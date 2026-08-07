@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { safeRouterPrefetch } from "@/lib/safeRouterPrefetch";
 import type { LucideIcon } from "lucide-react";
 import {
   Bot,
@@ -31,8 +32,10 @@ import {
   RefreshCw,
   Radio,
 } from "lucide-react";
+import { navItemAllowed, PACKS_FULL, type PackFlags } from "@knowpilot/shared";
 import { cn } from "@/lib/utils";
 import { OasisMindLogo } from "@/lib/icons";
+import { useNativeCapabilities } from "@/lib/hooks";
 
 interface SidebarProps {
   className?: string;
@@ -104,6 +107,15 @@ const navGroups: Record<string, NavGroup> = {
   },
 };
 
+function filterNavGroups(packs: PackFlags): Record<string, NavGroup> {
+  const out: Record<string, NavGroup> = {};
+  for (const [key, group] of Object.entries(navGroups)) {
+    const items = group.items.filter((item) => navItemAllowed(item.href, packs));
+    if (items.length > 0) out[key] = { ...group, items };
+  }
+  return out;
+}
+
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -111,12 +123,15 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(DEFAULT_WIDTH);
+  const caps = useNativeCapabilities({ staleTime: 60_000 });
+  const packs: PackFlags = caps.data?.packs ?? PACKS_FULL;
+  const visibleNavGroups = filterNavGroups(packs);
 
   const activeTab =
-    Object.entries(navGroups).find(([, group]) =>
+    Object.entries(visibleNavGroups).find(([, group]) =>
       group.items.some((item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))),
-    )?.[0] ?? "ai";
-  const activeGroup = navGroups[activeTab] ?? navGroups.ai;
+    )?.[0] ?? Object.keys(visibleNavGroups)[0] ?? "ai";
+  const activeGroup = visibleNavGroups[activeTab] ?? Object.values(visibleNavGroups)[0] ?? navGroups.ai;
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -133,11 +148,7 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
 
   const prefetchHref = useCallback(
     (href: string) => {
-      try {
-        router.prefetch(href);
-      } catch {
-        // ignore
-      }
+      safeRouterPrefetch(router, href);
     },
     [router],
   );
@@ -229,7 +240,7 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
         {/* 主导航：标签页 + 当前分组项 */}
         <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3">
           <div className="flex gap-1 border-b border-[var(--kp-divider)] pb-2">
-            {Object.entries(navGroups).map(([key, group]) => {
+            {Object.entries(visibleNavGroups).map(([key, group]) => {
               const Icon = group.icon;
               return (
                 <Link

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Memory 同步器
  *
  * 文件格式：config/memories/{slug}.md
@@ -10,7 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import { Syncer, SyncRecord } from "./types.js";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { hashMemoryContent } from "../../infra/memoryRepository.js";
-import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, readNumber, getFileMtime } from "./utils.js";
+import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, readNumber, getFileMtime, syncDetailWarn} from "./utils.js";
 
 interface MemoryData {
   content: string;
@@ -169,7 +169,7 @@ export const memorySyncer: Syncer<MemoryData> = {
 
   async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
     if (activeSlugs.length === 0) {
-      console.warn(`  ⚠️ [Memory] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      syncDetailWarn(`  ⚠️ [Memory] activeSlugs 为空，跳过 cleanup 以防误删。`);
       return 0;
     }
     // Memory 现在以 sourceSlug 为唯一标识，可以安全清理本地已删除的文件

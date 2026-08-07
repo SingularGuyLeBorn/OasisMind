@@ -6,6 +6,7 @@
  */
 
 import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from "undici";
+import { bootDetail } from "./bootLog.js";
 
 const AGENTMAIL_API_BASE = "https://api.agentmail.to/v0";
 
@@ -157,7 +158,7 @@ export async function ensureAgentMailWebhook(opts?: {
       };
     }
     const webhookId = body.webhook_id || body.webhookId || body.id;
-    console.info(`[AgentMail] webhook 已注册: ${webhookUrl} (id=${webhookId ?? "n/a"})`);
+    bootDetail(`[AgentMail] webhook 已注册: ${webhookUrl} (id=${webhookId ?? "n/a"})`);
     return { ok: true, webhookId, url: webhookUrl };
   } catch (err) {
     return {

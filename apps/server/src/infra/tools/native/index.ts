@@ -1,8 +1,9 @@
 /**
  * Native 域工具注册入口
  * PR-4a：fs / web / shell；PR-4b：swarm / session / memory；PR-4c：integration。
- * 由 nativeTools.ensureNativeToolsRegistered 调用；测试清空 registry 后可再次灌入。
+ * 由 nativeTools.ensureNativeToolsRegistered 调用；按 AppConfig.packs 跳过未启用域。
  */
+import { domainAllowed, type PackFlags } from "@knowpilot/shared";
 import { registerFsTools } from "./fs.js";
 import { registerWebTools } from "./web.js";
 import { registerShellTools } from "./shell.js";
@@ -23,26 +24,34 @@ import { registerLiteratureTools } from "./literature.js";
 import { registerDocumentTools } from "./document.js";
 import { registerQqTools } from "./qq.js";
 
-export function registerNativeDomains(): void {
-  registerFsTools();
-  registerWebTools();
-  registerShellTools();
-  registerSwarmTools();
-  registerSessionTools();
-  registerMemoryTools();
-  registerIntegrationTools();
-  registerNotifyTools();
-  registerAskUserTools();
-  registerSkillsTools();
-  registerInboxTools();
-  registerDeployTools();
-  registerAlgoVizTools();
-  registerArticleVideoTools();
-  registerMediaSttTools();
-  registerAgentCronTools();
-  registerLiteratureTools();
-  registerDocumentTools();
-  registerQqTools();
+type DomainRegistrar = { domain: Parameters<typeof domainAllowed>[0]; register: () => void };
+
+const DOMAIN_REGISTRARS: DomainRegistrar[] = [
+  { domain: "fs", register: registerFsTools },
+  { domain: "web", register: registerWebTools },
+  { domain: "shell", register: registerShellTools },
+  { domain: "swarm", register: registerSwarmTools },
+  { domain: "session", register: registerSessionTools },
+  { domain: "memory", register: registerMemoryTools },
+  { domain: "integration", register: registerIntegrationTools },
+  { domain: "notify", register: registerNotifyTools },
+  { domain: "askUser", register: registerAskUserTools },
+  { domain: "skills", register: registerSkillsTools },
+  { domain: "inbox", register: registerInboxTools },
+  { domain: "deploy", register: registerDeployTools },
+  { domain: "algoViz", register: registerAlgoVizTools },
+  { domain: "articleVideo", register: registerArticleVideoTools },
+  { domain: "mediaStt", register: registerMediaSttTools },
+  { domain: "agentCron", register: registerAgentCronTools },
+  { domain: "literature", register: registerLiteratureTools },
+  { domain: "document", register: registerDocumentTools },
+  { domain: "qq", register: registerQqTools },
+];
+
+export function registerNativeDomains(packs: PackFlags): void {
+  for (const { domain, register } of DOMAIN_REGISTRARS) {
+    if (domainAllowed(domain, packs)) register();
+  }
 }
 
 export type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";

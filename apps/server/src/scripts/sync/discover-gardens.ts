@@ -1,5 +1,5 @@
-/**
- * 发现 content/ 下的花园 id（供 sync-posts / sync-gardens / ensure 共用）
+﻿/**
+ * 鍙戠幇 content/ 涓嬬殑鑺卞洯 id锛堜緵 sync-posts / sync-gardens / ensure 鍏辩敤锛?
  */
 import fs from "fs";
 import path from "path";

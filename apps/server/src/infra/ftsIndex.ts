@@ -201,7 +201,10 @@ export async function rebuildFtsIndex(prisma: PrismaClient): Promise<number> {
     ),
   ]);
 
-  console.log(`  🔍 [FTS] 索引已重建：${rows.length} 条`);
+  const verbose = ["1", "true", "yes"].includes(
+    (process.env.KP_VERBOSE_SYNC || process.env.KP_VERBOSE_BOOT || "").trim().toLowerCase(),
+  );
+  if (verbose) console.log(`  🔍 [FTS] 索引已重建：${rows.length} 条`);
   return rows.length;
 }
 

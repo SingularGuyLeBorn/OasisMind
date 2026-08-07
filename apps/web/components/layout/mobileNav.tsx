@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { safeRouterPrefetch, scheduleIdlePrefetch } from "@/lib/safeRouterPrefetch";
 import type { LucideIcon } from "lucide-react";
 import {
   Home,
@@ -38,7 +39,9 @@ import {
   PlusCircle,
   UserCircle,
 } from "lucide-react";
+import { navItemAllowed, PACKS_FULL, type PackFlags } from "@knowpilot/shared";
 import { cn } from "@/lib/utils";
+import { useNativeCapabilities } from "@/lib/hooks";
 
 export type MobileMoreItem = {
   href: string;
@@ -105,9 +108,9 @@ const PRIMARY = [
   },
 ] as const;
 
-function isMoreActive(pathname: string): boolean {
+function isMoreActive(pathname: string, items: MobileMoreItem[]): boolean {
   if (PRIMARY.some((t) => t.match(pathname))) return false;
-  return MOBILE_MORE_ITEMS.some(
+  return items.some(
     (item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)),
   );
 }
@@ -118,19 +121,19 @@ export function MobileBottomNav() {
   // 用 pathname 键控：路由变化时 moreOpen 自然为 false，无需 effect 里 setState
   const [moreOpenPath, setMoreOpenPath] = useState<string | null>(null);
   const moreOpen = moreOpenPath === pathname;
+  const caps = useNativeCapabilities({ staleTime: 60_000 });
+  const packs: PackFlags = caps.data?.packs ?? PACKS_FULL;
+  const moreItems = useMemo(
+    () => MOBILE_MORE_ITEMS.filter((item) => navItemAllowed(item.href, packs)),
+    [packs],
+  );
 
   useEffect(() => {
-    const warm = () => {
+    return scheduleIdlePrefetch(() => {
       for (const href of ["/", "/gardens", "/chat", "/about", "/office", "/agents"] as const) {
-        try {
-          router.prefetch(href);
-        } catch {
-          /* ignore */
-        }
+        safeRouterPrefetch(router, href);
       }
-    };
-    const t = window.setTimeout(warm, 500);
-    return () => window.clearTimeout(t);
+    }, { timeoutMs: 1200, delayMs: 50 });
   }, [router]);
 
   useEffect(() => {
@@ -142,17 +145,17 @@ export function MobileBottomNav() {
     return () => window.removeEventListener("keydown", onKey);
   }, [moreOpen]);
 
-  const moreActive = isMoreActive(pathname);
+  const moreActive = isMoreActive(pathname, moreItems);
 
   const grouped = useMemo(() => {
     const map = new Map<string, MobileMoreItem[]>();
-    for (const item of MOBILE_MORE_ITEMS) {
+    for (const item of moreItems) {
       const list = map.get(item.group) ?? [];
       list.push(item);
       map.set(item.group, list);
     }
     return [...map.entries()];
-  }, []);
+  }, [moreItems]);
 
   return (
     <>
@@ -238,11 +241,7 @@ export function MobileBottomNav() {
                 href={tab.href}
                 prefetch
                 onTouchStart={() => {
-                  try {
-                    router.prefetch(tab.href);
-                  } catch {
-                    /* ignore */
-                  }
+                  safeRouterPrefetch(router, tab.href);
                 }}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition",

@@ -1,6 +1,20 @@
 # KnowPilot 运行时配置（本地优先，教学/产品向）
 # 环境变量仍可覆盖敏感项与部署相关项；此处放与业务行为相关的可调参数。
 
+# ══ 能力包 Core+Packs（轻量化按需加载）══
+# core/chat 始终开启。可选：swarm / im / mail / browser / research / viz
+# profile: full（默认全开，保持现网）| lite（仅花园+Chat）| custom（用下方布尔）
+# 环境变量：KP_PACKS=lite|full 优先于本段；KP_PACKS_DISABLE=viz,research；KP_PACKS_ENABLE=im
+packs:
+  profile: full
+  # 下列布尔仅在 profile 省略或为 custom 时生效；full/lite 会覆盖它们
+  # swarm: true
+  # im: true
+  # mail: true
+  # browser: true
+  # research: true
+  # viz: true
+
 # LLM 弹性调用（错误分类 + 指数退避重试 + fallback 降级）
 llm:
   # 全局默认模型 id（Agent/会话未指定模型时生效）；env DEFAULT_LLM_MODEL 可覆盖，缺省回退内置常量

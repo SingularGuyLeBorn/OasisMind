@@ -11,6 +11,7 @@ import { createTrpcInvoker } from "./trpcInvoker.js";
 import { executeTaskJob } from "./taskRunner.js";
 import { claimTaskRun } from "./taskClaim.js";
 import { getSwarmOrchestrator, type SwarmTaskOutcome } from "./swarmOrchestrator.js";
+import { bootDetail } from "./bootLog.js";
 
 /** 脱敏事件 payload 中的敏感字段，防止凭据/密钥被写入 Log.metadata。 */
 function sanitizePayloadForLog(payload: unknown): unknown {
@@ -48,7 +49,7 @@ export class TriggerEngine {
     if (this.isRunning) return;
     this.isRunning = true;
 
-    console.log("  ⚡ [TriggerEngine] 启动事件触发器引擎...");
+    bootDetail("  ⚡ [TriggerEngine] 启动事件触发器引擎...");
 
     this.eventHandler = async (payload: EntityEventPayload<any>) => {
       try {

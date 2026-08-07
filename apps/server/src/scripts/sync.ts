@@ -16,7 +16,7 @@ import chokidar from "chokidar";
 import { PrismaClient } from "@prisma/client";
 import { Syncer } from "./sync/types.js";
 import { getAppConfig, resolveGardenDir } from "../infra/config.js";
-import { getContentDir, filePathToSlug } from "./sync/utils.js";
+import { getContentDir, filePathToSlug, isVerboseSync, syncDetail } from "./sync/utils.js";
 import { guardedWatchDeleteBySlug } from "./sync/watchDeleteGuard.js";
 import { buildPostGardenSyncers } from "./sync/sync-posts.js";
 import { gardenSyncer } from "./sync/sync-gardens.js";
@@ -78,7 +78,7 @@ async function syncEntity<T>(syncer: Syncer<T>, client: PrismaClient): Promise<S
   const result: SyncResult = { entityName: syncer.entityName, scanned: 0, upserted: 0, cleaned: 0 };
 
   if (!fs.existsSync(contentDir)) {
-    console.log(`  ⚠️ 目录不存在，跳过: ${contentDir}`);
+    syncDetail(`  ⚠️ 目录不存在，跳过: ${contentDir}`);
     return result;
   }
 
@@ -113,24 +113,38 @@ export async function runContentSync(
   client: PrismaClient = prisma,
   options: { rebuildFts?: boolean } = {},
 ): Promise<SyncResult[]> {
-  console.log(`\n🔄 开始同步本地内容文件至数据库...`);
+  const verbose = isVerboseSync();
+  if (verbose) console.log(`\n🔄 开始同步本地内容文件至数据库...`);
 
   const results: SyncResult[] = [];
   for (const syncer of buildSyncers()) {
-    console.log(`\n📂 [${syncer.entityName}] 源目录: ${resolveSyncerDir(syncer)}`);
+    if (verbose) console.log(`\n📂 [${syncer.entityName}] 源目录: ${resolveSyncerDir(syncer)}`);
     const result = await syncEntity(syncer, client);
     results.push(result);
-    console.log(`  📊 扫描 ${result.scanned} 条，同步 ${result.upserted} 条，清理 ${result.cleaned} 条`);
+    if (verbose) {
+      console.log(`  📊 扫描 ${result.scanned} 条，同步 ${result.upserted} 条，清理 ${result.cleaned} 条`);
+    } else if (result.upserted > 0 || result.cleaned > 0) {
+      console.log(
+        `  📊 [${result.entityName}] 同步 ${result.upserted} · 清理 ${result.cleaned}（扫描 ${result.scanned}）`,
+      );
+    }
   }
 
-  console.log(`\n🎉 内容同步完成！\n`);
+  const changed = results.reduce((n, r) => n + r.upserted + r.cleaned, 0);
+  let ftsCount: number | null = null;
   if (options.rebuildFts !== false) {
     try {
       const { rebuildFtsIndex } = await import("../infra/ftsIndex.js");
-      await rebuildFtsIndex(client);
+      ftsCount = await rebuildFtsIndex(client);
     } catch (e: unknown) {
       console.warn("  ⚠️ [FTS] 索引重建跳过:", e instanceof Error ? e.message : e);
     }
+  }
+  if (verbose) {
+    console.log(`\n🎉 内容同步完成！\n`);
+  } else {
+    const ftsPart = ftsCount != null ? ` · FTS ${ftsCount}` : "";
+    console.log(`  ✅ sync 完成（变更 ${changed}）${ftsPart}`);
   }
   return results;
 }
@@ -139,7 +153,11 @@ export async function runContentSync(
 async function runWatch(): Promise<void> {
   await runContentSync(prisma, { rebuildFts: false });
 
-  console.log(`\n👀 进入监听模式，实时同步 content/ 目录变更...\n`);
+  if (isVerboseSync()) {
+    console.log(`\n👀 进入监听模式，实时同步 content/ 目录变更...\n`);
+  } else {
+    console.log(`  👀 sync:watch 已挂载`);
+  }
 
   // 防抖键 = `${entityName}:${eventPath}`：同窗口多文件事件（新增 A + 删除 B）各自独立防抖，
   // 不再互相覆盖导致「后一个事件吞掉前一个」而丢同步。
@@ -161,7 +179,9 @@ async function runWatch(): Promise<void> {
         fullRescanTimers.delete(target.entityName);
         syncEntity(target, prisma)
           .then((result) => {
-            console.log(`  📊 [${target.entityName}] 全量重扫（改名窗口保护）: 扫描 ${result.scanned} 条，同步 ${result.upserted} 条，清理 ${result.cleaned} 条`);
+            if (result.upserted > 0 || result.cleaned > 0 || isVerboseSync()) {
+              console.log(`  📊 [${target.entityName}] 全量重扫（改名窗口保护）: 扫描 ${result.scanned} 条，同步 ${result.upserted} 条，清理 ${result.cleaned} 条`);
+            }
             if (target.entityName === "Garden") attachNewGardenSyncers();
           })
           .catch((e) => console.error(`  ❌ [${target.entityName}] 全量重扫失败:`, e));
@@ -207,7 +227,7 @@ async function runWatch(): Promise<void> {
         return;
       }
 
-      console.log(`  🔔 [${syncer.entityName}] 检测到${eventType}: ${path.relative(contentDir, eventPath)}`);
+      syncDetail(`  🔔 [${syncer.entityName}] 检测到${eventType}: ${path.relative(contentDir, eventPath)}`);
 
       const debounceKey = `${syncer.entityName}:${eventPath}`;
       if (debounceMap.has(debounceKey)) {

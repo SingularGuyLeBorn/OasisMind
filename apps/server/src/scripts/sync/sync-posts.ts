@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Post / 知识库花园同步器
  *
  * 每棵花园（posts / knowledge / resources）注册一个 Syncer，
@@ -11,7 +11,7 @@ import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { getAppConfig } from "../../infra/config.js";
 import { buildPostFtsBody } from "../../services.js";
 import { Syncer, SyncRecord } from "./types.js";
-import { getFilesRecursive, parseMarkdownFile, filePathToSlug, getFileMtime } from "./utils.js";
+import { getFilesRecursive, parseMarkdownFile, filePathToSlug, getFileMtime, syncDetailWarn} from "./utils.js";
 import { discoverGardenIds } from "./discover-gardens.js";
 
 interface PostData {
@@ -143,7 +143,7 @@ export function createPostGardenSyncer(garden: string): Syncer<PostData> {
 
     async cleanup(prisma: PrismaClient, activeSlugs: string[], contentDir?: string): Promise<number> {
       if (activeSlugs.length === 0) {
-        console.warn(`  ⚠️ [Post:${garden}] activeSlugs 为空，跳过 cleanup 以防误删。`);
+        syncDetailWarn(`  ⚠️ [Post:${garden}] activeSlugs 为空，跳过 cleanup 以防误删。`);
         return 0;
       }
 

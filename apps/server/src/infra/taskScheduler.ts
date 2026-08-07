@@ -5,6 +5,7 @@
 import cron, { type ScheduledTask } from "node-cron";
 import type { PrismaClient } from "@prisma/client";
 import type { ServiceContainer } from "./serviceContainer.js";
+import { bootDetail } from "./bootLog.js";
 // 重叠互斥收进 TaskService.run → claimTaskRun，本调度器不再 check-then-act
 
 export class TaskScheduler {
@@ -36,10 +37,10 @@ export class TaskScheduler {
       });
       this.jobs.set(task.id, job);
       registered++;
-      console.log(`  ⏰ [TaskScheduler] 已注册 "${task.name}" → ${task.cronExpression}`);
+      bootDetail(`  ⏰ [TaskScheduler] 已注册 "${task.name}" → ${task.cronExpression}`);
     }
 
-    console.log(`  ⏰ [TaskScheduler] 启动完成，共 ${registered} 个定时任务`);
+    bootDetail(`  ⏰ [TaskScheduler] 启动完成，共 ${registered} 个定时任务`);
   }
 
   stop(): void {
@@ -48,7 +49,7 @@ export class TaskScheduler {
     }
     this.jobs.clear();
     this.started = false;
-    console.log("  ⏰ [TaskScheduler] 已停止");
+    bootDetail("  ⏰ [TaskScheduler] 已停止");
   }
 
   /** 热更新：新建/改 cron 后无需重启服务即可生效 */

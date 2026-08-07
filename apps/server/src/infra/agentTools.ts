@@ -13,7 +13,7 @@ const SCHEMA_WARN_BYTES = 50_000;
 /** schema 硬顶：超限先剥集成/skill/mcp，仍超则抛错拒跑（可用 env 覆盖） */
 const SCHEMA_HARD_CAP_BYTES = (() => {
   const n = Number(process.env.AGENT_TOOL_SCHEMA_HARD_CAP_BYTES);
-  return Number.isFinite(n) && n >= 20_000 ? Math.floor(n) : 100_000;
+  return Number.isFinite(n) && n >= 20_000 ? Math.floor(n) : 500_000;
 })();
 const INTEGRATION_OPT_IN_SET = new Set(INTEGRATION_OPT_IN_TOOLS.map((t) => t.replace(/^native:/, "")));
 import {

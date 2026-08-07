@@ -1,7 +1,7 @@
-/**
- * D4：watch unlink 与运行时 CRUD 改名窗口的并发保护
+﻿/**
+ * D4锛歸atch unlink 涓庤繍琛屾椂 CRUD 鏀瑰悕绐楀彛鐨勫苟鍙戜繚鎶?
  *
- * 目标行 updatedAt 在 grace 窗口内 → 跳过本次 deleteBySlug，交由全量重扫收敛。
+ * 鐩爣琛?updatedAt 鍦?grace 绐楀彛鍐?鈫?璺宠繃鏈 deleteBySlug锛屼氦鐢卞叏閲忛噸鎵敹鏁涖€?
  */
 
 import type { PrismaClient } from "@prisma/client";
@@ -9,7 +9,7 @@ import type { Syncer } from "./types.js";
 
 export const WATCH_DELETE_GRACE_MS = 5000;
 
-/** 该 slug 对应行是否在 graceMs 内刚被更新（改名窗口保护） */
+/** 璇?slug 瀵瑰簲琛屾槸鍚﹀湪 graceMs 鍐呭垰琚洿鏂帮紙鏀瑰悕绐楀彛淇濇姢锛?*/
 export async function isWatchDeleteProtected(
   prisma: PrismaClient,
   entityName: string,
@@ -17,7 +17,7 @@ export async function isWatchDeleteProtected(
   graceMs: number = WATCH_DELETE_GRACE_MS,
 ): Promise<boolean> {
   const since = new Date(Date.now() - graceMs);
-  // Post:posts / Post:knowledge / Post:resources —— 按花园收窄改名窗口
+  // Post:posts / Post:knowledge / Post:resources 鈥斺€?鎸夎姳鍥敹绐勬敼鍚嶇獥鍙?
   if (entityName === "Post" || entityName.startsWith("Post:")) {
     const garden = entityName.startsWith("Post:") ? entityName.slice("Post:".length) : undefined;
     return !!(await prisma.post.findFirst({
@@ -71,7 +71,7 @@ export async function isWatchDeleteProtected(
   }
 }
 
-/** watch 路径受保护删除：跳过时 deleted=0 + skipped=true（调用方标记全量重扫） */
+/** watch 璺緞鍙椾繚鎶ゅ垹闄わ細璺宠繃鏃?deleted=0 + skipped=true锛堣皟鐢ㄦ柟鏍囪鍏ㄩ噺閲嶆壂锛?*/
 export async function guardedWatchDeleteBySlug(
   prisma: PrismaClient,
   syncer: Syncer,

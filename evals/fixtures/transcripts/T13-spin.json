@@ -1,0 +1,38 @@
+{
+  "taskId": "T13-spin",
+  "trialIndex": 0,
+  "sessionId": "fixture-session-t13-spin",
+  "runId": "fixture-run-t13-spin",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "content": "随便搜一下",
+      "createdAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "搜完了。",
+      "createdAt": "2026-08-01T00:00:05.000Z",
+      "toolCallCount": 4
+    }
+  ],
+  "toolCalls": [
+    { "id": "c1", "name": "web_search", "args": { "query": "spin-loop" }, "result": {} },
+    { "id": "c2", "name": "web_search", "args": { "query": "spin-loop" }, "result": {} },
+    { "id": "c3", "name": "web_search", "args": { "query": "spin-loop" }, "result": {} },
+    { "id": "c4", "name": "web_search", "args": { "query": "spin-loop" }, "result": {} }
+  ],
+  "metrics": {
+    "durationMs": 12000,
+    "tokenTotal": 9000,
+    "toolCallCount": 4,
+    "rounds": 5,
+    "runStatus": "success"
+  },
+  "outcomeHints": {
+    "lastAssistantContent": "搜完了。",
+    "toolNames": ["web_search", "web_search", "web_search", "web_search"]
+  }
+}

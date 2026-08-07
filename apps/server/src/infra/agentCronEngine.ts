@@ -20,6 +20,7 @@ import {
   type AgentCronJobRow,
 } from "./agentCronStore.js";
 import { getStreamHub, onHubRunSettled } from "./sessionStreamHub.js";
+import { bootDetail } from "./bootLog.js";
 
 type JobKey = string; // cronJobId
 
@@ -62,7 +63,7 @@ export class AgentCronEngine {
           err instanceof Error ? err.message : err,
         );
       });
-    console.log("  ⏰ [AgentCronEngine] 已启动");
+    bootDetail("  ⏰ [AgentCronEngine] 已启动");
   }
 
   stop(): void {
@@ -75,7 +76,7 @@ export class AgentCronEngine {
     this.unsubSettled?.();
     this.unsubSettled = null;
     this.sessionToCron.clear();
-    console.log("  ⏰ [AgentCronEngine] 已停止");
+    bootDetail("  ⏰ [AgentCronEngine] 已停止");
   }
 
   /**
@@ -109,7 +110,7 @@ export class AgentCronEngine {
     for (const row of rows) {
       this.scheduleOne(row);
     }
-    console.log(`  ⏰ [AgentCronEngine] 已挂载 ${this.jobs.size} 条 cron`);
+    bootDetail(`  ⏰ [AgentCronEngine] 已挂载 ${this.jobs.size} 条 cron`);
   }
 
   /** set/clear 后热刷新（本地单用户，全量重建即可） */

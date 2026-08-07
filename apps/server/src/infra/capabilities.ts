@@ -2,6 +2,8 @@
  * 服务器运行时能力摘要 — /health 与 tRPC native.capabilities 共用
  */
 
+import type { PackFlags } from "@knowpilot/shared";
+import { formatPacksSummary } from "@knowpilot/shared";
 import type { AppConfig } from "./config.js";
 import type { PrismaClient } from "@prisma/client";
 import { getEngineStatus, READ_ARTICLE_PLATFORMS } from "./metablog/index.js";
@@ -12,6 +14,9 @@ import { getOcrStatus } from "./ocrService.js";
 
 export interface ServerCapabilities {
   chrome: boolean;
+  /** Core+Packs 启用状态（前端侧栏/doctor 同源） */
+  packs: PackFlags;
+  packsSummary: string;
   search: {
     priority: string;
     engines: string[];
@@ -56,6 +61,8 @@ export function getServerCapabilities(config: AppConfig): ServerCapabilities {
   const ocr = getOcrStatus(config);
   return {
     chrome: hasSystemChrome(),
+    packs: config.packs,
+    packsSummary: formatPacksSummary(config.packs),
     search: {
       priority: config.search.enginePriority,
       engines: getEngineStatus()

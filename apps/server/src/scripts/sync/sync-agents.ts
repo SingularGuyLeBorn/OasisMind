@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Agent 同步器
  *
  * 文件格式：config/agents/{slug}.md
@@ -10,7 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import { LLM_MODEL_IDS } from "@knowpilot/shared";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { Syncer, SyncRecord } from "./types.js";
-import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, getFileMtime } from "./utils.js";
+import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, getFileMtime, syncDetailWarn} from "./utils.js";
 
 interface AgentData {
   name: string;
@@ -157,7 +157,7 @@ export const agentSyncer: Syncer<AgentData> = {
 
   async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
     if (activeSlugs.length === 0) {
-      console.warn(`  ⚠️ [Agent] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      syncDetailWarn(`  ⚠️ [Agent] activeSlugs 为空，跳过 cleanup 以防误删。`);
       return 0;
     }
     const allInDb = await prisma.agent.findMany({ select: { id: true, sourceSlug: true } });

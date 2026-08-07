@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MCP Server 同步器
  *
  * 文件格式：config/mcp/{slug}.yaml 或 {slug}.json
@@ -9,7 +9,7 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import { Syncer, SyncRecord } from "./types.js";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
-import { getFilesRecursive, parseYamlFile, filePathToSlug, readBoolean, getFileMtime } from "./utils.js";
+import { getFilesRecursive, parseYamlFile, filePathToSlug, readBoolean, getFileMtime, syncDetailWarn} from "./utils.js";
 
 interface McpServerData {
   name: string;
@@ -133,7 +133,7 @@ export const mcpServerSyncer: Syncer<McpServerData> = {
 
   async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
     if (activeSlugs.length === 0) {
-      console.warn(`  ⚠️ [MCP Server] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      syncDetailWarn(`  ⚠️ [MCP Server] activeSlugs 为空，跳过 cleanup 以防误删。`);
       return 0;
     }
     const allInDb = await prisma.mcpServer.findMany({ select: { id: true, sourceSlug: true } });

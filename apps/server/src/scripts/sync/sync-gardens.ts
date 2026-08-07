@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Garden 同步器
  *
  * 扫描 content/{id}/_garden.md → upsert Garden 表。
@@ -16,7 +16,7 @@ import {
   isValidGardenIdFormat,
 } from "@knowpilot/shared";
 import { Syncer, SyncRecord } from "./types.js";
-import { getFileMtime } from "./utils.js";
+import { getFileMtime, syncDetailWarn} from "./utils.js";
 import { getAppConfig } from "../../infra/config.js";
 import { discoverGardenIds, GARDEN_META_FILE } from "./discover-gardens.js";
 
@@ -127,7 +127,7 @@ export const gardenSyncer: Syncer<GardenData> = {
 
   async cleanup(prisma: PrismaClient, activeSlugs: string[]): Promise<number> {
     if (activeSlugs.length === 0) {
-      console.warn("  ⚠️ [Garden] activeSlugs 为空，跳过 cleanup 以防误删。");
+      syncDetailWarn("  ⚠️ [Garden] activeSlugs 为空，跳过 cleanup 以防误删。");
       return 0;
     }
     const active = new Set(activeSlugs);

@@ -13,7 +13,9 @@ import {
   DEFAULT_LLM_MODEL,
   LLM_PROVIDER_DEEPSEEK,
   LOCAL_LLM_DEFAULT_BASE_URLS,
+  resolvePackFlags,
   type LocalLlmProviderId,
+  type PackFlags,
 } from "@knowpilot/shared";
 import { buildEffectiveSearchPriorityString } from "./metablog/search/priority.js";
 
@@ -61,6 +63,17 @@ const GoalYamlSchema = z.object({
 });
 
 /** config.yaml inbox 段：截图监视目录 + 蒸馏默认花园 */
+const PacksYamlSchema = z.object({
+  /** lite | full | custom（custom/省略 = 按下列布尔，默认全开） */
+  profile: z.string().optional(),
+  swarm: z.boolean().optional(),
+  im: z.boolean().optional(),
+  mail: z.boolean().optional(),
+  browser: z.boolean().optional(),
+  research: z.boolean().optional(),
+  viz: z.boolean().optional(),
+});
+
 const InboxYamlSchema = z.object({
   /** 截图监视目录；空 = data/inbox/screenshots/drop；可填 iCloud Photos 路径 */
   screenshotWatchDir: z.string().default(""),
@@ -355,6 +368,11 @@ export interface AppConfig {
     deepResearchMaxTurns: number;
     judgeModel: string;
   };
+  /**
+   * 能力包（Core+Packs）。core/chat 恒 true。
+   * config.yaml packs + KP_PACKS=lite|full + KP_PACKS_DISABLE/ENABLE。
+   */
+  packs: PackFlags;
 }
 
 /* ─── 环境变量 ─── */
@@ -607,6 +625,19 @@ export function createAppConfig(): AppConfig {
   const goalYaml = goalYamlParsed.success ? goalYamlParsed.data : GoalYamlSchema.parse({});
   const inboxYamlParsed = InboxYamlSchema.safeParse(yamlConfig.inbox ?? {});
   const inboxYaml = inboxYamlParsed.success ? inboxYamlParsed.data : InboxYamlSchema.parse({});
+  const packsYamlParsed = PacksYamlSchema.safeParse(yamlConfig.packs ?? {});
+  const packsYaml = packsYamlParsed.success ? packsYamlParsed.data : PacksYamlSchema.parse({});
+  const packs = resolvePackFlags({
+    profile: packsYaml.profile,
+    yaml: {
+      swarm: packsYaml.swarm,
+      im: packsYaml.im,
+      mail: packsYaml.mail,
+      browser: packsYaml.browser,
+      research: packsYaml.research,
+      viz: packsYaml.viz,
+    },
+  });
 
   const config: AppConfig = {
     port: parseInt(process.env.SERVER_PORT || "3010", 10),
@@ -911,6 +942,7 @@ export function createAppConfig(): AppConfig {
     reflection: reflectionYaml,
     skills: skillsYaml,
     goal: goalYaml,
+    packs,
   };
 
   for (const dir of Object.values(config.contentPaths)) {

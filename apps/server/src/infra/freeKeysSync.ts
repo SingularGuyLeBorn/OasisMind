@@ -20,6 +20,7 @@ import {
   setOpenRouterFreeModelCatalog,
   type OpenRouterFreeModelInfo,
 } from "./freeLlmRuntime.js";
+import { bootDetail, bootDetailWarn } from "./bootLog.js";
 
 export const FREELLM_GATEWAY_BASE_URL = "https://aiapiv2.pekpik.com/v1";
 export const OPENROUTER_API_BASE_URL = "https://openrouter.ai/api/v1";
@@ -185,24 +186,24 @@ export async function fetchFreellmKeys(projectRoot: string): Promise<FreeKeyEntr
     try {
       const res = await fetchText(src.url);
       if (!res.ok) {
-        console.warn(`  ⚠️ [freeKeysSync] ${src.url} -> HTTP ${res.status}`);
+        bootDetailWarn(`  ⚠️ [freeKeysSync] ${src.url} -> HTTP ${res.status}`);
         continue;
       }
       if (src.kind === "readme") {
         const keys = parseReadmeKeys(res.text);
         if (keys.length > 0) {
-          console.log(`  📄 [freeKeysSync] 从 README 解析到 ${keys.length} 个 key`);
+          bootDetail(`  📄 [freeKeysSync] 从 README 解析到 ${keys.length} 个 key`);
           return keys;
         }
         continue;
       }
       const keys = parseJsonKeys(JSON.parse(res.text) as unknown);
       if (keys.length > 0) {
-        console.log(`  📦 [freeKeysSync] 从 ${src.url} 解析到 ${keys.length} 个 key`);
+        bootDetail(`  📦 [freeKeysSync] 从 ${src.url} 解析到 ${keys.length} 个 key`);
         return keys;
       }
     } catch (err) {
-      console.warn(
+      bootDetailWarn(
         `  ⚠️ [freeKeysSync] 拉取 ${src.url} 失败:`,
         err instanceof Error ? err.message : err,
       );
@@ -219,7 +220,7 @@ export async function fetchFreellmKeys(projectRoot: string): Promise<FreeKeyEntr
         ? parseJsonKeys(JSON.parse(text) as unknown)
         : parseReadmeKeys(text);
       if (keys.length > 0) {
-        console.log(`  📁 [freeKeysSync] 从本地 ${local} 解析到 ${keys.length} 个 key`);
+        bootDetail(`  📁 [freeKeysSync] 从本地 ${local} 解析到 ${keys.length} 个 key`);
         return keys;
       }
     }
@@ -272,7 +273,7 @@ export async function validateEntries(entries: FreeKeyEntry[]): Promise<FreeKeyE
     const valid = await probeFreeKey(entry);
     if (valid) ok.push(entry);
   }
-  console.log(`  🔎 [freeKeysSync] 探活 ${candidates.length} 条，通过 ${ok.length} 条`);
+  bootDetail(`  🔎 [freeKeysSync] 探活 ${candidates.length} 条，通过 ${ok.length} 条`);
   return ok;
 }
 
@@ -314,7 +315,7 @@ export async function syncOpenRouterFreeModels(config: AppConfig): Promise<strin
     if (!getOpenRouterFreeModelCatalog()) {
       loadOpenRouterFreeCatalogFromDisk(config.projectRoot);
     }
-    console.log("  ℹ️ [freeKeysSync] 未配置 OPENROUTER_API_KEY，跳过 OpenRouter :free 在线同步");
+    bootDetail("  ℹ️ [freeKeysSync] 未配置 OPENROUTER_API_KEY，跳过 OpenRouter :free 在线同步");
     return getOpenRouterFreeModelCatalog()?.models.map((m) => m.id) ?? [];
   }
   const base = (config.llm.providers.openrouter.baseUrl || OPENROUTER_API_BASE_URL).replace(/\/$/, "");
@@ -344,7 +345,7 @@ export async function syncOpenRouterFreeModels(config: AppConfig): Promise<strin
     const existing = config.llm.fallbackModels ?? [];
     const merged = [...freeIds.slice(0, 8), ...existing.filter((m) => !freeIds.includes(m))];
     config.llm.fallbackModels = merged.slice(0, 16);
-    console.log(`  🌐 [freeKeysSync] OpenRouter :free 模型 ${models.length} 个（已写入 fallback + 落盘）`);
+    bootDetail(`  🌐 [freeKeysSync] OpenRouter :free 模型 ${models.length} 个（已写入 fallback + 落盘）`);
     return freeIds;
   } catch (err) {
     console.warn(
@@ -363,7 +364,7 @@ export async function syncFreeKeys(
   prisma: PrismaClient,
   config: AppConfig,
 ): Promise<FreeKeysSyncResult> {
-  console.log("🔄 [freeKeysSync] 开始同步免费 API Key...");
+  bootDetail("🔄 [freeKeysSync] 开始同步免费 API Key...");
   const fetched = await fetchFreellmKeys(config.projectRoot);
   const validated = fetched.length ? await validateEntries(fetched) : [];
 
@@ -484,13 +485,13 @@ export async function syncFreeKeys(
 
 export function startFreeKeysAutoSync(prisma: PrismaClient, config: AppConfig): void {
   if (!envFlagEnabled("FREE_KEYS_AUTO_SYNC", true)) {
-    console.log("  ℹ️ [freeKeysSync] FREE_KEYS_AUTO_SYNC 已关闭，跳过启动同步");
+    bootDetail("  ℹ️ [freeKeysSync] FREE_KEYS_AUTO_SYNC 已关闭，跳过启动同步");
     // 仍加载磁盘目录，供面板只读浏览
     loadOpenRouterFreeCatalogFromDisk(config.projectRoot);
     return;
   }
   if (process.env.MOCK_LLM === "true") {
-    console.log("  ℹ️ [freeKeysSync] MOCK_LLM=true，跳过免费 key 同步");
+    bootDetail("  ℹ️ [freeKeysSync] MOCK_LLM=true，跳过免费 key 同步");
     loadOpenRouterFreeCatalogFromDisk(config.projectRoot);
     return;
   }
@@ -517,7 +518,7 @@ export function startFreeKeysAutoSync(prisma: PrismaClient, config: AppConfig): 
   tick().catch((err) => { console.warn("[freeKeysSync.ts] best-effort failed:", err instanceof Error ? err.message : err); });
   if (timer) clearInterval(timer);
   timer = setInterval(() => { tick().catch((err) => { console.warn("[freeKeysSync.ts] best-effort failed:", err instanceof Error ? err.message : err); }); }, intervalMs);
-  console.log(`  👀 [freeKeysSync] 已启动（默认开启，间隔 ${Math.round(intervalMs / 60000)} 分钟）`);
+  bootDetail(`  👀 [freeKeysSync] 已启动（间隔 ${Math.round(intervalMs / 60000)} 分钟）`);
 }
 
 export function stopFreeKeysAutoSync(): void {

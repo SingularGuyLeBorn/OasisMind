@@ -1,0 +1,52 @@
+{
+  "taskId": "T11-chaotic",
+  "trialIndex": 0,
+  "sessionId": "fixture-session-t11-chaotic",
+  "runId": "fixture-run-t11-chaotic",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "content": "列一下知识库最近文章",
+      "createdAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "最近两篇：Mock 文章 A、Mock 文章 B。",
+      "createdAt": "2026-08-01T00:00:02.000Z",
+      "toolCallCount": 3
+    }
+  ],
+  "toolCalls": [
+    {
+      "id": "c1",
+      "name": "web_search",
+      "args": { "query": "noise" },
+      "result": { "ok": true }
+    },
+    {
+      "id": "c2",
+      "name": "run_shell",
+      "args": { "command": "echo hi" },
+      "result": { "exitCode": 0 }
+    },
+    {
+      "id": "c3",
+      "name": "post_list",
+      "args": { "page": 1 },
+      "result": { "total": 2 }
+    }
+  ],
+  "metrics": {
+    "durationMs": 2400,
+    "tokenTotal": 1800,
+    "toolCallCount": 3,
+    "rounds": 2,
+    "runStatus": "success"
+  },
+  "outcomeHints": {
+    "lastAssistantContent": "最近两篇：Mock 文章 A、Mock 文章 B。",
+    "toolNames": ["web_search", "run_shell", "post_list"]
+  }
+}

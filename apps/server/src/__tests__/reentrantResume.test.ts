@@ -19,6 +19,7 @@ import { createContextInner } from "../trpc/context.js";
 import { recoverStaleAsyncJobs, retryAsyncJob } from "../infra/asyncJobManager.js";
 import { getAsyncJobOrchestrator, resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { registerNativeDomains } from "../infra/tools/native/index.js";
+import { PACKS_FULL } from "@knowpilot/shared";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 
 const ASYNC_KIND = "async_agent";
@@ -59,7 +60,7 @@ async function mkZombie(opts: { sessionId: string; label: string; mode?: "llm" |
 }
 
 beforeAll(() => {
-  registerNativeDomains();
+  registerNativeDomains(PACKS_FULL);
 });
 
 beforeEach(() => {

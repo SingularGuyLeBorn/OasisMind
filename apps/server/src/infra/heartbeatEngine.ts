@@ -36,6 +36,7 @@ import { createMemoryRepository, decayMemories, consolidateMemories } from "./me
 import { sendEmailNotification } from "./emailNotifier.js";
 import { claimExclusiveSessionTaskRun } from "./taskClaim.js";
 import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES } from "@knowpilot/shared";
+import { bootDetail } from "./bootLog.js";
 import {
   closeLoopGate,
   ensureLoopContract,
@@ -145,7 +146,7 @@ export class HeartbeatEngine {
       });
     }
 
-    console.log(`  💓 [HeartbeatEngine] 启动完成，共 ${this.jobs.size} 个心跳任务`);
+    bootDetail(`  💓 [HeartbeatEngine] 启动完成，共 ${this.jobs.size} 个心跳任务`);
 
     // A14：监听 agent 配置变更事件，防抖后增量刷新 cron 注册，替代此前每 60s 全量轮询重建。
     const bus = getEventBus();

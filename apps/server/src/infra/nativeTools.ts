@@ -18,8 +18,9 @@ import {
   peelExpectControls,
 } from "./keyInfoExtractor.js";
 import { formatMissingRequiredWithExample } from "./tools/native/agentToolError.js";
+import { getAppConfig } from "./config.js";
 
-// 域副作用注册（fs/web/shell/swarm/session/memory/integration）
+// 域副作用注册（fs/web/shell/swarm/session/memory/integration）；按 packs 过滤
 import { registerNativeDomains } from "./tools/native/index.js";
 
 export type { NativeToolContext, NativeToolDefinition } from "./tools/native/types.js";
@@ -51,12 +52,17 @@ function checkRequiredParams(cmd: { schema(): { parameters: Record<string, unkno
 /** 域工具灌入统一注册表（唯一注册路径：registerNativeDomains） */
 let nativeToolsRegistered = false;
 function ensureNativeToolsRegistered(): void {
-  // 测试清空 registry 后需能重新灌入；探测两个不同域的工具防部分注册
-  if (nativeToolsRegistered && getTool("read_file") && getTool("agent_create")) return;
-  registerNativeDomains();
+  // 测试清空 registry 后需能重新灌入；只探测 core 域（swarm 可能被 pack 关掉）
+  if (nativeToolsRegistered && getTool("read_file")) return;
+  registerNativeDomains(getAppConfig().packs);
   nativeToolsRegistered = true;
 }
 ensureNativeToolsRegistered();
+
+/** 测试用：允许按新 packs 重新注册（先清 registry） */
+export function __resetNativeToolsRegistrationForTests(): void {
+  nativeToolsRegistered = false;
+}
 
 export function listNativeTools(): NativeToolDefinition[] {
   ensureNativeToolsRegistered();

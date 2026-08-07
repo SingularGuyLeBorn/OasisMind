@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Task 同步器
  *
  * 文件格式：config/tasks/{slug}.json
@@ -8,7 +8,7 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import { Syncer, SyncRecord } from "./types.js";
-import { getFilesRecursive, filePathToSlug, getFileMtime } from "./utils.js";
+import { getFilesRecursive, filePathToSlug, getFileMtime, syncDetailWarn} from "./utils.js";
 
 interface TaskData {
   name: string;
@@ -105,7 +105,7 @@ export const taskSyncer: Syncer<TaskData> = {
 
   async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
     if (activeSlugs.length === 0) {
-      console.warn(`  ⚠️ [Task] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      syncDetailWarn(`  ⚠️ [Task] activeSlugs 为空，跳过 cleanup 以防误删。`);
       return 0;
     }
     const allInDb = await prisma.task.findMany({ select: { id: true, sourceSlug: true } });

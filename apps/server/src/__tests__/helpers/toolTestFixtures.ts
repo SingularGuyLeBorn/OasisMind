@@ -5,6 +5,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { PACKS_FULL } from "@knowpilot/shared";
 import type { AppConfig } from "../../infra/config.js";
 import type { NativeToolContext } from "../../infra/nativeTools.js";
 import type { AgentToolContext, ParsedAgentTools } from "../../infra/agentTools.js";
@@ -177,6 +178,7 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
       notifyCooldownMs: 1_800_000,
     },
     reflection: { enabled: false, maxRounds: 1, criticModel: "" },
+    packs: { ...PACKS_FULL },
     ...overrides,
     // 浅合并会整段覆盖 skills/goal，这里补回默认字段
     skills: {

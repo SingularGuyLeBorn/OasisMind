@@ -111,6 +111,54 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
     bytes: String(args.content ?? "").length,
     elapsedMs: 1,
   }),
+
+  post_list: (args) => ({
+    items: [
+      { id: "mock-post-1", title: "Mock 文章 A", slug: "mock-a", updatedAt: new Date().toISOString() },
+      { id: "mock-post-2", title: "Mock 文章 B", slug: "mock-b", updatedAt: new Date().toISOString() },
+    ],
+    total: 2,
+    page: Number(args.page ?? 1),
+    pageSize: Number(args.pageSize ?? 10),
+    elapsedMs: 2,
+  }),
+
+  post_create: (args) => ({
+    id: "mock-created-post",
+    title: String(args.title ?? "untitled"),
+    slug: "mock-created",
+    garden: String(args.garden ?? "posts"),
+    elapsedMs: 3,
+  }),
+
+  file_delete: (args) => ({
+    path: String(args.path ?? ""),
+    deleted: true,
+    soft: true,
+    elapsedMs: 1,
+  }),
+
+  spawn_subagent: (args) => ({
+    jobId: `mock-job-${Date.now().toString(36)}`,
+    status: "queued",
+    waitForResult: args.waitForResult === true,
+    task: String(args.task ?? ""),
+    elapsedMs: 2,
+  }),
+
+  session_compact: () => ({
+    compacted: true,
+    summaryChars: 128,
+    elapsedMs: 2,
+  }),
+
+  run_shell: (args) => ({
+    command: String(args.command ?? ""),
+    stdout: "mock-shell-ok",
+    stderr: "",
+    exitCode: 0,
+    elapsedMs: 2,
+  }),
 };
 
 /**
