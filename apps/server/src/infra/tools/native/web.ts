@@ -338,7 +338,7 @@ async function webSearch(args: Record<string, unknown>, ctx: NativeToolContext) 
 
 async function rssFetchTool(args: Record<string, unknown>, ctx: NativeToolContext): Promise<unknown> {
   const { prisma } = ctx;
-  if (!prisma) throw new Error("rss_fetch 需要 prisma");
+  if (!prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
 
   const { fetchRssSource, draftPostsFromRssItems } = await import("../../rssFetch.js");
 
@@ -386,7 +386,7 @@ async function rssFetchTool(args: Record<string, unknown>, ctx: NativeToolContex
 
 async function rssDraftPostsTool(args: Record<string, unknown>, ctx: NativeToolContext): Promise<unknown> {
   const { prisma } = ctx;
-  if (!prisma) throw new Error("rss_draft_posts 需要 prisma");
+  if (!prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { draftPostsFromRssItems } = await import("../../rssFetch.js");
 
   const sourceId = typeof args.sourceId === "string" ? args.sourceId : undefined;

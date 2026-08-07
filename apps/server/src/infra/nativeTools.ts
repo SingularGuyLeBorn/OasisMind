@@ -17,6 +17,7 @@ import {
   injectExpectPropsIntoParameters,
   peelExpectControls,
 } from "./keyInfoExtractor.js";
+import { formatMissingRequiredWithExample } from "./tools/native/agentToolError.js";
 
 // 域副作用注册（fs/web/shell/swarm/session/memory/integration）
 import { registerNativeDomains } from "./tools/native/index.js";
@@ -91,7 +92,8 @@ export async function executeNativeTool(
         ctx.config,
       );
       return {
-        error: `[${permError.code}] ${permError.reason}`,
+        error: `${permError.reason}（权限码 ${permError.code}，供排查，勿当操作指令）`,
+        code: permError.code,
         permissionDenied: true,
       };
     }
@@ -116,8 +118,9 @@ export async function executeNativeTool(
   // 不进 handler（避免 handler 因字段缺失抛非结构化异常或误用默认值）。
   const missing = checkRequiredParams(cmd, cleanArgs);
   if (missing.length > 0) {
+    const parameters = cmd.schema().parameters as Record<string, unknown>;
     return {
-      error: `工具 ${name} 缺少必填参数: ${missing.join(", ")}。请检查参数后重试。`,
+      ...formatMissingRequiredWithExample(name, missing, parameters),
       validationError: true,
       missingParams: missing,
     };

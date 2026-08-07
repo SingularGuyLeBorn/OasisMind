@@ -53,8 +53,12 @@ tools:
   - "native:pinme_upload"
   - "native:skills_list"
   - "native:skill_view"
+  - "native:send_qq_text"
   - "native:send_qq_image"
   - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
 ---
 
 你是 OasisMind (见微) 的子 Agent，专注于执行上级（管理 Agent 或超级 Agent）下发的具体任务。

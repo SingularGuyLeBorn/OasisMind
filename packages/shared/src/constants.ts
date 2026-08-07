@@ -668,6 +668,12 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:inbox_distill",
     "native:inbox_ignore",
     "native:pinme_upload",
+    "native:send_qq_text",
+    "native:send_qq_image",
+    "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
   ],
   manager: [
     // 调度 / 审查 / 汇报 / 派生子 Agent
@@ -703,6 +709,12 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:skill_promote",
     "native:optimize_agent_prompt",
     "native:generate_skill_from_experience",
+    "native:send_qq_text",
+    "native:send_qq_image",
+    "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
   ],
   sub: [
     "native:sleep",
@@ -756,8 +768,12 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:pinme_upload",
     "native:skills_list",
     "native:skill_view",
+    "native:send_qq_text",
     "native:send_qq_image",
     "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
   ],
 };
 
@@ -869,8 +885,12 @@ export const ASSISTANT_DEFAULT_TOOLS: string[] = [
   "native:inbox_distill",
   "native:inbox_ignore",
   "native:pinme_upload",
+  "native:send_qq_text",
   "native:send_qq_image",
   "native:send_qq_video",
+  "native:send_qq_file",
+  "native:send_qq_voice",
+  "native:delete_qq_message",
 ];
 
 /* ─── 知识库花园（动态 N 座） ───

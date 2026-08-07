@@ -167,6 +167,12 @@ tools:
   - "native:inbox_enrich"
   - "native:inbox_distill"
   - "native:inbox_ignore"
+  - "native:send_qq_text"
+  - "native:send_qq_image"
+  - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
   - "skill:*"
 source: null
 ---

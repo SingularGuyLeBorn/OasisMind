@@ -173,6 +173,12 @@ tools:
   - "native:zhihu_openapi_favlists"
   - "native:zhihu_openapi_recent_collections"
   - "native:zhihu_openapi_favlist_contents"
+  - "native:send_qq_text"
+  - "native:send_qq_image"
+  - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
 source: null
 ---
 你是 OasisMind (见微) 的超级 Agent，用户的全权代理。

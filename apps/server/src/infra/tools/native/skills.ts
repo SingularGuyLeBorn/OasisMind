@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodParams } from "./zodParams.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
+import { agentParamError, TOOL_CORRECT_EXAMPLES } from "./agentToolError.js";
 import {
   archiveSkillPackage,
   inferKindFromScanPath,
@@ -90,18 +91,34 @@ async function skillsListTool(args: Record<string, unknown>, ctx: NativeToolCont
 
 async function skillViewTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const name = String(args.name || "").trim();
-  if (!name) return { error: "skill_view 需要 name" };
+  if (!name) {
+    return agentParamError({
+      reason:
+        "参数 name 无效：skill_view 必填 name。请先 skills_list 查看可用 Skill，再填入返回的精确 name（小写连字符）。",
+      got: args.name,
+      correctExample: { ...TOOL_CORRECT_EXAMPLES.skill_view },
+      code: "INVALID_SKILL_NAME",
+    });
+  }
   const filePath = args.file_path ? String(args.file_path) : args.filePath ? String(args.filePath) : "";
   const list = await ctx.services.skill.list({ page: 1, pageSize: 200, keyword: name });
   const skill = list.items.find((s) => s.name === name || sanitizeSkillName(s.name) === sanitizeSkillName(name));
-  if (!skill) return { error: `Skill「${name}」不存在` };
+  if (!skill) {
+    return {
+      error: `Skill「${name}」不存在。下一步：调用 skills_list 核对精确 name（大小写与连字符必须一致），不要编造名称。`,
+    };
+  }
 
   const kind = parseSkillKind(skill.metaJson, "executable");
   const root = skillsRoot(ctx);
 
   if (filePath) {
     if (kind !== "procedural") {
-      return { error: "仅 procedural 包支持 file_path 附属文件" };
+      return {
+        error:
+          `Skill「${skill.name}」的 kind=${kind}，不是 procedural 包，不能传 file_path。` +
+          "下一步：省略 file_path，只读主正文；若需要附属文件，先 skills_list / skill_view 确认 kind=procedural。",
+      };
     }
     const read = readSkillSupportFile(root, skill.name, filePath);
     if (!read.ok) return { error: read.error };
@@ -147,7 +164,7 @@ function buildProceduralFrontmatter(opts: {
     `kind: procedural`,
     `enabled: true`,
     `version: "${opts.version || "0.1.0"}"`,
-    `author: "KnowPilot"`,
+    `author: "OasisMind"`,
     "---",
     "",
   ].join("\n");
@@ -188,7 +205,13 @@ async function upsertProceduralSkill(
   opts?: { agentCreated?: boolean },
 ) {
   const safe = sanitizeSkillName(name);
-  if (!safe) return { error: "无效 skill name" };
+  if (!safe) {
+    return {
+      error:
+        "参数 name 无效：须为小写英文字母/数字/连字符（例 qq-onebot-messaging）。" +
+        "禁止中文、空格、下划线堆砌、PR 号、今日任务名。请改名后重试。",
+    };
+  }
   const { body } = splitSkillMd(fullMd);
   const descMatch = fullMd.match(/^description:\s*["']?(.+?)["']?\s*$/m);
   const description = truncateSkillDescription(descMatch?.[1] || safe, 60);
@@ -221,7 +244,13 @@ async function upsertProceduralSkill(
       tags,
       metaJson,
     } as never);
-    if (!updated.success) return { error: updated.error?.message ?? "更新失败" };
+    if (!updated.success) {
+      return {
+        error:
+          `更新 Skill「${safe}」失败：${updated.error?.message ?? "未知原因"}。` +
+          "下一步：skills_list 确认名称未冲突；patch 时先 skill_view 核对 old_string 与原文完全一致。",
+      };
+    }
     return { success: true, skillId: hit.id, name: safe, action: "updated" as const };
   }
 
@@ -235,7 +264,11 @@ async function upsertProceduralSkill(
     metaJson,
   } as never);
   if (!created.success || !created.data) {
-    return { error: created.error?.message ?? "创建失败" };
+    return {
+      error:
+        `创建 Skill「${safe}」失败：${created.error?.message ?? "未知原因"}。` +
+        "下一步：skills_list 检查是否重名；name 用小写连字符；content 须含合法 frontmatter。",
+    };
   }
   // 强制写包路径（Service 默认可能写扁平文件）
   const flat = skillMdPath(root, safe, "executable");
@@ -322,7 +355,11 @@ async function skillManageTool(args: Record<string, unknown>, ctx: NativeToolCon
     }
     const list = await ctx.services.skill.list({ page: 1, pageSize: 50, keyword: name });
     const skill = list.items.find((s) => sanitizeSkillName(s.name) === name);
-    if (!skill) return { error: `Skill「${name}」不存在` };
+    if (!skill) {
+    return {
+      error: `Skill「${name}」不存在。下一步：调用 skills_list 核对精确 name（大小写与连字符必须一致），不要编造名称。`,
+    };
+  }
     const kind = parseSkillKind(skill.metaJson, "executable");
     const mdPath = skillMdPath(root, name, kind === "procedural" ? "procedural" : "executable");
     let raw = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, "utf-8") : skill.code;
@@ -395,7 +432,11 @@ async function skillManageTool(args: Record<string, unknown>, ctx: NativeToolCon
   if (action === "delete") {
     const list = await ctx.services.skill.list({ page: 1, pageSize: 50, keyword: name });
     const skill = list.items.find((s) => sanitizeSkillName(s.name) === name);
-    if (!skill) return { error: `Skill「${name}」不存在` };
+    if (!skill) {
+    return {
+      error: `Skill「${name}」不存在。下一步：调用 skills_list 核对精确 name（大小写与连字符必须一致），不要编造名称。`,
+    };
+  }
     const kind = parseSkillKind(skill.metaJson, "executable");
     const archived = archiveSkillPackage(root, name, kind === "procedural" ? "procedural" : "executable");
     if (!archived.ok) return { error: archived.error };
@@ -440,13 +481,24 @@ const SKILLS_DEFS: NativeToolDefinition[] = [
   {
     name: "skill_view",
     description:
-      "加载 Skill 全文（渐进披露第 2 层）或包内附属文件（file_path=references/...）。procedural 技能应经此工具读取，而非 skill__*。",
+      "加载 Skill 正文（渐进披露第 2 层）。" +
+      "【必填】name=skills_list 返回的精确名称。" +
+      "【默认】不传 file_path：返回该 Skill 主正文（SKILL.md / code）。" +
+      "【仅当】kind=procedural 且要读包内附属文件时，再传 file_path（必须以 references/、templates/、scripts/、assets/ 之一开头）。" +
+      "executable / reference 不要传 file_path。禁止用 skill__* 旁路代替本工具读 procedural 手册。",
     parameters: zodParams(
       z.object({
-        name: z.string().describe("Skill 名称"),
+        name: z
+          .string()
+          .describe(
+            "【必填】Skill 精确名称，例 \"qq-onebot-messaging\"。大小写与连字符必须与 skills_list 一致。",
+          ),
         file_path: z
           .string()
-          .describe("可选：references/x.md | templates/x | scripts/x")
+          .describe(
+            "【可选】仅 procedural 包。相对 Skill 包内路径，例 \"references/api.md\"。" +
+              "省略=读主正文。禁止 \"..\" 与绝对路径。",
+          )
           .optional(),
       }),
     ),
@@ -454,21 +506,52 @@ const SKILLS_DEFS: NativeToolDefinition[] = [
   {
     name: "skill_manage",
     description:
-      "管理程序记忆 Skill（Hermes 闭环）。Actions: create（完整 SKILL.md）、patch（old_string/new_string，优先）、edit（全文重写）、write_file/remove_file（附属文件）、delete（归档到 .archive，非硬删）。\n" +
-      "Create when: 复杂任务成功（约 5+ tool calls）、攻克棘手错误、用户纠正后的可行流程、或用户要求记住程序。\n" +
-      "Update when: 技能过时/缺步/坑未写——立刻 patch，不要等被要求。\n" +
-      "Target: class-level 伞技能 + references/；禁止用 PR 号/今日任务名当 skill name。\n" +
-      "description ≤60 字符。Memory 记「用户是谁」；Skill 记「这类任务怎么做」。",
+      "管理程序记忆 Skill（Hermes 闭环）。" +
+      "【必填】action + name。" +
+      "action 取值（字面量，小写）：create | patch | edit | write_file | remove_file | delete。" +
+      "【按 action 的额外必填】" +
+      "create/edit → content=完整 SKILL.md 文本；" +
+      "patch → old_string + new_string（优先小补丁）；" +
+      "write_file → file_path + file_content；" +
+      "remove_file → file_path；" +
+      "delete → 只需 name（归档到 .archive，非硬删）。" +
+      "name 规则：小写连字符类名（例 web-scrape），禁止中文、空格、PR 号、今日任务名。" +
+      "description 建议 ≤60 字符。Memory 记「用户是谁」；Skill 记「这类任务怎么做」。",
     parameters: zodParams(
       z.object({
-        action: z.enum(["create", "patch", "edit", "write_file", "remove_file", "delete"]),
-        name: z.string().describe("小写连字符 skill 名"),
-        content: z.string().describe("create/edit：完整 SKILL.md").optional(),
-        old_string: z.string().optional(),
-        new_string: z.string().optional(),
-        replace_all: z.boolean().optional(),
-        file_path: z.string().optional(),
-        file_content: z.string().optional(),
+        action: z
+          .enum(["create", "patch", "edit", "write_file", "remove_file", "delete"])
+          .describe("【必填】create|patch|edit|write_file|remove_file|delete，小写字面量。"),
+        name: z
+          .string()
+          .describe("【必填】小写连字符 skill 名，例 \"qq-onebot-messaging\"。"),
+        content: z
+          .string()
+          .describe("【create/edit 必填】完整 SKILL.md（含 frontmatter）。其它 action 省略。")
+          .optional(),
+        old_string: z
+          .string()
+          .describe("【patch 必填】被替换的旧片段，必须与文件中原文完全一致。")
+          .optional(),
+        new_string: z
+          .string()
+          .describe("【patch 必填】替换后的新片段；可为空字符串表示删除该段。")
+          .optional(),
+        replace_all: z
+          .boolean()
+          .describe("【可选】patch 时是否替换全部匹配；默认 false 只替换第一处。")
+          .optional(),
+        file_path: z
+          .string()
+          .describe(
+            "【write_file/remove_file 必填】包内相对路径，例 \"references/notes.md\"。" +
+              "必须以 references/、templates/、scripts/、assets/ 之一开头。",
+          )
+          .optional(),
+        file_content: z
+          .string()
+          .describe("【write_file 必填】要写入附属文件的完整文本。")
+          .optional(),
       }),
     ),
   },

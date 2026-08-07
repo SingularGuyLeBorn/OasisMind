@@ -144,7 +144,11 @@ export async function resolveAgentFsPath(
 async function readFileTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const { abs, relForReturn } = await resolveAgentFsPath(ctx, String(args.path), "read");
   if (!fs.existsSync(abs)) throw new Error(`文件不存在: ${relForReturn}`);
-  if (!fs.statSync(abs).isFile()) throw new Error("目标不是文件");
+  if (!fs.statSync(abs).isFile()) {
+    throw new Error(
+      `路径「${relForReturn}」是目录，不是文件。下一步：用 list_directory 浏览该目录，或把 path 改成具体文件（含扩展名）。`,
+    );
+  }
   const maxChars = Number(args.maxChars || 12000);
   const offset = Math.max(0, Number(args.offset || 0));
   const content = fs.readFileSync(abs, "utf8");
@@ -293,7 +297,11 @@ async function searchFilesTool(args: Record<string, unknown>, ctx: NativeToolCon
   const root = rooted.abs;
   if (!fs.existsSync(root)) throw new Error(`目录不存在: ${rooted.relForReturn}`);
   const rawPattern = String(args.pattern || "");
-  if (!rawPattern) throw new Error("pattern 不能为空");
+  if (!rawPattern) {
+    throw new Error(
+      "参数 pattern 无效：必填且不能为空。默认按字面量子串匹配；若要写正则，必须同时传 isRegex=true。",
+    );
+  }
   const isRegex = args.isRegex === true;
   const caseSensitive = args.caseSensitive === true;
   const flags = caseSensitive ? "" : "i";

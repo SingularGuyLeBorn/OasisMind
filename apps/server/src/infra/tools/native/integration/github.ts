@@ -87,7 +87,7 @@ async function browserLoginStatusTool(_args: Record<string, unknown>, _ctx: Nati
 }
 
 async function platformDoctorTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("platform_doctor 需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { doctorPlatformChannels } = await import("../../../platformChannels.js");
   return doctorPlatformChannels(ctx.prisma, {
     liveProbe: coerceToolBoolean(args.liveProbe),

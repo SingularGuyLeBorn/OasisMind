@@ -212,7 +212,7 @@ async function swarmBriefTool(args: Record<string, unknown>, ctx: NativeToolCont
   if (tier !== "super" && tier !== "manager") {
     return { error: "[TIER_DENIED] swarm_brief 仅超级 / 管理 Agent 可用。" };
   }
-  if (!ctx.prisma) return { error: "swarm_brief 需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
 
   let workspaceId: string | null | undefined =
     typeof args.workspaceId === "string" && args.workspaceId.trim()
@@ -369,7 +369,7 @@ async function agentInspectTool(args: Record<string, unknown>, ctx: NativeToolCo
 }
 
 async function swarmExportTraceTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("需要 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const sessionId =
     (typeof args.sessionId === "string" && args.sessionId.trim()) ||
     ctx.sessionId ||
@@ -388,7 +388,7 @@ async function swarmExportTraceTool(args: Record<string, unknown>, ctx: NativeTo
 }
 
 async function swarmStageWriteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("需要 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { writeSwarmStage } = await import("../../swarmStages.js");
   return writeSwarmStage(ctx.prisma, ctx.config, {
     workspaceId:
@@ -404,7 +404,7 @@ async function swarmStageWriteTool(args: Record<string, unknown>, ctx: NativeToo
 }
 
 async function swarmStageListTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("需要 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { listSwarmStages } = await import("../../swarmStages.js");
   const items = await listSwarmStages(ctx.prisma, ctx.config, {
     workspaceId:
@@ -416,7 +416,7 @@ async function swarmStageListTool(args: Record<string, unknown>, ctx: NativeTool
 }
 
 async function swarmStageReadTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("需要 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { readSwarmStage } = await import("../../swarmStages.js");
   return readSwarmStage(ctx.prisma, ctx.config, {
     workspaceId:
@@ -547,7 +547,7 @@ async function prepareAgentRun(
       }
 
       if (shouldQueue && hub) {
-        if (!ctx.prisma) throw new Error("agent_send_message 需要 prisma 上下文");
+        if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
         const bus = getSwarmBus(ctx.prisma, ctx.services);
         // 走 bus.send（depth/queue-size/向上时机守卫）——旧 autoRun 路绕过守卫，此路径顺带补上
         const sent = await bus.send(
@@ -650,7 +650,7 @@ async function prepareAgentRun(
       // 动态 import：agentStream 经 agentRuntime/loop 处于 ReAct 环内，静态导入会重建循环依赖
       const { runAgentLoopStream } = await import("../../agentStream.js");
       if (!hub) {
-        throw new Error("SessionStreamHub 未初始化，无法启动子 Agent 流式运行");
+        throw new Error("流式对话服务未初始化，无法启动子 Agent 流式运行。请重启 OasisMind server 后再派生子 Agent。");
       }
 
       const tierTools = resolveToolsForAgentTier(agent.tier, agent.tools);
@@ -872,7 +872,7 @@ export async function requeueOrphanedSuperiorDrains(
 }
 
 export async function agentSendMessageTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("agent_send_message 需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const bus = getSwarmBus(ctx.prisma, ctx.services);
   const content = String(args.content || "");
   const autoRun = args.autoRun !== false;
@@ -988,7 +988,7 @@ async function agentReportBackTool(args: Record<string, unknown>, ctx: NativeToo
   if (!ctx.agentSnapshot?.parentId) {
     return { error: "当前 Agent 无上级（parentId 为空），无法 report_back。" };
   }
-  if (!ctx.prisma) throw new Error("agent_report_back 需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const content = String(args.content || "");
   const bus = getSwarmBus(ctx.prisma, ctx.services);
   // report_back 本身就是正式向上回报通道，即使在工具轮次中也必须放行。
@@ -1280,7 +1280,7 @@ async function workspaceArchiveTool(args: Record<string, unknown>, ctx: NativeTo
 // ─── 免费 API Key 工具 ───
 
 async function freeApiKeysListTool(_args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) return { error: "需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   const creds = await ctx.prisma.credential.findMany({
     where: { scope: { contains: "llm" } },
     select: { id: true, name: true, type: true, scope: true, lastUsedAt: true, metadata: true },
@@ -1306,7 +1306,7 @@ async function freeApiKeysListTool(_args: Record<string, unknown>, ctx: NativeTo
 }
 
 async function freeApiKeysFetchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) return { error: "需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   const provider = args.provider as string | undefined;
   const where: any = { scope: { contains: "llm" } };
   // 按 lastUsedAt 升序排列，取最久未使用的
@@ -1448,7 +1448,7 @@ async function freeModelsListTool(args: Record<string, unknown>, ctx: NativeTool
 // ─── Hermes 进化：Skill 发现与推广（#45）───
 
 async function skillDiscoverTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) return { error: "需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   const minSuccessRate = (args.minSuccessRate as number) ?? 80;
   const minUsageCount = Math.max(1, (args.minUsageCount as number) ?? 1);
   const limit = (args.limit as number) ?? 10;
@@ -1583,7 +1583,7 @@ async function skillPromoteTool(args: Record<string, unknown>, ctx: NativeToolCo
 // ─── Agent 进化高级版 ───
 
 async function optimizeAgentPromptTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) return { error: "需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   const result = await optimizeAgentPrompt(
     ctx.prisma,
     ctx.services,
@@ -1596,7 +1596,7 @@ async function optimizeAgentPromptTool(args: Record<string, unknown>, ctx: Nativ
 }
 
 async function generateSkillFromExperienceTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) return { error: "需要 prisma 上下文" };
+  if (!ctx.prisma) return { error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   const result = await generateSkillFromExperience(
     ctx.prisma,
     ctx.services,
@@ -1763,7 +1763,7 @@ const SWARM_DEFS: NativeToolDefinition[] = [
   {
     name: "workspace_create",
     description:
-      "创建业务 Workspace（需超级权限）。默认自动创建管理 Agent + 主 session + .knowpilot/；可设 withManager、initialTask、asyncSlotQuota（本空间后台 LLM 槽上限，默认 2，0=不限仍受全局硬顶）。",
+      "创建业务 Workspace（需超级权限）。默认自动创建管理 Agent + 主 session + .oasismind/；可设 withManager、initialTask、asyncSlotQuota（本空间后台 LLM 槽上限，默认 2，0=不限仍受全局硬顶）。",
     parameters: zodParams(
       z.object({
         name: z.string().describe("Workspace 名称"),
@@ -1895,7 +1895,7 @@ const SWARM_DEFS: NativeToolDefinition[] = [
   {
     name: "swarm_stage_write",
     description:
-      "写入 Workspace 阶段工件（.knowpilot/stages/{stage}.md）。轻量 SOP 接力：子 Agent 交工件，父/manager 读工件，不读子会话正文。",
+      "写入 Workspace 阶段工件（.oasismind/stages/{stage}.md）。轻量 SOP 接力：子 Agent 交工件，父/manager 读工件，不读子会话正文。",
     concurrencyClass: "C",
     parameters: zodParams(
       z.object({

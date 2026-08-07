@@ -108,7 +108,7 @@ export function createMcpTransport(server: McpServerEntity): StdioClientTranspor
 
 async function connectClient(server: McpServerEntity): Promise<Client> {
   const transport = createMcpTransport(server);
-  const client = new Client({ name: "knowpilot", version: "1.0.0" }, { capabilities: {} });
+  const client = new Client({ name: "oasismind", version: "1.0.0" }, { capabilities: {} });
   await withTimeout(client.connect(transport), MCP_CONNECT_TIMEOUT_MS, `MCP ${server.name}`);
   clientCache.set(server.name, client);
   return client;
@@ -223,7 +223,8 @@ export async function executeMcpTool(
     const retryAfterSec = Math.ceil(permit.retryAfterMs / 1000);
     console.warn(`[MCP] ${server.name} 熔断中，跳过 ${meta.toolName} 真实调用（${retryAfterSec}s 后重试）`);
     return {
-      error: "MCP_CIRCUIT_OPEN",
+      error: `MCP 服务「${server.name}」当前熔断中：连续失败已达阈值，真实调用已被跳过，约 ${retryAfterSec} 秒后系统会自动半开探测。下一步：先用其它工具继续任务；大约 ${retryAfterSec} 秒后再重试本 MCP 工具一次。不要在熔断窗口内连打。`,
+      code: "MCP_CIRCUIT_OPEN",
       message: `MCP 服务「${server.name}」熔断中（连续失败已达阈值），约 ${retryAfterSec} 秒后自动半开探测恢复，请稍后重试。`,
       circuitOpen: true,
       retryAfterMs: permit.retryAfterMs,

@@ -51,7 +51,7 @@ import { zodParams } from "../zodParams.js";
 // ─── 飞书 ───
 
 async function feishuSendTextTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuSendText(
     String(args.receiveId),
     String(args.receiveIdType || "open_id"),
@@ -61,7 +61,7 @@ async function feishuSendTextTool(args: Record<string, unknown>, ctx: NativeTool
 }
 
 async function feishuSendMessageTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuSendMessage(
     String(args.receiveId),
     String(args.receiveIdType || "open_id"),
@@ -72,17 +72,17 @@ async function feishuSendMessageTool(args: Record<string, unknown>, ctx: NativeT
 }
 
 async function feishuGetDocTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuGetDoc(String(args.documentId), ctx.prisma, ctx.config);
 }
 
 async function feishuCreateDocTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuCreateDoc(String(args.title), args.folderToken ? String(args.folderToken) : undefined, ctx.prisma, ctx.config);
 }
 
 async function feishuUpdateDocTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const documentId = String(args.documentId);
   const title = args.title != null ? String(args.title) : undefined;
   const blocks = Array.isArray(args.blocks) ? (args.blocks as unknown[]) : undefined;
@@ -98,12 +98,12 @@ async function feishuUpdateDocTool(args: Record<string, unknown>, ctx: NativeToo
 }
 
 async function feishuAppendDocTextTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuAppendDocText(String(args.documentId), String(args.text ?? ""), ctx.prisma, ctx.config);
 }
 
 async function feishuAppendDocBlocksTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const children = Array.isArray(args.children) ? (args.children as unknown[]) : [];
   if (children.length === 0) throw new Error("children 不能为空");
   return feishuCreateDocChildren(
@@ -119,17 +119,17 @@ async function feishuAppendDocBlocksTool(args: Record<string, unknown>, ctx: Nat
 }
 
 async function feishuDeleteDocTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuDeleteDoc(String(args.documentId), ctx.prisma, ctx.config);
 }
 
 async function feishuSearchDocsTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuSearchDocs(String(args.query), ctx.prisma, ctx.config);
 }
 
 async function feishuCreateWikiNodeTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuCreateWikiNode(
     String(args.spaceId),
     String(args.title),
@@ -143,22 +143,22 @@ async function feishuCreateWikiNodeTool(args: Record<string, unknown>, ctx: Nati
 }
 
 async function feishuGetWikiSpaceTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuGetWikiSpace(String(args.spaceId), ctx.prisma, ctx.config);
 }
 
 async function feishuGetWikiNodesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuGetWikiNodes(String(args.spaceId), args.parentNodeToken ? String(args.parentNodeToken) : undefined, ctx.prisma, ctx.config);
 }
 
 async function feishuCreateSpreadsheetTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuCreateSpreadsheet(String(args.title), args.folderToken ? String(args.folderToken) : undefined, ctx.prisma, ctx.config);
 }
 
 async function feishuAppendSpreadsheetValuesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuAppendSpreadsheetValues(
     String(args.spreadsheetToken),
     String(args.range),
@@ -169,23 +169,23 @@ async function feishuAppendSpreadsheetValuesTool(args: Record<string, unknown>, 
 }
 
 async function feishuTokenStatusTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return getUserAccessTokenStatus(ctx.prisma, ctx.config);
 }
 
 async function feishuListDocWhiteboardsTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const boards = await feishuListDocWhiteboards(String(args.documentId), ctx.prisma, ctx.config);
   return { count: boards.length, boards };
 }
 
 async function feishuListWhiteboardNodesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuListWhiteboardNodes(String(args.whiteboardId), ctx.prisma, ctx.config);
 }
 
 async function feishuCreateWhiteboardNodesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const nodes = args.nodes;
   if (!Array.isArray(nodes)) throw new Error("nodes 必须是数组（board-v1 节点结构）");
   return feishuCreateWhiteboardNodes(
@@ -201,7 +201,7 @@ async function feishuCreateWhiteboardNodesTool(args: Record<string, unknown>, ct
 }
 
 async function feishuWhiteboardFromDiagramTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const format = String(args.format || "mermaid") as "plantuml" | "mermaid" | "svg";
   if (!["plantuml", "mermaid", "svg"].includes(format)) {
     throw new Error("format 必须是 plantuml | mermaid | svg");
@@ -222,7 +222,7 @@ async function feishuWhiteboardFromDiagramTool(args: Record<string, unknown>, ct
 }
 
 async function feishuDeleteWhiteboardNodesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const ids = args.ids;
   if (!Array.isArray(ids) || ids.length === 0) throw new Error("ids 必须为非空字符串数组");
   return feishuDeleteWhiteboardNodes(
@@ -235,17 +235,17 @@ async function feishuDeleteWhiteboardNodesTool(args: Record<string, unknown>, ct
 }
 
 async function feishuGetWhiteboardThemeTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuGetWhiteboardTheme(String(args.whiteboardId), ctx.prisma, ctx.config);
 }
 
 async function feishuUpdateWhiteboardThemeTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuUpdateWhiteboardTheme(String(args.whiteboardId), String(args.theme), ctx.prisma, ctx.config);
 }
 
 async function feishuListPermissionMembersTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuListPermissionMembers(
     String(args.token),
     String(args.type || "docx"),
@@ -255,7 +255,7 @@ async function feishuListPermissionMembersTool(args: Record<string, unknown>, ct
 }
 
 async function feishuAddPermissionMemberTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuAddPermissionMember(
     String(args.token),
     String(args.type || "docx"),
@@ -270,7 +270,7 @@ async function feishuAddPermissionMemberTool(args: Record<string, unknown>, ctx:
 }
 
 async function feishuUpdatePermissionMemberTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuUpdatePermissionMember(
     String(args.token),
     String(args.type || "docx"),
@@ -285,7 +285,7 @@ async function feishuUpdatePermissionMemberTool(args: Record<string, unknown>, c
 }
 
 async function feishuRemovePermissionMemberTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuRemovePermissionMember(
     String(args.token),
     String(args.type || "docx"),
@@ -299,12 +299,12 @@ async function feishuRemovePermissionMemberTool(args: Record<string, unknown>, c
 }
 
 async function feishuGetPermissionPublicTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuGetPermissionPublic(String(args.token), String(args.type || "docx"), ctx.prisma, ctx.config);
 }
 
 async function feishuUpdatePermissionPublicTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const patch: FeishuPermissionPublicPatch = {};
   const keys = [
     "external_access_entity",
@@ -353,7 +353,7 @@ async function feishuLookupUserTool(args: Record<string, unknown>, ctx: NativeTo
 }
 
 async function feishuAddCollaboratorByContactTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   return feishuAddCollaboratorByContact(
     String(args.token),
     String(args.type || "docx"),
@@ -368,7 +368,7 @@ async function feishuAddCollaboratorByContactTool(args: Record<string, unknown>,
 }
 
 async function feishuRefreshTokenTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  if (!ctx.prisma) throw new Error("飞书工具需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const refreshToken = await getCredentialValue(ctx.prisma, "feishu", "feishu_refresh_token");
   if (refreshToken) {
     const token = await refreshUserAccessToken(ctx.prisma, refreshToken, ctx.config);

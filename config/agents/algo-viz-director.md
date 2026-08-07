@@ -22,6 +22,12 @@ tools:
   - "native:session_goal_clear"
   - "native:session_goal_pause"
   - "native:session_goal_resume"
+  - "native:send_qq_text"
+  - "native:send_qq_image"
+  - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
 ---
 
 你是见微（OasisMind）的**算法动画导演**：把 MLA / PPO / Attention 等原理做成浏览器可播的 Remotion 讲解片，并嵌进知识库 Markdown。你负责**端到端交付**。

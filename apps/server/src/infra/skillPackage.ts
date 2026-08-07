@@ -118,19 +118,37 @@ export function readSkillSupportFile(
   const safeName = sanitizeSkillName(name);
   const normalized = filePath.replace(/\\/g, "/").replace(/^\/+/, "");
   if (normalized.includes("..") || path.isAbsolute(normalized)) {
-    return { ok: false, error: "非法 file_path" };
+    return {
+      ok: false,
+      error:
+        `file_path「${filePath}」非法：禁止包含 \"..\"，也禁止绝对路径。` +
+        "请传 Skill 包内相对路径，例 references/api.md。",
+    };
   }
   const top = normalized.split("/")[0];
   if (!SUPPORT_DIRS.has(top || "")) {
-    return { ok: false, error: "file_path 须以 references/、templates/、scripts/ 或 assets/ 开头" };
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」非法：必须以 references/、templates/、scripts/、assets/ 四个目录之一开头（正斜杠）。` +
+        "例：references/notes.md。不要传 SKILL.md（读主正文时省略 file_path）。",
+    };
   }
   const abs = path.resolve(skillPackageDir(skillsRoot, safeName), normalized);
   const root = path.resolve(skillPackageDir(skillsRoot, safeName));
   if (!abs.startsWith(root + path.sep) && abs !== root) {
-    return { ok: false, error: "路径越界" };
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」越出 Skill「${safeName}」包目录。请只使用包内相对路径，禁止穿越到包外。`,
+    };
   }
   if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
-    return { ok: false, error: `文件不存在: ${normalized}` };
+    return {
+      ok: false,
+      error:
+        `附属文件不存在：${normalized}。下一步：先 skill_view(name) 看 linked_files 列表，再填其中已有路径；不要编造文件名。`,
+    };
   }
   return { ok: true, content: fs.readFileSync(abs, "utf-8"), absPath: abs };
 }
@@ -144,16 +162,29 @@ export function writeSkillSupportFile(
   const safeName = sanitizeSkillName(name);
   const normalized = filePath.replace(/\\/g, "/").replace(/^\/+/, "");
   if (normalized.includes("..") || path.isAbsolute(normalized)) {
-    return { ok: false, error: "非法 file_path" };
+    return {
+      ok: false,
+      error:
+        `file_path「${filePath}」非法：禁止包含 \"..\"，也禁止绝对路径。` +
+        "写入时请用包内相对路径，例 references/notes.md。",
+    };
   }
   const top = normalized.split("/")[0];
   if (!SUPPORT_DIRS.has(top || "")) {
-    return { ok: false, error: "file_path 须以 references/、templates/、scripts/ 或 assets/ 开头" };
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」非法：必须以 references/、templates/、scripts/、assets/ 之一开头。` +
+        "例：templates/outline.md。",
+    };
   }
   const abs = path.resolve(skillPackageDir(skillsRoot, safeName), normalized);
   const root = path.resolve(skillPackageDir(skillsRoot, safeName));
   if (!abs.startsWith(root + path.sep) && abs !== root) {
-    return { ok: false, error: "路径越界" };
+    return {
+      ok: false,
+      error: `file_path「${normalized}」越出 Skill「${safeName}」包目录，禁止写入包外。`,
+    };
   }
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, content, "utf-8");

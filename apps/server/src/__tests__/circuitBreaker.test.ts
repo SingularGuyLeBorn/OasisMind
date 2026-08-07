@@ -266,11 +266,13 @@ describe("MCP 断路器接入 executeMcpTool", () => {
     // open 期间：不抛异常，结构化错误结果喂回 LLM；真实连接尝试零增长
     const result = (await executeMcpTool(ctx.services, toolName, {})) as {
       error: string;
+      code?: string;
       message: string;
       circuitOpen: boolean;
       retryAfterMs: number;
     };
-    expect(result.error).toBe("MCP_CIRCUIT_OPEN");
+    expect(result.code).toBe("MCP_CIRCUIT_OPEN");
+    expect(String(result.error)).toMatch(/熔断/);
     expect(result.circuitOpen).toBe(true);
     expect(result.retryAfterMs).toBeGreaterThan(0);
     expect(result.message).toMatch(/熔断中/);

@@ -117,6 +117,12 @@ tools:
   - "native:inbox_distill"
   - "native:inbox_ignore"
   - "native:pinme_upload"
+  - "native:send_qq_text"
+  - "native:send_qq_image"
+  - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
 heartbeat:
   enabled: true
   cron: "0 9 * * *"

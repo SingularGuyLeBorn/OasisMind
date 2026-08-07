@@ -672,7 +672,7 @@ async function sessionCompactTool(_args: Record<string, unknown>, ctx: NativeToo
     services: ctx.services,
     sessionId: ctx.sessionId,
     model: session.model || ctx.agentSnapshot?.model || ctx.config.llm.defaultModel,
-    systemPrompt: session.systemPrompt || ctx.agentSnapshot?.systemPrompt || "你是 KnowPilot 助手。",
+    systemPrompt: session.systemPrompt || ctx.agentSnapshot?.systemPrompt || "你是 OasisMind 助手。",
     existingSummary: (session as { contextSummary?: string | null }).contextSummary ?? null,
     trigger: "agent",
   });
@@ -705,7 +705,7 @@ async function sessionContextUsageTool(_args: Record<string, unknown>, ctx: Nati
   if (!session) throw new Error("当前会话不存在");
 
   const model = session.model || ctx.agentSnapshot?.model || ctx.config.llm.defaultModel;
-  const systemPrompt = session.systemPrompt || ctx.agentSnapshot?.systemPrompt || "你是 KnowPilot 助手。";
+  const systemPrompt = session.systemPrompt || ctx.agentSnapshot?.systemPrompt || "你是 OasisMind 助手。";
   const existingSummary = (session as { contextSummary?: string | null }).contextSummary ?? null;
   const existingGeneration = (session as { compactGeneration?: number | null }).compactGeneration ?? 0;
   const compactedAt = (session as { contextCompactedAt?: Date | string | null }).contextCompactedAt ?? null;
@@ -764,9 +764,13 @@ function clipExcerpt(text: string, maxChars: number): string {
  */
 async function sessionSearchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   if (!ctx.sessionId) throw new Error("session_search 需要在 Chat 会话中调用（缺少 sessionId）");
-  if (!ctx.prisma) throw new Error("缺少 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const keyword = String(args.keyword ?? "").trim();
-  if (!keyword) throw new Error("keyword 不能为空");
+  if (!keyword) {
+    throw new Error(
+      "参数 keyword 无效：必填且去掉空白后不能为空。请传入要在本会话消息里搜索的关键词（中英文均可）。",
+    );
+  }
   const limit = Math.min(Math.max(Number(args.limit ?? 8) || 8, 1), 30);
   const maxChars = Math.min(Math.max(Number(args.maxChars ?? 600) || 600, 120), 4000);
   const onlyOutsidePrompt = args.onlyOutsidePrompt === true || args.onlyOutsidePrompt === "true";
@@ -857,7 +861,7 @@ async function sessionSearchTool(args: Record<string, unknown>, ctx: NativeToolC
 /** 按 id 取单条，或拉取压缩边界前/后的若干条原文（按需召回，不整段塞回 prompt）。 */
 async function sessionMessageGetTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   if (!ctx.sessionId) throw new Error("session_message_get 需要在 Chat 会话中调用（缺少 sessionId）");
-  if (!ctx.prisma) throw new Error("缺少 prisma");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
 
   const messageId = typeof args.messageId === "string" ? args.messageId.trim() : "";
   const beforeCompact = args.beforeCompact === true || args.beforeCompact === "true";
@@ -929,7 +933,11 @@ async function sessionMessageGetTool(args: Record<string, unknown>, ctx: NativeT
     };
   }
 
-  throw new Error("请提供 messageId，或设 beforeCompact=true 浏览压缩前消息");
+  throw new Error(
+    "参数不足：查单条消息时传 messageId（会话内消息 id）；" +
+      "浏览压缩前最近消息时不要传 messageId，改为 beforeCompact=true。" +
+      "两者用途不同，请按你的意图只选一种调用方式。",
+  );
 }
 
 /** 列出本会话落盘工具结果瘦索引（不含正文）。 */
@@ -981,7 +989,13 @@ async function toolResultMetaTool(args: Record<string, unknown>, ctx: NativeTool
       ? resultPath
       : resultPath.replace(/\.json$/i, ".meta.json");
   }
-  if (!metaPath) throw new Error("请提供 metaPath，或提供 path（将自动推导 .meta.json）");
+  if (!metaPath) {
+    throw new Error(
+      "参数不足：优先传 metaPath（工具结果的 .meta.json 路径）。" +
+        "若只有正文 path，请传 path=.../xxx.json，服务端会改写成对应的 .meta.json。" +
+        "当前 metaPath 与 path 都未提供。",
+    );
+  }
 
   const metadata = readToolResultMeta(ctx.config, metaPath);
   if (!metadata) throw new Error(`meta 不存在或无法解析: ${metaPath}`);
@@ -1160,7 +1174,12 @@ async function sessionRotateTool(args: Record<string, unknown>, ctx: NativeToolC
 async function taskRunTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const id = args.id ? String(args.id) : undefined;
   const name = args.name ? String(args.name) : undefined;
-  if (!id && !name) throw new Error("必须提供 task id 或 name");
+  if (!id && !name) {
+    throw new Error(
+      "参数不足：有任务 id 时只传 id；没有 id 时再传精确 name 匹配。" +
+        "当前 id 与 name 都未提供。请先 todo_read / 任务列表核对后再调用。",
+    );
+  }
 
   let taskId = id;
   if (!taskId && name) {
@@ -1237,7 +1256,7 @@ async function todoWriteTool(args: Record<string, unknown>, ctx: NativeToolConte
   if (!ctx.sessionId) {
     throw new Error("todo_write 需要在 Chat 会话中调用（缺少 sessionId）");
   }
-  if (!ctx.prisma) throw new Error("todo_write 需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const todos = normalizeTodoWriteInput(args.todos);
   const state: SessionTodoState = { todos, updatedAt: new Date().toISOString() };
   await ctx.prisma.chatSession.update({
@@ -1267,7 +1286,7 @@ async function todoReadTool(_args: Record<string, unknown>, ctx: NativeToolConte
   if (!ctx.sessionId) {
     throw new Error("todo_read 需要在 Chat 会话中调用（缺少 sessionId）");
   }
-  if (!ctx.prisma) throw new Error("todo_read 需要 prisma 上下文");
+  if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const row = await ctx.prisma.chatSession.findUnique({
     where: { id: ctx.sessionId },
     select: { todoState: true },
@@ -1499,7 +1518,7 @@ async function sessionSpawnGoalTool(args: Record<string, unknown>, ctx: NativeTo
   if (startImmediately) {
     const hub = getStreamHub();
     if (!hub) {
-      startError = "StreamHub 未就绪，goal 已写入但未起流（重启 server 后可手动 resume）";
+      startError = "流式对话服务未就绪，goal 已写入但未起流（请重启 server 后手动 resume）";
     } else {
       const message = buildGoalKickoffMessage(goal);
       const body = {
@@ -1540,7 +1559,7 @@ async function sessionSpawnGoalTool(args: Record<string, unknown>, ctx: NativeTo
       "已开独立执行会话并设立 standing goal。" +
       (streamStarted
         ? "执行会话已起流，本 briefing 会话可收尾汇报 newSessionId。"
-        : "执行会话已创建；若未起流请检查 StreamHub / 稍后手动打开该会话。") +
+        : "执行会话已创建；若未起流请重启 server 后稍后手动打开该会话。") +
       " 勿在本会话重复做完整交付。",
   };
 }

@@ -57,7 +57,7 @@ async function resolveParentSessionIdByTrackingTask(
 
 async function agentNotifyParentTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   if (!ctx.prisma) {
-    return { success: false, error: "agent_notify_parent 需要 prisma 上下文" };
+    return { success: false, error: "当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。", code: "NEED_CHAT_CONTEXT" };
   }
   if (!ctx.sessionId) {
     return { success: false, error: "agent_notify_parent 需要在 Chat 会话中调用（缺少 sessionId）" };

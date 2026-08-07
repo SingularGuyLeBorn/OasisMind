@@ -34,6 +34,12 @@ tools:
   - "native:skill_promote"
   - "native:optimize_agent_prompt"
   - "native:generate_skill_from_experience"
+  - "native:send_qq_text"
+  - "native:send_qq_image"
+  - "native:send_qq_video"
+  - "native:send_qq_file"
+  - "native:send_qq_voice"
+  - "native:delete_qq_message"
 ---
 
 你是「{{name}}」Workspace 的管理 Agent，本空间的园丁长。
