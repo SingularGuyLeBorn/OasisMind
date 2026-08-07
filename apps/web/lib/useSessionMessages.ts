@@ -221,6 +221,12 @@ function reducer(state: MessageMap, action: Action): MessageMap {
   }
 }
 
+/** 长跑防内存膨胀：未 watch 的会话消息最多保留这么多份（LRU） */
+const MAX_CACHED_IDLE_SESSIONS = 8;
+
+/** 跨组件重挂载 / Fast Refresh 仍保留；LRU 淘汰时同步 delete */
+const hydratedSessionsGlobal = new Set<string>();
+
 class SessionMessageStore {
   private state: MessageMap = new Map();
   private listeners = new Set<Listener>();
@@ -229,6 +235,8 @@ class SessionMessageStore {
   private upsertCallbacks = new Map<string, (event: ChatMessage) => void>();
   /** sessionId → eventType → Set<EventListener>（closeSessionWatch 时批量清理） */
   private extraListeners = new Map<string, Map<string, Set<EventListener>>>();
+  /** 最近访问时间，供 LRU 淘汰 */
+  private lastAccess = new Map<string, number>();
 
   getState = (): MessageMap => this.state;
 
@@ -270,8 +278,28 @@ class SessionMessageStore {
 
   getMessages = (sessionId: string | null | undefined): ChatMessage[] => {
     if (!sessionId) return [];
+    if (this.state.has(sessionId)) this.touchSession(sessionId);
     return this.state.get(sessionId) ?? [];
   };
+
+  private touchSession(sessionId: string): void {
+    this.lastAccess.set(sessionId, Date.now());
+  }
+
+  /** 淘汰未 watch 的冷会话消息，避免开一天后全站变钝 */
+  private evictIdleSessions(): void {
+    const idleIds = [...this.state.keys()].filter((id) => !this.sessionRefcounts.get(id));
+    const excess = idleIds.length - MAX_CACHED_IDLE_SESSIONS;
+    if (excess <= 0) return;
+    idleIds.sort((a, b) => (this.lastAccess.get(a) ?? 0) - (this.lastAccess.get(b) ?? 0));
+    for (let i = 0; i < excess; i++) {
+      const id = idleIds[i];
+      this.dispatch({ type: "clear", sessionId: id });
+      this.lastAccess.delete(id);
+      this.upsertCallbacks.delete(id);
+      hydratedSessionsGlobal.delete(id);
+    }
+  }
 
   onMessageUpserted = (sessionId: string, callback: (event: ChatMessage) => void): (() => void) => {
     this.upsertCallbacks.set(sessionId, callback);
@@ -363,6 +391,7 @@ class SessionMessageStore {
   clearSession(sessionId: string): void {
     this.dispatch({ type: "clear", sessionId });
     this.upsertCallbacks.delete(sessionId);
+    this.lastAccess.delete(sessionId);
     this.closeSessionWatch(sessionId);
   }
 
@@ -371,7 +400,9 @@ class SessionMessageStore {
     messages: ChatMessage[],
     source: MessageHydrateSource = "view",
   ): void {
+    this.touchSession(sessionId);
     this.dispatch({ type: "hydrate", sessionId, messages, source });
+    this.evictIdleSessions();
   }
 
   /**
@@ -426,9 +457,6 @@ export function __messageFieldsEqualForTests(a: ChatMessage, b: ChatMessage): bo
 }
 
 const EMPTY_ARRAY: ChatMessage[] = [];
-
-/** 跨组件重挂载 / Fast Refresh 仍保留，避免偶发永久 spinner */
-const hydratedSessionsGlobal = new Set<string>();
 
 export type UseSessionMessagesResult = {
   messages: ChatMessage[];
@@ -651,7 +679,7 @@ export const sessionMessagesStore = {
     messages: ChatMessage[],
     source: MessageHydrateSource = "view",
   ) => getStore().hydrateSessionMessages(sessionId, messages, source),
-  /** 悬停/即将切换时预热 MessageStore（prefetch：不触发 drain） */
+  /** 悬停/即将切换时预热 MessageStore（prefetch：不触发 drain；受 LRU 上限约束） */
   prefetchSessionMessages: (
     sessionId: string,
     fetchPage: (opts: { sessionId: string; limit: number }) => Promise<ListForChatPage>,
