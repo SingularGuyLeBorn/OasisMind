@@ -213,7 +213,6 @@ export function createOneBotAdapter(cfg: OneBotConfig): ChannelAdapter {
     const openMode = cfg.allowedUsers.includes("*");
     const allowed = openMode || cfg.allowedUsers.includes(opts.userId);
     if (!allowed) {
-      console.log(`[onebot] 忽略非白名单用户 QQ: ${opts.userId}`);
       return;
     }
     const text = opts.text.trim();
@@ -289,7 +288,7 @@ export function createOneBotAdapter(cfg: OneBotConfig): ChannelAdapter {
       const groupOpenMode = cfg.allowedGroups.includes("*");
       const groupAllowed = groupOpenMode || cfg.allowedGroups.includes(groupId);
       if (!groupAllowed) {
-        console.log(`[onebot] 忽略非白名单群聊：group=${groupId}`);
+        // 非白名单群消息极多：静默忽略，禁止刷控制台
         return { ok: true as const, ignored: true };
       }
     }
@@ -308,12 +307,10 @@ export function createOneBotAdapter(cfg: OneBotConfig): ChannelAdapter {
           relevantTypes.delete("other"); // other 不纳入过滤，避免误判纯文本里夹带未知段
           const hasAllowed = [...relevantTypes].some((t) => allowedSet.has(t));
           if (!hasAllowed) {
-            console.log(`[onebot] 忽略群聊消息类型：group=${groupId}, types=${[...types].join(",")}`);
             return;
           }
         }
         if (cfg.groupRequireAt && !atSelf) {
-          console.log(`[onebot] 忽略群聊非 @ 消息：group=${groupId}, user=${userId}`);
           return;
         }
       }

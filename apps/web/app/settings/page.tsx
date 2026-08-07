@@ -17,6 +17,8 @@ import {
   CircleAlert,
   Circle,
   Terminal,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { clearAuthToken } from "@/lib/auth";
@@ -59,12 +61,29 @@ function CheckRow({
 
 export default function SettingsPage() {
   const { data, isLoading, refetch } = trpc.auth.status.useQuery();
+  const { data: notifyStatus, refetch: refetchNotify } = trpc.auth.notifyStatus.useQuery();
+  const testNotify = trpc.auth.testNotify.useMutation();
+  const [testMsg, setTestMsg] = React.useState<string | null>(null);
   const { data: caps } = useNativeCapabilities();
 
   const handleLogout = () => {
     clearAuthToken();
     refetch().catch(catchUnlessCancelled("auth.status.refetch"));
     window.location.href = "/login";
+  };
+
+  const handleTestNotify = () => {
+    setTestMsg(null);
+    testNotify
+      .mutateAsync({})
+      .then((res) => {
+        setTestMsg(`已发送：${res.data.message}`);
+        refetchNotify().catch(catchUnlessCancelled("auth.notifyStatus.refetch"));
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        setTestMsg(msg);
+      });
   };
 
   return (
@@ -247,6 +266,87 @@ export default function SettingsPage() {
               <span className="text-xs text-[var(--kp-text-2)]">选择浅色、深色或跟随系统</span>
               <ThemeToggle />
             </div>
+          </section>
+
+          <section
+            className="kp-card-premium space-y-4 rounded-2xl p-4 sm:p-6 md:col-span-2"
+            data-testid="settings-notify-test"
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
+              <Mail className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+              邮件 / 推送通知测试
+            </div>
+            {notifyStatus ? (
+              <>
+                <dl className="grid gap-2 text-xs sm:grid-cols-2">
+                  <div className="flex justify-between gap-3 sm:block">
+                    <dt className="text-[var(--kp-text-3)]">主通道</dt>
+                    <dd className="font-mono">{notifyStatus.provider}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 sm:block">
+                    <dt className="text-[var(--kp-text-3)]">EMAIL_TO（收件人）</dt>
+                    <dd className="break-all font-mono">{notifyStatus.to || "未配置"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 sm:block">
+                    <dt className="text-[var(--kp-text-3)]">AGENTMAIL_ASK_TO</dt>
+                    <dd className="break-all font-mono">{notifyStatus.askTo || "未配置"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 sm:block">
+                    <dt className="text-[var(--kp-text-3)]">就绪</dt>
+                    <dd>{notifyStatus.ready ? "是" : "否"}</dd>
+                  </div>
+                </dl>
+                <ul className="space-y-1.5 text-[11px] text-[var(--kp-text-2)]">
+                  {notifyStatus.channels.map((c) => (
+                    <li key={c.name}>
+                      <span className="font-medium text-[var(--kp-text-1)]">
+                        {c.configured ? "✓" : "·"} {c.name}
+                      </span>
+                      ：{c.detail}
+                    </li>
+                  ))}
+                </ul>
+                {notifyStatus.hint ? (
+                  <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                    {notifyStatus.hint}
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleTestNotify}
+                    disabled={testNotify.isPending}
+                    data-testid="settings-notify-test-btn"
+                  >
+                    {testNotify.isPending ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        发送中…
+                      </>
+                    ) : (
+                      "发送测试邮件"
+                    )}
+                  </Button>
+                  <span className="text-[11px] text-[var(--kp-text-3)]">
+                    或命令行：<code className="font-mono">pnpm email:test</code>
+                  </span>
+                </div>
+                {testMsg ? (
+                  <p
+                    className={cn(
+                      "rounded-lg p-3 text-xs",
+                      testNotify.isError
+                        ? "bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200"
+                        : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200",
+                    )}
+                  >
+                    {testMsg}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-xs text-[var(--kp-text-3)]">加载通知配置中…</p>
+            )}
           </section>
 
           <section className="kp-card-premium space-y-3 rounded-2xl p-4 sm:p-6 md:col-span-2">

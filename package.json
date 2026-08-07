@@ -44,7 +44,8 @@
     "integration:smoke:platform:extended": "pnpm --filter @knowpilot/server integration:smoke:platform:extended",
     "read-article:spot": "pnpm --filter @knowpilot/server read-article:spot",
     "cleanup:smoke-artifacts": "pnpm --filter @knowpilot/server cleanup:smoke-artifacts",
-    "napcat": "node scripts/start-napcat.mjs"
+    "napcat": "node scripts/start-napcat.mjs",
+    "email:test": "node scripts/email-test.mjs"
   },
   "devDependencies": {
     "concurrently": "9.1.2",

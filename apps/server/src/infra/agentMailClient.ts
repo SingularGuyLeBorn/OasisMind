@@ -2,8 +2,10 @@
  * AgentMail（https://www.agentmail.to / api.agentmail.to）
  *
  * 双向邮件：ask_user 发问 + webhook 收回复；也可经 emailNotifier（EMAIL_PROVIDER=agentmail）发通知。
- * 本模块只用 fetch 调 REST，不引入 SDK。
+ * 国内直连常被 CloudFront 拦/超时；所有 API 调用统一走 KP_HTTPS_PROXY（与发信同源）。
  */
+
+import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from "undici";
 
 const AGENTMAIL_API_BASE = "https://api.agentmail.to/v0";
 
@@ -15,17 +17,88 @@ function apiKey(): string | undefined {
   return process.env.AGENTMAIL_API_KEY?.trim() || undefined;
 }
 
-function authHeaders(): HeadersInit {
+function authHeaders(): Record<string, string> {
   const key = apiKey();
   if (!key) throw new Error("AGENTMAIL_API_KEY 未配置");
   return {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
+    Accept: "application/json",
+    "User-Agent": "KnowPilot/1.0 (emailNotifier)",
   };
 }
 
 export function isAgentMailConfigured(): boolean {
   return Boolean(apiKey());
+}
+
+let mailDispatcher: Dispatcher | null | undefined;
+
+function resolveProxyUrl(): string {
+  return (
+    process.env.KP_HTTPS_PROXY?.trim() ||
+    process.env.HTTPS_PROXY?.trim() ||
+    process.env.HTTP_PROXY?.trim() ||
+    process.env.KP_HTTP_PROXY?.trim() ||
+    ""
+  );
+}
+
+function getMailDispatcher(): Dispatcher | undefined {
+  if (mailDispatcher !== undefined) return mailDispatcher ?? undefined;
+  const proxyUrl = resolveProxyUrl();
+  if (!proxyUrl) {
+    mailDispatcher = null;
+    return undefined;
+  }
+  try {
+    mailDispatcher = new ProxyAgent(proxyUrl);
+    return mailDispatcher;
+  } catch {
+    mailDispatcher = null;
+    return undefined;
+  }
+}
+
+/** AgentMail API 专用 fetch：显式挂代理（不依赖 Node 全局 fetch 是否吃到 undici dispatcher） */
+async function agentMailFetch(
+  url: string,
+  init: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    timeoutMs?: number;
+  } = {},
+): Promise<Response> {
+  const timeoutMs = init.timeoutMs ?? 30_000;
+  const dispatcher = getMailDispatcher();
+  const signal = AbortSignal.timeout(timeoutMs);
+  if (dispatcher) {
+    return undiciFetch(url, {
+      method: init.method,
+      headers: init.headers,
+      body: init.body,
+      dispatcher,
+      signal,
+    }) as unknown as Response;
+  }
+  return fetch(url, {
+    method: init.method,
+    headers: init.headers,
+    body: init.body,
+    signal,
+  });
+}
+
+function formatAgentMailNetError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/aborted|timeout|TimeoutError|UND_ERR_CONNECT/i.test(msg)) {
+    const proxy = resolveProxyUrl();
+    return proxy
+      ? `${msg}（经代理 ${proxy} 超时；发信成功≠巡检同速，确认 Clash 仍开着即可，非 rate limit）`
+      : `${msg}（国内直连 api.agentmail.to 常超时/403；设 KP_HTTPS_PROXY=http://127.0.0.1:7890。非 rate limit）`;
+  }
+  return msg;
 }
 
 /**
@@ -58,7 +131,7 @@ export async function ensureAgentMailWebhook(opts?: {
   }
 
   try {
-    const res = await fetch(`${AGENTMAIL_API_BASE}/webhooks`, {
+    const res = await agentMailFetch(`${AGENTMAIL_API_BASE}/webhooks`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
@@ -66,6 +139,7 @@ export async function ensureAgentMailWebhook(opts?: {
         event_types: ["message.received"],
         client_id: "knowpilot-webhook-v1",
       }),
+      timeoutMs: 30_000,
     });
     const body = (await res.json().catch(() => ({}))) as {
       webhook_id?: string;
@@ -88,7 +162,7 @@ export async function ensureAgentMailWebhook(opts?: {
   } catch (err) {
     return {
       ok: false,
-      error: `AgentMail 注册 webhook 异常: ${err instanceof Error ? err.message : String(err)}`,
+      error: `AgentMail 注册 webhook 异常: ${formatAgentMailNetError(err)}`,
     };
   }
 }
@@ -103,13 +177,14 @@ export async function ensureAgentMailInbox(): Promise<
   if (configured) return { ok: true, inboxId: configured };
 
   try {
-    const res = await fetch(`${AGENTMAIL_API_BASE}/inboxes`, {
+    const res = await agentMailFetch(`${AGENTMAIL_API_BASE}/inboxes`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
         client_id: "knowpilot",
         display_name: "KnowPilot",
       }),
+      timeoutMs: 30_000,
     });
     const body = (await res.json().catch(() => ({}))) as {
       inbox_id?: string;
@@ -143,7 +218,7 @@ export async function sendAgentMailMessage(input: {
   if (!inbox.ok) return { ok: false, error: inbox.error };
 
   try {
-    const res = await fetch(
+    const res = await agentMailFetch(
       `${AGENTMAIL_API_BASE}/inboxes/${encodeURIComponent(inbox.inboxId)}/messages/send`,
       {
         method: "POST",
@@ -154,6 +229,7 @@ export async function sendAgentMailMessage(input: {
           text: input.text,
           html: input.html || `<pre>${escapeHtml(input.text)}</pre>`,
         }),
+        timeoutMs: 60_000,
       },
     );
     const body = (await res.json().catch(() => ({}))) as {
@@ -165,9 +241,16 @@ export async function sendAgentMailMessage(input: {
       message?: string;
     };
     if (!res.ok) {
+      const raw = typeof body === "object" ? JSON.stringify(body) : String(body);
+      const blocked =
+        res.status === 403 &&
+        (/Request blocked|cloudfront|The request could not be satisfied/i.test(raw) ||
+          !body.error);
       return {
         ok: false,
-        error: `AgentMail 发信失败: HTTP ${res.status} ${body.error || body.message || ""}`.trim(),
+        error: blocked
+          ? `AgentMail 发信失败: HTTP 403（本机访问 api.agentmail.to 被拦）。请改用 SMTP：设置 EMAIL_PROVIDER=smtp + EMAIL_SMTP_USER/PASS（QQ 邮箱授权码），收件人 EMAIL_TO=主人邮箱。`
+          : `AgentMail 发信失败: HTTP ${res.status} ${body.error || body.message || ""}`.trim(),
       };
     }
     const messageId = body.message_id || body.messageId;
@@ -179,7 +262,7 @@ export async function sendAgentMailMessage(input: {
       inboxId: inbox.inboxId,
     };
   } catch (err) {
-    return { ok: false, error: `AgentMail 发信异常: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, error: `AgentMail 发信异常: ${formatAgentMailNetError(err)}` };
   }
 }
 
@@ -213,10 +296,10 @@ export async function listAgentMailWebhooks(): Promise<
 > {
   if (!apiKey()) return { ok: false, error: "AGENTMAIL_API_KEY 未配置" };
   try {
-    const res = await fetch(`${AGENTMAIL_API_BASE}/webhooks`, {
+    const res = await agentMailFetch(`${AGENTMAIL_API_BASE}/webhooks`, {
       method: "GET",
       headers: authHeaders(),
-      signal: AbortSignal.timeout(10000),
+      timeoutMs: 30_000,
     });
     const body = (await res.json().catch(() => ({}))) as {
       webhooks?: Array<{
@@ -234,7 +317,17 @@ export async function listAgentMailWebhooks(): Promise<
       message?: string;
     };
     if (!res.ok) {
-      return { ok: false, error: `AgentMail list webhooks 失败: HTTP ${res.status} ${body.error || body.message || ""}`.trim() };
+      // 429 才是限流；超时/403 是网络/CloudFront
+      const hint =
+        res.status === 429
+          ? "（AgentMail API rate limit，稍后再巡检）"
+          : res.status === 403
+            ? "（CloudFront 拦了；确认 KP_HTTPS_PROXY）"
+            : "";
+      return {
+        ok: false,
+        error: `AgentMail list webhooks 失败: HTTP ${res.status} ${body.error || body.message || ""}${hint}`.trim(),
+      };
     }
     const raw = body.webhooks ?? (Array.isArray(body.data) ? (body.data as Array<Record<string, unknown>>) : []);
     const webhooks = raw.map((w) => {
@@ -248,7 +341,7 @@ export async function listAgentMailWebhooks(): Promise<
     });
     return { ok: true, webhooks };
   } catch (err) {
-    return { ok: false, error: `AgentMail list webhooks 异常: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, error: `AgentMail list webhooks 异常: ${formatAgentMailNetError(err)}` };
   }
 }
 
@@ -263,6 +356,16 @@ export function startAgentMailWebhookHealthCheck(opts?: {
   let timer: NodeJS.Timeout | null = null;
   let stopped = false;
   let inFlight = false;
+  /** 失败日志节流：同一类失败 30min 内最多打一次，避免刷控制台 */
+  let lastFailLogAt = 0;
+  const FAIL_LOG_COOLDOWN_MS = 30 * 60_000;
+
+  function warnThrottled(msg: string) {
+    const now = Date.now();
+    if (now - lastFailLogAt < FAIL_LOG_COOLDOWN_MS) return;
+    lastFailLogAt = now;
+    console.warn(msg);
+  }
 
   async function check() {
     if (stopped || inFlight) return;
@@ -277,15 +380,16 @@ export function startAgentMailWebhookHealthCheck(opts?: {
 
       const list = await listAgentMailWebhooks();
       if (!list.ok) {
-        console.warn("[AgentMail HealthCheck] list webhooks 失败:", list.error);
+        warnThrottled(`[AgentMail HealthCheck] list webhooks 失败: ${list.error}`);
         return;
       }
+      lastFailLogAt = 0; // 成功后允许下次失败立刻提示一次
       const ours = list.webhooks.find((w) => w.clientId === "knowpilot-webhook-v1");
       if (!ours) {
         console.warn("[AgentMail HealthCheck] webhook 丢失（AgentMail 侧无 client_id=knowpilot-webhook-v1），重新注册…");
         const r = await ensureAgentMailWebhook();
         if (r.ok) console.log("[AgentMail HealthCheck] webhook 已重新注册:", r.url);
-        else if (!r.skipped) console.warn("[AgentMail HealthCheck] 重新注册失败:", r.error);
+        else if (!r.skipped) warnThrottled(`[AgentMail HealthCheck] 重新注册失败: ${r.error}`);
         return;
       }
       if (ours.url && ours.url !== expectedUrl) {
@@ -294,12 +398,12 @@ export function startAgentMailWebhookHealthCheck(opts?: {
         );
         const r = await ensureAgentMailWebhook();
         if (r.ok) console.log("[AgentMail HealthCheck] webhook URL 已更新:", r.url);
-        else if (!r.skipped) console.warn("[AgentMail HealthCheck] URL 更新失败:", r.error);
+        else if (!r.skipped) warnThrottled(`[AgentMail HealthCheck] URL 更新失败: ${r.error}`);
         return;
       }
       // 一切正常，静默
     } catch (err) {
-      console.warn("[AgentMail HealthCheck] 异常:", err instanceof Error ? err.message : err);
+      warnThrottled(`[AgentMail HealthCheck] 异常: ${formatAgentMailNetError(err)}`);
     } finally {
       inFlight = false;
     }

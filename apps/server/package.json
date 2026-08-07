@@ -35,6 +35,8 @@
     "ocr:check": "tsx src/scripts/ocr-check.ts",
     "feishu:authorize": "tsx src/scripts/feishu-authorize.ts",
     "diag:agentmail": "tsx src/scripts/diag-agentmail.ts",
+    "email:test": "tsx src/scripts/email-test.ts",
+    "email:probe": "tsx src/scripts/email-channel-probe.ts",
     "smoke:yuque-feishu": "tsx src/scripts/smoke-yuque-feishu-full.ts",
     "smoke:yuque-feishu:deep": "tsx src/scripts/smoke-yuque-feishu-deep.ts"
   },

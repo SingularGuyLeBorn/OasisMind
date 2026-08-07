@@ -170,6 +170,116 @@ async function sendViaNtfy(subject: string, body: string): Promise<EmailSendResu
   return { success: true, message: `ntfy 已推送到 ${topic}` };
 }
 
+/** 解析实际主通道：env 优先；缺省时有 AgentMail key 则走 agentmail（避免 EMAIL_PROVIDER 漏配导致全沉默） */
+export function resolveEmailProvider(config?: AppConfig): string {
+  const raw = (config?.emailProvider || process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
+  if (raw && raw !== "none") return raw;
+  if (process.env.AGENTMAIL_API_KEY?.trim()) return "agentmail";
+  if (process.env.EMAIL_SMTP_USER?.trim() && process.env.EMAIL_SMTP_PASS?.trim()) return "smtp";
+  if (process.env.NTFY_TOPIC?.trim()) return "ntfy";
+  return "none";
+}
+
+export type NotifyStatus = {
+  provider: string;
+  to: string;
+  askTo: string;
+  channels: {
+    name: string;
+    configured: boolean;
+    detail: string;
+  }[];
+  ready: boolean;
+  hint: string;
+};
+
+/** 只读通知配置（供 /settings 与 CLI；不返回密钥） */
+export function getNotifyStatus(config?: AppConfig): NotifyStatus {
+  const provider = resolveEmailProvider(config);
+  const to = process.env.EMAIL_TO?.trim() || "";
+  const askTo = process.env.AGENTMAIL_ASK_TO?.trim() || to;
+  const smtpUser = process.env.EMAIL_SMTP_USER?.trim() || "";
+  const smtpPass = Boolean(process.env.EMAIL_SMTP_PASS?.trim());
+  const agentKey = Boolean(process.env.AGENTMAIL_API_KEY?.trim());
+  const inbox = process.env.AGENTMAIL_INBOX_ID?.trim() || "";
+  const ntfy = process.env.NTFY_TOPIC?.trim() || "";
+
+  const channels = [
+    {
+      name: "agentmail",
+      configured: agentKey && Boolean(inbox),
+      detail: agentKey
+        ? `inbox=${inbox || "未设"} · askTo=${askTo || "未设"}`
+        : "未配置 AGENTMAIL_API_KEY",
+    },
+    {
+      name: "smtp",
+      configured: Boolean(smtpUser && smtpPass),
+      detail: smtpUser
+        ? `user=${smtpUser} · pass=${smtpPass ? "已设" : "未设"} · host=${process.env.EMAIL_SMTP_HOST || "smtp.qq.com"}`
+        : "未配置 EMAIL_SMTP_USER",
+    },
+    {
+      name: "ntfy",
+      configured: Boolean(ntfy),
+      detail: ntfy ? `topic=${ntfy}` : "未配置 NTFY_TOPIC",
+    },
+  ];
+
+  const ready =
+    (provider === "agentmail" && channels[0].configured && Boolean(to || askTo)) ||
+    (provider === "smtp" && channels[1].configured && Boolean(to)) ||
+    (provider === "ntfy" && channels[2].configured) ||
+    (Boolean(ntfy) && provider !== "none");
+
+  let hint = "";
+  if (!ready) {
+    hint =
+      "请设置 EMAIL_TO（主人邮箱，如 2635495642@qq.com），并至少配置 AgentMail / SMTP / NTFY 之一。";
+  } else if (!to && provider !== "ntfy") {
+    hint = "EMAIL_TO 为空：通知可能发不出去。";
+  } else if (to.includes("2871732121")) {
+    hint = "EMAIL_TO 仍是 Bot 号邮箱，应改为主人邮箱（如 2635495642@qq.com）。";
+  } else if (
+    channels[0].configured &&
+    !channels[1].configured &&
+    !(
+      process.env.KP_HTTPS_PROXY?.trim() ||
+      process.env.HTTPS_PROXY?.trim() ||
+      process.env.HTTP_PROXY?.trim()
+    )
+  ) {
+    hint =
+      "仅 AgentMail 且未配代理：国内直连常 403。可设 KP_HTTPS_PROXY=http://127.0.0.1:7890，或另配 SMTP 作备用。";
+  }
+
+  return { provider, to, askTo, channels, ready, hint };
+}
+
+/** 发一封测试通知（走与生产相同的 sendEmailNotification） */
+export async function sendTestNotification(
+  config: AppConfig,
+  log: ServiceContainer["log"] | undefined,
+  opts?: { to?: string },
+): Promise<EmailSendResult & { status: NotifyStatus }> {
+  const status = getNotifyStatus(config);
+  const to = opts?.to?.trim() || status.to || status.askTo;
+  const result = await sendEmailNotification(config, log, {
+    to,
+    subject: "[KnowPilot 邮件测试] 通知通道探测",
+    body: [
+      "这是一封见微 / KnowPilot 通知通道测试邮件。",
+      `时间: ${new Date().toISOString()}`,
+      `主通道: ${status.provider}`,
+      `收件人: ${to}`,
+      "",
+      "若你收到此邮件，说明掉线扫码通知 / 审批提醒等可走同一通道。",
+    ].join("\n"),
+    agentId: "notify-test",
+  });
+  return { ...result, status: { ...status, to } };
+}
+
 export async function sendEmailNotification(
   config: AppConfig,
   log: ServiceContainer["log"] | undefined,
@@ -178,33 +288,50 @@ export async function sendEmailNotification(
   const { subject, body } = input;
   if (!subject || !body) return { error: "send_email 需要 subject 和 body" };
 
-  const provider = (config.emailProvider || process.env.EMAIL_PROVIDER || "none").toLowerCase();
+  const provider = resolveEmailProvider(config);
   const ntfyTopic = process.env.NTFY_TOPIC?.trim();
-  const to = input.to || process.env.EMAIL_TO || "";
+  const to = input.to || process.env.EMAIL_TO || process.env.AGENTMAIL_ASK_TO || "";
+  const smtpReady = Boolean(
+    process.env.EMAIL_SMTP_USER?.trim() && process.env.EMAIL_SMTP_PASS?.trim(),
+  );
+  const agentmailReady = Boolean(
+    process.env.AGENTMAIL_API_KEY?.trim() && process.env.AGENTMAIL_INBOX_ID?.trim(),
+  );
 
+  // 所有已配置通道并行尝试（任一成功即成功）。主通道优先列入，便于日志阅读。
+  // 背景：国内访问 api.agentmail.to 常被 CloudFront 403，SMTP 作回退必不可少。
   const jobs: Array<{ name: string; run: () => Promise<EmailSendResult> }> = [];
+  const pushUnique = (name: string, run: () => Promise<EmailSendResult>) => {
+    if (jobs.some((j) => j.name === name)) return;
+    jobs.push({ name, run });
+  };
 
-  if (provider === "agentmail") {
-    if (!to) return { error: "未配置收件人（EMAIL_TO 或 to 参数）" };
-    jobs.push({ name: "agentmail", run: () => sendViaAgentMail(to, subject, body) });
-  } else if (provider === "smtp") {
-    if (!to) return { error: "未配置收件人（EMAIL_TO 或 to 参数）" };
-    jobs.push({ name: "smtp", run: () => sendViaSmtp(to, subject, body) });
-  } else if (provider === "ntfy") {
-    jobs.push({ name: "ntfy", run: () => sendViaNtfy(subject, body) });
-  } else if (provider !== "none" && provider) {
-    return { error: `未知的 EMAIL_PROVIDER: ${provider}（支持 none / agentmail / smtp / ntfy）` };
-  }
+  const order =
+    provider === "smtp"
+      ? (["smtp", "agentmail", "ntfy"] as const)
+      : provider === "ntfy"
+        ? (["ntfy", "smtp", "agentmail"] as const)
+        : (["agentmail", "smtp", "ntfy"] as const);
 
-  // 与邮件通道叠加：配了 NTFY_TOPIC 且主通道不是纯 ntfy 时也推一把
-  if (ntfyTopic && provider !== "ntfy") {
-    jobs.push({ name: "ntfy", run: () => sendViaNtfy(subject, body) });
+  for (const name of order) {
+    if (name === "agentmail" && agentmailReady) {
+      if (!to) continue;
+      pushUnique(name, () => sendViaAgentMail(to, subject, body));
+    } else if (name === "smtp" && smtpReady) {
+      if (!to) continue;
+      pushUnique(name, () => sendViaSmtp(to, subject, body));
+    } else if (name === "ntfy" && ntfyTopic) {
+      pushUnique(name, () => sendViaNtfy(subject, body));
+    }
   }
 
   if (jobs.length === 0) {
+    if (!to && (agentmailReady || smtpReady)) {
+      return { error: "未配置收件人（EMAIL_TO / AGENTMAIL_ASK_TO 或 to 参数）" };
+    }
     return {
       error:
-        "通知未配置：请设置 EMAIL_PROVIDER=agentmail|smtp|ntfy，和/或设置 NTFY_TOPIC（免注册推送）。",
+        "通知未配置：请设置 EMAIL_PROVIDER=agentmail|smtp|ntfy，配置 EMAIL_TO，并至少启用一种通道（AgentMail / SMTP / NTFY_TOPIC）。国内若 AgentMail 403，请改配 QQ SMTP 授权码。",
     };
   }
 

@@ -163,10 +163,16 @@ async function resolveOneBotHttpUrl(targetAccount) {
   }
   const isLocal = urlObj.hostname === "127.0.0.1" || urlObj.hostname === "localhost";
 
-  const existingSelfId = await fetchOneBotSelfId(configuredUrl, 3000);
-  if (existingSelfId === targetAccount) {
-    console.log(`  ✅ 目标 QQ ${targetAccount} 已在 ${configuredUrl} 在线，无需多开`);
-    return { url: configuredUrl, alreadyOnline: true };
+  // 多探几次：OneBot 晚就绪时不要误判去分配新端口 / 触发 spawn
+  let existingSelfId = null;
+  for (let i = 0; i < 5; i++) {
+    existingSelfId = await fetchOneBotSelfId(configuredUrl, 2500);
+    if (existingSelfId === targetAccount) {
+      console.log(`  ✅ 目标 QQ ${targetAccount} 已在 ${configuredUrl} 在线 → attach-only（不分配新端口）`);
+      return { url: configuredUrl, alreadyOnline: true };
+    }
+    if (existingSelfId) break;
+    await new Promise((r) => setTimeout(r, 800));
   }
 
   if (!isLocal) {
@@ -370,7 +376,11 @@ async function main() {
     const { url, alreadyOnline } = await resolveOneBotHttpUrl(process.env.ONEBOT_QQ_ACCOUNT);
     process.env.ONEBOT_HTTP_URL = url;
     if (alreadyOnline) {
-      console.log(`  ℹ️  目标 QQ 已在线，仍启动 NapCat 守护进程监控掉线重登`);
+      console.log(
+        `  ✅ 目标 QQ 已在线 → 仅启动 attach 守护（start-napcat 不会 spawn/杀进程）`,
+      );
+    } else {
+      console.log(`  🤖 目标 QQ 未在线 → 启动 NapCat（可能 spawn；已在线探测优先 attach）`);
     }
     spawnService("napcat", ["napcat"], {
       fatal: false,
