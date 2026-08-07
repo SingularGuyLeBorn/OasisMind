@@ -84,7 +84,6 @@ const stats = {
 
 export function registerChannelAdapter(adapter: ChannelAdapter): void {
   adapters.set(adapter.channel, adapter);
-  console.log(`[MessageGateway] 注册渠道: ${adapter.name} (${adapter.channel}) enabled=${adapter.enabled}`);
 }
 
 export function getChannelAdapter(channel: ImChannel): ChannelAdapter | undefined {
@@ -266,20 +265,29 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
 }
 
 export async function startAllChannelAdapters(): Promise<void> {
+  const { bootDetail } = await import("./bootLog.js");
+  const parts: string[] = [];
   for (const adapter of adapters.values()) {
     if (!adapter.enabled) {
-      console.log(`  📡 [IM] ${adapter.name} 未启用（缺凭证或 config 关闭）`);
+      bootDetail(`  📡 [IM] ${adapter.name} 未启用（缺凭证或 config 关闭）`);
+      parts.push(`${adapter.channel}=off`);
       continue;
     }
     try {
       await adapter.start();
-      console.log(`  📡 [IM] ${adapter.name} 已启动 · ${adapter.getStatus().state}`);
+      const state = adapter.getStatus().state;
+      bootDetail(`  📡 [IM] ${adapter.name} 已启动 · ${state}`);
+      parts.push(`${adapter.channel}=${state}`);
     } catch (err) {
       console.warn(
         `  ⚠️ [IM] ${adapter.name} 启动失败:`,
         err instanceof Error ? err.message : err,
       );
+      parts.push(`${adapter.channel}=error`);
     }
+  }
+  if (parts.length > 0) {
+    console.log(`  📡 [IM] ${parts.join(" · ")}`);
   }
 }
 

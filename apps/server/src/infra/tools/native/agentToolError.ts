@@ -128,8 +128,8 @@ function placeholderForProp(field: string, prop: JsonSchemaProp | undefined): un
   // 常见字段名启发式
   if (/url/i.test(field)) return "https://example.com/path";
   if (/path|file/i.test(field)) return "content/uploads/example.txt";
-  if (/userId|qq/i.test(field)) return "2635495642";
-  if (/groupId/i.test(field)) return "1098299609";
+  if (/userId|openid/i.test(field)) return "14A17D731DD2B1A0CC57FC8EDBFFC50B";
+  if (/groupId/i.test(field)) return "A1B2C3D4E5F6789012345678ABCDEF01";
   if (/messageId/i.test(field)) return "1234567890";
   if (/keyword|query|text|content|name$/i.test(field)) return "示例文本";
   return `<${field}>`;
@@ -139,34 +139,34 @@ function placeholderForProp(field: string, prop: JsonSchemaProp | undefined): un
 export const TOOL_CORRECT_EXAMPLES: Record<string, Record<string, unknown>> = {
   send_qq_text: {
     text: "备份已完成，报告见知识库。",
-    userId: "2635495642",
+    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   send_qq_image: {
     file: "content/uploads/screenshots/demo.jpg",
-    userId: "2635495642",
+    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   send_qq_video: {
     file: "content/uploads/demo.mp4",
-    userId: "2635495642",
+    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   send_qq_file: {
     file: "content/uploads/qq-text/report.txt",
     name: "调研报告.txt",
-    userId: "2635495642",
+    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   send_qq_voice: {
     file: "content/uploads/tts/reply.mp3",
-    userId: "2635495642",
+    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   delete_qq_message: {
     messageId: "1234567890",
   },
   skill_view: {
-    name: "qq-onebot-messaging",
+    name: "daily-fragments-workspace",
   },
   skill_manage: {
     action: "patch",
-    name: "qq-onebot-messaging",
+    name: "daily-fragments-workspace",
     old_string: "旧片段原文",
     new_string: "替换后的新片段",
   },

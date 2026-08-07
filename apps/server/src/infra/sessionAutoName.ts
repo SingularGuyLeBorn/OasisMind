@@ -39,19 +39,24 @@ function isGarbageName(s: string): boolean {
   return false;
 }
 
+/** IM 建绑定时误写入的占位名，不算「已命名」，允许 LLM 覆盖 */
+export function isPlaceholderSessionAutoName(autoName: string | null | undefined): boolean {
+  if (!autoName?.trim()) return true;
+  return /^IM\s*·/i.test(autoName.trim());
+}
+
 export async function autoNameSession(sessionId: string, firstMessage: string): Promise<void> {
   try {
     const { prisma } = await import("../db.js");
     const { getAppConfig } = await import("./config.js");
     const { resilientChatCompletion } = await import("./resilientLlmClient.js");
     const { getStreamHub } = await import("./sessionStreamHub.js");
-    // 幂等唯一守卫：autoName 已有值就跳过（命名过就不再命名）。
+    // 幂等唯一守卫：autoName 已有「真名」就跳过。
+    // IM 占位名（IM · qq · …）视为未命名，允许首条/后续消息触发 LLM 起题。
     // 不要用 msgCount>1 守卫——autoNameSession 与 agent 流并发，assistant 消息可能在
     // 本检查前写入 DB，使 msgCount 变成 2 → 误判为「非首条」跳过命名。
-    // 快回复会话因此竞态输给 assistant 消息、永远不被命名；带工具的慢会话才赢得竞态。
-    // autoName=null 的老会话被追溯命名一次是期望行为（用户重新打开时补名字）。
     const session = await prisma.chatSession.findUnique({ where: { id: sessionId }, select: { autoName: true } });
-    if (!session || session.autoName) return;
+    if (!session || !isPlaceholderSessionAutoName(session.autoName)) return;
     const config = getAppConfig();
     const { content } = await resilientChatCompletion({
       config,

@@ -8,10 +8,19 @@ import { router, publicProcedure } from "../../trpc/trpc.js";
 export const channelRouter = router({
   status: publicProcedure
     .meta({ description: "IM 通道（QQ）连接状态与统计。", aiReadable: true })
-    .query(async () => {
+    .query(async ({ ctx }) => {
       const { getMessageGatewayStats, listChannelAdapters } = await import("../messageGateway.js");
+      const defaultQqAgent = await ctx.prisma.agent.findFirst({
+        where: {
+          status: { not: "deleted" },
+          OR: [{ sourceSlug: "qq-bot" }, { name: { contains: "QQ" } }],
+        },
+        select: { id: true, name: true, sourceSlug: true, model: true },
+      });
       return {
         stats: getMessageGatewayStats(),
+        /** 新 QQ 官方绑定默认落到的 Agent（sourceSlug=qq-bot） */
+        defaultQqAgent: defaultQqAgent ?? null,
         adapters: listChannelAdapters().map((a) => ({
           channel: a.channel,
           name: a.name,

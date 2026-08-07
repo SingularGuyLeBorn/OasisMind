@@ -208,7 +208,7 @@ async function upsertProceduralSkill(
   if (!safe) {
     return {
       error:
-        "参数 name 无效：须为小写英文字母/数字/连字符（例 qq-onebot-messaging）。" +
+        "参数 name 无效：须为小写英文字母/数字/连字符（例 daily-fragments-workspace）。" +
         "禁止中文、空格、下划线堆砌、PR 号、今日任务名。请改名后重试。",
     };
   }
@@ -491,7 +491,7 @@ const SKILLS_DEFS: NativeToolDefinition[] = [
         name: z
           .string()
           .describe(
-            "【必填】Skill 精确名称，例 \"qq-onebot-messaging\"。大小写与连字符必须与 skills_list 一致。",
+            "【必填】Skill 精确名称，例 \"daily-fragments-workspace\"。大小写与连字符必须与 skills_list 一致。",
           ),
         file_path: z
           .string()
@@ -524,7 +524,7 @@ const SKILLS_DEFS: NativeToolDefinition[] = [
           .describe("【必填】create|patch|edit|write_file|remove_file|delete，小写字面量。"),
         name: z
           .string()
-          .describe("【必填】小写连字符 skill 名，例 \"qq-onebot-messaging\"。"),
+          .describe("【必填】小写连字符 skill 名，例 \"daily-fragments-workspace\"。"),
         content: z
           .string()
           .describe("【create/edit 必填】完整 SKILL.md（含 frontmatter）。其它 action 省略。")

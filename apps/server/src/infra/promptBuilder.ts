@@ -135,12 +135,11 @@ const PINME_TOOL_GUIDE = `## 公网部署（PinMe）
 2. 需要可分享链接时调用 **pinme_upload**（path 指向含 index.html 的目录；省略则自动找 dist/build/out/public）。
 3. 把返回的 url 发给用户。不要用 run_shell 调 pinme（密钥会被 shell 沙箱剥掉）。需配置 PINME_APPKEY。`;
 
-const QQ_TOOL_GUIDE = `## QQ / OneBot 发消息（铁律）
-处理 QQ 发送、推图、发文件/语音、撤回前，先 \`skill_view(name="qq-onebot-messaging")\`。
-- **用户从 QQ 发来的对话**：最终文字由系统自动回发。正文配图用 Markdown \`![](content/uploads/xxx.png)\`。**禁止** \`send_qq_text\` 重复正式答案。
-- **主动推送**：\`send_qq_text\` / \`send_qq_image\` / \`send_qq_video\` / \`send_qq_file\` / \`send_qq_voice\`；撤回 \`delete_qq_message\`（messageId 必须来自 send_qq_* 返回的 result.data.message_id）。
-- **目标参数**：QQ 绑定会话 → userId/groupId 都省略；Web 发私聊 → 只传 userId=数字字符串；Web 发群 → 只传 groupId=数字字符串；两者都传时按群聊（只用 groupId）。
-- 出站默认间隔 ≥5s；大图压到约 <1.5MB。QQ 不渲染 Markdown。
+const QQ_TOOL_GUIDE = `## QQ 官方 Bot 发消息（铁律）
+- **用户从 QQ 官方 Bot 发来的对话**：最终文字由系统自动回发；正文配图用 Markdown \`![](content/uploads/xxx.png)\`，官方通道会上传发出。**禁止** \`send_qq_text\` 重复正式答案。
+- **主动推送**：\`send_qq_text\` / \`send_qq_image\` / \`send_qq_video\` / \`send_qq_file\` / \`send_qq_voice\`（绑定会话可省略目标；目标一律为 openid，不是 QQ 号）。\`delete_qq_message\` 官方暂不支持。NapCat/OneBot 已退役。
+- **目标参数**：QQ 绑定会话 → userId/groupId 都省略；Web 发私聊 → userId=长十六进制 openid；群 → groupId=群 openid（若平台写「暂不支持群聊」则不要发群）。
+- 大图压到约 <1.5MB。QQ 不渲染 Markdown。
 - 工具因参数/格式失败时，返回里必有「正确示例」与 \`correctExample\` 字段：照抄改参后只重试一次，禁止无改动连打；以 error 正文为准，不要只读 code。`;
 
 const SESSION_HISTORY_GUIDE = `## 会话压缩与历史召回

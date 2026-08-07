@@ -13,7 +13,6 @@ import {
 } from "../messageGateway.js";
 import { createQqOfficialBotAdapter, loadQqBotConfigFromEnv } from "./qqOfficialBot.js";
 import { createFeishuBotAdapter, loadFeishuBotConfigFromEnv } from "./feishuBot.js";
-import { createOneBotAdapter, loadOneBotConfigFromEnv } from "./onebotBot.js";
 
 export async function bootstrapMessageChannels(opts: {
   prisma: PrismaClient;
@@ -21,9 +20,9 @@ export async function bootstrapMessageChannels(opts: {
   config: AppConfig;
 }): Promise<void> {
   initMessageGateway(opts);
+  // NapCat/OneBot 已退役：只注册官方 QQ Bot + 飞书
   registerChannelAdapter(createQqOfficialBotAdapter(loadQqBotConfigFromEnv()));
   registerChannelAdapter(createFeishuBotAdapter(loadFeishuBotConfigFromEnv()));
-  registerChannelAdapter(createOneBotAdapter(loadOneBotConfigFromEnv()));
   await startAllChannelAdapters();
 }
 

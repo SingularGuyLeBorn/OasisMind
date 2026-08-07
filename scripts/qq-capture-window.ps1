@@ -1,8 +1,8 @@
 # Soft capture QQ for mail attachments.
 # NEVER AttachThreadInput / HWND_TOPMOST — those deadlock QQ NT UI thread.
+# Prefer login-sized QQ hwnd + PrintWindow; fall back to CopyFromScreen region then desktop.
 # Args: -OutDir <dir> [-Prefix qq]
 # Exit: 0 wrote png, 2 no window, 1 error
-# Encoding: UTF-8 with BOM
 
 param(
   [Parameter(Mandatory = $true)][string]$OutDir,
@@ -20,10 +20,13 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 public static class QqSoftCapture {
   public const int SW_RESTORE = 9;
   public const int SW_SHOWNOACTIVATE = 4;
+  public const uint PW_RENDERFULLCONTENT = 0x00000002;
 
   public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -35,6 +38,7 @@ public static class QqSoftCapture {
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
   [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
   const int DWMWA_CLOAKED = 14;
 
@@ -51,6 +55,8 @@ public static class QqSoftCapture {
     public string Title;
     public int Area;
     public int Priority;
+    public int W;
+    public int H;
     public bool Visible;
     public bool Minimized;
   }
@@ -83,23 +89,31 @@ public static class QqSoftCapture {
       if (!GetWindowRect(hWnd, out r)) return true;
       int w = r.Right - r.Left;
       int h = r.Bottom - r.Top;
-      if (w < 280 || h < 200 || w > 4000 || h > 3000) return true;
+      if (w < 240 || h < 180 || w > 4000 || h > 3000) return true;
       bool noTitle = string.IsNullOrEmpty(t);
-      if (noTitle && w >= 1800 && h >= 900) return true;
+      // Skip huge blank/shell hosts
+      if (noTitle && w >= 1600 && h >= 900) return true;
 
       int pri = 40;
-      if (t.IndexOf("\u767B\u5F55", StringComparison.Ordinal) >= 0) pri = 1;
-      else if (t.IndexOf("\u4E0B\u7EBF", StringComparison.Ordinal) >= 0) pri = 2;
-      else if (t.IndexOf("QQ", StringComparison.OrdinalIgnoreCase) >= 0) pri = 5;
-      else if (!noTitle) pri = 10;
+      if (t.IndexOf("\u4E0B\u7EBF", StringComparison.Ordinal) >= 0) pri = 1; // 下线
+      else if (t.IndexOf("\u767B\u5F55", StringComparison.Ordinal) >= 0) pri = 2; // 登录
+      else if (t.Equals("QQ", StringComparison.OrdinalIgnoreCase)) pri = 6;
+      else if (t.IndexOf("QQ", StringComparison.OrdinalIgnoreCase) >= 0) pri = 8;
+      else if (!noTitle) pri = 15;
       else pri = 30;
-      if (w >= 700 && w <= 1400 && h >= 500 && h <= 1000) pri -= 3;
+
+      // Login / offline dialog frame: mid-size, portrait-ish
+      if (w >= 420 && w <= 1100 && h >= 360 && h <= 980) pri -= 8;
+      if (IsWindowVisible(hWnd) && !IsIconic(hWnd)) pri -= 2;
+      if (IsIconic(hWnd)) pri += 20;
 
       WinHit hit = new WinHit();
       hit.Hwnd = hWnd;
       hit.Title = (noTitle ? "(no-title)" : t) + " [" + proc + "] " + w + "x" + h;
       hit.Area = w * h;
       hit.Priority = pri;
+      hit.W = w;
+      hit.H = h;
       hit.Visible = IsWindowVisible(hWnd);
       hit.Minimized = IsIconic(hWnd);
       hits.Add(hit);
@@ -108,16 +122,17 @@ public static class QqSoftCapture {
     return hits;
   }
 
-  /** Soft only: restore if minimized. No AttachThreadInput, no TOPMOST. */
   public static string SoftShow(IntPtr hWnd) {
     if (!IsWindow(hWnd)) return "dead";
     if (IsIconic(hWnd)) {
       ShowWindow(hWnd, SW_RESTORE);
-      System.Threading.Thread.Sleep(200);
+      System.Threading.Thread.Sleep(280);
+      try { SetForegroundWindow(hWnd); } catch {}
       return "restored";
     }
-    // Do not steal focus aggressively; optional gentle foreground (may be ignored by OS)
+    ShowWindow(hWnd, SW_SHOWNOACTIVATE);
     try { SetForegroundWindow(hWnd); } catch {}
+    System.Threading.Thread.Sleep(120);
     return "ok";
   }
 
@@ -128,6 +143,33 @@ public static class QqSoftCapture {
     left = r.Left; top = r.Top;
     w = r.Right - r.Left; h = r.Bottom - r.Top;
     return w >= 40 && h >= 40;
+  }
+
+  /** PrintWindow — works when window is on another virtual desktop / partially occluded */
+  public static bool SavePrintWindow(IntPtr hWnd, string path) {
+    int left, top, w, h;
+    if (!GetRect(hWnd, out left, out top, out w, out h)) return false;
+    if (w > 4000 || h > 3000) return false;
+    using (Bitmap bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb)) {
+      using (Graphics g = Graphics.FromImage(bmp)) {
+        IntPtr hdc = g.GetHdc();
+        try {
+          bool ok = PrintWindow(hWnd, hdc, PW_RENDERFULLCONTENT);
+          if (!ok) ok = PrintWindow(hWnd, hdc, 0);
+          if (!ok) return false;
+        } finally {
+          g.ReleaseHdc(hdc);
+        }
+      }
+      // Reject near-black / empty captures
+      try {
+        Color c = bmp.GetPixel(Math.Min(20, w - 1), Math.Min(20, h - 1));
+        Color c2 = bmp.GetPixel(w / 2, h / 2);
+        if (c.A < 10 && c2.A < 10) return false;
+      } catch {}
+      bmp.Save(path, ImageFormat.Png);
+      return true;
+    }
   }
 }
 '@
@@ -156,6 +198,7 @@ function Save-WindowRegionPng([IntPtr]$Hwnd, [string]$Path) {
   $left = 0; $top = 0; $w = 0; $h = 0
   if (-not [QqSoftCapture]::GetRect($Hwnd, [ref]$left, [ref]$top, [ref]$w, [ref]$h)) { return $false }
   if ($w -gt 4000 -or $h -gt 3000) { return $false }
+  if ($left -lt -20000 -or $top -lt -20000) { return $false }
   $bmp = New-Object System.Drawing.Bitmap $w, $h
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   try {
@@ -180,7 +223,6 @@ $ts = Get-Date -Format "HHmmss"
 $written = 0
 
 if (-not $candidates -or $candidates.Count -eq 0) {
-  # No QQ window: still grab desktop once (no process touch)
   $screenPath = Join-Path $OutDir ("{0}-01-screen-{1}.png" -f $Prefix, $ts)
   if (Save-ScreenPng $screenPath) {
     Write-Output ("WROTE|{0}|SCREEN_ONLY" -f $screenPath)
@@ -190,27 +232,35 @@ if (-not $candidates -or $candidates.Count -eq 0) {
   exit 2
 }
 
-$ordered = @($candidates | Sort-Object Priority, @{ Expression = "Area"; Descending = $true })
+$ordered = @($candidates | Sort-Object Priority, @{ Expression = "Area"; Descending = $false })
 $best = $ordered[0]
 Write-Output ("BEST|{0}|pri={1}" -f $best.Title, $best.Priority)
 
-# Soft restore AT MOST ONCE — never AttachThreadInput / TOPMOST loop
 $soft = [QqSoftCapture]::SoftShow($best.Hwnd)
 Write-Output ("SOFTSHOW|{0}" -f $soft)
-Start-Sleep -Milliseconds 150
+Start-Sleep -Milliseconds 350
 
-# 1) One primary-screen shot (safest for mail)
-$screenPath = Join-Path $OutDir ("{0}-01-screen-{1}.png" -f $Prefix, $ts)
-if (Save-ScreenPng $screenPath) {
-  Write-Output ("WROTE|{0}|SCREEN" -f $screenPath)
+# 1) PrintWindow of QQ hwnd first (ground truth of that window)
+$pwPath = Join-Path $OutDir ("{0}-01-qq-{1}.png" -f $Prefix, $ts)
+if ([QqSoftCapture]::SavePrintWindow($best.Hwnd, $pwPath)) {
+  Write-Output ("WROTE|{0}|PRINTWINDOW" -f $pwPath)
   $written++
 }
 
-# 2) One window-region shot of best hwnd only (no more ForceForeground)
+# 2) Window-region CopyFromScreen (may miss virtual desktop / wrong monitor)
 $winPath = Join-Path $OutDir ("{0}-02-win-{1}.png" -f $Prefix, $ts)
 if (Save-WindowRegionPng $best.Hwnd $winPath) {
   Write-Output ("WROTE|{0}|WIN" -f $winPath)
   $written++
+}
+
+# 3) Primary screen only if QQ capture failed
+if ($written -eq 0) {
+  $screenPath = Join-Path $OutDir ("{0}-03-screen-{1}.png" -f $Prefix, $ts)
+  if (Save-ScreenPng $screenPath) {
+    Write-Output ("WROTE|{0}|SCREEN_FALLBACK" -f $screenPath)
+    $written++
+  }
 }
 
 if ($written -eq 0) {

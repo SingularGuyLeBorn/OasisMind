@@ -21,6 +21,7 @@ import type {
   UnifiedMessage,
 } from "../messageGateway.js";
 import { handleIncomingMessage } from "../messageGateway.js";
+import { bootDetail } from "../bootLog.js";
 import { gateFeishuVerificationToken } from "./webhookVerify.js";
 
 export type FeishuBotConfig = {
@@ -91,11 +92,11 @@ export function createFeishuBotAdapter(cfg: FeishuBotConfig): ChannelAdapter & {
 } {
   const openMode = cfg.allowedOpenIds.includes("*");
   if (openMode) {
-    console.log("[feishu-bot] 白名单模式：允许所有 openid（FEISHU_BOT_ALLOWED_OPENIDS=*）");
+    bootDetail("[feishu-bot] 白名单模式：允许所有 openid（FEISHU_BOT_ALLOWED_OPENIDS=*）");
   } else if (cfg.allowedOpenIds.length > 0) {
-    console.log(`[feishu-bot] 白名单模式：仅允许 ${cfg.allowedOpenIds.length} 个 openid`);
+    bootDetail(`[feishu-bot] 白名单模式：仅允许 ${cfg.allowedOpenIds.length} 个 openid`);
   } else {
-    console.log("[feishu-bot] 白名单模式：未配置白名单，拒绝所有用户");
+    bootDetail("[feishu-bot] 白名单模式：未配置白名单，拒绝所有用户");
   }
   let state = "disconnected";
   let lastError: string | undefined;
@@ -229,7 +230,7 @@ export function createFeishuBotAdapter(cfg: FeishuBotConfig): ChannelAdapter & {
       state = cfg.enabled ? "connected" : "disconnected";
       lastError = undefined;
       if (cfg.enabled) {
-        console.log("[feishu-bot] 已启用（webhook 模式，等待 /api/webhooks/feishu）");
+        bootDetail("[feishu-bot] 已启用（webhook 模式，等待 /api/webhooks/feishu）");
       }
     },
     stop: async () => {

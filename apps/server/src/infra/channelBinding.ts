@@ -105,6 +105,9 @@ export type ChannelBindingRow = {
   chatId: string | null;
   sessionId: string;
   agentId: string;
+  /** listBindings 联表；创建路径可不填 */
+  agentName?: string | null;
+  agentSourceSlug?: string | null;
   title: string | null;
   lastMessageAt: Date | null;
   createdAt: Date;
@@ -204,16 +207,18 @@ export async function resolveOrCreateChannelBinding(
     select: { systemPrompt: true },
   });
   const basePrompt = agentRow?.systemPrompt?.trim() || "你是 OasisMind 助手。";
-  const channelLabel = input.channel === "onebot" ? "QQ" : input.channel;
+  const channelLabel =
+    input.channel === "onebot" || input.channel === "qq" ? "QQ" : input.channel;
   const imFormatRule =
     `\n\n## 当前渠道格式约束\n` +
     `当前通过 ${channelLabel} / IM 渠道回复用户。请使用纯文本，不要使用 Markdown 语法（如 ** 加粗、- 列表、## 标题、[文本](链接) 链接标记、\`代码\` 等）。公式也尽量用普通文字描述，保持简洁自然。`;
   const sessionSystemPrompt = `${basePrompt}${imFormatRule}`;
 
+  // 不预填 autoName：留给 agentStream 首条消息触发 autoNameSession（LLM 起题）。
+  // 若写成 IM · qq · openid，幂等守卫会永久跳过自动命名。
   const dedicated = await prisma.chatSession.create({
     data: {
       title,
-      autoName: title,
       model,
       systemPrompt: sessionSystemPrompt,
       agentId: resolved.id,
@@ -248,7 +253,24 @@ export async function listChannelBindings(
     orderBy: { lastMessageAt: "desc" },
     take: opts?.limit ?? 100,
   });
-  return rows.map((r) => ({ ...r, chatId: r.chatId || null })) as ChannelBindingRow[];
+  const agentIds = [...new Set(rows.map((r) => r.agentId).filter(Boolean))];
+  const agents =
+    agentIds.length === 0
+      ? []
+      : await prisma.agent.findMany({
+          where: { id: { in: agentIds } },
+          select: { id: true, name: true, sourceSlug: true },
+        });
+  const byId = new Map(agents.map((a) => [a.id, a]));
+  return rows.map((r) => {
+    const agent = byId.get(r.agentId);
+    return {
+      ...r,
+      chatId: r.chatId || null,
+      agentName: agent?.name ?? null,
+      agentSourceSlug: agent?.sourceSlug ?? null,
+    } as ChannelBindingRow;
+  });
 }
 
 export async function setDefaultChannelSession(

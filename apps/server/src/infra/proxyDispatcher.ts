@@ -11,6 +11,7 @@
  */
 
 import { setGlobalDispatcher, EnvHttpProxyAgent, getGlobalDispatcher, Agent } from "undici";
+import { bootDetail } from "./bootLog.js";
 
 let initialized = false;
 let activeProxyUrl: string | null = null;
@@ -65,9 +66,8 @@ export function initGlobalProxy(): { proxyUrl: string | null } {
       }),
     );
     activeProxyUrl = proxyUrl;
-    console.log(
-      `[Proxy] 全局代理已启用: ${proxyUrl}（外网走代理；本机绕过: ${noProxy}）`,
-    );
+    // 默认安静；KP_VERBOSE_BOOT=1 时打印。初始化失败仍会 warn。
+    bootDetail(`[Proxy] 已启用 ${proxyUrl}（本机绕过: ${noProxy}）`);
   } catch (err) {
     console.warn(
       `[Proxy] 代理初始化失败（${proxyUrl}）: ${err instanceof Error ? err.message : String(err)}，回退直连`,

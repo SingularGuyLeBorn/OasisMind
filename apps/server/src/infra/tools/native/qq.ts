@@ -1,5 +1,6 @@
 /**
- * QQ / OneBot 渠道原生工具 — Agent 主动发文本/图片/视频/文件/语音，撤回自己发出的消息。
+ * QQ 官方 Bot 原生工具 — Agent 主动发文本/图片/视频/文件/语音。
+ * NapCat/OneBot 已退役；目标一律为官方 openid（非 QQ 号）。
  *
  * Agent 文案铁律（本文件强制）：
  * - error 必须是完整中文原因 + 下一步，禁止纯错误码、禁止「A 或 B」含糊二选一。
@@ -25,30 +26,24 @@ const EX = TOOL_CORRECT_EXAMPLES;
 
 const TARGET_RULES =
   "【目标怎么填】" +
-  "① 当前 ChatSession 已绑定 QQ（ChannelBinding.channel=onebot）：userId 与 groupId 都不要传，系统自动填目标。" +
-  "② 当前不是 QQ 会话、要发私聊：只传 userId，值为对方 QQ 号的数字字符串，例如 \"2635495642\"，不要空格、不要 @、不要带「QQ:」前缀。" +
-  "③ 当前不是 QQ 会话、要发群：只传 groupId，值为群号数字字符串，例如 \"1098299609\"。" +
-  "④ 若同时传了 userId 与 groupId：一律按群聊发送（只用 groupId），userId 被忽略。" +
-  "⑤ 禁止把一个用户的 peerId 填进另一个用户的会话。";
+  "① 当前会话已绑定官方 QQ（channel=qq）：userId/groupId 都不要传，系统自动填目标。" +
+  "② 私聊：userId 填用户 openid（长十六进制），不是 QQ 号。" +
+  "③ 群聊：groupId 填群 openid；平台若标注「暂不支持群聊」则不要发群。" +
+  "④ 禁止把一个用户的 peerId 填进另一个用户的会话。NapCat/OneBot 已退役，不要填数字 QQ 号。";
 
-const RATE_LIMIT_HINT =
-  "出站默认两条间隔 ≥5 秒（ONEBOT_SEND_MIN_INTERVAL_MS）；连发会排队等待，不是失败。";
+const RATE_LIMIT_HINT = "官方 Bot 受平台被动回复次数/主动消息频控限制；勿连打。";
 
 const targetFields = {
   userId: z
     .string()
     .describe(
-      "【可选】私聊目标 QQ 号。格式：纯数字字符串，例 \"2635495642\"。" +
-        "QQ 绑定会话请省略本字段。" +
-        "与 groupId 同时传入时本字段被忽略（走群聊）。",
+      "【可选】私聊目标：用户 openid（长十六进制）。已绑定 QQ 会话请省略。与 groupId 同时传入时本字段被忽略。",
     )
     .optional(),
   groupId: z
     .string()
     .describe(
-      "【可选】群聊目标群号。格式：纯数字字符串，例 \"1098299609\"。" +
-        "QQ 绑定会话请省略本字段。" +
-        "与 userId 同时传入时只用本字段（发群）。",
+      "【可选】群聊目标：群 openid。已绑定 QQ 会话请省略。与 userId 同时传入时只用本字段。",
     )
     .optional(),
 };
@@ -217,108 +212,85 @@ export const qqDefs: NativeToolDefinition[] = [
   },
 ];
 
-type OneBotAdapterSurface = {
-  sendOneBotApi?: (endpoint: string, payload: Record<string, unknown>) => Promise<unknown>;
-  sendImage?: (payload: {
-    userId?: string;
-    groupId?: string;
-    file: string;
-    caption?: string;
-  }) => Promise<unknown>;
-  sendVideo?: (payload: {
-    userId?: string;
-    groupId?: string;
-    file: string;
-    caption?: string;
-  }) => Promise<unknown>;
-  sendFile?: (payload: {
-    userId?: string;
-    groupId?: string;
-    file: string;
-    name?: string;
-  }) => Promise<unknown>;
-  sendRecord?: (payload: { userId?: string; groupId?: string; file: string }) => Promise<unknown>;
-  deleteMessage?: (messageId: string | number) => Promise<unknown>;
+type OfficialTarget = {
+  transport: "official";
+  openid: string;
+  groupOpenid?: string;
 };
 
-async function resolveOneBotTarget(
+function looksLikeOfficialOpenId(id: string): boolean {
+  return /^[0-9A-Fa-f]{16,}$/.test(id);
+}
+
+async function resolveBindingTarget(
   ctx: NativeToolContext,
-): Promise<{ userId?: string; groupId?: string } | null> {
+): Promise<OfficialTarget | null> {
   if (!ctx.prisma || !ctx.sessionId) return null;
   const { findChannelBindingBySessionId } = await import("../../channelBinding.js");
   const binding = await findChannelBindingBySessionId(ctx.prisma, ctx.sessionId);
-  if (!binding || binding.channel !== "onebot") return null;
+  if (!binding || binding.channel !== "qq") return null;
   return {
-    userId: binding.peerId,
-    groupId: binding.chatId || undefined,
+    transport: "official",
+    openid: binding.peerId,
+    groupOpenid: binding.chatId || undefined,
   };
 }
 
 async function resolveTarget(
   args: Record<string, unknown>,
   ctx: NativeToolContext,
-): Promise<{ userId?: string; groupId?: string } | { error: string }> {
-  let userId = args.userId != null && String(args.userId).trim() !== ""
-    ? String(args.userId).trim()
-    : undefined;
-  let groupId = args.groupId != null && String(args.groupId).trim() !== ""
-    ? String(args.groupId).trim()
-    : undefined;
+): Promise<OfficialTarget | { error: string }> {
+  const userId =
+    args.userId != null && String(args.userId).trim() !== ""
+      ? String(args.userId).trim()
+      : undefined;
+  const groupId =
+    args.groupId != null && String(args.groupId).trim() !== ""
+      ? String(args.groupId).trim()
+      : undefined;
 
-  if (userId && !/^\d+$/.test(userId)) {
+  if (!userId && !groupId) {
+    const fromBinding = await resolveBindingTarget(ctx);
+    if (fromBinding) return fromBinding;
     return agentParamError({
       reason:
-        "userId 格式无效：必须是纯数字 QQ 号字符串，不要空格、不要 @、不要「QQ:」前缀。",
+        "无法确定发送目标：当前会话没有 QQ 官方绑定，且参数里既没有 userId 也没有 groupId。",
+      correctExample: { ...EX.send_qq_text },
+      code: "MISSING_TARGET",
+      nextStep: "在 QQ 绑定会话里省略目标；或从 Web 主动推时填用户 openid（长十六进制）。",
+    });
+  }
+
+  if (groupId) {
+    if (!looksLikeOfficialOpenId(groupId)) {
+      return agentParamError({
+        reason:
+          "groupId 格式无效：须为官方群 openid（长十六进制）。NapCat/数字群号已退役。",
+        got: groupId,
+        correctExample: {
+          text: "群通知：任务已完成。",
+          groupId: "A1B2C3D4E5F6789012345678ABCDEF01",
+        },
+        code: "INVALID_GROUP_ID",
+      });
+    }
+    return {
+      transport: "official",
+      openid: userId && looksLikeOfficialOpenId(userId) ? userId : "group",
+      groupOpenid: groupId,
+    };
+  }
+
+  if (!userId || !looksLikeOfficialOpenId(userId)) {
+    return agentParamError({
+      reason:
+        "userId 格式无效：须为官方用户 openid（长十六进制）。不要填 QQ 号；NapCat/OneBot 已退役。",
       got: userId,
       correctExample: { ...EX.send_qq_text },
       code: "INVALID_USER_ID",
     });
   }
-  if (groupId && !/^\d+$/.test(groupId)) {
-    return agentParamError({
-      reason: "groupId 格式无效：必须是纯数字群号字符串，不要空格与前缀。",
-      got: groupId,
-      correctExample: {
-        text: "群通知：任务已完成。",
-        groupId: "1098299609",
-      },
-      code: "INVALID_GROUP_ID",
-    });
-  }
-
-  if (!userId && !groupId) {
-    const target = await resolveOneBotTarget(ctx);
-    if (target) {
-      userId = target.userId;
-      groupId = target.groupId || undefined;
-    }
-  }
-
-  if (!userId && !groupId) {
-    return agentParamError({
-      reason:
-        "无法确定发送目标：当前会话没有 OneBot（QQ）绑定，且参数里既没有 userId 也没有 groupId。" +
-        "只有 QQ 绑定会话才能省略目标参数。",
-      correctExample: { ...EX.send_qq_text },
-      code: "MISSING_TARGET",
-      nextStep:
-        "发私聊：照示例只填 userId；发群：改用 groupId（不要同时乱填）。按示例改参后只重试一次。",
-    });
-  }
-  return { userId, groupId };
-}
-
-async function getOneBotAdapter(): Promise<OneBotAdapterSurface | { error: string }> {
-  const { getChannelAdapter } = await import("../../messageGateway.js");
-  const adapter = getChannelAdapter("onebot");
-  if (!adapter) {
-    return agentErr(
-      "QQ（OneBot）通道未启用：服务端没有注册 OneBot 适配器。" +
-        "请主人检查根目录 .env：ONEBOT_ENABLED 不要为 false，ONEBOT_HTTP_URL 指向 NapCat（例 http://127.0.0.1:3001），" +
-        "改完后必须整栈重启 server。你不要连续重试本工具；用文字告诉用户通道未就绪。",
-    );
-  }
-  return adapter as OneBotAdapterSurface;
+  return { transport: "official", openid: userId };
 }
 
 const MEDIA_TYPE_CN: Record<"image" | "video" | "file" | "record", string> = {
@@ -334,14 +306,14 @@ function wrapOutboundFailure(
   extra?: Record<string, unknown>,
 ) {
   const detail = err instanceof Error ? err.message : String(err);
-  let hint = "请根据 detail 判断：文件过大则先压缩；对方非好友/群权限不足则改目标；本机 NapCat 无响应则请用户检查 NapCat 是否在线。";
+  let hint =
+    "请根据 detail 判断：文件过大则先压缩；openid/群权限不对则改目标；QQ_BOT_* 未配置则请用户检查 .env 并重启 server。";
   if (/timeout|Timeout|超时/i.test(detail)) {
     hint = "判定为超时：请把媒体压到更小（图片建议 <1.5MB）后只重试一次；禁止无改动连打。";
-  } else if (/502|ECONNREFUSED|fetch failed|UND_ERR/i.test(detail)) {
-    hint =
-      "判定为本机通道不通（代理劫持 127.0.0.1 或 NapCat 未开）。请用户检查代理 NO_PROXY 与 NapCat；你停止重试本工具。";
-  } else if (/retcode/i.test(detail)) {
-    hint = "判定为 NapCat/QQ 返回业务错误：核对目标 QQ/群号是否正确、Bot 是否在群内，然后只重试一次。";
+  } else if (/401|token|access_token|凭证/i.test(detail)) {
+    hint = "判定为官方 Bot 凭证问题：请用户核对 QQ_BOT_APP_ID / QQ_BOT_SECRET 后重启；你停止重试。";
+  } else if (/403|频控|rate|quota/i.test(detail)) {
+    hint = "判定为平台频控：稍后再发，不要连打本工具。";
   }
   return agentErr(`${action}失败：${hint}`, { detail, ...extra });
 }
@@ -358,29 +330,17 @@ const sendQqText: NativeToolHandler = async (args, ctx) => {
   }
   const target = await resolveTarget(args, ctx);
   if ("error" in target) return target;
-  const adapter = await getOneBotAdapter();
-  if ("error" in adapter) return adapter;
-  if (!adapter.sendOneBotApi) {
-    return agentErr(
-      "QQ 文本发送能力未就绪：当前 OneBot 适配器没有可用的消息发送接口。" +
-        "请用户确认 NapCat HTTP 服务正常并重启 OasisMind server。在此之前不要再调用 send_qq_text；" +
-        "若用户正从 QQ 对话，直接写好最终回复交给系统自动回发。",
-    );
-  }
 
   try {
-    const result = target.groupId
-      ? await adapter.sendOneBotApi("/send_group_msg", {
-          group_id: Number(target.groupId) || target.groupId,
-          message: text,
-        })
-      : await adapter.sendOneBotApi("/send_private_msg", {
-          user_id: Number(target.userId) || target.userId,
-          message: text,
-        });
+    const { sendQqOfficialText } = await import("../../channels/qqOfficialMedia.js");
+    const result = await sendQqOfficialText({
+      openid: target.openid,
+      groupOpenid: target.groupOpenid,
+      text,
+    });
     return { ok: true, type: "text", ...target, result };
   } catch (err) {
-    return wrapOutboundFailure("发送 QQ 文本", err, { ...target });
+    return wrapOutboundFailure("发送 QQ 官方文本", err, { ...target });
   }
 };
 
@@ -425,76 +385,28 @@ async function sendMedia(
 
   const target = await resolveTarget(args, ctx);
   if ("error" in target) return target;
-  const adapter = await getOneBotAdapter();
-  if ("error" in adapter) return adapter;
 
-  const capabilityMissing = (capability: string, nextStep: string) =>
-    agentErr(
-      `QQ 发送${MEDIA_TYPE_CN[type]}失败：当前 OneBot 通道未提供「${capability}」能力。${nextStep}`,
-    );
-
+  const kind =
+    type === "image" ? "image" : type === "video" ? "video" : type === "file" ? "file" : "voice";
   try {
-    let result: unknown;
-    if (type === "image") {
-      if (!adapter.sendImage) {
-        return capabilityMissing(
-          "发图",
-          "请把图片写进最终回复 Markdown：![说明](content/uploads/xxx.png)，由系统随正文发出；不要继续调用 send_qq_image。",
-        );
-      }
-      result = await adapter.sendImage({
-        ...target,
-        file,
-        caption: args.caption ? String(args.caption) : undefined,
-      });
-    } else if (type === "video") {
-      if (!adapter.sendVideo) {
-        return capabilityMissing(
-          "发视频",
-          "请用户启用 NapCat 视频发送后，再调用 send_qq_video；此前用文字说明视频路径即可。",
-        );
-      }
-      result = await adapter.sendVideo({
-        ...target,
-        file,
-        caption: args.caption ? String(args.caption) : undefined,
-      });
-    } else if (type === "file") {
-      if (!adapter.sendFile) {
-        return capabilityMissing(
-          "发文件",
-          "请用户确认 NapCat 支持 upload_private_file / upload_group_file；此前用短摘要文字回复，不要假装文件已发出。",
-        );
-      }
-      result = await adapter.sendFile({
-        ...target,
-        file,
-        name: args.name ? String(args.name) : undefined,
-      });
-    } else {
-      if (!adapter.sendRecord) {
-        return capabilityMissing(
-          "发语音",
-          "请用户确认 NapCat 支持 record/silk；此前用文字回复，不要继续调用 send_qq_voice。",
-        );
-      }
-      result = await adapter.sendRecord({ ...target, file });
-    }
-
+    const { sendQqOfficialMedia, sendQqOfficialText } = await import(
+      "../../channels/qqOfficialMedia.js"
+    );
+    const result = await sendQqOfficialMedia({
+      openid: target.openid,
+      groupOpenid: target.groupOpenid,
+      kind,
+      file,
+      fileName: args.name ? String(args.name) : undefined,
+    });
     const caption = args.caption ? String(args.caption).trim() : "";
-    if (caption && (type === "image" || type === "video") && adapter.sendOneBotApi) {
+    if (caption && (type === "image" || type === "video")) {
       try {
-        if (target.groupId) {
-          await adapter.sendOneBotApi("/send_group_msg", {
-            group_id: Number(target.groupId) || target.groupId,
-            message: caption,
-          });
-        } else if (target.userId) {
-          await adapter.sendOneBotApi("/send_private_msg", {
-            user_id: Number(target.userId) || target.userId,
-            message: caption,
-          });
-        }
+        await sendQqOfficialText({
+          openid: target.openid,
+          groupOpenid: target.groupOpenid,
+          text: caption,
+        });
       } catch (capErr) {
         return {
           ok: true,
@@ -503,15 +415,18 @@ async function sendMedia(
           ...target,
           result,
           captionWarning:
-            `图片/视频已发出，但说明文字发送失败：${capErr instanceof Error ? capErr.message : String(capErr)}。` +
-            "不要整段重发媒体；如需补说明，单独再调一次 send_qq_text。",
+            `媒体已发出，说明文字失败：${capErr instanceof Error ? capErr.message : String(capErr)}。` +
+            "不要重发媒体；补说明请再调 send_qq_text。",
         };
       }
     }
-
     return { ok: true, type, file, ...target, result };
   } catch (err) {
-    return wrapOutboundFailure(`发送 QQ${MEDIA_TYPE_CN[type]}`, err, { type, file, ...target });
+    return wrapOutboundFailure(`发送 QQ 官方${MEDIA_TYPE_CN[type]}`, err, {
+      type,
+      file,
+      ...target,
+    });
   }
 }
 
@@ -538,20 +453,11 @@ const deleteQqMessage: NativeToolHandler = async (args) => {
     });
   }
 
-  const adapter = await getOneBotAdapter();
-  if ("error" in adapter) return adapter;
-  if (!adapter.deleteMessage) {
-    return agentErr(
-      "QQ 撤回能力未就绪：当前 OneBot 通道未提供撤回接口。" +
-        "无法撤回已发消息。请向用户说明情况，并停止调用 delete_qq_message。",
-    );
-  }
-  try {
-    const result = await adapter.deleteMessage(messageId as string | number);
-    return { ok: true, messageId, result };
-  } catch (err) {
-    return wrapOutboundFailure("撤回 QQ 消息", err, { messageId });
-  }
+  return agentErr(
+    "QQ 官方 Bot 暂不支持撤回消息（NapCat/OneBot 已退役）。" +
+      "请向用户说明无法撤回，并停止调用 delete_qq_message。",
+    { messageId },
+  );
 };
 
 export const qqHandlers: Record<string, NativeToolHandler> = {

@@ -13,6 +13,8 @@ import { createContext } from "./trpc/context.js";
 import { getAppConfig, loadRootEnv } from "./infra/config.js";
 import { installProcessSafetyHandlers } from "./infra/processSafety.js";
 import { initGlobalProxy } from "./infra/proxyDispatcher.js";
+import { bootDetail } from "./infra/bootLog.js";
+import { formatPacksSummary, isPackEnabled } from "@knowpilot/shared";
 
 // 尽早挂安全网：Tesseract/Skill VM/第三方漏网微任务不得打死进程
 installProcessSafetyHandlers();
@@ -259,32 +261,11 @@ app.post("/api/webhooks/qq", async (req, res) => {
   }
 });
 
-// OneBot v11 (NapCatQQ / LLOneBot) 反向 HTTP Webhook
-app.post("/api/webhooks/onebot", async (req, res) => {
-  try {
-    const { getChannelAdapter } = await import("./infra/messageGateway.js");
-    const { getOneBotAdapterIngest } = await import("./infra/channels/onebotBot.js");
-    const adapter = getChannelAdapter("onebot");
-    if (!adapter?.enabled) {
-      res.status(503).json({ error: "OneBot 渠道未启用（需设 ONEBOT_HTTP_URL 或 ONEBOT_ENABLED=true）" });
-      return;
-    }
-    const ingest = getOneBotAdapterIngest(adapter);
-    if (!ingest) {
-      res.status(500).json({ error: "OneBot adapter 无 ingest" });
-      return;
-    }
-    res.status(202).json({ ok: true });
-    const signature = String(req.headers["x-signature"] ?? "");
-    const rawBody = (req as express.Request & { rawBody?: Buffer }).rawBody;
-    const result = ingest(req.body, rawBody, signature);
-    if (!result.ok) {
-      console.warn(`[onebot webhook] 忽略: ${result.error}`);
-    }
-  } catch (err) {
-    console.error("[onebot webhook]", err);
-    if (!res.headersSent) res.status(500).json({ error: "internal" });
-  }
+// NapCat/OneBot 已退役：旧 webhook 直接 410，避免误接
+app.post("/api/webhooks/onebot", (_req, res) => {
+  res.status(410).json({
+    error: "OneBot/NapCat 已退役，请改用 QQ 官方 Bot（QQ_BOT_* + /api/webhooks/qq 或 QQ_BOT_WS）",
+  });
 });
 
 // 飞书机器人事件订阅（URL 验证 + im.message.receive_v1）
@@ -557,7 +538,8 @@ const server = app.listen(PORT, HOST, () => {
   const origin = HOST === "0.0.0.0" || HOST === "::" ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
   console.log(`\n  🚀 OasisMind Server listening on ${HOST}:${PORT}`);
   console.log(`  📡 tRPC endpoint: ${origin}/api/trpc`);
-  console.log(`  💚 Health check:  ${origin}/health\n`);
+  console.log(`  💚 Health check:  ${origin}/health`);
+  console.log(`  📦 Packs: ${formatPacksSummary(config.packs)}\n`);
 
   // 凭据加密护栏：生产模式无 CREDENTIAL_MASTER_KEY 拒启动；开发模式 warn
   assertCredentialEncryptionAvailable();
@@ -596,26 +578,31 @@ const server = app.listen(PORT, HOST, () => {
     .catch((err) => console.error("❌ [GoalLoop] 挂载 settled 钩子失败:", err));
 
   // listen 后再启后台任务；FTS 仅由 pnpm db:sync / sync:watch 重建
-  triggerEngine.start().catch((err) => {
-    console.error("❌ [TriggerEngine] 启动失败:", err);
-  });
-  taskScheduler.start().catch((err) => {
-    console.error("❌ [TaskScheduler] 启动失败:", err);
-  });
-  // Swarm 初始化：首次启动自动创建系统 Workspace + 超级 Agent（幂等）
-  import("./infra/swarmInitializer.js")
-    .then(({ initSwarm }) => initSwarm(prisma, services, config))
-    .then(() => import("./infra/heartbeatEngine.js"))
-    .then(({ getHeartbeatEngine }) => {
-      heartbeatEngineRef = getHeartbeatEngine(prisma, services, config);
-      return heartbeatEngineRef.start();
-    })
-    .then(() => import("./infra/agentCronEngine.js"))
-    .then(({ getAgentCronEngine }) => {
-      agentCronEngineRef = getAgentCronEngine(prisma, services, config);
-      agentCronEngineRef.start();
-    })
-    .catch((err) => console.error("❌ [Swarm] 初始化/心跳/cron 启动失败:", err));
+  // Trigger / TaskScheduler：事件与 cron 任务属自动化面，随 swarm pack
+  if (isPackEnabled(config.packs, "swarm")) {
+    triggerEngine.start().catch((err) => {
+      console.error("❌ [TriggerEngine] 启动失败:", err);
+    });
+    taskScheduler.start().catch((err) => {
+      console.error("❌ [TaskScheduler] 启动失败:", err);
+    });
+    // Swarm 初始化：首次启动自动创建系统 Workspace + 超级 Agent（幂等）
+    import("./infra/swarmInitializer.js")
+      .then(({ initSwarm }) => initSwarm(prisma, services, config))
+      .then(() => import("./infra/heartbeatEngine.js"))
+      .then(({ getHeartbeatEngine }) => {
+        heartbeatEngineRef = getHeartbeatEngine(prisma, services, config);
+        return heartbeatEngineRef.start();
+      })
+      .then(() => import("./infra/agentCronEngine.js"))
+      .then(({ getAgentCronEngine }) => {
+        agentCronEngineRef = getAgentCronEngine(prisma, services, config);
+        agentCronEngineRef.start();
+      })
+      .catch((err) => console.error("❌ [Swarm] 初始化/心跳/cron 启动失败:", err));
+  } else {
+    bootDetail("  📦 [packs] swarm 未启用 → 跳过 Trigger/Scheduler/Heartbeat/AgentCron");
+  }
   // R-2 重启恢复首扫（四动作，条件写幂等，DB 为 ground truth）：僵尸 Task→failed（不自动重跑）
   // + 僵尸 running 会话→paused + superior 孤儿队列项重注册 drain + 未投递终态/孤儿交付合并对账
   // （动作 2 与 R-1 reconciler 同一幂等入口；周期对账由下方 startAsyncDeliveryReconciler 负责）
@@ -690,17 +677,16 @@ const server = app.listen(PORT, HOST, () => {
   // 兜底「认领了但气泡没进会话」的孤儿交付（回滚 delivered + 重新走 notify/autoConsume）
   startAsyncDeliveryReconciler(config, services);
 
-  // 免费 API Key：默认启动即同步（freellm GitHub + OpenRouter :free），FREE_KEYS_AUTO_SYNC=0 关闭
+  // 免费 API Key：core 运维能力，默认开；FREE_KEYS_AUTO_SYNC=0 关闭
   import("./infra/freeKeysSync.js")
     .then(({ startFreeKeysAutoSync }) => startFreeKeysAutoSync(prisma, config))
     .catch((err) => console.warn("  ⚠️ [freeKeysSync] 启动失败:", err instanceof Error ? err.message : err));
 
-  // AgentMail：启动即确保 inbox 可用 + 注册 webhook（邮件回复接收通道）+ 启动兜底轮询。
-  // 未配置 AGENTMAIL_API_KEY 时跳过；未配置 PUBLIC_URL/AGENTMAIL_WEBHOOK_URL 时跳过 webhook 注册并 warn
-  // （本地 localhost 不可公网访问，AgentMail 无法回调，需 Cloudflare Tunnel / ngrok 暴露公网）。
-  // 兜底轮询：webhook 通道挂了（ngrok 断、server 重启中、AgentMail 投递失败）也能收到邮件回复。
+  // AgentMail：mail pack；未配置 AGENTMAIL_API_KEY 时内部跳过
   let agentMailPollerLocal: { stop: () => void } | null = null;
-  import("./infra/agentMailClient.js")
+  if (!isPackEnabled(config.packs, "mail")) {
+    bootDetail("  📦 [packs] mail 未启用 → 跳过 AgentMail");
+  } else import("./infra/agentMailClient.js")
     .then(async ({ isAgentMailConfigured, ensureAgentMailInbox, ensureAgentMailWebhook }) => {
       if (!isAgentMailConfigured()) return;
       const inbox = await ensureAgentMailInbox();
@@ -708,22 +694,24 @@ const server = app.listen(PORT, HOST, () => {
         console.warn("  ⚠️ [AgentMail] inbox 未就绪:", inbox.error);
         return;
       }
-      console.log(`  📧 [AgentMail] inbox ready: ${inbox.inboxId}`);
       const wh = await ensureAgentMailWebhook();
       if (!wh.ok && !wh.skipped) {
         console.warn("  ⚠️ [AgentMail] webhook 注册失败:", wh.error);
+      } else {
+        const whLabel = wh.ok ? "webhook ok" : wh.skipped ? "webhook skipped" : "webhook ?";
+        console.log(`  📧 [AgentMail] ready · ${inbox.inboxId} · ${whLabel}`);
       }
-      // 隧道连通性自检：注册成功后延迟 10s 从公网 ping webhook URL
+      // 隧道连通性自检：失败才 warn；成功仅 verbose
       if (wh.ok) {
         const { selfCheckTunnel } = await import("./infra/agentMailClient.js");
         setTimeout(() => {
           selfCheckTunnel(wh.url)
             .then((r) => {
               if (r.ok) {
-                console.log(`  ✅ [AgentMail] 隧道自检通过：公网可访问 ${wh.url}（HTTP ${r.status}）`);
+                bootDetail(`  ✅ [AgentMail] 隧道自检通过：${wh.url}（HTTP ${r.status}）`);
               } else {
                 console.warn(
-                  `  ⚠️ [AgentMail] 隧道自检失败：公网无法访问 ${wh.url}（${r.error ?? `HTTP ${r.status}`}）。请检查 ngrok/Cloudflare Tunnel 是否正常运行、PUBLIC_URL 是否正确。`,
+                  `  ⚠️ [AgentMail] 隧道自检失败：公网无法访问 ${wh.url}（${r.error ?? `HTTP ${r.status}`}）。请检查 ngrok/Cloudflare Tunnel 与 PUBLIC_URL。`,
                 );
               }
             })
@@ -735,7 +723,6 @@ const server = app.listen(PORT, HOST, () => {
             });
         }, 10_000);
       }
-      // 兜底轮询（webhook 通道挂了的最后防线）
       const { startAgentMailPoller } = await import("./infra/agentMailPoller.js");
       agentMailPollerLocal = startAgentMailPoller({
         inboxId: inbox.inboxId,
@@ -743,40 +730,53 @@ const server = app.listen(PORT, HOST, () => {
         streamHub,
       });
       agentMailPollerRef = agentMailPollerLocal;
-      console.log("  📧 [AgentMail] 兜底轮询已启动（60s 周期，webhook 挂了也能收邮件回复）");
-      // webhook 健康巡检（AgentMail 侧 webhook 丢失/URL 不匹配 → 自动重注册）
       const { startAgentMailWebhookHealthCheck } = await import("./infra/agentMailClient.js");
       agentMailWebhookHealthRef = startAgentMailWebhookHealthCheck();
-      console.log("  📧 [AgentMail] webhook 健康巡检已启动（5min 周期，丢失/URL 不匹配自动重注册）");
+      bootDetail("  📧 [AgentMail] 兜底轮询 + webhook 健康巡检已挂载");
     })
     .catch((err) => console.warn("  ⚠️ [AgentMail] 启动初始化失败:", err instanceof Error ? err.message : err));
 
-  if (hasSystemChrome() && process.env.BROWSER_WARMUP !== "0") {
+  if (
+    isPackEnabled(config.packs, "browser") &&
+    hasSystemChrome() &&
+    process.env.BROWSER_WARMUP !== "0"
+  ) {
     getSharedBrowser()
-      .then(() => console.log("  🌐 [Browser] Playwright 共享实例已预热"))
+      .then(() => bootDetail("  🌐 [Browser] Playwright 共享实例已预热"))
       .catch((err) => console.warn("  ⚠️ [Browser] 预热失败:", err instanceof Error ? err.message : err));
+  } else if (!isPackEnabled(config.packs, "browser")) {
+    bootDetail("  📦 [packs] browser 未启用 → 跳过 Playwright 预热");
   }
 
-  // OCR 引擎可用性诊断（三级降级：PaddleOCR → Tesseract.js → OCR.space）
-  try {
-    const ocr = getOcrStatus(config);
-    const paddleReady = ocr.paddleCli && ocr.models.det && ocr.models.rec && ocr.models.cls;
-    const engines: string[] = [];
-    engines.push(paddleReady ? "PaddleOCR✅" : "PaddleOCR❌");
-    engines.push("Tesseract.js✅"); // 纯 JS 兜底，首次跑按需下载语言数据
-    engines.push(ocr.ocrSpaceConfigured ? "OCR.space✅" : "OCR.space❌");
-    console.log(`  🔤 [OCR] 引擎降级链: ${engines.join(" → ")}`);
-    if (!paddleReady) {
-      console.log(`     PaddleOCR 未就绪（cli=${ocr.paddleCli}, det=${ocr.models.det}, rec=${ocr.models.rec}, cls=${ocr.models.cls}）；将用 Tesseract.js 本地兜底，无需 API key`);
+  // OCR：挂 browser pack（读图依赖）；默认安静
+  if (isPackEnabled(config.packs, "browser")) {
+    try {
+      const ocr = getOcrStatus(config);
+      const paddleReady = ocr.paddleCli && ocr.models.det && ocr.models.rec && ocr.models.cls;
+      const engines = [
+        paddleReady ? "PaddleOCR✅" : "PaddleOCR❌",
+        "Tesseract.js✅",
+        ocr.ocrSpaceConfigured ? "OCR.space✅" : "OCR.space❌",
+      ];
+      bootDetail(`  🔤 [OCR] ${engines.join(" → ")}`);
+      if (!paddleReady) {
+        bootDetail(
+          `     PaddleOCR 未就绪（cli=${ocr.paddleCli}, det=${ocr.models.det}, rec=${ocr.models.rec}, cls=${ocr.models.cls}）→ Tesseract 兜底`,
+        );
+      }
+    } catch (err) {
+      console.warn("  ⚠️ [OCR] 状态探测失败:", err instanceof Error ? err.message : err);
     }
-  } catch (err) {
-    console.warn("  ⚠️ [OCR] 状态探测失败:", err instanceof Error ? err.message : err);
   }
 
-  // 初始化 IM 消息网关与适配器 (QQ / 飞书 / OneBot)
-  bootstrapMessageChannels({ prisma, services, config })
-    .then(() => console.log("  💬 [MessageChannels] IM 消息网关与 Adapter 已成功挂载"))
-    .catch((err) => console.warn("  ⚠️ [MessageChannels] 初始化失败:", err));
+  // IM：im pack；一行摘要由 startAllChannelAdapters 打印
+  if (isPackEnabled(config.packs, "im")) {
+    bootstrapMessageChannels({ prisma, services, config }).catch((err) =>
+      console.warn("  ⚠️ [MessageChannels] 初始化失败:", err),
+    );
+  } else {
+    bootDetail("  📦 [packs] im 未启用 → 跳过 MessageChannels");
+  }
 });
 
 // 优雅退出处理
