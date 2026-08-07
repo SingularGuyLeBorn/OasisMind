@@ -46,6 +46,8 @@ import { gapCursorKeymapPlugin, gapCursorPlugin } from "@/components/editor/gapC
 import { htmlMarkSchema, htmlMarkView } from "@/components/editor/htmlMarkSchema";
 import { htmlMarkRemark } from "@/components/editor/htmlMarkRemark";
 import { vizCodeBlockView } from "@/components/editor/vizCodeBlockNodeView";
+import { codeBlockFenceMetaSchema } from "@/components/editor/codeBlockFenceMeta";
+import { codeBlockHighlight } from "@/components/editor/codeBlockHighlight";
 import {
   milkdownLinkNav,
   setMilkdownLinkNavMeta,
@@ -177,6 +179,8 @@ function MilkdownWysiwyg({
         .use(htmlMarkView)
         .use(mathBlockEditableView)
         .use(mathInlineEditableView)
+        .use(codeBlockFenceMetaSchema)
+        .use(codeBlockHighlight)
         .use(vizCodeBlockView)
         .use(milkdownLinkNav)
         .use(milkdownImageUpload)

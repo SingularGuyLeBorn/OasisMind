@@ -14,7 +14,6 @@ import { transformWikiLinks } from "./WikiLink";
 import { PostMarkdownLink } from "./PostMarkdownLink";
 import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
 import { memoizeMarkdownTransform } from "@knowpilot/shared";
-import { useShowCodeLineNumbers } from "@/lib/codeBlockPrefs";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
@@ -162,7 +161,7 @@ function CodeToolbar({
           </div>
         )}
 
-        {/* 行号：全局偏好，一处切换全站代码块同步 */}
+        {/* 行号：本代码块独立开关，默认关闭 */}
         <button
           type="button"
           onClick={onToggleLineNumbers}
@@ -170,7 +169,7 @@ function CodeToolbar({
             showLineNumbers ? "text-[var(--kp-brand)]" : ""
           }`}
           aria-label={showLineNumbers ? "隐藏行号" : "显示行号"}
-          title={showLineNumbers ? "隐藏行号（全局）" : "显示行号（全局）"}
+          title={showLineNumbers ? "隐藏行号" : "显示行号"}
           aria-pressed={showLineNumbers}
         >
           <ListOrdered className="h-3.5 w-3.5" />
@@ -320,11 +319,12 @@ function Pre({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
   const isVizBlock = language === "viz" || language === "algoviz";
   const codeText = getText(children);
   const lineCount = useMemo(() => countCodeLines(codeText), [codeText]);
-  const [showLineNumbers, setShowLineNumbers] = useShowCodeLineNumbers();
+  /** 每个代码块独立；默认不带行号 */
+  const [showLineNumbers, setShowLineNumbers] = useState(false);
   const [state, setState] = useState<CodeBlockState>({ mode: "code", wrap: false, maximized: false });
   const canPreview = PREVIEWABLE_LANGS.has(language.toLowerCase());
   const update = (next: Partial<CodeBlockState>) => setState((prev) => ({ ...prev, ...next }));
-  const toggleLineNumbers = () => setShowLineNumbers(!showLineNumbers);
+  const toggleLineNumbers = () => setShowLineNumbers((v) => !v);
 
   // 展示型公式：官方 HTML 字符串注入（hooks 已全部调用完再分支）
   if (isMathBlock) {
