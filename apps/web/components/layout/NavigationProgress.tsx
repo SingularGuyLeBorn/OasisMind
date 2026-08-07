@@ -101,8 +101,8 @@ function NavigationProgressInner() {
   useEffect(() => {
     if (routeKeyRef.current === routeKey) return;
     routeKeyRef.current = routeKey;
-    endNavigation();
-  }, [routeKey]);
+    endNavigation(pathname);
+  }, [routeKey, pathname]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -115,7 +115,7 @@ function NavigationProgressInner() {
       const next = `${url.pathname}${url.search}`;
       const cur = `${window.location.pathname}${window.location.search}`;
       if (next === cur) return;
-      beginNavigation();
+      beginNavigation(next);
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
@@ -130,7 +130,7 @@ function NavigationProgressInner() {
         if (next) {
           const a = `${next.pathname}${next.search}`;
           const b = `${window.location.pathname}${window.location.search}`;
-          if (a !== b) beginNavigation();
+          if (a !== b) beginNavigation(a);
         }
       }
       return orig(...args);

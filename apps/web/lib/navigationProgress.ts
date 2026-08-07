@@ -3,6 +3,8 @@
  * NavigationProgress 订阅；需要时可手动 beginNavigation()。
  */
 
+import { markNavEnd, markNavStart } from "@/lib/navPerf";
+
 type Listener = (active: boolean) => void;
 
 const listeners = new Set<Listener>();
@@ -16,15 +18,17 @@ export function subscribeNavigationProgress(listener: Listener): () => void {
   };
 }
 
-export function beginNavigation(): void {
+export function beginNavigation(href?: string): void {
   if (active) return;
   active = true;
+  markNavStart(href);
   for (const l of listeners) l(true);
 }
 
-export function endNavigation(): void {
+export function endNavigation(pathname?: string): void {
   if (!active) return;
   active = false;
+  markNavEnd(pathname);
   for (const l of listeners) l(false);
 }
 

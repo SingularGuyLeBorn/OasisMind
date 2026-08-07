@@ -136,9 +136,9 @@ export function BrandManifesto() {
         <ScrollReveal>
           <div className="kp-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5">
             <p className="mb-4 w-full text-sm leading-relaxed text-[var(--kp-text-2)] lg:text-[15px]">
-              从细微之处照见全局——每一粒种子都被看见、被关联、被养成。O × M 合起来，就是
-              <SquareMark className="mx-1 font-semibold">全模态多智能体</SquareMark>
-              ：AGI 的另一种表述。
+              从细微之处照见全局——每一粒种子都被看见、被关联、被养成。名字拆开是
+              <SquareMark className="mx-1 font-semibold">Oasis × Mind</SquareMark>
+              ：一边吃进世界，一边把协作跑起来。
             </p>
 
             <div className="grid items-center gap-3 rounded-2xl border border-white/50 bg-white/35 p-3.5 backdrop-blur-md lg:grid-cols-[1fr_auto_1fr_auto_auto] lg:gap-4 lg:p-4">

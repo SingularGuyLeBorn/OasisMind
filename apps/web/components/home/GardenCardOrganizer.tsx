@@ -119,29 +119,10 @@ function fillLevel(postCount: number): number {
   return Math.min(100, Math.round(18 + postCount * 5.5));
 }
 
-/** 自定义图标：书脊/文档；选中态不用描边方框，避免绿卡上冒出「白框」 */
-function CardGlyph({ className, solid }: { className?: string; solid?: boolean }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} fill="none" aria-hidden>
-      {solid ? (
-        <>
-          <rect x="7" y="5" width="18" height="22" rx="3" fill="currentColor" fillOpacity="0.22" />
-          <path d="M11 11h10M11 15h8M11 19h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.9" />
-        </>
-      ) : (
-        <>
-          <rect x="7" y="5" width="18" height="22" rx="3" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.08" />
-          <path d="M11 11h10M11 15h8M11 19h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </>
-      )}
-    </svg>
-  );
-}
-
 /** 命中检测用基准 X（不含选中推开），避免 active 循环依赖 */
 function baseSlotX(index: number, total: number, compact: boolean): number {
   const mid = (total - 1) / 2;
-  const step = compact ? 56 + 14 : 68 + 18;
+  const step = compact ? 72 + 16 : 90 + 20;
   return (index - mid) * step;
 }
 
@@ -179,12 +160,11 @@ function slotTransform(
   total: number,
   expanded: boolean,
   compact: boolean,
-  activeIndex: number,
+  /** null = 指针在卡片外：均匀扇形，无单卡浮起 */
+  activeIndex: number | null,
 ) {
   const mid = (total - 1) / 2;
   const t = index - mid;
-  const dist = index - activeIndex;
-  const abs = Math.abs(dist);
 
   if (!expanded) {
     return {
@@ -199,8 +179,26 @@ function slotTransform(
     };
   }
 
-  const step = compact ? 56 : 68;
-  const push = dist === 0 ? 0 : Math.sign(dist) * (compact ? 28 : 36) * abs;
+  const step = compact ? 72 : 90;
+
+  // 默认扇形：无选中推开，鼠标离开卡片区后回这里
+  if (activeIndex === null) {
+    const absT = Math.abs(t);
+    return {
+      x: t * step,
+      y: 6 + absT * 2,
+      z: -18 - absT * 10,
+      rotateY: (t === 0 ? 0 : t < 0 ? 14 : -14) + t * 0.6,
+      rotateZ: t * 0.35,
+      rotateX: 4,
+      scale: Math.max(0.9, 0.96 - absT * 0.02),
+      opacity: Math.max(0.72, 0.92 - absT * 0.04),
+    };
+  }
+
+  const dist = index - activeIndex;
+  const abs = Math.abs(dist);
+  const push = dist === 0 ? 0 : Math.sign(dist) * (compact ? 32 : 40) * abs;
   const isActive = dist === 0;
 
   return {
@@ -208,10 +206,10 @@ function slotTransform(
     y: isActive ? -22 : 4 + abs * 3 + Math.abs(t) * 1.5,
     z: isActive ? 80 : -24 - abs * 18,
     // 轻倾角保留扇形感，又不至于穿面
-    rotateY: isActive ? 0 : (dist < 0 ? 18 : -18) + t * 0.8,
-    rotateZ: isActive ? 0 : t * 0.35,
+    rotateY: isActive ? 0 : (dist < 0 ? 16 : -16) + t * 0.7,
+    rotateZ: isActive ? 0 : t * 0.3,
     rotateX: isActive ? 0 : 4,
-    scale: isActive ? 1.12 : Math.max(0.82, 0.94 - abs * 0.04),
+    scale: isActive ? 1.1 : Math.max(0.84, 0.95 - abs * 0.035),
     opacity: isActive ? 1 : Math.max(0.55, 0.88 - abs * 0.1),
   };
 }
@@ -231,15 +229,20 @@ function FanCard({
   total: number;
   expanded: boolean;
   selected: boolean;
-  activeIndex: number;
+  activeIndex: number | null;
   compact: boolean;
   reducedMotion: boolean;
 }) {
   const style = ACCENT[garden.accent];
   const pose = slotTransform(index, total, expanded, compact, activeIndex);
-  const cardW = compact ? 118 : 138;
-  const cardH = compact ? 248 : 288;
-  const zIndex = selected ? total + 40 : total - Math.abs(index - activeIndex);
+  const cardW = compact ? 146 : 172;
+  const cardH = compact ? 264 : 304;
+  const zIndex =
+    selected
+      ? total + 40
+      : activeIndex === null
+        ? total - Math.abs(index - (total - 1) / 2)
+        : total - Math.abs(index - activeIndex);
   const idLabel = formatGardenId(garden.id);
   const title = displayGardenTitle(garden.title);
   const tags = gardenTags(garden);
@@ -332,46 +335,40 @@ function FanCard({
           </>
         )}
 
-        <div className="relative flex h-full flex-col px-2.5 pb-2.5 pt-2.5">
-          {/* 顶栏：序号 + id + 图标 */}
-          <div className="flex items-start justify-between gap-1">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <span
-                  className={cn(
-                    "inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[8px] font-bold tabular-nums",
-                    selected ? "bg-white/20 text-white" : "bg-[#eef4fb] text-[var(--kp-brand)]",
-                  )}
-                >
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span
-                  className={cn(
-                    "inline-flex max-w-[78%] items-center truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold tracking-wide",
-                    selected
-                      ? "bg-black/20 text-white"
-                      : "bg-[#f3f7fb] text-[var(--kp-brand-deep)]",
-                  )}
-                >
-                  <span className="mr-0.5 opacity-70">{"{"}</span>
-                  {idLabel}
-                  <span className="ml-0.5 opacity-70">{"}"}</span>
-                </span>
-              </div>
-              <p
+        <div className="relative flex h-full flex-col px-3 pb-3 pt-3">
+          {/* 顶栏：序号 + id（密列表不堆文档图标） */}
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span
                 className={cn(
-                  "mt-1.5 line-clamp-2 text-[12px] font-black leading-snug tracking-tight",
-                  selected ? "text-white" : "text-[var(--kp-text-1)]",
+                  "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded px-1 text-[8px] font-bold tabular-nums",
+                  selected ? "bg-white/20 text-white" : "bg-[#eef4fb] text-[var(--kp-brand)]",
                 )}
-                title={title}
               >
-                {title}
-              </p>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span
+                className={cn(
+                  "min-w-0 truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold tracking-wide",
+                  selected
+                    ? "bg-black/20 text-white"
+                    : "bg-[#f3f7fb] text-[var(--kp-brand-deep)]",
+                )}
+              >
+                <span className="opacity-70">{"{"}</span>
+                {idLabel}
+                <span className="opacity-70">{"}"}</span>
+              </span>
             </div>
-            <CardGlyph
-              solid={selected}
-              className={cn("mt-0.5 h-4 w-4 shrink-0 opacity-90", selected ? "text-white" : "text-[var(--kp-brand)]")}
-            />
+            <p
+              className={cn(
+                "mt-1.5 line-clamp-2 break-words text-[13px] font-black leading-snug tracking-tight",
+                selected ? "text-white" : "text-[var(--kp-text-1)]",
+              )}
+              title={title}
+            >
+              {title}
+            </p>
           </div>
 
           {/* 篇数 + 进度 */}
@@ -452,23 +449,16 @@ function FanCard({
             </p>
             {recent.length > 0 ? (
               <ul className="space-y-1">
-                {recent.map((p, i) => (
+                {recent.map((p) => (
                   <li
                     key={p.slug}
                     className={cn(
-                      "flex items-start gap-1 text-[8.5px] leading-snug",
+                      "min-w-0 text-[9px] leading-snug",
                       selected ? "text-white/90" : "text-[var(--kp-text-2)]",
                     )}
+                    title={p.title}
                   >
-                    <span
-                      className={cn(
-                        "mt-px flex h-3 w-3 shrink-0 items-center justify-center rounded text-[7px] font-bold tabular-nums",
-                        selected ? "bg-white/20" : "bg-[#eef4fb] text-[var(--kp-brand)]",
-                      )}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 line-clamp-2">{p.title}</span>
+                    <span className="line-clamp-2 break-words">{p.title}</span>
                   </li>
                 ))}
               </ul>
@@ -528,9 +518,13 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
   const cards = useMemo(() => toCards(gardens), [gardens]);
   const [expanded, setExpanded] = useState(true);
   const [active, setActive] = useState(0);
+  /** 指针在卡片舞台内才浮起选中卡；离开后回均匀扇形 */
+  const [pointerOnCards, setPointerOnCards] = useState(false);
   const [compact, setCompact] = useState(false);
   const [touchLike, setTouchLike] = useState(false);
   const reduced = useReducedMotion();
+  const fanActiveIndex =
+    reduced || touchLike || pointerOnCards ? active : null;
 
   useEffect(() => {
     const mqCompact = window.matchMedia("(max-width: 768px)");
@@ -575,7 +569,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
         </ScrollReveal>
 
         <ScrollReveal>
-          <div className="grid items-stretch gap-5 lg:grid-cols-[1.35fr_0.75fr]">
+          <div className="grid items-stretch gap-5 lg:grid-cols-[1.5fr_0.9fr]">
             {/* 收纳盒舞台：overflow 不裁切侧向推开的卡；悬停命中在下方 stage */}
             <div
               className="relative overflow-visible rounded-[1.75rem] border border-white/60 bg-white/40 shadow-[0_24px_64px_-28px_rgba(0,80,160,0.28)] backdrop-blur-xl"
@@ -642,13 +636,16 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
               </motion.div>
 
               <div
-                className="relative mx-auto h-[380px] w-full max-w-3xl cursor-pointer sm:h-[420px]"
+                className="relative mx-auto h-[400px] w-full max-w-5xl cursor-pointer sm:h-[440px]"
                 style={{ perspective: 1100, perspectiveOrigin: "50% 45%" }}
                 role="listbox"
                 aria-label="知识库扇形卡片"
                 aria-activedescendant={current?.id}
                 tabIndex={0}
+                onMouseEnter={() => setPointerOnCards(true)}
+                onMouseLeave={() => setPointerOnCards(false)}
                 onMouseMove={(e) => {
+                  if (!pointerOnCards) setPointerOnCards(true);
                   if (!expanded) setExpanded(true);
                   const rect = e.currentTarget.getBoundingClientRect();
                   const next = pickIndexFromClientX(
@@ -661,6 +658,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                 }}
                 onClick={(e) => {
                   if (!expanded) setExpanded(true);
+                  setPointerOnCards(true);
                   const rect = e.currentTarget.getBoundingClientRect();
                   const next = pickIndexFromClientX(
                     e.clientX - rect.left,
@@ -670,14 +668,18 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                   );
                   setActive(next);
                 }}
+                onFocus={() => setPointerOnCards(true)}
+                onBlur={() => setPointerOnCards(false)}
                 onKeyDown={(e) => {
                   if (e.key === "ArrowRight") {
                     e.preventDefault();
                     setExpanded(true);
+                    setPointerOnCards(true);
                     setActive((i) => Math.min(cards.length - 1, i + 1));
                   } else if (e.key === "ArrowLeft") {
                     e.preventDefault();
                     setExpanded(true);
+                    setPointerOnCards(true);
                     setActive((i) => Math.max(0, i - 1));
                   }
                 }}
@@ -705,8 +707,12 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                       index={i}
                       total={cards.length}
                       expanded={expanded || !!reduced}
-                      selected={active === i && (expanded || !!reduced)}
-                      activeIndex={active}
+                      selected={
+                        fanActiveIndex !== null &&
+                        active === i &&
+                        (expanded || !!reduced)
+                      }
+                      activeIndex={fanActiveIndex}
                       compact={compact}
                       reducedMotion={!!reduced}
                     />
@@ -808,16 +814,16 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                       />
                     </div>
 
-                    <div className="mt-4 flex-1">
+                    <div className="mt-4 min-h-0 flex-1">
                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
                         Recent activity
                       </p>
                       {current.recentPosts.length > 0 ? (
-                        <ul className="w-full space-y-1.5">
-                          {current.recentPosts.slice(0, 3).map((p, i) => (
+                        <ul className="kp-scroll-hidden max-h-[7.5rem] w-full space-y-1.5 overflow-y-auto">
+                          {current.recentPosts.slice(0, 5).map((p, i) => (
                             <motion.li
                               key={p.slug}
-                              className="flex w-full items-center gap-2 truncate rounded-xl bg-black/15 px-2.5 py-1.5 text-[11px] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+                              className="min-w-0 rounded-xl bg-black/15 px-3 py-2 text-[11px] leading-snug text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
                               initial={reduced ? false : { opacity: 0, x: 10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{
@@ -825,11 +831,9 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                                 duration: 0.32,
                                 ease: PANEL_EASE,
                               }}
+                              title={p.title}
                             >
-                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/15 text-[10px] font-bold tabular-nums">
-                                {i + 1}
-                              </span>
-                              <span className="min-w-0 truncate">{p.title}</span>
+                              <span className="line-clamp-2 break-words">{p.title}</span>
                             </motion.li>
                           ))}
                         </ul>

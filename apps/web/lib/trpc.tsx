@@ -40,8 +40,9 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30 * 1000,
-            gcTime: 5 * 60 * 1000,
+            staleTime: 45 * 1000,
+            // 长会话：列表缓存多留一会，二次进页少打网；MessageStore 另有 LRU
+            gcTime: 15 * 60 * 1000,
             refetchOnWindowFocus: false,
           },
         },

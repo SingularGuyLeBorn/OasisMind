@@ -5,11 +5,11 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
-import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { ConfirmDialog, EmptyState, LoadingState } from "@/components/shared";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
+import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
+import { CurlyMark } from "@/components/home/accentMark";
 import { SEED_GARDENS } from "@knowpilot/shared";
 import { formatGardenId } from "@/lib/gardenDisplay";
 import { postDetailHref } from "@/lib/postHref";
@@ -64,36 +64,19 @@ export default function GardensPage() {
   const totalPosts = items.reduce((sum, g) => sum + (g.postCount ?? 0), 0);
 
   return (
-    <div className="relative w-full overflow-x-hidden">
-      {/* 氛围层：晴空玻璃柔光 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 20% -10%, color-mix(in srgb, var(--kp-brand) 22%, transparent), transparent 55%)," +
-            "radial-gradient(ellipse 60% 40% at 90% 10%, color-mix(in srgb, var(--kp-brand-light, var(--kp-brand)) 18%, transparent), transparent 50%)," +
-            "radial-gradient(ellipse 50% 30% at 50% 100%, color-mix(in srgb, var(--kp-brand) 10%, transparent), transparent 60%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-64 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--kp-text-3) 35%, transparent) 1px, transparent 0)",
-          backgroundSize: "28px 28px",
-          maskImage: "linear-gradient(to bottom, black, transparent)",
-        }}
-      />
+    <div className="kp-force-light kp-home-surface relative w-full overflow-x-hidden">
+      <HomeAmbientBackground density="lite" />
 
-      <div className="mx-auto w-full max-w-6xl px-6 py-10 pb-16 lg:px-10 lg:py-14">
+      <div className="relative mx-auto w-full max-w-7xl px-6 py-10 pb-16 lg:px-12 lg:py-14">
         <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: easeOut }}
           className="mb-12 text-center sm:mb-14"
         >
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            Digital Garden
+          </p>
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -104,8 +87,7 @@ export default function GardensPage() {
             数字花园
           </motion.div>
           <h1 className="text-4xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-5xl">
-            知识库{" "}
-            <span className="text-[var(--kp-brand)]">{"{ Gardens }"}</span>
+            知识库 <CurlyMark>Gardens</CurlyMark>
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-base text-[var(--kp-text-2)] md:text-lg">
             一座库，一个首页，一棵文章树。先选库，再读写。
@@ -162,7 +144,7 @@ export default function GardensPage() {
               transition={{ duration: 0.35, ease: easeOut }}
               className="mb-10 overflow-hidden"
             >
-              <div className="rounded-[1.75rem] border border-white/55 bg-white/60 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl sm:p-6">
+              <div className="kp-card-topline kp-card-sheen rounded-[1.75rem] border border-white/55 bg-white/60 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl sm:p-6">
                 <h2 className="mb-4 text-sm font-semibold text-[var(--kp-text-1)]">新建知识库</h2>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
@@ -197,7 +179,7 @@ export default function GardensPage() {
                     type="button"
                     onClick={handleCreate}
                     disabled={create.isPending}
-                    className={cn(buttonVariants(), "text-sm")}
+                    className="inline-flex items-center rounded-full bg-[var(--kp-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)] disabled:opacity-60"
                   >
                     {create.isPending ? "创建中…" : "创建"}
                   </button>
@@ -207,7 +189,7 @@ export default function GardensPage() {
                       setOpen(false);
                       setError(null);
                     }}
-                    className={cn(buttonVariants({ variant: "outline" }), "text-sm")}
+                    className="inline-flex items-center rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-medium text-[var(--kp-text-2)] backdrop-blur-md transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
                   >
                     取消
                   </button>
@@ -235,7 +217,7 @@ export default function GardensPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.55, delay: 0.08 + index * 0.08, ease: easeOut }}
                   whileHover={{ y: -8 }}
-                  className="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]"
+                  className="kp-card-topline kp-card-sheen group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 p-6 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]"
                 >
                   <div
                     aria-hidden

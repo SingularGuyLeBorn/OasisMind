@@ -41,6 +41,8 @@ import {
   AdminFormShell,
 } from "@/components/shared";
 import { AgentAvatar } from "@/components/agentAvatar";
+import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
+import { CurlyMark } from "@/components/home/accentMark";
 import { cn } from "@/lib/utils";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { describeCron, describeCronOption } from "@/lib/cronDescribe";
@@ -203,15 +205,14 @@ const AgentCard = memo(function AgentCard({
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
       className={cn(
-        "kp-card-premium group relative rounded-2xl transition",
+        "kp-card-premium kp-card-topline kp-card-sheen group relative overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color]",
         density === "compact" ? "p-3" : "p-5",
-        isSuper
-          ? "border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-[var(--kp-bg-alt)]"
-          : "",
-        selected && "border-[var(--kp-brand)]/50 bg-[var(--kp-brand-soft)]/30",
+        isSuper && "border-amber-200/55 bg-gradient-to-br from-amber-50/70 via-white/55 to-white/40",
+        selected && "border-[var(--kp-brand)]/45 bg-[color-mix(in_srgb,var(--kp-brand-soft)_55%,white)] shadow-[0_18px_48px_-16px_rgba(0,135,235,0.28)]",
+        !selected && "hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]",
       )}
     >
       <div className={cn("flex items-start justify-between gap-3", density === "compact" ? "mb-2" : "mb-4")}>
@@ -377,9 +378,7 @@ const AgentCard = memo(function AgentCard({
       <div className="flex gap-2">
         <Link
           href={`/chat?agentId=${agent.id}`}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-1 rounded-xl bg-[var(--kp-brand-deep)] py-2 text-xs font-medium text-white transition hover:opacity-90",
-          )}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--kp-brand)] py-2 text-xs font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)]"
         >
           <MessageSquare className="h-3.5 w-3.5" />
           对话
@@ -387,7 +386,7 @@ const AgentCard = memo(function AgentCard({
         <button
           type="button"
           onClick={handleEdit}
-          className="rounded-xl border border-[var(--kp-divider)] px-3 py-2 text-xs text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+          className="rounded-full border border-white/70 bg-white/70 px-3.5 py-2 text-xs font-medium text-[var(--kp-text-2)] backdrop-blur-md transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
         >
           配置
         </button>
@@ -448,7 +447,9 @@ export default function AgentsPage() {
   const { data: driftStatus } = trpc.agent.driftStatus.useQuery(undefined, { staleTime: 60_000 });
   const { data: swarmAlerts } = trpc.agent.swarmAlerts.useQuery(undefined, {
     staleTime: 15_000,
-    refetchInterval: 20_000,
+    // 仅页可见时轮询；后台标签不刷，长开管理页少耗主线程
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 
   const sortedItems = useMemo(
@@ -594,25 +595,31 @@ export default function AgentsPage() {
 
   if (view === "edit") {
     return (
-      <AdminFormShell>
+      <AdminFormShell className="kp-force-light kp-home-surface !max-w-7xl !bg-transparent">
+        <HomeAmbientBackground density="lite" />
         <button
           type="button"
           onClick={() => setView("list")}
-          className="flex items-center gap-1 text-sm text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+          className="relative inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-3 py-1.5 text-sm text-[var(--kp-text-2)] shadow-sm backdrop-blur-md transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
         >
           <ChevronLeft className="h-4 w-4" />
           返回列表
         </button>
 
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--kp-text-1)]">{editingId ? "编辑 Agent" : "新建 Agent"}</h1>
-          <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+        <div className="relative">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            Agent Studio
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--kp-text-1)]">
+            {editingId ? "编辑" : "新建"} <CurlyMark>Agent</CurlyMark>
+          </h1>
+          <p className="mt-1.5 text-sm text-[var(--kp-text-2)]">
             配置模型、System Prompt、工具授权与心跳。Chat 页可会话级覆盖 Prompt。
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="space-y-4 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-5 md:p-6">
+        <div className="relative grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <div className="kp-card-topline kp-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">名称</label>
@@ -769,7 +776,7 @@ export default function AgentsPage() {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-5 md:p-6">
+          <div className="kp-card-topline kp-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
             <div>
               <label className="mb-2 block text-xs font-medium text-[var(--kp-text-3)]">工具授权</label>
               <AgentToolsEditor tools={form.tools} onChange={(tools) => setForm({ ...form, tools })} />
@@ -777,10 +784,15 @@ export default function AgentsPage() {
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button onClick={() => { handleSave().catch(catchUnlessCancelled("app/agents/page.tsx")); }} disabled={createMutation.isPending || updateMutation.isPending}>
+        <div className="relative flex gap-3">
+          <button
+            type="button"
+            onClick={() => { handleSave().catch(catchUnlessCancelled("app/agents/page.tsx")); }}
+            disabled={createMutation.isPending || updateMutation.isPending}
+            className="inline-flex items-center rounded-full bg-[var(--kp-brand)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)] disabled:opacity-60"
+          >
             {editingId ? "保存修改" : "创建 Agent"}
-          </Button>
+          </button>
           {editingId && (
             <span
               className={cn(isEditingSuper && "cursor-not-allowed")}
@@ -790,7 +802,7 @@ export default function AgentsPage() {
                 variant="destructive"
                 onClick={() => setDeleteId(editingId)}
                 disabled={isEditingSuper}
-                className="disabled:border-border disabled:bg-muted disabled:text-muted-foreground"
+                className="rounded-full disabled:border-border disabled:bg-muted disabled:text-muted-foreground"
               >
                 <Trash2 className="mr-1 h-4 w-4" />
                 删除
@@ -813,23 +825,35 @@ export default function AgentsPage() {
   }
 
   return (
-    <AdminPage>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
-            <Bot className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-[var(--kp-text-1)]">我的 Agents</h1>
-            <p className="text-xs text-[var(--kp-text-3)]">选择一个 Agent 开始对话，或配置模型、Prompt、工具与心跳</p>
+    <AdminPage className="kp-force-light kp-home-surface !max-w-7xl !bg-transparent">
+      <HomeAmbientBackground density="lite" />
+
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            Agent Studio
+          </p>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/55 px-3 py-1 text-xs font-medium text-[var(--kp-text-2)] shadow-sm backdrop-blur-md">
+            <Bot className="h-3.5 w-3.5 text-[var(--kp-brand)]" />
+            Swarm · 编排
           </div>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-4xl">
+            我的 <CurlyMark>Agents</CurlyMark>
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-[var(--kp-text-2)]">
+            选择一个 Agent 开始对话，或配置模型、Prompt、工具与心跳。
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <CardDensityToggle />
-          <Button onClick={openCreate} className="shrink-0 gap-1.5">
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--kp-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)]"
+          >
             <Plus className="h-4 w-4" />
             新建 Agent
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -852,21 +876,21 @@ export default function AgentsPage() {
         />
       )}
 
-      <div className="flex items-start gap-2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 text-xs text-[var(--kp-text-2)]">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+      <div className="kp-card-topline relative flex items-start gap-2 rounded-[1.25rem] border border-white/55 bg-white/55 px-3.5 py-2.5 text-xs text-[var(--kp-text-2)] shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
         <div>
           <span className="font-medium text-[var(--kp-text-1)]">心跳：</span>
           卡片展示频率、目标与上次运行。配置在「配置」页；系统定时脚本见
-          <Link href="/tasks" className="mx-1 text-[var(--kp-brand-deep)] hover:underline">/tasks</Link>
+          <Link href="/tasks" className="mx-1 text-[var(--kp-brand)] hover:underline">/tasks</Link>
           ，运行记录见
-          <Link href="/runs" className="mx-1 text-[var(--kp-brand-deep)] hover:underline">/runs</Link>
+          <Link href="/runs" className="mx-1 text-[var(--kp-brand)] hover:underline">/runs</Link>
           。说明见
-          <code className="mx-1 rounded bg-[var(--kp-bg-mute)] px-1 py-0.5">docs/development/scheduled-tasks-and-heartbeat.md</code>。
+          <code className="mx-1 rounded-md border border-white/60 bg-white/70 px-1 py-0.5">docs/development/scheduled-tasks-and-heartbeat.md</code>。
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2 rounded-[1.25rem] border border-white/55 bg-white/45 p-2 shadow-[0_10px_28px_-16px_rgba(0,80,160,0.16)] backdrop-blur-xl">
           <div className="relative w-full max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
             <Input
@@ -874,13 +898,13 @@ export default function AgentsPage() {
               onChange={(e) => { setSearchInput(e.target.value); clearSelection(); }}
               onKeyDown={(e) => e.key === "Enter" && setSearchInput(e.currentTarget.value.trim())}
               placeholder="搜索 Agent 名称…"
-              className="pl-9"
+              className="border-white/70 bg-white/70 pl-9 backdrop-blur-md"
             />
             {searchInput && (
               <button
                 type="button"
                 onClick={() => setSearchInput("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--kp-text-3)] hover:bg-white/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

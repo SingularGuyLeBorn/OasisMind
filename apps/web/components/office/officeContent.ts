@@ -72,71 +72,214 @@ export const KNOWLEDGE_BOARD = [
   { id: "daily", title: "每日碎片", meta: "随记沉淀" },
 ] as const;
 
-/** Transformer / LLM 架构板条目 */
+/** 办公室 LLM 配图（content/uploads → /uploads 静态托管） */
+export const LLM_NOTE_IMAGES = {
+  stack: "/uploads/llm-notes/transformer-stack.png",
+  encdec: "/uploads/llm-notes/transformer-encoder-decoder.png",
+  belial: "/uploads/llm-notes/belial-official.png",
+  zero: "/uploads/llm-notes/zero-official.png",
+} as const;
+
+export type OfficeFormulaCard = {
+  id: string;
+  title: string;
+  tint: string;
+  image: string;
+  imageAlt: string;
+  /** Markdown：$$ 块级公式 + 列表说明 + 可选配图 */
+  markdown: string;
+};
+
+/** Transformer / LLM 架构板 */
 export const ARCHITECTURE_BOARD = {
   title: "Transformer Architecture",
   subtitle: "Attention Is All You Need → LLM Stack",
+  image: LLM_NOTE_IMAGES.stack,
+  imageAlt: "Transformer / LLM 层级栈示意图",
+  imageSecondary: LLM_NOTE_IMAGES.encdec,
+  /** 黑板右侧 / 弹层正文（Markdown + KaTeX） */
+  markdown: `
+### 端到端推导（Decoder-only）
+
+1. **Embed**：$x_0 = E[\\mathrm{token}] + P_{\\mathrm{pos}}$
+2. **Attn**：$A = \\mathrm{softmax}(QK^{\\top}/\\sqrt{d_k}),\\; H = AV$
+3. **Resid**：$x' = x + \\mathrm{MultiHead}(\\mathrm{LN}(x))$
+4. **FFN**：$z = \\mathrm{GELU}(x'W_1)W_2,\\; y = x' + z$
+5. **Head**：$p = \\mathrm{softmax}(y_L W_{\\mathrm{out}}),\\; \\mathcal{L}=-\\sum_t \\log p_t$
+
+$$
+\\mathrm{Attn}(Q,K,V)=\\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V
+$$
+`.trim(),
   blocks: [
-    { label: "Token Embed + Pos", detail: "x = E·w + P" },
-    { label: "Multi-Head Attn", detail: "softmax(QKᵀ/√d)V" },
-    { label: "FFN", detail: "GELU(xW₁)W₂" },
-    { label: "LayerNorm + Residual", detail: "x + Sublayer(LN(x))" },
-    { label: "LM Head", detail: "softmax(h W_out)" },
+    { label: "Token Embed + Pos", detail: "$x = Ew + P$" },
+    { label: "Multi-Head Attn", detail: "$\\mathrm{softmax}(QK^{\\top}/\\sqrt{d})V$" },
+    { label: "FFN", detail: "$\\mathrm{GELU}(xW_1)W_2$" },
+    { label: "LayerNorm + Residual", detail: "$x + \\mathrm{Sublayer}(\\mathrm{LN}(x))$" },
+    { label: "LM Head", detail: "$\\mathrm{softmax}(h W_{\\mathrm{out}})$" },
   ],
   stack: ["Embedding", "N × Decoder Block", "RMSNorm", "Vocab Projection"],
 };
 
-/** A4 推导纸条（完整式子，非占位） */
-export const FORMULA_SHEETS = [
+/**
+ * 多屏墙内容（带鱼屏）——产品 / 花园 / 系统 / 公式混排，禁止整墙同一主题。
+ * 桌面便签另见 DESK_STICKY_NOTES，二者不得同源复制。
+ */
+export const MONITOR_FORMULA_CARDS: OfficeFormulaCard[] = [
   {
-    title: "Scaled Dot-Product",
-    lines: [
-      "Attn(Q,K,V)=softmax(QKᵀ/√d_k)V",
-      "Q=XW_Q, K=XW_K, V=XW_V",
-      "d_k=d_model/h",
-    ],
+    id: "ops",
+    title: "见微 · 运行看板",
+    tint: "#0087EB",
+    image: LLM_NOTE_IMAGES.stack,
+    imageAlt: "运行中的数字花园",
+    markdown: `
+### Live Ops
+
+| 通道 | 状态 |
+|---|---|
+| Chat SSE | streaming · 2 |
+| Swarm | manager idle |
+| Cron | next 09:00 |
+| HITL | 0 pending |
+
+- 推拉结合 · 刷新不丢
+- 本地 Markdown 为真相源
+`.trim(),
   },
   {
-    title: "Cross-Entropy LM",
-    lines: [
-      "p_t=softmax(h_t W_out)",
-      "L=-Σ_t log p_t[y_t]",
-      "Teacher forcing",
-    ],
+    id: "garden",
+    title: "花园 · 今日生长",
+    tint: "#059669",
+    image: LLM_NOTE_IMAGES.encdec,
+    imageAlt: "知识花园索引",
+    markdown: `
+### Gardens
+
+1. **博客** — 公开长文主展厅
+2. **知识库** — 蒸馏笔记可检索
+3. **资源库** — 素材与清单
+4. **LLM 指南** — 体系化入门
+
+\`post.update\` → FTS5 索引 · 当日 +12
+`.trim(),
   },
   {
-    title: "KV Cache",
-    lines: [
-      "K_t=[K_<t; k_t]",
-      "V_t=[V_<t; v_t]",
-      "decode: O(n)→O(1)/tok",
-    ],
+    id: "attn",
+    title: "Attention · 推导板",
+    tint: "#7C3AED",
+    image: LLM_NOTE_IMAGES.encdec,
+    imageAlt: "Scaled Dot-Product Attention",
+    markdown: `
+![Attention](${LLM_NOTE_IMAGES.encdec})
+
+$$
+\\mathrm{Attn}(Q,K,V)=\\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V
+$$
+
+- Multi-Head 并行子空间
+- Pre-Norm + Residual
+`.trim(),
   },
   {
-    title: "RoPE",
-    lines: [
-      "f(q,m)=R_Θ,m q",
-      "⟨Rq_m,Rk_n⟩∝(m-n)",
-      "相对位置可外推",
-    ],
+    id: "swarm",
+    title: "Swarm · 三层编排",
+    tint: "#D97706",
+    image: LLM_NOTE_IMAGES.belial,
+    imageAlt: "多智能体协作",
+    markdown: `
+### Tier
+
+- **super** — 总园丁 · 跨 Workspace
+- **manager** — 园丁长 · 本域编排
+- **sub** — 执行 · 只经 report_back
+
+\`spawn_subagent\` → 异步队列 → 父会话消费
+`.trim(),
   },
   {
-    title: "GQA / MoE",
-    lines: [
-      "n_kv ≪ n_q (GQA)",
-      "y=Σ_i g_i(x) E_i(x)",
-      "g=Top-k softmax",
-    ],
+    id: "hitl",
+    title: "审批 · HITL",
+    tint: "#DB2777",
+    image: LLM_NOTE_IMAGES.zero,
+    imageAlt: "人机协同审批",
+    markdown: `
+### Gate
+
+\`\`\`
+decision-scope
+  memory:delete:*
+  post:delete:slug
+\`\`\`
+
+- 等待中不空转
+- 邮件回复 APPROVE / REJECT
+`.trim(),
+  },
+];
+
+/** 桌面便签：手写备忘 / 待办 / 金句——与屏幕内容刻意不同源 */
+export type DeskStickyNote = {
+  id: string;
+  color: string;
+  ink: string;
+  title: string;
+  body: string;
+  rotate: number;
+};
+
+export const DESK_STICKY_NOTES: DeskStickyNote[] = [
+  {
+    id: "todo",
+    color: "#FEF08A",
+    ink: "#713F12",
+    title: "今日",
+    body: "① 花园首页改版\n② 审批邮件联调\n③ 别再写「刷新一下」",
+    rotate: -0.08,
   },
   {
-    title: "RLHF / DPO",
-    lines: [
-      "max E[r_φ]-β KL(π||π_ref)",
-      "DPO: σ(β log π/π_ref)",
-      "偏好对齐目标",
-    ],
+    id: "quote",
+    color: "#FBCFE8",
+    ink: "#831843",
+    title: "原则",
+    body: "状态在服务端\n前端只订阅渲染\n推拉缺一不可",
+    rotate: 0.06,
   },
-] as const;
+  {
+    id: "buy",
+    color: "#BBF7D0",
+    ink: "#14532D",
+    title: "采购",
+    body: "咖啡豆 · 滤纸\n键盘轴润滑\n绿植换盆土",
+    rotate: -0.04,
+  },
+  {
+    id: "idea",
+    color: "#BFDBFE",
+    ink: "#1E3A8A",
+    title: "灵感",
+    body: "办公室带鱼屏\n便签≠屏幕克隆\n杂物要有生活感",
+    rotate: 0.1,
+  },
+  {
+    id: "call",
+    color: "#FED7AA",
+    ink: "#7C2D12",
+    title: "提醒",
+    body: "周五备份 dev.db\n检查 cookie 登录态\n给超级 Agent 补工具",
+    rotate: -0.12,
+  },
+  {
+    id: "mood",
+    color: "#E9D5FF",
+    ink: "#581C87",
+    title: "心情",
+    body: "见微知著\n粗鄙偏颇\n但还有点梦想",
+    rotate: 0.05,
+  },
+];
+
+/** @deprecated 弹层仍展示屏幕公式墙；桌面已改用 DESK_STICKY_NOTES */
+export const FORMULA_SHEETS: OfficeFormulaCard[] = MONITOR_FORMULA_CARDS;
 
 export const BOOKSHELF_TITLES = [
   "Deep Learning · Goodfellow",
@@ -286,7 +429,7 @@ export const HOTSPOT_META: Record<
   OfficeHotspotId,
   { label: string; overlay: OverlayKind; hint: string }
 > = {
-  monitor: { label: "多屏工作墙", overlay: "projects", hint: "点击打开能力矩阵" },
+  monitor: { label: "带鱼屏工作墙", overlay: "projects", hint: "运行看板 · 花园 · Attention · Swarm" },
   binder: { label: "速查夹", overlay: "about", hint: "Quick Facts · 关于见微" },
   board: { label: "知识库看板", overlay: "knowledge", hint: "整齐花园目录" },
   map: { label: "旅程地图", overlay: "journey", hint: "L1→Now 演进钉点" },
@@ -298,5 +441,5 @@ export const HOTSPOT_META: Record<
   server: { label: "NVIDIA 推理机架", overlay: "server", hint: "DGX 风格本地算力" },
   bookshelf: { label: "AI 书架", overlay: "bookshelf", hint: "深度学习与大模型藏书" },
   chalkboard: { label: "架构黑板", overlay: "architecture", hint: "Transformer 栈板书" },
-  papers: { label: "推导草稿", overlay: "formulas", hint: "桌面 A4 · Attention 公式" },
+  papers: { label: "桌面便签", overlay: "formulas", hint: "手写备忘 · 与屏幕不同源" },
 };

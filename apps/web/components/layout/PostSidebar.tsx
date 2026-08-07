@@ -139,6 +139,16 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
       }}
     >
       <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--kp-divider)] py-2.5 pr-2">
+        {isScoped && (
+          <Link
+            href="/gardens"
+            onClick={() => onNavigate?.()}
+            className="inline-flex items-center gap-1 text-[11px] text-[var(--kp-text-3)] transition hover:text-[var(--kp-brand-deep)]"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            全部知识库
+          </Link>
+        )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <FolderOpen className="h-4 w-4 shrink-0 text-[var(--kp-brand-deep)]" />
@@ -161,16 +171,6 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
             新建
           </Link>
         </div>
-        {isScoped && (
-          <Link
-            href="/gardens"
-            onClick={() => onNavigate?.()}
-            className="inline-flex items-center gap-1 text-[11px] text-[var(--kp-text-3)] transition hover:text-[var(--kp-brand-deep)]"
-          >
-            <ArrowLeft className="h-3 w-3" />
-            全部知识库
-          </Link>
-        )}
         <ContinueReadingSidebarLink
           garden={isScoped ? gardenId : null}
           onNavigate={onNavigate}

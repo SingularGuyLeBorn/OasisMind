@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Home,
@@ -114,9 +114,24 @@ function isMoreActive(pathname: string): boolean {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   // 用 pathname 键控：路由变化时 moreOpen 自然为 false，无需 effect 里 setState
   const [moreOpenPath, setMoreOpenPath] = useState<string | null>(null);
   const moreOpen = moreOpenPath === pathname;
+
+  useEffect(() => {
+    const warm = () => {
+      for (const href of ["/", "/gardens", "/chat", "/about", "/office", "/agents"] as const) {
+        try {
+          router.prefetch(href);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    const t = window.setTimeout(warm, 500);
+    return () => window.clearTimeout(t);
+  }, [router]);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -221,6 +236,14 @@ export function MobileBottomNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
+                prefetch
+                onTouchStart={() => {
+                  try {
+                    router.prefetch(tab.href);
+                  } catch {
+                    /* ignore */
+                  }
+                }}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition",
                   active

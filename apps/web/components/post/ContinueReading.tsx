@@ -53,12 +53,13 @@ export function ContinueReadingCard({
     <Link
       href={readingEntryHref(last)}
       className={cn(
-        "group flex items-start gap-3 rounded-2xl border border-[var(--kp-brand)]/30",
-        "bg-[var(--kp-brand-soft)] p-4 transition hover:border-[var(--kp-brand)]/50 hover:bg-[color-mix(in_srgb,var(--kp-brand-soft)_80%,var(--kp-bg-alt))]",
+        "kp-card-topline kp-card-sheen group flex items-start gap-3 rounded-[1.5rem] border border-white/55",
+        "bg-white/55 p-4 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.22)] backdrop-blur-xl transition",
+        "hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_18px_44px_-16px_rgba(0,135,235,0.28)]",
         className,
       )}
     >
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--kp-bg-alt)] text-[var(--kp-brand-deep)] shadow-sm">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--kp-brand)] shadow-sm">
         <BookMarked className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">

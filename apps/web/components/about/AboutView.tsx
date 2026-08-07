@@ -554,7 +554,6 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                 <p className="text-sm font-bold text-[var(--kp-text-1)]">
                   想聊聊？ <SquareMark className="text-sm font-semibold">随时</SquareMark>
                 </p>
-                <p className="text-xs text-[var(--kp-text-3)]">对话、GitHub 或邮件都可以。</p>
               </div>
               <div className="flex shrink-0 flex-nowrap items-center gap-2">
                 <Link
@@ -596,18 +595,18 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
 
 function CosmicFooter() {
   return (
-    <section className="relative mt-8 overflow-hidden rounded-[1.75rem] border border-white/25 shadow-[0_20px_56px_-24px_rgba(20,40,80,0.45)]">
+    <section className="relative mt-8 overflow-hidden rounded-[1.75rem] border border-white/40 shadow-[0_20px_56px_-24px_rgba(0,80,160,0.28)]">
       <div className="relative min-h-[280px] md:min-h-[340px]">
         <SeasideCanvas />
 
-        {/* 可读性渐变：上半略压暗，保证白字对比 */}
+        {/* 蓝海可读性：底部略压深蓝，避免橙黑日落罩 */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-black/10"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a2744]/70 via-[#0c3a66]/25 to-transparent"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#7eb6e8]/35 to-transparent"
         />
 
         <motion.div
@@ -617,13 +616,13 @@ function CosmicFooter() {
           transition={{ type: "spring", stiffness: 260, damping: 26 }}
           className="relative z-10 flex min-h-[280px] flex-col items-center justify-center px-7 py-14 text-center md:min-h-[340px] md:px-14 md:py-20"
         >
-          <span className="mb-4 text-[10px] font-semibold tracking-[0.22em] text-white/55">
+          <span className="mb-4 text-[10px] font-semibold tracking-[0.22em] text-white/70">
             见微 · OasisMind
           </span>
-          <p className="max-w-3xl text-balance text-[clamp(1.15rem,2.6vw,1.7rem)] font-semibold leading-relaxed tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
+          <p className="max-w-3xl text-balance text-[clamp(1.15rem,2.6vw,1.7rem)] font-semibold leading-relaxed tracking-tight text-white drop-shadow-[0_2px_14px_rgba(8,40,80,0.55)]">
             我们的征途是星辰大海，但在那之前，不妨先去码头搞点薯条。
           </p>
-          <p className="kp-display-serif mt-4 max-w-2xl text-[clamp(0.95rem,2vw,1.2rem)] italic leading-relaxed text-white/80 drop-shadow-[0_1px_8px_rgba(0,0,0,0.4)]">
+          <p className="kp-display-serif mt-4 max-w-2xl text-[clamp(0.95rem,2vw,1.2rem)] italic leading-relaxed text-white/85 drop-shadow-[0_1px_10px_rgba(8,40,80,0.45)]">
             Our voyage is to the stars and the sea — but first, fries at the pier.
           </p>
         </motion.div>

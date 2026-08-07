@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { keepPreviousData } from "@tanstack/react-query";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
@@ -102,7 +103,7 @@ function PostList({
   const linkable = tone !== "deleted";
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", toneClass)}>
           {title}
@@ -112,31 +113,31 @@ function PostList({
       {items.length === 0 ? (
         <p className="text-[11px] text-[var(--kp-text-3)]">{empty}</p>
       ) : (
-        <ul className="max-h-24 space-y-1 overflow-y-auto pr-0.5">
+        <ul className="kp-scroll-hidden max-h-28 space-y-1 overflow-y-auto">
           {items.map((p) => {
-            const inner = (
+            const gardenLabel = formatGardenId(p.garden);
+            const tip = `${gardenLabel} / ${p.title}`;
+            const body = (
               <>
-                <span className="mr-1 shrink-0 text-[10px] text-[var(--kp-text-3)]">
-                  {formatGardenId(p.garden)}/
-                </span>
-                {p.title}
+                <span className="shrink-0 text-[10px] text-[var(--kp-text-3)]">{gardenLabel}/</span>
+                <span className="min-w-0 truncate">{p.title}</span>
               </>
             );
             const cls =
-              "block w-full truncate rounded-lg bg-black/[0.03] px-2 py-1 text-[11px] text-[var(--kp-text-2)]";
+              "flex min-w-0 w-full items-baseline gap-1 rounded-lg bg-black/[0.03] px-2 py-1 text-[11px] text-[var(--kp-text-2)]";
             return (
-              <li key={p.id} className="w-full">
+              <li key={p.id} className="min-w-0 w-full">
                 {linkable ? (
                   <Link
                     href={postDetailHref(p.slug, p.garden)}
                     className={cn(cls, "transition-colors hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand)]")}
-                    title={p.title}
+                    title={tip}
                   >
-                    {inner}
+                    {body}
                   </Link>
                 ) : (
-                  <span className={cn(cls, "opacity-80")} title={`${p.title}（已删除）`}>
-                    {inner}
+                  <span className={cn(cls, "opacity-80")} title={`${tip}（已删除）`}>
+                    {body}
                   </span>
                 )}
               </li>
@@ -202,13 +203,13 @@ function DayDetailPanel({
       {isError ? (
         <p className="text-[11px] text-red-500/80">详情加载失败，请稍后重试</p>
       ) : (
-        <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
           <PostList title="新增" tone="created" items={view.created} empty="当日无新增文章" />
           <PostList title="更新" tone="updated" items={view.updated} empty="当日无更新文章" />
           <PostList title="删除" tone="deleted" items={view.deleted} empty="当日无删除文章" />
 
           <div
-            className="relative overflow-hidden rounded-2xl px-3.5 py-3 text-white"
+            className="relative min-w-0 overflow-hidden rounded-2xl px-3.5 py-3 text-white"
             style={{
               background:
                 "linear-gradient(155deg, color-mix(in srgb, var(--kp-brand) 78%, white), var(--kp-brand-deep))",
@@ -300,9 +301,6 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
             </h2>
             <SquareMark className="text-xs font-semibold">{data.totalUpdates} 次</SquareMark>
           </div>
-          <p className="mt-1.5 text-sm text-[var(--kp-text-2)]">
-            点选日期，下方查看新增、更新、删除与 token
-          </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.06}>
@@ -319,105 +317,108 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
               </span>
             </div>
 
-            {/* 上：日历占满整行 · 下：当日详情 */}
+            {/* 上：热力图与外卡同宽 · 下：当日详情 */}
             <div className="flex flex-col gap-4">
-              <div className="min-w-0">
-                <div className="min-w-0 overflow-x-auto">
-                  <div className="inline-flex min-w-full flex-col gap-1">
-                    <div className="relative mb-1 ml-6 h-4">
-                      {months.map((m) => (
-                        <span
-                          key={`${m.label}-${m.col}`}
-                          className="absolute top-0 text-[10px] font-medium text-[var(--kp-text-3)]"
-                          style={{ left: `calc(${m.col} * (11px + 3px))` }}
+              <div className="min-w-0 w-full">
+                <div className="flex w-full flex-col gap-1">
+                  <div className="relative mb-1 ml-5 h-4">
+                    {months.map((m) => (
+                      <span
+                        key={`${m.label}-${m.col}`}
+                        className="absolute top-0 text-[10px] font-medium text-[var(--kp-text-3)]"
+                        style={{
+                          left: weeks.length > 0 ? `${(m.col / weeks.length) * 100}%` : 0,
+                        }}
+                      >
+                        {m.label}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex w-full gap-1">
+                    <div className="flex w-5 shrink-0 flex-col gap-[3px]">
+                      {WEEKDAY_LABELS.map((label, i) => (
+                        <div
+                          key={i}
+                          className="flex aspect-square w-full items-center text-[9px] leading-none text-[var(--kp-text-3)]"
                         >
-                          {m.label}
-                        </span>
+                          {label}
+                        </div>
                       ))}
                     </div>
 
-                    <div className="flex gap-1">
-                      <div className="flex w-5 shrink-0 flex-col gap-[3px]">
-                        {WEEKDAY_LABELS.map((label, i) => (
-                          <div
-                            key={i}
-                            className="flex h-[11px] items-center text-[9px] leading-none text-[var(--kp-text-3)]"
-                          >
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-[3px]">
-                        {weeks.map((week, wi) => (
-                          <div key={wi} className="flex flex-col gap-[3px]">
-                            {week.map((day) => {
-                              const level = levelFor(day.count, max);
-                              const future = parseLocalDate(day.date).getTime() > Date.now();
-                              const isSelected = selected?.date === day.date;
-                              return (
-                                <button
-                                  key={day.date}
-                                  type="button"
-                                  disabled={future}
-                                  aria-label={`${formatTipDate(day.date)}：${day.count} 次更新`}
-                                  aria-pressed={isSelected}
-                                  className={cn(
-                                    "h-[11px] w-[11px] rounded-[2px] transition-[transform,box-shadow] duration-150",
-                                    future ? "bg-transparent" : LEVEL_CLASS[level],
-                                    !future && "hover:scale-125",
-                                    // 选中：轻描边 + 外发光，不用 ring-offset 白底（会像「白框」）
-                                    isSelected && "z-[1] scale-125 shadow-[0_0_0_1.5px_var(--kp-brand),0_0_8px_rgba(0,135,235,0.45)]",
-                                  )}
-                                  onMouseEnter={(e) => {
-                                    if (future) return;
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    setTip({
-                                      date: day.date,
-                                      count: day.count,
-                                      x: rect.left + rect.width / 2,
-                                      y: rect.top,
-                                    });
-                                  }}
-                                  onMouseLeave={() => setTip(null)}
-                                  onClick={() => {
-                                    if (future) return;
-                                    setSelectedOverride({ date: day.date, count: day.count });
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex min-w-0 flex-1 gap-[3px]">
+                      {weeks.map((week, wi) => (
+                        <div key={wi} className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                          {week.map((day) => {
+                            const level = levelFor(day.count, max);
+                            const future = parseLocalDate(day.date).getTime() > Date.now();
+                            const isSelected = selected?.date === day.date;
+                            return (
+                              <button
+                                key={day.date}
+                                type="button"
+                                disabled={future}
+                                aria-label={`${formatTipDate(day.date)}：${day.count} 次更新`}
+                                aria-pressed={isSelected}
+                                className={cn(
+                                  "aspect-square w-full rounded-[2px] transition-[transform,box-shadow] duration-150",
+                                  future ? "bg-transparent" : LEVEL_CLASS[level],
+                                  !future && "hover:z-[1] hover:scale-110",
+                                  isSelected &&
+                                    "z-[1] scale-110 shadow-[0_0_0_1.5px_var(--kp-brand),0_0_8px_rgba(0,135,235,0.45)]",
+                                )}
+                                onMouseEnter={(e) => {
+                                  if (future) return;
+                                  setTip({
+                                    date: day.date,
+                                    count: day.count,
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                  });
+                                }}
+                                onMouseMove={(e) => {
+                                  if (future) return;
+                                  setTip({
+                                    date: day.date,
+                                    count: day.count,
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                  });
+                                }}
+                                onMouseLeave={() => setTip(null)}
+                                onClick={() => {
+                                  if (future) return;
+                                  setSelectedOverride({ date: day.date, count: day.count });
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[var(--kp-text-3)]">
-                  <span>少</span>
-                  {LEVEL_CLASS.map((cls, i) => (
-                    <span key={i} className={cn("h-[11px] w-[11px] rounded-[2px]", cls)} />
-                  ))}
-                  <span>多</span>
-                </div>
               </div>
 
               <DayDetailPanel date={selected?.date ?? null} count={selected?.count ?? 0} />
             </div>
 
-            {tip && (
-              <div
-                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-lg border border-white/70 bg-[var(--kp-text-1)] px-2.5 py-1.5 text-[11px] text-white shadow-lg"
-                style={{ left: tip.x, top: tip.y }}
-              >
-                <span className="font-semibold">
-                  {tip.count === 0 ? "无更新" : `${tip.count} 次更新`}
-                </span>
-                <span className="ml-1.5 opacity-80">{formatTipDate(tip.date)}</span>
-                <span className="ml-1.5 opacity-60">· 点击查看</span>
-              </div>
-            )}
+            {tip &&
+              typeof document !== "undefined" &&
+              createPortal(
+                <div
+                  className="pointer-events-none fixed z-[200] rounded-lg border border-white/70 bg-[var(--kp-text-1)] px-2.5 py-1.5 text-[11px] text-white shadow-lg"
+                  style={{ left: tip.x + 14, top: tip.y + 14 }}
+                >
+                  <span className="font-semibold">
+                    {tip.count === 0 ? "无更新" : `${tip.count} 次更新`}
+                  </span>
+                  <span className="ml-1.5 opacity-80">{formatTipDate(tip.date)}</span>
+                </div>,
+                document.body,
+              )}
           </div>
         </ScrollReveal>
       </div>

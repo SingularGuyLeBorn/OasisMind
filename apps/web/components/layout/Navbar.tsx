@@ -9,8 +9,11 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/themeToggle";
 import type { LayoutMode } from "./layoutMode";
 
-/** 重页面：idle + hover 预取，摊平首次点「对话/管理」的编译峰值 */
-const HEAVY_NAV_HREFS = ["/chat", "/agents"] as const;
+/**
+ * idle 只预热轻路由 RSC（秒切主力）。
+ * /about /office 含 three，禁止 idle 拉 chunk——悬停再拉，避免长跑堆内存。
+ */
+const IDLE_PREFETCH_HREFS = ["/", "/gardens", "/chat", "/agents", "/dashboard", "/posts"] as const;
 
 /** CmdK 面板按需加载，勿进根布局静态图 */
 const CommandPalette = dynamic(
@@ -50,8 +53,15 @@ function isManageActive(pathname: string): boolean {
     return false;
   }
   if (pathname === "/" || pathname === "") return false;
-  // app 模式其余路由（/agents、/skills、/memories、/credentials…）
   return true;
+}
+
+function prefetchHref(router: ReturnType<typeof useRouter>, href: string) {
+  try {
+    router.prefetch(href);
+  } catch {
+    // prefetch 失败不阻断导航
+  }
 }
 
 export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
@@ -60,21 +70,23 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
   const showMobileMenu = mode === "app" || mode === "content";
 
   useEffect(() => {
-    // 仅客户端 effect，勿写 typeof window 分支（会触发 Next hydration 误报）
-    const prefetchHeavy = () => {
-      for (const href of HEAVY_NAV_HREFS) {
-        router.prefetch(href);
+    const warm = () => {
+      for (const href of IDLE_PREFETCH_HREFS) {
+        prefetchHref(router, href);
       }
+      // 侧栏 chunk 提前拉，home↔app 切换不卡第一帧（勿预拉 Office/About three）
+      import("./Sidebar").catch(() => {});
+      import("./PostSidebar").catch(() => {});
     };
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
       cancelIdleCallback?: (id: number) => void;
     };
     if (typeof w.requestIdleCallback === "function") {
-      const id = w.requestIdleCallback(prefetchHeavy, { timeout: 2500 });
+      const id = w.requestIdleCallback(warm, { timeout: 1200 });
       return () => w.cancelIdleCallback?.(id);
     }
-    const t = window.setTimeout(prefetchHeavy, 1200);
+    const t = window.setTimeout(warm, 400);
     return () => window.clearTimeout(t);
   }, [router]);
 
@@ -99,37 +111,61 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
           </button>
         )}
 
-        {/* 顶栏入口：首页 · 知识库 · 对话 · 关于我 · 办公室 · 管理 */}
         <nav className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:flex">
           <TopNavLink
             href="/"
             active={pathname === "/" || pathname === ""}
             icon={<Home className="h-4 w-4" />}
+            onPrefetch={() => prefetchHref(router, "/")}
           >
             首页
           </TopNavLink>
-          <TopNavLink href="/gardens" active={isKnowledgeActive(pathname)} icon={<BookOpen className="h-4 w-4" />}>
+          <TopNavLink
+            href="/gardens"
+            active={isKnowledgeActive(pathname)}
+            icon={<BookOpen className="h-4 w-4" />}
+            onPrefetch={() => prefetchHref(router, "/gardens")}
+          >
             知识库
           </TopNavLink>
           <TopNavLink
             href="/chat"
             active={pathname.startsWith("/chat")}
             icon={<MessageSquare className="h-4 w-4" />}
-            onPrefetch={() => router.prefetch("/chat")}
+            onPrefetch={() => prefetchHref(router, "/chat")}
           >
             对话
           </TopNavLink>
-          <TopNavLink href="/about" active={pathname.startsWith("/about")} icon={<UserCircle className="h-4 w-4" />}>
+          <TopNavLink
+            href="/about"
+            active={pathname.startsWith("/about")}
+            icon={<UserCircle className="h-4 w-4" />}
+            onPrefetch={() => {
+              prefetchHref(router, "/about");
+              import("@/components/about/AboutView").catch(() => {});
+            }}
+          >
             关于我
           </TopNavLink>
-          <TopNavLink href="/office" active={pathname.startsWith("/office")} icon={<Sofa className="h-4 w-4" />}>
+          <TopNavLink
+            href="/office"
+            active={pathname.startsWith("/office")}
+            icon={<Sofa className="h-4 w-4" />}
+            onPrefetch={() => {
+              prefetchHref(router, "/office");
+              import("@/components/office/OfficeScene").catch(() => {});
+            }}
+          >
             办公室
           </TopNavLink>
           <TopNavLink
             href="/agents"
             active={isManageActive(pathname)}
             icon={<LayoutGrid className="h-4 w-4" />}
-            onPrefetch={() => router.prefetch("/agents")}
+            onPrefetch={() => {
+              prefetchHref(router, "/agents");
+              import("./Sidebar").catch(() => {});
+            }}
           >
             管理
           </TopNavLink>
@@ -160,8 +196,10 @@ function TopNavLink({
   return (
     <Link
       href={href}
+      prefetch
       onMouseEnter={onPrefetch}
       onFocus={onPrefetch}
+      onTouchStart={onPrefetch}
       className={cn(
         "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition",
         active

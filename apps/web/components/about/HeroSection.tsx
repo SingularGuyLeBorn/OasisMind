@@ -107,7 +107,7 @@ function MbtiBadge({ type }: { type: string }) {
           MBTI
         </span>
         <span className="block text-sm font-black tracking-tight text-[var(--kp-text-1)]">
-          我是 {meta.label}
+          {meta.label}
         </span>
         <span className="block text-[10px] font-medium text-[var(--kp-accent-deep)]">
           {meta.hint}

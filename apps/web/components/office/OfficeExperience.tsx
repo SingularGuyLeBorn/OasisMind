@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -23,11 +23,36 @@ const OfficeScene = dynamic(
 );
 
 const VIEW_ORDER = ["overview", "desk", "board", "server", "shelf"] as const;
+const OFFICE_ENTERED_KEY = "knowpilot-office-entered";
+
+function readOfficeEntered(): boolean {
+  try {
+    return sessionStorage.getItem(OFFICE_ENTERED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function OfficeExperience() {
-  const [entered, setEntered] = useState(false);
+  /** sessionStorage 用 useSyncExternalStore，避免 effect 内 setState */
+  const storedEntered = useSyncExternalStore(
+    () => () => {},
+    readOfficeEntered,
+    () => false,
+  );
+  const [enteredOverride, setEnteredOverride] = useState<boolean | null>(null);
+  const entered = enteredOverride ?? storedEntered;
   const [hotspot, setHotspot] = useState<OfficeHotspotId | null>(null);
   const [viewId, setViewId] = useState<OfficeViewId>("overview");
+
+  const handleEnter = () => {
+    try {
+      sessionStorage.setItem(OFFICE_ENTERED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setEnteredOverride(true);
+  };
 
   useEffect(() => {
     if (!entered) return;
@@ -49,7 +74,7 @@ export function OfficeExperience() {
 
   return (
     <div className="relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden bg-[#F3F6FA]">
-      {!entered && <KnockKnockIntro onEnter={() => setEntered(true)} />}
+      {!entered && <KnockKnockIntro onEnter={handleEnter} />}
 
       {entered && (
         <>

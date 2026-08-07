@@ -1,5 +1,5 @@
 import { AboutView } from "@/components/about/AboutView";
-import { trpcQuery } from "@/lib/serverTrpc";
+import { trpcQueryCached } from "@/lib/serverTrpc";
 import { ScrollProgress } from "@/components/magicui/scroll-progress";
 import type { AboutProfile } from "@knowpilot/shared";
 
@@ -7,8 +7,6 @@ export const metadata = {
   title: "关于应知序 | 见微 · OasisMind",
   description: "应知序 — 粗鄙、偏颇，但还有点梦想。见微知著，本地优先的数字主力。",
 };
-
-export const dynamic = "force-dynamic";
 
 const FALLBACK_PROFILE: AboutProfile = {
   name: "应知序",
@@ -35,7 +33,7 @@ const FALLBACK_PROFILE: AboutProfile = {
 export default async function AboutPage() {
   let profile = FALLBACK_PROFILE;
   try {
-    profile = await trpcQuery<AboutProfile>("about.getProfile");
+    profile = await trpcQueryCached<AboutProfile>("about.getProfile", undefined, 60);
   } catch {
     /* 构建或离线时降级 */
   }

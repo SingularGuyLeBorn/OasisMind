@@ -10,7 +10,7 @@ import {
   ScrollText,
   Waypoints,
 } from "lucide-react";
-import { CurlyMark, SquareMark } from "@/components/home/accentMark";
+import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/magicui/scroll-reveal";
 
 const hoverSpring = { type: "spring", stiffness: 260, damping: 26 } as const;
@@ -70,7 +70,6 @@ export function FeatureBento() {
           </div>
           <p className="max-w-md text-sm text-[var(--kp-text-2)]">
             把内容创作拆成可组合的模块，每个方块都是一种能力。
-            <SquareMark className="ml-1 text-xs font-semibold">可拼装</SquareMark>
           </p>
         </ScrollReveal>
 

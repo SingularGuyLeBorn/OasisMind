@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CurlyMark, SquareMark } from "@/components/home/accentMark";
+import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +144,6 @@ export function ThreeTheories() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--kp-text-2)]">
             见微不是堆功能，而是用三套透镜看 Agent：如何管得住、如何长成体、如何把噪声炼成知识。
-            <SquareMark className="ml-1 text-xs font-semibold">悬停展开</SquareMark>
           </p>
         </ScrollReveal>
 
@@ -224,22 +223,6 @@ export function ThreeTheories() {
                     {t.body}
                   </p>
                 </div>
-
-                <div className="relative mt-4 flex items-center gap-1.5">
-                  {THEORIES.map((dot) => (
-                    <span
-                      key={dot.id}
-                      className={cn(
-                        "h-1 rounded-full transition-all duration-300",
-                        active === dot.id
-                          ? isO
-                            ? "w-5 bg-[var(--kp-brand)]"
-                            : "w-5 bg-[var(--kp-accent)]"
-                          : "w-1.5 bg-[var(--kp-text-3)]/35",
-                      )}
-                    />
-                  ))}
-                </div>
               </motion.button>
             );
           })}
@@ -258,7 +241,7 @@ export function ThreeTheories() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="max-w-2xl">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-brand)]">
-                  {current.en} · 展开
+                  {current.en}
                 </p>
                 <p className="mt-1 text-base font-bold text-[var(--kp-text-1)] md:text-lg">
                   {current.thesis}

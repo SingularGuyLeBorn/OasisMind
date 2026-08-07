@@ -159,9 +159,9 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
             </ScrollReveal>
           )}
 
-          <div className="flex flex-col gap-3 lg:col-span-5">
+          <div className="flex min-w-0 flex-col gap-3 lg:col-span-5">
             {sidePosts.map((post, i) => (
-              <ScrollReveal key={post.id} delay={0.1}>
+              <ScrollReveal key={post.id} delay={0.1} className="min-w-0">
                 <SidePostRow post={post} variant={i % 3} />
               </ScrollReveal>
             ))}
@@ -194,25 +194,22 @@ function SidePostRow({ post, variant = 0 }: { post: Post; variant?: number }) {
       href={postHref(post)}
       whileHover={hoverMotion}
       transition={hoverSpring}
-      className={cn(glassCard, "kp-card-topline group flex items-start gap-3 p-3", hoverClass)}
+      className={cn(glassCard, "kp-card-topline group flex min-w-0 items-start gap-3 p-4", hoverClass)}
     >
       <HoverGlow />
-      <div className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--kp-brand-light)]/30 bg-[var(--kp-brand-soft)] text-[var(--kp-brand)] transition-all duration-300 group-hover:scale-110 group-hover:border-[var(--kp-brand-light)]/50 group-hover:bg-[var(--kp-brand)]/20 group-hover:shadow-[0_0_12px_rgba(0,135,235,0.18)]">
-        <FileText className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-      </div>
       <div className="relative min-w-0 flex-1">
-        <div className="mb-1 flex items-center gap-2 text-[10px] text-[var(--kp-text-3)]">
+        <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-[10px] text-[var(--kp-text-3)]">
           {post.category ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--kp-brand-soft)] px-1.5 py-0.5 font-semibold text-[var(--kp-brand-deep)] transition-colors group-hover:bg-[var(--kp-brand)]/20">
+            <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[var(--kp-brand-soft)] px-1.5 py-0.5 font-semibold text-[var(--kp-brand-deep)] transition-colors group-hover:bg-[var(--kp-brand)]/20">
               {post.category}
             </span>
           ) : null}
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex shrink-0 items-center gap-1">
             <Calendar className="h-2.5 w-2.5" /> {formatDate(post.createdAt)}
           </span>
         </div>
         <h3
-          className="mb-1 truncate text-sm font-bold leading-snug text-[var(--kp-text-1)] transition-colors group-hover:text-[var(--kp-brand)]"
+          className="mb-1.5 line-clamp-2 break-words text-sm font-bold leading-snug text-[var(--kp-text-1)] transition-colors group-hover:text-[var(--kp-brand)]"
           title={post.title}
         >
           {post.title}

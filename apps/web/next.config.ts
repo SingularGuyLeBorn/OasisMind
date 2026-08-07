@@ -23,6 +23,15 @@ const nextConfig: NextConfig = {
   // lucide / lodash 按符号拆包，减轻 webpack 开发态 on-demand 编译体积
   experimental: {
     optimizePackageImports: ["lucide-react", "lodash-es", "framer-motion"],
+    /**
+     * Next 15+ 默认 dynamic staleTimes=0 → 每次点导航都重拉 RSC，体感「切页等半天」。
+     * 本地单用户：短暂复用客户端路由缓存，秒切；数据仍靠 tRPC / 推拉更新。
+     */
+    staleTimes: {
+      // 长会话反复切页：3 分钟内复用客户端 RSC 缓存（打赢「每次重拉」baseline）
+      dynamic: 180,
+      static: 600,
+    },
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   webpack: (config, { isServer }) => {

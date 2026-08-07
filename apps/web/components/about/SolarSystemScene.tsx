@@ -4,6 +4,7 @@ import { useRef, useMemo, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { useInViewPause } from "@/lib/useInViewPause";
 
 interface MoonData {
   name: string;
@@ -288,12 +289,19 @@ function Controls() {
 }
 
 export function SolarSystemScene() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inView = useInViewPause(wrapRef);
+
   return (
-    <div className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]">
+    <div
+      ref={wrapRef}
+      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]"
+    >
       <Canvas
         camera={{ position: [0, 65, 95], fov: 45, near: 0.1, far: 1200 }}
-        gl={{ antialias: true, alpha: false }}
-        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: false, powerPreference: "low-power" }}
+        dpr={[1, 1.25]}
+        frameloop={inView ? "always" : "never"}
       >
         <color attach="background" args={["#05060a"]} />
         <ambientLight intensity={0.04} />

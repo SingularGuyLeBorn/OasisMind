@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
   ContactShadows,
+  Html,
   OrbitControls,
   RoundedBox,
   Text,
@@ -12,10 +13,15 @@ import * as THREE from "three";
 import {
   ARCHITECTURE_BOARD,
   BOOKSHELF_TITLES,
-  FORMULA_SHEETS,
+  DESK_STICKY_NOTES,
   KNOWLEDGE_BOARD,
+  MONITOR_FORMULA_CARDS,
+  type DeskStickyNote,
+  type OfficeFormulaCard,
   type OfficeHotspotId,
 } from "./officeContent";
+import { OfficeFormulaScreen } from "./OfficeFormulaScreen";
+import { OfficeRichMd } from "./OfficeRichMd";
 import { OFFICE_VIEWS, WALK_BOUNDS, type OfficeViewId } from "./officeNav";
 
 type OrbitLike = {
@@ -205,125 +211,121 @@ function RoomShell() {
   );
 }
 
-/** 显示器：浅色框 + 完整公式屏 */
+/**
+ * drei Html(transform) 的 CSS 像素→世界单位换算不是 1:1。
+ * 固定设计分辨率 + 按世界宽标定 scale，使屏内容铺满机壳可视区。
+ */
+const FORMULA_SCREEN_CSS_W = 420;
+
+/** 显示器：浅色框 + Html/Markdown 内容屏 */
 function FormulaMonitor({
   w,
   h,
-  title,
-  lines,
-  tint = "#0284C7",
+  card,
+  cssW = FORMULA_SCREEN_CSS_W,
 }: {
   w: number;
   h: number;
-  title: string;
-  lines: string[];
-  tint?: string;
+  card: OfficeFormulaCard;
+  cssW?: number;
 }) {
+  const cssH = Math.max(220, Math.round(cssW * (h / w)));
+  const htmlScale = w / 12;
   return (
     <group>
       <RoundedBox args={[w, h, 0.05]} radius={0.025} castShadow>
         <meshStandardMaterial color="#F1F5F9" roughness={0.4} metalness={0.12} />
       </RoundedBox>
       <mesh position={[0, 0, 0.028]}>
-        <planeGeometry args={[w * 0.9, h * 0.86]} />
-        <meshStandardMaterial color="#F8FAFC" emissive="#E0F2FE" emissiveIntensity={0.25} roughness={0.35} />
+        <planeGeometry args={[w * 0.94, h * 0.9]} />
+        <meshStandardMaterial color="#F8FAFC" emissive="#E0F2FE" emissiveIntensity={0.22} roughness={0.35} />
       </mesh>
-      <mesh position={[0, h * 0.36, 0.032]}>
-        <planeGeometry args={[w * 0.82, 0.045]} />
-        <meshBasicMaterial color={tint} transparent opacity={0.2} />
-      </mesh>
-      <Text position={[0, h * 0.36, 0.035]} fontSize={0.038} color={INK} anchorX="center" maxWidth={w * 0.8}>
-        {title}
-      </Text>
-      {lines.slice(0, 5).map((line, i) => (
-        <Text
-          key={i}
-          position={[0, h * 0.18 - i * 0.075, 0.035]}
-          fontSize={0.028}
-          color="#334155"
-          anchorX="center"
-          maxWidth={w * 0.82}
-          lineHeight={1.15}
-        >
-          {line}
-        </Text>
-      ))}
+      <Html
+        transform
+        position={[0, 0, 0.036]}
+        scale={htmlScale}
+        style={{ pointerEvents: "none" }}
+        zIndexRange={[40, 0]}
+      >
+        <div style={{ width: cssW, height: cssH, transform: "scale(1)", transformOrigin: "center center" }}>
+          <OfficeFormulaScreen card={card} widthPx={cssW} heightPx={cssH} compact />
+        </div>
+      </Html>
     </group>
   );
 }
 
-const MONITOR_FORMULAS = [
-  {
-    title: "Scaled Dot-Product Attention",
-    tint: "#0284C7",
-    lines: [
-      "Attn(Q,K,V)=softmax(QKᵀ/√d_k)V",
-      "Q=XW_Q  K=XW_K  V=XW_V",
-      "d_k = d_model / h",
-      "score_ij = q_i·k_j / √d_k",
-    ],
-  },
-  {
-    title: "Multi-Head + Output",
-    tint: "#059669",
-    lines: [
-      "head_i=Attn(QW_i^Q, KW_i^K, VW_i^V)",
-      "MultiHead=Concat(head_1..h)W_O",
-      "W_i^Q∈R^{d×d_k}, W_O∈R^{hd_v×d}",
-      "并行子空间捕捉不同依赖",
-    ],
-  },
-  {
-    title: "Transformer Block",
-    tint: "#D97706",
-    lines: [
-      "x̃ = x + MHA(LN(x))",
-      "y = x̃ + FFN(LN(x̃))",
-      "FFN(z)=GELU(zW_1+b_1)W_2+b_2",
-      "Pre-Norm 稳定深层训练",
-    ],
-  },
-  {
-    title: "Causal LM Loss",
-    tint: "#7C3AED",
-    lines: [
-      "p_θ(y_t|y_<t,x)=softmax(h_t W_out)",
-      "L=-Σ_t log p_θ(y_t|y_<t,x)",
-      "Teacher forcing 训练",
-      "decode 时用 KV Cache",
-    ],
-  },
-  {
-    title: "RoPE Position",
-    tint: "#DB2777",
-    lines: [
-      "f(q,m)=R_Θ,m q",
-      "R 为分块旋转矩阵",
-      "⟨f(q,m),f(k,n)⟩ 依赖 m-n",
-      "外推优于绝对位置编码",
-    ],
-  },
-  {
-    title: "GQA / MoE",
-    tint: "#0EA5E9",
-    lines: [
-      "n_kv ≪ n_q  (GQA)",
-      "y=Σ_i g_i(x)·E_i(x)",
-      "g=softmax(x W_g) Top-k",
-      "稀疏激活降推理成本",
-    ],
-  },
-  {
-    title: "RLHF Objective",
-    tint: "#65A30D",
-    lines: [
-      "max_π E[r_φ(x,y)]",
-      "  - β KL(π(·|x)||π_ref)",
-      "r_φ 为奖励模型",
-      "PPO / DPO 对齐人类偏好",
-    ],
-  },
-] as const;
+/** 带鱼屏：深色超宽机壳 + 单层内容（不嵌套第二道边框） */
+function UltrawideMonitor({ w, h, card }: { w: number; h: number; card: OfficeFormulaCard }) {
+  const cssW = Math.min(720, Math.round(520 * (w / 1.55)));
+  const cssH = Math.max(200, Math.round(cssW * (h / w)));
+  const htmlScale = (w * 0.94) / 12;
+  return (
+    <group>
+      <RoundedBox args={[w, h, 0.055]} radius={0.03} castShadow>
+        <meshStandardMaterial color="#0F172A" roughness={0.35} metalness={0.35} />
+      </RoundedBox>
+      <mesh position={[0, 0, 0.03]}>
+        <planeGeometry args={[w * 0.94, h * 0.88]} />
+        <meshStandardMaterial color="#F8FAFC" emissive="#E0F2FE" emissiveIntensity={0.2} roughness={0.35} />
+      </mesh>
+      <Html
+        transform
+        position={[0, 0, 0.038]}
+        scale={htmlScale}
+        style={{ pointerEvents: "none" }}
+        zIndexRange={[40, 0]}
+      >
+        <div style={{ width: cssW, height: cssH }}>
+          <OfficeFormulaScreen card={card} widthPx={cssW} heightPx={cssH} compact />
+        </div>
+      </Html>
+      <RoundedBox args={[w * 0.2, 0.035, 0.11]} radius={0.012} position={[0, -h / 2 - 0.055, 0.02]} castShadow>
+        <meshStandardMaterial color={METAL} roughness={0.4} metalness={0.3} />
+      </RoundedBox>
+      <mesh position={[0, -h / 2 - 0.02, 0.02]}>
+        <cylinderGeometry args={[0.022, 0.03, 0.07, 12]} />
+        <meshStandardMaterial color={METAL} metalness={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
+function StickyNoteMesh({ note }: { note: DeskStickyNote }) {
+  const w = 0.28;
+  const h = 0.28;
+  return (
+    <group rotation={[-Math.PI / 2 + 0.02, 0, note.rotate]}>
+      <RoundedBox args={[w, h, 0.008]} radius={0.01} castShadow>
+        <meshStandardMaterial color={note.color} roughness={0.9} />
+      </RoundedBox>
+      <Html
+        transform
+        position={[0, 0, 0.008]}
+        scale={w / 10}
+        style={{ pointerEvents: "none" }}
+        zIndexRange={[28, 0]}
+      >
+        <div
+          style={{
+            width: 160,
+            height: 160,
+            padding: "10px 12px",
+            boxSizing: "border-box",
+            fontFamily: "ui-rounded, \"Segoe UI\", system-ui, sans-serif",
+            color: note.ink,
+            background: "transparent",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>{note.title}</div>
+          <div style={{ fontSize: 11, lineHeight: 1.45, whiteSpace: "pre-line", fontWeight: 600 }}>
+            {note.body}
+          </div>
+        </div>
+      </Html>
+    </group>
+  );
+}
 
 function GamingDeskSet({
   onSelect,
@@ -361,8 +363,9 @@ function GamingDeskSet({
         </RoundedBox>
       ))}
 
+      {/* 带鱼屏墙：三块超宽屏 + 一块竖屏副屏，内容各不同 */}
       <group
-        position={[-0.1, deskY + 0.02, -0.4]}
+        position={[-0.05, deskY + 0.02, -0.42]}
         onClick={(e) => {
           e.stopPropagation();
           onSelect("monitor");
@@ -370,28 +373,27 @@ function GamingDeskSet({
         {...hover}
       >
         <HotspotGlow active={activeId === "monitor"} />
-        <group position={[-1.05, 0.48, 0]} rotation={[0, 0.16, 0]}>
-          <FormulaMonitor w={0.98} h={0.6} {...MONITOR_FORMULAS[0]} />
+        {/* 中央主带鱼屏 ~32:9 */}
+        <group position={[0, 0.58, -0.04]}>
+          <UltrawideMonitor w={2.65} h={0.78} card={MONITOR_FORMULA_CARDS[0]} />
         </group>
-        <group position={[0, 0.52, -0.02]}>
-          <FormulaMonitor w={1.12} h={0.68} {...MONITOR_FORMULAS[1]} />
+        {/* 左带鱼屏 */}
+        <group position={[-1.55, 0.5, 0.06]} rotation={[0, 0.28, 0]}>
+          <UltrawideMonitor w={1.55} h={0.58} card={MONITOR_FORMULA_CARDS[1]} />
         </group>
-        <group position={[1.1, 0.48, 0]} rotation={[0, -0.16, 0]}>
-          <FormulaMonitor w={0.98} h={0.6} {...MONITOR_FORMULAS[2]} />
+        {/* 右带鱼屏 */}
+        <group position={[1.55, 0.5, 0.06]} rotation={[0, -0.28, 0]}>
+          <UltrawideMonitor w={1.55} h={0.58} card={MONITOR_FORMULA_CARDS[2]} />
         </group>
-        <group position={[-0.55, 1.08, -0.04]} rotation={[0.04, 0.08, 0]}>
-          <FormulaMonitor w={0.74} h={0.44} {...MONITOR_FORMULAS[3]} />
+        {/* 右侧竖副屏：Swarm */}
+        <group position={[2.35, 0.62, -0.95]} rotation={[0, -0.95, 0]}>
+          <FormulaMonitor w={0.62} h={0.95} card={MONITOR_FORMULA_CARDS[3]} />
         </group>
-        <group position={[0.55, 1.08, -0.04]} rotation={[0.04, -0.08, 0]}>
-          <FormulaMonitor w={0.74} h={0.44} {...MONITOR_FORMULAS[4]} />
+        {/* 左上小副屏：HITL */}
+        <group position={[-1.85, 1.05, -0.15]} rotation={[0.05, 0.35, 0]}>
+          <FormulaMonitor w={0.72} h={0.42} card={MONITOR_FORMULA_CARDS[4]} />
         </group>
-        <group position={[1.95, 0.55, -0.85]} rotation={[0, -0.85, 0]}>
-          <FormulaMonitor w={0.56} h={0.88} {...MONITOR_FORMULAS[5]} />
-        </group>
-        <group position={[2.15, 0.55, -1.45]} rotation={[0, -1.05, 0]}>
-          <FormulaMonitor w={0.52} h={0.74} {...MONITOR_FORMULAS[6]} />
-        </group>
-        <RoundedBox args={[3.1, 0.05, 0.08]} radius={0.02} position={[0, 0.1, -0.06]} castShadow>
+        <RoundedBox args={[3.4, 0.05, 0.1]} radius={0.02} position={[0, 0.08, -0.02]} castShadow>
           <meshStandardMaterial color={METAL} roughness={0.4} metalness={0.25} />
         </RoundedBox>
       </group>
@@ -477,50 +479,143 @@ function GamingDeskSet({
         ))}
       </group>
 
-      {/* A4 完整推导 */}
+      {/* 桌面便签：彩色手写备忘，与屏幕内容不同源 */}
       <group
-        position={[0.55, deskY + 0.025, 0.02]}
+        position={[0.35, deskY + 0.03, 0.08]}
         onClick={(e) => {
           e.stopPropagation();
           onSelect("papers");
         }}
         {...hover}
       >
-        {FORMULA_SHEETS.map((sheet, i) => {
+        {DESK_STICKY_NOTES.map((note, i) => {
           const col = i % 3;
           const row = Math.floor(i / 3);
           return (
             <group
-              key={sheet.title}
-              position={[col * 0.38 - 0.2, 0.008 * i, row * 0.42 - 0.12]}
-              rotation={[-Math.PI / 2 + 0.015, 0, (i % 3) * 0.03 - 0.03]}
+              key={note.id}
+              position={[col * 0.32 - 0.15, 0.006 * i, row * 0.32 - 0.05]}
             >
-              <RoundedBox args={[0.34, 0.48, 0.006]} radius={0.008} castShadow>
-                <meshStandardMaterial color={PAPER} roughness={0.85} />
-              </RoundedBox>
-              <Text position={[0, 0.17, 0.006]} fontSize={0.026} color={INK} anchorX="center" maxWidth={0.3}>
-                {sheet.title}
-              </Text>
-              {sheet.lines.map((line, li) => (
-                <Text
-                  key={li}
-                  position={[0, 0.08 - li * 0.065, 0.006]}
-                  fontSize={0.02}
-                  color="#475569"
-                  anchorX="center"
-                  maxWidth={0.3}
-                >
-                  {line}
-                </Text>
-              ))}
+              <StickyNoteMesh note={note} />
             </group>
           );
         })}
         {activeId === "papers" && <HotspotGlow active />}
       </group>
 
+      {/* 咖啡杯 */}
+      <group position={[-0.95, deskY + 0.02, 0.48]}>
+        <mesh castShadow position={[0, 0.06, 0]}>
+          <cylinderGeometry args={[0.055, 0.048, 0.11, 20]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={0.35} />
+        </mesh>
+        <mesh position={[0, 0.105, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.02, 20]} />
+          <meshStandardMaterial color="#FEF3C7" roughness={0.6} />
+        </mesh>
+        <mesh position={[0.07, 0.06, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <torusGeometry args={[0.035, 0.008, 8, 16, Math.PI]} />
+          <meshStandardMaterial color="#F1F5F9" />
+        </mesh>
+        <mesh position={[0, 0.01, 0]} receiveShadow>
+          <cylinderGeometry args={[0.07, 0.07, 0.012, 20]} />
+          <meshStandardMaterial color="#E2E8F0" roughness={0.7} />
+        </mesh>
+      </group>
+
+      {/* 耳机架 */}
+      <group position={[1.05, deskY + 0.02, 0.42]} rotation={[0, -0.4, 0]}>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.05, 0.06, 0.03, 16]} />
+          <meshStandardMaterial color="#CBD5E1" metalness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.14, 0]} castShadow>
+          <cylinderGeometry args={[0.012, 0.012, 0.22, 8]} />
+          <meshStandardMaterial color="#94A3B8" metalness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.26, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <torusGeometry args={[0.09, 0.018, 10, 24]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.45} />
+        </mesh>
+        <mesh position={[-0.09, 0.22, 0]} castShadow>
+          <capsuleGeometry args={[0.035, 0.04, 6, 10]} />
+          <meshStandardMaterial color="#1E293B" />
+        </mesh>
+        <mesh position={[0.09, 0.22, 0]} castShadow>
+          <capsuleGeometry args={[0.035, 0.04, 6, 10]} />
+          <meshStandardMaterial color="#1E293B" />
+        </mesh>
+      </group>
+
+      {/* 桌面小多肉 */}
+      <group position={[-1.45, deskY + 0.02, 0.35]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.06, 0.05, 0.07, 12]} />
+          <meshStandardMaterial color="#F97316" roughness={0.65} />
+        </mesh>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh
+            key={i}
+            position={[Math.cos(i) * 0.025, 0.08 + (i % 2) * 0.02, Math.sin(i) * 0.025]}
+            castShadow
+          >
+            <sphereGeometry args={[0.028, 10, 10]} />
+            <meshStandardMaterial color="#4ADE80" roughness={0.55} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* 橡皮鸭 */}
+      <group position={[0.72, deskY + 0.02, 0.48]}>
+        <mesh position={[0, 0.04, 0]} castShadow>
+          <sphereGeometry args={[0.045, 12, 12]} />
+          <meshStandardMaterial color="#FACC15" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.03, 0.07, 0.02]} castShadow>
+          <sphereGeometry args={[0.028, 10, 10]} />
+          <meshStandardMaterial color="#FACC15" />
+        </mesh>
+        <mesh position={[0.055, 0.07, 0.03]}>
+          <coneGeometry args={[0.012, 0.025, 8]} />
+          <meshStandardMaterial color="#FB923C" />
+        </mesh>
+      </group>
+
+      {/* 笔筒 + 笔 */}
+      <group position={[1.35, deskY + 0.02, 0.18]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.05, 0.045, 0.12, 14]} />
+          <meshStandardMaterial color="#334155" roughness={0.5} />
+        </mesh>
+        {[
+          [0.015, "#7DD3FC"],
+          [-0.01, "#F472B6"],
+          [0.0, "#A78BFA"],
+        ].map(([x, c], i) => (
+          <mesh key={i} position={[x as number, 0.14, (i - 1) * 0.012]} rotation={[0.15, 0, 0.08 * i]} castShadow>
+            <cylinderGeometry args={[0.006, 0.006, 0.18, 6]} />
+            <meshStandardMaterial color={c as string} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* 相机 / 镜头小物 */}
+      <group position={[-0.55, deskY + 0.02, 0.42]} rotation={[0, 0.5, 0]}>
+        <RoundedBox args={[0.14, 0.09, 0.1]} radius={0.015} castShadow>
+          <meshStandardMaterial color="#1E293B" roughness={0.4} metalness={0.2} />
+        </RoundedBox>
+        <mesh position={[0.02, 0.01, 0.06]} castShadow>
+          <cylinderGeometry args={[0.035, 0.04, 0.05, 16]} />
+          <meshStandardMaterial color="#0F172A" metalness={0.4} />
+        </mesh>
+        <mesh position={[0.02, 0.01, 0.085]}>
+          <circleGeometry args={[0.022, 16]} />
+          <meshStandardMaterial color="#38BDF8" emissive="#0284C7" emissiveIntensity={0.35} />
+        </mesh>
+      </group>
+
       <group
-        position={[1.55, deskY + 0.02, 0.35]}
+        position={[1.7, deskY + 0.02, 0.32]}
         rotation={[0, -0.35, 0]}
         onClick={(e) => {
           e.stopPropagation();
@@ -538,7 +633,7 @@ function GamingDeskSet({
       </group>
 
       <group
-        position={[1.2, deskY + 0.02, 0.45]}
+        position={[1.55, deskY + 0.02, 0.5]}
         onClick={(e) => {
           e.stopPropagation();
           onSelect("phone");
@@ -554,7 +649,7 @@ function GamingDeskSet({
       </group>
 
       <group
-        position={[1.55, deskY + 0.02, 0.05]}
+        position={[1.75, deskY + 0.02, 0.05]}
         onClick={(e) => {
           e.stopPropagation();
           onSelect("calendar");
@@ -564,15 +659,19 @@ function GamingDeskSet({
         <RoundedBox args={[0.24, 0.18, 0.04]} radius={0.015} castShadow>
           <meshStandardMaterial color="#FFFFFF" roughness={0.7} />
         </RoundedBox>
-        <Text position={[0, 0.03, 0.025]} fontSize={0.032} color={INK} anchorX="center">
-          2026
+        <mesh position={[0, 0.06, 0.022]}>
+          <planeGeometry args={[0.2, 0.05]} />
+          <meshBasicMaterial color="#EF4444" />
+        </mesh>
+        <Text position={[0, -0.01, 0.025]} fontSize={0.04} color={INK} anchorX="center">
+          8
         </Text>
       </group>
 
-      <mesh position={[-1.0, deskY + 0.07, 0.45]} castShadow>
-        <cylinderGeometry args={[0.048, 0.042, 0.1, 16]} />
-        <meshStandardMaterial color="#E0F2FE" roughness={0.5} />
-      </mesh>
+      {/* 腕托 */}
+      <RoundedBox args={[0.85, 0.03, 0.1]} radius={0.02} position={[-0.1, deskY + 0.02, 0.52]} castShadow>
+        <meshStandardMaterial color="#E2E8F0" roughness={0.75} />
+      </RoundedBox>
     </group>
   );
 }
@@ -703,7 +802,7 @@ function KnowledgeBoard({
   );
 }
 
-/** 完整 Transformer 推导黑板（浅绿板 + 白字推导） */
+/** 完整 Transformer 推导黑板：Markdown + KaTeX + 架构图 */
 function ArchitectureChalkboard({
   onSelect,
   activeId,
@@ -712,13 +811,11 @@ function ArchitectureChalkboard({
   activeId: OfficeHotspotId | null;
 }) {
   const hover = useHoverCursor();
-  const derivation = [
-    "1) Embed:  x_0 = E[token] + P_pos",
-    "2) Attn:   A = softmax(QKᵀ/√d_k),  H = A V",
-    "3) Resid:  x' = x + MultiHead(LN(x))",
-    "4) FFN:    z = GELU(x'W₁)W₂ ,  y = x' + z",
-    "5) Head:   p = softmax(y_L W_out) ,  L = -Σ log p_t",
-  ];
+  /** 与机壳可视区同宽高比，scale 与 FormulaMonitor 同一标定（世界宽 / 12） */
+  const boardW = 2.9;
+  const boardH = 1.52;
+  const cssW = 720;
+  const cssH = Math.round(cssW * (boardH / boardW));
   return (
     <group
       position={[0.2, 2.55, -4.65]}
@@ -734,42 +831,34 @@ function ArchitectureChalkboard({
       <RoundedBox args={[3.25, 1.85, 0.05]} radius={0.03} position={[0, 0, -0.03]}>
         <meshStandardMaterial color="#D6D3D1" roughness={0.65} />
       </RoundedBox>
-      <Text position={[0, 0.68, 0.05]} fontSize={0.065} color="#14532D" anchorX="center" maxWidth={2.9}>
-        {ARCHITECTURE_BOARD.title}
-      </Text>
-      <Text position={[0, 0.52, 0.05]} fontSize={0.032} color="#059669" anchorX="center" maxWidth={2.9}>
-        End-to-end derivation · Decoder-only LLM
-      </Text>
-
-      {ARCHITECTURE_BOARD.blocks.map((b, i) => {
-        const x = -1.2 + i * 0.6;
-        return (
-          <group key={b.label} position={[x, 0.18, 0.05]}>
-            <RoundedBox args={[0.52, 0.42, 0.02]} radius={0.02}>
-              <meshStandardMaterial color="#D1FAE5" />
-            </RoundedBox>
-            <Text position={[0, 0.1, 0.02]} fontSize={0.03} color="#14532D" anchorX="center" maxWidth={0.48}>
-              {b.label}
-            </Text>
-            <Text position={[0, -0.08, 0.02]} fontSize={0.022} color="#047857" anchorX="center" maxWidth={0.48}>
-              {b.detail}
-            </Text>
-          </group>
-        );
-      })}
-
-      {derivation.map((line, i) => (
-        <Text
-          key={line}
-          position={[-1.35, -0.2 - i * 0.1, 0.05]}
-          fontSize={0.032}
-          color="#166534"
-          anchorX="left"
-          maxWidth={2.9}
+      <Html
+        transform
+        position={[0, 0, 0.048]}
+        scale={boardW / 12}
+        style={{ pointerEvents: "none" }}
+        zIndexRange={[35, 0]}
+      >
+        <div
+          className="box-border overflow-hidden rounded-xl border border-[#A7F3D0] bg-[#F0FDF4] px-3 py-2.5 text-left shadow-sm"
+          style={{ width: cssW, height: cssH }}
         >
-          {line}
-        </Text>
-      ))}
+          <p className="text-base font-bold text-[#14532D]">{ARCHITECTURE_BOARD.title}</p>
+          <p className="mb-1.5 text-xs font-medium text-[#059669]">{ARCHITECTURE_BOARD.subtitle}</p>
+          <div className="grid h-[calc(100%-2.25rem)] grid-cols-[1.05fr_1fr] gap-2.5">
+            <div className="overflow-hidden rounded-lg border border-[#BBF7D0] bg-white/80 p-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={ARCHITECTURE_BOARD.image}
+                alt={ARCHITECTURE_BOARD.imageAlt}
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <div className="kp-scroll-hidden min-h-0 overflow-y-auto">
+              <OfficeRichMd content={ARCHITECTURE_BOARD.markdown} compact />
+            </div>
+          </div>
+        </div>
+      </Html>
       {activeId === "chalkboard" && (
         <mesh position={[0, 0, 0.06]}>
           <planeGeometry args={[3.0, 1.6]} />
@@ -1119,11 +1208,21 @@ function SceneContent({ onSelect, activeId, viewId }: OfficeSceneProps) {
 
 export function OfficeScene({ onSelect, activeId, viewId }: OfficeSceneProps) {
   const initial = useMemo(() => OFFICE_VIEWS.overview, []);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
+  useEffect(() => {
+    const onVis = () => setPageVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   return (
     <Canvas
       className="h-full w-full touch-none"
       shadows
       dpr={[1, 1.5]}
+      frameloop={pageVisible ? "always" : "never"}
       camera={{ position: initial.position, fov: 42, near: 0.1, far: 45 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
     >

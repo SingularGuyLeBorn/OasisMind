@@ -3,6 +3,7 @@
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useInViewPause } from "@/lib/useInViewPause";
 
 const BLACK_HOLE_SHADER = {
   uniforms: {
@@ -31,7 +32,7 @@ const BLACK_HOLE_SHADER = {
     varying vec2 vUv;
 
     #define PI 3.14159265359
-    #define STEPS 120
+    #define STEPS 64
     #define MAX_DIST 90.0
     #define BH_RADIUS 0.85
     #define DISK_INNER 2.0
@@ -214,11 +215,18 @@ function BlackHoleQuad() {
 }
 
 export function BlackHoleScene() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inView = useInViewPause(wrapRef);
+
   return (
-    <div className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]">
+    <div
+      ref={wrapRef}
+      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]"
+    >
       <Canvas
-        gl={{ antialias: false, alpha: false }}
-        dpr={[1, 1.5]}
+        gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}
+        dpr={[1, 1.25]}
+        frameloop={inView ? "always" : "never"}
         camera={{ position: [0, 0, 1], fov: 75, near: 0.1, far: 10 }}
       >
         <BlackHoleQuad />

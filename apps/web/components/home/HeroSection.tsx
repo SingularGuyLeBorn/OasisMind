@@ -63,45 +63,45 @@ const BRAND_ANCHORS = [
 const CODE_MAIN = [
   { c: "kw", t: "const" },
   { c: "plain", t: " " },
-  { c: "var", t: "garden" },
+  { c: "var", t: "job" },
   { c: "plain", t: " = " },
   { c: "fn", t: "await" },
   { c: "plain", t: " " },
-  { c: "fn", t: "openOasis" },
+  { c: "fn", t: "spawnSubagent" },
   { c: "plain", t: "({" },
   { c: "nl", t: "\n" },
-  { c: "plain", t: "  source: " },
-  { c: "str", t: '"content/*.md"' },
+  { c: "plain", t: "  tier: " },
+  { c: "str", t: '"sub"' },
   { c: "plain", t: "," },
   { c: "nl", t: "\n" },
-  { c: "plain", t: "  engine: " },
-  { c: "str", t: '"local-first"' },
+  { c: "plain", t: "  task: " },
+  { c: "str", t: '"distill notes"' },
   { c: "plain", t: "," },
   { c: "nl", t: "\n" },
-  { c: "plain", t: "  agents: " },
-  { c: "str", t: '"always-on"' },
+  { c: "plain", t: "  waitForResult: " },
+  { c: "kw", t: "false" },
   { c: "plain", t: "," },
   { c: "nl", t: "\n" },
   { c: "plain", t: "});" },
 ];
 
 const CODE_SNIPPET = [
-  { c: "cmt", t: "/* glass surface */" },
+  { c: "cmt", t: "// report back only" },
   { c: "nl", t: "\n" },
-  { c: "sel", t: ".kp-glass" },
-  { c: "plain", t: " {" },
+  { c: "fn", t: "await" },
+  { c: "plain", t: " " },
+  { c: "fn", t: "reportBack" },
+  { c: "plain", t: "({" },
   { c: "nl", t: "\n" },
-  { c: "prop", t: "  backdrop-filter" },
-  { c: "plain", t: ": " },
-  { c: "str", t: "blur(16px)" },
-  { c: "plain", t: ";" },
+  { c: "plain", t: "  summary: " },
+  { c: "str", t: '"done"' },
+  { c: "plain", t: "," },
   { c: "nl", t: "\n" },
-  { c: "prop", t: "  background" },
-  { c: "plain", t: ": " },
-  { c: "str", t: "rgba(255,255,255,.58)" },
-  { c: "plain", t: ";" },
+  { c: "plain", t: "  jobId: " },
+  { c: "var", t: "job" },
+  { c: "plain", t: ".id," },
   { c: "nl", t: "\n" },
-  { c: "plain", t: "}" },
+  { c: "plain", t: "});" },
 ];
 
 /** 浮动气泡：icon / 文案都不与支柱、能力区撞车 */
@@ -109,7 +109,7 @@ const FLOAT_BADGES = [
   { icon: KeyRound, label: "文件即真相源", className: "bottom-0 left-2", duration: 5.5, delay: 0.3 },
   { icon: Leaf, label: "种子会发芽", className: "right-0 top-16", duration: 6.2, delay: 0.8 },
   { icon: Activity, label: "推拉实时", className: "bottom-16 left-[-0.5rem]", duration: 5.8, delay: 1.2 },
-  { icon: Orbit, label: "常驻提醒", className: "right-10 bottom-28", duration: 6.5, delay: 0.5 },
+  { icon: Orbit, label: "数字主力", className: "right-10 bottom-28", duration: 6.5, delay: 0.5 },
 ] as const;
 
 function CodeToken({ c, t }: { c: string; t: string }) {
@@ -309,7 +309,6 @@ export function HeroSection() {
 
             <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[var(--kp-text-2)] md:text-base">
               写作、收集、蒸馏品味——把碎片养成文章。数据落在你这边，真相留在文件里。
-              <SquareMark className="ml-1 text-sm font-semibold normal-case">常驻提醒</SquareMark>
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -352,7 +351,7 @@ export function HeroSection() {
             >
               <div className="flex items-center gap-3 border-b border-white/40 px-4 py-3">
                 <MacDots />
-                <span className="font-mono text-[11px] text-[var(--kp-text-3)]">oasis.open.ts</span>
+                <span className="font-mono text-[11px] text-[var(--kp-text-3)]">spawn.agent.ts</span>
               </div>
               <pre className="overflow-x-auto px-5 py-4 font-mono text-[12.5px] leading-6">
                 <code>
@@ -371,7 +370,7 @@ export function HeroSection() {
             >
               <div className="flex items-center gap-2 border-b border-white/40 px-3 py-2.5">
                 <MacDots />
-                <span className="font-mono text-[10px] text-[var(--kp-text-3)]">glass.css</span>
+                <span className="font-mono text-[10px] text-[var(--kp-text-3)]">report.back.ts</span>
               </div>
               <pre className="px-3.5 py-3 font-mono text-[11px] leading-5">
                 <code>
@@ -424,9 +423,9 @@ export function HeroSection() {
           className="kp-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5"
         >
           <p className="mb-4 w-full text-sm leading-relaxed text-[var(--kp-text-2)] lg:text-[15px]">
-            从细微之处照见全局——每一粒种子都被看见、被关联、被养成。O × M 合起来，就是
-            <SquareMark className="mx-1 font-semibold">全模态多智能体</SquareMark>
-            ：AGI 的另一种表述。
+            从细微之处照见全局——每一粒种子都被看见、被关联、被养成。名字拆开是
+            <SquareMark className="mx-1 font-semibold">Oasis × Mind</SquareMark>
+            ：一边吃进世界，一边把协作跑起来。
           </p>
 
           <div className="grid items-center gap-3 rounded-2xl border border-white/50 bg-white/35 p-3.5 backdrop-blur-md lg:grid-cols-[1fr_auto_1fr_auto_auto] lg:gap-4 lg:p-4">

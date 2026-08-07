@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { CurlyMark, SquareMark } from "@/components/home/accentMark";
+import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
 import { useMainScrollRoot } from "@/components/layout/MainScrollContext";
 import { cn } from "@/lib/utils";
@@ -492,10 +492,9 @@ function ToolCard({
   status: ToolStatus;
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (defaultOpen && status === "done") setOpen(true);
-  }, [defaultOpen, status]);
+  const autoOpen = Boolean(defaultOpen && status === "done");
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const open = userOpen ?? autoOpen;
 
   const canExpand = status === "done" || status === "running";
 
@@ -511,7 +510,7 @@ function ToolCard({
       <button
         type="button"
         disabled={!canExpand}
-        onClick={() => canExpand && setOpen((v) => !v)}
+        onClick={() => canExpand && setUserOpen((v) => !(v ?? open))}
         className={cn(
           "flex w-full items-start gap-2 px-2.5 py-2 text-left",
           canExpand && "cursor-pointer hover:bg-white/40",
@@ -552,7 +551,7 @@ function ToolCard({
                 <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-brand)]">
                   Args
                 </p>
-                <pre className="max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+                <pre className="kp-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
                   {JSON.stringify(tool.args, null, 2)}
                 </pre>
               </div>
@@ -560,7 +559,7 @@ function ToolCard({
                 <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-accent-deep)]">
                   Result
                 </p>
-                <pre className="max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+                <pre className="kp-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
                   {status === "running" ? "…" : JSON.stringify(tool.result, null, 2)}
                 </pre>
               </div>
@@ -573,21 +572,21 @@ function ToolCard({
 }
 
 function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
 }
 
 export function AgentConversationDemo() {
   const scrollRoot = useMainScrollRoot();
   const sectionRef = useRef<HTMLElement>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const inView = useInView(sectionRef, {
     root: scrollRoot ?? undefined,
     once: true,
@@ -600,6 +599,13 @@ export function AgentConversationDemo() {
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
   const turns = scenario.turns;
+
+  /** 内容增高时滚到底，卡片高度本身固定不变 */
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [phase, scenarioId]);
 
   useEffect(() => {
     if (!inView && runId === 0) return;
@@ -654,12 +660,6 @@ export function AgentConversationDemo() {
     };
   }, [inView, runId, reduced, scenarioId]);
 
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: reduced ? "auto" : "smooth" });
-  }, [phase, reduced]);
-
   const switchScenario = (id: string) => {
     if (id === scenarioId) return;
     setScenarioId(id);
@@ -687,8 +687,7 @@ export function AgentConversationDemo() {
             </h2>
           </div>
           <p className="max-w-md text-sm text-[var(--kp-text-2)]">
-            蒸馏落盘（5）/ 多智能体（6）/ 提醒审批（4）。工具卡可展开 Args / Result。
-            <SquareMark className="ml-1 text-xs font-semibold">可展开</SquareMark>
+            蒸馏落盘（5）/ 多智能体（6）/ 提醒审批（4）。
           </p>
         </ScrollReveal>
 
@@ -724,9 +723,9 @@ export function AgentConversationDemo() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -4 }}
             transition={{ type: "spring", stiffness: 260, damping: 26 }}
-            className="group/chat kp-card-topline kp-card-sheen overflow-hidden rounded-[1.5rem] border border-white/55 bg-white/55 shadow-[0_20px_56px_-22px_rgba(0,80,160,0.28)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/30 hover:shadow-[0_28px_64px_-22px_rgba(0,135,235,0.34)]"
+            className="group/chat kp-card-topline kp-card-sheen flex flex-col overflow-hidden rounded-[1.5rem] border border-white/55 bg-white/55 shadow-[0_20px_56px_-22px_rgba(0,80,160,0.28)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/30 hover:shadow-[0_28px_64px_-22px_rgba(0,135,235,0.34)]"
           >
-            <div className="flex items-center justify-between border-b border-white/50 px-4 py-3">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/50 px-4 py-3">
               <div className="flex items-center gap-3">
                 <MacDots />
                 <div className="flex items-center gap-2">
@@ -759,17 +758,11 @@ export function AgentConversationDemo() {
             </div>
 
             <div
-              ref={scrollerRef}
-              className={cn(
-                "flex max-h-[460px] min-h-[380px] flex-col gap-4 overflow-y-auto px-4 py-4 md:max-h-[480px] md:px-5",
-                /* 默认隐藏滚动条，仅鼠标在整张对话卡片内时显示 */
-                "[scrollbar-width:none] [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0",
-                "group-hover/chat:[scrollbar-width:thin] group-hover/chat:[&::-webkit-scrollbar]:w-2 group-hover/chat:[&::-webkit-scrollbar]:h-2",
-                "group-focus-within/chat:[scrollbar-width:thin] group-focus-within/chat:[&::-webkit-scrollbar]:w-2 group-focus-within/chat:[&::-webkit-scrollbar]:h-2",
-              )}
+              ref={chatScrollRef}
+              className="kp-scroll-hidden flex h-[min(52vh,420px)] flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 md:h-[460px] md:px-5"
             >
               {phase.kind === "idle" && (
-                <div className="flex flex-1 items-center justify-center text-xs text-[var(--kp-text-3)]">
+                <div className="flex min-h-full flex-1 items-center justify-center text-xs text-[var(--kp-text-3)]">
                   滚动到此处开始回放…
                 </div>
               )}
@@ -901,7 +894,7 @@ export function AgentConversationDemo() {
                 </li>
                 <li className="flex gap-2">
                   <IconTool className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-accent-deep)]" />
-                  工具卡可展开 Args / Result
+                  工具调用带 Args / Result
                 </li>
                 <li className="flex gap-2">
                   <IconBubble className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />

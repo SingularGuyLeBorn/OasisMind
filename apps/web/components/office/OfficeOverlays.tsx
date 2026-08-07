@@ -9,16 +9,19 @@ import {
   ARCHITECTURE_BOARD,
   BOARD_STICKIES,
   BOOKSHELF_TITLES,
-  FORMULA_SHEETS,
+  DESK_STICKY_NOTES,
   HOTSPOT_META,
   JOURNEY_STOPS,
   KNOWLEDGE_BOARD,
+  MONITOR_FORMULA_CARDS,
   MONITOR_WALL,
   OFFICE_BRAND,
   PROJECTS,
   type OfficeHotspotId,
   type OverlayKind,
 } from "./officeContent";
+import { OfficeFormulaScreen } from "./OfficeFormulaScreen";
+import { OfficeRichMd } from "./OfficeRichMd";
 
 interface OfficeOverlaysProps {
   hotspot: OfficeHotspotId | null;
@@ -116,7 +119,7 @@ export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
 function titleFor(kind: OverlayKind): string {
   switch (kind) {
     case "projects":
-      return "多屏墙 · 能力矩阵";
+      return "多屏墙 · 公式与能力矩阵";
     case "about":
       return "Quick Facts";
     case "knowledge":
@@ -138,7 +141,7 @@ function titleFor(kind: OverlayKind): string {
     case "architecture":
       return "Transformer 架构板";
     case "formulas":
-      return "桌面推导草稿";
+      return "桌面便签";
   }
 }
 
@@ -264,6 +267,21 @@ function ArchitecturePanel() {
         <h3 className="text-lg font-semibold text-[var(--kp-ink)]">{ARCHITECTURE_BOARD.title}</h3>
         <p className="text-sm text-[var(--kp-brand)]">{ARCHITECTURE_BOARD.subtitle}</p>
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={ARCHITECTURE_BOARD.image}
+          alt={ARCHITECTURE_BOARD.imageAlt}
+          className="w-full rounded-xl border border-white/50 bg-white object-contain p-2"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={ARCHITECTURE_BOARD.imageSecondary}
+          alt="Encoder–Decoder 对照"
+          className="w-full rounded-xl border border-white/50 bg-white object-contain p-2"
+        />
+      </div>
+      <OfficeRichMd content={ARCHITECTURE_BOARD.markdown} />
       <ol className="space-y-2">
         {ARCHITECTURE_BOARD.blocks.map((b, i) => (
           <li
@@ -273,9 +291,9 @@ function ArchitecturePanel() {
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--kp-brand)] text-xs font-bold text-white">
               {i + 1}
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-semibold text-[var(--kp-ink)]">{b.label}</p>
-              <p className="font-mono text-sm text-[var(--kp-text-2)]">{b.detail}</p>
+              <OfficeRichMd content={b.detail} className="mt-0.5" />
             </div>
           </li>
         ))}
@@ -287,25 +305,38 @@ function ArchitecturePanel() {
 
 function FormulasPanel() {
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-[var(--kp-text-2)]">
-        桌面 A4：大模型核心推导草稿——Attention、CE Loss、KV Cache、RoPE、MoE、RLHF。
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {FORMULA_SHEETS.map((s) => (
-          <article
-            key={s.title}
-            className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-3 shadow-sm"
-          >
-            <h4 className="text-sm font-bold text-[#0F172A]">{s.title}</h4>
-            {s.lines.map((line) => (
-              <p key={line} className="mt-1 font-mono text-xs leading-relaxed text-[#334155]">
-                {line}
-              </p>
-            ))}
-          </article>
-        ))}
-      </div>
+    <div className="space-y-6">
+      <section>
+        <p className="mb-3 text-sm font-semibold text-[var(--kp-text-1)]">桌面便签</p>
+        <p className="mb-3 text-sm text-[var(--kp-text-2)]">
+          手写备忘 / 待办 / 心情——与屏幕内容刻意不同源。
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {DESK_STICKY_NOTES.map((n) => (
+            <div
+              key={n.id}
+              className="rounded-xl border border-black/5 p-3 shadow-sm"
+              style={{ background: n.color, color: n.ink, transform: `rotate(${n.rotate * 12}deg)` }}
+            >
+              <p className="text-xs font-extrabold">{n.title}</p>
+              <p className="mt-1 whitespace-pre-line text-[11px] font-semibold leading-relaxed">{n.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section>
+        <p className="mb-3 text-sm font-semibold text-[var(--kp-text-1)]">带鱼屏内容墙</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {MONITOR_FORMULA_CARDS.map((s) => (
+            <OfficeFormulaScreen
+              key={s.id}
+              card={s}
+              compact={false}
+              className="h-auto min-h-[240px] w-full"
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -316,9 +347,26 @@ function ProjectsPanel() {
   const items = filter === "全部" ? PROJECTS : PROJECTS.filter((p) => p.tag === filter);
 
   return (
-    <div>
+    <div className="space-y-6">
+      <section>
+        <p className="mb-3 text-sm text-[var(--kp-text-2)]">
+          带鱼屏工作墙：运行看板 · 花园 · Attention · Swarm · HITL，主题混排。
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {MONITOR_FORMULA_CARDS.slice(0, 4).map((card) => (
+            <OfficeFormulaScreen
+              key={card.id}
+              card={card}
+              compact={false}
+              className="h-auto min-h-[240px] w-full"
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
       <p className="mb-3 text-sm text-[var(--kp-text-2)]">
-        量化级多屏墙：每块屏挂一条见微能力面，点开即进真实路由。
+        能力矩阵：每块屏挂一条见微路由，点开即进真实页面。
       </p>
       <div className="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
         {MONITOR_WALL.map((app) => (
@@ -378,6 +426,7 @@ function ProjectsPanel() {
           </article>
         ))}
       </div>
+      </section>
     </div>
   );
 }
