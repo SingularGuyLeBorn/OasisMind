@@ -188,7 +188,7 @@ const SMOKE_ARG_OVERRIDES: Record<string, unknown> = {
   "git.log": { repoPath: ".", limit: 3 },
   "git.diff": { repoPath: "." },
 
-  "search.web": { query: "KnowPilot smoke", maxResults: 2 },
+  "search.web": { query: "OasisMind smoke", maxResults: 2 },
   "search.global": { query: "smoke", limit: 5 },
 
   "analytics.dashboard": {},
@@ -269,7 +269,7 @@ const SMOKE_ARG_OVERRIDES: Record<string, unknown> = {
 
   "native.read_file": { path: "README.md" },
   "native.list_directory": { path: "." },
-  "native.web_search": { query: "KnowPilot", maxResults: 2 },
+  "native.web_search": { query: "OasisMind", maxResults: 2 },
   "native.wait": { ms: 1 },
   "native.git_status": { repoPath: "." },
   "native.git_log": { repoPath: ".", limit: 2 },
@@ -278,7 +278,7 @@ const SMOKE_ARG_OVERRIDES: Record<string, unknown> = {
   "native.run_shell": { command: "echo smoke" },
   "native.async_task_run": { task: "smoke noop", label: "smoke", toolCall: { tool: "wait", args: { ms: 1 } } },
   "native.yuque_get_doc": { namespace: "user/repo", slug: "doc" },
-  "native.github_search_repos": { query: "knowpilot", limit: 2 },
+  "native.github_search_repos": { query: "oasismind", limit: 2 },
   "native.feishu_send_text": { receiveId: "smoke", text: "smoke" },
 };
 

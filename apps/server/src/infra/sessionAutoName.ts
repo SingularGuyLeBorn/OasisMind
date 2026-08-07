@@ -7,10 +7,10 @@
 const AUTO_NAME_TIMEOUT_MS = 30_000; // 命名是 fire-and-forget，LLM 挂起时不能无限占用连接
 
 const SESSION_PROMPT =
-  "你在为 KnowPilot（一座以 Markdown 为原子、AI 为引擎的数字花园）的对话会话起标题。根据用户首条消息提炼一个 6-12 字的中文标题，概括这次对话的主题或意图。直接输出标题，不要引号/句号/emoji/前缀/解释。";
+  "你在为 OasisMind（一座以 Markdown 为原子、AI 为引擎的数字花园）的对话会话起标题。根据用户首条消息提炼一个 6-12 字的中文标题，概括这次对话的主题或意图。直接输出标题，不要引号/句号/emoji/前缀/解释。";
 
 const AGENT_PROMPT =
-  "你在为 KnowPilot（一座以 Markdown 为原子、AI 为引擎的数字花园）的 Agent 起名。" +
+  "你在为 OasisMind（一座以 Markdown 为原子、AI 为引擎的数字花园）的 Agent 起名。" +
   "规则：" +
   "1. 只输出名字，2-8 个汉字，不要前缀、不要解释、不要引号、不要 emoji。" +
   "2. 名字要像角色名，体现职责，例如「资料整理员」「代码审阅官」「诗人」「周报生成官」。" +

@@ -9,7 +9,7 @@ import { resilientChatCompletion } from "./resilientLlmClient.js";
 const EXPLAIN_TIMEOUT_MS = 45_000;
 const MAX_TOKENS = 900;
 
-const SYSTEM_PROMPT = `你是 KnowPilot 数字花园的阅读助手。用户在阅读 Markdown 文章时划选了一段文字，请用中文解释。
+const SYSTEM_PROMPT = `你是 OasisMind 数字花园的阅读助手。用户在阅读 Markdown 文章时划选了一段文字，请用中文解释。
 
 要求：
 - 只解释划选内容及其在文中的含义；不要改写、扩写或「优化」原文

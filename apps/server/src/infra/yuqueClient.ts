@@ -165,7 +165,7 @@ export async function yuqueOpenApi<T = unknown>(
     for (const [k, v] of Object.entries(options.query)) url.searchParams.set(k, v);
   }
   const headers: Record<string, string> = {
-    "User-Agent": "KnowPilot/1.0",
+    "User-Agent": "OasisMind/1.0",
     Accept: "application/json",
     "X-Auth-Token": options.token || "",
   };

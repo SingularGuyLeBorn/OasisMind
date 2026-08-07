@@ -24,9 +24,9 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
       engine: "mock",
       results: [
         {
-          title: "KnowPilot - 本地优先的智能知识管理平台",
-          url: "https://example.com/knowpilot",
-          snippet: `Mock 搜索结果：${query}。KnowPilot 是一个以 Markdown 为原子、AI 为引擎的数字花园。`,
+          title: "OasisMind - 本地优先的智能知识管理平台",
+          url: "https://example.com/oasismind",
+          snippet: `Mock 搜索结果：${query}。OasisMind 是一个以 Markdown 为原子、AI 为引擎的数字花园。`,
         },
         {
           title: "Mock Secondary Result",

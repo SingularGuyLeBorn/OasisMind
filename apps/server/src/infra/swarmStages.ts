@@ -1,5 +1,5 @@
 /**
- * Swarm 轻量阶段工件（SOP 接力）——落在 Workspace `.knowpilot/stages/`。
+ * Swarm 轻量阶段工件（SOP 接力）——落在 Workspace `.oasismind/stages/`。
  * 父/管理 Agent 读工件，不读子会话正文（守隔离铁律）。
  */
 import fs from "fs";
@@ -58,7 +58,7 @@ async function resolveWorkspaceStagesDir(
   const wsAbs = path.isAbsolute(ws.path)
     ? ws.path
     : path.join(config.projectRoot, ws.path);
-  const stagesDir = path.join(wsAbs, ".knowpilot", "stages");
+  const stagesDir = path.join(wsAbs, ".oasismind", "stages");
   fs.mkdirSync(stagesDir, { recursive: true });
   return { absDir: stagesDir, workspaceId: ws.id };
 }

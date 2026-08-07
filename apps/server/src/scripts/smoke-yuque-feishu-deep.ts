@@ -491,7 +491,7 @@ async function deepFeishu() {
 }
 
 async function main() {
-  console.log(`KnowPilot 深度联调 prefix=${PREFIX}\n`);
+  console.log(`OasisMind 深度联调 prefix=${PREFIX}\n`);
   console.log("说明：上一轮冒烟未覆盖复杂表格/公式/权限；本脚本专门验证这些能力。\n");
   await deepYuque();
   await deepFeishu();

@@ -60,7 +60,7 @@ describe("Session / Subagent schema 校验", () => {
       kind: "subagent",
       status: "running",
       parentSessionId: "clx12345678901234567890123",
-      taskDescription: "搜索 KnowPilot 并整理摘要",
+      taskDescription: "搜索 OasisMind 并整理摘要",
     });
     expect(parsed.success).toBe(true);
   });

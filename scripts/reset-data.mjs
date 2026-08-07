@@ -248,7 +248,7 @@ function askConfirm() {
 }
 
 async function main() {
-  console.log("KnowPilot data:reset");
+  console.log("OasisMind data:reset");
   console.log(`根目录: ${root}`);
   if (includePosts) console.log("模式: --all（含文章与 About）");
   if (runSeed) console.log("清空后将执行 db:seed");

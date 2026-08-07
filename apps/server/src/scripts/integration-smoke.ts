@@ -215,7 +215,7 @@ async function main() {
 
   console.log("\n=== smartSearch ===");
   const t0 = Date.now();
-  const search = await smartSearch("KnowPilot 本地知识库", 3);
+  const search = await smartSearch("OasisMind 本地知识库", 3);
   console.log(
     JSON.stringify(
       { ms: Date.now() - t0, engine: search.engine, total: search.total, results: briefResults(search.results) },

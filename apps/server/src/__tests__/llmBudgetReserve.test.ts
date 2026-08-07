@@ -14,7 +14,7 @@ import type { AppConfig } from "../infra/config.js";
 
 function fakeConfig(dailyBudget = 0.01): AppConfig {
   return {
-    projectRoot: "D:/tmp/knowpilot-budget-reserve",
+    projectRoot: "D:/tmp/oasismind-budget-reserve",
     llm: { dailyBudget, blendedUsdPer1k: 0.001 },
   } as AppConfig;
 }

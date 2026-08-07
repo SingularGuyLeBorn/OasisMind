@@ -1,5 +1,5 @@
 /**
- * KnowPilot Mock LLM Server — OpenAI 协议兼容的本地 Mock 服务
+ * OasisMind Mock LLM Server — OpenAI 协议兼容的本地 Mock 服务
  *
  * 用途：项目测试时把 LLM baseUrl 指向本服务（http://localhost:3040/v1），
  * 即可走真实 HTTP 路径（fetch/SSE/超时/错误分类/重试降级全覆盖），
@@ -202,7 +202,7 @@ app.post("/v1/chat/completions", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n  🧪 KnowPilot Mock LLM Server running at http://localhost:${PORT}`);
+  console.log(`\n  🧪 OasisMind Mock LLM Server running at http://localhost:${PORT}`);
   console.log(`  📡 OpenAI-compatible: http://localhost:${PORT}/v1/chat/completions`);
   console.log(`  💚 Health:            http://localhost:${PORT}/health`);
   console.log(`  \n  切换方式：.env 设 DEEPSEEK_BASE_URL=http://localhost:${PORT}/v1，API Key 随便填`);

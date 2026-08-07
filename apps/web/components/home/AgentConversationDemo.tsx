@@ -455,7 +455,7 @@ const SCENARIOS: Scenario[] = [
           {
             name: "send_email",
             summary: "发送摘要",
-            args: { subject: "[KnowPilot 通知] 心跳决策", body: "今日 quiet→monitor…" },
+            args: { subject: "[OasisMind 通知] 心跳决策", body: "今日 quiet→monitor…" },
             result: { ok: true, provider: "ntfy" },
           },
         ],

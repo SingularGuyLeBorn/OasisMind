@@ -1464,7 +1464,7 @@ describe("native:github_search_repos", () => {
           }),
       })),
     );
-    const result = (await executeNativeTool("github_search_repos", { query: "knowpilot", limit: 1 }, ctx)) as Array<{
+    const result = (await executeNativeTool("github_search_repos", { query: "oasismind", limit: 1 }, ctx)) as Array<{
       name: string;
       stars: number;
     }>;

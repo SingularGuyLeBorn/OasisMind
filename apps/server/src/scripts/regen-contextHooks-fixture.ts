@@ -42,7 +42,7 @@ function makeCtx(): NativeToolContext {
 
 function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
   const messages: LlmMessage[] = [
-    { role: "system", content: "你是 KnowPilot 助手。" },
+    { role: "system", content: "你是 OasisMind 助手。" },
     { role: "user", content: "触发检索的用户问题" },
   ];
   return {
@@ -51,7 +51,7 @@ function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
       name: "测试",
       description: null,
       model: "deepseek-v4-flash",
-      systemPrompt: "你是 KnowPilot 助手。",
+      systemPrompt: "你是 OasisMind 助手。",
       tools: [],
       tier: "sub",
       workspaceId: null,
@@ -68,7 +68,7 @@ function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
     runId: "run-1",
     round: 1,
     messages: messages.map((m) => ({ ...m })),
-    systemPrompt: "你是 KnowPilot 助手。",
+    systemPrompt: "你是 OasisMind 助手。",
     ctx: makeCtx(),
     scratch: {},
     ...overrides,
@@ -83,7 +83,7 @@ async function main() {
   const next: Fixture[] = [];
 
   for (const f of fixtures) {
-    const base = f.basePrompt || "你是 KnowPilot 助手。";
+    const base = f.basePrompt || "你是 OasisMind 助手。";
     const scratch: Record<string, unknown> = { __testMemoryHint: f.memoryHint };
     const out = await runContextHooks(
       makeInput({

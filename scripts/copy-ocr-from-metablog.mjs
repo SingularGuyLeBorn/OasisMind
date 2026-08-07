@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 从 MetaBlog 复制 OCR 代码与权重到 KnowPilot（不联网下载）
+ * 从 MetaBlog 复制 OCR 代码与权重到 OasisMind（不联网下载）
  *
  * 用法: node scripts/copy-ocr-from-metablog.mjs [MetaBlog根目录]
  */
@@ -85,14 +85,14 @@ function patchPythonPaths(filePath) {
   if (text.includes(oldBlock)) {
     text = text.replace(
       /# 推断项目根目录[^\n]*\n_script_dir = os\.path\.dirname\(os\.path\.abspath\(__file__\)\)\n_project_root = os\.path\.dirname\(os\.path\.dirname\(os\.path\.dirname\(_script_dir\)\)\)\n_MODEL_BASE = os\.path\.join\(_project_root, "weights", "ocr", "paddleocr"\)/,
-      `# 推断项目根目录（KnowPilot: tools/ocr/ → 上两级）\n_script_dir = os.path.dirname(os.path.abspath(__file__))\n${newBlock}`,
+      `# 推断项目根目录（OasisMind: tools/ocr/ → 上两级）\n_script_dir = os.path.dirname(os.path.abspath(__file__))\n${newBlock}`,
     );
     fs.writeFileSync(filePath, text);
   }
 }
 
 console.log(`📂 MetaBlog: ${META_BLOG}`);
-console.log(`📂 KnowPilot: ${ROOT}\n`);
+console.log(`📂 OasisMind: ${ROOT}\n`);
 
 for (const job of JOBS) {
   console.log(`→ ${job.label}`);
@@ -113,7 +113,7 @@ for (const job of JOBS) {
 }
 
 const total = countModels(path.join(ROOT, "weights", "ocr", "paddleocr"));
-console.log(`\n✅ 完成。KnowPilot 现有 ${total} 个 Paddle 推理包。`);
+console.log(`\n✅ 完成。OasisMind 现有 ${total} 个 Paddle 推理包。`);
 
 const userCls = path.join(
   process.env.USERPROFILE || process.env.HOME || "",

@@ -310,7 +310,7 @@ export function ensureInboxDirs(config: AppConfig): {
     fs.writeFileSync(
       readme,
       [
-        "KnowPilot 知识 Inbox",
+        "OasisMind 知识 Inbox",
         "",
         "screenshots/drop/  — 把手机截图丢这里（或配置 inbox.screenshotWatchDir）",
         "wechat/links.txt   — 每行一个公众号/网页链接",

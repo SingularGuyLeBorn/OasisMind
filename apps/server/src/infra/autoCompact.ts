@@ -427,7 +427,7 @@ export async function maybeCompactMessages(
         {
           role: "system",
           content:
-            "你是 KnowPilot 对话摘要助手。将以下历史对话压缩为简洁的中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
+            "你是 OasisMind 对话摘要助手。将以下历史对话压缩为简洁的中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
         },
         { role: "user", content: `请摘要以下对话历史：\n\n${transcript.slice(0, 32000)}` },
       ],
@@ -744,7 +744,7 @@ export async function runSessionCompact(params: {
     limit: SESSION_HISTORY_PAGE_SIZE,
   });
   const messages = buildLlmContextSinceCompact(
-    params.systemPrompt || "你是 KnowPilot 助手。",
+    params.systemPrompt || "你是 OasisMind 助手。",
     historyItems,
     {
       modelId: params.model,

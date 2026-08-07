@@ -50,7 +50,7 @@ function makeCtx(partial?: Partial<NativeToolContext>): NativeToolContext {
 
 function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
   const messages: LlmMessage[] = [
-    { role: "system", content: "你是 KnowPilot 助手。" },
+    { role: "system", content: "你是 OasisMind 助手。" },
     { role: "user", content: "你好" },
   ];
   return {
@@ -59,7 +59,7 @@ function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
       name: "测试",
       description: null,
       model: "deepseek-v4-flash",
-      systemPrompt: "你是 KnowPilot 助手。",
+      systemPrompt: "你是 OasisMind 助手。",
       tools: [],
       tier: "sub",
       workspaceId: null,
@@ -76,7 +76,7 @@ function makeInput(overrides?: Partial<ContextHookInput>): ContextHookInput {
     runId: "run-1",
     round: 1,
     messages: messages.map((m) => ({ ...m })),
-    systemPrompt: "你是 KnowPilot 助手。",
+    systemPrompt: "你是 OasisMind 助手。",
     ctx: makeCtx(),
     scratch: {},
     ...overrides,
@@ -241,7 +241,7 @@ describe("内建钩子 round===1 与等价性快照", () => {
 
   it("内建钩子链产出与迁移前 fixture 逐字节相等", async () => {
     for (const f of fixtures) {
-      const base = f.basePrompt || "你是 KnowPilot 助手。";
+      const base = f.basePrompt || "你是 OasisMind 助手。";
       // 注入固定 memoryHint：绕过 DB，验证拼装顺序与文案搬家等价
       const out = await runContextHooks(
         makeInput({
@@ -268,7 +268,7 @@ describe("内建钩子 round===1 与等价性快照", () => {
 
   it("round=2 时 round===1 内建钩子不再生效（systemPrompt 保持原样）", async () => {
     const f = fixtures[0]!;
-    const base = f.basePrompt || "你是 KnowPilot 助手。";
+    const base = f.basePrompt || "你是 OasisMind 助手。";
     const out = await runContextHooks(
       makeInput({
         round: 2,

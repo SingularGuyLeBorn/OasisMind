@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KnowPilot 本地语音转文字（STT）。
+"""OasisMind 本地语音转文字（STT）。
 
 优先 faster-whisper（CTranslate2，轻量）；否则回退 openai-whisper。
 用法：

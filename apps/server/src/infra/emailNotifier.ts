@@ -266,9 +266,9 @@ export async function sendTestNotification(
   const to = opts?.to?.trim() || status.to || status.askTo;
   const result = await sendEmailNotification(config, log, {
     to,
-    subject: "[KnowPilot 邮件测试] 通知通道探测",
+    subject: "[OasisMind 邮件测试] 通知通道探测",
     body: [
-      "这是一封见微 / KnowPilot 通知通道测试邮件。",
+      "这是一封见微 / OasisMind 通知通道测试邮件。",
       `时间: ${new Date().toISOString()}`,
       `主通道: ${status.provider}`,
       `收件人: ${to}`,

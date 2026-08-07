@@ -35,7 +35,7 @@ export async function githubApiRequest<T = unknown>(
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "KnowPilot/1.0",
+    "User-Agent": "OasisMind/1.0",
     ...(options.headers || {}),
   };
   if (token) headers.Authorization = `Bearer ${token}`;

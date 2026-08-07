@@ -43,13 +43,13 @@ export const scenarios: MockLlmScenario[] = [
     completion: (opts) => ({
       ...baseResult(opts),
       content: "我将先搜索相关资料，然后给出回答。",
-      toolCalls: [makeToolCall("web_search", { query: "KnowPilot intermediate" })],
+      toolCalls: [makeToolCall("web_search", { query: "OasisMind intermediate" })],
     }),
     stream: async function* (opts) {
       yield* streamFromCompletion(opts, {
         ...baseResult(opts),
         content: "我将先搜索相关资料，然后给出回答。",
-        toolCalls: [makeToolCall("web_search", { query: "KnowPilot intermediate" })],
+        toolCalls: [makeToolCall("web_search", { query: "OasisMind intermediate" })],
       });
     },
   },
@@ -160,14 +160,14 @@ export const scenarios: MockLlmScenario[] = [
     name: "web_search_final",
     match: (opts, forced) =>
       forced === "web_search_final" ||
-      (hasAnyToolResult(opts) && /搜索|search|KnowPilot/i.test(lastUserText(opts))),
+      (hasAnyToolResult(opts) && /搜索|search|OasisMind/i.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
-      content: "已完成 web_search，Mock 搜索返回：KnowPilot 是一个本地优先的智能知识管理平台。",
+      content: "已完成 web_search，Mock 搜索返回：OasisMind 是一个本地优先的智能知识管理平台。",
       toolCalls: [],
     }),
     stream: async function* (opts) {
-      const content = "已完成 web_search，Mock 搜索返回：KnowPilot 是一个本地优先的智能知识管理平台。";
+      const content = "已完成 web_search，Mock 搜索返回：OasisMind 是一个本地优先的智能知识管理平台。";
       for (const token of content.split("")) {
         yield { type: "token", delta: token, model: opts.model, provider: "mock" };
       }
@@ -214,19 +214,19 @@ export const scenarios: MockLlmScenario[] = [
     name: "web_search",
     match: (opts, forced) =>
       forced === "web_search" ||
-      (/搜索|search|KnowPilot/i.test(lastUserText(opts)) &&
+      (/搜索|search|OasisMind/i.test(lastUserText(opts)) &&
         hasTool(opts, "web_search") &&
         !hasAnyToolResult(opts)),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
-      toolCalls: [makeToolCall("web_search", { query: "KnowPilot" })],
+      toolCalls: [makeToolCall("web_search", { query: "OasisMind" })],
     }),
     stream: async function* (opts) {
       yield* streamFromCompletion(opts, {
         ...baseResult(opts),
         content: null,
-        toolCalls: [makeToolCall("web_search", { query: "KnowPilot" })],
+        toolCalls: [makeToolCall("web_search", { query: "OasisMind" })],
       });
     },
   },

@@ -1,7 +1,7 @@
 ﻿/**
  * 集成域 — 外部 Agent 平台接入（Coze + Dify）
  *
- * 让 KnowPilot Agent 能把子任务委托给外部 agent 平台（Coze 扣子 / Dify），
+ * 让 OasisMind Agent 能把子任务委托给外部 agent 平台（Coze 扣子 / Dify），
  * 复用平台上已编排好的 bot / workflow（RAG、知识库、复杂多步逻辑）。
  * 纯 HTTP 调用，本地零额外依赖。Credential 走 credentialVault（scope=coze/dify）。
  */
@@ -36,7 +36,7 @@ async function cozeChat(args: Record<string, unknown>, ctx: NativeToolContext): 
   if (!botId) throw new Error("需要 bot_id 参数（Coze bot ID）");
   const message = String(args.message ?? "").trim();
   if (!message) throw new Error("需要 message 参数（用户消息）");
-  const userId = String(args.user_id ?? "knowpilot-agent").trim();
+  const userId = String(args.user_id ?? "oasismind-agent").trim();
   const conversationId = args.conversation_id ? String(args.conversation_id) : undefined;
   const timeoutMs = typeof args.timeoutMs === "number" && args.timeoutMs > 0 ? Math.min(args.timeoutMs, 120000) : 60000;
   const token = await requireToken(ctx, "coze", "access_token", "COZE_ACCESS_TOKEN");
@@ -131,7 +131,7 @@ async function cozeWorkflow(args: Record<string, unknown>, ctx: NativeToolContex
 async function difyChat(args: Record<string, unknown>, ctx: NativeToolContext): Promise<unknown> {
   const query = String(args.query ?? "").trim();
   if (!query) throw new Error("需要 query 参数（用户消息）");
-  const user = String(args.user ?? "knowpilot-agent").trim();
+  const user = String(args.user ?? "oasismind-agent").trim();
   const inputs = (args.inputs && typeof args.inputs === "object" ? args.inputs : {}) as Record<string, unknown>;
   const conversationId = args.conversation_id ? String(args.conversation_id) : undefined;
   const apiKey = await requireToken(ctx, "dify", "api_key", "DIFY_API_KEY");
@@ -167,7 +167,7 @@ async function difyChat(args: Record<string, unknown>, ctx: NativeToolContext): 
 /** Dify workflow run：blocking 模式，返回 outputs */
 async function difyWorkflow(args: Record<string, unknown>, ctx: NativeToolContext): Promise<unknown> {
   const inputs = (args.inputs && typeof args.inputs === "object" ? args.inputs : {}) as Record<string, unknown>;
-  const user = String(args.user ?? "knowpilot-agent").trim();
+  const user = String(args.user ?? "oasismind-agent").trim();
   const apiKey = await requireToken(ctx, "dify", "api_key", "DIFY_API_KEY");
   const base = difyBase();
   const started = Date.now();
@@ -205,7 +205,7 @@ export const agentPlatformDefs: NativeToolDefinition[] = [
       properties: {
         bot_id: { type: "string", description: "Coze Bot ID（平台 Bot 开发页 URL 中 bot 参数后的数字）" },
         message: { type: "string", description: "发给 Bot 的用户消息" },
-        user_id: { type: "string", description: "终端用户标识，默认 knowpilot-agent" },
+        user_id: { type: "string", description: "终端用户标识，默认 oasismind-agent" },
         conversation_id: { type: "string", description: "可选，续接已有会话时传入" },
         timeoutMs: { type: "number", description: "轮询超时毫秒，默认 60000，上限 120000" },
       },
@@ -236,7 +236,7 @@ export const agentPlatformDefs: NativeToolDefinition[] = [
       type: "object",
       properties: {
         query: { type: "string", description: "用户消息" },
-        user: { type: "string", description: "终端用户标识，默认 knowpilot-agent" },
+        user: { type: "string", description: "终端用户标识，默认 oasismind-agent" },
         inputs: { type: "object", description: "可选，应用的输入变量对象" },
         conversation_id: { type: "string", description: "可选，续接已有会话时传入" },
       },
@@ -252,7 +252,7 @@ export const agentPlatformDefs: NativeToolDefinition[] = [
       type: "object",
       properties: {
         inputs: { type: "object", description: "工作流输入变量对象" },
-        user: { type: "string", description: "终端用户标识，默认 knowpilot-agent" },
+        user: { type: "string", description: "终端用户标识，默认 oasismind-agent" },
       },
       required: ["inputs"],
     },

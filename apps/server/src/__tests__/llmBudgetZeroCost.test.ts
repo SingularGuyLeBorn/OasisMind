@@ -9,7 +9,7 @@ import type { AppConfig } from "../infra/config.js";
 
 function fakeConfig(): AppConfig {
   return {
-    projectRoot: "D:/tmp/knowpilot-budget-zerocost",
+    projectRoot: "D:/tmp/oasismind-budget-zerocost",
     llm: { dailyBudget: 10, blendedUsdPer1k: 0.0005 },
   } as AppConfig;
 }

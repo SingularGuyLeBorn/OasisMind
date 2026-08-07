@@ -58,7 +58,7 @@ async function githubApiRequest(
 
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "KnowPilot/1.0",
+    "User-Agent": "OasisMind/1.0",
     ...options.headers,
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;

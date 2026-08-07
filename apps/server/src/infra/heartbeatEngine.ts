@@ -398,7 +398,7 @@ export class HeartbeatEngine {
           await this.suspendHeartbeat(agentId, agent.name);
           const stallExhausted = decision.reasons.some((r) => r.includes("stall repair exhausted"));
           if (stallExhausted) {
-            const subject = `[KnowPilot] Agent「${agent.name}」心跳 stall 修复耗尽`;
+            const subject = `[OasisMind] Agent「${agent.name}」心跳 stall 修复耗尽`;
             const body =
               `Agent「${agent.name}」（${agentId}）连续多轮无实质进展，stall repair exhausted，心跳已 suspended。\n` +
               `决策原因：${decision.reasons.join("；")}\n` +
@@ -506,7 +506,7 @@ export class HeartbeatEngine {
         let anyNotified = false;
         for (const row of pending) {
           const r = await notifyPendingApprovalIfCooldownAllows(this.services, row, {
-            subject: `[KnowPilot] Agent「${agentName}」心跳等待人工：approval`,
+            subject: `[OasisMind] Agent「${agentName}」心跳等待人工：approval`,
             body:
               `Agent「${agentName}」（${agentId}）心跳决策为 wait_user_gate。\n` +
               `待办：${decision.userGate.summary}\n` +
@@ -532,7 +532,7 @@ export class HeartbeatEngine {
         if (notify.notify && notify.gateKey) {
           const nowIso = new Date(nowMs).toISOString();
           nextState = withGateNotifyStamp(nextState, notify.gateKey, nowIso);
-          const subject = `[KnowPilot] Agent「${agentName}」心跳等待人工：${decision.userGate.kind}`;
+          const subject = `[OasisMind] Agent「${agentName}」心跳等待人工：${decision.userGate.kind}`;
           const body =
             `Agent「${agentName}」（${agentId}）心跳决策为 wait_user_gate。\n` +
             `待办：${decision.userGate.summary}\n` +
@@ -934,7 +934,7 @@ export class HeartbeatEngine {
     if (!updatedHb) return;
     if (updatedHb.consecutiveFailures === MAX_CONSECUTIVE_FAILURES) {
       const notify = await sendEmailNotification(this.config, this.services.log, {
-        subject: `[KnowPilot] Agent「${agentName}」心跳连续失败 ${updatedHb.consecutiveFailures} 次`,
+        subject: `[OasisMind] Agent「${agentName}」心跳连续失败 ${updatedHb.consecutiveFailures} 次`,
         body: `Agent「${agentName}」（${agentId}）心跳已连续失败 ${updatedHb.consecutiveFailures} 次，心跳已自动暂停（suspended，已持久化）。\n最近一次错误：${lastError}\n请检查 LLM 配置与该 Agent 状态；修复后保存该 Agent 的心跳配置（cron/goal/心跳模型变更会清零失败计数并自动恢复），重启服务不再自动恢复。`,
         agentId,
       });

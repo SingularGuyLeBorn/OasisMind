@@ -15,7 +15,7 @@ import {
 import { createMemoryRepository, resolveMemoryWriteScope } from "./memoryRepository.js";
 import { appendDailyNote } from "./memoryDaily.js";
 
-const FLUSH_SYSTEM = `你是 KnowPilot 记忆提取助手。从对话 transcript 中提取应长期保存的信息。
+const FLUSH_SYSTEM = `你是 OasisMind 记忆提取助手。从对话 transcript 中提取应长期保存的信息。
 
 规则：
 - 只输出 JSON 数组，无 markdown 包裹

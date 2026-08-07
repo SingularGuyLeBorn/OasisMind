@@ -1,4 +1,4 @@
-# KnowPilot Cloudflare Tunnel 启动脚本
+# OasisMind Cloudflare Tunnel 启动脚本
 # 用法:
 #   .\scripts\tunnel.ps1 quick          # 临时 *.trycloudflare.com 链接
 #   .\scripts\tunnel.ps1 run            # 使用 .env 中的 CLOUDFLARE_TUNNEL_TOKEN

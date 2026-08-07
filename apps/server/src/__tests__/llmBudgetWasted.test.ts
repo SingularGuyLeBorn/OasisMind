@@ -8,7 +8,7 @@ import {
 } from "../infra/llmBudget.js";
 import type { AppConfig } from "../infra/config.js";
 
-function fakeConfig(root = "D:/tmp/knowpilot-budget-test"): AppConfig {
+function fakeConfig(root = "D:/tmp/oasismind-budget-test"): AppConfig {
   return {
     projectRoot: root,
     llm: { dailyBudget: 10, blendedUsdPer1k: 0.0005 },

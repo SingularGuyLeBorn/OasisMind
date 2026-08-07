@@ -245,7 +245,7 @@ export function ensureBuiltinContextHooks(): void {
       // drift 目前仅 logAgentDrift，不注入 system prompt；预留 extras 槽位
       const extras =
         typeof input.scratch.__agentExtras === "string" ? input.scratch.__agentExtras : "";
-      const base = input.systemPrompt || "你是 KnowPilot 助手。";
+      const base = input.systemPrompt || "你是 OasisMind 助手。";
       const identityHint = typeof input.scratch.__identityHint === "string" ? input.scratch.__identityHint : "";
       const memoryHint = typeof input.scratch.__memoryHint === "string" ? input.scratch.__memoryHint : "";
       const goalHint = typeof input.scratch.__goalHint === "string" ? input.scratch.__goalHint : "";

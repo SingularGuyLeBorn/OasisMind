@@ -9,14 +9,14 @@ import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const workspaceRouter = router({
   create: publicProcedure
-    .meta({ description: "创建工作区（path 唯一）。autoCreateManager=true 时自动创建管理 Agent + 主 session + .knowpilot/ 目录。", aiReadable: false })
+    .meta({ description: "创建工作区（path 唯一）。autoCreateManager=true 时自动创建管理 Agent + 主 session + .oasismind/ 目录。", aiReadable: false })
     .input(createWorkspaceSchema)
     .mutation(async ({ ctx, input }) => {
       const withManager = input.withManager !== false && input.autoCreateManager !== false;
       if (!withManager) {
         return ctx.services.workspace.create(input);
       }
-      // 走完整 provision：Workspace + 管理 Agent + 主 session + 可选初始任务 + .knowpilot/
+      // 走完整 provision：Workspace + 管理 Agent + 主 session + 可选初始任务 + .oasismind/
       const { provisionWorkspace } = await import("../workspaceProvision.js");
       const result = await provisionWorkspace(ctx.config, ctx.services, {
         name: input.name,

@@ -195,7 +195,7 @@ async function selfCheck() {
 }
 
 async function main() {
-  console.log(`\n  🚀 KnowPilot Remote (ngrok + dev)\n`);
+  console.log(`\n  🚀 OasisMind Remote (ngrok + dev)\n`);
   console.log(`  ngrok domain: ${ngrokDomain}`);
   console.log(`  PUBLIC_URL:   ${publicUrl || "(未配)"}\n`);
 
@@ -217,7 +217,7 @@ async function main() {
   });
 
   console.log("\n══════════════════════════════════════════════════");
-  console.log("  🌐 KnowPilot 远程已就绪");
+  console.log("  🌐 OasisMind 远程已就绪");
   console.log(`  公网地址: https://${ngrokDomain}`);
   console.log("  本机 Web:  http://localhost:3000");
   console.log("  Server:   http://localhost:3010");

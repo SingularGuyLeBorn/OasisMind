@@ -187,7 +187,7 @@ describe("W9 resolveAgent 只读化 + drift 提示", () => {
         description: "w9-drift-fixture",
         model: "deepseek-chat",
         systemPrompt:
-          "你是 KnowPilot 智能助手，可以阅读本地 Markdown 知识库、搜索网络、抓取网页、操作 Git、调用 Skill 与 MCP 工具。回答请简洁、准确，优先使用工具获取事实。",
+          "你是 OasisMind 智能助手，可以阅读本地 Markdown 知识库、搜索网络、抓取网页、操作 Git、调用 Skill 与 MCP 工具。回答请简洁、准确，优先使用工具获取事实。",
         tools: "native:web_search",
         tier: "",
       },

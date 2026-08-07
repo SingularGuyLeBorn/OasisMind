@@ -8,11 +8,11 @@ const prisma = new PrismaClient();
 
 const samplePosts = [
   {
-    title: "欢迎使用 KnowPilot",
-    slug: "welcome-to-knowpilot",
-    content: `# 欢迎使用 KnowPilot
+    title: "欢迎使用 OasisMind",
+    slug: "welcome-to-oasismind",
+    content: `# 欢迎使用 OasisMind
 
-KnowPilot 是一个智能知识管理与博客平台。
+OasisMind 是一个智能知识管理与博客平台。
 
 ## 功能特点
 
@@ -24,7 +24,7 @@ KnowPilot 是一个智能知识管理与博客平台。
 ## 代码高亮
 
 \`\`\`typescript
-const greeting = "Hello, KnowPilot!";
+const greeting = "Hello, OasisMind!";
 console.log(greeting);
 \`\`\`
 
@@ -41,7 +41,7 @@ $$
     published: true,
     category: "入门",
     tags: "教程,入门", // 改为逗号分隔字符串
-    excerpt: "KnowPilot 是一个智能知识管理与博客平台。",
+    excerpt: "OasisMind 是一个智能知识管理与博客平台。",
   },
   {
     title: "Markdown 语法速查",

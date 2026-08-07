@@ -31,9 +31,9 @@ test.describe("L1 博客冒烟", () => {
   });
 
   test("/posts/[slug] 文章详情页应正常渲染", async ({ page }) => {
-    await page.goto("/posts/welcome-to-knowpilot");
+    await page.goto("/posts/welcome-to-oasismind");
     await expect(
-      page.locator("header").getByRole("heading", { name: "欢迎使用 KnowPilot", level: 1 })
+      page.locator("header").getByRole("heading", { name: "欢迎使用 OasisMind", level: 1 })
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("link", { name: "返回文章列表" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "功能特点", level: 2 })).toBeVisible();

@@ -1,5 +1,5 @@
 /**
- * KnowPilot 前端通用共享 UI 组件库 (Shared UI Components)
+ * OasisMind 前端通用共享 UI 组件库 (Shared UI Components)
  *
  * 【扁平化单文件设计】：
  * 1. 包含 Pagination (分页组件)、EmptyState (空状态组件)。

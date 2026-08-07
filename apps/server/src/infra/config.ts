@@ -433,11 +433,17 @@ function resolveStorageRoot(projectRoot: string, name: "content" | "config" | "d
 }
 
 /** 加载项目根目录 .env（幂等）。已加载的 process.env 键不覆盖。 */
-export function loadRootEnv(projectRoot?: string): void {
+/**
+ * 加载 monorepo 根目录 .env。
+ * - 默认：已存在的环境变量不覆盖（测试 / CI 注入优先）
+ * - override:true：根 .env 为权威（开发重启后白名单等必以文件为准，避免父进程旧 env 卡住）
+ */
+export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean }): void {
   const root = projectRoot || resolveProjectRoot();
   const envPath = path.join(root, ".env");
   if (!fs.existsSync(envPath)) return;
-  const content = fs.readFileSync(envPath, "utf8");
+  // 去 BOM，避免首行 key 变成 \uFEFFXXX
+  const content = fs.readFileSync(envPath, "utf8").replace(/^\uFEFF/, "");
   for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -448,7 +454,7 @@ export function loadRootEnv(projectRoot?: string): void {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (process.env[key] === undefined) {
+    if (opts?.override || process.env[key] === undefined) {
       process.env[key] = value;
     }
   }

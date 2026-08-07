@@ -1,5 +1,5 @@
 /**
- * KnowPilot 后端服务业务层基座 (Services Layer)
+ * OasisMind 后端服务业务层基座 (Services Layer)
  *
  * 【扁平化 + 按需叶子拆分】：
  * 1. 本文件只保留 Service 错误定义、CRUD 基类 BaseService / FileSyncService 与辅助函数。

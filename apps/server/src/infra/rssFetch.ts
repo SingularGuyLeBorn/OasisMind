@@ -2,7 +2,7 @@
  * RSS / Atom Feed 抓取与去重
  *
  * 借鉴 MetaBlog 信息源设计：
- * - sources 表同时存通用信源和 RSS（KnowPilot 已有 type="rss"）
+ * - sources 表同时存通用信源和 RSS（OasisMind 已有 type="rss"）
  * - 抓取条目单独存表去重
  * - 可自动沉淀为 Post 草稿
  */
@@ -148,7 +148,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<string>
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "KnowPilot RSS Fetcher/1.0 (+https://knowpilot.dev)",
+        "User-Agent": "OasisMind RSS Fetcher/1.0 (+https://knowpilot.dev)",
         Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
       },
     });

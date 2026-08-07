@@ -150,8 +150,8 @@ async function fetchQrPng(cred: string): Promise<string | null> {
 async function sendMail(attachments: string[], status: LoginStatus | null) {
   const online = status?.isLogin && !status?.isOffline;
   const subject = online
-    ? "[KnowPilot] QQ 当前在线（窗口截图，无登录二维码）"
-    : "[KnowPilot] QQ 登录二维码 / 窗口截图 — 请扫码";
+    ? "[OasisMind] QQ 当前在线（窗口截图，无登录二维码）"
+    : "[OasisMind] QQ 登录二维码 / 窗口截图 — 请扫码";
   const text = [
     online
       ? `机器人 QQ ${status?.uin || "2871732121"}（${status?.nick || ""}）当前已在线，WebUI 不会再生成登录二维码。`

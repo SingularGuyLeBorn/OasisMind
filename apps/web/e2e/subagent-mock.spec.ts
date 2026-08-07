@@ -30,7 +30,7 @@ test.describe("Subagent Mock — 子 Agent 任务创建与展示", () => {
     // 切换到「新建子 Agent」模式，填写名称与任务描述并提交
     await page.getByRole("button", { name: "新建子 Agent", exact: true }).click();
     await page.getByPlaceholder("例如：Research-Helper").fill("E2E-Test-Subagent");
-    await page.getByPlaceholder(/搜索 KnowPilot 并整理/).fill("总结本地文章并生成摘要");
+    await page.getByPlaceholder(/搜索 OasisMind 并整理/).fill("总结本地文章并生成摘要");
     await page.getByRole("button", { name: "创建并启动" }).click();
 
     // 子 Agent 会话应出现在左侧「子 Agent」面板

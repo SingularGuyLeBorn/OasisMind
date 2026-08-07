@@ -3,18 +3,18 @@ import { extractQueryTerms, filterRelevantResults, scoreResultRelevance } from "
 
 describe("search relevance", () => {
   it("extracts latin and cjk terms", () => {
-    expect(extractQueryTerms("KnowPilot 本地知识库")).toEqual(["knowpilot", "本地知识库"]);
+    expect(extractQueryTerms("OasisMind 本地知识库")).toEqual(["oasismind", "本地知识库"]);
   });
 
   it("filters irrelevant bing-style junk", () => {
-    const query = "KnowPilot 本地知识库";
+    const query = "OasisMind 本地知识库";
     const raw = [
       { title: "腾讯视频", url: "https://v.qq.com/x", snippet: "热门综艺", source: "bing_crawler" },
-      { title: "KnowPilot 文档", url: "https://example.com/knowpilot", snippet: "本地知识库", source: "tavily" },
+      { title: "OasisMind 文档", url: "https://example.com/oasismind", snippet: "本地知识库", source: "tavily" },
     ];
     const filtered = filterRelevantResults(query, raw);
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].title).toContain("KnowPilot");
+    expect(filtered[0].title).toContain("OasisMind");
   });
 
   it("scores matching snippets higher", () => {

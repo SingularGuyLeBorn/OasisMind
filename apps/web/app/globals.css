@@ -775,7 +775,7 @@ html.dark .kp-card,
   word-break: inherit;
 }
 
-/* shadcn/ui 主题覆盖为 KnowPilot 晴空玻璃色系 */
+/* shadcn/ui 主题覆盖为 OasisMind 晴空玻璃色系 */
 @layer base {
   :root {
     --background: var(--kp-bg);

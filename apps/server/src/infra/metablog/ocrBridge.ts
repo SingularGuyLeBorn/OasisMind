@@ -1,5 +1,5 @@
 /**
- * 供 platform/parser 使用的 OCR 桥接 — 复用 KnowPilot ocrService
+ * 供 platform/parser 使用的 OCR 桥接 — 复用 OasisMind ocrService
  */
 
 import fs from "fs";

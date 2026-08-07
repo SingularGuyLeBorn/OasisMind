@@ -520,7 +520,7 @@ model AskUserRequest {
   question      String
   options       Json?     /// string[]
   channel       String    @default("ui") /// "ui" | "email"
-  subject       String    @default("KnowPilot 需要你的确认")
+  subject       String    @default("OasisMind 需要你的确认")
   messageId     String?   /// AgentMail outbound Message-ID
   threadId      String?
   status        String    @default("pending") /// "pending" | "resolved"

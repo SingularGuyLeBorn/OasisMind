@@ -2,7 +2,7 @@
  * 跨实例「会话正在跑 Agent 流」信号（SWARM_MODE=redis）。
  *
  * local 模式全部 no-op（永远未占用 / 宣称成功），行为与单进程 hub 一致。
- * redis：SET knowpilot:session-running:{id} NX PX，TTL 防僵尸。
+ * redis：SET oasismind:session-running:{id} NX PX，TTL 防僵尸。
  */
 
 import { getRedisClient, isSwarmRedisMode } from "./redisClient.js";
@@ -11,7 +11,7 @@ import { getRedisClient, isSwarmRedisMode } from "./redisClient.js";
 const RUNNING_TTL_MS = 2 * 60 * 60 * 1000;
 
 function key(sessionId: string): string {
-  return `knowpilot:session-running:${sessionId}`;
+  return `oasismind:session-running:${sessionId}`;
 }
 
 /** 尝试宣称会话 running；已占用返回 false */

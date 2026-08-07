@@ -17,7 +17,7 @@ describe("FTS5 search index", () => {
   }, 120_000);
 
   it("searchFts 对已知关键词应返回 hits 数组", async () => {
-    const hits = await searchFts(prisma, "KnowPilot", 5);
+    const hits = await searchFts(prisma, "OasisMind", 5);
     expect(Array.isArray(hits)).toBe(true);
     for (const hit of hits) {
       expect(hit.entity).toBeTruthy();

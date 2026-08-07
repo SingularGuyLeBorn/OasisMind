@@ -317,7 +317,7 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
   // 8. File (文件带 Base64 上传)
   it("should perform CRUD on File entity including upload", async () => {
     const testFileName = `vitest-test-file-${Date.now()}.txt`;
-    const dummyBase64 = Buffer.from("Hello from KnowPilot file upload test!").toString("base64");
+    const dummyBase64 = Buffer.from("Hello from OasisMind file upload test!").toString("base64");
 
     // Test upload
     const uploaded = await caller.file.upload({
@@ -434,7 +434,7 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
       name: uniqueName,
       path: uniquePath,
       branch: "develop",
-      remoteUrl: "https://github.com/knowpilot/git-test.git",
+      remoteUrl: "https://github.com/oasismind/git-test.git",
     });
     expect(created.success).toBe(true);
     expect(created.data.id).toBeDefined();
@@ -849,7 +849,7 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
   }, 15_000);
 
   it("should search globally across entities", async () => {
-    const result = await caller.search.global({ query: "KnowPilot", limit: 10 });
+    const result = await caller.search.global({ query: "OasisMind", limit: 10 });
     expect(result.tookMs).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(result.hits)).toBe(true);
   });

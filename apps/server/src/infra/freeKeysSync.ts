@@ -173,7 +173,7 @@ export function parseJsonKeys(data: unknown, defaultBaseUrl = FREELLM_GATEWAY_BA
 
 async function fetchText(url: string): Promise<{ ok: boolean; status: number; text: string }> {
   const res = await fetch(url, {
-    headers: { "User-Agent": "KnowPilot-freeKeysSync/1.0" },
+    headers: { "User-Agent": "OasisMind-freeKeysSync/1.0" },
     signal: AbortSignal.timeout(20_000),
   });
   const text = await res.text();
@@ -242,7 +242,7 @@ export async function probeFreeKey(
     const res = await fetch(`${baseUrl}/models`, {
       headers: {
         Authorization: `Bearer ${entry.key}`,
-        "User-Agent": "KnowPilot-freeKeysSync/1.0",
+        "User-Agent": "OasisMind-freeKeysSync/1.0",
       },
       signal: AbortSignal.timeout(opts?.timeoutMs ?? 12_000),
     });
@@ -322,8 +322,8 @@ export async function syncOpenRouterFreeModels(config: AppConfig): Promise<strin
     const res = await fetch(`${base}/models`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://knowpilot.local",
-        "X-Title": "KnowPilot",
+        "HTTP-Referer": "https://oasismind.local",
+        "X-Title": "OasisMind",
       },
       signal: AbortSignal.timeout(20_000),
     });

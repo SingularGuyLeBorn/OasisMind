@@ -108,7 +108,7 @@ function main() {
 
   fs.writeFileSync(envPath, lines.join("\n").replace(/\n{3,}/g, "\n\n"), "utf8");
 
-  console.log("\n  KnowPilot setup:dev\n");
+  console.log("\n  OasisMind setup:dev\n");
   for (const a of actions) console.log(`  · ${a}`);
   console.log(`
   下一步：

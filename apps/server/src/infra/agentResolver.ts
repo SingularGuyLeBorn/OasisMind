@@ -99,7 +99,7 @@ export function detectAssistantDrift(agent: AgentEntity): string[] {
   if (!agent.systemPrompt || agent.systemPrompt === OUTDATED_ASSISTANT_SYSTEM_PROMPT) {
     drift.push("系统提示为空或为旧版默认");
   } else if (
-    (agent.systemPrompt.startsWith("你是 KnowPilot 智能助手") || agent.systemPrompt.startsWith("你是 OasisMind (见微) 智能助手")) &&
+    (agent.systemPrompt.startsWith("你是 OasisMind 智能助手") || agent.systemPrompt.startsWith("你是 OasisMind (见微) 智能助手")) &&
     !agent.systemPrompt.includes("garden_create")
   ) {
     // 仍是内置默认身份、但缺动态花园指引（功能新增后未跑迁移）

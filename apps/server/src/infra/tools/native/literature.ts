@@ -30,7 +30,7 @@ function readEnv(name: string, fallback = ""): string {
 }
 
 function mailtoContact(): string {
-  return readEnv("OPENALEX_MAILTO", readEnv("LITERATURE_CONTACT_EMAIL", "knowpilot@local"));
+  return readEnv("OPENALEX_MAILTO", readEnv("LITERATURE_CONTACT_EMAIL", "oasismind@local"));
 }
 
 async function semanticScholarKey(ctx: NativeToolContext): Promise<string | undefined> {
@@ -70,7 +70,7 @@ async function fetchJson(
 ): Promise<{ ok: boolean; status: number; json: unknown; text: string }> {
   const res = await fetch(url, {
     headers: {
-      "User-Agent": `KnowPilot/1.0 (mailto:${mailtoContact()})`,
+      "User-Agent": `OasisMind/1.0 (mailto:${mailtoContact()})`,
       Accept: "application/json",
       ...headers,
     },
@@ -137,7 +137,7 @@ export async function searchArxiv(query: string, maxResults: number): Promise<Li
   url.searchParams.set("sortBy", "relevance");
   url.searchParams.set("sortOrder", "descending");
   const res = await fetch(url.toString(), {
-    headers: { "User-Agent": `KnowPilot/1.0 (mailto:${mailtoContact()})` },
+    headers: { "User-Agent": `OasisMind/1.0 (mailto:${mailtoContact()})` },
   });
   const xml = await res.text();
   if (!res.ok) throw new Error(`arXiv 搜索失败 ${res.status}: ${xml.slice(0, 300)}`);
@@ -280,7 +280,7 @@ async function literatureGet(args: Record<string, unknown>, ctx: NativeToolConte
     const url = new URL("http://export.arxiv.org/api/query");
     url.searchParams.set("id_list", arxivId);
     const res = await fetch(url.toString(), {
-      headers: { "User-Agent": `KnowPilot/1.0 (mailto:${mailtoContact()})` },
+      headers: { "User-Agent": `OasisMind/1.0 (mailto:${mailtoContact()})` },
     });
     const xml = await res.text();
     if (!res.ok) throw new Error(`arXiv get 失败 ${res.status}`);

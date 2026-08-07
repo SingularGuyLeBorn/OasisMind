@@ -115,7 +115,7 @@ export async function completeEditorWithAgent(
   const systemParts = [
     typeof agent.systemPrompt === "string" && agent.systemPrompt.trim()
       ? agent.systemPrompt.trim()
-      : `你是 KnowPilot 数字花园中的 Agent「${agent.name}」，协助用户撰写 Markdown 文章。`,
+      : `你是 OasisMind 数字花园中的 Agent「${agent.name}」，协助用户撰写 Markdown 文章。`,
     "",
     FORMAT_RULES,
   ];

@@ -24,7 +24,7 @@ function authHeaders(): Record<string, string> {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
     Accept: "application/json",
-    "User-Agent": "KnowPilot/1.0 (emailNotifier)",
+    "User-Agent": "OasisMind/1.0 (emailNotifier)",
   };
 }
 
@@ -111,7 +111,7 @@ function formatAgentMailNetError(err: unknown): string {
  * 未配置任何公网 URL 时跳过注册并 warn——本地 localhost 不可公网访问，AgentMail 无法回调，
  * 邮件回复接收需要公网隧道（Cloudflare Tunnel / ngrok）。
  *
- * 用 client_id="knowpilot-webhook-v1" 幂等：AgentMail 同 client_id 重复注册返回已创建的 webhook，不重复。
+ * 用 client_id="oasismind-webhook-v1" 幂等：AgentMail 同 client_id 重复注册返回已创建的 webhook，不重复。
  */
 export async function ensureAgentMailWebhook(opts?: {
   /** 覆盖 webhook URL（优先级最高，用于临时隧道解析到 URL 后动态注入） */
@@ -137,7 +137,7 @@ export async function ensureAgentMailWebhook(opts?: {
       body: JSON.stringify({
         url: webhookUrl,
         event_types: ["message.received"],
-        client_id: "knowpilot-webhook-v1",
+        client_id: "oasismind-webhook-v1",
       }),
       timeoutMs: 30_000,
     });
@@ -167,7 +167,7 @@ export async function ensureAgentMailWebhook(opts?: {
   }
 }
 
-/** 确保有可用 inbox：优先 AGENTMAIL_INBOX_ID，否则用 client_id=knowpilot 幂等创建 */
+/** 确保有可用 inbox：优先 AGENTMAIL_INBOX_ID，否则用 client_id=oasismind 幂等创建 */
 export async function ensureAgentMailInbox(): Promise<
   { ok: true; inboxId: string } | { ok: false; error: string }
 > {
@@ -181,8 +181,8 @@ export async function ensureAgentMailInbox(): Promise<
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
-        client_id: "knowpilot",
-        display_name: "KnowPilot",
+        client_id: "oasismind",
+        display_name: "OasisMind",
       }),
       timeoutMs: 30_000,
     });
@@ -346,7 +346,7 @@ export async function listAgentMailWebhooks(): Promise<
 }
 
 /**
- * webhook 健康巡检：周期检查 client_id=knowpilot-webhook-v1 的 webhook 是否存在且 URL 匹配当前 PUBLIC_URL。
+ * webhook 健康巡检：周期检查 client_id=oasismind-webhook-v1 的 webhook 是否存在且 URL 匹配当前 PUBLIC_URL。
  * 丢失 / URL 不匹配（如 ngrok 换了域名但 server 没重启）→ 自动重注册。
  */
 export function startAgentMailWebhookHealthCheck(opts?: {
@@ -384,9 +384,9 @@ export function startAgentMailWebhookHealthCheck(opts?: {
         return;
       }
       lastFailLogAt = 0; // 成功后允许下次失败立刻提示一次
-      const ours = list.webhooks.find((w) => w.clientId === "knowpilot-webhook-v1");
+      const ours = list.webhooks.find((w) => w.clientId === "oasismind-webhook-v1");
       if (!ours) {
-        console.warn("[AgentMail HealthCheck] webhook 丢失（AgentMail 侧无 client_id=knowpilot-webhook-v1），重新注册…");
+        console.warn("[AgentMail HealthCheck] webhook 丢失（AgentMail 侧无 client_id=oasismind-webhook-v1），重新注册…");
         const r = await ensureAgentMailWebhook();
         if (r.ok) console.log("[AgentMail HealthCheck] webhook 已重新注册:", r.url);
         else if (!r.skipped) warnThrottled(`[AgentMail HealthCheck] 重新注册失败: ${r.error}`);

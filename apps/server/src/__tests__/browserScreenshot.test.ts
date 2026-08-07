@@ -125,7 +125,7 @@ describe("browser_screenshot / read_image", () => {
     fs.writeFileSync(abs, Buffer.from("fake-png"));
 
     vi.mocked(chatCompletion).mockResolvedValue({
-      content: "页面标题是 KnowPilot",
+      content: "页面标题是 OasisMind",
       reasoningContent: null,
       toolCalls: [],
       tokenUsage: { prompt: 10, completion: 5, total: 15 },
@@ -149,7 +149,7 @@ describe("browser_screenshot / read_image", () => {
     )) as { text: string; source: string; model: string };
 
     expect(result.source).toBe("vision");
-    expect(result.text).toContain("KnowPilot");
+    expect(result.text).toContain("OasisMind");
     expect(vi.mocked(chatCompletion)).toHaveBeenCalledOnce();
     const call = vi.mocked(chatCompletion).mock.calls[0][0];
     expect(Array.isArray(call.messages[0].content)).toBe(true);

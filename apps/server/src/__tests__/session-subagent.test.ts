@@ -73,7 +73,7 @@ describe("Subagent 后端 CRUD（session.spawn / stop / rerun / listChildren）"
     const result = await caller.session.spawn({
       parentSessionId,
       agentId,
-      task: "测试子代理任务：搜索 KnowPilot 并总结",
+      task: "测试子代理任务：搜索 OasisMind 并总结",
       label: "CRUD-test-subagent",
     });
 

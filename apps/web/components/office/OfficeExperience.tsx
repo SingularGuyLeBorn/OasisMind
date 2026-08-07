@@ -23,7 +23,7 @@ const OfficeScene = dynamic(
 );
 
 const VIEW_ORDER = ["overview", "desk", "board", "server", "shelf"] as const;
-const OFFICE_ENTERED_KEY = "knowpilot-office-entered";
+const OFFICE_ENTERED_KEY = "oasismind-office-entered";
 
 function readOfficeEntered(): boolean {
   try {

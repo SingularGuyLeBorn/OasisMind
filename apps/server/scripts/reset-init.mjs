@@ -26,7 +26,7 @@ function rmQuiet(p) {
   }
 }
 
-console.log("\n=== KnowPilot 重置初始化 ===\n");
+console.log("\n=== OasisMind 重置初始化 ===\n");
 
 console.log("1) 清空 SQLite…");
 for (const f of fs.readdirSync(prismaDir)) {

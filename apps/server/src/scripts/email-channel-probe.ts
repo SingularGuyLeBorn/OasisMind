@@ -33,7 +33,7 @@ async function probe(label: string) {
       headers: {
         Authorization: `Bearer ${key}`,
         Accept: "application/json",
-        "User-Agent": "KnowPilot-probe/1.0",
+        "User-Agent": "OasisMind-probe/1.0",
       },
       signal: AbortSignal.timeout(20_000),
     });
@@ -55,11 +55,11 @@ async function send(label: string) {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
         Accept: "application/json",
-        "User-Agent": "KnowPilot-probe/1.0",
+        "User-Agent": "OasisMind-probe/1.0",
       },
       body: JSON.stringify({
         to: [to],
-        subject: `[KnowPilot] AgentMail 通道测试 ${label}`,
+        subject: `[OasisMind] AgentMail 通道测试 ${label}`,
         text: `这是 AgentMail 通道测试（${label}），收件人应为 ${to}。\n时间 ${new Date().toISOString()}`,
         html: `<p>AgentMail 通道测试（${label}）→ <b>${to}</b></p>`,
       }),

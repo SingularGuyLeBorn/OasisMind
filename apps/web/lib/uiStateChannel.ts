@@ -29,7 +29,7 @@ export function postUiState(msg: UiStateChannelMessage): void {
   }
 }
 
-/** 会话列表变化提示：统一走 UI_STATE_CHANNEL 单频道（旧 knowpilot-session-list 频道已无消费者，已删） */
+/** 会话列表变化提示：统一走 UI_STATE_CHANNEL 单频道（旧 oasismind-session-list 频道已无消费者，已删） */
 export function postSessionListHint(sessionId?: string): void {
   postUiState({ type: "cron_session_started", sessionId });
 }

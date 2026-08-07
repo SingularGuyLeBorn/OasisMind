@@ -47,7 +47,7 @@ describe("W16d-3 agent.driftStatus tRPC 通道", () => {
     // 负向断言：删掉 fixture 创建，下方 expect(before.agentId).toBeTruthy() 在 fresh 库必红。
     const fixture = await ctx.services.agent.create({
       name: "assistant",
-      description: "KnowPilot 默认助手（测试 fixture）",
+      description: "OasisMind 默认助手（测试 fixture）",
       model: "deepseek-chat",
       systemPrompt: DEFAULT_ASSISTANT_SYSTEM_PROMPT,
       tools: [...ASSISTANT_DEFAULT_TOOLS],

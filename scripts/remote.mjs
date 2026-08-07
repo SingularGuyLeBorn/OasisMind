@@ -157,7 +157,7 @@ function assertRemoteCredentialKeyOrExit(env) {
 function printRemoteBanner(url, env) {
   const authMode = (env.AUTH_MODE || process.env.AUTH_MODE || "none").toLowerCase();
   console.log("\n══════════════════════════════════════════════════");
-  console.log("  🌐 KnowPilot 远程已就绪");
+  console.log("  🌐 OasisMind 远程已就绪");
   if (url) {
     console.log(`  公网地址: ${url}`);
   } else {
@@ -199,7 +199,7 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 async function main() {
-  console.log("\n  🚀 KnowPilot Remote（dev + tunnel）\n");
+  console.log("\n  🚀 OasisMind Remote（dev + tunnel）\n");
 
   const env = loadDotEnv(path.join(root, ".env"));
   assertRemoteAuthOrExit(env);

@@ -56,9 +56,9 @@ async function ensureWorkspaceDir(config: AppConfig, relPath: string): Promise<v
   try {
     const fs = await import("node:fs/promises");
     const abs = resolveSafePath(config, relPath);
-    await fs.mkdir(`${abs}/.knowpilot/shared/data`, { recursive: true });
-    await fs.mkdir(`${abs}/.knowpilot/shared/scratch`, { recursive: true });
-    await fs.writeFile(`${abs}/.knowpilot/state.json`, "{}");
+    await fs.mkdir(`${abs}/.oasismind/shared/data`, { recursive: true });
+    await fs.mkdir(`${abs}/.oasismind/shared/scratch`, { recursive: true });
+    await fs.writeFile(`${abs}/.oasismind/state.json`, "{}");
   } catch (err) {
     console.warn(`[swarmInitializer] Workspace 目录创建失败 (${relPath}):`, err);
   }

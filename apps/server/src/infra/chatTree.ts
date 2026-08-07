@@ -656,7 +656,7 @@ export async function summarizeAbandonedBranch(
         {
           role: "system",
           content:
-            "你是 KnowPilot 分支摘要助手。将以下被放弃的对话分支压缩为简洁中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
+            "你是 OasisMind 分支摘要助手。将以下被放弃的对话分支压缩为简洁中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
         },
         {
           role: "user",

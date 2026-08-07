@@ -41,18 +41,18 @@ describe("auth module", () => {
 
   it("getRemoteAccessInfo 反映公开 URL 与鉴权建议", () => {
     const config = createTestConfig("/tmp", {
-      publicUrl: "https://knowpilot.example.com",
+      publicUrl: "https://oasismind.example.com",
       auth: { mode: "none", password: "", token: "" },
     });
     const info = getRemoteAccessInfo(config);
-    expect(info.publicUrl).toBe("https://knowpilot.example.com");
+    expect(info.publicUrl).toBe("https://oasismind.example.com");
     expect(info.authRecommended).toBe(true);
     expect(info.authEnabled).toBe(false);
   });
 
   it("assertPublicUrlAuthSafe：生产环境有 PUBLIC_URL 无鉴权则抛错", () => {
     const config = createTestConfig("/tmp", {
-      publicUrl: "https://knowpilot.example.com",
+      publicUrl: "https://oasismind.example.com",
       auth: { mode: "none", password: "", token: "" },
       env: "production",
     });
@@ -69,7 +69,7 @@ describe("auth module", () => {
 
   it("assertPublicUrlAuthSafe：开发环境有 PUBLIC_URL 无鉴权仅警告不抛", () => {
     const config = createTestConfig("/tmp", {
-      publicUrl: "https://knowpilot.example.com",
+      publicUrl: "https://oasismind.example.com",
       auth: { mode: "none", password: "", token: "" },
       env: "development",
     });
@@ -82,7 +82,7 @@ describe("auth module", () => {
 
   it("assertPublicUrlAuthSafe：password 模式放行", () => {
     const config = createTestConfig("/tmp", {
-      publicUrl: "https://knowpilot.example.com",
+      publicUrl: "https://oasismind.example.com",
       auth: { mode: "password", password: "x", token: "t" },
     });
     expect(() => assertPublicUrlAuthSafe(config)).not.toThrow();

@@ -350,7 +350,7 @@ export const sessionRouter = router({
         services: ctx.services,
         sessionId: input.id,
         model: session.model || ctx.config.llm.defaultModel,
-        systemPrompt: session.systemPrompt || "你是 KnowPilot 助手。",
+        systemPrompt: session.systemPrompt || "你是 OasisMind 助手。",
         existingSummary: session.contextSummary,
         existingGeneration: (session as { compactGeneration?: number }).compactGeneration ?? 0,
         trigger: "manual",

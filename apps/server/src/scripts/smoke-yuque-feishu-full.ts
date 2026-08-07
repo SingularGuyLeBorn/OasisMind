@@ -151,7 +151,7 @@ async function smokeYuqueWeb() {
   const createdBook = await step("yuque_create_book", async () => {
     const raw = await yuqueCreateBook(
       PREFIX,
-      { description: "KnowPilot smoke test — safe to delete", public: 0, slug: PREFIX },
+      { description: "OasisMind smoke test — safe to delete", public: 0, slug: PREFIX },
       creds,
     );
     const book = unwrapData<any>(raw);
@@ -270,7 +270,7 @@ async function smokeYuqueV2() {
   const created = await step("yuque_create_repo", async () => {
     const repo = (await yuqueCreateRepo(
       PREFIX,
-      { description: "KnowPilot smoke", public: 0, slug: PREFIX, login },
+      { description: "OasisMind smoke", public: 0, slug: PREFIX, login },
       token,
     )) as any;
     namespace =
@@ -395,7 +395,7 @@ async function smokeFeishu() {
   });
 
   await step("feishu_search_docs", async () => {
-    const hits = await feishuSearchDocs("KnowPilot", prisma, config);
+    const hits = await feishuSearchDocs("OasisMind", prisma, config);
     const n = Array.isArray(hits) ? hits.length : typeof hits === "object" ? "obj" : "?";
     return `hits=${n}`;
   });
@@ -679,7 +679,7 @@ async function smokeFeishu() {
   const receiveId = process.env.FEISHU_SMOKE_RECEIVE_ID?.trim();
   if (receiveId) {
     await step("feishu_send_text", async () => {
-      await feishuSendText(receiveId, "open_id", `[KnowPilot smoke] ${PREFIX}`, config);
+      await feishuSendText(receiveId, "open_id", `[OasisMind smoke] ${PREFIX}`, config);
       return `to=${receiveId.slice(0, 8)}...`;
     });
     skip("feishu_send_message", "与 send_text 同通道，略");
@@ -690,7 +690,7 @@ async function smokeFeishu() {
 }
 
 async function main() {
-  console.log(`KnowPilot 语雀/飞书全量联调  prefix=${PREFIX}\n`);
+  console.log(`OasisMind 语雀/飞书全量联调  prefix=${PREFIX}\n`);
   await smokeYuqueWeb();
   await smokeYuqueV2();
   await smokeFeishu();

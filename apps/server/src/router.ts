@@ -1,5 +1,5 @@
 /**
- * KnowPilot 根路由合集与编译出口 (Root Router)
+ * OasisMind 根路由合集与编译出口 (Root Router)
  *
  * 【扁平化 + 按需叶子拆分】：
  * 1. 本文件只聚合 `infra/trpcRouters/*` 出口 `AppRouter`。

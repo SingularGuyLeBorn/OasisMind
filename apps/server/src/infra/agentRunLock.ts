@@ -60,7 +60,7 @@ export class RedisAgentRunLock implements AgentRunLock {
   ) {}
 
   private key(agentId: string): string {
-    return `knowpilot:agent-run-lock:${agentId}`;
+    return `oasismind:agent-run-lock:${agentId}`;
   }
 
   async withLock<T>(agentId: string, fn: () => Promise<T>): Promise<T> {

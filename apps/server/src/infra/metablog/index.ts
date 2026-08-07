@@ -1,5 +1,5 @@
 /**
- * MetaBlog 搜索 + 多媒体网页访问 — KnowPilot 服务端直调入口
+ * MetaBlog 搜索 + 多媒体网页访问 — OasisMind 服务端直调入口
  */
 
 export { smartSearch, getEngineStatus, resetSearchEngineConfigs } from "./search/router.js";

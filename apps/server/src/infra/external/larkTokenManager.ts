@@ -499,7 +499,7 @@ export async function authorizeUserViaBrowser(options?: {
       pending.done = true;
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(
-        "<h2 style='color:green'>飞书授权成功</h2><p>可关闭此页，回到 KnowPilot。</p>",
+        "<h2 style='color:green'>飞书授权成功</h2><p>可关闭此页，回到 OasisMind。</p>",
       );
     } catch (e) {
       pending.error = e instanceof Error ? e.message : String(e);

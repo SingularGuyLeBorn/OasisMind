@@ -58,7 +58,7 @@ export class WorkspaceService extends BaseService<CreateWorkspaceInput, UpdateWo
           failure({
             code: "SYSTEM_WORKSPACE_IMMUTABLE",
             message: "系统 Workspace 不可归档或删除",
-            suggestion: "系统 Workspace 是 KnowPilot 运行所必需，无法修改其状态。",
+            suggestion: "系统 Workspace 是 OasisMind 运行所必需，无法修改其状态。",
             retryable: false,
             operation: "update",
             entity: this.entityName,
@@ -87,7 +87,7 @@ export class WorkspaceService extends BaseService<CreateWorkspaceInput, UpdateWo
       return failure({
         code: "SYSTEM_WORKSPACE_NOT_DELETABLE",
         message: "系统 Workspace 不可删除",
-        suggestion: "系统 Workspace 是 KnowPilot 运行所必需。",
+        suggestion: "系统 Workspace 是 OasisMind 运行所必需。",
         retryable: false,
         operation: "delete",
         entity: this.entityName,

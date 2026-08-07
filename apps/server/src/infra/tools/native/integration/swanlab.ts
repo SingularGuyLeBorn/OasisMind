@@ -229,7 +229,7 @@ async function swanlabRunSeries(args: Record<string, unknown>, ctx: NativeToolCo
 
 /** 在当前 Agent Workspace 写入可运行的 SwanLab 训练脚手架（Python） */
 async function swanlabScaffoldTrain(args: Record<string, unknown>, ctx: NativeToolContext) {
-  const project = String(args.project || "knowpilot-exp").trim() || "knowpilot-exp";
+  const project = String(args.project || "oasismind-exp").trim() || "oasismind-exp";
   const fileName = String(args.fileName || "train_swanlab.py").trim() || "train_swanlab.py";
   if (!/^[\w.-]+\.py$/i.test(fileName)) throw new Error("fileName 须为简单 .py 文件名");
 
@@ -250,7 +250,7 @@ async function swanlabScaffoldTrain(args: Record<string, unknown>, ctx: NativeTo
   const abs = resolveWithinDir(baseDir, fileName);
 
   const snippet = `#!/usr/bin/env python3
-"""KnowPilot 生成的 SwanLab 训练脚手架 — ${project}
+"""OasisMind 生成的 SwanLab 训练脚手架 — ${project}
 依赖: pip install -U swanlab
 凭据: 环境变量 SWANLAB_API_KEY，或先 swanlab login
 """
@@ -270,7 +270,7 @@ def main() -> None:
             "batch_size": 32,
             "epochs": 5,
             "model": "toy-mlp",
-            "source": "knowpilot-scaffold",
+            "source": "oasismind-scaffold",
         },
     )
     print("swanlab run:", getattr(run, "public_run_url", None) or getattr(run, "url", ""))
@@ -412,7 +412,7 @@ export const swanlabDefs: NativeToolDefinition[] = [
     parameters: {
       type: "object",
       properties: {
-        project: { type: "string", description: "SwanLab 项目名，默认 knowpilot-exp" },
+        project: { type: "string", description: "SwanLab 项目名，默认 oasismind-exp" },
         fileName: { type: "string", description: "默认 train_swanlab.py" },
       },
     },

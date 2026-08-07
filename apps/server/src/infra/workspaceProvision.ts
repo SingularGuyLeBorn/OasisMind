@@ -6,7 +6,7 @@
  * 2. workspace.create tRPC 路由（用户在 /workspaces 页 UI 创建）
  *
  * 职责：创建 Workspace →（可选）管理 Agent + 主 session →（可选）初始任务起流 →
- *       .knowpilot/ 目录结构 → 审计日志
+ *       .oasismind/ 目录结构 → 审计日志
  *
  * 不变量（design-decisions Workspace Q5）：初始任务失败不回滚已创建的 Workspace。
  */
@@ -173,19 +173,19 @@ export async function provisionWorkspace(
     }
   }
 
-  // 4. .knowpilot/ 目录结构
+  // 4. .oasismind/ 目录结构
   try {
     const wsPath = resolveSafePath(config, path);
     const fs = await import("node:fs/promises");
-    await fs.mkdir(`${wsPath}/.knowpilot/shared/data`, { recursive: true });
-    await fs.mkdir(`${wsPath}/.knowpilot/shared/scratch`, { recursive: true });
-    await fs.writeFile(`${wsPath}/.knowpilot/state.json`, "{}");
+    await fs.mkdir(`${wsPath}/.oasismind/shared/data`, { recursive: true });
+    await fs.mkdir(`${wsPath}/.oasismind/shared/scratch`, { recursive: true });
+    await fs.writeFile(`${wsPath}/.oasismind/state.json`, "{}");
     await fs.appendFile(
-      `${wsPath}/.knowpilot/log.jsonl`,
+      `${wsPath}/.oasismind/log.jsonl`,
       JSON.stringify({ event: "workspace_created", at: new Date().toISOString(), by: input.operatorAgentId ?? "user" }) + "\n",
     );
   } catch (err) {
-    console.warn(`[workspaceProvision] .knowpilot/ 目录创建失败:`, err);
+    console.warn(`[workspaceProvision] .oasismind/ 目录创建失败:`, err);
   }
 
   // 5. 审计
