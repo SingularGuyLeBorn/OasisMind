@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Home, LayoutGrid, Menu, MessageSquare, Sofa, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { safeRouterPrefetch, scheduleIdlePrefetch } from "@/lib/safeRouterPrefetch";
 import { ThemeToggle } from "@/components/themeToggle";
 import type { LayoutMode } from "./layoutMode";
 
@@ -57,11 +58,7 @@ function isManageActive(pathname: string): boolean {
 }
 
 function prefetchHref(router: ReturnType<typeof useRouter>, href: string) {
-  try {
-    router.prefetch(href);
-  } catch {
-    // prefetch 失败不阻断导航
-  }
+  safeRouterPrefetch(router, href);
 }
 
 export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
@@ -70,24 +67,14 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
   const showMobileMenu = mode === "app" || mode === "content";
 
   useEffect(() => {
-    const warm = () => {
+    return scheduleIdlePrefetch(() => {
       for (const href of IDLE_PREFETCH_HREFS) {
         prefetchHref(router, href);
       }
       // 侧栏 chunk 提前拉，home↔app 切换不卡第一帧（勿预拉 Office/About three）
       import("./Sidebar").catch(() => {});
       import("./PostSidebar").catch(() => {});
-    };
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-    if (typeof w.requestIdleCallback === "function") {
-      const id = w.requestIdleCallback(warm, { timeout: 1200 });
-      return () => w.cancelIdleCallback?.(id);
-    }
-    const t = window.setTimeout(warm, 400);
-    return () => window.clearTimeout(t);
+    }, { timeoutMs: 1200, delayMs: 50 });
   }, [router]);
 
   return (

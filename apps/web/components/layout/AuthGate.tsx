@@ -25,7 +25,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (isLoading || !data?.enabled) return;
     if (isPublicPath(pathname)) return;
     if (data.authenticated || getAuthToken()) return;
-    router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    const href = `/login?redirect=${encodeURIComponent(pathname)}`;
+    // 等 App Router 初始化后再 replace，避免 Next 16「Router action before initialization」
+    const id = window.setTimeout(() => {
+      try {
+        router.replace(href);
+      } catch {
+        window.location.assign(href);
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [data, isLoading, pathname, router]);
 
   if (data?.enabled && !isPublicPath(pathname) && !data.authenticated && !getAuthToken()) {

@@ -1220,7 +1220,8 @@ export function OfficeScene({ onSelect, activeId, viewId }: OfficeSceneProps) {
   return (
     <Canvas
       className="h-full w-full touch-none"
-      shadows
+      // three 弃用 PCFSoftShadowMap；percentage → PCFShadowMap
+      shadows="percentage"
       dpr={[1, 1.5]}
       frameloop={pageVisible ? "always" : "never"}
       camera={{ position: initial.position, fov: 42, near: 0.1, far: 45 }}
