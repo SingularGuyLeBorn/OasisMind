@@ -366,7 +366,7 @@ async function sendViaAgentMail({ to, subject, text, html, shotPaths }) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         Accept: "application/json",
-        "User-Agent": "Mozilla/5.0 KnowPilot-NapCat/1.0",
+        "User-Agent": "Mozilla/5.0 OasisMind-NapCat/1.0",
       },
       body: JSON.stringify({
         to: [to],
@@ -501,8 +501,12 @@ export async function sendOwnerQqMessage(text) {
 async function collectOfflineShots(prefix) {
   const shots = [];
   const qr = await fetchWebUiLoginQrPng();
-  if (qr) shots.push(qr);
-  // 再截 QQ/登录相关窗（二维码页兜底）
+  if (qr) {
+    shots.push(qr);
+    // 已有 WebUI 二维码图时不再碰 QQ 窗口（硬抢焦点曾导致 QQ NT 卡死）
+    return shots;
+  }
+  // 无二维码时才软截一张桌面/窗（脚本已去掉 AttachThreadInput / TOPMOST）
   for (const p of captureQqWindows(prefix)) {
     if (!shots.includes(p)) shots.push(p);
   }
@@ -533,7 +537,7 @@ export async function notifyQqOfflineNeedHuman(reason = "offline", detail = "", 
 
   const shots = await collectOfflineShots(`offline-${crypto.randomBytes(2).toString("hex")}`);
   const to = recipient();
-  const subject = `[KnowPilot QQ掉线] ${account} 请扫码重登`;
+  const subject = `[OasisMind QQ掉线] ${account} 请扫码重登`;
   const text = [
     `QQ 账号 ${account} 已掉线，已尝试杀进程并重新拉起登录。`,
     `原因: ${reason}`,
@@ -603,7 +607,7 @@ export async function notifyQqOnlineSuccess(detail = "", opts = {}) {
   const account = (process.env.ONEBOT_QQ_ACCOUNT || "").trim() || "unknown";
   const shots = captureQqWindows(`online-${crypto.randomBytes(2).toString("hex")}`);
   const to = recipient();
-  const subject = `[KnowPilot QQ已上线] ${account} 重登成功`;
+  const subject = `[OasisMind QQ已上线] ${account} 重登成功`;
   const text = [
     `QQ 账号 ${account} 已重新在线 ✅`,
     detail ? `详情: ${detail}` : "",
@@ -630,7 +634,7 @@ export async function notifyQqOnlineSuccess(detail = "", opts = {}) {
   });
 
   const qqMsg = [
-    `【见微/KnowPilot】QQ ${account} 已重登成功 ✅`,
+    `【见微/OasisMind】QQ ${account} 已重登成功 ✅`,
     detail ? `详情: ${detail}` : "",
     `时间: ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`,
     "掉线扫码流程完成，守护继续运行。",

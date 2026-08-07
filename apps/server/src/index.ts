@@ -1,5 +1,5 @@
 /**
- * KnowPilot Server — Express + tRPC 入口
+ * OasisMind Server — Express + tRPC 入口
  */
 
 import "dotenv/config";
@@ -55,8 +55,8 @@ const app = express();
 // 纯本地直连无 XFF，req.ip 仍为 127.0.0.1，限流 skip 逻辑不受影响。
 app.set("trust proxy", "loopback");
 
-// 优先加载 monorepo 根目录 .env
-loadRootEnv();
+// 优先加载 monorepo 根目录 .env（override：文件权威，避免 pnpm parent 旧 env 卡住白名单）
+loadRootEnv(undefined, { override: true });
 
 // 初始化全局代理（国内访问国外 LLM/站点；读 HTTPS_PROXY/KP_HTTPS_PROXY，未设则直连）
 initGlobalProxy();
@@ -587,11 +587,6 @@ const server = app.listen(PORT, HOST, () => {
       console.warn(`  🧪 [Mock] 全部 Mock 开关已启用 (LLM/MCP/NATIVE_TOOLS) — 服务运行在测试模式，不调用任何真实外部 API。`);
     }
   }
-
-  // IM 通道：QQ Bot（未配凭证则跳过）
-  import("./infra/channels/index.js")
-    .then(({ bootstrapMessageChannels }) => bootstrapMessageChannels({ prisma, services, config }))
-    .catch((err) => console.error("❌ [IM] 通道启动失败:", err));
 
   // Goal 外环：hub run settled → 若有 pendingContinue 则起下一轮（显式事件，非定时器）
   import("./infra/goalLoop.js")

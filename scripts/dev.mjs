@@ -26,7 +26,7 @@ function loadRootEnv() {
     console.log(`  ℹ️  未找到根目录 .env (${envPath})，跳过环境变量预加载`);
     return;
   }
-  const content = fs.readFileSync(envPath, "utf8");
+  const content = fs.readFileSync(envPath, "utf8").replace(/^\uFEFF/, "");
   let loaded = 0;
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -39,12 +39,11 @@ function loadRootEnv() {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-      loaded++;
-    }
+    // 根 .env 为本地权威：覆盖父 shell 残留，保证改白名单后重启即生效
+    process.env[key] = value;
+    loaded++;
   }
-  console.log(`  ✅ 已加载根目录 .env：${loaded} 个键（已存在环境变量不覆盖）`);
+  console.log(`  ✅ 已加载根目录 .env：${loaded} 个键（文件覆盖）`);
   if (process.env.ONEBOT_QQ_ACCOUNT) {
     const autoOpen = process.env.ONEBOT_QQ_AUTO_OPEN !== "false";
     console.log(`  🤖 检测到 ONEBOT_QQ_ACCOUNT=${process.env.ONEBOT_QQ_ACCOUNT}，${autoOpen ? "将自动打开 QQ/NapCat 实例" : "自动打开已关闭，仅连接已运行实例"}`);
@@ -200,7 +199,7 @@ async function resolveOneBotHttpUrl(targetAccount) {
   throw new Error("未找到空闲的 OneBot HTTP 端口（3001-3099）");
 }
 
-/** 清理遗留的 KnowPilot server（占用 3010 会导致 health 误判旧进程、新 tsx watch 起不来） */
+/** 清理遗留的 OasisMind server（占用 3010 会导致 health 误判旧进程、新 tsx watch 起不来） */
 async function killOrphanServer(serverPort = 3010) {
   if (process.platform !== "win32") {
     try {
@@ -209,7 +208,7 @@ async function killOrphanServer(serverPort = 3010) {
       if (!pid) return;
       const { stdout: cmd } = await execAsync(`ps -p ${pid} -o args=`).catch(() => ({ stdout: "" }));
       if (!cmd.includes("tsx") && !cmd.includes("index.ts")) return;
-      if (!cmd.includes("KnowPilot") && !cmd.includes("apps/server")) return;
+      if (!cmd.includes("OasisMind") && !cmd.includes("apps/server")) return;
       console.log(`\n  ⚠️  检测到遗留 Server 进程 PID ${pid}，正在清理…`);
       await execAsync(`kill -9 ${pid}`).catch(() => {});
       await new Promise((r) => setTimeout(r, 500));
@@ -224,10 +223,10 @@ async function killOrphanServer(serverPort = 3010) {
     if (!listeningPid) return;
 
     const cmdStdout = await getProcessCommandLine(listeningPid);
-    const isKnowPilotServer =
+    const isOasisMindServer =
       (cmdStdout.includes("tsx") || cmdStdout.includes("index.ts")) &&
-      (cmdStdout.includes(root) || cmdStdout.includes("KnowPilot") || cmdStdout.includes("apps\\server") || cmdStdout.includes("apps/server"));
-    if (!isKnowPilotServer) return;
+      (cmdStdout.includes(root) || cmdStdout.includes("OasisMind") || cmdStdout.includes("apps\\server") || cmdStdout.includes("apps/server"));
+    if (!isOasisMindServer) return;
 
     console.log(`\n  ⚠️  检测到遗留 Server 进程 PID ${listeningPid}，正在清理…`);
     await execAsync(`taskkill /pid ${listeningPid} /T /F`).catch(() => {});
@@ -361,7 +360,7 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 async function main() {
-  console.log("\n  🌱 KnowPilot Dev\n");
+  console.log("\n  🌱 OasisMind Dev\n");
 
   if (!skipSync) {
     console.log("  📦 同步 content/ → SQLite（含 FTS）…\n");

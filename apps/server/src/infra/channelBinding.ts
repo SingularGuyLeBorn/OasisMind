@@ -144,6 +144,7 @@ export async function resolveOrCreateChannelBinding(
   config: AppConfig,
   input: {
     channel: ImChannel;
+    /** 对端用户稳定 id（QQ 号等）；禁止用群号——不同用户必须不同 session */
     peerId: string;
     chatId?: string | null;
     agentId?: string;
@@ -151,13 +152,17 @@ export async function resolveOrCreateChannelBinding(
     forceChatId?: string;
   },
 ): Promise<ChannelBindingRow> {
+  const peerId = input.peerId.trim();
+  if (!peerId) {
+    throw new Error("channelBinding: peerId 不能为空（不同 QQ 号必须隔离到不同 session）");
+  }
   const chatId = input.forceChatId?.trim() || input.chatId?.trim() || "";
   const existing = !input.forceChatId
     ? await prisma.channelBinding.findUnique({
         where: {
           channel_peerId_chatId: {
             channel: input.channel,
-            peerId: input.peerId,
+            peerId,
             chatId,
           },
         },
@@ -187,9 +192,10 @@ export async function resolveOrCreateChannelBinding(
     resolved = await resolveDefaultAgentId(prisma);
   }
 
+  // title 含完整 peerId，侧栏一眼区分不同 QQ，禁止截断导致两号看起来像同一会话
   const title = chatId
-    ? `IM · ${input.channel} · ${input.peerId.slice(0, 12)} · ${chatId.slice(0, 20)}`
-    : `IM · ${input.channel} · ${input.peerId.slice(0, 12)}`;
+    ? `IM · ${input.channel} · ${peerId} · g:${chatId}`
+    : `IM · ${input.channel} · ${peerId}`;
   const model = resolved.model || config.llm.defaultModel || DEFAULT_LLM_MODEL;
 
   // 为 IM 渠道追加纯文本格式约束：QQ 等 IM 不渲染 Markdown，用户可见才透明。
@@ -220,7 +226,7 @@ export async function resolveOrCreateChannelBinding(
   const created = await prisma.channelBinding.create({
     data: {
       channel: input.channel,
-      peerId: input.peerId,
+      peerId,
       chatId,
       sessionId: dedicated.id,
       agentId: resolved.id,
