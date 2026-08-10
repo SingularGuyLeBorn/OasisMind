@@ -7,6 +7,14 @@ import { AdminPage, EmptyState } from "@/components/shared";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 
+function chatHref(sessionId: string, agentId?: string | null) {
+  const params = new URLSearchParams();
+  params.set("sessionId", sessionId);
+  if (agentId) params.set("agentId", agentId);
+  params.set("view", "main");
+  return `/chat?${params.toString()}`;
+}
+
 export default function ChannelsPage() {
   const statusQ = trpc.channel.status.useQuery(undefined, { refetchInterval: 5_000 });
   const bindingsQ = trpc.channel.listBindings.useQuery(undefined, { refetchInterval: 10_000 });
@@ -28,6 +36,7 @@ export default function ChannelsPage() {
   const adapters = statusQ.data?.adapters ?? [];
   const bindings = bindingsQ.data?.items ?? [];
   const defaultQqAgent = statusQ.data?.defaultQqAgent ?? null;
+  const latestQq = bindings.find((b) => b.channel === "qq") ?? null;
 
   return (
     <AdminPage>
@@ -54,6 +63,32 @@ export default function ChannelsPage() {
           </p>
         )}
       </header>
+
+      {latestQq ? (
+        <div className="mb-4 rounded-xl border border-[var(--kp-brand)]/35 bg-[var(--kp-brand-soft)] p-4">
+          <p className="text-sm font-semibold text-[var(--kp-text-1)]">当前 QQ 连到哪里</p>
+          <p className="mt-1 text-xs text-[var(--kp-text-2)]">
+            Agent：{latestQq.agentName || latestQq.agentId}
+            {latestQq.workspaceName ? ` · Workspace：${latestQq.workspaceName}` : ""}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--kp-text-2)]">
+            会话：{latestQq.sessionTitle || latestQq.title || latestQq.sessionId}
+            {latestQq.chatId && !String(latestQq.chatId).includes("新话题")
+              ? ` · 群 ${latestQq.chatId}`
+              : " · 私聊"}
+          </p>
+          <Link
+            className="mt-3 inline-flex rounded-md bg-[var(--kp-brand)] px-3 py-1.5 text-sm text-white"
+            href={chatHref(latestQq.sessionId, latestQq.agentId)}
+          >
+            打开这个会话
+          </Link>
+          <p className="mt-2 text-[11px] text-[var(--kp-text-3)]">
+            Chat 侧栏须切到对应 Workspace /「主 Agent」才能在历史列表里看到；也可直接点上方按钮深链打开。
+          </p>
+        </div>
+      ) : null}
+
       <div className="mb-4 rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-4 text-sm text-[var(--kp-text-2)]">
         <p className="font-medium text-[var(--kp-text-1)]">手机 QQ 指挥家里 Agent（官方 Bot）</p>
         <ol className="mt-2 list-inside list-decimal space-y-1 text-xs">
@@ -67,7 +102,8 @@ export default function ChannelsPage() {
             >
               q.qq.com
             </a>{" "}
-            创建机器人，勾选<strong>单聊</strong>能力，复制 AppID / AppSecret
+            创建机器人，开通<strong>单聊</strong> + <strong>群聊@机器人</strong>能力与对应事件订阅，复制 AppID /
+            AppSecret
           </li>
           <li>
             根目录 <code>.env</code> 填写 <code>QQ_BOT_APP_ID</code>、<code>QQ_BOT_SECRET</code>
@@ -82,23 +118,21 @@ export default function ChannelsPage() {
           </li>
           <li>
             群白名单 <code>QQ_BOT_ALLOWED_GROUPS</code>：空 ={" "}
-            <strong>不接群聊</strong>；填群 openid 后 = 仅「白名单用户在该群 @ 机器人」才回复（被拒看{" "}
-            <code>rejectedGroup=…</code>）。平台本身只推 @ 事件。
+            <strong>不接群聊</strong>；<code>*</code> = 任意群；或填群 openid。群内仍须{" "}
+            <strong>@机器人</strong>（平台不推未 @ 的群消息），且发送者须在用户白名单。被拒看{" "}
+            <code>rejectedGroup=…</code>（可把该 openid 写进白名单）。
           </li>
           <li>
-            重启 server → 下方适配器状态为 connected → 本页「模拟入站」通 → 手机 QQ 私聊该机器人验证
+            重启 server → 下方适配器状态为 connected（detail 含 <code>groups=*</code> 或群数量）→
+            本页「模拟入站」通 → 手机 QQ 私聊 / 群里 @ 验证
           </li>
           <li>
-            账号白名单 = <code>QQ_BOT_ALLOWED_OPENIDS</code>（你的 openid）。本页 Bot
-            标注「暂不支持群聊」时群能力不可用，与见微白名单无关。
+            找不到会话：来本页看「当前 QQ 连到哪里」，或侧栏切到「QQ 远程指挥 Workspace」→「QQ 远程指挥助手」。
           </li>
-          <li>
-            NapCat/OneBot 已退役，不再拉起 QQ、不再发掉线邮件。
-          </li>
+          <li>NapCat/OneBot 已退役，不再拉起 QQ、不再发掉线邮件。</li>
         </ol>
         <p className="mt-3 text-xs text-[var(--kp-text-3)]">
           同步 Agent：改完 <code>config/agents/qq-bot.md</code> 后执行 <code>pnpm db:sync</code>。
-            对话侧栏切到 Workspace「QQ 远程指挥 Workspace」即可看到 Agent「QQ 远程指挥助手」。
         </p>
       </div>
 
@@ -164,7 +198,10 @@ export default function ChannelsPage() {
             {"sessionId" in simMut.data && simMut.data.sessionId ? (
               <>
                 {" "}
-                <Link className="text-[var(--kp-brand-deep)] underline" href={`/chat?session=${simMut.data.sessionId}`}>
+                <Link
+                  className="text-[var(--kp-brand-deep)] underline"
+                  href={chatHref(String(simMut.data.sessionId), defaultQqAgent?.id)}
+                >
                   打开会话
                 </Link>
               </>
@@ -181,39 +218,45 @@ export default function ChannelsPage() {
         <EmptyState title="暂无绑定" description="收到第一条 QQ 消息或模拟入站后会出现。" />
       ) : (
         <ul className="divide-y divide-[var(--kp-border)] rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)]">
-          {bindings.map((b) => (
-            <li key={b.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
-              <div className="min-w-0">
-                <p className="truncate font-medium text-[var(--kp-text-1)]">
-                  {b.channel} · {b.peerId}
-                  {b.chatId ? ` · 群 ${b.chatId}` : ""}
-                </p>
-                <p className="truncate text-xs text-[var(--kp-text-3)]">
-                  Agent：{" "}
-                  {b.agentName ? (
-                    <Link className="underline" href={`/agents`}>
-                      {b.agentName}
+          {bindings.map((b) => {
+            const isRealGroup = Boolean(b.chatId) && !String(b.chatId).includes("新话题");
+            return (
+              <li key={b.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-[var(--kp-text-1)]">
+                    {b.sessionTitle || b.title || `${b.channel} · ${b.peerId}`}
+                  </p>
+                  <p className="truncate text-xs text-[var(--kp-text-3)]">
+                    {b.channel}
+                    {isRealGroup ? ` · 群 ${b.chatId}` : " · 私聊"} · peer {b.peerId.slice(0, 12)}…
+                  </p>
+                  <p className="truncate text-xs text-[var(--kp-text-3)]">
+                    Agent：{" "}
+                    {b.agentName ? (
+                      <Link className="underline" href="/agents">
+                        {b.agentName}
+                      </Link>
+                    ) : (
+                      <span className="font-mono">{b.agentId}</span>
+                    )}
+                    {b.workspaceName ? ` · ${b.workspaceName}` : ""}
+                    {" · "}
+                    <Link className="underline" href={chatHref(b.sessionId, b.agentId)}>
+                      打开会话
                     </Link>
-                  ) : (
-                    <span className="font-mono">{b.agentId}</span>
-                  )}
-                  {" · "}
-                  {b.title || "—"} ·{" "}
-                  <Link className="underline" href={`/chat?session=${b.sessionId}`}>
-                    会话
-                  </Link>
-                </p>
-              </div>
-              <button
-                type="button"
-                title="删除绑定"
-                className="rounded-md p-1.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-red-600"
-                onClick={() => deleteMut.mutate({ id: b.id })}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  title="删除绑定"
+                  className="rounded-md p-1.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-red-600"
+                  onClick={() => deleteMut.mutate({ id: b.id })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </AdminPage>

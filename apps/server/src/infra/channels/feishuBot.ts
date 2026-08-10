@@ -238,6 +238,13 @@ export function createFeishuBotAdapter(cfg: FeishuBotConfig): ChannelAdapter & {
       replyCtx.clear();
     },
     reply: async (msg, chunk: ChannelReplyChunk) => {
+      // IM 状态条（排队/处理中）立即发；token 中间片仍跳过
+      if (chunk.imStatus === "queued" || chunk.imStatus === "working") {
+        const statusText = chunk.text.trim();
+        if (!statusText) return;
+        // 复用终稿路径发一条短状态
+        chunk = { ...chunk, finish: true, text: statusText };
+      }
       if (!chunk.finish && !chunk.text.trim()) return;
       // 流式中间片可跳过；终稿必发。若只有中间片带文本也合并策略：终稿时发全文
       if (!chunk.finish) return;

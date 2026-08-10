@@ -32,6 +32,39 @@ describe("A4 startIfNotRunning 三态", () => {
     await hub.dispose();
   });
 
+  it("起流同栈推 session_run_started（QQ/IM 前端 resume 依赖此事件）", async () => {
+    const sid = "a4-run-started-push";
+    const received: Array<{ type: string; reason?: string }> = [];
+    hub.subscribeExternal(sid, (ev) => {
+      if (ev.type === "session_run_started") {
+        received.push({ type: ev.type, reason: ev.reason });
+      }
+    });
+
+    const started = await hub.startIfNotRunning(
+      sid,
+      { sessionId: sid, message: "hi", clientMessageId: "c-push" },
+      async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      },
+    );
+    expect(started).toBe("started");
+    expect(received).toEqual([{ type: "session_run_started", reason: "hub_start" }]);
+    await hub.waitFor(sid);
+  });
+
+  it("pending: 占位键不起 session_run_started（无真实 session 订阅方）", async () => {
+    const key = `pending:${randomUUID()}`;
+    const received: string[] = [];
+    hub.subscribeExternal(key, (ev) => received.push(ev.type));
+
+    await hub.startIfNotRunning(key, { message: "a", clientMessageId: "ca" }, async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(received.filter((t) => t === "session_run_started")).toEqual([]);
+    await hub.waitFor(key);
+  });
+
   it("同 clientMessageId 重试 → duplicate；不同消息 → busy", async () => {
     const sid = "a4-tri-session";
     const input: AgentChatInput = {

@@ -6,7 +6,7 @@
  */
 
 import { memo } from "react";
-import { AlarmClock, Check, HeartPulse, Pencil, Trash2, X } from "lucide-react";
+import { AlarmClock, Check, HeartPulse, MessageCircle, Pencil, Trash2, X } from "lucide-react";
 import type { ChatSession } from "@knowpilot/shared";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
@@ -91,6 +91,15 @@ export const SessionListItem = memo(function SessionListItem({
         )}
       >
         <div className="flex min-w-0 items-center gap-1.5">
+          {session.kind === "channel" ? (
+            <span
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-sky-100 p-0.5 text-sky-700"
+              title="QQ / IM 通道会话"
+              aria-label="IM 通道"
+            >
+              <MessageCircle className="h-3 w-3" />
+            </span>
+          ) : null}
           {session.kind === "cron" ? (
             <span
               className="inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 p-0.5 text-amber-700"

@@ -111,6 +111,13 @@ export async function loadQqOfficialMediaBytes(
   return { buf: fs.readFileSync(abs), fileName: path.basename(abs) };
 }
 
+export type QqOfficialMessageReference = {
+  /** 被引用消息 ID（通常=用户入站 msg_id） */
+  messageId: string;
+  /** 取引用详情失败时仍发送（默认 true，避免引用失效卡死回发） */
+  ignoreGetMessageError?: boolean;
+};
+
 export type QqOfficialSendMediaOpts = {
   openid: string;
   groupOpenid?: string;
@@ -120,6 +127,8 @@ export type QqOfficialSendMediaOpts = {
   /** 被动回复窗口；省略则尝试 peek 最近入站 */
   msgId?: string;
   msgSeq?: number;
+  /** 可见引用气泡（与 msg_id 被动窗口正交） */
+  messageReference?: QqOfficialMessageReference;
   accessToken?: string;
 };
 
@@ -129,8 +138,22 @@ export type QqOfficialSendTextOpts = {
   text: string;
   msgId?: string;
   msgSeq?: number;
+  /** 可见引用气泡（与 msg_id 被动窗口正交） */
+  messageReference?: QqOfficialMessageReference;
   accessToken?: string;
 };
+
+function applyMessageReference(
+  body: Record<string, unknown>,
+  ref: QqOfficialMessageReference | undefined,
+): void {
+  const messageId = ref?.messageId?.trim();
+  if (!messageId) return;
+  body.message_reference = {
+    message_id: messageId,
+    ignore_get_message_error: ref?.ignoreGetMessageError !== false,
+  };
+}
 
 function peerPath(openid: string, groupOpenid?: string): string {
   return groupOpenid
@@ -172,6 +195,7 @@ export async function sendQqOfficialText(
     msg_seq: msgSeq,
   };
   if (msgId) body.msg_id = msgId;
+  applyMessageReference(body, opts.messageReference);
   await postQqOfficialJson(accessToken, `${peerPath(opts.openid, opts.groupOpenid)}/messages`, body);
   return { msgSeq, usedMsgId: msgId };
 }
@@ -204,6 +228,7 @@ export async function sendQqOfficialMedia(
     media: { file_info: fileInfo },
   };
   if (msgId) body.msg_id = msgId;
+  applyMessageReference(body, opts.messageReference);
   // 图片可附带空 content；其它类型 content 常被忽略
   if (opts.kind === "image") body.content = "";
 

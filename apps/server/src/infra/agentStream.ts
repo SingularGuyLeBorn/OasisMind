@@ -160,11 +160,11 @@ export type AgentStreamEvent =
       agentId?: string;
       mode?: "summary" | "firstMessage";
     }
-  /** 服务端自动消费异步结果后启动了会话流（前端应挂接 listRunning / resume） */
+  /** 服务端起流后通知前端挂接 agent 流（resume）；Hub.start 统一推 hub_start */
   | {
       type: "session_run_started";
       sessionId: string;
-      reason: "async_auto_consume" | "subagent_start";
+      reason: "hub_start" | "async_auto_consume" | "subagent_start";
       jobId?: string;
     }
   /** Agent Cron 新建 briefing 会话并起流：推到该 Agent 主会话，供其它 Chat 标签页刷新侧栏 */

@@ -83,6 +83,75 @@ function parseCsvEnv(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/**
+ * 数字号 → 平台 openid 映射（官方事件只有 openid）。
+ * 用户：`2251061018=14A17D73...`；群：`1098299609=2FE7E775...`
+ * 多项用逗号或分号分隔。
+ */
+export function parseQqIdOpenIdMap(raw: string | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  const body = (raw || "").split("#")[0] || "";
+  for (const part of body.split(/[,;]/)) {
+    const s = part.trim();
+    if (!s) continue;
+    const eq = s.indexOf("=");
+    if (eq <= 0) continue;
+    const id = s.slice(0, eq).trim();
+    const openid = s.slice(eq + 1).trim();
+    if (/^\d{5,12}$/.test(id) && openid) map.set(id, openid);
+  }
+  return map;
+}
+
+/** @deprecated 用 parseQqIdOpenIdMap */
+export const parseQqOpenIdMap = parseQqIdOpenIdMap;
+
+/**
+ * 把白名单里的数字 QQ/群号展开为 openid；已是 openid / * 的原样保留。
+ * 未映射的纯数字项会 warn 并丢弃（避免误以为数字号能直接匹配事件）。
+ */
+export function expandAllowedIds(
+  entries: string[],
+  idToOpenId: Map<string, string>,
+  label: string,
+): string[] {
+  const out = new Set<string>();
+  for (const e of entries) {
+    if (e === "*") {
+      out.add("*");
+      continue;
+    }
+    if (/^\d{5,12}$/.test(e)) {
+      const mapped = idToOpenId.get(e);
+      if (mapped) {
+        out.add(mapped);
+        out.add(e); // 若平台偶发带数字 group_id 也放行
+      } else {
+        console.warn(
+          `[qq] ${label} 含数字号 ${e}，但无对应 OPENID_MAP（官方事件多为 openid）`,
+        );
+        out.add(e); // 仍保留：平台若直接推数字 id 可命中
+      }
+      continue;
+    }
+    out.add(e);
+  }
+  for (const [id, openid] of idToOpenId) {
+    if (entries.includes(id) || entries.includes(openid) || entries.includes("*")) {
+      out.add(openid);
+      out.add(id);
+    }
+  }
+  return [...out];
+}
+
+export function expandAllowedOpenIds(
+  entries: string[],
+  qqToOpenId: Map<string, string>,
+): string[] {
+  return expandAllowedIds(entries, qqToOpenId, "QQ_BOT_ALLOWED_OPENIDS");
+}
+
 type TokenState = { accessToken: string; expiresAt: number };
 
 export type QqInboundParsed = {
@@ -90,6 +159,10 @@ export type QqInboundParsed = {
   content: string;
   msgId: string;
   groupOpenid?: string;
+  /** 事件原始 d（附件/引用解析用） */
+  rawD: Record<string, unknown>;
+  /** 本条或引用里是否带附件（允许无文字） */
+  hasMediaHint: boolean;
 };
 
 /** 纯函数：从 webhook / WS 事件体抽出入站字段（供单测） */
@@ -109,8 +182,17 @@ export function parseQqInboundPayload(body: unknown): QqInboundParsed | { error:
     .trim();
   const msgId = String(d.id ?? d.msg_id ?? randomUUID());
   const groupOpenid = String(d.group_openid || d.group_id || "").trim() || undefined;
-  if (!openid || !content) return { error: "缺 openid/content" };
-  return { openid, content, msgId, groupOpenid };
+  // 延迟 import 避免环；单测用动态收集
+  let hasMediaHint = Array.isArray(d.attachments) && d.attachments.length > 0;
+  if (!hasMediaHint && Array.isArray(d.msg_elements)) {
+    hasMediaHint = d.msg_elements.some((el) => {
+      const e = el as { attachments?: unknown[] };
+      return Array.isArray(e?.attachments) && e.attachments.length > 0;
+    });
+  }
+  if (!openid) return { error: "缺 openid" };
+  if (!content && !hasMediaHint) return { error: "缺 openid/content" };
+  return { openid, content, msgId, groupOpenid, rawD: d, hasMediaHint };
 }
 
 /** Identify 帧 payload（供单测断言 intents） */
@@ -185,8 +267,30 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
   }
   const replyCtx = new Map<
     string,
-    { openid: string; msgId: string; isGroup: boolean; groupOpenid?: string }
+    {
+      openid: string;
+      msgId: string;
+      isGroup: boolean;
+      groupOpenid?: string;
+      /** 同一 msg_id 下一条可用的 msg_seq（状态条与终稿共享） */
+      nextMsgSeq: number;
+    }
   >();
+
+  const ensureReplyCtx = (msg: UnifiedMessage) => {
+    const key = msg.meta.eventId;
+    const existing = replyCtx.get(key);
+    if (existing) return existing;
+    const created = {
+      openid: msg.envelope.peerId,
+      msgId: msg.meta.replyTo || msg.meta.eventId,
+      isGroup: Boolean(msg.envelope.chatId),
+      groupOpenid: msg.envelope.chatId,
+      nextMsgSeq: 1,
+    };
+    replyCtx.set(key, created);
+    return created;
+  };
 
   const clearHeartbeat = () => {
     if (heartbeatTimer) {
@@ -204,72 +308,77 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
     return accessToken;
   };
 
-  const ingestText = (opts: {
-    openid: string;
-    text: string;
-    msgId: string;
-    groupOpenid?: string;
-  }) => {
+  const ingestParsed = (parsed: QqInboundParsed) => {
     const gate = isQqInboundAllowed(cfg, {
-      openid: opts.openid,
-      groupOpenid: opts.groupOpenid,
+      openid: parsed.openid,
+      groupOpenid: parsed.groupOpenid,
     });
     if (!gate.ok) {
       if (gate.reason.startsWith("user_")) {
-        lastRejectedOpenId = opts.openid;
+        lastRejectedOpenId = parsed.openid;
         console.log(
-          `[qq] 忽略非白名单用户 ${opts.openid}（写入 QQ_BOT_ALLOWED_OPENIDS）`,
+          `[qq] 忽略非白名单用户 ${parsed.openid}（写入 QQ_BOT_ALLOWED_OPENIDS）`,
         );
       } else {
-        lastRejectedGroup = opts.groupOpenid;
+        lastRejectedGroup = parsed.groupOpenid;
         console.log(
-          `[qq] 忽略非白名单群 ${opts.groupOpenid}（指定人×指定群：填 QQ_BOT_ALLOWED_GROUPS；平台侧须 @ 机器人才推送）`,
+          `[qq] 忽略非白名单群 ${parsed.groupOpenid}（指定人×指定群：填 QQ_BOT_ALLOWED_GROUPS；平台侧须 @ 机器人才推送）`,
         );
       }
       return;
     }
-    const text = opts.text.trim();
-    if (!text) return;
-    rememberQqOfficialInbound({
-      openid: opts.openid,
-      groupOpenid: opts.groupOpenid,
-      msgId: opts.msgId,
-    });
-    const msg: UnifiedMessage = {
-      envelope: {
-        channel: "qq",
-        peerId: opts.openid,
-        chatId: opts.groupOpenid,
-        timestamp: new Date().toISOString(),
-      },
-      payload: { text },
-      meta: { eventId: opts.msgId, replyTo: opts.msgId },
-    };
-    replyCtx.set(opts.msgId, {
-      openid: opts.openid,
-      msgId: opts.msgId,
-      isGroup: Boolean(opts.groupOpenid),
-      groupOpenid: opts.groupOpenid,
-    });
-    handleIncomingMessage(msg)
-      .then((r) => {
+
+    void (async () => {
+      try {
+        const { composeQqUserText, materializeQqInboundMedia } = await import(
+          "./qqInboundMedia.js"
+        );
+        const media = await materializeQqInboundMedia(parsed.rawD);
+        const text = composeQqUserText({
+          content: parsed.content,
+          quotedText: media.quotedText,
+          mediaLines: media.mediaLines,
+        });
+        if (!text.trim() && media.chatAttachments.length === 0) return;
+
+        rememberQqOfficialInbound({
+          openid: parsed.openid,
+          groupOpenid: parsed.groupOpenid,
+          msgId: parsed.msgId,
+        });
+        const msg: UnifiedMessage = {
+          envelope: {
+            channel: "qq",
+            peerId: parsed.openid,
+            chatId: parsed.groupOpenid,
+            timestamp: new Date().toISOString(),
+          },
+          payload: {
+            text: text || "（见附件）",
+            attachments: media.chatAttachments.length ? media.chatAttachments : undefined,
+          },
+          meta: { eventId: parsed.msgId, replyTo: parsed.msgId, raw: parsed.rawD },
+        };
+        replyCtx.set(parsed.msgId, {
+          openid: parsed.openid,
+          msgId: parsed.msgId,
+          isGroup: Boolean(parsed.groupOpenid),
+          groupOpenid: parsed.groupOpenid,
+          nextMsgSeq: 1,
+        });
+        const r = await handleIncomingMessage(msg);
         if (!r.ok) console.warn(`[qq] 入站失败: ${r.error}`);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.warn(`[qq] 入站异常:`, err instanceof Error ? err.message : err);
-      });
+      }
+    })();
   };
 
   /** 供 Express webhook / WS 共用 */
   const ingestWebhookPayload = (body: unknown) => {
     const parsed = parseQqInboundPayload(body);
     if ("error" in parsed) return { ok: false as const, error: parsed.error };
-    ingestText({
-      openid: parsed.openid,
-      text: parsed.content,
-      msgId: parsed.msgId,
-      groupOpenid: parsed.groupOpenid,
-    });
+    ingestParsed(parsed);
     return { ok: true as const };
   };
 
@@ -403,6 +512,17 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           if (frame.t === "C2C_MESSAGE_CREATE" || frame.t === "GROUP_AT_MESSAGE_CREATE") {
             ingestWebhookPayload({ d: frame.d });
           }
+          if (frame.t === "GROUP_ADD_ROBOT") {
+            const g = String(
+              (frame.d as { group_openid?: string } | undefined)?.group_openid || "",
+            ).trim();
+            if (g) {
+              console.log(
+                `[qq] 机器人被拉进群 group_openid=${g}（写入 QQ_BOT_ALLOWED_GROUPS 或设 * 后 @ 即可）`,
+              );
+              lastRejectedGroup = undefined;
+            }
+          }
         } catch {
           /* ignore malformed frames */
         }
@@ -471,27 +591,21 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       state = "disconnected";
     },
     reply: async (msg, chunk: ChannelReplyChunk) => {
-      // 只发终稿；可附带思考（短文本 / 长则 txt 富媒体），同一 msg_id 用 msg_seq 区分
-      if (!chunk.finish) return;
       const accessToken = await ensureToken();
-      const ctx = replyCtx.get(msg.meta.eventId) ?? {
-        openid: msg.envelope.peerId,
-        msgId: msg.meta.eventId,
-        isGroup: Boolean(msg.envelope.chatId),
-        groupOpenid: msg.envelope.chatId,
-      };
-      let msgSeq = 1;
+      const ctx = ensureReplyCtx(msg);
       const openid = ctx.openid;
       const groupOpenid = ctx.isGroup ? ctx.groupOpenid : undefined;
+      const quoteRef = { messageId: ctx.msgId, ignoreGetMessageError: true };
 
-      const sendText = async (text: string) => {
+      const sendText = async (text: string, withQuote: boolean) => {
         try {
           await sendQqOfficialText({
             openid,
             groupOpenid,
             text: qqReplyPlainText(text),
             msgId: ctx.msgId,
-            msgSeq: msgSeq++,
+            msgSeq: ctx.nextMsgSeq++,
+            messageReference: withQuote ? quoteRef : undefined,
             accessToken,
           });
         } catch (err) {
@@ -499,6 +613,17 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           throw err;
         }
       };
+
+      // 状态条：排队 / 开始处理（非 token 流；官方无同气泡编辑）
+      if (chunk.imStatus === "queued" || chunk.imStatus === "working") {
+        const text = chunk.text.trim();
+        if (!text) return;
+        await sendText(text, true);
+        return;
+      }
+
+      // token 节流片丢弃——QQ 不能复用 Web 流式气泡
+      if (!chunk.finish) return;
 
       const sendMediaFile = async (
         file: string,
@@ -513,7 +638,8 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             file,
             fileName,
             msgId: ctx.msgId,
-            msgSeq: msgSeq++,
+            msgSeq: ctx.nextMsgSeq++,
+            messageReference: quoteRef,
             accessToken,
           });
         } catch (err) {
@@ -529,7 +655,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
 
       for (const plan of plans) {
         if (plan.kind === "thinking_text") {
-          await sendText(plan.text);
+          await sendText(plan.text, true);
         } else if (plan.kind === "thinking_file") {
           const abs = writeThinkingTxtFile(plan.fileName, plan.content);
           try {
@@ -542,10 +668,11 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             const preview = plan.content.slice(0, 800);
             await sendText(
               `【思考过程较长，完整内容见电脑 /chat】\n${preview}${plan.content.length > 800 ? "\n…" : ""}`,
+              true,
             );
           }
         } else {
-          await sendText(plan.text);
+          await sendText(plan.text, true);
           for (const img of plan.imageUrls) {
             try {
               const local = resolveProjectMediaPath(img);
@@ -556,7 +683,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
                 img,
                 err instanceof Error ? err.message : err,
               );
-              await sendText(`（配图发送失败：${img}）`).catch(() => {});
+              await sendText(`（配图发送失败：${img}）`, false).catch(() => {});
             }
           }
         }
@@ -574,12 +701,16 @@ export function loadQqBotConfigFromEnv(): QqBotConfig {
   const appId = (process.env.QQ_BOT_APP_ID || "").trim();
   const secret = (process.env.QQ_BOT_SECRET || "").trim();
   const yamlOff = process.env.QQ_BOT_ENABLED === "false";
+  const qqMap = parseQqIdOpenIdMap(process.env.QQ_BOT_QQ_OPENID_MAP);
+  const groupMap = parseQqIdOpenIdMap(process.env.QQ_BOT_GROUP_OPENID_MAP);
+  const allowedUsers = parseCsvEnv(process.env.QQ_BOT_ALLOWED_OPENIDS);
+  const allowedGroups = parseCsvEnv(process.env.QQ_BOT_ALLOWED_GROUPS);
   return {
     appId,
     secret,
     enabled: Boolean(appId && secret) && !yamlOff,
-    allowedOpenIds: parseCsvEnv(process.env.QQ_BOT_ALLOWED_OPENIDS),
-    allowedGroups: parseCsvEnv(process.env.QQ_BOT_ALLOWED_GROUPS),
+    allowedOpenIds: expandAllowedIds(allowedUsers, qqMap, "QQ_BOT_ALLOWED_OPENIDS"),
+    allowedGroups: expandAllowedIds(allowedGroups, groupMap, "QQ_BOT_ALLOWED_GROUPS"),
     useWs: process.env.QQ_BOT_WS === "1" || process.env.QQ_BOT_WS === "true",
   };
 }

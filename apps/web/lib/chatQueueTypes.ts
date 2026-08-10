@@ -551,12 +551,14 @@ export function mergeUserQueueFromDb(
   tombstonedDbIds?: ReadonlySet<string>,
 ): ChatQueueItem[] {
   // steer/follow_up 是内部注入态，未移交前不进发送队列 UI（移交后 kind=user）
+  // im_inbound 由服务端 imChannelDrain 消费，前端 drain 禁止接手（否则会丢 QQ 引用回发）
   const dbItems = dbRows
     .filter(
       (r) =>
         !tombstonedDbIds?.has(r.id) &&
         r.kind !== "steer" &&
-        r.kind !== "follow_up",
+        r.kind !== "follow_up" &&
+        r.kind !== "im_inbound",
     )
     .map(sessionQueueItemToChatItem);
   const localOnly = local.filter((i) => !i.dbId);

@@ -53,7 +53,19 @@ describe("qqOfficialMedia", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendQqOfficialText({ openid: "OPEN1", text: "hi", msgId: "mid", msgSeq: 1 });
+    await sendQqOfficialText({
+      openid: "OPEN1",
+      text: "hi",
+      msgId: "mid",
+      msgSeq: 1,
+      messageReference: { messageId: "mid" },
+    });
+    const textBody = JSON.parse(
+      String(
+        fetchMock.mock.calls.find((c) => String(c[0]).includes("/messages"))?.[1]?.body ?? "{}",
+      ),
+    ) as { message_reference?: { message_id: string } };
+    expect(textBody.message_reference?.message_id).toBe("mid");
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "qq-img-"));
     const img = path.join(dir, "x.png");
     fs.writeFileSync(img, Buffer.from([1, 2, 3, 4]));

@@ -19,6 +19,7 @@ import { type ChatQueueItem, type SyncTaskItem } from "@/lib/chatQueueTypes";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared";
 import { RuntimeStatusPanel } from "@/components/chatQueueStatus";
+import { SubagentProgressPanel } from "@/components/subagentProgressPanel";
 import { SideRunsPanel } from "@/components/sideRunsPanel";
 import { WorkspaceTree } from "@/components/workspaceTree";
 import { WorkspaceSelect } from "@/components/workspaceSelect";
@@ -287,6 +288,13 @@ export const ChatSidebar = memo(function ChatSidebar({
             <SwarmHealthPanel agentId={effectiveAgentId} compact hideWhenHealthy />
           ) : null}
           <section className="flex min-h-0 flex-1 flex-col" data-testid="left-runtime-delivery">
+            <SubagentProgressPanel
+              parentSessionId={effectiveSessionId ?? mainSessionId}
+              onOpenSession={(id) => {
+                selectSession(id);
+                closeLeftOnMobile();
+              }}
+            />
             {asyncProgressSteps.length > 0 && (
               <div className="border-b border-[var(--kp-divider)] px-3 py-2" data-testid="async-progress-block">
                 <ThinkingTimeline steps={asyncProgressSteps} isLive />

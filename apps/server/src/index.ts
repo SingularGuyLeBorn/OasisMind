@@ -797,9 +797,9 @@ const handleShutdown = () => {
     .then(({ stopToolResultTtlCleanup }) => stopToolResultTtlCleanup())
     .catch(() => {});
   import("./infra/channels/index.js")
-    .then(({ stopAllChannelAdapters }) => stopAllChannelAdapters())
+    .then(({ stopMessageChannels }) => stopMessageChannels())
     .catch((err) => {
-      console.warn("[Shutdown] stopAllChannelAdapters:", err instanceof Error ? err.message : err);
+      console.warn("[Shutdown] stopMessageChannels:", err instanceof Error ? err.message : err);
     });
   import("./infra/freeKeysSync.js")
     .then(({ stopFreeKeysAutoSync }) => stopFreeKeysAutoSync())

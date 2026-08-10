@@ -20,10 +20,18 @@ export async function bootstrapMessageChannels(opts: {
   config: AppConfig;
 }): Promise<void> {
   initMessageGateway(opts);
+  const { initImChannelDrain } = await import("../imChannelDrain.js");
+  initImChannelDrain(opts);
   // NapCat/OneBot 已退役：只注册官方 QQ Bot + 飞书
   registerChannelAdapter(createQqOfficialBotAdapter(loadQqBotConfigFromEnv()));
   registerChannelAdapter(createFeishuBotAdapter(loadFeishuBotConfigFromEnv()));
   await startAllChannelAdapters();
+}
+
+export async function stopMessageChannels(): Promise<void> {
+  const { stopImChannelDrain } = await import("../imChannelDrain.js");
+  stopImChannelDrain();
+  await stopAllChannelAdapters();
 }
 
 export { stopAllChannelAdapters };

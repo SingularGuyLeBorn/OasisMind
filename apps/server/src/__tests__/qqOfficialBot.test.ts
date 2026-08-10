@@ -7,7 +7,9 @@ import {
   QQ_GROUP_AND_C2C_INTENT,
   buildQqIdentifyPayload,
   createQqOfficialBotAdapter,
+  expandAllowedIds,
   isQqInboundAllowed,
+  parseQqIdOpenIdMap,
   parseQqInboundPayload,
   qqReplyPlainText,
 } from "../infra/channels/qqOfficialBot.js";
@@ -34,12 +36,14 @@ describe("qqOfficialBot helpers", () => {
       content: "你好 <@!123>",
       id: "m1",
     });
-    expect(flat).toEqual({
+    expect(flat).toMatchObject({
       openid: "u1",
       content: "你好",
       msgId: "m1",
       groupOpenid: undefined,
+      hasMediaHint: false,
     });
+    expect("error" in flat ? null : flat.rawD).toBeTruthy();
 
     const wrapped = parseQqInboundPayload({
       d: {
@@ -49,16 +53,53 @@ describe("qqOfficialBot helpers", () => {
         group_openid: "g9",
       },
     });
-    expect(wrapped).toEqual({
+    expect(wrapped).toMatchObject({
       openid: "u2",
       content: "群消息",
       msgId: "m2",
+      groupOpenid: "g9",
+      hasMediaHint: false,
+    });
+  });
+
+  it("parseQqInboundPayload：纯图/引用附件可无文字", () => {
+    const imgOnly = parseQqInboundPayload({
+      author: { user_openid: "u1" },
+      content: "",
+      id: "m-img",
+      attachments: [{ url: "https://example.com/a.jpg", content_type: "image/jpeg" }],
+    });
+    expect(imgOnly).toMatchObject({
+      openid: "u1",
+      content: "",
+      msgId: "m-img",
+      hasMediaHint: true,
+    });
+
+    const quoted = parseQqInboundPayload({
+      d: {
+        author: { member_openid: "u2" },
+        content: "看看这张",
+        id: "m-q",
+        group_openid: "g9",
+        msg_elements: [
+          {
+            content: "原图说明",
+            attachments: [{ url: "https://example.com/b.png", content_type: "image/png" }],
+          },
+        ],
+      },
+    });
+    expect(quoted).toMatchObject({
+      openid: "u2",
+      content: "看看这张",
+      hasMediaHint: true,
       groupOpenid: "g9",
     });
   });
 
   it("parseQqInboundPayload：缺字段报错", () => {
-    expect(parseQqInboundPayload({ content: "x" })).toEqual({ error: "缺 openid/content" });
+    expect(parseQqInboundPayload({ content: "x" })).toEqual({ error: "缺 openid" });
     expect(parseQqInboundPayload({ author: { user_openid: "u" } })).toEqual({
       error: "缺 openid/content",
     });
@@ -87,6 +128,31 @@ describe("qqOfficialBot helpers", () => {
       isQqInboundAllowed({ allowedOpenIds: ["u1"], allowedGroups: ["*"] }, { openid: "u1", groupOpenid: "any" })
         .ok,
     ).toBe(true);
+  });
+
+  it("QQ 号 / 群号经 MAP 展开后白名单命中", () => {
+    const userMap = parseQqIdOpenIdMap("2251061018=14A17D731DD2B1A0CC57FC8EDBFFC50B");
+    const users = expandAllowedIds(["2251061018"], userMap, "OPENIDS");
+    expect(users).toContain("14A17D731DD2B1A0CC57FC8EDBFFC50B");
+    expect(users).toContain("2251061018");
+
+    const groupMap = parseQqIdOpenIdMap("1098299609=2FE7E7758E29000B46A733B8761EB887");
+    const groups = expandAllowedIds(["1098299609"], groupMap, "GROUPS");
+    expect(
+      isQqInboundAllowed(
+        { allowedOpenIds: users, allowedGroups: groups },
+        {
+          openid: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
+          groupOpenid: "2FE7E7758E29000B46A733B8761EB887",
+        },
+      ).ok,
+    ).toBe(true);
+    expect(
+      isQqInboundAllowed(
+        { allowedOpenIds: users, allowedGroups: groups },
+        { openid: "14A17D731DD2B1A0CC57FC8EDBFFC50B", groupOpenid: "OTHER" },
+      ).ok,
+    ).toBe(false);
   });
 });
 
@@ -191,11 +257,66 @@ describe("qqOfficialBot adapter", () => {
       msg_id: string;
       msg_type: number;
       msg_seq?: number;
+      message_reference?: { message_id: string; ignore_get_message_error?: boolean };
     };
     expect(body.msg_id).toBe("evt-msg-1");
     expect(body.msg_type).toBe(0);
     expect(body.content).toBe("完成了");
     expect(body.msg_seq).toBe(1);
+    expect(body.message_reference).toEqual({
+      message_id: "evt-msg-1",
+      ignore_get_message_error: true,
+    });
+  });
+
+  it("reply：imStatus 状态条带引用且占用 msg_seq，终稿递增", async () => {
+    const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      void init;
+      if (String(url).includes("getAppAccessToken")) {
+        return new Response(JSON.stringify({ access_token: "at", expires_in: 7200 }), {
+          status: 200,
+        });
+      }
+      return new Response(JSON.stringify({ id: "out" }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const adapter = createQqOfficialBotAdapter({
+      appId: "appid",
+      secret: "secret",
+      enabled: true,
+      allowedOpenIds: ["*"],
+      allowedGroups: [],
+      useWs: false,
+    });
+    const msg: UnifiedMessage = {
+      envelope: {
+        channel: "qq",
+        peerId: "user-openid",
+        timestamp: new Date().toISOString(),
+      },
+      payload: { text: "q" },
+      meta: { eventId: "evt-status-1", replyTo: "evt-status-1" },
+    };
+
+    await adapter.reply(msg, {
+      text: "收到，正在处理…",
+      finish: false,
+      imStatus: "working",
+    });
+    await adapter.reply(msg, { text: "终稿", finish: true });
+
+    const bodies = fetchMock.mock.calls
+      .filter((c) => String(c[0]).includes("/messages"))
+      .map((c) => {
+        const init = c[1] as RequestInit | undefined;
+        return JSON.parse(String(init?.body ?? "{}")) as { content: string; msg_seq: number };
+      });
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]!.content).toContain("正在处理");
+    expect(bodies[0]!.msg_seq).toBe(1);
+    expect(bodies[1]!.content).toContain("终稿");
+    expect(bodies[1]!.msg_seq).toBe(2);
   });
 
   it("reply：短思考先发再发终稿（两条 msg_seq）", async () => {

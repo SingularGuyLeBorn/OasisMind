@@ -460,6 +460,17 @@ export class SessionStreamHub {
       this.armRunTimeout(state);
       this.armStallTimeout(state);
 
+      // 推拉铁律：凡 Hub 起流，同栈通知前端 resume 挂 agent 流。
+      // QQ/cron/heartbeat 等服务端起流此前缺此推送 → 用户气泡有（message_upserted）但
+      // assistant live 气泡不出现，只能 F5 hydrate。pending: 占位键无 async-stream 订阅方，跳过。
+      if (sessionId && !sessionId.startsWith("pending:")) {
+        this.pushExternalEvent(sessionId, {
+          type: "session_run_started",
+          sessionId,
+          reason: "hub_start",
+        });
+      }
+
       const emit = (event: AgentStreamEvent) => {
         this.emitToRun(state, event);
         this.resetStallTimeout(state);

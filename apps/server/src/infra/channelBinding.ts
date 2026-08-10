@@ -108,6 +108,12 @@ export type ChannelBindingRow = {
   /** listBindings 联表；创建路径可不填 */
   agentName?: string | null;
   agentSourceSlug?: string | null;
+  workspaceId?: string | null;
+  workspaceName?: string | null;
+  /** ChatSession.autoName 优先，否则 title / 绑定 title */
+  sessionTitle?: string | null;
+  sessionKind?: string | null;
+  sessionStatus?: string | null;
   title: string | null;
   lastMessageAt: Date | null;
   createdAt: Date;
@@ -254,21 +260,48 @@ export async function listChannelBindings(
     take: opts?.limit ?? 100,
   });
   const agentIds = [...new Set(rows.map((r) => r.agentId).filter(Boolean))];
+  const sessionIds = [...new Set(rows.map((r) => r.sessionId).filter(Boolean))];
   const agents =
     agentIds.length === 0
       ? []
       : await prisma.agent.findMany({
           where: { id: { in: agentIds } },
-          select: { id: true, name: true, sourceSlug: true },
+          select: { id: true, name: true, sourceSlug: true, workspaceId: true },
+        });
+  const sessions =
+    sessionIds.length === 0
+      ? []
+      : await prisma.chatSession.findMany({
+          where: { id: { in: sessionIds } },
+          select: { id: true, title: true, autoName: true, kind: true, status: true },
+        });
+  const workspaceIds = [
+    ...new Set(agents.map((a) => a.workspaceId).filter((id): id is string => Boolean(id))),
+  ];
+  const workspaces =
+    workspaceIds.length === 0
+      ? []
+      : await prisma.workspace.findMany({
+          where: { id: { in: workspaceIds } },
+          select: { id: true, name: true },
         });
   const byId = new Map(agents.map((a) => [a.id, a]));
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+  const wsById = new Map(workspaces.map((w) => [w.id, w]));
   return rows.map((r) => {
     const agent = byId.get(r.agentId);
+    const session = sessionById.get(r.sessionId);
+    const workspace = agent?.workspaceId ? wsById.get(agent.workspaceId) : undefined;
     return {
       ...r,
       chatId: r.chatId || null,
       agentName: agent?.name ?? null,
       agentSourceSlug: agent?.sourceSlug ?? null,
+      workspaceId: agent?.workspaceId ?? null,
+      workspaceName: workspace?.name ?? null,
+      sessionTitle: session?.autoName || session?.title || r.title || null,
+      sessionKind: session?.kind ?? null,
+      sessionStatus: session?.status ?? null,
     } as ChannelBindingRow;
   });
 }

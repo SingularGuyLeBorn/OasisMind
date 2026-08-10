@@ -22,6 +22,7 @@ import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComp
 import { mergeUserQueueFromDb } from "@/lib/chatQueueTypes";
 import { refreshSessionAsyncQueue } from "@/lib/refreshSessionAsyncQueue";
 import { postSessionListHint, postUiState, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { upsertSubagentProgress } from "@/lib/useSubagentProgress";
 
 export interface UseChatSseSubscriptionsParams {
   effectiveSessionId: string | null;
@@ -123,6 +124,9 @@ export function useChatSseSubscriptions({
           utils.session.listRunning.invalidate().catch(logQueryCatch);
           refreshAsync({ heavy: true, sessionId: sid });
         }
+        // 与 async_delivery 同口径：必须 resume 挂 agent 流，否则 QQ/cron 等服务端起流
+        // 只有用户气泡（message_upserted），assistant live/终态只能靠 F5 hydrate。
+        if (onSessionRunStarted) onSessionRunStarted(targetSid);
       });
       register("async_job_update", (ev) => {
         let status: string | undefined;
@@ -163,10 +167,29 @@ export function useChatSseSubscriptions({
           const data = JSON.parse(ev.data) as {
             subagentSessionId?: string;
             status?: string;
+            agentId?: string | null;
+            progress?: {
+              phase?: string;
+              roundsUsed?: number;
+              executedToolsCount?: number;
+              lastToolName?: string;
+            };
           };
           if (data.subagentSessionId && data.subagentSessionId !== sid) {
             sessionMessagesStore.watchSession(data.subagentSessionId);
             extraWatchedSessionsRef.current.add(data.subagentSessionId);
+            // 进度元信息进父会话内存（不灌全文）
+            if (data.status || data.progress) {
+              upsertSubagentProgress({
+                subagentSessionId: data.subagentSessionId,
+                status: data.status || "running",
+                agentId: data.agentId,
+                phase: data.progress?.phase,
+                roundsUsed: data.progress?.roundsUsed,
+                executedToolsCount: data.progress?.executedToolsCount,
+                lastToolName: data.progress?.lastToolName,
+              });
+            }
           }
         } catch {
           /* ignore */
