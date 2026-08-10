@@ -177,16 +177,76 @@ export const sessionRouter = router({
       return { items: hub ? hub.listRunning() : [] };
     }),
   listChildren: publicProcedure
-    .meta({ description: "列出指定父会话的子代理会话（Subagent）。", aiReadable: true })
+    .meta({
+      description:
+        "列出指定父会话的子代理会话（Subagent），附带最新 Run 进度元信息（无消息正文）。",
+      aiReadable: true,
+    })
     .input(z.object({ parentSessionId: z.string().cuid(), pageSize: z.number().int().min(1).max(100).optional() }))
-    .query(({ ctx, input }) =>
-      ctx.services.session.list({
+    .query(async ({ ctx, input }) => {
+      const listed = await ctx.services.session.list({
         page: 1,
         pageSize: input.pageSize ?? 50,
         parentSessionId: input.parentSessionId,
         kind: "subagent",
-      }),
-    ),
+      });
+      const items = listed.items ?? [];
+      if (items.length === 0) return listed;
+      const ids = items.map((s: { id: string }) => s.id);
+      const runs = await ctx.prisma.run.findMany({
+        where: { sessionId: { in: ids } },
+        orderBy: { updatedAt: "desc" },
+        select: { sessionId: true, status: true, output: true, updatedAt: true },
+      });
+      const latestBySession = new Map<string, (typeof runs)[0]>();
+      for (const r of runs) {
+        if (!r.sessionId || latestBySession.has(r.sessionId)) continue;
+        latestBySession.set(r.sessionId, r);
+      }
+      const agentIds = [
+        ...new Set(
+          items
+            .map((s: { agentId?: string | null }) => s.agentId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const agents =
+        agentIds.length > 0
+          ? await ctx.prisma.agent.findMany({
+              where: { id: { in: agentIds } },
+              select: { id: true, name: true, autoName: true },
+            })
+          : [];
+      const agentNameById = new Map(
+        agents.map((a) => [a.id, a.autoName || a.name || a.id] as const),
+      );
+      return {
+        ...listed,
+        items: items.map((s: { id: string; agentId?: string | null; status?: string }) => {
+          const run = latestBySession.get(s.id);
+          const out = (run?.output ?? null) as {
+            phase?: string;
+            roundsUsed?: number;
+            executedToolsCount?: number;
+            lastToolName?: string;
+          } | null;
+          return {
+            ...s,
+            agentName: s.agentId ? agentNameById.get(s.agentId) ?? null : null,
+            progress: out
+              ? {
+                  phase: out.phase,
+                  roundsUsed: out.roundsUsed,
+                  executedToolsCount: out.executedToolsCount,
+                  lastToolName: out.lastToolName,
+                  runStatus: run?.status,
+                  updatedAt: run?.updatedAt,
+                }
+              : null,
+          };
+        }),
+      };
+    }),
   rotateLineage: publicProcedure
     .meta({
       description:

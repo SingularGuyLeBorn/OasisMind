@@ -16,6 +16,7 @@ import {
   Loader2,
   MessageCircle,
   Minus,
+  Quote,
   Sparkles,
   Square,
   X,
@@ -29,6 +30,7 @@ import { formatToolDisplayName } from "@/lib/toolDisplayName";
 import { extractToolResultImages, type ToolResultImage } from "@/lib/toolResultImages";
 import { ToolStepIcon, type ToolIconStatus } from "@/lib/toolIcons";
 import { trpc } from "@/lib/trpc";
+import { formatToolArtifactCite, requestComposePrefill } from "@/lib/composePrefill";
 
 /** 从工具结果卡片解析落盘路径（压缩卡或短结果注解） */
 function resolveOffloadPath(result: unknown): {
@@ -358,16 +360,16 @@ const ContentStep = memo(function ContentStep({
   );
 });
 
-/** JSON 卡片形式：把对象递归渲染成缩进键值对列表（比裸 JSON 更友好） */
+/** JSON 卡片形式：把对象递归渲染成缩进键值对列表（比裸 JSON 更友好；正文用中性色，不染品牌蓝） */
 function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
   if (data === null) return <span className="text-[var(--kp-text-3)]">null</span>;
   if (typeof data === "boolean")
-    return <span className="text-[var(--kp-brand-deep)]">{String(data)}</span>;
+    return <span className="text-[var(--kp-text-2)]">{String(data)}</span>;
   if (typeof data === "number")
-    return <span className="text-[var(--kp-brand)]">{String(data)}</span>;
+    return <span className="text-[var(--kp-text-1)] tabular-nums">{String(data)}</span>;
   if (typeof data === "string") {
     const trimmed = data.length > 280 ? data.slice(0, 280) + "…" : data;
-    return <span className="text-green-700">&quot;{trimmed}&quot;</span>;
+    return <span className="text-[var(--kp-text-1)]">&quot;{trimmed}&quot;</span>;
   }
   if (Array.isArray(data)) {
     if (data.length === 0) return <span>[]</span>;
@@ -522,7 +524,7 @@ const ToolStep = memo(function ToolStep({
   const [showOriginal, setShowOriginal] = useState(false);
   const [originalOffset, setOriginalOffset] = useState(0);
   const originalQuery = trpc.session.readToolResult.useQuery(
-    { path: offload?.path ?? "", offset: originalOffset, maxChars: 12_000 },
+    { path: offload?.path ?? "", offset: originalOffset, maxChars: 40_000 },
     { enabled: Boolean(offload?.path && showOriginal), staleTime: 30_000 },
   );
 
@@ -668,10 +670,10 @@ const ToolStep = memo(function ToolStep({
                 {offload && (
                   <div
                     data-testid="tool-offload-panel"
-                    className="rounded-lg border border-[var(--kp-brand-light)]/60 bg-[var(--kp-brand-soft)]/20 px-2.5 py-2"
+                    className="rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)]/40 px-2.5 py-2"
                   >
                     <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--kp-text-2)]">
-                      <FileText className="h-3 w-3 shrink-0 text-[var(--kp-brand)]" />
+                      <FileText className="h-3 w-3 shrink-0 text-[var(--kp-text-3)]" />
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {offload.compacted ? "完整结果已落盘（上下文仅含元数据）" : "结果已落盘可追溯"}
                         {offload.originalChars != null ? ` · ${offload.originalChars} 字` : ""}
@@ -684,10 +686,31 @@ const ToolStep = memo(function ToolStep({
                           setShowOriginal((v) => !v);
                           if (!showOriginal) setOriginalOffset(0);
                         }}
-                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
                       >
-                        {showOriginal ? "收起原文" : "查看原文"}
+                        {showOriginal ? "收起原文" : "展开工件"}
                       </button>
+                      {showOriginal && originalQuery.data?.content && (
+                        <button
+                          type="button"
+                          data-testid="tool-offload-cite"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            requestComposePrefill(
+                              formatToolArtifactCite({
+                                path: offload.path,
+                                content: originalQuery.data!.content,
+                                toolName: step.name,
+                              }),
+                            );
+                          }}
+                          className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                          title="填入输入框，不自动发送"
+                        >
+                          <Quote className="h-3 w-3" />
+                          引用这段
+                        </button>
+                      )}
                     </div>
                     <p className="mt-1 truncate text-[9px] text-[var(--kp-text-3)]" title={offload.path}>
                       {offload.path}
@@ -695,7 +718,7 @@ const ToolStep = memo(function ToolStep({
                     {showOriginal && (
                       <div className="mt-2 space-y-1.5">
                         {originalQuery.isLoading && (
-                          <div className="flex items-center gap-1 text-[10px] text-[var(--kp-brand)]">
+                          <div className="flex items-center gap-1 text-[10px] text-[var(--kp-text-3)]">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             加载原文…
                           </div>
@@ -709,7 +732,7 @@ const ToolStep = memo(function ToolStep({
                           <>
                             <pre
                               data-testid="tool-offload-content"
-                              className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--kp-bg)] px-2 py-1.5 text-[10px] text-[var(--kp-text-2)]"
+                              className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--kp-bg)] px-2 py-1.5 text-[10px] text-[var(--kp-text-2)]"
                             >
                               {originalQuery.data.content}
                             </pre>
@@ -719,18 +742,38 @@ const ToolStep = memo(function ToolStep({
                                 {originalQuery.data.offset + originalQuery.data.content.length} /{" "}
                                 {originalQuery.data.totalChars}
                               </span>
-                              {originalQuery.data.nextOffset != null && (
+                              <div className="flex items-center gap-2">
+                                {originalQuery.data.nextOffset != null && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOriginalOffset(originalQuery.data!.nextOffset!);
+                                    }}
+                                    className="font-semibold text-[var(--kp-text-2)] hover:underline"
+                                  >
+                                    下一段
+                                  </button>
+                                )}
                                 <button
                                   type="button"
+                                  data-testid="tool-offload-cite-bottom"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setOriginalOffset(originalQuery.data!.nextOffset!);
+                                    requestComposePrefill(
+                                      formatToolArtifactCite({
+                                        path: offload.path,
+                                        content: originalQuery.data!.content,
+                                        toolName: step.name,
+                                      }),
+                                    );
                                   }}
-                                  className="font-semibold text-[var(--kp-brand-deep)] hover:underline"
+                                  className="inline-flex items-center gap-0.5 font-semibold text-[var(--kp-text-2)] hover:underline"
                                 >
-                                  下一段
+                                  <Quote className="h-3 w-3" />
+                                  引用进下一轮
                                 </button>
-                              )}
+                              </div>
                             </div>
                           </>
                         )}
@@ -748,7 +791,7 @@ const ToolStep = memo(function ToolStep({
                         e.stopPropagation();
                         setRequestView((v) => (v === "json" ? "card" : "json"));
                       }}
-                      className="opacity-0 transition group-hover/request:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-brand-deep)]"
+                      className="opacity-0 transition group-hover/request:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
                     >
                       {requestView === "json" ? "卡片" : "JSON"}
                     </button>
@@ -776,7 +819,7 @@ const ToolStep = memo(function ToolStep({
                           e.stopPropagation();
                           setResponseView((v) => (v === "json" ? "card" : "json"));
                         }}
-                        className="opacity-0 transition group-hover/response:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-brand-deep)]"
+                        className="opacity-0 transition group-hover/response:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
                       >
                         {responseView === "json" ? "卡片" : "JSON"}
                       </button>

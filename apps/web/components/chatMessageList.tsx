@@ -1,5 +1,5 @@
 "use client";
-import { catchUnlessCancelled } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 /**
  * ChatMessageList —— 消息列表渲染（W13a 从 chat.tsx 拆出）。
@@ -15,7 +15,7 @@ import { catchUnlessCancelled } from "@/lib/trpc";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Ban, Bot, Check, ChevronDown, FileText, Loader2, X } from "lucide-react";
+import { Ban, Check, ChevronDown, FileText, Loader2, X } from "lucide-react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   buildChatTimeline,
@@ -103,6 +103,33 @@ function UserAttachmentChips({
         );
       })}
     </div>
+  );
+}
+
+/** 空态问候语：从「每日碎片」花园抽一句你自己写过的话，按日轮换（同日内稳定，不闪烁） */
+function GardenGreeting() {
+  const fragmentsQuery = trpc.post.list.useQuery(
+    { garden: "daily-fragments", published: true, pageSize: 30, orderBy: "updatedAt", order: "desc" },
+    { staleTime: 10 * 60_000, retry: false, refetchOnWindowFocus: false },
+  );
+  // 日种子惰性初始化一次（render 纯度）：同日稳定轮换，不随重渲染漂移
+  const [daySeed] = useState(() => Math.floor(Date.now() / 86_400_000));
+  const line = useMemo(() => {
+    const items = fragmentsQuery.data?.items;
+    if (!items?.length) return null;
+    const pick = items[daySeed % items.length];
+    const text = (pick.excerpt || pick.title || "").trim();
+    if (!text) return null;
+    return text.length > 80 ? `${text.slice(0, 80)}…` : text;
+  }, [fragmentsQuery.data, daySeed]);
+  if (!line) return null;
+  return (
+    <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--kp-text-3)]">
+      <span className="text-[var(--kp-accent-deep)]">「</span>
+      {line}
+      <span className="text-[var(--kp-accent-deep)]">」</span>
+      <span className="ml-1.5 text-[10px] opacity-60">—— 每日碎片</span>
+    </p>
   );
 }
 
@@ -305,7 +332,7 @@ export const ChatMessageList = memo(function ChatMessageList({
         data-testid="assistant-message-bubble"
         className="group/msg relative mb-6 ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1"
       >
-        <div className="w-full rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-sm">
+        <div className="w-full rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
           {isEditingAssistant ? (
             <MessageMarkdownSourceEditor
               value={editDraft}
@@ -406,13 +433,13 @@ export const ChatMessageList = memo(function ChatMessageList({
         <div className="flex w-full justify-start">
           <div
             className={cn(
-              "group/msg ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1",
+              "kp-msg-in group/msg ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1",
               streamingContent ? "mb-6" : "mb-4",
             )}
             data-testid="streaming-assistant-bubble"
           >
             {streamingContent ? (
-              <div className="w-full rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-sm">
+              <div className="w-full rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
                 {/* 流式期轻量渲染：避免每 token 跑完整 remark/rehype/高亮。
                     落库终态气泡仍用 PostContent（代码预览 / viz / 画板）。 */}
                 <StreamingPlainContent
@@ -486,7 +513,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               isRightSide ? "items-stretch self-end" : "items-stretch self-start",
               deliveryJobId &&
                 highlightJobId === deliveryJobId &&
-                "rounded-2xl ring-2 ring-[var(--kp-brand)] ring-offset-2 ring-offset-[var(--kp-bg)]",
+                "rounded-[1.4rem] ring-2 ring-[var(--kp-brand)] ring-offset-2 ring-offset-[var(--kp-bg)]",
             )}
           >
             {group.userMessage.attachments &&
@@ -496,7 +523,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               )}
             <div
               className={cn(
-                "relative w-full min-w-[min(100%,6rem)] rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-left text-sm text-[var(--kp-text-1)] shadow-sm",
+                "relative w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]",
                 deliveryJobId &&
                   highlightJobId === deliveryJobId &&
                   "border-[var(--kp-brand)]/50 bg-[var(--kp-brand-soft)]/30",
@@ -587,12 +614,12 @@ export const ChatMessageList = memo(function ChatMessageList({
     content: string;
     attachments?: ChatAttachment[];
   }) => (
-    <div className="mb-4 flex justify-end">
+    <div className="kp-msg-in mb-4 flex justify-end">
       <div className="flex w-full max-w-[96%] flex-col items-stretch gap-1.5">
         {msg.attachments && msg.attachments.length > 0 && (
           <UserAttachmentChips attachments={msg.attachments} dimmed />
         )}
-        <div className="w-full min-w-[min(100%,6rem)] rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-sm text-[var(--kp-text-1)] opacity-80">
+        <div className="w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-sm text-[var(--kp-text-1)] opacity-80 shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
           <PostContent
             content={msg.content}
             className="prose-sm max-w-none text-left text-[var(--kp-text-1)] opacity-100 [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
@@ -835,9 +862,12 @@ export const ChatMessageList = memo(function ChatMessageList({
           <Loader2 className="h-6 w-6 animate-spin text-[var(--kp-text-3)]" />
         </div>
       ) : !hasDisplay && !backendDown ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-4 text-center text-[var(--kp-text-3)] md:px-6">
-          <Bot className="mb-1 h-12 w-12 opacity-40" />
-          <p className="text-sm">发送第一条消息开始对话</p>
+        <div className="kp-msg-in flex flex-1 flex-col items-center justify-center gap-3 px-4 py-4 text-center md:px-6">
+          <p className="kp-display-serif text-3xl text-[var(--kp-text-1)] md:text-4xl">
+            今天想种点什么？
+          </p>
+          <p className="text-sm text-[var(--kp-text-3)]">发送第一条消息，开始浇灌这个想法</p>
+          <GardenGreeting />
           {/* #12 Swarm 新手引导：无 Workspace 时展示（可关闭，localStorage 记忆） */}
           {!hasWorkspaces && showOnboarding && (
             <div className="relative max-w-md rounded-2xl border border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)] p-4 text-left" data-testid="swarm-onboarding">

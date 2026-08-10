@@ -97,7 +97,9 @@ export function SubagentCreateDialog({
               updatedAt: new Date(),
               createdAt: new Date(),
             } as (typeof prev.items)[number];
-            return { ...prev, items: [optimisticItem, ...prev.items] };
+            // listChildren 返回联合类型（空态原样 PaginatedResult / 非空增强 items），
+            // 展开后 TS 无法回配联合分支，断言回 prev 类型（运行时字段保持一致）
+            return { ...prev, items: [optimisticItem, ...prev.items] } as typeof prev;
           },
         );
       }
