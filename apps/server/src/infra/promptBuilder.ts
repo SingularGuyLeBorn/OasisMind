@@ -22,6 +22,12 @@ import {
   shouldSkipMemoryRetrieve,
 } from "./memoryRetrieveGate.js";
 import { ensurePinnedMemoryHint } from "./pinnedMemory.js";
+import { buildGardenNeighborHint } from "./gardenNeighbors.js";
+import {
+  GARDEN_TOOL_GUIDE,
+  SWARM_TOOL_GUIDE,
+  type PromptIntentPack,
+} from "./promptIntentPacks.js";
 
 /** 从 config/prompts 加载面经 Markdown 范文（公式写法 few-shot） */
 function loadMathMarkdownExample(): string {
@@ -90,14 +96,44 @@ export async function buildMemoryContext(
   });
 
   const now = Date.now();
+  const retrievedIds = new Set(unique.map((m) => m.id));
+  const conflictPeers = unique.flatMap((m) =>
+    (m.conflictsWith ?? []).filter((id) => id && !retrievedIds.has(id)),
+  );
+  // 冲突对端若未进 Top-K，补拉一行摘要用于警告（不计入主列表预算外扩太多）
+  let peerById = new Map<string, { content: string }>();
+  if (conflictPeers.length > 0) {
+    const peers = await repo.read({
+      ids: [...new Set(conflictPeers)].slice(0, 5),
+      scopes,
+      types: [...MEMORY_INJECTABLE_TYPES],
+      limit: 5,
+    });
+    peerById = new Map(peers.map((p) => [p.id, { content: p.content }]));
+  }
+
   const lines = unique.map((m) => {
     const attr = m.attribution && m.attribution !== "agent" ? `/${m.attribution}` : "";
+    const src = m.source ? ` source=${m.source}` : "";
     const ageMs = m.updatedAt ? now - new Date(m.updatedAt).getTime() : 0;
     const stale =
       Number.isFinite(ageMs) && ageMs > 24 * 60 * 60 * 1000
         ? "（可能过时，需验证）"
         : "";
-    return `- [${m.type}${attr}] ${m.content.slice(0, 300)}${stale}`;
+    const conflictIds = m.conflictsWith ?? [];
+    const conflictHit = conflictIds.filter((id) => retrievedIds.has(id));
+    const conflictWarn =
+      conflictIds.length > 0
+        ? ` ⚠冲突[${conflictIds
+            .slice(0, 3)
+            .map((id) => {
+              if (conflictHit.includes(id)) return id.slice(0, 8);
+              const peer = peerById.get(id);
+              return peer ? `${id.slice(0, 8)}:${peer.content.slice(0, 40)}` : id.slice(0, 8);
+            })
+            .join("; ")}]`
+        : "";
+    return `- [${m.type}${attr}${src}] ${m.content.slice(0, 300)}${stale}${conflictWarn}`;
   });
   return `\n\n## 相关长期记忆\n${lines.join("\n")}`;
 }
@@ -113,7 +149,8 @@ export async function buildAllMemoryHints(
 ): Promise<string> {
   const pinned = await ensurePinnedMemoryHint(services, options?.sessionId);
   const dynamic = await buildMemoryContext(services, userText, { agentId: options?.agentId });
-  return pinned + dynamic;
+  const neighbors = await buildGardenNeighborHint(services.prisma, userText).catch(() => "");
+  return pinned + dynamic + neighbors;
 }
 
 const WEB_TOOL_GUIDE = `## 网络工具用法
@@ -224,63 +261,109 @@ $$
 文中若出现 \`√\`、\`ₖ\`、\`ᵀ\`、\`·\`、\`Σ\`、\`≈\`、\`∈\` 当公式用 → **改成 $…$ / $$…$$ 再写。**
 完整面经范文见下节「完整 Markdown 范文」——**写文章时对齐该格式。**`;
 
-/** 根据 Agent 已授权工具追加简短使用指引 */
-export function buildAgentToolGuide(tools: string[]): string {
+/** 根据 Agent 已授权工具追加使用指引；packs 省略/"all"=旧行为全量（测试/兼容） */
+export function buildAgentToolGuide(
+  tools: string[],
+  packs: Iterable<PromptIntentPack> | "all" = "all",
+): string {
   const has = (name: string) => tools.some((t) => t === `native:${name}` || t === name);
-  const parts: string[] = [MATH_MARKDOWN_GUIDE, TOOL_RESULT_ATTENTION_GUIDE];
-  if (MATH_MARKDOWN_EXAMPLE) {
-    parts.push(`## 完整 Markdown 范文（照抄格式）\n${MATH_MARKDOWN_EXAMPLE}`);
+  const allow =
+    packs === "all"
+      ? null
+      : new Set<PromptIntentPack>(packs);
+  const want = (p: PromptIntentPack) => allow === null || allow.has(p);
+  /** 新包仅意图模式注入，避免 "all" 破坏等价性 fixture */
+  const intentOnly = (p: PromptIntentPack) => allow !== null && allow.has(p);
+
+  const parts: string[] = [];
+  // "all" 必须保持历史顺序：math → 落盘铁律 → 范文 → web…（等价性 fixture）
+  if (allow === null) {
+    parts.push(MATH_MARKDOWN_GUIDE);
+    parts.push(TOOL_RESULT_ATTENTION_GUIDE);
+    if (MATH_MARKDOWN_EXAMPLE) {
+      parts.push(`## 完整 Markdown 范文（照抄格式）\n${MATH_MARKDOWN_EXAMPLE}`);
+    }
+  } else {
+    if (want("tool_offload")) parts.push(TOOL_RESULT_ATTENTION_GUIDE);
+    if (want("math")) {
+      parts.push(MATH_MARKDOWN_GUIDE);
+      if (MATH_MARKDOWN_EXAMPLE) {
+        parts.push(`## 完整 Markdown 范文（照抄格式）\n${MATH_MARKDOWN_EXAMPLE}`);
+      }
+    }
   }
   if (
-    has("web_search") ||
-    has("read_article") ||
-    has("scrape_web_page") ||
-    has("download_file") ||
-    has("save_webpage") ||
-    has("browser_screenshot") ||
-    has("read_image") ||
-    has("search_arxiv") ||
-    has("search_huggingface") ||
-    has("fetch_huggingface_trending")
+    want("web") &&
+    (has("web_search") ||
+      has("read_article") ||
+      has("scrape_web_page") ||
+      has("download_file") ||
+      has("save_webpage") ||
+      has("browser_screenshot") ||
+      has("read_image") ||
+      has("search_arxiv") ||
+      has("search_huggingface") ||
+      has("fetch_huggingface_trending"))
   ) {
     parts.push(WEB_TOOL_GUIDE);
   }
-  if (has("algo_viz_create") || has("algo_viz_list")) {
+  if (
+    intentOnly("garden") &&
+    (has("post_list") ||
+      has("post_neighbors") ||
+      has("post_create") ||
+      has("post_update") ||
+      has("garden_list") ||
+      has("garden_create"))
+  ) {
+    parts.push(GARDEN_TOOL_GUIDE);
+  }
+  if (
+    intentOnly("swarm") &&
+    (has("spawn_subagent") || has("agent_inspect") || has("agent_send_message") || has("agent_create"))
+  ) {
+    parts.push(SWARM_TOOL_GUIDE);
+  }
+  if (want("algo_viz") && (has("algo_viz_create") || has("algo_viz_list"))) {
     parts.push(ALGO_VIZ_TOOL_GUIDE);
   }
-  if (has("pinme_upload")) {
+  if (want("pinme") && has("pinme_upload")) {
     parts.push(PINME_TOOL_GUIDE);
   }
   if (
-    has("send_qq_text") ||
-    has("send_qq_image") ||
-    has("send_qq_video") ||
-    has("send_qq_file") ||
-    has("send_qq_voice") ||
-    has("delete_qq_message")
+    want("qq") &&
+    (has("send_qq_text") ||
+      has("send_qq_image") ||
+      has("send_qq_video") ||
+      has("send_qq_file") ||
+      has("send_qq_voice") ||
+      has("delete_qq_message"))
   ) {
     parts.push(QQ_TOOL_GUIDE);
   }
-  if (has("session_search") || has("session_message_get") || has("session_compact")) {
+  if (
+    want("session") &&
+    (has("session_search") || has("session_message_get") || has("session_compact"))
+  ) {
     parts.push(SESSION_HISTORY_GUIDE);
   }
-  if (has("skills_list") || has("skill_view") || has("skill_manage")) {
+  if (want("skills") && (has("skills_list") || has("skill_view") || has("skill_manage"))) {
     parts.push(SKILLS_GUIDANCE);
   }
   if (
-    has("session_goal_set") ||
-    has("session_goal_status") ||
-    has("session_goal_clear")
+    want("goal") &&
+    (has("session_goal_set") || has("session_goal_status") || has("session_goal_clear"))
   ) {
     parts.push(GOAL_TOOL_GUIDE);
   }
   if (
-    has("file_delete") ||
-    has("directory_delete") ||
-    has("trash_list") ||
-    has("trash_restore") ||
-    has("post_delete") ||
-    has("garden_delete")
+    want("soft_delete") &&
+    (has("file_delete") ||
+      has("directory_delete") ||
+      has("trash_list") ||
+      has("trash_restore") ||
+      has("post_delete") ||
+      has("garden_delete"))
   ) {
     parts.push(SOFT_DELETE_GUIDE);
   }

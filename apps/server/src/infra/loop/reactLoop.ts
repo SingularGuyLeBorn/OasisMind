@@ -627,11 +627,25 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
       console.error(`${formatTrace()}[ReactLoop] 拒绝 aborted run 以 success 收口，强制 cancelled`);
       effective = "cancelled";
     }
+    // 薄 Decision：spawn / 审批 / 压缩等关键选择写入 output.decision（不另建表）
+    const { synthesizeRunDecision } = await import("../decisionRecord.js");
+    const decision = synthesizeRunDecision({
+      terminal: effective,
+      content: patch.content,
+      toolCalls: executedTools,
+      phase: machine.phase,
+    });
     try {
       await runSvc.update({
         id: runId,
         status: effective,
-        output: { ...patch, phase: machine.phase, roundsUsed, executedToolsCount: countExecutedTools() },
+        output: {
+          ...patch,
+          phase: machine.phase,
+          roundsUsed,
+          executedToolsCount: countExecutedTools(),
+          ...(decision ? { decision } : {}),
+        },
         toolCalls: executedTools,
         tokenUsage: totalUsage,
         durationMs: Date.now() - runStartedAt,
@@ -947,6 +961,10 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
           args: parsedCall.args,
           round: roundsUsed,
         });
+      }
+      // 工具开跑即推父会话进度（仅 lastToolName 等元信息；writeRunSnapshot 内节流/强制）
+      if (runnable.length + deferred.length > 0) {
+        await writeRunSnapshot(true);
       }
 
       if (input.signal?.aborted) {

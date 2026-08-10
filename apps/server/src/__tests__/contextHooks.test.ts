@@ -259,7 +259,7 @@ describe("内建钩子 round===1 与等价性快照", () => {
             tools: f.tools,
             systemPrompt: base,
           },
-          scratch: { __testMemoryHint: f.memoryHint },
+          scratch: { __testMemoryHint: f.memoryHint, __forceAllToolGuides: true },
         }),
       );
       expect(out.systemPrompt, f.id).toBe(f.systemPrompt);

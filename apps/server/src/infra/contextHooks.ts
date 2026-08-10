@@ -195,8 +195,19 @@ export function ensureBuiltinContextHooks(): void {
     name: "tool-guide",
     order: 300,
     enabled: roundOneOnly,
-    run: (input) => {
-      input.scratch.__toolGuide = buildAgentToolGuide(input.agent.tools ?? []);
+    run: async (input) => {
+      // 等价性测试可 scratch.__forceAllToolGuides=true 强制全量指南
+      if (input.scratch.__forceAllToolGuides) {
+        input.scratch.__toolGuide = buildAgentToolGuide(input.agent.tools ?? [], "all");
+        return;
+      }
+      const { detectPromptIntentPacks } = await import("./promptIntentPacks.js");
+      const userText = latestUserText(input.messages);
+      const packs = detectPromptIntentPacks({
+        userText,
+        tools: input.agent.tools ?? [],
+      });
+      input.scratch.__toolGuide = buildAgentToolGuide(input.agent.tools ?? [], packs);
     },
   });
 
