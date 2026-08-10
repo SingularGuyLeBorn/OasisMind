@@ -248,14 +248,28 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
 
   protected getFileSlug(entity: PostEntity): string { return entity.slug; }
 
-  // P11：FTS 增量——body 含 garden/slug/category/tags
+  // P11：FTS 增量——body 含 garden/slug/category/tags；同步落盘 wiki outLinks
   protected override async afterCreate(entity: PostEntity, input: CreatePostInput): Promise<void> {
     await super.afterCreate(entity, input);
     await this.syncFts("post", entity.id, entity.title, buildPostFtsBody(entity));
+    try {
+      const { persistPostOutLinks } = await import("../gardenNeighbors.js");
+      await persistPostOutLinks(this.prisma, entity.id, entity.content);
+    } catch (e) {
+      console.warn("[PostService] outLinks 落盘失败:", e instanceof Error ? e.message : e);
+    }
   }
   protected override async afterUpdate(entity: PostEntity, existing: any, input: UpdatePostInput): Promise<void> {
     await super.afterUpdate(entity, existing, input);
     await this.syncFts("post", entity.id, entity.title, buildPostFtsBody(entity));
+    if (input.content !== undefined) {
+      try {
+        const { persistPostOutLinks } = await import("../gardenNeighbors.js");
+        await persistPostOutLinks(this.prisma, entity.id, entity.content);
+      } catch (e) {
+        console.warn("[PostService] outLinks 落盘失败:", e instanceof Error ? e.message : e);
+      }
+    }
   }
   protected override async afterDelete(existing: any): Promise<void> {
     await super.afterDelete(existing);
@@ -759,6 +773,20 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       ftsRankById = new Map();
     }
 
+    // 邻居优先：正文 / metadata.outLinks 的 [[wiki]] 出链高权重
+    const { extractWikiOutLinks } = await import("../gardenNeighbors.js");
+    const metaOut =
+      self.metadata && typeof self.metadata === "object" && !Array.isArray(self.metadata)
+        ? (self.metadata as { outLinks?: unknown }).outLinks
+        : undefined;
+    const wikiTargets = [
+      ...extractWikiOutLinks(self.content),
+      ...(Array.isArray(metaOut) ? metaOut.map(String) : []),
+    ];
+    const wikiSlugSet = new Set(
+      wikiTargets.map((t) => t.replace(/\.md$/i, "").trim().toLowerCase()).filter(Boolean),
+    );
+
     const scored = Array.from(byId.values()).map((row) => {
       const tags = row.tags
         ? row.tags.split(",").map((t) => t.trim()).filter(Boolean)
@@ -766,6 +794,17 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       const overlap = selfTags.filter((t) => tags.includes(t));
       const reasons: string[] = [];
       let score = 0;
+
+      const slugKey = row.slug.toLowerCase();
+      const gardenSlugKey = `${row.garden}/${row.slug}`.toLowerCase();
+      if (
+        wikiSlugSet.has(slugKey) ||
+        wikiSlugSet.has(gardenSlugKey) ||
+        [...wikiSlugSet].some((t) => slugKey.endsWith(`/${t}`) || t.endsWith(`/${slugKey}`))
+      ) {
+        score += 80;
+        reasons.push("wiki 出链");
+      }
 
       const ftsScore = ftsRankById.get(row.id) ?? 0;
       if (ftsScore > 0) {

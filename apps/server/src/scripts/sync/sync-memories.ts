@@ -19,6 +19,8 @@ interface MemoryData {
   keywords: string; // 逗号分隔
   tags: string; // 统一组织标签 CSV
   scope?: string; // W5：缺省 global
+  source?: string;
+  conflictsWith?: string; // CSV of memory ids
 }
 
 export const memorySyncer: Syncer<MemoryData> = {
@@ -49,6 +51,8 @@ export const memorySyncer: Syncer<MemoryData> = {
       const keywords = readStringArray(data.keywords);
       const tags = readStringArray(data.tags);
       const scope = typeof data.scope === "string" ? data.scope : undefined;
+      const source = typeof data.source === "string" ? data.source : undefined;
+      const conflictsWith = readStringArray(data.conflictsWith).join(",");
 
       if (!memoryContent) {
         console.warn(`  ⚠️ [Memory 跳过] ${filePath}: content 为空`);
@@ -65,6 +69,8 @@ export const memorySyncer: Syncer<MemoryData> = {
           keywords: keywords.join(","),
           tags: tags.join(","),
           scope,
+          source,
+          conflictsWith: conflictsWith || undefined,
         },
       };
     } catch (e: any) {
@@ -102,6 +108,8 @@ export const memorySyncer: Syncer<MemoryData> = {
           sourceMtime: mtime,
           // scope 仅在文件显式声明时覆盖，否则保留 DB 现值（衰减/运行时写入不丢）
           ...(data.scope ? { scope: data.scope } : {}),
+          ...(data.source !== undefined ? { source: data.source } : {}),
+          ...(data.conflictsWith !== undefined ? { conflictsWith: data.conflictsWith } : {}),
         },
       });
       rowId = existing.id;
@@ -114,6 +122,8 @@ export const memorySyncer: Syncer<MemoryData> = {
           keywords: data.keywords,
           tags: data.tags,
           ...(data.scope ? { scope: data.scope } : {}),
+          ...(data.source ? { source: data.source } : {}),
+          ...(data.conflictsWith ? { conflictsWith: data.conflictsWith } : {}),
           sourceSlug: slug,
           sourceMtime: mtime,
         },

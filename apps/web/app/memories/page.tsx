@@ -4,10 +4,10 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { Brain, Plus, Zap, Tag } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, Brain, Plus, Tag } from "lucide-react";
 import Link from "next/link";
 import type { Memory } from "@knowpilot/shared";
 import { MEMORY_TYPE_LABELS } from "@knowpilot/shared";
@@ -15,12 +15,76 @@ import { useMemory } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { AdminPage, EmptyState, KpSelect, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
 import { formatToolDisplayName, toPascalCaseId } from "@/lib/toolDisplayName";
+import { listItemExit, SPRING_LAYOUT } from "@/lib/motion";
+import { trpc } from "@/lib/trpc";
 
 function formatScope(scope?: string) {
   if (!scope || scope === "global") return "Global";
   if (scope.startsWith("workspace:")) return `空间 ${scope.slice(10, 18)}…`;
   if (scope.startsWith("agent:")) return `Agent ${scope.slice(6, 14)}…`;
   return toPascalCaseId(scope);
+}
+
+/**
+ * 记忆晶体：强度 → 晶体能量液面 + 发光；低强度（衰减中）整体变淡。
+ * hover 随卡片 group 微放大点亮，替代原 Zap 图标的纯文字表达。
+ */
+function MemoryCrystal({ strength }: { strength: number }) {
+  const uid = useId();
+  const s = Math.min(1, Math.max(0, strength));
+  const fading = s < 0.35;
+  const fillTop = 42 - 40 * s;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110",
+        fading && "opacity-45",
+      )}
+      style={{
+        filter:
+          s > 0.55
+            ? `drop-shadow(0 0 ${3 + s * 4}px rgba(var(--kp-brand-rgb), ${0.2 + s * 0.3}))`
+            : undefined,
+      }}
+      title={`强度 ${(s * 100).toFixed(0)}%${fading ? " · 衰减中" : ""}`}
+    >
+      <svg viewBox="0 0 32 44" className="h-7 w-[22px]" aria-hidden>
+        <defs>
+          <linearGradient id={`${uid}-fill`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="var(--kp-brand-deep)" />
+            <stop offset="60%" stopColor="var(--kp-brand)" />
+            <stop offset="100%" stopColor="var(--kp-accent)" />
+          </linearGradient>
+          <clipPath id={`${uid}-clip`}>
+            <path d="M16 2 L28 12 L25 32 L16 42 L7 32 L4 12 Z" />
+          </clipPath>
+        </defs>
+        <rect
+          x="0"
+          y={fillTop}
+          width="32"
+          height={42 - fillTop}
+          fill={`url(#${uid}-fill)`}
+          clipPath={`url(#${uid}-clip)`}
+        />
+        <path
+          d="M16 2 L28 12 L25 32 L16 42 L7 32 L4 12 Z"
+          fill="none"
+          stroke="var(--kp-brand)"
+          strokeOpacity={fading ? 0.4 : 0.65}
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M4 12 L28 12 M7 32 L25 32 M16 2 L16 42"
+          fill="none"
+          stroke="#fff"
+          strokeOpacity="0.45"
+          strokeWidth="0.8"
+        />
+      </svg>
+    </span>
+  );
 }
 
 export default function MemoriesPage() {
@@ -38,6 +102,22 @@ export default function MemoriesPage() {
   const createMutation = useCreate();
   const deleteMutation = useDelete();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const conflictsQuery = trpc.memory.listConflicts.useQuery(undefined, {
+    refetchInterval: 15_000,
+  });
+  const resolveConflictMut = trpc.memory.resolveConflict.useMutation({
+    onSuccess: () => {
+      conflictsQuery.refetch().catch(() => {});
+      utils.memory.list.invalidate().catch(() => {});
+    },
+  });
+  const clearConflictMut = trpc.memory.clearConflict.useMutation({
+    onSuccess: () => {
+      conflictsQuery.refetch().catch(() => {});
+      utils.memory.list.invalidate().catch(() => {});
+    },
+  });
 
   const handleCreateDemo = () => {
     createMutation.mutate({
@@ -185,6 +265,98 @@ const confirmDelete = () => {
         />
       </div>
 
+      {(conflictsQuery.data?.items?.length ?? 0) > 0 && (
+        <section
+          className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4"
+          data-testid="memory-conflicts-panel"
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-100">
+            <AlertTriangle className="h-4 w-4" />
+            冲突记忆待裁决
+            <span className="text-xs font-normal text-amber-800/80 dark:text-amber-200/80">
+              {conflictsQuery.data!.total} 对 · 不静默覆盖
+            </span>
+          </div>
+          <ul className="space-y-3">
+            {conflictsQuery.data!.items.map((pair) => (
+              <li
+                key={`${pair.a.id}:${pair.b?.id ?? "?"}`}
+                className="grid gap-3 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] p-3 md:grid-cols-2"
+              >
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px]">
+                      A · {pair.a.type}
+                    </span>
+                    {pair.a.source && (
+                      <span className="truncate text-[9px] text-[var(--kp-text-3)]" title={pair.a.source}>
+                        {pair.a.source}
+                      </span>
+                    )}
+                  </div>
+                  <p className="leading-relaxed text-[var(--kp-text-2)]">{pair.a.content}</p>
+                  <button
+                    type="button"
+                    disabled={resolveConflictMut.isPending}
+                    className="text-[10px] font-semibold text-[var(--kp-text-1)] underline-offset-2 hover:underline"
+                    onClick={() =>
+                      pair.b &&
+                      resolveConflictMut.mutate({ keepId: pair.a.id, discardId: pair.b.id })
+                    }
+                  >
+                    以 A 为准
+                  </button>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  {pair.b ? (
+                    <>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px]">
+                          B · {pair.b.type}
+                        </span>
+                        {pair.b.source && (
+                          <span
+                            className="truncate text-[9px] text-[var(--kp-text-3)]"
+                            title={pair.b.source}
+                          >
+                            {pair.b.source}
+                          </span>
+                        )}
+                      </div>
+                      <p className="leading-relaxed text-[var(--kp-text-2)]">{pair.b.content}</p>
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          disabled={resolveConflictMut.isPending}
+                          className="text-[10px] font-semibold text-[var(--kp-text-1)] underline-offset-2 hover:underline"
+                          onClick={() =>
+                            resolveConflictMut.mutate({ keepId: pair.b!.id, discardId: pair.a.id })
+                          }
+                        >
+                          以 B 为准
+                        </button>
+                        <button
+                          type="button"
+                          disabled={clearConflictMut.isPending}
+                          className="text-[10px] text-[var(--kp-text-3)] underline-offset-2 hover:underline"
+                          onClick={() =>
+                            clearConflictMut.mutate({ idA: pair.a.id, idB: pair.b!.id })
+                          }
+                        >
+                          仅清除冲突边
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-[var(--kp-text-3)]">对端已不存在</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {isLoading ? (
         <LoadingState count={3} />
       ) : !data?.items || data.items.length === 0 ? (
@@ -196,16 +368,17 @@ const confirmDelete = () => {
         />
       ) : (
         <div className={cn("grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] ", density === "compact" ? "gap-4" : "gap-6")}>
-          {data.items.map((memory: Memory, idx: number) => (
+          <AnimatePresence mode="popLayout" initial={false}>
+          {data.items.map((memory: Memory) => (
             <motion.div
               key={memory.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 }
-              }}
-              className={cn("group relative overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] hover:bg-white dark:hover:bg-[var(--kp-bg-soft)] hover:border-[var(--kp-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
+              layout
+              initial={{ opacity: 0, y: 16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={listItemExit}
+              transition={SPRING_LAYOUT}
+              whileHover={{ y: -4 }}
+              className={cn("group relative overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] hover:bg-white dark:hover:bg-[var(--kp-bg-soft)] hover:border-[var(--kp-divider)] hover:shadow-xl transition-[background-color,border-color,box-shadow] duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
             >
               <div>
                 <div className="mb-3 flex items-start justify-between gap-4">
@@ -222,13 +395,26 @@ const confirmDelete = () => {
                       </span>
                     )}
                     {memory.attribution && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] text-blue-700">
+                      <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-2)]">
                         {toPascalCaseId(memory.attribution)}
+                      </span>
+                    )}
+                    {memory.source && (
+                      <span
+                        className="max-w-[10rem] truncate rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-3)]"
+                        title={memory.source}
+                      >
+                        {memory.source}
+                      </span>
+                    )}
+                    {(memory.conflictsWith?.length ?? 0) > 0 && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] text-amber-800">
+                        冲突 ×{memory.conflictsWith!.length}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex translate-y-1 items-center gap-1 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0 group-hover:opacity-100">
                     <Link
                       href={`/memories/edit/${memory.id}`}
                       className="text-xs text-[var(--kp-brand-deep)] hover:text-[var(--kp-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--kp-brand-soft)]"
@@ -237,7 +423,7 @@ const confirmDelete = () => {
                     </Link>
                     <button
                       onClick={() => setDeleteId(memory.id)}
-                      className="text-xs text-red-500 hover:text-red-600 transition-opacity px-2 py-0.5 rounded hover:bg-red-500/10"
+                      className="text-xs text-red-500 hover:text-red-600 px-2 py-0.5 rounded hover:bg-red-500/10"
                     >
                       粉碎
                     </button>
@@ -251,9 +437,14 @@ const confirmDelete = () => {
 
               <div className="space-y-2 border-t border-[var(--kp-divider-light)] pt-3">
                 <div className="flex items-center justify-between text-[10px] text-[var(--kp-text-3)]">
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-[var(--kp-brand-deep)]" />
-                    强度 {(memory.strength * 100).toFixed(0)}%
+                  <span className="flex items-center gap-1.5">
+                    <MemoryCrystal strength={memory.strength} />
+                    <span className="leading-none">
+                      强度 {(memory.strength * 100).toFixed(0)}%
+                      {memory.strength < 0.35 && (
+                        <span className="ml-1 text-amber-600">· 衰减中</span>
+                      )}
+                    </span>
                   </span>
                   {memory.validTo && (
                     <span title={String(memory.validTo)}>
@@ -275,6 +466,7 @@ const confirmDelete = () => {
               </div>
             </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       )}
 

@@ -280,6 +280,46 @@ async function postListTool(args: Record<string, unknown>, ctx: NativeToolContex
   };
 }
 
+/** 邻居优先：[[wiki]] 出链 > related/标签；不含正文 */
+async function postNeighborsTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (!ctx.prisma) {
+    throw new Error("post_neighbors 需要数据库上下文（Chat / Agent 会话内调用）");
+  }
+  const { resolveGardenNeighbors } = await import("../../gardenNeighbors.js");
+  const limit = Math.min(20, Math.max(1, Number(args.limit || 8)));
+  const postId = typeof args.id === "string" && args.id.trim() ? args.id.trim() : undefined;
+  const garden =
+    args.garden === undefined || args.garden === null || args.garden === ""
+      ? undefined
+      : parseGardenArg(args.garden);
+  const slug = typeof args.slug === "string" && args.slug.trim() ? args.slug.trim() : undefined;
+  if (!postId && !(garden && slug)) {
+    throw new Error("post_neighbors 需要 id，或同时提供 garden + slug");
+  }
+  const items = await resolveGardenNeighbors({
+    prisma: ctx.prisma,
+    postId,
+    garden,
+    slug,
+    limit,
+    relatedFn: (input) => ctx.services.post.related(input),
+  });
+  return {
+    total: items.length,
+    items: items.map((n) => ({
+      id: n.id,
+      garden: n.garden,
+      title: n.title,
+      slug: n.slug,
+      path: `content/${n.garden}/${n.slug}.md`,
+      excerpt: n.excerpt,
+      score: n.score,
+      reasons: n.reasons,
+      via: n.via,
+    })),
+  };
+}
+
 async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const content = String(args.content || "").trim();
   if (!content) throw new Error("content 不能为空");
@@ -341,6 +381,11 @@ async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolCo
     const d = new Date(String(args.validTo));
     if (!Number.isNaN(d.getTime())) validTo = d;
   }
+  const source =
+    typeof args.source === "string" && args.source.trim() ? args.source.trim() : undefined;
+  const conflictsWith = Array.isArray(args.conflictsWith)
+    ? args.conflictsWith.map(String).map((s) => s.trim()).filter(Boolean)
+    : undefined;
   const memory = await repo.write({
     content,
     type: rawType as MemoryUserCreatableType,
@@ -349,6 +394,8 @@ async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolCo
     keywords: Array.isArray(args.keywords) ? args.keywords.map(String) : [],
     tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
     attribution,
+    source,
+    conflictsWith,
     validTo,
   });
   return {
@@ -359,6 +406,8 @@ async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolCo
     tags: memory.tags,
     scope: memory.scope,
     attribution: memory.attribution,
+    source: memory.source,
+    conflictsWith: memory.conflictsWith,
   };
 }
 
@@ -424,6 +473,8 @@ async function memorySearchTool(args: Record<string, unknown>, ctx: NativeToolCo
       strength: m.strength,
       keywords: m.keywords,
       tags: m.tags,
+      source: m.source,
+      conflictsWith: m.conflictsWith,
     })),
   };
 }
@@ -629,13 +680,26 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
     ),
   },
   {
+    name: "post_neighbors",
+    description:
+      "查文章邻居（GraphRAG 薄版）：优先 [[wiki]] 出链，再 related/标签/同花园。返回元信息不含正文。读相关文章前先用本工具扩一圈上下文。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("文章 id（与 garden+slug 二选一）").optional(),
+        garden: z.string().describe("花园 id（与 slug 联用）").optional(),
+        slug: z.string().describe("花园内相对路径（与 garden 联用）").optional(),
+        limit: z.number().int().min(1).max(20).describe("返回条数，默认 8").optional(),
+      }),
+    ),
+  },
+  {
     name: "memory_create",
     concurrencyClass: "D",
     destructive: true,
     // 创建类可回滚（非删除）——记忆积累是 Agent 常态路径
     approvalExempt: true,
     description:
-      "创建长期记忆。type：preference=用户偏好；semantic=稳定事实/决策；episodic=某次经历；note=笔记；procedural=操作流程。scope：agent=仅自己可见（默认）；workspace=同 Workspace 的 Agent 共享；global=全局共享（仅超级 Agent）。不要记可从代码/git/文档直接查到的内容。若发现与已有记忆矛盾或事实过时，请用 memory_update（勿重复 create）。",
+      "创建长期记忆。type：preference=用户偏好；semantic=稳定事实/决策；episodic=某次经历；note=笔记；procedural=操作流程。scope：agent=仅自己可见（默认）；workspace=同 Workspace 的 Agent 共享；global=全局共享（仅超级 Agent）。不要记可从代码/git/文档直接查到的内容。纠正过时事实优先 memory_update；若新旧说法需并存对照，create 并填 conflictsWith 指向旧记忆 id（勿静默覆盖）。source 写出处（post:{garden}/{slug} | run:{id} | url:…）。",
     parameters: zodParams(
       z.object({
         content: z.string().describe("记忆内容"),
@@ -656,6 +720,14 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         attribution: z
           .enum(["user", "agent", "system"])
           .describe("事实来源：user=用户陈述；agent=Agent 推断（默认）；system=系统")
+          .optional(),
+        source: z
+          .string()
+          .describe("引用出处：post:{garden}/{slug} | run:{id} | url:https://… | tool:{jobId}")
+          .optional(),
+        conflictsWith: z
+          .array(z.string())
+          .describe("与本条并存的矛盾记忆 id（search 得到）；双方都会挂冲突边")
           .optional(),
         validTo: z
           .string()
@@ -771,6 +843,7 @@ const MEMORY_HANDLERS: Record<string, NativeToolHandler> = {
   post_update: postUpdateTool,
   post_delete: postDeleteTool,
   post_list: postListTool,
+  post_neighbors: postNeighborsTool,
   memory_create: memoryCreateTool,
   memory_update: memoryUpdateTool,
   memory_search: memorySearchTool,

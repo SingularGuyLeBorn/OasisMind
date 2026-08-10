@@ -14,7 +14,7 @@ import {
   FileText,
   ArrowUpRight,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Post } from "@knowpilot/shared";
 import { trpc } from "@/lib/trpc";
 import { usePostMutations } from "@/lib/usePostMutations";
@@ -24,9 +24,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Pagination, ConfirmDialog, EmptyState, LoadingState, TagFilterBar } from "@/components/shared";
+import { Pagination, ConfirmDialog, EmptyState, LoadingState, TagFilterBar, EntityCard } from "@/components/shared";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
-import { GlassTiltCard } from "@/components/motion/GlassTiltCard";
+import { listItemExit } from "@/lib/motion";
 
 type PublishFilter = "all" | "published" | "draft";
 
@@ -273,16 +273,18 @@ function PostsPageContent() {
             }}
             className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
           >
-            {data.items.map((post, idx) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                gardenLabel={gardenTitle(post.garden)}
-                onDelete={() => setDeleteTarget(post)}
-                deleting={remove.isPending && deleteTarget?.id === post.id}
-                featured={idx === 0 && data.page === 1 && !keyword && !tagFilter}
-              />
-            ))}
+            <AnimatePresence mode="popLayout">
+              {data.items.map((post, idx) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  gardenLabel={gardenTitle(post.garden)}
+                  onDelete={() => setDeleteTarget(post)}
+                  deleting={remove.isPending && deleteTarget?.id === post.id}
+                  featured={idx === 0 && data.page === 1 && !keyword && !tagFilter}
+                />
+              ))}
+            </AnimatePresence>
           </motion.div>
           <div className="mt-8">
             <Pagination
@@ -335,12 +337,13 @@ function PostCard({
           transition: { type: "spring", stiffness: 220, damping: 22 },
         },
       }}
+      exit={listItemExit}
       className={cn(
         "min-w-0",
         featured && "md:col-span-2 xl:col-span-2 xl:row-span-2",
       )}
     >
-      <GlassTiltCard className={cn("group h-full", featured ? "p-6" : "p-5")}>
+      <EntityCard className={cn("group h-full", featured ? "p-6" : "p-5")}>
         <article data-testid="post-card" className="flex h-full flex-col">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Badge
@@ -430,7 +433,7 @@ function PostCard({
             </div>
           </div>
         </article>
-      </GlassTiltCard>
+      </EntityCard>
     </motion.div>
   );
 }

@@ -290,6 +290,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "post_update",
   "post_delete",
   "post_list",
+  "post_neighbors",
   "memory_create",
   "memory_update",
   "memory_search",

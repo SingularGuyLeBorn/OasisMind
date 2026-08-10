@@ -55,7 +55,9 @@ describe("Native 工具注册表", () => {
       agentSnapshot: { id: "sub-1", model: "m", systemPrompt: "", tools: [], tier: "sub", parentId: "mgr-1" },
       prisma: undefined,
     };
-    await expect(executeNativeTool("agent_report_back", { content: "汇报" }, ctx)).rejects.toThrow(/prisma/);
+    await expect(executeNativeTool("agent_report_back", { content: "汇报" }, ctx)).rejects.toThrow(
+      /prisma|数据库|会话上下文/,
+    );
     fs.rmSync(root, { recursive: true, force: true });
   });
 

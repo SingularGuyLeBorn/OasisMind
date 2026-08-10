@@ -23,6 +23,8 @@ export interface MemoryEntity {
   agentId?: string | null;
   status?: string;
   attribution?: string | null;
+  source?: string | null;
+  conflictsWith?: string[];
   validFrom?: Date | null;
   validTo?: Date | null;
   lastAccessedAt?: Date | null;
@@ -44,6 +46,14 @@ export class MemoryService extends FileSyncService<CreateMemoryInput, UpdateMemo
       ...raw,
       keywords: raw.keywords ? raw.keywords.split(",").filter(Boolean).map((k: string) => k.trim()) : [],
       tags: tagsFromCsv(raw.tags),
+      conflictsWith: raw.conflictsWith
+        ? String(raw.conflictsWith)
+            .split(",")
+            .map((k: string) => k.trim())
+            .filter(Boolean)
+        : Array.isArray(raw.conflictsWith)
+          ? raw.conflictsWith
+          : [],
     };
   }
 
@@ -79,16 +89,27 @@ export class MemoryService extends FileSyncService<CreateMemoryInput, UpdateMemo
     if (extra.agentId) data.agentId = extra.agentId;
     if (extra.contentHash) data.contentHash = extra.contentHash;
     if (input.attribution) data.attribution = input.attribution;
+    if (input.source !== undefined) data.source = input.source;
+    if (input.conflictsWith !== undefined) {
+      data.conflictsWith = [...new Set(input.conflictsWith.map((id) => id.trim()).filter(Boolean))].join(
+        ",",
+      );
+    }
     if (input.validFrom !== undefined) data.validFrom = input.validFrom;
     if (input.validTo !== undefined) data.validTo = input.validTo;
     return data;
   }
 
   protected buildUpdateData(input: UpdateMemoryInput): any {
-    const { id: _id, keywords, tags, ...data } = input;
+    const { id: _id, keywords, tags, conflictsWith, ...data } = input;
     const updateData: any = { ...data };
     if (keywords !== undefined) updateData.keywords = keywords.join(",");
     if (tags !== undefined) updateData.tags = formatTagsCsv(tags);
+    if (conflictsWith !== undefined) {
+      updateData.conflictsWith = [
+        ...new Set(conflictsWith.map((id) => id.trim()).filter(Boolean)),
+      ].join(",");
+    }
     return updateData;
   }
 
@@ -101,6 +122,8 @@ export class MemoryService extends FileSyncService<CreateMemoryInput, UpdateMemo
         keywords: entity.keywords,
         tags: entity.tags ?? [],
         ...(entity.scope && entity.scope !== "global" ? { scope: entity.scope } : {}),
+        ...(entity.source ? { source: entity.source } : {}),
+        ...(entity.conflictsWith?.length ? { conflictsWith: entity.conflictsWith } : {}),
       },
       { lineWidth: -1, noRefs: true },
     );
@@ -129,6 +152,7 @@ export class MemoryService extends FileSyncService<CreateMemoryInput, UpdateMemo
       entity.content,
       entity.keywords?.length ? `keywords:${entity.keywords.join(" ")}` : "",
       tagsForFts(entity.tags),
+      entity.source ? `source:${entity.source}` : "",
     ];
     return parts.filter(Boolean).join("\n");
   }

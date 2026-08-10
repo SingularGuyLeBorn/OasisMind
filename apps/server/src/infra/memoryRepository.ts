@@ -51,6 +51,10 @@ export interface MemoryItem {
   scope: string;
   agentId: string | null;
   attribution: string;
+  /** 引用出处（post:/run:/url:/tool:…），非 sourceSlug */
+  source: string | null;
+  /** 并存矛盾记忆 id */
+  conflictsWith: string[];
   validFrom: Date | null;
   validTo: Date | null;
   lastAccessedAt: Date | null;
@@ -86,6 +90,10 @@ export interface MemoryWriteInput {
   sourceSlug?: string;
   /** user | agent | flush | experience | system */
   attribution?: string;
+  /** 引用出处：post:{garden}/{slug} | run:{id} | url:… | tool:{jobId} */
+  source?: string | null;
+  /** 并存矛盾记忆 id（写入后双向挂链） */
+  conflictsWith?: string[];
   validFrom?: Date | null;
   validTo?: Date | null;
 }
@@ -158,6 +166,8 @@ function toItem(raw: {
   scope: string;
   agentId: string | null;
   attribution?: string | null;
+  source?: string | null;
+  conflictsWith?: string | string[] | null;
   validFrom?: Date | null;
   validTo?: Date | null;
   lastAccessedAt?: Date | null;
@@ -175,6 +185,8 @@ function toItem(raw: {
     scope: raw.scope,
     agentId: raw.agentId,
     attribution: raw.attribution ?? "agent",
+    source: raw.source?.trim() ? raw.source.trim() : null,
+    conflictsWith: csvOrArray(raw.conflictsWith),
     validFrom: raw.validFrom ?? null,
     validTo: raw.validTo ?? null,
     lastAccessedAt: raw.lastAccessedAt ?? null,
@@ -182,6 +194,34 @@ function toItem(raw: {
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
+}
+
+function formatConflictsCsv(ids: string[] | undefined): string {
+  if (!ids?.length) return "";
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].join(",");
+}
+
+/** 双向冲突边：A↔B 都记下对方 id（CSV 幂等并集） */
+async function linkConflictPeers(
+  prisma: PrismaClient,
+  selfId: string,
+  peerIds: string[],
+): Promise<void> {
+  const peers = [...new Set(peerIds.map((id) => id.trim()).filter((id) => id && id !== selfId))];
+  if (peers.length === 0) return;
+  const rows = await prisma.memory.findMany({
+    where: { id: { in: peers } },
+    select: { id: true, conflictsWith: true },
+  });
+  for (const row of rows) {
+    const existing = csvOrArray(row.conflictsWith);
+    if (existing.includes(selfId)) continue;
+    const next = formatConflictsCsv([...existing, selfId]);
+    await prisma.memory.update({
+      where: { id: row.id },
+      data: { conflictsWith: next } as any,
+    });
+  }
 }
 
 /**
@@ -370,6 +410,9 @@ export class PrismaMemoryRepository implements MemoryRepository {
     if (recent && Date.now() - recent.at < MEMORY_WRITE_DEBOUNCE_MS) {
       return recent.item;
     }
+    const conflictsCsv = formatConflictsCsv(input.conflictsWith);
+    const source =
+      typeof input.source === "string" && input.source.trim() ? input.source.trim() : null;
     const createInput = {
       content: input.content,
       type: input.type,
@@ -383,6 +426,8 @@ export class PrismaMemoryRepository implements MemoryRepository {
       status: MEMORY_STATUS_ACTIVE,
       sourceSlug: input.sourceSlug,
       attribution: input.attribution ?? "agent",
+      source,
+      conflictsWith: input.conflictsWith ?? [],
       validFrom: input.validFrom ?? undefined,
       validTo: input.validTo ?? undefined,
     };
@@ -392,6 +437,14 @@ export class PrismaMemoryRepository implements MemoryRepository {
         throw new Error(created.error?.message ?? "Memory 创建失败");
       }
       const item = toItem(created.data as any);
+      if (item.conflictsWith.length > 0) {
+        await linkConflictPeers(this.prisma, item.id, item.conflictsWith).catch((err) => {
+          console.warn(
+            "[MemoryRepository] 双向冲突挂链失败:",
+            err instanceof Error ? err.message : err,
+          );
+        });
+      }
       recentMemoryWrites.set(debounceKey, { at: Date.now(), item });
       return item;
     }
@@ -411,11 +464,17 @@ export class PrismaMemoryRepository implements MemoryRepository {
         status: MEMORY_STATUS_ACTIVE,
         sourceSlug: input.sourceSlug ?? undefined,
         attribution: createInput.attribution,
+        source: source ?? undefined,
+        conflictsWith: conflictsCsv,
         validFrom: createInput.validFrom ?? undefined,
         validTo: createInput.validTo ?? undefined,
       } as any,
     });
-    return toItem(raw);
+    const item = toItem(raw);
+    if (item.conflictsWith.length > 0) {
+      await linkConflictPeers(this.prisma, item.id, item.conflictsWith).catch(() => undefined);
+    }
+    return item;
   }
 
   /**
