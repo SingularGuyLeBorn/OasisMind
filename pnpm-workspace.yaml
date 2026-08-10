@@ -6,6 +6,8 @@ packages:
 # 而 remark-stringify/gfm 仍解析到 2.0.0，序列化含行内公式的文章时崩溃空白。
 overrides:
   mdast-util-to-markdown: ">=2.1.0"
+  # three 本体与主类型均为 0.185；stats-gl 传递依赖仍钉 0.163，双版本类型冲突导致 build 期 tsc 失败
+  "@types/three": "0.185.0"
 
 allowBuilds:
   "@prisma/client": true
