@@ -177,6 +177,10 @@ export interface Memory {
   agentId?: string | null;
   status?: "active" | "superseded" | string;
   attribution?: string | null;
+  /** 引用出处（post:/run:/url:/tool:…），非文件同步 sourceSlug */
+  source?: string | null;
+  /** 并存矛盾记忆 id */
+  conflictsWith?: string[];
   validFrom?: string | Date | null;
   validTo?: string | Date | null;
   supersededBy?: string | null;

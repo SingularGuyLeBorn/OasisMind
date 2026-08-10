@@ -799,7 +799,8 @@ export const setMessageLabelSchema = z.object({
 
 export const createSessionQueueItemSchema = z.object({
   sessionId: z.string().cuid(),
-  kind: z.enum(["user", "superior", "child_notify"]),
+  /** im_inbound：QQ/飞书等 IM 忙碌入队，由服务端 imChannelDrain 消费（前端 drain 跳过） */
+  kind: z.enum(["user", "superior", "child_notify", "im_inbound"]),
   content: z.string().min(1, "队列项内容不能为空"),
   source: z.string().min(1),
   sourceName: z.string().optional(),
@@ -1026,6 +1027,10 @@ export const createMemorySchema = z.object({
   tags: z.array(z.string().max(40)).max(20).default([]),
   /** 事实来源归因（可选；Agent 工具 / flush 会写入） */
   attribution: memoryAttributionSchema.optional(),
+  /** 引用出处：post:{garden}/{slug} | run:{id} | url:… | tool:{jobId}（不是 sourceSlug） */
+  source: z.string().max(500).optional().nullable(),
+  /** 并存矛盾记忆 id 列表（薄冲突图；不静默覆盖） */
+  conflictsWith: z.array(z.string().min(1).max(64)).max(20).optional(),
   /** 作用域：global / workspace:{id} / agent:{id}；UI 创建默认 global */
   scope: z.string().max(120).optional(),
   validFrom: z.coerce.date().optional().nullable(),
@@ -1040,6 +1045,8 @@ export const updateMemorySchema = z.object({
   keywords: z.array(z.string()).optional(),
   tags: z.array(z.string().max(40)).max(20).optional(),
   attribution: memoryAttributionSchema.optional(),
+  source: z.string().max(500).optional().nullable(),
+  conflictsWith: z.array(z.string().min(1).max(64)).max(20).optional(),
   scope: z.string().max(120).optional(),
   validFrom: z.coerce.date().optional().nullable(),
   validTo: z.coerce.date().optional().nullable(),

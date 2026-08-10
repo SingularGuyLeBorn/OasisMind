@@ -321,6 +321,10 @@ model Memory {
   supersededBy String?
   /// 事实来源归因：user=用户陈述 | agent=Agent 推断 | flush=压缩前抢救 | experience=运行经验 | system=系统
   attribution String   @default("agent")
+  /// 引用出处（非文件同步键）：post:{garden}/{slug} | run:{id} | url:https://… | tool:{jobId}
+  source      String?
+  /// 与本条并存的矛盾记忆 id（CSV）；不静默覆盖，注入时显式警告
+  conflictsWith String @default("")
   validFrom   DateTime? /// 事实生效起点（可选）
   validTo     DateTime? /// 事实失效点；null=仍有效；过期后不进检索/注入
   /// 最近被检索/注入时间；衰减基准优先使用本字段（被调用即重置衰减）
