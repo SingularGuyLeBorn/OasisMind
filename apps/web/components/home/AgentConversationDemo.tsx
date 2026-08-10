@@ -588,7 +588,7 @@ export function AgentConversationDemo() {
   const sectionRef = useRef<HTMLElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inView = useInView(sectionRef, {
-    root: scrollRoot ?? undefined,
+    root: scrollRoot,
     once: true,
     amount: 0.22,
   });

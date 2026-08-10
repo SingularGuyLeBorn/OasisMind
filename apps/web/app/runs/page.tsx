@@ -155,21 +155,51 @@ export default function RunsPage() {
                             {STATUS_LABEL[run.status]}
                           </span>
                           {(() => {
-                            const out = run.output as { phase?: string; blockedScopes?: string[] } | null;
-                            if (out?.phase !== "awaiting_human") return null;
-                            const scopes = Array.isArray(out.blockedScopes) ? out.blockedScopes : [];
-                            return (
-                              <span
-                                className="text-[10px] font-mono text-amber-700 dark:text-amber-400"
-                                data-testid="run-awaiting-human-scope"
-                                title="AwaitingHuman 被堵 Scope"
-                              >
-                                等待审批
-                                {scopes.length > 0
-                                  ? ` · ${scopes.map(toPascalCaseId).join(", ")}`
-                                  : ""}
-                              </span>
-                            );
+                            const out = run.output as {
+                              phase?: string;
+                              blockedScopes?: string[];
+                              decision?: { kind?: string; summary?: string };
+                            } | null;
+                            const chips: React.ReactNode[] = [];
+                            if (out?.phase === "awaiting_human") {
+                              const scopes = Array.isArray(out.blockedScopes) ? out.blockedScopes : [];
+                              chips.push(
+                                <span
+                                  key="await"
+                                  className="text-[10px] font-mono text-amber-700 dark:text-amber-400"
+                                  data-testid="run-awaiting-human-scope"
+                                  title="AwaitingHuman 被堵 Scope"
+                                >
+                                  等待审批
+                                  {scopes.length > 0
+                                    ? ` · ${scopes.map(toPascalCaseId).join(", ")}`
+                                    : ""}
+                                </span>,
+                              );
+                            }
+                            if (out?.decision?.kind) {
+                              const kindLabel: Record<string, string> = {
+                                spawn: "派生",
+                                approve: "审批",
+                                compact: "压缩",
+                                tool: "工具链",
+                                answer: "回答",
+                              };
+                              chips.push(
+                                <span
+                                  key="decision"
+                                  className="inline-flex max-w-[14rem] truncate rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[10px] font-medium text-[var(--kp-text-2)]"
+                                  data-testid="run-decision-chip"
+                                  title={out.decision.summary || out.decision.kind}
+                                >
+                                  {kindLabel[out.decision.kind] ?? out.decision.kind}
+                                  {out.decision.summary
+                                    ? ` · ${out.decision.summary.slice(0, 40)}`
+                                    : ""}
+                                </span>,
+                              );
+                            }
+                            return chips.length ? <>{chips}</> : null;
                           })()}
                         </div>
                       </td>

@@ -82,6 +82,8 @@ interface ChatInputAreaProps {
    * 由中栏传入；未传则语音对话仅听写发送、不自动朗读。
    */
   voiceReplyText?: string | null;
+  /** 外部预填草稿（工具结果「引用这段」）；nonce 变化时写入输入框 */
+  externalDraft?: { text: string; nonce: number } | null;
 }
 
 type SlashCommandItem = {
@@ -120,6 +122,7 @@ export const ChatInputArea = memo(function ChatInputArea({
   onWarmSkills,
   onCancelQueueEdit,
   voiceReplyText = null,
+  externalDraft = null,
 }: ChatInputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -130,6 +133,45 @@ export const ChatInputArea = memo(function ChatInputArea({
   const [input, setInput] = useState("");
   const inputRef = useRef(input);
   inputRef.current = input;
+
+  // 工具工件「引用这段」→ 填草稿（不自动发送）
+  useEffect(() => {
+    if (!externalDraft?.text) return;
+    setInput(externalDraft.text);
+    queueMicrotask(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.selectionStart = el.selectionEnd = el.value.length;
+    });
+  }, [externalDraft?.nonce, externalDraft?.text]);
+
+  useEffect(() => {
+    const onPrefill = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ text?: string }>).detail;
+      if (!detail?.text) return;
+      setInput(detail.text);
+      queueMicrotask(() => textareaRef.current?.focus());
+    };
+    window.addEventListener("knowpilot-compose-prefill", onPrefill);
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("knowpilot-ui-state");
+      bc.onmessage = (msg) => {
+        const data = msg.data as { type?: string; text?: string } | null;
+        if (data?.type === "compose_prefill" && typeof data.text === "string") {
+          setInput(data.text);
+          queueMicrotask(() => textareaRef.current?.focus());
+        }
+      };
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      window.removeEventListener("knowpilot-compose-prefill", onPrefill);
+      bc?.close();
+    };
+  }, []);
   /** 编辑队列前备份的草稿（提交/取消后还原，保证 abcde 不丢） */
   const queueEditDraftBackupRef = useRef<string | null>(null);
   const queueEditActiveIdRef = useRef<string | null>(null);

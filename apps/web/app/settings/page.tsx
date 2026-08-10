@@ -77,7 +77,7 @@ export default function SettingsPage() {
     testNotify
       .mutateAsync({})
       .then((res) => {
-        setTestMsg(`已发送：${res.data.message}`);
+        setTestMsg(`已发送：${res.data?.message ?? "ok"}`);
         refetchNotify().catch(catchUnlessCancelled("auth.notifyStatus.refetch"));
       })
       .catch((err: unknown) => {

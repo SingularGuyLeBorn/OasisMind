@@ -1,42 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t d">
-  <title id="t">OasisMind Ink Seed</title>
-  <desc id="d">Open oasis ring with a luminous micro-seed at the center</desc>
+  <title id="t">OasisMind Crystal Seed</title>
+  <desc id="d">Open oasis ring framing a faceted micro-crystal — 见微 · OasisMind</desc>
   <defs>
-    <linearGradient id="gBg" x1="18%" y1="8%" x2="88%" y2="96%">
-      <stop offset="0%" stop-color="#faf7f3"/>
-      <stop offset="100%" stop-color="#ebe4db"/>
+    <linearGradient id="gBg" x1="12%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#f4f9ff"/>
+      <stop offset="100%" stop-color="#e3f1fc"/>
     </linearGradient>
     <linearGradient id="gRing" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#c9b8b3"/>
-      <stop offset="55%" stop-color="#8f7a66"/>
-      <stop offset="100%" stop-color="#5e4d3e"/>
+      <stop offset="0%" stop-color="#5bb4f5"/>
+      <stop offset="55%" stop-color="#0087eb"/>
+      <stop offset="100%" stop-color="#005a9e"/>
     </linearGradient>
-    <radialGradient id="gSeed" cx="38%" cy="34%" r="68%">
-      <stop offset="0%" stop-color="#d8c6b8"/>
-      <stop offset="55%" stop-color="#8a735f"/>
-      <stop offset="100%" stop-color="#4f4034"/>
-    </radialGradient>
   </defs>
-  <rect width="128" height="128" rx="30" fill="url(#gBg)"/>
+  <rect width="128" height="128" rx="32" fill="url(#gBg)"/>
+  <rect x="2" y="2" width="124" height="124" rx="30" fill="none" stroke="#0087eb" stroke-opacity="0.22" stroke-width="2"/>
+  <circle cx="64" cy="64" r="44.6" fill="none" stroke="#0087eb" stroke-opacity="0.18" stroke-width="2.8"/>
   <path
-    d="M92 34.5
-       C78 22 52 22 38 36
-       C22 52 22 78 38 94
-       C54 110 80 108 96 92
-       C104 84 108 74 108 64"
+    d="M90.4 33.6
+       C76.4 22.4 51.6 22.8 38 36.8
+       C23.2 52 23.6 77.2 38.8 92.4
+       C54.4 107.6 79.6 106.4 94.4 90.8
+       C101.6 83.6 106.4 73.6 106.4 64.4"
     fill="none"
     stroke="url(#gRing)"
-    stroke-width="7.5"
+    stroke-width="8.4"
     stroke-linecap="round"
   />
-  <circle cx="64" cy="64" r="14" fill="url(#gSeed)"/>
-  <circle cx="59.5" cy="59.5" r="4.2" fill="#f8f4ef" opacity="0.9"/>
-  <path
-    d="M78 52 C86 58 90 68 88 78"
-    fill="none"
-    stroke="#a89080"
-    stroke-width="2.4"
-    stroke-linecap="round"
-    opacity="0.7"
-  />
+  <path d="M64 46.4L77.4 64L64 67L50.6 64Z" fill="#5bb4f5"/>
+  <path d="M64 67L77.4 64L64 81.6Z" fill="#005a9e"/>
+  <path d="M64 67L50.6 64L64 81.6Z" fill="#0087eb"/>
+  <circle cx="64" cy="52.6" r="2.8" fill="#ffffff" opacity="0.85"/>
+  <path d="M93.6 32L104.4 22.4" fill="none" stroke="#0087eb" stroke-width="4.2" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="105.4" cy="21.4" r="3.6" fill="#5bb4f5"/>
 </svg>

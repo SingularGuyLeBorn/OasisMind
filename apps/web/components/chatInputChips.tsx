@@ -2,11 +2,16 @@
 
 /**
  * Kimi 风格能力 pill 行：输入框下方、悬停驱动动态 SVG 图标。
- * 只挂真实能力（深度研究 / Skill / 目标 / 引用 / 图片 / 队列），不做装饰假入口。
+ * 只挂真实能力，不做装饰假入口。
+ * 减负分层：高频（Skill / 引用 / 图片 / 队列）常驻 pill；
+ * 会话级低频（深度研究 / 目标 / 集群）收进「+」菜单，深度研究激活时 + 号带状态点。
  */
 
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SPRING_GENTLE } from "@/lib/motion";
 import {
   IconDeepResearch,
   IconDocRef,
@@ -35,6 +40,8 @@ export interface ChatInputChipsProps {
   onFocusQueue?: () => void;
 }
 
+type ChipIcon = ComponentType<{ state?: ChipIconState; className?: string }>;
+
 function ChipButton({
   label,
   title,
@@ -50,7 +57,7 @@ function ChipButton({
   pressed?: boolean;
   disabled?: boolean;
   onClick: () => void;
-  Icon: ComponentType<{ state?: ChipIconState; className?: string }>;
+  Icon: ChipIcon;
 }) {
   const [hovered, setHovered] = useState(false);
   const state: ChipIconState = pressed ? "active" : hovered ? "hover" : "idle";
@@ -83,6 +90,53 @@ function ChipButton({
   );
 }
 
+/** 「+」菜单内的会话级能力项：与 ChipButton 同一套图标态机 */
+function MoreMenuItem({
+  label,
+  title,
+  testId,
+  pressed,
+  disabled,
+  onClick,
+  Icon,
+}: {
+  label: string;
+  title: string;
+  testId: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  Icon: ChipIcon;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const state: ChipIconState = pressed ? "active" : hovered ? "hover" : "idle";
+
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      disabled={disabled}
+      aria-pressed={pressed}
+      title={title}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors",
+        "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+        pressed && "bg-[var(--kp-brand-soft)]/55 text-[var(--kp-brand-deep)]",
+        disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
+      )}
+    >
+      <Icon state={state} className="h-[15px] w-[15px] shrink-0" />
+      <span className="flex-1">{label}</span>
+      {pressed && <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />}
+    </button>
+  );
+}
+
 export function ChatInputChips({
   disabled,
   isSubagentSession,
@@ -98,28 +152,29 @@ export function ChatInputChips({
   queueLength,
   onFocusQueue,
 }: ChatInputChipsProps) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const deepResearchActive = deepResearchEnabled && canStartDeepResearch;
+
+  // 外部点击 / Esc 关闭「+」菜单
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onMouseDown = () => setMoreOpen(false);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [moreOpen]);
+
   return (
     <div
       className="mt-2.5 flex flex-wrap items-center justify-center gap-2"
       data-testid="chat-input-chips"
     >
-      {!isSubagentSession && (
-        <ChipButton
-          testId="chat-deep-research-toggle"
-          label="深度研究"
-          pressed={deepResearchEnabled && canStartDeepResearch}
-          disabled={disabled || !canStartDeepResearch}
-          onClick={onToggleDeepResearch}
-          Icon={IconDeepResearch}
-          title={
-            canStartDeepResearch
-              ? deepResearchEnabled
-                ? "关闭深度研究（发送不再自动加 /research）"
-                : "开启深度研究：发送时自动加 /research"
-              : "深度研究仅新会话首条消息前可选"
-          }
-        />
-      )}
       <ChipButton
         testId="chat-chip-skill"
         label={selectedSkillName ? `Skill · ${selectedSkillName.slice(0, 10)}` : "Skill"}
@@ -135,16 +190,6 @@ export function ChatInputChips({
               : "选择命令 / Skill，或输入 /goal、/research"
         }
       />
-      {!isSubagentSession && (
-        <ChipButton
-          testId="chat-chip-goal"
-          label="目标"
-          disabled={disabled}
-          onClick={onInsertGoal}
-          Icon={IconGoalFlag}
-          title="插入 /goal ，设立 standing goal"
-        />
-      )}
       <ChipButton
         testId="chat-mention-post"
         label="引用"
@@ -161,16 +206,6 @@ export function ChatInputChips({
         Icon={IconImageFrame}
         title="添加图片"
       />
-      {!isSubagentSession && onFocusSwarm && (
-        <ChipButton
-          testId="chat-chip-swarm"
-          label="集群"
-          disabled={disabled}
-          onClick={onFocusSwarm}
-          Icon={IconSwarmCluster}
-          title="查看 Agent 集群 / 侧栏"
-        />
-      )}
       {queueLength > 0 && (
         <ChipButton
           testId="chat-chip-queue"
@@ -180,6 +215,91 @@ export function ChatInputChips({
           Icon={IconQueueBars}
           title="查看发送队列"
         />
+      )}
+      {!isSubagentSession && (
+        <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            data-testid="chat-chip-more"
+            disabled={disabled}
+            aria-expanded={moreOpen}
+            title="更多能力（深度研究 / 目标 / 集群）"
+            onClick={() => setMoreOpen((v) => !v)}
+            className={cn(
+              "relative inline-flex items-center justify-center rounded-full border p-1.5 transition-colors",
+              "border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-text-2)]",
+              "hover:border-[color-mix(in_srgb,var(--kp-brand)_35%,var(--kp-divider))]",
+              "hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+              moreOpen && "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/55",
+              disabled && "cursor-not-allowed opacity-40 hover:bg-[var(--kp-bg)]",
+            )}
+          >
+            <Plus
+              className={cn(
+                "h-[15px] w-[15px] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                moreOpen && "rotate-45",
+              )}
+            />
+            {deepResearchActive && (
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--kp-brand)] ring-2 ring-[var(--kp-bg)]" />
+            )}
+          </button>
+          <AnimatePresence>
+            {moreOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                transition={SPRING_GENTLE}
+                className="absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1 shadow-[0_8px_28px_-10px_rgba(0,135,235,0.25)]"
+                data-testid="chat-chip-more-menu"
+              >
+                <MoreMenuItem
+                  testId="chat-deep-research-toggle"
+                  label="深度研究"
+                  pressed={deepResearchActive}
+                  disabled={disabled || !canStartDeepResearch}
+                  onClick={() => {
+                    onToggleDeepResearch();
+                    setMoreOpen(false);
+                  }}
+                  Icon={IconDeepResearch}
+                  title={
+                    canStartDeepResearch
+                      ? deepResearchEnabled
+                        ? "关闭深度研究（发送不再自动加 /research）"
+                        : "开启深度研究：发送时自动加 /research"
+                      : "深度研究仅新会话首条消息前可选"
+                  }
+                />
+                <MoreMenuItem
+                  testId="chat-chip-goal"
+                  label="目标"
+                  disabled={disabled}
+                  onClick={() => {
+                    onInsertGoal();
+                    setMoreOpen(false);
+                  }}
+                  Icon={IconGoalFlag}
+                  title="插入 /goal ，设立 standing goal"
+                />
+                {onFocusSwarm && (
+                  <MoreMenuItem
+                    testId="chat-chip-swarm"
+                    label="集群"
+                    disabled={disabled}
+                    onClick={() => {
+                      onFocusSwarm();
+                      setMoreOpen(false);
+                    }}
+                    Icon={IconSwarmCluster}
+                    title="查看 Agent 集群 / 侧栏"
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
     </div>
   );

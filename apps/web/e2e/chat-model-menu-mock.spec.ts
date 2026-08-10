@@ -25,9 +25,12 @@ test.describe("Chat Mock — 去右栏布局", () => {
     await page.getByTestId("chat-model-option-deepseek-v4-pro").click();
     await expect(page.getByTestId("chat-model-menu-trigger").first()).toContainText(/Pro|V4/i);
 
-    // 输入区 chip：深度研究 + Skill
-    await expect(page.getByTestId("chat-deep-research-toggle").first()).toBeVisible();
+    // 输入区 chip：Skill 常驻；深度研究收进「+」菜单
     await expect(page.getByTestId("chat-chip-skill").first()).toBeVisible();
+    await page.getByTestId("chat-chip-more").first().click();
+    await expect(page.getByTestId("chat-chip-more-menu")).toBeVisible();
+    await expect(page.getByTestId("chat-deep-research-toggle").first()).toBeVisible();
+    await page.keyboard.press("Escape");
 
     // 空会话无顶部深度调研推广条
     await expect(page.getByTestId("chat-deep-research-gate")).toHaveCount(0);

@@ -895,6 +895,25 @@ code.kp-inline-code::after {
   content: "" !important;
 }
 
+/* 工具返回正文：中性色，避免品牌蓝染整块结果 */
+.prose.kp-tool-result-md :where(a) {
+  color: var(--kp-text-1);
+  text-decoration-color: color-mix(in srgb, var(--kp-text-3) 70%, transparent);
+}
+.prose.kp-tool-result-md :where(a):hover {
+  color: var(--kp-text-1);
+  text-decoration-color: var(--kp-text-2);
+}
+.prose.kp-tool-result-md :where(code):not(:where([class~="not-prose"] *, pre *)),
+.prose.kp-tool-result-md code.kp-inline-code {
+  color: var(--kp-text-1) !important;
+  background: color-mix(in srgb, var(--kp-text-1) 5%, var(--kp-bg-alt)) !important;
+  font-weight: 500 !important;
+}
+.prose.kp-tool-result-md :where(strong) {
+  color: var(--kp-text-1);
+}
+
 /* 右侧目录 */
 .kp-toc {
   position: fixed;
@@ -1351,6 +1370,52 @@ html.dark button.kp-card-premium:hover::before,
 .dark a.kp-card-premium:hover::before,
 .dark button.kp-card-premium:hover::before {
   opacity: 0.9;
+}
+
+/* 悬停浮起：管理页/统计卡通用（挂上即生效，阴影与品牌色同频） */
+.kp-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kp-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 2px 4px rgba(var(--kp-brand-rgb), 0.06),
+    0 16px 36px -12px rgba(var(--kp-brand-rgb), 0.22);
+}
+html.dark .kp-lift:hover,
+.dark .kp-lift:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 16px 36px -12px rgba(0, 0, 0, 0.42);
+}
+
+/* Chat 消息入场：fade + 轻微上浮。CSS 动画只在挂载时播一次，
+   流式 token 重渲染不会重播（类名/key 不变），性能安全。 */
+@keyframes kp-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.kp-msg-in {
+  animation: kp-msg-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kp-msg-in {
+    animation: none;
+  }
+  .kp-lift,
+  .kp-lift:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* 数据徽章：趋势/状态一目了然 */

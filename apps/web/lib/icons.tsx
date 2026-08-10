@@ -119,31 +119,68 @@ function LogoFrame({
       role="img"
       aria-label="见微 OasisMind"
     >
-      <rect width="32" height="32" rx="7.5" className="fill-[var(--kp-bg-alt,#f0ede8)]" />
+      {/* 晴空玻璃底：品牌淡染 + 细描边，替代旧暖色实底 */}
+      <rect
+        width="32"
+        height="32"
+        rx="8"
+        className="fill-[color-mix(in_srgb,var(--kp-brand)_9%,var(--kp-bg-alt,#ffffff))]"
+      />
+      <rect
+        x="0.5"
+        y="0.5"
+        width="31"
+        height="31"
+        rx="7.5"
+        className="stroke-[color-mix(in_srgb,var(--kp-brand)_28%,transparent)]"
+        strokeWidth="1"
+      />
       {children}
     </svg>
   );
 }
 
-/** 墨核（默认）：不闭合绿洲环 + 中心微点 */
+/**
+ * 微晶（默认）：绿洲开环（Oasis O / 见）框住中心微晶（微）——
+ * 开口朝右上，一束微芒外射暗示「知著」。
+ */
 function LogoInkSeed({ className, size }: LogoSvgProps) {
   return (
     <LogoFrame className={className} size={size}>
+      {/* 外涟漪（淡） */}
+      <circle
+        cx="16"
+        cy="16"
+        r="11.15"
+        className="stroke-[var(--kp-brand,#0087eb)]"
+        strokeWidth="0.9"
+        opacity="0.18"
+      />
+      {/* 绿洲开环 */}
       <path
-        d="M23 8.6C19.5 5.5 13 5.5 9.5 9C5.5 13 5.5 19.5 9.5 23.5C13.5 27.5 20 27 24 23C26 21 27 18.5 27 16"
-        className="stroke-[var(--kp-brand-deep,#6e5c4a)]"
-        strokeWidth="1.9"
+        d="M22.6 8.4C19.1 5.6 12.9 5.7 9.5 9.2C5.8 13 5.9 19.3 9.7 23.1C13.6 26.9 19.9 26.6 23.6 22.7C25.4 20.9 26.6 18.4 26.6 16.1"
+        className="stroke-[var(--kp-brand-deep,#005a9e)]"
+        strokeWidth="2.1"
         strokeLinecap="round"
       />
-      <circle cx="16" cy="16" r="3.5" className="fill-[var(--kp-brand-deep,#6e5c4a)]" />
-      <circle cx="14.9" cy="14.9" r="1.05" fill="white" opacity="0.88" />
+      {/* 中心微晶：竖菱三切面（顶亮 / 右深 / 左中）——不用纯白，浅底也能看清 */}
       <path
-        d="M19.5 13C21.5 14.5 22.5 17 22 19.5"
-        className="stroke-[var(--kp-brand-dark,#a89080)]"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        opacity="0.75"
+        d="M16 11.6L19.35 16L16 16.75L12.65 16Z"
+        className="fill-[var(--kp-brand-light,#5bb4f5)]"
       />
+      <path d="M16 16.75L19.35 16L16 20.4Z" className="fill-[var(--kp-brand-deep,#005a9e)]" />
+      <path d="M16 16.75L12.65 16L16 20.4Z" className="fill-[var(--kp-brand,#0087eb)]" />
+      {/* 顶角高光点 */}
+      <circle cx="16" cy="13.15" r="0.7" fill="white" opacity="0.85" />
+      {/* 开口微芒：单束外射 + 端点 */}
+      <path
+        d="M23.4 8L26.1 5.6"
+        className="stroke-[var(--kp-brand,#0087eb)]"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <circle cx="26.35" cy="5.35" r="0.9" className="fill-[var(--kp-brand-light,#5bb4f5)]" />
     </LogoFrame>
   );
 }
@@ -154,17 +191,17 @@ function LogoTwinLeaf({ className, size }: LogoSvgProps) {
     <LogoFrame className={className} size={size}>
       <path
         d="M16 5.5C10 7 6.5 12 7 17C7.5 22.5 11.5 26.5 16 28C13 23 12.5 17 16 12Z"
-        className="fill-[var(--kp-brand,#b8a090)]"
-        opacity="0.95"
+        className="fill-[var(--kp-brand,#0087eb)]"
+        opacity="0.88"
       />
       <path
         d="M16 5.5C22 7 25.5 12 25 17C24.5 22.5 20.5 26.5 16 28C19 23 19.5 17 16 12Z"
-        className="fill-[var(--kp-brand-deep,#6e5c4a)]"
-        opacity="0.9"
+        className="fill-[var(--kp-brand-deep,#005a9e)]"
+        opacity="0.92"
       />
-      <path d="M16 10V25" stroke="white" strokeWidth="0.9" strokeLinecap="round" opacity="0.35" />
+      <path d="M16 10V25" stroke="white" strokeWidth="0.9" strokeLinecap="round" opacity="0.4" />
       <circle cx="16" cy="14.5" r="1.7" fill="white" />
-      <circle cx="16" cy="14.5" r="0.8" className="fill-[var(--kp-brand-deep,#6e5c4a)]" />
+      <circle cx="16" cy="14.5" r="0.8" className="fill-[var(--kp-brand-deep,#005a9e)]" />
     </LogoFrame>
   );
 }
@@ -177,16 +214,16 @@ function LogoStarRipple({ className, size }: LogoSvgProps) {
         cx="16"
         cy="16"
         r="10"
-        className="stroke-[var(--kp-brand,#b8a090)]"
+        className="stroke-[var(--kp-brand,#0087eb)]"
         strokeWidth="1.15"
-        opacity="0.4"
+        opacity="0.35"
       />
       <path
         d="M16 7C16.6 12 17.5 14 21.5 16C17.5 18 16.6 20 16 25C15.4 20 14.5 18 10.5 16C14.5 14 15.4 12 16 7Z"
-        className="fill-[var(--kp-brand-deep,#6e5c4a)]"
+        className="fill-[var(--kp-brand-deep,#005a9e)]"
       />
       <circle cx="16" cy="16" r="1.4" fill="white" opacity="0.9" />
-      <circle cx="24" cy="9.5" r="0.7" className="fill-[var(--kp-brand-deep,#6e5c4a)]" opacity="0.45" />
+      <circle cx="24" cy="9.5" r="0.7" className="fill-[var(--kp-brand,#0087eb)]" opacity="0.55" />
     </LogoFrame>
   );
 }
@@ -195,11 +232,11 @@ function LogoStarRipple({ className, size }: LogoSvgProps) {
 function LogoFolioSpark({ className, size }: LogoSvgProps) {
   return (
     <LogoFrame className={className} size={size}>
-      <path d="M15 7L7 9V23L15 25Z" className="fill-[var(--kp-brand,#b8a090)]" opacity="0.9" />
-      <path d="M17 7L25 9V23L17 25Z" className="fill-[var(--kp-brand-deep,#6e5c4a)]" opacity="0.92" />
+      <path d="M15 7L7 9V23L15 25Z" className="fill-[var(--kp-brand,#0087eb)]" opacity="0.85" />
+      <path d="M17 7L25 9V23L17 25Z" className="fill-[var(--kp-brand-deep,#005a9e)]" opacity="0.92" />
       <path d="M16 7.5V24.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
       <circle cx="16" cy="14.5" r="2.3" fill="white" />
-      <circle cx="16" cy="14.5" r="1.05" className="fill-[var(--kp-brand-deep,#6e5c4a)]" />
+      <circle cx="16" cy="14.5" r="1.05" className="fill-[var(--kp-brand-deep,#005a9e)]" />
     </LogoFrame>
   );
 }
@@ -210,7 +247,7 @@ function LogoMicroGlyph({ className, size }: LogoSvgProps) {
     <LogoFrame className={className} size={size}>
       <path
         d="M8.5 8.5V23.5M8.5 13H13"
-        className="stroke-[var(--kp-brand-deep,#6e5c4a)]"
+        className="stroke-[var(--kp-brand-deep,#005a9e)]"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -220,10 +257,10 @@ function LogoMicroGlyph({ className, size }: LogoSvgProps) {
         width="11.5"
         height="14"
         rx="4"
-        className="stroke-[var(--kp-brand-deep,#6e5c4a)]"
+        className="stroke-[var(--kp-brand-deep,#005a9e)]"
         strokeWidth="1.75"
       />
-      <circle cx="20.2" cy="16" r="2.6" className="fill-[var(--kp-brand-deep,#6e5c4a)]" />
+      <circle cx="20.2" cy="16" r="2.6" className="fill-[var(--kp-brand,#0087eb)]" />
       <circle cx="19.4" cy="15.2" r="0.85" fill="white" opacity="0.88" />
     </LogoFrame>
   );
@@ -242,7 +279,7 @@ const LOGO_VARIANTS: Record<
 
 /**
  * 见微 · OasisMind 品牌 Logo。
- * 默认 ink-seed（墨核）；其余变体文件在 /public/icons/logo/
+ * 默认 ink-seed（微晶）；其余变体文件在 /public/icons/logo/
  */
 export function OasisMindLogo({
   className,
@@ -258,7 +295,7 @@ export const OASISMIND_LOGO_VARIANTS: {
   label: string;
   href: string;
 }[] = [
-  { id: "ink-seed", label: "墨核", href: "/icons/logo/01-ink-seed.svg" },
+  { id: "ink-seed", label: "微晶", href: "/icons/logo/01-ink-seed.svg" },
   { id: "twin-leaf", label: "双叶", href: "/icons/logo/02-twin-leaf.svg" },
   { id: "star-ripple", label: "星涟", href: "/icons/logo/03-star-ripple.svg" },
   { id: "folio-spark", label: "书页", href: "/icons/logo/04-folio-spark.svg" },

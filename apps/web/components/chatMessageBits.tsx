@@ -217,21 +217,21 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
     const t = (resolvedTool || "").toLowerCase();
     const s = (sourceType || "").toLowerCase();
     if (t.includes("read") || t.includes("article") || s.includes("read")) {
-      return <FileText className="h-4 w-4 text-[var(--kp-brand)]" />;
+      return <FileText className="h-4 w-4 text-[var(--kp-text-2)]" />;
     }
     if (t.includes("search") || s.includes("search")) {
-      return <Search className="h-4 w-4 text-emerald-600" />;
+      return <Search className="h-4 w-4 text-[var(--kp-text-2)]" />;
     }
     if (t.includes("cmd") || t.includes("command") || t.includes("exec") || t.includes("bash")) {
-      return <Terminal className="h-4 w-4 text-amber-600" />;
+      return <Terminal className="h-4 w-4 text-[var(--kp-text-2)]" />;
     }
     if (s.includes("subagent") || subagentName) {
-      return <Cpu className="h-4 w-4 text-purple-600" />;
+      return <Cpu className="h-4 w-4 text-[var(--kp-text-2)]" />;
     }
     if (s.includes("sleep")) {
-      return <Clock className="h-4 w-4 text-blue-600" />;
+      return <Clock className="h-4 w-4 text-[var(--kp-text-2)]" />;
     }
-    return <Sparkles className="h-4 w-4 text-[var(--kp-brand)]" />;
+    return <Sparkles className="h-4 w-4 text-[var(--kp-text-2)]" />;
   };
 
   // 4. 复制正文
@@ -260,7 +260,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
 
   return (
     <div
-      className="group/card my-1 overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-gradient-to-br from-[var(--kp-bg)] to-[var(--kp-bg-alt)] shadow-xs transition-all hover:border-[var(--kp-brand)]/40 hover:shadow-sm"
+      className="group/card my-1 overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-gradient-to-br from-[var(--kp-bg)] to-[var(--kp-bg-alt)] shadow-xs transition-all hover:border-[var(--kp-divider)] hover:shadow-sm"
       data-testid="async-tool-result-card"
     >
       {/* 顶栏 Header: 工具名、任务名、模式切换与状态 */}
@@ -274,7 +274,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
               <span className="text-xs font-semibold text-[var(--kp-text-1)]">
                 {displayToolName}
               </span>
-              <span className="rounded-full bg-[var(--kp-brand-soft)] px-2 py-0.2 text-[10px] font-semibold text-[var(--kp-brand-deep)]">
+              <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.2 text-[10px] font-semibold text-[var(--kp-text-2)]">
                 异步工具
               </span>
             </div>
@@ -293,7 +293,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
               className={cn(
                 "flex h-6 w-6 items-center justify-center rounded-md transition-all",
                 viewMode === "rendered"
-                  ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)] shadow-2xs"
+                  ? "bg-[var(--kp-bg-mute)] text-[var(--kp-text-1)] shadow-2xs"
                   : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
               )}
               title="Markdown 富文本渲染视图"
@@ -306,7 +306,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
               className={cn(
                 "flex h-6 w-6 items-center justify-center rounded-md transition-all",
                 viewMode === "source"
-                  ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)] shadow-2xs"
+                  ? "bg-[var(--kp-bg-mute)] text-[var(--kp-text-1)] shadow-2xs"
                   : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
               )}
               title="原始源码视图（可直接在此编辑内容）"
@@ -335,7 +335,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
                 href={structured.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-[var(--kp-brand-deep)] hover:underline"
+                className="inline-flex items-center gap-1 font-medium text-[var(--kp-text-1)] underline decoration-[var(--kp-divider)] underline-offset-2 hover:decoration-[var(--kp-text-3)]"
                 onClick={(e) => e.stopPropagation()}
               >
                 <span className="truncate">{structured.url}</span>
@@ -410,7 +410,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
               rows={Math.min(18, Math.max(6, content.split("\n").length + 1))}
-              className="w-full resize-y border-0 bg-transparent p-0 font-mono text-[11px] leading-relaxed text-[var(--kp-text-1)] placeholder-[var(--kp-text-3)] shadow-none focus:outline-none focus:ring-0 selection:bg-[var(--kp-brand-soft)] selection:text-[var(--kp-brand-deep)]"
+              className="w-full resize-y border-0 bg-transparent p-0 font-mono text-[11px] leading-relaxed text-[var(--kp-text-1)] placeholder-[var(--kp-text-3)] shadow-none focus:outline-none focus:ring-0 selection:bg-[var(--kp-bg-mute)] selection:text-[var(--kp-text-1)]"
               placeholder="输入或修改源码正文..."
             />
           </div>
@@ -423,7 +423,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
                 <div className="relative rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)]/50 p-3">
                   <PostContent
                     content={content.slice(0, 240) + "..."}
-                    className="prose-sm max-w-none text-left text-[var(--kp-text-2)] [&_table]:text-xs"
+                    className="prose-sm kp-tool-result-md max-w-none text-left text-[var(--kp-text-2)] [&_table]:text-xs"
                   />
                   <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[var(--kp-bg-alt)] to-transparent" />
                 </div>
@@ -432,7 +432,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
                 <div className="max-h-80 overflow-y-auto rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)] p-3 text-[12px] shadow-inner">
                   <PostContent
                     content={content}
-                    className="prose-sm max-w-none text-left text-[var(--kp-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
+                    className="prose-sm kp-tool-result-md max-w-none text-left text-[var(--kp-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
                   />
                 </div>
               )}
@@ -441,7 +441,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
               <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] py-1.5 text-[11px] font-semibold text-[var(--kp-brand-deep)] shadow-2xs transition hover:border-[var(--kp-brand)]/30 hover:bg-[var(--kp-brand-soft)]/40"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] py-1.5 text-[11px] font-semibold text-[var(--kp-text-2)] shadow-2xs transition hover:border-[var(--kp-divider)] hover:bg-[var(--kp-bg-mute)]/60"
                 data-testid="async-tool-result-toggle"
               >
                 {open ? (
@@ -462,7 +462,7 @@ export const AsyncToolResultCard = memo(function AsyncToolResultCard({
             <div className="rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)]/60 p-3">
               <PostContent
                 content={content}
-                className="prose-sm max-w-none text-left text-[var(--kp-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
+                className="prose-sm kp-tool-result-md max-w-none text-left text-[var(--kp-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
               />
             </div>
           )
