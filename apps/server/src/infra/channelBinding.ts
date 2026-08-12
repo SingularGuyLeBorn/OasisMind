@@ -1,7 +1,36 @@
 /**
  * ChannelBinding — (channel, peerId[, chatId]) ↔ ChatSession 映射。
- * 本地优先：绑定存 SQLite；每条对端独占一个 kind=channel 会话（不占主会话）。
+ * 本地优先：绑定存 SQLite；kind=channel 会话（不占主会话）。
+ *
+ * 键规则：
+ * - 私聊：peerId=用户 openid，chatId="" → 一人一 session
+ * - 群聊：peerId=CHANNEL_GROUP_PEER，chatId=群 openid → **全群共享一个 session**
+ *   （说话人身份写进消息正文，见 messageGateway；回发仍用入站 envelope 的真实 peerId/chatId）
  */
+
+/** 群聊绑定用的占位 peerId（真实说话人 openid 不进绑定键） */
+export const CHANNEL_GROUP_PEER = "__group__";
+
+/**
+ * 将入站 envelope 归一成 ChannelBinding 唯一键。
+ * 群聊强制共享 peerId，避免「同群不同人各开一 session」。
+ */
+export function resolveChannelBindingKeys(input: {
+  peerId: string;
+  chatId?: string | null;
+}): { peerId: string; chatId: string; speakerPeerId: string; isGroup: boolean } {
+  const speakerPeerId = input.peerId.trim();
+  const groupId = input.chatId?.trim() || "";
+  if (groupId) {
+    return {
+      peerId: CHANNEL_GROUP_PEER,
+      chatId: groupId,
+      speakerPeerId,
+      isGroup: true,
+    };
+  }
+  return { peerId: speakerPeerId, chatId: "", speakerPeerId, isGroup: false };
+}
 
 import type { PrismaClient } from "@prisma/client";
 import type { AppConfig } from "./config.js";
@@ -153,7 +182,7 @@ export async function resolveOrCreateChannelBinding(
   config: AppConfig,
   input: {
     channel: ImChannel;
-    /** 对端用户稳定 id（QQ 号等）；禁止用群号——不同用户必须不同 session */
+    /** 说话人 openid；群聊时仅作 speaker 身份，绑定键见 resolveChannelBindingKeys */
     peerId: string;
     chatId?: string | null;
     agentId?: string;
@@ -161,11 +190,22 @@ export async function resolveOrCreateChannelBinding(
     forceChatId?: string;
   },
 ): Promise<ChannelBindingRow> {
-  const peerId = input.peerId.trim();
-  if (!peerId) {
-    throw new Error("channelBinding: peerId 不能为空（不同 QQ 号必须隔离到不同 session）");
+  if (!input.peerId.trim()) {
+    throw new Error("channelBinding: peerId 不能为空（私聊按用户隔离；群聊按群共享）");
   }
-  const chatId = input.forceChatId?.trim() || input.chatId?.trim() || "";
+  // 分组键只看入站 chatId（群 openid），绝不能把 /new 的 forceChatId 当成群号
+  const keys = resolveChannelBindingKeys({
+    peerId: input.peerId,
+    chatId: input.chatId,
+  });
+  const peerId = keys.peerId;
+  // /new：新建绑定行；随后 setDefaultChannelSession 把「默认键」指到新 session
+  const chatId = input.forceChatId?.trim()
+    ? keys.isGroup
+      ? `${keys.chatId}::${input.forceChatId.trim()}`
+      : input.forceChatId.trim()
+    : keys.chatId;
+
   const existing = !input.forceChatId
     ? await prisma.channelBinding.findUnique({
         where: {
@@ -186,6 +226,32 @@ export async function resolveOrCreateChannelBinding(
     return { ...existing, chatId: existing.chatId || null } as ChannelBindingRow;
   }
 
+  // 群聊升级：旧实现按「人×群」各开 session；并入最近活跃的那条，保留历史
+  if (keys.isGroup && !input.forceChatId) {
+    const legacy = await prisma.channelBinding.findFirst({
+      where: { channel: input.channel, chatId: keys.chatId },
+      orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
+    });
+    if (legacy) {
+      await prisma.channelBinding.deleteMany({
+        where: {
+          channel: input.channel,
+          chatId: keys.chatId,
+          id: { not: legacy.id },
+        },
+      });
+      const migrated = await prisma.channelBinding.update({
+        where: { id: legacy.id },
+        data: {
+          peerId: CHANNEL_GROUP_PEER,
+          lastMessageAt: new Date(),
+          title: `IM · ${input.channel} · 群:${keys.chatId}`,
+        },
+      });
+      return { ...migrated, chatId: migrated.chatId || null } as ChannelBindingRow;
+    }
+  }
+
   let resolved: { id: string; model: string };
   if (input.agentId) {
     const a = await prisma.agent.findUnique({
@@ -201,10 +267,10 @@ export async function resolveOrCreateChannelBinding(
     resolved = await resolveDefaultAgentId(prisma);
   }
 
-  // title 含完整 peerId，侧栏一眼区分不同 QQ，禁止截断导致两号看起来像同一会话
-  const title = chatId
-    ? `IM · ${input.channel} · ${peerId} · g:${chatId}`
-    : `IM · ${input.channel} · ${peerId}`;
+  // 侧栏标题：私聊标用户 openid；群聊标群（共享 session，不掺单个说话人）
+  const title = keys.isGroup
+    ? `IM · ${input.channel} · 群:${keys.chatId}${input.forceChatId ? " · 新话题" : ""}`
+    : `IM · ${input.channel} · ${keys.speakerPeerId}`;
   const model = resolved.model || config.llm.defaultModel || DEFAULT_LLM_MODEL;
 
   // 为 IM 渠道追加纯文本格式约束：QQ 等 IM 不渲染 Markdown，用户可见才透明。
@@ -314,23 +380,25 @@ export async function setDefaultChannelSession(
   sessionId: string,
   agentId: string,
 ): Promise<void> {
-  const key = chatId?.trim() ?? "";
+  const keys = resolveChannelBindingKeys({ peerId, chatId });
   await prisma.channelBinding.upsert({
     where: {
       channel_peerId_chatId: {
         channel,
-        peerId,
-        chatId: key,
+        peerId: keys.peerId,
+        chatId: keys.chatId,
       },
     },
     update: { sessionId, agentId, lastMessageAt: new Date() },
     create: {
       channel,
-      peerId,
-      chatId: key,
+      peerId: keys.peerId,
+      chatId: keys.chatId,
       sessionId,
       agentId,
-      title: null,
+      title: keys.isGroup
+        ? `IM · ${channel} · 群:${keys.chatId}`
+        : `IM · ${channel} · ${keys.speakerPeerId}`,
       lastMessageAt: new Date(),
     },
   });

@@ -3,10 +3,12 @@
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { executeNativeTool } from "../infra/nativeTools.js";
+import { stripQqAtTags, withQqAtMention } from "../infra/tools/native/qq.js";
 import { createNativeCtx, createTempProjectDir } from "./helpers/toolTestFixtures.js";
 import fs from "fs";
 
 const SAMPLE_OPENID = "14A17D731DD2B1A0CC57FC8EDBFFC50B";
+const SAMPLE_GROUP = "B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5";
 
 describe("qq native tools", () => {
   let root: string;
@@ -111,5 +113,49 @@ describe("qq native tools", () => {
     )) as { error?: string; correctExample?: Record<string, unknown> };
     expect(result.error).toMatch(/userId 格式无效/);
     expect(result.error).toContain("正确示例");
+  });
+
+  it("withQqAtMention：at 与 quote 解耦，仅群聊加 <@!openid>", () => {
+    expect(
+      withQqAtMention("进度：在搜", {
+        at: false,
+        openid: SAMPLE_OPENID,
+        groupOpenid: SAMPLE_GROUP,
+      }),
+    ).toBe("进度：在搜");
+    expect(
+      withQqAtMention("你好", {
+        at: true,
+        openid: SAMPLE_OPENID,
+        groupOpenid: SAMPLE_GROUP,
+      }),
+    ).toBe(`<@!${SAMPLE_OPENID}> 你好`);
+    // 私聊忽略 at
+    expect(
+      withQqAtMention("你好", { at: true, openid: SAMPLE_OPENID }),
+    ).toBe("你好");
+  });
+
+  it("withQqAtMention：atOpenIds 可艾特群里其他人（可多人）", () => {
+    const other = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+    expect(
+      withQqAtMention("麻烦看一下", {
+        openids: [other],
+        groupOpenid: SAMPLE_GROUP,
+      }),
+    ).toBe(`<@!${other}> 麻烦看一下`);
+    expect(
+      withQqAtMention("两位看看", {
+        at: true,
+        openid: SAMPLE_OPENID,
+        openids: [other],
+        groupOpenid: SAMPLE_GROUP,
+      }),
+    ).toBe(`<@!${SAMPLE_OPENID}> <@!${other}> 两位看看`);
+  });
+
+  it("stripQqAtTags：去掉正文里误写的艾特标签", () => {
+    expect(stripQqAtTags(`<@!${SAMPLE_OPENID}> 收到，正在处理`)).toBe("收到，正在处理");
+    expect(stripQqAtTags("普通文本")).toBe("普通文本");
   });
 });

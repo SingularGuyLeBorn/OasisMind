@@ -12,12 +12,38 @@ import type { ChatAttachment } from "@knowpilot/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { claimWebhookEvent } from "./webhookIdempotency.js";
-import { resolveOrCreateChannelBinding, setDefaultChannelSession } from "./channelBinding.js";
+import {
+  resolveOrCreateChannelBinding,
+  setDefaultChannelSession,
+} from "./channelBinding.js";
 import { getStreamHub } from "./sessionStreamHub.js";
 import { createTrpcInvoker } from "./trpcInvoker.js";
 import { wrapEmitForChannelReply } from "./channelStreamBridge.js";
+import {
+  clearChannelOutbound,
+  shouldSkipChannelFallback,
+} from "./channelOutboundLedger.js";
 import { notifyAgentUi } from "./uiStateNotify.js";
 import { IM_SLASH_HELP_TEXT, parseImSlashCommand } from "./imSlashCommands.js";
+
+/**
+ * 群聊共享 session 时，把说话人写进正文，否则 LLM 分不清是谁在 @。
+ * displayName 优先用平台昵称 / QQ 号；缺省回退 openid。
+ */
+export function prefixGroupSpeaker(
+  text: string,
+  speakerPeerId: string,
+  displayName?: string,
+): string {
+  const id = speakerPeerId.trim();
+  if (!id && !displayName?.trim()) return text;
+  const already = text.startsWith("【群成员") || text.startsWith("[群成员");
+  if (already) return text;
+  // 始终带 openid，便于 Agent 用 send_qq_text.atOpenIds 艾特群里其他人
+  const name = displayName?.trim();
+  const label = name && id ? `${name} | openid=${id}` : name || (id ? `openid=${id}` : "未知");
+  return `【群成员 ${label}】\n${text}`;
+}
 
 export type ImChannel = "qq" | "feishu" | "telegram" | "onebot";
 
@@ -40,6 +66,13 @@ export type UnifiedMessage = {
     eventId: string;
     /** 通道回传字段（replyTo 等） */
     replyTo?: string;
+    /** 群聊说话人展示名（昵称 / QQ 号）；缺省用 openid */
+    speakerLabel?: string;
+    /**
+     * QQ 群：true=回发时引用该入站消息（引用条；平台常连带 @）。
+     * 默认 false=普通气泡不艾特。排队 drain 一条条回复时应置 true。
+     */
+    quoteInbound?: boolean;
     raw?: unknown;
   };
 };
@@ -56,6 +89,8 @@ export type ChannelReplyChunk = {
    * QQ 官方无同气泡编辑，不能复用 Web 流式；状态条 + 终稿引用才是可行路径。
    */
   imStatus?: "queued" | "working";
+  /** 覆盖本条是否强制引用入站（缺省看 UnifiedMessage.meta.quoteInbound） */
+  imQuote?: boolean;
 };
 
 /** SessionQueueItem.attachments 中的 IM 入站元数据（drain 回发 / 引用依赖） */
@@ -239,6 +274,11 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       forceChatId,
     });
 
+    // 群聊全群一个 session：正文标注说话人，历史上下文里才能区分谁在讲话
+    if (msg.envelope.chatId?.trim()) {
+      text = prefixGroupSpeaker(text, msg.envelope.peerId, msg.meta.speakerLabel);
+    }
+
     const adapter = adapters.get(msg.envelope.channel);
     const replyText = async (body: string) => {
       if (!adapter) return;
@@ -416,18 +456,45 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
     });
     const { chatAgentStream } = await import("./agentStream.js");
 
+    // QQ：正式回发交给工具（at/quote 由模型定）；系统只在无 answer 出站时兜底
+    if (msg.envelope.channel === "qq") {
+      clearChannelOutbound(binding.sessionId);
+    }
+
     const started = await hub.startIfNotRunning(binding.sessionId, body, async (emit, signal) => {
       const channelEmit = adapter
-        ? wrapEmitForChannelReply(emit, (chunk) =>
-            adapter.reply(msg, chunk).catch((err) => {
-              console.warn(
-                `[MessageGateway] ${msg.envelope.channel} 回发失败:`,
-                err instanceof Error ? err.message : err,
-              );
-            }),
+        ? wrapEmitForChannelReply(
+            emit,
+            (chunk) =>
+              adapter.reply(msg, chunk).catch((err) => {
+                console.warn(
+                  `[MessageGateway] ${msg.envelope.channel} 回发失败:`,
+                  err instanceof Error ? err.message : err,
+                );
+              }),
+            msg.envelope.channel === "qq"
+              ? {
+                  fallbackOnlyWhenNoAnswer: {
+                    sessionId: binding.sessionId,
+                    shouldSkipFallback: (finalText) =>
+                      shouldSkipChannelFallback(binding.sessionId, "qq", finalText),
+                  },
+                }
+              : undefined,
           )
-        : emit;
-      await chatAgentStream(deps!.services, deps!.config, body, invoke, channelEmit, signal);
+        : null;
+      try {
+        await chatAgentStream(
+          deps!.services,
+          deps!.config,
+          body,
+          invoke,
+          channelEmit ?? emit,
+          signal,
+        );
+      } finally {
+        await channelEmit?.waitForChannelReplies?.().catch(() => {});
+      }
     });
 
     if (started === "busy") {
@@ -452,9 +519,10 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       if (adapter) {
         void adapter
           .reply(msg, {
-            text: `已排队（第 ${queuePos} 条），上一条结束后会引用这条继续回复。`,
+            text: `已排队（第 ${queuePos} 条），上一条结束后会继续回复。`,
             finish: false,
             imStatus: "queued",
+            imQuote: false,
           })
           .catch((err) => {
             console.warn(
@@ -472,7 +540,12 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
     stats.started += 1;
     if (adapter) {
       void adapter
-        .reply(msg, { text: "收到，正在处理…", finish: false, imStatus: "working" })
+        .reply(msg, {
+          text: "收到，正在处理…",
+          finish: false,
+          imStatus: "working",
+          imQuote: false,
+        })
         .catch(() => {});
     }
     const { enqueueImChannelDrain } = await import("./imChannelDrain.js");

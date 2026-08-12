@@ -10,6 +10,10 @@ import { getStreamHub, onHubRunSettled } from "./sessionStreamHub.js";
 import { createTrpcInvoker } from "./trpcInvoker.js";
 import { wrapEmitForChannelReply } from "./channelStreamBridge.js";
 import {
+  clearChannelOutbound,
+  shouldSkipChannelFallback,
+} from "./channelOutboundLedger.js";
+import {
   IM_INBOUND_QUEUE_KIND,
   getChannelAdapter,
   parseImInboundAttachment,
@@ -123,6 +127,9 @@ async function runImInboundItem(opts: {
   });
 
   const msg = unifiedMessageFromImInbound(opts.content, opts.meta);
+  // 不强制 quote：排队可能已超平台被动窗（群≈5min）；系统/兜底走主动消息。
+  // 要引用/艾特由 Agent 工具 at/quote 决定。
+  msg.meta.quoteInbound = false;
   const adapter = getChannelAdapter(msg.envelope.channel);
   const eventId = `${msg.envelope.channel}:${msg.meta.eventId}`;
 
@@ -145,6 +152,7 @@ async function runImInboundItem(opts: {
 
   // 恢复 QQ replyCtx / 被动窗口（drain 路径不再走 ingest）
   if (msg.envelope.channel === "qq") {
+    clearChannelOutbound(opts.sessionId);
     const { rememberQqOfficialInbound } = await import("./channels/qqOfficialMedia.js");
     rememberQqOfficialInbound({
       openid: msg.envelope.peerId,
@@ -153,18 +161,42 @@ async function runImInboundItem(opts: {
     });
   }
 
+  let waitChannelReplies: (() => Promise<void>) | undefined;
   const started = await hub.startIfNotRunning(opts.sessionId, body, async (emit, signal) => {
     const channelEmit = adapter
-      ? wrapEmitForChannelReply(emit, (chunk) =>
-          adapter.reply(msg, chunk).catch((err) => {
-            console.warn(
-              `[imChannelDrain] ${msg.envelope.channel} 回发失败:`,
-              err instanceof Error ? err.message : err,
-            );
-          }),
+      ? wrapEmitForChannelReply(
+          emit,
+          (chunk) =>
+            adapter.reply(msg, chunk).catch((err) => {
+              console.warn(
+                `[imChannelDrain] ${msg.envelope.channel} 回发失败:`,
+                err instanceof Error ? err.message : err,
+              );
+            }),
+          msg.envelope.channel === "qq"
+            ? {
+                fallbackOnlyWhenNoAnswer: {
+                  sessionId: opts.sessionId,
+                  shouldSkipFallback: (finalText) =>
+                    shouldSkipChannelFallback(opts.sessionId, "qq", finalText),
+                },
+              }
+            : undefined,
         )
-      : emit;
-    await chatAgentStream(opts.services, opts.config, body, invoke, channelEmit, signal);
+      : null;
+    waitChannelReplies = channelEmit?.waitForChannelReplies;
+    try {
+      await chatAgentStream(
+        opts.services,
+        opts.config,
+        body,
+        invoke,
+        channelEmit ?? emit,
+        signal,
+      );
+    } finally {
+      await waitChannelReplies?.().catch(() => {});
+    }
   });
 
   if (started === "busy" || started === "duplicate") {
@@ -173,9 +205,15 @@ async function runImInboundItem(opts: {
 
   if (adapter) {
     await adapter
-      .reply(msg, { text: "收到，正在处理…", finish: false, imStatus: "working" })
+      .reply(msg, {
+        text: "收到，正在处理…",
+        finish: false,
+        imStatus: "working",
+        imQuote: false,
+      })
       .catch(() => {});
   }
 
   await hub.waitFor(opts.sessionId);
+  await waitChannelReplies?.().catch(() => {});
 }

@@ -61,6 +61,101 @@ describe("channelStreamBridge", () => {
       reasoning: "先分析，再回答",
     });
   });
+
+  it("done.content 为权威终稿（token 缓冲可为空）", async () => {
+    const chunks: Array<{ text: string; finish: boolean }> = [];
+    const emit = vi.fn();
+    const wrapped = wrapEmitForChannelReply(emit, (c) => {
+      chunks.push({ text: c.text, finish: c.finish });
+    });
+    wrapped({
+      type: "done",
+      sessionId: "s1",
+      agentId: "a1",
+      content: "仅终稿有正文",
+      toolCalls: [],
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    });
+    await wrapped.waitForChannelReplies?.();
+    expect(chunks.at(-1)).toEqual({ text: "仅终稿有正文", finish: true });
+  });
+
+  it("fallbackOnly：中间 token 不回发；终稿未由工具发出则兜底且 imQuote=false", async () => {
+    const chunks: Array<{ text: string; finish: boolean; imQuote?: boolean; reasoning?: string }> =
+      [];
+    const emit = vi.fn();
+    const wrapped = wrapEmitForChannelReply(
+      emit,
+      (c) => {
+        chunks.push({
+          text: c.text,
+          finish: c.finish,
+          imQuote: c.imQuote,
+          reasoning: c.reasoning,
+        });
+      },
+      {
+        fallbackOnlyWhenNoAnswer: {
+          sessionId: "s-fb",
+          shouldSkipFallback: () => false,
+        },
+      },
+    );
+    wrapped({ type: "token", delta: "中" });
+    wrapped({ type: "token", delta: "间" });
+    wrapped({ type: "thinking", delta: "想了想" });
+    expect(chunks).toHaveLength(0);
+
+    wrapped({
+      type: "done",
+      sessionId: "s-fb",
+      agentId: "a1",
+      content: "兜底终稿",
+      toolCalls: [],
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    });
+    await wrapped.waitForChannelReplies?.();
+    expect(chunks).toEqual([
+      { text: "兜底终稿", finish: true, imQuote: false, reasoning: undefined },
+    ]);
+  });
+
+  it("fallbackOnly：中间发过短消息仍兜底；仅终稿已由工具发出才跳过", async () => {
+    const chunks: Array<{ text: string }> = [];
+    let skip = false;
+    const wrapped = wrapEmitForChannelReply(
+      vi.fn(),
+      (c) => {
+        chunks.push({ text: c.text });
+      },
+      {
+        fallbackOnlyWhenNoAnswer: {
+          sessionId: "s-skip",
+          shouldSkipFallback: (finalText) => {
+            // 模拟：中间短句不 skip；终稿相同时 skip
+            skip = finalText.includes("完整终稿正文");
+            return skip;
+          },
+        },
+      },
+    );
+    wrapped({
+      type: "done",
+      sessionId: "s-skip",
+      agentId: "a1",
+      content: "完整终稿正文应当被跳过",
+      toolCalls: [],
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    });
+    await wrapped.waitForChannelReplies?.();
+    expect(chunks).toHaveLength(0);
+  });
 });
 
 describe("messageGateway 幂等（mock deps）", () => {

@@ -16,6 +16,7 @@ import {
   agentToolError,
   TOOL_CORRECT_EXAMPLES,
 } from "./agentToolError.js";
+import { cosyVoiceSynthZodFields } from "./integration/voice.js";
 
 /** 非参数类错误（通道/能力）；参数类请用 agentParamError 附带正确示例 */
 function agentErr(error: string, extra?: Record<string, unknown>) {
@@ -24,50 +25,161 @@ function agentErr(error: string, extra?: Record<string, unknown>) {
 
 const EX = TOOL_CORRECT_EXAMPLES;
 
-const TARGET_RULES =
-  "【目标怎么填】" +
-  "① 当前会话已绑定官方 QQ（channel=qq）：userId/groupId 都不要传，系统自动填目标。" +
-  "② 私聊：userId 填用户 openid（长十六进制），不是 QQ 号。" +
-  "③ 群聊：groupId 填群 openid；平台若标注「暂不支持群聊」则不要发群。" +
-  "④ 禁止把一个用户的 peerId 填进另一个用户的会话。NapCat/OneBot 已退役，不要填数字 QQ 号。";
-
-const RATE_LIMIT_HINT = "官方 Bot 受平台被动回复次数/主动消息频控限制；勿连打。";
+const TARGET_RULES = "绑定会话省略目标；私聊/群填 openid（非 QQ 号）。";
+const RATE_LIMIT_HINT = "勿连打（平台限速）。";
 
 const targetFields = {
-  userId: z
-    .string()
+  userId: z.string().describe("可选，私聊 openid；绑定会话省略").optional(),
+  groupId: z.string().describe("可选，群 openid；绑定会话省略").optional(),
+  quote: z
+    .boolean()
+    .describe("可选，true=引用最近入站消息（出现引用条）。与 at 独立；进度勿开。")
+    .optional(),
+  at: z
+    .boolean()
     .describe(
-      "【可选】私聊目标：用户 openid（长十六进制）。已绑定 QQ 会话请省略。与 groupId 同时传入时本字段被忽略。",
+      "可选，true=群聊 @ 当前对话对端（刚说话的人）。默认 false。" +
+        "要艾特群里其他人用 atOpenIds（填对方 openid，见消息里的 openid=）。" +
+        "不重要消息少艾特。进度强制不艾特。私聊忽略。",
     )
     .optional(),
-  groupId: z
-    .string()
+  atOpenIds: z
+    .array(z.string())
     .describe(
-      "【可选】群聊目标：群 openid。已绑定 QQ 会话请省略。与 userId 同时传入时只用本字段。",
+      "可选，群聊要艾特的成员 openid 列表（可多人）。与 at 可并用。" +
+        "openid 来自【群成员 … | openid=…】或群近况；勿填 QQ 号/昵称。进度忽略。",
+    )
+    .optional(),
+  kind: z
+    .enum(["progress", "answer"])
+    .describe(
+      "progress=过程进度（不抑制系统终稿兜底）；answer=正式回复（发成功后系统不再自动回发）。" +
+        "默认 answer。长任务进度必须显式 progress。",
     )
     .optional(),
 };
+
+function outboundKind(args: Record<string, unknown>): "progress" | "answer" {
+  return args.kind === "progress" ? "progress" : "answer";
+}
+
+function looksLikeOpenIdForAt(id: string): boolean {
+  // 官方 openid 多为长十六进制；绑定占位 "group" 不能艾特
+  return id.length >= 8 && id !== "group" && !/^QQ:\d+/i.test(id);
+}
+
+/** 进度强制空；at→对端；atOpenIds→指定成员（可多人） */
+function resolveMentionOpenIds(
+  args: Record<string, unknown>,
+  peerOpenid: string,
+): string[] {
+  if (outboundKind(args) === "progress") return [];
+  const ids: string[] = [];
+  const push = (raw?: string) => {
+    const id = raw?.trim();
+    if (!id || !looksLikeOpenIdForAt(id) || ids.includes(id)) return;
+    ids.push(id);
+  };
+  if (args.at === true) push(peerOpenid);
+  const list = args.atOpenIds;
+  if (Array.isArray(list)) {
+    for (const x of list) push(String(x));
+  }
+  return ids;
+}
+
+/** 进度强制不引用；answer 仅当显式 quote===true（且被动窗仍新鲜才真正带 msg_id） */
+function effectiveQuote(args: Record<string, unknown>): boolean {
+  if (outboundKind(args) === "progress") return false;
+  return args.quote === true;
+}
+
+/** at=false 时去掉模型误写进正文的 <@!openid>，避免「参数没开却仍艾特」 */
+export function stripQqAtTags(text: string): string {
+  return text.replace(/(?:<@![A-Za-z0-9_-]+>\s*)+/g, "").trim();
+}
+
+async function noteQqOutbound(
+  ctx: NativeToolContext,
+  args: Record<string, unknown>,
+  textForMatch?: string,
+): Promise<void> {
+  const { markChannelOutbound } = await import("../../channelOutboundLedger.js");
+  markChannelOutbound(ctx.sessionId, "qq", outboundKind(args), textForMatch);
+}
+
+/**
+ * 群聊显式艾特：正文前缀一个或多个 `<@!openid>`。
+ * - 旧用法：`at: true` + `openid`（艾特对端）
+ * - 新用法：`openids: [...]`（艾特指定成员，可多人）
+ */
+export function withQqAtMention(
+  text: string,
+  opts: {
+    at?: boolean;
+    openid?: string;
+    openids?: string[];
+    groupOpenid?: string;
+  },
+): string {
+  if (!opts.groupOpenid) return text;
+  const ids: string[] = [];
+  const push = (raw?: string) => {
+    const id = raw?.trim();
+    if (!id || !looksLikeOpenIdForAt(id) || ids.includes(id)) return;
+    ids.push(id);
+  };
+  if (opts.at === true) push(opts.openid);
+  for (const id of opts.openids ?? []) push(id);
+  if (!ids.length) return text;
+  const missing = ids.filter((id) => !text.includes(`<@!${id}>`));
+  if (!missing.length) return text;
+  const prefix = missing.map((id) => `<@!${id}>`).join(" ");
+  const body = text.trim();
+  return body ? `${prefix} ${body}` : prefix;
+}
+
+async function applyQuoteOpts(
+  args: Record<string, unknown>,
+  target: { openid: string; groupOpenid?: string },
+): Promise<{
+  msgId?: string;
+  messageReference?: { messageId: string };
+  useLastInboundAsPassive?: boolean;
+}> {
+  // quote 只负责引用条；过期被动窗则放弃引用，改主动消息（长任务仍可发，无需重启）
+  if (!effectiveQuote(args)) return {};
+  const { peekQqOfficialFreshPassiveMsgId } = await import("../../channels/qqOfficialMedia.js");
+  const msgId = peekQqOfficialFreshPassiveMsgId({
+    openid: target.openid,
+    groupOpenid: target.groupOpenid,
+  });
+  if (!msgId) {
+    // 窗口已过：不带 msg_id，普通气泡照发
+    return {};
+  }
+  return {
+    msgId,
+    messageReference: { messageId: msgId },
+  };
+}
 
 export const qqDefs: NativeToolDefinition[] = [
   {
     name: "send_qq_text",
     description:
-      "主动往 QQ 再推一条纯文本气泡（不经过「最终 assistant 回复」自动回发管道）。" +
-      "【什么时候用】进度提醒、与正式答案分开的短通知、从 Web 会话推一条给主人 QQ。" +
-      "【什么时候不要用】用户正从 QQ 跟你对话、你准备给出的正式答案——系统会自动回发（思考最多 1 条 + 正文 1 条）。" +
-      "禁止把同一段正式答案再用本工具发一遍（会重复气泡并占满 5 秒限速）。" +
-      "【必填】text。" +
+      "往 QQ 推纯文本。正式答案与进度都用本工具。" +
+      "at/quote 默认 false。艾特对端用 at:true；艾特群里其他人用 atOpenIds:[openid,…]。" +
+      "不重要消息少艾特；要引用条再用 quote:true（群约5分钟内）。" +
+      "进度 kind=progress 强制不艾特，1～3 条极短、勿刷屏。" +
+      "正式回复 kind=answer（默认）；发成功后系统不再自动回发。" +
+      "若整轮结束你没发过 answer，系统会用终稿兜底（无艾特）。" +
       TARGET_RULES +
       RATE_LIMIT_HINT +
-      "QQ 不渲染 Markdown：不要传 **加粗** / 代码块，用纯文本与换行。",
+      "纯文本，无 Markdown。",
     parameters: zodParams(
       z.object({
-        text: z
-          .string()
-          .describe(
-            "【必填】要发送的纯文本。去首尾空白后不能为空。" +
-              "不要传 Markdown。不要把即将自动回发的正式答案再填一遍。",
-          ),
+        text: z.string().describe("必填，纯文本；进度宜短（一两句）"),
         ...targetFields,
       }),
     ),
@@ -77,31 +189,13 @@ export const qqDefs: NativeToolDefinition[] = [
   {
     name: "send_qq_image",
     description:
-      "主动往 QQ 发送一张图片。" +
-      "【优先做法】若图片属于「最终正式回复」的一部分：在最终 Markdown 写 ![说明](content/uploads/xxx.png)，" +
-      "由系统随正文一条发出——更省限速次数、更稳。本工具只用于：额外主动推图、或本轮尚未结束就要先推一张。" +
-      "【必填】file。" +
-      "【可选】caption：图片发出后会再发一条说明文字（额外占一次 5 秒间隔）；能写进最终正文就不要用 caption。" +
-      "【体积】建议压到约 1.5MB 以下；过大常 Timeout。" +
+      "主动推送 QQ 图片。正式回复配图优先 Markdown ![ ](content/uploads/…)。建议 <1.5MB。" +
       TARGET_RULES +
       RATE_LIMIT_HINT,
     parameters: zodParams(
       z.object({
-        file: z
-          .string()
-          .describe(
-            "【必填】图片来源，二选一规则（按优先级）：" +
-              "1) 文件已在本机：相对项目根的路径，例 \"content/uploads/screenshots/a.jpg\"（正斜杠 /，大小写按真实路径）；" +
-              "2) 仅当本机没有该文件：完整 http:// 或 https:// URL。" +
-              "不要传空字符串。不要只传文件名不含目录。",
-          ),
-        caption: z
-          .string()
-          .describe(
-            "【可选】图片后的说明纯文本。会另发一条消息并占用限速间隔。" +
-              "省略=只发图。不要用 Markdown。",
-          )
-          .optional(),
+        file: z.string().describe("必填，本机路径或 http(s) URL"),
+        caption: z.string().describe("可选，另发一条说明").optional(),
         ...targetFields,
       }),
     ),
@@ -110,26 +204,11 @@ export const qqDefs: NativeToolDefinition[] = [
   },
   {
     name: "send_qq_video",
-    description:
-      "主动往 QQ 发送一段视频。" +
-      "【必填】file。建议短视频并先压缩；体积过大易 Timeout，失败后先压缩再调一次，禁止无改动连打。" +
-      "【可选】caption：视频后另发说明文字（占限速）。" +
-      TARGET_RULES +
-      RATE_LIMIT_HINT,
+    description: "主动推送 QQ 视频。过大易超时，先压缩。" + TARGET_RULES + RATE_LIMIT_HINT,
     parameters: zodParams(
       z.object({
-        file: z
-          .string()
-          .describe(
-            "【必填】视频来源，优先级：" +
-              "1) 本机相对项目根路径，例 \"content/uploads/demo.mp4\"；" +
-              "2) 仅当本机无文件时用完整 http(s) URL。" +
-              "不要传空串。",
-          ),
-        caption: z
-          .string()
-          .describe("【可选】视频后的说明纯文本；省略=只发视频。")
-          .optional(),
+        file: z.string().describe("必填，本机路径或 http(s) URL"),
+        caption: z.string().describe("可选说明").optional(),
         ...targetFields,
       }),
     ),
@@ -138,28 +217,11 @@ export const qqDefs: NativeToolDefinition[] = [
   },
   {
     name: "send_qq_file",
-    description:
-      "主动往 QQ 发送文件（私聊走 upload_private_file，群聊走 upload_group_file）。" +
-      "适用：报告 PDF、txt、zip、长文导出。长思考系统可能已自动发过 thinking-*.txt，勿重复发同一文件。" +
-      "【必填】file（必须是本机路径，不接受 http URL）。" +
-      "【可选】name：用户看到的文件名，例 \"调研报告.txt\"；省略则用路径 basename。" +
-      TARGET_RULES +
-      RATE_LIMIT_HINT,
+    description: "主动推送 QQ 文件（仅本机路径，勿 http）。" + TARGET_RULES + RATE_LIMIT_HINT,
     parameters: zodParams(
       z.object({
-        file: z
-          .string()
-          .describe(
-            "【必填】本机文件路径。优先相对项目根，例 \"content/uploads/qq-text/report.txt\"。" +
-              "调试可用绝对路径。不要传 http/https URL（请先 download_file 落到本地再发）。",
-          ),
-        name: z
-          .string()
-          .describe(
-            "【可选】展示文件名，含扩展名，例 \"report.txt\"。省略=取 file 的 basename。" +
-              "不要含路径分隔符。",
-          )
-          .optional(),
+        file: z.string().describe("必填，本机路径"),
+        name: z.string().describe("可选展示名").optional(),
         ...targetFields,
       }),
     ),
@@ -169,42 +231,28 @@ export const qqDefs: NativeToolDefinition[] = [
   {
     name: "send_qq_voice",
     description:
-      "主动往 QQ 发送一条语音（OneBot record；NapCat 会转 silk）。" +
-      "【必填】file：本机音频路径（wav/mp3 等），推荐先落到 \"content/uploads/tts/xxx.mp3\" 再传该相对路径。" +
-      "适合短确认/摘要；不要把万字长文整段当语音。" +
+      "主动推送 QQ 语音：传 file，或 provider=cosyvoice + text（+ voice）合成。日文 language=ja。" +
       TARGET_RULES +
       RATE_LIMIT_HINT,
     parameters: zodParams(
       z.object({
-        file: z
-          .string()
-          .describe(
-            "【必填】本机音频路径。优先 \"content/uploads/tts/xxx.mp3\"（相对项目根，正斜杠）。" +
-              "不要传 http URL。不要传空串。",
-          ),
+        file: z.string().describe("可选，本机音频路径").optional(),
+        text: z.string().describe("合成必填，朗读文本").optional(),
+        provider: z.string().describe("合成时 cosyvoice").optional(),
+        voice: z.string().describe("可选 voice_id").optional(),
+        ...cosyVoiceSynthZodFields,
         ...targetFields,
       }),
     ),
-    concurrencyClass: "B",
+    concurrencyClass: "A",
     destructive: false,
   },
   {
     name: "delete_qq_message",
-    description:
-      "撤回本 Bot 已经发出的一条 QQ 消息（OneBot delete_msg）。" +
-      "【必填】messageId：必须来自上一次 send_qq_text / send_qq_image / send_qq_video / send_qq_file / send_qq_voice " +
-      "成功返回里的 result.data.message_id（数字或数字字符串均可）。" +
-      "没有 message_id 就不要猜、不要编造。" +
-      "只能撤本 Bot 自己发的消息，且受 QQ 撤回时限约束；超时/非自己的消息会失败——向用户说明即可，禁止死循环重试。" +
-      "撤回不占用发送限速间隔。",
+    description: "撤回本 Bot 已发消息。messageId 来自 send_qq_* 返回；勿猜、勿死循环重试。",
     parameters: zodParams(
       z.object({
-        messageId: z
-          .union([z.string(), z.number()])
-          .describe(
-            "【必填】要撤回的 message_id。类型：number 或数字字符串，例 1234567890 或 \"1234567890\"。" +
-              "来源：最近一次 send_qq_* 返回的 result.data.message_id。",
-          ),
+        messageId: z.union([z.string(), z.number()]).describe("必填，send_qq_* 返回的 message_id"),
       }),
     ),
     concurrencyClass: "B",
@@ -333,23 +381,82 @@ const sendQqText: NativeToolHandler = async (args, ctx) => {
 
   try {
     const { sendQqOfficialText } = await import("../../channels/qqOfficialMedia.js");
+    const quoteOpts = await applyQuoteOpts(args, target);
+    const mentionIds = resolveMentionOpenIds(args, target.openid);
+    const body = mentionIds.length ? text : stripQqAtTags(text);
+    const outboundText = withQqAtMention(body, {
+      openids: mentionIds,
+      groupOpenid: target.groupOpenid,
+    });
     const result = await sendQqOfficialText({
       openid: target.openid,
       groupOpenid: target.groupOpenid,
-      text,
+      text: outboundText,
+      ...quoteOpts,
     });
-    return { ok: true, type: "text", ...target, result };
+    await noteQqOutbound(ctx, args, outboundText);
+    return {
+      ok: true,
+      type: "text",
+      quote: effectiveQuote(args) && Boolean(quoteOpts.msgId),
+      at: mentionIds.length > 0,
+      atOpenIds: mentionIds,
+      kind: outboundKind(args),
+      ...target,
+      result,
+    };
   } catch (err) {
     return wrapOutboundFailure("发送 QQ 官方文本", err, { ...target });
   }
 };
+
+async function resolveVoiceFile(
+  args: Record<string, unknown>,
+  ctx: NativeToolContext,
+): Promise<{ file: string } | { error: string; [k: string]: unknown }> {
+  const existing = args.file != null ? String(args.file).trim() : "";
+  if (existing) return { file: existing };
+
+  const text = args.text != null ? String(args.text).trim() : "";
+  const provider = args.provider != null ? String(args.provider).trim() : "";
+  const wantsSynth = Boolean(text || provider || args.voice);
+  if (!wantsSynth) {
+    return agentParamError({
+      reason:
+        "发送语音须二选一：① 传 file（本机音频路径）；② 传 provider=cosyvoice + voice + text 现场合成。",
+      got: { file: args.file, text: args.text, provider: args.provider, voice: args.voice },
+      correctExample: { ...EX.send_qq_voice },
+      code: "INVALID_FILE",
+    });
+  }
+  if (!text) {
+    return agentParamError({
+      reason: "合成模式缺少 text：请传要朗读的文本，或改为传已有音频的 file。",
+      correctExample: { ...EX.send_qq_voice_synth },
+      code: "INVALID_TEXT",
+    });
+  }
+  try {
+    const { pickTtsArgsFromTool, synthesizeToUploads } = await import("../../ttsProvider.js");
+    const synth = await synthesizeToUploads(ctx.config, {
+      text,
+      ...pickTtsArgsFromTool(args),
+      provider: provider || "cosyvoice",
+    });
+    return { file: synth.path };
+  } catch (err) {
+    return agentErr(`CosyVoice 合成失败：${err instanceof Error ? err.message : String(err)}`, {
+      code: "TTS_FAILED",
+    });
+  }
+}
 
 async function sendMedia(
   args: Record<string, unknown>,
   ctx: NativeToolContext,
   type: "image" | "video" | "file" | "record",
 ): Promise<unknown> {
-  const file = String(args.file ?? "").trim();
+  let file = String(args.file ?? "").trim();
   const mediaTool =
     type === "image"
       ? "send_qq_image"
@@ -359,6 +466,12 @@ async function sendMedia(
           ? "send_qq_file"
           : "send_qq_voice";
   const mediaExample = { ...EX[mediaTool] };
+
+  if (type === "record" && !file) {
+    const resolved = await resolveVoiceFile(args, ctx);
+    if ("error" in resolved) return resolved;
+    file = resolved.file;
+  }
 
   if (!file) {
     return agentParamError({
@@ -392,26 +505,44 @@ async function sendMedia(
     const { sendQqOfficialMedia, sendQqOfficialText } = await import(
       "../../channels/qqOfficialMedia.js"
     );
+    const quoteOpts = await applyQuoteOpts(args, target);
     const result = await sendQqOfficialMedia({
       openid: target.openid,
       groupOpenid: target.groupOpenid,
       kind,
       file,
       fileName: args.name ? String(args.name) : undefined,
+      ...quoteOpts,
     });
-    const caption = args.caption ? String(args.caption).trim() : "";
-    if (caption && (type === "image" || type === "video")) {
+    // 富媒体 content 常被忽略：at 只作用在 image/video 的 caption 文本上
+    const captionRaw = args.caption ? String(args.caption).trim() : "";
+    const mentionIds = target.groupOpenid
+      ? resolveMentionOpenIds(args, target.openid)
+      : [];
+    const captionBody = mentionIds.length ? captionRaw : stripQqAtTags(captionRaw);
+    let captionSent = "";
+    if ((type === "image" || type === "video") && (captionBody || mentionIds.length)) {
+      const caption = withQqAtMention(captionBody || "（见图）", {
+        openids: mentionIds,
+        groupOpenid: target.groupOpenid,
+      });
       try {
         await sendQqOfficialText({
           openid: target.openid,
           groupOpenid: target.groupOpenid,
           text: caption,
+          // 说明文字跟在媒体后，不再重复引用
         });
+        captionSent = caption;
       } catch (capErr) {
+        await noteQqOutbound(ctx, args, captionBody || file);
         return {
           ok: true,
           type,
           file,
+          at: mentionIds.length > 0,
+          atOpenIds: mentionIds,
+          kind: outboundKind(args),
           ...target,
           result,
           captionWarning:
@@ -420,7 +551,19 @@ async function sendMedia(
         };
       }
     }
-    return { ok: true, type, file, ...target, result };
+    // 有 caption 用 caption 比对终稿；纯媒体用路径（难匹配文本终稿 → 仍会系统兜底文字，符合预期）
+    await noteQqOutbound(ctx, args, captionSent || captionBody || file);
+    return {
+      ok: true,
+      type,
+      file,
+      at: mentionIds.length > 0,
+      atOpenIds: mentionIds,
+      quote: effectiveQuote(args) && Boolean(quoteOpts.msgId),
+      kind: outboundKind(args),
+      ...target,
+      result,
+    };
   } catch (err) {
     return wrapOutboundFailure(`发送 QQ 官方${MEDIA_TYPE_CN[type]}`, err, {
       type,

@@ -71,7 +71,13 @@ function spawnPnpm(args, opts = {}) {
 
 const quick = process.argv.includes("--quick");
 const skipSync = process.argv.includes("--no-sync");
+/** QQ/IM 稳定：server 不用 tsx watch，避免改代码热重载把官方 WS 打成 gateway 400 */
+const stableServer =
+  process.argv.includes("--stable") ||
+  process.argv.includes("--qq") ||
+  process.env.KP_SERVER_STABLE === "1";
 const webScript = process.argv.includes("--remote") ? "dev:remote" : "dev";
+const serverScript = stableServer ? "dev:once" : "dev";
 
 /** @type {import('child_process').ChildProcess[]} */
 const children = [];
@@ -291,7 +297,11 @@ async function main() {
 
   // server 意外退出（如未捕获异常/历史 Tesseract Worker 崩进程）自动拉起，不拖死整栈；
   // 指数退避无限重启：后端是核心，必须持续可用。
-  spawnService("server", ["--filter", "@knowpilot/server", "dev"], {
+  // --stable/--qq / KP_SERVER_STABLE=1：用 dev:once（无 tsx watch），QQ WS 不被热重载风暴打断。
+  if (stableServer) {
+    console.log("  🔒 稳定模式：server 无热重载（改后端需手动重启；QQ 更稳）\n");
+  }
+  spawnService("server", ["--filter", "@knowpilot/server", serverScript], {
     fatal: false,
     restart: true,
     maxRestarts: Infinity,
@@ -314,6 +324,11 @@ async function main() {
   console.log("  ✅ 开发环境已就绪");
   console.log("     Web:    http://localhost:3000");
   console.log("     Server: http://localhost:3010");
+  if (stableServer) {
+    console.log("     Server 模式: stable（无 tsx watch · 改代码需手动重启 · QQ/IM 更稳）");
+  } else {
+    console.log("     提示: 跑 QQ 时用 pnpm dev:stable，避免热重载断 WebSocket");
+  }
   console.log("     按 Ctrl+C 停止\n");
 }
 
