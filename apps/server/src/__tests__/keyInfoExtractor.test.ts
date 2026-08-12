@@ -67,4 +67,12 @@ describe("keyInfoExtractor", () => {
     expect(props.expect_context_chars).toBeTruthy();
     expect(params.required).toEqual(["url"]);
   });
+
+  it("短工具不注入 expect_*，长结果工具才注入", () => {
+    const base = { type: "object", properties: { text: { type: "string" } } };
+    const skipped = injectExpectPropsIntoParameters(base, "send_qq_text");
+    expect((skipped.properties as Record<string, unknown>).expect_keywords).toBeUndefined();
+    const injected = injectExpectPropsIntoParameters(base, "read_article");
+    expect((injected.properties as Record<string, unknown>).expect_keywords).toBeTruthy();
+  });
 });

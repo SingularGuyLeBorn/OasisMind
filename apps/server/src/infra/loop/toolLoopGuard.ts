@@ -1,6 +1,6 @@
 /**
- * 工具调用死循环熔断（DeerFlow LoopDetection 启发）。
- * 纯函数：同参连续 / 同名变参刷屏 / 双指纹交替 → 阻断。
+ * 工具调用死循环检测（DeerFlow LoopDetection 启发）。
+ * 纯函数：同参连续 / 同名变参刷屏 / 双指纹交替 → 提醒（由调用方决定是否软警告，不硬拦执行）。
  */
 
 export type ToolCallFingerprintInput = {
@@ -17,6 +17,8 @@ export type LoopGuardState = {
   nameStreak: number;
   /** 本 run 已见过的指纹历史（最近 N） */
   recent: string[];
+  /** 本轮死循环提醒已发过的 warnKey（避免同模式连刷提示） */
+  lastWarnedKey: string | null;
 };
 
 export type LoopGuardVerdict =
@@ -25,6 +27,10 @@ export type LoopGuardVerdict =
       blocked: true;
       state: LoopGuardState;
       fingerprint: string;
+      /** 稳定键：同模式只提醒一次 */
+      warnKey: string;
+      /** 是否应注入一条提醒（同 warnKey 已提醒过则为 false） */
+      shouldWarn: boolean;
       message: string;
     };
 
@@ -36,7 +42,7 @@ const OSCILLATION_WINDOW = 6;
 
 /**
  * 知识库勘察类只读工具：连续 list/read 不同路径是正常推进，
- * 不计入「同名变参刷屏」与「双指纹交替」；仍受同参 fingerprint 熔断约束。
+ * 不计入「同名变参刷屏」与「双指纹交替」；仍受同参 fingerprint 检测约束。
  */
 const EXPLORE_READONLY_TOOLS = new Set([
   "list_directory",
@@ -88,6 +94,13 @@ const EXPLORE_READONLY_TOOLS = new Set([
   "async_task_status",
   "platform_login",
   "agent_inspect",
+  // 连续换命令勘察/抓取是推进（同 command 指纹仍受同参检测）
+  "run_shell",
+  "dokobot_read",
+  "dokobot_search",
+  "webbridge_status",
+  "webbridge_start",
+  "webbridge_command",
 ]);
 
 function isExploreReadonlyTool(name: string): boolean {
@@ -113,7 +126,14 @@ export function toolCallFingerprint(call: ToolCallFingerprintInput): string {
 }
 
 export function createLoopGuardState(): LoopGuardState {
-  return { streakFp: null, streakCount: 0, lastName: null, nameStreak: 0, recent: [] };
+  return {
+    streakFp: null,
+    streakCount: 0,
+    lastName: null,
+    nameStreak: 0,
+    recent: [],
+    lastWarnedKey: null,
+  };
 }
 
 /** 最近 window 条是否在两个指纹间严格交替（A/B/A/B…） */
@@ -129,8 +149,25 @@ export function detectOscillation(recent: string[], window = OSCILLATION_WINDOW)
   return `${a.slice(0, 60)} ⇄ ${b.slice(0, 60)}`;
 }
 
+function withWarn(
+  state: LoopGuardState,
+  warnKey: string,
+  fingerprint: string,
+  message: string,
+): LoopGuardVerdict {
+  const shouldWarn = state.lastWarnedKey !== warnKey;
+  return {
+    blocked: true,
+    state: { ...state, lastWarnedKey: warnKey },
+    fingerprint,
+    warnKey,
+    shouldWarn,
+    message,
+  };
+}
+
 /**
- * 检查本批 tool calls；命中任一类死循环模式则 blocked。
+ * 检查本批 tool calls；命中死循环模式则 blocked=true（提醒用，不硬拦）。
  * 1) 同 fingerprint 连续 ≥ streakLimit
  * 2) 同工具名连续 ≥ nameStreakLimit（变参刷屏）
  * 3) 最近 window 条双指纹交替
@@ -145,6 +182,7 @@ export function checkToolLoop(
   let streakCount = state.streakCount;
   let lastName = state.lastName;
   let nameStreak = state.nameStreak;
+  let lastWarnedKey = state.lastWarnedKey;
   const recent = [...state.recent];
 
   for (const call of calls) {
@@ -175,48 +213,59 @@ export function checkToolLoop(
     recent.push(fp);
     while (recent.length > RECENT_CAP) recent.shift();
 
-    const next: LoopGuardState = { streakFp, streakCount, lastName, nameStreak, recent };
+    const next: LoopGuardState = {
+      streakFp,
+      streakCount,
+      lastName,
+      nameStreak,
+      recent,
+      lastWarnedKey,
+    };
 
     if (streakCount >= streakLimit) {
-      return {
-        blocked: true,
-        state: next,
-        fingerprint: fp,
-        message:
-          `检测到工具死循环：连续 ${streakCount} 次相同调用（${fp.slice(0, 120)}）。` +
-          `请改换策略或向用户说明卡点，禁止再以相同参数重试。`,
-      };
+      return withWarn(
+        next,
+        `fp:${fp}`,
+        fp,
+        `【提醒】检测到疑似工具死循环：连续 ${streakCount} 次相同调用（${fp.slice(0, 120)}）。` +
+          `工具仍会照常执行；请留意是否卡在同一步，尽量换策略或换参数，避免无意义重复。`,
+      );
     }
 
     if (!explore && nameStreak >= nameStreakLimit) {
-      return {
-        blocked: true,
-        state: next,
-        fingerprint: fp,
-        message:
-          `检测到工具死循环：连续 ${nameStreak} 次调用同一工具「${name}」（参数在变但仍无进展）。` +
-          `请改换工具或策略，禁止继续微调参数重试。`,
-      };
+      return withWarn(
+        next,
+        `name:${name}`,
+        fp,
+        `【提醒】检测到疑似工具死循环：连续 ${nameStreak} 次调用同一工具「${name}」（参数在变）。` +
+          `工具仍会照常执行；请确认是否真有进展，必要时换工具或换思路。`,
+      );
     }
 
-    // 勘察类 A/B 交替读文件是常态，不做乒乓熔断
+    // 勘察类 A/B 交替读文件是常态，不做乒乓检测
     if (!explore) {
       const osc = detectOscillation(recent);
       if (osc) {
-        return {
-          blocked: true,
-          state: next,
-          fingerprint: fp,
-          message:
-            `检测到工具死循环：在两种调用间交替（${osc}）。` +
-            `请停止乒乓调用，改换策略或向用户说明卡点。`,
-        };
+        return withWarn(
+          next,
+          `osc:${osc}`,
+          fp,
+          `【提醒】检测到疑似工具死循环：在两种调用间交替（${osc}）。` +
+            `工具仍会照常执行；请避免乒乓调用，换策略或向用户说明卡点。`,
+        );
       }
     }
   }
 
   return {
     blocked: false,
-    state: { streakFp, streakCount, lastName, nameStreak, recent },
+    state: {
+      streakFp,
+      streakCount,
+      lastName,
+      nameStreak,
+      recent,
+      lastWarnedKey: null,
+    },
   };
 }

@@ -21,6 +21,9 @@ import {
   buildChatTimeline,
   buildTimelineFromStored,
   getActiveVersion,
+  getUserMessageClientId,
+  groupOwnsLiveStream,
+  ownsLiveRender,
   type MessageGroup,
   type TimelineStep,
 } from "@/lib/chatMessageUtils";
@@ -590,11 +593,18 @@ export const ChatMessageList = memo(function ChatMessageList({
             />
           </div>
         </div>
-        {(isStreaming &&
-          streamTargetUserId === group.userMessage.id &&
-          (streamConnected || hasLivePayload)) ||
-        (!!group.assistantMessage && group.assistantMessage.id === inFlightAssistantId)
+        {ownsLiveRender({
+          isStreaming,
+          streamConnected,
+          streamTargetUserId,
+          userMessageId: group.userMessage.id,
+          userClientMessageId: getUserMessageClientId(group.userMessage),
+          hasLivePayload,
+          inFlightAssistantId,
+          assistantMessageId: group.assistantMessage?.id ?? null,
+        })
           ? // INV-4：本轮流式的组由 live 块独占；幽灵 restore（未 connected 且无载荷）不抢 stored
+            // 所有权钉在目标用户气泡（含 clientMessageId）；中途 system inject 不得把 live 拽走
             renderLiveStreamBlock()
           : (
               <>
@@ -670,7 +680,13 @@ export const ChatMessageList = memo(function ChatMessageList({
       timeline.some(
         (t) => t.kind === "group" && t.group.assistantMessage?.id === inFlightAssistantId,
       );
-    if (showLiveStream && !streamTargetUserId && !inFlightMaterialized) {
+    const targetOwnedByGroup =
+      !!streamTargetUserId &&
+      timeline.some(
+        (t) => t.kind === "group" && groupOwnsLiveStream(t.group, streamTargetUserId),
+      );
+    // 无钉点 / 钉点尚未物化成组（仍只有乐观气泡）→ 尾部 live；钉点已归属某组则禁止尾部再挂一份
+    if (showLiveStream && !inFlightMaterialized && !targetOwnedByGroup) {
       items.push({ kind: "live", key: "live-trailing" });
     }
     return items;

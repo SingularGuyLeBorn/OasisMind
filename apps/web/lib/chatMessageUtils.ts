@@ -154,6 +154,51 @@ export function getActiveVersion(group: MessageGroup): AssistantVersionEntry | n
   return group.versions[group.activeVersionIndex] ?? group.versions[group.versions.length - 1];
 }
 
+/** 乐观气泡 id（clientMessageId）——用于 live 所有权在 DB id 落地前/后都能对上 */
+export function getUserMessageClientId(
+  msg: Pick<ChatMessage, "toolResults">,
+): string | null {
+  const tr = msg.toolResults;
+  if (!tr || typeof tr !== "object" || Array.isArray(tr)) return null;
+  const cid = (tr as { clientMessageId?: unknown }).clientMessageId;
+  return typeof cid === "string" && cid ? cid : null;
+}
+
+/**
+ * live 块是否挂在该用户气泡下。
+ * 匹配 DB id 或 clientMessageId——中途 inject 的 system 用户气泡不得抢走所有权。
+ */
+export function groupOwnsLiveStream(
+  group: MessageGroup,
+  streamTargetUserId: string | null,
+): boolean {
+  if (!streamTargetUserId) return false;
+  if (group.userMessage.id === streamTargetUserId) return true;
+  return getUserMessageClientId(group.userMessage) === streamTargetUserId;
+}
+
+/** 与 chatMessageList 渲染条件同构（单测与 UI 共用，禁双轨） */
+export function ownsLiveRender(opts: {
+  isStreaming: boolean;
+  streamConnected: boolean;
+  streamTargetUserId: string | null;
+  userMessageId: string;
+  userClientMessageId?: string | null;
+  hasLivePayload: boolean;
+  inFlightAssistantId: string | null;
+  assistantMessageId: string | null;
+}): boolean {
+  const asTarget =
+    opts.isStreaming &&
+    !!opts.streamTargetUserId &&
+    (opts.streamTargetUserId === opts.userMessageId ||
+      opts.streamTargetUserId === opts.userClientMessageId) &&
+    (opts.streamConnected || opts.hasLivePayload);
+  const asInFlight =
+    !!opts.assistantMessageId && opts.assistantMessageId === opts.inFlightAssistantId;
+  return asTarget || asInFlight;
+}
+
 export type TimelineStep =
   | { type: "thinking"; content: string; round: number }
   | { type: "content"; content: string; round: number }

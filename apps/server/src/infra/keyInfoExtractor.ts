@@ -241,28 +241,85 @@ export function peelExpectControls(args: Record<string, unknown>): {
   return { keywords, patterns, contextWindow, cleanArgs };
 }
 
-/** 注入到所有工具 JSON Schema 的通用 expect 参数 */
+/**
+ * 仅对「长结果」工具注入 expect_*，避免 100+ 工具每人一份说明把 schema 撑到 ~100KB。
+ * 短工具（todo/sleep/QQ 发送等）不需要；注意力铁律仍见 TOOL_RESULT_ATTENTION_GUIDE。
+ */
+export const EXPECT_ELIGIBLE_TOOLS = new Set<string>([
+  "web_search",
+  "read_article",
+  "scrape_web_page",
+  "dokobot_read",
+  "dokobot_search",
+  "webbridge_command",
+  "save_webpage",
+  "download_file",
+  "read_file",
+  "document_to_markdown",
+  "literature_search",
+  "literature_get",
+  "search_arxiv",
+  "fetch_arxiv",
+  "search_huggingface",
+  "fetch_huggingface_model",
+  "fetch_huggingface_trending",
+  "video_transcript",
+  "audio_transcribe",
+  "read_image",
+  "vision_describe",
+  "scroll_screenshot",
+  "tikhub_request",
+  "github_tool",
+  "skill_view",
+  "memory_search",
+  "memory_daily_search",
+  "session_search",
+  "session_message_get",
+  "tool_results_list",
+  "tool_result_meta",
+  "inbox_list",
+  "inbox_enrich",
+  "zhihu_openapi_search",
+  "zhihu_openapi_favlist_contents",
+]);
+
+/** 短描述：全量注入时每人约 40 JSON 字节级，而非 350+ */
 export const TOOL_EXPECT_SCHEMA_PROPS: Record<string, unknown> = {
   expect_keywords: {
     type: "array",
     items: { type: "string" },
-    description:
-      "可选。你期望在工具结果中看到的关键信息（3–8 个词/短语）。系统会只保留命中点前后上下文给你，完整结果落盘可按需 read_file。",
+    description: "可选，3–8 个期望关键词；命中偏移写入 metadata",
   },
   expect_patterns: {
     type: "array",
     items: { type: "string" },
-    description: "可选。正则表达式列表，用于在结果中定位关键片段（如版本号、百分比）。",
+    description: "可选，正则定位片段",
   },
   expect_context_chars: {
     type: "integer",
-    description: "可选。每个命中点前后各保留的字符数（默认约 400，范围 50–4000）。",
+    description: "可选，命中点前后字符数，默认 400",
   },
 };
 
+export function shouldInjectExpect(toolName: string): boolean {
+  if (EXPECT_ELIGIBLE_TOOLS.has(toolName)) return true;
+  // MCP：仅对读/搜类注入
+  if (toolName.includes("__")) {
+    return /(?:^|_)(?:search|read|fetch|get|list|query|find)/i.test(toolName);
+  }
+  return false;
+}
+
+/**
+ * @param toolName 传入时按白名单/启发式决定是否注入；省略（单测）则始终注入。
+ */
 export function injectExpectPropsIntoParameters(
   parameters: Record<string, unknown>,
+  toolName?: string,
 ): Record<string, unknown> {
+  if (toolName !== undefined && !shouldInjectExpect(toolName)) {
+    return parameters;
+  }
   const params = { ...parameters };
   const props =
     params.properties && typeof params.properties === "object" && !Array.isArray(params.properties)

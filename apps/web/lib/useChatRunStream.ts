@@ -235,9 +235,16 @@ export function useChatRunStream({
       /** 当前 ReAct 轮次：thinking delta 必须写入对应 round，禁止糊到上一轮 */
       let streamRound = 1;
 
+      // live 所有权钉在「本轮要回答的用户气泡」上：
+      // 普通发送用乐观 id（落库后靠 clientMessageId 匹配）；重试/编辑用真实 user id。
+      // 中途 inject 的 system 用户气泡不得把 trailing live 拽走——否则已出正文像「消失」。
       const began = streamLifecycleActions.beginStream(originSid, {
         streamTargetUserId:
-          opts.retryFromMessageId ?? opts.regenerateUserMessageId ?? opts.editMessageId ?? null,
+          opts.retryFromMessageId ??
+          opts.regenerateUserMessageId ??
+          opts.editMessageId ??
+          opts.optimisticUser?.id ??
+          null,
         resume: isResume,
       });
       // INV-2 / RESUME_CLAIM：begin 被拒（占用中或 resume 双挂）则禁止继续发请求
@@ -371,18 +378,12 @@ export function useChatRunStream({
             },
             onIntermediateContent: (content, round) => {
               discardStreamFlush(originSid);
-              streamLifecycleActions.clearStreamingContent(originSid);
               const prev = pruneEmptyThinkingSteps(streamLifecycleStore.get(originSid).liveTimeline);
               if (prev.length !== streamLifecycleStore.get(originSid).liveTimeline.length) {
                 streamLifecycleActions.replaceTimeline(originSid, prev);
               }
-              if (!prev.some((step) => step.type === "content" && step.round === round)) {
-                streamLifecycleActions.appendTimelineStep(originSid, {
-                  type: "content" as const,
-                  content,
-                  round,
-                });
-              }
+              // 原子 upsert：清 streaming + 写入/加长同 round content，禁止「清了气泡却没落时间线」
+              streamLifecycleActions.upsertIntermediateContent(originSid, content, round);
             },
             onToolPreparing: (tools, round) => {
               flushStreamNow(originSid);

@@ -20,6 +20,12 @@ describe("toolLoopGuard", () => {
     expect(blocked.blocked).toBe(true);
     if (blocked.blocked) {
       expect(blocked.message).toMatch(/死循环/);
+      expect(blocked.message).toMatch(/仍会照常执行/);
+      expect(blocked.shouldWarn).toBe(true);
+      // 同模式第二次只标记、不再刷提醒
+      const again = checkToolLoop(blocked.state, [call], 3);
+      expect(again.blocked).toBe(true);
+      if (again.blocked) expect(again.shouldWarn).toBe(false);
     }
   });
 
@@ -42,7 +48,10 @@ describe("toolLoopGuard", () => {
     }
     const blocked = checkToolLoop(state, [{ name: "post_create", args: { title: "t5" } }], 3, 6);
     expect(blocked.blocked).toBe(true);
-    if (blocked.blocked) expect(blocked.message).toMatch(/同一工具/);
+    if (blocked.blocked) {
+      expect(blocked.message).toMatch(/同一工具/);
+      expect(blocked.message).not.toMatch(/禁止/);
+    }
   });
 
   it("连续 web_search 不同关键词不触发同名熔断", () => {
@@ -116,6 +125,25 @@ describe("toolLoopGuard", () => {
       expect(v.blocked).toBe(false);
       state = v.state;
     }
+  });
+
+  it("连续 run_shell 不同 command 不触发同名熔断（同 command 仍熔断）", () => {
+    let state = createLoopGuardState();
+    for (let i = 0; i < 8; i++) {
+      const v = checkToolLoop(
+        state,
+        [{ name: "run_shell", args: { command: `echo step-${i}` } }],
+        3,
+        6,
+      );
+      expect(v.blocked).toBe(false);
+      state = v.state;
+    }
+    const same = { name: "run_shell", args: { command: "curl https://x.com" } };
+    state = checkToolLoop(state, [same], 3, 6).state;
+    state = checkToolLoop(state, [same], 3, 6).state;
+    const blocked = checkToolLoop(state, [same], 3, 6);
+    expect(blocked.blocked).toBe(true);
   });
 
   it("detectOscillation 识别 A/B 乒乓", () => {

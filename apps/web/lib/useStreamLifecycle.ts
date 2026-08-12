@@ -112,6 +112,8 @@ type Action =
   | { type: "APPEND_TIMELINE_STEP"; sessionId: string; step: TimelineStep }
   | { type: "UPDATE_TIMELINE_STEP"; sessionId: string; predicate: (s: TimelineStep) => boolean; patch: Partial<TimelineStep> }
   | { type: "MOVE_STREAMING_CONTENT_TO_TIMELINE"; sessionId: string; round: number }
+  /** 中间正文原子落时间线：清 streaming + upsert 同 round content（取更长，禁丢字） */
+  | { type: "UPSERT_INTERMEDIATE_CONTENT"; sessionId: string; content: string; round: number }
   | { type: "SET_LAST_EVENT"; sessionId: string; eventId: number }
   | { type: "SET_CONNECTED"; sessionId: string; connected: boolean }
   | { type: "SET_LAST_ROUND_TOKENS"; sessionId: string; tokens: number }
@@ -272,12 +274,59 @@ function reducer(state: LifecycleMap, action: Action): LifecycleMap {
       const s = get(action.sessionId);
       const leftover = s.streamingContent.trim();
       if (!leftover) return state;
-      if (s.liveTimeline.some((t) => t.type === "content" && t.round === action.round)) {
-        return set(action.sessionId, { ...s, streamingContent: "" });
+      const existingIdx = s.liveTimeline.findIndex(
+        (t) => t.type === "content" && t.round === action.round,
+      );
+      if (existingIdx >= 0) {
+        const prev = s.liveTimeline[existingIdx]!;
+        if (prev.type !== "content") {
+          return set(action.sessionId, { ...s, streamingContent: "" });
+        }
+        // 同轮已有 content：取更长正文，禁止「清 streaming 却丢 leftover」
+        const nextContent =
+          leftover.length > prev.content.length ? leftover : prev.content;
+        const nextTimeline = s.liveTimeline.map((t, i) =>
+          i === existingIdx && t.type === "content" ? { ...t, content: nextContent } : t,
+        );
+        return set(action.sessionId, { ...s, liveTimeline: nextTimeline, streamingContent: "" });
       }
       return set(action.sessionId, {
         ...s,
         liveTimeline: [...s.liveTimeline, { type: "content", content: leftover, round: action.round }],
+        streamingContent: "",
+      });
+    }
+    case "UPSERT_INTERMEDIATE_CONTENT": {
+      const s = get(action.sessionId);
+      const incoming = action.content.trim();
+      if (!incoming) {
+        return set(action.sessionId, { ...s, streamingContent: "" });
+      }
+      const existingIdx = s.liveTimeline.findIndex(
+        (t) => t.type === "content" && t.round === action.round,
+      );
+      if (existingIdx >= 0) {
+        const prev = s.liveTimeline[existingIdx]!;
+        if (prev.type !== "content") {
+          return set(action.sessionId, { ...s, streamingContent: "" });
+        }
+        const nextContent =
+          incoming.length >= prev.content.length ? incoming : prev.content;
+        const nextTimeline = s.liveTimeline.map((t, i) =>
+          i === existingIdx && t.type === "content" ? { ...t, content: nextContent } : t,
+        );
+        return set(action.sessionId, {
+          ...s,
+          liveTimeline: nextTimeline,
+          streamingContent: "",
+        });
+      }
+      return set(action.sessionId, {
+        ...s,
+        liveTimeline: [
+          ...s.liveTimeline,
+          { type: "content", content: incoming, round: action.round },
+        ],
         streamingContent: "",
       });
     }
@@ -729,6 +778,10 @@ export const streamLifecycleActions = {
   },
   moveStreamingContentToTimeline(sessionId: string, round: number) {
     getStore().dispatch({ type: "MOVE_STREAMING_CONTENT_TO_TIMELINE", sessionId, round });
+  },
+  /** 中间正文原子落时间线（清 streaming + upsert 同 round content） */
+  upsertIntermediateContent(sessionId: string, content: string, round: number) {
+    getStore().dispatch({ type: "UPSERT_INTERMEDIATE_CONTENT", sessionId, content, round });
   },
   setLastEventId(sessionId: string, eventId: number) {
     getStore().dispatch({ type: "SET_LAST_EVENT", sessionId, eventId });

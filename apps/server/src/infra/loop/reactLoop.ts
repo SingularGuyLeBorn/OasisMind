@@ -910,41 +910,19 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
         }
       }
 
-      // DeerFlow LoopDetection：同参连续工具调用熔断
+      // DeerFlow LoopDetection：疑似死循环只软提醒，不拦截工具执行
       const loopVerdict = checkToolLoop(
         loopGuard,
         parsedPreview.map((p) => ({ name: p.name, args: p.args })),
         input.config.compact.toolLoopStreakLimit,
       );
       loopGuard = loopVerdict.state;
-      if (loopVerdict.blocked) {
-        // 已 push 带 tool_calls 的 assistant → 必须补齐 tool 消息，再 follow_up
-        const blockItems = parsedPreview.map((p) => ({
-          call: p.call,
-          name: p.name,
-          args: p.args,
-          result: {
-            error: "TOOL_LOOP_BLOCKED",
-            message: loopVerdict.message,
-            fingerprint: loopVerdict.fingerprint,
-          },
-          kind: "tool" as const,
-        }));
-        appendToolResultMessages(
-          llmMessages,
-          executedTools,
-          blockItems,
-          snapshot.toolResultMaxChars,
+      if (loopVerdict.blocked && loopVerdict.shouldWarn) {
+        // 仅注入 LLM 上下文（不落库气泡），避免 UI 再出现「系统禁止」恐吓条
+        llmMessages.push({ role: "user", content: loopVerdict.message });
+        input.hooks?.onProgress?.(
+          `工具死循环提醒：${loopVerdict.fingerprint.slice(0, 80)}`,
         );
-        await injectUserMessages(
-          input,
-          llmMessages,
-          [{ id: `loop-guard-${roundsUsed}`, content: loopVerdict.message }],
-          "follow_up",
-        );
-        input.hooks?.onProgress?.(`工具死循环熔断：${loopVerdict.fingerprint.slice(0, 80)}`);
-        machine.transition("llm");
-        continue;
       }
 
       const { runnable, deferred } = partitionToolCallsByBudget(

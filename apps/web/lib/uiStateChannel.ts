@@ -14,7 +14,8 @@ export type UiStateChannelMessage = {
     | "run_updated"
     | "task_updated"
     | "goal_updated"
-    | "post_list_changed";
+    | "post_list_changed"
+    | "comment_updated";
   [key: string]: unknown;
 };
 
