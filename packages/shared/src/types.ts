@@ -407,6 +407,17 @@ export interface Approval {
   updatedAt: string | Date;
 }
 
+/** 文章轻留言 */
+export interface Comment {
+  id: string;
+  postId: string;
+  authorName: string;
+  content: string;
+  status: "approved" | "hidden";
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 /** 工具实体 */
 export interface Tool {
   id: string;

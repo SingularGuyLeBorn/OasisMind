@@ -78,14 +78,21 @@ export const MOBILE_MORE_ITEMS: MobileMoreItem[] = [
   { href: "/tasks", icon: CalendarClock, label: "后台任务", group: "系统与运维" },
   { href: "/logs", icon: ScrollText, label: "运行日志", group: "系统与运维" },
   { href: "/credentials", icon: KeyRound, label: "凭据管理", group: "系统与运维" },
+  { href: "/blog", icon: BookOpen, label: "博客", group: "知识库" },
   { href: "/posts", icon: PenLine, label: "全部文章", group: "知识库" },
   { href: "/editor", icon: PlusCircle, label: "新建文章", group: "知识库" },
 ];
 
 const PRIMARY = [
   {
-    href: "/gardens",
+    href: "/blog",
     icon: BookOpen,
+    label: "博客",
+    match: (p: string) => p.startsWith("/blog"),
+  },
+  {
+    href: "/gardens",
+    icon: LayoutGrid,
     label: "知识库",
     match: (p: string) =>
       p.startsWith("/gardens") ||

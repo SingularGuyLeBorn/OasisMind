@@ -28,6 +28,13 @@ export function postDetailHref(slug: string, garden: string = DEFAULT_POST_GARDE
   return `/posts/${encoded}?garden=${encodeURIComponent(garden)}`;
 }
 
+/** 访客只读博客详情链接（/blog） */
+export function blogDetailHref(slug: string, garden: string = DEFAULT_POST_GARDEN): string {
+  const encoded = encodeURIComponent(slug);
+  if (!garden || garden === DEFAULT_POST_GARDEN) return `/blog/${encoded}`;
+  return `/blog/${encoded}?garden=${encodeURIComponent(garden)}`;
+}
+
 /** 将相对 Markdown 路径解析为 post slug（不含 .md 后缀） */
 export function resolveRelativeMdSlug(href: string, postSlug: string): string | null {
   if (isExternalHref(href) || href.startsWith("#")) return null;

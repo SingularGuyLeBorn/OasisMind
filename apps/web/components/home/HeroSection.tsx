@@ -313,25 +313,31 @@ export function HeroSection() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                href="/chat"
+                href="/blog"
                 className="group inline-flex h-12 items-center gap-2 rounded-full bg-[var(--kp-brand)] px-6 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--kp-brand-dark)]"
               >
-                <MessageSquare className="h-4 w-4" />
-                开始对话
+                <BookOpen className="h-4 w-4" />
+                读博客
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
               <Link
-                href="/gardens"
+                href="/chat"
                 className="group inline-flex h-12 items-center gap-2 rounded-full border border-white/60 bg-white/55 px-6 text-sm font-semibold text-[var(--kp-text-1)] shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--kp-brand)]/35 hover:bg-white/80"
               >
-                <BookOpen className="h-4 w-4 text-[var(--kp-brand)]" />
-                进入知识库
+                <MessageSquare className="h-4 w-4 text-[var(--kp-brand)]" />
+                开始对话
+              </Link>
+              <Link
+                href="/gardens"
+                className="inline-flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium text-[var(--kp-text-2)] underline-offset-4 transition hover:text-[var(--kp-brand)] hover:underline"
+              >
+                知识库
               </Link>
               <Link
                 href="/office"
                 className="inline-flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium text-[var(--kp-text-2)] underline-offset-4 transition hover:text-[var(--kp-brand)] hover:underline"
               >
-                参观 3D 办公室
+                3D 办公室
               </Link>
             </div>
           </motion.div>

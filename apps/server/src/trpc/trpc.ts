@@ -171,6 +171,12 @@ export const router = t.router;
 /** 公开 procedure（AUTH_MODE=password 时仍需 Token，auth.* 除外） */
 export const publicProcedure = t.procedure.use(loggerMiddleware).use(authGuard);
 
+/**
+ * 匿名 procedure：访客博客 / 留言等真正无需登录的 API。
+ * AUTH_MODE=password 时也不要求 Bearer（与 publicProcedure 区分）。
+ */
+export const anonymousProcedure = t.procedure.use(loggerMiddleware);
+
 /** middleware 工具 */
 export const middleware = t.middleware;
 

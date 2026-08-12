@@ -11,6 +11,10 @@ export function getLayoutMode(pathname: string): LayoutMode {
   // 知识库门户列表：全宽无侧栏；单库首页 `/gardens/{id}` 进内容模式（只显示该库目录树）
   if (pathname === "/gardens" || pathname === "/gardens/") return "home";
   if (pathname.startsWith("/chat")) return "chat";
+  // 访客博客：全宽阅读面，不挂知识库侧栏
+  if (pathname === "/blog" || pathname === "/blog/" || pathname.startsWith("/blog/")) {
+    return "home";
+  }
   if (
     pathname.startsWith("/gardens/") ||
     pathname.startsWith("/posts") ||

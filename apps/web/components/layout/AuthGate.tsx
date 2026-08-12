@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { getAuthToken } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/", "/about", "/posts", "/categories", "/tags"];
+const PUBLIC_PATHS = ["/login", "/", "/about", "/blog", "/posts", "/categories", "/tags"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;

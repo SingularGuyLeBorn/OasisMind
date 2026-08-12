@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
+import { blogDetailHref } from "@/lib/postHref";
 import { cn } from "@/lib/utils";
 
 const MotionLink = motion.create(Link);
@@ -33,10 +34,7 @@ function formatDate(input: string | Date) {
 }
 
 function postHref(post: Post) {
-  if (post.garden && post.garden !== "posts") {
-    return `/posts/${encodeURIComponent(post.slug)}?garden=${encodeURIComponent(post.garden)}`;
-  }
-  return `/posts/${encodeURIComponent(post.slug)}`;
+  return blogDetailHref(post.slug, post.garden ?? "posts");
 }
 
 /** 玻璃卡片基础类：Light Glass Editorial（transform 由 Framer 弹簧接管，CSS 只过渡非位移属性） */
@@ -103,10 +101,10 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
             </h2>
           </div>
           <Link
-            href="/posts"
+            href="/blog"
             className="group inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-4 py-2 text-xs font-medium text-[var(--kp-brand)] shadow-sm backdrop-blur-md transition hover:bg-white/80"
           >
-            查看全部{" "}
+            查看全部博客{" "}
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </Link>
         </ScrollReveal>

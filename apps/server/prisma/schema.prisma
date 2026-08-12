@@ -516,6 +516,21 @@ model Approval {
   @@index([status, decisionScope])
 }
 
+/// 文章轻留言（仅 DB，不落 Markdown；访客博客用）
+model Comment {
+  id         String   @id @default(cuid())
+  postId     String
+  authorName String
+  content    String
+  /// approved | hidden（默认即时可见；业主可隐藏）
+  status     String   @default("approved")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([postId, status, createdAt])
+  @@index([status, createdAt])
+}
+
 /// ask_user 提问账本（进程重启后可恢复 pending / 孤儿答复入队）
 model AskUserRequest {
   id            String    @id /// UUID（与 askUserGate askId 一致）

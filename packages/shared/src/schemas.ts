@@ -1506,6 +1506,48 @@ export const listApprovalsSchema = z.object({
 });
 
 /* ═══════════════════════════════════════════════════════
+   Comment (文章轻留言)
+   ═══════════════════════════════════════════════════════ */
+
+export const createCommentSchema = z.object({
+  postId: z.string().cuid(),
+  authorName: z.string().trim().min(1, "请填写昵称").max(40, "昵称最多 40 字"),
+  content: z.string().trim().min(1, "请填写留言").max(2000, "留言最多 2000 字"),
+});
+
+export const updateCommentSchema = z.object({
+  id: z.string().cuid(),
+  status: z.enum(["approved", "hidden"]),
+});
+
+export const listCommentsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  postId: z.string().cuid().optional(),
+  status: z.enum(["approved", "hidden"]).optional(),
+});
+
+export const listCommentsForPostSchema = z.object({
+  postId: z.string().cuid(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(50),
+});
+
+export const listBlogPostsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(10),
+  keyword: z.string().max(200).optional(),
+  garden: gardenIdSchema.optional(),
+  tag: z.string().max(64).optional(),
+  category: z.string().max(64).optional(),
+});
+
+export const getBlogPostBySlugSchema = z.object({
+  slug: safeEntitySlugSchema,
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+});
+
+/* ═══════════════════════════════════════════════════════
    Tool (工具注册表)
    ═══════════════════════════════════════════════════════ */
 
@@ -1883,6 +1925,13 @@ export type ClearAgentCronInput = z.infer<typeof clearAgentCronSchema>;
 export type CreateApprovalInput = z.infer<typeof createApprovalSchema>;
 export type UpdateApprovalInput = z.infer<typeof updateApprovalSchema>;
 export type ListApprovalsInput = z.infer<typeof listApprovalsSchema>;
+
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
+export type ListCommentsInput = z.infer<typeof listCommentsSchema>;
+export type ListCommentsForPostInput = z.infer<typeof listCommentsForPostSchema>;
+export type ListBlogPostsInput = z.infer<typeof listBlogPostsSchema>;
+export type GetBlogPostBySlugInput = z.infer<typeof getBlogPostBySlugSchema>;
 
 export type CreateToolInput = z.infer<typeof createToolSchema>;
 export type UpdateToolInput = z.infer<typeof updateToolSchema>;

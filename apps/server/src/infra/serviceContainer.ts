@@ -12,6 +12,7 @@ import type { AppConfig } from "./config.js";
 // Service imports
 import { GardenService } from "./entityServices/gardenService.js";
 import { ApprovalService } from "./entityServices/approvalService.js";
+import { CommentService } from "./entityServices/commentService.js";
 import { InboxService } from "./entityServices/inboxService.js";
 import { SessionQueueItemService } from "./entityServices/sessionQueueItemService.js";
 import { MessageService } from "./entityServices/messageService.js";
@@ -52,6 +53,7 @@ export class ServiceContainer {
   readonly workspace: WorkspaceService;
   readonly trigger: TriggerService;
   readonly approval: ApprovalService;
+  readonly comment: CommentService;
   readonly tool: ToolService;
   readonly run: RunService;
   readonly prompt: PromptService;
@@ -78,6 +80,7 @@ export class ServiceContainer {
     this.workspace = new WorkspaceService(prisma, eventBus, config);
     this.trigger = new TriggerService(prisma, eventBus, config);
     this.approval = new ApprovalService(prisma, eventBus, config);
+    this.comment = new CommentService(prisma, eventBus, config);
     this.tool = new ToolService(prisma, eventBus, config);
     this.run = new RunService(prisma, eventBus, config);
     this.prompt = new PromptService(prisma, eventBus, config);

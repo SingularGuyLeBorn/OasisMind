@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Feather, MessageSquare } from "lucide-react";
+import { ArrowRight, BookOpen, Feather, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
@@ -42,12 +42,19 @@ export function FinalCta() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
-                    href="/editor"
+                    href="/blog"
                     className="group inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--kp-brand)] px-5 text-xs font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[var(--kp-brand-dark)]"
                   >
-                    <Feather className="h-3.5 w-3.5" />
-                    写一篇
+                    <BookOpen className="h-3.5 w-3.5" />
+                    逛逛博客
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/editor"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-full border border-white/60 bg-white/70 px-5 text-xs font-semibold text-[var(--kp-text-1)] shadow-sm backdrop-blur-md transition-colors hover:border-[var(--kp-brand)]/35"
+                  >
+                    <Feather className="h-3.5 w-3.5 text-[var(--kp-brand)]" />
+                    写一篇
                   </Link>
                   <Link
                     href="/chat"
