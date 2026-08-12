@@ -35,14 +35,34 @@ evals/
 
 ```bash
 pnpm test:evals   # mock-llm-core + evals/golden/*.json（CI 已挂）
+pnpm test:bench   # mini Harness-Bench（mock 冒烟，CI 零成本）
 ```
 
 1. **mock 模式（CI）**：`scenario` / 关键词匹配固定 tool_calls，断言 `expectToolsAnyOf` / `forbidTools`。
 2. **真实模式（周跑）**：小模型 / flash，人工看评或简单 JSON schema 判分（报告落 `evals/reports/`，gitignore）。
+
+## mini Harness-Bench（P2-1，Harness-Bench / HAL 思想）
+
+`evals/harness-bench/cases.json`（24 题）+ `evals/scripts/run-harness-bench.mjs`。
+同一批固定任务按 **(model, variant) 成对**扫：完成度（工具选择断言）+ 效率（token / 墙钟 / 估算成本）。
+
+```bash
+pnpm test:bench                                # mock：链路冒烟，有失败即非零退出
+pnpm test:bench -- --live --model deepseek-v4-flash --variant baseline
+pnpm test:bench -- --live --model deepseek-v4-flash --variant no-tool-desc   # 换 harness 变体对比
+pnpm test:bench -- --live --case B01,B13       # 只跑指定题
+```
+
+- **live 模式**：单轮工具选择（系统提示 + 工具 schema + userMessage → 首轮 tool_calls），不起 server、不跑完整 ReAct loop——测「模型在见微工具面下的首轮选择保真度与成本」。env：`BENCH_LLM_BASE_URL` / `BENCH_LLM_API_KEY`（回退 `DEEPSEEK_API_KEY`）。
+- **成本估算**：`--usd-per-1k`（默认 0.0001，对齐 `config.yaml` 的本地粗算单价；≠厂商账单）。
+- **报表**：控制台表格 + `evals/reports/harness-bench-{model}-{variant}-{ts}.json`（gitignore）。
+- **variant 挂载点**：`run-harness-bench.mjs` 的 `TOOL_DESCRIPTIONS` / `LIVE_SYSTEM_PROMPT`——换工具描述或提示词即一个 harness 变体，用 `--variant` 打标成对对比。
+- mock 模式靠 `mock-llm-core` 的参数化场景 `eval_bench:<toolName>`（`packages/mock-llm-core/src/scenarioDefs.ts`）。
 
 ## 验收标准
 
 - [x] 本 README + 黄金表
 - [x] `evals/golden/*.json` 机器可读用例（G01–G10 mock 全覆盖，`pnpm test:evals`）
 - [x] `pnpm test:evals`（mock）进 CI
+- [x] mini Harness-Bench 题库 + 跑题器 + 成本报表（`pnpm test:bench`）
 - [ ] 周跑真实模型报告落 `evals/reports/`（gitignore）

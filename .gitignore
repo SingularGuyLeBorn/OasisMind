@@ -29,6 +29,9 @@ Thumbs.db
 *.log
 .logs/
 
+# Eval 报告（运行时产物，可重建）
+evals/reports/
+
 # Temp
 tmp/
 *.tmp

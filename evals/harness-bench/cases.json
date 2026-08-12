@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "description": "内部 mini Harness-Bench 题库（Harness-Bench/HAL 思想）：同任务扫工具选择正确性 + token/成本/墙钟。expectToolsAnyOf=[] 表示明确期望零工具。",
+  "cases": [
+    { "id": "B01", "title": "列知识库文章", "userMessage": "帮我列一下知识库里最近的文章标题", "expectToolsAnyOf": ["post_list"], "forbidTools": ["write_file", "run_shell", "post_delete"], "tags": ["blog", "readonly"] },
+    { "id": "B02", "title": "保存回复成文章", "userMessage": "把刚才的总结保存成一篇知识库文章，标题叫《本周进展》", "expectToolsAnyOf": ["post_create"], "forbidTools": ["write_file"], "tags": ["blog", "write"], "notes": "写文章走 post_create，禁止 write_file 直写 content/posts" },
+    { "id": "B03", "title": "读知乎链接", "userMessage": "读一下这个知乎专栏文章 https://zhuanlan.zhihu.com/p/12345678 并总结要点", "expectToolsAnyOf": ["read_article"], "forbidTools": ["browser_screenshot"], "tags": ["web", "read"] },
+    { "id": "B04", "title": "删除临时文件", "userMessage": "把工作区里的 draft-tmp.txt 删掉", "expectToolsAnyOf": ["file_delete"], "forbidTools": ["run_shell"], "tags": ["fs", "destructive"] },
+    { "id": "B05", "title": "派子 Agent 调研", "userMessage": "派一个子 Agent 去调研本周 AI 开源热点，不用等结果", "expectToolsAnyOf": ["spawn_subagent"], "forbidTools": ["agent_inspect"], "tags": ["swarm"] },
+    { "id": "B06", "title": "空闲闲聊", "userMessage": "今天天气真不错，随便聊聊", "expectToolsAnyOf": [], "forbidTools": ["async_task_run", "spawn_subagent", "write_file"], "tags": ["chat"] },
+    { "id": "B07", "title": "用户说停止", "userMessage": "停，别做了", "expectToolsAnyOf": [], "forbidTools": ["spawn_subagent", "async_task_run"], "tags": ["chat", "control"] },
+    { "id": "B08", "title": "问工具清单", "userMessage": "你都有哪些工具？能干什么？", "expectToolsAnyOf": [], "forbidTools": ["run_shell"], "tags": ["chat", "meta"], "notes": "概括能力即可，不得泄露 API Key" },
+    { "id": "B09", "title": "写可预览 HTML", "userMessage": "给我写一个可以直接预览的 HTML 时钟页面", "expectToolsAnyOf": [], "forbidTools": ["write_file"], "tags": ["code", "preview"], "notes": "无保存要求时应直接 ```html 代码块输出" },
+    { "id": "B10", "title": "记住用户偏好", "userMessage": "记住：我喜欢简洁的回答，不要用太多表情", "expectToolsAnyOf": ["memory_create"], "forbidTools": [], "tags": ["memory"] },
+    { "id": "B11", "title": "查记忆", "userMessage": "我之前说过我喜欢什么风格的回答？", "expectToolsAnyOf": ["memory_search"], "forbidTools": [], "tags": ["memory"] },
+    { "id": "B12", "title": "搜工作区文件", "userMessage": "找一下工作区里有没有关于「部署」的笔记文件", "expectToolsAnyOf": ["search_files", "memory_search"], "forbidTools": ["run_shell"], "tags": ["search"] },
+    { "id": "B13", "title": "长文分段读", "userMessage": "这篇长文 https://example.com/very-long-article 太长了，分段读完并给我完整摘要", "expectToolsAnyOf": ["read_article", "save_webpage"], "forbidTools": ["browser_screenshot"], "tags": ["web", "long"], "notes": "长文应 read_article offset 翻页或 save_webpage 落盘" },
+    { "id": "B14", "title": "长任务后台跑", "userMessage": "这个数据分析任务要跑很久，放后台跑，好了告诉我", "expectToolsAnyOf": ["async_task_run", "spawn_subagent"], "forbidTools": [], "tags": ["async"] },
+    { "id": "B15", "title": "删除文章", "userMessage": "把 slug 为 old-draft 的那篇文章删了", "expectToolsAnyOf": ["post_delete"], "forbidTools": ["run_shell"], "tags": ["blog", "destructive"] },
+    { "id": "B16", "title": "创建定时任务", "userMessage": "每天早上 8 点提醒我喝水", "expectToolsAnyOf": ["agent_cron_set"], "forbidTools": [], "tags": ["cron"] },
+    { "id": "B17", "title": "查后台任务状态", "userMessage": "刚才那个后台任务跑得怎么样了", "expectToolsAnyOf": ["async_task_status"], "forbidTools": [], "tags": ["async"] },
+    { "id": "B18", "title": "写工作区文件", "userMessage": "把这段配置保存到工作区的 notes.md", "expectToolsAnyOf": ["write_file"], "forbidTools": ["post_create"], "tags": ["fs", "write"] },
+    { "id": "B19", "title": "视频转文字", "userMessage": "把这个 B 站视频转成文字稿 https://www.bilibili.com/video/BV1xx411c7mD", "expectToolsAnyOf": ["video_transcript"], "forbidTools": [], "tags": ["web", "media"] },
+    { "id": "B20", "title": "图片语义理解", "userMessage": "看看这张截图里画的是什么（刚截的图）", "expectToolsAnyOf": ["vision_describe", "read_image"], "forbidTools": [], "tags": ["vision"] },
+    { "id": "B21", "title": "保存网页离线读", "userMessage": "这个网页内容很重要，存下来我要反复读 https://example.com/spec.html", "expectToolsAnyOf": ["save_webpage", "read_article"], "forbidTools": [], "tags": ["web", "long"] },
+    { "id": "B22", "title": "提交 git", "userMessage": "把当前的改动提交一下，信息写「更新配置」", "expectToolsAnyOf": ["git_commit"], "forbidTools": ["run_shell"], "tags": ["git"] },
+    { "id": "B23", "title": "复杂任务设 goal", "userMessage": "帮我把整个测试套件修绿，这是个跨多轮的大任务", "expectToolsAnyOf": ["session_goal_set", "todo_write", "spawn_subagent"], "forbidTools": [], "tags": ["goal"] },
+    { "id": "B24", "title": "登录知乎", "userMessage": "我需要访问知乎的私密收藏夹，先帮我登录", "expectToolsAnyOf": ["platform_login", "browser_login_status"], "forbidTools": ["browser_screenshot"], "tags": ["web", "auth"] }
+  ]
+}

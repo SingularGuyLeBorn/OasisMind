@@ -409,6 +409,29 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    // 参数化 bench 场景：forced="eval_bench:<toolName>" 返回该工具调用；eval_bench:none 返回纯文本
+    name: "eval_bench",
+    match: (_opts, forced) => typeof forced === "string" && /^eval_bench(:|$)/.test(forced),
+    completion: (opts) => {
+      const tool = String(opts.scenario ?? "").replace(/^eval_bench:?/, "").trim();
+      const useTool = tool.length > 0 && tool !== "none";
+      return {
+        ...baseResult(opts),
+        content: useTool ? null : "好的，直接回答，无需调用工具。",
+        toolCalls: useTool ? [makeToolCall(tool, {})] : [],
+      };
+    },
+    stream: async function* (opts) {
+      const tool = String(opts.scenario ?? "").replace(/^eval_bench:?/, "").trim();
+      const useTool = tool.length > 0 && tool !== "none";
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: useTool ? null : "好的，直接回答，无需调用工具。",
+        toolCalls: useTool ? [makeToolCall(tool, {})] : [],
+      });
+    },
+  },
+  {
     name: "eval_judge",
     match: (_opts, forced) => forced === "eval_judge",
     completion: (opts) => ({
