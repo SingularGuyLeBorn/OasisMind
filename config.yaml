@@ -145,6 +145,10 @@ memory:
     maxPerScope: 30
     # 蒸馏模型；auto = resolveAuxiliaryModel 选免费轻量模型
     model: "auto"
+  # 记忆信任分级：LLM 推断出的记忆（attribution=agent）初始强度上限更低，
+  # 被后续 run 验证有效后 strength 提升，失败则下降。用户陈述/工具显式指定的强度不受影响。
+  trust:
+    agentInitialStrength: 0.7
   embedding:
     enabled: false
     # OpenAI 兼容端点（/embeddings）；env EMBEDDING_BASE_URL / EMBEDDING_API_KEY / EMBEDDING_MODEL 可覆盖

@@ -273,6 +273,13 @@ export async function chatAgent(
       )
       .catch((err) => { console.warn("[agentRuntime.ts] best-effort failed:", err instanceof Error ? err.message : err); });
 
+    // 记忆正确性反馈：对本次 run 检索过的 agent 推断记忆做 strength 奖惩
+    import("./memoryFeedback.js")
+      .then(({ applyMemoryRunOutcome }) =>
+        applyMemoryRunOutcome(services, result.runId, !!result.content.trim()),
+      )
+      .catch((err) => { console.warn("[agentRuntime.ts] memoryFeedback best-effort failed:", err instanceof Error ? err.message : err); });
+
     return success({
       data: {
         sessionId,

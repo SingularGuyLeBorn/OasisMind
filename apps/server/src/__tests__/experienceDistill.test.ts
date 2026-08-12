@@ -152,6 +152,7 @@ describe("distillExperienceToProcedural", () => {
           maxPerScope: 30,
           model: "auto",
         },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });

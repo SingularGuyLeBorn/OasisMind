@@ -209,6 +209,10 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
         model: "auto",
         ...(overrides?.memory?.experienceDistill ?? {}),
       },
+      trust: {
+        agentInitialStrength: 0.7,
+        ...(overrides?.memory?.trust ?? {}),
+      },
       embedding: {
         enabled: false,
         baseUrl: "",

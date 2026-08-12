@@ -68,6 +68,12 @@ const MemoryYamlSchema = z.object({
       model: z.string().default("auto"),
     })
     .default({ enabled: true, minCount: 5, maxPerScope: 30, model: "auto" }),
+  trust: z
+    .object({
+      /** LLM 推断记忆（attribution=agent）的初始强度上限 */
+      agentInitialStrength: z.coerce.number().min(0).max(1).default(0.7),
+    })
+    .default({ agentInitialStrength: 0.7 }),
   embedding: z
     .object({
       /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
@@ -426,6 +432,10 @@ export interface AppConfig {
       minCount: number;
       maxPerScope: number;
       model: string;
+    };
+    /** 记忆信任分级 */
+    trust: {
+      agentInitialStrength: number;
     };
     embedding: {
       enabled: boolean;
@@ -1061,6 +1071,9 @@ export function createAppConfig(): AppConfig {
         minCount: memoryYaml.experienceDistill.minCount,
         maxPerScope: memoryYaml.experienceDistill.maxPerScope,
         model: memoryYaml.experienceDistill.model,
+      },
+      trust: {
+        agentInitialStrength: memoryYaml.trust.agentInitialStrength,
       },
       embedding: {
         enabled: memoryYaml.embedding.enabled,

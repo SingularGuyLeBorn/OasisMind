@@ -63,7 +63,7 @@ const MATH_MARKDOWN_EXAMPLE = loadMathMarkdownExample();
 export async function buildMemoryContext(
   services: ServiceContainer,
   userText: string,
-  options?: { agentId?: string | null; config?: AppConfig },
+  options?: { agentId?: string | null; config?: AppConfig; retrievedIds?: string[] },
 ): Promise<string> {
   let keyword = userText.slice(0, 80).trim();
   if (!keyword) return "";
@@ -106,6 +106,9 @@ export async function buildMemoryContext(
 
   const now = Date.now();
   const retrievedIds = new Set(unique.map((m) => m.id));
+  if (options?.retrievedIds) {
+    for (const id of retrievedIds) options.retrievedIds.push(id);
+  }
   const conflictPeers = unique.flatMap((m) =>
     (m.conflictsWith ?? []).filter((id) => id && !retrievedIds.has(id)),
   );
@@ -178,13 +181,14 @@ export async function buildPersonaHint(services: ServiceContainer): Promise<stri
 export async function buildAllMemoryHints(
   services: ServiceContainer,
   userText: string,
-  options?: { agentId?: string | null; sessionId?: string | null; config?: AppConfig },
+  options?: { agentId?: string | null; sessionId?: string | null; config?: AppConfig; retrievedIds?: string[] },
 ): Promise<string> {
   const persona = await buildPersonaHint(services);
   const pinned = await ensurePinnedMemoryHint(services, options?.sessionId);
   const dynamic = await buildMemoryContext(services, userText, {
     agentId: options?.agentId,
     config: options?.config,
+    retrievedIds: options?.retrievedIds,
   });
   const neighbors = await buildGardenNeighborHint(services.prisma, userText).catch(() => "");
   return persona + pinned + dynamic + neighbors;

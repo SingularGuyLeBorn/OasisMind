@@ -1027,6 +1027,15 @@ export async function chatAgentStream(
         console.warn("[agentStream] accumulateExperience 失败", err);
       });
 
+    // 记忆正确性反馈：对本次 run 检索过的 agent 推断记忆做 strength 奖惩
+    import("./memoryFeedback.js")
+      .then(({ applyMemoryRunOutcome }) =>
+        applyMemoryRunOutcome(services, result.runId, !!result.content.trim()),
+      )
+      .catch((err) => {
+        console.warn("[agentStream] applyMemoryRunOutcome 失败", err);
+      });
+
     // Goal 外环：回合后裁判；CONTINUE 写 pendingContinue，由 onHubRunSettled 起下一轮
     try {
       const { evaluateGoalAfterTurn } = await import("./goalLoop.js");

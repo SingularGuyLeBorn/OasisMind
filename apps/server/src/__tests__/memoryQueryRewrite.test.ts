@@ -55,6 +55,7 @@ describe("rewriteMemoryQuery", () => {
       memory: {
         queryRewrite: { enabled: true, model: "auto", timeoutMs: 3000 },
         experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });
@@ -82,6 +83,7 @@ describe("rewriteMemoryQuery", () => {
       memory: {
         queryRewrite: { enabled: false, model: "auto", timeoutMs: 3000 },
         experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });
@@ -101,6 +103,7 @@ describe("rewriteMemoryQuery", () => {
       memory: {
         queryRewrite: { enabled: true, model: "auto", timeoutMs: 3000 },
         experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });
@@ -126,6 +129,7 @@ describe("rewriteMemoryQuery", () => {
       memory: {
         queryRewrite: { enabled: true, model: "auto", timeoutMs: 3000 },
         experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });
@@ -154,6 +158,7 @@ describe("rewriteMemoryQuery", () => {
       memory: {
         queryRewrite: { enabled: true, model: "auto", timeoutMs: 3000 },
         experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
+        trust: { agentInitialStrength: 0.7 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });

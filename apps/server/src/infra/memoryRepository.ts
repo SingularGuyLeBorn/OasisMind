@@ -503,10 +503,16 @@ export class PrismaMemoryRepository implements MemoryRepository {
     const conflictsCsv = formatConflictsCsv(input.conflictsWith);
     const source =
       typeof input.source === "string" && input.source.trim() ? input.source.trim() : null;
+    // 信任分级：attribution=agent 且调用方未显式传 strength 时，使用较低初始强度
+    const attribution = input.attribution ?? "agent";
+    const initialStrength =
+      attribution === "agent" && input.strength === undefined && this.config?.memory?.trust
+        ? this.config.memory.trust.agentInitialStrength
+        : MEMORY_INITIAL_STRENGTH;
     const createInput = {
       content: input.content,
       type: input.type,
-      strength: input.strength ?? MEMORY_INITIAL_STRENGTH,
+      strength: input.strength ?? initialStrength,
       keywords: input.keywords ?? [],
       tags: input.tags ?? [],
       // 以下字段不在 tRPC createMemorySchema 内，由 MemoryService.buildCreateData 透传

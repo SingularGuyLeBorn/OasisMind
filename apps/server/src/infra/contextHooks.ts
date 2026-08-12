@@ -172,11 +172,18 @@ export function ensureBuiltinContextHooks(): void {
       }
       // 空 userText 时 buildMemoryContext 跳过动态检索，但仍会带上 pinned（与旧 run 路径一致）
       const userText = latestUserText(input.messages);
+      const retrievedIds: string[] = [];
       input.scratch.__memoryHint = await buildAllMemoryHints(input.ctx.services, userText, {
         agentId: input.agent.id,
         sessionId: input.sessionId || null,
         config: input.ctx.config,
+        retrievedIds,
       });
+      // 把本轮检索命中的记忆 id 登记到 runId，供 run 终态正确性反馈使用
+      if (retrievedIds.length > 0 && input.runId) {
+        const { recordRetrievedForRun } = await import("./memoryFeedback.js");
+        recordRetrievedForRun(input.runId, retrievedIds);
+      }
     },
   });
 

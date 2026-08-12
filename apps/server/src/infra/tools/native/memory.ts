@@ -719,7 +719,8 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
     // 创建类可回滚（非删除）——记忆积累是 Agent 常态路径
     approvalExempt: true,
     description:
-      "创建长期记忆。type：preference=用户偏好；semantic=稳定事实/决策；episodic=某次经历；note=笔记；procedural=操作流程。scope：agent=仅自己可见（默认）；workspace=同 Workspace 的 Agent 共享；global=全局共享（仅超级 Agent）。不要记可从代码/git/文档直接查到的内容。纠正过时事实优先 memory_update；若新旧说法需并存对照，create 并填 conflictsWith 指向旧记忆 id（勿静默覆盖）。source 写出处（post:{garden}/{slug} | run:{id} | url:…）。",
+      "创建长期记忆。type：preference=用户偏好；semantic=稳定事实/决策；episodic=某次经历；note=笔记；procedural=操作流程。scope：agent=仅自己可见（默认）；workspace=同 Workspace 的 Agent 共享；global=全局共享（仅超级 Agent）。不要记可从代码/git/文档直接查到的内容。纠正过时事实优先 memory_update；若新旧说法需并存对照，create 并填 conflictsWith 指向旧记忆 id（勿静默覆盖）。source 写出处（post:{garden}/{slug} | run:{id} | url:…）。你（Agent）推断出的记忆初始强度较低（默认 0.7），被后续任务验证有效会增强；用户明确陈述的事实才是满强度。",
+
     parameters: zodParams(
       z.object({
         content: z.string().describe("记忆内容"),
