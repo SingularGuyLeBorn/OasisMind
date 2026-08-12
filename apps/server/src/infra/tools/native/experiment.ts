@@ -1,6 +1,6 @@
 /**
- * Native Harness 实验账本 + refine-lite
- * experiment_begin / experiment_decide / experiment_list / harness_refine
+ * Native Harness：账本 + refine-lite + gate + rollback/branch
+ * experiment_* / harness_refine / harness_gate_run
  */
 import { z } from "zod";
 import { zodParams } from "./zodParams.js";
@@ -9,9 +9,12 @@ import { registerNativeDomain } from "./registerDomain.js";
 import { agentParamError } from "./agentToolError.js";
 import {
   beginExperiment,
+  branchExperiment,
   coerceExperimentMetrics,
   decideExperiment,
+  getExperiment,
   listExperiments,
+  rollbackExperiment,
   type ExperimentTargetKind,
 } from "../../experimentLedger.js";
 import { refineWithLedger } from "../../harnessRefine.js";
@@ -95,6 +98,7 @@ async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeTo
       id,
       decision: decision as "keep" | "discard",
       metrics,
+      primaryMetric: args.primaryMetric ? String(args.primaryMetric) : undefined,
       config: ctx.config,
     });
   } catch (err) {
@@ -103,6 +107,70 @@ async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeTo
       error: err instanceof Error ? err.message : String(err),
     };
   }
+}
+
+async function experimentRollbackTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.experimentId ?? args.id ?? "").trim();
+  if (!id) {
+    return agentParamError({
+      reason: "experiment_rollback 必填 experimentId（仅 keep 可回滚到 baseline）。",
+      got: args.experimentId,
+      correctExample: { experimentId: "abc123" },
+      code: "INVALID_EXPERIMENT_ROLLBACK",
+    });
+  }
+  try {
+    return await rollbackExperiment({ id, config: ctx.config });
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+async function experimentBranchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const parentId = String(args.parentId ?? args.experimentId ?? "").trim();
+  const from = String(args.from ?? "candidate").trim() === "baseline" ? "baseline" : "candidate";
+  const hypothesis = String(args.hypothesis ?? "").trim();
+  if (!parentId || !hypothesis) {
+    return agentParamError({
+      reason:
+        "experiment_branch 必填 parentId + hypothesis + from(baseline|candidate)。从归档开新探索，禁止改 apps/server。",
+      got: { parentId: args.parentId, hypothesis: args.hypothesis, from: args.from },
+      correctExample: {
+        parentId: "abc123",
+        from: "candidate",
+        hypothesis: "在 discard 候选上再试缩短步骤",
+      },
+      code: "INVALID_EXPERIMENT_BRANCH",
+    });
+  }
+  try {
+    return await branchExperiment({
+      parentId,
+      from,
+      hypothesis,
+      agentId: ctx.agentSnapshot?.id ?? null,
+      sessionId: ctx.sessionId ?? null,
+      trajectoryRef: args.trajectoryRef ? String(args.trajectoryRef) : null,
+      config: ctx.config,
+    });
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+async function experimentGetTool(args: Record<string, unknown>, _ctx: NativeToolContext) {
+  const id = String(args.experimentId ?? args.id ?? "").trim();
+  if (!id) {
+    return agentParamError({
+      reason: "experiment_get 必填 experimentId。",
+      got: args.experimentId,
+      correctExample: { experimentId: "abc123" },
+      code: "INVALID_EXPERIMENT_GET",
+    });
+  }
+  const row = await getExperiment(id);
+  if (!row) return { ok: false, error: `实验不存在：${id}` };
+  return row;
 }
 
 async function harnessGateRunTool(args: Record<string, unknown>, ctx: NativeToolContext) {
@@ -243,6 +311,49 @@ const EXPERIMENT_DEFS: NativeToolDefinition[] = [
           .string()
           .describe("服务端现跑的 preset（server_lint/server_test…），结果自动写入 metrics。")
           .optional(),
+        primaryMetric: z
+          .string()
+          .describe("【可选】主判定字段名（如 gatePassed/testOk），记入账本。")
+          .optional(),
+      }),
+    ),
+  },
+  {
+    name: "experiment_rollback",
+    description:
+      "按实验 id 回滚已 keep 的变体到 begin 时 baseline（Prime 回滚 ID）。discard 无需调用（decide 已还原）。",
+    concurrencyClass: "A",
+    parameters: zodParams(
+      z.object({
+        experimentId: z.string().describe("【必填】已 keep 的 experimentId。"),
+      }),
+    ),
+  },
+  {
+    name: "experiment_branch",
+    description:
+      "DGM 式分支：从父实验归档的 baseline 或 candidate 物化到工作区并 begin 新实验。" +
+      "只探索 skill/memory/prompt_note，禁止改 apps/server runtime。",
+    concurrencyClass: "A",
+    parameters: zodParams(
+      z.object({
+        parentId: z.string().describe("【必填】父 experimentId。"),
+        from: z
+          .enum(["baseline", "candidate"])
+          .describe("从哪份归档开分支；默认 candidate。")
+          .optional(),
+        hypothesis: z.string().describe("【必填】新分支假设。"),
+        trajectoryRef: z.string().optional(),
+      }),
+    ),
+  },
+  {
+    name: "experiment_get",
+    description: "按 id 读取实验账本（含 parent/candidatePath/primaryMetric/rolledBackAt）。",
+    concurrencyClass: "B",
+    parameters: zodParams(
+      z.object({
+        experimentId: z.string().describe("【必填】experimentId。"),
       }),
     ),
   },
@@ -266,7 +377,7 @@ const EXPERIMENT_DEFS: NativeToolDefinition[] = [
       z.object({
         limit: z.number().int().min(1).max(100).describe("最多条数，默认 20。").optional(),
         decision: z
-          .enum(["pending", "keep", "discard"])
+          .enum(["pending", "keep", "discard", "rolled_back"])
           .describe("按决策过滤。")
           .optional(),
         agentId: z.string().describe("按 Agent 过滤。").optional(),
@@ -302,6 +413,9 @@ const EXPERIMENT_HANDLERS: Record<string, NativeToolHandler> = {
   experiment_begin: experimentBeginTool,
   experiment_decide: experimentDecideTool,
   experiment_list: experimentListTool,
+  experiment_get: experimentGetTool,
+  experiment_rollback: experimentRollbackTool,
+  experiment_branch: experimentBranchTool,
   harness_refine: harnessRefineTool,
   harness_gate_run: harnessGateRunTool,
 };

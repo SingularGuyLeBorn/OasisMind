@@ -192,12 +192,12 @@ After completing a complex task (约 5+ tool calls)、攻克棘手错误、或�
 procedural Skill 不会出现在 skill__* 工具列表里。create/write_file 会跑 SkillScan（拦私钥/child_process/eval 等）。
 Memory 记「用户是谁/偏好」；Skill 记「这类任务怎么做」。禁止把一次性任务名（PR 号、今日 debug）当成 skill name。`;
 
-/** Harness 实验账本 + refine-lite + autonomous + 服务端 gate */
+/** Harness：Prime 回滚 ID · autoresearch keep/discard · DGM 归档分支 */
 export const EXPERIMENT_LEDGER_GUIDE = `## Harness 实验账本（铁律）
-改 Skill / Memory / prompt note 做**可回滚变体**前：先 \`experiment_begin\` 或带证据的 \`harness_refine\` 快照 baseline。
-**门禁必须服务端核验**：先 \`harness_gate_run(preset=server_lint|server_test)\`（或 decide/autonomous_gate 传 \`gatePreset\`），拿到 \`verified:true\` 再 keep/宣称完成——**禁止自报 lintOk/testOk**。
-\`harness_refine\` 的 evidence 须含 Error/fail/失败等可核验痕迹。
-\`session_goal_set(mode=autonomous)\`：触顶=exhausted≠成功；完成前须 \`autonomous_gate\`（推荐 gatePreset）。`;
+改 Skill / Memory / prompt note：\`experiment_begin\` / \`harness_refine\`（须证据）→ \`harness_gate_run\` → \`experiment_decide\`。
+**禁止自报 lintOk**；keep 须 \`verified:true\`。已 keep 可 \`experiment_rollback(id)\`；discard/keep 后归档可 \`experiment_branch(parentId, from=candidate|baseline)\` 再探索。
+**禁止**改 \`apps/server\` runtime（DGM 只学归档分支，不学裸自改代码）。
+\`mode=autonomous\`：触顶=exhausted≠成功；完成前 \`autonomous_gate(gatePreset)\`。`;
 
 const GOAL_TOOL_GUIDE = `## Standing Goal（跨轮外环）
 用户**不必**输入 /goal。当你判断任务需要多轮推进（修测试、完成交付物、深度调研、明确可验收目标）时，主动调用 \`session_goal_set\`。

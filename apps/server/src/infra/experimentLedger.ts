@@ -1,11 +1,12 @@
 /**
- * Harness 实验账本（autoresearch 式 keep|discard）
+ * Harness 实验账本（Prime refine 回滚 ID · autoresearch keep/discard · DGM 归档分支）
  *
- * - begin：快照目标文件 → data/experiments/{id}/baseline → pending 行
- * - decide：metrics 须含外部可判定字段；discard 回滚 baseline；keep 保留候选
- * - 可变目标仅 skill / memory / prompt_note（均在 config/ 下）
+ * - begin：快照 baseline → data/experiments/{id}/
+ * - decide：归档 candidate；discard 回滚 / keep 保留；keep 须 verified
+ * - rollback：按 id 把已 keep 还原到 baseline（Prime）
+ * - branch：从父实验 baseline|candidate 开新探索（DGM；禁止改 runtime）
  *
- * 禁止环依赖 reactLoop；可依赖 prisma + AppConfig。
+ * 可变目标仅 skill / memory / prompt_note。禁止环依赖 reactLoop。
  */
 
 import crypto from "crypto";
@@ -16,7 +17,8 @@ import type { AppConfig } from "./config.js";
 import { skillMdPath, type SkillKind } from "./skillPackage.js";
 
 export type ExperimentTargetKind = "skill" | "memory" | "prompt_note";
-export type ExperimentDecision = "pending" | "keep" | "discard";
+export type ExperimentDecision = "pending" | "keep" | "discard" | "rolled_back";
+export type ExperimentBranchFrom = "baseline" | "candidate";
 
 /** 外部可判定指标；modelSelfScore 不得单独作为 keep/discard 依据 */
 export type ExperimentMetrics = {
@@ -48,6 +50,8 @@ export type DecideExperimentInput = {
   id: string;
   decision: "keep" | "discard";
   metrics: ExperimentMetrics;
+  /** autoresearch 式主判定字段名；缺省取第一个外部信号字段 */
+  primaryMetric?: string;
   config: AppConfig;
 };
 
@@ -182,6 +186,52 @@ function digestContent(content: string): string {
   return crypto.createHash("sha256").update(content, "utf8").digest("hex").slice(0, 16);
 }
 
+function experimentDir(config: AppConfig, id: string): string {
+  return path.join(config.dataPaths.experiments, id);
+}
+
+/** decide 前归档工作区候选（DGM archive；discard 后仍可 branch） */
+function archiveCandidateFile(
+  config: AppConfig,
+  id: string,
+  targetAbs: string,
+): { candidatePath: string; candidateDigest: string; content: string } | null {
+  if (!fs.existsSync(targetAbs)) return null;
+  const content = fs.readFileSync(targetAbs, "utf8");
+  const expDir = experimentDir(config, id);
+  fs.mkdirSync(expDir, { recursive: true });
+  const candAbs = path.join(expDir, "candidate");
+  fs.writeFileSync(candAbs, content, "utf8");
+  return {
+    candidatePath: relToProject(config.projectRoot, candAbs),
+    candidateDigest: digestContent(content),
+    content,
+  };
+}
+
+function pickPrimaryMetric(metrics: ExperimentMetrics, preferred?: string): string | null {
+  if (preferred && preferred in metrics) return preferred;
+  if (typeof metrics.gatePassed === "boolean") return "gatePassed";
+  if (typeof metrics.testOk === "boolean") return "testOk";
+  if (typeof metrics.lintOk === "boolean") return "lintOk";
+  if (typeof metrics.gateCommandExitCode === "number") return "gateCommandExitCode";
+  return null;
+}
+
+function assertTargetKindRoot(
+  config: AppConfig,
+  targetKind: string,
+  targetAbs: string,
+): void {
+  if (targetKind === "skill") {
+    assertWithinDir(config.configPaths.skills, targetAbs);
+  } else if (targetKind === "memory") {
+    assertWithinDir(config.configPaths.memories, targetAbs);
+  } else {
+    assertWithinDir(config.configPaths.prompts, targetAbs);
+  }
+}
+
 export async function beginExperiment(input: BeginExperimentInput) {
   const hypothesis = String(input.hypothesis || "").trim();
   if (!hypothesis) throw new Error("hypothesis 不能为空");
@@ -280,21 +330,16 @@ export async function decideExperiment(input: DecideExperimentInput) {
   const projectRoot = input.config.projectRoot;
   const targetAbs = path.resolve(projectRoot, row.targetPath);
   const baselineAbs = path.resolve(projectRoot, row.baselinePath);
+  assertTargetKindRoot(input.config, row.targetKind, targetAbs);
 
-  // 安全：目标必须仍在 config 对应根下
-  if (row.targetKind === "skill") {
-    assertWithinDir(input.config.configPaths.skills, targetAbs);
-  } else if (row.targetKind === "memory") {
-    assertWithinDir(input.config.configPaths.memories, targetAbs);
-  } else {
-    assertWithinDir(input.config.configPaths.prompts, targetAbs);
-  }
+  // DGM：先归档候选，再 keep/discard（discard 后仍可 branch from=candidate）
+  const archived = archiveCandidateFile(input.config, id, targetAbs);
+  let candidateDigest = archived?.candidateDigest ?? null;
+  const candidatePath = archived?.candidatePath ?? null;
 
-  let candidateDigest: string | null = null;
   if (input.decision === "discard") {
     if (row.createdNew) {
       if (fs.existsSync(targetAbs)) fs.unlinkSync(targetAbs);
-      candidateDigest = null;
     } else {
       if (!fs.existsSync(baselineAbs)) {
         throw new Error(`baseline 快照丢失：${row.baselinePath}`);
@@ -302,27 +347,28 @@ export async function decideExperiment(input: DecideExperimentInput) {
       const baseline = fs.readFileSync(baselineAbs, "utf8");
       fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
       fs.writeFileSync(targetAbs, baseline, "utf8");
-      candidateDigest = digestContent(baseline);
     }
   } else {
-    // keep：候选已在工作区，只记账
-    if (fs.existsSync(targetAbs)) {
-      candidateDigest = digestContent(fs.readFileSync(targetAbs, "utf8"));
-    } else if (row.createdNew) {
-      throw new Error("keep 失败：目标文件不存在（begin 时为新建，请先写入候选再 keep）");
-    } else {
-      throw new Error("keep 失败：目标文件不存在");
+    if (!fs.existsSync(targetAbs)) {
+      throw new Error(
+        row.createdNew
+          ? "keep 失败：目标文件不存在（begin 时为新建，请先写入候选再 keep）"
+          : "keep 失败：目标文件不存在",
+      );
     }
+    candidateDigest = digestContent(fs.readFileSync(targetAbs, "utf8"));
   }
 
+  const primaryMetric = pickPrimaryMetric(input.metrics, input.primaryMetric);
   const decidedAt = new Date();
-  // CAS：仅 pending → 终态，防并发双 decide
   const cas = await prisma.harnessExperiment.updateMany({
     where: { id, decision: "pending" },
     data: {
       decision: input.decision,
       metricsJson: JSON.stringify(input.metrics ?? {}),
       candidateDigest,
+      candidatePath,
+      primaryMetric,
       decidedAt,
     },
   });
@@ -335,14 +381,128 @@ export async function decideExperiment(input: DecideExperimentInput) {
     id: updated.id,
     decision: updated.decision as ExperimentDecision,
     metrics: input.metrics,
+    primaryMetric: updated.primaryMetric,
     candidateDigest: updated.candidateDigest,
+    candidatePath: updated.candidatePath,
     targetPath: updated.targetPath,
     decidedAt: updated.decidedAt,
     restored: input.decision === "discard",
     hint:
       input.decision === "discard"
-        ? "已回滚到 baseline（或删除新建候选）。"
-        : "已 keep：候选内容保留在工作区，账本已记 metrics。",
+        ? "已回滚到 baseline；候选已归档，可用 experiment_branch(from=candidate) 再探索。"
+        : "已 keep。若要撤销用 experiment_rollback(experimentId)。分支探索用 experiment_branch。",
+  };
+}
+
+/** Prime：按实验 id 回滚已 keep 的变体 → baseline */
+export async function rollbackExperiment(input: { id: string; config: AppConfig }) {
+  const id = String(input.id || "").trim();
+  if (!id) throw new Error("experiment id 不能为空");
+  const row = await prisma.harnessExperiment.findUnique({ where: { id } });
+  if (!row) throw new Error(`实验不存在：${id}`);
+  if (row.decision !== "keep") {
+    throw new Error(`仅 keep 状态可 rollback（当前 ${row.decision}）。discard 已在 decide 时还原。`);
+  }
+
+  const targetAbs = path.resolve(input.config.projectRoot, row.targetPath);
+  const baselineAbs = path.resolve(input.config.projectRoot, row.baselinePath);
+  assertTargetKindRoot(input.config, row.targetKind, targetAbs);
+
+  if (row.createdNew) {
+    if (fs.existsSync(targetAbs)) fs.unlinkSync(targetAbs);
+  } else {
+    if (!fs.existsSync(baselineAbs)) {
+      throw new Error(`baseline 快照丢失：${row.baselinePath}`);
+    }
+    fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
+    fs.writeFileSync(targetAbs, fs.readFileSync(baselineAbs, "utf8"), "utf8");
+  }
+
+  const rolledBackAt = new Date();
+  const cas = await prisma.harnessExperiment.updateMany({
+    where: { id, decision: "keep" },
+    data: { decision: "rolled_back", rolledBackAt },
+  });
+  if (cas.count !== 1) {
+    throw new Error("rollback 冲突：状态已变更");
+  }
+  return {
+    id,
+    decision: "rolled_back" as const,
+    rolledBackAt,
+    targetPath: row.targetPath,
+    hint: "已按 id 回滚到 baseline。可用 experiment_branch 从归档 candidate 再探索。",
+  };
+}
+
+/** DGM：从父实验归档的 baseline|candidate 开新实验（只动 config/ 目标，不改 runtime） */
+export async function branchExperiment(input: {
+  parentId: string;
+  from: ExperimentBranchFrom;
+  hypothesis: string;
+  agentId?: string | null;
+  sessionId?: string | null;
+  trajectoryRef?: string | null;
+  config: AppConfig;
+}) {
+  const parentId = String(input.parentId || "").trim();
+  const from = input.from === "candidate" ? "candidate" : "baseline";
+  const hypothesis = String(input.hypothesis || "").trim();
+  if (!parentId) throw new Error("parentId 不能为空");
+  if (!hypothesis) throw new Error("hypothesis 不能为空");
+
+  const parent = await prisma.harnessExperiment.findUnique({ where: { id: parentId } });
+  if (!parent) throw new Error(`父实验不存在：${parentId}`);
+  if (parent.decision === "pending") {
+    throw new Error("父实验仍为 pending，请先 experiment_decide 再 branch");
+  }
+
+  const variantRel =
+    from === "candidate" ? parent.candidatePath : parent.baselinePath;
+  if (!variantRel) {
+    throw new Error(
+      from === "candidate"
+        ? "父实验无 candidate 归档（可能 begin 后未改文件就 discard）"
+        : "父实验无 baseline 快照",
+    );
+  }
+  const variantAbs = path.resolve(input.config.projectRoot, variantRel);
+  if (!fs.existsSync(variantAbs)) {
+    throw new Error(`归档文件丢失：${variantRel}`);
+  }
+  const variantContent = fs.readFileSync(variantAbs, "utf8");
+
+  const targetAbs = path.resolve(input.config.projectRoot, parent.targetPath);
+  assertTargetKindRoot(input.config, parent.targetKind, targetAbs);
+
+  // 物化分支变体到工作区，再 begin（新 baseline = 该变体）
+  if (variantContent.length === 0 && parent.createdNew && from === "baseline") {
+    if (fs.existsSync(targetAbs)) fs.unlinkSync(targetAbs);
+  } else {
+    fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
+    fs.writeFileSync(targetAbs, variantContent, "utf8");
+  }
+
+  const begun = await beginExperiment({
+    hypothesis: `${hypothesis}\n\n[branch from ${parentId}:${from}]`,
+    targetKind: parent.targetKind as ExperimentTargetKind,
+    targetRef: parent.targetRef,
+    agentId: input.agentId,
+    sessionId: input.sessionId,
+    trajectoryRef: input.trajectoryRef,
+    config: input.config,
+  });
+
+  await prisma.harnessExperiment.update({
+    where: { id: begun.id },
+    data: { parentExperimentId: parentId },
+  });
+
+  return {
+    ...begun,
+    parentExperimentId: parentId,
+    branchedFrom: from,
+    hint: `已从 ${parentId}:${from} 分支。继续改配置 → harness_gate_run → experiment_decide。禁止改 apps/server runtime。`,
   };
 }
 
@@ -378,13 +538,17 @@ function serializeExperiment(row: {
   targetRef: string;
   targetPath: string;
   baselinePath: string;
+  candidatePath?: string | null;
   createdNew: boolean;
   candidateDigest: string | null;
   metricsJson: string;
+  primaryMetric?: string | null;
   decision: string;
+  parentExperimentId?: string | null;
   trajectoryRef: string | null;
   createdAt: Date;
   decidedAt: Date | null;
+  rolledBackAt?: Date | null;
 }) {
   let metrics: ExperimentMetrics = {};
   try {
@@ -401,12 +565,16 @@ function serializeExperiment(row: {
     targetRef: row.targetRef,
     targetPath: row.targetPath,
     baselinePath: row.baselinePath,
+    candidatePath: row.candidatePath ?? null,
     createdNew: row.createdNew,
     candidateDigest: row.candidateDigest,
+    primaryMetric: row.primaryMetric ?? null,
     metrics,
     decision: row.decision as ExperimentDecision,
+    parentExperimentId: row.parentExperimentId ?? null,
     trajectoryRef: row.trajectoryRef,
     createdAt: row.createdAt,
     decidedAt: row.decidedAt,
+    rolledBackAt: row.rolledBackAt ?? null,
   };
 }
