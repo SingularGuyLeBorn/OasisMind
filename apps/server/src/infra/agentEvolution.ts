@@ -16,7 +16,16 @@ import type { PrismaClient } from "@prisma/client";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { StoredToolCall } from "./chatHistory.js";
 import { createMemoryRepository } from "./memoryRepository.js";
+import { deriveDecisionScope } from "./approvalScope.js";
 import { MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@knowpilot/shared";
+
+/**
+ * IVE 失败归因（EvoScientist）：
+ * - implementation：实现失败——工具报错/参数错/执行崩（改工具使用纪律可修）
+ * - direction：方向失败——任务理解/思路错（需改 prompt 层引导）
+ * - unknown：规则无法判定（中断/内容空但无工具错误签名）
+ */
+export type ExperienceFailureKind = "implementation" | "direction" | "unknown";
 
 export interface ExperienceSummary {
   taskDescription: string;
@@ -25,6 +34,34 @@ export interface ExperienceSummary {
   durationMs: number;
   tokenUsage: { prompt: number; completion: number; total: number } | null;
   keyLearnings: string;
+  failureKind?: ExperienceFailureKind;
+  failureReason?: string;
+}
+
+/** 从工具结果对象提取错误签名（error 字段 / success===false） */
+function extractToolError(result: unknown): string | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const obj = result as Record<string, unknown>;
+  if (typeof obj.error === "string" && obj.error.trim()) return obj.error.slice(0, 200);
+  if (obj.success === false) {
+    return typeof obj.message === "string" ? obj.message.slice(0, 200) : "success=false";
+  }
+  return null;
+}
+
+/** 规则归因（零成本）：有工具错误签名 → implementation；否则 unknown（方向归因留给人工/上游 LLM） */
+export function attributeFailure(toolCalls: StoredToolCall[]): {
+  failureKind: ExperienceFailureKind;
+  failureReason?: string;
+} {
+  for (const t of toolCalls) {
+    if (t.kind !== "tool") continue;
+    const err = extractToolError(t.result);
+    if (err) {
+      return { failureKind: "implementation", failureReason: `工具 ${t.name} 报错：${err}` };
+    }
+  }
+  return { failureKind: "unknown" };
 }
 
 /** 有工具调用才值得沉淀经验；纯闲聊跳过，避免经验库噪声 */
@@ -60,8 +97,9 @@ export async function accumulateExperience(
     const tools = result.toolCalls.filter((t) => t.kind === "tool");
     const toolNames = tools.map((t) => t.name);
     const success = !!result.content.trim();
+    const attribution = success ? null : attributeFailure(result.toolCalls);
 
-    // 简化经验总结：工具使用 + 成功/失败 + 耗时
+    // 简化经验总结：工具使用 + 成功/失败 + 耗时 + IVE 失败归因
     const experience: ExperienceSummary = {
       taskDescription: input.message.slice(0, 200),
       toolsUsed: [...new Set(toolNames)],
@@ -71,6 +109,9 @@ export async function accumulateExperience(
       keyLearnings: success
         ? `任务成功完成。使用了 ${toolNames.length} 次工具调用（${[...new Set(toolNames)].join(", ")}），耗时 ${Math.round(durationMs / 1000)}s。`
         : `任务可能失败。内容为空或被中断。使用了 ${toolNames.length} 次工具调用。`,
+      ...(attribution
+        ? { failureKind: attribution.failureKind, failureReason: attribution.failureReason }
+        : {}),
     };
 
     // 写入 Memory（type="experience"，scope=agent:{id} 写时隔离——W5：不再直查 Prisma，
@@ -80,7 +121,12 @@ export async function accumulateExperience(
       content: JSON.stringify(experience),
       type: MEMORY_TYPES.EXPERIENCE,
       strength: success ? 1.0 : 0.5,
-      keywords: [...new Set(toolNames), input.trigger ?? "chat", success ? "success" : "failed"],
+      keywords: [
+        ...new Set(toolNames),
+        input.trigger ?? "chat",
+        success ? "success" : "failed",
+        ...(attribution ? [`failure:${attribution.failureKind}`] : []),
+      ],
       attribution: "experience" as const,
     };
     await repo.write({ ...memoryBase, scope: memoryAgentScope(agentId) });
@@ -106,15 +152,25 @@ export async function accumulateExperience(
 }
 
 /**
- * 自动优化子 Agent 的 system prompt
- * 管理 Agent 通过工具调用触发
+ * 自动优化子 Agent 的 system prompt（ESE 提案制：人工 review 闸）
+ * 管理 Agent 通过工具调用触发。
+ *
+ * 铁律：本函数**不直接改 prompt**——蒸馏结果先创建 pending Approval
+ * （toolName=agent.update），用户在 /approvals 批准后由审批执行链路重放生效。
+ * 防止 LLM 蒸馏出的劣质/漂移 prompt 静默污染 Agent 身份。
  */
 export async function optimizeAgentPrompt(
   prisma: PrismaClient,
   services: ServiceContainer,
   targetAgentId: string,
   operatorAgentId: string,
-): Promise<{ success: boolean; optimized?: string; reason?: string }> {
+): Promise<{
+  success: boolean;
+  pendingApproval?: boolean;
+  approvalId?: string;
+  proposal?: string;
+  reason?: string;
+}> {
   try {
     const agent = await prisma.agent.findUnique({ where: { id: targetAgentId } });
     if (!agent || agent.status === "deleted") {
@@ -136,53 +192,94 @@ export async function optimizeAgentPrompt(
       return { success: false, reason: "经验不足 5 条，暂不优化" };
     }
 
-    // 分析经验模式
-    const successCount = experiences.filter((e) => {
+    // 分析经验模式（含 IVE 失败归因分布）
+    const parsed: ExperienceSummary[] = [];
+    for (const e of experiences) {
       try {
-        const exp = JSON.parse(e.content) as ExperienceSummary;
-        return exp.success;
+        parsed.push(JSON.parse(e.content) as ExperienceSummary);
       } catch {
-        return false;
+        /* 跳过坏行 */
       }
-    }).length;
-
+    }
+    const successCount = parsed.filter((e) => e.success).length;
     const successRate = (successCount / experiences.length) * 100;
-    const allTools = experiences.flatMap((e) => {
-      try {
-        return (JSON.parse(e.content) as ExperienceSummary).toolsUsed;
-      } catch {
-        return [];
+
+    const failureStats = { implementation: 0, direction: 0, unknown: 0 };
+    const failureReasons: string[] = [];
+    for (const e of parsed) {
+      if (e.success) continue;
+      const kind = e.failureKind ?? "unknown";
+      failureStats[kind] += 1;
+      if (e.failureReason && failureReasons.length < 3) {
+        failureReasons.push(e.failureReason);
       }
-    });
+    }
+
     const toolFrequency = new Map<string, number>();
-    for (const t of allTools) {
+    for (const t of parsed.flatMap((e) => e.toolsUsed)) {
       toolFrequency.set(t, (toolFrequency.get(t) ?? 0) + 1);
     }
     const topTools = [...toolFrequency.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    // 构建优化建议（追加到现有 prompt，不覆盖）
-    const optimizationNote = `\n\n## 自动优化（${new Date().toISOString().slice(0, 10)}）
+    // 构建优化提案（追加到现有 prompt，不覆盖）；按失败归因分层给建议
+    const failTotal = failureStats.implementation + failureStats.direction + failureStats.unknown;
+    const attributionLines: string[] = [];
+    if (failTotal > 0) {
+      attributionLines.push(
+        `- 失败归因：实现失败 ${failureStats.implementation} / 方向失败 ${failureStats.direction} / 未判定 ${failureStats.unknown}`,
+      );
+      if (failureStats.implementation > 0) {
+        attributionLines.push(
+          `- 建议（实现层）：工具调用前先核对参数 schema；报错后读错误信息换参数重试，不要原样重发。典型错误：${failureReasons[0] ?? "见经验库"}`,
+        );
+      }
+      if (failureStats.direction > 0) {
+        attributionLines.push(
+          `- 建议（方向层）：动手前先复述任务目标与验收标准；方向不确定时用 ask_user 澄清，不要直接试错。`,
+        );
+      }
+    }
+
+    const optimizationNote = `\n\n## 自动优化提案（${new Date().toISOString().slice(0, 10)}，经人工 review 生效）
 - 近期成功率：${successRate.toFixed(0)}%
 - 高频工具：${topTools.map(([name, count]) => `${name}(${count})`).join(", ")}
+${attributionLines.join("\n")}
 ${successRate < 60 ? "- 建议：成功率偏低，检查任务描述是否清晰，工具是否合适。\n" : ""}${topTools.length > 3 ? "- 建议：使用工具较多，考虑封装为 Skill 减少调用次数。\n" : ""}`;
 
     const optimized = agent.systemPrompt + optimizationNote;
 
-    // 更新 prompt（运行中用旧配置，下次启动用新配置 #11）
-    await services.agent.update({ id: targetAgentId, systemPrompt: optimized } as any);
+    // ESE 人工 review 闸：创建 pending Approval，批准后经审批执行链路重放 agent.update
+    const approvalArgs = { id: targetAgentId, systemPrompt: optimized };
+    const created = await services.approval.create({
+      toolName: "agent.update",
+      args: approvalArgs,
+      status: "pending",
+      decisionScope: deriveDecisionScope("agent.update", approvalArgs),
+    } as Parameters<typeof services.approval.create>[0]);
+    if (!created.success || !created.data) {
+      return { success: false, reason: "创建优化提案审批失败" };
+    }
+    const approvalId = (created.data as { id: string }).id;
 
     // 审计日志
     await prisma.log.create({
       data: {
         level: "info",
         component: "swarm",
-        event: "agent_prompt_optimized",
-        message: `Agent ${agent.name} 的 system prompt 被自动优化（成功率 ${successRate.toFixed(0)}%）`,
-        metadata: { agentId: targetAgentId, operatorAgentId, successRate, experienceCount: experiences.length },
+        event: "agent_prompt_optimize_proposed",
+        message: `Agent ${agent.name} 的 prompt 优化提案已提交人工 review（成功率 ${successRate.toFixed(0)}%，approvalId=${approvalId}）`,
+        metadata: {
+          agentId: targetAgentId,
+          operatorAgentId,
+          successRate,
+          experienceCount: experiences.length,
+          failureStats,
+          approvalId,
+        },
       },
     }).catch((err) => { console.warn("[agentEvolution.ts] best-effort failed:", err instanceof Error ? err.message : err); });
 
-    return { success: true, optimized: optimizationNote };
+    return { success: true, pendingApproval: true, approvalId, proposal: optimizationNote };
   } catch (err) {
     return { success: false, reason: `优化失败: ${err instanceof Error ? err.message : String(err)}` };
   }

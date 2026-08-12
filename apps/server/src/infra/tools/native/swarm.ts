@@ -1591,7 +1591,15 @@ async function optimizeAgentPromptTool(args: Record<string, unknown>, ctx: Nativ
     ctx.agentSnapshot?.id ?? "",
   );
   return result.success
-    ? { success: true, message: "Prompt 已优化", optimized: result.optimized }
+    ? {
+        success: true,
+        pendingApproval: true,
+        approvalId: result.approvalId,
+        proposal: result.proposal,
+        message:
+          `优化提案已提交人工 review（approvalId=${result.approvalId}）。` +
+          `用户在 /approvals 批准后自动生效，不要重复提交；可向用户简述提案要点。`,
+      }
     : { error: result.reason ?? "优化失败" };
 }
 
@@ -1860,7 +1868,8 @@ const SWARM_DEFS: NativeToolDefinition[] = [
   },
   {
     name: "optimize_agent_prompt",
-    description: "自动优化子 Agent 的 system prompt（管理 Agent 专用，Agent 进化高级版）。基于近期运行经验分析成功率与工具使用模式，追加优化建议到 prompt。",
+    description:
+      "生成子 Agent system prompt 的优化提案（管理 Agent 专用，Agent 进化高级版）。基于近期运行经验分析成功率、工具使用模式与失败归因（实现失败 vs 方向失败）。提案制：不直接改 prompt，创建 pending 审批提交人工 review，用户在 /approvals 批准后生效。",
     parameters: zodParams(
       z.object({
         agentId: z.string().describe("目标子 Agent id"),

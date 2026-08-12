@@ -88,6 +88,8 @@ export function deriveDecisionScope(toolName: string, args: Record<string, unkno
     case "agent_delete_sub":
     case "agent.delete":
       return `agent:delete:${argStr(args, "id") ?? "*"}`;
+    case "agent.update":
+      return `agent:update:${argStr(args, "id") ?? "*"}`;
     case "memory_delete":
     case "memory.delete":
       return `memory:delete:${argStr(args, "id") ?? "*"}`;
