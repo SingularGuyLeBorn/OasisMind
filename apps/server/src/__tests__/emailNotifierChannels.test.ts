@@ -18,14 +18,27 @@ const config = { emailProvider: "none" } as AppConfig;
 describe("emailNotifier channels", () => {
   const originalFetch = globalThis.fetch;
 
+  // 本机 .env 注入了 AGENTMAIL_* / EMAIL_SMTP_* 等通道变量，必须全部清掉，
+  // 否则 resolveEmailProvider 会激活额外通道（agentmail mock 成功），扇出结果盖掉单通道断言
+  const CHANNEL_ENV_VARS = [
+    "NTFY_TOPIC",
+    "NTFY_SERVER",
+    "NTFY_TOKEN",
+    "EMAIL_TO",
+    "EMAIL_SMTP_USER",
+    "EMAIL_SMTP_PASS",
+    "AGENTMAIL_API_KEY",
+    "AGENTMAIL_INBOX_ID",
+    "AGENTMAIL_ASK_TO",
+  ] as const;
+
   beforeEach(() => {
     __resetNotifyBreakersForTests();
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("{}", { status: 200 })),
     );
-    delete process.env.NTFY_TOPIC;
-    delete process.env.EMAIL_TO;
+    for (const key of CHANNEL_ENV_VARS) delete process.env[key];
     process.env.EMAIL_PROVIDER = "none";
   });
 
@@ -33,9 +46,8 @@ describe("emailNotifier channels", () => {
     vi.unstubAllGlobals();
     globalThis.fetch = originalFetch;
     __resetNotifyBreakersForTests();
-    delete process.env.NTFY_TOPIC;
+    for (const key of CHANNEL_ENV_VARS) delete process.env[key];
     delete process.env.EMAIL_PROVIDER;
-    delete process.env.EMAIL_TO;
   });
 
   it("仅 NTFY_TOPIC 时可推送（EMAIL_PROVIDER=none）", async () => {
@@ -56,6 +68,9 @@ describe("emailNotifier channels", () => {
     process.env.EMAIL_PROVIDER = "agentmail";
     process.env.EMAIL_TO = "u@example.com";
     process.env.NTFY_TOPIC = "kp-dual";
+    // 通道就绪判定需要 key + inbox（beforeEach 已清掉本机 .env 注入，这里显式补齐）
+    process.env.AGENTMAIL_API_KEY = "test-key";
+    process.env.AGENTMAIL_INBOX_ID = "test-inbox";
     const result = await sendEmailNotification(
       { emailProvider: "agentmail" } as AppConfig,
       undefined,

@@ -2,7 +2,7 @@
  * 负向：全局代理不得劫持 loopback（否则 OneBot 回发 502、QQ 只进不出）。
  */
 
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeAll } from "vitest";
 import { ProxyAgent, fetch as undiciFetch, Agent, EnvHttpProxyAgent } from "undici";
 import {
   __resetProxyForTests,
@@ -12,6 +12,25 @@ import {
 } from "../infra/proxyDispatcher.js";
 
 describe("proxyDispatcher loopback 绕过", () => {
+  // 集成用例依赖本机 OneBot @ 127.0.0.1:3001（QQ bot 服务）；服务不在时跳过而非报错
+  let onebotUp = false;
+  beforeAll(async () => {
+    try {
+      const res = await undiciFetch("http://127.0.0.1:3001/get_login_info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        signal: AbortSignal.timeout(2000),
+      });
+      onebotUp = res.status === 200;
+    } catch {
+      onebotUp = false;
+    }
+    if (!onebotUp) {
+      console.warn("[proxyDispatcherNoProxy] OneBot @ 127.0.0.1:3001 不可达，跳过集成用例");
+    }
+  });
+
   afterEach(() => {
     delete process.env.KP_HTTPS_PROXY;
     delete process.env.HTTPS_PROXY;
@@ -26,7 +45,8 @@ describe("proxyDispatcher loopback 绕过", () => {
     expect(isLoopbackUrl("https://api.deepseek.com/v1")).toBe(false);
   });
 
-  it("ProxyAgent 走 Clash 打本机 OneBot → 502；直连 Agent → 200", async () => {
+  it("ProxyAgent 走 Clash 打本机 OneBot → 502；直连 Agent → 200", async (ctx) => {
+    if (!onebotUp) return ctx.skip();
     const url = "http://127.0.0.1:3001/get_login_info";
     const body = "{}";
     const headers = { "Content-Type": "application/json" };
@@ -57,7 +77,8 @@ describe("proxyDispatcher loopback 绕过", () => {
     expect(json.retcode).toBe(0);
   }, 15_000);
 
-  it("initGlobalProxy + EnvHttpProxyAgent 对本机 get_login_info 直连成功", async () => {
+  it("initGlobalProxy + EnvHttpProxyAgent 对本机 get_login_info 直连成功", async (ctx) => {
+    if (!onebotUp) return ctx.skip();
     process.env.KP_HTTPS_PROXY = "http://127.0.0.1:7890";
     __resetProxyForTests();
     const { proxyUrl } = initGlobalProxy();
@@ -93,7 +114,8 @@ describe("proxyDispatcher loopback 绕过", () => {
     ).rejects.toThrow(/fetch failed/);
   }, 15_000);
 
-  it("EnvHttpProxyAgent noProxy 对本机不走代理", async () => {
+  it("EnvHttpProxyAgent noProxy 对本机不走代理", async (ctx) => {
+    if (!onebotUp) return ctx.skip();
     const d = new EnvHttpProxyAgent({
       httpProxy: "http://127.0.0.1:7890",
       httpsProxy: "http://127.0.0.1:7890",

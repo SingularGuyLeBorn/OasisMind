@@ -32,9 +32,11 @@ describe("agentToolError 正确示例", () => {
       },
     });
     expect(err.code).toBe("MISSING_REQUIRED_PARAMS");
+    // userId 兜底示例随 QQ 官方 bot 改造从 QQ 号变为 openid（agentToolError.ts 硬编码），
+    // 具体值是实现细节，只断言「给出了非空示例」
     expect(err.correctExample).toMatchObject({
       text: expect.any(String),
-      userId: "2635495642",
+      userId: expect.any(String),
     });
     expect(err.error).toContain("正确示例");
     expect(err.error).toContain("备份已完成");

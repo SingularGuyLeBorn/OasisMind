@@ -7,7 +7,7 @@
  * 2. 审批 reject → 注入拒绝消息 → LLM 自行收尾，run 正常结束（success）而非断裂
  * 3. 审批 TTL 过期 → 注入过期消息 → LLM 收尾；审批行由 waiter 截止机制翻转（system-ttl）
  * 4. recoverStaleRuns：遗留 running Run 标 interrupted，success 行不动
- * 5. 活状态快照节流：连续两轮 tool_batch（<5s）只写一次快照；终态 update 携带 toolCallCount
+ * 5. 活状态快照：每轮工具开跑 force 写一次（推父会话进度），轮末节流写（<5s）跳过；终态 update 携带 toolCallCount
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -348,12 +348,16 @@ describe("W11 Run 活状态 + awaiting_human", () => {
     expect(runCreate).toHaveBeenCalledTimes(1);
     expect((runCreate.mock.calls[0][0] as { status: string }).status).toBe("running");
 
-    // 快照：两轮 tool_batch 在 5s 节流窗内 → 只写第一轮（phase=tool_batch, roundsUsed=1, executedToolsCount=1）
+    // 快照：每轮工具开跑即 force 写一次（reactLoop L943 推父会话进度，不受 5s 节流限制）；
+    // 轮末的节流写落在 5s 窗内被跳过 → 两轮共 2 次快照
+    // 第 1 轮开跑：roundsUsed=1，本轮工具尚未执行 → executedToolsCount=0
+    // 第 2 轮开跑：roundsUsed=2，第 1 轮工具已落账 → executedToolsCount=1
     const snapshots = runUpdate.mock.calls
       .map((c) => c[0] as unknown as { status?: string; output?: Record<string, unknown> })
       .filter((u) => u.status === undefined);
-    expect(snapshots).toHaveLength(1);
-    expect(snapshots[0].output).toMatchObject({ phase: "tool_batch", roundsUsed: 1, executedToolsCount: 1 });
+    expect(snapshots).toHaveLength(2);
+    expect(snapshots[0].output).toMatchObject({ phase: "tool_batch", roundsUsed: 1, executedToolsCount: 0 });
+    expect(snapshots[1].output).toMatchObject({ phase: "tool_batch", roundsUsed: 2, executedToolsCount: 1 });
 
     // 终态 success：output.phase=done + toolCallCount=2
     const terminal = runUpdate.mock.calls
