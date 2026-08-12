@@ -447,6 +447,25 @@ async function memoryDailySearchTool(args: Record<string, unknown>, ctx: NativeT
   });
 }
 
+async function memoryDistillPersonaTool(_args: Record<string, unknown>, ctx: NativeToolContext) {
+  const { distillPersona } = await import("../../personaDistiller.js");
+  const result = await distillPersona({
+    services: ctx.services,
+    config: ctx.config,
+    force: true, // 手动触发跳过防抖
+  });
+  if (result.status === "distilled") {
+    return {
+      success: true,
+      personaId: result.personaId,
+      previousId: result.previousId,
+      chars: result.chars,
+      message: "画像已蒸馏更新，新对话起自动注入 system prompt 顶部；可在 /memories 页查看/修正。",
+    };
+  }
+  return { success: false, status: result.status, reason: result.reason };
+}
+
 async function memorySearchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const keyword = String(args.keyword || "");
   const type = args.type ? String(args.type) : undefined;
@@ -830,6 +849,15 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
       }),
     ),
   },
+  {
+    name: "memory_distill_persona",
+    concurrencyClass: "D",
+    // 蒸馏写画像走 supersede 软版本链（非删除），与 memory_create 同档豁免
+    approvalExempt: true,
+    description:
+      "立即蒸馏 L3 长期用户画像：从全局记忆（偏好/事实/经历/笔记/流程）提炼一份 Markdown 画像，此后每次对话自动注入 system prompt 顶部。已有画像时整体重写（旧版走 supersede 版本链可回溯）。日常由每日 cron 自动蒸馏，本工具用于手动触发。",
+    parameters: zodParams(z.object({})),
+  },
 ];
 
 const MEMORY_HANDLERS: Record<string, NativeToolHandler> = {
@@ -852,6 +880,7 @@ const MEMORY_HANDLERS: Record<string, NativeToolHandler> = {
   pinned_memory_write: pinnedMemoryWriteTool,
   memory_daily_append: memoryDailyAppendTool,
   memory_daily_search: memoryDailySearchTool,
+  memory_distill_persona: memoryDistillPersonaTool,
 };
 
 /** create 类补偿共用：按结果 id 走 Service 删除（保证文件回写 / FTS 同步）；NOT_FOUND 幂等跳过 */

@@ -75,11 +75,13 @@ export const MEMORY_TYPES = {
   NOTE: "note",
   PROCEDURAL: "procedural",
   EXPERIENCE: "experience",
+  /** L3 长期画像（TencentDB 分层记忆思想）：由 personaDistiller 蒸馏，Agent/用户不可直接创建 */
+  PERSONA: "persona",
 } as const;
 
 export type MemoryType = (typeof MEMORY_TYPES)[keyof typeof MEMORY_TYPES];
 
-/** Agent / 用户可创建的 Memory 类型 */
+/** Agent / 用户可创建的 Memory 类型（persona 只能经蒸馏管线写入，不在此列） */
 export const MEMORY_USER_CREATABLE_TYPES = [
   MEMORY_TYPES.PREFERENCE,
   MEMORY_TYPES.SEMANTIC,
@@ -90,8 +92,8 @@ export const MEMORY_USER_CREATABLE_TYPES = [
 
 export type MemoryUserCreatableType = (typeof MEMORY_USER_CREATABLE_TYPES)[number];
 
-/** 可注入 Chat system prompt 的类型（排除 experience） */
-export const MEMORY_INJECTABLE_TYPES = [...MEMORY_USER_CREATABLE_TYPES] as const;
+/** 可注入 Chat system prompt 的类型（排除 experience；含 persona —— L3 画像快速启动上下文） */
+export const MEMORY_INJECTABLE_TYPES = [...MEMORY_USER_CREATABLE_TYPES, MEMORY_TYPES.PERSONA] as const;
 
 /** Memory scope：global 全局共享；agent:{agentId} 归属特定 Agent；workspace:{workspaceId} 归属 Workspace */
 export const MEMORY_SCOPE_GLOBAL = "global";
@@ -148,6 +150,8 @@ export const MEMORY_DECAY_FACTORS_BY_TYPE: Record<string, number> = {
   procedural: 0.98,
   episodic: MEMORY_DECAY_FACTOR_PER_DAY,
   experience: 0.9,
+  /** L3 画像由蒸馏管线整体重写（supersede 版本链），不参与逐日衰减 */
+  persona: 1.0,
 };
 
 /** 获取某类型记忆的日衰减系数（缺省回退到全局系数） */
@@ -162,7 +166,15 @@ export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
   note: "笔记",
   procedural: "操作流程",
   experience: "运行经验（内部）",
+  persona: "用户画像（L3）",
 };
+
+/** L3 画像蒸馏 cron（每日凌晨，错开记忆衰减/审批清理）；挂 heartbeatEngine maintenance 通道 */
+export const PERSONA_DISTILL_CRON = "17 5 * * *";
+/** 画像蒸馏最小间隔（防抖：距上次蒸馏不足该时长且记忆无新增则跳过） */
+export const PERSONA_DISTILL_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
+/** 画像注入 prompt 的字符预算（L3 快速启动层，保持轻量） */
+export const PERSONA_HINT_MAX_CHARS = 1_500;
 
 /** Auto-Compact 默认：占模型 context window 的触发比例 */
 export const DEFAULT_COMPACT_TRIGGER_RATIO = 0.75;
@@ -635,6 +647,7 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:memory_search",
     "native:memory_daily_append",
     "native:memory_daily_search",
+    "native:memory_distill_persona",
     "native:pinned_memory_read",
     "native:pinned_memory_write",
     "native:agent_create",
@@ -874,6 +887,7 @@ export const ASSISTANT_DEFAULT_TOOLS: string[] = [
   "native:memory_search",
   "native:memory_daily_append",
   "native:memory_daily_search",
+  "native:memory_distill_persona",
   "native:pinned_memory_read",
   "native:pinned_memory_write",
   "native:todo_write",

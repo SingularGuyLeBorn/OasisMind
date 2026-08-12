@@ -35,7 +35,8 @@ import {
 import { createMemoryRepository, decayMemories, consolidateMemories } from "./memoryRepository.js";
 import { sendEmailNotification } from "./emailNotifier.js";
 import { claimExclusiveSessionTaskRun } from "./taskClaim.js";
-import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES } from "@knowpilot/shared";
+import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES, PERSONA_DISTILL_CRON } from "@knowpilot/shared";
+import type { PersonaDistillResult } from "./personaDistiller.js";
 import { bootDetail } from "./bootLog.js";
 import {
   closeLoopGate,
@@ -95,6 +96,8 @@ export class HeartbeatEngine {
   private maintenanceJob: ScheduledTask | null = null;
   // W12：审批过期清理维护任务（同 maintenanceJob 通道，不随 refresh 重建）
   private approvalCleanupJob: ScheduledTask | null = null;
+  // L3 画像蒸馏维护任务（同 maintenance 通道族，不随 refresh 重建）
+  private personaDistillJob: ScheduledTask | null = null;
   // A14：事件驱动 refresh 的防抖句柄与监听器引用（stop 时清理）
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private eventHandler: ((payload: EntityEventPayload<unknown>) => void) | null = null;
@@ -146,6 +149,13 @@ export class HeartbeatEngine {
       });
     }
 
+    // L3 画像蒸馏：每日从 L1 记忆提炼长期画像（env PERSONA_DISTILL_ENABLED=false 关闭）
+    if (!this.personaDistillJob && process.env.PERSONA_DISTILL_ENABLED !== "false") {
+      this.personaDistillJob = cron.schedule(PERSONA_DISTILL_CRON, () => {
+        this.runPersonaDistill().catch((err) => { console.warn("[heartbeatEngine.ts] best-effort failed:", err instanceof Error ? err.message : err); });
+      });
+    }
+
     bootDetail(`  💓 [HeartbeatEngine] 启动完成，共 ${this.jobs.size} 个心跳任务`);
 
     // A14：监听 agent 配置变更事件，防抖后增量刷新 cron 注册，替代此前每 60s 全量轮询重建。
@@ -172,6 +182,10 @@ export class HeartbeatEngine {
     if (this.approvalCleanupJob) {
       this.approvalCleanupJob.stop();
       this.approvalCleanupJob = null;
+    }
+    if (this.personaDistillJob) {
+      this.personaDistillJob.stop();
+      this.personaDistillJob = null;
     }
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
@@ -354,6 +368,24 @@ export class HeartbeatEngine {
     } catch (err) {
       console.warn(`  ⚠️ [ApprovalCleanup] 执行失败:`, err instanceof Error ? err.message : err);
       return 0;
+    }
+  }
+
+  /** L3 画像蒸馏（每日 cron；防抖在 distillPersona 内，失败不阻塞心跳主流程） */
+  async runPersonaDistill(): Promise<PersonaDistillResult> {
+    try {
+      const { distillPersona } = await import("./personaDistiller.js");
+      const result = await distillPersona({ services: this.services, config: this.config });
+      if (result.status === "distilled") {
+        console.log(
+          `  🧬 [PersonaDistill] 画像已更新（${result.chars} 字符${result.previousId ? "，旧版已 supersede" : ""}）`,
+        );
+      }
+      return result;
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`  🧬 [PersonaDistill] 执行失败:`, reason);
+      return { status: "skipped", reason };
     }
   }
 

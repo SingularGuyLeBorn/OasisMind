@@ -12,9 +12,11 @@ import { fileURLToPath } from "url";
 import type { ServiceContainer } from "./serviceContainer.js";
 import {
   MEMORY_INJECTABLE_TYPES,
+  MEMORY_TYPES,
   memoryAgentScope,
   memoryWorkspaceScope,
   MEMORY_SCOPE_GLOBAL,
+  PERSONA_HINT_MAX_CHARS,
 } from "@knowpilot/shared";
 import { createMemoryRepository } from "./memoryRepository.js";
 import {
@@ -79,7 +81,8 @@ export async function buildMemoryContext(
   const repo = createMemoryRepository(services);
   const memories = await repo.read({
     keyword,
-    types: [...MEMORY_INJECTABLE_TYPES],
+    // persona 由 buildPersonaHint 独立注入（buildAllMemoryHints 顶部），动态检索排除避免重复
+    types: MEMORY_INJECTABLE_TYPES.filter((t) => t !== MEMORY_TYPES.PERSONA),
     scopes,
     limit: 5,
   });
@@ -142,15 +145,40 @@ export async function buildMemoryContext(
  * L1 常驻层（冻结）+ 动态 FTS 记忆（按轮检索）。
  * sessionId 有值时 USER/AGENT 快照会话内不变；动态层仍按 userText 检索。
  */
+/**
+ * L3 画像注入块（TencentDB 分层记忆：L2/L3 快速启动上下文，需要细节再下钻 L1/L0）。
+ * 读 global scope 的 active persona 记忆（蒸馏管线产出），无画像时返回空串。
+ */
+export async function buildPersonaHint(services: ServiceContainer): Promise<string> {
+  try {
+    const repo = createMemoryRepository(services);
+    const rows = await repo.read({
+      types: [MEMORY_TYPES.PERSONA],
+      scopes: [MEMORY_SCOPE_GLOBAL],
+      limit: 1,
+    });
+    const persona = rows[0];
+    if (!persona) return "";
+    const content =
+      persona.content.length > PERSONA_HINT_MAX_CHARS
+        ? `${persona.content.slice(0, PERSONA_HINT_MAX_CHARS)}…`
+        : persona.content;
+    return `\n\n## 用户画像（长期）\n${content}`;
+  } catch {
+    return "";
+  }
+}
+
 export async function buildAllMemoryHints(
   services: ServiceContainer,
   userText: string,
   options?: { agentId?: string | null; sessionId?: string | null },
 ): Promise<string> {
+  const persona = await buildPersonaHint(services);
   const pinned = await ensurePinnedMemoryHint(services, options?.sessionId);
   const dynamic = await buildMemoryContext(services, userText, { agentId: options?.agentId });
   const neighbors = await buildGardenNeighborHint(services.prisma, userText).catch(() => "");
-  return pinned + dynamic + neighbors;
+  return persona + pinned + dynamic + neighbors;
 }
 
 const WEB_TOOL_GUIDE = `## 网络工具用法

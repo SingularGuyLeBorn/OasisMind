@@ -324,6 +324,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "memory_delete",
   "memory_daily_append",
   "memory_daily_search",
+  "memory_distill_persona",
   "pinned_memory_read",
   "pinned_memory_write",
   "todo_write",
