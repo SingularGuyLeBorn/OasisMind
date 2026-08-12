@@ -579,7 +579,7 @@ export const sessionStatusSchema = z.enum(["active", "queued", "running", "pause
 
 export const sessionKindSchema = z.enum(["chat", "subagent", "heartbeat", "skill_review", "channel", "cron"]);
 
-export const sessionGoalModeSchema = z.enum(["goal", "deep_research"]);
+export const sessionGoalModeSchema = z.enum(["goal", "deep_research", "autonomous"]);
 export const sessionGoalStatusSchema = z.enum(["active", "paused", "done", "exhausted"]);
 
 export const sessionGoalStateSchema = z.object({
@@ -600,6 +600,23 @@ export const sessionGoalStateSchema = z.object({
   pendingContinue: z
     .object({
       reason: z.string(),
+    })
+    .nullable()
+    .optional(),
+  /** autonomous：墙钟起点（ISO） */
+  startedAt: z.string().optional(),
+  /** autonomous：墙钟预算 ms */
+  maxWallClockMs: z.number().int().positive().optional(),
+  /** autonomous：token 估算预算（可选） */
+  maxTokensEstimate: z.number().int().positive().optional(),
+  tokensUsedEstimate: z.number().int().min(0).optional(),
+  /** autonomous：完成前必须有外部门禁报告 */
+  requireExternalGate: z.boolean().optional(),
+  externalGate: z
+    .object({
+      passed: z.boolean(),
+      metrics: z.record(z.unknown()).optional(),
+      reportedAt: z.string().optional(),
     })
     .nullable()
     .optional(),

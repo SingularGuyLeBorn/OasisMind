@@ -141,10 +141,14 @@ skills:
   # curator 最小运行间隔（小时）；默认 7 天
   curatorIntervalHours: 168
 
-# Chat Goal / Deep Research 外环（Hermes Ralph 环）
+# Chat Goal / Deep Research / Autonomous 外环（Hermes Ralph 环）
 goal:
   maxTurns: 20
   deepResearchMaxTurns: 30
+  # autonomous：触顶（轮次/墙钟）标 exhausted，绝不等于成功
+  autonomousMaxTurns: 40
+  autonomousMaxWallClockMs: 1800000
+  autonomousRequireExternalGate: true
   # 裁判模型；auto = OpenRouter strong_free
   judgeModel: auto
 

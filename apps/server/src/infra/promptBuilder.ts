@@ -192,6 +192,13 @@ After completing a complex task (约 5+ tool calls)、攻克棘手错误、或�
 procedural Skill 不会出现在 skill__* 工具列表里。create/write_file 会跑 SkillScan（拦私钥/child_process/eval 等）。
 Memory 记「用户是谁/偏好」；Skill 记「这类任务怎么做」。禁止把一次性任务名（PR 号、今日 debug）当成 skill name。`;
 
+/** Harness 实验账本 + refine-lite + autonomous */
+export const EXPERIMENT_LEDGER_GUIDE = `## Harness 实验账本（铁律）
+改 Skill / Memory / prompt note 做**可回滚变体**前：先 \`experiment_begin\` 或带证据的 \`harness_refine\` 快照 baseline。
+改完后跑**外部可判定**门禁，再 \`experiment_decide(keep|discard)\`；\`metrics\` 须含 \`lintOk\`/\`testOk\`/\`gatePassed\`/\`gateCommandExitCode\`——禁止仅用模型自评分；**失败指标不能 keep**。
+\`harness_refine\` 的 evidence 必须含 Error/fail/失败等可核验痕迹。
+\`session_goal_set(mode=autonomous)\`：触顶（轮次/墙钟）= exhausted≠成功；完成前须 \`autonomous_gate\`。`;
+
 const GOAL_TOOL_GUIDE = `## Standing Goal（跨轮外环）
 用户**不必**输入 /goal。当你判断任务需要多轮推进（修测试、完成交付物、深度调研、明确可验收目标）时，主动调用 \`session_goal_set\`。
 - 短问短答、一次性查询：**不要**设 goal。
@@ -310,6 +317,16 @@ export function buildAgentToolGuide(
   }
   if (want("skills") && (has("skills_list") || has("skill_view") || has("skill_manage"))) {
     parts.push(SKILLS_GUIDANCE);
+  }
+  if (
+    want("skills") &&
+    (has("experiment_begin") ||
+      has("experiment_decide") ||
+      has("experiment_list") ||
+      has("harness_refine") ||
+      has("autonomous_gate"))
+  ) {
+    parts.push(EXPERIMENT_LEDGER_GUIDE);
   }
   if (
     want("goal") &&

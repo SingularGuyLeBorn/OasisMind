@@ -111,7 +111,12 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
           ) : (
             <Flag className="h-3.5 w-3.5" />
           )}
-          {goal.mode === "deep_research" ? "调研" : "Goal"} {goal.turnsUsed}/{goal.maxTurns}
+          {goal.mode === "deep_research"
+            ? "调研"
+            : goal.mode === "autonomous"
+              ? "自治"
+              : "Goal"}{" "}
+          {goal.turnsUsed}/{goal.maxTurns}
           {tokenLabel}
           <span
             className={cn(

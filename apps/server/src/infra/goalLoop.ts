@@ -15,6 +15,7 @@ import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
 import { onHubRunSettled, getStreamHub } from "./sessionStreamHub.js";
 import { notifyGoalUpdated } from "./uiStateNotify.js";
+import { canAutonomousMarkDone, checkAutonomousBudgets } from "./autonomousBudget.js";
 import { prisma } from "../db.js";
 
 /** 读写 goalState：绕过可能未 regenerate 的 Prisma Client 字段校验（列已由 ALTER 存在） */
@@ -85,15 +86,21 @@ export function parseGoalState(raw: unknown): SessionGoalState | null {
 }
 
 export function buildGoalContinueMessage(goal: SessionGoalState, reason: string): string {
-  const modeLabel = goal.mode === "deep_research" ? "深度调研" : "目标";
+  const modeLabel =
+    goal.mode === "deep_research" ? "深度调研" : goal.mode === "autonomous" ? "自治任务" : "目标";
   const research =
     goal.mode === "deep_research" ? `\n\n${DEEP_RESEARCH_SYSTEM_HINT}` : "";
+  const autoHint =
+    goal.mode === "autonomous"
+      ? `\n\n（autonomous）触顶≠成功；完成前须 autonomous_gate 上报外部指标。`
+      : "";
   return [
     `↻ 继续推进${modeLabel}（${goal.turnsUsed}/${goal.maxTurns}）：${reason}`,
     ``,
     `Standing goal: ${goal.text}`,
     `请基于上一轮进展继续，不要重复已完成的步骤；完成后在回复中明确说明是否已达成目标。`,
     research,
+    autoHint,
   ]
     .filter(Boolean)
     .join("\n");
@@ -127,6 +134,22 @@ export function buildGoalKickoffMessage(goal: SessionGoalState): string {
       ``,
       `请开始调研。`,
     ].join("\n");
+  }
+  if (goal.mode === "autonomous") {
+    const wall = goal.maxWallClockMs
+      ? `；墙钟 ${(goal.maxWallClockMs / 60000).toFixed(0)} 分钟`
+      : "";
+    return [
+      `⊙ 自治任务已设定（预算 ${goal.maxTurns} 轮${wall}）：${goal.text}`,
+      ``,
+      `触顶（轮次/墙钟/token）一律 exhausted，不等于成功。`,
+      goal.requireExternalGate !== false
+        ? `完成前必须调用 autonomous_gate 上报外部指标（lint/test/exit code）。`
+        : ``,
+      `请开始推进。`,
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
   return [
     `⊙ 目标已设定（预算 ${goal.maxTurns} 轮）：${goal.text}`,
@@ -195,23 +218,30 @@ export async function setSessionGoal(args: {
   config: AppConfig;
   sessionId: string;
   text: string;
-  mode: "goal" | "deep_research";
+  mode: "goal" | "deep_research" | "autonomous";
   maxTurns?: number;
   judgeModel?: string;
   execModel?: string;
+  maxWallClockMs?: number;
+  requireExternalGate?: boolean;
+  maxTokensEstimate?: number;
 }): Promise<SessionGoalState> {
   const session = await args.services.session.getByIdLite(args.sessionId);
   if (!session) throw new Error("会话不存在");
   if (session.kind === "heartbeat" || session.kind === "skill_review") {
-    throw new Error("该类型会话不支持 Goal / 深度调研");
+    throw new Error("该类型会话不支持 Goal / 深度调研 / 自治");
   }
   // 子会话允许 mode=goal（外环续跑走同一 SessionHub；父 waitForResult 会等到 goal 终态）。
-  // deep_research 仍禁止挂在子会话上（调研语义面向独立 chat，且子会话通常已有任务消息）。
+  // deep_research / autonomous 仍禁止挂在子会话上。
   if (
-    args.mode === "deep_research" &&
+    (args.mode === "deep_research" || args.mode === "autonomous") &&
     (session.kind === "subagent" || session.parentSessionId)
   ) {
-    throw new Error("子 Agent 会话不支持深度调研；请用 mode=goal，或 session_spawn_goal 开独立会话");
+    throw new Error(
+      args.mode === "autonomous"
+        ? "子 Agent 会话不支持 autonomous；请用 mode=goal，或 session_spawn_goal 开独立会话"
+        : "子 Agent 会话不支持深度调研；请用 mode=goal，或 session_spawn_goal 开独立会话",
+    );
   }
   if (args.mode === "deep_research") {
     // 深度调研必须在「尚未有用户消息」的新会话上启动
@@ -234,7 +264,11 @@ export async function setSessionGoal(args: {
   const defaults = args.config.goal;
   const maxTurns =
     args.maxTurns ??
-    (args.mode === "deep_research" ? defaults.deepResearchMaxTurns : defaults.maxTurns);
+    (args.mode === "deep_research"
+      ? defaults.deepResearchMaxTurns
+      : args.mode === "autonomous"
+        ? defaults.autonomousMaxTurns
+        : defaults.maxTurns);
   const goal: SessionGoalState = {
     mode: args.mode,
     text: args.text.trim(),
@@ -244,12 +278,55 @@ export async function setSessionGoal(args: {
     judgeModel: (args.judgeModel || defaults.judgeModel || "auto").trim() || "auto",
     execModel: args.execModel?.trim() || undefined,
     pendingContinue: null,
+    ...(args.mode === "autonomous"
+      ? {
+          startedAt: new Date().toISOString(),
+          maxWallClockMs: args.maxWallClockMs ?? defaults.autonomousMaxWallClockMs,
+          requireExternalGate:
+            args.requireExternalGate ?? defaults.autonomousRequireExternalGate,
+          maxTokensEstimate: args.maxTokensEstimate,
+          tokensUsedEstimate: 0,
+          externalGate: null,
+        }
+      : {}),
   };
   await goalStateStore.write(args.sessionId, goal);
   if (goal.execModel) {
     await args.services.session.update({ id: args.sessionId, model: goal.execModel } as never);
   }
   return goal;
+}
+
+/** autonomous：写入外部质量门结果（须含外部可判定指标） */
+export async function reportAutonomousGate(args: {
+  sessionId: string;
+  metrics: Record<string, unknown>;
+}): Promise<SessionGoalState> {
+  const goal = await goalStateStore.read(args.sessionId);
+  if (!goal) throw new Error("当前会话无 standing goal");
+  if (goal.mode !== "autonomous") {
+    throw new Error("autonomous_gate 仅用于 mode=autonomous 的 goal");
+  }
+  if (goal.status !== "active" && goal.status !== "paused") {
+    throw new Error(`goal 状态为 ${goal.status}，无法上报 gate`);
+  }
+  const { hasExternalMetric, metricsAllowKeep } = await import("./experimentLedger.js");
+  if (!hasExternalMetric(args.metrics)) {
+    throw new Error(
+      "metrics 须含 lintOk/testOk/gatePassed/gateCommandExitCode 至少一项（禁止仅 modelSelfScore）",
+    );
+  }
+  const passed = metricsAllowKeep(args.metrics);
+  const next: SessionGoalState = {
+    ...goal,
+    externalGate: {
+      passed,
+      metrics: args.metrics,
+      reportedAt: new Date().toISOString(),
+    },
+  };
+  await goalStateStore.write(args.sessionId, next);
+  return next;
 }
 
 export async function pauseSessionGoal(
@@ -322,7 +399,28 @@ export async function evaluateGoalAfterTurn(args: {
   }
 
   const turnsUsed = goal.turnsUsed + 1;
-  if (turnsUsed >= goal.maxTurns) {
+
+  if (goal.mode === "autonomous") {
+    const budget = checkAutonomousBudgets({
+      turnsUsed,
+      maxTurns: goal.maxTurns,
+      startedAt: goal.startedAt,
+      maxWallClockMs: goal.maxWallClockMs,
+      tokensUsedEstimate: goal.tokensUsedEstimate,
+      maxTokensEstimate: goal.maxTokensEstimate,
+    });
+    if (!budget.ok) {
+      const exhausted: SessionGoalState = {
+        ...goal,
+        turnsUsed,
+        status: "exhausted",
+        pendingContinue: null,
+        lastVerdict: { done: false, reason: budget.message },
+      };
+      await goalStateStore.write(args.sessionId, exhausted);
+      return { goal: exhausted, action: "exhausted" };
+    }
+  } else if (turnsUsed >= goal.maxTurns) {
     const exhausted: SessionGoalState = {
       ...goal,
       turnsUsed,
@@ -358,6 +456,23 @@ export async function evaluateGoalAfterTurn(args: {
   }
 
   if (verdict.done) {
+    if (goal.mode === "autonomous") {
+      const gateOk = canAutonomousMarkDone({
+        requireExternalGate: goal.requireExternalGate !== false,
+        externalGatePassed: goal.externalGate?.passed,
+      });
+      if (!gateOk.ok) {
+        const contGate: SessionGoalState = {
+          ...goal,
+          turnsUsed,
+          status: "active",
+          lastVerdict: { done: false, reason: gateOk.message },
+          pendingContinue: { reason: gateOk.message },
+        };
+        await goalStateStore.write(args.sessionId, contGate);
+        return { goal: contGate, action: "continue" };
+      }
+    }
     const doneState: SessionGoalState = {
       ...goal,
       turnsUsed,

@@ -29,8 +29,10 @@ import {
   pauseSessionGoal,
   readGoalStateRaw,
   resumeSessionGoal,
+  reportAutonomousGate,
   setSessionGoal,
 } from "../../goalLoop.js";
+import { coerceExperimentMetrics } from "../../experimentLedger.js";
 import { createTrpcInvoker } from "../../trpcInvoker.js";
 import { prisma } from "../../../db.js";
 import {
@@ -1337,7 +1339,12 @@ async function sessionGoalSetTool(args: Record<string, unknown>, ctx: NativeTool
   const sessionId = requireChatSessionId(ctx, "session_goal_set");
   const text = String(args.text ?? "").trim();
   if (!text) throw new Error("session_goal_set 需要 text（目标描述）");
-  const mode = args.mode === "deep_research" ? "deep_research" : "goal";
+  const mode =
+    args.mode === "deep_research"
+      ? "deep_research"
+      : args.mode === "autonomous"
+        ? "autonomous"
+        : "goal";
   const maxTurns =
     typeof args.maxTurns === "number" && Number.isFinite(args.maxTurns)
       ? Math.max(1, Math.min(200, Math.floor(args.maxTurns)))
@@ -1359,8 +1366,29 @@ async function sessionGoalSetTool(args: Record<string, unknown>, ctx: NativeTool
   return {
     ...summarizeGoal(goal),
     hint:
-      "Standing goal 已设立。本轮请继续推进该目标；结束后系统会自动裁判是否续跑。用户无需再输入 /goal。" +
-      " 短问短答勿滥用；与 todo_write 分工：todo=本轮步骤清单，goal=跨轮外环目标。",
+      mode === "autonomous"
+        ? "autonomous 已设立：触顶≠成功；完成前须 autonomous_gate 上报外部指标。"
+        : "Standing goal 已设立。本轮请继续推进该目标；结束后系统会自动裁判是否续跑。用户无需再输入 /goal。" +
+          " 短问短答勿滥用；与 todo_write 分工：todo=本轮步骤清单，goal=跨轮外环目标。",
+  };
+}
+
+async function autonomousGateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const sessionId = requireChatSessionId(ctx, "autonomous_gate");
+  const metrics = coerceExperimentMetrics(args.metrics);
+  if (!metrics) {
+    throw new Error(
+      "autonomous_gate 需要 metrics 对象/JSON，且含 lintOk/testOk/gatePassed/gateCommandExitCode",
+    );
+  }
+  const goal = await reportAutonomousGate({ sessionId, metrics });
+  return {
+    ...summarizeGoal(goal),
+    gatePassed: goal.externalGate?.passed === true,
+    hint:
+      goal.externalGate?.passed === true
+        ? "外部 gate 已通过；裁判可将任务标完成。"
+        : "外部 gate 未通过（失败指标）；不可标成功，请修复后重报或接受 exhausted。",
   };
 }
 
@@ -1439,7 +1467,12 @@ async function sessionSpawnGoalTool(args: Record<string, unknown>, ctx: NativeTo
     return { error: "不能给子 Agent 开 goal 执行会话" };
   }
 
-  const mode = args.mode === "deep_research" ? "deep_research" : "goal";
+  const mode =
+    args.mode === "deep_research"
+      ? "deep_research"
+      : args.mode === "autonomous"
+        ? "autonomous"
+        : "goal";
   const maxTurns =
     typeof args.maxTurns === "number" && Number.isFinite(args.maxTurns)
       ? Math.max(1, Math.min(200, Math.floor(args.maxTurns)))
@@ -1755,8 +1788,8 @@ const SESSION_DEFS: NativeToolDefinition[] = [
           .describe("完整可执行任务说明（将作为 standing goal text，并注入 kickoff）"),
         model: z.string().describe("新会话执行模型 id（必填）"),
         mode: z
-          .enum(["goal", "deep_research"])
-          .describe("goal=普通目标（默认）；deep_research=深度调研")
+          .enum(["goal", "deep_research", "autonomous"])
+          .describe("goal=普通；deep_research=深度调研；autonomous=有预算的自治（触顶≠成功）")
           .optional(),
         title: z.string().describe("新会话标题（可选）").optional(),
         agentId: z
@@ -1778,18 +1811,32 @@ const SESSION_DEFS: NativeToolDefinition[] = [
     description:
       "为当前会话设立/覆盖 standing goal（跨轮外环，系统裁判续跑）。用户不必输入 /goal——当你判断任务需要多轮推进（修测试、深度调研、长报告、明确交付物）时主动调用。" +
       "短问短答、一次性查询不要设。" +
-      "mode=goal 普通目标（含子 Agent 会话）；mode=deep_research 深度调研（仅独立 chat、尚无用户消息；子会话不可用）。" +
+      "mode=goal 普通目标（含子 Agent 会话）；mode=deep_research 深度调研；mode=autonomous 有墙钟/轮次预算的自治（触顶≠成功，完成前须 autonomous_gate）。" +
       "与 todo_write 分工：todo=本轮步骤清单；goal=跨轮外环目标。" +
       "调用后本轮继续推进目标即可，勿再让用户手动 /goal。",
     parameters: zodParams(
       z.object({
         text: z.string().describe("目标描述（清晰、可判定完成）"),
         mode: z
-          .enum(["goal", "deep_research"])
-          .describe("goal=普通目标（默认）；deep_research=深度调研")
+          .enum(["goal", "deep_research", "autonomous"])
+          .describe("goal=普通；deep_research=深度调研；autonomous=自治预算模式")
           .optional(),
         maxTurns: z.number().describe("最大续跑轮数（可选，走配置默认）").optional(),
         judgeModel: z.string().describe("裁判模型 id，默认 auto").optional(),
+      }),
+    ),
+  },
+  {
+    name: "autonomous_gate",
+    concurrencyClass: "D",
+    description:
+      "向当前 autonomous goal 上报外部质量门结果（lintOk/testOk/gatePassed/gateCommandExitCode）。" +
+      "未通过或未上报时，裁判不得将任务标 done（触顶只能 exhausted）。",
+    parameters: zodParams(
+      z.object({
+        metrics: z
+          .union([z.record(z.unknown()), z.string()])
+          .describe("外部指标对象或 JSON 字符串"),
       }),
     ),
   },
@@ -1838,6 +1885,7 @@ const SESSION_HANDLERS: Record<string, NativeToolHandler> = {
   session_goal_clear: sessionGoalClearTool,
   session_goal_pause: sessionGoalPauseTool,
   session_goal_resume: sessionGoalResumeTool,
+  autonomous_gate: autonomousGateTool,
 };
 
 export function registerSessionTools(): void {
