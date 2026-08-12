@@ -233,7 +233,8 @@ Memory 记「用户是谁/偏好」；Skill 记「这类任务怎么做」。禁
 /** Harness：Prime 回滚 ID · autoresearch keep/discard · DGM 归档分支 */
 export const EXPERIMENT_LEDGER_GUIDE = `## Harness 实验账本（铁律）
 改 Skill / Memory / prompt note：\`experiment_begin\` / \`harness_refine\`（须证据）→ \`harness_gate_run\` → \`experiment_decide\`。
-**禁止自报 lintOk**；keep 须 \`verified:true\`。已 keep 可 \`experiment_rollback(id)\`；discard/keep 后归档可 \`experiment_branch(parentId, from=candidate|baseline)\` 再探索。
+**禁止自报 lintOk**；keep 须 \`verified:true\`。keep 前系统会自动跑 harness-bench（mock 模式），退化即拒 keep。
+已 keep 可 \`experiment_rollback(id)\`；discard/keep 后归档可 \`experiment_branch(parentId, from=candidate|baseline)\` 再探索。
 **禁止**改 \`apps/server\` runtime（DGM 只学归档分支，不学裸自改代码）。
 \`mode=autonomous\`：触顶=exhausted≠成功；完成前 \`autonomous_gate(gatePreset)\`。`;
 

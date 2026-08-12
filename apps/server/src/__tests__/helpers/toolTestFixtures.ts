@@ -36,6 +36,10 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
       timeoutMs: 180_000,
       presets: {} as Record<string, string>,
     },
+    benchOnKeep: {
+      enabled: true,
+      minPassRate: 1.0,
+    },
   };
   return {
     port: 3010,

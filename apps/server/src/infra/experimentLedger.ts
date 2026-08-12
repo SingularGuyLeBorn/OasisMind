@@ -32,6 +32,11 @@ export type ExperimentMetrics = {
   gateCommand?: string;
   modelSelfScore?: number;
   notes?: string;
+  /** harness-bench 自动闭环指标 */
+  benchPassed?: boolean;
+  benchPassRate?: number;
+  benchFailedTaskIds?: string[];
+  benchSuiteId?: string;
   [key: string]: unknown;
 };
 
@@ -81,9 +86,21 @@ export function collectExternalSignals(metrics: ExperimentMetrics): boolean[] {
 }
 
 /** keep 要求：有外部字段且全部通过（禁止用失败指标「假装 keep」） */
-export function metricsAllowKeep(metrics: ExperimentMetrics): boolean {
+export function metricsAllowKeep(
+  metrics: ExperimentMetrics,
+  requireBench?: { minPassRate: number },
+): boolean {
   const signals = collectExternalSignals(metrics);
-  return signals.length > 0 && signals.every(Boolean);
+  if (signals.length === 0) return false;
+  if (!signals.every(Boolean)) return false;
+
+  if (requireBench?.minPassRate !== undefined) {
+    if (metrics.benchPassed !== true) return false;
+    if (typeof metrics.benchPassRate !== "number" || metrics.benchPassRate < requireBench.minPassRate) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** LLM 常把 metrics 打成 JSON 字符串 */
@@ -300,7 +317,9 @@ export async function beginExperiment(input: BeginExperimentInput) {
   };
 }
 
-export async function decideExperiment(input: DecideExperimentInput) {
+export async function decideExperiment(
+  input: DecideExperimentInput & { requireBench?: { minPassRate: number } },
+) {
   const id = String(input.id || "").trim();
   if (!id) throw new Error("experiment id 不能为空");
   if (input.decision !== "keep" && input.decision !== "discard") {
@@ -314,10 +333,11 @@ export async function decideExperiment(input: DecideExperimentInput) {
   if (input.decision === "keep") {
     const { assertVerifiedForKeep } = await import("./harnessGate.js");
     assertVerifiedForKeep(input.metrics);
-    if (!metricsAllowKeep(input.metrics)) {
-      throw new Error(
-        "keep 被拒绝：外部指标未全部通过（lintOk/testOk/gatePassed 须为 true，gateCommandExitCode 须为 0）。失败应用 discard。",
-      );
+    if (!metricsAllowKeep(input.metrics, input.requireBench)) {
+      const benchHint = input.requireBench
+        ? `harness-bench 退化：passRate=${String(input.metrics.benchPassRate)} < ${input.requireBench.minPassRate}，failed=${JSON.stringify(input.metrics.benchFailedTaskIds ?? [])}。应用 discard。`
+        : "外部指标未全部通过（lintOk/testOk/gatePassed 须为 true，gateCommandExitCode 须为 0）。失败应用 discard。";
+      throw new Error(`keep 被拒绝：${benchHint}`);
     }
   }
 

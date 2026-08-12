@@ -95,7 +95,7 @@ const GoalYamlSchema = z.object({
   judgeModel: z.string().default("auto"),
 });
 
-/** config.yaml harness 段：服务端核验门（禁止 Agent 自报指标） */
+/** config.yaml harness 段：服务端核验门 + keep 前 harness-bench 闭环 */
 const HarnessYamlSchema = z.object({
   gate: z
     .object({
@@ -104,6 +104,14 @@ const HarnessYamlSchema = z.object({
       presets: z.record(z.string()).default({}),
     })
     .default({}),
+  benchOnKeep: z
+    .object({
+      /** keep 前是否自动跑 harness-bench（mock 模式） */
+      enabled: z.boolean().default(true),
+      /** 最低通过率；低于此值 keep 被拒 */
+      minPassRate: z.coerce.number().min(0).max(1).default(1.0),
+    })
+    .default({ enabled: true, minPassRate: 1.0 }),
 });
 
 /** config.yaml inbox 段：截图监视目录 + 蒸馏默认花园 */
@@ -433,11 +441,15 @@ export interface AppConfig {
     autonomousRequireExternalGate: boolean;
     judgeModel: string;
   };
-  /** Harness：服务端核验门 allowlist */
+  /** Harness：服务端核验门 allowlist + keep 前 bench 闭环 */
   harness: {
     gate: {
       timeoutMs: number;
       presets: Record<string, string>;
+    };
+    benchOnKeep: {
+      enabled: boolean;
+      minPassRate: number;
     };
   };
   /**
@@ -1039,6 +1051,10 @@ export function createAppConfig(): AppConfig {
       gate: {
         timeoutMs: harnessYaml.gate.timeoutMs,
         presets: harnessYaml.gate.presets ?? {},
+      },
+      benchOnKeep: {
+        enabled: harnessYaml.benchOnKeep.enabled,
+        minPassRate: harnessYaml.benchOnKeep.minPassRate,
       },
     },
     packs,

@@ -175,6 +175,10 @@ harness:
     timeoutMs: 180000
     # 可覆盖/追加 preset → 命令（默认已有 server_lint / server_test / shared_lint）
     presets: {}
+  # keep 前自动跑 harness-bench（mock 模式），退化即拒 keep
+  benchOnKeep:
+    enabled: true
+    minPassRate: 1.0
 
 # W3：审批 decision-scope / gate 通知冷却（per-Approval.lastNotifiedAt）
 approvalGate:

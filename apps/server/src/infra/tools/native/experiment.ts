@@ -7,6 +7,7 @@ import { zodParams } from "./zodParams.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
 import { agentParamError } from "./agentToolError.js";
+import { prisma } from "../../../db.js";
 import {
   beginExperiment,
   branchExperiment,
@@ -22,6 +23,7 @@ import {
   listHarnessGatePresets,
   runHarnessGatePreset,
 } from "../../harnessGate.js";
+import { runHarnessBench } from "../../harnessBenchRunner.js";
 
 const TARGET_KINDS = ["skill", "memory", "prompt_note"] as const;
 
@@ -61,7 +63,7 @@ async function experimentBeginTool(args: Record<string, unknown>, ctx: NativeToo
   }
 }
 
-async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+export async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const id = String(args.experimentId ?? args.id ?? "").trim();
   const decision = String(args.decision ?? "").trim();
   const gatePreset = args.gatePreset ? String(args.gatePreset).trim() : "";
@@ -94,12 +96,45 @@ async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeTo
         code: "INVALID_EXPERIMENT_METRICS",
       });
     }
+
+    // P0-02：keep 前自动跑 harness-bench（mock 模式），退化即拒 keep
+    const benchCfg = ctx.config.harness?.benchOnKeep;
+    if (decision === "keep" && benchCfg?.enabled && typeof metrics.benchPassed !== "boolean") {
+      try {
+        const bench = await runHarnessBench(
+          { prisma: ctx.prisma ?? prisma, services: ctx.services, config: ctx.config },
+          { timeoutMs: 300_000 },
+        );
+        metrics = {
+          ...metrics,
+          benchPassed: bench.passed,
+          benchPassRate: bench.passRate,
+          benchFailedTaskIds: bench.failedTaskIds,
+          benchSuiteId: "harness-bench",
+        };
+      } catch (benchErr) {
+        const reason = benchErr instanceof Error ? benchErr.message : String(benchErr);
+        metrics = {
+          ...metrics,
+          benchPassed: false,
+          benchPassRate: 0,
+          benchFailedTaskIds: [],
+          benchSuiteId: "harness-bench",
+          benchError: reason,
+        };
+      }
+    }
+
     return await decideExperiment({
       id,
       decision: decision as "keep" | "discard",
       metrics,
       primaryMetric: args.primaryMetric ? String(args.primaryMetric) : undefined,
       config: ctx.config,
+      requireBench:
+        decision === "keep" && benchCfg?.enabled
+          ? { minPassRate: benchCfg.minPassRate }
+          : undefined,
     });
   } catch (err) {
     return {
