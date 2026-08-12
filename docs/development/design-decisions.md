@@ -1699,3 +1699,93 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 - **改写失败抛错**：会破坏现有记忆检索的可用性，回退旧行为是更安全的渐进升级。
 
 **回答**：按上表落地
+
+
+---
+
+## experiment → harness-bench 自动闭环（2026-08-12）
+
+### 背景
+
+`infra/evalHarness.ts` 作为 harness-bench 执行器全仓零调用方，`experimentLedger.ts` keep 门禁只检查 lint/test，experiment 与 harness-bench 之间没有质量反馈闭环，无法阻止“测试过、bench 退化”的 keep。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 可编程入口 | 将 `evals/scripts/run-harness-bench.mjs` 核心逻辑抽出为 `infra/harnessBenchRunner.ts`，CLI 改为薄壳调用，避免逻辑双份 |
+| 执行模式 | bench 必须跑在 `MOCK_LLM=true` 下，不消耗真实 API；复用 `evalHarness.ts` 的 env 保存/恢复写法 |
+| 触发位置 | `experiment_decide` keep 路径：当 `harness.benchOnKeep.enabled` 且调用方未自带 bench 指标时，服务端现跑 `runHarnessBench`，5 分钟硬超时 |
+| 门禁分层 | `experimentLedger.ts` 不直接读 config，由 `experiment.ts` 把 `requireBench` 作为参数传入 `decideExperiment`，保持 ledger 与配置层解耦 |
+| 失败语义 | bench 未通过/超时 → keep 抛错，实验保持 pending；错误文案明确给出 passRate 与 failedTaskIds |
+| 提示词 | `EXPERIMENT_LEDGER_GUIDE` 补一句：keep 前系统会自动跑 harness-bench，退化即拒 |
+
+### 替代方案为何不取
+
+- **把 bench 跑在前端**：前端没有 harness-bench 的 case/fixture 与 serviceContainer 上下文，且容易绕过后端审计。
+- **用外部 CI 报告代替**：本地 keep 是用户/Agent 在运行时触发的决策，不能依赖外部 CI 的异步结果。
+- **只把 bench 当可选提示**：不 blocking keep 等于没闭环，退化仍会落库。
+
+**回答**：按上表落地
+
+---
+
+## 经验 → procedural 蒸馏管线（2026-08-12）
+
+### 背景
+
+`accumulateExperience` 每次含工具调用的 run 写 `type=experience` 记忆（JSON 序列化），但 `MEMORY_INJECTABLE_TYPES` 排除 experience，经验“存了用不上”；`memory_search` 工具描述也未说明能搜 experience，content 截断 200 字符看不清内容。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 正确路径 | 不直接把 experience 注入上下文（JSON 噪音大），而是蒸馏成干净的 `type=procedural` 规则 |
+| 蒸馏函数 | `infra/agentEvolution.ts` 新增 `distillExperienceToProcedural(services, config)`，逐 scope 处理 |
+| 触发条件 | 某 scope 活跃 experience 条数 ≥ `memory.experienceDistill.minCount`（默认 5）才触发 |
+| 输入 | 按 strength×recency 取前 `maxPerScope` 条，把 `taskDescription/toolsUsed/success/failureReason` 拼成紧凑清单（非整段 JSON） |
+| 模型 | `resolveAuxiliaryModel(..., preference: "lite_free")`，要求提炼出现 ≥2 次的模式 |
+| 输出 | 非空时 `repo.write` 一条 `type=procedural`、`attribution=agent`、`source=experience-distill` 的记忆；keywords 取高频工具名前 5 |
+| 归档 | 蒸馏成功后把源 experience 归档（走 `MEMORY_ARCHIVE_THRESHOLD` 衰减路径），天然幂等：源归档后计数 < minCount，下轮跳过 |
+| 挂载 | 挂在 `heartbeatEngine.ts` 维护通道，`decayMemories`/`consolidateMemories` 之后调用，`.catch` 兜底不阻断 |
+| LLM 失败 | 只 `console.warn`，跳过该 scope，不归档、不抛错 |
+| 搜索通道 | `memory_search` 描述明确支持 `type=experience`；experience 返回 content 截断上限提到 800 字符 |
+
+### 替代方案为何不取
+
+- **把 experience 加入 `MEMORY_INJECTABLE_TYPES`**：会把大段 JSON 经验直接灌进 prompt，噪声高、token 贵、反而稀释有效信息。
+- **按固定周期无条件蒸馏**：没有 minCount 门槛会生成大量低置信规则，污染记忆库。
+- **新建独立 cron job**：heartbeat 维护通道已有衰减/整理周期，同频挂接最简洁，避免多个 cron 竞态。
+
+**回答**：按上表落地
+
+---
+
+## 记忆信任分级 + 正确性反馈（2026-08-12）
+
+### 背景
+
+所有记忆初始 strength 一律 clamp 到 1.0，`attribution=agent`（LLM 推断）的记忆与用户陈述的信任无区分，也没有“用对了加分/用错了减分”的反馈机制，导致 agent 推断的半事实长期占据高置信位置。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 初始强度 | `config.yaml` 新增 `memory.trust.agentInitialStrength: 0.7`；`memoryRepository.write` 对 `attribution=agent` 且调用方未显式传 strength 的记忆用 0.7，用户事实/显式强度不受影响 |
+| 反馈载体 | 新建 `infra/memoryFeedback.ts`：进程内 `Map<runId, memoryIds>` 登记本次 run 检索命中的记忆 id |
+| 登记点 | `contextHooks.ts` memory 钩子在拿到动态检索结果后，把命中 id 列表写入 registry |
+| 奖惩点 | `agentStream.ts`/`agentRuntime.ts` run 终态调用 `applyMemoryRunOutcome`，成功口径与 `accumulateExperience` 一致（`!!content.trim()`） |
+| 奖惩规则 | 只对 `attribution=agent` 生效：成功 +0.05（上限 1.0），失败 -0.10（下限 0.05）；用户事实不赏罚 |
+| 写入方式 | Prisma `updateMany` 条件写，strength 增减后 clamp；失败只 `console.warn`，不抛错 |
+| 幂等 | 执行后从 registry 删除 runId，重复 apply 是 no-op |
+| 提示词 | `memory_create` 工具描述补充：Agent 推断记忆初始强度较低，用户明确陈述的事实才是满强度 |
+| Registry 上限 | 500 个 runId，LRU 淘汰，避免长进程内存泄漏 |
+
+### 替代方案为何不取
+
+- **给所有记忆（含用户事实）做奖惩**：用户明确陈述的事实不应被后续 run 削弱，否则会污染核心事实源。
+- **用 `lastAccessedAt` 增减替代 strength**：`lastAccessedAt` 是访问时间戳，不适合表达置信度。
+- **在 retrieval 时临时调整 score**：无法持久化反馈，下一次 run 仍用旧 score，不能真正“学会”。
+- **把 feedback 写进新表**：过度设计；strength 字段就是为置信度设计的，直接修改即可。
+
+**回答**：按上表落地
