@@ -654,33 +654,42 @@ model ProcessedWebhookEvent {
 }
 
 /// Harness 实验账本（autoresearch 式 keep|discard；快照在 data/experiments/{id}/）
+/// Prime：按 id 回滚；DGM：归档候选 + parentExperimentId 分支探索（禁止改 runtime）
 model HarnessExperiment {
-  id               String    @id @default(cuid())
-  agentId          String?
-  sessionId        String?
-  hypothesis       String
+  id                  String    @id @default(cuid())
+  agentId             String?
+  sessionId           String?
+  hypothesis          String
   /// skill | memory | prompt_note
-  targetKind       String
+  targetKind          String
   /// skill 名 / memory slug / prompt 相对 config/prompts 路径
-  targetRef        String
+  targetRef           String
   /// 相对 projectRoot 的目标文件路径
-  targetPath       String
+  targetPath          String
   /// data/experiments/{id}/baseline 相对 projectRoot
-  baselinePath     String
+  baselinePath        String
+  /// data/experiments/{id}/candidate（decide 时归档，供分支/审计）
+  candidatePath       String?
   /// 是否在 begin 时目标文件尚不存在（discard 时删文件而非还原）
-  createdNew       Boolean   @default(false)
-  candidateDigest  String?
-  metricsJson      String    @default("{}")
-  /// pending | keep | discard
-  decision         String    @default("pending")
+  createdNew          Boolean   @default(false)
+  candidateDigest     String?
+  metricsJson         String    @default("{}")
+  /// 主判定指标名（autoresearch 式单一可判定字段），如 gatePassed / testOk
+  primaryMetric       String?
+  /// pending | keep | discard | rolled_back
+  decision            String    @default("pending")
+  /// DGM 式谱系：从哪次实验的 baseline|candidate 分支
+  parentExperimentId  String?
   /// 可选：sessionId:runId 等轨迹指针
-  trajectoryRef    String?
-  createdAt        DateTime  @default(now())
-  decidedAt        DateTime?
+  trajectoryRef       String?
+  createdAt           DateTime  @default(now())
+  decidedAt           DateTime?
+  rolledBackAt        DateTime?
 
   @@index([decision, createdAt])
   @@index([agentId, createdAt])
   @@index([targetKind, targetRef])
+  @@index([parentExperimentId])
 }
 
 /// 邮件回复死信表（处理失败 / 未匹配 pending 的邮件回复落表，方便事后追查）
