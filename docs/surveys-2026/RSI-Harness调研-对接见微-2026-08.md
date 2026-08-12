@@ -106,8 +106,10 @@ H = **(E, T, C, S, L, V)** = 执行环 / 工具注册 / 上下文 / 状态仓 / 
 | **P0** | `outputValidator`：落盘前机械化检查 | Harness V / METR | **已有** `infra/outputValidator.ts`（write_file / memory / Post） |
 | **P0** | ExperimentLedger：keep\|discard + 指标 + 轨迹指针 | autoresearch | **已有** `HarnessExperiment` + `infra/experimentLedger.ts` + `experiment_*` 工具（assistant/super） |
 | **P0** | Gate **服务端核验**（禁止自报 lintOk） | METR / autoresearch | **已有** `harness_gate_run` + keep/autonomous 强制 `verified` |
+| **P0** | 按 id 回滚 + 实验日志（primaryMetric） | Prime / autoresearch | **已有** `experiment_rollback` / `experiment_get` + `primaryMetric` |
 | **P1** | refine-lite：仅 Skill/Memory/prompt note；需证据；可 rollback | Prime `/refine` | **已有** `harness_refine` + 强制 ExperimentLedger |
 | **P1** | autonomous 预算 + 用户 gate（如 `pnpm test`）；触顶≠成功 | Prime `/autonomous` | **已有** `mode=autonomous` + `autonomous_gate(gatePreset)` + 墙钟/轮次预算 |
+| **P1** | 归档多样体 + 分支探索（不改 runtime） | DGM | **已有** decide 归档 `candidate` + `experiment_branch` |
 | **P2** | 内部 mini Harness-Bench（20–50 题）+ 成本报表 | Harness-Bench / HAL | 未做（非当前必要；evals 已有正确性黄金集） |
 | **P2** | 超长材料强制 path+offset（RLM 思想） | RLM | 部分（read_file/tool-results offset）；未强制 |
 | **P3** | 离线搜 Skill/工作流变体 → 候选 PR | ADAS / DGM | 未做 |
