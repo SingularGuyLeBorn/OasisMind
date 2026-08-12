@@ -598,9 +598,7 @@ export const feishuDefs: NativeToolDefinition[] = [
     name: "feishu_update_permission_public",
     concurrencyClass: "D",
     description:
-      "更新飞书云文档「权限设置」（增量）。字段映射 UI：external_access_entity=允许分享到组织外；link_share_entity=链接分享；" +
-      "share_entity+manage_collaborator_entity=谁可查看/添加/移除协作者；copy_entity=谁可复制；security_entity=谁可创建副本/打印/下载；comment_entity=谁可评论。" +
-      "示例：组织内链接可读 → link_share_entity=tenant_readable；互联网可读 → external_access_entity=open + link_share_entity=anyone_readable。",
+      "更新飞书文档公开权限（增量）。常用：link_share_entity=tenant_readable|anyone_readable；external_access_entity=open|closed。",
     parameters: zodParams(
       z.object({
         token: z.string(),
@@ -831,6 +829,31 @@ export const feishuDefs: NativeToolDefinition[] = [
     ),
   },
 ];
+
+/** 权限 / Wiki / 画板：进阶工具，对 LLM 默认隐藏（仍可显式勾选） */
+const FEISHU_ADVANCED = new Set([
+  "feishu_list_permission_members",
+  "feishu_add_permission_member",
+  "feishu_update_permission_member",
+  "feishu_remove_permission_member",
+  "feishu_get_permission_public",
+  "feishu_update_permission_public",
+  "feishu_lookup_user",
+  "feishu_add_collaborator_by_contact",
+  "feishu_get_wiki_space",
+  "feishu_get_wiki_nodes",
+  "feishu_create_wiki_node",
+  "feishu_list_doc_whiteboards",
+  "feishu_list_whiteboard_nodes",
+  "feishu_create_whiteboard_nodes",
+  "feishu_whiteboard_from_diagram",
+  "feishu_delete_whiteboard_nodes",
+  "feishu_get_whiteboard_theme",
+  "feishu_update_whiteboard_theme",
+]);
+for (const def of feishuDefs) {
+  if (FEISHU_ADVANCED.has(def.name)) def.defaultHidden = true;
+}
 
 export const feishuHandlers: Record<string, NativeToolHandler> = {
   feishu_send_text: feishuSendTextTool,

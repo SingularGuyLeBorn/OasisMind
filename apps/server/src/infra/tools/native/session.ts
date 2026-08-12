@@ -1568,9 +1568,8 @@ const SESSION_DEFS: NativeToolDefinition[] = [
   {
     name: "spawn_subagent",
     description:
-      "派生一个独立子 Agent（Subagent）执行长任务。waitForResult=false（默认）=异步投递：工具立刻返回，用户可继续与父 Agent 对话，子 Agent 完成后须调用 agent_report_back，结果进父会话异步任务结果队列。waitForResult=true=同步等待（正式例外）：父流挂起转圈，子会话空闲后系统抓取最后一条 assistant 摘要作为工具返回值（不强制 report_back，也不进异步队列）；勿再 agent_inspect 窥子消息全文。" +
-      "goal=true 或提供 goalText：在子会话设立 standing goal 外环（裁判续跑），等同向子会话发送 `/goal …`；waitForResult=true 时会等到 goal 终态/子空闲。" +
-      "waitForResult=false 派生后应立即结束当前轮（直接 return，告知用户已派子 Agent 即可），结果会经 report_back 自动投递到父会话异步结果队列，下一轮自动出现气泡；切勿轮询 async_task_status 查看进度——该工具只用于你已主动发起的 async_task_run 纯工具任务。",
+      "派生子 Agent。默认 waitForResult=false：立即返回，子完成须 agent_report_back，结果进父异步队列；派生后结束本轮，勿轮询 async_task_status。" +
+      "waitForResult=true：同步等摘要（不进异步队列）。goal/goalText 可开子会话 standing goal。勿 agent_inspect 窥子消息全文。",
     parameters: zodParams(
       z.object({
         task: z.string().describe("子 Agent 要执行的任务描述（详细越好）"),

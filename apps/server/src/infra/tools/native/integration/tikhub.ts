@@ -74,7 +74,7 @@ export const tikhubDefs: NativeToolDefinition[] = [
     name: "tikhub_request",
     concurrencyClass: "B",
     description:
-      "调用 TikHub 社交媒体数据 API（一个 key 覆盖 16 平台 1000+ 端点：小红书/抖音/B站/微博/微信公众号/知乎/快手/TikTok/YouTube/Twitter 等）。纯 REST + Bearer token，无需登录账号、无需浏览器、无需企业认证，~$0.001/请求。用于「搜索公开内容、获取笔记/视频/文章详情、用户信息与作品、评论、热榜」等。凭据：Credential 表 scope=tikhub name=api_key，或环境变量 TIKHUB_API_KEY（注册 user.tikhub.io 送 ~50 次免费）。端点路径传 endpoint（如 xiaohongshu/app_v2/get_note_info），查询参数传 params。完整端点文档见 https://tikhub.io/api-reference 。常用端点示例：小红书搜索 xiaohongshu/app_v2/search_note（keyword）、笔记详情 xiaohongshu/app_v2/get_note_info（note_id）、用户笔记 xiaohongshu/app_v2/get_user_notes（user_id）、评论 xiaohongshu/app_v2/get_note_comments（note_id）；抖音视频 douyin/app/v3/fetch_one_video（aweme_id）、搜索 douyin/app/v3/search_general（keyword）；B站搜索 bilibili/web/search（keyword）、视频 bilibili/web/view（bvid）；微博搜索 weibo/web/search（keyword）；知乎搜索 zhihu/web/search（keyword）；微信公众号文章 wechat/mp/articles。结果可直接用于生成知识库文章（post_create）或草稿（write_file）。",
+      "TikHub 社媒 API 转发（小红书/抖音/B站/微博/知乎等）。凭据 TIKHUB_API_KEY。传 endpoint+params；端点见 https://tikhub.io/api-reference 。",
     parameters: {
       type: "object",
       properties: {

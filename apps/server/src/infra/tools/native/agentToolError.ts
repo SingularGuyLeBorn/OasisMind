@@ -155,8 +155,18 @@ export const TOOL_CORRECT_EXAMPLES: Record<string, Record<string, unknown>> = {
     userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
   },
   send_qq_voice: {
-    file: "content/uploads/tts/reply.mp3",
-    userId: "14A17D731DD2B1A0CC57FC8EDBFFC50B",
+    provider: "cosyvoice",
+    voice: "cosyvoice-v3-flash-hikari-7d55a0404bf0487aa1d316cd3b6e1823",
+    text: "私はただの科学者だ。",
+    language: "ja",
+    tone: "gentle",
+  },
+  send_qq_voice_synth: {
+    provider: "cosyvoice",
+    voice: "cosyvoice-v3-flash-hikari-7d55a0404bf0487aa1d316cd3b6e1823",
+    text: "私はただの科学者だ。",
+    language: "ja",
+    tone: "angry",
   },
   delete_qq_message: {
     messageId: "1234567890",

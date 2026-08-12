@@ -154,17 +154,12 @@ export async function buildAllMemoryHints(
 }
 
 const WEB_TOOL_GUIDE = `## 网络工具用法
-- web_search：查最新信息、文档、新闻；返回标题+URL+摘要，优先用结果中的 URL 继续深挖。已配置 Tavily/SerpAPI 时按 SEARCH_ENGINE_PRIORITY 自动降级；在 /sources 启用信息源后，Tavily/SerpAPI 会优先在信息源域名内 scoped 搜索（hint 含 infoSource-scoped / N 信息源）。
-- search_arxiv / fetch_arxiv：学术论文走 arXiv API（免费，约 3s/次限流）。搜用 search_arxiv（可用 OR 合并主题、category=cs.AI 等）；详情用 fetch_arxiv(paperId)；下 PDF 用 download_file(url=pdfUrl)。不要用 web_search/read_article 硬爬 arxiv.org。
-- search_huggingface / fetch_huggingface_model / fetch_huggingface_trending：HuggingFace Hub（无需 key）。搜模型用 search_huggingface；详情用 fetch_huggingface_model(modelId)；热榜用 fetch_huggingface_trending(type=models|datasets|spaces|papers)。
-- read_article：读取单篇网页正文（Markdown）。支持知乎/微信/小红书/B站/掘金/CSDN/InfoQ/SegmentFault/开源中国/博客园/简书/GitHub 等；GitHub blob→raw + jsDelivr/API（~1s）；InfoQ/OSChina API；SegmentFault/CSDN/掘金/博客园 SSR HTTP；简书 Mobile HTTP；知乎 Cookie HTTP（~1s，需登录态）；HTTP 404 秒级报错；正文偏短（<150 字）时返回 contentWarning 并建议 scrape_web_page。默认 embedOcr=true：对前几张图**临时下载→OCR→把文字嵌进正文**（OCR 完删临时文件，**不永久落盘**）；\`images\` 返回 CDN URL 列表（图本身不进知识库）。小红书等图文笔记会从 SSR imageList 抽图。
-- scrape_web_page：Playwright 采集复杂 SPA/需 JS 渲染页面；返回 method=playwright 与 platform；read_article 失败或页面高度动态时再试。
-- download_file：按 URL 下载任意文件（PDF/zip/图片等）到本地，默认 Agent Workspace 的 downloads/；也可 path=content/uploads/…。与 save_webpage（存网页正文）不同。上限 50MB；文本类再用 read_file。
-- save_webpage：把网页正文存成 HTML/Markdown 到 data/webpages/，便于反复/离线读。
-- browser_screenshot：打开页面截图（PNG）落盘，返回 path/publicUrl（无图片字节）。用于视觉确认布局、登录墙、图表、验证码页等；随后用 read_image。
-- read_image：读图。path 用 screenshot 返回路径；也可传 read_article 返回的图片 URL。mode=ocr|vision|auto（默认 auto：当前模型支持 vision 则识图，否则 OCR）。只回文本，勿期望 base64。
-- vision_describe：外挂多模态模型做语义理解/描述（适合流程图、UI 截图、版面、纯文字模型看不懂的图）；可直接传图片 URL。
-**图文策略**：先 read_article（正文 + images URL + 内嵌 OCR 粗读）。若 OCR 空白/乱码/看不懂图意（流程图、截图 UI、表格、手写），再对 \`images[]\` 里的 URL 调用 read_image（偏文字）或 vision_describe（偏语义）；**当前模型若支持多模态**，可用 read_image(mode=vision/auto) 直接读图。正文已够用就不要对每张图都 vision_describe。建议流程：web_search 找 URL → read_article → 必要时 scrape_web_page / 读图补强。知乎/微信/小红书/抖音/B站/微博/掘金/CSDN/语雀**访问需登录内容（收藏夹/付费/私密）前，若不确定登录态，先 native:browser_login_status 或 native:platform_doctor 确认（不弹窗；doctor 还报告有序后端/tier），未登录则 native:platform_login 弹浏览器让用户手动登录（扫码/账密），登录态自动落盘后 read_article 自动复用 cookie——不要让用户手动 F12 复制 cookie，也不要用 browser_screenshot/read_image 截图检查登录状态（模型无 vision 会卡死）**。即使用户只说「看看登录状态」，也优先 browser_login_status / platform_doctor 而非截图。同步收藏优先 inbox_start_platform_sync。GitHub 可选 GITHUB_TOKEN 提高 API 限速余量。`;
+- 搜：\`web_search\`；学术 \`search_arxiv\`/\`fetch_arxiv\`；HF \`search_huggingface\` 等。勿硬爬 arxiv.org。
+- 读公开页：\`read_article\`（长文 offset 翻页）；失败/SPA → \`scrape_web_page\`；落盘反复读 → \`save_webpage\`；下文件 → \`download_file\`。
+- 登录墙 / 已在 Chrome 打开的页：优先 \`dokobot_read\`/\`dokobot_search\`（本机扩展）；否则 \`browser_login_status\`/\`platform_doctor\` → \`platform_login\` → \`read_article\`。禁止截图查登录态、禁止让用户 F12 抄 cookie。
+- 真实浏览器操作（点选/填表/多标签）：\`webbridge_status\` → 未起则 \`webbridge_start\` → \`webbridge_command\`（同任务固定 session；navigate → snapshot 取 @e → click/fill）。只需读正文用 dokobot，勿为阅读开 WebBridge。
+- 图：\`browser_screenshot\` → \`read_image\`；语义理解用 \`vision_describe\`。正文够用勿对每张图 vision。
+- 流程：search → read → 必要时 scrape/dokobot/webbridge/读图。`;
 
 const PINME_TOOL_GUIDE = `## 公网部署（PinMe）
 用户要「写个小工具/HTML 小游戏并给公网链接」时：
@@ -172,12 +167,12 @@ const PINME_TOOL_GUIDE = `## 公网部署（PinMe）
 2. 需要可分享链接时调用 **pinme_upload**（path 指向含 index.html 的目录；省略则自动找 dist/build/out/public）。
 3. 把返回的 url 发给用户。不要用 run_shell 调 pinme（密钥会被 shell 沙箱剥掉）。需配置 PINME_APPKEY。`;
 
-const QQ_TOOL_GUIDE = `## QQ 官方 Bot 发消息（铁律）
-- **用户从 QQ 官方 Bot 发来的对话**：最终文字由系统自动回发；正文配图用 Markdown \`![](content/uploads/xxx.png)\`，官方通道会上传发出。**禁止** \`send_qq_text\` 重复正式答案。
-- **主动推送**：\`send_qq_text\` / \`send_qq_image\` / \`send_qq_video\` / \`send_qq_file\` / \`send_qq_voice\`（绑定会话可省略目标；目标一律为 openid，不是 QQ 号）。\`delete_qq_message\` 官方暂不支持。NapCat/OneBot 已退役。
-- **目标参数**：QQ 绑定会话 → userId/groupId 都省略；Web 发私聊 → userId=长十六进制 openid；群 → groupId=群 openid（若平台写「暂不支持群聊」则不要发群）。
-- 大图压到约 <1.5MB。QQ 不渲染 Markdown。
-- 工具因参数/格式失败时，返回里必有「正确示例」与 \`correctExample\` 字段：照抄改参后只重试一次，禁止无改动连打；以 error 正文为准，不要只读 code。`;
+const QQ_TOOL_GUIDE = `## QQ 官方 Bot
+- **正式回复由你发**：\`send_qq_text\` / \`send_qq_image\`，\`kind=answer\`（默认）。系统兜底不艾特。
+- **艾特要克制**：\`at\`/\`quote\` 默认 false。\`at:true\` 艾特对端；艾特别人用 \`atOpenIds\`（填消息里的 openid）。进度/寒暄少艾特；要引用条才 \`quote:true\`（群约5分钟内）。
+- **兜底**：整轮结束若你还没把终稿正文用工具发出去，系统会抓取终稿自动回发（无艾特）。中间只发过进度 → 仍兜底。
+- **群被动窗≈5分钟**：长任务必须先 \`send_qq_text({ kind:"progress", text:"…" })\` 丢 1～3 条极短进度（勿刷屏）；能拆就拆短、先交一小步请主人再 @，避免闷头超时导致终稿发不回群。
+- 绑定会话省略目标；目标=openid。QQ 不渲染 Markdown；大图 <1.5MB。`;
 
 const SESSION_HISTORY_GUIDE = `## 会话压缩与历史召回
 - session_compact 只缩小**模型视野**（摘要 + 边界后消息），**不删除** ChatMessage；UI 历史仍在。
@@ -185,14 +180,9 @@ const SESSION_HISTORY_GUIDE = `## 会话压缩与历史召回
 - session_message_get(beforeCompact=true) 可浏览压缩前最近若干条。禁止用 run_shell/grep 扫会话库。
 - 跨会话长期事实用 memory_*；本会话细节用 session_search。`;
 
-const TOOL_RESULT_ATTENTION_GUIDE = `## 工具结果落盘与注意力保护（铁律）
-**每一次**工具结果都会写入记录平面：\`data/tool-results/{session}/{callId}.json\` + \`.meta.json\` + \`index.jsonl\`（可查询、可追溯）。
-1. **超阈值压缩时**：上下文**只含厚 metadata + keywords + path**，**不含正文**。用 \`metadata.recommendedRead\` / \`hitOffsets\` / \`sampleOffsets\` 决定 \`read_file(path, offset, maxChars)\` 去取原文。
-2. 调用长文工具时**主动声明** \`expect_keywords\`（3–8 个）：metadata 会带 hitCount / hitOffsets / missedKeywords / topics。
-3. 可选：\`expect_patterns\`、\`expect_context_chars\`。
-4. 短结果（未超阈值）正文仍原样返回，并附 \`_kp_result_path\` / \`_kp_meta_path\`。
-5. 历史工具结果用 **tool_results_list** 列索引、**tool_result_meta** 读厚 metadata；勿用 run_shell 扫 data/tool-results。
-6. 禁止要求用户打开落盘文件；禁止在未读 path 时假装已知全文。`;
+const TOOL_RESULT_ATTENTION_GUIDE = `## 工具结果落盘（铁律）
+结果写入 \`data/tool-results/{session}/{callId}.*\`。超阈值时上下文只有 metadata+path，用 \`recommendedRead\`/\`hitOffsets\` 再 \`read_file\` 取原文。
+长文工具可带 \`expect_keywords\`（3–8）。历史用 \`tool_results_list\` / \`tool_result_meta\`。禁止未读 path 假装已知全文。`;
 
 /** Hermes SKILLS_GUIDANCE：程序记忆 vs Memory（陈述事实） */
 export const SKILLS_GUIDANCE = `## Skill 程序记忆（Hermes + DeerFlow 渐进加载）
@@ -222,44 +212,11 @@ const SOFT_DELETE_GUIDE = `## 删除铁律（系统强制软删）
 - **禁止**用 \`run_shell\` 的 rm/del/Remove-Item 等硬删（系统会拒绝）。
 - **禁止**声称「没有删除工具」——缺的是硬删，不是软删。`;
 
-const MATH_MARKDOWN_GUIDE = `## 数学公式铁律（Markdown / KaTeX，前端只认 $…$）
-写知识库文章、面经、推导、Chat 回复里凡出现公式，**必须**用 LaTeX 定界（行内 \`$…$\`，块级 \`$$…$$\`）。
-前端用 remark-math + KaTeX：**不会**把 Unicode 伪公式（\`√d_k\`、\`dₖ\`、\`Q·Kᵀ\`）渲成根号/下标。
-下面表格与句例请**照抄风格**；输出里的反斜杠是单个 \`\\\`（如 \`\\sqrt\`），不要写成双反斜杠。
-
-### 行内对照表（句子里夹公式）
-| 要表达 | ✅ 正确（原样写入 Markdown） | ❌ 禁止 |
-|---|---|---|
-| 根号 | \`$\\sqrt{d_k}$\` | \`√d_k\` / \`√dₖ\` / \`sqrt(d_k)\` |
-| 下标 | \`$d_k$\` / \`$q_i$\` / \`$h_t$\` | 正文凑 \`d_k\` 当公式、\`dₖ\` |
-| 上标 | \`$K^{T}$\` / \`$x^{2}$\` / \`$e^{-x}$\` | \`Kᵀ\` / \`x²\` |
-| 点积 | \`$Q \\cdot K^{T}$\` | \`Q·Kᵀ\` / \`Q*K^T\` |
-| 分数 | \`$\\frac{Q K^{T}}{\\sqrt{d_k}}$\` | \`QK^T / √d_k\` |
-| 求和 | \`$\\sum_{i=1}^{n} x_i$\` | \`Σ x_i\` / \`sum_i x_i\` |
-| 期望方差 | \`$\\mathrm{Var}(q\\cdot k)=d_k$\` | \`Var(q·k)=d_k\` |
-| 正态分布 | \`$q_i,k_j \\sim \\mathcal{N}(0,1)$\` | \`q_i, k_j ~ N(0,1)\` |
-| Softmax | \`$\\mathrm{softmax}(z_i)=\\frac{e^{z_i}}{\\sum_j e^{z_j}}$\` | \`softmax(z)=e^z/Σe^z\` |
-| 近似 | \`$\\approx 0$\` / \`$\\propto$\` | 单独用 \`≈\` / \`∝\` 当公式 |
-| 范数 | \`$\\|x\\|_2$\` | \`‖x‖₂\` |
-| 矩阵 | \`$W \\in \\mathbb{R}^{d \\times d}$\` | \`W ∈ R^{d×d}\` |
-
-### 块级公式（单独成行，前后空行）
-\`\`\`
-$$
-\\mathrm{Attention}(Q,K,V)=\\mathrm{softmax}\\left(\\frac{QK^{T}}{\\sqrt{d_k}}\\right)V
-$$
-\`\`\`
-多行推导也用 \`$$…$$\`，不要用 Unicode 拼「假块级」。
-
-### 更多句例
-- ✅ \`交叉熵 $\\mathcal{L}=-\\sum_y y\\log \\hat{y}$。\`　❌ \`交叉熵 L=-Σ y log ŷ。\`
-- ✅ \`残差 $x_{l+1}=x_l+F(x_l)$。\`　❌ \`残差 x_{l+1}=x_l+F(x_l)（无 $ 定界）。\`
-- ✅ \`学习率常用 $\\eta=10^{-4}$。\`　❌ \`学习率 η=1e-4 里用希腊字母凑公式。\`
-- 纯数字维度可写「维度 4096」；**根号 / 下标 / 运算式 / 希腊字母公式必须 $…$。**
-
-### 落盘自检（post_create / post_update / write_file 前必做）
-文中若出现 \`√\`、\`ₖ\`、\`ᵀ\`、\`·\`、\`Σ\`、\`≈\`、\`∈\` 当公式用 → **改成 $…$ / $$…$$ 再写。**
-完整面经范文见下节「完整 Markdown 范文」——**写文章时对齐该格式。**`;
+const MATH_MARKDOWN_GUIDE = `## 数学公式铁律（只认 $…$ / $$…$$）
+公式必须 LaTeX 定界；禁止 Unicode 伪公式（\`√d_k\`、\`dₖ\`、\`Q·Kᵀ\`、\`Σ\`）。反斜杠写单个 \`\\\`（如 \`\\sqrt\`）。
+- 行内：\`$\\sqrt{d_k}$\` \`$d_k$\` \`$K^{T}$\` \`$\\frac{a}{b}$\` \`$\\sum_i x_i$\`
+- 块级：单独成行的 \`$$…$$\`
+落盘前若文中用 \`√/ₖ/ᵀ/·/Σ/≈/∈\` 当公式 → 改成 $ 定界。范文见下节。`;
 
 /** 根据 Agent 已授权工具追加使用指引；packs 省略/"all"=旧行为全量（测试/兼容） */
 export function buildAgentToolGuide(
@@ -296,6 +253,10 @@ export function buildAgentToolGuide(
     want("web") &&
     (has("web_search") ||
       has("read_article") ||
+      has("dokobot_read") ||
+      has("dokobot_search") ||
+      has("webbridge_command") ||
+      has("webbridge_status") ||
       has("scrape_web_page") ||
       has("download_file") ||
       has("save_webpage") ||

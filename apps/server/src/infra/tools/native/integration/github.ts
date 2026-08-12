@@ -33,7 +33,7 @@ import {
   githubCreateRelease,
   githubSearchRepos,
 } from "../../../githubClient.js";
-import { executeGitHubTool, listGitHubTools } from "../../../external/githubToolExecutor.js";
+import { executeGitHubTool } from "../../../external/githubToolExecutor.js";
 import {
   capturePlatformLoginState,
   listPlatformLoginStatus,
@@ -732,15 +732,24 @@ export const githubDefs: NativeToolDefinition[] = [
   {
     name: "github_tool",
     concurrencyClass: "D",
-    description: `调用完整版 GitHub 工具集（MetaBlog 全量）。可用 tool 名称：${listGitHubTools().join(", ")}。`,
+    description:
+      "GitHub 统一入口：tool + params。常用 github_search_repos / create_issue / create_pull_request / get_file。" +
+      "不知可用名时乱传会返回 suggestion 列表。删仓/合 PR/删分支走审批。",
     parameters: zodParams(
       z.object({
-        tool: z.string().describe("GitHub 工具名，如 github_create_issue"),
-        params: z.record(z.unknown()).describe("该工具所需参数"),
+        tool: z.string().describe("snake 名，如 github_create_issue"),
+        params: z.record(z.unknown()).describe("该操作参数"),
       }),
     ),
   },
 ];
+
+/** 细粒度 github_* 对 LLM 隐藏；请用 github_tool。仍可显式勾选。 */
+for (const def of githubDefs) {
+  if (def.name.startsWith("github_") && def.name !== "github_tool") {
+    def.defaultHidden = true;
+  }
+}
 
 export const githubHandlers: Record<string, NativeToolHandler> = {
   platform_login: platformLoginTool,

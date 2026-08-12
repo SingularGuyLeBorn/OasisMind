@@ -183,9 +183,10 @@ app.get("/health", async (_req, res) => {
 });
 
 // 文章本地资源（图片等）静态服务
-// P1-1：AUTH_MODE=password 时静态资源也走鉴权，避免 /uploads、/api/posts/assets 裸奔
+// AUTH_MODE=password 时：GET 放行（访客博客配图可读）；写操作仍需鉴权（静态托管本身只读）
 const staticAuthMiddleware = (req: any, res: any, next: any) => {
   if (!isAuthEnabled(config)) return next();
+  if (req.method === "GET" || req.method === "HEAD") return next();
   if (verifyAuthHeader(config, req.headers.authorization)) return next();
   res.status(401).json({ error: "UNAUTHORIZED", message: "静态资源需鉴权，请提供 Bearer Token。" });
   return;

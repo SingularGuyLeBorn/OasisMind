@@ -287,10 +287,11 @@ export async function buildAgentToolSchemas(
     }
   }
 
-  // 全工具注入 expect_*（注意力保护）；idempotent，不覆盖已有同名属性
+  // 仅长结果工具注入 expect_*（见 keyInfoExtractor.EXPECT_ELIGIBLE_TOOLS）；idempotent
   for (const schema of schemas) {
     schema.function.parameters = injectExpectPropsIntoParameters(
       (schema.function.parameters ?? { type: "object", properties: {} }) as Record<string, unknown>,
+      schema.function.name,
     );
   }
 
@@ -375,19 +376,32 @@ export async function executeAgentTool(
     throw new Error(`Agent 未授权使用原生工具 ${nativeName}`);
   }
 
+  // github_tool 元工具：审批/只读闸按嵌套细粒度工具名判定，防止绕过 destructive
+  let approvalToolName = nativeName;
+  if (nativeName === "github_tool") {
+    const nested = String(cleanArgs.tool ?? "").trim();
+    if (nested) {
+      const snake = nested.includes("_")
+        ? nested
+        : nested.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
+      const normalized = snake.startsWith("github_") ? snake : `github_${snake}`;
+      approvalToolName = normalized;
+    }
+  }
+
   // W3 safe bypass：只读 turn 内写工具硬拒（复用 isReadonlyTool / 非 destructive 集）
   if (ctx.readonlyOnly) {
     const { isReadonlyTool } = await import("./approvalScope.js");
-    if (!isReadonlyTool(nativeName)) {
+    if (!isReadonlyTool(approvalToolName)) {
       throw new Error(
-        `SAFE_BYPASS_READONLY：当前为审批 gate 下的只读分析步，禁止执行写工具「${nativeName}」。`,
+        `SAFE_BYPASS_READONLY：当前为审批 gate 下的只读分析步，禁止执行写工具「${approvalToolName}」。`,
       );
     }
   }
 
   // HITL：native 危险操作与 tRPC 审批走同一闸门（AGENT_DESTRUCTIVE_APPROVAL / APPROVAL_REQUIRED_OPS）
   const approvalId = typeof cleanArgs.approvalId === "string" ? cleanArgs.approvalId : undefined;
-  await assertApprovalOrProceed(ctx.services, nativeName, cleanArgs, approvalId);
+  await assertApprovalOrProceed(ctx.services, approvalToolName, cleanArgs, approvalId);
 
   return executeNativeTool(nativeName, cleanArgs, ctx);
 }

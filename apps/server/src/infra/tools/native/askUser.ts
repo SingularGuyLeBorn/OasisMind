@@ -143,15 +143,8 @@ const defs: NativeToolDefinition[] = [
   {
     name: "ask_user",
     description:
-      "【向用户提问并挂起 run，等待用户答复】调用后 run 暂停，直到用户作答（Chat 弹框或回复邮件）或超时。" +
-      "必用场景：(1) 需要用户回答开放问题；(2) 需要用户在选项中选一个；(3) 需要用户确认/决策某事。" +
-      "channel=ui（默认）：Chat 弹框显示选项 + 自定义输入框，用户在网页作答。" +
-      "channel=email：经 AgentMail 发一封【可回复】邮件，用户不在电脑前可直接回复邮件，" +
-      "回复内容会回填到 Chat 的 customResponse 输入框并注入会话继续本轮（不产生独立 user 气泡）。" +
-      "to 参数（channel=email 时）：指定收件人邮箱，不填则用 AGENTMAIL_ASK_TO / EMAIL_TO 环境变量。" +
-      "options：给 2~8 个候选选项；不给则视为开放问题（用户自定义输入）。" +
-      "⚠️ 单向通知（不需等回复，如任务完成/告警）用 send_email，**禁止**用本工具发通知。" +
-      "⚠️ 不要对同一问题重复调用本工具；用户答复后基于答复继续，除非用户要求澄清。",
+      "向用户提问并挂起 run，直至答复或超时。channel=ui（默认弹框）|email（可回复邮件）。options 可选 2–8 项。" +
+      "单向通知用 send_email，勿对本工具重复同一问题。",
     parameters: askUserParameters,
     concurrencyClass: "B",
   },

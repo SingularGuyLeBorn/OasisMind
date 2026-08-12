@@ -506,17 +506,8 @@ const SKILLS_DEFS: NativeToolDefinition[] = [
   {
     name: "skill_manage",
     description:
-      "管理程序记忆 Skill（Hermes 闭环）。" +
-      "【必填】action + name。" +
-      "action 取值（字面量，小写）：create | patch | edit | write_file | remove_file | delete。" +
-      "【按 action 的额外必填】" +
-      "create/edit → content=完整 SKILL.md 文本；" +
-      "patch → old_string + new_string（优先小补丁）；" +
-      "write_file → file_path + file_content；" +
-      "remove_file → file_path；" +
-      "delete → 只需 name（归档到 .archive，非硬删）。" +
-      "name 规则：小写连字符类名（例 web-scrape），禁止中文、空格、PR 号、今日任务名。" +
-      "description 建议 ≤60 字符。Memory 记「用户是谁」；Skill 记「这类任务怎么做」。",
+      "管理 Skill。必填 action+name。action=create|patch|edit|write_file|remove_file|delete。" +
+      "create/edit 要 content；patch 要 old/new_string；write_file 要 path+content。name 用小写连字符。",
     parameters: zodParams(
       z.object({
         action: z

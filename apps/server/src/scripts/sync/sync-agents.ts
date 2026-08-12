@@ -56,7 +56,12 @@ export const agentSyncer: Syncer<AgentData> = {
       const name = typeof data.name === "string" ? data.name : slug;
       const description = typeof data.description === "string" ? data.description : null;
       const model = typeof data.model === "string" ? data.model : LLM_MODEL_IDS.DEEPSEEK_CHAT;
-      const systemPrompt = content.trim();
+      // 优先 frontmatter.systemPrompt（qq-bot 等把铁律写在 YAML）；否则用正文（assistant 惯例）
+      const fmPrompt =
+        typeof data.systemPrompt === "string" && data.systemPrompt.trim()
+          ? data.systemPrompt.trim()
+          : "";
+      const systemPrompt = fmPrompt || content.trim();
       const tools = readStringArray(data.tools).join(",");
       const tier = typeof data.tier === "string" ? data.tier : "sub";
       const source = typeof data.source === "string" ? data.source : null;

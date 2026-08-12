@@ -84,7 +84,11 @@ async function main() {
 
   for (const f of fixtures) {
     const base = f.basePrompt || "你是 OasisMind 助手。";
-    const scratch: Record<string, unknown> = { __testMemoryHint: f.memoryHint };
+    // 与 contextHooks.test.ts 等价性用例对齐：强制注入全部 tool-guide 段
+    const scratch: Record<string, unknown> = {
+      __testMemoryHint: f.memoryHint,
+      __forceAllToolGuides: true,
+    };
     const out = await runContextHooks(
       makeInput({
         round: 1,

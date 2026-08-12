@@ -170,46 +170,53 @@ async function yuqueDeleteDocV2Tool(args: Record<string, unknown>, ctx: NativeTo
   return yuqueDeleteDocV2(String(args.namespace), String(args.slug), token);
 }
 
+/** Cookie Web 轨：进阶用，defaultHidden；日常用 Open API v2 + YUQUE_TOKEN */
+const YUQUE_COOKIE_HIDDEN = true;
+
 export const yuqueDefs: NativeToolDefinition[] = [
   {
     name: "yuque_get_doc",
-    description:
-      "读取语雀文档。优先 Web：传 bookId+slug（需 YUQUE_SESSION）；或 Open API：传 namespace+slug（需 YUQUE_TOKEN 个人令牌）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "读语雀文档（Cookie：bookId+slug；或 Token：namespace+slug）。优先 yuque_*_v2 / list_repos。",
     parameters: zodParams(
       z.object({
         slug: z.string().describe("文档 slug"),
-        bookId: z.string().describe("Web API：知识库 id").optional(),
-        namespace: z.string().describe("Open API：如 user/repo").optional(),
+        bookId: z.string().describe("Web：知识库 id").optional(),
+        namespace: z.string().describe("Open API：user/repo").optional(),
       }),
     ),
   },
   {
     name: "yuque_list_books",
-    description: "列出语雀知识库（Web Cookie：YUQUE_SESSION + YUQUE_CTOKEN）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "列知识库（Cookie）。优先 yuque_list_repos。",
     parameters: zodParams(z.object({})),
   },
   {
     name: "yuque_get_book_toc",
-    description: "获取语雀知识库目录（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "知识库目录（Cookie）。",
     parameters: zodParams(z.object({ bookId: z.string() })),
   },
   {
     name: "yuque_create_book",
     concurrencyClass: "D",
-    description: "创建语雀知识库（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "创建知识库（Cookie）。优先 yuque_create_repo。",
     parameters: zodParams(
       z.object({
         name: z.string(),
         description: z.string().optional(),
         slug: z.string().optional(),
-        public: z.number().describe("0 私密 / 1 公开，默认 0").optional(),
+        public: z.number().describe("0 私密 / 1 公开").optional(),
       }),
     ),
   },
   {
     name: "yuque_update_book",
     concurrencyClass: "D",
-    description: "更新语雀知识库元信息（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "更新知识库（Cookie）。",
     parameters: zodParams(
       z.object({
         bookId: z.string(),
@@ -223,23 +230,26 @@ export const yuqueDefs: NativeToolDefinition[] = [
     name: "yuque_delete_book",
     concurrencyClass: "D",
     destructive: true,
-    description: "删除语雀知识库（Web Cookie，不可恢复）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "删除知识库（Cookie，不可恢复）。",
     parameters: zodParams(z.object({ bookId: z.string() })),
   },
   {
     name: "yuque_create_doc",
-    description: "在语雀知识库创建文档（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "创建文档（Cookie）。优先 yuque_create_doc_v2。",
     parameters: zodParams(
       z.object({
         bookId: z.string(),
         title: z.string(),
-        body: z.string().describe("Markdown 内容"),
+        body: z.string().describe("Markdown"),
       }),
     ),
   },
   {
     name: "yuque_update_doc",
-    description: "更新语雀文档（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "更新文档（Cookie）。优先 yuque_update_doc_v2。",
     parameters: zodParams(
       z.object({
         docId: z.string(),
@@ -252,7 +262,8 @@ export const yuqueDefs: NativeToolDefinition[] = [
   {
     name: "yuque_delete_doc",
     destructive: true,
-    description: "删除语雀文档（Web Cookie）。",
+    defaultHidden: YUQUE_COOKIE_HIDDEN,
+    description: "删除文档（Cookie）。优先 yuque_delete_doc_v2。",
     parameters: zodParams(
       z.object({
         docId: z.string(),
@@ -262,18 +273,18 @@ export const yuqueDefs: NativeToolDefinition[] = [
   },
   {
     name: "yuque_session_status",
-    description: "探测语雀 Cookie 会话是否仍有效（list_books 轻量探测）。",
+    description: "探测语雀 Cookie 是否有效。",
     parameters: zodParams(z.object({})),
   },
   {
     name: "yuque_list_repos",
-    description: "列出语雀知识库（Open API v2，需 YUQUE_TOKEN 个人令牌，不是网页 _ctoken）。",
+    description: "列知识库（Open API v2，需 YUQUE_TOKEN）。",
     parameters: zodParams(z.object({})),
   },
   {
     name: "yuque_create_repo",
     concurrencyClass: "D",
-    description: "创建语雀知识库（Open API v2，需 YUQUE_TOKEN）。",
+    description: "创建知识库（Open API v2）。",
     parameters: zodParams(
       z.object({
         name: z.string(),
@@ -286,7 +297,7 @@ export const yuqueDefs: NativeToolDefinition[] = [
   {
     name: "yuque_update_repo",
     concurrencyClass: "D",
-    description: "更新语雀知识库（Open API v2）。",
+    description: "更新知识库（Open API v2）。",
     parameters: zodParams(
       z.object({
         namespace: z.string(),
@@ -300,17 +311,17 @@ export const yuqueDefs: NativeToolDefinition[] = [
     name: "yuque_delete_repo",
     concurrencyClass: "D",
     destructive: true,
-    description: "删除语雀知识库（Open API v2）。",
+    description: "删除知识库（Open API v2）。",
     parameters: zodParams(z.object({ namespace: z.string() })),
   },
   {
     name: "yuque_list_docs",
-    description: "列出语雀知识库文档（Open API v2，需 YUQUE_TOKEN）。",
+    description: "列文档（Open API v2）。",
     parameters: zodParams(z.object({ namespace: z.string() })),
   },
   {
     name: "yuque_create_doc_v2",
-    description: "创建语雀文档（Open API v2，需 YUQUE_TOKEN）。",
+    description: "创建文档（Open API v2）。",
     parameters: zodParams(
       z.object({
         namespace: z.string(),
@@ -321,7 +332,7 @@ export const yuqueDefs: NativeToolDefinition[] = [
   },
   {
     name: "yuque_update_doc_v2",
-    description: "更新语雀文档（Open API v2，需 YUQUE_TOKEN）。",
+    description: "更新文档（Open API v2）。",
     parameters: zodParams(
       z.object({
         namespace: z.string(),
@@ -334,7 +345,7 @@ export const yuqueDefs: NativeToolDefinition[] = [
   {
     name: "yuque_delete_doc_v2",
     destructive: true,
-    description: "删除语雀文档（Open API v2，需 YUQUE_TOKEN）。",
+    description: "删除文档（Open API v2）。",
     parameters: zodParams(
       z.object({
         namespace: z.string(),

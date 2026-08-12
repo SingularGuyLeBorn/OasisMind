@@ -73,9 +73,9 @@ export const DEFAULT_ASSISTANT_SYSTEM_PROMPT = `你是 OasisMind (见微) 智能
 const OUTDATED_ASSISTANT_SYSTEM_PROMPT =
   "你是 OasisMind (见微) 智能助手，可以阅读本地 Markdown 知识库、搜索网络、抓取网页、操作 Git、调用 Skill 与 MCP 工具。回答请简洁、准确，优先使用工具获取事实。";
 
-/** 漂移修复指引（drift 提示中引用；原一次性迁移脚本已执行并退役） */
+/** 漂移修复指引（drift 提示中引用；对齐脚本见 scripts/align-assistant-tools.ts） */
 export const ASSISTANT_MIGRATION_HINT =
-  "请在 /agents 页手动对齐内置默认工具与系统提示，或删除默认 assistant 后重启，由系统按最新模板重建";
+  "pnpm --filter @knowpilot/server exec tsx src/scripts/align-assistant-tools.ts（并同步 config/agents/assistant-*.md 的 tools），或在 /agents 页手动对齐";
 
 export interface ResolveAgentResult {
   agent: AgentEntity;
