@@ -67,6 +67,9 @@ content/uploads/llm-notes/
 content/uploads/qq-text/
 content/uploads/tts/
 content/uploads/qq-img/
+content/uploads/qq/
+*.bak-before-cleanup
+.env.bak*
 # 视频抽帧临时目录（工具运行时产物）
 .tmp-video-frames/
 # algo-viz 素材包（生成物，体积大；源在 apps/algo-viz/src）
