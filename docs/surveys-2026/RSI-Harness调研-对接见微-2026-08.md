@@ -17,6 +17,7 @@
 | 记忆驱动策略进化 | EvoScientist | 双持久记忆 + 失败归因 + 成功蒸馏人工 review |
 | 训练-搜索同构算子 | OpenRSI / Frontis-MA1 | Draft/Improve/Debug/Crossover 训练推理同构 |
 | 元层机制注入 | Bilevel Autoresearch | 外层循环生成搜索机制代码注入内层 |
+| 分层记忆蒸馏 | TencentDB Agent Memory | L0→L3 语义金字塔 + BM25/向量/RRF 混合检索 + 符号化任务画布 |
 
 对见微（OasisMind）：**已有 E/T/C/S/L 大半**；最该补的是 **V（自动化验证门）+ 实验账本 + 受限 refine**。  
 **不要**换成「唯一工具=REPL」、**不要**上权重级 SEAL、**不要**让 Agent 无沙箱改 `apps/server` runtime。
@@ -101,6 +102,17 @@
 - **特点**：**外层循环优化内层循环本身**——读内层代码找瓶颈，生成新搜索机制（Tabu/多臂老虎机/正交探索）以 Python 注入；RTX 5090 3×3 消融：外层带来 5× 提升；机制可递归反馈到外层自身（learn how to learn）。
 - **能不能学**：**中**。见微版 = refine 不只改 Skill/Memory，还可改「实验策略配置」（如 Gate 阈值、扫描顺序）——但必须有账本+回滚，且仅限配置层不改 runtime。
 
+### 1.11b TencentDB Agent Memory（腾讯云数据库团队，2026-04，MIT）
+
+- **仓库/形态**：团队级 AI Agent 记忆中枢；SQLite + sqlite-vec 本地零依赖，REST Gateway 框架中立。
+- **特点**：
+  - **L0→L3 分层记忆金字塔**：L0 原始对话 / L1 原子事实 / L2 场景知识块（人类可读 Markdown）/ L3 Persona 长期画像；检索由 L2/L3 快速启动、下钻 L1/L0。
+  - **混合检索**：BM25 + 向量 + RRF 融合。
+  - **符号化短期记忆**：厚重工具日志卸载外部文件，上下文只留 Mermaid 任务画布（node_id 可瞬间回读原文）。
+  - 白盒可调试（中间产物全是可读 Markdown/Mermaid）；官方 benchmark：WideSearch 成功率 +51%、Token −61%，PersonaMem 准确率 48%→76%。
+- **风险**：项目很新（2026-04 发布）API 未稳；Node ≥22.16；需两组 LLM 配置。
+- **能不能学**：**高（三个思想已落地，见 §3 P3 三行）**。不整栈引入（与见微 Memory 体系重叠），只抄分层蒸馏/混合检索/任务画布；sqlite-vec 不引（Prisma 扩展链脆弱，千条级暴力余弦足够）。
+
 ### 1.12 自我进化 Agent 总综述（2025-08，EvoAgentX 配套）
 
 - **两轴分类法**（定位任何 RSI 项目的坐标）：
@@ -154,9 +166,12 @@ H = **(E, T, C, S, L, V)** = 执行环 / 工具注册 / 上下文 / 状态仓 / 
 | **P1** | refine-lite：仅 Skill/Memory/prompt note；需证据；可 rollback | Prime `/refine` | **已有** `harness_refine` + 强制 ExperimentLedger |
 | **P1** | autonomous 预算 + 用户 gate（如 `pnpm test`）；触顶≠成功 | Prime `/autonomous` | **已有** `mode=autonomous` + `autonomous_gate(gatePreset)` + 墙钟/轮次预算 |
 | **P1** | 归档多样体 + 分支探索（不改 runtime） | DGM | **已有** decide 归档 `candidate` + `experiment_branch` |
-| **P2** | 内部 mini Harness-Bench（20–50 题）+ 成本报表 | Harness-Bench / HAL | 未做（非当前必要；evals 已有正确性黄金集） |
-| **P2** | 超长材料强制 path+offset（RLM 思想） | RLM | 部分（read_file/tool-results offset）；未强制 |
-| **P2** | 经验蒸馏加**失败归因**（实现失败 vs 方向失败）+ 蒸馏结果**人工 review 闸** | EvoScientist IVE/ESE | 未做（`optimizeAgentPrompt` 目前无归因、无 review） |
+| **P2** | 内部 mini Harness-Bench（20–50 题）+ 成本报表 | Harness-Bench / HAL | **已有** `evals/harness-bench/`（24 题）+ `pnpm test:bench`（mock/live 双模 + JSON 成本报表） |
+| **P2** | 超长材料强制 path+offset（RLM 思想） | RLM | **已有** `read_file`/`read_article` 返回 `nextOffset` 翻页闭环 + 截断标记强制引导分段重读 + `TOOL_RESULT_ATTENTION_GUIDE` 分段读纪律 |
+| **P2** | 经验蒸馏加**失败归因**（实现失败 vs 方向失败）+ 蒸馏结果**人工 review 闸** | EvoScientist IVE/ESE | **已有** `agentEvolution.ts`：`attributeFailure` 规则归因（工具错误签名→implementation）写入经验记忆；`optimizeAgentPrompt` 改提案制（pending Approval 人工 review 后生效） |
+| **P3** | **L3 Persona 蒸馏层**（L0 对话→L1 原子记忆→L2 Skill/知识库→L3 画像） | TencentDB Agent Memory | **已有** `infra/personaDistiller.ts`：L1 记忆→LLM 蒸馏 Markdown 画像→supersede 版本链；每日 cron + `memory_distill_persona` 手动；`buildPersonaHint` 注入 prompt 顶部；persona 不衰减、不可直接创建 |
+| **P3** | **混合检索**（BM25 + 向量 + RRF） | TencentDB Agent Memory | **已有** `infra/embedding.ts` + `memoryRepository.read` 路径 1b：OpenAI 兼容 embedding（`memory.embedding` 配置，默认关闭=纯 FTS5），RRF 排名融合；不引 sqlite-vec（千条级暴力余弦零原生依赖） |
+| **P3** | **任务画布**（长任务进度符号化状态卡） | TencentDB Agent Memory | **已有** `infra/taskCanvas.ts` + contextHooks `task-canvas` 钩子：本会话血缘 queued/running 任务紧凑文本注入（空态不注入）；不画 Mermaid（文本 token 效率更高） |
 | **P3** | 离线搜 Skill/工作流变体 → 候选 PR | ADAS / DGM | 未做 |
 | **P3** | refine 扩展到「实验策略配置」（Gate 阈值/扫描顺序），仍限配置层 | Bilevel Autoresearch | 未做 |
 | **不做** | REPL 唯一工具、SEAL 权重自改、无沙箱改 server、整条论文生产线 | — | 维持不做 |
@@ -187,3 +202,4 @@ H = **(E, T, C, S, L, V)** = 执行环 / 工具注册 / 上下文 / 状态仓 / 
 - Harness Effect：https://arxiv.org/abs/2607.06906  
 - HAL：https://hal.cs.princeton.edu/ · https://arxiv.org/abs/2510.11977  
 - Agent Eval Survey：https://arxiv.org/abs/2507.21504  
+- TencentDB Agent Memory：腾讯云数据库团队开源（2026-04，MIT）；L0→L3 分层记忆 + BM25/向量/RRF + Mermaid 任务画布
