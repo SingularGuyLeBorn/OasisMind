@@ -207,6 +207,18 @@ export interface InfoSource {
   updatedAt: string | Date;
 }
 
+/** 每日看板条目（待办 → 进行中 → 已完成） */
+export interface DailyFlowItem {
+  id: string;
+  dayKey: string;
+  title: string;
+  note: string;
+  status: "todo" | "doing" | "done" | string;
+  sortOrder: number;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 /** 知识 Inbox 素材 — 待消化的截图 / 收藏 / 链接 */
 export interface InboxItem {
   id: string;

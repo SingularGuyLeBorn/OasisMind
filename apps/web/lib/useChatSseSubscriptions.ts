@@ -279,6 +279,23 @@ export function useChatSseSubscriptions({
         utils.session.getGoal.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
         postUiState({ type: "goal_updated", sessionId: targetSid });
       });
+      register("daily_flow_updated", (ev) => {
+        let dayKey: string | undefined;
+        try {
+          const data = JSON.parse(ev.data) as { dayKey?: string };
+          dayKey = data.dayKey;
+        } catch {
+          /* ignore */
+        }
+        if (dayKey) {
+          utils.dailyFlow.listByDay.invalidate({ dayKey }).catch(logQueryCatch);
+          utils.dailyFlow.dayReport.invalidate({ dayKey }).catch(logQueryCatch);
+        } else {
+          utils.dailyFlow.listByDay.invalidate().catch(logQueryCatch);
+          utils.dailyFlow.dayReport.invalidate().catch(logQueryCatch);
+        }
+        postUiState({ type: "daily_flow_updated", dayKey });
+      });
       register("session_title_updated", () => {
         utils.session.list.invalidate().catch(logQueryCatch);
       });
@@ -414,6 +431,19 @@ export function useChatSseSubscriptions({
       if (t === "task_updated") {
         utils.task.list.invalidate().catch(logQueryCatch);
         utils.trigger.list.invalidate().catch(logQueryCatch);
+      }
+      if (t === "daily_flow_updated") {
+        const dayKey =
+          data && typeof data === "object" && "dayKey" in data && typeof (data as { dayKey?: unknown }).dayKey === "string"
+            ? (data as { dayKey: string }).dayKey
+            : undefined;
+        if (dayKey) {
+          utils.dailyFlow.listByDay.invalidate({ dayKey }).catch(logQueryCatch);
+          utils.dailyFlow.dayReport.invalidate({ dayKey }).catch(logQueryCatch);
+        } else {
+          utils.dailyFlow.listByDay.invalidate().catch(logQueryCatch);
+          utils.dailyFlow.dayReport.invalidate().catch(logQueryCatch);
+        }
       }
       if (t === "goal_updated") {
         const sid =

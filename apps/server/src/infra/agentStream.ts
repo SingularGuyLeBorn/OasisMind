@@ -223,6 +223,11 @@ export type AgentStreamEvent =
       sessionId: string;
       status?: string;
     }
+  /** 每日看板变更：/daily 页 invalidate listByDay */
+  | {
+      type: "daily_flow_updated";
+      dayKey: string;
+    }
   /** Post / Garden / Upload 等内容列表变更：管理页与 Chat 侧 invalidate post.* */
   | {
       type: "post_list_changed";

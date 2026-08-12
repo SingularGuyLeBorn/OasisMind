@@ -16,7 +16,8 @@ export type UiStateNotifyKind =
   | "post_list_changed"
   | "run_updated"
   | "task_updated"
-  | "goal_updated";
+  | "goal_updated"
+  | "daily_flow_updated";
 
 /** Goal 写库后推到该会话（ChatGoalBar / 跨标签） */
 export function notifyGoalUpdated(
@@ -119,6 +120,17 @@ export async function notifyPostListChanged(
   await notifyAllMainSessionsUi(prisma, {
     type: "post_list_changed",
     reason,
+  });
+}
+
+/** 每日看板写点后推送（/daily 与跨标签） */
+export async function notifyDailyFlowUpdated(
+  prisma: PrismaClient,
+  dayKey: string,
+): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, {
+    type: "daily_flow_updated",
+    dayKey,
   });
 }
 

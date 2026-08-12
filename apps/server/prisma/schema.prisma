@@ -692,6 +692,23 @@ model HarnessExperiment {
   @@index([parentExperimentId])
 }
 
+/// 每日看板（TriFlow 式：按日 · 待办→进行中→已完成；权威在 SQLite，非浏览器 localStorage）
+model DailyFlowItem {
+  id        String   @id @default(cuid())
+  /// 日历日 YYYY-MM-DD（客户端本地日，避免服务端时区偏移）
+  dayKey    String
+  title     String
+  note      String   @default("")
+  /// todo | doing | done
+  status    String   @default("todo")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dayKey, status, sortOrder])
+  @@index([dayKey, createdAt])
+}
+
 /// 邮件回复死信表（处理失败 / 未匹配 pending 的邮件回复落表，方便事后追查）
 model DeadLetterMail {
   id         String    @id @default(cuid())

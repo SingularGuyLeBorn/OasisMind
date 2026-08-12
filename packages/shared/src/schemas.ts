@@ -1695,6 +1695,41 @@ export const listCredentialsSchema = z.object({
 });
 
 /* ═══════════════════════════════════════════════════════
+   Daily Flow（每日看板 · TriFlow 式三栏）
+   ═══════════════════════════════════════════════════════ */
+
+export const dailyFlowDayKeySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey 须为 YYYY-MM-DD");
+
+export const dailyFlowStatusSchema = z.enum(["todo", "doing", "done"]);
+
+export const listDailyFlowByDaySchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+});
+
+export const createDailyFlowItemSchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+  title: z.string().min(1, "标题不能为空").max(200),
+  note: z.string().max(4000).default(""),
+});
+
+export const updateDailyFlowItemSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).max(200).optional(),
+  note: z.string().max(4000).optional(),
+});
+
+export const moveDailyFlowItemSchema = z.object({
+  id: z.string().cuid(),
+  status: dailyFlowStatusSchema,
+});
+
+export const dailyFlowDayReportSchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+});
+
+/* ═══════════════════════════════════════════════════════
    L4 审批 / 任务 / 工作流
    ═══════════════════════════════════════════════════════ */
 
@@ -1965,4 +2000,11 @@ export type ListPromptsInput = z.infer<typeof listPromptsSchema>;
 export type CreateCredentialInput = z.infer<typeof createCredentialSchema>;
 export type UpdateCredentialInput = z.infer<typeof updateCredentialSchema>;
 export type ListCredentialsInput = z.infer<typeof listCredentialsSchema>;
+
+export type DailyFlowStatus = z.infer<typeof dailyFlowStatusSchema>;
+export type ListDailyFlowByDayInput = z.infer<typeof listDailyFlowByDaySchema>;
+export type CreateDailyFlowItemInput = z.infer<typeof createDailyFlowItemSchema>;
+export type UpdateDailyFlowItemInput = z.infer<typeof updateDailyFlowItemSchema>;
+export type MoveDailyFlowItemInput = z.infer<typeof moveDailyFlowItemSchema>;
+export type DailyFlowDayReportInput = z.infer<typeof dailyFlowDayReportSchema>;
 

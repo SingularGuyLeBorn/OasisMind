@@ -31,6 +31,7 @@ import {
   Sparkles,
   RefreshCw,
   Radio,
+  Kanban,
 } from "lucide-react";
 import { navItemAllowed, PACKS_FULL, type PackFlags } from "@knowpilot/shared";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ const navGroups: Record<string, NavGroup> = {
     title: "自动化与工作流",
     icon: Zap,
     items: [
+      { href: "/daily", icon: Kanban, label: "每日看板" },
       { href: "/inbox", icon: Inbox, label: "知识 Inbox" },
       { href: "/platform-sync", icon: RefreshCw, label: "平台每日同步" },
       { href: "/channels", icon: Radio, label: "IM 通道" },
