@@ -182,6 +182,7 @@ export function buildNativeToolSchemas(allowed: string[] | "all") {
         description: s.description,
         parameters: injectExpectPropsIntoParameters(
           (s.parameters ?? { type: "object", properties: {} }) as Record<string, unknown>,
+          t.name,
         ),
       },
     };

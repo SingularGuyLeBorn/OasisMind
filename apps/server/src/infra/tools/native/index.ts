@@ -6,6 +6,8 @@
 import { domainAllowed, type PackFlags } from "@knowpilot/shared";
 import { registerFsTools } from "./fs.js";
 import { registerWebTools } from "./web.js";
+import { registerDokobotTools } from "./dokobot.js";
+import { registerWebbridgeTools } from "./webbridge.js";
 import { registerShellTools } from "./shell.js";
 import { registerSwarmTools } from "./swarm.js";
 import { registerSessionTools } from "./session.js";
@@ -29,6 +31,8 @@ type DomainRegistrar = { domain: Parameters<typeof domainAllowed>[0]; register: 
 const DOMAIN_REGISTRARS: DomainRegistrar[] = [
   { domain: "fs", register: registerFsTools },
   { domain: "web", register: registerWebTools },
+  { domain: "web", register: registerDokobotTools },
+  { domain: "web", register: registerWebbridgeTools },
   { domain: "shell", register: registerShellTools },
   { domain: "swarm", register: registerSwarmTools },
   { domain: "session", register: registerSessionTools },

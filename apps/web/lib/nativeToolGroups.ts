@@ -33,13 +33,13 @@ export const NATIVE_TOOL_GROUPS: NativeToolGroup[] = [
   { id: "async", label: "异步任务", hint: "后台任务、定时器" },
   { id: "swarm", label: "Swarm / 子 Agent", hint: "派生子代理、消息、Workspace" },
   { id: "skills", label: "Skill 闭环", hint: "技能列表/查看/管理" },
-  { id: "integration", label: "外部集成", hint: "飞书、语雀、GitHub、API" },
+  { id: "integration", label: "外部集成", hint: "GitHub 用 github_tool；语雀 v2；飞书核心；进阶默认隐藏" },
   { id: "other", label: "其他", hint: "未归类工具" },
 ];
 
 export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (
-    /^(web_|read_article|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
+    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
       name,
     )
   ) {
@@ -65,7 +65,7 @@ export function groupIdForNativeTool(name: string): NativeToolGroupId {
     return "swarm";
   }
   if (
-    /^(yuque_|github_|feishu_|task_run|ocr_|platform_login|browser_login|coze_|dify_|tikhub_)/.test(
+    /^(yuque_|github_|feishu_|task_run|ocr_|platform_login|browser_login|coze_|dify_|tikhub_|voice_|audio_slice|send_qq_)/.test(
       name,
     )
   ) {
@@ -82,6 +82,11 @@ export const NATIVE_LABELS: Record<string, string> = {
   rss_fetch: "抓取 RSS",
   rss_draft_posts: "RSS 转文章草稿",
   read_article: "读取网页文章",
+  dokobot_read: "Dokobot 读网页（真实 Chrome）",
+  dokobot_search: "Dokobot 网页搜索",
+  webbridge_status: "WebBridge 状态",
+  webbridge_start: "启动 WebBridge daemon",
+  webbridge_command: "WebBridge 浏览器操作",
   scrape_web_page: "采集网页",
   browser_screenshot: "网页截图",
   scroll_screenshot: "滚动截图",
@@ -185,7 +190,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   github_list_workflows: "GitHub 列工作流",
   github_trigger_workflow: "GitHub 触发工作流",
   github_create_release: "GitHub 创建 Release",
-  github_tool: "GitHub 通用调用",
+  github_tool: "GitHub（统一入口）",
   feishu_send_text: "飞书发文本",
   feishu_send_message: "飞书发消息",
   feishu_get_doc: "飞书读文档",
@@ -260,6 +265,17 @@ export const NATIVE_LABELS: Record<string, string> = {
   dify_chat: "Dify 对话",
   dify_workflow: "Dify 工作流",
   tikhub_request: "TikHub 请求",
+  voice_list: "列出克隆音色",
+  voice_clone: "克隆音色",
+  voice_delete: "删除克隆音色",
+  voice_synthesize: "语音合成",
+  audio_slice: "剪切参考音频",
+  send_qq_text: "发 QQ 文本",
+  send_qq_image: "发 QQ 图片",
+  send_qq_video: "发 QQ 视频",
+  send_qq_file: "发 QQ 文件",
+  send_qq_voice: "发 QQ 语音",
+  delete_qq_message: "撤回 QQ 消息",
   zhihu_openapi_search: "知乎开放平台搜索",
   zhihu_openapi_hot_list: "知乎热榜",
   zhihu_openapi_ask: "知乎直答",
