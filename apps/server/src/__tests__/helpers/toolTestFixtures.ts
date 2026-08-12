@@ -26,6 +26,9 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
   const goalDefaults = {
     maxTurns: 20,
     deepResearchMaxTurns: 30,
+    autonomousMaxTurns: 40,
+    autonomousMaxWallClockMs: 1_800_000,
+    autonomousRequireExternalGate: true,
     judgeModel: "auto",
   };
   return {
@@ -63,6 +66,7 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
       toolResults: path.join(projectRoot, "data", "tool-results"),
       workspace: path.join(projectRoot, "data", "workspace"),
       inbox: path.join(projectRoot, "data", "inbox"),
+      experiments: path.join(projectRoot, "data", "experiments"),
     },
     inbox: {
       screenshotWatchDir: "",
@@ -476,6 +480,11 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "skill_discover",
   "skill_enable",
   "skill_promote",
+  "experiment_begin",
+  "experiment_decide",
+  "experiment_list",
+  "harness_refine",
+  "autonomous_gate",
   "optimize_agent_prompt",
   "generate_skill_from_experience",
   "swarm_export_trace",

@@ -653,6 +653,36 @@ model ProcessedWebhookEvent {
   processedAt DateTime @default(now())
 }
 
+/// Harness 实验账本（autoresearch 式 keep|discard；快照在 data/experiments/{id}/）
+model HarnessExperiment {
+  id               String    @id @default(cuid())
+  agentId          String?
+  sessionId        String?
+  hypothesis       String
+  /// skill | memory | prompt_note
+  targetKind       String
+  /// skill 名 / memory slug / prompt 相对 config/prompts 路径
+  targetRef        String
+  /// 相对 projectRoot 的目标文件路径
+  targetPath       String
+  /// data/experiments/{id}/baseline 相对 projectRoot
+  baselinePath     String
+  /// 是否在 begin 时目标文件尚不存在（discard 时删文件而非还原）
+  createdNew       Boolean   @default(false)
+  candidateDigest  String?
+  metricsJson      String    @default("{}")
+  /// pending | keep | discard
+  decision         String    @default("pending")
+  /// 可选：sessionId:runId 等轨迹指针
+  trajectoryRef    String?
+  createdAt        DateTime  @default(now())
+  decidedAt        DateTime?
+
+  @@index([decision, createdAt])
+  @@index([agentId, createdAt])
+  @@index([targetKind, targetRef])
+}
+
 /// 邮件回复死信表（处理失败 / 未匹配 pending 的邮件回复落表，方便事后追查）
 model DeadLetterMail {
   id         String    @id @default(cuid())

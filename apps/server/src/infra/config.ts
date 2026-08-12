@@ -54,10 +54,16 @@ const SkillsYamlSchema = z.object({
   curatorIntervalHours: z.coerce.number().int().min(1).default(168),
 });
 
-/** config.yaml goal 段：Chat Goal / Deep Research 外环 */
+/** config.yaml goal 段：Chat Goal / Deep Research / Autonomous 外环 */
 const GoalYamlSchema = z.object({
   maxTurns: z.coerce.number().int().min(1).max(200).default(20),
   deepResearchMaxTurns: z.coerce.number().int().min(1).max(200).default(30),
+  /** autonomous 默认轮次预算；触顶→exhausted≠成功 */
+  autonomousMaxTurns: z.coerce.number().int().min(1).max(200).default(40),
+  /** autonomous 墙钟预算（毫秒），默认 30min */
+  autonomousMaxWallClockMs: z.coerce.number().int().min(60_000).default(1_800_000),
+  /** autonomous 完成前是否强制外部 gate 报告 */
+  autonomousRequireExternalGate: z.boolean().default(true),
   /** 裁判模型；auto = OpenRouter strong_free */
   judgeModel: z.string().default("auto"),
 });
@@ -136,6 +142,8 @@ export interface AppConfig {
     workspace: string;
     /** 知识 Inbox 原始件（截图/平台收藏缓存） */
     inbox: string;
+    /** Harness 实验快照（baseline / keep|discard） */
+    experiments: string;
   };
   /** 知识 Inbox：截图监视与蒸馏默认 */
   inbox: {
@@ -362,10 +370,13 @@ export interface AppConfig {
     /** curator 最小间隔小时 */
     curatorIntervalHours: number;
   };
-  /** Chat Goal / Deep Research 外环 */
+  /** Chat Goal / Deep Research / Autonomous 外环 */
   goal: {
     maxTurns: number;
     deepResearchMaxTurns: number;
+    autonomousMaxTurns: number;
+    autonomousMaxWallClockMs: number;
+    autonomousRequireExternalGate: boolean;
     judgeModel: string;
   };
   /**
@@ -674,6 +685,7 @@ export function createAppConfig(): AppConfig {
       toolResults: path.join(dataDir, "tool-results"),
       workspace: path.join(dataDir, "workspace"),
       inbox: path.join(dataDir, "inbox"),
+      experiments: path.join(dataDir, "experiments"),
     },
     inbox: {
       screenshotWatchDir: readEnv("KP_INBOX_SCREENSHOT_DIR") || inboxYaml.screenshotWatchDir,
