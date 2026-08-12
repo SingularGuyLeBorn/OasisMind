@@ -192,6 +192,12 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
     ...overrides,
     // 浅合并会整段覆盖 skills/goal，这里补回默认字段
     memory: {
+      queryRewrite: {
+        enabled: false,
+        model: "auto",
+        timeoutMs: 3000,
+        ...(overrides?.memory?.queryRewrite ?? {}),
+      },
       embedding: {
         enabled: false,
         baseUrl: "",

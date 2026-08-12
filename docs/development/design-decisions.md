@@ -1671,3 +1671,31 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 | 提示词 | `SESSION_HISTORY_GUIDE`：摘要≠全文；禁止 shell 扫会话 |
 
 **回答**：按上表落地
+
+---
+
+## Memory 检索查询改写（2026-08-12）
+
+### 背景
+
+`promptBuilder.ts:66` 之前的记忆检索直接把 `userText.slice(0, 80).trim()` 原样喂给 FTS5，导致口语化/冗余消息召回质量差。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 改写入口 | 新建叶子模块 `infra/memoryQueryRewrite.ts`，FTS 查询前把用户消息改写成 3~6 个关键词/短句 |
+| 模型选择 | `resolveAuxiliaryModel(..., preference: "lite_free")`，默认走免费轻量模型，不消耗主模型额度 |
+| 调用位置 | 必须放在 `shouldSkipMemoryRetrieve` 门控**放行后**，避免命中 miss streak 时仍浪费 LLM 调用 |
+| 失败策略 | 任何异常/超时/空输出/超长输出统一 `console.warn` 并回退原文 80 字符截断，函数永不抛异常 |
+| 缓存 | 进程内 LRU（上限 200），key 为 userText 原文，同一消息只触发一次 LLM 调用 |
+| 测试守护 | `createContextInner` 在非 `MOCK_LLM` 测试环境自动 `config.memory.queryRewrite.enabled = false`，防止真实 LLM 超时拖慢全量测试 |
+
+### 替代方案为何不取
+
+- **前端改写**：会让改写结果跨越网络，且不同客户端逻辑重复；后端的记忆语义应后端统一收敛。
+- **embedding 改写**：需要向量模型与额外依赖，违背本地优先、零新增重依赖的原则。
+- **无缓存每次 LLM**：同一轮 ReAct 里 memory hook 会被多次调用，重复调用会显著增加 latency 与 token 成本。
+- **改写失败抛错**：会破坏现有记忆检索的可用性，回退旧行为是更安全的渐进升级。
+
+**回答**：按上表落地

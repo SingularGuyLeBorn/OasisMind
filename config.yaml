@@ -131,6 +131,11 @@ reflection:
 # 记忆向量混合检索（BM25 + 向量 + RRF 融合，TencentDB Agent Memory 思想）
 # 默认关闭 = 纯 FTS5 现状；开启后记忆写入异步生成 embedding，检索走 FTS5+向量 RRF 融合
 memory:
+  # 检索查询改写：FTS 前用便宜模型把用户消息压成检索关键词（失败/超时自动回退原文截断）
+  queryRewrite:
+    enabled: true
+    model: "auto"     # auto = resolveAuxiliaryModel 选免费轻量模型
+    timeoutMs: 3000
   embedding:
     enabled: false
     # OpenAI 兼容端点（/embeddings）；env EMBEDDING_BASE_URL / EMBEDDING_API_KEY / EMBEDDING_MODEL 可覆盖

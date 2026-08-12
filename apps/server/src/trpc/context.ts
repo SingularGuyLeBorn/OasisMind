@@ -38,6 +38,10 @@ export async function createContext({ req, res }: CreateExpressContextOptions): 
 export async function createContextInner() {
   const eventBus = getEventBus();
   const config = getAppConfig();
+  // 测试环境未启用 MOCK_LLM 时，关闭 memory queryRewrite，避免真实 LLM 超时拖慢测试
+  if (process.env.MOCK_LLM !== "true" && process.env.NODE_ENV === "test") {
+    config.memory.queryRewrite.enabled = false;
+  }
   await ensureIntegrationCredentialsInjected(config, prisma);
   const services = getServiceContainer(prisma, eventBus, config);
   await services.garden.ensureSeedGardens();

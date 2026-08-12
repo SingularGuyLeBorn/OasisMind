@@ -29,6 +29,7 @@ const PROJECT_ROOT = path.resolve(__dirname, "../../..");
 function embeddingConfig(over?: Partial<{ enabled: boolean; topK: number }>) {
   return createTestConfig(PROJECT_ROOT, {
     memory: {
+      queryRewrite: { enabled: false, model: "auto", timeoutMs: 3000 },
       embedding: {
         enabled: over?.enabled ?? true,
         baseUrl: "http://embedding.test/v1",

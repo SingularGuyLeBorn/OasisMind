@@ -10,6 +10,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import type { ServiceContainer } from "./serviceContainer.js";
+import type { AppConfig } from "./config.js";
 import {
   MEMORY_INJECTABLE_TYPES,
   MEMORY_TYPES,
@@ -23,6 +24,7 @@ import {
   recordMemoryRetrieveOutcome,
   shouldSkipMemoryRetrieve,
 } from "./memoryRetrieveGate.js";
+import { rewriteMemoryQuery } from "./memoryQueryRewrite.js";
 import { ensurePinnedMemoryHint } from "./pinnedMemory.js";
 import { buildGardenNeighborHint } from "./gardenNeighbors.js";
 import {
@@ -61,13 +63,17 @@ const MATH_MARKDOWN_EXAMPLE = loadMathMarkdownExample();
 export async function buildMemoryContext(
   services: ServiceContainer,
   userText: string,
-  options?: { agentId?: string | null },
+  options?: { agentId?: string | null; config?: AppConfig },
 ): Promise<string> {
-  const keyword = userText.slice(0, 80).trim();
+  let keyword = userText.slice(0, 80).trim();
   if (!keyword) return "";
   const gateKey = options?.agentId ?? "__global__";
   if (shouldSkipMemoryRetrieve(gateKey)) {
     return "";
+  }
+  // 门控放行后才做 LLM 改写；config 未传或改写失败时保持 keyword 原值（回退语义）
+  if (options?.config) {
+    keyword = await rewriteMemoryQuery(options.config, userText);
   }
   const scopes = [MEMORY_SCOPE_GLOBAL];
   if (options?.agentId) {
@@ -172,11 +178,14 @@ export async function buildPersonaHint(services: ServiceContainer): Promise<stri
 export async function buildAllMemoryHints(
   services: ServiceContainer,
   userText: string,
-  options?: { agentId?: string | null; sessionId?: string | null },
+  options?: { agentId?: string | null; sessionId?: string | null; config?: AppConfig },
 ): Promise<string> {
   const persona = await buildPersonaHint(services);
   const pinned = await ensurePinnedMemoryHint(services, options?.sessionId);
-  const dynamic = await buildMemoryContext(services, userText, { agentId: options?.agentId });
+  const dynamic = await buildMemoryContext(services, userText, {
+    agentId: options?.agentId,
+    config: options?.config,
+  });
   const neighbors = await buildGardenNeighborHint(services.prisma, userText).catch(() => "");
   return persona + pinned + dynamic + neighbors;
 }

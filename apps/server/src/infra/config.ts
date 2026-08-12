@@ -44,8 +44,18 @@ const ReflectionYamlSchema = z.object({
   criticModel: z.string().default(""),
 });
 
-/** config.yaml memory 段：向量混合检索（BM25 + 向量 + RRF；缺省关闭=纯 FTS5 现状） */
+/** config.yaml memory 段：FTS 查询改写 + 向量混合检索 */
 const MemoryYamlSchema = z.object({
+  queryRewrite: z
+    .object({
+      /** FTS 前是否用轻量模型改写用户消息为检索关键词 */
+      enabled: z.boolean().default(true),
+      /** auto = resolveAuxiliaryModel 选免费轻量模型；也可钉死具体 id */
+      model: z.string().default("auto"),
+      /** 改写调用硬超时（毫秒），超时回退原文截断 */
+      timeoutMs: z.coerce.number().int().min(500).max(30_000).default(3000),
+    })
+    .default({ enabled: true, model: "auto", timeoutMs: 3000 }),
   embedding: z
     .object({
       /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
@@ -382,8 +392,14 @@ export interface AppConfig {
     /** critic 使用的便宜模型；空 = 与主 Agent 模型相同 */
     criticModel: string;
   };
-  /** 记忆向量混合检索（TencentDB BM25+向量+RRF 思想；默认关闭=纯 FTS5） */
+  /** 记忆检索：FTS 查询改写 + 向量混合检索 */
   memory: {
+    /** 用户消息 → 检索关键词改写 */
+    queryRewrite: {
+      enabled: boolean;
+      model: string;
+      timeoutMs: number;
+    };
     embedding: {
       enabled: boolean;
       baseUrl: string;
@@ -1004,6 +1020,11 @@ export function createAppConfig(): AppConfig {
     },
     reflection: reflectionYaml,
     memory: {
+      queryRewrite: {
+        enabled: memoryYaml.queryRewrite.enabled,
+        model: memoryYaml.queryRewrite.model,
+        timeoutMs: memoryYaml.queryRewrite.timeoutMs,
+      },
       embedding: {
         enabled: memoryYaml.embedding.enabled,
         baseUrl: readEnv("EMBEDDING_BASE_URL") || memoryYaml.embedding.baseUrl,

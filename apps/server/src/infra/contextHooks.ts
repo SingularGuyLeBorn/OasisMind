@@ -175,6 +175,7 @@ export function ensureBuiltinContextHooks(): void {
       input.scratch.__memoryHint = await buildAllMemoryHints(input.ctx.services, userText, {
         agentId: input.agent.id,
         sessionId: input.sessionId || null,
+        config: input.ctx.config,
       });
     },
   });
