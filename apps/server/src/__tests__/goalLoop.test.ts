@@ -144,6 +144,81 @@ describe("goalLoop", () => {
     expect(mem.get("s1")?.pendingContinue).toBeNull();
   });
 
+  it("autonomous：无外部 gate 时裁判 done → continue（触顶≠成功）", async () => {
+    mem.set("s1", {
+      mode: "autonomous",
+      text: "overnight refine",
+      status: "active",
+      turnsUsed: 0,
+      maxTurns: 40,
+      judgeModel: "auto",
+      startedAt: new Date().toISOString(),
+      maxWallClockMs: 1_800_000,
+      requireExternalGate: true,
+      externalGate: null,
+    });
+    const res = await evaluateGoalAfterTurn({
+      services: {} as never,
+      config: createTestConfig("/tmp/goal"),
+      sessionId: "s1",
+      lastAssistantText: "我完成了",
+      mainModel: "m",
+      judgeFn: async () => ({ done: true, reason: "model claims done" }),
+    });
+    expect(res.action).toBe("continue");
+    expect(mem.get("s1")?.status).toBe("active");
+    expect(mem.get("s1")?.pendingContinue?.reason).toMatch(/autonomous_gate/);
+  });
+
+  it("autonomous：墙钟耗尽 → exhausted", async () => {
+    mem.set("s1", {
+      mode: "autonomous",
+      text: "overnight",
+      status: "active",
+      turnsUsed: 1,
+      maxTurns: 40,
+      judgeModel: "auto",
+      startedAt: "2020-01-01T00:00:00.000Z",
+      maxWallClockMs: 1000,
+      requireExternalGate: true,
+    });
+    const res = await evaluateGoalAfterTurn({
+      services: {} as never,
+      config: createTestConfig("/tmp/goal"),
+      sessionId: "s1",
+      lastAssistantText: "x",
+      mainModel: "m",
+      judgeFn: async () => ({ done: false, reason: "more" }),
+    });
+    expect(res.action).toBe("exhausted");
+    expect(mem.get("s1")?.lastVerdict?.reason).toMatch(/触顶≠成功/);
+  });
+
+  it("autonomous：gate 通过后可 done", async () => {
+    mem.set("s1", {
+      mode: "autonomous",
+      text: "overnight",
+      status: "active",
+      turnsUsed: 0,
+      maxTurns: 40,
+      judgeModel: "auto",
+      startedAt: new Date().toISOString(),
+      maxWallClockMs: 1_800_000,
+      requireExternalGate: true,
+      externalGate: { passed: true, metrics: { testOk: true }, reportedAt: new Date().toISOString() },
+    });
+    const res = await evaluateGoalAfterTurn({
+      services: {} as never,
+      config: createTestConfig("/tmp/goal"),
+      sessionId: "s1",
+      lastAssistantText: "done with gate",
+      mainModel: "m",
+      judgeFn: async () => ({ done: true, reason: "ok" }),
+    });
+    expect(res.action).toBe("done");
+    expect(mem.get("s1")?.status).toBe("done");
+  });
+
   it("drainGoalContinueAfterSettle：有 pending 则清标记并 startContinuation", async () => {
     mem.set("s1", {
       mode: "goal",
@@ -187,9 +262,7 @@ describe("goalLoop", () => {
         },
         message: { list: vi.fn(async () => ({ items: [] })) },
       } as never,
-      config: createTestConfig("/tmp/goal", {
-        goal: { maxTurns: 20, deepResearchMaxTurns: 30, judgeModel: "auto" },
-      }),
+      config: createTestConfig("/tmp/goal"),
       sessionId: "s1",
       text: "调研主题",
       mode: "deep_research",
@@ -211,9 +284,7 @@ describe("goalLoop", () => {
           update: vi.fn(),
         },
       } as never,
-      config: createTestConfig("/tmp/goal", {
-        goal: { maxTurns: 20, deepResearchMaxTurns: 30, judgeModel: "auto" },
-      }),
+      config: createTestConfig("/tmp/goal"),
       sessionId: "sub1",
       text: "完成调研并 report_back",
       mode: "goal",
