@@ -182,7 +182,8 @@ const SESSION_HISTORY_GUIDE = `## 会话压缩与历史召回
 
 const TOOL_RESULT_ATTENTION_GUIDE = `## 工具结果落盘（铁律）
 结果写入 \`data/tool-results/{session}/{callId}.*\`。超阈值时上下文只有 metadata+path，用 \`recommendedRead\`/\`hitOffsets\` 再 \`read_file\` 取原文。
-长文工具可带 \`expect_keywords\`（3–8）。历史用 \`tool_results_list\` / \`tool_result_meta\`。禁止未读 path 假装已知全文。`;
+长文工具可带 \`expect_keywords\`（3–8）。历史用 \`tool_results_list\` / \`tool_result_meta\`。禁止未读 path 假装已知全文。
+**分段读纪律（RLM）**：超长材料一律 path+offset 变量化分段读，勿整文件灌窗——\`read_file\`/\`read_article\` 返回 \`nextOffset\` 时直接翻页直到 \`truncated=false\`；看到 [TRUNCATED] 标记时禁止基于残缺内容下结论。`;
 
 /** Hermes SKILLS_GUIDANCE：程序记忆 vs Memory（陈述事实） */
 export const SKILLS_GUIDANCE = `## Skill 程序记忆（Hermes + DeerFlow 渐进加载）

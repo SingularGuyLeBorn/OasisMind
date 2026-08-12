@@ -126,7 +126,7 @@ function truncateToolResultContent(result: unknown, maxChars: number): string | 
   const budget = Math.max(maxChars - overhead - 200, Math.floor(maxChars * 0.5));
   if (budget <= 0) return null;
 
-  const truncatedContent = target.slice(0, budget) + `\n…[content TRUNCATED, original=${target.length} chars, kept=${budget}]`;
+  const truncatedContent = target.slice(0, budget) + `\n…[content TRUNCATED, original=${target.length} chars, kept=${budget}. 若确需完整内容，用带 offset/maxChars 的参数分段重读该工具（read_file/read_article 支持 nextOffset 翻页），勿基于残缺内容下结论]`;
   const truncatedObj = { ...otherFields, [targetKey]: truncatedContent };
   return JSON.stringify(truncatedObj);
 }
@@ -326,7 +326,7 @@ function appendToolResultMessages(
     let content = fullStr;
     if (fullStr.length > maxChars) {
       const trimmed = truncateToolResultContent(resultForLlm, maxChars);
-      content = trimmed ?? fullStr.slice(0, maxChars) + `\n...[TRUNCATED, original=${fullStr.length} chars, limit=${maxChars}]`;
+      content = trimmed ?? fullStr.slice(0, maxChars) + `\n...[TRUNCATED, original=${fullStr.length} chars, limit=${maxChars}. 若确需完整内容，用带 offset/maxChars 的参数分段重读该工具，勿基于残缺 JSON 下结论]`;
     }
     // P2-04：工具结果不可信指令标记（defense-in-depth；单用户本地仍建议保留）
     content = markToolResultUntrusted(item.name, content);

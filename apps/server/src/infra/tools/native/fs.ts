@@ -154,11 +154,15 @@ async function readFileTool(args: Record<string, unknown>, ctx: NativeToolContex
   const content = fs.readFileSync(abs, "utf8");
   const totalChars = content.length;
   const slice = content.slice(offset, offset + maxChars);
+  const end = offset + slice.length;
+  const truncated = end < totalChars;
   return {
     path: relForReturn,
     offset,
     totalChars,
-    truncated: totalChars > offset + maxChars,
+    truncated,
+    // RLM 分段读闭环：truncated=true 时直接给下一段起点，LLM 不必自己算 offset
+    nextOffset: truncated ? end : undefined,
     content: slice,
   };
 }
@@ -428,7 +432,7 @@ const FS_DEFS: NativeToolDefinition[] = [
     name: "read_file",
     concurrencyClass: "A",
     description:
-      "读取文本文件。path：content/… 知识库；data/… 运行时产物（只读）；workspaces/…（工具回传的项目相对路径）；config/memories/…（只读）；apps/algo-viz/…；否则相对当前 Agent Workspace。支持偏移与最大长度。",
+      "读取文本文件。path：content/… 知识库；data/… 运行时产物（只读）；workspaces/…（工具回传的项目相对路径）；config/memories/…（只读）；apps/algo-viz/…；否则相对当前 Agent Workspace。长文件分段读：第一次 offset=0，之后用返回的 nextOffset 翻页直到 truncated=false。",
     parameters: {
       type: "object",
       properties: {
@@ -438,7 +442,7 @@ const FS_DEFS: NativeToolDefinition[] = [
             "content/…、data/…、workspaces/…、config/memories/…、apps/algo-viz/… 或 Workspace 相对路径（如 notes.md）",
         },
         maxChars: { type: "number", description: "最大读取字符数，默认 12000" },
-        offset: { type: "number", description: "起始字符偏移，默认 0" },
+        offset: { type: "number", description: "起始字符偏移，默认 0；翻页时传上次返回的 nextOffset" },
       },
       required: ["path"],
     },
