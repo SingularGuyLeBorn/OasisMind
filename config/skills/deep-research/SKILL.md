@@ -20,16 +20,17 @@ kind: procedural
 
 | 步骤 | 工具 |
 |------|------|
-| 网页广搜 | `web_search` |
+| 网页广搜 | `web_search`；登录墙/强反爬可改 `dokobot_search`（本机真实 Chrome，需扩展+CLI） |
 | arXiv 检索 | `search_arxiv` |
 | 学术检索 | `literature_search`（openalex / arxiv / semantic_scholar / all） |
 | arXiv 全文获取 | `fetch_arxiv`（arXiv ID）→ `download_file` 下载 PDF |
 | 单篇详情 | `literature_get`（DOI / arXiv id） |
-| 精读网页 | `read_article`（长文用 offset 翻页） |
+| 精读网页 | 公开页优先 `read_article`（长文 offset 翻页）；登录墙 / 已在 Chrome 打开的页用 `dokobot_read`；未装 Dokobot 或失败再 `platform_login` + `read_article` |
+| 需点击/填表 | `skill_view browser-drive` + `webbridge_command`（不要为读正文开 WebBridge） |
 | PDF/Word 入库 | `document_to_markdown` |
 | 报告落盘 | `write_file`（Workspace）或 `post_create`（数字花园） |
 
-**禁止**调用 `future` CLI 或不存在的 `search_paper` / `parse_doc`。
+**禁止**调用 `future` CLI 或不存在的 `search_paper` / `parse_doc`。Dokobot / WebBridge 都是场景手段，不单独为一工具开 Skill。
 
 ## 策略（先问用户选一档）
 
@@ -44,9 +45,9 @@ kind: procedural
 
 ## 五步流程
 
-1. **收束问题** — 确认主题、时间范围、A/B/C、输出语言；用户若给了 PDF/链接先 `document_to_markdown` / `read_article`。
-2. **广搜** — `web_search` 多组关键词；`literature_search`（source=all 或 arxiv）收集候选。
-3. **精读** — 对 Top 来源 `read_article` / `literature_get`；记下主张、证据、出处（URL 或 DOI）。
+1. **收束问题** — 确认主题、时间范围、A/B/C、输出语言；用户若给了 PDF/链接先 `document_to_markdown` / `read_article`（登录墙链接可直接 `dokobot_read`）。
+2. **广搜** — `web_search` 多组关键词；撞登录墙再用 `dokobot_search`；`literature_search`（source=all 或 arxiv）收集候选。
+3. **精读** — 对 Top 来源按上表选 `read_article` / `dokobot_read` / `literature_get`；记下主张、证据、出处（URL 或 DOI）。
 4. **交叉验证** — 至少 2 个独立来源支撑关键结论；冲突处显式写出；无来源不写死。
 5. **成稿** — Markdown 报告结构：
    - 问题与范围
