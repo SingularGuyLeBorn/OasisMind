@@ -31,6 +31,12 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
     autonomousRequireExternalGate: true,
     judgeModel: "auto",
   };
+  const harnessDefaults = {
+    gate: {
+      timeoutMs: 180_000,
+      presets: {} as Record<string, string>,
+    },
+  };
   return {
     port: 3010,
     host: "127.0.0.1",
@@ -192,6 +198,18 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
     goal: {
       ...goalDefaults,
       ...(overrides?.goal ?? {}),
+    },
+    harness: {
+      ...harnessDefaults,
+      ...(overrides?.harness ?? {}),
+      gate: {
+        ...harnessDefaults.gate,
+        ...(overrides?.harness?.gate ?? {}),
+        presets: {
+          ...harnessDefaults.gate.presets,
+          ...(overrides?.harness?.gate?.presets ?? {}),
+        },
+      },
     },
   };
 }
@@ -484,6 +502,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "experiment_decide",
   "experiment_list",
   "harness_refine",
+  "harness_gate_run",
   "autonomous_gate",
   "optimize_agent_prompt",
   "generate_skill_from_experience",

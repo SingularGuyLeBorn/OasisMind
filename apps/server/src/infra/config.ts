@@ -68,6 +68,17 @@ const GoalYamlSchema = z.object({
   judgeModel: z.string().default("auto"),
 });
 
+/** config.yaml harness 段：服务端核验门（禁止 Agent 自报指标） */
+const HarnessYamlSchema = z.object({
+  gate: z
+    .object({
+      timeoutMs: z.coerce.number().int().min(5_000).max(600_000).default(180_000),
+      /** preset 名 → 完整命令；覆盖内置 server_lint / server_test / shared_lint */
+      presets: z.record(z.string()).default({}),
+    })
+    .default({}),
+});
+
 /** config.yaml inbox 段：截图监视目录 + 蒸馏默认花园 */
 const PacksYamlSchema = z.object({
   /** lite | full | custom（custom/省略 = 按下列布尔，默认全开） */
@@ -379,6 +390,13 @@ export interface AppConfig {
     autonomousRequireExternalGate: boolean;
     judgeModel: string;
   };
+  /** Harness：服务端核验门 allowlist */
+  harness: {
+    gate: {
+      timeoutMs: number;
+      presets: Record<string, string>;
+    };
+  };
   /**
    * 能力包（Core+Packs）。core/chat 恒 true。
    * config.yaml packs + KP_PACKS=lite|full + KP_PACKS_DISABLE/ENABLE。
@@ -634,6 +652,10 @@ export function createAppConfig(): AppConfig {
   const skillsYaml = skillsYamlParsed.success ? skillsYamlParsed.data : SkillsYamlSchema.parse({});
   const goalYamlParsed = GoalYamlSchema.safeParse(yamlConfig.goal ?? {});
   const goalYaml = goalYamlParsed.success ? goalYamlParsed.data : GoalYamlSchema.parse({});
+  const harnessYamlParsed = HarnessYamlSchema.safeParse(yamlConfig.harness ?? {});
+  const harnessYaml = harnessYamlParsed.success
+    ? harnessYamlParsed.data
+    : HarnessYamlSchema.parse({});
   const inboxYamlParsed = InboxYamlSchema.safeParse(yamlConfig.inbox ?? {});
   const inboxYaml = inboxYamlParsed.success ? inboxYamlParsed.data : InboxYamlSchema.parse({});
   const packsYamlParsed = PacksYamlSchema.safeParse(yamlConfig.packs ?? {});
@@ -954,6 +976,12 @@ export function createAppConfig(): AppConfig {
     reflection: reflectionYaml,
     skills: skillsYaml,
     goal: goalYaml,
+    harness: {
+      gate: {
+        timeoutMs: harnessYaml.gate.timeoutMs,
+        presets: harnessYaml.gate.presets ?? {},
+      },
+    },
     packs,
   };
 
