@@ -16,6 +16,7 @@ import { registerIntegrationTools } from "./integration.js";
 import { registerNotifyTools } from "./notify.js";
 import { registerAskUserTools } from "./askUser.js";
 import { registerSkillsTools } from "./skills.js";
+import { registerExperimentTools } from "./experiment.js";
 import { registerInboxTools } from "./inbox.js";
 import { registerDeployTools } from "./deploy.js";
 import { registerAlgoVizTools } from "./algoViz.js";
@@ -41,6 +42,7 @@ const DOMAIN_REGISTRARS: DomainRegistrar[] = [
   { domain: "notify", register: registerNotifyTools },
   { domain: "askUser", register: registerAskUserTools },
   { domain: "skills", register: registerSkillsTools },
+  { domain: "skills", register: registerExperimentTools },
   { domain: "inbox", register: registerInboxTools },
   { domain: "deploy", register: registerDeployTools },
   { domain: "algoViz", register: registerAlgoVizTools },

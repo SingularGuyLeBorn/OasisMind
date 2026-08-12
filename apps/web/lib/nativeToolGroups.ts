@@ -56,8 +56,15 @@ export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (/^git_/.test(name)) return "git";
   if (/^(memory_|post_|pinned_memory|todo_)/.test(name)) return "memory";
   if (/^session_/.test(name)) return "session";
-  if (/^(skills_|skill_manage|skill_view|skill_discover|skill_enable|skill_promote)/.test(name)) {
+  if (
+    /^(skills_|skill_manage|skill_view|skill_discover|skill_enable|skill_promote|experiment_|harness_refine)/.test(
+      name,
+    )
+  ) {
     return "skills";
+  }
+  if (/^autonomous_gate$/.test(name)) {
+    return "session";
   }
   if (
     /^(spawn_|agent_|workspace_|free_models|free_api_keys|send_email|ask_user|swarm_)/.test(name)
@@ -255,6 +262,11 @@ export const NATIVE_LABELS: Record<string, string> = {
   skill_discover: "发现 Skill",
   skill_enable: "启用 Skill",
   skill_promote: "晋升 Skill",
+  experiment_begin: "开始 Harness 实验",
+  experiment_decide: "实验 keep/discard",
+  experiment_list: "实验账本列表",
+  harness_refine: "带证据 refine",
+  autonomous_gate: "自治外部质量门",
   optimize_agent_prompt: "优化 Agent 提示词",
   generate_skill_from_experience: "从经验生成 Skill",
   free_models_list: "免费模型目录",
