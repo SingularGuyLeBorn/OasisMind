@@ -248,6 +248,23 @@ export function ensureBuiltinContextHooks(): void {
     },
   });
 
+  // 任务画布：本会话血缘的 queued/running 后台任务符号视图（空态不注入）
+  registerContextHook({
+    name: "task-canvas",
+    order: 360,
+    enabled: roundOneOnly,
+    run: async (input) => {
+      try {
+        const { buildTaskCanvasHint } = await import("./taskCanvas.js");
+        input.scratch.__taskCanvasHint = await buildTaskCanvasHint(input.ctx.services.prisma, {
+          sessionId: input.sessionId || input.ctx.sessionId,
+        });
+      } catch {
+        input.scratch.__taskCanvasHint = "";
+      }
+    },
+  });
+
   registerContextHook({
     name: "agent-extras",
     order: 400,
@@ -260,10 +277,11 @@ export function ensureBuiltinContextHooks(): void {
       const identityHint = typeof input.scratch.__identityHint === "string" ? input.scratch.__identityHint : "";
       const memoryHint = typeof input.scratch.__memoryHint === "string" ? input.scratch.__memoryHint : "";
       const goalHint = typeof input.scratch.__goalHint === "string" ? input.scratch.__goalHint : "";
+      const taskCanvasHint = typeof input.scratch.__taskCanvasHint === "string" ? input.scratch.__taskCanvasHint : "";
       const guide = typeof input.scratch.__toolGuide === "string" ? input.scratch.__toolGuide : "";
       const composed = guide
-        ? `${base}${identityHint}${memoryHint}${goalHint}\n\n${guide}${extras}`
-        : `${base}${identityHint}${memoryHint}${goalHint}${extras}`;
+        ? `${base}${identityHint}${memoryHint}${goalHint}${taskCanvasHint}\n\n${guide}${extras}`
+        : `${base}${identityHint}${memoryHint}${goalHint}${taskCanvasHint}${extras}`;
       return { systemPrompt: composed };
     },
   });
