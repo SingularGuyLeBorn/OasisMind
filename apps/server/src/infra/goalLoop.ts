@@ -311,12 +311,16 @@ export async function reportAutonomousGate(args: {
     throw new Error(`goal 状态为 ${goal.status}，无法上报 gate`);
   }
   const { hasExternalMetric, metricsAllowKeep } = await import("./experimentLedger.js");
+  const { assertVerifiedForKeep } = await import("./harnessGate.js");
   if (!hasExternalMetric(args.metrics)) {
     throw new Error(
       "metrics 须含 lintOk/testOk/gatePassed/gateCommandExitCode 至少一项（禁止仅 modelSelfScore）",
     );
   }
-  const passed = metricsAllowKeep(args.metrics);
+  // 上报「通过」必须服务端核验；失败可带 verified 或不带（discard/继续修）
+  const claimingPass = metricsAllowKeep(args.metrics);
+  if (claimingPass) assertVerifiedForKeep(args.metrics);
+  const passed = claimingPass;
   const next: SessionGoalState = {
     ...goal,
     externalGate: {

@@ -57,7 +57,7 @@ export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (/^(memory_|post_|pinned_memory|todo_)/.test(name)) return "memory";
   if (/^session_/.test(name)) return "session";
   if (
-    /^(skills_|skill_manage|skill_view|skill_discover|skill_enable|skill_promote|experiment_|harness_refine)/.test(
+    /^(skills_|skill_manage|skill_view|skill_discover|skill_enable|skill_promote|experiment_|harness_refine|harness_gate_run)/.test(
       name,
     )
   ) {
@@ -266,6 +266,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   experiment_decide: "实验 keep/discard",
   experiment_list: "实验账本列表",
   harness_refine: "带证据 refine",
+  harness_gate_run: "服务端核验 Gate",
   autonomous_gate: "自治外部质量门",
   optimize_agent_prompt: "优化 Agent 提示词",
   generate_skill_from_experience: "从经验生成 Skill",

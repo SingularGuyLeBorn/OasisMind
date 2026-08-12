@@ -15,6 +15,10 @@ import {
   type ExperimentTargetKind,
 } from "../../experimentLedger.js";
 import { refineWithLedger } from "../../harnessRefine.js";
+import {
+  listHarnessGatePresets,
+  runHarnessGatePreset,
+} from "../../harnessGate.js";
 
 const TARGET_KINDS = ["skill", "memory", "prompt_note"] as const;
 
@@ -57,30 +61,36 @@ async function experimentBeginTool(args: Record<string, unknown>, ctx: NativeToo
 async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const id = String(args.experimentId ?? args.id ?? "").trim();
   const decision = String(args.decision ?? "").trim();
-  const metrics = coerceExperimentMetrics(args.metrics);
+  const gatePreset = args.gatePreset ? String(args.gatePreset).trim() : "";
+  let metrics = coerceExperimentMetrics(args.metrics);
   if (!id || (decision !== "keep" && decision !== "discard")) {
     return agentParamError({
       reason:
-        "experiment_decide 必填 experimentId + decision(keep|discard) + metrics。" +
-        "keep 时外部指标须全部通过；失败用 discard。",
+        "experiment_decide 必填 experimentId + decision(keep|discard)。" +
+        "keep 须用 harness_gate_run 的 verified metrics，或传 gatePreset 由服务端现跑。",
       got: { experimentId: args.experimentId ?? args.id, decision: args.decision, metrics: args.metrics },
       correctExample: {
         experimentId: "abc123",
         decision: "keep",
-        metrics: { lintOk: true, testOk: true },
+        gatePreset: "server_lint",
       },
       code: "INVALID_EXPERIMENT_DECIDE",
     });
   }
-  if (!metrics) {
-    return agentParamError({
-      reason: "metrics 必须是对象或 JSON 字符串，且含外部可判定字段（禁止仅 modelSelfScore）。",
-      got: args.metrics,
-      correctExample: { metrics: { testOk: true, gateCommandExitCode: 0 } },
-      code: "INVALID_EXPERIMENT_METRICS",
-    });
-  }
   try {
+    if (gatePreset) {
+      const verified = await runHarnessGatePreset(ctx.config, gatePreset);
+      metrics = { ...(metrics ?? {}), ...verified };
+    }
+    if (!metrics) {
+      return agentParamError({
+        reason:
+          "缺少 metrics：keep 请先 harness_gate_run 或传 gatePreset；discard 可传失败指标。",
+        got: args.metrics,
+        correctExample: { gatePreset: "server_lint" },
+        code: "INVALID_EXPERIMENT_METRICS",
+      });
+    }
     return await decideExperiment({
       id,
       decision: decision as "keep" | "discard",
@@ -91,6 +101,33 @@ async function experimentDecideTool(args: Record<string, unknown>, ctx: NativeTo
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+async function harnessGateRunTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const preset = String(args.preset ?? "").trim();
+  if (!preset) {
+    return agentParamError({
+      reason: "harness_gate_run 必填 preset（如 server_lint / server_test）。服务端执行并返回 verified metrics。",
+      got: args.preset,
+      correctExample: { preset: "server_lint" },
+      code: "INVALID_HARNESS_GATE",
+    });
+  }
+  try {
+    const metrics = await runHarnessGatePreset(ctx.config, preset);
+    return {
+      ...metrics,
+      availablePresets: Object.keys(listHarnessGatePresets(ctx.config)).sort(),
+      hint:
+        "将本对象原样传给 experiment_decide(metrics=…) 或 autonomous_gate(metrics=…)。禁止手改 verified。",
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      availablePresets: Object.keys(listHarnessGatePresets(ctx.config)).sort(),
     };
   }
 }
@@ -191,8 +228,8 @@ const EXPERIMENT_DEFS: NativeToolDefinition[] = [
   {
     name: "experiment_decide",
     description:
-      "结束实验：keep 保留候选（外部指标须全部通过），discard 回滚到 begin baseline。" +
-      "metrics 必须含外部可判定字段；禁止仅用模型自评分；失败指标不能 keep。",
+      "结束实验：keep 保留候选（须服务端 verified 指标且全部通过），discard 回滚 baseline。" +
+      "keep 请先 harness_gate_run，或直接传 gatePreset 由服务端现跑。禁止自报 lintOk。",
     concurrencyClass: "A",
     parameters: zodParams(
       z.object({
@@ -200,9 +237,24 @@ const EXPERIMENT_DEFS: NativeToolDefinition[] = [
         decision: z.enum(["keep", "discard"]).describe("【必填】keep|discard。"),
         metrics: z
           .union([z.record(z.unknown()), z.string()])
-          .describe(
-            "【必填】对象或 JSON 字符串。至少一项：lintOk/testOk/gatePassed（bool）或 gateCommandExitCode（number）。",
-          ),
+          .describe("harness_gate_run 返回的 verified 对象；与 gatePreset 二选一（keep 推荐 gatePreset）。")
+          .optional(),
+        gatePreset: z
+          .string()
+          .describe("服务端现跑的 preset（server_lint/server_test…），结果自动写入 metrics。")
+          .optional(),
+      }),
+    ),
+  },
+  {
+    name: "harness_gate_run",
+    description:
+      "服务端执行 allowlist gate 命令并返回 verified metrics（禁止 Agent 自报）。" +
+      "preset 如 server_lint / server_test；结果交给 experiment_decide 或 autonomous_gate。",
+    concurrencyClass: "C",
+    parameters: zodParams(
+      z.object({
+        preset: z.string().describe("【必填】config harness.gate.presets 中的名，如 server_lint。"),
       }),
     ),
   },
@@ -251,6 +303,7 @@ const EXPERIMENT_HANDLERS: Record<string, NativeToolHandler> = {
   experiment_decide: experimentDecideTool,
   experiment_list: experimentListTool,
   harness_refine: harnessRefineTool,
+  harness_gate_run: harnessGateRunTool,
 };
 
 export function registerExperimentTools(): void {

@@ -24,6 +24,10 @@ export type ExperimentMetrics = {
   testOk?: boolean;
   gateCommandExitCode?: number;
   gatePassed?: boolean;
+  /** 仅 harness_gate_run 服务端核验后为 true；keep 强制要求 */
+  verified?: boolean;
+  gatePreset?: string;
+  gateCommand?: string;
   modelSelfScore?: number;
   notes?: string;
   [key: string]: unknown;
@@ -257,10 +261,14 @@ export async function decideExperiment(input: DecideExperimentInput) {
       "metrics 须含至少一项外部可判定字段：lintOk / testOk / gatePassed（布尔）或 gateCommandExitCode（数字）。禁止仅用 modelSelfScore。",
     );
   }
-  if (input.decision === "keep" && !metricsAllowKeep(input.metrics)) {
-    throw new Error(
-      "keep 被拒绝：外部指标未全部通过（lintOk/testOk/gatePassed 须为 true，gateCommandExitCode 须为 0）。失败应用 discard。",
-    );
+  if (input.decision === "keep") {
+    const { assertVerifiedForKeep } = await import("./harnessGate.js");
+    assertVerifiedForKeep(input.metrics);
+    if (!metricsAllowKeep(input.metrics)) {
+      throw new Error(
+        "keep 被拒绝：外部指标未全部通过（lintOk/testOk/gatePassed 须为 true，gateCommandExitCode 须为 0）。失败应用 discard。",
+      );
+    }
   }
 
   const row = await prisma.harnessExperiment.findUnique({ where: { id } });

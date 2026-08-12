@@ -1375,20 +1375,27 @@ async function sessionGoalSetTool(args: Record<string, unknown>, ctx: NativeTool
 
 async function autonomousGateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const sessionId = requireChatSessionId(ctx, "autonomous_gate");
-  const metrics = coerceExperimentMetrics(args.metrics);
+  const gatePreset = args.gatePreset ? String(args.gatePreset).trim() : "";
+  let metrics = coerceExperimentMetrics(args.metrics);
+  if (gatePreset) {
+    const { runHarnessGatePreset } = await import("../../harnessGate.js");
+    const verified = await runHarnessGatePreset(ctx.config, gatePreset);
+    metrics = { ...(metrics ?? {}), ...verified };
+  }
   if (!metrics) {
     throw new Error(
-      "autonomous_gate 需要 metrics 对象/JSON，且含 lintOk/testOk/gatePassed/gateCommandExitCode",
+      "autonomous_gate 需要 gatePreset（推荐）或 harness_gate_run 的 verified metrics；禁止自报 lintOk",
     );
   }
   const goal = await reportAutonomousGate({ sessionId, metrics });
   return {
     ...summarizeGoal(goal),
     gatePassed: goal.externalGate?.passed === true,
+    metrics,
     hint:
       goal.externalGate?.passed === true
-        ? "外部 gate 已通过；裁判可将任务标完成。"
-        : "外部 gate 未通过（失败指标）；不可标成功，请修复后重报或接受 exhausted。",
+        ? "服务端核验 gate 已通过；裁判可将任务标完成。"
+        : "gate 未通过或未核验通过；不可标成功，请修复后重跑 harness_gate_run / gatePreset。",
   };
 }
 
@@ -1830,13 +1837,15 @@ const SESSION_DEFS: NativeToolDefinition[] = [
     name: "autonomous_gate",
     concurrencyClass: "D",
     description:
-      "向当前 autonomous goal 上报外部质量门结果（lintOk/testOk/gatePassed/gateCommandExitCode）。" +
-      "未通过或未上报时，裁判不得将任务标 done（触顶只能 exhausted）。",
+      "向当前 autonomous goal 上报质量门。推荐 gatePreset 由服务端现跑；或传 harness_gate_run 的 verified metrics。" +
+      "声称通过必须 verified；未通过/未上报时裁判不得 done（触顶只能 exhausted）。",
     parameters: zodParams(
       z.object({
+        gatePreset: z.string().describe("服务端现跑 preset，如 server_lint").optional(),
         metrics: z
           .union([z.record(z.unknown()), z.string()])
-          .describe("外部指标对象或 JSON 字符串"),
+          .describe("harness_gate_run 返回对象；与 gatePreset 二选一")
+          .optional(),
       }),
     ),
   },
