@@ -15,9 +15,12 @@
 import type { PrismaClient } from "@prisma/client";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { StoredToolCall } from "./chatHistory.js";
+import type { AppConfig } from "./config.js";
 import { createMemoryRepository } from "./memoryRepository.js";
 import { deriveDecisionScope } from "./approvalScope.js";
-import { MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@knowpilot/shared";
+import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
+import { resilientChatCompletion } from "./resilientLlmClient.js";
+import { MEMORY_ARCHIVE_THRESHOLD, MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@knowpilot/shared";
 
 /**
  * IVE 失败归因（EvoScientist）：
@@ -410,4 +413,153 @@ export async function generateSkillFromExperience(
   } catch (err) {
     return { success: false, reason: `Skill 生成失败: ${err instanceof Error ? err.message : String(err)}` };
   }
+}
+
+/**
+ * 从 type=experience 运行经验中蒸馏出 type=procedural 可复用规则。
+ *
+ * 触发：heartbeat 维护通道每日在 decay/consolidate 之后调用。
+ * 机制：
+ * - 按 scope 分批处理，只取 active experience。
+ * - 同一 scope 经验数 ≥ minCount 才蒸馏。
+ * - 按 strength × recency 取前 maxPerScope 条。
+ * - LLM 提炼 ≤5 条规则；输出非空则写 procedural 记忆。
+ * - 源经验通过「 strength 降到归档阈值以下 + repo.forget 」走既有归档路径。
+ */
+export async function distillExperienceToProcedural(
+  services: ServiceContainer,
+  config: AppConfig,
+): Promise<{ scopesProcessed: number; distilled: number }> {
+  const cfg = config.memory?.experienceDistill;
+  if (!cfg || cfg.enabled === false) {
+    return { scopesProcessed: 0, distilled: 0 };
+  }
+
+  const prisma = services.prisma;
+  const repo = createMemoryRepository(services);
+  const now = Date.now();
+
+  // 1) 找出所有有 active experience 的 scope
+  const rows = await prisma.memory.findMany({
+    where: { status: "active", type: MEMORY_TYPES.EXPERIENCE },
+    select: { scope: true },
+    distinct: ["scope"],
+  });
+  const scopes = rows.map((r) => r.scope);
+
+  let scopesProcessed = 0;
+  let distilled = 0;
+
+  for (const scope of scopes) {
+    try {
+      // 2) 读该 scope 的 active experience
+      const experiences = await repo.read({
+        types: [MEMORY_TYPES.EXPERIENCE],
+        scopes: [scope],
+        limit: cfg.maxPerScope,
+      });
+
+      if (experiences.length < cfg.minCount) continue;
+
+      // 3) 按 strength × recency 排序（recencyScore 已在 repo.read 中作为排序因子，这里再精排一次）
+      const sorted = [...experiences].sort((a, b) => {
+        const scoreA = a.strength * recencyScore(a.updatedAt, now);
+        const scoreB = b.strength * recencyScore(b.updatedAt, now);
+        return scoreB - scoreA;
+      });
+
+      const top = sorted.slice(0, cfg.maxPerScope);
+
+      // 4) 构建紧凑清单
+      const summaries: ExperienceSummary[] = [];
+      for (const e of top) {
+        try {
+          summaries.push(JSON.parse(e.content) as ExperienceSummary);
+        } catch {
+          /* 跳过坏 JSON */
+        }
+      }
+      if (summaries.length === 0) continue;
+
+      const toolFreq = new Map<string, number>();
+      const lines: string[] = [];
+      for (const s of summaries) {
+        for (const t of s.toolsUsed ?? []) {
+          toolFreq.set(t, (toolFreq.get(t) ?? 0) + 1);
+        }
+        lines.push(
+          `- 任务：${(s.taskDescription ?? "").slice(0, 80)} | 工具：${(s.toolsUsed ?? []).join(",") || "无"} | 成功：${s.success} | 原因：${(s.failureReason ?? s.keyLearnings ?? "").slice(0, 120)}`,
+        );
+      }
+
+      const prompt = `把这些运行经验提炼成不超过 5 条「这类任务该怎么做」的可复用规则，每条一句话，只输出规则，每行一条。只提炼出现 ≥2 次的模式，单次偶然不提炼。\n\n${lines.join("\n")}`;
+
+      const model = resolveAuxiliaryModel(config, {
+        configured: cfg.model,
+        mainModel: config.llm.defaultModel,
+        preference: "lite_free",
+      });
+
+      const result = await resilientChatCompletion({
+        config,
+        model,
+        messages: [
+          { role: "system", content: "你是经验蒸馏器。把运行经验列表提炼成可复用的操作规则。" },
+          { role: "user", content: prompt },
+        ],
+        maxTokens: 300,
+        temperature: 0.3,
+      });
+
+      const raw = typeof result.content === "string" ? result.content : "";
+      const rules = raw
+        .split("\n")
+        .map((l) => l.replace(/^[-\d\.\*]+\s*/, "").trim())
+        .filter((l) => l.length > 0)
+        .slice(0, 5);
+
+      if (rules.length === 0) {
+        console.warn(`[agentEvolution] scope=${scope} 蒸馏结果为空，跳过`);
+        continue;
+      }
+
+      // 5) 写 procedural 记忆
+      const keywords = [...toolFreq.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name]) => name);
+
+      await repo.write({
+        content: rules.map((r) => `- ${r}`).join("\n"),
+        type: MEMORY_TYPES.PROCEDURAL,
+        scope,
+        strength: 0.85,
+        keywords,
+        attribution: "agent",
+        source: "experience-distill",
+      });
+      distilled++;
+      scopesProcessed++;
+
+      // 6) 归档源经验：走既有「strength 降到归档阈值以下 → repo.forget」路径
+      const sourceIds = top.map((e) => e.id);
+      await prisma.memory.updateMany({
+        where: { id: { in: sourceIds } },
+        data: { strength: 0.05 },
+      });
+      await repo.forget({ scope, beforeStrength: MEMORY_ARCHIVE_THRESHOLD });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`[agentEvolution] scope=${scope} 经验蒸馏失败: ${reason}`);
+      // 单个 scope 失败不影响其他 scope；不归档源经验
+    }
+  }
+
+  return { scopesProcessed, distilled };
+}
+
+// 复用 memoryRepository 内部的 recencyScore 逻辑
+function recencyScore(updatedAt: Date, nowMs: number): number {
+  const ageDays = Math.max(0, (nowMs - updatedAt.getTime()) / 86_400_000);
+  return 1 / (1 + ageDays);
 }

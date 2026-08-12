@@ -33,6 +33,7 @@ import {
   refreshPendingApprovalScopeCache,
 } from "./approvalGate.js";
 import { createMemoryRepository, decayMemories, consolidateMemories } from "./memoryRepository.js";
+import { distillExperienceToProcedural } from "./agentEvolution.js";
 import { sendEmailNotification } from "./emailNotifier.js";
 import { claimExclusiveSessionTaskRun } from "./taskClaim.js";
 import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES, PERSONA_DISTILL_CRON } from "@knowpilot/shared";
@@ -137,7 +138,7 @@ export class HeartbeatEngine {
     // Hermes：同通道挂 skill curator（stale/archive，非硬删）
     if (!this.maintenanceJob) {
       this.maintenanceJob = cron.schedule(MEMORY_DECAY_CRON, () => {
-        this.runMemoryDecay().catch((err) => { console.warn("[heartbeatEngine.ts] best-effort failed:", err instanceof Error ? err.message : err); });
+        this.runMemoryDecay().then(() => this.runExperienceDistill()).catch((err) => { console.warn("[heartbeatEngine.ts] best-effort failed:", err instanceof Error ? err.message : err); });
         this.runSkillCurator().catch((err) => { console.warn("[heartbeatEngine.ts] best-effort failed:", err instanceof Error ? err.message : err); });
       });
     }
@@ -368,6 +369,25 @@ export class HeartbeatEngine {
     } catch (err) {
       console.warn(`  ⚠️ [ApprovalCleanup] 执行失败:`, err instanceof Error ? err.message : err);
       return 0;
+    }
+  }
+
+  /** 经验 → procedural 蒸馏（每日 cron；接在 decay/consolidate 后，失败不阻塞心跳主流程） */
+  async runExperienceDistill(): Promise<{ scopesProcessed: number; distilled: number }> {
+    try {
+      const result = await distillExperienceToProcedural(this.services, this.config);
+      if (result.scopesProcessed > 0 || result.distilled > 0) {
+        console.log(
+          `  🧠 [ExperienceDistill] 处理 ${result.scopesProcessed} 个 scope，生成 ${result.distilled} 条 procedural 规则`,
+        );
+      }
+      return result;
+    } catch (err) {
+      console.warn(
+        `  🧠 [ExperienceDistill] 执行失败:`,
+        err instanceof Error ? err.message : err,
+      );
+      return { scopesProcessed: 0, distilled: 0 };
     }
   }
 

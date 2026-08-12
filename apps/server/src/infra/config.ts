@@ -56,6 +56,18 @@ const MemoryYamlSchema = z.object({
       timeoutMs: z.coerce.number().int().min(500).max(30_000).default(3000),
     })
     .default({ enabled: true, model: "auto", timeoutMs: 3000 }),
+  experienceDistill: z
+    .object({
+      /** 是否把 experience 蒸馏成 procedural */
+      enabled: z.boolean().default(true),
+      /** 同一 scope 下最少积累多少条 experience 才触发 */
+      minCount: z.coerce.number().int().min(1).default(5),
+      /** 每次蒸馏最多读多少条 experience */
+      maxPerScope: z.coerce.number().int().min(1).default(30),
+      /** 蒸馏模型；auto = resolveAuxiliaryModel 选免费轻量模型 */
+      model: z.string().default("auto"),
+    })
+    .default({ enabled: true, minCount: 5, maxPerScope: 30, model: "auto" }),
   embedding: z
     .object({
       /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
@@ -407,6 +419,13 @@ export interface AppConfig {
       enabled: boolean;
       model: string;
       timeoutMs: number;
+    };
+    /** 经验蒸馏：把 experience 沉淀为 procedural */
+    experienceDistill: {
+      enabled: boolean;
+      minCount: number;
+      maxPerScope: number;
+      model: string;
     };
     embedding: {
       enabled: boolean;
@@ -1036,6 +1055,12 @@ export function createAppConfig(): AppConfig {
         enabled: memoryYaml.queryRewrite.enabled,
         model: memoryYaml.queryRewrite.model,
         timeoutMs: memoryYaml.queryRewrite.timeoutMs,
+      },
+      experienceDistill: {
+        enabled: memoryYaml.experienceDistill.enabled,
+        minCount: memoryYaml.experienceDistill.minCount,
+        maxPerScope: memoryYaml.experienceDistill.maxPerScope,
+        model: memoryYaml.experienceDistill.model,
       },
       embedding: {
         enabled: memoryYaml.embedding.enabled,

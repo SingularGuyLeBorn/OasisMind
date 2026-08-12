@@ -136,6 +136,15 @@ memory:
     enabled: true
     model: "auto"     # auto = resolveAuxiliaryModel 选免费轻量模型
     timeoutMs: 3000
+  # 经验蒸馏：把 type=experience 的运行经验沉淀为 type=procedural 的可复用规则
+  experienceDistill:
+    enabled: true
+    # 同一 scope 下最少积累多少条 experience 才触发蒸馏
+    minCount: 5
+    # 每次蒸馏最多读多少条 experience
+    maxPerScope: 30
+    # 蒸馏模型；auto = resolveAuxiliaryModel 选免费轻量模型
+    model: "auto"
   embedding:
     enabled: false
     # OpenAI 兼容端点（/embeddings）；env EMBEDDING_BASE_URL / EMBEDDING_API_KEY / EMBEDDING_MODEL 可覆盖

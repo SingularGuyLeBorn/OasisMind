@@ -8,6 +8,7 @@ import {
   isMemoryUserCreatable,
   isValidGardenIdFormat,
   MEMORY_SCOPE_GLOBAL,
+  MEMORY_TYPES,
   memoryAgentScope,
   memoryWorkspaceScope,
   type MemoryUserCreatableType,
@@ -487,7 +488,7 @@ async function memorySearchTool(args: Record<string, unknown>, ctx: NativeToolCo
     pageSize,
     items: items.map((m) => ({
       id: m.id,
-      content: m.content.slice(0, 200),
+      content: m.content.slice(0, m.type === MEMORY_TYPES.EXPERIENCE ? 800 : 200),
       type: m.type,
       strength: m.strength,
       keywords: m.keywords,
@@ -779,7 +780,8 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
   },
   {
     name: "memory_search",
-    description: "搜索本地记忆库（仅返回现行 active 版本）。",
+    description:
+      "搜索本地记忆库（仅返回现行 active 版本）。type 可填 experience 检索运行经验（任务→工具→成败台账），用于复盘「这类任务之前怎么做的」。",
     parameters: zodParams(
       z.object({
         keyword: z.string().describe("关键词").optional(),

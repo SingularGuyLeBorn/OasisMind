@@ -202,6 +202,13 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
         timeoutMs: 3000,
         ...(overrides?.memory?.queryRewrite ?? {}),
       },
+      experienceDistill: {
+        enabled: true,
+        minCount: 5,
+        maxPerScope: 30,
+        model: "auto",
+        ...(overrides?.memory?.experienceDistill ?? {}),
+      },
       embedding: {
         enabled: false,
         baseUrl: "",
