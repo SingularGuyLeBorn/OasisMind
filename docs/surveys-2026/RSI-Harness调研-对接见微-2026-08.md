@@ -101,16 +101,16 @@ H = **(E, T, C, S, L, V)** = 执行环 / 工具注册 / 上下文 / 状态仓 / 
 
 与 `docs/prompts/harness-gap-fix-prompt.md` 一致，按性价比：
 
-| 优先级 | 动作 | 学自 |
-|--------|------|------|
-| **P0** | `outputValidator`：落盘前机械化检查 | Harness V / METR |
-| **P0** | ExperimentLedger：keep\|discard + 指标 + 轨迹指针 | autoresearch |
-| **P1** | refine-lite：仅 Skill/Memory/prompt note；需证据；可 rollback | Prime `/refine` |
-| **P1** | autonomous 预算 + 用户 gate（如 `pnpm test`）；触顶≠成功 | Prime `/autonomous` |
-| **P2** | 内部 mini Harness-Bench（20–50 题）+ 成本报表 | Harness-Bench / HAL |
-| **P2** | 超长材料强制 path+offset（RLM 思想） | RLM |
-| **P3** | 离线搜 Skill/工作流变体 → 候选 PR | ADAS / DGM |
-| **不做** | REPL 唯一工具、SEAL 权重自改、无沙箱改 server | — |
+| 优先级 | 动作 | 学自 | 落地状态 |
+|--------|------|------|----------|
+| **P0** | `outputValidator`：落盘前机械化检查 | Harness V / METR | **已有** `infra/outputValidator.ts`（write_file / memory / Post） |
+| **P0** | ExperimentLedger：keep\|discard + 指标 + 轨迹指针 | autoresearch | **已有** `HarnessExperiment` + `infra/experimentLedger.ts` + `experiment_*` 工具（assistant/super） |
+| **P1** | refine-lite：仅 Skill/Memory/prompt note；需证据；可 rollback | Prime `/refine` | **已有** `harness_refine` + 强制 ExperimentLedger |
+| **P1** | autonomous 预算 + 用户 gate（如 `pnpm test`）；触顶≠成功 | Prime `/autonomous` | **已有** `mode=autonomous` + `autonomous_gate` + 墙钟/轮次预算 |
+| **P2** | 内部 mini Harness-Bench（20–50 题）+ 成本报表 | Harness-Bench / HAL | 未做 |
+| **P2** | 超长材料强制 path+offset（RLM 思想） | RLM | 部分（read_file/tool-results offset）；未强制 |
+| **P3** | 离线搜 Skill/工作流变体 → 候选 PR | ADAS / DGM | 未做 |
+| **不做** | REPL 唯一工具、SEAL 权重自改、无沙箱改 server | — | 维持不做 |
 
 ### 三条红线
 
