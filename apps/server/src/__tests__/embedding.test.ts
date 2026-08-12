@@ -3,7 +3,7 @@
  * 1. cosineSimilarity / rrfFuse / ranksFromScores 纯函数
  * 2. embedText：未启用 → null；测试注入 embedder → 返回注入向量
  * 3. read 融合：FTS 命中的 A + 仅向量命中的 B（语义相近无字面重叠）经 RRF 都召回；
- *    对照组（embedding disabled）只有 FTS 命中的 A —— 零回归
+ *    对照组（embedding disabled）单路 FTS 召回，只有 A
  * 4. embedAndStoreMemory：enabled 落库 / disabled 跳过
  */
 
@@ -159,7 +159,7 @@ describe("memoryRepository 向量混合检索（RRF 融合）", () => {
     expect(ids).toContain(idB); // 纯向量召回（FTS 无字面命中）
     expect(ids).not.toContain(idC); // 正交不召回
 
-    // 对照：embedding disabled → 纯 FTS，B 不召回（零回归现状语义）
+    // 对照：embedding disabled → 单路 FTS 召回，B 不召回
     const repoDisabled = new PrismaMemoryRepository(
       prisma,
       undefined,

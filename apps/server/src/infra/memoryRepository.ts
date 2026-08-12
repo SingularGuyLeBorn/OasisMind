@@ -9,7 +9,8 @@
  * 1. 写时隔离：scope ∈ { global, agent:{id}, workspace:{id} }，读方必须显式声明 scopes，
  *    其他 Agent 的 experience 天然不可见（替代读时手工过滤）。
  * 2. 去重：contentHash = sha256(content.trim())，同 scope 同 hash 幂等刷新而非重复插入。
- * 3. 排序：读时按 strength × recencyScore 打分（recencyScore = 1/(1+ageDays)）。
+ * 3. 排序：keyword 检索走 RRF 名次融合（FTS 单路或 FTS+向量双路）×(1+strength)×recency；
+ *    LIKE 回退路径无召回名次，纯 (1+strength)×recency（recencyScore = 1/(1+ageDays)）。
  * 4. 淘汰：decayMemories 每日 strength *= 0.95^days（raw SQL 不改 updatedAt，保证按日复利），
  *    低于 MEMORY_ARCHIVE_THRESHOLD 归档删除（走 MemoryService.delete 同步清理文件与 FTS）。
  * 5. 写路径统一走 MemoryService.create/update：保证文件回写 config/memories/ 与 FTS 增量同步。
@@ -233,8 +234,9 @@ async function linkConflictPeers(
 }
 
 /**
- * 综合分：BM25 相关度 × (1+strength) × recency。
- * FTS5 rank 越小（更负）越好 → logistic：1/(1+e^rank)；无 FTS 命中时 bm25Rel=1（纯 strength×recency）。
+ * LIKE 回退路径的排序分：BM25 相关度 × (1+strength) × recency。
+ * FTS5 rank 越小（更负）越好 → logistic：1/(1+e^rank)；无 ftsRank 时 bm25Rel=1（纯 strength×recency）。
+ * 注意：keyword 主路径的排序已统一为 RRF 名次融合（见 read），本函数只服务 LIKE 回退与单测。
  */
 export function scoreMemoryCandidate(opts: {
   strength: number;
@@ -255,7 +257,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
     private readonly prisma: PrismaClient,
     /** 写/删统一走 MemoryService，保证文件回写 + FTS 增量同步；缺省时退化为裸 Prisma（仅测试用） */
     private readonly memoryService?: MemoryService,
-    /** 向量混合检索配置（memory.embedding）；缺省/未启用 = 纯 FTS5 现状 */
+    /** 向量混合检索配置（memory.embedding）；未启用 = RRF 单路 FTS 召回 */
     private readonly config?: AppConfig,
   ) {}
 
@@ -292,16 +294,14 @@ export class PrismaMemoryRepository implements MemoryRepository {
     }
 
     let rows: any[] = [];
-    const rankById = new Map<string, number>();
-    // FTS 名次表（1-based，RRF 融合用；与 rankById 的 BM25 原始值并存）
+    // FTS 名次表（1-based，RRF 融合用）
     const ftsOrder = new Map<string, number>();
-    // 路径 1：FTS 召回 + BM25 rank 保留供综合打分
+    // 路径 1：FTS 召回
     if (query.keyword) {
       try {
         const hits = await searchFts(this.prisma, query.keyword, Math.max(limit * 4, 20));
         const memHits = hits.filter((h) => h.entity === "memory");
         memHits.forEach((h, i) => {
-          if (typeof h.rank === "number") rankById.set(h.entityId, h.rank);
           ftsOrder.set(h.entityId, i + 1);
         });
         const ids = memHits.map((h) => h.entityId);
@@ -321,8 +321,8 @@ export class PrismaMemoryRepository implements MemoryRepository {
       }
     }
 
-    // 路径 1b：向量召回（embedding 启用时）。与 FTS 做 RRF 排名融合（TencentDB 混合检索思想）；
-    // 未启用 / embed 失败 / 无向量数据 → vecOrder=null，走原 BM25 综合分（零回归）。
+    // 路径 1b：向量召回（embedding 启用时追加一路）。未启用 / embed 失败 / 无向量数据
+    // → vecOrder=null，RRF 退化为 FTS 单路。
     let vecOrder: Map<string, number> | null = null;
     if (query.keyword && this.config && isEmbeddingEnabled(this.config)) {
       try {
@@ -354,63 +354,73 @@ export class PrismaMemoryRepository implements MemoryRepository {
           );
         }
       } catch {
-        // 向量召回失败降级纯 FTS
+        // 向量召回失败，单路 FTS
       }
     }
 
-    // RRF 融合分支：FTS ∪ 向量候选并集，融合分 ×(1+strength)×recency 排序
-    if (vecOrder && vecOrder.size > 0) {
-      const candidateIds = new Set<string>([...ftsOrder.keys(), ...vecOrder.keys()]);
-      rows = await this.prisma.memory.findMany({
-        where: {
-          id: { in: [...candidateIds] },
-          scope: { in: scopes },
-          ...typeFilter,
-          ...statusFilter,
-          ...validityFilter,
-        },
-      });
-      const fused = rrfFuse([ftsOrder, vecOrder]);
-      const nowMs = now.getTime();
-      const items = rows
-        .map((r) => ({
-          item: toItem(r),
-          score:
-            (fused.get(r.id) ?? 0) *
-            (1 + Math.max(0, r.strength)) *
-            recencyScore(r.updatedAt, nowMs),
-        }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit)
-        .map((x) => x.item);
-      await this.touchRetrieved(items, now);
-      return items;
+    // RRF 统一排序主路径：有任一召回名次（FTS 或向量）且候选行非空即走这里。
+    // 候选 = FTS ∪ 向量并集；向量独有候选补查并入（embedding 关闭时无差集，零额外查询）。
+    // 名次非空但候选行全被 scope/type/validity 过滤光时 fall through 到 LIKE 回退。
+    if (ftsOrder.size > 0 || (vecOrder && vecOrder.size > 0)) {
+      if (vecOrder && vecOrder.size > 0) {
+        const fetchedIds = new Set(rows.map((r) => r.id as string));
+        const missing = [...vecOrder.keys()].filter((id) => !fetchedIds.has(id));
+        if (missing.length > 0) {
+          const extra = await this.prisma.memory.findMany({
+            where: {
+              id: { in: missing },
+              scope: { in: scopes },
+              ...typeFilter,
+              ...statusFilter,
+              ...validityFilter,
+            },
+          });
+          rows = [...rows, ...extra];
+        }
+      }
+      if (rows.length > 0) {
+        const rankings = vecOrder && vecOrder.size > 0 ? [ftsOrder, vecOrder] : [ftsOrder];
+        const fused = rrfFuse(rankings);
+        const nowMs = now.getTime();
+        const items = rows
+          .map((r) => ({
+            item: toItem(r),
+            score:
+              (fused.get(r.id) ?? 0) *
+              (1 + Math.max(0, r.strength)) *
+              recencyScore(r.updatedAt, nowMs),
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit)
+          .map((x) => x.item);
+        await this.touchRetrieved(items, now);
+        return items;
+      }
     }
 
-    // 路径 2：LIKE 回退；排序在内存做（BM25×(1+strength)×recency），取宽一点再裁剪
+    // 路径 2：LIKE 回退（FTS 未就绪/零命中且向量零命中）；无召回名次，
+    // 排序 = (1+strength)×recency（scoreMemoryCandidate 无 ftsRank 时 bm25Rel=1 自然退化）。
     // 注意：keyword 的 OR 不能与 validityFilter 的 OR 同级展开，否则后者被覆盖
-    if (rows.length === 0) {
-      const keywordFilter = query.keyword
-        ? {
-            OR: [
-              { content: { contains: query.keyword } },
-              { keywords: { contains: query.keyword } },
-            ],
-          }
-        : {};
-      rows = await this.prisma.memory.findMany({
-        where: {
-          AND: [
-            { scope: { in: scopes } },
-            typeFilter,
-            statusFilter,
-            validityFilter,
-            keywordFilter,
+    const keywordFilter = query.keyword
+      ? {
+          OR: [
+            { content: { contains: query.keyword } },
+            { keywords: { contains: query.keyword } },
           ],
-        },
-        take: 200,
-      });
-    }
+        }
+      : {};
+    rows = await this.prisma.memory.findMany({
+      where: {
+        AND: [
+          { scope: { in: scopes } },
+          typeFilter,
+          statusFilter,
+          validityFilter,
+          keywordFilter,
+        ],
+      },
+      take: 200,
+    });
 
     const nowMs = now.getTime();
     const items = rows
@@ -420,7 +430,6 @@ export class PrismaMemoryRepository implements MemoryRepository {
           strength: r.strength,
           updatedAt: r.updatedAt,
           nowMs,
-          ftsRank: rankById.get(r.id),
         }),
       }))
       .sort((a, b) => b.score - a.score)
