@@ -10,6 +10,7 @@ import type {
 } from "@knowpilot/shared";
 import { canonicalListTag, formatTagsCsv, tagsForFts, tagsFromCsv } from "@knowpilot/shared";
 import { FileSyncService } from "../../services.js";
+import { embedAndStoreMemory, isEmbeddingEnabled } from "../embedding.js";
 
 /** Memory 长期语义记忆 */
 export interface MemoryEntity {
@@ -166,10 +167,21 @@ export class MemoryService extends FileSyncService<CreateMemoryInput, UpdateMemo
   protected override async afterCreate(entity: MemoryEntity, input: CreateMemoryInput): Promise<void> {
     await super.afterCreate(entity, input);
     await this.syncFts("memory", entity.id, entity.type, this.ftsBody(entity));
+    this.scheduleEmbedding(entity.id, entity.content);
   }
   protected override async afterUpdate(entity: MemoryEntity, existing: any, input: UpdateMemoryInput): Promise<void> {
     await super.afterUpdate(entity, existing, input);
     await this.syncFts("memory", entity.id, entity.type, this.ftsBody(entity));
+    // 仅内容变化才重 embed（strength/keywords 等元信息更新不重算，省调用）
+    if (typeof (input as { content?: unknown }).content === "string") {
+      this.scheduleEmbedding(entity.id, entity.content);
+    }
+  }
+
+  /** fire-and-forget 生成 embedding 落库；未启用/失败静默（检索降级纯 FTS5），不阻塞写主链 */
+  private scheduleEmbedding(memoryId: string, content: string): void {
+    if (!isEmbeddingEnabled(this.config)) return;
+    embedAndStoreMemory(this.prisma, this.config, memoryId, content).catch(() => {});
   }
   protected override async afterDelete(existing: any): Promise<void> {
     await super.afterDelete(existing);

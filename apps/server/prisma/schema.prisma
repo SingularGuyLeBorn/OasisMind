@@ -331,6 +331,8 @@ model Memory {
   lastAccessedAt DateTime?
   /// 被检索/注入次数（含 FTS/LIKE 命中后返回）
   accessCount Int @default(0)
+  /// 向量嵌入（JSON number[]，OpenAI 兼容 /embeddings 产出）；null=未生成或 embedding 未启用
+  embedding   String?
   sourceSlug  String?  @unique /// 本地源文件 slug（用于增量同步与清理）
   sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
   createdAt   DateTime @default(now())

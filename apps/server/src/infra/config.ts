@@ -44,6 +44,23 @@ const ReflectionYamlSchema = z.object({
   criticModel: z.string().default(""),
 });
 
+/** config.yaml memory 段：向量混合检索（BM25 + 向量 + RRF；缺省关闭=纯 FTS5 现状） */
+const MemoryYamlSchema = z.object({
+  embedding: z
+    .object({
+      /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
+      enabled: z.boolean().default(false),
+      /** OpenAI 兼容端点 baseUrl（如 https://api.openai.com/v1）；env EMBEDDING_BASE_URL 可覆盖 */
+      baseUrl: z.string().default(""),
+      /** API key；env EMBEDDING_API_KEY 优先 */
+      apiKey: z.string().default(""),
+      model: z.string().default("text-embedding-3-small"),
+      /** 向量召回条数（与 FTS 召回做 RRF 融合） */
+      topK: z.coerce.number().int().min(1).max(100).default(20),
+    })
+    .default({ enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 }),
+});
+
 /** config.yaml skills 段：Hermes 闭环 nudge / curator */
 const SkillsYamlSchema = z.object({
   nudgeInterval: z.coerce.number().int().min(0).default(10),
@@ -365,6 +382,16 @@ export interface AppConfig {
     /** critic 使用的便宜模型；空 = 与主 Agent 模型相同 */
     criticModel: string;
   };
+  /** 记忆向量混合检索（TencentDB BM25+向量+RRF 思想；默认关闭=纯 FTS5） */
+  memory: {
+    embedding: {
+      enabled: boolean;
+      baseUrl: string;
+      apiKey: string;
+      model: string;
+      topK: number;
+    };
+  };
   /** Hermes Skill 闭环：回合后审查阈值 + curator */
   skills: {
     /** 本轮 tool 调用次数 ≥ 此值则触发 background skill review；0 = 关闭 */
@@ -648,6 +675,8 @@ export function createAppConfig(): AppConfig {
   const reflectionYaml = reflectionYamlParsed.success
     ? reflectionYamlParsed.data
     : ReflectionYamlSchema.parse({});
+  const memoryYamlParsed = MemoryYamlSchema.safeParse(yamlConfig.memory ?? {});
+  const memoryYaml = memoryYamlParsed.success ? memoryYamlParsed.data : MemoryYamlSchema.parse({});
   const skillsYamlParsed = SkillsYamlSchema.safeParse(yamlConfig.skills ?? {});
   const skillsYaml = skillsYamlParsed.success ? skillsYamlParsed.data : SkillsYamlSchema.parse({});
   const goalYamlParsed = GoalYamlSchema.safeParse(yamlConfig.goal ?? {});
@@ -974,6 +1003,15 @@ export function createAppConfig(): AppConfig {
       ),
     },
     reflection: reflectionYaml,
+    memory: {
+      embedding: {
+        enabled: memoryYaml.embedding.enabled,
+        baseUrl: readEnv("EMBEDDING_BASE_URL") || memoryYaml.embedding.baseUrl,
+        apiKey: readEnv("EMBEDDING_API_KEY") || memoryYaml.embedding.apiKey,
+        model: readEnv("EMBEDDING_MODEL") || memoryYaml.embedding.model,
+        topK: memoryYaml.embedding.topK,
+      },
+    },
     skills: skillsYaml,
     goal: goalYaml,
     harness: {

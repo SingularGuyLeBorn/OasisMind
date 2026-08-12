@@ -191,6 +191,16 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
     packs: { ...PACKS_FULL },
     ...overrides,
     // 浅合并会整段覆盖 skills/goal，这里补回默认字段
+    memory: {
+      embedding: {
+        enabled: false,
+        baseUrl: "",
+        apiKey: "",
+        model: "text-embedding-3-small",
+        topK: 20,
+        ...(overrides?.memory?.embedding ?? {}),
+      },
+    },
     skills: {
       ...skillsDefaults,
       ...(overrides?.skills ?? {}),

@@ -23,6 +23,14 @@ import type { PrismaClient } from "@prisma/client";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { MemoryEntity, MemoryService } from "./entityServices/memoryService.js";
 import { deleteFtsRow, searchFts } from "./ftsIndex.js";
+import type { AppConfig } from "./config.js";
+import {
+  cosineSimilarity,
+  embedText,
+  isEmbeddingEnabled,
+  ranksFromScores,
+  rrfFuse,
+} from "./embedding.js";
 import {
   MEMORY_ARCHIVE_THRESHOLD,
   MEMORY_INITIAL_STRENGTH,
@@ -247,6 +255,8 @@ export class PrismaMemoryRepository implements MemoryRepository {
     private readonly prisma: PrismaClient,
     /** 写/删统一走 MemoryService，保证文件回写 + FTS 增量同步；缺省时退化为裸 Prisma（仅测试用） */
     private readonly memoryService?: MemoryService,
+    /** 向量混合检索配置（memory.embedding）；缺省/未启用 = 纯 FTS5 现状 */
+    private readonly config?: AppConfig,
   ) {}
 
   async read(query: MemoryReadQuery): Promise<MemoryItem[]> {
@@ -283,14 +293,17 @@ export class PrismaMemoryRepository implements MemoryRepository {
 
     let rows: any[] = [];
     const rankById = new Map<string, number>();
+    // FTS 名次表（1-based，RRF 融合用；与 rankById 的 BM25 原始值并存）
+    const ftsOrder = new Map<string, number>();
     // 路径 1：FTS 召回 + BM25 rank 保留供综合打分
     if (query.keyword) {
       try {
         const hits = await searchFts(this.prisma, query.keyword, Math.max(limit * 4, 20));
         const memHits = hits.filter((h) => h.entity === "memory");
-        for (const h of memHits) {
+        memHits.forEach((h, i) => {
           if (typeof h.rank === "number") rankById.set(h.entityId, h.rank);
-        }
+          ftsOrder.set(h.entityId, i + 1);
+        });
         const ids = memHits.map((h) => h.entityId);
         if (ids.length > 0) {
           rows = await this.prisma.memory.findMany({
@@ -307,6 +320,73 @@ export class PrismaMemoryRepository implements MemoryRepository {
         // FTS 未就绪等，回退 LIKE
       }
     }
+
+    // 路径 1b：向量召回（embedding 启用时）。与 FTS 做 RRF 排名融合（TencentDB 混合检索思想）；
+    // 未启用 / embed 失败 / 无向量数据 → vecOrder=null，走原 BM25 综合分（零回归）。
+    let vecOrder: Map<string, number> | null = null;
+    if (query.keyword && this.config && isEmbeddingEnabled(this.config)) {
+      try {
+        const queryVec = await embedText(this.config, query.keyword);
+        if (queryVec) {
+          const vecRows = await this.prisma.memory.findMany({
+            where: {
+              scope: { in: scopes },
+              ...typeFilter,
+              ...statusFilter,
+              ...validityFilter,
+              embedding: { not: null },
+            },
+            select: { id: true, embedding: true },
+          });
+          const sims = new Map<string, number>();
+          for (const r of vecRows) {
+            if (!r.embedding) continue;
+            try {
+              const sim = cosineSimilarity(queryVec, JSON.parse(r.embedding) as number[]);
+              if (sim > 0) sims.set(r.id, sim);
+            } catch {
+              // 单行 embedding 解析失败跳过
+            }
+          }
+          const topK = Math.max(1, this.config.memory.embedding.topK);
+          vecOrder = new Map(
+            [...ranksFromScores(sims).entries()].filter(([, rank]) => rank <= topK),
+          );
+        }
+      } catch {
+        // 向量召回失败降级纯 FTS
+      }
+    }
+
+    // RRF 融合分支：FTS ∪ 向量候选并集，融合分 ×(1+strength)×recency 排序
+    if (vecOrder && vecOrder.size > 0) {
+      const candidateIds = new Set<string>([...ftsOrder.keys(), ...vecOrder.keys()]);
+      rows = await this.prisma.memory.findMany({
+        where: {
+          id: { in: [...candidateIds] },
+          scope: { in: scopes },
+          ...typeFilter,
+          ...statusFilter,
+          ...validityFilter,
+        },
+      });
+      const fused = rrfFuse([ftsOrder, vecOrder]);
+      const nowMs = now.getTime();
+      const items = rows
+        .map((r) => ({
+          item: toItem(r),
+          score:
+            (fused.get(r.id) ?? 0) *
+            (1 + Math.max(0, r.strength)) *
+            recencyScore(r.updatedAt, nowMs),
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map((x) => x.item);
+      await this.touchRetrieved(items, now);
+      return items;
+    }
+
     // 路径 2：LIKE 回退；排序在内存做（BM25×(1+strength)×recency），取宽一点再裁剪
     // 注意：keyword 的 OR 不能与 validityFilter 的 OR 同级展开，否则后者被覆盖
     if (rows.length === 0) {
@@ -347,24 +427,25 @@ export class PrismaMemoryRepository implements MemoryRepository {
       .slice(0, limit)
       .map((x) => x.item);
 
-    // 被检索/注入即重置衰减：更新 lastAccessedAt 并累加 accessCount。
-    // 后续 decayMemories 以 lastAccessedAt 为基准，所以「被调用」的记忆不会继续衰减。
-    if (items.length > 0) {
-      const ids = items.map((m) => m.id);
-      await this.prisma.memory
-        .updateMany({
-          where: { id: { in: ids } },
-          data: { lastAccessedAt: now, accessCount: { increment: 1 } },
-        })
-        .catch((err) => {
-          console.warn(
-            "[MemoryRepository] 更新 lastAccessedAt/accessCount 失败:",
-            err instanceof Error ? err.message : err,
-          );
-        });
-    }
-
+    await this.touchRetrieved(items, now);
     return items;
+  }
+
+  /** 被检索/注入即重置衰减：更新 lastAccessedAt 并累加 accessCount（decayMemories 以它为基准） */
+  private async touchRetrieved(items: MemoryItem[], now: Date): Promise<void> {
+    if (items.length === 0) return;
+    const ids = items.map((m) => m.id);
+    await this.prisma.memory
+      .updateMany({
+        where: { id: { in: ids } },
+        data: { lastAccessedAt: now, accessCount: { increment: 1 } },
+      })
+      .catch((err) => {
+        console.warn(
+          "[MemoryRepository] 更新 lastAccessedAt/accessCount 失败:",
+          err instanceof Error ? err.message : err,
+        );
+      });
   }
 
   async write(input: MemoryWriteInput): Promise<MemoryItem> {
@@ -677,7 +758,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
 }
 
 export function createMemoryRepository(services: ServiceContainer): MemoryRepository {
-  return new PrismaMemoryRepository(services.prisma, services.memory);
+  return new PrismaMemoryRepository(services.prisma, services.memory, services.config);
 }
 
 /* ─── 三层 scope 写路径守卫（W5-followup） ─── */
