@@ -151,7 +151,7 @@ describe("experimentLedger", () => {
     const decided = await decideExperiment({
       id: begun.id,
       decision: "keep",
-      metrics: { lintOk: true, gateCommandExitCode: 0 },
+      metrics: { verified: true, lintOk: true, gateCommandExitCode: 0 },
       config,
     });
     expect(decided.decision).toBe("keep");
@@ -188,7 +188,7 @@ describe("experimentLedger", () => {
     expect(fs.existsSync(promptAbs)).toBe(false);
   });
 
-  it("keep 拒绝失败的外部指标", async () => {
+  it("keep 拒绝失败的外部指标与未核验自报", async () => {
     expect(metricsAllowKeep({ testOk: false })).toBe(false);
     expect(metricsAllowKeep({ gateCommandExitCode: 1 })).toBe(false);
     expect(metricsAllowKeep({ lintOk: true, testOk: true })).toBe(true);
@@ -206,7 +206,15 @@ describe("experimentLedger", () => {
       decideExperiment({
         id: begun.id,
         decision: "keep",
-        metrics: { testOk: false },
+        metrics: { lintOk: true, testOk: true },
+        config,
+      }),
+    ).rejects.toThrow(/verified/);
+    await expect(
+      decideExperiment({
+        id: begun.id,
+        decision: "keep",
+        metrics: { verified: true, testOk: false },
         config,
       }),
     ).rejects.toThrow(/keep 被拒绝/);
@@ -243,7 +251,7 @@ describe("experimentLedger", () => {
     await decideExperiment({
       id: a.id,
       decision: "keep",
-      metrics: { lintOk: true },
+      metrics: { verified: true, lintOk: true },
       config,
     });
     await expect(

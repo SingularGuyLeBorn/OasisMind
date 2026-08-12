@@ -205,7 +205,11 @@ describe("goalLoop", () => {
       startedAt: new Date().toISOString(),
       maxWallClockMs: 1_800_000,
       requireExternalGate: true,
-      externalGate: { passed: true, metrics: { testOk: true }, reportedAt: new Date().toISOString() },
+      externalGate: {
+        passed: true,
+        metrics: { verified: true, testOk: true },
+        reportedAt: new Date().toISOString(),
+      },
     });
     const res = await evaluateGoalAfterTurn({
       services: {} as never,
