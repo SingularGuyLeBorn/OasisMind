@@ -6,7 +6,7 @@
  * 正文：systemPrompt
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { LLM_MODEL_IDS } from "@knowpilot/shared";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { Syncer, SyncRecord } from "./types.js";
@@ -20,6 +20,30 @@ interface AgentData {
   tools: string;
   tier: string;
   source: string | null;
+  toolInheritMask: { allow?: string[]; deny?: string[] } | null;
+  toolOwn: string[] | null;
+}
+
+function parseToolInheritMask(raw: unknown, slug: string): { allow?: string[]; deny?: string[] } | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as { allow?: unknown; deny?: unknown };
+  const allow = Array.isArray(obj.allow) ? obj.allow.map(String) : undefined;
+  const deny = Array.isArray(obj.deny) ? obj.deny.map(String) : undefined;
+  if ((allow?.length ?? 0) > 0 && (deny?.length ?? 0) > 0) {
+    syncDetailWarn(`  ⚠️ [Agent] ${slug}: toolInheritMask.allow 与 deny 互斥，已跳过 mask`);
+    return null;
+  }
+  if (!allow?.length && !deny?.length) return null;
+  return {
+    ...(allow?.length ? { allow } : {}),
+    ...(deny?.length ? { deny } : {}),
+  };
+}
+
+function parseToolOwn(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  const arr = raw.map(String).filter(Boolean);
+  return arr.length ? arr : null;
 }
 
 export const agentSyncer: Syncer<AgentData> = {
@@ -65,8 +89,14 @@ export const agentSyncer: Syncer<AgentData> = {
       const tools = readStringArray(data.tools).join(",");
       const tier = typeof data.tier === "string" ? data.tier : "sub";
       const source = typeof data.source === "string" ? data.source : null;
+      const toolInheritMask = parseToolInheritMask(data.toolInheritMask, slug);
+      const toolOwn = parseToolOwn(data.toolOwn);
 
-      return { slug, mtime, data: { name, description, model, systemPrompt, tools, tier, source } };
+      return {
+        slug,
+        mtime,
+        data: { name, description, model, systemPrompt, tools, tier, source, toolInheritMask, toolOwn },
+      };
     } catch (e: any) {
       console.error(`  ❌ [Agent 解析失败] ${filePath}:`, e.message);
       return null;
@@ -111,6 +141,8 @@ export const agentSyncer: Syncer<AgentData> = {
           tools: data.tools,
           tier: data.tier,
           source: data.source,
+          toolInheritMask: data.toolInheritMask ?? Prisma.DbNull,
+          toolOwn: data.toolOwn ?? Prisma.DbNull,
           sourceSlug: slug,
           sourceMtime: mtime,
         },
@@ -126,6 +158,8 @@ export const agentSyncer: Syncer<AgentData> = {
           tools: data.tools,
           tier: data.tier,
           source: data.source,
+          toolInheritMask: data.toolInheritMask ?? Prisma.DbNull,
+          toolOwn: data.toolOwn ?? Prisma.DbNull,
           sourceSlug: slug,
           sourceMtime: mtime,
         },

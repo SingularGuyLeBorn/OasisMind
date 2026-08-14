@@ -348,7 +348,7 @@ export async function runAgentLoopStream(options: {
   invokeTrpc: (tool: string, args?: unknown) => Promise<unknown>;
   emit: (event: AgentStreamEvent) => void;
   sessionId?: string;
-  agentMeta?: { id: string; name?: string | null; model: string; systemPrompt: string; tools: string[]; tier?: string; workspaceId?: string | null; parentId?: string | null };
+  agentMeta?: { id: string; name?: string | null; model: string; systemPrompt: string; tools: string[]; tier?: string; workspaceId?: string | null; parentId?: string | null; toolInheritMask?: { allow?: string[]; deny?: string[] }; toolOwn?: string[] };
   signal?: AbortSignal;
   runOrigin?: "user" | "parent" | "heartbeat";
   /** W11：Run.input 业务描述（触发消息等），run 入口落库时写入 */
@@ -892,6 +892,8 @@ export async function chatAgentStream(
         tier: (agent as { tier?: string }).tier,
         workspaceId: (agent as { workspaceId?: string | null }).workspaceId ?? null,
         parentId: (agent as { parentId?: string | null }).parentId ?? null,
+        toolInheritMask: (agent as { toolInheritMask?: { allow?: string[]; deny?: string[] } | null }).toolInheritMask ?? undefined,
+        toolOwn: (agent as { toolOwn?: string[] | null }).toolOwn ?? undefined,
       },
       signal,
       runOrigin: input.runOrigin,

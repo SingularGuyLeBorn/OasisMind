@@ -23,7 +23,8 @@ import { buildSystemPromptSkeleton } from "../../promptBuilder.js";
 import { resolveAgent as defaultResolveAgent } from "../../agentResolver.js";
 import { createTrpcInvoker } from "../../trpcInvoker.js";
 import { createMemoryRepository } from "../../memoryRepository.js";
-import { MEMORY_SCOPE_GLOBAL, memoryAgentScope, LLM_PROVIDER_DEEPSEEK } from "@knowpilot/shared";
+import { MEMORY_SCOPE_GLOBAL, memoryAgentScope, LLM_PROVIDER_DEEPSEEK, CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { deriveVisibleSet } from "../visibleSet.js";
 import {
   filterOpenRouterFreeModels,
   getFreellmGatewayRuntime,
@@ -365,6 +366,29 @@ async function agentInspectTool(args: Record<string, unknown>, ctx: NativeToolCo
     ]
       .filter(Boolean)
       .join(" "),
+    ...inspectVisibleTools(agent),
+  };
+}
+
+function inspectVisibleTools(agent: {
+  id: string;
+  tier?: string;
+  tools?: string[];
+  toolInheritMask?: { allow?: string[]; deny?: string[] } | null;
+  toolOwn?: string[] | null;
+}): { visibleToolCount: number; visibleToolsPreview: string[] } {
+  const tier = agent.tier ?? "sub";
+  const visible = deriveVisibleSet({
+    agentId: agent.id,
+    tier,
+    agentTools: agent.tools ?? [],
+    packs: getAppConfig().packs,
+    inheritMask: agent.toolInheritMask ?? undefined,
+    childOwn: agent.toolOwn ?? (tier === "sub" ? [...CHILD_OWN_TOOLS] : []),
+  });
+  return {
+    visibleToolCount: visible.native.length,
+    visibleToolsPreview: visible.native.slice(0, 30),
   };
 }
 
@@ -672,6 +696,8 @@ async function prepareAgentRun(
         tier: agent.tier,
         parentId: agent.parentId,
         workspaceId: agent.workspaceId,
+        toolInheritMask: agent.toolInheritMask ?? undefined,
+        toolOwn: agent.toolOwn ?? undefined,
       };
 
       let assistantContent = "(无文本输出)";
@@ -1223,6 +1249,10 @@ export async function agentCreateSubTool(args: Record<string, unknown>, ctx: Nat
     workspaceId,
     parentId: ctx.agentSnapshot?.id,
     source: "native_tool:agent_create_sub",
+    toolInheritMask: args.toolInheritMask
+      ? (args.toolInheritMask as { allow?: string[]; deny?: string[] })
+      : undefined,
+    toolOwn: Array.isArray(args.toolOwn) ? (args.toolOwn as string[]) : [...CHILD_OWN_TOOLS],
   });
   if (!created.success || !created.data) return { error: created.error?.message ?? "创建子 Agent 失败" };
   // 审计日志

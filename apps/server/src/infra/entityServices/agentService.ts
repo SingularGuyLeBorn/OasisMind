@@ -37,6 +37,8 @@ export interface AgentEntity {
   heartbeat: any;
   status: string;
   source: string | null;
+  toolInheritMask: { allow?: string[]; deny?: string[] } | null;
+  toolOwn: string[] | null;
   deletedAt: Date | null;
   deletedBy: string | null;
   createdAt: Date;
@@ -55,6 +57,8 @@ export class AgentService extends FileSyncService<CreateAgentInput, UpdateAgentI
     return {
       ...rest,
       tools: raw.tools ? raw.tools.split(",").filter(Boolean).map((t: string) => t.trim()) : [],
+      toolInheritMask: raw.toolInheritMask ?? null,
+      toolOwn: raw.toolOwn ?? null,
     };
   }
 
@@ -65,6 +69,7 @@ export class AgentService extends FileSyncService<CreateAgentInput, UpdateAgentI
       id: true, name: true, autoName: true, description: true, model: true, tools: true,
       tier: true, workspaceId: true, parentId: true, heartbeatModel: true,
       heartbeat: true, heartbeatSuspendedAt: true, status: true, source: true,
+      toolInheritMask: true, toolOwn: true,
       deletedAt: true, deletedBy: true, createdAt: true, updatedAt: true,
     };
   }
@@ -105,6 +110,8 @@ export class AgentService extends FileSyncService<CreateAgentInput, UpdateAgentI
       ...(input.source !== undefined ? { source: input.source } : {}),
       ...(input.heartbeatModel !== undefined ? { heartbeatModel: input.heartbeatModel } : {}),
       ...(input.heartbeat !== undefined ? { heartbeat: input.heartbeat } : {}),
+      ...(input.toolInheritMask !== undefined ? { toolInheritMask: input.toolInheritMask } : {}),
+      ...(input.toolOwn !== undefined ? { toolOwn: input.toolOwn } : {}),
     };
   }
 
@@ -125,6 +132,8 @@ export class AgentService extends FileSyncService<CreateAgentInput, UpdateAgentI
 
   protected serializeToFile(entity: AgentEntity): string {
     // gray-matter/js-yaml 统一序列化：引号/反斜杠/换行由 YAML 库正确转义，杜绝手拼的往返损坏
+    const mask = entity.toolInheritMask;
+    const own = entity.toolOwn;
     return matter.stringify(entity.systemPrompt ?? "", {
       name: entity.name,
       description: entity.description ?? null,
@@ -132,6 +141,8 @@ export class AgentService extends FileSyncService<CreateAgentInput, UpdateAgentI
       tier: entity.tier,
       tools: entity.tools,
       source: entity.source ?? null,
+      ...(mask && (mask.allow?.length || mask.deny?.length) ? { toolInheritMask: mask } : {}),
+      ...(own?.length ? { toolOwn: own } : {}),
     });
   }
 

@@ -35,7 +35,7 @@ export async function runAgentLoop(options: {
   signal?: AbortSignal;
   /** 工具上下文：传入后 async_task_run / spawn_subagent / sleep(async) 等可在本循环内使用 */
   sessionId?: string;
-  agentMeta?: { id: string; name?: string | null; model: string; systemPrompt: string; tools: string[]; tier?: string; parentId?: string | null; workspaceId?: string | null };
+  agentMeta?: { id: string; name?: string | null; model: string; systemPrompt: string; tools: string[]; tier?: string; parentId?: string | null; workspaceId?: string | null; toolInheritMask?: { allow?: string[]; deny?: string[] }; toolOwn?: string[] };
   runOrigin?: "user" | "parent" | "heartbeat" | "async";
   /** W11：Run.input 业务描述（触发消息等），run 入口落库时写入 */
   runInput?: unknown;
@@ -131,6 +131,8 @@ export async function runAgent(
         tier: (agent as { tier?: string }).tier,
         parentId: (agent as { parentId?: string | null }).parentId ?? null,
         workspaceId: (agent as { workspaceId?: string | null }).workspaceId ?? null,
+        toolInheritMask: (agent as { toolInheritMask?: { allow?: string[]; deny?: string[] } | null }).toolInheritMask ?? undefined,
+        toolOwn: (agent as { toolOwn?: string[] | null }).toolOwn ?? undefined,
       },
       runInput: input.input ? { input: input.input } : { messages: input.messages },
     });
@@ -232,6 +234,8 @@ export async function chatAgent(
         tier: effectiveTier,
         parentId: agent.parentId,
         workspaceId: agent.workspaceId,
+        toolInheritMask: agent.toolInheritMask ?? undefined,
+        toolOwn: agent.toolOwn ?? undefined,
       },
       runInput: {
         message: displayText,

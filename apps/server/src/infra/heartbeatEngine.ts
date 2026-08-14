@@ -772,6 +772,8 @@ export class HeartbeatEngine {
       workspaceId: string | null;
       parentId: string | null;
       heartbeatModel: string | null;
+      toolInheritMask?: unknown;
+      toolOwn?: unknown;
     },
     hb: HeartbeatState,
     repairHint: boolean,
@@ -812,6 +814,8 @@ export class HeartbeatEngine {
       tier: agent.tier,
       workspaceId: agent.workspaceId,
       parentId: agent.parentId,
+      toolInheritMask: (agent.toolInheritMask as { allow?: string[]; deny?: string[] } | null) ?? undefined,
+      toolOwn: Array.isArray(agent.toolOwn) ? (agent.toolOwn as string[]) : undefined,
     };
 
     const repairSuffix = repairHint ? `\n\n${REPAIR_SYSTEM_HINT}` : "";

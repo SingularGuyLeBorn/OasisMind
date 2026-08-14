@@ -326,6 +326,13 @@ export const heartbeatConfigSchema = z.object({
 
 export const agentPermissionModeSchema = z.enum(["default", "unattended", "explore"]);
 
+export const toolInheritMaskSchema = z
+  .object({
+    allow: z.array(z.string()).optional(),
+    deny: z.array(z.string()).optional(),
+  })
+  .refine((v) => !(v.allow?.length && v.deny?.length), { message: "allow 与 deny 互斥" });
+
 export const createAgentSchema = z.object({
   name: safeEntityNameSchema,
   description: z.string().optional(),
@@ -333,6 +340,8 @@ export const createAgentSchema = z.object({
   systemPrompt: z.string().default(""),
   tools: z.array(z.string()).default([]),
   permissionMode: agentPermissionModeSchema.nullish(),
+  toolInheritMask: toolInheritMaskSchema.nullable().optional(),
+  toolOwn: z.array(z.string()).nullable().optional(),
   // Swarm 层级（不传则 service 层默认 "sub"）
   tier: agentTierSchema.optional(),
   workspaceId: z.string().cuid().optional(),
@@ -350,6 +359,8 @@ export const updateAgentSchema = z.object({
   systemPrompt: z.string().optional(),
   tools: z.array(z.string()).optional(),
   permissionMode: agentPermissionModeSchema.nullish(),
+  toolInheritMask: toolInheritMaskSchema.nullable().optional(),
+  toolOwn: z.array(z.string()).nullable().optional(),
   // Swarm
   tier: agentTierSchema.optional(),
   workspaceId: z.string().cuid().nullable().optional(),

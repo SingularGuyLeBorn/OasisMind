@@ -12,6 +12,7 @@ import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
 import { getAppConfig } from "../../config.js";
 import { DEFAULT_SUBAGENT_TOOLS } from "../../loop/setup.js";
 import { deriveVisibleSet, visibleSetToAgentTools } from "../visibleSet.js";
+import { listTools } from "../registry.js";
 import { resolveAgent as defaultResolveAgent } from "../../agentResolver.js";
 import { getSwarmOrchestrator, type SwarmTaskOutcome } from "../../swarmOrchestrator.js";
 import { getAsyncJobOrchestrator } from "../../asyncJobOrchestrator.js";
@@ -88,7 +89,59 @@ function defaultSubagentPlaceholderName(task: string): string {
  *   SwarmOrchestrator.dispatch，禁止各调用方私自起流。
  *
  * 执行体 spawnSubagent* 保留原语义（同步等待/report_back/跟踪 Task 均不动）。 */
-function spawnChildVisibleTools(agentTools: string[]): string[] {
+function peelToolName(name: string): string {
+  return name.startsWith("native:") ? name.slice("native:".length) : name;
+}
+
+type InheritMask = { allow?: string[]; deny?: string[] };
+
+function validateSpawnInheritMask(
+  raw: unknown,
+):
+  | { ok: true; mask?: InheritMask }
+  | { ok: false; error: string; code: string; unknown?: string[] } {
+  if (raw == null) return { ok: true };
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "inheritMask 必须是 { allow } 或 { deny } 对象", code: "INHERIT_MASK_CONFLICT" };
+  }
+  const obj = raw as { allow?: unknown; deny?: unknown };
+  const allow = Array.isArray(obj.allow) ? obj.allow.map(String) : undefined;
+  const deny = Array.isArray(obj.deny) ? obj.deny.map(String) : undefined;
+  if ((allow?.length ?? 0) > 0 && (deny?.length ?? 0) > 0) {
+    return {
+      ok: false,
+      error: "inheritMask.allow 与 deny 互斥，只传一个",
+      code: "INHERIT_MASK_CONFLICT",
+    };
+  }
+  const named = [...(allow ?? []), ...(deny ?? [])].map(peelToolName);
+  const registered = new Set(listTools("native").map((t) => t.name));
+  const unknown = named.filter((n) => !registered.has(n));
+  if (unknown.length) {
+    return {
+      ok: false,
+      error: `inheritMask 含未注册工具: ${unknown.join(", ")}`,
+      code: "INHERIT_MASK_UNKNOWN_TOOL",
+      unknown,
+    };
+  }
+  const ownSet = new Set<string>(CHILD_OWN_TOOLS);
+  let cleanedDeny = deny?.map(peelToolName);
+  if (cleanedDeny?.length) {
+    const ownHit = cleanedDeny.filter((n) => ownSet.has(n));
+    if (ownHit.length) {
+      console.warn(`[visibleSet] inheritMask.deny 忽略 own 工具: ${ownHit.join(", ")}`);
+      cleanedDeny = cleanedDeny.filter((n) => !ownSet.has(n));
+    }
+  }
+  const mask: InheritMask = {
+    ...(allow?.length ? { allow: allow.map(peelToolName) } : {}),
+    ...(cleanedDeny?.length ? { deny: cleanedDeny } : {}),
+  };
+  return { ok: true, mask: Object.keys(mask).length ? mask : undefined };
+}
+
+function spawnChildVisibleTools(agentTools: string[], inheritMask?: InheritMask): string[] {
   return visibleSetToAgentTools(
     deriveVisibleSet({
       agentId: "",
@@ -96,11 +149,17 @@ function spawnChildVisibleTools(agentTools: string[]): string[] {
       agentTools,
       packs: getAppConfig().packs,
       childOwn: [...CHILD_OWN_TOOLS],
+      inheritMask,
     }),
   );
 }
 
 async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const maskCheck = validateSpawnInheritMask(args.inheritMask);
+  if (!maskCheck.ok) {
+    return { error: maskCheck.error, code: maskCheck.code, unknown: maskCheck.unknown };
+  }
+  const inheritMask = maskCheck.mask;
   if (!ctx.sessionId || !ctx.agentSnapshot) {
     throw new Error("spawn_subagent 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
   }
@@ -180,7 +239,7 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolC
         taskLabel: task.slice(0, 80),
         timeoutMs: typeof args.timeoutMs === "number" ? args.timeoutMs : undefined,
         // W3：子 Agent 默认工具集 → requiredScopes（粗粒度）；WP1 列举，禁止 native:all
-        tools: spawnChildVisibleTools([...DEFAULT_SUBAGENT_TOOLS]),
+        tools: spawnChildVisibleTools([...DEFAULT_SUBAGENT_TOOLS], inheritMask),
         guard,
         dedup: {
           agentId: parentSnapshot.id,
@@ -189,7 +248,7 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolC
           earlyOutcome: () => ({ status: "success", attach: buildAttach(getPrepared()!) }),
         },
         prepare: async () => {
-          const p = setPrepared(await spawnSubagentPrepare(args, ctx, task, false));
+          const p = setPrepared(await spawnSubagentPrepare(args, ctx, task, false, inheritMask));
           // 池任务 id = 跟踪 Task id：session.stop / async_task_cancel 同源可取消
           return {
             jobId: p.jobId,
@@ -245,7 +304,7 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolC
       guard,
       dedup: { agentId: parentSnapshot.id, taskText: dispatchTask },
       prepare: async () => {
-        const p = setPrepared(await spawnSubagentPrepare(args, ctx, task, true));
+        const p = setPrepared(await spawnSubagentPrepare(args, ctx, task, true, inheritMask));
         if (p.subagentSessionId) releaseClaim = pool.claimOccupancy(p.subagentSessionId);
         return { jobId: p.jobId };
       },
@@ -268,6 +327,7 @@ async function spawnSubagentPrepare(
   ctx: NativeToolContext,
   task: string,
   waitForResult: boolean,
+  inheritMask?: InheritMask,
 ): Promise<SpawnPrepared> {
   const parentSnapshot = ctx.agentSnapshot;
   if (!parentSnapshot) throw new Error("spawn_subagent 需要 Agent 上下文");
@@ -298,9 +358,12 @@ async function spawnSubagentPrepare(
           Array.isArray(args.tools) && (args.tools as string[]).length > 0
             ? (args.tools as string[])
             : [...DEFAULT_SUBAGENT_TOOLS],
+          inheritMask,
         ),
         model: modelOverride || parentSnapshot.model,
         workspaceId: args.workspaceId,
+        toolInheritMask: inheritMask ?? null,
+        toolOwn: [...CHILD_OWN_TOOLS],
       },
       ctx,
     );
@@ -1656,6 +1719,13 @@ const SESSION_DEFS: NativeToolDefinition[] = [
           .describe("standing goal 文本（不填则用 task）；提供后自动启用 goal 模式")
           .optional(),
         shareToSessionIds: z.array(z.string()).describe("swarm 协作：结果额外广播到这些会话 id").optional(),
+        inheritMask: z
+          .object({
+            allow: z.array(z.string()).optional(),
+            deny: z.array(z.string()).optional(),
+          })
+          .optional()
+          .describe("子 Agent 继承面裁剪：allow 与 deny 互斥，只传一个；own 工具不可被 deny"),
       }),
     ),
   },
