@@ -107,6 +107,8 @@ const defaultOrigins = [
   "http://127.0.0.1:3000",
   "http://localhost:3002",
   "http://127.0.0.1:3002",
+  "http://localhost:3003",
+  "http://127.0.0.1:3003",
 ];
 const corsOrigins = [
   ...new Set([
@@ -115,9 +117,16 @@ const corsOrigins = [
     ...config.corsOrigins,
   ]),
 ];
+const localDevOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, cb) => {
+      if (!origin || corsOrigins.includes(origin) || localDevOrigin.test(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(null, false);
+    },
     credentials: true,
   }),
 );

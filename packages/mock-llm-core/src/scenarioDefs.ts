@@ -77,6 +77,80 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_1_hard_spawn",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_1_hard_spawn" ||
+      (/硬调派生子代理/.test(lastUserText(opts)) && (opts.tools?.length ?? 0) > 0),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: hasAnyToolResult(opts) ? "硬调结果已返回。" : null,
+      toolCalls: hasAnyToolResult(opts)
+        ? []
+        : [makeToolCall("spawn_subagent", { task: "越权派子", waitForResult: false, label: "硬调" })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: hasAnyToolResult(opts) ? "硬调结果已返回。" : null,
+        toolCalls: hasAnyToolResult(opts)
+          ? []
+          : [makeToolCall("spawn_subagent", { task: "越权派子", waitForResult: false, label: "硬调" })],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_2_readonly_spawn",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_readonly_spawn" ||
+      (/派只读文件的子 Agent/.test(lastUserText(opts)) && !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("spawn_subagent", {
+          task: "DSH-E2E-2 只读文件后回报",
+          waitForResult: true,
+          label: "只读文件子",
+          inheritMask: { allow: ["read_file"] },
+        }),
+      ],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [
+          makeToolCall("spawn_subagent", {
+            task: "DSH-E2E-2 只读文件后回报",
+            waitForResult: true,
+            label: "只读文件子",
+            inheritMask: { allow: ["read_file"] },
+          }),
+        ],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_2_child_report",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_child_report" ||
+      (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
+        hasTool(opts, "agent_report_back") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("agent_report_back", { content: "DSH-E2E-2 子已回报" })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("agent_report_back", { content: "DSH-E2E-2 子已回报" })],
+      });
+    },
+  },
+  {
     name: "spawn_subagent_notify",
     match: (opts, forced) =>
       forced === "spawn_subagent_notify" ||

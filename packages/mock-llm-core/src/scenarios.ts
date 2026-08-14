@@ -55,11 +55,11 @@ export function hasAnyToolResult(opts: MockLlmOptions): boolean {
   return opts.messages.some((m) => m.role === "tool");
 }
 
-const MOCK_LOG_PATH = process.env.MOCK_LLM_LOG ?? "";
 export function mockLog(line: string): void {
-  if (!MOCK_LOG_PATH) return;
+  const logPath = process.env.MOCK_LLM_LOG ?? "";
+  if (!logPath) return;
   try {
-    fs.appendFileSync(MOCK_LOG_PATH, `[${new Date().toISOString()}] ${line}\n`);
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${line}\n`);
   } catch {
     /* 忽略日志写入失败 */
   }

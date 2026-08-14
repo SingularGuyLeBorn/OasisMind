@@ -27,6 +27,12 @@ export async function waitForStreamingComplete(page: Page): Promise<void> {
   await streamingBubble.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
 }
 
+/** 等 hub idle：助手气泡出现 ≠ session 空闲。发送钮可见（不是 chat-stop）即空闲；输入为空时发送钮本身 disabled。 */
+export async function waitForSessionIdle(page: Page): Promise<void> {
+  await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("chat-stop")).toHaveCount(0);
+}
+
 export async function expectToolPill(page: import("@playwright/test").Page, name: string): Promise<void> {
   await expect(page.getByTestId("tool-pill").filter({ hasText: name })).toBeVisible({ timeout: 15_000 });
 }
