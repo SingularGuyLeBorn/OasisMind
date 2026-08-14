@@ -585,6 +585,8 @@ model Run {
   error      Json?
   durationMs Int?
   toolCallCount Int?  /// 本次运行调用的工具总次数（Swarm 监控统计）
+  /// 首轮拼装的 system prompt 快照（model-visible = logged：审计「本次运行模型看到的系统设定」）
+  systemPrompt String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   // P1-8：外键，删 Agent/Session 时对应字段置 null

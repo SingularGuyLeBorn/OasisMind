@@ -1610,6 +1610,7 @@ export const createRunSchema = z.object({
   error: z.any().optional(),
   durationMs: z.number().int().nonnegative().optional(),
   toolCallCount: z.number().int().nonnegative().optional(),
+  systemPrompt: z.string().optional(),
 });
 
 export const updateRunSchema = z.object({
@@ -1621,6 +1622,7 @@ export const updateRunSchema = z.object({
   error: z.any().optional(),
   durationMs: z.number().int().nonnegative().optional(),
   toolCallCount: z.number().int().nonnegative().optional(),
+  systemPrompt: z.string().optional(),
 });
 
 export const listRunsSchema = z.object({

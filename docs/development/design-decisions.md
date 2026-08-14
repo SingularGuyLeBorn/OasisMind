@@ -1789,3 +1789,13 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 - **把 feedback 写进新表**：过度设计；strength 字段就是为置信度设计的，直接修改即可。
 
 **回答**：按上表落地
+
+---
+
+## DSH 三不变量落地（2026-08-14，待裁决）
+
+对照 DeepSeek Harness 源码后的施工规格（VisibleSet / 工具结果三通道 / 合作式取消 / 子 Agent own 层 / prompt 三分）见：
+
+**`docs/development/dsh-learn-implementation-plan.md`**
+
+产品默认（Q1/Q3/Q5/Q6/Q7/Q8/Q9/Q12）必须在该文档「回答：」后显式拍板后再开工。空回答不得落地。
