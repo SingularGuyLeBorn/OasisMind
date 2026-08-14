@@ -37,10 +37,12 @@ import {
   MEMORY_INITIAL_STRENGTH,
   MEMORY_SCOPE_GLOBAL,
   MEMORY_SCOPE_PREFIX,
+  MEMORY_USER_CREATABLE_TYPES,
   getMemoryDecayFactor,
   memoryAgentScope,
   memoryWorkspaceScope,
 } from "@knowpilot/shared";
+import { judgeMemoryWrite } from "./memoryWriteGate.js";
 
 function newMemoryId(): string {
   return `c${Date.now().toString(36)}${randomBytes(8).toString("hex")}`;
@@ -500,6 +502,54 @@ export class PrismaMemoryRepository implements MemoryRepository {
     if (recent && Date.now() - recent.at < MEMORY_WRITE_DEBOUNCE_MS) {
       return recent.item;
     }
+
+    // 语义级写入判定（Mem0 四元判定）：仅对用户可建类型开启
+    const writeDedupCfg = this.config?.memory?.writeDedup;
+    const userCreatableTypes = MEMORY_USER_CREATABLE_TYPES as unknown as string[];
+    if (writeDedupCfg?.enabled && userCreatableTypes.includes(input.type)) {
+      const neighborLimit = writeDedupCfg.neighborLimit ?? 5;
+      const neighbors = await this.read({
+        keyword: input.content.slice(0, 80),
+        scopes: [scope],
+        types: [input.type],
+        limit: neighborLimit,
+      });
+      if (neighbors.length > 0) {
+        const verdict = await judgeMemoryWrite(this.config!, {
+          content: input.content,
+          type: input.type,
+          neighbors: neighbors.map((n) => ({ id: n.id, content: n.content })),
+        });
+        if (verdict.action === "NOOP" && verdict.targetId) {
+          const target = await this.prisma.memory.findUnique({ where: { id: verdict.targetId } });
+          if (target && target.status === MEMORY_STATUS_ACTIVE) {
+            const strength = Math.max(target.strength, input.strength ?? target.strength);
+            if (this.memoryService) {
+              const updated = await this.memoryService.update({ id: target.id, strength } as any);
+              if (updated.success && updated.data) {
+                return toItem(updated.data as any);
+              }
+            }
+            const raw = await this.prisma.memory.update({ where: { id: target.id }, data: { strength } });
+            return toItem(raw);
+          }
+        } else if (verdict.action === "UPDATE" && verdict.targetId) {
+          const { memory } = await this.supersedeUpdate({
+            id: verdict.targetId,
+            content: input.content,
+            type: input.type,
+            strength: input.strength,
+            keywords: input.keywords,
+            tags: input.tags,
+            actor: scopeToActor(scope),
+          });
+          return memory;
+        } else if (verdict.action === "CONFLICT" && verdict.targetId) {
+          input.conflictsWith = [...(input.conflictsWith ?? []), verdict.targetId];
+        }
+      }
+    }
+
     const conflictsCsv = formatConflictsCsv(input.conflictsWith);
     const source =
       typeof input.source === "string" && input.source.trim() ? input.source.trim() : null;
@@ -774,6 +824,17 @@ export class PrismaMemoryRepository implements MemoryRepository {
 
 export function createMemoryRepository(services: ServiceContainer): MemoryRepository {
   return new PrismaMemoryRepository(services.prisma, services.memory, services.config);
+}
+
+/** 根据 scope 构造用于 update/supersede 权限校验的最小 actor */
+function scopeToActor(scope: string): MemoryScopeActor {
+  if (scope.startsWith(MEMORY_SCOPE_PREFIX.AGENT)) {
+    return { agentId: scope.slice(MEMORY_SCOPE_PREFIX.AGENT.length), workspaceId: null, tier: null };
+  }
+  if (scope.startsWith(MEMORY_SCOPE_PREFIX.WORKSPACE)) {
+    return { agentId: null, workspaceId: scope.slice(MEMORY_SCOPE_PREFIX.WORKSPACE.length), tier: null };
+  }
+  return { agentId: null, workspaceId: null, tier: null };
 }
 
 /* ─── 三层 scope 写路径守卫（W5-followup） ─── */

@@ -56,6 +56,18 @@ const MemoryYamlSchema = z.object({
       timeoutMs: z.coerce.number().int().min(500).max(30_000).default(3000),
     })
     .default({ enabled: true, model: "auto", timeoutMs: 3000 }),
+  writeDedup: z
+    .object({
+      /** 写入前是否用轻量模型做语义级 ADD/UPDATE/NOOP/CONFLICT 判定 */
+      enabled: z.boolean().default(true),
+      /** auto = resolveAuxiliaryModel 选免费轻量模型；也可钉死具体 id */
+      model: z.string().default("auto"),
+      /** 判定调用硬超时（毫秒），超时回退 ADD */
+      timeoutMs: z.coerce.number().int().min(500).max(30_000).default(4000),
+      /** 检索多少条同 scope 同类型记忆作为邻居 */
+      neighborLimit: z.coerce.number().int().min(1).max(20).default(5),
+    })
+    .default({ enabled: true, model: "auto", timeoutMs: 4000, neighborLimit: 5 }),
   experienceDistill: z
     .object({
       /** 是否把 experience 蒸馏成 procedural */
@@ -425,6 +437,13 @@ export interface AppConfig {
       enabled: boolean;
       model: string;
       timeoutMs: number;
+    };
+    /** 写入语义判定：Mem0 四元判定 ADD/UPDATE/NOOP/CONFLICT */
+    writeDedup: {
+      enabled: boolean;
+      model: string;
+      timeoutMs: number;
+      neighborLimit: number;
     };
     /** 经验蒸馏：把 experience 沉淀为 procedural */
     experienceDistill: {
@@ -1065,6 +1084,12 @@ export function createAppConfig(): AppConfig {
         enabled: memoryYaml.queryRewrite.enabled,
         model: memoryYaml.queryRewrite.model,
         timeoutMs: memoryYaml.queryRewrite.timeoutMs,
+      },
+      writeDedup: {
+        enabled: memoryYaml.writeDedup.enabled,
+        model: memoryYaml.writeDedup.model,
+        timeoutMs: memoryYaml.writeDedup.timeoutMs,
+        neighborLimit: memoryYaml.writeDedup.neighborLimit,
       },
       experienceDistill: {
         enabled: memoryYaml.experienceDistill.enabled,

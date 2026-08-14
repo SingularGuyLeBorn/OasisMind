@@ -136,6 +136,13 @@ memory:
     enabled: true
     model: "auto"     # auto = resolveAuxiliaryModel 选免费轻量模型
     timeoutMs: 3000
+  # 写入语义判定（Mem0 四元判定）：写记忆前用便宜模型判 ADD/UPDATE/NOOP/CONFLICT，防语义级重复堆积
+  # 仅作用于用户可建类型（preference/semantic/episodic/note/procedural）；experience/persona 跳过
+  writeDedup:
+    enabled: true
+    model: "auto"
+    timeoutMs: 4000
+    neighborLimit: 5
   # 经验蒸馏：把 type=experience 的运行经验沉淀为 type=procedural 的可复用规则
   experienceDistill:
     enabled: true

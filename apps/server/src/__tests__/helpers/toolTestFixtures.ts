@@ -15,7 +15,10 @@ export function createTempProjectDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "kp-tool-test-"));
 }
 
-export function createTestConfig(projectRoot: string, overrides?: Partial<AppConfig>): AppConfig {
+export function createTestConfig(
+  projectRoot: string,
+  overrides?: Partial<Omit<AppConfig, "memory">> & { memory?: Partial<AppConfig["memory"]> },
+): AppConfig {
   const skillsDefaults = {
     nudgeInterval: 10,
     reviewModel: "auto",
@@ -201,6 +204,13 @@ export function createTestConfig(projectRoot: string, overrides?: Partial<AppCon
         model: "auto",
         timeoutMs: 3000,
         ...(overrides?.memory?.queryRewrite ?? {}),
+      },
+      writeDedup: {
+        enabled: false,
+        model: "auto",
+        timeoutMs: 4000,
+        neighborLimit: 5,
+        ...(overrides?.memory?.writeDedup ?? {}),
       },
       experienceDistill: {
         enabled: true,
