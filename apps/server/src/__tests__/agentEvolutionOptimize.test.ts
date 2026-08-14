@@ -57,6 +57,29 @@ describe("attributeFailure（IVE 规则归因）", () => {
     expect(r.failureReason).toBeUndefined();
   });
 
+  it("无工具错误签名但 producedOutput=false → direction", () => {
+    const r = attributeFailure(
+      [
+        toolCall("web_search", { results: [] }),
+        toolCall("read_file", { content: "ok" }),
+      ],
+      { producedOutput: false },
+    );
+    expect(r.failureKind).toBe("direction");
+    expect(r.failureReason).toContain("方向/理解偏差");
+  });
+
+  it("无工具错误签名但 producedOutput=true → 仍 unknown（防御路径）", () => {
+    const r = attributeFailure(
+      [
+        toolCall("web_search", { results: [] }),
+      ],
+      { producedOutput: true },
+    );
+    expect(r.failureKind).toBe("unknown");
+    expect(r.failureReason).toBeUndefined();
+  });
+
   it("thinking/content 条目不参与归因", () => {
     const r = attributeFailure([
       { id: "t1", name: "__thinking__", args: {}, result: { error: "x" }, kind: "thinking" },
@@ -126,7 +149,7 @@ describe("accumulateExperience 失败归因写入", () => {
     expect(arg.keywords).toContain("failure:implementation");
   });
 
-  it("失败但无工具错误签名 → unknown 归因", async () => {
+  it("失败但无工具错误签名、内容为空 → direction 归因", async () => {
     const prisma = makePrisma();
     await accumulateExperience(
       prisma,
@@ -143,7 +166,29 @@ describe("accumulateExperience 失败归因写入", () => {
       1000,
     );
     const written = JSON.parse(writeMock.mock.calls[0]![0].content) as ExperienceSummary;
-    expect(written.failureKind).toBe("unknown");
+    expect(written.failureKind).toBe("direction");
+    expect(written.failureReason).toContain("方向/理解偏差");
+  });
+
+  it("失败 run 内容为空、工具无错 → failureKind=direction", async () => {
+    const prisma = makePrisma();
+    await accumulateExperience(
+      prisma,
+      {} as any,
+      "a1",
+      "s1",
+      {
+        content: "",
+        toolCalls: [toolCall("web_search", { results: [] })],
+        tokenUsage: null,
+        roundsUsed: 1,
+      },
+      baseInput,
+      1000,
+    );
+    const written = JSON.parse(writeMock.mock.calls[0]![0].content) as ExperienceSummary;
+    expect(written.failureKind).toBe("direction");
+    expect(written.failureReason).toContain("工具调用无报错");
   });
 });
 

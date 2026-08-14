@@ -52,8 +52,16 @@ function extractToolError(result: unknown): string | null {
   return null;
 }
 
-/** 规则归因（零成本）：有工具错误签名 → implementation；否则 unknown（方向归因留给人工/上游 LLM） */
-export function attributeFailure(toolCalls: StoredToolCall[]): {
+/**
+ * 规则归因（零成本）：
+ * 1. 任一工具调用有错误签名 → implementation（改工具使用纪律可修）
+ * 2. 无工具错误但整个 run 未产出有效内容（producedOutput=false）→ direction（任务理解/思路偏差，改 prompt 层引导）
+ * 3. 否则 → unknown（规则无法判定，留待人工/上游 LLM 复核）
+ */
+export function attributeFailure(
+  toolCalls: StoredToolCall[],
+  opts?: { producedOutput?: boolean },
+): {
   failureKind: ExperienceFailureKind;
   failureReason?: string;
 } {
@@ -63,6 +71,12 @@ export function attributeFailure(toolCalls: StoredToolCall[]): {
     if (err) {
       return { failureKind: "implementation", failureReason: `工具 ${t.name} 报错：${err}` };
     }
+  }
+  if (opts?.producedOutput === false) {
+    return {
+      failureKind: "direction",
+      failureReason: "工具调用无报错但未产出有效内容，疑似任务方向/理解偏差",
+    };
   }
   return { failureKind: "unknown" };
 }
@@ -100,7 +114,7 @@ export async function accumulateExperience(
     const tools = result.toolCalls.filter((t) => t.kind === "tool");
     const toolNames = tools.map((t) => t.name);
     const success = !!result.content.trim();
-    const attribution = success ? null : attributeFailure(result.toolCalls);
+    const attribution = success ? null : attributeFailure(result.toolCalls, { producedOutput: success });
 
     // 简化经验总结：工具使用 + 成功/失败 + 耗时 + IVE 失败归因
     const experience: ExperienceSummary = {
