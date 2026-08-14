@@ -110,6 +110,7 @@ function makeSendCtx(ctx: Ctx, fx: DrainFixture) {
       parentId: null,
     },
     invokeTrpc: async () => ({ ok: true }),
+    signal: new AbortController().signal,
   };
 }
 

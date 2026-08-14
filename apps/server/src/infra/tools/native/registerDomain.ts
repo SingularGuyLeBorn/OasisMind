@@ -8,6 +8,7 @@
 import { registerTool } from "../registry.js";
 import type { ToolRollback } from "../types.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
+import { isToolEnvelope, wrapRawAsEnvelope } from "../toolEnvelope.js";
 
 export function registerNativeDomain(
   defs: NativeToolDefinition[],
@@ -44,7 +45,11 @@ export function registerNativeDomain(
       defaultHidden,
       render: def.render,
       schema: () => ({ description: def.description, parameters: def.parameters }),
-      execute: (args, ctx) => handler(args, ctx),
+      execute: async (args, ctx) => {
+        const raw = await handler(args, ctx);
+        if (isToolEnvelope(raw)) return raw;
+        return wrapRawAsEnvelope(raw);
+      },
       captureRollback: rb?.capture,
       rollback: rb?.compensate,
     });

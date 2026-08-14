@@ -551,6 +551,7 @@ async function browserScreenshotTool(args: Record<string, unknown>, ctx: NativeT
     fullPage,
     width: args.width !== undefined ? Number(args.width) : 1280,
     height: args.height !== undefined ? Number(args.height) : 800,
+    signal: ctx.signal,
   });
 
   if (!result.success || !result.data) {
@@ -609,6 +610,14 @@ async function scrollScreenshotTool(args: Record<string, unknown>, ctx: NativeTo
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     });
+    const closeOnAbort = () => {
+      context?.close().catch(() => {});
+    };
+    if (ctx.signal.aborted) {
+      closeOnAbort();
+      throw new Error("scroll_screenshot 已取消");
+    }
+    ctx.signal.addEventListener("abort", closeOnAbort, { once: true });
     const page = await context.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout });
     await page.waitForTimeout(600);
@@ -730,6 +739,9 @@ async function downloadFileTool(args: Record<string, unknown>, ctx: NativeToolCo
   const referer = refererArg || getRefererForUrl(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromCtx = () => controller.abort();
+  if (ctx.signal.aborted) controller.abort();
+  else ctx.signal.addEventListener("abort", abortFromCtx, { once: true });
   try {
     const res = await fetch(url, {
       signal: controller.signal,
@@ -803,6 +815,7 @@ async function downloadFileTool(args: Record<string, unknown>, ctx: NativeToolCo
     throw err;
   } finally {
     clearTimeout(timer);
+    ctx.signal.removeEventListener("abort", abortFromCtx);
   }
 }
 

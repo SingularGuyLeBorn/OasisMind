@@ -151,16 +151,17 @@ async function runShellTool(args: Record<string, unknown>, ctx: NativeToolContex
     shell: args.shell ? String(args.shell) : undefined,
     timeoutMs: args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined,
     rootDir,
+    signal: ctx.signal,
   });
 }
 
-async function waitTool(args: Record<string, unknown>, _ctx: NativeToolContext) {
+async function waitTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const ms =
     args.ms !== undefined
       ? Number(args.ms)
       : Math.round(Number(args.seconds !== undefined ? args.seconds : 1) * 1000);
   if (!Number.isFinite(ms)) throw new Error("seconds/ms 必须是有效数字");
-  const result = await waitMs(ms);
+  const result = await waitMs(ms, ctx.signal);
   return { ...result, waitedSeconds: result.waitedMs / 1000 };
 }
 
@@ -187,7 +188,7 @@ async function sleepTool(args: Record<string, unknown>, ctx: NativeToolContext) 
   }
 
   const ms = Math.round(seconds * 1000);
-  const result = await waitMs(ms);
+  const result = await waitMs(ms, ctx.signal);
   return {
     ...result,
     waitedSeconds: result.waitedMs / 1000,

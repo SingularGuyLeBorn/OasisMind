@@ -213,6 +213,7 @@ describe("compact 数据暴露审计", () => {
         services: inner.services as ServiceContainer,
         sessionId: sess.id,
         invokeTrpc: vi.fn(),
+        signal: new AbortController().signal,
         agentSnapshot: {
           id: "mgr-1",
           model: "deepseek-v4-flash",

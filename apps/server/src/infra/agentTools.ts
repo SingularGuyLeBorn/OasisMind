@@ -29,8 +29,8 @@ import {
 } from "./mcpClient.js";
 import { getEventBus } from "./eventBus.js";
 import { assertApprovalOrProceed, getPendingApprovalCause } from "./approvalGate.js";
-import { makeAbortError } from "./abortReason.js";
 import { resolveAgent } from "./agentResolver.js";
+import { runCooperative } from "./tools/cooperativeAbort.js";
 import { formatTrace } from "./trace.js";
 import { coerceToolBoolean } from "./tools/native/types.js";
 import { injectExpectPropsIntoParameters, peelExpectControls } from "./keyInfoExtractor.js";
@@ -506,13 +506,27 @@ export async function executeToolCallsBatch(
     const timeoutMs = resolveToolCallTimeoutMs(item.parsed.name, item.parsed.args, defaultTimeoutMs);
     const isLongWait = timeoutMs === LONG_WAIT_TIMEOUT_MS;
     try {
-      const result = await withToolTimeout(
-        executeAgentTool(item.parsed.name, item.parsed.args, ctx, registry),
-        timeoutMs,
-        item.parsed.name,
-        signal,
+      const coop = await runCooperative(
+        (fused) =>
+          executeAgentTool(item.parsed.name, item.parsed.args, { ...ctx, signal: fused }, registry),
+        { timeoutMs, signal, label: item.parsed.name },
       );
-      return { ...item, result };
+      if (coop.status === "ok") return { ...item, result: coop.value };
+      const msg = coop.error.message;
+      const isTimeout = coop.status === "TIMEOUT";
+      const suggestion =
+        isTimeout && !isLongWait && !msg.includes("async_task_run")
+          ? `（该工具超过 ${timeoutMs / 1000}s 超时。建议改用 async_task_run 异步执行，或 spawn_subagent 派生子代理处理长任务，避免阻塞主对话。）`
+          : "";
+      return {
+        ...item,
+        result: {
+          error: msg + suggestion,
+          elapsedMs: coop.elapsedMs,
+          timedOut: isTimeout,
+          code: coop.status,
+        },
+      };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       // W11：审批 pending 不是普通工具错误——附结构化标记，reactLoop 据此进入 awaiting_human 挂起
@@ -577,25 +591,6 @@ export async function executeToolCallsBatch(
   return results;
 }
 
-/** 工具调用超时包装：超时或 abort 时拒绝，调用方捕获后转为错误结果 */
-function withToolTimeout<T>(promise: Promise<T>, ms: number, label: string, signal?: AbortSignal): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<T>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`工具 ${label} 执行超时（${ms}ms）`)), ms);
-  });
-  const abortPromise = signal
-    ? new Promise<T>((_, reject) => {
-        const rejectAbort = () => reject(makeAbortError(signal));
-        if (signal.aborted) rejectAbort();
-        else signal.addEventListener("abort", rejectAbort, { once: true });
-      })
-    : null;
-  const racers = abortPromise ? [promise, timeout, abortPromise] : [promise, timeout];
-  return Promise.race(racers).finally(() => {
-    if (timer) clearTimeout(timer);
-  });
-}
-
 /** 简单并发限制器：最多 limit 个 Promise 同时运行 */
 async function runWithConcurrency<T>(tasks: Array<() => Promise<T>>, limit: number): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
@@ -615,8 +610,8 @@ export function createAgentToolContext(
   services: ServiceContainer,
   invokeTrpc: (tool: string, args?: unknown) => Promise<unknown>,
   parsed: ParsedAgentTools,
-  skillNames?: string[],
-  meta?: {
+  skillNames: string[] | undefined,
+  meta: {
     sessionId?: string;
     agentSnapshot?: NativeToolContext["agentSnapshot"];
     runOrigin?: NativeToolContext["runOrigin"];
@@ -625,6 +620,7 @@ export function createAgentToolContext(
     /** W3 safe bypass */
     readonlyOnly?: boolean;
     visibleSet?: VisibleSet;
+    signal: AbortSignal;
   },
 ): AgentToolContext {
   const tier = meta?.agentSnapshot?.tier ?? "sub";
@@ -648,6 +644,7 @@ export function createAgentToolContext(
     rollbackStack: meta?.rollbackStack,
     readonlyOnly: meta?.readonlyOnly === true,
     visibleSet: visible,
+    signal: meta?.signal ?? new AbortController().signal,
     // W4：向工具层注入 Agent 解析（agentResolver 是叶子模块，不重建循环依赖）
     resolveAgent,
     allowedNative: visible.native,

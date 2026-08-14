@@ -85,6 +85,7 @@ function makeNotifyCtx(ctx: Ctx, fx: NotifyFixture, tier: "sub" | "manager" = "s
       parentId: tier === "sub" ? fx.parentAgentId : null,
     },
     invokeTrpc: async () => ({ ok: true }),
+    signal: new AbortController().signal,
   };
 }
 

@@ -151,7 +151,7 @@ export interface ShellRunResult {
 export async function runShellRestricted(
   config: AppConfig,
   command: string,
-  opts?: { cwd?: string; shell?: string; timeoutMs?: number; rootDir?: string },
+  opts?: { cwd?: string; shell?: string; timeoutMs?: number; rootDir?: string; signal?: AbortSignal },
 ): Promise<ShellRunResult> {
   assertShellEnabled(config);
   validateShellCommand(command);
@@ -187,6 +187,7 @@ export async function runShellRestricted(
         timeout: timeoutMs,
         maxBuffer,
         windowsHide: true,
+        signal: opts?.signal,
         env: buildSandboxEnv() as unknown as NodeJS.ProcessEnv,
       });
       const out = (stdout || "").slice(0, config.shell.maxOutputChars);
@@ -232,6 +233,7 @@ export async function runShellRestricted(
       timeout: timeoutMs,
       maxBuffer,
       windowsHide: true,
+      signal: opts?.signal,
       env: {
         ...buildSandboxEnv(),
         CI: "1",

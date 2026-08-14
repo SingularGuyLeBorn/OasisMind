@@ -685,6 +685,7 @@ export async function executeApprovedOperation(
         config,
         services: ctx.services,
         invokeTrpc: invoke,
+        signal: new AbortController().signal,
       });
     } else {
       const invoke = createTrpcInvoker(ctx);

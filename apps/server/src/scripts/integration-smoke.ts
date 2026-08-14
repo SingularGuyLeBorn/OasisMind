@@ -32,7 +32,7 @@ const runPlatformMedium =
 const runPlatformExtended =
   process.env.INTEGRATION_SMOKE_PLATFORM_EXTENDED === "1" || process.argv.includes("--extended-platform");
 
-const ctx = { config, services, invokeTrpc: async () => ({}) };
+const ctx = { config, services, invokeTrpc: async () => ({}), signal: new AbortController().signal };
 
 function briefResults(results: Array<{ title: string; url: string; snippet?: string }>) {
   return results.map((r) => ({ title: r.title, url: r.url, snippet: (r.snippet || "").slice(0, 120) }));

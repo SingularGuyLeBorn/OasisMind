@@ -276,6 +276,7 @@ export function createNativeCtx(
     services: opts?.services ?? ({} as NativeToolContext["services"]),
     prisma: opts?.prisma,
     invokeTrpc: opts?.invokeTrpc ?? (async () => ({ ok: true })),
+    signal: new AbortController().signal,
   };
 }
 

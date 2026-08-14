@@ -16,6 +16,7 @@ import { resolveAgent as defaultResolveAgent } from "../../agentResolver.js";
 import { getSwarmOrchestrator, type SwarmTaskOutcome } from "../../swarmOrchestrator.js";
 import { getAsyncJobOrchestrator } from "../../asyncJobOrchestrator.js";
 import { agentCreateSubTool, agentSendMessageTool } from "./swarm.js";
+import { fuseSignals } from "../cooperativeAbort.js";
 import {
   coerceToolBoolean,
   type NativeToolContext,
@@ -195,7 +196,12 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolC
             metadata: p.subagentSessionId ? { subagentSessionId: p.subagentSessionId } : undefined,
           };
         },
-        execute: (signal) => spawnSubagentPooledRun(ctx, dispatchTask, getPrepared()!, signal),
+        execute: (signal) => {
+          const fused = fuseSignals(signal, ctx.signal);
+          return spawnSubagentPooledRun(ctx, dispatchTask, getPrepared()!, fused.signal).finally(() =>
+            fused.dispose(),
+          );
+        },
       });
     } catch (err) {
       // 入池拒绝（maxQueued 满）/准备失败：回收 Phase A 产物，避免永远挂在 queued
@@ -522,6 +528,9 @@ async function spawnSubagentSyncWait(
   // 分属 DB 与 StreamHub 两个模块、无统一事件源；400ms 轮询 + 10 分钟硬上限（防父流永久挂起，
   // 与 waitForAsyncJob 同量级）是同时覆盖两条路径的最简判定。
   while (Date.now() < waitDeadline) {
+    if (ctx.signal.aborted) {
+      return { status: "failed", attach: { error: "spawn_subagent 等待已取消" } };
+    }
     if (jobId) {
       const row = await ctx.services.task.getById(jobId);
       if (row && (row.status === "success" || row.status === "failed")) {

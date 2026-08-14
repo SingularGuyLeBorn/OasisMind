@@ -37,6 +37,7 @@ function makeCtx(): NativeToolContext {
       },
     } as unknown as NativeToolContext["services"],
     invokeTrpc: async () => null,
+    signal: new AbortController().signal,
   };
 }
 

@@ -118,6 +118,7 @@ describe("W10 SwarmOrchestrator 中介者", () => {
         {
           ...ctx,
           invokeTrpc: async () => ({ ok: true }),
+          signal: new AbortController().signal,
           sessionId: parentSessionId,
           agentSnapshot: {
             id: parentAgentId,
@@ -164,6 +165,7 @@ describe("W10 SwarmOrchestrator 中介者", () => {
         {
           ...ctx,
           invokeTrpc: async () => ({ ok: true }),
+          signal: new AbortController().signal,
           sessionId,
           agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: ["native:wait", "native:async_task_run"], tier: "manager" },
         },
@@ -212,6 +214,7 @@ describe("W10 SwarmOrchestrator 中介者", () => {
     const toolCtx = {
       ...ctx,
       invokeTrpc: async () => ({ ok: true }),
+      signal: new AbortController().signal,
       sessionId,
       agentSnapshot: {
         id: parentAgentId,

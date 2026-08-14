@@ -86,6 +86,7 @@ export const aiRouter = router({
             config: ctx.config,
             services: ctx.services,
             invokeTrpc: createTrpcInvokerForCtx(ctx),
+            signal: new AbortController().signal,
           });
           return success({ data: result, operation: "invoke", entity: "ai", durationMs: Date.now() - start });
         }

@@ -29,6 +29,7 @@ export const searchRouter = router({
         config: ctx.config,
         services: ctx.services,
         invokeTrpc: createTrpcInvokerForCtx(ctx),
+        signal: new AbortController().signal,
       }),
     ),
   global: publicProcedure

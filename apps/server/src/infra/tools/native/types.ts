@@ -73,6 +73,8 @@ export interface NativeToolContext {
    * 单测直调无此字段时由 executeNativeTool 现场 derive 或按 registry 放行。
    */
   visibleSet?: VisibleSet;
+  /** WP3：合作式取消，必填。测试夹具用 new AbortController().signal */
+  signal: AbortSignal;
 }
 
 export type NativeToolHandler = (

@@ -23,7 +23,7 @@ if (!url) {
 
 const eventBus = getEventBus();
 const services = getServiceContainer(prisma, eventBus, config);
-const ctx = { config, services, invokeTrpc: async () => ({}) };
+const ctx = { config, services, invokeTrpc: async () => ({}), signal: new AbortController().signal };
 
 async function main() {
   const started = Date.now();

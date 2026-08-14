@@ -65,7 +65,7 @@ describe("async-task-queue 工具协议", () => {
 
   it("async_task_run 启动纯工具任务并返回 running 状态", async () => {
     const ctx = await createContextInner();
-    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }) };
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
     const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
     const sessionId = (session.data as { id: string }).id;
     const parentAgentId = await createParentAgent(ctx);
@@ -103,7 +103,7 @@ describe("async-task-queue 工具协议", () => {
 
   it("async_task_run 缺 toolCall 返回结构化校验错误（P2-03：前置 required 校验拦截，不再进 handler 抛错）", async () => {
     const ctx = await createContextInner();
-    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }) };
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
     const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
     const sessionId = (session.data as { id: string }).id;
     const parentAgentId = await createParentAgent(ctx);
@@ -128,7 +128,7 @@ describe("async-task-queue 工具协议", () => {
 
   it("async_task_wait 已从注册表移除（W-C）", async () => {
     const ctx = await createContextInner();
-    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }) };
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
     const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
     const sessionId = (session.data as { id: string }).id;
     const parentAgentId = await createParentAgent(ctx);
@@ -152,7 +152,7 @@ describe("async-task-queue 工具协议", () => {
 
   it("async_task_status 查询单个任务（W-B：终态也不回全文/日志）", async () => {
     const ctx = await createContextInner();
-    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }) };
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
     const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
     const sessionId = (session.data as { id: string }).id;
     const parentAgentId = await createParentAgent(ctx);
@@ -214,7 +214,7 @@ describe("async-task-queue 工具协议", () => {
       new SessionStreamHub({ ringSize: 50, persist: false, eventTtlMs: 500, cleanupIntervalMs: 0 }),
     );
     const ctx = await createContextInner();
-    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }) };
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
     const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
     const sessionId = (session.data as { id: string }).id;
     const parentAgentId = await createParentAgent(ctx);

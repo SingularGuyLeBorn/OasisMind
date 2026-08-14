@@ -140,7 +140,7 @@ kind: procedural
     const result = (await executeNativeTool(
       "skill_manage",
       { action: "create", name: "class-debug", content },
-      { config, services: services as never, invokeTrpc: async () => ({}) },
+      { config, services: services as never, invokeTrpc: async () => ({}), signal: new AbortController().signal },
     )) as { success?: boolean; name?: string; error?: string };
     expect(result.error).toBeUndefined();
     expect(result.success).toBe(true);

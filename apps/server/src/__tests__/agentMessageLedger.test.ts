@@ -145,6 +145,7 @@ function makeReportCtx(ctx: Ctx, fx: SwarmFixture) {
       parentId: fx.parentAgentId,
     },
     invokeTrpc: async () => ({ ok: true }),
+    signal: new AbortController().signal,
   };
 }
 
@@ -759,6 +760,7 @@ describe("W14 AgentMessage 投递记账回写", () => {
           parentId: null,
         },
         invokeTrpc: async () => ({ ok: true }),
+        signal: new AbortController().signal,
       };
       const sent = (await executeNativeTool(
         "agent_send_message",

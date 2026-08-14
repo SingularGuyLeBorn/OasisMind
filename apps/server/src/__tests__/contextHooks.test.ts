@@ -44,6 +44,7 @@ function makeCtx(partial?: Partial<NativeToolContext>): NativeToolContext {
       },
     } as unknown as NativeToolContext["services"],
     invokeTrpc: async () => null,
+    signal: new AbortController().signal,
     ...partial,
   };
 }

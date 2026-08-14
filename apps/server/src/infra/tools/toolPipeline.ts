@@ -1,15 +1,19 @@
 /**
- * Native 工具固定 stage 链（WP2 骨架：8 projectContent + 9 persistValue）。
- * 禁止 waterfall next() / Cordis。审批不在这里。
+ * Native 工具固定 stage 链 0–10。禁止 waterfall next() / Cordis。
+ * 审批 assertApprovalOrProceed 不在这里。
  */
 
+import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
 import type { AppConfig } from "../config.js";
-import { getTool } from "./registry.js";
+import { getTool, listTools } from "./registry.js";
 import {
   TOOL_ENVELOPE_BRAND,
   defaultProjectContent,
+  freezeJson,
   wrapRawAsEnvelope,
+  isToolEnvelope,
   type ToolEnvelope,
+  type ToolExecError,
   type ToolExecResult,
 } from "./toolEnvelope.js";
 import {
@@ -20,6 +24,16 @@ import {
   offloadToolResultIfNeeded,
   type ToolResultOffloadOpts,
 } from "../toolResultOffload.js";
+import { peelExpectControls } from "../keyInfoExtractor.js";
+import { checkToolPermission } from "../swarmPermissionGuard.js";
+import { recordViolation } from "../constraintEvolution.js";
+import { hasMockNativeTool, executeMockNativeTool } from "../mockNativeTools.js";
+import { formatMissingRequiredWithExample } from "./native/agentToolError.js";
+import { deriveVisibleSet } from "./visibleSet.js";
+import { runCooperative } from "./cooperativeAbort.js";
+import type { NativeToolContext } from "./native/types.js";
+
+const PIPELINE_TIMEOUT_MS = 10 * 60 * 1000;
 
 export type ToolObserver = (event: {
   stage: string;
@@ -159,45 +173,204 @@ export function materializeToolEnvelope(
   return envelope;
 }
 
+export function freezeArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const { cleanArgs } = peelExpectControls(args);
+  return freezeJson(cleanArgs) as Record<string, unknown>;
+}
+
+function checkRequiredParams(
+  cmd: { schema(): { parameters: Record<string, unknown> } },
+  args: Record<string, unknown>,
+): string[] {
+  try {
+    const params = cmd.schema().parameters;
+    const required = params?.required;
+    if (!Array.isArray(required)) return [];
+    return required
+      .filter((field) => {
+        const v = args[field as string];
+        return v === undefined || v === null;
+      })
+      .map((f) => String(f));
+  } catch {
+    return [];
+  }
+}
+
+function failResult(
+  started: number,
+  error: ToolExecError,
+): ToolExecResult {
+  return {
+    ok: false,
+    error,
+    envelope: wrapRawAsEnvelope({ error: error.message, code: error.code, ...(error.details ?? {}) }),
+    elapsedMs: Date.now() - started,
+  };
+}
+
+function resolveVisibleOrDeny(
+  name: string,
+  ctx: NativeToolContext,
+): ToolExecError | null {
+  if (ctx.visibleSet) {
+    if (!ctx.visibleSet.native.includes(name)) {
+      return { code: "NOT_VISIBLE", message: `工具 ${name} 不在当前 VisibleSet` };
+    }
+    return null;
+  }
+  if (ctx.agentSnapshot?.tools && ctx.agentSnapshot.tools.length > 0) {
+    const derived = deriveVisibleSet({
+      agentId: ctx.agentSnapshot.id,
+      tier: ctx.agentSnapshot.tier ?? "sub",
+      agentTools: ctx.agentSnapshot.tools,
+      packs: ctx.config.packs,
+      childOwn: (ctx.agentSnapshot.tier ?? "sub") === "sub" ? [...CHILD_OWN_TOOLS] : [],
+    });
+    if (!derived.native.includes(name)) {
+      return { code: "NOT_VISIBLE", message: `工具 ${name} 不在当前 VisibleSet` };
+    }
+  }
+  return null;
+}
+
 /**
- * WP2 骨架：dispatch 仍接现 execute；WP3 补 freeze/abort。
- * 审批不在此函数。
+ * stage 0–10。审批不在此函数。persist 仅当传入 toolCallId（loop 落库）；
+ * executeNativeTool 薄壳不传，避免与 append 双写。
  */
 export async function runNativePipeline(
   name: string,
   args: Record<string, unknown>,
-  dispatch: () => Promise<unknown>,
+  ctx: NativeToolContext,
   opts?: {
-    config?: AppConfig;
-    sessionId?: string;
-    runId?: string;
     toolCallId?: string;
+    runId?: string;
     maxChars?: number;
+    persist?: boolean;
   },
 ): Promise<ToolExecResult> {
   const started = Date.now();
-  try {
-    const raw = await dispatch();
+  notifyObservers({ stage: "freezeArgs", toolName: name });
+  const frozen = freezeArgs(args);
+
+  const visibleErr = resolveVisibleOrDeny(name, ctx);
+  if (visibleErr) return failResult(started, visibleErr);
+
+  const cmd = getTool(name);
+  if (!cmd || cmd.kind !== "native") {
+    return failResult(started, {
+      code: "HANDLER",
+      message: `未知原生工具 "${name}"。可用：${listTools("native").map((t) => t.name).join(", ")}`,
+    });
+  }
+
+  const missing = checkRequiredParams(cmd, frozen);
+  if (missing.length > 0) {
+    const parameters = cmd.schema().parameters as Record<string, unknown>;
+    const formatted = formatMissingRequiredWithExample(name, missing, parameters);
+    return failResult(started, {
+      code: "VALIDATION",
+      message: formatted.error,
+      details: { ...formatted, validationError: true, missingParams: missing },
+    });
+  }
+
+  if (ctx.agentSnapshot?.tier) {
+    const permError = checkToolPermission(name, frozen, {
+      agentTier: ctx.agentSnapshot.tier,
+      agentId: ctx.agentSnapshot.id,
+      agentWorkspaceId: ctx.agentSnapshot.workspaceId,
+      inToolRound: ctx.inToolRound ?? false,
+    });
+    if (permError) {
+      recordViolation(
+        ctx.agentSnapshot.id,
+        permError.code,
+        { toolName: name, message: permError.reason },
+        ctx.config,
+      );
+      return failResult(started, {
+        code: "PERMISSION",
+        message: `${permError.reason}（权限码 ${permError.code}，供排查，勿当操作指令）`,
+        details: { permissionDenied: true, code: permError.code },
+      });
+    }
+  }
+
+  if (process.env.MOCK_NATIVE_TOOLS === "true" && hasMockNativeTool(name)) {
+    const raw = await executeMockNativeTool(name, frozen, ctx);
     const envelope = materializeToolEnvelope(raw, {
       toolName: name,
-      args,
+      args: frozen,
       maxChars: opts?.maxChars,
-      config: opts?.config,
-      sessionId: opts?.sessionId,
-      runId: opts?.runId,
       toolCallId: opts?.toolCallId ?? `pipe-${name}`,
     });
+    notifyObservers({ stage: "observe", toolName: name, elapsedMs: Date.now() - started });
     return { ok: true, envelope, elapsedMs: Date.now() - started };
+  }
+
+  const stack = cmd.destructive ? ctx.rollbackStack : undefined;
+  const artifact = stack ? await stack.capture(cmd, frozen, ctx) : undefined;
+
+  let coop: Awaited<ReturnType<typeof runCooperative<unknown>>>;
+  try {
+    coop = await runCooperative(
+      (signal) => cmd.execute(frozen, { ...ctx, signal }),
+      { timeoutMs: PIPELINE_TIMEOUT_MS, signal: ctx.signal, label: name },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const envelope = wrapRawAsEnvelope({ error: message, code: "HANDLER" });
-    return {
-      ok: false,
-      error: { code: "HANDLER", message },
-      envelope,
-      elapsedMs: Date.now() - started,
-    };
+    if (stack && artifact) {
+      console.warn(`[toolPipeline] handler 抛错未 commit，可能有进行中副作用 tool=${name}`);
+    }
+    return failResult(started, { code: "HANDLER", message });
   }
+
+  const handlerSettledOk =
+    coop.status === "ok" ||
+    ((coop.status === "TIMEOUT" || coop.status === "ABORTED") && coop.value !== undefined);
+
+  if (handlerSettledOk && stack && artifact) {
+    try {
+      const rawForRollback = isToolEnvelope(coop.value) ? coop.value.value : coop.value;
+      await stack.commit(cmd, frozen, rawForRollback, artifact);
+    } catch (commitErr) {
+      console.warn(
+        `[toolPipeline] rollback commit 失败 tool=${name}:`,
+        commitErr instanceof Error ? commitErr.message : String(commitErr),
+      );
+    }
+  } else if (
+    (coop.status === "TIMEOUT" || coop.status === "ABORTED") &&
+    coop.bodyInvoked &&
+    coop.value === undefined
+  ) {
+    console.warn(`[toolPipeline] ${coop.status} 后未 commit，可能有进行中副作用 tool=${name}`);
+  }
+
+  if (coop.status === "ABORTED_BEFORE_DISPATCH") {
+    return failResult(started, { code: "ABORTED_BEFORE_DISPATCH", message: coop.error.message });
+  }
+  if (coop.status === "TIMEOUT" && coop.value === undefined) {
+    return failResult(started, { code: "TIMEOUT", message: coop.error.message });
+  }
+  if (coop.status === "ABORTED" && coop.value === undefined) {
+    return failResult(started, { code: "ABORTED", message: coop.error.message });
+  }
+
+  const raw = coop.status === "ok" || coop.value !== undefined ? coop.value : undefined;
+  const persist = opts?.persist === true && opts.toolCallId;
+  const envelope = materializeToolEnvelope(raw, {
+    toolName: name,
+    args: frozen,
+    maxChars: opts?.maxChars,
+    config: persist ? ctx.config : undefined,
+    sessionId: ctx.sessionId,
+    runId: opts?.runId,
+    toolCallId: opts?.toolCallId ?? `pipe-${name}`,
+  });
+  notifyObservers({ stage: "observe", toolName: name, elapsedMs: Date.now() - started });
+  return { ok: true, envelope, elapsedMs: Date.now() - started };
 }
 
 export { KP_RESULT_PATH_KEY };

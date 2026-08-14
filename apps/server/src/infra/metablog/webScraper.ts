@@ -168,6 +168,7 @@ export interface ScreenshotOptions {
   width?: number;
   /** 视口高，默认 800 */
   height?: number;
+  signal?: AbortSignal;
 }
 
 export interface ScreenshotResult {
@@ -194,6 +195,7 @@ export async function screenshotPage(options: ScreenshotOptions): Promise<Screen
     fullPage = false,
     width = 1280,
     height = 800,
+    signal,
   } = options;
 
   if (!url || !url.startsWith("http")) {
@@ -209,6 +211,14 @@ export async function screenshotPage(options: ScreenshotOptions): Promise<Screen
       userAgent: DEFAULT_UA,
     });
     page = await context.newPage();
+    const closeOnAbort = () => {
+      context?.close().catch(() => {});
+    };
+    if (signal?.aborted) {
+      closeOnAbort();
+      return { success: false, error: "截图已取消" };
+    }
+    signal?.addEventListener("abort", closeOnAbort, { once: true });
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout });
     await page.waitForTimeout(600);

@@ -278,6 +278,7 @@ function makeSpawnCtx(ctx: Ctx, narrow: Ctx["config"], fx: Pick<SpawnFixture, "p
       parentId: null,
     },
     invokeTrpc: async () => ({ ok: true }),
+    signal: new AbortController().signal,
   };
 }
 

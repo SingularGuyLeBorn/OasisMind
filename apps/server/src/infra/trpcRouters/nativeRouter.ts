@@ -26,6 +26,7 @@ export const nativeRouter = router({
         config: ctx.config,
         services: ctx.services,
         invokeTrpc: createTrpcInvokerForCtx(ctx),
+        signal: new AbortController().signal,
       }),
     ),
 });

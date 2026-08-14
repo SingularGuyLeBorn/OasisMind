@@ -408,6 +408,7 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
     rollbackStack,
     readonlyOnly: input.readonlyOnly === true,
     visibleSet: visible,
+    signal: input.signal ?? new AbortController().signal,
   });
 
   let llmMessages: LlmMessage[] = [...input.messages];

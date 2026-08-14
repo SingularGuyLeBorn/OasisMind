@@ -819,6 +819,7 @@ export async function enqueueSuperiorDrainForSession(options: {
         invokeTrpc: createTrpcInvoker({ services }),
         agentSnapshot: { id: item.source ?? "unknown", model: "", systemPrompt: "", tools: [], tier },
         inToolRound: false,
+        signal: new AbortController().signal,
       };
       const next = await prepareAgentRun(targetAgentId, item.content, drainCtx, { fromDrain: true });
       if (next.kind === "started") {
@@ -869,6 +870,26 @@ export async function requeueOrphanedSuperiorDrains(
     registered++;
   }
   return registered;
+}
+
+function waitWithSignal<T>(p: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) {
+    return Promise.reject(new Error("agent_send_message 等待已取消"));
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new Error("agent_send_message 等待已取消"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    p.then(
+      (v) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(v);
+      },
+      (e) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(e);
+      },
+    );
+  });
 }
 
 export async function agentSendMessageTool(args: Record<string, unknown>, ctx: NativeToolContext) {
@@ -933,7 +954,7 @@ export async function agentSendMessageTool(args: Record<string, unknown>, ctx: N
         };
       }
       // waitForRun=true + busy：等该 item 的 drain 完成（链 promise），再读子会话最后 assistant
-      await prepared.drainPromise;
+      await waitWithSignal(prepared.drainPromise, ctx.signal);
       const lastAssistant = await ctx.prisma.chatMessage.findFirst({
         where: { sessionId: prepared.subagentSessionId, role: "assistant" },
         select: { content: true },
@@ -949,7 +970,7 @@ export async function agentSendMessageTool(args: Record<string, unknown>, ctx: N
     }
 
     if (waitForRun) {
-      const content = await prepared.completion;
+      const content = await waitWithSignal(prepared.completion, ctx.signal);
       return {
         success: true,
         message: "已派活并自动运行。",

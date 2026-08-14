@@ -53,6 +53,7 @@ function toolCtx(
     config: getAppConfig(),
     services: ctx.services,
     invokeTrpc: async () => null,
+    signal: new AbortController().signal,
     agentSnapshot: {
       id: agent.id,
       model: "deepseek-chat",

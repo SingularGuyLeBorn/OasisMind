@@ -7,19 +7,12 @@
  * 新增 native 工具 = 在对应域文件加 schema + handler（开闭原则，勿改本文件分发逻辑）。
  */
 
-import { CHILD_OWN_TOOLS, DEFAULT_AGENT_NATIVE } from "@knowpilot/shared";
-import { checkToolPermission } from "./swarmPermissionGuard.js";
-import { deriveVisibleSet } from "./tools/visibleSet.js";
-import { recordViolation } from "./constraintEvolution.js";
-import { hasMockNativeTool, executeMockNativeTool } from "./mockNativeTools.js";
+import { DEFAULT_AGENT_NATIVE } from "@knowpilot/shared";
 import { getTool, listTools } from "./tools/registry.js";
 import type { NativeToolContext, NativeToolDefinition } from "./tools/native/types.js";
-import {
-  injectExpectPropsIntoParameters,
-  peelExpectControls,
-} from "./keyInfoExtractor.js";
-import { formatMissingRequiredWithExample } from "./tools/native/agentToolError.js";
+import { injectExpectPropsIntoParameters } from "./keyInfoExtractor.js";
 import { getAppConfig } from "./config.js";
+import { runNativePipeline } from "./tools/toolPipeline.js";
 
 // 域副作用注册（fs/web/shell/swarm/session/memory/integration）；按 packs 过滤
 import { registerNativeDomains } from "./tools/native/index.js";
@@ -30,25 +23,6 @@ export {
   isUnreadableArticlePage,
   readArticleContentWarning,
 } from "./tools/native/web.js";
-
-/**
- * P2-03：从 ToolCommand.schema().parameters 读 required 数组，返回 args 缺失的必填字段名。
- * 仅做轻量存在性校验（undefined/null 视为缺失；空字符串留给 handler 自行 trim 校验），
- * 避免引入 ajv 依赖；类型/格式校验仍由 handler 内 zod 负责。
- */
-function checkRequiredParams(cmd: { schema(): { parameters: Record<string, unknown> } }, args: Record<string, unknown>): string[] {
-  try {
-    const params = cmd.schema().parameters;
-    const required = params?.required;
-    if (!Array.isArray(required)) return [];
-    return required.filter((field) => {
-      const v = args[field];
-      return v === undefined || v === null;
-    }).map((f) => String(f));
-  } catch {
-    return [];
-  }
-}
 
 /** 域工具灌入统一注册表（唯一注册路径：registerNativeDomains） */
 let nativeToolsRegistered = false;
@@ -79,97 +53,23 @@ export async function executeNativeTool(
   ctx: NativeToolContext,
 ): Promise<unknown> {
   ensureNativeToolsRegistered();
-
-  if (ctx.visibleSet) {
-    if (!ctx.visibleSet.native.includes(name)) {
-      return { error: `工具 ${name} 不在当前 VisibleSet`, code: "NOT_VISIBLE" };
+  const started = Date.now();
+  const exec = await runNativePipeline(name, args, ctx);
+  if (!exec.ok) {
+    if (exec.error.code === "HANDLER") {
+      throw new Error(exec.error.message);
     }
-  } else if (ctx.agentSnapshot?.tools && ctx.agentSnapshot.tools.length > 0) {
-    const derived = deriveVisibleSet({
-      agentId: ctx.agentSnapshot.id,
-      tier: ctx.agentSnapshot.tier ?? "sub",
-      agentTools: ctx.agentSnapshot.tools,
-      packs: ctx.config.packs,
-      childOwn: (ctx.agentSnapshot.tier ?? "sub") === "sub" ? [...CHILD_OWN_TOOLS] : [],
-    });
-    if (!derived.native.includes(name)) {
-      return { error: `工具 ${name} 不在当前 VisibleSet`, code: "NOT_VISIBLE" };
-    }
-  }
-
-  // expect_* 是上下文层控制参数，剥掉后再进权限/handler，避免污染业务入参
-  const { cleanArgs } = peelExpectControls(args);
-
-  // Swarm 权限硬拦截：检查 agent 是否有权调用此工具
-  if (ctx.agentSnapshot?.tier) {
-    const permError = checkToolPermission(name, cleanArgs, {
-      agentTier: ctx.agentSnapshot.tier,
-      agentId: ctx.agentSnapshot.id,
-      agentWorkspaceId: ctx.agentSnapshot.workspaceId,
-      inToolRound: ctx.inToolRound ?? false,
-    });
-    if (permError) {
-      recordViolation(
-        ctx.agentSnapshot.id,
-        permError.code,
-        { toolName: name, message: permError.reason },
-        ctx.config,
-      );
-      return {
-        error: `${permError.reason}（权限码 ${permError.code}，供排查，勿当操作指令）`,
-        code: permError.code,
-        permissionDenied: true,
-      };
-    }
-  }
-
-  // Mock 模式：命中已覆盖的 native 工具则走 Mock 实现，避免真实网络调用
-  if (process.env.MOCK_NATIVE_TOOLS === "true") {
-    if (hasMockNativeTool(name)) {
-      return executeMockNativeTool(name, cleanArgs, ctx);
-    }
-  }
-
-  const cmd = getTool(name);
-  if (!cmd || cmd.kind !== "native") {
-    throw new Error(
-      `未知原生工具 "${name}"。可用：${listTools("native")
-        .map((t) => t.name)
-        .join(", ")}`,
-    );
-  }
-  // P2-03：执行前用 schema 的 required 字段做轻量入参校验，缺必填字段直接返回结构化错误给 LLM 下轮修正，
-  // 不进 handler（避免 handler 因字段缺失抛非结构化异常或误用默认值）。
-  const missing = checkRequiredParams(cmd, cleanArgs);
-  if (missing.length > 0) {
-    const parameters = cmd.schema().parameters as Record<string, unknown>;
     return {
-      ...formatMissingRequiredWithExample(name, missing, parameters),
-      validationError: true,
-      missingParams: missing,
+      ...(exec.error.details ?? {}),
+      error: exec.error.message,
+      code: (exec.error.details?.code as string | undefined) ?? exec.error.code,
     };
   }
-  // D 类工具回滚栈（W6）：本 run 携带 rollbackStack 时，执行前快照、成功后入栈；
-  // 执行失败的工具不入栈（未产生副作用，无需补偿）
-  const stack = cmd.destructive ? ctx.rollbackStack : undefined;
-  const artifact = stack ? await stack.capture(cmd, cleanArgs, ctx) : undefined;
-  const started = Date.now();
-  const raw = await cmd.execute(cleanArgs, ctx);
-  if (stack && artifact) {
-    try {
-      await stack.commit(cmd, cleanArgs, raw, artifact);
-    } catch (commitErr) {
-      console.warn(
-        `[nativeTools] rollback commit 失败 tool=${name}:`,
-        commitErr instanceof Error ? commitErr.message : String(commitErr),
-      );
-      // commit 失败不影响工具结果返回给 LLM，但日志告警供排查
-    }
-  }
+  const raw = exec.envelope.value;
   if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
     if (typeof obj.elapsedMs !== "number") {
-      return { ...obj, elapsedMs: Date.now() - started };
+      return { ...obj, elapsedMs: exec.elapsedMs || Date.now() - started };
     }
   }
   return raw;

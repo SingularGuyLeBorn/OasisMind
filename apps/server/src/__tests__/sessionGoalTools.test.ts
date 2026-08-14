@@ -26,6 +26,7 @@ function makeCtx(sessionId?: string): NativeToolContext {
     config: { goal: { maxTurns: 20, deepResearchMaxTurns: 30, judgeModel: "auto" } } as never,
     services: {} as never,
     invokeTrpc: async () => ({}),
+    signal: new AbortController().signal,
     sessionId,
   };
 }
