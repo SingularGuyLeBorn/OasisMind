@@ -1814,3 +1814,86 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 | Q12 施工批次 | A 先 WP0–3 再 WP4–7，两批都做完 |
 
 未再点头前不改业务代码。
+
+---
+
+## Memory 写入侧语义判定（2026-08-14）
+
+### 背景
+
+Memory 写路径只有 `contentHash` 精确去重，`conflictsWith` 靠 LLM 自觉填写；随着经验/笔记/偏好越攒越多，语义级重复（同一事实换一种说法又建一条）会不断稀释记忆库质量。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 判定模型 | 新增 `infra/memoryWriteGate.ts` 叶子模块，`judgeMemoryQuery(config, { content, type, neighbors })` 返回 `ADD/UPDATE/NOOP/CONFLICT` |
+| 触发范围 | 仅对 `MEMORY_USER_CREATABLE_TYPES` 判定；`experience`/`persona` 直接跳过（前者是机器经验 JSON，后者是人格配置，不适合被 LLM 改写/合并） |
+| 输入 | 取同 scope 同 type 的最近 `neighborLimit` 条（默认 5）已有记忆；新事实与邻居内容各截断 200 字符以内 |
+| 模型 | `resolveAuxiliaryModel(..., preference: "lite_free")`，非流式，maxTokens ≤ 150 |
+| 输出 | 强制单行 JSON `{"action":"...","target":编号,"reason":"..."}`；解析失败/超时/越界 → `console.warn` 并回退 `ADD` |
+| 接入点 | `memoryRepository.write` 中：contentHash 命中分支 → debounce → 语义判定 → 按 verdict 分派 |
+| 分派语义 | `NOOP`：不新建行，仅 strength 取 `Math.max(旧, 新)` 刷新；`UPDATE`：走 `supersedeUpdate`，旧版本 archived、新版本进版本链；`CONFLICT`：正常 create，但 `conflictsWith` 自动关联 target；`ADD`：正常 create |
+| 配置 | `config.yaml memory.writeDedup`：`enabled`/`model`/`timeoutMs`/`neighborLimit`，默认启用、timeout 4000ms |
+| 失败策略 | 任何异常都回退 `ADD`，保证写路径不卡、不丢用户事实 |
+
+### 替代方案为何不取
+
+- **向量相似度阈值自动判**：没有 ground truth 阈值，embedding 相似 ≠ 语义等价（同词不同义、同义不同词都易误判），且无法给出 CONFLICT/UPDATE/NOOP 的可解释分类；LLM 判定更贵但更准确、可解释、可失败回退。
+- **在 create 后由后台任务合并**：先污染再治理会把重复行写入 DB，前端/检索已看见多条，治理收益降低。
+- **所有类型都参与语义去重**：`experience` 是 JSON 结构化的运行经验，`persona` 是人格配置，被 LLM 合并会丢失关键字段或破坏人格一致性，必须排除。
+
+**回答**：按上表落地
+
+---
+
+## LLM 角色化拆价（2026-08-14）
+
+### 背景
+
+reactLoop 的 Turn Snapshot 在 run 入口冻结单一模型，全程不再切换；长 ReAct 链里 round 1（决定任务骨架）和后续执行轮用同一个贵模型，token 成本高，且没有「规划轮用强模型、执行轮用便宜模型」的拆价空间。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 设计边界 | `TurnSnapshot.model` 仍冻结为 base model；不 mutate snapshot，只通过 `transport.complete({ modelOverride })` 做 per-call 覆盖 |
+| Transport 扩展 | `LlmTransport.complete` 增加 `modelOverride?: string`；`createSyncTransport`/`createStreamTransport` 内用 `effectiveModel = modelOverride ?? baseModel`，并确保 `turn.model` 回记实际生效模型（token 记账依赖） |
+| 轮次解析 | 新增纯函数叶子 `infra/loop/roundModel.ts` `resolveRoundModel(config, round)`：默认 `enabled=false`；`round <= planningRounds` → `planningModel`；否则 → `executionModel`；空字符串视为未配置（回退 base） |
+| 接入点 | `reactLoop.ts` 主循环 `roundsUsed` 已是 1-based，传 `resolveRoundModel(input.config, roundsUsed)`；收尾合成轮在最后一轮之后，按执行轮对待，传 `resolveRoundModel(input.config, roundsUsed + 1)` |
+| 配置 | `config.yaml llm.roleSplit`：`enabled`（默认 false）、`planningModel`、`executionModel`、`planningRounds`（默认 1） |
+| 默认关闭 | 默认 `enabled: false`，所有 `resolveRoundModel` 返回 undefined，行为与改动前字节级一致；开启后纯配置生效，无需改代码 |
+
+### 替代方案为何不取
+
+- **直接改 snapshot.model**：会破坏「进入 run 后配置冻结」的不变量，飞行中改模型可能导致工具/预算/phase 语义漂移。
+- **在 loop 外创建多个 transport**：需要把 hooks/token 记账/重试状态拆到多个对象里，复杂且容易漏；per-call modelOverride 是 transport 契约的最小侵入扩展。
+- **默认开启并固定强/弱模型**：不同 Agent/任务适合的模型不同，默认关闭让用户按场景显式配置，避免强模型突然被所有任务调用抬高成本。
+
+**回答**：按上表落地
+
+---
+
+## IVE direction 归因规则层修复（2026-08-14）
+
+### 背景
+
+`agentEvolution.ts` 的 `attributeFailure` 只产出 `implementation`（工具报错/参数错）或 `unknown`；统计/建议层 `optimizeAgentPrompt` 虽然能消费 `direction`，但规则层永远不给 `direction` 赋值，导致「工具都没错但任务没完成」这类失败被归为 unknown，归因报表失真。
+
+### 决策
+
+| 项 | 结论 |
+| --- | --- |
+| 规则顺序 | ① 任一工具调用含错误签名 → `implementation`；② 无工具错误但 `producedOutput === false`（run 结果 content 为空/仅空白）→ `direction`；③ 其余 → `unknown` |
+| 签名扩展 | `attributeFailure(toolCalls, opts?: { producedOutput?: boolean })`，opts 可选，旧调用方无需改 |
+| failureReason | direction 时固定为「工具调用无报错但未产出有效内容，疑似任务方向/理解偏差」 |
+| 透传点 | `accumulateExperience` 失败分支传 `producedOutput: !!result.content.trim()`，使写出的 `type=experience` 记忆 `failureKind` 真实反映 direction |
+| 默认值 | 未传 `producedOutput` 时沿用旧语义（unknown），保证直接单测 attributeFailure 的路径不变 |
+
+### 替代方案为何不取
+
+- **让上游 LLM 在 optimize 时再判 direction**：失败经验已经落库为 unknown，后续 prompt 优化时只能从 unknown 堆里再 LLM 二判，浪费 token 且延迟反馈。
+- **把 content 空也判为 implementation**：没有工具错误，硬塞 implementation 会误导优化方向（改工具使用纪律无济于事）。
+- **新增独立 heuristics 模块**：规则本身只有一条「工具无错但没产出」，不值得再拆一个模块；直接扩展 `attributeFailure` 最简洁。
+
+**回答**：按上表落地
