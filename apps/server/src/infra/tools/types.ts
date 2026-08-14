@@ -60,6 +60,8 @@ export interface ToolCommand<Ctx = unknown> {
   deriveScope?(args: Record<string, unknown>): string | null | undefined;
   /** WP2：value → content 投影；缺省走 defaultProjectContent */
   render?(value: unknown, args: Record<string, unknown>): unknown;
+  /** WP5：VisibleSet 内才拼进 tool-guide；order 100–199 */
+  promptSection?: { order: number; text: string | ((ctx: { tier?: string }) => string) };
   schema(): ToolSchema;
   execute(params: Record<string, unknown>, ctx: Ctx): Promise<unknown>;
   /** 执行前快照（destructive 工具按需实现）；返回值原样透传给 rollback */

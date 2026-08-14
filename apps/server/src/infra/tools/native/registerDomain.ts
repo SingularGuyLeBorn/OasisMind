@@ -5,7 +5,7 @@
  * 无补偿实现的 destructive 工具（git_commit 等）run 失败时只记 warn「需人工 revert」。
  */
 
-import { registerTool } from "../registry.js";
+import { getTool, registerTool } from "../registry.js";
 import type { ToolRollback } from "../types.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { isToolEnvelope, wrapRawAsEnvelope } from "../toolEnvelope.js";
@@ -36,6 +36,10 @@ export function registerNativeDomain(
     if (defaultHidden === undefined) {
       defaultHidden = def.destructive === true && def.approvalExempt !== true;
     }
+    const existing = getTool(def.name);
+    if (existing?.promptSection && def.promptSection) {
+      console.warn(`[promptSection] 同名 promptSection 覆盖: ${def.name}`);
+    }
     registerTool<NativeToolContext>({
       name: def.name,
       kind: "native",
@@ -44,6 +48,7 @@ export function registerNativeDomain(
       approvalExempt: def.destructive ? def.approvalExempt : undefined,
       defaultHidden,
       render: def.render,
+      promptSection: def.promptSection,
       schema: () => ({ description: def.description, parameters: def.parameters }),
       execute: async (args, ctx) => {
         const raw = await handler(args, ctx);

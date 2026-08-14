@@ -39,6 +39,7 @@ import {
 import type { NativeToolContext, NativeToolDefinition } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
 import { defaultProjectContent } from "../toolEnvelope.js";
+import { LOGIN_WALL_PROMPT_SECTION } from "../../promptRuntimeContext.js";
 import { academicDefs, academicHandlers } from "./web/academic.js";
 import type { PostEntity } from "../../entityServices/postService.js";
 
@@ -1547,6 +1548,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
       required: ["url"],
     },
     render: (value) => defaultProjectContent(value),
+    promptSection: { order: 120, text: LOGIN_WALL_PROMPT_SECTION },
   },
   {
     name: "scrape_web_page",

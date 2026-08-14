@@ -33,6 +33,8 @@ export interface NativeToolDefinition {
   defaultHidden?: boolean;
   /** WP2：长文工具显式投影；缺省走 defaultProjectContent */
   render?(value: unknown, args: Record<string, unknown>): unknown;
+  /** WP5：VisibleSet 内才拼进 tool-guide；order 100–199 */
+  promptSection?: { order: number; text: string | ((ctx: { tier?: string }) => string) };
 }
 
 export interface NativeToolContext {

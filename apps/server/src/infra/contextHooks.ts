@@ -20,6 +20,10 @@ import {
   buildTierIdentityHint,
 } from "./promptBuilder.js";
 import { getConstraintEvolutionBlock, injectConstraintBlock } from "./constraintEvolution.js";
+import { buildRuntimeContextBlock, collectVisiblePromptSections } from "./promptRuntimeContext.js";
+import { deriveVisibleSet } from "./tools/visibleSet.js";
+import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { getAppConfig } from "./config.js";
 
 const SLOW_HOOK_MS = 500;
 
@@ -78,7 +82,7 @@ function sortedHooks(): ContextHook[] {
 }
 
 /** 将 prependUserContext 插入消息列表末尾之前（保留最后一条在尾部） */
-function applyPrependUserContext(messages: LlmMessage[], block: string): LlmMessage[] {
+export function applyPrependUserContext(messages: LlmMessage[], block: string): LlmMessage[] {
   if (!block) return messages;
   const injected: LlmMessage = { role: "user", content: block };
   if (messages.length === 0) return [injected];
@@ -206,7 +210,9 @@ export function ensureBuiltinContextHooks(): void {
     run: async (input) => {
       // 等价性测试可 scratch.__forceAllToolGuides=true 强制全量指南
       if (input.scratch.__forceAllToolGuides) {
-        input.scratch.__toolGuide = buildAgentToolGuide(input.agent.tools ?? [], "all");
+        const base = buildAgentToolGuide(input.agent.tools ?? [], "all");
+        const sections = collectVisiblePromptSections(visibleNativeNames(input), input.agent.tier);
+        input.scratch.__toolGuide = [base, sections].filter(Boolean).join("\n\n");
         return;
       }
       const { detectPromptIntentPacks } = await import("./promptIntentPacks.js");
@@ -215,7 +221,9 @@ export function ensureBuiltinContextHooks(): void {
         userText,
         tools: input.agent.tools ?? [],
       });
-      input.scratch.__toolGuide = buildAgentToolGuide(input.agent.tools ?? [], packs);
+      const base = buildAgentToolGuide(input.agent.tools ?? [], packs);
+      const sections = collectVisiblePromptSections(visibleNativeNames(input), input.agent.tier);
+      input.scratch.__toolGuide = [base, sections].filter(Boolean).join("\n\n");
     },
   });
 
@@ -292,6 +300,39 @@ export function ensureBuiltinContextHooks(): void {
         : `${base}${identityHint}${memoryHint}${goalHint}${taskCanvasHint}${extras}`;
       return { systemPrompt: composed };
     },
+  });
+
+  registerContextHook({
+    name: "runtime-snapshot",
+    order: 900,
+    enabled: () => true,
+    run: async (input) => {
+      const block = await buildRuntimeContextBlock({ ctx: input.ctx });
+      return { messages: upsertRuntimeContextBlock(input.messages, block) };
+    },
+  });
+}
+
+function visibleNativeNames(input: ContextHookInput): string[] {
+  if (input.ctx.visibleSet) return input.ctx.visibleSet.native;
+  const tools = input.agent.tools ?? [];
+  return deriveVisibleSet({
+    agentId: input.agent.id ?? "",
+    tier: (input.agent.tier as string) ?? "sub",
+    agentTools: tools,
+    packs: input.ctx.config?.packs ?? getAppConfig().packs,
+    childOwn: input.agent.tier === "sub" ? [...CHILD_OWN_TOOLS] : [],
+  }).native;
+}
+
+const RUNTIME_CTX_RE = /<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/;
+
+export function upsertRuntimeContextBlock(messages: LlmMessage[], block: string): LlmMessage[] {
+  const had = messages.some((m) => typeof m.content === "string" && m.content.includes("<!-- kp-runtime-context -->"));
+  if (!had) return applyPrependUserContext(messages, block);
+  return messages.map((m) => {
+    if (typeof m.content !== "string" || !m.content.includes("<!-- kp-runtime-context -->")) return m;
+    return { ...m, content: m.content.replace(RUNTIME_CTX_RE, block.trim()) };
   });
 }
 

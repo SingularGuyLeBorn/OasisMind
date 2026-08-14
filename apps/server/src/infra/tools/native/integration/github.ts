@@ -46,6 +46,7 @@ import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from 
 import { coerceToolBoolean } from "../types.js";
 import { z } from "zod";
 import { zodParams } from "../zodParams.js";
+import { LOGIN_WALL_PROMPT_SECTION } from "../../../promptRuntimeContext.js";
 
 // ─── 浏览器登录态 ───
 
@@ -376,6 +377,7 @@ async function githubTool(args: Record<string, unknown>, ctx: NativeToolContext)
 export const githubDefs: NativeToolDefinition[] = [
   {
     name: "platform_login",
+    promptSection: { order: 110, text: LOGIN_WALL_PROMPT_SECTION },
     description:
       "【Tier 1】平台登录唯一入口：弹 Playwright 让用户扫码/账密；落盘 storageState+cookieJar。支持 zhihu/wechat/xhs/douyin/bilibili/weibo/juejin/csdn/yuque。小红书须手机确认且侧栏出现「我」。查状态用 browser_login_status；通道/后端体检用 platform_doctor。",
     parameters: zodParams(
@@ -392,6 +394,7 @@ export const githubDefs: NativeToolDefinition[] = [
   },
   {
     name: "browser_login_status",
+    promptSection: { order: 100, text: LOGIN_WALL_PROMPT_SECTION },
     description:
       "【Tier 0 本地】列出各平台真登录态（loggedIn）。文件大小≠已登录；会清理访客假态。通道有序后端/在线探测见 platform_doctor。",
     parameters: zodParams(z.object({})),

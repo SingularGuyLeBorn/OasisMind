@@ -15,7 +15,7 @@ describe("promptIntentPacks", () => {
     expect(packs.has("math")).toBe(false);
     expect(packs.has("tool_offload")).toBe(true);
     const guide = buildAgentToolGuide(webTools, packs);
-    expect(guide).toContain("网络工具用法");
+    expect(guide).not.toContain("网络工具用法");
     expect(guide).toContain("工具结果落盘");
     expect(guide).not.toContain("完整 Markdown 范文");
     expect(guide).not.toContain("数字花园工具");
@@ -37,7 +37,7 @@ describe("promptIntentPacks", () => {
 
   it("packs=all 保持旧行为含 web+数学", () => {
     const guide = buildAgentToolGuide(webTools, "all");
-    expect(guide).toContain("网络工具用法");
+    expect(guide).not.toContain("网络工具用法");
     expect(guide).toContain("数学公式铁律");
   });
 });

@@ -194,14 +194,6 @@ export async function buildAllMemoryHints(
   return persona + pinned + dynamic + neighbors;
 }
 
-const WEB_TOOL_GUIDE = `## 网络工具用法
-- 搜：\`web_search\`；学术 \`search_arxiv\`/\`fetch_arxiv\`；HF \`search_huggingface\` 等。勿硬爬 arxiv.org。
-- 读公开页：\`read_article\`（长文 offset 翻页）；失败/SPA → \`scrape_web_page\`；落盘反复读 → \`save_webpage\`；下文件 → \`download_file\`。
-- 登录墙 / 已在 Chrome 打开的页：优先 \`dokobot_read\`/\`dokobot_search\`（本机扩展）；否则 \`browser_login_status\`/\`platform_doctor\` → \`platform_login\` → \`read_article\`。禁止截图查登录态、禁止让用户 F12 抄 cookie。
-- 真实浏览器操作（点选/填表/多标签）：\`webbridge_status\` → 未起则 \`webbridge_start\` → \`webbridge_command\`（同任务固定 session；navigate → snapshot 取 @e → click/fill）。只需读正文用 dokobot，勿为阅读开 WebBridge。
-- 图：\`browser_screenshot\` → \`read_image\`；语义理解用 \`vision_describe\`。正文够用勿对每张图 vision。
-- 流程：search → read → 必要时 scrape/dokobot/webbridge/读图。`;
-
 const PINME_TOOL_GUIDE = `## 公网部署（PinMe）
 用户要「写个小工具/HTML 小游戏并给公网链接」时：
 1. 用 write_file 写到当前 Workspace（如 \`demo/index.html\`），或对话里直接 \`\`\`html\`\`\` 预览（仅预览不部署）。
@@ -298,25 +290,6 @@ export function buildAgentToolGuide(
         parts.push(`## 完整 Markdown 范文（照抄格式）\n${MATH_MARKDOWN_EXAMPLE}`);
       }
     }
-  }
-  if (
-    want("web") &&
-    (has("web_search") ||
-      has("read_article") ||
-      has("dokobot_read") ||
-      has("dokobot_search") ||
-      has("webbridge_command") ||
-      has("webbridge_status") ||
-      has("scrape_web_page") ||
-      has("download_file") ||
-      has("save_webpage") ||
-      has("browser_screenshot") ||
-      has("read_image") ||
-      has("search_arxiv") ||
-      has("search_huggingface") ||
-      has("fetch_huggingface_trending"))
-  ) {
-    parts.push(WEB_TOOL_GUIDE);
   }
   if (
     intentOnly("garden") &&
