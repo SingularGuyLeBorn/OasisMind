@@ -450,6 +450,19 @@ export const SWARM_MAX_DEPTH = 10;
 /** 单个 Agent 待处理消息队列上限 */
 export const SWARM_MAX_QUEUE_SIZE = 100;
 
+/**
+ * 子 Agent 自己的层（DSH Q5）：父 inheritMask.deny 剥不掉。
+ * 裸名；LLM 从 own 里删 agent_report_back 无效（服务端强制并回）。
+ */
+export const CHILD_OWN_TOOLS = [
+  "agent_report_back",
+  "agent_notify_parent",
+  "todo_write",
+  "todo_read",
+  "ask_user",
+] as const;
+export type ChildOwnTool = (typeof CHILD_OWN_TOOLS)[number];
+
 /** Swarm Agent 层级（与 schemas.agentTierSchema 同源） */
 export const AGENT_TIERS = ["super", "manager", "sub"] as const;
 export type AgentTier = (typeof AGENT_TIERS)[number];

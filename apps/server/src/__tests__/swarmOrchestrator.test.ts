@@ -165,7 +165,7 @@ describe("W10 SwarmOrchestrator 中介者", () => {
           ...ctx,
           invokeTrpc: async () => ({ ok: true }),
           sessionId,
-          agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: ["native:wait"], tier: "manager" },
+          agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: ["native:wait", "native:async_task_run"], tier: "manager" },
         },
       )) as { jobId: string; status: string };
       const startedResult = started!;

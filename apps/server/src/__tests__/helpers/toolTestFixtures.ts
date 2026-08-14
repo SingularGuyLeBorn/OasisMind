@@ -285,11 +285,20 @@ export function createAgentCtx(
   opts?: Parameters<typeof createNativeCtx>[1],
 ): AgentToolContext {
   const base = createNativeCtx(projectRoot, opts);
+  const native = parsed.native === "all" ? [] : [...parsed.native];
   return {
     ...base,
-    allowedNative: parsed.native,
+    allowedNative: native,
     allowedSkills: parsed.skills,
     allowedMcpServers: parsed.mcpServers,
+    visibleSet: {
+      native,
+      skills: parsed.skills,
+      mcpServers: parsed.mcpServers,
+      skillWildcard: parsed.skillWildcard,
+      nativeAll: parsed.native === "all",
+      reasonByName: {},
+    },
   };
 }
 

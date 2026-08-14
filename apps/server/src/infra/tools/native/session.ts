@@ -8,8 +8,10 @@ import fs from "fs";
 import path from "path";
 import { getStreamHub } from "../../sessionStreamHub.js";
 import { runSessionCompact, estimateChars, resolveCompactThresholdForModel, buildLlmContextSinceCompact } from "../../autoCompact.js";
-import { getAllowedToolsForTier } from "../../swarmPermissionGuard.js";
-import { resolveToolsForAgentTier, DEFAULT_SUBAGENT_TOOLS } from "../../loop/setup.js";
+import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { getAppConfig } from "../../config.js";
+import { DEFAULT_SUBAGENT_TOOLS } from "../../loop/setup.js";
+import { deriveVisibleSet, visibleSetToAgentTools } from "../visibleSet.js";
 import { resolveAgent as defaultResolveAgent } from "../../agentResolver.js";
 import { getSwarmOrchestrator, type SwarmTaskOutcome } from "../../swarmOrchestrator.js";
 import { getAsyncJobOrchestrator } from "../../asyncJobOrchestrator.js";
@@ -85,6 +87,18 @@ function defaultSubagentPlaceholderName(task: string): string {
  *   SwarmOrchestrator.dispatch，禁止各调用方私自起流。
  *
  * 执行体 spawnSubagent* 保留原语义（同步等待/report_back/跟踪 Task 均不动）。 */
+function spawnChildVisibleTools(agentTools: string[]): string[] {
+  return visibleSetToAgentTools(
+    deriveVisibleSet({
+      agentId: "",
+      tier: "sub",
+      agentTools,
+      packs: getAppConfig().packs,
+      childOwn: [...CHILD_OWN_TOOLS],
+    }),
+  );
+}
+
 async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   if (!ctx.sessionId || !ctx.agentSnapshot) {
     throw new Error("spawn_subagent 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
@@ -164,8 +178,8 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: NativeToolC
         workspaceId: parentSnapshot.workspaceId ?? null,
         taskLabel: task.slice(0, 80),
         timeoutMs: typeof args.timeoutMs === "number" ? args.timeoutMs : undefined,
-        // W3：子 Agent 默认工具集 → requiredScopes（粗粒度）
-        tools: [...DEFAULT_SUBAGENT_TOOLS],
+        // W3：子 Agent 默认工具集 → requiredScopes（粗粒度）；WP1 列举，禁止 native:all
+        tools: spawnChildVisibleTools([...DEFAULT_SUBAGENT_TOOLS]),
         guard,
         dedup: {
           agentId: parentSnapshot.id,
@@ -273,9 +287,8 @@ async function spawnSubagentPrepare(
         name: args.name ? String(args.name) : defaultSubagentPlaceholderName(task),
         description: args.description ? String(args.description) : undefined,
         systemPrompt: args.systemPrompt ? String(args.systemPrompt) : defaultPrompt,
-        // 默认执行类工具（native: 前缀）；再按 sub tier 裁剪，杜绝物化成空 → native:all
-        tools: getAllowedToolsForTier(
-          "sub",
+        // WP1：VisibleSet 列举，禁止 native:all；own 层强制 CHILD_OWN_TOOLS
+        tools: spawnChildVisibleTools(
           Array.isArray(args.tools) && (args.tools as string[]).length > 0
             ? (args.tools as string[])
             : [...DEFAULT_SUBAGENT_TOOLS],

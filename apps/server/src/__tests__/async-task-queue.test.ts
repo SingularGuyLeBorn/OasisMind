@@ -52,7 +52,7 @@ async function createParentAgent(ctx: Awaited<ReturnType<typeof createContextInn
 
 /** W-D 后 async_task_run 只接纯工具任务：统一用 native:wait 做无害执行体 */
 const WAIT_TOOL_CALL = { tool: "wait", args: { ms: 30 } };
-const SNAPSHOT_TOOLS = ["native:wait"];
+const SNAPSHOT_TOOLS = ["native:wait", "native:async_task_run", "native:async_task_status"];
 
 describe("async-task-queue 工具协议", () => {
   beforeEach(() => {

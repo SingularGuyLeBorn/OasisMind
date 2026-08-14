@@ -7,8 +7,9 @@
  * 新增 native 工具 = 在对应域文件加 schema + handler（开闭原则，勿改本文件分发逻辑）。
  */
 
-import { DEFAULT_AGENT_NATIVE } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS, DEFAULT_AGENT_NATIVE } from "@knowpilot/shared";
 import { checkToolPermission } from "./swarmPermissionGuard.js";
+import { deriveVisibleSet } from "./tools/visibleSet.js";
 import { recordViolation } from "./constraintEvolution.js";
 import { hasMockNativeTool, executeMockNativeTool } from "./mockNativeTools.js";
 import { getTool, listTools } from "./tools/registry.js";
@@ -78,6 +79,23 @@ export async function executeNativeTool(
   ctx: NativeToolContext,
 ): Promise<unknown> {
   ensureNativeToolsRegistered();
+
+  if (ctx.visibleSet) {
+    if (!ctx.visibleSet.native.includes(name)) {
+      return { error: `工具 ${name} 不在当前 VisibleSet`, code: "NOT_VISIBLE" };
+    }
+  } else if (ctx.agentSnapshot?.tools && ctx.agentSnapshot.tools.length > 0) {
+    const derived = deriveVisibleSet({
+      agentId: ctx.agentSnapshot.id,
+      tier: ctx.agentSnapshot.tier ?? "sub",
+      agentTools: ctx.agentSnapshot.tools,
+      packs: ctx.config.packs,
+      childOwn: (ctx.agentSnapshot.tier ?? "sub") === "sub" ? [...CHILD_OWN_TOOLS] : [],
+    });
+    if (!derived.native.includes(name)) {
+      return { error: `工具 ${name} 不在当前 VisibleSet`, code: "NOT_VISIBLE" };
+    }
+  }
 
   // expect_* 是上下文层控制参数，剥掉后再进权限/handler，避免污染业务入参
   const { cleanArgs } = peelExpectControls(args);

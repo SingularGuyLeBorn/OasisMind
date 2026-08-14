@@ -1540,9 +1540,10 @@ describe("native:sleep", () => {
       const result = (await executeNativeTool(tool, { content: "记住", keyword: "x" }, ctx)) as {
         error?: string;
         permissionDenied?: boolean;
+        code?: string;
       };
-      expect(result.permissionDenied).toBe(true);
-      expect(result.error).toContain("TIER_INSUFFICIENT");
+      expect(result.code === "NOT_VISIBLE" || result.permissionDenied).toBe(true);
+      expect(result.error).toMatch(/TIER_INSUFFICIENT|VisibleSet/);
     }
     fs.rmSync(root, { recursive: true, force: true });
   });
@@ -1564,9 +1565,10 @@ describe("native:sleep", () => {
     const result = (await executeNativeTool("session_compact", {}, ctx)) as {
       error?: string;
       permissionDenied?: boolean;
+      code?: string;
     };
-    expect(result.permissionDenied).toBe(true);
-    expect(result.error).toContain("TIER_INSUFFICIENT");
+    expect(result.code === "NOT_VISIBLE" || result.permissionDenied).toBe(true);
+    expect(result.error).toMatch(/TIER_INSUFFICIENT|VisibleSet/);
     fs.rmSync(root, { recursive: true, force: true });
   });
 

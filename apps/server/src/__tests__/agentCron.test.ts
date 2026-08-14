@@ -123,7 +123,7 @@ describe("agentCron", () => {
         },
         toolCtx(ctx, sub),
       )) as { error?: string };
-      expect(subOut.error).toMatch(/TIER_INSUFFICIENT|子 Agent/);
+      expect(subOut.error).toMatch(/TIER_INSUFFICIENT|子 Agent|VisibleSet/);
 
       const cross = (await executeNativeTool(
         "agent_cron_set",
@@ -276,7 +276,7 @@ describe("agentCron", () => {
         },
         toolCtx(ctx, sub),
       )) as { error?: string };
-      expect(denied.error).toMatch(/TIER_INSUFFICIENT|子 Agent/);
+      expect(denied.error).toMatch(/TIER_INSUFFICIENT|子 Agent|VisibleSet/);
 
       const out = (await executeNativeTool(
         "session_spawn_goal",

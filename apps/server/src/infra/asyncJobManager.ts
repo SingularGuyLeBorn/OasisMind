@@ -34,7 +34,7 @@ import {
 } from "./asyncJobOrchestrator.js";
 import { getSwarmOrchestrator } from "./swarmOrchestrator.js";
 import { assertLlmBudget } from "./llmBudget.js";
-import { getAllowedToolsForTier } from "./swarmPermissionGuard.js";
+import { resolveToolsForAgentTier } from "./loop/setup.js";
 import {
   markAgentMessageDeliveredByTaskRef,
   rollbackAgentMessageDeliveredByTaskRef,
@@ -1708,7 +1708,7 @@ function buildAsyncExecute(
     }
   };
   const subagentOnly = agentSnapshot.tier === "sub";
-  const workerTools = subagentOnly ? getAllowedToolsForTier("sub", agentSnapshot.tools) : agentSnapshot.tools;
+  const workerTools = resolveToolsForAgentTier(agentSnapshot.tier, agentSnapshot.tools);
 
   const subagentHint = subagentOnly
     ? "\n\n注意：你是被派来直接执行该任务的子 Agent。你可以调用 async_task_run（toolCall 指定要执行的工具）把耗时步骤放入后台执行，但禁止调用 spawn_subagent、agent_create*、agent_send_message、agent_report_back 等再次派生或管理 Agent 的工具。请直接使用其他可用工具完成任务，不要继续追问用户。"
@@ -2178,7 +2178,7 @@ export async function startAsyncAgentTask(options: {
     }
 
     // 子 Agent 只保留执行类工具，禁止继承 spawn/async_task_run/async_task_cancel 等编排工具
-    const subagentTools = getAllowedToolsForTier("sub", options.agent.tools);
+    const subagentTools = resolveToolsForAgentTier("sub", options.agent.tools);
 
     try {
       const subAgentResult = await options.services.agent.create({

@@ -8,6 +8,7 @@ import type { ResolveAgentFn } from "../../agentResolver.js";
 import type { PrismaClient } from "@prisma/client";
 import type { ToolConcurrencyClass } from "../types.js";
 import type { RunRollbackStack } from "../rollback.js";
+import type { VisibleSet } from "../visibleSet.js";
 
 export interface NativeToolDefinition {
   name: string;
@@ -65,6 +66,11 @@ export interface NativeToolContext {
    * W3 safe bypass：为 true 时仅允许只读（非 destructive）工具；写工具在权限层拒绝。
    */
   readonlyOnly?: boolean;
+  /**
+   * WP1：本 run 的 VisibleSet。有则 execute 只认 visible.native；
+   * 单测直调无此字段时由 executeNativeTool 现场 derive 或按 registry 放行。
+   */
+  visibleSet?: VisibleSet;
 }
 
 export type NativeToolHandler = (

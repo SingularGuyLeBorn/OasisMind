@@ -9,11 +9,16 @@ import {
   createAgentToolContext,
   formatAgentToolRef,
   resolveToolCallTimeoutMs,
+  visibleSetToParsed,
+  clearAgentSchemaCache,
   DEFAULT_NATIVE,
 } from "../infra/agentTools.js";
+import { executeNativeTool } from "../infra/nativeTools.js";
+import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
 import { skillToolName, parseSkillToolName, buildSkillToolSchema, executeSkill } from "../infra/skillRunner.js";
 import { mcpToolName } from "../infra/mcpUtils.js";
-import { createTempProjectDir, createAgentCtx, makeSkillEntity } from "./helpers/toolTestFixtures.js";
+import { PACKS_FULL } from "@knowpilot/shared";
+import { createTempProjectDir, createAgentCtx, createNativeCtx, makeSkillEntity } from "./helpers/toolTestFixtures.js";
 import type { ToolRegistryEntry } from "../infra/agentTools.js";
 import fs from "fs";
 
@@ -257,7 +262,8 @@ describe("Agent 工具桥 — executeToolCallsBatch", () => {
       registry,
       parsed,
     );
-    expect((results[0].result as { error: string }).error).toMatch(/未授权/);
+    expect((results[0].result as { error: string }).error).toMatch(/VisibleSet/);
+    expect((results[0].result as { code: string }).code).toBe("NOT_VISIBLE");
     fs.rmSync(root, { recursive: true, force: true });
   });
 });
@@ -312,5 +318,68 @@ describe("长等待超时预算（P2/S5）", () => {
     expect(resolveToolCallTimeoutMs("spawn_subagent", {}, DEFAULT_MS)).toBe(LONG_WAIT_MS);
     expect(resolveToolCallTimeoutMs("sleep", { seconds: 60 }, DEFAULT_MS)).toBe(LONG_WAIT_MS);
     expect(resolveToolCallTimeoutMs("web_search", {}, DEFAULT_MS)).toBe(DEFAULT_MS);
+  });
+});
+
+describe("Agent 工具桥 — VisibleSet 授权", () => {
+  it("不在 VisibleSet 的 native execute 返回 code=NOT_VISIBLE 且不进 handler", async () => {
+    const root = createTempProjectDir();
+    fs.mkdirSync(`${root}/data/workspace`, { recursive: true });
+    fs.writeFileSync(`${root}/data/workspace/secret.txt`, "should-not-read", "utf8");
+    const ctx = {
+      ...createNativeCtx(root),
+      visibleSet: {
+        native: ["web_search"],
+        skills: [] as string[],
+        mcpServers: [] as string[],
+        skillWildcard: false,
+        nativeAll: false,
+        reasonByName: {},
+      },
+    };
+    const result = (await executeNativeTool("read_file", { path: "secret.txt" }, ctx)) as {
+      error?: string;
+      code?: string;
+      content?: string;
+    };
+    expect(result.code).toBe("NOT_VISIBLE");
+    expect(result.content).toBeUndefined();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("schema 硬顶剥离后的工具 isToolAuthorized=false 且 execute NOT_VISIBLE", async () => {
+    vi.stubEnv("AGENT_TOOL_SCHEMA_HARD_CAP_BYTES", "20000");
+    clearAgentSchemaCache();
+    const visible = deriveVisibleSet({
+      agentId: "cap",
+      tier: "super",
+      agentTools: ["native:all"],
+      packs: PACKS_FULL,
+    });
+    const before = [...visible.native];
+    const parsed = visibleSetToParsed(visible);
+    const registry = new Map<string, ToolRegistryEntry>();
+    const services = {
+      skill: {
+        list: vi.fn(async () => ({ items: [], total: 0, page: 1, pageSize: 200, totalPages: 0 })),
+      },
+    };
+    try {
+      await buildAgentToolSchemas(services as never, parsed, registry, visible);
+    } catch {
+      /* 剥完仍超硬顶：visible.native 仍应已去掉被 delete 的工具 */
+    }
+    const dropped = before.find((n) => !visible.native.includes(n) || !registry.get(n));
+    expect(dropped).toBeTruthy();
+    expect(isToolAuthorized(dropped!, registry, parsed, visible)).toBe(false);
+    const root = createTempProjectDir();
+    const result = (await executeNativeTool(dropped!, {}, {
+      ...createNativeCtx(root),
+      visibleSet: visible,
+    })) as { code?: string };
+    expect(result.code).toBe("NOT_VISIBLE");
+    fs.rmSync(root, { recursive: true, force: true });
+    vi.unstubAllEnvs();
+    clearAgentSchemaCache();
   });
 });

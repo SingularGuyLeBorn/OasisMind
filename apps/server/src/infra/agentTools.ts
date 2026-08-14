@@ -4,18 +4,10 @@
  */
 
 import type { LlmToolCall } from "./llmClient.js";
-import type { AppConfig } from "./config.js";
+import { getAppConfig, type AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
-import { DEFAULT_AGENT_NATIVE, INTEGRATION_OPT_IN_TOOLS } from "@knowpilot/shared";
-
-/** schema 体积 warn 阈值（字节）；超此仅告警 */
-const SCHEMA_WARN_BYTES = 50_000;
-/** schema 硬顶：超限先剥集成/skill/mcp，仍超则抛错拒跑（可用 env 覆盖） */
-const SCHEMA_HARD_CAP_BYTES = (() => {
-  const n = Number(process.env.AGENT_TOOL_SCHEMA_HARD_CAP_BYTES);
-  return Number.isFinite(n) && n >= 20_000 ? Math.floor(n) : 500_000;
-})();
-const INTEGRATION_OPT_IN_SET = new Set(INTEGRATION_OPT_IN_TOOLS.map((t) => t.replace(/^native:/, "")));
+import { CHILD_OWN_TOOLS, DEFAULT_AGENT_NATIVE, INTEGRATION_OPT_IN_TOOLS } from "@knowpilot/shared";
+import { deriveVisibleSet, type VisibleSet } from "./tools/visibleSet.js";
 import {
   buildNativeToolSchemas,
   executeNativeTool,
@@ -43,6 +35,15 @@ import { formatTrace } from "./trace.js";
 import { coerceToolBoolean } from "./tools/native/types.js";
 import { injectExpectPropsIntoParameters, peelExpectControls } from "./keyInfoExtractor.js";
 
+/** schema 体积 warn 阈值（字节）；超此仅告警 */
+const SCHEMA_WARN_BYTES = 50_000;
+/** schema 硬顶：每次读 env（测试可 stub），禁止模块加载时钉死。 */
+export function schemaHardCapBytes(): number {
+  const n = Number(process.env.AGENT_TOOL_SCHEMA_HARD_CAP_BYTES);
+  return Number.isFinite(n) && n >= 20_000 ? Math.floor(n) : 500_000;
+}
+const INTEGRATION_OPT_IN_SET = new Set(INTEGRATION_OPT_IN_TOOLS.map((t) => t.replace(/^native:/, "")));
+
 function parseToolCallArgs(call: LlmToolCall): { name: string; args: Record<string, unknown> } {
   let args: Record<string, unknown> = {};
   try {
@@ -61,9 +62,47 @@ export interface ParsedAgentTools {
 }
 
 export interface AgentToolContext extends NativeToolContext {
-  allowedNative: string[] | "all";
+  /** 永远列举 VisibleSet.native；parsed.native==="all" 只作 derive 输入语义 */
+  allowedNative: string[];
   allowedSkills: string[];
   allowedMcpServers: string[];
+}
+
+export function visibleSetToParsed(v: VisibleSet): ParsedAgentTools {
+  return {
+    native: v.nativeAll ? "all" : v.native,
+    skills: v.skills,
+    skillWildcard: v.skillWildcard,
+    mcpServers: v.mcpServers,
+  };
+}
+
+function parsedToAgentTools(parsed: ParsedAgentTools): string[] {
+  const out: string[] = [];
+  if (parsed.native === "all") out.push("native:all");
+  else for (const n of parsed.native) out.push(`native:${n}`);
+  for (const s of parsed.skills) out.push(`skill:${s}`);
+  if (parsed.skillWildcard) out.push("skill:*");
+  for (const m of parsed.mcpServers) out.push(`mcp:${m}`);
+  return out;
+}
+
+function deriveVisibleSetFromParsed(parsed: ParsedAgentTools, tier = "sub"): VisibleSet {
+  return deriveVisibleSet({
+    agentId: "",
+    tier,
+    agentTools: parsedToAgentTools(parsed),
+    packs: getAppConfig().packs,
+    childOwn: tier === "sub" ? [...CHILD_OWN_TOOLS] : [],
+  });
+}
+
+function syncVisibleNativeAfterCap(
+  visible: VisibleSet,
+  registry: Map<string, ToolRegistryEntry>,
+): void {
+  const kept = visible.native.filter((name) => registry.get(name));
+  visible.native = kept;
 }
 
 export interface ToolRegistryEntry {
@@ -225,21 +264,26 @@ export async function buildAgentToolSchemas(
   services: ServiceContainer,
   parsed: ParsedAgentTools,
   registry: Map<string, ToolRegistryEntry>,
+  visible?: VisibleSet,
 ): Promise<Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }>> {
+  const cap = schemaHardCapBytes();
+  const vis = visible ?? deriveVisibleSetFromParsed(parsed);
   const skillNames = await resolveSkillNames(services, parsed);
-  const cacheKey = JSON.stringify({ ...parsed, skillNames });
+  const cacheKey = JSON.stringify({ ...parsed, skillNames, cap });
   const cached = agentSchemaCache.get(cacheKey);
   if (cached) {
     registry.clear();
     for (const [key, entry] of cached.registryEntries) {
       registry.set(key, entry);
     }
+    syncVisibleNativeAfterCap(vis, registry);
     return cached.schemas;
   }
 
   registry.clear();
 
-  const schemas = buildNativeToolSchemas(parsed.native);
+  const nativeList = [...vis.native];
+  const schemas = buildNativeToolSchemas(nativeList);
   for (const schema of schemas) {
     const nativeName = schema.function.name;
     registry.set(schema.function.name, {
@@ -304,10 +348,10 @@ export async function buildAgentToolSchemas(
       `${formatTrace()}[agentTools] schema 体积过大: ${Math.round(schemaBytes / 1024)}KB / ${toolCount} 工具 (native=${nativeCount}, skills=${parsed.skills.length}, mcp=${parsed.mcpServers.length})，考虑显式声明子集或元工具`,
     );
   }
-  if (schemaBytes > SCHEMA_HARD_CAP_BYTES) {
+  if (schemaBytes > cap) {
     const dropped: string[] = [];
     const dropMatching = (pred: (name: string) => boolean) => {
-      for (let i = schemas.length - 1; i >= 0 && schemaBytes > SCHEMA_HARD_CAP_BYTES; i--) {
+      for (let i = schemas.length - 1; i >= 0 && schemaBytes > cap; i--) {
         const name = schemas[i]!.function.name;
         if (!pred(name)) continue;
         schemas.splice(i, 1);
@@ -321,14 +365,17 @@ export async function buildAgentToolSchemas(
     dropMatching((n) => n.startsWith("mcp__"));
     if (dropped.length) {
       console.warn(
-        `${formatTrace()}[agentTools] schema 超硬顶 ${Math.round(SCHEMA_HARD_CAP_BYTES / 1024)}KB，已剥离 ${dropped.length} 个工具: ${dropped.slice(0, 12).join(", ")}${dropped.length > 12 ? "…" : ""}`,
+        `${formatTrace()}[agentTools] schema 超硬顶 ${Math.round(cap / 1024)}KB，已剥离 ${dropped.length} 个工具: ${dropped.slice(0, 12).join(", ")}${dropped.length > 12 ? "…" : ""}`,
       );
     }
-    if (schemaBytes > SCHEMA_HARD_CAP_BYTES) {
+    syncVisibleNativeAfterCap(vis, registry);
+    if (schemaBytes > cap) {
       throw new Error(
-        `Agent 工具 schema 体积 ${Math.round(schemaBytes / 1024)}KB 超过硬顶 ${Math.round(SCHEMA_HARD_CAP_BYTES / 1024)}KB（剥集成/skill/mcp 后仍超）。请缩减 Agent.tools，或设 AGENT_TOOL_SCHEMA_HARD_CAP_BYTES 仅作紧急抬顶。`,
+        `Agent 工具 schema 体积 ${Math.round(schemaBytes / 1024)}KB 超过硬顶 ${Math.round(cap / 1024)}KB（剥集成/skill/mcp 后仍超）。请缩减 Agent.tools，或设 AGENT_TOOL_SCHEMA_HARD_CAP_BYTES 仅作紧急抬顶。`,
       );
     }
+  } else {
+    syncVisibleNativeAfterCap(vis, registry);
   }
 
   agentSchemaCache.set(cacheKey, { schemas, registryEntries: [...registry.entries()] });
@@ -339,13 +386,16 @@ export function isToolAuthorized(
   toolName: string,
   registry: Map<string, ToolRegistryEntry>,
   parsed: ParsedAgentTools,
+  visible?: VisibleSet,
 ): boolean {
-  if (registry.get(toolName)) return true;
-  const skillRef = parseSkillToolName(toolName);
-  if (skillRef && (parsed.skillWildcard || parsed.skills.includes(skillRef))) return true;
-  if (parseMcpToolName(toolName)) return parsed.mcpServers.length > 0;
-  if (parsed.native === "all") return true;
-  return parsed.native.includes(toolName);
+  const entry = registry.get(toolName);
+  if (!entry) return false;
+  if (entry.kind === "native") {
+    const bare = entry.nativeName ?? toolName;
+    if (visible) return visible.native.includes(bare);
+    return parsed.native === "all" || parsed.native.includes(bare);
+  }
+  return true;
 }
 
 export async function executeAgentTool(
@@ -372,7 +422,7 @@ export async function executeAgentTool(
   }
 
   const nativeName = entry?.nativeName || toolName;
-  if (ctx.allowedNative !== "all" && !ctx.allowedNative.includes(nativeName)) {
+  if (!ctx.allowedNative.includes(nativeName)) {
     throw new Error(`Agent 未授权使用原生工具 ${nativeName}`);
   }
 
@@ -437,8 +487,9 @@ export async function executeToolCallsBatch(
   const buckets: Record<"A" | "B" | "C" | "D", typeof prepared> = { A: [], B: [], C: [], D: [] };
   const unauthorized: typeof prepared = [];
 
+  const visible = ctx.visibleSet ?? deriveVisibleSetFromParsed(parsed, ctx.agentSnapshot?.tier ?? "sub");
   for (const item of prepared) {
-    if (!isToolAuthorized(item.parsed.name, registry, parsed)) {
+    if (!isToolAuthorized(item.parsed.name, registry, parsed, visible)) {
       unauthorized.push(item);
       continue;
     }
@@ -513,9 +564,14 @@ export async function executeToolCallsBatch(
     for (const r of bucketResults) results.push(...r);
   }
 
-  // 未授权工具串行返回错误结果
   for (const item of unauthorized) {
-    results.push(await runOne(item));
+    results.push({
+      ...item,
+      result: {
+        error: `工具 ${item.parsed.name} 不在当前 VisibleSet`,
+        code: "NOT_VISIBLE",
+      },
+    });
   }
 
   return results;
@@ -568,8 +624,19 @@ export function createAgentToolContext(
     rollbackStack?: NativeToolContext["rollbackStack"];
     /** W3 safe bypass */
     readonlyOnly?: boolean;
+    visibleSet?: VisibleSet;
   },
 ): AgentToolContext {
+  const tier = meta?.agentSnapshot?.tier ?? "sub";
+  const visible =
+    meta?.visibleSet ??
+    deriveVisibleSet({
+      agentId: meta?.agentSnapshot?.id ?? "",
+      tier,
+      agentTools: meta?.agentSnapshot?.tools ?? parsedToAgentTools(parsed),
+      packs: config.packs,
+      childOwn: tier === "sub" ? [...CHILD_OWN_TOOLS] : [],
+    });
   return {
     config,
     services,
@@ -580,9 +647,10 @@ export function createAgentToolContext(
     runOrigin: meta?.runOrigin,
     rollbackStack: meta?.rollbackStack,
     readonlyOnly: meta?.readonlyOnly === true,
+    visibleSet: visible,
     // W4：向工具层注入 Agent 解析（agentResolver 是叶子模块，不重建循环依赖）
     resolveAgent,
-    allowedNative: parsed.native,
+    allowedNative: visible.native,
     allowedSkills: skillNames ?? parsed.skills,
     allowedMcpServers: parsed.mcpServers,
   };

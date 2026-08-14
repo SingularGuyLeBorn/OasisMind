@@ -119,6 +119,9 @@ export interface ReactLoopInput {
     tier?: string;
     parentId?: string | null;
     workspaceId?: string | null;
+    /** WP1：Prisma 列落地前可选；缺省 sub 用 CHILD_OWN_TOOLS */
+    toolInheritMask?: { allow?: string[]; deny?: string[] };
+    toolOwn?: string[];
   };
   runOrigin?: "user" | "parent" | "heartbeat" | "async";
   /** W3 safe bypass：只读 turn */

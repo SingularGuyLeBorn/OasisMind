@@ -200,8 +200,9 @@ describe("freeModels catalog", () => {
     const denied = (await executeNativeTool("free_models_list", {}, subCtx as any)) as {
       error?: string;
       permissionDenied?: boolean;
+      code?: string;
     };
-    expect(denied.permissionDenied).toBe(true);
-    expect(denied.error).toContain("TIER_INSUFFICIENT");
+    expect(denied.code === "NOT_VISIBLE" || denied.permissionDenied).toBe(true);
+    expect(denied.error).toMatch(/TIER_INSUFFICIENT|VisibleSet/);
   });
 });

@@ -89,8 +89,13 @@ const TIER_RESTRICTED_TOOLS: Record<string, string[]> = {
   ],
 };
 
-/** 根据 tier 过滤工具列表：子 Agent 等低 tier 自动剔除无权限工具。
- *  支持 `native:xxx` 与裸名两种写法。 */
+/**
+ * 根据 tier 过滤工具列表：子 Agent 等低 tier 自动剔除无权限工具。
+ * 支持 `native:xxx` 与裸名两种写法。
+ *
+ * 清单唯一派生在 visibleSet.ts；本函数只供 VisibleSet 内部做 tier 裁。
+ * 禁止业务方再拿它当授权真相。
+ */
 export function getAllowedToolsForTier(tier: string, tools: string[]): string[] {
   return tools.filter((tool) => {
     const bare = tool.startsWith("native:") ? tool.slice("native:".length) : tool;

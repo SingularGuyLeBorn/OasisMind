@@ -11,14 +11,15 @@
 
 import { resolveEffectiveAgentModel, type LlmMessage, type LlmToolCall } from "../llmClient.js";
 import {
-  parseAgentTools,
   buildAgentToolSchemas,
   executeToolCallsBatch,
   createAgentToolContext,
   partitionToolCallsByBudget,
+  visibleSetToParsed,
   TOOL_BUDGET_SKIP_RESULT,
   type ToolRegistryEntry,
 } from "../agentTools.js";
+import { deriveVisibleSet, visibleSetToAgentTools } from "../tools/visibleSet.js";
 import {
   assertLlmBudget,
   defaultLlmBudgetReserveEstimate,
@@ -38,12 +39,8 @@ import {
   type AskUserResolution,
 } from "../askUserGate.js";
 import { getStreamHub } from "../sessionStreamHub.js";
-import {
-  DEFAULT_SUBAGENT_TOOLS,
-  resolveToolsForAgentTier,
-  parseToolCall,
-} from "./setup.js";
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { parseToolCall } from "./setup.js";
+import { AGENT_TOOL_RESULT_MAX_CHARS, CHILD_OWN_TOOLS } from "@knowpilot/shared";
 import { createPhaseMachine } from "./phase.js";
 import { REFLECTION_UNPASSED_MARK } from "./reflection.js";
 import type { ReactLoopInput, ReactLoopResult, TurnSnapshot } from "./types.js";
@@ -420,11 +417,17 @@ export async function runReactLoop(input: ReactLoopInput): Promise<ReactLoopResu
 
 async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult> {
   const effectiveModel = resolveEffectiveAgentModel(input.config, input.agent.model);
-  const tierTools = resolveToolsForAgentTier(input.agentMeta?.tier, input.agent.tools);
-  const parsed = parseAgentTools(tierTools);
-  if (parsed.native === "all" && (input.agentMeta?.tier === "sub" || !input.agentMeta?.tier)) {
-    parsed.native = DEFAULT_SUBAGENT_TOOLS.map((t) => t.replace(/^native:/, ""));
-  }
+  const tier = input.agentMeta?.tier ?? "sub";
+  const visible = deriveVisibleSet({
+    agentId: input.agentMeta?.id ?? "",
+    tier,
+    agentTools: input.agent.tools,
+    packs: input.config.packs,
+    inheritMask: input.agentMeta?.toolInheritMask,
+    childOwn: input.agentMeta?.toolOwn ?? (tier === "sub" ? [...CHILD_OWN_TOOLS] : []),
+  });
+  const parsed = visibleSetToParsed(visible);
+  const tierTools = visibleSetToAgentTools(visible);
 
   const snapshot: TurnSnapshot = {
     model: effectiveModel,
@@ -437,7 +440,7 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
   const machine = createPhaseMachine((to, from) => input.hooks?.onPhase?.(to, from));
 
   const registry = new Map<string, ToolRegistryEntry>();
-  const toolSchemas = await buildAgentToolSchemas(input.services, parsed, registry);
+  const toolSchemas = await buildAgentToolSchemas(input.services, parsed, registry, visible);
   // W6：run 级 D 类工具回滚栈——本 run 执行的 destructive 工具在此记录，
   // run 进入 failed 且非用户 abort 时在 catch 中逆序补偿
   const rollbackStack = new RunRollbackStack();
@@ -449,6 +452,7 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
     runOrigin: input.runOrigin ?? "user",
     rollbackStack,
     readonlyOnly: input.readonlyOnly === true,
+    visibleSet: visible,
   });
 
   let llmMessages: LlmMessage[] = [...input.messages];
