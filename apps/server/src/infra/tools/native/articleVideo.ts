@@ -13,7 +13,7 @@ import { detectRasterImageKind } from "../../ocrService.js";
 import { probeImageSize } from "../../imageProbe.js";
 import { resolveSafePath, resolveWithinDir, assertPathWithinDir } from "../../safePath.js";
 import { upsertAlgoVizComposition } from "../../algoVizRegistry.js";
-import { resolveAgentFsPath } from "./fs.js";
+import { resolveAgentFsPath } from "../../writePolicy.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
 

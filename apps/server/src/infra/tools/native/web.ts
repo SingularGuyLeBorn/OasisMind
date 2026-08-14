@@ -21,7 +21,7 @@ import { downloadImageToTemp, getRefererForUrl, ocrRemoteImage } from "../../met
 import { performOcrFromFile } from "../../ocrService.js";
 import { resilientChatCompletion } from "../../resilientLlmClient.js";
 import { resolveSafePath } from "../../safePath.js";
-import { resolveAgentFsPath } from "./fs.js";
+import { resolveAgentFsPath, assertWriteAllowed } from "../../writePolicy.js";
 import { isSmokeInfoSource } from "../../smokeArtifacts.js";
 import {
   fetchBilibiliPagelistCid,
@@ -847,6 +847,7 @@ async function saveWebpageTool(args: Record<string, unknown>, ctx: NativeToolCon
   const title = (result.title || "untitled").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
   const hash = crypto.createHash("sha1").update(url).digest("hex").slice(0, 8);
   const dirAbs = path.join(ctx.config.dataDir, "webpages");
+  assertWriteAllowed("data/webpages");
   fs.mkdirSync(dirAbs, { recursive: true });
 
   const saved: { htmlPath?: string; markdownPath?: string } = {};

@@ -18,7 +18,7 @@ import {
 } from "../../../cosyvoiceClient.js";
 import { resolveSafePath } from "../../../safePath.js";
 import { pickTtsArgsFromTool, synthesizeToUploads } from "../../../ttsProvider.js";
-import { resolveAgentFsPath } from "../fs.js";
+import { resolveAgentFsPath } from "../../../writePolicy.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "../types.js";
 import { zodParams } from "../zodParams.js";
 

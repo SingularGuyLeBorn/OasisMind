@@ -103,7 +103,7 @@ async function gitCloneTool(args: Record<string, unknown>, ctx: NativeToolContex
   const destRel = String(args.dest || "").trim();
   if (!destRel) throw new Error("dest 不能为空");
   // 与 write_file 同源：默认落当前 Workspace；返回路径可被 read_file 原样读回
-  const { resolveAgentFsPath } = await import("../fs.js");
+  const { resolveAgentFsPath } = await import("../../../writePolicy.js");
   const { abs: destAbs, relForReturn } = await resolveAgentFsPath(ctx, destRel, "write");
   if (fs.existsSync(destAbs)) throw new Error(`目标目录已存在: ${relForReturn}`);
   const parent = path.dirname(destAbs);

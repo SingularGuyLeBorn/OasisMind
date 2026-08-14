@@ -36,7 +36,7 @@ async function resolveInputPath(
     );
   }
   // 与 download_file / write_file 对齐，避免「下到 Workspace、解析却按项目根找」
-  const { resolveAgentFsPath } = await import("./fs.js");
+  const { resolveAgentFsPath } = await import("../../writePolicy.js");
   const { abs, relForReturn } = await resolveAgentFsPath(ctx, p, "read");
   assertPathWithinProjectRoot(ctx.config, abs);
   if (!fs.existsSync(abs)) throw new Error(`文件不存在: ${relForReturn}`);

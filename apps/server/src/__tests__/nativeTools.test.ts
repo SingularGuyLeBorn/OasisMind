@@ -1899,6 +1899,30 @@ describe("native:session_clear", () => {
 });
 
 describe("native:run_shell", () => {
+  it("run_shell / 写路径不能落到 content/posts", async () => {
+    const root = createTempProjectDir();
+    fs.mkdirSync(path.join(root, "content/posts"), { recursive: true });
+    const ctx = createNativeCtx(root, {
+      config: { shell: { enabled: true, mode: "host_restricted", timeoutMs: 1000, maxOutputChars: 1000, shell: "cmd" } },
+    });
+    ctx.agentSnapshot = {
+      id: "a1",
+      model: "m",
+      systemPrompt: "",
+      tools: ["native:run_shell"],
+      tier: "manager",
+      workspaceId: "ws-evil",
+    };
+    ctx.prisma = {
+      workspace: { findUnique: async () => ({ id: "ws-evil", path: "content/posts" }) },
+    } as never;
+    await expect(executeNativeTool("run_shell", { command: "echo hi" }, ctx)).rejects.toThrow(
+      /content\/posts|知识库|post_\*/,
+    );
+    expect(fs.existsSync(path.join(root, "content/posts/evil.md"))).toBe(false);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it("危险命令被拒绝", async () => {
     const root = createTempProjectDir();
     const ctx = createNativeCtx(root);

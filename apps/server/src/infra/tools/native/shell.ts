@@ -6,9 +6,8 @@
  * 结果经异步队列 + 原子 CLAIM 后注入会话。两条通道互斥，防止结果二次投喂。
  */
 import fs from "node:fs";
-import path from "node:path";
 import { runShellRestricted, waitMs } from "../../shellRunner.js";
-import { resolveSafePath } from "../../safePath.js";
+import { resolveAgentFsPath } from "../../writePolicy.js";
 import type { NativeToolContext, NativeToolDefinition } from "./types.js";
 import { coerceToolBoolean } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
@@ -125,21 +124,9 @@ async function resumeAsyncTool(args: Record<string, unknown>, ctx: NativeToolCon
   return resumeAsyncJob(jobId, ctx.config, ctx.services, { ownerSessionId: ctx.sessionId });
 }
 
-/** 解析 Agent Workspace 绝对路径；无则回退 data/workspace（仍在项目根内） */
+/** 解析 Agent Workspace 绝对路径；无则回退 data/workspace。写策略与 write_file 同源，禁止落到 content/posts。 */
 async function resolveShellSandboxRoot(ctx: NativeToolContext): Promise<string> {
-  const wsId = ctx.agentSnapshot?.workspaceId;
-  let abs: string;
-  if (wsId && ctx.prisma) {
-    const ws = await ctx.prisma.workspace.findUnique({ where: { id: wsId } }).catch((err) => { console.warn("[shell.ts] best-effort failed:", err instanceof Error ? err.message : err); return null; });
-    const wsRel = (ws as { path?: string } | null)?.path?.trim() || "";
-    if (wsRel) {
-      abs = path.isAbsolute(wsRel) ? path.resolve(wsRel) : resolveSafePath(ctx.config, wsRel);
-    } else {
-      abs = resolveSafePath(ctx.config, "data/workspace");
-    }
-  } else {
-    abs = resolveSafePath(ctx.config, "data/workspace");
-  }
+  const { abs } = await resolveAgentFsPath(ctx, ".", "write");
   if (!fs.existsSync(abs)) fs.mkdirSync(abs, { recursive: true });
   return abs;
 }

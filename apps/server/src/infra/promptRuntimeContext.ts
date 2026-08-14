@@ -1,20 +1,16 @@
 /**
  * WP5：运行时上下文快照 + VisibleSet 内工具 promptSection 拼装。
- * describePolicy 本 WP 暂住于此，WP6 迁 writePolicy.ts。
+ * fs-policy 文案来自 writePolicy.describePolicy。
  */
 
 import { getTool } from "./tools/registry.js";
 import { listPlatformLoginStatus } from "./metablog/auth/platformLogin.js";
 import { getLlmBudgetStatus } from "./llmBudget.js";
+import { describePolicy } from "./writePolicy.js";
 import type { NativeToolContext } from "./tools/native/types.js";
 
 export const LOGIN_WALL_PROMPT_SECTION =
   "- 登录墙 / 已在 Chrome 打开的页：优先 `dokobot_read`/`dokobot_search`（本机扩展）；否则 `browser_login_status`/`platform_doctor` → `platform_login` → `read_article`。禁止截图查登录态、禁止让用户 F12 抄 cookie。";
-
-/** WP5 临时；WP6 整段搬到 writePolicy.ts */
-export function describePolicy(): string {
-  return "uploads 可写；content/posts 走 post_*；data/ 只读；Workspace 相对可写";
-}
 
 export function collectVisiblePromptSections(
   visibleNative: string[],
