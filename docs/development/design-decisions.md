@@ -1792,10 +1792,25 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 
 ---
 
-## DSH 三不变量落地（2026-08-14，待裁决）
+## DSH 三不变量落地（2026-08-14，已裁决）
 
-对照 DeepSeek Harness 源码后的施工规格（VisibleSet / 工具结果三通道 / 合作式取消 / 子 Agent own 层 / prompt 三分）见：
+对照 DeepSeek Harness 源码后的施工规格见 **`docs/development/dsh-learn-implementation-plan.md`**。
 
-**`docs/development/dsh-learn-implementation-plan.md`**
+2026-08-14 用户授权：不逐题手填则按推荐。已写入该文档 §5.1。
 
-产品默认（Q1/Q3/Q5/Q6/Q7/Q8/Q9/Q12）必须在该文档「回答：」后显式拍板后再开工。空回答不得落地。
+| 题 | 裁决 |
+|----|------|
+| Q1 ChatMessage 存哪一通道 | A 只存 content；value 在磁盘 |
+| Q2 Pipeline 形态 | A 固定 stage + 只读 observer |
+| Q3 超时后 | A 等 body 停；不听 signal 修工具 |
+| Q4 handler 返回值 | A 包装识别信封，否则 raw→value |
+| Q5 CHILD_OWN + 父 deny own | A 五件套 + A1 忽略 deny 并 warn |
+| Q6 allow/deny 同时传 | A 互斥，spawn 结构化错误 |
+| Q7 mask/own 落点 | A Markdown frontmatter + DB JSON 列 |
+| Q8 会话权限三档 | A 不要 |
+| Q9 未知名工具 | C 存量 drift 仍可跑；A 新 mask 未知名则 spawn 失败 |
+| Q10 signal 必填时机 | A WP3 一次必填 |
+| Q11 VisibleSet vs 硬顶 | A 先 VisibleSet 再剥离；剥掉则 NOT_VISIBLE |
+| Q12 施工批次 | A 先 WP0–3 再 WP4–7，两批都做完 |
+
+未再点头前不改业务代码。
