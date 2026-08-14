@@ -700,8 +700,10 @@ export async function captureInboxUrl(
     source?: InboxSource;
     fetchContent?: boolean;
     maxChars?: number;
+    shouldAbort?: () => boolean;
   },
 ): Promise<{ id: string; created: boolean; title: string; url: string }> {
+  throwIfInboxSyncAborted(opts.shouldAbort);
   ensureInboxDirs(config);
   const url = opts.url.trim();
   const source = opts.source ?? inferSourceFromUrl(url);
@@ -713,6 +715,7 @@ export async function captureInboxUrl(
   const metadata: Record<string, unknown> = { capturedFrom: "url" };
 
   if (opts.fetchContent !== false) {
+    throwIfInboxSyncAborted(opts.shouldAbort);
     try {
       const body = await fetchArticleBody(url, maxChars);
       title = body.title;
@@ -736,6 +739,7 @@ export async function captureInboxUrl(
     }
   }
 
+  throwIfInboxSyncAborted(opts.shouldAbort);
   const result = await upsertInboxItem(prisma, {
     source,
     externalId: url,
@@ -759,6 +763,7 @@ export async function captureInboxUrls(
     fetchContent?: boolean;
     maxChars?: number;
     onProgress?: InboxSyncProgressFn;
+    shouldAbort?: () => boolean;
   },
 ): Promise<InboxSyncResult> {
   const urls = opts.urls.map((u) => u.trim()).filter((u) => u && !u.startsWith("#"));
@@ -766,6 +771,7 @@ export async function captureInboxUrls(
   progress.setTotal(urls.length);
   const result: InboxSyncResult = { scanned: 0, created: 0, updated: 0, skipped: 0, errors: [], items: [] };
   for (const url of urls) {
+    throwIfInboxSyncAborted(opts.shouldAbort);
     result.scanned += 1;
     try {
       const item = await captureInboxUrl(prisma, config, {
@@ -773,12 +779,14 @@ export async function captureInboxUrls(
         source: opts.source,
         fetchContent: opts.fetchContent,
         maxChars: opts.maxChars,
+        shouldAbort: opts.shouldAbort,
       });
       if (item.created) result.created += 1;
       else result.updated += 1;
       result.items.push(item);
       progress.success();
     } catch (err) {
+      if (isInboxSyncAbortedError(err)) throw err;
       result.errors.push(`${url}: ${err instanceof Error ? err.message : String(err)}`);
       result.skipped += 1;
     }

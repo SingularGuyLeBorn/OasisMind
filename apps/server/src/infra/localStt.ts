@@ -35,9 +35,13 @@ export type SttFail = {
 function runCmd(
   bin: string,
   args: string[],
-  opts: { cwd?: string; timeoutMs: number; env?: NodeJS.ProcessEnv },
+  opts: { cwd?: string; timeoutMs: number; env?: NodeJS.ProcessEnv; signal?: AbortSignal },
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
+    if (opts.signal?.aborted) {
+      resolve({ code: 130, stdout: "", stderr: "[aborted]" });
+      return;
+    }
     const child = spawn(bin, args, {
       cwd: opts.cwd,
       env: { ...process.env, ...opts.env } as NodeJS.ProcessEnv,
@@ -46,10 +50,23 @@ function runCmd(
     });
     let stdout = "";
     let stderr = "";
+    let settled = false;
+    const finish = (code: number, extraStderr = "") => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", onAbort);
+      resolve({ code, stdout, stderr: stderr + extraStderr });
+    };
+    const onAbort = () => {
+      child.kill("SIGTERM");
+      finish(130, "\n[aborted]");
+    };
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
-      resolve({ code: 124, stdout, stderr: stderr + "\n[timeout]" });
+      finish(124, "\n[timeout]");
     }, opts.timeoutMs);
+    opts.signal?.addEventListener("abort", onAbort, { once: true });
     child.stdout?.on("data", (d: Buffer) => {
       stdout += d.toString("utf8");
     });
@@ -57,12 +74,10 @@ function runCmd(
       stderr += d.toString("utf8");
     });
     child.on("error", (err) => {
-      clearTimeout(timer);
-      resolve({ code: 127, stdout, stderr: err.message });
+      finish(127, err.message);
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
-      resolve({ code: code ?? 1, stdout, stderr });
+      finish(code ?? 1);
     });
   });
 }
@@ -97,7 +112,7 @@ export async function transcribeAudioFile(
   config: AppConfig,
   audioAbs: string,
   outTxtAbs: string,
-  opts?: { model?: string; language?: string; timeoutMs?: number },
+  opts?: { model?: string; language?: string; timeoutMs?: number; signal?: AbortSignal },
 ): Promise<SttResult | SttFail> {
   if (!fs.existsSync(audioAbs)) {
     return { ok: false, error: `音频不存在：${audioAbs}`, hint: defaultSttInstallHint() };
@@ -140,6 +155,7 @@ export async function transcribeAudioFile(
     ],
     {
       timeoutMs,
+      signal: opts?.signal,
       env: {
         HF_HOME: hfHome,
         HUGGINGFACE_HUB_CACHE: hfHub,
@@ -202,7 +218,7 @@ export async function downloadMediaAudio(
   config: AppConfig,
   url: string,
   outStemAbs: string,
-  opts?: { timeoutMs?: number; maxDurationSec?: number },
+  opts?: { timeoutMs?: number; maxDurationSec?: number; signal?: AbortSignal },
 ): Promise<
   | { ok: true; audioPath: string; title?: string; bytes: number }
   | { ok: false; error: string; hint: string }
@@ -233,7 +249,7 @@ export async function downloadMediaAudio(
     url,
   ];
 
-  const { code, stdout, stderr } = await runCmd(yt, args, { timeoutMs });
+  const { code, stdout, stderr } = await runCmd(yt, args, { timeoutMs, signal: opts?.signal });
   if (code !== 0) {
     const msg = (stderr || stdout || `yt-dlp 退出码 ${code}`).slice(0, 2000);
     const hint = [

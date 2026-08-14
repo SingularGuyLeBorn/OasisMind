@@ -6,6 +6,14 @@ import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from 
 import { registerNativeDomain } from "./registerDomain.js";
 import { coerceToolBoolean } from "./types.js";
 
+function abortIfSignaled(ctx: NativeToolContext): void {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
+}
+
+function shouldAbortFromCtx(ctx: NativeToolContext): () => boolean {
+  return () => ctx.signal.aborted;
+}
+
 async function inboxList(args: Record<string, unknown>, ctx: NativeToolContext) {
   return ctx.services.inbox.list({
     page: typeof args.page === "number" ? args.page : 1,
@@ -23,73 +31,97 @@ async function inboxStats(_args: Record<string, unknown>, ctx: NativeToolContext
 }
 
 async function inboxCaptureUrl(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 必填");
-  return ctx.services.inbox.captureUrl({
-    url,
-    source: typeof args.source === "string" ? (args.source as any) : undefined,
-    fetchContent: args.fetchContent === undefined ? true : coerceToolBoolean(args.fetchContent),
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-  });
+  return ctx.services.inbox.captureUrl(
+    {
+      url,
+      source: typeof args.source === "string" ? (args.source as any) : undefined,
+      fetchContent: args.fetchContent === undefined ? true : coerceToolBoolean(args.fetchContent),
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+    },
+    shouldAbortFromCtx(ctx),
+  );
 }
 
 async function inboxCaptureUrls(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const urls = Array.isArray(args.urls) ? args.urls.map(String) : [];
   if (!urls.length) throw new Error("urls 不能为空");
-  return ctx.services.inbox.captureUrls({
-    urls,
-    source: typeof args.source === "string" ? (args.source as any) : undefined,
-    fetchContent: args.fetchContent === undefined ? true : coerceToolBoolean(args.fetchContent),
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-  });
+  return ctx.services.inbox.captureUrls(
+    {
+      urls,
+      source: typeof args.source === "string" ? (args.source as any) : undefined,
+      fetchContent: args.fetchContent === undefined ? true : coerceToolBoolean(args.fetchContent),
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+    },
+    shouldAbortFromCtx(ctx),
+  );
 }
 
 async function inboxSyncZhihu(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const collectionUrl = String(args.collectionUrl || "").trim();
   const mode = args.mode === "full" ? "full" : "incremental";
-  return ctx.services.inbox.syncZhihu({
-    collectionUrl: collectionUrl || undefined,
-    mode,
-    maxCollections: typeof args.maxCollections === "number" ? args.maxCollections : 50,
-    maxItemsPerCollection:
-      typeof args.maxItemsPerCollection === "number" ? args.maxItemsPerCollection : 5000,
-    maxItems: typeof args.maxItems === "number" ? args.maxItems : undefined,
-    fetchContent: coerceToolBoolean(args.fetchContent),
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-  });
+  return ctx.services.inbox.syncZhihu(
+    {
+      collectionUrl: collectionUrl || undefined,
+      mode,
+      maxCollections: typeof args.maxCollections === "number" ? args.maxCollections : 50,
+      maxItemsPerCollection:
+        typeof args.maxItemsPerCollection === "number" ? args.maxItemsPerCollection : 5000,
+      maxItems: typeof args.maxItems === "number" ? args.maxItems : undefined,
+      fetchContent: coerceToolBoolean(args.fetchContent),
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+    },
+    undefined,
+    shouldAbortFromCtx(ctx),
+  );
 }
 
 async function inboxSyncXhs(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const rawKinds = Array.isArray(args.kinds) ? args.kinds.map(String) : [];
   const kinds = rawKinds.filter((k): k is "liked" | "collect" => k === "liked" || k === "collect");
   const mode = args.mode === "full" ? "full" : "incremental";
-  return ctx.services.inbox.syncXhs({
-    kinds: kinds.length ? kinds : ["liked", "collect"],
-    mode,
-    maxItems:
-      typeof args.maxItems === "number" ? args.maxItems : mode === "full" ? 2000 : 200,
-    fetchContent: coerceToolBoolean(args.fetchContent),
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-  });
+  return ctx.services.inbox.syncXhs(
+    {
+      kinds: kinds.length ? kinds : ["liked", "collect"],
+      mode,
+      maxItems:
+        typeof args.maxItems === "number" ? args.maxItems : mode === "full" ? 2000 : 200,
+      fetchContent: coerceToolBoolean(args.fetchContent),
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+    },
+    undefined,
+    shouldAbortFromCtx(ctx),
+  );
 }
 
 async function inboxSyncBilibili(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const rawKinds = Array.isArray(args.kinds) ? args.kinds.map(String) : [];
   const kinds = rawKinds.filter((k): k is "fav" | "toview" => k === "fav" || k === "toview");
   const mode = args.mode === "full" ? "full" : "incremental";
-  return ctx.services.inbox.syncBilibili({
-    kinds: kinds.length ? kinds : ["fav", "toview"],
-    mode,
-    maxItems:
-      typeof args.maxItems === "number" ? args.maxItems : mode === "full" ? 2000 : 200,
-    maxFolders: typeof args.maxFolders === "number" ? args.maxFolders : 50,
-    fetchContent: coerceToolBoolean(args.fetchContent),
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-  });
+  return ctx.services.inbox.syncBilibili(
+    {
+      kinds: kinds.length ? kinds : ["fav", "toview"],
+      mode,
+      maxItems:
+        typeof args.maxItems === "number" ? args.maxItems : mode === "full" ? 2000 : 200,
+      maxFolders: typeof args.maxFolders === "number" ? args.maxFolders : 50,
+      fetchContent: coerceToolBoolean(args.fetchContent),
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+    },
+    undefined,
+    shouldAbortFromCtx(ctx),
+  );
 }
 
 /** 与 UI「平台同步」同通道：后台任务立即返回 jobId，不堵对话 */
 async function inboxStartPlatformSync(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const mode = args.mode === "full" ? "full" : "incremental";
   const job = await ctx.services.inbox.startPlatformSync({
     mode,
@@ -130,11 +162,13 @@ async function inboxPlatformSyncStatus(args: Record<string, unknown>, ctx: Nativ
 }
 
 async function inboxCancelPlatformSync(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const jobId = typeof args.jobId === "string" ? args.jobId.trim() : undefined;
   return ctx.services.inbox.cancelPlatformSync(jobId || undefined);
 }
 
 async function inboxScanScreenshots(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   return ctx.services.inbox.scanScreenshots({
     dir: typeof args.dir === "string" ? args.dir : undefined,
     maxFiles: typeof args.maxFiles === "number" ? args.maxFiles : 50,
@@ -143,6 +177,7 @@ async function inboxScanScreenshots(args: Record<string, unknown>, ctx: NativeTo
 }
 
 async function inboxIngestWechat(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   return ctx.services.inbox.ingestWechatDrop({
     fetchContent: args.fetchContent === undefined ? true : coerceToolBoolean(args.fetchContent),
     maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
@@ -167,13 +202,18 @@ async function inboxIgnore(args: Record<string, unknown>, ctx: NativeToolContext
 }
 
 async function inboxEnrich(args: Record<string, unknown>, ctx: NativeToolContext) {
+  abortIfSignaled(ctx);
   const ids = Array.isArray(args.ids) ? args.ids.map(String) : undefined;
-  const result = await ctx.services.inbox.enrichContent({
-    source: typeof args.source === "string" ? (args.source as any) : undefined,
-    maxItems: typeof args.maxItems === "number" ? args.maxItems : 12,
-    maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
-    ids,
-  });
+  const result = await ctx.services.inbox.enrichContent(
+    {
+      source: typeof args.source === "string" ? (args.source as any) : undefined,
+      maxItems: typeof args.maxItems === "number" ? args.maxItems : 12,
+      maxChars: typeof args.maxChars === "number" ? args.maxChars : 12000,
+      ids,
+    },
+    undefined,
+    shouldAbortFromCtx(ctx),
+  );
   return {
     ...result,
     hint:

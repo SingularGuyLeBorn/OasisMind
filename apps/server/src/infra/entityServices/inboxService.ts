@@ -310,16 +310,16 @@ export class InboxService extends BaseService<
     return data;
   }
 
-  async captureUrl(input: InboxCaptureUrlInput) {
+  async captureUrl(input: InboxCaptureUrlInput, shouldAbort?: () => boolean) {
     const { captureInboxUrl, ensureInboxDirs } = await import("../inbox/index.js");
     ensureInboxDirs(this.config);
-    return captureInboxUrl(this.prisma, this.config, input);
+    return captureInboxUrl(this.prisma, this.config, { ...input, shouldAbort });
   }
 
-  async captureUrls(input: InboxCaptureUrlsInput) {
+  async captureUrls(input: InboxCaptureUrlsInput, shouldAbort?: () => boolean) {
     const { captureInboxUrls, ensureInboxDirs } = await import("../inbox/index.js");
     ensureInboxDirs(this.config);
-    return captureInboxUrls(this.prisma, this.config, input);
+    return captureInboxUrls(this.prisma, this.config, { ...input, shouldAbort });
   }
 
   async syncZhihu(

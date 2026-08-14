@@ -14,6 +14,7 @@ function projectRel(ctx: NativeToolContext, abs: string): string {
 }
 
 async function mediaDownloadTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 不能为空");
   let parsed: URL;
@@ -52,7 +53,10 @@ async function mediaDownloadTool(args: Record<string, unknown>, ctx: NativeToolC
       ? Number(args.maxDurationSec)
       : ctx.config.stt.maxDurationSec;
 
-  const result = await downloadMediaAudio(ctx.config, url, stemAbs, { maxDurationSec });
+  const result = await downloadMediaAudio(ctx.config, url, stemAbs, {
+    maxDurationSec,
+    signal: ctx.signal,
+  });
   if (!result.ok) {
     return {
       ok: false,
@@ -77,6 +81,7 @@ async function mediaDownloadTool(args: Record<string, unknown>, ctx: NativeToolC
 }
 
 async function audioTranscribeTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const pathArg = String(args.path || "").trim();
   if (!pathArg) throw new Error("path 不能为空（media_download 返回的 audioPath）");
 
@@ -100,6 +105,7 @@ async function audioTranscribeTool(args: Record<string, unknown>, ctx: NativeToo
   const stt = await transcribeAudioFile(ctx.config, abs, outAbs, {
     model: args.model != null ? String(args.model) : undefined,
     language: args.language != null ? String(args.language) : undefined,
+    signal: ctx.signal,
   });
 
   if (!stt.ok) {
@@ -140,6 +146,7 @@ async function audioTranscribeTool(args: Record<string, unknown>, ctx: NativeToo
  * 长视频易超同步超时；Skill 会引导短片直调 / 长片 async_task_run。
  */
 async function videoNotesTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 不能为空");
 
