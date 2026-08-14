@@ -9,6 +9,7 @@ const webDir = path.resolve(__dirname, "..");
 const projectRoot = path.resolve(__dirname, "../../..");
 
 export const TEST_DB_NAME = "test-e2e.db";
+/** 相对 schema.prisma 目录；服务端 loadRootEnv 不得再 override 成 .env 的 dev.db */
 export const TEST_DB_URL = `file:./${TEST_DB_NAME}`;
 export const TEST_CONTENT_DIR = path.join(projectRoot, ".test-content-e2e");
 export const TEST_CONFIG_DIR = path.join(projectRoot, ".test-config-e2e");
@@ -67,24 +68,110 @@ function killProcessesOnPorts(ports) {
   }
 }
 
+async function waitUntilPortsFree(ports, timeoutMs = 15_000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    let output = "";
+    try {
+      output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
+    } catch {
+      return;
+    }
+    const busy = ports.some((port) =>
+      output.split(/\r?\n/).some((line) => {
+        const parts = line.trim().split(/\s+/);
+        return parts[0] === "TCP" && parts[3] === "LISTENING" && parts[1]?.endsWith(`:${port}`);
+      }),
+    );
+    if (!busy) return;
+    killProcessesOnPorts(ports);
+    await sleep(400);
+  }
+  throw new Error(`[e2e globalSetup] 端口 ${ports.join(",")} 仍被占用，无法空库启动`);
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function removeDbFiles(targetDir, dbName) {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    let failed = false;
-    for (const suffix of ["", "-journal", "-wal", "-shm"]) {
+function killPidFileProcesses() {
+  try {
+    if (!fs.existsSync(PID_FILE)) return;
+    const pids = JSON.parse(fs.readFileSync(PID_FILE, "utf8"));
+    for (const pid of [pids.serverPid, pids.webPid]) {
+      if (!pid) continue;
       try {
-        fs.rmSync(path.join(targetDir, `${dbName}${suffix}`), { force: true });
+        execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+      } catch {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 杀掉仍握着 test-e2e.db 的残留 node（旧 schema 的 systemPrompt 列缺失即由此） */
+function killNodeHoldingTestDb() {
+  try {
+    const out = execSync(
+      "wmic process where \"name='node.exe'\" get ProcessId,CommandLine /FORMAT:LIST",
+      { encoding: "utf8", timeout: 20000 },
+    );
+    const blocks = out.split(/\r?\n\r?\n/);
+    for (const block of blocks) {
+      const cmd = (block.match(/CommandLine=(.*)/) || [])[1] || "";
+      const pid = parseInt((block.match(/ProcessId=(\d+)/) || [])[1] || "", 10);
+      if (!pid || pid === process.pid) continue;
+      if (/test-e2e\.db|E2E_SERVER_PORT|e2e-global/i.test(cmd)) {
+        try {
+          execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function removeDbFiles(targetDir, dbName) {
+  const files = ["", "-journal", "-wal", "-shm"].map((suffix) =>
+    path.join(targetDir, `${dbName}${suffix}`),
+  );
+  killPidFileProcesses();
+  killStaleTestProcesses();
+  killNodeHoldingTestDb();
+  await sleep(400);
+
+  for (let attempt = 0; attempt < 15; attempt++) {
+    let failed = false;
+    for (const file of files) {
+      try {
+        if (fs.existsSync(file)) fs.rmSync(file, { force: true });
       } catch {
         failed = true;
       }
     }
-    if (!failed) return;
+    const leftover = files.filter((f) => fs.existsSync(f));
+    if (!failed && leftover.length === 0) {
+      console.log("[e2e globalSetup] 已清空 test-e2e.db*，将 prisma db push 到空库");
+      return;
+    }
+    killPidFileProcesses();
     killStaleTestProcesses();
-    await sleep(500);
+    killNodeHoldingTestDb();
+    await sleep(400);
   }
+  const leftover = files.filter((f) => fs.existsSync(f));
+  throw new Error(
+    `[e2e globalSetup] 无法删除测试库（仍被占用，禁止带旧列 push）: ${leftover.join(", ")}`,
+  );
 }
 
 function getPrismaCli() {
@@ -221,6 +308,9 @@ function spawnServer(serverPort) {
   for (const key of ["MOCK_LLM", "MOCK_MCP", "MOCK_NATIVE_TOOLS"]) {
     if (process.env[key]) serverEnv[key] = process.env[key];
   }
+  if (process.env.MOCK_LLM === "true") {
+    serverEnv.MOCK_LLM_LOG = path.join(TEST_DATA_DIR, "mock-llm.log");
+  }
 
   const proc = spawn(process.execPath, [tsxCli, "src/index.ts"], {
     cwd: serverDir,
@@ -272,9 +362,11 @@ function spawnWeb(webPort) {
 export default async function globalSetup() {
   const { serverPort, webPort } = getE2EPorts();
 
-  // 1. 清理可能残留的 E2E server/web 进程
+  // 1. 清理可能残留的 E2E server/web 进程，等到端口真正空闲
+  killPidFileProcesses();
   killStaleTestProcesses();
-  await sleep(500);
+  killNodeHoldingTestDb();
+  await waitUntilPortsFree([serverPort, webPort]);
 
   // 2. 隔离数据库与三桶存储目录
   process.env.DATABASE_URL = TEST_DB_URL;
@@ -286,8 +378,15 @@ export default async function globalSetup() {
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   }
 
-  // 3. 删除旧测试库（带重试，防止残留进程占用）
+  // 3. 删除旧测试库（prisma/ 与 server cwd 两处都清，防双库）
   await removeDbFiles(path.join(serverDir, "prisma"), TEST_DB_NAME);
+  await removeDbFiles(serverDir, TEST_DB_NAME);
+  const e2eWs = path.join(projectRoot, "workspaces", "e2e-default");
+  try {
+    fs.rmSync(e2eWs, { recursive: true, force: true });
+  } catch {
+    /* 目录被锁则留给 workspace.create 走已有记录 */
+  }
 
   // 4. 创建隔离三桶目录
   fs.mkdirSync(TEST_CONTENT_DIR, { recursive: true });

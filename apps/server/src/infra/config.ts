@@ -604,6 +604,18 @@ function resolveStorageRoot(projectRoot: string, name: "content" | "config" | "d
  * - 默认：已存在的环境变量不覆盖（测试 / CI 注入优先）
  * - override:true：根 .env 为权威（开发重启后白名单等必以文件为准，避免父进程旧 env 卡住）
  */
+/** E2E / 单测注入的隔离键：override 也不得盖掉，否则会连回 dev.db、wipe 假成功 */
+const ENV_ISOLATION_KEYS = new Set([
+  "DATABASE_URL",
+  "KP_CONTENT_DIR",
+  "KP_CONFIG_DIR",
+  "KP_DATA_DIR",
+  "SERVER_PORT",
+  "MOCK_LLM",
+  "MOCK_MCP",
+  "MOCK_NATIVE_TOOLS",
+]);
+
 export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean }): void {
   const root = projectRoot || resolveProjectRoot();
   const envPath = path.join(root, ".env");
@@ -619,6 +631,9 @@ export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean })
     let value = trimmed.slice(eq + 1).trim();
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
+    }
+    if (opts?.override && ENV_ISOLATION_KEYS.has(key) && process.env[key] !== undefined) {
+      continue;
     }
     if (opts?.override || process.env[key] === undefined) {
       process.env[key] = value;
