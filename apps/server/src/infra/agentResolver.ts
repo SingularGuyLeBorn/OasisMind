@@ -17,6 +17,7 @@ import type { ServiceContainer } from "./serviceContainer.js";
 import type { AgentEntity } from "./entityServices/agentService.js";
 import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
 import { getAppConfig } from "./config.js";
+import { listToolNames } from "./tools/registry.js";
 
 /** 与 swarmInitializer.SYSTEM_WORKSPACE_TYPE_ASSISTANT 同源字面量（避免循环依赖） */
 const ASSISTANT_HOME_SYSTEM_TYPE = "assistant";
@@ -87,6 +88,25 @@ export interface ResolveAgentResult {
  * 检测默认 assistant 相对内置默认配置的漂移（只读，不写库）。
  * 修复指引见 ASSISTANT_MIGRATION_HINT。
  */
+/** Q9-C：任意 Agent.tools 里未注册的 native:foo → drift，不拦跑。registry 空则跳过以免误报。 */
+export function detectAgentToolDrift(
+  agent: { tools?: string[] },
+  registryNames: string[],
+): string[] {
+  if (!registryNames.length) return [];
+  const registered = new Set(registryNames);
+  const drift: string[] = [];
+  for (const t of agent.tools ?? []) {
+    if (!t.startsWith("native:")) continue;
+    const bare = t.slice("native:".length);
+    if (!bare || bare === "all") continue;
+    if (!registered.has(bare)) {
+      drift.push(`工具清单含未注册 native:${bare}`);
+    }
+  }
+  return drift;
+}
+
 export function detectAssistantDrift(agent: AgentEntity): string[] {
   const drift: string[] = [];
   const tools = Array.isArray(agent.tools) ? agent.tools : [];
@@ -109,6 +129,7 @@ export function detectAssistantDrift(agent: AgentEntity): string[] {
   if (!agent.tier) {
     drift.push("未设置 tier（应为 manager）");
   }
+  drift.push(...detectAgentToolDrift(agent, listToolNames("native")));
   return drift;
 }
 
@@ -138,7 +159,10 @@ async function findAssistantHomeId(services: ServiceContainer): Promise<string |
 }
 
 export async function resolveAgent(services: ServiceContainer, agentId?: string): Promise<ResolveAgentResult> {
-  if (agentId) return { agent: await services.agent.getById(agentId), drift: [] };
+  if (agentId) {
+    const agent = await services.agent.getById(agentId);
+    return { agent, drift: detectAgentToolDrift(agent, listToolNames("native")) };
+  }
 
   const candidate = await findAssistantCandidate(services);
 

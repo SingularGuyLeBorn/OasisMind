@@ -654,6 +654,7 @@ reflection:
 | 项目模块 / 实体 / CRUD / 前端用法 | `docs/development/README.md` |
 | 具体使用场景（Agent / 子 Agent / 异步任务） | `docs/development/scenarios.md` |
 | 并发 / 阻塞 / 竞态条件防护 | `docs/development/concurrency.md` |
+| DSH 三不变量 | `docs/development/dsh-learn-implementation-plan.md` |
 | UI 实时性铁律（推拉结合） | `AGENTS.md`「状态在内存 · 推拉结合 · 刷新不丢」；`infra/uiStateNotify.ts`；`.cursor/rules/ui-state-realtime.mdc`；Chat 样板 `chat-state-architecture.md` |
 | 开发踩坑与教训（战地笔记） | `docs/development/开发心路历程.md` |
 | 未来功能规划 | `docs/development/future-features.md` |

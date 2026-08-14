@@ -82,6 +82,15 @@ queueDraining: boolean;
 
 两条流分别写入各自的 `ChatSession`，不会互相干扰。
 
+### 4.3 工具取消等停（DSH WP3）
+
+工具超时只 `abort` signal，然后 **await body 直到 settle**（`runCooperative`）。禁止用 `Promise.race` 丢弃仍在跑的 handler——否则副作用（浏览器、子进程、spawn 等待环）会在无人认领的情况下继续。
+
+- timeout 到点 → 仍等 body，返回 `TIMEOUT`（文案含「执行超时」与 `async_task_run` / `spawn_subagent` 建议）。
+- caller abort 且 body 未调用 → `ABORTED_BEFORE_DISPATCH`。
+- caller abort 且已 invoke → `ABORTED`，仍 await 完。
+- 不听 signal 的第一波工具（web/shell/session/swarm）修工具，不改回 race。
+
 ---
 
 ## 5. 异步任务并发控制

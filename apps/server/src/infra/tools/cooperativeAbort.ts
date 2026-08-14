@@ -1,6 +1,6 @@
 /**
  * 合作式取消：timeout 只 abort signal，await body 直到 settle。
- * 本文件禁止 Promise.race。
+ * 本文件禁止用 race 丢弃未 settle 的 body。
  */
 
 export function fuseSignals(

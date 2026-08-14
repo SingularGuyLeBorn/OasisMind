@@ -188,8 +188,8 @@ function isAvailable(config: SearchEngineConfig): boolean {
 
 // ==================== 主路由器 ====================
 
-/** 整体搜索 deadline：必须小于外层 withToolTimeout 默认 30s。
- * 到点即抛带引擎明细的汇总错误，避免挂起被外层 race 截胡（错误无明细、LLM 盲目原样重试） */
+/** 整体搜索 deadline：必须小于外层工具超时默认 30s。
+ * 到点即抛带引擎明细的汇总错误，避免挂起被外层截胡（错误无明细、LLM 盲目原样重试） */
 const SMART_SEARCH_DEADLINE_MS = 25000;
 
 /**

@@ -1813,7 +1813,7 @@ DeerFlow 2.0 = 字节开源 SuperAgent harness（LangGraph）。见微可学：�
 | Q11 VisibleSet vs 硬顶 | A 先 VisibleSet 再剥离；剥掉则 NOT_VISIBLE |
 | Q12 施工批次 | A 先 WP0–3 再 WP4–7，两批都做完 |
 
-未再点头前不改业务代码。
+施工用 Goal Prompt（锁死裁决、按 WP 执行、完工写报告）：`docs/development/prompts/dsh-three-invariants-goal-prompt.md`。已按 WP0–7 落地，报告见 `docs/development/dsh-three-invariants-implementation-report.md`。
 
 ---
 

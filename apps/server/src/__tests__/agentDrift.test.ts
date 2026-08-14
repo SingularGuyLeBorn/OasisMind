@@ -96,3 +96,53 @@ describe("W16d-3 agent.driftStatus tRPC 通道", () => {
     }
   });
 });
+
+describe("WP7 未知名工具 drift / mask fail-loud", () => {
+  it("Agent.tools 含 native:definitely_not_a_tool → drift 含该名且 deriveVisibleSet 不 throw", async () => {
+    const { listNativeTools } = await import("../infra/nativeTools.js");
+    const { listToolNames } = await import("../infra/tools/registry.js");
+    const { detectAgentToolDrift } = await import("../infra/agentResolver.js");
+    const { deriveVisibleSet } = await import("../infra/tools/visibleSet.js");
+    listNativeTools();
+    const names = listToolNames("native");
+    const drift = detectAgentToolDrift(
+      { tools: ["native:definitely_not_a_tool", "native:read_file"] },
+      names,
+    );
+    expect(drift.some((d) => d.includes("definitely_not_a_tool"))).toBe(true);
+    expect(() =>
+      deriveVisibleSet({
+        agentId: "a",
+        tier: "manager",
+        agentTools: ["native:definitely_not_a_tool", "native:read_file"],
+        packs: { im: false } as never,
+      }),
+    ).not.toThrow();
+  });
+
+  it("inheritMask.allow 含未注册名 → spawn 失败", async () => {
+    const { listNativeTools, executeNativeTool } = await import("../infra/nativeTools.js");
+    const { createNativeCtx } = await import("./helpers/toolTestFixtures.js");
+    const fs = await import("fs");
+    const os = await import("os");
+    const path = await import("path");
+    listNativeTools();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-wp7-"));
+    const ctx = createNativeCtx(root);
+    ctx.sessionId = "sess";
+    ctx.agentSnapshot = {
+      id: "parent",
+      model: "m",
+      systemPrompt: "",
+      tools: ["native:spawn_subagent"],
+      tier: "manager",
+    };
+    const result = (await executeNativeTool(
+      "spawn_subagent",
+      { task: "测未知", inheritMask: { allow: ["definitely_not_a_registered_tool"] } },
+      ctx,
+    )) as { code?: string };
+    expect(result.code).toBe("INHERIT_MASK_UNKNOWN_TOOL");
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+});

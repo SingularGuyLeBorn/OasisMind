@@ -1,6 +1,6 @@
 /**
  * Native 工具固定 stage 链 0–10。禁止 waterfall next() / Cordis。
- * 审批 assertApprovalOrProceed 不在这里。
+ * 审批闸门不在这里（只留在 executeAgentTool）。
  */
 
 import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
