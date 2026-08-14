@@ -35,6 +35,15 @@ const LlmYamlSchema = z.object({
     z.string(),
     z.object({ baseUrl: z.string().default("") }).passthrough(),
   ).default({}),
+  /** 角色化拆价：规划轮用强模型定骨架，执行轮用便宜模型省 token（默认关闭） */
+  roleSplit: z
+    .object({
+      enabled: z.boolean().default(false),
+      planningModel: z.string().default(""),
+      executionModel: z.string().default(""),
+      planningRounds: z.coerce.number().int().min(1).default(1),
+    })
+    .default({ enabled: false, planningModel: "", executionModel: "", planningRounds: 1 }),
 });
 
 /** config.yaml reflection 段：W7 反思（缺省时走默认值） */
@@ -259,6 +268,13 @@ export interface AppConfig {
     /** 弹性调用：重试耗尽后按序降级的备用模型（provider 由模型名推导） */
     fallbackModels: string[];
     providers: Record<string, LlmProviderConfig>;
+    /** 角色化拆价：规划轮/执行轮分模型（默认关闭） */
+    roleSplit: {
+      enabled: boolean;
+      planningModel: string;
+      executionModel: string;
+      planningRounds: number;
+    };
   };
   /** 异步 Agent 后台任务并发、超时与重试 */
   asyncJobs: {
@@ -856,6 +872,12 @@ export function createAppConfig(): AppConfig {
       baseDelayMs: llmYaml.baseDelayMs,
       fallbackModels: llmYaml.fallbackModels,
       providers,
+      roleSplit: {
+        enabled: llmYaml.roleSplit.enabled,
+        planningModel: llmYaml.roleSplit.planningModel,
+        executionModel: llmYaml.roleSplit.executionModel,
+        planningRounds: llmYaml.roleSplit.planningRounds,
+      },
     },
     asyncJobs: {
       // yaml 为教学默认；AGENT_ASYNC_* 环境变量可覆盖

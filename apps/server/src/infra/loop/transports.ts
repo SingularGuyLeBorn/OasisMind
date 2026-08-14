@@ -17,12 +17,12 @@ const resilientLlm = withResilience({
   chatCompletionStream: (options) => llmClient.chatCompletionStream(options),
 });
 
-export function createSyncTransport(config: AppConfig, model: string): LlmTransport {
+export function createSyncTransport(config: AppConfig, baseModel: string): LlmTransport {
   return {
-    async complete({ messages, tools, signal, withTools }): Promise<LlmTurnResult> {
+    async complete({ messages, tools, signal, withTools, modelOverride }): Promise<LlmTurnResult> {
       const completion = await resilientLlm.chatCompletion({
         config,
-        model,
+        model: modelOverride ?? baseModel,
         messages,
         tools: withTools ? tools : undefined,
         signal,
@@ -32,7 +32,8 @@ export function createSyncTransport(config: AppConfig, model: string): LlmTransp
         reasoningContent: completion.reasoningContent,
         toolCalls: completion.toolCalls,
         tokenUsage: completion.tokenUsage,
-        model: completion.model,
+        /** 返回实际使用的模型，供 token 记账与 lastModel 更新 */
+        model: completion.model || modelOverride || baseModel,
         provider: completion.provider,
       };
     },
@@ -41,25 +42,26 @@ export function createSyncTransport(config: AppConfig, model: string): LlmTransp
 
 export function createStreamTransport(
   config: AppConfig,
-  model: string,
+  baseModel: string,
   llmOptions: StreamLlmOptions,
   hooks?: LoopHooks,
   /** 当前轮次号，供 onThinking 使用；由 reactLoop 在每轮开始前写入 */
   getRound?: () => number,
 ): LlmTransport {
   return {
-    async complete({ messages, tools, signal, withTools }): Promise<LlmTurnResult> {
+    async complete({ messages, tools, signal, withTools, modelOverride }): Promise<LlmTurnResult> {
       let content = "";
       let reasoning = "";
       let toolCalls: LlmTurnResult["toolCalls"] = [];
       let tokenUsage: LlmTurnResult["tokenUsage"];
-      let lastModel = model;
+      const effectiveModel = modelOverride ?? baseModel;
+      let lastModel = effectiveModel;
       let lastProvider = config.llm.defaultProvider;
       const round = getRound?.() ?? 0;
 
       for await (const chunk of resilientLlm.chatCompletionStream({
         config,
-        model,
+        model: effectiveModel,
         messages,
         tools: withTools ? tools : undefined,
         temperature: llmOptions.temperature,

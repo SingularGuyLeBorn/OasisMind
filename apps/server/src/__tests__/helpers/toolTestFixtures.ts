@@ -106,6 +106,12 @@ export function createTestConfig(
       baseDelayMs: 1000,
       fallbackModels: [],
       providers: {},
+      roleSplit: {
+        enabled: false,
+        planningModel: "",
+        executionModel: "",
+        planningRounds: 1,
+      },
     },
     asyncJobs: { maxPerWorkspace: 0, maxQueued: 100, maxConcurrent: 2, maxPerSession: 2, maxLightweightConcurrent: 2, taskTimeoutMs: 60_000, queuedTimeoutMs: 0, maxSubagentsPerSession: 10 },
     ocr: {

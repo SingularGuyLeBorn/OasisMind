@@ -59,6 +59,8 @@ export interface LlmTransport {
     signal?: AbortSignal;
     /** false = 合成终轮，不传 tools */
     withTools: boolean;
+    /** 本轮模型覆盖；缺省用 transport 创建时的 base model（Turn Snapshot 冻结值） */
+    modelOverride?: string;
   }): Promise<LlmTurnResult>;
 }
 

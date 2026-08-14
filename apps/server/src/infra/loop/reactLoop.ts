@@ -4,7 +4,8 @@
  * 不变量：
  * 1. phase 只经 createPhaseMachine.transition 变更
  * 2. 工具预算在 tool_batch 前切分；deferred 必须回写 tool 消息
- * 3. Turn Snapshot 在入口冻结，本 run 内不改 maxRounds/maxToolCalls/model
+ * 3. Turn Snapshot 在入口冻结，本 run 内不改 maxRounds/maxToolCalls/model；
+ *    roleSplit 的 modelOverride 只是 per-call 覆盖，不 mutate snapshot.model
  * 4. hooks 只观测，禁止改 phase / messages（由内核写）
  */
 
@@ -46,6 +47,7 @@ import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
 import { createPhaseMachine } from "./phase.js";
 import { REFLECTION_UNPASSED_MARK } from "./reflection.js";
 import type { ReactLoopInput, ReactLoopResult, TurnSnapshot } from "./types.js";
+import { resolveRoundModel } from "./roundModel.js";
 import { isAbortLikeError, makeAbortError } from "../abortReason.js";
 import { runContextHooks, type ContextHookInput } from "../contextHooks.js";
 import type { Agent } from "@knowpilot/shared";
@@ -787,6 +789,8 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
             tools: toolSchemas,
             signal: input.signal,
             withTools: true,
+            // roundsUsed 已是 1-based 轮次（loop 内 round + 1），直接传给 resolveRoundModel
+            modelOverride: resolveRoundModel(input.config, roundsUsed),
           }),
         compactOnce: compactOnceForOverflow,
       });
@@ -1223,6 +1227,8 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
                 messages: llmMessages,
                 signal: input.signal,
                 withTools: false,
+                // 收尾合成轮在最后一轮之后，按执行轮对待
+                modelOverride: resolveRoundModel(input.config, roundsUsed + 1),
               }),
             compactOnce: compactOnceForOverflow,
           });
