@@ -41,6 +41,7 @@ import {
 import { getStreamHub } from "../sessionStreamHub.js";
 import { parseToolCall } from "./setup.js";
 import { AGENT_TOOL_RESULT_MAX_CHARS, CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { materializeToolEnvelope } from "../tools/toolPipeline.js";
 import { createPhaseMachine } from "./phase.js";
 import { REFLECTION_UNPASSED_MARK } from "./reflection.js";
 import type { ReactLoopInput, ReactLoopResult, TurnSnapshot } from "./types.js";
@@ -50,7 +51,6 @@ import { runContextHooks, type ContextHookInput } from "../contextHooks.js";
 import type { Agent } from "@knowpilot/shared";
 import { buildSystemPromptSkeleton } from "../promptBuilder.js";
 import { formatTrace } from "../trace.js";
-import { offloadToolResultIfNeeded } from "../toolResultOffload.js";
 import { peelExpectControls } from "../keyInfoExtractor.js";
 import { checkToolLoop, createLoopGuardState } from "./toolLoopGuard.js";
 /** W11：Run.output 活状态快照写回节流间隔（每轮 tool_batch 后至多写一次） */
@@ -94,41 +94,6 @@ function truncateForMessage(value: unknown): string {
   return text.length > APPROVAL_RESULT_MAX_CHARS ? `${text.slice(0, APPROVAL_RESULT_MAX_CHARS)}…` : text;
 }
 
-/**
- * 工具结果超 maxChars 时，优先截断 result 的长文本字段（content/text/transcript/excerpt），
- * 保留其他元信息字段完整，避免把整个 JSON 整体 slice 导致 content 在中间被砍。
- * 返回截断后的 JSON 字符串；若无法智能截断（无长文本字段）返回 null 由调用方整体 slice。
- */
-function truncateToolResultContent(result: unknown, maxChars: number): string | null {
-  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
-  const obj = result as Record<string, unknown>;
-  const longTextFields = ["content", "text", "transcript", "excerpt", "html", "markdown"];
-  // 找出最长的文本字段
-  let target: string | null = null;
-  let targetKey = "";
-  for (const k of longTextFields) {
-    const v = obj[k];
-    if (typeof v === "string" && v.length > (target?.length ?? 0)) {
-      target = v;
-      targetKey = k;
-    }
-  }
-  if (!target || target.length < maxChars * 0.3) return null;
-
-  // 计算除目标字段外的其他字段 JSON 长度
-  const otherFields = { ...obj };
-  delete otherFields[targetKey];
-  const otherJson = JSON.stringify(otherFields);
-  const overhead = otherJson.length + 20; // key 名 + 引号 + 省略号标记
-
-  // 给 content 留出 maxChars - overhead - 余量
-  const budget = Math.max(maxChars - overhead - 200, Math.floor(maxChars * 0.5));
-  if (budget <= 0) return null;
-
-  const truncatedContent = target.slice(0, budget) + `\n…[content TRUNCATED, original=${target.length} chars, kept=${budget}. 若确需完整内容，用带 offset/maxChars 的参数分段重读该工具（read_file/read_article 支持 nextOffset 翻页），勿基于残缺内容下结论]`;
-  const truncatedObj = { ...otherFields, [targetKey]: truncatedContent };
-  return JSON.stringify(truncatedObj);
-}
 
 /** W11：审批决策后的续跑注入消息（经 injectUserMessages 显式机制进入原 session 与 llmMessages） */
 function buildApprovalResumeMessage(resolution: ApprovalResolution): string {
@@ -275,60 +240,50 @@ function appendToolResultMessages(
   },
 ) {
   for (const item of items) {
-    let resultForStore = item.result;
-    let resultForLlm = item.result;
-
-    // 全量落盘（可追溯）+ 超阈值时关键词狙击/块采样压缩给 LLM
-    if (offloadCtx?.config) {
-      try {
-        const expect = peelExpectControls(item.args ?? {});
-        const off = offloadToolResultIfNeeded(offloadCtx.config, item.result, {
-          sessionId: offloadCtx.sessionId,
-          runId: offloadCtx.runId,
-          toolCallId: item.call.id,
-          toolName: item.name,
-          thresholdChars: offloadCtx.config.compact.toolResultOffload.thresholdChars,
-          expectKeywords: expect.keywords,
-          expectPatterns: expect.patterns,
-          contextWindow: expect.contextWindow,
-        });
-        if (off) {
-          resultForLlm = off.llmResult;
-          // 审计侧保留落盘后的 LLM 视图（含 path）；原文在 data/tool-results
-          resultForStore = off.llmResult;
-          if (off.artifact) {
-            offloadCtx.onArtifact?.({
-              ...off.artifact,
-              toolCallId: item.call.id,
-              toolName: item.name,
-            });
-          }
-        }
-      } catch (err) {
-        console.warn(
-          "[ReactLoop] tool result persist 失败，回退截断:",
-          err instanceof Error ? err.message : err,
-        );
-      }
+    const expect = peelExpectControls(item.args ?? {});
+    let envelope;
+    try {
+      envelope = materializeToolEnvelope(item.result, {
+        toolName: item.name,
+        args: item.args,
+        maxChars,
+        config: offloadCtx?.config,
+        sessionId: offloadCtx?.sessionId,
+        runId: offloadCtx?.runId,
+        toolCallId: item.call.id,
+        expectKeywords: expect.keywords,
+        expectPatterns: expect.patterns,
+        contextWindow: expect.contextWindow,
+      });
+    } catch (err) {
+      console.warn(
+        "[ReactLoop] tool result persist 失败，回退投影:",
+        err instanceof Error ? err.message : err,
+      );
+      envelope = materializeToolEnvelope(item.result, {
+        toolName: item.name,
+        args: item.args,
+        maxChars,
+        toolCallId: item.call.id,
+      });
+    }
+    if (envelope.persist && offloadCtx?.onArtifact) {
+      offloadCtx.onArtifact({
+        type: "tool_result",
+        path: envelope.persist.path,
+        toolCallId: item.call.id,
+        toolName: item.name,
+      });
     }
 
     executedTools.push({
       id: item.call.id,
       name: item.name,
       args: item.args,
-      result: resultForStore,
+      result: envelope.content,
       kind: item.kind ?? "tool",
     });
-    // P2-04：截断时加显式 [TRUNCATED] 后缀，让 LLM 知道结果被裁，避免基于残缺 JSON 误判。
-    // 优先截断 result 的 content/文本字段而非整个 JSON，保留结构完整性。
-    const fullStr = JSON.stringify(resultForLlm);
-    let content = fullStr;
-    if (fullStr.length > maxChars) {
-      const trimmed = truncateToolResultContent(resultForLlm, maxChars);
-      content = trimmed ?? fullStr.slice(0, maxChars) + `\n...[TRUNCATED, original=${fullStr.length} chars, limit=${maxChars}. 若确需完整内容，用带 offset/maxChars 的参数分段重读该工具，勿基于残缺 JSON 下结论]`;
-    }
-    // P2-04：工具结果不可信指令标记（defense-in-depth；单用户本地仍建议保留）
-    content = markToolResultUntrusted(item.name, content);
+    const content = markToolResultUntrusted(item.name, JSON.stringify(envelope.content));
     llmMessages.push({
       role: "tool",
       tool_call_id: item.call.id,

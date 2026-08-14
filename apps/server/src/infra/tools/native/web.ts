@@ -38,6 +38,7 @@ import {
 } from "@knowpilot/shared";
 import type { NativeToolContext, NativeToolDefinition } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
+import { defaultProjectContent } from "../toolEnvelope.js";
 import { academicDefs, academicHandlers } from "./web/academic.js";
 import type { PostEntity } from "../../entityServices/postService.js";
 
@@ -1532,6 +1533,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
       },
       required: ["url"],
     },
+    render: (value) => defaultProjectContent(value),
   },
   {
     name: "scrape_web_page",
@@ -1603,6 +1605,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
       },
       required: ["url"],
     },
+    render: (value) => defaultProjectContent(value),
   },
   {
     name: "download_file",
@@ -1703,6 +1706,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
       },
       required: ["url"],
     },
+    render: (value) => defaultProjectContent(value),
   },
   ...academicDefs,
 ];

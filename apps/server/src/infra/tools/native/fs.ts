@@ -21,6 +21,7 @@ import {
 } from "../../fsMutationGate.js";
 import type { ToolRollback } from "../types.js";
 import type { NativeToolContext, NativeToolDefinition } from "./types.js";
+import { defaultProjectContent } from "../toolEnvelope.js";
 import { registerNativeDomain } from "./registerDomain.js";
 import { validateOutputForAgent, formatValidationErrors } from "../../outputValidator.js";
 
@@ -446,6 +447,7 @@ const FS_DEFS: NativeToolDefinition[] = [
       },
       required: ["path"],
     },
+    render: (value) => defaultProjectContent(value),
   },
   {
     name: "write_file",

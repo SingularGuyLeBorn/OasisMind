@@ -58,6 +58,8 @@ export interface ToolCommand<Ctx = unknown> {
    * 返回值须为 `<domain>:<verb>:<target>`；LLM 不可见。
    */
   deriveScope?(args: Record<string, unknown>): string | null | undefined;
+  /** WP2：value → content 投影；缺省走 defaultProjectContent */
+  render?(value: unknown, args: Record<string, unknown>): unknown;
   schema(): ToolSchema;
   execute(params: Record<string, unknown>, ctx: Ctx): Promise<unknown>;
   /** 执行前快照（destructive 工具按需实现）；返回值原样透传给 rollback */

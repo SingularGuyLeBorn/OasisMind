@@ -42,6 +42,7 @@ export function registerNativeDomain(
       destructive: def.destructive,
       approvalExempt: def.destructive ? def.approvalExempt : undefined,
       defaultHidden,
+      render: def.render,
       schema: () => ({ description: def.description, parameters: def.parameters }),
       execute: (args, ctx) => handler(args, ctx),
       captureRollback: rb?.capture,

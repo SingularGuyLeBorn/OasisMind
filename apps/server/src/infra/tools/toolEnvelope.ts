@@ -82,14 +82,16 @@ export function snapshotJsonValue(value: unknown): unknown {
 
     if (Array.isArray(obj)) {
       seen.add(obj);
-      return obj.map((item) => walk(item));
+      return obj.map((item) => (item === undefined ? null : walk(item)));
     }
     if (!isPlainObject(obj)) throwUnserializable("非纯 JSON 对象 ");
 
     seen.add(obj);
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
-      out[key] = walk(obj[key]);
+      const child = obj[key];
+      if (child === undefined) continue;
+      out[key] = walk(child);
     }
     return out;
   }

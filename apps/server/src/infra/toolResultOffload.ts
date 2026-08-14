@@ -426,8 +426,8 @@ export function cleanupExpiredToolResults(
 }
 
 /**
- * 全量落盘；超阈值时对 LLM 只返回厚 metadata + keywords。
- * 原文落盘失败才抛错；index 失败仅 warn。
+ * value 全文权威落盘；超阈值时对 LLM 只返回厚 metadata + keywords 瘦卡。
+ * 字段名 `_kp_result_path` 不准改。原文落盘失败才抛错；index 失败仅 warn。
  */
 export function offloadToolResultIfNeeded(
   config: AppConfig,

@@ -31,6 +31,8 @@ export interface NativeToolDefinition {
    * 未显式声明时，registerNativeDomain 对 destructive && !approvalExempt 自动设 true。
    */
   defaultHidden?: boolean;
+  /** WP2：长文工具显式投影；缺省走 defaultProjectContent */
+  render?(value: unknown, args: Record<string, unknown>): unknown;
 }
 
 export interface NativeToolContext {
