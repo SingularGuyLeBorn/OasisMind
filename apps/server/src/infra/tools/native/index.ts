@@ -9,7 +9,7 @@ import { registerWebTools } from "./web.js";
 import { registerDokobotTools } from "./dokobot.js";
 import { registerWebbridgeTools } from "./webbridge.js";
 import { registerShellTools } from "./shell.js";
-import { registerSwarmTools } from "./swarm.js";
+import { registerSwarmTools } from "./swarm/register.js";
 import { registerSessionTools } from "./session/register.js";
 import { registerMemoryTools } from "./memory.js";
 import { registerIntegrationTools } from "./integration.js";

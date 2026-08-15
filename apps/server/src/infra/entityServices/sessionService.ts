@@ -292,7 +292,7 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
     // 队首 superior：只挂服务端 drain，禁止与「继续任务」并行起流（保 FIFO）
     const queueHead = (await services.sessionQueueItem.listBySession(input.id))[0];
     if (queueHead?.kind === "superior" && session.agentId) {
-      const { enqueueSuperiorDrainForSession } = await import("../tools/native/swarm.js");
+      const { enqueueSuperiorDrainForSession } = await import("../tools/native/swarm/superiorDrain.js");
       const drainPromise = enqueueSuperiorDrainForSession({
         sessionId: input.id,
         targetAgentId: session.agentId,

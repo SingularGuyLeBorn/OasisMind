@@ -64,7 +64,7 @@ export async function runStartupRecovery(options: {
   // B2：超龄软认领重置（须在 superior drain 重注册之前）
   const staleQueueClaimsReleased = await services.sessionQueueItem.releaseStaleClaims();
   // 动作 3：superior 孤儿 drain 重注册（动态 import——swarm.ts 处于 ReAct 环内，静态导入成环）
-  const { requeueOrphanedSuperiorDrains } = await import("../tools/native/swarm.js");
+  const { requeueOrphanedSuperiorDrains } = await import("../tools/native/swarm/superiorDrain.js");
   const superiorDrainsRegistered = await requeueOrphanedSuperiorDrains(config, services);
   // 动作 4 + R-1 孤儿：合并对账首轮
   const reconcile = await reconcileAsyncDeliveries({ services, config });
