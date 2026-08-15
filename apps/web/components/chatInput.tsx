@@ -1,35 +1,30 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import {
-  Bot,
-  Check,
-  FileText,
-  Flag,
-  Headphones,
-  Loader2,
-  Mic,
-  Search,
-  Send,
-  Square,
-  X,
-} from "lucide-react";
-import type { ChatPostAttachment, ChatSessionConfig, Skill } from "@knowpilot/shared";
+import { memo, useEffect, useRef, useState, useCallback } from "react";
+import { Bot, Send, Square, X } from "lucide-react";
+import type { ChatSessionConfig, Skill } from "@knowpilot/shared";
 import { LucideIconByName, ChatShortcutHints } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { trpc, catchUnlessCancelled } from "@/lib/trpc";
-import type { ChatQueueAttachment, ChatQueueImageAttachment } from "@/lib/chatQueueTypes";
+import type { ChatQueueAttachment } from "@/lib/chatQueueTypes";
 import { ChatModelMenu } from "@/components/chatModelMenu";
 import { ChatInputChips } from "@/components/chatInputChips";
-import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
-import { useVoiceConversation } from "@/lib/useVoiceConversation";
 import {
   restoreDraftAfterQueueEdit,
   stashDraftOnEnterQueueEdit,
 } from "@/lib/queueEditDraft";
-
-/** 发送时注入 LLM 的正文上限（字符）；更长用工具续读 */
-const POST_SNIPPET_MAX = 12_000;
+import {
+  ChatInputAttachmentSection,
+  ChatInputFileInput,
+  ChatInputMentionPicker,
+  ChatInputSlashPicker,
+  selectPostMentionCaught,
+  stripMentionPrefix,
+  tryHandleMentionKeyDown,
+  useChatInputAttachments,
+  type SlashCommandItem,
+  type SlashPickerRow,
+} from "@/components/chatInputAttachments";
+import { ChatInputVoiceButtons, useChatInputVoice } from "@/components/chatInputVoice";
 
 export interface SelectedSkill {
   id: string;
@@ -86,15 +81,6 @@ interface ChatInputAreaProps {
   externalDraft?: { text: string; nonce: number } | null;
 }
 
-type SlashCommandItem = {
-  id: string;
-  label: string;
-  insert: string;
-  description: string;
-  disabled?: boolean;
-  disabledReason?: string;
-};
-
 // R16：memo 化——onSend(onStop)已 useCallback、skills 已 useMemo 稳定，流式期间 props 稳定可跳过重渲染
 export const ChatInputArea = memo(function ChatInputArea({
   onSend,
@@ -125,7 +111,6 @@ export const ChatInputArea = memo(function ChatInputArea({
   externalDraft = null,
 }: ChatInputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   // 发送防重入锁：ref 在同步阶段立即生效，避免 React state 批处理导致双击/双快捷键穿透
   const sendLockRef = useRef(false);
 
@@ -181,8 +166,6 @@ export const ChatInputArea = memo(function ChatInputArea({
   const [mentionQuery, setMentionQuery] = useState("");
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
-  const [pendingPosts, setPendingPosts] = useState<ChatPostAttachment[]>([]);
-  const [postFetchError, setPostFetchError] = useState<string | null>(null);
 
   const openSkillPicker = useCallback(() => {
     onWarmSkills?.();
@@ -216,13 +199,40 @@ export const ChatInputArea = memo(function ChatInputArea({
     });
     textareaRef.current?.focus();
   }, []);
-  const [pendingImages, setPendingImages] = useState<ChatQueueImageAttachment[]>([]);
-  /** 正在 OCR 的附件 id → true（蒙版按图显示，而非整栏一个 loading） */
-  const [ocrInFlight, setOcrInFlight] = useState<Record<string, boolean>>({});
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const ocrLoading = Object.keys(ocrInFlight).length > 0;
   // 发送按钮防抖/防重入：用 ref 锁 + state 同步禁用按钮，避免 React state 批处理导致双击/双快捷键穿透
   const [isSending, setIsSending] = useState(false);
+
+  const attachments = useChatInputAttachments({
+    supportsVision,
+    mentionOpen,
+    mentionQuery,
+  });
+  const {
+    fileRef,
+    pendingPosts,
+    pendingImages,
+    ocrInFlight,
+    ocrError,
+    postFetchError,
+    ocrLoading,
+    mentionCandidates,
+    addImageFile,
+    handlePasteImage,
+    resetAttachments,
+    setPendingPosts,
+    setPendingImages,
+    selectPostMention,
+    prepareImagesForSend,
+    collectAttachments,
+  } = attachments;
+
+  const voice = useChatInputVoice({
+    input,
+    setInput,
+    isStreaming,
+    disabled,
+    voiceReplyText,
+  });
 
   // 移动端虚拟键盘：用 visualViewport 抬高输入区，避免遮挡
   useEffect(() => {
@@ -242,47 +252,6 @@ export const ChatInputArea = memo(function ChatInputArea({
     };
   }, []);
 
-  // 听写模式（点 Mic）：webkitSpeechRecognition 追加到输入框，不自动发送
-  const voiceBaseRef = useRef("");
-  const [voiceChatOn, setVoiceChatOn] = useState(false);
-  const { supported: sttSupported, listening, error: sttError, start: sttStart, stop: sttStop } =
-    useSpeechRecognition(
-      { lang: "zh-CN", interimResults: true, continuous: false, keepAlive: false },
-      {
-        onInterim: (t) => {
-          if (voiceChatOn) return;
-          setInput((voiceBaseRef.current + t).replace(/\s+$/, " "));
-        },
-        onFinal: (t) => {
-          if (voiceChatOn) return;
-          const merged =
-            (voiceBaseRef.current ? voiceBaseRef.current.replace(/\s+$/, "") + " " : "") + t;
-          voiceBaseRef.current = merged + " ";
-          setInput(voiceBaseRef.current);
-        },
-      },
-    );
-  useEffect(() => {
-    if (!listening) voiceBaseRef.current = input;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listening]);
-
-  // 语音对话模式：停顿自动发送 → 回复自动朗读（轻量，浏览器原生）
-  const voiceSendRef = useRef<(text: string) => void>(() => {});
-  useVoiceConversation({
-    enabled: voiceChatOn,
-    isStreaming: !!isStreaming,
-    disabled: !!disabled,
-    replyText: voiceReplyText,
-    onSend: (text) => voiceSendRef.current(text),
-    onDraftChange: (t) => {
-      if (voiceChatOn) setInput(t);
-    },
-  });
-  useEffect(() => {
-    if (voiceChatOn && listening) sttStop();
-  }, [voiceChatOn, listening, sttStop]);
-
   // 上键历史恢复：按 sessionId 隔离，存 localStorage
   const historyKey = sessionId ? `kp-input-history:${sessionId}` : null;
   const [historyIdx, setHistoryIdx] = useState(-1); // -1 = 不在浏览历史模式
@@ -296,16 +265,13 @@ export const ChatInputArea = memo(function ChatInputArea({
     setMentionOpen(false);
     setMentionQuery("");
     setHighlightIdx(0);
-    setPendingImages([]);
-    setPendingPosts([]);
-    setOcrError(null);
-    setPostFetchError(null);
+    resetAttachments();
     setHistoryIdx(-1);
     setDeepResearchEnabled(false);
     queueEditDraftBackupRef.current = null;
     queueEditActiveIdRef.current = null;
     textareaRef.current?.focus();
-  }, [sessionId]);
+  }, [sessionId, resetAttachments]);
 
   useEffect(() => {
     if (!canStartDeepResearch) setDeepResearchEnabled(false);
@@ -377,37 +343,6 @@ export const ChatInputArea = memo(function ChatInputArea({
     [historyKey, getHistory],
   );
 
-  const ocrMutation = trpc.agent.ocrImage.useMutation();
-  const utils = trpc.useUtils();
-  const postTreeQuery = trpc.post.tree.useQuery({}, { staleTime: 5 * 60 * 1000 });
-  const postSearchQuery = trpc.post.search.useQuery(
-    { query: mentionQuery.trim() || "a", limit: 20 },
-    { enabled: mentionOpen && mentionQuery.trim().length > 0, staleTime: 30_000 },
-  );
-
-  const mentionCandidates = useMemo(() => {
-    if (!mentionOpen) return [] as Array<{ id: string; garden: string; slug: string; title: string }>;
-    const q = mentionQuery.trim().toLowerCase();
-    if (q && postSearchQuery.data?.length) {
-      return postSearchQuery.data.map((p) => ({
-        id: p.id,
-        garden: p.garden,
-        slug: p.slug,
-        title: p.title,
-      }));
-    }
-    const tree = postTreeQuery.data ?? [];
-    if (!q) return tree.slice(0, 40);
-    return tree
-      .filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.slug.toLowerCase().includes(q) ||
-          p.garden.toLowerCase().includes(q),
-      )
-      .slice(0, 40);
-  }, [mentionOpen, mentionQuery, postSearchQuery.data, postTreeQuery.data]);
-
   const enabledSkills = skills.filter((s) => s.enabled);
 
   const slashCommands: SlashCommandItem[] = isSubagentSession
@@ -447,10 +382,7 @@ export const ChatInputArea = memo(function ChatInputArea({
     );
   });
 
-  type PickerRow =
-    | { kind: "cmd"; cmd: SlashCommandItem }
-    | { kind: "skill"; skill: Skill };
-  const pickerRows: PickerRow[] = [
+  const pickerRows: SlashPickerRow[] = [
     ...filteredCommands.map((cmd) => ({ kind: "cmd" as const, cmd })),
     ...filteredSkills.map((skill) => ({ kind: "skill" as const, skill })),
   ];
@@ -517,76 +449,25 @@ export const ChatInputArea = memo(function ChatInputArea({
     replaceSlashPrefix(cmd.insert);
   };
 
-  const activatePickerRow = (row: PickerRow) => {
+  const activatePickerRow = (row: SlashPickerRow) => {
     if (row.kind === "cmd") selectCommand(row.cmd);
     else selectSkill(row.skill);
   };
 
-  const stripMentionPrefix = () => {
-    const ta = textareaRef.current;
-    if (ta) {
-      const before = input.slice(0, ta.selectionStart);
-      const after = input.slice(ta.selectionStart);
-      setInput(before.replace(/@[\w\u4e00-\u9fff-]*$/, "") + after);
-    } else {
-      setInput(input.replace(/@[\w\u4e00-\u9fff-]*$/, ""));
-    }
+  const closeMention = () => {
     setMentionOpen(false);
     setMentionQuery("");
-    textareaRef.current?.focus();
   };
 
-  const selectPostMention = async (post: {
-    id: string;
-    garden: string;
-    slug: string;
-    title: string;
-  }) => {
-    if (pendingPosts.some((p) => p.id === post.id)) {
-      stripMentionPrefix();
-      return;
-    }
-    setPostFetchError(null);
-    stripMentionPrefix();
-    try {
-      const full = await utils.post.getById.fetch({ id: post.id });
-      const content = typeof full.content === "string" ? full.content : "";
-      const att: ChatPostAttachment = {
-        type: "post",
-        id: full.id,
-        garden: full.garden,
-        slug: full.slug,
-        title: full.title,
-        excerpt: full.excerpt ?? undefined,
-        contentSnippet: content.slice(0, POST_SNIPPET_MAX) || undefined,
-      };
-      setPendingPosts((prev) => [...prev.filter((p) => p.id !== att.id), att]);
-    } catch (err: unknown) {
-      setPostFetchError(err instanceof Error ? err.message : "加载文章失败");
-    }
+  const doStripMentionPrefix = () => {
+    stripMentionPrefix(textareaRef, input, setInput, closeMention);
   };
 
-  const runOcrForAttachment = async (
-    att: ChatQueueImageAttachment,
-  ): Promise<ChatQueueImageAttachment> => {
-    if (att.extractedText || supportsVision) return att;
-    const base64 = att.previewUrl?.split(",")[1] ?? "";
-    if (!base64) return att;
-    const res = await ocrMutation.mutateAsync({
-      base64,
-      mimeType: att.mimeType,
-    });
-    if (!res.success || !res.data?.text?.trim()) {
-      const msg =
-        (res as { error?: { message?: string } }).error?.message ??
-        "OCR 未返回文字，请检查 pnpm ocr:check 或配置 OCR_SPACE_API_KEY";
-      throw new Error(msg);
-    }
-    return {
-      ...att,
-      extractedText: res.data.text,
-      source: res.data.source ?? "ocr",
-    };
+  const pickPost = (post: Parameters<typeof selectPostMention>[0]) => {
+    selectPostMentionCaught(
+      () => selectPostMention(post, doStripMentionPrefix),
+      post,
+    );
   };
 
   const releaseSendLock = () => {
@@ -627,44 +508,22 @@ export const ChatInputArea = memo(function ChatInputArea({
       text = `/research ${text}`;
     }
 
-    let imageAtts = pendingImages;
-    const needsOcr = !supportsVision && imageAtts.some((a) => !a.extractedText);
-    if (needsOcr) {
-      const ids = imageAtts.filter((a) => !a.extractedText).map((a) => a.id);
-      setOcrInFlight((prev) => {
-        const next = { ...prev };
-        for (const id of ids) next[id] = true;
-        return next;
-      });
-      setOcrError(null);
-      try {
-        imageAtts = await Promise.all(imageAtts.map(runOcrForAttachment));
-      } catch (err: unknown) {
-        setOcrError(err instanceof Error ? err.message : "OCR 识别失败");
-        releaseSendLock();
-        return;
-      } finally {
-        setOcrInFlight((prev) => {
-          const next = { ...prev };
-          for (const id of ids) delete next[id];
-          return next;
-        });
-      }
+    const prepared = await prepareImagesForSend();
+    if (!prepared.ok) {
+      releaseSendLock();
+      return;
     }
 
-    const attachments: ChatQueueAttachment[] = [...pendingPosts, ...imageAtts];
+    const sendAttachments: ChatQueueAttachment[] = collectAttachments(prepared.images);
     onSend(
       text,
       selectedSkill ?? undefined,
-      attachments.length ? attachments : undefined,
+      sendAttachments.length ? sendAttachments : undefined,
     );
     setInput(""); // 清空输入框（状态内部化后由组件自行清空）
     pushHistory(text); // 记录到上键历史
     onSkillChange(null);
-    setPendingImages([]);
-    setPendingPosts([]);
-    setOcrError(null);
-    setPostFetchError(null);
+    resetAttachments();
     setMentionOpen(false);
     setHistoryIdx(-1); // 退出历史浏览模式
     setDeepResearchEnabled(false);
@@ -674,7 +533,7 @@ export const ChatInputArea = memo(function ChatInputArea({
   };
 
   // 语音对话：停顿后直接 onSend，不走图片 OCR 路径
-  voiceSendRef.current = (text: string) => {
+  voice.voiceSendRef.current = (text: string) => {
     const t = text.trim();
     if (!t || disabled || sendLockRef.current) return;
     sendLockRef.current = true;
@@ -684,44 +543,6 @@ export const ChatInputArea = memo(function ChatInputArea({
     onSkillChange(null);
     setDeepResearchEnabled(false);
     sendLockRef.current = false;
-  };
-
-  const addImageFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const previewUrl = reader.result as string;
-      const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const att: ChatQueueImageAttachment = {
-        id,
-        name: file.name,
-        mimeType: file.type,
-        previewUrl,
-        source: supportsVision ? "vision" : "ocr",
-      };
-      setOcrError(null);
-      setPendingImages((prev) => [...prev, att]);
-
-      if (!supportsVision) {
-        setOcrInFlight((prev) => ({ ...prev, [id]: true }));
-        runOcrForAttachment(att)
-          .then((done) => {
-            setPendingImages((prev) => prev.map((x) => (x.id === id ? done : x)));
-          })
-          .catch((err: unknown) => {
-            setOcrError(err instanceof Error ? err.message : "OCR 识别失败");
-            setPendingImages((prev) => prev.filter((x) => x.id !== id));
-          })
-          .finally(() => {
-            setOcrInFlight((prev) => {
-              const next = { ...prev };
-              delete next[id];
-              return next;
-            });
-          });
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const isEditingQueue = !!queueEdit?.id;
@@ -773,132 +594,27 @@ export const ChatInputArea = memo(function ChatInputArea({
       )}
 
       {mentionOpen && (
-        <div
-          className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg"
-          data-testid="chat-mention-picker"
-        >
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
-            引用文章{mentionQuery ? ` · ${mentionQuery}` : ""}
-          </div>
-          {mentionCandidates.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-[var(--kp-text-3)]">
-              {mentionQuery.trim()
-                ? postSearchQuery.isFetching
-                  ? "搜索中…"
-                  : "无匹配文章"
-                : postTreeQuery.isLoading
-                  ? "加载文章列表…"
-                  : "输入标题或 slug 过滤，或从下方挑选"}
-            </div>
-          ) : (
-            mentionCandidates.map((post, idx) => (
-              <button
-                key={post.id}
-                type="button"
-                onClick={() => {
-                  selectPostMention(post).catch(catchUnlessCancelled("components/chatInput.tsx"));
-                }}
-                className={cn(
-                  "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
-                  idx === activeHighlightIdx
-                    ? "bg-[var(--kp-brand-soft)]"
-                    : "hover:bg-[var(--kp-bg-mute)]",
-                )}
-              >
-                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
-                <div className="min-w-0">
-                  <div className="font-medium text-[var(--kp-text-1)]">{post.title}</div>
-                  <div className="truncate text-xs text-[var(--kp-text-3)]">
-                    {post.garden}/{post.slug}
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+        <ChatInputMentionPicker
+          mentionQuery={mentionQuery}
+          mentionCandidates={mentionCandidates}
+          activeHighlightIdx={activeHighlightIdx}
+          mentionSearchFetching={attachments.mentionSearchFetching}
+          mentionTreeLoading={attachments.mentionTreeLoading}
+          onSelect={pickPost}
+        />
       )}
 
       {skillOpen && pickerHasContent && !mentionOpen && (
-        <div
-          className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg"
-          data-testid="chat-slash-picker"
-        >
-          {!isSubagentSession && filteredCommands.length > 0 && (
-            <>
-              <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
-                命令
-              </div>
-              {filteredCommands.map((cmd) => {
-                const rowIdx = pickerRows.findIndex((r) => r.kind === "cmd" && r.cmd.id === cmd.id);
-                const disabled = !!cmd.disabled;
-                return (
-                  <button
-                    key={cmd.id}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => selectCommand(cmd)}
-                    title={disabled ? cmd.disabledReason : undefined}
-                    className={cn(
-                      "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
-                      disabled && "cursor-not-allowed opacity-45",
-                      !disabled && rowIdx === activeHighlightIdx
-                        ? "bg-[var(--kp-brand-soft)]"
-                        : !disabled && "hover:bg-[var(--kp-bg-mute)]",
-                    )}
-                  >
-                    {cmd.id === "research" ? (
-                      <Search className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
-                    ) : (
-                      <Flag className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-medium text-[var(--kp-text-1)]">{cmd.label}</div>
-                      <div className="truncate text-xs text-[var(--kp-text-3)]">
-                        {cmd.description}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </>
-          )}
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
-            已启用 Skill{enabledSkills.length === 0 ? "（当前无）" : ` · ${enabledSkills.length}`}
-          </div>
-          {filteredSkills.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-[var(--kp-text-3)]">
-              无匹配项。Skill 来自 content/skills 且标记为启用的条目。
-            </div>
-          ) : (
-            filteredSkills.map((skill) => {
-              const rowIdx = pickerRows.findIndex(
-                (r) => r.kind === "skill" && r.skill.id === skill.id,
-              );
-              return (
-                <button
-                  key={skill.id}
-                  type="button"
-                  onClick={() => selectSkill(skill)}
-                  className={cn(
-                    "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
-                    rowIdx === activeHighlightIdx
-                      ? "bg-[var(--kp-brand-soft)]"
-                      : "hover:bg-[var(--kp-bg-mute)]",
-                  )}
-                >
-                  <LucideIconByName
-                    name={skill.icon}
-                    className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-medium text-[var(--kp-text-1)]">{skill.name}</div>
-                    <div className="truncate text-xs text-[var(--kp-text-3)]">{skill.description}</div>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
+        <ChatInputSlashPicker
+          isSubagentSession={isSubagentSession}
+          filteredCommands={filteredCommands}
+          filteredSkills={filteredSkills}
+          enabledSkillsCount={enabledSkills.length}
+          pickerRows={pickerRows}
+          activeHighlightIdx={activeHighlightIdx}
+          onSelectCommand={selectCommand}
+          onSelectSkill={selectSkill}
+        />
       )}
 
       <div
@@ -911,92 +627,16 @@ export const ChatInputArea = memo(function ChatInputArea({
           disabled && "opacity-60",
         )}
       >
-        {/* 文章引用 chip + 图片预览 */}
-        {(pendingPosts.length > 0 || pendingImages.length > 0) && (
-          <div
-            data-testid="chat-attachment-previews"
-            className="flex flex-wrap gap-2 px-3 pt-3"
-          >
-            {pendingPosts.map((post) => (
-              <div
-                key={post.id}
-                className="relative inline-flex max-w-[min(100%,16rem)] items-start gap-1.5 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-brand-soft)]/40 px-2.5 py-1.5"
-                data-testid="chat-pending-post"
-              >
-                <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
-                <span className="min-w-0 pr-4">
-                  <span className="line-clamp-2 text-xs font-medium text-[var(--kp-text-1)]">
-                    {post.title}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[10px] text-[var(--kp-text-3)]">
-                    {post.garden}/{post.slug}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPendingPosts((p) => p.filter((x) => x.id !== post.id))}
-                  className="absolute right-1 top-1 rounded-full p-0.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
-                  aria-label="移除文章引用"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-            {pendingImages.map((img) => {
-              const isOcring = Boolean(ocrInFlight[img.id]);
-              return (
-                <div
-                  key={img.id}
-                  className="relative h-16 w-16 overflow-hidden rounded-xl"
-                  data-testid="chat-image-preview"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.previewUrl}
-                    alt={img.name}
-                    className={cn("h-full w-full object-cover", isOcring && "scale-[1.02]")}
-                  />
-                  {isOcring && (
-                    <div
-                      className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[rgba(28,26,24,0.55)]"
-                      data-testid="chat-ocr-loading"
-                      aria-label="OCR 识别中"
-                    >
-                      <Loader2 className="h-5 w-5 animate-spin text-white" />
-                      <span className="text-[9px] font-medium text-white/90">OCR</span>
-                    </div>
-                  )}
-                  {!supportsVision && !isOcring && img.extractedText && (
-                    <span
-                      data-testid="chat-ocr-ready"
-                      className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-0.5 bg-emerald-600/85 py-0.5 text-[9px] text-white"
-                      title={img.extractedText.slice(0, 200)}
-                    >
-                      <Check className="h-2.5 w-2.5" />
-                      完成
-                    </span>
-                  )}
-                  {!isOcring && (
-                    <button
-                      type="button"
-                      onClick={() => setPendingImages((p) => p.filter((x) => x.id !== img.id))}
-                      className="absolute right-0.5 top-0.5 rounded-full bg-black/55 p-0.5 text-white transition hover:bg-black/75"
-                      aria-label="移除图片"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {(ocrError || postFetchError) && (
-          <div data-testid="chat-ocr-error" className="px-3 pt-2 text-xs text-red-600">
-            {ocrError || postFetchError}
-          </div>
-        )}
+        <ChatInputAttachmentSection
+          pendingPosts={pendingPosts}
+          pendingImages={pendingImages}
+          ocrInFlight={ocrInFlight}
+          supportsVision={supportsVision}
+          ocrError={ocrError}
+          postFetchError={postFetchError}
+          onRemovePost={(id) => setPendingPosts((p) => p.filter((x) => x.id !== id))}
+          onRemoveImage={(id) => setPendingImages((p) => p.filter((x) => x.id !== id))}
+        />
 
         <div className="relative">
           <textarea
@@ -1009,26 +649,17 @@ export const ChatInputArea = memo(function ChatInputArea({
             }}
             onClick={(e) => detectTriggers(input, e.currentTarget.selectionStart)}
             onKeyDown={(e) => {
-              if (mentionOpen && mentionCandidates.length > 0) {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setHighlightIdx((i) => Math.min(i + 1, mentionCandidates.length - 1));
-                  return;
-                }
-                if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setHighlightIdx((i) => Math.max(i - 1, 0));
-                  return;
-                }
-                if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-                  e.preventDefault();
-                  selectPostMention(mentionCandidates[activeHighlightIdx]!).catch(catchUnlessCancelled("components/chatInput.tsx"));
-                  return;
-                }
-                if (e.key === "Escape") {
-                  setMentionOpen(false);
-                  return;
-                }
+              if (
+                tryHandleMentionKeyDown(e, {
+                  mentionOpen,
+                  mentionCandidates,
+                  activeHighlightIdx,
+                  setHighlightIdx,
+                  setMentionOpen,
+                  selectPostMention: pickPost,
+                })
+              ) {
+                return;
               }
               if (skillOpen && pickerRows.length > 0) {
                 if (e.key === "ArrowDown") {
@@ -1093,14 +724,7 @@ export const ChatInputArea = memo(function ChatInputArea({
                 }
               }
             }}
-            onPaste={(e) => {
-              const item = e.clipboardData?.items?.[0];
-              if (item?.kind === "file" && item.type.startsWith("image/")) {
-                e.preventDefault();
-                const file = item.getAsFile();
-                if (file) addImageFile(file);
-              }
-            }}
+            onPaste={handlePasteImage}
             rows={3}
             disabled={disabled}
             placeholder=""
@@ -1139,60 +763,19 @@ export const ChatInputArea = memo(function ChatInputArea({
                 </button>
               </span>
             )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              data-testid="chat-file-input"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) addImageFile(f);
-                e.target.value = "";
-              }}
+            <ChatInputFileInput fileRef={fileRef} addImageFile={addImageFile} />
+            <ChatInputVoiceButtons
+              disabled={disabled}
+              input={input}
+              voiceChatOn={voice.voiceChatOn}
+              setVoiceChatOn={voice.setVoiceChatOn}
+              listening={voice.listening}
+              sttSupported={voice.sttSupported}
+              sttError={voice.sttError}
+              sttStart={voice.sttStart}
+              sttStop={voice.sttStop}
+              voiceBaseRef={voice.voiceBaseRef}
             />
-            {sttSupported && (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => setVoiceChatOn((v) => !v)}
-                data-testid="chat-voice-conversation"
-                className={cn(
-                  "inline-flex items-center justify-center rounded-lg p-1.5 transition disabled:opacity-50",
-                  voiceChatOn
-                    ? "bg-[var(--kp-brand)]/15 text-[var(--kp-brand)] hover:bg-[var(--kp-brand)]/25"
-                    : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]",
-                )}
-                title={voiceChatOn ? "语音对话开启中：你说完我答，答完我念" : "开启语音对话（你说完自动发送，我答完自动朗读）"}
-                aria-label={voiceChatOn ? "关闭语音对话" : "开启语音对话"}
-              >
-                <Headphones className={cn("h-4 w-4", voiceChatOn && "animate-pulse")} />
-              </button>
-            )}
-            {sttSupported && !voiceChatOn && (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={listening ? sttStop : () => { voiceBaseRef.current = input; sttStart(); }}
-                data-testid="chat-voice-input"
-                className={cn(
-                  "inline-flex items-center justify-center rounded-lg p-1.5 transition disabled:opacity-50",
-                  listening
-                    ? "bg-red-500/15 text-red-500 hover:bg-red-500/25"
-                    : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]",
-                )}
-                title={
-                  sttError
-                    ? sttError
-                    : listening
-                      ? "正在听…点击停止"
-                      : "语音输入（浏览器原生，免费）"
-                }
-                aria-label={listening ? "停止语音输入" : "开始语音输入"}
-              >
-                <Mic className={cn("h-4 w-4", listening && "animate-pulse")} />
-              </button>
-            )}
             <ChatShortcutHints isStreaming={isStreaming} />
           </div>
 
