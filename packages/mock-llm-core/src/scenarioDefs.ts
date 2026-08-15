@@ -312,6 +312,35 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_5_runtime_login",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_5_runtime_login" || /你现在登录了哪些平台/.test(lastUserText(opts)),
+    completion: (opts) => {
+      const blob = opts.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
+      const blocks = blob.match(/<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/g) ?? [];
+      const last = blocks[blocks.length - 1] ?? "";
+      const login = last.match(/login:\s*([^\n]+)/)?.[1]?.trim() ?? "none";
+      mockLog(`RUNTIME_CTX count=${blocks.length} login=${login} user=${lastUserText(opts).slice(0, 40)}`);
+      return {
+        ...baseResult(opts),
+        content: `钩子回声登录平台：${login}`,
+        toolCalls: [],
+      };
+    },
+    stream: async function* (opts) {
+      const blob = opts.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
+      const blocks = blob.match(/<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/g) ?? [];
+      const last = blocks[blocks.length - 1] ?? "";
+      const login = last.match(/login:\s*([^\n]+)/)?.[1]?.trim() ?? "none";
+      mockLog(`RUNTIME_CTX count=${blocks.length} login=${login} user=${lastUserText(opts).slice(0, 40)}`);
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: `钩子回声登录平台：${login}`,
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "dsh_e2e_4_screenshot_timeout",
     match: (opts, forced) =>
       forced === "dsh_e2e_4_screenshot_timeout" ||

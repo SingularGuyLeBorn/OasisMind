@@ -792,6 +792,16 @@ export async function capturePlatformLoginState(
   }
 }
 
+let loginStatusOverrideForTests: CookiePlatform[] | null = null;
+
+/** 仅 E2E / Vitest：覆盖 listPlatformLoginStatus 的 loggedIn 集合。 */
+export function __setPlatformLoginStatusForTests(platforms: string[] | null): void {
+  if (process.env.E2E !== "1" && process.env.VITEST !== "true" && process.env.NODE_ENV !== "test") {
+    throw new Error("platform login override 仅测试可用");
+  }
+  loginStatusOverrideForTests = platforms ? (platforms as CookiePlatform[]) : null;
+}
+
 export function listPlatformLoginStatus(): Array<{
   platform: CookiePlatform;
   loginUrl: string;
@@ -811,13 +821,15 @@ export function listPlatformLoginStatus(): Array<{
       // ignore
     }
     const real = platformHasRealLoginCookies(cfg.platform);
+    const forced = loginStatusOverrideForTests;
+    const loggedIn = forced ? forced.includes(cfg.platform) : real.loggedIn;
     return {
       platform: cfg.platform,
       loginUrl: cfg.loginUrl,
       hasStorageState: size > 0,
       storageStateSize: size,
-      loggedIn: real.loggedIn,
-      hitCookies: real.hitCookies,
+      loggedIn,
+      hitCookies: loggedIn ? (real.hitCookies.length ? real.hitCookies : ["sid"]) : real.hitCookies,
       authCookieNames: cfg.authCookieNames,
       hasIdentityVerify: Boolean(cfg.verifyLogin),
     };

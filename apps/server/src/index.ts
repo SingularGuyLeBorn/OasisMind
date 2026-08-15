@@ -31,6 +31,7 @@ import {
   runStartupRecovery,
 } from "./infra/asyncJobManager.js";
 import { closeSharedBrowser, countOpenBrowserContexts, getSharedBrowser, isSharedBrowserReady } from "./infra/metablog/browserPool.js";
+import { __setPlatformLoginStatusForTests } from "./infra/metablog/auth/platformLogin.js";
 import { hasSystemChrome } from "./infra/metablog/playwrightChrome.js";
 import { syncSearchEnvFromConfig } from "./infra/nativeTools.js";
 import { getServerCapabilities, getCachedEnrichedServerCapabilities } from "./infra/capabilities.js";
@@ -196,6 +197,11 @@ if (process.env.E2E === "1") {
       contexts: countOpenBrowserContexts(),
       ready: isSharedBrowserReady(),
     });
+  });
+  app.post("/debug/platform-login", express.json(), (req, res) => {
+    const loggedIn = Array.isArray(req.body?.loggedIn) ? req.body.loggedIn.map(String) : [];
+    __setPlatformLoginStatusForTests(loggedIn);
+    res.json({ ok: true, loggedIn });
   });
 }
 

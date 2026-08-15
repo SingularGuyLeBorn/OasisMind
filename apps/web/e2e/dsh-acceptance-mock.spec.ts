@@ -222,4 +222,49 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     expect(payload.totalChars).toBeGreaterThanOrEqual(20_000);
     expect(payload.content).toContain("DSH-E2E-3 长文段落");
   });
+
+  test("DSH-E2E-5 — 同 session 第二轮 runtime-context 换登录列表", async ({ page, request }) => {
+    test.setTimeout(120_000);
+    const setLogin = async (loggedIn: string[]) => {
+      const res = await request.post(`${SERVER_URL}/debug/platform-login`, { data: { loggedIn } });
+      expect(res.ok()).toBe(true);
+    };
+
+    const agents = await trpcQuery<{
+      items: Array<{ id: string; name: string; tier: string; model: string }>;
+    }>("agent.list", { page: 1, pageSize: 50 });
+    const parent =
+      agents.items.find((a) => a.name === "assistant" && a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "super");
+    if (!parent) throw new Error("E2E-5 需要 manager 或 super");
+    const created = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
+      "session.create",
+      { title: `dsh-e2e-5-${Date.now()}`, model: parent.model, agentId: parent.id },
+    );
+    if (!created.success || !created.data?.id) {
+      throw new Error(created.error?.message ?? "E2E-5 创建会话失败");
+    }
+
+    await setLogin(["zhihu"]);
+    await page.goto(`/chat?sessionId=${created.data.id}&agentId=${parent.id}`);
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await waitForSessionIdle(page);
+    await sendChatMessage(page, "你好");
+    await waitForSessionIdle(page);
+
+    await setLogin(["bilibili"]);
+    await sendChatMessage(page, "你现在登录了哪些平台");
+    await expect(page.getByText("钩子回声登录平台：bilibili")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("钩子回声登录平台：zhihu")).toHaveCount(0);
+    await waitForSessionIdle(page);
+
+    const logPath = path.resolve(process.cwd(), "../../.test-data-e2e/mock-llm.log");
+    const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, "utf8") : "";
+    const lines = log.split(/\r?\n/).filter((l) => l.includes("RUNTIME_CTX") && l.includes("你现在登录了哪些平台"));
+    expect(lines.length, `mock-llm.log 应有第二轮 RUNTIME_CTX：${log.slice(-800)}`).toBeGreaterThan(0);
+    expect(lines[lines.length - 1]).toMatch(/count=1/);
+    expect(lines[lines.length - 1]).toMatch(/login=bilibili/);
+    expect(lines[lines.length - 1]).not.toMatch(/login=zhihu/);
+  });
 });

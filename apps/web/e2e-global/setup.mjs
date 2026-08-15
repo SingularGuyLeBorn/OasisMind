@@ -360,7 +360,11 @@ function spawnMockLlm(port) {
   }
   const proc = spawn(process.execPath, [cli, "src/index.ts"], {
     cwd: mockLlmDir,
-    env: { ...process.env, MOCK_LLM_PORT: String(port) },
+    env: {
+      ...process.env,
+      MOCK_LLM_PORT: String(port),
+      MOCK_LLM_LOG: path.join(TEST_DATA_DIR, "mock-llm.log"),
+    },
     stdio: "pipe",
     windowsHide: true,
   });
