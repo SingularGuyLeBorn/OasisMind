@@ -17,7 +17,7 @@ import type { ReactLoopInput, LlmTransport } from "../infra/loop/types.js";
 import type { LlmMessage, LlmToolCall } from "../infra/llmClient.js";
 import type { ServiceContainer } from "../infra/serviceContainer.js";
 import { listNativeTools } from "../infra/nativeTools.js";
-import { recoverStaleRuns } from "../infra/asyncJobManager.js";
+import { recoverStaleRuns } from "../infra/asyncJobs/index.js";
 import * as uiStateNotify from "../infra/uiStateNotify.js";
 import { appRouter } from "../router.js";
 import { createContextInner } from "../trpc/context.js";

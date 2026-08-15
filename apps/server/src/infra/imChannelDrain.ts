@@ -5,7 +5,7 @@
 
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
-import { enqueueSessionAutoConsume } from "./asyncJobManager.js";
+import { enqueueSessionAutoConsume } from "./asyncJobs/index.js";
 import { getStreamHub, onHubRunSettled } from "./sessionStreamHub.js";
 import { createTrpcInvoker } from "./trpcInvoker.js";
 import { wrapEmitForChannelReply } from "./channelStreamBridge.js";

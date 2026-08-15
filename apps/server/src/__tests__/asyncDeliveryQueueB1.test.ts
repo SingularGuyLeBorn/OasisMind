@@ -14,7 +14,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
-import { reconcileAsyncDeliveries } from "../infra/asyncJobManager.js";
+import { reconcileAsyncDeliveries } from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { setStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 

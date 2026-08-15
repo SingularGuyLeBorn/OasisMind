@@ -16,7 +16,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vite
 import { prisma } from "../db.js";
 import * as agentRuntime from "../infra/agentRuntime.js";
 import { createContextInner } from "../trpc/context.js";
-import { recoverStaleAsyncJobs, retryAsyncJob } from "../infra/asyncJobManager.js";
+import { recoverStaleAsyncJobs, retryAsyncJob } from "../infra/asyncJobs/index.js";
 import { getAsyncJobOrchestrator, resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { registerNativeDomains } from "../infra/tools/native/index.js";
 import { PACKS_FULL } from "@knowpilot/shared";

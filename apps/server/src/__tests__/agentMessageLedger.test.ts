@@ -16,7 +16,7 @@ import { prisma } from "../db.js";
 import * as agentStream from "../infra/agentStream.js";
 import { executeNativeTool, listNativeTools } from "../infra/nativeTools.js";
 import { createContextInner } from "../trpc/context.js";
-import { autoConsumeAsyncDelivery, markAsyncDeliveryConsumed } from "../infra/asyncJobManager.js";
+import { autoConsumeAsyncDelivery, markAsyncDeliveryConsumed } from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { setStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 import {

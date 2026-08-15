@@ -83,7 +83,7 @@ describe("Native 工具注册表", () => {
   it("sleep(async=\"true\") 字符串应走非阻塞路径而非同步阻塞", async () => {
     const root = createTempProjectDir();
     const startAsyncSleepTask = vi.fn().mockResolvedValue({ jobId: "j1", status: "queued" });
-    vi.doMock("../infra/asyncJobManager.js", () => ({ startAsyncSleepTask }));
+    vi.doMock("../infra/asyncJobs/index.js", () => ({ startAsyncSleepTask }));
     vi.resetModules();
     const { executeNativeTool: exec } = await import("../infra/nativeTools.js");
     const ctx = {
@@ -96,7 +96,7 @@ describe("Native 工具注册表", () => {
     expect(Date.now() - t0).toBeLessThan(2000);
     expect(startAsyncSleepTask).toHaveBeenCalled();
     expect(result).toMatchObject({ jobId: "j1" });
-    vi.doUnmock("../infra/asyncJobManager.js");
+    vi.doUnmock("../infra/asyncJobs/index.js");
     fs.rmSync(root, { recursive: true, force: true });
   });
 

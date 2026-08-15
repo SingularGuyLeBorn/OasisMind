@@ -27,7 +27,7 @@ import {
   autoConsumeAsyncDelivery,
   cancelAsyncJob,
   startAsyncAgentTask,
-} from "../infra/asyncJobManager.js";
+} from "../infra/asyncJobs/index.js";
 import { registerMockLlmScenario } from "@knowpilot/mock-llm-core";
 import type { LlmToolCall } from "../infra/llmClient.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";

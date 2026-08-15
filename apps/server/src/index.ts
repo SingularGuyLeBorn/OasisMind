@@ -29,7 +29,7 @@ import {
   startAsyncDeliveryReconciler,
   stopAsyncDeliveryReconciler,
   runStartupRecovery,
-} from "./infra/asyncJobManager.js";
+} from "./infra/asyncJobs/index.js";
 import { closeSharedBrowser, countOpenBrowserContexts, getSharedBrowser, isSharedBrowserReady } from "./infra/metablog/browserPool.js";
 import { __setPlatformLoginStatusForTests } from "./infra/metablog/auth/platformLogin.js";
 import { hasSystemChrome } from "./infra/metablog/playwrightChrome.js";
@@ -879,6 +879,6 @@ process.on("SIGINT", handleShutdown);
 process.on("SIGTERM", handleShutdown);
 
 export type { AppRouter } from "./router.js";
-export type { AsyncQueueStats } from "./infra/asyncJobManager.js";
+export type { AsyncQueueStats } from "./infra/asyncJobs/index.js";
 
 

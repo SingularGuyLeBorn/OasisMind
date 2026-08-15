@@ -30,7 +30,7 @@ import {
   markAsyncDeliveryConsumed,
   pullAsyncDeliveries,
   reconcileAsyncDeliveries,
-} from "../infra/asyncJobManager.js";
+} from "../infra/asyncJobs/index.js";
 import {
   getAsyncJobOrchestrator,
   resetAsyncJobOrchestratorForTests,

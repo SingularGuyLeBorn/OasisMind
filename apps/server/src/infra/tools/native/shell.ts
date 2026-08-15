@@ -16,7 +16,7 @@ async function runAsyncTool(args: Record<string, unknown>, ctx: NativeToolContex
   if (!ctx.sessionId || !ctx.agentSnapshot) {
     throw new Error("async_task_run 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
   }
-  const { startAsyncAgentTask, waitForAsyncJob } = await import("../../asyncJobManager.js");
+  const { startAsyncAgentTask, waitForAsyncJob } = await import("../../asyncJobs/index.js");
   const timeoutMs =
     args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined;
   const waitForResult = coerceToolBoolean(args.waitForResult);
@@ -64,7 +64,7 @@ async function runAsyncTool(args: Record<string, unknown>, ctx: NativeToolContex
 }
 
 async function taskStatusTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  const { getAsyncJobStatus, listSessionAsyncJobs } = await import("../../asyncJobManager.js");
+  const { getAsyncJobStatus, listSessionAsyncJobs } = await import("../../asyncJobs/index.js");
   const jobId = args.jobId ? String(args.jobId) : undefined;
   if (jobId) return getAsyncJobStatus(jobId, ctx.config, ctx.services);
   if (!ctx.sessionId) return { items: [] };
@@ -72,7 +72,7 @@ async function taskStatusTool(args: Record<string, unknown>, ctx: NativeToolCont
 }
 
 async function cancelAsyncTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  const { cancelAsyncJob, cancelOwnedAsyncJobs } = await import("../../asyncJobManager.js");
+  const { cancelAsyncJob, cancelOwnedAsyncJobs } = await import("../../asyncJobs/index.js");
   if (!ctx.sessionId) {
     throw new Error("async_task_cancel 需要当前会话上下文（只能取消本会话创建的任务）");
   }
@@ -98,7 +98,7 @@ async function cancelAsyncTool(args: Record<string, unknown>, ctx: NativeToolCon
 }
 
 async function resumeAsyncTool(args: Record<string, unknown>, ctx: NativeToolContext) {
-  const { resumeAsyncJob, resumeOwnedAsyncJobs } = await import("../../asyncJobManager.js");
+  const { resumeAsyncJob, resumeOwnedAsyncJobs } = await import("../../asyncJobs/index.js");
   if (!ctx.sessionId) {
     throw new Error("async_task_resume 需要当前会话上下文（只能恢复本会话创建的任务）");
   }
@@ -164,7 +164,7 @@ async function sleepTool(args: Record<string, unknown>, ctx: NativeToolContext) 
     if (!ctx.sessionId || !ctx.agentSnapshot) {
       throw new Error("sleep(async=true) 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
     }
-    const { startAsyncSleepTask } = await import("../../asyncJobManager.js");
+    const { startAsyncSleepTask } = await import("../../asyncJobs/index.js");
     return startAsyncSleepTask({
       sessionId: ctx.sessionId,
       seconds,

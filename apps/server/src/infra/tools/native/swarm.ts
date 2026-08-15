@@ -612,7 +612,7 @@ async function prepareAgentRun(
         });
         // 服务端 drain：子等闲时按 FIFO 自动处理（复用 per-session 串行链）。
         // 动态 import：asyncJobManager 经 agentRuntime/agentStream/agentTools 处于 ReAct 环内
-        const { enqueueSuperiorQueueDrain } = await import("../../asyncJobManager.js");
+        const { enqueueSuperiorQueueDrain } = await import("../../asyncJobs/index.js");
         const drainPromise = enqueueSuperiorQueueDrain({
           sessionId: mainSession.id,
           config: ctx.config,
@@ -821,7 +821,7 @@ export async function enqueueSuperiorDrainForSession(options: {
   services: ServiceContainer;
 }): Promise<void> {
   const { sessionId, targetAgentId, config, services } = options;
-  const { enqueueSuperiorQueueDrain } = await import("../../asyncJobManager.js");
+  const { enqueueSuperiorQueueDrain } = await import("../../asyncJobs/index.js");
   return enqueueSuperiorQueueDrain({
     sessionId,
     config,
@@ -1204,7 +1204,7 @@ async function agentReportBackTool(args: Record<string, unknown>, ctx: NativeToo
           }
         } else {
           // 动态 import：asyncJobManager 经 agentRuntime/agentStream/agentTools 处于 ReAct 环内，静态导入会重建循环依赖
-          const { notifyAndAutoConsumeAsyncDelivery } = await import("../../asyncJobManager.js");
+          const { notifyAndAutoConsumeAsyncDelivery } = await import("../../asyncJobs/index.js");
           await notifyAndAutoConsumeAsyncDelivery({
             sessionId: parentSessionId,
             jobId,

@@ -19,7 +19,7 @@ import { executeNativeTool } from "../infra/nativeTools.js";
 import { createContextInner } from "../trpc/context.js";
 import { setStreamHub, getStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 import { resetSwarmBus } from "../infra/swarmBus.js";
-import { enqueueSuperiorQueueDrain } from "../infra/asyncJobManager.js";
+import { enqueueSuperiorQueueDrain } from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { isSubagentSessionSettled } from "../infra/tools/native/session.js";
 

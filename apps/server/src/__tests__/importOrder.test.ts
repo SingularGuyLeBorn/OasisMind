@@ -31,7 +31,7 @@ const entries: Array<{ name: string; specifier: string; key: string; kind?: "fun
   { name: "webhookVerify", specifier: "../infra/channels/webhookVerify.js", key: "gateQqWebhook" },
   { name: "sessionStreamHub", specifier: "../infra/sessionStreamHub.js", key: "getStreamHub" },
   { name: "agentStream", specifier: "../infra/agentStream.js", key: "handleAgentChatStream" },
-  { name: "asyncJobManager", specifier: "../infra/asyncJobManager.js", key: "runStartupRecovery" },
+  { name: "asyncJobManager", specifier: "../infra/asyncJobs/index.js", key: "runStartupRecovery" },
   { name: "triggerEngine", specifier: "../infra/triggerEngine.js", key: "getTriggerEngine" },
   { name: "toolService", specifier: "../infra/entityServices/toolService.js", key: "ToolService" },
   { name: "promptService", specifier: "../infra/entityServices/promptService.js", key: "PromptService" },

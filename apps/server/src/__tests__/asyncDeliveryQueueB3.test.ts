@@ -8,7 +8,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
-import { autoConsumeAsyncDelivery } from "../infra/asyncJobManager.js";
+import { autoConsumeAsyncDelivery } from "../infra/asyncJobs/index.js";
 import {
   getAsyncJobOrchestrator,
   resetAsyncJobOrchestratorForTests,

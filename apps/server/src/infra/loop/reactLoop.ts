@@ -546,7 +546,7 @@ async function runReactLoopInner(input: ReactLoopInput): Promise<ReactLoopResult
           (await input.services.session.getById(input.sessionId));
         const parentSessionId = (sess as { parentSessionId?: string | null } | null)?.parentSessionId;
         if (parentSessionId) {
-          const { notifySubagentSessionUpdate } = await import("../asyncJobManager.js");
+          const { notifySubagentSessionUpdate } = await import("../asyncJobs/index.js");
           await notifySubagentSessionUpdate({
             parentSessionId,
             subagentSessionId: input.sessionId,

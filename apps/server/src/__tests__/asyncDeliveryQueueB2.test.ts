@@ -11,7 +11,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
-import { enqueueSuperiorQueueDrain, runStartupRecovery } from "../infra/asyncJobManager.js";
+import { enqueueSuperiorQueueDrain, runStartupRecovery } from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { setStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 import { SESSION_QUEUE_CLAIM_STALE_MS } from "../infra/entityServices/sessionQueueItemService.js";

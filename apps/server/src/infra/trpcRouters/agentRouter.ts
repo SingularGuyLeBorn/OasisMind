@@ -31,7 +31,7 @@ import {
   getAsyncQueueStats,
   listQueuedAsyncJobs,
   listSyncAsyncJobs,
-} from "../asyncJobManager.js";
+} from "../asyncJobs/index.js";
 import { withApprovalGuard } from "./withApprovalGuard.js";
 
 const createTrpcInvokerForCtx = createTrpcInvoker;

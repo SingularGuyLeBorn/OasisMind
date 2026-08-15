@@ -10,7 +10,7 @@ describe("notifySubagentSessionUpdate progress 元信息", () => {
     vi.doMock("../infra/sessionStreamHub.js", () => ({
       getStreamHub: () => ({ pushExternalEvent }),
     }));
-    const { notifySubagentSessionUpdate } = await import("../infra/asyncJobManager.js");
+    const { notifySubagentSessionUpdate } = await import("../infra/asyncJobs/index.js");
     await notifySubagentSessionUpdate({
       parentSessionId: "parent-1",
       subagentSessionId: "child-1",

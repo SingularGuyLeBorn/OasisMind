@@ -15,7 +15,7 @@ import {
   startAsyncAgentTask,
   getAsyncQueueStats,
   autoConsumeAsyncDelivery,
-} from "../infra/asyncJobManager.js";
+} from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import { setStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";

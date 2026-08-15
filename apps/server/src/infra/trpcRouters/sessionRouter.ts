@@ -25,7 +25,7 @@ import {
   startAsyncAgentTask,
   listQueuedAsyncJobs,
   listSyncAsyncJobs,
-} from "../asyncJobManager.js";
+} from "../asyncJobs/index.js";
 import { resolveAgent } from "../agentResolver.js";
 import { readToolResultPayload } from "../toolResultOffload.js";
 
@@ -433,7 +433,7 @@ export const sessionRouter = router({
       // A4：stop 只需 kind/status，用轻量 getByIdLite 避免拉 500 条消息
       const session = await ctx.services.session.getByIdLite(input.id);
       if (session.kind === "subagent") {
-        const { stopSubagentSession } = await import("../asyncJobManager.js");
+        const { stopSubagentSession } = await import("../asyncJobs/index.js");
         const result = stopSubagentSession(session.id, ctx.config);
         // 排队中任务被移出队列后 orchestrator 不会触发 catch，需手动回写 Task 为 interrupted
         if (result.stopped && !result.wasRunning && result.jobId) {

@@ -21,7 +21,7 @@ import {
   listSyncAsyncJobs,
   retryAsyncJob,
   enqueueSessionAutoConsume,
-} from "../infra/asyncJobManager.js";
+} from "../infra/asyncJobs/index.js";
 import {
   getAsyncJobOrchestrator,
   resetAsyncJobOrchestratorForTests,
@@ -449,14 +449,14 @@ describe("W-A 同步任务通道", () => {
   it("P4 防线：子 Agent 提示词不再引导传已删除的 mode=tool 参数", () => {
     // W-D 已删除 async_task_run 的 mode 入参（schema 无此字段、handler 不读 args.mode）；
     // 提示词若仍教 LLM 传 mode=tool 属残留漏网（终审 P4），此处防线防回归。
-    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobManager.ts"), "utf-8");
+    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobs/execute.ts"), "utf-8");
     expect(src).not.toContain("async_task_run(mode=tool)");
   });
 
   it("P5 防线：startAsyncAgentTask 不再保留无调用方的 guard 死参数", () => {
     // W-D 删除唯一传参方后 options.guard 恒为 undefined（终审 P5）。
     // 零兼容纪律：死参数不留（dispatch 层 guard 机制本身保留，spawn/trigger/heartbeat 直传）。
-    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobManager.ts"), "utf-8");
+    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobs/execute.ts"), "utf-8");
     expect(src).not.toMatch(/guard:\s*options\.guard/);
     expect(src).not.toMatch(/guard\?:\s*SwarmTaskSpec\["guard"\]/);
   });
