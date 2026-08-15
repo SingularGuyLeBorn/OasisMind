@@ -21,7 +21,7 @@ import { setStreamHub, getStreamHub, SessionStreamHub } from "../infra/sessionSt
 import { resetSwarmBus } from "../infra/swarmBus.js";
 import { enqueueSuperiorQueueDrain } from "../infra/asyncJobs/index.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
-import { isSubagentSessionSettled } from "../infra/tools/native/session.js";
+import { isSubagentSessionSettled } from "../infra/tools/native/session/register.js";
 
 type Ctx = Awaited<ReturnType<typeof createContextInner>>;
 

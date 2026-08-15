@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "../db.js";
 import { executeNativeTool } from "../infra/nativeTools.js";
 import { createNativeCtx, createTempProjectDir } from "./helpers/toolTestFixtures.js";
-import { normalizeTodoWriteInput } from "../infra/tools/native/session.js";
+import { normalizeTodoWriteInput } from "../infra/tools/native/session/register.js";
 
 const RUN = `todo-${Date.now()}`;
 
