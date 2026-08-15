@@ -134,3 +134,5 @@ pnpm --filter @knowpilot/server test -- --run
 - [x] spawn / report_back 仍有 PUSH（`useChatRunStream` invalidate + 既有 `uiStateNotify`）
 - [x] F5 后瘦卡 + path 还在（Q1，未改 `_kp_result_path`）
 - [x] 交付无「刷新一下」
+
+§7 真 E2E（Chat 脸 E2E-1～6）见 `rsi-dsh-modularize-finish-report.md`。不要改写上方 WP 历史。

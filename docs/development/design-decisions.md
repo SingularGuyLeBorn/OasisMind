@@ -1897,3 +1897,37 @@ reactLoop 的 Turn Snapshot 在 run 入口冻结单一模型，全程不再切�
 - **新增独立 heuristics 模块**：规则本身只有一条「工具无错但没产出」，不值得再拆一个模块；直接扩展 `attributeFailure` 最简洁。
 
 **回答**：按上表落地
+
+---
+
+## OpenAI Responses API（`/v1/responses`）
+
+**问题**：要不要接官方新的 Responses 协议，和现有 Chat Completions 怎么共存？
+
+**推荐**：内部契约不变（`LlmMessage` / `LlmCompletionResult` / `StreamChunk`）。线格式按厂商分流——`llm.httpProtocol=auto` 时 **openai + deepseek** 打 `POST /v1/responses`，Kimi / 本地等仍走 `/v1/chat/completions`。DeepSeek 思考开关映射 `reasoning.effort=none|high|max`，并把 `reasoning_content` 回传为 `reasoning` item。本地优先：`store: false`。测试用 mock 默认仍 completions（避免既有 E2E 断），`apps/mock-llm` 另提供 `/v1/responses` 供协议单测。
+
+**好处**：Items 把思考 / 正文 / 工具拆开；DeepSeek V4 / Codex 与 OpenAI 新模型都往这边演进。Kimi 等未宣称 Responses 的厂商不切。
+
+**回答**：纯基建，按推荐落地
+
+---
+
+## Goal verifiedProgress + IntentContract（2026-08-15）
+
+**问题**：overnight / 多轮 Goal 能否只靠模型自评 `done`？用户改口（猫→狗 / 另外做周报）时旧约束会不会污染摘要和新目标？
+
+**推荐**（本 prompt 锁死，禁止新表）：
+
+| 项 | 结论 |
+| --- | --- |
+| 存储 | 扩 `sessionGoalStateSchema`：`verifiedProgress[]` + 可选 `intent`（reveal/revision/switch + superseded） |
+| 写入权 | LLM / `session_goal_set` 不得写 `verifiedProgress`。唯一入口 `goalAudit.appendVerifiedProgress`；`writeGoalStateRaw` 默认冻结该数组 |
+| 无证据 | `evidenceRefs` 空或对不上磁盘/DB → `BAD_REQUEST`，状态不前进 |
+| 自评完成 | `lastVerdict.done===true` 且本轮 verifiedProgress 未增加 → 不准标 done；`blocked/impossible` 可停 |
+| Auditor | `goalAudit.runGoalAudit` 复用 reflection `createSyncTransport`，只读白名单 |
+| revision | 覆盖 arguments，旧值进 `superseded`；compact 注入 tombstone，禁止当现行约束 |
+| switch | 旧 goal `paused` + reason=switched，`pendingContinue=null`，同会话开新 goal |
+| 经验 admit | `skill_promote` / `memory_create(scope=global)` 无 evidence 硬拦 |
+| 推拉 | `notifyGoalUpdated` 带核实步数；Goal 条 `chat-goal-verified-count`；F5 水合 |
+
+**回答**：纯基建，按推荐落地

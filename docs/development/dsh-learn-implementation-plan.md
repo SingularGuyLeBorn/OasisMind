@@ -2,7 +2,7 @@
 
 > 日期：2026-08-14  
 > 对照源码：本地 `D:/ALL IN AI/deepseek-harness`（zip 解压）+ 本仓库 `apps/server/src/infra/**`  
-> 本文只做计划，**不改业务代码**。按 `AGENTS.md` 设计决策流程。  
+> 本文是规格（Q1–Q12 + WP0–WP7）。**WP0–7 已按本文施工**（见 `dsh-three-invariants-implementation-report.md`）。**WP3b + §7 E2E-1～6 已验收**（见 `rsi-dsh-modularize-finish-report.md`；E2E-4 走单独 screenshot Playwright 配置）。按 `AGENTS.md` 设计决策流程。  
 > 2026-08-14 用户授权：**不逐题手填则按推荐落地**。第 5 节已全部写入推荐案，作为施工规格。
 
 ---
@@ -675,7 +675,7 @@ ask_user          # 子被问住要能问人；若你认为子不该问人，从
 
 **推荐 A。** 你若要「一次上齐真功能」，选 A 但两批都做完再宣布完成；不要停在「只加了类型」。
 
-**回答：** A（用户授权：不填按推荐）。两批都做完再宣布完成；本文件仍只是规格，未点头前不改业务代码。
+**回答：** A（用户授权：不填按推荐）。两批代码已落地；WP3b + §7 E2E-1～6 已验收，见 `rsi-dsh-modularize-finish-report.md`。
 
 ---
 
@@ -793,6 +793,14 @@ ask_user          # 子被问住要能问人；若你认为子不该问人，从
 
 ## 10. 下一步
 
-第 5 节已按推荐全部裁决（见 §5.1 总表）。**本文件仍是规格，未再点头前不改 `apps/` / `packages/` 业务代码。**
+第 5 节已按推荐全部裁决（见 §5.1 总表）。
 
-你说「开工」之后：按 Q12 先 WP0–3，验收绿再 WP4–7。每 WP 负向测试先红后绿；commit 等你点头。
+**Goal 施工说明书（给执行 Agent，禁止决策）：**  
+`docs/development/prompts/dsh-three-invariants-goal-prompt.md`（WP0–WP7 内核，已施工）
+
+**收官施工说明书（模块化 + §7 六条严酷 E2E + WP3b）：**  
+`docs/development/prompts/modularize-and-dsh-e2e-goal-prompt.md`
+
+完工报告落点：  
+`docs/development/dsh-three-invariants-implementation-report.md`（内核）  
+`docs/development/rsi-dsh-modularize-finish-report.md`（§7 + 模块化 + RSI P0）
