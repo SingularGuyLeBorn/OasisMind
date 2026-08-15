@@ -267,4 +267,43 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     expect(lines[lines.length - 1]).toMatch(/login=bilibili/);
     expect(lines[lines.length - 1]).not.toMatch(/login=zhihu/);
   });
+
+  test("DSH-E2E-6 — 另一标签：spawn + report_back 侧栏和气泡自己动", async ({ page, context }) => {
+    test.setTimeout(180_000);
+    const agents = await trpcQuery<{
+      items: Array<{ id: string; name: string; tier: string; model: string }>;
+    }>("agent.list", { page: 1, pageSize: 50 });
+    const parent =
+      agents.items.find((a) => a.name === "assistant" && a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "super");
+    if (!parent) throw new Error("E2E-6 需要 manager 或 super");
+    const created = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
+      "session.create",
+      { title: `dsh-e2e-6-${Date.now()}`, model: parent.model, agentId: parent.id },
+    );
+    if (!created.success || !created.data?.id) {
+      throw new Error(created.error?.message ?? "E2E-6 创建会话失败");
+    }
+    const url = `/chat?sessionId=${created.data.id}&agentId=${parent.id}`;
+    await page.goto(url);
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await waitForSessionIdle(page);
+
+    const page2 = await context.newPage();
+    await page2.goto(url);
+    await page2.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await page2.getByTestId("left-tab-history").click();
+    await page2.getByTestId("history-subtab-sub").click();
+    const before = await page2.getByTestId("subagent-item").count();
+
+    await sendChatMessage(page, "派只读文件的子 Agent");
+    await expect(page.getByText("DSH-E2E-2 子已回报").first()).toBeVisible({ timeout: 90_000 });
+    await waitForSessionIdle(page);
+
+    await expect(page2.getByText("DSH-E2E-2 子已回报").first()).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(async () => page2.getByTestId("subagent-item").count(), { timeout: 20_000 })
+      .toBeGreaterThan(before);
+  });
 });
