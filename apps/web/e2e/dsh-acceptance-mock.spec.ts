@@ -4,6 +4,8 @@
  */
 
 import { test, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
 import { SERVER_URL, trpcQuery, trpcMutate } from "./helpers/trpcE2e";
 import {
   waitForChatReady,
@@ -11,6 +13,18 @@ import {
   waitForStreamingComplete,
   waitForSessionIdle,
 } from "./helpers/mockChatFixture";
+
+function findOffloadJsons(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  const out: string[] = [];
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) out.push(...findOffloadJsons(full));
+    else if (name.endsWith(".json") && !name.endsWith(".meta.json")) out.push(full);
+  }
+  return out;
+}
 
 test.describe("DSH §7 严酷验收 Mock", () => {
   test.beforeEach(async ({ request }) => {
@@ -141,5 +155,71 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     expect(toolNames).toContain("read_file");
     expect(toolNames).toContain("agent_report_back");
     expect(toolNames).not.toContain("web_search");
+  });
+
+  test("DSH-E2E-3 — read_article 长文：气泡不灌全文 + 磁盘全文 + read path", async ({ page }) => {
+    test.setTimeout(120_000);
+    const agents = await trpcQuery<{
+      items: Array<{ id: string; name: string; tier: string; model: string }>;
+    }>("agent.list", { page: 1, pageSize: 50 });
+    const parent =
+      agents.items.find((a) => a.name === "assistant" && a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "super");
+    if (!parent) throw new Error("E2E-3 需要 manager 或 super");
+
+    const created = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
+      "session.create",
+      { title: `dsh-e2e-3-${Date.now()}`, model: parent.model, agentId: parent.id },
+    );
+    if (!created.success || !created.data?.id) {
+      throw new Error(created.error?.message ?? "E2E-3 创建会话失败");
+    }
+    await page.goto(`/chat?sessionId=${created.data.id}&agentId=${parent.id}`);
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await waitForSessionIdle(page);
+
+    const streamPost = page.waitForRequest(
+      (req) => req.method() === "POST" && /\/api\/agent\/chat\/stream/.test(req.url()),
+      { timeout: 15_000 },
+    );
+    await sendChatMessage(page, "读取长文 https://example.com/dsh-e2e-3-long");
+    expect((await streamPost).url()).toContain("3011");
+
+    const pill = page.locator('[data-testid="tool-pill"][data-tool="read_article"]');
+    await expect(pill).toBeVisible({ timeout: 25_000 });
+    await expect(pill).toHaveAttribute("data-status", "done", { timeout: 25_000 });
+    await waitForSessionIdle(page);
+
+    const bubble = page.getByTestId("assistant-message-bubble").last();
+    await expect(bubble).toBeVisible({ timeout: 20_000 });
+    const text = (await bubble.innerText()).trim();
+    expect(text.length).toBeLessThan(8000);
+    expect(text).toContain("DSH-E2E-3 长文标题");
+
+    const toolResultsDir = path.resolve(process.cwd(), "../../.test-data-e2e/tool-results");
+    const files = findOffloadJsons(toolResultsDir);
+    const hit = files
+      .map((file) => {
+        const raw = fs.readFileSync(file, "utf8");
+        try {
+          return { file, raw, parsed: JSON.parse(raw) as { content?: string; title?: string; _kp_result_path?: string } };
+        } catch {
+          return { file, raw, parsed: {} };
+        }
+      })
+      .find((row) => String(row.parsed.content ?? "").length >= 20_000);
+    if (!hit) {
+      throw new Error(`E2E-3 未找到 ≥20k content 的 tool-results JSON（扫了 ${files.length} 个）`);
+    }
+    expect(String(hit.parsed.title ?? "")).toContain("DSH-E2E-3");
+    const rel = path.relative(path.resolve(process.cwd(), "../.."), hit.file).replace(/\\/g, "/");
+    const payload = await trpcQuery<{ content: string; totalChars: number }>("session.readToolResult", {
+      path: rel,
+      offset: 0,
+      maxChars: 100_000,
+    });
+    expect(payload.totalChars).toBeGreaterThanOrEqual(20_000);
+    expect(payload.content).toContain("DSH-E2E-3 长文段落");
   });
 });

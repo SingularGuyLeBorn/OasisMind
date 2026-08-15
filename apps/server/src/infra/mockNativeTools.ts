@@ -1,12 +1,11 @@
 /**
- * Mock Native Tools —— 用于 E2E / 单元测试，避免 native 工具（web_search / read_article 等）
- * 触发真实网络调用（Tavily / MetaBlog）。
+ * Mock Native 叶子 —— 只换外网/副作用工具的 canned 结果。
+ * 校验、权限、回滚、cooperative 超时仍走 toolPipeline 真路径。
  *
- * 通过环境变量启用：
  *   MOCK_NATIVE_TOOLS=true
  *
- * 当前覆盖：web_search、read_article、scrape_web_page、browser_screenshot、read_image、read_file、write_file。
- * 未覆盖的工具会回退到真实实现（如需可继续补）。
+ * spawn_subagent / async_task_run 不 mock——必须真实建子 Agent / 投递。
+ * 未覆盖的工具走真实实现。
  */
 
 import type { NativeToolContext } from "./nativeTools.js";
@@ -49,6 +48,18 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
         chars: 0,
         error: "Mock 读取失败：404 Not Found",
         elapsedMs: 5,
+      };
+    }
+    if (/dsh-e2e-3|long-article|读取长文/i.test(url)) {
+      const content = `${"DSH-E2E-3 长文段落。".repeat(2000)}`;
+      return {
+        url,
+        title: "DSH-E2E-3 长文标题",
+        content,
+        chars: content.length,
+        nextOffset: content.length,
+        totalChars: content.length,
+        elapsedMs: 8,
       };
     }
     return {
@@ -136,14 +147,6 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
     deleted: true,
     soft: true,
     elapsedMs: 1,
-  }),
-
-  spawn_subagent: (args) => ({
-    jobId: `mock-job-${Date.now().toString(36)}`,
-    status: "queued",
-    waitForResult: args.waitForResult === true,
-    task: String(args.task ?? ""),
-    elapsedMs: 2,
   }),
 
   session_compact: () => ({

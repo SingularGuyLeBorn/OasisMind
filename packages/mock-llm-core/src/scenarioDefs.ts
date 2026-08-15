@@ -312,6 +312,42 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_3_long_article",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_3_long_article" ||
+      (/读取长文/.test(lastUserText(opts)) && hasTool(opts, "read_article") && !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("read_article", { url: "https://example.com/dsh-e2e-3-long" })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("read_article", { url: "https://example.com/dsh-e2e-3-long" })],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_3_long_final",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_3_long_final" ||
+      (/读取长文/.test(lastUserText(opts)) && hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已读长文元信息，正文已落盘，未灌入气泡。标题：DSH-E2E-3 长文标题",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已读长文元信息，正文已落盘，未灌入气泡。标题：DSH-E2E-3 长文标题",
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "read_article_final",
     match: (opts, forced) =>
       forced === "read_article_final" ||
