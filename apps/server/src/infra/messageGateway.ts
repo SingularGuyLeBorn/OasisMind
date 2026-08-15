@@ -443,11 +443,24 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       sessionId: binding.sessionId,
       agentId: binding.agentId,
       message: text,
-      source: "user" as const,
+      source: "channel" as const,
       clientMessageId: eventId,
       attachments: inboundAttachments,
       config: session?.systemPrompt ? { systemPrompt: session.systemPrompt } : undefined,
     };
+
+    // C-S34：入站气泡在起流前落库。start 返回 started 但 runner 未跑 / busy 入队时，开着的 Chat 已有气泡。
+    // persist 侧按 clientMessageId 去重，runner 不会写第二条。
+    if (text) {
+      await deps.services.message.create({
+        sessionId: binding.sessionId,
+        role: "user",
+        content: text,
+        attachments: inboundAttachments,
+        toolResults: { clientMessageId: eventId },
+        source: "channel",
+      });
+    }
 
     const invoke = createTrpcInvoker({
       services: deps.services,
