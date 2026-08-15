@@ -12,6 +12,13 @@ import {
   mockLog,
   streamFromCompletion,
 } from "./scenarios.js";
+import { applyThinkingPolicy, resolveThinkingPolicy } from "./thinkingPolicy.js";
+import {
+  agenticLongCompletion,
+  catalogCompletion,
+  matchAgenticLong,
+  matchReplyCatalog,
+} from "./replyCatalog.js";
 import type { LlmCompletionResult, StreamChunk } from "./types.js";
 
 export const scenarios: MockLlmScenario[] = [
@@ -57,14 +64,14 @@ export const scenarios: MockLlmScenario[] = [
     name: "async_task_run",
     match: (opts, forced) => {
       if (forced === "async_task_run") return true;
-      return hasTool(opts, "async_task_run") && /后台任务|异步任务|async task/i.test(lastUserText(opts)) && !hasAnyToolResult(opts);
+      return hasTool(opts, "async_task_run") && /后台任务|异步任务|async task/i.test(lastUserText(opts));
     },
     completion: (opts) => ({
       ...baseResult(opts),
       content: hasAnyToolResult(opts) ? "已为你启动后台任务，结果会稍后自动插入对话。" : null,
       toolCalls: hasAnyToolResult(opts)
         ? []
-        : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 1 } } })],
+        : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 0 } } })],
     }),
     stream: async function* (opts) {
       yield* streamFromCompletion(opts, {
@@ -72,7 +79,7 @@ export const scenarios: MockLlmScenario[] = [
         content: hasAnyToolResult(opts) ? "已为你启动后台任务，结果会稍后自动插入对话。" : null,
         toolCalls: hasAnyToolResult(opts)
           ? []
-          : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 1 } } })],
+          : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 0 } } })],
       });
     },
   },
@@ -131,12 +138,50 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_2_parent_final",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_parent_final" ||
+      (/派只读文件的子 Agent/.test(lastUserText(opts)) && hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "子 Agent 已完成。DSH-E2E-2 子已回报",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "子 Agent 已完成。DSH-E2E-2 子已回报",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_2_child_read",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_child_read" ||
+      (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
+        hasTool(opts, "read_file") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("read_file", { path: "README.md" })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("read_file", { path: "README.md" })],
+      });
+    },
+  },
+  {
     name: "dsh_e2e_2_child_report",
     match: (opts, forced) =>
       forced === "dsh_e2e_2_child_report" ||
       (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
         hasTool(opts, "agent_report_back") &&
-        !hasAnyToolResult(opts)),
+        hasAnyToolResult(opts)),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -308,7 +353,7 @@ export const scenarios: MockLlmScenario[] = [
     name: "tool_error",
     match: (opts, forced) =>
       forced === "tool_error" ||
-      (/坏掉|broken|失败|error/i.test(lastUserText(opts)) &&
+      (/坏掉|broken|失败|error|读取文章/i.test(lastUserText(opts)) &&
         hasTool(opts, "read_article") &&
         !hasAnyToolResult(opts)),
     completion: (opts) => ({
@@ -803,6 +848,22 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "agentic_long_30",
+    match: (opts, forced) => matchAgenticLong(opts, forced),
+    completion: (opts) => agenticLongCompletion(opts),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, agenticLongCompletion(opts));
+    },
+  },
+  {
+    name: "reply_catalog",
+    match: (opts, forced) => matchReplyCatalog(opts, forced),
+    completion: (opts) => catalogCompletion(opts),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, catalogCompletion(opts));
+    },
+  },
+  {
     name: "greeting",
     match: () => true,
     completion: (opts) => ({
@@ -839,12 +900,22 @@ export function resolveScenario(opts: MockLlmOptions): MockLlmScenario {
 
 export async function mockChatCompletion(options: MockLlmOptions): Promise<LlmCompletionResult> {
   const scenario = resolveScenario(options);
-  return scenario.completion(options);
+  return applyThinkingPolicy(scenario.completion(options), options);
 }
 
 export async function* mockChatCompletionStream(options: MockLlmOptions): AsyncGenerator<StreamChunk> {
   const scenario = resolveScenario(options);
-  yield* scenario.stream(options);
+  const policy = resolveThinkingPolicy(options);
+  const model = options.model || "mock-llm";
+  if (policy.text) {
+    for (const token of policy.text.split("")) {
+      yield { type: "reasoning", delta: token, model, provider: "mock" };
+    }
+  }
+  for await (const chunk of scenario.stream(options)) {
+    if (chunk.type === "reasoning") continue;
+    yield { ...chunk, model: chunk.model || model };
+  }
 }
 
 export function registerMockLlmScenario(scenario: MockLlmScenario): void {

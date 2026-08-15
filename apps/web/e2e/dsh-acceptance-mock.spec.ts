@@ -76,4 +76,70 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     await waitForStreamingComplete(page);
     await waitForSessionIdle(page);
   });
+
+  test("DSH-E2E-2 — mask allow=read_file + report_back 气泡推拉 F5", async ({ page }) => {
+    test.setTimeout(180_000);
+    const agents = await trpcQuery<{
+      items: Array<{ id: string; name: string; tier: string; workspaceId: string | null; model: string }>;
+    }>("agent.list", { page: 1, pageSize: 50 });
+    const parent =
+      agents.items.find((a) => a.name === "assistant" && a.tier === "manager") ??
+      agents.items.find((a) => a.tier === "manager" && a.workspaceId) ??
+      agents.items.find((a) => a.tier === "super");
+    if (!parent) throw new Error("E2E-2 需要 manager 或 super");
+
+    const created = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
+      "session.create",
+      { title: `dsh-e2e-2-${Date.now()}`, model: parent.model, agentId: parent.id },
+    );
+    if (!created.success || !created.data?.id) {
+      throw new Error(created.error?.message ?? "E2E-2 创建会话失败");
+    }
+    const sessionId = created.data.id;
+    await page.goto(`/chat?sessionId=${sessionId}&agentId=${parent.id}`);
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await waitForSessionIdle(page);
+
+    const streamPost = page.waitForRequest(
+      (req) => req.method() === "POST" && /\/api\/agent\/chat\/stream/.test(req.url()),
+      { timeout: 15_000 },
+    );
+    await sendChatMessage(page, "派只读文件的子 Agent");
+    const posted = await streamPost;
+    expect(posted.url(), "流式必须直连 mock server 3011").toContain("3011");
+
+    const pill = page.locator('[data-testid="tool-pill"][data-tool="spawn_subagent"]');
+    await expect(pill).toBeVisible({ timeout: 40_000 });
+    await expect(pill).toHaveAttribute("data-status", "done", { timeout: 90_000 });
+    await expect(page.getByText("DSH-E2E-2 子已回报").first()).toBeVisible({ timeout: 90_000 });
+    await expect(page.getByTestId("assistant-message-bubble").getByText("DSH-E2E-2 子已回报")).toBeVisible();
+    await waitForSessionIdle(page);
+
+    await page.reload();
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await expect(page.getByText("DSH-E2E-2 子已回报").first()).toBeVisible({ timeout: 20_000 });
+
+    const children = await trpcQuery<{
+      items: Array<{
+        id: string;
+        tools: string[];
+        toolInheritMask: { allow?: string[]; deny?: string[] } | null;
+      }>;
+    }>("agent.list", { page: 1, pageSize: 50, parentId: parent.id, tier: "sub" });
+    const child = children.items.find((a) => {
+      const allow = a.toolInheritMask?.allow ?? [];
+      return allow.includes("read_file") || allow.includes("native:read_file");
+    });
+    if (!child) {
+      throw new Error(
+        `E2E-2 找不到 inheritMask.allow=read_file 的子 Agent：${JSON.stringify(children.items)}`,
+      );
+    }
+    const allow = child.toolInheritMask?.allow ?? [];
+    expect(allow.some((n) => n === "read_file" || n === "native:read_file")).toBe(true);
+    const toolNames = child.tools.map((t) => t.replace(/^native:/, ""));
+    expect(toolNames).toContain("read_file");
+    expect(toolNames).toContain("agent_report_back");
+    expect(toolNames).not.toContain("web_search");
+  });
 });
