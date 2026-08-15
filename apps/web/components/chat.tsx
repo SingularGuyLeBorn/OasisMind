@@ -8,11 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { useAgent } from "@/lib/hooks";
-import {
-  loadDefaultChatConfig,
-  resolveNewChatConfig,
-  saveDefaultChatConfig,
-} from "@/lib/chatConfig";
+import { saveDefaultChatConfig } from "@/lib/chatConfig";
 import { type Agent, type ChatMessage, type ChatSessionConfig } from "@knowpilot/shared";
 import { mergeUserQueueFromDb } from "@/lib/chatQueueTypes";
 import { isBackendDown } from "@/lib/backendReachability";
@@ -28,7 +24,6 @@ import {
 import {
   streamLifecycleActions,
   streamLifecycleStore,
-  type StreamLifecycleState,
 } from "@/lib/useStreamLifecycle";
 import {
   useSessionComposeState,
@@ -39,24 +34,21 @@ import { useChatUiPrefs } from "@/lib/useChatUiPrefs";
 import { useChatHoverMonitor } from "@/lib/useChatHoverMonitor";
 import { useSubagentMessageMirror } from "@/lib/useSubagentMessageMirror";
 import { useChatAsyncOverlayEffects } from "@/lib/useChatAsyncOverlayEffects";
-import { saveChatStoresToStorage, useChatRunStream, type RunStreamOptions, type RunStreamOutcome } from "@/lib/useChatRunStream";
+import { useChatRunStream, type RunStreamOptions, type RunStreamOutcome } from "@/lib/useChatRunStream";
 import { useChatQueueDrain } from "@/lib/useChatQueueDrain";
 import { useChatSseSubscriptions } from "@/lib/useChatSseSubscriptions";
 import { useChatDerivedQueues } from "@/lib/useChatDerivedQueues";
 import { useChatTabs } from "@/lib/useChatTabs";
 import { useChatUrlSync } from "@/lib/useChatUrlSync";
-import {
-  COMPOSE_STORAGE_KEY,
-  LIFECYCLE_STORAGE_KEY,
-  NEW_STREAM_KEY,
-} from "@/lib/chatKeys";
+import { useChatToast } from "@/lib/useChatToast";
+import { useChatSessionResume } from "@/lib/useChatSessionResume";
+import { useChatAsyncJobActions } from "@/lib/useChatAsyncJobActions";
+import { useChatStartNewChat } from "@/lib/useChatStartNewChat";
+import { NEW_STREAM_KEY } from "@/lib/chatKeys";
 import {
   ensureSessionConfigHydrated,
-  getSessionConfig,
   getSessionConfigSnapshot,
-  migrateSessionConfig,
   patchSessionConfig,
-  setSessionConfig,
   subscribeSessionConfigStore,
 } from "@/lib/sessionConfigStore";
 
@@ -109,25 +101,7 @@ export function ChatView() {
   const [showCreateSubagent, setShowCreateSubagent] = useState(false);
   /** 首屏 idle 后再拉 Skill 列表，避免进 Chat 就多打一枪；输入框聚焦会提前触发 */
   const [skillsQueryReady, setSkillsQueryReady] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  // toast 自动消失：showToast 内联重置定时器（重复调用重新计时、传 null 停表）。
-  // 与原「toast state 变化 → useEffect 重置计时」相比：不同文案路径逐点等价；
-  // 相同文案连续触发时行为改善——原实现 setToast(同值) 被 React bailout、effect 不重跑、
-  // 定时不重置，第二条相同 toast 会随第一条的定时提前消失；内联后每次调用都重新计时。
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showToast = useCallback((msg: string | null) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    setToast(msg);
-    if (msg !== null) {
-      toastTimerRef.current = setTimeout(() => {
-        setToast(null);
-        toastTimerRef.current = null;
-      }, 2500);
-    }
-  }, []);
+  const { toast, showToast } = useChatToast();
   /** session_rotate 后的跳转提示（不自动切换会话） */
   const [rotateBanner, setRotateBanner] = useState<{
     newSessionId: string;
@@ -261,7 +235,7 @@ export function ChatView() {
         return;
       }
       try {
-        const res = await utils.message.listForChat.fetch({ sessionId: sid, limit: 50 });
+        const res = await utils.message.listForChat.fetch({ sessionId: sid, limit: 50 }, { staleTime: 0 });
         sessionMessagesStore.hydrateSessionMessages(sid, res.items as ChatMessage[]);
       } catch {
         /* ignore */
@@ -393,63 +367,12 @@ export function ChatView() {
     asyncQueueQuery,
   });
 
-  const cancelAsyncJobMutation = trpc.agent.cancelAsyncJob.useMutation({
-    onSuccess: () => {
-      // 推优先：SSE async_job_update(interrupted) 会 refresh；此处拉兜底
-      asyncQueueQuery.refetch().catch(catchUnlessCancelled("components/chat.tsx"));
-      asyncQueueStatsQuery.refetch().catch(catchUnlessCancelled("components/chat.tsx"));
-      showToast("已中断任务");
-    },
-    onError: (err) => {
-      showToast(err.message || "中断失败：后端不可用或任务已结束");
-    },
-  });
-  const cancelAsyncJobMutateFn = cancelAsyncJobMutation.mutate;
-  const cancelAsyncJobMutate = useCallback(
-    (input: { jobId: string }) => {
-      if (backendDown) {
-        showToast("后端未连接，无法取消任务。请先运行 pnpm dev");
-        return;
-      }
-      if (!effectiveSessionId) {
-        showToast("无当前会话，无法中断任务");
-        return;
-      }
-      cancelAsyncJobMutateFn({ jobId: input.jobId, sessionId: effectiveSessionId });
-    },
-    [backendDown, cancelAsyncJobMutateFn, effectiveSessionId, showToast],
-  );
-
-  const resumeAsyncJobMutation = trpc.agent.resumeAsyncJob.useMutation({
-    onSuccess: () => {
-      asyncQueueQuery.refetch().catch(catchUnlessCancelled("components/chat.tsx"));
-      asyncQueueStatsQuery.refetch().catch(catchUnlessCancelled("components/chat.tsx"));
-      showToast("已恢复任务");
-    },
-    onError: (err) => {
-      showToast(err.message || "恢复失败");
-    },
-  });
-  const resumeAsyncJobMutateFn = resumeAsyncJobMutation.mutate;
-  const resumeAsyncJobMutate = useCallback(
-    (input: { jobId: string }) => {
-      if (backendDown) {
-        showToast("后端未连接，无法恢复任务。请先运行 pnpm dev");
-        return;
-      }
-      if (!effectiveSessionId) {
-        showToast("无当前会话，无法恢复任务");
-        return;
-      }
-      resumeAsyncJobMutateFn({ jobId: input.jobId, sessionId: effectiveSessionId });
-    },
-    [backendDown, effectiveSessionId, resumeAsyncJobMutateFn, showToast],
-  );
-
-  const pinAsyncJobMutation = trpc.agent.toggleAsyncJobPinned.useMutation({
-    onSuccess: () => {
-      asyncQueueQuery.refetch().catch(catchUnlessCancelled("components/chat.tsx"));
-    },
+  const { cancelAsyncJobMutate, resumeAsyncJobMutate, pinAsyncJobMutate } = useChatAsyncJobActions({
+    backendDown,
+    effectiveSessionId,
+    showToast,
+    refetchAsyncQueue: () => asyncQueueQuery.refetch(),
+    refetchAsyncQueueStats: () => asyncQueueStatsQuery.refetch(),
   });
 
   // 【队列水合 · INV-8 ④】E6：切会话与同会话统一走 mergeUserQueueFromDb
@@ -486,19 +409,41 @@ export function ChatView() {
   // 挂载顺序与 cleanup 的 closeSessionWatch 引用计数时序不变。
   const handleFocusSession = useCallback((id: string) => selectSessionRef.current(id), []);
   const handleSessionRunStarted = useCallback(
-    (sid: string) => {
-      if (!streamLifecycleStore.isRunOccupied(sid)) {
+    (sid: string, meta?: { userMessageId?: string }) => {
+      if (meta?.userMessageId) {
+        streamLifecycleActions.setStreamTargetIfEmpty(sid, meta.userMessageId);
+      }
+      // 拉：autoConsume 落库后 EventSource 若赶上重连窗口，hydrate 把第二条助手补进 store。
+      // 推仍走 message_upserted；这里是显式事件上的 PULL，不是 setTimeout 赌时序。
+      hydrateSessionMessagesFallback(sid).catch(catchUnlessCancelled("components/chat.tsx"));
+      const attach = () => {
+        if (streamLifecycleStore.isRunOccupied(sid)) return;
         ensureSessionConfigHydrated(sid);
+        // 禁止用 store「最后一个 user」当钉点：autoConsume 起流时注入用户尚未落库，
+        // lastUser 仍是上一轮，live 会盖掉第一条助手（C-S7 开着的页永远 1 条）。
+        // 钉点只认事件里的本轮 userMessageId；没有则空着，等 user upsert 补上。
         if (runStreamRef.current) {
           runStreamRef.current?.({
             targetSessionId: sid,
             resumeAfter: streamLifecycleStore.resolveResumeAfter(sid),
             isResume: true,
+            streamTargetUserId: meta?.userMessageId ?? null,
           }).catch(catchUnlessCancelled("components/chat.tsx"));
         }
+      };
+      if (!streamLifecycleStore.isRunOccupied(sid)) {
+        attach();
+        return;
       }
+      // autoConsume 常在上一轮尚未 commit 时起流；占用中不能丢，等本轮 idle 再挂。
+      const off = streamLifecycleActions.onStreamCommitted((committed) => {
+        if (committed !== sid) return;
+        off();
+        attach();
+        hydrateSessionMessagesFallback(sid).catch(catchUnlessCancelled("components/chat.tsx"));
+      });
     },
-    [],
+    [hydrateSessionMessagesFallback],
   );
   useChatSseSubscriptions({
     effectiveSessionId,
@@ -512,6 +457,7 @@ export function ChatView() {
     setRotateBanner,
     onFocusSession: handleFocusSession,
     onSessionRunStarted: handleSessionRunStarted,
+    onNeedHydrate: hydrateSessionMessagesFallback,
   });
 
   // 预热打开中会话的 async 切片缓存，供非焦点 drain / SSE merge 使用
@@ -601,200 +547,19 @@ export function ChatView() {
     runStreamRef,
   });
 
-  // 【mount 恢复与续传 · 心脏区】从 sessionStorage 恢复 compose + lifecycle，并自动续传
-  // 刷新前正在运行的会话（INV-8 ④ drain 请求源；续传时序经 chat-resume/subagent-resume e2e 覆盖；effect 体未改）
-  useEffect(() => {
-    try {
-      const composeRaw = sessionStorage.getItem(COMPOSE_STORAGE_KEY);
-      if (composeRaw) {
-        const parsed = JSON.parse(composeRaw) as Record<string, Parameters<typeof sessionComposeStore.hydrate>[0][string]>;
-        sessionComposeStore.hydrate(parsed);
-      }
-      const lifeRaw = sessionStorage.getItem(LIFECYCLE_STORAGE_KEY);
-      if (lifeRaw) {
-        const parsed = JSON.parse(lifeRaw) as Record<string, StreamLifecycleState & { isStreaming?: boolean }>;
-        for (const [sid, st] of Object.entries(parsed)) {
-          if (sid === NEW_STREAM_KEY) continue;
-          const wasStreaming = st.phase === "streaming" || st.isStreaming === true;
-          if (wasStreaming) {
-            // 只恢复 UI 快照，不占 RESUME_CLAIM——唯一 claim 在 runStream.beginStream(resume)。
-            // 旧路径外层 beginStream(resume) 会把第二次 claim 拒掉并清 AC，留下幽灵 streaming
-            // （Stop 空操作 / Thinking 假计时 / 队列 drain 堵死）。
-            streamLifecycleActions.restoreStreamSnapshot(sid, {
-              streamTargetUserId: st.streamTargetUserId ?? null,
-              streamingContent: st.streamingContent ?? "",
-              liveTimeline: st.liveTimeline ?? [],
-              lastEventId: st.lastEventId ?? 0,
-            });
-            console.log("[mount] resuming", sid, "lastEventId", st.lastEventId);
-            // E8：续传前同步 hydrate 该 sid 的 config（禁止吃首帧 DEFAULT 闭包）
-            ensureSessionConfigHydrated(sid);
-            // runStreamRef.current 此时读到的是 useRef(runStream) 首帧初始值
-            // （镜像 effect 声明在下方、mount 批内此时尚未执行，但它要赋的也是同一个首帧 runStream）；
-            // 事件处理内同步续传，无需 microtask
-            runStreamRef.current?.({
-              targetSessionId: sid,
-              resumeAfter: streamLifecycleStore.resolveResumeAfter(sid),
-              isResume: true,
-            }).catch(catchUnlessCancelled("components/chat.tsx"));
-          }
-        }
-      }
-      // INV-8 ④：lifecycle 恢复之后再请求 drain——若先 hydrateDone 再 restore streaming，
-      // 晚订阅的 drain 会撞上占用被跳过，待发消息就永远卡住。
-      for (const sid of sessionComposeStore.listSessionIds()) {
-        if (streamLifecycleStore.isRunOccupied(sid)) continue;
-        const compose = sessionComposeStore.get(sid);
-        const hasPending =
-          compose.userQueue.some(
-            (t) =>
-              (t.kind === "user" || t.kind === "child_notify") &&
-              (t.text.trim() || t.attachments?.length),
-          ) ||
-          compose.asyncOverlays.some(
-            (t) =>
-              t.kind === "async-result" &&
-              !t.serverConsumed &&
-              t.sourceType !== "async_task_tool" &&
-              t.sourceType !== "sleep" &&
-              (t.text.trim() || t.asyncResult),
-          );
-        if (hasPending) streamLifecycleActions.hydrateDone(sid);
-      }
-    } catch (e) {
-      console.error("[mount] restore error", e);
-    }
-  }, []);
-
-  // 【页面生命周期与全局监听群】beforeunload 持久化 + visibilitychange 断流续传 +
-  // Ctrl+Shift+S 快捷键 + unmount 清理（原 4 个 deps [] 独立 effect 归并为 1 个）。
-  // 原四者注册只发生在 mount、清理只发生在 unmount，两边界互不交互；
-  // 合并后注册/清理逐条一一对应，时序语义不变。
-  useEffect(() => {
-    // 卸载 / 刷新前持久化，并标记正在卸载以阻止 finally 清掉 streaming phase
-    const onBeforeUnload = () => {
-      isPageUnloadingRef.current = true;
-      saveChatStoresToStorage();
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-
-    // 切回浏览器标签页时：若后台有流式会话连接断开，自动续传；切出时持久化状态
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        saveChatStoresToStorage();
-        return;
-      }
-      const life = streamLifecycleStore.serialize();
-      for (const [sid, st] of Object.entries(life)) {
-        if (sid === NEW_STREAM_KEY) continue;
-        if (st.phase === "streaming" && !sessionComposeActions.getActiveAbortController(sid)) {
-          ensureSessionConfigHydrated(sid);
-          // 事件处理内同步续传；INV-5 续传起点唯一走 resolveResumeAfter
-          runStreamRef.current?.({
-            targetSessionId: sid,
-            resumeAfter: streamLifecycleStore.resolveResumeAfter(sid),
-            isResume: true,
-          }).catch(catchUnlessCancelled("components/chat.tsx"));
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    // Ctrl+Shift+S 快捷键打开新建子代理弹窗
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === "S" || e.key === "s")) {
-        e.preventDefault();
-        setShowCreateSubagent(true);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    // 捕获 ref 值到 effect 局部变量，供卸载清理（react-hooks/exhaustive-deps）
-    const rafMap = streamRafRef.current;
-    const deltaMap = pendingStreamDeltaRef.current;
-    const thinkRafMap = thinkingRafRef.current;
-    const thinkDeltaMap = pendingThinkingDeltaRef.current;
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("keydown", onKeyDown);
-      saveChatStoresToStorage();
-      // 流式 rAF / 残留定时器清理：组件卸载时取消所有待处理动画帧，避免 setState after unmount
-      rafMap.forEach((id) => cancelAnimationFrame(id));
-      rafMap.clear();
-      deltaMap.clear();
-      thinkRafMap.forEach((id) => cancelAnimationFrame(id));
-      thinkRafMap.clear();
-      thinkDeltaMap.clear();
-      if (streamSaveTimeoutRef.current) {
-        clearTimeout(streamSaveTimeoutRef.current);
-        streamSaveTimeoutRef.current = null;
-      }
-      if (reorderTimerRef.current) {
-        clearTimeout(reorderTimerRef.current);
-        reorderTimerRef.current = null;
-      }
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  // 【listRunning 挂接 · INV-5 · 心脏区】后端主动发现运行中会话并续传：
-  // 覆盖 sessionStorage 丢失、跨标签、切换 Agent 等场景。
-  // 仅信任 StreamHub.listRunning()（含 spawn_subagent / prepareAgentRun 的流式运行）。
-  // 服务端无该 sid 且本地无 AC → 幽灵占用（重启后假 streaming），ABORT 释放。
-  useEffect(() => {
-    if (!runningSessionsQuery.isFetched) return;
-    const items = runningSessionsQuery.data?.items ?? [];
-    const runningIds = new Set(items.map((item) => item.sessionId).filter(Boolean));
-    for (const item of items) {
-      const sid = item.sessionId;
-      if (!sid || sid === NEW_STREAM_KEY) continue;
-      // 已存在 active stream（abort 非空）说明已自行恢复或在运行中，无需重复 resume
-      if (sessionComposeActions.getActiveAbortController(sid)) continue;
-      ensureSessionConfigHydrated(sid);
-      // INV-5：续传起点唯一走 resolveResumeAfter（禁止各 effect 手写 lastEventId 判定）
-      // runStreamRef.current 读到 useRef 首帧初始值（mount 首跑时镜像 effect 尚未执行，
-      // 其镜像赋值也是同一个首帧 runStream）；同步挂接，无需 microtask
-      runStreamRef.current?.({
-        targetSessionId: sid,
-        resumeAfter: streamLifecycleStore.resolveResumeAfter(sid),
-        isResume: true,
-      }).catch(catchUnlessCancelled("components/chat.tsx"));
-    }
-    // 幽灵占用：服务端不在跑 + 本地无 SSE AC → 合法释放（服务重启会话已 paused，禁止假 streaming）
-    const released: string[] = [];
-    for (const [sid, st] of Object.entries(streamLifecycleStore.serialize())) {
-      if (sid === NEW_STREAM_KEY) continue;
-      if (st.phase !== "streaming" && st.phase !== "done") continue;
-      if (runningIds.has(sid)) continue;
-      if (sessionComposeActions.getActiveAbortController(sid)) continue;
-      streamLifecycleActions.abortStream(sid, {
-        partialAssistantMessageId: null,
-        leftoverContent: st.streamingContent,
-      });
-      released.push(sid);
-    }
-    // abort→idle 会 notifyCommit；再显式 hydrateDone，挡住「占用期间队列已到、drain 被跳过」的窗口
-    for (const sid of released) {
-      const compose = sessionComposeStore.get(sid);
-      const hasPending =
-        compose.userQueue.some(
-          (t) =>
-            (t.kind === "user" || t.kind === "child_notify") &&
-            (t.text.trim() || t.attachments?.length),
-        ) ||
-        compose.asyncOverlays.some(
-          (t) =>
-            t.kind === "async-result" &&
-            !t.serverConsumed &&
-            (t.text.trim() || t.asyncResult),
-        );
-      if (hasPending) streamLifecycleActions.hydrateDone(sid);
-    }
-  }, [runningSessionsQuery.data, runningSessionsQuery.isFetched]);
+  useChatSessionResume({
+    isPageUnloadingRef,
+    pendingStreamDeltaRef,
+    streamRafRef,
+    pendingThinkingDeltaRef,
+    thinkingRafRef,
+    streamSaveTimeoutRef,
+    reorderTimerRef,
+    runStreamRef,
+    runningSessionItems: runningSessionsQuery.data?.items,
+    runningSessionsFetched: runningSessionsQuery.isFetched,
+    setShowCreateSubagent,
+  });
 
   // 【队列 drain 编排簇】consumeQueue + drainAllPendingQueues 收拢于 useChatQueueDrain
   // （W13e 拆出）。E8：drain 内按 sid 取 sessionConfigStore.model。
@@ -844,113 +609,27 @@ export function ChatView() {
   const skills = useMemo(() => skillsQuery.data?.items ?? [], [skillsQuery.data]);
 
 
-  /** 绑定当前 Agent 的主会话（有则复用、无则创建空会话），保证始终有真实 sessionId */
-  const bindAgentMainSession = useCallback(
-    async (aid: string): Promise<string | null> => {
-      if (!aid || backendDown) return null;
-      try {
-        const res = await ensureMainMutateAsync({ agentId: aid });
-        // E8：把 Agent 归属写进 NEW_STREAM_KEY config 后再迁移，后台 drain 才不会用错 systemPrompt
-        const agent = (agentsQuery.data?.items ?? []).find((a: Agent) => a.id === aid);
-        const cfg = resolveNewChatConfig(getSessionConfig(NEW_STREAM_KEY), agent);
-        setSessionConfig(NEW_STREAM_KEY, cfg);
-        migrateSessionConfig(NEW_STREAM_KEY, res.id);
-        openTab(res.id);
-        utils.session.list.invalidate().catch(catchUnlessCancelled("components/chat.tsx"));
-        return res.id;
-      } catch {
-        return null;
-      }
-    },
-    [backendDown, ensureMainMutateAsync, openTab, utils.session.list, agentsQuery.data],
-  );
-
-  // 水合后若仍无焦点会话：落到当前 Agent 主会话（禁止长期停在 NEW_STREAM_KEY / 无 id）
-  useEffect(() => {
-    if (!tabsHydrated || backendDown) return;
-    if (focusedSessionId || sessionFromUrl) return;
-    if (!effectiveAgentId) return;
-    bindAgentMainSession(effectiveAgentId).catch(catchUnlessCancelled("components/chat.tsx"));
-  }, [
-    tabsHydrated,
+  const { bindAgentMainSession, startNewChat } = useChatStartNewChat({
     backendDown,
+    agentId,
+    setAgentId,
+    setEditingSessionId,
+    effectiveAgentId,
+    selectedAgent,
+    agentsItems: agentsQuery.data?.items,
     focusedSessionId,
     sessionFromUrl,
-    effectiveAgentId,
-    bindAgentMainSession,
-  ]);
-
-  const startNewChat = useCallback(() => {
-    const aid = agentId || effectiveAgentId;
-    setAgentId((prev) => prev || effectiveAgentId);
-    setEditingSessionId(null);
-    const next = resolveNewChatConfig(loadDefaultChatConfig(), selectedAgent);
-    setSessionConfig(NEW_STREAM_KEY, next);
-    saveDefaultChatConfig(next);
-    setHistorySubTab("main");
-    const params = new URLSearchParams(searchParams.toString());
-    let changed = false;
-    if (params.get("split")) {
-      params.delete("split");
-      changed = true;
-    }
-    if (params.get("agentId")) {
-      params.delete("agentId");
-      changed = true;
-    }
-    if (params.get("view") !== "main") {
-      params.set("view", "main");
-      changed = true;
-    }
-    if (changed) {
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }
-    (async () => {
-      if (!aid || backendDown) {
-        // 后端不可用时仍允许本地空态，避免按钮完全失灵
-        startNewChatInTabs();
-        streamLifecycleActions.resetSession(NEW_STREAM_KEY);
-        sessionComposeActions.resetComposeSession(NEW_STREAM_KEY);
-        const p = new URLSearchParams(searchParams.toString());
-        if (p.get("sessionId")) {
-          p.delete("sessionId");
-          router.replace(`${pathname}?${p.toString()}`, { scroll: false });
-        }
-        return;
-      }
-      try {
-        const res = await openNewSessionMutateAsync({
-          agentId: aid,
-          focusedSessionId: focusedSessionId,
-          model: selectedAgent?.model,
-        });
-        if (res.action === "already_here") {
-          showToast("当前已在新会话中");
-          return;
-        }
-        openTab(res.id);
-        migrateSessionConfig(NEW_STREAM_KEY, res.id);
-        utils.session.list.invalidate().catch(catchUnlessCancelled("components/chat.tsx"));
-      } catch {
-        showToast("创建新会话失败");
-      }
-    })().catch(catchUnlessCancelled("components/chat.tsx"));
-  }, [
-    agentId,
-    selectedAgent,
-    effectiveAgentId,
-    backendDown,
-    focusedSessionId,
+    tabsHydrated,
     searchParams,
     pathname,
     router,
     setHistorySubTab,
     startNewChatInTabs,
-    openNewSessionMutateAsync,
     openTab,
     showToast,
-    utils.session.list,
-  ]);
+    ensureMainMutateAsync,
+    openNewSessionMutateAsync,
+  });
 
   const selectSession = useCallback(
     (id: string) => {
@@ -1003,6 +682,30 @@ export function ChatView() {
   useEffect(() => {
     selectSessionRef.current = selectSession;
   }, [selectSession]);
+
+  const selectAgent = useCallback(
+    (id: string) => {
+      if (!id || id === effectiveAgentId) return;
+      setAgentId(id);
+      setUserSelectedWorkspaceId(null);
+      bindAgentMainSession(id).catch(catchUnlessCancelled("components/chat.tsx"));
+    },
+    [effectiveAgentId, bindAgentMainSession],
+  );
+
+  const agentPickerAgents = useMemo(
+    () =>
+      (agentsQuery.data?.items ?? [])
+        .filter((a: Agent) => a.status !== "deleted")
+        .map((a: Agent) => ({
+          id: a.id,
+          name: a.name,
+          tier: a.tier,
+          parentId: a.parentId,
+          status: a.status,
+        })),
+    [agentsQuery.data?.items],
+  );
 
   const selectWorkspace = useCallback((workspaceId: string) => {
     setUserSelectedWorkspaceId(workspaceId);
@@ -1077,6 +780,11 @@ export function ChatView() {
     onOpenRuntimePanel: openRuntimePanel,
     onFocusSwarm: openSwarmPanel,
     onWarmSkills: () => setSkillsQueryReady(true),
+    agentPicker: {
+      value: effectiveAgentId,
+      agents: agentPickerAgents,
+      onChange: selectAgent,
+    },
   } as const;
 
   return (
@@ -1115,7 +823,7 @@ export function ChatView() {
         refetchSession={refetchSession}
         cancelAsyncJobMutate={cancelAsyncJobMutate}
         resumeAsyncJobMutate={resumeAsyncJobMutate}
-        pinAsyncJobMutate={pinAsyncJobMutation.mutate}
+        pinAsyncJobMutate={pinAsyncJobMutate}
         runtimeGroupTab={runtimeGroupTab}
         setRuntimeGroupTab={setRuntimeGroupTab}
         syncTaskItems={syncTaskItems}
