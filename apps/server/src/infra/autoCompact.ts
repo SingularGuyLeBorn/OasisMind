@@ -12,7 +12,7 @@ import { resetContext } from "./loop/contextReset.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 // type-only：避免运行时循环依赖（agentStream 反向 import maybeCompactMessages）
-import type { AgentStreamEvent } from "./agentStream.js";
+import type { AgentStreamEvent } from "./agentStream/index.js";
 import {
   DEFAULT_COMPACT_KEEP_RECENT,
   DEFAULT_COMPACT_TRIGGER_RATIO,

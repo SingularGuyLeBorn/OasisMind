@@ -1,7 +1,7 @@
 import type { AppConfig } from "../config.js";
 import type { ServiceContainer } from "../serviceContainer.js";
 import { runAgentLoop } from "../agentRuntime.js";
-import { runAgentLoopStream, type AgentStreamEvent } from "../agentStream.js";
+import { runAgentLoopStream, type AgentStreamEvent } from "../agentStream/index.js";
 import {
   parseAgentTools,
   buildAgentToolSchemas,

@@ -648,7 +648,7 @@ export async function drainGoalContinueAfterSettle(args: {
   const hub = getStreamHub();
   if (!hub) return false;
 
-  const { chatAgentStream } = await import("./agentStream.js");
+  const { chatAgentStream } = await import("./agentStream/index.js");
   const { createTrpcInvoker } = await import("./trpcInvoker.js");
   const invoke = createTrpcInvoker({ services: args.services });
 

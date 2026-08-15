@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SessionStreamHub } from "../infra/sessionStreamHub.js";
-import type { AgentStreamEvent } from "../infra/agentStream.js";
+import type { AgentStreamEvent } from "../infra/agentStream/index.js";
 
 function makeHub(opts: { runTimeoutMs?: number; runStallTimeoutMs?: number } = {}) {
   return new SessionStreamHub({

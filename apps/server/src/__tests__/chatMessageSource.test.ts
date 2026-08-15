@@ -2,7 +2,7 @@
  * C-S34：QQ 入站 source 不得被洗成 user。
  */
 import { describe, expect, it } from "vitest";
-import { resolveChatMessageSource } from "../infra/agentStream.js";
+import { resolveChatMessageSource } from "../infra/agentStream/index.js";
 
 describe("契约 — ChatMessage source C-S34", () => {
   it("C-S34-A1 channel 入站保持 channel，手打才是 user", () => {

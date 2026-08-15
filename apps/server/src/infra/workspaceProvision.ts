@@ -62,7 +62,7 @@ async function startInitialTask(options: {
   if (!hub) return "failed";
 
   const { createTrpcInvoker } = await import("./trpcInvoker.js");
-  const { chatAgentStream } = await import("./agentStream.js");
+  const { chatAgentStream } = await import("./agentStream/index.js");
   const invokeTrpc = createTrpcInvoker({ services: options.services });
   const body = {
     sessionId: options.sessionId,

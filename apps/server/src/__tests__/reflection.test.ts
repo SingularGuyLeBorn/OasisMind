@@ -16,7 +16,7 @@ import { withReflection, REFLECTION_UNPASSED_MARK } from "../infra/loop/reflecti
 import type { LlmTransport, ReactLoopInput } from "../infra/loop/types.js";
 import * as llmClient from "../infra/llmClient.js";
 import type { LlmMessage } from "../infra/llmClient.js";
-import { runAgentLoopStream, type AgentStreamEvent } from "../infra/agentStream.js";
+import { runAgentLoopStream, type AgentStreamEvent } from "../infra/agentStream/index.js";
 import type { ServiceContainer } from "../infra/serviceContainer.js";
 import { createTempProjectDir, createTestConfig } from "./helpers/toolTestFixtures.js";
 

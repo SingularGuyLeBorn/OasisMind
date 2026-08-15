@@ -11,7 +11,7 @@ import {
   assertPublicUrlAuthSafe,
 } from "../infra/auth.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
-import { handleAgentChatStop } from "../infra/agentStream.js";
+import { handleAgentChatStop } from "../infra/agentStream/index.js";
 import { SessionStreamHub } from "../infra/sessionStreamHub.js";
 
 describe("auth module", () => {

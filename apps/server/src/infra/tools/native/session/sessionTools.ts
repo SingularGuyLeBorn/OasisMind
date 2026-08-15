@@ -416,7 +416,7 @@ async function sessionSpawnGoalTool(args: Record<string, unknown>, ctx: NativeTo
         });
         streamStarted =
           (await hub.startIfNotRunning(newSessionId, body, (emit, signal) =>
-            import("../../../agentStream.js").then(({ chatAgentStream }) =>
+            import("../../../agentStream/index.js").then(({ chatAgentStream }) =>
               chatAgentStream(ctx.services, ctx.config, body, invoke, emit, signal),
             ),
           )) === "started";

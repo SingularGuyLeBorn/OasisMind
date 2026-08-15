@@ -229,7 +229,7 @@ export class AgentCronEngine {
       let started: "started" | "duplicate" | "busy";
       try {
         started = await hub.startIfNotRunning(session.id, body, (emit, signal) =>
-          import("./agentStream.js").then(({ chatAgentStream }) =>
+          import("./agentStream/index.js").then(({ chatAgentStream }) =>
             chatAgentStream(this.services, this.config, body, invoke, emit, signal),
           ),
         );

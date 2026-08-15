@@ -16,10 +16,10 @@ import {
 import { SessionStreamHub, setStreamHub } from "../infra/sessionStreamHub.js";
 import { createContextInner } from "../trpc/context.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
-import type { AgentStreamEvent } from "../infra/agentStream.js";
+import type { AgentStreamEvent } from "../infra/agentStream/index.js";
 
-vi.mock("../infra/agentStream.js", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("../infra/agentStream.js")>();
+vi.mock("../infra/agentStream/index.js", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../infra/agentStream/index.js")>();
   const callSessionIds: string[] = [];
   return {
     ...mod,
@@ -50,7 +50,7 @@ vi.mock("../infra/agentStream.js", async (importOriginal) => {
   };
 });
 
-import * as agentStream from "../infra/agentStream.js";
+import * as agentStream from "../infra/agentStream/index.js";
 
 describe("messageGateway /new 话题切换", () => {
   let hub: SessionStreamHub;

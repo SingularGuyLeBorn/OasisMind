@@ -408,7 +408,7 @@ describe("asyncJobManager 持久化", () => {
   });
 
   it("autoConsumeAsyncDelivery：无前端时也能 CLAIM 并启动会话流", async () => {
-    const agentStream = await import("../infra/agentStream.js");
+    const agentStream = await import("../infra/agentStream/index.js");
     const chatSpy = vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (_s, _c, input, _inv, emit) => {
       emit({
         type: "done",

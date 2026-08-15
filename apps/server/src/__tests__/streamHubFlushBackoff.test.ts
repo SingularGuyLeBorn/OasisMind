@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prisma } from "../db.js";
 import { SessionStreamHub } from "../infra/sessionStreamHub.js";
-import type { AgentStreamEvent } from "../infra/agentStream.js";
+import type { AgentStreamEvent } from "../infra/agentStream/index.js";
 
 const SID = "flush-backoff-test-session";
 

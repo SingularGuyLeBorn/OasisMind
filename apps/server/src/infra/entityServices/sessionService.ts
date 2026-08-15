@@ -355,8 +355,8 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
 
     const { createTrpcInvoker } = await import("../trpcInvoker.js");
     const invokeTrpc = createTrpcInvoker({ services });
-    const { chatAgentStream } = await import("../agentStream.js");
-    type AgentStreamEvent = import("../agentStream.js").AgentStreamEvent;
+    const { chatAgentStream } = await import("../agentStream/index.js");
+    type AgentStreamEvent = import("../agentStream/index.js").AgentStreamEvent;
 
     try {
       const started = await hub.startIfNotRunning(input.id, body, async (emit, signal) => {

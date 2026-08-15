@@ -147,7 +147,7 @@ async function runLiveTrial(
     };
     const invoke = createTrpcInvoker({ services, config, prisma });
     const started = await hub.startIfNotRunning(sessionId, body, (emit, signal) =>
-      import("./agentStream.js").then(({ chatAgentStream }) =>
+      import("./agentStream/index.js").then(({ chatAgentStream }) =>
         chatAgentStream(services, config, body, invoke, emit, signal),
       ),
     );

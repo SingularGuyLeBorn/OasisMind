@@ -6,7 +6,7 @@
  */
 import type { PrismaClient } from "@prisma/client";
 import { getStreamHub } from "./sessionStreamHub.js";
-import type { AgentStreamEvent } from "./agentStream.js";
+import type { AgentStreamEvent } from "./agentStream/index.js";
 
 export type UiStateNotifyKind =
   | "cron_job_updated"

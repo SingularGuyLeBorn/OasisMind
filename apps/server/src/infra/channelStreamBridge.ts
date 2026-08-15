@@ -3,7 +3,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import type { AgentStreamEvent } from "./agentStream.js";
+import type { AgentStreamEvent } from "./agentStream/index.js";
 import type { ChannelReplyChunk } from "./messageGateway.js";
 
 const FLUSH_MS = 450;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveResumeAfter } from "../infra/agentStream.js";
+import { resolveResumeAfter } from "../infra/agentStream/index.js";
 
 describe("agentStream resumeAfter 校验", () => {
   it("数字直接返回", () => {

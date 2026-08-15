@@ -331,7 +331,7 @@ export const sessionRouter = router({
           });
           streamStarted =
             (await hub.startIfNotRunning(input.sessionId, fullBody, (emit, signal) =>
-              import("../agentStream.js").then(({ chatAgentStream }) =>
+              import("../agentStream/index.js").then(({ chatAgentStream }) =>
                 chatAgentStream(ctx.services, ctx.config, fullBody, invoke, emit, signal),
               ),
             )) === "started";
@@ -373,7 +373,7 @@ export const sessionRouter = router({
         });
         streamStarted =
           (await hub.startIfNotRunning(input.sessionId, body, (emit, signal) =>
-            import("../agentStream.js").then(({ chatAgentStream }) =>
+            import("../agentStream/index.js").then(({ chatAgentStream }) =>
               chatAgentStream(ctx.services, ctx.config, body, invoke, emit, signal),
             ),
           )) === "started";

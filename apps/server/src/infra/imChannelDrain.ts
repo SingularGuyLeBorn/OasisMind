@@ -148,7 +148,7 @@ async function runImInboundItem(opts: {
     config: opts.config,
     prisma: opts.prisma,
   });
-  const { chatAgentStream } = await import("./agentStream.js");
+  const { chatAgentStream } = await import("./agentStream/index.js");
 
   // 恢复 QQ replyCtx / 被动窗口（drain 路径不再走 ingest）
   if (msg.envelope.channel === "qq") {

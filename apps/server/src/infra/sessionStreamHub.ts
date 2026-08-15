@@ -8,7 +8,7 @@
  * - 订阅时优先重放内存缓冲；若运行已结束或进程已重启，则从 SQLite 重放。
  */
 
-import type { AgentStreamEvent } from "./agentStream.js";
+import type { AgentStreamEvent } from "./agentStream/index.js";
 import type { AgentChatInput } from "@knowpilot/shared";
 import type { AppConfig } from "./config.js";
 import { prisma } from "../db.js";

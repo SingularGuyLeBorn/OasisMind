@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { SessionStreamHub } from "../infra/sessionStreamHub.js";
-import type { AgentStreamEvent } from "../infra/agentStream.js";
+import type { AgentStreamEvent } from "../infra/agentStream/index.js";
 
 const SID = "replay-sess-1";
 

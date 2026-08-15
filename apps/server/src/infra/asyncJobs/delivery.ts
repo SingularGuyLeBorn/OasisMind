@@ -1,6 +1,6 @@
 import type { AppConfig } from "../config.js";
 import type { ServiceContainer } from "../serviceContainer.js";
-import { chatAgentStream } from "../agentStream.js";
+import { chatAgentStream } from "../agentStream/index.js";
 import { getStreamHub } from "../sessionStreamHub.js";
 import { createTrpcInvoker } from "../trpcInvoker.js";
 import { prisma } from "../../db.js";

@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prisma } from "../db.js";
 import { SessionStreamHub, setStreamHub } from "../infra/sessionStreamHub.js";
-import { handleAgentChatStop } from "../infra/agentStream.js";
+import { handleAgentChatStop } from "../infra/agentStream/index.js";
 import { createContextInner } from "../trpc/context.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import type { AgentChatInput } from "@knowpilot/shared";

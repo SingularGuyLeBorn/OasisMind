@@ -131,7 +131,7 @@ export interface ReactLoopInput {
   /** 覆盖 snapshot.toolResultMaxChars（stream 用 micro-compact 阈值） */
   toolResultMaxChars?: number;
   /** 压缩阶段 SSE（仅 stream 传入；type-only 依赖 AgentStreamEvent） */
-  compactEmit?: (event: import("../agentStream.js").AgentStreamEvent) => void;
+  compactEmit?: (event: import("../agentStream/index.js").AgentStreamEvent) => void;
   /**
    * 运行中消息注入（Steering / Follow-up）。
    * 由 SessionStreamHub 提供；缺省则本 run 不支持 mid-run 注入。

@@ -8,7 +8,7 @@ import {
   listMessagesForChatSchema, switchMessageVersionSchema, setMessageLabelSchema,
 } from "@knowpilot/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
-import { switchAssistantMessageVersion } from "../agentStream.js";
+import { switchAssistantMessageVersion } from "../agentStream/index.js";
 
 export const messageRouter = router({
   create: publicProcedure.meta({ description: "发送聊天消息（用户或助手）。", aiReadable: true }).input(createMessageSchema).mutation(({ ctx, input }) => ctx.services.message.create(input)),

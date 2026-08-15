@@ -30,7 +30,7 @@ const entries: Array<{ name: string; specifier: string; key: string; kind?: "fun
   { name: "inboxShared", specifier: "../infra/inbox/shared.js", key: "ensureInboxDirs" },
   { name: "webhookVerify", specifier: "../infra/channels/webhookVerify.js", key: "gateQqWebhook" },
   { name: "sessionStreamHub", specifier: "../infra/sessionStreamHub.js", key: "getStreamHub" },
-  { name: "agentStream", specifier: "../infra/agentStream.js", key: "handleAgentChatStream" },
+  { name: "agentStream", specifier: "../infra/agentStream/index.js", key: "handleAgentChatStream" },
   { name: "asyncJobManager", specifier: "../infra/asyncJobs/index.js", key: "runStartupRecovery" },
   { name: "triggerEngine", specifier: "../infra/triggerEngine.js", key: "getTriggerEngine" },
   { name: "toolService", specifier: "../infra/entityServices/toolService.js", key: "ToolService" },
@@ -105,7 +105,7 @@ describe("W4 import 顺序冒烟（循环依赖防线）", () => {
       const src = readFileSync(path.resolve(__dirname, `../infra/${leaf}.ts`), "utf-8");
       for (const banned of ["agentRuntime", "nativeTools", "agentTools", "loop/index", "loop/reactLoop", "agentStream"]) {
         expect(
-          src.includes(`./${banned}.js`) || src.includes(`../${banned}.js`),
+          src.includes(`./${banned}.js`) || src.includes(`../${banned}.js`) || src.includes(`./${banned}/`) || src.includes(`../${banned}/`),
           `${leaf}.ts 不得 import 环内模块 ${banned}`,
         ).toBe(false);
       }

@@ -231,7 +231,7 @@ export async function prepareAgentRun(
       }
 
       // 动态 import：agentStream 经 agentRuntime/loop 处于 ReAct 环内，静态导入会重建循环依赖
-      const { runAgentLoopStream } = await import("../../../agentStream.js");
+      const { runAgentLoopStream } = await import("../../../agentStream/index.js");
       if (!hub) {
         throw new Error("流式对话服务未初始化，无法启动子 Agent 流式运行。请重启 OasisMind server 后再派生子 Agent。");
       }

@@ -36,7 +36,7 @@ import { hasSystemChrome } from "./infra/metablog/playwrightChrome.js";
 import { syncSearchEnvFromConfig } from "./infra/nativeTools.js";
 import { getServerCapabilities, getCachedEnrichedServerCapabilities } from "./infra/capabilities.js";
 import { getOcrStatus } from "./infra/ocrService.js";
-import { handleAgentChatStream, handleAgentChatStop } from "./infra/agentStream.js";
+import { handleAgentChatStream, handleAgentChatStop } from "./infra/agentStream/index.js";
 import { SessionStreamHub, setStreamHub } from "./infra/sessionStreamHub.js";
 import { createTrpcInvoker } from "./infra/trpcInvoker.js";
 import { assertCredentialEncryptionAvailable } from "./infra/credentialVault.js";

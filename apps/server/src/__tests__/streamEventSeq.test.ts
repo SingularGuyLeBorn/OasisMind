@@ -10,9 +10,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prisma } from "../db.js";
 import { SessionStreamHub } from "../infra/sessionStreamHub.js";
-import { handleAgentChatStream } from "../infra/agentStream.js";
+import { handleAgentChatStream } from "../infra/agentStream/index.js";
 import type { AppConfig } from "../infra/config.js";
-import type { AgentStreamEvent } from "../infra/agentStream.js";
+import type { AgentStreamEvent } from "../infra/agentStream/index.js";
 
 const SID = "a2-seq-test-session";
 

@@ -454,7 +454,7 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       config: deps.config,
       prisma: deps.prisma,
     });
-    const { chatAgentStream } = await import("./agentStream.js");
+    const { chatAgentStream } = await import("./agentStream/index.js");
 
     // QQ：正式回发交给工具（at/quote 由模型定）；系统只在无 answer 出站时兜底
     if (msg.envelope.channel === "qq") {

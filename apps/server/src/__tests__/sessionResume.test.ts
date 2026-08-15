@@ -18,7 +18,7 @@
 
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "../db.js";
-import * as agentStream from "../infra/agentStream.js";
+import * as agentStream from "../infra/agentStream/index.js";
 import {
   __resetAskUserGateForTests,
   createAskUserPending,
