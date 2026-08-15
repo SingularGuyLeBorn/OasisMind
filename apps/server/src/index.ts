@@ -30,8 +30,7 @@ import {
   stopAsyncDeliveryReconciler,
   runStartupRecovery,
 } from "./infra/asyncJobManager.js";
-import { closeSharedBrowser } from "./infra/metablog/browserPool.js";
-import { getSharedBrowser } from "./infra/metablog/browserPool.js";
+import { closeSharedBrowser, countOpenBrowserContexts, getSharedBrowser, isSharedBrowserReady } from "./infra/metablog/browserPool.js";
 import { hasSystemChrome } from "./infra/metablog/playwrightChrome.js";
 import { syncSearchEnvFromConfig } from "./infra/nativeTools.js";
 import { getServerCapabilities, getCachedEnrichedServerCapabilities } from "./infra/capabilities.js";
@@ -190,6 +189,15 @@ app.get("/health", async (_req, res) => {
     });
   }
 });
+
+if (process.env.E2E === "1") {
+  app.get("/debug/browser-pool", (_req, res) => {
+    res.json({
+      contexts: countOpenBrowserContexts(),
+      ready: isSharedBrowserReady(),
+    });
+  });
+}
 
 // 文章本地资源（图片等）静态服务
 // AUTH_MODE=password 时：GET 放行（访客博客配图可读）；写操作仍需鉴权（静态托管本身只读）
@@ -576,7 +584,13 @@ const server = app.listen(PORT, HOST, () => {
           `这会导致「假 LLM 回复 + 真实工具触网」的混合态，生产环境请勿如此配置。`,
       );
     } else {
-      console.warn(`  🧪 [Mock] 全部 Mock 开关已启用 (LLM/MCP/NATIVE_TOOLS) — 服务运行在测试模式，不调用任何真实外部 API。`);
+      const llmVia =
+        process.env.MOCK_LLM_URL?.trim()
+          ? `LLM 走真 HTTP/SSE → ${process.env.MOCK_LLM_URL.trim()}（回复写死）`
+          : "LLM 进程内短路";
+      console.warn(
+        `  🧪 [Mock] 全部 Mock 开关已启用 (LLM/MCP/NATIVE_TOOLS) — ${llmVia}；管道与真路径相同，只换写死回复/叶子结果。`,
+      );
     }
   }
 

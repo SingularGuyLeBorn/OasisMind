@@ -34,3 +34,9 @@ export async function closeSharedBrowser(): Promise<void> {
 export function isSharedBrowserReady(): boolean {
   return !!browserInstance?.isConnected();
 }
+
+/** E2E 只读：残留 context 数。生产勿当通用后门。 */
+export function countOpenBrowserContexts(): number {
+  if (!browserInstance?.isConnected()) return 0;
+  return browserInstance.contexts().length;
+}

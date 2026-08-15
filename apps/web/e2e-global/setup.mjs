@@ -24,12 +24,15 @@ function getE2EPorts() {
   return {
     serverPort: parseInt(process.env.E2E_SERVER_PORT || "3010", 10),
     webPort: parseInt(process.env.E2E_WEB_PORT || "3002", 10),
+    mockLlmPort: parseInt(process.env.E2E_MOCK_LLM_PORT || "3041", 10),
   };
 }
 
 export function killStaleTestProcesses() {
-  const { serverPort, webPort } = getE2EPorts();
-  killProcessesOnPorts([serverPort, webPort]);
+  const { serverPort, webPort, mockLlmPort } = getE2EPorts();
+  const ports = [serverPort, webPort];
+  if (process.env.MOCK_LLM === "true" || process.env.MOCK_LLM_URL) ports.push(mockLlmPort);
+  killProcessesOnPorts(ports);
 }
 
 function killProcessesOnPorts(ports) {
@@ -98,7 +101,7 @@ function killPidFileProcesses() {
   try {
     if (!fs.existsSync(PID_FILE)) return;
     const pids = JSON.parse(fs.readFileSync(PID_FILE, "utf8"));
-    for (const pid of [pids.serverPid, pids.webPid]) {
+    for (const pid of [pids.serverPid, pids.webPid, pids.mockLlmPid]) {
       if (!pid) continue;
       try {
         execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
@@ -263,16 +266,33 @@ async function seedAssistantManager(serverPort) {
     if (!defaultWorkspace) throw err;
   }
 
+  const e2eManagerTools = [
+    "native:spawn_subagent",
+    "native:async_task_run",
+    "native:async_task_status",
+    "native:async_task_cancel",
+    "native:sleep",
+    "native:read_article",
+    "native:web_search",
+    "native:browser_screenshot",
+  ];
   const existingManager = items.find((a) => a.tier === "manager" && /assistant/i.test(a.name));
   if (existingManager) {
     console.log("[e2e globalSetup] 发现现有 manager Agent", JSON.stringify({ id: existingManager.id, workspaceId: existingManager.workspaceId }));
-    if (!existingManager.workspaceId) {
-      // 修复旧数据：给已存在但无 Workspace 的 manager Agent 挂上默认 Workspace
-      await trpcMutate(serverPort, "agent.update", {
-        id: existingManager.id,
-        workspaceId: defaultWorkspace?.id,
-      });
-      console.log("[e2e globalSetup] 已给现有 manager Agent 关联默认 Workspace");
+    const currentTools = Array.isArray(existingManager.tools)
+      ? existingManager.tools
+      : String(existingManager.tools ?? "").split(",").map((t) => t.trim()).filter(Boolean);
+    const nextTools = Array.from(new Set([...currentTools, ...e2eManagerTools]));
+    const patch = {};
+    if (defaultWorkspace?.id && existingManager.workspaceId !== defaultWorkspace.id) {
+      patch.workspaceId = defaultWorkspace.id;
+    }
+    if (e2eManagerTools.some((t) => !currentTools.includes(t))) {
+      patch.tools = nextTools;
+    }
+    if (Object.keys(patch).length > 0) {
+      await trpcMutate(serverPort, "agent.update", { id: existingManager.id, ...patch });
+      console.log("[e2e globalSetup] 已补齐 manager 的 E2E 空间/工具", JSON.stringify(patch));
     }
     return;
   }
@@ -284,7 +304,7 @@ async function seedAssistantManager(serverPort) {
     workspaceId: defaultWorkspace?.id,
     model: "deepseek-chat",
     systemPrompt: "你是 OasisMind (见微) 默认助手，可以调用 spawn_subagent / async_task_run / sleep / read_article / web_search 等工具完成任务。",
-    tools: ["native:spawn_subagent", "native:async_task_run", "native:async_task_status", "native:async_task_cancel", "native:sleep", "native:read_article", "native:web_search"],
+    tools: ["native:spawn_subagent", "native:async_task_run", "native:async_task_status", "native:async_task_cancel", "native:sleep", "native:read_article", "native:web_search", "native:browser_screenshot"],
     source: "e2e-seed",
   });
   console.log("[e2e globalSetup] 已创建默认 Workspace 与 manager Agent", JSON.stringify({ workspaceId: defaultWorkspace.id, agentId: created?.data?.id, agentWorkspaceId: created?.data?.workspaceId }));
@@ -304,8 +324,9 @@ function spawnServer(serverPort) {
     KP_CONFIG_DIR: TEST_CONFIG_DIR,
     KP_DATA_DIR: TEST_DATA_DIR,
     REQUIRE_APPROVAL: process.env.REQUIRE_APPROVAL ?? "false",
+    E2E: "1",
   };
-  for (const key of ["MOCK_LLM", "MOCK_MCP", "MOCK_NATIVE_TOOLS"]) {
+  for (const key of ["MOCK_LLM", "MOCK_LLM_URL", "MOCK_MCP", "MOCK_NATIVE_TOOLS", "DEEPSEEK_API_KEY"]) {
     if (process.env[key]) serverEnv[key] = process.env[key];
   }
   if (process.env.MOCK_LLM === "true") {
@@ -326,6 +347,29 @@ function spawnServer(serverPort) {
     process.stderr.write(`[e2e server] ${data}`);
   });
 
+  return proc;
+}
+
+function spawnMockLlm(port) {
+  const mockLlmDir = path.join(projectRoot, "apps", "mock-llm");
+  const tsxCli = path.join(mockLlmDir, "node_modules", "tsx", "dist", "cli.mjs");
+  const tsxFallback = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  const cli = fs.existsSync(tsxCli) ? tsxCli : tsxFallback;
+  if (!fs.existsSync(cli)) {
+    throw new Error(`[e2e globalSetup] 找不到 tsx CLI 启动 mock-llm: ${cli}`);
+  }
+  const proc = spawn(process.execPath, [cli, "src/index.ts"], {
+    cwd: mockLlmDir,
+    env: { ...process.env, MOCK_LLM_PORT: String(port) },
+    stdio: "pipe",
+    windowsHide: true,
+  });
+  proc.stdout.on("data", (data) => {
+    process.stdout.write(`[e2e mock-llm] ${data}`);
+  });
+  proc.stderr.on("data", (data) => {
+    process.stderr.write(`[e2e mock-llm] ${data}`);
+  });
   return proc;
 }
 
@@ -360,13 +404,14 @@ function spawnWeb(webPort) {
 }
 
 export default async function globalSetup() {
-  const { serverPort, webPort } = getE2EPorts();
+  const { serverPort, webPort, mockLlmPort } = getE2EPorts();
+  const useMockLlmHttp = process.env.MOCK_LLM === "true";
 
   // 1. 清理可能残留的 E2E server/web 进程，等到端口真正空闲
   killPidFileProcesses();
   killStaleTestProcesses();
   killNodeHoldingTestDb();
-  await waitUntilPortsFree([serverPort, webPort]);
+  await waitUntilPortsFree(useMockLlmHttp ? [serverPort, webPort, mockLlmPort] : [serverPort, webPort]);
 
   // 2. 隔离数据库与三桶存储目录
   process.env.DATABASE_URL = TEST_DB_URL;
@@ -433,29 +478,67 @@ export default async function globalSetup() {
     console.error("[e2e globalSetup] prisma db push 失败:", err instanceof Error ? err.message : err);
     throw err;
   }
+  try {
+    execFileSync(
+      process.execPath,
+      [prismaCli, "db", "execute", "--stdin", "--schema", "prisma/schema.prisma"],
+      {
+        cwd: serverDir,
+        env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+        input: "SELECT systemPrompt FROM Agent LIMIT 0;",
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    );
+  } catch (err) {
+    throw new Error(
+      `[e2e globalSetup] 空库 schema 缺 Agent.systemPrompt（wipe 未真正落到空库）: ${
+        err instanceof Error ? err.message : err
+      }`,
+    );
+  }
 
-  // 7. 启动 E2E server（由 globalSetup 托管，避免 Playwright webServer 与 globalSetup 并行导致时序问题）
+  // 7. mock E2E：先起 OpenAI 兼容 mock-llm，server 走真 fetch/SSE，只换写好的回复
+  let mockLlmProc = null;
+  if (useMockLlmHttp) {
+    process.env.MOCK_LLM_URL = process.env.MOCK_LLM_URL || `http://127.0.0.1:${mockLlmPort}/v1`;
+    mockLlmProc = spawnMockLlm(mockLlmPort);
+    await waitForUrl(`http://127.0.0.1:${mockLlmPort}/health`, 30_000);
+    console.log(`[e2e globalSetup] mock-llm=http://127.0.0.1:${mockLlmPort}/v1 已就绪`);
+  }
+
+  // 8. 启动 E2E server（由 globalSetup 托管，避免 Playwright webServer 与 globalSetup 并行导致时序问题）
   const serverProc = spawnServer(serverPort);
 
-  // 8. 启动 E2E web（等待 server 健康后再启动，避免请求打到未就绪后端）
+  // 9. 启动 E2E web（等待 server 健康后再启动，避免请求打到未就绪后端）
   const webBuildDir = path.join(webDir, ".next");
   if (!fs.existsSync(webBuildDir)) {
     throw new Error(`[e2e globalSetup] 缺少 ${webBuildDir}，请先运行对应 build 命令（如 pnpm build:mock）`);
   }
   const webProc = spawnWeb(webPort);
 
-  // 9. 等待 server 就绪，并预置一个 manager 级 Assistant Agent
+  // 10. 等待 server 就绪，并预置一个 manager 级 Assistant Agent
   // （部分 mock E2E 依赖该 Agent 作为可调用 spawn_subagent 的对话主体）
   await waitForUrl(`http://127.0.0.1:${serverPort}/health`, 120_000);
   await seedAssistantManager(serverPort);
 
-  // 10. 等待 web 就绪
+  // 11. 等待 web 就绪
   await waitForUrl(`http://127.0.0.1:${webPort}/`, 120_000);
 
-  // 10. 记录 PID，供 teardown 精确清理
+  // 12. 记录 PID，供 teardown 精确清理
   fs.writeFileSync(
     PID_FILE,
-    JSON.stringify({ serverPid: serverProc.pid, webPid: webProc.pid, serverPort, webPort }, null, 2),
+    JSON.stringify(
+      {
+        serverPid: serverProc.pid,
+        webPid: webProc.pid,
+        mockLlmPid: mockLlmProc?.pid ?? null,
+        serverPort,
+        webPort,
+        mockLlmPort: useMockLlmHttp ? mockLlmPort : null,
+      },
+      null,
+      2,
+    ),
   );
 
   console.log(`[e2e globalSetup] server=http://127.0.0.1:${serverPort} web=http://127.0.0.1:${webPort} 已就绪`);

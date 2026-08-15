@@ -312,6 +312,48 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_4_screenshot_timeout",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_4_screenshot_timeout" ||
+      (/DSH-E2E-4 截图超时/.test(lastUserText(opts)) &&
+        hasTool(opts, "browser_screenshot") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => {
+      const url = lastUserText(opts).match(/https?:\/\/\S+/)?.[0] ?? "http://127.0.0.1:9/hang";
+      return {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("browser_screenshot", { url, timeoutMs: 5000 })],
+      };
+    },
+    stream: async function* (opts) {
+      const url = lastUserText(opts).match(/https?:\/\/\S+/)?.[0] ?? "http://127.0.0.1:9/hang";
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("browser_screenshot", { url, timeoutMs: 5000 })],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_4_screenshot_final",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_4_screenshot_final" ||
+      (/DSH-E2E-4 截图超时/.test(lastUserText(opts)) && hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "截图未完成。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "截图未完成。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "dsh_e2e_3_long_article",
     match: (opts, forced) =>
       forced === "dsh_e2e_3_long_article" ||

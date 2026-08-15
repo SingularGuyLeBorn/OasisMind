@@ -297,27 +297,31 @@ export async function runNativePipeline(
     }
   }
 
-  if (process.env.MOCK_NATIVE_TOOLS === "true" && hasMockNativeTool(name)) {
-    const raw = await executeMockNativeTool(name, frozen, ctx);
-    const envelope = materializeToolEnvelope(raw, {
-      toolName: name,
-      args: frozen,
-      maxChars: opts?.maxChars,
-      toolCallId: opts?.toolCallId ?? `pipe-${name}`,
-    });
-    notifyObservers({ stage: "observe", toolName: name, elapsedMs: Date.now() - started });
-    return { ok: true, envelope, elapsedMs: Date.now() - started };
-  }
+  // Mock 只换叶子结果（外网/副作用回放），校验/权限/回滚/超时与真路径同一条。
+  const executeLeaf =
+    process.env.MOCK_NATIVE_TOOLS === "true" && hasMockNativeTool(name)
+      ? (signal: AbortSignal) => executeMockNativeTool(name, frozen, { ...ctx, signal })
+      : (signal: AbortSignal) => cmd.execute(frozen, { ...ctx, signal });
 
   const stack = cmd.destructive ? ctx.rollbackStack : undefined;
   const artifact = stack ? await stack.capture(cmd, frozen, ctx) : undefined;
 
   let coop: Awaited<ReturnType<typeof runCooperative<unknown>>>;
   try {
-    coop = await runCooperative(
-      (signal) => cmd.execute(frozen, { ...ctx, signal }),
-      { timeoutMs: PIPELINE_TIMEOUT_MS, signal: ctx.signal, label: name },
+    const screenshotBudget = Number(
+      name === "browser_screenshot" || name === "scroll_screenshot"
+        ? frozen.timeoutMs
+        : NaN,
     );
+    const coopTimeoutMs =
+      Number.isFinite(screenshotBudget) && screenshotBudget >= 200
+        ? Math.min(PIPELINE_TIMEOUT_MS, screenshotBudget)
+        : PIPELINE_TIMEOUT_MS;
+    coop = await runCooperative(executeLeaf, {
+      timeoutMs: coopTimeoutMs,
+      signal: ctx.signal,
+      label: name,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (stack && artifact) {
