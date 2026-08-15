@@ -219,7 +219,8 @@ async function harnessGateRunTool(args: Record<string, unknown>, ctx: NativeTool
     });
   }
   try {
-    const metrics = await runHarnessGatePreset(ctx.config, preset);
+    if (ctx.signal.aborted) throw new Error("工具已取消");
+    const metrics = await runHarnessGatePreset(ctx.config, preset, ctx.signal);
     return {
       ...metrics,
       availablePresets: Object.keys(listHarnessGatePresets(ctx.config)).sort(),

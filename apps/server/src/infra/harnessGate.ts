@@ -24,6 +24,7 @@ export type HarnessGateExecFn = (args: {
   command: string;
   cwd: string;
   timeoutMs: number;
+  signal?: AbortSignal;
 }) => Promise<{ exitCode: number; stdout: string; stderr: string; durationMs: number }>;
 
 let execOverride: HarnessGateExecFn | null = null;
@@ -61,6 +62,7 @@ async function defaultExec(args: {
   command: string;
   cwd: string;
   timeoutMs: number;
+  signal?: AbortSignal;
 }): Promise<{ exitCode: number; stdout: string; stderr: string; durationMs: number }> {
   const start = Date.now();
   const isWin = process.platform === "win32";
@@ -68,6 +70,10 @@ async function defaultExec(args: {
   const fileArgs = isWin ? ["/d", "/s", "/c", args.command] : ["-lc", args.command];
 
   return new Promise((resolve, reject) => {
+    if (args.signal?.aborted) {
+      reject(new Error("工具已取消"));
+      return;
+    }
     const child = spawn(file, fileArgs, {
       cwd: args.cwd,
       env: { ...process.env, CI: "1", NO_COLOR: "1" },
@@ -76,9 +82,18 @@ async function defaultExec(args: {
     let stdout = "";
     let stderr = "";
     let settled = false;
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.kill("SIGTERM");
+      reject(new Error("工具已取消"));
+    };
+    args.signal?.addEventListener("abort", onAbort, { once: true });
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
+      args.signal?.removeEventListener("abort", onAbort);
       child.kill("SIGTERM");
       reject(new Error(`harness_gate 超时（${args.timeoutMs}ms）：${args.command}`));
     }, args.timeoutMs);
@@ -95,12 +110,14 @@ async function defaultExec(args: {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      args.signal?.removeEventListener("abort", onAbort);
       reject(err);
     });
     child.on("close", (code) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      args.signal?.removeEventListener("abort", onAbort);
       resolve({
         exitCode: typeof code === "number" ? code : 1,
         stdout,
@@ -134,7 +151,9 @@ export function assertVerifiedForKeep(metrics: ExperimentMetrics): void {
 export async function runHarnessGatePreset(
   config: AppConfig,
   preset: string,
+  signal?: AbortSignal,
 ): Promise<HarnessGateRunResult> {
+  if (signal?.aborted) throw new Error("工具已取消");
   const command = resolveHarnessGateCommand(config, preset);
   const timeoutMs = Math.max(
     5_000,
@@ -145,6 +164,7 @@ export async function runHarnessGatePreset(
     command,
     cwd: config.projectRoot,
     timeoutMs,
+    signal,
   });
   const flags = inferMetricFlags(preset, ran.exitCode);
   return {

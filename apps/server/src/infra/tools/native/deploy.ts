@@ -137,6 +137,7 @@ function runPinmeUpload(opts: {
   domain?: string;
   appKey: string | null;
   timeoutMs: number;
+  signal?: AbortSignal;
 }): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const args = ["-y", "pinme", "upload", opts.dirAbs];
   if (opts.domain) {
@@ -150,6 +151,10 @@ function runPinmeUpload(opts: {
   }
 
   return new Promise((resolve) => {
+    if (opts.signal?.aborted) {
+      resolve({ exitCode: 1, stdout: "", stderr: "工具已取消" });
+      return;
+    }
     const child = spawn("npx", args, {
       cwd: opts.dirAbs,
       env,
@@ -158,6 +163,11 @@ function runPinmeUpload(opts: {
     });
     let stdout = "";
     let stderr = "";
+    const onAbort = () => {
+      child.kill("SIGTERM");
+      stderr += "\n[pinme_upload] 已取消";
+    };
+    opts.signal?.addEventListener("abort", onAbort, { once: true });
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
       stderr += "\n[pinme_upload] 超时已终止";
@@ -170,16 +180,19 @@ function runPinmeUpload(opts: {
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", onAbort);
       resolve({ exitCode: code ?? 1, stdout, stderr });
     });
     child.on("error", (err) => {
       clearTimeout(timer);
+      opts.signal?.removeEventListener("abort", onAbort);
       resolve({ exitCode: 1, stdout, stderr: stderr + "\n" + err.message });
     });
   });
 }
 
 async function pinmeUploadTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const { abs, rel } = await resolveUploadDir(ctx, String(args.path ?? ""));
   const domain = typeof args.domain === "string" && args.domain.trim() ? args.domain.trim() : undefined;
   const timeoutMs = Math.min(
@@ -197,7 +210,7 @@ async function pinmeUploadTool(args: Record<string, unknown>, ctx: NativeToolCon
     };
   }
 
-  const result = await runPinmeUpload({ dirAbs: abs, domain, appKey, timeoutMs });
+  const result = await runPinmeUpload({ dirAbs: abs, domain, appKey, timeoutMs, signal: ctx.signal });
   const combined = `${result.stdout}\n${result.stderr}`;
   const url = extractPinmePublicUrl(combined);
   if (result.exitCode !== 0 || !url) {

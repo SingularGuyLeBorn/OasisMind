@@ -38,6 +38,7 @@ async function runSwanlabApi(
   args: string[],
   opts?: { timeoutMs?: number },
 ): Promise<{ ok: boolean; stdout: string; stderr: string; code: number | null }> {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const apiKey = await resolveApiKey(ctx);
   const host = swanlabHost();
   const cmdArgs = ["api", ...args, "-k", apiKey];
@@ -47,6 +48,7 @@ async function runSwanlabApi(
       timeout: opts?.timeoutMs ?? 60000,
       maxBuffer: 8 * 1024 * 1024,
       windowsHide: true,
+      signal: ctx.signal,
       env: { ...process.env, SWANLAB_API_KEY: apiKey, ...(host ? { SWANLAB_API_HOST: host } : {}) },
     });
     return { ok: true, stdout: stdout || "", stderr: stderr || "", code: 0 };
@@ -150,6 +152,7 @@ async function swanlabProjectList(args: Record<string, unknown>, ctx: NativeTool
 }
 
 async function swanlabProjectCreate(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const name = String(args.name || "").trim();
   if (!name) throw new Error("name 必填");
   const cmd = ["project", "create", "-n", name];
@@ -229,6 +232,7 @@ async function swanlabRunSeries(args: Record<string, unknown>, ctx: NativeToolCo
 
 /** 在当前 Agent Workspace 写入可运行的 SwanLab 训练脚手架（Python） */
 async function swanlabScaffoldTrain(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (ctx.signal.aborted) throw new Error("工具已取消");
   const project = String(args.project || "oasismind-exp").trim() || "oasismind-exp";
   const fileName = String(args.fileName || "train_swanlab.py").trim() || "train_swanlab.py";
   if (!/^[\w.-]+\.py$/i.test(fileName)) throw new Error("fileName 须为简单 .py 文件名");
