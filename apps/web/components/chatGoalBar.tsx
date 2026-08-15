@@ -118,6 +118,9 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
               : "Goal"}{" "}
           {goal.turnsUsed}/{goal.maxTurns}
           {tokenLabel}
+          <span data-testid="chat-goal-verified-count" className="text-[var(--kp-text-3)]">
+            · 已核实 {goal.verifiedProgress?.length ?? 0} 步
+          </span>
           <span
             className={cn(
               "rounded px-1.5 py-0.5 text-[10px]",
@@ -150,6 +153,7 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
             type="button"
             className="inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] hover:bg-[var(--kp-bg-mute)]"
             onClick={() => pauseMut.mutate({ sessionId })}
+            data-testid="chat-goal-pause"
           >
             <Pause className="h-3 w-3" /> 暂停
           </button>
@@ -158,6 +162,7 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
             type="button"
             className="inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] hover:bg-[var(--kp-bg-mute)]"
             onClick={() => resumeMut.mutate({ sessionId })}
+            data-testid="chat-goal-resume"
           >
             <Play className="h-3 w-3" /> 继续
           </button>
@@ -166,6 +171,7 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
           type="button"
           className="inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50"
           onClick={() => clearMut.mutate({ sessionId })}
+          data-testid="chat-goal-clear"
         >
           <X className="h-3 w-3" /> 清除
         </button>

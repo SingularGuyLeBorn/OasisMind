@@ -349,6 +349,12 @@ async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolCo
     workspaceId: ctx.agentSnapshot?.workspaceId,
     tier: ctx.agentSnapshot?.tier,
   });
+  if (scope === "global") {
+    const evidence = String(args.evidence ?? args.source ?? "").trim();
+    if (!evidence) {
+      throw new Error("memory_create(scope=global) 需要 evidence 或 source（禁止无证据的全局记忆）");
+    }
+  }
   // P2-06：global 写入可污染全部 Agent 上下文——审计日志 + 强制审批（无视 approvalExempt）
   if (scope === "global" && ctx.services) {
     console.warn(
@@ -745,6 +751,10 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         source: z
           .string()
           .describe("引用出处：post:{garden}/{slug} | run:{id} | url:https://… | tool:{jobId}")
+          .optional(),
+        evidence: z
+          .string()
+          .describe("scope=global 时必填：可核验出处（与 source 二选一）")
           .optional(),
         conflictsWith: z
           .array(z.string())

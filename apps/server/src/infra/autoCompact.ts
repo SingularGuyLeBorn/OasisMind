@@ -317,6 +317,8 @@ export interface CompactOptions {
   };
   /** 压缩阶段事件回调；仅在真正 macro 压缩时触发，reused / 未触发不 emit */
   emit?: (event: AgentStreamEvent) => void;
+  /** Intent tombstone：superseded 旧约束，禁止写进现行摘要 */
+  intentCompactHint?: string;
 }
 
 /**
@@ -395,6 +397,18 @@ export async function maybeCompactMessages(
     transcriptParts.push(`[${role}]\n${text}`);
   }
   const transcript = transcriptParts.join("\n\n---\n\n");
+  let intentCompactHint = options?.intentCompactHint ?? "";
+  if (!intentCompactHint && options?.flushContext?.sessionId) {
+    try {
+      const { readGoalStateRaw } = await import("./goalLoop.js");
+      const { buildSupersededCompactHint } = await import("./intentContract.js");
+      const g = await readGoalStateRaw(options.flushContext.sessionId);
+      intentCompactHint = buildSupersededCompactHint(g);
+    } catch {
+      /* 摘要路径不得因 goal 读失败中断 */
+    }
+  }
+
   const summaryModel = resolveCompactSummaryModel(config, model);
 
   let memoriesFlushed = 0;
@@ -427,9 +441,12 @@ export async function maybeCompactMessages(
         {
           role: "system",
           content:
-            "你是 OasisMind 对话摘要助手。将以下历史对话压缩为简洁的中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
+            "你是 OasisMind 对话摘要助手。将以下历史对话压缩为简洁的中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。Intent tombstone / superseded 旧约束禁止当作现行目标。",
         },
-        { role: "user", content: `请摘要以下对话历史：\n\n${transcript.slice(0, 32000)}` },
+        {
+          role: "user",
+          content: `${intentCompactHint ? `${intentCompactHint}\n\n` : ""}请摘要以下对话历史：\n\n${transcript.slice(0, 32000)}`,
+        },
       ],
       temperature: 0.2,
       maxTokens: 1024,

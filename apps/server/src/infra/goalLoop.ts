@@ -33,14 +33,10 @@ export async function readGoalStateRaw(sessionId: string): Promise<SessionGoalSt
   }
 }
 
-export async function writeGoalStateRaw(
-  sessionId: string,
-  goal: SessionGoalState | null,
-): Promise<void> {
+async function persistGoalPrisma(sessionId: string, goal: SessionGoalState | null): Promise<void> {
   if (goal === null) {
     await prisma.$executeRawUnsafe(`UPDATE ChatSession SET goalState = NULL WHERE id = ?`, sessionId);
-    // 推拉结合：写点同栈 PUSH，禁止只靠 ChatGoalBar 轮询
-    notifyGoalUpdated(sessionId, null);
+    notifyGoalUpdated(sessionId, null, 0);
     return;
   }
   await prisma.$executeRawUnsafe(
@@ -48,7 +44,7 @@ export async function writeGoalStateRaw(
     JSON.stringify(goal),
     sessionId,
   );
-  notifyGoalUpdated(sessionId, goal.status);
+  notifyGoalUpdated(sessionId, goal.status, goal.verifiedProgress?.length ?? 0);
 }
 
 type GoalStateStore = {
@@ -58,12 +54,37 @@ type GoalStateStore = {
 
 let goalStateStore: GoalStateStore = {
   read: readGoalStateRaw,
-  write: writeGoalStateRaw,
+  write: persistGoalPrisma,
 };
 
 /** 测试注入内存 store，避免打真实 DB */
 export function __setGoalStateStoreForTests(store: GoalStateStore | null): void {
-  goalStateStore = store ?? { read: readGoalStateRaw, write: writeGoalStateRaw };
+  goalStateStore = store ?? { read: readGoalStateRaw, write: persistGoalPrisma };
+}
+
+/** 经 store 读（测试可注入；生产 = Prisma） */
+export function readGoalState(sessionId: string): Promise<SessionGoalState | null> {
+  return goalStateStore.read(sessionId);
+}
+
+/**
+ * 公开写点：默认冻结 verifiedProgress（只有 Auditor 的 replaceVerified 能改）。
+ */
+export async function writeGoalStateRaw(
+  sessionId: string,
+  goal: SessionGoalState | null,
+  opts?: { replaceVerified?: boolean },
+): Promise<void> {
+  if (goal === null) {
+    await goalStateStore.write(sessionId, null);
+    return;
+  }
+  let next = goal;
+  if (!opts?.replaceVerified) {
+    const prev = await goalStateStore.read(sessionId);
+    next = { ...goal, verifiedProgress: prev?.verifiedProgress ?? [] };
+  }
+  await goalStateStore.write(sessionId, next);
 }
 
 export const DEEP_RESEARCH_SYSTEM_HINT = `你正处于深度调研模式（Deep Research）。请按以下节奏工作：
@@ -82,7 +103,8 @@ Otherwise done=false with a short reason what remains.`;
 export function parseGoalState(raw: unknown): SessionGoalState | null {
   if (!raw || typeof raw !== "object") return null;
   const parsed = sessionGoalStateSchema.safeParse(raw);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  return { ...parsed.data, verifiedProgress: parsed.data.verifiedProgress ?? [] };
 }
 
 export function buildGoalContinueMessage(goal: SessionGoalState, reason: string): string {
@@ -278,6 +300,13 @@ export async function setSessionGoal(args: {
     judgeModel: (args.judgeModel || defaults.judgeModel || "auto").trim() || "auto",
     execModel: args.execModel?.trim() || undefined,
     pendingContinue: null,
+    verifiedProgress: [],
+    intent: {
+      function: args.text.trim().slice(0, 200),
+      arguments: {},
+      kind: "reveal",
+      superseded: [],
+    },
     ...(args.mode === "autonomous"
       ? {
           startedAt: new Date().toISOString(),
@@ -290,7 +319,7 @@ export async function setSessionGoal(args: {
         }
       : {}),
   };
-  await goalStateStore.write(args.sessionId, goal);
+  await writeGoalStateRaw(args.sessionId, goal, { replaceVerified: true });
   if (goal.execModel) {
     await args.services.session.update({ id: args.sessionId, model: goal.execModel } as never);
   }
@@ -329,7 +358,7 @@ export async function reportAutonomousGate(args: {
       reportedAt: new Date().toISOString(),
     },
   };
-  await goalStateStore.write(args.sessionId, next);
+  await writeGoalStateRaw(args.sessionId, next);
   return next;
 }
 
@@ -340,7 +369,7 @@ export async function pauseSessionGoal(
   const goal = await goalStateStore.read(sessionId);
   if (!goal) return null;
   const next: SessionGoalState = { ...goal, status: "paused", pendingContinue: null };
-  await goalStateStore.write(sessionId, next);
+  await writeGoalStateRaw(sessionId, next);
   return next;
 }
 
@@ -356,7 +385,7 @@ export async function resumeSessionGoal(
     turnsUsed: 0,
     pendingContinue: null,
   };
-  await goalStateStore.write(sessionId, next);
+  await writeGoalStateRaw(sessionId, next);
   return next;
 }
 
@@ -364,7 +393,7 @@ export async function clearSessionGoal(
   _services: ServiceContainer,
   sessionId: string,
 ): Promise<void> {
-  await goalStateStore.write(sessionId, null);
+  await writeGoalStateRaw(sessionId, null);
 }
 
 /**
@@ -378,8 +407,14 @@ export async function evaluateGoalAfterTurn(args: {
   lastAssistantText: string;
   mainModel: string;
   judgeFn?: GoalJudgeFn;
+  evidenceCandidates?: string[];
+  auditFn?: (input: {
+    goalText: string;
+    evidenceCandidates: string[];
+    lastAssistantText: string;
+  }) => Promise<{ accept: boolean; claim: string; evidenceRefs: string[] }>;
 }): Promise<{ goal: SessionGoalState | null; action: "skip" | "done" | "continue" | "exhausted" }> {
-  const goal = await goalStateStore.read(args.sessionId);
+  let goal = await goalStateStore.read(args.sessionId);
   if (!goal || goal.status !== "active") {
     return { goal, action: "skip" };
   }
@@ -398,7 +433,7 @@ export async function evaluateGoalAfterTurn(args: {
         reason: err instanceof Error ? err.message : "LLM daily budget exceeded",
       },
     };
-    await goalStateStore.write(args.sessionId, exhausted);
+    await writeGoalStateRaw(args.sessionId, exhausted);
     return { goal: exhausted, action: "exhausted" };
   }
 
@@ -421,7 +456,7 @@ export async function evaluateGoalAfterTurn(args: {
         pendingContinue: null,
         lastVerdict: { done: false, reason: budget.message },
       };
-      await goalStateStore.write(args.sessionId, exhausted);
+      await writeGoalStateRaw(args.sessionId, exhausted);
       return { goal: exhausted, action: "exhausted" };
     }
   } else if (turnsUsed >= goal.maxTurns) {
@@ -432,8 +467,44 @@ export async function evaluateGoalAfterTurn(args: {
       pendingContinue: null,
       lastVerdict: { done: false, reason: `Turn budget exhausted (${goal.maxTurns}).` },
     };
-    await goalStateStore.write(args.sessionId, exhausted);
+    await writeGoalStateRaw(args.sessionId, exhausted);
     return { goal: exhausted, action: "exhausted" };
+  }
+
+  const progressBefore = goal.verifiedProgress?.length ?? 0;
+  const evidenceCandidates = args.evidenceCandidates ?? [];
+  try {
+    const { runGoalAudit, appendVerifiedProgress } = await import("./goalAudit.js");
+    const audit =
+      args.auditFn ??
+      ((input: { goalText: string; evidenceCandidates: string[]; lastAssistantText: string }) =>
+        runGoalAudit({
+          config: args.config,
+          goalText: input.goalText,
+          evidenceCandidates: input.evidenceCandidates,
+          lastAssistantText: input.lastAssistantText,
+        }));
+    if (args.auditFn || evidenceCandidates.length > 0) {
+      const verdictAudit = await audit({
+        goalText: goal.text,
+        evidenceCandidates,
+        lastAssistantText: args.lastAssistantText,
+      });
+      if (verdictAudit.accept) {
+        await appendVerifiedProgress({
+          sessionId: args.sessionId,
+          claim: verdictAudit.claim || "本轮已核实进展",
+          evidenceRefs: verdictAudit.evidenceRefs,
+          auditor: "critic",
+        });
+        goal = (await goalStateStore.read(args.sessionId)) ?? goal;
+      }
+    }
+  } catch (err) {
+    console.warn(
+      "[goalLoop] auditor 失败，状态不前进:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
   const judgeModel = resolveAuxiliaryModel(args.config, {
@@ -473,9 +544,27 @@ export async function evaluateGoalAfterTurn(args: {
           lastVerdict: { done: false, reason: gateOk.message },
           pendingContinue: { reason: gateOk.message },
         };
-        await goalStateStore.write(args.sessionId, contGate);
+        await writeGoalStateRaw(args.sessionId, contGate);
         return { goal: contGate, action: "continue" };
       }
+    }
+    const { isBlockedOrImpossibleReason } = await import("./goalAudit.js");
+    const progressAfter = goal.verifiedProgress?.length ?? 0;
+    const progressed = progressAfter > progressBefore;
+    const autonomousGateOk = goal.mode === "autonomous" && goal.externalGate?.passed === true;
+    if (!progressed && !autonomousGateOk && !isBlockedOrImpossibleReason(verdict.reason)) {
+      const reject: SessionGoalState = {
+        ...goal,
+        turnsUsed,
+        status: "active",
+        lastVerdict: {
+          done: false,
+          reason: "自评完成被拒：本轮 verifiedProgress 未增加",
+        },
+        pendingContinue: { reason: "需要可核验产物后才能标完成" },
+      };
+      await writeGoalStateRaw(args.sessionId, reject);
+      return { goal: reject, action: "continue" };
     }
     const doneState: SessionGoalState = {
       ...goal,
@@ -484,7 +573,7 @@ export async function evaluateGoalAfterTurn(args: {
       pendingContinue: null,
       lastVerdict: verdict,
     };
-    await goalStateStore.write(args.sessionId, doneState);
+    await writeGoalStateRaw(args.sessionId, doneState);
     return { goal: doneState, action: "done" };
   }
 
@@ -495,7 +584,7 @@ export async function evaluateGoalAfterTurn(args: {
     lastVerdict: verdict,
     pendingContinue: { reason: verdict.reason },
   };
-  await goalStateStore.write(args.sessionId, cont);
+  await writeGoalStateRaw(args.sessionId, cont);
   return { goal: cont, action: "continue" };
 }
 
@@ -511,13 +600,14 @@ export async function drainGoalContinueAfterSettle(args: {
 }): Promise<boolean> {
   const goal = await goalStateStore.read(args.sessionId);
   if (!goal || goal.status !== "active" || !goal.pendingContinue) return false;
+  if (goal.lastVerdict?.reason === "switched") return false;
 
   // P2-02：续跑起流前再闸一次日预算（防止裁判后、settle 前预算被其他会话耗尽）
   try {
     const { assertLlmBudget } = await import("./llmBudget.js");
     assertLlmBudget(args.config);
   } catch (err) {
-    await goalStateStore.write(args.sessionId, {
+    await writeGoalStateRaw(args.sessionId, {
       ...goal,
       status: "exhausted",
       pendingContinue: null,
@@ -550,7 +640,7 @@ export async function drainGoalContinueAfterSettle(args: {
     if (ok) {
       const latest = await goalStateStore.read(args.sessionId);
       if (!isSamePending(latest)) return false; // goal 已被覆盖：新 goal 的标记不可误清
-      await goalStateStore.write(args.sessionId, { ...latest!, pendingContinue: null });
+      await writeGoalStateRaw(args.sessionId, { ...latest!, pendingContinue: null });
     }
     return ok;
   }
@@ -579,7 +669,7 @@ export async function drainGoalContinueAfterSettle(args: {
   if (started === "started") {
     const latest = await goalStateStore.read(args.sessionId);
     if (isSamePending(latest)) {
-      await goalStateStore.write(args.sessionId, { ...latest!, pendingContinue: null });
+      await writeGoalStateRaw(args.sessionId, { ...latest!, pendingContinue: null });
       return true;
     }
     // 起流期间 goal 被覆盖：撤回误起的旧 goal 续跑，新 goal 会话不背旧 goal 的轮次

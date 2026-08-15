@@ -494,7 +494,7 @@ export const agentChatSchema = z
     editMessageId: z.string().cuid().optional(),
     editContent: z.string().min(1).optional(),
     skillId: z.string().cuid().optional(),
-    source: z.enum(["user", "super", "manager", "sub", "system", "cron"]).optional(),
+    source: z.enum(["user", "super", "manager", "sub", "system", "cron", "channel"]).optional(),
     /** 工具权限血统：parent=上级任务/异步续跑（允许 report_back）；user=用户直接对话 */
     runOrigin: z.enum(["user", "parent", "heartbeat"]).optional(),
     toolResults: z.record(z.unknown()).optional(),
@@ -630,6 +630,34 @@ export const sessionGoalStateSchema = z.object({
       reportedAt: z.string().optional(),
     })
     .nullable()
+    .optional(),
+  /** 仅 Auditor 可写；LLM / session_goal_set 不得直写 */
+  verifiedProgress: z
+    .array(
+      z.object({
+        id: z.string(),
+        claim: z.string().max(500),
+        evidenceRefs: z.array(z.string()).min(1),
+        auditedAt: z.string(),
+        auditor: z.enum(["system", "critic"]),
+      }),
+    )
+    .optional(),
+  intent: z
+    .object({
+      function: z.string().max(200),
+      arguments: z.record(z.unknown()).default({}),
+      kind: z.enum(["reveal", "revision", "switch"]).default("reveal"),
+      superseded: z
+        .array(
+          z.object({
+            at: z.string(),
+            oldArguments: z.record(z.unknown()),
+            reason: z.string(),
+          }),
+        )
+        .default([]),
+    })
     .optional(),
 });
 
@@ -776,7 +804,7 @@ export const createMessageSchema = z.object({
     model: z.string().optional(),
   }).optional(),
   finishReason: z.string().optional(),
-  source: z.enum(["user", "super", "manager", "sub", "system", "cron"]).optional(), // 不传则 service 层默认 "user"
+  source: z.enum(["user", "super", "manager", "sub", "system", "cron", "channel"]).optional(), // 不传则 service 层默认 "user"
 });
 
 export const updateMessageSchema = z.object({

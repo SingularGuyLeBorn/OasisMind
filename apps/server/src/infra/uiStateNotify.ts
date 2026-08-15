@@ -23,11 +23,13 @@ export type UiStateNotifyKind =
 export function notifyGoalUpdated(
   sessionId: string,
   status?: string | null,
+  verifiedCount?: number,
 ): void {
   pushUiStateToSession(sessionId, {
     type: "goal_updated",
     sessionId,
     status: status ?? undefined,
+    verifiedCount,
   });
 }
 
@@ -73,6 +75,32 @@ export async function notifyAgentUi(
     if (fallback) pushUiStateToSession(fallback.id, event);
   } catch {
     /* 通知失败不阻断写库 */
+  }
+}
+
+/**
+ * 列表级 UI 事件：推到所有未归档 chat/cron/subagent 会话（含非主会话）。
+ * 开着的任意 Chat 必须自己动；只推主会话会让「新开的空会话」侧栏假死。
+ */
+export async function notifyAllActiveSessionsUi(
+  prisma: PrismaClient,
+  event: Extract<AgentStreamEvent, { type: UiStateNotifyKind }>,
+): Promise<void> {
+  try {
+    const sessions = await prisma.chatSession.findMany({
+      where: {
+        status: { notIn: ["archived", "deleted"] },
+        kind: { in: ["chat", "cron", "subagent"] },
+      },
+      select: { id: true },
+      orderBy: { updatedAt: "desc" },
+      take: 80,
+    });
+    for (const s of sessions) {
+      pushUiStateToSession(s.id, event);
+    }
+  } catch {
+    /* ignore */
   }
 }
 

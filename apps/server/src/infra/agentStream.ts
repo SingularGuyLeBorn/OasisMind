@@ -9,6 +9,26 @@ import type { Request, Response } from "express";
 function allocateCuid(): string {
   return `c${randomBytes(12).toString("hex")}`;
 }
+
+const CHAT_MESSAGE_SOURCES = new Set([
+  "user",
+  "super",
+  "manager",
+  "sub",
+  "system",
+  "cron",
+  "channel",
+]);
+
+/** ChatMessage / 待发队列来源：未知值一律当手打，禁止把 QQ 入站洗成 user。 */
+export function resolveChatMessageSource(
+  source?: string | null,
+): "user" | "super" | "manager" | "sub" | "system" | "cron" | "channel" {
+  if (source && CHAT_MESSAGE_SOURCES.has(source)) {
+    return source as "user" | "super" | "manager" | "sub" | "system" | "cron" | "channel";
+  }
+  return "user";
+}
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import {
@@ -166,6 +186,8 @@ export type AgentStreamEvent =
       sessionId: string;
       reason: "hub_start" | "async_auto_consume" | "subagent_start";
       jobId?: string;
+      /** 本轮要回答的用户消息；有则前端钉 live，禁止猜 store 里最后一个 user */
+      userMessageId?: string;
     }
   /** Agent Cron 新建 briefing 会话并起流：推到该 Agent 主会话，供其它 Chat 标签页刷新侧栏 */
   | {
@@ -222,6 +244,7 @@ export type AgentStreamEvent =
       type: "goal_updated";
       sessionId: string;
       status?: string;
+      verifiedCount?: number;
     }
   /** 每日看板变更：/daily 页 invalidate listByDay */
   | {
@@ -709,21 +732,46 @@ export async function chatAgentStream(
       console.warn("[agentStream] autoNameSession failed:", err);
     });
 
+    if (resolveChatMessageSource(input.source) === "user") {
+      try {
+        const { applyIntentFromUserText } = await import("./intentContract.js");
+        await applyIntentFromUserText({
+          sessionId,
+          userText: prepared.messageText,
+          config: effectiveConfig,
+          services,
+        });
+      } catch (err) {
+        console.warn("[agentStream] applyIntentFromUserText 失败", err);
+      }
+    }
+
     // E3：预生成 assistant 消息 id，stop 响应与 abort 落库共用
     pendingAssistantId = prepared.updateAssistantId ?? allocateCuid();
     getStreamHub()?.setPendingAssistantMessageId(sessionId, pendingAssistantId);
 
     if (!prepared.skipUserCreate) {
-      const src = input.source ?? "user";
+      const src = resolveChatMessageSource(input.source);
       // 上级任务 / 系统恢复消息：若已存在同内容 user 消息，禁止再写第二条气泡。
       // 系统恢复消息（src=system）只在 resume 流程注入；重复 resume 时跳过写入即可，
       // 但不应因已有 assistant 回复而早退——服务恢复后仍要继续跑 LLM 推进对话。
-      if ((src === "super" || src === "manager" || src === "system") && sessionId) {
-        const dup = await services.prisma.chatMessage.findFirst({
-          where: { sessionId, role: "user", content: prepared.messageText },
-          select: { id: true, createdAt: true },
+      if ((src === "super" || src === "manager" || src === "system" || src === "channel") && sessionId) {
+        const recentUsers = await services.prisma.chatMessage.findMany({
+          where: { sessionId, role: "user" },
+          select: { id: true, createdAt: true, content: true, toolResults: true },
           orderBy: { createdAt: "desc" },
+          take: 40,
         });
+        const clientId = input.clientMessageId?.trim();
+        const inboundText = prepared.messageText;
+        const dup =
+          (clientId
+            ? recentUsers.find((m) => {
+                const tr = m.toolResults as { clientMessageId?: unknown } | null;
+                return typeof tr?.clientMessageId === "string" && tr.clientMessageId === clientId;
+              })
+            : undefined) ??
+          recentUsers.find((m) => m.content === inboundText);
         if (dup) {
           prepared.skipUserCreate = true;
           if (src !== "system") {
@@ -759,7 +807,7 @@ export async function chatAgentStream(
     }
 
     if (!prepared.skipUserCreate) {
-      await services.message.create({
+      const createdUser = await services.message.create({
         sessionId,
         role: "user",
         content: prepared.messageText,
@@ -771,8 +819,17 @@ export async function chatAgentStream(
             : input.clientMessageId
               ? { clientMessageId: input.clientMessageId }
               : undefined),
-        source: input.source ?? "user",
+        source: resolveChatMessageSource(input.source),
       });
+      const userMessageId = createdUser.success ? createdUser.data?.id : undefined;
+      if (userMessageId) {
+        getStreamHub()?.pushExternalEvent(sessionId, {
+          type: "session_run_started",
+          sessionId,
+          reason: "hub_start",
+          userMessageId,
+        });
+      }
     }
 
     const sessionMeta = await services.session.getByIdLite(sessionId);
@@ -1041,12 +1098,21 @@ export async function chatAgentStream(
     // Goal 外环：回合后裁判；CONTINUE 写 pendingContinue，由 onHubRunSettled 起下一轮
     try {
       const { evaluateGoalAfterTurn } = await import("./goalLoop.js");
+      const evidenceCandidates = (result.toolCalls ?? [])
+        .map((tc) => {
+          const r = tc.result as { _kp_result_path?: unknown; path?: unknown } | undefined;
+          if (typeof r?._kp_result_path === "string") return r._kp_result_path;
+          if (typeof r?.path === "string") return r.path;
+          return "";
+        })
+        .filter(Boolean);
       await evaluateGoalAfterTurn({
         services,
         config: effectiveConfig,
         sessionId: sessionId!,
         lastAssistantText: result.content ?? "",
         mainModel: result.model || effectiveModel,
+        evidenceCandidates,
       });
     } catch (err) {
       console.warn("[agentStream] evaluateGoalAfterTurn 失败", err);
@@ -1278,8 +1344,7 @@ export async function handleBusyHubPost(
     sessionId,
     kind: "user",
     content: msg,
-    source:
-      body.source === "system" || body.source === "cron" ? body.source : "user",
+    source: resolveChatMessageSource(body.source),
     attachments: body.attachments,
     skillId: body.skillId,
   });

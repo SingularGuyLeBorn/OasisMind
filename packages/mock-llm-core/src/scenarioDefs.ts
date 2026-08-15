@@ -419,6 +419,40 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "evolving_intent_revision",
+    match: (opts, forced) =>
+      forced === "evolving_intent_revision" || /改成狗，不要猫/.test(lastUserText(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已按修订推进：现行目标是狗，不再以猫为约束。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已按修订推进：现行目标是狗，不再以猫为约束。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "evolving_intent_switch",
+    match: (opts, forced) =>
+      forced === "evolving_intent_switch" || /另外做一个周报/.test(lastUserText(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已切换到周报目标，旧目标不再续跑。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已切换到周报目标，旧目标不再续跑。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "read_article_final",
     match: (opts, forced) =>
       forced === "read_article_final" ||

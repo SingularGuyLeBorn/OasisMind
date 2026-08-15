@@ -971,6 +971,16 @@ describe("native:memory_create / memory_search", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it("memory_create(scope=global) 无 evidence/source 硬拦（负向）", async () => {
+    const root = createTempProjectDir();
+    const ctx = createNativeCtx(root, { services: { memory: { create: vi.fn() }, prisma: {} } as never });
+    ctx.agentSnapshot = { id: "super-1", tier: "super", workspaceId: "ws-1", model: "test" } as never;
+    await expect(
+      executeNativeTool("memory_create", { content: "全局无证据", type: "note", scope: "global" }, ctx),
+    ).rejects.toThrow(/evidence|source/);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it("memory_search 经 MemoryRepository 按 scope 过滤并返回摘要（W5）", async () => {
     const root = createTempProjectDir();
     const findMany = vi.fn(async () => [
