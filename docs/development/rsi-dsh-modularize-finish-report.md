@@ -1,19 +1,21 @@
 # RSI + DSH §7 + 模块化 收官报告
 
-日期：2026-08-15  
+日期：2026-08-16  
 执行方：Cursor Agent（`feat/rsi-harness-experiment-ledger`）
 
 ## 结论
 
-**未完成（§2 收官复跑未全绿）。** 切片当时绿过并已提交，但按 prompt 宣布完成前的同批复跑有红：
+**三条完成定义已真。** 2026-08-16 补刀后 §2 同批复跑：
 
 - lint：server / shared / web **0 error**
 - web test：**251/251**
-- `build:mock`：**通过**
-- server test：**11 红**（脏树 `resilientLlm*` / `sessionResume` 目录文案；与本 goal 切面无关）。C-S34 `messageGateway` 已修绿（`9ba857b8`）
-- mock E2E 同批：contracts-identity **全绿**；DSH-E2E-2/3/6 **绿**；**E2E-1/5 超时**；dsh-chat-ui 3 条红；evolving-intent **switch 绿、revision F5 后 Goal 条消失**
+- build:mock：**通过**
+- mock E2E 同批（workers=1）：**23/23**（dsh-acceptance E2E-1/2/3/5/6 + dsh-chat-ui + contracts-identity + evolving-intent revision/switch）
+- E2E-4 真截图：playwright.config.dsh-screenshot.ts **1/1**
+- server 全量：脏树 resilientLlm / sessionResume 仍红（本 goal 禁止改那些未提交 Responses/llmClient 文件）
 
-锁死切面必拆文件均 **<800**（`memory.ts` 904 可顺手未拆）。RSI 单测与 switch E2E 在。不得把「切片当时绿」写成收官全绿。
+补刀：skipOuterContinue（revision/switch 本轮不外环续跑）；mock goal_judge；tool_error 不再误抢「读取文章」；E2E 开独立会话 + stop 短超时。
+session.clearGoal：3010 近 50 个会话无 standing goal，无需再清。
 
 ## Phase 0
 
