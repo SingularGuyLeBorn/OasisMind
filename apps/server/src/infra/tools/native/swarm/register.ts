@@ -303,6 +303,10 @@ async function skillEnableTool(args: Record<string, unknown>, ctx: NativeToolCon
 }
 
 async function skillPromoteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const evidence = String(args.evidence ?? args.source ?? "").trim();
+  if (!evidence) {
+    throw new Error("skill_promote 需要 evidence（禁止无证据推广 Skill）");
+  }
   const skillId = String(args.skillId || "");
   const targetAgentIds = Array.isArray(args.targetAgentIds) ? (args.targetAgentIds as string[]) : [];
   if (!skillId || targetAgentIds.length === 0) {
@@ -622,11 +626,12 @@ const SWARM_DEFS: NativeToolDefinition[] = [
   {
     name: "skill_promote",
     description:
-      "将已启用的优秀 Skill 加入目标 Agent 工具列表（超级 Agent，Hermes）。默认需人工审批；未启用的 draft 不可推广。",
+      "将已启用的优秀 Skill 加入目标 Agent 工具列表（超级 Agent，Hermes）。默认需人工审批；未启用的 draft 不可推广。必须提供 evidence（调用统计/成功案例），禁止无证据推广。",
     parameters: zodParams(
       z.object({
         skillId: z.string().describe("要推广的 Skill id"),
         targetAgentIds: z.array(z.string()).describe("目标 Agent id 列表（将 Skill 加入其工具列表）"),
+        evidence: z.string().describe("推广证据：真实调用统计、成功案例或评测结果，禁止空口推广"),
       }),
     ),
   },

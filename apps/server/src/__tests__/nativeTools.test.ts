@@ -971,6 +971,32 @@ describe("native:memory_create / memory_search", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it("skill_promote 无 evidence 硬拦（负向）", async () => {
+    const root = createTempProjectDir();
+    const ctx = createNativeCtx(root, {
+      services: {
+        skill: { getById: vi.fn() },
+        agent: { getById: vi.fn(), update: vi.fn() },
+      } as never,
+    });
+    ctx.agentSnapshot = { id: "super-1", tier: "super", workspaceId: "ws-1", model: "test" } as never;
+    const result = (await executeNativeTool(
+      "skill_promote",
+      { skillId: "sk1", targetAgentIds: ["a1"] },
+      ctx,
+    )) as { error?: string; missingParams?: string[] };
+    expect(result.missingParams).toContain("evidence");
+    expect(String(result.error ?? "")).toMatch(/evidence/);
+    await expect(
+      executeNativeTool(
+        "skill_promote",
+        { skillId: "sk1", targetAgentIds: ["a1"], evidence: "   " },
+        ctx,
+      ),
+    ).rejects.toThrow(/evidence/);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it("memory_create(scope=global) 无 evidence/source 硬拦（负向）", async () => {
     const root = createTempProjectDir();
     const ctx = createNativeCtx(root, { services: { memory: { create: vi.fn() }, prisma: {} } as never });
