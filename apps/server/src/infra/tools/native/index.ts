@@ -5,7 +5,7 @@
  */
 import { domainAllowed, type PackFlags } from "@knowpilot/shared";
 import { registerFsTools } from "./fs.js";
-import { registerWebTools } from "./web.js";
+import { registerWebTools } from "./web/register.js";
 import { registerDokobotTools } from "./dokobot.js";
 import { registerWebbridgeTools } from "./webbridge.js";
 import { registerShellTools } from "./shell.js";
@@ -66,4 +66,4 @@ export {
   syncSearchEnvFromConfig,
   isUnreadableArticlePage,
   readArticleContentWarning,
-} from "./web.js";
+} from "./web/register.js";

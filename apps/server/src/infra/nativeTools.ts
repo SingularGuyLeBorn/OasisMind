@@ -3,7 +3,8 @@
  *
  * PR-4 全部落地：所有 handler/schema 已按域迁至 infra/tools/native/*
  * （fs / web / shell / swarm / session / memory / integration）。
- * 本文件只保留：域注册入口 + Swarm 权限闸门 + Mock 拦截 + registry 分发。
+ * 本文件只保留：域注册入口 + Swarm 权限闸门 + registry 分发。
+ * Mock 叶子在 toolPipeline（校验/回滚/超时仍走真路径）。
  * 新增 native 工具 = 在对应域文件加 schema + handler（开闭原则，勿改本文件分发逻辑）。
  */
 
@@ -22,7 +23,7 @@ export {
   syncSearchEnvFromConfig,
   isUnreadableArticlePage,
   readArticleContentWarning,
-} from "./tools/native/web.js";
+} from "./tools/native/web/register.js";
 
 /** 域工具灌入统一注册表（唯一注册路径：registerNativeDomains） */
 let nativeToolsRegistered = false;
