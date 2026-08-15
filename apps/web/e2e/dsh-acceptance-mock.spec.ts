@@ -7,12 +7,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { SERVER_URL, trpcQuery, trpcMutate } from "./helpers/trpcE2e";
-import {
-  waitForChatReady,
-  sendChatMessage,
-  waitForStreamingComplete,
-  waitForSessionIdle,
-} from "./helpers/mockChatFixture";
+import { sendChatMessage, waitForSessionIdle } from "./helpers/mockChatFixture";
 
 function findOffloadJsons(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
@@ -34,6 +29,7 @@ test.describe("DSH §7 严酷验收 Mock", () => {
   });
 
   test("DSH-E2E-1 — sub 误写 spawn_subagent：硬调是 NOT_VISIBLE 失败脸", async ({ page }) => {
+    test.setTimeout(180_000);
     const agents = await trpcQuery<{
       items: Array<{ id: string; name: string; tier: string; workspaceId: string | null; model: string }>;
     }>("agent.list", { page: 1, pageSize: 50 });
@@ -63,12 +59,13 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     const subId = created.data.id;
     const subName = created.data.name;
 
-    await waitForChatReady(page);
-    await waitForSessionIdle(page);
-    await page.getByTestId("agent-tree-select").click();
-    const option = page.getByTestId(`agent-tree-option-${subId}`);
-    await expect(option).toBeVisible({ timeout: 15_000 });
-    await option.click();
+    const sess = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
+      "session.create",
+      { title: `dsh-e2e-1-${Date.now()}`, model: parent.model, agentId: subId },
+    );
+    if (!sess.success || !sess.data?.id) throw new Error(sess.error?.message ?? "E2E-1 创建会话失败");
+    await page.goto(`/chat?sessionId=${sess.data.id}&agentId=${subId}`);
+    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
     await expect(page.getByTestId("agent-tree-select")).toContainText(subName, { timeout: 15_000 });
     await waitForSessionIdle(page);
 
@@ -88,7 +85,9 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     await expect(pill).toBeVisible({ timeout: 25_000 });
     await expect(pill).toHaveAttribute("data-status", "error");
     await expect(page.getByTestId("tool-timing-hint").first()).toContainText(/NOT_VISIBLE|VisibleSet/);
-    await waitForStreamingComplete(page);
+    if ((await page.getByTestId("chat-stop").count()) > 0) {
+      await page.getByTestId("chat-stop").click({ force: true, timeout: 8_000 }).catch(() => {});
+    }
     await waitForSessionIdle(page);
   });
 

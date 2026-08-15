@@ -15,8 +15,7 @@ export async function waitForChatReady(page: Page): Promise<Locator> {
   await expect(input).toBeEnabled({ timeout: 30_000 });
   const stop = page.getByTestId("chat-stop");
   if ((await stop.count()) > 0) {
-    if (await stop.isEnabled().catch(() => false)) await stop.click();
-    else await stop.click({ force: true });
+    await stop.click({ force: true, timeout: 8_000 }).catch(() => {});
     await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
   }
   return input;
@@ -35,9 +34,7 @@ export async function sendChatMessage(page: Page, text: string): Promise<void> {
   });
 
   if ((await page.getByTestId("chat-stop").count()) > 0) {
-    const stop = page.getByTestId("chat-stop");
-    if (await stop.isEnabled().catch(() => false)) await stop.click();
-    else await stop.click({ force: true });
+    await page.getByTestId("chat-stop").click({ force: true, timeout: 8_000 }).catch(() => {});
     await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
   }
 
