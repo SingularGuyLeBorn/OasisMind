@@ -4,7 +4,8 @@
  *
  *   MOCK_NATIVE_TOOLS=true
  *
- * spawn_subagent / async_task_run 不 mock——必须真实建子 Agent / 投递。
+ * spawn_subagent / async_task_run / browser_screenshot 不 mock——
+ * 必须真实建子 / 真投递 / 真截图超时（DSH-E2E-4 禁止造假 TIMEOUT）。
  * 未覆盖的工具走真实实现。
  */
 
@@ -78,25 +79,6 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
     links: [{ text: "Mock Link", href: "https://example.com" }],
     elapsedMs: 5,
   }),
-
-  browser_screenshot: (args) => {
-    const url = String(args.url ?? "https://example.com");
-    const path = `content/uploads/screenshots/mock-${Date.now().toString(36)}.png`;
-    return {
-      url,
-      title: "Mock Screenshot",
-      path,
-      publicUrl: `/uploads/screenshots/${path.split("/").pop()}`,
-      bytes: 1024,
-      width: 1280,
-      height: 800,
-      fullPage: args.fullPage === true,
-      mimeType: "image/png",
-      suggestedTool: "read_image",
-      suggestedArgs: { path, mode: "auto" },
-      elapsedMs: 8,
-    };
-  },
 
   read_image: (args) => ({
     text: "Mock OCR/vision text from screenshot.",

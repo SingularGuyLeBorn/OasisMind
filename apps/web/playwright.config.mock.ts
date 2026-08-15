@@ -15,6 +15,9 @@ process.env.NEXT_PUBLIC_SERVER_URL = serverInternal;
 
 // Mock 环境变量需在最外层设置，globalSetup 启动 server 时会继承
 process.env.MOCK_LLM = "true";
+process.env.E2E_MOCK_LLM_PORT = process.env.E2E_MOCK_LLM_PORT ?? "3041";
+process.env.MOCK_LLM_URL = `http://127.0.0.1:${process.env.E2E_MOCK_LLM_PORT}/v1`;
+process.env.DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "mock-e2e";
 process.env.MOCK_MCP = "true";
 process.env.MOCK_NATIVE_TOOLS = "true";
 process.env.REQUIRE_APPROVAL = "false";
@@ -22,7 +25,8 @@ process.env.REQUIRE_APPROVAL = "false";
 /**
  * Mock 模式 Playwright 配置：
  * - 启动独立 server / web 端口，避免与真实 LLM E2E 冲突
- * - 注入 MOCK_LLM=true / MOCK_MCP=true，所有 Chat 测试不依赖外部 API
+ * - MOCK_LLM_URL 打 mock-llm HTTP（真 fetch/SSE，回复写死）
+ * - MOCK_MCP / MOCK_NATIVE_TOOLS 只换叶子结果，管道与真路径相同
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -35,7 +39,12 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   reporter: [["list"], ["html", { open: "never", outputFolder: "./e2e/playwright-report-mock" }]],
-  testMatch: ["**/*mock.spec.ts", "**/post-trash.spec.ts", "**/ui-components.spec.ts"],
+  testMatch: [
+    "**/*mock.spec.ts",
+    "**/dsh-acceptance-screenshot.spec.ts",
+    "**/post-trash.spec.ts",
+    "**/ui-components.spec.ts",
+  ],
   use: {
     baseURL: webBaseUrl,
     trace: "on-first-retry",
