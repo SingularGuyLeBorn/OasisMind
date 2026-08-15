@@ -62,8 +62,14 @@ test.describe("evolving-intent mock", () => {
 
     await page.reload();
     await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+    await expect(page.getByTestId("chat-goal-bar")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("chat-goal-bar")).toContainText("狗");
     await expect(page.getByTestId("chat-goal-bar")).not.toContainText("猫");
+    const afterReload = await trpcQuery<{ goal: { status: string; text: string } }>("session.getGoal", {
+      sessionId,
+    });
+    expect(afterReload.goal.status).toMatch(/active|paused/);
+    expect(afterReload.goal.text).toContain("狗");
   });
 
   test("switch：另外做周报后旧 goal 不再续跑", async ({ page }) => {

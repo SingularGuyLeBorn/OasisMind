@@ -5,8 +5,15 @@
 
 ## 结论
 
-三条完成定义在本机切片验收上为真：**DSH §7 E2E-1～6 已按 Chat 脸绿过并提交**；**锁死切面必拆生产文件均 <800 行**（`shared.tsx` 除外；`memory.ts` 904 行为「可顺手」未拆）；**RSI P0 verifiedProgress / IntentContract / Auditor / evolving-intent ×2 已落地**。  
-宣布本报告时，prompt §2 全量门禁（server/web lint+test、`build:mock`、dsh-acceptance + dsh-chat-ui + contracts-identity + evolving-intent）须在同批复跑；若复跑有一条红，本结论改为「未完成」并改本段。
+**未完成（§2 收官复跑未全绿）。** 切片当时绿过并已提交，但按 prompt 宣布完成前的同批复跑有红：
+
+- lint：server / shared / web **0 error**
+- web test：**251/251**
+- `build:mock`：**通过**
+- server test：**11 红**（脏树 `resilientLlm*` / `sessionResume` 目录文案；与本 goal 切面无关）。C-S34 `messageGateway` 已修绿（`9ba857b8`）
+- mock E2E 同批：contracts-identity **全绿**；DSH-E2E-2/3/6 **绿**；**E2E-1/5 超时**；dsh-chat-ui 3 条红；evolving-intent **switch 绿、revision F5 后 Goal 条消失**
+
+锁死切面必拆文件均 **<800**（`memory.ts` 904 可顺手未拆）。RSI 单测与 switch E2E 在。不得把「切片当时绿」写成收官全绿。
 
 ## Phase 0
 
