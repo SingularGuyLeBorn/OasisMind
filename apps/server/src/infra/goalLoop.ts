@@ -408,6 +408,8 @@ export async function evaluateGoalAfterTurn(args: {
   mainModel: string;
   judgeFn?: GoalJudgeFn;
   evidenceCandidates?: string[];
+  /** Intent revision/switch: hold goal, no outer continue / self-done. */
+  skipOuterContinue?: boolean;
   auditFn?: (input: {
     goalText: string;
     evidenceCandidates: string[];
@@ -417,6 +419,17 @@ export async function evaluateGoalAfterTurn(args: {
   let goal = await goalStateStore.read(args.sessionId);
   if (!goal || goal.status !== "active") {
     return { goal, action: "skip" };
+  }
+
+  if (args.skipOuterContinue) {
+    const held: SessionGoalState = {
+      ...goal,
+      status: "active",
+      pendingContinue: null,
+      lastVerdict: { done: false, reason: "intent 已更新，本轮不外环续跑" },
+    };
+    await writeGoalStateRaw(args.sessionId, held);
+    return { goal: held, action: "skip" };
   }
 
   // P2-02：外环与内环共享全局日预算（含 reactLoop 在途 reservedUsd）——超限则 exhausted

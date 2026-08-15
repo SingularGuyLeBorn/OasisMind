@@ -252,9 +252,12 @@ export async function chatAgentStream(
       console.warn("[agentStream] autoNameSession failed:", err);
     });
 
+    let skipOuterContinue = false;
     if (resolveChatMessageSource(input.source) === "user") {
       try {
-        const { applyIntentFromUserText } = await import("../intentContract.js");
+        const { applyIntentFromUserText, classifyIntentByRules } = await import("../intentContract.js");
+        const intentKind = classifyIntentByRules(prepared.messageText);
+        skipOuterContinue = intentKind === "revision" || intentKind === "switch";
         await applyIntentFromUserText({
           sessionId, userText: prepared.messageText, config: effectiveConfig, services,
         });
@@ -376,6 +379,7 @@ export async function chatAgentStream(
         lastAssistantText: result.content ?? "",
         mainModel: result.model || effectiveModel,
         evidenceCandidates,
+        skipOuterContinue,
       });
     } catch (err) {
       console.warn("[agentStream] evaluateGoalAfterTurn 失败", err);

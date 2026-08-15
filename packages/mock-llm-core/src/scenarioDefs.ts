@@ -23,6 +23,42 @@ import type { LlmCompletionResult, StreamChunk } from "./types.js";
 
 export const scenarios: MockLlmScenario[] = [
   {
+    name: "goal_judge",
+    match: (opts, forced) =>
+      forced === "goal_judge" ||
+      (/Latest agent response:/i.test(lastUserText(opts)) && /^Goal:/m.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: '{"done": false, "reason": "mock judge: not complete"}',
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: '{"done": false, "reason": "mock judge: not complete"}',
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "goal_auditor",
+    match: (opts, forced) =>
+      forced === "goal_auditor" ||
+      (/候选证据:/.test(lastUserText(opts)) && /Standing goal:/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: '{"accept": false, "claim": "", "evidenceRefs": []}',
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: '{"accept": false, "claim": "", "evidenceRefs": []}',
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "intermediate_content_final",
     match: (opts, forced) =>
       forced === "intermediate_content_final" ||
@@ -494,7 +530,7 @@ export const scenarios: MockLlmScenario[] = [
     name: "tool_error",
     match: (opts, forced) =>
       forced === "tool_error" ||
-      (/坏掉|broken|失败|error|读取文章/i.test(lastUserText(opts)) &&
+      (/坏掉|broken|失败|error/i.test(lastUserText(opts)) &&
         hasTool(opts, "read_article") &&
         !hasAnyToolResult(opts)),
     completion: (opts) => ({

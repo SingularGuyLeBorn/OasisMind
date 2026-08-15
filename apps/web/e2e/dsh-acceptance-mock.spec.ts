@@ -64,6 +64,7 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     const subName = created.data.name;
 
     await waitForChatReady(page);
+    await waitForSessionIdle(page);
     await page.getByTestId("agent-tree-select").click();
     const option = page.getByTestId(`agent-tree-option-${subId}`);
     await expect(option).toBeVisible({ timeout: 15_000 });

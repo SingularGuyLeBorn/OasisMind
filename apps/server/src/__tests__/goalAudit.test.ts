@@ -95,6 +95,22 @@ describe("goalAudit verifiedProgress 写入权", () => {
     expect(mem.get("s1")?.lastVerdict?.reason).toMatch(/自评完成被拒/);
   });
 
+  it("revision 本轮 skipOuterContinue：judge 自称 done 也不标完成、不 pendingContinue（负向）", async () => {
+    const res = await evaluateGoalAfterTurn({
+      services: {} as never,
+      config: createTestConfig("/tmp/goal-audit"),
+      sessionId: "s1",
+      lastAssistantText: "现行目标是狗",
+      mainModel: "m",
+      skipOuterContinue: true,
+      judgeFn: async () => ({ done: true, reason: "model self score" }),
+    });
+    expect(res.action).toBe("skip");
+    expect(mem.get("s1")?.status).toBe("active");
+    expect(mem.get("s1")?.pendingContinue).toBeNull();
+    expect(mem.get("s1")?.lastVerdict?.reason).toMatch(/不外环续跑/);
+  });
+
   it("blocked/impossible 可停但 verifiedProgress 仍空", async () => {
     const res = await evaluateGoalAfterTurn({
       services: {} as never,

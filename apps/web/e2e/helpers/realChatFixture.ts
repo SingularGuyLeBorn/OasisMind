@@ -13,23 +13,53 @@ export async function waitForChatReady(page: Page): Promise<Locator> {
   const input = page.getByTestId("chat-input").first();
   await input.waitFor({ state: "visible", timeout: 30_000 });
   await expect(input).toBeEnabled({ timeout: 30_000 });
+  const stop = page.getByTestId("chat-stop");
+  if ((await stop.count()) > 0) {
+    if (await stop.isEnabled().catch(() => false)) await stop.click();
+    else await stop.click({ force: true });
+    await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
+  }
   return input;
 }
 
+const assistBaseline = new WeakMap<Page, { count: number; text: string; sent: string; pills: number }>();
+
 export async function sendChatMessage(page: Page, text: string): Promise<void> {
+  const assistants = page.getByTestId("assistant-message-bubble");
+  const beforeCount = await assistants.count();
+  assistBaseline.set(page, {
+    count: beforeCount,
+    text: beforeCount > 0 ? (await assistants.last().innerText()).trim() : "",
+    sent: text,
+    pills: await page.getByTestId("tool-pill").count(),
+  });
+
+  if ((await page.getByTestId("chat-stop").count()) > 0) {
+    const stop = page.getByTestId("chat-stop");
+    if (await stop.isEnabled().catch(() => false)) await stop.click();
+    else await stop.click({ force: true });
+    await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
+  }
+
   const focusedPane = page.getByTestId("chat-session-pane").filter({
     has: page.locator('[data-focused="true"]'),
   });
   const input =
     (await focusedPane.count()) > 0
       ? focusedPane.getByTestId("chat-input")
-      : page.getByTestId("chat-input").first();
-  const send =
+      : page.getByTestId("chat-input").last();
+  await expect(input).toBeEnabled({ timeout: 15_000 });
+  await input.fill(text);
+  const sendBtn =
     (await focusedPane.count()) > 0
       ? focusedPane.getByTestId("chat-send")
-      : page.getByTestId("chat-send").first();
-  await input.fill(text);
-  await send.click();
+      : page.getByTestId("chat-send").last();
+  await expect(sendBtn).toBeEnabled({ timeout: 15_000 });
+  await sendBtn.click();
+}
+
+export function getAssistBaseline(page: Page): { count: number; text: string; sent: string; pills: number } {
+  return assistBaseline.get(page) ?? { count: 0, text: "", sent: "", pills: 0 };
 }
 
 export async function waitForStreamingComplete(page: Page): Promise<void> {
