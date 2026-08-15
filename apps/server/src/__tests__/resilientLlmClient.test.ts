@@ -20,6 +20,8 @@ function makeConfig(overrides?: Partial<AppConfig["llm"]>): AppConfig {
   const config = createTestConfig(createTempProjectDir());
   config.llm = {
     ...config.llm,
+    // 本文件 mock 的是 Chat Completions 线格式；auto 会让 deepseek 走 /responses
+    httpProtocol: "chat_completions",
     maxRetries: 3,
     baseDelayMs: 5,
     fallbackModels: [],
@@ -101,6 +103,7 @@ function makeStreamFetchMock(steps: Array<{ status: number; sse?: string; stream
 
 beforeEach(() => {
   delete process.env.MOCK_LLM;
+  delete process.env.MOCK_LLM_URL;
   // 防止外部环境强制 MOCK_LLM_SCENARIO 改变 mock 场景命中，污染 greeting 文案断言
   delete process.env.MOCK_LLM_SCENARIO;
 });
@@ -108,6 +111,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env.MOCK_LLM;
+  delete process.env.MOCK_LLM_URL;
   delete process.env.MOCK_LLM_SCENARIO;
 });
 
@@ -256,15 +260,14 @@ describe("withResilience(chatCompletion)", () => {
     const result = await client.chatCompletion({
       config,
       model: "deepseek-v4-flash",
-      messages: [{ role: "user", content: "讲个笑话" }],
+      messages: [{ role: "user", content: "你好" }],
     });
 
     expect(mock.count()).toBe(0);
     expect(Date.now() - started).toBeLessThan(1000);
-    // R-3c 假绿修复：原断言 `typeof content === "string" || content === null` 恒为 true，
-    // 任何实现（含未直通 mock、返回 null、返回包装文案的错误实现）都能通过。
-    // mock 客户端对无关键词消息命中 greeting 兜底场景（mockLlmClient.ts），必须返回确定文案。
-    // 负向验证：把下两行改成任何其他文案 / provider 即红；旧恒真断言在同样错误实现下仍绿。
+    // R-3c 假绿修复：原断言 `typeof content === "string" || content === null` 恒为 true。
+    // 问候走 greeting 写死文案；其它非关键词走 reply_catalog（≥300 条测试用 Mock）。
+    // 负向验证：把下两行改成任何其他文案 / provider 即红。
     expect(result.content).toBe("你好！我是 Mock LLM，正在为你服务。");
     expect(result.provider).toBe("mock");
     expect(result.finishReason).toBe("stop");

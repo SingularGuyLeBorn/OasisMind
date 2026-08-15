@@ -12,7 +12,7 @@
 - build:mock：**通过**
 - mock E2E 同批（workers=1）：**23/23**（dsh-acceptance E2E-1/2/3/5/6 + dsh-chat-ui + contracts-identity + evolving-intent revision/switch）
 - E2E-4 真截图：playwright.config.dsh-screenshot.ts **1/1**
-- server 全量：脏树 resilientLlm / sessionResume 仍红（本 goal 禁止改那些未提交 Responses/llmClient 文件）
+- server 全量：**211 files / 1375 passed**（3 skipped）
 
 补刀：skipOuterContinue（revision/switch 本轮不外环续跑）；mock goal_judge；tool_error 不再误抢「读取文章」；E2E 开独立会话 + stop 短超时。
 session.clearGoal：3010 近 50 个会话无 standing goal，无需再清。

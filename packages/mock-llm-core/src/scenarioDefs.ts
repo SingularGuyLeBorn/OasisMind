@@ -1033,6 +1033,23 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "session_resume",
+    match: (opts, forced) =>
+      forced === "session_resume" || /服务已重启/.test(lastUserText(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "你好！我是 Mock LLM，正在为你服务。已继续未完成的任务。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "你好！我是 Mock LLM，正在为你服务。已继续未完成的任务。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "reply_catalog",
     match: (opts, forced) => matchReplyCatalog(opts, forced),
     completion: (opts) => catalogCompletion(opts),

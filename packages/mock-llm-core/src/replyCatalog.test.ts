@@ -108,6 +108,11 @@ describe("测试用 Mock 回复目录", () => {
         ],
       }).name,
     ).toBe("goal_judge");
+    expect(
+      resolveScenario({
+        messages: [{ role: "user", content: "（服务已重启，请继续完成未完成的任务）" }],
+      }).name,
+    ).toBe("session_resume");
   });
 
   it(`长程 agentic 共 ${AGENTIC_ROUNDS} 轮，前 ${AGENTIC_ROUNDS - 1} 轮带工具，末轮收尾`, () => {
