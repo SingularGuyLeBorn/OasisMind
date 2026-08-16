@@ -123,6 +123,7 @@ export async function applyIntentFromUserText(args: {
   }
 
   if (classified.kind === "revision") {
+    await forkGoalBranchIfNeeded(args, goal);
     const oldArguments = { ...(goal.intent?.arguments ?? {}) };
     const nextText = applyRevisionToGoalText(goal.text, args.userText);
     const next: SessionGoalState = {
@@ -147,7 +148,8 @@ export async function applyIntentFromUserText(args: {
     return next;
   }
 
-  // switch：停旧续跑，开新 goal（同会话覆盖；旧 arguments 进 tombstone）
+  // switch：先换到 Goal 锚点叶（废枝摘要），再停旧续跑开新 goal
+  await forkGoalBranchIfNeeded(args, goal);
   const oldArguments = { ...(goal.intent?.arguments ?? { topic: goal.text }) };
   const paused: SessionGoalState = {
     ...goal,
@@ -187,4 +189,30 @@ export async function applyIntentFromUserText(args: {
   };
   await writeGoalStateRaw(args.sessionId, next, { replaceVerified: true });
   return next;
+}
+
+/** revision/switch：从 Goal 设立时的叶分叉，现行路径不再带上旧枝全文 */
+export async function forkGoalBranchIfNeeded(
+  args: {
+    sessionId: string;
+    config: AppConfig;
+    services: ServiceContainer;
+  },
+  goal: SessionGoalState,
+): Promise<void> {
+  const anchor = goal.anchorLeafId;
+  if (!anchor || !args.services.prisma) return;
+  try {
+    const { switchBranch } = await import("./chatTree.js");
+    await switchBranch(args.services.prisma, args.config, {
+      sessionId: args.sessionId,
+      messageId: anchor,
+      compactHint: buildSupersededCompactHint(goal),
+    });
+  } catch (err) {
+    console.warn(
+      "[intentContract] forkGoalBranch 失败（Goal 仍写入）:",
+      err instanceof Error ? err.message : err,
+    );
+  }
 }

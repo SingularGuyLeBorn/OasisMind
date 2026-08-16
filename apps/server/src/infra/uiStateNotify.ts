@@ -17,7 +17,20 @@ export type UiStateNotifyKind =
   | "run_updated"
   | "task_updated"
   | "goal_updated"
+  | "session_tree_updated"
   | "daily_flow_updated";
+
+/** 会话树换叶后推到该会话（消息列表按活跃路径再水合） */
+export function notifySessionTreeUpdated(
+  sessionId: string,
+  activeLeafId?: string | null,
+): void {
+  pushUiStateToSession(sessionId, {
+    type: "session_tree_updated",
+    sessionId,
+    activeLeafId: activeLeafId ?? undefined,
+  });
+}
 
 /** Goal 写库后推到该会话（ChatGoalBar / 跨标签） */
 export function notifyGoalUpdated(

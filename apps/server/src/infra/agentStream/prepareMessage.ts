@@ -36,6 +36,7 @@ export type AgentStreamEvent =
   | { type: "run_updated"; runId: string; sessionId?: string; status?: string; phase?: string }
   | { type: "task_updated"; taskId: string; status?: string }
   | { type: "goal_updated"; sessionId: string; status?: string; verifiedCount?: number }
+  | { type: "session_tree_updated"; sessionId: string; activeLeafId?: string | null }
   | { type: "daily_flow_updated"; dayKey: string }
   | { type: "post_list_changed"; reason?: string }
   | { type: "message_upserted"; sessionId: string; message: { id: string; role: string; content: string; parentId?: string | null; label?: string | null; kind?: string | null; toolCalls?: unknown; toolResults?: unknown; tokenUsage?: unknown; attachments?: unknown; source?: string | null; createdAt: string } }

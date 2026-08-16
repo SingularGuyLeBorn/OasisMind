@@ -301,6 +301,7 @@ export async function setSessionGoal(args: {
     execModel: args.execModel?.trim() || undefined,
     pendingContinue: null,
     verifiedProgress: [],
+    anchorLeafId: session.activeLeafId ?? undefined,
     intent: {
       function: args.text.trim().slice(0, 200),
       arguments: {},

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   classifyIntent,
   applyRevisionToGoalText,
@@ -10,10 +10,16 @@ import { __resetGoalLoopHookForTests, __setGoalStateStoreForTests } from "../inf
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import type { SessionGoalState } from "@knowpilot/shared";
 
+const switchBranchMock = vi.hoisted(() => vi.fn().mockResolvedValue({ switched: true }));
+vi.mock("../infra/chatTree.js", () => ({
+  switchBranch: (...args: unknown[]) => switchBranchMock(...args),
+}));
+
 describe("IntentContract", () => {
   let mem: Map<string, SessionGoalState | null>;
 
   beforeEach(() => {
+    switchBranchMock.mockClear();
     __resetGoalLoopHookForTests();
     mem = new Map();
     __setGoalStateStoreForTests({
@@ -103,5 +109,48 @@ describe("IntentContract", () => {
 
   it("applyRevisionToGoalText 替换主题", () => {
     expect(applyRevisionToGoalText("写一篇关于猫的文章", "改成狗，不要猫")).toBe("写一篇关于狗的文章");
+  });
+
+  it("无 prisma / 无锚点时不换叶（现有单测路径）", async () => {
+    await applyIntentFromUserText({
+      sessionId: "s1",
+      userText: "改成狗，不要猫",
+      config: createTestConfig("/tmp/intent"),
+      services: {} as never,
+    });
+    expect(switchBranchMock).not.toHaveBeenCalled();
+  });
+
+  it("revision 有 anchorLeafId + prisma 时先 switchBranch", async () => {
+    mem.set("s1", {
+      ...mem.get("s1")!,
+      anchorLeafId: "clxxxxxxxxxxxxxxxxxxxxxx1",
+      intent: {
+        function: "写一篇关于猫的文章",
+        arguments: { topic: "猫" },
+        kind: "reveal",
+        superseded: [
+          { at: new Date().toISOString(), oldArguments: { audience: "专家" }, reason: "改受众" },
+        ],
+      },
+    });
+    await applyIntentFromUserText({
+      sessionId: "s1",
+      userText: "改成狗，不要猫",
+      config: createTestConfig("/tmp/intent"),
+      services: { prisma: {} } as never,
+    });
+    expect(switchBranchMock).toHaveBeenCalledTimes(1);
+    const input = switchBranchMock.mock.calls[0]![2] as {
+      sessionId: string;
+      messageId: string;
+      compactHint?: string;
+    };
+    expect(input).toMatchObject({
+      sessionId: "s1",
+      messageId: "clxxxxxxxxxxxxxxxxxxxxxx1",
+    });
+    expect(input.compactHint).toContain("tombstone");
+    expect(input.compactHint).toContain("专家");
   });
 });

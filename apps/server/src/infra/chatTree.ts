@@ -639,6 +639,7 @@ export async function summarizeAbandonedBranch(
   config: AppConfig,
   model: string,
   abandoned: Array<{ role: string; content: string }>,
+  compactHint?: string,
 ): Promise<string | null> {
   if (abandoned.length === 0) return null;
   const transcript = abandoned
@@ -656,7 +657,8 @@ export async function summarizeAbandonedBranch(
         {
           role: "system",
           content:
-            "你是 OasisMind 分支摘要助手。将以下被放弃的对话分支压缩为简洁中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。",
+            "你是 OasisMind 分支摘要助手。将以下被放弃的对话分支压缩为简洁中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。" +
+            (compactHint ? `\n\n${compactHint}` : ""),
         },
         {
           role: "user",
@@ -686,7 +688,7 @@ export type SwitchBranchResult = {
 export async function switchBranch(
   prisma: PrismaClient,
   config: AppConfig,
-  input: { sessionId: string; messageId: string; model?: string },
+  input: { sessionId: string; messageId: string; model?: string; compactHint?: string },
 ): Promise<SwitchBranchResult> {
   const session = await prisma.chatSession.findUnique({
     where: { id: input.sessionId },
@@ -748,6 +750,7 @@ export async function switchBranch(
         config,
         input.model ?? session.model ?? "deepseek-v4-flash",
         abandoned.map((m) => ({ role: m.role, content: m.content })),
+        input.compactHint,
       );
       if (body) {
         const meta: BranchSummaryMeta = {
@@ -777,6 +780,9 @@ export async function switchBranch(
     where: { id: input.sessionId },
     data: { activeLeafId: input.messageId },
   });
+
+  const { notifySessionTreeUpdated } = await import("./uiStateNotify.js");
+  notifySessionTreeUpdated(input.sessionId, input.messageId);
 
   return {
     switched: true,
