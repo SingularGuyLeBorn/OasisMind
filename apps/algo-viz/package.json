@@ -1,5 +1,5 @@
 {
-  "name": "@knowpilot/algo-viz",
+  "name": "@oasismind/algo-viz",
   "version": "0.1.0",
   "private": true,
   "main": "./src/registry.ts",

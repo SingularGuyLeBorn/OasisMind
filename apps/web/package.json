@@ -1,5 +1,5 @@
 {
-  "name": "@knowpilot/web",
+  "name": "@oasismind/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,9 +22,9 @@
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",
-    "@knowpilot/algo-viz": "workspace:*",
-    "@knowpilot/server": "workspace:*",
-    "@knowpilot/shared": "workspace:*",
+    "@oasismind/algo-viz": "workspace:*",
+    "@oasismind/server": "workspace:*",
+    "@oasismind/shared": "workspace:*",
     "@milkdown/core": "7.5.9",
     "@milkdown/ctx": "7.5.9",
     "@milkdown/plugin-history": "7.5.9",

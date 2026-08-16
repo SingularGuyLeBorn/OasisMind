@@ -1,5 +1,5 @@
 {
-  "name": "@knowpilot/server",
+  "name": "@oasismind/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -42,8 +42,8 @@
     "smoke:yuque-feishu:deep": "tsx src/scripts/smoke-yuque-feishu-deep.ts"
   },
   "dependencies": {
-    "@knowpilot/mock-llm-core": "workspace:*",
-    "@knowpilot/shared": "workspace:*",
+    "@oasismind/mock-llm-core": "workspace:*",
+    "@oasismind/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@mozilla/readability": "0.5.0",
     "@prisma/client": "6.9.0",

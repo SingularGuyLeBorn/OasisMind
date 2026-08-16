@@ -1,5 +1,5 @@
 {
-  "name": "@knowpilot/mock-llm",
+  "name": "@oasismind/mock-llm",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@knowpilot/mock-llm-core": "workspace:*",
+    "@oasismind/mock-llm-core": "workspace:*",
     "express": "5.1.0"
   },
   "devDependencies": {

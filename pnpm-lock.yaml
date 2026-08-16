@@ -52,7 +52,7 @@ importers:
 
   apps/mock-llm:
     dependencies:
-      '@knowpilot/mock-llm-core':
+      '@oasismind/mock-llm-core':
         specifier: workspace:*
         version: link:../../packages/mock-llm-core
       express:
@@ -77,18 +77,18 @@ importers:
 
   apps/server:
     dependencies:
-      '@knowpilot/mock-llm-core':
-        specifier: workspace:*
-        version: link:../../packages/mock-llm-core
-      '@knowpilot/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
         version: 1.29.0(zod@3.25.56)
       '@mozilla/readability':
         specifier: 0.5.0
         version: 0.5.0
+      '@oasismind/mock-llm-core':
+        specifier: workspace:*
+        version: link:../../packages/mock-llm-core
+      '@oasismind/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@prisma/client':
         specifier: 6.9.0
         version: 6.9.0(prisma@6.9.0(typescript@5.8.3))(typescript@5.8.3)
@@ -210,15 +210,6 @@ importers:
       '@base-ui/react':
         specifier: 1.6.0
         version: 1.6.0(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@knowpilot/algo-viz':
-        specifier: workspace:*
-        version: link:../algo-viz
-      '@knowpilot/server':
-        specifier: workspace:*
-        version: link:../server
-      '@knowpilot/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@milkdown/core':
         specifier: 7.5.9
         version: 7.5.9(@milkdown/ctx@7.5.9)(@milkdown/prose@7.5.9)(@milkdown/transformer@7.5.9(@milkdown/prose@7.5.9))
@@ -258,6 +249,15 @@ importers:
       '@milkdown/utils':
         specifier: 7.5.9
         version: 7.5.9(@milkdown/core@7.5.9(@milkdown/ctx@7.5.9)(@milkdown/prose@7.5.9)(@milkdown/transformer@7.5.9(@milkdown/prose@7.5.9)))(@milkdown/ctx@7.5.9)(@milkdown/prose@7.5.9)(@milkdown/transformer@7.5.9(@milkdown/prose@7.5.9))
+      '@oasismind/algo-viz':
+        specifier: workspace:*
+        version: link:../algo-viz
+      '@oasismind/server':
+        specifier: workspace:*
+        version: link:../server
+      '@oasismind/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@react-three/drei':
         specifier: 10.7.7
         version: 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.185.0))(@types/react@19.2.17)(@types/three@0.185.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.185.0)
@@ -424,7 +424,7 @@ importers:
 
   packages/mock-llm-core:
     dependencies:
-      '@knowpilot/shared':
+      '@oasismind/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
