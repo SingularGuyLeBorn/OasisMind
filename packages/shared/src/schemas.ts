@@ -185,6 +185,22 @@ export const relatedPostsSchema = z.object({
  * - append：在已有文章末尾追加（可选二级标题）
  * 正文以服务端 messageId 为准，防前端篡改。
  */
+export const createPostFromToolResultSchema = z.object({
+  path: z.string().min(1).max(500),
+  mode: z.enum(["create", "update", "append"]).default("create"),
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+  title: z.string().min(1).max(200).optional(),
+  targetPostId: z.string().cuid().optional(),
+  category: z.string().max(100).optional().nullable(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  published: z.boolean().default(true),
+  appendHeading: z.string().max(200).optional(),
+});
+
+export const inspectSessionTurnSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
 export const createPostFromChatSchema = z.object({
   sessionId: z.string().cuid(),
   messageId: z.string().cuid(),
@@ -659,6 +675,8 @@ export const sessionGoalStateSchema = z.object({
         .default([]),
     })
     .optional(),
+  /** 设立 Goal 时的 activeLeafId；revision/switch 从此叶分叉，避免旧枝污染现行路径 */
+  anchorLeafId: z.string().cuid().optional(),
 });
 
 export type SessionGoalState = z.infer<typeof sessionGoalStateSchema>;
@@ -1894,6 +1912,8 @@ export type PostActivityDayDetailInput = z.infer<typeof postActivityDayDetailSch
 export type SearchPostsInput = z.infer<typeof searchPostsSchema>;
 export type RelatedPostsInput = z.infer<typeof relatedPostsSchema>;
 export type CreatePostFromChatInput = z.infer<typeof createPostFromChatSchema>;
+export type CreatePostFromToolResultInput = z.infer<typeof createPostFromToolResultSchema>;
+export type InspectSessionTurnInput = z.infer<typeof inspectSessionTurnSchema>;
 
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
