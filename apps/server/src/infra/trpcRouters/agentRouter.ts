@@ -8,7 +8,7 @@ import {
   submitAgentInjectSchema, editorAgentCompleteSchema, editorFormulaCopilotSchema,
   deleteByIdWithApprovalSchema, runWorkflowSchema, duplicateAgentSchema,
   createSessionQueueItemSchema, reorderSessionQueueItemsSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { TRPCError } from "@trpc/server";
 import { success, failure } from "../../trpc/result.js";

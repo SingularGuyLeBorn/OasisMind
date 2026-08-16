@@ -15,7 +15,7 @@ import {
   MEMORY_SCOPE_GLOBAL,
   MEMORY_USER_CREATABLE_TYPES,
   getMemoryDecayFactor,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { createContextInner } from "../trpc/context.js";
 import { distillPersona } from "../infra/personaDistiller.js";
 import { buildPersonaHint, buildMemoryContext } from "../infra/promptBuilder.js";

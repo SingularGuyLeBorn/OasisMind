@@ -12,7 +12,7 @@ import {
   AGENT_TOOL_RESULT_MAX_CHARS,
   LLM_MODEL_IDS,
   resolveModelSupportsVision,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { NativeToolContext } from "../types.js";
 
 function mimeFromExt(filePath: string): string {

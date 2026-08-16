@@ -8,7 +8,7 @@ import { refineWithLedger, validateRefineEvidence } from "../infra/harnessRefine
 import { decideExperiment } from "../infra/experimentLedger.js";
 
 function createTempConfig(): AppConfig {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kp-refine-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "om-refine-"));
   const configDir = path.join(tmp, "config");
   const dataDir = path.join(tmp, "data");
   const skills = path.join(configDir, "skills");

@@ -148,7 +148,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<string>
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "OasisMind RSS Fetcher/1.0 (+https://knowpilot.dev)",
+        "User-Agent": "OasisMind RSS Fetcher/1.0 (+https://oasismind.dev)",
         Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
       },
     });

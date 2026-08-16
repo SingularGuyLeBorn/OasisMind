@@ -3,7 +3,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isChatPostAttachment } from "@knowpilot/shared";
+import { isChatPostAttachment } from "@oasismind/shared";
 import {
   collectQqRawAttachments,
   composeQqUserText,

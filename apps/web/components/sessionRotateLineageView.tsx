@@ -28,7 +28,7 @@ function nodeLabel(n: { autoName?: string | null; title: string }): string {
 const STATUS_DOT: Record<string, string> = {
   active: "bg-emerald-500",
   running: "bg-sky-500",
-  archived: "bg-[var(--kp-text-3)]",
+  archived: "bg-[var(--om-text-3)]",
   paused: "bg-amber-500",
   completed: "bg-emerald-600",
   failed: "bg-red-500",
@@ -136,10 +136,10 @@ export function SessionRotateLineageView() {
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]" data-testid="session-rotate-lineage-view">
       {/* 链列表 */}
-      <aside className="kp-card-premium flex max-h-[70vh] flex-col overflow-hidden rounded-2xl">
-        <div className="border-b border-[var(--kp-divider)] px-4 py-3">
-          <p className="text-sm font-semibold text-[var(--kp-text-1)]">轮换链</p>
-          <p className="mt-0.5 text-[11px] text-[var(--kp-text-3)]">
+      <aside className="om-card-premium flex max-h-[70vh] flex-col overflow-hidden rounded-2xl">
+        <div className="border-b border-[var(--om-divider)] px-4 py-3">
+          <p className="text-sm font-semibold text-[var(--om-text-1)]">轮换链</p>
+          <p className="mt-0.5 text-[11px] text-[var(--om-text-3)]">
             {chains.length} 条 · {data.nodes.length} 节点 · {data.edges.length} 边
           </p>
         </div>
@@ -156,14 +156,14 @@ export function SessionRotateLineageView() {
                   className={cn(
                     "flex w-full flex-col gap-0.5 rounded-xl px-3 py-2.5 text-left transition-colors",
                     active
-                      ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                      : "hover:bg-[var(--kp-bg-mute)] text-[var(--kp-text-1)]",
+                      ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                      : "hover:bg-[var(--om-bg-mute)] text-[var(--om-text-1)]",
                   )}
                 >
                   <span className="truncate text-sm font-medium">
                     {tip ? nodeLabel(tip) : chain.rootId.slice(0, 8)}
                   </span>
-                  <span className="truncate text-[11px] text-[var(--kp-text-3)]">
+                  <span className="truncate text-[11px] text-[var(--om-text-3)]">
                     {chain.nodeIds.length} 节
                     {root ? ` · 自 ${nodeLabel(root)}` : ""}
                     {tip?.agentName ? ` · ${tip.agentName}` : ""}
@@ -177,18 +177,18 @@ export function SessionRotateLineageView() {
 
       <div className="flex min-w-0 flex-col gap-4">
         {/* 当前链放大 */}
-        <section className="kp-card-premium overflow-hidden rounded-2xl p-4">
+        <section className="om-card-premium overflow-hidden rounded-2xl p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-bold text-[var(--kp-text-1)]">当前链</h2>
-              <p className="text-[11px] text-[var(--kp-text-3)]">
+              <h2 className="text-sm font-bold text-[var(--om-text-1)]">当前链</h2>
+              <p className="text-[11px] text-[var(--om-text-3)]">
                 点击节点打开 Chat；边来自 rotatedFrom ↔ rotatedTo
               </p>
             </div>
             {activeChain && layout?.nodes[layout.nodes.length - 1] && (
               <Link
                 href={`/chat?sessionId=${layout.nodes[layout.nodes.length - 1]!.id}`}
-                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--kp-brand-deep)] hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--om-brand-deep)] hover:underline"
               >
                 打开尖端会话
                 <ExternalLink className="h-3 w-3" />
@@ -218,7 +218,7 @@ export function SessionRotateLineageView() {
                       y1={y1}
                       x2={x2}
                       y2={y2}
-                      stroke="var(--kp-brand)"
+                      stroke="var(--om-brand)"
                       strokeOpacity={0.45}
                       strokeWidth={2}
                       markerEnd="url(#rotate-arrow)"
@@ -234,7 +234,7 @@ export function SessionRotateLineageView() {
                     refY="3"
                     orient="auto"
                   >
-                    <path d="M0,0 L6,3 L0,6 Z" fill="var(--kp-brand)" fillOpacity={0.6} />
+                    <path d="M0,0 L6,3 L0,6 Z" fill="var(--om-brand)" fillOpacity={0.6} />
                   </marker>
                 </defs>
                 {layout.positions.map(({ node: n, x, y }, i) => {
@@ -250,8 +250,8 @@ export function SessionRotateLineageView() {
                         width={NODE_W}
                         height={NODE_H}
                         rx={12}
-                        fill={tip ? "var(--kp-brand-soft)" : "var(--kp-bg-mute)"}
-                        stroke={tip ? "var(--kp-brand)" : "var(--kp-divider)"}
+                        fill={tip ? "var(--om-brand-soft)" : "var(--om-bg-mute)"}
+                        stroke={tip ? "var(--om-brand)" : "var(--om-divider)"}
                         strokeWidth={tip ? 1.5 : 1}
                       />
                       <a href={`/chat?sessionId=${n.id}`}>
@@ -259,7 +259,7 @@ export function SessionRotateLineageView() {
                         <text
                           x={x + 12}
                           y={y + 22}
-                          className="fill-[var(--kp-text-1)]"
+                          className="fill-[var(--om-text-1)]"
                           style={{ fontSize: 12, fontWeight: 600 }}
                         >
                           {nodeLabel(n)}
@@ -267,7 +267,7 @@ export function SessionRotateLineageView() {
                         <text
                           x={x + 12}
                           y={y + 40}
-                          className="fill-[var(--kp-text-3)]"
+                          className="fill-[var(--om-text-3)]"
                           style={{ fontSize: 10 }}
                         >
                           {toPascalCaseId(n.status)}
@@ -281,25 +281,25 @@ export function SessionRotateLineageView() {
             </div>
           )}
           {activeChain && (
-            <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--kp-text-2)]">
+            <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--om-text-2)]">
               {activeChain.nodeIds.map((id, i) => {
                 const n = byId.get(id);
                 if (!n) return null;
                 return (
                   <li key={id} className="inline-flex items-center gap-1.5">
-                    {i > 0 && <span className="text-[var(--kp-text-3)]">→</span>}
+                    {i > 0 && <span className="text-[var(--om-text-3)]">→</span>}
                     <Link
                       href={`/chat?sessionId=${id}`}
-                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand-deep)]"
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand-deep)]"
                     >
                       <span
                         className={cn(
                           "h-1.5 w-1.5 rounded-full",
-                          STATUS_DOT[n.status] ?? "bg-[var(--kp-text-3)]",
+                          STATUS_DOT[n.status] ?? "bg-[var(--om-text-3)]",
                         )}
                       />
                       {nodeLabel(n)}
-                      <span className="text-[var(--kp-text-3)]">
+                      <span className="text-[var(--om-text-3)]">
                         {formatRelativeTime(n.createdAt)}
                       </span>
                     </Link>
@@ -312,10 +312,10 @@ export function SessionRotateLineageView() {
 
         {/* 全景图 */}
         {panorama && (
-          <section className="kp-card-premium overflow-hidden rounded-2xl p-4">
+          <section className="om-card-premium overflow-hidden rounded-2xl p-4">
             <div className="mb-3">
-              <h2 className="text-sm font-bold text-[var(--kp-text-1)]">全景图</h2>
-              <p className="text-[11px] text-[var(--kp-text-3)]">
+              <h2 className="text-sm font-bold text-[var(--om-text-1)]">全景图</h2>
+              <p className="text-[11px] text-[var(--om-text-3)]">
                 每行一条轮换链；高亮行为左侧选中项
               </p>
             </div>
@@ -338,7 +338,7 @@ export function SessionRotateLineageView() {
                     refY="2.5"
                     orient="auto"
                   >
-                    <path d="M0,0 L5,2.5 L0,5 Z" fill="var(--kp-text-3)" />
+                    <path d="M0,0 L5,2.5 L0,5 Z" fill="var(--om-text-3)" />
                   </marker>
                 </defs>
                 {panorama.rows.map(({ chain, y, nodes }) => {
@@ -358,7 +358,7 @@ export function SessionRotateLineageView() {
                             y1={y + NODE_H / 2}
                             x2={next.x}
                             y2={y + NODE_H / 2}
-                            stroke={selected ? "var(--kp-brand)" : "var(--kp-divider)"}
+                            stroke={selected ? "var(--om-brand)" : "var(--om-divider)"}
                             strokeWidth={selected ? 2 : 1.5}
                             markerEnd="url(#rotate-arrow-pan)"
                           />
@@ -374,10 +374,10 @@ export function SessionRotateLineageView() {
                             rx={10}
                             fill={
                               selected
-                                ? "var(--kp-brand-soft)"
-                                : "color-mix(in srgb, var(--kp-bg) 88%, var(--kp-bg-mute))"
+                                ? "var(--om-brand-soft)"
+                                : "color-mix(in srgb, var(--om-bg) 88%, var(--om-bg-mute))"
                             }
-                            stroke={selected ? "var(--kp-brand)" : "var(--kp-divider)"}
+                            stroke={selected ? "var(--om-brand)" : "var(--om-divider)"}
                             strokeWidth={selected ? 1.5 : 1}
                           />
                           <text
@@ -386,7 +386,7 @@ export function SessionRotateLineageView() {
                             style={{
                               fontSize: 11,
                               fontWeight: 600,
-                              fill: "var(--kp-text-1)",
+                              fill: "var(--om-text-1)",
                             }}
                           >
                             {nodeLabel(n)}
@@ -394,7 +394,7 @@ export function SessionRotateLineageView() {
                           <text
                             x={x + 10}
                             y={y + 38}
-                            style={{ fontSize: 9, fill: "var(--kp-text-3)" }}
+                            style={{ fontSize: 9, fill: "var(--om-text-3)" }}
                           >
                             {toPascalCaseId(n.status)}
                           </text>

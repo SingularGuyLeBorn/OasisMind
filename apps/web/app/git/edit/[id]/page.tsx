@@ -7,7 +7,7 @@ import { ArrowLeft, Save, Loader2, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGit } from "@/lib/hooks";
-import type { GitRepo } from "@knowpilot/shared";
+import type { GitRepo } from "@oasismind/shared";
 
 export default function GitRepoDetailPage() {
   const params = useParams();
@@ -23,7 +23,7 @@ export default function GitRepoDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--kp-brand-deep)]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--om-brand-deep)]" />
       </div>
     );
   }
@@ -32,8 +32,8 @@ export default function GitRepoDetailPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center space-y-2">
-          <p className="text-[var(--kp-text-2)]">Git 仓库不存在</p>
-          <Link href="/git" className="text-sm text-[var(--kp-brand-deep)] hover:underline">
+          <p className="text-[var(--om-text-2)]">Git 仓库不存在</p>
+          <Link href="/git" className="text-sm text-[var(--om-brand-deep)] hover:underline">
             返回列表
           </Link>
         </div>
@@ -73,47 +73,47 @@ export default function GitRepoDetailPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8">
       <div className="mx-auto w-full max-w-[1400px] space-y-6">
         <div className="flex items-center gap-3">
           <Link
             href="/git"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--kp-bg-soft)] text-[var(--kp-text-1)]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--om-bg-soft)] text-[var(--om-text-1)]"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--kp-text-1)] flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-[var(--kp-brand-deep)]" />
+            <h1 className="text-2xl font-bold text-[var(--om-text-1)] flex items-center gap-2">
+              <GitBranch className="w-5 h-5 text-[var(--om-brand-deep)]" />
               {repo.name}
             </h1>
-            <p className="text-xs text-[var(--kp-text-3)]">ID: {repo.id}</p>
+            <p className="text-xs text-[var(--om-text-3)]">ID: {repo.id}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--kp-text-1)]">名称</label>
-            <Input value={String(value("name") ?? "")} onChange={(e) => updateField("name", e.target.value)} className="bg-[var(--kp-bg)]" />
+            <label className="text-sm font-medium text-[var(--om-text-1)]">名称</label>
+            <Input value={String(value("name") ?? "")} onChange={(e) => updateField("name", e.target.value)} className="bg-[var(--om-bg)]" />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--kp-text-1)]">本地路径</label>
-            <Input value={String(value("path") ?? "")} onChange={(e) => updateField("path", e.target.value)} className="bg-[var(--kp-bg)] font-mono text-xs" />
+            <label className="text-sm font-medium text-[var(--om-text-1)]">本地路径</label>
+            <Input value={String(value("path") ?? "")} onChange={(e) => updateField("path", e.target.value)} className="bg-[var(--om-bg)] font-mono text-xs" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">分支</label>
-              <Input value={String(value("branch") ?? "")} onChange={(e) => updateField("branch", e.target.value)} className="bg-[var(--kp-bg)]" />
+              <label className="text-sm font-medium text-[var(--om-text-1)]">分支</label>
+              <Input value={String(value("branch") ?? "")} onChange={(e) => updateField("branch", e.target.value)} className="bg-[var(--om-bg)]" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">远程 URL</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">远程 URL</label>
               <Input
                 value={value("remoteUrl") ?? ""}
                 onChange={(e) => updateField("remoteUrl", e.target.value || null)}
                 placeholder="可选"
-                className="bg-[var(--kp-bg)]"
+                className="bg-[var(--om-bg)]"
               />
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function GitRepoDetailPage() {
           )}
 
           <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" disabled={update.isPending} className="bg-[var(--kp-brand-deep)] text-white hover:bg-[var(--kp-brand-deep)]">
+            <Button type="submit" disabled={update.isPending} className="bg-[var(--om-brand-deep)] text-white hover:bg-[var(--om-brand-deep)]">
               {update.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               保存
             </Button>

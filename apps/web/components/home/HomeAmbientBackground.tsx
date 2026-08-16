@@ -31,8 +31,8 @@ export function HomeAmbientBackground({ density = "home" }: { density?: AmbientD
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 50% at 80% 0%, color-mix(in srgb, var(--kp-glow-peach) 55%, transparent), transparent 58%)," +
-            "radial-gradient(ellipse 65% 45% at 10% 90%, color-mix(in srgb, var(--kp-glow-blue) 65%, transparent), transparent 55%)",
+            "radial-gradient(ellipse 70% 50% at 80% 0%, color-mix(in srgb, var(--om-glow-peach) 55%, transparent), transparent 58%)," +
+            "radial-gradient(ellipse 65% 45% at 10% 90%, color-mix(in srgb, var(--om-glow-blue) 65%, transparent), transparent 55%)",
         }}
       />
       <Particles

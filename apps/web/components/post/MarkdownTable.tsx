@@ -242,20 +242,20 @@ export function MarkdownTable({
             style,
             className: cn(
               cellEl.props.className,
-              "kp-md-th",
-              isSelected && "kp-md-cell-selected",
+              "om-md-th",
+              isSelected && "om-md-cell-selected",
             ),
             onClick: (e: React.MouseEvent) => {
               cellEl.props.onClick?.(e);
-              if ((e.target as HTMLElement).closest(".kp-md-col-resizer")) return;
+              if ((e.target as HTMLElement).closest(".om-md-col-resizer")) return;
               setSelected({ row: rowIndex, col: i });
             },
             children: (
               <>
-                <span className="kp-md-th-label">{cellEl.props.children}</span>
+                <span className="om-md-th-label">{cellEl.props.children}</span>
                 {i < colCount - 1 && (
                   <span
-                    className="kp-md-col-resizer"
+                    className="om-md-col-resizer"
                     title="拖动调整列宽"
                     onMouseDown={(e) => startResize(i, e)}
                   />
@@ -267,7 +267,7 @@ export function MarkdownTable({
 
         return cloneElement(cellEl, {
           style,
-          className: cn(cellEl.props.className, isSelected && "kp-md-cell-selected"),
+          className: cn(cellEl.props.className, isSelected && "om-md-cell-selected"),
           onClick: (e: React.MouseEvent) => {
             cellEl.props.onClick?.(e);
             setSelected({ row: rowIndex, col: i });
@@ -311,15 +311,15 @@ export function MarkdownTable({
   return (
     <div
       ref={shellRef}
-      className={cn("kp-md-table-shell not-prose", hasSelection && "is-focused")}
+      className={cn("om-md-table-shell not-prose", hasSelection && "is-focused")}
     >
       {hasSelection && (
-        <div className="kp-md-table-toolbar">
-          <div className="kp-md-table-toolbar-actions ml-auto">
+        <div className="om-md-table-toolbar">
+          <div className="om-md-table-toolbar-actions ml-auto">
             <button
               type="button"
               className={cn(
-                "kp-md-table-btn",
+                "om-md-table-btn",
                 currentAligns[activeCol] === "left" && "is-active",
               )}
               title="当前列左对齐"
@@ -330,7 +330,7 @@ export function MarkdownTable({
             <button
               type="button"
               className={cn(
-                "kp-md-table-btn",
+                "om-md-table-btn",
                 currentAligns[activeCol] === "center" && "is-active",
               )}
               title="当前列居中"
@@ -341,7 +341,7 @@ export function MarkdownTable({
             <button
               type="button"
               className={cn(
-                "kp-md-table-btn",
+                "om-md-table-btn",
                 currentAligns[activeCol] === "right" && "is-active",
               )}
               title="当前列右对齐"
@@ -351,7 +351,7 @@ export function MarkdownTable({
             </button>
             <button
               type="button"
-              className="kp-md-table-btn"
+              className="om-md-table-btn"
               title="切换当前列对齐"
               onClick={() => setColAlign(activeCol, nextAlign(currentAligns[activeCol] ?? "left"))}
             >
@@ -359,7 +359,7 @@ export function MarkdownTable({
             </button>
             <button
               type="button"
-              className="kp-md-table-btn"
+              className="om-md-table-btn"
               title="重置列宽与对齐"
               onClick={resetLayout}
             >
@@ -368,11 +368,11 @@ export function MarkdownTable({
           </div>
         </div>
       )}
-      <div className="kp-md-table-scroll">
+      <div className="om-md-table-scroll">
         <table
           ref={tableRef}
           {...props}
-          className={cn("kp-md-table", className)}
+          className={cn("om-md-table", className)}
           style={tableStyle}
         >
           {widths && widths.length === colCount && (

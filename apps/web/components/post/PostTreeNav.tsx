@@ -21,7 +21,7 @@ import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { postDetailHref } from "@/lib/postHref";
 import { cn } from "@/lib/utils";
 import { useContentNavHighlight } from "@/lib/contentNavContext";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { VirtualFlatList } from "@/components/post/VirtualFlatList";
@@ -51,8 +51,8 @@ interface TreeItem {
   children: Record<string, TreeItem>;
 }
 
-const EXPANDED_KEY = "kp-tree-expanded";
-const SCROLL_KEY = "kp-tree-scroll-top";
+const EXPANDED_KEY = "om-tree-expanded";
+const SCROLL_KEY = "om-tree-scroll-top";
 
 const GARDEN_ROOT_LABEL: Record<string, string> = {
   posts: "博客",
@@ -266,20 +266,20 @@ const TreeNodeItem = memo(function TreeNodeItem({
   const rowClass = cn(
     "flex min-w-0 flex-1 items-center gap-1 rounded-lg py-1.5 pr-1 pl-0 text-left text-sm font-medium transition",
     isActive
-      ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-      : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+      ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+      : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
   );
 
   const iconNode = hasChildren ? (
     isExpanded ? (
-      <FolderOpen className="h-4 w-4 shrink-0 text-[var(--kp-brand-deep)]" />
+      <FolderOpen className="h-4 w-4 shrink-0 text-[var(--om-brand-deep)]" />
     ) : (
-      <FolderClosed className="h-4 w-4 shrink-0 text-[var(--kp-brand-light)]" />
+      <FolderClosed className="h-4 w-4 shrink-0 text-[var(--om-brand-light)]" />
     )
   ) : isDraft ? (
-    <FileX2 className="h-4 w-4 shrink-0 text-[var(--kp-text-3)]" />
+    <FileX2 className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
   ) : (
-    <FileText className="h-4 w-4 shrink-0 text-[var(--kp-text-3)]" />
+    <FileText className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
   );
 
   return (
@@ -290,8 +290,8 @@ const TreeNodeItem = memo(function TreeNodeItem({
             type="button"
             onClick={() => onToggle(node.key, !isExpanded)}
             className={cn(
-              "flex h-5 w-3.5 shrink-0 items-center justify-center rounded-md text-[var(--kp-text-3)] transition-colors hover:bg-[var(--kp-bg-soft)] hover:text-[var(--kp-text-1)]",
-              isExpanded && "text-[var(--kp-text-1)]",
+              "flex h-5 w-3.5 shrink-0 items-center justify-center rounded-md text-[var(--om-text-3)] transition-colors hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-text-1)]",
+              isExpanded && "text-[var(--om-text-1)]",
             )}
             aria-label={isExpanded ? "折叠" : "展开"}
           >
@@ -315,13 +315,13 @@ const TreeNodeItem = memo(function TreeNodeItem({
             data-tree-slug={node.slug}
           >
             {iconNode}
-            <span className={cn("min-w-0 flex-1 truncate", isDraft && "text-[var(--kp-text-3)]")}>{node.title}</span>
+            <span className={cn("min-w-0 flex-1 truncate", isDraft && "text-[var(--om-text-3)]")}>{node.title}</span>
             {isDraft && (
               <span className="ml-1 shrink-0 rounded px-1 py-0.5 text-[10px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-950 dark:text-amber-400">
                 草稿
               </span>
             )}
-            {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--kp-brand-deep)]" />}
+            {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--om-brand-deep)]" />}
           </Link>
         ) : (
           <button
@@ -349,7 +349,7 @@ const TreeNodeItem = memo(function TreeNodeItem({
       {hasChildren && (
         <Collapsible open={isExpanded} onOpenChange={(open) => onToggle(node.key, open)}>
           <CollapsibleContent className="data-open:animate-none data-closed:animate-none">
-            <div className="ml-1.5 border-l border-[var(--kp-divider)] pl-1">
+            <div className="ml-1.5 border-l border-[var(--om-divider)] pl-1">
               {node.children.map((child) => (
                 <TreeNodeItem
                   key={child.key}
@@ -587,7 +587,7 @@ export function PostTreeNav({
   if (isLoading) {
     return (
       <div className={cn("flex flex-1 items-center justify-center p-4", className)}>
-        <p className="text-sm text-[var(--kp-text-3)]">加载目录…</p>
+        <p className="text-sm text-[var(--om-text-3)]">加载目录…</p>
       </div>
     );
   }
@@ -596,18 +596,18 @@ export function PostTreeNav({
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
       <div className="shrink-0 pb-2 pr-2 pt-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="筛选文章…"
-            className="h-9 border-[var(--kp-divider)] bg-[var(--kp-bg)] pl-8 pr-8 text-sm"
+            className="h-9 border-[var(--om-divider)] bg-[var(--om-bg)] pl-8 pr-8 text-sm"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
               aria-label="清除筛选"
             >
               <X className="h-3.5 w-3.5" />
@@ -620,7 +620,7 @@ export function PostTreeNav({
             <button
               type="button"
               onClick={expandAll}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2 py-1.5 text-xs font-medium text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
               title="一键展开全部目录"
             >
               <UnfoldVertical className="h-3.5 w-3.5" />
@@ -629,7 +629,7 @@ export function PostTreeNav({
             <button
               type="button"
               onClick={collapseAll}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2 py-1.5 text-xs font-medium text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
               title="一键折叠全部目录"
             >
               <FoldVertical className="h-3.5 w-3.5" />
@@ -639,7 +639,7 @@ export function PostTreeNav({
               type="button"
               onClick={locateCurrent}
               disabled={!activeSlug}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2 py-1.5 text-xs font-medium text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] disabled:cursor-not-allowed disabled:opacity-40"
               title={activeSlug ? "定位当前文章" : "当前不在文章页"}
             >
               <LocateFixed className="h-3.5 w-3.5" />
@@ -656,8 +656,8 @@ export function PostTreeNav({
           className={cn(
             "mb-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium transition",
             pathname === `/gardens/${encodeURIComponent(gardenId)}`
-              ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-              : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+              ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+              : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
           )}
         >
           <Home className="h-4 w-4 shrink-0" />
@@ -683,14 +683,14 @@ export function PostTreeNav({
                 className={cn(
                   "flex h-full items-center gap-1 rounded-lg pr-1.5 text-sm font-medium transition",
                   isActive
-                    ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                    ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                 )}
                 style={{ paddingLeft: `${5 + item.depth * 10}px` }}
                 title={item.title}
                 data-tree-slug={item.slug}
               >
-                <FileText className="h-4 w-4 shrink-0 text-[var(--kp-text-3)]" />
+                <FileText className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
                 <span className="truncate">{item.title}</span>
               </Link>
             );
@@ -716,7 +716,7 @@ export function PostTreeNav({
               />
             ))}
             {visibleTree.length === 0 && (
-              <p className="py-4 pr-2 text-sm text-[var(--kp-text-3)]">暂无本地文章</p>
+              <p className="py-4 pr-2 text-sm text-[var(--om-text-3)]">暂无本地文章</p>
             )}
           </nav>
         </div>

@@ -17,7 +17,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-const CHAT_UI_STORAGE_KEY = "kp-chat-ui-v1";
+const CHAT_UI_STORAGE_KEY = "om-chat-ui-v1";
 
 export type ChatLeftTab = "history" | "runtime";
 

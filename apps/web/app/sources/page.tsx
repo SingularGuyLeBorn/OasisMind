@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { InfoSource } from "@knowpilot/shared";
+import type { InfoSource } from "@oasismind/shared";
 import { useInfoSource, useNativeCapabilities } from "@/lib/hooks";
 import { EmptyState, KpSelect, LoadingState, ConfirmDialog, Pagination, NativeCapabilitiesPanel, PageHeader } from "@/components/shared";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,7 @@ function ReliabilityStars({ value, size = "sm" }: { value: number; size?: "sm" |
           key={n}
           className={cn(
             size === "md" ? "h-4 w-4" : "h-3 w-3",
-            n <= value ? "fill-amber-400 text-amber-400" : "text-[var(--kp-text-3)]/30",
+            n <= value ? "fill-amber-400 text-amber-400" : "text-[var(--om-text-3)]/30",
           )}
         />
       ))}
@@ -204,11 +204,11 @@ export default function SourcesPage() {
 
   if (view === "edit") {
     return (
-      <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8">
         <button
           type="button"
           onClick={() => setView("list")}
-          className="mb-6 flex items-center gap-1 text-sm text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+          className="mb-6 flex items-center gap-1 text-sm text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
         >
           <ChevronLeft className="h-4 w-4" />
           返回信息源列表
@@ -216,26 +216,26 @@ export default function SourcesPage() {
 
         <div className="mx-auto w-full max-w-[1400px] space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--kp-text-1)]">
+            <h1 className="text-2xl font-bold text-[var(--om-text-1)]">
               {editingId ? "编辑信息源" : "新建信息源"}
             </h1>
-            <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+            <p className="mt-1 text-sm text-[var(--om-text-3)]">
               配置 Agent 可引用的可信信息来源，同步至 content/sources/*.json。
             </p>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-6">
+          <div className="space-y-4 rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-6">
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">名称</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">名称</label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="DeepSeek 官方博客" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">URL</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">URL</label>
               <Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">类型</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">类型</label>
                 <KpSelect
                   value={form.type}
                   onChange={(type) => setForm({ ...form, type })}
@@ -245,7 +245,7 @@ export default function SourcesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">语言</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">语言</label>
                 <KpSelect
                   value={form.language}
                   onChange={(language) => setForm({ ...form, language })}
@@ -256,7 +256,7 @@ export default function SourcesPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">
                 可信度（1-5）
               </label>
               <div className="flex items-center gap-3">
@@ -266,41 +266,41 @@ export default function SourcesPage() {
                   max={5}
                   value={form.reliability}
                   onChange={(e) => setForm({ ...form, reliability: Number(e.target.value) })}
-                  className="flex-1 accent-[var(--kp-brand)]"
+                  className="flex-1 accent-[var(--om-brand)]"
                 />
                 <ReliabilityStars value={form.reliability} size="md" />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">描述</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">描述</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={3}
-                className="w-full resize-none rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand)]"
+                className="w-full resize-none rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand)]"
                 placeholder="简要说明该信息源的用途与特点"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">标签</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">标签</label>
               <Input
                 value={form.tags}
                 onChange={(e) => setForm({ ...form, tags: e.target.value })}
                 placeholder="AI, 官方, 技术（逗号分隔）"
               />
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--kp-text-2)]">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--om-text-2)]">
               <input
                 type="checkbox"
                 checked={form.enabled}
                 onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-                className="rounded accent-[var(--kp-brand)]"
+                className="rounded accent-[var(--om-brand)]"
               />
               启用此信息源
             </label>
             {form.type === "rss" && (
-              <div className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-4">
-                <label className="mb-2 block text-xs font-medium text-[var(--kp-text-3)]">
+              <div className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-4">
+                <label className="mb-2 block text-xs font-medium text-[var(--om-text-3)]">
                   自动抓取间隔（分钟）
                 </label>
                 <div className="flex items-center gap-3">
@@ -312,21 +312,21 @@ export default function SourcesPage() {
                     value={form.fetchInterval ?? 60}
                     onChange={(e) => setForm({ ...form, fetchInterval: Number(e.target.value) })}
                     disabled={!form.enabled}
-                    className="flex-1 accent-[var(--kp-brand)]"
+                    className="flex-1 accent-[var(--om-brand)]"
                   />
-                  <span className="w-16 text-right text-xs text-[var(--kp-text-2)]">
+                  <span className="w-16 text-right text-xs text-[var(--om-text-2)]">
                     {form.fetchInterval ?? 60} 分
                   </span>
                 </div>
-                <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">
+                <p className="mt-1 text-[10px] text-[var(--om-text-3)]">
                   留空或设为 0 表示不自动抓取；仅 type=RSS 时生效。
                 </p>
-                <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--kp-text-3)]">
+                <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--om-text-3)]">
                   <input
                     type="checkbox"
                     checked={form.fetchInterval === null}
                     onChange={(e) => setForm({ ...form, fetchInterval: e.target.checked ? null : 60 })}
-                    className="rounded accent-[var(--kp-brand)]"
+                    className="rounded accent-[var(--om-brand)]"
                   />
                   不自动抓取
                 </label>
@@ -361,7 +361,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={Globe}
         title="信息源管理"
@@ -392,7 +392,7 @@ export default function SourcesPage() {
             detailLabel="完整能力"
           />
           {!isLoading && data && (
-            <p className="text-[10px] text-[var(--kp-text-3)] px-1">
+            <p className="text-[10px] text-[var(--om-text-3)] px-1">
               全局已启用 {caps.infoSources?.enabled ?? "—"} 条 · 本页 {enabledSourceCount}/{data.total} 条 · WebSearch 在 Tavily 等引擎下可 Scoped 到信息源域名
             </p>
           )}
@@ -400,10 +400,10 @@ export default function SourcesPage() {
       )}
 
       {/* 筛选栏 */}
-      <div className="space-y-3 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-4">
+      <div className="space-y-3 rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-4">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -418,15 +418,15 @@ export default function SourcesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[var(--kp-text-3)]">类型</span>
+          <span className="text-xs text-[var(--om-text-3)]">类型</span>
           <button
             type="button"
             onClick={() => { setTypeFilter(""); setPage(1); }}
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               !typeFilter
-                ? "bg-[var(--kp-brand-deep)] text-white"
-                : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                ? "bg-[var(--om-brand-deep)] text-white"
+                : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
             )}
           >
             全部
@@ -439,8 +439,8 @@ export default function SourcesPage() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 typeFilter === opt.value
-                  ? "bg-[var(--kp-brand-deep)] text-white"
-                  : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                  ? "bg-[var(--om-brand-deep)] text-white"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
               )}
             >
               {opt.label}
@@ -449,7 +449,7 @@ export default function SourcesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-[var(--kp-text-3)]">最低可信度</span>
+          <span className="text-xs text-[var(--om-text-3)]">最低可信度</span>
           {[undefined, 3, 4, 5].map((level) => (
             <button
               key={String(level ?? "all")}
@@ -458,15 +458,15 @@ export default function SourcesPage() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 minReliability === level
-                  ? "bg-[var(--kp-brand-deep)] text-white"
-                  : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                  ? "bg-[var(--om-brand-deep)] text-white"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
               )}
             >
               {level === undefined ? "不限" : `${level}+ 星`}
             </button>
           ))}
 
-          <span className="ml-2 text-xs text-[var(--kp-text-3)]">状态</span>
+          <span className="ml-2 text-xs text-[var(--om-text-3)]">状态</span>
           {[
             { value: undefined, label: "全部" },
             { value: true, label: "已启用" },
@@ -479,8 +479,8 @@ export default function SourcesPage() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 enabledFilter === opt.value
-                  ? "bg-[var(--kp-brand-deep)] text-white"
-                  : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                  ? "bg-[var(--om-brand-deep)] text-white"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
               )}
             >
               {opt.label}
@@ -489,7 +489,7 @@ export default function SourcesPage() {
 
           {allTags.length > 0 && (
             <>
-              <span className="ml-2 text-xs text-[var(--kp-text-3)]">标签</span>
+              <span className="ml-2 text-xs text-[var(--om-text-3)]">标签</span>
               <KpSelect
                 value={tagFilter || "__all__"}
                 onChange={(v) => { setTagFilter(v === "__all__" ? "" : v); setPage(1); }}
@@ -527,23 +527,23 @@ export default function SourcesPage() {
                   y: 0,
                   transition: { delay: idx * 0.04, type: "spring", stiffness: 200, damping: 20 },
                 }}
-                className="kp-card-premium kp-lift group flex flex-col rounded-2xl p-5"
+                className="om-card-premium om-lift group flex flex-col rounded-2xl p-5"
               >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                       {source.type === "rss" ? <Rss className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
                     </div>
                     <div className="min-w-0">
                       <button
                         type="button"
                         onClick={() => openEdit(source)}
-                        className="text-left text-sm font-bold text-[var(--kp-text-1)] hover:text-[var(--kp-brand-deep)]"
+                        className="text-left text-sm font-bold text-[var(--om-text-1)] hover:text-[var(--om-brand-deep)]"
                       >
                         {source.name}
                       </button>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                        <span className="rounded bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[10px] text-[var(--kp-text-3)]">
+                        <span className="rounded bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[10px] text-[var(--om-text-3)]">
                           {TYPE_LABELS[source.type] ?? source.type}
                         </span>
                         <ReliabilityStars value={source.reliability} />
@@ -557,7 +557,7 @@ export default function SourcesPage() {
                       "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
                       source.enabled
                         ? "bg-green-500/10 text-green-600"
-                        : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+                        : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
                     )}
                   >
                     {source.enabled ? "已启用" : "已禁用"}
@@ -565,14 +565,14 @@ export default function SourcesPage() {
                 </div>
 
                 {source.description && (
-                  <p className="mb-3 line-clamp-2 text-xs text-[var(--kp-text-3)]">{source.description}</p>
+                  <p className="mb-3 line-clamp-2 text-xs text-[var(--om-text-3)]">{source.description}</p>
                 )}
 
                 <a
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mb-3 flex items-center gap-1 truncate text-[11px] text-[var(--kp-brand-deep)] hover:underline"
+                  className="mb-3 flex items-center gap-1 truncate text-[11px] text-[var(--om-brand-deep)] hover:underline"
                 >
                   <ExternalLink className="h-3 w-3 shrink-0" />
                   {source.url}
@@ -583,7 +583,7 @@ export default function SourcesPage() {
                     {source.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-0.5 rounded bg-[var(--kp-bg-soft)] px-1.5 py-0.5 text-[8px] text-[var(--kp-text-3)]"
+                        className="inline-flex items-center gap-0.5 rounded bg-[var(--om-bg-soft)] px-1.5 py-0.5 text-[8px] text-[var(--om-text-3)]"
                       >
                         <Tag className="h-2 w-2" />
                         {tag}
@@ -592,10 +592,10 @@ export default function SourcesPage() {
                   </div>
                 )}
 
-                <div className="mt-auto space-y-2 border-t border-[var(--kp-divider-light)] pt-3">
+                <div className="mt-auto space-y-2 border-t border-[var(--om-divider-light)] pt-3">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-[var(--kp-text-3)]">
+                      <span className="text-[10px] text-[var(--om-text-3)]">
                         {source.language === "zh" ? "中文" : source.language === "en" ? "英文" : "自动"}
                         {source.type === "rss" && source.fetchInterval && (
                           <span className="ml-2">· 每 {source.fetchInterval} 分抓取</span>
@@ -609,7 +609,7 @@ export default function SourcesPage() {
                               ? "text-red-500"
                               : source.lastFetchStatus === "success"
                                 ? "text-green-600"
-                                : "text-[var(--kp-text-3)]",
+                                : "text-[var(--om-text-3)]",
                           )}
                         >
                           {source.lastFetchStatus === "success" && "✓ "}
@@ -632,7 +632,7 @@ export default function SourcesPage() {
                             }
                           }}
                           disabled={fetchingId === source.id || fetchMutation.isPending}
-                          className="flex items-center gap-1 text-xs text-[var(--kp-brand-deep)] hover:underline disabled:opacity-50"
+                          className="flex items-center gap-1 text-xs text-[var(--om-brand-deep)] hover:underline disabled:opacity-50"
                         >
                           <RefreshCw className={cn("h-3 w-3", fetchingId === source.id && "animate-spin")} />
                           抓取
@@ -641,7 +641,7 @@ export default function SourcesPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(source)}
-                        className="text-xs text-[var(--kp-brand-deep)] hover:underline"
+                        className="text-xs text-[var(--om-brand-deep)] hover:underline"
                       >
                         编辑
                       </button>

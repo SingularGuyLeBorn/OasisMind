@@ -19,7 +19,7 @@ import {
   DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS,
   DEFAULT_MODEL_CONTEXT_WINDOW_TOKENS,
   resolveCompactCharThreshold,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { flushMemoriesBeforeCompact } from "./memoryFlush.js";
 import {
   filterOpenRouterFreeModels,
@@ -43,7 +43,7 @@ import {
 
 /** 摘要内容标记：压缩边界消息的正文前缀（边界行由 buildCompactBoundaryMarker 生成） */
 export const SUMMARY_MARKER = "[此前对话摘要 — 自动压缩]";
-export const COMPACT_BOUNDARY_PREFIX = "[kp-compact-boundary:";
+export const COMPACT_BOUNDARY_PREFIX = "[om-compact-boundary:";
 
 export { DEFAULT_COMPACT_KEEP_RECENT, DEFAULT_KEEP_RECENT_TOKENS };
 
@@ -388,7 +388,7 @@ export async function maybeCompactMessages(
   const transcriptParts: string[] = [];
   if (existing) {
     // 摘要正文送 LLM 时剥离 details 机器块，避免污染
-    const bare = existing.replace(/\n*<!--kp-compact-details:[\s\S]*?-->\s*$/, "").trim();
+    const bare = existing.replace(/\n*<!--om-compact-details:[\s\S]*?-->\s*$/, "").trim();
     transcriptParts.push(`[已有摘要]\n${bare}`);
   }
   for (const m of toSummarize) {

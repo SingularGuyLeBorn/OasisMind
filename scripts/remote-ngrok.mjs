@@ -67,9 +67,9 @@ if (!ngrokDomain) {
   const authMode = (env.AUTH_MODE || process.env.AUTH_MODE || "none").toLowerCase();
   const password = (env.AUTH_PASSWORD || process.env.AUTH_PASSWORD || "").trim();
   if (!(authMode === "password" && password)) {
-    if (allowInsecureAuth || process.env.KP_ALLOW_INSECURE_PUBLIC === "1") {
+    if (allowInsecureAuth || process.env.OM_ALLOW_INSECURE_PUBLIC === "1") {
       console.warn(
-        "\n  ⚠️ [安全] 未启用 AUTH_MODE=password，但已用 --allow-insecure-auth / KP_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
+        "\n  ⚠️ [安全] 未启用 AUTH_MODE=password，但已用 --allow-insecure-auth / OM_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
       );
     } else {
       console.error("\n  ❌ 拒绝启动 ngrok 远程：公网暴露必须启用密码鉴权。");
@@ -80,9 +80,9 @@ if (!ngrokDomain) {
   }
   const masterKey = (env.CREDENTIAL_MASTER_KEY || process.env.CREDENTIAL_MASTER_KEY || "").trim();
   if (!masterKey) {
-    if (allowInsecureAuth || process.env.KP_ALLOW_INSECURE_PUBLIC === "1") {
+    if (allowInsecureAuth || process.env.OM_ALLOW_INSECURE_PUBLIC === "1") {
       console.warn(
-        "\n  ⚠️ [安全] 未配置 CREDENTIAL_MASTER_KEY，但已用 --allow-insecure-auth / KP_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
+        "\n  ⚠️ [安全] 未配置 CREDENTIAL_MASTER_KEY，但已用 --allow-insecure-auth / OM_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
       );
     } else {
       console.error("\n  ❌ 拒绝启动 ngrok 远程：公网暴露必须配置 CREDENTIAL_MASTER_KEY。");

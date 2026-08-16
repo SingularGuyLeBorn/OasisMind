@@ -12,7 +12,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Files, Upload, Link, Database } from "lucide-react";
-import type { FileMeta } from "@knowpilot/shared";
+import type { FileMeta } from "@oasismind/shared";
 import { useFile } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
@@ -69,7 +69,7 @@ export default function FilesPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -110,10 +110,10 @@ export default function FilesPage() {
                   y: 0,
                   transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 }
                 }}
-                className={cn("group relative overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] hover:bg-white dark:hover:bg-[var(--kp-bg-soft)] hover:border-[var(--kp-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-2.5" : "p-4")}
+                className={cn("group relative overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] hover:bg-white dark:hover:bg-[var(--om-bg-soft)] hover:border-[var(--om-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-2.5" : "p-4")}
               >
                 {/* 预览区域 */}
-                <div className="aspect-video w-full rounded-xl bg-[var(--kp-bg-soft)] overflow-hidden mb-3 relative flex items-center justify-center border border-[var(--kp-divider-light)]">
+                <div className="aspect-video w-full rounded-xl bg-[var(--om-bg-soft)] overflow-hidden mb-3 relative flex items-center justify-center border border-[var(--om-divider-light)]">
                   {isImage ? (
                     <Image
                       src={file.url}
@@ -124,7 +124,7 @@ export default function FilesPage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <Database className="w-8 h-8 text-[var(--kp-text-3)]" />
+                    <Database className="w-8 h-8 text-[var(--om-text-3)]" />
                   )}
                   
                   <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -142,17 +142,17 @@ export default function FilesPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[var(--kp-text-1)] text-xs truncate" title={file.name}>
+                  <h3 className="font-bold text-[var(--om-text-1)] text-xs truncate" title={file.name}>
                     {file.name}
                   </h3>
-                  <div className="flex justify-between items-center text-[10px] text-[var(--kp-text-3)] mt-1.5">
+                  <div className="flex justify-between items-center text-[10px] text-[var(--om-text-3)] mt-1.5">
                     <span>{formatBytes(file.size)}</span>
                     <span>{file.mimeType.split("/")[1]?.toUpperCase()}</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center border-t border-[var(--kp-divider-light)] mt-3 pt-3">
-                  <span className="text-[10px] text-[var(--kp-text-3)]">
+                <div className="flex justify-between items-center border-t border-[var(--om-divider-light)] mt-3 pt-3">
+                  <span className="text-[10px] text-[var(--om-text-3)]">
                     {new Date(file.createdAt).toLocaleDateString()}
                   </span>
                   

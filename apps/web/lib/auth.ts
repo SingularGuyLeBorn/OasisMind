@@ -1,6 +1,6 @@
 /** 本地鉴权 Token 存储（AUTH_MODE=password 时使用） */
 
-const STORAGE_KEY = "kp-auth-token";
+const STORAGE_KEY = "om-auth-token";
 
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;

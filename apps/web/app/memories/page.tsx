@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Brain, Plus, Tag } from "lucide-react";
 import Link from "next/link";
-import type { Memory } from "@knowpilot/shared";
-import { MEMORY_TYPE_LABELS } from "@knowpilot/shared";
+import type { Memory } from "@oasismind/shared";
+import { MEMORY_TYPE_LABELS } from "@oasismind/shared";
 import { useMemory } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { AdminPage, EmptyState, KpSelect, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
@@ -43,7 +43,7 @@ function MemoryCrystal({ strength }: { strength: number }) {
       style={{
         filter:
           s > 0.55
-            ? `drop-shadow(0 0 ${3 + s * 4}px rgba(var(--kp-brand-rgb), ${0.2 + s * 0.3}))`
+            ? `drop-shadow(0 0 ${3 + s * 4}px rgba(var(--om-brand-rgb), ${0.2 + s * 0.3}))`
             : undefined,
       }}
       title={`强度 ${(s * 100).toFixed(0)}%${fading ? " · 衰减中" : ""}`}
@@ -51,9 +51,9 @@ function MemoryCrystal({ strength }: { strength: number }) {
       <svg viewBox="0 0 32 44" className="h-7 w-[22px]" aria-hidden>
         <defs>
           <linearGradient id={`${uid}-fill`} x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor="var(--kp-brand-deep)" />
-            <stop offset="60%" stopColor="var(--kp-brand)" />
-            <stop offset="100%" stopColor="var(--kp-accent)" />
+            <stop offset="0%" stopColor="var(--om-brand-deep)" />
+            <stop offset="60%" stopColor="var(--om-brand)" />
+            <stop offset="100%" stopColor="var(--om-accent)" />
           </linearGradient>
           <clipPath id={`${uid}-clip`}>
             <path d="M16 2 L28 12 L25 32 L16 42 L7 32 L4 12 Z" />
@@ -70,7 +70,7 @@ function MemoryCrystal({ strength }: { strength: number }) {
         <path
           d="M16 2 L28 12 L25 32 L16 42 L7 32 L4 12 Z"
           fill="none"
-          stroke="var(--kp-brand)"
+          stroke="var(--om-brand)"
           strokeOpacity={fading ? 0.4 : 0.65}
           strokeWidth="1.4"
           strokeLinejoin="round"
@@ -143,10 +143,10 @@ export default function MemoriesPage() {
 
   if (!parsed) {
     return (
-      <p className="text-xs text-[var(--kp-text-2)] leading-relaxed">
-        <span className="text-[var(--kp-text-3)]">&ldquo;</span>
+      <p className="text-xs text-[var(--om-text-2)] leading-relaxed">
+        <span className="text-[var(--om-text-3)]">&ldquo;</span>
         {content}
-        <span className="text-[var(--kp-text-3)]">&rdquo;</span>
+        <span className="text-[var(--om-text-3)]">&rdquo;</span>
       </p>
     );
   }
@@ -168,14 +168,14 @@ export default function MemoriesPage() {
   return (
     <div className="space-y-2.5">
       {taskDescription && (
-        <p className="text-xs font-medium text-[var(--kp-text-1)] leading-relaxed">
-          <span className="text-[var(--kp-text-3)]">&ldquo;</span>
+        <p className="text-xs font-medium text-[var(--om-text-1)] leading-relaxed">
+          <span className="text-[var(--om-text-3)]">&ldquo;</span>
           {taskDescription}
-          <span className="text-[var(--kp-text-3)]">&rdquo;</span>
+          <span className="text-[var(--om-text-3)]">&rdquo;</span>
         </p>
       )}
       {keyLearnings && (
-        <div className="rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] px-2.5 py-2 text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+        <div className="rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)] px-2.5 py-2 text-[10px] leading-relaxed text-[var(--om-text-2)]">
           {keyLearnings}
         </div>
       )}
@@ -184,14 +184,14 @@ export default function MemoriesPage() {
           toolsUsed.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-0.5 rounded-full bg-[var(--kp-brand-soft)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--kp-brand-deep)]"
+              className="inline-flex items-center gap-0.5 rounded-full bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--om-brand-deep)]"
             >
               <Tag className="h-2 w-2" />
               {formatToolDisplayName(t)}
             </span>
           ))
         ) : (
-          <span className="rounded-full bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[9px] text-[var(--kp-text-3)]">
+          <span className="rounded-full bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[9px] text-[var(--om-text-3)]">
             无工具调用
           </span>
         )}
@@ -206,16 +206,16 @@ export default function MemoriesPage() {
           </span>
         )}
         {durationMs !== undefined && (
-          <span className="rounded-full bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[9px] text-[var(--kp-text-3)]">
+          <span className="rounded-full bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[9px] text-[var(--om-text-3)]">
             {(durationMs / 1000).toFixed(1)}s
           </span>
         )}
       </div>
       {tokenUsage && (
-        <div className="flex flex-wrap items-center gap-x-2 text-[9px] text-[var(--kp-text-3)]">
+        <div className="flex flex-wrap items-center gap-x-2 text-[9px] text-[var(--om-text-3)]">
           <span>prompt {(tokenUsage.prompt as number) ?? "-"}</span>
           <span>completion {(tokenUsage.completion as number) ?? "-"}</span>
-          <span className="font-medium text-[var(--kp-text-2)]">total {(tokenUsage.total as number) ?? "-"}</span>
+          <span className="font-medium text-[var(--om-text-2)]">total {(tokenUsage.total as number) ?? "-"}</span>
         </div>
       )}
     </div>
@@ -281,24 +281,24 @@ const confirmDelete = () => {
             {conflictsQuery.data!.items.map((pair) => (
               <li
                 key={`${pair.a.id}:${pair.b?.id ?? "?"}`}
-                className="grid gap-3 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] p-3 md:grid-cols-2"
+                className="grid gap-3 rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] p-3 md:grid-cols-2"
               >
                 <div className="space-y-1.5 text-xs">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px]">
+                    <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px]">
                       A · {pair.a.type}
                     </span>
                     {pair.a.source && (
-                      <span className="truncate text-[9px] text-[var(--kp-text-3)]" title={pair.a.source}>
+                      <span className="truncate text-[9px] text-[var(--om-text-3)]" title={pair.a.source}>
                         {pair.a.source}
                       </span>
                     )}
                   </div>
-                  <p className="leading-relaxed text-[var(--kp-text-2)]">{pair.a.content}</p>
+                  <p className="leading-relaxed text-[var(--om-text-2)]">{pair.a.content}</p>
                   <button
                     type="button"
                     disabled={resolveConflictMut.isPending}
-                    className="text-[10px] font-semibold text-[var(--kp-text-1)] underline-offset-2 hover:underline"
+                    className="text-[10px] font-semibold text-[var(--om-text-1)] underline-offset-2 hover:underline"
                     onClick={() =>
                       pair.b &&
                       resolveConflictMut.mutate({ keepId: pair.a.id, discardId: pair.b.id })
@@ -311,24 +311,24 @@ const confirmDelete = () => {
                   {pair.b ? (
                     <>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px]">
+                        <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px]">
                           B · {pair.b.type}
                         </span>
                         {pair.b.source && (
                           <span
-                            className="truncate text-[9px] text-[var(--kp-text-3)]"
+                            className="truncate text-[9px] text-[var(--om-text-3)]"
                             title={pair.b.source}
                           >
                             {pair.b.source}
                           </span>
                         )}
                       </div>
-                      <p className="leading-relaxed text-[var(--kp-text-2)]">{pair.b.content}</p>
+                      <p className="leading-relaxed text-[var(--om-text-2)]">{pair.b.content}</p>
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
                           disabled={resolveConflictMut.isPending}
-                          className="text-[10px] font-semibold text-[var(--kp-text-1)] underline-offset-2 hover:underline"
+                          className="text-[10px] font-semibold text-[var(--om-text-1)] underline-offset-2 hover:underline"
                           onClick={() =>
                             resolveConflictMut.mutate({ keepId: pair.b!.id, discardId: pair.a.id })
                           }
@@ -338,7 +338,7 @@ const confirmDelete = () => {
                         <button
                           type="button"
                           disabled={clearConflictMut.isPending}
-                          className="text-[10px] text-[var(--kp-text-3)] underline-offset-2 hover:underline"
+                          className="text-[10px] text-[var(--om-text-3)] underline-offset-2 hover:underline"
                           onClick={() =>
                             clearConflictMut.mutate({ idA: pair.a.id, idB: pair.b!.id })
                           }
@@ -348,7 +348,7 @@ const confirmDelete = () => {
                       </div>
                     </>
                   ) : (
-                    <p className="text-[var(--kp-text-3)]">对端已不存在</p>
+                    <p className="text-[var(--om-text-3)]">对端已不存在</p>
                   )}
                 </div>
               </li>
@@ -378,15 +378,15 @@ const confirmDelete = () => {
               exit={listItemExit}
               transition={SPRING_LAYOUT}
               whileHover={{ y: -4 }}
-              className={cn("group relative overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] hover:bg-white dark:hover:bg-[var(--kp-bg-soft)] hover:border-[var(--kp-divider)] hover:shadow-xl transition-[background-color,border-color,box-shadow] duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
+              className={cn("group relative overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] hover:bg-white dark:hover:bg-[var(--om-bg-soft)] hover:border-[var(--om-divider)] hover:shadow-xl transition-[background-color,border-color,box-shadow] duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
             >
               <div>
                 <div className="mb-3 flex items-start justify-between gap-4">
                   <div className="flex flex-wrap gap-1">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--kp-brand-soft)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--kp-brand-deep)]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--om-brand-soft)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--om-brand-deep)]">
                       {MEMORY_TYPE_LABELS[memory.type as keyof typeof MEMORY_TYPE_LABELS] ?? memory.type}
                     </span>
-                    <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-2)]">
+                    <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-2)]">
                       {formatScope(memory.scope)}
                     </span>
                     {memory.status && memory.status !== "active" && (
@@ -395,13 +395,13 @@ const confirmDelete = () => {
                       </span>
                     )}
                     {memory.attribution && (
-                      <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-2)]">
+                      <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-2)]">
                         {toPascalCaseId(memory.attribution)}
                       </span>
                     )}
                     {memory.source && (
                       <span
-                        className="max-w-[10rem] truncate rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-3)]"
+                        className="max-w-[10rem] truncate rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-3)]"
                         title={memory.source}
                       >
                         {memory.source}
@@ -417,7 +417,7 @@ const confirmDelete = () => {
                   <div className="flex translate-y-1 items-center gap-1 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0 group-hover:opacity-100">
                     <Link
                       href={`/memories/edit/${memory.id}`}
-                      className="text-xs text-[var(--kp-brand-deep)] hover:text-[var(--kp-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--kp-brand-soft)]"
+                      className="text-xs text-[var(--om-brand-deep)] hover:text-[var(--om-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--om-brand-soft)]"
                     >
                       编辑
                     </Link>
@@ -435,8 +435,8 @@ const confirmDelete = () => {
                 </div>
               </div>
 
-              <div className="space-y-2 border-t border-[var(--kp-divider-light)] pt-3">
-                <div className="flex items-center justify-between text-[10px] text-[var(--kp-text-3)]">
+              <div className="space-y-2 border-t border-[var(--om-divider-light)] pt-3">
+                <div className="flex items-center justify-between text-[10px] text-[var(--om-text-3)]">
                   <span className="flex items-center gap-1.5">
                     <MemoryCrystal strength={memory.strength} />
                     <span className="leading-none">
@@ -456,7 +456,7 @@ const confirmDelete = () => {
                   {memory.keywords?.map((k: string) => (
                     <span
                       key={k}
-                      className="inline-flex items-center gap-0.5 rounded bg-[var(--kp-bg-soft)] px-1.5 py-0.5 text-[8px] text-[var(--kp-text-3)] font-medium"
+                      className="inline-flex items-center gap-0.5 rounded bg-[var(--om-bg-soft)] px-1.5 py-0.5 text-[8px] text-[var(--om-text-3)] font-medium"
                     >
                       <Tag className="w-2 h-2" />
                       {k}

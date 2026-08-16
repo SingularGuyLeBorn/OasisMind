@@ -2,19 +2,19 @@
  * 聊天历史 → LLM messages 重建（含 tool call 多轮回放 + vision 多模态）
  */
 
-import type { ChatAttachment, ChatImageAttachment } from "@knowpilot/shared";
+import type { ChatAttachment, ChatImageAttachment } from "@oasismind/shared";
 import {
   resolveModelSupportsVision,
   DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS,
   isChatImageAttachment,
   isChatPostAttachment,
   formatPostAttachmentForLlm,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { LlmContentPart, LlmMessage } from "./llmClient.js";
 import { getActiveAssistantPayload } from "./messageVersions.js";
 
 /** 与 autoCompact / 前端 compactMarkers 对齐 */
-export const COMPACT_BOUNDARY_PREFIX = "[kp-compact-boundary:";
+export const COMPACT_BOUNDARY_PREFIX = "[om-compact-boundary:";
 
 export interface StoredToolCall {
   id: string;

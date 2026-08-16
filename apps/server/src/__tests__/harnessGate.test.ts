@@ -13,7 +13,7 @@ import os from "os";
 import path from "path";
 import { prisma } from "../db.js";
 import type { AppConfig } from "../infra/config.js";
-import type { SessionGoalState } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
 
 describe("harnessGate", () => {
   afterEach(() => {
@@ -47,7 +47,7 @@ describe("harnessGate", () => {
   });
 
   it("experiment keep 拒绝未核验；核验后可 keep", async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kp-gate-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "om-gate-"));
     const skills = path.join(tmp, "config", "skills");
     const experiments = path.join(tmp, "data", "experiments");
     fs.mkdirSync(skills, { recursive: true });

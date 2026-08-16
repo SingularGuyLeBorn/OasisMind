@@ -57,10 +57,10 @@ function RuntimeListPager({
   if (totalPages <= 1) return null;
   return (
     <div
-      className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--kp-divider-light)] px-2.5 py-1.5"
+      className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--om-divider-light)] px-2.5 py-1.5"
       data-testid="runtime-list-pager"
     >
-      <span className="text-[10px] text-[var(--kp-text-3)]">
+      <span className="text-[10px] text-[var(--om-text-3)]">
         {total} 条 · {page}/{totalPages}
       </span>
       <div className="flex items-center gap-0.5">
@@ -68,7 +68,7 @@ function RuntimeListPager({
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="rounded-md p-1 text-[var(--kp-text-3)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)] disabled:opacity-30"
+          className="rounded-md p-1 text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] disabled:opacity-30"
           aria-label="上一页"
           data-testid="runtime-list-pager-prev"
         >
@@ -78,7 +78,7 @@ function RuntimeListPager({
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="rounded-md p-1 text-[var(--kp-text-3)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)] disabled:opacity-30"
+          className="rounded-md p-1 text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] disabled:opacity-30"
           aria-label="下一页"
           data-testid="runtime-list-pager-next"
         >
@@ -198,26 +198,26 @@ function StatusRow({
       title={canLocate ? "点击跳转到对话中的投递气泡" : undefined}
       className={cn(
         "group relative overflow-hidden rounded-xl border px-2.5 py-2 transition-colors",
-        canLocate && "cursor-pointer hover:border-[var(--kp-brand)]/40 hover:bg-[var(--kp-brand-soft)]/15",
-        tone === "running" && "border-[var(--kp-brand)]/30 bg-[var(--kp-brand-soft)]/35",
-        tone === "queued" && "border-[var(--kp-divider-light)] bg-[var(--kp-bg)]",
+        canLocate && "cursor-pointer hover:border-[var(--om-brand)]/40 hover:bg-[var(--om-brand-soft)]/15",
+        tone === "running" && "border-[var(--om-brand)]/30 bg-[var(--om-brand-soft)]/35",
+        tone === "queued" && "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
         tone === "ready" && "border-amber-500/25 bg-amber-500/[0.04]",
         tone === "held" && "border-amber-500/35 bg-amber-500/[0.06]",
         tone === "consumed" &&
           !isFailed &&
           !isInterrupted &&
-          "border-[var(--kp-divider-light)] bg-[var(--kp-bg)]",
+          "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
         tone === "consumed" && isFailed && "border-red-500/25 bg-red-500/[0.04]",
         tone === "consumed" && isInterrupted && "border-amber-500/25 bg-amber-500/[0.04]",
-        fresh && "ring-1 ring-[var(--kp-brand)]/35",
+        fresh && "ring-1 ring-[var(--om-brand)]/35",
       )}
       data-testid={`runtime-status-${tone}`}
     >
       <span
         className={cn(
           "pointer-events-none absolute inset-y-0 left-0 w-0.5",
-          tone === "running" && "bg-[var(--kp-brand)]",
-          tone === "queued" && "bg-[var(--kp-text-3)]/35",
+          tone === "running" && "bg-[var(--om-brand)]",
+          tone === "queued" && "bg-[var(--om-text-3)]/35",
           (tone === "ready" || tone === "held") && "bg-amber-500",
           tone === "consumed" && !isFailed && !isInterrupted && "bg-emerald-500/70",
           isFailed && "bg-red-500",
@@ -228,8 +228,8 @@ function StatusRow({
         <span
           className={cn(
             "mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-md",
-            tone === "running" && "text-[var(--kp-brand)]",
-            tone === "queued" && "text-[var(--kp-text-3)]",
+            tone === "running" && "text-[var(--om-brand)]",
+            tone === "queued" && "text-[var(--om-text-3)]",
             (tone === "ready" || tone === "held") && "text-amber-700",
             tone === "consumed" && !isFailed && !isInterrupted && "text-emerald-600",
             isFailed && "text-red-600",
@@ -252,7 +252,7 @@ function StatusRow({
         </span>
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
-            <span className="shrink-0 rounded bg-[var(--kp-bg-mute)] px-1.5 py-px text-[10px] font-semibold text-[var(--kp-text-2)]">
+            <span className="shrink-0 rounded bg-[var(--om-bg-mute)] px-1.5 py-px text-[10px] font-semibold text-[var(--om-text-2)]">
               {label}
             </span>
             <span
@@ -271,7 +271,7 @@ function StatusRow({
                 !isFailed &&
                   !isInterrupted &&
                   (tone === "running" || tone === "queued") &&
-                  "text-[var(--kp-text-3)]",
+                  "text-[var(--om-text-3)]",
               )}
             >
               {toneLabel}
@@ -282,22 +282,22 @@ function StatusRow({
               </span>
             )}
             {showElapsed ? (
-              <span className="truncate text-[10px] text-[var(--kp-text-3)]">
+              <span className="truncate text-[10px] text-[var(--om-text-3)]">
                 已过 {formatElapsed(item.createdAt)}
               </span>
             ) : null}
           </div>
-          <p className="truncate text-xs font-semibold leading-snug text-[var(--kp-text-1)]" title={title}>
+          <p className="truncate text-xs font-semibold leading-snug text-[var(--om-text-1)]" title={title}>
             {title}
           </p>
           {preview ? (
-            <p className="truncate text-[11px] leading-snug text-[var(--kp-text-2)]">{preview}</p>
+            <p className="truncate text-[11px] leading-snug text-[var(--om-text-2)]">{preview}</p>
           ) : null}
           {latestLog && tone === "running" && latestLog !== preview ? (
-            <p className="truncate text-[10px] text-[var(--kp-text-3)]">日志 · {latestLog}</p>
+            <p className="truncate text-[10px] text-[var(--om-text-3)]">日志 · {latestLog}</p>
           ) : null}
           {displaySubName ? (
-            <p className="truncate text-[10px] text-[var(--kp-text-3)]">{displaySubName}</p>
+            <p className="truncate text-[10px] text-[var(--om-text-3)]">{displaySubName}</p>
           ) : null}
         </div>
         {hasSideActions && (
@@ -310,7 +310,7 @@ function StatusRow({
               <button
                 type="button"
                 onClick={locateBubble}
-                className="rounded-md p-1 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                className="rounded-md p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                 title="跳转对话原文"
                 aria-label="跳转对话原文"
                 data-testid="runtime-locate-delivery"
@@ -323,7 +323,7 @@ function StatusRow({
                 href={`/chat?sessionId=${item.subagentSessionId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]"
+                className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-brand-deep)]"
                 title="与之对话"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -333,7 +333,7 @@ function StatusRow({
               <button
                 type="button"
                 onClick={onTogglePin}
-                className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
                 title={item.pinned ? "取消置顶" : "置顶"}
               >
                 {item.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
@@ -343,7 +343,7 @@ function StatusRow({
               <button
                 type="button"
                 onClick={onResume}
-                className="rounded-md p-1 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                className="rounded-md p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                 title="恢复"
                 data-testid="runtime-resume-job"
               >
@@ -429,9 +429,9 @@ function SyncTaskRow({
     <div
       className={cn(
         "group relative overflow-hidden rounded-xl border px-3 py-2.5 transition-colors",
-        item.status === "running" && "border-[var(--kp-brand)]/30 bg-[var(--kp-brand-soft)]/35",
-        item.status === "queued" && "border-[var(--kp-divider-light)] bg-[var(--kp-bg)]",
-        item.status === "completed" && "border-[var(--kp-divider-light)] bg-[var(--kp-bg)]",
+        item.status === "running" && "border-[var(--om-brand)]/30 bg-[var(--om-brand-soft)]/35",
+        item.status === "queued" && "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
+        item.status === "completed" && "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
         item.status === "interrupted" && "border-amber-500/25 bg-amber-500/[0.04]",
         item.status === "failed" && "border-red-500/25 bg-red-500/[0.04]",
       )}
@@ -440,8 +440,8 @@ function SyncTaskRow({
       <span
         className={cn(
           "pointer-events-none absolute inset-y-0 left-0 w-[3px]",
-          item.status === "running" && "bg-[var(--kp-brand)]",
-          item.status === "queued" && "bg-[var(--kp-text-3)]/35",
+          item.status === "running" && "bg-[var(--om-brand)]",
+          item.status === "queued" && "bg-[var(--om-text-3)]/35",
           item.status === "completed" && "bg-emerald-500/70",
           item.status === "interrupted" && "bg-amber-600",
           item.status === "failed" && "bg-red-500",
@@ -451,8 +451,8 @@ function SyncTaskRow({
         <span
           className={cn(
             "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-            item.status === "running" && "bg-[var(--kp-brand-soft)] text-[var(--kp-brand)]",
-            item.status === "queued" && "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+            item.status === "running" && "bg-[var(--om-brand-soft)] text-[var(--om-brand)]",
+            item.status === "queued" && "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
             item.status === "completed" && "bg-emerald-500/12 text-emerald-600",
             item.status === "interrupted" && "bg-amber-500/15 text-amber-700",
             item.status === "failed" && "bg-red-500/12 text-red-600",
@@ -472,7 +472,7 @@ function SyncTaskRow({
         </span>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-md bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--kp-text-2)]">
+            <span className="rounded-md bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-[var(--om-text-2)]">
               同步任务
             </span>
             <span
@@ -484,35 +484,35 @@ function SyncTaskRow({
                     ? "text-amber-700"
                     : item.status === "completed"
                       ? "text-emerald-600"
-                      : "text-[var(--kp-text-3)]",
+                      : "text-[var(--om-text-3)]",
               )}
             >
               {statusLabel}
             </span>
           </div>
-          <p className="truncate text-[13px] font-semibold text-[var(--kp-text-1)]" title={item.taskLabel}>
+          <p className="truncate text-[13px] font-semibold text-[var(--om-text-1)]" title={item.taskLabel}>
             {item.taskLabel}
           </p>
-          {preview ? <p className="truncate text-[11px] leading-snug text-[var(--kp-text-2)]">{preview}</p> : null}
+          {preview ? <p className="truncate text-[11px] leading-snug text-[var(--om-text-2)]">{preview}</p> : null}
           {active && item.logs?.length ? (
             <div>
               <button
                 type="button"
                 onClick={() => setLogsOpen((v) => !v)}
-                className="inline-flex items-center gap-0.5 text-[11px] text-[var(--kp-text-3)] transition hover:text-[var(--kp-text-2)]"
+                className="inline-flex items-center gap-0.5 text-[11px] text-[var(--om-text-3)] transition hover:text-[var(--om-text-2)]"
               >
                 日志 {item.logs.length}
                 {logsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
               {logsOpen && (
-                <pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] p-2 text-[11px] text-[var(--kp-text-2)]">
+                <pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] p-2 text-[11px] text-[var(--om-text-2)]">
                   {item.logs.map((l) => l.message).join("\n")}
                 </pre>
               )}
             </div>
           ) : null}
           {elapsed ? (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[var(--kp-text-3)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[var(--om-text-3)]">
               <span>已过 {elapsed}</span>
             </div>
           ) : null}
@@ -523,7 +523,7 @@ function SyncTaskRow({
               <button
                 type="button"
                 onClick={() => onResume(item.jobId)}
-                className="rounded p-1 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                className="rounded p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                 title="恢复任务"
                 aria-label="恢复任务"
                 data-testid="runtime-resume-job"
@@ -717,13 +717,13 @@ export function RuntimeStatusPanel({
       className={cn(
         "relative flex flex-1 items-center justify-center rounded-lg px-2 py-2 transition",
         groupTab === tab
-          ? "bg-[var(--kp-bg)] text-[var(--kp-brand-deep)] shadow-sm"
-          : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+          ? "bg-[var(--om-bg)] text-[var(--om-brand-deep)] shadow-sm"
+          : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
       )}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden />
       {badge != null && (showZeroBadge || badge > 0) && (
-        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1.05rem] justify-center rounded-full bg-[var(--kp-brand-soft)] px-1 text-[9px] font-semibold leading-4 text-[var(--kp-brand-deep)]">
+        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1.05rem] justify-center rounded-full bg-[var(--om-brand-soft)] px-1 text-[9px] font-semibold leading-4 text-[var(--om-brand-deep)]">
           {badge > 99 ? "99+" : badge}
         </span>
       )}
@@ -733,7 +733,7 @@ export function RuntimeStatusPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-testid="chat-runtime-queue">
       <div className="px-2.5 py-2">
-        <div className="flex gap-1 rounded-xl bg-[var(--kp-bg-mute)] p-0.5">
+        <div className="flex gap-1 rounded-xl bg-[var(--om-bg-mute)] p-0.5">
           {groupTabBtn(
             "async",
             "异步任务",
@@ -755,7 +755,7 @@ export function RuntimeStatusPanel({
         <div className="flex min-h-0 flex-1 flex-col" data-testid="sync-task-list">
           <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
             {syncSorted.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--kp-text-3)]">
+              <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--om-text-3)]">
                 <Clock className="h-5 w-5 opacity-40" />
                 <p className="text-xs">暂无同步任务</p>
               </div>
@@ -788,7 +788,7 @@ export function RuntimeStatusPanel({
             data-testid="runtime-async-task-list"
           >
             {asyncTotal === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--kp-text-3)]">
+              <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--om-text-3)]">
                 <Clock className="h-5 w-5 opacity-40" />
                 <p className="text-xs">暂无异步任务</p>
               </div>

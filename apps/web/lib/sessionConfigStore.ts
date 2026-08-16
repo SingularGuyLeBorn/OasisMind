@@ -13,7 +13,7 @@ import {
   loadSessionChatConfig,
   saveSessionChatConfig,
 } from "@/lib/chatConfig";
-import type { ChatSessionConfig } from "@knowpilot/shared";
+import type { ChatSessionConfig } from "@oasismind/shared";
 
 const configs = new Map<string, ChatSessionConfig>();
 const listeners = new Set<() => void>();

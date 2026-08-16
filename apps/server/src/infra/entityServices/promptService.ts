@@ -6,8 +6,8 @@ import type {
   CreatePromptInput,
   UpdatePromptInput,
   ListPromptsInput,
-} from "@knowpilot/shared";
-import { canonicalListTag, formatTagsCsv, tagsFromCsv } from "@knowpilot/shared";
+} from "@oasismind/shared";
+import { canonicalListTag, formatTagsCsv, tagsFromCsv } from "@oasismind/shared";
 import { FileSyncService } from "../../services.js";
 
 export class PromptService extends FileSyncService<

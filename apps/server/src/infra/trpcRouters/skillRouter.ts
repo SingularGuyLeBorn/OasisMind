@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { withApprovalGuard } from "./withApprovalGuard.js";
-import { createSkillSchema, updateSkillSchema, listSkillsSchema, deleteByIdWithApprovalSchema } from "@knowpilot/shared";
+import { createSkillSchema, updateSkillSchema, listSkillsSchema, deleteByIdWithApprovalSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const skillRouter = router({

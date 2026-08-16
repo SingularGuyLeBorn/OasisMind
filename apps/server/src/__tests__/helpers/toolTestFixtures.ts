@@ -5,14 +5,14 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { PACKS_FULL } from "@knowpilot/shared";
+import { PACKS_FULL } from "@oasismind/shared";
 import type { AppConfig } from "../../infra/config.js";
 import type { NativeToolContext } from "../../infra/nativeTools.js";
 import type { AgentToolContext, ParsedAgentTools } from "../../infra/agentTools.js";
 import type { SkillEntity } from "../../infra/entityServices/skillService.js";
 
 export function createTempProjectDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "kp-tool-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "om-tool-test-"));
 }
 
 export function createTestConfig(

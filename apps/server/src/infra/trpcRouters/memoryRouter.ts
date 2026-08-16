@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { withApprovalGuard } from "./withApprovalGuard.js";
-import { createMemorySchema, updateMemorySchema, listMemoriesSchema } from "@knowpilot/shared";
+import { createMemorySchema, updateMemorySchema, listMemoriesSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 function parseConflictsCsv(raw: string | null | undefined): string[] {
   if (!raw?.trim()) return [];

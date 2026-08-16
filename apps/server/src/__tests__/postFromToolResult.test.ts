@@ -28,7 +28,7 @@ describe("createFromToolResult 路径守卫", () => {
   let root: string;
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-post-tool-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "om-post-tool-"));
     fs.mkdirSync(path.join(root, "data", "tool-results"), { recursive: true });
   });
 

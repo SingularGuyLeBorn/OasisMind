@@ -1,5 +1,5 @@
 /**
- * @knowpilot/shared — 共享常量定义
+ * @oasismind/shared — 共享常量定义
  *
  * 统一前端和后端的事件名、实体名和系统错误码。
  */

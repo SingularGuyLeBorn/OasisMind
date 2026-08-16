@@ -80,9 +80,9 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 shrink-0 border-b border-[var(--kp-divider)]",
-        "bg-[var(--kp-glass-bg)] backdrop-blur-md",
-        "shadow-[0_1px_0_0_color-mix(in_srgb,var(--kp-brand)_12%,transparent)]",
+        "sticky top-0 z-50 shrink-0 border-b border-[var(--om-divider)]",
+        "bg-[var(--om-glass-bg)] backdrop-blur-md",
+        "shadow-[0_1px_0_0_color-mix(in_srgb,var(--om-brand)_12%,transparent)]",
         className,
       )}
     >
@@ -91,7 +91,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
           <button
             type="button"
             onClick={onMenuClick}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] lg:hidden"
             aria-label="打开菜单"
           >
             <Menu className="h-5 w-5" />
@@ -198,8 +198,8 @@ function TopNavLink({
       className={cn(
         "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition",
         active
-          ? "kp-nav-pill-active"
-          : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+          ? "om-nav-pill-active"
+          : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
       )}
     >
       {icon}

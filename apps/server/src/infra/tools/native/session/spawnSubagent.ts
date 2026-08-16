@@ -1,4 +1,4 @@
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import { resolveAgent as defaultResolveAgent } from "../../../agentResolver.js";
 import { getAsyncJobOrchestrator } from "../../../asyncJobOrchestrator.js";
 import { getAppConfig } from "../../../config.js";

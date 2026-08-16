@@ -24,6 +24,6 @@ describe("codeBlockFenceMeta", () => {
 
   it("fenceLanguageOnly ignores title", () => {
     expect(fenceLanguageOnly('viz title="demo"')).toBe("viz");
-    expect(fenceLanguageOnly("kp-board")).toBe("kp-board");
+    expect(fenceLanguageOnly("om-board")).toBe("om-board");
   });
 });

@@ -1,7 +1,7 @@
 /**
  * Native Web 域 — WEB_DEFS + WEB_HANDLERS + registerWebTools
  */
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
 import type { NativeToolDefinition } from "../types.js";
 import { registerNativeDomain } from "../registerDomain.js";
 import { defaultProjectContent } from "../../toolEnvelope.js";

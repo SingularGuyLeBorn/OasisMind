@@ -8,7 +8,7 @@ import { resolveEffectiveAgentModel, type LlmMessage } from "./llmClient.js";
 import { describeLlmError } from "./resilientLlmClient.js";
 import { type StoredToolCall, sanitizePostCompactAssistantContent } from "./chatHistory.js";
 import { buildLlmContextSinceCompact } from "./autoCompact.js";
-import type { AgentChatInput, AgentRunInput } from "@knowpilot/shared";
+import type { AgentChatInput, AgentRunInput } from "@oasismind/shared";
 import { success, failure } from "../trpc/result.js";
 import { runReactLoop, createSyncTransport, withReflection } from "./loop/index.js";
 import { buildSystemPromptSkeleton } from "./promptBuilder.js";

@@ -9,7 +9,7 @@ import {
   PINNED_MEMORY_USER_MAX_CHARS,
   PINNED_MEMORY_DIR,
   PINNED_MEMORY_USER_FILE,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   truncatePinned,
   formatPinnedHint,
@@ -39,7 +39,7 @@ describe("truncatePinned / formatPinnedHint", () => {
 });
 
 describe("磁盘读写 + 会话冻结", () => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kp-pinned-"));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "om-pinned-"));
   let sessionId = "";
   let services: ReturnType<typeof getServiceContainer>;
 

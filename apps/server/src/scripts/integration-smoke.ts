@@ -1,11 +1,11 @@
 /**
  * 真实环境冒烟（无 mock）— 搜索 / OCR / 网页 / Playwright / 平台解析
- * 用法: pnpm --filter @knowpilot/server integration:smoke
+ * 用法: pnpm --filter @oasismind/server integration:smoke
  */
 
 import path from "path";
 import fs from "fs";
-import { formatToolResultHint, LLM_PROVIDER_DEEPSEEK } from "@knowpilot/shared";
+import { formatToolResultHint, LLM_PROVIDER_DEEPSEEK } from "@oasismind/shared";
 import { loadRootEnv, getAppConfig } from "../infra/config.js";
 import { performOcrFromFile, getOcrStatus, probeOcrPython } from "../infra/ocrService.js";
 import { executeNativeTool, syncSearchEnvFromConfig } from "../infra/nativeTools.js";

@@ -1,6 +1,6 @@
 /**
  * 按当前 promptBuilder / contextHooks 内建钩子重写 equivalence fixture。
- * 用法：pnpm --filter @knowpilot/server exec tsx src/scripts/regen-contextHooks-fixture.ts
+ * 用法：pnpm --filter @oasismind/server exec tsx src/scripts/regen-contextHooks-fixture.ts
  */
 import fs from "fs";
 import path from "path";

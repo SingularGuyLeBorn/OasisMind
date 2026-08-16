@@ -20,7 +20,7 @@ export type MilkdownImageUploader = (
   file: File,
 ) => Promise<MilkdownImageUploadResult | null>;
 
-const UPLOADING_TITLE_PREFIX = "kp-uploading:";
+const UPLOADING_TITLE_PREFIX = "om-uploading:";
 
 let uploader: MilkdownImageUploader | null = null;
 let activeView: EditorView | null = null;
@@ -137,7 +137,7 @@ export const milkdownImageUpload = $prose((ctx) => {
   imageNodeType = imageSchema.type(ctx);
 
   return new Plugin({
-    key: new PluginKey("kp-milkdown-image-upload"),
+    key: new PluginKey("om-milkdown-image-upload"),
     view(editorView) {
       activeView = editorView;
       return {

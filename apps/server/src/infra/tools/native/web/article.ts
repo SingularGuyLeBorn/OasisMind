@@ -6,7 +6,7 @@ import {
   detectPlatform,
   isArticleFetchFatalError,
 } from "../../../metablog/index.js";
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
 import type { NativeToolContext } from "../types.js";
 
 // 与 reactLoop snapshot.toolResultMaxChars 同源（shared AGENT_TOOL_RESULT_MAX_CHARS）

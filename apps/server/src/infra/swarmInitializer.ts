@@ -14,7 +14,7 @@ import {
   ASSISTANT_DEFAULT_TOOLS,
   DEFAULT_LLM_MODEL,
   TIER_DEFAULT_TOOLS,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { createAgentForTier } from "./agentFactory.js";
 import { ensureMainSession } from "./ensureMainSession.js";
 import { DEFAULT_ASSISTANT_SYSTEM_PROMPT, resolveAgent } from "./agentResolver.js";

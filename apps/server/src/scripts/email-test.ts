@@ -1,5 +1,5 @@
 /**
- * 通知通道探测：pnpm email:test / pnpm --filter @knowpilot/server email:test
+ * 通知通道探测：pnpm email:test / pnpm --filter @oasismind/server email:test
  */
 import fs from "fs";
 import path from "path";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import {
   isExternalHref,

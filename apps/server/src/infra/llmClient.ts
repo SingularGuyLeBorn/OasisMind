@@ -3,14 +3,14 @@
  */
 
 import type { AppConfig, LlmProviderConfig } from "./config.js";
-import type { ReasoningEffort } from "@knowpilot/shared";
+import type { ReasoningEffort } from "@oasismind/shared";
 import {
   LLM_MODEL_IDS,
   LLM_PROVIDER_DEEPSEEK,
   LOCAL_LLM_DEFAULT_BASE_URLS,
   isLocalLlmProviderId,
   parseLocalModelRef,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   mockChatCompletion,
   mockChatCompletionStream,
@@ -21,7 +21,7 @@ import {
   type LlmRequestOptions,
   type StreamChunk,
   type LlmContentPart,
-} from "@knowpilot/mock-llm-core";
+} from "@oasismind/mock-llm-core";
 import { getFreellmGatewayRuntime, withFreellmGatewayFallback } from "./freeLlmRuntime.js";
 import { makeAbortError } from "./abortReason.js";
 import { DsmlStreamFilter, stripDsmlToolMarkup } from "./deepseekDsmlFilter.js";
@@ -35,7 +35,7 @@ export type {
   LlmCompletionResult,
   LlmRequestOptions,
   StreamChunk,
-} from "@knowpilot/mock-llm-core";
+} from "@oasismind/mock-llm-core";
 
 /** LLM HTTP 错误：携带状态码与响应体，供弹性层（resilientLlmClient）分类 */
 export class LlmHttpError extends Error {
@@ -49,7 +49,7 @@ export class LlmHttpError extends Error {
   }
 }
 
-/** LLM 请求扩展（DeepSeek V4 思考模式）— 类型从 @knowpilot/mock-llm-core 再导出 */
+/** LLM 请求扩展（DeepSeek V4 思考模式）— 类型从 @oasismind/mock-llm-core 再导出 */
 export interface ResolvedDeepSeekRequest {
   apiModel: string;
   thinking: "enabled" | "disabled";

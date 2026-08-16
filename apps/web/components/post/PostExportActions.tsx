@@ -61,7 +61,7 @@ export function PostExportActions({ post, articleRef }: PostExportActionsProps) 
           onClick={() => handleExportPdf().catch(catchUnlessCancelled("components/post/PostExportActions.tsx"))}
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
-            "inline-flex items-center gap-1 text-[var(--kp-text-2)] hover:text-[var(--kp-brand-deep)]",
+            "inline-flex items-center gap-1 text-[var(--om-text-2)] hover:text-[var(--om-brand-deep)]",
           )}
           title="导出 PDF"
         >
@@ -78,7 +78,7 @@ export function PostExportActions({ post, articleRef }: PostExportActionsProps) 
           onClick={() => handleExportMd().catch(catchUnlessCancelled("components/post/PostExportActions.tsx"))}
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
-            "inline-flex items-center gap-1 text-[var(--kp-text-2)] hover:text-[var(--kp-brand-deep)]",
+            "inline-flex items-center gap-1 text-[var(--om-text-2)] hover:text-[var(--om-brand-deep)]",
           )}
           title="导出 Markdown（含图片 ZIP）"
         >
@@ -89,7 +89,7 @@ export function PostExportActions({ post, articleRef }: PostExportActionsProps) 
           )}
           MD
         </button>
-        <span className="hidden items-center gap-1 text-xs text-[var(--kp-text-3)] sm:inline-flex">
+        <span className="hidden items-center gap-1 text-xs text-[var(--om-text-3)] sm:inline-flex">
           <FileText className="h-3.5 w-3.5" />
           带图
         </span>

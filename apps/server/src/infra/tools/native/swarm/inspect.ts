@@ -1,6 +1,6 @@
 import { checkWorkspaceAgentAccess } from "../../../swarmPermissionGuard.js";
 import { createMemoryRepository } from "../../../memoryRepository.js";
-import { MEMORY_SCOPE_GLOBAL, memoryAgentScope, CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { MEMORY_SCOPE_GLOBAL, memoryAgentScope, CHILD_OWN_TOOLS } from "@oasismind/shared";
 import { deriveVisibleSet } from "../../visibleSet.js";
 import { getAppConfig } from "../../../config.js";
 import type { NativeToolContext } from "../types.js";

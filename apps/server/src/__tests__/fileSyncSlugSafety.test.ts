@@ -7,7 +7,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { createAgentSchema } from "@knowpilot/shared";
+import { createAgentSchema } from "@oasismind/shared";
 import { prisma } from "../db.js";
 import { getAppConfig } from "../infra/config.js";
 import { getEventBus } from "../infra/eventBus.js";

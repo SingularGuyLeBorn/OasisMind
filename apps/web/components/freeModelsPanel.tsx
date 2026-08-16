@@ -52,10 +52,10 @@ function StatusPill({
     <span
       className={cn(
         "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium tracking-wide",
-        tone === "neutral" && "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)]",
+        tone === "neutral" && "bg-[var(--om-bg-mute)] text-[var(--om-text-2)]",
         tone === "ok" && "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300",
         tone === "warn" && "bg-amber-500/15 text-amber-800 dark:text-amber-300",
-        tone === "brand" && "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]",
+        tone === "brand" && "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]",
       )}
     >
       {children}
@@ -81,7 +81,7 @@ function CopyIdButton({
       title={title}
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] transition-colors",
-        "text-[var(--kp-text-2)] hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand-deep)]",
+        "text-[var(--om-text-2)] hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand-deep)]",
         copied && "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300",
       )}
     >
@@ -204,14 +204,14 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
         {/* 顶栏：状态 + 刷新 */}
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl border border-[var(--kp-divider)]",
-            "bg-gradient-to-br from-[var(--kp-bg-alt)] via-[var(--kp-bg)] to-[var(--kp-brand-soft)]",
+            "relative overflow-hidden rounded-2xl border border-[var(--om-divider)]",
+            "bg-gradient-to-br from-[var(--om-bg-alt)] via-[var(--om-bg)] to-[var(--om-brand-soft)]",
             "px-4 py-4 md:px-5 md:py-4",
           )}
         >
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[var(--kp-brand)]/10 blur-2xl"
+            className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[var(--om-brand)]/10 blur-2xl"
           />
           <div className="relative flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -228,7 +228,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                 </StatusPill>
               )}
               {statusQuery.data?.openRouter.syncedAt && (
-                <span className="text-[11px] text-[var(--kp-text-2)]">
+                <span className="text-[11px] text-[var(--om-text-2)]">
                   {t.syncAt}{" "}
                   {new Date(statusQuery.data.openRouter.syncedAt).toLocaleString(dateLocale)}
                 </span>
@@ -236,7 +236,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
             </div>
             <div className="flex items-center gap-2">
               {toast && (
-                <span className="max-w-[16rem] truncate text-[11px] text-[var(--kp-brand-deep)] md:max-w-xs">
+                <span className="max-w-[16rem] truncate text-[11px] text-[var(--om-brand-deep)] md:max-w-xs">
                   {toast}
                 </span>
               )}
@@ -259,25 +259,25 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
         {/* OpenRouter */}
         <section
           className={cn(
-            "overflow-hidden rounded-2xl border border-[var(--kp-divider)]",
-            "bg-[var(--kp-bg-alt)]/80 shadow-[0_1px_0_rgba(45,42,38,0.04),0_12px_40px_-24px_rgba(45,42,38,0.35)]",
+            "overflow-hidden rounded-2xl border border-[var(--om-divider)]",
+            "bg-[var(--om-bg-alt)]/80 shadow-[0_1px_0_rgba(45,42,38,0.04),0_12px_40px_-24px_rgba(45,42,38,0.35)]",
           )}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--kp-divider)] px-4 py-3 md:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--om-divider)] px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                 <Sparkles className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-[var(--kp-text-1)]">{t.openRouterTitle}</h2>
-                <p className="text-[11px] text-[var(--kp-text-2)]">{t.openRouterSubtitle}</p>
+                <h2 className="text-sm font-semibold text-[var(--om-text-1)]">{t.openRouterTitle}</h2>
+                <p className="text-[11px] text-[var(--om-text-2)]">{t.openRouterSubtitle}</p>
               </div>
             </div>
             <a
               href="https://openrouter.ai/models?q=free"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-[var(--kp-text-2)] transition-colors hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand-deep)]"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-[var(--om-text-2)] transition-colors hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand-deep)]"
             >
               {t.officialCatalog} <ExternalLink className="h-3 w-3" />
             </a>
@@ -292,12 +292,12 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative min-w-[12rem] flex-1 max-w-md">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--kp-text-3)]" />
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--om-text-3)]" />
                 <Input
                   value={q}
                   onChange={(e) => setFilterQ(e.target.value)}
                   placeholder={t.searchPlaceholder}
-                  className="h-9 border-[var(--kp-divider)] bg-[var(--kp-bg)] pl-8 text-sm"
+                  className="h-9 border-[var(--om-divider)] bg-[var(--om-bg)] pl-8 text-sm"
                 />
               </div>
               <KpSelect
@@ -328,7 +328,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
             </div>
           ) : (
             <>
-            <ul className="divide-y divide-[var(--kp-divider)] border-t border-[var(--kp-divider)]">
+            <ul className="divide-y divide-[var(--om-divider)] border-t border-[var(--om-divider)]">
               {orPageItems.map((m, i) => {
                 const text = m.description || m.topProvider || "";
                 const long = text.length > 140;
@@ -341,18 +341,18 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                     key={m.id}
                     className={cn(
                       "group px-4 py-3.5 transition-colors md:px-5",
-                      "hover:bg-[var(--kp-bg)]/70",
-                      i % 2 === 1 && "bg-[var(--kp-bg)]/35",
+                      "hover:bg-[var(--om-bg)]/70",
+                      i % 2 === 1 && "bg-[var(--om-bg)]/35",
                     )}
                   >
                     <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[11px] text-[var(--kp-text-3)]">
+                          <span className="font-mono text-[11px] text-[var(--om-text-3)]">
                             #{globalIndex}
                           </span>
                           <StatusPill tone="brand">{formatPublisherLabel(publisher, locale)}</StatusPill>
-                          <h3 className="text-sm font-semibold leading-snug text-[var(--kp-text-1)]">
+                          <h3 className="text-sm font-semibold leading-snug text-[var(--om-text-1)]">
                             {m.name}
                           </h3>
                           <StatusPill tone="ok">{t.freeBadge}</StatusPill>
@@ -371,7 +371,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                           <div className="max-w-3xl space-y-1">
                             <p
                               className={cn(
-                                "text-xs leading-relaxed text-[var(--kp-text-2)] whitespace-pre-wrap break-words",
+                                "text-xs leading-relaxed text-[var(--om-text-2)] whitespace-pre-wrap break-words",
                                 !open && long && "line-clamp-2",
                               )}
                             >
@@ -380,7 +380,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                             {long && (
                               <button
                                 type="button"
-                                className="text-[11px] font-medium text-[var(--kp-brand-deep)] hover:underline"
+                                className="text-[11px] font-medium text-[var(--om-brand-deep)] hover:underline"
                                 onClick={() =>
                                   setExpandedDesc((prev) => ({ ...prev, [m.id]: !prev[m.id] }))
                                 }
@@ -392,14 +392,14 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                         ) : null}
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-col lg:items-end lg:pt-0.5">
-                        <span className="text-[11px] text-[var(--kp-text-2)]">
+                        <span className="text-[11px] text-[var(--om-text-2)]">
                           {formatModalityLabel(m.modality, locale)}
                         </span>
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
-                          className="h-8 gap-1.5 border border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-text-1)] hover:border-[var(--kp-brand)]/40 hover:bg-[var(--kp-brand-soft)]"
+                          className="h-8 gap-1.5 border border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-text-1)] hover:border-[var(--om-brand)]/40 hover:bg-[var(--om-brand-soft)]"
                           onClick={() => onCopy(m.id).catch(catchUnlessCancelled("components/freeModelsPanel.tsx"))}
                         >
                           {copiedId === m.id ? (
@@ -436,18 +436,18 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
         {/* Freellm */}
         <section
           className={cn(
-            "overflow-hidden rounded-2xl border border-[var(--kp-divider)]",
-            "bg-[var(--kp-bg-alt)]/80 shadow-[0_1px_0_rgba(45,42,38,0.04),0_12px_40px_-24px_rgba(45,42,38,0.35)]",
+            "overflow-hidden rounded-2xl border border-[var(--om-divider)]",
+            "bg-[var(--om-bg-alt)]/80 shadow-[0_1px_0_rgba(45,42,38,0.04),0_12px_40px_-24px_rgba(45,42,38,0.35)]",
           )}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--kp-divider)] px-4 py-3 md:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--om-divider)] px-4 py-3 md:px-5">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                 <Radio className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-[var(--kp-text-1)]">{t.freellmTitle}</h2>
-                <p className="text-[11px] text-[var(--kp-text-2)]">{t.freellmSubtitle}</p>
+                <h2 className="text-sm font-semibold text-[var(--om-text-1)]">{t.freellmTitle}</h2>
+                <p className="text-[11px] text-[var(--om-text-2)]">{t.freellmSubtitle}</p>
               </div>
             </div>
           </div>
@@ -465,19 +465,19 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
             </div>
           ) : (
             <>
-            <ul className="divide-y divide-[var(--kp-divider)]">
+            <ul className="divide-y divide-[var(--om-divider)]">
               {freellmPageItems.map((c) => (
                 <li
                   key={c.id}
                   className={cn(
                     "flex flex-col gap-2 px-4 py-3.5 transition-colors md:px-5 sm:flex-row sm:items-center sm:justify-between",
-                    "hover:bg-[var(--kp-bg)]/70",
-                    c.isRuntime && "bg-[var(--kp-brand-soft)]/50",
+                    "hover:bg-[var(--om-bg)]/70",
+                    c.isRuntime && "bg-[var(--om-brand-soft)]/50",
                   )}
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-[var(--kp-text-1)]">
+                      <h3 className="text-sm font-semibold text-[var(--om-text-1)]">
                         {c.model ?? c.name}
                       </h3>
                       {c.isRuntime && <StatusPill tone="ok">{t.runtime}</StatusPill>}
@@ -488,7 +488,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                         <StatusPill tone="neutral">{formatPublisherLabel(c.provider, locale)}</StatusPill>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--kp-text-2)]">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--om-text-2)]">
                       <span className="font-mono truncate max-w-[18rem]">{c.name}</span>
                       {c.budget && <span>{t.budget} {c.budget}</span>}
                       {c.rateLimit && <span>{t.rateLimit} {c.rateLimit}</span>}
@@ -504,7 +504,7 @@ export function FreeModelsPanel({ locale = "zh" }: { locale?: FreeModelsLocale }
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="h-8 shrink-0 gap-1.5 border border-[var(--kp-divider)] bg-[var(--kp-bg)] hover:bg-[var(--kp-brand-soft)]"
+                      className="h-8 shrink-0 gap-1.5 border border-[var(--om-divider)] bg-[var(--om-bg)] hover:bg-[var(--om-brand-soft)]"
                       onClick={() => onCopy(c.model!).catch(catchUnlessCancelled("components/freeModelsPanel.tsx"))}
                     >
                       {copiedId === c.model ? (
@@ -551,27 +551,27 @@ export function FreeModelsSummaryCard() {
     <a
       href="/free-models"
       className={cn(
-        "block rounded-2xl border border-[var(--kp-divider)] p-4 md:p-5 transition-colors",
-        "bg-gradient-to-br from-[var(--kp-bg-alt)] to-[var(--kp-brand-soft)]/40",
-        "hover:border-[var(--kp-brand-deep)]/35",
+        "block rounded-2xl border border-[var(--om-divider)] p-4 md:p-5 transition-colors",
+        "bg-gradient-to-br from-[var(--om-bg-alt)] to-[var(--om-brand-soft)]/40",
+        "hover:border-[var(--om-brand-deep)]/35",
       )}
     >
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
           <Sparkles className="h-4 w-4" />
         </span>
-        <span className="font-semibold text-[var(--kp-text-1)]">{t.summaryTitle}</span>
+        <span className="font-semibold text-[var(--om-text-1)]">{t.summaryTitle}</span>
         {isLoading || !data ? (
-          <span className="text-[var(--kp-text-2)]">{t.summaryLoading}</span>
+          <span className="text-[var(--om-text-2)]">{t.summaryLoading}</span>
         ) : (
           <>
-            <span className="font-mono text-[var(--kp-text-2)]">
+            <span className="font-mono text-[var(--om-text-2)]">
               OpenRouter {data.openRouter.count}
               {" · "}
               freellm {data.freellm.credentialCount}
             </span>
             {!data.openRouter.hasApiKey && <StatusPill tone="warn">{t.noOrKey}</StatusPill>}
-            <span className="text-[11px] font-medium text-[var(--kp-brand-deep)]">
+            <span className="text-[11px] font-medium text-[var(--om-brand-deep)]">
               {t.summaryViewAll}
             </span>
           </>

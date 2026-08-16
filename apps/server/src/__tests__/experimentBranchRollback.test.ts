@@ -13,7 +13,7 @@ import {
 } from "../infra/experimentLedger.js";
 
 function createTempConfig(): AppConfig {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kp-branch-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "om-branch-"));
   const skills = path.join(tmp, "config", "skills");
   const memories = path.join(tmp, "config", "memories");
   const prompts = path.join(tmp, "config", "prompts");

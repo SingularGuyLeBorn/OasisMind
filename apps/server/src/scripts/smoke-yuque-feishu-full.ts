@@ -1,8 +1,8 @@
 /**
- * 语雀 + 飞书全量联调（含写操作：创建 → 改 → 删，前缀 kp-smoke-*，测完尽量清理）
+ * 语雀 + 飞书全量联调（含写操作：创建 → 改 → 删，前缀 om-smoke-*，测完尽量清理）
  *
  * 用法：
- *   pnpm --filter @knowpilot/server exec tsx src/scripts/smoke-yuque-feishu-full.ts
+ *   pnpm --filter @oasismind/server exec tsx src/scripts/smoke-yuque-feishu-full.ts
  *
  * 可选环境变量：
  *   FEISHU_SMOKE_RECEIVE_ID   测发消息（open_id/user_id）
@@ -67,7 +67,7 @@ type Row = { name: string; status: Status; detail: string };
 
 const rows: Row[] = [];
 const stamp = Date.now().toString(36);
-const PREFIX = `kp-smoke-${stamp}`;
+const PREFIX = `om-smoke-${stamp}`;
 
 function rec(name: string, status: Status, detail: string) {
   rows.push({ name, status, detail: detail.slice(0, 280) });

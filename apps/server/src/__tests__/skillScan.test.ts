@@ -8,7 +8,7 @@ describe("skillScan", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "kp-skillscan-"));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-skillscan-"));
   });
 
   afterEach(() => {

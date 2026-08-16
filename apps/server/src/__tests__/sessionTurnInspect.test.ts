@@ -71,7 +71,7 @@ describe("inspectSessionTurn", () => {
       activeLeafId: "m2",
       messages: [
         { id: "m1", parentId: null, role: "user", content: "问", kind: null },
-        { id: "sum", parentId: "m1", role: "system", content: "[kp-branch-summary]\n旧枝", kind: "branch_summary" },
+        { id: "sum", parentId: "m1", role: "system", content: "[om-branch-summary]\n旧枝", kind: "branch_summary" },
         { id: "m2", parentId: "m1", role: "assistant", content: "答", kind: null },
       ],
     });

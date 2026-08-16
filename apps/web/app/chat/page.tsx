@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 function ChatFallback() {
   return (
-    <div className="flex flex-1 items-center justify-center text-[var(--kp-text-3)]">
+    <div className="flex flex-1 items-center justify-center text-[var(--om-text-3)]">
       <Loader2 className="h-6 w-6 animate-spin" />
     </div>
   );

@@ -7,7 +7,7 @@ import {
   inferProviderFromModel,
   resolveProvider,
 } from "../infra/llmClient.js";
-import { parseLocalModelRef, toLocalModelRef } from "@knowpilot/shared";
+import { parseLocalModelRef, toLocalModelRef } from "@oasismind/shared";
 
 describe("local LLM providers", () => {
   const prev = { ...process.env };

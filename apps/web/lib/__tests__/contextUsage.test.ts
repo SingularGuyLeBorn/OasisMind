@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 import {
   buildContextUsage,
   messagesInLlmContextWindow,

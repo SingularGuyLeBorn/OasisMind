@@ -320,9 +320,9 @@ function spawnServer(serverPort) {
     ...process.env,
     SERVER_PORT: String(serverPort),
     DATABASE_URL: TEST_DB_URL,
-    KP_CONTENT_DIR: TEST_CONTENT_DIR,
-    KP_CONFIG_DIR: TEST_CONFIG_DIR,
-    KP_DATA_DIR: TEST_DATA_DIR,
+    OM_CONTENT_DIR: TEST_CONTENT_DIR,
+    OM_CONFIG_DIR: TEST_CONFIG_DIR,
+    OM_DATA_DIR: TEST_DATA_DIR,
     REQUIRE_APPROVAL: process.env.REQUIRE_APPROVAL ?? "false",
     E2E: "1",
   };
@@ -419,9 +419,9 @@ export default async function globalSetup() {
 
   // 2. 隔离数据库与三桶存储目录
   process.env.DATABASE_URL = TEST_DB_URL;
-  process.env.KP_CONTENT_DIR = TEST_CONTENT_DIR;
-  process.env.KP_CONFIG_DIR = TEST_CONFIG_DIR;
-  process.env.KP_DATA_DIR = TEST_DATA_DIR;
+  process.env.OM_CONTENT_DIR = TEST_CONTENT_DIR;
+  process.env.OM_CONFIG_DIR = TEST_CONFIG_DIR;
+  process.env.OM_DATA_DIR = TEST_DATA_DIR;
   if (!process.env.CREDENTIAL_MASTER_KEY?.trim()) {
     process.env.CREDENTIAL_MASTER_KEY =
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

@@ -41,7 +41,7 @@ import {
   getMemoryDecayFactor,
   memoryAgentScope,
   memoryWorkspaceScope,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { judgeMemoryWrite } from "./memoryWriteGate.js";
 
 function newMemoryId(): string {

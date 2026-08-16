@@ -6,4 +6,4 @@ export {
   runLabel,
   type SessionLike,
   type AgentLike,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";

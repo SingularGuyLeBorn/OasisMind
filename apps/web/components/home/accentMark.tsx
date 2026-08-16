@@ -10,7 +10,7 @@ export function CurlyMark({
   className?: string;
 }) {
   return (
-    <span className={cn("text-[var(--kp-brand)]", className)}>
+    <span className={cn("text-[var(--om-brand)]", className)}>
       {"{"} {children} {"}"}
     </span>
   );
@@ -25,7 +25,7 @@ export function SquareMark({
   className?: string;
 }) {
   return (
-    <span className={cn("text-[var(--kp-brand)]", className)}>
+    <span className={cn("text-[var(--om-brand)]", className)}>
       [{children}]
     </span>
   );

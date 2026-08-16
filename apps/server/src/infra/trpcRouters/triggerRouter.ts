@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { createTriggerSchema, updateTriggerSchema, listTriggersSchema } from "@knowpilot/shared";
+import { createTriggerSchema, updateTriggerSchema, listTriggersSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const triggerRouter = router({

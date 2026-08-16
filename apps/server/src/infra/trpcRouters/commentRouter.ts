@@ -8,7 +8,7 @@ import {
   updateCommentSchema,
   listCommentsSchema,
   listCommentsForPostSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, anonymousProcedure } from "../../trpc/trpc.js";
 

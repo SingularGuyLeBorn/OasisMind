@@ -21,7 +21,7 @@ export function branchIndicatorLabel(branchCount: number): string | null {
 }
 
 export function isBranchSummaryMessage(msg: { kind?: string | null; content?: string }): boolean {
-  return msg.kind === "branch_summary" || (msg.content?.includes("[kp-branch-summary]") ?? false);
+  return msg.kind === "branch_summary" || (msg.content?.includes("[om-branch-summary]") ?? false);
 }
 
 export type BookmarkEntry = { id: string; label: string; contentPreview: string };

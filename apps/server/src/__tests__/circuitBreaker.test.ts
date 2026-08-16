@@ -25,7 +25,7 @@ import { getHeartbeatEngine, resetHeartbeatEngineForTests } from "../infra/heart
 import { resetSwarmOrchestratorForTests } from "../infra/swarmOrchestrator.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { setStreamHub } from "../infra/sessionStreamHub.js";
-import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES } from "@knowpilot/shared";
+import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES } from "@oasismind/shared";
 
 /** 可推进的测试时钟（避免 vi.useFakeTimers 与异步 DB 交互打架） */
 function makeClock(start = 1_000) {

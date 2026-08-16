@@ -18,7 +18,7 @@ import { getAppConfig } from "../infra/config.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import { ServiceContainer } from "../infra/serviceContainer.js";
 import { createMemoryRepository } from "../infra/memoryRepository.js";
-import { MEMORY_TYPES } from "@knowpilot/shared";
+import { MEMORY_TYPES } from "@oasismind/shared";
 import * as resilientLlmClient from "../infra/resilientLlmClient.js";
 
 const RUN = `mwg-${Date.now()}`;

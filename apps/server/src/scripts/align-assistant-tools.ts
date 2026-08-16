@@ -2,9 +2,9 @@
  * 把默认 assistant 的 tools 对齐为 ASSISTANT_DEFAULT_TOOLS（DB + Markdown），
  * 消掉 /agents「配置偏移」横幅。
  *
- * 用法：pnpm --filter @knowpilot/server exec tsx src/scripts/align-assistant-tools.ts
+ * 用法：pnpm --filter @oasismind/server exec tsx src/scripts/align-assistant-tools.ts
  */
-import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 import { PrismaClient } from "@prisma/client";
 import { spawnSync } from "child_process";
 import path from "path";

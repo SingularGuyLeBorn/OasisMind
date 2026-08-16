@@ -18,7 +18,7 @@ import {
   memoryWorkspaceScope,
   MEMORY_SCOPE_GLOBAL,
   PERSONA_HINT_MAX_CHARS,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { createMemoryRepository } from "./memoryRepository.js";
 import {
   recordMemoryRetrieveOutcome,

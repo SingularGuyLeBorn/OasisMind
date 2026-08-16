@@ -11,7 +11,7 @@ import { resilientChatCompletion } from "./resilientLlmClient.js";
 import { resolveCompactSummaryModel } from "./autoCompact.js";
 
 export const BRANCH_SUMMARY_KIND = "branch_summary";
-export const BRANCH_SUMMARY_MARKER = "[kp-branch-summary]";
+export const BRANCH_SUMMARY_MARKER = "[om-branch-summary]";
 
 export type ChatTreeMessage = {
   id: string;

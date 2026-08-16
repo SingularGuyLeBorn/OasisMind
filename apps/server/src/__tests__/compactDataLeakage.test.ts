@@ -155,7 +155,7 @@ describe("compact 数据暴露审计", () => {
     const history = buildLlmMessagesFromHistory("sys", [
       {
         role: "assistant",
-        content: "[kp-compact-boundary:v1@2026-01-01T00:00:00.000Z]\n已压缩。",
+        content: "[om-compact-boundary:v1@2026-01-01T00:00:00.000Z]\n已压缩。",
         toolCalls: [
           {
             id: "c1",

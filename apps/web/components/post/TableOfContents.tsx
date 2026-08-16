@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-const TOC_VISIBLE_KEY = "kp-post-toc-visible";
+const TOC_VISIBLE_KEY = "om-post-toc-visible";
 const tocListeners = new Set<() => void>();
 
 export interface TocItem {
@@ -32,7 +32,7 @@ function parseHeadings(content: string): TocItem[] {
         .trim()
         .replace(/<[^>]+>/g, "")
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-      items.push({ id: `kp-h-${items.length}`, text, level: match[1].length, index: items.length });
+      items.push({ id: `om-h-${items.length}`, text, level: match[1].length, index: items.length });
     }
   }
   return items;
@@ -40,7 +40,7 @@ function parseHeadings(content: string): TocItem[] {
 
 /**
  * 为每个标题生成唯一 id，与正文 Heading 组件使用的 id 保持一致。
- * 使用 `kp-h-${index}` 作为 id，彻底避免「math/特殊字符导致正文与目录 id 不一致」
+ * 使用 `om-h-${index}` 作为 id，彻底避免「math/特殊字符导致正文与目录 id 不一致」
  * 以及「重复标题 id 冲突」两类跳转失效。index 按文档顺序从 0 开始。
  */
 export function buildTocItems(content: string): TocItem[] {
@@ -75,13 +75,13 @@ function scrollToId(id: string, attempt = 0) {
     return;
   }
   // 兜底：按索引直接取第 N 个 h2/h3/h4，避免 id 生成/渲染不一致导致点击无响应
-  const idxMatch = /^kp-h-(\d+)$/.exec(id);
+  const idxMatch = /^om-h-(\d+)$/.exec(id);
   if (!idxMatch) return;
   const targetIndex = Number(idxMatch[1]);
-  const container = document.querySelector(".kp-post-content");
+  const container = document.querySelector(".om-post-content");
   const headings = container
     ? Array.from(container.querySelectorAll("h2, h3, h4"))
-    : Array.from(document.querySelectorAll("article.kp-post-swap h2, article.kp-post-swap h3, article.kp-post-swap h4"));
+    : Array.from(document.querySelectorAll("article.om-post-swap h2, article.om-post-swap h3, article.om-post-swap h4"));
   const target = headings[targetIndex];
   if (target) {
     target.scrollIntoView({ behavior: "auto", block: "start" });
@@ -203,7 +203,7 @@ export function TableOfContents({
         type="button"
         onClick={() => setTocVisiblePersist(true)}
         className={cn(
-          "fixed top-[5.5rem] right-4 z-30 hidden items-center gap-1.5 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 text-xs font-medium text-[var(--kp-text-2)] shadow-sm transition hover:border-[var(--kp-brand)] hover:text-[var(--kp-brand-deep)] xl:inline-flex",
+          "fixed top-[5.5rem] right-4 z-30 hidden items-center gap-1.5 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs font-medium text-[var(--om-text-2)] shadow-sm transition hover:border-[var(--om-brand)] hover:text-[var(--om-brand-deep)] xl:inline-flex",
           className,
         )}
         aria-label="显示本页目录"
@@ -218,20 +218,20 @@ export function TableOfContents({
   return (
     <aside
       className={cn(
-        "fixed top-[5.5rem] right-4 z-30 hidden w-72 flex-col rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] text-[var(--kp-text-1)] shadow-sm xl:flex",
+        "fixed top-[5.5rem] right-4 z-30 hidden w-72 flex-col rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-1)] shadow-sm xl:flex",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-2 px-4 py-3">
-        <h3 className="text-sm font-semibold text-[var(--kp-text-1)]">本页目录</h3>
+        <h3 className="text-sm font-semibold text-[var(--om-text-1)]">本页目录</h3>
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-xs font-medium text-[var(--kp-text-3)]">
+          <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-xs font-medium text-[var(--om-text-3)]">
             {groups.length}
           </span>
           <button
             type="button"
             onClick={() => setTocVisiblePersist(false)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--kp-text-3)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
             aria-label="隐藏本页目录"
             title="隐藏目录"
           >
@@ -271,8 +271,8 @@ export function TableOfContents({
                     className={cn(
                       "group flex flex-1 items-start rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
                       isActiveGroup
-                        ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                        : "text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-mute)]",
+                        ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                        : "text-[var(--om-text-1)] hover:bg-[var(--om-bg-mute)]",
                     )}
                   >
                     <span className="line-clamp-2 font-medium">{group.heading.text}</span>
@@ -295,10 +295,10 @@ export function TableOfContents({
                             className={cn(
                               "group flex w-full items-start rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
                               child.level === 3 && "pl-3",
-                              child.level === 4 && "pl-5 text-[var(--kp-text-2)]",
+                              child.level === 4 && "pl-5 text-[var(--om-text-2)]",
                               isActive
-                                ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                                : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                                ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                                : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                             )}
                           >
                             <span className="line-clamp-2">{child.text}</span>

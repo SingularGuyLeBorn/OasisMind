@@ -221,7 +221,7 @@ export function BlackHoleScene() {
   return (
     <div
       ref={wrapRef}
-      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]"
+      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-black md:h-[420px]"
     >
       <Canvas
         gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}

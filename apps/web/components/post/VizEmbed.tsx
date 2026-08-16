@@ -43,12 +43,12 @@ function VizFrame({
   return (
     <figure
       data-no-edit-click
-      className="not-prose my-0 overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-white"
+      className="not-prose my-0 overflow-hidden rounded-xl border border-[var(--om-divider)] bg-white"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
       {title ? (
-        <figcaption className="border-b border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-4 py-2.5 text-sm font-medium text-[var(--kp-text-1)]">
+        <figcaption className="border-b border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-4 py-2.5 text-sm font-medium text-[var(--om-text-1)]">
           {title}
         </figcaption>
       ) : null}
@@ -86,7 +86,7 @@ function CompositionPlayerInner({
   useEffect(() => {
     let cancelled = false;
     // 同一次 Promise：Player + registry 共用 webpack 对 remotion 的 alias 解析
-    Promise.all([import("@remotion/player"), import("@knowpilot/algo-viz")])
+    Promise.all([import("@remotion/player"), import("@oasismind/algo-viz")])
       .then(([playerMod, algoMod]) => {
         if (cancelled) return;
         setPlayer(() => playerMod.Player);
@@ -117,7 +117,7 @@ function CompositionPlayerInner({
   if (loading) {
     return (
       <VizFrame title={title} aspectRatio={aspectRatio}>
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-[var(--kp-text-3)]">
+        <div className="absolute inset-0 flex items-center justify-center text-sm text-[var(--om-text-3)]">
           加载动画组件…
         </div>
       </VizFrame>
@@ -126,7 +126,7 @@ function CompositionPlayerInner({
 
   if (loadError) {
     return (
-      <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-[var(--kp-text-2)]">
+      <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-[var(--om-text-2)]">
         动画引擎加载失败：{loadError}
       </div>
     );
@@ -134,7 +134,7 @@ function CompositionPlayerInner({
 
   if (!entry || !Player) {
     return (
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-[var(--kp-text-2)]">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-[var(--om-text-2)]">
         未知 composition：<code className="font-mono">{compositionId}</code>
         。已注册：{knownIds.join(", ") || "（无）"}
       </div>
@@ -164,7 +164,7 @@ export function VizEmbed({ raw }: { raw: string }) {
   const spec = parseVizFence(raw);
   if (!spec) {
     return (
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-[var(--kp-text-2)]">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-[var(--om-text-2)]">
         无效的 <code className="font-mono">viz</code> 块。请写{" "}
         <code className="font-mono">composition: PpoClip</code>
       </div>

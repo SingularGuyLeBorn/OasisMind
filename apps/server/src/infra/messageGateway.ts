@@ -8,7 +8,7 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
-import type { ChatAttachment } from "@knowpilot/shared";
+import type { ChatAttachment } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { claimWebhookEvent } from "./webhookIdempotency.js";

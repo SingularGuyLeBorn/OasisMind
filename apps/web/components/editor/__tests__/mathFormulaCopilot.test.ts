@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FORMULA_COPILOT_CONTEXT_LINES } from "@knowpilot/shared";
+import { FORMULA_COPILOT_CONTEXT_LINES } from "@oasismind/shared";
 
 describe("mathFormulaCopilot constants", () => {
   it("上下文默认 10 行", () => {

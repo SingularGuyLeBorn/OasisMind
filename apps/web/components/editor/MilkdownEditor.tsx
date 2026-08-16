@@ -209,15 +209,15 @@ function ModeToggle({
   onChange: (m: EditorViewMode) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] p-0.5 text-xs">
+    <div className="inline-flex rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-mute)] p-0.5 text-xs">
       <button
         type="button"
         onClick={() => onChange("wysiwyg")}
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition",
           mode === "wysiwyg"
-            ? "bg-[var(--kp-bg)] text-[var(--kp-text-1)] shadow-sm"
-            : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+            ? "bg-[var(--om-bg)] text-[var(--om-text-1)] shadow-sm"
+            : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
         )}
         title="所见即所得 · Ctrl+S · Ctrl+V 粘贴图片 · /gs 公式 · /code 代码 · /tb 表格 · /hb 画板 · 清空后 Backspace 删块"
       >
@@ -230,8 +230,8 @@ function ModeToggle({
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition",
           mode === "source"
-            ? "bg-[var(--kp-bg)] text-[var(--kp-text-1)] shadow-sm"
-            : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+            ? "bg-[var(--om-bg)] text-[var(--om-text-1)] shadow-sm"
+            : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
         )}
         title="Markdown 源码"
       >
@@ -421,7 +421,7 @@ function MilkdownEditorInner({
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const altBase = named.name.replace(/\.[^/.]+$/, "") || "image";
-    const token = `kp-uploading://${Date.now().toString(36)}`;
+    const token = `om-uploading://${Date.now().toString(36)}`;
     const placeholder = `\n![上传中… ${altBase}](${token})\n`;
     const current = ta.value;
     const withPlaceholder = current.slice(0, start) + placeholder + current.slice(end);
@@ -473,12 +473,12 @@ function MilkdownEditorInner({
       ref={editorRootRef}
       data-readonly={readOnly ? "true" : undefined}
       className={cn(
-        "milkdown-editor flex flex-col rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)]",
+        "milkdown-editor flex flex-col rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)]",
         readOnly ? "min-h-0" : "min-h-[calc(100dvh-12rem)]",
         className,
       )}
     >
-      <div className="flex items-center justify-end gap-3 border-b border-[var(--kp-divider)] px-3 py-2">
+      <div className="flex items-center justify-end gap-3 border-b border-[var(--om-divider)] px-3 py-2">
         <span className="sr-only">
           {readOnly
             ? "预览模式。顶部可切换到 Markdown 源码进行编辑。"
@@ -490,7 +490,7 @@ function MilkdownEditorInner({
           {!readOnly && (
             <>
               {imageUploading && (
-                <span className="text-xs text-[var(--kp-text-3)]">图片上传中…</span>
+                <span className="text-xs text-[var(--om-text-3)]">图片上传中…</span>
               )}
               <ImageUploadButton
                 meta={uploadMeta}
@@ -584,7 +584,7 @@ function MilkdownEditorInner({
             if (!applied) return;
             if (cmd.id === "board") {
               const inserted = applied.next;
-              const marker = "```kp-board\n";
+              const marker = "```om-board\n";
               const fenceAt = inserted.lastIndexOf(marker, Math.max(0, applied.cursor));
               setBoardModal({
                 writeBoard: (raw) => {
@@ -632,7 +632,7 @@ function MilkdownEditorInner({
           }}
           placeholder={placeholder || "写 Markdown… /gs 公式 · /code 代码 · /hb 画板 · @agent 协写"}
           spellCheck={false}
-          className="min-h-[calc(100dvh-14rem)] flex-1 resize-none bg-transparent px-4 py-4 font-mono text-sm leading-relaxed text-[var(--kp-text-1)] outline-none placeholder:text-[var(--kp-text-3)]"
+          className="min-h-[calc(100dvh-14rem)] flex-1 resize-none bg-transparent px-4 py-4 font-mono text-sm leading-relaxed text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
         />
       ) : (
         <div className={cn("flex-1", readOnly ? "min-h-0" : "min-h-[calc(100dvh-14rem)]")}>

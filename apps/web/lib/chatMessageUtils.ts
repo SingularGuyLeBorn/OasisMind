@@ -2,8 +2,8 @@
  * Chat 消息分组与多版本解析 — 前端展示层
  */
 
-import type { ChatMessage } from "@knowpilot/shared";
-import { formatToolResultHint, formatToolTimingHint } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
+import { formatToolResultHint, formatToolTimingHint } from "@oasismind/shared";
 import { isCompactBoundaryMessage } from "@/lib/compactMarkers";
 
 export type ToolCallRecord = {

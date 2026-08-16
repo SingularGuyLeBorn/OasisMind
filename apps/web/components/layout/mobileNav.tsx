@@ -39,7 +39,7 @@ import {
   PlusCircle,
   UserCircle,
 } from "lucide-react";
-import { navItemAllowed, PACKS_FULL, type PackFlags } from "@knowpilot/shared";
+import { navItemAllowed, PACKS_FULL, type PackFlags } from "@oasismind/shared";
 import { cn } from "@/lib/utils";
 import { useNativeCapabilities } from "@/lib/hooks";
 
@@ -177,17 +177,17 @@ export function MobileBottomNav() {
           <div
             className={cn(
               "absolute inset-x-0 bottom-0 max-h-[78dvh] overflow-y-auto rounded-t-2xl",
-              "border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] shadow-2xl",
+              "border border-[var(--om-divider)] bg-[var(--om-bg-alt)] shadow-2xl",
               "pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] pt-3",
             )}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--kp-bg-mute)]" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--om-bg-mute)]" />
             <div className="mb-2 flex items-center justify-between px-4">
-              <h2 className="text-sm font-semibold text-[var(--kp-text-1)]">更多</h2>
+              <h2 className="text-sm font-semibold text-[var(--om-text-1)]">更多</h2>
               <button
                 type="button"
                 onClick={() => setMoreOpenPath(null)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                 aria-label="关闭更多"
               >
                 <X className="h-5 w-5" />
@@ -196,7 +196,7 @@ export function MobileBottomNav() {
             <div className="space-y-4 px-3 pb-2">
               {grouped.map(([group, items]) => (
                 <div key={group}>
-                  <p className="mb-1.5 px-2 text-[11px] font-medium uppercase tracking-wide text-[var(--kp-text-3)]">
+                  <p className="mb-1.5 px-2 text-[11px] font-medium uppercase tracking-wide text-[var(--om-text-3)]">
                     {group}
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -213,8 +213,8 @@ export function MobileBottomNav() {
                           className={cn(
                             "flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                             active
-                              ? "kp-nav-pill-active"
-                              : "bg-[var(--kp-bg)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                              ? "om-nav-pill-active"
+                              : "bg-[var(--om-bg)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
                           )}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
@@ -233,8 +233,8 @@ export function MobileBottomNav() {
       <nav
         aria-label="手机主导航"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 border-t border-[var(--kp-divider)]",
-          "bg-[var(--kp-glass-bg)] backdrop-blur-md md:hidden",
+          "fixed inset-x-0 bottom-0 z-50 border-t border-[var(--om-divider)]",
+          "bg-[var(--om-glass-bg)] backdrop-blur-md md:hidden",
           "pb-[env(safe-area-inset-bottom,0px)]",
         )}
       >
@@ -253,8 +253,8 @@ export function MobileBottomNav() {
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition",
                   active
-                    ? "text-[var(--kp-accent-deep)]"
-                    : "text-[var(--kp-text-3)] active:bg-[var(--kp-bg-mute)]",
+                    ? "text-[var(--om-accent-deep)]"
+                    : "text-[var(--om-text-3)] active:bg-[var(--om-bg-mute)]",
                 )}
               >
                 <Icon className={cn("h-5 w-5", active && "stroke-[2.25]")} />
@@ -268,8 +268,8 @@ export function MobileBottomNav() {
             className={cn(
               "flex min-h-11 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition",
               moreActive || moreOpen
-                ? "text-[var(--kp-accent-deep)]"
-                : "text-[var(--kp-text-3)] active:bg-[var(--kp-bg-mute)]",
+                ? "text-[var(--om-accent-deep)]"
+                : "text-[var(--om-text-3)] active:bg-[var(--om-bg-mute)]",
             )}
             aria-expanded={moreOpen}
             aria-label="更多"

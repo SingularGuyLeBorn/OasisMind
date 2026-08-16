@@ -22,7 +22,7 @@ import {
 } from "@/lib/chatConfig";
 import { NEW_STREAM_KEY } from "@/lib/chatKeys";
 import { setSessionConfig } from "@/lib/sessionConfigStore";
-import { type Agent, type ChatSessionConfig } from "@knowpilot/shared";
+import { type Agent, type ChatSessionConfig } from "@oasismind/shared";
 
 export function useChatConfig(opts: {
   effectiveSessionId: string | null;

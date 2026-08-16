@@ -101,7 +101,7 @@ export function EditorSelectionToolbar({
     // 点在工具条上时不刷掉
     const node = range.commonAncestorContainer;
     const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
-    if (el?.closest("[data-kp-selection-toolbar]")) return;
+    if (el?.closest("[data-om-selection-toolbar]")) return;
 
     const pm = onSaveWysiwygSelection();
     if (!pm?.text.trim()) {
@@ -157,9 +157,9 @@ export function EditorSelectionToolbar({
 
   return createPortal(
     <div
-      data-kp-selection-toolbar
+      data-om-selection-toolbar
       className={cn(
-        "fixed z-[80] flex items-center gap-0.5 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-0.5 shadow-lg",
+        "fixed z-[80] flex items-center gap-0.5 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] p-0.5 shadow-lg",
         className,
       )}
       style={{ top: anchor.top, left: anchor.left }}
@@ -171,7 +171,7 @@ export function EditorSelectionToolbar({
           type="button"
           title={instruction || "自定义指令改写选区"}
           onClick={() => runAction(instruction)}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[var(--kp-text-2)] hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand-deep)]"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[var(--om-text-2)] hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand-deep)]"
         >
           <Icon className="h-3 w-3" />
           {label}

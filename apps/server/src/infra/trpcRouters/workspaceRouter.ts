@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createWorkspaceSchema, updateWorkspaceSchema, listWorkspacesSchema } from "@knowpilot/shared";
+import { createWorkspaceSchema, updateWorkspaceSchema, listWorkspacesSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const workspaceRouter = router({

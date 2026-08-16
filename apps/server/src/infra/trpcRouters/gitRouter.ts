@@ -6,7 +6,7 @@ import { z } from "zod";
 import {
   createGitRepoSchema, updateGitRepoSchema, listGitReposSchema, gitRepoPathSchema, gitLogSchema, gitDiffSchema,
   gitCommitWithApprovalSchema, gitPullWithApprovalSchema, gitPushWithApprovalSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { withApprovalGuard } from "./withApprovalGuard.js";
 

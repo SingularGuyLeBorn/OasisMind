@@ -41,7 +41,7 @@ export function SwarmHealthPanel({
     return (
       <div
         data-testid="swarm-health-panel"
-        className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3 text-[11px] text-[var(--kp-text-3)]"
+        className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 text-[11px] text-[var(--om-text-3)]"
       >
         <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
         加载运行健康…
@@ -54,7 +54,7 @@ export function SwarmHealthPanel({
     return (
       <div
         data-testid="swarm-health-panel"
-        className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3 text-[11px] text-[var(--kp-text-3)]"
+        className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 text-[11px] text-[var(--om-text-3)]"
       >
         无法加载运行健康快照。
       </div>
@@ -113,13 +113,13 @@ export function SwarmHealthPanel({
         compact && "rounded-none border-x-0 border-t-0",
         data.needsAttention
           ? "border-amber-300/70 bg-amber-50/70 dark:border-amber-500/40 dark:bg-amber-950/25"
-          : "border-[var(--kp-divider)] bg-[var(--kp-bg)]",
+          : "border-[var(--om-divider)] bg-[var(--om-bg)]",
       )}
     >
       <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <Activity className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+        <Activity className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
         <span
-          className="font-medium text-[var(--kp-text-1)]"
+          className="font-medium text-[var(--om-text-1)]"
           title="Agent 后台运行面：收件箱、上级队列、暂停会话、待答复"
         >
           {compact ? "运行健康" : "Swarm 运行健康"}
@@ -137,7 +137,7 @@ export function SwarmHealthPanel({
       </div>
       <div
         className={cn(
-          "grid gap-1.5 text-[10px] text-[var(--kp-text-2)]",
+          "grid gap-1.5 text-[10px] text-[var(--om-text-2)]",
           compact ? "grid-cols-4" : "grid-cols-2 sm:grid-cols-4",
         )}
       >
@@ -153,7 +153,7 @@ export function SwarmHealthPanel({
         </p>
       )}
       {data.heartbeat.lastMode && (
-        <p className="text-[10px] text-[var(--kp-text-3)]" data-testid="swarm-heartbeat-decision">
+        <p className="text-[10px] text-[var(--om-text-3)]" data-testid="swarm-heartbeat-decision">
           决策 {toPascalCaseId(data.heartbeat.lastMode)}
           {data.heartbeat.skipRemaining != null && data.heartbeat.skipRemaining > 0
             ? ` · 退避剩余 ${data.heartbeat.skipRemaining}`
@@ -164,19 +164,19 @@ export function SwarmHealthPanel({
         </p>
       )}
       {data.inbox.preview.length > 0 && (
-        <ul className="max-h-24 space-y-1 overflow-y-auto text-[10px] text-[var(--kp-text-2)]">
+        <ul className="max-h-24 space-y-1 overflow-y-auto text-[10px] text-[var(--om-text-2)]">
           {data.inbox.preview.slice(0, 3).map((m) => (
-            <li key={m.id} className="truncate rounded bg-[var(--kp-bg-mute)] px-2 py-1" title={m.content}>
-              <span className="text-[var(--kp-text-3)]">[{toPascalCaseId(m.messageType)}] </span>
+            <li key={m.id} className="truncate rounded bg-[var(--om-bg-mute)] px-2 py-1" title={m.content}>
+              <span className="text-[var(--om-text-3)]">[{toPascalCaseId(m.messageType)}] </span>
               {m.content}
             </li>
           ))}
         </ul>
       )}
       {data.askUserPending.length > 0 && (
-        <ul className="max-h-28 space-y-1 overflow-y-auto text-[10px] text-[var(--kp-text-2)]">
+        <ul className="max-h-28 space-y-1 overflow-y-auto text-[10px] text-[var(--om-text-2)]">
           {data.askUserPending.slice(0, 5).map((a) => (
-            <li key={a.askId} className="flex items-start gap-1.5 rounded bg-[var(--kp-bg-mute)] px-2 py-1">
+            <li key={a.askId} className="flex items-start gap-1.5 rounded bg-[var(--om-bg-mute)] px-2 py-1">
               {a.channel === "email" ? (
                 <Mail className="mt-0.5 h-3 w-3 shrink-0" />
               ) : (
@@ -185,11 +185,11 @@ export function SwarmHealthPanel({
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/chat?sessionId=${a.sessionId}`}
-                  className="font-medium text-[var(--kp-brand-deep)] underline-offset-2 hover:underline"
+                  className="font-medium text-[var(--om-brand-deep)] underline-offset-2 hover:underline"
                 >
                   打开会话
                 </Link>
-                <span className="ml-1 truncate text-[var(--kp-text-3)]">{a.question}</span>
+                <span className="ml-1 truncate text-[var(--om-text-3)]">{a.question}</span>
               </div>
             </li>
           ))}
@@ -213,14 +213,14 @@ function Metric(props: {
       title={title}
       className={cn(
         "min-w-0 rounded-lg px-1.5 py-1.5",
-        props.warn ? "bg-amber-100/80 dark:bg-amber-900/30" : "bg-[var(--kp-bg-mute)]",
+        props.warn ? "bg-amber-100/80 dark:bg-amber-900/30" : "bg-[var(--om-bg-mute)]",
       )}
     >
       <div className="flex items-center justify-between gap-1">
         <props.Icon
           className={cn(
             "h-3 w-3 shrink-0",
-            props.warn ? "text-amber-800 dark:text-amber-200" : "text-[var(--kp-text-3)]",
+            props.warn ? "text-amber-800 dark:text-amber-200" : "text-[var(--om-text-3)]",
           )}
           aria-hidden
         />
@@ -234,10 +234,10 @@ function Metric(props: {
         </div>
       </div>
       {!props.compact && (
-        <div className="mt-0.5 truncate text-[9px] text-[var(--kp-text-3)]">{props.label}</div>
+        <div className="mt-0.5 truncate text-[9px] text-[var(--om-text-3)]">{props.label}</div>
       )}
       {props.compact && (
-        <div className="mt-0.5 truncate text-center text-[9px] leading-tight text-[var(--kp-text-3)]">
+        <div className="mt-0.5 truncate text-center text-[9px] leading-tight text-[var(--om-text-3)]">
           {props.label}
         </div>
       )}

@@ -20,7 +20,7 @@ import { trpc } from "@/lib/trpc";
 import { PostContent } from "@/components/post/PostContent";
 
 const EXCLUDED_SELECTORS =
-  "pre, code, .katex, .katex-display, .kp-page-search-mark, .kp-selection-explain, script, style, noscript, button, a, input, textarea";
+  "pre, code, .katex, .katex-display, .om-page-search-mark, .om-selection-explain, script, style, noscript, button, a, input, textarea";
 
 const PANEL_WIDTH = 360;
 const BTN_GAP = 8;
@@ -50,7 +50,7 @@ function readSurrounding(range: Range): string | undefined {
     node.nodeType === Node.ELEMENT_NODE
       ? (node as HTMLElement)
       : node.parentElement;
-  const block = el?.closest("p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, .kp-md-p");
+  const block = el?.closest("p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, .om-md-p");
   const text = (block?.textContent || el?.textContent || "").replace(/\s+/g, " ").trim();
   if (!text || text.length < 8) return undefined;
   return text.slice(0, 1500);
@@ -227,9 +227,9 @@ export function SelectionExplain({
           onMouseDown={(e) => e.preventDefault()}
           onClick={runExplain}
           className={cn(
-            "kp-selection-explain inline-flex items-center gap-1 rounded-full border border-[var(--kp-divider)]",
-            "bg-[var(--kp-bg)] px-2.5 py-1 text-xs font-medium text-[var(--kp-brand-deep)] shadow-md",
-            "transition hover:border-[var(--kp-brand)]/50 hover:bg-[var(--kp-brand-soft)]/50",
+            "om-selection-explain inline-flex items-center gap-1 rounded-full border border-[var(--om-divider)]",
+            "bg-[var(--om-bg)] px-2.5 py-1 text-xs font-medium text-[var(--om-brand-deep)] shadow-md",
+            "transition hover:border-[var(--om-brand)]/50 hover:bg-[var(--om-brand-soft)]/50",
           )}
           data-testid="selection-explain-btn"
         >
@@ -246,33 +246,33 @@ export function SelectionExplain({
           aria-label="划线解释"
           style={panelStyle}
           className={cn(
-            "kp-selection-explain flex flex-col overflow-hidden rounded-xl border border-[var(--kp-divider)]",
-            "bg-[var(--kp-bg)] shadow-xl",
+            "om-selection-explain flex flex-col overflow-hidden rounded-xl border border-[var(--om-divider)]",
+            "bg-[var(--om-bg)] shadow-xl",
           )}
           data-testid="selection-explain-panel"
         >
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--kp-divider-light)] px-3 py-2">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--om-divider-light)] px-3 py-2">
             <div className="flex min-w-0 items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
-              <span className="truncate text-xs font-semibold text-[var(--kp-text-1)]">划线解释</span>
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
+              <span className="truncate text-xs font-semibold text-[var(--om-text-1)]">划线解释</span>
             </div>
             <button
               type="button"
               onClick={clearUi}
-              className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+              className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
               aria-label="关闭"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="shrink-0 border-b border-[var(--kp-divider-light)] px-3 py-2">
-            <p className="line-clamp-3 text-[11px] leading-relaxed text-[var(--kp-text-3)]">
+          <div className="shrink-0 border-b border-[var(--om-divider-light)] px-3 py-2">
+            <p className="line-clamp-3 text-[11px] leading-relaxed text-[var(--om-text-3)]">
               「{quote}」
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
             {explainMut.isPending && (
-              <div className="flex items-center gap-2 py-6 text-xs text-[var(--kp-text-3)]">
+              <div className="flex items-center gap-2 py-6 text-xs text-[var(--om-text-3)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 正在解释…
               </div>
@@ -285,7 +285,7 @@ export function SelectionExplain({
             {explanation && !explainMut.isPending && (
               <PostContent
                 content={explanation}
-                className="prose-sm max-w-none text-left text-[var(--kp-text-1)] [&_p]:my-1.5"
+                className="prose-sm max-w-none text-left text-[var(--om-text-1)] [&_p]:my-1.5"
               />
             )}
           </div>

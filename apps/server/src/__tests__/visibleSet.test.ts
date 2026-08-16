@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CHILD_OWN_TOOLS, PACKS_FULL } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS, PACKS_FULL } from "@oasismind/shared";
 import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
 import type { VisibleUniverseEntry } from "../infra/tools/visibleSet.js";
 

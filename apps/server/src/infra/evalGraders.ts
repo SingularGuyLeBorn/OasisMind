@@ -14,7 +14,7 @@ import type {
   EvalLayer,
   EvalVerdict,
   LayerSummary,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 const LAYERS: EvalLayer[] = ["result", "process", "efficiency", "risk"];
 

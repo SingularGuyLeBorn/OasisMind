@@ -23,7 +23,7 @@ import {
 } from "../infra/agentFactory.js";
 import { initSwarm } from "../infra/swarmInitializer.js";
 import { resolveAgent, detectAssistantDrift } from "../infra/agentResolver.js";
-import { TIER_DEFAULT_TOOLS, ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { TIER_DEFAULT_TOOLS, ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 
 const config = getAppConfig();
 const services = getServiceContainer(prisma, getEventBus(), config);

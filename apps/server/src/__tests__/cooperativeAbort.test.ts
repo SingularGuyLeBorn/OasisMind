@@ -84,7 +84,7 @@ describe("cooperativeAbort", () => {
       (frozen as { foo: number }).foo = 2;
     }).toThrow();
 
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-freeze-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "om-freeze-"));
     try {
       const ctx = createNativeCtx(root);
       ctx.agentSnapshot = {

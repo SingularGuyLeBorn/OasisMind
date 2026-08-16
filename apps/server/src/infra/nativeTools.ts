@@ -8,7 +8,7 @@
  * 新增 native 工具 = 在对应域文件加 schema + handler（开闭原则，勿改本文件分发逻辑）。
  */
 
-import { DEFAULT_AGENT_NATIVE } from "@knowpilot/shared";
+import { DEFAULT_AGENT_NATIVE } from "@oasismind/shared";
 import { getTool, listTools } from "./tools/registry.js";
 import type { NativeToolContext, NativeToolDefinition } from "./tools/native/types.js";
 import { injectExpectPropsIntoParameters } from "./keyInfoExtractor.js";

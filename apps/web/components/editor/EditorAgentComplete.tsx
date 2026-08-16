@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bot, Check, Loader2, Sparkles, X } from "lucide-react";
-import { DEFAULT_LLM_MODEL } from "@knowpilot/shared";
+import { DEFAULT_LLM_MODEL } from "@oasismind/shared";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { extractEditorCompleteContext } from "@/lib/editorCompleteContext";
@@ -525,8 +525,8 @@ export function EditorAgentComplete({
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition",
           phase !== "closed" || menuOpen
-            ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-            : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+            ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+            : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
         )}
         title="润稿：总结 / 整理格式 / 润色当前段；正文键入 @agent 可唤起 Agent 协写"
         data-testid="editor-polish-open"
@@ -537,10 +537,10 @@ export function EditorAgentComplete({
 
       {menuOpen && phase === "closed" && (
         <div
-          className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-xl"
+          className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] py-1 shadow-xl"
           data-testid="editor-polish-menu"
         >
-          <p className="px-3 py-1.5 text-[10px] text-[var(--kp-text-3)]">
+          <p className="px-3 py-1.5 text-[10px] text-[var(--om-text-3)]">
             默认 {DEFAULT_LLM_MODEL} · 预览后接受
           </p>
           {POLISH_PRESETS.map((p) => (
@@ -548,45 +548,45 @@ export function EditorAgentComplete({
               key={p.id}
               type="button"
               onClick={() => openPolishPreset(p)}
-              className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-[var(--kp-bg-mute)]"
+              className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-[var(--om-bg-mute)]"
             >
-              <span className="text-xs font-medium text-[var(--kp-text-1)]">{p.label}</span>
-              <span className="text-[10px] text-[var(--kp-text-3)]">{p.hint}</span>
+              <span className="text-xs font-medium text-[var(--om-text-1)]">{p.label}</span>
+              <span className="text-[10px] text-[var(--om-text-3)]">{p.hint}</span>
             </button>
           ))}
-          <div className="my-1 border-t border-[var(--kp-divider)]" />
+          <div className="my-1 border-t border-[var(--om-divider)]" />
           <button
             type="button"
             onClick={() => openCompose("", { title: "@agent 协写" })}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
           >
             <Bot className="h-3.5 w-3.5" />
             自定义 @agent…
           </button>
-          <p className="px-3 py-1.5 text-[10px] leading-snug text-[var(--kp-text-3)]">
-            也可在正文直接键入 <code className="text-[var(--kp-text-2)]">@agent</code>
+          <p className="px-3 py-1.5 text-[10px] leading-snug text-[var(--om-text-3)]">
+            也可在正文直接键入 <code className="text-[var(--om-text-2)]">@agent</code>
           </p>
         </div>
       )}
 
       {phase !== "closed" && (
         <div
-          className="absolute right-0 top-full z-40 mt-2 w-[min(100vw-2rem,28rem)] rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3 shadow-xl"
+          className="absolute right-0 top-full z-40 mt-2 w-[min(100vw-2rem,28rem)] rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 shadow-xl"
           data-testid="editor-agent-complete-panel"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-[var(--kp-text-1)]">{panelTitle}</span>
+            <span className="text-xs font-semibold text-[var(--om-text-1)]">{panelTitle}</span>
             <button
               type="button"
               onClick={close}
-              className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
               aria-label="关闭"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          <p className="mb-2 text-[10px] text-[var(--kp-text-3)]">
+          <p className="mb-2 text-[10px] text-[var(--om-text-3)]">
             模型 {DEFAULT_LLM_MODEL}
             {applyMode === "document"
               ? " · 接受后替换全文"
@@ -596,7 +596,7 @@ export function EditorAgentComplete({
           </p>
 
           {paragraphSnap && (
-            <div className="mb-2 max-h-14 overflow-y-auto rounded-md border border-dashed border-[var(--kp-divider)] bg-[var(--kp-bg-mute)]/40 px-2 py-1.5 text-[10px] text-[var(--kp-text-3)]">
+            <div className="mb-2 max-h-14 overflow-y-auto rounded-md border border-dashed border-[var(--om-divider)] bg-[var(--om-bg-mute)]/40 px-2 py-1.5 text-[10px] text-[var(--om-text-3)]">
               当前段：{paragraphSnap.slice(0, 120)}
               {paragraphSnap.length > 120 ? "…" : ""}
             </div>
@@ -604,13 +604,13 @@ export function EditorAgentComplete({
 
           {agentName || useDefaultAgent ? (
             <div className="mb-2 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--kp-brand-soft)]/70 px-2 py-1 text-xs text-[var(--kp-brand-deep)]">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--om-brand-soft)]/70 px-2 py-1 text-xs text-[var(--om-brand-deep)]">
                 <Bot className="h-3 w-3" />
                 {agentName ?? "assistant"}
               </span>
               <button
                 type="button"
-                className="text-[10px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+                className="text-[10px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
                 onClick={() => {
                   setPickerOpen(true);
                   setAgentQuery("");
@@ -620,12 +620,12 @@ export function EditorAgentComplete({
               </button>
             </div>
           ) : (
-            <p className="mb-2 text-xs text-[var(--kp-text-3)]">先选择一个 Agent</p>
+            <p className="mb-2 text-xs text-[var(--om-text-3)]">先选择一个 Agent</p>
           )}
 
           {pickerOpen && (
             <div
-              className="mb-2 max-h-40 overflow-y-auto rounded-lg border border-[var(--kp-divider)]"
+              className="mb-2 max-h-40 overflow-y-auto rounded-lg border border-[var(--om-divider)]"
               data-testid="editor-agent-picker"
             >
               <input
@@ -651,12 +651,12 @@ export function EditorAgentComplete({
                   }
                 }}
                 placeholder="搜索 Agent…"
-                className="w-full border-b border-[var(--kp-divider)] bg-transparent px-2.5 py-1.5 text-xs outline-none"
+                className="w-full border-b border-[var(--om-divider)] bg-transparent px-2.5 py-1.5 text-xs outline-none"
               />
               {agentsQuery.isLoading ? (
-                <div className="px-2.5 py-2 text-xs text-[var(--kp-text-3)]">加载中…</div>
+                <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">加载中…</div>
               ) : agents.length === 0 ? (
-                <div className="px-2.5 py-2 text-xs text-[var(--kp-text-3)]">无匹配 Agent</div>
+                <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">无匹配 Agent</div>
               ) : (
                 agents.map((a, idx) => (
                   <button
@@ -666,14 +666,14 @@ export function EditorAgentComplete({
                     className={cn(
                       "flex w-full items-start gap-2 px-2.5 py-1.5 text-left text-xs",
                       idx === highlightIdx
-                        ? "bg-[var(--kp-brand-soft)]"
-                        : "hover:bg-[var(--kp-bg-mute)]",
+                        ? "bg-[var(--om-brand-soft)]"
+                        : "hover:bg-[var(--om-bg-mute)]",
                     )}
                   >
-                    <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+                    <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
                     <span className="min-w-0">
-                      <span className="font-medium text-[var(--kp-text-1)]">{a.name}</span>
-                      <span className="mt-0.5 block truncate text-[10px] text-[var(--kp-text-3)]">
+                      <span className="font-medium text-[var(--om-text-1)]">{a.name}</span>
+                      <span className="mt-0.5 block truncate text-[10px] text-[var(--om-text-3)]">
                         {a.tier}
                         {a.description ? ` · ${a.description}` : ""}
                       </span>
@@ -692,7 +692,7 @@ export function EditorAgentComplete({
                 rows={3}
                 placeholder="告诉 Agent 要在光标处写什么 / 怎么改…"
                 disabled={phase === "loading" || (!agentId && !useDefaultAgent)}
-                className="mb-2 w-full resize-none rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)]/40 px-2.5 py-2 text-xs text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)] disabled:opacity-50"
+                className="mb-2 w-full resize-none rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-mute)]/40 px-2.5 py-2 text-xs text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)] disabled:opacity-50"
                 data-testid="editor-agent-instruction"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -702,12 +702,12 @@ export function EditorAgentComplete({
                 }}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-[var(--kp-text-3)]">Ctrl/Cmd+Enter 生成</span>
+                <span className="text-[10px] text-[var(--om-text-3)]">Ctrl/Cmd+Enter 生成</span>
                 <button
                   type="button"
                   onClick={runComplete}
                   disabled={!canRun || phase === "loading"}
-                  className="inline-flex items-center gap-1 rounded-lg bg-[var(--kp-brand-deep)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[var(--om-brand-deep)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                   data-testid="editor-agent-run"
                 >
                   {phase === "loading" ? (
@@ -731,8 +731,8 @@ export function EditorAgentComplete({
 
           {phase === "preview" && (
             <div className="mt-1 space-y-2" data-testid="editor-agent-preview">
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-dashed border-[var(--kp-brand)]/40 bg-[var(--kp-brand-soft)]/20 px-2.5 py-2">
-                <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-[var(--kp-text-1)]">
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-dashed border-[var(--om-brand)]/40 bg-[var(--om-brand-soft)]/20 px-2.5 py-2">
+                <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-[var(--om-text-1)]">
                   {preview}
                 </pre>
               </div>
@@ -743,7 +743,7 @@ export function EditorAgentComplete({
                     setPreview("");
                     setPhase("compose");
                   }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] px-3 py-1.5 text-xs text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] px-3 py-1.5 text-xs text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                   data-testid="editor-agent-reject"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -752,7 +752,7 @@ export function EditorAgentComplete({
                 <button
                   type="button"
                   onClick={accept}
-                  className="inline-flex items-center gap-1 rounded-lg bg-[var(--kp-brand-deep)] px-3 py-1.5 text-xs font-medium text-white"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[var(--om-brand-deep)] px-3 py-1.5 text-xs font-medium text-white"
                   data-testid="editor-agent-accept"
                 >
                   <Check className="h-3.5 w-3.5" />

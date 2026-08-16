@@ -4,7 +4,7 @@
 
 import fs from "fs";
 import path from "path";
-import type { AboutProfile } from "@knowpilot/shared";
+import type { AboutProfile } from "@oasismind/shared";
 import { getAppConfig } from "./config.js";
 
 function parseSimpleList(block: string): string[] {

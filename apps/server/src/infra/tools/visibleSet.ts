@@ -24,7 +24,7 @@ import {
   type AgentTier,
   type NativeToolDomain,
   type PackFlags,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { getTierTemplate } from "../agentFactory.js";
 import { getAllowedToolsForTier } from "../swarmPermissionGuard.js";
 import { getTool, listTools } from "./registry.js";

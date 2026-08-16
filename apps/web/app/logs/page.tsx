@@ -47,7 +47,7 @@ export default function LogsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={ScrollText}
         title="控制台与系统日志"
@@ -57,7 +57,7 @@ export default function LogsPage() {
 
       {/* 筛选菜单 */}
       <div className="flex flex-wrap items-center gap-2.5">
-        <span className="text-xs font-bold uppercase tracking-wider text-[var(--kp-text-3)] flex items-center gap-1">
+        <span className="text-xs font-bold uppercase tracking-wider text-[var(--om-text-3)] flex items-center gap-1">
           <Filter className="w-3.5 h-3.5" />
           级别过滤
         </span>
@@ -68,8 +68,8 @@ export default function LogsPage() {
             onClick={() => { setLevel(lvl); setPage(1); }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
               level === lvl
-                ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)] shadow-sm"
-                : "border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] text-[var(--kp-text-2)] hover:border-[var(--kp-brand-light)] hover:bg-[var(--kp-bg-soft)]"
+                ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)] shadow-sm"
+                : "border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-2)] hover:border-[var(--om-brand-light)] hover:bg-[var(--om-bg-soft)]"
             }`}
           >
             {lvl === "" ? "全部" : lvl.toUpperCase()}
@@ -86,11 +86,11 @@ export default function LogsPage() {
           description="目前没有任何系统执行痕迹。所有的 tRPC 变更操作（如创建文章、上传文件等）都会被自动记录日志。"
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)]/20 shadow-inner">
+        <div className="overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)]/20 shadow-inner">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[var(--kp-divider)] text-[10px] uppercase font-bold tracking-wider text-[var(--kp-text-3)] bg-[var(--kp-bg-alt)]">
+                <tr className="border-b border-[var(--om-divider)] text-[10px] uppercase font-bold tracking-wider text-[var(--om-text-3)] bg-[var(--om-bg-alt)]">
                   <th className="p-4 w-28">级别</th>
                   <th className="p-4 w-32">组件</th>
                   <th className="p-4 w-36">事件</th>
@@ -98,7 +98,7 @@ export default function LogsPage() {
                   <th className="p-4 w-40 text-right">时间戳</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--kp-divider-light)] font-mono text-[11px]">
+              <tbody className="divide-y divide-[var(--om-divider-light)] font-mono text-[11px]">
                 {data.items.map((log: LogEntry) => {
                   const levelKey = log.level.toLowerCase();
                   const levelBadge: Record<string, string> = {
@@ -109,18 +109,18 @@ export default function LogsPage() {
                     debug: "border border-violet-200 bg-violet-100 text-violet-900",
                   };
                   return (
-                    <tr key={log.id} className="hover:bg-[var(--kp-bg-soft)]/60 transition-colors">
+                    <tr key={log.id} className="hover:bg-[var(--om-bg-soft)]/60 transition-colors">
                       <td className="p-4">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 font-bold text-[9px] ${levelBadge[levelKey] ?? "border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)]"}`}>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 font-bold text-[9px] ${levelBadge[levelKey] ?? "border border-[var(--om-divider)] bg-[var(--om-bg-mute)] text-[var(--om-text-2)]"}`}>
                           {log.level.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-4 text-[var(--kp-text-2)]">{log.component}</td>
-                      <td className="p-4 text-[var(--kp-brand-deep)]">{log.event}</td>
-                      <td className="p-4 text-[var(--kp-text-1)] truncate max-w-xs md:max-w-md" title={log.message}>
+                      <td className="p-4 text-[var(--om-text-2)]">{log.component}</td>
+                      <td className="p-4 text-[var(--om-brand-deep)]">{log.event}</td>
+                      <td className="p-4 text-[var(--om-text-1)] truncate max-w-xs md:max-w-md" title={log.message}>
                         {log.message}
                       </td>
-                      <td className="p-4 text-right text-[var(--kp-text-3)]">
+                      <td className="p-4 text-right text-[var(--om-text-3)]">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
                     </tr>

@@ -2,8 +2,8 @@
  * CLI：从 GitHub freellm + OpenRouter 同步免费 API Key
  *
  * 用法：
- *   pnpm --filter @knowpilot/server run sync-free-keys
- *   pnpm --filter @knowpilot/server run sync-free-keys:watch
+ *   pnpm --filter @oasismind/server run sync-free-keys
+ *   pnpm --filter @oasismind/server run sync-free-keys:watch
  *
  * 生产路径：server 启动默认挂载 infra/freeKeysSync.startFreeKeysAutoSync
  */

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 
 /**
  * 内容区当前「作用域花园」。

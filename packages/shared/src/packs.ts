@@ -3,7 +3,7 @@
  *
  * - core / chat：始终启用，不可关
  * - 可选 pack：swarm / im / mail / browser / research / viz
- * - 配置：config.yaml packs: + env KP_PACKS=lite|full 或 KP_PACKS_DISABLE=viz,research
+ * - 配置：config.yaml packs: + env OM_PACKS=lite|full 或 OM_PACKS_DISABLE=viz,research
  */
 
 export const OPTIONAL_PACK_IDS = [
@@ -53,10 +53,10 @@ export function isOptionalPackId(id: string): id is OptionalPackId {
 
 /**
  * 解析 packs：
- * 1. KP_PACKS=lite|full 优先（整包 profile）
+ * 1. OM_PACKS=lite|full 优先（整包 profile）
  * 2. 否则用 yaml/base 布尔
- * 3. KP_PACKS_DISABLE=im,viz 再关掉列出的包
- * 4. KP_PACKS_ENABLE=im 再打开（便于 lite 上点开）
+ * 3. OM_PACKS_DISABLE=im,viz 再关掉列出的包
+ * 4. OM_PACKS_ENABLE=im 再打开（便于 lite 上点开）
  */
 export function resolvePackFlags(input?: {
   profile?: string;
@@ -65,7 +65,7 @@ export function resolvePackFlags(input?: {
   envDisable?: string;
   envEnable?: string;
 }): PackFlags {
-  const envProfile = (input?.envProfile ?? process.env.KP_PACKS ?? "").trim().toLowerCase();
+  const envProfile = (input?.envProfile ?? process.env.OM_PACKS ?? "").trim().toLowerCase();
   const yamlProfile = (input?.profile ?? "").trim().toLowerCase();
   const profile = envProfile || yamlProfile;
 
@@ -81,7 +81,7 @@ export function resolvePackFlags(input?: {
             ),
           };
 
-  const disable = (input?.envDisable ?? process.env.KP_PACKS_DISABLE ?? "")
+  const disable = (input?.envDisable ?? process.env.OM_PACKS_DISABLE ?? "")
     .split(/[,;\s]+/)
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
@@ -89,7 +89,7 @@ export function resolvePackFlags(input?: {
     if (isOptionalPackId(id)) flags = { ...flags, [id]: false };
   }
 
-  const enable = (input?.envEnable ?? process.env.KP_PACKS_ENABLE ?? "")
+  const enable = (input?.envEnable ?? process.env.OM_PACKS_ENABLE ?? "")
     .split(/[,;\s]+/)
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);

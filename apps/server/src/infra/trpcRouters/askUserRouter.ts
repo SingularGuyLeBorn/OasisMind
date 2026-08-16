@@ -5,7 +5,7 @@
 import { TRPCError } from "@trpc/server";
 import {
   resolveAskUserSchema, listAskUserPendingSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import {
   getAskUserPending,

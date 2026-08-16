@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Task } from "@knowpilot/shared";
+import type { Task } from "@oasismind/shared";
 import { useTask, useInbox } from "@/lib/hooks";
 import { catchUnlessCancelled } from "@/lib/trpc";
 import { AdminPage, LoadingState } from "@/components/shared";
@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 
 const TASK_NAME = "Inbox 平台每日同步";
 const DEFAULT_CRON = "0 3 * * *";
-const SYNC_JOB_ID_KEY = "kp-inbox-platform-sync-job-id";
+const SYNC_JOB_ID_KEY = "om-inbox-platform-sync-job-id";
 const CHILD_PAGE_SIZE = 8;
 
 type SyncFlags = {
@@ -100,11 +100,11 @@ function parseTaskInput(task: Task | undefined): SyncFlags & { cron: string } {
 
 function StepStatusIcon({ status }: { status: SyncStep["status"] | SyncStepChild["status"] }) {
   if (status === "running") {
-    return <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--kp-brand-deep)]" />;
+    return <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--om-brand-deep)]" />;
   }
   if (status === "done") return <Check className="h-3.5 w-3.5 text-emerald-600" />;
   if (status === "error") return <AlertCircle className="h-3.5 w-3.5 text-red-500" />;
-  return <span className="h-2 w-2 rounded-full bg-[var(--kp-border)]" />;
+  return <span className="h-2 w-2 rounded-full bg-[var(--om-border)]" />;
 }
 
 function jobSummaryLine(job: SyncJob): string {
@@ -411,12 +411,12 @@ export default function PlatformSyncPage() {
 
   return (
     <AdminPage>
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--kp-border)] pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--om-border)] pb-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--kp-text-1)]">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--om-text-1)]">
             平台每日同步
           </h1>
-          <p className="mt-0.5 text-xs text-[var(--kp-text-3)]">
+          <p className="mt-0.5 text-xs text-[var(--om-text-3)]">
             后台拉到 Inbox · 切页不中断
             {syncTask
               ? ` · 定时已启用 · 上次 ${
@@ -429,7 +429,7 @@ export default function PlatformSyncPage() {
         </div>
         <Link
           href="/inbox"
-          className="inline-flex h-8 items-center rounded-md border border-[var(--kp-border)] bg-[var(--kp-surface)] px-3 text-sm hover:bg-[var(--kp-bg-mute)]"
+          className="inline-flex h-8 items-center rounded-md border border-[var(--om-border)] bg-[var(--om-surface)] px-3 text-sm hover:bg-[var(--om-bg-mute)]"
         >
           <Inbox className="mr-1.5 h-3.5 w-3.5" />
           Inbox
@@ -442,13 +442,13 @@ export default function PlatformSyncPage() {
         <div className="grid gap-5 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] lg:items-start">
           {/* 左栏：控制面，窄而密 */}
           <aside className="space-y-4 lg:sticky lg:top-3">
-            <section className="rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-3">
+            <section className="rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
                   定时
                 </h2>
               </div>
-              <label className="block text-[11px] text-[var(--kp-text-3)]">
+              <label className="block text-[11px] text-[var(--om-text-3)]">
                 Cron
                 <Input
                   className="mt-1 h-8 font-mono text-xs"
@@ -479,9 +479,9 @@ export default function PlatformSyncPage() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-3">
+            <section className="rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
                   平台
                   <span className="ml-1.5 font-normal normal-case tracking-normal">
                     {selectedCount}/{platformCards.length}
@@ -490,16 +490,16 @@ export default function PlatformSyncPage() {
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    className="text-[11px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)] disabled:opacity-40"
+                    className="text-[11px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)] disabled:opacity-40"
                     disabled={syncRunning || allSelected}
                     onClick={selectAllPlatforms}
                   >
                     全选
                   </button>
-                  <span className="text-[var(--kp-border)]">·</span>
+                  <span className="text-[var(--om-border)]">·</span>
                   <button
                     type="button"
-                    className="text-[11px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)] disabled:opacity-40"
+                    className="text-[11px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)] disabled:opacity-40"
                     disabled={syncRunning || noneSelected}
                     onClick={selectNonePlatforms}
                   >
@@ -520,21 +520,21 @@ export default function PlatformSyncPage() {
                       className={cn(
                         "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",
                         on
-                          ? "border-[color-mix(in_oklab,var(--kp-brand)_45%,var(--kp-border))] bg-[var(--kp-brand-soft)]"
-                          : "border-transparent bg-[var(--kp-bg-mute)]/60 opacity-70 hover:opacity-100",
+                          ? "border-[color-mix(in_oklab,var(--om-brand)_45%,var(--om-border))] bg-[var(--om-brand-soft)]"
+                          : "border-transparent bg-[var(--om-bg-mute)]/60 opacity-70 hover:opacity-100",
                         syncRunning && "pointer-events-none opacity-50",
                       )}
                     >
                       {on ? (
-                        <Check className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+                        <Check className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
                       ) : (
-                        <span className="h-3.5 w-3.5 shrink-0 rounded border border-[var(--kp-border)]" />
+                        <span className="h-3.5 w-3.5 shrink-0 rounded border border-[var(--om-border)]" />
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-[var(--kp-text-1)]">
+                        <span className="block truncate text-sm font-medium text-[var(--om-text-1)]">
                           {p.label}
                         </span>
-                        <span className="block truncate text-[10px] text-[var(--kp-text-3)]">
+                        <span className="block truncate text-[10px] text-[var(--om-text-3)]">
                           {p.desc}
                         </span>
                       </span>
@@ -544,16 +544,16 @@ export default function PlatformSyncPage() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-3">
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+            <section className="rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-3">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
                 立即同步
               </h2>
               {notice ? (
-                <div className="mb-2 flex items-start gap-1.5 rounded-lg bg-[var(--kp-bg-mute)] px-2 py-1.5 text-xs text-[var(--kp-text-2)]">
+                <div className="mb-2 flex items-start gap-1.5 rounded-lg bg-[var(--om-bg-mute)] px-2 py-1.5 text-xs text-[var(--om-text-2)]">
                   <p className="min-w-0 flex-1 leading-snug">{notice}</p>
                   <button
                     type="button"
-                    className="shrink-0 rounded p-0.5 hover:bg-[var(--kp-surface)]"
+                    className="shrink-0 rounded p-0.5 hover:bg-[var(--om-surface)]"
                     aria-label="关闭提示"
                     onClick={() => setNotice(null)}
                   >
@@ -646,9 +646,9 @@ export default function PlatformSyncPage() {
               <>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="text-sm font-semibold text-[var(--kp-text-1)]">进度</h2>
-                    <p className="mt-0.5 text-sm text-[var(--kp-text-2)]">{jobSummaryLine(syncJob)}</p>
-                    <p className="mt-0.5 text-xs text-[var(--kp-text-3)]">
+                    <h2 className="text-sm font-semibold text-[var(--om-text-1)]">进度</h2>
+                    <p className="mt-0.5 text-sm text-[var(--om-text-2)]">{jobSummaryLine(syncJob)}</p>
+                    <p className="mt-0.5 text-xs text-[var(--om-text-3)]">
                       {syncJob.status === "running"
                         ? "后台进行中 · 可停止 · ~0.8s 刷新"
                         : syncJob.status === "cancelled"
@@ -659,7 +659,7 @@ export default function PlatformSyncPage() {
                   {syncJob.status !== "running" ? (
                     <button
                       type="button"
-                      className="shrink-0 rounded p-1 hover:bg-[var(--kp-bg-mute)]"
+                      className="shrink-0 rounded p-1 hover:bg-[var(--om-bg-mute)]"
                       aria-label="关闭进度"
                       onClick={() => {
                         dismissedJobIdRef.current = syncJob.id;
@@ -671,7 +671,7 @@ export default function PlatformSyncPage() {
                         }
                       }}
                     >
-                      <X className="h-3.5 w-3.5 text-[var(--kp-text-3)]" />
+                      <X className="h-3.5 w-3.5 text-[var(--om-text-3)]" />
                     </button>
                   ) : null}
                 </div>
@@ -692,26 +692,26 @@ export default function PlatformSyncPage() {
                     return (
                       <div
                         key={step.key}
-                        className="flex min-h-[320px] flex-col rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-4"
+                        className="flex min-h-[320px] flex-col rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-4"
                       >
                         <div className="flex items-start gap-2.5">
                           <StepStatusIcon status={step.status} />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                              <span className="text-base font-medium text-[var(--kp-text-1)]">
+                              <span className="text-base font-medium text-[var(--om-text-1)]">
                                 {step.label}
                               </span>
-                              <span className="text-xs tabular-nums text-[var(--kp-text-3)]">
+                              <span className="text-xs tabular-nums text-[var(--om-text-3)]">
                                 {folderLine ?? writeProgressLabel(step.done, step.total, step.status)}
                               </span>
                             </div>
                             {folderLine ? (
-                              <p className="mt-0.5 text-[11px] tabular-nums text-[var(--kp-text-3)]">
+                              <p className="mt-0.5 text-[11px] tabular-nums text-[var(--om-text-3)]">
                                 {writeProgressLabel(step.done, step.total, step.status)}
                               </p>
                             ) : null}
                             <div
-                              className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-[var(--kp-border)]"
+                              className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-[var(--om-border)]"
                               role="progressbar"
                               aria-valuenow={pct}
                               aria-valuemin={0}
@@ -724,7 +724,7 @@ export default function PlatformSyncPage() {
                                     ? "bg-amber-500"
                                     : step.status === "pending"
                                       ? "bg-transparent"
-                                      : "bg-[var(--kp-brand-deep)]",
+                                      : "bg-[var(--om-brand-deep)]",
                                 )}
                                 style={{ width: `${pct}%` }}
                               />
@@ -735,7 +735,7 @@ export default function PlatformSyncPage() {
                                   "mt-2 break-words text-sm leading-snug",
                                   step.status === "error"
                                     ? "text-red-600 dark:text-red-400"
-                                    : "text-[var(--kp-text-1)]",
+                                    : "text-[var(--om-text-1)]",
                                 )}
                                 title={step.message}
                               >
@@ -746,12 +746,12 @@ export default function PlatformSyncPage() {
                         </div>
 
                         {recentLines.length > 0 && step.status !== "pending" ? (
-                          <div className="mt-3 min-h-0 flex-1 border-t border-[var(--kp-border)] pt-3">
+                          <div className="mt-3 min-h-0 flex-1 border-t border-[var(--om-border)] pt-3">
                             <div className="mb-1.5 flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium text-[var(--kp-text-2)]">
+                              <span className="text-xs font-medium text-[var(--om-text-2)]">
                                 拉取记录
                               </span>
-                              <span className="text-[11px] tabular-nums text-[var(--kp-text-3)]">
+                              <span className="text-[11px] tabular-nums text-[var(--om-text-3)]">
                                 {recentLines.length} 条
                               </span>
                             </div>
@@ -762,8 +762,8 @@ export default function PlatformSyncPage() {
                                   className={cn(
                                     "rounded-lg px-2.5 py-1.5 text-xs leading-snug",
                                     idx === 0
-                                      ? "bg-[var(--kp-brand-soft)] text-[var(--kp-text-1)]"
-                                      : "bg-[var(--kp-bg-mute)]/70 text-[var(--kp-text-2)]",
+                                      ? "bg-[var(--om-brand-soft)] text-[var(--om-text-1)]"
+                                      : "bg-[var(--om-bg-mute)]/70 text-[var(--om-text-2)]",
                                   )}
                                   title={line}
                                 >
@@ -775,11 +775,11 @@ export default function PlatformSyncPage() {
                         ) : null}
 
                         {isZhihu && zhihuChildren.length > 0 ? (
-                          <div className="mt-2 border-t border-[var(--kp-border)] pt-2">
+                          <div className="mt-2 border-t border-[var(--om-border)] pt-2">
                             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                               <button
                                 type="button"
-                                className="inline-flex items-center gap-1 text-xs text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]"
+                                className="inline-flex items-center gap-1 text-xs text-[var(--om-text-2)] hover:text-[var(--om-text-1)]"
                                 onClick={() => setChildrenExpanded((v) => !v)}
                               >
                                 {childrenExpanded ? (
@@ -794,7 +794,7 @@ export default function PlatformSyncPage() {
                                   <button
                                     type="button"
                                     disabled={safeChildPage <= 0}
-                                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--kp-border)] disabled:opacity-30"
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--om-border)] disabled:opacity-30"
                                     onClick={() => {
                                       setChildPagePinned(true);
                                       setChildPage(Math.max(0, safeChildPage - 1));
@@ -803,13 +803,13 @@ export default function PlatformSyncPage() {
                                   >
                                     <ChevronLeft className="h-3 w-3" />
                                   </button>
-                                  <span className="min-w-[2.5rem] text-center text-[10px] tabular-nums text-[var(--kp-text-3)]">
+                                  <span className="min-w-[2.5rem] text-center text-[10px] tabular-nums text-[var(--om-text-3)]">
                                     {safeChildPage + 1}/{childTotalPages}
                                   </span>
                                   <button
                                     type="button"
                                     disabled={safeChildPage >= childTotalPages - 1}
-                                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--kp-border)] disabled:opacity-30"
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-[var(--om-border)] disabled:opacity-30"
                                     onClick={() => {
                                       setChildPagePinned(true);
                                       setChildPage(
@@ -832,26 +832,26 @@ export default function PlatformSyncPage() {
                                     <li
                                       key={child.id}
                                       className={cn(
-                                        "rounded-lg border border-[var(--kp-border)] px-2 py-1.5",
-                                        st === "running" && "bg-[var(--kp-brand-soft)]/50",
+                                        "rounded-lg border border-[var(--om-border)] px-2 py-1.5",
+                                        st === "running" && "bg-[var(--om-brand-soft)]/50",
                                       )}
                                     >
                                       <div className="flex items-center gap-1.5 text-[11px]">
                                         <StepStatusIcon status={st} />
-                                        <span className="min-w-0 flex-1 truncate text-[var(--kp-text-1)]">
+                                        <span className="min-w-0 flex-1 truncate text-[var(--om-text-1)]">
                                           {child.label}
                                         </span>
-                                        <span className="shrink-0 tabular-nums text-[var(--kp-text-3)]">
+                                        <span className="shrink-0 tabular-nums text-[var(--om-text-3)]">
                                           {writeProgressLabel(child.done, child.total, st)}
                                         </span>
                                       </div>
-                                      <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-[var(--kp-border)]">
+                                      <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-[var(--om-border)]">
                                         <div
                                           className={cn(
                                             "h-full rounded-full transition-[width] duration-300",
                                             st === "error"
                                               ? "bg-amber-500"
-                                              : "bg-[var(--kp-brand-deep)]",
+                                              : "bg-[var(--om-brand-deep)]",
                                           )}
                                           style={{ width: `${cPct}%` }}
                                         />
@@ -869,18 +869,18 @@ export default function PlatformSyncPage() {
                 </div>
 
                 {syncJob.status !== "running" ? (
-                  <p className="text-xs text-[var(--kp-text-3)]">
+                  <p className="text-xs text-[var(--om-text-3)]">
                     结果在{" "}
-                    <Link href="/inbox" className="text-[var(--kp-brand-deep)] hover:underline">
+                    <Link href="/inbox" className="text-[var(--om-brand-deep)] hover:underline">
                       知识 Inbox
                     </Link>
                   </p>
                 ) : null}
               </>
             ) : (
-              <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--kp-border)] bg-[var(--kp-surface)]/50 px-6 text-center">
-                <p className="text-sm text-[var(--kp-text-2)]">左侧勾选平台后点「全量」或「增量」</p>
-                <p className="mt-1 text-xs text-[var(--kp-text-3)]">进度会显示在这里</p>
+              <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--om-border)] bg-[var(--om-surface)]/50 px-6 text-center">
+                <p className="text-sm text-[var(--om-text-2)]">左侧勾选平台后点「全量」或「增量」</p>
+                <p className="mt-1 text-xs text-[var(--om-text-3)]">进度会显示在这里</p>
               </div>
             )}
           </section>

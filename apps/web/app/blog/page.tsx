@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Calendar, Eye, Search, X, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import { blogDetailHref } from "@/lib/postHref";
 import { formatGardenId } from "@/lib/gardenDisplay";
@@ -56,12 +56,12 @@ function BlogPageContent() {
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
         className="mb-8"
       >
-        <div className="mb-2 flex items-center gap-2 text-[var(--kp-brand)]">
+        <div className="mb-2 flex items-center gap-2 text-[var(--om-brand)]">
           <BookOpen className="h-5 w-5" />
           <span className="text-sm font-medium tracking-wide">Blog</span>
         </div>
-        <h1 className="kp-display-serif text-3xl text-[var(--kp-text-1)]">博客</h1>
-        <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+        <h1 className="om-display-serif text-3xl text-[var(--om-text-1)]">博客</h1>
+        <p className="mt-1 text-sm text-[var(--om-text-3)]">
           已发布文章 · 共 {data?.total ?? 0} 篇
           {gardenFromUrl ? ` · ${gardenTitle(gardenFromUrl)}` : ""}
           {isFetching && !isLoading ? " · 刷新中…" : ""}
@@ -70,7 +70,7 @@ function BlogPageContent() {
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
           <Input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
@@ -81,7 +81,7 @@ function BlogPageContent() {
             <button
               type="button"
               onClick={() => setKeyword("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
               aria-label="清空搜索"
             >
               <X className="h-3.5 w-3.5" />
@@ -103,8 +103,8 @@ function BlogPageContent() {
             className={cn(
               "rounded-full px-3 py-1 text-xs transition",
               !gardenFromUrl
-                ? "bg-[var(--kp-brand)] text-white"
-                : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:text-[var(--kp-brand)]",
+                ? "bg-[var(--om-brand)] text-white"
+                : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:text-[var(--om-brand)]",
             )}
           >
             全部
@@ -116,8 +116,8 @@ function BlogPageContent() {
               className={cn(
                 "rounded-full px-3 py-1 text-xs transition",
                 gardenFromUrl === g.id
-                  ? "bg-[var(--kp-brand)] text-white"
-                  : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:text-[var(--kp-brand)]",
+                  ? "bg-[var(--om-brand)] text-white"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:text-[var(--om-brand)]",
               )}
             >
               {g.title || formatGardenId(g.id)}
@@ -134,17 +134,17 @@ function BlogPageContent() {
             <li key={post.id}>
               <Link
                 href={blogDetailHref(post.slug, post.garden ?? DEFAULT_POST_GARDEN)}
-                className="group block rounded-2xl border border-[var(--kp-divider)] bg-white/50 px-5 py-4 transition hover:border-[var(--kp-brand)]/35 hover:shadow-[0_8px_24px_-12px_rgba(0,135,235,0.25)]"
+                className="group block rounded-2xl border border-[var(--om-divider)] bg-white/50 px-5 py-4 transition hover:border-[var(--om-brand)]/35 hover:shadow-[0_8px_24px_-12px_rgba(0,135,235,0.25)]"
               >
-                <h2 className="text-lg font-semibold text-[var(--kp-text-1)] group-hover:text-[var(--kp-brand)]">
+                <h2 className="text-lg font-semibold text-[var(--om-text-1)] group-hover:text-[var(--om-brand)]">
                   {post.title}
                 </h2>
                 {post.excerpt ? (
-                  <p className="mt-1.5 line-clamp-2 text-sm text-[var(--kp-text-3)]">
+                  <p className="mt-1.5 line-clamp-2 text-sm text-[var(--om-text-3)]">
                     {post.excerpt}
                   </p>
                 ) : null}
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--kp-text-3)]">
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--om-text-3)]">
                   {post.category ? (
                     <Badge variant="secondary" className="font-normal">
                       {post.category}

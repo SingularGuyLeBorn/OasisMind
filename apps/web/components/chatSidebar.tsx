@@ -14,7 +14,7 @@ import { Bot, ListChecks, PanelLeftClose, Plus, Search } from "lucide-react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { useAgent } from "@/lib/hooks";
 import { cn, groupBySessionDate } from "@/lib/utils";
-import { type Agent } from "@knowpilot/shared";
+import { type Agent } from "@oasismind/shared";
 import { type ChatQueueItem, type SyncTaskItem } from "@/lib/chatQueueTypes";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared";
@@ -296,7 +296,7 @@ export const ChatSidebar = memo(function ChatSidebar({
               }}
             />
             {asyncProgressSteps.length > 0 && (
-              <div className="border-b border-[var(--kp-divider)] px-3 py-2" data-testid="async-progress-block">
+              <div className="border-b border-[var(--om-divider)] px-3 py-2" data-testid="async-progress-block">
                 <ThinkingTimeline steps={asyncProgressSteps} isLive />
               </div>
             )}
@@ -333,7 +333,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       <>
         {/* 对话历史子标签：与顶层「对话|运行」同款圆角分段 */}
         <div className="px-3 py-2">
-          <div className="flex gap-1 rounded-xl bg-[var(--kp-bg-mute)] p-0.5">
+          <div className="flex gap-1 rounded-xl bg-[var(--om-bg-mute)] p-0.5">
             <button
               type="button"
               onClick={() => {
@@ -347,8 +347,8 @@ export const ChatSidebar = memo(function ChatSidebar({
               className={cn(
                 "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
                 isMain
-                  ? "kp-nav-pill-active"
-                  : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+                  ? "om-nav-pill-active"
+                  : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
               )}
             >
               主 Agent
@@ -363,13 +363,13 @@ export const ChatSidebar = memo(function ChatSidebar({
               className={cn(
                 "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
                 !isMain
-                  ? "kp-nav-pill-active"
-                  : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+                  ? "om-nav-pill-active"
+                  : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
               )}
             >
               子 Agent
               {currentSubAgentCount > 0 && (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--kp-bg)]/80 px-1.5 py-0 text-[9px] font-semibold text-[var(--kp-text-2)]">
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--om-bg)]/80 px-1.5 py-0 text-[9px] font-semibold text-[var(--om-text-2)]">
                   {currentSubAgentCount}
                 </span>
               )}
@@ -377,7 +377,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           </div>
         </div>
 
-        <div className="w-64 border-b border-[var(--kp-divider)] px-3 py-2">
+        <div className="w-64 border-b border-[var(--om-divider)] px-3 py-2">
           <WorkspaceSelect
             value={selectedWorkspaceId}
             workspaces={workspacesQuery.data?.items ?? []}
@@ -386,8 +386,8 @@ export const ChatSidebar = memo(function ChatSidebar({
           />
         </div>
 
-        <div className="flex w-64 items-center justify-between border-b border-[var(--kp-divider)] px-4 py-3">
-          <h2 className="text-sm font-semibold text-[var(--kp-text-1)]">
+        <div className="flex w-64 items-center justify-between border-b border-[var(--om-divider)] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[var(--om-text-1)]">
             {isMain ? "对话历史" : "子 Agent"}
           </h2>
           <div className="flex items-center gap-0.5">
@@ -403,7 +403,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                   className={cn(
                     buttonVariants({ variant: "ghost", size: "icon" }),
                     "h-8 w-8",
-                    bulkMode && "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]",
+                    bulkMode && "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]",
                   )}
                   aria-label="批量管理"
                   title="批量管理会话"
@@ -437,13 +437,13 @@ export const ChatSidebar = memo(function ChatSidebar({
 
         {/* 批量操作条（仅主 Agent 标签） */}
         {isMain && bulkMode && (
-          <div className="flex w-64 items-center justify-between border-b border-[var(--kp-divider)] bg-[var(--kp-brand-soft)]/30 px-3 py-2 text-xs">
-            <span className="text-[var(--kp-text-2)]">已选 {bulkSelected.size}</span>
+          <div className="flex w-64 items-center justify-between border-b border-[var(--om-divider)] bg-[var(--om-brand-soft)]/30 px-3 py-2 text-xs">
+            <span className="text-[var(--om-text-2)]">已选 {bulkSelected.size}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setBulkSelected(new Set(filteredSessions.map((s) => s.id)))}
-                className="rounded px-1.5 py-0.5 text-[11px] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                className="rounded px-1.5 py-0.5 text-[11px] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
               >
                 全选
               </button>
@@ -451,7 +451,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                 <button
                   type="button"
                   onClick={() => setBulkSelected(new Set())}
-                  className="rounded px-1.5 py-0.5 text-[11px] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                  className="rounded px-1.5 py-0.5 text-[11px] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                 >
                   清空
                 </button>
@@ -468,16 +468,16 @@ export const ChatSidebar = memo(function ChatSidebar({
           </div>
         )}
 
-        <div className="w-64 border-b border-[var(--kp-divider)] px-3 py-2">
+        <div className="w-64 border-b border-[var(--om-divider)] px-3 py-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--kp-text-3)]" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--om-text-3)]" />
             <input
               type="search"
               value={sessionSearch}
               onChange={(e) => setSessionSearch(e.target.value)}
               placeholder={isMain ? "搜索会话…" : "搜索子 Agent…"}
               data-testid="session-search"
-              className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1.5 pl-8 pr-2 text-xs outline-none focus:border-[var(--kp-brand)]"
+              className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] py-1.5 pl-8 pr-2 text-xs outline-none focus:border-[var(--om-brand)]"
             />
           </div>
         </div>
@@ -504,13 +504,13 @@ export const ChatSidebar = memo(function ChatSidebar({
             /* 非 swarm 模式：回退到扁平 session 列表 */
             <>
               {filteredSessions.length === 0 && (
-                <p className="px-2 py-6 text-center text-xs text-[var(--kp-text-3)]">
+                <p className="px-2 py-6 text-center text-xs text-[var(--om-text-3)]">
                   {sessionSearch.trim() ? "无匹配会话" : "暂无对话"}
                 </p>
               )}
               {groupedSessions.map((group) => (
                 <div key={group.key} className="mb-3">
-                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
                     {group.label}
                   </p>
                   {group.items.map((s) => (
@@ -527,7 +527,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                               return next;
                             });
                           }}
-                          className="ml-1 h-3.5 w-3.5 shrink-0 accent-[var(--kp-brand)]"
+                          className="ml-1 h-3.5 w-3.5 shrink-0 accent-[var(--om-brand)]"
                           aria-label={`选择会话 ${s.autoName || s.title}`}
                         />
                       )}
@@ -571,7 +571,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       )}
       <aside
         className={cn(
-          "kp-shell-rail flex min-h-0 flex-col border-[var(--kp-divider)]",
+          "om-shell-rail flex min-h-0 flex-col border-[var(--om-divider)]",
           // 仅用户折叠/展开时过渡；水合期禁止，避免刷新「侧栏长出来」叠层
           prefsReady && "transition-[width] duration-300 ease-out",
           // 桌面：侧栏伸缩
@@ -583,13 +583,13 @@ export const ChatSidebar = memo(function ChatSidebar({
             : "hidden md:flex",
         )}
       >
-        <div className="w-full shrink-0 border-b border-[var(--kp-divider)] px-3 py-2.5 md:w-64" data-testid="chat-left-panel-header">
+        <div className="w-full shrink-0 border-b border-[var(--om-divider)] px-3 py-2.5 md:w-64" data-testid="chat-left-panel-header">
           <div className="flex items-center gap-2">
-            <span className="kp-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+            <span className="om-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
               <Bot className="h-3.5 w-3.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-semibold text-[var(--kp-text-1)]">
+              <div className="truncate text-xs font-semibold text-[var(--om-text-1)]">
                 {selectedAgent?.name ?? "assistant"}
               </div>
             </div>
@@ -601,14 +601,14 @@ export const ChatSidebar = memo(function ChatSidebar({
               aria-label="折叠左侧栏"
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon" }),
-                "h-11 w-11 shrink-0 text-[var(--kp-text-3)] md:h-7 md:w-7",
+                "h-11 w-11 shrink-0 text-[var(--om-text-3)] md:h-7 md:w-7",
               )}
             >
               <PanelLeftClose className="h-4 w-4 md:h-3.5 md:w-3.5" />
             </button>
           </div>
           {/* 左栏顶层标签：对话 | 运行 */}
-          <div className="mt-2 flex gap-1 rounded-xl bg-[var(--kp-bg-mute)] p-0.5">
+          <div className="mt-2 flex gap-1 rounded-xl bg-[var(--om-bg-mute)] p-0.5">
             <button
               type="button"
               onClick={() => {
@@ -619,8 +619,8 @@ export const ChatSidebar = memo(function ChatSidebar({
               className={cn(
                 "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
                 leftTab === "history"
-                  ? "kp-nav-pill-active"
-                  : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+                  ? "om-nav-pill-active"
+                  : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
               )}
             >
               对话
@@ -635,14 +635,14 @@ export const ChatSidebar = memo(function ChatSidebar({
               className={cn(
                 "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition",
                 leftTab === "runtime"
-                  ? "kp-nav-pill-active"
-                  : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-2)]",
+                  ? "om-nav-pill-active"
+                  : "text-[var(--om-text-3)] hover:text-[var(--om-text-2)]",
               )}
             >
               运行
               {runtimeBadgeCount > 0 && (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--kp-brand-soft)] px-1 py-0 text-[9px] font-semibold text-[var(--kp-brand-deep)]">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--kp-brand)]" />
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--om-brand-soft)] px-1 py-0 text-[9px] font-semibold text-[var(--om-brand-deep)]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--om-brand)]" />
                   {runtimeBadgeCount}
                 </span>
               )}

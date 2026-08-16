@@ -12,7 +12,7 @@ import {
   memoryAgentScope,
   memoryWorkspaceScope,
   type MemoryUserCreatableType,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import fs from "fs";
 import path from "path";
 import type { PostEntity } from "../../entityServices/postService.js";

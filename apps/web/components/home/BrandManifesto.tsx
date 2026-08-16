@@ -57,8 +57,8 @@ function ModeChip({
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
         side === "o"
-          ? "border-[var(--kp-brand)]/25 bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-          : "border-[var(--kp-accent)]/30 bg-[rgba(var(--kp-accent-rgb),0.12)] text-[var(--kp-accent-deep)]",
+          ? "border-[var(--om-brand)]/25 bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+          : "border-[var(--om-accent)]/30 bg-[rgba(var(--om-accent-rgb),0.12)] text-[var(--om-accent-deep)]",
       )}
     >
       <Icon className="h-3 w-3" />
@@ -74,16 +74,16 @@ function LetterBadge({ letter, side }: { letter: "O" | "M"; side: "o" | "m" }) {
       className={cn(
         "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border md:h-14 md:w-14",
         isO
-          ? "border-[var(--kp-brand)]/35 bg-[var(--kp-brand-soft)] shadow-[0_10px_24px_-12px_rgba(0,135,235,0.45)]"
-          : "border-[var(--kp-accent)]/40 bg-[rgba(var(--kp-accent-rgb),0.12)] shadow-[0_10px_24px_-12px_rgba(232,168,74,0.4)]",
+          ? "border-[var(--om-brand)]/35 bg-[var(--om-brand-soft)] shadow-[0_10px_24px_-12px_rgba(0,135,235,0.45)]"
+          : "border-[var(--om-accent)]/40 bg-[rgba(var(--om-accent-rgb),0.12)] shadow-[0_10px_24px_-12px_rgba(232,168,74,0.4)]",
       )}
     >
       <span
         className={cn(
           "bg-gradient-to-br bg-clip-text text-2xl font-black tracking-tight text-transparent md:text-3xl",
           isO
-            ? "from-[var(--kp-brand-light)] to-[var(--kp-brand-deep)]"
-            : "from-[var(--kp-accent)] to-[var(--kp-accent-deep)]",
+            ? "from-[var(--om-brand-light)] to-[var(--om-brand-deep)]"
+            : "from-[var(--om-accent)] to-[var(--om-accent-deep)]",
         )}
       >
         {letter}
@@ -111,13 +111,13 @@ function FactorBlock({
     <div className="flex min-w-0 items-start gap-2.5">
       <LetterBadge letter={letter} side={side} />
       <div className="min-w-0 flex-1 pt-0.5">
-        <p className="text-sm font-bold leading-tight text-[var(--kp-text-1)]">
+        <p className="text-sm font-bold leading-tight text-[var(--om-text-1)]">
           {title}{" "}
-          <span className={side === "o" ? "text-[var(--kp-brand)]" : "text-[var(--kp-accent-deep)]"}>
+          <span className={side === "o" ? "text-[var(--om-brand)]" : "text-[var(--om-accent-deep)]"}>
             {titleAccent}
           </span>
         </p>
-        <p className="mt-0.5 text-[11px] font-medium text-[var(--kp-text-3)]">{subtitle}</p>
+        <p className="mt-0.5 text-[11px] font-medium text-[var(--om-text-3)]">{subtitle}</p>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {chips.map((m) => (
             <ModeChip key={m.label} icon={m.icon} label={m.label} side={side} />
@@ -134,8 +134,8 @@ export function BrandManifesto() {
     <section className="relative overflow-hidden px-6 py-6 lg:px-12 lg:py-8">
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal>
-          <div className="kp-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5">
-            <p className="mb-4 w-full text-sm leading-relaxed text-[var(--kp-text-2)] lg:text-[15px]">
+          <div className="om-card-premium relative overflow-hidden rounded-[1.5rem] p-4 md:p-5">
+            <p className="mb-4 w-full text-sm leading-relaxed text-[var(--om-text-2)] lg:text-[15px]">
               从细微之处照见全局——每一粒种子都被看见、被关联、被养成。名字拆开是
               <SquareMark className="mx-1 font-semibold">Oasis × Mind</SquareMark>
               ：一边吃进世界，一边把协作跑起来。
@@ -150,7 +150,7 @@ export function BrandManifesto() {
                 subtitle="全模态输入"
                 chips={OMNI_MODES}
               />
-              <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--kp-text-3)]">
+              <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--om-text-3)]">
                 ×
               </span>
               <FactorBlock
@@ -161,7 +161,7 @@ export function BrandManifesto() {
                 subtitle="多智能体协作"
                 chips={AGENT_CAPS}
               />
-              <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--kp-text-3)]">
+              <span aria-hidden className="shrink-0 self-center text-2xl font-light text-[var(--om-text-3)]">
                 =
               </span>
               <motion.div
@@ -173,11 +173,11 @@ export function BrandManifesto() {
               >
                 <p className="text-lg font-black tracking-tight md:text-xl">
                   <CurlyMark>全模态</CurlyMark>
-                  <span className="mx-1 text-[var(--kp-text-3)]">·</span>
+                  <span className="mx-1 text-[var(--om-text-3)]">·</span>
                   <SquareMark>多智能体</SquareMark>
                 </p>
-                <p className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--kp-text-2)]">
-                  <Sparkles className="h-3 w-3 text-[var(--kp-accent)]" />
+                <p className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--om-text-2)]">
+                  <Sparkles className="h-3 w-3 text-[var(--om-accent)]" />
                   AGI 的另一种表述
                 </p>
               </motion.div>
@@ -191,12 +191,12 @@ export function BrandManifesto() {
                     key={item.label}
                     className="flex items-start gap-2.5 rounded-xl border border-white/50 bg-white/40 px-3 py-2.5 backdrop-blur-sm"
                   >
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--kp-brand)]/20 bg-[var(--kp-brand-soft)] text-[var(--kp-brand)]">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--om-brand)]/20 bg-[var(--om-brand-soft)] text-[var(--om-brand)]">
                       <Icon className="h-3.5 w-3.5" />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--kp-text-1)]">{item.label}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--kp-text-3)]">{item.hint}</p>
+                      <p className="text-xs font-bold text-[var(--om-text-1)]">{item.label}</p>
+                      <p className="mt-0.5 text-[10px] text-[var(--om-text-3)]">{item.hint}</p>
                     </div>
                   </div>
                 );

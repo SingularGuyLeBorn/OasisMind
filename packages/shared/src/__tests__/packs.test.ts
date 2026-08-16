@@ -21,7 +21,7 @@ describe("resolvePackFlags", () => {
     expect(formatPacksSummary(p)).toBe("full");
   });
 
-  it("KP_PACKS_DISABLE 关掉列出的包", () => {
+  it("OM_PACKS_DISABLE 关掉列出的包", () => {
     const p = resolvePackFlags({
       profile: "full",
       envProfile: "",
@@ -43,7 +43,7 @@ describe("resolvePackFlags", () => {
     expect(p.swarm).toBe(false);
   });
 
-  it("lite + KP_PACKS_ENABLE=im 可点开 IM", () => {
+  it("lite + OM_PACKS_ENABLE=im 可点开 IM", () => {
     const p = resolvePackFlags({
       profile: "lite",
       envProfile: "",

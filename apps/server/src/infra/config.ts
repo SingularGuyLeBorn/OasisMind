@@ -16,7 +16,7 @@ import {
   resolvePackFlags,
   type LocalLlmProviderId,
   type PackFlags,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { buildEffectiveSearchPriorityString } from "./metablog/search/priority.js";
 
 /** config.yaml llm 段：弹性调用参数（缺省时走默认值） */
@@ -518,7 +518,7 @@ export interface AppConfig {
   };
   /**
    * 能力包（Core+Packs）。core/chat 恒 true。
-   * config.yaml packs + KP_PACKS=lite|full + KP_PACKS_DISABLE/ENABLE。
+   * config.yaml packs + OM_PACKS=lite|full + OM_PACKS_DISABLE/ENABLE。
    */
   packs: PackFlags;
 }
@@ -588,7 +588,7 @@ function loadYamlConfig(projectRoot: string): Record<string, unknown> {
 }
 
 function resolveStorageRoot(projectRoot: string, name: "content" | "config" | "data", envName: string): string {
-  // 测试隔离：KP_CONTENT_DIR / KP_CONFIG_DIR / KP_DATA_DIR 各自覆盖对应根目录
+  // 测试隔离：OM_CONTENT_DIR / OM_CONFIG_DIR / OM_DATA_DIR 各自覆盖对应根目录
   const envDir = process.env[envName]?.trim();
   if (envDir) {
     return path.isAbsolute(envDir) ? envDir : path.resolve(projectRoot, envDir);
@@ -607,9 +607,9 @@ function resolveStorageRoot(projectRoot: string, name: "content" | "config" | "d
 /** E2E / 单测注入的隔离键：override 也不得盖掉，否则会连回 dev.db、wipe 假成功 */
 const ENV_ISOLATION_KEYS = new Set([
   "DATABASE_URL",
-  "KP_CONTENT_DIR",
-  "KP_CONFIG_DIR",
-  "KP_DATA_DIR",
+  "OM_CONTENT_DIR",
+  "OM_CONFIG_DIR",
+  "OM_DATA_DIR",
   "SERVER_PORT",
   "MOCK_LLM",
   "MOCK_MCP",
@@ -645,9 +645,9 @@ export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean })
 
 export function createAppConfig(): AppConfig {
   const projectRoot = resolveProjectRoot();
-  const contentDir = resolveStorageRoot(projectRoot, "content", "KP_CONTENT_DIR");
-  const configDir = resolveStorageRoot(projectRoot, "config", "KP_CONFIG_DIR");
-  const dataDir = resolveStorageRoot(projectRoot, "data", "KP_DATA_DIR");
+  const contentDir = resolveStorageRoot(projectRoot, "content", "OM_CONTENT_DIR");
+  const configDir = resolveStorageRoot(projectRoot, "config", "OM_CONFIG_DIR");
+  const dataDir = resolveStorageRoot(projectRoot, "data", "OM_DATA_DIR");
 
   const providers: Record<string, LlmProviderConfig> = {
     [LLM_PROVIDER_DEEPSEEK]: readProvider(
@@ -846,7 +846,7 @@ export function createAppConfig(): AppConfig {
       experiments: path.join(dataDir, "experiments"),
     },
     inbox: {
-      screenshotWatchDir: readEnv("KP_INBOX_SCREENSHOT_DIR") || inboxYaml.screenshotWatchDir,
+      screenshotWatchDir: readEnv("OM_INBOX_SCREENSHOT_DIR") || inboxYaml.screenshotWatchDir,
       defaultGarden: inboxYaml.defaultGarden || "knowledge",
       zhihuCollectionUrls: inboxYaml.zhihuCollectionUrls,
     },

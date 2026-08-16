@@ -8,7 +8,7 @@ import {
   listBlogPostsSchema,
   getBlogPostBySlugSchema,
   postRecordViewSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, anonymousProcedure } from "../../trpc/trpc.js";
 
 export const blogRouter = router({

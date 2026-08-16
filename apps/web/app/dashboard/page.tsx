@@ -31,7 +31,7 @@ function StatCard({
   tone?: "default" | "success" | "warning" | "danger";
 }) {
   const toneStyles = {
-    default: "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]",
+    default: "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]",
     success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
     warning: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
     danger: "bg-red-500/10 text-red-700 dark:text-red-400",
@@ -41,24 +41,24 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="kp-card-premium kp-lift rounded-2xl p-5"
+      className="om-card-premium om-lift rounded-2xl p-5"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", toneStyles[tone])}>
             <Icon className="h-4 w-4" />
           </div>
-          <span className="text-xs font-medium text-[var(--kp-text-3)]">{label}</span>
+          <span className="text-xs font-medium text-[var(--om-text-3)]">{label}</span>
         </div>
         {trend && (
-          <span className="kp-badge kp-badge-success">
+          <span className="om-badge om-badge-success">
             <TrendingUp className="h-3 w-3" />
             {trend}
           </span>
         )}
       </div>
-      <p className="kp-stat-number mt-4">{value}</p>
-      {sub && <p className="mt-1 text-[11px] text-[var(--kp-text-3)]">{sub}</p>}
+      <p className="om-stat-number mt-4">{value}</p>
+      {sub && <p className="mt-1 text-[11px] text-[var(--om-text-3)]">{sub}</p>}
     </motion.div>
   );
 }
@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="kp-card-premium rounded-2xl p-4 md:p-5"
+          className="om-card-premium rounded-2xl p-4 md:p-5"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -115,27 +115,27 @@ export default function DashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[var(--kp-text-1)]">今日 LLM 预算</span>
+                  <span className="text-sm font-semibold text-[var(--om-text-1)]">今日 LLM 预算</span>
                   <span className={cn(
-                    "kp-badge",
-                    budgetTone === "danger" ? "kp-badge-danger" :
-                    budgetTone === "warning" ? "kp-badge-warning" :
-                    "kp-badge-success"
+                    "om-badge",
+                    budgetTone === "danger" ? "om-badge-danger" :
+                    budgetTone === "warning" ? "om-badge-warning" :
+                    "om-badge-success"
                   )}>
                     {(llmBudget.ratio * 100).toFixed(0)}%
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-[var(--kp-text-3)]">30s 自动刷新</p>
+                <p className="mt-0.5 text-xs text-[var(--om-text-3)]">30s 自动刷新</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-[var(--kp-text-1)]">
-                ${llmBudget.spentUsd.toFixed(4)} <span className="text-sm font-normal text-[var(--kp-text-3)]">/ ${llmBudget.limitUsd.toFixed(2)}</span>
+              <p className="text-lg font-bold text-[var(--om-text-1)]">
+                ${llmBudget.spentUsd.toFixed(4)} <span className="text-sm font-normal text-[var(--om-text-3)]">/ ${llmBudget.limitUsd.toFixed(2)}</span>
               </p>
-              <div className="kp-progress mt-2 w-40">
+              <div className="om-progress mt-2 w-40">
                 <div
                   className={cn(
-                    "kp-progress-bar",
+                    "om-progress-bar",
                     budgetTone === "danger" ? "!bg-red-500" :
                     budgetTone === "warning" ? "!bg-amber-500" : ""
                   )}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
         <NativeCapabilitiesPanel
           data={caps}
           compact
-          className="border-[var(--kp-divider)]"
+          className="border-[var(--om-divider)]"
           detailHref="/tools"
         />
       )}
@@ -206,25 +206,25 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="kp-card-premium rounded-2xl p-6"
+          className="om-card-premium rounded-2xl p-6"
           data-testid="dashboard-recent-rotates"
         >
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
               <GitBranch className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-[var(--kp-text-1)]">最近会话轮换</h2>
-              <p className="text-xs text-[var(--kp-text-3)]">派生自 rotatedFrom / rotatedTo，非独立事件流</p>
+              <h2 className="text-sm font-bold text-[var(--om-text-1)]">最近会话轮换</h2>
+              <p className="text-xs text-[var(--om-text-3)]">派生自 rotatedFrom / rotatedTo，非独立事件流</p>
             </div>
             <Link
               href="/session-lineage"
-              className="shrink-0 text-xs font-medium text-[var(--kp-brand-deep)] hover:underline"
+              className="shrink-0 text-xs font-medium text-[var(--om-brand-deep)] hover:underline"
             >
               打开血缘图
             </Link>
           </div>
-          <ul className="divide-y divide-[var(--kp-divider)]">
+          <ul className="divide-y divide-[var(--om-divider)]">
             {recentRotates.items.map((item) => {
               const toLabel = (item.autoName || item.title).slice(0, 28);
               const fromLabel = (item.fromTitle || "上一会话").slice(0, 24);
@@ -232,19 +232,19 @@ export default function DashboardPage() {
                 <li key={item.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                   <Link
                     href={`/chat?sessionId=${item.rotatedFromSessionId}`}
-                    className="text-[var(--kp-text-2)] hover:text-[var(--kp-brand-deep)]"
+                    className="text-[var(--om-text-2)] hover:text-[var(--om-brand-deep)]"
                   >
                     {fromLabel}
                   </Link>
-                  <span className="text-[var(--kp-text-3)]" aria-hidden>→</span>
+                  <span className="text-[var(--om-text-3)]" aria-hidden>→</span>
                   <Link
                     href={`/chat?sessionId=${item.id}`}
-                    className="font-medium text-[var(--kp-brand-deep)] hover:underline"
+                    className="font-medium text-[var(--om-brand-deep)] hover:underline"
                   >
                     {toLabel}
                   </Link>
                   {item.agentName && (
-                    <span className="ml-auto text-[11px] text-[var(--kp-text-3)]">{item.agentName}</span>
+                    <span className="ml-auto text-[11px] text-[var(--om-text-3)]">{item.agentName}</span>
                   )}
                 </li>
               );
@@ -258,19 +258,19 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="kp-card-premium rounded-2xl p-6"
+          className="om-card-premium rounded-2xl p-6"
         >
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
               <Activity className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[var(--kp-text-1)]">Swarm Agent 运行统计</h2>
-              <p className="text-xs text-[var(--kp-text-3)]">近 30 天</p>
+              <h2 className="text-sm font-bold text-[var(--om-text-1)]">Swarm Agent 运行统计</h2>
+              <p className="text-xs text-[var(--om-text-3)]">近 30 天</p>
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="kp-table">
+            <table className="om-table">
               <thead>
                 <tr>
                   <th>Agent</th>
@@ -288,19 +288,19 @@ export default function DashboardPage() {
                     <tr key={stat.agentId}>
                       <td>
                         <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--kp-bg-mute)]">
-                            <TierIcon className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--om-bg-mute)]">
+                            <TierIcon className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                           </div>
-                          <span className="font-medium text-[var(--kp-text-1)]">{stat.agentName}</span>
+                          <span className="font-medium text-[var(--om-text-1)]">{stat.agentName}</span>
                         </div>
                       </td>
                       <td className="text-right tabular-nums">{stat.conversationRounds}</td>
                       <td className="text-right tabular-nums">{stat.toolCallCount}</td>
                       <td className="text-right tabular-nums">
                         <span className={cn(
-                          "kp-badge",
-                          stat.successRate >= 80 ? "kp-badge-success" :
-                          stat.successRate >= 50 ? "kp-badge-warning" : "kp-badge-danger"
+                          "om-badge",
+                          stat.successRate >= 80 ? "om-badge-success" :
+                          stat.successRate >= 50 ? "om-badge-warning" : "om-badge-danger"
                         )}>
                           {stat.successRate}%
                         </span>

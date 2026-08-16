@@ -23,20 +23,20 @@ describe("auth module", () => {
 
   it("AUTH_MODE=password 时需正确 Bearer Token", () => {
     const config = createTestConfig("/tmp", {
-      auth: { mode: "password", password: "secret", token: "kp-test-token" },
+      auth: { mode: "password", password: "secret", token: "om-test-token" },
     });
     expect(isAuthEnabled(config)).toBe(true);
     expect(verifyAuthHeader(config, undefined)).toBe(false);
     expect(verifyAuthHeader(config, "Bearer wrong")).toBe(false);
-    expect(verifyAuthHeader(config, "Bearer kp-test-token")).toBe(true);
+    expect(verifyAuthHeader(config, "Bearer om-test-token")).toBe(true);
   });
 
   it("loginWithPassword 校验密码并返回 token", () => {
     const config = createTestConfig("/tmp", {
-      auth: { mode: "password", password: "secret", token: "kp-test-token" },
+      auth: { mode: "password", password: "secret", token: "om-test-token" },
     });
     expect(loginWithPassword(config, "wrong")).toBeNull();
-    expect(loginWithPassword(config, "secret")).toEqual({ token: "kp-test-token" });
+    expect(loginWithPassword(config, "secret")).toEqual({ token: "om-test-token" });
   });
 
   it("getRemoteAccessInfo 反映公开 URL 与鉴权建议", () => {
@@ -56,15 +56,15 @@ describe("auth module", () => {
       auth: { mode: "none", password: "", token: "" },
       env: "production",
     });
-    const prevAllow = process.env.KP_ALLOW_INSECURE_PUBLIC;
-    const prevReq = process.env.KP_REQUIRE_PUBLIC_AUTH;
-    delete process.env.KP_ALLOW_INSECURE_PUBLIC;
-    delete process.env.KP_REQUIRE_PUBLIC_AUTH;
+    const prevAllow = process.env.OM_ALLOW_INSECURE_PUBLIC;
+    const prevReq = process.env.OM_REQUIRE_PUBLIC_AUTH;
+    delete process.env.OM_ALLOW_INSECURE_PUBLIC;
+    delete process.env.OM_REQUIRE_PUBLIC_AUTH;
     expect(() => assertPublicUrlAuthSafe(config)).toThrow(/PUBLIC_URL/);
-    if (prevAllow === undefined) delete process.env.KP_ALLOW_INSECURE_PUBLIC;
-    else process.env.KP_ALLOW_INSECURE_PUBLIC = prevAllow;
-    if (prevReq === undefined) delete process.env.KP_REQUIRE_PUBLIC_AUTH;
-    else process.env.KP_REQUIRE_PUBLIC_AUTH = prevReq;
+    if (prevAllow === undefined) delete process.env.OM_ALLOW_INSECURE_PUBLIC;
+    else process.env.OM_ALLOW_INSECURE_PUBLIC = prevAllow;
+    if (prevReq === undefined) delete process.env.OM_REQUIRE_PUBLIC_AUTH;
+    else process.env.OM_REQUIRE_PUBLIC_AUTH = prevReq;
   });
 
   it("assertPublicUrlAuthSafe：开发环境有 PUBLIC_URL 无鉴权仅警告不抛", () => {
@@ -73,11 +73,11 @@ describe("auth module", () => {
       auth: { mode: "none", password: "", token: "" },
       env: "development",
     });
-    const prev = process.env.KP_ALLOW_INSECURE_PUBLIC;
-    delete process.env.KP_ALLOW_INSECURE_PUBLIC;
+    const prev = process.env.OM_ALLOW_INSECURE_PUBLIC;
+    delete process.env.OM_ALLOW_INSECURE_PUBLIC;
     expect(() => assertPublicUrlAuthSafe(config)).not.toThrow();
-    if (prev === undefined) delete process.env.KP_ALLOW_INSECURE_PUBLIC;
-    else process.env.KP_ALLOW_INSECURE_PUBLIC = prev;
+    if (prev === undefined) delete process.env.OM_ALLOW_INSECURE_PUBLIC;
+    else process.env.OM_ALLOW_INSECURE_PUBLIC = prev;
   });
 
   it("assertPublicUrlAuthSafe：password 模式放行", () => {
@@ -90,7 +90,7 @@ describe("auth module", () => {
 
   it("chat/stop 在 AUTH_MODE=password 时拒绝无 Bearer", async () => {
     const config = createTestConfig("/tmp", {
-      auth: { mode: "password", password: "secret", token: "kp-test-token" },
+      auth: { mode: "password", password: "secret", token: "om-test-token" },
     });
     const hub = new SessionStreamHub({
       ringSize: 10,
@@ -109,7 +109,7 @@ describe("auth module", () => {
 
   it("chat/stop 在 AUTH_MODE=password 时接受正确 Bearer", async () => {
     const config = createTestConfig("/tmp", {
-      auth: { mode: "password", password: "secret", token: "kp-test-token" },
+      auth: { mode: "password", password: "secret", token: "om-test-token" },
     });
     const hub = new SessionStreamHub({
       ringSize: 10,
@@ -121,7 +121,7 @@ describe("auth module", () => {
     handleAgentChatStop(hub, config)(
       {
         body: { sessionId: "s1" },
-        headers: { authorization: "Bearer kp-test-token" },
+        headers: { authorization: "Bearer om-test-token" },
       } as never,
       res as never,
     );

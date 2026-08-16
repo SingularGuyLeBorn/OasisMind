@@ -47,11 +47,11 @@ function HoverGlow() {
     <>
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--kp-glow-peach)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--kp-glow-peach)]/45"
+        className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[var(--om-glow-peach)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--om-glow-peach)]/45"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-10 -left-8 h-28 w-28 rounded-full bg-[var(--kp-glow-blue)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--kp-glow-blue)]/50"
+        className="pointer-events-none absolute -bottom-10 -left-8 h-28 w-28 rounded-full bg-[var(--om-glow-blue)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--om-glow-blue)]/50"
       />
     </>
   );
@@ -63,18 +63,18 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
       <section className="relative overflow-hidden px-6 py-10 lg:px-12 lg:py-12">
         <div className="relative z-10 mx-auto max-w-7xl">
           <div className={cn(glassCard, "flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center")}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--kp-brand-light)]/30 bg-[var(--kp-brand-soft)] text-[var(--kp-brand)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--om-brand-light)]/30 bg-[var(--om-brand-soft)] text-[var(--om-brand)]">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--kp-text-1)]">花园还在播种</h3>
-              <p className="text-xs leading-relaxed text-[var(--kp-text-2)]">
+              <h3 className="text-base font-bold text-[var(--om-text-1)]">花园还在播种</h3>
+              <p className="text-xs leading-relaxed text-[var(--om-text-2)]">
                 暂无已发布文章。去编辑器写第一篇，Agent 会帮你整理成可生长的笔记。
               </p>
             </div>
             <Link
               href="/editor"
-              className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--kp-brand)] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)]"
+              className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--om-brand)] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)]"
             >
               开始写作 <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
@@ -93,16 +93,16 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
               Growing notes
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
               最近 <CurlyMark>生长</CurlyMark> 的笔记
             </h2>
           </div>
           <Link
             href="/blog"
-            className="group inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-4 py-2 text-xs font-medium text-[var(--kp-brand)] shadow-sm backdrop-blur-md transition hover:bg-white/80"
+            className="group inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-4 py-2 text-xs font-medium text-[var(--om-brand)] shadow-sm backdrop-blur-md transition hover:bg-white/80"
           >
             查看全部博客{" "}
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -118,14 +118,14 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
                 transition={hoverSpring}
                 className={cn(
                   glassCard,
-                  "kp-card-topline kp-card-sheen group relative flex flex-col p-6 hover:border-[var(--kp-brand)]/35 hover:bg-white/65 hover:shadow-[0_24px_56px_-18px_rgba(0,135,235,0.32)]",
+                  "om-card-topline om-card-sheen group relative flex flex-col p-6 hover:border-[var(--om-brand)]/35 hover:bg-white/65 hover:shadow-[0_24px_56px_-18px_rgba(0,135,235,0.32)]",
                 )}
               >
                 <HoverGlow />
                 <div className="relative mb-4 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-[11px] text-[var(--kp-text-3)]">
+                  <div className="flex items-center gap-2 text-[11px] text-[var(--om-text-3)]">
                     {featured.category ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--kp-brand-light)]/30 bg-[var(--kp-brand-soft)] px-2.5 py-1 font-semibold text-[var(--kp-brand)] transition-colors group-hover:bg-[var(--kp-brand)]/20 group-hover:text-[var(--kp-brand-dark)]">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--om-brand-light)]/30 bg-[var(--om-brand-soft)] px-2.5 py-1 font-semibold text-[var(--om-brand)] transition-colors group-hover:bg-[var(--om-brand)]/20 group-hover:text-[var(--om-brand-dark)]">
                         <Tag className="h-3 w-3" /> {featured.category}
                       </span>
                     ) : null}
@@ -133,12 +133,12 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
                       <Calendar className="h-3 w-3" /> {formatDate(featured.createdAt)}
                     </span>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--kp-text-3)] opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--kp-brand)] group-hover:opacity-100" />
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--om-text-3)] opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--om-brand)] group-hover:opacity-100" />
                 </div>
-                <h3 className="relative mb-3 text-xl font-bold leading-snug tracking-tight text-[var(--kp-text-1)] transition-colors group-hover:text-[var(--kp-brand)] md:text-2xl">
+                <h3 className="relative mb-3 text-xl font-bold leading-snug tracking-tight text-[var(--om-text-1)] transition-colors group-hover:text-[var(--om-brand)] md:text-2xl">
                   {featured.title}
                 </h3>
-                <p className="relative mb-4 text-sm leading-relaxed text-[var(--kp-text-2)]">
+                <p className="relative mb-4 text-sm leading-relaxed text-[var(--om-text-2)]">
                   {featured.excerpt || "暂无摘要"}
                 </p>
                 {featured.tags.length > 0 ? (
@@ -146,7 +146,7 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
                     {featured.tags.slice(0, 5).map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full border border-white/70 bg-white/50 px-2.5 py-0.5 text-[10px] text-[var(--kp-text-3)]"
+                        className="rounded-full border border-white/70 bg-white/50 px-2.5 py-0.5 text-[10px] text-[var(--om-text-3)]"
                       >
                         {tag}
                       </span>
@@ -183,8 +183,8 @@ function SidePostRow({ post, variant = 0 }: { post: Post; variant?: number }) {
     { y: 1, scale: 0.99 },
   ][variant % 3];
   const hoverClass = [
-    "hover:border-[var(--kp-brand)]/35 hover:shadow-[0_16px_40px_-16px_rgba(0,135,235,0.28)]",
-    "hover:border-[var(--kp-accent)]/40 hover:shadow-[0_14px_36px_-14px_rgba(232,168,74,0.28)]",
+    "hover:border-[var(--om-brand)]/35 hover:shadow-[0_16px_40px_-16px_rgba(0,135,235,0.28)]",
+    "hover:border-[var(--om-accent)]/40 hover:shadow-[0_14px_36px_-14px_rgba(232,168,74,0.28)]",
     "hover:bg-white/70 hover:shadow-[inset_0_2px_10px_rgba(0,80,160,0.07)]",
   ][variant % 3];
   return (
@@ -192,13 +192,13 @@ function SidePostRow({ post, variant = 0 }: { post: Post; variant?: number }) {
       href={postHref(post)}
       whileHover={hoverMotion}
       transition={hoverSpring}
-      className={cn(glassCard, "kp-card-topline group flex min-w-0 items-start gap-3 p-4", hoverClass)}
+      className={cn(glassCard, "om-card-topline group flex min-w-0 items-start gap-3 p-4", hoverClass)}
     >
       <HoverGlow />
       <div className="relative min-w-0 flex-1">
-        <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-[10px] text-[var(--kp-text-3)]">
+        <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-[10px] text-[var(--om-text-3)]">
           {post.category ? (
-            <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[var(--kp-brand-soft)] px-1.5 py-0.5 font-semibold text-[var(--kp-brand-deep)] transition-colors group-hover:bg-[var(--kp-brand)]/20">
+            <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[var(--om-brand-soft)] px-1.5 py-0.5 font-semibold text-[var(--om-brand-deep)] transition-colors group-hover:bg-[var(--om-brand)]/20">
               {post.category}
             </span>
           ) : null}
@@ -207,7 +207,7 @@ function SidePostRow({ post, variant = 0 }: { post: Post; variant?: number }) {
           </span>
         </div>
         <h3
-          className="mb-1.5 line-clamp-2 break-words text-sm font-bold leading-snug text-[var(--kp-text-1)] transition-colors group-hover:text-[var(--kp-brand)]"
+          className="mb-1.5 line-clamp-2 break-words text-sm font-bold leading-snug text-[var(--om-text-1)] transition-colors group-hover:text-[var(--om-brand)]"
           title={post.title}
         >
           {post.title}
@@ -216,14 +216,14 @@ function SidePostRow({ post, variant = 0 }: { post: Post; variant?: number }) {
           {post.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-white/70 bg-white/50 px-1.5 py-0.5 text-[10px] text-[var(--kp-text-3)]"
+              className="rounded-full border border-white/70 bg-white/50 px-1.5 py-0.5 text-[10px] text-[var(--om-text-3)]"
             >
               {tag}
             </span>
           ))}
         </div>
       </div>
-      <ArrowUpRight className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] opacity-70 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--kp-brand)] group-hover:opacity-100" />
+      <ArrowUpRight className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] opacity-70 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--om-brand)] group-hover:opacity-100" />
     </MotionLink>
   );
 }
@@ -235,8 +235,8 @@ function ArticleCard({ post, variant = 0 }: { post: Post; variant?: number }) {
     { y: -4, x: -2 },
   ][variant % 3];
   const hoverClass = [
-    "kp-card-sheen hover:border-[var(--kp-brand)]/35 hover:shadow-[0_22px_52px_-16px_rgba(0,135,235,0.3)]",
-    "hover:border-[var(--kp-accent)]/40 hover:shadow-[0_20px_48px_-16px_rgba(232,168,74,0.28)]",
+    "om-card-sheen hover:border-[var(--om-brand)]/35 hover:shadow-[0_22px_52px_-16px_rgba(0,135,235,0.3)]",
+    "hover:border-[var(--om-accent)]/40 hover:shadow-[0_20px_48px_-16px_rgba(232,168,74,0.28)]",
     "hover:border-white/80 hover:shadow-[0_0_0_1px_rgba(0,135,235,0.1),0_18px_44px_-16px_rgba(0,80,160,0.26)]",
   ][variant % 3];
   return (
@@ -247,10 +247,10 @@ function ArticleCard({ post, variant = 0 }: { post: Post; variant?: number }) {
       className={cn(glassCard, "group relative flex h-full flex-col p-5", hoverClass)}
     >
       <HoverGlow />
-      <ArrowUpRight className="absolute right-4 top-4 h-4 w-4 text-[var(--kp-text-3)] opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--kp-brand)] group-hover:opacity-100" />
-      <div className="relative mb-3 flex items-center gap-2 text-[11px] text-[var(--kp-text-3)]">
+      <ArrowUpRight className="absolute right-4 top-4 h-4 w-4 text-[var(--om-text-3)] opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--om-brand)] group-hover:opacity-100" />
+      <div className="relative mb-3 flex items-center gap-2 text-[11px] text-[var(--om-text-3)]">
         {post.category ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-[var(--kp-brand-light)]/30 bg-[var(--kp-brand-soft)] px-2 py-0.5 font-semibold text-[var(--kp-brand)] transition-colors group-hover:bg-[var(--kp-brand)]/20 group-hover:text-[var(--kp-brand-dark)]">
+          <span className="inline-flex items-center gap-1 rounded-full border border-[var(--om-brand-light)]/30 bg-[var(--om-brand-soft)] px-2 py-0.5 font-semibold text-[var(--om-brand)] transition-colors group-hover:bg-[var(--om-brand)]/20 group-hover:text-[var(--om-brand-dark)]">
             <Tag className="h-3 w-3" /> {post.category}
           </span>
         ) : null}
@@ -260,13 +260,13 @@ function ArticleCard({ post, variant = 0 }: { post: Post; variant?: number }) {
       </div>
 
       <h3
-        className="relative mb-2 line-clamp-2 text-sm font-bold leading-snug text-[var(--kp-text-1)] transition-colors group-hover:text-[var(--kp-brand)]"
+        className="relative mb-2 line-clamp-2 text-sm font-bold leading-snug text-[var(--om-text-1)] transition-colors group-hover:text-[var(--om-brand)]"
         title={post.title}
       >
         {post.title}
       </h3>
 
-      <p className="relative mb-3 line-clamp-2 flex-1 text-xs leading-relaxed text-[var(--kp-text-2)]">
+      <p className="relative mb-3 line-clamp-2 flex-1 text-xs leading-relaxed text-[var(--om-text-2)]">
         {post.excerpt || "暂无摘要"}
       </p>
 
@@ -274,7 +274,7 @@ function ArticleCard({ post, variant = 0 }: { post: Post; variant?: number }) {
         {post.tags.slice(0, 3).map((tag) => (
           <span
             key={tag}
-            className="rounded-full border border-white/70 px-1.5 py-0.5 text-[10px] text-[var(--kp-text-3)]"
+            className="rounded-full border border-white/70 px-1.5 py-0.5 text-[10px] text-[var(--om-text-3)]"
           >
             {tag}
           </span>

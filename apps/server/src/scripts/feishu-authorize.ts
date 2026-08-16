@@ -1,4 +1,4 @@
-/** CLI：pnpm --filter @knowpilot/server exec tsx src/scripts/feishu-authorize.ts */
+/** CLI：pnpm --filter @oasismind/server exec tsx src/scripts/feishu-authorize.ts */
 import { loadRootEnv } from "../infra/config.js";
 import { authorizeUserViaBrowser } from "../infra/external/larkTokenManager.js";
 

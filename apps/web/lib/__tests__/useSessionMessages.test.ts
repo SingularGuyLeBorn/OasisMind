@@ -4,7 +4,7 @@ import {
   __messageFieldsEqualForTests,
   sessionMessagesStore,
 } from "@/lib/useSessionMessages";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 
 function baseMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
   return {

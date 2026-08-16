@@ -283,10 +283,10 @@ function runningAnimationClass(base: string): string {
 }
 
 const STATUS_COLOR: Record<ToolIconStatus, string> = {
-  running: "text-[var(--kp-brand)]",
+  running: "text-[var(--om-brand)]",
   done: "text-emerald-600",
   error: "text-red-500",
-  idle: "text-[var(--kp-text-3)]",
+  idle: "text-[var(--om-text-3)]",
 };
 
 export function ToolStepIcon({
@@ -310,7 +310,7 @@ export function ToolStepIcon({
       data-status={status}
     >
       {isRunning && (
-        <span className="absolute inset-0 rounded-full bg-[var(--kp-brand)]/15 animate-ping" aria-hidden />
+        <span className="absolute inset-0 rounded-full bg-[var(--om-brand)]/15 animate-ping" aria-hidden />
       )}
       {createElement(Icon, {
         className: cn(

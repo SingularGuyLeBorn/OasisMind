@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { sessionMessagesStore } from "../useSessionMessages";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 
 describe("MessageStore upsert merge", () => {
   const sid = "merge-sess-1";

@@ -166,8 +166,8 @@ function NavigationProgressInner() {
       >
         <div
           className={cn(
-            "h-full rounded-r-full bg-[var(--kp-brand)] shadow-[0_0_12px_color-mix(in_srgb,var(--kp-brand)_55%,transparent)]",
-            finishing ? "kp-nav-progress-done" : show ? "kp-nav-progress-run" : "scale-x-0",
+            "h-full rounded-r-full bg-[var(--om-brand)] shadow-[0_0_12px_color-mix(in_srgb,var(--om-brand)_55%,transparent)]",
+            finishing ? "om-nav-progress-done" : show ? "om-nav-progress-run" : "scale-x-0",
           )}
         />
       </div>
@@ -178,10 +178,10 @@ function NavigationProgressInner() {
           labelOn && !finishing ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
         )}
       >
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/90 px-3 py-1 text-[11px] font-semibold text-[var(--kp-text-2)] shadow-[0_8px_24px_-12px_rgba(0,80,160,0.35)] backdrop-blur-md dark:border-white/10 dark:bg-[var(--kp-bg-alt)]/90">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/90 px-3 py-1 text-[11px] font-semibold text-[var(--om-text-2)] shadow-[0_8px_24px_-12px_rgba(0,80,160,0.35)] backdrop-blur-md dark:border-white/10 dark:bg-[var(--om-bg-alt)]/90">
           <span
             aria-hidden
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--kp-brand)]"
+            className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--om-brand)]"
           />
           跳转中
         </span>

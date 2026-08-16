@@ -7,7 +7,7 @@ import { downloadMediaAudio, transcribeAudioFile, defaultSttInstallHint } from "
 import { resolveAgentFsPath } from "../../writePolicy.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
 
 function projectRel(ctx: NativeToolContext, abs: string): string {
   return path.relative(ctx.config.projectRoot, abs).replace(/\\/g, "/");

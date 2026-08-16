@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { InboxItem } from "@knowpilot/shared";
+import type { InboxItem } from "@oasismind/shared";
 import { useInbox } from "@/lib/hooks";
 import {
   EmptyState,
@@ -42,7 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
-const VIEW_MODE_KEY = "kp-inbox-view-mode";
+const VIEW_MODE_KEY = "om-inbox-view-mode";
 const COLLECTION_PAGE_SIZE = 8;
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -210,10 +210,10 @@ function MetaPill({
     <span
       className={cn(
         "inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] leading-none",
-        tone === "mute" && "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+        tone === "mute" && "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
         tone === "warn" && "bg-amber-500/12 text-amber-800 dark:text-amber-300",
         tone === "ok" && "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300",
-        tone === "brand" && "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]",
+        tone === "brand" && "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]",
       )}
     >
       {children}
@@ -243,7 +243,7 @@ function InboxItemActions({
           href={item.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-brand-deep)]"
           title="打开原文"
         >
           <ExternalLink className="h-3.5 w-3.5" />
@@ -251,7 +251,7 @@ function InboxItemActions({
       ) : null}
       <button
         type="button"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-red-600"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-red-600"
         title="删除"
         onClick={onDelete}
       >
@@ -519,31 +519,31 @@ export default function InboxPage() {
 
   return (
     <AdminPage className="!max-w-[1200px]">
-      <header className="space-y-4 border-b border-[var(--kp-border)] pb-5">
+      <header className="space-y-4 border-b border-[var(--om-border)] pb-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[var(--kp-text-3)]">
+            <div className="flex items-center gap-2 text-[var(--om-text-3)]">
               <Inbox className="h-4 w-4" />
               <span className="text-[11px] font-semibold tracking-[0.14em] uppercase">Inbox</span>
             </div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--kp-text-1)]">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--om-text-1)]">
               知识收件箱
             </h1>
-            <p className="mt-1 text-sm text-[var(--kp-text-2)]">
+            <p className="mt-1 text-sm text-[var(--om-text-2)]">
               选平台 → 可选收藏夹 → 勾选蒸馏。定时拉取在「平台每日同步」。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 hidden text-xs text-[var(--kp-text-3)] sm:inline">
+            <span className="mr-1 hidden text-xs text-[var(--om-text-3)] sm:inline">
               待消化{" "}
-              <strong className="font-semibold text-[var(--kp-text-1)]">{stats?.fetched ?? 0}</strong>
-              <span className="mx-1.5 text-[var(--kp-border)]">·</span>
+              <strong className="font-semibold text-[var(--om-text-1)]">{stats?.fetched ?? 0}</strong>
+              <span className="mx-1.5 text-[var(--om-border)]">·</span>
               总计{" "}
-              <strong className="font-semibold text-[var(--kp-text-1)]">{stats?.total ?? 0}</strong>
+              <strong className="font-semibold text-[var(--om-text-1)]">{stats?.total ?? 0}</strong>
             </span>
             <Link
               href="/platform-sync"
-              className="inline-flex h-8 items-center rounded-md border border-[var(--kp-border)] bg-[var(--kp-surface)] px-3 text-sm hover:bg-[var(--kp-bg-mute)]"
+              className="inline-flex h-8 items-center rounded-md border border-[var(--om-border)] bg-[var(--om-surface)] px-3 text-sm hover:bg-[var(--om-bg-mute)]"
             >
               <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
               每日同步
@@ -603,7 +603,7 @@ export default function InboxPage() {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="rounded-lg border border-[var(--kp-border)] bg-[var(--kp-surface)] px-3 py-2 text-sm text-[var(--kp-text-2)]"
+            className="rounded-lg border border-[var(--om-border)] bg-[var(--om-surface)] px-3 py-2 text-sm text-[var(--om-text-2)]"
           >
             {toast}
           </motion.div>
@@ -619,8 +619,8 @@ export default function InboxPage() {
             className={cn(
               "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm transition",
               browse.type === "all"
-                ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                : "border-[var(--kp-border)] bg-[var(--kp-surface)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                : "border-[var(--om-border)] bg-[var(--om-surface)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
             )}
           >
             <Inbox className="h-3.5 w-3.5 opacity-70" />
@@ -639,8 +639,8 @@ export default function InboxPage() {
                 className={cn(
                   "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm transition",
                   active
-                    ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                    : "border-[var(--kp-border)] bg-[var(--kp-surface)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                    ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                    : "border-[var(--om-border)] bg-[var(--om-surface)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
                 )}
               >
                 {SOURCE_LABELS[src]}
@@ -654,9 +654,9 @@ export default function InboxPage() {
 
         {/* 子筛选：仅当前平台有收藏夹/标签时出现；可分页；可回「该平台全部」 */}
         {activePlatform && facetChips.length > 0 ? (
-          <div className="rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-3">
+          <div className="rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-3">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-[var(--kp-text-3)]">
+              <p className="text-xs text-[var(--om-text-3)]">
                 {activePlatform === "zhihu"
                   ? "知乎收藏夹"
                   : activePlatform === "xhs"
@@ -670,8 +670,8 @@ export default function InboxPage() {
                   className={cn(
                     "rounded-md px-2 py-1 text-xs transition",
                     browse.type === "source"
-                      ? "bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                      : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                      ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                      : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                   )}
                   onClick={() =>
                     setBrowseAndReset({ type: "source", source: activePlatform })
@@ -684,19 +684,19 @@ export default function InboxPage() {
                     <button
                       type="button"
                       disabled={safeFacetPage <= 0}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--kp-border)] disabled:opacity-30"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--om-border)] disabled:opacity-30"
                       aria-label="上一页收藏夹"
                       onClick={() => setFacetPage((p) => Math.max(0, p - 1))}
                     >
                       <ChevronLeft className="h-3.5 w-3.5" />
                     </button>
-                    <span className="min-w-[3.5rem] text-center text-[11px] tabular-nums text-[var(--kp-text-3)]">
+                    <span className="min-w-[3.5rem] text-center text-[11px] tabular-nums text-[var(--om-text-3)]">
                       {safeFacetPage + 1}/{facetTotalPages}
                     </span>
                     <button
                       type="button"
                       disabled={safeFacetPage >= facetTotalPages - 1}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--kp-border)] disabled:opacity-30"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--om-border)] disabled:opacity-30"
                       aria-label="下一页收藏夹"
                       onClick={() =>
                         setFacetPage((p) => Math.min(facetTotalPages - 1, p + 1))
@@ -722,8 +722,8 @@ export default function InboxPage() {
                     className={cn(
                       "inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition",
                       on
-                        ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                        : "border-[var(--kp-border)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                        ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                        : "border-[var(--om-border)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
                     )}
                   >
                     <Icon className="h-3 w-3 shrink-0 opacity-60" />
@@ -740,9 +740,9 @@ export default function InboxPage() {
       {/* 工具条 */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1 text-sm">
-          <span className="font-medium text-[var(--kp-text-1)]">{breadcrumb}</span>
+          <span className="font-medium text-[var(--om-text-1)]">{breadcrumb}</span>
           {data ? (
-            <span className="ml-2 text-xs text-[var(--kp-text-3)]">{data.total} 条</span>
+            <span className="ml-2 text-xs text-[var(--om-text-3)]">{data.total} 条</span>
           ) : null}
         </div>
         <div className="flex max-w-[240px] items-center gap-1">
@@ -761,7 +761,7 @@ export default function InboxPage() {
           {keyword || searchInput ? (
             <button
               type="button"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--kp-border)] text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--om-border)] text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
               title="清除搜索"
               aria-label="清除搜索"
               onClick={() => {
@@ -797,7 +797,7 @@ export default function InboxPage() {
           ]}
         />
         <div
-          className="inline-flex h-8 items-center rounded-lg border border-[var(--kp-border)] bg-[var(--kp-surface)] p-0.5"
+          className="inline-flex h-8 items-center rounded-lg border border-[var(--om-border)] bg-[var(--om-surface)] p-0.5"
           role="group"
           aria-label="视图切换"
         >
@@ -809,8 +809,8 @@ export default function InboxPage() {
             className={cn(
               "inline-flex h-7 w-8 items-center justify-center rounded-md transition",
               viewMode === "list"
-                ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]",
+                ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                : "text-[var(--om-text-3)] hover:text-[var(--om-text-1)]",
             )}
           >
             <List className="h-3.5 w-3.5" />
@@ -823,8 +823,8 @@ export default function InboxPage() {
             className={cn(
               "inline-flex h-7 w-8 items-center justify-center rounded-md transition",
               viewMode === "card"
-                ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]",
+                ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                : "text-[var(--om-text-3)] hover:text-[var(--om-text-1)]",
             )}
           >
             <LayoutGrid className="h-3.5 w-3.5" />
@@ -838,8 +838,8 @@ export default function InboxPage() {
           className={cn(
             "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition",
             multiSelect
-              ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-              : "border-[var(--kp-border)] bg-[var(--kp-surface)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+              ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+              : "border-[var(--om-border)] bg-[var(--om-surface)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
           )}
         >
           {multiSelect ? (
@@ -897,7 +897,7 @@ export default function InboxPage() {
           }
         />
       ) : viewMode === "list" ? (
-        <ul className="divide-y divide-[var(--kp-border)] overflow-hidden rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)]">
+        <ul className="divide-y divide-[var(--om-border)] overflow-hidden rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)]">
           {items.map((item: InboxItem) => {
             const meta = itemMeta(item);
             const on = selected.has(item.id);
@@ -917,23 +917,23 @@ export default function InboxPage() {
                   className={cn(
                     "group flex cursor-pointer items-start gap-3 px-3 py-2.5 text-left transition",
                     on
-                      ? "bg-[var(--kp-brand-soft)] ring-1 ring-inset ring-[var(--kp-brand)]"
-                      : "hover:bg-[var(--kp-bg-mute)]/50",
+                      ? "bg-[var(--om-brand-soft)] ring-1 ring-inset ring-[var(--om-brand)]"
+                      : "hover:bg-[var(--om-bg-mute)]/50",
                   )}
                 >
                   <span
                     className={cn(
                       "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                       on
-                        ? "border-[var(--kp-brand-deep)] bg-[var(--kp-brand-deep)] text-white"
-                        : "border-[var(--kp-border)] bg-[var(--kp-surface)] text-transparent",
+                        ? "border-[var(--om-brand-deep)] bg-[var(--om-brand-deep)] text-white"
+                        : "border-[var(--om-border)] bg-[var(--om-surface)] text-transparent",
                     )}
                     aria-hidden
                   >
                     {on ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <h3 className="truncate text-sm font-medium text-[var(--kp-text-1)]">
+                    <h3 className="truncate text-sm font-medium text-[var(--om-text-1)]">
                       {item.title}
                     </h3>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -959,7 +959,7 @@ export default function InboxPage() {
                       ))}
                     </div>
                     {item.excerpt ? (
-                      <p className="line-clamp-2 text-xs text-[var(--kp-text-3)]">{item.excerpt}</p>
+                      <p className="line-clamp-2 text-xs text-[var(--om-text-3)]">{item.excerpt}</p>
                     ) : null}
                   </div>
                   <div
@@ -968,7 +968,7 @@ export default function InboxPage() {
                     onKeyDown={(e) => e.stopPropagation()}
                   >
                     <span
-                      className="text-[11px] tabular-nums text-[var(--kp-text-3)]"
+                      className="text-[11px] tabular-nums text-[var(--om-text-3)]"
                       title={meta.isSourceTime ? "原帖时间" : "收录时间"}
                     >
                       {meta.timeLabel}
@@ -1004,8 +1004,8 @@ export default function InboxPage() {
                 className={cn(
                   "group flex cursor-pointer flex-col gap-2 rounded-xl border p-3.5 text-left transition",
                   on
-                    ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] shadow-[0_0_0_1px_var(--kp-brand)]"
-                    : "border-[var(--kp-border)] bg-[var(--kp-surface)] hover:border-[color-mix(in_oklab,var(--kp-brand)_35%,var(--kp-border))]",
+                    ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] shadow-[0_0_0_1px_var(--om-brand)]"
+                    : "border-[var(--om-border)] bg-[var(--om-surface)] hover:border-[color-mix(in_oklab,var(--om-brand)_35%,var(--om-border))]",
                 )}
               >
                 <div className="flex items-start gap-2">
@@ -1013,8 +1013,8 @@ export default function InboxPage() {
                     className={cn(
                       "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                       on
-                        ? "border-[var(--kp-brand-deep)] bg-[var(--kp-brand-deep)] text-white"
-                        : "border-[var(--kp-border)] bg-[var(--kp-surface)] text-transparent",
+                        ? "border-[var(--om-brand-deep)] bg-[var(--om-brand-deep)] text-white"
+                        : "border-[var(--om-border)] bg-[var(--om-surface)] text-transparent",
                     )}
                     aria-hidden
                   >
@@ -1036,11 +1036,11 @@ export default function InboxPage() {
                       </MetaPill>
                       {meta.kindHint ? <MetaPill>{meta.kindHint}</MetaPill> : null}
                     </div>
-                    <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--kp-text-1)]">
+                    <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--om-text-1)]">
                       {item.title}
                     </h3>
                     {item.excerpt ? (
-                      <p className="line-clamp-3 text-xs leading-relaxed text-[var(--kp-text-3)]">
+                      <p className="line-clamp-3 text-xs leading-relaxed text-[var(--om-text-3)]">
                         {item.excerpt}
                       </p>
                     ) : null}
@@ -1052,7 +1052,7 @@ export default function InboxPage() {
                         <MetaPill key={t}>{t}</MetaPill>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between gap-2 pt-0.5 text-[11px] text-[var(--kp-text-3)]">
+                    <div className="flex items-center justify-between gap-2 pt-0.5 text-[11px] text-[var(--om-text-3)]">
                       <span title={meta.isSourceTime ? "原帖时间" : "收录时间"} className="tabular-nums">
                         {meta.timeLabel}
                       </span>

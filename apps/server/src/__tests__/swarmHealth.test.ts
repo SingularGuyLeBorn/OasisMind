@@ -124,7 +124,7 @@ describe("swarmHealth 快照与告警", () => {
   });
 
   it("通知通道熔断会进入 swarmAlerts", async () => {
-    process.env.NTFY_TOPIC = "kp-alert-breaker";
+    process.env.NTFY_TOPIC = "om-alert-breaker";
     process.env.EMAIL_PROVIDER = "none";
     vi.stubGlobal(
       "fetch",

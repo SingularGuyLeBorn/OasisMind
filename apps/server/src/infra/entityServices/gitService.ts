@@ -9,7 +9,7 @@ import type {
   UpdateGitRepoInput,
   ListGitReposInput,
   GitRepoPathInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 import { resolveSafePath } from "../safePath.js";
 

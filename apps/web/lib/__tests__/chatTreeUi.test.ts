@@ -29,7 +29,7 @@ describe("chatTreeUi", () => {
     ]);
     expect(bookmarks).toEqual([{ id: "1", label: "重要", contentPreview: "hello world" }]);
     expect(isBranchSummaryMessage({ kind: "branch_summary", content: "x" })).toBe(true);
-    expect(isBranchSummaryMessage({ content: "[kp-branch-summary]\n摘要" })).toBe(true);
+    expect(isBranchSummaryMessage({ content: "[om-branch-summary]\n摘要" })).toBe(true);
     expect(isBranchSummaryMessage({ kind: null, content: "普通" })).toBe(false);
   });
 

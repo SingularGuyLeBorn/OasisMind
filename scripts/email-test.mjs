@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const to = process.argv[2] || "";
 const r = spawnSync(
   "pnpm",
-  ["--filter", "@knowpilot/server", "run", "email:test", ...(to ? ["--", to] : [])],
+  ["--filter", "@oasismind/server", "run", "email:test", ...(to ? ["--", to] : [])],
   { cwd: root, stdio: "inherit", shell: true, env: process.env },
 );
 process.exit(r.status ?? 1);

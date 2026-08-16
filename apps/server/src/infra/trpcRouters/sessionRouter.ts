@@ -9,7 +9,7 @@ import {
   setSessionGoalSchema, sessionGoalControlSchema, listSideRunsSchema, rotateLineageSchema,
   listRecentRotatesSchema, rotateGraphSchema, createSessionQueueItemSchema, reorderSessionQueueItemsSchema,
   switchBranchSchema, sessionTreeSchema, forkSessionSchema, inspectSessionTurnSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { TRPCError } from "@trpc/server";
 import { getStreamHub } from "../sessionStreamHub.js";

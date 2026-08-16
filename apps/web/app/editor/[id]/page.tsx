@@ -27,7 +27,7 @@ export default function EditPostRedirectPage() {
   if (isLoading || post) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-[var(--kp-text-2)]">正在打开文章…</div>
+        <div className="text-[var(--om-text-2)]">正在打开文章…</div>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export default function EditPostRedirectPage() {
   if (isError || !post) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-[var(--kp-text-2)]">文章不存在</div>
+        <div className="text-[var(--om-text-2)]">文章不存在</div>
       </div>
     );
   }

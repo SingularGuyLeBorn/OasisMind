@@ -61,11 +61,11 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/katex/katex.min.css" />
         <script
-          id="kp-theme-init"
+          id="om-theme-init"
           dangerouslySetInnerHTML={{
             __html: `(function() {
   try {
-    const stored = localStorage.getItem("kp-theme");
+    const stored = localStorage.getItem("om-theme");
     const resolved = stored === "light" || stored === "dark" ? stored : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(resolved);
@@ -74,7 +74,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full bg-[var(--kp-bg)] text-[var(--kp-text)]">
+      <body className="min-h-full bg-[var(--om-bg)] text-[var(--om-text)]">
         <TooltipProvider>
           <Providers>
             <AppLayoutClient>{children}</AppLayoutClient>

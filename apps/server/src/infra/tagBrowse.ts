@@ -8,7 +8,7 @@ import {
   parseTags,
   type TagEntityKind,
   type TagFacet,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 export interface TagBrowseHit {
   entity: TagEntityKind;

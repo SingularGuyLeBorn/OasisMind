@@ -2,7 +2,7 @@
  * Tool 工具注册表 Service（从 services.ts 拆出的叶子）。
  */
 
-import type { CreateToolInput, UpdateToolInput, ListToolsInput } from "@knowpilot/shared";
+import type { CreateToolInput, UpdateToolInput, ListToolsInput } from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 
 export class ToolService extends BaseService<CreateToolInput, UpdateToolInput, ListToolsInput, any> {

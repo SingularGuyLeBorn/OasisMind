@@ -215,7 +215,7 @@ function recreateDb() {
   console.log("\n→ 重建空数据库（prisma db push）…");
   const r = spawnSync(
     "pnpm",
-    ["--filter", "@knowpilot/server", "exec", "prisma", "db", "push", "--accept-data-loss"],
+    ["--filter", "@oasismind/server", "exec", "prisma", "db", "push", "--accept-data-loss"],
     { cwd: root, stdio: "inherit", shell: true },
   );
   if (r.status !== 0) {

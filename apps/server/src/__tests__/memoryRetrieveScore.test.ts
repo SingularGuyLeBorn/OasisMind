@@ -19,7 +19,7 @@ import {
   MEMORY_RETRIEVE_GATE,
 } from "../infra/memoryRetrieveGate.js";
 import { buildMemoryContext } from "../infra/promptBuilder.js";
-import { MEMORY_TYPES, memoryAgentScope } from "@knowpilot/shared";
+import { MEMORY_TYPES, memoryAgentScope } from "@oasismind/shared";
 
 describe("scoreMemoryCandidate", () => {
   it("有更强 BM25（rank 更负）时分更高", () => {

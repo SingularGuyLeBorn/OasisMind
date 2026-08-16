@@ -1,8 +1,8 @@
 /**
  * 小红书收藏/点赞探测：小步慢滚 + 每步等列表 API + noteId 去重。
  *
- *   pnpm --filter @knowpilot/server exec tsx src/scripts/probe-xhs-fav.ts --kind collect
- *   pnpm --filter @knowpilot/server exec tsx src/scripts/probe-xhs-fav.ts --kind both
+ *   pnpm --filter @oasismind/server exec tsx src/scripts/probe-xhs-fav.ts --kind collect
+ *   pnpm --filter @oasismind/server exec tsx src/scripts/probe-xhs-fav.ts --kind both
  */
 import fs from "fs";
 import path from "path";

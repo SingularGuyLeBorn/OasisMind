@@ -12,12 +12,12 @@ describe("mathBlockAlign", () => {
 
   it("靠左写入并解析首行 meta", () => {
     const raw = serializeMathBlockPayload("a+b", "left");
-    expect(raw).toBe("% kp-align: left\na+b");
+    expect(raw).toBe("% om-align: left\na+b");
     expect(parseMathBlockPayload(raw)).toEqual({ value: "a+b", align: "left" });
   });
 
   it("兼容无换行残留", () => {
-    expect(parseMathBlockPayload("% kp-align: left\n\\frac{1}{2}")).toEqual({
+    expect(parseMathBlockPayload("% om-align: left\n\\frac{1}{2}")).toEqual({
       value: "\\frac{1}{2}",
       align: "left",
     });

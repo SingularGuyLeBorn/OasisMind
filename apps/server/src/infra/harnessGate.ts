@@ -35,9 +35,9 @@ export function __setHarnessGateExecForTests(fn: HarnessGateExecFn | null): void
 }
 
 const DEFAULT_PRESETS: Record<string, string> = {
-  server_lint: "pnpm --filter @knowpilot/server lint",
-  server_test: "pnpm --filter @knowpilot/server exec vitest run",
-  shared_lint: "pnpm --filter @knowpilot/shared lint",
+  server_lint: "pnpm --filter @oasismind/server lint",
+  server_test: "pnpm --filter @oasismind/server exec vitest run",
+  shared_lint: "pnpm --filter @oasismind/shared lint",
 };
 
 export function listHarnessGatePresets(config: AppConfig): Record<string, string> {

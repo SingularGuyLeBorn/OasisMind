@@ -3,7 +3,7 @@
  * 创建空公式块后自动抽前后约 10 行上下文并请求补全。
  */
 
-import { FORMULA_COPILOT_CONTEXT_LINES } from "@knowpilot/shared";
+import { FORMULA_COPILOT_CONTEXT_LINES } from "@oasismind/shared";
 import type { EditorView } from "@milkdown/prose/view";
 
 export type FormulaCopilotRequest = {

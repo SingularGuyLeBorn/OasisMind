@@ -23,7 +23,7 @@ import {
   inboxSyncBilibiliSchema,
   inboxPlatformSyncStartSchema,
   inboxEnrichSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   BaseService,
   type PaginatedResult,
@@ -35,12 +35,12 @@ export class InboxService extends BaseService<
   CreateInboxItemInput,
   UpdateInboxItemInput,
   ListInboxItemsInput,
-  import("@knowpilot/shared").InboxItem
+  import("@oasismind/shared").InboxItem
 > {
   readonly entityName = "inbox";
   protected get delegate() { return this.prisma.inboxItem; }
 
-  protected formatEntity(raw: any): import("@knowpilot/shared").InboxItem {
+  protected formatEntity(raw: any): import("@oasismind/shared").InboxItem {
     let metadata: Record<string, unknown> = {};
     try {
       metadata = raw.metadata ? JSON.parse(raw.metadata) : {};
@@ -77,7 +77,7 @@ export class InboxService extends BaseService<
   }
 
   // keyword 优先 FTS（含正文索引）；未命中再 LIKE 短字段，禁止扫 content/metadata
-  async list(input: ListInboxItemsInput): Promise<PaginatedResult<import("@knowpilot/shared").InboxItem>> {
+  async list(input: ListInboxItemsInput): Promise<PaginatedResult<import("@oasismind/shared").InboxItem>> {
     if (input.keyword && !(input as any).ftsIds) {
       try {
         const hits = await searchFtsByEntity(this.prisma, "inbox", input.keyword, 500);
@@ -142,7 +142,7 @@ export class InboxService extends BaseService<
   }
 
   protected override async afterCreate(
-    entity: import("@knowpilot/shared").InboxItem,
+    entity: import("@oasismind/shared").InboxItem,
     _input: CreateInboxItemInput,
   ): Promise<void> {
     await super.afterCreate(entity, _input);

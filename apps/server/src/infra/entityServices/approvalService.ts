@@ -6,7 +6,7 @@ import type {
   CreateApprovalInput,
   UpdateApprovalInput,
   ListApprovalsInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 import { notifyApprovalResolved } from "../approvalGate.js";
 import { deriveDecisionScope } from "../approvalScope.js";

@@ -9,7 +9,7 @@
 import crypto from "crypto";
 import type { PrismaClient } from "@prisma/client";
 import type { AppConfig } from "./config.js";
-import { LLM_PROVIDER_DEEPSEEK } from "@knowpilot/shared";
+import { LLM_PROVIDER_DEEPSEEK } from "@oasismind/shared";
 
 const ENC_PREFIX = "enc:";
 

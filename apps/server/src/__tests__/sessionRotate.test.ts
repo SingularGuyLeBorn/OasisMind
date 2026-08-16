@@ -10,7 +10,7 @@ describe("session_rotate", () => {
   let pushExternalEvent: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kp-rotate-"));
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "om-rotate-"));
     fs.mkdirSync(path.join(tmpRoot, "content"), { recursive: true });
     pushExternalEvent = vi.fn();
     vi.doMock("../infra/sessionStreamHub.js", () => ({

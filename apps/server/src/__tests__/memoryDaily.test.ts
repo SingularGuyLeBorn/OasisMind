@@ -8,7 +8,7 @@ describe("memoryDaily L2 日记层", () => {
   let root: string;
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-daily-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "om-daily-"));
   });
 
   afterEach(() => {

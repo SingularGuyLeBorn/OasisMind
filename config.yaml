@@ -1,10 +1,10 @@
-# KnowPilot 运行时配置（本地优先，教学/产品向）
+# OasisMind 运行时配置（本地优先，教学/产品向）
 # 环境变量仍可覆盖敏感项与部署相关项；此处放与业务行为相关的可调参数。
 
 # ══ 能力包 Core+Packs（轻量化按需加载）══
 # core/chat 始终开启。可选：swarm / im / mail / browser / research / viz
 # profile: full（默认全开，保持现网）| lite（仅花园+Chat）| custom（用下方布尔）
-# 环境变量：KP_PACKS=lite|full 优先于本段；KP_PACKS_DISABLE=viz,research；KP_PACKS_ENABLE=im
+# 环境变量：OM_PACKS=lite|full 优先于本段；OM_PACKS_DISABLE=viz,research；OM_PACKS_ENABLE=im
 packs:
   profile: full
   # 下列布尔仅在 profile 省略或为 custom 时生效；full/lite 会覆盖它们
@@ -216,7 +216,7 @@ approvalGate:
 inbox:
   # 截图监视目录；空 = data/inbox/screenshots/drop
   # Windows iCloud 示例：C:/Users/你的用户名/Pictures/iCloud Photos/Photos
-  # 也可设 env KP_INBOX_SCREENSHOT_DIR
+  # 也可设 env OM_INBOX_SCREENSHOT_DIR
   screenshotWatchDir: ""
   # 蒸馏默认写入的花园
   defaultGarden: knowledge

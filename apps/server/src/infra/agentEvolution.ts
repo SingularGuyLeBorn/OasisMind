@@ -20,7 +20,7 @@ import { createMemoryRepository } from "./memoryRepository.js";
 import { deriveDecisionScope } from "./approvalScope.js";
 import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
-import { MEMORY_ARCHIVE_THRESHOLD, MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@knowpilot/shared";
+import { MEMORY_ARCHIVE_THRESHOLD, MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@oasismind/shared";
 
 /**
  * IVE 失败归因（EvoScientist）：

@@ -14,7 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared";
 
-const NAME_KEY = "kp-blog-comment-name";
+const NAME_KEY = "om-blog-comment-name";
 
 export function CommentSection({
   postId,
@@ -118,13 +118,13 @@ export function CommentSection({
 
   return (
     <section
-      className={cn("mt-12 border-t border-[var(--kp-divider)] pt-8", className)}
+      className={cn("mt-12 border-t border-[var(--om-divider)] pt-8", className)}
       data-testid="comment-section"
     >
       <div className="mb-5 flex items-center gap-2">
-        <MessageCircle className="h-4 w-4 text-[var(--kp-brand)]" />
-        <h2 className="text-base font-semibold text-[var(--kp-text-1)]">留言</h2>
-        <span className="text-xs text-[var(--kp-text-3)]">
+        <MessageCircle className="h-4 w-4 text-[var(--om-brand)]" />
+        <h2 className="text-base font-semibold text-[var(--om-text-1)]">留言</h2>
+        <span className="text-xs text-[var(--om-text-3)]">
           {data?.total ?? 0} 条
           {isFetching && !isLoading ? " · 刷新中" : ""}
         </span>
@@ -168,7 +168,7 @@ export function CommentSection({
       </form>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-[var(--kp-text-3)]">
+        <div className="flex items-center gap-2 text-sm text-[var(--om-text-3)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           加载留言…
         </div>
@@ -179,14 +179,14 @@ export function CommentSection({
           {items.map((c) => (
             <li
               key={c.id}
-              className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-soft)]/40 px-4 py-3"
+              className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-soft)]/40 px-4 py-3"
             >
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-baseline gap-2">
-                  <span className="truncate text-sm font-medium text-[var(--kp-text-1)]">
+                  <span className="truncate text-sm font-medium text-[var(--om-text-1)]">
                     {c.authorName}
                   </span>
-                  <time className="shrink-0 text-xs text-[var(--kp-text-3)]">
+                  <time className="shrink-0 text-xs text-[var(--om-text-3)]">
                     {new Date(c.createdAt).toLocaleString("zh-CN")}
                   </time>
                 </div>
@@ -196,13 +196,13 @@ export function CommentSection({
                     title="隐藏留言"
                     disabled={hideMut.isPending}
                     onClick={() => hideMut.mutate({ id: c.id })}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--kp-text-3)] transition hover:bg-[var(--kp-bg-mute)] hover:text-destructive"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--kp-text-2)]">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--om-text-2)]">
                 {c.content}
               </p>
             </li>

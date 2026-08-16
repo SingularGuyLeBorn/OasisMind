@@ -6,7 +6,7 @@
 import type { LlmToolCall } from "./llmClient.js";
 import { getAppConfig, type AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
-import { CHILD_OWN_TOOLS, DEFAULT_AGENT_NATIVE, INTEGRATION_OPT_IN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS, DEFAULT_AGENT_NATIVE, INTEGRATION_OPT_IN_TOOLS } from "@oasismind/shared";
 import { deriveVisibleSet, type VisibleSet } from "./tools/visibleSet.js";
 import {
   buildNativeToolSchemas,

@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { createToolSchema, updateToolSchema, listToolsSchema } from "@knowpilot/shared";
+import { createToolSchema, updateToolSchema, listToolsSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const toolRouter = router({

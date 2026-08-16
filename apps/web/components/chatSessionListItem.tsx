@@ -7,7 +7,7 @@
 
 import { memo } from "react";
 import { AlarmClock, Check, HeartPulse, MessageCircle, Pencil, Trash2, X } from "lucide-react";
-import type { ChatSession } from "@knowpilot/shared";
+import type { ChatSession } from "@oasismind/shared";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
 export const SessionListItem = memo(function SessionListItem({
@@ -39,11 +39,11 @@ export const SessionListItem = memo(function SessionListItem({
 }) {
   if (editing) {
     return (
-      <div className="mb-1 flex items-center gap-1 rounded-lg border border-[var(--kp-brand-light)] bg-[var(--kp-bg)] px-2 py-1.5">
+      <div className="mb-1 flex items-center gap-1 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-bg)] px-2 py-1.5">
         <input
           value={renameDraft}
           onChange={(e) => onRenameDraftChange(e.target.value)}
-          className="min-w-0 flex-1 rounded-md border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-2 py-1 text-xs outline-none focus:border-[var(--kp-brand)]"
+          className="min-w-0 flex-1 rounded-md border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-2 py-1 text-xs outline-none focus:border-[var(--om-brand)]"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); onConfirmRename(session.id); }
@@ -53,7 +53,7 @@ export const SessionListItem = memo(function SessionListItem({
         <button
           type="button"
           onClick={() => onConfirmRename(session.id)}
-          className="rounded-md p-1 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+          className="rounded-md p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
           aria-label="确认重命名"
         >
           <Check className="h-3.5 w-3.5" />
@@ -61,7 +61,7 @@ export const SessionListItem = memo(function SessionListItem({
         <button
           type="button"
           onClick={onCancelRename}
-          className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+          className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
           aria-label="取消"
         >
           <X className="h-3.5 w-3.5" />
@@ -76,8 +76,8 @@ export const SessionListItem = memo(function SessionListItem({
       className={cn(
         "group/sess mb-1 flex items-stretch overflow-hidden rounded-xl border transition-colors",
         active
-          ? "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/45 shadow-[inset_3px_0_0_0_var(--kp-accent)]"
-          : "border-transparent hover:bg-[var(--kp-bg-mute)]/60",
+          ? "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/45 shadow-[inset_3px_0_0_0_var(--om-accent)]"
+          : "border-transparent hover:bg-[var(--om-bg-mute)]/60",
       )}
     >
       <button
@@ -87,7 +87,7 @@ export const SessionListItem = memo(function SessionListItem({
         onMouseLeave={() => onHoverEnd?.(session.id)}
         className={cn(
           "min-w-0 flex-1 px-3 py-2 text-left text-sm transition",
-          active ? "text-[var(--kp-brand-deep)]" : "text-[var(--kp-text-2)]",
+          active ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-2)]",
         )}
       >
         <div className="flex min-w-0 items-center gap-1.5">
@@ -122,12 +122,12 @@ export const SessionListItem = memo(function SessionListItem({
             {session.autoName || session.title || "新对话"}
           </span>
           {session.status === "archived" && (
-            <span className="shrink-0 rounded bg-[var(--kp-bg-mute)] px-1 py-0.5 text-[10px] font-normal text-[var(--kp-text-3)]">
+            <span className="shrink-0 rounded bg-[var(--om-bg-mute)] px-1 py-0.5 text-[10px] font-normal text-[var(--om-text-3)]">
               已归档
             </span>
           )}
         </div>
-        <div className="truncate text-xs text-[var(--kp-text-3)]">
+        <div className="truncate text-xs text-[var(--om-text-3)]">
           {session.model} · {formatRelativeTime(session.updatedAt)}
         </div>
       </button>
@@ -136,7 +136,7 @@ export const SessionListItem = memo(function SessionListItem({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onStartRename(session.id)}
-          className="rounded-md p-1.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
           aria-label="重命名"
           title="重命名"
         >
@@ -146,7 +146,7 @@ export const SessionListItem = memo(function SessionListItem({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onDelete(session.id)}
-          className="rounded-md p-1.5 text-[var(--kp-text-3)] hover:bg-red-50 hover:text-red-600"
+          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600"
           aria-label="删除"
           title="删除"
         >

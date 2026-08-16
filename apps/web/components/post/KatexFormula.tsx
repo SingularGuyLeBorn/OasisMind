@@ -144,12 +144,12 @@ export function KatexFormula({
     return next;
   }, [texProp]);
 
-  // 块级公式：从 LaTeX 源里读 `% kp-align: left`，直接改 class（避免 setState 级联）
+  // 块级公式：从 LaTeX 源里读 `% om-align: left`，直接改 class（避免 setState 级联）
   useLayoutEffect(() => {
     if (!display || !rootRef.current) return;
     const src = texProp?.trim() || extractTex(triggerRef.current);
     const { align } = parseMathBlockPayload(src);
-    rootRef.current.classList.toggle("kp-katex-align-left", align === "left");
+    rootRef.current.classList.toggle("om-katex-align-left", align === "left");
   }, [display, children, html, texProp]);
 
   const placePanel = useCallback(() => {
@@ -267,17 +267,17 @@ export function KatexFormula({
           <div
             ref={panelRef}
             id={panelId}
-            className="kp-katex-source"
+            className="om-katex-source"
             style={panelStyle}
             role="dialog"
             aria-label="LaTeX 源码"
           >
-            <div className="kp-katex-source-head">
-              <span className="kp-katex-source-badge">LaTeX</span>
-              <div className="kp-katex-source-actions">
+            <div className="om-katex-source-head">
+              <span className="om-katex-source-badge">LaTeX</span>
+              <div className="om-katex-source-actions">
                 <button
                   type="button"
-                  className="kp-katex-source-btn"
+                  className="om-katex-source-btn"
                   onClick={handleCopy}
                   title={copied ? "已复制" : "复制源码"}
                 >
@@ -286,7 +286,7 @@ export function KatexFormula({
                 </button>
                 <button
                   type="button"
-                  className="kp-katex-source-btn"
+                  className="om-katex-source-btn"
                   onClick={() => setOpen(false)}
                   title="关闭"
                   aria-label="关闭"
@@ -295,7 +295,7 @@ export function KatexFormula({
                 </button>
               </div>
             </div>
-            <pre className="kp-katex-source-code">
+            <pre className="om-katex-source-code">
               <code>{shown}</code>
             </pre>
           </div>,
@@ -309,8 +309,8 @@ export function KatexFormula({
       <span
         ref={rootRef}
         className={cn(
-          "kp-katex-formula",
-          display ? "kp-katex-formula--display" : "kp-katex-formula--inline",
+          "om-katex-formula",
+          display ? "om-katex-formula--display" : "om-katex-formula--inline",
           open && "is-open",
           safeClass,
         )}
@@ -318,7 +318,7 @@ export function KatexFormula({
         {html ? (
           <span
             ref={triggerRef}
-            className="kp-katex-formula-trigger"
+            className="om-katex-formula-trigger"
             role="button"
             tabIndex={0}
             onClick={toggle}
@@ -331,7 +331,7 @@ export function KatexFormula({
         ) : (
           <span
             ref={triggerRef}
-            className="kp-katex-formula-trigger"
+            className="om-katex-formula-trigger"
             role="button"
             tabIndex={0}
             onClick={toggle}

@@ -13,7 +13,7 @@ import {
   resolveGardenNeighbors,
 } from "../infra/gardenNeighbors.js";
 import { buildMemoryContext } from "../infra/promptBuilder.js";
-import { MEMORY_TYPES, memoryAgentScope } from "@knowpilot/shared";
+import { MEMORY_TYPES, memoryAgentScope } from "@oasismind/shared";
 
 const RUN = `ctxthin-${Date.now()}`;
 

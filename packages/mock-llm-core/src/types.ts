@@ -2,11 +2,11 @@
  * LLM 协议类型 — 单源定义，server 与 apps/mock-llm 共用。
  *
  * 从 apps/server/src/infra/llmClient.ts 抽出，避免 server / mock 服务两份定义。
- * server 的 llmClient.ts 改为 `export type { ... } from "@knowpilot/mock-llm-core"` 再导出，
+ * server 的 llmClient.ts 改为 `export type { ... } from "@oasismind/mock-llm-core"` 再导出，
  * 全仓 import 路径不变。
  */
 
-import type { ReasoningEffort } from "@knowpilot/shared";
+import type { ReasoningEffort } from "@oasismind/shared";
 
 export interface LlmContentPart {
   type: "text" | "image_url";

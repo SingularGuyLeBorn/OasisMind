@@ -49,7 +49,7 @@ describe("docx → markdown via mammoth+turndown", () => {
     // Create minimal valid-ish empty file would fail; just assert API exists
     expect(typeof mammoth.convertToHtml).toBe("function");
     // write a tiny invalid file → mammoth should reject without crashing process
-    const tmp = path.join(os.tmpdir(), `kp-docx-${Date.now()}.docx`);
+    const tmp = path.join(os.tmpdir(), `om-docx-${Date.now()}.docx`);
     fs.writeFileSync(tmp, "not-a-docx");
     await expect(mammoth.convertToHtml({ path: tmp })).rejects.toBeTruthy();
     fs.unlinkSync(tmp);

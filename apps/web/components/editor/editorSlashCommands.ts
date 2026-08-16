@@ -149,7 +149,7 @@ export function applySlashInSource(
       cursorOffset = nl.length + 4; // ```\n 之后，落在代码体内
       break;
     case "board":
-      snippet = `${nl}\`\`\`kp-board\n${EMPTY_BOARD_JSON}\n\`\`\`\n`;
+      snippet = `${nl}\`\`\`om-board\n${EMPTY_BOARD_JSON}\n\`\`\`\n`;
       cursorOffset = snippet.length;
       break;
     case "table":

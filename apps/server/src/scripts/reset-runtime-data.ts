@@ -1,6 +1,6 @@
 /**
  * 清空运行时对话数据并保留 Swarm 骨架（超级/管理 Agent + Workspace）。
- * 用法: pnpm --filter @knowpilot/server run reset:runtime
+ * 用法: pnpm --filter @oasismind/server run reset:runtime
  */
 import { config as loadEnv } from "dotenv";
 import path from "path";

@@ -20,7 +20,7 @@ import {
   parseLocalModelRef,
   type ChatSessionConfig,
   type ReasoningEffort,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { cn } from "@/lib/utils";
 import { useSessionHoverPreview } from "@/lib/hooks";
 import { trpc } from "@/lib/trpc";
@@ -277,10 +277,10 @@ export function ChatModelMenu({
             <div className="relative w-full">
             <div
               ref={mainPanelRef}
-              className="relative z-10 w-[280px] overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] shadow-lg shadow-black/8"
+              className="relative z-10 w-[280px] overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] shadow-lg shadow-black/8"
             >
               <div className="py-1">
-                <p className="px-3 py-1.5 text-[10px] font-medium text-[var(--kp-text-3)]">
+                <p className="px-3 py-1.5 text-[10px] font-medium text-[var(--om-text-3)]">
                   选择模型
                 </p>
                 {PRIMARY_CHAT_MODELS.map((m) => {
@@ -301,21 +301,21 @@ export function ChatModelMenu({
                         );
                       }}
                       className={cn(
-                        "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]",
-                        active && "bg-[var(--kp-brand-soft)]/35",
+                        "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--om-bg-mute)]",
+                        active && "bg-[var(--om-brand-soft)]/35",
                       )}
                     >
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
                         {active && (
-                          <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                          <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-medium text-[var(--kp-text-1)]">
+                        <span className="block text-xs font-medium text-[var(--om-text-1)]">
                           {m.label.replace(/^DeepSeek /, "")}
                         </span>
                         {m.inputHint && (
-                          <span className="mt-0.5 block text-[10px] leading-snug text-[var(--kp-text-3)]">
+                          <span className="mt-0.5 block text-[10px] leading-snug text-[var(--om-text-3)]">
                             {m.inputHint.slice(0, 48)}
                             {m.inputHint.length > 48 ? "…" : ""}
                           </span>
@@ -325,7 +325,7 @@ export function ChatModelMenu({
                   );
                 })}
 
-                <div className="my-1 border-t border-[var(--kp-divider-light)]" />
+                <div className="my-1 border-t border-[var(--om-divider-light)]" />
 
                 <FlyoutRow
                   testId="chat-model-menu-free"
@@ -333,7 +333,7 @@ export function ChatModelMenu({
                   onEnter={(el) => openFlyout("free", el)}
                   label={
                     <span className="inline-flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                      <Sparkles className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                       免费模型
                     </span>
                   }
@@ -345,7 +345,7 @@ export function ChatModelMenu({
                   onEnter={(el) => openFlyout("local", el)}
                   label={
                     <span className="inline-flex items-center gap-1.5">
-                      <HardDrive className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                      <HardDrive className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                       本地模型
                     </span>
                   }
@@ -368,16 +368,16 @@ export function ChatModelMenu({
                   label="更多参数"
                 />
 
-                <div className="my-1 border-t border-[var(--kp-divider-light)]" />
+                <div className="my-1 border-t border-[var(--om-divider-light)]" />
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--kp-text-2)] transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]"
+                  className="flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--om-text-2)] transition-colors duration-150 hover:bg-[var(--om-bg-mute)]"
                   onMouseEnter={scheduleCloseFlyout}
                   onClick={() => setHoverPreview(!hoverPreview)}
                   data-testid="chat-model-menu-hover-preview"
                 >
                   <span>会话 hover 预览</span>
-                  <span className="text-[var(--kp-text-3)]">{hoverPreview ? "开" : "关"}</span>
+                  <span className="text-[var(--om-text-3)]">{hoverPreview ? "开" : "关"}</span>
                 </button>
               </div>
             </div>
@@ -421,19 +421,19 @@ export function ChatModelMenu({
                           });
                         }}
                         className={cn(
-                          "flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition-colors duration-150 hover:bg-[var(--kp-bg-mute)] disabled:opacity-40",
-                          selected && "bg-[var(--kp-brand-soft)]/35",
+                          "flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition-colors duration-150 hover:bg-[var(--om-bg-mute)] disabled:opacity-40",
+                          selected && "bg-[var(--om-brand-soft)]/35",
                         )}
                       >
                         <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
                           {selected && (
-                            <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                            <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                           )}
                         </span>
                         <span>
-                          <span className="font-medium text-[var(--kp-text-1)]">{opt.label}</span>
+                          <span className="font-medium text-[var(--om-text-1)]">{opt.label}</span>
                           {opt.hint && (
-                            <span className="mt-0.5 block text-[10px] text-[var(--kp-text-3)]">
+                            <span className="mt-0.5 block text-[10px] text-[var(--om-text-3)]">
                               {opt.hint}
                             </span>
                           )}
@@ -453,7 +453,7 @@ export function ChatModelMenu({
                       onChange={(e) => setFreeQ(e.target.value)}
                       placeholder="搜索 OpenRouter :free…"
                       data-testid="chat-free-model-search"
-                      className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] px-2 py-1.5 text-xs text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                      className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-2 py-1.5 text-xs text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                     />
                   </div>
                   {freellmRuntimeModel && (
@@ -464,30 +464,30 @@ export function ChatModelMenu({
                       data-testid="chat-free-model-freellm-runtime"
                       onClick={() => pickFreeModel(freellmRuntimeModel)}
                       className={cn(
-                        "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]",
-                        chatConfig.model === freellmRuntimeModel && "bg-[var(--kp-brand-soft)]/35",
+                        "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--om-bg-mute)]",
+                        chatConfig.model === freellmRuntimeModel && "bg-[var(--om-brand-soft)]/35",
                       )}
                     >
                       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
                         {chatConfig.model === freellmRuntimeModel && (
-                          <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                          <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-medium text-[var(--kp-text-1)]">
+                        <span className="block text-xs font-medium text-[var(--om-text-1)]">
                           freellm 当前网关
                         </span>
-                        <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--kp-text-3)]">
+                        <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--om-text-3)]">
                           {freellmRuntimeModel}
                         </span>
                       </span>
                     </button>
                   )}
                   {freeModelsQuery.isLoading && (
-                    <p className="px-3 py-2 text-[10px] text-[var(--kp-text-3)]">加载免费目录…</p>
+                    <p className="px-3 py-2 text-[10px] text-[var(--om-text-3)]">加载免费目录…</p>
                   )}
                   {!freeModelsQuery.isLoading && freePicks.length === 0 && (
-                    <p className="px-3 py-2 text-[10px] leading-relaxed text-[var(--kp-text-3)]">
+                    <p className="px-3 py-2 text-[10px] leading-relaxed text-[var(--om-text-3)]">
                       暂无 :free 目录。请配置 OPENROUTER_API_KEY 并同步。
                     </p>
                   )}
@@ -503,20 +503,20 @@ export function ChatModelMenu({
                           data-testid={`chat-free-model-option-${m.id}`}
                           onClick={() => pickFreeModel(m.id)}
                           className={cn(
-                            "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]",
-                            active && "bg-[var(--kp-brand-soft)]/35",
+                            "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--om-bg-mute)]",
+                            active && "bg-[var(--om-brand-soft)]/35",
                           )}
                         >
                           <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
                             {active && (
-                              <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                              <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                             )}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block text-xs font-medium text-[var(--kp-text-1)]">
+                            <span className="block text-xs font-medium text-[var(--om-text-1)]">
                               {m.name || shortModelLabel(m.id)}
                             </span>
-                            <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--kp-text-3)]">
+                            <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--om-text-3)]">
                               {m.id}
                             </span>
                           </span>
@@ -524,11 +524,11 @@ export function ChatModelMenu({
                       );
                     })}
                   </div>
-                  <div className="my-1 border-t border-[var(--kp-divider-light)]" />
+                  <div className="my-1 border-t border-[var(--om-divider-light)]" />
                   <Link
                     href="/free-models"
                     data-testid="chat-free-model-browse-all"
-                    className="flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--kp-brand-deep)] transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]"
+                    className="flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--om-brand-deep)] transition-colors duration-150 hover:bg-[var(--om-bg-mute)]"
                     onClick={closeAll}
                   >
                     <span>浏览全部免费模型</span>
@@ -539,12 +539,12 @@ export function ChatModelMenu({
 
               {flyout === "local" && (
                 <FlyoutCard testId="chat-model-menu-local-panel" width={300}>
-                  <p className="px-3 pb-1 pt-2 text-[10px] leading-relaxed text-[var(--kp-text-3)]">
+                  <p className="px-3 pb-1 pt-2 text-[10px] leading-relaxed text-[var(--om-text-3)]">
                     探测 Ollama / llama.cpp / LM Studio / vLLM（OpenAI 兼容）。会话 id 形如{" "}
                     <span className="font-mono">ollama/llama3.2</span>
                   </p>
                   {localModelsQuery.isLoading && (
-                    <p className="px-3 py-2 text-[10px] text-[var(--kp-text-3)]">正在探测本机服务…</p>
+                    <p className="px-3 py-2 text-[10px] text-[var(--om-text-3)]">正在探测本机服务…</p>
                   )}
                   {localModelsQuery.isError && (
                     <p className="px-3 py-2 text-[10px] text-red-600">
@@ -555,7 +555,7 @@ export function ChatModelMenu({
                     (localModelsQuery.data?.items ?? []).map((backend) => (
                       <div key={backend.id} data-testid={`chat-local-backend-${backend.id}`}>
                         <div className="flex items-center justify-between px-3 py-1.5">
-                          <span className="text-[11px] font-semibold text-[var(--kp-text-2)]">
+                          <span className="text-[11px] font-semibold text-[var(--om-text-2)]">
                             {backend.label}
                           </span>
                           <span
@@ -563,7 +563,7 @@ export function ChatModelMenu({
                               "text-[10px]",
                               backend.reachable
                                 ? "text-emerald-600"
-                                : "text-[var(--kp-text-3)]",
+                                : "text-[var(--om-text-3)]",
                             )}
                           >
                             {backend.reachable
@@ -572,7 +572,7 @@ export function ChatModelMenu({
                           </span>
                         </div>
                         {!backend.reachable && backend.error && (
-                          <p className="px-3 pb-1.5 text-[10px] leading-snug text-[var(--kp-text-3)]">
+                          <p className="px-3 pb-1.5 text-[10px] leading-snug text-[var(--om-text-3)]">
                             {backend.baseUrl} · {backend.error.slice(0, 80)}
                           </p>
                         )}
@@ -587,20 +587,20 @@ export function ChatModelMenu({
                               data-testid={`chat-local-model-option-${m.id}`}
                               onClick={() => pickLocalModel(m.id)}
                               className={cn(
-                                "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--kp-bg-mute)]",
-                                active && "bg-[var(--kp-brand-soft)]/35",
+                                "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 hover:bg-[var(--om-bg-mute)]",
+                                active && "bg-[var(--om-brand-soft)]/35",
                               )}
                             >
                               <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
                                 {active && (
-                                  <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                                  <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                                 )}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-xs font-medium text-[var(--kp-text-1)]">
+                                <span className="block text-xs font-medium text-[var(--om-text-1)]">
                                   {m.name}
                                 </span>
-                                <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--kp-text-3)]">
+                                <span className="mt-0.5 block truncate font-mono text-[10px] text-[var(--om-text-3)]">
                                   {m.id}
                                 </span>
                               </span>
@@ -611,7 +611,7 @@ export function ChatModelMenu({
                     ))}
                   {!localModelsQuery.isLoading &&
                     (localModelsQuery.data?.totalModels ?? 0) === 0 && (
-                      <p className="px-3 py-2 text-[10px] leading-relaxed text-[var(--kp-text-3)]">
+                      <p className="px-3 py-2 text-[10px] leading-relaxed text-[var(--om-text-3)]">
                         未发现本地模型。请先启动服务，例如{" "}
                         <span className="font-mono">ollama serve</span> 后{" "}
                         <span className="font-mono">ollama pull llama3.2</span>。
@@ -667,7 +667,7 @@ export function ChatModelMenu({
                       }
                       onChange={(v) => updateConfig({ maxToolRounds: v })}
                     />
-                    <p className="pb-0.5 text-[10px] leading-snug text-[var(--kp-text-3)]">
+                    <p className="pb-0.5 text-[10px] leading-snug text-[var(--om-text-3)]">
                       超时/轮数设为 0 时使用服务端默认。
                     </p>
                   </div>
@@ -692,7 +692,7 @@ export function ChatModelMenu({
           setFlyout(null);
           setFreeQ("");
         }}
-        className="inline-flex max-w-[200px] items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)]"
+        className="inline-flex max-w-[200px] items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)]"
         title="模型与对话设置"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -731,12 +731,12 @@ function FlyoutRow({
       onFocus={fire}
       onClick={fire}
       className={cn(
-        "flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--kp-text-2)] transition-colors duration-150",
-        active ? "bg-[var(--kp-bg-mute)]" : "hover:bg-[var(--kp-bg-mute)]",
+        "flex w-full items-center justify-between px-3 py-2 text-xs text-[var(--om-text-2)] transition-colors duration-150",
+        active ? "bg-[var(--om-bg-mute)]" : "hover:bg-[var(--om-bg-mute)]",
       )}
     >
       <span>{label}</span>
-      <span className="flex items-center gap-1 text-[var(--kp-text-3)]">
+      <span className="flex items-center gap-1 text-[var(--om-text-3)]">
         {value}
         <ChevronRight className="h-3.5 w-3.5" />
       </span>
@@ -756,7 +756,7 @@ function FlyoutCard({
   return (
     <div
       data-testid={testId}
-      className="overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg shadow-black/8"
+      className="overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] py-1 shadow-lg shadow-black/8"
       style={{ width }}
     >
       {children}
@@ -784,8 +784,8 @@ function ParamSlider({
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-[11px]">
-        <span className="text-[var(--kp-text-2)]">{label}</span>
-        <span className="tabular-nums text-[var(--kp-brand-deep)]">{display}</span>
+        <span className="text-[var(--om-text-2)]">{label}</span>
+        <span className="tabular-nums text-[var(--om-brand-deep)]">{display}</span>
       </div>
       <input
         type="range"
@@ -794,7 +794,7 @@ function ParamSlider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[var(--kp-brand)]"
+        className="w-full accent-[var(--om-brand)]"
         aria-label={label}
       />
     </div>

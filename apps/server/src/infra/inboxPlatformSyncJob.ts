@@ -8,7 +8,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { InboxPlatformSyncStartInput } from "@knowpilot/shared";
+import type { InboxPlatformSyncStartInput } from "@oasismind/shared";
 import { getAppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { InboxSyncProgress, InboxSyncProgressChild } from "./inbox/shared.js";

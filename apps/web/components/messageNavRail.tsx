@@ -124,10 +124,10 @@ export const MessageNavRail = memo(function MessageNavRail({
                 className={cn(
                   "rounded-full transition-all duration-200",
                   isActive
-                    ? "h-1.5 w-4 bg-[var(--kp-brand-deep)]"
+                    ? "h-1.5 w-4 bg-[var(--om-brand-deep)]"
                     : isHovered
-                      ? "h-1 w-3.5 bg-[var(--kp-text-1)]"
-                      : "h-[3px] w-2.5 bg-[var(--kp-text-3)]/55 group-hover:bg-[var(--kp-text-2)]",
+                      ? "h-1 w-3.5 bg-[var(--om-text-1)]"
+                      : "h-[3px] w-2.5 bg-[var(--om-text-3)]/55 group-hover:bg-[var(--om-text-2)]",
                 )}
               />
             </button>
@@ -140,7 +140,7 @@ export const MessageNavRail = memo(function MessageNavRail({
         previewPos &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[80] w-64 -translate-y-1/2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-3 text-left text-xs leading-relaxed text-[var(--kp-text-2)] shadow-lg"
+            className="pointer-events-none fixed z-[80] w-64 -translate-y-1/2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-3 text-left text-xs leading-relaxed text-[var(--om-text-2)] shadow-lg"
             style={{ top: previewPos.top, right: previewPos.right }}
             data-testid="message-nav-preview"
           >
@@ -148,14 +148,14 @@ export const MessageNavRail = memo(function MessageNavRail({
               <span
                 className={cn(
                   "font-mono text-[10px] font-semibold",
-                  hoverIdx === resolvedActive ? "text-[var(--kp-brand-deep)]" : "text-[var(--kp-text-3)]",
+                  hoverIdx === resolvedActive ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-3)]",
                 )}
               >
                 # {(hoverIdx ?? 0) + 1}
                 {hoverIdx === resolvedActive ? " · 当前" : ""}
               </span>
               {hoverItem.versionLabel && (
-                <span className="rounded-full bg-[var(--kp-brand-soft)] px-1.5 py-px text-[10px] text-[var(--kp-brand-deep)]">
+                <span className="rounded-full bg-[var(--om-brand-soft)] px-1.5 py-px text-[10px] text-[var(--om-brand-deep)]">
                   {hoverItem.versionLabel}
                 </span>
               )}
@@ -163,7 +163,7 @@ export const MessageNavRail = memo(function MessageNavRail({
             <div
               className={cn(
                 "line-clamp-4",
-                hoverIdx === resolvedActive ? "text-[var(--kp-brand-deep)]" : "text-[var(--kp-text-2)]",
+                hoverIdx === resolvedActive ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-2)]",
               )}
             >
               {hoverItem.preview}

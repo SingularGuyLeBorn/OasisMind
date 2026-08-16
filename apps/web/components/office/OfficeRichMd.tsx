@@ -47,7 +47,7 @@ export const OfficeRichMd = memo(function OfficeRichMd({
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="font-medium text-[var(--kp-brand)] underline-offset-2 hover:underline"
+          className="font-medium text-[var(--om-brand)] underline-offset-2 hover:underline"
           {...props}
         >
           {children}

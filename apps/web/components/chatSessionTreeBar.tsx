@@ -33,7 +33,7 @@ export function ChatSessionTreeBar({
         .then((page) => {
           sessionMessagesStore.hydrateSessionMessages(
             sessionId,
-            (page.items ?? []) as import("@knowpilot/shared").ChatMessage[],
+            (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
             "view",
           );
         })
@@ -59,17 +59,17 @@ export function ChatSessionTreeBar({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--kp-divider)] px-3 py-1 text-[10px] text-[var(--kp-text-2)]"
+      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--om-divider)] px-3 py-1 text-[10px] text-[var(--om-text-2)]"
       data-testid="chat-session-tree-bar"
     >
-      <GitFork className="h-3 w-3 shrink-0 text-[var(--kp-text-3)]" />
+      <GitFork className="h-3 w-3 shrink-0 text-[var(--om-text-3)]" />
       <span>会话树</span>
       {forkIds.map((pid) => {
         const kids = listBranchChildren(tree.children, pid, nodeList);
         const parent = tree.nodes.find((n) => n.id === pid);
         return (
           <span key={pid} className="inline-flex items-center gap-1">
-            <span className="text-[var(--kp-text-3)]">{parent?.contentPreview?.slice(0, 16) || "分叉"}</span>
+            <span className="text-[var(--om-text-3)]">{parent?.contentPreview?.slice(0, 16) || "分叉"}</span>
             {kids.map((k) => {
               const active = tree.activeLeafId === k.id || isAncestorOfLeaf(tree, k.id);
               return (
@@ -85,8 +85,8 @@ export function ChatSessionTreeBar({
                   }}
                   className={
                     active
-                      ? "rounded-md bg-[var(--kp-brand-soft)] px-1.5 py-0.5 text-[9px] text-[var(--kp-brand-deep)]"
-                      : "rounded-md px-1.5 py-0.5 text-[9px] hover:bg-[var(--kp-bg-mute)]"
+                      ? "rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[9px] text-[var(--om-brand-deep)]"
+                      : "rounded-md px-1.5 py-0.5 text-[9px] hover:bg-[var(--om-bg-mute)]"
                   }
                 >
                   {k.preview.slice(0, 18) || k.role}

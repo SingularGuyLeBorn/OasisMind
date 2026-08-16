@@ -151,7 +151,7 @@ export function ImageUploadButton({
         disabled={uploading}
         className={cn(
           buttonVariants({ variant: "ghost", size: "sm" }),
-          "inline-flex items-center gap-1 text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]",
+          "inline-flex items-center gap-1 text-[var(--om-text-2)] hover:text-[var(--om-text-1)]",
           className,
         )}
         title="上传图片（Ctrl+V 粘贴 / 拖放；按花园·文章分目录）"

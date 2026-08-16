@@ -104,7 +104,7 @@ export const htmlMarkSchema = $node("html_mark", () => ({
         ...(attrs.color ? { "data-color": attrs.color } : {}),
         ...(attrs.bracket ? { "data-bracket": attrs.bracket } : {}),
         ...(attrs.target ? { "data-target": attrs.target } : {}),
-        class: "kp-html-mark",
+        class: "om-html-mark",
       },
       attrs.value,
     ];
@@ -137,7 +137,7 @@ function createHtmlMarkView(node: ProseNode): NodeView {
   // 外层 wrapper 是节点视图本身；内部文本 + SVG 手绘覆盖层都收在 wrapper 里，
   // 避免 rough-notation 把 SVG 插到 contenteditable 的节点视图外部，干扰 ProseMirror 的选区映射。
   const dom = document.createElement("span");
-  dom.className = "kp-html-mark";
+  dom.className = "om-html-mark";
   dom.dataset.type = "html_mark";
   dom.dataset.raw = attrs.raw;
   dom.dataset.annotation = attrs.annotation;
@@ -148,7 +148,7 @@ function createHtmlMarkView(node: ProseNode): NodeView {
   dom.style.verticalAlign = "baseline";
 
   const content = document.createElement("span");
-  content.className = "kp-html-mark-content";
+  content.className = "om-html-mark-content";
   content.textContent = attrs.value;
   content.style.display = "inline-block";
   dom.appendChild(content);

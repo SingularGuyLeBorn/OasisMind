@@ -46,7 +46,7 @@ import {
   HIGH_VALUE_TAGS,
   suggestTags,
   type TagFacet,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 /* ═══════════════════════════════════════════════════════
    1. Pagination — 通用分页组件
@@ -74,11 +74,11 @@ export function Pagination({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col items-center justify-between gap-3 px-2 py-4 sm:flex-row border-t border-[var(--kp-divider-light)]"
+      className="flex flex-col items-center justify-between gap-3 px-2 py-4 sm:flex-row border-t border-[var(--om-divider-light)]"
     >
-      <div className="text-sm text-[var(--kp-text-3)]">
-        共 <span className="font-medium text-[var(--kp-text-1)]">{total}</span> 条记录，
-        每页 <span className="font-medium text-[var(--kp-text-1)]">{pageSize}</span> 条
+      <div className="text-sm text-[var(--om-text-3)]">
+        共 <span className="font-medium text-[var(--om-text-1)]">{total}</span> 条记录，
+        每页 <span className="font-medium text-[var(--om-text-1)]">{pageSize}</span> 条
       </div>
       <div className="flex items-center space-x-2">
         <Button
@@ -86,7 +86,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="h-8 w-8 rounded-lg border-[var(--kp-divider)] bg-white/40 backdrop-blur-sm text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-soft)] transition"
+          className="h-8 w-8 rounded-lg border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:text-[var(--om-text-1)] hover:bg-[var(--om-bg-soft)] transition"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -96,7 +96,7 @@ export function Pagination({
             if (totalPages > 6 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
               if (p === 2 || p === totalPages - 1) {
                 return (
-                  <span key={p} className="px-2 text-[var(--kp-text-3)] text-xs">
+                  <span key={p} className="px-2 text-[var(--om-text-3)] text-xs">
                     ...
                   </span>
                 );
@@ -114,8 +114,8 @@ export function Pagination({
                 className={cn(
                   "h-8 w-8 rounded-lg text-xs font-medium transition",
                   p === page
-                    ? "border border-[var(--kp-brand)] bg-gradient-to-br from-[var(--kp-brand-soft)] to-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)] shadow-sm"
-                    : "border-[var(--kp-divider)] bg-white/40 backdrop-blur-sm text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                    ? "border border-[var(--om-brand)] bg-gradient-to-br from-[var(--om-brand-soft)] to-[var(--om-brand-soft)] text-[var(--om-brand-deep)] shadow-sm"
+                    : "border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
                 )}
               >
                 {p}
@@ -129,7 +129,7 @@ export function Pagination({
           size="icon"
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
-          className="h-8 w-8 rounded-lg border-[var(--kp-divider)] bg-white/40 backdrop-blur-sm text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-soft)] transition"
+          className="h-8 w-8 rounded-lg border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:text-[var(--om-text-1)] hover:bg-[var(--om-bg-soft)] transition"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -183,14 +183,14 @@ export function EntityCard({
       style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
       whileHover={{ scale: 1.015, z: 12 }}
       className={cn(
-        "kp-card-sheen group relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_4px_20px_-8px_rgba(0,135,235,0.14)] transition-shadow hover:shadow-[0_8px_28px_-10px_rgba(0,135,235,0.22)]",
+        "om-card-sheen group relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_4px_20px_-8px_rgba(0,135,235,0.14)] transition-shadow hover:shadow-[0_8px_28px_-10px_rgba(0,135,235,0.22)]",
         density === "compact" ? "p-3" : "p-5",
         className,
       )}
       {...props}
     >
       {/* 顶部渐变高光：常态微光，hover 点亮并横向扩散 */}
-      <div className="absolute inset-x-0 top-0 h-[3px] origin-center scale-x-[0.82] bg-gradient-to-r from-transparent via-[var(--kp-brand)]/40 to-[var(--kp-accent)]/40 opacity-40 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-hover:opacity-100" />
+      <div className="absolute inset-x-0 top-0 h-[3px] origin-center scale-x-[0.82] bg-gradient-to-r from-transparent via-[var(--om-brand)]/40 to-[var(--om-accent)]/40 opacity-40 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-hover:opacity-100" />
       <div className="relative z-10">{children}</div>
     </motion.div>
   );
@@ -204,7 +204,7 @@ export function CardDensityToggle({ className }: { className?: string }) {
       onClick={toggle}
       title={density === "compact" ? "切换为舒适视图" : "切换为紧凑视图"}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--kp-divider)] text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--om-divider)] text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
         className,
       )}
     >
@@ -241,24 +241,24 @@ export function EmptyState({
     >
       {/* 流体 blob 装饰 */}
       <div
-        className="kp-fluid-blob -left-10 -top-10"
-        style={{ width: 140, height: 140, background: "color-mix(in srgb, var(--kp-glow-peach) 45%, transparent)" }}
+        className="om-fluid-blob -left-10 -top-10"
+        style={{ width: 140, height: 140, background: "color-mix(in srgb, var(--om-glow-peach) 45%, transparent)" }}
       />
       <div
-        className="kp-fluid-blob -bottom-12 -right-12"
-        style={{ width: 160, height: 160, background: "color-mix(in srgb, var(--kp-glow-blue) 45%, transparent)", animationDelay: "-5s" }}
+        className="om-fluid-blob -bottom-12 -right-12"
+        style={{ width: 160, height: 160, background: "color-mix(in srgb, var(--om-glow-blue) 45%, transparent)", animationDelay: "-5s" }}
       />
 
       <div className="relative z-10">
-        <div className="kp-header-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
+        <div className="om-header-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
           {icon || <Inbox className="h-7 w-7" />}
         </div>
-        <h3 className="kp-display-serif mb-1 text-lg text-[var(--kp-text-1)]">{title}</h3>
-        <p className="mx-auto max-w-sm text-sm text-[var(--kp-text-3)]">{description}</p>
+        <h3 className="om-display-serif mb-1 text-lg text-[var(--om-text-1)]">{title}</h3>
+        <p className="mx-auto max-w-sm text-sm text-[var(--om-text-3)]">{description}</p>
         {onAction && actionLabel && (
           <Button
             onClick={onAction}
-            className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] px-5 text-white shadow-lg shadow-[rgba(0,135,235,0.22)] transition hover:opacity-95 hover:shadow-xl"
+            className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] px-5 text-white shadow-lg shadow-[rgba(0,135,235,0.22)] transition hover:opacity-95 hover:shadow-xl"
           >
             <Plus className="w-4 h-4" />
             {actionLabel}
@@ -282,8 +282,8 @@ export function LoadingState({ count = 3, label }: LoadingStateProps) {
   return (
     <div className="space-y-4 w-full">
       {label && (
-        <div className="flex items-center gap-2 text-sm text-[var(--kp-text-3)]">
-          <span className="kp-dot-bounce">
+        <div className="flex items-center gap-2 text-sm text-[var(--om-text-3)]">
+          <span className="om-dot-bounce">
             <span />
             <span />
             <span />
@@ -303,15 +303,15 @@ export function LoadingState({ count = 3, label }: LoadingStateProps) {
           }}
           className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 p-5 shadow-[0_4px_20px_-8px_rgba(0,135,235,0.15)] backdrop-blur-xl"
         >
-          <div className="kp-shimmer absolute inset-0 opacity-40" />
+          <div className="om-shimmer absolute inset-0 opacity-40" />
           <div className="relative z-10 flex items-center justify-between">
-            <Skeleton className="h-5 w-1/4 rounded-lg bg-[var(--kp-bg-mute)]" />
-            <Skeleton className="h-4 w-12 rounded-lg bg-[var(--kp-bg-mute)]" />
+            <Skeleton className="h-5 w-1/4 rounded-lg bg-[var(--om-bg-mute)]" />
+            <Skeleton className="h-4 w-12 rounded-lg bg-[var(--om-bg-mute)]" />
           </div>
-          <Skeleton className="relative z-10 mt-3 h-4 w-2/3 rounded-lg bg-[var(--kp-bg-mute)]" />
+          <Skeleton className="relative z-10 mt-3 h-4 w-2/3 rounded-lg bg-[var(--om-bg-mute)]" />
           <div className="relative z-10 flex items-center space-x-2 pt-3">
-            <Skeleton className="h-3 w-16 rounded-md bg-[var(--kp-bg-mute)]" />
-            <Skeleton className="h-3 w-20 rounded-md bg-[var(--kp-bg-mute)]" />
+            <Skeleton className="h-3 w-16 rounded-md bg-[var(--om-bg-mute)]" />
+            <Skeleton className="h-3 w-20 rounded-md bg-[var(--om-bg-mute)]" />
           </div>
         </motion.div>
       ))}
@@ -383,22 +383,22 @@ export function ConfirmDialog({
               transition: { type: "spring", stiffness: 300, damping: 25 }
             }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-6 shadow-2xl"
+            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-6 shadow-2xl"
           >
             <div className="flex items-start gap-4">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                 isDestructive 
                   ? "bg-red-500/10 text-red-500" 
-                  : "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
+                  : "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
               }`}>
                 <AlertTriangle className="h-5 w-5" />
               </div>
               
               <div className="space-y-1">
-                <h3 className="text-base font-semibold text-[var(--kp-text-1)]">
+                <h3 className="text-base font-semibold text-[var(--om-text-1)]">
                   {title}
                 </h3>
-                <p className="text-sm leading-relaxed text-[var(--kp-text-3)]">
+                <p className="text-sm leading-relaxed text-[var(--om-text-3)]">
                   {description}
                 </p>
               </div>
@@ -408,7 +408,7 @@ export function ConfirmDialog({
               <Button
                 variant="outline"
                 onClick={onCancel}
-                className="rounded-xl border-[var(--kp-divider)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]"
+                className="rounded-xl border-[var(--om-divider)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]"
               >
                 {cancelLabel}
               </Button>
@@ -421,7 +421,7 @@ export function ConfirmDialog({
                 className={`rounded-xl text-white transition-all ${
                   isDestructive
                     ? "bg-red-500 hover:bg-red-600 focus:ring-red-500"
-                    : "bg-[var(--kp-brand-deep)] hover:opacity-90 focus:ring-[var(--kp-brand)]"
+                    : "bg-[var(--om-brand-deep)] hover:opacity-90 focus:ring-[var(--om-brand)]"
                 }`}
               >
                 {confirmLabel}
@@ -521,8 +521,8 @@ export function KpSelect<T extends string = string>({
   }, [open]);
 
   const triggerClass = cn(
-    "inline-flex items-center justify-between gap-2 border border-[var(--kp-divider)] bg-[var(--kp-bg)]/80 text-[var(--kp-text-1)] shadow-sm outline-none transition",
-    "hover:border-[var(--kp-brand-light)] focus-visible:border-[var(--kp-brand)] focus-visible:ring-2 focus-visible:ring-[var(--kp-brand)]/20",
+    "inline-flex items-center justify-between gap-2 border border-[var(--om-divider)] bg-[var(--om-bg)]/80 text-[var(--om-text-1)] shadow-sm outline-none transition",
+    "hover:border-[var(--om-brand-light)] focus-visible:border-[var(--om-brand)] focus-visible:ring-2 focus-visible:ring-[var(--om-brand)]/20",
     "disabled:cursor-not-allowed disabled:opacity-45",
     variant === "capsule" ? "rounded-full" : "rounded-xl w-full",
     size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-2 text-sm",
@@ -532,7 +532,7 @@ export function KpSelect<T extends string = string>({
   const control = (
     <div className={cn(label ? "flex items-center justify-between gap-3" : "relative")}>
       {label && (
-        <span className="text-xs font-medium text-[var(--kp-text-2)]">{label}</span>
+        <span className="text-xs font-medium text-[var(--om-text-2)]">{label}</span>
       )}
       <button
         ref={triggerRef}
@@ -549,7 +549,7 @@ export function KpSelect<T extends string = string>({
         <span className="truncate">{selected?.label ?? placeholder}</span>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform duration-200",
+            "h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform duration-200",
             open && "rotate-180",
           )}
         />
@@ -578,7 +578,7 @@ export function KpSelect<T extends string = string>({
             zIndex: 9999,
           }}
           className={cn(
-            "overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1 shadow-lg shadow-[rgba(45,42,38,0.08)] backdrop-blur-md",
+            "overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-lg shadow-[rgba(45,42,38,0.08)] backdrop-blur-md",
             menuClassName,
           )}
         >
@@ -597,12 +597,12 @@ export function KpSelect<T extends string = string>({
                 className={cn(
                   "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
                   active
-                    ? "bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                    ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                 )}
               >
                 <span className="truncate">{opt.label}</span>
-                {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />}
+                {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />}
               </button>
             );
           })}
@@ -658,7 +658,7 @@ export function VirtualFlatList<T>({
 
   if (items.length === 0) {
     return (
-      <div className={cn("flex flex-1 items-center justify-center p-4 text-sm text-[var(--kp-text-3)]", className)}>
+      <div className={cn("flex flex-1 items-center justify-center p-4 text-sm text-[var(--om-text-3)]", className)}>
         {emptyMessage}
       </div>
     );
@@ -730,7 +730,7 @@ function CapabilityStatusDot({ ok, label }: { ok: boolean; label: string }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-        ok ? "bg-emerald-500/10 text-emerald-700" : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+        ok ? "bg-emerald-500/10 text-emerald-700" : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
       )}
     >
       {ok ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
@@ -774,9 +774,9 @@ function SearchEnginePill({ engine, dense = false }: { engine: string; dense?: b
       className={cn(
         "inline-flex max-w-full items-center gap-1 rounded-full border font-medium transition hover:opacity-80",
         dense ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]",
-        style?.bg ?? "bg-[var(--kp-bg-mute)]",
-        style?.text ?? "text-[var(--kp-text-2)]",
-        style?.border ?? "border-[var(--kp-divider)]",
+        style?.bg ?? "bg-[var(--om-bg-mute)]",
+        style?.text ?? "text-[var(--om-text-2)]",
+        style?.border ?? "border-[var(--om-divider)]",
       )}
     >
       <Icon className={cn("shrink-0", dense ? "h-2.5 w-2.5" : "h-3 w-3")} />
@@ -796,24 +796,24 @@ function SearchEnginePriorityList({ engines }: { engines: string[] }) {
         return (
           <li
             key={`${engine}-${index}`}
-            className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg)]/80 px-2 py-1"
+            className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)]/80 px-2 py-1"
           >
             <span
               className={cn(
                 "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold tabular-nums",
                 index === 0
-                  ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                  : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+                  ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
               )}
               aria-hidden
             >
               {index + 1}
             </span>
-            <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-[var(--kp-text-1)]" title={engine}>
+            <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-[var(--om-text-1)]" title={engine}>
               {label}
             </span>
             {index === 0 && (
-              <span className="shrink-0 rounded bg-[var(--kp-brand-soft)] px-1 py-px text-[8px] font-medium text-[var(--kp-brand-deep)]">
+              <span className="shrink-0 rounded bg-[var(--om-brand-soft)] px-1 py-px text-[8px] font-medium text-[var(--om-brand-deep)]">
                 首选
               </span>
             )}
@@ -859,21 +859,21 @@ export function NativeCapabilitiesPanel({
   return (
     <div
       className={cn(
-        "min-w-0 max-w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]",
+        "min-w-0 max-w-full overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]",
         sidebar ? "space-y-2.5 p-2.5" : compact ? "space-y-3 p-4" : "space-y-4 p-5",
         className,
       )}
       data-testid="native-capabilities-panel"
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-          <Globe className="h-4 w-4 shrink-0 text-[var(--kp-brand-deep)]" />
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+          <Globe className="h-4 w-4 shrink-0 text-[var(--om-brand-deep)]" />
           <span className="truncate">{title}</span>
         </div>
         {detailHref && (
           <Link
             href={detailHref}
-            className="shrink-0 text-[10px] font-medium text-[var(--kp-brand-deep)] hover:underline"
+            className="shrink-0 text-[10px] font-medium text-[var(--om-brand-deep)] hover:underline"
           >
             {detailLabel} →
           </Link>
@@ -896,7 +896,7 @@ export function NativeCapabilitiesPanel({
       </div>
       {showEngineList && data.search.engines.length > 0 && (
         <div className="min-w-0 space-y-1.5">
-          <p className="text-[10px] font-medium text-[var(--kp-text-2)]">搜索引擎优先级</p>
+          <p className="text-[10px] font-medium text-[var(--om-text-2)]">搜索引擎优先级</p>
           {usePriorityList ? (
             <SearchEnginePriorityList engines={data.search.engines} />
           ) : (
@@ -908,7 +908,7 @@ export function NativeCapabilitiesPanel({
               </div>
               {data.search.priority && (
                 <p
-                  className="break-all text-[10px] leading-relaxed text-[var(--kp-text-3)]"
+                  className="break-all text-[10px] leading-relaxed text-[var(--om-text-3)]"
                   title="SEARCH_ENGINE_PRIORITY"
                 >
                   {data.search.priority}
@@ -917,8 +917,8 @@ export function NativeCapabilitiesPanel({
             </>
           )}
           {sidebar && data.search.priority && (
-            <p className="text-[9px] leading-snug text-[var(--kp-text-3)]">
-              顺序由服务端 <code className="text-[var(--kp-text-2)]">SEARCH_ENGINE_PRIORITY</code> 决定，详见 Tools 页。
+            <p className="text-[9px] leading-snug text-[var(--om-text-3)]">
+              顺序由服务端 <code className="text-[var(--om-text-2)]">SEARCH_ENGINE_PRIORITY</code> 决定，详见 Tools 页。
             </p>
           )}
         </div>
@@ -932,14 +932,14 @@ export function NativeCapabilitiesPanel({
       )}
       {!compact && (
         <div>
-          <p className="mb-2 text-[10px] font-medium text-[var(--kp-text-2)]">
+          <p className="mb-2 text-[10px] font-medium text-[var(--om-text-2)]">
             read_article · {data.readArticle.platforms.length} 平台
           </p>
           <div className="flex flex-wrap gap-1.5">
             {data.readArticle.platforms.map((p) => (
               <span
                 key={p}
-                className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[10px] text-[var(--kp-text-2)]"
+                className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[10px] text-[var(--om-text-2)]"
               >
                 {READ_PLATFORM_LABELS[p] ?? p}
               </span>
@@ -988,14 +988,14 @@ export function PageHeader({
     >
       <div className="flex min-w-0 items-center gap-3">
         {Icon && (
-          <span className="kp-header-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+          <span className="om-header-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
             <Icon className="h-5 w-5" />
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-[var(--kp-text-1)]">{title}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-[var(--om-text-1)]">{title}</h1>
           {description && (
-            <p className="mt-0.5 text-xs text-[var(--kp-text-3)] whitespace-normal break-words leading-relaxed max-w-3xl">
+            <p className="mt-0.5 text-xs text-[var(--om-text-3)] whitespace-normal break-words leading-relaxed max-w-3xl">
               {description}
             </p>
           )}
@@ -1041,8 +1041,8 @@ export function AdminPage({
     <div
       className={cn(
         // 只由 Shell <main> 滚动；禁止 flex-1（会锁死高度）+ 禁止本层 overflow-y 裁切
-        "kp-admin-surface kp-spectrum relative mx-auto w-full max-w-[1400px] space-y-4 overflow-x-hidden px-3 py-4 sm:space-y-5 sm:px-4 sm:py-6 md:px-8 md:py-8",
-        "[&_.kp-table-scroll]:overflow-x-auto [&_.kp-table-scroll]:overscroll-x-contain",
+        "om-admin-surface om-spectrum relative mx-auto w-full max-w-[1400px] space-y-4 overflow-x-hidden px-3 py-4 sm:space-y-5 sm:px-4 sm:py-6 md:px-8 md:py-8",
+        "[&_.om-table-scroll]:overflow-x-auto [&_.om-table-scroll]:overscroll-x-contain",
         className,
       )}
     >
@@ -1062,7 +1062,7 @@ export function AdminFormShell({
   return (
     <div
       className={cn(
-        "kp-admin-surface kp-spectrum relative mx-auto w-full max-w-[1400px] space-y-5 overflow-x-hidden px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 md:px-8 md:py-8",
+        "om-admin-surface om-spectrum relative mx-auto w-full max-w-[1400px] space-y-5 overflow-x-hidden px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 md:px-8 md:py-8",
         className,
       )}
     >
@@ -1095,7 +1095,7 @@ export function TagFilterBar({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium text-[var(--kp-text-3)]">
+      <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium text-[var(--om-text-3)]">
         <Tags className="h-3 w-3" />
         标签
       </span>
@@ -1105,14 +1105,14 @@ export function TagFilterBar({
         className={cn(
           "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition backdrop-blur-sm",
           !value
-            ? "bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] text-white shadow-sm"
-            : "border border-white/40 bg-white/40 text-[var(--kp-text-3)] hover:bg-white/60",
+            ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+            : "border border-white/40 bg-white/40 text-[var(--om-text-3)] hover:bg-white/60",
         )}
       >
         全部
       </button>
       {chips.length === 0 ? (
-        <span className="text-[10px] text-[var(--kp-text-3)]">{emptyHint}</span>
+        <span className="text-[10px] text-[var(--om-text-3)]">{emptyHint}</span>
       ) : (
         chips.slice(0, 24).map((f) => {
           const active = value === f.tag;
@@ -1124,10 +1124,10 @@ export function TagFilterBar({
               className={cn(
                 "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition backdrop-blur-sm",
                 active
-                  ? "bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] text-white shadow-sm"
+                  ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
                   : f.highValue
                     ? "border border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
-                    : "border border-white/40 bg-white/40 text-[var(--kp-text-2)] hover:bg-white/60",
+                    : "border border-white/40 bg-white/40 text-[var(--om-text-2)] hover:bg-white/60",
               )}
             >
               {f.tag}
@@ -1142,7 +1142,7 @@ export function TagFilterBar({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+          className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
           title="清除筛选"
         >
           <X className="h-3 w-3" />
@@ -1210,15 +1210,15 @@ export function TagInputField({
             }
           }}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand-deep)]"
+          className="w-full rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand-deep)]"
         />
         {editing && suggestions.length > 0 && (
-          <div className="absolute z-20 mt-1 max-h-40 w-full overflow-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1 shadow-lg">
+          <div className="absolute z-20 mt-1 max-h-40 w-full overflow-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-lg">
             {suggestions.map((tag) => (
               <button
                 key={tag}
                 type="button"
-                className="flex w-full items-center rounded-lg px-2 py-1.5 text-left text-xs text-[var(--kp-text-2)] hover:bg-[var(--kp-brand-soft)]"
+                className="flex w-full items-center rounded-lg px-2 py-1.5 text-left text-xs text-[var(--om-text-2)] hover:bg-[var(--om-brand-soft)]"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   const base = draft
@@ -1238,7 +1238,7 @@ export function TagInputField({
           </div>
         )}
       </div>
-      {hint && <p className="text-[10px] text-[var(--kp-text-3)]">{hint}</p>}
+      {hint && <p className="text-[10px] text-[var(--om-text-3)]">{hint}</p>}
     </div>
   );
 }

@@ -2,13 +2,13 @@
  * Chat Token 预算估算 — 用于 Header / 设置 Panel（Codex 式上下文可见性）
  */
 
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 import {
   DEFAULT_COMPACT_TRIGGER_RATIO,
   DEFAULT_LLM_MODEL,
   resolveCompactCharThreshold,
   resolveModelContextWindowTokens,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 export const DEFAULT_COMPACT_TRIGGER_RATIO_EXPORT = DEFAULT_COMPACT_TRIGGER_RATIO;
 

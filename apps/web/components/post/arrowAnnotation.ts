@@ -12,8 +12,8 @@
 
 import rough from "roughjs";
 
-const ARROW_LAYER_ID = "kp-arrow-annotation-layer";
-const ARROW_CLASS = "kp-arrow-annotation";
+const ARROW_LAYER_ID = "om-arrow-annotation-layer";
+const ARROW_CLASS = "om-arrow-annotation";
 
 /** 查找/创建全局箭头 SVG 层（viewport 固定，不拦截鼠标） */
 function getArrowLayer(): SVGSVGElement {
@@ -36,14 +36,14 @@ function getArrowLayer(): SVGSVGElement {
 
 function ensureUniqueGroup(sourceEl: Element, targetSelector: string): SVGGElement {
   const layer = getArrowLayer();
-  const id = `kp-arrow-${Array.from(sourceEl.textContent ?? "")
+  const id = `om-arrow-${Array.from(sourceEl.textContent ?? "")
     .map((c) => c.charCodeAt(0))
     .join("-")}-${targetSelector}`;
-  let group = layer.querySelector(`g[data-kp-arrow-id="${id}"]`) as SVGGElement | null;
+  let group = layer.querySelector(`g[data-om-arrow-id="${id}"]`) as SVGGElement | null;
   if (!group) {
     group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     group.setAttribute("class", ARROW_CLASS);
-    group.setAttribute("data-kp-arrow-id", id);
+    group.setAttribute("data-om-arrow-id", id);
     layer.appendChild(group);
   }
   group.innerHTML = "";
@@ -158,10 +158,10 @@ function drawArrow(
 function removeArrow(sourceEl: Element, targetSelector: string) {
   const layer = document.getElementById(ARROW_LAYER_ID) as SVGSVGElement | null;
   if (!layer) return;
-  const id = `kp-arrow-${Array.from(sourceEl.textContent ?? "")
+  const id = `om-arrow-${Array.from(sourceEl.textContent ?? "")
     .map((c) => c.charCodeAt(0))
     .join("-")}-${targetSelector}`;
-  const group = layer.querySelector(`g[data-kp-arrow-id="${id}"]`);
+  const group = layer.querySelector(`g[data-om-arrow-id="${id}"]`);
   if (group) group.remove();
   if (!layer.querySelector("g")) layer.remove();
 }

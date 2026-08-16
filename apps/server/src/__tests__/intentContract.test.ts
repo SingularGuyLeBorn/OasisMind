@@ -8,7 +8,7 @@ import {
 } from "../infra/intentContract.js";
 import { __resetGoalLoopHookForTests, __setGoalStateStoreForTests } from "../infra/goalLoop.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
-import type { SessionGoalState } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
 
 const switchBranchMock = vi.hoisted(() => vi.fn().mockResolvedValue({ switched: true }));
 vi.mock("../infra/chatTree.js", () => ({

@@ -3,7 +3,7 @@
  */
 
 import { trpcMutate } from "./trpcE2e";
-import { DEFAULT_LLM_MODEL } from "@knowpilot/shared";
+import { DEFAULT_LLM_MODEL } from "@oasismind/shared";
 
 const ASYNC_KIND = "async_agent";
 

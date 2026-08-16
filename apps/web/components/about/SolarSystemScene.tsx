@@ -133,7 +133,7 @@ function OrbitRing({ radius }: { radius: number }) {
   }, [radius]);
   const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(points), [points]);
   const material = useMemo(
-    () => new THREE.LineBasicMaterial({ color: "rgba(var(--kp-text-3-rgb), 0.2)", transparent: true, opacity: 0.18 }),
+    () => new THREE.LineBasicMaterial({ color: "rgba(var(--om-text-3-rgb), 0.2)", transparent: true, opacity: 0.18 }),
     [],
   );
   return <primitive object={new THREE.Line(geometry, material)} />;
@@ -295,7 +295,7 @@ export function SolarSystemScene() {
   return (
     <div
       ref={wrapRef}
-      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-black md:h-[420px]"
+      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-black md:h-[420px]"
     >
       <Canvas
         camera={{ position: [0, 65, 95], fov: 45, near: 0.1, far: 1200 }}

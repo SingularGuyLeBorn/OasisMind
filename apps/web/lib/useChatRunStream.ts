@@ -19,7 +19,7 @@ import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { SessionBusyQueuedError, streamAgentChat } from "@/lib/agentStream";
 import { buildStreamConfig } from "@/lib/chatConfig";
 import { formatToolResultHint, pruneEmptyThinkingSteps } from "@/lib/chatMessageUtils";
-import { type Agent, type ChatAttachment, DEFAULT_LLM_MODEL } from "@knowpilot/shared";
+import { type Agent, type ChatAttachment, DEFAULT_LLM_MODEL } from "@oasismind/shared";
 import { COMPOSE_STORAGE_KEY, LIFECYCLE_STORAGE_KEY, NEW_STREAM_KEY } from "@/lib/chatKeys";
 import {
   ensureSessionConfigHydrated,

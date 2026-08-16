@@ -25,7 +25,7 @@ function statusTone(status: string): string {
   if (status === "failed" || status === "error") {
     return "bg-red-500/12 text-red-700 dark:text-red-300";
   }
-  return "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)]";
+  return "bg-[var(--om-bg-mute)] text-[var(--om-text-2)]";
 }
 
 function ProgressCard({
@@ -41,7 +41,7 @@ function ProgressCard({
 
   return (
     <li
-      className="rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] px-2.5 py-2"
+      className="rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)] px-2.5 py-2"
       data-testid="subagent-progress-card"
       data-session={item.subagentSessionId}
     >
@@ -52,14 +52,14 @@ function ProgressCard({
       >
         <ChevronRight
           className={cn(
-            "mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform",
+            "mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform",
             open && "rotate-90",
           )}
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <GitBranch className="h-3 w-3 shrink-0 text-[var(--kp-text-3)]" />
-            <span className="truncate text-[11px] font-semibold text-[var(--kp-text-1)]">
+            <GitBranch className="h-3 w-3 shrink-0 text-[var(--om-text-3)]" />
+            <span className="truncate text-[11px] font-semibold text-[var(--om-text-1)]">
               {item.agentName || "子 Agent"}
             </span>
             <span
@@ -72,7 +72,7 @@ function ProgressCard({
               {item.status}
             </span>
           </div>
-          <p className="mt-0.5 truncate text-[10px] text-[var(--kp-text-3)]">
+          <p className="mt-0.5 truncate text-[10px] text-[var(--om-text-3)]">
             {[
               item.phase,
               item.roundsUsed != null ? `R${item.roundsUsed}` : null,
@@ -85,17 +85,17 @@ function ProgressCard({
         </div>
       </button>
       {open && (
-        <div className="mt-2 space-y-1 border-t border-[var(--kp-divider-light)] pt-2 pl-5">
+        <div className="mt-2 space-y-1 border-t border-[var(--om-divider-light)] pt-2 pl-5">
           {item.steps.length === 0 ? (
-            <p className="text-[10px] text-[var(--kp-text-3)]">尚无时间线节点</p>
+            <p className="text-[10px] text-[var(--om-text-3)]">尚无时间线节点</p>
           ) : (
             <ul className="space-y-1" data-testid="subagent-progress-timeline">
               {item.steps
                 .slice()
                 .reverse()
                 .map((s, i) => (
-                  <li key={`${s.at}-${i}`} className="flex gap-2 text-[10px] text-[var(--kp-text-2)]">
-                    <span className="shrink-0 tabular-nums text-[var(--kp-text-3)]">
+                  <li key={`${s.at}-${i}`} className="flex gap-2 text-[10px] text-[var(--om-text-2)]">
+                    <span className="shrink-0 tabular-nums text-[var(--om-text-3)]">
                       {new Date(s.at).toLocaleTimeString("zh-CN", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -110,7 +110,7 @@ function ProgressCard({
           {onOpen && (
             <button
               type="button"
-              className="mt-1 text-[10px] font-medium text-[var(--kp-text-2)] hover:underline"
+              className="mt-1 text-[10px] font-medium text-[var(--om-text-2)] hover:underline"
               onClick={() => onOpen(item.subagentSessionId)}
             >
               打开子会话
@@ -177,10 +177,10 @@ export function SubagentProgressPanel({
 
   return (
     <div
-      className="border-b border-[var(--kp-divider)] px-3 py-2"
+      className="border-b border-[var(--om-divider)] px-3 py-2"
       data-testid="subagent-progress-panel"
     >
-      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
         <GitBranch className="h-3 w-3" />
         子任务进度
         <span className="font-normal normal-case">（无正文 · 仅编排）</span>

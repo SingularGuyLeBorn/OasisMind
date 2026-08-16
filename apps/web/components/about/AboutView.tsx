@@ -36,7 +36,7 @@ import {
   User,
   Wand2,
 } from "lucide-react";
-import type { AboutProfile } from "@knowpilot/shared";
+import type { AboutProfile } from "@oasismind/shared";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/magicui/scroll-reveal";
 import { HeroSection } from "@/components/about/HeroSection";
@@ -69,32 +69,32 @@ const HOVER_MOTION: Record<
   lift: {
     whileHover: { y: -7 },
     className:
-      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/35 hover:shadow-[0_22px_48px_-16px_rgba(0,135,235,0.28)]",
+      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-brand)]/35 hover:shadow-[0_22px_48px_-16px_rgba(0,135,235,0.28)]",
   },
   tilt: {
     whileHover: { y: -4, rotate: -1.2, scale: 1.015 },
     className:
-      "origin-center transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-accent)]/40 hover:shadow-[0_18px_40px_-14px_rgba(232,168,74,0.28)]",
+      "origin-center transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-accent)]/40 hover:shadow-[0_18px_40px_-14px_rgba(232,168,74,0.28)]",
   },
   sheen: {
     whileHover: { y: -5 },
     className:
-      "kp-card-topline kp-card-sheen transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--kp-brand)]/30 hover:bg-white/70 hover:shadow-[0_20px_44px_-16px_rgba(0,135,235,0.26)]",
+      "om-card-topline om-card-sheen transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-brand)]/30 hover:bg-white/70 hover:shadow-[0_20px_44px_-16px_rgba(0,135,235,0.26)]",
   },
   glowBlue: {
     whileHover: { y: -4, scale: 1.01 },
     className:
-      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/40 hover:shadow-[0_0_0_1px_rgba(0,135,235,0.12),0_20px_48px_-18px_rgba(0,135,235,0.35)]",
+      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-brand)]/40 hover:shadow-[0_0_0_1px_rgba(0,135,235,0.12),0_20px_48px_-18px_rgba(0,135,235,0.35)]",
   },
   glowPeach: {
     whileHover: { y: -3, scale: 1.02 },
     className:
-      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-accent)]/45 hover:shadow-[0_0_0_1px_rgba(232,168,74,0.14),0_18px_42px_-16px_rgba(232,168,74,0.32)]",
+      "transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-accent)]/45 hover:shadow-[0_0_0_1px_rgba(232,168,74,0.14),0_18px_42px_-16px_rgba(232,168,74,0.32)]",
   },
   rail: {
     whileHover: { x: 4, y: -2 },
     className:
-      "border-l-[3px] border-l-transparent transition-[border-color,box-shadow,border-left-color] duration-500 hover:border-l-[var(--kp-brand)] hover:border-[var(--kp-brand)]/25 hover:shadow-[0_14px_36px_-14px_rgba(0,80,160,0.22)]",
+      "border-l-[3px] border-l-transparent transition-[border-color,box-shadow,border-left-color] duration-500 hover:border-l-[var(--om-brand)] hover:border-[var(--om-brand)]/25 hover:shadow-[0_14px_36px_-14px_rgba(0,80,160,0.22)]",
   },
   scale: {
     whileHover: { scale: 1.03 },
@@ -104,7 +104,7 @@ const HOVER_MOTION: Record<
   sink: {
     whileHover: { y: 2, scale: 0.985 },
     className:
-      "transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--kp-divider)] hover:bg-white/75 hover:shadow-[inset_0_2px_12px_rgba(0,80,160,0.08)]",
+      "transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-divider)] hover:bg-white/75 hover:shadow-[inset_0_2px_12px_rgba(0,80,160,0.08)]",
   },
 };
 
@@ -132,14 +132,14 @@ function HoverCard({
           aria-hidden
           className={cn(
             "pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100",
-            kind === "glowBlue" ? "bg-[var(--kp-glow-blue)]/55" : "bg-[var(--kp-glow-peach)]/55",
+            kind === "glowBlue" ? "bg-[var(--om-glow-blue)]/55" : "bg-[var(--om-glow-peach)]/55",
           )}
         />
       )}
       {kind === "sheen" && (
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-[var(--kp-glow-blue)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--kp-glow-blue)]/40"
+          className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-[var(--om-glow-blue)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--om-glow-blue)]/40"
         />
       )}
       {/* className（含 flex）必须落在内容层：外层只有一个子节点时 flex-row 无效 */}
@@ -170,15 +170,15 @@ function StoryMarkdown({ children }: { children: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        p: ({ children }) => <p className="mb-1.5 text-xs leading-relaxed text-[var(--kp-text-2)] last:mb-0">{children}</p>,
-        ul: ({ children }) => <ul className="mb-1.5 list-disc space-y-0.5 pl-4 text-xs text-[var(--kp-text-2)]">{children}</ul>,
-        ol: ({ children }) => <ol className="mb-1.5 list-decimal space-y-0.5 pl-4 text-xs text-[var(--kp-text-2)]">{children}</ol>,
+        p: ({ children }) => <p className="mb-1.5 text-xs leading-relaxed text-[var(--om-text-2)] last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="mb-1.5 list-disc space-y-0.5 pl-4 text-xs text-[var(--om-text-2)]">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-1.5 list-decimal space-y-0.5 pl-4 text-xs text-[var(--om-text-2)]">{children}</ol>,
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[var(--kp-accent-light)] underline-offset-2 hover:text-[var(--kp-accent-deep)]">{children}</a>,
-        strong: ({ children }) => <strong className="font-semibold text-[var(--kp-text-1)]">{children}</strong>,
-        h1: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--kp-text-1)]">{children}</h4>,
-        h2: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--kp-text-1)]">{children}</h4>,
-        h3: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--kp-text-1)]">{children}</h4>,
+        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[var(--om-accent-light)] underline-offset-2 hover:text-[var(--om-accent-deep)]">{children}</a>,
+        strong: ({ children }) => <strong className="font-semibold text-[var(--om-text-1)]">{children}</strong>,
+        h1: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--om-text-1)]">{children}</h4>,
+        h2: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--om-text-1)]">{children}</h4>,
+        h3: ({ children }) => <h4 className="mb-1 text-xs font-bold text-[var(--om-text-1)]">{children}</h4>,
       }}
     >
       {children}
@@ -240,7 +240,7 @@ function QuoteCarousel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <Quote className="mx-auto mb-2 h-5 w-5 text-[var(--kp-brand-light)]" />
+      <Quote className="mx-auto mb-2 h-5 w-5 text-[var(--om-brand-light)]" />
       <div className="relative mx-auto min-h-[3.5rem] max-w-4xl px-6 md:min-h-[4rem]">
         <AnimatePresence mode="wait">
           <motion.p
@@ -249,7 +249,7 @@ function QuoteCarousel() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.45, ease: easeSpring }}
-            className="text-lg font-medium italic text-[var(--kp-text-1)] md:text-xl lg:text-2xl"
+            className="text-lg font-medium italic text-[var(--om-text-1)] md:text-xl lg:text-2xl"
           >
             {QUOTES[index]}
           </motion.p>
@@ -263,7 +263,7 @@ function QuoteCarousel() {
             onClick={() => setIndex(i)}
             className={cn(
               "h-1.5 rounded-full transition-all",
-              i === index ? "w-4 bg-[var(--kp-accent)]" : "w-1.5 bg-[var(--kp-divider)] hover:bg-[var(--kp-brand-light)]",
+              i === index ? "w-4 bg-[var(--om-accent)]" : "w-1.5 bg-[var(--om-divider)] hover:bg-[var(--om-brand-light)]",
             )}
             aria-label={`切换到第 ${i + 1} 句`}
           />
@@ -304,13 +304,13 @@ function SectionHeader({
     <div className={cn("flex min-w-0 items-start gap-2.5", className)}>
       <div
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]",
           iconClassName,
         )}
       >
         {icon}
       </div>
-      <h3 className="mt-0.5 min-w-0 truncate text-base font-bold text-[var(--kp-text-1)]" title={title}>
+      <h3 className="mt-0.5 min-w-0 truncate text-base font-bold text-[var(--om-text-1)]" title={title}>
         {title}
       </h3>
     </div>
@@ -328,8 +328,8 @@ function SectionLabel({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <Icon className="h-4 w-4 text-[var(--kp-brand)]" />
-      <p className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--kp-text-1)]">
+      <Icon className="h-4 w-4 text-[var(--om-brand)]" />
+      <p className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--om-text-1)]">
         {square ? <SquareMark>{children}</SquareMark> : <CurlyMark>{children}</CurlyMark>}
       </p>
     </div>
@@ -340,7 +340,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
   const storyCards = parseStoryCards(profile.bodyMarkdown);
 
   return (
-    <div className="kp-force-light relative w-full shrink-0 overflow-x-hidden">
+    <div className="om-force-light relative w-full shrink-0 overflow-x-hidden">
       <HeroSection profile={profile} />
       <ThreeTheories />
       <QuoteCarousel />
@@ -363,7 +363,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                         title={card.title}
                         className="mb-2"
                       />
-                      <div className="text-xs leading-relaxed text-[var(--kp-text-2)]">
+                      <div className="text-xs leading-relaxed text-[var(--om-text-2)]">
                         <StoryMarkdown>{card.body}</StoryMarkdown>
                       </div>
                     </HoverCard>
@@ -394,7 +394,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                       title={item.title}
                       className="mb-2"
                     />
-                    <p className="text-xs leading-relaxed text-[var(--kp-text-2)]">{item.description}</p>
+                    <p className="text-xs leading-relaxed text-[var(--om-text-2)]">{item.description}</p>
                   </HoverCard>
                 </StaggerItem>
               );
@@ -444,7 +444,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                       title={title}
                       className="mb-2"
                     />
-                    <div className="text-xs leading-relaxed text-[var(--kp-text-2)]">
+                    <div className="text-xs leading-relaxed text-[var(--om-text-2)]">
                       <StoryMarkdown>{f.description}</StoryMarkdown>
                     </div>
                   </HoverCard>
@@ -458,9 +458,9 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                 <SectionHeader icon={<Cpu className="h-4 w-4" />} title="技术栈" className="mb-1.5" />
                 <div className="space-y-1">
                   {profile.stack.map((g) => (
-                    <p key={g.category} className="text-[11px] leading-snug text-[var(--kp-text-3)]">
-                      <span className="font-semibold text-[var(--kp-text-1)]">{g.category}</span>
-                      <span className="text-[var(--kp-text-3)]">: {g.items.slice(0, 6).join(" · ")}</span>
+                    <p key={g.category} className="text-[11px] leading-snug text-[var(--om-text-3)]">
+                      <span className="font-semibold text-[var(--om-text-1)]">{g.category}</span>
+                      <span className="text-[var(--om-text-3)]">: {g.items.slice(0, 6).join(" · ")}</span>
                     </p>
                   ))}
                 </div>
@@ -472,9 +472,9 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                 <SectionHeader icon={<Wand2 className="h-4 w-4" />} title="现在用的工具" className="mb-1.5" />
                 <div className="space-y-1">
                   {profile.toolbox.map((g) => (
-                    <p key={g.category} className="text-[11px] leading-snug text-[var(--kp-text-3)]">
-                      <span className="font-semibold text-[var(--kp-text-1)]">{g.category}</span>
-                      <span className="text-[var(--kp-text-3)]">: {g.items.slice(0, 7).join(" · ")}</span>
+                    <p key={g.category} className="text-[11px] leading-snug text-[var(--om-text-3)]">
+                      <span className="font-semibold text-[var(--om-text-1)]">{g.category}</span>
+                      <span className="text-[var(--om-text-3)]">: {g.items.slice(0, 7).join(" · ")}</span>
                     </p>
                   ))}
                 </div>
@@ -491,33 +491,33 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                 <SectionLabel icon={CalendarClock}>Timeline</SectionLabel>
               </ScrollReveal>
               <div className="relative pl-4">
-                <div className="absolute left-0 top-1 bottom-1 w-px bg-[var(--kp-divider)]" />
+                <div className="absolute left-0 top-1 bottom-1 w-px bg-[var(--om-divider)]" />
                 <StaggerContainer className="space-y-3">
                   {profile.timeline.map((item, i) => (
                     <StaggerItem key={item.period + item.title}>
                       <div className="relative pl-5">
-                        <div className="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] shadow-sm transition-transform duration-300 group-hover:scale-125" />
+                        <div className="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border border-[var(--om-divider)] bg-[var(--om-bg-alt)] shadow-sm transition-transform duration-300 group-hover:scale-125" />
                         <HoverCard
                           kind={i % 2 === 0 ? "rail" : "glowBlue"}
                           className="p-3"
                         >
-                          <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-[var(--kp-text-1)]">
+                          <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-[var(--om-text-1)]">
                             {item.title.includes("大学") || item.title.includes("科技") ? (
-                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" aria-hidden />
+                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" aria-hidden />
                             ) : item.title.includes("回家") ? (
-                              <Heart className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" aria-hidden />
+                              <Heart className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" aria-hidden />
                             ) : (
-                              <Quote className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" aria-hidden />
+                              <Quote className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" aria-hidden />
                             )}
                             <span className="min-w-0 truncate whitespace-nowrap">
-                              <span className="text-[var(--kp-brand-1)]">
+                              <span className="text-[var(--om-brand-1)]">
                                 {item.period.replace(/—/g, "-")}
                               </span>
-                              <span className="mx-1.5 text-[var(--kp-text-3)]">·</span>
+                              <span className="mx-1.5 text-[var(--om-text-3)]">·</span>
                               {item.title}
                             </span>
                           </h3>
-                          <p className="mt-1 text-xs leading-relaxed text-[var(--kp-text-2)]">
+                          <p className="mt-1 text-xs leading-relaxed text-[var(--om-text-2)]">
                             {item.description}
                           </p>
                         </HoverCard>
@@ -551,14 +551,14 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
               className="flex flex-nowrap items-center justify-between gap-4 p-4"
             >
               <div className="min-w-0 shrink">
-                <p className="text-sm font-bold text-[var(--kp-text-1)]">
+                <p className="text-sm font-bold text-[var(--om-text-1)]">
                   想聊聊？ <SquareMark className="text-sm font-semibold">随时</SquareMark>
                 </p>
               </div>
               <div className="flex shrink-0 flex-nowrap items-center gap-2">
                 <Link
                   href="/chat"
-                  className="group inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--kp-accent)] px-4 text-xs font-bold text-white transition-transform hover:scale-105"
+                  className="group inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--om-accent)] px-4 text-xs font-bold text-white transition-transform hover:scale-105"
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   对话
@@ -569,7 +569,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                     href={profile.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg)]/70 px-4 text-xs font-bold text-[var(--kp-text-1)] transition-colors hover:border-[var(--kp-brand-light)]"
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--om-divider)] bg-[var(--om-bg)]/70 px-4 text-xs font-bold text-[var(--om-text-1)] transition-colors hover:border-[var(--om-brand-light)]"
                   >
                     <Github className="h-3.5 w-3.5" /> GitHub
                   </a>
@@ -577,7 +577,7 @@ export function AboutView({ profile }: { profile: AboutProfile }) {
                 {profile.email && (
                   <a
                     href={`mailto:${profile.email}`}
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg)]/70 px-4 text-xs font-bold text-[var(--kp-text-1)] transition-colors hover:border-[var(--kp-brand-light)]"
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--om-divider)] bg-[var(--om-bg)]/70 px-4 text-xs font-bold text-[var(--om-text-1)] transition-colors hover:border-[var(--om-brand-light)]"
                   >
                     <Mail className="h-3.5 w-3.5" /> 邮件
                   </a>
@@ -622,7 +622,7 @@ function CosmicFooter() {
           <p className="max-w-3xl text-balance text-[clamp(1.15rem,2.6vw,1.7rem)] font-semibold leading-relaxed tracking-tight text-white drop-shadow-[0_2px_14px_rgba(8,40,80,0.55)]">
             我们的征途是星辰大海，但在那之前，不妨先去码头搞点薯条。
           </p>
-          <p className="kp-display-serif mt-4 max-w-2xl text-[clamp(0.95rem,2vw,1.2rem)] italic leading-relaxed text-white/85 drop-shadow-[0_1px_10px_rgba(8,40,80,0.45)]">
+          <p className="om-display-serif mt-4 max-w-2xl text-[clamp(0.95rem,2vw,1.2rem)] italic leading-relaxed text-white/85 drop-shadow-[0_1px_10px_rgba(8,40,80,0.45)]">
             Our voyage is to the stars and the sea — but first, fries at the pier.
           </p>
         </motion.div>
@@ -657,12 +657,12 @@ function ProjectCard({
           <SectionHeader icon={iconNode} title={project.name} className="min-w-0" />
           <div className="flex shrink-0 items-center gap-1.5">
             {project.highlight && (
-              <span className="rounded-full bg-[var(--kp-accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--kp-accent-deep)]">
+              <span className="rounded-full bg-[var(--om-accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--om-accent-deep)]">
                 {project.highlight}
               </span>
             )}
             {project.href && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-[var(--kp-text-3)] opacity-0 transition-all group-hover:text-[var(--kp-accent-deep)] group-hover:opacity-100">
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-[var(--om-text-3)] opacity-0 transition-all group-hover:text-[var(--om-accent-deep)] group-hover:opacity-100">
                 访问
                 <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </span>
@@ -670,16 +670,16 @@ function ProjectCard({
           </div>
         </div>
         {project.tagline && (
-          <p className="mb-1 text-[10px] font-bold text-[var(--kp-brand-deep)]">{project.tagline}</p>
+          <p className="mb-1 text-[10px] font-bold text-[var(--om-brand-deep)]">{project.tagline}</p>
         )}
-        <p className="mb-2 line-clamp-2 text-xs leading-relaxed text-[var(--kp-text-2)]">
+        <p className="mb-2 line-clamp-2 text-xs leading-relaxed text-[var(--om-text-2)]">
           {project.description}
         </p>
         <div className="mt-auto flex flex-wrap gap-1">
           {project.stack.slice(0, 3).map((s) => (
             <span
               key={s}
-              className="rounded-md border border-[var(--kp-divider)] bg-[var(--kp-bg)]/60 px-1.5 py-0.5 text-[10px] text-[var(--kp-text-3)] transition-colors group-hover:border-[var(--kp-brand)]/25"
+              className="rounded-md border border-[var(--om-divider)] bg-[var(--om-bg)]/60 px-1.5 py-0.5 text-[10px] text-[var(--om-text-3)] transition-colors group-hover:border-[var(--om-brand)]/25"
             >
               {s}
             </span>

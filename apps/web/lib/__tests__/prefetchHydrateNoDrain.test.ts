@@ -15,7 +15,7 @@ import {
   streamLifecycleStore,
   __resetStreamLifecycleStoreForTests,
 } from "../useStreamLifecycle";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 
 const SID = "sess-e4";
 

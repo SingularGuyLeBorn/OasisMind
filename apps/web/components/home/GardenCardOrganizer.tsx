@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import type { Garden } from "@knowpilot/shared";
+import type { Garden } from "@oasismind/shared";
 import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal } from "@/components/magicui/scroll-reveal";
 import { displayGardenTitle, formatGardenId } from "@/lib/gardenDisplay";
@@ -48,18 +48,18 @@ const FALLBACK_GARDENS: GardenCard[] = [
 const ACCENT = {
   blue: {
     glow: "rgba(0,135,235,0.55)",
-    soft: "var(--kp-brand-soft)",
-    solid: "var(--kp-brand)",
-    deep: "var(--kp-brand-deep)",
-    fill: "linear-gradient(165deg, color-mix(in srgb, var(--kp-brand) 72%, white), var(--kp-brand-deep))",
+    soft: "var(--om-brand-soft)",
+    solid: "var(--om-brand)",
+    deep: "var(--om-brand-deep)",
+    fill: "linear-gradient(165deg, color-mix(in srgb, var(--om-brand) 72%, white), var(--om-brand-deep))",
     badge: "border-white/40 bg-white/25 text-white",
   },
   peach: {
     glow: "rgba(232,168,74,0.5)",
-    soft: "color-mix(in srgb, var(--kp-accent) 22%, white)",
-    solid: "var(--kp-accent)",
-    deep: "var(--kp-accent-deep)",
-    fill: "linear-gradient(165deg, color-mix(in srgb, var(--kp-accent) 75%, white), var(--kp-accent-deep))",
+    soft: "color-mix(in srgb, var(--om-accent) 22%, white)",
+    solid: "var(--om-accent)",
+    deep: "var(--om-accent-deep)",
+    fill: "linear-gradient(165deg, color-mix(in srgb, var(--om-accent) 75%, white), var(--om-accent-deep))",
     badge: "border-white/40 bg-white/25 text-white",
   },
   mint: {
@@ -281,7 +281,7 @@ function FanCard({
       <motion.div
         className={cn(
           "relative h-full w-full overflow-hidden rounded-[1.15rem] text-left",
-          selected ? "text-white" : "text-[var(--kp-text-1)]",
+          selected ? "text-white" : "text-[var(--om-text-1)]",
         )}
         style={{
           backgroundColor: selected ? style.deep : "#ffffff",
@@ -342,7 +342,7 @@ function FanCard({
               <span
                 className={cn(
                   "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded px-1 text-[8px] font-bold tabular-nums",
-                  selected ? "bg-white/20 text-white" : "bg-[#eef4fb] text-[var(--kp-brand)]",
+                  selected ? "bg-white/20 text-white" : "bg-[#eef4fb] text-[var(--om-brand)]",
                 )}
               >
                 {String(index + 1).padStart(2, "0")}
@@ -352,7 +352,7 @@ function FanCard({
                   "min-w-0 truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold tracking-wide",
                   selected
                     ? "bg-black/20 text-white"
-                    : "bg-[#f3f7fb] text-[var(--kp-brand-deep)]",
+                    : "bg-[#f3f7fb] text-[var(--om-brand-deep)]",
                 )}
               >
                 <span className="opacity-70">{"{"}</span>
@@ -363,7 +363,7 @@ function FanCard({
             <p
               className={cn(
                 "mt-1.5 line-clamp-2 break-words text-[13px] font-black leading-snug tracking-tight",
-                selected ? "text-white" : "text-[var(--kp-text-1)]",
+                selected ? "text-white" : "text-[var(--om-text-1)]",
               )}
               title={title}
             >
@@ -381,11 +381,11 @@ function FanCard({
             <div
               className={cn(
                 "flex w-full items-center justify-between text-[9px] font-semibold tabular-nums",
-                selected ? "text-white" : "text-[var(--kp-text-2)]",
+                selected ? "text-white" : "text-[var(--om-text-2)]",
               )}
             >
               <span>[{garden.postCount}] 篇</span>
-              <span className={selected ? "text-white/75" : "text-[var(--kp-text-3)]"}>{level}%</span>
+              <span className={selected ? "text-white/75" : "text-[var(--om-text-3)]"}>{level}%</span>
             </div>
             <div
               className={cn(
@@ -412,7 +412,7 @@ function FanCard({
                   "rounded px-1.5 py-0.5 text-[8px] font-semibold",
                   selected
                     ? "bg-white/15 text-white/90"
-                    : "bg-white text-[var(--kp-text-2)] shadow-[inset_0_0_0_1px_rgba(0,80,160,0.1)]",
+                    : "bg-white text-[var(--om-text-2)] shadow-[inset_0_0_0_1px_rgba(0,80,160,0.1)]",
                 )}
               >
                 {tag}
@@ -426,7 +426,7 @@ function FanCard({
               "mt-2 text-[9px] leading-snug",
               selected
                 ? "line-clamp-2 text-white/85"
-                : "line-clamp-2 text-[var(--kp-text-3)]",
+                : "line-clamp-2 text-[var(--om-text-3)]",
             )}
           >
             {garden.description}
@@ -442,7 +442,7 @@ function FanCard({
             <p
               className={cn(
                 "mb-1 text-[8px] font-semibold uppercase tracking-[0.1em]",
-                selected ? "text-white/65" : "text-[var(--kp-text-3)]",
+                selected ? "text-white/65" : "text-[var(--om-text-3)]",
               )}
             >
               Recent
@@ -454,7 +454,7 @@ function FanCard({
                     key={p.slug}
                     className={cn(
                       "min-w-0 text-[9px] leading-snug",
-                      selected ? "text-white/90" : "text-[var(--kp-text-2)]",
+                      selected ? "text-white/90" : "text-[var(--om-text-2)]",
                     )}
                     title={p.title}
                   >
@@ -469,7 +469,7 @@ function FanCard({
                     key={i}
                     className={cn(
                       "h-2 rounded",
-                      selected ? "bg-white/15" : "bg-[var(--kp-divider)]",
+                      selected ? "bg-white/15" : "bg-[var(--om-divider)]",
                     )}
                     style={{ width: `${72 - i * 18}%` }}
                   />
@@ -477,7 +477,7 @@ function FanCard({
                 <p
                   className={cn(
                     "pt-0.5 text-[8px]",
-                    selected ? "text-white/55" : "text-[var(--kp-text-3)]",
+                    selected ? "text-white/55" : "text-[var(--om-text-3)]",
                   )}
                 >
                   暂无近期文章
@@ -490,11 +490,11 @@ function FanCard({
           <div
             className={cn(
               "mt-2 flex items-center justify-between border-t pt-1.5 text-[8px] font-medium",
-              selected ? "border-white/20 text-white/75" : "border-black/5 text-[var(--kp-text-3)]",
+              selected ? "border-white/20 text-white/75" : "border-black/5 text-[var(--om-text-3)]",
             )}
           >
             <span className="truncate">content/{garden.id}</span>
-            <span className={selected ? "text-white" : "text-[var(--kp-brand)]"}>→</span>
+            <span className={selected ? "text-white" : "text-[var(--om-brand)]"}>→</span>
           </div>
         </div>
       </motion.div>
@@ -553,17 +553,17 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 55% 50% at 55% 45%, color-mix(in srgb, var(--kp-glow-blue) 45%, transparent), transparent 70%)," +
-            "radial-gradient(ellipse 40% 35% at 15% 80%, color-mix(in srgb, var(--kp-glow-peach) 30%, transparent), transparent 65%)",
+            "radial-gradient(ellipse 55% 50% at 55% 45%, color-mix(in srgb, var(--om-glow-blue) 45%, transparent), transparent 70%)," +
+            "radial-gradient(ellipse 40% 35% at 15% 80%, color-mix(in srgb, var(--om-glow-peach) 30%, transparent), transparent 65%)",
         }}
       />
 
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-8">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Gardens
           </p>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
             知识库 <CurlyMark>收纳盒</CurlyMark>
           </h2>
         </ScrollReveal>
@@ -581,10 +581,10 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
             >
               <div className="flex items-center justify-between px-5 pt-4">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-white/70 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+                  <span className="rounded-full border border-white/70 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--om-text-3)]">
                     Card Tray
                   </span>
-                  <span className="text-[11px] text-[var(--kp-text-3)]">
+                  <span className="text-[11px] text-[var(--om-text-3)]">
                     {expanded ? "扇形展开" : "收纳叠放"} · {cards.length} 座
                   </span>
                 </div>
@@ -593,14 +593,14 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                     <button
                       type="button"
                       onClick={() => setExpanded((v) => !v)}
-                      className="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-[var(--kp-text-2)]"
+                      className="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-[var(--om-text-2)]"
                     >
                       {expanded ? "收起" : "展开"}
                     </button>
                   )}
                   <Link
                     href="/gardens"
-                    className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-[var(--kp-brand)] transition hover:bg-white"
+                    className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-[var(--om-brand)] transition hover:bg-white"
                   >
                     全部花园
                     <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden>
@@ -623,7 +623,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                 animate={reduced ? undefined : { opacity: [0.35, 0.65, 0.35] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
               >
-                <svg viewBox="0 0 200 24" className="h-full w-full text-[var(--kp-text-3)]">
+                <svg viewBox="0 0 200 24" className="h-full w-full text-[var(--om-text-3)]">
                   <path
                     d="M10 16 Q100 2 190 16"
                     fill="none"
@@ -819,7 +819,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
                         Recent activity
                       </p>
                       {current.recentPosts.length > 0 ? (
-                        <ul className="kp-scroll-hidden max-h-[7.5rem] w-full space-y-1.5 overflow-y-auto">
+                        <ul className="om-scroll-hidden max-h-[7.5rem] w-full space-y-1.5 overflow-y-auto">
                           {current.recentPosts.slice(0, 5).map((p, i) => (
                             <motion.li
                               key={p.slug}
@@ -844,7 +844,7 @@ export function GardenCardOrganizer({ gardens }: { gardens: Garden[] }) {
 
                     <Link
                       href={`/gardens/${current.id}`}
-                      className="mt-5 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-white text-sm font-bold text-[var(--kp-text-1)] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)] transition hover:bg-white/92 hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.4)]"
+                      className="mt-5 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-white text-sm font-bold text-[var(--om-text-1)] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)] transition hover:bg-white/92 hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.4)]"
                     >
                       进入花园
                       <svg viewBox="0 0 12 12" className="h-3.5 w-3.5" fill="none" aria-hidden>

@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { withApprovalGuard } from "./withApprovalGuard.js";
-import { createMcpServerSchema, updateMcpServerSchema, listMcpServersSchema, deleteByIdWithApprovalSchema } from "@knowpilot/shared";
+import { createMcpServerSchema, updateMcpServerSchema, listMcpServersSchema, deleteByIdWithApprovalSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const mcpRouter = router({

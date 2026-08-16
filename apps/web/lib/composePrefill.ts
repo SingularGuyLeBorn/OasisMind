@@ -2,10 +2,10 @@
 
 /**
  * Chat 输入框草稿预填（工具结果「引用这段」等）
- * 同页用 CustomEvent；跨标签走 BroadcastChannel knowpilot-ui-state。
+ * 同页用 CustomEvent；跨标签走 BroadcastChannel oasismind-ui-state。
  */
 
-export const COMPOSE_PREFILL_EVENT = "knowpilot-compose-prefill";
+export const COMPOSE_PREFILL_EVENT = "oasismind-compose-prefill";
 
 export type ComposePrefillDetail = {
   text: string;
@@ -17,7 +17,7 @@ export function requestComposePrefill(text: string): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(COMPOSE_PREFILL_EVENT, { detail }));
     try {
-      const bc = new BroadcastChannel("knowpilot-ui-state");
+      const bc = new BroadcastChannel("oasismind-ui-state");
       bc.postMessage({ type: "compose_prefill", ...detail });
       bc.close();
     } catch {
@@ -26,7 +26,7 @@ export function requestComposePrefill(text: string): void {
   }
 }
 
-export const SAVE_TOOL_RESULT_EVENT = "knowpilot-save-tool-result";
+export const SAVE_TOOL_RESULT_EVENT = "oasismind-save-tool-result";
 
 export type SaveToolResultDetail = {
   sessionId: string;

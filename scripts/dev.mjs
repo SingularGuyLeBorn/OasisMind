@@ -40,7 +40,7 @@ function loadRootEnv() {
     loaded++;
   }
   const verbose = ["1", "true", "yes"].includes(
-    (process.env.KP_VERBOSE_BOOT || "").trim().toLowerCase(),
+    (process.env.OM_VERBOSE_BOOT || "").trim().toLowerCase(),
   );
   if (verbose) {
     console.log(`  ✅ 已加载根目录 .env：${loaded} 个键（文件覆盖）`);
@@ -75,7 +75,7 @@ const skipSync = process.argv.includes("--no-sync");
 const stableServer =
   process.argv.includes("--stable") ||
   process.argv.includes("--qq") ||
-  process.env.KP_SERVER_STABLE === "1";
+  process.env.OM_SERVER_STABLE === "1";
 const webScript = process.argv.includes("--remote") ? "dev:remote" : "dev";
 const serverScript = stableServer ? "dev:once" : "dev";
 
@@ -287,7 +287,7 @@ async function main() {
 
   if (!skipSync) {
     console.log("  📦 同步 content/ → SQLite（含 FTS）…\n");
-    await run(["--filter", "@knowpilot/server", "db:sync"]);
+    await run(["--filter", "@oasismind/server", "db:sync"]);
   }
 
   // 先清遗留 3010，避免 health 命中僵尸进程、新 server 绑定失败却误报「就绪」
@@ -297,11 +297,11 @@ async function main() {
 
   // server 意外退出（如未捕获异常/历史 Tesseract Worker 崩进程）自动拉起，不拖死整栈；
   // 指数退避无限重启：后端是核心，必须持续可用。
-  // --stable/--qq / KP_SERVER_STABLE=1：用 dev:once（无 tsx watch），QQ WS 不被热重载风暴打断。
+  // --stable/--qq / OM_SERVER_STABLE=1：用 dev:once（无 tsx watch），QQ WS 不被热重载风暴打断。
   if (stableServer) {
     console.log("  🔒 稳定模式：server 无热重载（改后端需手动重启；QQ 更稳）\n");
   }
-  spawnService("server", ["--filter", "@knowpilot/server", serverScript], {
+  spawnService("server", ["--filter", "@oasismind/server", serverScript], {
     fatal: false,
     restart: true,
     maxRestarts: Infinity,
@@ -310,7 +310,7 @@ async function main() {
 
   await killOrphanNextDev();
   // web 挂了自动重启，不拖死 server（多实例互杀时常见）
-  spawnService("web", ["--filter", "@knowpilot/web", webScript], {
+  spawnService("web", ["--filter", "@oasismind/web", webScript], {
     fatal: false,
     restart: true,
     maxRestarts: 5,
@@ -318,7 +318,7 @@ async function main() {
 
   if (!quick) {
     // sync watch 挂了只告警，不拖死整栈
-    spawnService("sync", ["--filter", "@knowpilot/server", "db:sync:watch"], { fatal: false });
+    spawnService("sync", ["--filter", "@oasismind/server", "db:sync:watch"], { fatal: false });
   }
 
   console.log("  ✅ 开发环境已就绪");

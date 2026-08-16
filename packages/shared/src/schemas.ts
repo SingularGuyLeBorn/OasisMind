@@ -1,5 +1,5 @@
 /**
- * @knowpilot/shared — 前后端共享 Zod Schema
+ * @oasismind/shared — 前后端共享 Zod Schema
  *
  * 所有 tRPC 输入验证的 schema 定义在这里，
  * 前端和后端共用同一份类型定义。

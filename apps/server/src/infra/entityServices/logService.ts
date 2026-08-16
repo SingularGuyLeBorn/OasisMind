@@ -2,7 +2,7 @@
  * Log 系统日志 Service（从 services.ts 拆出的叶子）。
  */
 
-import type { CreateLogInput, UpdateLogInput, ListLogsInput } from "@knowpilot/shared";
+import type { CreateLogInput, UpdateLogInput, ListLogsInput } from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 
 export class LogService extends BaseService<CreateLogInput, UpdateLogInput, ListLogsInput, any> {

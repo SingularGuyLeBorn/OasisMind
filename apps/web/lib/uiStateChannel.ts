@@ -2,7 +2,7 @@
  * 跨标签 UI 状态通道（推拉结合 · 浏览器侧 PUSH 兜底）
  * 主路径仍是服务端 SSE；本通道让无 SSE 的管理页（/cron 等）在同浏览器其它标签收到事件后立刻拉。
  */
-export const UI_STATE_CHANNEL = "knowpilot-ui-state";
+export const UI_STATE_CHANNEL = "oasismind-ui-state";
 
 export type UiStateChannelMessage = {
   type:

@@ -26,8 +26,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Agent } from "@knowpilot/shared";
-import { CHAT_MODELS, DEFAULT_LLM_MODEL, materializeAgentTools } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
+import { CHAT_MODELS, DEFAULT_LLM_MODEL, materializeAgentTools } from "@oasismind/shared";
 import { useAgent, useWorkspace } from "@/lib/hooks";
 import { useCardDensity, type CardDensity } from "@/lib/useCardDensity";
 import {
@@ -208,11 +208,11 @@ const AgentCard = memo(function AgentCard({
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
       className={cn(
-        "kp-card-premium kp-card-topline kp-card-sheen group relative overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color]",
+        "om-card-premium om-card-topline om-card-sheen group relative overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/55 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.22)] backdrop-blur-xl transition-[border-color,box-shadow,background-color]",
         density === "compact" ? "p-3" : "p-5",
         isSuper && "border-amber-200/55 bg-gradient-to-br from-amber-50/70 via-white/55 to-white/40",
-        selected && "border-[var(--kp-brand)]/45 bg-[color-mix(in_srgb,var(--kp-brand-soft)_55%,white)] shadow-[0_18px_48px_-16px_rgba(0,135,235,0.28)]",
-        !selected && "hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]",
+        selected && "border-[var(--om-brand)]/45 bg-[color-mix(in_srgb,var(--om-brand-soft)_55%,white)] shadow-[0_18px_48px_-16px_rgba(0,135,235,0.28)]",
+        !selected && "hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_22px_56px_-18px_rgba(0,135,235,0.32)]",
       )}
     >
       <div className={cn("flex items-start justify-between gap-3", density === "compact" ? "mb-2" : "mb-4")}>
@@ -224,7 +224,7 @@ const AgentCard = memo(function AgentCard({
                 type="checkbox"
                 checked={selected}
                 onChange={handleToggle}
-                className="h-4 w-4 rounded border-[var(--kp-divider)] text-[var(--kp-brand-deep)] focus:ring-[var(--kp-brand)]"
+                className="h-4 w-4 rounded border-[var(--om-divider)] text-[var(--om-brand-deep)] focus:ring-[var(--om-brand)]"
               />
             </label>
           )}
@@ -235,31 +235,31 @@ const AgentCard = memo(function AgentCard({
                 ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md shadow-amber-500/30"
                 : agent.tier === "manager"
                   ? "bg-blue-100 text-blue-600"
-                  : "bg-[var(--kp-bg-mute)]",
+                  : "bg-[var(--om-bg-mute)]",
             )}
           >
             {isSuper ? <Crown className="h-5 w-5" /> : agent.tier === "manager" ? <ShieldCheck className="h-5 w-5" /> : <AgentAvatar id={agent.id} name={agent.name} size={44} />}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-[var(--kp-text-1)]">{agent.name}</h3>
+              <h3 className="font-bold text-[var(--om-text-1)]">{agent.name}</h3>
               {isSuper ? (
-                <span className="kp-badge kp-badge-warning">
+                <span className="om-badge om-badge-warning">
                   <Lock className="h-2.5 w-2.5" />
                   超级 · 受保护
                 </span>
               ) : agent.tier === "manager" ? (
-                <span className="kp-badge kp-badge-info">管理</span>
+                <span className="om-badge om-badge-info">管理</span>
               ) : null}
               {agent.status === "deleted" && (
-                <span className="kp-badge" style={{ background: "rgba(107, 114, 128, 0.1)", color: "#6b7280" }}>已删除</span>
+                <span className="om-badge" style={{ background: "rgba(107, 114, 128, 0.1)", color: "#6b7280" }}>已删除</span>
               )}
               {agent.status === "dormant" && (
-                <span className="kp-badge" style={{ background: "rgba(107, 114, 128, 0.08)", color: "#9ca3af" }}>休眠</span>
+                <span className="om-badge" style={{ background: "rgba(107, 114, 128, 0.08)", color: "#9ca3af" }}>休眠</span>
               )}
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-1">
-              <span className="kp-badge" style={{ background: "var(--kp-bg-mute)", color: "var(--kp-text-2)" }}>
+              <span className="om-badge" style={{ background: "var(--om-bg-mute)", color: "var(--om-text-2)" }}>
                 <Cpu className="h-2.5 w-2.5" />
                 {agent.model}
               </span>
@@ -268,11 +268,11 @@ const AgentCard = memo(function AgentCard({
         </div>
       </div>
 
-      <p className={cn("min-h-[36px] text-xs leading-relaxed text-[var(--kp-text-3)]", density === "compact" ? "mb-2" : "mb-4")}>{agent.description || "暂无描述"}</p>
+      <p className={cn("min-h-[36px] text-xs leading-relaxed text-[var(--om-text-3)]", density === "compact" ? "mb-2" : "mb-4")}>{agent.description || "暂无描述"}</p>
 
       {/* Workspace 归属 */}
       {agent.workspaceId && (
-        <div className={cn("flex items-center gap-1.5 text-[10px] text-[var(--kp-text-3)]", density === "compact" ? "mb-1.5" : "mb-3")}>
+        <div className={cn("flex items-center gap-1.5 text-[10px] text-[var(--om-text-3)]", density === "compact" ? "mb-1.5" : "mb-3")}>
           <Folder className="h-3 w-3" />
           <span>Workspace: {workspaceName || "未命名空间"}</span>
         </div>
@@ -306,32 +306,32 @@ const AgentCard = memo(function AgentCard({
               <HeartPulse className="h-3.5 w-3.5 shrink-0" />
               <span>心跳已开启</span>
               {suspended && (
-                <span className="kp-badge kp-badge-warning">已熔断暂停</span>
+                <span className="om-badge om-badge-warning">已熔断暂停</span>
               )}
               {failed && !suspended && (
-                <span className="kp-badge kp-badge-danger">连续失败 ×{hb.consecutiveFailures}</span>
+                <span className="om-badge om-badge-danger">连续失败 ×{hb.consecutiveFailures}</span>
               )}
             </div>
             <div className="space-y-0.5 text-[10px] leading-relaxed opacity-90">
               <div>
-                <span className="text-[var(--kp-text-3)]">频率 </span>
+                <span className="text-[var(--om-text-3)]">频率 </span>
                 {formatHeartbeatCron(hb.cron)}
                 <span className="ml-1 font-mono text-[9px] opacity-70">({hb.cron})</span>
               </div>
               {agent.heartbeatModel && (
                 <div>
-                  <span className="text-[var(--kp-text-3)]">心跳模型 </span>
+                  <span className="text-[var(--om-text-3)]">心跳模型 </span>
                   {agent.heartbeatModel}
                 </div>
               )}
               {hb.goal?.trim() && (
                 <div className="truncate" title={hb.goal}>
-                  <span className="text-[var(--kp-text-3)]">目标 </span>
+                  <span className="text-[var(--om-text-3)]">目标 </span>
                   {hb.goal.trim()}
                 </div>
               )}
               <div>
-                <span className="text-[var(--kp-text-3)]">上次 </span>
+                <span className="text-[var(--om-text-3)]">上次 </span>
                 {formatHeartbeatLastRun(hb.lastRunAt)}
                 {hb.lastRunStatus
                   ? ` · ${
@@ -345,12 +345,12 @@ const AgentCard = memo(function AgentCard({
               </div>
               {hb.decision?.lastMode && (
                 <div data-testid="agent-heartbeat-decision">
-                  <span className="text-[var(--kp-text-3)]">决策 </span>
+                  <span className="text-[var(--om-text-3)]">决策 </span>
                   <span className="font-mono text-[9px]">
                     {toPascalCaseId(hb.decision.lastMode)}
                   </span>
                   {(hb.decision.skipRemaining ?? 0) > 0 && (
-                    <span className="ml-1 rounded-full bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[9px]">
+                    <span className="ml-1 rounded-full bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[9px]">
                       Skip {hb.decision.skipRemaining}
                     </span>
                   )}
@@ -371,14 +371,14 @@ const AgentCard = memo(function AgentCard({
         );
       })()}
 
-      <div className={cn("space-y-1 border-t border-[var(--kp-divider)] pt-3", density === "compact" ? "mb-2" : "mb-4")}>
+      <div className={cn("space-y-1 border-t border-[var(--om-divider)] pt-3", density === "compact" ? "mb-2" : "mb-4")}>
         <AgentToolSummaryCard tools={agent.tools ?? []} />
       </div>
 
       <div className="flex gap-2">
         <Link
           href={`/chat?agentId=${agent.id}`}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--kp-brand)] py-2 text-xs font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)]"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--om-brand)] py-2 text-xs font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)]"
         >
           <MessageSquare className="h-3.5 w-3.5" />
           对话
@@ -386,7 +386,7 @@ const AgentCard = memo(function AgentCard({
         <button
           type="button"
           onClick={handleEdit}
-          className="rounded-full border border-white/70 bg-white/70 px-3.5 py-2 text-xs font-medium text-[var(--kp-text-2)] backdrop-blur-md transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
+          className="rounded-full border border-white/70 bg-white/70 px-3.5 py-2 text-xs font-medium text-[var(--om-text-2)] backdrop-blur-md transition hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
         >
           配置
         </button>
@@ -595,38 +595,38 @@ export default function AgentsPage() {
 
   if (view === "edit") {
     return (
-      <AdminFormShell className="kp-force-light kp-home-surface !max-w-7xl !bg-transparent">
+      <AdminFormShell className="om-force-light om-home-surface !max-w-7xl !bg-transparent">
         <HomeAmbientBackground density="lite" />
         <button
           type="button"
           onClick={() => setView("list")}
-          className="relative inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-3 py-1.5 text-sm text-[var(--kp-text-2)] shadow-sm backdrop-blur-md transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
+          className="relative inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-3 py-1.5 text-sm text-[var(--om-text-2)] shadow-sm backdrop-blur-md transition hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
         >
           <ChevronLeft className="h-4 w-4" />
           返回列表
         </button>
 
         <div className="relative">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Agent Studio
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--kp-text-1)]">
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--om-text-1)]">
             {editingId ? "编辑" : "新建"} <CurlyMark>Agent</CurlyMark>
           </h1>
-          <p className="mt-1.5 text-sm text-[var(--kp-text-2)]">
+          <p className="mt-1.5 text-sm text-[var(--om-text-2)]">
             配置模型、System Prompt、工具授权与心跳。Chat 页可会话级覆盖 Prompt。
           </p>
         </div>
 
         <div className="relative grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="kp-card-topline kp-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
+          <div className="om-card-topline om-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">名称</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">名称</label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="assistant" />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">描述</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">描述</label>
                 <Input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -634,7 +634,7 @@ export default function AgentsPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">默认模型</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">默认模型</label>
                 <KpSelect
                   value={form.model}
                   onChange={(model) => setForm({ ...form, model })}
@@ -645,30 +645,30 @@ export default function AgentsPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">System Prompt</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">System Prompt</label>
               <textarea
                 value={form.systemPrompt}
                 onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })}
                 rows={10}
-                className="w-full resize-y rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand)]"
+                className="w-full resize-y rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand)]"
                 placeholder="定义 Agent 角色与行为。留空则仅依赖模型默认能力。"
               />
               {!form.systemPrompt.trim() && (
-                <p className="mt-1.5 text-[11px] text-[var(--kp-text-3)]">当前为空。可在 Markdown 源文件或此处填写系统提示词。</p>
+                <p className="mt-1.5 text-[11px] text-[var(--om-text-3)]">当前为空。可在 Markdown 源文件或此处填写系统提示词。</p>
               )}
             </div>
             {/* 心跳配置 */}
-            <div className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-4">
+            <div className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <HeartPulse className="h-4 w-4 text-[var(--kp-brand-deep)]" />
-                  <span className="text-xs font-medium text-[var(--kp-text-1)]">心跳（定时自主运行）</span>
+                  <HeartPulse className="h-4 w-4 text-[var(--om-brand-deep)]" />
+                  <span className="text-xs font-medium text-[var(--om-text-1)]">心跳（定时自主运行）</span>
                   <span
                     className={cn(
                       "rounded px-1.5 py-0.5 text-[10px] font-medium",
                       form.heartbeatEnabled
                         ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
-                        : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+                        : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
                     )}
                   >
                     {form.heartbeatEnabled ? "已开启" : "已关闭"}
@@ -691,7 +691,7 @@ export default function AgentsPage() {
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2",
                     form.heartbeatEnabled
                       ? "bg-emerald-600"
-                      : "bg-[var(--kp-bg-mute)] ring-1 ring-inset ring-[var(--kp-divider)]",
+                      : "bg-[var(--om-bg-mute)] ring-1 ring-inset ring-[var(--om-divider)]",
                   )}
                 >
                   <span
@@ -705,7 +705,7 @@ export default function AgentsPage() {
               {form.heartbeatEnabled && (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-[11px] text-[var(--kp-text-3)]">触发频率</label>
+                    <label className="mb-1 block text-[11px] text-[var(--om-text-3)]">触发频率</label>
                     <KpSelect
                       value={HEARTBEAT_CRON_PRESETS.some((p) => p.value === form.heartbeatCron) ? form.heartbeatCron : "custom"}
                       onChange={(v) => v !== "custom" && setForm({ ...form, heartbeatCron: v })}
@@ -724,7 +724,7 @@ export default function AgentsPage() {
                       placeholder="cron 表达式，如 0 9 * * *"
                       className="mt-1.5 font-mono text-xs"
                     />
-                    <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">
+                    <p className="mt-1 text-[10px] text-[var(--om-text-3)]">
                       当前：{formatHeartbeatCron(form.heartbeatCron)}
                       {HEARTBEAT_CRON_PRESETS.every((p) => p.value !== form.heartbeatCron) &&
                         formatHeartbeatCron(form.heartbeatCron) !== form.heartbeatCron && (
@@ -733,7 +733,7 @@ export default function AgentsPage() {
                     </p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] text-[var(--kp-text-3)]">心跳模型（可选）</label>
+                    <label className="mb-1 block text-[11px] text-[var(--om-text-3)]">心跳模型（可选）</label>
                     <KpSelect
                       value={form.heartbeatModel || "__default__"}
                       onChange={(v) =>
@@ -748,22 +748,22 @@ export default function AgentsPage() {
                       className="w-full"
                       aria-label="心跳模型"
                     />
-                    <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">
+                    <p className="mt-1 text-[10px] text-[var(--om-text-3)]">
                       可用更便宜的模型跑定时巡检，省主对话配额。
                     </p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] text-[var(--kp-text-3)]">心跳目标（触发时发给 Agent 的任务）</label>
+                    <label className="mb-1 block text-[11px] text-[var(--om-text-3)]">心跳目标（触发时发给 Agent 的任务）</label>
                     <textarea
                       value={form.heartbeatGoal}
                       onChange={(e) => setForm({ ...form, heartbeatGoal: e.target.value })}
                       rows={4}
-                      className="w-full resize-y rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand)]"
+                      className="w-full resize-y rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand)]"
                       placeholder="例：检查信息源更新并整理新文章"
                     />
                   </div>
                   {(heartbeatMeta.lastRunAt || heartbeatMeta.consecutiveFailures > 0) && (
-                    <p className="text-[11px] text-[var(--kp-text-3)]">
+                    <p className="text-[11px] text-[var(--om-text-3)]">
                       上次运行：{formatHeartbeatLastRun(heartbeatMeta.lastRunAt)} ·{" "}
                       {heartbeatMeta.lastRunStatus === "success" ? "成功" : heartbeatMeta.lastRunStatus ?? "未知"}
                       {heartbeatMeta.consecutiveFailures > 0 && ` · 连续失败 ${heartbeatMeta.consecutiveFailures} 次`}
@@ -776,9 +776,9 @@ export default function AgentsPage() {
             </div>
           </div>
 
-          <div className="kp-card-topline kp-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
+          <div className="om-card-topline om-card-sheen space-y-4 rounded-[1.5rem] border border-white/55 bg-white/55 p-5 shadow-[0_16px_48px_-20px_rgba(0,80,160,0.2)] backdrop-blur-xl md:p-6">
             <div>
-              <label className="mb-2 block text-xs font-medium text-[var(--kp-text-3)]">工具授权</label>
+              <label className="mb-2 block text-xs font-medium text-[var(--om-text-3)]">工具授权</label>
               <AgentToolsEditor tools={form.tools} onChange={(tools) => setForm({ ...form, tools })} />
             </div>
           </div>
@@ -789,7 +789,7 @@ export default function AgentsPage() {
             type="button"
             onClick={() => { handleSave().catch(catchUnlessCancelled("app/agents/page.tsx")); }}
             disabled={createMutation.isPending || updateMutation.isPending}
-            className="inline-flex items-center rounded-full bg-[var(--kp-brand)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)] disabled:opacity-60"
+            className="inline-flex items-center rounded-full bg-[var(--om-brand)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)] disabled:opacity-60"
           >
             {editingId ? "保存修改" : "创建 Agent"}
           </button>
@@ -825,22 +825,22 @@ export default function AgentsPage() {
   }
 
   return (
-    <AdminPage className="kp-force-light kp-home-surface !max-w-7xl !bg-transparent">
+    <AdminPage className="om-force-light om-home-surface !max-w-7xl !bg-transparent">
       <HomeAmbientBackground density="lite" />
 
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Agent Studio
           </p>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/55 px-3 py-1 text-xs font-medium text-[var(--kp-text-2)] shadow-sm backdrop-blur-md">
-            <Bot className="h-3.5 w-3.5 text-[var(--kp-brand)]" />
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/55 px-3 py-1 text-xs font-medium text-[var(--om-text-2)] shadow-sm backdrop-blur-md">
+            <Bot className="h-3.5 w-3.5 text-[var(--om-brand)]" />
             Swarm · 编排
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--om-text-1)] md:text-4xl">
             我的 <CurlyMark>Agents</CurlyMark>
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-[var(--kp-text-2)]">
+          <p className="mt-2 max-w-xl text-sm text-[var(--om-text-2)]">
             选择一个 Agent 开始对话，或配置模型、Prompt、工具与心跳。
           </p>
         </div>
@@ -849,7 +849,7 @@ export default function AgentsPage() {
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--kp-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--kp-brand-dark)]"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--om-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)]"
           >
             <Plus className="h-4 w-4" />
             新建 Agent
@@ -876,14 +876,14 @@ export default function AgentsPage() {
         />
       )}
 
-      <div className="kp-card-topline relative flex items-start gap-2 rounded-[1.25rem] border border-white/55 bg-white/55 px-3.5 py-2.5 text-xs text-[var(--kp-text-2)] shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+      <div className="om-card-topline relative flex items-start gap-2 rounded-[1.25rem] border border-white/55 bg-white/55 px-3.5 py-2.5 text-xs text-[var(--om-text-2)] shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
         <div>
-          <span className="font-medium text-[var(--kp-text-1)]">心跳：</span>
+          <span className="font-medium text-[var(--om-text-1)]">心跳：</span>
           卡片展示频率、目标与上次运行。配置在「配置」页；系统定时脚本见
-          <Link href="/tasks" className="mx-1 text-[var(--kp-brand)] hover:underline">/tasks</Link>
+          <Link href="/tasks" className="mx-1 text-[var(--om-brand)] hover:underline">/tasks</Link>
           ，运行记录见
-          <Link href="/runs" className="mx-1 text-[var(--kp-brand)] hover:underline">/runs</Link>
+          <Link href="/runs" className="mx-1 text-[var(--om-brand)] hover:underline">/runs</Link>
           。说明见
           <code className="mx-1 rounded-md border border-white/60 bg-white/70 px-1 py-0.5">docs/development/scheduled-tasks-and-heartbeat.md</code>。
         </div>
@@ -892,7 +892,7 @@ export default function AgentsPage() {
       <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2 rounded-[1.25rem] border border-white/55 bg-white/45 p-2 shadow-[0_10px_28px_-16px_rgba(0,80,160,0.16)] backdrop-blur-xl">
           <div className="relative w-full max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
             <Input
               value={searchInput}
               onChange={(e) => { setSearchInput(e.target.value); clearSelection(); }}
@@ -904,7 +904,7 @@ export default function AgentsPage() {
               <button
                 type="button"
                 onClick={() => setSearchInput("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--kp-text-3)] hover:bg-white/80"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--om-text-3)] hover:bg-white/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -928,7 +928,7 @@ export default function AgentsPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1 rounded-full border border-[var(--kp-divider)] px-2.5 py-1.5 text-xs text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--om-divider)] px-2.5 py-1.5 text-xs text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
             >
               <X className="h-3 w-3" />
               清空筛选
@@ -942,7 +942,7 @@ export default function AgentsPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="flex items-center gap-2"
           >
-            <span className="text-xs text-[var(--kp-text-3)]">已选 {selectedIds.size} 项</span>
+            <span className="text-xs text-[var(--om-text-3)]">已选 {selectedIds.size} 项</span>
             <Button
               variant="destructive"
               size="sm"
@@ -969,12 +969,12 @@ export default function AgentsPage() {
       ) : (
         <>
           <div className="flex items-center gap-2 px-1">
-            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-[var(--kp-text-3)]">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-[var(--om-text-3)]">
               <input
                 type="checkbox"
                 checked={selectedIds.size === sortedItems.length && sortedItems.length > 0}
                 onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-[var(--kp-divider)] text-[var(--kp-brand-deep)] focus:ring-[var(--kp-brand)]"
+                className="h-4 w-4 rounded border-[var(--om-divider)] text-[var(--om-brand-deep)] focus:ring-[var(--om-brand)]"
               />
               全选本页
             </label>

@@ -15,8 +15,8 @@ import { ServiceContainer } from "../infra/serviceContainer.js";
 import { createMemoryRepository } from "../infra/memoryRepository.js";
 import { distillExperienceToProcedural } from "../infra/agentEvolution.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
-import { MEMORY_TYPES, memoryAgentScope } from "@knowpilot/shared";
-import { registerMockLlmScenario } from "@knowpilot/mock-llm-core";
+import { MEMORY_TYPES, memoryAgentScope } from "@oasismind/shared";
+import { registerMockLlmScenario } from "@oasismind/mock-llm-core";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -111,7 +111,7 @@ describe("distillExperienceToProcedural", () => {
   const createdAgentIds: string[] = [];
 
   beforeAll(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-experience-distill-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "om-experience-distill-"));
     process.env.MOCK_LLM = "true";
   });
 

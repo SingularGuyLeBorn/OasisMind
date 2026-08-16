@@ -275,8 +275,8 @@ export const AgentAvatarPicker = memo(function AgentAvatarPicker({
             className={cn(
               "rounded-full p-0.5 transition",
               selected
-                ? "ring-2 ring-[var(--kp-brand)] ring-offset-1 ring-offset-[var(--kp-bg)]"
-                : "hover:bg-[var(--kp-bg-mute)]",
+                ? "ring-2 ring-[var(--om-brand)] ring-offset-1 ring-offset-[var(--om-bg)]"
+                : "hover:bg-[var(--om-bg-mute)]",
             )}
             aria-label={`头像 ${i + 1}`}
           >

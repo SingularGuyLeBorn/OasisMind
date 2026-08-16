@@ -3,7 +3,7 @@
  * PR-4a：fs / web / shell；PR-4b：swarm / session / memory；PR-4c：integration。
  * 由 nativeTools.ensureNativeToolsRegistered 调用；按 AppConfig.packs 跳过未启用域。
  */
-import { domainAllowed, type PackFlags } from "@knowpilot/shared";
+import { domainAllowed, type PackFlags } from "@oasismind/shared";
 import { registerFsTools } from "./fs.js";
 import { registerWebTools } from "./web/register.js";
 import { registerDokobotTools } from "./dokobot.js";

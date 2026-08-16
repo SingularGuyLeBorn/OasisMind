@@ -1,6 +1,6 @@
 # PaddleOCR 本地识别（来自 MetaBlog）
 
-KnowPilot Chat / `read_article` 图片 OCR 通过 Node 子进程调用 `paddleocr_cli.py`。
+OasisMind Chat / `read_article` 图片 OCR 通过 Node 子进程调用 `paddleocr_cli.py`。
 
 ## 目录
 

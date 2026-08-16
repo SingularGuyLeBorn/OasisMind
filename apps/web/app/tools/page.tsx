@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Tool } from "@knowpilot/shared";
+import type { Tool } from "@oasismind/shared";
 import { useTool, useNativeCapabilities } from "@/lib/hooks";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { EmptyState, KpSelect, LoadingState, ConfirmDialog, Pagination, NativeCapabilitiesPanel, PageHeader } from "@/components/shared";
@@ -215,11 +215,11 @@ export default function ToolsPage() {
 
   if (view === "edit") {
     return (
-      <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8">
+      <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8">
         <button
           type="button"
           onClick={() => setView("list")}
-          className="mb-6 flex items-center gap-1 text-sm text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+          className="mb-6 flex items-center gap-1 text-sm text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
         >
           <ChevronLeft className="h-4 w-4" />
           返回工具列表
@@ -227,29 +227,29 @@ export default function ToolsPage() {
 
         <div className="mx-auto w-full max-w-[1400px] space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--kp-text-1)]">
+            <h1 className="text-2xl font-bold text-[var(--om-text-1)]">
               {editingId ? "编辑工具注册" : "注册新工具"}
             </h1>
-            <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+            <p className="mt-1 text-sm text-[var(--om-text-3)]">
               登记 Native / Skill / MCP 工具元数据，供 Agent 授权与 ai.tools 反射发现。Native 实现仍由
               nativeTools.ts 提供，此处为配置与文档层。
             </p>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-6">
+          <div className="space-y-4 rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-6">
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">工具名称</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">工具名称</label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="web_search"
               />
-              <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">全局唯一，Agent 授权时使用 native:名称 等形式。</p>
+              <p className="mt-1 text-[10px] text-[var(--om-text-3)]">全局唯一，Agent 授权时使用 native:名称 等形式。</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">类型</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">类型</label>
                 <KpSelect
                   value={form.type}
                   onChange={(type) => setForm({ ...form, type: type as Tool["type"], targetId: "" })}
@@ -259,7 +259,7 @@ export default function ToolsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">
+                <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">
                   {form.type === "native" ? "内置工具" : form.type === "skill" ? "绑定 Skill" : "绑定 MCP 服务"}
                 </label>
                 {form.type === "native" ? (
@@ -294,18 +294,18 @@ export default function ToolsPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">描述</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">描述</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={3}
-                className="w-full resize-none rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand)]"
+                className="w-full resize-none rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand)]"
                 placeholder="说明该工具的用途、限制与典型场景"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--kp-text-3)]">
+              <label className="mb-1 block text-xs font-medium text-[var(--om-text-3)]">
                 参数 Schema（JSON）
               </label>
               <textarea
@@ -318,8 +318,8 @@ export default function ToolsPage() {
                 rows={10}
                 spellCheck={false}
                 className={cn(
-                  "w-full resize-y rounded-xl border bg-[var(--kp-bg)] px-3 py-2 font-mono text-xs outline-none focus:border-[var(--kp-brand)]",
-                  schemaError ? "border-red-400" : "border-[var(--kp-divider)]",
+                  "w-full resize-y rounded-xl border bg-[var(--om-bg)] px-3 py-2 font-mono text-xs outline-none focus:border-[var(--om-brand)]",
+                  schemaError ? "border-red-400" : "border-[var(--om-divider)]",
                 )}
                 placeholder='{"type":"object","properties":{...}}'
               />
@@ -328,19 +328,19 @@ export default function ToolsPage() {
                 <button
                   type="button"
                   onClick={() => applyNativeTemplate(form.targetId)}
-                  className="mt-2 text-xs text-[var(--kp-brand-deep)] hover:underline"
+                  className="mt-2 text-xs text-[var(--om-brand-deep)] hover:underline"
                 >
                   从内置工具「{form.targetId}」重新填充 Schema
                 </button>
               )}
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--kp-text-2)]">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--om-text-2)]">
               <input
                 type="checkbox"
                 checked={form.enabled}
                 onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-                className="rounded accent-[var(--kp-brand)]"
+                className="rounded accent-[var(--om-brand)]"
               />
               启用此工具注册
             </label>
@@ -376,7 +376,7 @@ export default function ToolsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={Wrench}
         title="Tools 工具目录"
@@ -392,7 +392,7 @@ export default function ToolsPage() {
 
       <div className="flex flex-wrap gap-2">
         <div className="relative min-w-[200px] flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -441,18 +441,18 @@ export default function ToolsPage() {
                   key={tool.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.04 } }}
-                  className="kp-card-premium kp-lift group relative rounded-2xl p-5"
+                  className="om-card-premium om-lift group relative rounded-2xl p-5"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                         <Icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-[var(--kp-text-1)]">
+                        <h3 className="font-bold text-[var(--om-text-1)]">
                           {formatToolDisplayName(tool.name)}
                         </h3>
-                        <span className="text-[10px] text-[var(--kp-text-3)]">{TYPE_LABELS[tool.type]}</span>
+                        <span className="text-[10px] text-[var(--om-text-3)]">{TYPE_LABELS[tool.type]}</span>
                       </div>
                     </div>
                     <button
@@ -464,13 +464,13 @@ export default function ToolsPage() {
                     </button>
                   </div>
 
-                  <p className="mb-3 min-h-[32px] text-xs leading-relaxed text-[var(--kp-text-3)] line-clamp-2">
+                  <p className="mb-3 min-h-[32px] text-xs leading-relaxed text-[var(--om-text-3)] line-clamp-2">
                     {tool.description || "无描述"}
                   </p>
 
                   {tool.targetId && (
                     <p
-                      className="mb-3 flex items-center gap-1 truncate text-[10px] text-[var(--kp-text-3)]"
+                      className="mb-3 flex items-center gap-1 truncate text-[10px] text-[var(--om-text-3)]"
                       title={tool.targetId}
                     >
                       <Link2 className="h-3 w-3 shrink-0" />
@@ -478,7 +478,7 @@ export default function ToolsPage() {
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between border-t border-[var(--kp-divider)] pt-3">
+                  <div className="flex items-center justify-between border-t border-[var(--om-divider)] pt-3">
                     <button
                       type="button"
                       onClick={() => toggleEnabled(tool)}
@@ -494,7 +494,7 @@ export default function ToolsPage() {
                     <button
                       type="button"
                       onClick={() => openEdit(tool)}
-                      className="rounded-xl border border-[var(--kp-divider)] px-3 py-1.5 text-xs text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                      className="rounded-xl border border-[var(--om-divider)] px-3 py-1.5 text-xs text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                     >
                       编辑
                     </button>

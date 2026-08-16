@@ -565,7 +565,7 @@ export async function extractTextFromImage(
 
   const ext =
     mime.includes("png") ? ".png" : mime.includes("webp") ? ".webp" : mime.includes("gif") ? ".gif" : ".jpg";
-  const tempPath = path.join(os.tmpdir(), `kp-ocr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+  const tempPath = path.join(os.tmpdir(), `om-ocr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
 
   try {
     fs.writeFileSync(tempPath, buffer);

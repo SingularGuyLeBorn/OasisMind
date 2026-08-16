@@ -2,7 +2,7 @@
  * native tRPC 子路由（从 router.ts 拆出的叶子）。
  */
 
-import { webSearchSchema, nativeExecuteSchema } from "@knowpilot/shared";
+import { webSearchSchema, nativeExecuteSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { listNativeTools, executeNativeTool } from "../nativeTools.js";
 import { createTrpcInvoker } from "../trpcInvoker.js";

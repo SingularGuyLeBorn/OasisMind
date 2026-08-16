@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_POST_GARDEN, type OperationResult, type Post } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN, type OperationResult, type Post } from "@oasismind/shared";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 /** 文章 mutation：创建/更新/删除后统一刷新相关 query（叶子，勿经 hooks 大桶） */

@@ -1,6 +1,6 @@
 /**
  * 清理 Vitest / E2E smoke 残留在 content/ 与 dev.db 中的实体
- * 用法: pnpm --filter @knowpilot/server cleanup:smoke-artifacts
+ * 用法: pnpm --filter @oasismind/server cleanup:smoke-artifacts
  */
 import { PrismaClient } from "@prisma/client";
 import { cleanupSmokeArtifacts } from "../infra/cleanupSmokeArtifacts.js";

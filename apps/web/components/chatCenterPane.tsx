@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { type ChatSession, type ChatSessionConfig, type Skill } from "@knowpilot/shared";
+import { type ChatSession, type ChatSessionConfig, type Skill } from "@oasismind/shared";
 import { buttonVariants } from "@/components/ui/button";
 import { SessionContextBar } from "@/components/sessionContextUsage";
 import { ChatInputArea, type SelectedSkill } from "@/components/chatInput";
@@ -186,8 +186,8 @@ export function ChatCenterPane({
   const activeEditingId = editingQueueItem?.id ?? null;
   const { messages, messageGroups } = messageListProps;
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--kp-bg)]">
-      <header className="flex items-center gap-2 border-b border-[var(--kp-divider)] bg-[var(--kp-glass-bg)] px-4 py-2.5 backdrop-blur-sm">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--om-bg)]">
+      <header className="flex items-center gap-2 border-b border-[var(--om-divider)] bg-[var(--om-glass-bg)] px-4 py-2.5 backdrop-blur-sm">
         <button
           type="button"
           onClick={() => setLeftOpen((v) => !v)}
@@ -202,19 +202,19 @@ export function ChatCenterPane({
         >
           <PanelLeft className="h-5 w-5 md:h-4 md:w-4" />
         </button>
-        <span className="kp-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+        <span className="om-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
           <Bot className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-sm font-semibold text-[var(--kp-text-1)]">
+            <h1 className="truncate text-sm font-semibold text-[var(--om-text-1)]">
               {sessionDetail?.autoName || sessionDetail?.title || "Agent 对话"}
             </h1>
             {isLoadingOlderMessages && !isStreaming && (
-              <Loader2 className="h-3 w-3 animate-spin text-[var(--kp-text-3)]" />
+              <Loader2 className="h-3 w-3 animate-spin text-[var(--om-text-3)]" />
             )}
           </div>
-          <p className="truncate text-xs text-[var(--kp-text-3)]">
+          <p className="truncate text-xs text-[var(--om-text-3)]">
             {selectedAgentName ?? "—"} · {chatConfigModel}
             {queueLength > 0 && ` · 队列 ${queueLength}`}
           </p>
@@ -255,10 +255,10 @@ export function ChatCenterPane({
       {isSubagentSession && (
         <div
           data-testid="subagent-context-bar"
-          className="flex items-center gap-2 border-b border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/40 px-4 py-1.5 text-xs"
+          className="flex items-center gap-2 border-b border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/40 px-4 py-1.5 text-xs"
         >
-          <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
-          <span className="font-medium text-[var(--kp-brand-deep)]">子 Agent 任务</span>
+          <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
+          <span className="font-medium text-[var(--om-brand-deep)]">子 Agent 任务</span>
           {sessionDetail?.status && (
             <span
               className={cn(
@@ -282,14 +282,14 @@ export function ChatCenterPane({
             </span>
           )}
           {sessionDetail?.taskDescription && (
-            <span className="min-w-0 flex-1 truncate text-[var(--kp-text-2)]">
+            <span className="min-w-0 flex-1 truncate text-[var(--om-text-2)]">
               {sessionDetail.taskDescription}
             </span>
           )}
           {parentSessionId && (
             <Link
               href={`/chat?sessionId=${parentSessionId}`}
-              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
               title="返回父会话"
             >
               <ArrowLeft className="h-3 w-3" />
@@ -303,17 +303,17 @@ export function ChatCenterPane({
       {!isSubagentSession && rotateLineage && rotateLineage.nodes.length > 1 && (
         <div
           data-testid="session-rotate-lineage-bar"
-          className="flex flex-wrap items-center gap-1 border-b border-[var(--kp-divider)] bg-[color-mix(in_srgb,var(--kp-bg)_90%,var(--kp-brand-soft))] px-4 py-1.5 text-[11px] text-[var(--kp-text-2)]"
+          className="flex flex-wrap items-center gap-1 border-b border-[var(--om-divider)] bg-[color-mix(in_srgb,var(--om-bg)_90%,var(--om-brand-soft))] px-4 py-1.5 text-[11px] text-[var(--om-text-2)]"
         >
-          <span className="mr-1 shrink-0 text-[var(--kp-text-3)]">轮换链</span>
+          <span className="mr-1 shrink-0 text-[var(--om-text-3)]">轮换链</span>
           {rotateLineage.nodes.map((n, i) => {
             const current = i === rotateLineage.currentIndex;
             return (
               <span key={n.id} className="inline-flex items-center gap-1">
-                {i > 0 && <span className="text-[var(--kp-text-3)]" aria-hidden>→</span>}
+                {i > 0 && <span className="text-[var(--om-text-3)]" aria-hidden>→</span>}
                 {current ? (
                   <span
-                    className="rounded-md bg-[var(--kp-brand-soft)] px-1.5 py-0.5 font-medium text-[var(--kp-brand-deep)]"
+                    className="rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 font-medium text-[var(--om-brand-deep)]"
                     title="当前会话"
                   >
                     {n.label}
@@ -321,7 +321,7 @@ export function ChatCenterPane({
                 ) : (
                   <Link
                     href={`/chat?sessionId=${n.id}`}
-                    className="rounded-md px-1.5 py-0.5 font-medium text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                    className="rounded-md px-1.5 py-0.5 font-medium text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                     title={`打开：${n.label}`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -338,7 +338,7 @@ export function ChatCenterPane({
       )}
 
       {effectiveSessionId && sessionDetail && (
-        <div className="flex border-b border-[var(--kp-divider)] px-4 py-2 lg:hidden">
+        <div className="flex border-b border-[var(--om-divider)] px-4 py-2 lg:hidden">
           <SessionContextBar
             messages={messages}
             systemPrompt={chatConfigSystemPrompt}
@@ -375,7 +375,7 @@ export function ChatCenterPane({
       {(rotateBanner || (sessionDetail?.status === "archived" && sessionDetail.rotatedToSessionId)) && (
         <div
           data-testid="session-rotate-banner"
-          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/40 px-3 py-2 text-xs text-[var(--kp-brand-deep)]"
+          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/40 px-3 py-2 text-xs text-[var(--om-brand-deep)]"
         >
           <span className="min-w-0 flex-1 truncate">
             新 session 已创建：
@@ -383,7 +383,7 @@ export function ChatCenterPane({
           </span>
           <button
             type="button"
-            className="shrink-0 rounded-md bg-[var(--kp-brand-deep)] px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90"
+            className="shrink-0 rounded-md bg-[var(--om-brand-deep)] px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90"
             onClick={() => {
               const id = rotateBanner?.newSessionId ?? sessionDetail?.rotatedToSessionId;
               if (!id) return;
@@ -396,7 +396,7 @@ export function ChatCenterPane({
           {rotateBanner && (
             <button
               type="button"
-              className="shrink-0 rounded-md px-1.5 py-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="shrink-0 rounded-md px-1.5 py-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
               aria-label="关闭提示"
               onClick={() => setRotateBanner(null)}
             >
@@ -469,8 +469,8 @@ export function ChatCenterPane({
       )}
 
       <div
-        className="relative z-30 border-t border-[var(--kp-divider-light)] bg-[color-mix(in_srgb,var(--kp-bg)_92%,var(--kp-brand-soft))] px-4 pt-3 pb-3 md:px-6"
-        style={{ paddingBottom: "max(0.75rem, calc(0.75rem + var(--kp-keyboard-inset, 0px)))" }}
+        className="relative z-30 border-t border-[var(--om-divider-light)] bg-[color-mix(in_srgb,var(--om-bg)_92%,var(--om-brand-soft))] px-4 pt-3 pb-3 md:px-6"
+        style={{ paddingBottom: "max(0.75rem, calc(0.75rem + var(--om-keyboard-inset, 0px)))" }}
       >
         <SessionAskUserBar sessionId={effectiveSessionId} />
         <SessionArtifactsStrip sessionId={effectiveSessionId} />

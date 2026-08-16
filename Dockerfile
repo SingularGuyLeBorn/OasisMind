@@ -1,4 +1,4 @@
-# KnowPilot — 单容器运行 Web + Server（SQLite 持久化卷）
+# OasisMind — 单容器运行 Web + Server（SQLite 持久化卷）
 FROM node:20-bookworm-slim AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
@@ -12,11 +12,11 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @knowpilot/server db:generate
+RUN pnpm --filter @oasismind/server db:generate
 ENV DATABASE_URL="file:./build.db"
-RUN pnpm --filter @knowpilot/server db:push
+RUN pnpm --filter @oasismind/server db:push
 RUN pnpm db:sync
-RUN pnpm --filter @knowpilot/web build
+RUN pnpm --filter @oasismind/web build
 
 FROM base AS runner
 ENV NODE_ENV=production
@@ -35,4 +35,4 @@ COPY --from=build /app/scripts ./scripts
 
 EXPOSE 3000 3010
 
-CMD ["sh", "-c", "pnpm --filter @knowpilot/server exec prisma db push && pnpm db:sync && (pnpm --filter @knowpilot/server start &) && pnpm --filter @knowpilot/web start -p 3000"]
+CMD ["sh", "-c", "pnpm --filter @oasismind/server exec prisma db push && pnpm db:sync && (pnpm --filter @oasismind/server start &) && pnpm --filter @oasismind/web start -p 3000"]

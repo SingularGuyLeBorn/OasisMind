@@ -9,7 +9,7 @@ import {
   listDailyFlowByDaySchema,
   moveDailyFlowItemSchema,
   updateDailyFlowItemSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import {
   createDailyFlowItem,

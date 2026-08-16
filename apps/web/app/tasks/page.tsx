@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { CalendarClock, Plus, Play, Info } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Task } from "@knowpilot/shared";
+import type { Task } from "@oasismind/shared";
 import { useTask } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
@@ -53,7 +53,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] flex-1 space-y-6 bg-[var(--kp-bg)] px-4 py-6 md:px-8 md:py-8">
+    <div className="mx-auto w-full max-w-[1400px] flex-1 space-y-6 bg-[var(--om-bg)] px-4 py-6 md:px-8 md:py-8">
       <PageHeader
         icon={CalendarClock}
         title="Tasks 定时任务"
@@ -62,17 +62,17 @@ export default function TasksPage() {
         showDensityToggle
       />
 
-      <div className="flex items-start gap-2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 text-xs text-[var(--kp-text-2)]">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+      <div className="flex items-start gap-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs text-[var(--om-text-2)]">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
         <div>
-          <span className="font-medium text-[var(--kp-text-1)]">查看指南：</span>
+          <span className="font-medium text-[var(--om-text-1)]">查看指南：</span>
           Task 是周期性后台脚本；运行记录去
-          <Link href="/runs" className="mx-1 text-[var(--kp-brand-deep)] hover:underline">/runs</Link>，
+          <Link href="/runs" className="mx-1 text-[var(--om-brand-deep)] hover:underline">/runs</Link>，
           事件触发去
-          <Link href="/triggers" className="mx-1 text-[var(--kp-brand-deep)] hover:underline">/triggers</Link>，
+          <Link href="/triggers" className="mx-1 text-[var(--om-brand-deep)] hover:underline">/triggers</Link>，
           Agent 自主心跳去
-          <Link href="/agents" className="mx-1 text-[var(--kp-brand-deep)] hover:underline">/agents</Link>。
-          详情见 <code className="rounded bg-[var(--kp-bg-mute)] px-1 py-0.5">docs/development/scheduled-tasks-and-heartbeat.md</code>。
+          <Link href="/agents" className="mx-1 text-[var(--om-brand-deep)] hover:underline">/agents</Link>。
+          详情见 <code className="rounded bg-[var(--om-bg-mute)] px-1 py-0.5">docs/development/scheduled-tasks-and-heartbeat.md</code>。
         </div>
       </div>
 
@@ -103,15 +103,15 @@ export default function TasksPage() {
                   y: 0,
                   transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 }
                 }}
-                className={cn("group relative overflow-hidden rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] hover:bg-white dark:hover:bg-[var(--kp-bg-soft)] hover:border-[var(--kp-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
+                className={cn("group relative overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] hover:bg-white dark:hover:bg-[var(--om-bg-soft)] hover:border-[var(--om-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
               >
                 <div>
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                         <CalendarClock className="w-4 h-4" />
                       </div>
-                      <h3 className="font-bold text-[var(--kp-text-1)] group-hover:text-[var(--kp-brand-deep)] transition-colors text-xs truncate max-w-[150px]">
+                      <h3 className="font-bold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)] transition-colors text-xs truncate max-w-[150px]">
                         {task.name}
                       </h3>
                     </div>
@@ -119,7 +119,7 @@ export default function TasksPage() {
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Link
                         href={`/tasks/edit/${task.id}`}
-                        className="text-xs text-[var(--kp-brand-deep)] hover:text-[var(--kp-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--kp-brand-soft)]"
+                        className="text-xs text-[var(--om-brand-deep)] hover:text-[var(--om-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--om-brand-soft)]"
                       >
                         编辑
                       </Link>
@@ -133,14 +133,14 @@ export default function TasksPage() {
                   </div>
 
                   <div className="space-y-1 mb-4 text-[10px]">
-                    <div className="text-[9px] uppercase font-bold text-[var(--kp-text-3)]">Cron 表达式</div>
-                    <code className="block p-1 bg-[var(--kp-bg-mute)] font-mono text-[var(--kp-text-2)] rounded">
+                    <div className="text-[9px] uppercase font-bold text-[var(--om-text-3)]">Cron 表达式</div>
+                    <code className="block p-1 bg-[var(--om-bg-mute)] font-mono text-[var(--om-text-2)] rounded">
                       {task.cronExpression || "单次执行"}
                     </code>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[var(--kp-divider-light)] flex justify-between items-center text-[10px]">
+                <div className="pt-3 border-t border-[var(--om-divider-light)] flex justify-between items-center text-[10px]">
                   <span className={`px-2 py-0.5 rounded-full font-medium ${statusColors[task.status as keyof typeof statusColors]}`}>
                     {task.status.toUpperCase()}
                   </span>
@@ -148,7 +148,7 @@ export default function TasksPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 gap-1 text-[10px] text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                    className="h-6 gap-1 text-[10px] text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                     onClick={() => runMutation.mutate({ id: task.id })}
                     disabled={runMutation.isPending || task.status === "running"}
                   >

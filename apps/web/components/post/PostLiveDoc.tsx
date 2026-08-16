@@ -9,7 +9,7 @@
 import { useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import {
   MilkdownEditor,
   type EditorViewMode,
@@ -84,7 +84,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
           {post.garden && post.garden !== DEFAULT_POST_GARDEN ? "返回首页" : "返回"}
         </Link>
         <span
-          className="text-xs text-[var(--kp-text-3)]"
+          className="text-xs text-[var(--om-text-3)]"
           title="改动 2 秒后写入 Markdown 文件；Ctrl+S 立刻保存"
         >
           {mode === "source"
@@ -97,7 +97,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
         </span>
       </div>
 
-      <article ref={articleRef} className="kp-post-swap kp-post-content">
+      <article ref={articleRef} className="om-post-swap om-post-content">
         <ReadingProgressTracker
           postId={post.id}
           slug={post.slug}

@@ -40,7 +40,7 @@ describe("auxiliaryModel — OpenRouter strong_free", () => {
   });
 
   it("resolveAuxiliaryModel：显式配置优先生效", () => {
-    const config = createTestConfig("/tmp/kp-aux", {
+    const config = createTestConfig("/tmp/om-aux", {
       llm: {
         defaultProvider: "openrouter",
         providers: {
@@ -68,7 +68,7 @@ describe("auxiliaryModel — OpenRouter strong_free", () => {
         { id: "google/gemma-2-9b-it:free", name: "Gemma small", contextLength: 8_000 },
       ],
     });
-    const config = createTestConfig("/tmp/kp-aux", {
+    const config = createTestConfig("/tmp/om-aux", {
       llm: {
         defaultProvider: "openrouter",
         providers: {

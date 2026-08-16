@@ -7,7 +7,7 @@
 
 import { Loader2 } from "lucide-react";
 import { cn, formatRelativeTime } from "@/lib/utils";
-import type { ChatSession } from "@knowpilot/shared";
+import type { ChatSession } from "@oasismind/shared";
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "排队中",
@@ -39,14 +39,14 @@ export function SubsessionPanel({
   if (isLoading) {
     return (
       <div className="flex justify-center py-6">
-        <Loader2 className="h-4 w-4 animate-spin text-[var(--kp-text-3)]" />
+        <Loader2 className="h-4 w-4 animate-spin text-[var(--om-text-3)]" />
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="px-4 py-6 text-center text-xs text-[var(--kp-text-3)]" data-testid="subsession-empty">
+      <div className="px-4 py-6 text-center text-xs text-[var(--om-text-3)]" data-testid="subsession-empty">
         暂无子 Agent 会话
       </div>
     );
@@ -66,8 +66,8 @@ export function SubsessionPanel({
             className={cn(
               "flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition",
               active
-                ? "border-[var(--kp-brand-light)] bg-[var(--kp-brand)]/10 text-[var(--kp-brand-deep)]"
-                : "border-transparent hover:border-[var(--kp-divider)] hover:bg-[var(--kp-bg-mute)]/50 text-[var(--kp-text-2)]",
+                ? "border-[var(--om-brand-light)] bg-[var(--om-brand)]/10 text-[var(--om-brand-deep)]"
+                : "border-transparent hover:border-[var(--om-divider)] hover:bg-[var(--om-bg-mute)]/50 text-[var(--om-text-2)]",
             )}
           >
             <span
@@ -79,7 +79,7 @@ export function SubsessionPanel({
             />
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium">{s.autoName || s.title || "子会话"}</div>
-              <div className="truncate text-[10px] text-[var(--kp-text-3)]">
+              <div className="truncate text-[10px] text-[var(--om-text-3)]">
                 {STATUS_LABEL[status] ?? status} · {formatRelativeTime(s.updatedAt)}
               </div>
             </div>

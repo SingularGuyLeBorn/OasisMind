@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- 动态 tRPC router 名称绑定 */
 import { useCallback, useEffect, useState } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import type {
   OperationResult,
   CreatePostInput, UpdatePostInput, ListPostsInput, Post,
@@ -18,7 +18,7 @@ import type {
   Task, Workspace, Trigger, Approval, Comment,
   Tool, Prompt, Credential, Run,
   CreateCommentInput, UpdateCommentInput, ListCommentsInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 /* ─── 1. 通用 CRUD Hook 工厂 ─── */
 
@@ -433,8 +433,8 @@ export function useAIApi() {
 
 /* ─── 4. 会话列表 hover 预览悬浮窗（默认关闭） ─── */
 
-const SESSION_HOVER_PREVIEW_KEY = "kp-session-hover-preview";
-const SESSION_HOVER_PREVIEW_EVENT = "kp-session-hover-preview-change";
+const SESSION_HOVER_PREVIEW_KEY = "om-session-hover-preview";
+const SESSION_HOVER_PREVIEW_EVENT = "om-session-hover-preview-change";
 
 function readSessionHoverPreview(): boolean {
   try {

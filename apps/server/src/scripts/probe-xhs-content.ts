@@ -1,8 +1,8 @@
 /**
  * 探测：对若干收藏笔记走与 fetchContent 相同的 parsePlatformUrl（正文+图片）。
  *
- *   pnpm --filter @knowpilot/server exec tsx src/scripts/probe-xhs-content.ts
- *   pnpm --filter @knowpilot/server exec tsx src/scripts/probe-xhs-content.ts --n 3
+ *   pnpm --filter @oasismind/server exec tsx src/scripts/probe-xhs-content.ts
+ *   pnpm --filter @oasismind/server exec tsx src/scripts/probe-xhs-content.ts --n 3
  */
 import fs from "fs";
 import path from "path";

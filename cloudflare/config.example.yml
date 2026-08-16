@@ -13,7 +13,7 @@
 
 ingress:
   # 只暴露 Next.js（3000）；API 由 next.config rewrites 反代到 localhost:3010
-  - hostname: knowpilot.example.com
+  - hostname: oasismind.example.com
     service: http://127.0.0.1:3000
     originRequest:
       # Agent SSE 流式聊天：禁用缓冲

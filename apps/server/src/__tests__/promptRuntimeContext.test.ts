@@ -25,7 +25,7 @@ function countRuntimeMarkers(messages: LlmMessage[]): number {
   return messages
     .map((m) => (typeof m.content === "string" ? m.content : ""))
     .join("\n")
-    .match(/<!-- kp-runtime-context -->/g)?.length ?? 0;
+    .match(/<!-- om-runtime-context -->/g)?.length ?? 0;
 }
 
 function makeInput(ctx = createNativeCtx(path.resolve(__dirname, "../../.."))): ContextHookInput {
@@ -99,7 +99,7 @@ describe("promptRuntimeContext", () => {
       login: ["bilibili"],
       budget: "remaining=$0.90 / limit=$5.00",
     });
-    expect(block1).toContain("<!-- kp-runtime-context -->");
+    expect(block1).toContain("<!-- om-runtime-context -->");
     expect(block1).toContain("Current runtime context. This snapshot supersedes earlier runtime-context snapshots.");
     expect(block1).toContain("login: zhihu");
     expect(block2).toContain("login: bilibili");

@@ -10,7 +10,7 @@ import {
   type TrialTranscript,
   type TrialToolCall,
   type TrialMessage,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { parseStoredToolCalls } from "./chatHistory.js";
 
 function asRecord(v: unknown): Record<string, unknown> | null {

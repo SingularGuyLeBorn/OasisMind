@@ -14,7 +14,7 @@ import {
   PINNED_MEMORY_DIR,
   PINNED_MEMORY_USER_FILE,
   PINNED_MEMORY_USER_MAX_CHARS,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { ServiceContainer } from "./serviceContainer.js";
 
 export type PinnedWhich = "user" | "agent";

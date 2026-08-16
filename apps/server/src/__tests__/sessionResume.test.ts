@@ -27,7 +27,7 @@ import { appRouter } from "../router.js";
 import { createContextInner } from "../trpc/context.js";
 import { setStreamHub, getStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 import type { AppConfig } from "../infra/config.js";
-import type { AgentChatInput } from "@knowpilot/shared";
+import type { AgentChatInput } from "@oasismind/shared";
 
 type Ctx = Awaited<ReturnType<typeof createContextInner>>;
 

@@ -25,9 +25,9 @@ function formatRelative(ts: number): string {
 function ProgressBar({ progress }: { progress: number }) {
   const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   return (
-    <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--kp-bg-mute)]">
+    <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--om-bg-mute)]">
       <div
-        className="h-full rounded-full bg-[var(--kp-brand)] transition-[width]"
+        className="h-full rounded-full bg-[var(--om-brand)] transition-[width]"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -53,31 +53,31 @@ export function ContinueReadingCard({
     <Link
       href={readingEntryHref(last)}
       className={cn(
-        "kp-card-topline kp-card-sheen group flex items-start gap-3 rounded-[1.5rem] border border-white/55",
+        "om-card-topline om-card-sheen group flex items-start gap-3 rounded-[1.5rem] border border-white/55",
         "bg-white/55 p-4 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.22)] backdrop-blur-xl transition",
-        "hover:border-[var(--kp-brand)]/35 hover:bg-white/75 hover:shadow-[0_18px_44px_-16px_rgba(0,135,235,0.28)]",
+        "hover:border-[var(--om-brand)]/35 hover:bg-white/75 hover:shadow-[0_18px_44px_-16px_rgba(0,135,235,0.28)]",
         className,
       )}
     >
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--kp-brand)] shadow-sm">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--om-brand)] shadow-sm">
         <BookMarked className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[var(--kp-brand-deep)]">
+        <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-[var(--om-brand-deep)]">
           上次阅读
-          <span className="font-normal normal-case tracking-normal text-[var(--kp-text-3)]">
+          <span className="font-normal normal-case tracking-normal text-[var(--om-text-3)]">
             {formatRelative(last.updatedAt)}
           </span>
         </span>
-        <span className="mt-0.5 block truncate text-sm font-semibold text-[var(--kp-text-1)] group-hover:text-[var(--kp-brand-deep)]">
+        <span className="mt-0.5 block truncate text-sm font-semibold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)]">
           {last.title}
         </span>
-        <span className="mt-0.5 block text-xs text-[var(--kp-text-3)]">
+        <span className="mt-0.5 block text-xs text-[var(--om-text-3)]">
           {unfinished ? `已读约 ${pct}% · 点击继续` : pct >= 92 ? "已读完 · 再看一遍" : "点击打开"}
         </span>
         {unfinished && <ProgressBar progress={last.progress} />}
       </span>
-      <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-[var(--kp-text-3)] transition group-hover:translate-x-0.5 group-hover:text-[var(--kp-brand-deep)]" />
+      <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-[var(--om-text-3)] transition group-hover:translate-x-0.5 group-hover:text-[var(--om-brand-deep)]" />
     </Link>
   );
 }
@@ -101,14 +101,14 @@ export function ContinueReadingSidebarLink({
       onClick={() => onNavigate?.()}
       className={cn(
         "flex min-w-0 items-center gap-1.5 rounded-lg py-1.5 pr-1.5 text-left text-[11px] transition",
-        "text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]",
+        "text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]",
         className,
       )}
       title={`上次阅读：${last.title}`}
     >
       <BookMarked className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0 flex-1 truncate font-medium">{last.title}</span>
-      <span className="shrink-0 tabular-nums text-[var(--kp-text-3)]">
+      <span className="shrink-0 tabular-nums text-[var(--om-text-3)]">
         {Math.round(last.progress * 100)}%
       </span>
     </Link>

@@ -3,7 +3,7 @@
  *
  * Setup（workers fork 之前，env 会被子进程继承）：
  * 1. DATABASE_URL → file:./test.db（独立测试库，不再污染 dev.db）
- * 2. KP_CONTENT_DIR → .test-content（测试写的 Agent/Post 等 md 文件不落入真实 content/）
+ * 2. OM_CONTENT_DIR → .test-content（测试写的 Agent/Post 等 md 文件不落入真实 content/）
  * 3. prisma db push 同步 schema 到 test.db
  *
  * Teardown：清理 smoke 残留 + 关闭共享浏览器。
@@ -51,9 +51,9 @@ export default async function globalSetup() {
   for (const sub of DATA_SUBDIRS) {
     fs.mkdirSync(path.join(TEST_DATA_DIR, sub), { recursive: true });
   }
-  process.env.KP_CONTENT_DIR = TEST_CONTENT_DIR;
-  process.env.KP_CONFIG_DIR = TEST_CONFIG_DIR;
-  process.env.KP_DATA_DIR = TEST_DATA_DIR;
+  process.env.OM_CONTENT_DIR = TEST_CONTENT_DIR;
+  process.env.OM_CONFIG_DIR = TEST_CONFIG_DIR;
+  process.env.OM_DATA_DIR = TEST_DATA_DIR;
   // 测试库强制加密路径（与生产一致；避免明文污染断言与泄漏面）
   if (!process.env.CREDENTIAL_MASTER_KEY?.trim()) {
     process.env.CREDENTIAL_MASTER_KEY =

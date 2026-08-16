@@ -211,7 +211,7 @@ export async function getWebbridgeStatus(opts?: {
     const res = await fetch(`${baseUrl}/command`, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ action: "list_tabs", args: {}, session: "knowpilot-status" }),
+      body: JSON.stringify({ action: "list_tabs", args: {}, session: "oasismind-status" }),
       signal: ac.signal,
     });
     clearTimeout(timer);

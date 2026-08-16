@@ -83,11 +83,11 @@ export function Shell({ children, className }: ShellProps) {
         <MainScrollProvider rootRef={mainRef}>
           <main
             ref={mainRef}
-            data-kp-main-scroll
+            data-om-main-scroll
             className={cn(
               "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto",
               // 知识库文章/编辑：纯白阅读面；其它页保留晴空底色
-              mode === "content" ? "bg-[var(--kp-bg-alt)]" : "bg-[var(--kp-bg)]",
+              mode === "content" ? "bg-[var(--om-bg-alt)]" : "bg-[var(--om-bg)]",
               "pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
               className,
             )}

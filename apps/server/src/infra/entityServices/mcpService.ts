@@ -6,7 +6,7 @@ import type {
   CreateMcpServerInput,
   UpdateMcpServerInput,
   ListMcpServersInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { FileSyncService, ServiceValidationError } from "../../services.js";
 import { failure } from "../../trpc/result.js";
 

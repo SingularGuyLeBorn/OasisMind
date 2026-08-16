@@ -9,7 +9,7 @@
  */
 
 import type { AgentStreamEvent } from "./agentStream/index.js";
-import type { AgentChatInput } from "@knowpilot/shared";
+import type { AgentChatInput } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import { prisma } from "../db.js";
 import {

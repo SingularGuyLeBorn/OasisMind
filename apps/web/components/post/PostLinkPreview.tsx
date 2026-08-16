@@ -11,7 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 
@@ -147,26 +147,26 @@ export function PostLinkPreview({
             id={labelId}
             role="tooltip"
             className={cn(
-              "z-[80] overflow-hidden rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] shadow-lg",
+              "z-[80] overflow-hidden rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] shadow-lg",
               "animate-in fade-in-0 zoom-in-95 duration-150",
             )}
             style={cardStyle}
             onMouseEnter={scheduleOpen}
             onMouseLeave={scheduleClose}
           >
-            <div className="border-b border-[var(--kp-divider-light)] px-3 py-2">
-              <p className="truncate text-[13px] font-semibold leading-snug text-[var(--kp-text-1)]">
+            <div className="border-b border-[var(--om-divider-light)] px-3 py-2">
+              <p className="truncate text-[13px] font-semibold leading-snug text-[var(--om-text-1)]">
                 {data?.title ?? (isFetching ? "加载中…" : title ?? slug)}
               </p>
               {data?.category ? (
-                <p className="mt-0.5 truncate text-[11px] text-[var(--kp-text-3)]">{data.category}</p>
+                <p className="mt-0.5 truncate text-[11px] text-[var(--om-text-3)]">{data.category}</p>
               ) : null}
             </div>
             <div className="px-3 py-2">
               {isError ? (
-                <p className="text-[12px] text-[var(--kp-text-3)]">预览加载失败</p>
+                <p className="text-[12px] text-[var(--om-text-3)]">预览加载失败</p>
               ) : (
-                <p className="line-clamp-4 text-[12px] leading-relaxed text-[var(--kp-text-2)]">
+                <p className="line-clamp-4 text-[12px] leading-relaxed text-[var(--om-text-2)]">
                   {data?.previewText || (isFetching ? "…" : "暂无摘要")}
                 </p>
               )}

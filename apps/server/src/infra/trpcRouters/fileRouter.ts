@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { withApprovalGuard } from "./withApprovalGuard.js";
-import { createFileSchema, updateFileSchema, listFilesSchema, uploadFileSchema, deleteByIdWithApprovalSchema } from "@knowpilot/shared";
+import { createFileSchema, updateFileSchema, listFilesSchema, uploadFileSchema, deleteByIdWithApprovalSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const fileRouter = router({

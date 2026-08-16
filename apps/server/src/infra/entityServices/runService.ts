@@ -2,7 +2,7 @@
  * Run 执行记录 Service（从 services.ts 拆出的叶子）。
  */
 
-import type { CreateRunInput, UpdateRunInput, ListRunsInput } from "@knowpilot/shared";
+import type { CreateRunInput, UpdateRunInput, ListRunsInput } from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 
 export class RunService extends BaseService<CreateRunInput, UpdateRunInput, ListRunsInput, any> {

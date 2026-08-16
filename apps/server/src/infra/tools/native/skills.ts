@@ -29,7 +29,7 @@ import {
   markSkillArchived,
 } from "../../skillUsage.js";
 import { scanSkillPackage } from "../../skillScan.js";
-import { compareByHighValueTags, hasHighValueTag, parseTags } from "@knowpilot/shared";
+import { compareByHighValueTags, hasHighValueTag, parseTags } from "@oasismind/shared";
 
 function skillsRoot(ctx: NativeToolContext): string {
   return ctx.config.configPaths.skills;

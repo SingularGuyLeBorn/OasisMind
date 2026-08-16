@@ -8,7 +8,7 @@
  */
 
 import { useSyncExternalStore, useMemo } from "react";
-import type { ChatAttachment } from "@knowpilot/shared";
+import type { ChatAttachment } from "@oasismind/shared";
 import type { ChatQueueItem } from "@/lib/chatQueueTypes";
 
 export type OptimisticUserBubble = {

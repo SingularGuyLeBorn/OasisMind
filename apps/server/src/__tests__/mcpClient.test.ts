@@ -17,7 +17,7 @@ import {
   MCP_MAX_RESULT_CHARS,
 } from "../infra/mcpUtils.js";
 import type { McpServerEntity } from "../infra/entityServices/mcpService.js";
-import { createMcpServerSchema } from "@knowpilot/shared";
+import { createMcpServerSchema } from "@oasismind/shared";
 import type { ServiceContainer } from "../infra/serviceContainer.js";
 
 describe("MCP 工具命名", () => {

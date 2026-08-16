@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useRef, useState, useCallback } from "react";
 import { Bot, Send, Square, X } from "lucide-react";
-import type { ChatSessionConfig, Skill } from "@knowpilot/shared";
+import type { ChatSessionConfig, Skill } from "@oasismind/shared";
 import { LucideIconByName, ChatShortcutHints } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { ChatQueueAttachment } from "@/lib/chatQueueTypes";
@@ -138,10 +138,10 @@ export const ChatInputArea = memo(function ChatInputArea({
       setInput(detail.text);
       queueMicrotask(() => textareaRef.current?.focus());
     };
-    window.addEventListener("knowpilot-compose-prefill", onPrefill);
+    window.addEventListener("oasismind-compose-prefill", onPrefill);
     let bc: BroadcastChannel | null = null;
     try {
-      bc = new BroadcastChannel("knowpilot-ui-state");
+      bc = new BroadcastChannel("oasismind-ui-state");
       bc.onmessage = (msg) => {
         const data = msg.data as { type?: string; text?: string } | null;
         if (data?.type === "compose_prefill" && typeof data.text === "string") {
@@ -153,7 +153,7 @@ export const ChatInputArea = memo(function ChatInputArea({
       /* ignore */
     }
     return () => {
-      window.removeEventListener("knowpilot-compose-prefill", onPrefill);
+      window.removeEventListener("oasismind-compose-prefill", onPrefill);
       bc?.close();
     };
   }, []);
@@ -240,7 +240,7 @@ export const ChatInputArea = memo(function ChatInputArea({
     if (!vv) return;
     const sync = () => {
       const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      document.documentElement.style.setProperty("--kp-keyboard-inset", `${inset}px`);
+      document.documentElement.style.setProperty("--om-keyboard-inset", `${inset}px`);
     };
     sync();
     vv.addEventListener("resize", sync);
@@ -248,12 +248,12 @@ export const ChatInputArea = memo(function ChatInputArea({
     return () => {
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
-      document.documentElement.style.removeProperty("--kp-keyboard-inset");
+      document.documentElement.style.removeProperty("--om-keyboard-inset");
     };
   }, []);
 
   // 上键历史恢复：按 sessionId 隔离，存 localStorage
-  const historyKey = sessionId ? `kp-input-history:${sessionId}` : null;
+  const historyKey = sessionId ? `om-input-history:${sessionId}` : null;
   const [historyIdx, setHistoryIdx] = useState(-1); // -1 = 不在浏览历史模式
   const [draftBackup, setDraftBackup] = useState(""); // 浏览历史前的草稿备份
 
@@ -569,7 +569,7 @@ export const ChatInputArea = memo(function ChatInputArea({
       {sessionHint && (
         <div
           data-testid="session-hint"
-          className="mb-2 flex items-center gap-1.5 rounded-lg border border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/40 px-3 py-1.5 text-[11px] text-[var(--kp-brand-deep)]"
+          className="mb-2 flex items-center gap-1.5 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/40 px-3 py-1.5 text-[11px] text-[var(--om-brand-deep)]"
         >
           <Bot className="h-3 w-3 shrink-0" />
           <span>{sessionHint}</span>
@@ -577,19 +577,19 @@ export const ChatInputArea = memo(function ChatInputArea({
       )}
       {selectedSkill && (
         <div className="mb-2 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--kp-brand-soft)]/70 px-2.5 py-1 text-xs font-medium text-[var(--kp-brand-deep)]">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--om-brand-soft)]/70 px-2.5 py-1 text-xs font-medium text-[var(--om-brand-deep)]">
             <LucideIconByName name={selectedSkill.icon} className="h-3 w-3" />
             {selectedSkill.name}
           </span>
           <button
             type="button"
             onClick={() => onSkillChange(null)}
-            className="rounded-lg p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+            className="rounded-lg p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
             aria-label="清除 Skill"
           >
             <X className="h-3.5 w-3.5" />
           </button>
-          <span className="text-[10px] text-[var(--kp-text-3)]">将作为本轮系统指引</span>
+          <span className="text-[10px] text-[var(--om-text-3)]">将作为本轮系统指引</span>
         </div>
       )}
 
@@ -619,11 +619,11 @@ export const ChatInputArea = memo(function ChatInputArea({
 
       <div
         className={cn(
-          "kp-chat-composer overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] transition-colors",
-          "focus-within:border-[var(--kp-accent)]",
+          "om-chat-composer overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] transition-colors",
+          "focus-within:border-[var(--om-accent)]",
           deepResearchEnabled &&
             canStartDeepResearch &&
-            "border-[var(--kp-accent)]/50 bg-[var(--kp-brand-soft)]/15",
+            "border-[var(--om-accent)]/50 bg-[var(--om-brand-soft)]/15",
           disabled && "opacity-60",
         )}
       >
@@ -731,14 +731,14 @@ export const ChatInputArea = memo(function ChatInputArea({
             data-testid="chat-input"
             className={cn(
               "min-h-[88px] w-full resize-none border-0 bg-transparent px-4 py-3 text-sm leading-relaxed",
-              "text-[var(--kp-text-1)] caret-[var(--kp-text-1)] disabled:cursor-not-allowed",
+              "text-[var(--om-text-1)] caret-[var(--om-text-1)] disabled:cursor-not-allowed",
               // 覆盖 globals.css 的 textarea:focus-visible 描边——否则聚焦时底部 outline 会像一条横线劈开输入框
               "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
             )}
           />
           {!disabled && !input.trim() && (
             <div className="pointer-events-none absolute inset-0 px-4 py-3" aria-hidden>
-              <span className="text-sm text-[var(--kp-text-3)]">{placeholderHint}</span>
+              <span className="text-sm text-[var(--om-text-3)]">{placeholderHint}</span>
             </div>
           )}
         </div>
@@ -749,13 +749,13 @@ export const ChatInputArea = memo(function ChatInputArea({
             {isEditingQueue && (
               <span
                 data-testid="chat-edit-queued-chip"
-                className="mr-1 inline-flex items-center gap-1 rounded-full border border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/60 px-2.5 py-1 text-[11px] font-medium text-[var(--kp-brand-deep)]"
+                className="mr-1 inline-flex items-center gap-1 rounded-full border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/60 px-2.5 py-1 text-[11px] font-medium text-[var(--om-brand-deep)]"
               >
                 Edit Queued
                 <button
                   type="button"
                   onClick={cancelQueueEdit}
-                  className="rounded-full p-0.5 hover:bg-[var(--kp-brand-soft)]"
+                  className="rounded-full p-0.5 hover:bg-[var(--om-brand-soft)]"
                   aria-label="取消编辑队列"
                   title="取消编辑，恢复原草稿"
                 >
@@ -796,8 +796,8 @@ export const ChatInputArea = memo(function ChatInputArea({
               className={cn(
                 "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-200",
                 isStreaming || canSend
-                  ? "border-transparent bg-gradient-to-b from-[var(--kp-brand-light)] to-[var(--kp-brand-dark)] text-white hover:from-[var(--kp-brand)] hover:to-[var(--kp-brand-dark)]"
-                  : "border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+                  ? "border-transparent bg-gradient-to-b from-[var(--om-brand-light)] to-[var(--om-brand-dark)] text-white hover:from-[var(--om-brand)] hover:to-[var(--om-brand-dark)]"
+                  : "border-[var(--om-divider-light)] bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
               )}
             >
               {isStreaming ? <Square className="h-4 w-4 fill-current" /> : <Send className="h-4 w-4" />}
@@ -827,8 +827,8 @@ export const ChatInputArea = memo(function ChatInputArea({
       />
 
       {modelHint && (
-        <p className="mt-1.5 px-1 text-center text-[11px] leading-relaxed text-[var(--kp-text-3)]">
-          <span className="font-medium text-[var(--kp-text-2)]">{modelId}：</span>
+        <p className="mt-1.5 px-1 text-center text-[11px] leading-relaxed text-[var(--om-text-3)]">
+          <span className="font-medium text-[var(--om-text-2)]">{modelId}：</span>
           {modelHint}
         </p>
       )}

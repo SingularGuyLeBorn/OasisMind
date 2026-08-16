@@ -40,7 +40,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (data?.enabled && !isPublicPath(pathname) && !data.authenticated && !getAuthToken()) {
     if (isLoading) {
       return (
-        <div className="flex flex-1 items-center justify-center text-sm text-[var(--kp-text-3)]">
+        <div className="flex flex-1 items-center justify-center text-sm text-[var(--om-text-3)]">
           验证登录状态…
         </div>
       );

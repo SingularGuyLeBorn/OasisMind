@@ -5,7 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 import { getAppConfig } from "../infra/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { createLogSchema, updateLogSchema, listLogsSchema } from "@knowpilot/shared";
+import { createLogSchema, updateLogSchema, listLogsSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const logRouter = router({

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import type { Garden, Post } from "@knowpilot/shared";
+import type { Garden, Post } from "@oasismind/shared";
 import { trpcQueryCached } from "@/lib/serverTrpc";
 import { HeroSection } from "@/components/home/HeroSection";
 import { StatsStrip } from "@/components/home/StatsStrip";
@@ -81,9 +81,9 @@ async function HomeDataSections() {
 
 export default function HomePage() {
   return (
-    <div className="kp-force-light kp-home-surface relative shrink-0 overflow-x-hidden">
+    <div className="om-force-light om-home-surface relative shrink-0 overflow-x-hidden">
       <HomeAmbientBackground />
-      <ScrollProgress className="h-0.5 bg-gradient-to-r from-[var(--kp-glow-peach)] via-[var(--kp-brand-light)] to-[var(--kp-brand)]" />
+      <ScrollProgress className="h-0.5 bg-gradient-to-r from-[var(--om-glow-peach)] via-[var(--om-brand-light)] to-[var(--om-brand)]" />
       <HeroSection />
       <Suspense fallback={<HomeDataFallback />}>
         <HomeDataSections />

@@ -1,6 +1,6 @@
 /**
  * OCR 环境诊断 — 模型 / Python / 试识别
- * 用法: pnpm --filter @knowpilot/server ocr:check
+ * 用法: pnpm --filter @oasismind/server ocr:check
  */
 
 import path from "path";

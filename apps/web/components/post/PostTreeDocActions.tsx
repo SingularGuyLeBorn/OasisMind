@@ -26,7 +26,7 @@ import { usePostMutations } from "@/lib/usePostMutations";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared";
 
-const PIN_KEY = "kp-post-pins";
+const PIN_KEY = "om-post-pins";
 
 export function pinStorageKey(garden: string, slug: string) {
   return `${garden}::${slug}`;
@@ -208,7 +208,7 @@ export function PostTreeDocActions({
           e.stopPropagation();
           createChild();
         }}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-soft)] hover:text-[var(--kp-brand-deep)]"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--om-text-3)] hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-brand-deep)]"
       >
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -221,7 +221,7 @@ export function PostTreeDocActions({
           e.stopPropagation();
           setMenuOpen((v) => !v);
         }}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-soft)] hover:text-[var(--kp-text-1)]"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[var(--om-text-3)] hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-text-1)]"
       >
         <MoreHorizontal className="h-3.5 w-3.5" />
       </button>
@@ -229,7 +229,7 @@ export function PostTreeDocActions({
       {menuOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] py-1 shadow-lg"
           role="menu"
         >
           {renaming ? (
@@ -243,7 +243,7 @@ export function PostTreeDocActions({
                   if (e.key === "Escape") setRenaming(false);
                 }}
                 onBlur={submitRename}
-                className="w-full rounded-md border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] px-2 py-1 text-xs outline-none"
+                className="w-full rounded-md border border-[var(--om-divider)] bg-[var(--om-bg-mute)] px-2 py-1 text-xs outline-none"
               />
             </div>
           ) : (
@@ -262,11 +262,11 @@ export function PostTreeDocActions({
               <MenuItem icon={<Copy className="h-3.5 w-3.5" />} label="复制" onClick={() => copyDoc().catch(() => {})} />
               <MenuItem icon={<Download className="h-3.5 w-3.5" />} label="导出" onClick={() => exportMd().catch(() => {})} />
               <MenuItem
-                icon={<Pin className={cn("h-3.5 w-3.5", pinned && "text-[var(--kp-brand-deep)]")} />}
+                icon={<Pin className={cn("h-3.5 w-3.5", pinned && "text-[var(--om-brand-deep)]")} />}
                 label={pinned ? "取消置顶" : "置顶"}
                 onClick={togglePin}
               />
-              <div className="my-1 border-t border-[var(--kp-divider)]" />
+              <div className="my-1 border-t border-[var(--om-divider)]" />
               <MenuItem
                 icon={<Trash2 className="h-3.5 w-3.5" />}
                 label="删除"
@@ -314,7 +314,7 @@ function MenuItem({
         "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition",
         danger
           ? "text-destructive hover:bg-destructive/10"
-          : "text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-mute)]",
+          : "text-[var(--om-text-1)] hover:bg-[var(--om-bg-mute)]",
       )}
     >
       {icon}

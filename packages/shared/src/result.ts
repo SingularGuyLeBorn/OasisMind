@@ -1,5 +1,5 @@
 /**
- * @knowpilot/shared — AI-native 操作结果类型
+ * @oasismind/shared — AI-native 操作结果类型
  *
  * 所有 tRPC mutation 统一返回此结构，让 Agent 能基于结构化上下文做决策。
  * 拒绝仅返回状态码或简单 message。

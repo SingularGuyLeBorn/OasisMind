@@ -5,7 +5,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { DEFAULT_LLM_MODEL } from "@knowpilot/shared";
+import { DEFAULT_LLM_MODEL } from "@oasismind/shared";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { getAppConfig } from "./config.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
@@ -26,7 +26,7 @@ const FORMAT_RULES = `【输出格式铁律】
 - 公式：行内 $E=mc^2$；独立块用 $$ 独占一行围住 LaTeX（可含 align/cases/matrix）
 - 表格：GitHub 风格 Markdown 表（| 列 | … | + 分隔行）
 - 图表/示意图：优先 \`\`\`svg 或 \`\`\`html 完整可渲染代码（前端可预览）；勿只给无法渲染的 ASCII 草图
-- 流程/架构示意：用 SVG/HTML；手绘白板请提示用户用编辑器 /hb，勿伪造 kp-board JSON
+- 流程/架构示意：用 SVG/HTML；手绘白板请提示用户用编辑器 /hb，勿伪造 om-board JSON
 - 代码块：标明语言；数学专用块也可用 $$，不要用 \`\`\`math 除非用户明确要求`;
 
 export type EditorAgentCompleteArgs = {

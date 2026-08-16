@@ -17,7 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
-import type { GitRepo } from "@knowpilot/shared";
+import type { GitRepo } from "@oasismind/shared";
 import { useGit } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
@@ -147,7 +147,7 @@ export default function GitPage() {
     commitMutation.isPending || pullMutation.isPending || pushMutation.isPending;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={GitBranch}
         title="Git 仓库"
@@ -219,18 +219,18 @@ export default function GitPage() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.05 } }}
                 className={cn(
-                  "kp-card-premium kp-lift group relative overflow-hidden rounded-2xl p-5 text-left",
+                  "om-card-premium om-lift group relative overflow-hidden rounded-2xl p-5 text-left",
                   activeId === repo.id
-                    ? "border-[var(--kp-brand-deep)] bg-white dark:bg-[var(--kp-bg-soft)]"
+                    ? "border-[var(--om-brand-deep)] bg-white dark:bg-[var(--om-bg-soft)]"
                     : "",
                 )}
               >
                 <div className="mb-2 flex items-center gap-2">
-                  <GitBranch className="h-4 w-4 text-[var(--kp-brand-deep)]" />
-                  <h3 className="text-sm font-bold text-[var(--kp-text-1)]">{repo.name}</h3>
+                  <GitBranch className="h-4 w-4 text-[var(--om-brand-deep)]" />
+                  <h3 className="text-sm font-bold text-[var(--om-text-1)]">{repo.name}</h3>
                 </div>
-                <code className="block truncate text-[10px] text-[var(--kp-text-3)]">{repo.path}</code>
-                <span className="mt-2 inline-flex items-center gap-1 rounded bg-[var(--kp-bg-soft)] px-2 py-0.5 font-mono text-xs">
+                <code className="block truncate text-[10px] text-[var(--om-text-3)]">{repo.path}</code>
+                <span className="mt-2 inline-flex items-center gap-1 rounded bg-[var(--om-bg-soft)] px-2 py-0.5 font-mono text-xs">
                   <GitCommit className="h-3 w-3" />
                   {repo.branch}
                 </span>
@@ -252,23 +252,23 @@ export default function GitPage() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="kp-card-premium space-y-4 rounded-2xl p-5"
+              className="om-card-premium space-y-4 rounded-2xl p-5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-[var(--kp-text-1)]">
+                <h2 className="text-sm font-bold text-[var(--om-text-1)]">
                   {selected.name} · 工作台
                 </h2>
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={`/git/edit/${selected.id}`}
-                    className="inline-flex items-center rounded-lg border border-[var(--kp-divider)] px-2 py-1 text-[10px] text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                    className="inline-flex items-center rounded-lg border border-[var(--om-divider)] px-2 py-1 text-[10px] text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                   >
                     编辑
                   </Link>
                   <button
                     type="button"
                     onClick={refreshAll}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] px-2 py-1 text-[10px] hover:bg-[var(--kp-bg-soft)]"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] px-2 py-1 text-[10px] hover:bg-[var(--om-bg-soft)]"
                   >
                     <RefreshCw className="h-3 w-3" />
                     刷新
@@ -276,16 +276,16 @@ export default function GitPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] p-3 sm:flex-row sm:items-end">
+              <div className="flex flex-col gap-3 rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-3 sm:flex-row sm:items-end">
                 <label className="min-w-0 flex-1 space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-[var(--kp-text-3)]">
+                  <span className="text-[10px] font-bold uppercase text-[var(--om-text-3)]">
                     提交信息
                   </span>
                   <input
                     value={commitMessage}
                     onChange={(e) => setCommitMessage(e.target.value)}
                     placeholder="例如：更新文章与 Agent 配置"
-                    className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand-deep)]"
+                    className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand-deep)]"
                   />
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -298,7 +298,7 @@ export default function GitPage() {
                         message: commitMessage.trim(),
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-lg bg-[var(--kp-brand-deep)] px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-lg bg-[var(--om-brand-deep)] px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
                   >
                     <GitCommit className="h-3.5 w-3.5" />
                     Commit
@@ -307,7 +307,7 @@ export default function GitPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => pullMutation.mutate({ repoId: selected.id })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] px-3 py-2 text-xs hover:bg-[var(--kp-bg-soft)] disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] px-3 py-2 text-xs hover:bg-[var(--om-bg-soft)] disabled:opacity-40"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Pull
@@ -316,14 +316,14 @@ export default function GitPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => pushMutation.mutate({ repoId: selected.id })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] px-3 py-2 text-xs hover:bg-[var(--kp-bg-soft)] disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] px-3 py-2 text-xs hover:bg-[var(--om-bg-soft)] disabled:opacity-40"
                   >
                     <Upload className="h-3.5 w-3.5" />
                     Push
                   </button>
                 </div>
               </div>
-              <p className="text-[11px] text-[var(--kp-text-3)]">
+              <p className="text-[11px] text-[var(--om-text-3)]">
                 Commit / Pull / Push 默认需人工审批：首次点击会创建审批单，请到{" "}
                 <Link href="/approvals" className="underline underline-offset-2">
                   /approvals
@@ -332,45 +332,45 @@ export default function GitPage() {
               </p>
 
               <div>
-                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--kp-text-3)]">
+                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--om-text-3)]">
                   工作区状态
                 </div>
                 {statusQuery.isLoading ? (
-                  <p className="text-xs text-[var(--kp-text-3)]">加载中…</p>
+                  <p className="text-xs text-[var(--om-text-3)]">加载中…</p>
                 ) : statusQuery.error ? (
                   <p className="text-xs text-red-600">{statusQuery.error.message}</p>
                 ) : (
-                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] p-3 font-mono text-[10px] text-[var(--kp-text-2)]">
+                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] p-3 font-mono text-[10px] text-[var(--om-text-2)]">
                     {(statusQuery.data as { status?: string })?.status || "（干净工作区）"}
                   </pre>
                 )}
               </div>
 
               <div>
-                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--kp-text-3)]">
+                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--om-text-3)]">
                   Diff（未暂存，最多约 12KB）
                 </div>
                 {diffQuery.isLoading ? (
-                  <p className="text-xs text-[var(--kp-text-3)]">加载中…</p>
+                  <p className="text-xs text-[var(--om-text-3)]">加载中…</p>
                 ) : diffQuery.error ? (
                   <p className="text-xs text-red-600">{diffQuery.error.message}</p>
                 ) : (
-                  <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] p-3 font-mono text-[10px] text-[var(--kp-text-2)]">
+                  <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] p-3 font-mono text-[10px] text-[var(--om-text-2)]">
                     {(diffQuery.data as { diff?: string })?.diff || "（无 diff）"}
                   </pre>
                 )}
               </div>
 
               <div>
-                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--kp-text-3)]">
+                <div className="mb-1 text-[10px] font-bold uppercase text-[var(--om-text-3)]">
                   最近提交
                 </div>
                 {logQuery.isLoading ? (
-                  <p className="text-xs text-[var(--kp-text-3)]">加载中…</p>
+                  <p className="text-xs text-[var(--om-text-3)]">加载中…</p>
                 ) : logQuery.error ? (
                   <p className="text-xs text-red-600">{logQuery.error.message}</p>
                 ) : (
-                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] p-3 font-mono text-[10px] text-[var(--kp-text-2)]">
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] p-3 font-mono text-[10px] text-[var(--om-text-2)]">
                     {((logQuery.data as { log?: string[] })?.log ?? []).join("\n") || "（无提交）"}
                   </pre>
                 )}

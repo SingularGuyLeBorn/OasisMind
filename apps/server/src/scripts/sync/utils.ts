@@ -8,9 +8,9 @@ import matter from "gray-matter";
 import { load as loadYaml } from "js-yaml";
 import { getAppConfig } from "../../infra/config.js";
 
-/** 榛樿瀹夐潤锛汯P_VERBOSE_SYNC=1 鎴?KP_VERBOSE_BOOT=1 鎵撴槑缁?*/
+/** 榛樿瀹夐潤锛汯P_VERBOSE_SYNC=1 鎴?OM_VERBOSE_BOOT=1 鎵撴槑缁?*/
 export function isVerboseSync(): boolean {
-  const v = (process.env.KP_VERBOSE_SYNC || process.env.KP_VERBOSE_BOOT || "").trim().toLowerCase();
+  const v = (process.env.OM_VERBOSE_SYNC || process.env.OM_VERBOSE_BOOT || "").trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }
 
@@ -23,9 +23,9 @@ export function syncDetailWarn(...args: unknown[]): void {
 }
 
 /**
- * 瀹氫綅瀛樺偍瀛愮洰褰曪紙缁熶竴璇?AppConfig锛屾秷鐏笌 KP_*_DIR 鍙岃建锛?
+ * 瀹氫綅瀛樺偍瀛愮洰褰曪紙缁熶竴璇?AppConfig锛屾秷鐏笌 OM_*_DIR 鍙岃建锛?
  * posts/about/uploads 鈫?contentPaths锛沘gents/skills/mcp/memories/tasks/prompts/sources 鈫?configPaths锛?
- * 鍏朵綑锛堣繍琛屾椂浜х墿锛夆啋 dataPaths銆傛祴璇曢€氳繃 KP_CONTENT_DIR/KP_CONFIG_DIR/KP_DATA_DIR 闅旂銆?
+ * 鍏朵綑锛堣繍琛屾椂浜х墿锛夆啋 dataPaths銆傛祴璇曢€氳繃 OM_CONTENT_DIR/OM_CONFIG_DIR/OM_DATA_DIR 闅旂銆?
  */
 export function getContentDir(dirName: string): string {
   const config = getAppConfig();

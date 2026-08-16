@@ -18,7 +18,7 @@ import {
   applyMemoryRunOutcome,
   recordRetrievedForRun,
 } from "../infra/memoryFeedback.js";
-import { MEMORY_TYPES } from "@knowpilot/shared";
+import { MEMORY_TYPES } from "@oasismind/shared";
 import type { MemoryRepository } from "../infra/memoryRepository.js";
 
 const RUN = `memfb-${Date.now()}`;

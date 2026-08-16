@@ -4,7 +4,7 @@ import {
 } from "../../../swarmPermissionGuard.js";
 import { provisionWorkspace } from "../../../workspaceProvision.js";
 import { resolveToolsForAgentTier } from "../../../loop/setup.js";
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import type { NativeToolContext } from "../types.js";
 
 export async function agentCreateTool(args: Record<string, unknown>, ctx: NativeToolContext) {

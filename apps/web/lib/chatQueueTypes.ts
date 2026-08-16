@@ -2,7 +2,7 @@
  * Chat 发送队列 — 类型与 LLM 正文拼装（参考 MetaBlog 异步任务 + 发送队列）
  */
 
-import type { ChatAttachment, ChatPostAttachment } from "@knowpilot/shared";
+import type { ChatAttachment, ChatPostAttachment } from "@oasismind/shared";
 
 export type ChatQueueItemKind = "user" | "async-running" | "async-result" | "superior" | "child_notify";
 

@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, type Dispatch, type SetStateAction } from "react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
-import type { Agent } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import {
   loadDefaultChatConfig,

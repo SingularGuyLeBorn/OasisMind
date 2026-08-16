@@ -5,7 +5,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_LLM_MODEL, LLM_MODEL_IDS, type ChatSessionConfig } from "@knowpilot/shared";
+import { DEFAULT_LLM_MODEL, LLM_MODEL_IDS, type ChatSessionConfig } from "@oasismind/shared";
 import { DEFAULT_CHAT_CONFIG } from "@/lib/chatConfig";
 
 const freeFixtures = vi.hoisted(() => ({

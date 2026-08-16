@@ -14,7 +14,7 @@ import { AgentAvatar } from "./agentAvatar";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared";
-import type { Agent } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
 
 interface SubagentAgentBrief {
   id: string;
@@ -84,7 +84,7 @@ function SubagentAgentCard({
   return (
     <div
       data-testid="subagent-card"
-      className="rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] p-2 text-xs shadow-sm transition-colors hover:border-[var(--kp-brand-light)] hover:bg-[var(--kp-bg-soft)]"
+      className="rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-2 text-xs shadow-sm transition-colors hover:border-[var(--om-brand-light)] hover:bg-[var(--om-bg-soft)]"
     >
       <button
         type="button"
@@ -95,8 +95,8 @@ function SubagentAgentCard({
       >
         <span className={cn("h-2 w-2 shrink-0 rounded-full", statusColor)} title={STATUS_LABEL[agent.status] ?? agent.status} />
         <AgentAvatar id={agent.id} name={agent.name} size={18} className="rounded-full" />
-        <span className="min-w-0 flex-1 truncate font-medium text-[var(--kp-text-1)]">{agent.autoName || agent.name}</span>
-        <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform", open && "rotate-90")} />
+        <span className="min-w-0 flex-1 truncate font-medium text-[var(--om-text-1)]">{agent.autoName || agent.name}</span>
+        <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform", open && "rotate-90")} />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -107,13 +107,13 @@ function SubagentAgentCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-2 space-y-2 border-t border-[var(--kp-divider-light)] pt-2">
+            <div className="mt-2 space-y-2 border-t border-[var(--om-divider-light)] pt-2">
               {agent.description && (
-                <p className="line-clamp-3 text-[11px] leading-relaxed text-[var(--kp-text-3)]">{agent.description}</p>
+                <p className="line-clamp-3 text-[11px] leading-relaxed text-[var(--om-text-3)]">{agent.description}</p>
               )}
-              <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--kp-text-3)]">
-                <span className="rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5">{STATUS_LABEL[agent.status] ?? agent.status}</span>
-                <span className="rounded-full bg-[var(--kp-brand-soft)] px-2 py-0.5 text-[var(--kp-brand-deep)]">{formatSource(agent.source)}</span>
+              <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--om-text-3)]">
+                <span className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5">{STATUS_LABEL[agent.status] ?? agent.status}</span>
+                <span className="rounded-full bg-[var(--om-brand-soft)] px-2 py-0.5 text-[var(--om-brand-deep)]">{formatSource(agent.source)}</span>
                 <span className="truncate">{agent.model}</span>
               </div>
               <div className="flex flex-wrap gap-1">
@@ -136,7 +136,7 @@ function SubagentAgentCard({
                     <Eye className="h-3 w-3" /> 查看任务进行
                   </a>
                 ) : (
-                  <span className="inline-flex h-6 items-center gap-1 px-2 text-[10px] text-[var(--kp-text-3)]">
+                  <span className="inline-flex h-6 items-center gap-1 px-2 text-[10px] text-[var(--om-text-3)]">
                     <Eye className="h-3 w-3" /> 暂无进行中的任务会话
                   </span>
                 )}
@@ -229,7 +229,7 @@ export function SubagentPanel({
 
   if (!parentAgentId) {
     return (
-      <div className="flex flex-1 items-center justify-center p-4 text-center text-xs text-[var(--kp-text-3)]">
+      <div className="flex flex-1 items-center justify-center p-4 text-center text-xs text-[var(--om-text-3)]">
         当前没有主 Agent，<br />无法查看子 Agent。
       </div>
     );
@@ -238,13 +238,13 @@ export function SubagentPanel({
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto p-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[var(--kp-text-2)]">子 Agent · {items.length}</span>
+        <span className="text-xs font-medium text-[var(--om-text-2)]">子 Agent · {items.length}</span>
         {onCreate && (
           <button
             type="button"
             data-testid="subagent-create-button"
             onClick={onCreate}
-            className="inline-flex items-center gap-1 rounded-md bg-[var(--kp-brand-soft)] px-2 py-1 text-[10px] font-medium text-[var(--kp-brand-deep)] transition hover:bg-[var(--kp-brand-light)]/30"
+            className="inline-flex items-center gap-1 rounded-md bg-[var(--om-brand-soft)] px-2 py-1 text-[10px] font-medium text-[var(--om-brand-deep)] transition hover:bg-[var(--om-brand-light)]/30"
           >
             <Plus className="h-3 w-3" />
             新建
@@ -252,7 +252,7 @@ export function SubagentPanel({
         )}
       </div>
       {items.length === 0 && !query.isLoading && (
-        <div className="rounded-lg border border-dashed border-[var(--kp-divider)] p-4 text-center text-xs text-[var(--kp-text-3)]">
+        <div className="rounded-lg border border-dashed border-[var(--om-divider)] p-4 text-center text-xs text-[var(--om-text-3)]">
           暂无子 Agent，点击右上角新建。
         </div>
       )}

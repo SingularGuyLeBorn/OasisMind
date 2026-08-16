@@ -15,10 +15,10 @@ import {
   type ContextHookInput,
 } from "../infra/contextHooks.js";
 import type { AppConfig } from "../infra/config.js";
-import type { Agent } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
 
 function createTempConfig(): AppConfig {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kp-constraint-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "om-constraint-"));
   const config = {
     projectRoot: tmp,
     configDir: path.join(tmp, "config"),

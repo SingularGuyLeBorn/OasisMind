@@ -47,7 +47,7 @@ describe("editorSlashCommands", () => {
   it("applySlashInSource /hb 插入画板 fence", () => {
     const r = applySlashInSource("/hb", 3, resolveExactSlashCommand("hb")!);
     expect(r).not.toBeNull();
-    expect(r!.next).toContain("```kp-board");
+    expect(r!.next).toContain("```om-board");
     expect(r!.next).toContain('"strokes":[]');
   });
 

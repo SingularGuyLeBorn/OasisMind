@@ -502,7 +502,7 @@ function ToolCard({
     <div
       className={cn(
         "overflow-hidden rounded-xl border text-[11px] transition-colors",
-        status === "running" && "border-[var(--kp-brand)]/35 bg-[var(--kp-brand-soft)]/70",
+        status === "running" && "border-[var(--om-brand)]/35 bg-[var(--om-brand-soft)]/70",
         status === "done" && "border-white/60 bg-white/65",
         status === "pending" && "border-transparent bg-transparent opacity-40",
       )}
@@ -517,7 +517,7 @@ function ToolCard({
           !canExpand && "cursor-default",
         )}
       >
-        <span className="mt-0.5 shrink-0 text-[var(--kp-brand)]">
+        <span className="mt-0.5 shrink-0 text-[var(--om-brand)]">
           {status === "running" ? (
             <IconSpin className="h-3.5 w-3.5" />
           ) : status === "done" ? (
@@ -528,12 +528,12 @@ function ToolCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-mono font-semibold text-[var(--kp-text-1)]">{tool.name}</span>
-            <span className="text-[var(--kp-text-2)]">{tool.summary}</span>
+            <span className="font-mono font-semibold text-[var(--om-text-1)]">{tool.name}</span>
+            <span className="text-[var(--om-text-2)]">{tool.summary}</span>
           </div>
         </div>
         {canExpand && (
-          <IconChevron className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)]" open={open} />
+          <IconChevron className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)]" open={open} />
         )}
       </button>
 
@@ -548,18 +548,18 @@ function ToolCard({
           >
             <div className="grid gap-2 px-2.5 py-2 sm:grid-cols-2">
               <div>
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-brand)]">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--om-brand)]">
                   Args
                 </p>
-                <pre className="kp-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+                <pre className="om-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--om-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--om-text-2)]">
                   {JSON.stringify(tool.args, null, 2)}
                 </pre>
               </div>
               <div>
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-accent-deep)]">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--om-accent-deep)]">
                   Result
                 </p>
-                <pre className="kp-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--kp-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+                <pre className="om-scroll-hidden max-h-28 overflow-auto rounded-lg bg-[var(--om-text-1)]/[0.04] p-2 font-mono text-[10px] leading-relaxed text-[var(--om-text-2)]">
                   {status === "running" ? "…" : JSON.stringify(tool.result, null, 2)}
                 </pre>
               </div>
@@ -679,14 +679,14 @@ export function AgentConversationDemo() {
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
               Agent Studio
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
               三场景 · <CurlyMark>多轮工作流</CurlyMark>
             </h2>
           </div>
-          <p className="max-w-md text-sm text-[var(--kp-text-2)]">
+          <p className="max-w-md text-sm text-[var(--om-text-2)]">
             蒸馏落盘（5）/ 多智能体（6）/ 提醒审批（4）。
           </p>
         </ScrollReveal>
@@ -703,12 +703,12 @@ export function AgentConversationDemo() {
                 className={cn(
                   "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all",
                   active
-                    ? "border-[var(--kp-brand)]/40 bg-[var(--kp-brand)] text-white shadow-[0_8px_20px_-10px_rgba(0,135,235,0.55)]"
-                    : "border-white/60 bg-white/55 text-[var(--kp-text-2)] hover:border-[var(--kp-brand)]/30 hover:text-[var(--kp-brand)]",
+                    ? "border-[var(--om-brand)]/40 bg-[var(--om-brand)] text-white shadow-[0_8px_20px_-10px_rgba(0,135,235,0.55)]"
+                    : "border-white/60 bg-white/55 text-[var(--om-text-2)] hover:border-[var(--om-brand)]/30 hover:text-[var(--om-brand)]",
                 )}
               >
                 {s.label}
-                <span className={cn("ml-1.5 font-normal", active ? "text-white/80" : "text-[var(--kp-text-3)]")}>
+                <span className={cn("ml-1.5 font-normal", active ? "text-white/80" : "text-[var(--om-text-3)]")}>
                   {s.hint}
                 </span>
               </button>
@@ -723,18 +723,18 @@ export function AgentConversationDemo() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -4 }}
             transition={{ type: "spring", stiffness: 260, damping: 26 }}
-            className="group/chat kp-card-topline kp-card-sheen flex flex-col overflow-hidden rounded-[1.5rem] border border-white/55 bg-white/55 shadow-[0_20px_56px_-22px_rgba(0,80,160,0.28)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/30 hover:shadow-[0_28px_64px_-22px_rgba(0,135,235,0.34)]"
+            className="group/chat om-card-topline om-card-sheen flex flex-col overflow-hidden rounded-[1.5rem] border border-white/55 bg-white/55 shadow-[0_20px_56px_-22px_rgba(0,80,160,0.28)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-brand)]/30 hover:shadow-[0_28px_64px_-22px_rgba(0,135,235,0.34)]"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-white/50 px-4 py-3">
               <div className="flex items-center gap-3">
                 <MacDots />
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--kp-brand-soft)] text-[var(--kp-brand)]">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--om-brand-soft)] text-[var(--om-brand)]">
                     <IconSpark className="h-3.5 w-3.5" />
                   </span>
                   <div>
-                    <p className="text-xs font-bold text-[var(--kp-text-1)]">见微助手</p>
-                    <p className="text-[10px] text-[var(--kp-text-3)]">
+                    <p className="text-xs font-bold text-[var(--om-text-1)]">见微助手</p>
+                    <p className="text-[10px] text-[var(--om-text-3)]">
                       {scenario.label} · {turns.length} 轮
                     </p>
                   </div>
@@ -745,13 +745,13 @@ export function AgentConversationDemo() {
                   <button
                     type="button"
                     onClick={() => setRunId((n) => n + 1)}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[var(--kp-text-2)] transition hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
+                    className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[var(--om-text-2)] transition hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
                   >
                     <IconReplay className="h-3 w-3" />
                     重播
                   </button>
                 )}
-                <span className="rounded-full border border-white/60 bg-white/70 px-2.5 py-0.5 font-mono text-[10px] text-[var(--kp-text-2)]">
+                <span className="rounded-full border border-white/60 bg-white/70 px-2.5 py-0.5 font-mono text-[10px] text-[var(--om-text-2)]">
                   deepseek-v4
                 </span>
               </div>
@@ -759,10 +759,10 @@ export function AgentConversationDemo() {
 
             <div
               ref={chatScrollRef}
-              className="kp-scroll-hidden flex h-[min(52vh,420px)] flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 md:h-[460px] md:px-5"
+              className="om-scroll-hidden flex h-[min(52vh,420px)] flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4 md:h-[460px] md:px-5"
             >
               {phase.kind === "idle" && (
-                <div className="flex min-h-full flex-1 items-center justify-center text-xs text-[var(--kp-text-3)]">
+                <div className="flex min-h-full flex-1 items-center justify-center text-xs text-[var(--om-text-3)]">
                   滚动到此处开始回放…
                 </div>
               )}
@@ -807,39 +807,39 @@ export function AgentConversationDemo() {
 
                   return (
                     <div key={`${scenarioId}-${t}`} className="flex flex-col gap-2.5">
-                      <div className="my-0.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-[var(--kp-text-3)]">
-                        <span className="h-px flex-1 bg-[var(--kp-divider)]" />
+                      <div className="my-0.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-[var(--om-text-3)]">
+                        <span className="h-px flex-1 bg-[var(--om-divider)]" />
                         Round {t + 1}
-                        <span className="h-px flex-1 bg-[var(--kp-divider)]" />
+                        <span className="h-px flex-1 bg-[var(--om-divider)]" />
                       </div>
 
                       <motion.div
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="ml-auto max-w-[92%] rounded-2xl rounded-br-md bg-[var(--kp-brand)] px-3.5 py-2.5 text-[13px] leading-relaxed text-white shadow-[0_10px_24px_-12px_rgba(0,135,235,0.55)]"
+                        className="ml-auto max-w-[92%] rounded-2xl rounded-br-md bg-[var(--om-brand)] px-3.5 py-2.5 text-[13px] leading-relaxed text-white shadow-[0_10px_24px_-12px_rgba(0,135,235,0.55)]"
                       >
                         {turn.user}
                       </motion.div>
 
                       {showThink && (
                         <div className="rounded-xl border border-white/55 bg-white/50 px-3 py-2">
-                          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--kp-text-2)]">
+                          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--om-text-2)]">
                             <IconThink
                               className={cn(
-                                "h-3.5 w-3.5 text-[var(--kp-brand)]",
+                                "h-3.5 w-3.5 text-[var(--om-brand)]",
                                 thinkLive && "animate-pulse",
                               )}
                             />
                             {thinkLive ? "Thinking…" : "Thought"}
                           </div>
-                          <p className="text-[12px] leading-relaxed text-[var(--kp-text-2)]">
+                          <p className="text-[12px] leading-relaxed text-[var(--om-text-2)]">
                             {turn.thinking}
                           </p>
                         </div>
                       )}
 
                       {showTools && toolIndex >= 0 && (
-                        <div className="space-y-1.5 border-l-2 border-[var(--kp-brand)]/20 pl-2.5">
+                        <div className="space-y-1.5 border-l-2 border-[var(--om-brand)]/20 pl-2.5">
                           {turn.tools.slice(0, toolIndex + 1).map((tool, i) => {
                             let status: ToolStatus = "done";
                             if (p.kind === "tools" && p.turn === t) {
@@ -863,10 +863,10 @@ export function AgentConversationDemo() {
                       )}
 
                       {showReply && replyChars > 0 && (
-                        <div className="mr-auto max-w-[94%] rounded-2xl rounded-bl-md border border-white/60 bg-white/85 px-3.5 py-3 text-[13px] leading-relaxed text-[var(--kp-text-1)] shadow-sm">
+                        <div className="mr-auto max-w-[94%] rounded-2xl rounded-bl-md border border-white/60 bg-white/85 px-3.5 py-3 text-[13px] leading-relaxed text-[var(--om-text-1)] shadow-sm">
                           {turn.assistant.slice(0, replyChars)}
                           {p.kind === "reply" && p.turn === t && (
-                            <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-[2px] animate-pulse bg-[var(--kp-brand)]" />
+                            <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-[2px] animate-pulse bg-[var(--om-brand)]" />
                           )}
                         </div>
                       )}
@@ -880,30 +880,30 @@ export function AgentConversationDemo() {
             <motion.div
               whileHover={{ y: -5, scale: 1.015 }}
               transition={{ type: "spring", stiffness: 260, damping: 24 }}
-              className="rounded-2xl border border-white/55 bg-white/50 p-5 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--kp-brand)]/35 hover:shadow-[0_20px_48px_-16px_rgba(0,135,235,0.28)]"
+              className="rounded-2xl border border-white/55 bg-white/50 p-5 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500 hover:border-[var(--om-brand)]/35 hover:shadow-[0_20px_48px_-16px_rgba(0,135,235,0.28)]"
             >
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-brand)]">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--om-brand)]">
                 当前场景
               </p>
-              <p className="text-sm font-bold text-[var(--kp-text-1)]">{scenario.label}</p>
-              <p className="mt-1 text-xs text-[var(--kp-text-2)]">{scenario.hint}</p>
-              <ul className="mt-4 space-y-2.5 text-sm text-[var(--kp-text-2)]">
+              <p className="text-sm font-bold text-[var(--om-text-1)]">{scenario.label}</p>
+              <p className="mt-1 text-xs text-[var(--om-text-2)]">{scenario.hint}</p>
+              <ul className="mt-4 space-y-2.5 text-sm text-[var(--om-text-2)]">
                 <li className="flex gap-2">
-                  <IconThink className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
+                  <IconThink className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]" />
                   每轮含思考过程
                 </li>
                 <li className="flex gap-2">
-                  <IconTool className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-accent-deep)]" />
+                  <IconTool className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-accent-deep)]" />
                   工具调用带 Args / Result
                 </li>
                 <li className="flex gap-2">
-                  <IconBubble className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
+                  <IconBubble className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]" />
                   本场景 {turns.length} 轮（各场景 4–6 轮不等）
                 </li>
               </ul>
               <Link
                 href="/chat"
-                className="group mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--kp-brand)] px-5 text-xs font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[var(--kp-brand-dark)]"
+                className="group mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--om-brand)] px-5 text-xs font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[var(--om-brand-dark)]"
               >
                 <IconBubble className="h-3.5 w-3.5" />
                 开始真实对话
@@ -914,7 +914,7 @@ export function AgentConversationDemo() {
             <motion.div
               whileHover={{ y: 2, scale: 0.99 }}
               transition={{ type: "spring", stiffness: 280, damping: 24 }}
-              className="rounded-2xl border border-white/55 bg-white/40 p-4 text-[11px] leading-relaxed text-[var(--kp-text-3)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--kp-accent)]/35 hover:bg-white/55 hover:shadow-[inset_0_2px_10px_rgba(0,80,160,0.06)]"
+              className="rounded-2xl border border-white/55 bg-white/40 p-4 text-[11px] leading-relaxed text-[var(--om-text-3)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:border-[var(--om-accent)]/35 hover:bg-white/55 hover:shadow-[inset_0_2px_10px_rgba(0,80,160,0.06)]"
             >
               切换场景会重播该场景剧本。点开工具卡片可看入参与返回，对齐真实 Chat 时间线。
             </motion.div>

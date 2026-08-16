@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { prisma } from "../db.js";
-import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 import { getAppConfig } from "../infra/config.js";
 import { getEventBus } from "../infra/eventBus.js";
 import { getServiceContainer } from "../infra/serviceContainer.js";

@@ -91,13 +91,13 @@ export function AskUserPrompt({
     <div
       data-testid="ask-user-prompt"
       className={cn(
-        "w-full rounded-xl border border-[var(--kp-brand-light)] bg-[var(--kp-bg)] px-4 py-3 shadow-sm",
+        "w-full rounded-xl border border-[var(--om-brand-light)] bg-[var(--om-bg)] px-4 py-3 shadow-sm",
         className,
       )}
     >
-      <p className="text-sm font-medium text-[var(--kp-text-1)]">{question}</p>
+      <p className="text-sm font-medium text-[var(--om-text-1)]">{question}</p>
       {channel === "email" && (
-        <p className="mt-1 text-[11px] text-[var(--kp-text-3)]">
+        <p className="mt-1 text-[11px] text-[var(--om-text-3)]">
           已发邮件；也可在此直接作答，或回复邮件。
         </p>
       )}
@@ -116,12 +116,12 @@ export function AskUserPrompt({
                 className={cn(
                   "flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                   selected === idx
-                    ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)]/40"
-                    : "border-[var(--kp-divider)] hover:border-[var(--kp-brand-light)] hover:bg-[var(--kp-bg-alt)]",
+                    ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)]/40"
+                    : "border-[var(--om-divider)] hover:border-[var(--om-brand-light)] hover:bg-[var(--om-bg-alt)]",
                 )}
               >
-                <span className="shrink-0 font-semibold text-[var(--kp-brand)]">{idx + 1}.</span>
-                <span className="min-w-0 flex-1 text-[var(--kp-text-1)]">{opt}</span>
+                <span className="shrink-0 font-semibold text-[var(--om-brand)]">{idx + 1}.</span>
+                <span className="min-w-0 flex-1 text-[var(--om-text-1)]">{opt}</span>
               </button>
             </li>
           ))}
@@ -141,14 +141,14 @@ export function AskUserPrompt({
           }}
           placeholder={opts.length > 0 ? "自定义回答…" : "输入你的答复…"}
           disabled={resolveMutation.isPending}
-          className="min-w-0 flex-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 text-sm text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-sm text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
         />
         <button
           type="button"
           data-testid="ask-user-submit"
           disabled={resolveMutation.isPending || !custom.trim()}
           onClick={() => submit(custom)}
-          className="shrink-0 rounded-lg bg-[var(--kp-brand)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-[var(--om-brand)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {resolveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "提交"}
         </button>

@@ -36,7 +36,7 @@ import { createMemoryRepository, decayMemories, consolidateMemories } from "./me
 import { distillExperienceToProcedural } from "./agentEvolution.js";
 import { sendEmailNotification } from "./emailNotifier.js";
 import { claimExclusiveSessionTaskRun } from "./taskClaim.js";
-import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES, PERSONA_DISTILL_CRON } from "@knowpilot/shared";
+import { HEARTBEAT_MAX_CONSECUTIVE_FAILURES, PERSONA_DISTILL_CRON } from "@oasismind/shared";
 import type { PersonaDistillResult } from "./personaDistiller.js";
 import { bootDetail } from "./bootLog.js";
 import {

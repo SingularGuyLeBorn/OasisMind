@@ -3,7 +3,7 @@
  */
 
 import { trpcMutate, trpcQuery } from "./trpcE2e";
-import { LLM_PROVIDER_DEEPSEEK } from "@knowpilot/shared";
+import { LLM_PROVIDER_DEEPSEEK } from "@oasismind/shared";
 
 export interface UserOnlySessionFixture {
   sessionId: string;

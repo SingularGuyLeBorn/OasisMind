@@ -6,8 +6,8 @@ import type {
   CreateSkillInput,
   UpdateSkillInput,
   ListSkillsInput,
-} from "@knowpilot/shared";
-import { canonicalListTag, formatTagsCsv, tagsForFts, tagsFromCsv } from "@knowpilot/shared";
+} from "@oasismind/shared";
+import { canonicalListTag, formatTagsCsv, tagsForFts, tagsFromCsv } from "@oasismind/shared";
 import { FileSyncService } from "../../services.js";
 import { parseSkillKind, skillFileSlug } from "../skillPackage.js";
 

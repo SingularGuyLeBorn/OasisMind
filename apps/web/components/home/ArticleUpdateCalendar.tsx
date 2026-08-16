@@ -23,10 +23,10 @@ export type ActivityCalendarData = {
 
 const LEVEL_CLASS = [
   "bg-black/[0.07]",
-  "bg-[var(--kp-brand)]/25",
-  "bg-[var(--kp-brand)]/45",
-  "bg-[var(--kp-brand)]/70",
-  "bg-[var(--kp-brand)]",
+  "bg-[var(--om-brand)]/25",
+  "bg-[var(--om-brand)]/45",
+  "bg-[var(--om-brand)]/70",
+  "bg-[var(--om-brand)]",
 ] as const;
 
 const WEEKDAY_LABELS = ["", "一", "", "三", "", "五", ""];
@@ -98,8 +98,8 @@ function PostList({
     tone === "created"
       ? "text-[#1f6f56] bg-[#2f9f7a]/10 border-[#2f9f7a]/25"
       : tone === "updated"
-        ? "text-[var(--kp-brand-deep)] bg-[var(--kp-brand-soft)] border-[var(--kp-brand)]/25"
-        : "text-[var(--kp-text-3)] bg-black/[0.04] border-[var(--kp-divider)]";
+        ? "text-[var(--om-brand-deep)] bg-[var(--om-brand-soft)] border-[var(--om-brand)]/25"
+        : "text-[var(--om-text-3)] bg-black/[0.04] border-[var(--om-divider)]";
   const linkable = tone !== "deleted";
 
   return (
@@ -108,29 +108,29 @@ function PostList({
         <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", toneClass)}>
           {title}
         </span>
-        <span className="text-[10px] tabular-nums text-[var(--kp-text-3)]">{items.length}</span>
+        <span className="text-[10px] tabular-nums text-[var(--om-text-3)]">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-[11px] text-[var(--kp-text-3)]">{empty}</p>
+        <p className="text-[11px] text-[var(--om-text-3)]">{empty}</p>
       ) : (
-        <ul className="kp-scroll-hidden max-h-28 space-y-1 overflow-y-auto">
+        <ul className="om-scroll-hidden max-h-28 space-y-1 overflow-y-auto">
           {items.map((p) => {
             const gardenLabel = formatGardenId(p.garden);
             const tip = `${gardenLabel} / ${p.title}`;
             const body = (
               <>
-                <span className="shrink-0 text-[10px] text-[var(--kp-text-3)]">{gardenLabel}/</span>
+                <span className="shrink-0 text-[10px] text-[var(--om-text-3)]">{gardenLabel}/</span>
                 <span className="min-w-0 truncate">{p.title}</span>
               </>
             );
             const cls =
-              "flex min-w-0 w-full items-baseline gap-1 rounded-lg bg-black/[0.03] px-2 py-1 text-[11px] text-[var(--kp-text-2)]";
+              "flex min-w-0 w-full items-baseline gap-1 rounded-lg bg-black/[0.03] px-2 py-1 text-[11px] text-[var(--om-text-2)]";
             return (
               <li key={p.id} className="min-w-0 w-full">
                 {linkable ? (
                   <Link
                     href={postDetailHref(p.slug, p.garden)}
-                    className={cn(cls, "transition-colors hover:bg-[var(--kp-brand-soft)] hover:text-[var(--kp-brand)]")}
+                    className={cn(cls, "transition-colors hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand)]")}
                     title={tip}
                   >
                     {body}
@@ -190,12 +190,12 @@ function DayDetailPanel({
     >
       <div className="mb-3 flex w-full flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--kp-text-3)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--om-text-3)]">
             {"{"} 当日详情 {"}"}
           </p>
-          <p className="text-sm font-bold text-[var(--kp-text-1)]">{formatTipDate(date)}</p>
+          <p className="text-sm font-bold text-[var(--om-text-1)]">{formatTipDate(date)}</p>
         </div>
-        <span className="rounded-full bg-[var(--kp-brand-soft)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--kp-brand-deep)]">
+        <span className="rounded-full bg-[var(--om-brand-soft)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--om-brand-deep)]">
           [{count}]
         </span>
       </div>
@@ -212,9 +212,9 @@ function DayDetailPanel({
             className="relative min-w-0 overflow-hidden rounded-2xl px-3.5 py-3 text-white"
             style={{
               background:
-                "linear-gradient(155deg, color-mix(in srgb, var(--kp-brand) 78%, white), var(--kp-brand-deep))",
+                "linear-gradient(155deg, color-mix(in srgb, var(--om-brand) 78%, white), var(--om-brand-deep))",
               boxShadow:
-                "0 16px 36px -16px color-mix(in srgb, var(--kp-brand) 55%, transparent), inset 0 1px 0 rgba(255,255,255,0.28)",
+                "0 16px 36px -16px color-mix(in srgb, var(--om-brand) 55%, transparent), inset 0 1px 0 rgba(255,255,255,0.28)",
             }}
           >
             <div
@@ -292,11 +292,11 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
     <section className="relative overflow-hidden px-6 py-10 lg:px-12 lg:py-12">
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-5">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Activity
           </p>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
               文章更新 <CurlyMark>日历</CurlyMark>
             </h2>
             <SquareMark className="text-xs font-semibold">{data.totalUpdates} 次</SquareMark>
@@ -305,12 +305,12 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
 
         <ScrollReveal delay={0.06}>
           <div className="rounded-2xl border border-white/55 bg-white/45 p-4 shadow-[0_12px_40px_-20px_rgba(0,80,160,0.18)] backdrop-blur-xl sm:p-5">
-            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--kp-text-3)]">
+            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--om-text-3)]">
               <span className="rounded-full border border-white/70 bg-white/60 px-2.5 py-0.5">
-                <span className="font-semibold text-[var(--kp-text-1)]">{data.totalUpdates}</span> 次更新
+                <span className="font-semibold text-[var(--om-text-1)]">{data.totalUpdates}</span> 次更新
               </span>
               <span className="rounded-full border border-white/70 bg-white/60 px-2.5 py-0.5">
-                <span className="font-semibold text-[var(--kp-text-1)]">{data.activeDays}</span> 个活跃日
+                <span className="font-semibold text-[var(--om-text-1)]">{data.activeDays}</span> 个活跃日
               </span>
               <span className="tabular-nums">
                 {data.startDate} → {data.endDate}
@@ -325,7 +325,7 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
                     {months.map((m) => (
                       <span
                         key={`${m.label}-${m.col}`}
-                        className="absolute top-0 text-[10px] font-medium text-[var(--kp-text-3)]"
+                        className="absolute top-0 text-[10px] font-medium text-[var(--om-text-3)]"
                         style={{
                           left: weeks.length > 0 ? `${(m.col / weeks.length) * 100}%` : 0,
                         }}
@@ -340,7 +340,7 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
                       {WEEKDAY_LABELS.map((label, i) => (
                         <div
                           key={i}
-                          className="flex aspect-square w-full items-center text-[9px] leading-none text-[var(--kp-text-3)]"
+                          className="flex aspect-square w-full items-center text-[9px] leading-none text-[var(--om-text-3)]"
                         >
                           {label}
                         </div>
@@ -366,7 +366,7 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
                                   future ? "bg-transparent" : LEVEL_CLASS[level],
                                   !future && "hover:z-[1] hover:scale-110",
                                   isSelected &&
-                                    "z-[1] scale-110 shadow-[0_0_0_1.5px_var(--kp-brand),0_0_8px_rgba(0,135,235,0.45)]",
+                                    "z-[1] scale-110 shadow-[0_0_0_1.5px_var(--om-brand),0_0_8px_rgba(0,135,235,0.45)]",
                                 )}
                                 onMouseEnter={(e) => {
                                   if (future) return;
@@ -409,7 +409,7 @@ export function ArticleUpdateCalendar({ data }: { data: ActivityCalendarData | n
               typeof document !== "undefined" &&
               createPortal(
                 <div
-                  className="pointer-events-none fixed z-[200] rounded-lg border border-white/70 bg-[var(--kp-text-1)] px-2.5 py-1.5 text-[11px] text-white shadow-lg"
+                  className="pointer-events-none fixed z-[200] rounded-lg border border-white/70 bg-[var(--om-text-1)] px-2.5 py-1.5 text-[11px] text-white shadow-lg"
                   style={{ left: tip.x + 14, top: tip.y + 14 }}
                 >
                   <span className="font-semibold">

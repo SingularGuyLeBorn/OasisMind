@@ -6,7 +6,7 @@ import type {
   CreateTriggerInput,
   UpdateTriggerInput,
   ListTriggersInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 
 export class TriggerService extends BaseService<

@@ -17,7 +17,7 @@ import { executeNativeTool } from "../infra/nativeTools.js";
 import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
 import { skillToolName, parseSkillToolName, buildSkillToolSchema, executeSkill } from "../infra/skillRunner.js";
 import { mcpToolName } from "../infra/mcpUtils.js";
-import { PACKS_FULL } from "@knowpilot/shared";
+import { PACKS_FULL } from "@oasismind/shared";
 import { createTempProjectDir, createAgentCtx, createNativeCtx, makeSkillEntity } from "./helpers/toolTestFixtures.js";
 import type { ToolRegistryEntry } from "../infra/agentTools.js";
 import fs from "fs";

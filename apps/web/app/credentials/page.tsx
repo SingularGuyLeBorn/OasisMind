@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { KeyRound, Plus, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Credential } from "@knowpilot/shared";
+import type { Credential } from "@oasismind/shared";
 import { useCredential } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, ConfirmDialog, Pagination, PageHeader } from "@/components/shared";
@@ -58,7 +58,7 @@ export default function CredentialsPage() {
     createMutation.mutate({
       name: `demo_key_${Date.now().toString(36).slice(-4)}`,
       type: "api_key",
-      value: `kp-demo-${Math.random().toString(36).slice(2, 10)}`,
+      value: `om-demo-${Math.random().toString(36).slice(2, 10)}`,
       scope: ["llm"],
     });
   };
@@ -80,7 +80,7 @@ export default function CredentialsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={KeyRound}
         title="Credentials 凭据库"
@@ -120,17 +120,17 @@ export default function CredentialsPage() {
                   y: 0,
                   transition: { delay: idx * 0.04, type: "spring", stiffness: 200, damping: 20 },
                 }}
-                className={cn("kp-card-premium kp-lift group relative overflow-hidden rounded-2xl", density === "compact" ? "p-3" : "p-5")}
+                className={cn("om-card-premium om-lift group relative overflow-hidden rounded-2xl", density === "compact" ? "p-3" : "p-5")}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="font-bold text-sm text-[var(--kp-text-1)]">{cred.name}</h3>
-                    <span className="text-[10px] text-[var(--kp-text-3)]">{TYPE_LABEL[cred.type]}</span>
+                    <h3 className="font-bold text-sm text-[var(--om-text-1)]">{cred.name}</h3>
+                    <span className="text-[10px] text-[var(--om-text-3)]">{TYPE_LABEL[cred.type]}</span>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Link
                       href={`/credentials/edit/${cred.id}`}
-                      className="text-xs text-[var(--kp-brand-deep)] hover:text-[var(--kp-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--kp-brand-soft)]"
+                      className="text-xs text-[var(--om-brand-deep)] hover:text-[var(--om-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--om-brand-soft)]"
                     >
                       编辑
                     </Link>
@@ -144,7 +144,7 @@ export default function CredentialsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 rounded-lg bg-[var(--kp-bg-soft)] px-3 py-2 font-mono text-xs text-[var(--kp-text-2)] mb-3">
+                <div className="flex items-center gap-2 rounded-lg bg-[var(--om-bg-soft)] px-3 py-2 font-mono text-xs text-[var(--om-text-2)] mb-3">
                   <span className="flex-1 truncate">{maskValue(cred.valuePreview)}</span>
                 </div>
 
@@ -152,17 +152,17 @@ export default function CredentialsPage() {
                   {(cred.scope ?? []).map((s) => (
                     <span
                       key={s}
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${SCOPE_COLORS[s] || "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"}`}
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${SCOPE_COLORS[s] || "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"}`}
                     >
                       {s}
                     </span>
                   ))}
                   {(!cred.scope || cred.scope.length === 0) && (
-                    <span className="text-[10px] text-[var(--kp-text-3)]">无 scope</span>
+                    <span className="text-[10px] text-[var(--om-text-3)]">无 scope</span>
                   )}
                 </div>
                 {cred.expiresAt && (
-                  <div className="text-[10px] text-[var(--kp-text-3)]">
+                  <div className="text-[10px] text-[var(--om-text-3)]">
                     {formatExpiresAt(cred.expiresAt)}
                   </div>
                 )}

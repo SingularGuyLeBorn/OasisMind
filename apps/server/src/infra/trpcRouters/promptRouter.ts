@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { createPromptSchema, updatePromptSchema, listPromptsSchema } from "@knowpilot/shared";
+import { createPromptSchema, updatePromptSchema, listPromptsSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const promptRouter = router({

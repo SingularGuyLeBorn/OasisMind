@@ -16,7 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import type { PrismaClient, Agent, Prisma } from "@prisma/client";
-import { TIER_DEFAULT_TOOLS, DEFAULT_LLM_MODEL, type AgentTier } from "@knowpilot/shared";
+import { TIER_DEFAULT_TOOLS, DEFAULT_LLM_MODEL, type AgentTier } from "@oasismind/shared";
 import { getAppConfig } from "./config.js";
 
 /* ─── 类型 ─── */

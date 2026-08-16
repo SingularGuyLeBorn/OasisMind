@@ -31,7 +31,7 @@ function textBeforeCursor(view: EditorView): { text: string; from: number } {
 export const milkdownAtAgent = $prose(
   () =>
     new Plugin({
-      key: new PluginKey("kp-milkdown-at-agent"),
+      key: new PluginKey("om-milkdown-at-agent"),
       view() {
         return {
           update(view, prevState) {

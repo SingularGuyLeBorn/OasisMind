@@ -14,7 +14,7 @@ import { getAppConfig, loadRootEnv } from "./infra/config.js";
 import { installProcessSafetyHandlers } from "./infra/processSafety.js";
 import { initGlobalProxy } from "./infra/proxyDispatcher.js";
 import { bootDetail } from "./infra/bootLog.js";
-import { formatPacksSummary, isPackEnabled } from "@knowpilot/shared";
+import { formatPacksSummary, isPackEnabled } from "@oasismind/shared";
 
 // 尽早挂安全网：Tesseract/Skill VM/第三方漏网微任务不得打死进程
 installProcessSafetyHandlers();
@@ -60,7 +60,7 @@ app.set("trust proxy", "loopback");
 // 优先加载 monorepo 根目录 .env（override：文件权威，避免 pnpm parent 旧 env 卡住白名单）
 loadRootEnv(undefined, { override: true });
 
-// 初始化全局代理（国内访问国外 LLM/站点；读 HTTPS_PROXY/KP_HTTPS_PROXY，未设则直连）
+// 初始化全局代理（国内访问国外 LLM/站点；读 HTTPS_PROXY/OM_HTTPS_PROXY，未设则直连）
 initGlobalProxy();
 
 // 初始化配置、事件总线、Service容器、触发器引擎
@@ -549,7 +549,7 @@ await hydrateLlmBudget(config.projectRoot).catch((err) => {
   console.error("❌ [llmBudget] 启动 hydrate 失败（将以内存零消耗继续）:", err);
 });
 
-// P0-01：PUBLIC_URL + 无鉴权 → 拒绝启动（除非 KP_ALLOW_INSECURE_PUBLIC=1）
+// P0-01：PUBLIC_URL + 无鉴权 → 拒绝启动（除非 OM_ALLOW_INSECURE_PUBLIC=1）
 try {
   assertPublicUrlAuthSafe(config);
 } catch (err) {

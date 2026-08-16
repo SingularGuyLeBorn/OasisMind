@@ -3,7 +3,7 @@
  * value = 程序/磁盘权威；content = 喂 LLM 的投影。本文件不改现网调用方。
  */
 
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
 
 export const TOOL_ENVELOPE_BRAND = "__kpToolEnvelope" as const;
 

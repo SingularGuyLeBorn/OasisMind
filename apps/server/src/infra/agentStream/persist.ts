@@ -4,7 +4,7 @@
  */
 
 import { randomBytes } from "node:crypto";
-import type { AgentChatInput } from "@knowpilot/shared";
+import type { AgentChatInput } from "@oasismind/shared";
 import type { AppConfig } from "../config.js";
 import type { ServiceContainer } from "../serviceContainer.js";
 import type { StoredToolCall } from "../chatHistory.js";

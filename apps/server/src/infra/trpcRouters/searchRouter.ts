@@ -7,7 +7,7 @@ import {
   globalSearchSchema,
   tagFacetsSchema,
   browseByTagSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { executeNativeTool } from "../nativeTools.js";
 import { createTrpcInvoker } from "../trpcInvoker.js";

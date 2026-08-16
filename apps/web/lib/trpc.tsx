@@ -4,7 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCReact, httpLink, httpBatchLink, splitLink } from "@trpc/react-query";
 import superjson from "superjson";
-import type { AppRouter } from "@knowpilot/server/router";
+import type { AppRouter } from "@oasismind/server/router";
 import { authHeaders } from "@/lib/auth";
 
 export const trpc = createTRPCReact<AppRouter>();

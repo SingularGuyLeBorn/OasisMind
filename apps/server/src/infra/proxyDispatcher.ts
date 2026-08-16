@@ -7,7 +7,7 @@
  * 铁律：OneBot / NapCat / 本机 tRPC / Prisma 等 loopback 绝不能进 Clash，
  * 否则会 HTTP 502——表现为「QQ 收得到、回不出去」。
  *
- * 优先级：KP_HTTPS_PROXY > HTTPS_PROXY > HTTP_PROXY > KP_HTTP_PROXY。
+ * 优先级：OM_HTTPS_PROXY > HTTPS_PROXY > HTTP_PROXY > OM_HTTP_PROXY。
  */
 
 import { setGlobalDispatcher, EnvHttpProxyAgent, getGlobalDispatcher, Agent } from "undici";
@@ -16,7 +16,7 @@ import { bootDetail } from "./bootLog.js";
 let initialized = false;
 let activeProxyUrl: string | null = null;
 
-/** 本机服务默认不走代理（可被 NO_PROXY / KP_NO_PROXY 追加） */
+/** 本机服务默认不走代理（可被 NO_PROXY / OM_NO_PROXY 追加） */
 const DEFAULT_NO_PROXY = "localhost,127.0.0.1,::1,.local";
 
 function mergeNoProxy(...parts: Array<string | undefined>): string {
@@ -36,10 +36,10 @@ export function initGlobalProxy(): { proxyUrl: string | null } {
   initialized = true;
 
   const proxyUrl =
-    process.env.KP_HTTPS_PROXY?.trim() ||
+    process.env.OM_HTTPS_PROXY?.trim() ||
     process.env.HTTPS_PROXY?.trim() ||
     process.env.HTTP_PROXY?.trim() ||
-    process.env.KP_HTTP_PROXY?.trim() ||
+    process.env.OM_HTTP_PROXY?.trim() ||
     "";
 
   if (!proxyUrl) {
@@ -51,7 +51,7 @@ export function initGlobalProxy(): { proxyUrl: string | null } {
     DEFAULT_NO_PROXY,
     process.env.NO_PROXY,
     process.env.no_proxy,
-    process.env.KP_NO_PROXY,
+    process.env.OM_NO_PROXY,
   );
   // 同步写回，便于子进程 / 第三方库读到同一份绕过列表
   process.env.NO_PROXY = noProxy;
@@ -66,7 +66,7 @@ export function initGlobalProxy(): { proxyUrl: string | null } {
       }),
     );
     activeProxyUrl = proxyUrl;
-    // 默认安静；KP_VERBOSE_BOOT=1 时打印。初始化失败仍会 warn。
+    // 默认安静；OM_VERBOSE_BOOT=1 时打印。初始化失败仍会 warn。
     bootDetail(`[Proxy] 已启用 ${proxyUrl}（本机绕过: ${noProxy}）`);
   } catch (err) {
     console.warn(

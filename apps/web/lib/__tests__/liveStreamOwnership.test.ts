@@ -9,7 +9,7 @@ import {
   ownsLiveRender,
   type MessageGroup,
 } from "@/lib/chatMessageUtils";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 
 function fakeUser(id: string, clientMessageId?: string): ChatMessage {
   return {

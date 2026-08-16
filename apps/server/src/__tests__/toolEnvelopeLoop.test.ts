@@ -6,8 +6,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
-import { KP_RESULT_PATH_KEY } from "../infra/toolResultOffload.js";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
+import { OM_RESULT_PATH_KEY } from "../infra/toolResultOffload.js";
 import { materializeToolEnvelope } from "../infra/tools/toolPipeline.js";
 import { formatAsyncToolDelivery } from "../infra/asyncToolDeliveryFormat.js";
 import { listNativeTools } from "../infra/nativeTools.js";
@@ -18,7 +18,7 @@ describe("toolEnvelopeLoop", () => {
 
   beforeEach(() => {
     listNativeTools();
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-env-loop-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "om-env-loop-"));
     fs.mkdirSync(path.join(root, "data", "tool-results"), { recursive: true });
   });
 
@@ -78,10 +78,10 @@ describe("toolEnvelopeLoop", () => {
       expect(Array.isArray(parsed.keys)).toBe(true);
       expect((parsed.keys as string[])[0]).toBe("key_0_complete");
     }
-    expect(parsed[KP_RESULT_PATH_KEY] ?? envelope.persist?.path).toBeTruthy();
+    expect(parsed[OM_RESULT_PATH_KEY] ?? envelope.persist?.path).toBeTruthy();
   });
 
-  it("offload 后 executedTools 是瘦卡且含 _kp_result_path", () => {
+  it("offload 后 executedTools 是瘦卡且含 _om_result_path", () => {
     const config = createTestConfig(root);
     const value = { title: "t", content: "x".repeat(8000) };
     const envelope = materializeToolEnvelope(value, {
@@ -92,7 +92,7 @@ describe("toolEnvelopeLoop", () => {
       toolCallId: "call-card",
     });
     const card = envelope.content as Record<string, unknown>;
-    expect(card[KP_RESULT_PATH_KEY]).toBeTruthy();
+    expect(card[OM_RESULT_PATH_KEY]).toBeTruthy();
     expect(JSON.stringify(card)).not.toContain("x".repeat(500));
   });
 

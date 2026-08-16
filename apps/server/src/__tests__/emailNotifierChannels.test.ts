@@ -51,7 +51,7 @@ describe("emailNotifier channels", () => {
   });
 
   it("仅 NTFY_TOPIC 时可推送（EMAIL_PROVIDER=none）", async () => {
-    process.env.NTFY_TOPIC = "kp-test-topic-xyz";
+    process.env.NTFY_TOPIC = "om-test-topic-xyz";
     const result = await sendEmailNotification(config, undefined, {
       subject: "标题",
       body: "正文",
@@ -59,7 +59,7 @@ describe("emailNotifier channels", () => {
     expect(result).toMatchObject({ success: true });
     expect(vi.mocked(fetch)).toHaveBeenCalled();
     const [url, init] = vi.mocked(fetch).mock.calls[0]!;
-    expect(String(url)).toContain("ntfy.sh/kp-test-topic-xyz");
+    expect(String(url)).toContain("ntfy.sh/om-test-topic-xyz");
     expect((init as RequestInit).method).toBe("POST");
     expect((init as RequestInit).headers).toMatchObject({ Title: "标题" });
   });
@@ -67,7 +67,7 @@ describe("emailNotifier channels", () => {
   it("agentmail + ntfy 双通道扇出", async () => {
     process.env.EMAIL_PROVIDER = "agentmail";
     process.env.EMAIL_TO = "u@example.com";
-    process.env.NTFY_TOPIC = "kp-dual";
+    process.env.NTFY_TOPIC = "om-dual";
     // 通道就绪判定需要 key + inbox（beforeEach 已清掉本机 .env 注入，这里显式补齐）
     process.env.AGENTMAIL_API_KEY = "test-key";
     process.env.AGENTMAIL_INBOX_ID = "test-inbox";
@@ -81,7 +81,7 @@ describe("emailNotifier channels", () => {
   });
 
   it("ntfy 连续失败达阈值后熔断跳过", async () => {
-    process.env.NTFY_TOPIC = "kp-breaker";
+    process.env.NTFY_TOPIC = "om-breaker";
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("fail", { status: 503 })),

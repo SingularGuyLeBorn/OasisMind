@@ -9,7 +9,7 @@ import type {
   AgentChatInput,
   OperationResult,
   NextStep,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { TRPCError } from "@trpc/server";
 import {
   BaseService,
@@ -30,7 +30,7 @@ export interface SessionEntity {
   // Swarm/Subagent 扩展字段（数据库有默认值，普通会话可省略）
   parentSessionId?: string | null;
   kind?: "chat" | "subagent";
-  status?: import("@knowpilot/shared").SessionStatus;
+  status?: import("@oasismind/shared").SessionStatus;
   taskDescription?: string | null;
   isMainSession?: boolean;
   contextSummary?: string | null;

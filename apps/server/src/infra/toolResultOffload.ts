@@ -28,10 +28,10 @@ export type ToolResultOffloadMeta = {
   artifact?: ToolResultThickMetadata["artifact"];
 };
 
-export const KP_RESULT_PATH_KEY = "_kp_result_path";
-export const KP_META_PATH_KEY = "_kp_meta_path";
-export const KP_PERSISTED_KEY = "_kp_persisted";
-export const KP_ORIGINAL_CHARS_KEY = "_kp_original_chars";
+export const OM_RESULT_PATH_KEY = "_om_result_path";
+export const OM_META_PATH_KEY = "_om_meta_path";
+export const OM_PERSISTED_KEY = "_om_persisted";
+export const OM_ORIGINAL_CHARS_KEY = "_om_original_chars";
 
 export type ToolResultPersistOutcome = {
   path: string;
@@ -162,18 +162,18 @@ function annotateWithPath(
   if (result !== null && typeof result === "object" && !Array.isArray(result)) {
     return {
       ...(result as Record<string, unknown>),
-      [KP_PERSISTED_KEY]: true,
-      [KP_RESULT_PATH_KEY]: rel,
-      [KP_META_PATH_KEY]: metaRel,
-      [KP_ORIGINAL_CHARS_KEY]: originalChars,
+      [OM_PERSISTED_KEY]: true,
+      [OM_RESULT_PATH_KEY]: rel,
+      [OM_META_PATH_KEY]: metaRel,
+      [OM_ORIGINAL_CHARS_KEY]: originalChars,
     };
   }
   return {
     value: result,
-    [KP_PERSISTED_KEY]: true,
-    [KP_RESULT_PATH_KEY]: rel,
-    [KP_META_PATH_KEY]: metaRel,
-    [KP_ORIGINAL_CHARS_KEY]: originalChars,
+    [OM_PERSISTED_KEY]: true,
+    [OM_RESULT_PATH_KEY]: rel,
+    [OM_META_PATH_KEY]: metaRel,
+    [OM_ORIGINAL_CHARS_KEY]: originalChars,
   };
 }
 
@@ -427,7 +427,7 @@ export function cleanupExpiredToolResults(
 
 /**
  * value 全文权威落盘；超阈值时对 LLM 只返回厚 metadata + keywords 瘦卡。
- * 字段名 `_kp_result_path` 不准改。原文落盘失败才抛错；index 失败仅 warn。
+ * 字段名 `_om_result_path` 不准改。原文落盘失败才抛错；index 失败仅 warn。
  */
 export function offloadToolResultIfNeeded(
   config: AppConfig,

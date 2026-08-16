@@ -11,7 +11,7 @@ import {
   MEMORY_FLUSH_STRENGTH_PREFERENCE,
   MEMORY_TYPES,
   type MemoryUserCreatableType,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { createMemoryRepository, resolveMemoryWriteScope } from "./memoryRepository.js";
 import { appendDailyNote } from "./memoryDaily.js";
 

@@ -19,7 +19,7 @@ os.environ.setdefault("FLAGS_use_mkldnn", "0")
 os.environ.setdefault("FLAGS_use_onednn", "0")
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
-# KnowPilot: tools/ocr/ → 项目根上两级
+# OasisMind: tools/ocr/ → 项目根上两级
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _project_root = os.path.dirname(os.path.dirname(_script_dir))
 _MODEL_BASE = os.environ.get("PPOCR_HOME") or os.path.join(_project_root, "weights", "ocr", "paddleocr")

@@ -15,7 +15,7 @@ const OfficeScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#F3F6FA] text-sm text-[var(--kp-text-2)]">
+      <div className="flex h-full w-full items-center justify-center bg-[#F3F6FA] text-sm text-[var(--om-text-2)]">
         正在渲染办公室…
       </div>
     ),
@@ -88,7 +88,7 @@ export function OfficeExperience() {
           >
             <Link
               href="/"
-              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-medium text-[var(--kp-text-1)] shadow-sm backdrop-blur-md transition hover:bg-white/95"
+              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-medium text-[var(--om-text-1)] shadow-sm backdrop-blur-md transition hover:bg-white/95"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               首页
@@ -103,8 +103,8 @@ export function OfficeExperience() {
                     onClick={() => setViewId(id)}
                     className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                       viewId === id
-                        ? "bg-[var(--kp-brand)] text-white"
-                        : "text-[var(--kp-text-2)] hover:bg-black/5"
+                        ? "bg-[var(--om-brand)] text-white"
+                        : "text-[var(--om-text-2)] hover:bg-black/5"
                     }`}
                   >
                     {OFFICE_VIEWS[id].label}
@@ -116,13 +116,13 @@ export function OfficeExperience() {
                   className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                     viewId === "walk"
                       ? "bg-[#0F172A] text-white"
-                      : "text-[var(--kp-text-2)] hover:bg-black/5"
+                      : "text-[var(--om-text-2)] hover:bg-black/5"
                   }`}
                 >
                   漫游
                 </button>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-xs font-medium text-[var(--kp-text-1)] shadow-sm backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-xs font-medium text-[var(--om-text-1)] shadow-sm backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -155,7 +155,7 @@ export function OfficeExperience() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <div className="max-w-xl rounded-full border border-white/70 bg-white/92 px-4 py-2 text-center text-xs font-medium text-[var(--kp-text-1)] shadow-lg backdrop-blur-md sm:text-sm">
+            <div className="max-w-xl rounded-full border border-white/70 bg-white/92 px-4 py-2 text-center text-xs font-medium text-[var(--om-text-1)] shadow-lg backdrop-blur-md sm:text-sm">
               {hint}
             </div>
           </motion.div>
@@ -175,7 +175,7 @@ function WalkPadKey({ label, code }: { label: string; code: string }) {
   return (
     <button
       type="button"
-      className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-xs font-bold text-[var(--kp-text-1)] active:bg-[var(--kp-brand)] active:text-white"
+      className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1F5F9] text-xs font-bold text-[var(--om-text-1)] active:bg-[var(--om-brand)] active:text-white"
       onPointerDown={(e) => {
         e.preventDefault();
         fire("keydown");

@@ -1,6 +1,6 @@
 /**
  * 截取 QQ 窗口；若未登录则向 WebUI 拉二维码 PNG，附图发到 EMAIL_TO。
- * pnpm --filter @knowpilot/server exec tsx src/scripts/email-qq-qr.ts
+ * pnpm --filter @oasismind/server exec tsx src/scripts/email-qq-qr.ts
  */
 import fs from "fs";
 import path from "path";
@@ -14,7 +14,7 @@ loadRootEnv();
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const proxy =
-  process.env.KP_HTTPS_PROXY?.trim() ||
+  process.env.OM_HTTPS_PROXY?.trim() ||
   process.env.HTTPS_PROXY?.trim() ||
   process.env.HTTP_PROXY?.trim() ||
   "http://127.0.0.1:7890";

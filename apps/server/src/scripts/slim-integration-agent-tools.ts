@@ -3,13 +3,13 @@
  * - 多个 github_* → 单一 github_tool
  * - 去掉 INTEGRATION_ADVANCED（语雀 Cookie / 飞书权限·Wiki·画板 / github 细粒度）
  *
- * pnpm --filter @knowpilot/server exec tsx src/scripts/slim-integration-agent-tools.ts
+ * pnpm --filter @oasismind/server exec tsx src/scripts/slim-integration-agent-tools.ts
  */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
-import { INTEGRATION_ADVANCED_OPT_IN_TOOLS } from "@knowpilot/shared";
+import { INTEGRATION_ADVANCED_OPT_IN_TOOLS } from "@oasismind/shared";
 import { getAppConfig } from "../infra/config.js";
 
 const prisma = new PrismaClient();

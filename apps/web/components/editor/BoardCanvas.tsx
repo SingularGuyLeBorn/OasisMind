@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * kp-board 手绘白板：perfect-freehand 真笔迹（压感 + 钢笔/荧光笔）+ 橡皮/撤销。
- * 数据落在 Markdown ```kp-board``` JSON；阅读态 BoardPreview 同款渲染。
+ * om-board 手绘白板：perfect-freehand 真笔迹（压感 + 钢笔/荧光笔）+ 橡皮/撤销。
+ * 数据落在 Markdown ```om-board``` JSON；阅读态 BoardPreview 同款渲染。
  */
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
@@ -32,7 +32,7 @@ export interface BoardDoc {
 
 const PEN_COLORS = [
   { id: "ink", label: "墨色", value: "#1c1917" },
-  { id: "brand", label: "品牌", value: "var(--kp-brand-deep)" },
+  { id: "brand", label: "品牌", value: "var(--om-brand-deep)" },
   { id: "red", label: "红", value: "#b91c1c" },
   { id: "blue", label: "蓝", value: "#1d4ed8" },
   { id: "green", label: "绿", value: "#15803d" },
@@ -197,17 +197,17 @@ export function BoardPreview({
     <>
       <div
         className={cn(
-          "group relative my-4 overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] transition hover:border-[var(--kp-brand)]",
+          "group relative my-4 overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-mute)] transition hover:border-[var(--om-brand)]",
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-[var(--kp-divider)] px-3 py-1.5 text-xs text-[var(--kp-text-3)]">
-          <span className="font-medium text-[var(--kp-text-2)]">画板 · 手写</span>
+        <div className="flex items-center justify-between border-b border-[var(--om-divider)] px-3 py-1.5 text-xs text-[var(--om-text-3)]">
+          <span className="font-medium text-[var(--om-text-2)]">画板 · 手写</span>
           {onEdit && (
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="rounded bg-[var(--kp-brand-soft)] px-2 py-0.5 text-xs font-medium text-[var(--kp-brand-deep)] hover:opacity-80 transition"
+              className="rounded bg-[var(--om-brand-soft)] px-2 py-0.5 text-xs font-medium text-[var(--om-brand-deep)] hover:opacity-80 transition"
             >
               点击编辑手绘
             </button>
@@ -218,7 +218,7 @@ export function BoardPreview({
             if (onEdit) setModalOpen(true);
           }}
           className={cn(
-            "relative block w-full bg-[var(--kp-bg)] text-[var(--kp-text-1)]",
+            "relative block w-full bg-[var(--om-bg)] text-[var(--om-text-1)]",
             onEdit && "cursor-pointer",
           )}
         >
@@ -411,13 +411,13 @@ function BoardEditorModalBody({
       <div
         role="dialog"
         aria-label="画板编辑"
-        className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] shadow-xl"
+        className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] shadow-xl"
         data-testid="board-editor-modal"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--kp-divider)] px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--om-divider)] px-4 py-2.5">
           <div>
-            <p className="text-sm font-medium text-[var(--kp-text-1)]">画板 · 手写</p>
-            <p className="text-[10px] text-[var(--kp-text-3)]">
+            <p className="text-sm font-medium text-[var(--om-text-1)]">画板 · 手写</p>
+            <p className="text-[10px] text-[var(--om-text-3)]">
               支持触控笔压感 · Ctrl+Z 撤销 · Ctrl+Y 重做
             </p>
           </div>
@@ -435,7 +435,7 @@ function BoardEditorModalBody({
             <ToolBtn active={tool === "eraser"} onClick={() => setTool("eraser")} title="橡皮">
               <Eraser className="h-4 w-4" />
             </ToolBtn>
-            <span className="mx-1 h-5 w-px bg-[var(--kp-divider)]" />
+            <span className="mx-1 h-5 w-px bg-[var(--om-divider)]" />
             {SIZE_PRESETS.map((s) => (
               <button
                 key={s.id}
@@ -445,14 +445,14 @@ function BoardEditorModalBody({
                 className={cn(
                   "rounded-md px-2 py-1 text-[10px]",
                   sizeId === s.id
-                    ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]",
+                    ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]",
                 )}
               >
                 {s.label}
               </button>
             ))}
-            <span className="mx-1 h-5 w-px bg-[var(--kp-divider)]" />
+            <span className="mx-1 h-5 w-px bg-[var(--om-divider)]" />
             {tool !== "eraser" &&
               colors.map((c) => (
                 <button
@@ -466,7 +466,7 @@ function BoardEditorModalBody({
                   className={cn(
                     "h-6 w-6 rounded-full border-2",
                     activeColor === c.value
-                      ? "border-[var(--kp-brand-deep)]"
+                      ? "border-[var(--om-brand-deep)]"
                       : "border-transparent",
                   )}
                   style={{
@@ -477,7 +477,7 @@ function BoardEditorModalBody({
                   }}
                 />
               ))}
-            <span className="mx-1 h-5 w-px bg-[var(--kp-divider)]" />
+            <span className="mx-1 h-5 w-px bg-[var(--om-divider)]" />
             <ToolBtn onClick={undo} disabled={doc.strokes.length === 0} title="撤销 (Ctrl+Z)">
               <RotateCcw className="h-4 w-4" />
             </ToolBtn>
@@ -489,11 +489,11 @@ function BoardEditorModalBody({
             </ToolBtn>
           </div>
         </div>
-        <div className="bg-[var(--kp-bg-mute)] p-3">
+        <div className="bg-[var(--om-bg-mute)] p-3">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${doc.w} ${doc.h}`}
-            className="block w-full touch-none rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)]"
+            className="block w-full touch-none rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)]"
             style={{
               aspectRatio: `${doc.w} / ${doc.h}`,
               cursor: tool === "eraser" ? "cell" : "crosshair",
@@ -504,24 +504,24 @@ function BoardEditorModalBody({
             onPointerLeave={onPointerUp}
             data-testid="board-canvas"
           >
-            <rect width={doc.w} height={doc.h} fill="var(--kp-bg)" />
+            <rect width={doc.w} height={doc.h} fill="var(--om-bg)" />
             {/* 淡网格，方便对齐手写 */}
             <defs>
-              <pattern id="kp-board-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+              <pattern id="om-board-grid" width="24" height="24" patternUnits="userSpaceOnUse">
                 <path
                   d="M 24 0 L 0 0 0 24"
                   fill="none"
-                  stroke="var(--kp-divider)"
+                  stroke="var(--om-divider)"
                   strokeWidth="0.5"
                   opacity="0.55"
                 />
               </pattern>
             </defs>
-            <rect width={doc.w} height={doc.h} fill="url(#kp-board-grid)" />
+            <rect width={doc.w} height={doc.h} fill="url(#om-board-grid)" />
             <StrokePaths strokes={doc.strokes} />
           </svg>
         </div>
-        <div className="flex justify-end gap-2 border-t border-[var(--kp-divider)] px-4 py-3">
+        <div className="flex justify-end gap-2 border-t border-[var(--om-divider)] px-4 py-3">
           <button
             type="button"
             onClick={onCancel}
@@ -566,10 +566,10 @@ function ToolBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--kp-text-2)] transition disabled:opacity-40 disabled:pointer-events-none",
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--om-text-2)] transition disabled:opacity-40 disabled:pointer-events-none",
         active
-          ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-          : "hover:bg-[var(--kp-bg-mute)]",
+          ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+          : "hover:bg-[var(--om-bg-mute)]",
       )}
     >
       {children}

@@ -10,10 +10,10 @@ import {
   isLocalLlmProviderId,
   parseLocalModelRef,
   type ChatSessionConfig,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
-const DEFAULT_KEY = "kp-chat-default-config";
-const sessionKey = (id: string) => `kp-chat-session-${id}`;
+const DEFAULT_KEY = "om-chat-default-config";
+const sessionKey = (id: string) => `om-chat-session-${id}`;
 
 export const DEFAULT_CHAT_CONFIG: ChatSessionConfig = {
   model: DEFAULT_LLM_MODEL,

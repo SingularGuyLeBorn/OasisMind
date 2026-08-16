@@ -59,7 +59,7 @@ function renderInline(text: string): ReactNode[] {
       nodes.push(
         <code
           key={key++}
-          className="rounded bg-[var(--kp-bg-mute)] px-1 py-0.5 font-mono text-[0.9em]"
+          className="rounded bg-[var(--om-bg-mute)] px-1 py-0.5 font-mono text-[0.9em]"
         >
           {token.slice(1, -1)}
         </code>,
@@ -98,7 +98,7 @@ export const StreamingPlainContent = memo(function StreamingPlainContent({
         return (
           <pre
             key={i}
-            className="my-2 overflow-x-auto rounded-lg bg-[var(--kp-bg-mute)] p-3 font-mono text-[12px] leading-relaxed"
+            className="my-2 overflow-x-auto rounded-lg bg-[var(--om-bg-mute)] p-3 font-mono text-[12px] leading-relaxed"
           >
             {code}
           </pre>
@@ -123,7 +123,7 @@ export const StreamingPlainContent = memo(function StreamingPlainContent({
   return (
     <div
       data-testid="streaming-plain-content"
-      className={cn("text-sm leading-relaxed text-[var(--kp-text-1)]", className)}
+      className={cn("text-sm leading-relaxed text-[var(--om-text-1)]", className)}
       spellCheck={false}
     >
       {blocks}

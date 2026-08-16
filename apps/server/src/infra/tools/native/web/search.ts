@@ -19,7 +19,7 @@ import { isSmokeInfoSource } from "../../../smokeArtifacts.js";
 import {
   DEFAULT_POST_GARDEN,
   isValidGardenIdFormat,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { NativeToolContext } from "../types.js";
 import type { PostEntity } from "../../../entityServices/postService.js";
 import { formatReadArticleFatalError } from "./article.js";

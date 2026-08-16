@@ -109,8 +109,8 @@ export function ChatInputVoiceButtons({
         className={cn(
           "inline-flex items-center justify-center rounded-lg p-1.5 transition disabled:opacity-50",
           voiceChatOn
-            ? "bg-[var(--kp-brand)]/15 text-[var(--kp-brand)] hover:bg-[var(--kp-brand)]/25"
-            : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]",
+            ? "bg-[var(--om-brand)]/15 text-[var(--om-brand)] hover:bg-[var(--om-brand)]/25"
+            : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-brand-deep)]",
         )}
         title={voiceChatOn ? "语音对话开启中：你说完我答，答完我念" : "开启语音对话（你说完自动发送，我答完自动朗读）"}
         aria-label={voiceChatOn ? "关闭语音对话" : "开启语音对话"}
@@ -127,7 +127,7 @@ export function ChatInputVoiceButtons({
             "inline-flex items-center justify-center rounded-lg p-1.5 transition disabled:opacity-50",
             listening
               ? "bg-red-500/15 text-red-500 hover:bg-red-500/25"
-              : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-brand-deep)]",
+              : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-brand-deep)]",
           )}
           title={
             sttError

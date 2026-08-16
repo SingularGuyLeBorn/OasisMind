@@ -11,7 +11,7 @@ import {
   __setGoalStateStoreForTests,
 } from "../infra/goalLoop.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
-import type { SessionGoalState } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
 
 describe("goalLoop", () => {
   let mem: Map<string, SessionGoalState | null>;

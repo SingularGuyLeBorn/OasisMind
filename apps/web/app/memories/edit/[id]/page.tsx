@@ -7,7 +7,7 @@ import { ArrowLeft, Save, Loader2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMemory } from "@/lib/hooks";
-import type { Memory } from "@knowpilot/shared";
+import type { Memory } from "@oasismind/shared";
 import { memoryLabel } from "@/lib/displayLabels";
 
 export default function MemoryDetailPage() {
@@ -24,7 +24,7 @@ export default function MemoryDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--kp-brand-deep)]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--om-brand-deep)]" />
       </div>
     );
   }
@@ -33,8 +33,8 @@ export default function MemoryDetailPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center space-y-2">
-          <p className="text-[var(--kp-text-2)]">记忆不存在</p>
-          <Link href="/memories" className="text-sm text-[var(--kp-brand-deep)] hover:underline">
+          <p className="text-[var(--om-text-2)]">记忆不存在</p>
+          <Link href="/memories" className="text-sm text-[var(--om-brand-deep)] hover:underline">
             返回列表
           </Link>
         </div>
@@ -95,42 +95,42 @@ export default function MemoryDetailPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8">
       <div className="mx-auto w-full max-w-[1400px] space-y-6">
         <div className="flex items-center gap-3">
           <Link
             href="/memories"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--kp-bg-soft)] text-[var(--kp-text-1)]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--om-bg-soft)] text-[var(--om-text-1)]"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--kp-text-1)] flex items-center gap-2">
-              <Brain className="w-5 h-5 text-[var(--kp-brand-deep)]" />
+            <h1 className="text-2xl font-bold text-[var(--om-text-1)] flex items-center gap-2">
+              <Brain className="w-5 h-5 text-[var(--om-brand-deep)]" />
               {memoryLabel({ content: String(value("content") ?? memory.content ?? "") })}
             </h1>
-            <p className="text-xs text-[var(--kp-text-3)]">ID: {memory.id}</p>
+            <p className="text-xs text-[var(--om-text-3)]">ID: {memory.id}</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--kp-text-1)]">内容</label>
+            <label className="text-sm font-medium text-[var(--om-text-1)]">内容</label>
             <textarea
               value={String(value("content") ?? "")}
               onChange={(e) => updateField("content", e.target.value)}
               rows={8}
-              className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand-deep)] focus:ring-1 focus:ring-[var(--kp-brand-deep)] resize-y"
+              className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand-deep)] focus:ring-1 focus:ring-[var(--om-brand-deep)] resize-y"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">类型</label>
-              <Input value={String(value("type") ?? "")} onChange={(e) => updateField("type", e.target.value)} placeholder="episodic / semantic" className="bg-[var(--kp-bg)]" />
+              <label className="text-sm font-medium text-[var(--om-text-1)]">类型</label>
+              <Input value={String(value("type") ?? "")} onChange={(e) => updateField("type", e.target.value)} placeholder="episodic / semantic" className="bg-[var(--om-bg)]" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">强度（0-1）</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">强度（0-1）</label>
               <Input
                 type="number"
                 min={0}
@@ -138,48 +138,48 @@ export default function MemoryDetailPage() {
                 step={0.01}
                 value={String(value("strength") ?? "")}
                 onChange={(e) => updateField("strength", Number(e.target.value))}
-                className="bg-[var(--kp-bg)]"
+                className="bg-[var(--om-bg)]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--kp-text-1)]">关键词（逗号分隔）</label>
-            <Input value={formatKeywords(value("keywords") as string[] | undefined)} onChange={(e) => updateField("keywords", parseKeywords(e.target.value))} className="bg-[var(--kp-bg)]" />
+            <label className="text-sm font-medium text-[var(--om-text-1)]">关键词（逗号分隔）</label>
+            <Input value={formatKeywords(value("keywords") as string[] | undefined)} onChange={(e) => updateField("keywords", parseKeywords(e.target.value))} className="bg-[var(--om-bg)]" />
           </div>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">Scope</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">Scope</label>
               <Input
                 value={String(value("scope") ?? "global")}
                 onChange={(e) => updateField("scope", e.target.value)}
                 placeholder="global / workspace:{id} / agent:{id}"
-                className="bg-[var(--kp-bg)]"
+                className="bg-[var(--om-bg)]"
               />
-              <p className="text-[10px] text-[var(--kp-text-3)]">
+              <p className="text-[10px] text-[var(--om-text-3)]">
                 写入权限：仅超级 Agent 可写 global；勿伪造他 Agent / Workspace
               </p>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">状态</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">状态</label>
               <select
                 value={String(value("status") ?? "active")}
                 onChange={(e) => updateField("status", e.target.value)}
-                className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm"
               >
                 <option value="active">active</option>
                 <option value="superseded">superseded</option>
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">归因</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">归因</label>
               <select
                 value={String(value("attribution") ?? "")}
                 onChange={(e) =>
                   updateField("attribution", e.target.value ? e.target.value : null)
                 }
-                className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm"
               >
                 <option value="">（未设）</option>
                 <option value="user">user</option>
@@ -190,7 +190,7 @@ export default function MemoryDetailPage() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--kp-text-1)]">有效至（可选）</label>
+              <label className="text-sm font-medium text-[var(--om-text-1)]">有效至（可选）</label>
               <Input
                 type="date"
                 value={(() => {
@@ -203,7 +203,7 @@ export default function MemoryDetailPage() {
                 onChange={(e) =>
                   updateField("validTo", e.target.value ? e.target.value : null)
                 }
-                className="bg-[var(--kp-bg)]"
+                className="bg-[var(--om-bg)]"
               />
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function MemoryDetailPage() {
           )}
 
           <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" disabled={update.isPending} className="bg-[var(--kp-brand-deep)] text-white hover:bg-[var(--kp-brand-deep)]">
+            <Button type="submit" disabled={update.isPending} className="bg-[var(--om-brand-deep)] text-white hover:bg-[var(--om-brand-deep)]">
               {update.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               保存
             </Button>

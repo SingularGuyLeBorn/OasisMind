@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { keepPreviousData } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { DEFAULT_POST_GARDEN, isValidGardenIdFormat } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN, isValidGardenIdFormat } from "@oasismind/shared";
 import { PostReadDoc } from "@/components/post/PostReadDoc";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -69,7 +69,7 @@ function BlogDetailContent() {
     if (!post?.id) return;
     if (viewedIdsRef.current.has(post.id)) return;
     try {
-      const key = `kp-blog-view:${post.id}`;
+      const key = `om-blog-view:${post.id}`;
       if (sessionStorage.getItem(key) === "1") {
         viewedIdsRef.current.add(post.id);
         return;

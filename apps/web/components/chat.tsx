@@ -9,7 +9,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { useAgent } from "@/lib/hooks";
 import { saveDefaultChatConfig } from "@/lib/chatConfig";
-import { type Agent, type ChatMessage, type ChatSessionConfig } from "@knowpilot/shared";
+import { type Agent, type ChatMessage, type ChatSessionConfig } from "@oasismind/shared";
 import { mergeUserQueueFromDb } from "@/lib/chatQueueTypes";
 import { isBackendDown } from "@/lib/backendReachability";
 import { ChatHoverMonitor } from "@/components/chatHoverMonitor";

@@ -1,5 +1,5 @@
 /**
- * @knowpilot/shared — 共享实体类型
+ * @oasismind/shared — 共享实体类型
  *
  * 为前端和 AI 提供纯 TypeScript 实体类型定义，
  * 隔离数据库（Prisma）独有的私有字段，保持前后端纯净的数据交互。

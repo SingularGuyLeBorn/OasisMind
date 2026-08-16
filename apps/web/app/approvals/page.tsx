@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, Check, X, Play, Clock, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Approval } from "@knowpilot/shared";
+import type { Approval } from "@oasismind/shared";
 import { useApproval } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, Pagination, PageHeader } from "@/components/shared";
@@ -28,10 +28,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: "kp-badge-warning",
-  approved: "kp-badge-success",
-  rejected: "kp-badge-danger",
-  executed: "kp-badge-info",
+  pending: "om-badge-warning",
+  approved: "om-badge-success",
+  rejected: "om-badge-danger",
+  executed: "om-badge-info",
 };
 
 function formatTtlRemaining(createdAt: Date | string, ttlMs: number): string | null {
@@ -159,7 +159,7 @@ export default function ApprovalsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={ShieldCheck}
         title="待你点头"
@@ -169,13 +169,13 @@ export default function ApprovalsPage() {
 
       {summary && (
         <div
-          className="rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-soft)] px-4 py-3 text-sm text-[var(--kp-text-2)]"
+          className="rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-soft)] px-4 py-3 text-sm text-[var(--om-text-2)]"
           data-testid="approval-human-todo-summary"
         >
-          <span className="font-medium text-[var(--kp-text-1)]">
+          <span className="font-medium text-[var(--om-text-1)]">
             {summary.pendingCount} 条待你点头
           </span>
-          <span className="mx-2 text-[var(--kp-text-3)]">·</span>
+          <span className="mx-2 text-[var(--om-text-3)]">·</span>
           <span>{summary.hint}</span>
         </div>
       )}
@@ -194,8 +194,8 @@ export default function ApprovalsPage() {
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition-all",
                 statusFilter === s
-                  ? "bg-[var(--kp-brand-deep)] text-white shadow-sm"
-                  : "bg-[var(--kp-bg-soft)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                  ? "bg-[var(--om-brand-deep)] text-white shadow-sm"
+                  : "bg-[var(--om-bg-soft)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
               )}
             >
               {s === "all" ? "全部" : STATUS_LABELS[s]}
@@ -229,7 +229,7 @@ export default function ApprovalsPage() {
             </Button>
             <Button
               size="sm"
-              className="bg-[var(--kp-brand-deep)] text-white"
+              className="bg-[var(--om-brand-deep)] text-white"
               disabled={busy || selectedList.length === 0}
               onClick={() =>
                 batchApprove.mutate(
@@ -266,9 +266,9 @@ export default function ApprovalsPage() {
                   transition: { delay: idx * 0.03, type: "spring", stiffness: 200, damping: 20 },
                 }}
                 className={cn(
-                  "kp-card-premium kp-lift rounded-2xl",
+                  "om-card-premium om-lift rounded-2xl",
                   density === "compact" ? "p-3" : "p-5",
-                  selected.has(approval.id) && "ring-2 ring-[var(--kp-brand-deep)]/40",
+                  selected.has(approval.id) && "ring-2 ring-[var(--om-brand-deep)]/40",
                 )}
                 data-testid="approval-card"
               >
@@ -278,22 +278,22 @@ export default function ApprovalsPage() {
                       {approval.status === "pending" && (
                         <input
                           type="checkbox"
-                          className="h-4 w-4 accent-[var(--kp-brand-deep)]"
+                          className="h-4 w-4 accent-[var(--om-brand-deep)]"
                           checked={selected.has(approval.id)}
                           onChange={() => toggleOne(approval.id)}
                           aria-label={`选择 ${formatToolDisplayName(approval.toolName)}`}
                         />
                       )}
-                      <code className="rounded-lg bg-[var(--kp-bg-mute)] px-2 py-1 text-sm font-bold text-[var(--kp-text-1)]">
+                      <code className="rounded-lg bg-[var(--om-bg-mute)] px-2 py-1 text-sm font-bold text-[var(--om-text-1)]">
                         {formatToolDisplayName(approval.toolName)}
                       </code>
-                      <span className={cn("kp-badge", STATUS_BADGE[approval.status] ?? "kp-badge-warning")}>
+                      <span className={cn("om-badge", STATUS_BADGE[approval.status] ?? "om-badge-warning")}>
                         {STATUS_LABELS[approval.status] ?? toPascalCaseId(approval.status)}
                       </span>
                       {approval.decisionScope ? (
                         <code
-                          className="kp-badge"
-                          style={{ background: "var(--kp-bg-mute)", color: "var(--kp-text-2)" }}
+                          className="om-badge"
+                          style={{ background: "var(--om-bg-mute)", color: "var(--om-text-2)" }}
                           title="DecisionScope（调度面相交检查）"
                           data-testid="approval-decision-scope"
                         >
@@ -301,10 +301,10 @@ export default function ApprovalsPage() {
                         </code>
                       ) : null}
                     </div>
-                    <pre className="rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] p-3 text-[11px] font-mono overflow-x-auto max-h-32 text-[var(--kp-text-2)] shadow-inner">
+                    <pre className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-3 text-[11px] font-mono overflow-x-auto max-h-32 text-[var(--om-text-2)] shadow-inner">
                       {formatArgs(approval.args)}
                     </pre>
-                    <p className="text-[11px] text-[var(--kp-text-3)] flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-[11px] text-[var(--om-text-3)] flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
                         {new Date(approval.createdAt).toLocaleString("zh-CN")}
@@ -341,7 +341,7 @@ export default function ApprovalsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        className="gap-1 bg-[var(--kp-brand-deep)] text-white hover:bg-[var(--kp-brand-deep)]"
+                        className="gap-1 bg-[var(--om-brand-deep)] text-white hover:bg-[var(--om-brand-deep)]"
                         onClick={() => handleApproveAndExecute(approval.id)}
                         disabled={busy}
                         data-testid="approval-approve-execute"

@@ -11,7 +11,7 @@
  *   「每轮生效」留给后续具体钩子自行选择。
  */
 
-import type { Agent } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
 import type { LlmMessage } from "./llmClient.js";
 import type { NativeToolContext } from "./tools/native/types.js";
 import {
@@ -22,7 +22,7 @@ import {
 import { getConstraintEvolutionBlock, injectConstraintBlock } from "./constraintEvolution.js";
 import { buildRuntimeContextBlock, collectVisiblePromptSections } from "./promptRuntimeContext.js";
 import { deriveVisibleSet } from "./tools/visibleSet.js";
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import { getAppConfig } from "./config.js";
 
 const SLOW_HOOK_MS = 500;
@@ -325,13 +325,13 @@ function visibleNativeNames(input: ContextHookInput): string[] {
   }).native;
 }
 
-const RUNTIME_CTX_RE = /<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/;
+const RUNTIME_CTX_RE = /<!-- om-runtime-context -->[\s\S]*?<!-- \/om-runtime-context -->/;
 
 export function upsertRuntimeContextBlock(messages: LlmMessage[], block: string): LlmMessage[] {
-  const had = messages.some((m) => typeof m.content === "string" && m.content.includes("<!-- kp-runtime-context -->"));
+  const had = messages.some((m) => typeof m.content === "string" && m.content.includes("<!-- om-runtime-context -->"));
   if (!had) return applyPrependUserContext(messages, block);
   return messages.map((m) => {
-    if (typeof m.content !== "string" || !m.content.includes("<!-- kp-runtime-context -->")) return m;
+    if (typeof m.content !== "string" || !m.content.includes("<!-- om-runtime-context -->")) return m;
     return { ...m, content: m.content.replace(RUNTIME_CTX_RE, block.trim()) };
   });
 }

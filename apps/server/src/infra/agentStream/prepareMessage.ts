@@ -2,7 +2,7 @@
  * 用户消息预备：来源归一、编辑/重试/再生成删尾、Skill 提示拼装。
  */
 
-import type { AgentChatInput, ChatAttachment, ChatConfigInput } from "@knowpilot/shared";
+import type { AgentChatInput, ChatAttachment, ChatConfigInput } from "@oasismind/shared";
 import type { StoredToolCall } from "../chatHistory.js";
 import { getStreamHub } from "../sessionStreamHub.js";
 import type { ServiceContainer } from "../serviceContainer.js";
@@ -111,7 +111,7 @@ export interface LlmCallOptions {
   temperature?: number;
   maxTokens?: number;
   enableReasoning?: boolean;
-  reasoningEffort?: import("@knowpilot/shared").ReasoningEffort;
+  reasoningEffort?: import("@oasismind/shared").ReasoningEffort;
 }
 
 export interface PrepareResult {

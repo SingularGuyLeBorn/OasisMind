@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ExternalLink, Loader2, MessageSquare, X } from "lucide-react";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { buildMessageGroups, type MessageGroup } from "@/lib/chatMessageUtils";
@@ -99,8 +99,8 @@ export function ChatHoverMonitor({ sessionId, onMouseEnter, onMouseLeave, onClos
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
           className={cn(
             "fixed right-4 top-20 z-50 flex flex-col overflow-hidden",
-            "w-96 max-h-[70vh] rounded-2xl border border-[var(--kp-divider)]",
-            "bg-[var(--kp-bg-alt)] shadow-2xl shadow-black/10",
+            "w-96 max-h-[70vh] rounded-2xl border border-[var(--om-divider)]",
+            "bg-[var(--om-bg-alt)] shadow-2xl shadow-black/10",
           )}
           style={{ width: WINDOW_WIDTH, maxHeight: WINDOW_MAX_HEIGHT }}
           onMouseEnter={onMouseEnter}
@@ -108,15 +108,15 @@ export function ChatHoverMonitor({ sessionId, onMouseEnter, onMouseLeave, onClos
           data-testid="chat-hover-monitor"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] px-4 py-3">
+          <div className="flex items-center justify-between border-b border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-4 py-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
-                <h3 className="truncate text-xs font-semibold text-[var(--kp-text-1)]">
+                <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
+                <h3 className="truncate text-xs font-semibold text-[var(--om-text-1)]">
                   {session?.title ?? "会话预览"}
                 </h3>
               </div>
-              <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--kp-text-3)]">
+              <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--om-text-3)]">
                 <span className="truncate">{session?.model ?? "—"}</span>
                 <StatusBadge status={session?.status ?? "active"} />
                 {session?.updatedAt && <span>· {formatRelativeTime(session.updatedAt)}</span>}
@@ -145,12 +145,12 @@ export function ChatHoverMonitor({ sessionId, onMouseEnter, onMouseLeave, onClos
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-3">
             {isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-xs text-[var(--kp-text-3)]">
+              <div className="flex items-center justify-center gap-2 py-8 text-xs text-[var(--om-text-3)]">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 加载中…
               </div>
             ) : groups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-[var(--kp-text-3)]">
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-[var(--om-text-3)]">
                 <MessageSquare className="h-6 w-6 opacity-40" />
                 <p className="text-xs">该会话暂无消息</p>
               </div>
@@ -163,14 +163,14 @@ export function ChatHoverMonitor({ sessionId, onMouseEnter, onMouseLeave, onClos
                   return (
                     <div key={group.userMessage.id} className="space-y-1.5">
                       <div className="flex justify-end">
-                        <div className="max-w-[85%] rounded-xl bg-[var(--kp-brand-deep)] px-2.5 py-1.5 text-[11px] text-white">
+                        <div className="max-w-[85%] rounded-xl bg-[var(--om-brand-deep)] px-2.5 py-1.5 text-[11px] text-white">
                           <p className="line-clamp-3 break-words">{userText}</p>
                         </div>
                       </div>
                       {assistantText && (
                         <div className="flex justify-start">
-                          <div className="max-w-[90%] rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-[11px] text-[var(--kp-text-1)]">
-                            <p className="line-clamp-4 break-words text-[var(--kp-text-2)]">{assistantText}</p>
+                          <div className="max-w-[90%] rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] px-2.5 py-1.5 text-[11px] text-[var(--om-text-1)]">
+                            <p className="line-clamp-4 break-words text-[var(--om-text-2)]">{assistantText}</p>
                           </div>
                         </div>
                       )}
@@ -182,7 +182,7 @@ export function ChatHoverMonitor({ sessionId, onMouseEnter, onMouseLeave, onClos
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] px-3 py-2 text-[10px] text-[var(--kp-text-3)]">
+          <div className="flex items-center justify-between border-t border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-3 py-2 text-[10px] text-[var(--om-text-3)]">
             <span>
               {messageCount > 0 ? `共 ${messageCount} 条消息 · 展示最近 ${Math.min(groups.length, 5)} 轮` : "悬停会话监控"}
             </span>
@@ -202,7 +202,7 @@ function StatusBadge({ status }: { status: string }) {
         ? "bg-amber-500/10 text-amber-600"
         : status === "failed" || status === "paused"
           ? "bg-red-500/10 text-red-600"
-          : "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]";
+          : "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]";
   const label: Record<string, string> = {
     running: "运行中",
     queued: "排队中",

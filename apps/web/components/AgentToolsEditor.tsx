@@ -19,7 +19,7 @@ import {
   parseAgentToolSelection,
   serializeAgentTools,
   type AgentToolSelection,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
@@ -71,14 +71,14 @@ function ToolPreview({ tools }: { tools: string[] }) {
   );
 
   return (
-    <div className="min-h-[4.5rem] space-y-2 rounded-xl border border-[var(--kp-brand)]/20 bg-[var(--kp-brand-soft)]/50 p-3">
+    <div className="min-h-[4.5rem] space-y-2 rounded-xl border border-[var(--om-brand)]/20 bg-[var(--om-brand-soft)]/50 p-3">
       {!data ? (
-        <div className="flex items-center gap-2 text-xs text-[var(--kp-text-3)]">
+        <div className="flex items-center gap-2 text-xs text-[var(--om-text-3)]">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           计算实际可用能力…
         </div>
       ) : (
-        <div className="flex items-start gap-2 text-xs text-[var(--kp-brand-deep)]">
+        <div className="flex items-start gap-2 text-xs text-[var(--om-brand-deep)]">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="font-medium">
@@ -88,7 +88,7 @@ function ToolPreview({ tools }: { tools: string[] }) {
               )}
             </p>
             {data.usesDefaultNative && (
-              <p className="mt-1 text-[var(--kp-text-3)]">
+              <p className="mt-1 text-[var(--om-text-3)]">
                 未单独勾选内置工具时，系统会自动附带 {DEFAULT_AGENT_NATIVE.length}{" "}
                 个基础能力（搜索、读文件等）。保存后将写入配置文件。
               </p>
@@ -118,8 +118,8 @@ function ToggleChip({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-xs transition",
         checked
-          ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-          : "border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-text-2)] hover:border-[var(--kp-brand-light)]",
+          ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+          : "border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-text-2)] hover:border-[var(--om-brand-light)]",
       )}
       title={hint}
     >
@@ -127,8 +127,8 @@ function ToggleChip({
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
           checked
-            ? "border-[var(--kp-brand)] bg-[var(--kp-brand-deep)] text-white"
-            : "border-[var(--kp-divider)]",
+            ? "border-[var(--om-brand)] bg-[var(--om-brand-deep)] text-white"
+            : "border-[var(--om-divider)]",
         )}
       >
         {checked && <Check className="h-2.5 w-2.5" />}
@@ -158,16 +158,16 @@ function ToolRow({
       className={cn(
         "flex w-full items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition",
         checked
-          ? "border-[var(--kp-brand)]/40 bg-[var(--kp-brand-soft)]/60"
-          : "border-transparent hover:border-[var(--kp-divider)] hover:bg-[var(--kp-bg)]",
+          ? "border-[var(--om-brand)]/40 bg-[var(--om-brand-soft)]/60"
+          : "border-transparent hover:border-[var(--om-divider)] hover:bg-[var(--om-bg)]",
       )}
     >
       <span
         className={cn(
           "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
           checked
-            ? "border-[var(--kp-brand)] bg-[var(--kp-brand-deep)] text-white"
-            : "border-[var(--kp-divider)] bg-[var(--kp-bg)]",
+            ? "border-[var(--om-brand)] bg-[var(--om-brand-deep)] text-white"
+            : "border-[var(--om-divider)] bg-[var(--om-bg)]",
         )}
       >
         {checked && <Check className="h-2.5 w-2.5" />}
@@ -177,17 +177,17 @@ function ToolRow({
           <span
             className={cn(
               "text-xs font-medium",
-              checked ? "text-[var(--kp-brand-deep)]" : "text-[var(--kp-text-1)]",
+              checked ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-1)]",
             )}
           >
             {label}
           </span>
-          <code className="font-mono text-[10px] text-[var(--kp-text-3)]">
+          <code className="font-mono text-[10px] text-[var(--om-text-3)]">
             {formatToolDisplayName(name)}
           </code>
         </span>
         {description ? (
-          <span className="mt-0.5 line-clamp-2 block text-[11px] leading-relaxed text-[var(--kp-text-3)]">
+          <span className="mt-0.5 line-clamp-2 block text-[11px] leading-relaxed text-[var(--om-text-3)]">
             {description}
           </span>
         ) : null}
@@ -309,17 +309,17 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+          <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
             <Wrench className="h-3.5 w-3.5" />
             内置工具
-            <span className="font-normal normal-case tracking-normal text-[var(--kp-text-3)]">
+            <span className="font-normal normal-case tracking-normal text-[var(--om-text-3)]">
               · 已选 {selectedNativeCount}
             </span>
           </h3>
           <div className="flex gap-1.5">
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-[11px] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+              className="rounded-md px-2 py-1 text-[11px] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
               onClick={() => {
                 setOpenGroups(new Set(NATIVE_TOOL_GROUPS.map((g) => g.id)));
               }}
@@ -328,24 +328,24 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
             </button>
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-[11px] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+              className="rounded-md px-2 py-1 text-[11px] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
               onClick={() => setOpenGroups(new Set())}
             >
               全部折叠
             </button>
           </div>
         </div>
-        <p className="text-[11px] text-[var(--kp-text-3)]">
+        <p className="text-[11px] text-[var(--om-text-3)]">
           按能力分组勾选；可用搜索缩小范围。悬停/阅读每行说明再决定是否授权。
         </p>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--kp-text-3)]" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--om-text-3)]" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索工具名 / 中文名 / 说明…"
-            className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1.5 pl-8 pr-2 text-xs outline-none focus:border-[var(--kp-brand)]"
+            className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] py-1.5 pl-8 pr-2 text-xs outline-none focus:border-[var(--om-brand)]"
           />
         </div>
 
@@ -354,7 +354,7 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
           onScroll={(e) => {
             listScrollTopRef.current = e.currentTarget.scrollTop;
           }}
-          className="max-h-[28rem] space-y-2 overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]/40 p-2"
+          className="max-h-[28rem] space-y-2 overflow-y-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/40 p-2"
         >
           {NATIVE_TOOL_GROUPS.map((group) => {
             const items = grouped.get(group.id) ?? [];
@@ -365,32 +365,32 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
             return (
               <div
                 key={group.id}
-                className="overflow-hidden rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)]"
+                className="overflow-hidden rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)]"
               >
-                <div className="flex items-center gap-1 border-b border-[var(--kp-divider)] px-2 py-1.5">
+                <div className="flex items-center gap-1 border-b border-[var(--om-divider)] px-2 py-1.5">
                   <button
                     type="button"
                     onClick={() => setGroupOpen(group.id, !open)}
                     className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                   >
                     {open ? (
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)]" />
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)]" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)]" />
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)]" />
                     )}
-                    <span className="text-xs font-semibold text-[var(--kp-text-1)]">
+                    <span className="text-xs font-semibold text-[var(--om-text-1)]">
                       {group.label}
                     </span>
-                    <span className="truncate text-[10px] text-[var(--kp-text-3)]">
+                    <span className="truncate text-[10px] text-[var(--om-text-3)]">
                       {group.hint}
                     </span>
-                    <span className="ml-auto shrink-0 rounded-full bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[10px] tabular-nums text-[var(--kp-text-2)]">
+                    <span className="ml-auto shrink-0 rounded-full bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[10px] tabular-nums text-[var(--om-text-2)]">
                       {selectedInGroup}/{items.length}
                     </span>
                   </button>
                   <button
                     type="button"
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                     onClick={() => selectGroup(names, selectedInGroup < items.length)}
                   >
                     {selectedInGroup === items.length ? "清空" : "全选"}
@@ -415,7 +415,7 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
           })}
           {nativeTools.length > 0 &&
             NATIVE_TOOL_GROUPS.every((g) => (grouped.get(g.id) ?? []).length === 0) && (
-              <p className="px-2 py-6 text-center text-[11px] text-[var(--kp-text-3)]">
+              <p className="px-2 py-6 text-center text-[11px] text-[var(--om-text-3)]">
                 无匹配工具，试试别的关键词
               </p>
             )}
@@ -423,7 +423,7 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
       </section>
 
       <section className="space-y-2">
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
           <Puzzle className="h-3.5 w-3.5" />
           Skill 技能
         </h3>
@@ -442,7 +442,7 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
         {!sel.skillWildcard && (
           <div className="flex flex-wrap gap-2 pt-1">
             {skills.length === 0 ? (
-              <p className="text-[11px] text-[var(--kp-text-3)]">暂无 Skill，请先在「Skills」页创建。</p>
+              <p className="text-[11px] text-[var(--om-text-3)]">暂无 Skill，请先在「Skills」页创建。</p>
             ) : (
               skills.map((skill) => (
                 <ToggleChip
@@ -459,12 +459,12 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
       </section>
 
       <section className="space-y-2">
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
           <Server className="h-3.5 w-3.5" />
           MCP 外部服务
         </h3>
         {mcpServers.length === 0 ? (
-          <p className="text-[11px] text-[var(--kp-text-3)]">暂无 MCP 配置，请先在「MCP」页添加服务。</p>
+          <p className="text-[11px] text-[var(--om-text-3)]">暂无 MCP 配置，请先在「MCP」页添加服务。</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {mcpServers.map((server) => (
@@ -480,11 +480,11 @@ export function AgentToolsEditor({ tools, onChange }: AgentToolsEditorProps) {
         )}
       </section>
 
-      <details className="rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2">
-        <summary className="cursor-pointer text-[11px] text-[var(--kp-text-3)]">
+      <details className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2">
+        <summary className="cursor-pointer text-[11px] text-[var(--om-text-3)]">
           高级：查看原始配置行
         </summary>
-        <pre className="mt-2 overflow-x-auto font-mono text-[10px] leading-relaxed text-[var(--kp-text-2)]">
+        <pre className="mt-2 overflow-x-auto font-mono text-[10px] leading-relaxed text-[var(--om-text-2)]">
           {serialized.length > 0 ? serialized.join("\n") : "（未授权任何工具）"}
         </pre>
       </details>
@@ -504,12 +504,12 @@ export const AgentToolSummaryCard = memo(function AgentToolSummaryCard({
   );
 
   if (isLoading || !data) {
-    return <p className="text-[11px] text-[var(--kp-text-3)]">加载工具信息…</p>;
+    return <p className="text-[11px] text-[var(--om-text-3)]">加载工具信息…</p>;
   }
 
   if (tools.length === 0) {
     return (
-      <p className="text-[11px] leading-relaxed text-[var(--kp-text-2)]">未限制工具（默认全开）</p>
+      <p className="text-[11px] leading-relaxed text-[var(--om-text-2)]">未限制工具（默认全开）</p>
     );
   }
 
@@ -526,23 +526,23 @@ export const AgentToolSummaryCard = memo(function AgentToolSummaryCard({
 
   return (
     <div className="space-y-1.5">
-      <p className="text-[11px] font-medium text-[var(--kp-text-2)]">
+      <p className="text-[11px] font-medium text-[var(--om-text-2)]">
         可用约 {data.llmFunctions} 个工具 · {parts.join(" · ") || "无"}
       </p>
       {data.usesDefaultNative && (
-        <p className="text-[10px] text-[var(--kp-text-3)]">含系统默认基础内置包</p>
+        <p className="text-[10px] text-[var(--om-text-3)]">含系统默认基础内置包</p>
       )}
       <div className="flex flex-wrap gap-1">
         {data.resolvedNative.slice(0, 3).map((name) => (
           <span
             key={name}
-            className="rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-3)]"
+            className="rounded-full border border-[var(--om-divider)] bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-3)]"
           >
             {NATIVE_LABELS[name] ?? formatToolDisplayName(name)}
           </span>
         ))}
         {data.resolvedSkills.length > 0 && (
-          <span className="rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-3)]">
+          <span className="rounded-full border border-[var(--om-divider)] bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-3)]">
             {data.resolvedSkills.length === 1
               ? `Skill: ${data.resolvedSkills[0]}`
               : `Skill ×${data.resolvedSkills.length}`}
@@ -551,7 +551,7 @@ export const AgentToolSummaryCard = memo(function AgentToolSummaryCard({
         {data.resolvedMcpServers.map((name) => (
           <span
             key={name}
-            className="rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--kp-text-3)]"
+            className="rounded-full border border-[var(--om-divider)] bg-[var(--om-bg-mute)] px-2 py-0.5 text-[9px] text-[var(--om-text-3)]"
           >
             MCP: {name}
           </span>

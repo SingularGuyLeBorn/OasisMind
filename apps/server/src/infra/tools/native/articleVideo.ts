@@ -552,8 +552,8 @@ async function articleVideoComposeTool(args: Record<string, unknown>, ctx: Nativ
     durationInFrames: totalFrames,
     durationSec: Math.round((totalFrames / fps) * 10) / 10,
     vizFenceExample: "```viz\ncomposition: " + compositionId + "\n```",
-    studioHint: "pnpm --filter @knowpilot/algo-viz dev",
-    previewHint: `pnpm --filter @knowpilot/algo-viz preview ${compositionId}`,
+    studioHint: "pnpm --filter @oasismind/algo-viz dev",
+    previewHint: `pnpm --filter @oasismind/algo-viz preview ${compositionId}`,
     note: "成片数据在 composition 内 SCENES + pack/demoData.json。TTS/字幕驱动时间轴见 Skill（可选外部服务）。原文图 object-fit: contain。",
   };
 }

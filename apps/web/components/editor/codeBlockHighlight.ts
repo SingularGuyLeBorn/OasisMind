@@ -169,7 +169,7 @@ function getDecorations(doc: Node): DecorationSet {
   return DecorationSet.create(doc, decorations);
 }
 
-const key = new PluginKey("KP_CODE_BLOCK_HIGHLIGHT");
+const key = new PluginKey("OM_CODE_BLOCK_HIGHLIGHT");
 
 export const codeBlockHighlightPlugin = $prose(() => {
   return new Plugin({
@@ -200,7 +200,7 @@ export const codeBlockHighlightPlugin = $prose(() => {
 });
 
 codeBlockHighlightPlugin.meta = {
-  package: "@knowpilot/web",
+  package: "@oasismind/web",
   displayName: "Prose<codeBlockHighlight>",
 };
 

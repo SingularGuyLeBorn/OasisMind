@@ -123,9 +123,9 @@ function assertRemoteAuthOrExit(env) {
   const authMode = (env.AUTH_MODE || process.env.AUTH_MODE || "none").toLowerCase();
   const password = (env.AUTH_PASSWORD || process.env.AUTH_PASSWORD || "").trim();
   if (authMode === "password" && password) return;
-  if (allowInsecureAuth || process.env.KP_ALLOW_INSECURE_PUBLIC === "1") {
+  if (allowInsecureAuth || process.env.OM_ALLOW_INSECURE_PUBLIC === "1") {
     console.warn(
-      "\n  ⚠️ [安全] 未启用 AUTH_MODE=password，但已用 --allow-insecure-auth / KP_ALLOW_INSECURE_PUBLIC=1 强制继续（勿用于真实公网）。\n",
+      "\n  ⚠️ [安全] 未启用 AUTH_MODE=password，但已用 --allow-insecure-auth / OM_ALLOW_INSECURE_PUBLIC=1 强制继续（勿用于真实公网）。\n",
     );
     return;
   }
@@ -141,9 +141,9 @@ function assertRemoteAuthOrExit(env) {
 function assertRemoteCredentialKeyOrExit(env) {
   const key = (env.CREDENTIAL_MASTER_KEY || process.env.CREDENTIAL_MASTER_KEY || "").trim();
   if (key) return;
-  if (allowInsecureAuth || process.env.KP_ALLOW_INSECURE_PUBLIC === "1") {
+  if (allowInsecureAuth || process.env.OM_ALLOW_INSECURE_PUBLIC === "1") {
     console.warn(
-      "\n  ⚠️ [安全] 未配置 CREDENTIAL_MASTER_KEY，但已用 --allow-insecure-auth / KP_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
+      "\n  ⚠️ [安全] 未配置 CREDENTIAL_MASTER_KEY，但已用 --allow-insecure-auth / OM_ALLOW_INSECURE_PUBLIC=1 强制继续。\n",
     );
     return;
   }

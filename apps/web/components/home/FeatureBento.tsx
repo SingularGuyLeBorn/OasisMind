@@ -61,14 +61,14 @@ export function FeatureBento() {
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
               Capabilities
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
               为深度写作而生的 <CurlyMark>工作台</CurlyMark>
             </h2>
           </div>
-          <p className="max-w-md text-sm text-[var(--kp-text-2)]">
+          <p className="max-w-md text-sm text-[var(--om-text-2)]">
             把内容创作拆成可组合的模块，每个方块都是一种能力。
           </p>
         </ScrollReveal>
@@ -84,12 +84,12 @@ export function FeatureBento() {
               { y: -7, scale: 1.015 },
             ][i % 6];
             const hoverClass = [
-              "kp-card-topline kp-card-sheen hover:border-[var(--kp-brand)]/35 hover:shadow-[0_22px_52px_-16px_rgba(0,135,235,0.32)]",
-              "hover:border-[var(--kp-accent)]/40 hover:shadow-[0_18px_44px_-14px_rgba(232,168,74,0.3)]",
+              "om-card-topline om-card-sheen hover:border-[var(--om-brand)]/35 hover:shadow-[0_22px_52px_-16px_rgba(0,135,235,0.32)]",
+              "hover:border-[var(--om-accent)]/40 hover:shadow-[0_18px_44px_-14px_rgba(232,168,74,0.3)]",
               "hover:border-white/80 hover:shadow-[0_0_0_1px_rgba(0,135,235,0.12),0_20px_48px_-18px_rgba(0,135,235,0.28)]",
-              "border-l-[3px] border-l-transparent hover:border-l-[var(--kp-brand)] hover:border-[var(--kp-brand)]/25 hover:shadow-[0_16px_40px_-14px_rgba(0,80,160,0.24)]",
+              "border-l-[3px] border-l-transparent hover:border-l-[var(--om-brand)] hover:border-[var(--om-brand)]/25 hover:shadow-[0_16px_40px_-14px_rgba(0,80,160,0.24)]",
               "hover:bg-white/80 hover:shadow-[inset_0_2px_12px_rgba(0,80,160,0.08)]",
-              "kp-card-sheen hover:border-[var(--kp-brand)]/30 hover:shadow-[0_24px_50px_-18px_rgba(0,80,160,0.28)]",
+              "om-card-sheen hover:border-[var(--om-brand)]/30 hover:shadow-[0_24px_50px_-18px_rgba(0,80,160,0.28)]",
             ][i % 6];
             return (
               <StaggerItem key={feature.title}>
@@ -102,16 +102,16 @@ export function FeatureBento() {
                     aria-hidden
                     className={`pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full blur-3xl transition-all duration-500 ${
                       i % 2 === 0
-                        ? "bg-[var(--kp-glow-peach)]/0 group-hover:bg-[var(--kp-glow-peach)]/45"
-                        : "bg-[var(--kp-glow-blue)]/0 group-hover:bg-[var(--kp-glow-blue)]/50"
+                        ? "bg-[var(--om-glow-peach)]/0 group-hover:bg-[var(--om-glow-peach)]/45"
+                        : "bg-[var(--om-glow-blue)]/0 group-hover:bg-[var(--om-glow-blue)]/50"
                     }`}
                   />
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--kp-brand)] shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--om-brand)] shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                     {feature.icon}
                   </div>
                   <div className="relative min-w-0 flex-1">
-                    <h3 className="mb-1 text-sm font-bold text-[var(--kp-text-1)]">{feature.title}</h3>
-                    <p className="text-xs leading-relaxed text-[var(--kp-text-2)]">{feature.description}</p>
+                    <h3 className="mb-1 text-sm font-bold text-[var(--om-text-1)]">{feature.title}</h3>
+                    <p className="text-xs leading-relaxed text-[var(--om-text-2)]">{feature.description}</p>
                   </div>
                 </motion.div>
               </StaggerItem>

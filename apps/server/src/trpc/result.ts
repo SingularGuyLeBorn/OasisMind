@@ -4,7 +4,7 @@
  * 统一所有 mutation 的返回结构，确保 AI-native 反馈一致性。
  */
 
-import { OperationResult, OperationError, OperationMeta, NextStep, generateRequestId } from "@knowpilot/shared";
+import { OperationResult, OperationError, OperationMeta, NextStep, generateRequestId } from "@oasismind/shared";
 
 interface BuildSuccessOptions<T> {
   data?: T;

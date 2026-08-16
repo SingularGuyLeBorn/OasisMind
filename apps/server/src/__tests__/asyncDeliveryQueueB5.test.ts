@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import { SWARM_MAX_DEPTH } from "@knowpilot/shared";
+import { SWARM_MAX_DEPTH } from "@oasismind/shared";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
 import { getSwarmBus, resetSwarmBus } from "../infra/swarmBus.js";

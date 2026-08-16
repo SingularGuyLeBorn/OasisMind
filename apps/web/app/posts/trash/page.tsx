@@ -8,7 +8,7 @@ import { usePostMutations } from "@/lib/usePostMutations";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Pagination, ConfirmDialog, EmptyState, LoadingState } from "@/components/shared";
-import type { Post } from "@knowpilot/shared";
+import type { Post } from "@oasismind/shared";
 
 export default function PostTrashPage() {
   const [page, setPage] = useState(1);
@@ -42,8 +42,8 @@ export default function PostTrashPage() {
     <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)]">文章回收站</h1>
-          <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)]">文章回收站</h1>
+          <p className="mt-1 text-sm text-[var(--om-text-3)]">
             共 {total} 篇已删除文章，可恢复或永久删除
           </p>
         </div>
@@ -67,11 +67,11 @@ export default function PostTrashPage() {
               <div
                 key={post.id}
                 data-testid="trash-post-card"
-                className="flex flex-col gap-3 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <h3 className="truncate font-medium text-[var(--kp-text-1)]">{post.title}</h3>
-                  <p className="mt-1 text-xs text-[var(--kp-text-3)]">
+                  <h3 className="truncate font-medium text-[var(--om-text-1)]">{post.title}</h3>
+                  <p className="mt-1 text-xs text-[var(--om-text-3)]">
                     slug: {post.slug} · 删除于 {post.deletedAt ? new Date(post.deletedAt).toLocaleString("zh-CN") : "—"}
                   </p>
                 </div>
@@ -80,7 +80,7 @@ export default function PostTrashPage() {
                     type="button"
                     onClick={() => setRestoreTarget(post)}
                     disabled={restore.isPending}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-1.5 text-xs font-medium text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-xs font-medium text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] disabled:opacity-50"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     恢复

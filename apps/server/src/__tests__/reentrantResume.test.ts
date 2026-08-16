@@ -19,7 +19,7 @@ import { createContextInner } from "../trpc/context.js";
 import { recoverStaleAsyncJobs, retryAsyncJob } from "../infra/asyncJobs/index.js";
 import { getAsyncJobOrchestrator, resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { registerNativeDomains } from "../infra/tools/native/index.js";
-import { PACKS_FULL } from "@knowpilot/shared";
+import { PACKS_FULL } from "@oasismind/shared";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 
 const ASYNC_KIND = "async_agent";

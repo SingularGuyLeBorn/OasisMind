@@ -7,7 +7,7 @@ import {
   createApprovalSchema, updateApprovalSchema, listApprovalsSchema,
   executeApprovalSchema, approveAndExecuteApprovalSchema,
   approveAndExecuteBatchSchema, rejectApprovalsBatchSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { executeApprovedOperation } from "../approvalGate.js";
 

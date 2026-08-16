@@ -7,7 +7,7 @@ import type {
   UpdateMessageInput,
   ListMessagesInput,
   OperationResult,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService, ServiceValidationError, failureFromPrismaUnique } from "../../services.js";
 import { success, failureFromError } from "../../trpc/result.js";
 import { deleteFtsRow } from "../ftsIndex.js";

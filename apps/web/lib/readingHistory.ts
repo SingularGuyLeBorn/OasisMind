@@ -3,7 +3,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { postDetailHref } from "@/lib/postHref";
 
-const STORAGE_KEY = "kp-reading-history";
+const STORAGE_KEY = "om-reading-history";
 const MAX_ENTRIES = 40;
 const listeners = new Set<() => void>();
 
@@ -183,5 +183,5 @@ export function useLastRead(garden?: string | null): ReadingHistoryEntry | null 
 /** 查找 Shell 主滚动容器 */
 export function getMainScrollEl(): HTMLElement | null {
   if (typeof document === "undefined") return null;
-  return document.querySelector<HTMLElement>("[data-kp-main-scroll]");
+  return document.querySelector<HTMLElement>("[data-om-main-scroll]");
 }

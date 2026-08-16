@@ -6,7 +6,7 @@ import type { ServiceContainer } from "../serviceContainer.js";
 import { resolveEffectiveAgentModel, type LlmMessage, type LlmToolCall } from "../llmClient.js";
 import { describeLlmError } from "../resilientLlmClient.js";
 import { type StoredToolCall } from "../chatHistory.js";
-import { formatToolResultHint, type AgentChatInput } from "@knowpilot/shared";
+import { formatToolResultHint, type AgentChatInput } from "@oasismind/shared";
 import { buildSystemPromptSkeleton } from "../promptBuilder.js";
 import { resolveAgent, logAgentDrift } from "../agentResolver.js";
 import { resolveMicroCompactToolMaxChars, buildLlmContextSinceCompact } from "../autoCompact.js";
@@ -366,8 +366,8 @@ export async function chatAgentStream(
       const { evaluateGoalAfterTurn } = await import("../goalLoop.js");
       const evidenceCandidates = (result.toolCalls ?? [])
         .map((tc) => {
-          const r = tc.result as { _kp_result_path?: unknown; path?: unknown } | undefined;
-          if (typeof r?._kp_result_path === "string") return r._kp_result_path;
+          const r = tc.result as { _om_result_path?: unknown; path?: unknown } | undefined;
+          if (typeof r?._om_result_path === "string") return r._om_result_path;
           if (typeof r?.path === "string") return r.path;
           return "";
         })

@@ -2,7 +2,7 @@
  * AgentMail（https://www.agentmail.to / api.agentmail.to）
  *
  * 双向邮件：ask_user 发问 + webhook 收回复；也可经 emailNotifier（EMAIL_PROVIDER=agentmail）发通知。
- * 国内直连常被 CloudFront 拦/超时；所有 API 调用统一走 KP_HTTPS_PROXY（与发信同源）。
+ * 国内直连常被 CloudFront 拦/超时；所有 API 调用统一走 OM_HTTPS_PROXY（与发信同源）。
  */
 
 import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from "undici";
@@ -37,10 +37,10 @@ let mailDispatcher: Dispatcher | null | undefined;
 
 function resolveProxyUrl(): string {
   return (
-    process.env.KP_HTTPS_PROXY?.trim() ||
+    process.env.OM_HTTPS_PROXY?.trim() ||
     process.env.HTTPS_PROXY?.trim() ||
     process.env.HTTP_PROXY?.trim() ||
-    process.env.KP_HTTP_PROXY?.trim() ||
+    process.env.OM_HTTP_PROXY?.trim() ||
     ""
   );
 }
@@ -97,7 +97,7 @@ function formatAgentMailNetError(err: unknown): string {
     const proxy = resolveProxyUrl();
     return proxy
       ? `${msg}（经代理 ${proxy} 超时；发信成功≠巡检同速，确认 Clash 仍开着即可，非 rate limit）`
-      : `${msg}（国内直连 api.agentmail.to 常超时/403；设 KP_HTTPS_PROXY=http://127.0.0.1:7890。非 rate limit）`;
+      : `${msg}（国内直连 api.agentmail.to 常超时/403；设 OM_HTTPS_PROXY=http://127.0.0.1:7890。非 rate limit）`;
   }
   return msg;
 }
@@ -323,7 +323,7 @@ export async function listAgentMailWebhooks(): Promise<
         res.status === 429
           ? "（AgentMail API rate limit，稍后再巡检）"
           : res.status === 403
-            ? "（CloudFront 拦了；确认 KP_HTTPS_PROXY）"
+            ? "（CloudFront 拦了；确认 OM_HTTPS_PROXY）"
             : "";
       return {
         ok: false,

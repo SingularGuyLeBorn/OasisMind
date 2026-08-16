@@ -5,7 +5,7 @@
 import {
   listAgentCronSchema, upsertAgentCronSchema, clearAgentCronSchema,
   setAgentCronEnabledSchema, fireAgentCronSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const agentCronRouter = router({

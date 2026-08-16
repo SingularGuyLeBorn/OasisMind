@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { isChatPostAttachment } from "@knowpilot/shared";
+import { isChatPostAttachment } from "@oasismind/shared";
 import {
   buildImInboundAttachment,
   parseImInboundAttachment,

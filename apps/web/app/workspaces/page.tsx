@@ -21,7 +21,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Workspace } from "@knowpilot/shared";
+import type { Workspace } from "@oasismind/shared";
 import { useWorkspace } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
@@ -170,9 +170,9 @@ export default function WorkspacesPage() {
                   transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 },
                 }}
                 className={cn(
-                  "kp-card-premium kp-lift group relative flex flex-col justify-between overflow-hidden rounded-2xl",
+                  "om-card-premium om-lift group relative flex flex-col justify-between overflow-hidden rounded-2xl",
                   workspace.isSystem
-                    ? "border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-[var(--kp-bg-alt)]"
+                    ? "border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-[var(--om-bg-alt)]"
                     : "",
                   density === "compact" ? "p-3" : "p-5",
                 )}
@@ -180,16 +180,16 @@ export default function WorkspacesPage() {
                 <div>
                   <div className="mb-3 flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                         <Folder className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="truncate text-sm font-bold text-[var(--kp-text-1)] group-hover:text-[var(--kp-brand-deep)]">
+                        <h3 className="truncate text-sm font-bold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)]">
                           {workspace.name}
                         </h3>
                         <div className="mt-0.5 flex flex-wrap gap-1">
                           {workspace.isSystem && (
-                            <span className="kp-badge kp-badge-warning">
+                            <span className="om-badge om-badge-warning">
                               {workspace.systemType === "super"
                                 ? "Root"
                                 : workspace.systemType === "assistant"
@@ -199,8 +199,8 @@ export default function WorkspacesPage() {
                           )}
                           <span
                             className={cn(
-                              "kp-badge",
-                              workspace.status === "active" ? "kp-badge-success" : "",
+                              "om-badge",
+                              workspace.status === "active" ? "om-badge-success" : "",
                             )}
                           >
                             {workspace.status}
@@ -211,7 +211,7 @@ export default function WorkspacesPage() {
                     <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <Link
                         href={`/workspaces/edit/${workspace.id}`}
-                        className="rounded px-2 py-0.5 text-xs text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                        className="rounded px-2 py-0.5 text-xs text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                       >
                         编辑
                       </Link>
@@ -246,16 +246,16 @@ export default function WorkspacesPage() {
                       })()}
                     </div>
                   </div>
-                  <p className="mb-3 min-h-[30px] text-xs text-[var(--kp-text-3)]">
+                  <p className="mb-3 min-h-[30px] text-xs text-[var(--om-text-3)]">
                     {workspace.description || "暂无描述。"}
                   </p>
                 </div>
 
                 <div className="mb-3 space-y-1.5">
-                  <div className="flex items-center gap-2 rounded-lg bg-[var(--kp-bg)] px-2 py-1.5 text-[11px]">
-                    <Gauge className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
-                    <span className="font-medium text-[var(--kp-text-1)]">{quotaLabel}</span>
-                    <span className="text-[var(--kp-text-3)]">· 后台 LLM 并发</span>
+                  <div className="flex items-center gap-2 rounded-lg bg-[var(--om-bg)] px-2 py-1.5 text-[11px]">
+                    <Gauge className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
+                    <span className="font-medium text-[var(--om-text-1)]">{quotaLabel}</span>
+                    <span className="text-[var(--om-text-3)]">· 后台 LLM 并发</span>
                   </div>
                   {manager && (
                     <div className="flex items-center gap-2 rounded-lg bg-blue-50/60 px-2 py-1.5">
@@ -275,28 +275,28 @@ export default function WorkspacesPage() {
                     </div>
                   ))}
                   <div className="flex items-center gap-2 px-2 py-1">
-                    <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
-                    <span className="text-[11px] text-[var(--kp-text-2)]">
+                    <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
+                    <span className="text-[11px] text-[var(--om-text-2)]">
                       {wsAgents.length > 0 ? (
                         <>
                           <span className="font-semibold">{wsAgents.length}</span> 个 Agent
-                          <span className="ml-1.5 text-[var(--kp-text-3)]">
+                          <span className="ml-1.5 text-[var(--om-text-3)]">
                             · 管理 {manager ? 1 : 0} · 子 {subs.length}
                             {supers.length ? ` · 超级 ${supers.length}` : ""}
                           </span>
                         </>
                       ) : (
-                        <span className="text-[var(--kp-text-3)]">暂无 Agent</span>
+                        <span className="text-[var(--om-text-3)]">暂无 Agent</span>
                       )}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1 border-t border-[var(--kp-divider-light)] pt-3">
-                  <div className="flex items-center gap-1 text-[9px] font-bold uppercase text-[var(--kp-text-3)]">
+                <div className="space-y-1 border-t border-[var(--om-divider-light)] pt-3">
+                  <div className="flex items-center gap-1 text-[9px] font-bold uppercase text-[var(--om-text-3)]">
                     <MapPin className="h-3 w-3" /> 本地路径
                   </div>
-                  <code className="block truncate rounded bg-[var(--kp-bg-mute)] p-1.5 font-mono text-[10px] text-[var(--kp-text-2)]">
+                  <code className="block truncate rounded bg-[var(--om-bg-mute)] p-1.5 font-mono text-[10px] text-[var(--om-text-2)]">
                     {workspace.path}
                   </code>
                 </div>
@@ -332,20 +332,20 @@ export default function WorkspacesPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold">创建新工作区</h3>
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="rounded p-1 hover:bg-[var(--kp-bg-mute)]"
+                className="rounded p-1 hover:bg-[var(--om-bg-mute)]"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs text-[var(--kp-text-3)]">名称</label>
+                <label className="mb-1 block text-xs text-[var(--om-text-3)]">名称</label>
                 <Input
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
@@ -353,7 +353,7 @@ export default function WorkspacesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[var(--kp-text-3)]">本地路径</label>
+                <label className="mb-1 block text-xs text-[var(--om-text-3)]">本地路径</label>
                 <Input
                   value={createForm.path}
                   onChange={(e) => setCreateForm({ ...createForm, path: e.target.value })}
@@ -361,7 +361,7 @@ export default function WorkspacesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[var(--kp-text-3)]">描述</label>
+                <label className="mb-1 block text-xs text-[var(--om-text-3)]">描述</label>
                 <Input
                   value={createForm.description}
                   onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
@@ -369,7 +369,7 @@ export default function WorkspacesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[var(--kp-text-3)]">异步 LLM 槽位配额</label>
+                <label className="mb-1 block text-xs text-[var(--om-text-3)]">异步 LLM 槽位配额</label>
                 <Input
                   type="number"
                   min={0}
@@ -379,23 +379,23 @@ export default function WorkspacesPage() {
                     setCreateForm({ ...createForm, asyncSlotQuota: Number(e.target.value) || 0 })
                   }
                 />
-                <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">0 = 不限；默认 2</p>
+                <p className="mt-1 text-[10px] text-[var(--om-text-3)]">0 = 不限；默认 2</p>
               </div>
-              <label className="flex items-center gap-2 text-xs text-[var(--kp-text-2)]">
+              <label className="flex items-center gap-2 text-xs text-[var(--om-text-2)]">
                 <input
                   type="checkbox"
                   checked={createForm.autoCreateManager}
                   onChange={(e) =>
                     setCreateForm({ ...createForm, autoCreateManager: e.target.checked })
                   }
-                  className="h-4 w-4 rounded border-[var(--kp-divider)] text-[var(--kp-brand-deep)]"
+                  className="h-4 w-4 rounded border-[var(--om-divider)] text-[var(--om-brand-deep)]"
                 />
                 自动创建管理 Agent（推荐）
               </label>
               {createForm.autoCreateManager && (
                 <>
                   <div>
-                    <label className="mb-1 block text-xs text-[var(--kp-text-3)]">
+                    <label className="mb-1 block text-xs text-[var(--om-text-3)]">
                       管理 Agent 名称（可选）
                     </label>
                     <Input
@@ -407,7 +407,7 @@ export default function WorkspacesPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-[var(--kp-text-3)]">
+                    <label className="mb-1 block text-xs text-[var(--om-text-3)]">
                       初始任务（可选，写入管理 Agent 首条消息）
                     </label>
                     <textarea
@@ -417,7 +417,7 @@ export default function WorkspacesPage() {
                       }
                       rows={3}
                       placeholder="例如：梳理本目录结构并建立索引"
-                      className="w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--kp-brand-deep)]"
+                      className="w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand-deep)]"
                     />
                   </div>
                 </>

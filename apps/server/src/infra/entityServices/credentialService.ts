@@ -7,7 +7,7 @@ import type {
   CreateCredentialInput,
   UpdateCredentialInput,
   ListCredentialsInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   encryptCredentialValue,
   decryptCredentialValue,

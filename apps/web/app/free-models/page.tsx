@@ -29,7 +29,7 @@ function LocaleToggle({
     <div
       role="group"
       aria-label="Language"
-      className="inline-flex items-center rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-0.5 text-[11px] font-medium"
+      className="inline-flex items-center rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] p-0.5 text-[11px] font-medium"
     >
       <button
         type="button"
@@ -37,8 +37,8 @@ function LocaleToggle({
         className={cn(
           "rounded-md px-2.5 py-1 transition-colors",
           locale === "zh"
-            ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-            : "text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]",
+            ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+            : "text-[var(--om-text-2)] hover:text-[var(--om-text-1)]",
         )}
       >
         {labels.zh}
@@ -49,8 +49,8 @@ function LocaleToggle({
         className={cn(
           "rounded-md px-2.5 py-1 transition-colors",
           locale === "en"
-            ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-            : "text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]",
+            ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+            : "text-[var(--om-text-2)] hover:text-[var(--om-text-1)]",
         )}
       >
         {labels.en}

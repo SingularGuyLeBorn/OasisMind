@@ -21,7 +21,7 @@ import {
   inboxEnrichSchema,
   inboxBulkDeleteSchema,
   inboxFacetsSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const inboxRouter = router({

@@ -18,7 +18,7 @@ import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { stopAgentChat, copyToClipboard } from "@/lib/agentStream";
 import { getModelOption } from "@/lib/chatConfig";
 import { buildMessageGroups } from "@/lib/chatMessageUtils";
-import { type Agent, type ChatMessage, type Skill } from "@knowpilot/shared";
+import { type Agent, type ChatMessage, type Skill } from "@oasismind/shared";
 import { ChatCenterPane } from "@/components/chatCenterPane";
 import { type ChatMessageListProps } from "@/components/chatMessageList";
 import { type SelectedSkill } from "@/components/chatInput";

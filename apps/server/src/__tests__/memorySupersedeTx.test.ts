@@ -11,7 +11,7 @@ import { getEventBus } from "../infra/eventBus.js";
 import { getAppConfig } from "../infra/config.js";
 import { getServiceContainer } from "../infra/serviceContainer.js";
 import { createMemoryRepository } from "../infra/memoryRepository.js";
-import { MEMORY_TYPES, memoryAgentScope } from "@knowpilot/shared";
+import { MEMORY_TYPES, memoryAgentScope } from "@oasismind/shared";
 
 const RUN = `d8-${Date.now().toString(36)}`;
 const createdIds: string[] = [];

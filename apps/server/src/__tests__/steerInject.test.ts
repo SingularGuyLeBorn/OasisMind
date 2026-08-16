@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { prisma } from "../db.js";
 import { SessionStreamHub, setStreamHub } from "../infra/sessionStreamHub.js";
-import type { AgentChatInput } from "@knowpilot/shared";
+import type { AgentChatInput } from "@oasismind/shared";
 
 const baseInput = { message: "hi" } as AgentChatInput;
 

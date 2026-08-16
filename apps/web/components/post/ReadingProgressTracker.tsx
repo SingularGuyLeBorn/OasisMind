@@ -115,8 +115,8 @@ export function ReadingProgressTracker({
   return (
     <div
       className={cn(
-        "mb-4 flex items-center gap-2 rounded-xl border border-[var(--kp-brand)]/25",
-        "bg-[var(--kp-brand-soft)] px-3 py-2 text-xs text-[var(--kp-brand-deep)]",
+        "mb-4 flex items-center gap-2 rounded-xl border border-[var(--om-brand)]/25",
+        "bg-[var(--om-brand-soft)] px-3 py-2 text-xs text-[var(--om-brand-deep)]",
       )}
       role="status"
     >
@@ -124,7 +124,7 @@ export function ReadingProgressTracker({
       <span className="min-w-0 flex-1">已跳到上次阅读位置</span>
       <button
         type="button"
-        className="shrink-0 rounded-md px-2 py-0.5 font-medium hover:bg-[var(--kp-bg-alt)]"
+        className="shrink-0 rounded-md px-2 py-0.5 font-medium hover:bg-[var(--om-bg-alt)]"
         onClick={() => {
           const main = getMainScrollEl();
           main?.scrollTo({ top: 0, behavior: "smooth" });
@@ -135,7 +135,7 @@ export function ReadingProgressTracker({
       </button>
       <button
         type="button"
-        className="shrink-0 rounded p-1 hover:bg-[var(--kp-bg-alt)]"
+        className="shrink-0 rounded p-1 hover:bg-[var(--om-bg-alt)]"
         aria-label="关闭提示"
         onClick={() => setBanner(null)}
       >
@@ -143,7 +143,7 @@ export function ReadingProgressTracker({
       </button>
       <button
         type="button"
-        className="shrink-0 rounded-md px-2 py-0.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-alt)] hover:text-[var(--kp-text-2)]"
+        className="shrink-0 rounded-md px-2 py-0.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-alt)] hover:text-[var(--om-text-2)]"
         onClick={() => {
           clearReadingEntry(postId);
           setBanner(null);

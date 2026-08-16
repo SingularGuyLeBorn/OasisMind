@@ -15,7 +15,7 @@
 
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { AgentEntity } from "./entityServices/agentService.js";
-import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 import { getAppConfig } from "./config.js";
 import { listToolNames } from "./tools/registry.js";
 
@@ -76,7 +76,7 @@ const OUTDATED_ASSISTANT_SYSTEM_PROMPT =
 
 /** 漂移修复指引（drift 提示中引用；对齐脚本见 scripts/align-assistant-tools.ts） */
 export const ASSISTANT_MIGRATION_HINT =
-  "pnpm --filter @knowpilot/server exec tsx src/scripts/align-assistant-tools.ts（并同步 config/agents/assistant-*.md 的 tools），或在 /agents 页手动对齐";
+  "pnpm --filter @oasismind/server exec tsx src/scripts/align-assistant-tools.ts（并同步 config/agents/assistant-*.md 的 tools），或在 /agents 页手动对齐";
 
 export interface ResolveAgentResult {
   agent: AgentEntity;

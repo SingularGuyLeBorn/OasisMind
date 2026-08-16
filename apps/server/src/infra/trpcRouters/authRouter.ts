@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { authLoginSchema } from "@knowpilot/shared";
+import { authLoginSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { success } from "../../trpc/result.js";
 import {

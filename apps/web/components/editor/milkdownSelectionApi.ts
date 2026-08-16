@@ -128,7 +128,7 @@ export function insertMilkdownMarkdownAtCursor(markdown: string): boolean {
 export const milkdownSelectionApi = $prose((ctx) => {
   editorCtx = ctx;
   return new Plugin({
-    key: new PluginKey("kp-milkdown-selection-api"),
+    key: new PluginKey("om-milkdown-selection-api"),
     view(editorView) {
       activeView = editorView;
       return {

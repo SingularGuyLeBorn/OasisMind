@@ -59,9 +59,9 @@ describe("formatToolTimingHint", () => {
     ).toBe("已落盘 · 12000 字 · 2 命中");
     expect(
       formatToolResultHint({
-        _kp_persisted: true,
-        _kp_result_path: "data/tool-results/s/c.json",
-        _kp_original_chars: 80,
+        _om_persisted: true,
+        _om_result_path: "data/tool-results/s/c.json",
+        _om_original_chars: 80,
       }),
     ).toBe("已落盘 · 80 字");
   });

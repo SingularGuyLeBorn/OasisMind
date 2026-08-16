@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from "react";
 import { Activity, Clock, Bot } from "lucide-react";
 import Link from "next/link";
-import type { Run } from "@knowpilot/shared";
+import type { Run } from "@oasismind/shared";
 import { useRun, useAgent } from "@/lib/hooks";
 import { EmptyState, LoadingState, ConfirmDialog, Pagination, PageHeader } from "@/components/shared";
 import { formatRelativeTime, cn } from "@/lib/utils";
@@ -16,12 +16,12 @@ import { trpc } from "@/lib/trpc";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
 
 const STATUS_STYLE: Record<Run["status"], string> = {
-  pending: "kp-badge-warning",
-  running: "kp-badge-info animate-pulse",
-  success: "kp-badge-success",
-  failed: "kp-badge-danger",
-  cancelled: "kp-badge",
-  interrupted: "kp-badge-warning",
+  pending: "om-badge-warning",
+  running: "om-badge-info animate-pulse",
+  success: "om-badge-success",
+  failed: "om-badge-danger",
+  cancelled: "om-badge",
+  interrupted: "om-badge-warning",
 };
 
 const STATUS_LABEL: Record<Run["status"], string> = {
@@ -83,7 +83,7 @@ export default function RunsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
       <PageHeader
         icon={Activity}
         title="Runs 执行记录"
@@ -116,8 +116,8 @@ export default function RunsPage() {
             className={cn(
               "rounded-full px-3 py-1.5 text-xs font-medium transition-all",
               statusFilter === s
-                ? "bg-[var(--kp-brand-deep)] text-white shadow-sm"
-                : "bg-[var(--kp-bg-soft)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                ? "bg-[var(--om-brand-deep)] text-white shadow-sm"
+                : "bg-[var(--om-bg-soft)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
             )}
           >
             {s === "" ? "全部" : STATUS_LABEL[s as Run["status"]]}
@@ -134,9 +134,9 @@ export default function RunsPage() {
         />
       ) : (
         <>
-          <div className="kp-card-premium rounded-2xl overflow-hidden">
-            <div className="kp-table-scroll overflow-x-auto">
-              <table className="kp-table min-w-[36rem]">
+          <div className="om-card-premium rounded-2xl overflow-hidden">
+            <div className="om-table-scroll overflow-x-auto">
+              <table className="om-table min-w-[36rem]">
                 <thead>
                   <tr>
                     <th>状态</th>
@@ -151,7 +151,7 @@ export default function RunsPage() {
                     <tr key={run.id}>
                       <td>
                         <div className="flex flex-col gap-1.5">
-                          <span className={cn("kp-badge w-fit", STATUS_STYLE[run.status])}>
+                          <span className={cn("om-badge w-fit", STATUS_STYLE[run.status])}>
                             {STATUS_LABEL[run.status]}
                           </span>
                           {(() => {
@@ -188,7 +188,7 @@ export default function RunsPage() {
                               chips.push(
                                 <span
                                   key="decision"
-                                  className="inline-flex max-w-[14rem] truncate rounded-full bg-[var(--kp-bg-mute)] px-2 py-0.5 text-[10px] font-medium text-[var(--kp-text-2)]"
+                                  className="inline-flex max-w-[14rem] truncate rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[10px] font-medium text-[var(--om-text-2)]"
                                   data-testid="run-decision-chip"
                                   title={out.decision.summary || out.decision.kind}
                                 >
@@ -204,9 +204,9 @@ export default function RunsPage() {
                         </div>
                       </td>
                       <td>
-                        <div className="flex items-center gap-2 text-[var(--kp-text-2)]">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--kp-bg-mute)]">
-                            <Bot className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />
+                        <div className="flex items-center gap-2 text-[var(--om-text-2)]">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--om-bg-mute)]">
+                            <Bot className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />
                           </div>
                           <span className="text-xs truncate max-w-[240px]" title={runLabel({
                             agentName: run.agentId ? agentNameById.get(run.agentId) : null,
@@ -221,20 +221,20 @@ export default function RunsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="text-[var(--kp-text-3)]">
+                      <td className="text-[var(--om-text-3)]">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {run.durationMs != null ? `${run.durationMs} ms` : "—"}
                         </span>
                       </td>
-                      <td className="text-xs text-[var(--kp-text-3)]">
+                      <td className="text-xs text-[var(--om-text-3)]">
                         {formatRelativeTime(run.createdAt)}
                       </td>
                       <td>
                         <div className="flex items-center gap-3">
                           <Link
                             href={`/runs/edit/${run.id}`}
-                            className="text-xs font-medium text-[var(--kp-brand-deep)] hover:underline"
+                            className="text-xs font-medium text-[var(--om-brand-deep)] hover:underline"
                           >
                             详情
                           </Link>

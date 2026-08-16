@@ -110,8 +110,8 @@ const PLANETS: PlanetData[] = [
 const ASTEROID_BELT = { inner: 33, outer: 35.5, count: 420, color: "#b0a89c" };
 
 const CAPSULE: Record<Side, string> = {
-  o: "border border-[var(--kp-brand)]/35 bg-white/95 text-[var(--kp-brand-deep)] shadow-sm",
-  m: "border border-[var(--kp-accent)]/40 bg-white/95 text-[var(--kp-accent-deep)] shadow-sm",
+  o: "border border-[var(--om-brand)]/35 bg-white/95 text-[var(--om-brand-deep)] shadow-sm",
+  m: "border border-[var(--om-accent)]/40 bg-white/95 text-[var(--om-accent-deep)] shadow-sm",
 };
 
 function stringHash(s: string) {

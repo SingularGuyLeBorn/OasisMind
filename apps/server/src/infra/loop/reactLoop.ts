@@ -40,7 +40,7 @@ import {
 } from "../askUserGate.js";
 import { getStreamHub } from "../sessionStreamHub.js";
 import { parseToolCall } from "./setup.js";
-import { AGENT_TOOL_RESULT_MAX_CHARS, CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS, CHILD_OWN_TOOLS } from "@oasismind/shared";
 import { materializeToolEnvelope } from "../tools/toolPipeline.js";
 import { createPhaseMachine } from "./phase.js";
 import { REFLECTION_UNPASSED_MARK } from "./reflection.js";
@@ -48,7 +48,7 @@ import type { ReactLoopInput, ReactLoopResult, TurnSnapshot } from "./types.js";
 import { resolveRoundModel } from "./roundModel.js";
 import { isAbortLikeError, makeAbortError } from "../abortReason.js";
 import { runContextHooks, type ContextHookInput } from "../contextHooks.js";
-import type { Agent } from "@knowpilot/shared";
+import type { Agent } from "@oasismind/shared";
 import { buildSystemPromptSkeleton } from "../promptBuilder.js";
 import { formatTrace } from "../trace.js";
 import { peelExpectControls } from "../keyInfoExtractor.js";
@@ -302,8 +302,8 @@ function markToolResultUntrusted(toolName: string, content: string): string {
       if (obj && typeof obj === "object" && !Array.isArray(obj)) {
         return JSON.stringify({
           ...obj,
-          _kp_untrusted_tool_result: true,
-          _kp_tool: toolName,
+          _om_untrusted_tool_result: true,
+          _om_tool: toolName,
         });
       }
     } catch {

@@ -43,14 +43,14 @@ function resolveOffloadPath(result: unknown): {
   const r = result as Record<string, unknown>;
   const path =
     (typeof r.path === "string" && r.offloaded === true && r.path) ||
-    (typeof r._kp_result_path === "string" && r._kp_result_path) ||
+    (typeof r._om_result_path === "string" && r._om_result_path) ||
     null;
   if (!path || !String(path).includes("tool-results")) return null;
   const originalChars =
     typeof r.originalChars === "number"
       ? r.originalChars
-      : typeof r._kp_original_chars === "number"
-        ? r._kp_original_chars
+      : typeof r._om_original_chars === "number"
+        ? r._om_original_chars
         : undefined;
   return { path: String(path).replace(/\\/g, "/"), originalChars, compacted: r.offloaded === true };
 }
@@ -76,7 +76,7 @@ function parseTodoList(raw: unknown): TodoListItem[] | null {
 const TodoWriteResult = memo(function TodoWriteResult({ items }: { items: TodoListItem[] }) {
   return (
     <ul
-      className="space-y-0 overflow-hidden rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] py-1"
+      className="space-y-0 overflow-hidden rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)] py-1"
       data-testid="todo-write-list"
     >
       {items.map((t) => {
@@ -88,16 +88,16 @@ const TodoWriteResult = memo(function TodoWriteResult({ items }: { items: TodoLi
             key={t.id || t.content}
             className={cn(
               "flex items-start gap-2.5 px-3 py-1.5 text-[11px]",
-              inProgress && "border-l-2 border-l-[var(--kp-brand)] bg-[var(--kp-brand-soft)]/20 pl-2.5",
+              inProgress && "border-l-2 border-l-[var(--om-brand)] bg-[var(--om-brand-soft)]/20 pl-2.5",
             )}
           >
-            <span className="mt-0.5 shrink-0 text-[var(--kp-text-3)]" aria-hidden>
+            <span className="mt-0.5 shrink-0 text-[var(--om-text-3)]" aria-hidden>
               {done ? (
-                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-[var(--kp-brand)] bg-[var(--kp-brand)] text-white">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-[var(--om-brand)] bg-[var(--om-brand)] text-white">
                   <Check className="h-2.5 w-2.5" strokeWidth={3} />
                 </span>
               ) : cancelled ? (
-                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-[var(--kp-divider)] text-[var(--kp-text-3)]">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-[var(--om-divider)] text-[var(--om-text-3)]">
                   <Minus className="h-2.5 w-2.5" />
                 </span>
               ) : (
@@ -106,9 +106,9 @@ const TodoWriteResult = memo(function TodoWriteResult({ items }: { items: TodoLi
             </span>
             <span
               className={cn(
-                "min-w-0 flex-1 leading-snug text-[var(--kp-text-2)]",
-                (done || cancelled) && "text-[var(--kp-text-3)] line-through",
-                inProgress && "font-medium text-[var(--kp-text-1)]",
+                "min-w-0 flex-1 leading-snug text-[var(--om-text-2)]",
+                (done || cancelled) && "text-[var(--om-text-3)] line-through",
+                inProgress && "font-medium text-[var(--om-text-1)]",
               )}
             >
               {t.content}
@@ -142,13 +142,13 @@ const ToolResultImageGallery = memo(function ToolResultImageGallery({
   return (
     <>
       <div className="mb-2 space-y-2" data-testid="tool-result-images">
-        <div className="text-[10px] font-medium text-[var(--kp-text-3)]">截图预览</div>
+        <div className="text-[10px] font-medium text-[var(--om-text-3)]">截图预览</div>
         <div className={cn("grid gap-2", images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
           {images.map((img) => (
             <button
               key={img.src}
               type="button"
-              className="group relative overflow-hidden rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)] text-left"
+              className="group relative overflow-hidden rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg-mute)] text-left"
               onClick={() => setLightbox(img.src)}
               title="点击放大"
             >
@@ -291,26 +291,26 @@ const ThinkingStep = memo(function ThinkingStep({
   }, [isLive]);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)] shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] shadow-sm">
       <button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
         className={cn(
-          "flex w-full items-center gap-2 bg-[var(--kp-bg-soft)] px-3 py-2 text-left text-[11px] font-medium text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)]",
-          !collapsed && "border-b border-[var(--kp-divider-light)]",
+          "flex w-full items-center gap-2 bg-[var(--om-bg-soft)] px-3 py-2 text-left text-[11px] font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)]",
+          !collapsed && "border-b border-[var(--om-divider-light)]",
         )}
         aria-expanded={!collapsed}
         aria-label={collapsed ? "展开思考" : "折叠思考"}
       >
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+        <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
         <span>Thinking{isLive ? "…" : ""}</span>
-        {isLive && <Loader2 className="h-3 w-3 animate-spin text-[var(--kp-brand)]" />}
+        {isLive && <Loader2 className="h-3 w-3 animate-spin text-[var(--om-brand)]" />}
         {elapsedSec > 0 && (
-          <span className="text-[10px] tabular-nums text-[var(--kp-text-3)]">{elapsedSec}s</span>
+          <span className="text-[10px] tabular-nums text-[var(--om-text-3)]">{elapsedSec}s</span>
         )}
         <ChevronRight
           className={cn(
-            "ml-auto h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform duration-200",
+            "ml-auto h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform duration-200",
             collapsed ? "" : "rotate-90",
           )}
         />
@@ -319,17 +319,17 @@ const ThinkingStep = memo(function ThinkingStep({
         <div className="max-h-[240vh] overflow-y-auto px-3 py-3">
           {isEmpty ? (
             isLive ? (
-              <p className="text-xs text-[var(--kp-text-3)]">等待模型输出…</p>
+              <p className="text-xs text-[var(--om-text-3)]">等待模型输出…</p>
             ) : null
           ) : isLive ? (
             <StreamingPlainContent
               content={content}
-              className="prose-sm max-w-none text-xs text-[var(--kp-text-2)]"
+              className="prose-sm max-w-none text-xs text-[var(--om-text-2)]"
             />
           ) : (
             <PostContent
               content={content}
-              className="prose-sm max-w-none text-xs text-[var(--kp-text-2)] [&_p]:text-xs [&_li]:text-xs"
+              className="prose-sm max-w-none text-xs text-[var(--om-text-2)] [&_p]:text-xs [&_li]:text-xs"
             />
           )}
         </div>
@@ -351,11 +351,11 @@ const ContentStep = memo(function ContentStep({
   return (
     <div
       data-testid="intermediate-content-step"
-      className="w-full rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-sm"
+      className="w-full rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--om-text-1)] shadow-sm"
     >
       <PostContent
         content={content.trimEnd()}
-        className="prose-sm kp-chat-md max-w-none text-left"
+        className="prose-sm om-chat-md max-w-none text-left"
       />
     </div>
   );
@@ -363,14 +363,14 @@ const ContentStep = memo(function ContentStep({
 
 /** JSON 卡片形式：把对象递归渲染成缩进键值对列表（比裸 JSON 更友好；正文用中性色，不染品牌蓝） */
 function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
-  if (data === null) return <span className="text-[var(--kp-text-3)]">null</span>;
+  if (data === null) return <span className="text-[var(--om-text-3)]">null</span>;
   if (typeof data === "boolean")
-    return <span className="text-[var(--kp-text-2)]">{String(data)}</span>;
+    return <span className="text-[var(--om-text-2)]">{String(data)}</span>;
   if (typeof data === "number")
-    return <span className="text-[var(--kp-text-1)] tabular-nums">{String(data)}</span>;
+    return <span className="text-[var(--om-text-1)] tabular-nums">{String(data)}</span>;
   if (typeof data === "string") {
     const trimmed = data.length > 280 ? data.slice(0, 280) + "…" : data;
-    return <span className="text-[var(--kp-text-1)]">&quot;{trimmed}&quot;</span>;
+    return <span className="text-[var(--om-text-1)]">&quot;{trimmed}&quot;</span>;
   }
   if (Array.isArray(data)) {
     if (data.length === 0) return <span>[]</span>;
@@ -378,12 +378,12 @@ function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
       <div
         className={cn(
           "space-y-0.5",
-          depth > 0 && "border-l border-[var(--kp-divider-light)] pl-2",
+          depth > 0 && "border-l border-[var(--om-divider-light)] pl-2",
         )}
       >
         {data.map((item, i) => (
           <div key={i} className="flex items-start gap-1">
-            <span className="shrink-0 select-none text-[var(--kp-text-3)]">[{i}]</span>
+            <span className="shrink-0 select-none text-[var(--om-text-3)]">[{i}]</span>
             <JsonCardView data={item} depth={depth + 1} />
           </div>
         ))}
@@ -397,12 +397,12 @@ function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
       <div
         className={cn(
           "space-y-0.5",
-          depth > 0 && "border-l border-[var(--kp-divider-light)] pl-2",
+          depth > 0 && "border-l border-[var(--om-divider-light)] pl-2",
         )}
       >
         {entries.map(([key, value]) => (
           <div key={key} className="flex items-start gap-1">
-            <span className="shrink-0 select-none font-medium text-[var(--kp-text-2)]">
+            <span className="shrink-0 select-none font-medium text-[var(--om-text-2)]">
               {key}:
             </span>
             <JsonCardView data={value} depth={depth + 1} />
@@ -549,32 +549,32 @@ const ToolStep = memo(function ToolStep({
       className={cn(
         "w-full overflow-hidden rounded-xl border shadow-sm transition-colors",
         step.status === "running" || waitingAsk || isPreparing
-          ? "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/30"
-          : "border-[var(--kp-divider-light)] bg-[var(--kp-bg)]",
+          ? "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/30"
+          : "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
       )}
     >
       <details open={open} className="group/tool" onToggle={(e) => setUserOpen(e.currentTarget.open)}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--kp-text-2)]">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--om-text-2)]">
           <span
             className={cn(
               "h-2 w-2 shrink-0 rounded-full",
               step.status === "running" || waitingAsk || isPreparing
-                ? "animate-pulse bg-[var(--kp-brand)]"
+                ? "animate-pulse bg-[var(--om-brand)]"
                 : hasError
                   ? "bg-red-500"
                   : "bg-green-500",
             )}
           />
           {isTodoWrite ? (
-            <ListTodo className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+            <ListTodo className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
           ) : (
             <ToolStepIcon toolName={step.name} status={iconStatus} />
           )}
-          <span className="min-w-0 truncate font-semibold text-[var(--kp-text-1)]">
+          <span className="min-w-0 truncate font-semibold text-[var(--om-text-1)]">
             {displayName}
           </span>
           {isTodoWrite && (
-            <span className="shrink-0 text-[10px] font-normal text-[var(--kp-text-3)]">
+            <span className="shrink-0 text-[10px] font-normal text-[var(--om-text-3)]">
               更新待办
             </span>
           )}
@@ -593,7 +593,7 @@ const ToolStep = memo(function ToolStep({
           )}
           {sleepHint && (
             <span
-              className="ml-auto inline-flex items-center gap-1 text-[10px] tabular-nums text-[var(--kp-brand)]"
+              className="ml-auto inline-flex items-center gap-1 text-[10px] tabular-nums text-[var(--om-brand)]"
               data-testid="tool-sleep-countdown"
             >
               <Clock className="h-3 w-3" />
@@ -603,7 +603,7 @@ const ToolStep = memo(function ToolStep({
           {/* preparing：模型仍在写工具参数，显示「准备中」而非裸 KB 数字 */}
           {isPreparing && !sleepHint && (
             <span
-              className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--kp-brand)]"
+              className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--om-brand)]"
               data-testid="tool-preparing-indicator"
             >
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -612,7 +612,7 @@ const ToolStep = memo(function ToolStep({
           )}
           {(step.status === "running" || waitingAsk) && !sleepHint && !isPreparing && (
             <span
-              className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--kp-brand)]"
+              className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--om-brand)]"
               data-testid="tool-running-indicator"
             >
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -623,7 +623,7 @@ const ToolStep = memo(function ToolStep({
             <span
               className={cn(
                 "ml-auto text-[10px]",
-                hasError ? "text-red-600" : "text-[var(--kp-text-3)]",
+                hasError ? "text-red-600" : "text-[var(--om-text-3)]",
               )}
               data-testid="tool-timing-hint"
             >
@@ -644,22 +644,22 @@ const ToolStep = memo(function ToolStep({
                   previewExcerpt: `落盘 ${offload.originalChars ?? ""} 字`.trim(),
                 });
               }}
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
               title="把落盘全文写入知识库"
             >
               <BookPlus className="h-3 w-3" />
               另存为文章
             </button>
           )}
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform duration-200 group-open/tool:rotate-90" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform duration-200 group-open/tool:rotate-90" />
         </summary>
         {open && (
-          <div className="border-t border-[var(--kp-divider-light)] px-3 py-2 space-y-2">
+          <div className="border-t border-[var(--om-divider-light)] px-3 py-2 space-y-2">
             {todoItems ? (
               <TodoWriteResult items={todoItems} />
             ) : askUserAnswer ? (
               <div className="space-y-2 text-[11px]">
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-[10px] text-[var(--kp-text-3)]">
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-[10px] text-[var(--om-text-3)]">
                   {argsJson}
                 </pre>
                 {askUserAnswer.answer ? (
@@ -694,10 +694,10 @@ const ToolStep = memo(function ToolStep({
                 {offload && (
                   <div
                     data-testid="tool-offload-panel"
-                    className="rounded-lg border border-[var(--kp-divider-light)] bg-[var(--kp-bg-mute)]/40 px-2.5 py-2"
+                    className="rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg-mute)]/40 px-2.5 py-2"
                   >
-                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--kp-text-2)]">
-                      <FileText className="h-3 w-3 shrink-0 text-[var(--kp-text-3)]" />
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--om-text-2)]">
+                      <FileText className="h-3 w-3 shrink-0 text-[var(--om-text-3)]" />
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {offload.compacted ? "完整结果已落盘（上下文仅含元数据）" : "结果已落盘可追溯"}
                         {offload.originalChars != null ? ` · ${offload.originalChars} 字` : ""}
@@ -710,7 +710,7 @@ const ToolStep = memo(function ToolStep({
                           setShowOriginal((v) => !v);
                           if (!showOriginal) setOriginalOffset(0);
                         }}
-                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                       >
                         {showOriginal ? "收起原文" : "展开工件"}
                       </button>
@@ -728,7 +728,7 @@ const ToolStep = memo(function ToolStep({
                               }),
                             );
                           }}
-                          className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+                          className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                           title="填入输入框，不自动发送"
                         >
                           <Quote className="h-3 w-3" />
@@ -736,13 +736,13 @@ const ToolStep = memo(function ToolStep({
                         </button>
                       )}
                     </div>
-                    <p className="mt-1 truncate text-[9px] text-[var(--kp-text-3)]" title={offload.path}>
+                    <p className="mt-1 truncate text-[9px] text-[var(--om-text-3)]" title={offload.path}>
                       {offload.path}
                     </p>
                     {showOriginal && (
                       <div className="mt-2 space-y-1.5">
                         {originalQuery.isLoading && (
-                          <div className="flex items-center gap-1 text-[10px] text-[var(--kp-text-3)]">
+                          <div className="flex items-center gap-1 text-[10px] text-[var(--om-text-3)]">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             加载原文…
                           </div>
@@ -756,11 +756,11 @@ const ToolStep = memo(function ToolStep({
                           <>
                             <pre
                               data-testid="tool-offload-content"
-                              className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--kp-bg)] px-2 py-1.5 text-[10px] text-[var(--kp-text-2)]"
+                              className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-[var(--om-bg)] px-2 py-1.5 text-[10px] text-[var(--om-text-2)]"
                             >
                               {originalQuery.data.content}
                             </pre>
-                            <div className="flex items-center justify-between text-[9px] text-[var(--kp-text-3)]">
+                            <div className="flex items-center justify-between text-[9px] text-[var(--om-text-3)]">
                               <span>
                                 {originalQuery.data.offset}–
                                 {originalQuery.data.offset + originalQuery.data.content.length} /{" "}
@@ -774,7 +774,7 @@ const ToolStep = memo(function ToolStep({
                                       e.stopPropagation();
                                       setOriginalOffset(originalQuery.data!.nextOffset!);
                                     }}
-                                    className="font-semibold text-[var(--kp-text-2)] hover:underline"
+                                    className="font-semibold text-[var(--om-text-2)] hover:underline"
                                   >
                                     下一段
                                   </button>
@@ -792,7 +792,7 @@ const ToolStep = memo(function ToolStep({
                                       }),
                                     );
                                   }}
-                                  className="inline-flex items-center gap-0.5 font-semibold text-[var(--kp-text-2)] hover:underline"
+                                  className="inline-flex items-center gap-0.5 font-semibold text-[var(--om-text-2)] hover:underline"
                                 >
                                   <Quote className="h-3 w-3" />
                                   引用进下一轮
@@ -806,27 +806,27 @@ const ToolStep = memo(function ToolStep({
                   </div>
                 )}
                 {/* Request */}
-                <div className="group/request overflow-hidden rounded-lg bg-[var(--kp-bg-mute)]/50">
+                <div className="group/request overflow-hidden rounded-lg bg-[var(--om-bg-mute)]/50">
                   <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-[10px] font-medium text-[var(--kp-text-3)]">Request</span>
+                    <span className="text-[10px] font-medium text-[var(--om-text-3)]">Request</span>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setRequestView((v) => (v === "json" ? "card" : "json"));
                       }}
-                      className="opacity-0 transition group-hover/request:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+                      className="opacity-0 transition group-hover/request:opacity-100 text-[9px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
                     >
                       {requestView === "json" ? "卡片" : "JSON"}
                     </button>
                   </div>
                   <div className="px-3 pb-2">
                     {requestView === "json" ? (
-                      <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--kp-text-3)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
+                      <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--om-text-3)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
                         {argsJson}
                       </pre>
                     ) : (
-                      <div className="max-h-48 overflow-hidden text-[10px] text-[var(--kp-text-2)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
+                      <div className="max-h-48 overflow-hidden text-[10px] text-[var(--om-text-2)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
                         <JsonCardView data={step.args} />
                       </div>
                     )}
@@ -834,27 +834,27 @@ const ToolStep = memo(function ToolStep({
                 </div>
                 {/* Response */}
                 {step.result !== undefined && (
-                  <div className="group/response overflow-hidden rounded-lg bg-[var(--kp-bg-mute)]/50">
+                  <div className="group/response overflow-hidden rounded-lg bg-[var(--om-bg-mute)]/50">
                     <div className="flex items-center justify-between px-3 py-1.5">
-                      <span className="text-[10px] font-medium text-[var(--kp-text-3)]">Response</span>
+                      <span className="text-[10px] font-medium text-[var(--om-text-3)]">Response</span>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setResponseView((v) => (v === "json" ? "card" : "json"));
                         }}
-                        className="opacity-0 transition group-hover/response:opacity-100 text-[9px] text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+                        className="opacity-0 transition group-hover/response:opacity-100 text-[9px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
                       >
                         {responseView === "json" ? "卡片" : "JSON"}
                       </button>
                     </div>
                     <div className="px-3 pb-2">
                       {responseView === "json" ? (
-                        <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--kp-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
+                        <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--om-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
                           {resultJson}
                         </pre>
                       ) : (
-                        <div className="max-h-48 overflow-hidden text-[10px] text-[var(--kp-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
+                        <div className="max-h-48 overflow-hidden text-[10px] text-[var(--om-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
                           <JsonCardView data={step.result} />
                         </div>
                       )}
@@ -886,7 +886,7 @@ const ProgressStep = memo(function ProgressStep({
     ) : status === "queued" ? (
       <Clock className="h-3.5 w-3.5 shrink-0 text-amber-500" />
     ) : (
-      <Loader2 className={cn("h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]", isLive && "animate-spin")} />
+      <Loader2 className={cn("h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]", isLive && "animate-spin")} />
     );
   return (
     <div
@@ -897,13 +897,13 @@ const ProgressStep = memo(function ProgressStep({
           ? "border-red-200 bg-red-50"
           : status === "done"
             ? "border-green-200 bg-green-50"
-            : "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/30",
+            : "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/30",
       )}
     >
-      <div className="flex items-center gap-2 font-medium text-[var(--kp-text-2)]">
+      <div className="flex items-center gap-2 font-medium text-[var(--om-text-2)]">
         {icon}
         <span className="min-w-0 truncate">{step.label}</span>
-        <span className="ml-auto shrink-0 text-[10px] text-[var(--kp-text-3)]">
+        <span className="ml-auto shrink-0 text-[10px] text-[var(--om-text-3)]">
           {status === "queued" && "排队中"}
           {status === "running" && "运行中"}
           {status === "done" && "已完成"}
@@ -911,7 +911,7 @@ const ProgressStep = memo(function ProgressStep({
         </span>
       </div>
       {step.content && (
-        <p className="mt-1 line-clamp-2 text-[10px] text-[var(--kp-text-3)]">{step.content}</p>
+        <p className="mt-1 line-clamp-2 text-[10px] text-[var(--om-text-3)]">{step.content}</p>
       )}
     </div>
   );
@@ -942,7 +942,7 @@ export function ThinkingTimeline({
       className="relative mb-2 ml-6 mr-2 w-full max-w-[96%]"
       data-testid="thinking-timeline"
     >
-      <div className="absolute -left-4 bottom-2 top-2 w-0.5 bg-[var(--kp-brand-light)]/40" />
+      <div className="absolute -left-4 bottom-2 top-2 w-0.5 bg-[var(--om-brand-light)]/40" />
       <div className="min-w-0 space-y-3">
         {visibleSteps.map((step, i) => {
           const key =
@@ -957,7 +957,7 @@ export function ThinkingTimeline({
           return (
             <div key={key} className="relative">
               {step.type === "thinking" && (
-                <span className="absolute -left-5 top-2 h-2.5 w-2.5 rounded-full bg-[var(--kp-brand)] ring-2 ring-[var(--kp-bg-alt)]" />
+                <span className="absolute -left-5 top-2 h-2.5 w-2.5 rounded-full bg-[var(--om-brand)] ring-2 ring-[var(--om-bg-alt)]" />
               )}
               {step.type === "thinking" ? (
                 <ThinkingStep step={step} isLive={isLive && i === visibleSteps.length - 1} />

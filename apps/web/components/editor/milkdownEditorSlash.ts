@@ -52,12 +52,12 @@ function openBoardAt(
     writeBoard: (raw: string) => {
       const v = ctx.get(editorViewCtx);
       const n = v.state.doc.nodeAt(nodePos);
-      if (!n || n.type.name !== "code_block" || n.attrs.language !== "kp-board") {
+      if (!n || n.type.name !== "code_block" || n.attrs.language !== "om-board") {
         // 位置漂移：按 language 回落查找
         let pos = -1;
         v.state.doc.descendants((node, p) => {
           if (pos >= 0) return false;
-          if (node.type.name === "code_block" && node.attrs.language === "kp-board") {
+          if (node.type.name === "code_block" && node.attrs.language === "om-board") {
             pos = p;
             return false;
           }
@@ -180,10 +180,10 @@ function insertBoardBlock(ctx: Ctx, boardHook?: BoardInsertRequest) {
   let tr = state.tr;
   let nodePos = $from.before();
   if (emptyLine) {
-    tr = tr.setBlockType(nodePos, $from.after(), type, { language: "kp-board" });
+    tr = tr.setBlockType(nodePos, $from.after(), type, { language: "om-board" });
   } else {
     nodePos = $from.after();
-    tr = tr.insert(nodePos, type.create({ language: "kp-board" }, state.schema.text(EMPTY_BOARD_JSON)));
+    tr = tr.insert(nodePos, type.create({ language: "om-board" }, state.schema.text(EMPTY_BOARD_JSON)));
   }
 
   const node = tr.doc.nodeAt(nodePos);
@@ -268,7 +268,7 @@ function runCommand(ctx: Ctx, cmd: EditorSlashCommand, boardHook?: BoardInsertRe
 
 export function configureEditorSlash(ctx: Ctx, boardHook?: BoardInsertRequest) {
   const menu = document.createElement("div");
-  menu.className = "kp-editor-slash";
+  menu.className = "om-editor-slash";
   menu.setAttribute("data-show", "false");
   menu.tabIndex = -1;
 
@@ -280,7 +280,7 @@ export function configureEditorSlash(ctx: Ctx, boardHook?: BoardInsertRequest) {
     menu.innerHTML = "";
     if (currentList.length === 0) {
       const empty = document.createElement("div");
-      empty.className = "kp-editor-slash-empty";
+      empty.className = "om-editor-slash-empty";
       empty.textContent = "无匹配命令";
       menu.appendChild(empty);
       return;
@@ -288,9 +288,9 @@ export function configureEditorSlash(ctx: Ctx, boardHook?: BoardInsertRequest) {
     currentList.forEach((cmd, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "kp-editor-slash-item";
+      btn.className = "om-editor-slash-item";
       if (i === selected) btn.dataset.active = "true";
-      btn.innerHTML = `<span class="kp-editor-slash-title">${cmd.title}</span><span class="kp-editor-slash-alias">/${cmd.alias}</span><span class="kp-editor-slash-desc">${cmd.description}</span>`;
+      btn.innerHTML = `<span class="om-editor-slash-title">${cmd.title}</span><span class="om-editor-slash-alias">/${cmd.alias}</span><span class="om-editor-slash-desc">${cmd.description}</span>`;
       btn.addEventListener("mousedown", (e) => {
         e.preventDefault();
         runCommand(ctx, cmd, boardHook);
@@ -327,7 +327,7 @@ export function configureEditorSlash(ctx: Ctx, boardHook?: BoardInsertRequest) {
       // 双击已有画板 → 重新打开编辑（与公式点选编辑同类）
       handleDoubleClickOn(view, _pos, node, nodePos, event, direct) {
         if (!direct) return false;
-        if (node.type.name !== "code_block" || node.attrs.language !== "kp-board") return false;
+        if (node.type.name !== "code_block" || node.attrs.language !== "om-board") return false;
         event.preventDefault();
         openBoardAt(ctx, boardHook, nodePos, {
           initialRaw: node.textContent || EMPTY_BOARD_JSON,

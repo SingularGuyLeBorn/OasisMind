@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import type { ChatAttachment } from "@knowpilot/shared";
+import type { ChatAttachment } from "@oasismind/shared";
 import { getAppConfig } from "../config.js";
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -138,7 +138,7 @@ async function downloadOne(
 ): Promise<{ relPath: string; absPath: string; mime: string; kind: "image" | "video" | "file"; bytes: Buffer } | null> {
   try {
     const res = await fetch(att.url, {
-      headers: { "User-Agent": "KnowPilot-QQBot/1.0" },
+      headers: { "User-Agent": "OasisMind-QQBot/1.0" },
     });
     if (!res.ok) {
       console.warn(`[qq-media] 下载失败 HTTP ${res.status}: ${att.url.slice(0, 120)}`);

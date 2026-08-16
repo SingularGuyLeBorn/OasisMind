@@ -1,5 +1,5 @@
 /**
- * @knowpilot/mock-llm-core — LLM 协议类型 + Mock 场景逻辑（单源）
+ * @oasismind/mock-llm-core — LLM 协议类型 + Mock 场景逻辑（单源）
  *
  * 消费者：
  * - apps/server：llmClient.ts 取类型 + MOCK_LLM 分支调 mockChatCompletion/Stream

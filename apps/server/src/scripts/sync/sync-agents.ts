@@ -7,7 +7,7 @@
  */
 
 import { Prisma, PrismaClient } from "@prisma/client";
-import { LLM_MODEL_IDS } from "@knowpilot/shared";
+import { LLM_MODEL_IDS } from "@oasismind/shared";
 import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
 import { Syncer, SyncRecord } from "./types.js";
 import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, getFileMtime, syncDetailWarn} from "./utils.js";

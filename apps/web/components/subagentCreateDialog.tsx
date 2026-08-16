@@ -14,7 +14,7 @@ import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { KpSelect } from "@/components/shared";
-import { PRIMARY_CHAT_MODELS } from "@knowpilot/shared";
+import { PRIMARY_CHAT_MODELS } from "@oasismind/shared";
 
 type CreateResult = {
   subagentSessionId?: string;
@@ -206,7 +206,7 @@ export function SubagentCreateDialog({
           onClick={onClose}
         >
           <motion.div
-            className="w-[460px] max-w-[92vw] rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-5 shadow-xl"
+            className="w-[460px] max-w-[92vw] rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-5 shadow-xl"
             initial={{ scale: 0.96, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
@@ -214,22 +214,22 @@ export function SubagentCreateDialog({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
                 <Bot className="h-4 w-4" />
               </span>
-              <h2 className="text-sm font-bold text-[var(--kp-text-1)]">新建子 Agent 任务 [debug]</h2>
+              <h2 className="text-sm font-bold text-[var(--om-text-1)]">新建子 Agent 任务 [debug]</h2>
             </div>
 
             {/* 模式切换 */}
-            <div className="mb-4 flex rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-1">
+            <div className="mb-4 flex rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-1">
               <button
                 type="button"
                 onClick={() => setMode("existing")}
                 className={cn(
                   "flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition",
                   mode === "existing"
-                    ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]",
+                    ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-3)] hover:text-[var(--om-text-1)]",
                 )}
               >
                 选择现有 Agent
@@ -240,8 +240,8 @@ export function SubagentCreateDialog({
                 className={cn(
                   "flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition",
                   mode === "new"
-                    ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]",
+                    ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-3)] hover:text-[var(--om-text-1)]",
                 )}
               >
                 新建子 Agent
@@ -251,7 +251,7 @@ export function SubagentCreateDialog({
             <div className="space-y-3">
               {mode === "existing" ? (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[var(--kp-text-2)]">Agent</label>
+                  <label className="text-xs font-medium text-[var(--om-text-2)]">Agent</label>
                   <KpSelect
                     value={effectiveAgentId}
                     onChange={setAgentId}
@@ -263,52 +263,52 @@ export function SubagentCreateDialog({
               ) : (
                 <>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[var(--kp-text-2)]">名称</label>
+                    <label className="text-xs font-medium text-[var(--om-text-2)]">名称</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="例如：Research-Helper"
-                      className="w-full rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-xs text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                      className="w-full rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-xs text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[var(--kp-text-2)]">描述（可选）</label>
+                    <label className="text-xs font-medium text-[var(--om-text-2)]">描述（可选）</label>
                     <input
                       type="text"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="一句话说明这个子 Agent 的职责"
-                      className="w-full rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-xs text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                      className="w-full rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-xs text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[var(--kp-text-2)]">System Prompt</label>
+                    <label className="text-xs font-medium text-[var(--om-text-2)]">System Prompt</label>
                     <textarea
                       value={systemPrompt}
                       onChange={(e) => setSystemPrompt(e.target.value)}
                       rows={3}
                       placeholder="给子 Agent 的通用角色与约束"
-                      className="w-full resize-none rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                      className="w-full resize-none rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                     />
                   </div>
                 </>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--kp-text-2)]">任务描述</label>
+                <label className="text-xs font-medium text-[var(--om-text-2)]">任务描述</label>
                 <textarea
                   value={task}
                   onChange={(e) => setTask(e.target.value)}
                   rows={4}
                   autoFocus
                   placeholder="例如：搜索 OasisMind 并整理成 200 字摘要"
-                  className="w-full resize-none rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                  className="w-full resize-none rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--kp-text-2)]">模型（可选）</label>
+                <label className="text-xs font-medium text-[var(--om-text-2)]">模型（可选）</label>
                 <KpSelect
                   value={model}
                   onChange={setModel}

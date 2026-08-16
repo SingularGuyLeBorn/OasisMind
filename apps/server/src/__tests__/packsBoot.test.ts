@@ -2,7 +2,7 @@
  * Packs：lite 不注册 swarm/qq；full 注册。
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { PACKS_FULL, PACKS_LITE } from "@knowpilot/shared";
+import { PACKS_FULL, PACKS_LITE } from "@oasismind/shared";
 import { __resetToolRegistryForTests, getTool } from "../infra/tools/registry.js";
 import { registerNativeDomains } from "../infra/tools/native/index.js";
 import { __resetNativeToolsRegistrationForTests } from "../infra/nativeTools.js";

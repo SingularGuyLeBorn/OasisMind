@@ -41,7 +41,7 @@ export function VirtualFlatList<T>({
     return (
       <div
         className={cn(
-          "flex flex-1 items-center justify-center p-4 text-sm text-[var(--kp-text-3)]",
+          "flex flex-1 items-center justify-center p-4 text-sm text-[var(--om-text-3)]",
           className,
         )}
       >

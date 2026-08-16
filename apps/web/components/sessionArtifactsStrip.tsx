@@ -44,20 +44,20 @@ export function SessionArtifactsStrip({ sessionId }: { sessionId: string | null 
       {items.map((a) => (
         <div
           key={`${a.toolCallId}-${a.path}`}
-          className="flex items-center gap-2 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]/90 px-3 py-2 text-xs"
+          className="flex items-center gap-2 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/90 px-3 py-2 text-xs"
         >
-          <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+          <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
           <div className="min-w-0 flex-1">
-            <div className="truncate font-medium text-[var(--kp-text-2)]">
+            <div className="truncate font-medium text-[var(--om-text-2)]">
               {a.title || toPascalCaseId(a.artifactKind)} · {formatToolDisplayName(a.toolName)}
             </div>
-            <div className="truncate font-mono text-[10px] text-[var(--kp-text-3)]" title={a.path}>
+            <div className="truncate font-mono text-[10px] text-[var(--om-text-3)]" title={a.path}>
               {a.path}
             </div>
           </div>
           <button
             type="button"
-            className="rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+            className="rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
             aria-label="关闭"
             onClick={() => setItems((prev) => prev.filter((p) => p.toolCallId !== a.toolCallId))}
           >

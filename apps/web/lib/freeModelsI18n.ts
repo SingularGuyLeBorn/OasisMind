@@ -4,7 +4,7 @@
 
 export type FreeModelsLocale = "zh" | "en";
 
-const STORAGE_KEY = "kp-free-models-locale";
+const STORAGE_KEY = "om-free-models-locale";
 
 export function readFreeModelsLocale(): FreeModelsLocale {
   if (typeof window === "undefined") return "zh";

@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { createCredentialSchema, updateCredentialSchema, listCredentialsSchema } from "@knowpilot/shared";
+import { createCredentialSchema, updateCredentialSchema, listCredentialsSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { getEnvCredentialCandidates } from "../credentialVault.js";
 

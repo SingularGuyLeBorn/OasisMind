@@ -30,7 +30,7 @@ describe("C5 llmBudget hydrate 合并", () => {
 
   beforeEach(() => {
     resetLlmBudgetForTests();
-    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kp-budget-"));
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "om-budget-"));
     fs.mkdirSync(path.join(tmpRoot, ".dev-log"), { recursive: true });
   });
 

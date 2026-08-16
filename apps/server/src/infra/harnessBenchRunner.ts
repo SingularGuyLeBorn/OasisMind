@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { mockChatCompletion } from "@knowpilot/mock-llm-core";
+import { mockChatCompletion } from "@oasismind/mock-llm-core";
 import type { HarnessDeps } from "./evalHarness.js";
 
 const BENCH_CASES_PATH = "evals/harness-bench/cases.json";

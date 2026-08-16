@@ -10,7 +10,7 @@ import { catchUnlessCancelled } from "@/lib/trpc";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BookPlus, Loader2, X } from "lucide-react";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import { formatGardenId } from "@/lib/gardenDisplay";
 import { postDetailHref } from "@/lib/postHref";
@@ -147,16 +147,16 @@ function SaveMessageAsPostDialogInner({
         if (e.target === e.currentTarget && !pending) onClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-4 shadow-2xl">
+      <div className="w-full max-w-lg rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-            <BookPlus className="h-4 w-4 text-[var(--kp-brand)]" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+            <BookPlus className="h-4 w-4 text-[var(--om-brand)]" />
             写入知识库
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+            className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
             aria-label="关闭"
           >
             <X className="h-4 w-4" />
@@ -164,21 +164,21 @@ function SaveMessageAsPostDialogInner({
         </div>
 
         {target.previewExcerpt && (
-          <p className="mb-3 line-clamp-3 rounded-lg border border-dashed border-[var(--kp-divider)] bg-[var(--kp-bg-mute)]/40 px-2.5 py-2 text-[11px] text-[var(--kp-text-3)]">
+          <p className="mb-3 line-clamp-3 rounded-lg border border-dashed border-[var(--om-divider)] bg-[var(--om-bg-mute)]/40 px-2.5 py-2 text-[11px] text-[var(--om-text-3)]">
             {target.previewExcerpt}
           </p>
         )}
 
         {resultHref ? (
           <div className="space-y-3" data-testid="save-message-as-post-success">
-            <p className="text-sm text-[var(--kp-text-1)]">已写入知识库。</p>
+            <p className="text-sm text-[var(--om-text-1)]">已写入知识库。</p>
             <Link
               href={resultHref}
               className={cn(buttonVariants({ variant: "default", size: "sm" }), "inline-flex")}
             >
               打开文章
             </Link>
-            <button type="button" onClick={onClose} className="ml-2 text-xs text-[var(--kp-text-3)] underline">
+            <button type="button" onClick={onClose} className="ml-2 text-xs text-[var(--om-text-3)] underline">
               关闭
             </button>
           </div>
@@ -199,8 +199,8 @@ function SaveMessageAsPostDialogInner({
                   className={cn(
                     "rounded-lg border px-2.5 py-1 text-xs",
                     mode === id
-                      ? "border-[var(--kp-brand)] bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                      : "border-[var(--kp-divider)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                      ? "border-[var(--om-brand)] bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                      : "border-[var(--om-divider)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
                   )}
                 >
                   {label}
@@ -208,12 +208,12 @@ function SaveMessageAsPostDialogInner({
               ))}
             </div>
 
-            <label className="block text-xs text-[var(--kp-text-3)]">
+            <label className="block text-xs text-[var(--om-text-3)]">
               花园
               <select
                 value={garden}
                 onChange={(e) => setGarden(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm text-[var(--kp-text-1)]"
+                className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm text-[var(--om-text-1)]"
               >
                 {(gardens?.items ?? [{ id: DEFAULT_POST_GARDEN, title: "博客" }]).map((g) => (
                   <option key={g.id} value={g.id}>
@@ -224,31 +224,31 @@ function SaveMessageAsPostDialogInner({
             </label>
 
             {(mode === "create" || mode === "update") && (
-              <label className="block text-xs text-[var(--kp-text-3)]">
+              <label className="block text-xs text-[var(--om-text-3)]">
                 标题
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={mode === "create" ? "不填则取正文首行" : "可选，留空保留原标题"}
-                  className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm text-[var(--kp-text-1)]"
+                  className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm text-[var(--om-text-1)]"
                 />
               </label>
             )}
 
             {(mode === "update" || mode === "append") && (
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--kp-text-3)]">
+                <label className="block text-xs text-[var(--om-text-3)]">
                   搜索已有文章
                   <input
                     value={postQuery}
                     onChange={(e) => setPostQuery(e.target.value)}
                     placeholder="关键词…"
-                    className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm"
                   />
                 </label>
-                <div className="max-h-36 overflow-y-auto rounded-lg border border-[var(--kp-divider)]">
+                <div className="max-h-36 overflow-y-auto rounded-lg border border-[var(--om-divider)]">
                   {candidatePosts.length === 0 ? (
-                    <p className="px-2.5 py-2 text-xs text-[var(--kp-text-3)]">无候选文章</p>
+                    <p className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">无候选文章</p>
                   ) : (
                     candidatePosts.map((p) => (
                       <button
@@ -261,12 +261,12 @@ function SaveMessageAsPostDialogInner({
                         className={cn(
                           "flex w-full flex-col items-start px-2.5 py-1.5 text-left text-xs",
                           targetPostId === p.id
-                            ? "bg-[var(--kp-brand-soft)]"
-                            : "hover:bg-[var(--kp-bg-mute)]",
+                            ? "bg-[var(--om-brand-soft)]"
+                            : "hover:bg-[var(--om-bg-mute)]",
                         )}
                       >
-                        <span className="font-medium text-[var(--kp-text-1)]">{p.title}</span>
-                        <span className="text-[10px] text-[var(--kp-text-3)]">
+                        <span className="font-medium text-[var(--om-text-1)]">{p.title}</span>
+                        <span className="text-[10px] text-[var(--om-text-3)]">
                           {p.garden}/{p.slug}
                         </span>
                       </button>
@@ -277,37 +277,37 @@ function SaveMessageAsPostDialogInner({
             )}
 
             {mode === "append" && (
-              <label className="block text-xs text-[var(--kp-text-3)]">
+              <label className="block text-xs text-[var(--om-text-3)]">
                 追加二级标题（可选）
                 <input
                   value={appendHeading}
                   onChange={(e) => setAppendHeading(e.target.value)}
                   placeholder="例如：对话摘录 · 2026-07-29"
-                  className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm"
+                  className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm"
                 />
               </label>
             )}
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="block text-xs text-[var(--kp-text-3)]">
+              <label className="block text-xs text-[var(--om-text-3)]">
                 分类
                 <input
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm"
+                  className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm"
                 />
               </label>
-              <label className="block text-xs text-[var(--kp-text-3)]">
+              <label className="block text-xs text-[var(--om-text-3)]">
                 标签（逗号分隔）
                 <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2.5 py-1.5 text-sm"
+                  className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm"
                 />
               </label>
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-[var(--kp-text-2)]">
+            <label className="flex items-center gap-2 text-xs text-[var(--om-text-2)]">
               <input
                 type="checkbox"
                 checked={published}

@@ -153,9 +153,9 @@ export function QueueCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-[var(--kp-bg-alt)] transition-shadow",
-        item.pinned ? "border-[var(--kp-brand)]/40 shadow-sm" : isChildNotify ? "border-emerald-300/60" : "border-[var(--kp-divider-light)]",
-        isEditing && "border-[var(--kp-brand)]/50 ring-1 ring-[var(--kp-brand)]/30",
+        "rounded-xl border bg-[var(--om-bg-alt)] transition-shadow",
+        item.pinned ? "border-[var(--om-brand)]/40 shadow-sm" : isChildNotify ? "border-emerald-300/60" : "border-[var(--om-divider-light)]",
+        isEditing && "border-[var(--om-brand)]/50 ring-1 ring-[var(--om-brand)]/30",
         isChildNotify && "border-l-4 border-l-emerald-400",
         expanded ? "p-3" : "px-3 py-2",
       )}
@@ -164,7 +164,7 @@ export function QueueCard({
     >
       <div className="flex items-start gap-2">
         {!isRunning && (
-          <span className="mt-1 cursor-grab text-[var(--kp-text-3)]" title="拖动排序（或使用箭头）">
+          <span className="mt-1 cursor-grab text-[var(--om-text-3)]" title="拖动排序（或使用箭头）">
             <GripVertical className="h-4 w-4" />
           </span>
         )}
@@ -174,29 +174,29 @@ export function QueueCard({
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-semibold",
                 isRunning
-                  ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
+                  ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
                   : isAsyncResult
                     ? "bg-amber-500/10 text-amber-700"
                     : isChildNotify
                       ? "bg-emerald-100 text-emerald-700"
-                      : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)]",
+                      : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)]",
               )}
             >
               {kindLabel(item)}
             </span>
-            {isRunning && <Loader2 className="h-3 w-3 animate-spin text-[var(--kp-brand)]" />}
+            {isRunning && <Loader2 className="h-3 w-3 animate-spin text-[var(--om-brand)]" />}
             {isEditing && (
-              <span className="text-[10px] font-medium text-[var(--kp-text-3)]" data-testid="chat-queue-editing-badge">
+              <span className="text-[10px] font-medium text-[var(--om-text-3)]" data-testid="chat-queue-editing-badge">
                 编辑中
               </span>
             )}
-            {item.pinned && <span className="text-[10px] text-[var(--kp-brand-deep)]">已置顶</span>}
+            {item.pinned && <span className="text-[10px] text-[var(--om-brand-deep)]">已置顶</span>}
             {(isRunning || isAsyncResult) && item.subagentSessionId && (
               <a
                 href={`/chat?sessionId=${item.subagentSessionId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                 title="在新标签页中与子 Agent 对话"
               >
                 <MessageSquare className="h-3 w-3" />
@@ -207,13 +207,13 @@ export function QueueCard({
           </div>
 
           {!expanded ? (
-            <p className="line-clamp-2 text-xs text-[var(--kp-text-2)]">{previewText(item)}</p>
+            <p className="line-clamp-2 text-xs text-[var(--om-text-2)]">{previewText(item)}</p>
           ) : (
             <>
               {isAsyncResult && item.asyncResult && (
                 <div>
-                  <p className="mb-1 text-[10px] font-medium text-[var(--kp-text-3)]">系统结果（不可修改）</p>
-                  <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] p-2 text-xs text-[var(--kp-text-2)]">
+                  <p className="mb-1 text-[10px] font-medium text-[var(--om-text-3)]">系统结果（不可修改）</p>
+                  <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] p-2 text-xs text-[var(--om-text-2)]">
                     {item.asyncResult}
                   </pre>
                 </div>
@@ -221,12 +221,12 @@ export function QueueCard({
 
               {canEditAppend && onUpdate && (
                 <div>
-                  <p className="mb-1 text-[10px] font-medium text-[var(--kp-text-3)]">你的补充说明（LLM 会区分）</p>
+                  <p className="mb-1 text-[10px] font-medium text-[var(--om-text-3)]">你的补充说明（LLM 会区分）</p>
                   <textarea
                     value={item.userAppend ?? ""}
                     onChange={(e) => onUpdate({ userAppend: e.target.value })}
                     rows={2}
-                    className="w-full resize-none rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-2 py-1.5 text-xs outline-none focus:border-[var(--kp-brand)]"
+                    className="w-full resize-none rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs outline-none focus:border-[var(--om-brand)]"
                     placeholder="可选：对异步结果追加说明…"
                   />
                 </div>
@@ -235,7 +235,7 @@ export function QueueCard({
               {/* superior / child_notify：只读正文（旧实现展开后既无 preview 也无 textarea，内容空白） */}
               {(item.kind === "superior" || item.kind === "child_notify") && (
                 <p
-                  className="whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] px-2 py-1.5 text-xs text-[var(--kp-text-1)]"
+                  className="whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] px-2 py-1.5 text-xs text-[var(--om-text-1)]"
                   data-testid="chat-queue-item-body"
                 >
                   {item.text.trim() || "（空消息）"}
@@ -244,7 +244,7 @@ export function QueueCard({
 
               {editInComposer && (
                 <p
-                  className="whitespace-pre-wrap rounded-lg bg-[var(--kp-bg-mute)] px-2 py-1.5 text-xs text-[var(--kp-text-1)]"
+                  className="whitespace-pre-wrap rounded-lg bg-[var(--om-bg-mute)] px-2 py-1.5 text-xs text-[var(--om-text-1)]"
                   data-testid="chat-queue-item-body"
                 >
                   {item.text.trim() || "（空消息）"}
@@ -253,7 +253,7 @@ export function QueueCard({
 
               {!editInComposer && (canEditMain || (isAsyncResult && item.text)) && onUpdate && (
                 <div>
-                  <p className="mb-1 text-[10px] font-medium text-[var(--kp-text-3)]">
+                  <p className="mb-1 text-[10px] font-medium text-[var(--om-text-3)]">
                     {canEditMain ? "消息内容" : "附加上下文"}
                   </p>
                   <textarea
@@ -264,8 +264,8 @@ export function QueueCard({
                     className={cn(
                       "w-full resize-none rounded-lg border px-2 py-1.5 text-xs outline-none",
                       canEditMain
-                        ? "border-[var(--kp-divider)] bg-[var(--kp-bg)] focus:border-[var(--kp-brand)]"
-                        : "border-transparent bg-[var(--kp-bg-mute)] text-[var(--kp-text-3)]",
+                        ? "border-[var(--om-divider)] bg-[var(--om-bg)] focus:border-[var(--om-brand)]"
+                        : "border-transparent bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
                     )}
                   />
                 </div>
@@ -276,7 +276,7 @@ export function QueueCard({
                   {item.attachments.map((a) => (
                     <span
                       key={a.id}
-                      className="rounded bg-[var(--kp-bg-soft)] px-1.5 py-0.5 text-[10px] text-[var(--kp-text-3)]"
+                      className="rounded bg-[var(--om-bg-soft)] px-1.5 py-0.5 text-[10px] text-[var(--om-text-3)]"
                     >
                       {a.type === "post" ? `文 ${a.title}` : `图 ${a.name}`}
                     </span>
@@ -295,8 +295,8 @@ export function QueueCard({
                   type="button"
                   onClick={onEdit}
                   className={cn(
-                    "rounded p-1 hover:bg-[var(--kp-bg-mute)]",
-                    isEditing ? "text-[var(--kp-brand-deep)]" : "text-[var(--kp-text-3)]",
+                    "rounded p-1 hover:bg-[var(--om-bg-mute)]",
+                    isEditing ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-3)]",
                   )}
                   title="在输入框中编辑"
                   data-testid="chat-queue-edit"
@@ -308,7 +308,7 @@ export function QueueCard({
                 <button
                   type="button"
                   onClick={onTogglePin}
-                  className="rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                  className="rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
                   title={item.pinned ? "取消置顶" : "置顶"}
                 >
                   {item.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
@@ -318,7 +318,7 @@ export function QueueCard({
                 <button
                   type="button"
                   onClick={onMoveUp}
-                  className="rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                  className="rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
                   title="上移"
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
@@ -328,7 +328,7 @@ export function QueueCard({
                 <button
                   type="button"
                   onClick={onMoveDown}
-                  className="rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                  className="rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
                   title="下移"
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
@@ -361,7 +361,7 @@ export function QueueCard({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded p-1 text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+              className="rounded p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
               title="重试"
             >
               <RotateCcw className="h-3.5 w-3.5" />
@@ -462,40 +462,40 @@ export function UserSendQueuePanel({
         <button
           type="button"
           onClick={() => setUserExpanded(true)}
-          className="flex w-full items-center gap-2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]/95 px-3 py-2 text-left text-xs shadow-sm transition hover:bg-[var(--kp-bg-mute)]"
+          className="flex w-full items-center gap-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/95 px-3 py-2 text-left text-xs shadow-sm transition hover:bg-[var(--om-bg-mute)]"
         >
-          <MessageSquare className="h-4 w-4 text-[var(--kp-brand)]" />
-          <span className="font-medium text-[var(--kp-text-2)]">
+          <MessageSquare className="h-4 w-4 text-[var(--om-brand)]" />
+          <span className="font-medium text-[var(--om-text-2)]">
             待发消息 {items.length}
           </span>
           {superiorHeadBlocks && (
-            <span className="text-[var(--kp-text-3)]">· 等待上级消息送达</span>
+            <span className="text-[var(--om-text-3)]">· 等待上级消息送达</span>
           )}
           {asyncStats && asyncStats.runningGlobal > 0 && (
-            <span className="text-[var(--kp-brand)]">· 运行 {asyncStats.runningGlobal}</span>
+            <span className="text-[var(--om-brand)]">· 运行 {asyncStats.runningGlobal}</span>
           )}
           {asyncStats && asyncStats.queued > 0 && (
-            <span className="text-[var(--kp-text-3)]">· 排队 {asyncStats.queued}</span>
+            <span className="text-[var(--om-text-3)]">· 排队 {asyncStats.queued}</span>
           )}
-          <span className="ml-auto text-[var(--kp-text-3)]">点击展开</span>
-          <ChevronDown className="h-4 w-4 text-[var(--kp-text-3)]" />
+          <span className="ml-auto text-[var(--om-text-3)]">点击展开</span>
+          <ChevronDown className="h-4 w-4 text-[var(--om-text-3)]" />
         </button>
       ) : (
-        <div className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]/95 p-3 shadow-sm">
+        <div className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/95 p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--kp-text-2)]">
+            <span className="text-xs font-medium text-[var(--om-text-2)]">
               待发消息 {items.length}
               {asyncStats && asyncStats.runningGlobal > 0 && (
-                <span className="ml-1.5 text-[var(--kp-brand)]">· 运行 {asyncStats.runningGlobal}</span>
+                <span className="ml-1.5 text-[var(--om-brand)]">· 运行 {asyncStats.runningGlobal}</span>
               )}
               {asyncStats && asyncStats.queued > 0 && (
-                <span className="ml-1.5 text-[var(--kp-text-3)]">· 排队 {asyncStats.queued}</span>
+                <span className="ml-1.5 text-[var(--om-text-3)]">· 排队 {asyncStats.queued}</span>
               )}
             </span>
             <button
               type="button"
               onClick={() => setUserExpanded(false)}
-              className="rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
               title="收起"
               disabled={!!editingId}
             >
@@ -503,7 +503,7 @@ export function UserSendQueuePanel({
             </button>
           </div>
           {superiorHeadBlocks && (
-            <p className="mb-2 text-[11px] leading-snug text-[var(--kp-text-3)]">
+            <p className="mb-2 text-[11px] leading-snug text-[var(--om-text-3)]">
               队首为上级 Agent 消息，服务端送达后才会继续发送后续待发项。
             </p>
           )}
@@ -561,7 +561,7 @@ export function QueuePanelList({ items, onChange, onRemove, onCancel, onRetry, e
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--kp-text-3)]">
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-[var(--om-text-3)]">
         <MessageSquare className="h-6 w-6 opacity-40" />
         <p className="text-xs">{emptyText ?? "队列为空"}</p>
       </div>
@@ -600,7 +600,7 @@ export function QueuePanelList({ items, onChange, onRemove, onCancel, onRetry, e
         })}
       </div>
       {totalPages > 1 && (
-        <div className="border-t border-[var(--kp-divider)] px-3 py-2">
+        <div className="border-t border-[var(--om-divider)] px-3 py-2">
           <SimplePagination page={safePage} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
@@ -610,12 +610,12 @@ export function QueuePanelList({ items, onChange, onRemove, onCancel, onRetry, e
 
 function SimplePagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
   return (
-    <div className="flex items-center justify-center gap-2 text-xs text-[var(--kp-text-2)]">
+    <div className="flex items-center justify-center gap-2 text-xs text-[var(--om-text-2)]">
       <button
         type="button"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        className="rounded px-2 py-1 hover:bg-[var(--kp-bg-mute)] disabled:opacity-40"
+        className="rounded px-2 py-1 hover:bg-[var(--om-bg-mute)] disabled:opacity-40"
       >
         上一页
       </button>
@@ -626,7 +626,7 @@ function SimplePagination({ page, totalPages, onChange }: { page: number; totalP
         type="button"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
-        className="rounded px-2 py-1 hover:bg-[var(--kp-bg-mute)] disabled:opacity-40"
+        className="rounded px-2 py-1 hover:bg-[var(--om-bg-mute)] disabled:opacity-40"
       >
         下一页
       </button>

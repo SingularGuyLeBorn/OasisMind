@@ -16,7 +16,7 @@ import {
   type EvalSuiteReport,
   type EvalTrialReport,
   type TrialTranscript,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { AppConfig } from "./config.js";
 import { buildTrialTranscript, transcriptFromFixture } from "./evalTranscript.js";

@@ -15,7 +15,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { Post } from "@knowpilot/shared";
+import type { Post } from "@oasismind/shared";
 import { trpc } from "@/lib/trpc";
 import { usePostMutations } from "@/lib/usePostMutations";
 import { formatGardenId } from "@/lib/gardenDisplay";
@@ -103,8 +103,8 @@ function PostsPageContent() {
         className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
       >
         <div>
-          <h1 className="kp-display-serif text-3xl text-[var(--kp-text-1)]">全部文章</h1>
-          <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+          <h1 className="om-display-serif text-3xl text-[var(--om-text-1)]">全部文章</h1>
+          <p className="mt-1 text-sm text-[var(--om-text-3)]">
             跨库列表 · 共 {data?.total ?? 0} 篇
             {gardenFilter !== "all" ? ` · ${gardenTitle(gardenFilter)}` : ""}
             {isFetching && !isLoading ? " · 刷新中…" : ""}
@@ -159,8 +159,8 @@ function PostsPageContent() {
           className={cn(
             "rounded-xl px-3 py-1.5 text-xs font-medium transition",
             gardenFilter === "all"
-              ? "bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] text-white shadow-sm"
-              : "text-[var(--kp-text-2)] hover:bg-white/60",
+              ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+              : "text-[var(--om-text-2)] hover:bg-white/60",
           )}
         >
           全部花园
@@ -177,8 +177,8 @@ function PostsPageContent() {
             className={cn(
               "rounded-xl px-3 py-1.5 text-xs font-medium transition",
               gardenFilter === g.id
-                ? "bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] text-white shadow-sm"
-                : "text-[var(--kp-text-2)] hover:bg-white/60",
+                ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+                : "text-[var(--om-text-2)] hover:bg-white/60",
             )}
           >
             {g.title}
@@ -203,7 +203,7 @@ function PostsPageContent() {
         className="mb-6 flex flex-col gap-3 rounded-2xl border border-white/50 bg-white/40 p-4 shadow-[0_4px_16px_-8px_rgba(0,135,235,0.12)] backdrop-blur-xl sm:flex-row sm:items-center"
       >
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--kp-text-3)]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
           <Input
             value={keyword}
             onChange={(e) => {
@@ -211,7 +211,7 @@ function PostsPageContent() {
               setPage(1);
             }}
             placeholder="搜索标题或 slug…"
-            className="h-10 border-[var(--kp-divider)] bg-white/60 pl-9 pr-9 text-sm backdrop-blur-sm transition focus:bg-white"
+            className="h-10 border-[var(--om-divider)] bg-white/60 pl-9 pr-9 text-sm backdrop-blur-sm transition focus:bg-white"
           />
           {keyword && (
             <button
@@ -220,13 +220,13 @@ function PostsPageContent() {
                 setKeyword("");
                 setPage(1);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <div className="flex shrink-0 gap-1 rounded-xl border border-[var(--kp-divider)] bg-white/50 p-1 backdrop-blur-sm">
+        <div className="flex shrink-0 gap-1 rounded-xl border border-[var(--om-divider)] bg-white/50 p-1 backdrop-blur-sm">
           {(
             [
               ["all", "全部"],
@@ -244,8 +244,8 @@ function PostsPageContent() {
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 publishFilter === value
-                  ? "bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] text-white shadow-sm"
-                  : "text-[var(--kp-text-2)] hover:bg-white/70",
+                  ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+                  : "text-[var(--om-text-2)] hover:bg-white/70",
               )}
             >
               {label}
@@ -357,21 +357,21 @@ function PostCard({
             >
               {post.published ? "已发布" : "草稿"}
             </Badge>
-            <Badge variant="outline" className="text-xs border-[var(--kp-divider)] bg-white/40">
+            <Badge variant="outline" className="text-xs border-[var(--om-divider)] bg-white/40">
               {gardenLabel}
             </Badge>
             {post.category && (
               <Badge
                 variant="outline"
-                className="cursor-pointer text-xs border-[var(--kp-divider)] bg-white/40 hover:border-[var(--kp-brand)]/40"
+                className="cursor-pointer text-xs border-[var(--om-divider)] bg-white/40 hover:border-[var(--om-brand)]/40"
                 onClick={() => router.push(`/categories/${encodeURIComponent(post.category!)}`)}
               >
                 {post.category}
               </Badge>
             )}
             {featured && (
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--kp-accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--kp-accent-deep)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--kp-accent)] animate-pulse" />
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--om-accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--om-accent-deep)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--om-accent)] animate-pulse" />
                 最新
               </span>
             )}
@@ -380,15 +380,15 @@ function PostCard({
           <Link
             href={postDetailHref(post.slug, post.garden)}
             className={cn(
-              "block font-semibold text-[var(--kp-text-1)] transition hover:text-[var(--kp-brand-deep)]",
-              featured ? "kp-display-serif text-xl md:text-2xl" : "text-lg",
+              "block font-semibold text-[var(--om-text-1)] transition hover:text-[var(--om-brand-deep)]",
+              featured ? "om-display-serif text-xl md:text-2xl" : "text-lg",
             )}
           >
             {post.title}
           </Link>
           <p
             className={cn(
-              "mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--kp-text-2)]",
+              "mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--om-text-2)]",
               featured && "line-clamp-3 md:text-base",
             )}
           >
@@ -397,17 +397,17 @@ function PostCard({
           </p>
 
           <div className="mt-auto pt-4">
-            <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--kp-text-3)]">
-              <span className="kp-glass-pill">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--om-text-3)]">
+              <span className="om-glass-pill">
                 <Calendar className="h-3 w-3" />
                 {new Date(post.updatedAt).toLocaleDateString("zh-CN")}
               </span>
-              <span className="kp-glass-pill">
+              <span className="om-glass-pill">
                 <Eye className="h-3 w-3" />
                 {post.viewCount} 阅读
               </span>
               {featured && (
-                <span className="truncate font-mono text-[11px] text-[var(--kp-text-3)]">{post.slug}</span>
+                <span className="truncate font-mono text-[11px] text-[var(--om-text-3)]">{post.slug}</span>
               )}
             </div>
 
@@ -415,7 +415,7 @@ function PostCard({
               <Link
                 href={postDetailHref(post.slug, post.garden)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[var(--kp-brand-deep)] to-[var(--kp-brand)] py-2 text-xs font-medium text-white shadow-md shadow-[rgba(0,135,235,0.18)] transition hover:opacity-95",
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] py-2 text-xs font-medium text-white shadow-md shadow-[rgba(0,135,235,0.18)] transition hover:opacity-95",
                 )}
               >
                 <Edit2 className="h-3.5 w-3.5" />
@@ -426,7 +426,7 @@ function PostCard({
                 type="button"
                 onClick={onDelete}
                 disabled={deleting}
-                className="rounded-xl border border-[var(--kp-divider)] bg-white/50 px-3 py-2 text-xs text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"
+                className="rounded-xl border border-[var(--om-divider)] bg-white/50 px-3 py-2 text-xs text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -443,7 +443,7 @@ export default function PostsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center text-sm text-[var(--kp-text-3)]">
+        <div className="flex min-h-[50vh] items-center justify-center text-sm text-[var(--om-text-3)]">
           加载文章列表…
         </div>
       }

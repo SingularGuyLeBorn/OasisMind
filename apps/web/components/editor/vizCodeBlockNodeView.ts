@@ -26,7 +26,7 @@ function isVizLang(language: unknown): boolean {
 
 function isBoardLang(language: unknown): boolean {
   const lang = fenceLanguageOnly(language);
-  return lang === "kp-board" || lang === "board";
+  return lang === "om-board" || lang === "board";
 }
 
 function countCodeLines(code: string): number {
@@ -65,71 +65,71 @@ function createPlainCodeBlockView(
   getPos: () => number | undefined,
 ): NodeView {
   const wrap = document.createElement("div");
-  wrap.className = "kp-code-block kp-md-code-block not-prose";
+  wrap.className = "om-code-block om-md-code-block not-prose";
 
   const toolbar = document.createElement("div");
-  toolbar.className = "kp-code-toolbar kp-md-code-toolbar";
+  toolbar.className = "om-code-toolbar om-md-code-toolbar";
   toolbar.contentEditable = "false";
 
   const left = document.createElement("div");
-  left.className = "kp-md-code-toolbar-left";
+  left.className = "om-md-code-toolbar-left";
 
-  const foldBtn = btn("kp-md-code-fold", "折叠代码块", ICON.chevron);
+  const foldBtn = btn("om-md-code-fold", "折叠代码块", ICON.chevron);
   foldBtn.setAttribute("aria-expanded", "true");
 
   const titleInput = document.createElement("input");
   titleInput.type = "text";
-  titleInput.className = "kp-md-code-title";
+  titleInput.className = "om-md-code-title";
   titleInput.placeholder = "请输入代码块名称";
   titleInput.spellcheck = false;
 
   const langLabel = document.createElement("span");
-  langLabel.className = "kp-md-code-lang font-mono uppercase tracking-wider";
+  langLabel.className = "om-md-code-lang font-mono uppercase tracking-wider";
 
   left.append(foldBtn, titleInput, langLabel);
 
   const hoverActions = document.createElement("div");
-  hoverActions.className = "kp-code-toolbar-actions kp-md-code-toolbar-hover";
+  hoverActions.className = "om-code-toolbar-actions om-md-code-toolbar-hover";
 
-  const searchBtn = btn("kp-md-code-tool", "搜索", ICON.search);
-  const wrapBtn = btn("kp-md-code-tool", "自动换行", ICON.wrap);
-  const lineBtn = btn("kp-md-code-tool kp-md-code-tool--on", "隐藏行号", ICON.lines);
+  const searchBtn = btn("om-md-code-tool", "搜索", ICON.search);
+  const wrapBtn = btn("om-md-code-tool", "自动换行", ICON.wrap);
+  const lineBtn = btn("om-md-code-tool om-md-code-tool--on", "隐藏行号", ICON.lines);
   lineBtn.setAttribute("aria-pressed", "true");
-  const copyBtn = btn("kp-md-code-tool", "复制", ICON.copy);
+  const copyBtn = btn("om-md-code-tool", "复制", ICON.copy);
 
   hoverActions.append(searchBtn, wrapBtn, lineBtn, copyBtn);
   toolbar.append(left, hoverActions);
 
   const searchBar = document.createElement("div");
-  searchBar.className = "kp-md-code-search";
+  searchBar.className = "om-md-code-search";
   searchBar.hidden = true;
   searchBar.contentEditable = "false";
 
   const searchInput = document.createElement("input");
   searchInput.type = "search";
-  searchInput.className = "kp-md-code-search-input";
+  searchInput.className = "om-md-code-search-input";
   searchInput.placeholder = "在代码块内搜索…";
   searchInput.spellcheck = false;
 
   const searchMeta = document.createElement("span");
-  searchMeta.className = "kp-md-code-search-meta";
+  searchMeta.className = "om-md-code-search-meta";
 
-  const searchNext = btn("kp-md-code-tool", "下一个", "下一个");
-  searchNext.classList.add("kp-md-code-search-textbtn");
-  const searchClose = btn("kp-md-code-tool", "关闭搜索", "关闭");
-  searchClose.classList.add("kp-md-code-search-textbtn");
+  const searchNext = btn("om-md-code-tool", "下一个", "下一个");
+  searchNext.classList.add("om-md-code-search-textbtn");
+  const searchClose = btn("om-md-code-tool", "关闭搜索", "关闭");
+  searchClose.classList.add("om-md-code-search-textbtn");
 
   searchBar.append(searchInput, searchMeta, searchNext, searchClose);
 
   const body = document.createElement("div");
-  body.className = "kp-code-body kp-code-body--lines";
+  body.className = "om-code-body om-code-body--lines";
 
   const gutter = document.createElement("div");
-  gutter.className = "kp-code-gutter";
+  gutter.className = "om-code-gutter";
   gutter.setAttribute("aria-hidden", "true");
 
   const pre = document.createElement("pre");
-  pre.className = "kp-code-pre text-sm";
+  pre.className = "om-code-pre text-sm";
   const code = document.createElement("code");
   pre.appendChild(code);
 
@@ -156,8 +156,8 @@ function createPlainCodeBlockView(
     if (!showLineNumbers) {
       gutter.hidden = true;
       gutter.replaceChildren();
-      body.classList.remove("kp-code-body--lines");
-      lineBtn.classList.remove("kp-md-code-tool--on");
+      body.classList.remove("om-code-body--lines");
+      lineBtn.classList.remove("om-md-code-tool--on");
       lineBtn.setAttribute("aria-pressed", "false");
       lineBtn.title = "显示行号";
       lineBtn.setAttribute("aria-label", "显示行号");
@@ -165,8 +165,8 @@ function createPlainCodeBlockView(
     }
     const count = countCodeLines(n.textContent ?? "");
     gutter.hidden = false;
-    body.classList.add("kp-code-body--lines");
-    lineBtn.classList.add("kp-md-code-tool--on");
+    body.classList.add("om-code-body--lines");
+    lineBtn.classList.add("om-md-code-tool--on");
     lineBtn.setAttribute("aria-pressed", "true");
     lineBtn.title = "隐藏行号";
     lineBtn.setAttribute("aria-label", "隐藏行号");
@@ -180,25 +180,25 @@ function createPlainCodeBlockView(
   };
 
   const syncWrap = () => {
-    pre.classList.toggle("kp-code-pre--wrap", wrapLines);
-    wrapBtn.classList.toggle("kp-md-code-tool--on", wrapLines);
+    pre.classList.toggle("om-code-pre--wrap", wrapLines);
+    wrapBtn.classList.toggle("om-md-code-tool--on", wrapLines);
     wrapBtn.title = wrapLines ? "关闭自动换行" : "自动换行";
     wrapBtn.setAttribute("aria-label", wrapBtn.title);
   };
 
   const syncFold = () => {
-    wrap.classList.toggle("kp-md-code-block--folded", folded);
+    wrap.classList.toggle("om-md-code-block--folded", folded);
     body.hidden = folded;
     searchBar.hidden = folded || !searchOpen;
     foldBtn.setAttribute("aria-expanded", folded ? "false" : "true");
     foldBtn.title = folded ? "展开代码块" : "折叠代码块";
     foldBtn.setAttribute("aria-label", foldBtn.title);
-    foldBtn.classList.toggle("kp-md-code-fold--folded", folded);
+    foldBtn.classList.toggle("om-md-code-fold--folded", folded);
   };
 
   const syncSearchBar = () => {
     searchBar.hidden = folded || !searchOpen;
-    searchBtn.classList.toggle("kp-md-code-tool--on", searchOpen);
+    searchBtn.classList.toggle("om-md-code-tool--on", searchOpen);
     if (searchOpen && !folded) {
       queueMicrotask(() => searchInput.focus());
     }
@@ -287,10 +287,10 @@ function createPlainCodeBlockView(
     navigator.clipboard.writeText(text).then(
       () => {
         copyBtn.innerHTML = ICON.check;
-        copyBtn.classList.add("kp-md-code-tool--on");
+        copyBtn.classList.add("om-md-code-tool--on");
         window.setTimeout(() => {
           copyBtn.innerHTML = ICON.copy;
-          copyBtn.classList.remove("kp-md-code-tool--on");
+          copyBtn.classList.remove("om-md-code-tool--on");
         }, 1600);
       },
       () => {},
@@ -374,9 +374,9 @@ function createBoardBlockView(
   getPos: () => number | undefined,
 ): NodeView {
   const dom = document.createElement("div");
-  dom.className = "kp-board-block not-prose";
+  dom.className = "om-board-block not-prose";
   dom.contentEditable = "false";
-  dom.dataset.language = String(parseFenceMeta(node.attrs.language).language || "kp-board");
+  dom.dataset.language = String(parseFenceMeta(node.attrs.language).language || "om-board");
 
   const mount = document.createElement("div");
   dom.appendChild(mount);
@@ -421,7 +421,7 @@ function createBoardBlockView(
 
 function createVizBlockView(node: ProseNode): NodeView {
   const dom = document.createElement("div");
-  dom.className = "kp-viz-block not-prose";
+  dom.className = "om-viz-block not-prose";
   dom.contentEditable = "false";
   dom.dataset.language = String(parseFenceMeta(node.attrs.language).language || "viz");
 
@@ -452,10 +452,10 @@ function createVizBlockView(node: ProseNode): NodeView {
     stopEvent: () => true,
     ignoreMutation: () => true,
     selectNode() {
-      dom.classList.add("kp-viz-block--selected");
+      dom.classList.add("om-viz-block--selected");
     },
     deselectNode() {
-      dom.classList.remove("kp-viz-block--selected");
+      dom.classList.remove("om-viz-block--selected");
     },
   };
 }

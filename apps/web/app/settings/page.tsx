@@ -47,13 +47,13 @@ function CheckRow({
           "mt-0.5 h-3.5 w-3.5 shrink-0",
           tone === "ok" && "text-emerald-700 dark:text-emerald-400",
           tone === "warn" && "text-amber-700 dark:text-amber-400",
-          tone === "todo" && "text-[var(--kp-text-3)]",
+          tone === "todo" && "text-[var(--om-text-3)]",
         )}
         aria-hidden
       />
       <div className="min-w-0">
-        <p className="font-medium text-[var(--kp-text-1)]">{title}</p>
-        <p className="mt-0.5 text-[var(--kp-text-2)]">{detail}</p>
+        <p className="font-medium text-[var(--om-text-1)]">{title}</p>
+        <p className="mt-0.5 text-[var(--om-text-2)]">{detail}</p>
       </div>
     </li>
   );
@@ -87,7 +87,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 space-y-5 overflow-y-auto bg-[var(--kp-bg)] px-3 py-4 sm:space-y-6 sm:p-6 md:p-8">
+    <div className="flex-1 space-y-5 overflow-y-auto bg-[var(--om-bg)] px-3 py-4 sm:space-y-6 sm:p-6 md:p-8">
       <PageHeader
         title="远程访问与安全"
         description="通过 Cloudflare Tunnel 暴露公网时，建议同时启用 Access 或 AUTH_MODE 密码保护。手机请用下方 PUBLIC_URL 或临时隧道地址访问。"
@@ -98,11 +98,11 @@ export default function SettingsPage() {
       ) : (
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
           <section
-            className="kp-card-premium space-y-3 rounded-2xl border-[var(--kp-brand)]/25 bg-[var(--kp-brand-soft)]/40 p-4 sm:space-y-4 sm:p-6 md:col-span-2"
+            className="om-card-premium space-y-3 rounded-2xl border-[var(--om-brand)]/25 bg-[var(--om-brand-soft)]/40 p-4 sm:space-y-4 sm:p-6 md:col-span-2"
             data-testid="settings-remote-checklist"
           >
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Shield className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Shield className="h-4 w-4 text-[var(--om-brand-deep)]" />
               远程就绪检查清单
             </div>
             <ul className="space-y-3">
@@ -124,7 +124,7 @@ export default function SettingsPage() {
                       href={data.remote.publicUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="break-all font-medium text-[var(--kp-brand-deep)] underline"
+                      className="break-all font-medium text-[var(--om-brand-deep)] underline"
                     >
                       {data.remote.publicUrl}
                     </a>
@@ -152,8 +152,8 @@ export default function SettingsPage() {
                 detail="Zero Trust → Access → Self-hosted 应用 + OTP/SSO，与应用密码可叠加。步骤见下方。"
               />
             </ul>
-            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--kp-bg)]/70 px-3 py-2 text-[11px] text-[var(--kp-text-2)]">
-              <Terminal className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[var(--om-bg)]/70 px-3 py-2 text-[11px] text-[var(--om-text-2)]">
+              <Terminal className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
               <span>
                 一键远程：<code className="font-mono">pnpm remote</code>（dev + 临时隧道）·{" "}
                 <code className="font-mono">pnpm remote:named</code>（Token/config）
@@ -162,53 +162,53 @@ export default function SettingsPage() {
           </section>
 
           <section
-            className="kp-card-premium space-y-3 rounded-2xl p-4 sm:space-y-4 sm:p-6 md:col-span-2"
+            className="om-card-premium space-y-3 rounded-2xl p-4 sm:space-y-4 sm:p-6 md:col-span-2"
             data-testid="settings-pwa-guide"
           >
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Smartphone className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Smartphone className="h-4 w-4 text-[var(--om-brand-deep)]" />
               手机使用与添加到主屏幕
             </div>
-            <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--kp-text-2)]">
+            <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--om-text-2)]">
               <li>只用 Tunnel 的 https 地址，不要指望家里局域网 IP 穿网。</li>
               <li>底部导航：首页 / 博客 / Chat / 更多；Chat 左栏在手机上是全屏叠层。</li>
             </ul>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)]/60 p-3">
-                <p className="text-xs font-medium text-[var(--kp-text-1)]">iPhone / iPad（Safari）</p>
-                <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-[var(--kp-text-2)]">
+              <div className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)]/60 p-3">
+                <p className="text-xs font-medium text-[var(--om-text-1)]">iPhone / iPad（Safari）</p>
+                <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-[var(--om-text-2)]">
                   <li>用 Safari 打开 Tunnel 地址并登录</li>
                   <li>点底部分享 →「添加到主屏幕」</li>
                   <li>从主屏幕图标进入（standalone，无完整浏览器栏）</li>
                 </ol>
               </div>
-              <div className="rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)]/60 p-3">
-                <p className="text-xs font-medium text-[var(--kp-text-1)]">Android（Chrome）</p>
-                <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-[var(--kp-text-2)]">
+              <div className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)]/60 p-3">
+                <p className="text-xs font-medium text-[var(--om-text-1)]">Android（Chrome）</p>
+                <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-[var(--om-text-2)]">
                   <li>用 Chrome 打开 Tunnel 地址并登录</li>
                   <li>菜单 ⋮ →「安装应用」或「添加到主屏幕」</li>
                   <li>确认后从桌面图标打开</li>
                 </ol>
               </div>
             </div>
-            <p className="text-[11px] leading-relaxed text-[var(--kp-text-3)]">
-              这是轻量 PWA（有 manifest，无 Service Worker）：<strong className="font-medium text-[var(--kp-text-2)]">不支持离线</strong>
+            <p className="text-[11px] leading-relaxed text-[var(--om-text-3)]">
+              这是轻量 PWA（有 manifest，无 Service Worker）：<strong className="font-medium text-[var(--om-text-2)]">不支持离线</strong>
               ，断网后无法打开已缓存页面。图标目前为 SVG，部分系统主屏幕预览可能偏简陋。
             </p>
           </section>
 
-          <section className="kp-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Lock className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+          <section className="om-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Lock className="h-4 w-4 text-[var(--om-brand-deep)]" />
               应用鉴权
             </div>
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <dt className="text-[var(--kp-text-3)]">AUTH 模式</dt>
+                <dt className="text-[var(--om-text-3)]">AUTH 模式</dt>
                 <dd>{data.enabled ? "password（已启用）" : "none（单用户开放）"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[var(--kp-text-3)]">当前会话</dt>
+                <dt className="text-[var(--om-text-3)]">当前会话</dt>
                 <dd>{data.authenticated ? "已登录" : "未登录"}</dd>
               </div>
             </dl>
@@ -224,22 +224,22 @@ export default function SettingsPage() {
             )}
           </section>
 
-          <section className="kp-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Cloud className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+          <section className="om-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Cloud className="h-4 w-4 text-[var(--om-brand-deep)]" />
               Cloudflare Tunnel
             </div>
             <dl className="space-y-2 text-xs">
               <div className="flex justify-between gap-4">
-                <dt className="shrink-0 text-[var(--kp-text-3)]">PUBLIC_URL</dt>
+                <dt className="shrink-0 text-[var(--om-text-3)]">PUBLIC_URL</dt>
                 <dd className="truncate">{data.remote.publicUrl ?? "未配置"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[var(--kp-text-3)]">Tunnel Token</dt>
+                <dt className="text-[var(--om-text-3)]">Tunnel Token</dt>
                 <dd>{data.remote.tunnelConfigured ? "已配置" : "未配置"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[var(--kp-text-3)]">CORS</dt>
+                <dt className="text-[var(--om-text-3)]">CORS</dt>
                 <dd>
                   {data.remote.corsOrigins.length
                     ? data.remote.corsOrigins.join(", ")
@@ -250,56 +250,56 @@ export default function SettingsPage() {
             <Link
               href="https://one.dash.cloudflare.com/"
               target="_blank"
-              className="inline-flex items-center gap-1 text-xs text-[var(--kp-brand-deep)] hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-[var(--om-brand-deep)] hover:underline"
             >
               Cloudflare Zero Trust 控制台
               <ExternalLink className="h-3 w-3" />
             </Link>
           </section>
 
-          <section className="kp-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Palette className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+          <section className="om-card-premium space-y-4 rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Palette className="h-4 w-4 text-[var(--om-brand-deep)]" />
               外观主题
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--kp-text-2)]">选择浅色、深色或跟随系统</span>
+              <span className="text-xs text-[var(--om-text-2)]">选择浅色、深色或跟随系统</span>
               <ThemeToggle />
             </div>
           </section>
 
           <section
-            className="kp-card-premium space-y-4 rounded-2xl p-4 sm:p-6 md:col-span-2"
+            className="om-card-premium space-y-4 rounded-2xl p-4 sm:p-6 md:col-span-2"
             data-testid="settings-notify-test"
           >
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Mail className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Mail className="h-4 w-4 text-[var(--om-brand-deep)]" />
               邮件 / 推送通知测试
             </div>
             {notifyStatus ? (
               <>
                 <dl className="grid gap-2 text-xs sm:grid-cols-2">
                   <div className="flex justify-between gap-3 sm:block">
-                    <dt className="text-[var(--kp-text-3)]">主通道</dt>
+                    <dt className="text-[var(--om-text-3)]">主通道</dt>
                     <dd className="font-mono">{notifyStatus.provider}</dd>
                   </div>
                   <div className="flex justify-between gap-3 sm:block">
-                    <dt className="text-[var(--kp-text-3)]">EMAIL_TO（收件人）</dt>
+                    <dt className="text-[var(--om-text-3)]">EMAIL_TO（收件人）</dt>
                     <dd className="break-all font-mono">{notifyStatus.to || "未配置"}</dd>
                   </div>
                   <div className="flex justify-between gap-3 sm:block">
-                    <dt className="text-[var(--kp-text-3)]">AGENTMAIL_ASK_TO</dt>
+                    <dt className="text-[var(--om-text-3)]">AGENTMAIL_ASK_TO</dt>
                     <dd className="break-all font-mono">{notifyStatus.askTo || "未配置"}</dd>
                   </div>
                   <div className="flex justify-between gap-3 sm:block">
-                    <dt className="text-[var(--kp-text-3)]">就绪</dt>
+                    <dt className="text-[var(--om-text-3)]">就绪</dt>
                     <dd>{notifyStatus.ready ? "是" : "否"}</dd>
                   </div>
                 </dl>
-                <ul className="space-y-1.5 text-[11px] text-[var(--kp-text-2)]">
+                <ul className="space-y-1.5 text-[11px] text-[var(--om-text-2)]">
                   {notifyStatus.channels.map((c) => (
                     <li key={c.name}>
-                      <span className="font-medium text-[var(--kp-text-1)]">
+                      <span className="font-medium text-[var(--om-text-1)]">
                         {c.configured ? "✓" : "·"} {c.name}
                       </span>
                       ：{c.detail}
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                       "发送测试邮件"
                     )}
                   </Button>
-                  <span className="text-[11px] text-[var(--kp-text-3)]">
+                  <span className="text-[11px] text-[var(--om-text-3)]">
                     或命令行：<code className="font-mono">pnpm email:test</code>
                   </span>
                 </div>
@@ -345,24 +345,24 @@ export default function SettingsPage() {
                 ) : null}
               </>
             ) : (
-              <p className="text-xs text-[var(--kp-text-3)]">加载通知配置中…</p>
+              <p className="text-xs text-[var(--om-text-3)]">加载通知配置中…</p>
             )}
           </section>
 
-          <section className="kp-card-premium space-y-3 rounded-2xl p-4 sm:p-6 md:col-span-2">
-            <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
-              <Shield className="h-4 w-4 text-[var(--kp-brand-deep)]" />
+          <section className="om-card-premium space-y-3 rounded-2xl p-4 sm:p-6 md:col-span-2">
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+              <Shield className="h-4 w-4 text-[var(--om-brand-deep)]" />
               Cloudflare Access 检查清单
             </div>
-            <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed text-[var(--kp-text-2)]">
+            <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed text-[var(--om-text-2)]">
               <li>
                 Zero Trust →{" "}
-                <strong className="font-medium text-[var(--kp-text-1)]">Access → Applications</strong>
+                <strong className="font-medium text-[var(--om-text-1)]">Access → Applications</strong>
                 ，为 Tunnel 域名创建 Self-hosted 应用（Application domain = 你的公网主机名）。
               </li>
               <li>
                 添加 Policy：身份源选{" "}
-                <strong className="font-medium text-[var(--kp-text-1)]">One-time PIN</strong> 或
+                <strong className="font-medium text-[var(--om-text-1)]">One-time PIN</strong> 或
                 Google / GitHub；Include 规则收紧到你自己的邮箱。
               </li>
               <li>

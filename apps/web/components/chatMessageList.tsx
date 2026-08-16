@@ -34,7 +34,7 @@ import {
   isChatPostAttachment,
   type ChatAttachment,
   type ChatMessage,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { PostContent } from "@/components/post/PostContent";
 import { StreamingPlainContent } from "@/components/streamingPlainContent";
 import { ThinkingTimeline } from "@/components/chatTimelineSteps";
@@ -69,14 +69,14 @@ function UserAttachmentChips({
             <Link
               key={`post-${att.id}`}
               href={postDetailHref(att.slug, att.garden)}
-              className="inline-flex max-w-[min(100%,18rem)] items-start gap-1.5 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] px-2.5 py-1.5 text-left shadow-sm transition hover:border-[var(--kp-brand)]/40 hover:bg-[var(--kp-brand-soft)]/30"
+              className="inline-flex max-w-[min(100%,18rem)] items-start gap-1.5 rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] px-2.5 py-1.5 text-left shadow-sm transition hover:border-[var(--om-brand)]/40 hover:bg-[var(--om-brand-soft)]/30"
               title={`${att.garden}/${att.slug}`}
               data-testid="chat-post-ref-chip"
             >
-              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
               <span className="min-w-0">
-                <span className="line-clamp-2 text-xs font-medium text-[var(--kp-text-1)]">{att.title}</span>
-                <span className="mt-0.5 block truncate text-[10px] text-[var(--kp-text-3)]">
+                <span className="line-clamp-2 text-xs font-medium text-[var(--om-text-1)]">{att.title}</span>
+                <span className="mt-0.5 block truncate text-[10px] text-[var(--om-text-3)]">
                   {att.garden}/{att.slug}
                 </span>
               </span>
@@ -87,7 +87,7 @@ function UserAttachmentChips({
         return (
           <div
             key={att.previewUrl}
-            className="relative overflow-hidden rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] shadow-sm"
+            className="relative overflow-hidden rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] shadow-sm"
             title={att.extractedText ? `OCR 识别 · ${att.extractedText.slice(0, 120)}` : att.name}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -127,10 +127,10 @@ function GardenGreeting() {
   }, [fragmentsQuery.data, daySeed]);
   if (!line) return null;
   return (
-    <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--kp-text-3)]">
-      <span className="text-[var(--kp-accent-deep)]">「</span>
+    <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--om-text-3)]">
+      <span className="text-[var(--om-accent-deep)]">「</span>
       {line}
-      <span className="text-[var(--kp-accent-deep)]">」</span>
+      <span className="text-[var(--om-accent-deep)]">」</span>
       <span className="ml-1.5 text-[10px] opacity-60">—— 每日碎片</span>
     </p>
   );
@@ -243,7 +243,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   useEffect(() => {
     // mount 后读 localStorage 同步到 React state（SSR 安全），非派生数据。
     try {
-      if (localStorage.getItem("kp-swarm-onboarding-dismissed") !== "1") {
+      if (localStorage.getItem("om-swarm-onboarding-dismissed") !== "1") {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe localStorage hydrate
         setShowOnboarding(true);
       }
@@ -254,7 +254,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   const dismissSwarmOnboarding = () => {
     setShowOnboarding(false);
     try {
-      localStorage.setItem("kp-swarm-onboarding-dismissed", "1");
+      localStorage.setItem("om-swarm-onboarding-dismissed", "1");
     } catch {
       // ignore
     }
@@ -338,7 +338,7 @@ export const ChatMessageList = memo(function ChatMessageList({
         data-testid="assistant-message-bubble"
         className="group/msg relative mb-6 ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1"
       >
-        <div className="w-full rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
+        <div className="w-full rounded-[1.4rem] border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--om-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
           {isEditingAssistant ? (
             <MessageMarkdownSourceEditor
               value={editDraft}
@@ -350,7 +350,7 @@ export const ChatMessageList = memo(function ChatMessageList({
           ) : (
             <PostContent
               content={active.content.trimEnd()}
-              className="prose-sm kp-chat-md max-w-none text-left"
+              className="prose-sm om-chat-md max-w-none text-left"
             />
           )}
           {isInterrupted && !isEditingAssistant && (
@@ -442,23 +442,23 @@ export const ChatMessageList = memo(function ChatMessageList({
         <div className="flex w-full justify-start">
           <div
             className={cn(
-              "kp-msg-in group/msg ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1",
+              "om-msg-in group/msg ml-6 mr-2 flex w-full max-w-[96%] flex-col items-start gap-1",
               streamingContent ? "mb-6" : "mb-4",
             )}
             data-testid="streaming-assistant-bubble"
           >
             {streamingContent ? (
-              <div className="w-full rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
+              <div className="w-full rounded-[1.4rem] border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3.5 py-2 text-left text-sm text-[var(--om-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
                 {/* 流式期轻量渲染：避免每 token 跑完整 remark/rehype/高亮。
                     落库终态气泡仍用 PostContent（代码预览 / viz / 画板）。 */}
                 <StreamingPlainContent
                   content={streamingContent.trimEnd()}
-                  className="prose-sm kp-chat-md max-w-none text-left"
+                  className="prose-sm om-chat-md max-w-none text-left"
                 />
               </div>
             ) : liveTimeline.length === 0 ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] px-4 py-2 text-xs text-[var(--kp-text-2)] shadow-sm">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--kp-brand)]" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] px-4 py-2 text-xs text-[var(--om-text-2)] shadow-sm">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--om-brand)]" />
                 Thinking…
               </div>
             ) : null}
@@ -522,7 +522,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               isRightSide ? "items-stretch self-end" : "items-stretch self-start",
               deliveryJobId &&
                 highlightJobId === deliveryJobId &&
-                "rounded-[1.4rem] ring-2 ring-[var(--kp-brand)] ring-offset-2 ring-offset-[var(--kp-bg)]",
+                "rounded-[1.4rem] ring-2 ring-[var(--om-brand)] ring-offset-2 ring-offset-[var(--om-bg)]",
             )}
           >
             {group.userMessage.attachments &&
@@ -532,10 +532,10 @@ export const ChatMessageList = memo(function ChatMessageList({
               )}
             <div
               className={cn(
-                "relative w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-left text-sm text-[var(--kp-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]",
+                "relative w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--om-divider)] bg-[var(--om-bg)] px-4 py-3 text-left text-sm text-[var(--om-text-1)] shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]",
                 deliveryJobId &&
                   highlightJobId === deliveryJobId &&
-                  "border-[var(--kp-brand)]/50 bg-[var(--kp-brand-soft)]/30",
+                  "border-[var(--om-brand)]/50 bg-[var(--om-brand-soft)]/30",
               )}
             >
               <MessageSourceLabel
@@ -550,7 +550,7 @@ export const ChatMessageList = memo(function ChatMessageList({
                 cronName={isCron ? cronMeta?.name : undefined}
               />
               {group.userMessage.skillName && (
-                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-[var(--kp-brand-soft)] px-2 py-0.5 text-[10px] text-[var(--kp-brand-deep)]">
+                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-[var(--om-brand-soft)] px-2 py-0.5 text-[10px] text-[var(--om-brand-deep)]">
                   <LucideIconByName name={group.userMessage.skillIcon} className="h-3 w-3" />
                   {group.userMessage.skillName}
                 </span>
@@ -576,7 +576,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               ) : (
                 <PostContent
                   content={group.userMessage.content}
-                  className="prose-sm max-w-none text-left text-[var(--kp-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
+                  className="prose-sm max-w-none text-left text-[var(--om-text-1)] [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
                 />
               )}
             </div>
@@ -632,15 +632,15 @@ export const ChatMessageList = memo(function ChatMessageList({
     content: string;
     attachments?: ChatAttachment[];
   }) => (
-    <div className="kp-msg-in mb-4 flex justify-end">
+    <div className="om-msg-in mb-4 flex justify-end">
       <div className="flex w-full max-w-[96%] flex-col items-stretch gap-1.5">
         {msg.attachments && msg.attachments.length > 0 && (
           <UserAttachmentChips attachments={msg.attachments} dimmed />
         )}
-        <div className="w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-4 py-3 text-sm text-[var(--kp-text-1)] opacity-80 shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
+        <div className="w-full min-w-[min(100%,6rem)] rounded-[1.4rem] border border-[var(--om-divider)] bg-[var(--om-bg)] px-4 py-3 text-sm text-[var(--om-text-1)] opacity-80 shadow-[0_2px_14px_-6px_rgba(0,135,235,0.10)]">
           <PostContent
             content={msg.content}
-            className="prose-sm max-w-none text-left text-[var(--kp-text-1)] opacity-100 [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
+            className="prose-sm max-w-none text-left text-[var(--om-text-1)] opacity-100 [&_table]:text-xs [&_th]:px-2 [&_td]:px-2"
           />
         </div>
       </div>
@@ -883,31 +883,31 @@ export const ChatMessageList = memo(function ChatMessageList({
     <div className="relative flex min-h-0 flex-1">
       {!hasDisplay && isColdLoading ? (
         <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-[var(--kp-text-3)]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--om-text-3)]" />
         </div>
       ) : !hasDisplay && !backendDown ? (
-        <div className="kp-msg-in flex flex-1 flex-col items-center justify-center gap-3 px-4 py-4 text-center md:px-6">
-          <p className="kp-display-serif text-3xl text-[var(--kp-text-1)] md:text-4xl">
+        <div className="om-msg-in flex flex-1 flex-col items-center justify-center gap-3 px-4 py-4 text-center md:px-6">
+          <p className="om-display-serif text-3xl text-[var(--om-text-1)] md:text-4xl">
             今天想种点什么？
           </p>
-          <p className="text-sm text-[var(--kp-text-3)]">发送第一条消息，开始浇灌这个想法</p>
+          <p className="text-sm text-[var(--om-text-3)]">发送第一条消息，开始浇灌这个想法</p>
           <GardenGreeting />
           {/* #12 Swarm 新手引导：无 Workspace 时展示（可关闭，localStorage 记忆） */}
           {!hasWorkspaces && showOnboarding && (
-            <div className="relative max-w-md rounded-2xl border border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)] p-4 text-left" data-testid="swarm-onboarding">
+            <div className="relative max-w-md rounded-2xl border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)] p-4 text-left" data-testid="swarm-onboarding">
               <button
                 type="button"
                 onClick={dismissSwarmOnboarding}
-                className="absolute right-2 top-2 rounded p-1 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)]"
+                className="absolute right-2 top-2 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
                 aria-label="关闭引导"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
-              <p className="mb-1.5 text-xs font-semibold text-[var(--kp-text-1)]">试试 Agent Swarm</p>
-              <ul className="space-y-1 text-[11px] leading-relaxed text-[var(--kp-text-2)]">
+              <p className="mb-1.5 text-xs font-semibold text-[var(--om-text-1)]">试试 Agent Swarm</p>
+              <ul className="space-y-1 text-[11px] leading-relaxed text-[var(--om-text-2)]">
                 <li>· 右上角选择「见微超级 Agent」，让它替你管理其他 Agent</li>
                 <li>· 对它说「创建一个 XX 工作区」，它会自动生成管理 Agent</li>
-                <li>· 也可以在 <Link href="/workspaces" className="text-[var(--kp-brand-deep)] underline">工作区管理页</Link> 手动创建</li>
+                <li>· 也可以在 <Link href="/workspaces" className="text-[var(--om-brand-deep)] underline">工作区管理页</Link> 手动创建</li>
                 <li>· 长任务会派生子 Agent 后台执行，完成后结果自动回到对话</li>
               </ul>
             </div>
@@ -943,7 +943,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               Header: () =>
                 isLoadingOlderMessages ? (
                   <div className="flex justify-center py-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--kp-text-3)]" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--om-text-3)]" />
                   </div>
                 ) : (
                   <div className="h-2" />
@@ -993,7 +993,7 @@ export const ChatMessageList = memo(function ChatMessageList({
               className="pointer-events-none absolute inset-0 flex items-start justify-center pt-6"
               aria-hidden
             >
-              <Loader2 className="h-5 w-5 animate-spin text-[var(--kp-text-3)]" />
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--om-text-3)]" />
             </div>
           )}
         </>
@@ -1005,7 +1005,7 @@ export const ChatMessageList = memo(function ChatMessageList({
           data-testid="scroll-to-bottom"
           aria-label="回到底部"
           onClick={scrollToBottom}
-          className="absolute bottom-5 right-12 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] text-[var(--kp-text-2)] shadow-md transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+          className="absolute bottom-5 right-12 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--om-divider)] bg-[var(--om-bg-alt)] text-[var(--om-text-2)] shadow-md transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
         >
           <ChevronDown className="h-4 w-4" />
         </button>

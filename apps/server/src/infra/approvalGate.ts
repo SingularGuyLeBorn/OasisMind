@@ -9,8 +9,8 @@ import { TRPCError } from "@trpc/server";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { createTrpcInvoker } from "./trpcInvoker.js";
 import { success, failureFromError } from "../trpc/result.js";
-import type { OperationResult } from "@knowpilot/shared";
-import { APPROVAL_DEFAULT_TTL_MS } from "@knowpilot/shared";
+import type { OperationResult } from "@oasismind/shared";
+import { APPROVAL_DEFAULT_TTL_MS } from "@oasismind/shared";
 import { makeAbortError } from "./abortReason.js";
 import { listDestructiveNativeOpsForApproval } from "./tools/registry.js";
 import {

@@ -16,7 +16,7 @@ import {
   loadOpenRouterFreeCatalogFromDisk,
 } from "../../../freeLlmRuntime.js";
 import { listFreellmChannels } from "../../../freeKeysSync.js";
-import { LLM_PROVIDER_DEEPSEEK } from "@knowpilot/shared";
+import { LLM_PROVIDER_DEEPSEEK } from "@oasismind/shared";
 import { z } from "zod";
 import { zodParams } from "../zodParams.js";
 import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "../types.js";

@@ -33,7 +33,7 @@ import {
   Radio,
   Kanban,
 } from "lucide-react";
-import { navItemAllowed, PACKS_FULL, type PackFlags } from "@knowpilot/shared";
+import { navItemAllowed, PACKS_FULL, type PackFlags } from "@oasismind/shared";
 import { cn } from "@/lib/utils";
 import { OasisMindLogo } from "@/lib/icons";
 import { useNativeCapabilities } from "@/lib/hooks";
@@ -56,7 +56,7 @@ interface NavGroup {
   items: NavSubItem[];
 }
 
-const STORAGE_KEY = "kp-sidebar-width";
+const STORAGE_KEY = "om-sidebar-width";
 const MIN_WIDTH = 240;
 const MAX_WIDTH = 520;
 const DEFAULT_WIDTH = 288;
@@ -207,8 +207,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
               className={cn(
                 "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
                 isActive
-                  ? "kp-nav-rail-active"
-                  : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                  ? "om-nav-rail-active"
+                  : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
               )}
             >
               <ItemIcon className="h-4 w-4 shrink-0" />
@@ -224,24 +224,24 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
     <aside
       suppressHydrationWarning
       className={cn(
-        "kp-shell-rail relative flex shrink-0 flex-col border-r border-[var(--kp-divider)]",
+        "om-shell-rail relative flex shrink-0 flex-col border-r border-[var(--om-divider)]",
         isResizing && "select-none",
         className
       )}
       style={onNavigate ? undefined : { width }}
     >
       <div className="flex h-full flex-col overflow-hidden">
-        <Link href="/" className="flex shrink-0 items-center gap-3 border-b border-[var(--kp-divider)] px-5 py-4 transition hover:bg-[var(--kp-bg-mute)]">
+        <Link href="/" className="flex shrink-0 items-center gap-3 border-b border-[var(--om-divider)] px-5 py-4 transition hover:bg-[var(--om-bg-mute)]">
           <OasisMindLogo size={36} className="shrink-0" />
           <div>
-            <p className="text-base font-bold tracking-tight text-[var(--kp-text-1)]">见微</p>
-            <p className="text-xs text-[var(--kp-text-3)]">OasisMind · 控制台</p>
+            <p className="text-base font-bold tracking-tight text-[var(--om-text-1)]">见微</p>
+            <p className="text-xs text-[var(--om-text-3)]">OasisMind · 控制台</p>
           </div>
         </Link>
 
         {/* 主导航：标签页 + 当前分组项 */}
         <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="flex gap-1 border-b border-[var(--kp-divider)] pb-2">
+          <div className="flex gap-1 border-b border-[var(--om-divider)] pb-2">
             {Object.entries(visibleNavGroups).map(([key, group]) => {
               const Icon = group.icon;
               return (
@@ -251,8 +251,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
                     className={cn(
                       "flex flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
                       activeTab === key
-                        ? "kp-nav-pill-active"
-                        : "text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                        ? "om-nav-pill-active"
+                        : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                     )}
                 >
                   <Icon className="h-4 w-4" />
@@ -269,8 +269,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
         <div
           onPointerDown={handlePointerDown}
           className={cn(
-            "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize transition-colors hover:bg-[var(--kp-brand)]/20",
-            isResizing && "bg-[var(--kp-brand)]/30",
+            "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize transition-colors hover:bg-[var(--om-brand)]/20",
+            isResizing && "bg-[var(--om-brand)]/30",
           )}
           aria-label="调整侧边栏宽度"
           role="separator"

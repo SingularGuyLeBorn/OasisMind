@@ -17,7 +17,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import {
   type OperationResult,
   type NextStep,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { success, failure, failureFromError } from "./trpc/result.js";
 import type { AppEventBus } from "./infra/eventBus.js";
 import type { AppConfig } from "./infra/config.js";

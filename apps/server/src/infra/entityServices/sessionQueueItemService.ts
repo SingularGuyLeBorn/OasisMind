@@ -7,7 +7,7 @@ import type {
   UpdateSessionQueueItemInput,
   ListSessionQueueItemsInput,
   OperationResult,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 import { success, failureFromError } from "../../trpc/result.js";
 

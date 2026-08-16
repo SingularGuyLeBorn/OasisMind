@@ -30,7 +30,7 @@ export function AgentLoopContractPanel({ agentId }: { agentId: string }) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3 text-[11px] text-[var(--kp-text-3)]">
+      <div className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 text-[11px] text-[var(--om-text-3)]">
         加载 Loop Contract…
       </div>
     );
@@ -38,7 +38,7 @@ export function AgentLoopContractPanel({ agentId }: { agentId: string }) {
 
   if (isError || !contract) {
     return (
-      <div className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3 text-[11px] text-[var(--kp-text-3)]">
+      <div className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 text-[11px] text-[var(--om-text-3)]">
         当前 Agent 无 Loop Contract（通常仅超级 Agent 心跳启用）。
       </div>
     );
@@ -46,11 +46,11 @@ export function AgentLoopContractPanel({ agentId }: { agentId: string }) {
 
   return (
     <div
-      className="space-y-2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-3"
+      className="space-y-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3"
       data-testid="agent-loop-contract"
     >
       <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <span className="font-medium text-[var(--kp-text-1)]">Loop Contract</span>
+        <span className="font-medium text-[var(--om-text-1)]">Loop Contract</span>
         <span
           className={cn(
             "rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
@@ -59,7 +59,7 @@ export function AgentLoopContractPanel({ agentId }: { agentId: string }) {
         >
           {contract.gateOpen ? "gate 开" : "gate 关"}
         </span>
-        <span className="text-[var(--kp-text-3)]">
+        <span className="text-[var(--om-text-3)]">
           handoff {contract.handoff ? "开" : "关"} · stale {contract.staleRounds}/
           {contract.stopRule.maxStaleRounds}
         </span>
@@ -68,9 +68,9 @@ export function AgentLoopContractPanel({ agentId }: { agentId: string }) {
         <p className="text-[10px] text-amber-800">停止原因：{contract.stoppedReason}</p>
       )}
       {contract.evidence?.length > 0 && (
-        <ul className="max-h-24 space-y-1 overflow-y-auto text-[10px] text-[var(--kp-text-2)]">
+        <ul className="max-h-24 space-y-1 overflow-y-auto text-[10px] text-[var(--om-text-2)]">
           {[...contract.evidence].slice(-5).reverse().map((e, i) => (
-            <li key={`${e.at}-${i}`} className="truncate rounded bg-[var(--kp-bg-mute)] px-2 py-1">
+            <li key={`${e.at}-${i}`} className="truncate rounded bg-[var(--om-bg-mute)] px-2 py-1">
               {toPascalCaseId(e.status)} · {e.summary}
             </li>
           ))}

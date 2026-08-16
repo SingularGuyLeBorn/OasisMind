@@ -10,7 +10,7 @@ import {
   type RefObject,
 } from "react";
 import { Check, FileText, Flag, Loader2, Search, X } from "lucide-react";
-import type { ChatPostAttachment, Skill } from "@knowpilot/shared";
+import type { ChatPostAttachment, Skill } from "@oasismind/shared";
 import { LucideIconByName } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
@@ -307,14 +307,14 @@ export function ChatInputMentionPicker({
 }) {
   return (
     <div
-      className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg"
+      className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] py-1 shadow-lg"
       data-testid="chat-mention-picker"
     >
-      <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
+      <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--om-text-3)]">
         引用文章{mentionQuery ? ` · ${mentionQuery}` : ""}
       </div>
       {mentionCandidates.length === 0 ? (
-        <div className="px-3 py-2 text-xs text-[var(--kp-text-3)]">
+        <div className="px-3 py-2 text-xs text-[var(--om-text-3)]">
           {mentionQuery.trim()
             ? mentionSearchFetching
               ? "搜索中…"
@@ -334,14 +334,14 @@ export function ChatInputMentionPicker({
             className={cn(
               "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
               idx === activeHighlightIdx
-                ? "bg-[var(--kp-brand-soft)]"
-                : "hover:bg-[var(--kp-bg-mute)]",
+                ? "bg-[var(--om-brand-soft)]"
+                : "hover:bg-[var(--om-bg-mute)]",
             )}
           >
-            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]" />
             <div className="min-w-0">
-              <div className="font-medium text-[var(--kp-text-1)]">{post.title}</div>
-              <div className="truncate text-xs text-[var(--kp-text-3)]">
+              <div className="font-medium text-[var(--om-text-1)]">{post.title}</div>
+              <div className="truncate text-xs text-[var(--om-text-3)]">
                 {post.garden}/{post.slug}
               </div>
             </div>
@@ -381,22 +381,22 @@ export function ChatInputAttachmentSection({
           {pendingPosts.map((post) => (
             <div
               key={post.id}
-              className="relative inline-flex max-w-[min(100%,16rem)] items-start gap-1.5 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-brand-soft)]/40 px-2.5 py-1.5"
+              className="relative inline-flex max-w-[min(100%,16rem)] items-start gap-1.5 rounded-xl border border-[var(--om-divider)] bg-[var(--om-brand-soft)]/40 px-2.5 py-1.5"
               data-testid="chat-pending-post"
             >
-              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--kp-brand)]" />
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
               <span className="min-w-0 pr-4">
-                <span className="line-clamp-2 text-xs font-medium text-[var(--kp-text-1)]">
+                <span className="line-clamp-2 text-xs font-medium text-[var(--om-text-1)]">
                   {post.title}
                 </span>
-                <span className="mt-0.5 block truncate text-[10px] text-[var(--kp-text-3)]">
+                <span className="mt-0.5 block truncate text-[10px] text-[var(--om-text-3)]">
                   {post.garden}/{post.slug}
                 </span>
               </span>
               <button
                 type="button"
                 onClick={() => onRemovePost(post.id)}
-                className="absolute right-1 top-1 rounded-full p-0.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]"
+                className="absolute right-1 top-1 rounded-full p-0.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
                 aria-label="移除文章引用"
               >
                 <X className="h-3 w-3" />
@@ -496,12 +496,12 @@ export function ChatInputSlashPicker({
 }) {
   return (
     <div
-      className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] py-1 shadow-lg"
+      className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] py-1 shadow-lg"
       data-testid="chat-slash-picker"
     >
       {!isSubagentSession && filteredCommands.length > 0 && (
         <>
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
+          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--om-text-3)]">
             命令
           </div>
           {filteredCommands.map((cmd) => {
@@ -518,18 +518,18 @@ export function ChatInputSlashPicker({
                   "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
                   cmdDisabled && "cursor-not-allowed opacity-45",
                   !cmdDisabled && rowIdx === activeHighlightIdx
-                    ? "bg-[var(--kp-brand-soft)]"
-                    : !cmdDisabled && "hover:bg-[var(--kp-bg-mute)]",
+                    ? "bg-[var(--om-brand-soft)]"
+                    : !cmdDisabled && "hover:bg-[var(--om-bg-mute)]",
                 )}
               >
                 {cmd.id === "research" ? (
-                  <Search className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
+                  <Search className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]" />
                 ) : (
-                  <Flag className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]" />
+                  <Flag className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]" />
                 )}
                 <div className="min-w-0">
-                  <div className="font-medium text-[var(--kp-text-1)]">{cmd.label}</div>
-                  <div className="truncate text-xs text-[var(--kp-text-3)]">
+                  <div className="font-medium text-[var(--om-text-1)]">{cmd.label}</div>
+                  <div className="truncate text-xs text-[var(--om-text-3)]">
                     {cmd.description}
                   </div>
                 </div>
@@ -538,11 +538,11 @@ export function ChatInputSlashPicker({
           })}
         </>
       )}
-      <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--kp-text-3)]">
+      <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--om-text-3)]">
         已启用 Skill{enabledSkillsCount === 0 ? "（当前无）" : ` · ${enabledSkillsCount}`}
       </div>
       {filteredSkills.length === 0 ? (
-        <div className="px-3 py-2 text-xs text-[var(--kp-text-3)]">
+        <div className="px-3 py-2 text-xs text-[var(--om-text-3)]">
           无匹配项。Skill 来自 content/skills 且标记为启用的条目。
         </div>
       ) : (
@@ -558,17 +558,17 @@ export function ChatInputSlashPicker({
               className={cn(
                 "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition",
                 rowIdx === activeHighlightIdx
-                  ? "bg-[var(--kp-brand-soft)]"
-                  : "hover:bg-[var(--kp-bg-mute)]",
+                  ? "bg-[var(--om-brand-soft)]"
+                  : "hover:bg-[var(--om-bg-mute)]",
               )}
             >
               <LucideIconByName
                 name={skill.icon}
-                className="mt-0.5 h-4 w-4 shrink-0 text-[var(--kp-brand)]"
+                className="mt-0.5 h-4 w-4 shrink-0 text-[var(--om-brand)]"
               />
               <div className="min-w-0">
-                <div className="font-medium text-[var(--kp-text-1)]">{skill.name}</div>
-                <div className="truncate text-xs text-[var(--kp-text-3)]">{skill.description}</div>
+                <div className="font-medium text-[var(--om-text-1)]">{skill.name}</div>
+                <div className="truncate text-xs text-[var(--om-text-3)]">{skill.description}</div>
               </div>
             </button>
           );

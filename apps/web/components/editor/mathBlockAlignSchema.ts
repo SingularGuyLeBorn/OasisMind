@@ -1,5 +1,5 @@
 /**
- * 扩展 milkdown math_block：attrs.align + Markdown 往返（% kp-align）。
+ * 扩展 milkdown math_block：attrs.align + Markdown 往返（% om-align）。
  */
 
 import { mathBlockSchema } from "@milkdown/plugin-math";

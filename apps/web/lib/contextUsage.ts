@@ -13,14 +13,14 @@
  * - inputTokens/outputTokens = 各轮 API 累计叠乘，≠ 当前窗口
  */
 
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 import {
   DEFAULT_COMPACT_TRIGGER_RATIO,
   DEFAULT_LLM_MODEL,
   DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS,
   resolveCompactCharThreshold,
   resolveModelContextWindowTokens,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { formatTokenCount } from "@/lib/tokenBudget";
 import {
   COMPACT_BOUNDARY_PREFIX,
@@ -290,7 +290,7 @@ export function buildContextUsage(params: {
         preview:
           previewSource
             .replace(SUMMARY_MARKER, "")
-            .replace(/\[kp-compact-boundary:[^\]]+\]/g, "")
+            .replace(/\[om-compact-boundary:[^\]]+\]/g, "")
             .trim()
             .slice(0, 80) || "(空)",
         isSummarized: est.isSummarized,

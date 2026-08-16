@@ -76,12 +76,12 @@ function ChipButton({
       onBlur={() => setHovered(false)}
       className={cn(
         "group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors",
-        "border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-text-2)]",
-        "hover:border-[color-mix(in_srgb,var(--kp-brand)_35%,var(--kp-divider))]",
-        "hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+        "border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-text-2)]",
+        "hover:border-[color-mix(in_srgb,var(--om-brand)_35%,var(--om-divider))]",
+        "hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
         pressed &&
-          "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/55 text-[var(--kp-brand-deep)]",
-        disabled && "cursor-not-allowed opacity-40 hover:bg-[var(--kp-bg)]",
+          "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/55 text-[var(--om-brand-deep)]",
+        disabled && "cursor-not-allowed opacity-40 hover:bg-[var(--om-bg)]",
       )}
     >
       <Icon state={state} className="h-[15px] w-[15px]" />
@@ -125,14 +125,14 @@ function MoreMenuItem({
       onBlur={() => setHovered(false)}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors",
-        "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
-        pressed && "bg-[var(--kp-brand-soft)]/55 text-[var(--kp-brand-deep)]",
+        "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+        pressed && "bg-[var(--om-brand-soft)]/55 text-[var(--om-brand-deep)]",
         disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
       )}
     >
       <Icon state={state} className="h-[15px] w-[15px] shrink-0" />
       <span className="flex-1">{label}</span>
-      {pressed && <Check className="h-3.5 w-3.5 text-[var(--kp-brand-deep)]" />}
+      {pressed && <Check className="h-3.5 w-3.5 text-[var(--om-brand-deep)]" />}
     </button>
   );
 }
@@ -227,11 +227,11 @@ export function ChatInputChips({
             onClick={() => setMoreOpen((v) => !v)}
             className={cn(
               "relative inline-flex items-center justify-center rounded-full border p-1.5 transition-colors",
-              "border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-text-2)]",
-              "hover:border-[color-mix(in_srgb,var(--kp-brand)_35%,var(--kp-divider))]",
-              "hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
-              moreOpen && "border-[var(--kp-brand-light)] bg-[var(--kp-brand-soft)]/55",
-              disabled && "cursor-not-allowed opacity-40 hover:bg-[var(--kp-bg)]",
+              "border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-text-2)]",
+              "hover:border-[color-mix(in_srgb,var(--om-brand)_35%,var(--om-divider))]",
+              "hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+              moreOpen && "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/55",
+              disabled && "cursor-not-allowed opacity-40 hover:bg-[var(--om-bg)]",
             )}
           >
             <Plus
@@ -241,7 +241,7 @@ export function ChatInputChips({
               )}
             />
             {deepResearchActive && (
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--kp-brand)] ring-2 ring-[var(--kp-bg)]" />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--om-brand)] ring-2 ring-[var(--om-bg)]" />
             )}
           </button>
           <AnimatePresence>
@@ -251,7 +251,7 @@ export function ChatInputChips({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.96 }}
                 transition={SPRING_GENTLE}
-                className="absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1 shadow-[0_8px_28px_-10px_rgba(0,135,235,0.25)]"
+                className="absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-[0_8px_28px_-10px_rgba(0,135,235,0.25)]"
                 data-testid="chat-chip-more-menu"
               >
                 <MoreMenuItem

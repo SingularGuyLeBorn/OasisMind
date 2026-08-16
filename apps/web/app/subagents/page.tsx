@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmDialog, EmptyState, Pagination } from "@/components/shared";
-import type { SessionStatus } from "@knowpilot/shared";
+import type { SessionStatus } from "@oasismind/shared";
 import { sessionLabel } from "@/lib/displayLabels";
 
 const STATUS_OPTIONS = ["", "running", "queued", "completed", "failed", "paused"] as const;
@@ -75,15 +75,15 @@ export default function SubagentsPage() {
   const confirmTarget = items.find((s) => s.id === confirmId);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--kp-bg)] p-6 md:p-8">
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8">
       <div className="mx-auto max-w-5xl space-y-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
             <Bot className="h-5 w-5" />
           </span>
           <div>
-            <h1 className="text-xl font-bold text-[var(--kp-text-1)]">子 Agent 任务</h1>
-            <p className="text-xs text-[var(--kp-text-3)]">管理后台异步子 Agent 会话</p>
+            <h1 className="text-xl font-bold text-[var(--om-text-1)]">子 Agent 任务</h1>
+            <p className="text-xs text-[var(--om-text-3)]">管理后台异步子 Agent 会话</p>
           </div>
         </div>
 
@@ -92,12 +92,12 @@ export default function SubagentsPage() {
             {[
               { label: "排队中", value: stats.queued, color: "text-amber-600" },
               { label: "执行中", value: stats.runningGlobal, color: "text-blue-600" },
-              { label: "全局上限", value: stats.maxGlobal, color: "text-[var(--kp-text-2)]" },
-              { label: "每会话上限", value: stats.maxPerSession, color: "text-[var(--kp-text-2)]" },
+              { label: "全局上限", value: stats.maxGlobal, color: "text-[var(--om-text-2)]" },
+              { label: "每会话上限", value: stats.maxPerSession, color: "text-[var(--om-text-2)]" },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2">
+              <div key={item.label} className="rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2">
                 <div className={cn("text-lg font-bold tabular-nums", item.color)}>{item.value}</div>
-                <div className="text-[10px] text-[var(--kp-text-3)]">{item.label}</div>
+                <div className="text-[10px] text-[var(--om-text-3)]">{item.label}</div>
               </div>
             ))}
           </div>
@@ -115,8 +115,8 @@ export default function SubagentsPage() {
             className={cn(
               "rounded-full px-3 py-1 text-xs transition",
               status === s
-                ? "bg-[var(--kp-brand-deep)] text-white"
-                : "bg-[var(--kp-bg-mute)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-soft)]",
+                ? "bg-[var(--om-brand-deep)] text-white"
+                : "bg-[var(--om-bg-mute)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
             )}
           >
             {s ? STATUS_LABEL[s] ?? s : "全部"}
@@ -127,9 +127,9 @@ export default function SubagentsPage() {
       {items.length === 0 ? (
         <EmptyState icon={<Bot className="h-10 w-10 opacity-40" />} title="暂无子 Agent 任务" description="在 Chat 中让 Agent 调用 AsyncTaskRun 即可创建后台任务。" />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]">
+        <div className="overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] text-[var(--kp-text-3)]">
+            <thead className="border-b border-[var(--om-divider)] bg-[var(--om-bg-soft)] text-[var(--om-text-3)]">
               <tr>
                 <th className="px-3 py-2 font-medium">标题</th>
                 <th className="px-3 py-2 font-medium">父会话</th>
@@ -140,24 +140,24 @@ export default function SubagentsPage() {
             </thead>
             <tbody>
               {items.map((s) => (
-                <tr key={s.id} className="border-b border-[var(--kp-divider-light)] last:border-0">
+                <tr key={s.id} className="border-b border-[var(--om-divider-light)] last:border-0">
                   <td className="max-w-[18rem] px-3 py-2">
-                    <div className="truncate font-medium text-[var(--kp-text-1)]">{sessionLabel(s)}</div>
+                    <div className="truncate font-medium text-[var(--om-text-1)]">{sessionLabel(s)}</div>
                     {s.taskDescription && (
-                      <div className="mt-0.5 line-clamp-1 text-[10px] text-[var(--kp-text-3)]">{s.taskDescription}</div>
+                      <div className="mt-0.5 line-clamp-1 text-[10px] text-[var(--om-text-3)]">{s.taskDescription}</div>
                     )}
                   </td>
                   <td className="px-3 py-2">
                     {s.parentSessionId ? (
                       <Link
                         href={`/chat?sessionId=${s.parentSessionId}`}
-                        className="text-[var(--kp-brand-deep)] hover:underline"
+                        className="text-[var(--om-brand-deep)] hover:underline"
                         title={parentLabelById.get(s.parentSessionId) ?? "父会话"}
                       >
                         {parentLabelById.get(s.parentSessionId) ?? "父会话"}
                       </Link>
                     ) : (
-                      <span className="text-[var(--kp-text-3)]">—</span>
+                      <span className="text-[var(--om-text-3)]">—</span>
                     )}
                   </td>
                   <td className="px-3 py-2">
@@ -166,7 +166,7 @@ export default function SubagentsPage() {
                       {STATUS_LABEL[s.status ?? ""] ?? s.status ?? "—"}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-[var(--kp-text-3)]">
+                  <td className="px-3 py-2 text-[var(--om-text-3)]">
                     {new Date(s.updatedAt).toLocaleString()}
                   </td>
                   <td className="px-3 py-2">

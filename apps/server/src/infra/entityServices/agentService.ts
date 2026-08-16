@@ -10,8 +10,8 @@ import type {
   AgentChatInput,
   OperationResult,
   NextStep,
-} from "@knowpilot/shared";
-import { materializeAgentTools } from "@knowpilot/shared";
+} from "@oasismind/shared";
+import { materializeAgentTools } from "@oasismind/shared";
 import { TRPCError } from "@trpc/server";
 import matter from "gray-matter";
 import {

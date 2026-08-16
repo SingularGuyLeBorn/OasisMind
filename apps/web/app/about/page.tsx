@@ -1,7 +1,7 @@
 import { AboutView } from "@/components/about/AboutView";
 import { trpcQueryCached } from "@/lib/serverTrpc";
 import { ScrollProgress } from "@/components/magicui/scroll-progress";
-import type { AboutProfile } from "@knowpilot/shared";
+import type { AboutProfile } from "@oasismind/shared";
 
 export const metadata = {
   title: "关于应知序 | 见微 · OasisMind",
@@ -38,8 +38,8 @@ export default async function AboutPage() {
     /* 构建或离线时降级 */
   }
   return (
-    <div className="kp-force-light">
-      <ScrollProgress className="h-0.5 bg-gradient-to-r from-[var(--kp-accent)] via-[var(--kp-brand-light)] to-[var(--kp-brand)]" />
+    <div className="om-force-light">
+      <ScrollProgress className="h-0.5 bg-gradient-to-r from-[var(--om-accent)] via-[var(--om-brand-light)] to-[var(--om-brand)]" />
       <AboutView profile={profile} />
     </div>
   );

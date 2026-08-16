@@ -255,7 +255,7 @@ export async function feishuApi<T = unknown>(
         if (fileRefresh.success && fileRefresh.access_token) return fileRefresh.access_token;
         throw new Error(
           "飞书 user_access_token 已过期且无法自动刷新。请调用 native 工具 feishu_authorize（会打开浏览器，用户点一次同意），" +
-            "或手动跑：pnpm --filter @knowpilot/server exec tsx src/scripts/feishu-authorize.ts",
+            "或手动跑：pnpm --filter @oasismind/server exec tsx src/scripts/feishu-authorize.ts",
         );
       }
       const t = await getUserAccessToken(prisma, config);
@@ -1079,7 +1079,7 @@ export async function resolveFeishuAppOpenId(
     {
       method: "POST",
       token: tenant,
-      body: { title: `kp-app-openid-${Date.now().toString(36)}` },
+      body: { title: `om-app-openid-${Date.now().toString(36)}` },
     },
     prisma,
     config,

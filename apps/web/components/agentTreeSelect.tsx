@@ -42,7 +42,7 @@ function tierIcon(tier?: string) {
 function tierIconColor(tier?: string) {
   if (tier === "super") return "text-amber-500";
   if (tier === "manager") return "text-blue-500";
-  return "text-[var(--kp-brand)]";
+  return "text-[var(--om-brand)]";
 }
 
 /** 按 parentId 构建 Agent 树；parentId 不存在于列表的视为根节点 */
@@ -176,7 +176,7 @@ export function AgentTreeSelect({
             maxWidth: 360,
             zIndex: 9999,
           }}
-          className="max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1 shadow-lg shadow-[rgba(45,42,38,0.08)] backdrop-blur-md"
+          className="max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-lg shadow-[rgba(45,42,38,0.08)] backdrop-blur-md"
           data-testid="agent-tree-select-menu"
         >
           {rows.map(({ item, depth, creatorName }) => {
@@ -196,24 +196,24 @@ export function AgentTreeSelect({
                 className={cn(
                   "flex w-full items-center gap-2 rounded-lg py-2 pr-3 text-left text-xs transition-colors",
                   active
-                    ? "bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                    : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)]",
+                    ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
                 )}
               >
                 <Icon className={cn("h-3.5 w-3.5 shrink-0", tierIconColor(item.tier))} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{item.name}</span>
-                  <span className="block truncate text-[10px] text-[var(--kp-text-3)]">
+                  <span className="block truncate text-[10px] text-[var(--om-text-3)]">
                     {creatorName ? `由 ${creatorName} 创建` : "用户创建"}
                     {item.status === "dormant" && " · 休眠"}
                   </span>
                 </span>
-                {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--kp-brand-deep)]" />}
+                {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />}
               </button>
             );
           })}
           {rows.length === 0 && (
-            <p className="px-3 py-2 text-xs text-[var(--kp-text-3)]">暂无 Agent</p>
+            <p className="px-3 py-2 text-xs text-[var(--om-text-3)]">暂无 Agent</p>
           )}
         </motion.div>
       </AnimatePresence>,
@@ -234,8 +234,8 @@ export function AgentTreeSelect({
         onClick={() => !disabled && setOpen((v) => !v)}
         data-testid="agent-tree-select"
         className={cn(
-          "inline-flex items-center justify-between gap-2 rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg)]/80 px-2.5 py-1 text-xs text-[var(--kp-text-1)] shadow-sm outline-none transition",
-          "hover:border-[var(--kp-brand-light)] focus-visible:border-[var(--kp-brand)] focus-visible:ring-2 focus-visible:ring-[var(--kp-brand)]/20",
+          "inline-flex items-center justify-between gap-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)]/80 px-2.5 py-1 text-xs text-[var(--om-text-1)] shadow-sm outline-none transition",
+          "hover:border-[var(--om-brand-light)] focus-visible:border-[var(--om-brand)] focus-visible:ring-2 focus-visible:ring-[var(--om-brand)]/20",
           "disabled:cursor-not-allowed disabled:opacity-45",
           className,
         )}
@@ -246,7 +246,7 @@ export function AgentTreeSelect({
         <span className="truncate">{selected?.name ?? "选择 Agent"}</span>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform duration-200",
+            "h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform duration-200",
             open && "rotate-180",
           )}
         />

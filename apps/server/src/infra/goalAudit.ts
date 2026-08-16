@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { SessionGoalState } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import { createSyncTransport } from "./loop/transports.js";
 import type { LlmTransport } from "./loop/types.js";

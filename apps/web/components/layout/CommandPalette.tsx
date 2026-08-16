@@ -357,20 +357,20 @@ export function CommandPalette() {
             onClick={closePalette}
           >
             <div
-              className="flex w-full max-w-2xl max-h-[min(80vh,40rem)] flex-col overflow-hidden rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] shadow-2xl"
+              className="flex w-full max-w-2xl max-h-[min(80vh,40rem)] flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={handleKeyDown}
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex shrink-0 items-center gap-3 border-b border-[var(--kp-divider)] px-4 py-3">
-                <Search className="h-5 w-5 shrink-0 text-[var(--kp-text-3)]" />
+              <div className="flex shrink-0 items-center gap-3 border-b border-[var(--om-divider)] px-4 py-3">
+                <Search className="h-5 w-5 shrink-0 text-[var(--om-text-3)]" />
                 <Input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="搜索文章、Agent、Skill、分类…"
-                  className="h-auto border-0 bg-transparent px-0 text-base text-[var(--kp-text-1)] shadow-none placeholder:text-[var(--kp-text-3)] focus-visible:ring-0"
+                  className="h-auto border-0 bg-transparent px-0 text-base text-[var(--om-text-1)] shadow-none placeholder:text-[var(--om-text-3)] focus-visible:ring-0"
                 />
                 <span className="hidden shrink-0 sm:inline-block">
                   <ShortcutEsc />
@@ -381,7 +381,7 @@ export function CommandPalette() {
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 <div className="py-2">
                   {items.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-sm text-[var(--kp-text-3)]">
+                    <div className="px-4 py-8 text-center text-sm text-[var(--om-text-3)]">
                       没有找到匹配结果
                     </div>
                   ) : (
@@ -390,7 +390,7 @@ export function CommandPalette() {
                 </div>
               </div>
 
-              <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-t border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-4 py-2.5 text-xs text-[var(--kp-text-3)]">
+              <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-t border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-4 py-2.5 text-xs text-[var(--om-text-3)]">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <KbdKey icon={ChevronUp} label="上" />
@@ -415,7 +415,7 @@ export function CommandPalette() {
       <button
         type="button"
         onClick={openPalette}
-        className="hidden items-center gap-2 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] px-3 py-2 text-sm text-[var(--kp-text-2)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-1)] md:inline-flex"
+        className="hidden items-center gap-2 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-3 py-2 text-sm text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] md:inline-flex"
       >
         <Search className="h-4 w-4" />
         <span>搜索</span>
@@ -448,7 +448,7 @@ function renderGroupedItems(
     if (group.items.length === 0) continue;
     elements.push(
       <div key={`group-${group.label}`}>
-        <div className="sticky top-0 z-[1] bg-[var(--kp-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--kp-text-3)]">
+        <div className="sticky top-0 z-[1] bg-[var(--om-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--om-text-3)]">
           {group.label}
         </div>
         <div className="px-2">
@@ -465,11 +465,11 @@ function renderGroupedItems(
                 className={cn(
                   "flex w-full min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition",
                   selected
-                    ? "bg-[var(--kp-brand-deep)] text-white"
-                    : "text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-mute)]"
+                    ? "bg-[var(--om-brand-deep)] text-white"
+                    : "text-[var(--om-text-1)] hover:bg-[var(--om-bg-mute)]"
                 )}
               >
-                <span className={cn("shrink-0", selected ? "text-white" : "text-[var(--kp-text-3)]")}>
+                <span className={cn("shrink-0", selected ? "text-white" : "text-[var(--om-text-3)]")}>
                   {item.icon}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
@@ -477,7 +477,7 @@ function renderGroupedItems(
                   <span
                     className={cn(
                       "hidden max-w-[40%] truncate text-xs sm:inline",
-                      selected ? "text-white/80" : "text-[var(--kp-text-3)]",
+                      selected ? "text-white/80" : "text-[var(--om-text-3)]",
                     )}
                   >
                     {item.subtitle}
@@ -489,7 +489,7 @@ function renderGroupedItems(
                       "shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px]",
                       selected
                         ? "border-white/30 bg-white/10 text-white"
-                        : "border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] text-[var(--kp-text-3)]"
+                        : "border-[var(--om-divider)] bg-[var(--om-bg-soft)] text-[var(--om-text-3)]"
                     )}
                   >
                     {item.shortcut}
@@ -499,7 +499,7 @@ function renderGroupedItems(
             );
           })}
         </div>
-        <Separator className="my-2 bg-[var(--kp-divider)]" />
+        <Separator className="my-2 bg-[var(--om-divider)]" />
       </div>
     );
   }

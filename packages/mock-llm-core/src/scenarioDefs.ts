@@ -353,7 +353,7 @@ export const scenarios: MockLlmScenario[] = [
       forced === "dsh_e2e_5_runtime_login" || /你现在登录了哪些平台/.test(lastUserText(opts)),
     completion: (opts) => {
       const blob = opts.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
-      const blocks = blob.match(/<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/g) ?? [];
+      const blocks = blob.match(/<!-- om-runtime-context -->[\s\S]*?<!-- \/om-runtime-context -->/g) ?? [];
       const last = blocks[blocks.length - 1] ?? "";
       const login = last.match(/login:\s*([^\n]+)/)?.[1]?.trim() ?? "none";
       mockLog(`RUNTIME_CTX count=${blocks.length} login=${login} user=${lastUserText(opts).slice(0, 40)}`);
@@ -365,7 +365,7 @@ export const scenarios: MockLlmScenario[] = [
     },
     stream: async function* (opts) {
       const blob = opts.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
-      const blocks = blob.match(/<!-- kp-runtime-context -->[\s\S]*?<!-- \/kp-runtime-context -->/g) ?? [];
+      const blocks = blob.match(/<!-- om-runtime-context -->[\s\S]*?<!-- \/om-runtime-context -->/g) ?? [];
       const last = blocks[blocks.length - 1] ?? "";
       const login = last.match(/login:\s*([^\n]+)/)?.[1]?.trim() ?? "none";
       mockLog(`RUNTIME_CTX count=${blocks.length} login=${login} user=${lastUserText(opts).slice(0, 40)}`);

@@ -45,22 +45,22 @@ function createMathBlockView(
   getPos: () => number | undefined,
 ): NodeView {
   const dom = document.createElement("div");
-  dom.className = "kp-math-block";
+  dom.className = "om-math-block";
   dom.dataset.type = "math_block";
 
   const toolbar = document.createElement("div");
-  toolbar.className = "kp-math-block-toolbar";
+  toolbar.className = "om-math-block-toolbar";
 
   const btnLeft = document.createElement("button");
   btnLeft.type = "button";
-  btnLeft.className = "kp-math-align-btn";
+  btnLeft.className = "om-math-align-btn";
   btnLeft.title = "靠左";
   btnLeft.setAttribute("aria-label", "公式靠左");
   btnLeft.innerHTML = alignIconSvg("left");
 
   const btnCenter = document.createElement("button");
   btnCenter.type = "button";
-  btnCenter.className = "kp-math-align-btn";
+  btnCenter.className = "om-math-align-btn";
   btnCenter.title = "居中";
   btnCenter.setAttribute("aria-label", "公式居中");
   btnCenter.innerHTML = alignIconSvg("center");
@@ -68,31 +68,31 @@ function createMathBlockView(
   toolbar.append(btnLeft, btnCenter);
 
   const idle = document.createElement("div");
-  idle.className = "kp-math-block-idle";
+  idle.className = "om-math-block-idle";
 
   const edit = document.createElement("div");
-  edit.className = "kp-math-block-edit";
+  edit.className = "om-math-block-edit";
   edit.hidden = true;
 
   const sourceRow = document.createElement("div");
-  sourceRow.className = "kp-math-block-source";
+  sourceRow.className = "om-math-block-source";
 
   const ghost = document.createElement("div");
-  ghost.className = "kp-math-block-ghost";
+  ghost.className = "om-math-block-ghost";
   ghost.setAttribute("aria-hidden", "true");
 
   const textarea = document.createElement("textarea");
-  textarea.className = "kp-math-block-input";
+  textarea.className = "om-math-block-input";
   textarea.rows = 1;
   textarea.wrap = "soft";
   textarea.placeholder = "正在根据上下文补全…";
   textarea.spellcheck = false;
 
   const hint = document.createElement("div");
-  hint.className = "kp-math-block-hint";
+  hint.className = "om-math-block-hint";
 
   const live = document.createElement("div");
-  live.className = "kp-math-block-live";
+  live.className = "om-math-block-live";
 
   sourceRow.append(ghost, textarea);
   edit.append(sourceRow, hint, live);
@@ -174,10 +174,10 @@ function createMathBlockView(
   const paintGhost = (typedBefore: string, suffix: string, hintText: string) => {
     ghost.replaceChildren();
     const typed = document.createElement("span");
-    typed.className = "kp-math-ghost-typed";
+    typed.className = "om-math-ghost-typed";
     typed.textContent = typedBefore;
     const sug = document.createElement("span");
-    sug.className = "kp-math-ghost-suffix";
+    sug.className = "om-math-ghost-suffix";
     sug.textContent = suffix;
     ghost.append(typed, sug);
     hint.textContent = hintText;
@@ -544,24 +544,24 @@ function createMathInlineView(
   getPos: () => number | undefined,
 ): NodeView {
   const dom = document.createElement("span");
-  dom.className = "kp-math-inline";
+  dom.className = "om-math-inline";
   dom.dataset.type = "math_inline";
 
   const idle = document.createElement("span");
-  idle.className = "kp-math-inline-idle";
+  idle.className = "om-math-inline-idle";
 
   const edit = document.createElement("span");
-  edit.className = "kp-math-inline-edit";
+  edit.className = "om-math-inline-edit";
   edit.hidden = true;
 
   const input = document.createElement("input");
   input.type = "text";
-  input.className = "kp-math-inline-input";
+  input.className = "om-math-inline-input";
   input.placeholder = "LaTeX";
   input.spellcheck = false;
 
   const live = document.createElement("span");
-  live.className = "kp-math-inline-live";
+  live.className = "om-math-inline-live";
 
   edit.append(input, live);
   dom.append(idle, edit);

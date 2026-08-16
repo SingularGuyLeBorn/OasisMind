@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import dynamic from "next/dynamic";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 
 const MilkdownEditor = dynamic(
   () => import("@/components/editor/MilkdownEditor").then((m) => m.MilkdownEditor),
@@ -92,11 +92,11 @@ function NewPostPageContent() {
   return (
     <>
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between border-b border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-4 py-3 sm:px-6">
           <div className="flex items-center gap-4">
             <Link
               href="/posts"
-              className="inline-flex items-center gap-1 text-sm text-[var(--kp-text-2)] transition hover:text-[var(--kp-text-1)]"
+              className="inline-flex items-center gap-1 text-sm text-[var(--om-text-2)] transition hover:text-[var(--om-text-1)]"
             >
               <ArrowLeft className="h-4 w-4" />
               返回
@@ -105,7 +105,7 @@ function NewPostPageContent() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="文章标题"
-              className="bg-transparent text-lg font-semibold text-[var(--kp-text-1)] outline-none placeholder:text-[var(--kp-text-3)]"
+              className="bg-transparent text-lg font-semibold text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ function NewPostPageContent() {
               </span>
             )}
             {lastSavedAt && (
-              <span className="hidden text-xs text-[var(--kp-text-3)] sm:inline">
+              <span className="hidden text-xs text-[var(--om-text-3)] sm:inline">
                 本地已记 {lastSavedAt.toLocaleTimeString("zh-CN")}
               </span>
             )}
@@ -123,7 +123,7 @@ function NewPostPageContent() {
               type="button"
               onClick={handleCreate}
               disabled={create.isPending || !title.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--kp-brand-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--om-brand-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
               <Check className="h-4 w-4" />
               {create.isPending ? "创建中…" : "创建文章"}
@@ -131,7 +131,7 @@ function NewPostPageContent() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 border-b border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap gap-4 border-b border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-4 py-3 sm:px-6">
           <select
             value={garden}
             onChange={(e) => {
@@ -142,7 +142,7 @@ function NewPostPageContent() {
               params.set("garden", next);
               router.replace(`/editor?${params.toString()}`, { scroll: false });
             }}
-            className="rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-1.5 text-sm text-[var(--kp-text-1)] outline-none"
+            className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-sm text-[var(--om-text-1)] outline-none"
             title="知识库花园（content/{garden}/）"
           >
             {(gardens?.items ?? [{ id: DEFAULT_POST_GARDEN, title: "博客" }]).map((g) => (
@@ -155,27 +155,27 @@ function NewPostPageContent() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="分类"
-            className="rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-1.5 text-sm text-[var(--kp-text-1)] outline-none placeholder:text-[var(--kp-text-3)]"
+            className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-sm text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
           />
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="标签，用逗号分隔"
-            className="rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-1.5 text-sm text-[var(--kp-text-1)] outline-none placeholder:text-[var(--kp-text-3)]"
+            className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-sm text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
           />
           <div className="flex flex-col gap-1">
             <input
               value={slugInput}
               onChange={(e) => setSlugInput(e.target.value)}
               placeholder="路径（留空由标题生成；如 tutorials/react）"
-              className="rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-3 py-1.5 text-sm text-[var(--kp-text-1)] outline-none placeholder:text-[var(--kp-text-3)]"
+              className="rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-1.5 text-sm text-[var(--om-text-1)] outline-none placeholder:text-[var(--om-text-3)]"
             />
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--kp-text-2)]">
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--om-text-2)]">
               <input
                 type="checkbox"
                 checked={createFolderIndex}
                 onChange={(e) => setCreateFolderIndex(e.target.checked)}
-                className="h-4 w-4 rounded border-[var(--kp-divider)] bg-[var(--kp-bg)] text-[var(--kp-brand-deep)]"
+                className="h-4 w-4 rounded border-[var(--om-divider)] bg-[var(--om-bg)] text-[var(--om-brand-deep)]"
               />
               文件夹本身也是文档（生成 a/b/index.md）
             </label>
@@ -199,7 +199,7 @@ export default function NewPostPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center text-sm text-[var(--kp-text-3)]">
+        <div className="flex min-h-[50vh] items-center justify-center text-sm text-[var(--om-text-3)]">
           加载编辑器…
         </div>
       }

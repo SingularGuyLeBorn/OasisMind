@@ -6,8 +6,8 @@ import type {
   CreateInfoSourceInput,
   UpdateInfoSourceInput,
   ListInfoSourcesInput,
-} from "@knowpilot/shared";
-import { canonicalListTag, formatTagsCsv, tagsFromCsv } from "@knowpilot/shared";
+} from "@oasismind/shared";
+import { canonicalListTag, formatTagsCsv, tagsFromCsv } from "@oasismind/shared";
 import { FileSyncService } from "../../services.js";
 import { invalidateCapabilitiesCache } from "../capabilities.js";
 

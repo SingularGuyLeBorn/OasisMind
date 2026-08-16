@@ -8,7 +8,7 @@ import {
   createPostFromChatSchema, createPostFromToolResultSchema, getPostBySlugSchema, postGardenSchema, postRecordViewSchema, explainSelectionSchema,
   deleteByIdSchema, deleteByIdWithApprovalSchema, postActivityCalendarSchema,
   postActivityDayDetailSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { withApprovalGuard } from "./withApprovalGuard.js";
 

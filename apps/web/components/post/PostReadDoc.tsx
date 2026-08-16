@@ -8,7 +8,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Eye, PenLine } from "lucide-react";
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { PostContent } from "@/components/post/PostContent";
 import { TableOfContents, usePostTocVisible } from "@/components/post/TableOfContents";
 import { RelatedPosts } from "@/components/post/RelatedPosts";
@@ -65,7 +65,7 @@ export function PostReadDoc({ post }: { post: PostReadDocModel }) {
         </Link>
       </div>
 
-      <article ref={articleRef} className="kp-post-content mx-auto max-w-3xl">
+      <article ref={articleRef} className="om-post-content mx-auto max-w-3xl">
         <header className="mb-6">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {post.title}

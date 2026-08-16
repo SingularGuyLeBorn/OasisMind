@@ -3,7 +3,7 @@
  * - 详情 URL：默认花园 posts 走 /posts/{slug}；其它花园带 ?garden=
  * - Markdown 相对链接 / wiki 解析：在 tree 结果里按 slug 匹配，并带上 garden
  */
-import { DEFAULT_POST_GARDEN } from "@knowpilot/shared";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 
 export interface PostTreeItem {
   slug: string;

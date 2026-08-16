@@ -136,13 +136,13 @@ export function ThreeTheories() {
     <section className="relative overflow-hidden px-6 py-10 lg:px-12 lg:py-12">
       <div className="relative z-10 mx-auto max-w-7xl">
         <ScrollReveal className="mb-8">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--kp-brand)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--om-brand)]">
             Foundations
           </p>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--om-text-1)] md:text-3xl">
             三论立园 · <CurlyMark>控制 · 系统 · 信息</CurlyMark>
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--kp-text-2)]">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--om-text-2)]">
             见微不是堆功能，而是用三套透镜看 Agent：如何管得住、如何长成体、如何把噪声炼成知识。
           </p>
         </ScrollReveal>
@@ -171,19 +171,19 @@ export function ThreeTheories() {
                   "group relative flex flex-col overflow-hidden rounded-2xl border p-5 text-left shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500",
                   selected
                     ? isO
-                      ? "border-[var(--kp-brand)]/40 bg-white/75 shadow-[0_22px_52px_-16px_rgba(0,135,235,0.28)]"
-                      : "border-[var(--kp-accent)]/45 bg-white/75 shadow-[0_22px_52px_-16px_rgba(232,168,74,0.28)]"
-                    : "border-white/55 bg-white/50 hover:border-[var(--kp-brand)]/25 hover:bg-white/70",
+                      ? "border-[var(--om-brand)]/40 bg-white/75 shadow-[0_22px_52px_-16px_rgba(0,135,235,0.28)]"
+                      : "border-[var(--om-accent)]/45 bg-white/75 shadow-[0_22px_52px_-16px_rgba(232,168,74,0.28)]"
+                    : "border-white/55 bg-white/50 hover:border-[var(--om-brand)]/25 hover:bg-white/70",
                   i === 0 && "hover:shadow-[0_22px_48px_-16px_rgba(0,135,235,0.3)]",
                   i === 1 && "hover:shadow-[0_20px_44px_-14px_rgba(232,168,74,0.32)]",
-                  i === 2 && "kp-card-sheen hover:shadow-[0_18px_40px_-14px_rgba(0,80,160,0.28)]",
+                  i === 2 && "om-card-sheen hover:shadow-[0_18px_40px_-14px_rgba(0,80,160,0.28)]",
                 )}
               >
                 <div
                   aria-hidden
                   className={cn(
                     "pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-3xl transition-opacity duration-500",
-                    isO ? "bg-[var(--kp-glow-blue)]/40" : "bg-[var(--kp-glow-peach)]/45",
+                    isO ? "bg-[var(--om-glow-blue)]/40" : "bg-[var(--om-glow-peach)]/45",
                     selected ? "opacity-100" : "opacity-0 group-hover:opacity-70",
                   )}
                 />
@@ -193,8 +193,8 @@ export function ThreeTheories() {
                     className={cn(
                       "flex h-11 w-11 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-105",
                       isO
-                        ? "border-[var(--kp-brand)]/30 bg-[var(--kp-brand-soft)] text-[var(--kp-brand)]"
-                        : "border-[var(--kp-accent)]/35 bg-[rgba(var(--kp-accent-rgb),0.12)] text-[var(--kp-accent-deep)]",
+                        ? "border-[var(--om-brand)]/30 bg-[var(--om-brand-soft)] text-[var(--om-brand)]"
+                        : "border-[var(--om-accent)]/35 bg-[rgba(var(--om-accent-rgb),0.12)] text-[var(--om-accent-deep)]",
                     )}
                   >
                     <t.Icon className="h-7 w-7" />
@@ -203,8 +203,8 @@ export function ThreeTheories() {
                     className={cn(
                       "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                       isO
-                        ? "border-[var(--kp-brand)]/25 text-[var(--kp-brand)]"
-                        : "border-[var(--kp-accent)]/30 text-[var(--kp-accent-deep)]",
+                        ? "border-[var(--om-brand)]/25 text-[var(--om-brand)]"
+                        : "border-[var(--om-accent)]/30 text-[var(--om-accent-deep)]",
                     )}
                   >
                     {t.tag}
@@ -212,14 +212,14 @@ export function ThreeTheories() {
                 </div>
 
                 <div className="relative mt-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--om-text-3)]">
                     {t.en}
                   </p>
-                  <h3 className="mt-0.5 text-lg font-bold text-[var(--kp-text-1)]">{t.title}</h3>
-                  <p className="mt-2 text-sm font-semibold leading-snug text-[var(--kp-text-1)]">
+                  <h3 className="mt-0.5 text-lg font-bold text-[var(--om-text-1)]">{t.title}</h3>
+                  <p className="mt-2 text-sm font-semibold leading-snug text-[var(--om-text-1)]">
                     {t.thesis}
                   </p>
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--kp-text-2)]">
+                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--om-text-2)]">
                     {t.body}
                   </p>
                 </div>
@@ -240,13 +240,13 @@ export function ThreeTheories() {
           >
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="max-w-2xl">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-brand)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--om-brand)]">
                   {current.en}
                 </p>
-                <p className="mt-1 text-base font-bold text-[var(--kp-text-1)] md:text-lg">
+                <p className="mt-1 text-base font-bold text-[var(--om-text-1)] md:text-lg">
                   {current.thesis}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--kp-text-2)]">{current.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--om-text-2)]">{current.body}</p>
               </div>
               <div className="grid flex-1 gap-2 sm:grid-cols-3 md:max-w-md">
                 {current.points.map((p, i) => (
@@ -258,8 +258,8 @@ export function ThreeTheories() {
                     whileHover={{ y: -3 }}
                     className="rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 shadow-sm"
                   >
-                    <p className="text-[11px] font-bold text-[var(--kp-brand)]">{p.label}</p>
-                    <p className="mt-1 text-[11px] leading-snug text-[var(--kp-text-2)]">{p.text}</p>
+                    <p className="text-[11px] font-bold text-[var(--om-brand)]">{p.label}</p>
+                    <p className="mt-1 text-[11px] leading-snug text-[var(--om-text-2)]">{p.text}</p>
                   </motion.div>
                 ))}
               </div>

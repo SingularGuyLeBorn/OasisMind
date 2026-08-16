@@ -3,7 +3,7 @@
  * 审批闸门不在这里（只留在 executeAgentTool）。
  */
 
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import type { AppConfig } from "../config.js";
 import { getTool, listTools } from "./registry.js";
 import {
@@ -17,10 +17,10 @@ import {
   type ToolExecResult,
 } from "./toolEnvelope.js";
 import {
-  KP_META_PATH_KEY,
-  KP_ORIGINAL_CHARS_KEY,
-  KP_PERSISTED_KEY,
-  KP_RESULT_PATH_KEY,
+  OM_META_PATH_KEY,
+  OM_ORIGINAL_CHARS_KEY,
+  OM_PERSISTED_KEY,
+  OM_RESULT_PATH_KEY,
   offloadToolResultIfNeeded,
   type ToolResultOffloadOpts,
 } from "../toolResultOffload.js";
@@ -96,18 +96,18 @@ export function persistValue(
         : { offloaded: true, card: off.llmResult };
     content = {
       ...card,
-      [KP_PERSISTED_KEY]: true,
-      [KP_RESULT_PATH_KEY]: off.path,
-      [KP_META_PATH_KEY]: off.metaPath,
-      [KP_ORIGINAL_CHARS_KEY]: off.originalChars,
+      [OM_PERSISTED_KEY]: true,
+      [OM_RESULT_PATH_KEY]: off.path,
+      [OM_META_PATH_KEY]: off.metaPath,
+      [OM_ORIGINAL_CHARS_KEY]: off.originalChars,
     };
   } else if (content !== null && typeof content === "object" && !Array.isArray(content)) {
     content = {
       ...(content as Record<string, unknown>),
-      [KP_PERSISTED_KEY]: true,
-      [KP_RESULT_PATH_KEY]: off.path,
-      [KP_META_PATH_KEY]: off.metaPath,
-      [KP_ORIGINAL_CHARS_KEY]: off.originalChars,
+      [OM_PERSISTED_KEY]: true,
+      [OM_RESULT_PATH_KEY]: off.path,
+      [OM_META_PATH_KEY]: off.metaPath,
+      [OM_ORIGINAL_CHARS_KEY]: off.originalChars,
     };
   }
   return {
@@ -377,4 +377,4 @@ export async function runNativePipeline(
   return { ok: true, envelope, elapsedMs: Date.now() - started };
 }
 
-export { KP_RESULT_PATH_KEY };
+export { OM_RESULT_PATH_KEY };

@@ -32,7 +32,7 @@ import {
   inboxSyncZhihuSchema,
   inboxSyncBilibiliSchema,
   inboxEnrichSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { createTempProjectDir, createTestConfig } from "./helpers/toolTestFixtures.js";
 
 describe("inboxPipeline", () => {

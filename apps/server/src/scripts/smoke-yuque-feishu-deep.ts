@@ -1,6 +1,6 @@
 /**
  * 飞书 + 语雀深度联调：知识库/文档 CRUD、复杂表格、数学公式、画板、权限变更
- * 用法：pnpm --filter @knowpilot/server exec tsx src/scripts/smoke-yuque-feishu-deep.ts
+ * 用法：pnpm --filter @oasismind/server exec tsx src/scripts/smoke-yuque-feishu-deep.ts
  */
 import { prisma } from "../db.js";
 import { getAppConfig } from "../infra/config.js";
@@ -42,7 +42,7 @@ type Status = "PASS" | "FAIL" | "SKIP";
 type Row = { name: string; status: Status; detail: string };
 const rows: Row[] = [];
 const stamp = Date.now().toString(36);
-const PREFIX = `kp-deep-${stamp}`;
+const PREFIX = `om-deep-${stamp}`;
 
 function rec(name: string, status: Status, detail: string) {
   rows.push({ name, status, detail: detail.slice(0, 320) });

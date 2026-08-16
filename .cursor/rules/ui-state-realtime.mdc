@@ -11,7 +11,7 @@ alwaysApply: true
 
 1. **权威只在服务端**（DB + hub/store）。前端零真相，只订阅、只渲染。
 2. **推拉结合，缺一不可**：
-   - **PUSH**：写库后同栈推 SSE（优先 `infra/uiStateNotify.ts`）→ 订阅方 `invalidate`/`setData`/reducer；跨标签可再 `BroadcastChannel("knowpilot-ui-state")`。
+   - **PUSH**：写库后同栈推 SSE（优先 `infra/uiStateNotify.ts`）→ 订阅方 `invalidate`/`setData`/reducer；跨标签可再 `BroadcastChannel("oasismind-ui-state")`。
    - **PULL**：进页/刷新从权威源水合；管理页对 running/pending 保留短 `refetchInterval` 兜底。
 3. **禁止**「只写库等 F5」「刷新当修复」「交付文案写刷新一下」「用 setTimeout/useEffect 猜时序代替推送」。
 4. 开着的 Chat / `/cron` / `/approvals` / `/runs` / 侧栏必须秒级自己动。

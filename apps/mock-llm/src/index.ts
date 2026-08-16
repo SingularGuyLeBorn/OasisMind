@@ -27,7 +27,7 @@ import {
   type LlmMessage,
   type LlmToolDefinition,
   type StreamChunk,
-} from "@knowpilot/mock-llm-core";
+} from "@oasismind/mock-llm-core";
 
 const PORT = parseInt(process.env.MOCK_LLM_PORT || "3040", 10);
 

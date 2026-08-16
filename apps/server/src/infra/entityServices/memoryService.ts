@@ -7,8 +7,8 @@ import type {
   CreateMemoryInput,
   UpdateMemoryInput,
   ListMemoriesInput,
-} from "@knowpilot/shared";
-import { canonicalListTag, formatTagsCsv, tagsForFts, tagsFromCsv } from "@knowpilot/shared";
+} from "@oasismind/shared";
+import { canonicalListTag, formatTagsCsv, tagsForFts, tagsFromCsv } from "@oasismind/shared";
 import { FileSyncService } from "../../services.js";
 import { embedAndStoreMemory, isEmbeddingEnabled } from "../embedding.js";
 

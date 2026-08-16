@@ -85,7 +85,7 @@ function getLarkAppSecret(): string {
 
 /** 解析 monorepo 根（避免从 apps/server 启动时读到 apps/server/content/...） */
 function resolveRepoRoot(): string {
-  if (process.env.KNOWPILOT_ROOT?.trim()) return path.resolve(process.env.KNOWPILOT_ROOT.trim());
+  if (process.env.OASISMIND_ROOT?.trim()) return path.resolve(process.env.OASISMIND_ROOT.trim());
   const candidates = [
     process.cwd(),
     path.resolve(process.cwd(), "../.."),

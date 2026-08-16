@@ -110,7 +110,7 @@ describe("editorAgentComplete", () => {
 
 describe("extractFormulaContext lines", () => {
   it("截取末尾/开头 N 行", async () => {
-    const { FORMULA_COPILOT_CONTEXT_LINES } = await import("@knowpilot/shared");
+    const { FORMULA_COPILOT_CONTEXT_LINES } = await import("@oasismind/shared");
     expect(FORMULA_COPILOT_CONTEXT_LINES).toBe(10);
   });
 });

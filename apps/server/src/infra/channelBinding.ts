@@ -36,7 +36,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { ImChannel } from "./messageGateway.js";
-import { DEFAULT_LLM_MODEL, TIER_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { DEFAULT_LLM_MODEL, TIER_DEFAULT_TOOLS } from "@oasismind/shared";
 import { notifyAgentUi } from "./uiStateNotify.js";
 
 const DAILY_FRAGMENTS_SOURCE = "onebot-daily-fragments";

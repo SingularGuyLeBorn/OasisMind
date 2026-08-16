@@ -13,7 +13,7 @@ import type {
   CreatePostFromToolResultInput,
   OperationResult,
   NextStep,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   DEFAULT_POST_GARDEN,
   isValidGardenIdFormat,
@@ -21,7 +21,7 @@ import {
   canonicalListTag,
   formatTagsCsv,
   tagsFromCsv,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { TRPCError } from "@trpc/server";
 import matter from "gray-matter";
 import {

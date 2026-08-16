@@ -15,7 +15,7 @@ interface PostSidebarProps {
   onNavigate?: () => void;
 }
 
-const SIDEBAR_WIDTH_KEY = "kp-post-sidebar-width";
+const SIDEBAR_WIDTH_KEY = "om-post-sidebar-width";
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 280;
@@ -128,7 +128,7 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
   return (
     <aside
       className={cn(
-        "relative flex shrink-0 flex-col border-r border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] pl-[5px]",
+        "relative flex shrink-0 flex-col border-r border-[var(--om-divider)] bg-[var(--om-bg-alt)] pl-[5px]",
         className,
       )}
       style={onNavigate ? undefined : { width: `${width}px` }}
@@ -138,12 +138,12 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
         if (t?.closest("a[href]")) onNavigate();
       }}
     >
-      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--kp-divider)] py-2.5 pr-2">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--om-divider)] py-2.5 pr-2">
         {isScoped && (
           <Link
             href="/gardens"
             onClick={() => onNavigate?.()}
-            className="inline-flex items-center gap-1 text-[11px] text-[var(--kp-text-3)] transition hover:text-[var(--kp-brand-deep)]"
+            className="inline-flex items-center gap-1 text-[11px] text-[var(--om-text-3)] transition hover:text-[var(--om-brand-deep)]"
           >
             <ArrowLeft className="h-3 w-3" />
             全部知识库
@@ -151,8 +151,8 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
         )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <FolderOpen className="h-4 w-4 shrink-0 text-[var(--kp-brand-deep)]" />
-            <span className="truncate text-sm font-semibold text-[var(--kp-text-1)]" title={title}>
+            <FolderOpen className="h-4 w-4 shrink-0 text-[var(--om-brand-deep)]" />
+            <span className="truncate text-sm font-semibold text-[var(--om-text-1)]" title={title}>
               {title}
             </span>
           </div>
@@ -162,8 +162,8 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
             className={cn(
               "flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition",
               pathname.startsWith("/editor")
-                ? "bg-[var(--kp-brand-soft)] text-[var(--kp-brand-deep)]"
-                : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
             )}
             title="新建文章"
           >
@@ -180,7 +180,7 @@ export function PostSidebar({ className, onNavigate }: PostSidebarProps) {
       {!onNavigate && (
         <div
           onMouseDown={handleMouseDown}
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize bg-transparent transition-colors hover:bg-[var(--kp-brand)]/30 active:bg-[var(--kp-brand)]/50"
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize bg-transparent transition-colors hover:bg-[var(--om-brand)]/30 active:bg-[var(--om-brand)]/50"
           aria-label="拖拽调整侧栏宽度"
         />
       )}

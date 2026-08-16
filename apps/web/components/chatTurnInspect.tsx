@@ -30,14 +30,14 @@ export function ChatTurnInspect({ sessionId }: { sessionId: string | null }) {
 
   return (
     <div
-      className="border-b border-[var(--kp-divider)] bg-[var(--kp-bg)]/80 px-3 py-1"
+      className="border-b border-[var(--om-divider)] bg-[var(--om-bg)]/80 px-3 py-1"
       data-testid="chat-turn-inspect"
     >
       <button
         type="button"
         data-testid="chat-turn-inspect-toggle"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-left text-[11px] text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]"
+        className="flex w-full items-center gap-2 text-left text-[11px] text-[var(--om-text-2)] hover:text-[var(--om-text-1)]"
       >
         {open ? <EyeOff className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
         <span className="min-w-0 flex-1 truncate">
@@ -49,39 +49,39 @@ export function ChatTurnInspect({ sessionId }: { sessionId: string | null }) {
       </button>
       {open && data && (
         <div
-          className="mt-1.5 space-y-1.5 pb-1.5 text-[10px] text-[var(--kp-text-2)]"
+          className="mt-1.5 space-y-1.5 pb-1.5 text-[10px] text-[var(--om-text-2)]"
           data-testid="chat-turn-inspect-body"
         >
-          <p className="text-[var(--kp-text-3)]">
+          <p className="text-[var(--om-text-3)]">
             模型只走当前叶到根的活跃路径
             {data.lastUserPreview ? ` · 最近用户：「${data.lastUserPreview}」` : ""}
           </p>
           {data.contextSummaryPreview && (
-            <p className="text-[var(--kp-text-3)]">摘要：{data.contextSummaryPreview}</p>
+            <p className="text-[var(--om-text-3)]">摘要：{data.contextSummaryPreview}</p>
           )}
           <div className="flex flex-wrap gap-1" data-testid="chat-turn-inspect-visible">
             {data.visibleNative.map((name) => (
               <span
                 key={name}
-                className="rounded-md bg-[var(--kp-brand-soft)] px-1.5 py-0.5 text-[9px] text-[var(--kp-brand-deep)]"
+                className="rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[9px] text-[var(--om-brand-deep)]"
               >
                 {name}
               </span>
             ))}
             {data.visibleNative.length === 0 && (
-              <span className="text-[var(--kp-text-3)]">无可见 native 工具</span>
+              <span className="text-[var(--om-text-3)]">无可见 native 工具</span>
             )}
           </div>
           {data.hidden.length > 0 && (
             <ul className="space-y-0.5" data-testid="chat-turn-inspect-hidden">
               {data.hidden.slice(0, 24).map((h) => (
-                <li key={`${h.name}:${h.reason}`} className={cn("text-[var(--kp-text-3)]")}>
+                <li key={`${h.name}:${h.reason}`} className={cn("text-[var(--om-text-3)]")}>
                   {h.name}
                   <span className="ml-1 text-[9px]">（{REASON_LABEL[h.reason] ?? h.reason}）</span>
                 </li>
               ))}
               {data.hidden.length > 24 && (
-                <li className="text-[var(--kp-text-3)]">…还有 {data.hidden.length - 24} 个</li>
+                <li className="text-[var(--om-text-3)]">…还有 {data.hidden.length - 24} 个</li>
               )}
             </ul>
           )}

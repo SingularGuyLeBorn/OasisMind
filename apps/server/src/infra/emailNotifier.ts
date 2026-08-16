@@ -244,13 +244,13 @@ export function getNotifyStatus(config?: AppConfig): NotifyStatus {
     channels[0].configured &&
     !channels[1].configured &&
     !(
-      process.env.KP_HTTPS_PROXY?.trim() ||
+      process.env.OM_HTTPS_PROXY?.trim() ||
       process.env.HTTPS_PROXY?.trim() ||
       process.env.HTTP_PROXY?.trim()
     )
   ) {
     hint =
-      "仅 AgentMail 且未配代理：国内直连常 403。可设 KP_HTTPS_PROXY=http://127.0.0.1:7890，或另配 SMTP 作备用。";
+      "仅 AgentMail 且未配代理：国内直连常 403。可设 OM_HTTPS_PROXY=http://127.0.0.1:7890，或另配 SMTP 作备用。";
   }
 
   return { provider, to, askTo, channels, ready, hint };

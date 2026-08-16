@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { transformWikiLinks } from "./WikiLink";
 import { PostMarkdownLink } from "./PostMarkdownLink";
 import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
-import { memoizeMarkdownTransform } from "@knowpilot/shared";
+import { memoizeMarkdownTransform } from "@oasismind/shared";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
@@ -29,7 +29,7 @@ const VizEmbed = dynamic(
     // padding 外框与真实 VizEmbed 对齐，禁止 my-6 margin（Virtuoso 测不到）在加载完成时跳变滚顶
     loading: () => (
       <div className="py-6" data-no-edit-click>
-        <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-[var(--kp-divider)] bg-white text-sm text-[var(--kp-text-3)]">
+        <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-[var(--om-divider)] bg-white text-sm text-[var(--om-text-3)]">
           加载动画…
         </div>
       </div>
@@ -44,7 +44,7 @@ const BoardPreview = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="my-4 flex h-40 items-center justify-center rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-mute)] text-sm text-[var(--kp-text-3)]"
+        className="my-4 flex h-40 items-center justify-center rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-mute)] text-sm text-[var(--om-text-3)]"
         data-no-edit-click
       >
         加载画板…
@@ -128,19 +128,19 @@ function CodeToolbar({
   };
 
   return (
-    <div className="kp-code-toolbar">
+    <div className="om-code-toolbar">
       <span className="font-mono uppercase tracking-wider">{language || "text"}</span>
       <div className="flex items-center gap-1">
         {/* 代码 / 预览 切换（仅可渲染语言显示） */}
         {canPreview && (
-          <div className="flex items-center rounded-md bg-[var(--kp-bg)] p-0.5 text-xs">
+          <div className="flex items-center rounded-md bg-[var(--om-bg)] p-0.5 text-xs">
             <button
               type="button"
               onClick={() => setState({ mode: "code" })}
               className={`flex items-center gap-1 rounded px-2 py-0.5 transition-colors ${
                 state.mode === "code"
-                  ? "bg-[var(--kp-brand)] text-white"
-                  : "text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]"
+                  ? "bg-[var(--om-brand)] text-white"
+                  : "text-[var(--om-text-2)] hover:text-[var(--om-text-1)]"
               }`}
               aria-label="代码视图"
             >
@@ -151,8 +151,8 @@ function CodeToolbar({
               onClick={() => setState({ mode: "preview" })}
               className={`flex items-center gap-1 rounded px-2 py-0.5 transition-colors ${
                 state.mode === "preview"
-                  ? "bg-[var(--kp-brand)] text-white"
-                  : "text-[var(--kp-text-2)] hover:text-[var(--kp-text-1)]"
+                  ? "bg-[var(--om-brand)] text-white"
+                  : "text-[var(--om-text-2)] hover:text-[var(--om-text-1)]"
               }`}
               aria-label="预览视图"
             >
@@ -165,8 +165,8 @@ function CodeToolbar({
         <button
           type="button"
           onClick={onToggleLineNumbers}
-          className={`rounded p-1 text-[var(--kp-text-2)] transition-colors hover:bg-[var(--kp-bg)] hover:text-[var(--kp-text-1)] ${
-            showLineNumbers ? "text-[var(--kp-brand)]" : ""
+          className={`rounded p-1 text-[var(--om-text-2)] transition-colors hover:bg-[var(--om-bg)] hover:text-[var(--om-text-1)] ${
+            showLineNumbers ? "text-[var(--om-brand)]" : ""
           }`}
           aria-label={showLineNumbers ? "隐藏行号" : "显示行号"}
           title={showLineNumbers ? "隐藏行号" : "显示行号"}
@@ -179,8 +179,8 @@ function CodeToolbar({
         <button
           type="button"
           onClick={() => setState({ wrap: !state.wrap })}
-          className={`group/wrap rounded p-1 text-[var(--kp-text-2)] transition-colors hover:bg-[var(--kp-bg)] hover:text-[var(--kp-text-1)] ${
-            state.wrap ? "text-[var(--kp-brand)]" : ""
+          className={`group/wrap rounded p-1 text-[var(--om-text-2)] transition-colors hover:bg-[var(--om-bg)] hover:text-[var(--om-text-1)] ${
+            state.wrap ? "text-[var(--om-brand)]" : ""
           }`}
           aria-label={state.wrap ? "关闭自动换行" : "开启自动换行"}
           title={state.wrap ? "关闭自动换行" : "开启自动换行"}
@@ -192,7 +192,7 @@ function CodeToolbar({
         <button
           type="button"
           onClick={handleCopy}
-          className="group/copy rounded p-1 text-[var(--kp-text-2)] transition-colors hover:bg-[var(--kp-bg)] hover:text-[var(--kp-text-1)]"
+          className="group/copy rounded p-1 text-[var(--om-text-2)] transition-colors hover:bg-[var(--om-bg)] hover:text-[var(--om-text-1)]"
           aria-label={copied ? "已复制" : "复制代码"}
           title={copied ? "已复制" : "复制代码"}
         >
@@ -203,7 +203,7 @@ function CodeToolbar({
         <button
           type="button"
           onClick={() => setState({ maximized: !state.maximized })}
-          className="rounded p-1 text-[var(--kp-text-2)] transition-colors hover:bg-[var(--kp-bg)] hover:text-[var(--kp-text-1)]"
+          className="rounded p-1 text-[var(--om-text-2)] transition-colors hover:bg-[var(--om-bg)] hover:text-[var(--om-text-1)]"
           aria-label={state.maximized ? "还原" : "最大化"}
           title={state.maximized ? "还原" : "最大化"}
         >
@@ -287,7 +287,7 @@ function Heading({
       {children}
       <a
         href={`#${id}`}
-        className="kp-heading-anchor"
+        className="om-heading-anchor"
         aria-label={`${level} 级标题 ${hashes} · 复制锚点链接`}
         title={`${level} 级标题 · ${hashes}`}
         onClick={(e) => {
@@ -296,7 +296,7 @@ function Heading({
           document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
       >
-        <span className="kp-heading-level" aria-hidden>
+        <span className="om-heading-level" aria-hidden>
           {hashes}
         </span>
       </a>
@@ -315,7 +315,7 @@ function Pre({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
   }
 
   const isMathBlock = isMathClassName(childClass) || language === "math";
-  const isBoardBlock = language === "kp-board" || language === "board";
+  const isBoardBlock = language === "om-board" || language === "board";
   const isVizBlock = language === "viz" || language === "algoviz";
   const codeText = getText(children);
   const lineCount = useMemo(() => countCodeLines(codeText), [codeText]);
@@ -344,9 +344,9 @@ function Pre({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
   }
 
   const codeView = (
-    <div className={`kp-code-body${showLineNumbers ? " kp-code-body--lines" : ""}`}>
+    <div className={`om-code-body${showLineNumbers ? " om-code-body--lines" : ""}`}>
       {showLineNumbers && (
-        <div className="kp-code-gutter" aria-hidden="true">
+        <div className="om-code-gutter" aria-hidden="true">
           {Array.from({ length: lineCount }, (_, i) => (
             <span key={i}>{i + 1}</span>
           ))}
@@ -354,7 +354,7 @@ function Pre({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
       )}
       <pre
         {...props}
-        className={`kp-code-pre text-sm ${
+        className={`om-code-pre text-sm ${
           state.wrap ? "whitespace-pre-wrap break-words" : "overflow-x-auto whitespace-pre"
         }`}
       >
@@ -388,14 +388,14 @@ function Pre({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
 
   return (
     <>
-      <div className="kp-code-block my-6 overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)]">
+      <div className="om-code-block my-6 overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]">
         {toolbar}
         {body}
       </div>
       {/* 最大化 overlay：fixed 全屏，Esc 还原 */}
       {state.maximized && (
         <div
-          className="fixed inset-0 z-[100] flex flex-col bg-[var(--kp-bg)]"
+          className="fixed inset-0 z-[100] flex flex-col bg-[var(--om-bg)]"
           role="dialog"
           aria-modal="true"
           aria-label="代码最大化视图"
@@ -448,7 +448,7 @@ function rehypeNormalizeCustomTags() {
       } else if (!HTML5_TAGS.has(el.tagName) && !CUSTOM_TAGS.has(el.tagName)) {
         el.properties = {
           ...el.properties,
-          className: ["kp-md-fallback", ...(Array.isArray(el.properties?.className) ? el.properties.className : el.properties?.className ? [String(el.properties.className)] : [])],
+          className: ["om-md-fallback", ...(Array.isArray(el.properties?.className) ? el.properties.className : el.properties?.className ? [String(el.properties.className)] : [])],
           "data-original-tag": el.tagName,
         };
         el.tagName = "div";
@@ -518,14 +518,14 @@ function ThinkingNode({
   return (
     <aside
       {...props}
-      className="my-4 rounded-xl border border-[var(--kp-brand)]/20 bg-[var(--kp-brand)]/5 px-4 py-3 not-prose"
+      className="my-4 rounded-xl border border-[var(--om-brand)]/20 bg-[var(--om-brand)]/5 px-4 py-3 not-prose"
     >
       {category && (
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--kp-brand-deep)]">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--om-brand-deep)]">
           {category}
         </div>
       )}
-      <div className="text-sm leading-relaxed text-[var(--kp-text-2)]">{children}</div>
+      <div className="text-sm leading-relaxed text-[var(--om-text-2)]">{children}</div>
     </aside>
   );
 }
@@ -580,7 +580,7 @@ export const PostContent = memo(function PostContent({
             <img
               src={resolveAssetUrl(src, postSlug)}
               alt={alt || ""}
-              className="rounded-xl border border-[var(--kp-divider)]"
+              className="rounded-xl border border-[var(--om-divider)]"
               loading="lazy"
             />
           );
@@ -605,7 +605,7 @@ export const PostContent = memo(function PostContent({
           }
 
           return (
-            <code className="kp-inline-code" {...props}>
+            <code className="om-inline-code" {...props}>
               {children}
             </code>
           );
@@ -614,7 +614,7 @@ export const PostContent = memo(function PostContent({
         pre: Pre as Components["pre"],
         // 用 div 代替 p：避免 display 公式 / 代码块等块级结构落入 <p> 触发 hydration
         p: ({ children, className, ...props }: ComponentPropsWithoutRef<"div"> & { node?: unknown }) => (
-          <div className={["kp-md-p", className].filter(Boolean).join(" ")} {...props}>
+          <div className={["om-md-p", className].filter(Boolean).join(" ")} {...props}>
             {children}
           </div>
         ),
@@ -632,7 +632,7 @@ export const PostContent = memo(function PostContent({
         ),
         kbd: ({ children, ...props }: ComponentPropsWithoutRef<"kbd"> & { node?: unknown }) => (
           <kbd
-            className="rounded border border-[var(--kp-divider)] bg-[var(--kp-bg-soft)] px-1.5 py-0.5 font-mono text-xs shadow-xs text-[var(--kp-text-1)]"
+            className="rounded border border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-1.5 py-0.5 font-mono text-xs shadow-xs text-[var(--om-text-1)]"
             {...props}
           >
             {children}
@@ -648,7 +648,7 @@ export const PostContent = memo(function PostContent({
               : undefined;
           if (!annotationType) {
             return (
-              <mark className="rounded-sm bg-[var(--kp-brand-soft)] px-1 py-0.5 text-inherit" {...props}>
+              <mark className="rounded-sm bg-[var(--om-brand-soft)] px-1 py-0.5 text-inherit" {...props}>
                 {children}
               </mark>
             );
@@ -719,7 +719,7 @@ export const PostContent = memo(function PostContent({
             <video
               {...props}
               src={resolved}
-              className="my-6 aspect-video w-full overflow-hidden rounded-xl border border-[var(--kp-divider)] bg-black"
+              className="my-6 aspect-video w-full overflow-hidden rounded-xl border border-[var(--om-divider)] bg-black"
               controls
               playsInline
               preload="metadata"
@@ -734,7 +734,7 @@ export const PostContent = memo(function PostContent({
 
   return (
     <div
-      className={cn("prose prose-stone dark:prose-invert max-w-none kp-post-content", className)}
+      className={cn("prose prose-stone dark:prose-invert max-w-none om-post-content", className)}
       spellCheck={false}
     >
       <ReactMarkdown

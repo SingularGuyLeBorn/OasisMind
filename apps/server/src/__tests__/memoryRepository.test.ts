@@ -28,7 +28,7 @@ import {
   MEMORY_TYPES,
   memoryAgentScope,
   memoryWorkspaceScope,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 const RUN = `w5test-${Date.now()}`;
 const DAY_MS = 86_400_000;

@@ -9,7 +9,7 @@ import { catchUnlessCancelled } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { ChevronLeft, Plus, ToggleLeft, ToggleRight, Zap } from "lucide-react";
-import type { Trigger } from "@knowpilot/shared";
+import type { Trigger } from "@oasismind/shared";
 import { useTrigger, useTask, useAgent } from "@/lib/hooks";
 import { useCardDensity } from "@/lib/useCardDensity";
 import {
@@ -179,23 +179,23 @@ export default function TriggersPage() {
         <button
           type="button"
           onClick={() => setView("list")}
-          className="flex items-center gap-1 text-sm text-[var(--kp-text-3)] hover:text-[var(--kp-text-1)]"
+          className="flex items-center gap-1 text-sm text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
         >
           <ChevronLeft className="h-4 w-4" />
           返回列表
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-[var(--kp-text-1)]">
+          <h1 className="text-2xl font-bold text-[var(--om-text-1)]">
             {editingId ? "编辑触发器" : "新建触发器"}
           </h1>
-          <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+          <p className="mt-1 text-sm text-[var(--om-text-3)]">
             事件发生时自动唤醒 Agent 或执行 Task。FileChange 的事件源形如 Entity.Action（底层仍为 entity.action）。
           </p>
         </div>
 
-        <div className="max-w-2xl space-y-4 rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-5 md:p-6">
+        <div className="max-w-2xl space-y-4 rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-5 md:p-6">
           <div>
-            <label className="mb-1 block text-xs text-[var(--kp-text-3)]">名称</label>
+            <label className="mb-1 block text-xs text-[var(--om-text-3)]">名称</label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -204,7 +204,7 @@ export default function TriggersPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-[var(--kp-text-3)]">类型</label>
+              <label className="mb-1 block text-xs text-[var(--om-text-3)]">类型</label>
               <KpSelect
                 value={form.type}
                 onChange={(v) => setForm({ ...form, type: v as TriggerForm["type"] })}
@@ -214,7 +214,7 @@ export default function TriggersPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-[var(--kp-text-3)]">动作</label>
+              <label className="mb-1 block text-xs text-[var(--om-text-3)]">动作</label>
               <KpSelect
                 value={form.actionType}
                 onChange={(v) =>
@@ -231,7 +231,7 @@ export default function TriggersPage() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--kp-text-3)]">
+            <label className="mb-1 block text-xs text-[var(--om-text-3)]">
               {form.type === "cron" ? "Cron 表达式" : form.type === "webhook" ? "Webhook 路径/密钥" : "事件源"}
             </label>
             {form.type === "file_change" ? (
@@ -258,7 +258,7 @@ export default function TriggersPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--kp-text-3)]">
+            <label className="mb-1 block text-xs text-[var(--om-text-3)]">
               动作目标（{form.actionType === "run_task" ? "Task" : "Agent"}）
             </label>
             {actionOptions.length === 0 ? (
@@ -275,12 +275,12 @@ export default function TriggersPage() {
               />
             )}
           </div>
-          <label className="flex items-center gap-2 text-xs text-[var(--kp-text-2)]">
+          <label className="flex items-center gap-2 text-xs text-[var(--om-text-2)]">
             <input
               type="checkbox"
               checked={form.enabled}
               onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-              className="h-4 w-4 rounded border-[var(--kp-divider)]"
+              className="h-4 w-4 rounded border-[var(--om-divider)]"
             />
             创建后立即启用
           </label>
@@ -311,8 +311,8 @@ export default function TriggersPage() {
         showDensityToggle
       />
 
-      <div className="rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] p-4 text-xs text-[var(--kp-text-3)]">
-        <p className="mb-1 font-semibold text-[var(--kp-text-2)]">常用事件源</p>
+      <div className="rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] p-4 text-xs text-[var(--om-text-3)]">
+        <p className="mb-1 font-semibold text-[var(--om-text-2)]">常用事件源</p>
         <code className="text-[10px]">{EVENT_SOURCES.map(toPascalCaseId).join(" · ")}</code>
       </div>
 
@@ -343,27 +343,27 @@ export default function TriggersPage() {
                   transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 },
                 }}
                 className={cn(
-                  "group rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] transition-all hover:shadow-lg",
+                  "group rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] transition-all hover:shadow-lg",
                   density === "compact" ? "p-3" : "p-5",
                 )}
               >
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-bold text-[var(--kp-text-1)]">{trigger.name}</h3>
-                    <p className="mt-1 text-[10px] text-[var(--kp-text-3)]">
+                    <h3 className="font-bold text-[var(--om-text-1)]">{trigger.name}</h3>
+                    <p className="mt-1 text-[10px] text-[var(--om-text-3)]">
                       {toPascalCaseId(trigger.type)} · {toPascalCaseId(trigger.actionType)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleEnabled(trigger)}
-                    className="flex items-center gap-1 text-xs text-[var(--kp-brand-deep)]"
+                    className="flex items-center gap-1 text-xs text-[var(--om-brand-deep)]"
                     aria-label={trigger.enabled ? "禁用" : "启用"}
                   >
                     {trigger.enabled ? (
                       <ToggleRight className="h-5 w-5 text-green-500" />
                     ) : (
-                      <ToggleLeft className="h-5 w-5 text-[var(--kp-text-3)]" />
+                      <ToggleLeft className="h-5 w-5 text-[var(--om-text-3)]" />
                     )}
                     {trigger.enabled ? "已启用" : "已禁用"}
                   </button>
@@ -371,25 +371,25 @@ export default function TriggersPage() {
 
                 <div className="space-y-2 text-xs">
                   <div>
-                    <span className="text-[var(--kp-text-3)]">事件源 </span>
-                    <code className="rounded bg-[var(--kp-bg-mute)] px-1.5 py-0.5 font-mono">
+                    <span className="text-[var(--om-text-3)]">事件源 </span>
+                    <code className="rounded bg-[var(--om-bg-mute)] px-1.5 py-0.5 font-mono">
                       {toPascalCaseId(trigger.source)}
                     </code>
                   </div>
                   <div>
-                    <span className="text-[var(--kp-text-3)]">动作目标 </span>
-                    <span className="rounded bg-[var(--kp-bg-mute)] px-1.5 py-0.5 text-[10px]">
+                    <span className="text-[var(--om-text-3)]">动作目标 </span>
+                    <span className="rounded bg-[var(--om-bg-mute)] px-1.5 py-0.5 text-[10px]">
                       {actionLabelById.get(trigger.actionId) ||
                         (trigger.actionType === "run_task" ? "未知任务" : "未知 Agent")}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2 border-t border-[var(--kp-divider-light)] pt-3">
+                <div className="mt-4 flex justify-end gap-2 border-t border-[var(--om-divider-light)] pt-3">
                   <button
                     type="button"
                     onClick={() => openEdit(trigger)}
-                    className="rounded px-2 py-1 text-xs text-[var(--kp-brand-deep)] hover:bg-[var(--kp-brand-soft)]"
+                    className="rounded px-2 py-1 text-xs text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
                   >
                     编辑
                   </button>

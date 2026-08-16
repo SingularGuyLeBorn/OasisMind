@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { analyticsDashboardSchema } from "@knowpilot/shared";
+import { analyticsDashboardSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { getCachedAnalyticsDashboard } from "../analytics.js";
 

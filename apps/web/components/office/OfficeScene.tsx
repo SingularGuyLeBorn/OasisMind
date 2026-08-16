@@ -853,7 +853,7 @@ function ArchitectureChalkboard({
                 className="h-full w-full object-contain"
               />
             </div>
-            <div className="kp-scroll-hidden min-h-0 overflow-y-auto">
+            <div className="om-scroll-hidden min-h-0 overflow-y-auto">
               <OfficeRichMd content={ARCHITECTURE_BOARD.markdown} compact />
             </div>
           </div>

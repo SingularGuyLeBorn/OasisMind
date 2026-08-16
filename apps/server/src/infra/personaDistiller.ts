@@ -19,7 +19,7 @@ import {
   MEMORY_TYPES,
   MEMORY_SCOPE_GLOBAL,
   PERSONA_DISTILL_MIN_INTERVAL_MS,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { createMemoryRepository, type MemoryItem } from "./memoryRepository.js";

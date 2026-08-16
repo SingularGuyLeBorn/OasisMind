@@ -139,11 +139,11 @@ function formatWhen(d: Date | string | null | undefined): string {
 
 function StatusDot({ status }: { status: string | null | undefined }) {
   if (!status) {
-    return <span className="kp-badge kp-badge-info">待命</span>;
+    return <span className="om-badge om-badge-info">待命</span>;
   }
   if (status === "running") {
     return (
-      <span className="kp-badge kp-badge-info">
+      <span className="om-badge om-badge-info">
         <Loader2 className="h-3 w-3 animate-spin" />
         运行中
       </span>
@@ -151,7 +151,7 @@ function StatusDot({ status }: { status: string | null | undefined }) {
   }
   if (status === "success") {
     return (
-      <span className="kp-badge kp-badge-success">
+      <span className="om-badge om-badge-success">
         <CheckCircle2 className="h-3 w-3" />
         成功
       </span>
@@ -159,13 +159,13 @@ function StatusDot({ status }: { status: string | null | undefined }) {
   }
   if (status === "failed") {
     return (
-      <span className="kp-badge kp-badge-danger">
+      <span className="om-badge om-badge-danger">
         <XCircle className="h-3 w-3" />
         失败
       </span>
     );
   }
-  return <span className="kp-badge kp-badge-warning">{toPascalCaseId(status)}</span>;
+  return <span className="om-badge om-badge-warning">{toPascalCaseId(status)}</span>;
 }
 
 function ConfigRow({
@@ -178,14 +178,14 @@ function ConfigRow({
   mono?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-3 border-b border-[var(--kp-divider-light)] py-2.5 last:border-b-0">
-      <dt className="pt-0.5 text-[11px] font-semibold tracking-wide text-[var(--kp-text-3)]">
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-3 border-b border-[var(--om-divider-light)] py-2.5 last:border-b-0">
+      <dt className="pt-0.5 text-[11px] font-semibold tracking-wide text-[var(--om-text-3)]">
         {label}
       </dt>
       <dd
         className={cn(
-          "min-w-0 break-words text-sm text-[var(--kp-text-1)]",
-          mono && "font-mono text-xs text-[var(--kp-text-2)]",
+          "min-w-0 break-words text-sm text-[var(--om-text-1)]",
+          mono && "font-mono text-xs text-[var(--om-text-2)]",
         )}
       >
         {children}
@@ -206,13 +206,13 @@ function PromptPreview({
   return (
     <div
       className={cn(
-        "h-[11.4rem] overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3.5 py-3",
+        "h-[11.4rem] overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3.5 py-3",
         className,
       )}
     >
       <PostContent
         content={md}
-        className="prose-sm max-w-none break-words text-[var(--kp-text-1)] [&_h1]:mt-0 [&_h1]:text-base [&_h2]:mt-3 [&_h2]:text-sm [&_h3]:text-sm [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:text-[11px] [&_code]:break-all [&_code]:text-[11px]"
+        className="prose-sm max-w-none break-words text-[var(--om-text-1)] [&_h1]:mt-0 [&_h1]:text-base [&_h2]:mt-3 [&_h2]:text-sm [&_h3]:text-sm [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:text-[11px] [&_code]:break-all [&_code]:text-[11px]"
       />
     </div>
   );
@@ -436,35 +436,35 @@ export default function AgentCronPage() {
 
   return (
     <AdminPage>
-      <div className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--kp-divider)]">
+      <div className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--om-divider)]">
         <div
           className="absolute inset-0 opacity-90"
           style={{
             background:
-              "radial-gradient(120% 80% at 10% 0%, color-mix(in srgb, var(--kp-brand) 28%, transparent), transparent 55%)," +
-              "radial-gradient(90% 70% at 90% 20%, color-mix(in srgb, var(--kp-brand-deep) 18%, transparent), transparent 50%)," +
-              "linear-gradient(165deg, var(--kp-bg-alt), var(--kp-bg))",
+              "radial-gradient(120% 80% at 10% 0%, color-mix(in srgb, var(--om-brand) 28%, transparent), transparent 55%)," +
+              "radial-gradient(90% 70% at 90% 20%, color-mix(in srgb, var(--om-brand-deep) 18%, transparent), transparent 50%)," +
+              "linear-gradient(165deg, var(--om-bg-alt), var(--om-bg))",
           }}
         />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 1px 1px, var(--kp-brand-deep) 1px, transparent 0)",
+              "radial-gradient(circle at 1px 1px, var(--om-brand-deep) 1px, transparent 0)",
             backgroundSize: "22px 22px",
           }}
         />
         <div className="relative flex flex-col gap-6 px-6 py-8 md:flex-row md:items-end md:justify-between md:px-8">
           <div className="max-w-xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--kp-divider)] bg-[var(--kp-bg)]/60 px-3 py-1 text-[11px] font-medium text-[var(--kp-brand-deep)] backdrop-blur">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--om-divider)] bg-[var(--om-bg)]/60 px-3 py-1 text-[11px] font-medium text-[var(--om-brand-deep)] backdrop-blur">
               <AlarmClock className="h-3.5 w-3.5" />
               Agent Cron · Briefing → Goal
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-[var(--kp-text-1)]">
+              <h1 className="text-3xl font-bold tracking-tight text-[var(--om-text-1)]">
                 定时节律
               </h1>
-              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[var(--kp-text-3)]">
+              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[var(--om-text-3)]">
                 到点新建 briefing 会话，摸清现状后 spawn goal 执行。与心跳、Triggers 正交——这里只管 Agent 自设定时。
               </p>
             </div>
@@ -508,13 +508,13 @@ export default function AgentCronPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...spring, delay: i * 0.04 }}
-            className="kp-card-premium kp-lift rounded-2xl p-4"
+            className="om-card-premium om-lift rounded-2xl p-4"
           >
-            <div className="flex items-center gap-2 text-[var(--kp-text-3)]">
+            <div className="flex items-center gap-2 text-[var(--om-text-3)]">
               <s.icon className="h-4 w-4" />
               <span className="text-xs font-medium">{s.label}</span>
             </div>
-            <p className="kp-stat-number mt-2">{s.value}</p>
+            <p className="om-stat-number mt-2">{s.value}</p>
           </motion.div>
         ))}
       </div>
@@ -534,15 +534,15 @@ export default function AgentCronPage() {
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
               filter === k
-                ? "bg-[var(--kp-brand-deep)] text-[var(--kp-bg)]"
-                : "bg-[var(--kp-bg-soft)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                ? "bg-[var(--om-brand-deep)] text-[var(--om-bg)]"
+                : "bg-[var(--om-bg-soft)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
             )}
           >
             {label}
           </button>
         ))}
         {fireStatusHint ? (
-          <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-[var(--kp-brand-deep)]">
+          <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-[var(--om-brand-deep)]">
             {awaitingFire && !jumpAskOpen ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : null}
@@ -577,27 +577,27 @@ export default function AgentCronPage() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ ...spring, delay: Math.min(idx * 0.03, 0.2) }}
                   className={cn(
-                    "kp-card-premium group relative overflow-hidden rounded-2xl p-5",
+                    "om-card-premium group relative overflow-hidden rounded-2xl p-5",
                     !row.enabled && "opacity-75",
                   )}
                 >
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-6">
                     {/* 节律摘要 */}
-                    <div className="flex shrink-0 flex-col items-center justify-center rounded-2xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg-alt)] px-4 py-5 lg:w-40">
+                    <div className="flex shrink-0 flex-col items-center justify-center rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] px-4 py-5 lg:w-40">
                       <div
                         className={cn(
                           "relative flex h-24 w-24 items-center justify-center rounded-full",
                           row.enabled
-                            ? "bg-[color-mix(in_srgb,var(--kp-brand)_16%,transparent)]"
-                            : "bg-[var(--kp-bg-soft)]",
+                            ? "bg-[color-mix(in_srgb,var(--om-brand)_16%,transparent)]"
+                            : "bg-[var(--om-bg-soft)]",
                         )}
                       >
                         <div
                           className={cn(
                             "absolute inset-2 rounded-full border-2 border-dashed",
                             row.enabled
-                              ? "border-[var(--kp-brand)] animate-[spin_28s_linear_infinite]"
-                              : "border-[var(--kp-divider)]",
+                              ? "border-[var(--om-brand)] animate-[spin_28s_linear_infinite]"
+                              : "border-[var(--om-divider)]",
                           )}
                         />
                         <div className="relative text-center">
@@ -605,16 +605,16 @@ export default function AgentCronPage() {
                             className={cn(
                               "mx-auto h-5 w-5",
                               row.enabled
-                                ? "text-[var(--kp-brand-deep)]"
-                                : "text-[var(--kp-text-3)]",
+                                ? "text-[var(--om-brand-deep)]"
+                                : "text-[var(--om-text-3)]",
                             )}
                           />
-                          <p className="mt-1 max-w-[5rem] text-[11px] font-semibold leading-tight text-[var(--kp-text-1)]">
+                          <p className="mt-1 max-w-[5rem] text-[11px] font-semibold leading-tight text-[var(--om-text-1)]">
                             {describeCron(row.cron)}
                           </p>
                         </div>
                       </div>
-                      <code className="mt-3 rounded-md bg-[var(--kp-bg)] px-2 py-0.5 font-mono text-[10px] text-[var(--kp-text-3)]">
+                      <code className="mt-3 rounded-md bg-[var(--om-bg)] px-2 py-0.5 font-mono text-[10px] text-[var(--om-text-3)]">
                         {row.cron}
                       </code>
                     </div>
@@ -623,42 +623,42 @@ export default function AgentCronPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <h2 className="text-lg font-semibold tracking-tight text-[var(--kp-text-1)]">
+                          <h2 className="text-lg font-semibold tracking-tight text-[var(--om-text-1)]">
                             {row.name}
                           </h2>
-                          <p className="mt-0.5 text-[11px] text-[var(--kp-text-3)]">
+                          <p className="mt-0.5 text-[11px] text-[var(--om-text-3)]">
                             节律配置 · Briefing → SessionSpawnGoal
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {row.enabled ? (
-                            <span className="kp-badge kp-badge-success">启用</span>
+                            <span className="om-badge om-badge-success">启用</span>
                           ) : (
-                            <span className="kp-badge kp-badge-warning">暂停</span>
+                            <span className="om-badge om-badge-warning">暂停</span>
                           )}
                           <StatusDot status={row.lastRunStatus} />
                         </div>
                       </div>
 
-                      <dl className="mt-3 rounded-xl border border-[var(--kp-divider-light)] bg-[var(--kp-bg)]/40 px-3.5">
+                      <dl className="mt-3 rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)]/40 px-3.5">
                         <ConfigRow label="Agent">
                           <span className="inline-flex items-center gap-1.5">
-                            <Bot className="h-3.5 w-3.5 text-[var(--kp-text-3)]" />
+                            <Bot className="h-3.5 w-3.5 text-[var(--om-text-3)]" />
                             {row.agentName}
                             {row.agentTier ? (
-                              <span className="text-[var(--kp-text-3)]">· {row.agentTier}</span>
+                              <span className="text-[var(--om-text-3)]">· {row.agentTier}</span>
                             ) : null}
                           </span>
                         </ConfigRow>
                         <ConfigRow label="频率">
                           {describeCron(row.cron)}
-                          <span className="ml-2 font-mono text-[11px] text-[var(--kp-text-3)]">
+                          <span className="ml-2 font-mono text-[11px] text-[var(--om-text-3)]">
                             {row.cron}
                           </span>
                         </ConfigRow>
                         <ConfigRow label="Bus" mono>
                           {row.busPath || (
-                            <span className="font-sans text-[var(--kp-text-3)]">未设置</span>
+                            <span className="font-sans text-[var(--om-text-3)]">未设置</span>
                           )}
                         </ConfigRow>
                         <ConfigRow label="上次运行">
@@ -667,7 +667,7 @@ export default function AgentCronPage() {
                             {row.lastSessionId ? (
                               <Link
                                 href={`/chat?sessionId=${row.lastSessionId}`}
-                                className="text-[var(--kp-brand-deep)] underline-offset-2 hover:underline"
+                                className="text-[var(--om-brand-deep)] underline-offset-2 hover:underline"
                               >
                                 打开会话
                               </Link>
@@ -677,10 +677,10 @@ export default function AgentCronPage() {
                       </dl>
 
                       <div className="mt-4 min-w-0">
-                        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[var(--kp-text-3)]">
+                        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[var(--om-text-3)]">
                           <FileCode2 className="h-3.5 w-3.5" />
                           Briefing Prompt
-                          <span className="font-normal text-[var(--kp-text-3)]">· Markdown</span>
+                          <span className="font-normal text-[var(--om-text-3)]">· Markdown</span>
                         </div>
                         <PromptPreview prompt={row.prompt} />
                       </div>
@@ -780,26 +780,26 @@ export default function AgentCronPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
               transition={spring}
-              className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-5 shadow-xl sm:p-6"
+              className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-5 shadow-xl sm:p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h2
                 id="cron-composer-title"
-                className="text-lg font-semibold text-[var(--kp-text-1)]"
+                className="text-lg font-semibold text-[var(--om-text-1)]"
               >
                 {form.name && items.some((i) => i.name === form.name && i.agentId === form.agentId)
                   ? "编辑节律配置"
                   : "新建节律配置"}
               </h2>
-              <p className="mt-1 text-xs text-[var(--kp-text-3)]">
+              <p className="mt-1 text-xs text-[var(--om-text-3)]">
                 同 Agent + 同名会覆盖。Prompt 请用 Markdown；到点开 briefing，须调用{" "}
-                <code className="rounded bg-[var(--kp-bg-soft)] px-1">SessionSpawnGoal</code>。
+                <code className="rounded bg-[var(--om-bg-soft)] px-1">SessionSpawnGoal</code>。
               </p>
 
               <div className="mt-4 space-y-4">
-                <div className="rounded-xl border border-[var(--kp-divider-light)] px-3.5">
-                  <label className="block border-b border-[var(--kp-divider-light)] py-3">
-                    <span className="text-[11px] font-semibold text-[var(--kp-text-3)]">Agent</span>
+                <div className="rounded-xl border border-[var(--om-divider-light)] px-3.5">
+                  <label className="block border-b border-[var(--om-divider-light)] py-3">
+                    <span className="text-[11px] font-semibold text-[var(--om-text-3)]">Agent</span>
                     <div className="mt-1.5">
                       <KpSelect
                         value={form.agentId}
@@ -809,8 +809,8 @@ export default function AgentCronPage() {
                       />
                     </div>
                   </label>
-                  <label className="block border-b border-[var(--kp-divider-light)] py-3">
-                    <span className="text-[11px] font-semibold text-[var(--kp-text-3)]">任务名</span>
+                  <label className="block border-b border-[var(--om-divider-light)] py-3">
+                    <span className="text-[11px] font-semibold text-[var(--om-text-3)]">任务名</span>
                     <Input
                       className="mt-1.5"
                       value={form.name}
@@ -818,8 +818,8 @@ export default function AgentCronPage() {
                       placeholder="zhihu-llm-interview-daily"
                     />
                   </label>
-                  <div className="border-b border-[var(--kp-divider-light)] py-3">
-                    <span className="text-[11px] font-semibold text-[var(--kp-text-3)]">频率</span>
+                  <div className="border-b border-[var(--om-divider-light)] py-3">
+                    <span className="text-[11px] font-semibold text-[var(--om-text-3)]">频率</span>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {CRON_PRESETS.map((p) => (
                         <button
@@ -829,8 +829,8 @@ export default function AgentCronPage() {
                           className={cn(
                             "rounded-full px-2.5 py-1 text-[11px] transition-colors",
                             form.cron === p.value
-                              ? "bg-[var(--kp-brand-deep)] text-[var(--kp-bg)]"
-                              : "bg-[var(--kp-bg-soft)] text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+                              ? "bg-[var(--om-brand-deep)] text-[var(--om-bg)]"
+                              : "bg-[var(--om-bg-soft)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
                           )}
                         >
                           {p.label}
@@ -843,12 +843,12 @@ export default function AgentCronPage() {
                       onChange={(e) => setForm((f) => ({ ...f, cron: e.target.value }))}
                       placeholder="0 8 * * *"
                     />
-                    <span className="mt-1 block text-[11px] text-[var(--kp-text-3)]">
+                    <span className="mt-1 block text-[11px] text-[var(--om-text-3)]">
                       {describeCron(form.cron)} · 本机时区
                     </span>
                   </div>
                   <label className="block py-3">
-                    <span className="text-[11px] font-semibold text-[var(--kp-text-3)]">
+                    <span className="text-[11px] font-semibold text-[var(--om-text-3)]">
                       Bus 文件（可选）
                     </span>
                     <Input
@@ -862,18 +862,18 @@ export default function AgentCronPage() {
 
                 <div>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-[var(--kp-text-3)]">
+                    <span className="text-[11px] font-semibold text-[var(--om-text-3)]">
                       Briefing Prompt · Markdown
                     </span>
-                    <div className="flex rounded-lg border border-[var(--kp-divider)] p-0.5">
+                    <div className="flex rounded-lg border border-[var(--om-divider)] p-0.5">
                       <button
                         type="button"
                         onClick={() => setPromptTab("edit")}
                         className={cn(
                           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium",
                           promptTab === "edit"
-                            ? "bg-[var(--kp-brand-deep)] text-[var(--kp-bg)]"
-                            : "text-[var(--kp-text-2)]",
+                            ? "bg-[var(--om-brand-deep)] text-[var(--om-bg)]"
+                            : "text-[var(--om-text-2)]",
                         )}
                       >
                         <PenLine className="h-3 w-3" />
@@ -885,8 +885,8 @@ export default function AgentCronPage() {
                         className={cn(
                           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium",
                           promptTab === "preview"
-                            ? "bg-[var(--kp-brand-deep)] text-[var(--kp-bg)]"
-                            : "text-[var(--kp-text-2)]",
+                            ? "bg-[var(--om-brand-deep)] text-[var(--om-bg)]"
+                            : "text-[var(--om-text-2)]",
                         )}
                       >
                         <Eye className="h-3 w-3" />
@@ -896,7 +896,7 @@ export default function AgentCronPage() {
                   </div>
                   {promptTab === "edit" ? (
                     <textarea
-                      className="min-h-[220px] w-full resize-y rounded-xl border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] px-3 py-2 font-mono text-xs leading-relaxed text-[var(--kp-text-1)] outline-none focus:border-[var(--kp-brand)]"
+                      className="min-h-[220px] w-full resize-y rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 font-mono text-xs leading-relaxed text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)]"
                       value={form.prompt}
                       onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
                       placeholder={PROMPT_PLACEHOLDER}
@@ -910,12 +910,12 @@ export default function AgentCronPage() {
                   )}
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-[var(--kp-text-2)]">
+                <label className="flex items-center gap-2 text-xs text-[var(--om-text-2)]">
                   <input
                     type="checkbox"
                     checked={form.enabled}
                     onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
-                    className="rounded border-[var(--kp-divider)]"
+                    className="rounded border-[var(--om-divider)]"
                   />
                   保存后立即启用
                 </label>

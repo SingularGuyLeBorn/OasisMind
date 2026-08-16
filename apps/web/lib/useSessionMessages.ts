@@ -11,7 +11,7 @@
  */
 
 import { useSyncExternalStore, useCallback, useRef, useEffect, useState } from "react";
-import type { ChatMessage } from "@knowpilot/shared";
+import type { ChatMessage } from "@oasismind/shared";
 import { trpc, warnUnlessCancelled } from "@/lib/trpc";
 import { getAuthToken } from "@/lib/auth";
 import { streamLifecycleActions } from "@/lib/useStreamLifecycle";

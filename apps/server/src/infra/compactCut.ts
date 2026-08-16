@@ -11,7 +11,7 @@ import type { LlmMessage } from "./llmClient.js";
 /** 默认保留最近约 20k tokens（字符粗估 /4） */
 export const DEFAULT_KEEP_RECENT_TOKENS = 20_000;
 
-const DETAILS_START = "<!--kp-compact-details:";
+const DETAILS_START = "<!--om-compact-details:";
 const DETAILS_END = "-->";
 
 export type CompactFileDetails = {

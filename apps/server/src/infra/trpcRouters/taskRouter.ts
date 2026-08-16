@@ -5,7 +5,7 @@
 import { z } from "zod";
 import {
   createTaskSchema, updateTaskSchema, listTasksSchema, runTaskSchema, deleteByIdWithApprovalSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { withApprovalGuard } from "./withApprovalGuard.js";
 

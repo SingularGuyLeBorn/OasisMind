@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRunSchema, updateRunSchema, listRunsSchema } from "@knowpilot/shared";
+import { createRunSchema, updateRunSchema, listRunsSchema } from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const runRouter = router({

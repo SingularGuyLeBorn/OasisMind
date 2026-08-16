@@ -32,10 +32,10 @@ describe("proxyDispatcher loopback 绕过", () => {
   });
 
   afterEach(() => {
-    delete process.env.KP_HTTPS_PROXY;
+    delete process.env.OM_HTTPS_PROXY;
     delete process.env.HTTPS_PROXY;
     delete process.env.HTTP_PROXY;
-    delete process.env.KP_HTTP_PROXY;
+    delete process.env.OM_HTTP_PROXY;
     __resetProxyForTests();
   });
 
@@ -79,7 +79,7 @@ describe("proxyDispatcher loopback 绕过", () => {
 
   it("initGlobalProxy + EnvHttpProxyAgent 对本机 get_login_info 直连成功", async (ctx) => {
     if (!onebotUp) return ctx.skip();
-    process.env.KP_HTTPS_PROXY = "http://127.0.0.1:7890";
+    process.env.OM_HTTPS_PROXY = "http://127.0.0.1:7890";
     __resetProxyForTests();
     const { proxyUrl } = initGlobalProxy();
     expect(proxyUrl).toBe("http://127.0.0.1:7890");

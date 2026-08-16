@@ -43,14 +43,14 @@ export async function buildRuntimeContextBlock(input: {
   const login = loginNames.length ? loginNames.join(", ") : "none";
   const budget = input.budget ?? formatBudgetLine(input.ctx);
   return [
-    "<!-- kp-runtime-context -->",
+    "<!-- om-runtime-context -->",
     "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.",
     "",
     `workspace: ${workspace}`,
     `fs-policy: ${fsPolicy}`,
     `login: ${login}`,
     `budget: ${budget}`,
-    "<!-- /kp-runtime-context -->",
+    "<!-- /om-runtime-context -->",
   ].join("\n");
 }
 

@@ -9,7 +9,7 @@ import {
   LOCAL_LLM_PROVIDER_LABELS,
   toLocalModelRef,
   type LocalLlmProviderId,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 
 export interface LocalLlmBackendStatus {

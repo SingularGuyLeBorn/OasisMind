@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import type { AsyncQueueStats } from "@knowpilot/server";
+import type { AsyncQueueStats } from "@oasismind/server";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 
 const logQueryCatch = catchUnlessCancelled("[useChatSseSubscriptions] query");
@@ -283,7 +283,7 @@ export function useChatSseSubscriptions({
           .then((page) => {
             sessionMessagesStore.hydrateSessionMessages(
               targetSid,
-              (page.items ?? []) as import("@knowpilot/shared").ChatMessage[],
+              (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
               "view",
             );
           })
@@ -480,7 +480,7 @@ export function useChatSseSubscriptions({
             .then((page) => {
               sessionMessagesStore.hydrateSessionMessages(
                 sid,
-                (page.items ?? []) as import("@knowpilot/shared").ChatMessage[],
+                (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
                 "view",
               );
             })

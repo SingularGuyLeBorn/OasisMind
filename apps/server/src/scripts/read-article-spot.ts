@@ -1,9 +1,9 @@
 /**
  * 单 URL read_article 快速验证（真实网络，无 mock）
- * 用法: pnpm --filter @knowpilot/server read-article:spot <url>
+ * 用法: pnpm --filter @oasismind/server read-article:spot <url>
  */
 
-import { formatToolResultHint } from "@knowpilot/shared";
+import { formatToolResultHint } from "@oasismind/shared";
 import { loadRootEnv, getAppConfig } from "../infra/config.js";
 import { executeNativeTool, syncSearchEnvFromConfig } from "../infra/nativeTools.js";
 import { closeSharedBrowser } from "../infra/metablog/index.js";

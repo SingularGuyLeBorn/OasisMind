@@ -54,7 +54,7 @@ export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
             className={`relative max-h-[88vh] w-full overflow-y-auto shadow-2xl ${
               kind === "knowledge"
                 ? "max-w-2xl rounded-sm border border-[#E2E8F0] bg-[#F8FAFC] p-0"
-                : "max-w-3xl rounded-[28px] border border-white/40 bg-[color-mix(in_srgb,var(--kp-glass-bg)_92%,white)] p-5 backdrop-blur-xl sm:p-7"
+                : "max-w-3xl rounded-[28px] border border-white/40 bg-[color-mix(in_srgb,var(--om-glass-bg)_92%,white)] p-5 backdrop-blur-xl sm:p-7"
             }`}
             initial={{ y: 28, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -68,17 +68,17 @@ export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
               <>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--om-text-3)]">
                       {OFFICE_BRAND.en} · {HOTSPOT_META[hotspot].label}
                     </p>
-                    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--kp-ink)]">
+                    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--om-ink)]">
                       {titleFor(kind)}
                     </h2>
                   </div>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--kp-text-2)] transition hover:bg-black/5"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--om-text-2)] transition hover:bg-black/5"
                     aria-label="关闭"
                   >
                     <X className="h-5 w-5" />
@@ -101,7 +101,7 @@ export function OfficeOverlays({ hotspot, onClose }: OfficeOverlaysProps) {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="inline-flex items-center gap-2 rounded-full bg-[var(--kp-brand)] px-5 py-2.5 text-sm font-medium text-white shadow-md transition hover:brightness-110"
+                    className="inline-flex items-center gap-2 rounded-full bg-[var(--om-brand)] px-5 py-2.5 text-sm font-medium text-white shadow-md transition hover:brightness-110"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Back
@@ -175,13 +175,13 @@ function PaperReader({ onClose }: { onClose: () => void }) {
             <li key={g.id}>
               <Link
                 href={`/gardens/${g.id}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 transition hover:border-[var(--kp-brand)]/40 hover:shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 transition hover:border-[var(--om-brand)]/40 hover:shadow-sm"
               >
                 <div>
                   <p className="font-semibold text-[#0F172A]">{g.title}</p>
                   <p className="text-sm text-[#64748B]">{g.meta}</p>
                 </div>
-                <span className="text-xs font-medium text-[var(--kp-brand)]">{g.id}</span>
+                <span className="text-xs font-medium text-[var(--om-brand)]">{g.id}</span>
               </Link>
             </li>
           ))}
@@ -216,7 +216,7 @@ function PaperReader({ onClose }: { onClose: () => void }) {
 
 function ServerPanel() {
   return (
-    <div className="space-y-4 text-sm leading-relaxed text-[var(--kp-text-2)]">
+    <div className="space-y-4 text-sm leading-relaxed text-[var(--om-text-2)]">
       <p className="rounded-2xl bg-[#052E16] px-4 py-3 text-[#A3E635]">
         NVIDIA DGX 风格机架 · H100 / NVLink 意象。本地优先不等于没有算力想象——见微的 Agent 与
         vision / embedding 任务可以挂到本机或远端 GPU。
@@ -229,10 +229,10 @@ function ServerPanel() {
           ["原则", "密钥不进 Git · 本地落盘"],
         ].map(([k, v]) => (
           <div key={k} className="rounded-xl border border-white/50 bg-white/70 px-3 py-2">
-            <dt className="text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+            <dt className="text-[10px] font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
               {k}
             </dt>
-            <dd className="mt-0.5 font-medium text-[var(--kp-ink)]">{v}</dd>
+            <dd className="mt-0.5 font-medium text-[var(--om-ink)]">{v}</dd>
           </div>
         ))}
       </dl>
@@ -243,14 +243,14 @@ function ServerPanel() {
 function BookshelfPanel() {
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[var(--kp-text-2)]">
+      <p className="text-sm text-[var(--om-text-2)]">
         书架藏书：深度学习、Transformer、强化学习与 Agent 系统设计——和见微的运行时同频。
       </p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {BOOKSHELF_TITLES.map((t) => (
           <li
             key={t}
-            className="rounded-xl border border-white/50 bg-white/75 px-3 py-2 text-sm font-medium text-[var(--kp-ink)]"
+            className="rounded-xl border border-white/50 bg-white/75 px-3 py-2 text-sm font-medium text-[var(--om-ink)]"
           >
             {t}
           </li>
@@ -264,8 +264,8 @@ function ArchitecturePanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-[var(--kp-ink)]">{ARCHITECTURE_BOARD.title}</h3>
-        <p className="text-sm text-[var(--kp-brand)]">{ARCHITECTURE_BOARD.subtitle}</p>
+        <h3 className="text-lg font-semibold text-[var(--om-ink)]">{ARCHITECTURE_BOARD.title}</h3>
+        <p className="text-sm text-[var(--om-brand)]">{ARCHITECTURE_BOARD.subtitle}</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -288,17 +288,17 @@ function ArchitecturePanel() {
             key={b.label}
             className="flex items-start gap-3 rounded-xl border border-white/50 bg-white/75 px-3 py-2.5"
           >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--kp-brand)] text-xs font-bold text-white">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--om-brand)] text-xs font-bold text-white">
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[var(--kp-ink)]">{b.label}</p>
+              <p className="font-semibold text-[var(--om-ink)]">{b.label}</p>
               <OfficeRichMd content={b.detail} className="mt-0.5" />
             </div>
           </li>
         ))}
       </ol>
-      <p className="text-xs text-[var(--kp-text-3)]">{ARCHITECTURE_BOARD.stack.join(" · ")}</p>
+      <p className="text-xs text-[var(--om-text-3)]">{ARCHITECTURE_BOARD.stack.join(" · ")}</p>
     </div>
   );
 }
@@ -307,8 +307,8 @@ function FormulasPanel() {
   return (
     <div className="space-y-6">
       <section>
-        <p className="mb-3 text-sm font-semibold text-[var(--kp-text-1)]">桌面便签</p>
-        <p className="mb-3 text-sm text-[var(--kp-text-2)]">
+        <p className="mb-3 text-sm font-semibold text-[var(--om-text-1)]">桌面便签</p>
+        <p className="mb-3 text-sm text-[var(--om-text-2)]">
           手写备忘 / 待办 / 心情——与屏幕内容刻意不同源。
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -325,7 +325,7 @@ function FormulasPanel() {
         </div>
       </section>
       <section>
-        <p className="mb-3 text-sm font-semibold text-[var(--kp-text-1)]">带鱼屏内容墙</p>
+        <p className="mb-3 text-sm font-semibold text-[var(--om-text-1)]">带鱼屏内容墙</p>
         <div className="grid gap-4 sm:grid-cols-2">
           {MONITOR_FORMULA_CARDS.map((s) => (
             <OfficeFormulaScreen
@@ -349,7 +349,7 @@ function ProjectsPanel() {
   return (
     <div className="space-y-6">
       <section>
-        <p className="mb-3 text-sm text-[var(--kp-text-2)]">
+        <p className="mb-3 text-sm text-[var(--om-text-2)]">
           带鱼屏工作墙：运行看板 · 花园 · Attention · Swarm · HITL，主题混排。
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -365,7 +365,7 @@ function ProjectsPanel() {
       </section>
 
       <section>
-      <p className="mb-3 text-sm text-[var(--kp-text-2)]">
+      <p className="mb-3 text-sm text-[var(--om-text-2)]">
         能力矩阵：每块屏挂一条见微路由，点开即进真实页面。
       </p>
       <div className="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -381,7 +381,7 @@ function ProjectsPanel() {
             >
               {app.label.slice(0, 3)}
             </span>
-            <span className="text-[10px] text-[var(--kp-text-2)]">{app.label}</span>
+            <span className="text-[10px] text-[var(--om-text-2)]">{app.label}</span>
           </Link>
         ))}
       </div>
@@ -395,7 +395,7 @@ function ProjectsPanel() {
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
               filter === t
                 ? "bg-[#111827] text-white"
-                : "border border-[var(--kp-divider)] bg-white/70 text-[var(--kp-text-2)] hover:bg-white"
+                : "border border-[var(--om-divider)] bg-white/70 text-[var(--om-text-2)] hover:bg-white"
             }`}
           >
             {t}
@@ -414,11 +414,11 @@ function ProjectsPanel() {
             >
               {p.tag}
             </span>
-            <h3 className="mt-2 text-base font-semibold text-[var(--kp-ink)]">{p.title}</h3>
-            <p className="mt-1 text-sm text-[var(--kp-text-2)]">{p.meta}</p>
+            <h3 className="mt-2 text-base font-semibold text-[var(--om-ink)]">{p.title}</h3>
+            <p className="mt-1 text-sm text-[var(--om-text-2)]">{p.meta}</p>
             <Link
               href={p.href}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[var(--kp-brand)] px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[var(--om-brand)] px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
             >
               {p.cta}
               <ExternalLink className="h-3.5 w-3.5" />
@@ -438,19 +438,19 @@ function AboutPanel() {
         {OFFICE_BRAND.name}（{OFFICE_BRAND.en}）——{OFFICE_BRAND.tagline}。
         点击房间物件探索能力；这不只是展示页，而是连进真实路由的指挥舱。
       </p>
-      <dl className="divide-y divide-[var(--kp-divider)] rounded-2xl border border-white/50 bg-white/70">
+      <dl className="divide-y divide-[var(--om-divider)] rounded-2xl border border-white/50 bg-white/70">
         {ABOUT_FACTS.map((f) => (
           <div key={f.label} className="grid gap-1 px-4 py-3 sm:grid-cols-[100px_1fr]">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
               {f.label}
             </dt>
-            <dd className="text-sm text-[var(--kp-ink)]">{f.value}</dd>
+            <dd className="text-sm text-[var(--om-ink)]">{f.value}</dd>
           </div>
         ))}
       </dl>
       <Link
         href="/about"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--kp-brand)]"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--om-brand)]"
       >
         打开完整 About
         <ExternalLink className="h-3.5 w-3.5" />
@@ -461,18 +461,18 @@ function AboutPanel() {
 
 function JourneyPanel() {
   return (
-    <ol className="relative space-y-0 border-l-2 border-[var(--kp-brand)]/30 pl-5">
+    <ol className="relative space-y-0 border-l-2 border-[var(--om-brand)]/30 pl-5">
       {JOURNEY_STOPS.map((s) => (
         <li key={s.year} className="relative pb-5 last:pb-0">
-          <span className="absolute -left-[1.4rem] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--kp-brand)] ring-4 ring-white" />
+          <span className="absolute -left-[1.4rem] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--om-brand)] ring-4 ring-white" />
           <div className="flex flex-wrap items-baseline gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--kp-brand)]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--om-brand)]">
               {s.year}
             </p>
-            <p className="text-[11px] text-[var(--kp-text-3)]">{s.region}</p>
+            <p className="text-[11px] text-[var(--om-text-3)]">{s.region}</p>
           </div>
-          <p className="mt-0.5 font-medium text-[var(--kp-ink)]">{s.place}</p>
-          <p className="text-sm text-[var(--kp-text-2)]">{s.note}</p>
+          <p className="mt-0.5 font-medium text-[var(--om-ink)]">{s.place}</p>
+          <p className="text-sm text-[var(--om-text-2)]">{s.note}</p>
         </li>
       ))}
     </ol>
@@ -482,7 +482,7 @@ function JourneyPanel() {
 function GardenPanel() {
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-[var(--kp-text-2)]">
+      <p className="text-sm leading-relaxed text-[var(--om-text-2)]">
         绿植是数字花园的隐喻：每座花园对应{" "}
         <code className="rounded bg-black/5 px-1">content/&#123;gardenId&#125;</code>
         ，Markdown 文章是叶子，Agent 是园丁。
@@ -498,7 +498,7 @@ function GardenPanel() {
 function AgentsPanel() {
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-[var(--kp-text-2)]">
+      <p className="text-sm leading-relaxed text-[var(--om-text-2)]">
         手机支架 = 随时呼叫。超级 Agent 统筹全局，管理 Agent 守 Workspace，子 Agent 执行后
         report_back——结果唯一通道，禁止偷看子会话正文。
       </p>
@@ -514,7 +514,7 @@ function AgentsPanel() {
 
 function MoodPanel() {
   return (
-    <div className="space-y-3 text-sm leading-relaxed text-[var(--kp-text-2)]">
+    <div className="space-y-3 text-sm leading-relaxed text-[var(--om-text-2)]">
       <p>
         落地灯照亮指挥舱：浅色科技书房不是装饰，是「状态在内存、推拉结合」的工作现场——开着的面板自己动，刷新也不丢。
       </p>
@@ -529,7 +529,7 @@ function MoodPanel() {
 function FunPanel({ hotspot }: { hotspot: OfficeHotspotId }) {
   if (hotspot === "calendar") {
     return (
-      <div className="space-y-3 text-sm text-[var(--kp-text-2)]">
+      <div className="space-y-3 text-sm text-[var(--om-text-2)]">
         <p>
           台历提醒：心跳引擎按 cron 唤醒 Agent；服务重启<strong>不</strong>自动续跑僵尸任务——人工
           retry 才是安全闸。
@@ -539,7 +539,7 @@ function FunPanel({ hotspot }: { hotspot: OfficeHotspotId }) {
     );
   }
   return (
-    <div className="space-y-3 text-sm leading-relaxed text-[var(--kp-text-2)]">
+    <div className="space-y-3 text-sm leading-relaxed text-[var(--om-text-2)]">
       <p>
         角落的小伙伴说：数据在本地，密钥不进 Git，刷新也不该丢气泡。见微是常驻数字主力，不是演示页。
       </p>
@@ -554,10 +554,10 @@ function LinkCard({ href, title, desc }: { href: string; title: string; desc: st
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-white/50 bg-white/75 p-4 transition hover:border-[var(--kp-brand)]/40 hover:shadow-md"
+      className="rounded-2xl border border-white/50 bg-white/75 p-4 transition hover:border-[var(--om-brand)]/40 hover:shadow-md"
     >
-      <p className="font-semibold text-[var(--kp-ink)]">{title}</p>
-      <p className="mt-1 text-sm text-[var(--kp-text-2)]">{desc}</p>
+      <p className="font-semibold text-[var(--om-ink)]">{title}</p>
+      <p className="mt-1 text-sm text-[var(--om-text-2)]">{desc}</p>
     </Link>
   );
 }

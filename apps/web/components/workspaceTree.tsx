@@ -13,7 +13,7 @@ import { AlarmClock, Bot, Crown, HeartPulse, Loader2, Pin, ShieldCheck, Trash2 }
 import { trpc } from "@/lib/trpc";
 import { cn, formatRelativeTime, groupBySessionDate } from "@/lib/utils";
 import { AgentAvatar } from "./agentAvatar";
-import type { ChatSession } from "@knowpilot/shared";
+import type { ChatSession } from "@oasismind/shared";
 
 interface WorkspaceAgent {
   id: string;
@@ -145,7 +145,7 @@ export function WorkspaceTree({
 
   if (!currentWorkspaceId) {
     return (
-      <p className="px-2 py-4 text-center text-xs text-[var(--kp-text-3)]">
+      <p className="px-2 py-4 text-center text-xs text-[var(--om-text-3)]">
         请先选择一个 Workspace
       </p>
     );
@@ -155,11 +155,11 @@ export function WorkspaceTree({
     if (mainAgents.length === 0) {
       return (
         <div className="space-y-2 px-2 py-4 text-center">
-          <p className="text-xs text-[var(--kp-text-3)]">当前 Workspace 暂无主 Agent</p>
+          <p className="text-xs text-[var(--om-text-3)]">当前 Workspace 暂无主 Agent</p>
           <button
             type="button"
             onClick={onNewChat}
-            className="text-xs text-[var(--kp-brand-deep)] hover:underline"
+            className="text-xs text-[var(--om-brand-deep)] hover:underline"
           >
             新建对话
           </button>
@@ -174,26 +174,26 @@ export function WorkspaceTree({
       <div className="space-y-2" data-testid="workspace-tree-main">
         <div className="flex items-center gap-2 px-2 py-1.5">
           <AgentIcon tier={mainAgent.tier} className="h-4 w-4" />
-          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--kp-text-1)]">
+          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--om-text-1)]">
             {mainAgent.name}
           </span>
         </div>
 
         {isLoading && (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-[var(--kp-text-3)]" />
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--om-text-3)]" />
           </div>
         )}
 
         {!isLoading && mainGroupedSessions.length === 0 && (
-          <p className="px-2 py-4 text-center text-xs text-[var(--kp-text-3)]">
+          <p className="px-2 py-4 text-center text-xs text-[var(--om-text-3)]">
             {searchLower ? "无匹配会话" : "暂无对话"}
           </p>
         )}
 
         {mainGroupedSessions.map((group) => (
           <div key={group.key} className="mb-2">
-            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--kp-text-3)]">
+            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--om-text-3)]">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -226,7 +226,7 @@ export function WorkspaceTree({
   if (filteredSubAgents.length === 0) {
     return (
       <div className="space-y-2 px-2 py-4 text-center">
-        <p className="text-xs text-[var(--kp-text-3)]">
+        <p className="text-xs text-[var(--om-text-3)]">
           {searchLower ? "无匹配子 Agent" : "当前 Workspace 暂无子 Agent"}
         </p>
       </div>
@@ -250,8 +250,8 @@ export function WorkspaceTree({
             className={cn(
               "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left text-xs transition",
               active
-                ? "bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-                : "text-[var(--kp-text-1)] hover:bg-[var(--kp-bg-mute)]",
+                ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                : "text-[var(--om-text-1)] hover:bg-[var(--om-bg-mute)]",
               !session && "opacity-60",
             )}
           >
@@ -259,12 +259,12 @@ export function WorkspaceTree({
               <AgentAvatar id={agent.id} name={agent.name} size={16} className="rounded-full" />
               <span className="min-w-0 flex-1 truncate">{agent.autoName || agent.name}</span>
               {agent.status === "dormant" && (
-                <span className="text-[9px] text-[var(--kp-text-3)]">休眠</span>
+                <span className="text-[9px] text-[var(--om-text-3)]">休眠</span>
               )}
             </div>
             {session && (
-              <div className="flex items-center gap-1.5 pl-5 text-[11px] text-[var(--kp-text-2)]">
-                {session.isMainSession && <Pin className="h-2.5 w-2.5 shrink-0 text-[var(--kp-brand-deep)]" />}
+              <div className="flex items-center gap-1.5 pl-5 text-[11px] text-[var(--om-text-2)]">
+                {session.isMainSession && <Pin className="h-2.5 w-2.5 shrink-0 text-[var(--om-brand-deep)]" />}
                 {session.kind === "cron" && (
                   <AlarmClock className="h-2.5 w-2.5 shrink-0 text-amber-700" aria-label="定时节律" />
                 )}
@@ -272,7 +272,7 @@ export function WorkspaceTree({
                   <HeartPulse className="h-2.5 w-2.5 shrink-0 text-orange-700" aria-label="心跳" />
                 )}
                 <span className="min-w-0 flex-1 truncate">{session.autoName || session.title}</span>
-                <span className="ml-auto shrink-0 text-[9px] text-[var(--kp-text-3)]">
+                <span className="ml-auto shrink-0 text-[9px] text-[var(--om-text-3)]">
                   {formatRelativeTime(session.updatedAt)}
                 </span>
                 {onDeleteSession && (
@@ -280,7 +280,7 @@ export function WorkspaceTree({
                     role="button"
                     tabIndex={0}
                     title="删除会话"
-                    className="rounded p-0.5 text-[var(--kp-text-3)] hover:bg-red-50 hover:text-red-600"
+                    className="rounded p-0.5 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteSession(session.id);
@@ -308,7 +308,7 @@ export function WorkspaceTree({
 function AgentIcon({ tier, className }: { tier: string; className?: string }) {
   if (tier === "super") return <Crown className={cn("text-amber-500", className)} />;
   if (tier === "manager") return <ShieldCheck className={cn("text-blue-500", className)} />;
-  return <Bot className={cn("text-[var(--kp-brand-deep)]", className)} />;
+  return <Bot className={cn("text-[var(--om-brand-deep)]", className)} />;
 }
 
 function SessionRow({
@@ -337,10 +337,10 @@ function SessionRow({
       className={cn(
         "group flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[11px] transition",
         bulkMode && bulkChecked
-          ? "bg-[var(--kp-brand-soft)]/70 font-medium text-[var(--kp-brand-deep)]"
+          ? "bg-[var(--om-brand-soft)]/70 font-medium text-[var(--om-brand-deep)]"
           : active
-            ? "bg-[var(--kp-brand-soft)] font-medium text-[var(--kp-brand-deep)]"
-            : "text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]",
+            ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+            : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]",
       )}
     >
       {bulkMode && (
@@ -349,7 +349,7 @@ function SessionRow({
           checked={!!bulkChecked}
           onChange={onSelect}
           onClick={(e) => e.stopPropagation()}
-          className="h-3.5 w-3.5 shrink-0 accent-[var(--kp-brand)]"
+          className="h-3.5 w-3.5 shrink-0 accent-[var(--om-brand)]"
           aria-label={`选择会话 ${session.autoName || session.title || "新对话"}`}
           data-testid="session-bulk-checkbox"
         />
@@ -362,7 +362,7 @@ function SessionRow({
         onMouseLeave={onHoverEnd}
         className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
       >
-        {session.isMainSession && <Pin className="h-2.5 w-2.5 shrink-0 text-[var(--kp-brand-deep)]" />}
+        {session.isMainSession && <Pin className="h-2.5 w-2.5 shrink-0 text-[var(--om-brand-deep)]" />}
         {session.kind === "cron" && (
           <AlarmClock className="h-2.5 w-2.5 shrink-0 text-amber-700" aria-label="定时节律" />
         )}
@@ -370,7 +370,7 @@ function SessionRow({
           <HeartPulse className="h-2.5 w-2.5 shrink-0 text-orange-700" aria-label="心跳" />
         )}
         <span className="min-w-0 flex-1 truncate">{session.autoName || session.title || "新对话"}</span>
-        <span className="ml-auto shrink-0 text-[9px] text-[var(--kp-text-3)]">
+        <span className="ml-auto shrink-0 text-[9px] text-[var(--om-text-3)]">
           {formatRelativeTime(session.updatedAt)}
         </span>
       </button>
@@ -378,7 +378,7 @@ function SessionRow({
         <button
           type="button"
           title="删除会话"
-          className="shrink-0 rounded p-0.5 text-[var(--kp-text-3)] opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+          className="shrink-0 rounded p-0.5 text-[var(--om-text-3)] opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

@@ -11,12 +11,12 @@ import type {
   UpdateGardenInput,
   ListGardensInput,
   OperationResult,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   SEED_GARDENS,
   isValidGardenIdFormat,
   isReservedContentDir,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import {
   BaseService,
   ServiceValidationError,

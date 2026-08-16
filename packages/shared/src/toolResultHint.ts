@@ -8,12 +8,12 @@ export function formatToolTimingHint(result: unknown): string | null {
     return r.summary.trim().slice(0, 80);
   }
   // 工具结果落盘压缩卡（无正文）
-  if (r.offloaded === true || r._kp_persisted === true) {
+  if (r.offloaded === true || r._om_persisted === true) {
     const chars =
       typeof r.originalChars === "number"
         ? r.originalChars
-        : typeof r._kp_original_chars === "number"
-          ? r._kp_original_chars
+        : typeof r._om_original_chars === "number"
+          ? r._om_original_chars
           : null;
     const hits = typeof r.hitCount === "number" ? r.hitCount : null;
     const parts = ["已落盘"];

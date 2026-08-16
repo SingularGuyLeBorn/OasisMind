@@ -1,6 +1,6 @@
 /**
  * 对比直连 vs 代理下 AgentMail 是否可达，并尝试发一封测试信。
- * pnpm --filter @knowpilot/server exec tsx src/scripts/email-channel-probe.ts
+ * pnpm --filter @oasismind/server exec tsx src/scripts/email-channel-probe.ts
  */
 import { setGlobalDispatcher, ProxyAgent, Agent } from "undici";
 import { loadRootEnv } from "../infra/config.js";
@@ -11,7 +11,7 @@ const key = process.env.AGENTMAIL_API_KEY?.trim() || "";
 const inbox = process.env.AGENTMAIL_INBOX_ID?.trim() || "";
 const to = process.env.EMAIL_TO?.trim() || process.env.AGENTMAIL_ASK_TO?.trim() || "";
 const proxy =
-  process.env.KP_HTTPS_PROXY?.trim() ||
+  process.env.OM_HTTPS_PROXY?.trim() ||
   process.env.HTTPS_PROXY?.trim() ||
   process.env.HTTP_PROXY?.trim() ||
   "http://127.0.0.1:7890";
@@ -90,7 +90,7 @@ const proxyOk = await probe(`代理 ${proxy}`);
 if (proxyOk) {
   const sent = await send(`代理 ${proxy}`);
   if (sent) {
-    console.log("\n✅ 代理下 AgentMail 可发。建议在 .env 加：KP_HTTPS_PROXY=http://127.0.0.1:7890");
+    console.log("\n✅ 代理下 AgentMail 可发。建议在 .env 加：OM_HTTPS_PROXY=http://127.0.0.1:7890");
     process.exit(0);
   }
 }

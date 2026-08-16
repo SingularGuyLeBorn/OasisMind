@@ -77,7 +77,7 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     const posted = await streamPost;
     expect(
       posted.url(),
-      "流式必须直连 mock server 3011；若打到 3003 rewrite 会卡死 SSE。请先 pnpm --filter @knowpilot/web run build:mock",
+      "流式必须直连 mock server 3011；若打到 3003 rewrite 会卡死 SSE。请先 pnpm --filter @oasismind/web run build:mock",
     ).toContain("3011");
     expect(posted.postDataJSON()?.message ?? "").toContain("硬调派生子代理");
 
@@ -203,7 +203,7 @@ test.describe("DSH §7 严酷验收 Mock", () => {
       .map((file) => {
         const raw = fs.readFileSync(file, "utf8");
         try {
-          return { file, raw, parsed: JSON.parse(raw) as { content?: string; title?: string; _kp_result_path?: string } };
+          return { file, raw, parsed: JSON.parse(raw) as { content?: string; title?: string; _om_result_path?: string } };
         } catch {
           return { file, raw, parsed: {} };
         }

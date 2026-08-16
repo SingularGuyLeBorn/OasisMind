@@ -18,7 +18,7 @@ import { createNativeCtx } from "./helpers/toolTestFixtures.js";
 const execAsync = promisify(exec);
 
 function createTempConfig(benchOnKeep?: { enabled: boolean; minPassRate: number }): AppConfig {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kp-bench-gate-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "om-bench-gate-"));
   const skills = path.join(tmp, "config", "skills");
   const memories = path.join(tmp, "config", "memories");
   const prompts = path.join(tmp, "config", "prompts");
@@ -172,7 +172,7 @@ describe("experiment keep 接入 harness-bench 自动闭环", () => {
   it("T4: CLI 薄壳仍能跑通（mock，--case B01）", async () => {
     const projectRoot = path.resolve(__dirname, "../../../..");
     const { stdout, stderr } = await execAsync(
-      "pnpm --filter @knowpilot/server exec tsx ../../evals/scripts/run-harness-bench.mjs --case B01",
+      "pnpm --filter @oasismind/server exec tsx ../../evals/scripts/run-harness-bench.mjs --case B01",
       { cwd: projectRoot, timeout: 120_000 },
     );
     const combined = `${stdout}\n${stderr}`;

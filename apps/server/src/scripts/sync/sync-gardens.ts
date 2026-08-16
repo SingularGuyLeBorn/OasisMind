@@ -14,7 +14,7 @@ import {
   SEED_GARDENS,
   isReservedContentDir,
   isValidGardenIdFormat,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { Syncer, SyncRecord } from "./types.js";
 import { getFileMtime, syncDetailWarn} from "./utils.js";
 import { getAppConfig } from "../../infra/config.js";

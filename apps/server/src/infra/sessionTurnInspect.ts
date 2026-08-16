@@ -4,7 +4,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import type { PrismaClient } from "@prisma/client";
 import type { AppConfig } from "./config.js";
 import { deriveVisibleSet, type VisibleReason } from "./tools/visibleSet.js";
@@ -94,7 +94,7 @@ export async function inspectSessionTurn(
     hidden,
     pathMessageCount: path.length,
     lastUserPreview: lastUser?.content.replace(/\s+/g, " ").trim().slice(0, 120) || null,
-    hasRuntimeContext: joined.includes("kp-runtime-context"),
+    hasRuntimeContext: joined.includes("om-runtime-context"),
     contextSummaryPreview: session.contextSummary?.replace(/\s+/g, " ").trim().slice(0, 200) || null,
   };
 }

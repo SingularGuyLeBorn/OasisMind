@@ -9,7 +9,7 @@ import type {
   DailyFlowStatus,
   MoveDailyFlowItemInput,
   UpdateDailyFlowItemInput,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { notifyDailyFlowUpdated } from "./uiStateNotify.js";
 
 const STATUSES: DailyFlowStatus[] = ["todo", "doing", "done"];

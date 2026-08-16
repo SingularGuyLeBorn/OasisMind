@@ -3,8 +3,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import {
-  KP_META_PATH_KEY,
-  KP_RESULT_PATH_KEY,
+  OM_META_PATH_KEY,
+  OM_RESULT_PATH_KEY,
   cleanupExpiredToolResults,
   listToolResultIndex,
   offloadToolResultIfNeeded,
@@ -25,7 +25,7 @@ describe("toolResultOffload", () => {
   let root: string;
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-offload-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "om-offload-"));
     fs.mkdirSync(path.join(root, "data", "tool-results"), { recursive: true });
   });
 
@@ -73,8 +73,8 @@ describe("toolResultOffload", () => {
     expect(fs.existsSync(path.join(root, off!.metaPath))).toBe(true);
     const llm = off!.llmResult as Record<string, unknown>;
     expect(llm.content).toBe("hi");
-    expect(llm[KP_RESULT_PATH_KEY]).toBe(off!.path);
-    expect(llm[KP_META_PATH_KEY]).toBe(off!.metaPath);
+    expect(llm[OM_RESULT_PATH_KEY]).toBe(off!.path);
+    expect(llm[OM_META_PATH_KEY]).toBe(off!.metaPath);
     const index = listToolResultIndex(config, "sess-small");
     expect(index).toHaveLength(1);
     expect(index[0]!.contentType).toBeTruthy();

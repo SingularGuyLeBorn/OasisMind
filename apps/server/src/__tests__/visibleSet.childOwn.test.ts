@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { CHILD_OWN_TOOLS } from "@knowpilot/shared";
+import { CHILD_OWN_TOOLS } from "@oasismind/shared";
 import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
 import { listNativeTools, executeNativeTool } from "../infra/nativeTools.js";
 import { createNativeCtx } from "./helpers/toolTestFixtures.js";
@@ -49,7 +49,7 @@ describe("visibleSet.childOwn", () => {
 
   it("allow+deny 同时传 → spawn 返回 INHERIT_MASK_CONFLICT", async () => {
     universe();
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-mask-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "om-mask-"));
     const ctx = createNativeCtx(root);
     ctx.sessionId = "sess";
     ctx.agentSnapshot = {
@@ -74,7 +74,7 @@ describe("visibleSet.childOwn", () => {
 
   it("inheritMask 点名未注册工具 → spawn 返回 INHERIT_MASK_UNKNOWN_TOOL", async () => {
     universe();
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-unk-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "om-unk-"));
     const ctx = createNativeCtx(root);
     ctx.sessionId = "sess";
     ctx.agentSnapshot = {
@@ -99,7 +99,7 @@ describe("visibleSet.childOwn", () => {
 
   it("agent_inspect 无消息字段", async () => {
     universe();
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-insp-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "om-insp-"));
     const ctx = createNativeCtx(root);
     ctx.agentSnapshot = {
       id: "mgr",

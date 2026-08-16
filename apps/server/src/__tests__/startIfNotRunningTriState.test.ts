@@ -14,7 +14,7 @@ import { SessionStreamHub } from "../infra/sessionStreamHub.js";
 import { handleAgentChatStream, handleBusyHubPost } from "../infra/agentStream/index.js";
 import { createContextInner } from "../trpc/context.js";
 import type { AppConfig } from "../infra/config.js";
-import type { AgentChatInput } from "@knowpilot/shared";
+import type { AgentChatInput } from "@oasismind/shared";
 
 describe("A4 startIfNotRunning 三态", () => {
   let hub: SessionStreamHub;

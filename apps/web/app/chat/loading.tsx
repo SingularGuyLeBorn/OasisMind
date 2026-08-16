@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 export default function ChatLoading() {
   return (
     <div className="flex flex-1 items-center justify-center" role="status" aria-label="对话加载中">
-      <Loader2 className="h-6 w-6 animate-spin text-[var(--kp-text-3)]" />
+      <Loader2 className="h-6 w-6 animate-spin text-[var(--om-text-3)]" />
     </div>
   );
 }

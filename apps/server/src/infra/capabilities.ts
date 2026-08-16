@@ -2,8 +2,8 @@
  * 服务器运行时能力摘要 — /health 与 tRPC native.capabilities 共用
  */
 
-import type { PackFlags } from "@knowpilot/shared";
-import { formatPacksSummary } from "@knowpilot/shared";
+import type { PackFlags } from "@oasismind/shared";
+import { formatPacksSummary } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { PrismaClient } from "@prisma/client";
 import { getEngineStatus, READ_ARTICLE_PLATFORMS } from "./metablog/index.js";

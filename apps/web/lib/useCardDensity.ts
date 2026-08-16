@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 export type CardDensity = "comfortable" | "compact";
 
-const CARD_DENSITY_KEY = "kp-card-density";
-const CARD_DENSITY_CHANGE_EVENT = "kp-card-density-change";
+const CARD_DENSITY_KEY = "om-card-density";
+const CARD_DENSITY_CHANGE_EVENT = "om-card-density-change";
 
 function readSavedDensity(): CardDensity {
   try {

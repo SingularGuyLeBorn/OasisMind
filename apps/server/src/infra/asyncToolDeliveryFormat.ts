@@ -7,7 +7,7 @@
  * 3. structured 供前端卡片渲染；缺省也可从 text 降级，但写点必须尽量填
  */
 
-import { AGENT_TOOL_RESULT_MAX_CHARS } from "@knowpilot/shared";
+import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
 
 export type AsyncToolDeliveryKind = "read_article" | "generic";
 

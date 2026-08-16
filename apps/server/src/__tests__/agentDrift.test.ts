@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { appRouter } from "../router.js";
 import { createContextInner } from "../trpc/context.js";
 import { prisma } from "../db.js";
-import { ASSISTANT_DEFAULT_TOOLS } from "@knowpilot/shared";
+import { ASSISTANT_DEFAULT_TOOLS } from "@oasismind/shared";
 import { DEFAULT_ASSISTANT_SYSTEM_PROMPT } from "../infra/agentResolver.js";
 
 describe("S9 防线：默认 assistant 提示词与双工具分工一致", () => {
@@ -127,7 +127,7 @@ describe("WP7 未知名工具 drift / mask fail-loud", () => {
     const os = await import("os");
     const path = await import("path");
     listNativeTools();
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "kp-wp7-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "om-wp7-"));
     const ctx = createNativeCtx(root);
     ctx.sessionId = "sess";
     ctx.agentSnapshot = {

@@ -7,8 +7,8 @@
  * - 禁止 setTimeout / await hydrate 赌序；续跑唯一入口 = drainGoalContinueAfterSettle
  */
 
-import type { SessionGoalState } from "@knowpilot/shared";
-import { sessionGoalStateSchema } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
+import { sessionGoalStateSchema } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { resolveAuxiliaryModel } from "./auxiliaryModel.js";

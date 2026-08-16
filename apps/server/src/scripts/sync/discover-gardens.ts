@@ -7,7 +7,7 @@ import {
   isReservedContentDir,
   isValidGardenIdFormat,
   SEED_GARDENS,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 
 export const GARDEN_META_FILE = "_garden.md";
 

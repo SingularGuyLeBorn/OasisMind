@@ -12,7 +12,7 @@
 
 import type { PrismaClient } from "@prisma/client";
 import type { ServiceContainer } from "./serviceContainer.js";
-import { SWARM_MAX_DEPTH, SWARM_MAX_QUEUE_SIZE } from "@knowpilot/shared";
+import { SWARM_MAX_DEPTH, SWARM_MAX_QUEUE_SIZE } from "@oasismind/shared";
 import {
   checkUpwardMessageTiming,
   checkCrossWorkspace,

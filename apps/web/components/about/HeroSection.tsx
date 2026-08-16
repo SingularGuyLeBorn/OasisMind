@@ -14,7 +14,7 @@ import {
   PenLine,
   Wrench,
 } from "lucide-react";
-import type { AboutProfile } from "@knowpilot/shared";
+import type { AboutProfile } from "@oasismind/shared";
 import { CurlyMark, SquareMark } from "@/components/home/accentMark";
 import { OasisMindLogo } from "@/lib/icons";
 
@@ -97,19 +97,19 @@ function MbtiBadge({ type }: { type: string }) {
       whileHover={{ y: -3, scale: 1.03 }}
       transition={{ type: "spring", stiffness: 320, damping: 24 }}
       title={meta.hint}
-      className="group inline-flex items-center gap-2.5 rounded-2xl border border-[color-mix(in_srgb,var(--kp-accent)_35%,white)] bg-gradient-to-br from-[color-mix(in_srgb,var(--kp-accent)_18%,white)] via-white/80 to-[color-mix(in_srgb,var(--kp-brand)_12%,white)] px-3 py-2 shadow-[0_10px_28px_-14px_rgba(232,168,74,0.45)] backdrop-blur-md"
+      className="group inline-flex items-center gap-2.5 rounded-2xl border border-[color-mix(in_srgb,var(--om-accent)_35%,white)] bg-gradient-to-br from-[color-mix(in_srgb,var(--om-accent)_18%,white)] via-white/80 to-[color-mix(in_srgb,var(--om-brand)_12%,white)] px-3 py-2 shadow-[0_10px_28px_-14px_rgba(232,168,74,0.45)] backdrop-blur-md"
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/70 bg-white/80 text-[var(--kp-accent-deep)] shadow-sm transition-transform duration-300 group-hover:rotate-6">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/70 bg-white/80 text-[var(--om-accent-deep)] shadow-sm transition-transform duration-300 group-hover:rotate-6">
         <EntjCommanderIcon className="h-5 w-5" />
       </span>
       <span className="min-w-0 text-left">
-        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--om-text-3)]">
           MBTI
         </span>
-        <span className="block text-sm font-black tracking-tight text-[var(--kp-text-1)]">
+        <span className="block text-sm font-black tracking-tight text-[var(--om-text-1)]">
           {meta.label}
         </span>
-        <span className="block text-[10px] font-medium text-[var(--kp-accent-deep)]">
+        <span className="block text-[10px] font-medium text-[var(--om-accent-deep)]">
           {meta.hint}
         </span>
       </span>
@@ -125,8 +125,8 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(ellipse 70% 55% at 75% -5%, color-mix(in srgb, var(--kp-glow-peach) 70%, transparent), transparent 58%)," +
-            "radial-gradient(ellipse 65% 50% at 5% 100%, color-mix(in srgb, var(--kp-glow-blue) 75%, transparent), transparent 55%)",
+            "radial-gradient(ellipse 70% 55% at 75% -5%, color-mix(in srgb, var(--om-glow-peach) 70%, transparent), transparent 58%)," +
+            "radial-gradient(ellipse 65% 50% at 5% 100%, color-mix(in srgb, var(--om-glow-blue) 75%, transparent), transparent 55%)",
         }}
       />
       <div className="pointer-events-none absolute inset-0 -z-10 opacity-80">
@@ -149,7 +149,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: easeSpring }}
         >
-          <p className="mb-3 text-sm font-medium tracking-wide text-[var(--kp-text-2)]">
+          <p className="mb-3 text-sm font-medium tracking-wide text-[var(--om-text-2)]">
             {profile.oneLiner || "Creator · Developer · AI 协作者"}
           </p>
 
@@ -159,7 +159,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
               className="shrink-0 rounded-2xl border border-white/55 shadow-[0_12px_32px_-14px_rgba(0,135,235,0.35)]"
             />
             <div className="min-w-0">
-              <h1 className="text-[clamp(2.6rem,7vw,4.5rem)] font-black leading-[0.92] tracking-[-0.04em] text-[var(--kp-text-1)]">
+              <h1 className="text-[clamp(2.6rem,7vw,4.5rem)] font-black leading-[0.92] tracking-[-0.04em] text-[var(--om-text-1)]">
                 {profile.name}
               </h1>
               {profile.title ? (
@@ -170,7 +170,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
             </div>
           </div>
 
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--kp-text-2)] md:text-base">
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--om-text-2)] md:text-base">
             {profile.tagline}
             <SquareMark className="ml-1 text-sm font-semibold">关于我</SquareMark>
           </p>
@@ -178,14 +178,14 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
           <div className="mt-4 flex flex-wrap items-center gap-2.5">
             {profile.mbti ? <MbtiBadge type={profile.mbti} /> : null}
             {profile.location && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[var(--kp-text-3)] backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[var(--om-text-3)] backdrop-blur-sm">
                 <MapPin className="h-3 w-3" /> {profile.location}
               </span>
             )}
             {profile.email && (
               <a
                 href={`mailto:${profile.email}`}
-                className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[var(--kp-text-3)] backdrop-blur-sm transition-colors hover:text-[var(--kp-brand)]"
+                className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[var(--om-text-3)] backdrop-blur-sm transition-colors hover:text-[var(--om-brand)]"
               >
                 <Mail className="h-3 w-3" /> {profile.email}
               </a>
@@ -198,7 +198,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
               return (
                 <span
                   key={role}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/55 px-2.5 py-1 text-xs font-medium text-[var(--kp-text-2)] backdrop-blur-md transition-colors hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/55 px-2.5 py-1 text-xs font-medium text-[var(--om-text-2)] backdrop-blur-md transition-colors hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
                 >
                   {Icon && <Icon className="h-3 w-3" />}
                   {role}
@@ -210,7 +210,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <Link
               href="/chat"
-              className="group inline-flex h-11 items-center gap-1.5 rounded-full bg-[var(--kp-brand)] px-5 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-all hover:-translate-y-0.5 hover:bg-[var(--kp-brand-dark)]"
+              className="group inline-flex h-11 items-center gap-1.5 rounded-full bg-[var(--om-brand)] px-5 text-sm font-semibold text-white shadow-[0_10px_28px_-8px_rgba(0,135,235,0.55)] transition-all hover:-translate-y-0.5 hover:bg-[var(--om-brand-dark)]"
             >
               <MessageSquare className="h-4 w-4" />
               开始对话
@@ -221,7 +221,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
                 href={profile.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-11 items-center gap-1.5 rounded-full border border-white/60 bg-white/60 px-5 text-sm font-semibold text-[var(--kp-text-1)] shadow-sm backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[var(--kp-brand)]/35"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full border border-white/60 bg-white/60 px-5 text-sm font-semibold text-[var(--om-text-1)] shadow-sm backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[var(--om-brand)]/35"
               >
                 <Github className="h-4 w-4" /> GitHub
               </a>
@@ -268,18 +268,18 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
                   }}
                   className={[
                     "rounded-2xl border border-white/55 bg-white/50 p-4 shadow-[0_12px_32px_-18px_rgba(0,80,160,0.2)] backdrop-blur-xl transition-[border-color,box-shadow] duration-500",
-                    i === 0 && "hover:border-[var(--kp-brand)]/35 hover:shadow-[0_18px_40px_-14px_rgba(0,135,235,0.3)]",
-                    i === 1 && "hover:border-[var(--kp-accent)]/40 hover:shadow-[0_16px_36px_-12px_rgba(232,168,74,0.3)]",
-                    i === 2 && "kp-card-sheen hover:border-white/80 hover:shadow-[0_20px_44px_-16px_rgba(0,80,160,0.28)]",
+                    i === 0 && "hover:border-[var(--om-brand)]/35 hover:shadow-[0_18px_40px_-14px_rgba(0,135,235,0.3)]",
+                    i === 1 && "hover:border-[var(--om-accent)]/40 hover:shadow-[0_16px_36px_-12px_rgba(232,168,74,0.3)]",
+                    i === 2 && "om-card-sheen hover:border-white/80 hover:shadow-[0_20px_44px_-16px_rgba(0,80,160,0.28)]",
                     i === 3 && "hover:bg-white/75 hover:shadow-[inset_0_2px_10px_rgba(0,80,160,0.08)]",
                   ]
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--om-text-3)]">
                     {item.label}
                   </span>
-                  <p className="mt-1 text-2xl font-black text-[var(--kp-text-1)]">
+                  <p className="mt-1 text-2xl font-black text-[var(--om-text-1)]">
                     {item.value}
                     <SquareMark className="ml-1 text-sm font-bold">{item.mark}</SquareMark>
                   </p>
@@ -296,7 +296,7 @@ export function HeroSection({ profile }: { profile: AboutProfile }) {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/55 px-2.5 py-1 text-xs font-medium text-[var(--kp-text-2)] backdrop-blur-md transition-colors hover:border-[var(--kp-brand)]/35 hover:text-[var(--kp-brand)]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/55 px-2.5 py-1 text-xs font-medium text-[var(--om-text-2)] backdrop-blur-md transition-colors hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
                 >
                   <SocialIcon platform={s.platform} /> {s.platform}
                 </a>

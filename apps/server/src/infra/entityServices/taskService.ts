@@ -7,7 +7,7 @@ import type {
   UpdateTaskInput,
   ListTasksInput,
   OperationResult,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 import { failure } from "../../trpc/result.js";
 import { claimTaskRun } from "../taskClaim.js";

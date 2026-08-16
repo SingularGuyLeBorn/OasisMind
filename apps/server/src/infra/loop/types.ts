@@ -12,7 +12,7 @@ import type { ServiceContainer } from "../serviceContainer.js";
 import type { LlmMessage, LlmToolCall, LlmToolDefinition } from "../llmClient.js";
 import type { StoredToolCall } from "../chatHistory.js";
 import type { AgentRunPhase } from "./phase.js";
-import type { ReasoningEffort } from "@knowpilot/shared";
+import type { ReasoningEffort } from "@oasismind/shared";
 
 /** 进入 run 时冻结的配置快照（学 Pi Turn Snapshot） */
 export interface TurnSnapshot {

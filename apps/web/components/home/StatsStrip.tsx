@@ -48,13 +48,13 @@ export function StatsStrip({
                 className={[
                   "group flex flex-col items-center gap-1.5 px-3 py-5 text-center transition-colors duration-300",
                   stat.href ? "cursor-pointer" : "cursor-default",
-                  i % 2 === 0 ? "hover:bg-[var(--kp-brand-soft)]/50" : "hover:bg-white/55",
+                  i % 2 === 0 ? "hover:bg-[var(--om-brand-soft)]/50" : "hover:bg-white/55",
                 ].join(" ")}
               >
                 {stat.icon ? (
                   <stat.icon
                     className={[
-                      "h-4 w-4 text-[var(--kp-brand)] transition-transform duration-300",
+                      "h-4 w-4 text-[var(--om-brand)] transition-transform duration-300",
                       i === 1 && "group-hover:rotate-12",
                       i === 3 && "group-hover:-rotate-6",
                       i !== 1 && i !== 3 && "group-hover:scale-125",
@@ -64,20 +64,20 @@ export function StatsStrip({
                   />
                 ) : (
                   <span
-                    className="text-xs font-black text-[var(--kp-brand)] transition-transform duration-300 group-hover:scale-125"
+                    className="text-xs font-black text-[var(--om-brand)] transition-transform duration-300 group-hover:scale-125"
                     aria-hidden
                   >
                     ∞
                   </span>
                 )}
-                <div className="text-2xl font-black tabular-nums tracking-tight text-[var(--kp-text-1)] md:text-3xl">
+                <div className="text-2xl font-black tabular-nums tracking-tight text-[var(--om-text-1)] md:text-3xl">
                   {typeof stat.value === "number" ? (
-                    <NumberTicker value={stat.value} className="text-[var(--kp-text-1)]" />
+                    <NumberTicker value={stat.value} className="text-[var(--om-text-1)]" />
                   ) : (
                     stat.value
                   )}
                 </div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kp-text-3)]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--om-text-3)]">
                   {stat.label}
                 </div>
               </motion.div>

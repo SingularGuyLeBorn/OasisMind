@@ -2,7 +2,7 @@
  * IntentContract：reveal / revision / switch。
  * 纯函数分类 + 一处写 goalState。compact 必须读 superseded，禁止当现行约束。
  */
-import type { SessionGoalState } from "@knowpilot/shared";
+import type { SessionGoalState } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 

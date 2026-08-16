@@ -20,7 +20,7 @@ import {
   StickyNote,
   Trash2,
 } from "lucide-react";
-import type { DailyFlowItem } from "@knowpilot/shared";
+import type { DailyFlowItem } from "@oasismind/shared";
 import { AdminPage, LoadingState } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,11 +172,11 @@ export default function DailyFlowPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-[var(--kp-brand-deep)]">
+            <div className="flex items-center gap-2 text-[var(--om-brand-deep)]">
               <Kanban className="h-5 w-5" />
               <h1 className="text-xl font-semibold tracking-tight">每日看板</h1>
             </div>
-            <p className="mt-1 text-sm text-[var(--kp-text-3)]">
+            <p className="mt-1 text-sm text-[var(--om-text-3)]">
               待办流向完成 · 一天一板 · 不加优先级标签
             </p>
           </div>
@@ -216,13 +216,13 @@ export default function DailyFlowPage() {
               <ClipboardCopy className="h-4 w-4" />
               复制日报告
             </Button>
-            {copyHint && <span className="text-xs text-[var(--kp-text-3)]">{copyHint}</span>}
+            {copyHint && <span className="text-xs text-[var(--om-text-3)]">{copyHint}</span>}
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-4 text-sm text-[var(--kp-text-2)]">
+        <div className="flex flex-wrap gap-4 text-sm text-[var(--om-text-2)]">
           <span>
-            合计 <strong className="text-[var(--kp-text-1)]">{stats.total}</strong>
+            合计 <strong className="text-[var(--om-text-1)]">{stats.total}</strong>
           </span>
           <span>
             待办 <strong>{stats.todo}</strong>
@@ -267,17 +267,17 @@ export default function DailyFlowPage() {
               return (
                 <section
                   key={col.status}
-                  className="rounded-2xl border border-[var(--kp-border)] bg-[var(--kp-surface)]/60 p-3"
+                  className="rounded-2xl border border-[var(--om-border)] bg-[var(--om-surface)]/60 p-3"
                 >
                   <div className="mb-3 flex items-baseline justify-between px-1">
-                    <h2 className="text-sm font-medium text-[var(--kp-text-1)]">{col.title}</h2>
-                    <span className="text-xs text-[var(--kp-text-3)]">
+                    <h2 className="text-sm font-medium text-[var(--om-text-1)]">{col.title}</h2>
+                    <span className="text-xs text-[var(--om-text-3)]">
                       {list.length} · {col.hint}
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
                     {list.length === 0 ? (
-                      <p className="px-1 py-8 text-center text-xs text-[var(--kp-text-3)]">暂无条目</p>
+                      <p className="px-1 py-8 text-center text-xs text-[var(--om-text-3)]">暂无条目</p>
                     ) : (
                       list.map((item) => {
                         const forward = nextStatus(item.status as FlowStatus);
@@ -287,18 +287,18 @@ export default function DailyFlowPage() {
                           <motion.article
                             key={item.id}
                             layout
-                            className="rounded-xl border border-[var(--kp-border)] bg-[var(--kp-bg)] p-3"
+                            className="rounded-xl border border-[var(--om-border)] bg-[var(--om-bg)] p-3"
                           >
-                            <p className="text-sm font-medium text-[var(--kp-text-1)]">{item.title}</p>
+                            <p className="text-sm font-medium text-[var(--om-text-1)]">{item.title}</p>
                             {item.note.trim() && !noteOpen && (
-                              <p className="mt-1 line-clamp-2 text-xs text-[var(--kp-text-3)]">{item.note}</p>
+                              <p className="mt-1 line-clamp-2 text-xs text-[var(--om-text-3)]">{item.note}</p>
                             )}
                             {noteOpen && (
                               <textarea
                                 value={noteDraft}
                                 onChange={(e) => setNoteDraft(e.target.value)}
                                 rows={3}
-                                className="mt-2 w-full rounded-lg border border-[var(--kp-border)] bg-transparent p-2 text-xs"
+                                className="mt-2 w-full rounded-lg border border-[var(--om-border)] bg-transparent p-2 text-xs"
                                 placeholder="备注（可选）"
                               />
                             )}
@@ -348,7 +348,7 @@ export default function DailyFlowPage() {
                                 }}
                                 title={noteOpen ? "保存备注" : "备注"}
                               >
-                                <StickyNote className={cn("h-3.5 w-3.5", noteOpen && "text-[var(--kp-brand)]")} />
+                                <StickyNote className={cn("h-3.5 w-3.5", noteOpen && "text-[var(--om-brand)]")} />
                               </Button>
                               <Button
                                 type="button"

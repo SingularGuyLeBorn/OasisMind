@@ -15,7 +15,7 @@ const OPTIONS: ThemeOption[] = [
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
   return (
-    <div className={cn("inline-flex items-center gap-1 rounded-lg border border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-1", className)}>
+    <div className={cn("inline-flex items-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1", className)}>
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}
@@ -24,8 +24,8 @@ export function ThemeToggle({ className }: { className?: string }) {
           title={opt.label}
           aria-label={opt.label}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md text-[var(--kp-text-3)] transition",
-            theme === opt.value && "bg-[var(--kp-bg)] text-[var(--kp-brand-deep)] shadow-sm",
+            "flex h-7 w-7 items-center justify-center rounded-md text-[var(--om-text-3)] transition",
+            theme === opt.value && "bg-[var(--om-bg)] text-[var(--om-brand-deep)] shadow-sm",
           )}
         >
           {opt.icon}

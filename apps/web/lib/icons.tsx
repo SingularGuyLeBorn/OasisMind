@@ -124,7 +124,7 @@ function LogoFrame({
         width="32"
         height="32"
         rx="8"
-        className="fill-[color-mix(in_srgb,var(--kp-brand)_9%,var(--kp-bg-alt,#ffffff))]"
+        className="fill-[color-mix(in_srgb,var(--om-brand)_9%,var(--om-bg-alt,#ffffff))]"
       />
       <rect
         x="0.5"
@@ -132,7 +132,7 @@ function LogoFrame({
         width="31"
         height="31"
         rx="7.5"
-        className="stroke-[color-mix(in_srgb,var(--kp-brand)_28%,transparent)]"
+        className="stroke-[color-mix(in_srgb,var(--om-brand)_28%,transparent)]"
         strokeWidth="1"
       />
       {children}
@@ -152,35 +152,35 @@ function LogoInkSeed({ className, size }: LogoSvgProps) {
         cx="16"
         cy="16"
         r="11.15"
-        className="stroke-[var(--kp-brand,#0087eb)]"
+        className="stroke-[var(--om-brand,#0087eb)]"
         strokeWidth="0.9"
         opacity="0.18"
       />
       {/* 绿洲开环 */}
       <path
         d="M22.6 8.4C19.1 5.6 12.9 5.7 9.5 9.2C5.8 13 5.9 19.3 9.7 23.1C13.6 26.9 19.9 26.6 23.6 22.7C25.4 20.9 26.6 18.4 26.6 16.1"
-        className="stroke-[var(--kp-brand-deep,#005a9e)]"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
         strokeWidth="2.1"
         strokeLinecap="round"
       />
       {/* 中心微晶：竖菱三切面（顶亮 / 右深 / 左中）——不用纯白，浅底也能看清 */}
       <path
         d="M16 11.6L19.35 16L16 16.75L12.65 16Z"
-        className="fill-[var(--kp-brand-light,#5bb4f5)]"
+        className="fill-[var(--om-brand-light,#5bb4f5)]"
       />
-      <path d="M16 16.75L19.35 16L16 20.4Z" className="fill-[var(--kp-brand-deep,#005a9e)]" />
-      <path d="M16 16.75L12.65 16L16 20.4Z" className="fill-[var(--kp-brand,#0087eb)]" />
+      <path d="M16 16.75L19.35 16L16 20.4Z" className="fill-[var(--om-brand-deep,#005a9e)]" />
+      <path d="M16 16.75L12.65 16L16 20.4Z" className="fill-[var(--om-brand,#0087eb)]" />
       {/* 顶角高光点 */}
       <circle cx="16" cy="13.15" r="0.7" fill="white" opacity="0.85" />
       {/* 开口微芒：单束外射 + 端点 */}
       <path
         d="M23.4 8L26.1 5.6"
-        className="stroke-[var(--kp-brand,#0087eb)]"
+        className="stroke-[var(--om-brand,#0087eb)]"
         strokeWidth="1.15"
         strokeLinecap="round"
         opacity="0.85"
       />
-      <circle cx="26.35" cy="5.35" r="0.9" className="fill-[var(--kp-brand-light,#5bb4f5)]" />
+      <circle cx="26.35" cy="5.35" r="0.9" className="fill-[var(--om-brand-light,#5bb4f5)]" />
     </LogoFrame>
   );
 }
@@ -191,17 +191,17 @@ function LogoTwinLeaf({ className, size }: LogoSvgProps) {
     <LogoFrame className={className} size={size}>
       <path
         d="M16 5.5C10 7 6.5 12 7 17C7.5 22.5 11.5 26.5 16 28C13 23 12.5 17 16 12Z"
-        className="fill-[var(--kp-brand,#0087eb)]"
+        className="fill-[var(--om-brand,#0087eb)]"
         opacity="0.88"
       />
       <path
         d="M16 5.5C22 7 25.5 12 25 17C24.5 22.5 20.5 26.5 16 28C19 23 19.5 17 16 12Z"
-        className="fill-[var(--kp-brand-deep,#005a9e)]"
+        className="fill-[var(--om-brand-deep,#005a9e)]"
         opacity="0.92"
       />
       <path d="M16 10V25" stroke="white" strokeWidth="0.9" strokeLinecap="round" opacity="0.4" />
       <circle cx="16" cy="14.5" r="1.7" fill="white" />
-      <circle cx="16" cy="14.5" r="0.8" className="fill-[var(--kp-brand-deep,#005a9e)]" />
+      <circle cx="16" cy="14.5" r="0.8" className="fill-[var(--om-brand-deep,#005a9e)]" />
     </LogoFrame>
   );
 }
@@ -214,16 +214,16 @@ function LogoStarRipple({ className, size }: LogoSvgProps) {
         cx="16"
         cy="16"
         r="10"
-        className="stroke-[var(--kp-brand,#0087eb)]"
+        className="stroke-[var(--om-brand,#0087eb)]"
         strokeWidth="1.15"
         opacity="0.35"
       />
       <path
         d="M16 7C16.6 12 17.5 14 21.5 16C17.5 18 16.6 20 16 25C15.4 20 14.5 18 10.5 16C14.5 14 15.4 12 16 7Z"
-        className="fill-[var(--kp-brand-deep,#005a9e)]"
+        className="fill-[var(--om-brand-deep,#005a9e)]"
       />
       <circle cx="16" cy="16" r="1.4" fill="white" opacity="0.9" />
-      <circle cx="24" cy="9.5" r="0.7" className="fill-[var(--kp-brand,#0087eb)]" opacity="0.55" />
+      <circle cx="24" cy="9.5" r="0.7" className="fill-[var(--om-brand,#0087eb)]" opacity="0.55" />
     </LogoFrame>
   );
 }
@@ -232,11 +232,11 @@ function LogoStarRipple({ className, size }: LogoSvgProps) {
 function LogoFolioSpark({ className, size }: LogoSvgProps) {
   return (
     <LogoFrame className={className} size={size}>
-      <path d="M15 7L7 9V23L15 25Z" className="fill-[var(--kp-brand,#0087eb)]" opacity="0.85" />
-      <path d="M17 7L25 9V23L17 25Z" className="fill-[var(--kp-brand-deep,#005a9e)]" opacity="0.92" />
+      <path d="M15 7L7 9V23L15 25Z" className="fill-[var(--om-brand,#0087eb)]" opacity="0.85" />
+      <path d="M17 7L25 9V23L17 25Z" className="fill-[var(--om-brand-deep,#005a9e)]" opacity="0.92" />
       <path d="M16 7.5V24.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
       <circle cx="16" cy="14.5" r="2.3" fill="white" />
-      <circle cx="16" cy="14.5" r="1.05" className="fill-[var(--kp-brand-deep,#005a9e)]" />
+      <circle cx="16" cy="14.5" r="1.05" className="fill-[var(--om-brand-deep,#005a9e)]" />
     </LogoFrame>
   );
 }
@@ -247,7 +247,7 @@ function LogoMicroGlyph({ className, size }: LogoSvgProps) {
     <LogoFrame className={className} size={size}>
       <path
         d="M8.5 8.5V23.5M8.5 13H13"
-        className="stroke-[var(--kp-brand-deep,#005a9e)]"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -257,10 +257,10 @@ function LogoMicroGlyph({ className, size }: LogoSvgProps) {
         width="11.5"
         height="14"
         rx="4"
-        className="stroke-[var(--kp-brand-deep,#005a9e)]"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
         strokeWidth="1.75"
       />
-      <circle cx="20.2" cy="16" r="2.6" className="fill-[var(--kp-brand,#0087eb)]" />
+      <circle cx="20.2" cy="16" r="2.6" className="fill-[var(--om-brand,#0087eb)]" />
       <circle cx="19.4" cy="15.2" r="0.85" fill="white" opacity="0.88" />
     </LogoFrame>
   );
@@ -311,7 +311,7 @@ export function KbdKey({
   label?: string;
 }) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-1">
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--om-divider)] bg-[var(--om-bg)] px-1">
       <Icon className="h-3 w-3" aria-hidden />
       {label ? <span className="sr-only">{label}</span> : null}
     </kbd>
@@ -319,7 +319,7 @@ export function KbdKey({
 }
 
 const kbdBoxClass =
-  "inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--kp-divider)] bg-[var(--kp-bg)] px-1";
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--om-divider)] bg-[var(--om-bg)] px-1";
 
 /** SVG 键帽字母 K — 非 Unicode 字符 */
 function SvgKeyK({ className }: { className?: string }) {
@@ -401,7 +401,7 @@ export function ShortcutSlashSkill({ className }: { className?: string }) {
         <Slash className="h-3 w-3" aria-hidden />
         <span className="sr-only">斜杠</span>
       </kbd>
-      <Wand2 className="h-3.5 w-3.5 text-[var(--kp-text-3)]" aria-hidden />
+      <Wand2 className="h-3.5 w-3.5 text-[var(--om-text-3)]" aria-hidden />
     </span>
   );
 }
@@ -422,7 +422,7 @@ export function ChatShortcutHints({
       <Tooltip>
         <TooltipTrigger
           className={cn(
-            "inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--kp-text-3)] transition hover:bg-[var(--kp-bg-mute)] hover:text-[var(--kp-text-2)]",
+            "inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-2)]",
             className,
           )}
           aria-label="快捷键说明"
@@ -562,11 +562,11 @@ export function PlatformSourceIcon({
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("shrink-0 text-[var(--kp-brand-deep)]", className)}
+      className={cn("shrink-0 text-[var(--om-brand-deep)]", className)}
       role="img"
       aria-label={title ?? label}
     >
-      <rect width="32" height="32" rx="8" fill="var(--kp-brand-soft)" />
+      <rect width="32" height="32" rx="8" fill="var(--om-brand-soft)" />
       <PlatformGlyph source={key} />
     </svg>
   );

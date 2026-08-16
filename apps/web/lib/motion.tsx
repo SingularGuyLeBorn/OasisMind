@@ -32,5 +32,5 @@ export const listItemExit = {
   transition: { duration: 0.18 },
 } as const;
 
-/** 卡片 hover：浮起（阴影走 CSS transition，与 kp-lift 对齐） */
+/** 卡片 hover：浮起（阴影走 CSS transition，与 om-lift 对齐） */
 export const cardHoverLift = { whileHover: { y: -4 }, transition: SPRING_GENTLE } as const;

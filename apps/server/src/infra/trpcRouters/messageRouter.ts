@@ -6,7 +6,7 @@ import { z } from "zod";
 import {
   createMessageSchema, updateMessageSchema, listMessagesSchema,
   listMessagesForChatSchema, switchMessageVersionSchema, setMessageLabelSchema,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { switchAssistantMessageVersion } from "../agentStream/index.js";
 

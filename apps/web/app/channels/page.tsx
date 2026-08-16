@@ -41,17 +41,17 @@ export default function ChannelsPage() {
   return (
     <AdminPage>
       <header className="mb-2">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--kp-text-1)]">IM 通道</h1>
-        <p className="mt-0.5 text-xs text-[var(--kp-text-3)]">
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--om-text-1)]">IM 通道</h1>
+        <p className="mt-0.5 text-xs text-[var(--om-text-3)]">
           手机 QQ / 飞书指挥家里 Agent：入站归一化后进 ChatSession / SessionStreamHub。
         </p>
         {defaultQqAgent ? (
-          <p className="mt-1 text-xs text-[var(--kp-text-2)]">
+          <p className="mt-1 text-xs text-[var(--om-text-2)]">
             官方 QQ Bot 默认 Agent：{" "}
-            <Link className="font-medium text-[var(--kp-brand-deep)] underline" href="/agents">
+            <Link className="font-medium text-[var(--om-brand-deep)] underline" href="/agents">
               {defaultQqAgent.name}
             </Link>
-            <span className="text-[var(--kp-text-3)]">
+            <span className="text-[var(--om-text-3)]">
               {" "}
               · {defaultQqAgent.sourceSlug || "—"} · {defaultQqAgent.model || "—"}
             </span>
@@ -65,37 +65,37 @@ export default function ChannelsPage() {
       </header>
 
       {latestQq ? (
-        <div className="mb-4 rounded-xl border border-[var(--kp-brand)]/35 bg-[var(--kp-brand-soft)] p-4">
-          <p className="text-sm font-semibold text-[var(--kp-text-1)]">当前 QQ 连到哪里</p>
-          <p className="mt-1 text-xs text-[var(--kp-text-2)]">
+        <div className="mb-4 rounded-xl border border-[var(--om-brand)]/35 bg-[var(--om-brand-soft)] p-4">
+          <p className="text-sm font-semibold text-[var(--om-text-1)]">当前 QQ 连到哪里</p>
+          <p className="mt-1 text-xs text-[var(--om-text-2)]">
             Agent：{latestQq.agentName || latestQq.agentId}
             {latestQq.workspaceName ? ` · Workspace：${latestQq.workspaceName}` : ""}
           </p>
-          <p className="mt-0.5 text-xs text-[var(--kp-text-2)]">
+          <p className="mt-0.5 text-xs text-[var(--om-text-2)]">
             会话：{latestQq.sessionTitle || latestQq.title || latestQq.sessionId}
             {latestQq.chatId && !String(latestQq.chatId).includes("新话题")
               ? ` · 群 ${latestQq.chatId}`
               : " · 私聊"}
           </p>
           <Link
-            className="mt-3 inline-flex rounded-md bg-[var(--kp-brand)] px-3 py-1.5 text-sm text-white"
+            className="mt-3 inline-flex rounded-md bg-[var(--om-brand)] px-3 py-1.5 text-sm text-white"
             href={chatHref(latestQq.sessionId, latestQq.agentId)}
           >
             打开这个会话
           </Link>
-          <p className="mt-2 text-[11px] text-[var(--kp-text-3)]">
+          <p className="mt-2 text-[11px] text-[var(--om-text-3)]">
             Chat 侧栏须切到对应 Workspace /「主 Agent」才能在历史列表里看到；也可直接点上方按钮深链打开。
           </p>
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-4 text-sm text-[var(--kp-text-2)]">
-        <p className="font-medium text-[var(--kp-text-1)]">手机 QQ 指挥家里 Agent（官方 Bot）</p>
+      <div className="mb-4 rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-4 text-sm text-[var(--om-text-2)]">
+        <p className="font-medium text-[var(--om-text-1)]">手机 QQ 指挥家里 Agent（官方 Bot）</p>
         <ol className="mt-2 list-inside list-decimal space-y-1 text-xs">
           <li>
             在{" "}
             <a
-              className="underline text-[var(--kp-brand-deep)]"
+              className="underline text-[var(--om-brand-deep)]"
               href="https://q.qq.com/"
               target="_blank"
               rel="noreferrer"
@@ -131,7 +131,7 @@ export default function ChannelsPage() {
           </li>
           <li>NapCat/OneBot 已退役，不再拉起 QQ、不再发掉线邮件。</li>
         </ol>
-        <p className="mt-3 text-xs text-[var(--kp-text-3)]">
+        <p className="mt-3 text-xs text-[var(--om-text-3)]">
           同步 Agent：改完 <code>config/agents/qq-bot.md</code> 后执行 <code>pnpm db:sync</code>。
         </p>
       </div>
@@ -143,15 +143,15 @@ export default function ChannelsPage() {
             className={cn(
               "rounded-xl border p-4",
               a.enabled
-                ? "border-[var(--kp-brand)]/40 bg-[var(--kp-brand-soft)]"
-                : "border-[var(--kp-border)] bg-[var(--kp-surface)]",
+                ? "border-[var(--om-brand)]/40 bg-[var(--om-brand-soft)]"
+                : "border-[var(--om-border)] bg-[var(--om-surface)]",
             )}
           >
-            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--kp-text-1)]">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
               <Radio className="h-4 w-4" />
               {a.name}
             </div>
-            <p className="mt-2 text-xs text-[var(--kp-text-3)]">
+            <p className="mt-2 text-xs text-[var(--om-text-3)]">
               {a.enabled ? "已启用" : "未启用"} · 状态 {a.state}
               {a.detail ? ` · ${a.detail}` : ""}
             </p>
@@ -165,41 +165,41 @@ export default function ChannelsPage() {
         ) : null}
       </div>
 
-      <div className="mb-6 rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)] p-4">
-        <p className="text-sm font-medium text-[var(--kp-text-1)]">模拟入站（调试）</p>
+      <div className="mb-6 rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-4">
+        <p className="text-sm font-medium text-[var(--om-text-1)]">模拟入站（调试）</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <span className="rounded-md border border-[var(--kp-border)] px-2 py-1.5 text-sm text-[var(--kp-text-3)]">
+          <span className="rounded-md border border-[var(--om-border)] px-2 py-1.5 text-sm text-[var(--om-text-3)]">
             qq
           </span>
           <input
-            className="flex-1 rounded-md border border-[var(--kp-border)] bg-transparent px-2 py-1.5 text-sm"
+            className="flex-1 rounded-md border border-[var(--om-border)] bg-transparent px-2 py-1.5 text-sm"
             value={peerId}
             onChange={(e) => setPeerId(e.target.value)}
             placeholder="peerId"
           />
         </div>
         <textarea
-          className="mt-2 w-full rounded-md border border-[var(--kp-border)] bg-transparent px-2 py-1.5 text-sm"
+          className="mt-2 w-full rounded-md border border-[var(--om-border)] bg-transparent px-2 py-1.5 text-sm"
           rows={2}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
         <button
           type="button"
-          className="mt-2 rounded-md bg-[var(--kp-brand)] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+          className="mt-2 rounded-md bg-[var(--om-brand)] px-3 py-1.5 text-sm text-white disabled:opacity-50"
           disabled={simMut.isPending || !text.trim()}
           onClick={() => simMut.mutate({ channel, peerId, text })}
         >
           {simMut.isPending ? "发送中…" : "注入 MessageGateway"}
         </button>
         {simMut.data ? (
-          <p className="mt-2 text-xs text-[var(--kp-text-3)]">
+          <p className="mt-2 text-xs text-[var(--om-text-3)]">
             结果：{JSON.stringify(simMut.data)}
             {"sessionId" in simMut.data && simMut.data.sessionId ? (
               <>
                 {" "}
                 <Link
-                  className="text-[var(--kp-brand-deep)] underline"
+                  className="text-[var(--om-brand-deep)] underline"
                   href={chatHref(String(simMut.data.sessionId), defaultQqAgent?.id)}
                 >
                   打开会话
@@ -213,24 +213,24 @@ export default function ChannelsPage() {
         ) : null}
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-[var(--kp-text-1)]">绑定列表</h2>
+      <h2 className="mb-2 text-sm font-semibold text-[var(--om-text-1)]">绑定列表</h2>
       {bindings.length === 0 ? (
         <EmptyState title="暂无绑定" description="收到第一条 QQ 消息或模拟入站后会出现。" />
       ) : (
-        <ul className="divide-y divide-[var(--kp-border)] rounded-xl border border-[var(--kp-border)] bg-[var(--kp-surface)]">
+        <ul className="divide-y divide-[var(--om-border)] rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)]">
           {bindings.map((b) => {
             const isRealGroup = Boolean(b.chatId) && !String(b.chatId).includes("新话题");
             return (
               <li key={b.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-[var(--kp-text-1)]">
+                  <p className="truncate font-medium text-[var(--om-text-1)]">
                     {b.sessionTitle || b.title || `${b.channel} · ${b.peerId}`}
                   </p>
-                  <p className="truncate text-xs text-[var(--kp-text-3)]">
+                  <p className="truncate text-xs text-[var(--om-text-3)]">
                     {b.channel}
                     {isRealGroup ? ` · 群 ${b.chatId}` : " · 私聊"} · peer {b.peerId.slice(0, 12)}…
                   </p>
-                  <p className="truncate text-xs text-[var(--kp-text-3)]">
+                  <p className="truncate text-xs text-[var(--om-text-3)]">
                     Agent：{" "}
                     {b.agentName ? (
                       <Link className="underline" href="/agents">
@@ -249,7 +249,7 @@ export default function ChannelsPage() {
                 <button
                   type="button"
                   title="删除绑定"
-                  className="rounded-md p-1.5 text-[var(--kp-text-3)] hover:bg-[var(--kp-bg-mute)] hover:text-red-600"
+                  className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-red-600"
                   onClick={() => deleteMut.mutate({ id: b.id })}
                 >
                   <Trash2 className="h-4 w-4" />

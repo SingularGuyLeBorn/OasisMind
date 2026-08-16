@@ -7,7 +7,7 @@ import type {
   UpdateCommentInput,
   ListCommentsInput,
   Comment,
-} from "@knowpilot/shared";
+} from "@oasismind/shared";
 import { BaseService, ServiceValidationError } from "../../services.js";
 import { failure } from "../../trpc/result.js";
 
