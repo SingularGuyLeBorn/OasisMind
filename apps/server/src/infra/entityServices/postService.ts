@@ -10,6 +10,7 @@ import type {
   ListPostsInput,
   RelatedPostsInput,
   CreatePostFromChatInput,
+  CreatePostFromToolResultInput,
   OperationResult,
   NextStep,
 } from "@knowpilot/shared";
@@ -73,6 +74,24 @@ function toLocalDateKey(d: Date): string {
 function parseLocalDateKey(key: string): Date {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, (m || 1) - 1, d || 1);
+}
+
+/** 落盘 JSON 优先取长文本字段，否则用原文 */
+export function extractPostBodyFromToolResult(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const obj = JSON.parse(trimmed) as Record<string, unknown>;
+      for (const key of ["content", "markdown", "text", "transcript"]) {
+        const v = obj[key];
+        if (typeof v === "string" && v.trim()) return v.trim();
+      }
+    } catch {
+      /* 非 JSON 当纯文本 */
+    }
+  }
+  return trimmed;
 }
 
 function parseTokenUsage(raw: unknown): { prompt: number; completion: number; total: number } | null {
@@ -958,6 +977,100 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       if (error instanceof ServiceValidationError || error instanceof TRPCError) throw error;
       return failureFromError(error, "createFromChat", "post", "POST_FROM_CHAT_FAILED");
     }
+  }
+
+  /**
+   * 工具落盘全文 → 文章（读 data/tool-results，不信前端正文）。
+   */
+  async createFromToolResult(input: CreatePostFromToolResultInput): Promise<OperationResult<PostEntity>> {
+    try {
+      const { readToolResultPayload } = await import("../toolResultOffload.js");
+      const page = readToolResultPayload(this.config, input.path, { offset: 0, maxChars: 100_000 });
+      const body = extractPostBodyFromToolResult(page.content);
+      if (!body) {
+        throw new ServiceValidationError(
+          failure({
+            code: "TOOL_RESULT_EMPTY",
+            message: "createFromToolResult 失败：落盘原文为空。",
+            retryable: false,
+            operation: "createFromToolResult",
+            entity: "post",
+          }),
+        );
+      }
+      return this.writePostBody(input, body);
+    } catch (error: unknown) {
+      if (error instanceof ServiceValidationError || error instanceof TRPCError) throw error;
+      return failureFromError(error, "createFromToolResult", "post", "POST_FROM_TOOL_RESULT_FAILED");
+    }
+  }
+
+  private async writePostBody(
+    input: {
+      mode?: "create" | "update" | "append";
+      garden?: string;
+      title?: string;
+      targetPostId?: string;
+      category?: string | null;
+      tags?: string[];
+      published?: boolean;
+      appendHeading?: string;
+    },
+    body: string,
+  ): Promise<OperationResult<PostEntity>> {
+    const mode = input.mode ?? "create";
+    if (mode === "create") {
+      const title =
+        input.title?.trim() ||
+        body
+          .split("\n")
+          .map((l) => l.replace(/^#+\s*/, "").trim())
+          .find((l) => l.length > 0)
+          ?.slice(0, 80) ||
+        `来自工具结果 ${new Date().toLocaleString("zh-CN")}`;
+      return this.create({
+        title,
+        content: body,
+        garden: input.garden,
+        category: input.category ?? null,
+        tags: input.tags,
+        published: input.published ?? true,
+        excerpt: body.replace(/\s+/g, " ").trim().slice(0, 160),
+      });
+    }
+    if (!input.targetPostId) {
+      throw new ServiceValidationError(
+        failure({
+          code: "TARGET_POST_REQUIRED",
+          message: `落库失败：mode=${mode} 时必须提供 targetPostId。`,
+          field: "targetPostId",
+          retryable: false,
+          operation: "writePostBody",
+          entity: "post",
+        }),
+      );
+    }
+    const target = await this.getById(input.targetPostId);
+    if (mode === "update") {
+      return this.update({
+        id: target.id,
+        content: body,
+        title: input.title?.trim() || undefined,
+        category: input.category === undefined ? undefined : input.category,
+        tags: input.tags,
+        published: input.published,
+      });
+    }
+    const heading = input.appendHeading?.trim();
+    const block = heading ? `\n\n## ${heading}\n\n${body}\n` : `\n\n---\n\n${body}\n`;
+    return this.update({
+      id: target.id,
+      content: `${target.content || ""}${block}`,
+      title: input.title?.trim() || undefined,
+      category: input.category === undefined ? undefined : input.category,
+      tags: input.tags,
+      published: input.published,
+    });
   }
 
   async getById(id: string): Promise<PostEntity> {

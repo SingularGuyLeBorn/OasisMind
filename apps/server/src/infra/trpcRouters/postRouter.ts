@@ -5,7 +5,7 @@
 import { z } from "zod";
 import {
   createPostSchema, updatePostSchema, listPostsSchema, searchPostsSchema, relatedPostsSchema,
-  createPostFromChatSchema, getPostBySlugSchema, postGardenSchema, postRecordViewSchema, explainSelectionSchema,
+  createPostFromChatSchema, createPostFromToolResultSchema, getPostBySlugSchema, postGardenSchema, postRecordViewSchema, explainSelectionSchema,
   deleteByIdSchema, deleteByIdWithApprovalSchema, postActivityCalendarSchema,
   postActivityDayDetailSchema,
 } from "@knowpilot/shared";
@@ -43,6 +43,13 @@ export const postRouter = router({
     })
     .input(createPostFromChatSchema)
     .mutation(({ ctx, input }) => ctx.services.post.createFromChat(input)),
+  createFromToolResult: publicProcedure
+    .meta({
+      description: "把工具落盘全文写入知识库（path 须在 data/tool-results）。",
+      aiReadable: false,
+    })
+    .input(createPostFromToolResultSchema)
+    .mutation(({ ctx, input }) => ctx.services.post.createFromToolResult(input)),
   categories: publicProcedure.meta({ description: "获取所有已发布文章的分类列表。", aiReadable: true }).query(({ ctx }) => ctx.services.post.categories()),
   tags: publicProcedure.meta({ description: "获取所有已发布文章的标签列表。", aiReadable: true }).query(({ ctx }) => ctx.services.post.tags()),
   activityCalendar: publicProcedure
