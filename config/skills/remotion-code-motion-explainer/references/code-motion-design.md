@@ -84,7 +84,7 @@ the same frame. Offset actions so the eye can follow cause and effect.
 - Put safety caveats in the visual when the subject involves hazardous voltage, heat, pressure,
   chemicals, or machinery.
 
-## Algorithm teaching clips (KnowPilot / algo-viz)
+## Algorithm teaching clips (OasisMind / algo-viz)
 
 When the job is **algorithm pedagogy** (not talking-head / brand neon):
 

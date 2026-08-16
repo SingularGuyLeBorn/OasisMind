@@ -252,7 +252,7 @@ export type VisibleSet = {
 
 - memory / extras 继续 hook（fail-soft）。
 - `tool-guide` 不再是 `promptBuilder` 里一大段 `WEB_TOOL_GUIDE` 字符串，改为 **聚合各工具 `promptSection`**（order 100–199）。
-- 新增 hook `runtime-snapshot`（order 900，**每轮都跑**）：插入/替换标记为 `<!-- kp-runtime-context -->` 的 user 块。
+- 新增 hook `runtime-snapshot`（order 900，**每轮都跑**）：插入/替换标记为 `<!-- om-runtime-context -->` 的 user 块。
 
 ---
 
@@ -317,7 +317,7 @@ export type VisibleSet = {
   - **删除**对同一对象再 `JSON.stringify` + `truncateToolResultContent` 的双砍。`AGENT_TOOL_RESULT_MAX_CHARS` 变成 **content 投影的硬顶**，在 `projectContent` 里执行，不再在 loop 里二次 slice。
 - `toolResultOffload.ts`：
   - 输入改为 `value`（全文权威）。
-  - 输出：`persist` + `content`（瘦卡，含 `_kp_result_path`，与现字段兼容——这是磁盘格式，不是 API 兼容层）。
+  - 输出：`persist` + `content`（瘦卡，含 `_om_result_path`，与现字段兼容——这是磁盘格式，不是 API 兼容层）。
   - 阈值仍用 `config.compact.toolResultOffload.thresholdChars`（现 4000）。
 - `microCompact.toolResultMaxChars`（4000）：只作用于 **content**，禁止再碰 value。
 - `asyncToolDeliveryFormat.ts`：父会话气泡若展示工具结果，用 content；需要全文走 path。**禁止**再把 value 全文塞进投递气泡（与 v7「status 去全文」同向）。
@@ -337,7 +337,7 @@ export type VisibleSet = {
 2. 无长文本字段的大 JSON → LLM 看到 keys+path，**不会**出现半截 key。
 3. offload 后 `executedTools` 按 Q1 存；F5 水合后气泡仍能显示瘦卡 + 读 path。
 4. `waitForResult=true` 的 spawn 同步返回：父拿到的 tool return 是 content（或声明的同步摘要），不是 16k 砍断的残 JSON。
-5. 回归：`toolResultOffload.test.ts` 全绿；字段名 `_kp_result_path` 不变。
+5. 回归：`toolResultOffload.test.ts` 全绿；字段名 `_om_result_path` 不变。
 
 ---
 
@@ -426,14 +426,14 @@ export type VisibleSet = {
 - 快照块格式（固定，测它）：
 
   ```
-  <!-- kp-runtime-context -->
+  <!-- om-runtime-context -->
   Current runtime context. This snapshot supersedes earlier runtime-context snapshots.
 
   workspace: ...
   fs-policy: ...
   login: zhihu, bilibili
   budget: ...
-  <!-- /kp-runtime-context -->
+  <!-- /om-runtime-context -->
   ```
 
   每轮：若 messages 里已有该标记块，**替换**；没有则 prepend 到最后一条 user 之前（复用 `applyPrependUserContext`）。
@@ -755,7 +755,7 @@ ask_user          # 子被问住要能问人；若你认为子不该问人，从
 
 ### 工程
 
-- `pnpm --filter @knowpilot/server lint` + `test` 全绿
+- `pnpm --filter @oasismind/server lint` + `test` 全绿
 - 每个 WP 至少 1 个「旧实现必红」的负向测试
 - grep：`Promise.race` 不再用于工具 body；`WEB_TOOL_GUIDE` 零命中；`parsed.native = DEFAULT_SUBAGENT_TOOLS` 零命中
 - 无 `void promise`；无「刷新一下」文案

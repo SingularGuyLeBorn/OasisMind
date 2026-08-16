@@ -1,4 +1,4 @@
-# KnowPilot 架构审计报告（2026-07-26）
+# OasisMind 架构审计报告（2026-07-26）
 
 > 验收数字以本轮命令输出为准。审计 prompt 已退役删除。
 
@@ -45,9 +45,9 @@
 | server lint | 通过 |
 | shared lint | 通过 |
 | web lint | 0 error |
-| `@knowpilot/server` test | **113 files / 779 passed** |
-| `@knowpilot/web` test | **20 files / 67 passed** |
-| `@knowpilot/shared` test | **5 files / 40 passed** |
+| `@oasismind/server` test | **113 files / 779 passed** |
+| `@oasismind/web` test | **20 files / 67 passed** |
+| `@oasismind/shared` test | **5 files / 40 passed** |
 
 ---
 

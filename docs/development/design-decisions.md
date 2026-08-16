@@ -565,7 +565,7 @@ Pi Agent Harness 把「运行中用户插话」拆成两种投递语义，投递
 | **Steering**  | 当前 assistant 的工具批执行完之后、下一轮 LLM 调用之前   | 纠偏、改方向、补充约束（不 abort 重开一轮） |
 | **Follow-up** | Agent 本会停止时（无 tool calls、且无 pending steering） | 排队下一任务，等当前工作真正结束再跑        |
 
-KnowPilot 现状：
+OasisMind 现状：
 
 - 前端已有 `userQueue` / `asyncOverlays`（`useSessionComposeState`）+ Stream `phase` 不变量。
 - 后端 `runAgentLoopStream` 是 `for` 轮次循环，**没有**「工具批结束 → 注入用户消息 → 再 LLM」的显式投递点。
@@ -612,14 +612,14 @@ KnowPilot 现状：
 
 **背景**：
 
-LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重启保持 goal、gates、todos、evidence、quota、handoff。KnowPilot 已有执行器（ReAct + Swarm + 心跳）+ 审批 + SessionStreamHub，缺的是「长程任务剧情」契约。
+LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重启保持 goal、gates、todos、evidence、quota、handoff。OasisMind 已有执行器（ReAct + Swarm + 心跳）+ 审批 + SessionStreamHub，缺的是「长程任务剧情」契约。
 
 **推荐方案（挂在心跳 / Swarm 之上，不替换执行器）**：
 
 为每个长程目标（首期：超级 Agent 心跳任务、可选 Workspace 级目标）持久化 `LoopContract`：
 
 
-| 字段              | 含义                | KnowPilot 落点建议                            |
+| 字段              | 含义                | OasisMind 落点建议                            |
 | ------------------- | --------------------- | ----------------------------------------------- |
 | `goal`            | 稳定目标陈述        | 心跳已有 goal 雏形 → 结构化字段              |
 | `gates`           | 需人工判断的点      | 复用`Approval` + 显式 gate id                 |
@@ -635,7 +635,7 @@ LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重�
 
 - Phase 1：只服务 **heartbeat 超级 Agent**（单用户本地，收益最大）。
 - Phase 2：可选挂到 manager 主会话的长任务。
-- **不做**：把 KnowPilot 改成「纯控制平面、外包 Codex/Claude 执行」。
+- **不做**：把 OasisMind 改成「纯控制平面、外包 Codex/Claude 执行」。
 
 **回答**：
 
@@ -1149,7 +1149,7 @@ LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重�
 
 **推荐方案 A**：
 
-- 启动时保证存在且仅有一个 **root workspace**（可命名 `KnowPilot Root`），`super` Agent 的 `workspaceId` 固定指向它。
+- 启动时保证存在且仅有一个 **root workspace**（可命名 `OasisMind Root`），`super` Agent 的 `workspaceId` 固定指向它。
 - 业务 Workspace 由超级（或用户 UI）创建；每个业务 Workspace **默认**创建一个 `tier=manager` 管理员 Agent（可用创建参数 `withManager: false` 关闭）。
 - 创建参数建议：
   - `name` / `description`
@@ -1222,7 +1222,7 @@ LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重�
 | 项 | 状态 |
 |---|---|
 | Q1 超级不可删 / 不可自降 tier | ✅ Service + native `agent_delete` / `validateUpdate` |
-| Q2 Root Workspace + super 绑定 | ✅ `swarmInitializer`（名「KnowPilot Root」，配额 0） |
+| Q2 Root Workspace + super 绑定 | ✅ `swarmInitializer`（名「OasisMind Root」，配额 0） |
 | Q3 出域硬拦 + 向超级报告白名单 | ✅ `checkCrossWorkspace(toTier)` + `checkWorkspaceAgentAccess` |
 | Q4 行级 `asyncSlotQuota` | ✅ schema / provision / `blockReason(workspaceSlotQuota)` |
 | Q5 `withManager` / `initialTask` / 失败不回滚 | ✅ `workspaceProvision` + tool + tRPC |
@@ -1241,7 +1241,7 @@ LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重�
 
 | 项 | 选择 |
 |---|---|
-| 系统 Workspace | `systemType: "assistant"`，名「KnowPilot Assistant」，`isSystem: true`，路径 `workspaces/__assistant__` |
+| 系统 Workspace | `systemType: "assistant"`，名「OasisMind Assistant」，`isSystem: true`，路径 `workspaces/__assistant__` |
 | 绑定 | 默认 `assistant` Agent 的 `workspaceId` 固定指向该空间；启动 `initSwarm` 幂等保证 |
 | 删除 | 复用 `isSystem` 硬拦（不可删/不可归档） |
 | 重置 | `workspace.resetAssistantHome`：归档该助手活跃会话 + 清 SessionQueueItem + 恢复 `ASSISTANT_DEFAULT_TOOLS` 与默认 systemPrompt；**不动** Memory 表与 pinned |

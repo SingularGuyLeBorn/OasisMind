@@ -73,7 +73,7 @@ const batch = toolCalls.slice(0, room);
 
 - [ ] 配置 `AGENT_MAX_TOOL_CALLS_PER_RUN=3`，mock 每轮 2 个 tool → 第二轮截断并停止
 - [ ] 仅 `maxToolRounds` 仍生效（两者取更严）
-- [ ] `pnpm --filter @knowpilot/server test` 绿
+- [ ] `pnpm --filter @oasismind/server test` 绿
 
 **风险**：低。不改对外 API。
 

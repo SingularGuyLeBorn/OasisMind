@@ -1,6 +1,6 @@
-# KnowPilot Harness 工程缺口修复 Prompt
+# OasisMind Harness 工程缺口修复 Prompt
 
-> 本 Prompt 供另一位开发者 / AI 按图施工。修复目标：把 KnowPilot 的 Agent Harness 从「主要靠 prompt 约束 + 人审」升级到「机械化约束 + 自动化验证 + 上下文可控」。
+> 本 Prompt 供另一位开发者 / AI 按图施工。修复目标：把 OasisMind 的 Agent Harness 从「主要靠 prompt 约束 + 人审」升级到「机械化约束 + 自动化验证 + 上下文可控」。
 >
 > 请严格按 P0→P1→P2→P3 的顺序推进，每个 P 完成后必须跑过 lint + server test + web test，再进入下一个 P。
 
@@ -8,7 +8,7 @@
 
 ## 项目背景
 
-KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字花园，技术栈：
+OasisMind（见微 / OasisMind）是一个单用户、本地优先的 AI 数字花园，技术栈：
 
 - 后端：Express + tRPC + Prisma + SQLite，`apps/server/src`
 - 前端：Next.js 16 + React 19 + Tailwind，`apps/web`
@@ -73,7 +73,7 @@ KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字�
   - TypeScript 语法错误文件 → 返回错误。
   - 合法 Markdown / 合法 TS → 返回 `{ ok: true }`。
 - 验证失败时，调用工具返回 `success: false` + `error` 字段，LLM 能看到修复建议。
-- `pnpm --filter @knowpilot/server test -- --run` 全绿。
+- `pnpm --filter @oasismind/server test -- --run` 全绿。
 
 ### 关键设计原则
 
@@ -119,7 +119,7 @@ KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字�
   - 模拟 messages 超长，验证 reset 后保留 system prompt、goal、最后一条消息。
   - 验证 reset 不会丢失必须遵守的硬性约束（比如「禁止 write_file 写 content/posts/」）。
 - 添加 `AGENT_CONTEXT_RESET_THRESHOLD=0.4` 环境变量支持（可选，默认 0.4）。
-- `pnpm --filter @knowpilot/server test -- --run` 全绿。
+- `pnpm --filter @oasismind/server test -- --run` 全绿。
 
 ---
 
@@ -172,7 +172,7 @@ KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字�
 - 三个模板正文（不含 frontmatter）均 ≤ 100 行。
 - `manager.md` 的 `tools` 列表移除执行类工具；保留的工具调用不破坏现有测试。
 - 新增/更新的测试：`agentFactory.test.ts` 检查模板渲染后长度；`trpcSmoke.test.ts` 确保 Agent chat 不崩溃。
-- `pnpm --filter @knowpilot/server test -- --run` 全绿。
+- `pnpm --filter @oasismind/server test -- --run` 全绿。
 
 ---
 
@@ -214,7 +214,7 @@ KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字�
 - 新增 `__tests__/constraintEvolution.test.ts`：
   - 同一错误触发 3 次后生成约束文件。
   - 约束文件内容会被 contextHooks 注入到 system prompt。
-- `pnpm --filter @knowpilot/server test -- --run` 全绿。
+- `pnpm --filter @oasismind/server test -- --run` 全绿。
 
 ---
 
@@ -224,10 +224,10 @@ KnowPilot（见微 / OasisMind）是一个单用户、本地优先的 AI 数字�
 - **禁止向后兼容包袱**：改接口就改全仓调用方，不要留 deprecated 分支。
 - **状态在内存，推拉结合**：任何管理页/Chat 侧状态变化必须走 SSE / hub push + DB pull，禁止让用户刷新页面当修复。
 - **提交前必须**：
-  - `pnpm --filter @knowpilot/server lint`
-  - `pnpm --filter @knowpilot/web lint`
-  - `pnpm --filter @knowpilot/server test -- --run`
-  - `pnpm --filter @knowpilot/web test -- --run`
+  - `pnpm --filter @oasismind/server lint`
+  - `pnpm --filter @oasismind/web lint`
+  - `pnpm --filter @oasismind/server test -- --run`
+  - `pnpm --filter @oasismind/web test -- --run`
 - **按主题拆分提交**：基础设施 / 验证器 / context reset / 模板重构 / 进化闭环 分开 commit，不要一锅端。
 
 ---

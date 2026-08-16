@@ -1,6 +1,6 @@
-# Cloudflare Tunnel：把本机 KnowPilot 暴露到公网
+# Cloudflare Tunnel：把本机 OasisMind 暴露到公网
 
-KnowPilot 已内置 Tunnel 脚本与 CORS / 鉴权挂钩。**不要**把路由器端口映射到 3000/3010；用 Cloudflare Tunnel 出站建隧道即可，本机无需公网 IP。
+OasisMind 已内置 Tunnel 脚本与 CORS / 鉴权挂钩。**不要**把路由器端口映射到 3000/3010；用 Cloudflare Tunnel 出站建隧道即可，本机无需公网 IP。
 
 手机远程访问时，请用文末的 Tunnel URL；界面底栏与 Chat 单栏叠层见移动端改造说明。系统设置页（`/settings`）也可查看 `PUBLIC_URL` 与鉴权状态。
 

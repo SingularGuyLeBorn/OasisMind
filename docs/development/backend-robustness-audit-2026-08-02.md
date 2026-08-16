@@ -1,8 +1,8 @@
-# KnowPilot 后端鲁棒性审计报告
+# OasisMind 后端鲁棒性审计报告
 
 > 审计目标：`agentStream` / `asyncJobManager` / `nativeTools/tools/native/*.ts` / `mcpClient` / `sessionStreamHub` 中的高崩溃风险点。
 > 审计日期：2026-08-02
-> 结论：已识别并修复 5 处核心风险，补充 2 个防御性回归测试；`pnpm --filter @knowpilot/server lint` 与 `test` 全绿。
+> 结论：已识别并修复 5 处核心风险，补充 2 个防御性回归测试；`pnpm --filter @oasismind/server lint` 与 `test` 全绿。
 
 ---
 
@@ -56,8 +56,8 @@ SQLite 写入失败常见原因是并发锁竞争或临时磁盘繁忙。固定�
 ## 4. 验证结果
 
 ```bash
-pnpm --filter @knowpilot/server lint   # tsc --noEmit，0 error
-pnpm --filter @knowpilot/server test    # Vitest 全量，0 failure
+pnpm --filter @oasismind/server lint   # tsc --noEmit，0 error
+pnpm --filter @oasismind/server test    # Vitest 全量，0 failure
 ```
 
 ---

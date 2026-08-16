@@ -37,7 +37,7 @@ epsilon: 0.2
 
 **反模式**：`write_file` 写 `apps/algo-viz` / `content/uploads/viz/*.tsx`；手改 `registry.ts`（会被下次 create 覆盖——改 meta 或走工具）。
 
-本地预览：`pnpm --filter @knowpilot/algo-viz dev`。
+本地预览：`pnpm --filter @oasismind/algo-viz dev`。
 
 ## 用 Agent 生成并插入（全流程）
 

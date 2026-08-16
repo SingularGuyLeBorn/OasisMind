@@ -1,7 +1,7 @@
-# 多智能体 / Swarm 组件级对比（KnowPilot × 综述 × 市面框架）
+# 多智能体 / Swarm 组件级对比（OasisMind × 综述 × 市面框架）
 
 > 写作日期：2026-07-18  
-> 依据：本地三篇综述（`docs/surveys-2026/`）+ 编排综述 *LLM-Based Multi-Agent Orchestration*（Preprints 202604.2147，截止 2026-03）+ 生产实践综述（Supervisor / Swarm / Pipeline / Hierarchical）+ KnowPilot 当前代码（含 Root Workspace / 行级槽 / 三通道父子通信）。  
+> 依据：本地三篇综述（`docs/surveys-2026/`）+ 编排综述 *LLM-Based Multi-Agent Orchestration*（Preprints 202604.2147，截止 2026-03）+ 生产实践综述（Supervisor / Swarm / Pipeline / Hierarchical）+ OasisMind 当前代码（含 Root Workspace / 行级槽 / 三通道父子通信）。  
 > 姊妹文档：`对比分析-记忆-Harness-Agent.md`（记忆·Harness·单 Agent，2026-07-12，部分条目已被后续工单超越）。
 
 ---
@@ -10,7 +10,7 @@
 
 | 系统 | 拓扑（综述 taxonomy） | 定位 |
 |---|---|---|
-| **KnowPilot Swarm** | **Hierarchical**（固定 super→manager→sub）+ 局部 **Centralized**（Workspace 内 manager 编排） | 单用户、本地优先的「组织树 + 权限 OS」；Markdown 事实源 |
+| **OasisMind Swarm** | **Hierarchical**（固定 super→manager→sub）+ 局部 **Centralized**（Workspace 内 manager 编排） | 单用户、本地优先的「组织树 + 权限 OS」；Markdown 事实源 |
 | LangGraph | Centralized / Hierarchical（supervisor + nested graph） | 生产态状态机 / 图编排 |
 | CrewAI | Hierarchical（manager 动态委派）或角色 Crew | 角色叙事友好的快速组队 |
 | AutoGen / MS Agent Framework | Decentralized 对话 / Dynamic speaker select | 对话式协作、代码共创 |
@@ -18,13 +18,13 @@
 | OpenAI Agents SDK | Centralized（handoff / agent-as-tool） | 云端产品化编排 |
 | Anthropic「lead + subagents」 | Centralized supervisor | 研究场景并行子代理（token 贵、可靠性靠 harness） |
 
-KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT 式 SOP 编译器；它是 **带 Workspace 边界的层级组织 + 生产级投递/槽位/HITL**。
+OasisMind **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT 式 SOP 编译器；它是 **带 Workspace 边界的层级组织 + 生产级投递/槽位/HITL**。
 
 ---
 
 ## 1. 拓扑与组织模型
 
-| 维度 | 市面 / 论文共识 | KnowPilot | 差异 |
+| 维度 | 市面 / 论文共识 | OasisMind | 差异 |
 |---|---|---|---|
 | 协调拓扑 | 三拓扑：中心化 / 去中心化 / 层级；可加动态自适应轴（编排综述 §4） | 固定三 tier + Root/业务 Workspace | **有意不做**对等群聊与运行时拓扑学习（GPTSwarm / DyLAN） |
 | 角色模型 | CrewAI backstory；MetaGPT 岗位卡；Generative Agents 人格 | `systemPrompt` + tier + tools + `buildTierIdentityHint` | 身份防冒充更强；缺角色卡库 / SOP 模板市场 |
@@ -44,7 +44,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | MetaGPT 岗位 SOP；CrewAI Role/Goal/Backstory；OpenAI handoff 转移所有权 vs as_tool 保留所有权 |
-| KnowPilot | `super/manager/sub`；工厂模板；超级不可删/不可自降；manager 出域硬拦 |
+| OasisMind | `super/manager/sub`；工厂模板；超级不可删/不可自降；manager 出域硬拦 |
 | 水位 | **A-**（组织硬约束强于多数框架；缺 SOP 剧本库） |
 
 ### 2.2 Workspace / 隔离
@@ -52,7 +52,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 少见一等 Workspace；多靠 prompt「别越权」；企业方案偶有租户隔离 |
-| KnowPilot | Root + 业务空间；`checkCrossWorkspace` / `checkWorkspaceAgentAccess`；向超级报告为出域白名单 |
+| OasisMind | Root + 业务空间；`checkCrossWorkspace` / `checkWorkspaceAgentAccess`；向超级报告为出域白名单 |
 | 水位 | **A**（开源 MAS 框架普遍缺失的 OS 边界） |
 | 缺口 | 非容器/chroot 强隔离；文件仍靠 `safePath` |
 
@@ -61,7 +61,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 广播贵（编排综述）；MetaGPT pub-sub 降 token；A2A Agent Card；AutoGen 共享线程 |
-| KnowPilot | 点对点 `AgentMessage` + 账本；**三通道刻意拆分**：superior 队列（父→子忙时）、`report_back`→Task 认领、`notify_parent`→父发送队列；depth/队列容量/向上时机硬拦 |
+| OasisMind | 点对点 `AgentMessage` + 账本；**三通道刻意拆分**：superior 队列（父→子忙时）、`report_back`→Task 认领、`notify_parent`→父发送队列；depth/队列容量/向上时机硬拦 |
 | 水位 | **A**（投递语义与通道分工清晰度高于 CrewAI/AutoGen 默认「聊到完」） |
 | 缺口 | **无 A2A**；私有信封；无跨厂商发现 |
 
@@ -70,7 +70,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | LangGraph 图边；CrewAI process；Anthropic 并行子代理（~15× token）；失败三模式：重复劳动 / 矛盾输出 / 不收敛 |
-| KnowPilot | `SwarmOrchestrator.dispatch`；`spawn_subagent` sync/async；全局 LLM 池 + 行级 `asyncSlotQuota`；`slotClass=lightweight`；血缘槽继承防死锁；60s spawn 去重 |
+| OasisMind | `SwarmOrchestrator.dispatch`；`spawn_subagent` sync/async；全局 LLM 池 + 行级 `asyncSlotQuota`；`slotClass=lightweight`；血缘槽继承防死锁；60s spawn 去重 |
 | 水位 | **A-**（容量经济学与防死锁是差异化强项） |
 | 缺口 | **无 DAG/工作流图**；无运行时重规划图（Magentic-One / conditional edges） |
 
@@ -79,7 +79,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | Harness 综述 L 组件：多数多 Agent 框架 ≈；生产靠外挂网关；级联虚假共识论文显示框架对注入极脆弱 |
-| KnowPilot | tier 工具矩阵 + Workspace 出域 + 审批 argsMatch + `awaiting_human` + 身份 hint + 子 Agent 工具裁剪 |
+| OasisMind | tier 工具矩阵 + Workspace 出域 + 审批 argsMatch + `awaiting_human` + 身份 hint + 子 Agent 工具裁剪 |
 | 水位 | **A**（相对 AutoGen/CrewAI/MetaGPT 矩阵上的明显领先） |
 | 缺口 | 默认审批开关可能关闭；无多用户 RBAC；无 Byzantine（单用户合理不做） |
 
@@ -88,7 +88,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 共享世界 + 私有流（Generative Agents）；编排综述强调 hybrid memory；记忆综述开放挑战「多 Agent 记忆治理」 |
-| KnowPilot | `global` / `workspace:{id}` / `agent:{id}` 三层 scope + 写硬拦；经验可双写 workspace |
+| OasisMind | `global` / `workspace:{id}` / `agent:{id}` 三层 scope + 写硬拦；经验可双写 workspace |
 | 水位 | **B+**（比「全池共享」已进步；仍非协商式黑板 / 向量混合） |
 | 缺口 | 检索仍偏 FTS；缺矛盾消解/`memory_update`；缺「共享产物工件」一等模型（MetaGPT 式文档接力） |
 
@@ -97,7 +97,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 多为「一次 crew run」；少见常驻 cron Agent；主动性属综述③未来方向 |
-| KnowPilot | per-Agent cron 心跳 + 预算门 + 熔断持久化 + LoopContract 证据门 |
+| OasisMind | per-Agent cron 心跳 + 预算门 + 熔断持久化 + LoopContract 证据门 |
 | 水位 | **A-**（产品级主动性稀缺） |
 | 缺口 | LoopContract 主要服务心跳超级；非通用多目标调度市场 |
 
@@ -106,7 +106,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | ToT/LATS/TOOLLLM；MetaGPT 结构化中间件；Reflexion；动态拓扑 GPTSwarm |
-| KnowPilot | ReAct + 可选 critic（默认关）+ 层级委托替代单 Agent 长规划 |
+| OasisMind | ReAct + 可选 critic（默认关）+ 层级委托替代单 Agent 长规划 |
 | 水位 | **B-** |
 | 缺口 | 无 todo/checkpoint；无 SOP；无搜索式规划；反思默认关 |
 
@@ -115,7 +115,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | MCP=agent↔tool 事实层；工具枚举 vs CodeAct |
-| KnowPilot | native 分域 + Skill 沙箱 + MCP stdio + 断路器 + tRPC `invoke_api` 反射 |
+| OasisMind | native 分域 + Skill 沙箱 + MCP stdio + 断路器 + tRPC `invoke_api` 反射 |
 | 水位 | **A-** |
 | 缺口 | MCP 远程/OAuth 薄；轨迹→可执行 Skill 闭环未完成 |
 
@@ -124,7 +124,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | LangGraph checkpointer；多数框架无一等 Chat 状态机 |
-| KnowPilot | SessionStreamHub 双写；三层 store + Stream commit 不变量；父子队列 SSE |
+| OasisMind | SessionStreamHub 双写；三层 store + Stream commit 不变量；父子队列 SSE |
 | 水位 | **A**（产品 UI 正确性深度远超研究框架） |
 
 ### 2.11 故障恢复 / 可重入
@@ -132,7 +132,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 框架差异大；编排综述强调 failure-recovery 轴；生产要 at-least-once 语义 |
-| KnowPilot | 启动恢复四动作（僵尸 Task→failed，不自动续跑）；投递 CLAIM+reconciler；会话手动 resume |
+| OasisMind | 启动恢复四动作（僵尸 Task→failed，不自动续跑）；投递 CLAIM+reconciler；会话手动 resume |
 | 水位 | **A-** |
 | 缺口 | 无细粒度 checkpoint；无多副本选主 |
 
@@ -141,7 +141,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | MCP ⊕ A2A 分层；ACP–A2A 收敛趋势；ANP 去中心发现 |
-| KnowPilot | MCP ✅ · A2A ❌ · 私有 SwarmBus |
+| OasisMind | MCP ✅ · A2A ❌ · 私有 SwarmBus |
 | 水位 | **C+**（本地单域合理；跨产品联协作短板） |
 
 ### 2.13 评估 / 可观测
@@ -149,7 +149,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 | | |
 |---|---|
 | 业界 | 编排综述六维协调质量；MASEval；AgencyBench；级联感染实验 |
-| KnowPilot | Run phase + SSE + 右栏任务看板 + 正确性测试（Vitest/E2E）强 |
+| OasisMind | Run phase + SSE + 右栏任务看板 + 正确性测试（Vitest/E2E）强 |
 | 水位 | **B-**（系统正确性 A，任务效能/协调质量指标 C） |
 | 缺口 | 无协作质量基准；无轨迹导出评测 harness；无「开/关记忆」A/B |
 
@@ -157,7 +157,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 
 沿用旧文结论并更新：
 
-| 组件 | KnowPilot | vs 典型多 Agent 框架 |
+| 组件 | OasisMind | vs 典型多 Agent 框架 |
 |---|---|---|
 | E 执行循环 | ReAct + Run 生命周期 | 同档或更好 |
 | T 工具 | 三源 + 反射 | **更强** |
@@ -170,28 +170,28 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 
 ## 3. 与「生产四模式」对照
 
-| 模式 | 含义 | KnowPilot 是否覆盖 |
+| 模式 | 含义 | OasisMind 是否覆盖 |
 |---|---|---|
 | Supervisor | 单协调者派专家 | ✅ 超级 / Workspace manager |
 | Hierarchical | 多层委派 | ✅ 三 tier 核心 |
 | Pipeline | 顺序阶段产物 | ⚠️ 可手写 prompt 模拟；**无一等 SOP/工件接力** |
 | Peer Swarm | 对等协商 | ❌ 有意不做（威胁模型与成本） |
 
-生产侧共识：**编排（orchestration）存活率高于无约束协作**；KnowPilot 站在编排侧，与 Anthropic lead+subagents、LangGraph supervisor 同族，与「自由群聊 Swarm」不同义。
+生产侧共识：**编排（orchestration）存活率高于无约束协作**；OasisMind 站在编排侧，与 Anthropic lead+subagents、LangGraph supervisor 同族，与「自由群聊 Swarm」不同义。
 
 ---
 
-## 4. 三大经典失败模式 × KnowPilot 防护
+## 4. 三大经典失败模式 × OasisMind 防护
 
 编排综述指出无编排层时的三失败：
 
-| 失败 | 市面常见 | KnowPilot 对策 | 仍存风险 |
+| 失败 | 市面常见 | OasisMind 对策 | 仍存风险 |
 |---|---|---|---|
 | 任务重复 | 多 agent 同解一题 | spawn 60s 去重；池配额；superior FIFO | LLM 仍可能重复派语义不同任务 |
 | 矛盾输出 | 共享前提不一致 | Workspace 记忆 scope；审批；report_back 单通道结果 | 缺结构化工件版本/矛盾消解 |
 | 不收敛 | 循环委托/空转 | depth 上限；向上时机；LoopContract；工具预算 | 单 Agent 长任务缺 todo；反思默认关 |
 
-级联虚假共识（hub 注入 → 全系统感染）论文对 LangGraph/CrewAI 等极残酷——KnowPilot 的 **出域硬拦 + 身份 hint + 非广播拓扑** 降低感染面，但**未做**专门治理层（论文中的 defense 模块）。
+级联虚假共识（hub 注入 → 全系统感染）论文对 LangGraph/CrewAI 等极残酷——OasisMind 的 **出域硬拦 + 身份 hint + 非广播拓扑** 降低感染面，但**未做**专门治理层（论文中的 defense 模块）。
 
 ---
 
@@ -226,7 +226,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 
 ## 6. 与本地三篇综述的交叉索引
 
-| 综述 | 对 Swarm 最相关的论断 | KnowPilot 落点 |
+| 综述 | 对 Swarm 最相关的论断 | OasisMind 落点 |
 |---|---|---|
 | ① 记忆 | 多 Agent 需协调层记忆；Pattern B→C | workspace/agent scope=B+；分层晋升仍弱 |
 | ② Harness | 多 Agent 框架常缺 C/S/L/V；可靠性在 harness | L/S 强；V 弱；与 Claude Code 同档完整性 |
@@ -237,7 +237,7 @@ KnowPilot **不是**「对等 Swarm / 群聊涌现」，也 **不是** MetaGPT �
 
 ## 7. 总评
 
-KnowPilot Swarm 在 **2026 生产编排光谱**里，属于：
+OasisMind Swarm 在 **2026 生产编排光谱**里，属于：
 
 > **Hierarchical + Supervisor（Workspace 内）+ 强 L/S harness 的本地个人 OS**  
 > 而不是 MetaGPT 流水线，也不是 AutoGen 群聊，更不是去中心 A2A 联邦。

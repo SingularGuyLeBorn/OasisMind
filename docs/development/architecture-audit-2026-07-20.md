@@ -1,4 +1,4 @@
-# KnowPilot 架构深度体检报告（2026-07-20）
+# OasisMind 架构深度体检报告（2026-07-20）
 
 > 基线：`master @ f866c89b`。方法：按 5 个集群并行深检（Loop/Stream/Session 内核、Async/Swarm 调度、Heartbeat/Trigger/Approval/Budget、API/数据层/同步、Web Chat 状态层）。
 > 判定纪律：与 AGENTS.md「禁止打补丁」「不变量收进 store/reducer/转移点」对齐——凡靠编排层时序猜测（`setTimeout`/`queueMicrotask`/`await 重新拉取赌落库`/散布的 phase 守卫）维持的正确性，均记为缺陷。

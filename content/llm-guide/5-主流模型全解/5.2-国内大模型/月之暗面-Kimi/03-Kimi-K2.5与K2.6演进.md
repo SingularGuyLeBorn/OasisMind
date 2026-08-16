@@ -129,7 +129,7 @@ Kimi-K2.6 并非在所有层都使用 MoE。根据 Moonshot AI 披露的技术�
 具体而言，Kimi-K2.6 的64层中大约有40层是 MoE 层，其余24层保持为标准的密集 FFN。每个专家本身是一个两层的 MLP，结构与传统 FFN 相同：
 
 $$
-% kp-align: left
+% om-align: left
  \text{Expert}_i(\mathbf{x}) = \text{SiLU}(\mathbf{x} \mathbf{W}_{i,1}) \mathbf{W}_{i,2} \tag{3}
 $$
 

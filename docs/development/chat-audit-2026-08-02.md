@@ -170,8 +170,8 @@
 - mock LLM E2E（`chat-resume-mock.spec.ts` / `chat-queue-mock.spec.ts`）在 baseline 即失败，与本轮改动无关；需单独排查 mock E2E 基础设施。
 
 验证结果：
-- `pnpm --filter @knowpilot/web lint`：0 errors
-- `pnpm --filter @knowpilot/web test`：47 files, 167 passed
-- `pnpm --filter @knowpilot/server lint`：通过
-- `pnpm --filter @knowpilot/server test`：149 files, 1036 passed
+- `pnpm --filter @oasismind/web lint`：0 errors
+- `pnpm --filter @oasismind/web test`：47 files, 167 passed
+- `pnpm --filter @oasismind/server lint`：通过
+- `pnpm --filter @oasismind/server test`：149 files, 1036 passed
 - mock E2E：baseline 失败，前置阻塞

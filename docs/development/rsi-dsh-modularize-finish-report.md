@@ -40,7 +40,7 @@ session.clearGoal：3010 近 50 个会话无 standing goal，无需再清。
 | DSH-E2E-5 | `DSH-E2E-5 — runtime-context 第二轮` `0cb07feb` | 第二轮回声 `bilibili`；log `count=1` | — | mock 真读钩子块；`/debug/platform-login` |
 | DSH-E2E-6 | `DSH-E2E-6 — 另一标签：spawn + report_back` `2f426fdf` | 另一标签不 reload 看见回报正文 + 侧栏子 Agent | 跨标签 PUSH | 复用 E2E-2 场景 |
 
-E2E-4 跑法：`pnpm --filter @knowpilot/web exec playwright test --config=playwright.config.dsh-screenshot.ts`。
+E2E-4 跑法：`pnpm --filter @oasismind/web exec playwright test --config=playwright.config.dsh-screenshot.ts`。
 
 ## Phase 2 行数
 

@@ -10,9 +10,9 @@
 ### Added
 - 记忆系统：新增 `lastAccessedAt` / `accessCount` 元数据，支持按类型差异化衰减（preference/semantic 不衰减，note/procedural 慢，episodic 常规，experience 快），被检索/注入即重置衰减
 - 审批邮件：AgentMail webhook 支持邮件回复审批，第一行 `APPROVE` / `REJECT` 自动决策并执行；审批通知记录 `lastNotifiedMessageId` / `lastNotifiedThreadId`
-- 邮件主题统一：审批 = `[KnowPilot 待审批]`，ask_user = `[KnowPilot 需回复]`，send_email = `[KnowPilot 通知]`
+- 邮件主题统一：审批 = `[OasisMind 待审批]`，ask_user = `[OasisMind 需回复]`，send_email = `[OasisMind 通知]`
 - Chat UI：右下角「回到底部」浮动按钮，回底后自动隐藏
-- 控制台视觉升级：`kp-card-premium` / `kp-badge` / `kp-stat-number` / `kp-table` / `kp-progress` / `kp-lift` 设计系统工具类
+- 控制台视觉升级：`om-card-premium` / `om-badge` / `om-stat-number` / `om-table` / `om-progress` / `om-lift` 设计系统工具类
 
 ### Fixed
 - Chat 刷新丢回复：SessionStreamHub 不再重放 `message_upserted`，no-op upsert 跳过 `tryCommitAfterAssistant`，防止 stale 重放误标 in-flight

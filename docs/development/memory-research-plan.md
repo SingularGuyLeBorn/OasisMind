@@ -1,12 +1,12 @@
 # 记忆系统学习与改造计划
 
-> 定位：**不克隆、不跑分**。按「KnowPilot 下一阶段最该补的记忆能力」反推——该学谁、学什么、入口在哪、对应哪个模块、能抄回哪一行、难度与阅读体量。
+> 定位：**不克隆、不跑分**。按「OasisMind 下一阶段最该补的记忆能力」反推——该学谁、学什么、入口在哪、对应哪个模块、能抄回哪一行、难度与阅读体量。
 > 体量档 = 阅读/代码量成本：S < 500 行 / M 500–3k / L 3k–15k / XL 15k+。
 > 优先级：★ 必看（高 ROI）/ ◆ 选看 / · 知道即可。
 
 ---
 
-## 0. KnowPilot 记忆现状（对照基线）
+## 0. OasisMind 记忆现状（对照基线）
 
 | 层 | 现有实现 | 文件 | 缺口 |
 |---|---|---|---|
@@ -26,7 +26,7 @@
 |---|---|
 | 学什么 | L1 `MEMORY.md`/`USER.md` 硬字符上限（~800+500 token），会话开始冻结注入（保 prefix cache）；L2 `session_search` 用 SQLite FTS5 跨会话按需召回；`memory` 工具 add/replace/remove 三操作 |
 | 入口文件 | `agent/memory_provider.py`（MemoryManager ABC）；`agent/memory_tool.py`；`agent/session_search_tool.py`；`agent/context_compressor.py` |
-| 对应 KnowPilot | `agentRuntime.ts` `buildMemoryContext` + `buildSystemPromptWithHints`；`autoCompact.ts`；`nativeTools.ts` memory_* 工具 |
+| 对应 OasisMind | `agentRuntime.ts` `buildMemoryContext` + `buildSystemPromptWithHints`；`autoCompact.ts`；`nativeTools.ts` memory_* 工具 |
 | 能抄回哪一行 | `agentRuntime.ts:105` `buildSystemPromptWithHints` → 加「冻结快照 + 硬预算截断」；`services.ts` MemoryService → 加 `USER.md` / `AGENT.md` 双文件 + 字符上限 |
 | 难度 | ◆ 中（概念清晰，落地需改注入路径） |
 | 阅读体量 | M（~1.5k 行核心） |
@@ -38,7 +38,7 @@
 
 ---
 
-## 2. OpenClaw — ★ 必看（和 KnowPilot 定位最贴）
+## 2. OpenClaw — ★ 必看（和 OasisMind 定位最贴）
 
 **学什么**：Markdown 三层（MEMORY.md / 日记 / DREAMS）+ memoryFlush + Dreaming 晋升。
 
@@ -46,7 +46,7 @@
 |---|---|
 | 学什么 | `MEMORY.md`（精炼长期）+ `memory/YYYY-MM-DD.md`（工作日记）+ `DREAMS.md`（晋升审阅）；**compact 前静默 memoryFlush 让 Agent 先写入文件**；Dreaming 后台打分晋升；action-sensitive memory（何时可执行/过期/谁授权） |
 | 入口文件 | `docs/concepts/memory.md`；`packages/agent-memory-core/`（memory-core 插件）；`packages/agent-compaction/`（memoryFlush 逻辑） |
-| 对应 KnowPilot | `autoCompact.ts` → 加 flush 前置；`content/memories/` → 加日记层；`nativeTools.ts` memory_* → 加 action-sensitive |
+| 对应 OasisMind | `autoCompact.ts` → 加 flush 前置；`content/memories/` → 加日记层；`nativeTools.ts` memory_* → 加 action-sensitive |
 | 能抄回哪一行 | `autoCompact.ts:60` `maybeCompactMessages` → 在摘要前插入「静默一轮要求 Agent 写入 Memory」；`content/memories/` 目录结构 → 加 `daily/YYYY-MM-DD.md` |
 | 难度 | ◆ 中（flush 需要协调 compact 时机） |
 | 阅读体量 | M（文档 + 核心插件 ~2k 行） |
@@ -66,7 +66,7 @@
 |---|---|
 | 学什么 | 6 层记忆（CLAUDE.md / auto-memory / session memory / agent-memory / team memory / compact）；**microcompact 清大工具结果 + macro compact 对话摘要**；回合结束后台 `extractMemories` 与主 Agent 写入互斥；记忆类型四类 +「不记可从代码推导的内容」；`memoryAge` 新鲜度免责 |
 | 入口文件 | `src/memdir/memdir.ts`（`buildMemoryPrompt`）；`src/memdir/findRelevantMemories.ts`（LLM 选 ≤5）；`src/services/SessionMemory/sessionMemory.ts`（`shouldExtractMemory`）；`src/services/compact/microCompact.ts`（`microcompactMessages`）；`src/services/compact/compact.ts`（`compactConversation`）；`src/services/extractMemories/extractMemories.ts`（`executeExtractMemories`）；`src/services/autoDream/autoDream.ts` |
-| 对应 KnowPilot | `autoCompact.ts` → 加 microcompact；`agentRuntime.ts` → 加 LLM 二次选择 + 去重；`nativeTools.ts` → 加记忆类型约束；新增 extract 后台 |
+| 对应 OasisMind | `autoCompact.ts` → 加 microcompact；`agentRuntime.ts` → 加 LLM 二次选择 + 去重；`nativeTools.ts` → 加记忆类型约束；新增 extract 后台 |
 | 能抄回哪一行 | `autoCompact.ts:30` `estimateChars` → 加 microcompact 先清大 tool result；`agentRuntime.ts:38` `buildMemoryContext` → 加 `alreadySurfaced` 去重 + LLM 选 ≤5 |
 | 难度 | ★ 高（多模块协调） |
 | 阅读体量 | L（核心 ~8k 行，可选读 microCompact + findRelevantMemories ~2k 行） |
@@ -88,7 +88,7 @@
 |---|---|
 | 学什么 | rollout 会话持久化与 resume；SandboxMode 三级；ApprovalPolicy；记忆与恢复同套事件语义 |
 | 入口文件 | 本地 `D:\ALL IN AI\codex` 目前为空；参考 `codex-rs/core/protocol/`、`sandbox/`、`rollout/`（需重新克隆） |
-| 对应 KnowPilot | `SessionStreamHub` 检查点 + resume；`shellRunner.ts` 沙箱分级 |
+| 对应 OasisMind | `SessionStreamHub` 检查点 + resume；`shellRunner.ts` 沙箱分级 |
 | 能抄回哪一行 | `sessionStreamHub.ts` → 加检查点 ID + 可重放游标；`shellRunner.ts` → 加三级权限档 |
 | 难度 | ★ 高（Rust + 协议设计） |
 | 阅读体量 | L（如能重新获取源码） |
@@ -112,7 +112,7 @@
 
 ---
 
-## 6. KnowPilot 推荐分层（自用 + 教学，不上向量库先）
+## 6. OasisMind 推荐分层（自用 + 教学，不上向量库先）
 
 ```text
 L0  身份/指令     Agent.systemPrompt + Workspace AGENTS.md（冻结）

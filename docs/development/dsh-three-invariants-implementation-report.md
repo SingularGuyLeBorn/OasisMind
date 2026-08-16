@@ -40,7 +40,7 @@ WP0–WP7 已按锁死裁决落地并分主题提交。用户可察觉的变化�
 - 偏差：`visibleSetToParsed` 放 `agentTools.ts`；空 `agentSnapshot.tools` 不现场 derive（单测直调按 registry 放行）
 
 ### WP2
-- `_kp_result_path` 仍在？ 是
+- `_om_result_path` 仍在？ 是
 - 删除 `truncateToolResultContent`？ 是
 - commit：`2e09d768 feat(dsh): WP2 工具结果三通道只砍 content`
 - 偏差：execute 仍返 raw，包装在 materialize/append
@@ -82,10 +82,10 @@ WP0–WP7 已按锁死裁决落地并分主题提交。用户可察觉的变化�
 ## 4. 验证命令与结果
 
 ```
-pnpm --filter @knowpilot/server lint   → tsc --noEmit 0 error
-pnpm --filter @knowpilot/shared lint   → tsc --noEmit 0 error
-pnpm --filter @knowpilot/web lint      → eslint 0 error（1 条预存 RoughAnnotation warning）
-pnpm --filter @knowpilot/server test -- --run
+pnpm --filter @oasismind/server lint   → tsc --noEmit 0 error
+pnpm --filter @oasismind/shared lint   → tsc --noEmit 0 error
+pnpm --filter @oasismind/web lint      → eslint 0 error（1 条预存 RoughAnnotation warning）
+pnpm --filter @oasismind/server test -- --run
   Test Files  203 passed (203)
   Tests  1337 passed | 3 skipped (1340)
   Duration  128.75s
@@ -103,7 +103,7 @@ pnpm --filter @knowpilot/server test -- --run
 
 1. sub 误写 spawn_subagent → VisibleSet 不含 + execute `NOT_VISIBLE`（WP1）
 2. 父 mask allow=`read_file` → 子无 web_search、有 agent_report_back（WP4）
-3. 长文 content 截断、磁盘全文、`_kp_result_path`（WP2）
+3. 长文 content 截断、磁盘全文、`_om_result_path`（WP2）
 4. cooperative timeout 等停（WP3）
 5. 两轮 runtime-context 只有一块（WP5）
 6. spawn invalidate / report_back 投递未拆（`useChatRunStream` 仍 invalidate）
@@ -132,7 +132,7 @@ pnpm --filter @knowpilot/server test -- --run
 ## 7. 推拉自检
 
 - [x] spawn / report_back 仍有 PUSH（`useChatRunStream` invalidate + 既有 `uiStateNotify`）
-- [x] F5 后瘦卡 + path 还在（Q1，未改 `_kp_result_path`）
+- [x] F5 后瘦卡 + path 还在（Q1，未改 `_om_result_path`）
 - [x] 交付无「刷新一下」
 
 §7 真 E2E（Chat 脸 E2E-1～6）见 `rsi-dsh-modularize-finish-report.md`。不要改写上方 WP 历史。

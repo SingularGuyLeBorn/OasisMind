@@ -211,7 +211,7 @@
 
 ### 3.5 与本场景适配度
 
-KnowPilot 是**单用户、本地、教学向**，消息量中等，SSE + 内存 store 完全够用，**不需要** CRDT / OT / 向量时钟。适配度：**极高**。
+OasisMind 是**单用户、本地、教学向**，消息量中等，SSE + 内存 store 完全够用，**不需要** CRDT / OT / 向量时钟。适配度：**极高**。
 
 ---
 
@@ -415,7 +415,7 @@ Agent Chat + 工具时间线 + 断线续传，**天然适合有限状态机**。
 | D. **MessageStore(SSE) + Lifecycle 状态机 + Compose 局部**（本文） | 按生命周期拆分 | **采纳**：贴合 SSE 已有基建；教学清晰；改动面可控 |
 | E. 服务端推「全量 messages 快照」每轮 | 简化前端 | **浪费带宽**；Virtuoso 大数据重渲染更差 |
 
-### 8.2 优秀之处（相对 KnowPilot 定位）
+### 8.2 优秀之处（相对 OasisMind 定位）
 
 1. **本地优先 / 教学向**：事件驱动 + 显式状态机，文档可画图，适合「学着写 Agent 产品」。
 2. **复用现有 Hub**：不必上 WebSocket 新协议；扩展 SSE 事件类型即可。
@@ -494,7 +494,7 @@ Agent Chat + 工具时间线 + 断线续传，**天然适合有限状态机**。
 
 **服务端写消息就推消息；前端用 MessageStore 收消息；用显式 StreamLifecycle 管「这一轮在干什么」；用 Compose 管「还没进 DB 的队列与乐观 UI」。三者用可读的英文全名通信，禁止万能缩写 setter。**
 
-这才是和 KnowPilot「自用 + 教学 + Swarm」场景匹配的架构，而不是在 3500 行 `chat.tsx` 上继续叠 effect。
+这才是和 OasisMind「自用 + 教学 + Swarm」场景匹配的架构，而不是在 3500 行 `chat.tsx` 上继续叠 effect。
 
 ---
 

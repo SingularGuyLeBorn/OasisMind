@@ -1,7 +1,7 @@
-# KnowPilot — 完整实施计划 (Markdown ↔ SQLite 同步版)
+# OasisMind — 完整实施计划 (Markdown ↔ SQLite 同步版)
 
 > 本文件为项目迁移与重构的终极指南，开发人员必须严格遵循此规范。
-> 项目路径: `D:\ALL IN AI\KnowPilot`
+> 项目路径: `D:\ALL IN AI\OasisMind`
 > 核心原则: 单用户模式，文章采用 “Markdown 为源，SQLite 为缓存/检索层” 双向同步架构。
 >
 > **实施状态（2026-06-29）**：L1–L5 已全部落地。阶段细节见 `docs/development/README.md` 与 `entities/entity-matrix.md`。
@@ -151,7 +151,7 @@ excerpt: "一句话文章简要介绍。"
   - `create` 成功时，在本地 `content/posts/` 下生成新 `.md` 文件。
   - `update` 成功时，根据 `slug` 生成 YAML Frontmatter + Markdown，同步写入对应的 `.md` 文件。
   - `delete` 成功时，删除对应的 `.md` 文件。
-- [x] 根目录 `package.json` 注册 `"db:sync": "pnpm --filter @knowpilot/server db:sync"`。
+- [x] 根目录 `package.json` 注册 `"db:sync": "pnpm --filter @oasismind/server db:sync"`。
 
 ### 后续阶段（摘要）
 

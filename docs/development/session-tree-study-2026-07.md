@@ -1,7 +1,7 @@
-# pi Session 树学习笔记与 KnowPilot 对照（2026-07）
+# pi Session 树学习笔记与 OasisMind 对照（2026-07）
 
 > 来源：微信公众号文章（pi 系列 session 系统设计），对应源码 `session-manager.ts` + `core/compaction/compaction.ts`。
-> 目的：评估 pi 的 session 设计哪些值得 KnowPilot 吸收。KnowPilot 现状均已对照源码核实。
+> 目的：评估 pi 的 session 设计哪些值得 OasisMind 吸收。OasisMind 现状均已对照源码核实。
 
 ## 一、pi 设计要点
 
@@ -33,13 +33,13 @@
 - 第一条 assistant 回复产生前暂缓写盘：不留「有 user 无回复」的半截会话文件。
 - 读回只建 `byId` 索引 + leaf 落最后一条；子节点关系用时现算（向上回溯单线 while；向下铺树 `getTree` 两趟扫描），不维护冗余结构。
 
-## 二、KnowPilot 现状对照（已核实源码）
+## 二、OasisMind 现状对照（已核实源码）
 
-| 维度 | pi | KnowPilot 现状 | 差距 |
+| 维度 | pi | OasisMind 现状 | 差距 |
 |---|---|---|---|
 | 存储模型 | entry 树（id + parentId） | ChatSession/ChatMessage **扁平存储**，按 createdAt 线性排列（`chatHistory.test.ts`「扁平存储重建多轮 ReAct 消息链」） | 无树结构 |
 | 分支能力 | `branch()` 只动 leafId，旧分支不丢 | 编辑用户消息 → `deleteMany` **截断全部尾部**（agentStream.ts A5）；regenerate 仅 assistant 侧多版本（versionMeta），线性激活其一 | 编辑即丢历史 |
-| 压缩落点 | compaction 是追加节点，原文全留 | `ChatSession.contextSummary` **替换式**更新（带 `kp-compact-boundary:v{n}` 代际标记）+ 边界 ChatMessage；原文不删但重建时被 `sliceHistoryAfterCompactBoundary` 整体切出模型视野 | 无「追加节点+投影」，但原文同样不丢 |
+| 压缩落点 | compaction 是追加节点，原文全留 | `ChatSession.contextSummary` **替换式**更新（带 `om-compact-boundary:v{n}` 代际标记）+ 边界 ChatMessage；原文不删但重建时被 `sliceHistoryAfterCompactBoundary` 整体切出模型视野 | 无「追加节点+投影」，但原文同样不丢 |
 | 摘要结构 | 六小节结构化 checkpoint | 自由文本摘要（prompt 要求保留目标/决策/工具要点/未完成任务） | 结构松散，续跑信息密度低 |
 | 二次压缩 | 基于旧摘要迭代更新 | **已有**：`[已有摘要]` 拼入 transcript 重新压缩（autoCompact.ts） | 对齐 |
 | token 估算 | chars/4 | **已对齐**：`resolveCompactCharThreshold = windowTokens × 0.75 × 4` 字符；`estimateChars` 按字符累计 | 对齐 |
@@ -47,7 +47,7 @@
 | 压缩切点 | 不切在 toolResult 上 | `rest.slice(0, -keepRecent)` 在 LlmMessage 粒度切，recent 首条可能是孤儿 tool 消息 | 待验证/修复 |
 | 持久化 | 单 session 单 .jsonl，坏行跳过 | SQLite（ChatMessage 表）为查询/缓存层 + `content/sessions/*-summary.md`（session_rotate 时） | 架构路线不同 |
 | 半截会话 | 首条 assistant 回复前暂缓写盘 | session 创建即落库（`session_start` 需立刻推送供刷新恢复） | 机制冲突，见下 |
-| 会话轮换 | —（文章未涉及） | `session_rotate` 已落地：归档旧会话 + 同 Agent 新会话 + 总结写入 md 与新会话首条消息 | KnowPilot 独有 |
+| 会话轮换 | —（文章未涉及） | `session_rotate` 已落地：归档旧会话 + 同 Agent 新会话 + 总结写入 md 与新会话首条消息 | OasisMind 独有 |
 
 ## 三、可借鉴清单
 
@@ -65,7 +65,7 @@
 
 ### 暂不采纳（与现有架构冲突）
 
-7. **JSONL 单文件持久化**：KnowPilot 走 SQLite（查询/FTS）+ Markdown 双写，「本地 Markdown 是唯一事实源」是项目基石；jsonl 坏行跳过是为文件追加设计的容错，SQLite 事务天然免疫同类问题。
+7. **JSONL 单文件持久化**：OasisMind 走 SQLite（查询/FTS）+ Markdown 双写，「本地 Markdown 是唯一事实源」是项目基石；jsonl 坏行跳过是为文件追加设计的容错，SQLite 事务天然免疫同类问题。
 8. **9 种 entry 类型全集**：模型/思考档位切换已存在 session 字段与消息 toolCalls 元数据里，不需要独立 entry 类型；只取 compaction 一种的思想即可。
 9. **首条 assistant 回复前暂缓写盘**：与 `session_start` 早推机制冲突——前端刷新/切 tab 后靠真实 sessionId 恢复流式状态，session 必须在发消息瞬间就落库。
 

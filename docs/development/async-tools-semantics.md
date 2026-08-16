@@ -1,6 +1,6 @@
 # 异步工具语义：spawn_subagent × async_task_run
 
-> 本文档是 KnowPilot 两个后台任务工具的**完整语义参考**：定位分工、waitForResult 双模式全生命周期、deliverToQueue 分流与右栏展示、「结果不丢」三层兜底、取消语义、Q4 血缘继承防死锁、async_task_status 去全文的动机。
+> 本文档是 OasisMind 两个后台任务工具的**完整语义参考**：定位分工、waitForResult 双模式全生命周期、deliverToQueue 分流与右栏展示、「结果不丢」三层兜底、取消语义、Q4 血缘继承防死锁、async_task_status 去全文的动机。
 >
 > 所有论断带「文件:行号」出处（行号以 2026-07-16 工作区为准）。设计决策全文不在此重复，只做交叉引用（见文末 §8）。并发不变量的系统性表述见 `concurrency.md` §6/§7，本文是其工具语义侧的展开。
 

@@ -1,4 +1,4 @@
-# KnowPilot 项目总览
+# OasisMind 项目总览
 
 > 本文档面向使用者和二次开发者，说明项目有哪些模块、哪些实体、完整 CRUD 是否具备，以及前端如何与系统交互。
 > 如果你只想快速了解“点哪里、看到什么”，请先看 `scenarios.md`。
@@ -7,7 +7,7 @@
 
 ## 1. 项目定位
 
-KnowPilot 是一个**单用户、本地优先**的智能知识管理与博客平台。
+OasisMind 是一个**单用户、本地优先**的智能知识管理与博客平台。
 
 - **核心原则**：本地 Markdown 文件是数据的唯一事实源，SQLite（通过 Prisma）只作为查询与缓存层。
 - **核心能力**：Markdown 博客、Agent 聊天、Agent 工具调用、子 Agent 委派、异步任务、审批、搜索、定时任务。
@@ -17,7 +17,7 @@ KnowPilot 是一个**单用户、本地优先**的智能知识管理与博客平
 ## 2. 模块划分
 
 ```
-KnowPilot/
+OasisMind/
 ├── apps/
 │   ├── server/          # Express + tRPC + Prisma 后端
 │   └── web/             # Next.js 16 + React 19 前端

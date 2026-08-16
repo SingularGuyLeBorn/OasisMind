@@ -20,7 +20,7 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 
 **见微（OasisMind）** 因此而生：希望它成为真正的**数字主力**——常驻、本地、不离场；每天提醒你昨晚还有什么没看、没做；一周过去了，哪些事还在晾着。见微知著：从细处积累，看见自己。
 
-> 产品曾用名 KnowPilot。仓库与 npm 工作区包名（`@knowpilot/*`）仍处过渡期，用户可见品牌以 **见微 / OasisMind** 为准。
+> 产品曾用名 OasisMind。仓库与 npm 工作区包名（`@oasismind/*`）仍处过渡期，用户可见品牌以 **见微 / OasisMind** 为准。
 
 ---
 
@@ -63,7 +63,7 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 ```bash
 # 1. 克隆仓库
 git clone <repository-url>
-cd OasisMind   # 或本地目录名 KnowPilot（过渡期）
+cd OasisMind   # 或本地目录名 OasisMind（过渡期）
 
 # 2. 安装依赖
 pnpm install
@@ -77,7 +77,7 @@ pnpm db:sync
 # 5. 启动开发服务（并行启动 server + web）
 pnpm dev
 # 已有库、想跳过全量 sync（日常更快）：pnpm dev:quick
-# 前端 Turbopack（可选）：pnpm --filter @knowpilot/web dev:turbo
+# 前端 Turbopack（可选）：pnpm --filter @oasismind/web dev:turbo
 ```
 
 - 前端：[http://localhost:3000](http://localhost:3000)
@@ -159,7 +159,7 @@ pnpm validate       # lint → test → build → e2e 一键验收
 ## 项目结构
 
 ```text
-OasisMind/                  # 产品名见微；本地目录或仍叫 KnowPilot
+OasisMind/                  # 产品名见微；本地目录或仍叫 OasisMind
 ├── apps/
 │   ├── web/                 # Next.js 16 前端（App Router）
 │   └── server/              # Express + tRPC + Prisma 后端

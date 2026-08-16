@@ -43,7 +43,7 @@ description: 从零理解扩散语言模型：为什么用扩散做语言生成�
 两则动画均通过 `algo_viz_create` 注册，源码位于 `apps/algo-viz/src/compositions/`，可在 Remotion Studio 预览：
 
 ```bash
-pnpm --filter @knowpilot/algo-viz dev
+pnpm --filter @oasismind/algo-viz dev
 ```
 
 ---

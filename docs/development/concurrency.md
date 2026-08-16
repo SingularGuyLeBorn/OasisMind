@@ -1,6 +1,6 @@
-# KnowPilot 并发、阻塞与竞态条件防护
+# OasisMind 并发、阻塞与竞态条件防护
 
-> 本文档说明 KnowPilot 在多 Agent、多会话、多异步任务并发时，如何避免竞态条件、阻塞和数据损坏。
+> 本文档说明 OasisMind 在多 Agent、多会话、多异步任务并发时，如何避免竞态条件、阻塞和数据损坏。
 
 ---
 
@@ -260,7 +260,7 @@ AgentMessage pending 超龄走 W14 既有 stale 对账（`SUPERIOR_MIRROR_STALE_
 
 ### 9.2 SQLite 单连接限制
 
-SQLite 是文件级锁，并发写会串行化。KnowPilot 默认单用户、单进程，因此不会遇到严重的写并发冲突。
+SQLite 是文件级锁，并发写会串行化。OasisMind 默认单用户、单进程，因此不会遇到严重的写并发冲突。
 
 如果未来迁移到 PostgreSQL：
 

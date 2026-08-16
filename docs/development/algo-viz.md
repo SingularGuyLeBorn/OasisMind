@@ -45,7 +45,7 @@ epsilon: 0.2
 ```
 ````
 
-Studio 调参：`pnpm --filter @knowpilot/algo-viz dev`。MP4 / GitHub Actions 仅作导出归档可选，不是阅读路径。
+Studio 调参：`pnpm --filter @oasismind/algo-viz dev`。MP4 / GitHub Actions 仅作导出归档可选，不是阅读路径。
 
 ### 为什么有 README 又有 SKILL.md？
 

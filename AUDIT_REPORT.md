@@ -10,7 +10,7 @@
 
 ## 一、执行摘要
 
-见微（OasisMind，包名仍 `@knowpilot/*`）是单用户、本地优先的「Markdown 数字花园 + 自研多 Agent 运行时」：Express/tRPC + Prisma/SQLite 后端驱动统一 ReAct 内核与约 **236** 个 native 工具，Next.js Chat/管理台以 SSE 推拉结合渲染。L1–L5 与 Swarm/审批/异步池在代码层面均已接通。
+见微（OasisMind，包名仍 `@oasismind/*`）是单用户、本地优先的「Markdown 数字花园 + 自研多 Agent 运行时」：Express/tRPC + Prisma/SQLite 后端驱动统一 ReAct 内核与约 **236** 个 native 工具，Next.js Chat/管理台以 SSE 推拉结合渲染。L1–L5 与 Swarm/审批/异步池在代码层面均已接通。
 
 **总体健康度：7 / 10**  
 理由：内核状态机、投递对账、重启不续跑等纪律远超典型自研 Agent；但 god file、默认工具面 ~200 schema、远程暴露默认无鉴权、无产品级 evals，使「继续堆功能」已接近可维护性天花板。
@@ -541,7 +541,7 @@ flowchart TB
 
 ### 6.6 与上轮审计关系
 
-`AUDIT_REPORT_2026-07-26.md` 记录的 P0/P1（UTF-8、resume 单飞、FS 隔离等）标记为已修。本轮为全景重审，**未复测其全部用例**；若需回归验证，建议跑 `pnpm --filter @knowpilot/server test` 全量后对照该账本。
+`AUDIT_REPORT_2026-07-26.md` 记录的 P0/P1（UTF-8、resume 单飞、FS 隔离等）标记为已修。本轮为全景重审，**未复测其全部用例**；若需回归验证，建议跑 `pnpm --filter @oasismind/server test` 全量后对照该账本。
 
 ---
 

@@ -8,7 +8,7 @@ tags:
   - "测试"
   - "LaTeX"
 published: true
-excerpt: "覆盖标题、段落、强调、列表、代码、表格、图片、HTML 嵌入、数学公式、LaTeX 公式大全、脚注等 Markdown / GFM 语法，用于检验 KnowPilot 渲染效果。"
+excerpt: "覆盖标题、段落、强调、列表、代码、表格、图片、HTML 嵌入、数学公式、LaTeX 公式大全、脚注等 Markdown / GFM 语法，用于检验 OasisMind 渲染效果。"
 ---
 
 # Markdown 全语法渲染测试
@@ -121,7 +121,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <div className="p-8">
-      <h1>KnowPilot</h1>
+      <h1>OasisMind</h1>
       <Link href="/posts">浏览文章</Link>
     </div>
   );
@@ -135,21 +135,21 @@ def hello(name: str = "World") -> str:
     return f"Hello, {name}!"
 
 if __name__ == "__main__":
-    print(hello("KnowPilot"))
+    print(hello("OasisMind"))
 ```
 
 #### Bash
 
 ```bash
 pnpm install
-pnpm --filter @knowpilot/web dev
+pnpm --filter @oasismind/web dev
 ```
 
 #### JSON
 
 ```json
 {
-  "name": "knowpilot",
+  "name": "oasismind",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -162,7 +162,7 @@ pnpm --filter @knowpilot/web dev
 #### YAML
 
 ```yaml
-name: KnowPilot
+name: OasisMind
 category: 知识管理
 tags:
   - markdown
@@ -184,7 +184,7 @@ LIMIT 10;
 
 ```rust
 fn main() {
-    let message = "Hello, KnowPilot!";
+    let message = "Hello, OasisMind!";
     println!("{}", message);
 }
 ```
@@ -206,7 +206,7 @@ fn main() {
 
 ### Markdown 图片
 
-![KnowPilot 测试图片](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjYjhhMDkwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5Lbm93UGlsb3QgVGVzdCBJbWFnZTwvdGV4dD48L3N2Zz4= "SVG 测试图")
+![OasisMind 测试图片](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjYjhhMDkwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5Lbm93UGlsb3QgVGVzdCBJbWFnZTwvdGV4dD48L3N2Zz4= "SVG 测试图")
 
 ### 带标题的图片
 
@@ -223,7 +223,7 @@ fn main() {
 
 ### 样式块
 
-<div style="padding: 1rem; background: var(--kp-brand-soft); border: 1px solid var(--kp-divider); border-radius: 0.75rem; margin: 1rem 0;">
+<div style="padding: 1rem; background: var(--om-brand-soft); border: 1px solid var(--om-divider); border-radius: 0.75rem; margin: 1rem 0;">
   <strong>HTML 样式块</strong><br />
   这段内容使用内联 <code>style</code> 渲染，可以验证 <code>rehype-raw</code> 是否正常解析原始 HTML。
 </div>
@@ -231,7 +231,7 @@ fn main() {
 ### 折叠详情
 
 <details>
-  <summary>点击展开：KnowPilot 技术栈</summary>
+  <summary>点击展开：OasisMind 技术栈</summary>
   <ul>
     <li>Next.js 16 + React 19</li>
     <li>tRPC 11 + Prisma</li>
@@ -243,12 +243,12 @@ fn main() {
 
 ### Iframe 嵌入
 
-<iframe src="data:text/html;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+PHN0eWxlPmJvZHl7Zm9udC1mYW1pbHk6c2Fucy1zZXJpZjtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2p1c3RpZnktY29udGVudDpjZW50ZXI7aGVpZ2h0OjEwMHZoO21hcmdpbjowO2JhY2tncm91bmQ6I2Y4ZjZmMztjb2xvcjojMmQyYTI2O308L3N0eWxlPjwvaGVhZD48Ym9keT48ZGl2IHN0eWxlPSJwYWRkaW5nOjFyZW0gMnJlbTtiYWNrZ3JvdW5kOiNmZmY7Ym9yZGVyLXJhZGl1czowLjc1cmVtO2JveC1zaGFkb3c6MCAycHggOHB4IHJnYmEoMCwwLDAsMC4wOCk7Ij48aDI+RW1iZWRkZWQgSFRNTDwvaDI+PHA+VGhpcyBjb250ZW50IGxpdmVzIGluc2lkZSBhbiA8Y29kZT4mbHQ7aWZyYW1lJmd0OzwvY29kZT4uPC9wPjwvZGl2PjwvYm9keT48L2h0bWw+" width="100%" height="220" style="border: 1px solid var(--kp-divider); border-radius: 0.75rem;"></iframe>
+<iframe src="data:text/html;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+PHN0eWxlPmJvZHl7Zm9udC1mYW1pbHk6c2Fucy1zZXJpZjtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2p1c3RpZnktY29udGVudDpjZW50ZXI7aGVpZ2h0OjEwMHZoO21hcmdpbjowO2JhY2tncm91bmQ6I2Y4ZjZmMztjb2xvcjojMmQyYTI2O308L3N0eWxlPjwvaGVhZD48Ym9keT48ZGl2IHN0eWxlPSJwYWRkaW5nOjFyZW0gMnJlbTtiYWNrZ3JvdW5kOiNmZmY7Ym9yZGVyLXJhZGl1czowLjc1cmVtO2JveC1zaGFkb3c6MCAycHggOHB4IHJnYmEoMCwwLDAsMC4wOCk7Ij48aDI+RW1iZWRkZWQgSFRNTDwvaDI+PHA+VGhpcyBjb250ZW50IGxpdmVzIGluc2lkZSBhbiA8Y29kZT4mbHQ7aWZyYW1lJmd0OzwvY29kZT4uPC9wPjwvZGl2PjwvYm9keT48L2h0bWw+" width="100%" height="220" style="border: 1px solid var(--om-divider); border-radius: 0.75rem;"></iframe>
 
 ### 定义列表
 
 <dl>
-  <dt>KnowPilot</dt>
+  <dt>OasisMind</dt>
   <dd>智能知识管理与博客平台。</dd>
   <dt>tRPC</dt>
   <dd>端到端类型安全的 RPC 框架。</dd>
@@ -427,7 +427,7 @@ $$
 
 ## 12. 脚注
 
-GFM 脚注语法示例：KnowPilot 使用 React 作为 UI 框架[^1]，服务端使用 tRPC 提供类型安全 API[^2]。
+GFM 脚注语法示例：OasisMind 使用 React 作为 UI 框架[^1]，服务端使用 tRPC 提供类型安全 API[^2]。
 
 [^1]: React 官网：https://react.dev
 [^2]: tRPC 官网：https://trpc.io
@@ -458,4 +458,4 @@ GFM 脚注语法示例：KnowPilot 使用 React 作为 UI 框架[^1]，服务端
 
 ## 结语
 
-如果以上所有元素都能正确渲染，说明 KnowPilot 的 Markdown 渲染链路（`react-markdown`、`remark-gfm`、`remark-math`、`rehype-raw`、`rehype-katex`、`rehype-highlight`）已经正常工作，并且代码块已支持莫兰迪主题、复制按钮和语言标签。
+如果以上所有元素都能正确渲染，说明 OasisMind 的 Markdown 渲染链路（`react-markdown`、`remark-gfm`、`remark-math`、`rehype-raw`、`rehype-katex`、`rehype-highlight`）已经正常工作，并且代码块已支持莫兰迪主题、复制按钮和语言标签。

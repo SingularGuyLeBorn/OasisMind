@@ -1,13 +1,13 @@
 ---
-title: "欢迎使用 KnowPilot"
+title: "欢迎使用 OasisMind"
 category: "入门"
 tags: ["教程", "入门"]
 published: true
-excerpt: "KnowPilot 是一个智能知识管理与博客平台。"
+excerpt: "OasisMind 是一个智能知识管理与博客平台。"
 ---
-# 欢迎使用 KnowPilot
+# 欢迎使用 OasisMind
 
-KnowPilot 是一个智能知识管理与博客平台。
+OasisMind 是一个智能知识管理与博客平台。
 
 ## 功能特点
 
@@ -19,7 +19,7 @@ KnowPilot 是一个智能知识管理与博客平台。
 ## 代码高亮
 
 ```typescript
-const greeting = "Hello, KnowPilot!";
+const greeting = "Hello, OasisMind!";
 console.log(greeting);
 ```
 

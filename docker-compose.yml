@@ -1,12 +1,12 @@
-# KnowPilot 本地开发 / 生产部署（SQLite + monorepo）
+# OasisMind 本地开发 / 生产部署（SQLite + monorepo）
 # Swarm 模式：docker compose --profile swarm up -d
 
 services:
-  knowpilot:
+  oasismind:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: knowpilot-app
+    container_name: oasismind-app
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -20,7 +20,7 @@ services:
       # SWARM_MODE: "redis"
       # REDIS_URL: "redis://redis:6379"
     volumes:
-      - kp-data:/data
+      - om-data:/data
       # 运行时 CRUD 会写回 config/agents、config/memories/daily、content/uploads，必须可写
       - ./content:/app/content
       - ./config:/app/config
@@ -31,15 +31,15 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: knowpilot-pg
+    container_name: oasismind-pg
     restart: unless-stopped
     profiles: ["postgres"]
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: knowpilot
-      POSTGRES_PASSWORD: knowpilot
-      POSTGRES_DB: knowpilot
+      POSTGRES_USER: oasismind
+      POSTGRES_PASSWORD: oasismind
+      POSTGRES_DB: oasismind
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -47,7 +47,7 @@ services:
   # 启用：docker compose --profile swarm up -d
   redis:
     image: redis:7-alpine
-    container_name: knowpilot-redis
+    container_name: oasismind-redis
     restart: unless-stopped
     profiles: ["swarm"]
     ports:
@@ -65,7 +65,7 @@ services:
   # 配置 SEARXNG_URL=http://127.0.0.1:8080 后，smartSearch 优先走本地实例
   searxng:
     image: searxng/searxng:latest
-    container_name: knowpilot-searxng
+    container_name: oasismind-searxng
     restart: unless-stopped
     profiles: ["searxng"]
     ports:
@@ -80,16 +80,16 @@ services:
   # 需先设置 CLOUDFLARE_TUNNEL_TOKEN 环境变量
   cloudflare:
     image: cloudflare/cloudflared:latest
-    container_name: knowpilot-tunnel
+    container_name: oasismind-tunnel
     restart: unless-stopped
     profiles: ["cloudflare"]
     command: tunnel run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     depends_on:
-      - knowpilot
+      - oasismind
 
 volumes:
-  kp-data:
+  om-data:
   pgdata:
   redisdata:
