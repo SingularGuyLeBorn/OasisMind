@@ -21,6 +21,9 @@ export interface MockLlmOptions {
   signal?: AbortSignal;
   /** 请求级强制 scenario（HTTP 服务经 header 传入；优先于 process.env.MOCK_LLM_SCENARIO） */
   scenario?: string;
+  /** 与真实请求体同一套思考开关 */
+  thinking?: { type?: string } | string | null;
+  reasoningEffort?: string | null;
 }
 
 export interface MockLlmScenario {

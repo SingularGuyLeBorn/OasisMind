@@ -17,8 +17,6 @@ function makeConfig(baseUrl: string, overrides?: Partial<AppConfig["llm"]>): App
   const config = createTestConfig(createTempProjectDir());
   config.llm = {
     ...config.llm,
-    // 本文件 mock 的是 Chat Completions 线格式；auto 会让 deepseek 走 /responses
-    httpProtocol: "chat_completions",
     maxRetries: 2,
     baseDelayMs: 1,
     fallbackModels: [],
