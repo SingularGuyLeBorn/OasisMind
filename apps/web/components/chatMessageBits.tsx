@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Eye,
   FileText,
+  GitFork,
   Gauge,
   Globe,
   Info,
@@ -757,6 +758,7 @@ export function MessageActions({
   onShare,
   onSpeak,
   onSaveAsPost,
+  onForkFrom,
   onToggleBookmark,
   onToggleUsage,
   bookmarked = false,
@@ -767,6 +769,7 @@ export function MessageActions({
   showSpeak = true,
   showBookmark = false,
   showSaveAsPost = false,
+  showForkFrom = false,
   showUsage = false,
   usageOpen = false,
   isEditing = false,
@@ -784,6 +787,7 @@ export function MessageActions({
   onShare?: () => void;
   onSpeak?: () => void;
   onSaveAsPost?: () => void;
+  onForkFrom?: () => void;
   onToggleBookmark?: () => void;
   onToggleUsage?: () => void;
   bookmarked?: boolean;
@@ -794,6 +798,7 @@ export function MessageActions({
   showSpeak?: boolean;
   showBookmark?: boolean;
   showSaveAsPost?: boolean;
+  showForkFrom?: boolean;
   showUsage?: boolean;
   usageOpen?: boolean;
   isEditing?: boolean;
@@ -874,6 +879,19 @@ export function MessageActions({
           data-testid="message-save-as-post-btn"
         >
           <BookPlus className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {showForkFrom && onForkFrom && (
+        <button
+          type="button"
+          onClick={onForkFrom}
+          disabled={disabled}
+          className={btnClass}
+          title="从这里另写"
+          aria-label="从这里另写"
+          data-testid="message-fork-from-btn"
+        >
+          <GitFork className="h-3.5 w-3.5" />
         </button>
       )}
       {showRegenerate && onRegenerate && (

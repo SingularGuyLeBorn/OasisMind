@@ -26,6 +26,20 @@ export function requestComposePrefill(text: string): void {
   }
 }
 
+export const SAVE_TOOL_RESULT_EVENT = "knowpilot-save-tool-result";
+
+export type SaveToolResultDetail = {
+  sessionId: string;
+  path: string;
+  previewTitle?: string;
+  previewExcerpt?: string;
+};
+
+export function requestSaveToolResult(detail: SaveToolResultDetail): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SAVE_TOOL_RESULT_EVENT, { detail }));
+}
+
 export function formatToolArtifactCite(opts: {
   path: string;
   content: string;

@@ -268,6 +268,28 @@ export function useChatSseSubscriptions({
         utils.trigger.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "task_updated" });
       });
+      register("session_tree_updated", (ev) => {
+        let targetSid = sid;
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          if (data.sessionId) targetSid = data.sessionId;
+        } catch {
+          /* ignore */
+        }
+        utils.session.tree.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
+        utils.session.inspectTurn.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
+        utils.message.listForChat
+          .fetch({ sessionId: targetSid, limit: 50 })
+          .then((page) => {
+            sessionMessagesStore.hydrateSessionMessages(
+              targetSid,
+              (page.items ?? []) as import("@knowpilot/shared").ChatMessage[],
+              "view",
+            );
+          })
+          .catch(logQueryCatch);
+        postUiState({ type: "session_tree_updated", sessionId: targetSid });
+      });
       register("goal_updated", (ev) => {
         let targetSid = sid;
         try {
@@ -443,6 +465,26 @@ export function useChatSseSubscriptions({
         } else {
           utils.dailyFlow.listByDay.invalidate().catch(logQueryCatch);
           utils.dailyFlow.dayReport.invalidate().catch(logQueryCatch);
+        }
+      }
+      if (t === "session_tree_updated") {
+        const sid =
+          data && typeof data === "object" && "sessionId" in data && typeof (data as { sessionId?: unknown }).sessionId === "string"
+            ? (data as { sessionId: string }).sessionId
+            : undefined;
+        if (sid) {
+          utils.session.tree.invalidate({ sessionId: sid }).catch(logQueryCatch);
+          utils.session.inspectTurn.invalidate({ sessionId: sid }).catch(logQueryCatch);
+          utils.message.listForChat
+            .fetch({ sessionId: sid, limit: 50 })
+            .then((page) => {
+              sessionMessagesStore.hydrateSessionMessages(
+                sid,
+                (page.items ?? []) as import("@knowpilot/shared").ChatMessage[],
+                "view",
+              );
+            })
+            .catch(logQueryCatch);
         }
       }
       if (t === "goal_updated") {

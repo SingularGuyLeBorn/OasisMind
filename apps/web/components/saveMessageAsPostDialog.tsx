@@ -19,7 +19,9 @@ import { buttonVariants } from "@/components/ui/button";
 
 export type SaveMessageAsPostTarget = {
   sessionId: string;
-  messageId: string;
+  messageId?: string;
+  /** 工具落盘路径：另存全文时走 createFromToolResult */
+  toolResultPath?: string;
   /** 预填标题 / 预览（前端展示用，落库仍走服务端正文） */
   previewTitle?: string;
   previewExcerpt?: string;
@@ -41,7 +43,7 @@ export function SaveMessageAsPostDialog({
   if (!open || !target) return null;
   return (
     <SaveMessageAsPostDialogInner
-      key={`${target.sessionId}:${target.messageId}`}
+      key={`${target.sessionId}:${target.messageId ?? target.toolResultPath ?? "post"}`}
       target={target}
       onClose={onClose}
       onSuccess={onSuccess}
@@ -84,7 +86,9 @@ function SaveMessageAsPostDialogInner({
   );
 
   const createFromChat = trpc.post.createFromChat.useMutation();
+  const createFromTool = trpc.post.createFromToolResult.useMutation();
   const utils = trpc.useUtils();
+  const pending = createFromChat.isPending || createFromTool.isPending;
 
   const candidatePosts = useMemo(() => {
     if (postQuery.trim().length >= 1) return searchQ.data ?? [];
@@ -93,22 +97,29 @@ function SaveMessageAsPostDialogInner({
 
   const submit = () => {
     setError(null);
-    createFromChat
-      .mutateAsync({
-        sessionId: target.sessionId,
-        messageId: target.messageId,
-        mode,
-        garden,
-        title: title.trim() || undefined,
-        targetPostId: mode === "create" ? undefined : targetPostId || undefined,
-        category: category.trim() || null,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        published,
-        appendHeading: mode === "append" ? appendHeading.trim() || undefined : undefined,
-      })
+    const common = {
+      mode,
+      garden,
+      title: title.trim() || undefined,
+      targetPostId: mode === "create" ? undefined : targetPostId || undefined,
+      category: category.trim() || null,
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      published,
+      appendHeading: mode === "append" ? appendHeading.trim() || undefined : undefined,
+    };
+    const run = target.toolResultPath
+      ? createFromTool.mutateAsync({ path: target.toolResultPath, ...common })
+      : target.messageId
+        ? createFromChat.mutateAsync({
+            sessionId: target.sessionId,
+            messageId: target.messageId,
+            ...common,
+          })
+        : Promise.reject(new Error("缺少消息或落盘路径"));
+    run
       .then(async (res) => {
         if (!res.success || !res.data) {
           setError(res.error?.message || "落库失败");
@@ -133,7 +144,7 @@ function SaveMessageAsPostDialogInner({
       className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
       data-testid="save-message-as-post-dialog"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !createFromChat.isPending) onClose();
+        if (e.target === e.currentTarget && !pending) onClose();
       }}
     >
       <div className="w-full max-w-lg rounded-2xl border border-[var(--kp-divider)] bg-[var(--kp-bg)] p-4 shadow-2xl">
@@ -316,7 +327,7 @@ function SaveMessageAsPostDialogInner({
                 type="button"
                 onClick={onClose}
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                disabled={createFromChat.isPending}
+                disabled={pending}
               >
                 取消
               </button>
@@ -324,7 +335,7 @@ function SaveMessageAsPostDialogInner({
                 type="button"
                 onClick={submit}
                 disabled={
-                  createFromChat.isPending ||
+                  pending ||
                   ((mode === "update" || mode === "append") && !targetPostId)
                 }
                 className={cn(
@@ -333,7 +344,7 @@ function SaveMessageAsPostDialogInner({
                 )}
                 data-testid="save-message-as-post-submit"
               >
-                {createFromChat.isPending ? (
+                {pending ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     写入中…

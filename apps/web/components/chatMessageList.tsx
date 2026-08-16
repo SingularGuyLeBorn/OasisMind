@@ -169,6 +169,8 @@ export interface ChatMessageListProps {
   onRetry: (messageId: string) => void;
   /** Chat → 知识库：打开落库对话框 */
   onSaveAsPost?: (messageId: string, content: string) => void;
+  /** 从该消息另写（switchBranch 到此叶） */
+  onForkFrom?: (messageId: string) => void;
   setEditingMessageId: (id: string | null) => void;
   setEditDraft: (draft: string) => void;
   /** 会话级压缩摘要（压缩卡片点击展开） */
@@ -206,6 +208,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   onEditConfirm: handleEditConfirm,
   onRetry: handleRetry,
   onSaveAsPost: handleSaveAsPost,
+  onForkFrom: handleForkFrom,
   setEditingMessageId,
   setEditDraft,
   contextSummary,
@@ -316,7 +319,7 @@ export const ChatMessageList = memo(function ChatMessageList({
     if (!displaySteps.length) return null;
     return (
       <div className="flex w-full justify-start">
-        <ThinkingTimeline steps={displaySteps} isLive={false} />
+        <ThinkingTimeline steps={displaySteps} isLive={false} sessionId={effectiveSessionId} />
       </div>
     );
   };
@@ -389,6 +392,8 @@ export const ChatMessageList = memo(function ChatMessageList({
               ? () => handleSaveAsPost(assistantId, active.content)
               : undefined
           }
+          showForkFrom={!!handleForkFrom && !isEditingAssistant}
+          onForkFrom={handleForkFrom ? () => handleForkFrom(assistantId) : undefined}
           onEdit={() => {
             setEditingMessageId(assistantId);
             setEditDraft(active.content);
@@ -429,6 +434,7 @@ export const ChatMessageList = memo(function ChatMessageList({
           <ThinkingTimeline
             steps={liveTimeline}
             isLive={!streamingContent.trim()}
+            sessionId={effectiveSessionId}
           />
         </div>
       )}
@@ -584,6 +590,8 @@ export const ChatMessageList = memo(function ChatMessageList({
               onEditSave={() => handleEditConfirm(group.userMessage.id)}
               onEditCancel={() => setEditingMessageId(null)}
               onRetry={() => handleRetry(group.userMessage.id)}
+              showForkFrom={!!handleForkFrom && !isEditing && !isSystemish}
+              onForkFrom={handleForkFrom ? () => handleForkFrom(group.userMessage.id) : undefined}
               showEdit={!isSystemish}
               showRetry={isLastUser && !isEditing && !isSystemish}
               showRegenerate={false}

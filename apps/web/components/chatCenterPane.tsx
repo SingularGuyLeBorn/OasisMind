@@ -34,6 +34,8 @@ import {
 import { UserSendQueuePanel } from "@/components/chatQueue";
 import { ChatMessageList, type ChatMessageListProps } from "@/components/chatMessageList";
 import { ChatGoalBar } from "@/components/chatGoalBar";
+import { ChatSessionTreeBar } from "@/components/chatSessionTreeBar";
+import { ChatTurnInspect } from "@/components/chatTurnInspect";
 import { SessionAskUserBar } from "@/components/sessionAskUserBar";
 import { SessionArtifactsStrip } from "@/components/sessionArtifactsStrip";
 import { ChatDispatchStrip } from "@/components/chatDispatchStrip";
@@ -363,6 +365,12 @@ export function ChatCenterPane({
         !sessionDetail?.parentSessionId && (
           <ChatGoalBar sessionId={effectiveSessionId} />
         )}
+      {effectiveSessionId && (sessionDetail?.kind ?? "chat") !== "heartbeat" && (
+        <>
+          <ChatSessionTreeBar sessionId={effectiveSessionId} disabled={isStreaming} />
+          <ChatTurnInspect sessionId={effectiveSessionId} />
+        </>
+      )}
 
       {(rotateBanner || (sessionDetail?.status === "archived" && sessionDetail.rotatedToSessionId)) && (
         <div

@@ -45,6 +45,7 @@ import { useChatEnqueue } from "@/lib/useChatEnqueue";
 import { useChatDerivedQueues } from "@/lib/useChatDerivedQueues";
 import { NEW_STREAM_KEY } from "@/lib/chatKeys";
 import { sessionLabel } from "@/lib/displayLabels";
+import { SAVE_TOOL_RESULT_EVENT, type SaveToolResultDetail } from "@/lib/composePrefill";
 import type { RunStreamOptions, RunStreamOutcome } from "@/lib/useChatRunStream";
 
 export interface ChatSessionPaneProps {
@@ -107,6 +108,22 @@ export function ChatSessionPane({
   onWarmSkills,
 }: ChatSessionPaneProps) {
   const [saveAsPostTarget, setSaveAsPostTarget] = useState<SaveMessageAsPostTarget | null>(null);
+
+  useEffect(() => {
+    const onSaveTool = (ev: Event) => {
+      const detail = (ev as CustomEvent<SaveToolResultDetail>).detail;
+      if (!detail?.path || !detail.sessionId) return;
+      if (sessionId && detail.sessionId !== sessionId) return;
+      setSaveAsPostTarget({
+        sessionId: detail.sessionId,
+        toolResultPath: detail.path,
+        previewTitle: detail.previewTitle,
+        previewExcerpt: detail.previewExcerpt,
+      });
+    };
+    window.addEventListener(SAVE_TOOL_RESULT_EVENT, onSaveTool);
+    return () => window.removeEventListener(SAVE_TOOL_RESULT_EVENT, onSaveTool);
+  }, [sessionId]);
   const lifecycleKey = sessionId ?? NEW_STREAM_KEY;
 
   const {
@@ -467,6 +484,23 @@ export function ChatSessionPane({
     [sessionId, showToast],
   );
 
+  const forkMut = trpc.session.switchBranch.useMutation();
+  const handleForkFrom = useCallback(
+    (messageId: string) => {
+      if (!sessionId) {
+        showToast("请先选择会话");
+        return;
+      }
+      forkMut
+        .mutateAsync({ sessionId, messageId })
+        .then(() => hydrateFromServer())
+        .catch(() => {
+          showToast("换叶失败");
+        });
+    },
+    [sessionId, showToast, forkMut, hydrateFromServer],
+  );
+
   const messageListProps: ChatMessageListProps = useMemo(
     () => ({
       messageGroups,
@@ -497,6 +531,7 @@ export function ChatSessionPane({
       onEditConfirm: handleEditConfirm,
       onRetry: handleRetry,
       onSaveAsPost: handleSaveAsPost,
+      onForkFrom: handleForkFrom,
       setEditingMessageId,
       setEditDraft,
       contextSummary: sessionDetail?.contextSummary ?? null,
@@ -531,6 +566,7 @@ export function ChatSessionPane({
       handleEditConfirm,
       handleRetry,
       handleSaveAsPost,
+      handleForkFrom,
       sessionDetail?.contextSummary,
       chatConfig.model,
     ],

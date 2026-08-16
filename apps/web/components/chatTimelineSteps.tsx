@@ -11,6 +11,7 @@ import {
   Check,
   ChevronRight,
   Clock,
+  BookPlus,
   FileText,
   ListTodo,
   Loader2,
@@ -30,7 +31,7 @@ import { formatToolDisplayName } from "@/lib/toolDisplayName";
 import { extractToolResultImages, type ToolResultImage } from "@/lib/toolResultImages";
 import { ToolStepIcon, type ToolIconStatus } from "@/lib/toolIcons";
 import { trpc } from "@/lib/trpc";
-import { formatToolArtifactCite, requestComposePrefill } from "@/lib/composePrefill";
+import { formatToolArtifactCite, requestComposePrefill, requestSaveToolResult } from "@/lib/composePrefill";
 
 /** 从工具结果卡片解析落盘路径（压缩卡或短结果注解） */
 function resolveOffloadPath(result: unknown): {
@@ -416,9 +417,11 @@ function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
 const ToolStep = memo(function ToolStep({
   step,
   isLive = false,
+  sessionId,
 }: {
   step: Extract<TimelineStep, { type: "tool" }>;
   isLive?: boolean;
+  sessionId?: string | null;
 }) {
   const toolBaseName = step.name
     .replace(/^native:/, "")
@@ -626,6 +629,27 @@ const ToolStep = memo(function ToolStep({
             >
               {step.hint || formatToolResultHint(step.result) || (hasError ? "失败" : "")}
             </span>
+          )}
+          {sessionId && offload && (
+            <button
+              type="button"
+              data-testid="tool-offload-save-post"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                requestSaveToolResult({
+                  sessionId,
+                  path: offload.path,
+                  previewTitle: step.name.replace(/^native:/, ""),
+                  previewExcerpt: `落盘 ${offload.originalChars ?? ""} 字`.trim(),
+                });
+              }}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--kp-text-2)] hover:bg-[var(--kp-bg-mute)]"
+              title="把落盘全文写入知识库"
+            >
+              <BookPlus className="h-3 w-3" />
+              另存为文章
+            </button>
           )}
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--kp-text-3)] transition-transform duration-200 group-open/tool:rotate-90" />
         </summary>
@@ -896,9 +920,11 @@ const ProgressStep = memo(function ProgressStep({
 export function ThinkingTimeline({
   steps,
   isLive = false,
+  sessionId,
 }: {
   steps: TimelineStep[];
   isLive?: boolean;
+  sessionId?: string | null;
 }) {
   // 历史/非末尾的空 Thinking 一律不渲染；直播中仅保留「正在等首 token」的最后一个空壳
   const visibleSteps = steps.filter((step, i) => {
@@ -940,7 +966,7 @@ export function ThinkingTimeline({
               ) : step.type === "progress" ? (
                 <ProgressStep step={step} isLive={isLive} />
               ) : (
-                <ToolStep step={step} isLive={isLive} />
+                <ToolStep step={step} isLive={isLive} sessionId={sessionId} />
               )}
             </div>
           );
