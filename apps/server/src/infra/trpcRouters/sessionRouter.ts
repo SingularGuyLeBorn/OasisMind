@@ -8,7 +8,7 @@ import {
   resumeSessionSchema, ensureMainSessionSchema, openNewSessionSchema, compactSessionSchema,
   setSessionGoalSchema, sessionGoalControlSchema, listSideRunsSchema, rotateLineageSchema,
   listRecentRotatesSchema, rotateGraphSchema, createSessionQueueItemSchema, reorderSessionQueueItemsSchema,
-  switchBranchSchema, sessionTreeSchema, forkSessionSchema,
+  switchBranchSchema, sessionTreeSchema, forkSessionSchema, inspectSessionTurnSchema,
 } from "@knowpilot/shared";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { TRPCError } from "@trpc/server";
@@ -489,6 +489,16 @@ export const sessionRouter = router({
     .query(async ({ ctx, input }) => {
       const { getSessionTree } = await import("../chatTree.js");
       return getSessionTree(ctx.prisma, input.sessionId);
+    }),
+  inspectTurn: publicProcedure
+    .meta({
+      description: "只读：本轮 VisibleSet 与活跃路径上下文摘要（不改状态）。",
+      aiReadable: false,
+    })
+    .input(inspectSessionTurnSchema)
+    .query(async ({ ctx, input }) => {
+      const { inspectSessionTurn } = await import("../sessionTurnInspect.js");
+      return inspectSessionTurn(ctx.prisma, ctx.config, input.sessionId);
     }),
   spawn: publicProcedure
     .meta({ description: "创建并启动子代理任务（subagent）。返回 subagentSessionId 与 jobId。", aiReadable: false })
