@@ -26,6 +26,7 @@ tools:
   - "native:platform_login"
   - "native:browser_login_status"
   - "native:platform_doctor"
+  - "native:generate_illustration"
   - "native:skills_list"
   - "native:skill_view"
   - "native:skill_manage"

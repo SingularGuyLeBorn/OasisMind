@@ -1,4 +1,5 @@
 import { CHILD_OWN_TOOLS } from "@oasismind/shared";
+import { markUnverifiedAssistantDump } from "../../../swarmReportContract.js";
 import { resolveAgent as defaultResolveAgent } from "../../../agentResolver.js";
 import { getAsyncJobOrchestrator } from "../../../asyncJobOrchestrator.js";
 import { getAppConfig } from "../../../config.js";
@@ -629,7 +630,7 @@ async function spawnSubagentSyncWait(
       });
       const text = (last?.content ?? "").trim();
       if (text) {
-        finalContent = text;
+        finalContent = markUnverifiedAssistantDump(text);
         finalStatus = "success";
         // 落终态 + delivered=true：同上的 v7 sync 通道交付闭环；asyncResult 供右栏「同步任务」区
         // 与审计追溯，父 Agent 拿到的全文经下方 attach.content 返回。
@@ -641,7 +642,12 @@ async function spawnSubagentSyncWait(
               finishedAt: new Date(),
               delivered: true,
               deliveredAt: new Date(),
-              output: { asyncResult: finalContent },
+              output: {
+                asyncResult: finalContent,
+                evidenceStatus: "none",
+                evidence: [],
+                outcome: "success",
+              },
             } as any)
             .catch((err) => { console.warn("[session.ts] best-effort failed:", err instanceof Error ? err.message : err); return undefined; });
         }
@@ -660,7 +666,7 @@ async function spawnSubagentSyncWait(
       select: { content: true },
     });
     if (last?.content?.trim()) {
-      finalContent = last.content;
+      finalContent = markUnverifiedAssistantDump(last.content);
       finalStatus = "success";
     }
   }

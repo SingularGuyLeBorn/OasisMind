@@ -21,6 +21,11 @@ import { deriveDecisionScope } from "./approvalScope.js";
 import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
 import { MEMORY_ARCHIVE_THRESHOLD, MEMORY_TYPES, memoryAgentScope, memoryWorkspaceScope } from "@oasismind/shared";
+import type {
+  ReportEvidenceItem,
+  ReportEvidenceStatus,
+  ReportOutcome,
+} from "./swarmReportContract.js";
 
 /**
  * IVE 失败归因（EvoScientist）：
@@ -39,6 +44,9 @@ export interface ExperienceSummary {
   keyLearnings: string;
   failureKind?: ExperienceFailureKind;
   failureReason?: string;
+  /** 子 Agent report_back 出处合同；缺省=历史经验，视为可蒸馏 */
+  evidenceStatus?: ReportEvidenceStatus;
+  evidence?: ReportEvidenceItem[];
 }
 
 /** 从工具结果对象提取错误签名（error 字段 / success===false） */
@@ -58,6 +66,44 @@ function extractToolError(result: unknown): string | null {
  * 2. 无工具错误但整个 run 未产出有效内容（producedOutput=false）→ direction（任务理解/思路偏差，改 prompt 层引导）
  * 3. 否则 → unknown（规则无法判定，留待人工/上游 LLM 复核）
  */
+function bareToolName(name: string): string {
+  return name.startsWith("native:") ? name.slice("native:".length) : name;
+}
+
+/** 从本轮工具结果抽出最近一次 report_back 出处合同（无则 null） */
+export function extractReportBackContract(toolCalls: StoredToolCall[]): {
+  evidenceStatus?: ReportEvidenceStatus;
+  evidence?: ReportEvidenceItem[];
+  outcome?: ReportOutcome;
+} | null {
+  for (let i = toolCalls.length - 1; i >= 0; i--) {
+    const t = toolCalls[i];
+    if (t.kind !== "tool") continue;
+    if (bareToolName(t.name) !== "agent_report_back") continue;
+    const r = t.result;
+    if (!r || typeof r !== "object" || Array.isArray(r)) {
+      return { evidenceStatus: "none" };
+    }
+    const obj = r as Record<string, unknown>;
+    const status = obj.evidenceStatus;
+    return {
+      evidenceStatus:
+        status === "cited" || status === "none" || status === "excused" ? status : "none",
+      evidence: Array.isArray(obj.evidence) ? (obj.evidence as ReportEvidenceItem[]) : undefined,
+      outcome:
+        obj.outcome === "failed" || obj.outcome === "blocked" || obj.outcome === "success"
+          ? obj.outcome
+          : undefined,
+    };
+  }
+  return null;
+}
+
+/** 未核验回报不进 procedural 蒸馏；缺字段的历史经验视为可蒸馏 */
+export function isCitedExperience(summary: ExperienceSummary): boolean {
+  return summary.evidenceStatus !== "none";
+}
+
 export function attributeFailure(
   toolCalls: StoredToolCall[],
   opts?: { producedOutput?: boolean },
@@ -71,6 +117,13 @@ export function attributeFailure(
     if (err) {
       return { failureKind: "implementation", failureReason: `工具 ${t.name} 报错：${err}` };
     }
+  }
+  const report = extractReportBackContract(toolCalls);
+  if (report?.outcome === "failed" || report?.outcome === "blocked") {
+    return {
+      failureKind: "direction",
+      failureReason: `子 Agent 以 outcome=${report.outcome} 回报，任务方向或目标未达成`,
+    };
   }
   if (opts?.producedOutput === false) {
     return {
@@ -113,10 +166,13 @@ export async function accumulateExperience(
 
     const tools = result.toolCalls.filter((t) => t.kind === "tool");
     const toolNames = tools.map((t) => t.name);
-    const success = !!result.content.trim();
+    const report = extractReportBackContract(result.toolCalls);
+    const outcomeFailed = report?.outcome === "failed" || report?.outcome === "blocked";
+    const success = !!result.content.trim() && !outcomeFailed;
     const attribution = success ? null : attributeFailure(result.toolCalls, { producedOutput: success });
+    const unverified = report?.evidenceStatus === "none";
 
-    // 简化经验总结：工具使用 + 成功/失败 + 耗时 + IVE 失败归因
+    // 简化经验总结：工具使用 + 成功/失败 + 耗时 + IVE 失败归因 + report_back 出处
     const experience: ExperienceSummary = {
       taskDescription: input.message.slice(0, 200),
       toolsUsed: [...new Set(toolNames)],
@@ -124,11 +180,13 @@ export async function accumulateExperience(
       durationMs,
       tokenUsage: result.tokenUsage,
       keyLearnings: success
-        ? `任务成功完成。使用了 ${toolNames.length} 次工具调用（${[...new Set(toolNames)].join(", ")}），耗时 ${Math.round(durationMs / 1000)}s。`
+        ? `任务成功完成。使用了 ${toolNames.length} 次工具调用（${[...new Set(toolNames)].join(", ")}），耗时 ${Math.round(durationMs / 1000)}s。${unverified ? "回报未经出处核验。" : ""}`
         : `任务可能失败。内容为空或被中断。使用了 ${toolNames.length} 次工具调用。`,
       ...(attribution
         ? { failureKind: attribution.failureKind, failureReason: attribution.failureReason }
         : {}),
+      ...(report?.evidenceStatus ? { evidenceStatus: report.evidenceStatus } : {}),
+      ...(report?.evidence?.length ? { evidence: report.evidence } : {}),
     };
 
     // 写入 Memory（type="experience"，scope=agent:{id} 写时隔离——W5：不再直查 Prisma，
@@ -137,12 +195,13 @@ export async function accumulateExperience(
     const memoryBase = {
       content: JSON.stringify(experience),
       type: MEMORY_TYPES.EXPERIENCE,
-      strength: success ? 1.0 : 0.5,
+      strength: success ? (unverified ? 0.7 : 1.0) : 0.5,
       keywords: [
         ...new Set(toolNames),
         input.trigger ?? "chat",
         success ? "success" : "failed",
         ...(attribution ? [`failure:${attribution.failureKind}`] : []),
+        ...(unverified ? ["evidence:none"] : report?.evidenceStatus === "cited" ? ["evidence:cited"] : []),
       ],
       attribution: "experience" as const,
     };
@@ -473,10 +532,19 @@ export async function distillExperienceToProcedural(
         limit: cfg.maxPerScope,
       });
 
-      if (experiences.length < cfg.minCount) continue;
+      // 未核验回报（evidenceStatus=none）不进蒸馏，避免把无出处幻觉写成 procedural
+      const usable = experiences.filter((e) => {
+        try {
+          return isCitedExperience(JSON.parse(e.content) as ExperienceSummary);
+        } catch {
+          return false;
+        }
+      });
+
+      if (usable.length < cfg.minCount) continue;
 
       // 3) 按 strength × recency 排序（recencyScore 已在 repo.read 中作为排序因子，这里再精排一次）
-      const sorted = [...experiences].sort((a, b) => {
+      const sorted = [...usable].sort((a, b) => {
         const scoreA = a.strength * recencyScore(a.updatedAt, now);
         const scoreB = b.strength * recencyScore(b.updatedAt, now);
         return scoreB - scoreA;

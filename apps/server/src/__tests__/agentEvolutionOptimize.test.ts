@@ -80,6 +80,19 @@ describe("attributeFailure（IVE 规则归因）", () => {
     expect(r.failureReason).toBeUndefined();
   });
 
+  it("report_back outcome=failed 且无工具错误 → direction", () => {
+    const r = attributeFailure([
+      toolCall("agent_report_back", {
+        success: true,
+        outcome: "failed",
+        evidenceStatus: "excused",
+        message: "已向上级回报。",
+      }),
+    ]);
+    expect(r.failureKind).toBe("direction");
+    expect(r.failureReason).toContain("outcome=failed");
+  });
+
   it("thinking/content 条目不参与归因", () => {
     const r = attributeFailure([
       { id: "t1", name: "__thinking__", args: {}, result: { error: "x" }, kind: "thinking" },
@@ -122,6 +135,40 @@ describe("accumulateExperience 失败归因写入", () => {
     const written = JSON.parse(writeMock.mock.calls[0]![0].content) as ExperienceSummary;
     expect(written.success).toBe(true);
     expect(written.failureKind).toBeUndefined();
+  });
+
+  it("report_back 无出处 → 成功经验降强度并打 evidence:none", async () => {
+    const prisma = makePrisma();
+    await accumulateExperience(
+      prisma,
+      {} as any,
+      "a1",
+      "s1",
+      {
+        content: "完成了",
+        toolCalls: [
+          toolCall("agent_report_back", {
+            success: true,
+            message: "已向上级回报。",
+            evidenceStatus: "none",
+            evidence: [],
+            outcome: "success",
+            unverified: true,
+          }),
+        ],
+        tokenUsage: null,
+        roundsUsed: 1,
+      },
+      baseInput,
+      1000,
+    );
+    const arg = writeMock.mock.calls[0]![0];
+    const written = JSON.parse(arg.content) as ExperienceSummary;
+    expect(written.success).toBe(true);
+    expect(written.evidenceStatus).toBe("none");
+    expect(written.keyLearnings).toContain("未经出处核验");
+    expect(arg.strength).toBe(0.7);
+    expect(arg.keywords).toContain("evidence:none");
   });
 
   it("失败经验带 implementation 归因 + keywords 标签", async () => {

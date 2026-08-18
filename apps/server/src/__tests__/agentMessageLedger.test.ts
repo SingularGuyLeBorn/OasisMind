@@ -216,6 +216,31 @@ describe("W14 AgentMessage 投递记账回写", () => {
     }
   }, 15_000);
 
+  it("report_back messageType=query 不结案跟踪 Task", async () => {
+    const ctx = await createContextInner();
+    const fx = await createSwarmFixture(ctx);
+    try {
+      const before = await prisma.task.findUnique({ where: { id: fx.trackingTaskId } });
+      expect(before?.status).toBe("running");
+
+      const report = (await executeNativeTool(
+        "agent_report_back",
+        { content: "卡在登录墙，需要 cookie", messageType: "query" },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; settled?: boolean; message?: string };
+
+      expect(report.success).toBe(true);
+      expect(report.settled).toBe(false);
+      expect(report.message).toContain("未结案");
+
+      const after = await prisma.task.findUnique({ where: { id: fx.trackingTaskId } });
+      expect(after?.status).toBe("running");
+      expect(after?.delivered).not.toBe(true);
+    } finally {
+      await cleanupSwarmFixture(fx);
+    }
+  });
+
   it("report_back 桥接零模糊兜底：血缘键 miss 时不得误完成同 Agent 兄弟任务的跟踪 Task", async () => {
     // chatAgentStream 打桩：autoConsume 会认领新建的 success Task 并起流，桩住避免真 LLM
     vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (_s, _c, input, _inv, emit) => {
@@ -324,7 +349,7 @@ describe("W14 AgentMessage 投递记账回写", () => {
         where: { sessionId: fx.parentSessionId, role: "user" },
         orderBy: { createdAt: "desc" },
       });
-      expect(bubble?.content).toBe("W14 全链路回报：请查收");
+      expect(bubble?.content).toBe("[未经出处核验]\nW14 全链路回报：请查收");
       const toolResults = bubble?.toolResults as { subagentResult?: { jobId?: string } } | null;
       expect(toolResults?.subagentResult?.jobId).toBe(fx.trackingTaskId);
 
@@ -793,7 +818,11 @@ describe("W14 AgentMessage 投递记账回写", () => {
       expect(reported.error).toBeUndefined();
       expect(reported.success).toBe(true);
       const reportMsg = await prisma.agentMessage.findFirst({
-        where: { fromAgentId: fx.subAgentId, toAgentId: fx.parentAgentId, content: "W16a 伪造 taskRef 回报（无桥接）" },
+        where: {
+          fromAgentId: fx.subAgentId,
+          toAgentId: fx.parentAgentId,
+          content: { contains: "W16a 伪造 taskRef 回报（无桥接）" },
+        },
         orderBy: { createdAt: "desc" },
       });
       expect(reportMsg).toBeTruthy();

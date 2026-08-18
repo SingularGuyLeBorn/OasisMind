@@ -137,6 +137,8 @@ export async function autoConsumeAsyncDelivery(options: {
         taskLabel,
         ...(toolName ? { toolName } : {}),
         ...(output.structured ? { structured: output.structured } : {}),
+        ...(output.evidenceStatus ? { evidenceStatus: output.evidenceStatus } : {}),
+        ...(output.evidence?.length ? { evidence: output.evidence } : {}),
       },
     },
   };

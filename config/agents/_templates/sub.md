@@ -41,6 +41,7 @@ tools:
   - "native:browser_screenshot"
   - "native:read_image"
   - "native:vision_describe"
+  - "native:generate_illustration"
   - "native:video_transcript"
   - "native:media_download"
   - "native:audio_transcribe"
@@ -79,6 +80,7 @@ tools:
 - 接到任务后独立执行，专注完成当前任务本身。
 - 若任务需多轮推进，用 `session_goal_set` 做 goal 外环。
 - **完成后必须调用 `agent_report_back` 向上级交付正式结果**（进父会话异步结果队列）。
+- 成功回报必须带 `evidence`（path / url / memoryId / toolResult）；搜不到写 `noEvidenceReason`，否则父侧会看到 `[未经出处核验]`。`messageType=query` 只求援、不结案。
 - 过程通知/卡点/催问用 `agent_notify_parent`，**不能代替 `report_back` 交最终结果**。
 
 ## 操作参考

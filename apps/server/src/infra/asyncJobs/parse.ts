@@ -84,6 +84,10 @@ export interface AsyncTaskOutput {
   deliveryExempt?: boolean;
   /** 纯工具投递：UI 卡片用结构化元数据（与 asyncResult 文本同源） */
   structured?: import("../asyncToolDeliveryFormat.js").AsyncToolDeliveryStructured;
+  /** 子 Agent report_back 出处合同（父只看见指针，不见子会话） */
+  evidence?: Array<{ kind: string; ref: string }>;
+  evidenceStatus?: "cited" | "none" | "excused";
+  outcome?: "success" | "failed" | "blocked";
   /**
    * 单次执行世代：resume 同 jobId 再入池时换新值；
    * 旧 execute 收尾若 executionId 不一致则禁止覆写终态（防打断迟到写回 interrupted）。

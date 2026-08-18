@@ -1759,7 +1759,7 @@ describe("native:spawn_subagent 同步等待系统抓取", () => {
 
     expect(result.error).toBeUndefined();
     expect(result.success).toBe(true);
-    expect(result.content).toBe("系统抓取的最终答复");
+    expect(result.content).toBe("[未经出处核验]\n系统抓取的最终答复");
     expect(result.status).toBe("success");
     expect(result.jobId).toBe("track-1");
     expect(services.task.update).toHaveBeenCalledWith(
@@ -1767,7 +1767,12 @@ describe("native:spawn_subagent 同步等待系统抓取", () => {
         id: "track-1",
         status: "success",
         delivered: true,
-        output: { asyncResult: "系统抓取的最终答复" },
+        output: {
+          asyncResult: "[未经出处核验]\n系统抓取的最终答复",
+          evidenceStatus: "none",
+          evidence: [],
+          outcome: "success",
+        },
       }),
     );
     fs.rmSync(root, { recursive: true, force: true });

@@ -231,6 +231,42 @@ describe("distillExperienceToProcedural", () => {
     expect(remaining.length).toBe(3);
   });
 
+  it("T5: 全部是未核验回报（evidenceStatus=none）→ 不蒸馏", async () => {
+    const config = makeConfig({ minCount: 3 });
+    const agentId = `${DISTILL_MARKER}${Date.now()}-t5`;
+    createdAgentIds.push(agentId);
+    const scope = memoryAgentScope(agentId);
+    for (let i = 0; i < 4; i++) {
+      const item = await repo.write({
+        content: JSON.stringify({
+          taskDescription: `未核验任务 ${i}`,
+          toolsUsed: ["agent_report_back"],
+          success: true,
+          durationMs: 1000,
+          tokenUsage: null,
+          keyLearnings: "回报未经出处核验。",
+          evidenceStatus: "none",
+        }),
+        type: MEMORY_TYPES.EXPERIENCE,
+        scope,
+        strength: 0.7,
+        keywords: ["evidence:none"],
+        attribution: "experience",
+        source: "experience-distill-test",
+      });
+      createdMemoryIds.push(item.id);
+    }
+
+    const result = await distillExperienceToProcedural(services, config);
+    expect(result.scopesProcessed).toBe(0);
+    expect(result.distilled).toBe(0);
+
+    const procedural = await repo.read({ types: [MEMORY_TYPES.PROCEDURAL], scopes: [scope] });
+    expect(procedural.length).toBe(0);
+    const remaining = await repo.read({ types: [MEMORY_TYPES.EXPERIENCE], scopes: [scope] });
+    expect(remaining.length).toBe(4);
+  });
+
   it("T4: procedural 属于 MEMORY_INJECTABLE_TYPES 召回路径", async () => {
     const config = makeConfig({ minCount: 1 });
     const agentId = `${DISTILL_MARKER}${Date.now()}-t4`;

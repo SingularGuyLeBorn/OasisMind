@@ -1,3 +1,4 @@
+import { normalizeReportBack } from "../../../swarmReportContract.js";
 import { getSwarmBus } from "../../../swarmBus.js";
 import type { NativeToolContext } from "../types.js";
 
@@ -8,7 +9,7 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
     return { error: "当前 Agent 无上级（parentId 为空），无法 report_back。" };
   }
   if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
-  const content = String(args.content || "");
+  const report = normalizeReportBack(args);
   const bus = getSwarmBus(ctx.prisma, ctx.services);
   // report_back 本身就是正式向上回报通道，即使在工具轮次中也必须放行。
   // taskRef 不接受 LLM 入参（W16a-3）：桥接找到跟踪 Task 后由服务端强制写 jobId（下方）
@@ -16,8 +17,8 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
     {
       fromAgentId: ctx.agentSnapshot.id,
       toAgentId: ctx.agentSnapshot.parentId,
-      content,
-      messageType: (args.messageType as any) ?? "report",
+      content: report.asyncResult,
+      messageType: report.messageType,
       source: ctx.agentSnapshot.tier as any,
     },
     ctx.agentSnapshot?.tier ?? "sub",
@@ -26,6 +27,19 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
   );
   if (!result.success) {
     return { error: `[${result.error?.code}] ${result.error?.reason}` };
+  }
+
+  // query = 向上求援，不是任务结案：只发 SwarmBus，不完成跟踪 Task。
+  if (report.messageType === "query") {
+    return {
+      success: true,
+      message: "已向上级提问（未结案）。",
+      evidenceStatus: report.evidenceStatus,
+      evidence: report.evidence,
+      outcome: report.outcome,
+      unverified: report.unverified,
+      settled: false,
+    };
   }
 
   // 桥接：完成父会话跟踪 Task（spawn 时创建）或新建投递，供 pullAsyncQueue / 异步列表消费
@@ -109,7 +123,12 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
           id: matched.id,
           status: "success",
           finishedAt: new Date(),
-          output: { asyncResult: content },
+          output: {
+            asyncResult: report.asyncResult,
+            evidence: report.evidence,
+            evidenceStatus: report.evidenceStatus,
+            outcome: report.outcome,
+          },
         } as any);
         jobId = matched.id;
       } else {
@@ -123,7 +142,7 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
           input: {
             kind: "async_agent",
             sessionId: parentSessionId,
-            task: content.slice(0, 200),
+            task: report.body.slice(0, 200),
             taskLabel,
             agentSnapshot: {
               id: snapshot.id,
@@ -138,7 +157,12 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
             subagentSessionId: ctx.sessionId,
             sourceType: "subagent",
           },
-          output: { asyncResult: content },
+          output: {
+            asyncResult: report.asyncResult,
+            evidence: report.evidence,
+            evidenceStatus: report.evidenceStatus,
+            outcome: report.outcome,
+          },
         } as any);
         if (created.success && created.data) {
           jobId = (created.data as { id: string }).id;
@@ -192,5 +216,13 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
     console.warn("[agent_report_back] 桥接父会话异步投递失败:", err);
   }
 
-  return { success: true, message: "已向上级回报。" };
+  return {
+    success: true,
+    message: "已向上级回报。",
+    evidenceStatus: report.evidenceStatus,
+    evidence: report.evidence,
+    outcome: report.outcome,
+    unverified: report.unverified,
+    settled: true,
+  };
 }

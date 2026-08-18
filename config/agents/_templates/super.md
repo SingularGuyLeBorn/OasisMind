@@ -12,6 +12,7 @@ tools:
   - "native:browser_screenshot"
   - "native:read_image"
   - "native:vision_describe"
+  - "native:generate_illustration"
   - "native:video_transcript"
   - "native:media_download"
   - "native:audio_transcribe"

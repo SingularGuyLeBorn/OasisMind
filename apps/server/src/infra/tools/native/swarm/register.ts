@@ -510,11 +510,30 @@ const SWARM_DEFS: NativeToolDefinition[] = [
     description:
       "【正式任务结果】把本轮任务的最终结果回报给上级，进入父会话「异步任务结果队列」（右栏待消费），父 Agent 会据此继续工作。" +
       "与 agent_notify_parent 的区别：report_back=任务完成/失败的正式交付；notify_parent=过程中的进度/催问/闲聊通知，走发送队列，不是任务结果。" +
+      "成功回报须带 evidence（path/url/memoryId/toolResult）；缺出处会标 [未经出处核验]。" +
+      "messageType=query 只向上求援，不结案跟踪任务。" +
       "非阻塞派活（waitForResult=false）完成后必须调用本工具；不要用 notify_parent 代替本工具交结果。",
     parameters: zodParams(
       z.object({
         content: z.string().describe("回报内容（任务最终结果全文）"),
-        messageType: z.enum(["report", "query"]).describe("回报或请求帮助").optional(),
+        messageType: z.enum(["report", "query"]).describe("report=结案交付；query=求援不结案").optional(),
+        outcome: z.enum(["success", "failed", "blocked"]).describe("任务结局，默认 success").optional(),
+        evidence: z
+          .array(
+            z.union([
+              z.string().describe("出处指针（路径/URL/记忆 id）"),
+              z.object({
+                kind: z.enum(["path", "url", "memoryId", "toolResult", "note"]).optional(),
+                ref: z.string().describe("路径、URL、memoryId 或工具结果指针"),
+              }),
+            ]),
+          )
+          .describe("出处列表。成功结案应至少一条；父 Agent 只看见指针，看不见子会话。")
+          .optional(),
+        noEvidenceReason: z
+          .string()
+          .describe("确实搜不到出处时说明原因（搜过但无结果/任务本身无需材料）。有此字段不再打未核验标记。")
+          .optional(),
       }),
     ),
   },
