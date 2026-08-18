@@ -30,6 +30,10 @@ RSI（Recursive Self-Improvement，递归自我改进）专题：AI 加速 AI �
 - [各实验室动态：AlphaEvolve / Sakana / Meta / 国内各家](notes/labs-dynamics)
 - [入门综述：A Comprehensive Survey of Self-Evolving AI Agents（arXiv:2508.07407）](notes/arxiv-survey-self-evolving-agents)
 
+## 资源清单（2026-08 补充）
+
+- [Awesome-Self-Evolving-Agents：自进化 Agent 资源全景清单](notes/awesome-self-evolving-agents-list) — 论文索引（推理时/训练式/协同进化三类）+ 基准与开源库
+
 ## 概念 / 待核实
 
 - [MirroS · Physical RSI](notes/mirros-physical-rsi) —— 小红书概念帖；官方论文待核实

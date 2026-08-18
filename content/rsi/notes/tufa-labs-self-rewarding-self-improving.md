@@ -1,7 +1,7 @@
 ---
 title: Tufa Labs《Self Rewarding Self Improving》：无参考答案的自奖励自改进闭环
 category: 论文
-published: false
+published: true
 excerpt: >-
   Tufa Labs（arXiv:2505.08827）利用 generator-verifier
   gap：模型无需参考答案，仅靠自我评判（self-judging）提供奖励信号即可 RL 自改进；配合合成问题生成形成完整闭环——Qwen2.5-7B

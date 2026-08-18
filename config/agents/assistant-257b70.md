@@ -19,6 +19,7 @@ tools:
   - "native:browser_screenshot"
   - "native:read_image"
   - "native:vision_describe"
+  - "native:generate_illustration"
   - "native:video_transcript"
   - "native:search_arxiv"
   - "native:fetch_arxiv"

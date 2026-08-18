@@ -14,6 +14,7 @@ tools:
   - "native:browser_screenshot"
   - "native:read_image"
   - "native:vision_describe"
+  - "native:generate_illustration"
   - "native:video_transcript"
   - "native:read_file"
   - "native:write_file"

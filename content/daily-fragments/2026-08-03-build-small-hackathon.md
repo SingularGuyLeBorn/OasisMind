@@ -3,7 +3,7 @@
 ---
 title: 2026-08-03 碎片：Build Small Hackathon 四个获奖项目
 category: 灵感收集
-published: false
+published: true
 excerpt: >-
   OpenBMB × Hugging Face Build Small Hackathon（≤32B 小模型）获奖项目精选 4
   个：Aranya、WanderLust、Grandpa's Bedtime Stories、Aether Garden

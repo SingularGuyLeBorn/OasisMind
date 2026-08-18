@@ -1,0 +1,100 @@
+---
+title: RSI 各实验室动态：AlphaEvolve / Sakana / Meta / 国内各家
+category: 实验室动态
+published: true
+excerpt: >-
+  跨实验室 RSI 动态：DeepMind AlphaEvolve（生产环境，Gemini 矩阵乘法提速 23%、FlashAttention
+  32.5%）、Sakana RSI Lab（演化算法）、Meta 裁员人才外流、腾讯 Hyra-1.0、MiniMax
+  M2.7、Apodex/Weco/Hermes 创业公司；三条路线并行。
+tags:
+  - RSI
+  - AlphaEvolve
+  - Sakana
+  - MiniMax
+  - 腾讯混元
+  - Hermes
+  - Apodex
+---
+# RSI 各实验室动态：AlphaEvolve / Sakana / Meta / 智谱清华
+
+> 整理日期：2026-08-05（更新：并入重建稿第 1/3、2/3 部分）｜ 综合：arXiv、DeepMind 官方博客、The Decoder、Futurism、新浪财经、周星星《自进化》长文
+
+## 一、Google DeepMind：AlphaEvolve——从「发现算法」到「反哺自身训练」
+
+### 论文与方法
+
+DeepMind 于 2025-06-16 发布白皮书《AlphaEvolve: A coding agent for scientific and algorithmic discovery》（arXiv:2506.13131，署名含 Matej Balog、Pushmeet Kohli、Sebastian Nowozin 等）。AlphaEvolve 是「进化式编码智能体」：编排自主 LLM 流水线，**直接修改代码**改进算法，通过 evaluator 持续反馈迭代演化，自动逼近科学发现与工程优化。它是 AlphaTensor（Romera-Paredes et al., 2023）的扩展——把「自动发现算法」从矩阵乘法推广到更广的数学与计算问题。
+
+### 标志性成果
+
+- 数学：4x4 复矩阵乘法只需 **48 次标量乘法**——该设定下 **56 年来首次超越 Strassen 算法**（1969）。
+- 基础设施：改进数据中心调度算法；硬件加速器电路设计找到功能等价但更简的电路；并**加速了支撑 AlphaEvolve 自身的 LLM 的训练**（论文摘要原文 accelerated the training of the LLM underpinning AlphaEvolve itself）——「自我反哺」的最直接证据。
+- 2026-05-07 DeepMind 官方博客披露落地数字：Google Spanner 写放大降低 20%；Willow 量子处理器分子模拟提出误差比基线低 10 倍的量子电路（deepmind.google/blog/alphaevolve-impact）。
+- Pichai 2025-05-14 发推：已回收全舰队约 0.7% 计算量（x.com/sundarpichai/status/1922691182125015452）。
+
+### Gemini 反哺细节
+
+AlphaEvolve 是 Gemini 驱动的 coding agent，闭环是「用 Gemini 改进算法 → 算法反过来加速训练 Gemini 的基础设施」。2026 年 I/O 进入 agentic Gemini era（Gemini 3.5），Pichai 描述内部 AI 开发工具从 3 月每日 0.5 万亿 token 增长到超过 3 万亿 token/天（blog.google/innovation-and-ai/sundar-pichai-io-2026）。2026 年 AlphaEvolve 随 Google Cloud 正式 GA。Pichai 在 Matthew Berman 访谈（2025-05-23）称它是 one of the most groundbreaking work we are doing。
+
+另据周星星《自进化》长文：AlphaEvolve 生产环境跑了一年多，帮 Gemini 自己的矩阵乘法核心提速 23%、FlashAttention 提速 32.5%，甚至提出过硬件层面的 Verilog 修改；目前每轮迭代大概能省 1% 左右的计算，业内讨论认为这个数字冲到 5% 到 10% 后，「自我改进」的时间表会从几十年缩到几年。AlphaEvolve 因此常被当成 RSI 已在生产环境悄悄发生的例证。
+
+### Pichai 2026 年年中「泼冷水」
+
+任务线索称 Pichai 于 2026-06 公开降温；可核实材料：The Decoder 2026-07-23 报道《Google CEO Pichai says Gemini's next leap depends on building much larger base models》——Pichai 把下一阶段突破押注在**更大的基础模型**而非自我改进上；同期他在 Cheeky Pint 播客（2026-04）谈 AGI 时保持务实，并披露 2026 年资本开支 1750 至 1850 亿美元。**注意：未检索到 6 月原话，时间点在 6 月/7 月之间存在出入**，建议表述为「2026 年年中 Pichai 降温」并注明出处日期。
+
+## 二、Sakana AI：Darwin Gödel Machine + 专门 RSI Lab
+
+### DGM 论文
+
+Sakana AI（联合创始人 Llion Jones 与 David Ha，2023 年成立，2026-01 获谷歌投资、估值 25 亿美元）的 RSI 主线论文是《Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents》（arXiv:2505.22954，作者 Jenny Zhang、Shengran Hu、Cong Lu、Robert Lange、Jeff Clune，Sakana + UBC Clune 组，2025-05-29）。方法要点：
+
+- 系统**反复修改自己的代码**（包括修改「修改自身代码」的能力），并在编码 benchmark 上**逐次实证验证**每个改动，化解 Gödel machine 理论中「无法证明改动有益」的困境；
+- 受达尔文进化与开放世界（open-endedness）研究启发，维护**智能体档案库（archive）**：抽样一个 agent → 用基础模型生成它的「新变体」→ 验证后放回，形成**不断分叉的进化树**，并行探索多条路径；
+- 进化中自发涌现的改进：更好的代码编辑工具、长上下文窗口管理、**同行评审（peer-review）机制**等。
+
+### 效果（20% 到 50%）
+
+SWE-bench 从 **20.0% 提升到 50.0%**，Polyglot 从 **14.2% 提升到 30.7%**；显著超过「无自我改进」或「无开放探索」的消融基线，证明两个组件缺一不可；所有实验均在沙箱与人工监督下进行。同线前作 SICA《A Self-Improving Coding Agent》（arXiv:2504.15228）在 SWE-bench Verified 随机子集上把 17% 提到 53%，DGM 是其开放世界版强化。
+
+### 2026 年成立专门 RSI Lab
+
+据 The Decoder 报道《Sakana AI bets AI that improves itself can break the compute arms race of frontier labs》（2026 年年中，任务线索为 6 月）：Sakana 成立 **Sakana AI RSI Lab**，目标「让神经网络迭代地重写、测试并优化自己的代码」，路线是**进化优化而非无限堆算力**，以此跳出前沿实验室的算力军备竞赛；与既往工作 LLM-Squared（LLM 为其他模型生成训练算法）、AI Scientist（发表于 Nature，自动化科研）一脉相承。实验室同步发布 RSI Lab 研究岗招聘，声明称 By transitioning from static, human-led R&D to autonomous, self-improving intelligence engines, we are turning constraints into our greatest compounding advantage（与 CEO David Ha 直接共事）；路线图终点是**无需人类干预、自主改进自身架构的智能体**。报道亦点出：该路线恰好撞上 Anthropic 曾警告的 RSI 安全风险，Sakana 的立场是强调其「更高效、更普惠」的一面。
+
+## 三、Meta：扎克伯格称「开始看到自我改进的迹象」
+
+2026 年扎克伯格发布以 **Personal Superintelligence（个人超级智能）** 为主题的公开信与视频（与投资者电话会同日），信中称 Meta **begun to see glimpses of our AI systems improving themselves**（开始看到我们的 AI 系统自我改进的迹象），并把该迹象与「发展超级智能」直接挂钩。Futurism 报道《Zuckerberg Says Meta Is Now Seeing Signs of Advanced AI Improving Itself》（futurism.com/zuckerberg-self-improving-ai）的细节：这一说法**极其含糊、未给任何具体案例**，且公开信里只是顺带一提；同一天的投资者电话会上扎克伯格**反而没有提**「自我改进迹象」，只说 Meta「正在开发这类模型」——被媒体解读为想借 RSI 概念提振叙事又不愿被具体承诺绑定。其公开信原话还包括：Developing super intelligence is now in sight... AI will improve all our existing systems and enable the creation and discovery of new things that aren't imaginable today. But it is an open question what we will direct super intelligence towards.（超级智能已在眼前……但我们将把超级智能导向何方仍是开放问题。）另：在 LlamaCon 与纳德拉的对话中，小扎提出「到 2026 年底让 AI 编写 Meta 一半代码」的工程目标（Mashable：mashable.com/article/llamacon-mark-zuckerberg-ai-writes-meta-code），是其叙事的工程侧注脚。
+
+人才背景补充：2025 年 10 月 Meta 裁掉 AI 研究部门约 600 人，时任 FAIR 研究科学家总监的田渊栋在列——这正是 Recursive Superintelligence 团队组建的人才背景；田渊栋在访谈中对 Meta「蒸馏」员工数据争议评论：从公司利益角度不意外，但可能引发员工对抗甚至数据投毒。
+
+## 四、智谱（Zhipu AI）：唐杰——「自改进大模型最有前景」
+
+唐杰 2026-05-16 接受新浪财经采访（《从一人公司到无人公司！智谱AI创始人唐杰：2026年突破焦点是长时程Agent，自改进大模型最有前景》，finance.sina.com.cn/wm/2026-05-16/doc-inhxzeqz3183808.shtml）：
+
+- 明确判断：**2026 年突破焦点是长时程 Agent，自改进大模型是最有前景的道路**；
+- 论证「工程化实现『不可能』」的三根支柱：**记忆**（超长上下文 100 万 token 以上 + RAG 已显著弥补差距）、**持续学习**（真正持续学习仍难，但模型发布周期在缩短）、**自我判断**；
+- 转引 DeepMind 研究员 Mostafa Dehghani 2026 年 4 月播客观点：「AI 中更高的循环（loop）是自改进」，且**自我提升的最大瓶颈不在算力或模型能力，而在『评估』**——「如果你无法衡量它，你就无法改进它」。
+
+更早铺垫：智谱 2026-01-08 上市首日唐杰内部信称「最具挑战性的探索，是开启通往持续学习与自主进化的道路……当前所有主流 AI 模型的智能在部署后基本是静态的……需要前瞻性布局在线学习（Online Learning）/持续学习（Continual Learning）」并预告 GLM-5（21经济网：21jingji.com/article/20260108/herald/7bd7a55b1bedf1b5cb12d0eb6a454d7e.html）。
+
+## 五、清华大学：SkillEvolver 与 SEAGym
+
+### SkillEvolver（技能即元技能）
+
+arXiv:2605.10500《SkillEvolver: Skill Learning as a Meta-Skill》，2026-05-11，Genrui Zhang、Erle Zhu、Jinfeng Zhou、Caiyan Jia、Hongning Wang：指出 agent 技能是「一次性静态产物」——人类策展或一次生成后即不再更新。SkillEvolver 让**单个元技能（meta-skill）反复地编写、部署、精炼领域技能**：
+
+- 学习对象是**技能的文本与代码而非模型权重**，产物可无重训地注入任何协议兼容的 CLI agent；**元技能本身也是技能**（自我指涉结构）；
+- 与 trace-distillation 不同，它**只在技能被部署后**才据「其他 agent 使用时的失败信号」精炼，并配 fresh-agent overfit audit 防泄漏与静默绕过（技能看似有效但运行时从未被调用）；
+- 效果：SkillsBench **83 个任务（15+ 领域）上 56.8% 准确率** vs 人工策展技能 43.6%、无技能基线 29.9%；KernelBench 3 个 GPU kernel 优化任务平均加速从 **1.16 倍提升到 1.51 倍**。
+
+### SEAGym（自进化评测环境）
+
+arXiv:2606.17546《SEAGym: An Evaluation Environment for Self-Evolving LLM Agents》，2026-06-16，Congjie Zheng、Chuanyi Xue、Bin Liang、Jun Yang、Changshui Zhang：指出自进化 agent 的改进主要发生在 **agent harness**（包住基础模型的结构化执行层：prompt、记忆、工具、中间件、运行时状态、模型-工具交互循环），而现有评测只看孤立任务分或单条曲线，掩盖「改动是否可复用、是否过拟合近期任务、是否变贵、是否损害旧行为」。SEAGym 提供**训练/验证/测试/回放/成本**五类记录的评测环境，把 Terminal-Bench 2.0 与 HLE 变成动态自进化任务源。统一协议下对比 ACE、TF-GRPO、AHE 后发现：**频繁更新未必提升留出集性能；有用的中间快照可能在后期崩溃；数据源多样性与模型后端影响 harness 可靠性**——「RSI 需要新评测学」的代表性论据。
+
+## 六、国内其它 + 创业公司
+
+- **腾讯混元**：7 月 21 日发布 Hyra-1.0，能自己跑「探索 → 提方案 → 读反馈 → 修订」这套循环。
+- **MiniMax**：4 月开源的 **M2.7** 官方称是「第一个深度参与自我进化的模型」，在内部 harness 里自主跑了 100 多轮「分析失败 → 改代码 → 跑评测」，把性能提了 30%（详见周星星笔记 Harness 层案例）。
+- **Recursive Superintelligence**（田渊栋、Richard Socher 等）：押注 latent space 方向（latent token 取代语言 token），融资 6.5 亿美元/46.5 亿估值（详见公司专篇）。
+- **Apodex**（陈天桥创立）：靠上百个子 agent 分工协同、外加独立验证团队互相纠错；官方管这叫「discoverative intelligence」（详见周星星笔记）。
+- **Weco AI**：专注 autoresearch 方向的小团队，口号「We build recursively self-improving AI」；AIDE² 实验用双层优化让 agent 自己改进自己「做研究」的 agent，8 天、100 步迭代出的版本在三个外部基准上显著超过基线。
+- **Nous Research（Hermes）**：2026 年 2 月开源、MIT 协议——任务用到 5 次以上工具调用就自动把经验写成 SKILL.md，配 Curator 后台维护（活跃→陈旧→归档），是 Harness 层自我进化的开源代表。

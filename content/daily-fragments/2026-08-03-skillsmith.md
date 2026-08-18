@@ -1,7 +1,7 @@
 ---
 title: 2026-08-03 碎片：SkillSmith——让模型像读文本一样读权重
 category: 灵感收集
-published: false
+published: true
 excerpt: Google SkillSmith：让 LLM 像阅读/生成文本一样阅读旧权重、生成新权重，文本知识与参数技能合一
 tags:
   - Google

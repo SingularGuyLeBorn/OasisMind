@@ -1,7 +1,7 @@
 ---
 title: 自进化 Agent 分类法（A Taxonomy of Self-evolving Agents）
 category: RSI · 综述
-published: false
+published: true
 excerpt: >-
   Shilong Liu（2026-07）给出的自进化系统分类法：以 Model / Harness / Artifact
   三要素为坐标，把现有工作分为三层——产物（artifact）迭代优化、Harness 自改进、无黄金答案的模型学习；并辨析

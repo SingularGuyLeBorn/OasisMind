@@ -1,7 +1,7 @@
 ---
 title: RSI 行业动态速览（2026-08）：Karpathy 入局、Pichai 泼冷水、Cotra 里程碑框架
 category: RSI · 行业动态
-published: false
+published: true
 excerpt: >-
   2026-08 行业速览：Karpathy Auto-Research 开源并加入 Anthropic 预训练团队；Adaption
   AutoScientist 冲全尺寸训练闭环；Pichai 泼冷水「还没到下一个量级」；CSET 专家分裂；Ajeya Cotra 给出
