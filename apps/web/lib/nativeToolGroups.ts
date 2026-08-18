@@ -39,7 +39,7 @@ export const NATIVE_TOOL_GROUPS: NativeToolGroup[] = [
 
 export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (
-    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
+    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|generate_illustration|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
       name,
     )
   ) {
@@ -101,6 +101,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   download_file: "下载文件到本地",
   read_image: "识别图片文字",
   vision_describe: "视觉理解描述",
+  generate_illustration: "生成配图",
   video_transcript: "视频转文字",
   search_arxiv: "搜索 arXiv",
   fetch_arxiv: "获取 arXiv 论文",

@@ -2,7 +2,7 @@
 
 import "./milkdown-editor.css";
 
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Milkdown, MilkdownProvider, useEditor, useInstance } from "@milkdown/react";
 import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx, editorViewCtx } from "@milkdown/core";
 import { gfm } from "@milkdown/preset-gfm";
@@ -53,6 +53,10 @@ import {
   setMilkdownLinkNavMeta,
 } from "@/components/editor/milkdownLinkNav";
 import {
+  milkdownImageView,
+  setMilkdownImageAssetMeta,
+} from "@/components/editor/milkdownImageView";
+import {
   beginMilkdownImageUpload,
   insertMilkdownImageAtCursor,
   milkdownImageUpload,
@@ -64,9 +68,11 @@ import {
   replaceMilkdownSelectionWithMarkdown,
   saveMilkdownSelectionRange,
 } from "@/components/editor/milkdownSelectionApi";
+import { extractMarkdownImages, stripMarkdownImages } from "@/lib/editorCompleteContext";
 import {
   milkdownAtAgent,
   registerMilkdownAtAgentHandler,
+  unregisterMilkdownAtAgentHandler,
 } from "@/components/editor/milkdownAtAgent";
 import {
   ImageUploadButton,
@@ -74,7 +80,9 @@ import {
   useImageUploader,
   type UploadedImage,
 } from "@/components/editor/ImageUploadButton";
+import { EditorGenerateImage } from "@/components/editor/EditorGenerateImage";
 import { trpc } from "@/lib/trpc";
+import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 
 export type EditorViewMode = "wysiwyg" | "source";
 
@@ -105,6 +113,7 @@ function MilkdownWysiwyg({
   boardHookRef,
   linkNavGarden,
   linkNavSlug,
+  onAtAgent,
 }: {
   initialValue?: string;
   onChange?: (value: string) => void;
@@ -114,12 +123,29 @@ function MilkdownWysiwyg({
   boardHookRef: MutableRefObject<BoardInsertRequest | null>;
   linkNavGarden?: string;
   linkNavSlug?: string;
+  onAtAgent?: (hit: { query: string }) => void;
 }) {
   const onChangeRef = useRef(onChange);
+  const onAtAgentRef = useRef(onAtAgent);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    onAtAgentRef.current = onAtAgent;
+  }, [onAtAgent]);
+
+  registerMilkdownAtAgentHandler((hit) => {
+    onAtAgentRef.current?.(hit);
+  });
+
+  useEffect(() => {
+    const gen = registerMilkdownAtAgentHandler((hit) => {
+      onAtAgentRef.current?.(hit);
+    });
+    return () => unregisterMilkdownAtAgentHandler(gen);
+  }, []);
 
   useEffect(() => {
     setMilkdownLinkNavMeta({ garden: linkNavGarden, slug: linkNavSlug });
@@ -150,10 +176,11 @@ function MilkdownWysiwyg({
   useEditor(
     (root) => {
       setMilkdownLinkNavMeta({ garden: linkNavGarden, slug: linkNavSlug });
+      setMilkdownImageAssetMeta({ garden: linkNavGarden, slug: linkNavSlug });
       const editor = Editor.make()
         .config((ctx) => {
           ctx.set(rootCtx, root);
-          ctx.set(defaultValueCtx, initialValue);
+          ctx.set(defaultValueCtx, protectMathPipesInMarkdown(initialValue));
           ctx.set(editorViewOptionsCtx, { editable: () => !readOnly });
 
           const l = ctx.get(listenerCtx);
@@ -171,8 +198,8 @@ function MilkdownWysiwyg({
         })
         .use(emptyCodeBlockDeleteKeymap)
         .use(commonmarkWithAbsoluteHeading())
-        .use(gfm)
         .use(math)
+        .use(gfm)
         .use(mathBlockAlignExtend)
         .use(htmlMarkSchema)
         .use(htmlMarkRemark)
@@ -183,6 +210,7 @@ function MilkdownWysiwyg({
         .use(codeBlockHighlight)
         .use(vizCodeBlockView)
         .use(milkdownLinkNav)
+        .use(milkdownImageView)
         .use(milkdownImageUpload)
         .use(milkdownSelectionApi)
         .use(milkdownAtAgent)
@@ -266,15 +294,12 @@ function MilkdownEditorInner({
     mode?: "wysiwyg" | "source";
   } | null>(null);
 
-  useEffect(() => {
-    registerMilkdownAtAgentHandler((hit) => {
-      setAtTrigger((prev) => ({
-        token: (prev?.token ?? 0) + 1,
-        query: hit.query,
-        mode: "wysiwyg",
-      }));
-    });
-    return () => registerMilkdownAtAgentHandler(null);
+  const handleWysiwygAtAgent = useCallback((hit: { query: string }) => {
+    setAtTrigger((prev) => ({
+      token: (prev?.token ?? 0) + 1,
+      query: hit.query,
+      mode: "wysiwyg",
+    }));
   }, []);
   const pendingCursorRef = useRef<number | null>(null);
   const boardHookRef = useRef<BoardInsertRequest | null>(null);
@@ -300,6 +325,10 @@ function MilkdownEditorInner({
 
   const trpcUtils = trpc.useUtils();
   const editorRootRef = useRef<HTMLDivElement>(null);
+  const [panelHost, setPanelHost] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    setPanelHost(editorRootRef.current);
+  }, []);
   const agentApiRef = useRef<EditorAgentCompleteApi | null>(null);
   const registerAgentApi = useCallback((api: EditorAgentCompleteApi | null) => {
     agentApiRef.current = api;
@@ -473,7 +502,7 @@ function MilkdownEditorInner({
       ref={editorRootRef}
       data-readonly={readOnly ? "true" : undefined}
       className={cn(
-        "milkdown-editor flex flex-col rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)]",
+        "milkdown-editor relative flex flex-col rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)]",
         readOnly ? "min-h-0" : "min-h-[calc(100dvh-12rem)]",
         className,
       )}
@@ -501,12 +530,20 @@ function MilkdownEditorInner({
                     : undefined
                 }
               />
+              <EditorGenerateImage
+                content={draft}
+                sourceTextareaRef={sourceRef}
+                docMeta={docMeta}
+                editorMode={effectiveMode}
+                onInserted={insertUploadedImage}
+              />
               <EditorAgentComplete
                 content={draft}
                 sourceTextareaRef={sourceRef}
                 docMeta={docMeta}
                 editorMode={effectiveMode}
                 atTrigger={atTrigger}
+                panelHost={panelHost}
                 registerApi={registerAgentApi}
                 onPreferSourceMode={() => setMode("source")}
                 onCaptureWysiwygSelection={() => {
@@ -527,6 +564,18 @@ function MilkdownEditorInner({
                     return;
                   }
                   if (wysiwyg) {
+                    const images = extractMarkdownImages(snippet);
+                    let insertedImage = false;
+                    for (const img of images) {
+                      if (insertMilkdownImageAtCursor({ src: img.url, alt: img.alt })) {
+                        insertedImage = true;
+                      }
+                    }
+                    const rest = stripMarkdownImages(snippet);
+                    const insertedRest = rest
+                      ? insertMilkdownMarkdownAtCursor(rest)
+                      : false;
+                    if (insertedImage || insertedRest) return;
                     if (
                       replaceMilkdownSelectionWithMarkdown(snippet) ||
                       insertMilkdownMarkdownAtCursor(snippet)
@@ -647,6 +696,7 @@ function MilkdownEditorInner({
               boardHookRef={boardHookRef}
               linkNavGarden={docMeta?.garden}
               linkNavSlug={docMeta?.slug}
+              onAtAgent={handleWysiwygAtAgent}
             />
           </MilkdownProvider>
         </div>

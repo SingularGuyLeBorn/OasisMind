@@ -1,15 +1,21 @@
 /**
- * 编辑器 @Agent 补全 — 一次 sync LLM，注入 Agent systemPrompt + Markdown 格式约束。
- * 不建会话、不跑工具；由前端 Accept 后写入正文。
+ * 编辑器 @Agent 补全 — sync LLM + 仅开放 generate_illustration 工具。
+ * 不建会话；由前端 Accept 后写入正文。
  * 另：公式块 Copilot（前后文 → 纯 LaTeX 幽灵补全）。
  */
 
 import { TRPCError } from "@trpc/server";
 import { DEFAULT_LLM_MODEL } from "@oasismind/shared";
+import type { LlmMessage, LlmToolCall } from "./llmClient.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { getAppConfig } from "./config.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
 import { resolveAgent } from "./agentResolver.js";
+import { executeNativeTool } from "./nativeTools.js";
+import {
+  GENERATE_ILLUSTRATION_LLM_TOOL,
+  GENERATE_ILLUSTRATION_TOOL_NAME,
+} from "./tools/native/web/generateIllustration.js";
 
 const COMPLETE_TIMEOUT_MS = 90_000;
 const MAX_TOKENS = 4096;
@@ -27,7 +33,12 @@ const FORMAT_RULES = `【输出格式铁律】
 - 表格：GitHub 风格 Markdown 表（| 列 | … | + 分隔行）
 - 图表/示意图：优先 \`\`\`svg 或 \`\`\`html 完整可渲染代码（前端可预览）；勿只给无法渲染的 ASCII 草图
 - 流程/架构示意：用 SVG/HTML；手绘白板请提示用户用编辑器 /hb，勿伪造 om-board JSON
-- 代码块：标明语言；数学专用块也可用 $$，不要用 \`\`\`math 除非用户明确要求`;
+- 代码块：标明语言；数学专用块也可用 $$，不要用 \`\`\`math 除非用户明确要求
+
+【配图（必须走工具）】
+- 用户要插图/示意图/配图/生图时，调用 generate_illustration，不要用 SVG 凑合，不要编造 /uploads URL
+- prompt 用英文、论文插图风格；不传 imageModel 则默认最强免费档 pollinations/flux
+- 工具返回 markdown 后，把它原样放进输出（可加一句图注）`;
 
 export type EditorAgentCompleteArgs = {
   /** 省略则 resolveAgent → 默认 assistant */
@@ -41,7 +52,10 @@ export type EditorAgentCompleteArgs = {
   title?: string;
   garden?: string;
   slug?: string;
+  postId?: string;
+  draftKey?: string;
   model?: string;
+  imageModel?: string;
 };
 
 export type EditorAgentCompleteResult = {
@@ -61,7 +75,13 @@ function buildUserPrompt(input: EditorAgentCompleteArgs): string {
   const parts: string[] = [];
   if (input.title || input.garden || input.slug) {
     parts.push(
-      `文章元信息：${[input.title && `标题=${input.title}`, input.garden && `花园=${input.garden}`, input.slug && `slug=${input.slug}`]
+      `文章元信息：${[
+        input.title && `标题=${input.title}`,
+        input.garden && `花园=${input.garden}`,
+        input.slug && `slug=${input.slug}`,
+        input.postId && `postId=${input.postId}`,
+        input.draftKey && `draftKey=${input.draftKey}`,
+      ]
         .filter(Boolean)
         .join(" · ")}`,
     );
@@ -86,8 +106,47 @@ function buildUserPrompt(input: EditorAgentCompleteArgs): string {
   parts.push("【用户指令】");
   parts.push(input.instruction.trim());
   parts.push("");
-  parts.push("请直接输出要插入/替换的 Markdown 片段。");
+  parts.push("请直接输出要插入/替换的 Markdown 片段。需要配图时先调用 generate_illustration。");
   return parts.join("\n");
+}
+
+function parseToolArgs(raw: string): Record<string, unknown> {
+  try {
+    const v = JSON.parse(raw || "{}") as unknown;
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function runEditorIllustrationTool(
+  services: ServiceContainer,
+  input: EditorAgentCompleteArgs,
+  call: LlmToolCall,
+): Promise<unknown> {
+  if (call.function.name !== GENERATE_ILLUSTRATION_TOOL_NAME) {
+    return { error: `编辑器协写只开放 ${GENERATE_ILLUSTRATION_TOOL_NAME}`, code: "NOT_ALLOWED" };
+  }
+  const args = parseToolArgs(call.function.arguments);
+  return executeNativeTool(
+    GENERATE_ILLUSTRATION_TOOL_NAME,
+    {
+      ...args,
+      garden: typeof args.garden === "string" ? args.garden : input.garden,
+      postId: typeof args.postId === "string" ? args.postId : input.postId,
+      draftKey: typeof args.draftKey === "string" ? args.draftKey : input.draftKey,
+      imageModel:
+        typeof args.imageModel === "string" ? args.imageModel : input.imageModel,
+    },
+    {
+      config: getAppConfig(),
+      services,
+      invokeTrpc: async () => {
+        throw new Error("编辑器协写不走 tRPC 反射");
+      },
+      signal: AbortSignal.timeout(COMPLETE_TIMEOUT_MS),
+    },
+  );
 }
 
 export async function completeEditorWithAgent(
@@ -120,21 +179,45 @@ export async function completeEditorWithAgent(
     FORMAT_RULES,
   ];
 
-  try {
-    const { content } = await resilientChatCompletion({
-      config,
-      model,
-      messages: [
-        { role: "system", content: systemParts.join("\n") },
-        { role: "user", content: buildUserPrompt(input) },
-      ],
-      maxTokens: MAX_TOKENS,
-      temperature: 0.4,
-      enableReasoning: false,
-      signal: AbortSignal.timeout(COMPLETE_TIMEOUT_MS),
-    });
+  const messages: LlmMessage[] = [
+    { role: "system", content: systemParts.join("\n") },
+    { role: "user", content: buildUserPrompt(input) },
+  ];
 
-    let text = (content ?? "").trim();
+  try {
+    let text = "";
+    for (let round = 0; round < 3; round++) {
+      const turn = await resilientChatCompletion({
+        config,
+        model,
+        messages,
+        tools: [GENERATE_ILLUSTRATION_LLM_TOOL],
+        maxTokens: MAX_TOKENS,
+        temperature: 0.4,
+        enableReasoning: false,
+        signal: AbortSignal.timeout(COMPLETE_TIMEOUT_MS),
+      });
+      const calls = turn.toolCalls ?? [];
+      if (calls.length === 0) {
+        text = (turn.content ?? "").trim();
+        break;
+      }
+      messages.push({
+        role: "assistant",
+        content: turn.content ?? "",
+        tool_calls: calls,
+      });
+      for (const call of calls) {
+        const result = await runEditorIllustrationTool(services, input, call);
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          name: call.function.name,
+          content: JSON.stringify(result),
+        });
+      }
+    }
+
     // 剥掉模型偶发的整篇 ```markdown 围栏
     const fenced = text.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/i);
     if (fenced) text = fenced[1]!.trim();

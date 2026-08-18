@@ -18,13 +18,36 @@ import {
   extractFormulaContext,
   requestFormulaCopilot,
 } from "@/components/editor/mathFormulaCopilot";
-import {
-  normalizeMathAlign,
-  type MathBlockAlign,
-} from "@/components/editor/mathBlockAlign";
+import { normalizeMathAlign, type MathBlockAlign } from "@/components/editor/mathBlockAlign";
+
+/** 点在元素自带的横向/纵向滚动条上（不是点公式本身） */
+export function isScrollbarClick(
+  e: Pick<MouseEvent, "clientX" | "clientY">,
+  el: Pick<
+    HTMLElement,
+    "scrollWidth" | "clientWidth" | "scrollHeight" | "clientHeight" | "getBoundingClientRect"
+  >,
+): boolean {
+  const hasH = el.scrollWidth > el.clientWidth + 1;
+  const hasV = el.scrollHeight > el.clientHeight + 1;
+  if (!hasH && !hasV) return false;
+  const rect = el.getBoundingClientRect();
+  const barBottom = rect.height - el.clientHeight;
+  const barRight = rect.width - el.clientWidth;
+  if (hasH && barBottom > 0 && e.clientY >= rect.bottom - barBottom) return true;
+  if (hasV && barRight > 0 && e.clientX >= rect.right - barRight) return true;
+  return false;
+}
+
+/** 被表格切断的 `$` 会把后文整页塞进一个公式；超长 tex 不再整页刷红 */
+const MATH_TEX_SOFT_MAX = 8000;
 
 function renderKatex(target: HTMLElement, tex: string, displayMode: boolean) {
   target.replaceChildren();
+  if (tex.length > MATH_TEX_SOFT_MAX) {
+    target.textContent = "公式未闭合或过长";
+    return;
+  }
   try {
     katex.render(tex, target, { displayMode, throwOnError: false });
   } catch {
@@ -258,7 +281,9 @@ function createMathBlockView(
   };
 
   const commit = () => {
-    writeAttrs({ value: textarea.value });
+    const next = textarea.value;
+    if (next === value) return;
+    writeAttrs({ value: next });
   };
 
   /** 删掉整个公式块，光标落到相邻位置（空内容 + Backspace） */
@@ -421,6 +446,7 @@ function createMathBlockView(
   };
 
   idle.addEventListener("mousedown", (e) => {
+    if (isScrollbarClick(e, idle) || isScrollbarClick(e, dom)) return;
     e.preventDefault();
     e.stopPropagation();
     showEdit();
@@ -450,6 +476,7 @@ function createMathBlockView(
 
   edit.addEventListener("mousedown", (e) => {
     if (e.target === textarea) return;
+    if (isScrollbarClick(e, live) || isScrollbarClick(e, dom)) return;
     e.preventDefault();
     textarea.focus();
   });
@@ -526,6 +553,11 @@ function createMathBlockView(
     },
     deselectNode() {},
     stopEvent(event) {
+      if (event instanceof MouseEvent) {
+        if (isScrollbarClick(event, dom) || isScrollbarClick(event, idle) || isScrollbarClick(event, live)) {
+          return true;
+        }
+      }
       if (!editing) return false;
       const t = event.target as Node | null;
       return Boolean(t && edit.contains(t));
@@ -595,7 +627,9 @@ function createMathInlineView(
   };
 
   const commit = () => {
-    value = input.value;
+    const next = input.value;
+    if (next === value) return;
+    value = next;
     dom.dataset.value = value;
     const pos = getPos();
     if (typeof pos !== "number") return;
@@ -654,6 +688,7 @@ function createMathInlineView(
   };
 
   idle.addEventListener("mousedown", (e) => {
+    if (isScrollbarClick(e, idle) || isScrollbarClick(e, dom)) return;
     e.preventDefault();
     e.stopPropagation();
     showEdit();
@@ -672,6 +707,7 @@ function createMathInlineView(
 
   edit.addEventListener("mousedown", (e) => {
     if (e.target === input) return;
+    if (isScrollbarClick(e, live) || isScrollbarClick(e, dom)) return;
     e.preventDefault();
     input.focus();
   });
@@ -734,6 +770,11 @@ function createMathInlineView(
     },
     deselectNode() {},
     stopEvent(event) {
+      if (event instanceof MouseEvent) {
+        if (isScrollbarClick(event, dom) || isScrollbarClick(event, idle)) {
+          return true;
+        }
+      }
       if (!editing) return false;
       const t = event.target as Node | null;
       return Boolean(t && edit.contains(t));

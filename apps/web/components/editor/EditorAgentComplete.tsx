@@ -8,12 +8,17 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bot, Check, Loader2, Sparkles, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Bot, Check, Loader2, Plus, Sparkles, X } from "lucide-react";
 import { DEFAULT_LLM_MODEL } from "@oasismind/shared";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/lib/trpc";
-import { extractEditorCompleteContext } from "@/lib/editorCompleteContext";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import {
+  extractEditorCompleteContext,
+  extractMarkdownImages,
+} from "@/lib/editorCompleteContext";
+import {
+  getMilkdownCursorScreenRect,
   getMilkdownParagraphContext,
   saveMilkdownBlockRange,
   saveMilkdownSelectionRange,
@@ -58,6 +63,28 @@ type PolishPreset = {
   applyMode: ApplyMode;
 };
 
+const PANEL_WIDTH = 360;
+
+function placePanelInHost(
+  host: HTMLElement | null | undefined,
+  cursor: { left: number; bottom: number } | null,
+): { left: number; top: number } {
+  const hostBox = host?.getBoundingClientRect();
+  const screenLeft = cursor?.left ?? hostBox?.left ?? 24;
+  const screenTop = (cursor?.bottom ?? hostBox?.top ?? 80) + 8;
+  if (host && hostBox) {
+    const maxLeft = Math.max(8, host.clientWidth - PANEL_WIDTH - 8);
+    return {
+      left: Math.max(8, Math.min(screenLeft - hostBox.left + host.scrollLeft, maxLeft)),
+      top: Math.max(8, screenTop - hostBox.top + host.scrollTop),
+    };
+  }
+  return {
+    left: screenLeft + window.scrollX,
+    top: screenTop + window.scrollY,
+  };
+}
+
 const POLISH_PRESETS: PolishPreset[] = [
   {
     id: "summarize",
@@ -97,10 +124,19 @@ interface EditorAgentCompleteProps {
   /** 外部 @agent 触发：递增 token + 可选预填搜索词；mode 决定是否切源码 */
   atTrigger?: { token: number; query: string; mode?: "wysiwyg" | "source" } | null;
   registerApi?: (api: EditorAgentCompleteApi | null) => void;
+  /** 面板挂到编辑器根上用 absolute，随页面/文章一起滚 */
+  panelHost?: HTMLElement | null;
   className?: string;
 }
 
 export { detectEditorAgentAtTrigger } from "@/lib/editorCompleteContext";
+
+export function __placePanelInHostForTests(
+  host: HTMLElement | null | undefined,
+  cursor: { left: number; bottom: number } | null,
+): { left: number; top: number } {
+  return placePanelInHost(host, cursor);
+}
 
 export function EditorAgentComplete({
   content,
@@ -113,6 +149,7 @@ export function EditorAgentComplete({
   onRewriteContent,
   atTrigger,
   registerApi,
+  panelHost,
   className,
 }: EditorAgentCompleteProps) {
   const [phase, setPhase] = useState<Phase>("closed");
@@ -132,12 +169,16 @@ export function EditorAgentComplete({
   const [wysiwygRewrite, setWysiwygRewrite] = useState(false);
   const [applyMode, setApplyMode] = useState<ApplyMode>("cursor");
   const [panelTitle, setPanelTitle] = useState("Agent 协写");
+  const [cursorPanel, setCursorPanel] = useState<{ left: number; top: number } | null>(null);
+  const [creatingAgent, setCreatingAgent] = useState(false);
+  const [newAgentName, setNewAgentName] = useState("");
 
   const agentsQuery = trpc.agent.list.useQuery(
     { page: 1, pageSize: 100 },
     { staleTime: 60_000, enabled: phase !== "closed" || menuOpen },
   );
   const completeMut = trpc.agent.editorComplete.useMutation();
+  const createAgentMut = trpc.agent.create.useMutation();
 
   const agents = useMemo(() => {
     const items = agentsQuery.data?.items ?? [];
@@ -374,6 +415,11 @@ export function EditorAgentComplete({
   useEffect(() => {
     if (!atTrigger || atTrigger.token <= 0) return;
     const forceSource = atTrigger.mode === "source";
+    if (!forceSource && typeof window !== "undefined") {
+      setCursorPanel(placePanelInHost(panelHost, getMilkdownCursorScreenRect()));
+    } else {
+      setCursorPanel(null);
+    }
     const t = window.setTimeout(() => {
       openCompose(atTrigger.query, {
         forceSource,
@@ -393,6 +439,9 @@ export function EditorAgentComplete({
     setInstruction("");
     setWysiwygRewrite(false);
     setUseDefaultAgent(false);
+    setCursorPanel(null);
+    setCreatingAgent(false);
+    setNewAgentName("");
   }, []);
 
   const selectAgent = (id: string, name: string) => {
@@ -403,9 +452,7 @@ export function EditorAgentComplete({
     setAgentQuery("");
   };
 
-  const runComplete = () => {
-    if ((!agentId && !useDefaultAgent) || !instruction.trim() || completeMut.isPending) return;
-
+  const collectCompleteContext = () => {
     let start = range.start;
     let end = range.end;
     let selected = selectedSnap || undefined;
@@ -449,8 +496,51 @@ export function EditorAgentComplete({
           end = pAt + paragraph.length;
         }
       }
-      setRange({ start, end });
     }
+    return { start, end, selected, before, after, paragraph };
+  };
+
+  const createAgentFromPanel = () => {
+    const name = newAgentName.trim();
+    if (!name || createAgentMut.isPending) return;
+    createAgentMut
+      .mutateAsync({
+        name,
+        model: DEFAULT_LLM_MODEL,
+        description: "编辑器 @agent 协写",
+        systemPrompt:
+          "你是见微数字花园的写作助手。协助用户撰写 Markdown 文章；需要配图时调用 generate_illustration，不要编造图片 URL。",
+        tools: ["native:generate_illustration"],
+        tier: "sub",
+      })
+      .then((res) => {
+        if (!res.success || !res.data) {
+          setError(res.error?.message ?? "创建 Agent 失败");
+          return;
+        }
+        selectAgent(res.data.id, res.data.name);
+        setCreatingAgent(false);
+        setNewAgentName("");
+        agentsQuery.refetch().catch(catchUnlessCancelled("EditorAgentComplete.createAgent"));
+      })
+      .catch((err: unknown) => {
+        const msg =
+          err &&
+          typeof err === "object" &&
+          "message" in err &&
+          typeof (err as { message: unknown }).message === "string"
+            ? (err as { message: string }).message
+            : "创建 Agent 失败";
+        setError(msg);
+      });
+  };
+
+  const runComplete = () => {
+    if (completeMut.isPending) return;
+    if ((!agentId && !useDefaultAgent) || !instruction.trim()) return;
+
+    const { start, end, selected, before, after, paragraph } = collectCompleteContext();
+    if (!wysiwygRewrite) setRange({ start, end });
 
     setPhase("loading");
     setError(null);
@@ -465,6 +555,8 @@ export function EditorAgentComplete({
         title: docMeta?.title,
         garden: docMeta?.garden,
         slug: docMeta?.slug,
+        postId: docMeta?.postId,
+        draftKey: docMeta?.postId ? undefined : docMeta?.draftKey,
         model: DEFAULT_LLM_MODEL,
       })
       .then((res) => {
@@ -509,6 +601,7 @@ export function EditorAgentComplete({
   };
 
   const canRun = Boolean((agentId || useDefaultAgent) && instruction.trim());
+  const floatHost = cursorPanel ? (panelHost ?? null) : null;
 
   return (
     <div className={cn("relative", className)} data-testid="editor-agent-complete">
@@ -569,9 +662,18 @@ export function EditorAgentComplete({
         </div>
       )}
 
-      {phase !== "closed" && (
+      {phase !== "closed" &&
+        ((el) => (floatHost ? createPortal(el, floatHost) : el))(
         <div
-          className="absolute right-0 top-full z-40 mt-2 w-[min(100vw-2rem,28rem)] rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 shadow-xl"
+          className={cn(
+            "z-50 w-[min(100vw-2rem,28rem)] rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] p-3 shadow-xl",
+            cursorPanel ? "absolute" : "absolute right-0 top-full mt-2",
+          )}
+          style={
+            cursorPanel
+              ? { left: cursorPanel.left, top: cursorPanel.top }
+              : undefined
+          }
           data-testid="editor-agent-complete-panel"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -587,7 +689,7 @@ export function EditorAgentComplete({
           </div>
 
           <p className="mb-2 text-[10px] text-[var(--om-text-3)]">
-            模型 {DEFAULT_LLM_MODEL}
+            写正文用 {DEFAULT_LLM_MODEL}；要图时 Agent 会调 generate_illustration
             {applyMode === "document"
               ? " · 接受后替换全文"
               : selectedSnap
@@ -614,73 +716,134 @@ export function EditorAgentComplete({
                 onClick={() => {
                   setPickerOpen(true);
                   setAgentQuery("");
+                  setCreatingAgent(false);
                 }}
               >
                 更换
               </button>
             </div>
           ) : (
-            <p className="mb-2 text-xs text-[var(--om-text-3)]">先选择一个 Agent</p>
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-xs text-[var(--om-text-3)]">先选择一个 Agent</p>
+              <button
+                type="button"
+                className="inline-flex items-center gap-0.5 text-[10px] text-[var(--om-brand-deep)] hover:underline"
+                onClick={() => {
+                  setPickerOpen(true);
+                  setCreatingAgent(true);
+                }}
+              >
+                <Plus className="h-3 w-3" />
+                新建
+              </button>
+            </div>
           )}
 
           {pickerOpen && (
             <div
-              className="mb-2 max-h-40 overflow-y-auto rounded-lg border border-[var(--om-divider)]"
+              className="mb-2 overflow-hidden rounded-lg border border-[var(--om-divider)]"
               data-testid="editor-agent-picker"
             >
-              <input
-                autoFocus
-                value={agentQuery}
-                onChange={(e) => {
-                  setAgentQuery(e.target.value);
-                  setHighlightIdx(0);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setHighlightIdx((i) => Math.min(i + 1, Math.max(agents.length - 1, 0)));
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setHighlightIdx((i) => Math.max(i - 1, 0));
-                  } else if (e.key === "Enter" && agents[highlightIdx]) {
-                    e.preventDefault();
-                    const a = agents[highlightIdx]!;
-                    selectAgent(a.id, a.name);
-                  } else if (e.key === "Escape") {
-                    setPickerOpen(false);
-                  }
-                }}
-                placeholder="搜索 Agent…"
-                className="w-full border-b border-[var(--om-divider)] bg-transparent px-2.5 py-1.5 text-xs outline-none"
-              />
-              {agentsQuery.isLoading ? (
-                <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">加载中…</div>
-              ) : agents.length === 0 ? (
-                <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">无匹配 Agent</div>
-              ) : (
-                agents.map((a, idx) => (
+              {creatingAgent ? (
+                <div className="flex items-center gap-1.5 border-b border-[var(--om-divider)] px-2 py-1.5">
+                  <input
+                    autoFocus
+                    value={newAgentName}
+                    onChange={(e) => setNewAgentName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        createAgentFromPanel();
+                      } else if (e.key === "Escape") {
+                        setCreatingAgent(false);
+                        setNewAgentName("");
+                      }
+                    }}
+                    placeholder="新 Agent 名称"
+                    className="min-w-0 flex-1 rounded-md border border-[var(--om-divider)] bg-transparent px-2 py-1 text-xs outline-none"
+                    data-testid="editor-agent-create-name"
+                  />
                   <button
-                    key={a.id}
                     type="button"
-                    onClick={() => selectAgent(a.id, a.name)}
-                    className={cn(
-                      "flex w-full items-start gap-2 px-2.5 py-1.5 text-left text-xs",
-                      idx === highlightIdx
-                        ? "bg-[var(--om-brand-soft)]"
-                        : "hover:bg-[var(--om-bg-mute)]",
-                    )}
+                    onClick={createAgentFromPanel}
+                    disabled={!newAgentName.trim() || createAgentMut.isPending}
+                    className="rounded-md bg-[var(--om-brand-deep)] px-2 py-1 text-[10px] text-white disabled:opacity-50"
+                    data-testid="editor-agent-create-submit"
                   >
-                    <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
-                    <span className="min-w-0">
-                      <span className="font-medium text-[var(--om-text-1)]">{a.name}</span>
-                      <span className="mt-0.5 block truncate text-[10px] text-[var(--om-text-3)]">
-                        {a.tier}
-                        {a.description ? ` · ${a.description}` : ""}
-                      </span>
-                    </span>
+                    {createAgentMut.isPending ? "创建中…" : "创建"}
                   </button>
-                ))
+                </div>
+              ) : (
+                <input
+                  autoFocus
+                  value={agentQuery}
+                  onChange={(e) => {
+                    setAgentQuery(e.target.value);
+                    setHighlightIdx(0);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setHighlightIdx((i) => Math.min(i + 1, Math.max(agents.length - 1, 0)));
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setHighlightIdx((i) => Math.max(i - 1, 0));
+                    } else if (e.key === "Enter" && agents[highlightIdx]) {
+                      e.preventDefault();
+                      const a = agents[highlightIdx]!;
+                      selectAgent(a.id, a.name);
+                    } else if (e.key === "Escape") {
+                      setPickerOpen(false);
+                    }
+                  }}
+                  placeholder="搜索 Agent…"
+                  className="w-full border-b border-[var(--om-divider)] bg-transparent px-2.5 py-1.5 text-xs outline-none"
+                />
               )}
+              <div className="max-h-40 overflow-y-auto">
+                {agentsQuery.isLoading ? (
+                  <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">加载中…</div>
+                ) : agents.length === 0 ? (
+                  <div className="px-2.5 py-2 text-xs text-[var(--om-text-3)]">无匹配 Agent</div>
+                ) : (
+                  agents.map((a, idx) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => selectAgent(a.id, a.name)}
+                      className={cn(
+                        "flex w-full items-start gap-2 px-2.5 py-1.5 text-left text-xs",
+                        idx === highlightIdx
+                          ? "bg-[var(--om-brand-soft)]"
+                          : "hover:bg-[var(--om-bg-mute)]",
+                      )}
+                    >
+                      <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
+                      <span className="min-w-0">
+                        <span className="font-medium text-[var(--om-text-1)]">{a.name}</span>
+                        <span className="mt-0.5 block truncate text-[10px] text-[var(--om-text-3)]">
+                          {a.tier}
+                          {a.description ? ` · ${a.description}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  ))
+                )}
+                {!creatingAgent && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingAgent(true);
+                      setNewAgentName(agentQuery.trim());
+                    }}
+                    className="flex w-full items-center gap-1 border-t border-[var(--om-divider)] px-2.5 py-1.5 text-left text-[10px] text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+                    data-testid="editor-agent-create-open"
+                  >
+                    <Plus className="h-3 w-3" />
+                    新建 Agent
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -690,8 +853,8 @@ export function EditorAgentComplete({
                 value={instruction}
                 onChange={(e) => setInstruction(e.target.value)}
                 rows={3}
-                placeholder="告诉 Agent 要在光标处写什么 / 怎么改…"
-                disabled={phase === "loading" || (!agentId && !useDefaultAgent)}
+                placeholder="写什么 / 怎么改；要图直接写「加一张图说明 RoPE」"
+                disabled={phase === "loading"}
                 className="mb-2 w-full resize-none rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-mute)]/40 px-2.5 py-2 text-xs text-[var(--om-text-1)] outline-none focus:border-[var(--om-brand)] disabled:opacity-50"
                 data-testid="editor-agent-instruction"
                 onKeyDown={(e) => {
@@ -702,7 +865,7 @@ export function EditorAgentComplete({
                 }}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-[var(--om-text-3)]">Ctrl/Cmd+Enter 生成</span>
+                <span className="text-[10px] text-[var(--om-text-3)]">Ctrl+Enter 生成</span>
                 <button
                   type="button"
                   onClick={runComplete}
@@ -731,7 +894,22 @@ export function EditorAgentComplete({
 
           {phase === "preview" && (
             <div className="mt-1 space-y-2" data-testid="editor-agent-preview">
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-dashed border-[var(--om-brand)]/40 bg-[var(--om-brand-soft)]/20 px-2.5 py-2">
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-dashed border-[var(--om-brand)]/40 bg-[var(--om-brand-soft)]/20 px-2.5 py-2">
+                {extractMarkdownImages(preview).map((img) => (
+                  <figure key={img.url} className="mb-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.url}
+                      alt={img.alt}
+                      className="max-h-40 w-full rounded-md object-contain"
+                    />
+                    {img.alt ? (
+                      <figcaption className="mt-1 text-[10px] text-[var(--om-text-3)]">
+                        {img.alt}
+                      </figcaption>
+                    ) : null}
+                  </figure>
+                ))}
                 <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-[var(--om-text-1)]">
                   {preview}
                 </pre>
@@ -761,8 +939,8 @@ export function EditorAgentComplete({
               </div>
             </div>
           )}
-        </div>
-      )}
+        </div>,
+        )}
     </div>
   );
 }

@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   detectEditorAgentAtTrigger,
   extractEditorCompleteContext,
+  extractMarkdownImages,
   findParagraphBounds,
+  isIllustrationInstruction,
+  stripMarkdownImages,
 } from "@/lib/editorCompleteContext";
 
 describe("editorCompleteContext", () => {
@@ -30,5 +33,29 @@ describe("editorCompleteContext", () => {
       tokenStart: 6,
     });
     expect(detectEditorAgentAtTrigger("x @agent写作", 10)?.query).toBe("写作");
+    expect(detectEditorAgentAtTrigger("＠agent", 6)).toEqual({
+      token: "＠agent",
+      query: "",
+      tokenStart: 0,
+    });
+    expect(detectEditorAgentAtTrigger("@agent  ", 8)?.tokenStart).toBe(0);
+    expect(detectEditorAgentAtTrigger("@agent\u200b", 7)?.tokenStart).toBe(0);
+    expect(detectEditorAgentAtTrigger("@agent", 0)?.token).toBe("@agent");
+  });
+
+  it("抽出 Markdown 图片", () => {
+    const md =
+      "![多模态对齐](/uploads/llm-guide/abc/fig-001.jpg)\n\n*图注*";
+    expect(extractMarkdownImages(md)).toEqual([
+      { alt: "多模态对齐", url: "/uploads/llm-guide/abc/fig-001.jpg" },
+    ]);
+    expect(stripMarkdownImages(md)).toBe("*图注*");
+  });
+
+  it("识别生图意图", () => {
+    expect(isIllustrationInstruction("生图")).toBe(true);
+    expect(isIllustrationInstruction("在这里配一张图说明 RoPE")).toBe(true);
+    expect(isIllustrationInstruction("画一张位置编码对比图")).toBe(true);
+    expect(isIllustrationInstruction("写一段 RoPE 解释")).toBe(false);
   });
 });

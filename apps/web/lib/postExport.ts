@@ -1,8 +1,10 @@
 import JSZip from "jszip";
+import { resolvePostAssetUrl } from "@/lib/postAssetUrl";
 
 export interface PostExportInput {
   title: string;
   slug: string;
+  garden?: string;
   content: string;
   excerpt?: string | null;
   category?: string | null;
@@ -42,32 +44,12 @@ function collectImageSources(content: string): string[] {
   return Array.from(sources);
 }
 
-function resolveAssetPath(src: string, postSlug: string): string | null {
-  if (src.startsWith("data:")) return null;
-  if (src.startsWith("/api/posts/assets")) {
-    return src.replace(/^\/api\/posts\/assets/, "") || "/";
-  }
-  if (src.startsWith("/")) {
-    return src;
-  }
-  if (EXTERNAL_SRC_RE.test(src)) return null;
-
-  const slugDir = postSlug.replace(/\/[^/]+$/, "");
-  const base = `http://a/${slugDir ? `${slugDir}/` : ""}`;
-  try {
-    return new URL(src, base).pathname;
-  } catch {
-    return null;
-  }
-}
-
-function resolveFetchUrl(src: string, postSlug: string): string | null {
+function resolveFetchUrl(src: string, post: Pick<PostExportInput, "slug" | "garden">): string | null {
   if (src.startsWith("data:")) return src;
   if (EXTERNAL_SRC_RE.test(src)) return src;
-
-  const assetPath = resolveAssetPath(src, postSlug);
-  if (!assetPath) return null;
-  return `/api/posts/assets${assetPath.startsWith("/") ? assetPath : `/${assetPath}`}`;
+  const url = resolvePostAssetUrl(src, { slug: post.slug, garden: post.garden });
+  if (url === src && !src.startsWith("/")) return null;
+  return url;
 }
 
 function assetFileName(index: number, src: string): string {
@@ -105,7 +87,7 @@ export async function exportPostMarkdownZip(post: PostExportInput): Promise<void
 
   await Promise.all(
     imageSources.map(async (src, index) => {
-      const fetchUrl = resolveFetchUrl(src, post.slug);
+      const fetchUrl = resolveFetchUrl(src, post);
       if (!fetchUrl) return;
 
       try {

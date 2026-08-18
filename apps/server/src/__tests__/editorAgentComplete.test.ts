@@ -11,6 +11,11 @@ vi.mock("../infra/resilientLlmClient.js", () => ({
   resilientChatCompletion: (...args: unknown[]) => completeSpy(...args),
 }));
 
+const execToolSpy = vi.fn();
+vi.mock("../infra/nativeTools.js", () => ({
+  executeNativeTool: (...args: unknown[]) => execToolSpy(...args),
+}));
+
 import {
   __buildEditorCompleteUserPromptForTests,
   completeEditorWithAgent,
@@ -20,7 +25,8 @@ import {
 describe("editorAgentComplete", () => {
   beforeEach(() => {
     completeSpy.mockReset();
-    completeSpy.mockResolvedValue({ content: "## 示例\n\n内容。" });
+    execToolSpy.mockReset();
+    completeSpy.mockResolvedValue({ content: "## 示例\n\n内容。", toolCalls: [] });
   });
 
   it("prompt 含指令与前后文与当前段落", () => {
@@ -69,6 +75,7 @@ describe("editorAgentComplete", () => {
       model: string;
       enableReasoning: boolean;
       messages: Array<{ role: string; content: string }>;
+      tools?: Array<{ function: { name: string } }>;
     };
     expect(args.model).toBe("deepseek-v4-flash");
     expect(args.enableReasoning).toBe(false);
@@ -78,6 +85,60 @@ describe("editorAgentComplete", () => {
     expect(args.messages[0]!.content).toContain("表格");
     expect(args.messages[0]!.content).toContain("svg");
     expect(args.messages[1]!.content).toContain("写一段简介");
+    expect(args.tools?.[0]?.function.name).toBe("generate_illustration");
+  });
+
+  it("模型调 generate_illustration 后把工具结果回灌再出 Markdown", async () => {
+    completeSpy
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: {
+              name: "generate_illustration",
+              arguments: JSON.stringify({ prompt: "linear attention figure" }),
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        content: "![线性注意力](/uploads/g/p/fig-001.png)",
+        toolCalls: [],
+      });
+    execToolSpy.mockResolvedValue({
+      url: "/uploads/g/p/fig-001.png",
+      markdown: "![线性注意力](/uploads/g/p/fig-001.png)",
+    });
+
+    const services = {
+      agent: {
+        getById: vi.fn().mockResolvedValue({
+          id: "clagent00000000000000000001",
+          name: "写作助手",
+          status: "active",
+          systemPrompt: "sp",
+        }),
+      },
+    };
+    const res = await completeEditorWithAgent(services as never, {
+      agentId: "clagent00000000000000000001",
+      instruction: "加一张图",
+      garden: "llm-guide",
+      postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
+    });
+    expect(res.content).toContain("fig-001.png");
+    expect(execToolSpy).toHaveBeenCalledWith(
+      "generate_illustration",
+      expect.objectContaining({
+        prompt: "linear attention figure",
+        garden: "llm-guide",
+        postId: "clxxxxxxxxxxxxxxxxxxxxxxxx",
+      }),
+      expect.anything(),
+    );
+    expect(completeSpy).toHaveBeenCalledTimes(2);
   });
 
   it("剥掉整篇 markdown 围栏", async () => {

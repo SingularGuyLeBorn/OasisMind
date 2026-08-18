@@ -14,6 +14,7 @@ import {
 } from "../freeLlmRuntime.js";
 import { listFreellmChannels, syncFreeKeys } from "../freeKeysSync.js";
 import { listLocalLlmBackends } from "../localLlmCatalog.js";
+import { listBuiltinImageGenModels, resolveDefaultImageGenModel } from "../imageGen.js";
 
 export const llmRouter = router({
   freeModelsStatus: publicProcedure
@@ -85,6 +86,19 @@ export const llmRouter = router({
     .mutation(async ({ ctx }) => {
       const result = await syncFreeKeys(ctx.prisma, ctx.config);
       return { success: true as const, ...result };
+    }),
+
+  listImageGenModels: publicProcedure
+    .meta({
+      description: "列出编辑器可用生图模型。默认 defaultModel 为当前最强免费档（Pollinations FLUX）。",
+      aiReadable: false,
+    })
+    .query(({ ctx }) => {
+      const items = listBuiltinImageGenModels(ctx.config);
+      return {
+        defaultModel: resolveDefaultImageGenModel(items),
+        items,
+      };
     }),
 
   listLocalModels: publicProcedure

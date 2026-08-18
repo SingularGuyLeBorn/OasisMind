@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseMathBlockPayload,
-  serializeMathBlockPayload,
-} from "@/components/editor/mathBlockAlign";
+import { parseMathBlockPayload, serializeMathBlockPayload } from "@/components/editor/mathBlockAlign";
 
 describe("mathBlockAlign", () => {
   it("默认居中无 meta", () => {

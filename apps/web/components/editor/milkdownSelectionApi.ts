@@ -8,6 +8,7 @@ import { Slice } from "@milkdown/prose/model";
 import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 import type { EditorView } from "@milkdown/prose/view";
 import { $prose } from "@milkdown/utils";
+import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 
 let activeView: EditorView | null = null;
 let editorCtx: Ctx | null = null;
@@ -85,7 +86,7 @@ function applyMarkdownAtRange(
 
   try {
     const parser = ctx.get(parserCtx);
-    const parsed = parser(markdown.trim() || " ");
+    const parsed = parser(protectMathPipesInMarkdown(markdown.trim() || " "));
     // 单段 → 只替换/插入 inline，避免在段落内嵌套新段落
     const slice =
       parsed.childCount === 1 && parsed.firstChild?.isTextblock
@@ -94,16 +95,34 @@ function applyMarkdownAtRange(
 
     const to = Math.min(range.to, view.state.doc.content.size);
     const from = Math.min(range.from, to);
+    const sizeBefore = view.state.doc.content.size;
     let tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to));
     tr = tr.replaceSelection(slice).scrollIntoView();
     view.dispatch(tr);
     view.focus();
-    savedRange = null;
+    if (view.state.doc.content.size === sizeBefore && markdown.trim().length > 0) {
+      return false;
+    }
+    savedRange = {
+      from: view.state.selection.from,
+      to: view.state.selection.from,
+    };
     return true;
   } catch (err) {
     console.error("[milkdownSelectionApi] apply markdown failed", err);
     return false;
   }
+}
+
+export function getMilkdownSavedRange(): { from: number; to: number } | null {
+  if (savedRange) return savedRange;
+  if (!activeView) return null;
+  const { from, to } = activeView.state.selection;
+  return { from, to };
+}
+
+export function advanceMilkdownSavedRange(pos: number) {
+  savedRange = { from: pos, to: pos };
 }
 
 /** 有选区则替换；无选区则在光标处插入 */
@@ -115,6 +134,19 @@ export function replaceMilkdownSelectionWithMarkdown(markdown: string): boolean 
     to: view.state.selection.to,
   };
   return applyMarkdownAtRange(markdown, range);
+}
+
+/** 当前光标屏幕坐标，供 @agent 面板贴在正文旁 */
+export function getMilkdownCursorScreenRect(): DOMRect | null {
+  const view = activeView;
+  if (!view) return null;
+  try {
+    const pos = view.state.selection.from;
+    const coords = view.coordsAtPos(pos);
+    return new DOMRect(coords.left, coords.top, 0, Math.max(0, coords.bottom - coords.top));
+  } catch {
+    return null;
+  }
 }
 
 /** 在当前/已保存光标处插入 Markdown（无选区也可） */

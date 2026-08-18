@@ -14,6 +14,7 @@ import { browserScreenshotTool, scrollScreenshotTool } from "./screenshot.js";
 import { saveWebpageTool, downloadFileTool } from "./saveWebpage.js";
 import { readImageTool, visionDescribeTool } from "./readImage.js";
 import { videoTranscriptTool } from "./transcript.js";
+import { generateIllustrationTool } from "./generateIllustration.js";
 
 export { syncSearchEnvFromConfig } from "./search.js";
 export { isUnreadableArticlePage, readArticleContentWarning } from "./article.js";
@@ -72,7 +73,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
     concurrencyClass: "A",
     // 创建文章 + 下载图片：有本地写副作用，但属于可控导入
     description:
-      "导入外部文章到本地知识库：给定 URL，抓取正文并把文章里所有图片下载到 content/uploads/imports/，Markdown 图片 URL 改写成本地 /uploads/... 路径，然后创建一篇 Post（默认未发布草稿）。解决 read_article 抓取后原图防盗链/过期变成占位符的问题。长文或图片多时可用 async_task_run 后台执行。",
+      "导入外部文章到本地知识库：给定 URL，抓取正文并把文章里所有图片下载到 content/uploads/imports/，Markdown 图片 URL 改写成本地 /uploads/... 路径，然后创建一篇 Post。解决 read_article 抓取后原图防盗链/过期变成占位符的问题。长文或图片多时可用 async_task_run 后台执行。",
     parameters: {
       type: "object",
       properties: {
@@ -82,7 +83,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
         slug: { type: "string", description: "文章路径（默认由标题生成）" },
         category: { type: "string", description: "分类（默认 转载）" },
         tags: { type: "array", items: { type: "string" }, description: "标签（默认 [转载]）" },
-        published: { type: "boolean", description: "是否直接发布，默认 false（草稿）" },
+        published: { type: "boolean", description: "写入后即可阅读，默认 true" },
         method: { type: "string", enum: ["playwright", "direct"], description: "抓取方式：playwright（默认，可渲染 JS/登录墙）或直接 HTTP" },
         timeout: { type: "number", description: "抓取超时毫秒，默认 30000" },
       },
@@ -261,6 +262,32 @@ const WEB_DEFS: NativeToolDefinition[] = [
     },
   },
   {
+    name: "generate_illustration",
+    concurrencyClass: "B",
+    description:
+      "文生图并落盘：给英文 prompt，生成技术文章配图，写入 content/uploads（文章目录 fig-001.png 起编号）。返回 url 与 Markdown。用户要插图/示意图/配图时必须调用，不要编造 URL。不传 imageModel 默认最强免费档 pollinations/flux。",
+    parameters: {
+      type: "object",
+      properties: {
+        prompt: {
+          type: "string",
+          description:
+            "给文生图模型的英文 prompt。风格：white background, research-paper figure, clean labels, no watermark",
+        },
+        imageModel: {
+          type: "string",
+          description:
+            "可选。默认 pollinations/flux。免费：pollinations/flux | pollinations/flux-realism | pollinations/turbo",
+        },
+        alt: { type: "string", description: "图片 alt / 图注短句" },
+        garden: { type: "string", description: "文章所属花园 id" },
+        postId: { type: "string", description: "已落盘文章 id" },
+        draftKey: { type: "string", description: "未落盘草稿键" },
+      },
+      required: ["prompt"],
+    },
+  },
+  {
     name: "video_transcript",
     concurrencyClass: "B",
     description:
@@ -301,6 +328,7 @@ const WEB_HANDLERS = {
   download_file: downloadFileTool,
   read_image: readImageTool,
   vision_describe: visionDescribeTool,
+  generate_illustration: generateIllustrationTool,
   video_transcript: videoTranscriptTool,
   ...academicHandlers,
 };

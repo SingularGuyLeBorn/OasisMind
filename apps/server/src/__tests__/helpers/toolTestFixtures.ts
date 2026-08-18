@@ -342,6 +342,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "article_video_compose",
   "read_image",
   "vision_describe",
+  "generate_illustration",
   "video_transcript",
   "media_download",
   "audio_transcribe",

@@ -9,6 +9,10 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 import type { Node as PmNode } from "@milkdown/prose/model";
 import type { EditorView } from "@milkdown/prose/view";
 import { $prose } from "@milkdown/utils";
+import {
+  advanceMilkdownSavedRange,
+  getMilkdownSavedRange,
+} from "@/components/editor/milkdownSelectionApi";
 
 export type MilkdownImageUploadResult = {
   src: string;
@@ -42,8 +46,16 @@ export function insertMilkdownImageAtCursor(
     title: attrs.title ?? "",
   });
   if (!node) return false;
-  view.dispatch(view.state.tr.replaceSelectionWith(node).scrollIntoView());
+  const range = getMilkdownSavedRange();
+  const rawFrom = range?.from ?? view.state.selection.from;
+  const rawTo = range?.to ?? view.state.selection.to;
+  const to = Math.min(rawTo, view.state.doc.content.size);
+  const from = Math.min(rawFrom, to);
+  let tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to));
+  tr = tr.replaceSelectionWith(node).scrollIntoView();
+  view.dispatch(tr);
   view.focus();
+  advanceMilkdownSavedRange(from + 1);
   return true;
 }
 
