@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   ChevronRight,
   FileText,
-  FileX2,
   FoldVertical,
   FolderClosed,
   FolderOpen,
@@ -260,7 +259,6 @@ const TreeNodeItem = memo(function TreeNodeItem({
   const isActive = node.slug === activeSlug;
   const hasChildren = node.children.length > 0;
   const isDoc = node.type === "doc";
-  const isDraft = isDoc && node.published === false;
   const pinned = Boolean(node.slug && node.garden && isPostPinned(node.garden, node.slug));
 
   const rowClass = cn(
@@ -276,8 +274,6 @@ const TreeNodeItem = memo(function TreeNodeItem({
     ) : (
       <FolderClosed className="h-4 w-4 shrink-0 text-[var(--om-brand-light)]" />
     )
-  ) : isDraft ? (
-    <FileX2 className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
   ) : (
     <FileText className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
   );
@@ -315,12 +311,7 @@ const TreeNodeItem = memo(function TreeNodeItem({
             data-tree-slug={node.slug}
           >
             {iconNode}
-            <span className={cn("min-w-0 flex-1 truncate", isDraft && "text-[var(--om-text-3)]")}>{node.title}</span>
-            {isDraft && (
-              <span className="ml-1 shrink-0 rounded px-1 py-0.5 text-[10px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-950 dark:text-amber-400">
-                草稿
-              </span>
-            )}
+            <span className="min-w-0 flex-1 truncate">{node.title}</span>
             {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--om-brand-deep)]" />}
           </Link>
         ) : (
@@ -666,7 +657,7 @@ export function PostTreeNav({
       )}
       {isSearchMode ? (
         <VirtualFlatList
-          className="pb-3 pr-1 [overflow-anchor:none]"
+          className="om-scroll-hidden pb-3 [overflow-anchor:none]"
           items={flatSearchResults}
           rowHeight={40}
           getKey={(item) => item.key}
@@ -700,7 +691,7 @@ export function PostTreeNav({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 pr-1 [overflow-anchor:none]"
+          className="om-scroll-hidden min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 [overflow-anchor:none]"
         >
           <nav className="flex flex-col gap-0.5">
             {visibleTree.map((node) => (

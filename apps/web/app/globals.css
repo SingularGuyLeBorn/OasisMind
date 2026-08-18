@@ -36,6 +36,13 @@
   --om-accent-rgb: 232, 168, 74;
   --om-ink: #0b1220;
 
+  /*
+   * 字体走系统栈，不经 next/font/google。
+   * 国内拉 fonts.googleapis.com 会把首次编译/首屏卡到几十秒。
+   */
+  --font-geist-sans: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-geist-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
+
   /* 氛围色（渐变层） */
   --om-glow-peach: #ffe0ae;
   --om-glow-blue: #b1e3ff;
@@ -289,6 +296,15 @@ html {
 
 .om-post-swap {
   animation: om-post-swap 60ms ease-out;
+}
+
+/* 标题是 <input>：UA 默认 overflow:hidden + 行高不够，英文括号/降部会被横线裁掉 */
+article.om-post-content > header input,
+article.om-post-swap > header input {
+  overflow: visible;
+  height: auto;
+  line-height: 1.35;
+  padding-block: 0.2em;
 }
 
 @media (prefers-reduced-motion: reduce) {

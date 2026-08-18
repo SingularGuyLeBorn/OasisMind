@@ -499,7 +499,7 @@ export class InboxService extends BaseService<
           content: body,
           excerpt: item.excerpt || item.title,
           tags: [...new Set(["inbox", item.source, ...item.tags])],
-          published: input.published ?? false,
+          published: input.published ?? true,
         });
         await this.prisma.inboxItem.update({
           where: { id: item.id },

@@ -458,7 +458,7 @@ export async function articleImportTool(args: Record<string, unknown>, ctx: Nati
   const slug = args.slug ? String(args.slug) : slugify(title);
   const excerpt = String(args.excerpt || previewContent.slice(0, 200).replace(/\s+/g, " ").trim());
   const tags = Array.isArray(args.tags) ? args.tags.map(String) : ["转载"];
-  const published = args.published === true;
+  const published = args.published !== false;
 
   const createResult = await ctx.services.post.create({
     title,

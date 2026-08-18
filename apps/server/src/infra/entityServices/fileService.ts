@@ -33,14 +33,18 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
     garden?: string;
     postId?: string;
     draftKey?: string;
+    /** Chat 无文章时落到 uploads/_agent/{agentId}/ */
+    agentId?: string;
+    /** false = 用消毒后的原名（配图 fig-001.png）；默认 true 追加时间戳防撞 */
+    unique?: boolean;
   }): Promise<OperationResult<any>> {
     const start = Date.now();
     try {
-      const { name, mimeType, size, data, garden, postId, draftKey } = input;
+      const { name, mimeType, size, data, garden, postId, draftKey, agentId, unique = true } = input;
       const safeName = path.basename(name);
       const ext = path.extname(safeName);
       const baseName = path.basename(safeName, ext).replace(/[^\w\u4e00-\u9fff.-]+/g, "_") || "file";
-      const uniqueName = `${baseName}_${Date.now().toString(36)}${ext}`;
+      const uniqueName = unique ? `${baseName}_${Date.now().toString(36)}${ext}` : `${baseName}${ext}`;
       const uploadRoot = path.resolve(this.config.uploadDir);
 
       // 按 postId（或草稿 draftKey）分目录，与 slug 解耦——改 slug 不断图片链
@@ -50,6 +54,8 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
         segments.push(postId);
       } else if (draftKey) {
         segments.push("_draft", draftKey);
+      } else if (agentId) {
+        segments.push("_agent", agentId);
       }
 
       const destDir = segments.length > 0 ? path.resolve(uploadRoot, ...segments) : uploadRoot;

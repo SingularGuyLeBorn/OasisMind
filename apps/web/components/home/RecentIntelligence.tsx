@@ -69,7 +69,7 @@ export function RecentIntelligence({ posts }: RecentIntelligenceProps) {
             <div>
               <h3 className="text-base font-bold text-[var(--om-text-1)]">花园还在播种</h3>
               <p className="text-xs leading-relaxed text-[var(--om-text-2)]">
-                暂无已发布文章。去编辑器写第一篇，Agent 会帮你整理成可生长的笔记。
+                暂无文章。去编辑器写第一篇，Agent 会帮你整理成可生长的笔记。
               </p>
             </div>
             <Link

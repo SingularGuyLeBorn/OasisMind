@@ -186,7 +186,7 @@ const SCENARIOS: Scenario[] = [
           },
           {
             name: "post_create",
-            summary: "写入花园草稿",
+            summary: "写入花园",
             args: { title: "见微：把碎片养成文章", garden: "posts", published: false },
             result: { slug: "garden-draft", id: "post_91c" },
           },

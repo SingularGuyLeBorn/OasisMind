@@ -296,7 +296,7 @@ export async function draftPostsFromRssItems(
           excerpt,
           category: defaultCategory,
           tags: ["RSS", source.name].join(","),
-          published: false,
+          published: true,
           garden: "posts", // RSS 草稿固定进博客花园
         },
       });

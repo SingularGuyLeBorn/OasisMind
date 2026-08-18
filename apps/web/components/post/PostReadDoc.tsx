@@ -67,7 +67,7 @@ export function PostReadDoc({ post }: { post: PostReadDocModel }) {
 
       <article ref={articleRef} className="om-post-content mx-auto max-w-3xl">
         <header className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h1 className="text-3xl font-semibold leading-snug tracking-tight text-foreground sm:text-4xl">
             {post.title}
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

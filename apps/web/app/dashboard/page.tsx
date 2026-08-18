@@ -164,7 +164,6 @@ export default function DashboardPage() {
             icon={FileText}
             label="文章"
             value={data.posts.total}
-            sub={`已发布 ${data.posts.published}`}
           />
           <StatCard icon={Bot} label="Agent" value={data.agents.total} />
           <StatCard

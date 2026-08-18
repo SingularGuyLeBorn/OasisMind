@@ -19,15 +19,15 @@ import { createAgentForTier } from "./agentFactory.js";
 import { ensureMainSession } from "./ensureMainSession.js";
 import { DEFAULT_ASSISTANT_SYSTEM_PROMPT, resolveAgent } from "./agentResolver.js";
 
-/** 存量超级 Agent 补齐缺失的默认工具（幂等；含飞书/语雀/GitHub） */
-function mergeMissingSuperTools(existingTools: string): { tools: string; added: string[] } {
+/** 存量 Agent 补齐缺失的默认工具（幂等） */
+function mergeMissingTools(existingTools: string, required: readonly string[]): { tools: string; added: string[] } {
   const current = existingTools
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
   const seen = new Set(current);
   const added: string[] = [];
-  for (const t of TIER_DEFAULT_TOOLS.super) {
+  for (const t of required) {
     if (!seen.has(t)) {
       current.push(t);
       seen.add(t);
@@ -308,7 +308,7 @@ export async function initSwarm(
       });
       console.log(`  🔗 [Swarm] 已把超级 Agent 关联到系统 Workspace`);
     }
-    const { tools, added } = mergeMissingSuperTools(existing.tools ?? "");
+    const { tools, added } = mergeMissingTools(existing.tools ?? "", TIER_DEFAULT_TOOLS.super);
     if (added.length > 0) {
       await prisma.agent.update({
         where: { id: existing.id },

@@ -22,7 +22,7 @@ export function StatsStrip({
     label: string;
     href: string | null;
   }> = [
-    { icon: Newspaper, value: postCount, label: "已发布文章", href: "/blog" },
+    { icon: Newspaper, value: postCount, label: "文章", href: "/blog" },
     { icon: FolderTree, value: categoryCount, label: "内容分类", href: null },
     { icon: null, value: "∞", label: "协作席位", href: null },
     { icon: Gauge, value: "0", label: "等待毫秒", href: null },

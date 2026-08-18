@@ -112,7 +112,7 @@ function UserAttachmentChips({
 /** 空态问候语：从「每日碎片」花园抽一句你自己写过的话，按日轮换（同日内稳定，不闪烁） */
 function GardenGreeting() {
   const fragmentsQuery = trpc.post.list.useQuery(
-    { garden: "daily-fragments", published: true, pageSize: 30, orderBy: "updatedAt", order: "desc" },
+    { garden: "daily-fragments", pageSize: 30, orderBy: "updatedAt", order: "desc" },
     { staleTime: 10 * 60_000, retry: false, refetchOnWindowFocus: false },
   );
   // 日种子惰性初始化一次（render 纯度）：同日稳定轮换，不随重渲染漂移

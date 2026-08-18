@@ -15,7 +15,6 @@ export default function TagPage() {
   const slug = decodeURIComponent(params.slug as string);
 
   const { data, isLoading } = trpc.post.list.useQuery({
-    published: true,
     tag: slug,
     pageSize: 100,
     orderBy: "updatedAt",

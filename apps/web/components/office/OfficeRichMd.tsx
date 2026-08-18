@@ -14,6 +14,7 @@ import remarkMath from "remark-math";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
 import { cn } from "@/lib/utils";
+import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 
 function getText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -38,7 +39,8 @@ export const OfficeRichMd = memo(function OfficeRichMd({
   /** 3D 屏 / 小卡：更紧凑的字号与间距 */
   compact?: boolean;
 }) {
-  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath], []);
+  const remarkPlugins = useMemo(() => [remarkMath, remarkGfm], []);
+  const processed = useMemo(() => protectMathPipesInMarkdown(content), [content]);
 
   const components = useMemo<Components>(
     () => ({
@@ -158,7 +160,7 @@ export const OfficeRichMd = memo(function OfficeRichMd({
       )}
     >
       <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
-        {content}
+        {processed}
       </ReactMarkdown>
     </div>
   );

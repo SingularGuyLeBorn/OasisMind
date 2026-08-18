@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   createAgentSchema, updateAgentSchema, listAgentsSchema, agentRunSchema, agentChatSchema,
   submitAgentInjectSchema, editorAgentCompleteSchema, editorFormulaCopilotSchema,
+  editorGenerateIllustrationSchema,
   deleteByIdWithApprovalSchema, runWorkflowSchema, duplicateAgentSchema,
   createSessionQueueItemSchema, reorderSessionQueueItemsSchema,
 } from "@oasismind/shared";
@@ -75,7 +76,7 @@ export const agentRouter = router({
   list: publicProcedure.meta({ description: "列出所有 Agent，支持分页和关键词搜索。", aiReadable: true }).input(listAgentsSchema).query(({ ctx, input }) => ctx.services.agent.list(input)),
   editorComplete: publicProcedure
     .meta({
-      description: "编辑器 @Agent 补全：注入 Agent systemPrompt，一次生成 Markdown 片段（不建会话、不跑工具）。",
+      description: "编辑器 @Agent 补全：注入 Agent systemPrompt，可调用 generate_illustration（不建会话）。",
       aiReadable: false,
     })
     .input(editorAgentCompleteSchema)
@@ -93,6 +94,17 @@ export const agentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { completeFormulaCopilot } = await import("../editorAgentComplete.js");
       return completeFormulaCopilot(ctx.services, input);
+    }),
+  generateIllustration: publicProcedure
+    .meta({
+      description:
+        "编辑器生成配图：根据光标上下文写生图 prompt，调用生图模型，落盘后返回 url（前端插入光标处）。不选模型则用最强免费档。",
+      aiReadable: false,
+    })
+    .input(editorGenerateIllustrationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { generateEditorIllustration } = await import("../editorIllustration.js");
+      return generateEditorIllustration(ctx.services, input);
     }),
   update: publicProcedure.meta({ description: "更新 Agent 配置。", aiReadable: true }).input(updateAgentSchema).mutation(({ ctx, input }) => ctx.services.agent.update(input)),
   delete: publicProcedure.meta({ description: "删除 Agent 及其本地配置文件。", aiReadable: true }).input(deleteByIdWithApprovalSchema).mutation(({ ctx, input }) =>

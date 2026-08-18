@@ -211,7 +211,7 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       garden,
       slug: finalSlug,
       content: stripLeadingMarkdownFrontmatter(input.content ?? ""),
-      published: input.published ?? false,
+      published: input.published ?? true,
       excerpt: input.excerpt,
       coverImage: input.coverImage,
       category: input.category,

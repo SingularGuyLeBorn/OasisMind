@@ -28,8 +28,6 @@ import { Pagination, ConfirmDialog, EmptyState, LoadingState, TagFilterBar, Enti
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
 import { listItemExit } from "@/lib/motion";
 
-type PublishFilter = "all" | "published" | "draft";
-
 function PostsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,7 +35,6 @@ function PostsPageContent() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [publishFilter, setPublishFilter] = useState<PublishFilter>("all");
   /** URL ?garden= 优先；本地切换时用 state，点「全部」清 URL */
   const [gardenOverride, setGardenOverride] = useState<string | null>(null);
   const gardenFilter = gardenOverride ?? (gardenFromUrl || "all");
@@ -63,14 +60,10 @@ function PostsPageContent() {
     limit: 40,
   });
 
-  const publishedParam =
-    publishFilter === "all" ? undefined : publishFilter === "published";
-
   const { data, isLoading, isFetching } = trpc.post.list.useQuery({
     page,
     pageSize: 10,
     keyword: debouncedKeyword || undefined,
-    published: publishedParam,
     garden: gardenFilter === "all" ? undefined : gardenFilter,
     tag: tagFilter ?? undefined,
     orderBy: "updatedAt",
@@ -226,32 +219,6 @@ function PostsPageContent() {
             </button>
           )}
         </div>
-        <div className="flex shrink-0 gap-1 rounded-xl border border-[var(--om-divider)] bg-white/50 p-1 backdrop-blur-sm">
-          {(
-            [
-              ["all", "全部"],
-              ["published", "已发布"],
-              ["draft", "草稿"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setPublishFilter(value);
-                setPage(1);
-              }}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                publishFilter === value
-                  ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
-                  : "text-[var(--om-text-2)] hover:bg-white/70",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </motion.div>
 
       {isLoading ? (
@@ -346,17 +313,6 @@ function PostCard({
       <EntityCard className={cn("group h-full", featured ? "p-6" : "p-5")}>
         <article data-testid="post-card" className="flex h-full flex-col">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge
-              variant={post.published ? "default" : "secondary"}
-              className={cn(
-                "text-xs",
-                post.published
-                  ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 text-emerald-700 hover:from-emerald-500/20"
-                  : "",
-              )}
-            >
-              {post.published ? "已发布" : "草稿"}
-            </Badge>
             <Badge variant="outline" className="text-xs border-[var(--om-divider)] bg-white/40">
               {gardenLabel}
             </Badge>

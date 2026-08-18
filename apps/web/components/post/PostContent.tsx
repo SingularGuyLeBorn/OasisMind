@@ -14,6 +14,8 @@ import { transformWikiLinks } from "./WikiLink";
 import { PostMarkdownLink } from "./PostMarkdownLink";
 import { RoughAnnotation, type RoughAnnotationProps } from "./RoughAnnotation";
 import { memoizeMarkdownTransform } from "@oasismind/shared";
+import { resolvePostAssetUrl } from "@/lib/postAssetUrl";
+import { protectMathPipesInMarkdown } from "@/lib/protectMathPipes";
 import { MarkdownTable } from "@/components/post/MarkdownTable";
 import { isMathClassName } from "@/components/post/KatexFormula";
 import { KatexHtml } from "@/components/post/KatexHtml";
@@ -68,18 +70,6 @@ function urlTransform(url: string) {
   const scheme = url.slice(0, colonIndex + 1).toLowerCase();
   const allowed = ["http:", "https:", "mailto:", "tel:", "data:", "wiki:"];
   return allowed.includes(scheme) ? url : "";
-}
-
-/** 将 Markdown 中的相对图片地址解析为可访问的静态资源 URL */
-function resolveAssetUrl(src: string, postSlug?: string) {
-  if (!postSlug) return src;
-  // 协议链接、协议相对链接或绝对路径保持原样
-  if (/^([a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(src)) return src;
-
-  const slugDir = postSlug.replace(/\/[^/]+$/, "");
-  const base = `http://a/${slugDir ? `${slugDir}/` : ""}`;
-  const resolved = new URL(src, base).pathname;
-  return `/api/posts/assets${resolved}`;
 }
 
 /** 可渲染为 iframe 预览的语言（HTML/可独立运行的标记） */
@@ -537,14 +527,16 @@ export const PostContent = memo(function PostContent({
   postGarden,
 }: PostContentProps) {
   const processedContent = useMemo(
-    () => memoizeMarkdownTransform(content, transformWikiLinks),
+    () =>
+      memoizeMarkdownTransform(content, (raw) =>
+        transformWikiLinks(protectMathPipesInMarkdown(raw)),
+      ),
     [content],
   );
 
   const tocItems = useMemo(() => buildTocItems(content), [content]);
-  // 公式：remark-math 产出 code.language-math → KatexHtml(renderToString)
-  // 不再用 rehype-katex→React 子树（空 strut 易丢，下标飞掉）
-  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath], []);
+  // 公式必须先于 GFM 表格，否则表内 `\|` 会切断 `$...$` 把后文吞成红字
+  const remarkPlugins = useMemo(() => [remarkMath, remarkGfm], []);
   const rehypePlugins = useMemo(
     () =>
       [
@@ -578,7 +570,7 @@ export const PostContent = memo(function PostContent({
           return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={resolveAssetUrl(src, postSlug)}
+              src={resolvePostAssetUrl(src, { slug: postSlug, garden: postGarden })}
               alt={alt || ""}
               className="rounded-xl border border-[var(--om-divider)]"
               loading="lazy"

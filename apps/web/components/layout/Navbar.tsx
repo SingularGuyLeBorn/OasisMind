@@ -11,10 +11,10 @@ import { ThemeToggle } from "@/components/themeToggle";
 import type { LayoutMode } from "./layoutMode";
 
 /**
- * idle 只预热轻路由 RSC（秒切主力）。
- * /about /office 含 three，禁止 idle 拉 chunk——悬停再拉，避免长跑堆内存。
+ * idle 只预热轻路由。/chat /agents /dashboard /about /office 首次编译极重，
+ * 禁止进首页 idle 队列——悬停再拉，否则冷启动访问 / 会连带编译整站一分钟。
  */
-const IDLE_PREFETCH_HREFS = ["/", "/blog", "/gardens", "/chat", "/agents", "/dashboard", "/posts"] as const;
+const IDLE_PREFETCH_HREFS = ["/", "/blog", "/gardens"] as const;
 
 /** CmdK 面板按需加载，勿进根布局静态图 */
 const CommandPalette = dynamic(
@@ -67,15 +67,17 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
   const showMobileMenu = mode === "app" || mode === "content";
 
   useEffect(() => {
+    const onHome = pathname === "/" || pathname === "";
     return scheduleIdlePrefetch(() => {
       for (const href of IDLE_PREFETCH_HREFS) {
         prefetchHref(router, href);
       }
-      // 侧栏 chunk 提前拉，home↔app 切换不卡第一帧（勿预拉 Office/About three）
-      import("./Sidebar").catch(() => {});
-      import("./PostSidebar").catch(() => {});
-    }, { timeoutMs: 1200, delayMs: 50 });
-  }, [router]);
+      if (!onHome) {
+        import("./Sidebar").catch(() => {});
+        import("./PostSidebar").catch(() => {});
+      }
+    }, { timeoutMs: 12_000, delayMs: onHome ? 8_000 : 2_000 });
+  }, [router, pathname]);
 
   return (
     <header
@@ -127,6 +129,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             href="/chat"
             active={pathname.startsWith("/chat")}
             icon={<MessageSquare className="h-4 w-4" />}
+            eagerPrefetch={false}
             onPrefetch={() => prefetchHref(router, "/chat")}
           >
             对话
@@ -135,6 +138,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             href="/about"
             active={pathname.startsWith("/about")}
             icon={<UserCircle className="h-4 w-4" />}
+            eagerPrefetch={false}
             onPrefetch={() => {
               prefetchHref(router, "/about");
               import("@/components/about/AboutView").catch(() => {});
@@ -146,6 +150,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             href="/office"
             active={pathname.startsWith("/office")}
             icon={<Sofa className="h-4 w-4" />}
+            eagerPrefetch={false}
             onPrefetch={() => {
               prefetchHref(router, "/office");
               import("@/components/office/OfficeScene").catch(() => {});
@@ -157,6 +162,7 @@ export function Navbar({ mode, onMenuClick, className }: NavbarProps) {
             href="/agents"
             active={isManageActive(pathname)}
             icon={<LayoutGrid className="h-4 w-4" />}
+            eagerPrefetch={false}
             onPrefetch={() => {
               prefetchHref(router, "/agents");
               import("./Sidebar").catch(() => {});
@@ -181,17 +187,20 @@ function TopNavLink({
   icon,
   children,
   onPrefetch,
+  eagerPrefetch = true,
 }: {
   href: string;
   active: boolean;
   icon: React.ReactNode;
   children: React.ReactNode;
   onPrefetch?: () => void;
+  /** false：视口内不预编译（Chat / Three / 管理页），只在悬停时拉 */
+  eagerPrefetch?: boolean;
 }) {
   return (
     <Link
       href={href}
-      prefetch
+      prefetch={eagerPrefetch}
       onMouseEnter={onPrefetch}
       onFocus={onPrefetch}
       onTouchStart={onPrefetch}

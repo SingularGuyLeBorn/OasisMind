@@ -438,7 +438,7 @@ const INBOX_DEFS: NativeToolDefinition[] = [
   {
     name: "inbox_distill",
     description:
-      "把 Inbox 条目蒸馏为 knowledge 花园未发布 Post 草稿（可用 garden 覆盖）。适合批量落库；若需深度改写可先 inbox_list 读内容再 post_create。",
+      "把 Inbox 条目蒸馏为 knowledge 花园文章（可用 garden 覆盖）。适合批量落库；若需深度改写可先 inbox_list 读内容再 post_create。",
     concurrencyClass: "D",
     destructive: true,
     approvalExempt: true,
@@ -448,7 +448,7 @@ const INBOX_DEFS: NativeToolDefinition[] = [
       properties: {
         ids: { type: "array", items: { type: "string" } },
         garden: { type: "string", description: "默认 knowledge" },
-        published: { type: "boolean", description: "默认 false（草稿）" },
+        published: { type: "boolean", description: "写入后即可阅读，默认 true" },
       },
     },
   },

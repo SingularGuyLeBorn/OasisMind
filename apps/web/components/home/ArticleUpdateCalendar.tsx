@@ -165,7 +165,7 @@ function DayDetailPanel({
 }) {
   const enabled = !!date;
   const { data, isError, isPlaceholderData } = trpc.post.activityDayDetail.useQuery(
-    { date: date ?? "1970-01-01", publishedOnly: true },
+    { date: date ?? "1970-01-01", publishedOnly: false },
     {
       enabled,
       staleTime: 30_000,

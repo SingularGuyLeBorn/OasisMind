@@ -62,7 +62,7 @@ function BlogPageContent() {
         </div>
         <h1 className="om-display-serif text-3xl text-[var(--om-text-1)]">博客</h1>
         <p className="mt-1 text-sm text-[var(--om-text-3)]">
-          已发布文章 · 共 {data?.total ?? 0} 篇
+          共 {data?.total ?? 0} 篇
           {gardenFromUrl ? ` · ${gardenTitle(gardenFromUrl)}` : ""}
           {isFetching && !isLoading ? " · 刷新中…" : ""}
         </p>
@@ -167,7 +167,7 @@ function BlogPageContent() {
           ))}
         </ul>
       ) : (
-        <EmptyState title="暂无已发布文章" description="发布文章后会出现在这里" />
+        <EmptyState title="暂无文章" description="写入花园后会出现在这里" />
       )}
 
       {data && data.totalPages > 1 ? (

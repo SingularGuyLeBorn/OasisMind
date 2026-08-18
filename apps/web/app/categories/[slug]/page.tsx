@@ -15,7 +15,6 @@ export default function CategoryPage() {
   const slug = decodeURIComponent(params.slug as string);
 
   const { data, isLoading } = trpc.post.list.useQuery({
-    published: true,
     category: slug,
     pageSize: 100,
     orderBy: "updatedAt",

@@ -65,7 +65,6 @@ function SaveMessageAsPostDialogInner({
   const [title, setTitle] = useState(target.previewTitle?.slice(0, 80) || "");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
-  const [published, setPublished] = useState(true);
   const [targetPostId, setTargetPostId] = useState("");
   const [appendHeading, setAppendHeading] = useState("");
   const [postQuery, setPostQuery] = useState("");
@@ -107,7 +106,7 @@ function SaveMessageAsPostDialogInner({
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
-      published,
+      published: true,
       appendHeading: mode === "append" ? appendHeading.trim() || undefined : undefined,
     };
     const run = target.toolResultPath
@@ -306,15 +305,6 @@ function SaveMessageAsPostDialogInner({
                 />
               </label>
             </div>
-
-            <label className="flex items-center gap-2 text-xs text-[var(--om-text-2)]">
-              <input
-                type="checkbox"
-                checked={published}
-                onChange={(e) => setPublished(e.target.checked)}
-              />
-              发布（写入后可在花园中阅读）
-            </label>
 
             {error && (
               <p className="text-xs text-red-600" data-testid="save-message-as-post-error">

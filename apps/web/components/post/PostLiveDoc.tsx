@@ -109,7 +109,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-transparent text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground sm:text-4xl"
+            className="box-border min-h-[1.35em] w-full overflow-visible bg-transparent py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground sm:text-4xl"
             placeholder="标题"
           />
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -135,6 +135,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
               post={{
                 title,
                 slug: post.slug,
+                garden: post.garden,
                 content,
                 excerpt: null,
                 category: post.category,

@@ -29,7 +29,10 @@ export function warmKatexFonts() {
   );
 }
 
+const MATH_TEX_SOFT_MAX = 8000;
+
 function renderKatex(tex: string, displayMode: boolean): string {
+  if (tex.length > MATH_TEX_SOFT_MAX) return "公式未闭合或过长";
   try {
     return katex.renderToString(tex, {
       throwOnError: false,

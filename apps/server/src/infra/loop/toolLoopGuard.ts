@@ -90,6 +90,7 @@ const EXPLORE_READONLY_TOOLS = new Set([
   "scroll_screenshot",
   "read_image",
   "vision_describe",
+  "generate_illustration",
   // 状态轮询（换 jobId / 平台）
   "async_task_status",
   "platform_login",
