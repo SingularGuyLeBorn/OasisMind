@@ -246,7 +246,8 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 | 命令 | 作用 |
 | --- | --- |
 | `pnpm install` | 安装依赖 |
-| `pnpm dev` | 同步内容并同时启动 server + web |
+| `pnpm dev` | 完整：sync + server + web + sync:watch |
+| `pnpm dev:mini` | 极简：跳过全量 sync |
 | `pnpm dev:web` | 只启动前端 |
 | `pnpm dev:server` | 只启动后端 |
 | `pnpm db:sync` | Markdown/YAML ↔ SQLite 同步 |
@@ -266,4 +267,5 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 - 想了解未来规划：看 `future-features.md`。
 - 想查开发踩坑与教训：`开发心路历程.md`。
 - 想看 Swarm / 队列 / P0 架构决策：`design-decisions.md`；落地 PR 拆分：`p0-agent-arch-pr-split.md`。
+- 2026-08 Swarm 出处合同 + RSI 经验门 + 模块全景：`swarm-rsi-session-2026-08.md`。
 - 算法可视化（Remotion Code Motion Explainer）：`algo-viz.md`。
