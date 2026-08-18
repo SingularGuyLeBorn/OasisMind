@@ -172,7 +172,7 @@ async function postCreateTool(args: Record<string, unknown>, ctx: NativeToolCont
     coverImage: args.coverImage ? String(args.coverImage) : null,
     category: args.category ? String(args.category) : null,
     tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
-    published: args.published === true,
+    published: args.published !== false,
   };
   const result = await ctx.services.post.create(input);
   if (!result.success) throw new Error(result.error?.message || "创建文章失败");
@@ -653,7 +653,7 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         coverImage: z.string().describe("封面图 URL").optional(),
         category: z.string().describe("分类（元数据，不是目录）").optional(),
         tags: z.array(z.string()).describe("标签列表").optional(),
-        published: z.boolean().describe("是否发布").optional(),
+        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
       }),
     ),
   },
@@ -673,7 +673,7 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         coverImage: z.string().describe("封面图 URL").optional(),
         category: z.string().describe("分类").optional(),
         tags: z.array(z.string()).describe("标签列表").optional(),
-        published: z.boolean().describe("是否发布").optional(),
+        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
       }),
     ),
   },
@@ -698,7 +698,7 @@ const MEMORY_DEFS: NativeToolDefinition[] = [
         garden: z.string().describe("只列该花园；不填=全部花园").optional(),
         page: z.number().int().min(1).describe("页码，默认 1").optional(),
         pageSize: z.number().int().min(1).max(50).describe("每页条数，默认 20，最大 50").optional(),
-        published: z.boolean().describe("是否仅看已发布；不填=全部").optional(),
+        published: z.boolean().describe("可选过滤；不填=全部").optional(),
         category: z.string().describe("按分类过滤").optional(),
         tag: z.string().describe("按标签过滤").optional(),
         keyword: z.string().describe("关键词（标题/正文 FTS 优先，回退 LIKE）").optional(),

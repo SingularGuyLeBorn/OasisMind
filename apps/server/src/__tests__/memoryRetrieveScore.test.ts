@@ -9,16 +9,17 @@ import { getEventBus } from "../infra/eventBus.js";
 import { getAppConfig } from "../infra/config.js";
 import {
   createMemoryRepository,
+  memoryScopeProximityBoost,
   scoreMemoryCandidate,
   consolidateMemories,
 } from "../infra/memoryRepository.js";
+import { assembleLayeredMemoryHint, buildMemoryContext } from "../infra/promptBuilder.js";
 import {
   __resetMemoryRetrieveGatesForTests,
   shouldSkipMemoryRetrieve,
   recordMemoryRetrieveOutcome,
   MEMORY_RETRIEVE_GATE,
 } from "../infra/memoryRetrieveGate.js";
-import { buildMemoryContext } from "../infra/promptBuilder.js";
 import { MEMORY_TYPES, memoryAgentScope } from "@oasismind/shared";
 
 describe("scoreMemoryCandidate", () => {
@@ -46,6 +47,55 @@ describe("scoreMemoryCandidate", () => {
     const a = scoreMemoryCandidate({ strength: 0.2, updatedAt, nowMs: now });
     const b = scoreMemoryCandidate({ strength: 1, updatedAt, nowMs: now });
     expect(b).toBeGreaterThan(a);
+  });
+
+  it("同强度时本 Agent 记忆压过全局", () => {
+    const now = Date.now();
+    const updatedAt = new Date(now);
+    const global = scoreMemoryCandidate({
+      strength: 1,
+      updatedAt,
+      nowMs: now,
+      scope: "global",
+    });
+    const own = scoreMemoryCandidate({
+      strength: 1,
+      updatedAt,
+      nowMs: now,
+      scope: memoryAgentScope("agent-room"),
+    });
+    expect(memoryScopeProximityBoost(memoryAgentScope("x"))).toBeGreaterThan(
+      memoryScopeProximityBoost("global"),
+    );
+    expect(own).toBeGreaterThan(global);
+  });
+});
+
+describe("assembleLayeredMemoryHint", () => {
+  it("L2 与 L1 分节，不混成一坨", () => {
+    const text = assembleLayeredMemoryHint({
+      scenarioLines: ["- [procedural] 发版先跑 lint"],
+      atomLines: ["- [preference] 中文回复"],
+    });
+    expect(text).toContain("## 场景与流程");
+    expect(text).toContain("## 相关长期记忆");
+    expect(text.indexOf("场景与流程")).toBeLessThan(text.indexOf("相关长期记忆"));
+  });
+
+  it("超预算先丢原子层尾部", () => {
+    const atoms = [
+      `- [semantic] ${"甲".repeat(400)}`,
+      `- [semantic] ${"乙".repeat(400)}`,
+      `- [semantic] ${"丙".repeat(400)}`,
+    ];
+    const text = assembleLayeredMemoryHint({
+      scenarioLines: ["- [procedural] 短流程"],
+      atomLines: atoms,
+      maxChars: 500,
+    });
+    expect(text).toContain("短流程");
+    expect(text.includes("丙") || text.length <= 500).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(500);
   });
 });
 

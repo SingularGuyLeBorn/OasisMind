@@ -95,6 +95,16 @@ export type MemoryUserCreatableType = (typeof MEMORY_USER_CREATABLE_TYPES)[numbe
 /** 可注入 Chat system prompt 的类型（排除 experience；含 persona —— L3 画像快速启动上下文） */
 export const MEMORY_INJECTABLE_TYPES = [...MEMORY_USER_CREATABLE_TYPES, MEMORY_TYPES.PERSONA] as const;
 
+/** L2 场景层：流程 / 笔记（先恢复怎么做） */
+export const MEMORY_L2_INJECT_TYPES = [MEMORY_TYPES.PROCEDURAL, MEMORY_TYPES.NOTE] as const;
+
+/** L1 原子层：偏好 / 事实 / 经历（需要细节再下钻） */
+export const MEMORY_L1_INJECT_TYPES = [
+  MEMORY_TYPES.PREFERENCE,
+  MEMORY_TYPES.SEMANTIC,
+  MEMORY_TYPES.EPISODIC,
+] as const;
+
 /** Memory scope：global 全局共享；agent:{agentId} 归属特定 Agent；workspace:{workspaceId} 归属 Workspace */
 export const MEMORY_SCOPE_GLOBAL = "global";
 
@@ -603,6 +613,7 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:browser_screenshot",
     "native:read_image",
     "native:vision_describe",
+    "native:generate_illustration",
     "native:video_transcript",
     "native:media_download",
     "native:audio_transcribe",
@@ -752,6 +763,7 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:platform_login",
     "native:browser_login_status",
     "native:platform_doctor",
+    "native:generate_illustration",
     "native:dokobot_read",
     "native:dokobot_search",
     "native:webbridge_status",
@@ -814,6 +826,7 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:browser_screenshot",
     "native:read_image",
     "native:vision_describe",
+    "native:generate_illustration",
     "native:video_transcript",
     "native:media_download",
     "native:audio_transcribe",
@@ -852,6 +865,7 @@ export const ASSISTANT_DEFAULT_TOOLS: string[] = [
   "native:browser_screenshot",
   "native:read_image",
   "native:vision_describe",
+  "native:generate_illustration",
   "native:video_transcript",
   "native:search_arxiv",
   "native:fetch_arxiv",

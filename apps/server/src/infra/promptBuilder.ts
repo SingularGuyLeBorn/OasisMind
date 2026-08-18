@@ -13,12 +13,15 @@ import type { ServiceContainer } from "./serviceContainer.js";
 import type { AppConfig } from "./config.js";
 import {
   MEMORY_INJECTABLE_TYPES,
+  MEMORY_L1_INJECT_TYPES,
+  MEMORY_L2_INJECT_TYPES,
   MEMORY_TYPES,
   memoryAgentScope,
   memoryWorkspaceScope,
   MEMORY_SCOPE_GLOBAL,
   PERSONA_HINT_MAX_CHARS,
 } from "@oasismind/shared";
+import type { MemoryItem } from "./memoryRepository.js";
 import { createMemoryRepository } from "./memoryRepository.js";
 import {
   recordMemoryRetrieveOutcome,
@@ -54,11 +57,82 @@ function loadMathMarkdownExample(): string {
 
 const MATH_MARKDOWN_EXAMPLE = loadMathMarkdownExample();
 
+/** 分层注入总字符预算：L2/L3 先占位，L1 细节挤不进就丢掉，禁止整坨灌窗 */
+export const MEMORY_INJECT_MAX_CHARS = 1800;
+const MEMORY_L2_LIMIT = 2;
+const MEMORY_L1_LIMIT = 4;
+const MEMORY_L2_EXCERPT = 500;
+const MEMORY_L1_EXCERPT = 240;
+
+function dedupeMemories(memories: MemoryItem[], seen: Set<string>): MemoryItem[] {
+  return memories.filter((m) => {
+    const key = m.content.trim().toLowerCase().slice(0, 120);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function formatMemoryInjectLine(
+  m: MemoryItem,
+  excerpt: number,
+  now: number,
+  retrievedIds: Set<string>,
+  peerById: Map<string, { content: string }>,
+): string {
+  const attr = m.attribution && m.attribution !== "agent" ? `/${m.attribution}` : "";
+  const src = m.source ? ` source=${m.source}` : "";
+  const ageMs = m.updatedAt ? now - new Date(m.updatedAt).getTime() : 0;
+  const stale =
+    Number.isFinite(ageMs) && ageMs > 24 * 60 * 60 * 1000 ? "（可能过时，需验证）" : "";
+  const conflictIds = m.conflictsWith ?? [];
+  const conflictHit = conflictIds.filter((id) => retrievedIds.has(id));
+  const conflictWarn =
+    conflictIds.length > 0
+      ? ` ⚠冲突[${conflictIds
+          .slice(0, 3)
+          .map((id) => {
+            if (conflictHit.includes(id)) return id.slice(0, 8);
+            const peer = peerById.get(id);
+            return peer ? `${id.slice(0, 8)}:${peer.content.slice(0, 40)}` : id.slice(0, 8);
+          })
+          .join("; ")}]`
+      : "";
+  return `- [${m.type}${attr}${src}] ${m.content.slice(0, excerpt)}${stale}${conflictWarn}`;
+}
+
+/** 分层拼装：场景块 + 原子块，超预算从原子尾部开始丢 */
+export function assembleLayeredMemoryHint(opts: {
+  scenarioLines: string[];
+  atomLines: string[];
+  maxChars?: number;
+}): string {
+  const maxChars = opts.maxChars ?? MEMORY_INJECT_MAX_CHARS;
+  const scenario = opts.scenarioLines.filter(Boolean);
+  const atoms = [...opts.atomLines.filter(Boolean)];
+  const pack = (scene: string[], atom: string[]) => {
+    const parts: string[] = [];
+    if (scene.length > 0) parts.push(`## 场景与流程\n${scene.join("\n")}`);
+    if (atom.length > 0) parts.push(`## 相关长期记忆\n${atom.join("\n")}`);
+    return parts.length > 0 ? `\n\n${parts.join("\n\n")}` : "";
+  };
+  let out = pack(scenario, atoms);
+  while (out.length > maxChars && atoms.length > 0) {
+    atoms.pop();
+    out = pack(scenario, atoms);
+  }
+  while (out.length > maxChars && scenario.length > 0) {
+    scenario.pop();
+    out = pack(scenario, atoms);
+  }
+  return out.length > maxChars ? out.slice(0, maxChars) : out;
+}
+
 /**
  * 构建注入 system prompt 的长期记忆片段。
- * W5：统一走 MemoryRepository（FTS 优先 / LIKE 回退；BM25×(1+strength)×recency 排序）；
- * W5-followup：三层 scope 读路径——global + workspace:{wid}（Agent 有 Workspace 时）+ agent:{aid}；
- * 门控：连续无命中后跳过若干轮检索（综述① retrieve-or-not）。
+ * 分层检索（腾讯 L2 场景 / L1 原子，L3 画像走 buildPersonaHint）：
+ * 先拉 procedural/note 恢复「怎么做」，再拉 preference/semantic/episodic 补事实；
+ * 总字符封顶，细节挤不进就丢掉。scope 排序本房间优先见 memoryScopeProximityBoost。
  */
 export async function buildMemoryContext(
   services: ServiceContainer,
@@ -71,7 +145,6 @@ export async function buildMemoryContext(
   if (shouldSkipMemoryRetrieve(gateKey)) {
     return "";
   }
-  // 门控放行后才做 LLM 改写；config 未传或改写失败时保持 keyword 原值（回退语义）
   if (options?.config) {
     keyword = await rewriteMemoryQuery(options.config, userText);
   }
@@ -85,24 +158,26 @@ export async function buildMemoryContext(
     scopes.push(memoryAgentScope(options.agentId));
   }
   const repo = createMemoryRepository(services);
-  const memories = await repo.read({
-    keyword,
-    // persona 由 buildPersonaHint 独立注入（buildAllMemoryHints 顶部），动态检索排除避免重复
-    types: MEMORY_INJECTABLE_TYPES.filter((t) => t !== MEMORY_TYPES.PERSONA),
-    scopes,
-    limit: 5,
-  });
-  recordMemoryRetrieveOutcome(gateKey, memories.length > 0);
-  if (!memories.length) return "";
-
-  // S6 轻量：同 content 去重（保留强度更高/更新的一条已在 repo 排序）
+  const [scenarioHits, atomHits] = await Promise.all([
+    repo.read({
+      keyword,
+      types: [...MEMORY_L2_INJECT_TYPES],
+      scopes,
+      limit: MEMORY_L2_LIMIT,
+    }),
+    repo.read({
+      keyword,
+      types: [...MEMORY_L1_INJECT_TYPES],
+      scopes,
+      limit: MEMORY_L1_LIMIT,
+    }),
+  ]);
   const seen = new Set<string>();
-  const unique = memories.filter((m) => {
-    const key = m.content.trim().toLowerCase().slice(0, 120);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const scenario = dedupeMemories(scenarioHits, seen);
+  const atoms = dedupeMemories(atomHits, seen);
+  const unique = [...scenario, ...atoms];
+  recordMemoryRetrieveOutcome(gateKey, unique.length > 0);
+  if (!unique.length) return "";
 
   const now = Date.now();
   const retrievedIds = new Set(unique.map((m) => m.id));
@@ -112,7 +187,6 @@ export async function buildMemoryContext(
   const conflictPeers = unique.flatMap((m) =>
     (m.conflictsWith ?? []).filter((id) => id && !retrievedIds.has(id)),
   );
-  // 冲突对端若未进 Top-K，补拉一行摘要用于警告（不计入主列表预算外扩太多）
   let peerById = new Map<string, { content: string }>();
   if (conflictPeers.length > 0) {
     const peers = await repo.read({
@@ -124,30 +198,14 @@ export async function buildMemoryContext(
     peerById = new Map(peers.map((p) => [p.id, { content: p.content }]));
   }
 
-  const lines = unique.map((m) => {
-    const attr = m.attribution && m.attribution !== "agent" ? `/${m.attribution}` : "";
-    const src = m.source ? ` source=${m.source}` : "";
-    const ageMs = m.updatedAt ? now - new Date(m.updatedAt).getTime() : 0;
-    const stale =
-      Number.isFinite(ageMs) && ageMs > 24 * 60 * 60 * 1000
-        ? "（可能过时，需验证）"
-        : "";
-    const conflictIds = m.conflictsWith ?? [];
-    const conflictHit = conflictIds.filter((id) => retrievedIds.has(id));
-    const conflictWarn =
-      conflictIds.length > 0
-        ? ` ⚠冲突[${conflictIds
-            .slice(0, 3)
-            .map((id) => {
-              if (conflictHit.includes(id)) return id.slice(0, 8);
-              const peer = peerById.get(id);
-              return peer ? `${id.slice(0, 8)}:${peer.content.slice(0, 40)}` : id.slice(0, 8);
-            })
-            .join("; ")}]`
-        : "";
-    return `- [${m.type}${attr}${src}] ${m.content.slice(0, 300)}${stale}${conflictWarn}`;
+  return assembleLayeredMemoryHint({
+    scenarioLines: scenario.map((m) =>
+      formatMemoryInjectLine(m, MEMORY_L2_EXCERPT, now, retrievedIds, peerById),
+    ),
+    atomLines: atoms.map((m) =>
+      formatMemoryInjectLine(m, MEMORY_L1_EXCERPT, now, retrievedIds, peerById),
+    ),
   });
-  return `\n\n## 相关长期记忆\n${lines.join("\n")}`;
 }
 
 /**
@@ -378,6 +436,7 @@ export function buildTierIdentityHint(tier?: string | null, name?: string | null
   - 禁止用 notify_parent 代替 report_back 交最终结果；过程中可先 notify，结束时仍要 report_back。
 - 异步任务（如 sleep async）到期后续跑时，仍应继续完成任务并 agent_report_back，不要把续跑当成「用户闲聊」。
 - 用户在本会话直接发消息时，也可酌情 report_back（补充汇报），但请在内容中说明这是补充。
+- **出处合同**：成功 report_back 必须带 evidence（path / url / memoryId / toolResult）。搜不到就写 noEvidenceReason；否则父侧会看到 [未经出处核验]。messageType=query 只求援不结案。
 - **子 Agent 隔离铁律**：你的结果唯一交付通道 = agent_report_back。你**看不到**父 Agent / 同级 Agent 的会话内容，也**不要**试图读取——父 Agent 只能看你的状态，你的结果只能经 report_back 投递。
 - 禁止创建/派生子 Agent 或管理其他 Agent（不得使用 spawn_subagent、agent_create、agent_create_sub 等）。
 - 禁止创建或归档 Workspace；不要自称超级 Agent / 管理 Agent。

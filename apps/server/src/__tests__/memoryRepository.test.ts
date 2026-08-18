@@ -372,4 +372,30 @@ describe("MemoryRepository（W5）", () => {
       }),
     ).rejects.toThrow(/越权/);
   });
+
+  it("动态注入分层：procedural 进场景块，preference 进原子块", async () => {
+    const token = `${RUN}-layered`;
+    await track(
+      await repo.write({
+        content: `发版流程 ${token}`,
+        type: MEMORY_TYPES.PROCEDURAL,
+        scope: "global",
+        keywords: [token],
+      }),
+    );
+    await track(
+      await repo.write({
+        content: `回复偏好 ${token}`,
+        type: MEMORY_TYPES.PREFERENCE,
+        scope: "global",
+        keywords: [token],
+      }),
+    );
+    const ctx = await buildMemoryContext(services, token, {});
+    expect(ctx).toContain("## 场景与流程");
+    expect(ctx).toContain("## 相关长期记忆");
+    expect(ctx).toContain(`发版流程 ${token}`);
+    expect(ctx).toContain(`回复偏好 ${token}`);
+    expect(ctx.indexOf("场景与流程")).toBeLessThan(ctx.indexOf("相关长期记忆"));
+  });
 });

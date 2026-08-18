@@ -9,8 +9,8 @@
  * 1. 写时隔离：scope ∈ { global, agent:{id}, workspace:{id} }，读方必须显式声明 scopes，
  *    其他 Agent 的 experience 天然不可见（替代读时手工过滤）。
  * 2. 去重：contentHash = sha256(content.trim())，同 scope 同 hash 幂等刷新而非重复插入。
- * 3. 排序：keyword 检索走 RRF 名次融合（FTS 单路或 FTS+向量双路）×(1+strength)×recency；
- *    LIKE 回退路径无召回名次，纯 (1+strength)×recency（recencyScore = 1/(1+ageDays)）。
+ * 3. 排序：keyword 检索走 RRF 名次融合（FTS 单路或 FTS+向量双路）×(1+strength)×recency×本房间加权；
+ *    LIKE 回退路径无召回名次，纯 (1+strength)×recency×proximity（recencyScore = 1/(1+ageDays)）。
  * 4. 淘汰：decayMemories 每日 strength *= 0.95^days（raw SQL 不改 updatedAt，保证按日复利），
  *    低于 MEMORY_ARCHIVE_THRESHOLD 归档删除（走 MemoryService.delete 同步清理文件与 FTS）。
  * 5. 写路径统一走 MemoryService.create/update：保证文件回写 config/memories/ 与 FTS 增量同步。
@@ -240,18 +240,30 @@ async function linkConflictPeers(
  * FTS5 rank 越小（更负）越好 → logistic：1/(1+e^rank)；无 ftsRank 时 bm25Rel=1（纯 strength×recency）。
  * 注意：keyword 主路径的排序已统一为 RRF 名次融合（见 read），本函数只服务 LIKE 回退与单测。
  */
+/**
+ * 本房间优先（QM 按房间隔离的思想，落在已有 scope 上）：
+ * 当前 Agent / Workspace 的记忆压过同相关度的全局条目，避免「公司百科」盖住本空间约定。
+ */
+export function memoryScopeProximityBoost(scope: string): number {
+  if (scope.startsWith(MEMORY_SCOPE_PREFIX.AGENT)) return 1.2;
+  if (scope.startsWith(MEMORY_SCOPE_PREFIX.WORKSPACE)) return 1.12;
+  return 1;
+}
+
 export function scoreMemoryCandidate(opts: {
   strength: number;
   updatedAt: Date;
   nowMs: number;
   ftsRank?: number;
+  scope?: string;
 }): number {
   const recency = recencyScore(opts.updatedAt, opts.nowMs);
   const bm25Rel =
     typeof opts.ftsRank === "number" && Number.isFinite(opts.ftsRank)
       ? 1 / (1 + Math.exp(opts.ftsRank))
       : 1;
-  return bm25Rel * (1 + Math.max(0, opts.strength)) * recency;
+  const proximity = memoryScopeProximityBoost(opts.scope ?? MEMORY_SCOPE_GLOBAL);
+  return bm25Rel * (1 + Math.max(0, opts.strength)) * recency * proximity;
 }
 
 export class PrismaMemoryRepository implements MemoryRepository {
@@ -390,7 +402,8 @@ export class PrismaMemoryRepository implements MemoryRepository {
             score:
               (fused.get(r.id) ?? 0) *
               (1 + Math.max(0, r.strength)) *
-              recencyScore(r.updatedAt, nowMs),
+              recencyScore(r.updatedAt, nowMs) *
+              memoryScopeProximityBoost(String(r.scope ?? MEMORY_SCOPE_GLOBAL)),
           }))
           .sort((a, b) => b.score - a.score)
           .slice(0, limit)
@@ -432,6 +445,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
           strength: r.strength,
           updatedAt: r.updatedAt,
           nowMs,
+          scope: String(r.scope ?? MEMORY_SCOPE_GLOBAL),
         }),
       }))
       .sort((a, b) => b.score - a.score)
