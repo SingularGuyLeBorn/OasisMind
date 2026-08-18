@@ -93,9 +93,16 @@ function parseCsvEnv(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/** 同一 QQ 号可对应多串 openid（私聊 user_openid 与群 member_openid 常不同） */
+export function splitMappedOpenIds(mapped: string | undefined): string[] {
+  if (!mapped) return [];
+  return [...new Set(mapped.split("|").map((s) => s.trim()).filter(Boolean))];
+}
+
 /**
  * 数字号 → 平台 openid 映射（官方事件只有 openid）。
  * 用户：`2251061018=14A17D73...`；群：`1098299609=2FE7E775...`
+ * 同一号多 openid：`2251061018=私聊openid|群openid`，或重复写两遍 `号=A,号=B`。
  * 多项用逗号或分号分隔。
  */
 export function parseQqIdOpenIdMap(raw: string | undefined): Map<string, string> {
@@ -108,7 +115,9 @@ export function parseQqIdOpenIdMap(raw: string | undefined): Map<string, string>
     if (eq <= 0) continue;
     const id = s.slice(0, eq).trim();
     const openid = s.slice(eq + 1).trim();
-    if (/^\d{5,12}$/.test(id) && openid) map.set(id, openid);
+    if (!/^\d{5,12}$/.test(id) || !openid) continue;
+    const prev = map.get(id);
+    map.set(id, splitMappedOpenIds(prev ? `${prev}|${openid}` : openid).join("|"));
   }
   return map;
 }
@@ -124,7 +133,7 @@ export function resolveQqNumberForOpenId(
   const oid = openid.trim();
   if (!oid) return undefined;
   for (const [qq, mapped] of idToOpenId) {
-    if (mapped === oid) return qq;
+    if (mapped === oid || splitMappedOpenIds(mapped).includes(oid)) return qq;
   }
   return undefined;
 }
@@ -168,8 +177,9 @@ export function expandAllowedIds(
     }
     if (/^\d{5,12}$/.test(e)) {
       const mapped = idToOpenId.get(e);
-      if (mapped) {
-        out.add(mapped);
+      const oids = splitMappedOpenIds(mapped);
+      if (oids.length > 0) {
+        for (const oid of oids) out.add(oid);
         out.add(e); // 若平台偶发带数字 group_id 也放行
       } else {
         console.warn(
@@ -182,8 +192,9 @@ export function expandAllowedIds(
     out.add(e);
   }
   for (const [id, openid] of idToOpenId) {
-    if (entries.includes(id) || entries.includes(openid) || entries.includes("*")) {
-      out.add(openid);
+    const oids = splitMappedOpenIds(openid);
+    if (entries.includes(id) || oids.some((o) => entries.includes(o)) || entries.includes("*")) {
+      for (const oid of oids) out.add(oid);
       out.add(id);
     }
   }

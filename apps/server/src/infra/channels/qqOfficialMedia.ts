@@ -32,6 +32,8 @@ let tokenCache: TokenState | null = null;
  * 本地缓存 24h 只为记住 peer↔msgId；真正出站前用 {@link isQqPassiveWindowFresh} 过滤。
  */
 const lastInboundByPeer = new Map<string, { msgId: string; at: number }>();
+/** 同一入站 msg_id 的被动 msg_seq 递增，避免 40054005 去重 */
+const nextSeqByMsgId = new Map<string, number>();
 /** 本地记住入站的最长时间（不是平台被动窗） */
 export const QQ_PASSIVE_MSG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 /** 平台被动窗：群 5min / 私聊 60min */
@@ -54,6 +56,9 @@ export function rememberQqOfficialInbound(opts: {
   const key = opts.groupOpenid
     ? `g:${opts.groupOpenid}:${opts.openid}`
     : `u:${opts.openid}`;
+  const prev = lastInboundByPeer.get(key);
+  if (prev && prev.msgId !== opts.msgId) nextSeqByMsgId.delete(prev.msgId);
+  if (!nextSeqByMsgId.has(opts.msgId)) nextSeqByMsgId.set(opts.msgId, 1);
   lastInboundByPeer.set(key, { msgId: opts.msgId, at: Date.now() });
   // 群维度也记一份，便于群内工具省略个人维度
   if (opts.groupOpenid) {
@@ -134,6 +139,7 @@ export async function ensureQqOfficialAccessToken(opts?: {
 export function __resetQqOfficialMediaForTests(): void {
   tokenCache = null;
   lastInboundByPeer.clear();
+  nextSeqByMsgId.clear();
 }
 
 export async function loadQqOfficialMediaBytes(
@@ -194,6 +200,26 @@ export type QqOfficialSendMediaOpts = {
 export function isQqActiveMessageDenied(err: unknown): boolean {
   const m = err instanceof Error ? err.message : String(err);
   return /40034105|主动消息失败|无权限/.test(m);
+}
+
+/** 同一 msg_id + msg_seq 重发被平台去重 */
+export function isQqMsgSeqDeduped(err: unknown): boolean {
+  const m = err instanceof Error ? err.message : String(err);
+  return /40054005|消息被去重|msgseq/i.test(m);
+}
+
+/** 为被动窗口分配不重复的 msg_seq；无 msgId 的主动发送不占序号 */
+export function allocateQqPassiveMsgSeq(msgId: string, preferred?: number): number {
+  const next = nextSeqByMsgId.get(msgId) ?? 1;
+  const want = preferred && preferred > 0 ? preferred : next;
+  const seq = Math.max(next, want);
+  nextSeqByMsgId.set(msgId, seq + 1);
+  return seq;
+}
+
+function resolveOutboundMsgSeq(msgId: string | undefined, preferred?: number): number {
+  if (!msgId) return preferred && preferred > 0 ? preferred : 1;
+  return allocateQqPassiveMsgSeq(msgId, preferred);
 }
 
 export type QqOfficialSendTextOpts = {
@@ -301,14 +327,33 @@ async function postTextOnce(
   return { msgSeq, usedMsgId: msgId, refIdx };
 }
 
+async function postTextWithDedupRetry(
+  accessToken: string,
+  opts: QqOfficialSendTextOpts,
+  msgId: string | undefined,
+  msgSeq: number,
+): Promise<{ msgSeq: number; usedMsgId?: string; refIdx?: string }> {
+  try {
+    return await postTextOnce(accessToken, opts, msgId, msgSeq);
+  } catch (err) {
+    if (!msgId || !isQqMsgSeqDeduped(err)) throw err;
+    const retrySeq = allocateQqPassiveMsgSeq(msgId);
+    console.warn(
+      "[qq] 被动窗口 msg_seq 去重(40054005)，改用 seq=",
+      retrySeq,
+    );
+    return await postTextOnce(accessToken, opts, msgId, retrySeq);
+  }
+}
+
 export async function sendQqOfficialText(
   opts: QqOfficialSendTextOpts,
 ): Promise<{ msgSeq: number; usedMsgId?: string; refIdx?: string }> {
   const accessToken = opts.accessToken || (await ensureQqOfficialAccessToken());
   const msgId = resolveOutboundMsgId(opts);
-  const msgSeq = opts.msgSeq ?? 1;
+  const msgSeq = resolveOutboundMsgSeq(msgId, opts.msgSeq);
   try {
-    return await postTextOnce(accessToken, opts, msgId, msgSeq);
+    return await postTextWithDedupRetry(accessToken, opts, msgId, msgSeq);
   } catch (err) {
     // 未带 msg_id 的主动发送被拒 → 用仍新鲜的入站 msg_id 再发（否则群里会「全哑」）
     if (
@@ -323,12 +368,14 @@ export async function sendQqOfficialText(
       groupOpenid: opts.groupOpenid,
     });
     if (!fallbackId) throw err;
+    const fallbackSeq = allocateQqPassiveMsgSeq(fallbackId);
     console.warn(
       "[qq] 主动消息无权限(40034105)，降级被动窗口 msg_id=",
       fallbackId.slice(0, 12),
-      "…",
+      "… seq=",
+      fallbackSeq,
     );
-    return await postTextOnce(accessToken, opts, fallbackId, msgSeq);
+    return await postTextWithDedupRetry(accessToken, opts, fallbackId, fallbackSeq);
   }
 }
 
@@ -351,24 +398,37 @@ export async function sendQqOfficialMedia(
   if (!fileInfo) throw new Error("QQ 上传未返回 file_info");
 
   const msgId = resolveOutboundMsgId(opts);
-  const msgSeq = opts.msgSeq ?? 1;
-  const buildBody = (id: string | undefined) => {
+  const msgSeq = resolveOutboundMsgSeq(msgId, opts.msgSeq);
+  const buildBody = (id: string | undefined, seq: number) => {
     const body: Record<string, unknown> = {
       msg_type: 7,
       media: { file_info: fileInfo },
     };
     if (id) {
       body.msg_id = id;
-      body.msg_seq = msgSeq;
+      body.msg_seq = seq;
     }
     applyMessageReference(body, opts.messageReference);
     if (opts.kind === "image") body.content = "";
     return body;
   };
 
+  const postMedia = async (id: string | undefined, seq: number) => {
+    try {
+      await postQqOfficialJson(accessToken, `${base}/messages`, buildBody(id, seq));
+      return seq;
+    } catch (err) {
+      if (!id || !isQqMsgSeqDeduped(err)) throw err;
+      const retrySeq = allocateQqPassiveMsgSeq(id);
+      console.warn("[qq] 被动媒体 msg_seq 去重(40054005)，改用 seq=", retrySeq);
+      await postQqOfficialJson(accessToken, `${base}/messages`, buildBody(id, retrySeq));
+      return retrySeq;
+    }
+  };
+
   try {
-    await postQqOfficialJson(accessToken, `${base}/messages`, buildBody(msgId));
-    return { fileInfo, msgSeq, usedMsgId: msgId, fileName };
+    const usedSeq = await postMedia(msgId, msgSeq);
+    return { fileInfo, msgSeq: usedSeq, usedMsgId: msgId, fileName };
   } catch (err) {
     if (
       msgId ||
@@ -382,12 +442,14 @@ export async function sendQqOfficialMedia(
       groupOpenid: opts.groupOpenid,
     });
     if (!fallbackId) throw err;
+    const fallbackSeq = allocateQqPassiveMsgSeq(fallbackId);
     console.warn(
       "[qq] 主动媒体无权限(40034105)，降级被动窗口 msg_id=",
       fallbackId.slice(0, 12),
-      "…",
+      "… seq=",
+      fallbackSeq,
     );
-    await postQqOfficialJson(accessToken, `${base}/messages`, buildBody(fallbackId));
-    return { fileInfo, msgSeq, usedMsgId: fallbackId, fileName };
+    const usedSeq = await postMedia(fallbackId, fallbackSeq);
+    return { fileInfo, msgSeq: usedSeq, usedMsgId: fallbackId, fileName };
   }
 }

@@ -164,6 +164,25 @@ describe("qqOfficialBot helpers", () => {
     expect(resolveQqNumberForOpenId("other", map)).toBeUndefined();
   });
 
+  it("同一 QQ 号可映射私聊+群聊两串 openid", () => {
+    const map = parseQqIdOpenIdMap(
+      "2251061018=14A17D731DD2B1A0CC57FC8EDBFFC50B|6ACA11C154D5B9A578F916EB1BBF5E10,2251061018=14A17D731DD2B1A0CC57FC8EDBFFC50B",
+    );
+    expect(map.get("2251061018")).toBe(
+      "14A17D731DD2B1A0CC57FC8EDBFFC50B|6ACA11C154D5B9A578F916EB1BBF5E10",
+    );
+    expect(resolveQqNumberForOpenId("6ACA11C154D5B9A578F916EB1BBF5E10", map)).toBe("2251061018");
+    const users = expandAllowedIds(["2251061018"], map, "OPENIDS");
+    expect(users).toContain("14A17D731DD2B1A0CC57FC8EDBFFC50B");
+    expect(users).toContain("6ACA11C154D5B9A578F916EB1BBF5E10");
+    expect(
+      isQqInboundAllowed(
+        { allowedOpenIds: users, allowedGroups: ["*"] },
+        { openid: "6ACA11C154D5B9A578F916EB1BBF5E10", groupOpenid: "g1" },
+      ).ok,
+    ).toBe(true);
+  });
+
   it("qqReplyPlainText 去 Markdown 并截断", () => {
     expect(qqReplyPlainText("**粗体** 与 `code`")).toBe("粗体 与 code");
     expect(qqReplyPlainText("a".repeat(5000)).length).toBe(4000);
