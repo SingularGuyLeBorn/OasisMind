@@ -114,8 +114,8 @@ function main() {
   下一步：
     pnpm install
     pnpm db:sync
-    pnpm dev:quick          # 跳过全量 sync 的较快启动（已有库时）
-    # 或 pnpm dev
+    pnpm dev                # 完整
+    pnpm dev:mini           # 极简（已有库、跳过全量 sync）
 
   本地模型（可选）：
     1) 安装并启动 Ollama → ollama pull llama3.2

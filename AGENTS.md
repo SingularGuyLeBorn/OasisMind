@@ -146,8 +146,8 @@ pnpm install
 ```bash
 # 同步 Markdown 文章到 SQLite，然后并行启动 server + web
 pnpm dev
-# 已有库、日常导航压测：跳过阻塞全量 sync（更快）
-pnpm dev:quick
+# 已有库、只想快点起来：跳过阻塞全量 sync
+pnpm dev:mini
 # 前端单独用 Turbopack（可选；Remotion 路径异常时退回默认 webpack）
 pnpm --filter @oasismind/web dev:turbo
 ```

@@ -48,6 +48,7 @@ import { prisma } from "./db.js";
 import { bootstrapMessageChannels, stopAllChannelAdapters } from "./infra/channels/index.js";
 import { hydrateLlmBudget } from "./infra/llmBudget.js";
 import { notifyPostListChanged } from "./infra/uiStateNotify.js";
+import { ensureSqliteColumns } from "./infra/ensureSqliteColumns.js";
 
 const app = express();
 
@@ -98,6 +99,7 @@ const taskScheduler = getTaskScheduler(prisma, services);
 
 const PORT = config.port;
 const HOST = config.host;
+const contentDir = config.contentDir;
 const postsDir = config.contentPaths.posts;
 const uploadsDir = config.uploadDir;
 
@@ -214,7 +216,11 @@ const staticAuthMiddleware = (req: any, res: any, next: any) => {
   res.status(401).json({ error: "UNAUTHORIZED", message: "静态资源需鉴权，请提供 Bearer Token。" });
   return;
 };
-if (fs.existsSync(postsDir)) {
+// 花园文章配图在 content/{garden}/…/images/；旧 posts 花园仍在 content/posts/
+if (fs.existsSync(contentDir)) {
+  app.use("/api/posts/assets", staticAuthMiddleware, express.static(contentDir));
+}
+if (fs.existsSync(postsDir) && postsDir !== contentDir) {
   app.use("/api/posts/assets", staticAuthMiddleware, express.static(postsDir));
 }
 
@@ -543,6 +549,15 @@ app.use(
     },
   })
 );
+
+// schema 加列后只 generate、不 db push（push 会误删 FTS）→ live SQLite 缺列。
+// 启动时只 ADD 可选标量列，不 DROP / 不重建。
+await ensureSqliteColumns(prisma).catch((err) => {
+  console.warn(
+    "  ⚠️ [sqlite] 缺列自愈失败（不影响启动，写路径可能再报缺列）:",
+    err instanceof Error ? err.message : err,
+  );
+});
 
 // C5：启动期 await 预算 hydrate（同日 max 合并，不丢已花额度）后再接流量
 await hydrateLlmBudget(config.projectRoot).catch((err) => {

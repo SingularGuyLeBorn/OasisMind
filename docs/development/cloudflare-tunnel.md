@@ -49,7 +49,7 @@ pnpm remote
 会同时拉起 `dev --remote` 与临时隧道，并在终端打印 `https://xxxx.trycloudflare.com`。  
 Ctrl+C 会一并停掉开发服务与 cloudflared。
 
-等价于「先 `pnpm dev` / `pnpm tunnel:quick`」两步；需要跳过 sync 时：`pnpm remote --quick`。
+等价于「先 `pnpm dev` / `pnpm tunnel:quick`」两步。
 
 ### 3. 分步启动（可选）
 
@@ -115,8 +115,6 @@ AUTH_PASSWORD=换成强密码
 
 ```powershell
 pnpm dev
-# 或需要绑定 0.0.0.0 时：
-# pnpm dev:remote
 ```
 
 终端 2 — 隧道：
@@ -185,10 +183,9 @@ docker compose --profile cloudflare up -d cloudflare
 
 | 命令 | 作用 |
 |---|---|
-| `pnpm remote` | **一键**：dev(--remote) + 临时隧道，打印公网 URL |
-| `pnpm remote:named` | 一键：dev(--remote) + Token/config 命名隧道 |
-| `pnpm dev` | 本地 Web + Server |
-| `pnpm dev:remote` | Web 绑 `0.0.0.0`（局域网/特殊网络） |
+| `pnpm remote` | **一键**：完整 dev + 临时隧道，打印公网 URL |
+| `pnpm remote:named` | 一键：完整 dev + Token/config 命名隧道 |
+| `pnpm dev` | 本地完整开发栈 |
 | `pnpm tunnel:quick` | 仅临时隧道（需已 `pnpm dev`） |
 | `pnpm tunnel:run` | 用 `.env` 的 `CLOUDFLARE_TUNNEL_TOKEN` |
 | `pnpm tunnel:run:config` | 用 `cloudflare/config.yml` |

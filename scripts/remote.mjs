@@ -5,8 +5,6 @@
  * 用法:
  *   pnpm remote              # 临时 *.trycloudflare.com（默认）
  *   pnpm remote --named      # 使用 CLOUDFLARE_TUNNEL_TOKEN 或 cloudflare/config.yml
- *   pnpm remote --quick      # 跳过 db:sync（转发到 dev.mjs --quick）
- *   pnpm remote --no-sync    # 跳过首次 sync
  */
 
 import { spawn, execSync } from "child_process";
@@ -21,8 +19,6 @@ const healthUrl = process.env.SERVER_INTERNAL_URL
   : "http://127.0.0.1:3010/health";
 
 const named = process.argv.includes("--named");
-const quick = process.argv.includes("--quick");
-const noSync = process.argv.includes("--no-sync");
 const allowInsecureAuth = process.argv.includes("--allow-insecure-auth");
 
 /** @type {import('child_process').ChildProcess[]} */
@@ -211,8 +207,6 @@ async function main() {
   console.log(`  cloudflared: ${cf}\n`);
 
   const devArgs = ["--remote"];
-  if (quick) devArgs.push("--quick");
-  if (noSync) devArgs.push("--no-sync");
 
   const dev = spawnNode("scripts/dev.mjs", devArgs);
   dev.on("exit", (code, signal) => {

@@ -55,7 +55,7 @@ Write-Host "cloudflared: $cf" -ForegroundColor Cyan
 if ($Mode -eq "quick") {
   Write-Host ""
   Write-Host "启动临时隧道 -> $Origin" -ForegroundColor Green
-  Write-Host "请确保已运行: pnpm dev  或  pnpm dev:remote" -ForegroundColor Yellow
+  Write-Host "请确保已运行: pnpm dev" -ForegroundColor Yellow
   Write-Host "成功后终端会显示 https://xxxx.trycloudflare.com 公网地址" -ForegroundColor Yellow
   Write-Host ""
   & $cf tunnel --url $Origin

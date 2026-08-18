@@ -3,8 +3,7 @@
  * 一键远程：dev + ngrok 固定域名隧道。
  *
  * 用法:
- *   pnpm dev:ngrok          # 启动 ngrok（NGROK_DOMAIN）+ dev（server+web）
- *   pnpm dev:ngrok --quick  # 跳过 db:sync
+ *   pnpm dev:ngrok          # 启动 ngrok（NGROK_DOMAIN）+ 完整 dev
  *
  * 前提：.env 已配 NGROK_DOMAIN（免费 dev domain，如 xxx.ngrok-free.dev）
  *       ngrok 已 `ngrok config add-authtoken <token>`
@@ -92,8 +91,6 @@ if (!ngrokDomain) {
     }
   }
 }
-
-const quick = process.argv.includes("--quick");
 
 /** @type {import('child_process').ChildProcess[]} */
 const children = [];
@@ -203,9 +200,7 @@ async function main() {
   startNgrok();
 
   // 2. 启动 dev（server + web + sync:watch）
-  const devArgs = [];
-  if (quick) devArgs.push("--quick");
-  const dev = spawn(process.execPath, [path.join(root, "scripts/dev.mjs"), ...devArgs], {
+  const dev = spawn(process.execPath, [path.join(root, "scripts/dev.mjs")], {
     stdio: "inherit",
     env: { ...process.env, PUBLIC_URL: publicUrl || `https://${ngrokDomain}` },
   });

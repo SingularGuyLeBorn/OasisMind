@@ -69,15 +69,24 @@ function spawnPnpm(args, opts = {}) {
   return spawn("pnpm", args, { ...base, shell: true });
 }
 
-const quick = process.argv.includes("--quick");
-const skipSync = process.argv.includes("--no-sync");
-/** QQ/IM 稳定：server 不用 tsx watch，避免改代码热重载把官方 WS 打成 gateway 400 */
-const stableServer =
-  process.argv.includes("--stable") ||
-  process.argv.includes("--qq") ||
-  process.env.OM_SERVER_STABLE === "1";
-const webScript = process.argv.includes("--remote") ? "dev:remote" : "dev";
-const serverScript = stableServer ? "dev:once" : "dev";
+const unknownFlags = process.argv.slice(2).filter(
+  (a) => a.startsWith("-") && a !== "--mini" && a !== "--remote",
+);
+if (unknownFlags.length > 0) {
+  console.error(
+    `\n  ❌ 未知参数: ${unknownFlags.join(" ")}\n` +
+      "     开发入口只有两种：pnpm dev（完整） / pnpm dev:mini（极简）\n",
+  );
+  process.exit(1);
+}
+
+/** 极简：跳过阻塞全量 sync 与 sync:watch。完整：sync + sync:watch。 */
+const mini = process.argv.includes("--mini");
+/** 仅供 pnpm remote / ngrok 内部使用：Web 绑 0.0.0.0，不是第三种开发模式 */
+const remote = process.argv.includes("--remote");
+const webScript = remote ? "dev:remote" : "dev";
+/** 两种模式都不热重载后端：避免改文件打断 QQ/飞书 WebSocket。改 server 请重启。 */
+const serverScript = "dev:once";
 
 /** @type {import('child_process').ChildProcess[]} */
 const children = [];
@@ -259,14 +268,14 @@ async function waitForHealth(url, timeoutMs = 90_000) {
   throw new Error(`后端在 ${timeoutMs / 1000}s 内未就绪：${url}`);
 }
 
-function shutdown(reason) {
+function shutdown(reason, exitCode = 0) {
   // 先标记所有 spawnService disposed，阻止重启定时器在进程退出后 spawn 新子进程
   for (const dispose of disposedServices) {
     try { dispose(); } catch { /* ignore */ }
   }
   disposedServices.clear();
 
-  if (children.length === 0) process.exit(0);
+  if (children.length === 0) process.exit(exitCode);
   console.log(`\n  👋 停止开发服务 (${reason})…`);
   for (const child of children) {
     if (!child.pid || child.killed) continue;
@@ -276,16 +285,21 @@ function shutdown(reason) {
       child.kill("SIGTERM");
     }
   }
-  setTimeout(() => process.exit(0), 500);
+  setTimeout(() => process.exit(exitCode), 500);
 }
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 async function main() {
-  console.log("\n  🌱 OasisMind Dev\n");
+  console.log(mini ? "\n  🌱 OasisMind Dev · 极简\n" : "\n  🌱 OasisMind Dev · 完整\n");
 
-  if (!skipSync) {
+  // 目录改名 / 重建 node_modules 后 @prisma/client 是空壳，不 generate 则
+  // `import { Prisma }` 直接 SyntaxError。每次 boot 幂等跑一遍，通常 1～3s。
+  console.log("  🔧 生成 Prisma Client…\n");
+  await run(["--filter", "@oasismind/server", "db:generate"]);
+
+  if (!mini) {
     console.log("  📦 同步 content/ → SQLite（含 FTS）…\n");
     await run(["--filter", "@oasismind/server", "db:sync"]);
   }
@@ -297,10 +311,6 @@ async function main() {
 
   // server 意外退出（如未捕获异常/历史 Tesseract Worker 崩进程）自动拉起，不拖死整栈；
   // 指数退避无限重启：后端是核心，必须持续可用。
-  // --stable/--qq / OM_SERVER_STABLE=1：用 dev:once（无 tsx watch），QQ WS 不被热重载风暴打断。
-  if (stableServer) {
-    console.log("  🔒 稳定模式：server 无热重载（改后端需手动重启；QQ 更稳）\n");
-  }
   spawnService("server", ["--filter", "@oasismind/server", serverScript], {
     fatal: false,
     restart: true,
@@ -316,7 +326,7 @@ async function main() {
     maxRestarts: 5,
   });
 
-  if (!quick) {
+  if (!mini) {
     // sync watch 挂了只告警，不拖死整栈
     spawnService("sync", ["--filter", "@oasismind/server", "db:sync:watch"], { fatal: false });
   }
@@ -324,16 +334,11 @@ async function main() {
   console.log("  ✅ 开发环境已就绪");
   console.log("     Web:    http://localhost:3000");
   console.log("     Server: http://localhost:3010");
-  if (stableServer) {
-    console.log("     Server 模式: stable（无 tsx watch · 改代码需手动重启 · QQ/IM 更稳）");
-  } else {
-    console.log("     提示: 跑 QQ 时用 pnpm dev:stable，避免热重载断 WebSocket");
-  }
+  console.log(mini ? "     极简：已跳过全量 sync" : "     完整：含 sync:watch");
   console.log("     按 Ctrl+C 停止\n");
 }
 
 main().catch((err) => {
   console.error(`\n  ❌ 启动失败: ${err.message}\n`);
-  shutdown("ERROR");
-  process.exit(1);
+  shutdown("ERROR", 1);
 });

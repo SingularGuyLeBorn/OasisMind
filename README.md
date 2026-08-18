@@ -76,7 +76,7 @@ pnpm db:sync
 
 # 5. 启动开发服务（并行启动 server + web）
 pnpm dev
-# 已有库、想跳过全量 sync（日常更快）：pnpm dev:quick
+# 已有库、只想快点起来：pnpm dev:mini
 # 前端 Turbopack（可选）：pnpm --filter @oasismind/web dev:turbo
 ```
 
@@ -118,7 +118,8 @@ AUTH_MODE=none
 ### 常用命令
 
 ```bash
-pnpm dev            # 同步文章 + 并行启动 server / web
+pnpm dev            # 完整：sync + server + web + sync:watch
+pnpm dev:mini       # 极简：跳过全量 sync
 pnpm dev:web        # 单独启动前端
 pnpm dev:server     # 单独启动后端
 pnpm dev:ngrok      # ngrok 固定域名隧道 + dev（邮件 webhook 自动注册，见下文「远程访问与邮件 webhook」）
@@ -315,8 +316,7 @@ ngrok config add-authtoken <你的-authtoken>
 #    PUBLIC_URL=https://xxx.ngrok-free.dev
 
 # 5. 以后每次开发只需一条命令
-pnpm dev:ngrok          # 自动：ngrok 起固定域名 → dev 起 server+web → server 自动注册 AgentMail webhook
-pnpm dev:ngrok:quick    # 跳过 db:sync
+pnpm dev:ngrok          # 自动：ngrok 起固定域名 → 完整 dev → server 自动注册 AgentMail webhook
 ```
 
 启动后日志会打印：

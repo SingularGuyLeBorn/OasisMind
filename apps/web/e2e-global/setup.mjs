@@ -377,16 +377,18 @@ function spawnMockLlm(port) {
   return proc;
 }
 
-function spawnWeb(webPort) {
+function spawnWeb(webPort, serverPort) {
   const nextBin = path.join(webDir, "node_modules", "next", "dist", "bin", "next");
   if (!fs.existsSync(nextBin)) {
     throw new Error(`[e2e globalSetup] 找不到 next CLI: ${nextBin}`);
   }
 
+  const serverUrl = `http://127.0.0.1:${serverPort}`;
   const webEnv = {
     ...process.env,
-    SERVER_INTERNAL_URL: process.env.SERVER_INTERNAL_URL ?? `http://127.0.0.1:${process.env.E2E_SERVER_PORT ?? "3010"}`,
-    NEXT_PUBLIC_SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL ?? `http://127.0.0.1:${process.env.E2E_SERVER_PORT ?? "3010"}`,
+    // 禁止继承壳里残留的 mock 端口（3011）；rewrite 以本轮 E2E server 为准
+    SERVER_INTERNAL_URL: serverUrl,
+    NEXT_PUBLIC_SERVER_URL: serverUrl,
     PORT: String(webPort),
   };
 
@@ -518,7 +520,7 @@ export default async function globalSetup() {
   if (!fs.existsSync(webBuildDir)) {
     throw new Error(`[e2e globalSetup] 缺少 ${webBuildDir}，请先运行对应 build 命令（如 pnpm build:mock）`);
   }
-  const webProc = spawnWeb(webPort);
+  const webProc = spawnWeb(webPort, serverPort);
 
   // 10. 等待 server 就绪，并预置一个 manager 级 Assistant Agent
   // （部分 mock E2E 依赖该 Agent 作为可调用 spawn_subagent 的对话主体）
