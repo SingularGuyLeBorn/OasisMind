@@ -147,10 +147,24 @@ export const useInfoSource = () => {
       utils.infoSource.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
     },
   });
+  const importTidingsMutation = trpc.infoSource.importTidings.useMutation({
+    onSuccess: () => {
+      utils.infoSource.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
+      utils.native.capabilities.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
+    },
+  });
+  const importOpmlMutation = trpc.infoSource.importOpml.useMutation({
+    onSuccess: () => {
+      utils.infoSource.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
+      utils.native.capabilities.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
+    },
+  });
   return {
     ...base,
     useFetch: () => fetchMutation,
     useFetchDue: () => fetchDueMutation,
+    useImportTidings: () => importTidingsMutation,
+    useImportOpml: () => importOpmlMutation,
   };
 };
 

@@ -257,8 +257,15 @@ export const editorAgentCompleteSchema = z.object({
   title: z.string().max(300).optional(),
   garden: gardenIdSchema.optional(),
   slug: safeEntitySlugSchema.optional(),
+  postId: z.string().cuid().optional(),
+  draftKey: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{8,64}$/, "draftKey 须为 8–64 位字母数字/_/-")
+    .optional(),
   /** 默认 deepseek-v4-flash；可覆盖 */
   model: z.string().min(1).max(120).optional(),
+  /** 生图模型；空则工具内用最强免费档 */
+  imageModel: z.string().min(1).max(160).optional(),
 });
 
 export type EditorAgentCompleteInput = z.infer<typeof editorAgentCompleteSchema>;
@@ -278,6 +285,29 @@ export const editorFormulaCopilotSchema = z.object({
   model: z.string().min(1).max(120).optional(),
 });
 export type EditorFormulaCopilotInput = z.infer<typeof editorFormulaCopilotSchema>;
+
+/** 编辑器「生成配图」：上下文 → 生图 prompt → 生图 → 落盘，前端插到光标处 */
+export const editorGenerateIllustrationSchema = z.object({
+  before: z.string().max(8000).default(""),
+  after: z.string().max(8000).default(""),
+  paragraph: z.string().max(4000).optional(),
+  selected: z.string().max(4000).optional(),
+  /** 用户补充（如「画 Performer 特征映射」）；可空，由上下文自动写 prompt */
+  instruction: z.string().trim().max(2000).optional(),
+  title: z.string().max(300).optional(),
+  garden: gardenIdSchema.optional(),
+  slug: safeEntitySlugSchema.optional(),
+  postId: z.string().cuid().optional(),
+  draftKey: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{8,64}$/, "draftKey 须为 8–64 位字母数字/_/-")
+    .optional(),
+  /** 空 = 当前可用的最强免费生图模型 */
+  imageModel: z.string().min(1).max(160).optional(),
+  /** 写 prompt 的 LLM；默认 DEFAULT_LLM_MODEL */
+  promptModel: z.string().min(1).max(120).optional(),
+});
+export type EditorGenerateIllustrationInput = z.infer<typeof editorGenerateIllustrationSchema>;
 
 /* ═══════════════════════════════════════════════════════
    Agent (AI 代理)
@@ -1162,7 +1192,17 @@ export const createInfoSourceSchema = z.object({
   language: infoSourceLanguageSchema.default("auto"),
   tags: z.array(z.string()).default([]),
   enabled: z.boolean().default(true),
-  fetchInterval: z.number().int().min(5).max(10080).optional(), /// 5 分钟 ~ 1 周
+  fetchInterval: z.number().int().min(5).max(10080).optional().nullable(), /// null = 不自动抓取
+});
+
+export const importOpmlSchema = z.object({
+  xml: z.string().min(20).max(2_000_000),
+  tags: z.array(z.string()).default(["opml"]),
+  enabled: z.boolean().default(false),
+});
+
+export const importTidingsCatalogSchema = z.object({
+  catalog: z.enum(["ai", "top200", "research"]).default("ai"),
 });
 
 export const updateInfoSourceSchema = z.object({

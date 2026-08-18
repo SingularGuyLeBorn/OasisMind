@@ -7,7 +7,10 @@ import {
   createInfoSourceSchema,
   updateInfoSourceSchema,
   listInfoSourcesSchema,
+  importOpmlSchema,
+  importTidingsCatalogSchema,
 } from "@oasismind/shared";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const infoSourceRouter = router({
@@ -25,6 +28,34 @@ export const infoSourceRouter = router({
         maxItems: input.maxItems ?? 20,
         timeoutMs: 20000,
       });
+    }),
+  importOpml: publicProcedure
+    .meta({ description: "从 OPML 批量导入 RSS 信息源（默认关闭）。", aiReadable: false })
+    .input(importOpmlSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { parseOpmlFeeds } = await import("../opmlImport.js");
+      const { importOpmlFeedsToInfoSources } = await import("../tidingsRssImport.js");
+      const feeds = parseOpmlFeeds(input.xml);
+      if (feeds.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "OPML 未解析到任何带 xmlUrl 的订阅" });
+      }
+      return importOpmlFeedsToInfoSources({
+        services: ctx.services,
+        feeds,
+        tags: input.tags,
+        enabled: input.enabled,
+        descriptionPrefix: "OPML 导入",
+      });
+    }),
+  importTidings: publicProcedure
+    .meta({
+      description: "导入 Tidings 开源 RSS 目录（AI / Top200 / 科研；默认关闭）。",
+      aiReadable: false,
+    })
+    .input(importTidingsCatalogSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { importTidingsCatalog } = await import("../tidingsRssImport.js");
+      return importTidingsCatalog(ctx.services, input.catalog);
     }),
   fetchDue: publicProcedure
     .meta({ description: "抓取所有到期的 RSS 信息源。", aiReadable: true })

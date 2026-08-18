@@ -87,7 +87,7 @@ export class InfoSourceService extends FileSyncService<
       language: input.language,
       tags: formatTagsCsv(input.tags),
       enabled: input.enabled ?? true,
-      fetchInterval: input.fetchInterval ?? 60,
+      fetchInterval: input.fetchInterval === undefined ? 60 : input.fetchInterval,
       sourceSlug: slug,
     };
   }

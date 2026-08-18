@@ -87,9 +87,10 @@ function ReliabilityStars({ value, size = "sm" }: { value: number; size?: "sm" |
 }
 
 export default function SourcesPage() {
-  const { useList, useCreate, useUpdate, useDelete, useFetch, useFetchDue } = useInfoSource();
+  const { useList, useCreate, useUpdate, useDelete, useFetch, useFetchDue, useImportTidings } = useInfoSource();
   const fetchMutation = useFetch();
   const fetchDueMutation = useFetchDue();
+  const importTidingsMutation = useImportTidings();
 
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
@@ -104,6 +105,8 @@ export default function SourcesPage() {
   const [form, setForm] = useState<SourceForm>(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [fetchingId, setFetchingId] = useState<string | null>(null);
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const [tidingsCatalog, setTidingsCatalog] = useState<"ai" | "top200" | "research">("ai");
 
   const listInput = {
     page,
@@ -368,7 +371,45 @@ export default function SourcesPage() {
         description="维护 Agent 检索与引用时可信任的外部来源。支持按类型、可信度与标签筛选，配置同步至 content/sources/。"
         action={{ label: "新建信息源", onClick: openCreate, icon: Plus }}
       />
-      <div className="-mt-4 flex items-center justify-end gap-2">
+      <div className="-mt-4 flex flex-wrap items-center justify-end gap-2">
+        <KpSelect
+          value={tidingsCatalog}
+          onChange={(v) => setTidingsCatalog(v)}
+          size="sm"
+          options={[
+            { value: "ai", label: "Tidings · AI" },
+            { value: "top200", label: "Tidings · Top200" },
+            { value: "research", label: "Tidings · 科研" },
+          ]}
+          className="w-[9.5rem]"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const catalogLabel =
+              tidingsCatalog === "ai" ? "AI" : tidingsCatalog === "top200" ? "Top200" : "科研";
+            importTidingsMutation
+              .mutateAsync({ catalog: tidingsCatalog })
+              .then((r) => {
+                setTagFilter("tidings");
+                setEnabledFilter(false);
+                setPage(1);
+                setImportNote(
+                  `已导入 Tidings ${catalogLabel} 目录：新增 ${r.created}，跳过 ${r.skipped}。默认关闭，勾开后再抓取。`,
+                );
+              })
+              .catch((err) => {
+                setImportNote(err instanceof Error ? err.message : "导入失败");
+                catchUnlessCancelled("app/sources/page.tsx")(err);
+              });
+          }}
+          disabled={importTidingsMutation.isPending}
+          className="gap-1 text-xs"
+        >
+          <Rss className={cn("h-3.5 w-3.5", importTidingsMutation.isPending && "animate-pulse")} />
+          {importTidingsMutation.isPending ? "导入 Tidings…" : "导入 Tidings 目录"}
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -379,6 +420,9 @@ export default function SourcesPage() {
           <RefreshCw className={cn("h-3.5 w-3.5", fetchDueMutation.isPending && "animate-spin")} />
           抓取全部到期 RSS
         </Button>
+        {importNote && (
+          <p className="w-full text-right text-[11px] text-[var(--om-text-3)]">{importNote}</p>
+        )}
       </div>
 
       {caps && (
