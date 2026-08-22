@@ -36,6 +36,7 @@ import {
 } from "./parse.js";
 import { notifyAsyncDelivery, notifySubagentSessionUpdate } from "./delivery.js";
 import { pushAsyncJobInterrupted } from "./query.js";
+import { commitAsyncTaskIfCurrentExecution, failAsyncTaskIfStillActive } from "./commitTerminal.js";
 
 export function buildAsyncExecute(
   config: AppConfig,
@@ -145,16 +146,18 @@ export function buildAsyncExecute(
         }
       }
       const existingOutput = parseAsyncOutput((await services.task.getById(jobId))?.output);
-      await services.task.update({
-        id: jobId,
+      const committed = await commitAsyncTaskIfCurrentExecution(prisma, {
+        jobId,
+        executionId,
         status: "success",
-        finishedAt: new Date(),
         output: {
           asyncResult: resultText,
           tokenUsage,
           logs: existingOutput.logs,
+          executionId,
         } satisfies AsyncTaskOutput,
-      } as any);
+      });
+      if (committed === 0) return;
       await syncSubStatus("completed");
       if (agentSnapshot.tier === "sub" && agentSnapshot.parentId) {
         await services.agent.update({ id: agentSnapshot.id, status: "dormant" } as any).catch((err) => {
@@ -179,15 +182,14 @@ export function buildAsyncExecute(
         tokenUsage,
       });
     } catch (err) {
-      // 成功收尾任何步骤失败都不得上抛——否则 Task 终态落不了库，前端右栏永久 running
+      // 成功收尾任何步骤失败都不得上抛；已 success 禁止回翻 failed（N-6）
       console.warn(`[asyncJobManager] finalizeSuccess 失败 job=${jobId}:`, err);
       try {
-        await services.task.update({
-          id: jobId,
-          status: "failed",
-          finishedAt: new Date(),
-          output: { error: `收尾失败: ${err instanceof Error ? err.message : String(err)}` } satisfies AsyncTaskOutput,
-        } as any);
+        await failAsyncTaskIfStillActive(
+          prisma,
+          jobId,
+          `收尾失败: ${err instanceof Error ? err.message : String(err)}`,
+        );
       } catch (lastErr) {
         console.error(`[asyncJobManager] finalizeSuccess 最终兜底也失败 job=${jobId}:`, lastErr);
       }
@@ -217,27 +219,24 @@ export function buildAsyncExecute(
             : String(err);
       await appendAsyncJobLog(jobId, { level: "error", message: errorText }, services);
       const existingOutputFailed = parseAsyncOutput((await services.task.getById(jobId))?.output);
-      // 若 cancelAsyncJob 已先写 interrupted，禁止再覆写为 failed
-      const written = await prisma.task.updateMany({
-        where: { id: jobId, status: { in: ["running", "queued"] } },
-        data: {
-          status: terminalStatus,
-          finishedAt: new Date(),
-          ...(isInterrupt
-            ? { delivered: true, deliveredAt: new Date() }
-            : {}),
-          output: {
-            error: errorText,
-            logs: existingOutputFailed.logs,
-            ...(isInterrupt ? { deliveryExempt: true } : {}),
-          } satisfies AsyncTaskOutput as object,
-        },
+      // 若 cancelAsyncJob 已先写 interrupted，禁止再覆写为 failed；旧轮 executionId 不一致也不写
+      const writtenCount = await commitAsyncTaskIfCurrentExecution(prisma, {
+        jobId,
+        executionId,
+        status: terminalStatus,
+        output: {
+          error: errorText,
+          logs: existingOutputFailed.logs,
+          executionId,
+          ...(isInterrupt ? { deliveryExempt: true } : {}),
+        } satisfies AsyncTaskOutput,
+        delivered: isInterrupt,
       });
-      if (written.count === 0 && isInterrupt) {
+      if (writtenCount === 0 && isInterrupt) {
         // 已是 interrupted：仍推一次，保证开着的 UI 对齐
         const row = await services.task.getById(jobId);
         if (row?.sessionId) await pushAsyncJobInterrupted(row.sessionId, jobId, config);
-      } else if (written.count > 0 && isInterrupt) {
+      } else if (writtenCount > 0 && isInterrupt) {
         const row = await services.task.getById(jobId);
         if (row?.sessionId) await pushAsyncJobInterrupted(row.sessionId, jobId, config);
       }
@@ -329,16 +328,17 @@ export function buildAsyncExecute(
           );
         });
       }
-      await services.task.update({
-        id: jobId,
+      const toolCommitted = await commitAsyncTaskIfCurrentExecution(prisma, {
+        jobId,
+        executionId,
         status: "success",
-        finishedAt: new Date(),
         output: {
           asyncResult: resultText,
           structured: formatted.structured,
           executionId,
         } satisfies AsyncTaskOutput,
-      } as any);
+      });
+      if (toolCommitted === 0) return;
       await syncSubStatus("completed");
       await broadcastShare("success", { asyncResult: resultText, structured: formatted.structured });
       const parentInputTool = parseAsyncInput((await services.task.getById(jobId))?.input);
@@ -438,7 +438,7 @@ export function buildAsyncExecute(
                 });
               }
             }
-            await hub.waitFor(subagentSessionId);
+            await hub.waitFor(subagentSessionId, signal);
             return;
           } finally {
             releaseClaim();

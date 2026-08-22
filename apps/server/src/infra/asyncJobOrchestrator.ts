@@ -391,20 +391,30 @@ export class AsyncJobOrchestrator {
   }
 
   /**
+   * 提前摘掉运行中占位（超时 / resume 台账已终态）。
+   * abort 仍留给原 execute；finally 见 earlyReleasedSlots 则不再减计数。
+   */
+  private detachRunningSlot(jobId: string): RunningJob | null {
+    const running = this.runningJobs.get(jobId);
+    if (!running) return null;
+    this.runningJobs.delete(jobId);
+    if (running.spec.metadata?.subagentSessionId) {
+      this.subagentControllers.delete(running.spec.metadata.subagentSessionId);
+    }
+    this.releaseSlotCounters(running.spec);
+    this.earlyReleasedSlots.add(jobId);
+    this.drain();
+    return running;
+  }
+
+  /**
    * 台账已终态（interrupted）但池占位未释放时强制摘槽，供 resume 同 jobId 再入队。
-   * abort 仍会留给原 execute；finally 见 earlyReleasedSlots 则不再减计数。
    */
   releaseStaleSlot(jobId: string): boolean {
     const running = this.runningJobs.get(jobId);
     if (running) {
       abortController(running.controller, "cancel");
-      this.runningJobs.delete(jobId);
-      if (running.spec.metadata?.subagentSessionId) {
-        this.subagentControllers.delete(running.spec.metadata.subagentSessionId);
-      }
-      this.releaseSlotCounters(running.spec);
-      this.earlyReleasedSlots.add(jobId);
-      this.drain();
+      this.detachRunningSlot(jobId);
       return true;
     }
     const idx = this.queue.findIndex((q) => q.spec.jobId === jobId);
@@ -525,6 +535,11 @@ export class AsyncJobOrchestrator {
     const timeoutMs = spec.timeoutMs ?? this.limits.taskTimeoutMs;
     const timeout = setTimeout(() => {
       abortController(controller, "timeout");
+      // O-1：超时与 cancel 同套摘槽，execute 不听 abort 时槽位不得挂死
+      const detached = this.detachRunningSlot(spec.jobId);
+      if (detached) {
+        this.emit({ type: "timeout", jobId: spec.jobId, sessionId: spec.sessionId });
+      }
     }, timeoutMs);
 
     // B6：同步 throw 必须进 Promise 失败路径——直接 spec.execute() 会穿透 start→drain→enqueue，

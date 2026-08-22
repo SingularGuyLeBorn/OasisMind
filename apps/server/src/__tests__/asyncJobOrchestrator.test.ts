@@ -160,6 +160,20 @@ describe("AsyncJobOrchestrator", () => {
     expect(started).toContain("lw-3");
   });
 
+  it("O-1：超时立刻摘槽，即使 execute 不听 abort", async () => {
+    const orch = new AsyncJobOrchestrator({ maxGlobal: 1, maxPerSession: 1, taskTimeoutMs: 40 });
+    orch.enqueue({
+      jobId: "hang",
+      sessionId: "s1",
+      execute: async () => {
+        await new Promise((r) => setTimeout(r, 400));
+      },
+    });
+    await vi.waitFor(() => {
+      expect(orch.getStats().runningGlobal).toBe(0);
+    }, { timeout: 5000, interval: 20 });
+  });
+
   it("超时自动 abort", async () => {
     const orch = new AsyncJobOrchestrator({ maxGlobal: 2, maxPerSession: 2, taskTimeoutMs: 50 });
     let aborted = false;
