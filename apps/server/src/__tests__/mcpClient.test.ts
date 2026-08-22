@@ -7,6 +7,9 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import {
   parseMcpToolName,
+  parseMcpToolNameParts,
+  parseRegisteredMcpToolName,
+  getOrCreateInflight,
   createMcpTransport,
   buildMcpToolSchemas,
   disconnectAllMcpClients,
@@ -29,6 +32,36 @@ describe("MCP 工具命名", () => {
   it("parseMcpToolName 解析外部名", () => {
     const meta = parseMcpToolName("mcp__filesystem__read_file");
     expect(meta).toEqual({ serverName: "filesystem", toolName: "read_file" });
+  });
+
+  it("结构拆分不把 server 名里的下划线改成横杠", () => {
+    expect(parseMcpToolNameParts("mcp__a_b__tool")).toEqual({ serverName: "a_b", toolName: "tool" });
+  });
+
+  it("执行路由在注册表 miss 时拒绝猜测", () => {
+    expect(parseRegisteredMcpToolName("mcp__filesystem__read_file")).toBeNull();
+  });
+
+  it("getOrCreateInflight 并发共用一个 Promise，失败摘除", async () => {
+    const cache = new Map<string, Promise<number>>();
+    let factories = 0;
+    const factory = () => {
+      factories += 1;
+      return Promise.resolve(7);
+    };
+    const [a, b] = await Promise.all([
+      getOrCreateInflight(cache, "k", factory),
+      getOrCreateInflight(cache, "k", factory),
+    ]);
+    expect(a).toBe(7);
+    expect(b).toBe(7);
+    expect(factories).toBe(1);
+
+    const boom = new Map<string, Promise<number>>();
+    await expect(
+      getOrCreateInflight(boom, "x", () => Promise.reject(new Error("fail"))),
+    ).rejects.toThrow("fail");
+    expect(boom.has("x")).toBe(false);
   });
 
   it("非 MCP 名返回 null", () => {

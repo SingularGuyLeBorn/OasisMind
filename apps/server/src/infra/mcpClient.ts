@@ -11,13 +11,14 @@ import type { McpServerEntity } from "./entityServices/mcpService.js";
 import { executeMockMcpTool, getMockMcpToolSchemas } from "./mockMcpRegistry.js";
 import { CircuitBreaker } from "./circuitBreaker.js";
 import { mcpToolName, truncateMcpResult } from "./mcpUtils.js";
+import { getEventBus, type EntityEventPayload } from "./eventBus.js";
 
 interface McpToolMeta {
   serverName: string;
   toolName: string;
 }
 
-const clientCache = new Map<string, Client>();
+const clientCache = new Map<string, Promise<Client>>();
 const toolRegistry = new Map<string, McpToolMeta>();
 const schemaCache = new Map<string, Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }>>();
 
@@ -56,15 +57,44 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+/** 按 mcp__{server}__{tool} 拆分，不做 _→- 猜测（避免 a_b / a-b 误路由）。 */
+export function parseMcpToolNameParts(externalName: string): McpToolMeta | null {
+  if (!externalName.startsWith("mcp__")) return null;
+  const rest = externalName.slice(5);
+  const idx = rest.lastIndexOf("__");
+  if (idx <= 0) return null;
+  const serverName = rest.slice(0, idx);
+  const toolName = rest.slice(idx + 2);
+  if (!serverName || !toolName) return null;
+  return { serverName, toolName };
+}
+
+/** 分类用：注册表优先，miss 时只做结构拆分（禁止 dash 猜测）。 */
 export function parseMcpToolName(externalName: string): McpToolMeta | null {
   if (!externalName.startsWith("mcp__")) return null;
-  const meta = toolRegistry.get(externalName);
-  if (meta) return meta;
-  const parts = externalName.slice(5).split("__");
-  if (parts.length < 2) return null;
-  const toolName = parts.pop()!;
-  const serverName = parts.join("__").replace(/_/g, "-");
-  return { serverName, toolName };
+  return toolRegistry.get(externalName) ?? parseMcpToolNameParts(externalName);
+}
+
+/** 执行路由：注册表 miss 即拒绝，禁止在 schema 未构建时猜测 server。 */
+export function parseRegisteredMcpToolName(externalName: string): McpToolMeta | null {
+  if (!externalName.startsWith("mcp__")) return null;
+  return toolRegistry.get(externalName) ?? null;
+}
+
+/** 同 key 并发共用一个 Promise；失败摘除以免脏缓存。 */
+export function getOrCreateInflight<T>(
+  cache: Map<string, Promise<T>>,
+  key: string,
+  factory: () => Promise<T>,
+): Promise<T> {
+  const existing = cache.get(key);
+  if (existing) return existing;
+  const inflight = factory().catch((err) => {
+    if (cache.get(key) === inflight) cache.delete(key);
+    throw err;
+  });
+  cache.set(key, inflight);
+  return inflight;
 }
 
 async function findMcpServer(services: ServiceContainer, name: string): Promise<McpServerEntity> {
@@ -75,12 +105,42 @@ async function findMcpServer(services: ServiceContainer, name: string): Promise<
 }
 
 function evictClient(serverName: string): void {
-  const client = clientCache.get(serverName);
-  if (client) {
-    client.close().catch((err) => { console.warn("[mcpClient.ts] best-effort failed:", err instanceof Error ? err.message : err); return undefined; });
-  }
+  const pending = clientCache.get(serverName);
   clientCache.delete(serverName);
+  if (pending) {
+    pending
+      .then((client) =>
+        client.close().catch((err) => {
+          console.warn("[mcpClient.ts] best-effort failed:", err instanceof Error ? err.message : err);
+        }),
+      )
+      .catch(() => undefined);
+  }
 }
+
+export function invalidateMcpCaches(serverName?: string): void {
+  if (serverName) {
+    evictClient(serverName);
+    for (const [key, meta] of toolRegistry) {
+      if (meta.serverName === serverName) toolRegistry.delete(key);
+    }
+  } else {
+    for (const [name] of clientCache) evictClient(name);
+    toolRegistry.clear();
+  }
+  schemaCache.clear();
+}
+
+void (() => {
+  const bus = getEventBus();
+  const handler = (payload: EntityEventPayload<{ name?: string }>) => {
+    const name = payload.data?.name;
+    invalidateMcpCaches(typeof name === "string" && name ? name : undefined);
+  };
+  for (const ev of ["mcp.created", "mcp.updated", "mcp.deleted"] as const) {
+    bus.on(ev, handler);
+  }
+})();
 
 /** 按 transport 选择客户端传输（供测试断言，不真正连接） */
 export function createMcpTransport(server: McpServerEntity): StdioClientTransport | StreamableHTTPClientTransport {
@@ -110,15 +170,12 @@ async function connectClient(server: McpServerEntity): Promise<Client> {
   const transport = createMcpTransport(server);
   const client = new Client({ name: "oasismind", version: "1.0.0" }, { capabilities: {} });
   await withTimeout(client.connect(transport), MCP_CONNECT_TIMEOUT_MS, `MCP ${server.name}`);
-  clientCache.set(server.name, client);
   return client;
 }
 
 async function getOrConnectClient(server: McpServerEntity, forceReconnect = false): Promise<Client> {
   if (forceReconnect) evictClient(server.name);
-  const cached = clientCache.get(server.name);
-  if (cached) return cached;
-  return connectClient(server);
+  return getOrCreateInflight(clientCache, server.name, () => connectClient(server));
 }
 
 export async function buildMcpToolSchemas(
@@ -131,11 +188,11 @@ export async function buildMcpToolSchemas(
     // 按 agent 配置的 serverNames 过滤，避免 Mock 模式下授权边界比真实更宽
     const allowed = new Set(serverNames);
     const schemas = getMockMcpToolSchemas().filter((s) => {
-      const meta = parseMcpToolName(s.function.name);
+      const meta = parseMcpToolNameParts(s.function.name);
       return meta ? allowed.has(meta.serverName) : false;
     });
     for (const schema of schemas) {
-      const meta = parseMcpToolName(schema.function.name);
+      const meta = parseMcpToolNameParts(schema.function.name);
       if (meta) toolRegistry.set(schema.function.name, meta);
     }
     return schemas;
@@ -210,8 +267,12 @@ export async function executeMcpTool(
     return executeMockMcpTool(externalName, args, services);
   }
 
-  const meta = parseMcpToolName(externalName);
-  if (!meta) throw new Error(`无效的 MCP 工具名: ${externalName}`);
+  const meta = parseRegisteredMcpToolName(externalName);
+  if (!meta) {
+    throw new Error(
+      `MCP 工具 schema 未构建，无法路由 ${externalName}。请确认对应 MCP server 已连接后再调用。`,
+    );
+  }
 
   const server = await findMcpServer(services, meta.serverName);
   if (!server.enabled) throw new Error(`MCP Server "${meta.serverName}" 已禁用`);

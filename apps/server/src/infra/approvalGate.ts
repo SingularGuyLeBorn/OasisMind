@@ -484,6 +484,21 @@ function argsMatch(stored: unknown, requested: Record<string, unknown>): boolean
   return canonicalJson(normalizeArgs(parsed)) === canonicalJson(normalizeArgs(requested));
 }
 
+async function findPendingApproval(
+  services: ServiceContainer,
+  toolName: string,
+  normalizedArgs: Record<string, unknown>,
+): Promise<{ id: string; decisionScope: string | null } | null> {
+  const candidates = await services.prisma.approval.findMany({
+    where: { toolName, status: "pending" },
+    orderBy: { createdAt: "asc" },
+    take: 50,
+    select: { id: true, args: true, decisionScope: true },
+  });
+  const hit = candidates.find((row) => argsMatch(row.args, normalizedArgs));
+  return hit ? { id: hit.id, decisionScope: hit.decisionScope } : null;
+}
+
 /** 将超时仍 pending 的审批标为 rejected；只对实际翻转成功的行发 notify；返回翻转条数 */
 export async function expireStaleApprovals(services: ServiceContainer): Promise<number> {
   const ttl = getApprovalPendingTtlMs();
@@ -579,21 +594,32 @@ async function enforceApprovalOrProceed(
     if (!argsMatch(approval.args, args)) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "审批参数与当前请求不一致，请重新发起审批。" });
     }
-    // user_replied 放行后标 executed（approved 路径由 executeApprovedOperation 标，此处补 user_replied）
+    // user_replied：条件翻转认领，并发第二路 count=0 拒绝，禁止同一审批执行两次
     if (approval.status === "user_replied") {
-      try {
-        await services.prisma.approval.update({
-          where: { id: approvalId },
-          data: { status: "executed", executedAt: new Date() },
+      const flipped = await services.prisma.approval.updateMany({
+        where: { id: approvalId, status: "user_replied" },
+        data: { status: "executed", executedAt: new Date() },
+      });
+      if (flipped.count === 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "该审批已被执行或状态已变更，拒绝重复执行。",
         });
-      } catch {
-        /* 标记失败不阻断本次执行 */
       }
     }
     return;
   }
 
   const normalizedArgs = normalizeArgs(args);
+  const existingPending = await findPendingApproval(services, toolName, normalizedArgs);
+  if (existingPending) {
+    const decisionScope = existingPending.decisionScope ?? deriveDecisionScope(toolName, normalizedArgs);
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `操作「${toolName}」需要人工审批，已加入审批队列（approvalId=${existingPending.id}，scope=${decisionScope}）。请在 /approvals 批准后，携带同一参数与 approvalId 重试。`,
+      cause: { reason: "PENDING_APPROVAL", approvalId: existingPending.id, decisionScope },
+    });
+  }
   const decisionScope = deriveDecisionScope(toolName, normalizedArgs);
   const created = await services.approval.create({
     toolName,
