@@ -167,8 +167,7 @@ pnpm dev:server
 ```bash
 pnpm db:sync      # content/ → SQLite 同步（Post/Agent/Skill/MCP/Memory/Prompt/Task；支持 --watch）
 pnpm db:backup    # 将 dev.db 复制到 backups/ 目录
-pnpm db:migrate   # Prisma migrate dev
-pnpm db:push      # Prisma db push
+pnpm db:push      # Prisma 推 schema（SQLite 缓存层单轨；不要走 migrate）
 pnpm db:generate  # 生成 Prisma Client
 pnpm db:seed      # 写入 3 篇示例文章
 pnpm db:studio    # 打开 Prisma Studio

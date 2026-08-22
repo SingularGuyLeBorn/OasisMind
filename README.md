@@ -126,7 +126,7 @@ pnpm dev:ngrok      # ngrok 固定域名隧道 + dev（邮件 webhook 自动注�
 
 pnpm db:sync        # content/ → SQLite 同步（支持 --watch）
 pnpm db:backup      # dev.db 备份到 backups/
-pnpm db:migrate     # Prisma migrate dev
+pnpm db:push        # Prisma 推 schema（SQLite 是缓存层，单轨用 push 不用 migrate）
 pnpm db:studio      # 打开 Prisma Studio
 
 pnpm lint           # 全仓 lint（server/shared 用 tsc，web 用 eslint）

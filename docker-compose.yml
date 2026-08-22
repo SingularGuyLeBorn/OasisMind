@@ -24,10 +24,7 @@ services:
       # 运行时 CRUD 会写回 config/agents、config/memories/daily、content/uploads，必须可写
       - ./content:/app/content
       - ./config:/app/config
-    depends_on:
-      redis:
-        condition: service_healthy
-        required: false  # 仅 swarm profile 时需要
+      - ./config.yaml:/app/config.yaml:ro
 
   postgres:
     image: postgres:16-alpine

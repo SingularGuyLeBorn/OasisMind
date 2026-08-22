@@ -13,9 +13,6 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 RUN pnpm --filter @oasismind/server db:generate
-ENV DATABASE_URL="file:./build.db"
-RUN pnpm --filter @oasismind/server db:push
-RUN pnpm db:sync
 RUN pnpm --filter @oasismind/web build
 
 FROM base AS runner
@@ -31,6 +28,7 @@ COPY --from=build /app/apps ./apps
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/content ./content
 COPY --from=build /app/config ./config
+COPY --from=build /app/config.yaml ./config.yaml
 COPY --from=build /app/scripts ./scripts
 
 EXPOSE 3000 3010
