@@ -42,7 +42,10 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
     try {
       const { name, mimeType, size, data, garden, postId, draftKey, agentId, unique = true } = input;
       const safeName = path.basename(name);
-      const ext = path.extname(safeName);
+      const ext = path.extname(safeName).toLowerCase();
+      if ([".html", ".htm", ".svg", ".xhtml"].includes(ext)) {
+        throw new Error("拒绝上传 HTML/SVG（可在同源执行脚本，存在 XSS 风险）");
+      }
       const baseName = path.basename(safeName, ext).replace(/[^\w\u4e00-\u9fff.-]+/g, "_") || "file";
       const uniqueName = unique ? `${baseName}_${Date.now().toString(36)}${ext}` : `${baseName}${ext}`;
       const uploadRoot = path.resolve(this.config.uploadDir);
@@ -71,7 +74,7 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
 
       const fileUrl = `/uploads/${[...segments, uniqueName].join("/")}`;
       const fileRecord = await this.prisma.file.create({
-        data: { name: safeName, path: filePath, mimeType, size, url: fileUrl },
+        data: { name: safeName, path: filePath, mimeType, size: buffer.length, url: fileUrl },
       });
       this.eventBus.emit("file.created", fileRecord);
       return success({ data: fileRecord, operation: "upload", entity: "file", durationMs: Date.now() - start });

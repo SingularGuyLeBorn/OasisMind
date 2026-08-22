@@ -4,6 +4,7 @@
 
 import "dotenv/config";
 import fs from "fs";
+import path from "path";
 import express from "express";
 import cors from "cors";
 import compression from "compression";
@@ -225,8 +226,16 @@ if (fs.existsSync(postsDir) && postsDir !== contentDir) {
   app.use("/api/posts/assets", staticAuthMiddleware, express.static(postsDir));
 }
 
-// 上传文件静态服务
-app.use("/uploads", staticAuthMiddleware, express.static(uploadsDir));
+// 上传文件静态服务：非白名单强制附件下载 + nosniff，阻断 HTML/SVG XSS
+const INLINE_UPLOAD_EXTS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".md", ".txt", ".json", ".csv"]);
+app.use("/uploads", staticAuthMiddleware, (req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  const ext = path.extname(req.path).toLowerCase();
+  if (!INLINE_UPLOAD_EXTS.has(ext)) {
+    res.setHeader("Content-Disposition", "attachment");
+  }
+  next();
+}, express.static(uploadsDir));
 
 // Agent 流式聊天 SSE（不走 tRPC，避免 buffering）
 const streamHub = new SessionStreamHub(config.stream);

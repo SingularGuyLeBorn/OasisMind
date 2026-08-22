@@ -9,6 +9,8 @@ import {
   loginWithPassword,
   getRemoteAccessInfo,
   assertPublicUrlAuthSafe,
+  assertLoginRateLimit,
+  __resetLoginRateLimitForTests,
 } from "../infra/auth.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import { handleAgentChatStop } from "../infra/agentStream/index.js";
@@ -29,6 +31,14 @@ describe("auth module", () => {
     expect(verifyAuthHeader(config, undefined)).toBe(false);
     expect(verifyAuthHeader(config, "Bearer wrong")).toBe(false);
     expect(verifyAuthHeader(config, "Bearer om-test-token")).toBe(true);
+  });
+
+  it("SEC-4：同一 IP 登录 10 次后限流", () => {
+    __resetLoginRateLimitForTests();
+    for (let i = 0; i < 10; i++) assertLoginRateLimit("203.0.113.9");
+    expect(() => assertLoginRateLimit("203.0.113.9")).toThrow(/过于频繁/);
+    assertLoginRateLimit("203.0.113.10");
+    __resetLoginRateLimitForTests();
   });
 
   it("loginWithPassword 校验密码并返回 token", () => {

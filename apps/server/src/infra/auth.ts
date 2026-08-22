@@ -38,6 +38,29 @@ export function assertAuthHeader(config: AppConfig, authorization?: string | str
   }
 }
 
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
+const loginHits = new Map<string, number[]>();
+
+/** SEC-4：登录 10 次 / 15min / IP。超出抛 TOO_MANY_REQUESTS。 */
+export function assertLoginRateLimit(ip: string): void {
+  const now = Date.now();
+  const key = ip.replace(/^::ffff:/, "") || "unknown";
+  const hits = (loginHits.get(key) ?? []).filter((t) => now - t < LOGIN_WINDOW_MS);
+  if (hits.length >= LOGIN_MAX_ATTEMPTS) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "登录尝试过于频繁，请 15 分钟后再试。",
+    });
+  }
+  hits.push(now);
+  loginHits.set(key, hits);
+}
+
+export function __resetLoginRateLimitForTests(): void {
+  loginHits.clear();
+}
+
 export function loginWithPassword(
   config: AppConfig,
   password: string,

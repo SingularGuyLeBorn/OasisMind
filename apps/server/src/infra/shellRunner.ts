@@ -53,6 +53,10 @@ const BLOCKED_PATTERNS: Array<{ re: RegExp; message?: string }> = [
   // PowerShell 移动/写文件（应走 native 文件工具，便于回收站与 Workspace 隔离）
   { re: /\bMove-Item\b/i, message: SHELL_WRITE_BLOCKED },
   { re: /\bSet-Content\b/i, message: SHELL_WRITE_BLOCKED },
+  { re: /\bOut-File\b/i, message: SHELL_WRITE_BLOCKED },
+  { re: /\bAdd-Content\b/i, message: SHELL_WRITE_BLOCKED },
+  { re: /\bTee-Object\b/i, message: SHELL_WRITE_BLOCKED },
+  { re: /(^|[\s;|&])>>\s*\S/, message: SHELL_WRITE_BLOCKED },
   // 下载执行（iex (iwr ...) / Invoke-Expression 动态执行远程脚本）
   { re: /\b(iex|Invoke-Expression)\b/i, message: "禁止动态执行（iex/Invoke-Expression），下载执行远程脚本属高危操作。" },
   { re: /\bformat\s+[a-z]:/i },

@@ -25,6 +25,8 @@ describe("shellRunner — validateShellCommand", () => {
   it("拒绝 PowerShell Move-Item / Set-Content 直写", () => {
     expect(() => validateShellCommand('Move-Item a.txt b.txt')).toThrow(/write_file|禁止用 shell 写入/);
     expect(() => validateShellCommand('Set-Content a.txt "x"')).toThrow(/write_file|禁止用 shell 写入/);
+    expect(() => validateShellCommand('echo hi | Out-File a.txt')).toThrow(/write_file|禁止用 shell 写入/);
+    expect(() => validateShellCommand('echo hi >> a.txt')).toThrow(/write_file|禁止用 shell 写入/);
     expect(() => validateShellCommand('[IO.File]::WriteAllText("a.txt","x")')).toThrow(
       /write_file|禁止用 shell 写入/,
     );

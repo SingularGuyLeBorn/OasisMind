@@ -12,6 +12,7 @@ import {
   isAuthEnabled,
   loginWithPassword,
   verifyAuthHeader,
+  assertLoginRateLimit,
 } from "../auth.js";
 import { getNotifyStatus, sendTestNotification } from "../emailNotifier.js";
 
@@ -54,6 +55,8 @@ export const authRouter = router({
     .meta({ description: "密码登录，返回 Bearer Token。", aiReadable: false })
     .input(authLoginSchema)
     .mutation(({ ctx, input }) => {
+      const ip = ctx.req?.ip || ctx.req?.socket?.remoteAddress || "unknown";
+      assertLoginRateLimit(ip);
       const result = loginWithPassword(ctx.config, input.password);
       if (!result) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "密码错误，请重试。" });

@@ -32,9 +32,17 @@ export class CredentialService extends BaseService<
     // 安全：API 响应永不返回明文 value，仅返回遮蔽后的 valuePreview。
     // 明文仅在 credentialVault 内部（getCredentialValue 等）解密使用。
     const { value: _encryptedValue, ...rest } = raw;
+    let valuePreview = "";
+    let decryptError: string | undefined;
+    try {
+      valuePreview = maskSecret(decryptCredentialValue(raw.value));
+    } catch (err) {
+      decryptError = err instanceof Error ? err.message : String(err);
+    }
     return {
       ...rest,
-      valuePreview: maskSecret(decryptCredentialValue(raw.value)),
+      valuePreview,
+      ...(decryptError ? { decryptError } : {}),
       scope: raw.scope ? raw.scope.split(",").filter(Boolean).map((s: string) => s.trim()) : [],
       metadata: raw.metadata ? safeJsonParse(raw.metadata) : null,
     };
