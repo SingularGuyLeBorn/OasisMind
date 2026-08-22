@@ -19,6 +19,7 @@ import {
   persistRetrievedForRun,
   recordRetrievedForRun,
   __clearRetrievedRegistryForTests,
+  __setApplyStrengthForTests,
 } from "../infra/memoryFeedback.js";
 import { isRunSuccess } from "../infra/agentEvolution.js";
 import { MEMORY_TYPES } from "@oasismind/shared";
@@ -193,6 +194,61 @@ describe("memoryFeedback", () => {
     expect(await getStrength(agentMem.id)).toBeCloseTo(0.65);
     const after = await prisma.run.findUnique({ where: { id: run.id }, select: { output: true } });
     expect(after?.output).toEqual({ phase: "llm" });
+    await prisma.run.delete({ where: { id: run.id } }).catch(() => undefined);
+  });
+
+  it("T7: 并发奖惩同一条记忆走原子 SQL，不互相覆盖", async () => {
+    const agentMem = await track(
+      await repo.write({
+        content: `${RUN}-concurrent`,
+        type: MEMORY_TYPES.SEMANTIC,
+        scope: "global",
+        keywords: [RUN],
+        attribution: "agent",
+        strength: 0.5,
+      }),
+    );
+    recordRetrievedForRun(`${RUN}-c1`, [agentMem.id]);
+    recordRetrievedForRun(`${RUN}-c2`, [agentMem.id]);
+    await Promise.all([
+      applyMemoryRunOutcome(services, `${RUN}-c1`, true),
+      applyMemoryRunOutcome(services, `${RUN}-c2`, true),
+    ]);
+    expect(await getStrength(agentMem.id)).toBeCloseTo(0.6);
+  });
+
+  it("T8: apply SQL 失败不消耗登记，重试仍能从 Run.output 奖惩", async () => {
+    const agentMem = await track(
+      await repo.write({
+        content: `${RUN}-retry-agent`,
+        type: MEMORY_TYPES.SEMANTIC,
+        scope: "global",
+        keywords: [RUN],
+        attribution: "agent",
+        strength: 0.6,
+      }),
+    );
+    const run = await prisma.run.create({
+      data: { status: "running", input: { t: "memfb-retry" }, output: { phase: "llm" } },
+    });
+    await persistRetrievedForRun(prisma, run.id, [agentMem.id]);
+    __clearRetrievedRegistryForTests();
+    __setApplyStrengthForTests(async () => {
+      throw new Error("boom");
+    });
+    try {
+      await applyMemoryRunOutcome(services, run.id, true);
+      expect(await getStrength(agentMem.id)).toBeCloseTo(0.6);
+      const stillThere = await prisma.run.findUnique({
+        where: { id: run.id },
+        select: { output: true },
+      });
+      expect(stillThere?.output).toMatchObject({ _retrievedMemoryIds: [agentMem.id] });
+    } finally {
+      __setApplyStrengthForTests(null);
+    }
+    await applyMemoryRunOutcome(services, run.id, true);
+    expect(await getStrength(agentMem.id)).toBeCloseTo(0.65);
     await prisma.run.delete({ where: { id: run.id } }).catch(() => undefined);
   });
 
