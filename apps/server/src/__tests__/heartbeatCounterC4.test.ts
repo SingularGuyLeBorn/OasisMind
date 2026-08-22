@@ -131,4 +131,52 @@ describe("C4 心跳 consecutiveFailures 原子化", () => {
     expect((await readHb(agentId)).cron).toBe("0 11 * * *");
     expect((await readHb(agentId)).goal).toBe("C4 清零");
   });
+
+  it("persistLoopContract 与 status 交错不丢 lastRunAt / 失败计数", async () => {
+    const ctx = await createContextInner();
+    const created = await ctx.services.agent.create({
+      name: `C4-Persist-${RUN}`,
+      model: "deepseek-chat",
+      systemPrompt: "test",
+      tools: [],
+      tier: "manager",
+      heartbeat: {
+        enabled: true,
+        cron: "0 9 * * *",
+        goal: "C4 persist",
+        consecutiveFailures: 0,
+      } as any,
+    });
+    if (!created.success) throw new Error(created.error?.message);
+    const agentId = (created.data as { id: string }).id;
+    const engine = getHeartbeatEngine(prisma, ctx.services, {
+      ...ctx.config,
+      llm: { ...ctx.config.llm, dailyBudget: 0 },
+    });
+    const prevHb = {
+      enabled: true,
+      cron: "0 9 * * *",
+      goal: "C4 persist",
+      lastRunAt: null,
+      lastRunStatus: null,
+      consecutiveFailures: 0,
+    };
+    await Promise.all([
+      engine.__updateHeartbeatStatusForTests(agentId, "failed", prevHb),
+      engine.__persistLoopContractForTests(agentId, {
+        goal: "C4 persist",
+        handoff: true,
+        gateOpen: true,
+        evidence: [],
+        stopRule: { maxStaleRounds: 3 },
+        staleRounds: 0,
+        stoppedReason: null,
+      }),
+    ]);
+    const hb = await readHb(agentId);
+    expect(hb.consecutiveFailures).toBe(1);
+    expect(typeof hb.lastRunAt).toBe("string");
+    expect((hb.loopContract as { goal?: string } | undefined)?.goal).toBe("C4 persist");
+    expect(hb.cron).toBe("0 9 * * *");
+  });
 });

@@ -456,7 +456,7 @@ export class HeartbeatEngine {
         }
         // 首次确保 contract 落库（goal 对齐）
         if (!hb.loopContract) {
-          await this.persistHeartbeat(agentId, { ...hb, loopContract: contract });
+          await this.persistLoopContract(agentId, contract);
         }
       }
 
@@ -1049,11 +1049,24 @@ export class HeartbeatEngine {
     };
   }
 
-  private async persistHeartbeat(agentId: string, hb: HeartbeatState): Promise<void> {
-    await this.prisma.agent.update({
-      where: { id: agentId },
-      data: { heartbeat: hb as object },
-    });
+  /**
+   * C4：只 json_set loopContract，禁止整 heartbeat blob 覆写
+   * （并发 lastRunAt / consecutiveFailures 不得被旧快照滚回去）。
+   */
+  private async persistLoopContract(agentId: string, contract: LoopContract): Promise<void> {
+    const loopJson = JSON.stringify(contract);
+    await this.prisma.$executeRaw`
+      UPDATE "Agent"
+      SET
+        heartbeat = json_set(COALESCE(heartbeat, '{}'), '$.loopContract', json(${loopJson})),
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE id = ${agentId}
+    `;
+  }
+
+  /** @internal 测试用：验证 persist 与 status 交错不丢 lastRunAt */
+  async __persistLoopContractForTests(agentId: string, contract: LoopContract): Promise<void> {
+    return this.persistLoopContract(agentId, contract);
   }
 
   /**
@@ -1077,7 +1090,7 @@ export class HeartbeatEngine {
     const next = resumeLoopContract(
       ensureLoopContract(hb.goal, hb.loopContract, this.config.heartbeat.loopContract),
     );
-    await this.persistHeartbeat(agentId, { ...hb, loopContract: next });
+    await this.persistLoopContract(agentId, next);
     return next;
   }
 
@@ -1092,7 +1105,7 @@ export class HeartbeatEngine {
       ensureLoopContract(hb.goal, hb.loopContract, this.config.heartbeat.loopContract),
       reason,
     );
-    await this.persistHeartbeat(agentId, { ...hb, loopContract: next });
+    await this.persistLoopContract(agentId, next);
     return next;
   }
 
