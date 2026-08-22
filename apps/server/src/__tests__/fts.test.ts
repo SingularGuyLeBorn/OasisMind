@@ -11,17 +11,47 @@ describe("FTS5 search index", () => {
     await rebuildFtsIndex(prisma);
   }, 120_000);
 
-  it("rebuildFtsIndex 应写入至少一条索引", async () => {
+  it("rebuildFtsIndex 可完成且不因 trigram 迁移失败", async () => {
     const count = await rebuildFtsIndex(prisma);
     expect(count).toBeGreaterThanOrEqual(0);
+    const probeId = "fts-test-rebuild-probe";
+    try {
+      await upsertFtsRow(prisma, "post", probeId, "rebuildprobe title", "body rebuildprobe");
+      const hits = await searchFts(prisma, "rebuildprobe", 10);
+      expect(hits.some((h) => h.entityId === probeId)).toBe(true);
+    } finally {
+      await deleteFtsRow(prisma, "post", probeId).catch(() => undefined);
+    }
   }, 120_000);
 
-  it("searchFts 对已知关键词应返回 hits 数组", async () => {
-    const hits = await searchFts(prisma, "OasisMind", 5);
-    expect(Array.isArray(hits)).toBe(true);
-    for (const hit of hits) {
-      expect(hit.entity).toBeTruthy();
-      expect(hit.entityId || (hit as { entity_id?: string }).entity_id).toBeTruthy();
+  it("searchFts 对已知关键词应命中含该词的行", async () => {
+    const entityId = "fts-test-known-keyword";
+    const token = "oasismindknowntoken";
+    try {
+      await upsertFtsRow(prisma, "post", entityId, `${token} title`, `body ${token}`);
+      const hits = await searchFts(prisma, token, 20);
+      expect(hits.some((h) => h.entityId === entityId || (h as { entity_id?: string }).entity_id === entityId)).toBe(
+        true,
+      );
+    } finally {
+      await deleteFtsRow(prisma, "post", entityId).catch(() => undefined);
+    }
+  });
+
+  it("searchFts 中文部分词能命中连续正文（心跳 ⊂ 心跳引擎调度器）", async () => {
+    const entityId = "fts-test-zh-partial";
+    try {
+      await upsertFtsRow(prisma, "post", entityId, "心跳引擎调度器", "心跳引擎是调度核心");
+      const hits = await searchFts(prisma, "心跳", 50);
+      expect(hits.some((h) => h.entityId === entityId || (h as { entity_id?: string }).entity_id === entityId)).toBe(
+        true,
+      );
+      const longer = await searchFts(prisma, "心跳引擎", 50);
+      expect(longer.some((h) => h.entityId === entityId || (h as { entity_id?: string }).entity_id === entityId)).toBe(
+        true,
+      );
+    } finally {
+      await deleteFtsRow(prisma, "post", entityId).catch(() => undefined);
     }
   });
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 import { createTempProjectDir, createTestConfig, createNativeCtx } from "./helpers/toolTestFixtures.js";
-import { assertWritePathSafe, resolveRealWriteTarget } from "../infra/safePath.js";
+import { assertWritePathSafe, resolveRealWriteTarget, resolveSafePath } from "../infra/safePath.js";
 import { executeNativeTool } from "../infra/nativeTools.js";
 
 describe("D7 safePath realpath 写隔离", () => {
@@ -74,5 +74,31 @@ describe("D7 safePath realpath 写隔离", () => {
       executeNativeTool("write_file", { path: "trap/evil.md", content: "x" }, ctx),
     ).rejects.toThrow(/知识库核心|content\/posts|路径超出/);
     expect(fs.existsSync(path.join(root, "content/posts/evil.md"))).toBe(false);
+  });
+
+  it("assertWritePathSafe 拒绝 Content/ 大小写变体（Windows 可落入知识库）", () => {
+    const config = createTestConfig(root);
+    expect(() =>
+      assertWritePathSafe(config, path.join(root, "Content", "evil.md")),
+    ).toThrow(/知识库/);
+    expect(() =>
+      assertWritePathSafe(config, path.join(root, "CONTENT", "posts", "x.md")),
+    ).toThrow(/知识库/);
+  });
+
+  it("assertWritePathSafe 仍允许 content/uploads 及大小写变体", () => {
+    const config = createTestConfig(root);
+    expect(() =>
+      assertWritePathSafe(config, path.join(root, "content", "uploads", "shot.png")),
+    ).not.toThrow();
+    expect(() =>
+      assertWritePathSafe(config, path.join(root, "Content", "Uploads", "shot.png")),
+    ).not.toThrow();
+  });
+
+  it("resolveSafePath 允许文件名内连续点（foo..bar.txt）", () => {
+    const config = createTestConfig(root);
+    const abs = resolveSafePath(config, "data/workspace/foo..bar.txt");
+    expect(abs.replace(/\\/g, "/")).toMatch(/foo\.\.bar\.txt$/);
   });
 });

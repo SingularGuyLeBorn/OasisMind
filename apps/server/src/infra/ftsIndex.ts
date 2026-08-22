@@ -13,7 +13,16 @@ export interface FtsHit {
   rank?: number;
 }
 
-let ftsReady = false;
+/** per-PrismaClient：避免进程级 sticky 标志跨测试 DB 串扰 */
+const ftsReadyByClient = new WeakMap<object, boolean>();
+
+function isFtsReady(prisma: PrismaClient): boolean {
+  return ftsReadyByClient.get(prisma) === true;
+}
+
+function setFtsReady(prisma: PrismaClient, ready: boolean): void {
+  ftsReadyByClient.set(prisma, ready);
+}
 
 /** 安全截断，避免在 UTF-16 代理对中间切断（会导致 Prisma raw 参数 JSON 失败） */
 function safeSlice(text: string, maxLen: number): string {
@@ -24,38 +33,75 @@ function safeSlice(text: string, maxLen: number): string {
   return s;
 }
 
-function escapeFtsQuery(query: string): string {
+function queryTokens(query: string): string[] {
   return query
     .trim()
     .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
     .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => `"${t.replace(/"/g, "")}"`)
-    .join(" ");
+    .map((t) => t.replace(/"/g, ""))
+    .filter(Boolean);
 }
 
-export async function ensureFtsTable(prisma: PrismaClient): Promise<void> {
-  try {
-    await prisma.$executeRawUnsafe(`
+function escapeFtsQuery(tokens: string[]): string {
+  return tokens.map((t) => `"${t}"`).join(" ");
+}
+
+function charLen(s: string): number {
+  return [...s].length;
+}
+
+function sanitizeLikeNeedle(s: string): string {
+  return s.replace(/[%_\\]/g, "");
+}
+
+const FTS_CREATE_SQL = `
       CREATE VIRTUAL TABLE IF NOT EXISTS search_fts USING fts5(
         entity UNINDEXED,
         entity_id UNINDEXED,
         title,
         body,
-        tokenize='unicode61'
+        tokenize='trigram'
       );
-    `);
-    ftsReady = true;
+    `;
+
+async function ftsTableSql(prisma: PrismaClient): Promise<string | null> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<Array<{ sql: string | null }>>(
+      `SELECT sql FROM sqlite_master WHERE type IN ('table','view') AND name='search_fts'`,
+    );
+    return rows[0]?.sql ?? null;
+  } catch {
+    return null;
+  }
+}
+
+let ftsRebuildInFlight: Promise<number> | null = null;
+
+export async function ensureFtsTable(prisma: PrismaClient, opts?: { rebuildIfMigrated?: boolean }): Promise<void> {
+  try {
+    const existing = await ftsTableSql(prisma);
+    const migrated = Boolean(existing && !existing.includes("tokenize='trigram'"));
+    if (migrated) {
+      await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS search_fts`);
+    }
+    await prisma.$executeRawUnsafe(FTS_CREATE_SQL);
+    setFtsReady(prisma, true);
+    if (migrated && opts?.rebuildIfMigrated && !ftsRebuildInFlight) {
+      ftsRebuildInFlight = rebuildFtsIndex(prisma).finally(() => {
+        ftsRebuildInFlight = null;
+      });
+      await ftsRebuildInFlight;
+    }
   } catch {
     // 非 SQLite 引擎（如 PostgreSQL）或未编译 FTS5 扩展时安全降级
-    ftsReady = false;
+    setFtsReady(prisma, false);
   }
 }
 
 /** 全量重建 FTS 索引（db:sync 后调用） */
 export async function rebuildFtsIndex(prisma: PrismaClient): Promise<number> {
   await ensureFtsTable(prisma);
-  if (!ftsReady) return 0;
+  if (!isFtsReady(prisma)) return 0;
 
   // P1-7：收集所有插入参数后用单事务批量提交，避免逐条 $executeRawUnsafe 阻塞
   const rows: Array<[string, string, string, string]> = [];
@@ -229,31 +275,48 @@ async function searchFtsFiltered(
   limit: number,
   entity?: string,
 ): Promise<FtsHit[]> {
-  const ftsQuery = escapeFtsQuery(query);
-  if (!ftsQuery) return [];
+  const tokens = queryTokens(query);
+  if (tokens.length === 0) return [];
+
+  const longTokens = tokens.filter((t) => charLen(t) >= 3);
+  const shortTokens = tokens.filter((t) => charLen(t) < 3);
+  const ftsQuery = longTokens.length ? escapeFtsQuery(longTokens) : "";
 
   try {
-    if (!ftsReady) await ensureFtsTable(prisma);
-    const rows = entity
-      ? await prisma.$queryRawUnsafe<Array<FtsHit & { entity_id?: string; rank?: number }>>(
-          `SELECT entity, entity_id as entityId, title, body, rank
+    if (!isFtsReady(prisma)) await ensureFtsTable(prisma, { rebuildIfMigrated: true });
+    if (!isFtsReady(prisma)) return [];
+
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (ftsQuery) {
+      where.push("search_fts MATCH ?");
+      params.push(ftsQuery);
+    }
+    for (const tok of shortTokens) {
+      // trigram MATCH 要求 token ≥ 3 字；「心跳」这类中文部分词走 LIKE 子串
+      const needle = sanitizeLikeNeedle(tok);
+      if (!needle) continue;
+      const like = `%${needle}%`;
+      where.push("(title LIKE ? OR body LIKE ?)");
+      params.push(like, like);
+    }
+    if (entity) {
+      where.push("entity = ?");
+      params.push(entity);
+    }
+    if (where.length === 0) return [];
+
+    // FTS5 rank 仅在 MATCH 时有意义；纯 LIKE 选 rank 会触发 Prisma「Value not supported」
+    const selectRank = Boolean(ftsQuery);
+    const rows = await prisma.$queryRawUnsafe<Array<FtsHit & { entity_id?: string; rank?: number }>>(
+      `SELECT entity, entity_id as entityId, title, body${selectRank ? ", rank" : ""}
            FROM search_fts
-           WHERE search_fts MATCH ? AND entity = ?
-           ORDER BY rank
+           WHERE ${where.join(" AND ")}
+           ${selectRank ? "ORDER BY rank" : ""}
            LIMIT ?`,
-          ftsQuery,
-          entity,
-          limit,
-        )
-      : await prisma.$queryRawUnsafe<Array<FtsHit & { entity_id?: string; rank?: number }>>(
-          `SELECT entity, entity_id as entityId, title, body, rank
-           FROM search_fts
-           WHERE search_fts MATCH ?
-           ORDER BY rank
-           LIMIT ?`,
-          ftsQuery,
-          limit,
-        );
+      ...params,
+      limit,
+    );
     return rows.map((r) => ({
       entity: r.entity,
       entityId: r.entityId ?? r.entity_id ?? "",
@@ -279,8 +342,8 @@ export async function upsertFtsRow(
   title: string,
   body: string,
 ): Promise<void> {
-  if (!ftsReady) await ensureFtsTable(prisma);
-  if (!ftsReady) return;
+  if (!isFtsReady(prisma)) await ensureFtsTable(prisma, { rebuildIfMigrated: true });
+  if (!isFtsReady(prisma)) return;
   const t = safeSlice(title, 500);
   const b = safeSlice(body, 8000);
   await prisma.$transaction([
@@ -296,7 +359,7 @@ export async function upsertFtsRow(
 }
 
 export async function deleteFtsRow(prisma: PrismaClient, entity: string, entityId: string): Promise<void> {
-  if (!ftsReady) await ensureFtsTable(prisma);
-  if (!ftsReady) return;
+  if (!isFtsReady(prisma)) await ensureFtsTable(prisma, { rebuildIfMigrated: true });
+  if (!isFtsReady(prisma)) return;
   await prisma.$executeRawUnsafe(`DELETE FROM search_fts WHERE entity = ? AND entity_id = ?`, entity, entityId);
 }

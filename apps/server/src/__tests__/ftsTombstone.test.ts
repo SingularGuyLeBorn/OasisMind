@@ -46,6 +46,11 @@ afterEach(async () => {
 
 describe("D5 FTS 墓碑与 syncer 挂钩", () => {
   it("rebuildFtsIndex 不含回收站 post / deleted agent", async () => {
+    await prisma.garden.upsert({
+      where: { id: "posts" },
+      create: { id: "posts", title: "Posts" },
+      update: { deletedAt: null },
+    });
     const token = `${RUN}tombstone`;
     const post = await services.post.create({
       title: `${token} 回收站文`,
@@ -53,7 +58,7 @@ describe("D5 FTS 墓碑与 syncer 挂钩", () => {
       slug: `${RUN}-trashed-post`,
       published: true,
     });
-    expect(post.success).toBe(true);
+    expect(post.success, JSON.stringify(post)).toBe(true);
     cleanupPostIds.push(post.data!.id);
     await services.post.delete(post.data!.id);
 

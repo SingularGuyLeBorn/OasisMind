@@ -572,6 +572,14 @@ try {
   process.exit(1);
 }
 
+// 凭据加密护栏必须在 listen 之前：listen 回调里 throw 会被 processSafety 吞掉，服务照常对外。
+try {
+  assertCredentialEncryptionAvailable();
+} catch (err) {
+  console.error(`\n  ❌ [安全] ${err instanceof Error ? err.message : err}\n`);
+  process.exit(1);
+}
+
 // 启动（默认 127.0.0.1；Docker 等设 SERVER_HOST=0.0.0.0）
 const server = app.listen(PORT, HOST, () => {
   const origin = HOST === "0.0.0.0" || HOST === "::" ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
@@ -579,9 +587,6 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`  📡 tRPC endpoint: ${origin}/api/trpc`);
   console.log(`  💚 Health check:  ${origin}/health`);
   console.log(`  📦 Packs: ${formatPacksSummary(config.packs)}\n`);
-
-  // 凭据加密护栏：生产模式无 CREDENTIAL_MASTER_KEY 拒启动；开发模式 warn
-  assertCredentialEncryptionAvailable();
 
   // P1-1：鉴权护栏 —— AUTH_TOKEN 回退为 AUTH_PASSWORD 时 warn（token 与密码同值，无轮换）
   if (isAuthEnabled(config) && config.auth.token === config.auth.password) {

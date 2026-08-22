@@ -8,6 +8,16 @@ import fs from "fs";
 import path from "path";
 import type { AppConfig } from "./config.js";
 
+/** 路径段级 `..`，避免 `foo..bar.txt` 被误伤。 */
+function hasParentPathSegment(normalizedPosix: string): boolean {
+  return normalizedPosix.split("/").includes("..");
+}
+
+/** Windows 大小写不敏感：比较知识库前缀前先小写化。 */
+function posixRelLower(rel: string): string {
+  return rel.replace(/\\/g, "/").toLowerCase();
+}
+
 /** 校验绝对路径必须位于 projectRoot 之内，否则抛错。 */
 export function assertPathWithinProjectRoot(config: AppConfig, absPath: string): void {
   const root = path.resolve(config.projectRoot);
@@ -25,7 +35,7 @@ export function assertPathWithinProjectRoot(config: AppConfig, absPath: string):
  */
 export function resolveSafePath(config: AppConfig, relPath: string): string {
   const normalized = relPath.replace(/\\/g, "/").replace(/^\/+/, "");
-  if (normalized.includes("..")) throw new Error("路径不允许包含 ..");
+  if (hasParentPathSegment(normalized)) throw new Error("路径不允许包含 ..");
   // 拒绝绝对路径（Windows 盘符 / UNC / Unix 根）
   if (/^[a-zA-Z]:[\\/]/.test(normalized) || /^[\\/]/.test(normalized) || normalized.startsWith("//")) {
     throw new Error(`路径不允许为绝对路径：${relPath}`);
@@ -53,7 +63,7 @@ export function assertPathWithinDir(dir: string, absPath: string): void {
  */
 export function resolveWithinDir(dir: string, relPath: string): string {
   const normalized = String(relPath).replace(/\\/g, "/").replace(/^\/+/, "");
-  if (normalized.includes("..")) throw new Error("路径不允许包含 ..");
+  if (hasParentPathSegment(normalized)) throw new Error("路径不允许包含 ..");
   if (/^[a-zA-Z]:[\\/]/.test(normalized) || /^[\\/]/.test(normalized) || normalized.startsWith("//")) {
     throw new Error(`路径不允许为绝对路径：${relPath}`);
   }
@@ -90,8 +100,9 @@ export function resolveRealWriteTarget(absPath: string): string {
 export function assertAbsNotKnowledgeCore(config: AppConfig, absPath: string): void {
   const rel = path.relative(path.resolve(config.projectRoot), path.resolve(absPath)).replace(/\\/g, "/");
   if (rel.startsWith("..")) return;
-  const underContent = rel === "content" || rel.startsWith("content/");
-  const underUploads = rel === "content/uploads" || rel.startsWith("content/uploads/");
+  const relNorm = posixRelLower(rel);
+  const underContent = relNorm === "content" || relNorm.startsWith("content/");
+  const underUploads = relNorm === "content/uploads" || relNorm.startsWith("content/uploads/");
   if (underContent && !underUploads) {
     throw new Error(
       `禁止写入知识库路径 ${rel}：文章须走 post_create/post_update；建库/改首页走 garden_*；About 禁止 AI 写；仅 content/uploads/ 可经 write_file 写`,
@@ -116,13 +127,14 @@ export function assertWritePathSafe(config: AppConfig, absPath: string): void {
 export function assertWorkspacePathAllowed(config: AppConfig, workspacePath: string): void {
   const normalized = String(workspacePath ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
   if (!normalized) throw new Error("Workspace path 不能为空");
-  if (normalized.includes("..")) throw new Error("Workspace path 不允许包含 ..");
+  if (hasParentPathSegment(normalized)) throw new Error("Workspace path 不允许包含 ..");
   const abs = path.isAbsolute(normalized)
     ? path.resolve(normalized)
     : resolveSafePath(config, normalized);
   assertWritePathSafe(config, abs);
   const rel = path.relative(path.resolve(config.projectRoot), path.resolve(abs)).replace(/\\/g, "/");
-  if (rel === "config" || rel.startsWith("config/agents") || rel.startsWith("config/skills")) {
+  const relNorm = posixRelLower(rel);
+  if (relNorm === "config" || relNorm.startsWith("config/agents") || relNorm.startsWith("config/skills")) {
     throw new Error(`Workspace path 禁止指向 Agent 配置区：${rel}`);
   }
 }
