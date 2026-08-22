@@ -309,6 +309,11 @@ class SessionMessageStore {
   };
 
   /** 确保该会话的 SSE 已连接（引用计数，幂等）。多个组件 watch 同一 session 只开一个 EventSource。 */
+  /** 单测：当前 session 的 EventSource 引用计数（0 = 已关闭）。 */
+  getWatchRefcount(sessionId: string): number {
+    return this.sessionRefcounts.get(sessionId) ?? 0;
+  }
+
   watchSession(sessionId: string): void {
     const count = this.sessionRefcounts.get(sessionId) ?? 0;
     this.sessionRefcounts.set(sessionId, count + 1);
@@ -456,6 +461,11 @@ export function __messageFieldsEqualForTests(a: ChatMessage, b: ChatMessage): bo
   return messageFieldsEqual(a, b);
 }
 
+/** 单测：watch/close 必须配对，否则 EventSource 泄漏 */
+export function __sessionWatchRefcountForTests(sessionId: string): number {
+  return getStore().getWatchRefcount(sessionId);
+}
+
 const EMPTY_ARRAY: ChatMessage[] = [];
 
 export type UseSessionMessagesResult = {
@@ -562,6 +572,8 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
 
     const cached = store.getMessages(sessionId);
     const already = hydratedSessionsGlobal.has(sessionId) || cached.length > 0;
+    let cancelled = false;
+
     if (already) {
       // isMessagesHydrated 已由 global/cache 派生为 true，无需 effect 内同步 setState
       (async () => {
@@ -569,44 +581,45 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
           const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
             utilsRef.current.message.listForChat.fetch(opts),
           );
+          if (cancelled) return;
           if (nextCursor !== undefined) {
             cursorRef.current = nextCursor ?? undefined;
             setHasOlderMessages(!!nextCursor);
           }
         } catch (err) {
+          if (cancelled) return;
           // 后台刷新失败仍标 hydrated（已有 cache）；必须打日志，禁止静默假死难查
           console.warn("[chat] hydrate refresh failed", sessionId, err);
           streamLifecycleActions.hydrateDone(sessionId);
         }
       })().catch((err) => {
-        console.warn("[chat] hydrate refresh outer", sessionId, err);
+        if (!cancelled) console.warn("[chat] hydrate refresh outer", sessionId, err);
       });
-      return;
+    } else {
+      // 冷会话：保持 hydratedForSessionId !== sessionId，直到 fetch 完成
+      (async () => {
+        try {
+          const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
+            utilsRef.current.message.listForChat.fetch(opts),
+          );
+          if (cancelled) return;
+          cursorRef.current = nextCursor ?? undefined;
+          setHasOlderMessages(!!nextCursor);
+          setHydratedForSessionId(sessionId);
+        } catch (err) {
+          console.warn(`[useSessionMessages] hydrate ${sessionId} 失败:`, err);
+          if (!cancelled) setHydratedForSessionId(sessionId);
+          streamLifecycleActions.hydrateDone(sessionId);
+        }
+      })().catch((err) => {
+        console.warn(`[useSessionMessages] hydrate outer ${sessionId}:`, err);
+      });
     }
 
-    // 冷会话：保持 hydratedForSessionId !== sessionId，直到 fetch 完成
-    let cancelled = false;
-    (async () => {
-      try {
-        const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
-          utilsRef.current.message.listForChat.fetch(opts),
-        );
-        if (cancelled) return;
-        cursorRef.current = nextCursor ?? undefined;
-        setHasOlderMessages(!!nextCursor);
-        setHydratedForSessionId(sessionId);
-      } catch (err) {
-        console.warn(`[useSessionMessages] hydrate ${sessionId} 失败:`, err);
-        if (!cancelled) setHydratedForSessionId(sessionId);
-        streamLifecycleActions.hydrateDone(sessionId);
-      }
-    })().catch((err) => {
-      console.warn(`[useSessionMessages] hydrate outer ${sessionId}:`, err);
-    });
     return () => {
       cancelled = true;
-      // 根因修复：切走时关闭旧 session 的 EventSource，防止 HTTP/1.1 6 连接上限耗尽
-      // 导致后续 session 的 listForChat fetch 排队挂起 → 永久转圈
+      // watch/close 必须配对：已水合分支也曾 watchSession +1，裸 return 会泄漏 EventSource
+      // → HTTP/1.1 同源 6 连接耗尽 → 后续 listForChat 排队挂起、页面永久转圈
       store.closeSessionWatch(sessionId);
     };
   }, [sessionId, store]);

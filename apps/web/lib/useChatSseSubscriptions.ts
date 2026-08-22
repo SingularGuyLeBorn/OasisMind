@@ -39,6 +39,8 @@ export interface UseChatSseSubscriptionsParams {
   onFocusSession?: (sessionId: string) => void;
   /** 后端起流或异步投递完成时触发，用于即时挂接前端流 */
   onSessionRunStarted?: (sessionId: string) => void;
+  /** SSE 表明会话消息可能已变（起流/投递/树更新）时兜底水合，禁止只靠 F5 */
+  onNeedHydrate?: (sessionId: string) => void | Promise<void>;
 }
 
 export function useChatSseSubscriptions({
@@ -53,8 +55,13 @@ export function useChatSseSubscriptions({
   setRotateBanner,
   onFocusSession,
   onSessionRunStarted,
+  onNeedHydrate,
 }: UseChatSseSubscriptionsParams) {
   const utils = trpc.useUtils();
+  const onNeedHydrateRef = useRef(onNeedHydrate);
+  useEffect(() => {
+    onNeedHydrateRef.current = onNeedHydrate;
+  }, [onNeedHydrate]);
 
   const extraWatchedSessionsRef = useRef<Set<string>>(new Set());
   const watchedKey = (watchedSessionIds ?? []).filter(Boolean).sort().join(",");
@@ -90,6 +97,12 @@ export function useChatSseSubscriptions({
       }
     };
 
+    const requestHydrate = (sid: string) => {
+      const fn = onNeedHydrateRef.current;
+      if (!fn || !sid) return;
+      Promise.resolve(fn(sid)).catch(logQueryCatch);
+    };
+
     const cleanups: Array<() => void> = [];
     for (const sid of sessionIds) {
       // 确保该 session 已 watch（引用计数 +1），并注册额外事件监听
@@ -108,6 +121,7 @@ export function useChatSseSubscriptions({
         }
         refreshAsync({ heavy: true, sessionId: targetSid });
         if (onSessionRunStarted) onSessionRunStarted(targetSid);
+        requestHydrate(targetSid);
       });
       register("session_run_started", (ev) => {
         let targetSid = sid;
@@ -127,6 +141,7 @@ export function useChatSseSubscriptions({
         // 与 async_delivery 同口径：必须 resume 挂 agent 流，否则 QQ/cron 等服务端起流
         // 只有用户气泡（message_upserted），assistant live/终态只能靠 F5 hydrate。
         if (onSessionRunStarted) onSessionRunStarted(targetSid);
+        requestHydrate(targetSid);
       });
       register("async_job_update", (ev) => {
         let status: string | undefined;

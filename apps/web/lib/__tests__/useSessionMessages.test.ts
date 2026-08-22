@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   __resetSessionMessageStoreForTests,
   __messageFieldsEqualForTests,
+  __sessionWatchRefcountForTests,
   sessionMessagesStore,
 } from "@/lib/useSessionMessages";
 import type { ChatMessage } from "@oasismind/shared";
@@ -126,5 +127,31 @@ describe("useSessionMessages / messageFieldsEqual", () => {
     const list = sessionMessagesStore.getMessages("s1");
     expect(list).toHaveLength(1);
     expect(list[0]?.source).toBe("sub");
+  });
+
+  it("watchSession / closeSessionWatch 引用计数配对，归零才关连接", () => {
+    class FakeEventSource {
+      closed = false;
+      addEventListener() {}
+      removeEventListener() {}
+      close() {
+        this.closed = true;
+      }
+    }
+    const Original = globalThis.EventSource;
+    (globalThis as unknown as { EventSource: typeof EventSource }).EventSource =
+      FakeEventSource as unknown as typeof EventSource;
+    try {
+      sessionMessagesStore.watchSession("s-watch");
+      expect(__sessionWatchRefcountForTests("s-watch")).toBe(1);
+      sessionMessagesStore.watchSession("s-watch");
+      expect(__sessionWatchRefcountForTests("s-watch")).toBe(2);
+      sessionMessagesStore.closeSessionWatch("s-watch");
+      expect(__sessionWatchRefcountForTests("s-watch")).toBe(1);
+      sessionMessagesStore.closeSessionWatch("s-watch");
+      expect(__sessionWatchRefcountForTests("s-watch")).toBe(0);
+    } finally {
+      (globalThis as unknown as { EventSource: typeof EventSource }).EventSource = Original;
+    }
   });
 });
