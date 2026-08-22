@@ -293,7 +293,27 @@ export class HeartbeatEngine {
       for (const agent of agents) {
         if (await this.refreshAborted(gen)) return;
         const hb = this.parseHeartbeat(agent.heartbeat);
-        if (!hb?.enabled || !hb.cron || !cron.validate(hb.cron)) continue;
+        if (!hb?.enabled || !hb.cron) continue;
+        if (!cron.validate(hb.cron)) {
+          console.warn(
+            `  💓 [HeartbeatEngine] Agent ${agent.name} (${agent.id}) cron 非法：${hb.cron}，心跳未挂载`,
+          );
+          this.services.log
+            .create({
+              level: "warn",
+              component: "HeartbeatEngine",
+              event: "heartbeat_cron_invalid",
+              message: `Agent ${agent.name} 心跳 cron 非法：${hb.cron}`,
+              metadata: { agentId: agent.id, cron: hb.cron },
+            })
+            .catch((err: unknown) => {
+              console.warn(
+                `  💓 [HeartbeatEngine] 写 heartbeat_cron_invalid 失败:`,
+                err instanceof Error ? err.message : err,
+              );
+            });
+          continue;
+        }
 
         const job = cron.schedule(hb.cron, () => {
           // P2 可观测性：心跳非请求路径，每次触发建独立 trace_id 作用域贯穿整段决策+执行
@@ -682,10 +702,18 @@ export class HeartbeatEngine {
     const pendingApprovalScopes = pendingApprovalRows.map((r) => {
       let scope = r.decisionScope;
       if (!scope) {
-        const args =
-          typeof r.args === "string"
-            ? (JSON.parse(r.args) as Record<string, unknown>)
-            : ((r.args as Record<string, unknown>) ?? {});
+        let args: Record<string, unknown> = {};
+        try {
+          args =
+            typeof r.args === "string"
+              ? (JSON.parse(r.args) as Record<string, unknown>)
+              : ((r.args as Record<string, unknown>) ?? {});
+        } catch (err) {
+          console.warn(
+            `  💓 [HeartbeatEngine] pending 审批 ${r.id} args 无法解析，跳过 scope 派生:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
         scope = deriveDecisionScope(r.toolName, args);
       }
       return { approvalId: r.id, scope };
