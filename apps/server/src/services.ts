@@ -442,8 +442,10 @@ export abstract class FileSyncService<
       const provisional = this.formatEntity(this.buildProvisionalRaw(data));
       this.writeFile(provisional);
       provisionalWritten = provisional;
+      let dbCreated = false;
       try {
         const raw = await this.delegate.create({ data });
+        dbCreated = true;
         const entity = this.formatEntity(raw);
         await this.syncFileMetaToDb(entity);
         await this.afterCreate(entity, input);
@@ -456,8 +458,8 @@ export abstract class FileSyncService<
           durationMs: Date.now() - start,
         });
       } catch (dbError) {
-        // 用实体补偿删除（Post 多花园时仅凭 slug 无法定位文件）
-        if (provisionalWritten) {
+        // 仅 DB 建行失败才补偿删文件。建行成功后 afterCreate 失败不得删——否则 DB 有行、磁盘无文件。
+        if (provisionalWritten && !dbCreated) {
           try {
             this.deleteFile(provisionalWritten);
           } catch {

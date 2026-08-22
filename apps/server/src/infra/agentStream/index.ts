@@ -343,23 +343,18 @@ export async function chatAgentStream(
     });
 
     import("../agentEvolution.js")
-      .then(({ accumulateExperience }) =>
-        accumulateExperience(services.prisma, services, agent.id, sessionId!, result, {
+      .then(async ({ accumulateExperience, isRunSuccess }) => {
+        const ok = isRunSuccess(result);
+        await accumulateExperience(services.prisma, services, agent.id, sessionId!, result, {
           message: prepared!.messageText,
           trigger: "user",
           workspaceId: (agent as { workspaceId?: string | null }).workspaceId ?? null,
-        }, Date.now() - start),
-      )
+        }, Date.now() - start);
+        const { applyMemoryRunOutcome } = await import("../memoryFeedback.js");
+        await applyMemoryRunOutcome(services, result.runId, ok);
+      })
       .catch((err) => {
-        console.warn("[agentStream] accumulateExperience 失败", err);
-      });
-
-    import("../memoryFeedback.js")
-      .then(({ applyMemoryRunOutcome }) =>
-        applyMemoryRunOutcome(services, result.runId, !!result.content.trim()),
-      )
-      .catch((err) => {
-        console.warn("[agentStream] applyMemoryRunOutcome 失败", err);
+        console.warn("[agentStream] accumulateExperience/memoryFeedback 失败", err);
       });
 
     try {

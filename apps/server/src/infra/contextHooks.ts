@@ -185,8 +185,8 @@ export function ensureBuiltinContextHooks(): void {
       });
       // 把本轮检索命中的记忆 id 登记到 runId，供 run 终态正确性反馈使用
       if (retrievedIds.length > 0 && input.runId) {
-        const { recordRetrievedForRun } = await import("./memoryFeedback.js");
-        recordRetrievedForRun(input.runId, retrievedIds);
+        const { persistRetrievedForRun } = await import("./memoryFeedback.js");
+        await persistRetrievedForRun(input.ctx.services.prisma, input.runId, retrievedIds);
       }
     },
   });

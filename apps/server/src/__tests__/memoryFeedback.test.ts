@@ -16,8 +16,11 @@ import { ServiceContainer } from "../infra/serviceContainer.js";
 import { createMemoryRepository } from "../infra/memoryRepository.js";
 import {
   applyMemoryRunOutcome,
+  persistRetrievedForRun,
   recordRetrievedForRun,
+  __clearRetrievedRegistryForTests,
 } from "../infra/memoryFeedback.js";
+import { isRunSuccess } from "../infra/agentEvolution.js";
 import { MEMORY_TYPES } from "@oasismind/shared";
 import type { MemoryRepository } from "../infra/memoryRepository.js";
 
@@ -168,5 +171,47 @@ describe("memoryFeedback", () => {
     // 第二次：registry 已清空，不应再加分
     await applyMemoryRunOutcome(services, runId, true);
     expect(await getStrength(agentMem.id)).toBeCloseTo(0.65);
+  });
+
+  it("T5: 清空内存登记后仍能从 Run.output 奖惩（模拟重启）", async () => {
+    const agentMem = await track(
+      await repo.write({
+        content: `${RUN}-persist-agent`,
+        type: MEMORY_TYPES.SEMANTIC,
+        scope: "global",
+        keywords: [RUN],
+        attribution: "agent",
+        strength: 0.6,
+      }),
+    );
+    const run = await prisma.run.create({
+      data: { status: "running", input: { t: "memfb-persist" }, output: { phase: "llm" } },
+    });
+    await persistRetrievedForRun(prisma, run.id, [agentMem.id]);
+    __clearRetrievedRegistryForTests();
+    await applyMemoryRunOutcome(services, run.id, true);
+    expect(await getStrength(agentMem.id)).toBeCloseTo(0.65);
+    const after = await prisma.run.findUnique({ where: { id: run.id }, select: { output: true } });
+    expect(after?.output).toEqual({ phase: "llm" });
+    await prisma.run.delete({ where: { id: run.id } }).catch(() => undefined);
+  });
+
+  it("T6: isRunSuccess 与经验积累口径一致——report_back failed 即使有正文也算失败", () => {
+    expect(isRunSuccess({ content: "已完成", toolCalls: [] })).toBe(true);
+    expect(isRunSuccess({ content: "   ", toolCalls: [] })).toBe(false);
+    expect(
+      isRunSuccess({
+        content: "子任务失败说明",
+        toolCalls: [
+          {
+            id: "1",
+            name: "agent_report_back",
+            args: {},
+            result: { outcome: "failed" },
+            kind: "tool",
+          },
+        ],
+      }),
+    ).toBe(false);
   });
 });

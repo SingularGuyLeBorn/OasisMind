@@ -93,6 +93,29 @@ describe("D1 FileSync 双写顺序", () => {
     expect(fs.existsSync(newPath)).toBe(false);
   });
 
+  it("create：DB 建行成功后 afterCreate 失败不得删文件", async () => {
+    const name = `${RUN}-aftercreate-fail`;
+    const spy = vi.spyOn(services.agent as unknown as { afterCreate: () => Promise<void> }, "afterCreate")
+      .mockRejectedValue(new Error("模拟 afterCreate 失败"));
+
+    const result = await services.agent.create({
+      name,
+      description: "d1",
+      model: "deepseek-chat",
+      systemPrompt: "test",
+      tools: [],
+    });
+    spy.mockRestore();
+    expect(result.success).toBe(false);
+
+    const row = await prisma.agent.findFirst({ where: { name } });
+    expect(row).not.toBeNull();
+    createdAgentIds.push(row!.id);
+    const slug = `${name}-${row!.id.slice(-6)}`;
+    const fp = path.join(config.configPaths.agents, `${slug}.md`);
+    expect(fs.existsSync(fp)).toBe(true);
+  });
+
   it("delete：文件删除失败时 DB 行仍在", async () => {
     const name = `${RUN}-del-fail`;
     const created = await services.agent.create({

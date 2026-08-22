@@ -70,6 +70,16 @@ function bareToolName(name: string): string {
   return name.startsWith("native:") ? name.slice("native:".length) : name;
 }
 
+/** 经验积累与记忆奖惩共用：有正文且 report_back 未标 failed/blocked 才算成功。 */
+export function isRunSuccess(result: {
+  content?: string | null;
+  toolCalls?: StoredToolCall[];
+}): boolean {
+  const report = extractReportBackContract(result.toolCalls ?? []);
+  const outcomeFailed = report?.outcome === "failed" || report?.outcome === "blocked";
+  return Boolean(result.content?.trim()) && !outcomeFailed;
+}
+
 /** 从本轮工具结果抽出最近一次 report_back 出处合同（无则 null） */
 export function extractReportBackContract(toolCalls: StoredToolCall[]): {
   evidenceStatus?: ReportEvidenceStatus;
@@ -167,8 +177,7 @@ export async function accumulateExperience(
     const tools = result.toolCalls.filter((t) => t.kind === "tool");
     const toolNames = tools.map((t) => t.name);
     const report = extractReportBackContract(result.toolCalls);
-    const outcomeFailed = report?.outcome === "failed" || report?.outcome === "blocked";
-    const success = !!result.content.trim() && !outcomeFailed;
+    const success = isRunSuccess(result);
     const attribution = success ? null : attributeFailure(result.toolCalls, { producedOutput: success });
     const unverified = report?.evidenceStatus === "none";
 

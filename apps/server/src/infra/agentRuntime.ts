@@ -255,34 +255,31 @@ export async function chatAgent(
 
     // Hermes：有工具调用时沉淀 experience（与 agentStream onDone 同语义）
     import("./agentEvolution.js")
-      .then(({ accumulateExperience }) =>
-        accumulateExperience(
+      .then(async ({ accumulateExperience, isRunSuccess }) => {
+        const payload = {
+          content: result.content,
+          toolCalls: result.toolCalls ?? [],
+          tokenUsage: result.tokenUsage ?? null,
+          roundsUsed: result.roundsUsed ?? 0,
+        };
+        const ok = isRunSuccess(payload);
+        await accumulateExperience(
           services.prisma,
           services,
           agent.id,
           sessionId!,
-          {
-            content: result.content,
-            toolCalls: result.toolCalls ?? [],
-            tokenUsage: result.tokenUsage ?? null,
-            roundsUsed: result.roundsUsed ?? 0,
-          },
+          payload,
           {
             message: displayText,
             trigger: "chat",
             workspaceId: agent.workspaceId ?? null,
           },
           Date.now() - start,
-        ),
-      )
+        );
+        const { applyMemoryRunOutcome } = await import("./memoryFeedback.js");
+        await applyMemoryRunOutcome(services, result.runId, ok);
+      })
       .catch((err) => { console.warn("[agentRuntime.ts] best-effort failed:", err instanceof Error ? err.message : err); });
-
-    // 记忆正确性反馈：对本次 run 检索过的 agent 推断记忆做 strength 奖惩
-    import("./memoryFeedback.js")
-      .then(({ applyMemoryRunOutcome }) =>
-        applyMemoryRunOutcome(services, result.runId, !!result.content.trim()),
-      )
-      .catch((err) => { console.warn("[agentRuntime.ts] memoryFeedback best-effort failed:", err instanceof Error ? err.message : err); });
 
     return success({
       data: {
