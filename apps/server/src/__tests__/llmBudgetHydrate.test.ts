@@ -15,6 +15,7 @@ import {
   getLlmBudgetStatus,
   resetLlmBudgetForTests,
   flushLlmBudgetForTests,
+  localDateKey,
 } from "../infra/llmBudget.js";
 import type { AppConfig } from "../infra/config.js";
 
@@ -31,7 +32,7 @@ describe("C5 llmBudget hydrate 合并", () => {
   beforeEach(() => {
     resetLlmBudgetForTests();
     tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "om-budget-"));
-    fs.mkdirSync(path.join(tmpRoot, ".dev-log"), { recursive: true });
+    fs.mkdirSync(path.join(tmpRoot, "data"), { recursive: true });
   });
 
   afterEach(async () => {
@@ -42,8 +43,8 @@ describe("C5 llmBudget hydrate 合并", () => {
   });
 
   it("磁盘有消耗、hydrate 窗口内新消耗 → 合并后不丢额度", async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const file = path.join(tmpRoot, ".dev-log", "llm-budget.json");
+    const today = localDateKey();
+    const file = path.join(tmpRoot, "data", "llm-budget.json");
     fs.writeFileSync(file, JSON.stringify({ date: today, spentUsd: 5 }, null, 2), "utf8");
 
     let releaseRead!: () => void;
@@ -76,8 +77,8 @@ describe("C5 llmBudget hydrate 合并", () => {
   });
 
   it("启动 hydrate 幂等：二次调用不覆盖已合并状态", async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const file = path.join(tmpRoot, ".dev-log", "llm-budget.json");
+    const today = localDateKey();
+    const file = path.join(tmpRoot, "data", "llm-budget.json");
     fs.writeFileSync(file, JSON.stringify({ date: today, spentUsd: 3 }, null, 2), "utf8");
 
     const config = makeConfig(tmpRoot);
@@ -88,5 +89,23 @@ describe("C5 llmBudget hydrate 合并", () => {
     const spent = getLlmBudgetStatus(config).spentUsd;
     await hydrateLlmBudget(tmpRoot);
     expect(getLlmBudgetStatus(config).spentUsd).toBe(spent);
+  });
+
+  it("日预算键用本地日历日，不用 UTC ISO 日期", () => {
+    const utc = new Date(Date.UTC(2026, 7, 22, 22, 0, 0)); // UTC 22:00 = 次日 06:00 CST
+    const local = localDateKey(utc);
+    expect(local).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(local).not.toBe("use-iso");
+    // 在东八区本地日应是 23；UTC ISO 仍是 22。用偏移量断言，不绑死时区。
+    const isoUtc = utc.toISOString().slice(0, 10);
+    if (utc.getTimezoneOffset() !== 0) {
+      expect(local === isoUtc || local !== isoUtc).toBe(true);
+      const expected = [
+        utc.getFullYear(),
+        String(utc.getMonth() + 1).padStart(2, "0"),
+        String(utc.getDate()).padStart(2, "0"),
+      ].join("-");
+      expect(local).toBe(expected);
+    }
   });
 });

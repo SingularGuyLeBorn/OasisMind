@@ -4,6 +4,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { getAppConfig } from "../config.js";
 
 function resolveProjectRoot(): string {
   return (
@@ -110,7 +111,7 @@ export function planImReply(opts: {
 }
 
 export function writeThinkingTxtFile(fileName: string, content: string): string {
-  const dir = path.resolve(resolveProjectRoot(), "content/uploads/qq-text");
+  const dir = path.join(getAppConfig().contentPaths.uploads, "qq-text");
   fs.mkdirSync(dir, { recursive: true });
   const safe = fileName.replace(/[^\w.\-]+/g, "_");
   const abs = path.join(dir, safe);

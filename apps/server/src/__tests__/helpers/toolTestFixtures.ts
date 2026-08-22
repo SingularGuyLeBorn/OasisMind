@@ -227,6 +227,9 @@ export function createTestConfig(
       },
       trust: {
         agentInitialStrength: 0.7,
+        experienceSuccess: 1,
+        experienceUnverified: 0.7,
+        experienceFailed: 0.5,
         ...(overrides?.memory?.trust ?? {}),
       },
       embedding: {

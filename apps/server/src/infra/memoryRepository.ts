@@ -82,6 +82,8 @@ export interface MemoryReadQuery {
   /** 按 id 列表直取（忽略 keyword；仍受 status/type/validity 过滤） */
   ids?: string[];
   limit?: number;
+  /** false = 不去刷新 lastAccessedAt（writeDedup 邻居查询） */
+  touch?: boolean;
 }
 
 /** 记忆写入方的身份（提前声明供 supersedeUpdate 使用） */
@@ -408,7 +410,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
           .sort((a, b) => b.score - a.score)
           .slice(0, limit)
           .map((x) => x.item);
-        await this.touchRetrieved(items, now);
+        if (query.touch !== false) await this.touchRetrieved(items, now);
         return items;
       }
     }
@@ -452,7 +454,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
       .slice(0, limit)
       .map((x) => x.item);
 
-    await this.touchRetrieved(items, now);
+    if (query.touch !== false) await this.touchRetrieved(items, now);
     return items;
   }
 
@@ -527,6 +529,7 @@ export class PrismaMemoryRepository implements MemoryRepository {
         scopes: [scope],
         types: [input.type],
         limit: neighborLimit,
+        touch: false,
       });
       if (neighbors.length > 0) {
         const verdict = await judgeMemoryWrite(this.config!, {

@@ -33,4 +33,4 @@ COPY --from=build /app/scripts ./scripts
 
 EXPOSE 3000 3010
 
-CMD ["sh", "-c", "pnpm --filter @oasismind/server exec prisma db push && pnpm db:sync && (pnpm --filter @oasismind/server start &) && pnpm --filter @oasismind/web start -p 3000"]
+CMD ["sh", "/app/scripts/docker-start.sh"]

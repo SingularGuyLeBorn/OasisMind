@@ -163,6 +163,9 @@ memory:
   # 被后续 run 验证有效后 strength 提升，失败则下降。用户陈述/工具显式指定的强度不受影响。
   trust:
     agentInitialStrength: 0.7
+    experienceSuccess: 1.0
+    experienceUnverified: 0.7
+    experienceFailed: 0.5
   embedding:
     enabled: false
     # OpenAI 兼容端点（/embeddings）；env EMBEDDING_BASE_URL / EMBEDDING_API_KEY / EMBEDDING_MODEL 可覆盖

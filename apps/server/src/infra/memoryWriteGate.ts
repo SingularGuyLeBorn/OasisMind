@@ -2,11 +2,12 @@
  * Memory 写入侧语义判定（Mem0 四元判定）
  *
  * 在写入记忆前用轻量 LLM 判定：ADD / UPDATE / NOOP / CONFLICT。
- * 失败/超时/解析异常一律回退 ADD，永不抛异常。
+ * 解析失败会重试一次；仍失败 / 超时 / 异常一律回退 ADD，永不抛异常。
  *
  * 叶子纪律：不 import loop/reactLoop/agentTools/nativeTools/memoryRepository。
  */
 
+import { z } from "zod";
 import type { AppConfig } from "./config.js";
 import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
@@ -22,6 +23,14 @@ interface JudgeInput {
   type: string;
   neighbors: { id: string; content: string }[];
 }
+
+const VerdictSchema = z.object({
+  action: z.enum(["ADD", "UPDATE", "NOOP", "CONFLICT"]),
+  target: z.coerce.number().int().optional(),
+  reason: z.string().optional(),
+});
+
+const PARSE_ATTEMPTS = 2;
 
 const SYSTEM_PROMPT = `你是记忆写入判官。给定一条【新事实】和若干条【已有记忆】（编号 1..N），判断新事实应如何处理，只输出一行 JSON，不要任何解释：{"action":"ADD|UPDATE|NOOP|CONFLICT","target":编号或0,"reason":"一句话"}。
 
@@ -41,6 +50,53 @@ function extractJsonBlock(raw: string): string | null {
 
 function normalizeNeighborContent(content: string): string {
   return content.replace(/\r?\n/g, " ").trim().slice(0, 200);
+}
+
+async function judgeOnce(
+  config: AppConfig,
+  model: string,
+  userMessage: string,
+  timeoutMs: number,
+  neighbors: { id: string; content: string }[],
+): Promise<MemoryWriteVerdict> {
+  const result = await Promise.race([
+    resilientChatCompletion({
+      config,
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userMessage },
+      ],
+      maxTokens: 150,
+      temperature: 0.3,
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("记忆写入判定超时")), timeoutMs),
+    ),
+  ]);
+
+  const raw = typeof result.content === "string" ? result.content : "";
+  const block = extractJsonBlock(raw);
+  if (!block) {
+    throw new Error("未解析到 JSON");
+  }
+  const rawObj = JSON.parse(block) as Record<string, unknown>;
+  const parsed = VerdictSchema.parse({
+    ...rawObj,
+    action: String(rawObj.action ?? "ADD").toUpperCase(),
+  });
+  if (parsed.action === "ADD") {
+    return { action: "ADD", reason: parsed.reason };
+  }
+  const targetIndex = parsed.target ?? 0;
+  if (targetIndex < 1 || targetIndex > neighbors.length) {
+    throw new Error(`${parsed.action} 但 target 越界/缺失`);
+  }
+  return {
+    action: parsed.action,
+    targetId: neighbors[targetIndex - 1].id,
+    reason: parsed.reason,
+  };
 }
 
 export async function judgeMemoryWrite(
@@ -67,58 +123,18 @@ export async function judgeMemoryWrite(
     ...input.neighbors.map((n, idx) => `${idx + 1}. id=${n.id} ${normalizeNeighborContent(n.content)}`),
   ].join("\n");
 
-  try {
-    const timeoutMs = cfg.timeoutMs ?? 4000;
-    const result = await Promise.race([
-      resilientChatCompletion({
-        config,
-        model,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMessage },
-        ],
-        maxTokens: 150,
-        temperature: 0.3,
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("记忆写入判定超时")), timeoutMs),
-      ),
-    ]);
-
-    const raw = typeof result.content === "string" ? result.content : "";
-    const block = extractJsonBlock(raw);
-    if (!block) {
-      console.warn("[memoryWriteGate] 未解析到 JSON，回退 ADD");
-      return { action: "ADD" };
+  const timeoutMs = cfg.timeoutMs ?? 4000;
+  let lastMessage = "";
+  for (let attempt = 1; attempt <= PARSE_ATTEMPTS; attempt++) {
+    try {
+      return await judgeOnce(config, model, userMessage, timeoutMs, input.neighbors);
+    } catch (err) {
+      lastMessage = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[memoryWriteGate] 判定第 ${attempt}/${PARSE_ATTEMPTS} 次失败：${lastMessage}`,
+      );
     }
-
-    const parsed = JSON.parse(block);
-    const action = String(parsed.action ?? "ADD").toUpperCase();
-    const targetIndex = Number(parsed.target ?? 0);
-    const reason = typeof parsed.reason === "string" ? parsed.reason : undefined;
-
-    if (!["ADD", "UPDATE", "NOOP", "CONFLICT"].includes(action)) {
-      console.warn(`[memoryWriteGate] 非法 action: ${action}，回退 ADD`);
-      return { action: "ADD", reason };
-    }
-
-    if (action === "ADD") {
-      return { action: "ADD", reason };
-    }
-
-    if (
-      !Number.isInteger(targetIndex) ||
-      targetIndex < 1 ||
-      targetIndex > input.neighbors.length
-    ) {
-      console.warn(`[memoryWriteGate] ${action} 但 target 越界/缺失，回退 ADD`);
-      return { action: "ADD", reason };
-    }
-
-    return { action: action as Exclude<MemoryWriteVerdict["action"], "ADD">, targetId: input.neighbors[targetIndex - 1].id, reason };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.warn(`[memoryWriteGate] 判定失败，回退 ADD：${message}`);
-    return { action: "ADD" };
   }
+  console.warn(`[memoryWriteGate] 判定失败，回退 ADD：${lastMessage}`);
+  return { action: "ADD" };
 }

@@ -213,7 +213,9 @@ async function runWatch(): Promise<void> {
     const watcher = chokidar.watch(contentDir, {
       ignored: (p: string) => {
         if (path.basename(p) === "_garden.md") return false;
-        return /(^|[/\\])(\.|_)/.test(p);
+        const rel = path.relative(contentDir, p);
+        if (!rel || rel === ".") return false;
+        return /(^|[/\\])(\.|_)/.test(rel);
       },
       persistent: true,
       ignoreInitial: true,

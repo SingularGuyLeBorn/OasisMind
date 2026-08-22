@@ -213,4 +213,37 @@ describe("memoryWriteGate", () => {
     expect(spy).not.toHaveBeenCalled();
     expect(item.id).not.toBe(seed.id);
   });
+
+  it("T8: 首次非法 JSON 后重试成功 → 按二次判定生效，不回退 ADD", async () => {
+    const seed = await seedMemory(`${RUN}-t8-seed-rephrased-original`, MEMORY_TYPES.SEMANTIC, 0.7);
+    const spy = vi.spyOn(resilientLlmClient, "resilientChatCompletion")
+      .mockResolvedValueOnce({
+        content: "这不是 JSON",
+        reasoningContent: null,
+        toolCalls: [],
+        model: "test-model",
+        provider: "test",
+        finishReason: "stop",
+        tokenUsage: { prompt: 10, completion: 5, total: 15 },
+      })
+      .mockResolvedValueOnce({
+        content: JSON.stringify({ action: "NOOP", target: 1 }),
+        reasoningContent: null,
+        toolCalls: [],
+        model: "test-model",
+        provider: "test",
+        finishReason: "stop",
+        tokenUsage: { prompt: 10, completion: 5, total: 15 },
+      });
+
+    const item = await repo.write({
+      content: `${RUN}-t8-seed-rephrased`,
+      type: MEMORY_TYPES.SEMANTIC,
+      scope: "global",
+      keywords: [RUN],
+    });
+
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(item.id).toBe(seed.id);
+  });
 });

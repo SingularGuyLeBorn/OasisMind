@@ -41,12 +41,20 @@ let hydrated = false;
 let hydratePromise: Promise<void> | null = null;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** 本地日历日（不是 UTC），避免 UTC+8 跨日切错预算 */
+export function localDateKey(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 function budgetFile(projectRoot: string) {
-  return path.join(projectRoot, ".dev-log", "llm-budget.json");
+  return path.join(projectRoot, "data", "llm-budget.json");
 }
 
 /**
@@ -209,7 +217,7 @@ export function assertLlmBudget(config: AppConfig) {
         (status.reservedUsd > 0 ? `+预留$${status.reservedUsd.toFixed(2)}` : "") +
         ` / $${status.limitUsd}）。` +
         "请明日再试，或在 .env 提高 LLM_DAILY_BUDGET / 调低 LLM_BLENDED_USD_PER_1K，" +
-        "或删除 .dev-log/llm-budget.json 后重启服务重置当日计数。",
+        "或删除 data/llm-budget.json 后重启服务重置当日计数。",
     );
   }
 }
@@ -266,7 +274,7 @@ let attributionDirty = false;
 let attributionTimer: ReturnType<typeof setTimeout> | null = null;
 
 function attributionFile(projectRoot: string) {
-  return path.join(projectRoot, ".dev-log", "llm-attribution.json");
+  return path.join(projectRoot, "data", "llm-attribution.json");
 }
 
 function ensureAttributionDay() {

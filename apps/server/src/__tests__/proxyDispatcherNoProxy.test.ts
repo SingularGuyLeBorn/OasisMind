@@ -1,9 +1,11 @@
 /**
- * 负向：全局代理不得劫持 loopback（否则 OneBot 回发 502、QQ 只进不出）。
+ * 负向：全局代理不得劫持 loopback（否则本机 webhook / 健康检查会 502）。
+ * 用临时 HTTP 服务代替已退役的 NapCat/OneBot，CI 不再永久 skip。
  */
 
-import { describe, it, expect, afterEach, beforeAll } from "vitest";
-import { ProxyAgent, fetch as undiciFetch, Agent, EnvHttpProxyAgent } from "undici";
+import { createServer, type Server } from "node:http";
+import { describe, it, expect, afterEach, beforeAll, afterAll } from "vitest";
+import { fetch as undiciFetch, Agent, EnvHttpProxyAgent } from "undici";
 import {
   __resetProxyForTests,
   getDirectDispatcher,
@@ -11,24 +13,33 @@ import {
   isLoopbackUrl,
 } from "../infra/proxyDispatcher.js";
 
+function listenLoopback(): Promise<{ server: Server; url: string }> {
+  return new Promise((resolve, reject) => {
+    const server = createServer((req, res) => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, path: req.url }));
+    });
+    server.listen(0, "127.0.0.1", () => {
+      const addr = server.address();
+      if (!addr || typeof addr === "string") {
+        reject(new Error("loopback server 未拿到端口"));
+        return;
+      }
+      resolve({ server, url: `http://127.0.0.1:${addr.port}/health` });
+    });
+    server.on("error", reject);
+  });
+}
+
 describe("proxyDispatcher loopback 绕过", () => {
-  // 集成用例依赖本机 OneBot @ 127.0.0.1:3001（QQ bot 服务）；服务不在时跳过而非报错
-  let onebotUp = false;
+  let loopback: { server: Server; url: string };
+
   beforeAll(async () => {
-    try {
-      const res = await undiciFetch("http://127.0.0.1:3001/get_login_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-        signal: AbortSignal.timeout(2000),
-      });
-      onebotUp = res.status === 200;
-    } catch {
-      onebotUp = false;
-    }
-    if (!onebotUp) {
-      console.warn("[proxyDispatcherNoProxy] OneBot @ 127.0.0.1:3001 不可达，跳过集成用例");
-    }
+    loopback = await listenLoopback();
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => loopback.server.close(() => resolve()));
   });
 
   afterEach(() => {
@@ -45,88 +56,31 @@ describe("proxyDispatcher loopback 绕过", () => {
     expect(isLoopbackUrl("https://api.deepseek.com/v1")).toBe(false);
   });
 
-  it("ProxyAgent 走 Clash 打本机 OneBot → 502；直连 Agent → 200", async (ctx) => {
-    if (!onebotUp) return ctx.skip();
-    const url = "http://127.0.0.1:3001/get_login_info";
-    const body = "{}";
-    const headers = { "Content-Type": "application/json" };
-
-    let viaProxyStatus: number | null = null;
-    try {
-      const viaProxy = await undiciFetch(url, {
-        method: "POST",
-        headers,
-        body,
-        dispatcher: new ProxyAgent("http://127.0.0.1:7890"),
-      });
-      viaProxyStatus = viaProxy.status;
-    } catch {
-      viaProxyStatus = -1; // 代理挂了也算「不能当本机通道」
-    }
-    // Clash 对本机转发常见 502；若本机没开 Clash 则可能连接失败(-1)
-    expect(viaProxyStatus === 502 || viaProxyStatus === -1 || viaProxyStatus === 503).toBe(true);
-
-    const direct = await undiciFetch(url, {
-      method: "POST",
-      headers,
-      body,
-      dispatcher: new Agent(),
-    });
+  it("直连 Agent 能打到本机 loopback", async () => {
+    const direct = await undiciFetch(loopback.url, { dispatcher: new Agent() });
     expect(direct.status).toBe(200);
-    const json = (await direct.json()) as { retcode?: number };
-    expect(json.retcode).toBe(0);
-  }, 15_000);
+    const json = (await direct.json()) as { ok?: boolean };
+    expect(json.ok).toBe(true);
+  });
 
-  it("initGlobalProxy + EnvHttpProxyAgent 对本机 get_login_info 直连成功", async (ctx) => {
-    if (!onebotUp) return ctx.skip();
-    process.env.OM_HTTPS_PROXY = "http://127.0.0.1:7890";
+  it("initGlobalProxy 把 loopback 写进 NO_PROXY，直连 dispatcher 仍通", async () => {
+    process.env.OM_HTTPS_PROXY = "http://127.0.0.1:9";
     __resetProxyForTests();
     const { proxyUrl } = initGlobalProxy();
-    expect(proxyUrl).toBe("http://127.0.0.1:7890");
+    expect(proxyUrl).toBe("http://127.0.0.1:9");
     expect(process.env.NO_PROXY || "").toMatch(/127\.0\.0\.1/);
 
-    // 全局 fetch（无错误 dispatcher）应绕过代理直连本机
-    const res = await fetch("http://127.0.0.1:3001/get_login_info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    });
+    const res = await undiciFetch(loopback.url, { dispatcher: getDirectDispatcher() });
     expect(res.status).toBe(200);
+  });
 
-    // undici.fetch + 直连 Agent（OneBot 正式路径）
-    const res2 = await undiciFetch("http://127.0.0.1:3001/get_login_info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-      dispatcher: getDirectDispatcher(),
-    });
-    expect(res2.status).toBe(200);
-
-    // 负向：Node fetch + dispatcher:Agent 必炸（曾导致 QQ 只进不出）
-    await expect(
-      fetch("http://127.0.0.1:3001/get_login_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-        // @ts-expect-error 错误用法
-        dispatcher: getDirectDispatcher(),
-      }),
-    ).rejects.toThrow(/fetch failed/);
-  }, 15_000);
-
-  it("EnvHttpProxyAgent noProxy 对本机不走代理", async (ctx) => {
-    if (!onebotUp) return ctx.skip();
+  it("EnvHttpProxyAgent noProxy 对本机不走代理", async () => {
     const d = new EnvHttpProxyAgent({
-      httpProxy: "http://127.0.0.1:7890",
-      httpsProxy: "http://127.0.0.1:7890",
+      httpProxy: "http://127.0.0.1:9",
+      httpsProxy: "http://127.0.0.1:9",
       noProxy: "localhost,127.0.0.1,::1",
     });
-    const res = await undiciFetch("http://127.0.0.1:3001/get_login_info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-      dispatcher: d,
-    });
+    const res = await undiciFetch(loopback.url, { dispatcher: d });
     expect(res.status).toBe(200);
-  }, 15_000);
+  });
 });

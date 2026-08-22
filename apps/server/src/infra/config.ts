@@ -93,8 +93,16 @@ const MemoryYamlSchema = z.object({
     .object({
       /** LLM 推断记忆（attribution=agent）的初始强度上限 */
       agentInitialStrength: z.coerce.number().min(0).max(1).default(0.7),
+      experienceSuccess: z.coerce.number().min(0).max(1).default(1),
+      experienceUnverified: z.coerce.number().min(0).max(1).default(0.7),
+      experienceFailed: z.coerce.number().min(0).max(1).default(0.5),
     })
-    .default({ agentInitialStrength: 0.7 }),
+    .default({
+      agentInitialStrength: 0.7,
+      experienceSuccess: 1,
+      experienceUnverified: 0.7,
+      experienceFailed: 0.5,
+    }),
   embedding: z
     .object({
       /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
@@ -471,6 +479,9 @@ export interface AppConfig {
     /** 记忆信任分级 */
     trust: {
       agentInitialStrength: number;
+      experienceSuccess: number;
+      experienceUnverified: number;
+      experienceFailed: number;
     };
     embedding: {
       enabled: boolean;
@@ -631,6 +642,9 @@ export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean })
     let value = trimmed.slice(eq + 1).trim();
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
+    } else {
+      const hash = value.indexOf(" #");
+      if (hash >= 0) value = value.slice(0, hash).trimEnd();
     }
     if (opts?.override && ENV_ISOLATION_KEYS.has(key) && process.env[key] !== undefined) {
       continue;
@@ -1136,6 +1150,9 @@ export function createAppConfig(): AppConfig {
       },
       trust: {
         agentInitialStrength: memoryYaml.trust.agentInitialStrength,
+        experienceSuccess: memoryYaml.trust.experienceSuccess,
+        experienceUnverified: memoryYaml.trust.experienceUnverified,
+        experienceFailed: memoryYaml.trust.experienceFailed,
       },
       embedding: {
         enabled: memoryYaml.embedding.enabled,

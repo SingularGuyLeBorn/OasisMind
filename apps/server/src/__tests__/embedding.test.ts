@@ -31,7 +31,7 @@ function embeddingConfig(over?: Partial<{ enabled: boolean; topK: number }>) {
     memory: {
       queryRewrite: { enabled: false, model: "auto", timeoutMs: 3000 },
       experienceDistill: { enabled: true, minCount: 5, maxPerScope: 30, model: "auto" },
-      trust: { agentInitialStrength: 0.7 },
+      trust: { agentInitialStrength: 0.7, experienceSuccess: 1, experienceUnverified: 0.7, experienceFailed: 0.5 },
       embedding: {
         enabled: over?.enabled ?? true,
         baseUrl: "http://embedding.test/v1",

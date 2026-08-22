@@ -204,7 +204,11 @@ export async function accumulateExperience(
     const memoryBase = {
       content: JSON.stringify(experience),
       type: MEMORY_TYPES.EXPERIENCE,
-      strength: success ? (unverified ? 0.7 : 1.0) : 0.5,
+      strength: success
+        ? (unverified
+          ? services.config.memory.trust.experienceUnverified
+          : services.config.memory.trust.experienceSuccess)
+        : services.config.memory.trust.experienceFailed,
       keywords: [
         ...new Set(toolNames),
         input.trigger ?? "chat",

@@ -21,10 +21,17 @@ services:
       # REDIS_URL: "redis://redis:6379"
     volumes:
       - om-data:/data
+      - ./data:/app/data
       # 运行时 CRUD 会写回 config/agents、config/memories/daily、content/uploads，必须可写
       - ./content:/app/content
       - ./config:/app/config
       - ./config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3010/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   postgres:
     image: postgres:16-alpine

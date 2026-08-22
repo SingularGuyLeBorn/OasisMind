@@ -543,11 +543,15 @@ export abstract class FileSyncService<
 
   override async delete(id: string): Promise<OperationResult<Record<string, unknown>>> {
     const start = Date.now();
+    let fileRemoved = false;
     try {
       const existing = await this.delegate.findUnique({ where: { id } });
       if (!existing) return this.buildNotFoundFailure("删除", id, Date.now() - start);
       const slug = this.getExistingFileSlug(existing);
-      if (slug) this.deleteFileBySlug(slug, { required: true });
+      if (slug) {
+        this.deleteFileBySlug(slug, { required: true });
+        fileRemoved = true;
+      }
       await this.delegate.delete({ where: { id } });
       await this.afterDelete(existing);
       return success({
@@ -560,7 +564,12 @@ export abstract class FileSyncService<
       });
     } catch (error) {
       if (error instanceof ServiceValidationError) return error.result;
-      return failureFromError(error, "delete", this.entityName, `${this.entityName.toUpperCase()}_DELETE_FAILED`);
+      const wrapped = fileRemoved
+        ? new Error(
+            `删除未完成：磁盘文件可能已移除，但数据库行可能仍在，请 db:sync 对账。${error instanceof Error ? error.message : String(error)}`,
+          )
+        : error;
+      return failureFromError(wrapped, "delete", this.entityName, `${this.entityName.toUpperCase()}_DELETE_FAILED`);
     }
   }
 

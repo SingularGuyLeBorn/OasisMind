@@ -152,7 +152,7 @@ describe("distillExperienceToProcedural", () => {
           maxPerScope: 30,
           model: "auto",
         },
-        trust: { agentInitialStrength: 0.7 },
+        trust: { agentInitialStrength: 0.7, experienceSuccess: 1, experienceUnverified: 0.7, experienceFailed: 0.5 },
         embedding: { enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 },
       },
     });
@@ -161,7 +161,7 @@ describe("distillExperienceToProcedural", () => {
     return config;
   }
 
-  it("T1: 同 scope 经验 ≥ minCount → 生成 procedural 并归档源经验", async () => {
+  it("T1: 同 scope 经验 ≥ minCount → 生成 procedural 并归档源经验（缺 evidenceStatus 的历史经验也进蒸馏）", async () => {
     const config = makeConfig({ minCount: 5 });
     const agentId = `${DISTILL_MARKER}${Date.now()}-t1`;
     createdAgentIds.push(agentId);

@@ -15,6 +15,7 @@ import { getEventBus } from "../infra/eventBus.js";
 import { getAppConfig } from "../infra/config.js";
 import { getServiceContainer, type ServiceContainer } from "../infra/serviceContainer.js";
 import {
+  consolidateMemories,
   createMemoryRepository,
   decayMemories,
   hashMemoryContent,
@@ -146,6 +147,43 @@ describe("MemoryRepository（W5）", () => {
       await repo.write({ content: `${content}（变体）`, type: MEMORY_TYPES.NOTE, scope: "global", keywords: [token] }),
     );
     expect(other.id).not.toBe(first.id);
+  });
+
+  it("N-8：同 scope 同 contentHash 的重复 active 行由 reconciler 只留最强一条", async () => {
+    const token = `${RUN}-reconcile-hash`;
+    const content = `重复行 ${token}`;
+    const contentHash = hashMemoryContent(content);
+    const a = await prisma.memory.create({
+      data: {
+        content,
+        type: MEMORY_TYPES.NOTE,
+        scope: "global",
+        status: "active",
+        strength: 0.4,
+        contentHash,
+        keywords: token,
+      },
+    });
+    const b = await prisma.memory.create({
+      data: {
+        content,
+        type: MEMORY_TYPES.NOTE,
+        scope: "global",
+        status: "active",
+        strength: 0.9,
+        contentHash,
+        keywords: token,
+      },
+    });
+    createdIds.push(a.id, b.id);
+    const { duplicatesRemoved } = await consolidateMemories(prisma, async (id) => {
+      await prisma.memory.delete({ where: { id } }).catch(() => undefined);
+      return true;
+    });
+    expect(duplicatesRemoved).toBe(1);
+    const left = await prisma.memory.findMany({ where: { contentHash, status: "active" } });
+    expect(left).toHaveLength(1);
+    expect(left[0].id).toBe(b.id);
   });
 
   it("decayMemories：按日复利衰减且不动 updatedAt，低于阈值归档删除", async () => {
