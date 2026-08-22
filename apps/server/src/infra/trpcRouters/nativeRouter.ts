@@ -7,6 +7,7 @@ import { router, publicProcedure } from "../../trpc/trpc.js";
 import { listNativeTools, executeNativeTool } from "../nativeTools.js";
 import { createTrpcInvoker } from "../trpcInvoker.js";
 import { getCachedEnrichedServerCapabilities } from "../capabilities.js";
+import { assertApprovalOrProceed } from "../approvalGate.js";
 
 const createTrpcInvokerForCtx = createTrpcInvoker;
 
@@ -21,13 +22,15 @@ export const nativeRouter = router({
   execute: publicProcedure
     .meta({ description: "执行指定原生工具。", aiReadable: true })
     .input(nativeExecuteSchema)
-    .mutation(({ ctx, input }) =>
-      executeNativeTool(input.name, input.args, {
+    .mutation(async ({ ctx, input }) => {
+      const approvalId = typeof input.args.approvalId === "string" ? input.args.approvalId : undefined;
+      await assertApprovalOrProceed(ctx.services, input.name, input.args, approvalId);
+      return executeNativeTool(input.name, input.args, {
         config: ctx.config,
         services: ctx.services,
         invokeTrpc: createTrpcInvokerForCtx(ctx),
         signal: new AbortController().signal,
-      }),
-    ),
+      });
+    }),
 });
 

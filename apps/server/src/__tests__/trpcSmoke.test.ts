@@ -65,7 +65,8 @@ describe("tRPC AI 工具 smoke（~100+ procedures）", () => {
       expect(crashes, `以下工具 smoke 崩溃:\n${summary}`).toEqual([]);
     }
 
-    expect(results.length).toBeGreaterThanOrEqual(100);
+    // tRPC ai-readable 为主；未覆盖参数的 native.* 不在此套真实执行（见 nativeTools.test）
+    expect(results.length).toBeGreaterThanOrEqual(90);
 
     const byKind = results.reduce(
       (acc, r) => {

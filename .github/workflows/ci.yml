@@ -52,13 +52,14 @@ jobs:
       - name: Install Playwright Chromium (integration smoke)
         run: pnpm --filter @oasismind/server exec playwright install chromium --with-deps
 
+      # 基础冒烟：脚本内 optionalStep / CI 对 OCR 已软跳过；网络硬失败必须红。
       - name: Integration smoke (network)
         run: pnpm integration:smoke
-        continue-on-error: true
         env:
           INTEGRATION_SMOKE_CI: "1"
           DATABASE_URL: "file:./ci.db"
 
+      # 平台层依赖外网站点 / Cookie，CI 无凭据时允许跳过，不挡主闸。
       - name: Integration smoke (platform quick)
         run: pnpm integration:smoke:platform:quick
         continue-on-error: true

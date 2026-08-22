@@ -34,6 +34,17 @@ export const SMOKE_SKIP = new Set<string>([
   "agent.ocrImage",
   "agent.pullAsyncQueue",
   "native.execute",
+  // 副作用 / 外网 / 长等待：invoke 现已真实分发 native.*，禁止在 smoke 里跑
+  "native.write_file",
+  "native.run_shell",
+  "native.async_task_run",
+  "native.yuque_get_doc",
+  "native.github_search_repos",
+  "native.feishu_send_text",
+  "native.web_search",
+  "native.scrape_web_page",
+  "native.vision_describe",
+  "native.tikhub_request",
   "git.commit",
   "git.pull",
   "git.push",
@@ -283,7 +294,12 @@ const SMOKE_ARG_OVERRIDES: Record<string, unknown> = {
 };
 
 export function listAiTools(tools: AiToolDescriptor[]): AiToolDescriptor[] {
-  return tools.filter((t) => !SMOKE_SKIP.has(t.name));
+  return tools.filter((t) => {
+    if (SMOKE_SKIP.has(t.name)) return false;
+    // 未给参数覆盖的 native.* 不再 invoke（会真执行；新工具默认跳过）
+    if (t.name.startsWith("native.") && !(t.name in SMOKE_ARG_OVERRIDES)) return false;
+    return true;
+  });
 }
 
 export function getProcedureValidator(

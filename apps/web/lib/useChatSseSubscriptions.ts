@@ -64,6 +64,14 @@ export function useChatSseSubscriptions({
   }, [onNeedHydrate]);
 
   const extraWatchedSessionsRef = useRef<Set<string>>(new Set());
+  const asyncQueueQueryRef = useRef(asyncQueueQuery);
+  const asyncQueueStatsQueryRef = useRef(asyncQueueStatsQuery);
+  const pullAgentMessagesQueryRef = useRef(pullAgentMessagesQuery);
+  useEffect(() => {
+    asyncQueueQueryRef.current = asyncQueueQuery;
+    asyncQueueStatsQueryRef.current = asyncQueueStatsQuery;
+    pullAgentMessagesQueryRef.current = pullAgentMessagesQuery;
+  }, [asyncQueueQuery, asyncQueueStatsQuery, pullAgentMessagesQuery]);
   const watchedKey = (watchedSessionIds ?? []).filter(Boolean).sort().join(",");
   useEffect(() => {
     if (backendDown) return;
@@ -83,9 +91,9 @@ export function useChatSseSubscriptions({
       refreshSessionAsyncQueue(utils, targetSid).catch(logQueryCatch);
       // 焦点 query 缓存对齐（同 session 时 UI 立刻一致）
       if (targetSid === effectiveSessionId) {
-        asyncQueueQuery.refetch().catch(logQueryCatch);
+        asyncQueueQueryRef.current.refetch().catch(logQueryCatch);
       }
-      asyncQueueStatsQuery.refetch().catch(logQueryCatch);
+      asyncQueueStatsQueryRef.current.refetch().catch(logQueryCatch);
     };
 
     const refreshAsync = (opts: { heavy?: boolean; sessionId: string }) => {
@@ -169,7 +177,7 @@ export function useChatSseSubscriptions({
         refreshAsync({ heavy: terminal, sessionId: targetSid });
       });
       register("agent_message", () => {
-        if (isSubagentSession) pullAgentMessagesQuery.refetch().catch(logQueryCatch);
+        if (isSubagentSession) pullAgentMessagesQueryRef.current.refetch().catch(logQueryCatch);
       });
       register("subagent_session_update", (ev) => {
         if (mainSessionId) {
@@ -424,9 +432,6 @@ export function useChatSseSubscriptions({
     mainSessionId,
     watchedKey,
     backendDown,
-    asyncQueueQuery,
-    asyncQueueStatsQuery,
-    pullAgentMessagesQuery,
     isSubagentSession,
     utils,
     setRotateBanner,

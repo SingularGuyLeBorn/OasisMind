@@ -14,7 +14,7 @@ export function isAuthEnabled(config: AppConfig): boolean {
 }
 
 /** 常量时间比较密钥/密码（防时序侧信道）；长度不等先返回 false */
-function safeEqualSecret(a: string, b: string): boolean {
+export function safeEqualSecret(a: string, b: string): boolean {
   const ba = Buffer.from(a, "utf8");
   const bb = Buffer.from(b, "utf8");
   if (ba.length !== bb.length) return false;
@@ -66,10 +66,14 @@ export function getRemoteAccessInfo(config: AppConfig) {
  * - OM_ALLOW_INSECURE_PUBLIC=1：显式逃生，仅 warn
  */
 export function assertPublicUrlAuthSafe(config: AppConfig): void {
-  if (!config.publicUrl?.trim()) return;
+  const exposed = Boolean(config.publicUrl?.trim() || config.cloudflare.tunnelToken?.trim());
+  if (!exposed) return;
   if (isAuthEnabled(config)) return;
+  const via = config.publicUrl?.trim()
+    ? "PUBLIC_URL"
+    : "CLOUDFLARE_TUNNEL_TOKEN";
   const msg =
-    "检测到 PUBLIC_URL 但 AUTH_MODE 未设为 password。公网暴露必须启用鉴权：" +
+    `检测到 ${via} 但 AUTH_MODE 未设为 password。公网暴露必须启用鉴权：` +
     "在 .env 设置 AUTH_MODE=password 与 AUTH_PASSWORD；" +
     "隧道请用 pnpm remote（无鉴权会拒绝）；本地临时可设 OM_ALLOW_INSECURE_PUBLIC=1。";
   if (process.env.OM_ALLOW_INSECURE_PUBLIC === "1") {

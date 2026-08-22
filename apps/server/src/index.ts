@@ -119,11 +119,12 @@ const corsOrigins = [
     ...config.corsOrigins,
   ]),
 ];
-const localDevOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || corsOrigins.includes(origin) || localDevOrigin.test(origin)) {
+      // 只放行白名单：默认 3000/3002/3003 + PUBLIC_URL + CORS_ORIGINS。
+      // 禁止任意 localhost 端口（恶意本机页 + AUTH_MODE=none 可跨域调 native.execute）。
+      if (!origin || corsOrigins.includes(origin)) {
         cb(null, true);
         return;
       }

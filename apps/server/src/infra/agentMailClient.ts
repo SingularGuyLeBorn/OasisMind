@@ -6,6 +6,7 @@
  */
 
 import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from "undici";
+import { safeEqualSecret } from "./auth.js";
 import { bootDetail } from "./bootLog.js";
 
 const AGENTMAIL_API_BASE = "https://api.agentmail.to/v0";
@@ -430,14 +431,25 @@ export function startAgentMailWebhookHealthCheck(opts?: {
   };
 }
 
+function isPubliclyReachable(): boolean {
+  return Boolean(
+    process.env.PUBLIC_URL?.trim() ||
+      process.env.CLOUDFLARE_TUNNEL_TOKEN?.trim() ||
+      process.env.NODE_ENV === "production",
+  );
+}
+
 /** 校验 webhook：支持 header x-agentmail-secret / Authorization Bearer 与 env AGENTMAIL_WEBHOOK_SECRET */
 export function verifyAgentMailWebhook(req: {
   headers: Record<string, string | string[] | undefined>;
 }): boolean {
   const secret = process.env.AGENTMAIL_WEBHOOK_SECRET?.trim();
   if (!secret) {
-    // 未配置 secret 时开发期放行并告警；生产应配置
-    console.warn("[AgentMail] AGENTMAIL_WEBHOOK_SECRET 未配置，跳过 webhook 验签（仅建议本地开发）");
+    if (isPubliclyReachable()) {
+      console.error("[AgentMail] AGENTMAIL_WEBHOOK_SECRET 未配置，公网/生产拒绝 webhook（fail-closed）");
+      return false;
+    }
+    console.warn("[AgentMail] AGENTMAIL_WEBHOOK_SECRET 未配置，仅本地开发放行");
     return true;
   }
   const h = req.headers;
@@ -451,7 +463,8 @@ export function verifyAgentMailWebhook(req: {
     (pick("authorization")?.startsWith("Bearer ")
       ? pick("authorization")!.slice("Bearer ".length)
       : undefined);
-  return provided === secret;
+  if (!provided) return false;
+  return safeEqualSecret(provided, secret);
 }
 
 export type AgentMailWebhookPayload = {

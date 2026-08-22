@@ -213,7 +213,7 @@ async function parseSseBlock(
     // console.error 上报后按流失败收尾：通知 onError 并结束本次流（finished=true 不再重连）。
     console.error("agentStream: SSE 事件回调异常，按流失败收尾", err);
     try {
-      callbacks.onError?.(err instanceof Error ? err.message : String(err));
+      await callbacks.onError?.(err instanceof Error ? err.message : String(err));
     } catch {
       /* onError 自身也抛错时放弃上报 */
     }
@@ -260,7 +260,7 @@ async function readOneConnection(
         /* 非 JSON 走通用错误 */
       }
     }
-    callbacks.onError?.(`流式请求失败 HTTP ${res.status}: ${text}`);
+    await callbacks.onError?.(`流式请求失败 HTTP ${res.status}: ${text}`);
     return true; // 非可重试错误：结束，禁止空转重连
   }
 
@@ -302,6 +302,11 @@ async function readOneConnection(
 
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 本跳交付过事件则清零后再计 1；空跳才累加。禁止成功续传后仍耗尽 12 次窗口。 */
+export function nextStreamReconnectAttempt(prev: number, deliveredThisHop: boolean): number {
+  return deliveredThisHop ? 1 : prev + 1;
 }
 
 /**
@@ -349,6 +354,7 @@ export async function streamAgentChat(
       };
     }
 
+    const eventIdBefore = lastEventId;
     const trackingCallbacks: AgentStreamCallbacks = {
       ...callbacks,
       onEventId: (id) => {
@@ -378,9 +384,9 @@ export async function streamAgentChat(
       throw abortErr;
     }
 
-    attempt++;
+    attempt = nextStreamReconnectAttempt(attempt, lastEventId > eventIdBefore);
     if (attempt > maxAttempts) {
-      callbacks.onError?.("连接已断开，多次重连失败。请检查网络或刷新页面。");
+      await callbacks.onError?.("连接已断开，多次重连失败。请检查网络或刷新页面。");
       return;
     }
 

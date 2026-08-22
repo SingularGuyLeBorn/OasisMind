@@ -88,6 +88,24 @@ describe("auth module", () => {
     expect(() => assertPublicUrlAuthSafe(config)).not.toThrow();
   });
 
+  it("assertPublicUrlAuthSafe：仅有隧道 token 生产无鉴权则抛错", () => {
+    const config = createTestConfig("/tmp", {
+      publicUrl: "",
+      cloudflare: { tunnelToken: "cf-tunnel-token" },
+      auth: { mode: "none", password: "", token: "" },
+      env: "production",
+    });
+    const prevAllow = process.env.OM_ALLOW_INSECURE_PUBLIC;
+    const prevReq = process.env.OM_REQUIRE_PUBLIC_AUTH;
+    delete process.env.OM_ALLOW_INSECURE_PUBLIC;
+    delete process.env.OM_REQUIRE_PUBLIC_AUTH;
+    expect(() => assertPublicUrlAuthSafe(config)).toThrow(/CLOUDFLARE_TUNNEL_TOKEN/);
+    if (prevAllow === undefined) delete process.env.OM_ALLOW_INSECURE_PUBLIC;
+    else process.env.OM_ALLOW_INSECURE_PUBLIC = prevAllow;
+    if (prevReq === undefined) delete process.env.OM_REQUIRE_PUBLIC_AUTH;
+    else process.env.OM_REQUIRE_PUBLIC_AUTH = prevReq;
+  });
+
   it("chat/stop 在 AUTH_MODE=password 时拒绝无 Bearer", async () => {
     const config = createTestConfig("/tmp", {
       auth: { mode: "password", password: "secret", token: "om-test-token" },

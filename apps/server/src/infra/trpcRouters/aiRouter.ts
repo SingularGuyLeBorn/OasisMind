@@ -10,6 +10,7 @@ import { listNativeTools, executeNativeTool } from "../nativeTools.js";
 import { summarizeAgentTools } from "../agentTools.js";
 import { createTrpcInvoker } from "../trpcInvoker.js";
 import { extractTextFromImage, getOcrStatus, probeOcrPython } from "../ocrService.js";
+import { assertApprovalOrProceed } from "../approvalGate.js";
 
 const createTrpcInvokerForCtx = createTrpcInvoker;
 
@@ -55,6 +56,46 @@ export const aiRouter = router({
       try {
         const { appRouter } = await import("../../router.js");
         const procedures = appRouter._def.procedures as any;
+        const parts = tool.split(".");
+        if (parts[0] === "ai") {
+          return failure({
+            code: "AI_TOOL_FORBIDDEN",
+            message: `调用失败：禁止经 ai.invoke 反射调用 ai.*（防递归烧配额）。`,
+            retryable: false,
+            operation: "invoke",
+            entity: "ai",
+            durationMs: Date.now() - start,
+          });
+        }
+        // native.* 在 ai.tools 里列出，但除 list/capabilities/execute 外不是 tRPC procedure。
+        // list/capabilities 走下方 caller；execute 与真实工具名在此拆包并过审批闸。
+        if (parts[0] === "native" && parts.length === 2 && parts[1] !== "list" && parts[1] !== "capabilities") {
+          const rawArgs = (args as Record<string, unknown>) || {};
+          const nativeName = parts[1] === "execute" ? String(rawArgs.name ?? "") : parts[1];
+          const nativeArgs =
+            parts[1] === "execute" && rawArgs.args && typeof rawArgs.args === "object"
+              ? (rawArgs.args as Record<string, unknown>)
+              : rawArgs;
+          if (!nativeName) {
+            return failure({
+              code: "AI_TOOL_NOT_FOUND",
+              message: `调用失败：native.execute 必须指定 name。`,
+              retryable: false,
+              operation: "invoke",
+              entity: "ai",
+              durationMs: Date.now() - start,
+            });
+          }
+          const approvalId = typeof nativeArgs.approvalId === "string" ? nativeArgs.approvalId : undefined;
+          await assertApprovalOrProceed(ctx.services, nativeName, nativeArgs, approvalId);
+          const result = await executeNativeTool(nativeName, nativeArgs, {
+            config: ctx.config,
+            services: ctx.services,
+            invokeTrpc: createTrpcInvokerForCtx(ctx),
+            signal: new AbortController().signal,
+          });
+          return success({ data: result, operation: "invoke", entity: "ai", durationMs: Date.now() - start });
+        }
         if (!procedures[tool]) {
           return failure({
             code: "AI_TOOL_NOT_FOUND",
@@ -80,16 +121,6 @@ export const aiRouter = router({
           });
         }
         const caller = appRouter.createCaller(ctx);
-        const parts = tool.split(".");
-        if (parts[0] === "native" && parts.length === 2) {
-          const result = await executeNativeTool(parts[1], (args as Record<string, unknown>) || {}, {
-            config: ctx.config,
-            services: ctx.services,
-            invokeTrpc: createTrpcInvokerForCtx(ctx),
-            signal: new AbortController().signal,
-          });
-          return success({ data: result, operation: "invoke", entity: "ai", durationMs: Date.now() - start });
-        }
         let method = caller as any;
         for (const part of parts) {
           if (!method || method[part] === undefined) throw new Error(`无法解析调用链路: ${tool}`);
