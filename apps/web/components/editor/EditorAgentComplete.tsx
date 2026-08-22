@@ -415,12 +415,12 @@ export function EditorAgentComplete({
   useEffect(() => {
     if (!atTrigger || atTrigger.token <= 0) return;
     const forceSource = atTrigger.mode === "source";
-    if (!forceSource && typeof window !== "undefined") {
-      setCursorPanel(placePanelInHost(panelHost, getMilkdownCursorScreenRect()));
-    } else {
-      setCursorPanel(null);
-    }
     const t = window.setTimeout(() => {
+      if (!forceSource && typeof window !== "undefined") {
+        setCursorPanel(placePanelInHost(panelHost, getMilkdownCursorScreenRect()));
+      } else {
+        setCursorPanel(null);
+      }
       openCompose(atTrigger.query, {
         forceSource,
         title: "@agent 协写",

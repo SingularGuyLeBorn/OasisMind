@@ -65,6 +65,8 @@ export type RunStreamOptions = {
   resumeAfter?: number;
   isResume?: boolean;
   targetSessionId?: string;
+  /** 本轮 live 钉点；autoConsume 起流时由 session_run_started 传入，禁止猜最后一个 user */
+  streamTargetUserId?: string | null;
   /** 后台消费队列时：不抢占当前视图 / URL */
   keepCurrentView?: boolean;
   /** 覆盖 agentId（后台消费其它 session 时用该 session 的 Agent） */
@@ -240,6 +242,7 @@ export function useChatRunStream({
       // 中途 inject 的 system 用户气泡不得把 trailing live 拽走——否则已出正文像「消失」。
       const began = streamLifecycleActions.beginStream(originSid, {
         streamTargetUserId:
+          opts.streamTargetUserId ??
           opts.retryFromMessageId ??
           opts.regenerateUserMessageId ??
           opts.editMessageId ??
@@ -510,6 +513,8 @@ export function useChatRunStream({
                       createdAt: new Date(),
                       updatedAt: new Date(),
                       systemPrompt: "",
+                      toolInheritMask: null,
+                      toolOwn: null,
                     };
                     const upsertAgentList = (
                       old:

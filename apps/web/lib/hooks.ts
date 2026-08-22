@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
+import { mergeMutationOptions } from "@/lib/mergeMutationOptions";
 import type {
   OperationResult,
   CreatePostInput, UpdatePostInput, ListPostsInput, Post,
@@ -19,6 +20,8 @@ import type {
   Tool, Prompt, Credential, Run,
   CreateCommentInput, UpdateCommentInput, ListCommentsInput,
 } from "@oasismind/shared";
+
+export { mergeMutationOptions } from "@/lib/mergeMutationOptions";
 
 /* ─── 1. 通用 CRUD Hook 工厂 ─── */
 
@@ -46,44 +49,38 @@ export function useCRUDApi<TCreate = any, TUpdate extends { id: string } = any, 
 
     useCreate: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return api.create.useMutation({
-        onSuccess: (res: OperationResult<TEntity>) => {
+      return api.create.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<TEntity>) => {
           if (res.success) {
             utils[entityRouterName].list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
           }
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
 
     useUpdate: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return api.update.useMutation({
-        onSuccess: (res: OperationResult<TEntity>) => {
+      return api.update.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<TEntity>) => {
           if (res.success) {
             utils[entityRouterName].list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
             if (res.data) {
               utils[entityRouterName].getById.invalidate({ id: (res.data as any).id }).catch(catchUnlessCancelled("lib/hooks.ts"));
             }
           }
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
 
     useDelete: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return api.delete.useMutation({
-        onSuccess: (res: OperationResult<any>) => {
+      return api.delete.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<any>) => {
           if (res.success) {
             utils[entityRouterName].list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
           }
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
   };
 }
@@ -310,13 +307,11 @@ export const useTask = () => {
     ...crud,
     useRun: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return trpc.task.run.useMutation({
-        onSuccess: (res: OperationResult<any>) => {
+      return trpc.task.run.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<any>) => {
           if (res.success) utils.task.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
   };
 };
@@ -331,48 +326,40 @@ export const useApproval = () => {
     ...crud,
     useExecute: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return trpc.approval.execute.useMutation({
-        onSuccess: (res: OperationResult<any>) => {
+      return trpc.approval.execute.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<any>) => {
           if (res.success) utils.approval.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
     useApproveAndExecute: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return trpc.approval.approveAndExecute.useMutation({
-        onSuccess: (res: OperationResult<any>) => {
+      return trpc.approval.approveAndExecute.useMutation(
+        mergeMutationOptions(options, (res: OperationResult<any>) => {
           if (res.success) {
             utils.approval.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
             utils.approval.humanTodoSummary.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
           }
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
     useApproveAndExecuteBatch: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return trpc.approval.approveAndExecuteBatch.useMutation({
-        onSuccess: () => {
+      return trpc.approval.approveAndExecuteBatch.useMutation(
+        mergeMutationOptions(options, () => {
           utils.approval.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
           utils.approval.humanTodoSummary.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-          options?.onSuccess?.();
-        },
-        ...options,
-      });
+        }),
+      );
     },
     useRejectBatch: (options?: any) => {
       const utils = trpc.useUtils() as any;
-      return trpc.approval.rejectBatch.useMutation({
-        onSuccess: () => {
+      return trpc.approval.rejectBatch.useMutation(
+        mergeMutationOptions(options, () => {
           utils.approval.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
           utils.approval.humanTodoSummary.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-          options?.onSuccess?.();
-        },
-        ...options,
-      });
+        }),
+      );
     },
     useHumanTodoSummary: (options?: any) =>
       trpc.approval.humanTodoSummary.useQuery(undefined, {
@@ -415,13 +402,11 @@ export const useCredential = () => {
     ...crud,
     useImportFromEnv: (options?: any) => {
       const utils = trpc.useUtils();
-      return trpc.credential.importFromEnv.useMutation({
-        onSuccess: (res: any) => {
+      return trpc.credential.importFromEnv.useMutation(
+        mergeMutationOptions(options, (res: any) => {
           if (res?.imported?.length) utils.credential.list.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-          options?.onSuccess?.(res);
-        },
-        ...options,
-      });
+        }),
+      );
     },
   };
 };
@@ -435,12 +420,11 @@ export function useAIApi() {
       return trpc.ai.tools.useQuery(undefined, options);
     },
     useCall: (options?: any) => {
-      return trpc.ai.invoke.useMutation({
-        onSuccess: () => {
+      return trpc.ai.invoke.useMutation(
+        mergeMutationOptions(options, () => {
           utils.invalidate().catch(catchUnlessCancelled("lib/hooks.ts"));
-        },
-        ...options,
-      });
+        }),
+      );
     },
   };
 }

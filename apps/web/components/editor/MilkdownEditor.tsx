@@ -136,10 +136,6 @@ function MilkdownWysiwyg({
     onAtAgentRef.current = onAtAgent;
   }, [onAtAgent]);
 
-  registerMilkdownAtAgentHandler((hit) => {
-    onAtAgentRef.current?.(hit);
-  });
-
   useEffect(() => {
     const gen = registerMilkdownAtAgentHandler((hit) => {
       onAtAgentRef.current?.(hit);

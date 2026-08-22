@@ -71,9 +71,16 @@ export default async function globalSetup() {
 
   // 3. 同步 schema 到 test.db（幂等）
   try {
-    execSync("pnpm exec prisma db push --skip-generate --accept-data-loss", {
+    const binDir = path.join(serverDir, "node_modules", ".bin");
+    execSync("prisma db push --skip-generate --accept-data-loss", {
       cwd: serverDir,
-      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      shell: process.platform === "win32" ? "cmd.exe" : "/bin/sh",
+      env: {
+        ...process.env,
+        DATABASE_URL: TEST_DB_URL,
+        PRISMA_SKIP_POSTINSTALL_GENERATE: "1",
+        PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
+      },
       stdio: "pipe",
     });
   } catch (err) {

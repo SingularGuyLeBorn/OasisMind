@@ -146,6 +146,7 @@ type Action =
       lastEventId: number;
     }
   | { type: "MIGRATE_STREAM_SESSION"; fromKey: string; toSessionId: string }
+  | { type: "SET_STREAM_TARGET_IF_EMPTY"; sessionId: string; streamTargetUserId: string }
   | { type: "RESET"; sessionId: string }
   | { type: "DELETE"; sessionId: string };
 
@@ -481,10 +482,24 @@ function reducer(state: LifecycleMap, action: Action): LifecycleMap {
     case "MIGRATE_STREAM_SESSION": {
       const from = state.get(action.fromKey);
       if (!from) return state;
+      const target = state.get(action.toSessionId);
+      if (target && isOccupiedPhase(target.phase)) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error(
+            `[StreamLifecycle] MIGRATE_STREAM_SESSION blocked: ${action.toSessionId} still ${target.phase}`,
+          );
+        }
+        return state;
+      }
       const map = new Map(state);
       map.delete(action.fromKey);
       map.set(action.toSessionId, { ...from });
       return map;
+    }
+    case "SET_STREAM_TARGET_IF_EMPTY": {
+      const prev = get(action.sessionId);
+      if (prev.streamTargetUserId) return state;
+      return set(action.sessionId, { ...prev, streamTargetUserId: action.streamTargetUserId });
     }
     case "RESET":
       return set(action.sessionId, { ...IDLE_STATE });
@@ -733,6 +748,9 @@ export const streamLifecycleActions = {
    * sessionStorage 挂载恢复：只还原过渡 UI，不占 RESUME_CLAIM。
    * 随后必须由 runStream(isResume) 内 beginStream(resume) 唯一 claim。
    */
+  setStreamTargetIfEmpty(sessionId: string, streamTargetUserId: string) {
+    getStore().dispatch({ type: "SET_STREAM_TARGET_IF_EMPTY", sessionId, streamTargetUserId });
+  },
   restoreStreamSnapshot(
     sessionId: string,
     opts: {

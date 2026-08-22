@@ -19,12 +19,17 @@ function fakeEl(opts: {
     scrollHeight: opts.scrollHeight ?? opts.clientHeight,
     clientHeight: opts.clientHeight,
     getBoundingClientRect: () => ({
+      x: left,
+      y: top,
       top,
       left,
       right: left + opts.width,
       bottom: top + opts.height,
       width: opts.width,
       height: opts.height,
+      toJSON() {
+        return this;
+      },
     }),
   };
 }
