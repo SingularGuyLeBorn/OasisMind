@@ -50,7 +50,7 @@ export async function prepareAgentRun(
       if (!agent || agent.status === "deleted") throw new Error("目标 Agent 不存在或已删除");
 
       let mainSession = await ctx.prisma?.chatSession.findFirst({
-        where: { agentId: targetAgentId, isMainSession: true, status: { not: "deleted" } },
+        where: { agentId: targetAgentId, isMainSession: true, status: { notIn: ["deleted", "archived"] } },
         // 存量若曾双主会话，取最近更新的一条（SessionService 已阻止新建双主）
         orderBy: { updatedAt: "desc" },
       });
@@ -68,6 +68,21 @@ export async function prepareAgentRun(
         });
         if (created.success && created.data) {
           mainSession = await ctx.prisma?.chatSession.findUnique({ where: { id: (created.data as { id: string }).id } }) ?? null;
+        }
+      } else if (mainSession.status === "paused") {
+        // SW-L5：用户手动暂停不得翻成 running；只补血缘，消息走入队、不起流
+        const patch: Record<string, unknown> = {};
+        if (mainSession.kind !== "subagent") patch.kind = "subagent";
+        if (ctx.sessionId && mainSession.parentSessionId !== ctx.sessionId) {
+          patch.parentSessionId = ctx.sessionId;
+        }
+        if (Object.keys(patch).length > 0) {
+          try {
+            await ctx.services.session.update({ id: mainSession.id, ...patch } as any);
+            mainSession = { ...mainSession, ...patch } as typeof mainSession;
+          } catch {
+            /* 补齐失败不阻塞运行 */
+          }
         }
       } else {
         // 已有主会话（含 P11 空壳主会话）：刷新血缘 + running，保证 report_back / 队列查询可定位
@@ -117,8 +132,9 @@ export async function prepareAgentRun(
       // W-E busy 判定（写 ChatMessage 之前）。hub 缺失时跳过判定，idle 路径在起流前再报错（原语义）
       // SWARM_MODE=redis 时再看跨实例 running 宣称（本进程 hub 看不到他机内存 runs）
       const hub = getStreamHub();
-      let shouldQueue = false;
-      if (hub) {
+      const sessionPaused = mainSession.status === "paused";
+      let shouldQueue = sessionPaused;
+      if (!shouldQueue && hub) {
         shouldQueue = hub.isRunning(mainSession.id);
         if (!shouldQueue) {
           shouldQueue = await isSessionRunningClaimed(mainSession.id);
@@ -129,7 +145,7 @@ export async function prepareAgentRun(
         }
       }
 
-      if (shouldQueue && hub) {
+      if (shouldQueue && (hub || sessionPaused)) {
         if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
         const bus = getSwarmBus(ctx.prisma, ctx.services);
         // 走 bus.send（depth/queue-size/向上时机守卫）——旧 autoRun 路绕过守卫，此路径顺带补上
@@ -171,6 +187,12 @@ export async function prepareAgentRun(
         });
         // 服务端 drain：子等闲时按 FIFO 自动处理（复用 per-session 串行链）。
         // 动态 import：asyncJobManager 经 agentRuntime/agentStream/agentTools 处于 ReAct 环内
+        if (sessionPaused) {
+          return { kind: "queued", subagentSessionId: mainSession.id, drainPromise: Promise.resolve() };
+        }
+        if (!hub) {
+          return { kind: "failed", subagentSessionId: mainSession.id, error: "会话已暂停或缺少流式枢纽，无法自动起流" };
+        }
         const { enqueueSuperiorQueueDrain } = await import("../../../asyncJobs/index.js");
         const drainPromise = enqueueSuperiorQueueDrain({
           sessionId: mainSession.id,
@@ -191,12 +213,14 @@ export async function prepareAgentRun(
       }
 
       const messageSource = (ctx.agentSnapshot?.tier ?? "super") as "super" | "manager" | "sub" | "user" | "system";
-      // 幂等：同内容父任务只写一次；若已有对应 assistant 则直接返回，避免双写/双跑
+      // SW-L2：只去重数秒内的重复提交，禁止全历史 content 命中（昨天「继续」不能秒回今天）
+      const DEDUP_WINDOW_MS = 8_000;
       const dupUser = await ctx.prisma?.chatMessage.findFirst({
         where: {
           sessionId: mainSession.id,
           role: "user",
           content: runInput,
+          createdAt: { gte: new Date(Date.now() - DEDUP_WINDOW_MS) },
         },
         select: { id: true, createdAt: true },
         orderBy: { createdAt: "desc" },

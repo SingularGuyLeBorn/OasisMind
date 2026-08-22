@@ -92,6 +92,16 @@ describe("Workspace 出域硬拦（Q3）", () => {
     }
   });
 
+  it("未知 tier 不得放行受限工具（SW-L1）", () => {
+    const err = checkToolPermission("agent_update", { id: "x" }, {
+      agentTier: "unknown" as "sub",
+      agentId: "x1",
+      agentWorkspaceId: "ws-a",
+      inToolRound: true,
+    });
+    expect(err?.code).toBe("TIER_INSUFFICIENT");
+  });
+
   it("getAllowedToolsForTier 从 sub 清单剔除 free_api_keys_* / free_models_list", () => {
     const filtered = getAllowedToolsForTier("sub", [
       "native:free_api_keys_list",

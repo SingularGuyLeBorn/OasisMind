@@ -132,7 +132,7 @@ export function checkToolPermission(
 ): PermissionError | null {
   // 1. 按 tier 限制的工具：检查 Agent 层级是否满足最低要求
   const requiredTier = getRequiredTierForTool(toolName);
-  if (requiredTier && TIER_RANK[ctx.agentTier] < TIER_RANK[requiredTier]) {
+  if (requiredTier && (TIER_RANK[ctx.agentTier] ?? 0) < (TIER_RANK[requiredTier] ?? 0)) {
     return {
       code: "TIER_INSUFFICIENT",
       reason: `工具 ${toolName} 需要 ${requiredTier} 及以上权限，当前 Agent 层级为 ${ctx.agentTier}。`,
@@ -187,7 +187,7 @@ export function checkUpwardMessageTiming(
   // agent_report_back 是专门的向上回报工具，必须允许在工具轮次中调用
   if (options?.allowReportTool) return null;
   // 向上发：目标 tier > 发送方 tier
-  const isUpward = TIER_RANK[toTier] > TIER_RANK[fromTier];
+  const isUpward = (TIER_RANK[toTier] ?? 0) > (TIER_RANK[fromTier] ?? 0);
   if (isUpward && inToolRound) {
     return {
       code: "UPWARD_MESSAGE_IN_TOOL_ROUND",

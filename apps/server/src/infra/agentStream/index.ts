@@ -525,8 +525,14 @@ export async function handleBusyHubPost(
     }
   }
 
+  const DEDUP_WINDOW_MS = 8_000;
   const existing = await services.prisma.sessionQueueItem.findFirst({
-    where: { sessionId, kind: "user", content: msg },
+    where: {
+      sessionId,
+      kind: "user",
+      content: msg,
+      createdAt: { gte: new Date(Date.now() - DEDUP_WINDOW_MS) },
+    },
     orderBy: { order: "desc" },
   });
   if (existing) {
