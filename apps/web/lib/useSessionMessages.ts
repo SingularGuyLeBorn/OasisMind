@@ -603,8 +603,10 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
             utilsRef.current.message.listForChat.fetch(opts),
           );
           if (cancelled) return;
-          cursorRef.current = nextCursor ?? undefined;
-          setHasOlderMessages(!!nextCursor);
+          if (nextCursor !== undefined) {
+            cursorRef.current = nextCursor ?? undefined;
+            setHasOlderMessages(!!nextCursor);
+          }
           setHydratedForSessionId(sessionId);
         } catch (err) {
           console.warn(`[useSessionMessages] hydrate ${sessionId} 失败:`, err);
@@ -653,8 +655,10 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
       const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
         utilsRef.current.message.listForChat.fetch(opts),
       );
-      cursorRef.current = nextCursor ?? undefined;
-      setHasOlderMessages(!!nextCursor);
+      if (nextCursor !== undefined) {
+        cursorRef.current = nextCursor ?? undefined;
+        setHasOlderMessages(!!nextCursor);
+      }
       setHydratedForSessionId(sessionId);
     } catch (err) {
       // CancelledError（并发 fetch 取消）或网络瞬断：静默，不冒泡为 unhandled rejection

@@ -175,8 +175,8 @@ export class SessionStreamHub {
     }
   }
 
-  /** per-session 最大 seq（事件 id 单一事实源）；无行返回 0 */
-  private async maxEventSeqFor(sessionId: string): Promise<number> {
+  /** per-session 最大 seq；无行返回 0；查询失败返回 null（调用方拒起流，禁止回 0 撞号） */
+  private async maxEventSeqFor(sessionId: string): Promise<number | null> {
     if (!this.config.persist) return 0;
     try {
       const agg = await prisma.sessionStreamEvent.aggregate({
@@ -186,7 +186,7 @@ export class SessionStreamHub {
       return agg._max.seq ?? 0;
     } catch (err) {
       console.warn(`[SessionStreamHub] 查询 ${sessionId} 最大事件 seq 失败:`, err);
-      return 0;
+      return null;
     }
   }
 
@@ -455,6 +455,9 @@ export class SessionStreamHub {
       await claimSessionDbRunning(sessionId);
 
       const maxSeq = await this.maxEventSeqFor(sessionId);
+      if (maxSeq === null) {
+        throw new Error(`无法读取会话 ${sessionId} 事件序号，拒绝起流以免续传错乱`);
+      }
       state.nextId = maxSeq + 1;
 
       this.armRunTimeout(state);
@@ -577,10 +580,29 @@ export class SessionStreamHub {
   /**
    * 等待指定 session 运行结束。
    */
-  waitFor(sessionId: string): Promise<void> {
+  waitFor(sessionId: string, signal?: AbortSignal): Promise<void> {
     const run = this.runs.get(sessionId);
     if (!run) return Promise.resolve();
-    return run.promise;
+    if (!signal) return run.promise;
+    if (signal.aborted) {
+      return Promise.reject(Object.assign(new Error("waitFor aborted"), { name: "AbortError" }));
+    }
+    return new Promise<void>((resolve, reject) => {
+      const onAbort = () => {
+        reject(Object.assign(new Error("waitFor aborted"), { name: "AbortError" }));
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      run.promise.then(
+        () => {
+          signal.removeEventListener("abort", onAbort);
+          resolve();
+        },
+        (err) => {
+          signal.removeEventListener("abort", onAbort);
+          reject(err);
+        },
+      );
+    });
   }
 
   /**
@@ -657,6 +679,11 @@ export class SessionStreamHub {
   async migrateSessionId(oldId: string, newId: string): Promise<boolean> {
     const state = this.runs.get(oldId);
     if (!state) return false;
+    const target = this.runs.get(newId);
+    if (target && target !== state && !target.completed) {
+      console.warn(`[SessionStreamHub] 拒绝迁移 ${oldId} → ${newId}：目标已有活跃流`);
+      return false;
+    }
 
     state.sessionId = newId;
     this.runs.set(newId, state);
@@ -694,7 +721,7 @@ export class SessionStreamHub {
           data: { sessionId: newId },
         });
         const maxSeq = await this.maxEventSeqFor(newId);
-        if (state.nextId <= maxSeq) state.nextId = maxSeq + 1;
+        if (maxSeq !== null && state.nextId <= maxSeq) state.nextId = maxSeq + 1;
       } catch (err) {
         console.warn(`[SessionStreamHub] 迁移持久化事件 ${oldId} -> ${newId} 失败:`, err);
       }
@@ -1054,6 +1081,12 @@ export class SessionStreamHub {
       eventType: buffered.event.type,
       payload: buffered.event,
     });
+    const PERSIST_QUEUE_CAP = 5000;
+    if (this.persistQueue.length > PERSIST_QUEUE_CAP) {
+      const drop = this.persistQueue.length - PERSIST_QUEUE_CAP;
+      this.persistQueue.splice(0, drop);
+      console.warn(`[SessionStreamHub] persistQueue 超限 ${PERSIST_QUEUE_CAP}，丢弃最老 ${drop} 条`);
+    }
     const warnFlush = (err: unknown) => {
       console.warn(
         "[SessionStreamHub] flushPersistQueue 失败:",
