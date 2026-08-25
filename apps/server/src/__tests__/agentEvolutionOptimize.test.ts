@@ -109,6 +109,19 @@ describe("accumulateExperience 失败归因写入", () => {
 
   const baseInput = { message: "做个任务", trigger: "chat" };
 
+  const servicesStub = {
+    config: {
+      memory: {
+        trust: {
+          agentInitialStrength: 0.7,
+          experienceSuccess: 1,
+          experienceUnverified: 0.7,
+          experienceFailed: 0.5,
+        },
+      },
+    },
+  } as any;
+
   function makePrisma() {
     return {
       agent: { update: vi.fn(async () => ({})) },
@@ -119,7 +132,7 @@ describe("accumulateExperience 失败归因写入", () => {
     const prisma = makePrisma();
     const r = await accumulateExperience(
       prisma,
-      {} as any,
+      servicesStub,
       "a1",
       "s1",
       {
@@ -141,7 +154,7 @@ describe("accumulateExperience 失败归因写入", () => {
     const prisma = makePrisma();
     await accumulateExperience(
       prisma,
-      {} as any,
+      servicesStub,
       "a1",
       "s1",
       {
@@ -175,7 +188,7 @@ describe("accumulateExperience 失败归因写入", () => {
     const prisma = makePrisma();
     const r = await accumulateExperience(
       prisma,
-      {} as any,
+      servicesStub,
       "a1",
       "s1",
       {
@@ -200,7 +213,7 @@ describe("accumulateExperience 失败归因写入", () => {
     const prisma = makePrisma();
     await accumulateExperience(
       prisma,
-      {} as any,
+      servicesStub,
       "a1",
       "s1",
       {
@@ -221,7 +234,7 @@ describe("accumulateExperience 失败归因写入", () => {
     const prisma = makePrisma();
     await accumulateExperience(
       prisma,
-      {} as any,
+      servicesStub,
       "a1",
       "s1",
       {

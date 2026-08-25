@@ -92,13 +92,19 @@
 
 ## F4 经验积累测例补 services.config
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`accumulateExperience` 读取 `services.config.memory.trust.{experienceSuccess,experienceUnverified,experienceFailed}`；`agentEvolutionOptimize.test.ts` 的 5 处 `accumulateExperience` 调用把 `{} as any` 当 services 传入，导致 `TypeError: Cannot read properties of undefined (reading 'memory')`；错误被 `catch` 吞掉后返回 `written: false`，后续断言读取 `writeMock.mock.calls[0]` 再炸，5 个用例红。
+- 成功标准：所有经验积累相关测试不再因空 services 红；语义断言一字不动；不放宽任何现有断言。
 - 改动文件：
+  - `apps/server/src/__tests__/agentEvolutionOptimize.test.ts`：新增最小可用 `servicesStub`，替换 5 处 `{} as any`；语义断言保持原样。
 - 设计决定与理由：
+  - stub 只补 `config.memory.trust` 中 accumulateExperience 实际读取的 4 个字段（`agentInitialStrength` 一并补入，与 `config.yaml` 一致），不伪造 `createMemoryRepository` 等已被 vi.mock 的依赖。
+  - 不改 `agentEvolutionExperience.test.ts` / `agentEvolutionSkillDraft.test.ts`：它们不调用 `accumulateExperience`，也不传空 services，无需改动。
 - [OM-FREEPLAY] 清单：
+  - 无（trust 字段值与 `config.yaml` 对齐，无猜测）。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/server exec vitest run src/__tests__/agentEvolutionOptimize.test.ts`：16 测试全绿，退出码 0。
 - 遇到的问题：
+  - 无。
 
 ## F5 run_shell 真限制 + 文案诚实
 
