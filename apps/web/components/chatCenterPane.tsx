@@ -277,8 +277,9 @@ export function ChatCenterPane({
               {sessionDetail.status === "completed" && "已完成"}
               {sessionDetail.status === "failed" && "失败"}
               {sessionDetail.status === "paused" && "已暂停"}
+              {sessionDetail.status === "interrupted" && "已中断"}
               {sessionDetail.status === "active" && "活跃"}
-              {!["running", "queued", "completed", "failed", "paused", "active"].includes(sessionDetail.status) && sessionDetail.status}
+              {!["running", "queued", "completed", "failed", "paused", "interrupted", "active"].includes(sessionDetail.status) && sessionDetail.status}
             </span>
           )}
           {sessionDetail?.taskDescription && (

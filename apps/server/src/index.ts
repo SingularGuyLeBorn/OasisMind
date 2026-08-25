@@ -664,12 +664,12 @@ const server = app.listen(PORT, HOST, () => {
     bootDetail("  📦 [packs] swarm 未启用 → 跳过 Trigger/Scheduler/Heartbeat/AgentCron");
   }
   // R-2 重启恢复首扫（四动作，条件写幂等，DB 为 ground truth）：僵尸 Task→failed（不自动重跑）
-  // + 僵尸 running 会话→paused + superior 孤儿队列项重注册 drain + 未投递终态/孤儿交付合并对账
+  // + 僵尸 running 会话→interrupted + superior 孤儿队列项重注册 drain + 未投递终态/孤儿交付合并对账
   // （动作 2 与 R-1 reconciler 同一幂等入口；周期对账由下方 startAsyncDeliveryReconciler 负责）
   runStartupRecovery({ config, services })
     .then((r) => {
       if (r.staleTasksFailed > 0) console.log(`  ⚠️ [AsyncJobs] 已将 ${r.staleTasksFailed} 个中断的后台任务标为 failed`);
-      if (r.zombieSessionsPaused > 0) console.log(`  ⚠️ [Session] 已将 ${r.zombieSessionsPaused} 个僵尸 running 会话标为 paused`);
+      if (r.zombieSessionsInterrupted > 0) console.log(`  ⚠️ [Session] 已将 ${r.zombieSessionsInterrupted} 个僵尸 running 会话标为 interrupted`);
       if (r.superiorDrainsRegistered > 0) console.log(`  ♻️ [Session] 已为 ${r.superiorDrainsRegistered} 个会话重注册 superior 队列 drain`);
       const healed = r.reconcile.renotified + r.reconcile.renotifiedUndelivered;
       if (healed > 0) {

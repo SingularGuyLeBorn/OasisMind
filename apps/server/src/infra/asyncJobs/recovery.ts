@@ -11,8 +11,8 @@ import { reconcileAsyncDeliveries, type ReconcileAsyncDeliveriesResult } from ".
 export interface StartupRecoveryResult {
   /** 动作 1：僵尸 running/queued async Task 标 failed 数（服务重启一律不自动续跑） */
   staleTasksFailed: number;
-  /** 动作 2：僵尸 running ChatSession 标 paused 数 */
-  zombieSessionsPaused: number;
+  /** 动作 2：僵尸 running ChatSession 标 interrupted 数 */
+  zombieSessionsInterrupted: number;
   /** B2：超龄软认领 SessionQueueItem 重置 claimedAt 数 */
   staleQueueClaimsReleased: number;
   /** 动作 3：superior 孤儿队列项重注册 drain 的会话数 */
@@ -26,9 +26,10 @@ export interface StartupRecoveryResult {
  * 不是第三条并行恢复路径——动作 1 收拢既有 recoverStaleAsyncJobs，动作 2 与 R-1 孤儿共用
  * reconcileAsyncDeliveries 同一幂等入口（CLAIM 原子互斥 + notify/autoConsume 管道）。
  *
- * 四动作（顺序敏感；B4：僵尸会话 paused 先于 Task 处理，避免刚被 resume 置 running 的子会话被误伤）：
- * 1. 僵尸 running ChatSession → paused（条件写 updateMany）：重启后 hub 无任何活跃流，
- *    仍 running 的会话都是尸体。
+ * 四动作（顺序敏感；B4：僵尸会话 interrupted 先于 Task 处理，避免刚被 resume 置 running 的子会话被误伤）：
+ * 1. 僵尸 running ChatSession → interrupted（条件写 updateMany）：重启后 hub 无任何活跃流，
+ *    仍 running 的会话都是尸体。interrupted 表示崩溃/重启遗留，恢复管道可自动接管；
+ *    paused 保留给用户手停。
  * 2. 僵尸 running/queued async Task 统一标 failed（用户明确要求服务重启不自动续跑）：
  *    文案「服务重启，任务中断」。reentrant/maxRetries/retryCount 三列已删，留待人工 retryAsyncJob 手动恢复。
  * 3. superior 孤儿 SessionQueueItem → 重新注册 drain（含 B2 超龄软认领重置）。
@@ -39,7 +40,7 @@ export async function runStartupRecovery(options: {
   services: ServiceContainer;
 }): Promise<StartupRecoveryResult> {
   const { config, services } = options;
-  // B4 动作 1：僵尸 running 会话 → paused（先于 Task 续跑，防误伤刚起流的子会话；
+  // B4 动作 1：僵尸 running 会话 → interrupted（先于 Task 续跑，防误伤刚起流的子会话；
   // 先查出子会话以便广播，再条件写）
   const zombieSubRows = await prisma.chatSession.findMany({
     where: { status: "running", kind: "subagent", parentSessionId: { not: null } },
@@ -47,17 +48,17 @@ export async function runStartupRecovery(options: {
   });
   const zombieSessions = await prisma.chatSession.updateMany({
     where: { status: "running" },
-    data: { status: "paused" },
+    data: { status: "interrupted" },
   });
   for (const row of zombieSubRows) {
     if (!row.parentSessionId) continue;
     notifySubagentSessionUpdate({
       parentSessionId: row.parentSessionId,
       subagentSessionId: row.id,
-      status: "paused",
+      status: "interrupted",
       title: row.title ?? undefined,
       agentId: row.agentId,
-    }).catch(catchUnlessAbort("[asyncJobManager] notifySubagentSessionUpdate (zombie pause)"));
+    }).catch(catchUnlessAbort("[asyncJobManager] notifySubagentSessionUpdate (zombie interrupted)"));
   }
   // 动作 2：Task 恢复（服务重启一律标 failed，不自动续跑）
   const { failed: staleTasksFailed } = await recoverStaleAsyncJobs(config, services);
@@ -70,7 +71,7 @@ export async function runStartupRecovery(options: {
   const reconcile = await reconcileAsyncDeliveries({ services, config });
   return {
     staleTasksFailed,
-    zombieSessionsPaused: zombieSessions.count,
+    zombieSessionsInterrupted: zombieSessions.count,
     staleQueueClaimsReleased,
     superiorDrainsRegistered,
     reconcile,

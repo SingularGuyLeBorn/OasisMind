@@ -59,6 +59,9 @@ export async function enqueueSuperiorDrainForSession(options: {
  *
  * 进程内 drain 链随重启丢失，pending 队列项跨重启留存于 SQLite（W-E 已知限制）。
  * 重启首扫为每个有待处理 superior 项的活跃会话重新注册 drain，会话空闲后按 FIFO consume。
+ * 跳过 status="paused" 的会话：用户手停的 pending 项原样保留，等用户点 resume 时
+ * sessionService.resume 已负责「队首 superior 挂 drain」接管；避免本函数与 prepareAgentRun
+ * 在 paused 状态循环入队-consume-重建空转。
  * 返回重注册 drain 的会话数。
  */
 export async function requeueOrphanedSuperiorDrains(
@@ -75,7 +78,8 @@ export async function requeueOrphanedSuperiorDrains(
   const sessionIds = [...new Set(items.map((i) => i.sessionId))];
   if (sessionIds.length === 0) return 0;
   const liveSessions = await services.prisma.chatSession.findMany({
-    where: { id: { in: sessionIds }, status: { notIn: ["deleted", "archived"] }, agentId: { not: null } },
+    // paused 跳过：用户手停会话的 pending superior 项由 resume 时 sessionService.resume 挂 drain 接管
+    where: { id: { in: sessionIds }, status: { notIn: ["deleted", "archived", "paused"] }, agentId: { not: null } },
     select: { id: true, agentId: true },
   });
   let registered = 0;

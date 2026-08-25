@@ -31,6 +31,7 @@ export type SwarmHealthSnapshot = {
   sessions: {
     running: number;
     paused: number;
+    interrupted: number;
     active: number;
   };
   askUserPending: Array<{
@@ -121,6 +122,7 @@ export async function getSwarmHealthSnapshot(
 
   const running = sessions.filter((s) => s.status === "running").length;
   const paused = sessions.filter((s) => s.status === "paused").length;
+  const interrupted = sessions.filter((s) => s.status === "interrupted").length;
   const active = sessions.filter((s) => s.status === "active" || s.status === "completed").length;
 
   const askUserPending = sessions.flatMap((s) =>
@@ -165,6 +167,7 @@ export async function getSwarmHealthSnapshot(
     pendingMsg > 0 ||
     queueItems > 0 ||
     paused > 0 ||
+    interrupted > 0 ||
     suspendedAt != null;
 
   return {
@@ -183,7 +186,7 @@ export async function getSwarmHealthSnapshot(
         createdAt: r.createdAt.toISOString(),
       })),
     },
-    sessions: { running, paused, active },
+    sessions: { running, paused, interrupted, active },
     askUserPending,
     heartbeat: {
       suspendedAt,
@@ -288,6 +291,19 @@ export async function buildSwarmBrief(
     orderBy: [{ tier: "asc" }, { updatedAt: "desc" }],
     take: limit,
   });
+  // 全局简报必须带上超级 Agent：tier 字典序 super 排最后，take:limit 会把它挤出扫描集，
+  // Chat「看下心跳」就读不到 lastMode。workspace 作用域简报仍只看本空间。
+  const globalScan = options?.workspaceId == null || options.workspaceId === "";
+  if (globalScan) {
+    const supers = await prisma.agent.findMany({
+      where: { tier: "super", status: { not: "deleted" } },
+      select: { id: true, name: true, tier: true },
+    });
+    const seen = new Set(agents.map((a) => a.id));
+    for (const s of supers) {
+      if (!seen.has(s.id)) agents.push(s);
+    }
+  }
 
   const snapshots: SwarmHealthSnapshot[] = [];
   for (const a of agents) {

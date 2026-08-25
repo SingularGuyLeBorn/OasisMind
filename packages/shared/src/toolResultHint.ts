@@ -71,6 +71,30 @@ export function formatToolTimingHint(result: unknown): string | null {
   return parts.length ? parts.join(" · ") : null;
 }
 
+export type ApprovalPendingMarker = {
+  approvalId: string;
+  toolName?: string;
+  decisionScope?: string;
+};
+
+/** 工具结果里的审批挂起标记（与 agentTools PENDING_APPROVAL 写入同形） */
+export function parseApprovalPending(result: unknown): ApprovalPendingMarker | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const marker = (result as { approvalPending?: unknown }).approvalPending;
+  if (!marker || typeof marker !== "object" || Array.isArray(marker)) return null;
+  const approvalId = (marker as { approvalId?: unknown }).approvalId;
+  if (typeof approvalId !== "string" || !approvalId.trim()) return null;
+  const toolName = (marker as { toolName?: unknown }).toolName;
+  const decisionScope = (marker as { decisionScope?: unknown }).decisionScope;
+  return {
+    approvalId: approvalId.trim(),
+    ...(typeof toolName === "string" && toolName.trim() ? { toolName: toolName.trim() } : {}),
+    ...(typeof decisionScope === "string" && decisionScope.trim()
+      ? { decisionScope: decisionScope.trim() }
+      : {}),
+  };
+}
+
 /** 工具失败摘要 */
 export function formatToolErrorHint(result: unknown): string | null {
   if (!result || typeof result !== "object" || Array.isArray(result)) return null;
@@ -84,6 +108,7 @@ export function formatToolErrorHint(result: unknown): string | null {
 
 /** 成功或失败均尝试生成摘要（Chat 时间线 / SSE hint） */
 export function formatToolResultHint(result: unknown): string | null {
+  if (parseApprovalPending(result)) return "待审批";
   return formatToolTimingHint(result) ?? formatToolErrorHint(result);
 }
 
@@ -102,6 +127,7 @@ const ASYNC_STATUS_LABEL: Record<string, string> = {
   completed: "已完成",
   failed: "失败",
   paused: "已暂停",
+  interrupted: "已中断",
   active: "活跃",
   not_found: "未找到",
 };

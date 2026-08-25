@@ -168,7 +168,7 @@ export class LocalSwarmBus implements SwarmBus {
         where: {
           agentId: params.toAgentId,
           kind: "subagent",
-          status: { in: ["active", "running", "queued", "paused"] },
+          status: { in: ["active", "running", "queued", "paused", "interrupted"] },
         },
         orderBy: { updatedAt: "desc" },
         take: 8,

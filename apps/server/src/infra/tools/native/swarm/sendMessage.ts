@@ -70,7 +70,8 @@ export async function prepareAgentRun(
           mainSession = await ctx.prisma?.chatSession.findUnique({ where: { id: (created.data as { id: string }).id } }) ?? null;
         }
       } else if (mainSession.status === "paused") {
-        // SW-L5：用户手动暂停不得翻成 running；只补血缘，消息走入队、不起流
+        // SW-L5：用户手动 paused 不得翻成 running；只补血缘，消息走入队、不起流。
+        // interrupted（崩溃/重启尸体）不走此分支，会落进 else 正常分支由恢复管道接管。
         const patch: Record<string, unknown> = {};
         if (mainSession.kind !== "subagent") patch.kind = "subagent";
         if (ctx.sessionId && mainSession.parentSessionId !== ctx.sessionId) {
@@ -133,6 +134,7 @@ export async function prepareAgentRun(
       // SWARM_MODE=redis 时再看跨实例 running 宣称（本进程 hub 看不到他机内存 runs）
       const hub = getStreamHub();
       const sessionPaused = mainSession.status === "paused";
+      // interrupted（崩溃/重启尸体）应走正常起流分支，由恢复管道自动接管；不因为状态非 paused 就入队空转
       let shouldQueue = sessionPaused;
       if (!shouldQueue && hub) {
         shouldQueue = hub.isRunning(mainSession.id);

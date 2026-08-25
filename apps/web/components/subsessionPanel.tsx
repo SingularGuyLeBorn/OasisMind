@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "已完成",
   failed: "失败",
   paused: "已暂停",
+  interrupted: "已中断",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -23,6 +24,7 @@ const STATUS_DOT: Record<string, string> = {
   completed: "bg-blue-400",
   failed: "bg-red-500",
   paused: "bg-gray-400",
+  interrupted: "bg-orange-400",
 };
 
 export function SubsessionPanel({

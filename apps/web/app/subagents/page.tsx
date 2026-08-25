@@ -14,13 +14,14 @@ import { ConfirmDialog, EmptyState, Pagination } from "@/components/shared";
 import type { SessionStatus } from "@oasismind/shared";
 import { sessionLabel } from "@/lib/displayLabels";
 
-const STATUS_OPTIONS = ["", "running", "queued", "completed", "failed", "paused"] as const;
+const STATUS_OPTIONS = ["", "running", "queued", "completed", "failed", "paused", "interrupted"] as const;
 const STATUS_LABEL: Record<string, string> = {
   running: "执行中",
   queued: "排队中",
   completed: "已完成",
   failed: "失败",
   paused: "已暂停",
+  interrupted: "已中断",
   active: "活跃",
 };
 const STATUS_COLOR: Record<string, string> = {
@@ -29,6 +30,7 @@ const STATUS_COLOR: Record<string, string> = {
   completed: "bg-green-500",
   failed: "bg-red-500",
   paused: "bg-gray-400",
+  interrupted: "bg-orange-400",
   active: "bg-green-500",
 };
 

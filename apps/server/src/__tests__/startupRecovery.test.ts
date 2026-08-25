@@ -5,7 +5,8 @@
  * startAsyncDeliveryReconciler 负责，动作 2 与 R-1 孤儿共用 reconcileAsyncDeliveries 同一幂等入口）：
  * 1. 僵尸 running/queued async Task 统一标 failed「服务重启，任务中断」
  *    （服务重启一律不自动续跑；reentrant/maxRetries/retryCount 三列已删；retryAsyncJob 手动重试）；
- * 2. 僵尸 running ChatSession → paused（条件写；重启后 hub 无活跃流，running 皆尸体）；
+ * 2. 僵尸 running ChatSession → interrupted（条件写；重启后 hub 无活跃流，running 皆尸体；
+ *    interrupted 表示崩溃/重启遗留，恢复管道可自动接管；paused 保留给用户手停）；
  * 3. superior 孤儿 SessionQueueItem → 重新注册 drain（v7 W-E 机制，consume 删除即认领）；
  * 4. delivered=false 终态未投递 → 重新 notify（reconcileAsyncDeliveries Pass 2）。
  *
@@ -160,7 +161,7 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
     resetSwarmBus();
     setStreamHub(new SessionStreamHub({ ringSize: 100, persist: false, eventTtlMs: 1000, cleanupIntervalMs: 0 }));
     // 单 fork 串行下 test.db 跨文件共享：清掉前序文件遗留，保证 runStartupRecovery 扫描面
-    // 只含本文件构造的数据（staleTasksFailed / zombieSessionsPaused / renotifiedUndelivered 计数确定性）
+    // 只含本文件构造的数据（staleTasksFailed / zombieSessionsInterrupted / renotifiedUndelivered 计数确定性）
     await prisma.task.deleteMany({ where: { status: { in: ["running", "queued", "success", "failed"] } } });
     await prisma.chatSession.updateMany({ where: { status: "running" }, data: { status: "paused" } });
     await prisma.sessionQueueItem.deleteMany({ where: { kind: "superior" } });
@@ -194,10 +195,10 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       expect((rowRunning?.output as { error?: string })?.error).toContain("服务重启");
       // 不自动重跑：没有新 run/新任务被创建，任务只是被标 failed（重试走 retryAsyncJob 手动）
       expect(rowRunning?.startedAt).toBeNull();
-      // B4：先 paused 全部 running 尸体（本例 zombie + sub 共 2），再 Task 恢复把 sub 覆写 failed
-      expect(r1.zombieSessionsPaused).toBe(2);
+      // B4：先 interrupted 全部 running 尸体（本例 zombie + sub 共 2），再 Task 恢复把 sub 覆写 failed
+      expect(r1.zombieSessionsInterrupted).toBe(2);
       const zombieSession = await prisma.chatSession.findUnique({ where: { id: zombieSessionId } });
-      expect(zombieSession?.status).toBe("paused");
+      expect(zombieSession?.status).toBe("interrupted");
       // stale 任务的 subagent 会话同步标 failed（既有 recoverStaleAsyncJobs 语义收拢）
       const subSession = await prisma.chatSession.findUnique({ where: { id: subSessionId } });
       expect(subSession?.status).toBe("failed");
@@ -211,9 +212,9 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       // 幂等：连跑第二次，状态不变、计数全零
       const r2 = await runStartupRecovery({ config: ctx.config, services: ctx.services });
       expect(r2.staleTasksFailed).toBe(0);
-      expect(r2.zombieSessionsPaused).toBe(0);
+      expect(r2.zombieSessionsInterrupted).toBe(0);
       expect((await prisma.task.findUnique({ where: { id: staleRunning.id } }))?.status).toBe("failed");
-      expect((await prisma.chatSession.findUnique({ where: { id: zombieSessionId } }))?.status).toBe("paused");
+      expect((await prisma.chatSession.findUnique({ where: { id: zombieSessionId } }))?.status).toBe("interrupted");
     } finally {
       await cleanupIds({ agentIds: [agentId], sessionIds: [zombieSessionId, subSessionId] });
     }
@@ -314,7 +315,7 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       // 账本：consume 事务内 pending → consumed
       const msgRow = await prisma.agentMessage.findUnique({ where: { id: agentMsg.id } });
       expect(msgRow?.status).toBe("consumed");
-      // 会话生命周期：running（尸体）→ paused（动作 2）→ running（drain 起流）→ completed（跑完）
+      // 会话生命周期：running（尸体）→ interrupted（动作 2）→ running（drain 起流）→ completed（跑完）
       const session = await prisma.chatSession.findUnique({ where: { id: subSessionId } });
       expect(session?.status).toBe("completed");
     } finally {
@@ -322,4 +323,58 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       await cleanupIds({ agentIds: [parentAgentId, subAgentId], sessionIds: [subSessionId] });
     }
   }, 25_000);
+
+  it("C4 动作 3：status=paused 的用户手停会话，pending superior 项不被 drain 重注册/消费，仍 paused", async () => {
+    const ctx = await createContextInner();
+    const parentAgentId = await createAgent(ctx, "C4父", "manager");
+    const subAgentId = await createAgent(ctx, "C4子", "sub", parentAgentId);
+    const main = await prisma.chatSession.findFirst({
+      where: { agentId: subAgentId, isMainSession: true, status: { not: "deleted" } },
+    });
+    if (!main) throw new Error("C4: 子 Agent 缺少自动主会话");
+    const subSessionId = main.id;
+    // 模拟用户手停：status=paused，并留一条 pending superior 队列项
+    await prisma.chatSession.update({
+      where: { id: subSessionId },
+      data: { status: "paused", kind: "subagent" },
+    });
+    const agentMsg = await prisma.agentMessage.create({
+      data: {
+        fromAgentId: parentAgentId,
+        toAgentId: subAgentId,
+        content: "C4 用户手停保留项",
+        messageType: "command",
+        source: "manager",
+        status: "pending",
+      },
+    });
+    await prisma.sessionQueueItem.create({
+      data: {
+        sessionId: subSessionId,
+        kind: "superior",
+        content: "C4 用户手停保留项",
+        source: parentAgentId,
+        agentMessageId: agentMsg.id,
+      },
+    });
+
+    try {
+      const r = await runStartupRecovery({ config: ctx.config, services: ctx.services });
+      // 不注册 drain、不消费、不写入 user 消息
+      expect(r.superiorDrainsRegistered).toBe(0);
+      const remaining = await ctx.services.sessionQueueItem.listBySession(subSessionId);
+      expect(remaining).toHaveLength(1);
+      const userMsg = await prisma.chatMessage.findFirst({
+        where: { sessionId: subSessionId, role: "user" },
+      });
+      expect(userMsg).toBeFalsy();
+      const session = await prisma.chatSession.findUnique({ where: { id: subSessionId } });
+      expect(session?.status).toBe("paused");
+      const msgRow = await prisma.agentMessage.findUnique({ where: { id: agentMsg.id } });
+      expect(msgRow?.status).toBe("pending");
+    } finally {
+      await prisma.agentMessage.deleteMany({ where: { id: agentMsg.id } }).catch(() => {});
+      await cleanupIds({ agentIds: [parentAgentId, subAgentId], sessionIds: [subSessionId] });
+    }
+  }, 15_000);
 });

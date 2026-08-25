@@ -470,7 +470,7 @@ export const sessionRouter = router({
       }
       return ctx.services.session.update({ id: input.id, status: "active" });
     }),
-  // 保留 API：重启僵尸 paused 可程序化续跑；Chat UI 已去掉「恢复运行」，用户直接发消息即可
+  // 保留 API：重启僵尸 interrupted（或用户手停的 paused）可程序化续跑；Chat UI 已去掉「恢复运行」，用户直接发消息即可
   resume: publicProcedure
     .meta({ description: "手动恢复已暂停（paused）会话：续跑服务端重启前未完成的 ReAct 轮。幂等——并发/重复调用不报错、不重复起流。", aiReadable: false })
     .input(resumeSessionSchema)

@@ -632,7 +632,16 @@ export const listSkillsSchema = z.object({
    Session (会话)
    ═══════════════════════════════════════════════════════ */
 
-export const sessionStatusSchema = z.enum(["active", "queued", "running", "paused", "completed", "failed", "archived"]);
+export const sessionStatusSchema = z.enum([
+  "active",
+  "queued",
+  "running",
+  "paused",
+  "interrupted",
+  "completed",
+  "failed",
+  "archived",
+]);
 
 export const sessionKindSchema = z.enum(["chat", "subagent", "heartbeat", "skill_review", "channel", "cron"]);
 

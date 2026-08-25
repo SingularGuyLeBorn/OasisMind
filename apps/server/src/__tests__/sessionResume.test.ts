@@ -537,6 +537,29 @@ describe("C-3 会话手动恢复（session.resume）", () => {
     }
   }, 20_000);
 
+  it("T13 interrupted 会话可 resume，语义与 paused 一致：续跑后归 active", async () => {
+    process.env.MOCK_LLM = "true";
+    const ctx = await createContextInner();
+    const caller = appRouter.createCaller(ctx);
+    const agentId = await createAgent(ctx, "T13");
+    const sessionId = await createSessionWithStatus(ctx, agentId, "interrupted");
+    await prisma.chatMessage.create({ data: { sessionId, role: "user", content: "历史问题" } });
+    await prisma.chatMessage.create({ data: { sessionId, role: "assistant", content: "历史回答" } });
+
+    try {
+      const res = await caller.session.resume({ id: sessionId });
+      expect(res).toMatchObject({ status: "running", resumed: true, streamStarted: true });
+      await getStreamHub()!.waitFor(sessionId);
+      expect((await prisma.chatSession.findUnique({ where: { id: sessionId } }))?.status).toBe("active");
+      const sysMsgs = await prisma.chatMessage.findMany({
+        where: { sessionId, role: "user", source: "system" },
+      });
+      expect(sysMsgs).toHaveLength(1);
+    } finally {
+      await cleanup({ agentIds: [agentId], sessionIds: [sessionId] });
+    }
+  }, 20_000);
+
   it("T9 Hub 全路径归位：paused 上普通起流（非 resume）done → active", async () => {
     // 根因回归：软暂停标 paused 后用户直接发消息走 hub.start，旧实现无归位 → 永久 paused
     const chatSpy = vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (_s, _c, input, _inv, emit) => {

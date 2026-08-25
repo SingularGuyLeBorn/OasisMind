@@ -96,6 +96,14 @@ export function SwarmHealthPanel({
       Icon: PauseCircle,
     },
     {
+      key: "interrupted",
+      label: "已中断",
+      hint: "Interrupted 会话（崩溃/重启遗留，恢复管道可自动接管）",
+      value: data.sessions.interrupted,
+      warn: data.sessions.interrupted > 0,
+      Icon: PauseCircle,
+    },
+    {
       key: "ask",
       label: "等人答",
       hint: "AskUser 待用户答复",

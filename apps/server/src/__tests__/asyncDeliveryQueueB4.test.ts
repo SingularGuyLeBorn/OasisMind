@@ -131,8 +131,8 @@ describe("B4 启动恢复 resuming 幂等与动作顺序", () => {
     });
 
     const result = await runStartupRecovery({ config: ctx.config, services: ctx.services });
-    expect(result.zombieSessionsPaused).toBeGreaterThanOrEqual(1);
-    expect((await prisma.chatSession.findUnique({ where: { id: zombie.id } }))?.status).toBe("paused");
+    expect(result.zombieSessionsInterrupted).toBeGreaterThanOrEqual(1);
+    expect((await prisma.chatSession.findUnique({ where: { id: zombie.id } }))?.status).toBe("interrupted");
 
     await prisma.agent.deleteMany({ where: { id: agentId } }).catch(() => {});
   });

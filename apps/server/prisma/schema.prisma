@@ -149,7 +149,7 @@ model ChatSession {
   parentSessionId String?
   // 会话类型："chat" | "subagent" | "heartbeat" | "skill_review" | "cron"
   kind         String        @default("chat")
-  // 任务状态：active | queued | running | paused | completed | failed
+  // 任务状态：active | queued | running | paused | interrupted | completed | failed | archived
   status       String        @default("active")
   // 任务描述（subagent 的任务文本）
   taskDescription String?

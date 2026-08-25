@@ -359,7 +359,7 @@ export async function markSessionActiveAfterUserStop(
 ): Promise<void> {
   try {
     await services.prisma.chatSession.updateMany({
-      where: { id: sessionId, status: { in: ["active", "running", "paused"] } },
+      where: { id: sessionId, status: { in: ["active", "running", "paused", "interrupted"] } },
       data: { status: "active" },
     });
     // 推拉铁律：状态写点后推 session_list_changed，其它标签页侧栏秒级对齐

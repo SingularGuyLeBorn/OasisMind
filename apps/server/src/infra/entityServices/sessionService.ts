@@ -213,18 +213,19 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
   }
 
   /**
-   * C-3 会话手动恢复（v10）：paused → running 续跑未完成的 ReAct 轮。
+   * C-3 会话手动恢复（v10）：paused|interrupted → running 续跑未完成的 ReAct 轮。
    *
-   * 背景：服务端重启后 R-2 把僵尸 running 会话标 paused（进程内 ReAct 状态随进程死亡，
+   * 背景：服务端重启后 R-2 把僵尸 running 会话标 interrupted（进程内 ReAct 状态随进程死亡，
    * 消息链在 ChatMessage 表扁平存储，chatAgentStream 从扁平链重建上下文续跑，
-   * 不重复生成已有 assistant 消息）。设计：手动恢复，不做自动恢复。
+   * 不重复生成已有 assistant 消息）。设计：手动恢复，不做自动恢复；interrupted 也可由
+   * 恢复管道（drain / 直接发消息）自动接管，但 resume  procedure 同时放行以便用户手动恢复。
    *
    * 不变量（全部收条件写/原子操作，不靠编排层时序猜测）：
-   * 1. 仅 status="paused" 可恢复；active/failed/archived/completed 等 → BAD_REQUEST（说明原因）。
-   * 2. resume 互斥点 = 条件写 updateMany where {id, status:"paused"} → {status:"running"}：
+   * 1. 仅 status∈{"paused","interrupted"} 可恢复；active/failed/archived/completed 等 → BAD_REQUEST（说明原因）。
+   * 2. resume 互斥点 = 条件写 updateMany where {id, status:{in:["paused","interrupted"]}} → {status:"running"}：
    *    count=1 获得恢复权；count=0 重读——已 running → 幂等返回（并发 double-resume
    *    落选方不报错、不重复起流）；其它 → BAD_REQUEST。
-   *    普通发消息走 Hub.start 的 claim（active|paused→running），与此处幂等叠加。
+   *    普通发消息走 Hub.start 的 claim（active|paused|interrupted→running），与此处幂等叠加。
    * 3. 系统提示消息（role:"user", source:"system"）由 chatAgentStream 在起流后写入——
    *    注入与起流同源，不存在「消息已写、流未起」的孤儿窗口，故回滚无需删消息。
    * 4. 起流失败回滚（宁漏勿错）：startIfNotRunning 返回 false = 已有活跃流接管
@@ -249,7 +250,7 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
 
     // 互斥点（唯一）：条件写抢占恢复权
     const claim = await this.prisma.chatSession.updateMany({
-      where: { id: input.id, status: "paused" },
+      where: { id: input.id, status: { in: ["paused", "interrupted"] } },
       data: { status: "running" },
     });
 
@@ -263,7 +264,7 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
       throw new TRPCError({
         code: "BAD_REQUEST",
         message:
-          `恢复会话失败：仅「已暂停（paused）」的会话可恢复运行，当前状态为「${current.status}」。` +
+          `恢复会话失败：仅「已暂停（paused）」或「已中断（interrupted）」的会话可恢复运行，当前状态为「${current.status}」。` +
           (current.status === "archived" ? "已归档会话请前往续写会话。" : "请刷新会话列表确认状态后重试。"),
       });
     }

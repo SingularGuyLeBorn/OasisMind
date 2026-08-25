@@ -41,7 +41,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PostContent } from "@/components/post/PostContent";
-import { postSessionListHint, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { isCronAdminPushEvent, postSessionListHint, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { cronListRefetchMs } from "@/lib/adminPullIntervals";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
 
 const CRON_PRESETS = [
@@ -138,12 +139,17 @@ function formatWhen(d: Date | string | null | undefined): string {
 }
 
 function StatusDot({ status }: { status: string | null | undefined }) {
+  const runStatus = status || "idle";
   if (!status) {
-    return <span className="om-badge om-badge-info">待命</span>;
+    return (
+      <span className="om-badge om-badge-info" data-testid="cron-job-run-status" data-status={runStatus}>
+        待命
+      </span>
+    );
   }
   if (status === "running") {
     return (
-      <span className="om-badge om-badge-info">
+      <span className="om-badge om-badge-info" data-testid="cron-job-run-status" data-status={runStatus}>
         <Loader2 className="h-3 w-3 animate-spin" />
         运行中
       </span>
@@ -151,7 +157,7 @@ function StatusDot({ status }: { status: string | null | undefined }) {
   }
   if (status === "success") {
     return (
-      <span className="om-badge om-badge-success">
+      <span className="om-badge om-badge-success" data-testid="cron-job-run-status" data-status={runStatus}>
         <CheckCircle2 className="h-3 w-3" />
         成功
       </span>
@@ -159,13 +165,17 @@ function StatusDot({ status }: { status: string | null | undefined }) {
   }
   if (status === "failed") {
     return (
-      <span className="om-badge om-badge-danger">
+      <span className="om-badge om-badge-danger" data-testid="cron-job-run-status" data-status={runStatus}>
         <XCircle className="h-3 w-3" />
         失败
       </span>
     );
   }
-  return <span className="om-badge om-badge-warning">{toPascalCaseId(status)}</span>;
+  return (
+    <span className="om-badge om-badge-warning" data-testid="cron-job-run-status" data-status={runStatus}>
+      {toPascalCaseId(status)}
+    </span>
+  );
 }
 
 function ConfigRow({
@@ -231,11 +241,7 @@ export default function AgentCronPage() {
   const listQuery = trpc.agentCron.list.useQuery(
     {},
     {
-      refetchInterval: (q) => {
-        const items = q.state.data?.items ?? [];
-        const busy = items.some((j) => j.lastRunStatus === "running");
-        return busy ? 2000 : 12_000;
-      },
+      refetchInterval: (q) => cronListRefetchMs(q.state.data?.items ?? []),
     },
   );
   const agentsQuery = trpc.agent.list.useQuery({ page: 1, pageSize: 100 });
@@ -293,7 +299,7 @@ export default function AgentCronPage() {
     const channels: BroadcastChannel[] = [];
     const onMsg = (ev: MessageEvent) => {
       const t = (ev.data as { type?: string } | null)?.type;
-      if (t === "cron_job_updated" || t === "cron_session_started" || t === "session_list_changed") {
+      if (isCronAdminPushEvent(t)) {
         listQuery.refetch().catch(catchUnlessCancelled("app/cron/page.tsx"));
         utils.session.list.invalidate().catch(catchUnlessCancelled("app/cron/page.tsx"));
       }
@@ -322,7 +328,7 @@ export default function AgentCronPage() {
       enabled: !!awaitingFire && !jumpPromptDismissed,
       refetchInterval: (q) => {
         const st = q.state.data?.status;
-        if (st === "completed" || st === "failed" || st === "paused" || st === "archived") {
+        if (st === "completed" || st === "failed" || st === "paused" || st === "interrupted" || st === "archived") {
           return false;
         }
         return 1500;
@@ -345,7 +351,7 @@ export default function AgentCronPage() {
       (m) => m.role === "assistant" && typeof m.content === "string" && m.content.trim().length > 0,
     );
     const terminal =
-      status === "completed" || status === "failed" || status === "paused" || status === "archived";
+      status === "completed" || status === "failed" || status === "paused" || status === "interrupted" || status === "archived";
     return hasAssistant || terminal;
   }, [
     awaitingFire,
@@ -576,6 +582,9 @@ export default function AgentCronPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ ...spring, delay: Math.min(idx * 0.03, 0.2) }}
+                  data-testid="cron-job-card"
+                  data-job-id={row.id}
+                  data-enabled={row.enabled ? "true" : "false"}
                   className={cn(
                     "om-card-premium group relative overflow-hidden rounded-2xl p-5",
                     !row.enabled && "opacity-75",
@@ -632,9 +641,13 @@ export default function AgentCronPage() {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {row.enabled ? (
-                            <span className="om-badge om-badge-success">启用</span>
+                            <span className="om-badge om-badge-success" data-testid="cron-job-enabled">
+                              启用
+                            </span>
                           ) : (
-                            <span className="om-badge om-badge-warning">暂停</span>
+                            <span className="om-badge om-badge-warning" data-testid="cron-job-enabled">
+                              暂停
+                            </span>
                           )}
                           <StatusDot status={row.lastRunStatus} />
                         </div>

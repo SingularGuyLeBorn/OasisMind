@@ -34,8 +34,8 @@ export type BufferedEvent = {
 
 type StreamConfig = AppConfig["stream"];
 
-/** Hub 起流时允许切入 running 的会话态（archived/failed/completed 不动） */
-const CLAIM_RUNNING_FROM = ["active", "paused", "running"] as const;
+/** Hub 起流时允许切入 running 的会话态（archived/failed/completed 不动；interrupted 崩溃尸体可直接续聊） */
+const CLAIM_RUNNING_FROM = ["active", "paused", "running", "interrupted"] as const;
 
 /**
  * 会话 DB 生命周期：所有起流路径（普通发消息 / resume / drain）统一经 Hub 收口。
@@ -911,7 +911,7 @@ export class SessionStreamHub {
     if (reason === "user") {
       prisma.chatSession
         .updateMany({
-          where: { id: sessionId, status: { in: ["active", "running", "paused"] } },
+          where: { id: sessionId, status: { in: ["active", "running", "paused", "interrupted"] } },
           data: { status: "active" },
         })
         .then(async () => {

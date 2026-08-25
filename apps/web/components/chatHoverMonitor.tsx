@@ -200,7 +200,7 @@ function StatusBadge({ status }: { status: string }) {
       ? "bg-green-500/10 text-green-600"
       : status === "queued"
         ? "bg-amber-500/10 text-amber-600"
-        : status === "failed" || status === "paused"
+        : status === "failed" || status === "paused" || status === "interrupted"
           ? "bg-red-500/10 text-red-600"
           : "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]";
   const label: Record<string, string> = {
@@ -210,6 +210,7 @@ function StatusBadge({ status }: { status: string }) {
     done: "已完成",
     failed: "失败",
     paused: "已暂停",
+    interrupted: "已中断",
     active: "活跃",
   };
   return (
