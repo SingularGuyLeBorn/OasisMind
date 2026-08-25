@@ -18,7 +18,7 @@
     { "id": "B14", "title": "长任务后台跑", "userMessage": "这个数据分析任务要跑很久，放后台跑，好了告诉我", "expectToolsAnyOf": ["async_task_run", "spawn_subagent"], "forbidTools": [], "tags": ["async"] },
     { "id": "B15", "title": "删除文章", "userMessage": "把 slug 为 old-draft 的那篇文章删了", "expectToolsAnyOf": ["post_delete"], "forbidTools": ["run_shell"], "tags": ["blog", "destructive"] },
     { "id": "B16", "title": "创建定时任务", "userMessage": "每天早上 8 点提醒我喝水", "expectToolsAnyOf": ["agent_cron_set"], "forbidTools": [], "tags": ["cron"] },
-    { "id": "B17", "title": "查后台任务状态", "userMessage": "刚才那个后台任务跑得怎么样了", "expectToolsAnyOf": ["async_task_status"], "forbidTools": [], "tags": ["async"] },
+    { "id": "B17", "title": "查后台任务状态", "userMessage": "查一下我的后台任务现在的运行状态，不要新建任务", "expectToolsAnyOf": ["async_task_status"], "forbidTools": ["async_task_run"], "tags": ["async"] },
     { "id": "B18", "title": "写工作区文件", "userMessage": "把这段配置保存到工作区的 notes.md", "expectToolsAnyOf": ["write_file"], "forbidTools": ["post_create"], "tags": ["fs", "write"] },
     { "id": "B19", "title": "视频转文字", "userMessage": "把这个 B 站视频转成文字稿 https://www.bilibili.com/video/BV1xx411c7mD", "expectToolsAnyOf": ["video_transcript"], "forbidTools": [], "tags": ["web", "media"] },
     { "id": "B20", "title": "图片语义理解", "userMessage": "看看这张截图里画的是什么（刚截的图）", "expectToolsAnyOf": ["vision_describe", "read_image"], "forbidTools": [], "tags": ["vision"] },

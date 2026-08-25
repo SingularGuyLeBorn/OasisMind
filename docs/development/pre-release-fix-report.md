@@ -127,13 +127,19 @@
 
 ## F6 harness B17 查状态走错工具
 
-- 根因复述：
-- 成功标准：
+- 根因复述：B17「刚才那个后台任务跑得怎么样了」语义上既可理解为「查状态」也可理解为「再跑一遍看状态」，模型实际调了 `async_task_run`；`config.yaml benchOnKeep.minPassRate=1.0` 会因此挡 keep 闭环。
+- 成功标准：B17 明确指向状态查询，禁止 `async_task_run`；`async_task_status` description 也明确提示查状态不要新建任务。
 - 改动文件：
+  - `evals/harness-bench/cases.json`：B17 `userMessage` 改为「查一下我的后台任务现在的运行状态，不要新建任务」；`forbidTools` 加 `async_task_run`。
+  - `apps/server/src/infra/tools/native/shell.ts`：已在 F5 同步把「用户问后台任务进度/状态时一律用本工具，不要为此新建任务」补进 `async_task_status` description。
 - 设计决定与理由：
+  - 同时改 prompt 与工具描述，双向消除歧义；`forbidTools` 提供 harness 硬约束。
 - [OM-FREEPLAY] 清单：
+  - 无。
 - 验证命令与结果：
+  - `pnpm test:bench` 在全局验收阶段运行并记录（见「全局门禁结果」）。
 - 遇到的问题：
+  - 无。
 
 ## F7 博客 HTML 渲染加 sanitize
 
