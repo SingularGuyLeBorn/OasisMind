@@ -5,8 +5,8 @@
 | 项 | 状态 | commit | 验证 |
 |---|---|---|---|
 | F1 崩溃中断 ≠ 用户手停 | done | 8dd65ff3 | server lint 绿；startupRecovery/sessionResume/asyncDeliveryQueueB4/superiorQueueDrain/session-subagent 绿 |
-| F2 read_file 读路径收口 | in_progress | - | - |
-| F3 hostAccess 默认关闸 | pending | - | - |
+| F2 read_file 读路径收口 | done | d9af3c61 | server lint 绿；writePolicy 13 测试全绿 |
+| F3 hostAccess 默认关闸 | in_progress | - | - |
 | F4 经验积累测例补 services.config | pending | - | - |
 | F5 run_shell 真限制 + 文案诚实 | pending | - | - |
 | F6 harness B17 查状态走错工具 | pending | - | - |
@@ -50,23 +50,45 @@
 
 ## F2 read_file 读路径收口
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`data/` 目录只禁写、读全放行；`workspaces/` 按 projectRoot 解析、不校验当前 Agent 的 Workspace 归属。于是 `read_file("data/cookies/feishu_oauth.json")`、`read_file("workspaces/别人/secret.txt")` 都能读。
+- 成功标准：`data/` 读改默认拒绝 + 白名单；`workspaces/` 仅当前 Agent 自己的 Workspace 可读；super tier 不开口子。
 - 改动文件：
+  - `apps/server/src/infra/writePolicy.ts`：新增 `DATA_READ_ALLOWLIST`；`data/` 读分支校验白名单；`workspaces/` 分支查当前 Agent 的 `Workspace.path` 并断言目标落在其内；`describePolicy()` 文案同步。
+  - `apps/server/src/__tests__/writePolicy.test.ts`：新增 13 条测试覆盖允许/拒绝路径。
 - 设计决定与理由：
+  - 白名单只放 `data/tool-results/`、`data/webpages/`、`data/workspace/`——这是 Agent 回读链路的完整扫描结论：`toolResultOffload` 写 `data/tool-results/{session}/` 后 `read_file` 读回；`save_webpage` 落 `data/webpages/` 后提示用户 `read_file` 读回；`data/workspace/` 是无 Workspace 记录时的回退工作区。
+  - `cookies`、`credentials`、`db`、`git`、`approvals`、`logs`、`sessions`、`messages` 不在白名单，读取会被拒绝。
+  - `workspaces/` 用 `ctx.agentSnapshot?.workspaceId` 查 `Workspace.path`，再用 `isAbsInside`（Windows 大小写不敏感）比较；无 Workspace 全拒；裸扫 `workspaces/` 根也拒。
+  - super tier 不额外开洞：审计未授权 super 读别人 Workspace，统一走 Workspace 归属校验。
 - [OM-FREEPLAY] 清单：
+  - 无（白名单子目录与报错文案均按审计要求实现，无自行猜测的默认）。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/server lint`：绿。
+  - `pnpm --filter @oasismind/server test -- writePolicy.test`：`writePolicy.test.ts` 13 测试全绿；整体退出码 1 来自 F4 `agentEvolutionOptimize.test.ts`，与本项无关。
 - 遇到的问题：
+  - 无。
 
 ## F3 hostAccess 默认关闸、去本机盘符
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`HostAccessYamlSchema` 的 `enabled` 默认 `true`，`roots` 默认包含本机盘符 `"D:/ALL IN AI"`；`config.yaml` 中 `enabled: true` 与注释「总闸：enabled=false」相反，导致主机访问默认敞开且携带不可移植路径。
+- 成功标准：`enabled` 默认 `false`；默认 roots 只保留 `%USERPROFILE%` 下的可移植目录；`config.yaml` 注释与值一致；测试验证空对象解析为关闸；全仓默认配置/ schema 不再含 `D:/ALL IN AI`。
 - 改动文件：
+  - `apps/server/src/infra/config.ts`：`enabled: z.boolean().default(false)`；`roots` 默认值删掉 `"D:/ALL IN AI"`，保留 `%USERPROFILE%/Desktop/Documents/Downloads`。
+  - `config.yaml`：`hostAccess.enabled: false`；删 `"D:/ALL IN AI"` 行；注释同步。
+  - `apps/server/src/infra/hostAccess.ts`：新增模块（随本项一起入库）。
+  - `apps/server/src/__tests__/hostAccess.test.ts`：新增空对象默认 off / 显式 true 仍可用两条用例；将测试里的示例盘符改成 `D:/example`。
+  - `config/agents/weixin-bot.md`、`config/agents/qq-bot.md`：把示例路径 `D:/ALL IN AI` 改成占位写法 `D:/你的项目`。
+  - `config/mcp/windows-mcp.yaml`：随本项一起入库（无密钥，仅配置说明）。
 - 设计决定与理由：
+  - `%USERPROFILE%` 保留：它们是可移植的用户目录，不是某台机器的绝对路径，且对应默认 roots 的三个常见用户文件夹。
+  - `weixin-bot.md` / `qq-bot.md` 的 `D:/ALL IN AI` 只是 prompt 示例，不属于 schema/默认配置，但按「示例出现要改成占位写法」同步替换，避免 grep 误报。
+  - `hostAccess.ts` 与 `windows-mcp.yaml` 是用户未跟踪的新文件，已审阅无密钥后随 F3 入库，避免遗留未提交文件。
 - [OM-FREEPLAY] 清单：
+  - 无（默认值、roots 清单、占位写法均按审计要求执行）。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/server exec vitest run src/__tests__/hostAccess.test.ts`：17 测试全绿，退出码 0。
 - 遇到的问题：
+  - 无。
 
 ## F4 经验积累测例补 services.config
 

@@ -1,0 +1,22 @@
+# Windows-MCP（CursorTouch）— 本机桌面操控
+# 原理：stdio MCP 子进程，内部调 Win32 / UI Automation（UIA）看窗口树、模拟键鼠、截屏、开应用。
+# 不是给 LLM 一套完整 Win32 ABI。文件走 native + hostAccess.roots。
+# 本机系统 Python 常为 3.10；windows-mcp 需要 >=3.12，必须 uvx --python 3.12（uv 会装独立解释器）。
+# GitHub 直连常失败：UV_PYTHON_INSTALL_MIRROR + UV_DEFAULT_INDEX 走国内镜像。
+# 总闸：config.yaml hostAccess.enabled；群聊拒绝；工具白名单（不要 --exclude，新危险工具会漏进来）。
+name: windows-mcp
+transport: stdio
+enabled: true
+command: uvx
+args:
+  - --python
+  - "3.12"
+  - windows-mcp
+  - serve
+  - --tools
+  - Screenshot,Click,Type,Scroll,Move,Wait,WaitFor,DisplayInventory,Snapshot,App
+env:
+  ANONYMIZED_TELEMETRY: "false"
+  WINDOWS_MCP_TOOLS: "Screenshot,Click,Type,Scroll,Move,Wait,WaitFor,DisplayInventory,Snapshot,App"
+  UV_PYTHON_INSTALL_MIRROR: "https://registry.npmmirror.com/-/binary/python-build-standalone"
+  UV_DEFAULT_INDEX: "https://pypi.tuna.tsinghua.edu.cn/simple"

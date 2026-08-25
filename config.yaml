@@ -215,6 +215,20 @@ approvalGate:
   # 同一审批冷却窗口内不重复通知（毫秒）；默认 30min
   notifyCooldownMs: 1800000
 
+# 主机访问（与 Workspace 沙箱正交）
+# IM 远程助手默认仍封印在自己的 Workspace；只有 Agent tools 含 native:host_access 才能碰 roots。
+# 群聊一律拒绝。总闸：enabled=false（公网/隧道发布前务必保持关闭）。桌面点击/开应用走 MCP windows-mcp（不含 PowerShell/注册表/任意删文件）。
+hostAccess:
+  enabled: false
+  roots:
+    - "%USERPROFILE%/Desktop"
+    - "%USERPROFILE%/Documents"
+    - "%USERPROFILE%/Downloads"
+  desktopMcpServers:
+    - windows-mcp
+  # 空 = 默认白名单（Screenshot/Click/Type/App 等）。不要把 PowerShell/FileSystem/Registry 加进来。
+  desktopMcpAllowedTools: []
+
 # 知识 Inbox：截图 / 知乎 / 小红书 / 微信公众号 → 待消化 → 蒸馏
 inbox:
   # 截图监视目录；空 = data/inbox/screenshots/drop

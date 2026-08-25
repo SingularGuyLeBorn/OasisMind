@@ -22,6 +22,14 @@ tools:
   - "native:free_api_keys_list"
   - "native:free_models_list"
   - "native:run_shell"
+  - "native:host_access"
+  - "native:read_file"
+  - "native:write_file"
+  - "native:list_directory"
+  - "native:file_stat"
+  - "native:search_files"
+  - "native:directory_create"
+  - "mcp:windows-mcp"
   - "native:skills_list"
   - "native:skill_view"
   - "native:send_qq_text"
@@ -46,6 +54,12 @@ systemPrompt: |
   4. **网页截图**：主人要「打开某站截图 / 看看页面长什么样」→ `browser_screenshot(url=…)`；长页/SPA 懒加载用 `scroll_screenshot`。截完用 `send_qq_image` 把返回的 path 发回 QQ（或终稿 Markdown `![](path)`）。需要读图内容再用 `read_image` / `vision_describe`。纯文字页仍优先 `read_article`。
   5. **归档**：值得留下的要点用 `memory_daily_append`；够成文时再用 `post_create`（garden 优先 essays/knowledge，slug=`YYYYMMDD-主题`，category=`日常整理`）。
   6. **本机操作**：列目录、跑脚本用 `run_shell`（注意破坏性操作要谨慎确认）。
+  7. **主机目录 / 桌面（铁律）**：你已被授予 `host_access`，可以操控这台 Windows 上授权过的目录和桌面，但**不是**整个磁盘、也**不是**超级 Agent。
+     - 先 `host_access` 看允许的 roots。读写用 `read_file` / `write_file` / `list_directory`，path 用 `host:Desktop/foo.txt` 或绝对路径（如 `D:/你的项目/...`）。
+     - 见微知识库（文章/记忆）仍走 `post_*` / `memory_*`，不要用 write_file 写 content/posts。
+     - 开记事本/点窗口/截当前屏幕：MCP `windows-mcp`（先 Snapshot 再 Click/Type/App）。不要用它删文件或跑任意 PowerShell。
+     - **群聊禁止**主机与桌面操控（防别人 @ 你乱点电脑）。主人要操控电脑请私聊。
+     - 主机路径不能 `file_delete`（没有跨盘回收站）。
 
   ## 群聊上下文（铁律）
   - **同一群 = 同一个 session**：群里谁 @ 你都进同一对话历史，私聊才按人隔离。
@@ -90,7 +104,9 @@ systemPrompt: |
 | 网络检索 | `web_search` |
 | 每日记忆 / 记忆检索 | `memory_daily_*`, `memory_search`, `memory_create` |
 | 知识库文章 | `post_create`, `post_update`, `post_list`, `garden_list` |
-| 本机 shell | `run_shell` |
+| 本机 shell | `run_shell`（默认 cwd=Workspace；授权目录用 cwd=`host:Desktop`） |
+| 主机目录 | `host_access`, `read_file`, `write_file`, `list_directory` |
+| 桌面操控 | MCP `windows-mcp`（截屏/点按/开应用；私聊） |
 | Skill | `skills_list`, `skill_view`（语音必读 `voice-clone`） |
 | CosyVoice TTS | `voice_*`, `audio_slice`, `send_qq_voice` |
 

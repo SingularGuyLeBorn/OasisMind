@@ -182,6 +182,22 @@ const InboxYamlSchema = z.object({
   zhihuCollectionUrls: z.array(z.string()).default([]),
 });
 
+/** 主机访问：与 Workspace 沙箱正交。IM 远程助手显式 native:host_access 后才能碰 roots。 */
+const HostAccessYamlSchema = z.object({
+  enabled: z.boolean().default(false),
+  roots: z
+    .array(z.string())
+    .default([
+      "%USERPROFILE%/Desktop",
+      "%USERPROFILE%/Documents",
+      "%USERPROFILE%/Downloads",
+    ]),
+  /** 视为「桌面操控」的 MCP server 名（群聊拒绝；hostAccess.enabled=false 时不挂 schema） */
+  desktopMcpServers: z.array(z.string()).default(["windows-mcp"]),
+  /** 空 = 用运行时默认白名单（截屏/点按/开应用）。PowerShell/注册表/任意删文件不在默认内。 */
+  desktopMcpAllowedTools: z.array(z.string()).default([]),
+});
+
 /* ─── 类型定义 ─── */
 
 export interface LlmProviderConfig {
@@ -368,6 +384,16 @@ export interface AppConfig {
     maxOutputChars: number;
     /** auto | powershell | cmd | bash */
     shell: string;
+  };
+  /**
+   * 主机访问（与 Workspace 正交）。
+   * enabled=false 为总闸；roots 是允许的本机目录；desktopMcpServers 是桌面 MCP（如 windows-mcp）。
+   */
+  hostAccess: {
+    enabled: boolean;
+    roots: string[];
+    desktopMcpServers: string[];
+    desktopMcpAllowedTools?: string[];
   };
   /** SessionStreamHub 内存缓冲与持久化配置 */
   stream: {
@@ -810,6 +836,10 @@ export function createAppConfig(): AppConfig {
   const inboxYaml = inboxYamlParsed.success ? inboxYamlParsed.data : InboxYamlSchema.parse({});
   const packsYamlParsed = PacksYamlSchema.safeParse(yamlConfig.packs ?? {});
   const packsYaml = packsYamlParsed.success ? packsYamlParsed.data : PacksYamlSchema.parse({});
+  const hostAccessYamlParsed = HostAccessYamlSchema.safeParse(yamlConfig.hostAccess ?? {});
+  const hostAccessYaml = hostAccessYamlParsed.success
+    ? hostAccessYamlParsed.data
+    : HostAccessYamlSchema.parse({});
   const packs = resolvePackFlags({
     profile: packsYaml.profile,
     yaml: {
@@ -1047,6 +1077,12 @@ export function createAppConfig(): AppConfig {
       timeoutMs: Math.max(1000, parseInt(readEnv("SHELL_TIMEOUT_MS") || "30000", 10)),
       maxOutputChars: Math.max(1000, parseInt(readEnv("SHELL_MAX_OUTPUT_CHARS") || "12000", 10)),
       shell: readEnv("SHELL_BINARY") || "auto",
+    },
+    hostAccess: {
+      enabled: hostAccessYaml.enabled,
+      roots: hostAccessYaml.roots,
+      desktopMcpServers: hostAccessYaml.desktopMcpServers,
+      desktopMcpAllowedTools: hostAccessYaml.desktopMcpAllowedTools,
     },
     stream: {
       ringSize: Math.max(10, parseInt(String(streamConfig.ringSize ?? "500"), 10)),
