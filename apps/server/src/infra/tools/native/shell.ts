@@ -8,6 +8,13 @@
 import fs from "node:fs";
 import { runShellRestricted, waitMs } from "../../shellRunner.js";
 import { resolveAgentFsPath } from "../../writePolicy.js";
+import {
+  assertHostSessionAllowed,
+  findContainingHostRoot,
+  listExpandedHostRoots,
+  looksLikeHostPath,
+  resolveHostAbsolutePath,
+} from "../../hostAccess.js";
 import type { NativeToolContext, NativeToolDefinition } from "./types.js";
 import { coerceToolBoolean } from "./types.js";
 import { registerNativeDomain } from "./registerDomain.js";
@@ -132,9 +139,35 @@ async function resolveShellSandboxRoot(ctx: NativeToolContext): Promise<string> 
 }
 
 async function runShellTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const cwdArg = args.cwd ? String(args.cwd) : undefined;
+  if (cwdArg && looksLikeHostPath(cwdArg)) {
+    await assertHostSessionAllowed({
+      config: ctx.config,
+      prisma: ctx.prisma,
+      sessionId: ctx.sessionId,
+      tools: ctx.agentSnapshot?.tools,
+      requireCapability: true,
+    });
+    const hostAbs = resolveHostAbsolutePath(ctx.config, cwdArg);
+    if (!hostAbs) {
+      throw new Error(`run_shell cwd 不在 hostAccess.roots 内：${cwdArg}。下一步：先调 host_access。`);
+    }
+    const hostRoot = findContainingHostRoot(hostAbs, listExpandedHostRoots(ctx.config));
+    if (!hostRoot) throw new Error(`run_shell cwd 未命中授权根：${cwdArg}`);
+    if (!fs.existsSync(hostAbs)) {
+      throw new Error(`run_shell cwd 不存在：${hostAbs}`);
+    }
+    return runShellRestricted(ctx.config, String(args.command || ""), {
+      cwd: hostAbs,
+      shell: args.shell ? String(args.shell) : undefined,
+      timeoutMs: args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined,
+      rootDir: hostRoot,
+      signal: ctx.signal,
+    });
+  }
   const rootDir = await resolveShellSandboxRoot(ctx);
   return runShellRestricted(ctx.config, String(args.command || ""), {
-    cwd: args.cwd ? String(args.cwd) : undefined,
+    cwd: cwdArg,
     shell: args.shell ? String(args.shell) : undefined,
     timeoutMs: args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined,
     rootDir,
@@ -214,7 +247,7 @@ const SHELL_DEFS: NativeToolDefinition[] = [
   {
     name: "async_task_status",
     concurrencyClass: "A",
-    description: "查询异步任务状态（不含结果内容与执行日志——结果完成后自动进队列投递）。可传 jobId 查单个，不传则列当前会话全部任务。返回状态、已执行/排队时长等。",
+    description: "查询异步任务状态（不含结果内容与执行日志——结果完成后自动进队列投递）。可传 jobId 查单个，不传则列当前会话全部任务。返回状态、已执行/排队时长等。用户问后台任务进度/状态时一律用本工具，不要为此新建任务。",
     parameters: {
       type: "object",
       properties: {
@@ -273,12 +306,15 @@ const SHELL_DEFS: NativeToolDefinition[] = [
     // P0-02：标 destructive → 入审批清单 + native:all 默认隐藏；须显式 native:run_shell
     destructive: true,
     description:
-      "在当前 Agent Workspace（无则 data/workspace）内执行 Shell 命令（须 SHELL_ENABLED=true；host_restricted：超时/输出上限/危险命令拦截）。安全边界如实说明：host_restricted 只限制 cwd 落点与黑名单命令片段，命令体本身仍可读写系统任意路径、访问网络，不等于文件系统沙箱；删除/写文件请用 file_delete / write_file 等 native 软删工具。Windows 默认 PowerShell，Linux/macOS 默认 bash。",
+      "在主机上以当前 OS 用户权限直接执行 Shell，不是沙箱隔离。须 SHELL_ENABLED=true；host_restricted 仅拦截危险命令片段并拒绝沙箱外绝对路径，cwd 默认不出 Workspace。已授予 native:host_access 时，cwd 可传 host:Desktop 或授权绝对路径。删除/写文件请用 native 软删工具，不要 rm。Windows 默认 PowerShell。destructive 操作需审批。",
     parameters: {
       type: "object",
       properties: {
         command: { type: "string", description: "要执行的命令，如 pnpm test 或 dir" },
-        cwd: { type: "string", description: "相对 Workspace 沙箱根的工作目录，默认 ." },
+        cwd: {
+          type: "string",
+          description: "工作目录：相对 Workspace，或 host:Desktop / 授权绝对路径（须 native:host_access）",
+        },
         shell: { type: "string", enum: ["auto", "powershell", "cmd", "bash"], description: "Shell 类型，默认 auto" },
         timeoutMs: { type: "number", description: "命令超时毫秒数，不填则使用全局默认值" },
       },

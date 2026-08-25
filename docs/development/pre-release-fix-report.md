@@ -108,13 +108,22 @@
 
 ## F5 run_shell 真限制 + 文案诚实
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`validateShellCommand` 只拦危险命令关键字，不拦 `Get-Content`/`type`/`cat` 这类读命令；`runShellRestricted` 只约束 cwd，命令体仍按当前 OS 用户跑，能读全盘。工具描述把「cwd 默认不出 Workspace」包装得像沙箱隔离，不诚实。
+- 成功标准：host_restricted 命令文本出现沙箱外绝对路径即拒绝；工具描述明确「不是沙箱」；测试覆盖拒绝/放行/不误伤路径。
 - 改动文件：
+  - `apps/server/src/infra/shellRunner.ts`：新增 `findCommandAbsolutePaths` / `assertShellCommandPathsInsideSandbox`；host_restricted 分支在执行前调用；docker 分支不加（容器路径语义不同）。
+  - `apps/server/src/infra/tools/native/shell.ts`：`run_shell` description 改为「在主机上以当前 OS 用户权限直接执行，不是沙箱隔离」；`async_task_status` description 补一句「用户问后台任务进度/状态时一律用本工具，不要为此新建任务」。
+  - `apps/server/src/__tests__/shellRunner.test.ts`：新增 5 条 host_restricted 绝对路径防线测试。
 - 设计决定与理由：
+  - 绝对路径检测覆盖 Windows 盘符、UNC、POSIX 绝对；先剔除 URL（`://`），避免 `curl https://example.com` 被误伤。
+  - 沙箱根用 `opts.rootDir || config.projectRoot`，cwd 内绝对路径也放行——与 `resolveShellCwd` 的约束一致。
+  - 文案诚实化直接点出「当前 OS 用户权限」「不是沙箱」「destructive 需审批」，消除之前把 cwd 限制包装成沙箱的误导。
 - [OM-FREEPLAY] 清单：
+  - 报错文案「读本机授权目录请走 native:host_access」是审计建议；5 秒 / 300 秒 clamp 沿用已有实现。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/server exec vitest run src/__tests__/shellRunner.test.ts`：14 测试全绿，退出码 0。
 - 遇到的问题：
+  - 无。
 
 ## F6 harness B17 查状态走错工具
 

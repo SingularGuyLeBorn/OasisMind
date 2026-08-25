@@ -1,5 +1,8 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { validateShellCommand, buildSandboxEnv, waitMs } from "../infra/shellRunner.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "fs";
+import path from "path";
+import { validateShellCommand, buildSandboxEnv, waitMs, runShellRestricted } from "../infra/shellRunner.js";
+import { createTempProjectDir, createTestConfig } from "./helpers/toolTestFixtures.js";
 
 describe("shellRunner — validateShellCommand", () => {
   it("拒绝 rm -rf /", () => {
@@ -74,5 +77,49 @@ describe("shellRunner — waitMs", () => {
     await vi.advanceTimersByTimeAsync(300_000);
     const result = await p;
     expect(result.waitedMs).toBe(300_000);
+  });
+});
+
+
+describe("shellRunner — host_restricted 绝对路径防线", () => {
+  let project: string;
+  let config: ReturnType<typeof createTestConfig>;
+
+  beforeEach(() => {
+    project = createTempProjectDir();
+    config = createTestConfig(project);
+  });
+
+  afterEach(() => {
+    fs.rmSync(project, { recursive: true, force: true });
+  });
+
+  it("拒绝沙箱外 POSIX 绝对路径", async () => {
+    await expect(
+      runShellRestricted(config, "cat /etc/passwd", { shell: "bash" }),
+    ).rejects.toThrow(/沙箱外绝对路径/);
+  });
+
+  it("拒绝沙箱外 Windows 绝对路径", async () => {
+    await expect(
+      runShellRestricted(config, "Get-Content C:\\Windows\\win.ini", { shell: "powershell" }),
+    ).rejects.toThrow(/沙箱外绝对路径/);
+  });
+
+  it("允许沙箱内绝对路径", async () => {
+    const target = path.join(project, "test.txt");
+    fs.writeFileSync(target, "hello", "utf8");
+    const r = await runShellRestricted(config, `cat "${target.replace(/\\/g, "/")}"`, { shell: "bash" });
+    expect(r.stdout).toContain("hello");
+  });
+
+  it("URL 不被误伤", async () => {
+    const r = await runShellRestricted(config, "echo curl https://example.com", { shell: "bash" });
+    expect(r.stdout).toContain("https://example.com");
+  });
+
+  it("普通命令不受影响", async () => {
+    const r = await runShellRestricted(config, "node --version", { shell: "bash" });
+    expect(r.stdout).toMatch(/^v\d+/);
   });
 });

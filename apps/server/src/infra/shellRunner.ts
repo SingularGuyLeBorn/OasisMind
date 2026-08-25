@@ -9,6 +9,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import type { AppConfig } from "./config.js";
+import { isAbsInside } from "./hostAccess.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -95,23 +96,59 @@ export function validateShellCommand(command: string): void {
   }
 }
 
+/** 扫描命令文本中的绝对路径 token（Windows 盘符 / UNC / POSIX 绝对），排除 URL。 */
+function findCommandAbsolutePaths(command: string): string[] {
+  const paths: string[] = [];
+  // 先把 URL 挖掉，避免 https://example.com 被误当 POSIX 绝对路径
+  const withoutUrls = command.replace(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s"'|;]+/g, "");
+  // Windows 盘符路径，如 C:\Windows\win.ini 或 C:/tmp/a.txt
+  const winRe = /([a-zA-Z]:[\\/][^\s"'|;]*)/g;
+  let m: RegExpExecArray | null;
+  while ((m = winRe.exec(withoutUrls)) !== null) paths.push(m[1]!);
+  // UNC，如 \\server\share
+  const uncRe = /(\\\\[^\s"'|;]*)/g;
+  while ((m = uncRe.exec(withoutUrls)) !== null) paths.push(m[1]!);
+  // POSIX 绝对路径，如 /etc/passwd；通过捕获组拿到路径本身
+  const posixRe = /(^|[\s"'|;])(\/[^\s"'|;]*)/g;
+  while ((m = posixRe.exec(withoutUrls)) !== null) paths.push(m[2]!);
+  return paths;
+}
+
+/** host_restricted 模式下，拒绝命令里出现沙箱外的绝对路径。 */
+function assertShellCommandPathsInsideSandbox(
+  command: string,
+  sandboxRoot: string,
+  cwd: string,
+): void {
+  const roots = [path.resolve(sandboxRoot), path.resolve(cwd)];
+  for (const token of findCommandAbsolutePaths(command)) {
+    const resolved = path.resolve(token);
+    if (!roots.some((r) => isAbsInside(r, resolved))) {
+      throw new Error(
+        `命令含沙箱外绝对路径 ${token}；host_restricted 不允许。读本机授权目录请走 native:host_access。`,
+      );
+    }
+  }
+}
+
 /**
  * 解析 shell cwd。
- * @param rootDir 沙箱根（默认 projectRoot；run_shell 可收窄为 Agent Workspace）
+ * @param rootDir 沙箱根（默认 projectRoot；run_shell 可收窄为 Agent Workspace，或放宽为 hostAccess root）
  */
 export function resolveShellCwd(config: AppConfig, cwdArg?: string, rootDir?: string): string {
   const rel = (cwdArg || ".").replace(/\\/g, "/").replace(/^\/+/, "");
   if (rel.includes("..")) throw new Error("cwd 不允许包含 ..");
-  const root = path.resolve(rootDir || config.projectRoot);
-  const abs = path.resolve(root, rel);
-  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
-  if (abs !== root && !abs.startsWith(rootWithSep)) {
+  const sandbox = path.resolve(rootDir || config.projectRoot);
+  const abs =
+    cwdArg && path.isAbsolute(cwdArg) && isAbsInside(sandbox, cwdArg)
+      ? path.resolve(cwdArg)
+      : path.resolve(sandbox, rel === "." ? "." : rel);
+  const sandboxPrefix = sandbox.endsWith(path.sep) ? sandbox : sandbox + path.sep;
+  if (abs !== sandbox && !abs.startsWith(sandboxPrefix) && !isAbsInside(sandbox, abs)) {
     throw new Error("cwd 超出沙箱根目录范围");
   }
-  // 仍须落在项目根内（Workspace 路径本身已在项目内）
   const projectRoot = path.resolve(config.projectRoot);
-  const projectWithSep = projectRoot.endsWith(path.sep) ? projectRoot : projectRoot + path.sep;
-  if (abs !== projectRoot && !abs.startsWith(projectWithSep)) {
+  if (isAbsInside(projectRoot, sandbox) && !isAbsInside(projectRoot, abs)) {
     throw new Error("cwd 超出项目根目录范围");
   }
   return abs;
@@ -227,6 +264,9 @@ export async function runShellRestricted(
       };
     }
   }
+
+  // host_restricted 额外防线：命令文本里出现沙箱外绝对路径即拒绝（docker 模式容器路径语义不同，不加这层）。
+  assertShellCommandPathsInsideSandbox(command, path.resolve(opts?.rootDir || config.projectRoot), cwd);
 
   const { file, argsPrefix } = resolveShellExecutable(config, opts?.shell);
   const args = [...argsPrefix, command];
