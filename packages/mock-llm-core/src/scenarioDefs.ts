@@ -97,6 +97,24 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "async_task_status",
+    match: (opts, forced) =>
+      forced === "async_task_status" ||
+      (hasTool(opts, "async_task_status") && /后台任务.*状态|任务状态|查.*状态/i.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("async_task_status", {})],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("async_task_status", {})],
+      });
+    },
+  },
+  {
     name: "async_task_run",
     match: (opts, forced) => {
       if (forced === "async_task_run") return true;

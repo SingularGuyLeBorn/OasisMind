@@ -242,7 +242,8 @@ export class SessionStreamHub {
     const result: RunningSessionInfo[] = [];
     for (const [sessionId, run] of this.runs) {
       if (!run.completed) {
-        result.push({ sessionId, lastEventId: run.nextId - 1, runningSince: run.runningSince });
+        // [OM-FREEPLAY] 起流占位期间 nextId 可能为 0，lastEventId 不能为 -1（违反 schema min(0)）
+        result.push({ sessionId, lastEventId: Math.max(0, run.nextId - 1), runningSince: run.runningSince });
       }
     }
     return result;
