@@ -217,7 +217,7 @@ export function ChatView() {
   // 焦点 session：消息 + compose 供右栏/队列派生；lifecycle 不再订阅（每 token 重渲整树）
   // 中栏流式 UI 由 ChatSessionPane 各自 useStreamLifecycle；此处只走 store actions
   const lifecycleKey = effectiveSessionId ?? NEW_STREAM_KEY;
-  const { messages, hydrateFromServer } = useSessionMessages(effectiveSessionId);
+  const { hydrateFromServer } = useSessionMessages(effectiveSessionId);
   const setError = setViewError;
   const { state: composeState } = useSessionComposeState(lifecycleKey);
   const userQueue = composeState.userQueue;
@@ -394,7 +394,6 @@ export function ChatView() {
     effectiveSessionId,
     isSubagentSession,
     pendingAgentMessages: pullAgentMessagesQuery.data,
-    messages,
     refetchSessionQueue: sessionQueueQuery.refetch,
   });
 

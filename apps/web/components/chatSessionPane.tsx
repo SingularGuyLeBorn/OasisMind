@@ -251,7 +251,6 @@ export function ChatSessionPane({
     effectiveSessionId: sessionId,
     isSubagentSession,
     pendingAgentMessages: pullAgentMessagesQuery.data,
-    messages,
     refetchSessionQueue: sessionQueueQuery.refetch,
   });
 

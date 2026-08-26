@@ -212,7 +212,7 @@ export default function DailyFlowPage() {
                 今天
               </Button>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={() => void onCopyReport()}>
+            <Button type="button" variant="outline" size="sm" onClick={() => { onCopyReport().catch(() => {}); }}>
               <ClipboardCopy className="h-4 w-4" />
               复制日报告
             </Button>

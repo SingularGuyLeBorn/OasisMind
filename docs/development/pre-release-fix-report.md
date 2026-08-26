@@ -184,12 +184,23 @@
 ## F9 两处纪律清理
 
 - 根因复述：
-- 成功标准：
+  1. `daily/page.tsx` 使用 `void onCopyReport()` 丢弃 Promise，unhandled rejection 风险。
+  2. `useSubagentMessageMirror.ts` 的 `messages: unknown` 入参注释已说明是死参数，但仍保留并传给调用方。
+- 成功标准：`void <promise>` 清零；死参数从 hook 与所有调用方移除；web lint+test 绿。
 - 改动文件：
+  - `apps/web/app/daily/page.tsx`：`onClick={() => void onCopyReport()}` → `onClick={() => { onCopyReport().catch(() => {}); }}`。
+  - `apps/web/lib/useSubagentMessageMirror.ts`：删除 `messages: unknown` 入参与类型。
+  - `apps/web/components/chat.tsx`、`apps/web/components/chatSessionPane.tsx`：同步移除 `messages` 传参；`chat.tsx` 中原本只用于传给 hook 的 `messages` 变量一并删除。
 - 设计决定与理由：
+  - 用 `.catch(() => {})` 兜底而非 `await`，符合 onClick 同步事件语义；复制失败静默忽略不影响主流程。
+  - `messages` 在 hook 内完全未使用，删除避免调用方误依赖；`chat.tsx` 的 `messages` 只有此处使用，一并清理。
 - [OM-FREEPLAY] 清单：
+  - 无。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/web lint`：0 errors，3 warnings（与本项无关）。
+  - `pnpm --filter @oasismind/web test`：68 文件 / 257 测试全绿，退出码 0。
 - 遇到的问题：
+  - 无。
 
 ## F10 文档债 + 发布清单
 

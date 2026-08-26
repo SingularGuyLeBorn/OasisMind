@@ -21,8 +21,6 @@ export function useSubagentMessageMirror(opts: {
   effectiveSessionId: string | null;
   isSubagentSession: boolean;
   pendingAgentMessages: PendingAgentMessage[] | undefined;
-  /** 保留入参以兼容调用方；判重不再读 messages */
-  messages: unknown;
   refetchSessionQueue: () => Promise<unknown>;
 }) {
   const {
