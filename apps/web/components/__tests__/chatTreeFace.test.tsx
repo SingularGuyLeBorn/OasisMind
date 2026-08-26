@@ -39,6 +39,14 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ data: null }),
       },
     },
+    approval: {
+      approveAndExecute: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      update: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+    },
   },
   catchUnlessCancelled: () => () => {},
 }));

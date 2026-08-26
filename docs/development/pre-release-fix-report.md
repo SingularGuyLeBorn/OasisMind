@@ -143,13 +143,25 @@
 
 ## F7 博客 HTML 渲染加 sanitize
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`PostContent` 使用 `rehype-raw` 解析原始 HTML，但只自定义丢弃 `iframe/object/embed/script`；缺少 `rehype-sanitize`，`urlTransform` 又放行 `data:`，导致事件属性、`javascript:` 链接、SVG onload、style 等可进入渲染树。
+- 成功标准：危险标签/事件处理器/协议被清洗；代码高亮、data: 图片、表格、heading id、KaTeX 公式等正常渲染保持；`@oasismind/web` lint + test 绿。
 - 改动文件：
+  - `apps/web/package.json`：新增依赖 `rehype-sanitize`。
+  - `apps/web/components/post/PostContent.tsx`：引入 `rehype-sanitize` 与 `defaultSchema`；构建扩展 schema（className、id 全局放行；src 协议 http/https/data）；插件顺序调整为 `rehypeRaw → rehypeNormalizeCustomTags → rehypeSanitize → rehypeHeadingIds → rehypeHighlight`；删除原有的 `rehypeDropUnsafeEmbeds` 与 `script: () => null` 重复防御逻辑。
+  - `apps/web/components/post/__tests__/PostContentSanitize.test.tsx`：新增 8 条 sanitize 测试。
+  - `apps/web/components/__tests__/chatTreeFace.test.tsx`：补全 `trpc.approval.*` mock（该用例在 web 全量中因缺失 approval mutation mock 而红，阻碍 `pnpm test`）。
 - 设计决定与理由：
+  - schema 在 `defaultSchema` 上扩展，不另起白名单：`className` 全局放行（highlight.js / KaTeX / 自定义组件样式依赖）；`id` 全局放行（TOC 锚点依赖）；`src` 协议补 `data:`（与 `urlTransform` 一致）。
+  - 插件顺序：sanitize 必须在 `rehypeRaw` 之后、高亮之前；`rehypeNormalizeCustomTags` 先于 sanitize，保证 `<llmguidepage>` 等自定义标签先变成 `div` 再进入 sanitize，避免被误删。
+  - 删除 `rehypeDropUnsafeEmbeds` 与 `script: () => null`：默认 schema 已剥离 `iframe/object/embed/script`，无需重复逻辑。
 - [OM-FREEPLAY] 清单：
+  - 无（schema 字段与插件顺序均按审计要求实现）。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/web typecheck`：退出码 0。
+  - `pnpm --filter @oasismind/web lint`：0 errors，3 warnings（与本项无关，见「未验证/残留风险」）。
+  - `pnpm --filter @oasismind/web test`：68 文件 / 257 测试全绿，退出码 0。
 - 遇到的问题：
+  - web 全量跑出一个无关用例 `chatTreeFace.test.tsx` 因 `trpc.approval.*` mock 缺失而红；已补全 mock，全量复绿。
 
 ## F8 删掉评论 tRPC delete
 

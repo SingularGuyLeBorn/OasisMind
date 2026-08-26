@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Check, Copy, Eye, Code2, Maximize2, Minimize2, WrapText, ListOrdered } from "lucide-react";
 import { cn } from "@/lib/utils";
 // KaTeX CSS 只在根布局 layout.tsx 导入一次，避免 client chunk 延迟加载导致公式初始闪烁
@@ -22,6 +23,32 @@ import { KatexHtml } from "@/components/post/KatexHtml";
 import { buildTocItems, type TocItem } from "@/components/post/TableOfContents";
 import dynamic from "next/dynamic";
 import "highlight.js/styles/github.css";
+
+/** 配图未加载成功前不露浏览器碎图；404 改成 alt 说明 */
+function MarkdownImg({ src, alt }: { src: string; alt: string }) {
+  const [status, setStatus] = useState<"pending" | "ok" | "failed">("pending");
+  return (
+    <>
+      {status === "failed" && alt ? (
+        <span className="my-3 block rounded-xl border border-dashed border-[var(--om-divider)] bg-[var(--om-bg-2)]/40 px-3 py-2 text-sm text-[var(--om-text-3)]">
+          {alt}
+        </span>
+      ) : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(
+          "rounded-xl border border-[var(--om-divider)]",
+          status !== "ok" && "hidden",
+        )}
+        loading="lazy"
+        onLoad={() => setStatus("ok")}
+        onError={() => setStatus("failed")}
+      />
+    </>
+  );
+}
 
 /** Remotion 很重：按需加载，避免整页卡在 Next「Rendering…」 */
 const VizEmbed = dynamic(
@@ -71,6 +98,21 @@ function urlTransform(url: string) {
   const allowed = ["http:", "https:", "mailto:", "tel:", "data:", "wiki:"];
   return allowed.includes(scheme) ? url : "";
 }
+
+/** rehype-sanitize schema：在 defaultSchema 基础上保留 className/id/src(data:) 等现有渲染依赖 */
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    // highlight.js / KaTeX / 自定义组件大量使用 className；heading id 用于 TOC 锚点
+    "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "id"],
+  },
+  protocols: {
+    ...defaultSchema.protocols,
+    // 与 urlTransform 一致：允许 data: 图片
+    src: ["http", "https", "data"],
+  },
+};
 
 /** 可渲染为 iframe 预览的语言（HTML/可独立运行的标记） */
 const PREVIEWABLE_LANGS = new Set(["html", "htm", "svg"]);
@@ -451,26 +493,6 @@ function rehypeNormalizeCustomTags() {
   };
 }
 
-/** rehype-raw 不带 sanitize：iframe/object/embed 可嵌入任意第三方内容，整节点丢弃（script 已在 components 层丢弃） */
-const UNSAFE_EMBED_TAGS = new Set(["iframe", "object", "embed"]);
-
-function rehypeDropUnsafeEmbeds() {
-  return (tree: RehypeRoot) => {
-    if (!tree || !Array.isArray(tree.children)) return;
-    const walk = (node: RehypeRoot | RehypeNode) => {
-      const children = node.children;
-      if (!Array.isArray(children)) return;
-      // 先过滤掉嵌入节点本身，再递归其余子节点
-      const kept = children.filter(
-        (child) => !(child.type === "element" && UNSAFE_EMBED_TAGS.has((child as RehypeElement).tagName)),
-      );
-      node.children = kept;
-      for (const child of kept) walk(child);
-    };
-    walk(tree);
-  };
-}
-
 /**
  * 把 TOC 预计算的 id 写回 h2-h4。
  * 与 TableOfContents 共用 buildTocItems，彻底消除「重复标题 id 冲突」
@@ -542,7 +564,8 @@ export const PostContent = memo(function PostContent({
       [
         rehypeRaw,
         rehypeNormalizeCustomTags,
-        rehypeDropUnsafeEmbeds,
+        // rehype-sanitize 在 rehypeRaw 之后、高亮/KaTeX 之前；iframe/object/embed/script 由 sanitize 统一剥离
+        [rehypeSanitize, sanitizeSchema],
         rehypeHeadingIds(tocItems),
         rehypeHighlight,
       ] as NonNullable<React.ComponentProps<typeof ReactMarkdown>["rehypePlugins"]>,
@@ -552,8 +575,6 @@ export const PostContent = memo(function PostContent({
   const components = useMemo<Components>(
     () =>
       ({
-        // rehype-raw 可能带进正文里的 <script>；React 客户端永不执行，直接丢弃避免控制台报错
-        script: () => null,
         a: ({ href, children, ...props }: ComponentPropsWithoutRef<"a"> & { node?: unknown }) => (
           <PostMarkdownLink href={href} postSlug={postSlug} postGarden={postGarden} {...props}>
             {children}
@@ -568,12 +589,9 @@ export const PostContent = memo(function PostContent({
         img: ({ src, alt }: ComponentPropsWithoutRef<"img"> & { node?: unknown }) => {
           if (typeof src !== "string") return null;
           return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <MarkdownImg
               src={resolvePostAssetUrl(src, { slug: postSlug, garden: postGarden })}
               alt={alt || ""}
-              className="rounded-xl border border-[var(--om-divider)]"
-              loading="lazy"
             />
           );
         },
