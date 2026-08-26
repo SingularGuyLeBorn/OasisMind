@@ -1,5 +1,7 @@
 /**
- * comment tRPC 子路由 — 访客留言 + 业主隐藏/删除。
+ * comment tRPC 子路由 — 访客留言 + 业主隐藏。
+ *
+ * 不暴露 delete：hide 已覆盖运营需求；AUTH_MODE=none 时无法区分操作者，物理删除风险不可控。
  */
 
 import { z } from "zod";
@@ -76,9 +78,4 @@ export const commentRouter = router({
     .meta({ description: "隐藏留言（不物理删除）。", aiReadable: false })
     .input(z.object({ id: z.string().cuid() }))
     .mutation(({ ctx, input }) => ctx.services.comment.hide(input.id)),
-
-  delete: publicProcedure
-    .meta({ description: "删除留言。", aiReadable: false })
-    .input(z.object({ id: z.string().cuid() }))
-    .mutation(({ ctx, input }) => ctx.services.comment.delete(input.id)),
 });

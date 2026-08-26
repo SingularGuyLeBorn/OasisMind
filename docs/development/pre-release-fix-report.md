@@ -165,13 +165,21 @@
 
 ## F8 删掉评论 tRPC delete
 
-- 根因复述：
-- 成功标准：
+- 根因复述：`commentRouter` 暴露 `delete` procedure，但 `apps/web` 的 `CommentSection.tsx` 只有 `hide`；`AUTH_MODE=none` 下无法区分操作者，物理删除风险不可控。
+- 成功标准：tRPC 不再暴露 `comment.delete`；不残留死代码；server lint+test 绿。
 - 改动文件：
+  - `apps/server/src/infra/trpcRouters/commentRouter.ts`：删除 `delete` procedure；头注同步改为「访客留言 + 业主隐藏」并说明不暴露 delete 的理由。
 - 设计决定与理由：
+  - 选择删除路线：`hide` 已覆盖运营需求（把留言标为 hidden 不再展示），无需物理删除。
+  - `CommentService.delete` 来自 `BaseService` 泛型，被多个其他 Service/Router 使用，不能删；本项只删 tRPC 入口，避免 none 模式下被任意调用。
+  - 全仓 grep `\.comment\.delete` 仅 router 自身一处，无其他调用方/测试引用。
 - [OM-FREEPLAY] 清单：
+  - 无。
 - 验证命令与结果：
+  - `pnpm --filter @oasismind/server lint`：退出码 0。
+  - `pnpm --filter @oasismind/server test -- commentRouter blogComment`：相关用例通过，命令退出码 0。
 - 遇到的问题：
+  - 无。
 
 ## F9 两处纪律清理
 
