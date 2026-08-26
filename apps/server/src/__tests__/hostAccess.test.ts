@@ -202,7 +202,7 @@ describe("hostAccess", () => {
   });
 
   it("hostAccess 空对象解析：默认 enabled=false、roots 不含 D:/ALL IN AI", () => {
-    const config = createTestConfig(project, { hostAccess: {} });
+    const config = createTestConfig(project, { hostAccess: {} as any });
     expect(isHostAccessEnabled(config)).toBe(false);
     const roots = listExpandedHostRoots(config);
     expect(roots.some((r) => r.toLowerCase().includes("d:/all in ai"))).toBe(false);
