@@ -9,7 +9,7 @@
 | F3 hostAccess 默认关闸 | done | 21ae1595 | hostAccess.test 17 测试绿；server lint 绿 |
 | F4 经验积累测例补 services.config | done | 180990e3 | agentEvolutionOptimize 16 测试绿 |
 | F5 run_shell 真限制 + 文案诚实 | done | 4edcfee7 | shellRunner 14 测试绿；server lint 绿 |
-| F6 harness B17 查状态走错工具 | done | 7f9eb68c | test:bench 在全局验收阶段验证 |
+| F6 harness B17 查状态走错工具 | done | 7f9eb68c / 03a8a480 | 03a8a480 在 mock-llm 场景数组中把 async_task_status 前置到 async_task_run 之前；test:bench 100% |
 | F7 博客 HTML 渲染加 sanitize | done | dee40009 | web lint 绿；web test 68 文件 / 257 测试绿 |
 | F8 删掉评论 tRPC delete | done | f3245f47 | server lint 绿；commentRouter/blogComment 相关测试绿 |
 | F9 两处纪律清理 | done | aab21a68 | web lint 绿；web test 68 文件 / 257 测试绿 |
@@ -222,10 +222,17 @@
 
 ## 未验证 / 残留风险
 
+- E2E mock 本轮两次跑均为 18 pass / 25 fail（与本轮整改前基线一致），未出现「本次改动引入」的新红用例。失败集中在工具 pill 未渲染、主题切换超时、文章管理页未加载等，与 mock-llm 场景/页面加载相关，疑似环境/测试稳定性问题。按审计要求记录在「未验证」段，不阻断发布。
+- Docker / Compose 构建与运行未在本机验证（无可用 Docker daemon），已在 `release-checklist.md` 中列为发布前必验项。
+- `apps/web` lint 有 3 个既有 warning（`RoughAnnotation.tsx` useEffect 依赖、`dsh-acceptance-screenshot.spec.ts` 未使用参数），非本次引入，未修。
+- `agentFactory.test.ts` 在单独过滤跑法与完整 `pnpm test` 中均通过；`swarmHealth.test.ts` 若在某些顺序下先于 `agentFactory.test.ts` 运行，可能因创建的 super Agent 主会话外键导致清理不完全，存在潜在测试隔离风险，本轮未触发，已记录。
+
 ## 全局门禁结果
 
-- lint：
-- test：
-- build：
-- e2e:mock：
-- bench：
+| 门禁 | 命令 | 结果 | 退出码 |
+|---|---|---|---|
+| lint | `pnpm lint` | 全包 tsc/eslint 通过；web 有 3 个既有 warning | 0 |
+| test | `pnpm test` | server 227 文件 / 1514 测试通过；web 68 文件 / 257 测试通过 | 0 |
+| build | `pnpm build` | web 生产构建成功（Compiled successfully / 42 static pages） | 0 |
+| e2e:mock | `pnpm test:e2e:mock` | 18 passed / 25 failed，与整改前基线持平 | 1（测试本身失败，不劣于基线） |
+| bench | `pnpm test:bench` | 24/24 通过（100%） | 0 |
