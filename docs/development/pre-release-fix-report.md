@@ -6,14 +6,14 @@
 |---|---|---|---|
 | F1 崩溃中断 ≠ 用户手停 | done | 8dd65ff3 | server lint 绿；startupRecovery/sessionResume/asyncDeliveryQueueB4/superiorQueueDrain/session-subagent 绿 |
 | F2 read_file 读路径收口 | done | d9af3c61 | server lint 绿；writePolicy 13 测试全绿 |
-| F3 hostAccess 默认关闸 | in_progress | - | - |
-| F4 经验积累测例补 services.config | pending | - | - |
-| F5 run_shell 真限制 + 文案诚实 | pending | - | - |
-| F6 harness B17 查状态走错工具 | pending | - | - |
-| F7 博客 HTML 渲染加 sanitize | pending | - | - |
-| F8 删掉评论 tRPC delete | pending | - | - |
-| F9 两处纪律清理 | pending | - | - |
-| F10 文档债 + 发布清单 | pending | - | - |
+| F3 hostAccess 默认关闸 | done | 21ae1595 | hostAccess.test 17 测试绿；server lint 绿 |
+| F4 经验积累测例补 services.config | done | 180990e3 | agentEvolutionOptimize 16 测试绿 |
+| F5 run_shell 真限制 + 文案诚实 | done | 4edcfee7 | shellRunner 14 测试绿；server lint 绿 |
+| F6 harness B17 查状态走错工具 | done | 7f9eb68c | test:bench 在全局验收阶段验证 |
+| F7 博客 HTML 渲染加 sanitize | done | dee40009 | web lint 绿；web test 68 文件 / 257 测试绿 |
+| F8 删掉评论 tRPC delete | done | f3245f47 | server lint 绿；commentRouter/blogComment 相关测试绿 |
+| F9 两处纪律清理 | done | aab21a68 | web lint 绿；web test 68 文件 / 257 测试绿 |
+| F10 文档债 + 发布清单 | done | （见本项） | 旧审计归档、README 更新、release-checklist.md 新建 |
 
 ## F1 崩溃中断 ≠ 用户手停
 
@@ -204,13 +204,21 @@
 
 ## F10 文档债 + 发布清单
 
-- 根因复述：
-- 成功标准：
+- 根因复述：旧审计报告仍放在根目录充当「现行」，容易误导；`docs/development/README.md` 的模块图漏了 `mock-llm`、`algo-viz`、`mock-llm-core`；缺少一份面向发布的硬约束检查单。
+- 成功标准：旧审计归档；README 模块图完整；`release-checklist.md` 覆盖安全、构建、测试、工作树、依赖、部署验证、文档 7 个维度。
 - 改动文件：
+  - `git mv AUDIT_REPORT.md` 与 `AUDIT_REPORT_2026-07-26.md` → `docs/development/archive/`。
+  - `docs/development/README.md`：模块树补上 `apps/mock-llm`、`apps/algo-viz`、`packages/mock-llm-core`。
+  - `docs/development/release-checklist.md`：新建发布硬约束检查单。
 - 设计决定与理由：
+  - 归档旧审计：根目录只保留当前README/CHANGELOG，历史账本进 `archive/`。
+  - 检查单把 `AUTH_MODE=password`、`hostAccess` 默认关、`run_shell` 不是沙箱、测试/E2E/bench 全绿、工作树清、`pnpm audit`、Docker 验证列为发布前置，避免凭记忆发布。
 - [OM-FREEPLAY] 清单：
+  - 无。
 - 验证命令与结果：
+  - 文档为纯文本/Markdown 变更，以 `pnpm --filter @oasismind/web lint` / `pnpm --filter @oasismind/server lint` 不引入新的 tsc/eslint 错误为底线验证，均已通过。
 - 遇到的问题：
+  - 无。
 
 ## 未验证 / 残留风险
 

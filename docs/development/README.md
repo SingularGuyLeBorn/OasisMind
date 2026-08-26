@@ -20,9 +20,12 @@ OasisMind 是一个**单用户、本地优先**的智能知识管理与博客平
 OasisMind/
 ├── apps/
 │   ├── server/          # Express + tRPC + Prisma 后端
-│   └── web/             # Next.js 16 + React 19 前端
+│   ├── web/             # Next.js 16 + React 19 前端
+│   ├── mock-llm/        # Mock LLM HTTP 服务（离线评测/E2E 用）
+│   └── algo-viz/        # 算法可视化 React 组件库
 ├── packages/
-│   └── shared/          # 前后端共享的 Zod schema、类型、常量
+│   ├── shared/          # 前后端共享的 Zod schema、类型、常量
+│   └── mock-llm-core/   # mock-llm 核心协议与场景定义
 ├── content/             # Git 跟踪的文本数据源（Markdown/YAML/JSON）
 ├── docs/                # 项目文档（本文档所在目录）
 └── scripts/             # 根目录工具脚本（backup、clean、dev 等）
