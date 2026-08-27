@@ -144,6 +144,50 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
     exitCode: 0,
     elapsedMs: 2,
   }),
+
+  video_transcript: (args) => ({
+    url: String(args.url ?? ""),
+    title: "Mock 视频标题",
+    hasCaptions: true,
+    transcript: "Mock 字幕逐字稿：扩散采样从噪声逐步变成样本，不要编台词。",
+    summary: "有字幕，已转写。",
+    elapsedMs: 8,
+  }),
+
+  browser_login_status: (args) => ({
+    platform: String(args.platform ?? "zhihu"),
+    loggedIn: true,
+    via: "mock-storageState",
+    message: "Mock：zhihu 已登录（loggedIn=true），可直接 read_article。",
+    elapsedMs: 2,
+  }),
+
+  list_directory: (args) => ({
+    path: String(args.path ?? ""),
+    entries: [
+      { name: "shot-raw.jpg", type: "file", bytes: 4_200_000 },
+      { name: "demo.gif", type: "file", bytes: 6_100_000 },
+    ],
+    elapsedMs: 1,
+  }),
+
+  article_material_pack: (args) => ({
+    url: String(args.url ?? ""),
+    packDir: "article-packs/e2e-wechat",
+    articleMd: "article.md",
+    imagesJson: "images.json",
+    beatsJson: "beats.json",
+    imageCount: 2,
+    elapsedMs: 6,
+  }),
+
+  article_video_compose: (args) => ({
+    packDir: String(args.packDir ?? ""),
+    compositionId: String(args.compositionId ?? "PpoClip"),
+    registered: true,
+    vizFence: "```viz\ncomposition: PpoClip\ntitle: E2E 短片\n```",
+    elapsedMs: 8,
+  }),
 };
 
 /**

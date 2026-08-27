@@ -118,9 +118,10 @@
     {
       "id": "11",
       "title": "阅读 LiveDoc + 划词解释",
-      "coverage": "partial",
-      "note": "选区门控 + 解释不改写原文 + Esc/点外关闭策略已锁；缺弹层关闭 E2E",
+      "coverage": "covered",
+      "note": "划词弹层开/关/重开 + 原文不变",
       "tests": [
+        "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/web/lib/__tests__/selectionExplainRange.test.ts",
         "apps/server/src/__tests__/postExplain.test.ts"
       ]
@@ -128,8 +129,10 @@
     {
       "id": "12",
       "title": "编辑器选区 AI 改写",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "源码选区精简：拒绝恢复原文，接受才写回",
       "tests": [
+        "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
         "apps/server/src/__tests__/editorAgentComplete.test.ts",
         "apps/web/lib/__tests__/editorCompleteContext.test.ts"
@@ -138,9 +141,10 @@
     {
       "id": "13",
       "title": "相关笔记推荐",
-      "coverage": "partial",
-      "note": "post.related 排除未发布/墓碑 + href 单源已锁；缺点开死链 E2E",
+      "coverage": "covered",
+      "note": "点开 related-post-link 落到真文",
       "tests": [
+        "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/server/src/__tests__/relatedPosts.test.ts",
         "apps/web/lib/__tests__/relatedPostsView.test.ts"
       ]
@@ -148,8 +152,10 @@
     {
       "id": "14",
       "title": "Chat → 知识库落库",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "createFromChat 对话框成文可打开；post_create 禁止 write_file",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "evals/golden/G02-post-create.json",
         "evals/golden/G01-post-list.json",
         "apps/server/src/__tests__/relatedPosts.test.ts"
@@ -158,8 +164,10 @@
     {
       "id": "15",
       "title": "中栏派工条",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "双非阻塞 spawn 后 chat-dispatch-strip 可点开运行栏",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/dsh-chat-ui-mock.spec.ts",
         "apps/web/e2e/subagent-mock.spec.ts"
       ]
@@ -167,8 +175,10 @@
     {
       "id": "16",
       "title": "本地模型对话",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "本地菜单空/未连接可见；先别上网不搜；切模型历史仍在。不要求真连 Ollama",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/chat-model-menu-mock.spec.ts",
         "apps/web/lib/__tests__/chatConfig.test.ts"
       ]
@@ -176,25 +186,30 @@
     {
       "id": "17",
       "title": "Inbox 抓取 → 蒸馏成文",
-      "coverage": "partial",
-      "note": "管道单测有；缺「抓取后成文」端到端",
+      "coverage": "covered",
+      "note": "inbox_list → inbox_distill → knowledge 草稿可打开且保留来源 URL",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/inboxPipeline.test.ts"
       ]
     },
     {
       "id": "18",
       "title": "视频转文字 / 本地 STT 做笔记",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "mock video_transcript 产出逐字稿；不编台词",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "evals/harness-bench/cases.json"
       ]
     },
     {
       "id": "19",
       "title": "平台登录后读文",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "browser_login_status → read_article；禁止截图当读文",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/platformFetch.test.ts",
         "evals/golden/G03-read-article.json"
       ]
@@ -202,28 +217,32 @@
     {
       "id": "20",
       "title": "深度调研 Goal",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "session_goal_set + Goal 条；回复写明重启不自动续跑",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/evolving-intent-mock.spec.ts"
       ]
     },
     {
       "id": "A",
       "title": "晨间简报 → 花园笔记",
-      "coverage": "partial",
-      "note": "Inbox 增量 + createFromChat 日报/每日简报已锁；缺端到端 3 分钟体验",
+      "coverage": "covered",
+      "note": "inbox_list 5 要点后 createFromChat 落库",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/inboxPipeline.test.ts",
         "apps/server/src/__tests__/dailyFlow.test.ts",
-        "apps/server/src/__tests__/relatedPosts.test.ts",
         "evals/golden/G12-morning-brief.json"
       ]
     },
     {
       "id": "B",
       "title": "专题深挖 → 阻塞调研 → 成文",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "post_list + spawn wait=true + 写入知识库",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "evals/golden/G05-spawn-subagent.json",
         "evals/golden/G02-post-create.json"
       ]
@@ -231,11 +250,10 @@
     {
       "id": "C",
       "title": "本地草稿 + 云精修 + 选区打磨",
-      "coverage": "partial",
-      "note": "uploads 按 postId 与选区改写已锁；缺本地/云模型切换 E2E",
+      "coverage": "covered",
+      "note": "先别上网 + 切模型 + 同一篇选区 Accept",
       "tests": [
-        "apps/server/src/__tests__/uploadDir.test.ts",
-        "apps/web/lib/__tests__/postAssetUrl.test.ts",
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/editorAgentComplete.test.ts",
         "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
         "apps/web/lib/__tests__/editorCompleteContext.test.ts"
@@ -244,9 +262,10 @@
     {
       "id": "D",
       "title": "本地压图配文（PicLite 图轻）",
-      "coverage": "partial",
-      "note": "Skill 铁律 + golden 路径已锁；缺真实压图体积断言",
+      "coverage": "covered",
+      "note": "skill_view + list_directory；禁止第三方压图。体积断言仍走真实 PicLite 本机",
       "tests": [
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/picliteSkillContract.test.ts",
         "evals/golden/G11-piclite-compress.json"
       ]
@@ -254,8 +273,11 @@
     {
       "id": "E",
       "title": "微信/网页文章 → Remotion 成片",
-      "coverage": "partial",
+      "coverage": "covered",
+      "note": "Chat 工具卡 pack→compose；花园内 viz-embed 可挂载",
       "tests": [
+        "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
+        "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/lib/__tests__/vizEmbed.test.ts"
       ]
     }

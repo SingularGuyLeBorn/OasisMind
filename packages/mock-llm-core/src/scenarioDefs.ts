@@ -22,6 +22,7 @@ import {
   matchAgenticLong,
   matchReplyCatalog,
 } from "./replyCatalog.js";
+import { partialE2eScenarios } from "./partialE2eScenarios.js";
 import type { LlmCompletionResult, LlmToolCall, StreamChunk } from "./types.js";
 
 /** 队列 E2E 第一条每个 token 间隔，预留 Ctrl+Enter 入队窗口 */
@@ -1007,7 +1008,8 @@ export const scenarios: MockLlmScenario[] = [
     name: "thinking",
     match: (opts, forced) =>
       forced === "thinking" ||
-      /思考|reasoning|explain|解释/i.test(lastUserText(opts)),
+      ((/思考|reasoning|explain|解释/i.test(lastUserText(opts)) &&
+        !/划选|精简选中段落/.test(lastUserText(opts)))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: "这是 Mock LLM 给出的最终回答。",
@@ -1099,7 +1101,9 @@ export const scenarios: MockLlmScenario[] = [
     match: (opts, forced) =>
       !hasAnyToolResult(opts) &&
       (forced === "eval_G01_post_list" ||
-        (/列.*文章|知识库.*文章|最近的文章/i.test(lastUserText(opts)) && hasTool(opts, "post_list"))),
+        (!/保存/.test(lastUserText(opts)) &&
+          /列.*文章|知识库里的文章|最近的文章/i.test(lastUserText(opts)) &&
+          hasTool(opts, "post_list"))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -1468,6 +1472,7 @@ export const scenarios: MockLlmScenario[] = [
       });
     },
   },
+  ...partialE2eScenarios,
   {
     name: "reply_catalog",
     match: (opts, forced) => matchReplyCatalog(opts, forced),

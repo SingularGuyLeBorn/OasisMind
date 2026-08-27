@@ -317,6 +317,17 @@ async function seedAssistantManager(serverPort) {
     "native:read_article",
     "native:web_search",
     "native:browser_screenshot",
+    "native:inbox_list",
+    "native:inbox_distill",
+    "native:session_goal_set",
+    "native:post_list",
+    "native:post_create",
+    "native:video_transcript",
+    "native:browser_login_status",
+    "native:skill_view",
+    "native:list_directory",
+    "native:article_material_pack",
+    "native:article_video_compose",
   ];
   const existingManager = items.find((a) => a.tier === "manager" && /assistant/i.test(a.name));
   if (existingManager) {
@@ -346,7 +357,7 @@ async function seedAssistantManager(serverPort) {
     workspaceId: defaultWorkspace?.id,
     model: "deepseek-chat",
     systemPrompt: "你是 OasisMind (见微) 默认助手，可以调用 spawn_subagent / async_task_run / sleep / read_article / web_search 等工具完成任务。",
-    tools: ["native:spawn_subagent", "native:async_task_run", "native:async_task_status", "native:async_task_cancel", "native:sleep", "native:read_article", "native:web_search", "native:browser_screenshot"],
+    tools: e2eManagerTools,
     source: "e2e-seed",
   });
   console.log("[e2e globalSetup] 已创建默认 Workspace 与 manager Agent", JSON.stringify({ workspaceId: defaultWorkspace.id, agentId: created?.data?.id, agentWorkspaceId: created?.data?.workspaceId }));
