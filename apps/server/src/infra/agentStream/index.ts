@@ -320,7 +320,7 @@ export async function chatAgentStream(
         model: effectiveModel,
         systemPrompt: effectiveSystemPrompt || agent.systemPrompt,
         tools: agent.tools,
-        tier: (agent as { tier?: string }).tier,
+        tier: agent.tier,
         workspaceId: (agent as { workspaceId?: string | null }).workspaceId ?? null,
         parentId: (agent as { parentId?: string | null }).parentId ?? null,
         toolInheritMask: (agent as { toolInheritMask?: { allow?: string[]; deny?: string[] } | null }).toolInheritMask ?? undefined,

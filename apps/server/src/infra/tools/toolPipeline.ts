@@ -32,6 +32,7 @@ import { formatMissingRequiredWithExample } from "./native/agentToolError.js";
 import { deriveVisibleSet } from "./visibleSet.js";
 import { runCooperative } from "./cooperativeAbort.js";
 import type { NativeToolContext } from "./native/types.js";
+import { getPendingApprovalCause } from "../approvalGate.js";
 
 const PIPELINE_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -323,6 +324,9 @@ export async function runNativePipeline(
       label: name,
     });
   } catch (err) {
+    // HITL：handler 内 forceApproval 抛的 PENDING_APPROVAL 必须原样冒泡到 executeToolCallsBatch，
+    // 不能收成 HANDLER failResult（会丢掉 cause，前端当成普通失败、run 不进 awaiting_human）。
+    if (getPendingApprovalCause(err)) throw err;
     const message = err instanceof Error ? err.message : String(err);
     if (stack && artifact) {
       console.warn(`[toolPipeline] handler 抛错未 commit，可能有进行中副作用 tool=${name}`);

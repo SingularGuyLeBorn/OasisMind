@@ -163,6 +163,12 @@ export function createTestConfig(
       maxOutputChars: 12_000,
       shell: "auto",
     },
+    hostAccess: {
+      enabled: false,
+      roots: [],
+      desktopMcpServers: ["windows-mcp"],
+      desktopMcpAllowedTools: [],
+    },
     stream: {
       ringSize: 100,
       persist: false,
@@ -356,6 +362,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "fetch_huggingface_model",
   "fetch_huggingface_trending",
   "read_file",
+  "host_access",
   "write_file",
   "append_to_file",
   "algo_viz_create",

@@ -49,10 +49,13 @@ describe("postExplain", () => {
     expect(completeSpy).toHaveBeenCalledOnce();
     const args = completeSpy.mock.calls[0]![0] as {
       enableReasoning: boolean;
+      tools?: unknown;
       messages: Array<{ role: string; content: string }>;
     };
     expect(args.enableReasoning).toBe(false);
+    expect(args.tools).toBeUndefined();
     expect(args.messages[0]!.role).toBe("system");
+    expect(args.messages[0]!.content).toContain("不要改写");
     expect(args.messages[1]!.content).toContain("经验回放");
   });
 

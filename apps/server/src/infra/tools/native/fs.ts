@@ -20,6 +20,14 @@ import { defaultProjectContent } from "../toolEnvelope.js";
 import { registerNativeDomain } from "./registerDomain.js";
 import { validateOutputForAgent, formatValidationErrors } from "../../outputValidator.js";
 import { resolveAgentFsPath } from "../../writePolicy.js";
+import {
+  assertHostSessionAllowed,
+  isAbsInside,
+  isHostAccessEnabled,
+  listDesktopMcpAllowedTools,
+  listExpandedHostRoots,
+  toHostDisplayPath,
+} from "../../hostAccess.js";
 
 async function readFileTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const { abs, relForReturn } = await resolveAgentFsPath(ctx, String(args.path), "read");
@@ -122,6 +130,11 @@ async function fileDeleteTool(args: Record<string, unknown>, ctx: NativeToolCont
   if (!fs.existsSync(abs)) throw new Error(`文件不存在: ${relForReturn}`);
   const stat = fs.statSync(abs);
   if (stat.isDirectory()) throw new Error(`不支持删除目录，请指定文件: ${relForReturn}`);
+  if (!isAbsInside(ctx.config.projectRoot, abs)) {
+    throw new Error(
+      `主机路径不支持软删进项目 .trash（跨盘无法原子回收）：${relForReturn}。请用 write_file 覆盖，或在资源管理器手动删除。`,
+    );
+  }
   const trashPath = moveToTrash(ctx.config, abs, relForReturn);
   return {
     path: relForReturn,
@@ -141,10 +154,12 @@ async function fileRenameTool(args: Record<string, unknown>, ctx: NativeToolCont
   if (!newName) throw new Error("newName 不能为空");
   if (newName.includes("/") || newName.includes("\\")) throw new Error("newName 不能包含目录分隔符");
   const dest = path.join(path.dirname(abs), newName);
-  if (!dest.startsWith(path.resolve(ctx.config.projectRoot))) throw new Error("目标路径超出项目根目录范围");
   if (fs.existsSync(dest)) throw new Error(`目标已存在: ${newName}`);
   fs.renameSync(abs, dest);
-  return { from: relForReturn, to: path.relative(ctx.config.projectRoot, dest).replace(/\\/g, "/") };
+  const destReturn = isAbsInside(ctx.config.projectRoot, dest)
+    ? path.relative(ctx.config.projectRoot, dest).replace(/\\/g, "/")
+    : toHostDisplayPath(dest);
+  return { from: relForReturn, to: destReturn };
 }
 
 async function fileMoveTool(args: Record<string, unknown>, ctx: NativeToolContext) {
@@ -232,7 +247,9 @@ async function searchFilesTool(args: Record<string, unknown>, ctx: NativeToolCon
           const line = lines[i];
           if (line && regex.test(line)) {
             results.push({
-              file: path.relative(ctx.config.projectRoot, abs).replace(/\\/g, "/"),
+              file: isAbsInside(ctx.config.projectRoot, abs)
+                ? path.relative(ctx.config.projectRoot, abs).replace(/\\/g, "/")
+                : toHostDisplayPath(abs),
               line: i + 1,
               snippet: line.slice(0, 160),
             });
@@ -276,6 +293,11 @@ async function directoryDeleteTool(args: Record<string, unknown>, ctx: NativeToo
   if (!fs.existsSync(abs)) throw new Error(`目录不存在: ${relForReturn}`);
   const stat = fs.statSync(abs);
   if (!stat.isDirectory()) throw new Error(`目标不是目录: ${relForReturn}`);
+  if (!isAbsInside(ctx.config.projectRoot, abs)) {
+    throw new Error(
+      `主机路径不支持软删进项目 .trash（跨盘无法原子回收）：${relForReturn}。请用 write_file 覆盖，或在资源管理器手动删除。`,
+    );
+  }
   // 语义保持：非 recursive 只允许删空目录（原 rmdirSync 行为），recursive 才删非空
   if (args.recursive !== true && fs.readdirSync(abs).length > 0) {
     throw new Error(`目录非空，需 recursive=true 才能删除: ${relForReturn}`);
@@ -307,7 +329,57 @@ async function trashRestoreTool(args: Record<string, unknown>, ctx: NativeToolCo
   return { ...result, restored: true, hint: "已从回收站移回原路径（软删可逆）" };
 }
 
+const HOST_ACCESS_PROMPT_SECTION =
+  "**主机目录（须 native:host_access）**：先调 `host_access` 看 roots。读写用 read_file/write_file/list_directory，path 用 `host:Desktop/foo.txt` 或授权绝对路径。默认 cwd 仍是 Workspace。群聊禁止。桌面点击/开应用走 MCP windows-mcp。主机路径不能 file_delete。";
+
+async function hostAccessTool(_args: Record<string, unknown>, ctx: NativeToolContext) {
+  const roots = listExpandedHostRoots(ctx.config).map((abs) => ({
+    abs,
+    display: toHostDisplayPath(abs),
+    exists: fs.existsSync(abs),
+  }));
+  let sessionAllowed = true;
+  let sessionError: string | undefined;
+  try {
+    await assertHostSessionAllowed({
+      config: ctx.config,
+      prisma: ctx.prisma,
+      sessionId: ctx.sessionId,
+      tools: ctx.agentSnapshot?.tools,
+      requireCapability: true,
+    });
+  } catch (err) {
+    sessionAllowed = false;
+    sessionError = err instanceof Error ? err.message : String(err);
+  }
+  return {
+    enabled: isHostAccessEnabled(ctx.config),
+    sessionAllowed,
+    sessionError,
+    roots,
+    aliases: ["host:Desktop/", "host:Documents/", "host:Downloads/"],
+    desktopMcpServers: ctx.config.hostAccess?.desktopMcpServers ?? ["windows-mcp"],
+    allowedDesktopMcpTools: listDesktopMcpAllowedTools(ctx.config),
+    hints: [
+      "读写用 read_file / write_file / list_directory，path 用 host:Desktop/foo.txt 或绝对路径",
+      "run_shell 的 cwd 可传 host:Desktop（默认仍在 Workspace）",
+      "开应用 / 点窗口 / 截屏走 MCP windows-mcp（Snapshot → Click / Type / App）",
+      "群聊禁止主机与桌面操控，请私聊",
+      "主机路径不支持 file_delete 软删",
+    ],
+  };
+}
+
 const FS_DEFS: NativeToolDefinition[] = [
+  {
+    name: "host_access",
+    concurrencyClass: "A",
+    defaultHidden: true,
+    description:
+      "查看本机主机访问授权：允许的目录 roots、当前会话是否允许操控（群聊禁止）、桌面 MCP 名。读写这些目录用 read_file/write_file/list_directory，path 用 host:Desktop/foo.txt 或绝对路径。开应用/点窗口走 MCP windows-mcp。",
+    parameters: { type: "object", properties: {} },
+    promptSection: { order: 118, text: HOST_ACCESS_PROMPT_SECTION },
+  },
   {
     name: "read_file",
     concurrencyClass: "A",
@@ -319,7 +391,7 @@ const FS_DEFS: NativeToolDefinition[] = [
         path: {
           type: "string",
           description:
-            "content/…、data/…、workspaces/…、config/memories/…、apps/algo-viz/… 或 Workspace 相对路径（如 notes.md）",
+            "content/…、data/…、workspaces/…、config/memories/…、apps/algo-viz/…、Workspace 相对路径，或 host:Desktop/foo.txt / 授权绝对路径（须 native:host_access）",
         },
         maxChars: { type: "number", description: "最大读取字符数，默认 12000" },
         offset: { type: "number", description: "起始字符偏移，默认 0；翻页时传上次返回的 nextOffset" },
@@ -522,6 +594,7 @@ const FS_DEFS: NativeToolDefinition[] = [
 ];
 
 const FS_HANDLERS = {
+  host_access: hostAccessTool,
   read_file: readFileTool,
   write_file: writeFileTool,
   append_to_file: appendToFileTool,

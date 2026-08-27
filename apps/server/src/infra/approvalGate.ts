@@ -707,12 +707,16 @@ export async function executeApprovedOperation(
       const { getAppConfig } = await import("./config.js");
       const config = getAppConfig();
       const invoke = createTrpcInvoker(ctx);
-      execResult = await executeNativeTool(approval.toolName, storedArgs, {
-        config,
-        services: ctx.services,
-        invokeTrpc: invoke,
-        signal: new AbortController().signal,
-      });
+      execResult = await executeNativeTool(
+        approval.toolName,
+        { ...storedArgs, approvalId: approval.id },
+        {
+          config,
+          services: ctx.services,
+          invokeTrpc: invoke,
+          signal: new AbortController().signal,
+        },
+      );
     } else {
       const invoke = createTrpcInvoker(ctx);
       execResult = await invoke(approval.toolName, {

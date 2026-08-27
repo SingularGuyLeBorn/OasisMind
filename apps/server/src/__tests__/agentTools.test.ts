@@ -18,7 +18,8 @@ import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
 import { skillToolName, parseSkillToolName, buildSkillToolSchema, executeSkill } from "../infra/skillRunner.js";
 import { mcpToolName } from "../infra/mcpUtils.js";
 import { PACKS_FULL } from "@oasismind/shared";
-import { createTempProjectDir, createAgentCtx, createNativeCtx, makeSkillEntity } from "./helpers/toolTestFixtures.js";
+import { createTempProjectDir, createAgentCtx, createNativeCtx, createTestConfig, makeSkillEntity } from "./helpers/toolTestFixtures.js";
+import { createContextInner } from "../trpc/context.js";
 import type { ToolRegistryEntry } from "../infra/agentTools.js";
 import fs from "fs";
 
@@ -264,6 +265,56 @@ describe("Agent 工具桥 — executeToolCallsBatch", () => {
     );
     expect((results[0].result as { error: string }).error).toMatch(/VisibleSet/);
     expect((results[0].result as { code: string }).code).toBe("NOT_VISIBLE");
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("memory_create(scope=global) 经 pipeline 仍带 approvalPending，不把 HITL 吞成普通失败", async () => {
+    const inner = await createContextInner();
+    const parsed = parseAgentTools(["native:memory_create"]);
+    const registry = new Map<string, ToolRegistryEntry>([
+      ["memory_create", { kind: "native", nativeName: "memory_create", concurrencySafe: false }],
+    ]);
+    const root = createTempProjectDir();
+    const toolCtx = createAgentToolContext(
+      createTestConfig(root),
+      inner.services,
+      async () => ({}),
+      parsed,
+      undefined,
+      {
+        agentSnapshot: {
+          id: "agent-super-hitl",
+          model: "test-model",
+          systemPrompt: "",
+          tools: ["native:memory_create"],
+          tier: "super",
+        },
+        signal: new AbortController().signal,
+      },
+    );
+    const results = await executeToolCallsBatch(
+      [
+        {
+          id: "1",
+          type: "function",
+          function: {
+            name: "memory_create",
+            arguments: JSON.stringify({
+              content: "unit 全局记忆审批探针",
+              type: "note",
+              scope: "global",
+              evidence: "unit-approval",
+            }),
+          },
+        },
+      ],
+      toolCtx,
+      registry,
+      parsed,
+    );
+    const result = results[0]?.result as { approvalPending?: { approvalId?: string }; error?: string };
+    expect(result.error).toMatch(/需要人工审批/);
+    expect(result.approvalPending?.approvalId).toBeTruthy();
     fs.rmSync(root, { recursive: true, force: true });
   });
 });

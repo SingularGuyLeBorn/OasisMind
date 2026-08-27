@@ -206,9 +206,9 @@ export async function accumulateExperience(
       type: MEMORY_TYPES.EXPERIENCE,
       strength: success
         ? (unverified
-          ? services.config.memory.trust.experienceUnverified
-          : services.config.memory.trust.experienceSuccess)
-        : services.config.memory.trust.experienceFailed,
+          ? services.config.memory?.trust?.experienceUnverified
+          : services.config.memory?.trust?.experienceSuccess)
+        : services.config.memory?.trust?.experienceFailed,
       keywords: [
         ...new Set(toolNames),
         input.trigger ?? "chat",

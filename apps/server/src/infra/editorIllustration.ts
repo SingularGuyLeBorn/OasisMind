@@ -11,6 +11,7 @@ import type { ServiceContainer } from "./serviceContainer.js";
 import { getAppConfig } from "./config.js";
 import { resilientChatCompletion } from "./resilientLlmClient.js";
 import { generateImageBytes } from "./imageGen.js";
+import { buildUploadDirSegments as resolveIllustrationSegments } from "./uploadDir.js";
 
 const PROMPT_TIMEOUT_MS = 60_000;
 const CTX_SLICE = 2500;
@@ -127,19 +128,7 @@ export function formatFigFileName(serial: number, ext: string): string {
   return `fig-${String(serial).padStart(3, "0")}${e}`;
 }
 
-export function resolveIllustrationSegments(loc: {
-  garden?: string;
-  postId?: string;
-  draftKey?: string;
-  agentId?: string;
-}): string[] {
-  const segments: string[] = [];
-  if (loc.garden) segments.push(loc.garden);
-  if (loc.postId) segments.push(loc.postId);
-  else if (loc.draftKey) segments.push("_draft", loc.draftKey);
-  else if (loc.agentId) segments.push("_agent", loc.agentId);
-  return segments;
-}
+export { resolveIllustrationSegments };
 
 export function altFromPrompt(prompt: string, title?: string): string {
   const first = prompt.split(/[.!\n]/)[0]?.trim() ?? "";

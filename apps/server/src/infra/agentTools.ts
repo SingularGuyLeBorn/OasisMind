@@ -321,7 +321,9 @@ export async function buildAgentToolSchemas(
   }
 
   if (parsed.mcpServers.length > 0) {
-    const mcpSchemas = await buildMcpToolSchemas(services, parsed.mcpServers);
+    const mcpSchemas = await buildMcpToolSchemas(services, parsed.mcpServers, {
+      agentTools: parsedToAgentTools(parsed),
+    });
     for (const schema of mcpSchemas) {
       const name = schema.function.name;
       const meta = parseMcpToolName(name);
@@ -413,7 +415,12 @@ export async function executeAgentTool(
   }
 
   if (entry?.kind === "mcp" || parseMcpToolName(toolName)) {
-    return executeMcpTool(ctx.services, toolName, cleanArgs);
+    return executeMcpTool(ctx.services, toolName, cleanArgs, {
+      config: ctx.config,
+      prisma: ctx.prisma,
+      sessionId: ctx.sessionId,
+      agentTools: ctx.agentSnapshot?.tools,
+    });
   }
 
   const skillRef = parseSkillToolName(toolName);
@@ -691,7 +698,7 @@ export async function summarizeAgentTools(
   let mcpTools = 0;
   if (parsed.mcpServers.length > 0) {
     try {
-      mcpTools = (await buildMcpToolSchemas(services, parsed.mcpServers)).length;
+      mcpTools = (await buildMcpToolSchemas(services, parsed.mcpServers, { agentTools: tools })).length;
     } catch {
       mcpTools = 0;
     }

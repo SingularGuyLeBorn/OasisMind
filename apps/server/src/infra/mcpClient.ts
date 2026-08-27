@@ -12,21 +12,49 @@ import { executeMockMcpTool, getMockMcpToolSchemas } from "./mockMcpRegistry.js"
 import { CircuitBreaker } from "./circuitBreaker.js";
 import { mcpToolName, truncateMcpResult } from "./mcpUtils.js";
 import { getEventBus, type EntityEventPayload } from "./eventBus.js";
+import { getAppConfig } from "./config.js";
+import {
+  agentHasHostAccess,
+  assertHostSessionAllowed,
+  isDesktopMcpServer,
+  isDesktopMcpToolAllowed,
+  isHostAccessEnabled,
+  listDesktopMcpAllowedTools,
+} from "./hostAccess.js";
 
 interface McpToolMeta {
   serverName: string;
   toolName: string;
 }
 
+const MCP_CONNECT_TIMEOUT_MS = 12_000;
+/** 桌面 MCP 首次 uvx 拉 Python/包可能远超 12s；失败不永久缓存空 schema。 */
+const MCP_DESKTOP_CONNECT_TIMEOUT_MS = 90_000;
+const MCP_CALL_TIMEOUT_MS = 60_000;
+const MCP_SCHEMA_FAIL_RETRY_MS = 30_000;
+
+type McpFnSchema = {
+  type: "function";
+  function: { name: string; description: string; parameters: Record<string, unknown> };
+};
+
 const clientCache = new Map<string, Promise<Client>>();
 const toolRegistry = new Map<string, McpToolMeta>();
-const schemaCache = new Map<string, Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }>>();
+/** 按 server 成功缓存；失败记 until，到期重试（避免一次 uvx 超时把工具永久藏起来）。 */
+const serverSchemaOk = new Map<string, McpFnSchema[]>();
+const serverSchemaFailUntil = new Map<string, number>();
 
 /** W12：每个 MCP server 一个断路器实例（模块级；进程重启自然重置） */
 const circuitBreakers = new Map<string, CircuitBreaker>();
 
-const MCP_CONNECT_TIMEOUT_MS = 12_000;
-const MCP_CALL_TIMEOUT_MS = 60_000;
+function mcpConnectTimeoutMs(serverName: string): number {
+  try {
+    if (isDesktopMcpServer(serverName, getAppConfig())) return MCP_DESKTOP_CONNECT_TIMEOUT_MS;
+  } catch {
+    /* 测试/启动早期无完整 config */
+  }
+  return MCP_CONNECT_TIMEOUT_MS;
+}
 
 function getMcpCircuitBreaker(serverName: string): CircuitBreaker {
   let breaker = circuitBreakers.get(serverName);
@@ -124,11 +152,14 @@ export function invalidateMcpCaches(serverName?: string): void {
     for (const [key, meta] of toolRegistry) {
       if (meta.serverName === serverName) toolRegistry.delete(key);
     }
+    serverSchemaOk.delete(serverName);
+    serverSchemaFailUntil.delete(serverName);
   } else {
     for (const [name] of clientCache) evictClient(name);
     toolRegistry.clear();
+    serverSchemaOk.clear();
+    serverSchemaFailUntil.clear();
   }
-  schemaCache.clear();
 }
 
 void (() => {
@@ -169,7 +200,7 @@ export function createMcpTransport(server: McpServerEntity): StdioClientTranspor
 async function connectClient(server: McpServerEntity): Promise<Client> {
   const transport = createMcpTransport(server);
   const client = new Client({ name: "oasismind", version: "1.0.0" }, { capabilities: {} });
-  await withTimeout(client.connect(transport), MCP_CONNECT_TIMEOUT_MS, `MCP ${server.name}`);
+  await withTimeout(client.connect(transport), mcpConnectTimeoutMs(server.name), `MCP ${server.name}`);
   return client;
 }
 
@@ -178,10 +209,53 @@ async function getOrConnectClient(server: McpServerEntity, forceReconnect = fals
   return getOrCreateInflight(clientCache, server.name, () => connectClient(server));
 }
 
+async function buildSchemasForServer(
+  server: McpServerEntity,
+  hostCfg: ReturnType<typeof getAppConfig>,
+): Promise<McpFnSchema[]> {
+  const cached = serverSchemaOk.get(server.name);
+  if (cached) return cached;
+  const failUntil = serverSchemaFailUntil.get(server.name) ?? 0;
+  if (Date.now() < failUntil) return [];
+
+  try {
+    const client = await getOrConnectClient(server);
+    const listed = await withTimeout(
+      client.listTools(),
+      mcpConnectTimeoutMs(server.name),
+      `MCP ${server.name} listTools`,
+    );
+    const schemas: McpFnSchema[] = [];
+    const desktop = isDesktopMcpServer(server.name, hostCfg);
+    for (const tool of listed.tools) {
+      if (desktop && !isDesktopMcpToolAllowed(tool.name, hostCfg)) continue;
+      const externalName = mcpToolName(server.name, tool.name);
+      toolRegistry.set(externalName, { serverName: server.name, toolName: tool.name });
+      schemas.push({
+        type: "function",
+        function: {
+          name: externalName,
+          description: `[MCP:${server.name}] ${tool.description || tool.name}`,
+          parameters: (tool.inputSchema as Record<string, unknown>) || { type: "object", properties: {} },
+        },
+      });
+    }
+    serverSchemaOk.set(server.name, schemas);
+    serverSchemaFailUntil.delete(server.name);
+    return schemas;
+  } catch (err: unknown) {
+    console.warn(`[MCP] 连接 ${server.name} 失败，跳过 MCP 工具:`, err instanceof Error ? err.message : err);
+    evictClient(server.name);
+    serverSchemaFailUntil.set(server.name, Date.now() + MCP_SCHEMA_FAIL_RETRY_MS);
+    return [];
+  }
+}
+
 export async function buildMcpToolSchemas(
   services: ServiceContainer,
   serverNames: string[],
-): Promise<Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }>> {
+  gate?: { agentTools?: string[] | null },
+): Promise<McpFnSchema[]> {
   if (serverNames.length === 0) return [];
 
   if (process.env.MOCK_MCP === "true") {
@@ -198,11 +272,8 @@ export async function buildMcpToolSchemas(
     return schemas;
   }
 
-  const cacheKey = serverNames.slice().sort().join(",");
-  const cached = schemaCache.get(cacheKey);
-  if (cached) return cached;
-
-  const schemas: Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }> = [];
+  const hostCfg = getAppConfig();
+  const schemas: McpFnSchema[] = [];
 
   for (const serverName of serverNames) {
     // 未配置的 MCP 名（如默认清单残留 mcp:filesystem）必须跳过，禁止拖垮整次 Chat
@@ -217,29 +288,19 @@ export async function buildMcpToolSchemas(
       continue;
     }
     if (!server.enabled) continue;
-
-    try {
-      const client = await getOrConnectClient(server);
-      const listed = await withTimeout(client.listTools(), MCP_CONNECT_TIMEOUT_MS, `MCP ${server.name} listTools`);
-      for (const tool of listed.tools) {
-        const externalName = mcpToolName(server.name, tool.name);
-        toolRegistry.set(externalName, { serverName: server.name, toolName: tool.name });
-        schemas.push({
-          type: "function",
-          function: {
-            name: externalName,
-            description: `[MCP:${server.name}] ${tool.description || tool.name}`,
-            parameters: (tool.inputSchema as Record<string, unknown>) || { type: "object", properties: {} },
-          },
-        });
-      }
-    } catch (err: unknown) {
-      console.warn(`[MCP] 连接 ${serverName} 失败，跳过 MCP 工具:`, err instanceof Error ? err.message : err);
-      evictClient(serverName);
+    if (isDesktopMcpServer(server.name, hostCfg) && !isHostAccessEnabled(hostCfg)) {
+      console.warn(`[MCP] 跳过桌面 MCP "${server.name}"：hostAccess.enabled=false`);
+      continue;
     }
+    if (isDesktopMcpServer(server.name, hostCfg) && gate?.agentTools && !agentHasHostAccess(gate.agentTools)) {
+      console.warn(`[MCP] 跳过桌面 MCP "${server.name}"：Agent 未授予 native:host_access`);
+      continue;
+    }
+
+    const part = await buildSchemasForServer(server, hostCfg);
+    schemas.push(...part);
   }
 
-  schemaCache.set(cacheKey, schemas);
   return schemas;
 }
 
@@ -262,12 +323,18 @@ export async function executeMcpTool(
   services: ServiceContainer,
   externalName: string,
   args: Record<string, unknown>,
+  gate?: {
+    config?: import("./config.js").AppConfig;
+    prisma?: import("@prisma/client").PrismaClient;
+    sessionId?: string;
+    agentTools?: string[] | null;
+  },
 ): Promise<unknown> {
   if (process.env.MOCK_MCP === "true") {
     return executeMockMcpTool(externalName, args, services);
   }
 
-  const meta = parseRegisteredMcpToolName(externalName);
+  const meta = parseRegisteredMcpToolName(externalName) ?? parseMcpToolNameParts(externalName);
   if (!meta) {
     throw new Error(
       `MCP 工具 schema 未构建，无法路由 ${externalName}。请确认对应 MCP server 已连接后再调用。`,
@@ -276,6 +343,22 @@ export async function executeMcpTool(
 
   const server = await findMcpServer(services, meta.serverName);
   if (!server.enabled) throw new Error(`MCP Server "${meta.serverName}" 已禁用`);
+
+  const hostCfg = gate?.config ?? getAppConfig();
+  if (isDesktopMcpServer(meta.serverName, hostCfg)) {
+    await assertHostSessionAllowed({
+      config: hostCfg,
+      prisma: gate?.prisma ?? services.prisma,
+      sessionId: gate?.sessionId,
+      tools: gate?.agentTools,
+      requireCapability: true,
+    });
+    if (!isDesktopMcpToolAllowed(meta.toolName, hostCfg)) {
+      throw new Error(
+        `桌面 MCP 工具「${meta.toolName}」不在白名单。允许：${listDesktopMcpAllowedTools(hostCfg).join(", ")}。PowerShell/注册表/任意删文件已禁用。`,
+      );
+    }
+  }
 
   // W12 断路器：open 期间零真实连接尝试，结构化错误结果直接喂回 LLM（不抛）
   const breaker = getMcpCircuitBreaker(server.name);
@@ -320,5 +403,6 @@ export async function disconnectAllMcpClients(): Promise<void> {
     evictClient(name);
   }
   toolRegistry.clear();
-  schemaCache.clear();
+  serverSchemaOk.clear();
+  serverSchemaFailUntil.clear();
 }

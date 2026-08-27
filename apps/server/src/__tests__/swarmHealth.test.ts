@@ -149,6 +149,42 @@ describe("swarmHealth 快照与告警", () => {
     }
   });
 
+  it("全局简报即使 limit 很小也包含超级 Agent", async () => {
+    const ctx = await createContextInner();
+    const existingSuper = await prisma.agent.findFirst({
+      where: { tier: "super", status: { not: "deleted" } },
+      select: { id: true },
+    });
+    let createdSuperId: string | null = null;
+    if (!existingSuper) {
+      const created = await ctx.services.agent.create({
+        name: `SwarmSuper-${RUN}`,
+        model: "deepseek-chat",
+        systemPrompt: "t",
+        tools: [],
+        tier: "super",
+      } as any);
+      createdSuperId = (created.data as { id: string }).id;
+    }
+    const agent = await ctx.services.agent.create({
+      name: `SwarmL-${RUN}`,
+      model: "deepseek-chat",
+      systemPrompt: "t",
+      tools: [],
+      tier: "manager",
+    } as any);
+    const agentId = (agent.data as { id: string }).id;
+    try {
+      const brief = await buildSwarmBrief(prisma, { limit: 1 });
+      expect(brief.agents.some((a) => a.tier === "super")).toBe(true);
+    } finally {
+      await prisma.agent.deleteMany({ where: { id: agentId } }).catch(() => {});
+      if (createdSuperId) {
+        await prisma.agent.deleteMany({ where: { id: createdSuperId } }).catch(() => {});
+      }
+    }
+  });
+
   it("buildSwarmBrief 产出 markdown 与需关注段落", async () => {
     const ctx = await createContextInner();
     const agent = await ctx.services.agent.create({

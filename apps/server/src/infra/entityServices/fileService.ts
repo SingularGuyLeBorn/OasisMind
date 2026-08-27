@@ -12,6 +12,7 @@ import type {
 } from "@oasismind/shared";
 import { BaseService } from "../../services.js";
 import { success, failureFromError } from "../../trpc/result.js";
+import { buildUploadDirSegments, buildUploadPublicUrl } from "../uploadDir.js";
 
 export class FileService extends BaseService<CreateFileInput, UpdateFileInput, ListFilesInput, any> {
   readonly entityName = "file";
@@ -51,15 +52,7 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
       const uploadRoot = path.resolve(this.config.uploadDir);
 
       // 按 postId（或草稿 draftKey）分目录，与 slug 解耦——改 slug 不断图片链
-      const segments: string[] = [];
-      if (garden) segments.push(garden);
-      if (postId) {
-        segments.push(postId);
-      } else if (draftKey) {
-        segments.push("_draft", draftKey);
-      } else if (agentId) {
-        segments.push("_agent", agentId);
-      }
+      const segments = buildUploadDirSegments({ garden, postId, draftKey, agentId });
 
       const destDir = segments.length > 0 ? path.resolve(uploadRoot, ...segments) : uploadRoot;
       const relToRoot = path.relative(uploadRoot, destDir);
@@ -72,7 +65,7 @@ export class FileService extends BaseService<CreateFileInput, UpdateFileInput, L
       const buffer = Buffer.from(data, "base64");
       fs.writeFileSync(filePath, buffer);
 
-      const fileUrl = `/uploads/${[...segments, uniqueName].join("/")}`;
+      const fileUrl = buildUploadPublicUrl(segments, uniqueName);
       const fileRecord = await this.prisma.file.create({
         data: { name: safeName, path: filePath, mimeType, size: buffer.length, url: fileUrl },
       });
