@@ -68,7 +68,7 @@ import {
   replaceMilkdownSelectionWithMarkdown,
   saveMilkdownSelectionRange,
 } from "@/components/editor/milkdownSelectionApi";
-import { extractMarkdownImages, stripMarkdownImages } from "@/lib/editorCompleteContext";
+import { extractMarkdownImages, stripMarkdownImages, applyEditorCompleteToSource } from "@/lib/editorCompleteContext";
 import {
   milkdownAtAgent,
   registerMilkdownAtAgentHandler,
@@ -555,7 +555,15 @@ function MilkdownEditorInner({
                   replaceDocument,
                 }) => {
                   if (replaceDocument) {
-                    rewriteContent(snippet, Math.min(snippet.length, 0));
+                    rewriteContent(
+                      applyEditorCompleteToSource(draft, {
+                        insertStart: 0,
+                        insertEnd: draft.length,
+                        content: snippet,
+                        replaceDocument: true,
+                      }),
+                      Math.min(snippet.length, 0),
+                    );
                     if (effectiveMode === "wysiwyg") setWysiwygEpoch((n) => n + 1);
                     return;
                   }
@@ -582,7 +590,11 @@ function MilkdownEditorInner({
                     setWysiwygEpoch((n) => n + 1);
                     return;
                   }
-                  const next = draft.slice(0, insertStart) + snippet + draft.slice(insertEnd);
+                  const next = applyEditorCompleteToSource(draft, {
+                    insertStart,
+                    insertEnd,
+                    content: snippet,
+                  });
                   const cursor = insertStart + snippet.length;
                   rewriteContent(next, cursor);
                   if (effectiveMode === "wysiwyg") setWysiwygEpoch((n) => n + 1);

@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Minus,
   Quote,
+  ShieldCheck,
   Sparkles,
   Square,
   X,
@@ -26,11 +27,11 @@ import {
 import { PostContent } from "@/components/post/PostContent";
 import { StreamingPlainContent } from "@/components/streamingPlainContent";
 import { cn } from "@/lib/utils";
-import { formatToolResultHint, type TimelineStep } from "@/lib/chatMessageUtils";
+import { formatToolResultHint, parseApprovalPending, type TimelineStep } from "@/lib/chatMessageUtils";
 import { formatToolDisplayName } from "@/lib/toolDisplayName";
 import { extractToolResultImages, type ToolResultImage } from "@/lib/toolResultImages";
 import { ToolStepIcon, type ToolIconStatus } from "@/lib/toolIcons";
-import { trpc } from "@/lib/trpc";
+import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { formatToolArtifactCite, requestComposePrefill, requestSaveToolResult } from "@/lib/composePrefill";
 
 /** 从工具结果卡片解析落盘路径（压缩卡或短结果注解） */
@@ -435,6 +436,7 @@ const ToolStep = memo(function ToolStep({
   // UI 统一大驼峰（WriteFile）；底层 id 仍为 snake_case
   const displayName = formatToolDisplayName(step.name);
   const hasError =
+    !parseApprovalPending(step.result) &&
     step.result &&
     typeof step.result === "object" &&
     step.result !== null &&
@@ -531,9 +533,23 @@ const ToolStep = memo(function ToolStep({
     { enabled: Boolean(offload?.path && showOriginal), staleTime: 30_000 },
   );
 
+  const waitingAsk = Boolean(askUserPending);
+  const approvalPending = useMemo(() => parseApprovalPending(step.result), [step.result]);
+  const waitingApproval = Boolean(approvalPending);
+  const liveWaiting = waitingAsk || waitingApproval;
+  const [hitlDone, setHitlDone] = useState(false);
+  const approveMut = trpc.approval.approveAndExecute.useMutation({
+    onSuccess: () => setHitlDone(true),
+  });
+  const rejectMut = trpc.approval.update.useMutation({
+    onSuccess: () => setHitlDone(true),
+  });
+  const hitlBusy = approveMut.isPending || rejectMut.isPending;
+  const showHitl = waitingApproval && !hitlDone;
+
   const isPreparing = step.status === "preparing";
   const iconStatus: ToolIconStatus =
-    step.status === "running" || isPreparing
+    step.status === "running" || isPreparing || waitingApproval
       ? "running"
       : hasError
         ? "error"
@@ -541,14 +557,14 @@ const ToolStep = memo(function ToolStep({
           ? "done"
           : "idle";
 
-  const waitingAsk = Boolean(askUserPending);
-
   return (
     <div
       data-testid="tool-pill"
+      data-tool={toolBaseName}
+      data-status={waitingApproval ? "awaiting_human" : iconStatus}
       className={cn(
         "w-full overflow-hidden rounded-xl border shadow-sm transition-colors",
-        step.status === "running" || waitingAsk || isPreparing
+        step.status === "running" || liveWaiting || isPreparing
           ? "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/30"
           : "border-[var(--om-divider-light)] bg-[var(--om-bg)]",
       )}
@@ -558,7 +574,7 @@ const ToolStep = memo(function ToolStep({
           <span
             className={cn(
               "h-2 w-2 shrink-0 rounded-full",
-              step.status === "running" || waitingAsk || isPreparing
+              step.status === "running" || liveWaiting || isPreparing
                 ? "animate-pulse bg-[var(--om-brand)]"
                 : hasError
                   ? "bg-red-500"
@@ -610,16 +626,60 @@ const ToolStep = memo(function ToolStep({
               准备调用…
             </span>
           )}
-          {(step.status === "running" || waitingAsk) && !sleepHint && !isPreparing && (
+          {(step.status === "running" || liveWaiting) && !sleepHint && !isPreparing && (
             <span
               className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--om-brand)]"
-              data-testid="tool-running-indicator"
+              data-testid={waitingApproval ? "tool-approval-pending" : "tool-running-indicator"}
             >
               <Loader2 className="h-3 w-3 animate-spin" />
-              {waitingAsk ? "等待回复" : "运行中"}
+              {waitingApproval ? "等待审批" : waitingAsk ? "等待回复" : "运行中"}
             </span>
           )}
-          {step.status === "done" && !isLive && !isTodoWrite && (
+          {showHitl && approvalPending && (
+            <span
+              className="inline-flex shrink-0 items-center gap-1"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <button
+                type="button"
+                data-testid="chat-approval-reject"
+                disabled={hitlBusy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  rejectMut.mutate(
+                    { id: approvalPending.approvalId, status: "rejected" },
+                    { onError: catchUnlessCancelled("chatTimelineSteps.reject") },
+                  );
+                }}
+                className="inline-flex items-center gap-0.5 rounded-md border border-red-200 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                <X className="h-3 w-3" />
+                拒绝
+              </button>
+              <button
+                type="button"
+                data-testid="chat-approval-approve"
+                disabled={hitlBusy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  approveMut.mutate(
+                    { id: approvalPending.approvalId },
+                    { onError: catchUnlessCancelled("chatTimelineSteps.approve") },
+                  );
+                }}
+                className="inline-flex items-center gap-0.5 rounded-md bg-[var(--om-brand-deep)] px-1.5 py-0.5 text-[9px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                批准并执行
+              </button>
+            </span>
+          )}
+          {step.status === "done" && !isLive && !isTodoWrite && !waitingApproval && (
             <span
               className={cn(
                 "ml-auto text-[10px]",

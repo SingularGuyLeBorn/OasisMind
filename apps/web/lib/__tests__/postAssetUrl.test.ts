@@ -28,6 +28,17 @@ describe("resolvePostAssetUrl", () => {
     ).toBe("/api/posts/assets/posts/hello/images/a.png");
   });
 
+  it("Ilya 一文一目录：配图落在该篇 images/ 而不是兄弟文章共用目录", () => {
+    expect(
+      resolvePostAssetUrl("images/00_abstract.png", {
+        slug: "ilya-30/12-understanding-lstm-networks/12-understanding-lstm-networks",
+        garden: "classic-papers",
+      }),
+    ).toBe(
+      "/api/posts/assets/classic-papers/ilya-30/12-understanding-lstm-networks/images/00_abstract.png",
+    );
+  });
+
   it("uploads 与绝对/外链保持可访问形式", () => {
     expect(resolvePostAssetUrl("content/uploads/a.png")).toBe("/uploads/a.png");
     expect(resolvePostAssetUrl("/uploads/a.png")).toBe("/uploads/a.png");

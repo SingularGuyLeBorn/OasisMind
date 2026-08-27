@@ -26,7 +26,7 @@ const ADMIN_PAGES: Array<{ path: string; heading: string }> = [
   { path: "/credentials", heading: "Credentials 凭据库" },
   { path: "/free-models", heading: "免费模型目录" },
   { path: "/settings", heading: "远程访问与安全" },
-  { path: "/approvals", heading: "Approvals 审批队列" },
+  { path: "/approvals", heading: "待你点头" },
   { path: "/triggers", heading: "Triggers 触发器" },
   { path: "/cron", heading: "定时节律" },
   { path: "/daily", heading: "每日看板" },

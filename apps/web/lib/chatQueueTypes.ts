@@ -495,6 +495,45 @@ export function countVisibleQueueItems(items: ChatQueueItem[]): number {
   return items.reduce((n, i) => n + (isVisibleQueueItem(i) ? 1 : 0), 0);
 }
 
+/**
+ * INV-Send：空闲且队空且未 draining → dispatching（UI 不闪待发）；
+ * 占用 / 已有队 / drain 中 → visible。
+ * 与 useChatEnqueue 必须共用，禁止测试里另写一份分流。
+ */
+export function decideEnqueueVisibility(opts: {
+  occupied: boolean;
+  draining: boolean;
+  queueLength: number;
+}): ChatQueueVisibility {
+  return opts.occupied || opts.draining || opts.queueLength > 0 ? "visible" : "dispatching";
+}
+
+/** 前端 drain 可起流：非 async-running，且有正文/附件/异步结果。 */
+export function isFrontendDrainReady(item: ChatQueueItem): boolean {
+  return (
+    item.kind !== "async-running" &&
+    !!(item.text.trim() || item.asyncResult || item.attachments?.length)
+  );
+}
+
+/**
+ * 前端可 drain 的队首。superior 挡在前面时返回 null（不越过，服务端 FIFO 专属）。
+ * consumeQueue / drainAllPendingQueues / PBT 必须共用，禁止各写一份扫描。
+ */
+export function pickFrontendDrainHead(queue: ChatQueueItem[]): ChatQueueItem | null {
+  for (const item of queue) {
+    if (item.kind === "superior") return null;
+    if ((item.kind === "user" || item.kind === "child_notify") && isFrontendDrainReady(item)) {
+      return item;
+    }
+  }
+  return null;
+}
+
+export function queueHasFrontendDrainWork(queue: ChatQueueItem[]): boolean {
+  return pickFrontendDrainHead(queue) != null;
+}
+
 /** DB SessionQueueItem 行形状（list / SSE 合并共用） */
 export type SessionQueueItemRow = {
   id: string;

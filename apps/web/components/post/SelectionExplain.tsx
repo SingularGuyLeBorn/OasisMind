@@ -18,9 +18,13 @@ import { Loader2, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { PostContent } from "@/components/post/PostContent";
-
-const EXCLUDED_SELECTORS =
-  "pre, code, .katex, .katex-display, .om-page-search-mark, .om-selection-explain, script, style, noscript, button, a, input, textarea";
+import {
+  readSurrounding,
+  selectionInside,
+  placeNearRect,
+  isExplainableQuote,
+  selectionExplainDismissAction,
+} from "@/lib/selectionExplainRange";
 
 const PANEL_WIDTH = 360;
 const BTN_GAP = 8;
@@ -32,28 +36,6 @@ export interface SelectionExplainProps {
   title: string;
   slug: string;
   garden: string;
-}
-
-function selectionInside(container: HTMLElement, sel: Selection): boolean {
-  if (sel.rangeCount === 0 || sel.isCollapsed) return false;
-  const range = sel.getRangeAt(0);
-  const node = range.commonAncestorContainer;
-  const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
-  if (!el || !container.contains(el)) return false;
-  if (el.closest(EXCLUDED_SELECTORS)) return false;
-  return true;
-}
-
-function readSurrounding(range: Range): string | undefined {
-  const node = range.commonAncestorContainer;
-  const el =
-    node.nodeType === Node.ELEMENT_NODE
-      ? (node as HTMLElement)
-      : node.parentElement;
-  const block = el?.closest("p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, .om-md-p");
-  const text = (block?.textContent || el?.textContent || "").replace(/\s+/g, " ").trim();
-  if (!text || text.length < 8) return undefined;
-  return text.slice(0, 1500);
 }
 
 export function SelectionExplain({
@@ -87,15 +69,8 @@ export function SelectionExplain({
     rangeRectRef.current = null;
   }, []);
 
-  const placeNearRect = useCallback((rect: DOMRect, width: number): AnchorPos => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let left = rect.left + rect.width / 2 - width / 2;
-    left = Math.max(12, Math.min(left, vw - width - 12));
-    const below = rect.bottom + BTN_GAP;
-    const placeAbove = below + 48 > vh && rect.top > 80;
-    const top = placeAbove ? rect.top - BTN_GAP : below;
-    return { top, left, placeAbove };
+  const placeNearSelection = useCallback((rect: DOMRect, width: number): AnchorPos => {
+    return placeNearRect(rect, width, { vw: window.innerWidth, vh: window.innerHeight }, BTN_GAP);
   }, []);
 
   const syncFromSelection = useCallback(() => {
@@ -107,7 +82,7 @@ export function SelectionExplain({
       return;
     }
     const text = sel.toString().replace(/\s+/g, " ").trim();
-    if (text.length < 2 || text.length > 2000) {
+    if (!isExplainableQuote(text)) {
       setBtnPos(null);
       return;
     }
@@ -120,8 +95,8 @@ export function SelectionExplain({
     rangeRectRef.current = rect;
     setQuote(text);
     setSurrounding(readSurrounding(range));
-    setBtnPos(placeNearRect(rect, 88));
-  }, [containerRef, panelOpen, placeNearRect]);
+    setBtnPos(placeNearSelection(rect, 88));
+  }, [containerRef, panelOpen, placeNearSelection]);
 
   useEffect(() => {
     const onMouseUp = () => {
@@ -130,7 +105,9 @@ export function SelectionExplain({
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        clearUi();
+        if (selectionExplainDismissAction({ kind: "escape", panelOpen: false }) === "clear") {
+          clearUi();
+        }
         return;
       }
       if (e.shiftKey) window.setTimeout(() => syncFromSelection(), 0);
@@ -146,8 +123,9 @@ export function SelectionExplain({
   useEffect(() => {
     if (!btnPos && !panelOpen) return;
     const onScroll = () => {
-      if (panelOpen) return;
-      setBtnPos(null);
+      if (selectionExplainDismissAction({ kind: "scroll", panelOpen }) === "hide-button") {
+        setBtnPos(null);
+      }
     };
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
@@ -157,8 +135,13 @@ export function SelectionExplain({
     if (!panelOpen) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (panelRef.current?.contains(t) || btnRef.current?.contains(t)) return;
-      clearUi();
+      const inside =
+        !!panelRef.current?.contains(t) || !!btnRef.current?.contains(t);
+      const action = selectionExplainDismissAction({
+        kind: inside ? "inside-mousedown" : "outside-mousedown",
+        panelOpen: true,
+      });
+      if (action === "clear") clearUi();
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
@@ -167,7 +150,7 @@ export function SelectionExplain({
   const runExplain = () => {
     if (!quote.trim() || explainMut.isPending) return;
     const rect = rangeRectRef.current;
-    if (rect) setPanelPos(placeNearRect(rect, PANEL_WIDTH));
+    if (rect) setPanelPos(placeNearSelection(rect, PANEL_WIDTH));
     else if (btnPos) setPanelPos({ ...btnPos, left: Math.max(12, btnPos.left - 120) });
     setPanelOpen(true);
     setBtnPos(null);
@@ -259,6 +242,7 @@ export function SelectionExplain({
             <button
               type="button"
               onClick={clearUi}
+              data-testid="selection-explain-close"
               className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
               aria-label="关闭"
             >

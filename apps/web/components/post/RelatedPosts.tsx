@@ -8,9 +8,9 @@ import { catchUnlessCancelled } from "@/lib/trpc";
 import Link from "next/link";
 import { GitBranch, Loader2, Sparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { postDetailHref } from "@/lib/postHref";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { relatedPostsViewState, relatedPostHref } from "@/lib/relatedPostsView";
 
 export function RelatedPosts({
   postId,
@@ -24,7 +24,14 @@ export function RelatedPosts({
     { staleTime: 60_000, enabled: !!postId },
   );
 
-  if (isLoading) {
+  const view = relatedPostsViewState({
+    isLoading,
+    isError,
+    errorMessage: error?.message,
+    items: data,
+  });
+
+  if (view.kind === "loading") {
     return (
       <section
         className={cn("mt-10 border-t border-[var(--om-divider)] pt-8", className)}
@@ -39,7 +46,7 @@ export function RelatedPosts({
     );
   }
 
-  if (isError) {
+  if (view.kind === "error") {
     return (
       <section className={cn("mt-10 border-t border-[var(--om-divider)] pt-8", className)}>
         <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[var(--om-text-2)]">
@@ -47,7 +54,7 @@ export function RelatedPosts({
           相关笔记
         </div>
         <p className="text-xs text-red-600">
-          加载失败：{error.message}
+          加载失败：{view.message}
           <button
             type="button"
             className="ml-2 underline"
@@ -62,7 +69,21 @@ export function RelatedPosts({
     );
   }
 
-  if (!data?.length) return null;
+  if (view.kind === "empty") {
+    return (
+      <section
+        className={cn("mt-10 border-t border-[var(--om-divider)] pt-8", className)}
+        data-testid="related-posts-empty"
+        aria-label="相关笔记"
+      >
+        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[var(--om-text-2)]">
+          <Sparkles className="h-4 w-4 text-[var(--om-brand)]" />
+          相关笔记
+        </div>
+        <p className="text-xs text-[var(--om-text-3)]">暂无相关笔记</p>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -78,11 +99,12 @@ export function RelatedPosts({
         </span>
       </div>
       <ul className="grid gap-3 sm:grid-cols-2">
-        {data.map((item) => (
+        {view.items.map((item) => (
           <li key={item.id}>
             <Link
-              href={postDetailHref(item.slug, item.garden)}
+              href={relatedPostHref(item)}
               className="group block rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/40 px-3.5 py-3 transition hover:border-[var(--om-brand)]/40 hover:bg-[var(--om-brand-soft)]/30"
+              data-testid="related-post-link"
             >
               <div className="mb-1 flex items-start justify-between gap-2">
                 <h3 className="line-clamp-2 text-sm font-semibold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)]">

@@ -30,6 +30,7 @@
  *
  * 相位合法性表（action → 合法源相位）：
  * - BEGIN_STREAM（非 resume）：idle
+ * - BEGIN_STREAM（resume）：idle | streaming（done/error 拒绝——无活流可挂）
  * - RESTORE_STREAM_SNAPSHOT：任意（sessionStorage 挂载恢复；不占 RESUME_CLAIM）
  * - COMPLETE_STREAM：streaming
  * - FAIL_STREAM：streaming | done
@@ -157,8 +158,19 @@ function isOccupiedPhase(phase: StreamPhase): boolean {
 function reducer(state: LifecycleMap, action: Action): LifecycleMap {
   const get = (sid: string): StreamLifecycleState => state.get(sid) ?? IDLE_STATE;
   const set = (sid: string, next: StreamLifecycleState): LifecycleMap => {
+    // INV-8：占用期不得残留 drainRequested。resume/restore 从 idle 进入 streaming 时
+    // 若只 spread prev，会把 hydrate 置位带进 occupied，队列可能在流式中误 drain。
+    // resumeClaimed 只在 streaming 有意义；abort-pending 进入 done 若残留 true，
+    // 二次 begin(resume) 会绕过 abort-pending 把相位拉回流式。
+    let normalized = next;
+    if (isOccupiedPhase(normalized.phase) && normalized.drainRequested) {
+      normalized = { ...normalized, drainRequested: false };
+    }
+    if (normalized.phase !== "streaming" && normalized.resumeClaimed) {
+      normalized = { ...normalized, resumeClaimed: false };
+    }
     const map = new Map(state);
-    map.set(sid, next);
+    map.set(sid, normalized);
     return map;
   };
 
@@ -185,6 +197,15 @@ function reducer(state: LifecycleMap, action: Action): LifecycleMap {
     case "BEGIN_STREAM": {
       const prev = get(action.sessionId);
       if (action.resume) {
+        // done/error 没有可挂接的活流；resume 拉回流式会清 pending、卡住 abort-pending
+        if (prev.phase === "done" || prev.phase === "error") {
+          if (process.env.NODE_ENV !== "production") {
+            console.error(
+              `[StreamLifecycle] resume blocked: session ${action.sessionId} still ${prev.phase}`,
+            );
+          }
+          return state;
+        }
         // RESUME_CLAIM：已有 resume 在途则拒绝双挂
         if (prev.resumeClaimed && prev.phase === "streaming" && prev.connected) {
           if (process.env.NODE_ENV !== "production") {
@@ -409,6 +430,7 @@ function reducer(state: LifecycleMap, action: Action): LifecycleMap {
           streamingContent: leftover,
           error: null,
           connected: false,
+          resumeClaimed: false,
           pendingAssistantMessageId: action.partialAssistantMessageId,
           pendingAssistantContent: leftover || null,
           drainRequested: false,
@@ -729,6 +751,9 @@ export const streamLifecycleActions = {
   ): boolean {
     const resume = opts.resume === true;
     const before = getStore().get(sessionId);
+    if (resume && (before.phase === "done" || before.phase === "error")) {
+      return false;
+    }
     if (resume && before.resumeClaimed && before.phase === "streaming" && before.connected) {
       return false;
     }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyEditorCompleteToSource,
   detectEditorAgentAtTrigger,
   extractEditorCompleteContext,
   extractMarkdownImages,
@@ -57,5 +58,21 @@ describe("editorCompleteContext", () => {
     expect(isIllustrationInstruction("在这里配一张图说明 RoPE")).toBe(true);
     expect(isIllustrationInstruction("画一张位置编码对比图")).toBe(true);
     expect(isIllustrationInstruction("写一段 RoPE 解释")).toBe(false);
+  });
+
+  it("Accept 写回选区；整篇替换；未调用则原文不变", () => {
+    const doc = "AAA BBB CCC";
+    expect(
+      applyEditorCompleteToSource(doc, { insertStart: 4, insertEnd: 7, content: "XX" }),
+    ).toBe("AAA XX CCC");
+    expect(
+      applyEditorCompleteToSource(doc, {
+        insertStart: 0,
+        insertEnd: doc.length,
+        content: "NEW",
+        replaceDocument: true,
+      }),
+    ).toBe("NEW");
+    expect(doc).toBe("AAA BBB CCC");
   });
 });

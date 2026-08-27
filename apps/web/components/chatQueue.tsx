@@ -461,6 +461,7 @@ export function UserSendQueuePanel({
       {!expanded ? (
         <button
           type="button"
+          data-testid="chat-queue-expand"
           onClick={() => setUserExpanded(true)}
           className="flex w-full items-center gap-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]/95 px-3 py-2 text-left text-xs shadow-sm transition hover:bg-[var(--om-bg-mute)]"
         >

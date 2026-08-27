@@ -21,6 +21,11 @@ export async function waitForChatReady(page: Page): Promise<Locator> {
   return input;
 }
 
+/** DSH / mock E2E：打开可发送的 Chat（当前即 waitForChatReady）。 */
+export async function openFreshChat(page: Page): Promise<Locator> {
+  return waitForChatReady(page);
+}
+
 const assistBaseline = new WeakMap<Page, { count: number; text: string; sent: string; pills: number }>();
 
 export async function sendChatMessage(page: Page, text: string): Promise<void> {
@@ -57,6 +62,15 @@ export async function sendChatMessage(page: Page, text: string): Promise<void> {
 
 export function getAssistBaseline(page: Page): { count: number; text: string; sent: string; pills: number } {
   return assistBaseline.get(page) ?? { count: 0, text: "", sent: "", pills: 0 };
+}
+
+/** 取走本次 sendChatMessage 的基线；没有则返回 undefined（刷新/切会话续跑路径）。 */
+export function consumeAssistBaseline(
+  page: Page,
+): { count: number; text: string; sent: string; pills: number } | undefined {
+  const value = assistBaseline.get(page);
+  if (value) assistBaseline.delete(page);
+  return value;
 }
 
 export async function waitForStreamingComplete(page: Page): Promise<void> {
@@ -108,4 +122,43 @@ export async function lastAssistantText(page: Page): Promise<string> {
   const count = await bubbles.count();
   if (count === 0) return "";
   return bubbles.nth(count - 1).innerText();
+}
+
+/**
+ * 展开折叠的待发面板后断言可见 user 队列项。
+ * 默认折叠只显示「待发消息 N」，DOM 里没有 chat-queue-item-*。
+ */
+export async function expectVisibleQueuedUser(page: Page): Promise<void> {
+  const panel = page.getByTestId("chat-queue-panel");
+  await expect(panel).toBeVisible({ timeout: 8_000 });
+  await expect(panel).toContainText("待发消息");
+  const expand = page.getByTestId("chat-queue-expand");
+  const expandByLabel = panel.getByRole("button").filter({ hasText: "待发消息" });
+  if ((await expand.count()) > 0) {
+    await expand.click();
+  } else if ((await expandByLabel.count()) > 0) {
+    await expandByLabel.click();
+  }
+  await expect(page.getByTestId("chat-queue-item-user").first()).toBeVisible({ timeout: 5_000 });
+}
+
+/**
+ * 流式占用时入队：发送钮已是 chat-stop，入队走 Ctrl+Enter（产品路径）。
+ * 断言仍在流式中且出现可见队列项（INV-Send：占用必须 visible）。
+ */
+export async function enqueueDuringStream(
+  page: Page,
+  text: string,
+  opts?: { stopTimeoutMs?: number },
+): Promise<void> {
+  await expect(page.getByTestId("chat-stop")).toBeVisible({
+    timeout: opts?.stopTimeoutMs ?? 15_000,
+  });
+  const input = page.getByTestId("chat-input").first();
+  await input.fill(text);
+  await expect(page.getByTestId("chat-stop")).toBeVisible();
+  await input.press("Control+Enter");
+  await expect(input).toHaveValue("");
+  await expectVisibleQueuedUser(page);
+  await expect(page.getByTestId("chat-stop")).toBeVisible();
 }

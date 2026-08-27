@@ -123,3 +123,22 @@ export function isIllustrationInstruction(text: string): boolean {
     t,
   );
 }
+
+/**
+ * Accept 才写回源码。Reject / 预览阶段不得调用本函数。
+ * replaceDocument 整篇替换；否则按 [insertStart, insertEnd) 切开插入。
+ */
+export function applyEditorCompleteToSource(
+  doc: string,
+  payload: {
+    insertStart: number;
+    insertEnd: number;
+    content: string;
+    replaceDocument?: boolean;
+  },
+): string {
+  if (payload.replaceDocument) return payload.content;
+  const start = Math.max(0, Math.min(payload.insertStart, doc.length));
+  const end = Math.max(start, Math.min(payload.insertEnd, doc.length));
+  return doc.slice(0, start) + payload.content + doc.slice(end);
+}

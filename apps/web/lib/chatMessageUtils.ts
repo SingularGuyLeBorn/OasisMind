@@ -3,7 +3,7 @@
  */
 
 import type { ChatMessage } from "@oasismind/shared";
-import { formatToolResultHint, formatToolTimingHint } from "@oasismind/shared";
+import { formatToolResultHint, formatToolTimingHint, parseApprovalPending } from "@oasismind/shared";
 import { isCompactBoundaryMessage } from "@/lib/compactMarkers";
 
 export type ToolCallRecord = {
@@ -225,7 +225,7 @@ export type TimelineStep =
       status: "queued" | "running" | "done" | "failed";
     };
 
-export { formatToolResultHint, formatToolTimingHint };
+export { formatToolResultHint, formatToolTimingHint, parseApprovalPending };
 
 export function buildTimelineFromStored(toolCalls?: ToolCallRecord[]): TimelineStep[] {
   if (!toolCalls?.length) return [];

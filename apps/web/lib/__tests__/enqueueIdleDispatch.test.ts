@@ -7,8 +7,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   countVisibleQueueItems,
   createUserQueueItem,
+  decideEnqueueVisibility,
   filterVisibleQueueItems,
-  type ChatQueueItem,
 } from "../chatQueueTypes";
 import {
   sessionComposeActions,
@@ -17,16 +17,6 @@ import {
 } from "../useSessionComposeState";
 
 const SID = "sess-inv-send";
-
-/** 复刻 useChatEnqueue 的 visibility 分流（纯函数，便于单测） */
-function decideEnqueueVisibility(opts: {
-  occupied: boolean;
-  draining: boolean;
-  userQueue: ChatQueueItem[];
-}): "visible" | "dispatching" {
-  const hasVisiblePending = opts.userQueue.some((i) => i.visibility !== "dispatching");
-  return opts.occupied || opts.draining || hasVisiblePending ? "visible" : "dispatching";
-}
 
 describe("INV-Send enqueue visibility", () => {
   beforeEach(() => {
@@ -37,7 +27,7 @@ describe("INV-Send enqueue visibility", () => {
     const visibility = decideEnqueueVisibility({
       occupied: false,
       draining: false,
-      userQueue: [],
+      queueLength: 0,
     });
     expect(visibility).toBe("dispatching");
 
@@ -54,7 +44,7 @@ describe("INV-Send enqueue visibility", () => {
     const visibility = decideEnqueueVisibility({
       occupied: true,
       draining: false,
-      userQueue: [],
+      queueLength: 0,
     });
     expect(visibility).toBe("visible");
 
@@ -73,7 +63,7 @@ describe("INV-Send enqueue visibility", () => {
     const visibility = decideEnqueueVisibility({
       occupied: false,
       draining: false,
-      userQueue: sessionComposeStore.get(SID).userQueue,
+      queueLength: sessionComposeStore.get(SID).userQueue.length,
     });
     expect(visibility).toBe("visible");
   });
@@ -82,8 +72,22 @@ describe("INV-Send enqueue visibility", () => {
     const visibility = decideEnqueueVisibility({
       occupied: false,
       draining: true,
-      userQueue: [],
+      queueLength: 0,
     });
     expect(visibility).toBe("visible");
+  });
+
+  it("队里已有 dispatching 项时后续必须 visible（避免连发第二条仍隐身）", () => {
+    sessionComposeActions.enqueueUserQueueItem(
+      SID,
+      createUserQueueItem("first", { visibility: "dispatching" }),
+    );
+    expect(
+      decideEnqueueVisibility({
+        occupied: false,
+        draining: false,
+        queueLength: sessionComposeStore.get(SID).userQueue.length,
+      }),
+    ).toBe("visible");
   });
 });

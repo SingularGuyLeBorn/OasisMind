@@ -99,6 +99,43 @@ describe("Chat store invariants lock", () => {
     expect(streamLifecycleStore.isRunOccupied(SID)).toBe(false);
   });
 
+  it("INV-8：idle 已置 drainRequested 后 resume begin 必须清掉，占用期不得残留", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        {
+          id: "u-drain",
+          sessionId: SID,
+          role: "user",
+          content: "hydrate",
+          toolCalls: null,
+          toolResults: null,
+          tokenUsage: null,
+          createdAt: new Date(),
+        } as ChatMessage,
+      ],
+      "view",
+    );
+    expect(streamLifecycleStore.get(SID).phase).toBe("idle");
+    expect(streamLifecycleStore.get(SID).drainRequested).toBe(true);
+
+    expect(streamLifecycleActions.beginStream(SID, { resume: true })).toBe(true);
+    expect(streamLifecycleStore.get(SID).phase).toBe("streaming");
+    expect(streamLifecycleStore.get(SID).drainRequested).toBe(false);
+  });
+
+  it("abort-pending 进入 done 时必须清 resumeClaimed，避免二次 resume 绕过对齐", () => {
+    expect(streamLifecycleActions.beginStream(SID, { resume: true })).toBe(true);
+    expect(streamLifecycleStore.get(SID).resumeClaimed).toBe(true);
+
+    streamLifecycleActions.abortStream(SID, { partialAssistantMessageId: "a-partial" });
+    expect(streamLifecycleStore.get(SID).phase).toBe("done");
+    expect(streamLifecycleStore.get(SID).resumeClaimed).toBe(false);
+    expect(streamLifecycleStore.get(SID).pendingAssistantMessageId).toBe("a-partial");
+    expect(streamLifecycleActions.beginStream(SID, { resume: true })).toBe(false);
+    expect(streamLifecycleStore.get(SID).phase).toBe("done");
+  });
+
   it("多会话隔离：A streaming 时 B beginStream 不受影响", () => {
     expect(streamLifecycleActions.beginStream(SID)).toBe(true);
     streamLifecycleActions.appendTokenDelta(SID, "A");

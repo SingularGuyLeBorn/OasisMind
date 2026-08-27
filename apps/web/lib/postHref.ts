@@ -18,6 +18,16 @@ export function isExternalHref(href: string): boolean {
   return EXTERNAL_HREF_RE.test(href);
 }
 
+/** URL.pathname 会百分号编码中文；文章 slug 本身是 Unicode，必须解码后再匹配 */
+function decodeHrefPathname(pathname: string): string {
+  const raw = pathname.replace(/^\//, "");
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 /**
  * 文章详情链接：默认花园 posts 走 /posts/{slug}；其它花园带 ?garden=
  * slug 可含 /，统一 encodeURIComponent。
@@ -43,7 +53,7 @@ export function resolveRelativeMdSlug(href: string, postSlug: string): string | 
   const base = `http://a/${slugDir ? `${slugDir}/` : ""}`;
 
   try {
-    let path = new URL(href, base).pathname.replace(/^\//, "");
+    let path = decodeHrefPathname(new URL(href, base).pathname);
     if (path.endsWith(".md")) path = path.slice(0, -3);
     return path || null;
   } catch {
@@ -55,7 +65,7 @@ export function resolveRelativeMdSlug(href: string, postSlug: string): string | 
 export function normalizeMdTarget(href: string): string {
   const clean = href.split(/[#?]/)[0]?.trim() ?? "";
   try {
-    let path = new URL(clean, "http://a/base/").pathname.replace(/^\//, "");
+    let path = decodeHrefPathname(new URL(clean, "http://a/base/").pathname);
     if (path.endsWith(".md")) path = path.slice(0, -3);
     return path;
   } catch {

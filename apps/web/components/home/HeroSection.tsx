@@ -209,14 +209,12 @@ function FactorBlock({
 }) {
   const isO = side === "o";
   return (
-    <motion.div
-      whileHover={isO ? { y: -4, scale: 1.015 } : { y: -3, rotate: 0.8 }}
-      transition={{ type: "spring", stiffness: 320, damping: 24 }}
+    <div
       className={cn(
-        "flex min-w-0 cursor-default items-start gap-2.5 rounded-xl border border-transparent bg-transparent p-2.5 transition-[border-color,background-color,box-shadow] duration-300",
+        "flex min-w-0 cursor-default items-start gap-2.5 rounded-xl border border-transparent bg-transparent p-2.5 transition-[border-color,background-color] duration-200",
         isO
-          ? "om-card-sheen hover:border-[var(--om-brand)]/25 hover:bg-white/55 hover:shadow-[0_10px_28px_-14px_rgba(0,135,235,0.35)]"
-          : "hover:border-[var(--om-accent)]/30 hover:bg-white/55 hover:shadow-[0_12px_30px_-14px_rgba(232,168,74,0.35)]",
+          ? "hover:border-[var(--om-brand)]/25 hover:bg-white/55"
+          : "hover:border-[var(--om-accent)]/30 hover:bg-white/55",
       )}
     >
       <LetterBadge letter={letter} side={side} />
@@ -234,7 +232,7 @@ function FactorBlock({
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -472,35 +470,21 @@ export function HeroSection() {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {BRAND_ANCHORS.map((item, i) => {
+            {BRAND_ANCHORS.map((item) => {
               const Icon = item.icon;
-              const hoverMotion = [
-                { y: -4 },
-                { y: -3, rotate: -1.2 },
-                { y: -3, scale: 1.03 },
-                { y: 2, scale: 0.98 },
-              ][i % 4];
-              const hoverClass = [
-                "hover:border-[var(--om-brand)]/35 hover:shadow-[0_10px_24px_-14px_rgba(0,135,235,0.3)]",
-                "hover:border-[var(--om-accent)]/40 hover:shadow-[0_10px_24px_-14px_rgba(232,168,74,0.3)]",
-                "om-card-sheen hover:border-white/80 hover:shadow-[0_12px_28px_-14px_rgba(0,80,160,0.24)]",
-                "hover:bg-white/80 hover:shadow-[inset_0_2px_8px_rgba(0,80,160,0.08)]",
-              ][i % 4];
               return (
-                <motion.div
+                <div
                   key={item.label}
-                  whileHover={hoverMotion}
-                  transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                  className={`group flex cursor-default items-start gap-2.5 rounded-xl border border-white/50 bg-white/40 px-3 py-2.5 backdrop-blur-sm transition-[border-color,background-color,box-shadow] duration-300 hover:bg-white/70 ${hoverClass}`}
+                  className="flex cursor-default items-start gap-2.5 rounded-xl border border-white/50 bg-white/40 px-3 py-2.5 backdrop-blur-sm transition-[border-color,background-color] duration-200 hover:border-[var(--om-brand)]/25 hover:bg-white/70"
                 >
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--om-brand)]/20 bg-[var(--om-brand-soft)] text-[var(--om-brand)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--om-brand)]/20 bg-[var(--om-brand-soft)] text-[var(--om-brand)]">
                     <Icon className="h-3.5 w-3.5" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-[var(--om-text-1)]">{item.label}</p>
                     <p className="mt-0.5 text-[10px] text-[var(--om-text-3)]">{item.hint}</p>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>

@@ -14,7 +14,7 @@ import { useCallback, useRef, type RefObject } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 
 const logQueryCatch = catchUnlessCancelled("[useChatEnqueue] query");
-import { type ChatQueueItem, createUserQueueItem } from "@/lib/chatQueueTypes";
+import { type ChatQueueItem, createUserQueueItem, decideEnqueueVisibility } from "@/lib/chatQueueTypes";
 import { type SelectedSkill } from "@/components/chatInput";
 import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComposeState";
 import { NEW_STREAM_KEY } from "@/lib/chatKeys";
@@ -175,13 +175,17 @@ export function useChatEnqueue({
         !!effectiveSessionId && isSessionRunOccupied(effectiveSessionId);
       const compose = sessionComposeStore.get(sid);
       const draining = compose.queueDraining;
-      const hasAnyQueueItem = compose.userQueue.length > 0;
-      const showInQueue = occupied || draining || hasAnyQueueItem;
+      const visibility = decideEnqueueVisibility({
+        occupied,
+        draining,
+        queueLength: compose.userQueue.length,
+      });
+      const showInQueue = visibility === "visible";
       const localItem = createUserQueueItem(messageText || "（见附件）", {
         skillId: skill?.id,
         skillPrompt,
         attachments,
-        visibility: showInQueue ? "visible" : "dispatching",
+        visibility,
       });
 
       sessionComposeActions.enqueueUserQueueItem(sid, localItem);

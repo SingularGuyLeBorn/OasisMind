@@ -1729,28 +1729,13 @@ html.dark .om-card-interactive:hover,
     0 0 24px -6px rgba(var(--om-brand-rgb), 0.25);
 }
 
-/* 斜向光泽扫过（hover 时一道高光掠过卡面） */
+/* 斜向光泽扫过已关掉：hover 高光扫过会闪，影响阅读 */
 .om-card-sheen {
   position: relative;
-  overflow: hidden;
 }
-.om-card-sheen::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(
-    105deg,
-    transparent 42%,
-    rgba(255, 255, 255, 0.38) 50%,
-    transparent 58%
-  );
-  transform: translateX(-135%) skewX(-8deg);
-  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
-  z-index: 20;
-}
+.om-card-sheen::after,
 .om-card-sheen:hover::after {
-  transform: translateX(135%) skewX(-8deg);
+  content: none;
 }
 html.dark .om-card-sheen::after,
 .dark .om-card-sheen::after {

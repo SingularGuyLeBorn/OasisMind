@@ -48,7 +48,7 @@ export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (/^(algo_viz_)/.test(name)) {
     return "algoViz";
   }
-  if (/^(read_file|write_file|list_directory|file_|directory_|search_files)/.test(name)) {
+  if (/^(host_access|read_file|write_file|list_directory|file_|directory_|search_files)/.test(name)) {
     return "fs";
   }
   if (/^async_task_/.test(name)) return "async";
@@ -109,6 +109,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   fetch_huggingface_model: "HuggingFace 模型详情",
   fetch_huggingface_trending: "HuggingFace 热榜",
   read_file: "读取文件",
+  host_access: "主机目录授权",
   write_file: "写入文件",
   append_to_file: "追加文件",
   algo_viz_create: "创建算法动画",

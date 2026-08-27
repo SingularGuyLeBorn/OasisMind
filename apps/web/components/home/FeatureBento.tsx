@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { motion } from "framer-motion";
 import {
   Blend,
   Code2,
@@ -12,8 +11,6 @@ import {
 } from "lucide-react";
 import { CurlyMark } from "@/components/home/accentMark";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/magicui/scroll-reveal";
-
-const hoverSpring = { type: "spring", stiffness: 260, damping: 26 } as const;
 
 interface Feature {
   icon: ReactNode;
@@ -74,46 +71,18 @@ export function FeatureBento() {
         </ScrollReveal>
 
         <StaggerContainer className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, i) => {
-            const hoverMotion = [
-              { y: -8 },
-              { y: -5, rotate: -1.1 },
-              { y: -4, scale: 1.02 },
-              { y: -6, x: 3 },
-              { y: 2, scale: 0.985 },
-              { y: -7, scale: 1.015 },
-            ][i % 6];
-            const hoverClass = [
-              "om-card-topline om-card-sheen hover:border-[var(--om-brand)]/35 hover:shadow-[0_22px_52px_-16px_rgba(0,135,235,0.32)]",
-              "hover:border-[var(--om-accent)]/40 hover:shadow-[0_18px_44px_-14px_rgba(232,168,74,0.3)]",
-              "hover:border-white/80 hover:shadow-[0_0_0_1px_rgba(0,135,235,0.12),0_20px_48px_-18px_rgba(0,135,235,0.28)]",
-              "border-l-[3px] border-l-transparent hover:border-l-[var(--om-brand)] hover:border-[var(--om-brand)]/25 hover:shadow-[0_16px_40px_-14px_rgba(0,80,160,0.24)]",
-              "hover:bg-white/80 hover:shadow-[inset_0_2px_12px_rgba(0,80,160,0.08)]",
-              "om-card-sheen hover:border-[var(--om-brand)]/30 hover:shadow-[0_24px_50px_-18px_rgba(0,80,160,0.28)]",
-            ][i % 6];
+          {features.map((feature) => {
             return (
               <StaggerItem key={feature.title}>
-                <motion.div
-                  whileHover={hoverMotion}
-                  transition={hoverSpring}
-                  className={`group relative flex h-full items-center gap-3.5 overflow-hidden rounded-2xl border border-white/55 bg-white/50 p-5 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-500 hover:bg-white/70 ${hoverClass}`}
-                >
-                  <div
-                    aria-hidden
-                    className={`pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full blur-3xl transition-all duration-500 ${
-                      i % 2 === 0
-                        ? "bg-[var(--om-glow-peach)]/0 group-hover:bg-[var(--om-glow-peach)]/45"
-                        : "bg-[var(--om-glow-blue)]/0 group-hover:bg-[var(--om-glow-blue)]/50"
-                    }`}
-                  />
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--om-brand)] shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                <div className="group relative flex h-full items-center gap-3.5 overflow-hidden rounded-2xl border border-white/55 bg-white/50 p-5 shadow-[0_12px_36px_-18px_rgba(0,80,160,0.18)] backdrop-blur-xl transition-[border-color,background-color] duration-200 hover:border-[var(--om-brand)]/30 hover:bg-white/70">
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/70 text-[var(--om-brand)] shadow-sm">
                     {feature.icon}
                   </div>
                   <div className="relative min-w-0 flex-1">
                     <h3 className="mb-1 text-sm font-bold text-[var(--om-text-1)]">{feature.title}</h3>
                     <p className="text-xs leading-relaxed text-[var(--om-text-2)]">{feature.description}</p>
                   </div>
-                </motion.div>
+                </div>
               </StaggerItem>
             );
           })}

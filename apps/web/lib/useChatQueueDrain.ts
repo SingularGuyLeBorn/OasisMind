@@ -17,7 +17,7 @@ import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 
 const logQueryCatch = catchUnlessCancelled("[useChatQueueDrain] query");
 import { getModelOption } from "@/lib/chatConfig";
-import { type ChatQueueItem, formatQueueItemForLlm, toApiAttachments } from "@/lib/chatQueueTypes";
+import { type ChatQueueItem, formatQueueItemForLlm, pickFrontendDrainHead, queueHasFrontendDrainWork, toApiAttachments } from "@/lib/chatQueueTypes";
 import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComposeState";
 import { type RunStreamOptions, type RunStreamOutcome } from "@/lib/useChatRunStream";
 import { NEW_STREAM_KEY } from "@/lib/chatKeys";
@@ -91,20 +91,7 @@ export function useChatQueueDrain({
     // INV-2：streaming|done 均占用，禁止开新流
     if (isSessionRunOccupied(sid) || compose.queueDraining) return;
 
-    const isReady = (t: ChatQueueItem) =>
-      t.kind !== "async-running" &&
-      (t.text.trim() || t.asyncResult || t.attachments?.length);
-
-    let userReady: ChatQueueItem | undefined;
-    for (const t of compose.userQueue) {
-      // superior：服务端 FIFO drain 专属；队首是 superior 时前端停，绝不越过起流
-      if (t.kind === "superior") break;
-      if ((t.kind === "user" || t.kind === "child_notify") && isReady(t)) {
-        userReady = t;
-        break;
-      }
-    }
-    const task = userReady;
+    const task = pickFrontendDrainHead(compose.userQueue);
     if (!task) return;
 
     if (task.kind === "superior" && sid === NEW_STREAM_KEY) {
@@ -248,14 +235,7 @@ export function useChatQueueDrain({
         // 释放锁后若 session 已 idle 且队列仍有可发项，必须再次触发 drain，否则待发消息永久卡住。
         // 这是「释放锁后检查工作」的标准模式，与 onStreamCommitted 双保险，非时序猜测补丁。
         const composeAfter = sessionComposeStore.get(sid);
-        if (
-          !isSessionRunOccupied(sid) &&
-          composeAfter.userQueue.some(
-            (t) =>
-              (t.kind === "user" || t.kind === "child_notify") &&
-              (t.text.trim() || t.attachments?.length),
-          )
-        ) {
+        if (!isSessionRunOccupied(sid) && queueHasFrontendDrainWork(composeAfter.userQueue)) {
           consumeRef.current(sid);
         }
       }
@@ -298,20 +278,7 @@ export function useChatQueueDrain({
         const compose = sessionComposeStore.get(sid);
         // INV-2：streaming|done 均占用，跳过
         if (isSessionRunOccupied(sid) || compose.queueDraining) continue;
-        // superior 在队首时前端不 drain（服务端负责）；仅探测 user/child_notify
-        let blockedBySuperior = false;
-        const hasUser = compose.userQueue.some((t) => {
-          if (t.kind === "superior") {
-            blockedBySuperior = true;
-            return false;
-          }
-          if (blockedBySuperior) return false;
-          return (
-            (t.kind === "user" || t.kind === "child_notify") &&
-            (t.text.trim() || t.attachments?.length)
-          );
-        });
-        if (!hasUser) continue;
+        if (!queueHasFrontendDrainWork(compose.userQueue)) continue;
         consumeQueue(sid);
       }
     },

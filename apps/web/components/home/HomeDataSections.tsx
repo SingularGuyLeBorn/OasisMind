@@ -55,12 +55,12 @@ export function HomeDataSections() {
   const activity = (activityQuery.data ?? null) as ActivityCalendarData | null;
   const posts = recentPosts.items ?? [];
   const postCount = recentPosts.total ?? 0;
-  const categoryCount = new Set(posts.map((p) => p.category).filter(Boolean)).size;
+  const gardenCount = gardensQuery.data?.total ?? gardens.length;
 
   return (
     <>
       <div className="pb-4 pt-2">
-        <StatsStrip postCount={postCount} categoryCount={categoryCount} />
+        <StatsStrip postCount={postCount} gardenCount={gardenCount} />
       </div>
       <ArticleUpdateCalendar data={activity} />
       <GardenCardOrganizer gardens={gardens} />
