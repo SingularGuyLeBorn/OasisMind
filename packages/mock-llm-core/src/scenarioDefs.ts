@@ -151,7 +151,11 @@ export const scenarios: MockLlmScenario[] = [
     name: "async_task_run",
     match: (opts, forced) => {
       if (forced === "async_task_run") return true;
-      return hasTool(opts, "async_task_run") && /后台任务|异步任务|async task/i.test(lastUserText(opts));
+      if (!hasTool(opts, "async_task_run")) return false;
+      const text = lastUserText(opts);
+      if (/后台任务|异步任务|async task/i.test(text)) return true;
+      // autoConsume 把 sleep 结果注入为新 user 消息，「定时时间…请继续」不再含「后台任务」
+      return /定时时间/.test(text) && hasNamedToolResult(opts, "async_task_run");
     },
     completion: (opts) => ({
       ...baseResult(opts),
@@ -263,12 +267,32 @@ export const scenarios: MockLlmScenario[] = [
     },
   },
   {
+    name: "dsh_e2e_2_child_done",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_child_done" ||
+      (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
+        hasNamedToolResult(opts, "agent_report_back")),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "DSH-E2E-2 子已回报",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "DSH-E2E-2 子已回报",
+        toolCalls: [],
+      });
+    },
+  },
+  {
     name: "dsh_e2e_2_child_report",
     match: (opts, forced) =>
       forced === "dsh_e2e_2_child_report" ||
       (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
         hasTool(opts, "agent_report_back") &&
-        hasAnyToolResult(opts)),
+        hasAnyToolResult(opts) &&
+        !hasNamedToolResult(opts, "agent_report_back")),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -279,6 +303,26 @@ export const scenarios: MockLlmScenario[] = [
         ...baseResult(opts),
         content: null,
         toolCalls: [makeToolCall("agent_report_back", { content: "DSH-E2E-2 子已回报" })],
+      });
+    },
+  },
+  {
+    name: "dsh_e2e_2_child_final",
+    match: (opts, forced) =>
+      forced === "dsh_e2e_2_child_final" ||
+      (/DSH-E2E-2 只读文件后回报/.test(lastUserText(opts)) &&
+        hasAnyToolResult(opts) &&
+        !hasTool(opts, "agent_report_back")),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "DSH-E2E-2 子已回报",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "DSH-E2E-2 子已回报",
+        toolCalls: [],
       });
     },
   },

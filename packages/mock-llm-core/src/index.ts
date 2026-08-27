@@ -41,3 +41,11 @@ export {
   QUEUE_SLOW_FIRST_TOKEN_MS,
   SUBAGENT_ASYNC_SLEEP_SECONDS,
 } from "./scenarioDefs.js";
+
+export {
+  parseHttpThinking,
+  resolveThinkingPolicy,
+  applyThinkingPolicy,
+  REASONING_HIGH,
+  REASONING_MAX,
+} from "./thinkingPolicy.js";

@@ -47,6 +47,25 @@ describe("mock 思考策略（与真实请求体对齐）", () => {
     expect((max.reasoningContent ?? "").length).toBeGreaterThan((high.reasoningContent ?? "").length);
   });
 
+  it("enableReasoning:true 无 thinking 字段 = 开思考（进程内 MOCK_LLM 别名）", async () => {
+    const result = await mockChatCompletion({ ...hello, enableReasoning: true });
+    expect(result.reasoningContent).toBe(REASONING_HIGH);
+    const chunks: string[] = [];
+    for await (const c of mockChatCompletionStream({ ...hello, enableReasoning: true })) {
+      if (c.type === "reasoning") chunks.push(c.delta ?? "");
+    }
+    expect(chunks.join("")).toBe(REASONING_HIGH);
+  });
+
+  it("thinking.type 优先于 enableReasoning=false", async () => {
+    const result = await mockChatCompletion({
+      ...hello,
+      thinking: { type: "enabled" },
+      enableReasoning: false,
+    });
+    expect(result.reasoningContent).toBe(REASONING_HIGH);
+  });
+
   it("thinking.disabled 即使用户说「解释」也不吐推理", async () => {
     const result = await mockChatCompletion({
       model: "deepseek-v4-flash",

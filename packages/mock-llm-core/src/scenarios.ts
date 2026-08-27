@@ -24,6 +24,8 @@ export interface MockLlmOptions {
   /** 与真实请求体同一套思考开关 */
   thinking?: { type?: string } | string | null;
   reasoningEffort?: string | null;
+  /** 进程内 MOCK_LLM：LlmRequestOptions.enableReasoning 别名 */
+  enableReasoning?: boolean;
 }
 
 export interface MockLlmScenario {

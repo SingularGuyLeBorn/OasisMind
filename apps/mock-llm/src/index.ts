@@ -24,6 +24,7 @@ import express from "express";
 import {
   mockChatCompletion,
   mockChatCompletionStream,
+  parseHttpThinking,
   type LlmMessage,
   type LlmToolDefinition,
   type StreamChunk,
@@ -99,12 +100,18 @@ app.post("/v1/chat/completions", async (req, res) => {
     messages: LlmMessage[];
     tools?: LlmToolDefinition[];
     stream?: boolean;
+    thinking?: { type?: string } | string;
+    reasoning_effort?: string;
+    reasoningEffort?: string;
   };
+  const parsedThinking = parseHttpThinking(body);
   const opts = {
     model: body.model,
     messages: body.messages ?? [],
     tools: body.tools,
     scenario: scenarioOverride || undefined,
+    thinking: { type: parsedThinking.type },
+    reasoningEffort: parsedThinking.effort,
   };
 
   if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));

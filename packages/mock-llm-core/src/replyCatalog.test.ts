@@ -88,6 +88,33 @@ describe("测试用 Mock 回复目录", () => {
     ).toBe("async_task_run");
     expect(
       resolveScenario({
+        messages: [
+          { role: "user", content: "请启动一个后台任务总结当前项目" },
+          { role: "tool", name: "async_task_run", content: "ok" },
+          { role: "user", content: "定时时间0s到了，请继续完成任务" },
+        ],
+        tools: [tool("async_task_run")],
+      }).name,
+    ).toBe("async_task_run");
+    const continued = resolveScenario({
+      messages: [
+        { role: "user", content: "请启动一个后台任务总结当前项目" },
+        { role: "tool", name: "async_task_run", content: "ok" },
+        { role: "user", content: "定时时间0s到了，请继续完成任务" },
+      ],
+      tools: [tool("async_task_run")],
+    }).completion({
+      messages: [
+        { role: "user", content: "请启动一个后台任务总结当前项目" },
+        { role: "tool", name: "async_task_run", content: "ok" },
+        { role: "user", content: "定时时间0s到了，请继续完成任务" },
+      ],
+      tools: [tool("async_task_run")],
+    });
+    expect(continued.content).toContain("后台任务");
+    expect(continued.toolCalls).toHaveLength(0);
+    expect(
+      resolveScenario({
         messages: [{ role: "user", content: "读取文章 https://juejin.cn/post/mock" }],
         tools: [tool("read_article")],
       }).name,

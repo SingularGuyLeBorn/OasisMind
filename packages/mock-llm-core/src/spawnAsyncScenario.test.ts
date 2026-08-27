@@ -86,3 +86,56 @@ describe("spawn_subagent_async", () => {
     expect(r.toolCalls).toEqual([]);
   });
 });
+
+describe("dsh_e2e_2 子回报不循环", () => {
+  const childTools = [tool("read_file"), tool("agent_report_back")];
+  const task = "DSH-E2E-2 只读文件后回报";
+
+  it("先 read_file，再 report_back 一次，之后收束不再二次调用", () => {
+    expect(
+      resolveScenario({
+        messages: [{ role: "user", content: task }],
+        tools: childTools,
+      }).name,
+    ).toBe("dsh_e2e_2_child_read");
+
+    const afterRead = resolveScenario({
+      messages: [
+        { role: "user", content: task },
+        { role: "tool", name: "read_file", content: "ok" },
+      ],
+      tools: childTools,
+    });
+    expect(afterRead.name).toBe("dsh_e2e_2_child_report");
+    expect(afterRead.completion({
+      messages: [
+        { role: "user", content: task },
+        { role: "tool", name: "read_file", content: "ok" },
+      ],
+      tools: childTools,
+    }).toolCalls[0]?.function.name).toBe("agent_report_back");
+
+    expect(
+      resolveScenario({
+        messages: [
+          { role: "user", content: task },
+          { role: "tool", name: "read_file", content: "ok" },
+          { role: "tool", name: "agent_report_back", content: "ok" },
+        ],
+        tools: childTools,
+      }).name,
+    ).toBe("dsh_e2e_2_child_done");
+  });
+
+  it("waitForResult 子无 report_back 时读完直接给正文", () => {
+    expect(
+      resolveScenario({
+        messages: [
+          { role: "user", content: task },
+          { role: "tool", name: "read_file", content: "ok" },
+        ],
+        tools: [tool("read_file")],
+      }).name,
+    ).toBe("dsh_e2e_2_child_final");
+  });
+});

@@ -1,5 +1,5 @@
 /**
- * 与真实厂商同一套开关：只看请求里的 thinking / reasoning_effort。
+ * 与真实厂商同一套开关：thinking.type 或进程内 enableReasoning。
  * 场景只提供写死正文；开思考才附带写死推理，关思考绝不吐 reasoning。
  */
 
@@ -12,6 +12,11 @@ export type ThinkingType = "enabled" | "disabled";
 export interface ThinkingPolicyInput {
   thinking?: { type?: string } | string | null;
   reasoningEffort?: string | null;
+  /**
+   * 进程内 MOCK_LLM 走 LlmRequestOptions.enableReasoning，没有 HTTP thinking 字段。
+   * 显式 true/false 作为别名；thinking.type 优先。
+   */
+  enableReasoning?: boolean;
 }
 
 export interface ThinkingPolicy {
@@ -40,7 +45,13 @@ export function resolveThinkingPolicy(input: ThinkingPolicyInput): ThinkingPolic
     typeof input.thinking === "string"
       ? input.thinking
       : input.thinking?.type;
-  const enabled = type === "enabled";
+  let enabled = type === "enabled";
+  if (type !== "enabled" && type !== "disabled" && input.enableReasoning === true) {
+    enabled = true;
+  }
+  if (input.enableReasoning === false && type !== "enabled") {
+    enabled = false;
+  }
   const effort = input.reasoningEffort === "max" ? "max" : "high";
   return {
     enabled,
