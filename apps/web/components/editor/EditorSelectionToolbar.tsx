@@ -158,6 +158,7 @@ export function EditorSelectionToolbar({
   return createPortal(
     <div
       data-om-selection-toolbar
+      data-testid="editor-selection-toolbar"
       className={cn(
         "fixed z-[80] flex items-center gap-0.5 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] p-0.5 shadow-lg",
         className,
@@ -169,6 +170,7 @@ export function EditorSelectionToolbar({
         <button
           key={id}
           type="button"
+          data-testid={`editor-selection-${id}`}
           title={instruction || "自定义指令改写选区"}
           onClick={() => runAction(instruction)}
           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[var(--om-text-2)] hover:bg-[var(--om-brand-soft)] hover:text-[var(--om-brand-deep)]"

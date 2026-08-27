@@ -173,6 +173,7 @@ function SaveMessageAsPostDialogInner({
             <p className="text-sm text-[var(--om-text-1)]">已写入知识库。</p>
             <Link
               href={resultHref}
+              data-testid="save-message-as-post-open"
               className={cn(buttonVariants({ variant: "default", size: "sm" }), "inline-flex")}
             >
               打开文章
@@ -229,6 +230,7 @@ function SaveMessageAsPostDialogInner({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={mode === "create" ? "不填则取正文首行" : "可选，留空保留原标题"}
+                  data-testid="save-message-as-post-title"
                   className="mt-1 w-full rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2.5 py-1.5 text-sm text-[var(--om-text-1)]"
                 />
               </label>

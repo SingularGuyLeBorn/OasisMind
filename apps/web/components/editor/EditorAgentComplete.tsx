@@ -384,7 +384,8 @@ export function EditorAgentComplete({
       setHighlightIdx(0);
       setPhase("compose");
       setApplyMode("selection");
-      setPickerOpen(!agentId && !useDefaultAgent);
+      setUseDefaultAgent(true);
+      setPickerOpen(false);
       setMenuOpen(false);
 
       if (opts.wysiwyg) {
@@ -403,7 +404,7 @@ export function EditorAgentComplete({
         ta.setSelectionRange(start, end);
       }, 0);
     },
-    [agentId, onPreferSourceMode, sourceTextareaRef, useDefaultAgent],
+    [onPreferSourceMode, sourceTextareaRef],
   );
 
   useEffect(() => {

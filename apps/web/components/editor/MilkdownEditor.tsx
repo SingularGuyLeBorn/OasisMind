@@ -237,6 +237,7 @@ function ModeToggle({
       <button
         type="button"
         onClick={() => onChange("wysiwyg")}
+        data-testid="editor-mode-wysiwyg"
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition",
           mode === "wysiwyg"
@@ -251,6 +252,7 @@ function ModeToggle({
       <button
         type="button"
         onClick={() => onChange("source")}
+        data-testid="editor-mode-source"
         className={cn(
           "inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition",
           mode === "source"
@@ -623,6 +625,7 @@ function MilkdownEditorInner({
       {effectiveMode === "source" ? (
         <textarea
           ref={sourceRef}
+          data-testid="editor-source-textarea"
           value={draft}
           onChange={(e) => handleChange(e.target.value)}
           onPaste={handleSourcePaste}

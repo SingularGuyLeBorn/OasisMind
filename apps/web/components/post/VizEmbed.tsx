@@ -43,6 +43,7 @@ function VizFrame({
   return (
     <figure
       data-no-edit-click
+      data-testid="viz-embed"
       className="not-prose my-0 overflow-hidden rounded-xl border border-[var(--om-divider)] bg-white"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}

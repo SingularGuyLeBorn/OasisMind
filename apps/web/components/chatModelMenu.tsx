@@ -611,7 +611,10 @@ export function ChatModelMenu({
                     ))}
                   {!localModelsQuery.isLoading &&
                     (localModelsQuery.data?.totalModels ?? 0) === 0 && (
-                      <p className="px-3 py-2 text-[10px] leading-relaxed text-[var(--om-text-3)]">
+                      <p
+                        className="px-3 py-2 text-[10px] leading-relaxed text-[var(--om-text-3)]"
+                        data-testid="chat-local-models-empty"
+                      >
                         未发现本地模型。请先启动服务，例如{" "}
                         <span className="font-mono">ollama serve</span> 后{" "}
                         <span className="font-mono">ollama pull llama3.2</span>。

@@ -97,7 +97,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
         </span>
       </div>
 
-      <article ref={articleRef} className="om-post-swap om-post-content">
+      <article ref={articleRef} className="om-post-swap om-post-content" data-testid="post-article-body">
         <ReadingProgressTracker
           postId={post.id}
           slug={post.slug}

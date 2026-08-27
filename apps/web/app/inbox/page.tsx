@@ -564,6 +564,7 @@ export default function InboxPage() {
             </Link>
             <Button
               size="sm"
+              data-testid="inbox-distill-btn"
               disabled={!selectedIds.length || !!busy}
               onClick={() =>
                 runAction("蒸馏", () => distillMutation.mutateAsync({ ids: selectedIds }))
@@ -846,6 +847,7 @@ export default function InboxPage() {
         </div>
         <button
           type="button"
+          data-testid="inbox-multiselect-toggle"
           title={multiSelect ? "当前：多选" : "当前：单选（点此项开启多选）"}
           aria-pressed={multiSelect}
           onClick={() => setMultiSelectMode(!multiSelect)}
@@ -921,6 +923,7 @@ export default function InboxPage() {
                   role="button"
                   tabIndex={0}
                   aria-pressed={on}
+                  data-testid="inbox-item"
                   onClick={() => toggleSelect(item.id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -1008,6 +1011,7 @@ export default function InboxPage() {
                 role="button"
                 tabIndex={0}
                 aria-pressed={on}
+                data-testid="inbox-item"
                 onClick={() => toggleSelect(item.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {

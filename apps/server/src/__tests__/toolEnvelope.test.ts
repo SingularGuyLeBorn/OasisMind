@@ -13,6 +13,14 @@ import {
 } from "../infra/tools/toolEnvelope.js";
 
 describe("toolEnvelope", () => {
+  it("Date 序列化为 ISO 字符串（list 工具带 capturedAt 才能喂 LLM）", () => {
+    const d = new Date("2026-08-28T00:00:00.000Z");
+    expect(snapshotJsonValue({ id: "cabcdefghijklmnopqrstuvwx", capturedAt: d })).toEqual({
+      id: "cabcdefghijklmnopqrstuvwx",
+      capturedAt: "2026-08-28T00:00:00.000Z",
+    });
+  });
+
   it("bigint 不可序列化则 throw", () => {
     expect(() => snapshotJsonValue(1n)).toThrow(/ToolEnvelope/);
   });

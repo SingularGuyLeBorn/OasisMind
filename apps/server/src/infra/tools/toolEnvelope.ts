@@ -73,7 +73,10 @@ export function snapshotJsonValue(value: unknown): unknown {
 
     const obj = v as object;
     if (seen.has(obj)) throwUnserializable("循环引用 ");
-    if (obj instanceof Date) throwUnserializable("Date ");
+    if (obj instanceof Date) {
+      if (Number.isNaN(obj.getTime())) throwUnserializable("Invalid Date ");
+      return obj.toISOString();
+    }
     if (obj instanceof Map) throwUnserializable("Map ");
     if (obj instanceof Set) throwUnserializable("Set ");
     if (typeof Buffer !== "undefined" && Buffer.isBuffer(obj)) throwUnserializable("Buffer ");
