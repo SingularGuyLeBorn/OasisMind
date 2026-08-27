@@ -6,12 +6,13 @@ import { motion } from "framer-motion";
 import { Lock, Sparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { setAuthToken } from "@/lib/auth";
+import { safeRedirectPath } from "@/lib/safeRedirectPath";
 import { Button } from "@/components/ui/button";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/chat";
+  const redirect = safeRedirectPath(searchParams.get("redirect"));
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 

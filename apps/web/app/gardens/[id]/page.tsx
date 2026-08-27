@@ -16,7 +16,7 @@ export default function GardenHomePage() {
   const params = useParams();
   const id = decodeURIComponent(params.id as string);
 
-  const { data: garden, isLoading, error } = trpc.garden.getById.useQuery(
+  const { data: garden, isPending, error } = trpc.garden.getById.useQuery(
     { id },
     { placeholderData: keepPreviousData },
   );
@@ -28,40 +28,28 @@ export default function GardenHomePage() {
     order: "desc",
   });
 
-  if (isLoading) {
-    return (
-      <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
-        <HomeAmbientBackground density="lite" />
-        <div className="relative mx-auto max-w-3xl px-6 py-10">
-          <Skeleton className="mb-4 h-8 w-48" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !garden) {
-    return (
-      <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
-        <HomeAmbientBackground density="lite" />
-        <div className="relative mx-auto max-w-3xl px-6 py-10 text-center">
-          <p className="text-[var(--om-text-2)]">知识库不存在或已删除</p>
-          <Link
-            href="/gardens"
-            className="mt-4 inline-flex items-center rounded-full bg-[var(--om-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)]"
-          >
-            返回列表
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="om-force-light om-home-surface relative w-full overflow-x-hidden">
       <HomeAmbientBackground density="lite" />
       <div className="relative mx-auto w-full max-w-3xl px-6 py-8 pb-16 lg:px-10 lg:py-12">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {isPending && !garden ? (
+          <>
+            <Skeleton className="mb-4 h-8 w-48" />
+            <Skeleton className="h-40 w-full" />
+          </>
+        ) : error || !garden ? (
+          <div className="text-center">
+            <p className="text-[var(--om-text-2)]">知识库不存在或已删除</p>
+            <Link
+              href="/gardens"
+              className="mt-4 inline-flex items-center rounded-full bg-[var(--om-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(0,135,235,0.5)] transition hover:bg-[var(--om-brand-dark)]"
+            >
+              返回列表
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/gardens"
             className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/55 px-3 py-1.5 text-sm text-[var(--om-text-2)] shadow-sm backdrop-blur-md transition hover:border-[var(--om-brand)]/35 hover:text-[var(--om-brand)]"
@@ -132,6 +120,8 @@ export default function GardenHomePage() {
             </ul>
           )}
         </section>
+          </>
+        )}
       </div>
     </div>
   );

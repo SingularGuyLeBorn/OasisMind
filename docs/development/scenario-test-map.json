@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "note": "scenarios.md 每个「## 场景」必须在此登记。coverage=gap 允许，但禁止漏登记。CI：apps/web/lib/__tests__/scenarioTestMap.test.ts",
+  "scenarios": [
+    {
+      "id": "1",
+      "title": "用户与主 Agent 普通对话",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/chat-mock.spec.ts",
+        "apps/web/lib/__tests__/chatStoreInvariants.test.ts",
+        "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
+        "evals/golden/G06-idle-chat.json"
+      ]
+    },
+    {
+      "id": "2",
+      "title": "Agent 调用普通工具（`web_search`）",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/chat-mock.spec.ts",
+        "apps/web/e2e/chat-tool-hint.spec.ts",
+        "evals/golden/G03-read-article.json"
+      ]
+    },
+    {
+      "id": "3",
+      "title": "阻塞式子 Agent（`spawn_subagent(waitForResult=true)`）",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
+        "apps/web/e2e/dsh-chat-ui-mock.spec.ts"
+      ]
+    },
+    {
+      "id": "4",
+      "title": "非阻塞式子 Agent（`waitForResult=false`）",
+      "coverage": "covered",
+      "note": "过程断言：父先 idle、禁止 async_task_status、子结果后到并驱动父续答；无需 F5",
+      "tests": [
+        "apps/web/e2e/spawn-async-mock.spec.ts",
+        "evals/golden/G05-spawn-subagent.json"
+      ]
+    },
+    {
+      "id": "5",
+      "title": "异步纯工具任务（`async_task_run`）",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/async-task-mock.spec.ts",
+        "apps/server/src/__tests__/async-task-queue.test.ts"
+      ]
+    },
+    {
+      "id": "6",
+      "title": "审批（高风险操作）",
+      "coverage": "covered",
+      "note": "过程断言：Chat 工具卡 awaiting_human → 页内批准/拒绝 → 会话自己续跑；drain 必须带 super 的 session.agentId；未批准绝不静默成功",
+      "tests": [
+        "apps/server/src/__tests__/approvalScope.test.ts",
+        "apps/server/src/__tests__/nativeExecuteApproval.test.ts",
+        "apps/server/src/__tests__/uiStateNotify.test.ts",
+        "apps/web/lib/__tests__/adminPullIntervals.test.ts",
+        "apps/web/lib/__tests__/uiStateChannel.test.ts",
+        "apps/web/e2e/admin-live-push-mock.spec.ts",
+        "apps/web/e2e/chat-approval-mock.spec.ts"
+      ]
+    },
+    {
+      "id": "7",
+      "title": "定时任务 / 心跳",
+      "coverage": "covered",
+      "note": "PUSH cron_job_updated + PULL 间隔 + /cron 开着页自拉已锁；Chat 查询心跳：swarm_brief 只读检查 → 过程断言 lastMode/未熔断，禁止伪造刚跑完；drain 必须带 super session.agentId",
+      "tests": [
+        "apps/server/src/__tests__/heartbeatDecision.test.ts",
+        "apps/server/src/__tests__/uiStateNotify.test.ts",
+        "apps/server/src/__tests__/swarmHealth.test.ts",
+        "packages/mock-llm-core/src/heartbeatQueryScenario.test.ts",
+        "apps/web/lib/__tests__/adminPullIntervals.test.ts",
+        "apps/web/lib/__tests__/uiStateChannel.test.ts",
+        "apps/web/e2e/admin-live-push-mock.spec.ts",
+        "apps/web/e2e/chat-heartbeat-mock.spec.ts"
+      ]
+    },
+    {
+      "id": "8",
+      "title": "写文章（编辑器 Post）",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/blog-smoke.spec.ts",
+        "apps/web/e2e/post-trash.spec.ts",
+        "evals/golden/G02-post-create.json"
+      ]
+    },
+    {
+      "id": "9",
+      "title": "流式中连续发送 / 队列",
+      "coverage": "covered",
+      "note": "流式中 Ctrl+Enter 入可见队列 + drain；mock 走 queue_slow_stream 预留窗口",
+      "tests": [
+        "apps/web/e2e/chat-queue-mock.spec.ts",
+        "apps/web/e2e/chat-queue-real.spec.ts",
+        "apps/web/lib/__tests__/chatQueueDrainLifecycle.test.tsx",
+        "apps/web/lib/__tests__/chatQueueDrainHead.test.ts",
+        "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts"
+      ]
+    },
+    {
+      "id": "10",
+      "title": "刷新 / 切会话后续传",
+      "coverage": "covered",
+      "tests": [
+        "apps/web/e2e/chat-resume-mock.spec.ts",
+        "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
+        "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts"
+      ]
+    },
+    {
+      "id": "11",
+      "title": "阅读 LiveDoc + 划词解释",
+      "coverage": "partial",
+      "note": "选区门控 + 解释不改写原文 + Esc/点外关闭策略已锁；缺弹层关闭 E2E",
+      "tests": [
+        "apps/web/lib/__tests__/selectionExplainRange.test.ts",
+        "apps/server/src/__tests__/postExplain.test.ts"
+      ]
+    },
+    {
+      "id": "12",
+      "title": "编辑器选区 AI 改写",
+      "coverage": "partial",
+      "tests": [
+        "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
+        "apps/server/src/__tests__/editorAgentComplete.test.ts",
+        "apps/web/lib/__tests__/editorCompleteContext.test.ts"
+      ]
+    },
+    {
+      "id": "13",
+      "title": "相关笔记推荐",
+      "coverage": "partial",
+      "note": "post.related 排除未发布/墓碑 + href 单源已锁；缺点开死链 E2E",
+      "tests": [
+        "apps/server/src/__tests__/relatedPosts.test.ts",
+        "apps/web/lib/__tests__/relatedPostsView.test.ts"
+      ]
+    },
+    {
+      "id": "14",
+      "title": "Chat → 知识库落库",
+      "coverage": "partial",
+      "tests": [
+        "evals/golden/G02-post-create.json",
+        "evals/golden/G01-post-list.json",
+        "apps/server/src/__tests__/relatedPosts.test.ts"
+      ]
+    },
+    {
+      "id": "15",
+      "title": "中栏派工条",
+      "coverage": "partial",
+      "tests": [
+        "apps/web/e2e/dsh-chat-ui-mock.spec.ts",
+        "apps/web/e2e/subagent-mock.spec.ts"
+      ]
+    },
+    {
+      "id": "16",
+      "title": "本地模型对话",
+      "coverage": "partial",
+      "tests": [
+        "apps/web/e2e/chat-model-menu-mock.spec.ts",
+        "apps/web/lib/__tests__/chatConfig.test.ts"
+      ]
+    },
+    {
+      "id": "17",
+      "title": "Inbox 抓取 → 蒸馏成文",
+      "coverage": "partial",
+      "note": "管道单测有；缺「抓取后成文」端到端",
+      "tests": [
+        "apps/server/src/__tests__/inboxPipeline.test.ts"
+      ]
+    },
+    {
+      "id": "18",
+      "title": "视频转文字 / 本地 STT 做笔记",
+      "coverage": "partial",
+      "tests": [
+        "evals/harness-bench/cases.json"
+      ]
+    },
+    {
+      "id": "19",
+      "title": "平台登录后读文",
+      "coverage": "partial",
+      "tests": [
+        "apps/server/src/__tests__/platformFetch.test.ts",
+        "evals/golden/G03-read-article.json"
+      ]
+    },
+    {
+      "id": "20",
+      "title": "深度调研 Goal",
+      "coverage": "partial",
+      "tests": [
+        "apps/web/e2e/evolving-intent-mock.spec.ts"
+      ]
+    },
+    {
+      "id": "A",
+      "title": "晨间简报 → 花园笔记",
+      "coverage": "partial",
+      "note": "Inbox 增量 + createFromChat 日报/每日简报已锁；缺端到端 3 分钟体验",
+      "tests": [
+        "apps/server/src/__tests__/inboxPipeline.test.ts",
+        "apps/server/src/__tests__/dailyFlow.test.ts",
+        "apps/server/src/__tests__/relatedPosts.test.ts",
+        "evals/golden/G12-morning-brief.json"
+      ]
+    },
+    {
+      "id": "B",
+      "title": "专题深挖 → 阻塞调研 → 成文",
+      "coverage": "partial",
+      "tests": [
+        "evals/golden/G05-spawn-subagent.json",
+        "evals/golden/G02-post-create.json"
+      ]
+    },
+    {
+      "id": "C",
+      "title": "本地草稿 + 云精修 + 选区打磨",
+      "coverage": "partial",
+      "note": "uploads 按 postId 与选区改写已锁；缺本地/云模型切换 E2E",
+      "tests": [
+        "apps/server/src/__tests__/uploadDir.test.ts",
+        "apps/web/lib/__tests__/postAssetUrl.test.ts",
+        "apps/server/src/__tests__/editorAgentComplete.test.ts",
+        "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
+        "apps/web/lib/__tests__/editorCompleteContext.test.ts"
+      ]
+    },
+    {
+      "id": "D",
+      "title": "本地压图配文（PicLite 图轻）",
+      "coverage": "partial",
+      "note": "Skill 铁律 + golden 路径已锁；缺真实压图体积断言",
+      "tests": [
+        "apps/server/src/__tests__/picliteSkillContract.test.ts",
+        "evals/golden/G11-piclite-compress.json"
+      ]
+    },
+    {
+      "id": "E",
+      "title": "微信/网页文章 → Remotion 成片",
+      "coverage": "partial",
+      "tests": [
+        "apps/web/lib/__tests__/vizEmbed.test.ts"
+      ]
+    }
+  ]
+}

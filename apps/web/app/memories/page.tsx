@@ -16,7 +16,7 @@ import { useCardDensity } from "@/lib/useCardDensity";
 import { AdminPage, EmptyState, KpSelect, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
 import { formatToolDisplayName, toPascalCaseId } from "@/lib/toolDisplayName";
 import { listItemExit, SPRING_LAYOUT } from "@/lib/motion";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 function formatScope(scope?: string) {
   if (!scope || scope === "global") return "Global";
@@ -108,14 +108,14 @@ export default function MemoriesPage() {
   });
   const resolveConflictMut = trpc.memory.resolveConflict.useMutation({
     onSuccess: () => {
-      conflictsQuery.refetch().catch(() => {});
-      utils.memory.list.invalidate().catch(() => {});
+      conflictsQuery.refetch().catch(catchUnlessCancelled("app/memories/page.tsx"));
+      utils.memory.list.invalidate().catch(catchUnlessCancelled("app/memories/page.tsx"));
     },
   });
   const clearConflictMut = trpc.memory.clearConflict.useMutation({
     onSuccess: () => {
-      conflictsQuery.refetch().catch(() => {});
-      utils.memory.list.invalidate().catch(() => {});
+      conflictsQuery.refetch().catch(catchUnlessCancelled("app/memories/page.tsx"));
+      utils.memory.list.invalidate().catch(catchUnlessCancelled("app/memories/page.tsx"));
     },
   });
 

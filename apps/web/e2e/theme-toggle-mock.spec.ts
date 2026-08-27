@@ -10,7 +10,7 @@ test.describe("主题切换", () => {
 
   test("Navbar 主题切换按钮可切换 light/dark", async ({ page }) => {
     await page.goto("/chat");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("button", { name: "浅色" })).toBeVisible({ timeout: 30_000 });
 
     const html = page.locator("html");
     const lightBtn = page.getByRole("button", { name: "浅色" });

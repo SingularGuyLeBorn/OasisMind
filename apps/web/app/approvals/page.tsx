@@ -15,7 +15,8 @@ import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, Pagination, PageHeader } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
-import { UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { UI_STATE_CHANNEL, isApprovalPushEvent } from "@/lib/uiStateChannel";
+import { approvalListRefetchMs } from "@/lib/adminPullIntervals";
 import { formatToolDisplayName, toPascalCaseId } from "@/lib/toolDisplayName";
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected" | "executed";
@@ -67,11 +68,8 @@ export default function ApprovalsPage() {
   };
   // 推拉：PUSH=approval_updated SSE/BC；PULL=有 pending 时 3s，否则 15s
   const { data, isLoading } = useList(listInput, {
-    refetchInterval: (q: { state: { data?: { items?: Approval[] } } }) => {
-      const items = q.state.data?.items ?? [];
-      const pending = items.some((a) => a.status === "pending");
-      return pending || statusFilter === "pending" ? 3000 : 15_000;
-    },
+    refetchInterval: (q: { state: { data?: { items?: Approval[] } } }) =>
+      approvalListRefetchMs(q.state.data?.items ?? [], statusFilter),
   });
   const { data: summary } = useHumanTodoSummary({ refetchInterval: 5000 });
   const utils = trpc.useUtils();
@@ -84,7 +82,7 @@ export default function ApprovalsPage() {
       return;
     }
     const onMsg = (ev: MessageEvent) => {
-      if ((ev.data as { type?: string } | null)?.type !== "approval_updated") return;
+      if (!isApprovalPushEvent((ev.data as { type?: string } | null)?.type)) return;
       utils.approval.list.invalidate().catch(catchUnlessCancelled("app/approvals/page.tsx"));
       utils.approval.humanTodoSummary.invalidate().catch(catchUnlessCancelled("app/approvals/page.tsx"));
     };
@@ -271,6 +269,7 @@ export default function ApprovalsPage() {
                   selected.has(approval.id) && "ring-2 ring-[var(--om-brand-deep)]/40",
                 )}
                 data-testid="approval-card"
+                data-approval-id={approval.id}
               >
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="space-y-3 flex-1 min-w-0">

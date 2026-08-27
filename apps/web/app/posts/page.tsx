@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Post } from "@oasismind/shared";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { usePostMutations } from "@/lib/usePostMutations";
 import { formatGardenId } from "@/lib/gardenDisplay";
 import { postDetailHref } from "@/lib/postHref";
@@ -27,9 +27,12 @@ import { cn } from "@/lib/utils";
 import { Pagination, ConfirmDialog, EmptyState, LoadingState, TagFilterBar, EntityCard } from "@/components/shared";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
 import { listItemExit } from "@/lib/motion";
+import { CONTENT_LIST_REFETCH_MS } from "@/lib/adminPullIntervals";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 function PostsPageContent() {
   const router = useRouter();
+  const utils = trpc.useUtils();
   const searchParams = useSearchParams();
   const gardenFromUrl = searchParams.get("garden") || "";
   const [page, setPage] = useState(1);
@@ -54,13 +57,24 @@ function PostsPageContent() {
     return () => clearTimeout(id);
   }, [keyword]);
 
-  const { data: gardens } = trpc.garden.list.useQuery({ page: 1, pageSize: 100 });
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "post_list_changed") return;
+      utils.garden.list.invalidate().catch(catchUnlessCancelled("app/posts/page.tsx"));
+      utils.post.list.invalidate().catch(catchUnlessCancelled("app/posts/page.tsx"));
+    });
+  }, [utils]);
+
+  const { data: gardens } = trpc.garden.list.useQuery(
+    { page: 1, pageSize: 100 },
+    { refetchInterval: CONTENT_LIST_REFETCH_MS },
+  );
   const { data: tagFacets = [] } = trpc.search.tagFacets.useQuery({
     entities: ["post"],
     limit: 40,
   });
 
-  const { data, isLoading, isFetching } = trpc.post.list.useQuery({
+  const { data, isFetching, isPending } = trpc.post.list.useQuery({
     page,
     pageSize: 10,
     keyword: debouncedKeyword || undefined,
@@ -68,7 +82,7 @@ function PostsPageContent() {
     tag: tagFilter ?? undefined,
     orderBy: "updatedAt",
     order: "desc",
-  });
+  }, { refetchInterval: CONTENT_LIST_REFETCH_MS });
 
   const { remove } = usePostMutations({
     onDeleteSuccess: () => {
@@ -98,9 +112,9 @@ function PostsPageContent() {
         <div>
           <h1 className="om-display-serif text-3xl text-[var(--om-text-1)]">全部文章</h1>
           <p className="mt-1 text-sm text-[var(--om-text-3)]">
-            跨库列表 · 共 {data?.total ?? 0} 篇
+            跨库列表 · {data ? `共 ${data.total} 篇` : "加载中…"}
             {gardenFilter !== "all" ? ` · ${gardenTitle(gardenFilter)}` : ""}
-            {isFetching && !isLoading ? " · 刷新中…" : ""}
+            {isFetching && !isPending ? " · 刷新中…" : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -221,7 +235,7 @@ function PostsPageContent() {
         </div>
       </motion.div>
 
-      {isLoading ? (
+      {isPending ? (
         <LoadingState />
       ) : !data?.items.length ? (
         <EmptyState
@@ -380,6 +394,7 @@ function PostCard({
               </Link>
               <button
                 type="button"
+                aria-label="删除"
                 onClick={onDelete}
                 disabled={deleting}
                 className="rounded-xl border border-[var(--om-divider)] bg-white/50 px-3 py-2 text-xs text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"

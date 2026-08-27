@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
@@ -13,13 +13,25 @@ import { CurlyMark } from "@/components/home/accentMark";
 import { SEED_GARDENS } from "@oasismind/shared";
 import { formatGardenId } from "@/lib/gardenDisplay";
 import { postDetailHref } from "@/lib/postHref";
+import { CONTENT_LIST_REFETCH_MS } from "@/lib/adminPullIntervals";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 const spring = { type: "spring" as const, stiffness: 260, damping: 26 };
 const easeOut = [0.22, 1, 0.36, 1] as const;
 
 export default function GardensPage() {
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.garden.list.useQuery({ page: 1, pageSize: 100 });
+  const { data, isLoading } = trpc.garden.list.useQuery(
+    { page: 1, pageSize: 100 },
+    { refetchInterval: CONTENT_LIST_REFETCH_MS },
+  );
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "post_list_changed") return;
+      utils.garden.list.invalidate().catch(catchUnlessCancelled("app/gardens/page.tsx"));
+      utils.post.list.invalidate().catch(catchUnlessCancelled("app/gardens/page.tsx"));
+    });
+  }, [utils]);
   const create = trpc.garden.create.useMutation({
     onSuccess: () => {
       utils.garden.list.invalidate().catch(catchUnlessCancelled("garden.list.invalidate"));

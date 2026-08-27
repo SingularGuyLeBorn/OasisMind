@@ -13,7 +13,7 @@ test.describe("L1 博客冒烟", () => {
 
   test("/posts 文章管理页应正常渲染", async ({ page }) => {
     await page.goto("/posts");
-    await expect(page.getByRole("heading", { name: "文章管理", level: 1 })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "全部文章", level: 1 })).toBeVisible({
       timeout: 30_000,
     });
     await expect(page.getByRole("link", { name: /新建文章/ })).toBeVisible();

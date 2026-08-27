@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -41,6 +41,8 @@ import {
 } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
+import { inboxListRefetchMs } from "@/lib/adminPullIntervals";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 const VIEW_MODE_KEY = "om-inbox-view-mode";
 const COLLECTION_PAGE_SIZE = 8;
@@ -333,7 +335,10 @@ export default function InboxPage() {
     return base;
   }, [page, keyword, statusFilter, browse, orderBy]);
 
-  const { data, isLoading, refetch } = useList(listInput);
+  const { data, isLoading, refetch } = useList(listInput, {
+    refetchInterval: (q: { state: { data?: { items?: { status?: string }[] } } }) =>
+      inboxListRefetchMs(q.state.data?.items ?? []),
+  });
   const { data: stats, refetch: refetchStats } = useStats();
   const { data: facets, refetch: refetchFacets } = useFacets(
     statusFilter === "fetched" || statusFilter === "distilled" || statusFilter === "ignored"
@@ -346,6 +351,15 @@ export default function InboxPage() {
   const ignoreMutation = useIgnore();
   const captureMutation = useCaptureUrl();
   const utils = trpc.useUtils();
+
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "inbox_updated" && msg.type !== "post_list_changed") return;
+      utils.inbox.list.invalidate().catch(catchUnlessCancelled("app/inbox/page.tsx"));
+      utils.inbox.stats.invalidate().catch(catchUnlessCancelled("app/inbox/page.tsx"));
+      utils.inbox.facets.invalidate().catch(catchUnlessCancelled("app/inbox/page.tsx"));
+    });
+  }, [utils]);
 
   const items = data?.items ?? [];
   const selectedIds = useMemo(() => Array.from(selected), [selected]);

@@ -4,15 +4,17 @@
  * Subagent 后台管理页 — 列出所有子 Agent 任务会话，支持状态过滤与操作
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bot, ExternalLink, MessageSquare, Square, Trash2, RotateCcw } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmDialog, EmptyState, Pagination } from "@/components/shared";
 import type { SessionStatus } from "@oasismind/shared";
 import { sessionLabel } from "@/lib/displayLabels";
+import { subagentListRefetchMs } from "@/lib/adminPullIntervals";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 const STATUS_OPTIONS = ["", "running", "queued", "completed", "failed", "paused", "interrupted"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -40,26 +42,39 @@ export default function SubagentsPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const utils = trpc.useUtils();
 
-  const query = trpc.session.list.useQuery({
-    page,
-    pageSize: 20,
-    kind: "subagent",
-    ...(status ? { status: status as SessionStatus } : {}),
-  });
-  // orchestrator 全局统计：Chat SSE 会更新；本页无 SSE，focus + 30s 兜底
+  const query = trpc.session.list.useQuery(
+    {
+      page,
+      pageSize: 20,
+      kind: "subagent",
+      ...(status ? { status: status as SessionStatus } : {}),
+    },
+    {
+      refetchInterval: (q: { state: { data?: { items?: { status?: string }[] } } }) =>
+        subagentListRefetchMs(q.state.data?.items ?? []),
+    },
+  );
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "session_list_changed" && msg.type !== "subagent_session_update") return;
+      utils.session.list.invalidate().catch(catchUnlessCancelled("app/subagents/page.tsx"));
+      utils.agent.asyncQueueStats.invalidate().catch(catchUnlessCancelled("app/subagents/page.tsx"));
+    });
+  }, [utils]);
+  // orchestrator 全局统计：Chat SSE 会更新；本页无 SSE，focus + 忙时短轮询
   const statsQuery = trpc.agent.asyncQueueStats.useQuery(undefined, {
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
   const stats = statsQuery.data;
   const stopMut = trpc.session.stop.useMutation({
-    onSuccess: () => utils.session.list.invalidate(),
+    onSuccess: () => utils.session.list.invalidate().catch(catchUnlessCancelled("app/subagents/page.tsx")),
   });
   const deleteMut = trpc.session.delete.useMutation({
-    onSuccess: () => utils.session.list.invalidate(),
+    onSuccess: () => utils.session.list.invalidate().catch(catchUnlessCancelled("app/subagents/page.tsx")),
   });
   const rerunMut = trpc.session.rerun.useMutation({
-    onSuccess: () => utils.session.list.invalidate(),
+    onSuccess: () => utils.session.list.invalidate().catch(catchUnlessCancelled("app/subagents/page.tsx")),
   });
 
   const items = query.data?.items ?? [];

@@ -55,10 +55,11 @@ test.describe("文章回收站", () => {
 
       // 2. 打开文章列表并删除
       await page.goto("/posts");
-      await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole("heading", { name: "全部文章" })).toBeVisible({ timeout: 30_000 });
       await expect(page.getByText(title).first()).toBeVisible({ timeout: 15_000 });
       const card = page.locator("[data-testid='post-card']").filter({ hasText: title }).first();
-      await card.getByRole("button", { name: "删除" }).click();
+      // 卡片上「打开」是 link；唯一 button 是删除（图标按钮，aria-label=删除）
+      await card.getByRole("button").click();
 
       await expect(page.getByRole("heading", { name: "删除文章" })).toBeVisible({ timeout: 5_000 });
       await page.getByTestId("confirm-dialog-confirm").click();
@@ -74,20 +75,14 @@ test.describe("文章回收站", () => {
       await trashCard.getByRole("button", { name: "恢复" }).click();
       await expect(page.getByRole("heading", { name: "恢复文章" })).toBeVisible({ timeout: 5_000 });
       await page.getByTestId("confirm-dialog-confirm").click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "文章回收站" })).toBeVisible({ timeout: 15_000 });
 
-      // 5. 验证文章回到列表（等待 React Query 刷新）
+      // 5. 验证文章回到列表（权威在服务端；进页 PULL 即可，禁止 networkidle）
       await page.goto("/posts");
-      await page.waitForLoadState("networkidle");
-      await expect
-        .poll(async () => {
-          const visible = await page.getByText(title).first().isVisible().catch(() => false);
-          if (visible) return true;
-          await page.reload();
-          await page.waitForLoadState("networkidle");
-          return false;
-        })
-        .toBe(true);
+      await expect(page.getByRole("heading", { name: "全部文章" })).toBeVisible({ timeout: 30_000 });
+      await expect(
+        page.locator("[data-testid='post-card']").filter({ hasText: title }),
+      ).toBeVisible({ timeout: 15_000 });
     } finally {
       // 6. 强制清理：用创建时的 id，无论文章处于何种状态都清干净
       if (createdId) {

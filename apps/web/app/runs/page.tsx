@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Activity, Clock, Bot } from "lucide-react";
 import Link from "next/link";
 import type { Run } from "@oasismind/shared";
@@ -12,8 +12,9 @@ import { useRun, useAgent } from "@/lib/hooks";
 import { EmptyState, LoadingState, ConfirmDialog, Pagination, PageHeader } from "@/components/shared";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { agentLabel, runLabel, sessionLabel } from "@/lib/displayLabels";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 const STATUS_STYLE: Record<Run["status"], string> = {
   pending: "om-badge-warning",
@@ -56,6 +57,13 @@ export default function RunsPage() {
       },
     },
   );
+  const utils = trpc.useUtils();
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "run_updated") return;
+      utils.run.list.invalidate().catch(catchUnlessCancelled("app/runs/page.tsx"));
+    });
+  }, [utils]);
   const agentsQuery = useAgentList({ page: 1, pageSize: 100 });
   const sessionsQuery = trpc.session.list.useQuery({ page: 1, pageSize: 100 });
   const agentNameById = useMemo(() => {

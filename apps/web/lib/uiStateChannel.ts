@@ -17,7 +17,11 @@ export type UiStateChannelMessage = {
     | "session_tree_updated"
     | "daily_flow_updated"
     | "post_list_changed"
-    | "comment_updated";
+    | "comment_updated"
+    | "inbox_updated"
+    | "dead_letter_updated"
+    | "compose_prefill"
+    | "subagent_session_update";
   [key: string]: unknown;
 };
 
@@ -32,7 +36,44 @@ export function postUiState(msg: UiStateChannelMessage): void {
   }
 }
 
-/** 会话列表变化提示：统一走 UI_STATE_CHANNEL 单频道（旧 oasismind-session-list 频道已无消费者，已删） */
+/** 订阅跨标签 UI 状态；无 BroadcastChannel 时 no-op。返回取消函数。 */
+export function subscribeUiState(
+  handler: (msg: UiStateChannelMessage) => void,
+): () => void {
+  if (typeof BroadcastChannel === "undefined") return () => {};
+  let bc: BroadcastChannel;
+  try {
+    bc = new BroadcastChannel(UI_STATE_CHANNEL);
+  } catch {
+    return () => {};
+  }
+  const onMsg = (ev: MessageEvent) => {
+    const data = ev.data as UiStateChannelMessage | null;
+    if (!data?.type) return;
+    handler(data);
+  };
+  bc.addEventListener("message", onMsg);
+  return () => {
+    bc.removeEventListener("message", onMsg);
+    bc.close();
+  };
+}
+
+/** 会话列表变化提示：统一走 UI_STATE_CHANNEL 单频道 */
 export function postSessionListHint(sessionId?: string): void {
-  postUiState({ type: "cron_session_started", sessionId });
+  postUiState({ type: "session_list_changed", sessionId });
+}
+
+/** Chat 侧栏 / cron 配置：任务状态或 briefing 会话变化 */
+export function isCronJobPushEvent(type: string | undefined): boolean {
+  return type === "cron_job_updated" || type === "cron_session_started";
+}
+
+/** /cron 管理页：上者 + 会话列表（fire 后侧栏会话也要跟上） */
+export function isCronAdminPushEvent(type: string | undefined): boolean {
+  return isCronJobPushEvent(type) || type === "session_list_changed";
+}
+
+export function isApprovalPushEvent(type: string | undefined): boolean {
+  return type === "approval_updated";
 }

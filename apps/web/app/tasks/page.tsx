@@ -19,6 +19,7 @@ export default function TasksPage() {
   const { useList, useCreate, useDelete, useRun } = useTask();
   const { density } = useCardDensity();
   const [page] = useState(1);
+  const [runError, setRunError] = useState<string | null>(null);
   const { data, isLoading } = useList(
     { page, pageSize: 12 },
     {
@@ -61,6 +62,11 @@ export default function TasksPage() {
         action={{ label: "新建定时任务", onClick: handleCreateDemo, icon: Plus }}
         showDensityToggle
       />
+      {runError && (
+        <p className="text-xs text-red-600" role="alert">
+          {runError}
+        </p>
+      )}
 
       <div className="flex items-start gap-2 rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-3 py-2 text-xs text-[var(--om-text-2)]">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
@@ -149,7 +155,13 @@ export default function TasksPage() {
                     variant="ghost"
                     size="sm"
                     className="h-6 gap-1 text-[10px] text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
-                    onClick={() => runMutation.mutate({ id: task.id })}
+                    onClick={() => {
+                      setRunError(null);
+                      runMutation.mutate(
+                        { id: task.id },
+                        { onError: (err) => setRunError(err.message || "执行失败") },
+                      );
+                    }}
                     disabled={runMutation.isPending || task.status === "running"}
                   >
                     <Play className="w-3 h-3" />

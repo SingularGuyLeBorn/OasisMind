@@ -29,6 +29,19 @@ export default function ChannelsPage() {
       bindingsQ.refetch().catch(catchUnlessCancelled("channel.bindings.refetch"));
     },
   });
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const weixinLoginMut = trpc.channel.weixinStartLogin.useMutation({
+    onSuccess: (d) => {
+      setQrImage(d.imageDataUrl);
+      statusQ.refetch().catch(catchUnlessCancelled("channel.status.refetch"));
+    },
+  });
+  const weixinLogoutMut = trpc.channel.weixinLogout.useMutation({
+    onSuccess: () => {
+      setQrImage(null);
+      statusQ.refetch().catch(catchUnlessCancelled("channel.status.refetch"));
+    },
+  });
   const [peerId, setPeerId] = useState("debug-user");
   const [text, setText] = useState("你好，这是一条模拟 QQ 消息");
   const channel = "qq" as const;
@@ -36,6 +49,7 @@ export default function ChannelsPage() {
   const adapters = statusQ.data?.adapters ?? [];
   const bindings = bindingsQ.data?.items ?? [];
   const defaultQqAgent = statusQ.data?.defaultQqAgent ?? null;
+  const defaultWeixinAgent = statusQ.data?.defaultWeixinAgent ?? null;
   const latestQq = bindings.find((b) => b.channel === "qq") ?? null;
 
   return (
@@ -43,7 +57,11 @@ export default function ChannelsPage() {
       <header className="mb-2">
         <h1 className="text-xl font-semibold tracking-tight text-[var(--om-text-1)]">IM 通道</h1>
         <p className="mt-0.5 text-xs text-[var(--om-text-3)]">
-          手机 QQ / 飞书指挥家里 Agent：入站归一化后进 ChatSession / SessionStreamHub。
+          手机 QQ / 微信 ClawBot / 飞书指挥家里 Agent：入站归一化后进 ChatSession / SessionStreamHub。
+        </p>
+        <p className="mt-2 text-xs text-[var(--om-text-3)]">
+          远程助手仍在自己的 Workspace 里写花园；本机桌面/文档等走 <code>hostAccess.roots</code>（私聊）。群聊不能点你的电脑。桌面操控需本机{" "}
+          <code>uvx</code>（Windows-MCP）。总闸：<code>config.yaml</code> 的 <code>hostAccess.enabled</code>。
         </p>
         {defaultQqAgent ? (
           <p className="mt-1 text-xs text-[var(--om-text-2)]">
@@ -63,6 +81,64 @@ export default function ChannelsPage() {
           </p>
         )}
       </header>
+
+      <div className="mb-4 rounded-xl border border-[var(--om-border)] bg-[var(--om-surface)] p-4 text-sm text-[var(--om-text-2)]">
+        <p className="font-medium text-[var(--om-text-1)]">微信 ClawBot（官方 iLink，不是 OpenClaw 安装器）</p>
+        <p className="mt-1 text-xs">
+          不要在本仓库跑 <code>npx @tencent-weixin/openclaw-weixin-cli install</code>。那条命令只认本机
+          <code>openclaw</code>。OasisMind 直接扫码连 iLink。
+        </p>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-xs">
+          <li>手机微信：我 → 设置 → 插件 → 打开 ClawBot（Windows 桌面微信 ≥ 4.1.8.65，鸿蒙微信 ≥ 8.0.16.51）</li>
+          <li>点下方「扫码绑定」，用微信 ClawBot 的「开始扫一扫」扫本页二维码</li>
+          <li>绑定后在微信里给 ClawBot 发文字 / 图片 / 语音 / 视频，会进 sourceSlug=weixin-bot 的 Agent</li>
+        </ol>
+        {defaultWeixinAgent ? (
+          <p className="mt-2 text-xs">
+            默认 Agent：
+            <Link className="underline" href="/agents">
+              {defaultWeixinAgent.name}
+            </Link>
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-amber-700">
+            未找到 weixin-bot：确认 <code>config/agents/weixin-bot.md</code> 后会随 <code>pnpm db:sync</code> 入库
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded-md bg-[var(--om-brand)] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            disabled={weixinLoginMut.isPending}
+            onClick={() => weixinLoginMut.mutate()}
+          >
+            {weixinLoginMut.isPending ? "取码中…" : "扫码绑定"}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-[var(--om-border)] px-3 py-1.5 text-sm disabled:opacity-50"
+            disabled={weixinLogoutMut.isPending}
+            onClick={() => weixinLogoutMut.mutate()}
+          >
+            断开微信
+          </button>
+        </div>
+        {weixinLoginMut.error ? (
+          <p className="mt-2 text-xs text-red-600">{weixinLoginMut.error.message}</p>
+        ) : null}
+        {qrImage ? (
+          qrImage.startsWith("data:image") || qrImage.startsWith("http") ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="微信 ClawBot 二维码"
+              src={qrImage}
+              className="mt-3 h-48 w-48 rounded-md border border-[var(--om-border)] bg-white p-2"
+            />
+          ) : (
+            <p className="mt-2 break-all text-xs">二维码内容：{qrImage}</p>
+          )
+        ) : null}
+      </div>
 
       {latestQq ? (
         <div className="mb-4 rounded-xl border border-[var(--om-brand)]/35 bg-[var(--om-brand-soft)] p-4">

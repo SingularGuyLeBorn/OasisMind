@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { mergeMutationOptions } from "@/lib/mergeMutationOptions";
+import { DEAD_LETTER_REFETCH_MS } from "@/lib/adminPullIntervals";
 import type {
   OperationResult,
   CreatePostInput, UpdatePostInput, ListPostsInput, Post,
@@ -372,7 +373,10 @@ export const useTool = () => useCRUDApi<any, any, any, Tool>("tool");
 
 /** 邮件回复死信审计（未匹配 pending 的邮件回复） */
 export function useDeadLetterList(status: "pending" | "reviewed" | "all" = "all") {
-  return trpc.deadLetter.list.useQuery({ status, limit: 50 });
+  return trpc.deadLetter.list.useQuery(
+    { status, limit: 50 },
+    { refetchInterval: DEAD_LETTER_REFETCH_MS },
+  );
 }
 export function useDeadLetterReview() {
   const utils = trpc.useUtils() as any;

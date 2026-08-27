@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MailX, Check, Trash2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, PageHeader } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 
 type StatusFilter = "all" | "pending" | "reviewed";
 
@@ -25,6 +27,13 @@ export default function DeadLettersPage() {
   const { data, isLoading } = useDeadLetterList(statusFilter);
   const reviewMutation = useDeadLetterReview();
   const clearMutation = useDeadLetterClear();
+  const utils = trpc.useUtils();
+  useEffect(() => {
+    return subscribeUiState((msg) => {
+      if (msg.type !== "dead_letter_updated") return;
+      utils.deadLetter.list.invalidate().catch(catchUnlessCancelled("app/dead-letters/page.tsx"));
+    });
+  }, [utils]);
 
   const items = data?.items ?? [];
 

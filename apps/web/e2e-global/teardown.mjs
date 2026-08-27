@@ -15,14 +15,18 @@ function sleep(ms) {
 
 function killTree(pid) {
   if (!pid) return;
-  try {
-    execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
-  } catch {
+  if (process.platform === "win32") {
     try {
-      process.kill(pid, "SIGKILL");
+      execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+      return;
     } catch {
-      /* ignore */
+      /* fall through */
     }
+  }
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    /* ignore */
   }
 }
 

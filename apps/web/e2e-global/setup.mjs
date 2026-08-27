@@ -36,6 +36,34 @@ export function killStaleTestProcesses() {
 }
 
 function killProcessesOnPorts(ports) {
+  if (process.platform === "win32") {
+    killProcessesOnPortsWin32(ports);
+    return;
+  }
+  killProcessesOnPortsUnix(ports);
+}
+
+function killProcessesOnPortsUnix(ports) {
+  for (const port of ports) {
+    try {
+      const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, {
+        encoding: "utf8",
+        timeout: 15000,
+      });
+      for (const pid of output.split(/\s+/).map((s) => parseInt(s, 10)).filter((n) => n > 0)) {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* 端口空闲或无 lsof */
+    }
+  }
+}
+
+function killProcessesOnPortsWin32(ports) {
   let output = "";
   try {
     output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
@@ -74,23 +102,32 @@ function killProcessesOnPorts(ports) {
 async function waitUntilPortsFree(ports, timeoutMs = 15_000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    let output = "";
-    try {
-      output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
-    } catch {
-      return;
-    }
-    const busy = ports.some((port) =>
-      output.split(/\r?\n/).some((line) => {
-        const parts = line.trim().split(/\s+/);
-        return parts[0] === "TCP" && parts[3] === "LISTENING" && parts[1]?.endsWith(`:${port}`);
-      }),
-    );
-    if (!busy) return;
+    if (ports.every((port) => !isPortListening(port))) return;
     killProcessesOnPorts(ports);
     await sleep(400);
   }
   throw new Error(`[e2e globalSetup] 端口 ${ports.join(",")} 仍被占用，无法空库启动`);
+}
+
+function isPortListening(port) {
+  if (process.platform === "win32") {
+    let output = "";
+    try {
+      output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
+    } catch {
+      return false;
+    }
+    return output.split(/\r?\n/).some((line) => {
+      const parts = line.trim().split(/\s+/);
+      return parts[0] === "TCP" && parts[3] === "LISTENING" && parts[1]?.endsWith(`:${port}`);
+    });
+  }
+  try {
+    const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: "utf8", timeout: 8000 });
+    return output.trim().length > 0;
+  } catch {
+    return false;
+  }
 }
 
 function sleep(ms) {
@@ -103,14 +140,18 @@ function killPidFileProcesses() {
     const pids = JSON.parse(fs.readFileSync(PID_FILE, "utf8"));
     for (const pid of [pids.serverPid, pids.webPid, pids.mockLlmPid]) {
       if (!pid) continue;
-      try {
-        execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
-      } catch {
+      if (process.platform === "win32") {
         try {
-          process.kill(pid, "SIGKILL");
+          execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+          continue;
         } catch {
-          /* ignore */
+          /* fall through */
         }
+      }
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore */
       }
     }
   } catch {
@@ -120,6 +161,7 @@ function killPidFileProcesses() {
 
 /** 杀掉仍握着 test-e2e.db 的残留 node（旧 schema 的 systemPrompt 列缺失即由此） */
 function killNodeHoldingTestDb() {
+  if (process.platform !== "win32") return;
   try {
     const out = execSync(
       "wmic process where \"name='node.exe'\" get ProcessId,CommandLine /FORMAT:LIST",

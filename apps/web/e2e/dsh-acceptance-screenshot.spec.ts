@@ -63,7 +63,7 @@ test.describe("DSH §7 E2E-4 真截图超时", () => {
         { timeout: 15_000 },
       );
       await sendChatMessage(page, `DSH-E2E-4 截图超时 ${hang.url}`);
-      expect((await streamPost).url()).toContain("3011");
+      expect((await streamPost).url()).toContain("/api/agent/chat/stream");
 
       const pill = page.locator('[data-testid="tool-pill"][data-tool="browser_screenshot"]');
       await expect(pill).toBeVisible({ timeout: 40_000 });

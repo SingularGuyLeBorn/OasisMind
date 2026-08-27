@@ -21,7 +21,7 @@ import { streamLifecycleActions } from "@/lib/useStreamLifecycle";
 import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComposeState";
 import { mergeUserQueueFromDb } from "@/lib/chatQueueTypes";
 import { refreshSessionAsyncQueue } from "@/lib/refreshSessionAsyncQueue";
-import { postSessionListHint, postUiState, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { isApprovalPushEvent, isCronJobPushEvent, postSessionListHint, postUiState, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
 import { upsertSubagentProgress } from "@/lib/useSubagentProgress";
 
 export interface UseChatSseSubscriptionsParams {
@@ -217,6 +217,7 @@ export function useChatSseSubscriptions({
         } catch {
           /* ignore */
         }
+        postUiState({ type: "subagent_session_update" });
       });
       register("session_rotated", (ev) => {
         try {
@@ -266,6 +267,7 @@ export function useChatSseSubscriptions({
       });
       register("approval_updated", () => {
         utils.approval.list.invalidate().catch(logQueryCatch);
+        utils.approval.getById.invalidate().catch(logQueryCatch);
         utils.approval.humanTodoSummary.invalidate().catch(logQueryCatch);
         postUiState({ type: "approval_updated" });
       });
@@ -281,6 +283,31 @@ export function useChatSseSubscriptions({
         utils.post.categories.invalidate().catch(logQueryCatch);
         utils.post.tags.invalidate().catch(logQueryCatch);
         postUiState({ type: "post_list_changed" });
+      });
+      register("comment_updated", (ev) => {
+        let postId: string | undefined;
+        try {
+          const data = JSON.parse(ev.data) as { postId?: string };
+          postId = data.postId;
+        } catch {
+          /* ignore */
+        }
+        if (postId) {
+          utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
+        } else {
+          utils.comment.listForPost.invalidate().catch(logQueryCatch);
+        }
+        postUiState({ type: "comment_updated", postId });
+      });
+      register("inbox_updated", () => {
+        utils.inbox.list.invalidate().catch(logQueryCatch);
+        utils.inbox.stats.invalidate().catch(logQueryCatch);
+        utils.inbox.facets.invalidate().catch(logQueryCatch);
+        postUiState({ type: "inbox_updated" });
+      });
+      register("dead_letter_updated", () => {
+        utils.deadLetter.list.invalidate().catch(logQueryCatch);
+        postUiState({ type: "dead_letter_updated" });
       });
       register("run_updated", () => {
         utils.run.list.invalidate().catch(logQueryCatch);
@@ -451,10 +478,10 @@ export function useChatSseSubscriptions({
         utils.session.list.invalidate().catch(logQueryCatch);
         utils.session.listRunning.invalidate().catch(logQueryCatch);
       }
-      if (t === "cron_job_updated" || t === "cron_session_started") {
+      if (isCronJobPushEvent(t)) {
         utils.agentCron.list.invalidate().catch(logQueryCatch);
       }
-      if (t === "approval_updated") {
+      if (isApprovalPushEvent(t)) {
         utils.approval.list.invalidate().catch(logQueryCatch);
         utils.approval.humanTodoSummary.invalidate().catch(logQueryCatch);
       }
@@ -468,6 +495,26 @@ export function useChatSseSubscriptions({
         utils.post.tree.invalidate().catch(logQueryCatch);
         utils.post.categories.invalidate().catch(logQueryCatch);
         utils.post.tags.invalidate().catch(logQueryCatch);
+      }
+      if (t === "comment_updated") {
+        const postId =
+          data && typeof data === "object" && "postId" in data && typeof (data as { postId?: unknown }).postId === "string"
+            ? (data as { postId: string }).postId
+            : undefined;
+        if (postId) utils.comment.listForPost.invalidate({ postId }).catch(logQueryCatch);
+        else utils.comment.listForPost.invalidate().catch(logQueryCatch);
+      }
+      if (t === "inbox_updated") {
+        utils.inbox.list.invalidate().catch(logQueryCatch);
+        utils.inbox.stats.invalidate().catch(logQueryCatch);
+        utils.inbox.facets.invalidate().catch(logQueryCatch);
+      }
+      if (t === "dead_letter_updated") {
+        utils.deadLetter.list.invalidate().catch(logQueryCatch);
+      }
+      if (t === "subagent_session_update") {
+        utils.session.list.invalidate().catch(logQueryCatch);
+        utils.session.listRunning.invalidate().catch(logQueryCatch);
       }
       if (t === "run_updated") utils.run.list.invalidate().catch(logQueryCatch);
       if (t === "task_updated") {
