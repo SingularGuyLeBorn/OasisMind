@@ -18,22 +18,61 @@ type RouterLike = {
   replace: (href: string, opts?: { scroll?: boolean }) => void;
 };
 
-/** 由焦点会话推导应写入的 query（纯函数，供单测）。 */
+/**
+ * URL→tabs 上次观测值的首屏哨兵。必须是 undefined，不能初始化成当前 URL：
+ * 否则 `sessionFromUrl === prev`，首屏深链不会 adopt，storage 旧焦点会盖住 goto。
+ */
+export const INITIAL_PREV_SESSION_FROM_URL: string | null | undefined = undefined;
+
+/** URL 查询串相对上次观测值变了、且与当前焦点不一致时，adopt URL。 */
+export function shouldAdoptUrlSession(opts: {
+  prevSessionFromUrl: string | null | undefined;
+  sessionFromUrl: string | null;
+  focusedSessionId: string | null;
+}): boolean {
+  const urlChanged = opts.sessionFromUrl !== opts.prevSessionFromUrl;
+  if (!urlChanged) return false;
+  return Boolean(opts.sessionFromUrl && opts.sessionFromUrl !== opts.focusedSessionId);
+}
+
+/** 水合完成后：storage 旧焦点不得盖住深链。 */
+export function shouldCorrectFocusAfterHydrate(opts: {
+  tabsHydrated: boolean;
+  sessionFromUrl: string | null;
+  focusedSessionId: string | null;
+}): boolean {
+  if (!opts.tabsHydrated) return false;
+  return Boolean(opts.sessionFromUrl && opts.sessionFromUrl !== opts.focusedSessionId);
+}
+
+/**
+ * 由焦点会话推导应写入的 query（纯函数，供单测）。
+ * 首屏焦点从空变成 storage 值、但 URL 已是另一会话 → 深链优先，不回写。
+ */
 export function nextChatSearchFromFocus(opts: {
   search: string;
   focusedSessionId: string | null;
   prevFocusedSessionId: string | null;
 }): { nextSearch: string; changed: boolean } {
   const params = new URLSearchParams(opts.search);
+  const urlSession = params.get("sessionId");
+  const deepLinkPending =
+    opts.prevFocusedSessionId == null &&
+    Boolean(opts.focusedSessionId) &&
+    Boolean(urlSession) &&
+    urlSession !== opts.focusedSessionId;
+
   let changed = false;
-  if (opts.focusedSessionId) {
-    if (params.get("sessionId") !== opts.focusedSessionId) {
-      params.set("sessionId", opts.focusedSessionId);
+  if (!deepLinkPending) {
+    if (opts.focusedSessionId) {
+      if (urlSession !== opts.focusedSessionId) {
+        params.set("sessionId", opts.focusedSessionId);
+        changed = true;
+      }
+    } else if (params.has("sessionId") && opts.prevFocusedSessionId) {
+      params.delete("sessionId");
       changed = true;
     }
-  } else if (params.has("sessionId") && opts.prevFocusedSessionId) {
-    params.delete("sessionId");
-    changed = true;
   }
   if (params.has("split")) {
     params.delete("split");
@@ -66,7 +105,7 @@ export function useChatUrlSync(args: {
   const utils = trpc.useUtils();
   const prevFocusedRef = useRef<string | null>(null);
   const focusedSessionIdRef = useRef(focusedSessionId);
-  const prevSessionFromUrlRef = useRef<string | null | undefined>(undefined);
+  const prevSessionFromUrlRef = useRef<string | null | undefined>(INITIAL_PREV_SESSION_FROM_URL);
   const searchParamsRef = useRef(searchParams);
   useEffect(() => {
     searchParamsRef.current = searchParams;
@@ -105,24 +144,32 @@ export function useChatUrlSync(args: {
   }, [focusedSessionId]);
 
   useEffect(() => {
-    const urlChanged = sessionFromUrl !== prevSessionFromUrlRef.current;
+    const adopt = shouldAdoptUrlSession({
+      prevSessionFromUrl: prevSessionFromUrlRef.current,
+      sessionFromUrl,
+      focusedSessionId: focusedSessionIdRef.current,
+    });
     prevSessionFromUrlRef.current = sessionFromUrl;
-    if (!urlChanged) return;
-    if (sessionFromUrl && sessionFromUrl !== focusedSessionIdRef.current) {
-      ensureFocusedSession(sessionFromUrl);
-      utils.session.list.invalidate().catch(catchUnlessCancelled("useChatUrlSync"));
-      utils.session.listRunning.invalidate().catch(catchUnlessCancelled("useChatUrlSync"));
-      consumeRef.current(sessionFromUrl);
-    }
+    if (!adopt || !sessionFromUrl) return;
+    ensureFocusedSession(sessionFromUrl);
+    utils.session.list.invalidate().catch(catchUnlessCancelled("useChatUrlSync"));
+    utils.session.listRunning.invalidate().catch(catchUnlessCancelled("useChatUrlSync"));
+    consumeRef.current(sessionFromUrl);
   }, [sessionFromUrl, ensureFocusedSession, utils.session.list, utils.session.listRunning, consumeRef]);
 
   useEffect(() => {
-    // 水合完成后以 URL 为准纠一次：sessionStorage 里的旧焦点不得盖住深链 / goto。
     // 禁止把 focusedSessionId 放进 deps，否则 openTab 后 URL 未跟上会被拽回去。
-    if (!tabsHydrated) return;
-    if (sessionFromUrl && sessionFromUrl !== focusedSessionIdRef.current) {
-      ensureFocusedSession(sessionFromUrl);
+    if (
+      !shouldCorrectFocusAfterHydrate({
+        tabsHydrated,
+        sessionFromUrl,
+        focusedSessionId: focusedSessionIdRef.current,
+      }) ||
+      !sessionFromUrl
+    ) {
+      return;
     }
+    ensureFocusedSession(sessionFromUrl);
   }, [tabsHydrated, sessionFromUrl, ensureFocusedSession]);
 
   useEffect(() => {
