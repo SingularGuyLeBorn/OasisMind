@@ -5,8 +5,11 @@
 import type { MockLlmOptions, MockLlmScenario } from "./scenarios.js";
 import {
   baseResult,
+  delayYield,
   hasAnyToolResult,
+  hasNamedToolResult,
   hasTool,
+  lastToolContent,
   lastUserText,
   makeToolCall,
   mockLog,
@@ -19,7 +22,37 @@ import {
   matchAgenticLong,
   matchReplyCatalog,
 } from "./replyCatalog.js";
-import type { LlmCompletionResult, StreamChunk } from "./types.js";
+import type { LlmCompletionResult, LlmToolCall, StreamChunk } from "./types.js";
+
+/** 队列 E2E 第一条每个 token 间隔，预留 Ctrl+Enter 入队窗口 */
+export const QUEUE_SLOW_FIRST_TOKEN_MS = 70;
+
+/** 场景 4：子 Agent 先 sleep，保证父会话能先 idle 再收到 report_back */
+export const SUBAGENT_ASYNC_SLEEP_SECONDS = 8;
+
+function heartbeatQueryToolCall(opts: MockLlmOptions): LlmToolCall {
+  if (hasTool(opts, "swarm_brief")) {
+    return makeToolCall("swarm_brief", { limit: 30 });
+  }
+  const idMatch = lastUserText(opts).match(/c[a-z0-9]{20,}/);
+  return makeToolCall("agent_inspect", {
+    id: idMatch?.[0] ?? "missing-agent-id",
+    includeSwarm: true,
+  });
+}
+
+/** 按真实工具结果作答。禁止写死 quiet。禁止声称「刚跑完」。 */
+function heartbeatQueryFollowup(opts: MockLlmOptions): string {
+  const raw = lastToolContent(opts);
+  const lastMode =
+    raw.match(/决策=([a-z_]+)/)?.[1] ??
+    raw.match(/"lastMode"\s*:\s*"([a-z_]+)"/)?.[1] ??
+    "unknown";
+  const suspended =
+    /心跳熔断/.test(raw) || /"suspendedAt"\s*:\s*"(?!null)/.test(raw);
+  const fuse = suspended ? "已熔断" : "未熔断";
+  return `根据只读检查（不是本轮现场跑出来的简报）：心跳 lastMode=${lastMode}，${fuse}。`;
+}
 
 export const scenarios: MockLlmScenario[] = [
   {
@@ -286,6 +319,252 @@ export const scenarios: MockLlmScenario[] = [
         ...baseResult(opts),
         content: null,
         toolCalls: [makeToolCall("agent_notify_parent", { content: "子 Agent 进度通知：任务进行中" })],
+      });
+    },
+  },
+  {
+    name: "spawn_subagent_async",
+    match: (opts, forced) =>
+      forced === "spawn_subagent_async" ||
+      (/非阻塞派子/.test(lastUserText(opts).trim()) &&
+        hasTool(opts, "spawn_subagent") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("spawn_subagent", {
+          task: "执行非阻塞调研",
+          waitForResult: false,
+          label: "非阻塞调研",
+        }),
+      ],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [
+          makeToolCall("spawn_subagent", {
+            task: "执行非阻塞调研",
+            waitForResult: false,
+            label: "非阻塞调研",
+          }),
+        ],
+      });
+    },
+  },
+  {
+    name: "spawn_subagent_async_final",
+    match: (opts, forced) =>
+      forced === "spawn_subagent_async_final" ||
+      (hasAnyToolResult(opts) && /非阻塞派子/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已派非阻塞子 Agent，我先不等它，结果回来再说。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已派非阻塞子 Agent，我先不等它，结果回来再说。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "spawn_subagent_async_followup",
+    match: (opts, forced) =>
+      forced === "spawn_subagent_async_followup" ||
+      /非阻塞子结果已送达/.test(lastUserText(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "根据子 Agent 回报：非阻塞调研已完成。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "根据子 Agent 回报：非阻塞调研已完成。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "approval_memory_global",
+    match: (opts, forced) =>
+      forced === "approval_memory_global" ||
+      (/审批测试写全局记忆/.test(lastUserText(opts)) &&
+        hasTool(opts, "memory_create") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("memory_create", {
+          content: "e2e 全局记忆审批探针",
+          type: "note",
+          scope: "global",
+          evidence: "e2e-approval",
+        }),
+      ],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [
+          makeToolCall("memory_create", {
+            content: "e2e 全局记忆审批探针",
+            type: "note",
+            scope: "global",
+            evidence: "e2e-approval",
+          }),
+        ],
+      });
+    },
+  },
+  {
+    name: "approval_memory_global_approved",
+    match: (opts, forced) =>
+      forced === "approval_memory_global_approved" ||
+      (/人工审批已通过/.test(lastUserText(opts)) && /memory_create/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已按审批结果写入全局记忆。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已按审批结果写入全局记忆。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "approval_memory_global_rejected",
+    match: (opts, forced) =>
+      forced === "approval_memory_global_rejected" ||
+      (/人工审批被拒绝/.test(lastUserText(opts)) && /memory_create/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "审批被拒绝，全局记忆未写入。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "审批被拒绝，全局记忆未写入。",
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "heartbeat_query",
+    match: (opts, forced) =>
+      forced === "heartbeat_query" ||
+      (/看下心跳/.test(lastUserText(opts)) &&
+        (hasTool(opts, "swarm_brief") || hasTool(opts, "agent_inspect")) &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [heartbeatQueryToolCall(opts)],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [heartbeatQueryToolCall(opts)],
+      });
+    },
+  },
+  {
+    name: "heartbeat_query_followup",
+    match: (opts, forced) =>
+      forced === "heartbeat_query_followup" ||
+      (/看下心跳/.test(lastUserText(opts)) &&
+        (hasNamedToolResult(opts, "swarm_brief") || hasNamedToolResult(opts, "agent_inspect"))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: heartbeatQueryFollowup(opts),
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: heartbeatQueryFollowup(opts),
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "subagent_async_sleep",
+    match: (opts, forced) =>
+      forced === "subagent_async_sleep" ||
+      (/执行非阻塞调研/.test(lastUserText(opts)) &&
+        hasTool(opts, "sleep") &&
+        !hasAnyToolResult(opts)),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_ASYNC_SLEEP_SECONDS })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_ASYNC_SLEEP_SECONDS })],
+      });
+    },
+  },
+  {
+    name: "subagent_async_report",
+    match: (opts, forced) =>
+      forced === "subagent_async_report" ||
+      (/执行非阻塞调研/.test(lastUserText(opts)) &&
+        hasAnyToolResult(opts) &&
+        hasTool(opts, "agent_report_back") &&
+        !hasNamedToolResult(opts, "agent_report_back")),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("agent_report_back", {
+          content: "非阻塞子结果已送达",
+          noEvidenceReason: "mock e2e",
+        }),
+      ],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [
+          makeToolCall("agent_report_back", {
+            content: "非阻塞子结果已送达",
+            noEvidenceReason: "mock e2e",
+          }),
+        ],
+      });
+    },
+  },
+  {
+    name: "subagent_async_done",
+    match: (opts, forced) =>
+      forced === "subagent_async_done" ||
+      (/执行非阻塞调研/.test(lastUserText(opts)) && hasNamedToolResult(opts, "agent_report_back")),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已向父会话回报非阻塞调研结果。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: "已向父会话回报非阻塞调研结果。",
+        toolCalls: [],
       });
     },
   },
@@ -936,6 +1215,82 @@ export const scenarios: MockLlmScenario[] = [
         content:
           "下面是可预览的计数页面：\n\n```html\n<!doctype html><html><body><button id=b>0</button><script>b.onclick=()=>b.textContent=++b.textContent</script></body></html>\n```",
         toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "queue_slow_stream",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "queue_slow_stream" || /^队列测试/.test(lastUserText(opts).trim())),
+    completion: (opts) => {
+      const first = /第一条/.test(lastUserText(opts));
+      return {
+        ...baseResult(opts),
+        content: first
+          ? "队列慢流甲：预留入队窗口。请在本句流式期间把第二条送进队列。"
+          : "队列慢流乙：第二条已接到。",
+        toolCalls: [],
+      };
+    },
+    stream: async function* (opts) {
+      const first = /第一条/.test(lastUserText(opts));
+      const content = first
+        ? "队列慢流甲：预留入队窗口。请在本句流式期间把第二条送进队列。"
+        : "队列慢流乙：第二条已接到。";
+      const model = opts.model || "mock-llm";
+      const chunks = content.split("").map((delta) => ({
+        type: "token" as const,
+        delta,
+        model,
+        provider: "mock",
+      }));
+      yield* delayYield(chunks, first ? QUEUE_SLOW_FIRST_TOKEN_MS : 8);
+      yield {
+        type: "token" as const,
+        delta: "",
+        finishReason: "stop",
+        model,
+        provider: "mock",
+        tokenUsage: { prompt: 10, completion: 12, total: 22 },
+      };
+    },
+  },
+  {
+    name: "eval_G11_piclite",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G11_piclite" ||
+        /不要上传任何在线压图|在线压图网站|piclite-compress/i.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("skill_view", { name: "piclite-compress" })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("skill_view", { name: "piclite-compress" })],
+      });
+    },
+  },
+  {
+    name: "eval_G12_morning_brief",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G12_morning_brief" ||
+        /昨夜 Inbox|订阅源新增|标签.?日报/i.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [makeToolCall("inbox_list", { limit: 20 })],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [makeToolCall("inbox_list", { limit: 20 })],
       });
     },
   },

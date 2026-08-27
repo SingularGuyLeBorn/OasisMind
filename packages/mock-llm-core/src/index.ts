@@ -23,6 +23,8 @@ export {
   hasTool,
   firstToolName,
   hasAnyToolResult,
+  hasNamedToolResult,
+  lastToolContent,
   mockLog,
   makeToolCall,
   baseResult,
@@ -36,4 +38,6 @@ export {
   mockChatCompletion,
   mockChatCompletionStream,
   registerMockLlmScenario,
+  QUEUE_SLOW_FIRST_TOKEN_MS,
+  SUBAGENT_ASYNC_SLEEP_SECONDS,
 } from "./scenarioDefs.js";

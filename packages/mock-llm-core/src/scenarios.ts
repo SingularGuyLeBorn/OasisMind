@@ -58,6 +58,25 @@ export function hasAnyToolResult(opts: MockLlmOptions): boolean {
   return opts.messages.some((m) => m.role === "tool");
 }
 
+/** 某工具是否已经作为 tool result 进过上下文（防 report_back / sleep 二次调用死循环）。 */
+export function hasNamedToolResult(opts: MockLlmOptions, name: string): boolean {
+  return opts.messages.some((m) => m.role === "tool" && m.name === name);
+}
+
+/** 最近一条 tool 消息正文（供后续场景按真实工具结果作答，禁止写死）。 */
+export function lastToolContent(opts: MockLlmOptions): string {
+  for (let i = opts.messages.length - 1; i >= 0; i--) {
+    const m = opts.messages[i];
+    if (m.role !== "tool") continue;
+    if (typeof m.content === "string") return m.content;
+    if (Array.isArray(m.content)) {
+      return m.content.map((p) => (typeof p.text === "string" ? p.text : "")).join("");
+    }
+    return JSON.stringify(m.content ?? "");
+  }
+  return "";
+}
+
 export function mockLog(line: string): void {
   const logPath = process.env.MOCK_LLM_LOG ?? "";
   if (!logPath) return;
