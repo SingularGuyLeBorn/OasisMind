@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LlmToolDefinition } from "./types.js";
-import { resolveScenario, SUBAGENT_ASYNC_SLEEP_SECONDS } from "./scenarioDefs.js";
+import { resolveScenario, SUBAGENT_ASYNC_SLEEP_SECONDS, SUBAGENT_WAIT_SLEEP_SECONDS } from "./scenarioDefs.js";
 
 function tool(name: string): LlmToolDefinition {
   return {
@@ -37,7 +37,10 @@ describe("spawn_subagent_async", () => {
   });
 
   it("子任务先 sleep 再 report_back，回报后不再二次调用", () => {
-    expect(SUBAGENT_ASYNC_SLEEP_SECONDS).toBeGreaterThanOrEqual(4);
+    expect(SUBAGENT_ASYNC_SLEEP_SECONDS).toBeGreaterThan(0);
+    expect(SUBAGENT_ASYNC_SLEEP_SECONDS).toBeLessThanOrEqual(2);
+    expect(SUBAGENT_WAIT_SLEEP_SECONDS).toBeGreaterThan(0);
+    expect(SUBAGENT_WAIT_SLEEP_SECONDS).toBeLessThanOrEqual(1);
     expect(
       resolveScenario({
         messages: [{ role: "user", content: "执行非阻塞调研" }],

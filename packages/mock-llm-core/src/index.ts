@@ -40,6 +40,7 @@ export {
   registerMockLlmScenario,
   QUEUE_SLOW_FIRST_TOKEN_MS,
   SUBAGENT_ASYNC_SLEEP_SECONDS,
+  SUBAGENT_WAIT_SLEEP_SECONDS,
 } from "./scenarioDefs.js";
 
 export {

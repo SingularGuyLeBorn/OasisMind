@@ -27,8 +27,10 @@ import type { LlmCompletionResult, LlmToolCall, StreamChunk } from "./types.js";
 /** 队列 E2E 第一条每个 token 间隔，预留 Ctrl+Enter 入队窗口 */
 export const QUEUE_SLOW_FIRST_TOKEN_MS = 70;
 
-/** 场景 4：子 Agent 先 sleep，保证父会话能先 idle 再收到 report_back */
-export const SUBAGENT_ASYNC_SLEEP_SECONDS = 8;
+/** 非阻塞子：必须长于父会话 spawn 收束，禁止再写成 8（全量 E2E 会空等二十秒） */
+export const SUBAGENT_ASYNC_SLEEP_SECONDS = 2;
+/** 阻塞 waitForResult 子：够 reload / 切会话，不必 3s */
+export const SUBAGENT_WAIT_SLEEP_SECONDS = 1;
 
 function heartbeatQueryToolCall(opts: MockLlmOptions): LlmToolCall {
   if (hasTool(opts, "swarm_brief")) {
@@ -642,13 +644,13 @@ export const scenarios: MockLlmScenario[] = [
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
-      toolCalls: [makeToolCall("sleep", { seconds: 3 })],
+      toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_WAIT_SLEEP_SECONDS })],
     }),
     stream: async function* (opts) {
       yield* streamFromCompletion(opts, {
         ...baseResult(opts),
         content: null,
-        toolCalls: [makeToolCall("sleep", { seconds: 3 })],
+        toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_WAIT_SLEEP_SECONDS })],
       });
     },
   },
