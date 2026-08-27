@@ -336,8 +336,8 @@ export function ChatView() {
     { sessionId: effectiveSessionId! },
     {
       enabled: !!effectiveSessionId && !backendDown,
-      // 推优先（session_queue_update）；与 pane 共用查询缓存，禁止再 3s 双轮询
-      refetchInterval: (query) => (query.state.error ? 15_000 : false),
+      // 推优先（session_queue_update）；空闲会话仍短拉，避免首包空水合后错过待发
+      refetchInterval: (query) => (query.state.error ? 15_000 : 3_000),
       refetchOnWindowFocus: true,
     },
   );

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { SERVER_URL } from "./helpers/trpcE2e";
+import { SERVER_URL, trpcMutate } from "./helpers/trpcE2e";
 import {
   waitForChatReady,
   sendChatMessage,
@@ -9,6 +9,7 @@ import {
   expectToolPill,
   expectAssistantAnswer,
   selectAssistantAgent,
+  openBoundSession,
 } from "./helpers/mockChatFixture";
 
 async function waitForSessionId(page: import("@playwright/test").Page, timeout = 10_000): Promise<string> {
@@ -110,16 +111,28 @@ test.describe("Subagent Mock — 刷新后父会话流式恢复", () => {
     // 记录父会话 ID，避免历史会话污染导致点错
     const parentSessionId = await waitForSessionId(page);
     expect(parentSessionId).toBeTruthy();
+    const agentId = new URL(page.url()).searchParams.get("agentId") ?? undefined;
 
-    // 切到新会话并发送一条普通消息
-    await page.getByLabel("新建对话").click();
-    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 10_000 });
+    // 另开会话再切回：走 tRPC 建会话 + URL 绑定，避免「新建对话」与流式父会话抢焦点。
+    const other = await trpcMutate<{
+      success: boolean;
+      data?: { id: string };
+      error?: { message?: string };
+    }>("session.create", {
+      title: `e2e-switch-${Date.now()}`,
+      agentId,
+      model: "deepseek-v4-flash",
+    });
+    const otherId = other.data?.id;
+    if (!other.success || !otherId) {
+      throw new Error(other.error?.message ?? "创建切换会话失败");
+    }
+    await openBoundSession(page, otherId, agentId);
+    await expect(page.getByTestId("chat-stop")).toHaveCount(0);
     await sendChatMessage(page, "你好");
     await waitForStreamingComplete(page);
 
-    // 切回父会话（通过 URL，避免同标题会话干扰）
-    await page.goto(`/chat?sessionId=${parentSessionId}`);
-    await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 10_000 });
+    await openBoundSession(page, parentSessionId, agentId);
 
     // 父会话应继续流式并完成
     await waitForStreamingComplete(page);

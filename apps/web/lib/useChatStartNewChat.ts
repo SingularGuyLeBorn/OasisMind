@@ -151,6 +151,10 @@ export function useChatStartNewChat(opts: {
         }
         openTab(res.id);
         migrateSessionConfig(NEW_STREAM_KEY, res.id);
+        const p = new URLSearchParams(searchParams.toString());
+        p.set("sessionId", res.id);
+        p.delete("agentId");
+        router.replace(`${pathname}?${p.toString()}`, { scroll: false });
         utils.session.list.invalidate().catch(catchUnlessCancelled("components/chat.tsx"));
       } catch {
         showToast("创建新会话失败");

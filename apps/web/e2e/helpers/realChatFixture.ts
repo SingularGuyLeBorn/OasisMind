@@ -38,24 +38,23 @@ export async function sendChatMessage(page: Page, text: string): Promise<void> {
     pills: await page.getByTestId("tool-pill").count(),
   });
 
-  if ((await page.getByTestId("chat-stop").count()) > 0) {
-    await page.getByTestId("chat-stop").click({ force: true, timeout: 8_000 }).catch(() => {});
-    await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
-  }
-
   const focusedPane = page.getByTestId("chat-session-pane").filter({
     has: page.locator('[data-focused="true"]'),
   });
-  const input =
+  const pane =
     (await focusedPane.count()) > 0
-      ? focusedPane.getByTestId("chat-input")
-      : page.getByTestId("chat-input").last();
+      ? focusedPane
+      : page.getByTestId("chat-session-pane").last();
+  // 只停本 pane 的 chat-stop。禁止回退点全局 stop：新建对话未切焦点时会误停后台父流。
+  const stopInPane = pane.getByTestId("chat-stop");
+  if ((await stopInPane.count()) > 0) {
+    await stopInPane.click({ force: true, timeout: 8_000 }).catch(() => {});
+    await expect(pane.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
+  }
+  const input = pane.getByTestId("chat-input");
   await expect(input).toBeEnabled({ timeout: 15_000 });
   await input.fill(text);
-  const sendBtn =
-    (await focusedPane.count()) > 0
-      ? focusedPane.getByTestId("chat-send")
-      : page.getByTestId("chat-send").last();
+  const sendBtn = pane.getByTestId("chat-send");
   await expect(sendBtn).toBeEnabled({ timeout: 15_000 });
   await sendBtn.click();
 }
@@ -118,10 +117,10 @@ export function countAssistantMessages(page: Page): Promise<number> {
 }
 
 export async function lastAssistantText(page: Page): Promise<string> {
-  const bubbles = page.getByTestId("assistant-message-bubble");
-  const count = await bubbles.count();
+  const withText = page.getByTestId("assistant-message-bubble").filter({ hasText: /\S/ });
+  const count = await withText.count();
   if (count === 0) return "";
-  return bubbles.nth(count - 1).innerText();
+  return (await withText.last().innerText()).trim();
 }
 
 /**

@@ -72,6 +72,9 @@ test.describe("Superior Queue Mock — 实时队列与单次消费", () => {
 
     try {
       await page.goto(`/chat?sessionId=${subSessionId}`);
+      await expect(
+        page.locator(`[data-testid="chat-session-pane"][data-session-id="${subSessionId}"]`),
+      ).toBeVisible({ timeout: 15_000 });
       await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
 
       const msgB = `SUPERIOR-UI-B-${Date.now().toString(36)}`;

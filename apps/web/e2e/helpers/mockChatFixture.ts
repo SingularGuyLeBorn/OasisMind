@@ -75,6 +75,9 @@ export async function openFreshChat(page: Page): Promise<Locator> {
   }
 
   await page.goto(`/chat?sessionId=${sessionId}&agentId=${assistant.id}`);
+  await expect(
+    page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
+  ).toBeVisible({ timeout: 15_000 });
   const input = page.getByTestId("chat-input").first();
   await input.waitFor({ state: "visible", timeout: 30_000 });
   await expect(input).toBeEnabled({ timeout: 30_000 });
@@ -82,6 +85,21 @@ export async function openFreshChat(page: Page): Promise<Locator> {
   await expect(page.getByTestId("assistant-message-bubble")).toHaveCount(0);
   await expect(page.getByTestId("workspace-select")).toContainText(/E2E 默认空间/, { timeout: 10_000 });
   return input;
+}
+
+/** 打开已有会话并等到焦点 pane 绑上 sessionId（禁止只等 chat-input，新对话页也有输入框）。 */
+export async function openBoundSession(
+  page: Page,
+  sessionId: string,
+  agentId?: string,
+): Promise<void> {
+  const qs = new URLSearchParams({ sessionId });
+  if (agentId) qs.set("agentId", agentId);
+  await page.goto(`/chat?${qs.toString()}`);
+  await expect(
+    page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
+  ).toBeVisible({ timeout: 15_000 });
+  await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
 }
 
 /** Mock 套件：waitForChatReady = 开空会话，避免全量套件污染。 */
@@ -94,25 +112,23 @@ export async function waitForChatReady(page: Page): Promise<Locator> {
  * 有 sendChatMessage 基线时等气泡数增加；刷新/切回会话时等 stop 消失且已有助手气泡。
  */
 export async function waitForStreamingComplete(page: Page): Promise<void> {
-  const assistantBubble = page.getByTestId("assistant-message-bubble");
+  const withText = page.getByTestId("assistant-message-bubble").filter({ hasText: /\S/ });
   const streamingBubble = page.getByTestId("streaming-assistant-bubble");
   const baseline = consumeAssistBaseline(page);
+  const minCount = (baseline?.count ?? 0) + 1;
 
-  if (baseline) {
-    await expect
-      .poll(() => assistantBubble.count(), { timeout: 30_000, intervals: [200, 500, 1000] })
-      .toBeGreaterThan(baseline.count);
-  } else {
-    const stop = page.getByTestId("chat-stop");
-    if ((await stop.count()) > 0 || (await streamingBubble.count()) > 0) {
-      await streamingBubble.waitFor({ state: "hidden", timeout: 30_000 }).catch(() => {});
-      await expect(stop).toHaveCount(0, { timeout: 30_000 });
-    }
-    await expect
-      .poll(() => assistantBubble.count(), { timeout: 30_000, intervals: [200, 500, 1000] })
-      .toBeGreaterThan(0);
-  }
-  await streamingBubble.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
+  await expect
+    .poll(
+      async () => {
+        if ((await page.getByTestId("chat-stop").count()) > 0) return false;
+        if ((await streamingBubble.count()) > 0 && (await streamingBubble.first().isVisible().catch(() => false))) {
+          return false;
+        }
+        return (await withText.count()) >= minCount;
+      },
+      { timeout: 30_000, intervals: [200, 400, 800] },
+    )
+    .toBe(true);
   await expect(page.getByTestId("chat-stop")).toHaveCount(0);
 }
 
@@ -123,7 +139,26 @@ export async function waitForSessionIdle(page: Page): Promise<void> {
 }
 
 export async function expectToolPill(page: import("@playwright/test").Page, name: string): Promise<void> {
-  await expect(page.getByTestId("tool-pill").filter({ hasText: name })).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(`[data-testid="tool-pill"][data-tool="${name}"]`)).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+/** 打开模型菜单，打开思考（标准）。 */
+export async function enableThinking(page: Page): Promise<void> {
+  const trigger = page.getByTestId("chat-model-menu-trigger").first();
+  await trigger.click();
+  await expect(page.getByTestId("chat-model-menu")).toBeVisible();
+  const thinkingItem = page.getByTestId("chat-model-menu-thinking");
+  if ((await thinkingItem.count()) === 0) {
+    await page.getByTestId("chat-model-option-deepseek-v4-pro").click();
+    await trigger.click();
+    await expect(page.getByTestId("chat-model-menu")).toBeVisible();
+  }
+  await page.getByTestId("chat-model-menu-thinking").click();
+  await expect(page.getByTestId("chat-thinking-high")).toBeVisible({ timeout: 8_000 });
+  await page.getByTestId("chat-thinking-high").click();
+  await page.keyboard.press("Escape");
 }
 
 export async function expectToolHint(page: import("@playwright/test").Page, text: string): Promise<void> {
@@ -137,8 +172,10 @@ export async function expectThinkingTimeline(page: Page): Promise<void> {
 }
 
 export async function expectAssistantAnswer(page: Page, text: string): Promise<void> {
-  const last = await (await import("./realChatFixture")).lastAssistantText(page);
-  expect(last).toContain(text);
+  const { lastAssistantText: readLast } = await import("./realChatFixture");
+  await expect
+    .poll(async () => readLast(page), { timeout: 15_000, intervals: [200, 400, 800] })
+    .toContain(text);
 }
 
 /** 确保当前选中的是 E2E 默认 Workspace（其中包含 manager 层级的 assistant Agent）。 */

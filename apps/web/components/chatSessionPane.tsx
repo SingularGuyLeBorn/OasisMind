@@ -211,8 +211,8 @@ export function ChatSessionPane({
     { sessionId: sessionId! },
     {
       enabled: !!sessionId && !backendDown,
-      // 推优先；错误时 15s 兜底（与 chat.tsx 同 key 共享缓存，避免双 3s）
-      refetchInterval: (query) => (query.state.error ? 15_000 : false),
+      // 与 chat.tsx 同 key；空闲待发靠 PUSH + 3s PULL 兜底
+      refetchInterval: (query) => (query.state.error ? 15_000 : 3_000),
       refetchOnWindowFocus: true,
     },
   );

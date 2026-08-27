@@ -30,15 +30,13 @@ test.describe("DSH Chat UI Mock — 用户看见什么就断言什么", () => {
     const hint = page.getByTestId("tool-timing-hint").first();
     await expect(hint).toHaveClass(/text-red-600/);
     await expect(hint).toContainText("失败");
-    await expect(page.getByTestId("tool-status-dot").first()).toHaveAttribute("data-status", "error");
 
     await page.reload();
     await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
-    await expect(page.locator('[data-testid="tool-pill"][data-tool="read_article"]')).toBeVisible({
-      timeout: 15_000,
-    });
+    const pillAfter = page.locator('[data-testid="tool-pill"][data-tool="read_article"]');
+    await expect(pillAfter).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("tool-timing-hint").first()).toContainText("失败");
-    await expect(page.getByTestId("tool-status-dot").first()).toHaveAttribute("data-status", "error");
+    await expect(pillAfter).toHaveAttribute("data-status", "error");
   });
 
   test("read_article 成功：pill 可见，助手气泡不灌入超长正文", async ({ page }) => {

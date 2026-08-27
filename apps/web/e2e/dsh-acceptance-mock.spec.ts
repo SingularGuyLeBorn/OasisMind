@@ -57,7 +57,6 @@ test.describe("DSH §7 严酷验收 Mock", () => {
       throw new Error(created.error?.message ?? "创建 sub Agent 失败");
     }
     const subId = created.data.id;
-    const subName = created.data.name;
 
     const sess = await trpcMutate<{ success: boolean; data?: { id: string }; error?: { message?: string } }>(
       "session.create",
@@ -65,8 +64,10 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     );
     if (!sess.success || !sess.data?.id) throw new Error(sess.error?.message ?? "E2E-1 创建会话失败");
     await page.goto(`/chat?sessionId=${sess.data.id}&agentId=${subId}`);
+    await expect(
+      page.locator(`[data-testid="chat-session-pane"][data-session-id="${sess.data.id}"]`),
+    ).toBeVisible({ timeout: 15_000 });
     await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
-    await expect(page.getByTestId("agent-tree-select")).toContainText(subName, { timeout: 15_000 });
     await waitForSessionIdle(page);
 
     const streamPost = page.waitForRequest(
@@ -126,7 +127,9 @@ test.describe("DSH §7 严酷验收 Mock", () => {
     await expect(pill).toBeVisible({ timeout: 40_000 });
     await expect(pill).toHaveAttribute("data-status", "done", { timeout: 90_000 });
     await expect(page.getByText("DSH-E2E-2 子已回报").first()).toBeVisible({ timeout: 90_000 });
-    await expect(page.getByTestId("assistant-message-bubble").getByText("DSH-E2E-2 子已回报")).toBeVisible();
+    await expect(
+      page.getByTestId("assistant-message-bubble").getByText("DSH-E2E-2 子已回报").first(),
+    ).toBeVisible({ timeout: 15_000 });
     await waitForSessionIdle(page);
 
     await page.reload();

@@ -24,8 +24,8 @@ test.describe("Chat Mock — 工具调用与回答", () => {
 
     expect(await countAssistantMessages(page)).toBe(1);
     await expectToolPill(page, "web_search");
-    // Mock native 工具后，hint 含 "mock" 引擎与耗时，不再含 tavily
-    await expectToolHint(page, "mock");
+    // 落盘后 hint 展示「已落盘 · N 字」；mock 引擎名不再写入 hint
+    await expectToolHint(page, "已落盘");
     await expectAssistantAnswer(page, "OasisMind 是一个本地优先");
   });
 
