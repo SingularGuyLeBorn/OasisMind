@@ -27,7 +27,11 @@ type AgentListItem = {
   workspaceId: string | null;
 };
 
-async function listE2eAssistant(): Promise<AgentListItem> {
+let cachedE2eAssistant: AgentListItem | null = null;
+
+export async function listE2eAssistant(): Promise<AgentListItem> {
+  if (cachedE2eAssistant) return cachedE2eAssistant;
+
   const byName = await trpcQuery<{ items: AgentListItem[] }>("agent.list", {
     page: 1,
     pageSize: 100,
@@ -35,7 +39,10 @@ async function listE2eAssistant(): Promise<AgentListItem> {
     tier: "manager",
   });
   const named = byName.items.find((a) => a.name === "assistant" && a.tier === "manager");
-  if (named) return named;
+  if (named) {
+    cachedE2eAssistant = named;
+    return named;
+  }
 
   const managers = await trpcQuery<{ items: AgentListItem[] }>("agent.list", {
     page: 1,
@@ -43,7 +50,10 @@ async function listE2eAssistant(): Promise<AgentListItem> {
     tier: "manager",
   });
   const manager = managers.items.find((a) => a.tier === "manager");
-  if (manager) return manager;
+  if (manager) {
+    cachedE2eAssistant = manager;
+    return manager;
+  }
 
   const supers = await trpcQuery<{ items: AgentListItem[] }>("agent.list", {
     page: 1,
@@ -51,39 +61,47 @@ async function listE2eAssistant(): Promise<AgentListItem> {
     tier: "super",
   });
   const superAgent = supers.items.find((a) => a.tier === "super");
-  if (superAgent) return superAgent;
+  if (superAgent) {
+    cachedE2eAssistant = superAgent;
+    return superAgent;
+  }
   throw new Error("[e2e] 找不到可用的主 Agent");
 }
 
-/**
- * 每条 mock 测例必须开空会话。禁止 goto /chat 复用上一测残留消息/工具 pill。
- */
-export async function openFreshChat(page: Page): Promise<Locator> {
+export async function createE2eSession(title: string): Promise<{ sessionId: string; agentId: string }> {
   const assistant = await listE2eAssistant();
   const created = await trpcMutate<{
     success: boolean;
     data?: { id: string };
     error?: { message?: string };
   }>("session.create", {
-    title: `e2e-fresh-${Date.now()}`,
+    title,
     model: assistant.model,
     agentId: assistant.id,
   });
   const sessionId = created.data?.id;
   if (!created.success || !sessionId) {
-    throw new Error(created.error?.message ?? "[e2e] openFreshChat session.create 失败");
+    throw new Error(created.error?.message ?? "[e2e] session.create 失败");
   }
+  return { sessionId, agentId: assistant.id };
+}
 
-  await page.goto(`/chat?sessionId=${sessionId}&agentId=${assistant.id}`);
+/**
+ * 每条 mock 测例必须开空会话。禁止 goto /chat 复用上一测残留消息/工具 pill。
+ */
+export async function openFreshChat(page: Page): Promise<Locator> {
+  const { sessionId, agentId } = await createE2eSession(`e2e-fresh-${Date.now()}`);
+
+  await page.goto(`/chat?sessionId=${sessionId}&agentId=${agentId}`);
   await expect(
     page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
-  ).toBeVisible({ timeout: 15_000 });
+  ).toBeVisible({ timeout: 10_000 });
   const input = page.getByTestId("chat-input").first();
-  await input.waitFor({ state: "visible", timeout: 30_000 });
-  await expect(input).toBeEnabled({ timeout: 30_000 });
+  await input.waitFor({ state: "visible", timeout: 10_000 });
+  await expect(input).toBeEnabled({ timeout: 10_000 });
   await expect(page.getByTestId("chat-stop")).toHaveCount(0);
   await expect(page.getByTestId("assistant-message-bubble")).toHaveCount(0);
-  await expect(page.getByTestId("workspace-select")).toContainText(/E2E 默认空间/, { timeout: 10_000 });
+  await expect(page.getByTestId("workspace-select")).toContainText(/E2E 默认空间/, { timeout: 8_000 });
   return input;
 }
 
@@ -98,8 +116,8 @@ export async function openBoundSession(
   await page.goto(`/chat?${qs.toString()}`);
   await expect(
     page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
-  ).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 30_000 });
+  ).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("chat-input").waitFor({ state: "visible", timeout: 10_000 });
 }
 
 /** Mock 套件：waitForChatReady = 开空会话，避免全量套件污染。 */
@@ -126,7 +144,7 @@ export async function waitForStreamingComplete(page: Page): Promise<void> {
         }
         return (await withText.count()) >= minCount;
       },
-      { timeout: 30_000, intervals: [200, 400, 800] },
+      { timeout: 15_000, intervals: [50, 100, 200] },
     )
     .toBe(true);
   await expect(page.getByTestId("chat-stop")).toHaveCount(0);
@@ -174,7 +192,7 @@ export async function expectThinkingTimeline(page: Page): Promise<void> {
 export async function expectAssistantAnswer(page: Page, text: string): Promise<void> {
   const { lastAssistantText: readLast } = await import("./realChatFixture");
   await expect
-    .poll(async () => readLast(page), { timeout: 15_000, intervals: [200, 400, 800] })
+    .poll(async () => readLast(page), { timeout: 10_000, intervals: [50, 100, 200] })
     .toContain(text);
 }
 

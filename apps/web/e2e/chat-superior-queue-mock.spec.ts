@@ -106,8 +106,8 @@ test.describe("Superior Queue Mock — 实时队列与单次消费", () => {
       // DB 已写入；前端靠 SSE 重放 / 3s 轮询 / merge 水合，不刷新也应出现
       await expect
         .poll(async () => page.getByTestId("chat-queue-panel").count(), {
-          timeout: 20_000,
-          intervals: [300, 500, 1000],
+          timeout: 8_000,
+          intervals: [50, 100, 200],
         })
         .toBe(1);
 
@@ -158,10 +158,10 @@ test.describe("Superior Queue Mock — 实时队列与单次消费", () => {
 
     // 通知正文与父回复各出现一次（Virtuoso 可能卸载离屏节点，故用 toBeVisible 而非 count）
     await expect(page.getByText("子 Agent 进度通知：任务进行中").first()).toBeVisible({
-      timeout: 30_000,
+      timeout: 12_000,
     });
     await expect(page.getByText("收到子 Agent 通知").first()).toBeVisible({
-      timeout: 30_000,
+      timeout: 12_000,
     });
 
     // 通知气泡不得连发两遍
@@ -177,7 +177,7 @@ test.describe("Superior Queue Mock — 实时队列与单次消费", () => {
           );
           return items.filter((i) => i.kind === "child_notify").length;
         },
-        { timeout: 20_000, intervals: [500, 1000] },
+        { timeout: 8_000, intervals: [50, 100, 200] },
       )
       .toBe(0);
 

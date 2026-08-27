@@ -35,16 +35,16 @@ test.describe("Notify Parent Mock — 子 Agent 主动通知父会话", () => {
           >("agent.listSessionQueueItems", { sessionId: parentSessionId });
           return items.find((i) => i.kind === "child_notify");
         },
-        { timeout: 15_000, intervals: [500, 1000] },
+        { timeout: 8_000, intervals: [50, 100, 200] },
       )
       .toBeTruthy();
 
     // 父 Agent 对通知生成回复（用文案可见性，避免 Virtuoso 离屏卸载导致 count 假失败）
     await expect(page.getByText("子 Agent 进度通知：任务进行中").first()).toBeVisible({
-      timeout: 30_000,
+      timeout: 12_000,
     });
     await expect(page.getByText("收到子 Agent 通知").first()).toBeVisible({
-      timeout: 30_000,
+      timeout: 12_000,
     });
     await expectAssistantAnswer(page, "收到子 Agent 通知");
   });

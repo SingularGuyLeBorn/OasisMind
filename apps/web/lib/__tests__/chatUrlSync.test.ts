@@ -208,3 +208,28 @@ describe("nextChatSearchFromFocus", () => {
     expect(new URLSearchParams(r.nextSearch).get("sessionId")).toBe("stored");
   });
 });
+
+describe("首屏深链 vs storage（完整两帧，不经过 React ref）", () => {
+  it("空焦点 adopt 深链；水合出旧焦点后仍纠回深链，且不把 URL 写回旧会话", () => {
+    expect(
+      adoptAcrossFrames([
+        { url: "deep", focused: null },
+        { url: "deep", focused: "stored" },
+      ]),
+    ).toEqual(["deep"]);
+    expect(
+      shouldCorrectFocusAfterHydrate({
+        tabsHydrated: true,
+        sessionFromUrl: "deep",
+        focusedSessionId: "stored",
+      }),
+    ).toBe(true);
+    const write = nextChatSearchFromFocus({
+      search: "sessionId=deep",
+      focusedSessionId: "stored",
+      prevFocusedSessionId: null,
+    });
+    expect(write.changed).toBe(false);
+    expect(new URLSearchParams(write.nextSearch).get("sessionId")).toBe("deep");
+  });
+});
