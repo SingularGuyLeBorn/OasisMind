@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatToolErrorHint, formatToolResultHint, formatToolTimingHint } from "../toolResultHint.js";
+import {
+  formatToolErrorHint,
+  formatToolResultHint,
+  formatToolTimingHint,
+  parseApprovalPending,
+} from "../toolResultHint.js";
 
 describe("formatToolTimingHint", () => {
   it("web_search 摘要", () => {
@@ -36,6 +41,21 @@ describe("formatToolTimingHint", () => {
   it("formatToolResultHint 成功与失败", () => {
     expect(formatToolResultHint({ elapsedMs: 10, engine: "tavily" })).toContain("10ms");
     expect(formatToolResultHint({ error: "timeout" })).toContain("失败");
+  });
+
+  it("审批挂起不是失败摘要", () => {
+    expect(
+      parseApprovalPending({
+        error: "需要人工审批",
+        approvalPending: { approvalId: "appr_1", toolName: "memory_create" },
+      })?.approvalId,
+    ).toBe("appr_1");
+    expect(
+      formatToolResultHint({
+        error: "需要人工审批",
+        approvalPending: { approvalId: "appr_1", toolName: "memory_create" },
+      }),
+    ).toBe("待审批");
   });
 
   it("todo_write 结果优先用 summary", () => {

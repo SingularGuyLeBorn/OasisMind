@@ -1,12 +1,13 @@
 ---
-name: video-notes
-description: 视频链接做笔记：优先字幕，否则本地下音频 + Whisper STT，再整理成文章
-kind: procedural
+name: "video-notes"
+description: "视频链接做笔记：优先字幕，否则本地下音频 + Whisper STT，再整理成文章"
+icon: "Wand2"
+trigger: "/video-notes"
 enabled: true
+kind: procedural
+tags: []
 version: "0.1.0"
-author: OasisMind
 ---
-
 # video-notes — 视频 → 逐字稿 → 文章
 
 用户场景：扔一个视频链接 → 做笔记 → 可写成知识库文章。  
@@ -47,8 +48,10 @@ pip install -U faster-whisper yt-dlp
 | `media_download` | yt-dlp 抽 mp3 |
 | `audio_transcribe` | 本地 Whisper → `.transcript.txt` |
 | `video_notes` | 下载+转写一站式 |
-| `read_file` | 读全文逐字稿 |
+| `run_shell` | 本地后处理：切片、重命名、格式转换、Whisper 参数调优 |
+| `read_file` | 读全文逐字稿（配合 offset 分段，RLM 纪律） |
 | `post_create` | 落花园 |
+| `memory_daily_append` | 关键片段、时间戳、待办即时捕获 |
 
 ## 超时注意
 

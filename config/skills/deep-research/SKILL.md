@@ -5,6 +5,8 @@ icon: "Wand2"
 trigger: "/deep-research"
 enabled: true
 kind: procedural
+tags: []
+version: "1.0.0"
 ---
 # Deep Research（OasisMind 精简版）
 
@@ -21,13 +23,17 @@ kind: procedural
 | 步骤 | 工具 |
 |------|------|
 | 网页广搜 | `web_search`；登录墙/强反爬可改 `dokobot_search`（本机真实 Chrome，需扩展+CLI） |
+| 指定 URL 抓取 | `scrape_web_page`（单页/列表页精准抓取，非搜索） |
 | arXiv 检索 | `search_arxiv` |
 | 学术检索 | `literature_search`（openalex / arxiv / semantic_scholar / all） |
 | arXiv 全文获取 | `fetch_arxiv`（arXiv ID）→ `download_file` 下载 PDF |
 | 单篇详情 | `literature_get`（DOI / arXiv id） |
-| 精读网页 | 公开页优先 `read_article`（长文 offset 翻页）；登录墙 / 已在 Chrome 打开的页用 `dokobot_read`；未装 Dokobot 或失败再 `platform_login` + `read_article` |
+| 精读网页/长文 | 公开页优先 `read_article`（长文 offset 翻页，见 RLM 纪律）；登录墙 / 已在 Chrome 打开的页用 `dokobot_read`；未装 Dokobot 或失败再 `platform_login` + `read_article` |
+| 本地处理/转换 | `run_shell`（tsx/Node/Python/ffmpeg 等本地脚本） |
+| 读取本地产物 | `read_file`（Workspace/产物路径，配合 offset 分段） |
 | 需点击/填表 | `skill_view browser-drive` + `webbridge_command`（不要为读正文开 WebBridge） |
 | PDF/Word 入库 | `document_to_markdown` |
+| 过程记录/碎片捕获 | `memory_daily_append`（关键发现、金句、待办即时落盘） |
 | 报告落盘 | `write_file`（Workspace）或 `post_create`（数字花园） |
 
 **禁止**调用 `future` CLI 或不存在的 `search_paper` / `parse_doc`。Dokobot / WebBridge 都是场景手段，不单独为一工具开 Skill。
@@ -62,3 +68,15 @@ kind: procedural
 - 区分「已核实」与「单源传闻」。
 - 长文勿整页塞进对话：先落盘再 `read_file` 分段。
 - 创作向：结尾给 3–5 条可写进文章的「素材钩子」（论点/金句/数据）。
+
+## 分段读纪律（RLM —— Read Long Material）
+
+- 超长材料（>8k 字）一律 **path + offset 变量化分段读**，勿整文件灌窗。
+- `read_article` / `read_file` 返回 `nextOffset` / `truncated` 时，直接翻页直到 `truncated=false`。
+- 看到 `[TRUNCATED]` 标记时，**禁止**基于残缺内容下结论；必须继续读取后续段落。
+- 关键词定位：可带 `expect_keywords`（3–8 个）让工具在 metadata 记录命中偏移，后续 `read_file` 直接跳转。
+
+## 过程记录习惯
+
+- 关键发现、金句、待办、跨源验证点，即时用 `memory_daily_append` 落盘（按日期自动分文件，便于过夜复盘）。
+- 会话结束前可 `tool_results_list` 回顾本轮所有工具产物路径，防漏捡。

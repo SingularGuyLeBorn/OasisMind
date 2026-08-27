@@ -1,0 +1,9 @@
+{
+  "id": "G11",
+  "title": "本地压图不走第三方",
+  "userMessage": "把 raw-photos 里的相机原图压到约 1MB 内，不要上传任何在线压图网站",
+  "expectToolsAnyOf": ["skill_view"],
+  "forbidTools": ["web_search", "write_file"],
+  "scenario": "eval_G11_piclite",
+  "notes": "先 skill_view(piclite-compress)；禁止搜 TinyPNG / 写 posts"
+}
