@@ -109,17 +109,42 @@ describe("shellRunner — host_restricted 绝对路径防线", () => {
   it("允许沙箱内绝对路径", async () => {
     const target = path.join(project, "test.txt");
     fs.writeFileSync(target, "hello", "utf8");
-    const r = await runShellRestricted(config, `cat "${target.replace(/\\/g, "/")}"`, { shell: "bash" });
+    const hostShell = process.platform === "win32" ? "powershell" : "bash";
+    const cmd =
+      process.platform === "win32"
+        ? `Get-Content -Raw '${target.replace(/'/g, "''")}'`
+        : `cat "${target.replace(/\\/g, "/")}"`;
+    const r = await runShellRestricted(config, cmd, { shell: hostShell });
     expect(r.stdout).toContain("hello");
   });
 
   it("URL 不被误伤", async () => {
-    const r = await runShellRestricted(config, "echo curl https://example.com", { shell: "bash" });
+    const hostShell = process.platform === "win32" ? "powershell" : "bash";
+    const r = await runShellRestricted(config, "echo curl https://example.com", { shell: hostShell });
     expect(r.stdout).toContain("https://example.com");
   });
 
   it("普通命令不受影响", async () => {
-    const r = await runShellRestricted(config, "node --version", { shell: "bash" });
-    expect(r.stdout).toMatch(/^v\d+/);
+    const hostShell = process.platform === "win32" ? "powershell" : "bash";
+    const r = await runShellRestricted(config, "node --version", { shell: hostShell });
+    expect(r.stdout).toMatch(/v\d+/);
+  });
+
+  it("Windows 上 bash 不用 WSL 存根：有 Git Bash 则用之，否则明确报错", async () => {
+    if (process.platform !== "win32") return;
+    const gitBash = [
+      process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, "Git", "bin", "bash.exe"),
+      process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Git", "bin", "bash.exe"),
+      process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "Programs", "Git", "bin", "bash.exe"),
+    ].find((p) => p && fs.existsSync(p));
+    if (gitBash) {
+      const r = await runShellRestricted(config, "echo hi", { shell: "bash" });
+      expect(r.stdout).toMatch(/hi/);
+      expect(r.shell.toLowerCase()).not.toContain("system32");
+      return;
+    }
+    await expect(runShellRestricted(config, "echo hi", { shell: "bash" })).rejects.toThrow(
+      /未找到可用的 bash|Git for Windows|powershell/,
+    );
   });
 });

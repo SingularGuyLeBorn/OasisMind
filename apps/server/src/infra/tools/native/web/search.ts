@@ -23,6 +23,7 @@ import {
 import type { NativeToolContext } from "../types.js";
 import type { PostEntity } from "../../../entityServices/postService.js";
 import { formatReadArticleFatalError } from "./article.js";
+import { assertPublicHttpUrl } from "../../../safeHttpUrl.js";
 
 interface InfoSourceSnapshot {
   name: string;
@@ -404,6 +405,7 @@ function isNoiseImageUrl(src: string): boolean {
 export async function articleImportTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 不能为空");
+  assertPublicHttpUrl(url);
 
   const started = Date.now();
   const method = args.method === "direct" ? undefined : "playwright";

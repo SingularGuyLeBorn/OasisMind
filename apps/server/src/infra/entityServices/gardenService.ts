@@ -189,6 +189,12 @@ export class GardenService extends BaseService<
         entity = this.formatEntity(created);
       }
       this.writeMetaFile(entity);
+      try {
+        const { notifyPostListChanged } = await import("../uiStateNotify.js");
+        await notifyPostListChanged(this.prisma, "garden.created");
+      } catch {
+        /* 推送失败不阻断写库 */
+      }
       return success({
         data: entity,
         operation: "create",
@@ -217,6 +223,12 @@ export class GardenService extends BaseService<
       });
       const entity = this.formatEntity(updated);
       this.writeMetaFile(entity);
+      try {
+        const { notifyPostListChanged } = await import("../uiStateNotify.js");
+        await notifyPostListChanged(this.prisma, "garden.updated");
+      } catch {
+        /* 推送失败不阻断写库 */
+      }
       return success({
         data: entity,
         operation: "update",
@@ -316,6 +328,12 @@ export class GardenService extends BaseService<
         where: { id },
         data: { deletedAt: new Date() },
       });
+      try {
+        const { notifyPostListChanged } = await import("../uiStateNotify.js");
+        await notifyPostListChanged(this.prisma, "garden.deleted");
+      } catch {
+        /* 推送失败不阻断写库 */
+      }
       return success({
         data: { id, title: existing.title, trashPath: fs.existsSync(trashDir) ? path.relative(this.config.projectRoot, trashDir).replace(/\\/g, "/") : null },
         operation: "delete",
@@ -384,6 +402,12 @@ export class GardenService extends BaseService<
         where: { id },
         data: { deletedAt: null },
       });
+      try {
+        const { notifyPostListChanged } = await import("../uiStateNotify.js");
+        await notifyPostListChanged(this.prisma, "garden.restored");
+      } catch {
+        /* 推送失败不阻断写库 */
+      }
       return success({
         data: {
           id,

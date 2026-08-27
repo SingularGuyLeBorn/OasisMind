@@ -65,6 +65,12 @@ export async function recordDeadLetterMail(
         source: input.source,
       },
     });
+    try {
+      const { notifyDeadLetterUpdated } = await import("./uiStateNotify.js");
+      await notifyDeadLetterUpdated(prisma);
+    } catch {
+      /* 推送失败不阻断审计 */
+    }
   } catch (err) {
     // DLQ 落表失败不阻断主流程，仅 warn
     console.warn("[webhookIdempotency] recordDeadLetter 异常:", err instanceof Error ? err.message : err);

@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 
 export const channelRouter = router({
@@ -17,10 +18,18 @@ export const channelRouter = router({
         },
         select: { id: true, name: true, sourceSlug: true, model: true },
       });
+      const defaultWeixinAgent = await ctx.prisma.agent.findFirst({
+        where: {
+          status: { not: "deleted" },
+          OR: [{ sourceSlug: "weixin-bot" }, { name: { contains: "微信" } }],
+        },
+        select: { id: true, name: true, sourceSlug: true, model: true },
+      });
       return {
         stats: getMessageGatewayStats(),
         /** 新 QQ 官方绑定默认落到的 Agent（sourceSlug=qq-bot） */
         defaultQqAgent: defaultQqAgent ?? null,
+        defaultWeixinAgent: defaultWeixinAgent ?? null,
         adapters: listChannelAdapters().map((a) => ({
           channel: a.channel,
           name: a.name,
@@ -31,7 +40,7 @@ export const channelRouter = router({
     }),
   listBindings: publicProcedure
     .meta({ description: "列出 IM 对端 ↔ 会话绑定。", aiReadable: true })
-    .input(z.object({ channel: z.enum(["qq", "feishu", "telegram"]).optional(), limit: z.number().int().min(1).max(200).optional() }).optional())
+    .input(z.object({ channel: z.enum(["qq", "feishu", "telegram", "weixin"]).optional(), limit: z.number().int().min(1).max(200).optional() }).optional())
     .query(async ({ ctx, input }) => {
       const { listChannelBindings } = await import("../channelBinding.js");
       return { items: await listChannelBindings(ctx.prisma, input ?? undefined) };
@@ -47,7 +56,7 @@ export const channelRouter = router({
     .meta({ description: "模拟一条 IM 入站（开发调试；需服务已 init MessageGateway）。", aiReadable: true })
     .input(
       z.object({
-        channel: z.enum(["qq"]),
+        channel: z.enum(["qq", "weixin"]),
         peerId: z.string().min(1).max(128),
         text: z.string().min(1).max(4000),
         chatId: z.string().max(128).optional(),
@@ -67,5 +76,24 @@ export const channelRouter = router({
         payload: { text: input.text },
         meta: { eventId: input.eventId || randomUUID() },
       });
+    }),
+  weixinStartLogin: publicProcedure
+    .meta({ description: "开始微信 ClawBot 扫码登录。", aiReadable: true })
+    .mutation(async () => {
+      const { getWeixinClawBotController } = await import("../channels/weixinClawBot.js");
+      const api = getWeixinClawBotController();
+      if (!api) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "微信通道未启动" });
+      }
+      return api.startQrLogin();
+    }),
+  weixinLogout: publicProcedure
+    .meta({ description: "断开微信 ClawBot 会话。", aiReadable: true })
+    .mutation(async () => {
+      const { getWeixinClawBotController } = await import("../channels/weixinClawBot.js");
+      const api = getWeixinClawBotController();
+      if (!api) return { ok: true as const };
+      await api.logout();
+      return { ok: true as const };
     }),
 });

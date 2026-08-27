@@ -4,6 +4,7 @@
  * - HuggingFace Hub REST API（无需 key；trending 走 API 而非 HTML 抓取）
  */
 import type { NativeToolDefinition, NativeToolHandler } from "../types.js";
+import { assertPublicHttpUrl } from "../../../safeHttpUrl.js";
 
 const FETCH_TIMEOUT_MS = 25_000;
 
@@ -14,6 +15,7 @@ function hfBase(): string {
 }
 
 async function fetchText(url: string, headers?: Record<string, string>): Promise<Response> {
+  assertPublicHttpUrl(url);
   try {
     return await fetch(url, {
       headers,

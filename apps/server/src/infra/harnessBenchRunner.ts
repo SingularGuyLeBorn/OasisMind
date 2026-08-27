@@ -25,7 +25,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   save_webpage: "把网页完整正文保存到本地再读",
   file_delete: "删除文件（软删到回收站）",
   write_file: "写文本文件到当前 Agent Workspace",
-  run_shell: "执行 shell 命令（沙箱）",
+  run_shell: "在主机上执行 shell 命令（非沙箱；host_restricted 仅拦危险片段与沙箱外路径）",
   spawn_subagent: "派子 Agent 执行带 LLM 的子任务",
   agent_inspect: "查看子 Agent 状态（不含消息内容）",
   async_task_run: "后台异步跑纯工具任务",

@@ -199,15 +199,22 @@ export async function swarmExportTraceTool(args: Record<string, unknown>, ctx: N
     ctx.sessionId ||
     "";
   if (!sessionId) throw new Error("sessionId 必填（或在会话内调用）");
+  const includeContent = args.includeContent === true;
+  const tier = ctx.agentSnapshot?.tier ?? "sub";
+  if (includeContent && tier !== "super" && sessionId !== ctx.sessionId) {
+    throw new Error(
+      "includeContent 仅超级 Agent 可导出其它会话正文；子 Agent 结果请走 agent_report_back。",
+    );
+  }
   const { exportSwarmTraceJsonl } = await import("../../../swarmTrace.js");
   const result = await exportSwarmTraceJsonl(ctx.prisma, ctx.config, {
     sessionId,
-    includeContent: args.includeContent === true,
+    includeContent,
     outRelPath: typeof args.outRelPath === "string" ? args.outRelPath : undefined,
   });
   return {
     ...result,
-    hint: "默认不含消息正文。评估协作效能时用此 JSONL；需要正文才传 includeContent=true。",
+    hint: "默认不含消息正文。评估协作效能时用此 JSONL；需要正文才传 includeContent=true（非 super 仅限当前会话）。",
   };
 }
 

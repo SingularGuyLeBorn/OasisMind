@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { parsePlatformUrl, isArticleFetchFatalError } from "../../../metablog/index.js";
 import { getRefererForUrl } from "../../../metablog/ocrBridge.js";
 import { resolveAgentFsPath, assertWriteAllowed } from "../../../writePolicy.js";
+import { assertPublicHttpUrl } from "../../../safeHttpUrl.js";
 import type { NativeToolContext } from "../types.js";
 import { formatReadArticleFatalError } from "./article.js";
 
@@ -44,15 +45,7 @@ function filenameFromContentDisposition(header: string | null): string | null {
 export async function downloadFileTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 不能为空");
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new Error(`url 非法：${url}`);
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("download_file 仅支持 http/https URL");
-  }
+  const parsed = assertPublicHttpUrl(url);
 
   const started = Date.now();
   const timeoutMs = Math.min(
@@ -165,6 +158,7 @@ export async function downloadFileTool(args: Record<string, unknown>, ctx: Nativ
 export async function saveWebpageTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   const url = String(args.url || "").trim();
   if (!url) throw new Error("url 不能为空");
+  assertPublicHttpUrl(url);
 
   const started = Date.now();
   const format = String(args.format || "both") as "html" | "markdown" | "both";

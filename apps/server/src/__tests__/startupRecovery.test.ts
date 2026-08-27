@@ -123,7 +123,7 @@ async function createStaleTask(data: {
   });
 }
 
-/** chatAgentStream 打桩：模拟真实注入（user 气泡携带 jobId 台账）+ emit done，不触 LLM */
+/** chatAgentStream 打桩：模拟真实注入（user 气泡携带 jobId 台账）+ assistant + 会话 completed，不触 LLM */
 function mockChatAgentStreamWithBubble() {
   return vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (s, _c, input, _inv, emit) => {
     await s.message.create({
@@ -133,6 +133,16 @@ function mockChatAgentStreamWithBubble() {
       toolResults: input.toolResults as never,
       source: input.source ?? "user",
     } as any);
+    await s.message.create({
+      sessionId: input.sessionId!,
+      role: "assistant",
+      content: "已消化",
+      source: "system",
+    } as any);
+    await s.prisma.chatSession.update({
+      where: { id: input.sessionId! },
+      data: { status: "completed" },
+    });
     emit({
       type: "done",
       sessionId: input.sessionId!,
@@ -173,7 +183,7 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
     delete process.env.MOCK_LLM;
   });
 
-  it("C1 动作 1+2：僵尸 Task 标 failed（文案正确、不自动重跑）+ 僵尸 running 会话标 paused；连跑两次幂等", async () => {
+  it("C1 动作 1+2：僵尸 Task 标 failed（文案正确、不自动重跑）+ 僵尸 running 会话标 interrupted；连跑两次幂等", async () => {
     const ctx = await createContextInner();
     const agentId = await createAgent(ctx, "C1", "manager");
     const zombieSessionId = await createSession(ctx, agentId, { status: "running" });
@@ -256,7 +266,15 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
   }, 20_000);
 
   it("C3 动作 3：superior 孤儿队列项 → drain 重注册 → 项被消费 + AgentMessage 记账 consumed", async () => {
-    process.env.MOCK_LLM = "true";
+    // superior drain 走 prepareAgentRun → runAgentLoopStream，不经 chatAgentStream
+    const loopSpy = vi.spyOn(agentStream, "runAgentLoopStream").mockImplementation(async () => ({
+      content: "已消化",
+      toolCalls: [],
+      tokenUsage: { prompt: 0, completion: 0, total: 0 },
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    }));
     const ctx = await createContextInner();
     const parentAgentId = await createAgent(ctx, "C3父", "manager");
     const subAgentId = await createAgent(ctx, "C3子", "sub", parentAgentId);
@@ -295,9 +313,10 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       // 旧实现无重注册：孤儿队列项永久滞留（listBySession 恒 1）、user 消息永不写入，以下断言必红
       expect(r.superiorDrainsRegistered).toBe(1);
 
-      // drain 自动处理：队列项被 consume（删除即认领）→ prepareAgentRun 写 user 消息并起流（MOCK_LLM）
+      // drain 自动处理：队列项被 consume（删除即认领）→ prepareAgentRun 写 user 消息并起流（spy）
       await vi.waitFor(
         async () => {
+          expect(loopSpy).toHaveBeenCalled();
           const remaining = await ctx.services.sessionQueueItem.listBySession(subSessionId);
           expect(remaining).toHaveLength(0);
           const userMsg = await prisma.chatMessage.findFirst({

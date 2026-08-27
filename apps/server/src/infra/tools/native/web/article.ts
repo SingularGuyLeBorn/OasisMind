@@ -7,6 +7,7 @@ import {
   isArticleFetchFatalError,
 } from "../../../metablog/index.js";
 import { AGENT_TOOL_RESULT_MAX_CHARS } from "@oasismind/shared";
+import { assertPublicHttpUrl } from "../../../safeHttpUrl.js";
 import type { NativeToolContext } from "../types.js";
 
 // 与 reactLoop snapshot.toolResultMaxChars 同源（shared AGENT_TOOL_RESULT_MAX_CHARS）
@@ -51,6 +52,7 @@ export function formatReadArticleFatalError(url: string, err: unknown): Error {
 export async function readArticleTool(args: Record<string, unknown>, _ctx: NativeToolContext) {
   const url = String(args.url || "");
   if (!url) throw new Error("url 不能为空");
+  assertPublicHttpUrl(url);
 
   const started = Date.now();
   let result;

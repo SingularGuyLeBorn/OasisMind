@@ -30,7 +30,23 @@ export interface MessageEntity {
   createdAt: Date;
 }
 
-function messageUpsertPayload(entity: MessageEntity) {
+/** SSE `message_upserted` 载荷源：MessageService 实体与 chatTree 追加结果共用（attachments 在树消息上可选）。 */
+export type MessageUpsertSource = {
+  id: string;
+  role: string;
+  content: string;
+  parentId?: string | null;
+  label?: string | null;
+  kind?: string | null;
+  attachments?: unknown;
+  toolCalls?: unknown;
+  toolResults?: unknown;
+  tokenUsage?: unknown;
+  source?: string | null;
+  createdAt: Date | string;
+};
+
+export function messageUpsertPayload(entity: MessageUpsertSource) {
   return {
     id: entity.id,
     role: entity.role,

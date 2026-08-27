@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import http from "http";
 import { execFileSync } from "child_process";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 import {
   executeNativeTool,
   buildNativeToolSchemas,
@@ -2057,6 +2057,13 @@ describe("native:article_import", () => {
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
     "base64",
   );
+
+  beforeAll(() => {
+    process.env.OM_ALLOW_PRIVATE_HTTP = "1";
+  });
+  afterAll(() => {
+    delete process.env.OM_ALLOW_PRIVATE_HTTP;
+  });
 
   function startLocalServer(): Promise<{ url: string; close: () => void }> {
     return new Promise((resolve) => {

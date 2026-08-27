@@ -472,6 +472,12 @@ export async function upsertInboxItem(
     if (sourceAt) data.sourceAt = sourceAt;
     const updated = await prisma.inboxItem.update({ where: { id: existing.id }, data });
     await upsertInboxFts(prisma, updated);
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(prisma, "upsert");
+    } catch {
+      /* 推送失败不阻断写库 */
+    }
     return { id: updated.id, created: false, title: updated.title, url: updated.url };
   }
   const created = await prisma.inboxItem.create({
@@ -490,6 +496,12 @@ export async function upsertInboxItem(
     },
   });
   await upsertInboxFts(prisma, created);
+  try {
+    const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+    await notifyInboxUpdated(prisma, "created");
+  } catch {
+    /* 推送失败不阻断写库 */
+  }
   return { id: created.id, created: true, title: created.title, url: created.url };
 }
 

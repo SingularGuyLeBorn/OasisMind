@@ -256,7 +256,7 @@ const PINME_TOOL_GUIDE = `## 公网部署（PinMe）
 用户要「写个小工具/HTML 小游戏并给公网链接」时：
 1. 用 write_file 写到当前 Workspace（如 \`demo/index.html\`），或对话里直接 \`\`\`html\`\`\` 预览（仅预览不部署）。
 2. 需要可分享链接时调用 **pinme_upload**（path 指向含 index.html 的目录；省略则自动找 dist/build/out/public）。
-3. 把返回的 url 发给用户。不要用 run_shell 调 pinme（密钥会被 shell 沙箱剥掉）。需配置 PINME_APPKEY。`;
+3. 把返回的 url 发给用户。不要用 run_shell 调 pinme（密钥会被子进程环境剔除）。需配置 PINME_APPKEY。`;
 
 const QQ_TOOL_GUIDE = `## QQ 官方 Bot
 - **正式回复由你发**：\`send_qq_text\` / \`send_qq_image\`，\`kind=answer\`（默认）。系统兜底不艾特。

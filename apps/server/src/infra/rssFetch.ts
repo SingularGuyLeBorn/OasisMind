@@ -9,6 +9,7 @@
 
 import type { PrismaClient } from "@prisma/client";
 import { createHash } from "crypto";
+import { assertPublicHttpUrl } from "./safeHttpUrl.js";
 
 export interface RssItem {
   guid: string;
@@ -142,6 +143,7 @@ function resolveUrl(url: string, base: string): string {
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<string> {
+  assertPublicHttpUrl(url, "rss url");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

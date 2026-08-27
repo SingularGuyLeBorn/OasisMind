@@ -18,7 +18,10 @@ export type UiStateNotifyKind =
   | "task_updated"
   | "goal_updated"
   | "session_tree_updated"
-  | "daily_flow_updated";
+  | "daily_flow_updated"
+  | "comment_updated"
+  | "inbox_updated"
+  | "dead_letter_updated";
 
 /** 会话树换叶后推到该会话（消息列表按活跃路径再水合） */
 export function notifySessionTreeUpdated(
@@ -162,6 +165,30 @@ export async function notifyPostListChanged(
     type: "post_list_changed",
     reason,
   });
+}
+
+export async function notifyCommentUpdated(
+  prisma: PrismaClient,
+  postId?: string,
+): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, {
+    type: "comment_updated",
+    postId,
+  });
+}
+
+export async function notifyInboxUpdated(
+  prisma: PrismaClient,
+  reason?: string,
+): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, {
+    type: "inbox_updated",
+    reason,
+  });
+}
+
+export async function notifyDeadLetterUpdated(prisma: PrismaClient): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, { type: "dead_letter_updated" });
 }
 
 /** 每日看板写点后推送（/daily 与跨标签） */

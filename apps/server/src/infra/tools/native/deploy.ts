@@ -239,7 +239,7 @@ const DEPLOY_DEFS: NativeToolDefinition[] = [
     name: "pinme_upload",
     concurrencyClass: "C",
     description:
-      "【公网部署】用 PinMe 把静态站点（含 index.html 的目录）上传到公网，返回可分享 URL。适合「写个小工具/HTML 小游戏 → 立刻给链接」。path 省略时自动找 Workspace 或项目下的 dist/build/out/public。需 PINME_APPKEY（或本机已 pinme login）。不要用 run_shell 调 pinme（密钥会被 shell 沙箱剥掉）。",
+      "【公网部署】用 PinMe 把静态站点（含 index.html 的目录）上传到公网，返回可分享 URL。适合「写个小工具/HTML 小游戏 → 立刻给链接」。path 省略时自动找 Workspace 或项目下的 dist/build/out/public。需 PINME_APPKEY（或本机已 pinme login）。不要用 run_shell 调 pinme（密钥会被子进程环境剔除）。",
     parameters: {
       type: "object",
       properties: {

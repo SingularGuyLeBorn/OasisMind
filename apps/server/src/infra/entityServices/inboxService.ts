@@ -157,6 +157,12 @@ export class InboxService extends BaseService<
     } catch (err) {
       console.warn("[inbox] FTS afterCreate 失败:", err instanceof Error ? err.message : err);
     }
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(this.prisma, "created");
+    } catch {
+      /* 推送失败不阻断写库 */
+    }
   }
 
   protected override async afterDelete(existing: any): Promise<void> {
@@ -165,6 +171,12 @@ export class InboxService extends BaseService<
       await deleteFtsRow(this.prisma, "inbox", existing.id);
     } catch (err) {
       console.warn("[inbox] FTS afterDelete 失败:", err instanceof Error ? err.message : err);
+    }
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(this.prisma, "deleted");
+    } catch {
+      /* 推送失败不阻断写库 */
     }
   }
 
@@ -185,6 +197,12 @@ export class InboxService extends BaseService<
       } catch (err) {
         console.warn("[inbox] FTS bulkDelete 失败:", err instanceof Error ? err.message : err);
       }
+    }
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(this.prisma, "bulkDelete");
+    } catch {
+      /* 推送失败不阻断写库 */
     }
     return { deleted: found.length };
   }
@@ -439,6 +457,12 @@ export class InboxService extends BaseService<
       where: { id: { in: input.ids } },
       data: { status: "ignored" },
     });
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(this.prisma, "ignored");
+    } catch {
+      /* 推送失败不阻断写库 */
+    }
     return { success: true, count: result.count };
   }
 
@@ -514,6 +538,12 @@ export class InboxService extends BaseService<
       } catch (err) {
         errors.push(`${item.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
+    }
+    try {
+      const { notifyInboxUpdated } = await import("../uiStateNotify.js");
+      await notifyInboxUpdated(this.prisma, "distilled");
+    } catch {
+      /* 推送失败不阻断写库 */
     }
     return { distilled, errors, garden };
   }

@@ -45,7 +45,7 @@ export function prefixGroupSpeaker(
   return `【群成员 ${label}】\n${text}`;
 }
 
-export type ImChannel = "qq" | "feishu" | "telegram" | "onebot";
+export type ImChannel = "qq" | "feishu" | "telegram" | "onebot" | "weixin";
 
 export type UnifiedMessage = {
   envelope: {
@@ -146,7 +146,7 @@ export function parseImInboundAttachment(raw: unknown): ImInboundQueueMeta | nul
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const channel = o.channel;
-  if (channel !== "qq" && channel !== "feishu" && channel !== "telegram" && channel !== "onebot") {
+  if (channel !== "qq" && channel !== "feishu" && channel !== "telegram" && channel !== "onebot" && channel !== "weixin") {
     return null;
   }
   const peerId = typeof o.peerId === "string" ? o.peerId.trim() : "";
@@ -246,6 +246,9 @@ export function initMessageGateway(next: GatewayDeps): void {
  */
 export async function handleIncomingMessage(msg: UnifiedMessage): Promise<GatewayHandleResult> {
   if (!deps) return { ok: false, error: "MessageGateway 未初始化" };
+  if (msg.envelope.channel === "telegram") {
+    return { ok: false, error: "Telegram 通道尚未实现，请使用 QQ / 飞书 / 微信。" };
+  }
   let text = msg.payload.text?.trim();
   const inboundAttachments = msg.payload.attachments?.length ? msg.payload.attachments : undefined;
   if (!text && !inboundAttachments?.length) return { ok: false, error: "空消息" };

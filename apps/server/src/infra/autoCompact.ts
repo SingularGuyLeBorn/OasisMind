@@ -698,6 +698,31 @@ export async function persistCompactResult(
   }
 
   const boundaryMessageId = txResult.boundaryMessageId;
+  if (boundaryMessageId) {
+    try {
+      const { getStreamHub } = await import("./sessionStreamHub.js");
+      getStreamHub()?.pushExternalEvent(sessionId, {
+        type: "message_upserted",
+        sessionId,
+        message: {
+          id: boundaryMessageId,
+          role: "assistant",
+          content: boundaryContent,
+          parentId: null,
+          label: null,
+          kind: "compact",
+          toolCalls: boundaryToolCalls,
+          toolResults: undefined,
+          tokenUsage: undefined,
+          attachments: undefined,
+          source: "system",
+          createdAt: new Date().toISOString(),
+        },
+      });
+    } catch {
+      /* StreamHub 未初始化，忽略 */
+    }
+  }
   if (boundaryMessageId && options?.emit) {
     options.emit({
       type: "compact_end",

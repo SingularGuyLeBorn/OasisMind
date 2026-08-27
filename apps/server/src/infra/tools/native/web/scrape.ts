@@ -2,11 +2,13 @@
  * Native Web 域 — scrape_web_page
  */
 import { scrapePage, detectPlatform } from "../../../metablog/index.js";
+import { assertPublicHttpUrl } from "../../../safeHttpUrl.js";
 import type { NativeToolContext } from "../types.js";
 
 export async function scrapeWebPageTool(args: Record<string, unknown>, _ctx: NativeToolContext) {
   const url = String(args.url || "");
   if (!url) throw new Error("url 不能为空");
+  assertPublicHttpUrl(url);
 
   const started = Date.now();
   const result = await scrapePage({

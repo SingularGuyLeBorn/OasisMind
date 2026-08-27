@@ -390,7 +390,7 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
             data: { status: nextStatus },
           });
         } catch (settleErr) {
-          // 归位失败不阻塞流本身：R-2 重启首扫会把尸体 running 再标 paused，留人工恢复
+          // 归位失败不阻塞流本身：R-2 重启首扫会把尸体 running 再标 interrupted，留人工恢复
           console.warn(`[session.resume] 终态归位失败 session=${input.id}:`, settleErr);
         }
       });

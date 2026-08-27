@@ -149,7 +149,24 @@ export type ChannelBindingRow = {
   updatedAt: Date;
 };
 
-async function resolveDefaultAgentId(prisma: PrismaClient): Promise<{ id: string; model: string }> {
+async function resolveDefaultAgentId(
+  prisma: PrismaClient,
+  channel?: ImChannel,
+): Promise<{ id: string; model: string }> {
+  const preferredSlug = channel === "weixin" ? "weixin-bot" : channel === "qq" ? "qq-bot" : undefined;
+  if (preferredSlug) {
+    const preferred = await prisma.agent.findFirst({
+      where: {
+        status: { not: "deleted" },
+        OR: [
+          { sourceSlug: preferredSlug },
+          ...(preferredSlug === "weixin-bot" ? [{ name: { contains: "微信" } }] : [{ name: { contains: "QQ" } }]),
+        ],
+      },
+      select: { id: true, model: true },
+    });
+    if (preferred) return { id: preferred.id, model: preferred.model || DEFAULT_LLM_MODEL };
+  }
   const qqBot = await prisma.agent.findFirst({
     where: {
       status: { not: "deleted" },
@@ -262,9 +279,9 @@ export async function resolveOrCreateChannelBinding(
     resolved = { id: a.id, model: a.model || DEFAULT_LLM_MODEL };
   } else if (input.channel === "onebot") {
     const dedicated = await resolveDailyFragmentsAgent(prisma, _services, config);
-    resolved = dedicated ?? (await resolveDefaultAgentId(prisma));
+    resolved = dedicated ?? (await resolveDefaultAgentId(prisma, input.channel));
   } else {
-    resolved = await resolveDefaultAgentId(prisma);
+    resolved = await resolveDefaultAgentId(prisma, input.channel);
   }
 
   // 侧栏标题：私聊标用户 openid；群聊标群（共享 session，不掺单个说话人）
@@ -280,7 +297,11 @@ export async function resolveOrCreateChannelBinding(
   });
   const basePrompt = agentRow?.systemPrompt?.trim() || "你是 OasisMind 助手。";
   const channelLabel =
-    input.channel === "onebot" || input.channel === "qq" ? "QQ" : input.channel;
+    input.channel === "onebot" || input.channel === "qq"
+      ? "QQ"
+      : input.channel === "weixin"
+        ? "微信"
+        : input.channel;
   const imFormatRule =
     `\n\n## 当前渠道格式约束\n` +
     `当前通过 ${channelLabel} / IM 渠道回复用户。请使用纯文本，不要使用 Markdown 语法（如 ** 加粗、- 列表、## 标题、[文本](链接) 链接标记、\`代码\` 等）。公式也尽量用普通文字描述，保持简洁自然。`;

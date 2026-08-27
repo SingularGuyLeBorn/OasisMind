@@ -6,6 +6,7 @@
  */
 
 import { execFile } from "child_process";
+import fs from "fs";
 import { promisify } from "util";
 import path from "path";
 import type { AppConfig } from "./config.js";
@@ -154,11 +155,43 @@ export function resolveShellCwd(config: AppConfig, cwdArg?: string, rootDir?: st
   return abs;
 }
 
+/** Windows 上 PATH 的 bash.exe 经常是未装发行版的 WSL 存根，跑出来是 UTF-16 商店广告。 */
+function isWindowsWslBashStub(absPath: string): boolean {
+  const n = absPath.replace(/\\/g, "/").toLowerCase();
+  return (
+    n.endsWith("/system32/bash.exe") ||
+    n.endsWith("/syswow64/bash.exe") ||
+    n.includes("/windowsapps/")
+  );
+}
+
+/** [OM-FREEPLAY] Git for Windows 的常见安装位；未指定其它探测顺序。 */
+function resolveWindowsGitBash(): string | null {
+  const candidates = [
+    process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, "Git", "bin", "bash.exe"),
+    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Git", "bin", "bash.exe"),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "Programs", "Git", "bin", "bash.exe"),
+  ].filter((p): p is string => Boolean(p));
+  for (const c of candidates) {
+    if (fs.existsSync(c) && !isWindowsWslBashStub(c)) return c;
+  }
+  return null;
+}
+
 function resolveShellExecutable(config: AppConfig, shell?: string): { file: string; argsPrefix: string[] } {
   const prefer = shell || config.shell.shell || "auto";
   const isWin = process.platform === "win32";
 
   if (prefer === "bash") {
+    if (isWin) {
+      const gitBash = resolveWindowsGitBash();
+      if (!gitBash) {
+        throw new Error(
+          "未找到可用的 bash。Windows 上 PATH 里的 bash.exe 通常是未安装发行版的 WSL 存根；请安装 Git for Windows，或把 shell 设为 powershell。",
+        );
+      }
+      return { file: gitBash, argsPrefix: ["-lc"] };
+    }
     return { file: "bash", argsPrefix: ["-lc"] };
   }
   if (prefer === "cmd") {

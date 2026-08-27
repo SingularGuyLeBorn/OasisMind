@@ -88,6 +88,16 @@ export const sessionRouter = router({
           source: msg.source ?? undefined,
         });
         idMap.set(msg.id, created.id);
+        try {
+          const { messageUpsertPayload } = await import("../entityServices/messageService.js");
+          getStreamHub()?.pushExternalEvent(newSession.id, {
+            type: "message_upserted",
+            sessionId: newSession.id,
+            message: messageUpsertPayload(created),
+          });
+        } catch {
+          /* hub 未就绪不阻断 fork */
+        }
       }
 
       return {
