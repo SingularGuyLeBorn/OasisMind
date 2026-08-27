@@ -10,7 +10,7 @@ describe("notifySubagentSessionUpdate progress 元信息", () => {
     vi.doMock("../infra/sessionStreamHub.js", () => ({
       getStreamHub: () => ({ pushExternalEvent }),
     }));
-    const { notifySubagentSessionUpdate } = await import("../infra/asyncJobs/index.js");
+    const { notifySubagentSessionUpdate } = await import("../infra/asyncJobs/delivery.js");
     await notifySubagentSessionUpdate({
       parentSessionId: "parent-1",
       subagentSessionId: "child-1",
@@ -23,8 +23,11 @@ describe("notifySubagentSessionUpdate progress 元信息", () => {
         lastToolName: "web_search",
       },
     });
-    expect(pushExternalEvent).toHaveBeenCalledTimes(1);
-    const [sid, ev] = pushExternalEvent.mock.calls[0]!;
+    const updates = pushExternalEvent.mock.calls.filter(
+      (call) => (call[1] as { type?: string } | undefined)?.type === "subagent_session_update",
+    );
+    expect(updates).toHaveLength(1);
+    const [sid, ev] = updates[0] as [string, Record<string, unknown>];
     expect(sid).toBe("parent-1");
     expect(ev.type).toBe("subagent_session_update");
     expect(ev.progress).toEqual({
