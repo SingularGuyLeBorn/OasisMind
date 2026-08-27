@@ -1,6 +1,6 @@
 # OasisMind 未来功能规划
 
-> 只列**尚未做完**的项。已落地能力见 `AGENTS.md`「当前状态与近期变更」与 `design-decisions.md`。
+> 只列**尚未做完**的项。已落地能力见 `CHANGELOG.md` 与 `design-decisions.md`。
 
 ---
 

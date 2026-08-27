@@ -10,11 +10,11 @@
 > | **Compose** | `useSessionComposeState` | `userQueue`；`asyncOverlays`；`optimistic`；`queueDraining`；`consumedDeliveries` |
 > | **服务端** | Prisma + `SessionStreamHub` + `AsyncJobOrchestrator` | `ChatMessage`；`SessionQueueItem`；`Task`（池调度 + 可选异步投递）；`AgentMessage`（非 autoRun 收件箱） |
 >
-> 队列消费规则（前端 `drainAllPendingQueues`）：  
-> 1. **优先级**：未 pinned 的 `async-result` > `user` / `superior`  
-> 2. **按 session 独立**：流结束后优先消费**刚结束流的 session**，再扫描其它有待消费项的 session  
-> 3. **后台不抢视图**：消费非当前视图 session 时 `keepCurrentView=true`，不改 URL / `sessionId`  
-> 4. **异步投递后台续跑**：服务端 `autoConsumeAsyncDelivery` 可在无前端时 CLAIM Task 并 `hub.start` 父会话流
+> 队列消费规则（前端 `useChatQueueDrain` 只 drain `user` / `child_notify`）：  
+> 1. **`async-result` 不由前端消费**：服务端 `autoConsumeAsyncDelivery` CLAIM 后注入父会话流；前端只 ACK / 画 overlay  
+> 2. **`superior` 仅服务端 drain**（`enqueueSuperiorQueueDrain`）；前端队首是 superior 则停  
+> 3. **按 session 独立**：流结束后优先消费**刚结束流的 session**，再扫描其它有待消费项的 session  
+> 4. **后台不抢视图**：消费非当前视图 session 时 `keepCurrentView=true`，不改 URL / `sessionId`
 >
 > 最后更新：2026-07-11
 

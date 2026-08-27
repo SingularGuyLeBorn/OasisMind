@@ -49,8 +49,8 @@
 - DB：`Agent.heartbeat`（JSON：`enabled/cron/goal/lastRunAt/lastRunStatus/consecutiveFailures/loopContract?`）
 - DB：`Agent.heartbeatSuspendedAt`（连续失败熔断暂停时刻；`null` = 未暂停）
 - 可选：`Agent.heartbeatModel`（心跳用便宜模型；空则用 Agent 默认 model）
-- Markdown 源：`content/agents/*.md` frontmatter 的 `heartbeat:` 段（`db:sync` 双向）
-- 超级 Agent 默认模板：`content/agents/_templates/super.md`
+- Markdown 源：`config/agents/*.md` frontmatter 的 `heartbeat:` 段（`db:sync` 双向）
+- 超级 Agent 默认模板：`config/agents/_templates/super.md`
 
 ---
 
@@ -103,7 +103,7 @@ Trigger（**`/triggers`**）是第三类：事件驱动，不是 cron 心跳。
 | `apps/web/app/agents/page.tsx` | 心跳 UI（列表摘要 + 编辑表单） |
 | `apps/server/src/infra/heartbeatEngine.ts` | 调度与熔断 |
 | `packages/shared/src/schemas.ts` | `heartbeatConfigSchema` |
-| `content/agents/_templates/super.md` | 超级 Agent 默认心跳 |
+| `config/agents/_templates/super.md` | 超级 Agent 默认心跳 |
 | `apps/web/app/tasks/page.tsx` | 系统 Task 管理 |
 | `config.yaml` → `heartbeat.loopContract` | 全局 Loop Contract 默认 |
 

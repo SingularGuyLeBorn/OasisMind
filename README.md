@@ -20,8 +20,6 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 
 **见微（OasisMind）** 因此而生：希望它成为真正的**数字主力**——常驻、本地、不离场；每天提醒你昨晚还有什么没看、没做；一周过去了，哪些事还在晾着。见微知著：从细处积累，看见自己。
 
-> 产品曾用名 OasisMind。仓库与 npm 工作区包名（`@oasismind/*`）仍处过渡期，用户可见品牌以 **见微 / OasisMind** 为准。
-
 ---
 
 ## 项目简介
@@ -63,7 +61,7 @@ LLM 领域里，为了对抗 Transformer 的平方复杂度，已经出现了诸
 ```bash
 # 1. 克隆仓库
 git clone <repository-url>
-cd OasisMind   # 或本地目录名 OasisMind（过渡期）
+cd OasisMind
 
 # 2. 安装依赖
 pnpm install
@@ -252,7 +250,7 @@ L1 ~ L5 已全部落地，项目处于**功能完备、持续打磨**阶段。�
 - **记忆系统**：三层 scope（global / workspace / agent）、按类型差异化衰减、被调用重置衰减
 - **审批与邮件**：审批 scope、邮件通知、AgentMail webhook 支持邮件回复审批 / ask_user
 
-详细变更记录见 [`AGENTS.md`](AGENTS.md) 的「当前状态与近期变更」节。
+详细变更记录见 [`CHANGELOG.md`](CHANGELOG.md) 与 [`docs/development/design-decisions.md`](docs/development/design-decisions.md)。
 
 ---
 

@@ -28,4 +28,4 @@
 - L1-L5 全部落地
 - PR-1 ~ PR-6 + W1 ~ W5 重构套件合入 master
 - v8 全局任务池、v9 投递可靠性、v10 可重入与续跑
-- W1-W12 / v4 / v7 既有功能（见 AGENTS.md）
+- W1-W12 / v4 / v7 既有功能（见 `docs/development/design-decisions.md`）

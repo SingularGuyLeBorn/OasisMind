@@ -84,21 +84,23 @@ OasisMind/
 
 修改接口或实体字段时，**优先改这里**，再让前后端同时生效。
 
-### 2.4 `content/`
+### 2.4 `content/` 与 `config/`
 
-本地数据源，受 Git 跟踪：
+知识库 Markdown 在 `content/`（Git 跟踪）；Agent / Skill / Memory / Prompt / Task / MCP / 信源配置在 **`config/`**（Git 跟踪）。不要把 Agent 配成 `content/agents/`。
 
 | 目录 | 内容 |
 | --- | --- |
-| `content/posts/` | 博客文章 Markdown |
-| `content/agents/` | Agent 配置 Markdown |
-| `content/skills/` | Skill 配置 Markdown |
-| `content/memories/` | Memory 配置 Markdown |
-| `content/prompts/` | Prompt 模板 Markdown |
-| `content/tasks/` | Task 配置 JSON |
-| `content/mcp/` | MCP Server 配置 YAML |
-| `content/sources/` | 信息源配置 |
+| `content/{gardenId}/_garden.md` | 花园首页 |
+| `content/{gardenId}/*.md` | 该花园文章（含 `posts` / `knowledge` 等） |
+| `content/about/` | 关于页 |
 | `content/uploads/` | 上传文件 |
+| `config/agents/` | Agent 配置 Markdown |
+| `config/skills/` | Skill 配置 Markdown |
+| `config/memories/` | Memory 配置 Markdown |
+| `config/prompts/` | Prompt 模板 Markdown |
+| `config/tasks/` | Task 配置 JSON |
+| `config/mcp/` | MCP Server 配置 YAML |
+| `config/sources/` | 信息源配置 |
 
 ---
 
@@ -108,25 +110,28 @@ OasisMind/
 
 | # | 实体 | 管理页面 | 完整 CRUD | 数据源文件 |
 | --- | --- | --- | --- | --- |
-| 1 | Post | `/posts`、`/editor` | ✅ | `content/posts/*.md` |
-| 2 | Agent | `/agents` | ✅ | `content/agents/*.md` |
-| 3 | Skill | `/skills` | ✅ | `content/skills/*.md` |
-| 4 | McpServer | `/mcp` | ✅ | `content/mcp/*.yaml` |
-| 5 | Memory | `/memories` | ✅ | `content/memories/*.md` |
-| 6 | Prompt | `/prompts` | ✅ | `content/prompts/*.md` |
-| 7 | Task | `/tasks` | ✅ | `content/tasks/*.json` |
-| 8 | InfoSource | `/sources` | ✅ | `content/sources/*` |
+| 1 | Post | `/posts`、`/editor` | ✅ | `content/{gardenId}/*.md` |
+| 2 | Agent | `/agents` | ✅ | `config/agents/*.md` |
+| 3 | Skill | `/skills` | ✅ | `config/skills/*.md` |
+| 4 | McpServer | `/mcp` | ✅ | `config/mcp/*.yaml` |
+| 5 | Memory | `/memories` | ✅ | `config/memories/*.md` |
+| 6 | Prompt | `/prompts` | ✅ | `config/prompts/*.md` |
+| 7 | Task | `/tasks` | ✅ | `config/tasks/*.json` |
+| 8 | InfoSource | `/sources` | ✅ | `config/sources/*` |
 | 9 | ChatSession | Chat 左栏 | ✅ | DB |
 | 10 | ChatMessage | Chat 对话区 | ✅ | DB |
 | 11 | File | `/files` | ✅ | `content/uploads/` + DB |
 | 12 | GitRepo | `/git` | ✅ | DB |
 | 13 | Log | `/logs` | ✅ | DB |
 | 14 | Workspace | `/workspaces` | ✅ | DB |
-| 15 | Trigger | `/triggers` | ✅ | DB + `content/tasks/` |
+| 15 | Trigger | `/triggers` | ✅ | DB + `config/tasks/` |
 | 16 | Approval | `/approvals` | ✅ | DB |
 | 17 | Tool | `/tools` | ✅ | DB |
 | 18 | Run | `/runs` | ✅ | DB |
 | 19 | Credential | `/credentials` | ✅ | DB |
+| 20 | Garden | `/gardens` | ✅ | `content/{gardenId}/_garden.md` |
+| 21 | InboxItem | `/inbox` | ✅ | DB + 平台同步 |
+| 22 | Comment | 文章页留言 | ✅ | DB |
 
 ### 3.1 列表接口统一格式
 
@@ -185,6 +190,13 @@ const deleteMutation = useDelete();
 | `/approvals` | 审批管理 |
 | `/tools` | 工具管理 |
 | `/runs` | 运行记录 |
+| `/cron` | Agent 定时 briefing |
+| `/channels` | IM 通道（QQ / 飞书 / 微信） |
+| `/daily` | 每日看板 |
+| `/inbox` | 知识收集队列 |
+| `/gardens` | 知识库花园 |
+| `/subagents` | 子 Agent 会话 |
+| `/dead-letters` | 邮件回复死信 |
 | `/credentials` | 凭证管理 |
 | `/dashboard` | 统计面板 |
 | `/settings` | 设置（模型、密码等） |

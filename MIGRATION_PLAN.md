@@ -1,5 +1,7 @@
 # OasisMind — 完整实施计划 (Markdown ↔ SQLite 同步版)
 
+> **历史快照**（2026-06 迁移期）。现行为多花园：`content/{gardenId}/_garden.md` + `content/{gardenId}/*.md`；Agent/Skill/Memory 在 `config/`。日常以 `docs/development/README.md` 为准。
+>
 > 本文件为项目迁移与重构的终极指南，开发人员必须严格遵循此规范。
 > 项目路径: `D:\ALL IN AI\OasisMind`
 > 核心原则: 单用户模式，文章采用 “Markdown 为源，SQLite 为缓存/检索层” 双向同步架构。

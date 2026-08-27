@@ -2,6 +2,7 @@
 
 > 写法约定：每个场景都写清**理想状态下**「用户发什么 → Agent 怎么动作 → 系统/前端长什么样」。  
 > 技术细节（phase / MessageStore）见 [`chat-scenario-states.md`](./chat-scenario-states.md)。  
+> 验收对照（可执行规格）：[`scenario-test-map.json`](./scenario-test-map.json) — 新增场景必须登记覆盖，CI 由 `scenarioTestMap.test.ts` 锁文件存在性。  
 > 灵感外链单独标注来源，不替代本产品契约。
 
 ---

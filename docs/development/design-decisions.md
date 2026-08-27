@@ -1931,3 +1931,43 @@ reactLoop 的 Turn Snapshot 在 run 入口冻结单一模型，全程不再切�
 | 推拉 | `notifyGoalUpdated` 带核实步数；Goal 条 `chat-goal-verified-count`；F5 水合 |
 
 **回答**：纯基建，按推荐落地
+---
+
+## 微信 ClawBot / iLink 通道（2026-08-23）
+
+**问题**：截图里的 `npx @tencent-weixin/openclaw-weixin-cli install` 能不能直接给 OasisMind 用？
+
+**推荐**：不能。该 CLI 只检测本机 `openclaw` 并往 OpenClaw Gateway 装插件。本仓库按 QQ/飞书同一套 `ChannelAdapter`，直连腾讯 iLink（扫码 + 长轮询），入口在 `/channels`。
+
+**回答**：按推荐落地（用户要求给本项目接入）
+
+### 多媒体（2026-08-24）
+
+入站：图/语音/视频/文件经 CDN 解密落盘 `content/uploads/weixin/`。图片 ≤1.5MB 内嵌 data URL 给 vision，更大的只写路径。语音 ASR 拼进正文。
+
+出站：文本带 `from_user_id="" + client_id + context_token + base_info`；Markdown 配图走图片 item；`.mp4/.silk/.mp3` 等链接走对应 item。
+
+性能：getupdates 长轮询返回后才写 session（cursor 未变不落盘）；轮询失败指数退避 400ms→8s。
+
+分层：`weixinIlink.ts` HTTP · `weixinMedia.ts` 加解密/CDN · `weixinClawBot.ts` ChannelAdapter。扫码入口 `/channels`。
+
+---
+
+## IM 远程助手主机访问 + Windows-MCP（2026-08-24）
+
+**问题**：QQ / 微信远程助手被封印在 Workspace，想操控本机又怕整盘裸奔。Windows-MCP（常叫 win-mcp）能不能接进来？
+
+**推荐（已按此落地）**：不把 IM Agent 升成 super / Root。Workspace 继续管花园文件。另开 `hostAccess` 能力层：
+
+| 闸 | 作用 |
+|---|---|
+| `config.yaml hostAccess.enabled` | 总闸 |
+| `hostAccess.roots` | 允许的本机目录（默认桌面/文档/下载/`D:/ALL IN AI`） |
+| Agent `native:host_access` | 显式授权，不进默认工具包 |
+| 群聊 `peerId=__group__` | 拒绝主机 FS 与桌面 MCP |
+| MCP `windows-mcp` | UI Automation 点按/截屏/开应用；**白名单**（Screenshot/Click/Type/App 等），禁止 PowerShell/注册表/任意删文件；须 `uvx --python 3.12` |
+
+文件仍走 native（软删只服务项目内路径）。Windows-MCP 原理是封装 Win32 + UI Automation，不是把整套 Windows API 交给模型。
+
+**回答**：用户要求远程助手能操控本机，同时强调危险 → 按推荐落地
+

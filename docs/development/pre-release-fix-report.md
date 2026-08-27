@@ -222,17 +222,19 @@
 
 ## 未验证 / 残留风险
 
-- E2E mock 本轮两次跑均为 18 pass / 25 fail（与本轮整改前基线一致），未出现「本次改动引入」的新红用例。失败集中在工具 pill 未渲染、主题切换超时、文章管理页未加载等，与 mock-llm 场景/页面加载相关，疑似环境/测试稳定性问题。按审计要求记录在「未验证」段，不阻断发布。
-- Docker / Compose 构建与运行未在本机验证（无可用 Docker daemon），已在 `release-checklist.md` 中列为发布前必验项。
-- `apps/web` lint 有 3 个既有 warning（`RoughAnnotation.tsx` useEffect 依赖、`dsh-acceptance-screenshot.spec.ts` 未使用参数），非本次引入，未修。
-- `agentFactory.test.ts` 在单独过滤跑法与完整 `pnpm test` 中均通过；`swarmHealth.test.ts` 若在某些顺序下先于 `agentFactory.test.ts` 运行，可能因创建的 super Agent 主会话外键导致清理不完全，存在潜在测试隔离风险，本轮未触发，已记录。
+- 全量 `pnpm test:e2e:mock` 本机 19 passed / 24 failed。失败仍集中在 mock-llm 工具 pill / 子 Agent 刷新恢复 / DSH Chat UI 等，与 2026-08-25 审计基线同类；**不是**本次安全/推拉改动引入。关键 7 条隔离重跑 7/7。随后把「文章管理」文案、`networkidle`、删除按钮无障碍名对上后，`ui-components` / `theme-toggle` / `post-trash` 单跑全绿，未再跑完整 43 条。
+- Docker / Compose 构建与运行未在本机验证（无可用 Docker daemon）。
+- `pnpm audit` 因 npmmirror 无 advisories 端点失败，未拿到 CVE 列表。
+- `apps/web` lint 3 个既有 warning（`RoughAnnotation.tsx`、`dsh-acceptance-screenshot.spec.ts`），不阻断。
+- Windows 无 Git Bash 时 `shell: bash` 会明确报错，须用 powershell 或安装 Git for Windows。
 
 ## 全局门禁结果
 
 | 门禁 | 命令 | 结果 | 退出码 |
 |---|---|---|---|
-| lint | `pnpm lint` | 全包 tsc/eslint 通过；web 有 3 个既有 warning | 0 |
-| test | `pnpm test` | server 227 文件 / 1514 测试通过；web 68 文件 / 257 测试通过 | 0 |
-| build | `pnpm build` | web 生产构建成功（Compiled successfully / 42 static pages） | 0 |
-| e2e:mock | `pnpm test:e2e:mock` | 18 passed / 25 failed，与整改前基线持平 | 1（测试本身失败，不劣于基线） |
-| bench | `pnpm test:bench` | 24/24 通过（100%） | 0 |
+| lint | `pnpm lint` | 全包 tsc/eslint 通过；web 3 warning | 0 |
+| test | `pnpm test` | server 1519、web 262、shared 56、mock-llm-core 26 | 0 |
+| build | `pnpm build` | web 生产构建成功（42 路由） | 0 |
+| e2e:mock 关键路径 | playwright mock：queue / approval / heartbeat / admin-push / spawn | 7/7 | 0 |
+| e2e:mock 全量 | `pnpm test:e2e:mock` | 19 passed / 24 failed，不劣于审计基线 | 1 |
+| bench | `pnpm test:bench` | 24/24（100%，含 B17） | 0 |
