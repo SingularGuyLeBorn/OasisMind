@@ -136,7 +136,7 @@
 | 第 6 节 | `chatStorePbtInvariants`（numRuns≥400；命令 busy_409 / begin_rejected / abort_then_drain / abort_pending_then_drain） |
 | GT-1 | 磁带 `golden-traces/queue-gt1-two-turns.json` + Playwright `chat-queue-mock.spec.ts` |
 | GT-3 R8 | 磁带 `golden-traces/queue-gt3-abort-then-drain.json`：锁 `ABORT(null)` 立即 idle 后 drain；E2E `chat-queue-mock`；单测 R13。**不是** abort-pending |
-| GT-3 abort-pending | 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`：锁点停窗口 occupied + 队未蒸发；PBT `abort_pending_then_drain` |
+| GT-3 abort-pending | 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`：锁点停窗口 occupied + 队未蒸发；PBT `abort_pending_then_drain`；`chatQueueDrainLifecycle` abort-pending 窗口 |
 | GT-4 | `queueDrainClaimRollback` + PBT `busy_409` |
 | 性能 AC | 本期不做 |
 

@@ -139,7 +139,7 @@
 | 第 5 节 | `prdChatStopTable.test.ts` + `prdChatStopHub.test.ts` + `messageUpsertPayload.test.ts` |
 | 第 6 节 | `chatStorePbtInvariants`（含 abort_then_drain / abort_pending_then_drain）+ 本表粘性断言 |
 | GT-1 | 磁带 `golden-traces/stop-gt1-user-abort.json` + Playwright mock：`scenario-product-gaps-mock` |
-| abort-pending 队列 | 队列 PRD GT-3 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`（点停窗口不得 drain） |
+| abort-pending 队列 | 队列 PRD GT-3 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`；`chatQueueDrainLifecycle` abort-pending 窗口（点停窗口不得 drain） |
 | GT-3 | 磁带 `golden-traces/stop-gt3-aborted-sticky.json` |
 | GT-4 | Playwright mock：`scenario-product-gaps-mock`「stop HTTP 非 2xx」；store 表测 R5 |
 | 性能 AC | 本期不做（不写假 P95） |
