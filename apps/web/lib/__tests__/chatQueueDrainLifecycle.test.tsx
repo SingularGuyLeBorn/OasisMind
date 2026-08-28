@@ -5,6 +5,7 @@
  * - S1：空闲直发 M1，M1 run 期间入队 M2，M1 结束后应自动 drain 发 M2。
  * - S2：run settled 后队空，不额外发送。
  * - S3：done 后 drain 撞上 queueDraining 锁未释放时，必须有可靠二次触发。
+ * - abort-pending：M1 已 settle 且 drain 锁已释放时，phase=done 仍 occupied，不得发 M2。
  *
  * 使用真实 store + createRoot/act（项目约定，不引入 RTL），mock tRPC。
  */
@@ -245,6 +246,80 @@ describe("Chat queue drain 生命周期", () => {
 
     expect(runStream).toHaveBeenCalledTimes(2);
     expect(calls[1]?.message).toBe("M2-after-stop");
+    expect(sessionComposeStore.get(SID).userQueue).toHaveLength(0);
+  });
+
+  it("abort-pending 窗口内不得 drain M2", async () => {
+    const calls: RunStreamOptions[] = [];
+    let resolveM1: (() => void) | null = null;
+
+    const runStream = vi.fn(async (opts: RunStreamOptions): Promise<RunStreamOutcome> => {
+      calls.push(opts);
+      const callIndex = calls.length;
+      streamLifecycleActions.beginStream(opts.targetSessionId ?? SID, {});
+      if (callIndex === 1) {
+        return new Promise<RunStreamOutcome>((resolve) => {
+          resolveM1 = () => resolve({ status: "streamed" });
+        });
+      }
+      return { status: "streamed" };
+    });
+
+    await setupHarness(runStream);
+
+    const m1 = createUserQueueItem("M1", { visibility: "dispatching" });
+    sessionComposeActions.enqueueUserQueueItem(SID, m1);
+    sessionComposeActions.setQueueDraining(SID, false);
+    streamLifecycleActions.hydrateDone(SID);
+    await act(async () => {});
+
+    expect(runStream).toHaveBeenCalledTimes(1);
+    expect(streamLifecycleStore.get(SID).phase).toBe("streaming");
+
+    const m2 = createUserQueueItem("M2-abort-pending", {
+      visibility: "visible",
+      dbId: "db-m2-ap",
+    });
+    sessionComposeActions.enqueueUserQueueItem(SID, m2);
+    await act(async () => {});
+
+    expect(sessionComposeStore.get(SID).userQueue).toHaveLength(1);
+    expect(runStream).toHaveBeenCalledTimes(1);
+
+    streamLifecycleActions.abortStream(SID, {
+      partialAssistantMessageId: "msg-ap",
+      leftoverContent: "半",
+    });
+    await act(async () => {});
+
+    expect(streamLifecycleStore.get(SID).phase).toBe("done");
+    expect(streamLifecycleStore.isRunOccupied(SID)).toBe(true);
+    expect(runStream).toHaveBeenCalledTimes(1);
+
+    // 先放掉 M1，让 finally 释放 queueDraining。M1 还挂着时即使用错 isStreaming 也发不出 M2。
+    (resolveM1 as (() => void) | null)?.();
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(streamLifecycleStore.get(SID).phase).toBe("done");
+    expect(streamLifecycleStore.isRunOccupied(SID)).toBe(true);
+    expect(sessionComposeStore.get(SID).queueDraining).toBe(false);
+    expect(runStream).toHaveBeenCalledTimes(1);
+    expect(
+      sessionComposeStore.get(SID).userQueue.some((i) => i.text === "M2-abort-pending"),
+    ).toBe(true);
+    expect(sessionComposeStore.get(SID).consumedQueueDbIds.has("db-m2-ap")).toBe(false);
+
+    sessionMessagesStore.upsertAssistantFromDone(SID, {
+      assistantMessageId: "msg-ap",
+      content: "半",
+      finishReason: "aborted",
+    });
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(runStream).toHaveBeenCalledTimes(2);
+    expect(calls[1]?.message).toBe("M2-abort-pending");
     expect(sessionComposeStore.get(SID).userQueue).toHaveLength(0);
   });
 });
