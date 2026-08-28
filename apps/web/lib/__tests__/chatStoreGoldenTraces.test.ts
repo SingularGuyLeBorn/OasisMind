@@ -33,6 +33,7 @@ const REQUIRED_TRACE_IDS = [
   "stop-gt1-user-abort",
   "queue-gt1-two-turns",
   "queue-gt3-abort-then-drain",
+  "queue-gt3b-abort-pending-then-drain",
   "stop-gt3-aborted-sticky",
 ] as const;
 
@@ -231,7 +232,7 @@ describe("Chat golden traces 回放", () => {
     vi.restoreAllMocks();
   });
 
-  it("目录含 PRD 点名的四条磁带", () => {
+  it("目录含 PRD 点名的磁带（含 abort-pending GT-3b）", () => {
     const ids = loadTraces().map((t) => t.id);
     for (const id of REQUIRED_TRACE_IDS) {
       expect(ids, `缺少磁带 ${id}`).toContain(id);
