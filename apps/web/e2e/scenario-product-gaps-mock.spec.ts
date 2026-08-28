@@ -78,6 +78,27 @@ test.describe("产品主路径补洞 Mock", () => {
     await expect(page.getByTestId("chat-stop")).toHaveCount(0);
   });
 
+  test("stop HTTP 非 2xx：占用立刻释放，发送钮回来", async ({ page }) => {
+    await openFreshChat(page);
+    await page.route("**/api/agent/chat/stop", async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "e2e-stop-http-fail" }),
+      });
+    });
+    const stopVisible = page.getByTestId("chat-stop").waitFor({ state: "visible", timeout: 10_000 });
+    await sendChatMessage(page, "请慢慢说，多讲几句。");
+    await stopVisible;
+    await page.getByTestId("chat-stop").click();
+    await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("chat-stop")).toHaveCount(0);
+  });
+
   test("全局搜索：新文章可被搜到并点进真文", async ({ page }) => {
     const stamp = Date.now();
     const title = `E2E_FTS_${stamp}_唯一标题`;

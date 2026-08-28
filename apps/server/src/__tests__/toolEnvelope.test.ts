@@ -35,6 +35,17 @@ describe("toolEnvelope", () => {
     expect(() => snapshotJsonValue(obj)).toThrow(/ToolEnvelope/);
   });
 
+  it("同一数组挂两处视为循环引用（ask_user 须 clone options）", () => {
+    const options = ["knowledge", "posts"];
+    expect(() => snapshotJsonValue({ options, askUserPending: { options } })).toThrow(/循环引用/);
+    expect(() =>
+      snapshotJsonValue({
+        options: [...options],
+        askUserPending: { options: [...options] },
+      }),
+    ).not.toThrow();
+  });
+
   it("freezeJson 后 Object.assign 改属性 throw", () => {
     const frozen = freezeJson({ foo: 1, nested: { bar: 2 } });
     expect(() => Object.assign(frozen, { foo: 99 })).toThrow();

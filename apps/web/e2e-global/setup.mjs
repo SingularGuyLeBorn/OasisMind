@@ -320,6 +320,7 @@ async function seedAssistantManager(serverPort) {
     "native:inbox_list",
     "native:inbox_distill",
     "native:session_goal_set",
+    "native:session_compact",
     "native:post_list",
     "native:post_create",
     "native:video_transcript",
@@ -328,6 +329,7 @@ async function seedAssistantManager(serverPort) {
     "native:list_directory",
     "native:article_material_pack",
     "native:article_video_compose",
+    "native:ask_user",
   ];
   const existingManager = items.find((a) => a.tier === "manager" && /assistant/i.test(a.name));
   if (existingManager) {

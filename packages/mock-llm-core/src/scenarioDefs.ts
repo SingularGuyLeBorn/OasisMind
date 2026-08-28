@@ -1202,7 +1202,9 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G07_compact",
-    match: (opts, forced) => !hasAnyToolResult(opts) && forced === "eval_G07_compact",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G07_compact" || /压缩会话|压缩后继续/.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -1218,7 +1220,9 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G08_stop",
-    match: (_opts, forced) => forced === "eval_G08_stop",
+    match: (_opts, forced) =>
+      forced === "eval_G08_stop" ||
+      /^(停[，,。. ]?别做|停止，别再继续)/.test(lastUserText(_opts).trim()),
     completion: (opts) => ({
       ...baseResult(opts),
       content: "好的，已停止，不再继续执行新任务。",
@@ -1252,7 +1256,9 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G10_html_preview",
-    match: (_opts, forced) => forced === "eval_G10_html_preview",
+    match: (_opts, forced) =>
+      forced === "eval_G10_html_preview" ||
+      /可预览的.{0,12}HTML|HTML 小页面|HTML 时钟/.test(lastUserText(_opts)),
     completion: (opts) => ({
       ...baseResult(opts),
       content:
@@ -1304,6 +1310,93 @@ export const scenarios: MockLlmScenario[] = [
         provider: "mock",
         tokenUsage: { prompt: 10, completion: 12, total: 22 },
       };
+    },
+  },
+  {
+    name: "stop_slow_stream",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "stop_slow_stream" || /^请慢慢说/.test(lastUserText(opts).trim())),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "这是一段故意拉长的慢流，用来给停止按钮留出窗口。后面还有很多字可以截断。",
+      toolCalls: [],
+    }),
+    stream: async function* (opts) {
+      const content =
+        "这是一段故意拉长的慢流，用来给停止按钮留出窗口。后面还有很多字可以截断。请在流式中途点停止。";
+      const model = opts.model || "mock-llm";
+      const chunks = content.split("").map((delta) => ({
+        type: "token" as const,
+        delta,
+        model,
+        provider: "mock",
+      }));
+      yield* delayYield(chunks, 90);
+      yield {
+        type: "token" as const,
+        delta: "",
+        finishReason: "stop",
+        model,
+        provider: "mock",
+        tokenUsage: { prompt: 8, completion: 20, total: 28 },
+      };
+    },
+  },
+  {
+    name: "ask_user_answered",
+    match: (opts, forced) =>
+      forced === "ask_user_answered" || /用户已答复 ask_user/.test(lastUserText(opts)),
+    completion: (opts) => {
+      const text = lastUserText(opts);
+      const extracted = text.match(/：\n([\s\S]*?)\n请基于该答复/)?.[1]?.trim();
+      const answer = extracted || "knowledge";
+      return {
+        ...baseResult(opts),
+        content: `已按你的选择「${answer}」继续。`,
+        toolCalls: [],
+      };
+    },
+    stream: async function* (opts) {
+      const text = lastUserText(opts);
+      const extracted = text.match(/：\n([\s\S]*?)\n请基于该答复/)?.[1]?.trim();
+      const answer = extracted || "knowledge";
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: `已按你的选择「${answer}」继续。`,
+        toolCalls: [],
+      });
+    },
+  },
+  {
+    name: "ask_user_prompt",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      hasTool(opts, "ask_user") &&
+      (forced === "ask_user_prompt" || /请用提问卡/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("ask_user", {
+          question: "这篇笔记放进哪个花园？",
+          options: ["knowledge", "posts"],
+          channel: "ui",
+        }),
+      ],
+    }),
+    stream: async function* (opts) {
+      yield* streamFromCompletion(opts, {
+        ...baseResult(opts),
+        content: null,
+        toolCalls: [
+          makeToolCall("ask_user", {
+            question: "这篇笔记放进哪个花园？",
+            options: ["knowledge", "posts"],
+            channel: "ui",
+          }),
+        ],
+      });
     },
   },
   {
