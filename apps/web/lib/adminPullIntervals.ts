@@ -14,6 +14,8 @@ export const INBOX_REFETCH_IDLE_MS = 15_000;
 export const DEAD_LETTER_REFETCH_MS = 15_000;
 export const SUBAGENT_REFETCH_BUSY_MS = 4_000;
 export const SUBAGENT_REFETCH_IDLE_MS = 20_000;
+export const RUN_REFETCH_BUSY_MS = 4_000;
+export const RUN_REFETCH_IDLE_MS = 20_000;
 
 export function cronListRefetchMs(
   items: Array<{ lastRunStatus?: string | null }>,
@@ -47,4 +49,15 @@ export function subagentListRefetchMs(
   return items.some((s) => s.status === "running" || s.status === "queued")
     ? SUBAGENT_REFETCH_BUSY_MS
     : SUBAGENT_REFETCH_IDLE_MS;
+}
+
+export function runListRefetchMs(
+  items: Array<{ status?: string | null }>,
+  statusFilter: string,
+): number {
+  const busy =
+    !statusFilter ||
+    statusFilter === "running" ||
+    items.some((r) => r.status === "running" || r.status === "pending");
+  return busy ? RUN_REFETCH_BUSY_MS : RUN_REFETCH_IDLE_MS;
 }

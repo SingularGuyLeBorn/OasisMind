@@ -16,6 +16,8 @@ import {
   notifyDailyFlowUpdated,
   notifyDeadLetterUpdated,
   notifyInboxUpdated,
+  notifyApprovalUpdated,
+  notifyRunUpdated,
 } from "../infra/uiStateNotify.js";
 
 function prismaWithSessions(ids: string[]) {
@@ -32,7 +34,7 @@ describe("uiStateNotify PUSH", () => {
     pushExternalEvent.mockReset();
   });
 
-  it("notifyCronJobUpdated 推 cron_job_updated 到 Agent 会话", async () => {
+  it("notifyCronJobUpdated 推 cron_job_updated 到全部主会话 + Agent 会话", async () => {
     await notifyCronJobUpdated(prismaWithSessions(["sess-cron"]), {
       id: "job-1",
       agentId: "ag-1",
@@ -47,6 +49,7 @@ describe("uiStateNotify PUSH", () => {
         lastRunStatus: "running",
       }),
     );
+    expect(pushExternalEvent.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it("notifyDailyFlowUpdated 推到全部主会话", async () => {
@@ -61,6 +64,7 @@ describe("uiStateNotify PUSH", () => {
   it("comment / inbox / dead letter 推到主会话", async () => {
     await notifyCommentUpdated(prismaWithSessions(["m1"]), "post-1");
     await notifyInboxUpdated(prismaWithSessions(["m1"]), "created");
+    await notifyApprovalUpdated(prismaWithSessions(["m1"]), "appr-exec", "executed");
     await notifyDeadLetterUpdated(prismaWithSessions(["m1"]));
     expect(pushExternalEvent).toHaveBeenCalledWith(
       "m1",
@@ -85,6 +89,25 @@ describe("uiStateNotify PUSH", () => {
     expect(pushExternalEvent).toHaveBeenCalledWith(
       "main-1",
       expect.objectContaining({ type: "approval_updated", approvalId: "appr-9" }),
+    );
+  });
+
+  it("notifyApprovalUpdated 推 executed", async () => {
+    await notifyApprovalUpdated(prismaWithSessions(["main-1"]), "appr-exec", "executed");
+    expect(pushExternalEvent).toHaveBeenCalledWith(
+      "main-1",
+      expect.objectContaining({ type: "approval_updated", approvalId: "appr-exec", status: "executed" }),
+    );
+  });
+
+  it("notifyRunUpdated 推 interrupted", async () => {
+    await notifyRunUpdated(prismaWithSessions(["main-1"]), {
+      runId: "run-z",
+      status: "interrupted",
+    });
+    expect(pushExternalEvent).toHaveBeenCalledWith(
+      "main-1",
+      expect.objectContaining({ type: "run_updated", runId: "run-z", status: "interrupted" }),
     );
   });
 });

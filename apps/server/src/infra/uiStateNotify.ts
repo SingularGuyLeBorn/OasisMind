@@ -142,18 +142,20 @@ export async function notifyAllMainSessionsUi(
   }
 }
 
-/** Cron 行变更后通知（含 lastRunStatus） */
+/** Cron 行变更后通知（含 lastRunStatus）。/cron 是全局页：推全部主会话，任意开着的 Chat 都能 BC。 */
 export async function notifyCronJobUpdated(
   prisma: PrismaClient,
   job: { id: string; agentId: string; name?: string; lastRunStatus?: string | null },
 ): Promise<void> {
-  await notifyAgentUi(prisma, job.agentId, {
-    type: "cron_job_updated",
+  const event = {
+    type: "cron_job_updated" as const,
     agentId: job.agentId,
     cronJobId: job.id,
     cronName: job.name,
     lastRunStatus: job.lastRunStatus ?? undefined,
-  });
+  };
+  await notifyAllMainSessionsUi(prisma, event);
+  await notifyAgentUi(prisma, job.agentId, event);
 }
 
 /** Post / Garden 等 content 列表变更：创建/更新/删除/恢复后推到所有主会话 */
@@ -184,6 +186,33 @@ export async function notifyInboxUpdated(
   await notifyAllMainSessionsUi(prisma, {
     type: "inbox_updated",
     reason,
+  });
+}
+
+/** 审批写点后推送（创建 / 决策 / 执行 / TTL / 邮件回复） */
+export async function notifyApprovalUpdated(
+  prisma: PrismaClient,
+  approvalId: string,
+  status?: string,
+): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, {
+    type: "approval_updated",
+    approvalId,
+    status,
+  });
+}
+
+/** Run 写点后通知 /runs 与开着的 Chat */
+export async function notifyRunUpdated(
+  prisma: PrismaClient,
+  patch: { runId: string; sessionId?: string | null; status?: string; phase?: string },
+): Promise<void> {
+  await notifyAllMainSessionsUi(prisma, {
+    type: "run_updated",
+    runId: patch.runId,
+    sessionId: patch.sessionId ?? undefined,
+    status: patch.status,
+    phase: patch.phase,
   });
 }
 

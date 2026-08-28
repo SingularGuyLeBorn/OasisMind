@@ -15,6 +15,7 @@ import { agentLabel, runLabel, sessionLabel } from "@/lib/displayLabels";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
 import { subscribeUiState } from "@/lib/uiStateChannel";
+import { runListRefetchMs } from "@/lib/adminPullIntervals";
 
 const STATUS_STYLE: Record<Run["status"], string> = {
   pending: "om-badge-warning",
@@ -47,14 +48,8 @@ export default function RunsPage() {
       status: statusFilter || undefined,
     },
     {
-      refetchInterval: (q: { state: { data?: { items?: { status?: string }[] } } }) => {
-        const items = q.state.data?.items ?? [];
-        const busy =
-          !statusFilter ||
-          statusFilter === "running" ||
-          items.some((r: { status?: string }) => r.status === "running" || r.status === "pending");
-        return busy ? 4000 : 20_000;
-      },
+      refetchInterval: (q: { state: { data?: { items?: { status?: string }[] } } }) =>
+        runListRefetchMs(q.state.data?.items ?? [], statusFilter),
     },
   );
   const utils = trpc.useUtils();
@@ -159,7 +154,11 @@ export default function RunsPage() {
                     <tr key={run.id}>
                       <td>
                         <div className="flex flex-col gap-1.5">
-                          <span className={cn("om-badge w-fit", STATUS_STYLE[run.status])}>
+                          <span
+                            className={cn("om-badge w-fit", STATUS_STYLE[run.status])}
+                            data-testid="run-status"
+                            data-status={run.status}
+                          >
                             {STATUS_LABEL[run.status]}
                           </span>
                           {(() => {

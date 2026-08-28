@@ -8,10 +8,13 @@ import {
   INBOX_REFETCH_IDLE_MS,
   SUBAGENT_REFETCH_BUSY_MS,
   SUBAGENT_REFETCH_IDLE_MS,
+  RUN_REFETCH_BUSY_MS,
+  RUN_REFETCH_IDLE_MS,
   approvalListRefetchMs,
   cronListRefetchMs,
   inboxListRefetchMs,
   subagentListRefetchMs,
+  runListRefetchMs,
 } from "../adminPullIntervals";
 
 describe("adminPullIntervals", () => {
@@ -36,5 +39,12 @@ describe("adminPullIntervals", () => {
     expect(subagentListRefetchMs([{ status: "completed" }])).toBe(SUBAGENT_REFETCH_IDLE_MS);
     expect(subagentListRefetchMs([{ status: "running" }])).toBe(SUBAGENT_REFETCH_BUSY_MS);
     expect(subagentListRefetchMs([{ status: "queued" }])).toBe(SUBAGENT_REFETCH_BUSY_MS);
+  });
+
+  it("runs：无筛选或有 running/pending 用短间隔", () => {
+    expect(runListRefetchMs([{ status: "success" }], "success")).toBe(RUN_REFETCH_IDLE_MS);
+    expect(runListRefetchMs([{ status: "running" }], "success")).toBe(RUN_REFETCH_BUSY_MS);
+    expect(runListRefetchMs([{ status: "success" }], "")).toBe(RUN_REFETCH_BUSY_MS);
+    expect(runListRefetchMs([], "running")).toBe(RUN_REFETCH_BUSY_MS);
   });
 });

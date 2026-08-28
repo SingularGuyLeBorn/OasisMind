@@ -83,10 +83,27 @@ export async function runStartupRecovery(options: {
  * 如实声明不假装能续跑——运行中的 ReAct 状态随进程丢失，完整 checkpoint 重建另立设计。
  */
 export async function recoverStaleRuns(): Promise<number> {
-  const result = await prisma.run.updateMany({
+  const stale = await prisma.run.findMany({
     where: { status: "running" },
+    select: { id: true, sessionId: true },
+  });
+  if (stale.length === 0) return 0;
+  const result = await prisma.run.updateMany({
+    where: { id: { in: stale.map((r) => r.id) }, status: "running" },
     data: { status: "interrupted" },
   });
+  try {
+    const { notifyRunUpdated } = await import("../uiStateNotify.js");
+    for (const row of stale) {
+      await notifyRunUpdated(prisma, {
+        runId: row.id,
+        sessionId: row.sessionId,
+        status: "interrupted",
+      });
+    }
+  } catch {
+    /* PUSH 失败不回滚已标 interrupted */
+  }
   return result.count;
 }
 
