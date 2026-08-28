@@ -337,6 +337,39 @@ export async function chatAgentStream(
       },
     });
 
+    // 不变量：用户点停止后循环仍可能把 token 读完并返回 result；禁止再走 success 落库，
+    // 否则 finishReason 不是 aborted，气泡没有「已停止生成」。
+    if (signal?.aborted) {
+      const abortCode = resolveAbortReasonCode(signal);
+      const isUserSoftStop =
+        abortCode === "user" ||
+        abortCode === "session_stop" ||
+        abortCode === "cancel";
+      if (sessionId && (partial.content.trim() || partial.toolCalls.length > 0 || result.content?.trim())) {
+        await persistAbortedAssistant({
+          services,
+          sessionId,
+          prepared,
+          pendingAssistantId,
+          partialContent: partial.content.trim() || result.content || "",
+          partialToolCalls: partial.toolCalls.length > 0 ? partial.toolCalls : (result.toolCalls ?? []),
+        });
+      }
+      if (isUserSoftStop && sessionId) {
+        await markSessionActiveAfterUserStop(services, sessionId);
+      }
+      emit({
+        type: "error",
+        message: isUserSoftStop ? messageFromAbortReason("user") : messageFromAbortReason(abortCode),
+        sessionId,
+        retryable: true,
+        ...(isUserSoftStop
+          ? { suggestion: "本轮已停止；直接发送下一条消息即可继续。" }
+          : {}),
+      });
+      return;
+    }
+
     const persisted = await persistAssistantSuccess({
       services, sessionId, prepared, pendingAssistantId,
       historyItems, result, effectiveModel,

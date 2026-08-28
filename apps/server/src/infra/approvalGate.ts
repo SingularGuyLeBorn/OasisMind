@@ -292,7 +292,23 @@ async function expireApprovalIfPending(services: ServiceContainer, approvalId: s
       decisionNote: "审批超时，自动拒绝。",
     },
   });
+  if (result.count > 0) {
+    await pushApprovalUpdatedUi(services, approvalId, "rejected");
+  }
   return result.count > 0;
+}
+
+async function pushApprovalUpdatedUi(
+  services: ServiceContainer,
+  approvalId: string,
+  status: string,
+): Promise<void> {
+  try {
+    const { notifyApprovalUpdated } = await import("./uiStateNotify.js");
+    await notifyApprovalUpdated(services.prisma, approvalId, status);
+  } catch {
+    /* 推送失败不回滚写库 */
+  }
 }
 
 type ApprovalRow = {
@@ -606,6 +622,7 @@ async function enforceApprovalOrProceed(
           message: "该审批已被执行或状态已变更，拒绝重复执行。",
         });
       }
+      await pushApprovalUpdatedUi(services, approvalId, "executed");
     }
     return;
   }
@@ -726,10 +743,13 @@ export async function executeApprovedOperation(
     }
 
     // 软删除：永不物理删除审批记录，标记 executed + 执行时间以保留审计痕迹
-    await ctx.services.prisma.approval.update({
-      where: { id: approval.id },
-      data: { status: "executed", executedAt: new Date() },
+    const marked = await ctx.services.approval.update({
+      id: approval.id,
+      status: "executed",
     });
+    if (!marked.success) {
+      return marked;
+    }
     // W11：approval_resolved 显式事件——唤醒挂在该审批上的 run（awaiting_human → llm）
     notifyApprovalResolved(approval.id, {
       outcome: "approved",
@@ -807,6 +827,8 @@ export async function resolveApprovalFromMail(
     },
   });
   if (updated.count === 0) return { ok: false, reason: "审批已处理或已过期" };
+
+  await pushApprovalUpdatedUi(services, approvalId, "user_replied");
 
   // 3. 唤醒挂起的 run，把回复原文注入回 Agent（和聊天框打字等价）
   notifyApprovalResolved(approvalId, {

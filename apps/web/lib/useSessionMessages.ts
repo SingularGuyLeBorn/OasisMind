@@ -181,6 +181,8 @@ function reducer(state: MessageMap, action: Action): MessageMap {
       if (idx >= 0) {
         const prev = list[idx];
         // field-level merge：incoming 为 undefined 的字段保留 prev（防 agentStream 补发空 payload 抹掉 timeline）
+        const incomingFinish =
+          msg.finishReason !== undefined ? msg.finishReason : prev.finishReason;
         const merged: ChatMessage = {
           ...prev,
           ...msg,
@@ -188,6 +190,8 @@ function reducer(state: MessageMap, action: Action): MessageMap {
           toolResults: msg.toolResults !== undefined ? msg.toolResults : prev.toolResults,
           tokenUsage: msg.tokenUsage !== undefined ? msg.tokenUsage : prev.tokenUsage,
           attachments: msg.attachments !== undefined ? msg.attachments : prev.attachments,
+      // INV-S1：aborted 对同一 id 粘性；省略 finishReason 不得抹掉已有值（prd-chat-stop）
+      finishReason: prev.finishReason === "aborted" ? "aborted" : incomingFinish,
         };
         if (messageFieldsEqual(prev, merged)) {
           return state;

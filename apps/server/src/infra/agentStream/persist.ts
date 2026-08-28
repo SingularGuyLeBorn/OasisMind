@@ -303,6 +303,7 @@ export async function persistAssistantSuccess(opts: {
           : undefined,
         attachments: undefined,
         source: null,
+        finishReason: "stop",
         createdAt: persistedCreatedAt ?? new Date().toISOString(),
       },
     });

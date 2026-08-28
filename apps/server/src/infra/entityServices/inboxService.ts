@@ -499,6 +499,15 @@ export class InboxService extends BaseService<
         errors.push(`${item.id}: 已忽略，跳过`);
         continue;
       }
+      // 已成文且已有文章：幂等返回，禁止第二篇（slug 会撞 (garden,slug) 唯一）
+      if (item.status === "distilled" && item.distilledPostId) {
+        distilled.push({
+          inboxId: item.id,
+          postId: item.distilledPostId,
+          title: item.title,
+        });
+        continue;
+      }
       try {
         const body = formatInboxItemBody({
           title: item.title,
@@ -523,7 +532,8 @@ export class InboxService extends BaseService<
           content: body,
           excerpt: item.excerpt || item.title,
           tags: [...new Set(["inbox", item.source, ...item.tags])],
-          published: input.published ?? true,
+          // 与 inboxDistillSchema 默认 false 对齐：未传即未发布草稿
+          published: input.published ?? false,
         });
         await this.prisma.inboxItem.update({
           where: { id: item.id },

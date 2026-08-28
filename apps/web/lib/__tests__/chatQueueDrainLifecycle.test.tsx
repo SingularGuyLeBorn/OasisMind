@@ -202,4 +202,49 @@ describe("Chat queue drain 生命周期", () => {
     expect(runStream).toHaveBeenCalledTimes(1);
     expect(sessionComposeStore.get(SID).userQueue).toHaveLength(0);
   });
+
+  it("R13：ABORT(null) 进 idle 后自动 drain 队列中下一条", async () => {
+    const calls: RunStreamOptions[] = [];
+    let resolveM1: (() => void) | null = null;
+
+    const runStream = vi.fn(async (opts: RunStreamOptions): Promise<RunStreamOutcome> => {
+      calls.push(opts);
+      const callIndex = calls.length;
+      streamLifecycleActions.beginStream(opts.targetSessionId ?? SID, {});
+      if (callIndex === 1) {
+        return new Promise<RunStreamOutcome>((resolve) => {
+          resolveM1 = () => resolve({ status: "streamed" });
+        });
+      }
+      return { status: "streamed" };
+    });
+
+    await setupHarness(runStream);
+
+    const m1 = createUserQueueItem("M1", { visibility: "dispatching" });
+    sessionComposeActions.enqueueUserQueueItem(SID, m1);
+    sessionComposeActions.setQueueDraining(SID, false);
+    streamLifecycleActions.hydrateDone(SID);
+    await act(async () => {});
+
+    expect(runStream).toHaveBeenCalledTimes(1);
+
+    const m2 = createUserQueueItem("M2-after-stop", { visibility: "visible" });
+    sessionComposeActions.enqueueUserQueueItem(SID, m2);
+
+    streamLifecycleActions.abortStream(SID, {
+      partialAssistantMessageId: null,
+      leftoverContent: "stopped",
+    });
+    await act(async () => {});
+
+    expect(streamLifecycleStore.get(SID).phase).toBe("idle");
+    (resolveM1 as (() => void) | null)?.();
+    await act(async () => {});
+    await act(async () => {});
+
+    expect(runStream).toHaveBeenCalledTimes(2);
+    expect(calls[1]?.message).toBe("M2-after-stop");
+    expect(sessionComposeStore.get(SID).userQueue).toHaveLength(0);
+  });
 });

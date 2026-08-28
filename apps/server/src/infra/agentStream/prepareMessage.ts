@@ -42,7 +42,7 @@ export type AgentStreamEvent =
   | { type: "comment_updated"; postId?: string }
   | { type: "inbox_updated"; reason?: string }
   | { type: "dead_letter_updated" }
-  | { type: "message_upserted"; sessionId: string; message: { id: string; role: string; content: string; parentId?: string | null; label?: string | null; kind?: string | null; toolCalls?: unknown; toolResults?: unknown; tokenUsage?: unknown; attachments?: unknown; source?: string | null; createdAt: string } }
+  | { type: "message_upserted"; sessionId: string; message: { id: string; role: string; content: string; parentId?: string | null; label?: string | null; kind?: string | null; toolCalls?: unknown; toolResults?: unknown; tokenUsage?: unknown; attachments?: unknown; source?: string | null; finishReason?: string | null; createdAt: string } }
   | { type: "message_deleted"; sessionId: string; messageId: string }
   | { type: "session_title_updated"; sessionId: string; title: string }
   | { type: "agent_renamed"; agentId: string; name: string }

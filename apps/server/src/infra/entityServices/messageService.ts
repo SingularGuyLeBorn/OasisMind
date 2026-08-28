@@ -43,6 +43,7 @@ export type MessageUpsertSource = {
   toolResults?: unknown;
   tokenUsage?: unknown;
   source?: string | null;
+  finishReason?: string | null;
   createdAt: Date | string;
 };
 
@@ -59,6 +60,7 @@ export function messageUpsertPayload(entity: MessageUpsertSource) {
     tokenUsage: entity.tokenUsage ?? undefined,
     attachments: entity.attachments ?? undefined,
     source: entity.source ?? null,
+    finishReason: entity.finishReason ?? null,
     createdAt: entity.createdAt instanceof Date ? entity.createdAt.toISOString() : String(entity.createdAt),
   };
 }

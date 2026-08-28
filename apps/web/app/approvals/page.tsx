@@ -15,7 +15,7 @@ import { useCardDensity } from "@/lib/useCardDensity";
 import { EmptyState, LoadingState, Pagination, PageHeader } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
-import { UI_STATE_CHANNEL, isApprovalPushEvent } from "@/lib/uiStateChannel";
+import { isApprovalPushEvent, subscribeUiState } from "@/lib/uiStateChannel";
 import { approvalListRefetchMs } from "@/lib/adminPullIntervals";
 import { formatToolDisplayName, toPascalCaseId } from "@/lib/toolDisplayName";
 
@@ -74,23 +74,11 @@ export default function ApprovalsPage() {
   const { data: summary } = useHumanTodoSummary({ refetchInterval: 5000 });
   const utils = trpc.useUtils();
   useEffect(() => {
-    if (typeof BroadcastChannel === "undefined") return;
-    let bc: BroadcastChannel;
-    try {
-      bc = new BroadcastChannel(UI_STATE_CHANNEL);
-    } catch {
-      return;
-    }
-    const onMsg = (ev: MessageEvent) => {
-      if (!isApprovalPushEvent((ev.data as { type?: string } | null)?.type)) return;
+    return subscribeUiState((msg) => {
+      if (!isApprovalPushEvent(msg.type)) return;
       utils.approval.list.invalidate().catch(catchUnlessCancelled("app/approvals/page.tsx"));
       utils.approval.humanTodoSummary.invalidate().catch(catchUnlessCancelled("app/approvals/page.tsx"));
-    };
-    bc.addEventListener("message", onMsg);
-    return () => {
-      bc.removeEventListener("message", onMsg);
-      bc.close();
-    };
+    });
   }, [utils]);
   const updateMutation = useUpdate();
   const approveExecuteMutation = useApproveAndExecute();

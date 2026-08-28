@@ -14,7 +14,12 @@ import { useCallback, useRef, type RefObject } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 
 const logQueryCatch = catchUnlessCancelled("[useChatEnqueue] query");
-import { type ChatQueueItem, createUserQueueItem, decideEnqueueVisibility } from "@/lib/chatQueueTypes";
+import {
+  type ChatQueueItem,
+  createUserQueueItem,
+  decideEnqueueVisibility,
+  isDuplicateEnqueue,
+} from "@/lib/chatQueueTypes";
 import { type SelectedSkill } from "@/components/chatInput";
 import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComposeState";
 import { NEW_STREAM_KEY } from "@/lib/chatKeys";
@@ -162,7 +167,7 @@ export function useChatEnqueue({
       const last = lastEnqueueRef.current;
       const attachmentsKey =
         attachments?.map((a) => (a.type === "post" ? `post:${a.id}` : a.name)).join("\n") ?? "";
-      if (last && now - last.at < 500 && last.text === `${messageText}\n${attachmentsKey}`) {
+      if (isDuplicateEnqueue(last, now, `${messageText}\n${attachmentsKey}`)) {
         return;
       }
       lastEnqueueRef.current = { text: `${messageText}\n${attachmentsKey}`, at: now };

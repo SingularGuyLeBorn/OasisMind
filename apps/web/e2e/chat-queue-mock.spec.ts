@@ -6,9 +6,12 @@ import {
   enqueueDuringStream,
   countUserMessages,
   countAssistantMessages,
+  waitForSessionIdle,
 } from "./helpers/mockChatFixture";
 
 test.describe("Chat Mock — 连续发送队列自动 drain", () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test.beforeEach(async ({ request }) => {
     await expect
       .poll(async () => (await request.get(`${SERVER_URL}/health`)).ok())
@@ -28,5 +31,20 @@ test.describe("Chat Mock — 连续发送队列自动 drain", () => {
 
     expect(await countUserMessages(page)).toBe(2);
     expect(await countAssistantMessages(page)).toBe(2);
+  });
+
+  test("点停后仍 drain 第二条，半成品带已停止生成", async ({ page }) => {
+    await waitForChatReady(page);
+    const stopVisible = page.getByTestId("chat-stop").waitFor({ state: "visible", timeout: 10_000 });
+    await sendChatMessage(page, "请慢慢说，多讲几句。");
+    await stopVisible;
+    await enqueueDuringStream(page, "队列测试第二条");
+    await page.getByTestId("chat-stop").click();
+    await expect(page.getByText("已停止生成").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("user-message-bubble")).toHaveCount(2, { timeout: 30_000 });
+    await expect(page.getByTestId("assistant-message-bubble")).toHaveCount(2, { timeout: 30_000 });
+    await waitForSessionIdle(page);
+    await expect(page.getByTestId("chat-queue-item-user")).toHaveCount(0);
+    expect(await countUserMessages(page)).toBe(2);
   });
 });

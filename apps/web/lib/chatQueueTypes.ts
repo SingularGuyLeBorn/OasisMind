@@ -508,6 +508,17 @@ export function decideEnqueueVisibility(opts: {
   return opts.occupied || opts.draining || opts.queueLength > 0 ? "visible" : "dispatching";
 }
 
+/** 同文连点防重（与 useChatEnqueue 共用，禁止测试另写一份 500ms） */
+export const ENQUEUE_DEDUP_MS = 500;
+
+export function isDuplicateEnqueue(
+  last: { text: string; at: number } | null,
+  now: number,
+  key: string,
+): boolean {
+  return !!last && now - last.at < ENQUEUE_DEDUP_MS && last.text === key;
+}
+
 /** 前端 drain 可起流：非 async-running，且有正文/附件/异步结果。 */
 export function isFrontendDrainReady(item: ChatQueueItem): boolean {
   return (

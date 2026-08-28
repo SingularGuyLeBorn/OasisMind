@@ -68,4 +68,28 @@ describe("MessageStore upsert merge", () => {
     const msg = sessionMessagesStore.getMessages(sid).find((m) => m.id === "m2");
     expect(msg?.toolResults).toBeNull();
   });
+
+  it("finishReason aborted 粘性：迟到 stop 不得覆盖", () => {
+    sessionMessagesStore.upsertMessage(sid, {
+      id: "m-abort",
+      sessionId: sid,
+      role: "assistant",
+      content: "半",
+      finishReason: "aborted",
+      createdAt: new Date(),
+    } as ChatMessage);
+
+    sessionMessagesStore.upsertMessage(sid, {
+      id: "m-abort",
+      sessionId: sid,
+      role: "assistant",
+      content: "半更长",
+      finishReason: "stop",
+      createdAt: new Date(),
+    } as ChatMessage);
+
+    const msg = sessionMessagesStore.getMessages(sid).find((m) => m.id === "m-abort");
+    expect(msg?.finishReason).toBe("aborted");
+    expect(msg?.content).toBe("半更长");
+  });
 });
