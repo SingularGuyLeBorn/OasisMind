@@ -18,7 +18,7 @@ import {
 import { resetSwarmOrchestratorForTests } from "../infra/swarmOrchestrator.js";
 import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { getAppConfig } from "../infra/config.js";
-import { setStreamHub } from "../infra/sessionStreamHub.js";
+import { emitHubRunSettled, setStreamHub } from "../infra/sessionStreamHub.js";
 import { readGoalStateRaw } from "../infra/goalLoop.js";
 import type { NativeToolContext } from "../infra/tools/native/types.js";
 
@@ -239,6 +239,12 @@ describe("agentCron", () => {
       const marked = await listCronJobs(prisma, { agentId: mgr.id });
       expect(marked.find((r) => r.id === row.id)?.lastRunStatus).toBe("running");
       expect(marked.find((r) => r.id === row.id)?.lastSessionId).toBe(r1.sessionId);
+
+      emitHubRunSettled(r1.sessionId!);
+      await vi.waitFor(async () => {
+        const after = await listCronJobs(prisma, { agentId: mgr.id });
+        expect(after.find((r) => r.id === row.id)?.lastRunStatus).toBe("success");
+      });
 
       const r2 = await engine.fire(row.id);
       expect(r2.sessionId).toBeTruthy();

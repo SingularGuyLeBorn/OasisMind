@@ -41,7 +41,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PostContent } from "@/components/post/PostContent";
-import { isCronAdminPushEvent, postSessionListHint, UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { isCronAdminPushEvent, postSessionListHint, subscribeUiState } from "@/lib/uiStateChannel";
 import { cronListRefetchMs } from "@/lib/adminPullIntervals";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
 
@@ -295,30 +295,11 @@ export default function AgentCronPage() {
 
   // PUSH 跨标签：Chat SSE → BC → 本页立刻拉；无 Chat 时靠上面 refetchInterval
   useEffect(() => {
-    if (typeof BroadcastChannel === "undefined") return;
-    const channels: BroadcastChannel[] = [];
-    const onMsg = (ev: MessageEvent) => {
-      const t = (ev.data as { type?: string } | null)?.type;
-      if (isCronAdminPushEvent(t)) {
-        listQuery.refetch().catch(catchUnlessCancelled("app/cron/page.tsx"));
-        utils.session.list.invalidate().catch(catchUnlessCancelled("app/cron/page.tsx"));
-      }
-    };
-    for (const name of [UI_STATE_CHANNEL]) {
-      try {
-        const bc = new BroadcastChannel(name);
-        bc.addEventListener("message", onMsg);
-        channels.push(bc);
-      } catch {
-        /* ignore */
-      }
-    }
-    return () => {
-      for (const bc of channels) {
-        bc.removeEventListener("message", onMsg);
-        bc.close();
-      }
-    };
+    return subscribeUiState((msg) => {
+      if (!isCronAdminPushEvent(msg.type)) return;
+      listQuery.refetch().catch(catchUnlessCancelled("app/cron/page.tsx"));
+      utils.session.list.invalidate().catch(catchUnlessCancelled("app/cron/page.tsx"));
+    });
   }, [listQuery, utils]);
 
   // 等 briefing 出现 assistant 回复（或会话终态）后再弹跳转询问——不立刻离开 Cron 页

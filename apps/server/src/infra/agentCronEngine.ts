@@ -17,6 +17,7 @@ import {
   ensureAgentCronJobTable,
   listCronJobs,
   markCronJobRun,
+  recoverStaleCronJobRuns,
   type AgentCronJobRow,
 } from "./agentCronStore.js";
 import { getStreamHub, onHubRunSettled } from "./sessionStreamHub.js";
@@ -56,7 +57,15 @@ export class AgentCronEngine {
   start(): void {
     this.ensureSettledHook();
     void ensureAgentCronJobTable(this.prisma)
-      .then(() => this.refresh())
+      .then(() => recoverStaleCronJobRuns(this.prisma))
+      .then((n) => {
+        if (n > 0) {
+          console.log(
+            `  ⏰ [AgentCronEngine] 已将 ${n} 条重启遗留 running 标 failed（不自动续跑）`,
+          );
+        }
+        return this.refresh();
+      })
       .catch((err) => {
         console.error(
           "  ⏰ [AgentCronEngine] 建表/加载失败:",
@@ -76,6 +85,7 @@ export class AgentCronEngine {
     this.unsubSettled?.();
     this.unsubSettled = null;
     this.sessionToCron.clear();
+    this.running.clear();
     bootDetail("  ⏰ [AgentCronEngine] 已停止");
   }
 
@@ -160,10 +170,22 @@ export class AgentCronEngine {
     }
   }
 
+  /**
+   * 占用 = fire 临界区（running）或已起流尚未 settled（sessionToCron）。
+   * 禁止只在 fire() finally 放锁——那会让 briefing 还在跑时叠出第二会话。
+   */
+  private isJobOccupied(cronJobId: string): boolean {
+    if (this.running.has(cronJobId)) return true;
+    for (const id of this.sessionToCron.values()) {
+      if (id === cronJobId) return true;
+    }
+    return false;
+  }
+
   /** 测试 / 手动触发 / 定时点火入口 */
   async fire(cronJobId: string): Promise<{ sessionId?: string; error?: string }> {
     this.ensureSettledHook();
-    if (this.running.has(cronJobId)) {
+    if (this.isJobOccupied(cronJobId)) {
       return { error: "同任务仍在执行，跳过重叠触发" };
     }
     this.running.add(cronJobId);

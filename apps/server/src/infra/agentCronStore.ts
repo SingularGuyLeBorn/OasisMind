@@ -224,3 +224,18 @@ export async function markCronJobRun(
     /* 通知失败不阻断写库 */
   }
 }
+
+/**
+ * 进程启动：lastRunStatus=running 的行都是尸体（hub 流已随进程丢失）。
+ * 标 failed 并 PUSH；禁止自动 fire。幂等：非 running 不动。
+ */
+export async function recoverStaleCronJobRuns(prisma: PrismaClient): Promise<number> {
+  const rows = await listCronJobs(prisma);
+  let n = 0;
+  for (const row of rows) {
+    if (row.lastRunStatus !== "running") continue;
+    await markCronJobRun(prisma, row.id, "failed", row.lastSessionId);
+    n += 1;
+  }
+  return n;
+}
