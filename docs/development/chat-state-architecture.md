@@ -257,7 +257,7 @@ OasisMind 是**单用户、本地、教学向**，消息量中等，SSE + 内存
 - **INV-4（渲染单一所有权）**：一条 assistant 消息任一时刻只能有一个渲染源。流式期间由 liveTimeline 独占；`message_upserted` 先于 `done` 到达时记入 `inFlightAssistantId`，渲染层屏蔽 MessageStore 中同一条消息的 stored 渲染，直到 commit 后由 MessageStore 独占。见 §13。
 - **INV-5（挂接进度一致性）**：向运行中会话挂接 SSE 时，`resumeAfter` 必须与本地已有进度一致——本地无任何进度（服务端启动的运行）必须从 0 全量重放事件缓冲；本地有进度（断线重连）才接在本地 `lastEventId` 之后。见 §13。
 
-测试锁：手写黄金路径 `apps/web/lib/__tests__/chatStoreInvariants.test.ts`；随机交错（property-based）`chatStorePbtInvariants.test.ts` — 每步断言 INV-1～5 / INV-8，人写不变量、机器探交错。场景文档对照 `docs/development/scenario-test-map.json`。
+测试锁：手写黄金路径 `apps/web/lib/__tests__/chatStoreInvariants.test.ts`；事件级磁带回放 `chatStoreGoldenTraces.test.ts`（`golden-traces/*.json`，不是 evals/golden）；随机交错（property-based）`chatStorePbtInvariants.test.ts` — 每步断言 INV-1～5 / INV-8，人写不变量、机器探交错。场景文档对照 `docs/development/scenario-test-map.json`。
 
 1. `beginStream`：清内容（非 resume）、设 `streamTargetUserId`、phase=`streaming`、`connected=true`。**非 resume 且 isRunOccupied 时 no-op**（开发期 console.error）。
 2. `completeStream(content, { assistantMessageId })`：phase=`done`，保留 content 供过渡，写入 `pendingAssistantMessageId`；MessageStore 出现同 id assistant → `tryCommitStream` → `commitStream` → idle。

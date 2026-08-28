@@ -131,8 +131,10 @@
 | 章节 | 测试手段 |
 |---|---|
 | 第 5 节 | `prdChatQueueTable.test.ts` + 既有 drain/merge/rollback |
-| 第 6 节 | `chatStorePbtInvariants` |
-| GT-1 | Playwright `chat-queue-mock.spec.ts` |
+| 第 6 节 | `chatStorePbtInvariants`（numRuns≥400；命令 busy_409 / begin_rejected / abort_then_drain） |
+| GT-1 | 磁带 `golden-traces/queue-gt1-two-turns.json` + Playwright `chat-queue-mock.spec.ts` |
+| GT-3 | 磁带 `golden-traces/queue-gt3-abort-then-drain.json` + E2E `chat-queue-mock` + 单测 R13 |
+| GT-4 | `queueDrainClaimRollback` + PBT `busy_409` |
 | 性能 AC | 本期不做 |
 
 ---

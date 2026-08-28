@@ -70,6 +70,7 @@ Chat 弹框；`session-ask-user-bar`；SSE `ask_user_pending`
 |---|---|
 | R2/R6/R8 | `askUserGate.test.ts` |
 | R3/R4/R5/R7 | `prdAskUserTable.test.ts` |
+| GT 点卡续跑 | Playwright mock：`apps/web/e2e/chat-ask-user-mock.spec.ts` |
 
 ---
 

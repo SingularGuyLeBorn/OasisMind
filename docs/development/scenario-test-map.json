@@ -10,6 +10,7 @@
         "apps/web/e2e/chat-mock.spec.ts",
         "apps/web/lib/__tests__/chatStoreInvariants.test.ts",
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
+        "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
         "evals/golden/G06-idle-chat.json"
       ]
     },
@@ -96,13 +97,14 @@
       "id": "9",
       "title": "流式中连续发送 / 队列",
       "coverage": "covered",
-      "note": "流式中 Ctrl+Enter 入可见队列 + drain；mock 走 queue_slow_stream 预留窗口",
+      "note": "流式中 Ctrl+Enter 入可见队列 + drain；mock 走 queue_slow_stream 预留窗口。UI 状态机磁带见 chatStoreGoldenTraces，evals/golden 不是 UI GT。",
       "tests": [
         "apps/web/e2e/chat-queue-mock.spec.ts",
         "apps/web/e2e/chat-queue-real.spec.ts",
         "apps/web/lib/__tests__/chatQueueDrainLifecycle.test.tsx",
         "apps/web/lib/__tests__/chatQueueDrainHead.test.ts",
-        "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts"
+        "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
+        "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts"
       ]
     },
     {
