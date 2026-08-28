@@ -113,7 +113,9 @@
 
 - **GT-1 连发**:「队列测试第一条」流式中入队第二条 → 两问两答、可见待发清零（E2E `chat-queue-mock`）
 - **GT-2 空闲直发**:不闪待发 N（enqueueIdleDispatch 单测）
-- **GT-3 停止后 drain**:流式中入队 M2，点停释放占用后 M2 自动发出（E2E `chat-queue-mock` + 单测 R13）
+- **GT-3 停止后 drain**（两条磁带，禁止混称）：
+  - R8 `ABORT(null)`：立即 idle 后 drain — 磁带 `golden-traces/queue-gt3-abort-then-drain.json`（不是 abort-pending）
+  - 点停 abort-pending：`APPLY_USER_STOP(partialId 有值)` 期间仍 occupied、M2 不得蒸发；`UPSERT` aborted 对齐后才 drain — 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`
 - **GT-4 起流失败回潮**:detach 无 tombstone 时 merge 恢复（queueDrainClaimRollback）
 
 ## 9. 边界
@@ -131,9 +133,10 @@
 | 章节 | 测试手段 |
 |---|---|
 | 第 5 节 | `prdChatQueueTable.test.ts` + 既有 drain/merge/rollback |
-| 第 6 节 | `chatStorePbtInvariants`（numRuns≥400；命令 busy_409 / begin_rejected / abort_then_drain） |
+| 第 6 节 | `chatStorePbtInvariants`（numRuns≥400；命令 busy_409 / begin_rejected / abort_then_drain / abort_pending_then_drain） |
 | GT-1 | 磁带 `golden-traces/queue-gt1-two-turns.json` + Playwright `chat-queue-mock.spec.ts` |
-| GT-3 | 磁带 `golden-traces/queue-gt3-abort-then-drain.json` + E2E `chat-queue-mock` + 单测 R13 |
+| GT-3 R8 | 磁带 `golden-traces/queue-gt3-abort-then-drain.json`：锁 `ABORT(null)` 立即 idle 后 drain；E2E `chat-queue-mock`；单测 R13。**不是** abort-pending |
+| GT-3 abort-pending | 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`：锁点停窗口 occupied + 队未蒸发；PBT `abort_pending_then_drain` |
 | GT-4 | `queueDrainClaimRollback` + PBT `busy_409` |
 | 性能 AC | 本期不做 |
 
