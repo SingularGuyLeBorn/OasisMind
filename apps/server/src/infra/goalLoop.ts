@@ -369,6 +369,10 @@ export async function pauseSessionGoal(
 ): Promise<SessionGoalState | null> {
   const goal = await goalStateStore.read(sessionId);
   if (!goal) return null;
+  if (goal.status === "paused") return goal;
+  if (goal.status !== "active") {
+    throw new Error(`goal 状态为 ${goal.status}，无法暂停`);
+  }
   const next: SessionGoalState = { ...goal, status: "paused", pendingContinue: null };
   await writeGoalStateRaw(sessionId, next);
   return next;
@@ -380,6 +384,10 @@ export async function resumeSessionGoal(
 ): Promise<SessionGoalState | null> {
   const goal = await goalStateStore.read(sessionId);
   if (!goal) return null;
+  if (goal.status === "active") return goal;
+  if (goal.status !== "paused") {
+    throw new Error(`goal 状态为 ${goal.status}，无法恢复`);
+  }
   const next: SessionGoalState = {
     ...goal,
     status: "active",
@@ -388,6 +396,13 @@ export async function resumeSessionGoal(
   };
   await writeGoalStateRaw(sessionId, next);
   return next;
+}
+
+/** 顶栏暂停/继续：done/exhausted 不可控；paused 再暂停、active 再继续幂等。 */
+export function isAllowedGoalControl(status: string, control: "pause" | "resume"): boolean {
+  if (control === "pause") return status === "active" || status === "paused";
+  if (control === "resume") return status === "paused" || status === "active";
+  return false;
 }
 
 export async function clearSessionGoal(

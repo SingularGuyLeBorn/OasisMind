@@ -449,6 +449,14 @@ export async function waitAskUserResolution(
   return new Promise<AskUserResolution>((resolve) => {
     const waiter: AskUserWaiter = { resolve };
 
+    // 注册先行：先入 waiters 再处理已 abort，否则 finishAsk 见不到 waiter，Promise 永不 settle
+    let set = waitersById.get(askId);
+    if (!set) {
+      set = new Set();
+      waitersById.set(askId, set);
+    }
+    set.add(waiter);
+
     const ttl = askTtlMs();
     const elapsed = Date.now() - pending.createdAt;
     const remain = Math.max(0, ttl - elapsed);
@@ -471,13 +479,6 @@ export async function waitAskUserResolution(
       }
       opts.signal.addEventListener("abort", waiter.onAbort, { once: true });
     }
-
-    let set = waitersById.get(askId);
-    if (!set) {
-      set = new Set();
-      waitersById.set(askId, set);
-    }
-    set.add(waiter);
   });
 }
 

@@ -284,3 +284,4 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 - 想看 Swarm / 队列 / P0 架构决策：`design-decisions.md`；落地 PR 拆分：`p0-agent-arch-pr-split.md`。
 - 2026-08 Swarm 出处合同 + RSI 经验门 + 模块全景：`swarm-rsi-session-2026-08.md`。
 - 算法可视化（Remotion Code Motion Explainer）：`algo-viz.md`。
+- 可执行规格（状态×事件表，按行写测）：`prd-chat-stop.md`、`prd-chat-queue.md`、`prd-inbox-distill.md`、`prd-approval.md`、`prd-cron.md`、`prd-runs.md`、`prd-chat-goal.md`、`prd-ask-user.md`。

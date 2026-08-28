@@ -10,13 +10,18 @@ type TrpcBatchItem<T> = {
 };
 
 async function parseBatch<T>(res: Response, procedure: string): Promise<T> {
+  let batch: TrpcBatchItem<T>[] | undefined;
+  try {
+    batch = (await res.json()) as TrpcBatchItem<T>[];
+  } catch {
+    throw new Error(`tRPC ${procedure} HTTP ${res.status}`);
+  }
+  const first = batch?.[0];
+  const errMsg = first?.error?.json?.message ?? first?.error?.message;
+  if (errMsg) throw new Error(errMsg);
   if (!res.ok) {
     throw new Error(`tRPC ${procedure} HTTP ${res.status}`);
   }
-  const batch = (await res.json()) as TrpcBatchItem<T>[];
-  const first = batch[0];
-  const errMsg = first?.error?.json?.message ?? first?.error?.message;
-  if (errMsg) throw new Error(errMsg);
   if (!first?.result?.data?.json) {
     throw new Error(`tRPC ${procedure} 返回空数据`);
   }

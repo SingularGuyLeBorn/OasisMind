@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, Flag, Pause, Play, Search, X } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { UI_STATE_CHANNEL } from "@/lib/uiStateChannel";
+import { subscribeUiState } from "@/lib/uiStateChannel";
 import type { SessionGoalState } from "@oasismind/shared";
 
 const SUMMARY_MAX = 48;
@@ -45,24 +45,12 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
   );
 
   useEffect(() => {
-    if (!sessionId || typeof BroadcastChannel === "undefined") return;
-    let bc: BroadcastChannel;
-    try {
-      bc = new BroadcastChannel(UI_STATE_CHANNEL);
-    } catch {
-      return;
-    }
-    const onMsg = (ev: MessageEvent) => {
-      const data = ev.data as { type?: string; sessionId?: string } | null;
-      if (data?.type !== "goal_updated") return;
-      if (data.sessionId && data.sessionId !== sessionId) return;
+    if (!sessionId) return;
+    return subscribeUiState((msg) => {
+      if (msg.type !== "goal_updated") return;
+      if (msg.sessionId && msg.sessionId !== sessionId) return;
       utils.session.getGoal.invalidate({ sessionId }).catch(catchUnlessCancelled("getGoal.bc"));
-    };
-    bc.addEventListener("message", onMsg);
-    return () => {
-      bc.removeEventListener("message", onMsg);
-      bc.close();
-    };
+    });
   }, [sessionId, utils.session.getGoal]);
 
   const pauseMut = trpc.session.pauseGoal.useMutation({
@@ -127,6 +115,8 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
               goal.status === "active" && "bg-emerald-500/12 text-emerald-800",
               goal.status === "paused" && "bg-amber-500/15 text-amber-800",
             )}
+            data-testid="chat-goal-status"
+            data-status={goal.status}
           >
             {goal.status === "active" ? "进行中" : "已暂停"}
           </span>

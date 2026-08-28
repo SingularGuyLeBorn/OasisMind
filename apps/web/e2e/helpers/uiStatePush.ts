@@ -7,9 +7,10 @@ import { UI_STATE_CHANNEL, type UiStateChannelMessage } from "../../lib/uiStateC
 import {
   APPROVAL_REFETCH_PENDING_MS,
   CRON_REFETCH_IDLE_MS,
+  RUN_REFETCH_BUSY_MS,
 } from "../../lib/adminPullIntervals";
 
-export { APPROVAL_REFETCH_PENDING_MS, CRON_REFETCH_IDLE_MS };
+export { APPROVAL_REFETCH_PENDING_MS, CRON_REFETCH_IDLE_MS, RUN_REFETCH_BUSY_MS };
 
 export async function pushAdminUiState(
   page: Page,
