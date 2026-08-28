@@ -18,6 +18,11 @@ import {
 } from "../useSessionComposeState";
 import { pickFrontendDrainHead, decideEnqueueVisibility, type ChatQueueItem } from "../chatQueueTypes";
 import {
+  applyBeginRejectedDrain,
+  assertDrainFailureRestored,
+  syncTryDrain,
+} from "./helpers/chatStoreDrainModel";
+import {
   streamLifecycleActions,
   streamLifecycleStore,
   __resetStreamLifecycleStoreForTests,
@@ -55,7 +60,10 @@ type ChatCmd =
   | { t: "eventId"; sid: PbtSessionId; eventId: number }
   | { t: "watchdog" }
   | { t: "badQueue"; sid: PbtSessionId }
-  | { t: "clearError"; sid: PbtSessionId };
+  | { t: "clearError"; sid: PbtSessionId }
+  | { t: "busy_409"; sid: PbtSessionId }
+  | { t: "begin_rejected"; sid: PbtSessionId }
+  | { t: "abort_then_drain"; sid: PbtSessionId };
 
 const ASSISTANT_IDS = ["a1", "a2"] as const;
 const USER_IDS = ["u1", "u2"] as const;
@@ -83,22 +91,23 @@ function chatMsg(
 }
 
 function pbtTryDrain(sid: PbtSessionId): void {
-  const compose = sessionComposeStore.get(sid);
-  if (streamLifecycleStore.isRunOccupied(sid) || compose.queueDraining) return;
-  const head = pickFrontendDrainHead(compose.userQueue);
-  if (!head) return;
-  const beforeLen = compose.userQueue.length;
-  sessionComposeActions.setQueueDraining(sid, true);
-  sessionComposeActions.patchUserQueue(sid, (q) => q.filter((i) => i.id !== head.id));
-  const began = streamLifecycleActions.beginStream(sid);
-  if (!began) {
-    sessionComposeActions.enqueueUserQueueItem(sid, head);
-    sessionComposeActions.setQueueDraining(sid, false);
-    return;
-  }
-  // 同步模型：begin 已占流，等价于 runStream finally 释放 drain 锁
-  sessionComposeActions.setQueueDraining(sid, false);
-  expect(sessionComposeStore.get(sid).userQueue.length).toBe(beforeLen - 1);
+  syncTryDrain(sid, "streamed");
+}
+
+function ensureDrainableUser(sid: PbtSessionId): ChatQueueItem | null {
+  const existing = pickFrontendDrainHead(sessionComposeStore.get(sid).userQueue);
+  if (existing) return existing;
+  const item: ChatQueueItem = {
+    id: nextId("q"),
+    kind: "user",
+    text: "queued",
+    status: "pending",
+    createdAt: seq,
+    dbId: nextId("db"),
+    visibility: "visible",
+  };
+  sessionComposeActions.enqueueUserQueueItem(sid, item);
+  return pickFrontendDrainHead(sessionComposeStore.get(sid).userQueue);
 }
 
 function resetStores(): void {
@@ -110,7 +119,7 @@ function resetStores(): void {
   __resetSessionMessageStoreForTests();
   __resetSessionComposeStoreForTests();
   drainUnsub = streamLifecycleActions.onStreamCommitted((sid) => {
-    if (sid === "s0" || sid === "s1") pbtTryDrain(sid);
+    if (sid === "s0" || sid === "s1") syncTryDrain(sid, "streamed");
   });
 }
 
@@ -248,6 +257,41 @@ function applyCommand(cmd: ChatCmd): void {
     case "clearError":
       streamLifecycleActions.clearError(cmd.sid);
       break;
+    case "busy_409": {
+      if (streamLifecycleStore.isRunOccupied(cmd.sid)) break;
+      const head = ensureDrainableUser(cmd.sid);
+      if (!head) break;
+      syncTryDrain(cmd.sid, "busy_409");
+      break;
+    }
+    case "begin_rejected": {
+      const head = ensureDrainableUser(cmd.sid);
+      if (!head) break;
+      applyBeginRejectedDrain(cmd.sid, head);
+      break;
+    }
+    case "abort_then_drain": {
+      const lc = streamLifecycleStore.get(cmd.sid);
+      if (lc.phase === "error") streamLifecycleActions.commitStream(cmd.sid);
+      if (streamLifecycleStore.get(cmd.sid).phase === "done") {
+        streamLifecycleActions.abortStream(cmd.sid, { partialAssistantMessageId: null });
+      }
+      if (!streamLifecycleStore.isRunOccupied(cmd.sid)) {
+        streamLifecycleActions.beginStream(cmd.sid);
+      }
+      const drainable = ensureDrainableUser(cmd.sid);
+      const blocked = pickFrontendDrainHead(sessionComposeStore.get(cmd.sid).userQueue) == null;
+      streamLifecycleActions.abortStream(cmd.sid, { partialAssistantMessageId: null });
+      if (!blocked && drainable) {
+        expect(
+          sessionComposeStore.get(cmd.sid).userQueue.some((i) => i.id === drainable.id),
+        ).toBe(false);
+        expect(streamLifecycleStore.get(cmd.sid).phase).toBe("streaming");
+      } else {
+        expect(pickFrontendDrainHead(sessionComposeStore.get(cmd.sid).userQueue)).toBeNull();
+      }
+      break;
+    }
   }
   assertAllPbtSessions();
 }
@@ -323,6 +367,9 @@ const cmdArb: fc.Arbitrary<ChatCmd> = fc.oneof(
   { weight: 1, arbitrary: fc.constant({ t: "watchdog" as const }) },
   { weight: 1, arbitrary: fc.record({ t: fc.constant("badQueue" as const), sid: sidArb }) },
   { weight: 1, arbitrary: fc.record({ t: fc.constant("clearError" as const), sid: sidArb }) },
+  { weight: 3, arbitrary: fc.record({ t: fc.constant("busy_409" as const), sid: sidArb }) },
+  { weight: 3, arbitrary: fc.record({ t: fc.constant("begin_rejected" as const), sid: sidArb }) },
+  { weight: 3, arbitrary: fc.record({ t: fc.constant("abort_then_drain" as const), sid: sidArb }) },
 );
 
 describe("Chat store property-based invariants", () => {
@@ -401,9 +448,91 @@ describe("Chat store property-based invariants", () => {
             applyCommand(cmd);
           }
         }),
-        { numRuns: 120, seed: Number.isFinite(seed) ? seed : undefined },
+        { numRuns: 400, seed: Number.isFinite(seed) ? seed : undefined },
       );
     },
-    30_000,
+    // [OM-FREEPLAY] 400 次 × 最长 40 command；120 次时 30s 够用，按比例留余量
+    120_000,
   );
+
+  it("契约失败态：409 回潮禁止 tombstone", () => {
+    vi.useFakeTimers();
+    resetStores();
+    const item: ChatQueueItem = {
+      id: "q-409",
+      kind: "user",
+      text: "queued-409",
+      status: "pending",
+      createdAt: 1,
+      dbId: "db-409",
+      visibility: "dispatching",
+    };
+    sessionComposeActions.enqueueUserQueueItem("s0", item);
+    expect(syncTryDrain("s0", "busy_409")).toBe(false);
+    assertDrainFailureRestored("s0", item);
+    expect(streamLifecycleStore.isRunOccupied("s0")).toBe(false);
+    assertAllPbtSessions();
+  });
+
+  it("契约失败态：占用中 begin_rejected 恢复队列项", () => {
+    vi.useFakeTimers();
+    resetStores();
+    expect(streamLifecycleActions.beginStream("s0")).toBe(true);
+    const item: ChatQueueItem = {
+      id: "q-rej",
+      kind: "user",
+      text: "queued-rej",
+      status: "pending",
+      createdAt: 1,
+      dbId: "db-rej",
+      visibility: "visible",
+    };
+    sessionComposeActions.enqueueUserQueueItem("s0", item);
+    applyBeginRejectedDrain("s0", item);
+    assertDrainFailureRestored("s0", item);
+    expect(streamLifecycleStore.get("s0").phase).toBe("streaming");
+    assertAllPbtSessions();
+  });
+
+  it("契约失败态：ABORT 后仍 drain；superior 队首不越过", () => {
+    vi.useFakeTimers();
+    resetStores();
+    expect(streamLifecycleActions.beginStream("s0")).toBe(true);
+    sessionComposeActions.enqueueUserQueueItem("s0", {
+      id: "q-after-abort",
+      kind: "user",
+      text: "after-abort",
+      status: "pending",
+      createdAt: 1,
+      dbId: "db-after-abort",
+      visibility: "visible",
+    });
+    streamLifecycleActions.abortStream("s0", { partialAssistantMessageId: null });
+    expect(streamLifecycleStore.get("s0").phase).toBe("streaming");
+    expect(sessionComposeStore.get("s0").userQueue).toHaveLength(0);
+
+    sessionComposeActions.enqueueUserQueueItem("s1", {
+      id: "q-sup",
+      kind: "superior",
+      text: "上级先走",
+      status: "pending",
+      createdAt: 1,
+      visibility: "visible",
+    });
+    sessionComposeActions.enqueueUserQueueItem("s1", {
+      id: "q-user-behind",
+      kind: "user",
+      text: "后发",
+      status: "pending",
+      createdAt: 2,
+      dbId: "db-behind",
+      visibility: "visible",
+    });
+    expect(syncTryDrain("s1", "streamed")).toBe(false);
+    expect(sessionComposeStore.get("s1").userQueue.map((i) => i.id)).toEqual([
+      "q-sup",
+      "q-user-behind",
+    ]);
+    assertAllPbtSessions();
+  });
 });
