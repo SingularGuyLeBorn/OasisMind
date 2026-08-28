@@ -1,0 +1,53 @@
+{
+  "id": "queue-gt1-two-turns",
+  "prd": "prd-chat-queue.md GT-1",
+  "sessionId": "s0",
+  "events": [
+    {
+      "t": "BEGIN_STREAM",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "sendButton": "chat-stop",
+        "visibleQueueCount": 0
+      }
+    },
+    {
+      "t": "ENQUEUE",
+      "id": "q-m2",
+      "kind": "user",
+      "text": "队列测试第二条",
+      "dbId": "db-m2",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "visibleQueueCount": 1,
+        "queueLength": 1
+      }
+    },
+    {
+      "t": "COMPLETE",
+      "content": "队列慢流甲",
+      "assistantId": "a-turn-1",
+      "expect": {
+        "phase": "done",
+        "occupied": true,
+        "visibleQueueCount": 1
+      }
+    },
+    {
+      "t": "UPSERT",
+      "role": "assistant",
+      "id": "a-turn-1",
+      "content": "队列慢流甲",
+      "finishReason": "stop",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "sendButton": "chat-stop",
+        "visibleQueueCount": 0,
+        "queueLength": 0
+      }
+    }
+  ]
+}

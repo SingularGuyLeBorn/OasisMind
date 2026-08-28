@@ -1,0 +1,39 @@
+{
+  "id": "queue-gt3-abort-then-drain",
+  "prd": "prd-chat-queue.md GT-3",
+  "sessionId": "s0",
+  "events": [
+    {
+      "t": "BEGIN_STREAM",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "sendButton": "chat-stop"
+      }
+    },
+    {
+      "t": "ENQUEUE",
+      "id": "q-m2-abort",
+      "kind": "user",
+      "text": "点停后仍应发出",
+      "dbId": "db-m2-abort",
+      "expect": {
+        "phase": "streaming",
+        "visibleQueueCount": 1,
+        "queueLength": 1
+      }
+    },
+    {
+      "t": "ABORT",
+      "partialId": null,
+      "leftover": "半截",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "sendButton": "chat-stop",
+        "visibleQueueCount": 0,
+        "queueLength": 0
+      }
+    }
+  ]
+}
