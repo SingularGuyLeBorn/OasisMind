@@ -19,7 +19,8 @@
 | W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
 | W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
 | W6 | done | `pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；scenarioTestMap 绿 | `3c55deb4` |
-| W7 | done | `pnpm test:evals` 12/12；`pnpm --filter @oasismind/mock-llm-core test` 141 passed；`pnpm --filter @oasismind/server test -- evalGoldenSync` 3 passed；`pnpm test:bench` 24/24 退出码 0 | （本 W commit） |
+| W7 | done | `pnpm test:evals` 12/12；`pnpm --filter @oasismind/mock-llm-core test` 141 passed；`pnpm --filter @oasismind/server test -- evalGoldenSync` 3 passed；`pnpm test:bench` 24/24 退出码 0 | `193a6350` |
+| W8 | done | `pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；web lint 退出码 0；扫描 0 条生产违规 | （本 W commit） |
 | W7 | | | |
 | W8 | | | |
 | W9 | | | |
@@ -123,7 +124,7 @@
 | 补 | gardens-list-mock.spec.ts | done | apps/web/e2e/gardens-list-mock.spec.ts；空态加 gardens-empty |
 | 改 | evals/README.md | done | 文首诚实声明 + mini Harness 非模型质量一句 |
 | 补 | evalGoldenSync.test.ts | done | apps/server/src/__tests__/evalGoldenSync.test.ts（listNativeTools） |
-| 补 | noVoidPromise.test.ts | pending | |
+| 补 | noVoidPromise.test.ts | done | apps/web/lib/__tests__/noVoidPromise.test.ts |
 | 补 | catchUnlessCancelled.test.ts | pending | |
 | 补 | uiStateNotify.hub.test.ts | pending | |
 | 补 | admin-live-push-mock F5 it | pending | |
@@ -220,12 +221,13 @@
 
 ## W8 void promise 源码闸
 
-- 根因复述：
-- 改动文件：
-- 扫到并修好的违规：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：AGENTS.md 已禁 void refetch/invalidate，jsdom 单测绿抓不到浏览器 unhandled rejection。成功 = 机器闸扫 apps/web 生产源码，命中正则即红；现存违规改成 .catch 或 await。
+- 改动文件：新建 `apps/web/lib/__tests__/noVoidPromise.test.ts`。
+- 扫到并修好的违规：无。现网生产路径已是 `.catch(catchUnlessCancelled(...))`，闸 0 hit。
+- 不改哪些面：不扫 server React（无）；不扫 markdown / e2e / 测试文件。
+- [OM-FREEPLAY]：行内 `//` 注释在匹配前剥掉，避免注释里的 `void utils.` 假阳性。不引入 TS parser。
+- 验证：`pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；`pnpm --filter @oasismind/web lint` 退出码 0（10 条既有 warning，0 error）。
+- 遇到的问题：无。
 
 ## W9 中段门禁
 
