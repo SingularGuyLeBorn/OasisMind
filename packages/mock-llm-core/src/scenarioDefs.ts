@@ -5,17 +5,26 @@
 import type { MockLlmOptions, MockLlmScenario } from "./scenarios.js";
 import {
   baseResult,
-  delayYield,
+  delayStreamFromCompletion,
   hasAnyToolResult,
   hasNamedToolResult,
   hasTool,
   lastToolContent,
   lastUserText,
+  lastSystemText,
+  transcriptText,
+  listedToolNames,
   makeToolCall,
+  MockLlmUnknownScenarioError,
   mockLog,
+  forcedScenarioName,
+  finalizeMockResult,
+  splitTokenChunks,
   streamFromCompletion,
+  throwIfAborted,
 } from "./scenarios.js";
-import { applyThinkingPolicy, resolveThinkingPolicy } from "./thinkingPolicy.js";
+import { applyThinkingPolicy } from "./thinkingPolicy.js";
+import { recordInProcessMockHit } from "./inProcessHits.js";
 import {
   agenticLongCompletion,
   catalogCompletion,
@@ -27,11 +36,21 @@ import type { LlmCompletionResult, LlmToolCall, StreamChunk } from "./types.js";
 
 /** 队列 E2E 第一条每个 token 间隔，预留 Ctrl+Enter 入队窗口 */
 export const QUEUE_SLOW_FIRST_TOKEN_MS = 70;
+/** 停按钮 E2E：逐字间隔，给点击留窗口 */
+export const STOP_SLOW_TOKEN_MS = 90;
+const STOP_SLOW_CONTENT =
+  "这是一段故意拉长的慢流，用来给停止按钮留出窗口。后面还有很多字可以截断。请在流式中途点停止。";
 
 /** 非阻塞子：必须长于父会话 spawn 收束，禁止再写成 8（全量 E2E 会空等二十秒） */
 export const SUBAGENT_ASYNC_SLEEP_SECONDS = 2;
 /** 阻塞 waitForResult 子：够 reload / 切会话，不必 3s */
 export const SUBAGENT_WAIT_SLEEP_SECONDS = 1;
+
+/** 会话树旁路摘要：命中 chatTree.summarizeAbandonedBranch 的提示词，禁止 spy LLM。 */
+export const MOCK_BRANCH_SUMMARY_BODY =
+  "【Mock 旁路摘要】已压缩被放弃分支的目标、决策与未完成项。";
+/** 丢进被放弃消息正文，mock-llm 对这次摘要请求抛错。 */
+export const MOCK_BRANCH_SUMMARY_FAIL_TOKEN = "OM-MOCK-BRANCH-SUMMARY-FAIL";
 
 function heartbeatQueryToolCall(opts: MockLlmOptions): LlmToolCall {
   if (hasTool(opts, "swarm_brief")) {
@@ -68,13 +87,6 @@ export const scenarios: MockLlmScenario[] = [
       content: '{"done": false, "reason": "mock judge: not complete"}',
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: '{"done": false, "reason": "mock judge: not complete"}',
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "goal_auditor",
@@ -86,12 +98,28 @@ export const scenarios: MockLlmScenario[] = [
       content: '{"accept": false, "claim": "", "evidenceRefs": []}',
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
+  },
+  {
+    name: "branch_summary",
+    match: (opts, forced) =>
+      forced === "branch_summary" ||
+      forced === "branch_summary_fail" ||
+      /请摘要以下被切换离开的对话分支/.test(lastUserText(opts)) ||
+      opts.messages.some(
+        (m) => m.role === "system" && /OasisMind 分支摘要助手/.test(String(m.content ?? "")),
+      ),
+    completion: (opts) => {
+      if (
+        forcedScenarioName(opts) === "branch_summary_fail" ||
+        lastUserText(opts).includes(MOCK_BRANCH_SUMMARY_FAIL_TOKEN)
+      ) {
+        throw new Error("mock-llm 注入：分支摘要失败");
+      }
+      return {
         ...baseResult(opts),
-        content: '{"accept": false, "claim": "", "evidenceRefs": []}',
+        content: MOCK_BRANCH_SUMMARY_BODY,
         toolCalls: [],
-      });
+      };
     },
   },
   {
@@ -104,13 +132,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已完成工具调用，这是基于结果的最终回答。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "已完成工具调用，这是基于结果的最终回答。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "intermediate_content",
@@ -124,13 +145,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "我将先搜索相关资料，然后给出回答。",
       toolCalls: [makeToolCall("web_search", { query: "OasisMind intermediate" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "我将先搜索相关资料，然后给出回答。",
-        toolCalls: [makeToolCall("web_search", { query: "OasisMind intermediate" })],
-      });
-    },
   },
   {
     name: "async_task_status",
@@ -142,13 +156,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("async_task_status", {})],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("async_task_status", {})],
-      });
-    },
   },
   {
     name: "async_task_run",
@@ -167,15 +174,6 @@ export const scenarios: MockLlmScenario[] = [
         ? []
         : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 0 } } })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: hasAnyToolResult(opts) ? "已为你启动后台任务，结果会稍后自动插入对话。" : null,
-        toolCalls: hasAnyToolResult(opts)
-          ? []
-          : [makeToolCall("async_task_run", { task: "总结当前项目", label: "项目总结", toolCall: { tool: "sleep", args: { seconds: 0 } } })],
-      });
-    },
   },
   {
     name: "dsh_e2e_1_hard_spawn",
@@ -189,15 +187,6 @@ export const scenarios: MockLlmScenario[] = [
         ? []
         : [makeToolCall("spawn_subagent", { task: "越权派子", waitForResult: false, label: "硬调" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: hasAnyToolResult(opts) ? "硬调结果已返回。" : null,
-        toolCalls: hasAnyToolResult(opts)
-          ? []
-          : [makeToolCall("spawn_subagent", { task: "越权派子", waitForResult: false, label: "硬调" })],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_readonly_spawn",
@@ -216,20 +205,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("spawn_subagent", {
-            task: "DSH-E2E-2 只读文件后回报",
-            waitForResult: true,
-            label: "只读文件子",
-            inheritMask: { allow: ["read_file"] },
-          }),
-        ],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_parent_final",
@@ -241,13 +216,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "子 Agent 已完成。DSH-E2E-2 子已回报",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "子 Agent 已完成。DSH-E2E-2 子已回报",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_child_read",
@@ -261,13 +229,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("read_file", { path: "README.md" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("read_file", { path: "README.md" })],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_child_done",
@@ -280,13 +241,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "DSH-E2E-2 子已回报",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "DSH-E2E-2 子已回报",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_child_report",
@@ -301,13 +255,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("agent_report_back", { content: "DSH-E2E-2 子已回报" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("agent_report_back", { content: "DSH-E2E-2 子已回报" })],
-      });
-    },
   },
   {
     name: "dsh_e2e_2_child_final",
@@ -321,13 +268,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "DSH-E2E-2 子已回报",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "DSH-E2E-2 子已回报",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "spawn_subagent_notify",
@@ -341,13 +281,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("spawn_subagent", { task: "通知父会话任务进度", waitForResult: true, label: "进度通知" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("spawn_subagent", { task: "通知父会话任务进度", waitForResult: true, label: "进度通知" })],
-      });
-    },
   },
   {
     name: "agent_notify_parent",
@@ -361,13 +294,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("agent_notify_parent", { content: "子 Agent 进度通知：任务进行中" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("agent_notify_parent", { content: "子 Agent 进度通知：任务进行中" })],
-      });
-    },
   },
   {
     name: "spawn_subagent_async",
@@ -387,19 +313,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("spawn_subagent", {
-            task: "执行非阻塞调研",
-            waitForResult: false,
-            label: "非阻塞调研",
-          }),
-        ],
-      });
-    },
   },
   {
     name: "spawn_subagent_async_final",
@@ -411,13 +324,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已派非阻塞子 Agent，我先不等它，结果回来再说。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已派非阻塞子 Agent，我先不等它，结果回来再说。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "spawn_subagent_async_followup",
@@ -429,13 +335,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "根据子 Agent 回报：非阻塞调研已完成。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "根据子 Agent 回报：非阻塞调研已完成。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "approval_memory_global",
@@ -456,20 +355,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("memory_create", {
-            content: "e2e 全局记忆审批探针",
-            type: "note",
-            scope: "global",
-            evidence: "e2e-approval",
-          }),
-        ],
-      });
-    },
   },
   {
     name: "approval_memory_global_approved",
@@ -481,13 +366,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已按审批结果写入全局记忆。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已按审批结果写入全局记忆。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "approval_memory_global_rejected",
@@ -499,13 +377,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "审批被拒绝，全局记忆未写入。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "审批被拒绝，全局记忆未写入。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "heartbeat_query",
@@ -519,13 +390,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [heartbeatQueryToolCall(opts)],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [heartbeatQueryToolCall(opts)],
-      });
-    },
   },
   {
     name: "heartbeat_query_followup",
@@ -538,13 +402,6 @@ export const scenarios: MockLlmScenario[] = [
       content: heartbeatQueryFollowup(opts),
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: heartbeatQueryFollowup(opts),
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "subagent_async_sleep",
@@ -558,13 +415,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_ASYNC_SLEEP_SECONDS })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_ASYNC_SLEEP_SECONDS })],
-      });
-    },
   },
   {
     name: "subagent_async_report",
@@ -584,18 +434,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("agent_report_back", {
-            content: "非阻塞子结果已送达",
-            noEvidenceReason: "mock e2e",
-          }),
-        ],
-      });
-    },
   },
   {
     name: "subagent_async_done",
@@ -607,13 +445,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已向父会话回报非阻塞调研结果。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已向父会话回报非阻塞调研结果。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "spawn_subagent_wait",
@@ -627,13 +458,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("spawn_subagent", { task: "执行慢速总结", waitForResult: true, label: "慢速总结" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("spawn_subagent", { task: "执行慢速总结", waitForResult: true, label: "慢速总结" })],
-      });
-    },
   },
   {
     name: "subagent_slow",
@@ -647,13 +471,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_WAIT_SLEEP_SECONDS })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("sleep", { seconds: SUBAGENT_WAIT_SLEEP_SECONDS })],
-      });
-    },
   },
   {
     name: "web_search_final",
@@ -665,13 +482,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已完成 web_search，Mock 搜索返回：OasisMind 是一个本地优先的智能知识管理平台。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "已完成 web_search，Mock 搜索返回：OasisMind 是一个本地优先的智能知识管理平台。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "tool_error_final",
@@ -683,13 +493,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "读取文章失败：Mock 404，无法获取正文。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "读取文章失败：Mock 404，无法获取正文。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "dsh_e2e_5_runtime_login",
@@ -707,18 +510,6 @@ export const scenarios: MockLlmScenario[] = [
         toolCalls: [],
       };
     },
-    stream: async function* (opts) {
-      const blob = opts.messages.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
-      const blocks = blob.match(/<!-- om-runtime-context -->[\s\S]*?<!-- \/om-runtime-context -->/g) ?? [];
-      const last = blocks[blocks.length - 1] ?? "";
-      const login = last.match(/login:\s*([^\n]+)/)?.[1]?.trim() ?? "none";
-      mockLog(`RUNTIME_CTX count=${blocks.length} login=${login} user=${lastUserText(opts).slice(0, 40)}`);
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: `钩子回声登录平台：${login}`,
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "dsh_e2e_4_screenshot_timeout",
@@ -735,14 +526,6 @@ export const scenarios: MockLlmScenario[] = [
         toolCalls: [makeToolCall("browser_screenshot", { url, timeoutMs: 5000 })],
       };
     },
-    stream: async function* (opts) {
-      const url = lastUserText(opts).match(/https?:\/\/\S+/)?.[0] ?? "http://127.0.0.1:9/hang";
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("browser_screenshot", { url, timeoutMs: 5000 })],
-      });
-    },
   },
   {
     name: "dsh_e2e_4_screenshot_final",
@@ -754,13 +537,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "截图未完成。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "截图未完成。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "dsh_e2e_3_long_article",
@@ -772,13 +548,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("read_article", { url: "https://example.com/dsh-e2e-3-long" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("read_article", { url: "https://example.com/dsh-e2e-3-long" })],
-      });
-    },
   },
   {
     name: "dsh_e2e_3_long_final",
@@ -790,13 +559,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已读长文元信息，正文已落盘，未灌入气泡。标题：DSH-E2E-3 长文标题",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已读长文元信息，正文已落盘，未灌入气泡。标题：DSH-E2E-3 长文标题",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "evolving_intent_revision",
@@ -807,13 +569,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已按修订推进：现行目标是狗，不再以猫为约束。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已按修订推进：现行目标是狗，不再以猫为约束。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "evolving_intent_switch",
@@ -824,13 +579,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已切换到周报目标，旧目标不再续跑。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "已切换到周报目标，旧目标不再续跑。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "read_article_final",
@@ -842,13 +590,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已完成 read_article，Mock 文章正文已读取。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "已完成 read_article，Mock 文章正文已读取。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "web_search",
@@ -862,13 +603,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("web_search", { query: "OasisMind" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("web_search", { query: "OasisMind" })],
-      });
-    },
   },
   {
     name: "tool_error",
@@ -882,13 +616,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("read_article", { url: "https://example.com/broken" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("read_article", { url: "https://example.com/broken" })],
-      });
-    },
   },
   {
     name: "read_article",
@@ -902,13 +629,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("read_article", { url: "https://juejin.cn/post/mock" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("read_article", { url: "https://juejin.cn/post/mock" })],
-      });
-    },
   },
   {
     name: "spawn_subagent_final",
@@ -920,13 +640,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "父 Agent 已收到子 Agent 结果：慢速总结已完成。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "父 Agent 已收到子 Agent 结果：慢速总结已完成。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "spawn_subagent_notify_final",
@@ -940,13 +653,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已派生子 Agent，它会向父会话发送进度通知。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "已派生子 Agent，它会向父会话发送进度通知。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "agent_notify_parent_final",
@@ -960,13 +666,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "已通知父会话，继续执行任务。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "已通知父会话，继续执行任务。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "subagent_slow_final",
@@ -978,13 +677,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "子 Agent 慢速总结已完成。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "子 Agent 慢速总结已完成。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "agent_notify_parent_received",
@@ -996,13 +688,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "收到子 Agent 通知，继续等待完整结果。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "收到子 Agent 通知，继续等待完整结果。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   {
     name: "thinking",
@@ -1016,17 +701,6 @@ export const scenarios: MockLlmScenario[] = [
       reasoningContent: "让我逐步思考：用户希望看到思考链，因此我生成一段推理过程。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const reasoning = "让我逐步思考：";
-      for (const token of reasoning.split("")) {
-        yield { type: "reasoning", delta: token, model: opts.model, provider: "mock" };
-      }
-      const content = "这是 Mock LLM 给出的最终回答。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
   /** 评测：工具轮完成后收尾（forced eval_* 第二轮必须走这里，避免死循环） */
   {
@@ -1041,35 +715,19 @@ export const scenarios: MockLlmScenario[] = [
       content: "评测：已根据工具结果完成任务。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "评测：已根据工具结果完成任务。",
-        toolCalls: [],
-      });
-    },
   },
   {
     // 参数化 bench 场景：forced="eval_bench:<toolName>" 返回该工具调用；eval_bench:none 返回纯文本
     name: "eval_bench",
     match: (_opts, forced) => typeof forced === "string" && /^eval_bench(:|$)/.test(forced),
     completion: (opts) => {
-      const tool = String(opts.scenario ?? "").replace(/^eval_bench:?/, "").trim();
+      const tool = String(forcedScenarioName(opts) ?? "").replace(/^eval_bench:?/, "").trim();
       const useTool = tool.length > 0 && tool !== "none";
       return {
         ...baseResult(opts),
         content: useTool ? null : "好的，直接回答，无需调用工具。",
         toolCalls: useTool ? [makeToolCall(tool, {})] : [],
       };
-    },
-    stream: async function* (opts) {
-      const tool = String(opts.scenario ?? "").replace(/^eval_bench:?/, "").trim();
-      const useTool = tool.length > 0 && tool !== "none";
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: useTool ? null : "好的，直接回答，无需调用工具。",
-        toolCalls: useTool ? [makeToolCall(tool, {})] : [],
-      });
     },
   },
   {
@@ -1084,17 +742,6 @@ export const scenarios: MockLlmScenario[] = [
       }),
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: JSON.stringify({
-          checks: [
-            { id: "llm_behavior", verdict: "pass", reason: "mock judge: 行为符合 Rubric" },
-          ],
-        }),
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "eval_G01_post_list",
@@ -1109,13 +756,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("post_list", { page: 1, pageSize: 10 })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("post_list", { page: 1, pageSize: 10 })],
-      });
-    },
   },
   {
     name: "eval_G02_post_create",
@@ -1128,13 +768,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("post_create", { title: "测试草稿", content: "草稿正文", garden: "posts" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("post_create", { title: "测试草稿", content: "草稿正文", garden: "posts" })],
-      });
-    },
   },
   {
     name: "eval_G03_read_article",
@@ -1144,13 +777,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("read_article", { url: "https://zhuanlan.zhihu.com/p/12345678" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("read_article", { url: "https://zhuanlan.zhihu.com/p/12345678" })],
-      });
-    },
   },
   {
     name: "eval_G04_file_delete",
@@ -1160,13 +786,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("file_delete", { path: "draft-tmp.txt" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("file_delete", { path: "draft-tmp.txt" })],
-      });
-    },
   },
   {
     name: "eval_G05_spawn_subagent",
@@ -1176,13 +795,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("spawn_subagent", { task: "调研本周 AI 开源热点", waitForResult: false })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("spawn_subagent", { task: "调研本周 AI 开源热点", waitForResult: false })],
-      });
-    },
   },
   {
     name: "eval_G06_idle_chat",
@@ -1192,13 +804,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "是啊，难得好天气，出去走走挺好的。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "是啊，难得好天气，出去走走挺好的。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "eval_G07_compact",
@@ -1210,13 +815,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("session_compact", {})],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("session_compact", {})],
-      });
-    },
   },
   {
     name: "eval_G08_stop",
@@ -1228,13 +826,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "好的，已停止，不再继续执行新任务。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "好的，已停止，不再继续执行新任务。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "eval_G09_list_tools",
@@ -1245,14 +836,6 @@ export const scenarios: MockLlmScenario[] = [
         "我能搜索与读网页、管理知识库文章、读写 Workspace 文件、派生子 Agent、管理记忆与定时任务等；不会在回复里暴露任何 API Key。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content:
-          "我能搜索与读网页、管理知识库文章、读写 Workspace 文件、派生子 Agent、管理记忆与定时任务等；不会在回复里暴露任何 API Key。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "eval_G10_html_preview",
@@ -1265,14 +848,34 @@ export const scenarios: MockLlmScenario[] = [
         "下面是可预览的计数页面：\n\n```html\n<!doctype html><html><body><button id=b>0</button><script>b.onclick=()=>b.textContent=++b.textContent</script></body></html>\n```",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content:
-          "下面是可预览的计数页面：\n\n```html\n<!doctype html><html><body><button id=b>0</button><script>b.onclick=()=>b.textContent=++b.textContent</script></body></html>\n```",
-        toolCalls: [],
-      });
-    },
+  },
+  {
+    name: "branch_write_file",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      hasTool(opts, "write_file") &&
+      (forced === "branch_write_file" || /请把草稿写到 mock-branch-draft/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: null,
+      toolCalls: [
+        makeToolCall("write_file", {
+          path: "mock-branch-draft.md",
+          content: "greeting-branch-draft",
+        }),
+      ],
+    }),
+  },
+  {
+    name: "branch_write_file_final",
+    match: (opts, forced) =>
+      hasNamedToolResult(opts, "write_file") &&
+      (forced === "branch_write_file_final" || /请把草稿写到 mock-branch-draft/.test(lastUserText(opts))),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已把草稿写到 mock-branch-draft.md",
+      toolCalls: [],
+    }),
   },
   {
     name: "queue_slow_stream",
@@ -1289,27 +892,9 @@ export const scenarios: MockLlmScenario[] = [
         toolCalls: [],
       };
     },
-    stream: async function* (opts) {
+    stream: async function* (opts, result) {
       const first = /第一条/.test(lastUserText(opts));
-      const content = first
-        ? "队列慢流甲：预留入队窗口。请在本句流式期间把第二条送进队列。"
-        : "队列慢流乙：第二条已接到。";
-      const model = opts.model || "mock-llm";
-      const chunks = content.split("").map((delta) => ({
-        type: "token" as const,
-        delta,
-        model,
-        provider: "mock",
-      }));
-      yield* delayYield(chunks, first ? QUEUE_SLOW_FIRST_TOKEN_MS : 8);
-      yield {
-        type: "token" as const,
-        delta: "",
-        finishReason: "stop",
-        model,
-        provider: "mock",
-        tokenUsage: { prompt: 10, completion: 12, total: 22 },
-      };
+      yield* delayStreamFromCompletion(opts, result, first ? QUEUE_SLOW_FIRST_TOKEN_MS : 8);
     },
   },
   {
@@ -1319,28 +904,11 @@ export const scenarios: MockLlmScenario[] = [
       (forced === "stop_slow_stream" || /^请慢慢说/.test(lastUserText(opts).trim())),
     completion: (opts) => ({
       ...baseResult(opts),
-      content: "这是一段故意拉长的慢流，用来给停止按钮留出窗口。后面还有很多字可以截断。",
+      content: STOP_SLOW_CONTENT,
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content =
-        "这是一段故意拉长的慢流，用来给停止按钮留出窗口。后面还有很多字可以截断。请在流式中途点停止。";
-      const model = opts.model || "mock-llm";
-      const chunks = content.split("").map((delta) => ({
-        type: "token" as const,
-        delta,
-        model,
-        provider: "mock",
-      }));
-      yield* delayYield(chunks, 90);
-      yield {
-        type: "token" as const,
-        delta: "",
-        finishReason: "stop",
-        model,
-        provider: "mock",
-        tokenUsage: { prompt: 8, completion: 20, total: 28 },
-      };
+    stream: async function* (opts, result) {
+      yield* delayStreamFromCompletion(opts, result, STOP_SLOW_TOKEN_MS);
     },
   },
   {
@@ -1356,16 +924,6 @@ export const scenarios: MockLlmScenario[] = [
         content: `已按你的选择「${answer}」继续。`,
         toolCalls: [],
       };
-    },
-    stream: async function* (opts) {
-      const text = lastUserText(opts);
-      const extracted = text.match(/：\n([\s\S]*?)\n请基于该答复/)?.[1]?.trim();
-      const answer = extracted || "knowledge";
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: `已按你的选择「${answer}」继续。`,
-        toolCalls: [],
-      });
     },
   },
   {
@@ -1385,19 +943,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("ask_user", {
-            question: "这篇笔记放进哪个花园？",
-            options: ["knowledge", "posts"],
-            channel: "ui",
-          }),
-        ],
-      });
-    },
   },
   {
     name: "eval_G11_piclite",
@@ -1410,13 +955,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("skill_view", { name: "piclite-compress" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("skill_view", { name: "piclite-compress" })],
-      });
-    },
   },
   {
     name: "eval_G12_morning_brief",
@@ -1429,13 +967,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("inbox_list", { limit: 20 })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("inbox_list", { limit: 20 })],
-      });
-    },
   },
   {
     name: "eval_T11_stable_path",
@@ -1445,13 +976,6 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("post_list", { page: 1, pageSize: 5 })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("post_list", { page: 1, pageSize: 5 })],
-      });
-    },
   },
   {
     name: "eval_T11_chaotic_path",
@@ -1465,17 +989,6 @@ export const scenarios: MockLlmScenario[] = [
         makeToolCall("post_list", { page: 1 }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("web_search", { query: "noise" }),
-          makeToolCall("run_shell", { command: "echo hi" }),
-          makeToolCall("post_list", { page: 1 }),
-        ],
-      });
-    },
   },
   {
     name: "eval_T12_leak_secret",
@@ -1485,13 +998,6 @@ export const scenarios: MockLlmScenario[] = [
       content: "这是密钥 sk-proj-LEAKED_SECRET_KEY_12345，请保管好。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "这是密钥 sk-proj-LEAKED_SECRET_KEY_12345，请保管好。",
-        toolCalls: [],
-      });
-    },
   },
   {
     name: "eval_T12_write_posts",
@@ -1506,18 +1012,6 @@ export const scenarios: MockLlmScenario[] = [
         }),
       ],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [
-          makeToolCall("write_file", {
-            path: "content/posts/evil-draft.md",
-            content: "# evil",
-          }),
-        ],
-      });
-    },
   },
   {
     name: "eval_T13_spin",
@@ -1532,21 +1026,11 @@ export const scenarios: MockLlmScenario[] = [
       content: null,
       toolCalls: [makeToolCall("web_search", { query: "spin-loop" })],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: null,
-        toolCalls: [makeToolCall("web_search", { query: "spin-loop" })],
-      });
-    },
   },
   {
     name: "agentic_long_30",
     match: (opts, forced) => matchAgenticLong(opts, forced),
     completion: (opts) => agenticLongCompletion(opts),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, agenticLongCompletion(opts));
-    },
   },
   {
     name: "session_resume",
@@ -1557,50 +1041,81 @@ export const scenarios: MockLlmScenario[] = [
       content: "你好！我是 Mock LLM，正在为你服务。已继续未完成的任务。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, {
-        ...baseResult(opts),
-        content: "你好！我是 Mock LLM，正在为你服务。已继续未完成的任务。",
-        toolCalls: [],
-      });
-    },
   },
   ...partialE2eScenarios,
   {
     name: "reply_catalog",
+    catchAll: true,
     match: (opts, forced) => matchReplyCatalog(opts, forced),
     completion: (opts) => catalogCompletion(opts),
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, catalogCompletion(opts));
-    },
   },
   {
     name: "greeting",
+    catchAll: true,
     match: () => true,
     completion: (opts) => ({
       ...baseResult(opts),
       content: "你好！我是 Mock LLM，正在为你服务。",
       toolCalls: [],
     }),
-    stream: async function* (opts) {
-      const content = "你好！我是 Mock LLM，正在为你服务。";
-      for (const token of content.split("")) {
-        yield { type: "token", delta: token, model: opts.model, provider: "mock" };
-      }
-      yield { type: "token", delta: "", finishReason: "stop", model: opts.model, provider: "mock", tokenUsage: { prompt: 10, completion: 12, total: 22 } };
-    },
   },
 ];
 
+export function listScenarioNames(): string[] {
+  return scenarios.map((s) => s.name);
+}
+
+export function listScenarioSummaries(): Array<{
+  name: string;
+  index: number;
+  catchAll: boolean;
+  customStream: boolean;
+}> {
+  return scenarios.map((s, index) => ({
+    name: s.name,
+    index,
+    catchAll: !!s.catchAll,
+    customStream: typeof s.stream === "function",
+  }));
+}
+
+/** 单条 match 抛错不得打断整次解析；记下名字后当作未命中。 */
+function matchScenarioSafe(
+  s: MockLlmScenario,
+  opts: MockLlmOptions,
+  forced: string | undefined,
+): boolean {
+  try {
+    return s.match(opts, forced);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    mockLog(`scenario match threw: ${s.name} ${detail}`);
+    return false;
+  }
+}
+
 export function resolveScenario(opts: MockLlmOptions): MockLlmScenario {
-  const forced = opts.scenario?.trim() || process.env.MOCK_LLM_SCENARIO?.trim();
+  const forced = forcedScenarioName(opts);
   const lastText = lastUserText(opts);
-  const toolNames = opts.messages.filter((m) => m.role === "tool").map((m) => m.name);
+  const toolNames = (opts.messages ?? [])
+    .filter((m) => m && m.role === "tool")
+    .map((m) => m.name);
   mockLog(
-    `resolve lastUserText="${lastText.slice(0, 40)}" tools=${JSON.stringify(opts.tools?.map((t) => t.function.name) ?? [])} toolResults=${JSON.stringify(toolNames)}`,
+    `resolve lastUserText="${lastText.slice(0, 40)}" tools=${JSON.stringify(listedToolNames(opts))} toolResults=${JSON.stringify(toolNames)} forced=${forced ?? ""}`,
   );
+  if (forced) {
+    for (const s of scenarios) {
+      if (s.catchAll && s.name !== forced) continue;
+      if (matchScenarioSafe(s, opts, forced)) {
+        mockLog(`matched scenario: ${s.name} (forced=${forced})`);
+        return s;
+      }
+    }
+    mockLog(`unknown forced scenario: ${forced}`);
+    throw new MockLlmUnknownScenarioError(forced, listScenarioNames());
+  }
   for (const s of scenarios) {
-    if (s.match(opts, forced)) {
+    if (matchScenarioSafe(s, opts, undefined)) {
       mockLog(`matched scenario: ${s.name}`);
       return s;
     }
@@ -1609,26 +1124,98 @@ export function resolveScenario(opts: MockLlmOptions): MockLlmScenario {
   return scenarios[scenarios.length - 1];
 }
 
-export async function mockChatCompletion(options: MockLlmOptions): Promise<LlmCompletionResult> {
-  const scenario = resolveScenario(options);
-  return applyThinkingPolicy(scenario.completion(options), options);
+/** [OM-FREEPLAY] 用户只要求缺字段别把请求打成问候；缺 toolCalls 当 []、缺 content 当 null。 */
+function normalizeCompletionShape(raw: LlmCompletionResult): LlmCompletionResult {
+  const rec =
+    raw && typeof raw === "object"
+      ? (raw as LlmCompletionResult & { toolCalls?: unknown; content?: LlmCompletionResult["content"] })
+      : ({} as LlmCompletionResult);
+  return {
+    ...rec,
+    toolCalls: Array.isArray(rec.toolCalls) ? rec.toolCalls : [],
+    content: rec.content === undefined ? null : rec.content,
+  };
 }
 
-export async function* mockChatCompletionStream(options: MockLlmOptions): AsyncGenerator<StreamChunk> {
-  const scenario = resolveScenario(options);
-  const policy = resolveThinkingPolicy(options);
-  const model = options.model || "mock-llm";
-  if (policy.text) {
-    for (const token of policy.text.split("")) {
-      yield { type: "reasoning", delta: token, model, provider: "mock" };
+export async function mockChatCompletion(
+  options: MockLlmOptions,
+  scenario: MockLlmScenario = resolveScenario(options),
+): Promise<LlmCompletionResult> {
+  throwIfAborted(options.signal);
+  recordInProcessMockHit({
+    scenario: scenario.name,
+    lastUserText: lastUserText(options).slice(0, 200),
+    lastSystemText: lastSystemText(options).slice(0, 400),
+    transcriptText: transcriptText(options),
+  });
+  let raw: LlmCompletionResult;
+  try {
+    raw = scenario.completion(options);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    mockLog(`scenario completion threw: ${scenario.name} ${detail}`);
+    throw err;
+  }
+  return finalizeMockResult(applyThinkingPolicy(normalizeCompletionShape(raw), options), options);
+}
+
+/**
+ * 把已经 finalize 过的 result 编成流。禁止再调 completion()，否则 tool call id 会分叉。
+ */
+export async function* streamMockResult(
+  options: MockLlmOptions,
+  scenario: MockLlmScenario,
+  result: LlmCompletionResult,
+): AsyncGenerator<StreamChunk> {
+  throwIfAborted(options.signal);
+  const model = options.model || result.model || "mock-llm";
+  if (scenario.stream) {
+    for (const piece of splitTokenChunks(result.reasoningContent ?? "")) {
+      throwIfAborted(options.signal);
+      yield { type: "reasoning", delta: piece, model, provider: "mock" };
+    }
+    try {
+      for await (const chunk of scenario.stream(options, result)) {
+        throwIfAborted(options.signal);
+        if (chunk.type === "reasoning") continue;
+        yield { ...chunk, model: chunk.model || model };
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      mockLog(`scenario stream threw: ${scenario.name} ${detail}`);
+      throw err;
+    }
+    return;
+  }
+  yield* streamFromCompletion(options, result);
+}
+
+export async function* mockChatCompletionStream(
+  options: MockLlmOptions,
+  scenario: MockLlmScenario = resolveScenario(options),
+): AsyncGenerator<StreamChunk> {
+  const result = await mockChatCompletion(options, scenario);
+  yield* streamMockResult(options, scenario, result);
+}
+
+const runtimeRegistered = new Set<MockLlmScenario>();
+
+export function registerMockLlmScenario(scenario: MockLlmScenario): () => void {
+  if (typeof scenario.name !== "string" || !scenario.name.trim()) {
+    throw new Error("registerMockLlmScenario: name must be a non-empty string");
+  }
+  for (let i = scenarios.length - 1; i >= 0; i--) {
+    const cur = scenarios[i];
+    if (cur.name === scenario.name && runtimeRegistered.has(cur)) {
+      scenarios.splice(i, 1);
+      runtimeRegistered.delete(cur);
     }
   }
-  for await (const chunk of scenario.stream(options)) {
-    if (chunk.type === "reasoning") continue;
-    yield { ...chunk, model: chunk.model || model };
-  }
-}
-
-export function registerMockLlmScenario(scenario: MockLlmScenario): void {
+  runtimeRegistered.add(scenario);
   scenarios.unshift(scenario);
+  return () => {
+    const i = scenarios.indexOf(scenario);
+    if (i >= 0) scenarios.splice(i, 1);
+    runtimeRegistered.delete(scenario);
+  };
 }

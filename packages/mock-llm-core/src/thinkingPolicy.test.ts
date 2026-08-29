@@ -1,9 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   mockChatCompletion,
   mockChatCompletionStream,
+  registerMockLlmScenario,
 } from "./scenarioDefs.js";
-import { REASONING_HIGH, REASONING_MAX, parseHttpThinking } from "./thinkingPolicy.js";
+import { baseResult } from "./scenarios.js";
+import {
+  applyThinkingPolicy,
+  listMockOpenAiModels,
+  parseHttpThinking,
+  REASONING_HIGH,
+  REASONING_MAX,
+} from "./thinkingPolicy.js";
 
 const hello = {
   messages: [{ role: "user" as const, content: "你好" }],
@@ -101,5 +109,77 @@ describe("mock 思考策略（与真实请求体对齐）", () => {
     expect(types[0]).toBe("reasoning");
     expect(types).toContain("token");
     expect(model).toBe("deepseek-v4-pro");
+  });
+
+  it("模型列表覆盖 Chat 菜单与 mock 专用 id", () => {
+    const ids = listMockOpenAiModels().map((m) => m.id);
+    expect(ids).toContain("deepseek-v4-flash");
+    expect(ids).toContain("deepseek-chat");
+    expect(ids).toContain("kimi-k2");
+    expect(ids).toContain("mock-llm");
+  });
+});
+
+describe("场景自定义 reasoningContent 不被 canned 覆盖", () => {
+  const CUSTOM_REASONING = "场景自己写的推理，不是 canned。";
+  const unregs: Array<() => void> = [];
+
+  afterEach(() => {
+    for (const u of unregs.splice(0)) u();
+  });
+
+  function registerCustomReasoningScenario(reasoningContent: string) {
+    unregs.push(
+      registerMockLlmScenario({
+        name: "custom_reasoning_probe",
+        match: (_opts, forced) => forced === "custom_reasoning_probe",
+        completion: (opts) => ({
+          ...baseResult(opts),
+          content: "自定义推理场景正文",
+          reasoningContent,
+          toolCalls: [],
+        }),
+      }),
+    );
+  }
+
+  it("thinking.enabled / enableReasoning 保留场景自定义推理，不是 REASONING_HIGH", async () => {
+    registerCustomReasoningScenario(CUSTOM_REASONING);
+    const viaThinking = await mockChatCompletion({
+      messages: [{ role: "user", content: "x" }],
+      model: "deepseek-v4-flash",
+      scenario: "custom_reasoning_probe",
+      thinking: { type: "enabled" },
+    });
+    expect(viaThinking.reasoningContent).toBe(CUSTOM_REASONING);
+    expect(viaThinking.reasoningContent).not.toBe(REASONING_HIGH);
+
+    const viaEnable = await mockChatCompletion({
+      messages: [{ role: "user", content: "x" }],
+      model: "deepseek-v4-flash",
+      scenario: "custom_reasoning_probe",
+      enableReasoning: true,
+    });
+    expect(viaEnable.reasoningContent).toBe(CUSTOM_REASONING);
+    expect(viaEnable.reasoningContent).not.toBe(REASONING_HIGH);
+  });
+
+  it("thinking.disabled 即使场景写了推理也不泄漏", async () => {
+    registerCustomReasoningScenario(CUSTOM_REASONING);
+    const result = await mockChatCompletion({
+      messages: [{ role: "user", content: "x" }],
+      model: "deepseek-v4-flash",
+      scenario: "custom_reasoning_probe",
+      thinking: { type: "disabled" },
+    });
+    expect(result.reasoningContent).toBeNull();
+  });
+
+  it("空白 reasoningContent 开思考时走 canned", () => {
+    const out = applyThinkingPolicy(
+      { reasoningContent: "  \n  ", model: "mock-llm" },
+      { thinking: { type: "enabled" } },
+    );
+    expect(out.reasoningContent).toBe(REASONING_HIGH);
   });
 });

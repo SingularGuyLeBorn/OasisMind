@@ -12,7 +12,6 @@ import {
   lastToolContent,
   lastUserText,
   makeToolCall,
-  streamFromCompletion,
 } from "./scenarios.js";
 import type { LlmCompletionResult } from "./types.js";
 
@@ -21,14 +20,7 @@ function canned(
   match: MockLlmScenario["match"],
   completion: (opts: MockLlmOptions) => LlmCompletionResult,
 ): MockLlmScenario {
-  return {
-    name,
-    match,
-    completion,
-    stream: async function* (opts) {
-      yield* streamFromCompletion(opts, completion(opts));
-    },
-  };
+  return { name, match, completion };
 }
 
 export function extractInboxItemIds(raw: string, limit = 3): string[] {

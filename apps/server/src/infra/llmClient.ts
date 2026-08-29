@@ -14,6 +14,9 @@ import {
 import {
   mockChatCompletion,
   mockChatCompletionStream,
+  isInProcessMockLlm,
+  getMockLlmHttpUrl,
+  mockLlmHttpHeaders,
   type LlmMessage,
   type LlmToolDefinition,
   type LlmToolCall,
@@ -188,6 +191,30 @@ function applyDeepSeekThinkingBody(
   }
 }
 
+/**
+ * Mock HTTP 与 parseHttpThinking 对齐：enableReasoning 对任何厂商都要写进 body。
+ * mock URL 下若已按 enableReasoning 写过 thinking，跳过 DeepSeek 专用写入，避免双写覆盖。
+ */
+function applyHttpThinkingBody(
+  body: Record<string, unknown>,
+  options: LlmRequestOptions,
+  ds: ResolvedDeepSeekRequest,
+  model: string,
+): void {
+  if (getMockLlmHttpUrl()) {
+    if (options.enableReasoning === true) {
+      body.thinking = { type: "enabled" };
+      body.reasoning_effort = options.reasoningEffort === "max" ? "max" : "high";
+      return;
+    }
+    if (options.enableReasoning === false) {
+      body.thinking = { type: "disabled" };
+      return;
+    }
+  }
+  applyDeepSeekThinkingBody(body, { ...ds, apiModel: model });
+}
+
 /** 根据 model 字段推断 provider（agent.model 可能是 v4-flash / kimi-k2.5 等各厂商模型 id） */
 export function inferProviderFromModel(config: AppConfig, model: string): LlmProviderConfig & { id: string } {
   const localRef = parseLocalModelRef(model);
@@ -247,6 +274,56 @@ function resolveEffectiveModel(
   return r.includes("/") ? providerDefault : r;
 }
 
+/**
+ * MOCK_LLM_URL 优先：E2E 起了 mock-llm HTTP 就必须打过去，禁止再被 MOCK_LLM=true 进程内短路。
+ * 无 URL 且 MOCK_LLM=true 才走 in-process（单测 / eval / harness）。
+ */
+function resolveLlmHttpContext(options: {
+  config: AppConfig;
+  model?: string;
+} & LlmRequestOptions): {
+  provider: LlmProviderConfig & { id: string };
+  ds: ResolvedDeepSeekRequest;
+  model: string;
+  baseUrl: string;
+  headers: Record<string, string>;
+} {
+  const mockUrl = getMockLlmHttpUrl();
+  let provider: LlmProviderConfig & { id: string };
+  if (mockUrl) {
+    try {
+      provider = options.model
+        ? inferProviderFromModel(options.config, options.model)
+        : resolveProvider(options.config);
+    } catch {
+      provider = {
+        id: "mock",
+        apiKey: "mock",
+        model: options.model || "mock-llm",
+        baseUrl: mockUrl,
+      };
+    }
+    provider = { ...provider, baseUrl: mockUrl, apiKey: provider.apiKey?.trim() || "mock" };
+  } else {
+    provider = options.model
+      ? inferProviderFromModel(options.config, options.model)
+      : resolveProvider(options.config);
+  }
+
+  const ds = resolveDeepSeekRequest(options.config, options.model || provider.model, options);
+  const model = resolveEffectiveModel(ds.apiModel, provider.model, provider.id);
+  const baseUrl = (provider.baseUrl || DEFAULT_BASE_URLS[provider.id] || DEFAULT_BASE_URLS.openai).replace(
+    /\/$/,
+    "",
+  );
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${provider.apiKey}`,
+  };
+  Object.assign(headers, mockLlmHttpHeaders());
+  return { provider, ds, model, baseUrl, headers };
+}
+
 export async function chatCompletion(options: {
   config: AppConfig;
   model?: string;
@@ -254,16 +331,10 @@ export async function chatCompletion(options: {
   tools?: LlmToolDefinition[];
   signal?: AbortSignal;
 } & LlmRequestOptions): Promise<LlmCompletionResult> {
-  if (process.env.MOCK_LLM === "true") {
+  if (isInProcessMockLlm()) {
     return mockChatCompletion(options);
   }
-  const provider = options.model
-    ? inferProviderFromModel(options.config, options.model)
-    : resolveProvider(options.config);
-
-  const ds = resolveDeepSeekRequest(options.config, options.model || provider.model, options);
-  const model = resolveEffectiveModel(ds.apiModel, provider.model, provider.id);
-  const baseUrl = (provider.baseUrl || DEFAULT_BASE_URLS[provider.id] || DEFAULT_BASE_URLS.openai).replace(/\/$/, "");
+  const { provider, ds, model, baseUrl, headers } = resolveLlmHttpContext(options);
 
   const body: Record<string, unknown> = {
     model,
@@ -273,7 +344,7 @@ export async function chatCompletion(options: {
   if (!ds.isDeepSeek || ds.thinking === "disabled") {
     body.temperature = options.temperature ?? 0.7;
   }
-  applyDeepSeekThinkingBody(body, { ...ds, apiModel: model });
+  applyHttpThinkingBody(body, options, ds, model);
   if (options.tools && options.tools.length > 0) {
     body.tools = options.tools;
     body.tool_choice = "auto";
@@ -281,10 +352,7 @@ export async function chatCompletion(options: {
 
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.apiKey}`,
-    },
+    headers,
     body: JSON.stringify(body),
     signal: options.signal,
   });
@@ -346,17 +414,11 @@ export async function* chatCompletionStream(options: {
   tools?: LlmToolDefinition[];
   signal?: AbortSignal;
 } & LlmRequestOptions): AsyncGenerator<StreamChunk> {
-  if (process.env.MOCK_LLM === "true") {
+  if (isInProcessMockLlm()) {
     yield* mockChatCompletionStream(options);
     return;
   }
-  const provider = options.model
-    ? inferProviderFromModel(options.config, options.model)
-    : resolveProvider(options.config);
-
-  const ds = resolveDeepSeekRequest(options.config, options.model || provider.model, options);
-  const model = resolveEffectiveModel(ds.apiModel, provider.model, provider.id);
-  const baseUrl = (provider.baseUrl || DEFAULT_BASE_URLS[provider.id] || DEFAULT_BASE_URLS.openai).replace(/\/$/, "");
+  const { provider, ds, model, baseUrl, headers } = resolveLlmHttpContext(options);
 
   const body: Record<string, unknown> = {
     model,
@@ -367,7 +429,11 @@ export async function* chatCompletionStream(options: {
   if (!ds.isDeepSeek || ds.thinking === "disabled") {
     body.temperature = options.temperature ?? 0.7;
   }
-  applyDeepSeekThinkingBody(body, { ...ds, apiModel: model });
+  applyHttpThinkingBody(body, options, ds, model);
+  // mock-llm 在 stream_options.include_usage !== false 时 finish 帧带 usage
+  if (getMockLlmHttpUrl()) {
+    body.stream_options = { include_usage: true };
+  }
   if (options.tools && options.tools.length > 0) {
     body.tools = options.tools;
     body.tool_choice = "auto";
@@ -375,10 +441,7 @@ export async function* chatCompletionStream(options: {
 
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.apiKey}`,
-    },
+    headers,
     body: JSON.stringify(body),
     signal: options.signal,
   });

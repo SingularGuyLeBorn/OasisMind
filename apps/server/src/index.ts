@@ -636,6 +636,31 @@ const server = app.listen(PORT, HOST, () => {
     }
   }
 
+  // MOCK_LLM_URL 已设时异步探 mock-llm /health（origin+/health，不是 /v1/health）；失败只 warn，不挡启动
+  const mockLlmUrl = process.env.MOCK_LLM_URL?.trim() ?? "";
+  if (/^https?:\/\//i.test(mockLlmUrl)) {
+    (async () => {
+      try {
+        const healthUrl = `${new URL(mockLlmUrl).origin}/health`;
+        // [OM-FREEPLAY] 2s 超时：用户只要求发现 mock 没起来，避免启动日志一直挂着
+        const res = await fetch(healthUrl, { method: "GET", signal: AbortSignal.timeout(2000) });
+        const body = (await res.json()) as { status?: unknown; scenarios?: unknown };
+        if (body.status === "ok") {
+          const n = typeof body.scenarios === "number" ? body.scenarios : undefined;
+          console.log(
+            n !== undefined
+              ? `  ✅ [Mock] mock-llm /health ok（${n} scenarios）`
+              : "  ✅ [Mock] mock-llm /health ok",
+          );
+          return;
+        }
+      } catch {
+        // 超时 / 连不上 / 非法 URL / 非 JSON：统一 warn，不 throw
+      }
+      console.warn("  ⚠️ [Mock] MOCK_LLM_URL 已设但 mock-llm /health 不可达，Chat 会 HTTP 失败");
+    })().catch(() => {});
+  }
+
   // Goal 外环：hub run settled → 若有 pendingContinue 则起下一轮（显式事件，非定时器）
   import("./infra/goalLoop.js")
     .then(({ registerGoalLoopSettledHook }) => {

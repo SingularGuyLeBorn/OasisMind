@@ -155,6 +155,25 @@ describe("partial E2E mock scenarios", () => {
     expect(JSON.parse(spawn.toolCalls[0]!.function.arguments).waitForResult).toBe(true);
   });
 
+  it("压缩会话 / 口头停止 / HTML 预览可走 Chat 关键词", () => {
+    expect(
+      resolveScenario({
+        messages: [{ role: "user", content: "上下文已经很长了，请压缩会话后继续" }],
+        tools: [tool("session_compact")],
+      }).name,
+    ).toBe("eval_G07_compact");
+    expect(
+      resolveScenario({
+        messages: [{ role: "user", content: "停，别做了" }],
+      }).name,
+    ).toBe("eval_G08_stop");
+    expect(
+      resolveScenario({
+        messages: [{ role: "user", content: "写一个可预览的计数按钮 HTML 小页面" }],
+      }).name,
+    ).toBe("eval_G10_html_preview");
+  });
+
   it("精简选区与划词解释不落 catalog", () => {
     expect(
       resolveScenario({

@@ -79,6 +79,23 @@ async function runCase(c) {
       errors.push(`禁用工具被调用: ${JSON.stringify(bad)}`);
     }
   }
+  // 实际调了工具时协议要求 finishReason=tool_calls（与是否声明 expectToolsAnyOf 无关）
+  if (used.length > 0 && result.finishReason !== "tool_calls") {
+    errors.push(
+      `有工具调用时 finishReason 应为 tool_calls，实际 ${JSON.stringify(result.finishReason)}`,
+    );
+  }
+  // 明确零工具（空数组，不是省略字段）且实际未调用时，finishReason 不应是 tool_calls
+  if (
+    Array.isArray(c.expectToolsAnyOf) &&
+    c.expectToolsAnyOf.length === 0 &&
+    used.length === 0 &&
+    result.finishReason === "tool_calls"
+  ) {
+    errors.push(
+      `明确零工具时 finishReason 不应为 tool_calls（stop/null 均可），实际 ${JSON.stringify(result.finishReason)}`,
+    );
+  }
   return { id: c.id, title: c.title, used, errors };
 }
 

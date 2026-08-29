@@ -1,7 +1,9 @@
 /**
  * 与真实厂商同一套开关：thinking.type 或进程内 enableReasoning。
- * 场景只提供写死正文；开思考才附带写死推理，关思考绝不吐 reasoning。
+ * 开思考时优先保留场景自己的 reasoningContent，否则附带 canned 推理；关思考绝不吐 reasoning。
  */
+
+import { CHAT_MODELS } from "@oasismind/shared";
 
 export const REASONING_HIGH = "先对齐问题目标，再组织答复。";
 export const REASONING_MAX =
@@ -61,16 +63,18 @@ export function resolveThinkingPolicy(input: ThinkingPolicyInput): ThinkingPolic
 }
 
 export function listMockOpenAiModels(): Array<{ id: string; object: "model"; owned_by: string }> {
-  return [
-    { id: "deepseek-v4-flash", object: "model", owned_by: "deepseek" },
-    { id: "deepseek-v4-pro", object: "model", owned_by: "deepseek" },
-    { id: "deepseek-vl2", object: "model", owned_by: "deepseek" },
-    { id: "kimi", object: "model", owned_by: "kimi" },
-    { id: "moonshot-v1-auto", object: "model", owned_by: "kimi" },
-    { id: "glm-4-flash", object: "model", owned_by: "zhipu" },
-    { id: "gpt-4o-mini", object: "model", owned_by: "openai" },
-    { id: "mock-llm", object: "model", owned_by: "mock" },
-  ];
+  const seen = new Set<string>();
+  const out: Array<{ id: string; object: "model"; owned_by: string }> = [];
+  const push = (id: string, ownedBy: string) => {
+    if (seen.has(id)) return;
+    seen.add(id);
+    out.push({ id, object: "model", owned_by: ownedBy });
+  };
+  for (const m of CHAT_MODELS) push(m.id, m.provider);
+  // Chat 菜单没有、但请求体 / E2E 会点名的 id
+  push("kimi-k2", "kimi");
+  push("mock-llm", "mock");
+  return out;
 }
 
 export function applyThinkingPolicy<T extends { reasoningContent?: string | null; model?: string }>(
@@ -78,9 +82,12 @@ export function applyThinkingPolicy<T extends { reasoningContent?: string | null
   input: ThinkingPolicyInput & { model?: string },
 ): T {
   const policy = resolveThinkingPolicy(input);
+  const raw = result.reasoningContent;
+  // [OM-FREEPLAY] 空串 / 只有空白当作没有自定义推理，走 canned。
+  const hasCustom = typeof raw === "string" && raw.trim().length > 0;
   return {
     ...result,
     model: input.model || result.model,
-    reasoningContent: policy.text,
+    reasoningContent: policy.enabled ? (hasCustom ? raw : policy.text) : null,
   };
 }
