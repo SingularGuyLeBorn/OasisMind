@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripLeadingMarkdownFrontmatter } from "../scripts/sync/utils.js";
+import { stripLeadingMarkdownFrontmatter } from "../../scripts/sync/utils.js";
 
 describe("stripLeadingMarkdownFrontmatter", () => {
   it("剥掉正文里误嵌的 frontmatter", () => {

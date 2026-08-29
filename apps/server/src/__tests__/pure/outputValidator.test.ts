@@ -7,7 +7,7 @@ import {
   validateOutputContent,
   formatValidationErrors,
   type OutputValidationError,
-} from "../infra/outputValidator.js";
+} from "../../infra/outputValidator.js";
 
 describe("outputValidator", () => {
   it("合法 Markdown（frontmatter + 正文）通过验证", () => {

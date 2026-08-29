@@ -16,7 +16,7 @@ import {
   withGateNotifyStamp,
   type HeartbeatDecisionState,
   type HeartbeatSignals,
-} from "../infra/heartbeatDecision.js";
+} from "../../infra/heartbeatDecision.js";
 
 function baseSignals(over: Partial<HeartbeatSignals> = {}): HeartbeatSignals {
   return {

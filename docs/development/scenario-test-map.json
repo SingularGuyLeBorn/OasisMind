@@ -181,7 +181,7 @@
       "coverage": "covered",
       "note": "PUSH cron_job_updated + PULL 间隔 + /cron 开着页自拉已锁；Chat 查询心跳：swarm_brief 只读检查 → 过程断言 lastMode/未熔断，禁止伪造刚跑完。cron/approvals F5 卡片仍在见 W10。",
       "tests": [
-        "apps/server/src/__tests__/heartbeatDecision.test.ts",
+        "apps/server/src/__tests__/pure/heartbeatDecision.test.ts",
         "apps/server/src/__tests__/uiStateNotify.test.ts",
         "apps/server/src/__tests__/swarmHealth.test.ts",
         "packages/mock-llm-core/src/heartbeatQueryScenario.test.ts",
@@ -216,7 +216,7 @@
           "layer": "e2e-mock"
         },
         {
-          "file": "apps/server/src/__tests__/heartbeatDecision.test.ts",
+          "file": "apps/server/src/__tests__/pure/heartbeatDecision.test.ts",
           "it": "有待审批 → wait_user_gate 且 summary 非空",
           "claim": "待审批时心跳决策 wait_user_gate，禁止空 summary",
           "layer": "unit"

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildToolResultMetadata } from "../infra/toolResultMetadata.js";
+import { buildToolResultMetadata } from "../../infra/toolResultMetadata.js";
 
 describe("toolResultMetadata", () => {
   it("网页类结果抽出 contentType / shortFields / urls / topics", () => {

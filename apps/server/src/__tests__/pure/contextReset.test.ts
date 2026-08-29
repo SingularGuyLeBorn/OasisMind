@@ -8,8 +8,8 @@ import {
   resolveContextWindow,
   shouldResetContext,
   resetContext,
-} from "../infra/loop/contextReset.js";
-import type { LlmMessage } from "../infra/llmClient.js";
+} from "../../infra/loop/contextReset.js";
+import type { LlmMessage } from "../../infra/llmClient.js";
 
 function makeMessages(n: number, contentLen = 100): LlmMessage[] {
   return Array.from({ length: n }, (_, i) => ({

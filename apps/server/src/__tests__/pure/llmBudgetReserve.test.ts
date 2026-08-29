@@ -9,8 +9,8 @@ import {
   releaseLlmBudgetReservation,
   resetLlmBudgetForTests,
   tryReserveLlmBudget,
-} from "../infra/llmBudget.js";
-import type { AppConfig } from "../infra/config.js";
+} from "../../infra/llmBudget.js";
+import type { AppConfig } from "../../infra/config.js";
 
 function fakeConfig(dailyBudget = 0.01): AppConfig {
   return {

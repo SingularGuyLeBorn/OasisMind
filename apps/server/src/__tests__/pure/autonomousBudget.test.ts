@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canAutonomousMarkDone,
   checkAutonomousBudgets,
-} from "../infra/autonomousBudget.js";
+} from "../../infra/autonomousBudget.js";
 
 describe("autonomousBudget", () => {
   it("轮次触顶 → exhausted 语义", () => {

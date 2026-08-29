@@ -2,7 +2,7 @@
  * 上传目录与 slug 解耦（场景 C：改 slug 后图片 URL 仍稳定）。
  */
 import { describe, expect, it } from "vitest";
-import { buildUploadDirSegments, buildUploadPublicUrl } from "../infra/uploadDir.js";
+import { buildUploadDirSegments, buildUploadPublicUrl } from "../../infra/uploadDir.js";
 
 describe("buildUploadDirSegments", () => {
   it("已有文章用 garden + postId，不含 slug", () => {

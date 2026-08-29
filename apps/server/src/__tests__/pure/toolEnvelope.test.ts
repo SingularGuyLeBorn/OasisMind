@@ -10,7 +10,7 @@ import {
   freezeJson,
   isToolEnvelope,
   snapshotJsonValue,
-} from "../infra/tools/toolEnvelope.js";
+} from "../../infra/tools/toolEnvelope.js";
 
 describe("toolEnvelope", () => {
   it("Date 序列化为 ISO 字符串（list 工具带 capturedAt 才能喂 LLM）", () => {

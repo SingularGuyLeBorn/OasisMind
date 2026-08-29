@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertPublicHttpUrl } from "../infra/safeHttpUrl.js";
+import { assertPublicHttpUrl } from "../../infra/safeHttpUrl.js";
 
 describe("assertPublicHttpUrl", () => {
   it("放行公网 https", () => {

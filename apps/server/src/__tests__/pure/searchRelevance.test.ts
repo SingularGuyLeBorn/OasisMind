@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractQueryTerms, filterRelevantResults, scoreResultRelevance } from "../infra/metablog/search/relevance.js";
+import { extractQueryTerms, filterRelevantResults, scoreResultRelevance } from "../../infra/metablog/search/relevance.js";
 
 describe("search relevance", () => {
   it("extracts latin and cjk terms", () => {
