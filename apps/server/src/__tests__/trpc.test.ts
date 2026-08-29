@@ -712,6 +712,13 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
     const list = await caller.run.list({ page: 1, pageSize: 10 });
     expect(list.items.some((item: any) => item.id === created.data.id)).toBe(true);
 
+    const started = await caller.run.update({
+      id: created.data.id,
+      status: "running",
+    });
+    expect(started.success).toBe(true);
+    expect(started.data.status).toBe("running");
+
     const updated = await caller.run.update({
       id: created.data.id,
       status: "success",

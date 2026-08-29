@@ -21,6 +21,8 @@ function makeConfig(overrides?: Partial<AppConfig["llm"]>): AppConfig {
   const config = createTestConfig(createTempProjectDir());
   config.llm = {
     ...config.llm,
+    // 本文件 mock 的是 chat.completions JSON/SSE；auto 下 deepseek 会走 responses，解析不到 content。
+    httpProtocol: "chat.completions",
     maxRetries: 3,
     baseDelayMs: 5,
     fallbackModels: [],

@@ -2,6 +2,13 @@
 
 > 审计 P1-03：改 prompt / 换模型 / 调工具清单后，用固定用例证明「没变傻」。
 
+## 诚实声明（必读）
+
+- `pnpm test:evals`（mock）**不是**模型质量测试，也**不能**证明换模型/改 prompt 之后「没变傻」。
+- 它只证明：给定用户句 → mock-llm 场景解析到的名字/关键词 → 命中 JSON 里的 `expectToolsAnyOf` / `forbidTools`。
+- 真模型效果：`pnpm test:bench -- --live ...`，报告在 `evals/reports/`（gitignore），人工看。默认 CI 不跑 live。
+- 禁止在 PR 描述或测试注释里写「evals 绿 = 智能回归通过」。
+
 ## 目标
 
 - **不是**再写一套单元测试（行为不变量仍走 Vitest）
@@ -45,6 +52,7 @@ pnpm test:bench   # mini Harness-Bench（mock 冒烟，CI 零成本）
 
 `evals/harness-bench/cases.json`（24 题）+ `evals/scripts/run-harness-bench.mjs`。
 同一批固定任务按 **(model, variant) 成对**扫：完成度（工具选择断言）+ 效率（token / 墙钟 / 估算成本）。
+mock bench 同样不是模型质量测试。
 
 ```bash
 pnpm test:bench                                # mock：链路冒烟，有失败即非零退出

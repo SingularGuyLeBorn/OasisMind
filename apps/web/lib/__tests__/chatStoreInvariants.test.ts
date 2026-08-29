@@ -7,10 +7,11 @@
  * INV-7 相关：hydrate view 可对齐 done 收口
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   sessionMessagesStore,
   __resetSessionMessageStoreForTests,
+  type DrainTriggerSource,
 } from "../useSessionMessages";
 import {
   streamLifecycleActions,
@@ -18,6 +19,13 @@ import {
   __resetStreamLifecycleStoreForTests,
 } from "../useStreamLifecycle";
 import type { ChatMessage } from "@oasismind/shared";
+import {
+  getUserMessageClientId,
+  groupOwnsLiveStream,
+  ownsLiveRender,
+  shouldRenderTrailingLive,
+  type MessageGroup,
+} from "@/lib/chatMessageUtils";
 
 const SID = "sess-inv-lock";
 const SID_B = "sess-inv-lock-b";
@@ -146,5 +154,351 @@ describe("Chat store invariants lock", () => {
     expect(streamLifecycleStore.get(SID_B).streamingContent).toContain("B");
     expect(streamLifecycleActions.beginStream(SID)).toBe(false);
     expect(streamLifecycleActions.beginStream(SID_B)).toBe(false);
+  });
+});
+
+describe("streamOnErrorIdle", () => {
+  const SID_ERR = "sess-onerror-idle";
+
+  beforeEach(() => {
+    __resetStreamLifecycleStoreForTests();
+  });
+
+  it("idle 时 failStream/commitStream 为 no-op（不抛、不改相）", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(streamLifecycleStore.get(SID_ERR).phase).toBe("idle");
+    streamLifecycleActions.failStream(SID_ERR, "连接已断开，多次重连失败");
+    streamLifecycleActions.commitStream(SID_ERR);
+    expect(streamLifecycleStore.get(SID_ERR).phase).toBe("idle");
+    expect(streamLifecycleStore.get(SID_ERR).error).toBeNull();
+    spy.mockRestore();
+  });
+
+  it("streaming → abort(null) → idle 后再次 fail 不改变 idle", () => {
+    streamLifecycleActions.beginStream(SID_ERR);
+    streamLifecycleActions.abortStream(SID_ERR, { partialAssistantMessageId: null });
+    expect(streamLifecycleStore.get(SID_ERR).phase).toBe("idle");
+    streamLifecycleActions.failStream(SID_ERR, "HTTP 502");
+    expect(streamLifecycleStore.get(SID_ERR).phase).toBe("idle");
+  });
+});
+
+describe("streamLifecycleAbort", () => {
+  const SID_E2 = "sess-e2";
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    __resetStreamLifecycleStoreForTests();
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("streaming 相位 COMMIT_STREAM → 状态不变 + dev 报错", () => {
+    streamLifecycleActions.beginStream(SID_E2);
+    streamLifecycleActions.appendTokenDelta(SID_E2, "hello");
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("streaming");
+    expect(streamLifecycleStore.get(SID_E2).streamingContent).toBe("hello");
+
+    streamLifecycleActions.commitStream(SID_E2);
+
+    const st = streamLifecycleStore.get(SID_E2);
+    expect(st.phase).toBe("streaming");
+    expect(st.streamingContent).toBe("hello");
+    expect(consoleErrorSpy).toHaveBeenCalled();
+  });
+
+  it("ABORT_STREAM(null) 从 streaming 释放占用并清空 leftover", () => {
+    streamLifecycleActions.beginStream(SID_E2);
+    streamLifecycleActions.appendTokenDelta(SID_E2, "partial");
+    streamLifecycleActions.abortStream(SID_E2, {
+      partialAssistantMessageId: null,
+      leftoverContent: "partial",
+    });
+
+    const st = streamLifecycleStore.get(SID_E2);
+    expect(st.phase).toBe("idle");
+    expect(st.streamingContent).toBe("");
+    expect(st.liveTimeline).toEqual([]);
+    expect(streamLifecycleStore.isRunOccupied(SID_E2)).toBe(false);
+  });
+
+  it("ABORT_STREAM(id) 进入 done 等待对齐，不立即 idle", () => {
+    streamLifecycleActions.beginStream(SID_E2);
+    streamLifecycleActions.appendTokenDelta(SID_E2, "partial-text");
+    streamLifecycleActions.abortStream(SID_E2, {
+      partialAssistantMessageId: "msg-partial-1",
+      leftoverContent: "partial-text",
+    });
+
+    const st = streamLifecycleStore.get(SID_E2);
+    expect(st.phase).toBe("done");
+    expect(st.pendingAssistantMessageId).toBe("msg-partial-1");
+    expect(st.streamingContent).toBe("partial-text");
+    expect(streamLifecycleStore.isRunOccupied(SID_E2)).toBe(true);
+
+    expect(
+      streamLifecycleActions.tryCommitStream(SID_E2, {
+        messageId: "msg-partial-1",
+        content: "partial-text",
+      }),
+    ).toBe(true);
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("idle");
+  });
+
+  it("idle 收到 stale COMPLETE_STREAM / FAIL_STREAM 为 no-op", () => {
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("idle");
+    streamLifecycleActions.completeStream(SID_E2, "stale");
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("idle");
+    streamLifecycleActions.failStream(SID_E2, "stale error");
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("idle");
+    expect(streamLifecycleStore.get(SID_E2).error).toBeNull();
+  });
+
+  it("done 相位允许 COMMIT_STREAM", () => {
+    streamLifecycleActions.beginStream(SID_E2);
+    streamLifecycleActions.completeStream(SID_E2, "done-text", {
+      assistantMessageId: null,
+    });
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("done");
+    streamLifecycleActions.commitStream(SID_E2);
+    expect(streamLifecycleStore.get(SID_E2).phase).toBe("idle");
+  });
+});
+
+describe("upsertNoopNoInFlight", () => {
+  const SID_NOOP = "sess-inv4-noop";
+
+  function assistantMsg(
+    id: string,
+    content: string,
+    extra: Partial<ChatMessage> = {},
+  ): ChatMessage {
+    return {
+      id,
+      sessionId: SID_NOOP,
+      role: "assistant",
+      content,
+      createdAt: new Date(),
+      ...extra,
+    } as ChatMessage;
+  }
+
+  beforeEach(() => {
+    __resetStreamLifecycleStoreForTests();
+    sessionMessagesStore.clearSession(SID_NOOP);
+  });
+
+  it("流式中，重复 upsert 字段全等的已存在消息，in-flight 保持 null", () => {
+    const msg = assistantMsg("m1", "hello");
+    sessionMessagesStore.upsertMessage(SID_NOOP, msg);
+    streamLifecycleActions.beginStream(SID_NOOP);
+    streamLifecycleActions.appendTokenDelta(SID_NOOP, "typing");
+
+    expect(streamLifecycleStore.get(SID_NOOP).phase).toBe("streaming");
+    expect(streamLifecycleStore.get(SID_NOOP).inFlightAssistantId).toBeNull();
+
+    sessionMessagesStore.upsertMessage(SID_NOOP, { ...msg });
+    expect(streamLifecycleStore.get(SID_NOOP).inFlightAssistantId).toBeNull();
+  });
+
+  it("流式中，新增（或真变更）的 assistant upsert 仍正常登记 in-flight", () => {
+    streamLifecycleActions.beginStream(SID_NOOP);
+    expect(streamLifecycleStore.get(SID_NOOP).phase).toBe("streaming");
+
+    sessionMessagesStore.upsertMessage(SID_NOOP, assistantMsg("m2", "hello"));
+    expect(streamLifecycleStore.get(SID_NOOP).inFlightAssistantId).toBe("m2");
+  });
+});
+
+describe("prefetchHydrateNoDrain", () => {
+  const SID_E4 = "sess-e4";
+
+  function msg(partial: Partial<ChatMessage> & { id: string; content: string }): ChatMessage {
+    return {
+      sessionId: SID_E4,
+      role: "user",
+      toolCalls: null,
+      toolResults: null,
+      tokenUsage: null,
+      createdAt: new Date(),
+      ...partial,
+    };
+  }
+
+  beforeEach(() => {
+    __resetSessionMessageStoreForTests();
+    __resetStreamLifecycleStoreForTests();
+  });
+
+  it("prefetch hydrate 后 drainRequested 仍为 false，不触发 onStreamCommitted", async () => {
+    const committed: string[] = [];
+    const unsub = streamLifecycleActions.onStreamCommitted((sid) => committed.push(sid));
+
+    await sessionMessagesStore.prefetchSessionMessages(SID_E4, async () => ({
+      items: [msg({ id: "m1", content: "预取" })],
+      nextCursor: null,
+    }));
+
+    expect(sessionMessagesStore.getMessages(SID_E4)).toHaveLength(1);
+    expect(streamLifecycleStore.get(SID_E4).drainRequested).toBe(false);
+    expect(committed).toEqual([]);
+    unsub();
+  });
+
+  it("view hydrate 置 drainRequested 并经钩子通知", () => {
+    const committed: string[] = [];
+    const unsub = streamLifecycleActions.onStreamCommitted((sid) => committed.push(sid));
+
+    sessionMessagesStore.hydrateSessionMessages(
+      SID_E4,
+      [msg({ id: "m1", content: "可见" })],
+      "view",
+    );
+
+    expect(committed).toContain(SID_E4);
+    unsub();
+  });
+
+  it("DrainTriggerSource 联合类型含 hydrate_view、不含 prefetch", () => {
+    const legal: DrainTriggerSource[] = [
+      "user_enqueue",
+      "stream_committed",
+      "session_switch",
+      "hydrate_view",
+    ];
+    expect(legal).not.toContain("prefetch");
+    expect(legal).toContain("hydrate_view");
+  });
+});
+
+describe("liveStreamOwnership", () => {
+  function fakeUser(id: string, clientMessageId?: string): ChatMessage {
+    return {
+      id,
+      sessionId: "s1",
+      role: "user",
+      content: "hi",
+      createdAt: new Date(),
+      toolCalls: null,
+      toolResults: clientMessageId ? { clientMessageId } : null,
+      tokenUsage: null,
+    };
+  }
+
+  function fakeGroup(user: ChatMessage): MessageGroup {
+    return { userMessage: user, versions: [], activeVersionIndex: 0 };
+  }
+
+  it("负向：RESTORE 幽灵 streaming 无载荷 → 不抢 stored", () => {
+    expect(
+      ownsLiveRender({
+        isStreaming: true,
+        streamConnected: false,
+        streamTargetUserId: "u1",
+        userMessageId: "u1",
+        hasLivePayload: false,
+        inFlightAssistantId: null,
+        assistantMessageId: "a1",
+      }),
+    ).toBe(false);
+  });
+
+  it("正路径：SSE 已接通 → 可显示空 Thinking", () => {
+    expect(
+      ownsLiveRender({
+        isStreaming: true,
+        streamConnected: true,
+        streamTargetUserId: "u1",
+        userMessageId: "u1",
+        hasLivePayload: false,
+        inFlightAssistantId: null,
+        assistantMessageId: "a1",
+      }),
+    ).toBe(true);
+  });
+
+  it("正路径：未接通但有恢复的 streamingContent → 显示 live", () => {
+    expect(
+      ownsLiveRender({
+        isStreaming: true,
+        streamConnected: false,
+        streamTargetUserId: "u1",
+        userMessageId: "u1",
+        hasLivePayload: true,
+        inFlightAssistantId: null,
+        assistantMessageId: "a1",
+      }),
+    ).toBe(true);
+  });
+
+  it("正路径：乐观 id 经 clientMessageId 仍归属原用户气泡", () => {
+    expect(
+      ownsLiveRender({
+        isStreaming: true,
+        streamConnected: true,
+        streamTargetUserId: "opt-1",
+        userMessageId: "db-u1",
+        userClientMessageId: "opt-1",
+        hasLivePayload: true,
+        inFlightAssistantId: null,
+        assistantMessageId: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("负向：中途 inject 的另一条用户气泡不得抢走 live", () => {
+    expect(
+      ownsLiveRender({
+        isStreaming: true,
+        streamConnected: true,
+        streamTargetUserId: "opt-1",
+        userMessageId: "sys-loop",
+        userClientMessageId: null,
+        hasLivePayload: true,
+        inFlightAssistantId: null,
+        assistantMessageId: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("groupOwnsLiveStream：clientMessageId 对齐乐观钉点", () => {
+    const g = fakeGroup(fakeUser("db-u1", "opt-1"));
+    expect(getUserMessageClientId(g.userMessage)).toBe("opt-1");
+    expect(groupOwnsLiveStream(g, "opt-1")).toBe(true);
+    expect(groupOwnsLiveStream(g, "db-u1")).toBe(true);
+    expect(groupOwnsLiveStream(g, "other")).toBe(false);
+    expect(groupOwnsLiveStream(fakeGroup(fakeUser("sys-loop")), "opt-1")).toBe(false);
+  });
+
+  it("尾部 live：钉点在旁路不挂；钉在乐观气泡上仍挂", () => {
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: "u-offpath",
+        targetOwnedByOptimistic: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: "opt-1",
+        targetOwnedByOptimistic: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: null,
+      }),
+    ).toBe(true);
   });
 });

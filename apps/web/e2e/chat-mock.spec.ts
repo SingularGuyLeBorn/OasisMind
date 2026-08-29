@@ -9,12 +9,25 @@ import {
   expectToolHint,
   expectAssistantAnswer,
 } from "./helpers/mockChatFixture";
+import { installPageErrorGuard } from "./helpers/pageErrorGuard";
 
 test.describe("Chat Mock — 工具调用与回答", () => {
-  test.beforeEach(async ({ request }) => {
+  let uninstallGuard: (() => void) | undefined;
+
+  test.beforeEach(async ({ page, request }) => {
     await expect
       .poll(async () => (await request.get(`${SERVER_URL}/health`)).ok())
       .toBe(true);
+    uninstallGuard = installPageErrorGuard(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    const pending = await page
+      .evaluate(() => (window as unknown as { __omUnhandled?: string[] }).__omUnhandled ?? [])
+      .catch(() => [] as string[]);
+    uninstallGuard?.();
+    uninstallGuard = undefined;
+    expect(pending).toEqual([]);
   });
 
   test("触发 web_search 工具并显示 pill/hint", async ({ page }) => {
@@ -24,8 +37,9 @@ test.describe("Chat Mock — 工具调用与回答", () => {
 
     expect(await countAssistantMessages(page)).toBe(1);
     await expectToolPill(page, "web_search");
-    // 超阈值压缩后 hint 展示「全文已存 · N 字」
-    await expectToolHint(page, "全文已存");
+    // MOCK_NATIVE_TOOLS canned 两条结果不到 offload 阈值；hint 是耗时/引擎/条数。
+    // 「全文已存」由 toolResultHint 单测与带 offloaded 的 fixture 锁，不在这条 mock 路径。
+    await expectToolHint(page, "2 条");
     await expectAssistantAnswer(page, "OasisMind 是一个本地优先");
   });
 
