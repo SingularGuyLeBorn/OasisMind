@@ -252,7 +252,7 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 3. **加 schema**：在域文件 `<DOMAIN>_DEFS` 数组追加 `{ name, description, parameters }`；四域（swarm/session/memory/integration）用 Zod + `zodToJsonSchema` 生成 parameters（勿手写 JSON 字面量），fs/web/shell 遗留字面量另立工单跟进。
 4. **注册**：`<DOMAIN>_HANDLERS[name] = xxxTool`；`concurrencyClass` 在 def 上声明（A 纯 CPU / B 网络只读 / C 本地进程 / D 写入串行），缺省按 B。新域文件还需在 `native/index.ts` 的 `registerNativeDomains()` 加一行 `registerXxxTools()`。
 5. **D 类工具评估 rollback**：写入/删除类工具需实现幂等 `rollback`（经 `registerNativeDomain` 第三参数挂入），不可逆操作（如 git_commit）如实声明「需人工 revert」。
-6. **测试**：`nativeTools.test.ts` 加用例；`helpers/toolTestFixtures.ts` 的 `ALL_NATIVE_TOOL_NAMES` 追加新工具名。
+6. **测试**：加到对应 `nativeTools.<域>.test.ts`，注册表测仍走 `nativeTools.registry.test.ts`；`helpers/toolTestFixtures.ts` 的 `ALL_NATIVE_TOOL_NAMES` 追加新工具名。
 
 ---
 

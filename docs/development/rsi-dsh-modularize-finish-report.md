@@ -67,7 +67,7 @@ E2E-4 跑法：`pnpm --filter @oasismind/web exec playwright test --config=playw
 | revision tombstone | `intentContract.applyIntentFromUserText` | 旧 arguments 进 `superseded`；`assertSummaryOmitsSuperseded` | Goal 条改文案；F5 仍是狗 |
 | switch 停旧续跑 | 同上 | `pendingContinue=null`；旧 status paused + reason=switched | 新 goal 条；旧气泡还在 |
 | evolving-intent E2E ×2 | `e2e/evolving-intent-mock.spec.ts` | revision「改成狗，不要猫」；switch「另外做一个周报」 | revision 含 `page.reload()` |
-| 经验 admit | `memory_create(scope=global)` 已有；`skill_promote` 补 evidence | `nativeTools.test.ts` | — |
+| 经验 admit | `memory_create(scope=global)` 已有；`skill_promote` 补 evidence | `nativeTools.memory.test.ts` / registry | — |
 
 写入权：`writeGoalStateRaw` 默认冻结核实进度；仅 `replaceVerified: true`（Auditor / 新 goal 空数组）能改。`session_goal_set` 不得塞 verifiedProgress。
 

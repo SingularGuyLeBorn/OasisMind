@@ -15,8 +15,8 @@
 | W0 | done | `docs/development/testing.md` 含满分定义/四层/内环/禁止/设计错误/map 字段；`AGENTS.md` 快速导航加「测试圣经」；`docs/development/README.md` §8 加 testing.md 条目 | `6e02f755` |
 | W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | `d91d1fd7` |
 | W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | `1e41ed13` |
-| W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | （待填） |
-| W4 | | | |
+| W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | `1cd5d32e` |
+| W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | （待填） |
 | W5 | | | |
 | W6 | | | |
 | W7 | | | |
@@ -108,7 +108,7 @@
 
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
-| 合（拆文件） | nativeTools.test.ts | pending | nativeTools.{registry,fs,knowledge,git,memory,web,integration,async,swarm,shell}.test.ts |
+| 合（拆文件） | nativeTools.test.ts | done | nativeTools.{registry,fs,knowledge,git,memory,web,integration,async,swarm,shell}.test.ts |
 
 ### 3.4 E2E / evals / 产品面
 
@@ -180,12 +180,13 @@
 
 ## W4 拆 nativeTools.test.ts
 
-- 根因复述：
-- 改动文件：
-- `it(` 搬家前数量 / 搬家后数量：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：单文件约 2100 行，内环无法按域跑。成功 = 原文件已删、10 个域文件各含原 describe、断言不改、`it(` 数不减、`nativeTools.fs` 可单独绿。
+- 改动文件：删 `nativeTools.test.ts`；新建 10 个 `nativeTools.<域>.test.ts`；`docs/development/README.md` §6；`rsi-dsh-modularize-finish-report.md`、`dsh-learn-implementation-plan.md` 旧路径。
+- 不改哪些面：工具生产代码；`hasGitBinary` skip 条件；`helpers/toolTestFixtures.ts`。
+- `it(` 搬家前数量 / 搬家后数量：111 / 111（含 `it.skipIf`）。
+- [OM-FREEPLAY]：`hasGitBinary`/`initTempGitRepo` 原夹在 post_create 与 git_branch 之间；剪切后从 knowledge 文件去掉、只留 git 文件，否则 git 测 ReferenceError。各域文件保留了原文件头 import（含未用项）；tsconfig 无 noUnusedLocals，未改断言。
+- 验证：`pnpm --filter @oasismind/server test -- nativeTools.fs` 退出码 0（45）；`... test -- nativeTools` 退出码 0。
+- 遇到的问题：无。
 
 ## W5 E2E skip 诚实
 

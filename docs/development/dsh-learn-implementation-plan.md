@@ -704,7 +704,7 @@ ask_user          # 子被问住要能问人；若你认为子不该问人，从
 
 - 新：`infra/tools/visibleSet.ts`、`visibleSet.test.ts`、`toolEnvelope.ts`、`toolEnvelope.test.ts`
 - 改：`agentTools.ts`、`nativeTools.ts`、`loop/setup.ts`、`loop/reactLoop.ts`、`swarmPermissionGuard.ts`（注释+导出关系）、`tools/native/session.ts`
-- 测：`agentTools.test.ts`、`nativeTools.test.ts`、`superiorQueueDrain.test.ts`（子工具清单回归）
+- 测：`agentTools.test.ts`、`nativeTools.<域>.test.ts`、`superiorQueueDrain.test.ts`（子工具清单回归）
 
 ### WP2
 
