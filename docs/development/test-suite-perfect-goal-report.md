@@ -25,7 +25,7 @@
 | W10 | done | scenarioTestMap 3；admin-live-push PULL it + daily-board | `78d756aa` |
 | W11 | done | catchUnlessCancelled 6；uiStateNotify.hub 1 | `5dc0b512` |
 | W12 | done | `--project pure` 13 files 86 tests；`--project db -- chatTree` 17 | `1167f993` |
-| W13 | done | 见门禁节；交卷给验收者打分 | 收尾对照（本提交） |
+| W13 | done | 见门禁节；交卷给验收者打分 | `d04f30b3` |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
