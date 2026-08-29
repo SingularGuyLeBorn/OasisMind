@@ -5,7 +5,7 @@
 
 - 执行者：Cursor Grok 4.6（施工员）
 - 开始：2026-08-30
-- 结束（施工交卷，不是验收完成）：
+- 结束（施工交卷，不是验收完成）：2026-08-30
 - 见微 Goal / Cursor 台账：已 CreateGoal `测试十分（待原评审 10/10）`；**必须仍为 active**，直到验收者 10/10。施工员不得标 completed。
 
 ## Goal 台账（等价 verifiedProgress）
@@ -24,23 +24,23 @@
 | W9 | done | server/web lint 0；scenarioTestMap/noVoidPromise 绿；W3/W4 点名 7 files 84 tests；旧测试路径 git ls-files 空。S7–S10 尚未 W10–W12，不能交十分卷 | `e9d42654` |
 | W10 | done | mock e2e admin-live-push + daily-board + files/gardens 9 passed；scenarioTestMap 绿 | `80b8e14b` |
 | W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | `e62598dd` |
-| W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | |
-| W13 | | | |
+| W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | `6c2b4376` |
+| W13 | done | 见「门禁」表；theme-toggle 挂场景 1 map；施工交卷。Goal 保持 active | 本提交 |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
 | S | 分 | 证据 | 为何验收者应打 1 |
 |---|---|---|---|
-| S1 Chat 不变量 | 待验收 | | |
-| S2 场景不虚标 | 待验收 | | |
-| S3 纪念碑变契约 | 待验收 | | |
-| S4 nativeTools 按域 | 待验收 | | |
-| S5 evals 诚实 | 待验收 | | |
-| S6 CI 闸诚实 | 待验收 | | |
-| S7 产品面过程 | 待验收 | | |
-| S8 推拉 PUSH+PULL | 待验收 | | |
-| S9 运行时路径 | 待验收 | | |
-| S10 内环 pure 项目 | 待验收 | | |
+| S1 Chat 不变量 | 待验收 | `chatStoreInvariants.test.ts` / `chatStoreGoldenTraces.test.ts` / `chatStorePbtInvariants.test.ts` 仍在；W13 `pnpm --filter @oasismind/web test` 72 files/374 含 INV 27 + golden 6 + PBT 7。本 Goal 新测（catchUnlessCancelled / noVoidPromise / pageErrorGuard / hub / pure 闸）无 `setTimeout`/`queueMicrotask`/`await hydrate` | INV 三件套仍在且绿；新测不赌时序 |
+| S2 场景不虚标 | 待验收 | `scenario-test-map.json` 每条 `asserts[]`；`scenarioTestMap.test.ts` 3 passed；covered 计分层排除 e2e-real 与 heading claim | 过程闸在 CI 路径，不是文件存在 |
+| S3 纪念碑变契约 | 待验收 | `git ls-files` 对 B1/C1/reentrantResume/nativeTools.test.ts 为空；`asyncDeliveryReconciler.table.test.ts` 14 it；`heartbeatEngine.table.test.ts` 8 it | 旧事故文件名已从工作树消失，契约表 it 不减 |
+| S4 nativeTools 按域 | 待验收 | `nativeTools.test.ts` 已删；W4 `nativeTools.fs` 45 passed；`it(` 111→111 | 可按域跑，断言没丢 |
+| S5 evals 诚实 | 待验收 | `evals/README.md` L5–10 诚实声明；`evalGoldenSync.test.ts`；W13 `pnpm test:evals` 12/12、`pnpm test:bench` 24/24 退出码 0 | mock 绿不再能冒充「没变傻」 |
+| S6 CI 闸诚实 | 待验收 | 4 个 `*-real.spec.ts` 文件头降权；OCR `test.skip`；map 里 e2e-real 不计 covered | skip 的 real 不能撑 covered |
+| S7 产品面过程 | 待验收 | `files-accept-hint-mock` / `gardens-list-mock` / `daily-board-mock` e2e 绿；`theme-toggle-mock` 挂场景 1 asserts（Navbar 切 light/dark） | 花园/文件柜/每日/主题都有过程 claim |
+| S8 推拉 PUSH+PULL | 待验收 | `admin-live-push-mock`：cron/approvals 无需刷新 PUSH +「刷新页面卡片仍在」；/runs it 含 reload 后 hint；场景 17 Inbox 蒸馏钮 | 双通道都有 it，禁止只 spy notify |
+| S9 运行时路径 | 待验收 | `noVoidPromise` 1 passed；`catchUnlessCancelled` 2；`pageErrorGuard` 挂于 `chat-mock.spec.ts`；`uiStateNotify.hub.test.ts` 真 hub 先推再订 | 写法闸 + 浏览器守卫 + hub 可观测 |
+| S10 内环 pure 项目 | 待验收 | `apps/server/vitest.config.ts` projects `db`+`pure`；`src/__tests__/pure/` 9 测 + `pureNoPrisma.test.ts`；`testing.md` 内环有 `--project pure`；`--project pure` 65 passed。db 仍 `singleFork` | 零 DB 测可并行，文件锁项目没拆掉 |
 
 ## 验收者打分（提出 Goal 的人填，施工员整节留空）
 
@@ -67,6 +67,7 @@
 | W7 测路径 | 优先 mock-llm-core | shared 默认清单无 run_shell | server + listNativeTools | 是 |
 | W11 pageErrorGuard | 同步 `() => void` | Playwright `addInitScript` 必须 await | `installPageErrorGuard` 为 async，返回 `() => Promise<void>` | 是 |
 | W11 mock web_search | 不准放宽 chat-mock「全文已存」 | mock 叶子 JSON 仅 3945 字，低于 4000 阈值 | 对含 OasisMind 的查询垫长 snippet（repeat 500），不改断言 | 是 |
+| W13 theme-toggle map | S7 要求 map 挂过程 claim；W10 禁止硬塞无关 scenario | 无「主题」场景标题 | 挂到场景 1（spec 本身 goto /chat Navbar） | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -74,12 +75,12 @@
 
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
-| 留 | chatStoreInvariants.test.ts | pending | |
-| 留 | chatStoreGoldenTraces.test.ts + golden-traces/*.json | pending | |
-| 留 | chatStorePbtInvariants.test.ts | pending | |
-| 留 | prdChatStopTable.test.ts / prdChatQueueTable.test.ts | pending | |
-| 留 | chatQueueDrainLifecycle.test.tsx | pending | |
-| 留 | helpers/chatStoreDrainModel.ts / chatStoreInvariantAsserts.ts | pending | |
+| 留 | chatStoreInvariants.test.ts | done | 未拆（503 行） |
+| 留 | chatStoreGoldenTraces.test.ts + golden-traces/*.json | done | 未改磁带 |
+| 留 | chatStorePbtInvariants.test.ts | done | 未缩 command 空间 |
+| 留 | prdChatStopTable.test.ts / prdChatQueueTable.test.ts | done | 收了卫星 |
+| 留 | chatQueueDrainLifecycle.test.tsx | done | 未并进 invariants |
+| 留 | helpers/chatStoreDrainModel.ts / chatStoreInvariantAsserts.ts | done | |
 | 合 | abortPartialAssistantId.test.ts | done | prdChatStopTable.test.ts describe abortPartialAssistantId |
 | 合 | streamOnErrorIdle.test.ts | done | chatStoreInvariants.test.ts describe streamOnErrorIdle |
 | 合 | streamLifecycleGhostStop.test.ts | done | prdChatStopTable.test.ts describe streamLifecycleGhostStop |
@@ -97,11 +98,11 @@
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
 | 留 | sessionBranch.brutal / toolPipelineOffload.brutal / toolResultConclusion.brutal | pending | |
-| 留 | chatHistory / chatImageEnrich / compactCutPoints / chatTree / prd* / uiStateNotify / importOrder | pending | |
+| 留 | chatHistory / chatImageEnrich / compactCutPoints / chatTree / prd* / uiStateNotify / importOrder | done | chatHistory → `pure/chatHistory.test.ts`；其余仍 db；importOrder 不准进 pure |
 | 合 | asyncDeliveryQueueB1–B5、B7 | done | asyncDeliveryReconciler.table.test.ts（14 it） |
 | 留空 | B6 | done | 不补造 |
 | 合 | heartbeatSchedulerC1 / heartbeatRefreshC2 / heartbeatCounterC4 | done | heartbeatEngine.table.test.ts（8 it；未并入 decisionEngine，并完会 >500） |
-| 留 | heartbeatDecision.test.ts | pending | |
+| 留 | heartbeatDecision.test.ts | done | apps/server/src/__tests__/pure/heartbeatDecision.test.ts（W12 剪切，内容未与引擎混文件） |
 | 合或删 | reentrantResume.test.ts | done | T3/T4 → startupRecovery.test.ts 后删源 |
 | 改名 | cClassRemainingAbort.test.ts | done | nativeToolAbortSignal.test.ts |
 | 改名 | safePathWriteD7.test.ts | done | safePathWrite.test.ts |
@@ -269,34 +270,41 @@
 
 ## W13 十分收尾
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：S7–S10 落地后必须重新跑全量并填报告。没有十分表证据 = 没做完。施工员交卷等验收者打分，Goal 保持 active。
+- 改动文件：本报告；`scenario-test-map.json` / `testing.md` 把 theme-toggle 挂到场景 1。
+- 不改哪些面：不把 Goal 标 completed；不写 10/10；不 push；不取消 db singleFork；不加覆盖率门禁。
+- [OM-FREEPLAY]：S7 要 map 挂主题过程 claim，W10 又禁止硬塞无关 scenario。挂场景 1，因为 `theme-toggle-mock.spec.ts` 本身 `goto("/chat")`。
+- 验证：见「门禁」表。merge 主干后再跑一轮（用户要求），结果补记「merge 后复跑」。
+- 遇到的问题：无。施工员不准自评十分。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
 
 | 发现于 | 本文原句 | 错误原因 | 正确契约 |
 |---|---|---|---|
+| W3 | 「合并保留断言」针对 B4 resume 再入池 | 与重启不续跑铁律冲突 | 断言标 failed、零入池 | 是 |
 | W7 | 优先 mock-llm-core 读 shared 常量当工具名 | shared 默认清单不含已注册 native `run_shell` | 金表 forbidTools 合法使用 `run_shell`；防漂源用 `listNativeTools()`，测放 server | 是 |
 
 ## 铁律冲突 / 未做
 
+- B4：prompt 曾写「合并保留断言」，与 `AGENTS.md` 重启不续跑冲突 → 以铁律为准，testing.md 已记。
+- 未做（禁止项）：覆盖率门禁、live LLM 进 CI、取消 db `singleFork`、`git add -A`、push、标 Goal completed。
+
 ## 残留（范围外发现、本 Goal 故意没修）
 
-- 其它 mock spec 未挂 pageErrorGuard（prompt 只强制 chat-mock）。预存 pageerror 若有，W13 全量 e2e 时记现象，不在本 Goal 扩守卫。
+- 其它 mock spec 未挂 pageErrorGuard（prompt 只强制 chat-mock）。
 - `pnpm --filter @oasismind/web test:e2e:mock -- chat-mock.spec` 会误匹配 `scenario-partial-chat-mock.spec.ts`；验收请用 `e2e/chat-mock.spec.ts`。
+- `pnpm test:bench` 结束后 prisma teardown 可能打 `DATABASE_URL` stderr，退出码仍 0。
+- 未跑全部 40+ mock spec（W13 只跑本 Goal 新/改过的 mock spec）。
 
 ## 门禁
 
 | 命令 | 退出码 | 备注 |
 |---|---|---|
-| `pnpm --filter @oasismind/server lint` | | |
-| `pnpm --filter @oasismind/web lint` | | |
-| `pnpm --filter @oasismind/server test` | | |
-| `pnpm --filter @oasismind/web test` | | |
-| `pnpm --filter @oasismind/mock-llm-core test` | | |
-| `pnpm test:evals` | | |
-| `pnpm test:bench` | | |
-| mock e2e（W6 文件） | | |
+| `pnpm --filter @oasismind/server lint` | 0 | tsc --noEmit |
+| `pnpm --filter @oasismind/web lint` | 0 | 10 warning / 0 error（既有） |
+| `pnpm --filter @oasismind/server test` | 0 | W12：247 files / 1668 tests（含 db+pure） |
+| `pnpm --filter @oasismind/web test` | 0 | 72 files / 374 tests |
+| `pnpm --filter @oasismind/mock-llm-core test` | 0 | 19 files / 141 tests |
+| `pnpm test:evals` | 0 | 12/12 |
+| `pnpm test:bench` | 0 | 24/24；拆卸期 prisma DATABASE_URL stderr |
+| mock e2e（本 Goal 新/改 spec） | 0 | `e2e/chat-mock.spec.ts` files-accept-hint-mock gardens-list-mock daily-board-mock admin-live-push-mock：11 passed |

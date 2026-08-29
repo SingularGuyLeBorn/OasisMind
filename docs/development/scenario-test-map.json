@@ -8,6 +8,7 @@
       "coverage": "covered",
       "tests": [
         "apps/web/e2e/chat-mock.spec.ts",
+        "apps/web/e2e/theme-toggle-mock.spec.ts",
         "apps/web/lib/__tests__/chatStoreInvariants.test.ts",
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
         "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
@@ -18,6 +19,12 @@
           "file": "apps/web/e2e/chat-mock.spec.ts",
           "it": "普通问候不触发工具",
           "claim": "问候后出现助手气泡，过程中无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/theme-toggle-mock.spec.ts",
+          "it": "Navbar 主题切换按钮可切换 light/dark",
+          "claim": "Chat Navbar 可切换浅色/深色，html class 跟着变，无需 F5",
           "layer": "e2e-mock"
         },
         {
