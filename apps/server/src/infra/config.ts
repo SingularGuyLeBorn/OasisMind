@@ -27,6 +27,11 @@ const LlmYamlSchema = z.object({
   baseDelayMs: z.coerce.number().int().min(0).default(1000),
   fallbackModels: z.array(z.string()).default([]),
   /**
+   * 协议分流：auto 时 openai / deepseek 走 OpenAI Responses API（/v1/responses），
+   * 其余厂商仍走 /v1/chat/completions。mock-llm HTTP 默认仍 completions 以保持既有 E2E。
+   */
+  httpProtocol: z.enum(["auto", "chat.completions", "responses"]).default("auto"),
+  /**
    * P3-03：providers 段可选覆盖各厂商 baseUrl（env <provider>_BASE_URL 仍优先；
    * 此处次之；都未配则回退 llmClient.DEFAULT_BASE_URLS）。
    * 例：providers: { deepseek: { baseUrl: "https://proxy.example.com/v1" } }
@@ -291,6 +296,8 @@ export interface AppConfig {
     baseDelayMs: number;
     /** 弹性调用：重试耗尽后按序降级的备用模型（provider 由模型名推导） */
     fallbackModels: string[];
+    /** 协议分流：auto | chat.completions | responses */
+    httpProtocol: "auto" | "chat.completions" | "responses";
     providers: Record<string, LlmProviderConfig>;
     /** 角色化拆价：规划轮/执行轮分模型（默认关闭） */
     roleSplit: {
@@ -656,6 +663,10 @@ const ENV_ISOLATION_KEYS = new Set([
   "MOCK_LLM_DELAY_MS",
   "MOCK_LLM_STREAM_BREAK",
   "MOCK_LLM_REQUEST_ID",
+  "MOCK_LLM_PROVIDER",
+  "MOCK_LLM_QUIRK",
+  "MOCK_LLM_CASSETTE",
+  "MOCK_LLM_CASSETTE_DIR",
   "MOCK_MCP",
   "MOCK_NATIVE_TOOLS",
 ]);
@@ -937,6 +948,7 @@ export function createAppConfig(): AppConfig {
       maxRetries: llmYaml.maxRetries,
       baseDelayMs: llmYaml.baseDelayMs,
       fallbackModels: llmYaml.fallbackModels,
+      httpProtocol: llmYaml.httpProtocol,
       providers,
       roleSplit: {
         enabled: llmYaml.roleSplit.enabled,

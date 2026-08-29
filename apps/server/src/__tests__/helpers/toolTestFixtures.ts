@@ -105,6 +105,7 @@ export function createTestConfig(
       maxRetries: 3,
       baseDelayMs: 1000,
       fallbackModels: [],
+      httpProtocol: "auto",
       providers: {},
       roleSplit: {
         enabled: false,

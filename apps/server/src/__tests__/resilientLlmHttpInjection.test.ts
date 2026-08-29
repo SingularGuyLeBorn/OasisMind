@@ -20,6 +20,7 @@ function makeConfig(baseUrl: string, overrides?: Partial<AppConfig["llm"]>): App
     maxRetries: 2,
     baseDelayMs: 1,
     fallbackModels: [],
+    httpProtocol: "chat.completions",
     providers: {
       deepseek: { apiKey: "sk-test", model: "deepseek-v4-flash", baseUrl },
       kimi: { apiKey: "sk-test", model: "kimi-k2", baseUrl },

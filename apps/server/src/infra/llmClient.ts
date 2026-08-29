@@ -180,6 +180,37 @@ export function serializeMessagesForApi(messages: LlmMessage[]): Record<string, 
   });
 }
 
+/** 把内部 LlmMessage 转成 OpenAI Responses API 的 input items。 */
+function messagesToResponsesInput(messages: LlmMessage[]): unknown[] {
+  const out: unknown[] = [];
+  for (const m of messages) {
+    const content = typeof m.content === "string" ? m.content : "";
+    if (m.role === "tool") {
+      out.push({
+        type: "function_call_output",
+        call_id: m.tool_call_id || "",
+        output: content,
+      });
+      continue;
+    }
+    if (m.role === "assistant" && m.tool_calls?.length) {
+      out.push({
+        type: "message",
+        role: "assistant",
+        content,
+        tool_calls: m.tool_calls.map((tc) => ({
+          type: "function",
+          id: tc.id,
+          function: { name: tc.function.name, arguments: tc.function.arguments },
+        })),
+      });
+      continue;
+    }
+    out.push({ type: "message", role: m.role, content });
+  }
+  return out;
+}
+
 function applyDeepSeekThinkingBody(
   body: Record<string, unknown>,
   resolved: ResolvedDeepSeekRequest,
@@ -278,6 +309,20 @@ function resolveEffectiveModel(
  * MOCK_LLM_URL 优先：E2E 起了 mock-llm HTTP 就必须打过去，禁止再被 MOCK_LLM=true 进程内短路。
  * 无 URL 且 MOCK_LLM=true 才走 in-process（单测 / eval / harness）。
  */
+function resolveHttpProtocol(
+  config: AppConfig,
+  providerId: string,
+  isMockHttp: boolean,
+): "chat.completions" | "responses" {
+  const explicit = config.llm.httpProtocol;
+  if (explicit === "chat.completions") return "chat.completions";
+  if (explicit === "responses") return "responses";
+  // auto：mock-llm HTTP 默认仍走 completions，避免既有 E2E 断；真实 openai/deepseek 走 responses。
+  if (isMockHttp) return "chat.completions";
+  if (providerId === "openai" || providerId === LLM_PROVIDER_DEEPSEEK) return "responses";
+  return "chat.completions";
+}
+
 function resolveLlmHttpContext(options: {
   config: AppConfig;
   model?: string;
@@ -287,6 +332,8 @@ function resolveLlmHttpContext(options: {
   model: string;
   baseUrl: string;
   headers: Record<string, string>;
+  protocol: "chat.completions" | "responses";
+  endpoint: string;
 } {
   const mockUrl = getMockLlmHttpUrl();
   let provider: LlmProviderConfig & { id: string };
@@ -316,26 +363,30 @@ function resolveLlmHttpContext(options: {
     /\/$/,
     "",
   );
+  const protocol = resolveHttpProtocol(options.config, provider.id, !!mockUrl);
+  const endpoint = protocol === "responses" ? `${baseUrl}/responses` : `${baseUrl}/chat/completions`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${provider.apiKey}`,
   };
   Object.assign(headers, mockLlmHttpHeaders());
-  return { provider, ds, model, baseUrl, headers };
+  if (mockUrl && !headers["x-mock-provider"]) {
+    headers["x-mock-provider"] = provider.id;
+  }
+  return { provider, ds, model, baseUrl, headers, protocol, endpoint };
 }
 
-export async function chatCompletion(options: {
-  config: AppConfig;
-  model?: string;
-  messages: LlmMessage[];
-  tools?: LlmToolDefinition[];
-  signal?: AbortSignal;
-} & LlmRequestOptions): Promise<LlmCompletionResult> {
-  if (isInProcessMockLlm()) {
-    return mockChatCompletion(options);
-  }
-  const { provider, ds, model, baseUrl, headers } = resolveLlmHttpContext(options);
-
+function buildChatCompletionBody(
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  ds: ResolvedDeepSeekRequest,
+  model: string,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model,
     messages: serializeMessagesForApi(options.messages),
@@ -349,8 +400,174 @@ export async function chatCompletion(options: {
     body.tools = options.tools;
     body.tool_choice = "auto";
   }
+  return body;
+}
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+function buildResponsesBody(
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  ds: ResolvedDeepSeekRequest,
+  model: string,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model,
+    input: messagesToResponsesInput(options.messages),
+    max_tokens: options.maxTokens ?? 4096,
+    store: false,
+  };
+  if (!ds.isDeepSeek || ds.thinking === "disabled") {
+    body.temperature = options.temperature ?? 0.7;
+  }
+  // Responses API：DeepSeek / OpenAI 思考开关用 reasoning.effort
+  if (ds.isDeepSeek || model.toLowerCase().includes("o3") || model.toLowerCase().includes("o4")) {
+    body.reasoning = { effort: ds.thinking === "enabled" ? ds.reasoningEffort : "none" };
+  }
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools;
+    body.tool_choice = "auto";
+  }
+  return body;
+}
+
+function parseChatCompletionResult(
+  data: {
+    choices?: Array<{
+      finish_reason?: string;
+      message?: {
+        content?: string | null;
+        reasoning_content?: string | null;
+        tool_calls?: LlmToolCall[];
+      };
+    }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    model?: string;
+  },
+  model: string,
+  providerId: string,
+): LlmCompletionResult {
+  const choice = data.choices?.[0];
+  const usage = data.usage;
+  const reasoningContent = choice?.message?.reasoning_content ?? null;
+  const rawContent = choice?.message?.content ?? null;
+  // 思考与正文分离：不要把 reasoning_content 填进 content，否则会与正式回复串台，
+  // 并误导上层再走一遍「有思考 → 二次 stream」路径。
+  // DeepSeek V4：非流式也可能把 DSML 工具块写进 content
+  const cleaned = rawContent ? stripDsmlToolMarkup(rawContent) : null;
+  const content = cleaned?.trim() ? cleaned : null;
+  return {
+    content,
+    reasoningContent,
+    toolCalls: choice?.message?.tool_calls ?? [],
+    tokenUsage: usage
+      ? {
+          prompt: usage.prompt_tokens ?? 0,
+          completion: usage.completion_tokens ?? 0,
+          total: usage.total_tokens ?? 0,
+        }
+      : undefined,
+    finishReason: choice?.finish_reason ?? null,
+    model: data.model || model,
+    provider: providerId,
+  };
+}
+
+function flattenResponsesContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (!part || typeof part !== "object") return "";
+        const rec = part as Record<string, unknown>;
+        if (typeof rec.text === "string") return rec.text;
+        if (typeof rec.output_text === "string") return rec.output_text;
+        return "";
+      })
+      .join("");
+  }
+  return "";
+}
+
+function parseResponsesResult(
+  data: {
+    output?: Array<{
+      type?: string;
+      role?: string;
+      content?: unknown;
+      summary?: Array<{ type?: string; text?: string }>;
+      id?: string;
+      call_id?: string;
+      name?: string;
+      arguments?: string;
+    }>;
+    usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number };
+    model?: string;
+  },
+  model: string,
+  providerId: string,
+): LlmCompletionResult {
+  let content: string | null = null;
+  let reasoningContent: string | null = null;
+  const toolCalls: LlmToolCall[] = [];
+  for (const item of data.output ?? []) {
+    if (item.type === "message" && item.role === "assistant") {
+      const text = flattenResponsesContent(item.content);
+      if (text) content = content ? `${content}${text}` : text;
+    } else if (item.type === "reasoning") {
+      reasoningContent = (item.summary ?? [])
+        .map((s) => (typeof s.text === "string" ? s.text : ""))
+        .join("");
+    } else if (item.type === "function_call") {
+      toolCalls.push({
+        id: item.id || item.call_id || "call_unknown",
+        type: "function",
+        function: {
+          name: item.name || "",
+          arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments ?? {}),
+        },
+      });
+    }
+  }
+  const usage = data.usage;
+  return {
+    content: content?.trim() ? content : null,
+    reasoningContent,
+    toolCalls,
+    tokenUsage: usage
+      ? {
+          prompt: usage.input_tokens ?? 0,
+          completion: usage.output_tokens ?? 0,
+          total: usage.total_tokens ?? 0,
+        }
+      : undefined,
+    finishReason: toolCalls.length > 0 ? "tool_calls" : "stop",
+    model: data.model || model,
+    provider: providerId,
+  };
+}
+
+export async function chatCompletion(options: {
+  config: AppConfig;
+  model?: string;
+  messages: LlmMessage[];
+  tools?: LlmToolDefinition[];
+  signal?: AbortSignal;
+} & LlmRequestOptions): Promise<LlmCompletionResult> {
+  if (isInProcessMockLlm()) {
+    return mockChatCompletion(options);
+  }
+  const { provider, ds, model, headers, endpoint, protocol } = resolveLlmHttpContext(options);
+
+  const body =
+    protocol === "responses"
+      ? buildResponsesBody(options, ds, model)
+      : buildChatCompletionBody(options, ds, model);
+
+  const res = await fetch(endpoint, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -366,60 +583,24 @@ export async function chatCompletion(options: {
     );
   }
 
-  const data = (await res.json()) as {
-    choices?: Array<{
-      finish_reason?: string;
-      message?: {
-        content?: string | null;
-        reasoning_content?: string | null;
-        tool_calls?: LlmToolCall[];
-      };
-    }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-    model?: string;
-  };
-
-  const choice = data.choices?.[0];
-  const usage = data.usage;
-  const reasoningContent = choice?.message?.reasoning_content ?? null;
-  const rawContent = choice?.message?.content ?? null;
-  // 思考与正文分离：不要把 reasoning_content 填进 content，否则会与正式回复串台，
-  // 并误导上层再走一遍「有思考 → 二次 stream」路径。
-  // DeepSeek V4：非流式也可能把 DSML 工具块写进 content
-  const cleaned = rawContent ? stripDsmlToolMarkup(rawContent) : null;
-  const content = cleaned?.trim() ? cleaned : null;
-
-  return {
-    content,
-    reasoningContent,
-    toolCalls: choice?.message?.tool_calls ?? [],
-    tokenUsage: usage
-      ? {
-          prompt: usage.prompt_tokens ?? 0,
-          completion: usage.completion_tokens ?? 0,
-          total: usage.total_tokens ?? 0,
-        }
-      : undefined,
-    finishReason: choice?.finish_reason ?? null,
-    model: data.model || model,
-    provider: provider.id,
-  };
+  const data = (await res.json()) as Record<string, unknown>;
+  if (protocol === "responses") {
+    return parseResponsesResult(data as Parameters<typeof parseResponsesResult>[0], model, provider.id);
+  }
+  return parseChatCompletionResult(data as Parameters<typeof parseChatCompletionResult>[0], model, provider.id);
 }
 
-/** OpenAI 协议 SSE 流式补全；tool_calls 边收边发 partial，结束后再发完整 tool_calls */
-export async function* chatCompletionStream(options: {
-  config: AppConfig;
-  model?: string;
-  messages: LlmMessage[];
-  tools?: LlmToolDefinition[];
-  signal?: AbortSignal;
-} & LlmRequestOptions): AsyncGenerator<StreamChunk> {
-  if (isInProcessMockLlm()) {
-    yield* mockChatCompletionStream(options);
-    return;
-  }
-  const { provider, ds, model, baseUrl, headers } = resolveLlmHttpContext(options);
-
+function buildChatCompletionStreamBody(
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  ds: ResolvedDeepSeekRequest,
+  model: string,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model,
     messages: serializeMessagesForApi(options.messages),
@@ -438,8 +619,376 @@ export async function* chatCompletionStream(options: {
     body.tools = options.tools;
     body.tool_choice = "auto";
   }
+  return body;
+}
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+function buildResponsesStreamBody(
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  ds: ResolvedDeepSeekRequest,
+  model: string,
+): Record<string, unknown> {
+  const body = buildResponsesBody(options, ds, model);
+  body.stream = true;
+  return body;
+}
+
+async function* parseChatCompletionStream(
+  res: Response,
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  model: string,
+  providerId: string,
+): AsyncGenerator<StreamChunk> {
+  if (!res.body) throw new Error("LLM 流式响应无 body");
+  const reader = res.body.getReader();
+  try {
+    const decoder = new TextDecoder();
+    let buffer = "";
+    const toolCallsAcc = new Map<number, LlmToolCall>();
+    let finishReason: string | null = null;
+    let usage: { prompt: number; completion: number; total: number } | undefined;
+    let responseModel = model;
+    let lastPartialEmitAt = 0;
+    let lastPartialArgsChars = 0;
+    // DeepSeek V4：DSML 工具标记偶发漏进 content，流式缓冲过滤（见 deepseekDsmlFilter.ts）
+    const dsmlFilter = new DsmlStreamFilter();
+    const snapshotToolCalls = () =>
+      [...toolCallsAcc.entries()].sort(([a], [b]) => a - b).map(([, v]) => v);
+    const maybeEmitPartial = function* () {
+      if (toolCallsAcc.size === 0) return;
+      const toolCalls = snapshotToolCalls();
+      if (!toolCalls.some((tc) => tc.function.name)) return;
+      const argsChars = toolCalls.reduce((n, tc) => n + (tc.function.arguments?.length ?? 0), 0);
+      const now = Date.now();
+      // 节流：首次有名字必发；之后 ≥400ms 或参数增长 ≥1.5KB
+      if (lastPartialEmitAt > 0 && now - lastPartialEmitAt < 400 && argsChars - lastPartialArgsChars < 1500) {
+        return;
+      }
+      lastPartialEmitAt = now;
+      lastPartialArgsChars = argsChars;
+      yield {
+        type: "tool_calls_partial" as const,
+        toolCalls,
+        model: responseModel,
+        provider: providerId,
+      };
+    };
+    while (true) {
+      if (options.signal?.aborted) {
+        throw makeAbortError(options.signal);
+      }
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === "[DONE]") continue;
+
+        let parsed: {
+          model?: string;
+          choices?: Array<{
+            finish_reason?: string | null;
+            delta?: {
+              content?: string;
+              reasoning_content?: string;
+              tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>;
+            };
+          }>;
+          usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+        };
+
+        try {
+          parsed = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+
+        if (parsed.model) responseModel = parsed.model;
+        const choice = parsed.choices?.[0];
+        if (!choice) continue;
+
+        if (choice.finish_reason) finishReason = choice.finish_reason;
+
+        if (choice.delta?.reasoning_content) {
+          yield {
+            type: "reasoning",
+            delta: choice.delta.reasoning_content,
+            model: responseModel,
+            provider: providerId,
+          };
+        }
+
+        if (choice.delta?.content) {
+          const safe = dsmlFilter.push(choice.delta.content);
+          if (safe) {
+            yield { type: "token", delta: safe, model: responseModel, provider: providerId };
+          }
+        }
+
+        if (choice.delta?.tool_calls) {
+          dsmlFilter.markStructuredToolCalls();
+          for (const tc of choice.delta.tool_calls) {
+            const existing = toolCallsAcc.get(tc.index) ?? {
+              id: tc.id || `call_${tc.index}`,
+              type: "function" as const,
+              function: { name: "", arguments: "" },
+            };
+            if (tc.id) existing.id = tc.id;
+            if (tc.function?.name) existing.function.name += tc.function.name;
+            if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+            toolCallsAcc.set(tc.index, existing);
+          }
+          yield* maybeEmitPartial();
+        }
+
+        if (parsed.usage) {
+          usage = {
+            prompt: parsed.usage.prompt_tokens ?? 0,
+            completion: parsed.usage.completion_tokens ?? 0,
+            total: parsed.usage.total_tokens ?? 0,
+          };
+        }
+      }
+    }
+
+    const dsmlTail = dsmlFilter.flush();
+    if (dsmlTail) {
+      yield { type: "token", delta: dsmlTail, model: responseModel, provider: providerId };
+    }
+
+    const toolCalls = [...toolCallsAcc.entries()].sort(([a], [b]) => a - b).map(([, v]) => v);
+    if (toolCalls.length > 0) {
+      yield {
+        type: "tool_calls",
+        toolCalls,
+        finishReason,
+        model: responseModel,
+        provider: providerId,
+        tokenUsage: usage,
+      };
+    } else {
+      // 思考已通过 type:"reasoning" 逐片输出；此处不要把 reasoningAcc 再当正式 token，
+      // 否则思考会灌进正式回复气泡，造成「思考/正文串台」。
+      yield {
+        type: "token",
+        delta: "",
+        finishReason,
+        model: responseModel,
+        provider: providerId,
+        tokenUsage: usage,
+      };
+    }
+  } finally {
+    // 消费者提前 break / throw 时释放 reader 锁并取消底层流，
+    // 避免 HTTP 连接泄漏（fetch body stream 不自动关闭）。
+    reader.releaseLock();
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* already closed */
+    }
+  }
+}
+
+async function* parseResponsesStream(
+  res: Response,
+  options: {
+    config: AppConfig;
+    model?: string;
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+  } & LlmRequestOptions,
+  model: string,
+  providerId: string,
+): AsyncGenerator<StreamChunk> {
+  if (!res.body) throw new Error("LLM 流式响应无 body");
+  const reader = res.body.getReader();
+  try {
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let responseModel = model;
+    let content = "";
+    let reasoning = "";
+    let reasoningOpen = false;
+    let finishReason: string | null = "stop";
+    let usage: { prompt: number; completion: number; total: number } | undefined;
+    const toolCallsAcc = new Map<string, LlmToolCall>();
+    let activeToolCallId: string | null = null;
+    const dsmlFilter = new DsmlStreamFilter();
+
+    const flushReasoning = function* () {
+      if (!reasoningOpen) return;
+      reasoningOpen = false;
+      if (reasoning.trim()) {
+        yield { type: "reasoning" as const, delta: reasoning, model: responseModel, provider: providerId };
+      }
+      reasoning = "";
+    };
+
+    while (true) {
+      if (options.signal?.aborted) {
+        throw makeAbortError(options.signal);
+      }
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      let eventName = "";
+      for (const line of lines) {
+        if (!line.trim()) {
+          eventName = "";
+          continue;
+        }
+        if (line.startsWith("event:")) {
+          eventName = line.slice(6).trim();
+          continue;
+        }
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload) continue;
+
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+        if (typeof parsed.model === "string") responseModel = parsed.model;
+
+        if (eventName === "response.reasoning.delta") {
+          reasoningOpen = true;
+          const delta = typeof parsed.delta === "string" ? parsed.delta : "";
+          reasoning += delta;
+          yield { type: "reasoning", delta, model: responseModel, provider: providerId };
+          continue;
+        }
+
+        yield* flushReasoning();
+
+        if (eventName === "response.output_text.delta") {
+          const delta = typeof parsed.delta === "string" ? parsed.delta : "";
+          content += delta;
+          const safe = dsmlFilter.push(delta);
+          if (safe) {
+            yield { type: "token", delta: safe, model: responseModel, provider: providerId };
+          }
+        } else if (eventName === "response.output_item.added" && parsed.type === "function_call") {
+          const id = typeof parsed.id === "string" ? parsed.id : "call_unknown";
+          const name = typeof parsed.name === "string" ? parsed.name : "";
+          activeToolCallId = id;
+          toolCallsAcc.set(id, {
+            id,
+            type: "function",
+            function: { name, arguments: "" },
+          });
+        } else if (eventName === "response.function_call_arguments.delta") {
+          const itemId = typeof parsed.item_id === "string" ? parsed.item_id : activeToolCallId;
+          const delta = typeof parsed.delta === "string" ? parsed.delta : "";
+          if (itemId) {
+            const existing = toolCallsAcc.get(itemId) ?? {
+              id: itemId,
+              type: "function",
+              function: { name: "", arguments: "" },
+            };
+            existing.function.arguments += delta;
+            toolCallsAcc.set(itemId, existing);
+          }
+        } else if (eventName === "response.function_call_arguments.done") {
+          const itemId = typeof parsed.item_id === "string" ? parsed.item_id : activeToolCallId;
+          if (itemId) {
+            const existing = toolCallsAcc.get(itemId) ?? {
+              id: itemId,
+              type: "function",
+              function: { name: "", arguments: "" },
+            };
+            existing.function.arguments =
+              typeof parsed.arguments === "string" ? parsed.arguments : existing.function.arguments;
+            toolCallsAcc.set(itemId, existing);
+          }
+        } else if (eventName === "response.completed") {
+          const result = parseResponsesResult(parsed, model, providerId);
+          finishReason = result.finishReason;
+          if (result.tokenUsage) usage = result.tokenUsage;
+        }
+      }
+    }
+
+    const dsmlTail = dsmlFilter.flush();
+    if (dsmlTail) {
+      yield { type: "token", delta: dsmlTail, model: responseModel, provider: providerId };
+    }
+
+    const toolCalls = [...toolCallsAcc.values()];
+    if (toolCalls.length > 0) {
+      yield {
+        type: "tool_calls",
+        toolCalls,
+        finishReason: finishReason ?? "tool_calls",
+        model: responseModel,
+        provider: providerId,
+        tokenUsage: usage,
+      };
+    } else {
+      yield {
+        type: "token",
+        delta: "",
+        finishReason,
+        model: responseModel,
+        provider: providerId,
+        tokenUsage: usage,
+      };
+    }
+  } finally {
+    reader.releaseLock();
+    try {
+      await res.body?.cancel();
+    } catch {
+      /* already closed */
+    }
+  }
+}
+
+/** OpenAI 协议 SSE 流式补全；tool_calls 边收边发 partial，结束后再发完整 tool_calls */
+export async function* chatCompletionStream(options: {
+  config: AppConfig;
+  model?: string;
+  messages: LlmMessage[];
+  tools?: LlmToolDefinition[];
+  signal?: AbortSignal;
+} & LlmRequestOptions): AsyncGenerator<StreamChunk> {
+  if (isInProcessMockLlm()) {
+    yield* mockChatCompletionStream(options);
+    return;
+  }
+  const { provider, ds, model, headers, endpoint, protocol } = resolveLlmHttpContext(options);
+
+  const body =
+    protocol === "responses"
+      ? buildResponsesStreamBody(options, ds, model)
+      : buildChatCompletionStreamBody(options, ds, model);
+
+  const res = await fetch(endpoint, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -455,160 +1004,9 @@ export async function* chatCompletionStream(options: {
     );
   }
 
-  if (!res.body) throw new Error("LLM 流式响应无 body");
-
-  const reader = res.body.getReader();
-  try {
-  const decoder = new TextDecoder();
-  let buffer = "";
-  const toolCallsAcc = new Map<number, LlmToolCall>();
-  let finishReason: string | null = null;
-  let usage: { prompt: number; completion: number; total: number } | undefined;
-  let responseModel = model;
-  let lastPartialEmitAt = 0;
-  let lastPartialArgsChars = 0;
-  // DeepSeek V4：DSML 工具标记偶发漏进 content，流式缓冲过滤（见 deepseekDsmlFilter.ts）
-  const dsmlFilter = new DsmlStreamFilter();
-  const snapshotToolCalls = () =>
-    [...toolCallsAcc.entries()].sort(([a], [b]) => a - b).map(([, v]) => v);
-  const maybeEmitPartial = function* () {
-    if (toolCallsAcc.size === 0) return;
-    const toolCalls = snapshotToolCalls();
-    if (!toolCalls.some((tc) => tc.function.name)) return;
-    const argsChars = toolCalls.reduce((n, tc) => n + (tc.function.arguments?.length ?? 0), 0);
-    const now = Date.now();
-    // 节流：首次有名字必发；之后 ≥400ms 或参数增长 ≥1.5KB
-    if (
-      lastPartialEmitAt > 0 &&
-      now - lastPartialEmitAt < 400 &&
-      argsChars - lastPartialArgsChars < 1500
-    ) {
-      return;
-    }
-    lastPartialEmitAt = now;
-    lastPartialArgsChars = argsChars;
-    yield {
-      type: "tool_calls_partial" as const,
-      toolCalls,
-      model: responseModel,
-      provider: provider.id,
-    };
-  };
-  while (true) {
-    if (options.signal?.aborted) {
-      throw makeAbortError(options.signal);
-    }
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === "[DONE]") continue;
-
-      let parsed: {
-        model?: string;
-        choices?: Array<{
-          finish_reason?: string | null;
-          delta?: {
-            content?: string;
-            reasoning_content?: string;
-            tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>;
-          };
-        }>;
-        usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-      };
-
-      try {
-        parsed = JSON.parse(payload);
-      } catch {
-        continue;
-      }
-
-      if (parsed.model) responseModel = parsed.model;
-      const choice = parsed.choices?.[0];
-      if (!choice) continue;
-
-      if (choice.finish_reason) finishReason = choice.finish_reason;
-
-      if (choice.delta?.reasoning_content) {
-        yield {
-          type: "reasoning",
-          delta: choice.delta.reasoning_content,
-          model: responseModel,
-          provider: provider.id,
-        };
-      }
-
-      if (choice.delta?.content) {
-        const safe = dsmlFilter.push(choice.delta.content);
-        if (safe) {
-          yield { type: "token", delta: safe, model: responseModel, provider: provider.id };
-        }
-      }
-
-      if (choice.delta?.tool_calls) {
-        dsmlFilter.markStructuredToolCalls();
-        for (const tc of choice.delta.tool_calls) {
-          const existing = toolCallsAcc.get(tc.index) ?? {
-            id: tc.id || `call_${tc.index}`,
-            type: "function" as const,
-            function: { name: "", arguments: "" },
-          };
-          if (tc.id) existing.id = tc.id;
-          if (tc.function?.name) existing.function.name += tc.function.name;
-          if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
-          toolCallsAcc.set(tc.index, existing);
-        }
-        yield* maybeEmitPartial();
-      }
-
-      if (parsed.usage) {
-        usage = {
-          prompt: parsed.usage.prompt_tokens ?? 0,
-          completion: parsed.usage.completion_tokens ?? 0,
-          total: parsed.usage.total_tokens ?? 0,
-        };
-      }
-    }
+  if (protocol === "responses") {
+    yield* parseResponsesStream(res, options, model, provider.id);
+    return;
   }
-
-  const dsmlTail = dsmlFilter.flush();
-  if (dsmlTail) {
-    yield { type: "token", delta: dsmlTail, model: responseModel, provider: provider.id };
-  }
-
-  const toolCalls = [...toolCallsAcc.entries()].sort(([a], [b]) => a - b).map(([, v]) => v);
-  if (toolCalls.length > 0) {
-    yield {
-      type: "tool_calls",
-      toolCalls,
-      finishReason,
-      model: responseModel,
-      provider: provider.id,
-      tokenUsage: usage,
-    };
-  } else {
-    // 思考已通过 type:"reasoning" 逐片输出；此处不要把 reasoningAcc 再当正式 token，
-    // 否则思考会灌进正式回复气泡，造成「思考/正文串台」。
-    yield {
-      type: "token",
-      delta: "",
-      finishReason,
-      model: responseModel,
-      provider: provider.id,
-      tokenUsage: usage,
-    };
-  }
-  } finally {
-    // 消费者提前 break / throw 时释放 reader 锁并取消底层流，
-    // 避免 HTTP 连接泄漏（fetch body stream 不自动关闭）。
-    reader.releaseLock();
-    try { await res.body?.cancel(); } catch { /* already closed */ }
-  }
+  yield* parseChatCompletionStream(res, options, model, provider.id);
 }
