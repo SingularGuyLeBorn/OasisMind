@@ -10,10 +10,9 @@ export default defineConfig({
           exclude: ["src/__tests__/pure/**"],
           globalSetup: ["./src/__tests__/globalSetup.ts"],
           setupFiles: ["./src/__tests__/setupPrismaIsolation.ts"],
+          // SQLite 是文件级单写锁：并行多 worker 各自 PrismaClient 会争文件锁。
           pool: "forks",
           poolOptions: { forks: { singleFork: true } },
-          // SQLite + 单 PrismaClient：多文件在同一 fork 里并行会抢 fetch stub / Run 行。
-          fileParallelism: false,
           testTimeout: 30_000,
         },
       },

@@ -1,25 +1,24 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
-import { catchUnlessCancelled, isCancelledOrAbortError } from "../trpc";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  catchUnlessCancelled,
+  isCancelledOrAbortError,
+  warnUnlessCancelled,
+} from "../trpc";
+
+function namedError(name: string, message = name): Error {
+  const err = new Error(message);
+  err.name = name;
+  return err;
+}
 
 describe("isCancelledOrAbortError", () => {
-  it("name=CancelledError 为 true", () => {
-    const err = new Error("cancelled");
-    err.name = "CancelledError";
-    expect(isCancelledOrAbortError(err)).toBe(true);
-  });
-
-  it("name=AbortError 为 true", () => {
-    const err = new Error("aborted");
-    err.name = "AbortError";
-    expect(isCancelledOrAbortError(err)).toBe(true);
-  });
-
-  it("message=CancelledError 为 true", () => {
-    expect(isCancelledOrAbortError(new Error("CancelledError"))).toBe(true);
-  });
-
-  it("普通 Error 为 false", () => {
-    expect(isCancelledOrAbortError(new Error("network down"))).toBe(false);
+  it("CancelledError / AbortError 的 name 或 message 为 true", () => {
+    expect(isCancelledOrAbortError(namedError("CancelledError", "x"))).toBe(true);
+    expect(isCancelledOrAbortError(namedError("AbortError", "x"))).toBe(true);
+    expect(isCancelledOrAbortError(namedError("Error", "CancelledError"))).toBe(true);
+    expect(isCancelledOrAbortError(namedError("Error", "AbortError"))).toBe(true);
+    expect(isCancelledOrAbortError(new Error("boom"))).toBe(false);
+    expect(isCancelledOrAbortError("nope")).toBe(false);
   });
 });
 
@@ -28,18 +27,14 @@ describe("catchUnlessCancelled", () => {
     vi.restoreAllMocks();
   });
 
-  it("CancelledError 不 console.warn", () => {
+  it("CancelledError 不 console.warn，其它 Error 会 warn", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const err = new Error("cancelled");
-    err.name = "CancelledError";
-    catchUnlessCancelled("t")(err);
+    const catcher = catchUnlessCancelled("t");
+    catcher(namedError("CancelledError"));
     expect(warn).not.toHaveBeenCalled();
-  });
-
-  it("其它 Error 调用 console.warn", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const err = new Error("boom");
-    catchUnlessCancelled("t")(err);
-    expect(warn).toHaveBeenCalledWith("t", err);
+    catcher(new Error("boom"));
+    expect(warn).toHaveBeenCalledWith("t", expect.any(Error));
+    warnUnlessCancelled("t", namedError("AbortError"));
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

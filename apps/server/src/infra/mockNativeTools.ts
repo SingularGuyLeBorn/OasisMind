@@ -19,6 +19,9 @@ type MockHandler = (
 const MOCK_HANDLERS: Record<string, MockHandler> = {
   web_search: (args) => {
     const query = String(args.query ?? "");
+    // [OM-FREEPLAY] chat-mock 既有「全文已存」断言要求 JSON.stringify(value) > thresholdChars(4000) 才 compacted。
+    // 400 次垫长只有 3945 字，差 55；不放宽断言，只对含 OasisMind 的查询垫到稳超阈值。
+    const pad = /oasismind/i.test(query) ? `\n${"本地优先数字花园。".repeat(500)}` : "";
     return {
       query,
       engine: "mock",
@@ -26,7 +29,7 @@ const MOCK_HANDLERS: Record<string, MockHandler> = {
         {
           title: "OasisMind - 本地优先的智能知识管理平台",
           url: "https://example.com/oasismind",
-          snippet: `Mock 搜索结果：${query}。OasisMind 是一个以 Markdown 为原子、AI 为引擎的数字花园。`,
+          snippet: `Mock 搜索结果：${query}。OasisMind 是一个以 Markdown 为原子、AI 为引擎的数字花园。${pad}`,
         },
         {
           title: "Mock Secondary Result",

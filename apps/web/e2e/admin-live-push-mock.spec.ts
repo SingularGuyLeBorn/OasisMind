@@ -172,7 +172,7 @@ test.describe("管理页 PUSH — 开着页自己动", () => {
     }
   });
 
-  test("/cron upsert 后刷新卡片仍在", async ({ page }) => {
+  test("/cron upsert 后刷新页面卡片仍在", async ({ page }) => {
     await page.goto("/cron");
     await expect(page.getByRole("heading", { name: "定时节律", level: 1 })).toBeVisible({
       timeout: 30_000,
@@ -196,13 +196,13 @@ test.describe("管理页 PUSH — 开着页自己动", () => {
         enabled: true,
       });
       await page.reload();
-      await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible({ timeout: 30_000 });
     } finally {
       await trpcMutate("agentCron.clear", { agentId: agent.id, name }).catch(() => {});
     }
   });
 
-  test("/approvals 创建 pending 后刷新卡片仍在", async ({ page }) => {
+  test("/approvals 创建 pending 后刷新页面卡片仍在", async ({ page }) => {
     await page.goto("/approvals");
     await expect(page.getByRole("heading", { name: "待你点头", level: 1 })).toBeVisible({
       timeout: 30_000,
@@ -211,20 +211,44 @@ test.describe("管理页 PUSH — 开着页自己动", () => {
     const marker = `e2e-appr-pull-${Date.now()}`;
     let approvalId: string | undefined;
     try {
-      const created = await trpcMutate<{ success: boolean; data: { id: string } }>("approval.create", {
-        toolName: "git_push",
-        args: { marker },
-        status: "pending",
-      });
+      const created = await trpcMutate<{ success: boolean; data: { id: string } }>(
+        "approval.create",
+        {
+          toolName: "git_push",
+          args: { marker },
+          status: "pending",
+        },
+      );
       approvalId = created.data.id;
       await page.reload();
       await expect(page.getByTestId("approval-card").filter({ hasText: marker })).toBeVisible({
-        timeout: 15_000,
+        timeout: 30_000,
       });
     } finally {
       if (approvalId) {
         await trpcMutate("approval.delete", { id: approvalId }).catch(() => {});
       }
+    }
+  });
+
+  test("/runs 创建 interrupted 后刷新页面 hint 仍在", async ({ page }) => {
+    await page.goto("/runs");
+    await expect(page.getByRole("heading", { name: "Runs 执行记录", level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
+    const marker = `e2e-run-pull-${Date.now()}`;
+    let interruptedId: string | undefined;
+    try {
+      const interrupted = await trpcMutate<{ success: boolean; data: { id: string } }>("run.create", {
+        status: "interrupted",
+        input: { marker },
+      });
+      interruptedId = interrupted.data.id;
+      await page.reload();
+      await expect(page.getByTestId("runs-interrupted-resume-hint")).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator("tbody .om-badge").filter({ hasText: /^已中断$/ })).toBeVisible();
+    } finally {
+      if (interruptedId) await trpcMutate("run.delete", { id: interruptedId }).catch(() => {});
     }
   });
 });

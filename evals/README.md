@@ -1,6 +1,13 @@
 # Agent Evals（效果回归）
 
-> 审计 P1-03：改 prompt / 换模型 / 调工具清单后，用固定用例证明「没变傻」。
+> 审计 P1-03：改 prompt / 换模型 / 调工具清单后，用固定用例锁 mock 场景命中与工具名。mock 绿不能证明模型「没变傻」，见下方诚实声明。
+
+## 诚实声明（必读）
+
+- `pnpm test:evals`（mock）**不是**模型质量测试，也**不能**证明换模型/改 prompt 之后「没变傻」。
+- 它只证明：给定用户句 → mock-llm 场景解析到的名字/关键词 → 命中 JSON 里的 `expectToolsAnyOf` / `forbidTools`。
+- 真模型效果：`pnpm test:bench -- --live ...`，报告在 `evals/reports/`（gitignore），人工看。默认 CI 不跑 live。
+- 禁止在 PR 描述或测试注释里写「evals 绿 = 智能回归通过」。
 
 ## 诚实声明（必读）
 
@@ -51,6 +58,7 @@ pnpm test:bench   # mini Harness-Bench（mock 冒烟，CI 零成本）
 ## mini Harness-Bench（P2-1，Harness-Bench / HAL 思想）
 
 `evals/harness-bench/cases.json`（24 题）+ `evals/scripts/run-harness-bench.mjs`。
+`pnpm test:bench` 的 mock 模式同样**不是**模型质量测试，只验证 mock-llm 场景命中与工具名约束。
 同一批固定任务按 **(model, variant) 成对**扫：完成度（工具选择断言）+ 效率（token / 墙钟 / 估算成本）。
 mock bench 同样不是模型质量测试。
 

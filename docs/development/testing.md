@@ -52,7 +52,7 @@
 - `pnpm --filter @oasismind/web test -- chatStore`
 - `pnpm --filter @oasismind/server test -- <文件名>`
 - `pnpm --filter @oasismind/server exec vitest run --project pure`
-- 全量 server 的 **db 项目**是 `singleFork` + `fileParallelism: false` 故慢，这是正确性不是缺陷（同一 fork 里并行文件会抢 SQLite / `fetch` stub）。
+- 全量 server 的 **db 项目**是 `singleFork` 故慢，这是正确性不是缺陷。
 - `pnpm --filter @oasismind/web test -- scenarioTestMap`
 - `pnpm --filter @oasismind/web test:e2e:mock -- <spec 文件名>`（mock Playwright；未改 E2E 生产代码不必 `build:mock`）
 
@@ -74,6 +74,7 @@
 | 发现于 W* | 本文原句 | 错误原因 | 正确契约 | 报告是否已记 |
 |---|---|---|---|---|
 | W3 | 「合并保留断言」针对 B4 resume 再入池 | 与 AGENTS.md「服务重启不自动续跑」冲突；生产 `recoverStaleAsyncJobs` 已一律标 failed、不入池 | 断言「标 failed、零 runAgentLoop / 零入池」；二次 recover 幂等。B4 第二 it 锁的是僵尸会话 interrupted 顺序，保留 | 是 |
+| W7 | 优先 mock-llm-core + shared 常量当工具名 | shared 默认清单不含已注册 native `run_shell` | 金表 forbidTools 可用 `run_shell`；防漂用 `listNativeTools()`，测放 `apps/server/src/__tests__/evalGoldenSync.test.ts` | 是 |
 
 ---
 
@@ -126,8 +127,8 @@ W6/W10 新增的过程 E2E，若 `scenarios.md` 没有对应标题，**不准改
 |---|---|---|---|
 | 文件柜收件提示 | `apps/web/e2e/files-accept-hint-mock.spec.ts` | 可见 `files-accept-hint`，文案含 pdf 与 docx | 否（场景 8 是写文章；见场景 8 note） |
 | 花园列表/空态 | `apps/web/e2e/gardens-list-mock.spec.ts` | 至少一张花园卡片可点，或空态 `gardens-empty` | 仅当 claim 真是花园阅读时挂场景 11/13；列表页只登记本表 |
-| 主题切换 | `apps/web/e2e/theme-toggle-mock.spec.ts` | 已有过程；挂本表，不强塞无关 scenario | 本表 |
-| 每日看板 | `apps/web/e2e/daily-board-mock.spec.ts` | h1 之外可见 `daily-flow-board` 或 `morning-brief-card` | 本表（scenarios.md 无专属标题） |
+| 主题切换 | `apps/web/e2e/theme-toggle-mock.spec.ts` | Chat Navbar 切 light/dark，html class 跟着变 | 场景 1（测本身 goto /chat，不是硬塞写文章） |
+| 每日看板 | `apps/web/e2e/daily-board-mock.spec.ts` | 非 heading：看板 `daily-flow-board` 或空态 `daily-empty` | 本表（scenarios.md 无专属每日标题） |
 
 ---
 

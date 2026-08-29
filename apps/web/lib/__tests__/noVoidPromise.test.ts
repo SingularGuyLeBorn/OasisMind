@@ -1,63 +1,60 @@
 /**
- * 源码闸：禁止 `void refetch/invalidate/mutateAsync/prefetch/writeText` 与 `void utils.` / `void query.`。
- * jsdom 单测抓不到浏览器 CancelledError unhandled rejection。
+ * 源码闸：禁止 `void refetch/invalidate/...` 造成浏览器 unhandled rejection。
  */
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, relative } from "node:path";
 
-const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const WEB_ROOT = join(process.cwd());
 
-const SKIP_DIR = new Set(["node_modules", ".next", "e2e", "dist", "coverage", "playwright-report", "test-results"]);
+const SKIP_DIR = new Set(["node_modules", ".next", "e2e"]);
+const VOID_PROMISE_RE =
+  /void\s+[^;\n]*(refetch|invalidate|mutateAsync|prefetch|writeText)\s*\(|void\s+utils\.|void\s+query\./;
 
-const VOID_CALL_RE = /void\s+[^;\n]*(refetch|invalidate|mutateAsync|prefetch|writeText)\s*\(/;
-const VOID_UTILS_RE = /void\s+utils\./;
-const VOID_QUERY_RE = /void\s+query\./;
-
-function isSkippedFile(rel: string): boolean {
+function shouldSkipFile(rel: string): boolean {
   const n = rel.replace(/\\/g, "/");
-  if (/\.test\.tsx?$/.test(n) || /\.spec\.ts$/.test(n)) return true;
+  if (n.endsWith(".test.ts") || n.endsWith(".test.tsx") || n.endsWith(".spec.ts")) return true;
   return false;
-}
-
-function stripLineComment(line: string): string {
-  const idx = line.indexOf("//");
-  if (idx < 0) return line;
-  return line.slice(0, idx);
 }
 
 function walkTsFiles(dir: string, acc: string[]): void {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIR.has(name)) continue;
-    const full = path.join(dir, name);
+    const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) {
       walkTsFiles(full, acc);
       continue;
     }
-    if (!/\.(ts|tsx)$/.test(name)) continue;
-    const rel = path.relative(webRoot, full);
-    if (isSkippedFile(rel)) continue;
+    if (!name.endsWith(".ts") && !name.endsWith(".tsx")) continue;
+    const rel = relative(WEB_ROOT, full);
+    if (shouldSkipFile(rel)) continue;
     acc.push(full);
   }
 }
 
+function codeWithoutLineComments(line: string): string {
+  const idx = line.indexOf("//");
+  if (idx < 0) return line;
+  return line.slice(0, idx);
+}
+
 describe("禁止 void promise", () => {
-  it("apps/web 生产源码不得 void refetch/invalidate/utils/query", () => {
+  it("apps/web 生产源码不得 void refetch/invalidate/utils./query.", () => {
     const files: string[] = [];
-    walkTsFiles(webRoot, files);
+    walkTsFiles(WEB_ROOT, files);
+    expect(files.length).toBeGreaterThan(20);
     const hits: string[] = [];
     for (const file of files) {
-      const rel = path.relative(webRoot, file).replace(/\\/g, "/");
+      const rel = relative(WEB_ROOT, file).replace(/\\/g, "/");
       const lines = readFileSync(file, "utf8").split(/\r?\n/);
-      lines.forEach((raw, i) => {
-        const line = stripLineComment(raw);
-        if (VOID_CALL_RE.test(line) || VOID_UTILS_RE.test(line) || VOID_QUERY_RE.test(line)) {
-          hits.push(`${rel}:${i + 1}:${raw.trim()}`);
+      for (let i = 0; i < lines.length; i++) {
+        const code = codeWithoutLineComments(lines[i]);
+        if (VOID_PROMISE_RE.test(code)) {
+          hits.push(`${rel}:${i + 1}: ${lines[i].trim()}`);
         }
-      });
+      }
     }
-    expect(hits).toEqual([]);
+    expect(hits, hits.join("\n")).toEqual([]);
   });
 });

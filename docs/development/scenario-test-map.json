@@ -8,6 +8,7 @@
       "coverage": "covered",
       "tests": [
         "apps/web/e2e/chat-mock.spec.ts",
+        "apps/web/e2e/theme-toggle-mock.spec.ts",
         "apps/web/lib/__tests__/chatStoreInvariants.test.ts",
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
         "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
@@ -18,6 +19,12 @@
           "file": "apps/web/e2e/chat-mock.spec.ts",
           "it": "普通问候不触发工具",
           "claim": "问候后出现助手气泡，过程中无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/theme-toggle-mock.spec.ts",
+          "it": "Navbar 主题切换按钮可切换 light/dark",
+          "claim": "Chat Navbar 可切换浅色/深色，html class 跟着变，无需 F5",
           "layer": "e2e-mock"
         },
         {
@@ -163,8 +170,8 @@
         },
         {
           "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
-          "it": "/approvals 创建 pending 后刷新卡片仍在",
-          "claim": "/approvals 刷新后仍可见 pending 卡片",
+          "it": "/approvals 创建 pending 后刷新页面卡片仍在",
+          "claim": "/approvals 刷新后仍可见 pending 卡片，禁止只靠 PUSH",
           "layer": "e2e-mock"
         },
         {
@@ -199,14 +206,20 @@
         },
         {
           "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
-          "it": "/cron upsert 后刷新卡片仍在",
-          "claim": "/cron 刷新后仍可见任务卡片",
+          "it": "/cron upsert 后刷新页面卡片仍在",
+          "claim": "/cron 刷新后仍可见任务卡片，禁止只靠 PUSH",
           "layer": "e2e-mock"
         },
         {
           "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
           "it": "/runs 有已中断记录时出现 hint，他处新建后开着页自己出现行",
-          "claim": "/runs reload 后 interrupted hint 仍在，且开着页 PUSH 新行无需 F5",
+          "claim": "/runs 开着页 PUSH 出现运行中行，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/runs 创建 interrupted 后刷新页面 hint 仍在",
+          "claim": "/runs 刷新后仍可见已中断 hint，禁止只靠 PUSH",
           "layer": "e2e-mock"
         },
         {

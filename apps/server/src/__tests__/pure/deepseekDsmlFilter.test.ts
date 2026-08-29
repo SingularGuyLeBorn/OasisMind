@@ -3,7 +3,7 @@ import {
   DsmlStreamFilter,
   looksLikeDsmlLeak,
   stripDsmlToolMarkup,
-} from "../infra/deepseekDsmlFilter.js";
+} from "../../infra/deepseekDsmlFilter.js";
 
 const LEAK_FW =
   `<｜DSML｜tool_calls><｜DSML｜invoke name="web_search"><｜DSML｜parameter name="query" string>true</｜DSML｜parameter>llm-interview</｜DSML｜invoke></｜DSML｜tool_calls>`;
