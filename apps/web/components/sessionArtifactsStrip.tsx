@@ -34,10 +34,17 @@ function isInfraOffload(a: SessionArtifact): boolean {
 export function SessionArtifactsStrip({ sessionId }: { sessionId: string | null }) {
   const [items, setItems] = useState<SessionArtifact[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const [prevSessionId, setPrevSessionId] = useState<string | null>(sessionId);
 
-  useEffect(() => {
+  // 切换会话时清空产物与展开态：用 React 官方「render 期比对上一帧 prop」模式重置，
+  // 不在 effect 里 setState，避免级联渲染（react-hooks/set-state-in-effect）。
+  if (sessionId !== prevSessionId) {
+    setPrevSessionId(sessionId);
     setItems([]);
     setExpanded(false);
+  }
+
+  useEffect(() => {
     if (!sessionId) return;
     const onArt = (ev: Event) => {
       const detail = (ev as CustomEvent).detail as SessionArtifact & { sessionId?: string };
