@@ -19,8 +19,8 @@
 | W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
 | W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
 | W6 | done | files-accept-hint-mock 1 passed；gardens-list-mock 1 passed | `6897dec1` |
-| W7 | done | evalGoldenSync 3 passed；test:evals 12/12；test:bench 24/24 | （待填） |
-| W8 | | | |
+| W7 | done | evalGoldenSync 3 passed；test:evals 12/12；test:bench 24/24 | `e32e417c` |
+| W8 | done | noVoidPromise 1 passed；现存违规 0 | （待填） |
 | W9 | | | |
 | W10 | | | |
 | W11 | | | |
