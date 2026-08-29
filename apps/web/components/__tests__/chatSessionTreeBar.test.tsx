@@ -97,12 +97,13 @@ function node(
   role: string,
   preview: string,
   kind: string | null = null,
+  label: string | null = null,
 ): TreeNode {
   return {
     id,
     parentId,
     role,
-    label: null,
+    label,
     kind,
     contentPreview: preview,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -317,5 +318,56 @@ describe("ChatSessionTreeBar", () => {
       inactive!.click();
     });
     expect(fixtures.mutate).toHaveBeenCalledWith({ sessionId: "s1", messageId: "a2" });
+  });
+
+  it("书签芯片：label 非空节点渲染芯片；点旁路书签切到该子树叶", async () => {
+    fixtures.tree = {
+      sessionId: "s1",
+      activeLeafId: "a2",
+      nodes: [
+        node("u1", null, "user", "原问"),
+        node("a1", "u1", "assistant", "原答", null, "书签"),
+        node("u2", "u1", "user", "另写"),
+        node("a2", "u2", "assistant", "另写答"),
+      ],
+      children: { "": ["u1"], u1: ["a1", "u2"], u2: ["a2"] },
+    };
+    await act(async () => {
+      root.render(<ChatSessionTreeBar sessionId="s1" />);
+    });
+    const chips = [
+      ...container.querySelectorAll('[data-testid="chat-bookmark-chip"]'),
+    ] as HTMLButtonElement[];
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.getAttribute("data-message-id")).toBe("a1");
+    expect(chips[0]!.textContent).toBe("书签");
+    // a1 是叶子，tip=a1；当前 activeLeafId=a2 ≠ a1 → 可点
+    expect(chips[0]!.disabled).toBe(false);
+    await act(async () => {
+      chips[0]!.click();
+    });
+    expect(fixtures.mutate).toHaveBeenCalledWith({ sessionId: "s1", messageId: "a1" });
+  });
+
+  it("书签芯片在当前叶上 disabled（已在该叶不切）", async () => {
+    fixtures.tree = {
+      sessionId: "s1",
+      activeLeafId: "a1",
+      nodes: [
+        node("u1", null, "user", "原问"),
+        node("a1", "u1", "assistant", "原答", null, "书签"),
+        node("a2", "u1", "assistant", "旁路答"),
+      ],
+      children: { "": ["u1"], u1: ["a1", "a2"] },
+    };
+    await act(async () => {
+      root.render(<ChatSessionTreeBar sessionId="s1" />);
+    });
+    const chips = [
+      ...container.querySelectorAll('[data-testid="chat-bookmark-chip"]'),
+    ] as HTMLButtonElement[];
+    expect(chips).toHaveLength(1);
+    // a1 是当前叶，tip=a1=activeLeafId → disabled
+    expect(chips[0]!.disabled).toBe(true);
   });
 });

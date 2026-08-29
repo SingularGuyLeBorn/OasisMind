@@ -478,6 +478,37 @@ describe("W1 会话树 chatTree", () => {
     expect(cleared.label).toBeNull();
   });
 
+  it("setLabel 变更推 session_tree_updated，label 未变不推（幂等）", async () => {
+    const ctx = await createContextInner();
+    const caller = appRouter.createCaller(ctx);
+    const uiStateNotify = await import("../infra/uiStateNotify.js");
+    const notifySpy = vi.spyOn(uiStateNotify, "notifySessionTreeUpdated");
+    const session = await ctx.services.session.create({
+      title: `W2-label-notify-${RUN}`,
+      model: "deepseek-v4-flash",
+    } as never);
+    const sid = (session.data as { id: string }).id;
+    sessionIds.push(sid);
+    const msg = await ctx.services.message.create({
+      sessionId: sid,
+      role: "assistant",
+      content: "bookmark me",
+    });
+    // 钉：label null → "书签"，变更 → 推树
+    notifySpy.mockClear();
+    await caller.message.setLabel({ messageId: msg.data!.id, label: "书签" });
+    expect(notifySpy).toHaveBeenCalledTimes(1);
+    expect(notifySpy.mock.calls[0]?.[0]).toBe(sid);
+    // 再钉同值：幂等，不推
+    notifySpy.mockClear();
+    await caller.message.setLabel({ messageId: msg.data!.id, label: "书签" });
+    expect(notifySpy).not.toHaveBeenCalled();
+    // 清除：label "书签" → null，变更 → 推树
+    notifySpy.mockClear();
+    await caller.message.setLabel({ messageId: msg.data!.id, label: null });
+    expect(notifySpy).toHaveBeenCalledTimes(1);
+  });
+
   it("message.update 只改正文，不删旁路兄弟", async () => {
     const ctx = await createContextInner();
     const caller = appRouter.createCaller(ctx);

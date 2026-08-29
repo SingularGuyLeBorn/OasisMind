@@ -1700,6 +1700,60 @@ test.describe("Chat Mock — 对话分支", () => {
     expect(cleared.items.find((m) => m.id === asst!.id)?.label ?? null).toBeNull();
   });
 
+  test("书签 UI：钉助手 → 树条芯片 → 点芯片切回 → F5 仍钉", async ({ page }) => {
+    await waitForChatReady(page);
+    const sessionId = new URL(page.url()).searchParams.get("sessionId");
+    expect(sessionId).toBeTruthy();
+
+    await sendChatMessage(page, "你好");
+    await waitForStreamingComplete(page);
+    await expectAssistantAnswer(page, GREETING);
+    await waitForSessionIdle(page);
+
+    const asstBubble = pane(page)
+      .getByTestId("assistant-message-bubble")
+      .filter({ hasText: GREETING });
+    await asstBubble.hover();
+    const bookmarkBtn = asstBubble.getByTestId("message-bookmark-btn");
+    await bookmarkBtn.click({ force: true });
+    await expect(bookmarkBtn).toHaveAttribute("aria-label", "去书签", { timeout: 8_000 });
+
+    const path = await listChat(sessionId!);
+    const asst = path.items.find((m) => m.role === "assistant" && m.content.includes(GREETING));
+    expect(asst?.id).toBeTruthy();
+
+    // 另写 → 树条出现，钉过的助手落到旁路枝
+    await forkFromUserMessage(page, 0);
+    await waitForAbandonedGone(sessionId!, GREETING, "你好");
+    await waitForSessionIdle(page);
+    await expect(page.getByTestId("chat-session-tree-bar")).toBeVisible({ timeout: 15_000 });
+
+    // 书签芯片出现，指向钉过的助手，当前叶在另一枝 → 可点
+    const chip = page.getByTestId("chat-bookmark-chip");
+    await expect(chip).toBeVisible({ timeout: 10_000 });
+    await expect(chip).toHaveAttribute("data-message-id", asst!.id);
+    await expect(chip).not.toBeDisabled();
+    await chip.click();
+
+    // 切回原枝，助手气泡重现，书签仍钉
+    await expect(asstBubble).toBeVisible({ timeout: 15_000 });
+    await asstBubble.hover();
+    await expect(bookmarkBtn).toHaveAttribute("aria-label", "去书签", { timeout: 8_000 });
+
+    // F5 后书签仍在（PULL：listForChat 带回 label）
+    await page.reload();
+    await expect(
+      page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(asstBubble).toBeVisible({ timeout: 15_000 });
+    await asstBubble.hover();
+    await expect(bookmarkBtn).toHaveAttribute("aria-label", "去书签", { timeout: 8_000 });
+
+    // 清理：取消书签
+    await bookmarkBtn.click({ force: true });
+    await expect(bookmarkBtn).toHaveAttribute("aria-label", "加书签", { timeout: 8_000 });
+  });
+
   test("另写仍是同一会话，不是 session.fork 复制", async ({ page }) => {
     const sessionId = await seedGreetingSearchFork(page);
     await expectSessionIdUnchanged(page, sessionId);

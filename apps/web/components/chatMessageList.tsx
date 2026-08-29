@@ -241,6 +241,28 @@ export const ChatMessageList = memo(function ChatMessageList({
     [speakingAssistantId, ttsCancel, ttsSpeak],
   );
 
+  // 书签：钉/取消钉。固定文案「书签」，不弹窗起名；再点清 label:null。
+  // 服务端 setLabel 成功后推 message_upserted + session_tree_updated；这里再 invalidate 作 PULL 兜底。
+  const utils = trpc.useUtils();
+  const setLabelMut = trpc.message.setLabel.useMutation({
+    onSuccess: () => {
+      if (!effectiveSessionId) return;
+      utils.session.tree
+        .invalidate({ sessionId: effectiveSessionId })
+        .catch(catchUnlessCancelled("bookmark.tree"));
+      utils.message.listForChat
+        .invalidate({ sessionId: effectiveSessionId })
+        .catch(catchUnlessCancelled("bookmark.list"));
+    },
+  });
+  const handleToggleBookmark = useCallback(
+    (messageId: string, currentLabel: string | null | undefined) => {
+      const next = currentLabel ? null : "书签";
+      setLabelMut.mutate({ messageId, label: next });
+    },
+    [setLabelMut],
+  );
+
   // #12 Swarm 新手引导（可关闭，localStorage 记忆）
   // 初始恒为 false，mount 后再读 localStorage，避免 SSR/首屏 hydration 不一致
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -332,6 +354,9 @@ export const ChatMessageList = memo(function ChatMessageList({
     const active = getActiveVersion(group);
     if (!active || !group.assistantMessage) return null;
     const assistantId = group.assistantMessage.id;
+    // 捕获为 const：onToggleBookmark 闭包内 TS 不保留外层对 group.assistantMessage 的窄化。
+    const assistantLabel = group.assistantMessage.label;
+    const assistantKind = group.assistantMessage.kind;
     const isInterrupted = group.assistantMessage.finishReason === "aborted";
     const isEditingAssistant = editingMessageId === assistantId;
     const editBusy = isStreaming || editSaving || hubOccupied;
@@ -398,6 +423,9 @@ export const ChatMessageList = memo(function ChatMessageList({
           }
           showForkFrom={!!handleForkFrom && !isEditingAssistant}
           onForkFrom={handleForkFrom ? () => handleForkFrom(assistantId) : undefined}
+          showBookmark={!isEditingAssistant && assistantKind !== "branch_summary"}
+          bookmarked={!!assistantLabel}
+          onToggleBookmark={() => handleToggleBookmark(assistantId, assistantLabel)}
           onEdit={() => {
             setEditingMessageId(assistantId);
             setEditDraft(active.content);
@@ -596,6 +624,9 @@ export const ChatMessageList = memo(function ChatMessageList({
               onRetry={() => handleRetry(group.userMessage.id)}
               showForkFrom={!!handleForkFrom && !isEditing && !isSystemish}
               onForkFrom={handleForkFrom ? () => handleForkFrom(group.userMessage.id) : undefined}
+              showBookmark={!isEditing && !isSystemish && group.userMessage.kind !== "branch_summary"}
+              bookmarked={!!group.userMessage.label}
+              onToggleBookmark={() => handleToggleBookmark(group.userMessage.id, group.userMessage.label)}
               showEdit={!isSystemish}
               showRetry={isLastUser && !isEditing && !isSystemish}
               showRegenerate={false}

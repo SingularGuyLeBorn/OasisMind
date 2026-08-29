@@ -848,7 +848,7 @@ export async function switchBranch(
 export async function setMessageLabel(
   prisma: PrismaClient,
   input: { messageId: string; label: string | null },
-): Promise<ChatTreeMessage> {
+): Promise<{ updated: ChatTreeMessage; previousLabel: string | null }> {
   const existing = await prisma.chatMessage.findUnique({ where: { id: input.messageId } });
   if (!existing) {
     throw new TRPCError({ code: "NOT_FOUND", message: `消息不存在：${input.messageId}` });
@@ -857,5 +857,5 @@ export async function setMessageLabel(
     where: { id: input.messageId },
     data: { label: input.label },
   });
-  return updated as ChatTreeMessage;
+  return { updated: updated as ChatTreeMessage, previousLabel: existing.label ?? null };
 }

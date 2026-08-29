@@ -56,6 +56,8 @@ export function ChatSessionTreeBar({
     contentPreview: n.contentPreview,
     role: n.role,
   }));
+  // 书签芯片：label 非空且非 branch_summary 的节点；点击跳到该节点子树叶（与分叉按钮同一套换叶）。
+  const bookmarkNodes = tree.nodes.filter((n) => !!n.label && n.kind !== "branch_summary");
 
   return (
     <div
@@ -100,6 +102,37 @@ export function ChatSessionTreeBar({
           </span>
         );
       })}
+      {bookmarkNodes.length > 0 ? (
+        <span className="mx-1 inline-flex flex-wrap items-center gap-1" data-testid="chat-bookmark-chips">
+          {bookmarkNodes.map((n) => {
+            const label = n.label ?? "";
+            const tip = subtreeTipId(tree.children, n.id, tree.nodes);
+            const onPath = tip === tree.activeLeafId;
+            return (
+              <button
+                key={`bm-${n.id}`}
+                type="button"
+                data-testid="chat-bookmark-chip"
+                data-message-id={n.id}
+                disabled={disabled || hubOccupied || switchMut.isPending || onPath}
+                title={n.contentPreview}
+                onClick={() => {
+                  if (onPath) return;
+                  setSwitchError(null);
+                  switchMut.mutate({ sessionId, messageId: tip });
+                }}
+                className={
+                  onPath
+                    ? "rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[9px] text-[var(--om-brand-deep)]"
+                    : "rounded-md px-1.5 py-0.5 text-[9px] hover:bg-[var(--om-bg-mute)]"
+                }
+              >
+                {label === "书签" ? "书签" : label.slice(0, 12)}
+              </button>
+            );
+          })}
+        </span>
+      ) : null}
       {switchError ? (
         <span data-testid="chat-tree-switch-error" className="text-red-600">
           {switchError}

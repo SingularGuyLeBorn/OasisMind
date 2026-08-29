@@ -174,9 +174,23 @@ export class MessageService extends BaseService<CreateMessageInput, UpdateMessag
 
   async setLabel(input: { messageId: string; label: string | null }): Promise<MessageEntity> {
     const { setMessageLabel } = await import("../chatTree.js");
-    const updated = await setMessageLabel(this.prisma, input);
+    const { updated, previousLabel } = await setMessageLabel(this.prisma, input);
     const entity = this.formatEntity(updated);
     await this.afterUpdate(entity, updated, { id: input.messageId } as UpdateMessageInput);
+    // 书签变更才推树（幂等：label 没变不推 session_tree_updated，避免树条无谓刷新）。
+    // message_upserted 已在 afterUpdate 推过；这里补 session_tree_updated 让树条书签芯片 PUSH。
+    if ((previousLabel ?? null) !== (input.label ?? null)) {
+      try {
+        const session = await this.prisma.chatSession.findUnique({
+          where: { id: entity.sessionId },
+          select: { activeLeafId: true },
+        });
+        const { notifySessionTreeUpdated } = await import("../uiStateNotify.js");
+        notifySessionTreeUpdated(entity.sessionId, session?.activeLeafId ?? null);
+      } catch {
+        /* ignore */
+      }
+    }
     return entity;
   }
 
