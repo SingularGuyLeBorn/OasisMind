@@ -25,7 +25,8 @@
 | W10 | done | mock e2e admin-live-push + daily-board + files/gardens 9 passed；scenarioTestMap 绿 | `80b8e14b` |
 | W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | `e62598dd` |
 | W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | `6c2b4376` |
-| W13 | done | 见「门禁」表；theme-toggle 挂场景 1 map；施工交卷。Goal 保持 active | 本提交 |
+| W13 | done | 见「门禁」表；theme-toggle 挂场景 1 map；master fast-forward 到 `408210cc` 后复跑与施工期同数字。Goal 保持 active | `408210cc` |
+| W13′ | done | `/runs` 独立 F5 it + map claim；`admin-live-push-mock` 7 passed。Goal 仍 active | 本提交 |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
@@ -38,7 +39,7 @@
 | S5 evals 诚实 | 待验收 | `evals/README.md` L5–10 诚实声明；`evalGoldenSync.test.ts`；W13 `pnpm test:evals` 12/12、`pnpm test:bench` 24/24 退出码 0 | mock 绿不再能冒充「没变傻」 |
 | S6 CI 闸诚实 | 待验收 | 4 个 `*-real.spec.ts` 文件头降权；OCR `test.skip`；map 里 e2e-real 不计 covered | skip 的 real 不能撑 covered |
 | S7 产品面过程 | 待验收 | `files-accept-hint-mock` / `gardens-list-mock` / `daily-board-mock` e2e 绿；`theme-toggle-mock` 挂场景 1 asserts（Navbar 切 light/dark） | 花园/文件柜/每日/主题都有过程 claim |
-| S8 推拉 PUSH+PULL | 待验收 | `admin-live-push-mock`：cron/approvals 无需刷新 PUSH +「刷新页面卡片仍在」；/runs it 含 reload 后 hint；场景 17 Inbox 蒸馏钮 | 双通道都有 it，禁止只 spy notify |
+| S8 推拉 PUSH+PULL | 待验收 | `admin-live-push-mock`：`/cron` `/approvals` `/runs` 各有 PUSH it + 独立「刷新页面…仍在」F5 it（`/runs 创建 interrupted 后刷新页面 hint 仍在`）；场景 17 Inbox 蒸馏钮 | 三页双通道都有独立 it，禁止只 spy notify、禁止 F5 只叠在 PUSH 里 |
 | S9 运行时路径 | 待验收 | `noVoidPromise` 1 passed；`catchUnlessCancelled` 2；`pageErrorGuard` 挂于 `chat-mock.spec.ts`；`uiStateNotify.hub.test.ts` 真 hub 先推再订 | 写法闸 + 浏览器守卫 + hub 可观测 |
 | S10 内环 pure 项目 | 待验收 | `apps/server/vitest.config.ts` projects `db`+`pure`；`src/__tests__/pure/` 9 测 + `pureNoPrisma.test.ts`；`testing.md` 内环有 `--project pure`；`--project pure` 65 passed。db 仍 `singleFork` | 零 DB 测可并行，文件锁项目没拆掉 |
 
@@ -274,8 +275,15 @@
 - 改动文件：本报告；`scenario-test-map.json` / `testing.md` 把 theme-toggle 挂到场景 1。
 - 不改哪些面：不把 Goal 标 completed；不写 10/10；不 push；不取消 db singleFork；不加覆盖率门禁。
 - [OM-FREEPLAY]：S7 要 map 挂主题过程 claim，W10 又禁止硬塞无关 scenario。挂场景 1，因为 `theme-toggle-mock.spec.ts` 本身 `goto("/chat")`。
-- 验证：见「门禁」表。merge 主干后再跑一轮（用户要求），结果补记「merge 后复跑」。
+- 验证：见「门禁」表。`408210cc` 已 fast-forward 进 master；merge 后在施工 worktree（当时与 master 同 SHA）复跑：server/web lint 0；`--project pure` 10/65；db `chatTree` 17；server 247/1668；web 72/374；mock-llm-core 141；evals 12/12；bench 24/24；本 Goal mock e2e 11 passed。
 - 遇到的问题：无。施工员不准自评十分。
+
+## W13′ S8 补 `/runs` 独立 F5
+
+- 根因复述：S8 锁 `/cron` `/approvals` `/runs` 的 PUSH + F5。W10 只强制 cron/approvals 各一条独立 reload it；`/runs` 的 reload 叠在 PUSH 那条 it 里，验收者按标题检索会找不到「刷新页面…仍在」。
+- 改动文件：`admin-live-push-mock.spec.ts` 追加 `/runs 创建 interrupted 后刷新页面 hint 仍在`；场景 7 map 把 PUSH claim 与 F5 claim 拆开。
+- 不改哪些面：不 `pushAdminUiState`；不改生产 `/runs` 页。
+- 验证：`pnpm --filter @oasismind/web test:e2e:mock -- admin-live-push-mock` 退出码 0（7 passed，含新 it）；`scenarioTestMap` 3 passed。首次跑因 `waitForUrl(http://127.0.0.1:3003/)` fetch failed 超时（Next 已印 Ready）；重跑即绿，属环境残留，未改 setup。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
 
@@ -307,4 +315,6 @@
 | `pnpm --filter @oasismind/mock-llm-core test` | 0 | 19 files / 141 tests |
 | `pnpm test:evals` | 0 | 12/12 |
 | `pnpm test:bench` | 0 | 24/24；拆卸期 prisma DATABASE_URL stderr |
-| mock e2e（本 Goal 新/改 spec） | 0 | `e2e/chat-mock.spec.ts` files-accept-hint-mock gardens-list-mock daily-board-mock admin-live-push-mock：11 passed |
+| mock e2e（本 Goal 新/改 spec） | 0 | W13：`e2e/chat-mock.spec.ts` files-accept-hint-mock gardens-list-mock daily-board-mock admin-live-push-mock：11 passed |
+| merge 后复跑（master=`408210cc`） | 0 | 与上行 W13 全量同数字（施工 worktree 当时已与 master 同 SHA） |
+| mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed（含 `/runs 创建 interrupted 后刷新页面 hint 仍在`） |

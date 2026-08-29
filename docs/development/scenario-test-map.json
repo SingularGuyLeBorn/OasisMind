@@ -213,7 +213,13 @@
         {
           "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
           "it": "/runs 有已中断记录时出现 hint，他处新建后开着页自己出现行",
-          "claim": "/runs reload 后 interrupted hint 仍在，且开着页 PUSH 新行无需 F5",
+          "claim": "/runs 开着页 PUSH 出现运行中行，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/runs 创建 interrupted 后刷新页面 hint 仍在",
+          "claim": "/runs 刷新后仍可见已中断 hint，禁止只靠 PUSH",
           "layer": "e2e-mock"
         },
         {
