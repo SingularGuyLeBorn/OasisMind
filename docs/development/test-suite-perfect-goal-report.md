@@ -12,8 +12,8 @@
 
 | W | 状态 done/blocked | 证据（命令退出码或文件:行） | commit |
 |---|---|---|---|
-| W0 | done | `docs/development/testing.md` 含满分定义/四层/内环/禁止/设计错误/map 字段；`AGENTS.md` 快速导航加「测试圣经」；`docs/development/README.md` §8 加 testing.md 条目 | （本 commit） |
-| W1 | | | |
+| W0 | done | `docs/development/testing.md` 含满分定义/四层/内环/禁止/设计错误/map 字段；`AGENTS.md` 快速导航加「测试圣经」；`docs/development/README.md` §8 加 testing.md 条目 | `6e02f755` |
+| W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | （待填 hash） |
 | W2 | | | |
 | W3 | | | |
 | W4 | | | |
@@ -62,7 +62,7 @@
 
 | 位置 | 本文要求 | 我觉得不合理的点 | 实际落地 | 是否 [OM-FREEPLAY] |
 |---|---|---|---|---|
-| | | | | |
+| W1 eval-mock `it` | it 必须是 it(/test( 标题子串 | golden JSON 没有 it() | 用 JSON 字段子串过 includes 闸 | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -128,7 +128,7 @@
 | 补 | e2e/helpers/pageErrorGuard.ts | pending | |
 | 补 | src/__tests__/pure/ + vitest projects | pending | |
 | 补 | docs/development/testing.md | done | W0 |
-| 改 | scenario-test-map.json + scenarioTestMap.test.ts | pending | W1 |
+| 改 | scenario-test-map.json + scenarioTestMap.test.ts | done | W1：每条 asserts[]；校验 it 子串 |
 | 改 | AGENTS.md 快速导航 | done | 只加一行 |
 
 ### 3.5 明确不要删
@@ -152,11 +152,12 @@
 
 ## W1 场景 map 过程断言
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：`scenarioTestMap.test.ts` 只检查标题对齐且 `tests[]` 文件存在，于是 blog-smoke heading 就能让「写文章」标 covered。成功 = 每条有 `asserts[]`，`it` 子串落在文件内，covered 必须有非 e2e-real 过程 claim。
+- 改动文件：`docs/development/scenario-test-map.json`；`apps/web/lib/__tests__/scenarioTestMap.test.ts`。
+- 不改哪些面：不改 E2E 生产代码；不把 heading 改写成过程 claim；不删 real spec。
+- [OM-FREEPLAY]：eval-mock 指向 golden JSON 时文件无 `it(`/`test(`，用 JSON 内 `"id": "G0x"` 等子串满足 includes 闸（规则第 5 条只要求文件文本 includes）。场景 18 现有 `scenario-partial-chat-mock` 已有 video_transcript 过程，故保持 covered（prompt 写「仅 cases.json 则 partial」；实际已有 mock 过程）。场景 A 的晨间简报 unit assert 指向 `relatedPosts.test.ts`（不在该场景 tests[]，prompt 允许）。
+- 验证：`pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0。
+- 遇到的问题：无。
 
 ## W2 Chat 卫星合并
 

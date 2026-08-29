@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "scenarios.md 每个「## 场景」必须在此登记。coverage=gap 允许，但禁止漏登记。CI：apps/web/lib/__tests__/scenarioTestMap.test.ts",
+  "note": "scenarios.md 每个「## 场景」必须在此登记。coverage=gap 允许，但禁止漏登记。covered 必须靠 asserts 过程断言，禁止文件存在 / heading / e2e-real 冒充。CI：apps/web/lib/__tests__/scenarioTestMap.test.ts",
   "scenarios": [
     {
       "id": "1",
@@ -12,6 +12,32 @@
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
         "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
         "evals/golden/G06-idle-chat.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-mock.spec.ts",
+          "it": "普通问候不触发工具",
+          "claim": "问候后出现助手气泡，过程中无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/lib/__tests__/chatStoreInvariants.test.ts",
+          "it": "INV-1：complete + upsert 对齐后自动 commit 到 idle",
+          "claim": "流式完成必须经 commitStream 才 idle，禁止绕过对齐开新流",
+          "layer": "unit"
+        },
+        {
+          "file": "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
+          "it": "stop-gt1-user-abort",
+          "claim": "磁带 stop-gt1-user-abort 回放停止不变量，禁止赌时序",
+          "layer": "unit"
+        },
+        {
+          "file": "evals/golden/G06-idle-chat.json",
+          "it": "\"id\": \"G06\"",
+          "claim": "闲聊禁止无故 spawn/write_file（mock 场景命中，不是模型质量）",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -22,6 +48,20 @@
         "apps/web/e2e/chat-mock.spec.ts",
         "apps/web/e2e/chat-tool-hint.spec.ts",
         "evals/golden/G03-read-article.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-mock.spec.ts",
+          "it": "触发 web_search 工具并显示 pill/hint",
+          "claim": "web_search 后出现工具 pill 与助手气泡，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/chat-tool-hint.spec.ts",
+          "it": "历史会话：web_search 完成 pill 显示耗时与引擎",
+          "claim": "历史会话 web_search 完成 pill 显示耗时，刷新后仍可读",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -31,6 +71,20 @@
       "tests": [
         "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
         "apps/web/e2e/dsh-chat-ui-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
+          "it": "spawn_subagent waitForResult=true 不刷新也应正常完成",
+          "claim": "阻塞 spawn 父会话收到子结果并完成，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/dsh-chat-ui-mock.spec.ts",
+          "it": "spawn_subagent 后左侧子 Agent 列表自己出现卡片",
+          "claim": "spawn 后侧栏自己出现子 Agent 卡片，禁止教刷新",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -41,6 +95,20 @@
       "tests": [
         "apps/web/e2e/spawn-async-mock.spec.ts",
         "evals/golden/G05-spawn-subagent.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/spawn-async-mock.spec.ts",
+          "it": "父先空闲，子结果后到且无需刷新",
+          "claim": "非阻塞 spawn 父先 idle，子结果后到驱动续答，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "evals/golden/G05-spawn-subagent.json",
+          "it": "\"id\": \"G05\"",
+          "claim": "派子走 spawn_subagent，禁止 agent_inspect 窥消息",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -50,13 +118,27 @@
       "tests": [
         "apps/web/e2e/async-task-mock.spec.ts",
         "apps/server/src/__tests__/async-task-queue.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/async-task-mock.spec.ts",
+          "it": "async_task_run 后台任务完成后结果自动插入对话",
+          "claim": "后台任务完成后结果自动插入对话气泡，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/async-task-queue.test.ts",
+          "it": "async_task_run 启动纯工具任务并返回 running 状态",
+          "claim": "async_task_run 落库为 running，终态不回全文",
+          "layer": "unit"
+        }
       ]
     },
     {
       "id": "6",
       "title": "审批（高风险操作）",
       "coverage": "covered",
-      "note": "过程断言：Chat 工具卡 awaiting_human → 页内批准/拒绝 → 会话自己续跑；drain 必须带 super 的 session.agentId；未批准绝不静默成功",
+      "note": "过程断言：Chat 工具卡 awaiting_human → 页内批准/拒绝 → 会话自己续跑；drain 必须带 super 的 session.agentId；未批准绝不静默成功。PULL F5 水合见 W10 追加 it。",
       "tests": [
         "apps/server/src/__tests__/approvalScope.test.ts",
         "apps/server/src/__tests__/nativeExecuteApproval.test.ts",
@@ -65,13 +147,33 @@
         "apps/web/lib/__tests__/uiStateChannel.test.ts",
         "apps/web/e2e/admin-live-push-mock.spec.ts",
         "apps/web/e2e/chat-approval-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-approval-mock.spec.ts",
+          "it": "Chat 点批准并执行后才写入，无需刷新",
+          "claim": "页内批准后会话自己续跑写入，无需 F5；未批准禁止静默成功",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/approvals 他处创建 pending 后开着页自己出现卡片，无需刷新",
+          "claim": "/approvals 开着页 PUSH 出现 pending 卡片，无需刷新",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/nativeExecuteApproval.test.ts",
+          "it": "native.execute(run_shell) 在审批开启时抛 PENDING_APPROVAL",
+          "claim": "高风险 native.execute 未批准必须抛 PENDING_APPROVAL 禁止落库副作用",
+          "layer": "unit"
+        }
       ]
     },
     {
       "id": "7",
       "title": "定时任务 / 心跳",
       "coverage": "covered",
-      "note": "PUSH cron_job_updated + PULL 间隔 + /cron 开着页自拉已锁；Chat 查询心跳：swarm_brief 只读检查 → 过程断言 lastMode/未熔断，禁止伪造刚跑完；drain 必须带 super session.agentId",
+      "note": "PUSH cron_job_updated + PULL 间隔 + /cron 开着页自拉已锁；Chat 查询心跳：swarm_brief 只读检查 → 过程断言 lastMode/未熔断，禁止伪造刚跑完。cron/approvals F5 卡片仍在见 W10。",
       "tests": [
         "apps/server/src/__tests__/heartbeatDecision.test.ts",
         "apps/server/src/__tests__/uiStateNotify.test.ts",
@@ -81,16 +183,57 @@
         "apps/web/lib/__tests__/uiStateChannel.test.ts",
         "apps/web/e2e/admin-live-push-mock.spec.ts",
         "apps/web/e2e/chat-heartbeat-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/cron 他处写入后开着页自己出现卡片，无需刷新",
+          "claim": "/cron 开着页 PUSH 出现任务卡片，无需刷新",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/runs 有已中断记录时出现 hint，他处新建后开着页自己出现行",
+          "claim": "/runs reload 后 interrupted hint 仍在，且开着页 PUSH 新行无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/chat-heartbeat-mock.spec.ts",
+          "it": "Chat 查询心跳读只读检查，不伪造刚跑完",
+          "claim": "查询心跳只读 swarm_brief，禁止伪造刚跑完",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/heartbeatDecision.test.ts",
+          "it": "有待审批 → wait_user_gate 且 summary 非空",
+          "claim": "待审批时心跳决策 wait_user_gate，禁止空 summary",
+          "layer": "unit"
+        }
       ]
     },
     {
       "id": "8",
       "title": "写文章（编辑器 Post）",
       "coverage": "covered",
+      "note": "过程覆盖靠 post-trash 软删/恢复，不是 blog-smoke heading。文件柜收件提示见 files-accept-hint-mock，不升格为写文章 covered 依据。",
       "tests": [
         "apps/web/e2e/blog-smoke.spec.ts",
         "apps/web/e2e/post-trash.spec.ts",
         "evals/golden/G02-post-create.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/post-trash.spec.ts",
+          "it": "删除文章后可在回收站恢复",
+          "claim": "文章软删后可在回收站恢复，不是 heading 冒烟",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "evals/golden/G02-post-create.json",
+          "it": "\"id\": \"G02\"",
+          "claim": "保存文章走 post_create，禁止 write_file 污染 posts",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -105,6 +248,32 @@
         "apps/web/lib/__tests__/chatQueueDrainHead.test.ts",
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts",
         "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-queue-mock.spec.ts",
+          "it": "流式未结束时第二条入可见队列，commit 后自动 drain 出第二份回复",
+          "claim": "流式中第二条入可见队列，commit 后自动 drain，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/lib/__tests__/chatQueueDrainLifecycle.test.tsx",
+          "it": "S1：run 结束后自动 drain 队列中下一条",
+          "claim": "真 hook 窗口：run 结束后自动 drain 队列下一条",
+          "layer": "unit"
+        },
+        {
+          "file": "apps/web/lib/__tests__/chatStoreGoldenTraces.test.ts",
+          "it": "queue-gt1-two-turns",
+          "claim": "磁带 queue-gt1-two-turns 回放两轮队列 drain",
+          "layer": "unit"
+        },
+        {
+          "file": "apps/web/e2e/chat-queue-real.spec.ts",
+          "it": "流式未结束时第二条入可见队列，commit 后自动 drain 出第二份回复",
+          "claim": "真 LLM 队列（有 key 才跑）；不计 covered",
+          "layer": "e2e-real"
+        }
       ]
     },
     {
@@ -115,17 +284,45 @@
         "apps/web/e2e/chat-resume-mock.spec.ts",
         "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
         "apps/web/lib/__tests__/chatStorePbtInvariants.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/chat-resume-mock.spec.ts",
+          "it": "普通问候完成后刷新，点回会话不丢失最终结果",
+          "claim": "问候完成后刷新再点回会话，助手气泡与最终结果不丢",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/chat-subagent-resume-mock.spec.ts",
+          "it": "spawn_subagent waitForResult=true 时刷新，父会话应恢复并收到子 Agent 结果",
+          "claim": "阻塞 spawn 刷新后续传，父会话恢复并收到子结果",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
       "id": "11",
       "title": "阅读 LiveDoc + 划词解释",
       "coverage": "covered",
-      "note": "划词弹层开/关/重开 + 原文不变",
+      "note": "划词弹层开/关/重开 + 原文不变。花园列表页过程见 gardens-list-mock，不挂本场景以免污染划词契约。",
       "tests": [
         "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/web/lib/__tests__/selectionExplainRange.test.ts",
         "apps/server/src/__tests__/postExplain.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
+          "it": "11 划词解释：弹层可关可重开，原文不变",
+          "claim": "划词弹层可关可重开，原文不变，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/lib/__tests__/selectionExplainRange.test.ts",
+          "it": "正文段落内选区可通过；代码块内拒绝",
+          "claim": "代码块内禁止划词解释，只允许正文段落选区",
+          "layer": "unit"
+        }
       ]
     },
     {
@@ -138,6 +335,20 @@
         "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
         "apps/server/src/__tests__/editorAgentComplete.test.ts",
         "apps/web/lib/__tests__/editorCompleteContext.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
+          "it": "12 编辑器选区改写：拒绝恢复原文，接受才写回",
+          "claim": "选区改写拒绝则恢复原文，接受才写回，禁止静默覆盖",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/editorAgentComplete.test.ts",
+          "it": "prompt 含指令与前后文与当前段落",
+          "claim": "选区改写 prompt 必须含前后文与当前段落",
+          "layer": "unit"
+        }
       ]
     },
     {
@@ -149,6 +360,20 @@
         "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/server/src/__tests__/relatedPosts.test.ts",
         "apps/web/lib/__tests__/relatedPostsView.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
+          "it": "13 相关笔记：点开是真文，不是死链",
+          "claim": "点开 related-post-link 落到真文，禁止死链",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/relatedPosts.test.ts",
+          "it": "未发布与墓碑不得进入 related（死链）",
+          "claim": "未发布与墓碑禁止进入 related，避免死链",
+          "layer": "unit"
+        }
       ]
     },
     {
@@ -161,6 +386,26 @@
         "evals/golden/G02-post-create.json",
         "evals/golden/G01-post-list.json",
         "apps/server/src/__tests__/relatedPosts.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "14 Chat 写入知识库：对话框成文可打开；工具路径禁止 write_file",
+          "claim": "createFromChat 成文可打开，工具路径禁止 write_file 落库",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/relatedPosts.test.ts",
+          "it": "createFromChat 以服务端消息正文新建文章",
+          "claim": "createFromChat 用服务端消息正文新建文章并落库",
+          "layer": "unit"
+        },
+        {
+          "file": "evals/golden/G02-post-create.json",
+          "it": "forbidTools",
+          "claim": "金表 forbid write_file，不是模型质量证明",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -172,6 +417,20 @@
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/dsh-chat-ui-mock.spec.ts",
         "apps/web/e2e/subagent-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "15 同时派两个资料员：派工条出现且可打开运行栏",
+          "claim": "双非阻塞 spawn 后派工条出现且可打开运行栏，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/subagent-mock.spec.ts",
+          "it": "通过弹窗创建子 Agent 后左侧出现卡片",
+          "claim": "弹窗创建子 Agent 后左侧出现卡片，无需 F5",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -183,26 +442,75 @@
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/chat-model-menu-mock.spec.ts",
         "apps/web/lib/__tests__/chatConfig.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "16 本地模型菜单可见；切模型后同会话历史还在；先别上网不搜",
+          "claim": "切模型后同会话历史还在；先别上网禁止 web_search",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/lib/__tests__/chatConfig.test.ts",
+          "it": "ollama 前缀是本地纯文本，图片走 OCR",
+          "claim": "ollama 前缀本地纯文本，禁止当云端 vision 默认",
+          "layer": "unit"
+        }
       ]
     },
     {
       "id": "17",
       "title": "Inbox 抓取 → 蒸馏成文",
       "coverage": "covered",
-      "note": "inbox_list → inbox_distill → knowledge 草稿可打开且保留来源 URL",
+      "note": "inbox_list → inbox_distill → knowledge 草稿可打开且保留来源 URL。蒸馏钮过程另见 scenario-product-gaps-mock。",
       "tests": [
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
-        "apps/server/src/__tests__/inboxPipeline.test.ts"
+        "apps/server/src/__tests__/inboxPipeline.test.ts",
+        "apps/web/e2e/scenario-product-gaps-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "17 Inbox 未处理条目蒸馏成文，草稿可打开且保留来源链接",
+          "claim": "Inbox 蒸馏成文草稿可打开且保留来源 URL，无需 F5",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/scenario-product-gaps-mock.spec.ts",
+          "it": "Inbox 未勾选时蒸馏钮禁用",
+          "claim": "未勾选时蒸馏钮禁用，禁止空选蒸馏",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/inboxPipeline.test.ts",
+          "it": "formatInboxItemBody 含来源与原文链接",
+          "claim": "Inbox 正文格式必须含来源与原文链接以便落库追溯",
+          "layer": "unit"
+        }
       ]
     },
     {
       "id": "18",
       "title": "视频转文字 / 本地 STT 做笔记",
       "coverage": "covered",
-      "note": "mock video_transcript 产出逐字稿；不编台词",
+      "note": "过程靠 scenario-partial-chat-mock 的 video_transcript 逐字稿，不是仅 cases.json。W6 不准新写不稳定视频 E2E。",
       "tests": [
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "evals/harness-bench/cases.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "18 视频学习笔记：走 video_transcript，有逐字稿",
+          "claim": "视频笔记走 video_transcript 产出逐字稿，禁止编台词",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "evals/harness-bench/cases.json",
+          "it": "\"id\": \"B19\"",
+          "claim": "mock bench 期望 video_transcript，不是模型质量",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -214,6 +522,20 @@
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/platformFetch.test.ts",
         "evals/golden/G03-read-article.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "19 知乎登录后读文：login_status → read_article，不用截图代替",
+          "claim": "登录后读文走 read_article，禁止截图当读文",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "evals/golden/G03-read-article.json",
+          "it": "\"id\": \"G03\"",
+          "claim": "金表 forbid browser_screenshot，只约束 mock 工具名",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -224,6 +546,20 @@
       "tests": [
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/e2e/evolving-intent-mock.spec.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "20 深度调研 Goal：goal 条出现，并说明重启不自动续跑",
+          "claim": "Goal 条出现且回复写明重启不自动续跑",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/evolving-intent-mock.spec.ts",
+          "it": "switch：另外做周报后旧 goal 不再续跑",
+          "claim": "Goal switch 后旧目标禁止续跑",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -236,6 +572,26 @@
         "apps/server/src/__tests__/inboxPipeline.test.ts",
         "apps/server/src/__tests__/dailyFlow.test.ts",
         "evals/golden/G12-morning-brief.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "A 晨间简报：Inbox 要点后可写入知识库",
+          "claim": "晨间简报 Inbox 要点后可写入知识库落库",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/relatedPosts.test.ts",
+          "it": "createFromChat 晨间简报：tags 日报 + appendHeading 每日简报，正文来自 messageId",
+          "claim": "晨间简报落库 tags 日报且正文来自消息，禁止空文",
+          "layer": "unit"
+        },
+        {
+          "file": "evals/golden/G12-morning-brief.json",
+          "it": "\"id\": \"G12\"",
+          "claim": "先 inbox_list；禁止 write_file 直写 posts",
+          "layer": "eval-mock"
+        }
       ]
     },
     {
@@ -247,6 +603,14 @@
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "evals/golden/G05-spawn-subagent.json",
         "evals/golden/G02-post-create.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "B 专题深挖：阻塞调研完成后可成文",
+          "claim": "阻塞调研完成后可成文落库，无需 F5",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -259,6 +623,14 @@
         "apps/server/src/__tests__/editorAgentComplete.test.ts",
         "apps/web/components/editor/__tests__/editorAgentCompletePanel.test.tsx",
         "apps/web/lib/__tests__/editorCompleteContext.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "C 先别上网整理 + 切云模型 + 选区精简同一篇",
+          "claim": "先别上网再切云模型，同一篇选区 Accept 才写回",
+          "layer": "e2e-mock"
+        }
       ]
     },
     {
@@ -270,6 +642,20 @@
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/server/src/__tests__/picliteSkillContract.test.ts",
         "evals/golden/G11-piclite-compress.json"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "D PicLite：skill_view + list_directory，禁止第三方压图",
+          "claim": "压图走 skill_view+list_directory，禁止第三方压图 SaaS",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/server/src/__tests__/picliteSkillContract.test.ts",
+          "it": "启用且禁止第三方压图 SaaS",
+          "claim": "PicLite 契约禁止第三方压图 SaaS",
+          "layer": "unit"
+        }
       ]
     },
     {
@@ -281,6 +667,20 @@
         "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
         "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
         "apps/web/lib/__tests__/vizEmbed.test.ts"
+      ],
+      "asserts": [
+        {
+          "file": "apps/web/e2e/scenario-partial-chat-mock.spec.ts",
+          "it": "E Chat 微信成片：material_pack → compose，禁止 write_file 写 algo-viz",
+          "claim": "成片走 pack→compose，禁止 write_file 写 algo-viz",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/scenario-garden-ui-mock.spec.ts",
+          "it": "E 花园内 Remotion 可播，不是未知 composition",
+          "claim": "花园内 viz-embed 可挂载播放，禁止未知 composition",
+          "layer": "e2e-mock"
+        }
       ]
     }
   ]
