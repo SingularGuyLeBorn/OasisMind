@@ -1722,9 +1722,12 @@ test.describe("Chat Mock — 对话分支", () => {
     const asst = path.items.find((m) => m.role === "assistant" && m.content.includes(GREETING));
     expect(asst?.id).toBeTruthy();
 
-    // 另写 → 树条出现，钉过的助手落到旁路枝
+    // 另写 → 钉过的助手落到旁路枝；再发一条后续生成第二枝，树条才出现（用户消息需有 ≥2 子节点）
     await forkFromUserMessage(page, 0);
     await waitForAbandonedGone(sessionId!, GREETING, "你好");
+    await waitForSessionIdle(page);
+    await sendChatMessage(page, FOLLOW_UP);
+    await waitForStreamingComplete(page);
     await waitForSessionIdle(page);
     await expect(page.getByTestId("chat-session-tree-bar")).toBeVisible({ timeout: 15_000 });
 

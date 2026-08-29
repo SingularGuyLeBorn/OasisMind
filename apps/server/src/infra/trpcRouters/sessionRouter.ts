@@ -437,6 +437,13 @@ export const sessionRouter = router({
               where: { id: input.sessionId },
               data: { goalState: next as never },
             });
+            // 推 goal_updated 让前端 getGoal invalidate（推拉结合），否则顶栏 verifiedCount 不刷新
+            try {
+              const { notifyGoalUpdated } = await import("../uiStateNotify.js");
+              notifyGoalUpdated(input.sessionId, current.status, input.items.length);
+            } catch {
+              /* 推送失败不阻断 */
+            }
             return { ok: true as const, count: input.items.length };
           })
       : publicProcedure.input(z.object({ sessionId: z.string().cuid() })).mutation(() => {
