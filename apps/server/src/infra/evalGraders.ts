@@ -15,6 +15,7 @@ import type {
   EvalVerdict,
   LayerSummary,
 } from "@oasismind/shared";
+import { enterInProcessMockLlm } from "@oasismind/mock-llm-core";
 
 const LAYERS: EvalLayer[] = ["result", "process", "efficiency", "risk"];
 
@@ -393,15 +394,14 @@ export async function runLlmRubricGrader(
 }
 
 /**
- * 默认机评调用：走 resilientChatCompletion；MOCK_LLM 时可用 scenario eval_judge。
+ * 默认机评调用：走 resilientChatCompletion。
+ * MOCK_LLM 时强制进程内 eval_judge，避免 E2E 残留 MOCK_LLM_URL / 注入 header 把裁判打去 HTTP。
  */
 export async function createDefaultLlmJudge(): Promise<LlmJudgeFn> {
   return async (prompt: string) => {
-    const prev = process.env.MOCK_LLM_SCENARIO;
+    const restore =
+      process.env.MOCK_LLM === "true" ? enterInProcessMockLlm({ scenario: "eval_judge" }) : () => {};
     try {
-      if (process.env.MOCK_LLM === "true") {
-        process.env.MOCK_LLM_SCENARIO = "eval_judge";
-      }
       const { resilientChatCompletion } = await import("./resilientLlmClient.js");
       const { getAppConfig } = await import("./config.js");
       const model =
@@ -419,8 +419,7 @@ export async function createDefaultLlmJudge(): Promise<LlmJudgeFn> {
       });
       return String(result.content ?? "");
     } finally {
-      if (prev === undefined) delete process.env.MOCK_LLM_SCENARIO;
-      else process.env.MOCK_LLM_SCENARIO = prev;
+      restore();
     }
   };
 }

@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prisma } from "../db.js";
 import { SessionStreamHub, setStreamHub } from "../infra/sessionStreamHub.js";
 import { handleAgentChatStop } from "../infra/agentStream/index.js";
-import { persistAbortedAssistant } from "../infra/agentStream/persist.js";
+import { persistAbortedAssistant, shouldPersistAbortedAssistant } from "../infra/agentStream/persist.js";
 import { createContextInner } from "../trpc/context.js";
 import { createTestConfig } from "./helpers/toolTestFixtures.js";
 import type { AgentChatInput } from "@oasismind/shared";
@@ -87,5 +87,45 @@ describe("PRD 流式停止 Hub / persist", () => {
     const msg = await prisma.chatMessage.findUnique({ where: { id: pendingId } });
     expect(msg?.finishReason).toBe("aborted");
     expect(msg?.content).toBe("半截停住");
+  });
+
+  it("用户点停即使零 token 也要落 aborted（界面才能画已停止生成）", () => {
+    expect(
+      shouldPersistAbortedAssistant({
+        isUserSoftStop: true,
+        partialContent: "",
+        partialToolCalls: [],
+      }),
+    ).toBe(true);
+    expect(
+      shouldPersistAbortedAssistant({
+        isUserSoftStop: false,
+        partialContent: "",
+        partialToolCalls: [],
+      }),
+    ).toBe(false);
+    expect(
+      shouldPersistAbortedAssistant({
+        isUserSoftStop: false,
+        partialContent: "半截",
+        partialToolCalls: [],
+      }),
+    ).toBe(true);
+  });
+
+  it("零 token 中断落库正文是「(已中断)」且 finishReason=aborted", async () => {
+    const pendingId = `c${"d".repeat(24)}`;
+    const ctx = await createContextInner();
+    await persistAbortedAssistant({
+      services: ctx.services,
+      sessionId,
+      prepared: undefined,
+      pendingAssistantId: pendingId,
+      partialContent: "",
+      partialToolCalls: [],
+    });
+    const msg = await prisma.chatMessage.findUnique({ where: { id: pendingId } });
+    expect(msg?.finishReason).toBe("aborted");
+    expect(msg?.content).toBe("(已中断)");
   });
 });

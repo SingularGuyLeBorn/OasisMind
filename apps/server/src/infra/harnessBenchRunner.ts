@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { mockChatCompletion } from "@oasismind/mock-llm-core";
+import { enterInProcessMockLlm, mockChatCompletion } from "@oasismind/mock-llm-core";
 import type { HarnessDeps } from "./evalHarness.js";
 
 const BENCH_CASES_PATH = "evals/harness-bench/cases.json";
@@ -100,7 +100,7 @@ function buildToolSchemas(cases: BenchCase[]) {
   }));
 }
 
-function judgeCase(c: BenchCase, used: string[]): string[] {
+function judgeCase(c: BenchCase, used: string[], finishReason: string | null): string[] {
   const errors: string[] = [];
   if (Array.isArray(c.expectToolsAnyOf)) {
     if (c.expectToolsAnyOf.length === 0) {
@@ -112,6 +112,24 @@ function judgeCase(c: BenchCase, used: string[]): string[] {
   if (c.forbidTools?.length) {
     const bad = c.forbidTools.filter((t) => used.includes(t));
     if (bad.length) errors.push(`禁用工具被调用: ${JSON.stringify(bad)}`);
+  }
+  // 与 golden 同语义：实际调了工具时协议要求 finishReason=tool_calls（与是否声明 expectToolsAnyOf 无关）
+  if (used.length > 0 && finishReason !== "tool_calls") {
+    errors.push(
+      `有工具调用时 finishReason 应为 tool_calls，实际 ${JSON.stringify(finishReason)}`,
+    );
+  }
+  // 明确零工具（空数组，不是省略字段）且实际未调用时，finishReason 不应是 tool_calls
+  // 省略 expectToolsAnyOf 时不要因为 finishReason 单独失败
+  if (
+    Array.isArray(c.expectToolsAnyOf) &&
+    c.expectToolsAnyOf.length === 0 &&
+    used.length === 0 &&
+    finishReason === "tool_calls"
+  ) {
+    errors.push(
+      `明确零工具时 finishReason 不应为 tool_calls（stop/null 均可），实际 ${JSON.stringify(finishReason)}`,
+    );
   }
   return errors;
 }
@@ -134,23 +152,18 @@ async function runMockCase(c: BenchCase, tools: ReturnType<typeof buildToolSchem
     used,
     usage: result.tokenUsage ?? null,
     durationMs: Date.now() - started,
-    errors: judgeCase(c, used),
+    errors: judgeCase(c, used, result.finishReason),
   };
 }
 
 async function runWithMockEnv<T>(fn: () => Promise<T>): Promise<T> {
-  const prevMock = process.env.MOCK_LLM;
-  const prevScenario = process.env.MOCK_LLM_SCENARIO;
   const prevNative = process.env.MOCK_NATIVE_TOOLS;
-  process.env.MOCK_LLM = "true";
+  const restore = enterInProcessMockLlm();
   process.env.MOCK_NATIVE_TOOLS = process.env.MOCK_NATIVE_TOOLS || "true";
   try {
     return await fn();
   } finally {
-    if (prevMock === undefined) delete process.env.MOCK_LLM;
-    else process.env.MOCK_LLM = prevMock;
-    if (prevScenario === undefined) delete process.env.MOCK_LLM_SCENARIO;
-    else process.env.MOCK_LLM_SCENARIO = prevScenario;
+    restore();
     if (prevNative === undefined) delete process.env.MOCK_NATIVE_TOOLS;
     else process.env.MOCK_NATIVE_TOOLS = prevNative;
   }

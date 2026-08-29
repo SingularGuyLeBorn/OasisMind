@@ -44,4 +44,54 @@ describe("runTraceExport", () => {
     const { lineCount } = await exportSessionTraceJsonl(prisma, sessionId);
     expect(lineCount).toBeGreaterThanOrEqual(1);
   });
+
+  it("exportSessionTraceJsonl 只含活跃路径，不含 branch_summary 与旁路", async () => {
+    const session = await prisma.chatSession.create({
+      data: { title: "轨迹树导出测", model: "deepseek-v4-flash", kind: "chat", status: "active" },
+    });
+    const u1 = await prisma.chatMessage.create({
+      data: { sessionId: session.id, role: "user", content: "Q-root" },
+    });
+    const aMain = await prisma.chatMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "assistant",
+        content: "A-main",
+        parentId: u1.id,
+      },
+    });
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "assistant",
+        content: "A-fork-secret",
+        parentId: u1.id,
+      },
+    });
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "system",
+        kind: "branch_summary",
+        content: "[om-branch-summary]\n秘密旁路摘要",
+        parentId: u1.id,
+      },
+    });
+    await prisma.chatSession.update({
+      where: { id: session.id },
+      data: { activeLeafId: aMain.id },
+    });
+
+    try {
+      const { jsonl } = await exportSessionTraceJsonl(prisma, session.id);
+      expect(jsonl).toContain("Q-root");
+      expect(jsonl).toContain("A-main");
+      expect(jsonl).not.toContain("A-fork-secret");
+      expect(jsonl).not.toContain("秘密旁路摘要");
+      expect(jsonl).not.toContain("[om-branch-summary]");
+    } finally {
+      await prisma.chatMessage.deleteMany({ where: { sessionId: session.id } }).catch(() => undefined);
+      await prisma.chatSession.deleteMany({ where: { id: session.id } }).catch(() => undefined);
+    }
+  });
 });

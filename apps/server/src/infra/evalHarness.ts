@@ -17,6 +17,7 @@ import {
   type EvalTrialReport,
   type TrialTranscript,
 } from "@oasismind/shared";
+import { enterInProcessMockLlm } from "@oasismind/mock-llm-core";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { AppConfig } from "./config.js";
 import { buildTrialTranscript, transcriptFromFixture } from "./evalTranscript.js";
@@ -127,14 +128,11 @@ async function runLiveTrial(
   }
   const sessionId = sessionRes.data.id as string;
 
-  const prevMock = process.env.MOCK_LLM;
-  const prevScenario = process.env.MOCK_LLM_SCENARIO;
   const prevNative = process.env.MOCK_NATIVE_TOOLS;
-  process.env.MOCK_LLM = "true";
+  const restoreMock = enterInProcessMockLlm(
+    task.mockScenario ? { scenario: task.mockScenario } : {},
+  );
   process.env.MOCK_NATIVE_TOOLS = process.env.MOCK_NATIVE_TOOLS || "true";
-  if (task.mockScenario) {
-    process.env.MOCK_LLM_SCENARIO = task.mockScenario;
-  }
 
   try {
     const body = {
@@ -156,12 +154,18 @@ async function runLiveTrial(
     }
 
     const timeoutMs = opts.timeoutMs ?? Number(process.env.EVAL_TRIAL_TIMEOUT_MS || 60_000);
-    await Promise.race([
-      hub.waitFor(sessionId),
-      new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new Error(`Trial 超时 ${timeoutMs}ms`)), timeoutMs),
-      ),
-    ]);
+    // waitFor 先完成时必须清掉超时 timer，否则 settled 后再 reject 会成 unhandled
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        hub.waitFor(sessionId),
+        new Promise<void>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Trial 超时 ${timeoutMs}ms`)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
 
     const transcript = await buildTrialTranscript(prisma, {
       taskId: task.id,
@@ -170,10 +174,7 @@ async function runLiveTrial(
     });
     return { transcript, sessionId, agentId };
   } finally {
-    if (prevMock === undefined) delete process.env.MOCK_LLM;
-    else process.env.MOCK_LLM = prevMock;
-    if (prevScenario === undefined) delete process.env.MOCK_LLM_SCENARIO;
-    else process.env.MOCK_LLM_SCENARIO = prevScenario;
+    restoreMock();
     if (prevNative === undefined) delete process.env.MOCK_NATIVE_TOOLS;
     else process.env.MOCK_NATIVE_TOOLS = prevNative;
 

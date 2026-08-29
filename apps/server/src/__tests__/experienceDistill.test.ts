@@ -38,20 +38,6 @@ registerMockLlmScenario({
     finishReason: "stop",
     tokenUsage: { prompt: 10, completion: 12, total: 22 },
   }),
-  stream: async function* () {
-    const content = "优先使用 web_search 收集最新资料\n调用 read_article 前检查登录态";
-    for (const token of content.split("")) {
-      yield { type: "token" as const, delta: token, model: "mock-llm", provider: "mock" };
-    }
-    yield {
-      type: "token" as const,
-      delta: "",
-      finishReason: "stop",
-      model: "mock-llm",
-      provider: "mock",
-      tokenUsage: { prompt: 10, completion: 12, total: 22 },
-    };
-  },
 });
 
 registerMockLlmScenario({
@@ -61,9 +47,6 @@ registerMockLlmScenario({
     return opts.messages.some((m) => m.role === "user" && /ERROR_MARKER/.test(String(m.content)));
   },
   completion: () => {
-    throw new Error("mock 蒸馏失败");
-  },
-  stream: async function* () {
     throw new Error("mock 蒸馏失败");
   },
 });

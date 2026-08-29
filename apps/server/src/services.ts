@@ -76,6 +76,11 @@ export function failureFromPrismaUnique(error: unknown, operation: string, entit
   return null;
 }
 
+/** 并发下 findUnique 成功后记录已被另一路删掉（P2025） */
+export function isPrismaRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
@@ -284,6 +289,9 @@ export abstract class BaseService<
       });
     } catch (error) {
       if (error instanceof ServiceValidationError) return error.result;
+      if (isPrismaRecordNotFound(error)) {
+        return this.buildNotFoundFailure("删除", id, Date.now() - start);
+      }
       return failureFromError(error, "delete", this.entityName, `${this.entityName.toUpperCase()}_DELETE_FAILED`);
     }
   }

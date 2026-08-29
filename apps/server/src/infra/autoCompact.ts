@@ -20,6 +20,7 @@ import {
   DEFAULT_MODEL_CONTEXT_WINDOW_TOKENS,
   resolveCompactCharThreshold,
 } from "@oasismind/shared";
+import { OM_PERSISTED_KEY, OM_RESULT_PATH_KEY } from "./toolResultOffload.js";
 import { flushMemoriesBeforeCompact } from "./memoryFlush.js";
 import {
   filterOpenRouterFreeModels,
@@ -40,6 +41,9 @@ import {
   parseCompactFileDetails,
   type CompactFileDetails,
 } from "./compactCut.js";
+
+export const COMPACT_SUMMARY_SYSTEM =
+  "你是 OasisMind 对话摘要助手。将以下历史对话压缩为简洁的中文摘要。保留：用户目标、已做决策、工具结果里的错误信息与列表条数/标题、未完成项。丢过期工具刷屏。不要编造。Intent tombstone / superseded 旧约束禁止当作现行目标。";
 
 /** 摘要内容标记：压缩边界消息的正文前缀（边界行由 buildCompactBoundaryMarker 生成） */
 export const SUMMARY_MARKER = "[此前对话摘要 — 自动压缩]";
@@ -152,6 +156,7 @@ function fallbackContextReset(
 export function microCompactMessages(messages: LlmMessage[], toolResultMaxChars: number): LlmMessage[] {
   return messages.map((m) => {
     if (m.role !== "tool" || typeof m.content !== "string") return m;
+    if (isOffloadedToolCardJson(m.content)) return m;
     if (m.content.length <= toolResultMaxChars) return m;
     return {
       ...m,
@@ -160,6 +165,28 @@ export function microCompactMessages(messages: LlmMessage[], toolResultMaxChars:
         `\n\n${MICRO_COMPACT_TRUNCATED}（原 ${m.content.length} 字符）`,
     };
   });
+}
+
+/** persistValue 卡：压缩有 offloaded:true；未压缩只有 _om_result_path，两者都禁止切断。 */
+function isOffloadedToolCardJson(content: string): boolean {
+  const t = content.trim();
+  if (!t.startsWith("{")) return false;
+  if (
+    !t.includes('"offloaded"') &&
+    !t.includes(`"${OM_RESULT_PATH_KEY}"`) &&
+    !t.includes(`"${OM_PERSISTED_KEY}"`)
+  ) {
+    return false;
+  }
+  try {
+    const o = JSON.parse(t) as Record<string, unknown>;
+    if (o.offloaded === true) return true;
+    const resultPath = o[OM_RESULT_PATH_KEY];
+    if (typeof resultPath === "string" && resultPath.length > 0) return true;
+    return o[OM_PERSISTED_KEY] === true;
+  } catch {
+    return false;
+  }
 }
 
 /** 摘要注入后的合成 assistant 确认（rebuild / maybeCompact 幂等剥离用） */
@@ -440,8 +467,7 @@ export async function maybeCompactMessages(
       messages: [
         {
           role: "system",
-          content:
-            "你是 OasisMind 对话摘要助手。将以下历史对话压缩为简洁的中文摘要，保留：用户目标、已做决策、工具结果要点、未完成任务。不要编造。Intent tombstone / superseded 旧约束禁止当作现行目标。",
+          content: COMPACT_SUMMARY_SYSTEM,
         },
         {
           role: "user",

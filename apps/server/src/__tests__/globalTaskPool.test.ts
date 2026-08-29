@@ -670,7 +670,7 @@ describe("TP-1 消费续跑池准入", () => {
 /**
  * TP-4 压测专用 mock 场景：子 Agent 第一轮调 agent_report_back、第二轮给最终答复。
  * 窄 match（唯一 marker + agent_report_back 工具在场），不干扰本进程其他测试/场景
- * （registerMockLlmScenario 无 unregister：注册一次，marker 唯一即隔离）。
+ * （进程内注册、marker 唯一隔离；测完不必 unregister）。
  */
 const TP4_STRESS_MARKER = "TP4压测";
 let tp4MockCallSeq = 0;
@@ -705,31 +705,6 @@ registerMockLlmScenario({
       toolCalls: hasToolResult ? [] : [tp4ReportBackCall()],
       finishReason: "stop",
       model: opts.model || "mock-llm",
-      provider: "mock",
-      tokenUsage: { prompt: 10, completion: 12, total: 22 },
-    };
-  },
-  stream: async function* (opts) {
-    const hasToolResult = opts.messages.some((m) => m.role === "tool");
-    if (hasToolResult) {
-      for (const delta of "压测子任务最终答复") {
-        yield { type: "token" as const, delta, model: opts.model, provider: "mock" };
-      }
-      yield {
-        type: "token" as const,
-        delta: "",
-        finishReason: "stop",
-        model: opts.model,
-        provider: "mock",
-        tokenUsage: { prompt: 10, completion: 12, total: 22 },
-      };
-      return;
-    }
-    yield {
-      type: "tool_calls" as const,
-      toolCalls: [tp4ReportBackCall()],
-      finishReason: "tool_calls",
-      model: opts.model,
       provider: "mock",
       tokenUsage: { prompt: 10, completion: 12, total: 22 },
     };

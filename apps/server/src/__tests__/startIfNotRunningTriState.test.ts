@@ -32,12 +32,12 @@ describe("A4 startIfNotRunning 三态", () => {
     await hub.dispose();
   });
 
-  it("起流同栈推 session_run_started（QQ/IM 前端 resume 依赖此事件）", async () => {
+  it("起流同栈推 session_run_started；收尾同栈推 session_run_settled", async () => {
     const sid = "a4-run-started-push";
-    const received: Array<{ type: string; reason?: string }> = [];
+    const received: string[] = [];
     hub.subscribeExternal(sid, (ev) => {
-      if (ev.type === "session_run_started") {
-        received.push({ type: ev.type, reason: ev.reason });
+      if (ev.type === "session_run_started" || ev.type === "session_run_settled") {
+        received.push(ev.type);
       }
     });
 
@@ -49,8 +49,9 @@ describe("A4 startIfNotRunning 三态", () => {
       },
     );
     expect(started).toBe("started");
-    expect(received).toEqual([{ type: "session_run_started", reason: "hub_start" }]);
+    expect(received).toContain("session_run_started");
     await hub.waitFor(sid);
+    expect(received).toEqual(["session_run_started", "session_run_settled"]);
   });
 
   it("pending: 占位键不起 session_run_started（无真实 session 订阅方）", async () => {

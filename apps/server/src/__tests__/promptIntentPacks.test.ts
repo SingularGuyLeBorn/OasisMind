@@ -17,6 +17,12 @@ describe("promptIntentPacks", () => {
     const guide = buildAgentToolGuide(webTools, packs);
     expect(guide).not.toContain("网络工具用法");
     expect(guide).toContain("工具结果落盘");
+    expect(guide).toContain("卡片上的 title");
+    expect(guide).toContain("expect_keywords");
+    expect(guide).toContain("data/tool-results/{session}/{callId}.*");
+    expect(guide).toContain("[TRUNCATED]");
+    expect(guide).not.toContain("记录平面");
+    expect(guide).not.toContain("tool_results_list");
     expect(guide).not.toContain("完整 Markdown 范文");
     expect(guide).not.toContain("数字花园工具");
   });

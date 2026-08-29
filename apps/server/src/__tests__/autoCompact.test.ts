@@ -10,6 +10,7 @@ import {
   DEFAULT_COMPACT_KEEP_RECENT,
   microCompactMessages,
   resolveCompactThresholdForModel,
+  COMPACT_SUMMARY_SYSTEM,
 } from "../infra/autoCompact.js";
 import * as llmClient from "../infra/llmClient.js";
 import * as resilientLlmClient from "../infra/resilientLlmClient.js";
@@ -134,6 +135,51 @@ describe("autoCompact", () => {
     expect(String(out[0].content)).toContain("micro-compact");
   });
 
+  it("microCompact 不得切断已落盘瘦卡 JSON", () => {
+    const card = JSON.stringify({
+      offloaded: true,
+      hint: "结论：线性注意力机制 · 5000 字。禁止假装已读全文。",
+      path: "data/tool-results/s/c.json",
+      metadata: {
+        title: "线性注意力机制",
+        sampleOffsets: Array.from({ length: 40 }, (_, i) => i * 1000),
+        shortFields: { total: "61" },
+        pad: "m".repeat(2000),
+      },
+    });
+    expect(card.length).toBeGreaterThan(500);
+    const out = microCompactMessages(
+      [{ role: "tool", tool_call_id: "1", name: "post_list", content: card }],
+      500,
+    );
+    expect(out[0]!.content).toBe(card);
+    expect(String(out[0]!.content)).not.toContain("micro-compact");
+    expect(() => JSON.parse(String(out[0]!.content))).not.toThrow();
+    expect((JSON.parse(String(out[0]!.content)) as { offloaded: boolean }).offloaded).toBe(true);
+  });
+
+  it("microCompact 不得切断 persistValue 未压缩注解卡（无 offloaded:true）", () => {
+    const card = JSON.stringify({
+      total: 61,
+      items: [{ id: "1" }, { id: "2" }],
+      excerpt: "e".repeat(600),
+      _om_persisted: true,
+      _om_result_path: "data/tool-results/s/c.json",
+      _om_meta_path: "data/tool-results/s/c.meta.json",
+      _om_original_chars: 800,
+    });
+    expect(card.length).toBeGreaterThan(500);
+    expect(card).not.toContain('"offloaded"');
+    const out = microCompactMessages(
+      [{ role: "tool", tool_call_id: "1", name: "post_list", content: card }],
+      500,
+    );
+    expect(out[0]!.content).toBe(card);
+    expect(String(out[0]!.content)).not.toContain("micro-compact");
+    expect(() => JSON.parse(String(out[0]!.content))).not.toThrow();
+    expect((JSON.parse(String(out[0]!.content)) as { total: number }).total).toBe(61);
+  });
+
   it("复用摘要时保留压缩后全部原文，不用 keepRecent 截断", async () => {
     const messages = longMessages(20, 80);
     const result = await maybeCompactMessages(makeConfig({ triggerRatio: 0.99, keepRecent: 4 }), messages, "deepseek-v4-flash", {
@@ -188,4 +234,11 @@ describe("autoCompact", () => {
     expect(count(twice)).toBe(1);
   });
 
+  it("摘要 system 保留错误与条数/标题，丢工具刷屏", () => {
+    expect(COMPACT_SUMMARY_SYSTEM).toContain("错误信息");
+    expect(COMPACT_SUMMARY_SYSTEM).toContain("列表条数/标题");
+    expect(COMPACT_SUMMARY_SYSTEM).toContain("丢过期工具刷屏");
+    expect(COMPACT_SUMMARY_SYSTEM).not.toContain("记录平面");
+    expect(COMPACT_SUMMARY_SYSTEM).not.toContain("tool_results_list");
+  });
 });

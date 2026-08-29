@@ -49,6 +49,11 @@ jobs:
       - name: Agent golden evals (mock)
         run: pnpm test:evals
 
+      - name: Agent harness bench (mock)
+        run: pnpm test:bench
+        env:
+          DATABASE_URL: "file:./ci.db"
+
       - name: Install Playwright Chromium (integration smoke)
         run: pnpm --filter @oasismind/server exec playwright install chromium --with-deps
 
