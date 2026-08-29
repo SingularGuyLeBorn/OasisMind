@@ -1,0 +1,209 @@
+---
+title: "Multi-Scale Context Aggregation by Dilated Convolutions"
+category: CNN与视觉
+published: true
+excerpt: >-
+  Ilya 清单第 6 到 8 篇讲的是分类网络怎么做得更深, 第 9 篇换个问题: 这些为分类设计的网络, 怎么改造成逐像素输出的稠密预测机器.
+  Fisher Yu 和 Vladlen Koltun 2016 年的答案是空洞卷积: 把卷积核的采样点按间隔撑开. 感受野随层数指数增长,
+  参数量只线性增长, 分辨率一个像素都不丢. 围绕这个算子, 他们设计了一个即插即用的 context module, 在 VOC 2012,
+  CamVid, KITTI, Cityscapes 四个数据集上全面超过 FCN-8s 和 DeepLab, 而且不需要 CRF 后
+tags:
+  - Ilya
+  - DilatedConvolution
+  - 空洞卷积
+  - 语义分割
+  - 感受野
+  - 计算机视觉
+  - FisherYu
+  - VladlenKoltun
+  - Ilya推荐30篇
+  - 经典论文
+---
+# Multi-Scale Context Aggregation by Dilated Convolutions: 不打孔的卷积, 指数级长大的眼睛
+
+> 原始论文: Fisher Yu, Vladlen Koltun, "Multi-Scale Context Aggregation by Dilated Convolutions", ICLR 2016, arXiv:1511.07122v3 (2016-04-30).
+> https://arxiv.org/abs/1511.07122
+> 这是 Ilya Sutskever 推荐清单的第 9 篇. 清单第 6 到 8 篇 (AlexNet, ResNet, Identity Mappings) 解决的都是同一个问题: 分类网络怎么做得更深, 训得更稳. 第 9 篇换了一个问题: 这些为分类设计的网络, 怎么改造成逐像素输出的稠密预测机器. 答案是空洞卷积 (dilated convolution), 一个后来从视觉溢出到语音和时序建模的算子.
+
+**全文符号表**
+
+本文五条公式全部围绕一个算子: 空洞卷积. 记号沿用原论文, 先一次性登记.
+
+| 符号 | 含义 |
+|------|------|
+| $F$ | 输入特征图, 数学上看成定义在二维整数网格上的函数, 给每个位置一个数值 |
+| $\mathbb{Z}^2$ | 二维整数坐标网格, 即特征图上所有像素位置的集合. $\mathbb{Z}$ 是整数集, 上标 2 表示二维 |
+| $k$ | 卷积核 (滤波器), 一组可训练权重 |
+| $p$ | 输出位置, 即「现在要算特征图上哪个点的值」 |
+| $s$ | 输入位置, 求和时遍历输入特征图上的点 |
+| $t$ | 卷积核内部的偏移坐标, 比如 3x3 核有 9 个偏移: 横纵各取 $-1, 0, 1$ |
+| $*$ | 标准离散卷积运算符 |
+| $*_l$ | 膨胀因子为 $l$ 的空洞卷积运算符, 下标 $l$ 写在星号旁边 |
+| $l$ | 膨胀因子 (dilation factor), 卷积核采样点之间的间隔, $l=1$ 就是普通卷积 |
+| $F_i$ | 第 $i$ 层特征图, $F_0$ 是网络输入 |
+| $k_i$ | 第 $i$ 层用的卷积核 |
+| $n$ | 特征图的总层数 |
+| $\text{RF}_{i+1}$ | 第 $i+1$ 层特征图上单个位置的感受野 (receptive field), 即输入里能影响这个位置取值的区域 |
+| $C$ | 通道数 (特征图的个数) |
+| $k_b(t, a)$ | 输出通道 $b$ 对应的卷积核权重: $t$ 是核内空间偏移, $a$ 是输入通道编号 |
+| $\mathbb{1}[\cdot]$ | 指示函数: 方括号里的条件成立时取 1, 不成立取 0 |
+| $\mathcal{N}(0, \sigma^2)$ | 均值 0, 方差 $\sigma^2$ 的高斯分布, 用于初始化时叠加小噪声 |
+
+**读公式的方法**: 五条公式分三组. §3 两条是定义, 它们只差一个字母: 标准卷积要求 $s + t = p$, 空洞卷积要求 $s + lt = p$, 乘在 $t$ 上的 $l$ 把采样点按间隔撑开, 这就是全部差别. §4 两条是层叠的后果: 第一条说每一层怎么算, 第二条说感受野长多快, 记住递推「每层边长翻倍加一」就够了. §6 一条是初始化: 两个指示函数相乘, 只有「空间中心点 + 同名通道」那个权重为 1, 其余全是 0.
+
+## 1. 背景: 分类网络占领了分割, 但它是借来的兵
+
+2015 年之前的语义分割是手工特征的天下. TextonBoost, 各种 CRF 变体, 超像素解析, 每条流水线都靠人工设计的纹理描述子和图模型推理撑着. 2015 年, Long, Shelhamer 和 Darrell 发表 FCN (Fully Convolutional Networks), 把为图像分类设计的卷积网络改造成全卷积结构, 直接输出逐像素的类别预测. 改造后的网络在分割基准上把旧方法甩开一大截, 语义分割从此进入卷积网络时代.
+
+但 FCN 的改造是「借来的兵」. VGG-16 这类分类网络的设计目标是输出一个整图标签, 它的结构里有两样为分类量身定做的东西: 一是逐层的 pooling 和下采样, 把 224x224 的图一路压到 7x7, 用分辨率换感受野和语义抽象; 二是顶部的全连接层, 把空间信息彻底摊平. 分类任务里, 物体在画面哪个位置不重要, 压扁空间维度反而是优点. 分割任务恰好相反, 输出必须和输入一样大, 每个像素都要有标签.
+
+Yu 和 Koltun 在论文开头就点破了这种错位: 当前最强的分割系统全部建立在分类网络的改造之上, 但稠密预测 (dense prediction) 和图像分类是结构性不同的两个问题. 真正该问的是, 改造来的网络里哪些部件是真正必要的, 哪些只是分类时代的遗产, 在稠密预测里反而掉精度. 以及, 一个专为稠密预测设计的模块, 能不能比改造品做得更好. 这篇论文就是这两个问题的回答.
+
+## 2. 问题定义: 多尺度上下文和全分辨率, 一个两难
+
+语义分割难在两个互相打架的要求上. 一方面, 它是逐像素的判别, 边界要准, 猫和沙发的分界线偏两个像素都算错, 这要求输出保持高分辨率. 另一方面, 像素级的局部信息经常不足以判断类别: 一个灰色像素属于路面还是车身, 要看它周围几十上百像素的上下文, 这要求网络聚合多尺度的上下文信息.
+
+分类网络解决上下文的方式是 pooling 加下采样. 每经过一次 stride-2 的 pooling, 特征图边长减半, 同样大小的卷积核看到的原始图像区域扩大四倍. 叠几次之后, 一个 3x3 的核理论上能「看」到整幅图, 多尺度上下文就到手了. 代价是分辨率没了: VGG-16 的 conv5 输出边长只有输入的 1/32, 猫胡子级别的细节全部丢失.
+
+2015 年前后, 围绕这个两难有两条主流路线. 第一条是「先下去再上来」: 沿用分类网络的下采样拿上下文, 然后用反卷积 (up-convolution) 逐级恢复分辨率, 代表作是 Noh 等人的 Deconvolution Network 和 Fischer 等人的 FlowNet. 第二条是「多尺度输入」: 把原图缩放成多个分辨率版本, 分别喂给网络, 再融合各尺度的预测, Farabet 2013 年的场景解析和 Chen 等人的 Attention to Scale 都是这一路. Yu 和 Koltun 对两条路线都留了同一句疑问: 中间那次狠下采样, 或者那套多分辨率重复分析, 真的是必要的吗? 论文给出的回答是否定的: 有一个算子可以不丢分辨率地拿到指数级增长的感受野, 上面两种绕行都可以省掉.
+
+## 3. 空洞卷积: 定义与 à trous 的渊源
+
+标准离散卷积的定义是, 对离散函数 $F: \mathbb{Z}^2 \to \mathbb{R}$ (从二维整数网格到实数的函数, 即给每个像素位置一个实数值的特征图) 和大小 $(2r+1)^2$ 的滤波器 $k$:
+
+$$
+(F * k)(p) = \sum_{s + t = p} F(s)\, k(t)
+$$
+
+逐块拆开. 左边 $(F * k)(p)$ 是卷积输出在位置 $p$ 的值. 右边的求和遍历所有满足 $s + t = p$ 的位置对 $(s, t)$: $s$ 跑输入特征图, $t$ 跑卷积核内部的偏移, 约束 $s + t = p$ 的意思是「输入位置加核内偏移正好对准输出位置 $p$ 的那些组合」. 对 3x3 核, $t$ 取 9 个偏移 $(-1,0,1) \times (-1,0,1)$, 求和就固定是 9 项: $p$ 周围 3x3 邻域里每个输入值 $F(s)$, 乘上对应偏移的核权重 $k(t)$, 加起来. 一句话: 输出在 $p$ 处的值, 等于 $p$ 的邻域按核权重加权求和.
+
+空洞卷积引入一个膨胀因子 (dilation factor) $l$, 把滤波器的采样点按 $l$ 的间隔撑开:
+
+$$
+(F *_l k)(p) = \sum_{s + l t = p} F(s)\, k(t)
+$$
+
+和上一条公式逐字符对比, 唯一的差别是约束从 $s + t = p$ 变成 $s + l\,t = p$: 核内偏移 $t$ 被乘了 $l$. 效果是核的 9 个采样点不再落在 $p$ 的相邻 9 格, 而是落在间隔 $l$ 格的 9 个位置. $l = 1$ 时退化为标准卷积. $l = 2$ 时, 一个 3x3 的核实际覆盖 5x5 的区域, 但只采样其中 9 个点, 中间隔一个像素取一个. $l = 4$ 时覆盖 9x9, 依然是 9 个采样点. 参数量永远是 9 个, 看到的区域随 $l$ 扩大.
+
+这个算子不是新发明. 论文专门交代了它的谱系: 空洞卷积在小波分析里叫「带膨胀滤波器的卷积」, 是 à trous 算法 (algorithme à trous, 法语「带孔的」) 的核心组件, 至少可以追溯到 Holschneider 等人 1987 年的工作, Shensa 1992 年把它和 Mallat 算法统一起来. 作者特意用「dilated convolution」而不是「convolution with a dilated filter」这个叫法, 理由是实现上根本没有构造任何膨胀后的滤波器, 只是卷积算子用不同的方式去取滤波器参数. 他们还顺带纠正了一个文献里的常见错误: 有些工作把空洞卷积算子本身叫成 à trous 算法, 这是不对的. à trous 是在多个尺度上施加滤波器做信号分解的完整算法, 它用到空洞卷积, 但不等于空洞卷积. 在深度学习内部, FCN 分析过滤波器膨胀但最终没用, DeepLab 用膨胀简化了架构, 而 Yu 和 Koltun 是第一个围绕空洞卷积系统设计多尺度上下文聚合架构的.
+
+**空洞卷积采样模式**
+
+```text
+Flat vector illustration on a pure white background, 4:3 aspect ratio. Three pixel grids side by side showing 3x3 convolution kernels with dilation factors 1, 2, 4. Solid navy dots mark actual sampling positions; hollow gray circles mark skipped pixels. Coverage area grows from 3x3 to 5x5 to 9x9 while a label under each grid reads "9 samples". Thin grid lines, low-saturation teal highlight on sampling points, sans-serif labels, no gradients, no shadows.
+```
+三个 3x3 卷积核, 膨胀因子从左到右为 1, 2, 4. 实心点是实际采样位置, 空心圈是被跳过的像素. 采样点数恒为 9, 覆盖区域从 3x3 扩到 5x5 再到 9x9.
+
+## 4. 指数感受野: 参数量线性, 视野指数
+
+空洞卷积真正的威力在层叠. 考虑一串特征图 $F_0, F_1, \dots, F_{n-1}$, 用 3x3 的核, 按指数增长的膨胀因子依次卷积:
+
+$$
+F_{i+1} = F_i *_{2^i} k_i, \quad i = 0, 1, \dots, n-2
+$$
+
+读法: 第 $i+1$ 层特征图, 由第 $i$ 层做一次空洞卷积得到, 这一层的膨胀因子是 $2^i$, 即第 1 层 $l=1$, 第 2 层 $l=2$, 第 3 层 $l=4$, 每层翻倍. 星号下标 $2^i$ 就是 §3 里 $*_l$ 的那个 $l$. $i$ 从 0 跑到 $n-2$, 一共 $n-1$ 次卷积, 把 $F_0$ 一路加工成 $F_{n-1}$.
+
+把 $F_{i+1}$ 中某个位置 $p$ 的感受野定义为 $F_0$ 中所有影响 $F_{i+1}(p)$ 取值的元素集合. 论文给出一个简单事实: 按上面的方式堆叠, $F_{i+1}$ 中每个元素的感受野是边长为 $2^{i+2} - 1$ 的正方形:
+
+$$
+\text{RF}_{i+1} = (2^{i+2} - 1) \times (2^{i+2} - 1)
+$$
+
+这个闭式怎么来的, 递推一步就看清. 第 $i+1$ 层的膨胀因子是 $2^i$, 3x3 核的左右采样点离中心各 $2^i$ 格, 所以这一层在已有感受野的每侧各扩 $2^i$ 格, 边长增加 $2 \cdot 2^i = 2^{i+1}$. 即 $\text{RF}_{i+1} = \text{RF}_i + 2^{i+1}$, 从 $\text{RF}_0 = 1$ (输入层一个像素只看到自己) 开始累加: $1, 3, 7, 15, 31, \dots$, 第 $i+1$ 项正好是 $2^{i+2} - 1$. 逐层验证一遍: 第一层 $l=1$, 感受野 $3 \times 3$. 第二层 $l=2$, 9 个采样点各自带 $3 \times 3$ 的下游感受野, 拼成 $7 \times 7$. 第三层 $l=4$, 拼成 $15 \times 15$. 每加一层, 边长翻倍加一, 而每层的参数量恒为 $3 \times 3 \times C^2$ 量级, 和 $l$ 无关.
+
+对比一下如果用 pooling 达到同样的感受野扩张: 每层 stride-2 pooling 把分辨率砍半, 三次之后特征图只剩 1/8 的边长, 逐像素的精确定位信息被平均掉了. 空洞卷积版本里, 特征图从头到尾保持原尺寸, 感受野照样指数增长, 而且没有覆盖空洞: 膨胀核的采样点在下一层被相邻位置的普通卷积重新填满, 整个感受野是密实的正方形, 不是筛子. 论文用的措辞是「without loss of resolution or coverage」, 不丢分辨率, 也不丢覆盖.
+
+另一个容易想到的替代方案是直接换大核, 用 7x7, 15x15 的卷积拿大感受野. 这条路在参数上立刻破产: 7x7 是 49 个参数, 15x15 是 225 个, 而空洞方案每层永远是 9 个. 更关键的是组合方式, 大核是一步到位的线性增长, 空洞层叠是逐层翻倍的几何增长, 同样 6 层深度, 前者感受野边长 13, 后者 65. 稀疏采样加指数层叠, 才是这个算子划算的真正原因.
+
+## 5. Context Module: 一个长方体, 不是金字塔
+
+分类网络是金字塔形的: 越往深处, 分辨率越低, 通道越多, 最后塌缩成一个向量. Yu 和 Koltun 设计的 context module 是长方体形的: C 个特征图进, C 个特征图出, 全程不降分辨率, 不做 pooling, 不做下采样. 输入输出形状完全一致, 所以它可以作为一个即插即用的模块, 接到任何已有的稠密预测架构的任意分辨率位置.
+
+基础版 (Basic) 的结构是一张表就能写完的. 7 层 3x3 卷积, 膨胀因子依次是 1, 1, 2, 4, 8, 16, 1, 每层后面接一个逐点截断 $\max(\cdot, 0)$, 最后接一个 1x1 卷积产出 C 通道输出. 各层感受野依次是 3, 5, 9, 17, 33, 65, 67, 67. 为什么指数扩张到 16 就停? 因为前端模块提供的特征图是 64x64, 膨胀 16 对应的 65x65 感受野已经覆盖整幅特征图, 再往上没有新信息可聚合. 这个细节体现了一个工程自觉: 感受野要和特征图尺寸匹配, 盲目堆大只是浪费.
+
+模块内部每个中间层都是 C 通道, 理论上每一层的表示都可以直接拿去做逐像素分类, 只是没有归一化, 内部也不定义损失. 直觉上, 特征图每过一层就被暴露给更大尺度的上下文, 逐层被「洗」得更准. 整个基础模块的参数量约 $64C^2$, 以 VOC 的 C=21 算, 不到 3 万个参数. 用不到 3 万个参数换后面要看到的 1.5 到 2 个点的 mean IoU, 性价比极高. 论文还训了一个大版 (Large), 深层通道数按 2C, 2C, 4C, 8C, 16C, 32C, 32C 扩张, 最后收回到 C, 精度再上一截.
+
+## 6. Identity Initialization: 不会训练就先学会什么都不做
+
+第一次训 context module 失败了, 精度没有提升. 排查后发现是初始化的问题. 卷积网络的标准初始化是随机采样, Glorot 或者 Krizhevsky 式的高斯分布, 对从零训练的分类网络工作良好, 对这个模块却不行.
+
+作者的解法有清晰的语义: identity initialization, 恒等初始化. 把每个滤波器设成
+
+$$
+k_b(t, a) = \mathbb{1}[t = 0]\,\mathbb{1}[a = b]
+$$
+
+逐块拆开. $\mathbb{1}[\cdot]$ 是指示函数: 方括号里的条件成立取 1, 不成立取 0. 第一个因子 $\mathbb{1}[t = 0]$ 筛空间位置: 只有核的中心点 ($t = 0$, 即偏移为零) 能通过, 3x3 核的其余 8 个位置全被置 0. 第二个因子 $\mathbb{1}[a = b]$ 筛通道: 只有输入通道编号和输出通道编号相同时能通过. 两个因子相乘, 两个条件必须同时满足权重才是 1, 否则是 0. 其中 $a$ 是输入特征图索引, $b$ 是输出特征图索引. 翻译过来: 每个 3x3 核只有中心点是 1, 其余是 0, 且第 $b$ 个输出通道只读第 $b$ 个输入通道. 整个模块初始化完就是一个恒等映射, 输入原样穿到输出, 什么都不做. 这个思路来自 Le, Jaitly 和 Hinton 2015 年给 ReLU 循环网络提的初始化方案, Yu 和 Koltun 把它搬到了卷积上.
+
+一个自然的担心: 恒等映射是不是一个陷阱, 反向传播会不会被困在「什么都不做」的模式里出不来? 实验表明不会. 反向传播稳定地从模块提供的多尺度上下文里榨出信息, 精度稳步上升. 大版模块的初始化在此基础上推广: 通道数不匹配时按 $C/c_{i+1}$ 的比例缩放恒等块, 再叠加一个 $\mathcal{N}(0, \sigma^2)$ 的小噪声打破有共同前驱的特征图之间的对称性. 这个初始化技巧本身是个独立的经验贡献: 当一个模块的职责是「修正」而不是「变换」时, 让它从零修正出发, 比从随机变换出发好训得多. 这个直觉和清单第 8 篇 Identity Mappings 是同一脉的.
+
+## 7. 前端: 拆掉分类网络的尾巴, 精度反而涨
+
+论文的第二个贡献和空洞卷积无关, 但同样重要: 一个简化版的 VGG-16 前端. 做法是把 VGG-16 改造成稠密预测前端时, 彻底移除最后两个 pooling 和 stride 层, 然后把它们之后的所有卷积按移除的层数膨胀补偿: 每拆掉一个 pooling, 后续卷积的膨胀因子乘 2, 最后一组卷积膨胀 4 倍. 这样可以用原分类网络的预训练参数初始化, 但输出分辨率从 1/32 提到 1/8, 得到 64x64 的 C=21 通道特征图.
+
+对比一下同行的做法. FCN-8s 保留了全部 pooling 层, 靠跨层连接和上采样补回分辨率. DeepLab 把 stride 换成了膨胀, 但保留了 pooling 层. Yu 和 Koltun 把 pooling 整个删了, 还顺手删掉了中间特征图的 padding: padding 在分类网络里用来对齐尺寸, 在稠密预测里既不必要也没有依据. 前端输入用反射 padding (reflection padding), 边界区域用镜像填充, 避免零填充注入的人工边缘.
+
+结果是, 这个更简单的前端反而更准. VOC 2012 测试集上, FCN-8s 的 mean IoU 是 62.2, DeepLab 是 62.1, DeepLab-Msc 是 62.9, 简化前端直接到 67.6, 甩开三个对手 5 个百分点左右. 更反直觉的一笔: DeepLab 在 leaderboard 上挂的 DeepLab+CRF 成绩是 66.4, 简化前端不接任何 CRF 后处理就以 67.6 超过它一个多点. 一个为分类设计的部件都不留, 比精心后处理还管用. 这印证了论文开头的判断: 改造网络里的很多部件不是资产, 是负债.
+
+## 8. 受控实验: Context Module 在三种架构里都涨
+
+前端之后的实验设计得很干净, 是这篇论文方法论上最值得学的部分. 作者把 context module 分别插进三种分割架构, 在 VOC 2012 验证集上做受控对比 (为了和当时的强系统公平比较, 前端额外用了 Microsoft COCO 中含 VOC 类别的图训练, 两阶段 SGD, 最终前端单体能到 69.8 的验证 mean IoU).
+
+三种架构覆盖了当时的结构化预测谱系. 第一种是裸前端, 不做任何结构化预测, 对应 FCN 的路线. 第二种是前端加 dense CRF, 用 Krähenbühl 和 Koltun 2011 年的实现, CRF 参数在验证集上网格搜索, 对应 DeepLab 的路线. 第三种是前端加 CRF-RNN, 用 Zheng 等人 2015 年的实现, 把 CRF 的均值场迭代展开成循环网络.
+
+结果: 裸前端 69.8, 加 Basic 模块 71.3, 加 Large 模块 72.1. 前端加 CRF 是 71.6, 加 Basic 加 CRF 是 72.7, 加 Large 加 CRF 是 73.3. 前端加 CRF-RNN 是 72.5, 加 Basic 加 RNN 是 73.1, 加 Large 加 RNN 是 73.9. 三行九列, 每一格里 context module 都带来提升, 大模块提升更多, 而且模块和结构化预测是协同的, 不是互相替代的.
+
+测试集提交到 VOC 2012 评测服务器的结果同样整齐. 当时的强系统: DeepLab++ (DeepLab-CRF-COCO-LargeFOV) 72.7, DeepLab-MSc++ 73.9, CRF-RNN 74.7. 本文: 裸前端 71.3, 前端加 context 模块 (无结构化预测) 73.5, 已经超过了挂 CRF 的 DeepLab++; context 加 dense CRF 74.7, 追平 CRF-RNN; context 加 CRF-RNN 75.3, 全场最高. 一个不到 3 万参数 (Basic) 到几十万参数 (Large) 的即插即用模块, 在没有 CRF 的情况下打败了带 CRF 的同期最强系统, 挂上 CRF-RNN 后又刷新了它.
+
+**VOC 2012 实验结果**
+
+```text
+Flat vector bar chart on a pure white background, 4:3 aspect ratio. Three groups of bars for three architectures: "front end only", "front end + CRF", "front end + CRF-RNN". Each group has three bars rising strictly left to right labeled "front", "+Basic", "+Large", with values 69.8/71.3/72.1, 71.6/72.7/73.3, 72.5/73.1/73.9. A dashed horizontal line near the top reads "test set: Context+CRF-RNN 75.3 vs CRF-RNN 74.7". Thin axis lines, muted teal/amber/coral bars, sans-serif labels, no gradients.
+```
+三组柱状图对应三种架构: 裸前端, 前端加 CRF, 前端加 CRF-RNN. 每组三根柱子依次是 front end, 加 Basic, 加 Large, 高度严格递增. 横线标注测试集上的 Context+CRF-RNN 75.3, 压过 CRF-RNN 的 74.7.
+
+## 9. 街景三数据集: Dilation8, Dilation7, Dilation10
+
+附录把同一套配方搬到三个街景数据集, 全部不接 CRF, 只用前端加 context 模块. 训练细节统一: SGD, batch 8 个 628x628 的随机裁剪, 学习率 1e-4, 动量 0.99, 前端先训, 再联合训练.
+
+CamVid: 367 张训练图, 233 张测试图, 11 个类别, 分辨率降到 640x480. context 模块用 8 层, 整体叫 Dilation8. 测试集 mean IoU 65.3, 对比 DeepLab-LFOV 的 61.6, SegNet 的 46.4, SuperParsing 的 42.0. 小类别上优势尤其大, 比如行人 56.3 对 DeepLab 的 48.4, 骑车人 55.5 对 50.1.
+
+KITTI: 只有 100 张训练图, 46 张测试图, 分辨率 1226x370. 因为垂直方向只有 370 像素, 65x65 的感受野浪费, 作者删掉了 Table 1 的第 6 层, 得到 7 层的 Dilation7. mean IoU 59.2 对 DeepLab-LFOV 的 54.2, 对 Ros 等人的 39.9. 注意 DeepLab 在 KITTI 上行人 IoU 是 0.0, Dilation7 也只有 4.6, 100 张训练图对行人这种少样本类别谁都不够用.
+
+Cityscapes: 2975 张训练图, 500 张验证图, 1525 张测试图, 分辨率达 2048x1024. 高分辨率需要更大的感受野, 作者在第 6 层之后追加膨胀 32 和 64 的两层, 得到 10 层的 Dilation10, C=19. 三阶段训练: 前端 40K 迭代, context 模块在整图上训 24K 迭代, 然后整体在半张图 (1396x1396) 上联合训 60K 迭代. 最终验证集类别 mean IoU 68.7, 测试集 67.1, 按大类 (flat, nature, object, sky, construction, human, vehicle) 汇总的 mean IoU 达到 86.3 和 86.5. 在 Cityscapes 论文作者组织的评测里, Dilation10 击败了所有当时的在先模型. 这组实验还顺手验证了模块的可伸缩性: 同一个长方体配方, 按特征图分辨率增删层数即可适配从 480p 到 2K 的输入.
+
+## 10. 局限与失败案例
+
+论文没有回避失败. 作者展示了最准配置 (Context + CRF-RNN) 在 VOC 验证集上的失败案例: 沙发和椅子混淆, 人和马在遮挡场景下互相污染, 小物体和细结构丢失. 失败模式集中在两类: 一是类别语义层面的混淆, 上下文模块聚合的是空间上下文, 不解决「人和马在骑乘场景里像素纠缠」这种需要实例级推理的问题; 二是小物体, 前端的 1/8 分辨率对几十像素的目标依然太粗, 空洞卷积保住了特征图分辨率, 但前端那一次 1/8 的下采样还在.
+
+还有几个工程层面的局限论文自己也点到了. 其一, 前端依然依赖 ImageNet 分类预训练的参数初始化, 整套系统还不是真正的端到端稠密训练. 其二, 高分辨率全程卷积的显存代价不小, Cityscapes 联合训练时 batch size 只能开到 1, 在 2016 年的硬件上这是实打实的约束. 其三, 联合训练前端和 context 模块在 VOC 上「没有带来明显提升」, 模块的收益主要来自单独训练阶段, 这说明两部分的耦合还没有被充分挖掘.
+
+论文之外还有一个后来才被系统处理的缺陷: 栅格伪影 (gridding artifact). 膨胀卷积的采样点间隔大于 1, 如果连续多层的膨胀因子有公因子, 感受野里会出现系统性的采样空洞, 输出特征图呈现棋盘状的条纹. 本文的膨胀序列 1, 1, 2, 4, 8, 16 恰好避开了最糟的情况, 但问题没有从原理上消除. Yu, Koltun 和 Funkhouser 2017 年的 Dilated Residual Networks 专门分析了这个问题, 用「先升后降」的膨胀排布和去栅格化模块把它修掉, 并把空洞卷积接进了 ResNet 主干. 这算是对本文工程细节的一次迟到的补丁.
+
+作者在结论里押了一个方向: 随着稠密标注数据变多, 未来的架构可以全分辨率端到端训练, 彻底摆脱分类预训练, 前端和 context 模块统一成一个全稠密结构. 这个预言后来由 HRNet 这类全程高分辨率架构部分兑现.
+
+## 11. 后续影响: 从分割溢出到语音和时序
+
+空洞卷积的生命力远超这篇论文本身. 最直接的继承者是 DeepLab 系列: Chen 等人在 DeepLab v2 (2016) 里把多个不同膨胀率的空洞卷积并联成 ASPP (Atrous Spatial Pyramid Pooling), 一个层里同时看多个尺度, 取代了这里的串行层叠, 成为此后几年分割网络的标配模块.
+
+更出人意料的是溢出方向. 同年 9 月, DeepMind 发表 WaveNet, 用因果空洞卷积 (causal dilated convolution) 建模原始音频波形: 一维卷积, 膨胀因子按 1, 2, 4, ..., 512 指数增长再循环, 几十层就拿到几千个采样点的感受野, 正好覆盖一段语音的上下文. 这是本文「指数感受野, 线性参数」思想在一维时序上的直接搬运, 连堆叠公式都长得一样. 2018 年 Bai, Kolter 和 Koltun (正是本文第二作者 Vladlen Koltun) 正式把这种结构命名为 TCN (Temporal Convolutional Network), 系统论证了在序列建模任务上, 空洞卷积网络可以和 LSTM 打平甚至更好, 训练还更容易并行. 从 2015 年这篇视觉论文出发, 空洞卷积走完了视觉到语音到时序建模的三级跳, 一度是「卷积能不能取代循环」这场争论里卷积一方的主武器.
+
+## 12. 在清单中的位置: 从「怎么深」到「怎么用」
+
+把清单第 6 到 9 篇连起来看, 是一条完整的 CNN 谱系. 第 6 篇 AlexNet 证明深度卷积网络可以大规模训练, 解决「能不能」. 第 7 篇 ResNet 用残差连接把深度推到 152 层, 解决「能有多深」. 第 8 篇 Identity Mappings 分析残差结构里恒等映射的作用, 回答「为什么能深」. 第 9 篇换了个维度: 这些为分类造出来的深度网络, 怎么改造成别的任务的引擎.
+
+Yu 和 Koltun 的回答包含两层方法论, 都值得单独记住. 第一层是「减法」: 改造来的架构里, 为原任务定制的部件 (pooling, padding) 在新任务里可能是负债, 删掉它们, 精度不降反升, 前端比 FCN-8s 高 5 个点就是删出来的. 第二层是「针对性设计」: 不再迁就分类网络的遗产, 而是问稠密预测本身需要什么 (多尺度上下文加全分辨率), 然后找到恰好满足这两个约束的算子 (空洞卷积), 围绕它设计一个即插即用的模块. 先做减法清场, 再做针对性设计, 这个顺序后来被无数「把 backbone 改造成 X」的工作复用. 而 identity initialization 那一节, 则和清单第 8 篇遥相呼应: 恒等映射在 2015-2016 年是深度学习里反复出现的关键词, 从 ResNet 的 skip connection 到 IRNN 的初始化, 再到这里的 context module, 同一思想在三个不同载体上各自开花.
+
+## 13. 扩展阅读
+
+- Long, Shelhamer, Darrell, "Fully Convolutional Networks for Semantic Segmentation", CVPR 2015. 分类网络改造分割的起点, 本文前端的对标对象.
+- Chen et al., "Semantic Image Segmentation with Deep Convolutional Nets and Fully Connected CRFs" (DeepLab), ICLR 2015. 空洞卷积在分割里的早期使用者, 本文的正面竞争对手.
+- Holschneider et al., "A Real-Time Algorithm for Signal Analysis with the Help of the Wavelet Transform", 1987. à trous 算法的源头, 空洞卷积的小波谱系.
+- Shensa, "The Discrete Wavelet Transform: Wedding the À Trous and Mallat Algorithms", IEEE TSP, 1992. à trous 与 Mallat 算法的统一视角.
+- Le, Jaitly, Hinton, "A Simple Way to Initialize Recurrent Networks of Rectified Linear Units", 2015. identity initialization 的出处.
+- Zheng et al., "Conditional Random Fields as Recurrent Neural Networks", ICCV 2015. CRF-RNN, 本文最强配置的结构化预测组件.
+- van den Oord et al., "WaveNet: A Generative Model for Raw Audio", 2016. 因果空洞卷积在语音生成上的爆发.
+- Bai, Kolter, Koltun, "An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling", 2018. TCN 的命名与系统评估.
+- Chen et al., "DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs", TPAMI 2017 (DeepLab v2). ASPP 的出处.
+- 代码与模型: https://github.com/fyu/dilation
