@@ -16,8 +16,8 @@
 | W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | `d91d1fd7` |
 | W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | `1e41ed13` |
 | W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | `1cd5d32e` |
-| W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | （待填） |
-| W5 | | | |
+| W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
+| W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | （待填） |
 | W6 | | | |
 | W7 | | | |
 | W8 | | | |
@@ -190,11 +190,12 @@
 
 ## W5 E2E skip 诚实
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：无 key 的 `*-real.spec.ts` 若当 covered 依据则虚。成功 = 4 个 real 文件头有锁死降权声明；OCR 保持 skip；map 里 e2e-real 不是唯一计分断言。
+- 改动文件：`chat-queue-real.spec.ts` `chat-tool-hint-real.spec.ts` `chat-thinking-real.spec.ts` `chat-ocr-real.spec.ts`；`testing.md` 禁止节 OCR 人工一行。
+- 不改哪些面：playwright ignore、不删 real 套件、OCR `test.skip` 不改成真跑。
+- [OM-FREEPLAY]：无。map 里仅场景 9 有一条 e2e-real，同场景已有 e2e-mock+unit。
+- 验证：`pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）。
+- 遇到的问题：无。
 
 ## W6 产品面补测
 

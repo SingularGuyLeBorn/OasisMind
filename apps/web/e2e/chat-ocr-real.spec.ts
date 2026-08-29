@@ -1,3 +1,7 @@
+/**
+ * 本文件不计 scenario-test-map 的 covered。无 DEEPSEEK_API_KEY（或文件内写明的其它条件）时 skip。不要把 skip 当回归。
+ * OCR real 人工：时长不稳定，`test.skip` 保持 skip，不纳入 CI。
+ */
 import { test, expect } from "@playwright/test";
 import {
   waitForChatReady,

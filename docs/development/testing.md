@@ -65,6 +65,7 @@
 - 工单号当文件名（新文件）。旧纪念碑测例应收成契约表后删除源文件。
 - `void promise`（`void refetch` / `void invalidate` / `void mutateAsync` 等）。
 - 教用户刷新（交付文案 / 测试名 / 文档禁止「刷新一下就好」）。
+- OCR real 人工：`chat-ocr-real.spec.ts` 时长不稳定，保持 `test.skip`，不计 covered，不进 CI。
 
 ---
 
