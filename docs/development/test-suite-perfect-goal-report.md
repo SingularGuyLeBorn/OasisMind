@@ -301,3 +301,10 @@
 | `pnpm test:evals` | 0 | 12/12 |
 | `pnpm test:bench` | 0 | 24/24 |
 | mock e2e（本 Goal 新/改 spec） | 0 | files-accept-hint、gardens-list、daily-board、admin-live-push（含 F5 PULL）绿；`e2e/chat-mock.spec.ts` 2 passed（pageErrorGuard 未误伤） |
+
+## 并入原分支后再测
+
+- merge：`6b20c9cb` → `feat/worth-doing-w1-w7`。唯一冲突 `sessionRouter.__setVerifiedProgressForTest`：保留 worth-doing 的 `notifyGoalUpdated` PUSH。
+- 未 push。施工员未把 Goal 标 completed。
+- 再跑（cwd 主仓 worth-doing）：lint 0；server 246/1665；web 72/378；mock-llm-core 144；evals 12/12；bench 24/24；点名 mock e2e 11 passed。
+
