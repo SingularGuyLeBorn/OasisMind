@@ -112,7 +112,7 @@
 ## 8. 黄金轨迹(≤5 条)
 
 - **GT-1 连发**:「队列测试第一条」流式中入队第二条 → 两问两答、可见待发清零（E2E `chat-queue-mock`）
-- **GT-2 空闲直发**:不闪待发 N（enqueueIdleDispatch 单测）
+- **GT-2 空闲直发**:不闪待发 N（`prdChatQueueTable.test.ts` 的 `enqueueIdleDispatch`）
 - **GT-3 停止后 drain**（两条磁带，禁止混称）：
   - R8 `ABORT(null)`：立即 idle 后 drain — 磁带 `golden-traces/queue-gt3-abort-then-drain.json`（不是 abort-pending）
   - 点停 abort-pending：`APPLY_USER_STOP(partialId 有值)` 期间仍 occupied、M2 不得蒸发；`UPSERT` aborted 对齐后才 drain — 磁带 `golden-traces/queue-gt3b-abort-pending-then-drain.json`

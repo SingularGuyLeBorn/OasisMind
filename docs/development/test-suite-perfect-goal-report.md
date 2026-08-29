@@ -13,8 +13,8 @@
 | W | 状态 done/blocked | 证据（命令退出码或文件:行） | commit |
 |---|---|---|---|
 | W0 | done | `docs/development/testing.md` 含满分定义/四层/内环/禁止/设计错误/map 字段；`AGENTS.md` 快速导航加「测试圣经」；`docs/development/README.md` §8 加 testing.md 条目 | `6e02f755` |
-| W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | （待填 hash） |
-| W2 | | | |
+| W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | `d91d1fd7` |
+| W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | （待填） |
 | W3 | | | |
 | W4 | | | |
 | W5 | | | |
@@ -76,15 +76,15 @@
 | 留 | prdChatStopTable.test.ts / prdChatQueueTable.test.ts | pending | |
 | 留 | chatQueueDrainLifecycle.test.tsx | pending | |
 | 留 | helpers/chatStoreDrainModel.ts / chatStoreInvariantAsserts.ts | pending | |
-| 合 | abortPartialAssistantId.test.ts | pending | → invariants 或 stop 表 |
-| 合 | streamOnErrorIdle.test.ts | pending | → invariants |
-| 合 | streamLifecycleGhostStop.test.ts | pending | → invariants 或 stop 表 |
-| 合 | streamLifecycleAbort.test.ts | pending | → invariants 或 stop 表 |
-| 合 | upsertNoopNoInFlight.test.ts | pending | → invariants |
-| 合 | prefetchHydrateNoDrain.test.ts | pending | → invariants |
-| 合 | enqueueIdleDispatch.test.ts | pending | → queue 表或 invariants |
-| 合 | claimActiveAbortController.test.ts | pending | → stop 表或 invariants |
-| 合 | liveStreamOwnership.test.ts | pending | → invariants |
+| 合 | abortPartialAssistantId.test.ts | done | prdChatStopTable.test.ts describe abortPartialAssistantId |
+| 合 | streamOnErrorIdle.test.ts | done | chatStoreInvariants.test.ts describe streamOnErrorIdle |
+| 合 | streamLifecycleGhostStop.test.ts | done | prdChatStopTable.test.ts describe streamLifecycleGhostStop |
+| 合 | streamLifecycleAbort.test.ts | done | chatStoreInvariants.test.ts describe streamLifecycleAbort |
+| 合 | upsertNoopNoInFlight.test.ts | done | chatStoreInvariants.test.ts describe upsertNoopNoInFlight |
+| 合 | prefetchHydrateNoDrain.test.ts | done | chatStoreInvariants.test.ts describe prefetchHydrateNoDrain |
+| 合 | enqueueIdleDispatch.test.ts | done | prdChatQueueTable.test.ts describe enqueueIdleDispatch |
+| 合 | claimActiveAbortController.test.ts | done | prdChatStopTable.test.ts describe claimActiveAbortController |
+| 合 | liveStreamOwnership.test.ts | done | chatStoreInvariants.test.ts describe liveStreamOwnership |
 | 留 | useSessionMessages / messageUpsertMerge / hydrateFreshnessMerge / chatQueueMerge / chatQueueDrainHead / queueDrainClaimRollback / queueEditDraft / sessionTreeHydrate / chatTreeUi / chatTimelineCompact / adminPullIntervals / uiStateChannel / ackThenMarkDelivery | pending | 不硬并 |
 | 留 | scenarioTestMap.test.ts | pending | W1 改校验 |
 
@@ -161,11 +161,12 @@
 
 ## W2 Chat 卫星合并
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：INV 碎片散落 9 个文件，改一条停止契约要翻 10 处。成功 = it 剪切进 invariants / stop 表 / queue 表，源文件删除，断言不丢，零生产 store 重构。
+- 改动文件：`chatStoreInvariants.test.ts`（503 行，未拆）；`prdChatStopTable.test.ts`；`prdChatQueueTable.test.ts`；删除 9 个卫星；文档路径 `prd-chat-queue.md` / `design-decisions.md` 指向新家。map 未引用卫星故未改。
+- 不改哪些面：生产 store；`chatQueueDrainLifecycle.test.tsx`；PBT / golden-traces。
+- [OM-FREEPLAY]：abortPartial / ghostStop / claimAC 归停止表（停止契约）；其余 INV 归 invariants。enqueueIdleDispatch 归 queue 表。
+- 验证：点名四条命令退出码 0。invariants 27 / stop 23 / queue 15。
+- 遇到的问题：无。
 
 ## W3 纪念碑收成契约表
 

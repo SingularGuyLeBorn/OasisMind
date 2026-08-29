@@ -1574,7 +1574,7 @@ WIP 分支（Kimi 模型菜单/飞书集成/软暂停占位/tombstone 等，基�
 | --- | --- |
 | 不变量 | INV-Send：空闲且队空且未 draining → `visibility=dispatching`（Panel/chip 不计）+ 立刻 drain；占用/已有可见待发/draining → `visibility=visible` + toast |
 | 契约不动 | Drain 认领/回滚、superior 优先级、DB `SessionQueueItem` 仍走原路径；visibility 仅前端展示层 |
-| 负向测试 | `enqueueIdleDispatch.test.ts`：idle 可见计数=0；occupied 可见≥1 |
+| 负向测试 | `prdChatQueueTable.test.ts` `enqueueIdleDispatch`：idle 可见计数=0；occupied 可见≥1 |
 
 **回答**：按上表落地
 
