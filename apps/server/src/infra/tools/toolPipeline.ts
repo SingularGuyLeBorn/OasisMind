@@ -139,25 +139,27 @@ export function materializeToolEnvelope(
     thresholdChars?: number;
   },
 ): ToolEnvelope {
+  const cmd = getTool(opts.toolName);
   let envelope: ToolEnvelope;
   try {
     envelope = wrapRawAsEnvelope(raw);
+    envelope = {
+      ...envelope,
+      [TOOL_ENVELOPE_BRAND]: true,
+      content: projectContent(envelope.value, {
+        render: cmd?.render,
+        args: opts.args,
+        maxChars: opts.maxChars,
+      }),
+    };
+    // 投影/自定义 render 也可能带回循环引用；这里先锁死 content 可 stringify。
+    void JSON.stringify(envelope.content);
   } catch {
     envelope = wrapRawAsEnvelope({
       error: "tool_result_not_serializable",
       toolName: opts.toolName,
     });
   }
-  const cmd = getTool(opts.toolName);
-  envelope = {
-    ...envelope,
-    [TOOL_ENVELOPE_BRAND]: true,
-    content: projectContent(envelope.value, {
-      render: cmd?.render,
-      args: opts.args,
-      maxChars: opts.maxChars,
-    }),
-  };
   if (opts.config) {
     envelope = persistValue(opts.config, envelope, {
       sessionId: opts.sessionId,

@@ -166,11 +166,13 @@ export function defaultProjectContent(value: unknown, maxChars?: number): unknow
 }
 
 export function wrapRawAsEnvelope(raw: unknown): ToolEnvelope {
-  if (isToolEnvelope(raw)) return raw;
-  const value = snapshotJsonValue(raw);
+  // 已带品牌的信封也必须 snapshot：循环引用 value 不能原样放行。
+  const source = isToolEnvelope(raw) ? raw.value : raw;
+  const value = snapshotJsonValue(source);
   return {
     [TOOL_ENVELOPE_BRAND]: true,
     value,
     content: defaultProjectContent(value),
+    ...(isToolEnvelope(raw) && raw.persist ? { persist: raw.persist } : {}),
   };
 }

@@ -37,4 +37,72 @@ describe("buildChatTimeline 压缩边界", () => {
     expect(timeline[0]!.kind === "group" && timeline[0].group.assistantMessage?.id).toBe("a1");
     expect(timeline[1]!.kind === "compact" && timeline[1].message.id).toBe("b1");
   });
+
+  it("branch_summary 单独成卡，不进对话组，不盖住助手", () => {
+    const user = msg({ id: "u1", role: "user", content: "你好" });
+    const asst = msg({ id: "a1", role: "assistant", content: "原答" });
+    const summary = msg({
+      id: "sum",
+      role: "system",
+      kind: "branch_summary",
+      content: "[om-branch-summary]\n【Mock 旁路摘要】已压缩",
+    });
+    const groups = buildMessageGroups([user, asst, summary]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.assistantMessage?.id).toBe("a1");
+    const timeline = buildChatTimeline([
+      user,
+      summary,
+    ]);
+    expect(timeline.map((t) => t.kind)).toEqual(["group", "compact"]);
+    expect(timeline[0]!.kind === "group" && timeline[0].group.userMessage.id).toBe("u1");
+    expect(timeline[1]!.kind === "compact" && timeline[1].message.id).toBe("sum");
+  });
+
+  it("摘要夹在用户与重试助手之间：助手仍进同一轮，不能变孤儿", () => {
+    const user = msg({ id: "u1", role: "user", content: "你好" });
+    const sum1 = msg({
+      id: "sum1",
+      role: "system",
+      kind: "branch_summary",
+      content: "[om-branch-summary]\n【Mock 旁路摘要】一",
+    });
+    const sum2 = msg({
+      id: "sum2",
+      role: "system",
+      kind: "branch_summary",
+      content: "[om-branch-summary]\n【Mock 旁路摘要】二",
+    });
+    const retryAsst = msg({
+      id: "a-retry",
+      role: "assistant",
+      content: "你好！我是 Mock LLM，正在为你服务。",
+    });
+    const groups = buildMessageGroups([user, sum1, sum2, retryAsst]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.assistantMessage?.id).toBe("a-retry");
+
+    const timeline = buildChatTimeline([user, sum1, sum2, retryAsst]);
+    expect(timeline.map((t) => t.kind)).toEqual(["group", "compact", "compact"]);
+    expect(timeline[0]!.kind === "group" && timeline[0].group.assistantMessage?.id).toBe("a-retry");
+    expect(timeline[0]!.kind === "group" && timeline[0].group.userMessage.id).toBe("u1");
+    expect(timeline[1]!.kind === "compact" && timeline[1].message.id).toBe("sum1");
+    expect(timeline[2]!.kind === "compact" && timeline[2].message.id).toBe("sum2");
+  });
+
+  it("已冲掉的组后面再来助手：挂回最近一轮，不能丢气泡", () => {
+    const user = msg({ id: "u1", role: "user", content: "你好" });
+    const asst = msg({ id: "a1", role: "assistant", content: "原答" });
+    const summary = msg({
+      id: "sum",
+      role: "system",
+      kind: "branch_summary",
+      content: "[om-branch-summary]\n【Mock 旁路摘要】",
+    });
+    const retryAsst = msg({ id: "a2", role: "assistant", content: "重生答" });
+    const timeline = buildChatTimeline([user, asst, summary, retryAsst]);
+    expect(timeline.map((t) => t.kind)).toEqual(["group", "compact"]);
+    expect(timeline[0]!.kind === "group" && timeline[0].group.assistantMessage?.id).toBe("a2");
+    expect(timeline[1]!.kind === "compact" && timeline[1].message.id).toBe("sum");
+  });
 });

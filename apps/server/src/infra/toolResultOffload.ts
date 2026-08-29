@@ -1,5 +1,5 @@
 /**
- * 工具结果全量落盘（记录平面）+ 超阈值时只向主 LLM 注入厚 metadata + keywords。
+ * 工具结果全文落盘；超阈值时只向主 LLM 注入薄 metadata 卡（无正文、无导航堆）。
  * - 原文：data/tool-results/{bucket}/{toolCallId}.json
  * - 元数据：同目录 {toolCallId}.meta.json + 瘦 index.jsonl
  * - 压缩视图不含正文；写盘原子化；索引追加失败不阻断主路径；支持 TTL 清理
@@ -10,10 +10,13 @@ import path from "path";
 import type { AppConfig } from "./config.js";
 import {
   buildToolResultMetadata,
+  slimToolResultMetadata,
+  type ToolResultSlimMetadata,
   type ToolResultThickMetadata,
 } from "./toolResultMetadata.js";
+import { resolveListedCount } from "@oasismind/shared";
 
-/** 压缩后给主 LLM 的索引卡（无正文） */
+/** 压缩后给主 LLM 的索引卡（无正文、无导航堆） */
 export type ToolResultOffloadMeta = {
   offloaded: true;
   path: string;
@@ -24,7 +27,7 @@ export type ToolResultOffloadMeta = {
   keywords: string[];
   hitCount: number;
   missedKeywords: string[];
-  metadata: ToolResultThickMetadata;
+  metadata: ToolResultSlimMetadata;
   artifact?: ToolResultThickMetadata["artifact"];
 };
 
@@ -200,15 +203,31 @@ function appendIndexEntry(dir: string, entry: ToolResultIndexEntry): void {
   );
 }
 
+function conclusionErrorText(meta: ToolResultThickMetadata): string | undefined {
+  if (!meta.hasError) return undefined;
+  for (const k of ["error", "reason", "message"] as const) {
+    const s = (meta.shortFields[k] ?? "").trim();
+    if (s && s !== "{…}" && s !== "null" && s !== "false") return s.split("\n")[0]!.slice(0, 72);
+  }
+  return undefined;
+}
+
 function buildHint(rel: string, meta: ToolResultThickMetadata): string {
+  const bits: string[] = [];
+  const title = (meta.title ?? meta.shortFields.title ?? "").trim();
+  if (title) bits.push(title.slice(0, 48));
+  const err = conclusionErrorText(meta);
+  if (err) bits.push(`失败 · ${err}`);
+  else if (meta.hasError) bits.push("有错误");
+  const listed = resolveListedCount(meta.shortFields, meta.fieldSizes);
+  if (listed != null) bits.push(`${listed} 条`);
+  if (meta.originalChars > 0) bits.push(`${meta.originalChars} 字`);
+  const conclusion = bits.length > 0 ? bits.join(" · ") : "全文已存文件";
   const first = meta.recommendedRead[0];
-  const offsetHint =
-    first != null
-      ? `建议先 read_file(path="${rel}", offset=${first.offset}, maxChars=${first.maxChars ?? 4000})（${first.reason}）`
-      : `用 read_file(path="${rel}", offset=0, maxChars=12000) 分段读取`;
+  const offset = first != null ? first.offset : 0;
+  const maxChars = first?.maxChars ?? 4000;
   return (
-    `完整结果已落盘（记录平面可追溯）。上下文仅含 metadata+keywords，无正文。` +
-    `${offsetHint}；也可用 tool_results_list / tool_result_meta 查询。`
+    `结论：${conclusion}。正文在 path，用 read_file(path="${rel}", offset=${offset}, maxChars=${maxChars}) 分段读；禁止假装已读全文。`
   );
 }
 
@@ -426,7 +445,7 @@ export function cleanupExpiredToolResults(
 }
 
 /**
- * value 全文权威落盘；超阈值时对 LLM 只返回厚 metadata + keywords 瘦卡。
+ * value 全文权威落盘；超阈值时对 LLM 只返回薄 metadata + keywords 卡。
  * 字段名 `_om_result_path` 不准改。原文落盘失败才抛错；index 失败仅 warn。
  */
 export function offloadToolResultIfNeeded(
@@ -449,6 +468,12 @@ export function offloadToolResultIfNeeded(
   } catch {
     fullStr = JSON.stringify({ error: "tool_result_not_serializable", toolName: opts.toolName });
   }
+  let persistValue: unknown;
+  try {
+    persistValue = JSON.parse(fullStr) as unknown;
+  } catch {
+    persistValue = { error: "tool_result_not_serializable", toolName: opts.toolName };
+  }
 
   const bucket = (opts.sessionId || opts.runId || "anon").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) || "anon";
   const safeCall = opts.toolCallId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80) || "call";
@@ -464,9 +489,9 @@ export function offloadToolResultIfNeeded(
 
   const keywords = (opts.expectKeywords ?? []).map((k) => k.trim()).filter(Boolean);
   const patterns = (opts.expectPatterns ?? []).map((p) => p.trim()).filter(Boolean);
-  const artifact = extractArtifact(result, rel);
+  const artifact = extractArtifact(persistValue, rel);
 
-  const metadata = buildToolResultMetadata(result, {
+  const metadata = buildToolResultMetadata(persistValue, {
     toolName: opts.toolName,
     originalChars: fullStr.length,
     keywords,
@@ -499,12 +524,12 @@ export function offloadToolResultIfNeeded(
       keywords: metadata.keywords,
       hitCount: metadata.hitCount,
       missedKeywords: metadata.missedKeywords,
-      metadata,
+      metadata: slimToolResultMetadata(metadata),
       ...(artifact ? { artifact } : {}),
     };
     llmResult = card;
   } else {
-    llmResult = annotateWithPath(result, rel, metaRel, fullStr.length);
+    llmResult = annotateWithPath(persistValue, rel, metaRel, fullStr.length);
   }
 
   appendIndexEntry(dir, {

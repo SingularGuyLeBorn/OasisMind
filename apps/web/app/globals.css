@@ -1795,6 +1795,26 @@ html.dark .om-card-sheen::after,
     color-mix(in srgb, var(--om-glass-bg) 35%, transparent);
 }
 
+/* 工具瘦卡：隐藏 details 三角，避免 hover 时占位把摘要撑成两行 */
+[data-testid="tool-pill"] summary::-webkit-details-marker {
+  display: none;
+}
+[data-testid="tool-pill"] summary::marker {
+  content: none;
+}
+
+/* JSON/卡片切换：只在本块 hover/焦点时出现，禁止跟 group/tool 绑在一起整卡一起露 */
+[data-testid="tool-pill"] .om-tool-json-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+[data-testid="tool-pill"] .om-tool-json-pane:hover .om-tool-json-toggle,
+[data-testid="tool-pill"] .om-tool-json-pane:focus-within .om-tool-json-toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* 侧栏轨道：玻璃白 + 微蓝 */
 .om-shell-rail {
   background: linear-gradient(

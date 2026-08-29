@@ -1,9 +1,10 @@
 /**
  * 工具结果厚 metadata（零模型）：结构/类型/短字段/命中偏移/导航点。
- * 供压缩视图注入主 LLM；正文永不进 metadata（只偏移与统计）。
+ * 全文写入 .meta.json；压缩卡只注入 slimToolResultMetadata（无导航堆）。正文永不进 metadata。
  */
 
 import { extractKeyInfoSpans, type HitSpan } from "./keyInfoExtractor.js";
+import { isMeaningfulToolError, TOOL_RESULT_LIST_KEYS } from "@oasismind/shared";
 
 export type ToolResultContentType =
   | "web_page"
@@ -69,6 +70,34 @@ export type ToolResultThickMetadata = {
     mime?: string;
   };
 };
+
+/** 注入主 LLM / Chat 的薄 metadata：结论所需，不含偏移/URL/实体堆 */
+export type ToolResultSlimMetadata = {
+  contentType: ToolResultContentType;
+  title?: string;
+  hasError: boolean;
+  shortFields: Record<string, string>;
+  /** 仅列表条数键（items/results/rows/papers） */
+  fieldSizes: Record<string, number>;
+  language?: ToolResultThickMetadata["language"];
+};
+
+/** 厚 → 薄：hint 已用 recommendedRead[0] 算过后再调用 */
+export function slimToolResultMetadata(meta: ToolResultThickMetadata): ToolResultSlimMetadata {
+  const fieldSizes: Record<string, number> = {};
+  for (const key of TOOL_RESULT_LIST_KEYS) {
+    const n = meta.fieldSizes[key];
+    if (typeof n === "number" && Number.isFinite(n)) fieldSizes[key] = n;
+  }
+  return {
+    contentType: meta.contentType,
+    ...(meta.title ? { title: meta.title } : {}),
+    hasError: meta.hasError,
+    shortFields: { ...meta.shortFields },
+    fieldSizes,
+    ...(meta.language ? { language: meta.language } : {}),
+  };
+}
 
 const LONG_TEXT_KEYS = ["content", "text", "transcript", "excerpt", "html", "markdown", "summary", "body"];
 const SHORT_FIELD_KEYS = [
@@ -192,7 +221,7 @@ function inferContentType(
   if (artifact) return "artifact";
   if (result !== null && typeof result === "object" && !Array.isArray(result)) {
     const obj = result as Record<string, unknown>;
-    if (obj.error != null || obj.permissionDenied === true || obj.validationError === true) {
+    if (isMeaningfulToolError(obj.error) || obj.permissionDenied === true || obj.validationError === true || obj.success === false || obj.ok === false) {
       return "error";
     }
     if (typeof obj.content === "string" && (obj.url != null || obj.platform != null || obj.title != null)) {
@@ -212,6 +241,16 @@ function inferContentType(
   if (searchText.length > 200) return "text";
   if (typeof result === "object" && result !== null) return "api_response";
   return searchText ? "text" : "unknown";
+}
+
+function extractNestedErrorText(v: unknown): string | undefined {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const o = v as Record<string, unknown>;
+  for (const k of ["message", "reason", "error", "msg"]) {
+    const s = o[k];
+    if (typeof s === "string" && s.trim()) return s.trim();
+  }
+  return undefined;
 }
 
 function collectFieldMeta(result: unknown): {
@@ -237,6 +276,8 @@ function collectFieldMeta(result: unknown): {
 
   if (Array.isArray(result)) {
     topKeys.push(`[array:${result.length}]`);
+    fieldSizes.items = result.length;
+    shortFields.items = `[array:${result.length}]`;
     return { topKeys, fieldSizes, shortFields, hasError };
   }
 
@@ -259,12 +300,17 @@ function collectFieldMeta(result: unknown): {
       fieldSizes[key] = v.length;
       shortFields[key] = `[array:${v.length}]`;
     } else if (typeof v === "object") {
-      try {
-        fieldSizes[key] = JSON.stringify(v).length;
-      } catch {
-        fieldSizes[key] = -1;
+      if (key === "error") {
+        const msg = extractNestedErrorText(v);
+        shortFields[key] = msg ?? "{…}";
+      } else {
+        try {
+          fieldSizes[key] = JSON.stringify(v).length;
+        } catch {
+          fieldSizes[key] = -1;
+        }
+        shortFields[key] = "{…}";
       }
-      shortFields[key] = "{…}";
     }
   }
 
@@ -272,9 +318,44 @@ function collectFieldMeta(result: unknown): {
   else if (typeof obj.name === "string") title = obj.name;
   if (typeof obj.url === "string") url = obj.url;
   if (typeof obj.platform === "string") platform = obj.platform;
-  if (obj.error != null || obj.permissionDenied === true || obj.validationError === true) hasError = true;
+  if (isMeaningfulToolError(obj.error) || obj.permissionDenied === true || obj.validationError === true) {
+    hasError = true;
+  }
+  if (obj.success === false || obj.ok === false) hasError = true;
+  if (typeof obj.status === "string" && /^(failed|error|timeout)$/i.test(obj.status)) hasError = true;
+
+  hoistNestedListStats(obj, shortFields, fieldSizes);
 
   return { topKeys, fieldSizes, shortFields, title, url, platform, hasError };
+}
+
+// [OM-FREEPLAY] 用户要锁全集条数；{ data: { total, items } } 是常见包装，测里会砸到，抬一层避免再把本页长当结论。
+function hoistNestedListStats(
+  obj: Record<string, unknown>,
+  shortFields: Record<string, string>,
+  fieldSizes: Record<string, number>,
+): void {
+  const nested = obj.data;
+  if (!nested || typeof nested !== "object" || Array.isArray(nested)) return;
+  const d = nested as Record<string, unknown>;
+  if (!Object.hasOwn(shortFields, "total")) {
+    if (typeof d.total === "number" && Number.isInteger(d.total) && d.total >= 0) {
+      shortFields.total = String(d.total);
+    } else if (typeof d.total === "string") {
+      shortFields.total = d.total;
+    }
+  }
+  if (!Object.hasOwn(shortFields, "itemCount") && d.itemCount != null) {
+    shortFields.itemCount = String(d.itemCount);
+  }
+  if (!Object.hasOwn(shortFields, "count") && typeof d.count === "number") {
+    shortFields.count = String(d.count);
+  }
+  for (const key of TOOL_RESULT_LIST_KEYS) {
+    if (fieldSizes[key] == null && Array.isArray(d[key])) {
+      fieldSizes[key] = (d[key] as unknown[]).length;
+    }
+  }
 }
 
 function buildSampleOffsets(textLen: number, stride = 1000): number[] {

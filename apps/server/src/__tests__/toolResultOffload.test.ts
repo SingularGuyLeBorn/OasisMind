@@ -36,7 +36,8 @@ describe("toolResultOffload", () => {
 
   it("超阈值落盘并返回 metadata 索引卡（无 preview 正文）", () => {
     const config = createTestConfig(root);
-    const big = { content: "x".repeat(5000), title: "t" };
+    const title = "线性注意力机制";
+    const big = { content: "x".repeat(5000), title };
     const off = offloadToolResultIfNeeded(config, big, {
       sessionId: "sess1",
       toolCallId: "call-1",
@@ -50,6 +51,7 @@ describe("toolResultOffload", () => {
     const card = off!.llmResult as {
       offloaded: boolean;
       preview?: string;
+      hint: string;
       metadata: { contentType: string; title?: string };
       keywords: string[];
     };
@@ -57,6 +59,72 @@ describe("toolResultOffload", () => {
     expect(card.preview).toBeUndefined();
     expect(card.metadata.contentType).toBeTruthy();
     expect(JSON.stringify(card)).not.toContain("x".repeat(200));
+    expect(card.hint).toContain("结论：");
+    expect(card.hint).toContain(title);
+    expect(card.hint).not.toContain("web_page");
+    expect(card.hint).toMatch(/read_file\(path="[^"]+", offset=\d+, maxChars=\d+\)/);
+    expect(card.hint).toContain("禁止假装已读全文");
+    expect(card.hint).not.toContain("记录平面");
+    expect(card.hint).not.toContain("metadata+keywords");
+    expect(card.hint).not.toContain("0 命中");
+    expect(card.hint).not.toContain("tool_results_list");
+  });
+
+  it("分页列表 hint 用 total 条数，不用本页条数或 contentType 枚举", () => {
+    const config = createTestConfig(root);
+    const items = [
+      { id: "1", title: "alpha" },
+      { id: "2", title: "bravo" },
+      { id: "3", title: "charlie" },
+      { id: "4", title: "delta" },
+      { id: "5", title: "echo" },
+    ];
+    const payload = {
+      total: 61,
+      page: 1,
+      pageSize: 5,
+      items,
+      excerpt: "pad-".repeat(400),
+    };
+    const off = offloadToolResultIfNeeded(config, payload, {
+      sessionId: "sess-page",
+      toolCallId: "call-page",
+      toolName: "post_list",
+      thresholdChars: 200,
+    });
+    expect(off).not.toBeNull();
+    expect(off!.compacted).toBe(true);
+    const card = off!.llmResult as { hint: string };
+    expect(card.hint).toContain("61 条");
+    expect(card.hint).not.toContain("5 条");
+    expect(card.hint).not.toContain("data_table");
+    expect(card.hint).not.toContain("api_response");
+    expect(card.hint).toContain("禁止假装已读全文");
+    expect(card.hint).not.toContain("记录平面");
+    expect(card.hint).not.toContain("metadata+keywords");
+  });
+
+  it("错误结果 hint 写可读失败文案，不用 error= 前缀", () => {
+    const config = createTestConfig(root);
+    const errText = "文件不存在: foo.md";
+    const off = offloadToolResultIfNeeded(
+      config,
+      { error: errText, content: "x".repeat(2000) },
+      {
+        sessionId: "sess-err",
+        toolCallId: "call-err",
+        toolName: "read_file",
+        thresholdChars: 200,
+      },
+    );
+    expect(off).not.toBeNull();
+    expect(off!.compacted).toBe(true);
+    const card = off!.llmResult as { hint: string };
+    expect(card.hint).toContain(errText);
+    expect(card.hint).not.toContain("error=");
+    expect(card.hint).toContain("禁止假装已读全文");
+    expect(card.hint).not.toContain("记录平面");
+    expect(card.hint).not.toContain("metadata+keywords");
   });
 
   it("未超阈值也落盘+meta，LLM 仍拿原文并带 path 注解", () => {
@@ -81,7 +149,7 @@ describe("toolResultOffload", () => {
     expect(index[0]!.hitCount).toBe(0);
   });
 
-  it("带 expect_keywords 时索引卡含 hitOffsets，正文只在落盘文件", () => {
+  it("带 expect_keywords 时厚 meta 含 hitOffsets，注入卡不含导航堆", () => {
     const config = createTestConfig(root);
     const needle = "CRITICAL_SIGNAL_TORCH_COMPILE";
     const content =
@@ -106,24 +174,97 @@ describe("toolResultOffload", () => {
     const card = off!.llmResult as {
       hitCount: number;
       missedKeywords: string[];
-      metadata: {
-        hitOffsets: Array<{ keyword: string; start: number }>;
-        recommendedRead: Array<{ offset: number; reason: string }>;
-        contentType: string;
-      };
+      hint: string;
+      metadata: { contentType: string };
       path: string;
     };
     expect(card.hitCount).toBeGreaterThanOrEqual(1);
     expect(card.missedKeywords).toContain("missing-word");
-    expect(card.metadata.hitOffsets.some((h) => h.keyword.includes(needle))).toBe(true);
-    expect(card.metadata.recommendedRead[0]?.reason).toMatch(/keyword/);
+    const thick = readToolResultMeta(config, off!.metaPath)!;
+    expect(thick.hitOffsets.some((h) => h.keyword.includes(needle))).toBe(true);
+    expect(thick.recommendedRead[0]?.reason).toMatch(/keyword/);
+    expect(card.hint).toContain(`offset=${thick.recommendedRead[0]!.offset}`);
+    expect(card.metadata).not.toHaveProperty("hitOffsets");
+    expect(card.metadata).not.toHaveProperty("recommendedRead");
+    expect(card.metadata).not.toHaveProperty("sampleOffsets");
+    const cardStr = JSON.stringify(card);
+    expect(cardStr).not.toContain("sampleOffsets");
+    expect(cardStr).not.toContain("hitOffsets");
+    expect(cardStr).not.toContain("recommendedRead");
+    expect(card.hint).not.toContain("keyword:");
+    expect(card.hint).not.toContain("记录平面");
+    expect(card.hint).not.toContain("web_page");
     expect(card.metadata.contentType).toBe("web_page");
-    expect(JSON.stringify(card)).not.toContain("important detail 42%");
+    expect(cardStr).not.toContain("important detail 42%");
     const raw = fs.readFileSync(path.join(root, card.path), "utf8");
     expect(raw).toContain(needle);
     const index = listToolResultIndex(config, "sess-kw");
     expect(index[0]!.topics.length).toBeGreaterThan(0);
     expect(index[0]!.hitCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("注入卡禁止含导航堆：sampleOffsets/hitOffsets/recommendedRead/urls/entities/topics", () => {
+    const config = createTestConfig(root);
+    const needle = "SLIM_CARD_NEEDLE_TORCH";
+    const content =
+      "https://example.com/page1 https://pytorch.org/blog/x " +
+      "noise ".repeat(1200) +
+      `Here is ${needle} CUDA v2.4.0 ` +
+      "noise ".repeat(1200);
+    const off = offloadToolResultIfNeeded(
+      config,
+      {
+        content,
+        title: "PyTorch release notes",
+        url: "https://example.com/rel",
+        total: 12,
+        items: [{ id: "1" }, { id: "2" }],
+      },
+      {
+        sessionId: "sess-slim",
+        toolCallId: "call-slim",
+        toolName: "read_article",
+        thresholdChars: 500,
+        expectKeywords: [needle, "missing-word"],
+      },
+    );
+    expect(off).not.toBeNull();
+    expect(off!.compacted).toBe(true);
+    const card = off!.llmResult as Record<string, unknown>;
+    const cardStr = JSON.stringify(card);
+    expect(cardStr).not.toContain("sampleOffsets");
+    expect(cardStr).not.toContain("hitOffsets");
+    expect(cardStr).not.toContain("recommendedRead");
+    const meta = card.metadata as Record<string, unknown>;
+    expect(meta).not.toHaveProperty("urls");
+    expect(meta).not.toHaveProperty("entities");
+    expect(meta).not.toHaveProperty("topics");
+    expect(meta).not.toHaveProperty("topKeys");
+    expect(meta).not.toHaveProperty("searchTextChars");
+    expect(meta.contentType).toBe("web_page");
+    expect(meta.hasError).toBe(false);
+    expect(meta.shortFields).toBeDefined();
+    const sizes = meta.fieldSizes as Record<string, number>;
+    expect(sizes.items).toBe(2);
+    expect(sizes).not.toHaveProperty("content");
+    expect(sizes).not.toHaveProperty("excerpt");
+    const allowed = new Set(["title", "hasError", "contentType", "shortFields", "fieldSizes", "language"]);
+    for (const k of Object.keys(meta)) {
+      expect(allowed.has(k), `薄 metadata 多了键 ${k}`).toBe(true);
+    }
+
+    const thick = readToolResultMeta(config, off!.metaPath)!;
+    expect(thick.sampleOffsets.length).toBeGreaterThan(1);
+    expect(thick.hitOffsets.some((h) => h.keyword.includes(needle))).toBe(true);
+    expect(thick.recommendedRead[0]?.reason).toMatch(/keyword/);
+    expect(thick.urls.length).toBeGreaterThan(0);
+    expect(thick.entities.length).toBeGreaterThan(0);
+    expect(thick.topics.length).toBeGreaterThan(0);
+    expect(card.hint).toContain(`offset=${thick.recommendedRead[0]!.offset}`);
+    expect(card.hint).toMatch(/read_file\(path="[^"]+", offset=\d+, maxChars=\d+\)/);
+    expect(card.hint).toContain("禁止假装已读全文");
+    expect(card.hint).not.toContain("web_page");
+    expect(card.hint).not.toContain("keyword:");
   });
 
   it("同 toolCallId 冲突时改名落盘，不覆盖旧文件", () => {
@@ -334,6 +475,11 @@ describe("Chat 内核冒烟：工具结果 offload", () => {
     expect(toolText).toContain("offloaded");
     expect(toolText).not.toContain(marker);
     expect(toolText).not.toContain("z".repeat(200));
+    expect(toolText).not.toContain("sampleOffsets");
+    expect(toolText).not.toContain("hitOffsets");
+    expect(toolText).not.toContain("recommendedRead");
+    expect(toolText).toContain("禁止假装已读全文");
+    expect(toolText).not.toContain("记录平面");
 
     const card = JSON.parse(toolText) as { path: string; offloaded: boolean };
     expect(card.offloaded).toBe(true);

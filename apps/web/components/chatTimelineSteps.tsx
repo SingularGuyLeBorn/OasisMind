@@ -27,14 +27,19 @@ import {
 import { PostContent } from "@/components/post/PostContent";
 import { StreamingPlainContent } from "@/components/streamingPlainContent";
 import { cn } from "@/lib/utils";
-import { formatToolResultHint, parseApprovalPending, type TimelineStep } from "@/lib/chatMessageUtils";
+import {
+  formatToolResultHint,
+  isToolResultFailed,
+  parseApprovalPending,
+  type TimelineStep,
+} from "@/lib/chatMessageUtils";
 import { formatToolDisplayName } from "@/lib/toolDisplayName";
 import { extractToolResultImages, type ToolResultImage } from "@/lib/toolResultImages";
 import { ToolStepIcon, type ToolIconStatus } from "@/lib/toolIcons";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
 import { formatToolArtifactCite, requestComposePrefill, requestSaveToolResult } from "@/lib/composePrefill";
 
-/** 从工具结果卡片解析落盘路径（压缩卡或短结果注解） */
+/** 只有超阈值压缩卡才算 offload；普通写盘注解不当成落盘条 */
 function resolveOffloadPath(result: unknown): {
   path: string;
   originalChars?: number;
@@ -42,8 +47,9 @@ function resolveOffloadPath(result: unknown): {
 } | null {
   if (!result || typeof result !== "object" || Array.isArray(result)) return null;
   const r = result as Record<string, unknown>;
+  if (r.offloaded !== true) return null;
   const path =
-    (typeof r.path === "string" && r.offloaded === true && r.path) ||
+    (typeof r.path === "string" && r.path) ||
     (typeof r._om_result_path === "string" && r._om_result_path) ||
     null;
   if (!path || !String(path).includes("tool-results")) return null;
@@ -53,7 +59,149 @@ function resolveOffloadPath(result: unknown): {
       : typeof r._om_original_chars === "number"
         ? r._om_original_chars
         : undefined;
-  return { path: String(path).replace(/\\/g, "/"), originalChars, compacted: r.offloaded === true };
+  return { path: String(path).replace(/\\/g, "/"), originalChars, compacted: true };
+}
+
+const OM_PERSIST_KEYS = new Set([
+  "_om_result_path",
+  "_om_meta_path",
+  "_om_persisted",
+  "_om_original_chars",
+]);
+
+/** 肥卡导航堆：偏移 / 建议读点，只给模型分段用，不铺给人看 */
+const OFFLOAD_NAV_DUMP_KEYS = new Set(["sampleOffsets", "hitOffsets", "recommendedRead"]);
+
+function omitOffloadNavDump(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const next: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (OFFLOAD_NAV_DUMP_KEYS.has(k)) continue;
+    if (k === "urls" && Array.isArray(v)) continue;
+    next[k] = v;
+  }
+  return next;
+}
+
+/**
+ * 展示用 JSON：
+ * - 未压缩：去掉 `_om_*` 写盘注解
+ * - offloaded 肥卡：再剥 metadata / 顶层的偏移导航堆（历史会话仍可能很肥）
+ */
+function displayToolResult(result: unknown): unknown {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return result;
+  const r = result as Record<string, unknown>;
+  if (r.offloaded === true) {
+    const next: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(r)) {
+      if (OM_PERSIST_KEYS.has(k)) continue;
+      if (OFFLOAD_NAV_DUMP_KEYS.has(k)) continue;
+      if (k === "urls" && Array.isArray(v)) continue;
+      if (k === "metadata") {
+        next[k] = omitOffloadNavDump(v);
+        continue;
+      }
+      next[k] = v;
+    }
+    return next;
+  }
+  if (r._om_persisted !== true) return result;
+  const next: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(r)) {
+    if (!OM_PERSIST_KEYS.has(k)) next[k] = v;
+  }
+  return next;
+}
+
+/** JSON 卡片：仅在本块 hover/焦点时从右上角切换进来，默认仍是 JSON */
+function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
+  if (data === null) return <span className="text-[var(--om-text-3)]">null</span>;
+  if (typeof data === "boolean")
+    return <span className="text-[var(--om-text-2)]">{String(data)}</span>;
+  if (typeof data === "number")
+    return <span className="text-[var(--om-text-1)] tabular-nums">{String(data)}</span>;
+  if (typeof data === "string") {
+    const trimmed = data.length > 280 ? `${data.slice(0, 280)}…` : data;
+    return <span className="text-[var(--om-text-1)]">&quot;{trimmed}&quot;</span>;
+  }
+  if (Array.isArray(data)) {
+    if (data.length === 0) return <span>[]</span>;
+    return (
+      <div
+        className={cn("space-y-0.5", depth > 0 && "border-l border-[var(--om-divider-light)] pl-2")}
+      >
+        {data.map((item, i) => (
+          <div key={i} className="flex items-start gap-1">
+            <span className="shrink-0 select-none text-[var(--om-text-3)]">[{i}]</span>
+            <JsonCardView data={item} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (typeof data === "object") {
+    const entries = Object.entries(data as Record<string, unknown>);
+    if (entries.length === 0) return <span>{"{}"}</span>;
+    return (
+      <div
+        className={cn("space-y-0.5", depth > 0 && "border-l border-[var(--om-divider-light)] pl-2")}
+      >
+        {entries.map(([key, value]) => (
+          <div key={key} className="flex items-start gap-1">
+            <span className="shrink-0 select-none font-medium text-[var(--om-text-2)]">{key}:</span>
+            <JsonCardView data={value} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return <span>{String(data)}</span>;
+}
+
+function JsonPayloadBlock({
+  label,
+  jsonText,
+  data,
+  preClassName,
+}: {
+  label: string;
+  jsonText: string;
+  data: unknown;
+  preClassName: string;
+}) {
+  const [view, setView] = useState<"json" | "card">("json");
+  return (
+    <div
+      className="om-tool-json-pane overflow-hidden rounded-lg bg-[var(--om-bg-mute)]/50"
+      data-testid={`tool-json-${label.toLowerCase()}`}
+    >
+      <div className="flex items-center justify-between px-3 py-1.5">
+        <span className="text-[10px] font-medium text-[var(--om-text-3)]">{label}</span>
+        <button
+          type="button"
+          data-testid="tool-json-view-toggle"
+          onClick={(e) => {
+            e.stopPropagation();
+            setView((v) => (v === "json" ? "card" : "json"));
+          }}
+          className="om-tool-json-toggle text-[9px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
+        >
+          {view === "json" ? "卡片" : "JSON"}
+        </button>
+      </div>
+      <div className="px-3 pb-2">
+        {view === "json" ? (
+          <pre className={cn("max-h-48 overflow-y-auto whitespace-pre-wrap text-[10px]", preClassName)}>
+            {jsonText}
+          </pre>
+        ) : (
+          <div className="max-h-48 overflow-y-auto text-[10px] text-[var(--om-text-2)]">
+            <JsonCardView data={data} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 type TodoListItem = { id: string; content: string; status: string };
@@ -362,59 +510,6 @@ const ContentStep = memo(function ContentStep({
   );
 });
 
-/** JSON 卡片形式：把对象递归渲染成缩进键值对列表（比裸 JSON 更友好；正文用中性色，不染品牌蓝） */
-function JsonCardView({ data, depth = 0 }: { data: unknown; depth?: number }) {
-  if (data === null) return <span className="text-[var(--om-text-3)]">null</span>;
-  if (typeof data === "boolean")
-    return <span className="text-[var(--om-text-2)]">{String(data)}</span>;
-  if (typeof data === "number")
-    return <span className="text-[var(--om-text-1)] tabular-nums">{String(data)}</span>;
-  if (typeof data === "string") {
-    const trimmed = data.length > 280 ? data.slice(0, 280) + "…" : data;
-    return <span className="text-[var(--om-text-1)]">&quot;{trimmed}&quot;</span>;
-  }
-  if (Array.isArray(data)) {
-    if (data.length === 0) return <span>[]</span>;
-    return (
-      <div
-        className={cn(
-          "space-y-0.5",
-          depth > 0 && "border-l border-[var(--om-divider-light)] pl-2",
-        )}
-      >
-        {data.map((item, i) => (
-          <div key={i} className="flex items-start gap-1">
-            <span className="shrink-0 select-none text-[var(--om-text-3)]">[{i}]</span>
-            <JsonCardView data={item} depth={depth + 1} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (typeof data === "object") {
-    const entries = Object.entries(data as Record<string, unknown>);
-    if (entries.length === 0) return <span>{"{}"}</span>;
-    return (
-      <div
-        className={cn(
-          "space-y-0.5",
-          depth > 0 && "border-l border-[var(--om-divider-light)] pl-2",
-        )}
-      >
-        {entries.map(([key, value]) => (
-          <div key={key} className="flex items-start gap-1">
-            <span className="shrink-0 select-none font-medium text-[var(--om-text-2)]">
-              {key}:
-            </span>
-            <JsonCardView data={value} depth={depth + 1} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return <span>{String(data)}</span>;
-}
-
 const ToolStep = memo(function ToolStep({
   step,
   isLive = false,
@@ -431,16 +526,9 @@ const ToolStep = memo(function ToolStep({
   const isTodoWrite = toolBaseName === "todo_write";
   // null = 跟随默认（todo 有清单则开）；用户点过 summary 后锁定
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
-  const [requestView, setRequestView] = useState<"json" | "card">("json");
-  const [responseView, setResponseView] = useState<"json" | "card">("json");
   // UI 统一大驼峰（WriteFile）；底层 id 仍为 snake_case
   const displayName = formatToolDisplayName(step.name);
-  const hasError =
-    !parseApprovalPending(step.result) &&
-    step.result &&
-    typeof step.result === "object" &&
-    step.result !== null &&
-    "error" in (step.result as Record<string, unknown>);
+  const hasError = isToolResultFailed(step.result);
 
   const targetMs = useMemo(() => sleepTargetMs(step.name, step.args), [step.name, step.args]);
   const showSleepTimer =
@@ -517,9 +605,13 @@ const ToolStep = memo(function ToolStep({
 
   // R18：JSON.stringify 仅在展开时计算（折叠时不浪费 CPU），且 memo 化避免重复 stringify
   const argsJson = useMemo(() => (open ? JSON.stringify(step.args, null, 2) : ""), [open, step.args]);
+  const resultForDisplay = useMemo(
+    () => (step.result !== undefined ? displayToolResult(step.result) : undefined),
+    [step.result],
+  );
   const resultJson = useMemo(
-    () => (open && step.result !== undefined && !todoItems ? JSON.stringify(step.result, null, 2) : ""),
-    [open, step.result, todoItems],
+    () => (open && resultForDisplay !== undefined && !todoItems ? JSON.stringify(resultForDisplay, null, 2) : ""),
+    [open, resultForDisplay, todoItems],
   );
   const resultImages = useMemo(
     () => (step.result !== undefined ? extractToolResultImages(step.result) : []),
@@ -570,7 +662,7 @@ const ToolStep = memo(function ToolStep({
       )}
     >
       <details open={open} className="group/tool" onToggle={(e) => setUserOpen(e.currentTarget.open)}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--om-text-2)]">
+        <summary className="flex h-9 cursor-pointer list-none items-center gap-2 overflow-hidden px-3 text-[11px] font-medium text-[var(--om-text-2)] [&::-webkit-details-marker]:hidden [&::marker]:hidden">
           <span
             className={cn(
               "h-2 w-2 shrink-0 rounded-full",
@@ -682,12 +774,13 @@ const ToolStep = memo(function ToolStep({
           {step.status === "done" && !isLive && !isTodoWrite && !waitingApproval && (
             <span
               className={cn(
-                "ml-auto text-[10px]",
+                "ml-auto min-w-0 truncate text-[10px]",
                 hasError ? "text-red-600" : "text-[var(--om-text-3)]",
               )}
               data-testid="tool-timing-hint"
+              title={formatToolResultHint(step.result) || step.hint || (hasError ? "失败" : "")}
             >
-              {step.hint || formatToolResultHint(step.result) || (hasError ? "失败" : "")}
+              {formatToolResultHint(step.result) || step.hint || (hasError ? "失败" : "")}
             </span>
           )}
           {sessionId && offload && (
@@ -759,7 +852,7 @@ const ToolStep = memo(function ToolStep({
                     <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--om-text-2)]">
                       <FileText className="h-3 w-3 shrink-0 text-[var(--om-text-3)]" />
                       <span className="min-w-0 flex-1 truncate font-medium">
-                        {offload.compacted ? "完整结果已落盘（上下文仅含元数据）" : "结果已落盘可追溯"}
+                        {offload.compacted ? "全文在文件里，对话只留摘要" : "结果已存文件"}
                         {offload.originalChars != null ? ` · ${offload.originalChars} 字` : ""}
                       </span>
                       <button
@@ -772,7 +865,7 @@ const ToolStep = memo(function ToolStep({
                         }}
                         className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)]"
                       >
-                        {showOriginal ? "收起原文" : "展开工件"}
+                        {showOriginal ? "收起全文" : "查看全文"}
                       </button>
                       {showOriginal && originalQuery.data?.content && (
                         <button
@@ -865,61 +958,19 @@ const ToolStep = memo(function ToolStep({
                     )}
                   </div>
                 )}
-                {/* Request */}
-                <div className="group/request overflow-hidden rounded-lg bg-[var(--om-bg-mute)]/50">
-                  <div className="flex items-center justify-between px-3 py-1.5">
-                    <span className="text-[10px] font-medium text-[var(--om-text-3)]">Request</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRequestView((v) => (v === "json" ? "card" : "json"));
-                      }}
-                      className="opacity-0 transition group-hover/request:opacity-100 text-[9px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
-                    >
-                      {requestView === "json" ? "卡片" : "JSON"}
-                    </button>
-                  </div>
-                  <div className="px-3 pb-2">
-                    {requestView === "json" ? (
-                      <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--om-text-3)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
-                        {argsJson}
-                      </pre>
-                    ) : (
-                      <div className="max-h-48 overflow-hidden text-[10px] text-[var(--om-text-2)] group-hover/request:max-h-96 group-hover/request:overflow-y-auto">
-                        <JsonCardView data={step.args} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Response */}
+                <JsonPayloadBlock
+                  label="Request"
+                  jsonText={argsJson}
+                  data={step.args}
+                  preClassName="text-[var(--om-text-3)]"
+                />
                 {step.result !== undefined && (
-                  <div className="group/response overflow-hidden rounded-lg bg-[var(--om-bg-mute)]/50">
-                    <div className="flex items-center justify-between px-3 py-1.5">
-                      <span className="text-[10px] font-medium text-[var(--om-text-3)]">Response</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setResponseView((v) => (v === "json" ? "card" : "json"));
-                        }}
-                        className="opacity-0 transition group-hover/response:opacity-100 text-[9px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
-                      >
-                        {responseView === "json" ? "卡片" : "JSON"}
-                      </button>
-                    </div>
-                    <div className="px-3 pb-2">
-                      {responseView === "json" ? (
-                        <pre className="max-h-48 overflow-hidden whitespace-pre-wrap text-[10px] text-[var(--om-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
-                          {resultJson}
-                        </pre>
-                      ) : (
-                        <div className="max-h-48 overflow-hidden text-[10px] text-[var(--om-text-2)] group-hover/response:max-h-96 group-hover/response:overflow-y-auto">
-                          <JsonCardView data={step.result} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <JsonPayloadBlock
+                    label="Response"
+                    jsonText={resultJson}
+                    data={resultForDisplay}
+                    preClassName="text-[var(--om-text-2)]"
+                  />
                 )}
               </>
             )}

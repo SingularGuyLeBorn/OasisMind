@@ -37,4 +37,60 @@ describe("toolResultMetadata", () => {
     expect(meta.hasError).toBe(true);
     expect(meta.shortFields.error).toBe("TIMEOUT");
   });
+
+  it("error 对象抽出 message；error:false / 成功 message 不是 hasError", () => {
+    const nested = buildToolResultMetadata(
+      { error: { message: "ENOENT: foo.md", code: "ENOENT" } },
+      { toolName: "read_file", originalChars: 40 },
+    );
+    expect(metaHasErrorAndMessage(nested, "ENOENT: foo.md")).toBe(true);
+
+    const notErr = buildToolResultMetadata(
+      { error: false, title: "ok", content: "x" },
+      { toolName: "x", originalChars: 20 },
+    );
+    expect(notErr.hasError).toBe(false);
+
+    const okMsg = buildToolResultMetadata(
+      { success: true, message: "Agent 被创建", total: 1 },
+      { toolName: "agent_create", originalChars: 40 },
+    );
+    expect(okMsg.hasError).toBe(false);
+
+    const failReason = buildToolResultMetadata(
+      { success: false, reason: "花园不存在" },
+      { toolName: "post_list", originalChars: 20 },
+    );
+    expect(failReason.hasError).toBe(true);
+    expect(failReason.shortFields.reason).toBe("花园不存在");
+  });
+
+  it("顶层数组写入 fieldSizes.items", () => {
+    const meta = buildToolResultMetadata([{ id: 1 }, { id: 2 }], {
+      toolName: "x",
+      originalChars: 10,
+    });
+    expect(meta.fieldSizes.items).toBe(2);
+  });
+
+  it("嵌套 data.total 抬到 shortFields.total", () => {
+    const meta = buildToolResultMetadata(
+      {
+        data: { total: 61, items: [{ id: "1" }, { id: "2" }] },
+      },
+      { toolName: "post_list", originalChars: 40 },
+    );
+    expect(meta.shortFields.total).toBe("61");
+    expect(meta.fieldSizes.items).toBe(2);
+  });
 });
+
+function metaHasErrorAndMessage(
+  meta: { hasError: boolean; shortFields: Record<string, string> },
+  msg: string,
+): boolean {
+  expect(meta.hasError).toBe(true);
+  expect(meta.shortFields.error).toBe(msg);
+  expect(meta.shortFields.error).not.toBe("{…}");
+  return true;
+}

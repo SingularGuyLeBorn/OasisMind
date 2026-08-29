@@ -3,6 +3,7 @@ import {
   formatToolErrorHint,
   formatToolResultHint,
   formatToolTimingHint,
+  isToolResultFailed,
   parseApprovalPending,
 } from "../toolResultHint.js";
 
@@ -68,7 +69,7 @@ describe("formatToolTimingHint", () => {
     ).toBe("待办 3项 · 1进行中 · 1完成");
   });
 
-  it("落盘压缩卡摘要为「已落盘」而非空白", () => {
+  it("压缩卡摘要是「全文已存」，零命中不展示", () => {
     expect(
       formatToolResultHint({
         offloaded: true,
@@ -76,14 +77,41 @@ describe("formatToolTimingHint", () => {
         originalChars: 12000,
         hitCount: 2,
       }),
-    ).toBe("已落盘 · 12000 字 · 2 命中");
+    ).toBe("全文已存 · 12000 字 · 2 处关键词");
+    expect(
+      formatToolResultHint({
+        offloaded: true,
+        path: "data/tool-results/s/c.json",
+        originalChars: 5642,
+        hitCount: 0,
+        metadata: { title: "自注意力机制" },
+      }),
+    ).toBe("全文已存 · 5642 字 · 自注意力机制");
+  });
+
+  it("未压缩的写盘注解不当成「已落盘」，列表结果走条数", () => {
     expect(
       formatToolResultHint({
         _om_persisted: true,
         _om_result_path: "data/tool-results/s/c.json",
         _om_original_chars: 80,
       }),
-    ).toBe("已落盘 · 80 字");
+    ).toBeNull();
+    expect(
+      formatToolResultHint({
+        _om_persisted: true,
+        _om_result_path: "data/tool-results/s/c.json",
+        _om_original_chars: 1904,
+        total: 61,
+        page: 1,
+        items: [{ id: "1" }],
+      }),
+    ).toBe("61 条");
+    expect(
+      formatToolResultHint({
+        items: [{ jobId: "j1", status: "completed" }],
+      }),
+    ).toBe("1 个任务");
   });
 
   it("read_article 摘要含平台、作者与方法", () => {
@@ -177,5 +205,73 @@ describe("formatToolTimingHint", () => {
     });
     expect(hint).toContain("等待");
     expect(hint).toMatch(/20s|20\.0s/);
+  });
+
+  it("grep / arxiv 形用全集条数；长文 count 不是条数", () => {
+    expect(formatToolResultHint({ pattern: "TODO", total: 8, results: [{}, {}] })).toContain("8 条");
+    expect(formatToolResultHint({ query: "mamba", count: 10, papers: new Array(10).fill({}) })).toContain(
+      "10 条",
+    );
+    expect(
+      formatToolResultHint({ count: 3842, content: "hello", title: "线性注意力机制" }) ?? "",
+    ).not.toContain("3842 条");
+  });
+
+  it("压缩失败卡给人看失败，不是全文已存；成功 message 不标失败", () => {
+    expect(
+      formatToolResultHint({
+        offloaded: true,
+        originalChars: 4000,
+        metadata: {
+          hasError: true,
+          shortFields: { error: "文件不存在: foo.md" },
+          fieldSizes: {},
+        },
+      }),
+    ).toBe("失败 · 文件不存在: foo.md");
+    expect(
+      isToolResultFailed({
+        offloaded: true,
+        metadata: { hasError: true, shortFields: { error: "文件不存在: foo.md" } },
+      }),
+    ).toBe(true);
+    expect(
+      isToolResultFailed({
+        offloaded: true,
+        originalChars: 5000,
+        metadata: { hasError: false, shortFields: { message: "Agent 被创建", total: "61" } },
+      }),
+    ).toBe(false);
+  });
+
+  it("压缩列表卡摘要带条数", () => {
+    expect(
+      formatToolResultHint({
+        offloaded: true,
+        originalChars: 9000,
+        hitCount: 0,
+        metadata: {
+          title: "ignored-if-we-prefer-count",
+          shortFields: { total: "61" },
+          fieldSizes: { items: 5 },
+        },
+      }),
+    ).toContain("61 条");
+  });
+
+  it("error:null 不当失败；空列表+total=0 是 0 条", () => {
+    expect(isToolResultFailed({ error: null, elapsedMs: 10 })).toBe(false);
+    expect(formatToolResultHint({ total: 0, items: [] })).toBe("0 条");
+    expect(
+      formatToolResultHint({
+        data: { total: 61, items: [{}, {}, {}, {}, {}] },
+      }),
+    ).toBe("61 条");
+  });
+
+  it("未压缩的对象 error / ok:false 也是失败摘要", () => {
+    expect(formatToolResultHint({ error: { message: "ENOENT: foo.md" } })).toContain("ENOENT: foo.md");
+    expect(isToolResultFailed({ error: { message: "ENOENT: foo.md" } })).toBe(true);
+    expect(formatToolResultHint({ ok: false, message: "权限不足" })).toBe("失败 · 权限不足");
   });
 });
