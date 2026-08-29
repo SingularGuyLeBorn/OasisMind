@@ -20,7 +20,8 @@
 | W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
 | W6 | done | `pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；scenarioTestMap 绿 | `3c55deb4` |
 | W7 | done | `pnpm test:evals` 12/12；`pnpm --filter @oasismind/mock-llm-core test` 141 passed；`pnpm --filter @oasismind/server test -- evalGoldenSync` 3 passed；`pnpm test:bench` 24/24 退出码 0 | `193a6350` |
-| W8 | done | `pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；web lint 退出码 0；扫描 0 条生产违规 | （本 W commit） |
+| W8 | done | `pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；web lint 退出码 0；扫描 0 条生产违规 | `24ddc990` |
+| W9 | done | server/web lint 0；scenarioTestMap/noVoidPromise 绿；W3/W4 点名 7 files 84 tests；旧测试路径 git ls-files 空。S7–S10 尚未 W10–W12，不能交十分卷 | （本 W commit） |
 | W7 | | | |
 | W8 | | | |
 | W9 | | | |
@@ -231,11 +232,13 @@
 
 ## W9 中段门禁
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：后面 W10–W13 还要改 e2e / vitest 配置；这里先锁结构改造没把已有测弄红。成功 = 旧路径不是测试文件、点名测绿、S1–S6 证据齐、S7–S10 仍为 0。
+- 改动文件：仅本报告。
+- 不改哪些面：不跑 server 全量（留给 W13）；不把 Goal 标完成。
+- [OM-FREEPLAY]：`pnpm test:evals` / `test:bench` / mock-llm-core 在 W7 同会话已退出码 0，本 W 未再全量重跑以省时间；W13 会再跑。
+- 验证：`git ls-files` 对 `asyncDeliveryQueueB1.test.ts` / `reentrantResume.test.ts` / `nativeTools.test.ts` 为空。`pnpm --filter @oasismind/server lint` 0；web lint 0（W8）。scenarioTestMap 3 passed；noVoidPromise 1；server 点名 7 files 84 passed。
+- S1–S6 证据能否暂打 1：能（INV/map/契约表/nativeTools 拆分/evals 诚实/real 降权）。S7–S10 必须仍为 0（W10–W12 未做）。分列保持待验收。
+- 遇到的问题：无。
 
 ## W10 推拉 PULL + 每日看板
 
