@@ -16,7 +16,7 @@ export type AgentStreamEvent =
   | { type: "tool_preparing"; round: number; tools: Array<{ toolCallId: string; name: string; argsChars: number }> }
   | { type: "tool_start"; toolCallId: string; name: string; args: unknown; round: number }
   | { type: "tool_end"; toolCallId: string; name: string; result: unknown; round: number; hint?: string }
-  | { type: "done"; sessionId: string; agentId: string; content: string; toolCalls: StoredToolCall[]; model: string; provider: string; roundsUsed: number; assistantMessageId?: string; versionIndex?: number; versionCount?: number; tokenUsage?: { prompt: number; completion: number; total: number } }
+   | { type: "done"; sessionId: string; agentId: string; content: string; toolCalls: StoredToolCall[]; model: string; provider: string; roundsUsed: number; assistantMessageId?: string; parentId?: string | null; versionIndex?: number; versionCount?: number; tokenUsage?: { prompt: number; completion: number; total: number } }
   | { type: "error"; message: string; sessionId?: string; suggestion?: string; retryable?: boolean }
   | { type: "async_delivery"; sessionId: string; jobId: string; status: "done" | "failed"; taskLabel: string }
   | { type: "async_job_update"; sessionId: string; jobId: string; status: "queued" | "running" | "done" | "cancelled" | "failed" | "interrupted"; taskLabel?: string; subagentSessionId?: string; stats?: { queued: number; runningGlobal: number; maxGlobal: number; maxPerSession: number; taskTimeoutMs: number } }
@@ -28,6 +28,7 @@ export type AgentStreamEvent =
   | { type: "compact_error"; message: string; fallback: "trim" | "none" | "contextReset"; generation: number }
   | { type: "session_rotated"; oldSessionId: string; newSessionId: string; newTitle: string; reason?: string; focusNewSession?: boolean; agentId?: string; mode?: "summary" | "firstMessage" }
   | { type: "session_run_started"; sessionId: string; reason: "hub_start" | "async_auto_consume" | "subagent_start"; jobId?: string; userMessageId?: string }
+  | { type: "session_run_settled"; sessionId: string }
   | { type: "cron_session_started"; agentId: string; sessionId: string; cronJobId: string; cronName: string; title?: string }
   | { type: "cron_job_updated"; agentId: string; cronJobId: string; cronName?: string; lastRunStatus?: string }
   | { type: "approval_updated"; approvalId: string; status?: string }
@@ -124,14 +125,19 @@ export interface PrepareResult {
   updateAssistantId?: string;
   attachments?: ChatAttachment[];
   userMessageMeta?: { skill?: { id: string; name: string; icon?: string | null } };
+  /**
+   * 本轮用户消息 id。助手落库必须钉在这颗节点，禁止猜当时的 activeLeafId。
+   * 另一标签换叶 / Goal revision 都会动叶；猜叶会把回复挂错枝。
+   */
+  anchorUserMessageId?: string;
+  /** false：本轮 user/assistant 落库不推进 activeLeafId（旁路投递） */
+  advanceLeaf?: boolean;
 }
 
 /**
- * 删除指定位置之后的所有消息（含 assistant 与后续 user/assistant），并推送 message_deleted SSE。
- * 重试/重新生成时复用：与编辑一致，删除尾部后重发该用户消息，避免后续消息残留导致状态混乱
- * （如「重试 A 却残留 B，新 assistant 插入后 B 重复」竞态）。
+ * 删除指定位置之后当前叶那一叉（truncateAfter），并推送 message_deleted SSE。
+ * 旁路兄弟枝保留。
  */
-/** 重试/编辑/重新生成：按树删 keep 的全部后代（单一入口 truncateAfter） */
 export async function deleteTailMessages(
   services: ServiceContainer,
   sessionId: string,

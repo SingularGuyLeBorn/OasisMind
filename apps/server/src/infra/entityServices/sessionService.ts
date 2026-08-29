@@ -105,11 +105,9 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
 
   protected override async afterCreate(entity: SessionEntity, input: CreateSessionInput): Promise<void> {
     await super.afterCreate(entity, input);
-    if (!entity.agentId) return;
-    const { notifyAgentUi } = await import("../uiStateNotify.js");
-    await notifyAgentUi(this.prisma, entity.agentId, {
-      type: "session_list_changed",
-      agentId: entity.agentId,
+    const { notifySessionListChanged } = await import("../uiStateNotify.js");
+    await notifySessionListChanged(this.prisma, {
+      agentId: entity.agentId ?? undefined,
       sessionId: entity.id,
       reason: "create",
     });
@@ -126,7 +124,6 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
   ): Promise<void> {
     await super.afterUpdate(entity, existing, input);
     const agentId = entity.agentId ?? existing?.agentId;
-    if (!agentId) return;
     const listAffecting =
       input.status !== undefined ||
       input.title !== undefined ||
@@ -138,10 +135,9 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
       input.rotatedFromSessionId !== undefined ||
       input.agentId !== undefined;
     if (!listAffecting) return;
-    const { notifyAgentUi } = await import("../uiStateNotify.js");
-    await notifyAgentUi(this.prisma, agentId, {
-      type: "session_list_changed",
-      agentId,
+    const { notifySessionListChanged } = await import("../uiStateNotify.js");
+    await notifySessionListChanged(this.prisma, {
+      agentId: agentId ?? undefined,
       sessionId: entity.id,
       reason: "update",
     });
@@ -149,12 +145,10 @@ export class SessionService extends BaseService<CreateSessionInput, UpdateSessio
 
   protected override async afterDelete(existing: any): Promise<void> {
     await super.afterDelete(existing);
-    if (!existing?.agentId) return;
-    const { notifyAgentUi } = await import("../uiStateNotify.js");
-    await notifyAgentUi(this.prisma, existing.agentId, {
-      type: "session_list_changed",
-      agentId: existing.agentId,
-      sessionId: existing.id,
+    const { notifySessionListChanged } = await import("../uiStateNotify.js");
+    await notifySessionListChanged(this.prisma, {
+      agentId: existing?.agentId ?? undefined,
+      sessionId: existing?.id,
       reason: "delete",
     });
   }

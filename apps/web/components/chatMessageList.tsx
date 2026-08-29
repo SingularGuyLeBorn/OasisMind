@@ -24,6 +24,7 @@ import {
   getUserMessageClientId,
   groupOwnsLiveStream,
   ownsLiveRender,
+  shouldRenderTrailingLive,
   type MessageGroup,
   type TimelineStep,
 } from "@/lib/chatMessageUtils";
@@ -143,6 +144,8 @@ export interface ChatMessageListProps {
   liveTimeline: TimelineStep[];
   streamingContent: string;
   isStreaming: boolean;
+  /** 服务端 hub 占线（含另一标签起流）：禁用另写 / 编辑，不靠本页 isStreaming */
+  hubOccupied?: boolean;
   /** SSE 已接通；RESTORE 幽灵 streaming（connected=false）不得盖住已落库回复 */
   streamConnected: boolean;
   streamTargetUserId: string | null;
@@ -186,6 +189,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   liveTimeline,
   streamingContent,
   isStreaming,
+  hubOccupied = false,
   streamConnected,
   streamTargetUserId,
   inFlightAssistantId,
@@ -330,7 +334,7 @@ export const ChatMessageList = memo(function ChatMessageList({
     const assistantId = group.assistantMessage.id;
     const isInterrupted = group.assistantMessage.finishReason === "aborted";
     const isEditingAssistant = editingMessageId === assistantId;
-    const editBusy = isStreaming || editSaving;
+    const editBusy = isStreaming || editSaving || hubOccupied;
 
     return (
       <div
@@ -473,7 +477,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   const renderMessageGroup = (group: MessageGroup, groupIdx: number) => {
     const isLastUser = groupIdx === lastGroupIndex;
     const isEditing = editingMessageId === group.userMessage.id;
-    const editBusy = isStreaming || editSaving;
+    const editBusy = isStreaming || editSaving || hubOccupied;
     const msgSource = (group.userMessage as { source?: string }).source ?? "user";
     const msgToolResults = (group.userMessage as { toolResults?: unknown }).toolResults;
     const subResult = (msgToolResults as {
@@ -693,8 +697,17 @@ export const ChatMessageList = memo(function ChatMessageList({
       timeline.some(
         (t) => t.kind === "group" && groupOwnsLiveStream(t.group, streamTargetUserId),
       );
-    // 无钉点 / 钉点尚未物化成组（仍只有乐观气泡）→ 尾部 live；钉点已归属某组则禁止尾部再挂一份
-    if (showLiveStream && !inFlightMaterialized && !targetOwnedByGroup) {
+    const targetOwnedByOptimistic =
+      !!streamTargetUserId && optimistic.some((m) => m.id === streamTargetUserId);
+    if (
+      shouldRenderTrailingLive({
+        showLiveStream,
+        inFlightMaterialized,
+        targetOwnedByGroup,
+        streamTargetUserId,
+        targetOwnedByOptimistic,
+      })
+    ) {
       items.push({ kind: "live", key: "live-trailing" });
     }
     return items;

@@ -23,7 +23,7 @@ import {
   clearChannelOutbound,
   shouldSkipChannelFallback,
 } from "./channelOutboundLedger.js";
-import { notifyAgentUi } from "./uiStateNotify.js";
+import { notifySessionListChanged } from "./uiStateNotify.js";
 import { IM_SLASH_HELP_TEXT, parseImSlashCommand } from "./imSlashCommands.js";
 
 /**
@@ -412,7 +412,11 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
     if (slash.type === "clear") {
       await deps.prisma.chatMessage.deleteMany({ where: { sessionId: binding.sessionId } });
       // 推拉铁律：session 内容变化后推列表变更，让 web 侧栏/打开的标签页实时刷新
-      await notifyAgentUi(deps.prisma, binding.agentId, { type: "session_list_changed" });
+      await notifySessionListChanged(deps.prisma, {
+        agentId: binding.agentId,
+        sessionId: binding.sessionId,
+        reason: "clear",
+      });
       await replyText("已清空当前会话上下文，继续聊吧。");
       return { ok: true, sessionId: binding.sessionId };
     }

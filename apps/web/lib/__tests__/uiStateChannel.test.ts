@@ -4,6 +4,7 @@ import {
   isCronAdminPushEvent,
   isCronJobPushEvent,
   postSessionListHint,
+  postUiState,
 } from "../uiStateChannel";
 
 describe("管理页 PUSH 事件门控", () => {
@@ -27,5 +28,9 @@ describe("管理页 PUSH 事件门控", () => {
 
   it("postSessionListHint 不抛", () => {
     expect(() => postSessionListHint("sess-1")).not.toThrow();
+  });
+
+  it("postUiState session_tree_updated 不抛", () => {
+    expect(() => postUiState({ type: "session_tree_updated", sessionId: "sess-tree" })).not.toThrow();
   });
 });

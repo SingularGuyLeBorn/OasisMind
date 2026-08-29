@@ -41,6 +41,7 @@ import {
   persistAssistantSuccess,
   persistDeliveryResumeFailure,
   persistUserMessage,
+  shouldPersistAbortedAssistant,
 } from "./persist.js";
 
 export { resolveChatMessageSource, type AgentStreamEvent } from "./prepareMessage.js";
@@ -221,6 +222,22 @@ export async function chatAgentStream(
   const partial = { content: "", toolCalls: [] as StoredToolCall[] };
   let prepared: PrepareResult | undefined;
   let pendingAssistantId: string | undefined;
+  /** Goal revision/switch：换叶后推迟到助手落库再 PUSH，避免另一标签水合把正在流的助手冲掉。 */
+  let skipOuterContinue = false;
+
+  const notifyIntentForkTree = async () => {
+    if (!skipOuterContinue || !sessionId) return;
+    try {
+      const leaf = await services.prisma.chatSession.findUnique({
+        where: { id: sessionId },
+        select: { activeLeafId: true },
+      });
+      const { notifySessionTreeUpdated } = await import("../uiStateNotify.js");
+      notifySessionTreeUpdated(sessionId, leaf?.activeLeafId ?? null);
+    } catch (err) {
+      console.warn("[agentStream] revision/switch 后推 session_tree_updated 失败", err);
+    }
+  };
 
   try {
     assertLlmBudget(config);
@@ -252,7 +269,6 @@ export async function chatAgentStream(
       console.warn("[agentStream] autoNameSession failed:", err);
     });
 
-    let skipOuterContinue = false;
     if (resolveChatMessageSource(input.source) === "user") {
       try {
         const { applyIntentFromUserText, classifyIntentByRules } = await import("../intentContract.js");
@@ -273,7 +289,10 @@ export async function chatAgentStream(
       services, config, sessionId, input, prepared,
       skillMeta: skillResolved.meta, agentId: agent.id, effectiveModel, emit,
     });
-    if (userPersist.earlyDone) return;
+    if (userPersist.earlyDone) {
+      await notifyIntentForkTree();
+      return;
+    }
 
     const sessionMeta = await services.session.getByIdLite(sessionId);
     const historyItems = await services.message.listForLlmContext({
@@ -345,7 +364,15 @@ export async function chatAgentStream(
         abortCode === "user" ||
         abortCode === "session_stop" ||
         abortCode === "cancel";
-      if (sessionId && (partial.content.trim() || partial.toolCalls.length > 0 || result.content?.trim())) {
+      if (
+        sessionId &&
+        shouldPersistAbortedAssistant({
+          isUserSoftStop,
+          partialContent: partial.content,
+          partialToolCalls: partial.toolCalls,
+          resultContent: result.content,
+        })
+      ) {
         await persistAbortedAssistant({
           services,
           sessionId,
@@ -367,6 +394,7 @@ export async function chatAgentStream(
           ? { suggestion: "本轮已停止；直接发送下一条消息即可继续。" }
           : {}),
       });
+      await notifyIntentForkTree();
       return;
     }
 
@@ -374,6 +402,7 @@ export async function chatAgentStream(
       services, sessionId, prepared, pendingAssistantId,
       historyItems, result, effectiveModel,
     });
+    await notifyIntentForkTree();
 
     import("../agentEvolution.js")
       .then(async ({ accumulateExperience, isRunSuccess }) => {
@@ -436,6 +465,7 @@ export async function chatAgentStream(
       provider: result.provider,
       roundsUsed: result.roundsUsed,
       assistantMessageId: persisted.assistantMessageId,
+      parentId: persisted.parentId,
       versionIndex: persisted.versionIndex,
       versionCount: persisted.versionCount,
       tokenUsage: result.tokenUsage,
@@ -450,7 +480,15 @@ export async function chatAgentStream(
       rawMessage.includes("用户中断") ||
       rawMessage.includes("流式输出已被用户中断");
 
-    if (isAbort && sessionId && (partial.content.trim() || partial.toolCalls.length > 0)) {
+    if (
+      isAbort &&
+      sessionId &&
+      shouldPersistAbortedAssistant({
+        isUserSoftStop,
+        partialContent: partial.content,
+        partialToolCalls: partial.toolCalls,
+      })
+    ) {
       try {
         await persistAbortedAssistant({
           services, sessionId, prepared, pendingAssistantId,
@@ -497,6 +535,7 @@ export async function chatAgentStream(
           ? "本轮已停止；直接发送下一条消息即可继续。"
           : llm.suggestion,
     });
+    await notifyIntentForkTree();
   }
 }
 

@@ -37,7 +37,7 @@ import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import type { ImChannel } from "./messageGateway.js";
 import { DEFAULT_LLM_MODEL, TIER_DEFAULT_TOOLS } from "@oasismind/shared";
-import { notifyAgentUi } from "./uiStateNotify.js";
+import { notifySessionListChanged } from "./uiStateNotify.js";
 
 const DAILY_FRAGMENTS_SOURCE = "onebot-daily-fragments";
 const DAILY_FRAGMENTS_AGENT_NAME = "每日碎片整理员";
@@ -333,7 +333,11 @@ export async function resolveOrCreateChannelBinding(
     },
   });
   // 新 IM session 首次创建，推侧栏刷新让 web 实时可见
-  await notifyAgentUi(prisma, resolved.id, { type: "session_list_changed" });
+  await notifySessionListChanged(prisma, {
+    agentId: resolved.id,
+    sessionId: dedicated.id,
+    reason: "create",
+  });
   return { ...created, chatId: created.chatId || null } as ChannelBindingRow;
 }
 

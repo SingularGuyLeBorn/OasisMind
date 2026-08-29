@@ -357,6 +357,7 @@ function SessionRow({
       <button
         type="button"
         data-testid={dataTestId}
+        data-session-id={session.id}
         onClick={onSelect}
         onMouseEnter={onHover}
         onMouseLeave={onHoverEnd}

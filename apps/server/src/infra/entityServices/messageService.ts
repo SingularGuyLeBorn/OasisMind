@@ -8,7 +8,7 @@ import type {
   ListMessagesInput,
   OperationResult,
 } from "@oasismind/shared";
-import { BaseService, ServiceValidationError, failureFromPrismaUnique } from "../../services.js";
+import { BaseService, ServiceValidationError, failureFromPrismaUnique, isPrismaRecordNotFound } from "../../services.js";
 import { success, failureFromError } from "../../trpc/result.js";
 import { deleteFtsRow } from "../ftsIndex.js";
 
@@ -87,18 +87,23 @@ export class MessageService extends BaseService<CreateMessageInput, UpdateMessag
     try {
       await this.validateCreate(input);
       const { appendChatMessage } = await import("../chatTree.js");
-      const raw = await appendChatMessage(this.prisma, {
-        id: input.id,
-        sessionId: input.sessionId,
-        role: input.role,
-        content: input.content,
-        attachments: input.attachments,
-        toolCalls: input.toolCalls,
-        toolResults: input.toolResults,
-        tokenUsage: input.tokenUsage,
-        finishReason: input.finishReason,
-        source: input.source,
-      });
+      const raw = await appendChatMessage(
+        this.prisma,
+        {
+          id: input.id,
+          sessionId: input.sessionId,
+          role: input.role,
+          content: input.content,
+          attachments: input.attachments,
+          toolCalls: input.toolCalls,
+          toolResults: input.toolResults,
+          tokenUsage: input.tokenUsage,
+          finishReason: input.finishReason,
+          source: input.source,
+          ...(input.parentId ? { parentId: input.parentId } : {}),
+        },
+        { advanceLeaf: input.advanceLeaf !== false },
+      );
       const entity = this.formatEntity(raw);
       await this.afterCreate(entity, input);
       return success({
@@ -194,6 +199,9 @@ export class MessageService extends BaseService<CreateMessageInput, UpdateMessag
       });
     } catch (error) {
       if (error instanceof ServiceValidationError) return error.result;
+      if (isPrismaRecordNotFound(error)) {
+        return this.buildNotFoundFailure("删除", id, Date.now() - start);
+      }
       return failureFromError(error, "delete", this.entityName, `${this.entityName.toUpperCase()}_DELETE_FAILED`);
     }
   }

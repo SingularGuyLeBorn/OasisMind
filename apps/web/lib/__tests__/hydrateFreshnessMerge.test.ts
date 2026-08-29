@@ -86,4 +86,153 @@ describe("E5 hydrate 新鲜度合并", () => {
     );
     expect(sessionMessagesStore.getMessages(SID)).toBe(before);
   });
+
+  it("active_path 换叶：快照外旁路丢掉，同 id 仍取新鲜", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问" }),
+        msg({ id: "a1", content: "原答" }),
+      ],
+      "view",
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问" }),
+        msg({ id: "sum", role: "system", kind: "branch_summary", content: "【Mock 旁路摘要】" }),
+      ],
+      "active_path",
+    );
+    const list = sessionMessagesStore.getMessages(SID);
+    expect(list.map((m) => m.id)).toEqual(["u1", "sum"]);
+    expect(list.some((m) => m.id === "a1")).toBe(false);
+  });
+
+  it("active_path 空快照不得清空已有路径", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问" }),
+        msg({ id: "a1", content: "原答" }),
+      ],
+      "view",
+    );
+    sessionMessagesStore.hydrateSessionMessages(SID, [], "active_path");
+    expect(sessionMessagesStore.getMessages(SID).map((m) => m.id)).toEqual(["u1", "a1"]);
+  });
+
+  it("换叶后陈旧 view 不得把旁路加回来", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") }),
+        msg({ id: "a1", content: "原答", createdAt: new Date("2026-01-01T00:00:01Z") }),
+      ],
+      "view",
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") }),
+        msg({
+          id: "sum",
+          role: "system",
+          kind: "branch_summary",
+          content: "【Mock 旁路摘要】",
+          createdAt: new Date("2026-01-01T00:00:02Z"),
+        }),
+      ],
+      "active_path",
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") }),
+        msg({ id: "a1", content: "原答", createdAt: new Date("2026-01-01T00:00:01Z") }),
+      ],
+      "view",
+    );
+    expect(sessionMessagesStore.getMessages(SID).map((m) => m.id)).toEqual(["u1", "sum"]);
+  });
+
+  it("换叶丢掉的旁路不影响 SSE 后到的新消息", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") }),
+        msg({ id: "a1", content: "原答", createdAt: new Date("2026-01-01T00:00:01Z") }),
+      ],
+      "view",
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") })],
+      "active_path",
+    );
+    sessionMessagesStore.upsertMessage(
+      SID,
+      msg({ id: "u2", role: "user", content: "另写", createdAt: new Date("2026-01-01T00:00:03Z") }),
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [msg({ id: "u1", role: "user", content: "问", createdAt: new Date("2026-01-01T00:00:00Z") })],
+      "view",
+    );
+    expect(sessionMessagesStore.getMessages(SID).map((m) => m.id)).toEqual(["u1", "u2"]);
+  });
+
+  it("active_path Goal 换叶：保留问候助手 + 新用户气泡，丢掉被放弃追问", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "你好" }),
+        msg({ id: "a1", content: "你好！我是 Mock LLM，正在为你服务。" }),
+        msg({ id: "u2", role: "user", content: "你好，请简短回复" }),
+        msg({ id: "a2", content: "你好！我是 Mock LLM，正在为你服务。" }),
+      ],
+      "view",
+    );
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u1", role: "user", content: "你好" }),
+        msg({ id: "a1", content: "你好！我是 Mock LLM，正在为你服务。" }),
+        msg({
+          id: "sum",
+          role: "system",
+          kind: "branch_summary",
+          content: "[om-branch-summary]\n【Mock 旁路摘要】",
+        }),
+        msg({ id: "u3", role: "user", content: "另外做一个周报" }),
+      ],
+      "active_path",
+    );
+    const list = sessionMessagesStore.getMessages(SID);
+    expect(list.map((m) => m.id)).toEqual(["u1", "a1", "sum", "u3"]);
+    expect(list.some((m) => m.id === "u2")).toBe(false);
+    expect(list.find((m) => m.id === "a1")?.content).toContain("Mock LLM");
+  });
+
+  it("SSE upsert 父不在当前路径：不混进正在看的叶", () => {
+    sessionMessagesStore.hydrateSessionMessages(
+      SID,
+      [
+        msg({ id: "u-search", role: "user", content: "搜索", parentId: null }),
+        msg({ id: "a-search", content: "搜索答", parentId: "u-search" }),
+      ],
+      "active_path",
+    );
+    sessionMessagesStore.upsertMessage(
+      SID,
+      msg({
+        id: "u-spawn-result",
+        role: "user",
+        content: "非阻塞子结果已送达",
+        parentId: "a-spawn",
+        createdAt: new Date("2026-01-01T00:00:04Z"),
+      }),
+    );
+    expect(sessionMessagesStore.getMessages(SID).map((m) => m.id)).toEqual(["u-search", "a-search"]);
+  });
 });

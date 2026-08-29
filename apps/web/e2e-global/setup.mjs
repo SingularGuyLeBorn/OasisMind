@@ -134,6 +134,20 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * 子进程不要继承开发者壳里残留的强制场景 / 错误注入。
+ * 不删 MOCK_LLM、MOCK_LLM_URL、MOCK_LLM_PORT、MOCK_LLM_LOG、MOCK_LLM_REQUEST_ID、MOCK_MCP、MOCK_NATIVE_TOOLS。
+ */
+function stripMockInjectionEnv(env) {
+  // [OM-FREEPLAY] 给刻意测注入的人留口，默认隔离。
+  if (process.env.E2E_KEEP_MOCK_INJECTION === "1") return env;
+  delete env.MOCK_LLM_SCENARIO;
+  delete env.MOCK_LLM_FAIL;
+  delete env.MOCK_LLM_DELAY_MS;
+  delete env.MOCK_LLM_STREAM_BREAK;
+  return env;
+}
+
 function killPidFileProcesses() {
   try {
     if (!fs.existsSync(PID_FILE)) return;
@@ -387,6 +401,7 @@ function spawnServer(serverPort) {
   if (process.env.MOCK_LLM === "true") {
     serverEnv.MOCK_LLM_LOG = path.join(TEST_DATA_DIR, "mock-llm.log");
   }
+  stripMockInjectionEnv(serverEnv);
 
   const proc = spawn(process.execPath, [tsxCli, "src/index.ts"], {
     cwd: serverDir,
@@ -415,11 +430,11 @@ function spawnMockLlm(port) {
   }
   const proc = spawn(process.execPath, [cli, "src/index.ts"], {
     cwd: mockLlmDir,
-    env: {
+    env: stripMockInjectionEnv({
       ...process.env,
       MOCK_LLM_PORT: String(port),
       MOCK_LLM_LOG: path.join(TEST_DATA_DIR, "mock-llm.log"),
-    },
+    }),
     stdio: "pipe",
     windowsHide: true,
   });
@@ -564,6 +579,31 @@ export default async function globalSetup() {
     process.env.MOCK_LLM_URL = process.env.MOCK_LLM_URL || `http://127.0.0.1:${mockLlmPort}/v1`;
     mockLlmProc = spawnMockLlm(mockLlmPort);
     await waitForUrl(`http://127.0.0.1:${mockLlmPort}/health`, 30_000);
+    const mockHealthUrl = `http://127.0.0.1:${mockLlmPort}/health`;
+    try {
+      const healthRes = await fetch(mockHealthUrl);
+      const health = JSON.parse(await healthRes.text());
+      if (health.status !== "ok" || health.service !== "mock-llm") {
+        throw new Error(
+          `[e2e globalSetup] ${mockHealthUrl} 不是 mock-llm（避免端口上是别的 200 服务）: ${JSON.stringify(health)}`,
+        );
+      }
+    } catch (err) {
+      throw new Error(
+        `[e2e globalSetup] 校验 mock-llm /health 失败: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+    try {
+      const resetRes = await fetch(`http://127.0.0.1:${mockLlmPort}/debug/reset`, { method: "POST" });
+      await resetRes.text();
+      if (!resetRes.ok) {
+        console.warn(`[e2e globalSetup] mock-llm /debug/reset HTTP ${resetRes.status}，hits 环可能未清空`);
+      }
+    } catch (err) {
+      console.warn(
+        `[e2e globalSetup] mock-llm /debug/reset 失败（不阻断 E2E）: ${err instanceof Error ? err.message : err}`,
+      );
+    }
     console.log(`[e2e globalSetup] mock-llm=http://127.0.0.1:${mockLlmPort}/v1 已就绪`);
   }
 

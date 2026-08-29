@@ -5,10 +5,11 @@
  * 推：session_tree_updated；拉：session.tree。
  */
 
+import { useState } from "react";
 import { GitFork } from "lucide-react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
-import { countBranches, listBranchChildren } from "@/lib/chatTreeUi";
-import { sessionMessagesStore } from "@/lib/useSessionMessages";
+import { countBranches, isAncestorOfLeaf, listBranchChildren, subtreeTipId } from "@/lib/chatTreeUi";
+import { hydrateAfterSessionTreeChange } from "@/lib/sessionTreeHydrate";
 
 export function ChatSessionTreeBar({
   sessionId,
@@ -18,26 +19,25 @@ export function ChatSessionTreeBar({
   disabled?: boolean;
 }) {
   const utils = trpc.useUtils();
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const treeQ = trpc.session.tree.useQuery(
     { sessionId: sessionId! },
     { enabled: !!sessionId, staleTime: 5_000, refetchOnWindowFocus: true },
   );
+  const runningQ = trpc.session.listRunning.useQuery(undefined, {
+    enabled: !!sessionId,
+    refetchOnWindowFocus: true,
+  });
+  const hubOccupied =
+    !!sessionId && (runningQ.data?.items ?? []).some((item) => item.sessionId === sessionId);
   const switchMut = trpc.session.switchBranch.useMutation({
     onSuccess: () => {
       if (!sessionId) return;
-      const log = catchUnlessCancelled("tree.switch");
-      utils.session.tree.invalidate({ sessionId }).catch(log);
-      utils.session.inspectTurn.invalidate({ sessionId }).catch(log);
-      utils.message.listForChat
-        .fetch({ sessionId, limit: 50 })
-        .then((page) => {
-          sessionMessagesStore.hydrateSessionMessages(
-            sessionId,
-            (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
-            "view",
-          );
-        })
-        .catch(log);
+      setSwitchError(null);
+      hydrateAfterSessionTreeChange(utils, sessionId, catchUnlessCancelled("tree.switch"));
+    },
+    onError: () => {
+      setSwitchError("换叶失败");
     },
   });
 
@@ -76,12 +76,16 @@ export function ChatSessionTreeBar({
                 <button
                   key={k.id}
                   type="button"
-                  disabled={disabled || switchMut.isPending}
+                  disabled={disabled || hubOccupied || switchMut.isPending || active}
+                  aria-pressed={active}
                   data-testid="chat-tree-branch-btn"
                   data-active={active ? "true" : "false"}
                   title={k.preview}
                   onClick={() => {
-                    switchMut.mutate({ sessionId, messageId: k.id });
+                    if (active) return;
+                    setSwitchError(null);
+                    const tip = subtreeTipId(tree.children, k.id, tree.nodes);
+                    switchMut.mutate({ sessionId, messageId: tip });
                   }}
                   className={
                     active
@@ -96,22 +100,11 @@ export function ChatSessionTreeBar({
           </span>
         );
       })}
+      {switchError ? (
+        <span data-testid="chat-tree-switch-error" className="text-red-600">
+          {switchError}
+        </span>
+      ) : null}
     </div>
   );
-}
-
-function isAncestorOfLeaf(
-  tree: { activeLeafId: string | null; nodes: Array<{ id: string; parentId: string | null }> },
-  nodeId: string,
-): boolean {
-  if (!tree.activeLeafId) return false;
-  const byId = new Map(tree.nodes.map((n) => [n.id, n]));
-  let cur: string | null = tree.activeLeafId;
-  const seen = new Set<string>();
-  while (cur && !seen.has(cur)) {
-    if (cur === nodeId) return true;
-    seen.add(cur);
-    cur = byId.get(cur)?.parentId ?? null;
-  }
-  return false;
 }

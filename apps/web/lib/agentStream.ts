@@ -53,6 +53,7 @@ export interface AgentStreamDone {
   versionIndex?: number;
   versionCount?: number;
   tokenUsage?: { prompt: number; completion: number; total: number };
+  parentId?: string | null;
 }
 
 export interface AgentStreamCallbacks {

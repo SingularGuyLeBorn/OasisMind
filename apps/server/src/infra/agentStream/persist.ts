@@ -27,6 +27,7 @@ type DoneEmit = (event: {
   provider: string;
   roundsUsed: number;
   assistantMessageId?: string;
+  parentId?: string | null;
   versionIndex?: number;
   versionCount?: number;
 }) => void;
@@ -104,6 +105,7 @@ export async function persistUserMessage(opts: {
   emit: DoneEmit;
 }): Promise<{ earlyDone: boolean }> {
   const { services, sessionId, input, prepared } = opts;
+  if (input.advanceLeaf === false) prepared.advanceLeaf = false;
   if (!prepared.skipUserCreate) {
     const src = resolveChatMessageSource(input.source);
     // 上级任务 / 系统恢复消息：若已存在同内容 user 消息，禁止再写第二条气泡。
@@ -174,9 +176,12 @@ export async function persistUserMessage(opts: {
             ? { clientMessageId: input.clientMessageId }
             : undefined),
       source: resolveChatMessageSource(input.source),
+      ...(input.parentMessageId ? { parentId: input.parentMessageId } : {}),
+      ...(prepared.advanceLeaf === false ? { advanceLeaf: false } : {}),
     });
     const userMessageId = createdUser.success ? createdUser.data?.id : undefined;
     if (userMessageId) {
+      prepared.anchorUserMessageId = userMessageId;
       getStreamHub()?.pushExternalEvent(sessionId, {
         type: "session_run_started",
         sessionId,
@@ -185,7 +190,22 @@ export async function persistUserMessage(opts: {
       });
     }
   }
+  await pinTurnUserAnchor(services, sessionId, prepared);
   return { earlyDone: false };
+}
+
+/** 助手必须挂本轮 user：create 失败或 skipUserCreate（重试）时用当前叶（应已是该 user）。 */
+async function pinTurnUserAnchor(
+  services: ServiceContainer,
+  sessionId: string,
+  prepared: PrepareResult,
+): Promise<void> {
+  if (prepared.anchorUserMessageId) return;
+  const row = await services.prisma.chatSession.findUnique({
+    where: { id: sessionId },
+    select: { activeLeafId: true },
+  });
+  if (row?.activeLeafId) prepared.anchorUserMessageId = row.activeLeafId;
 }
 
 export async function persistAssistantSuccess(opts: {
@@ -202,7 +222,7 @@ export async function persistAssistantSuccess(opts: {
     runId?: string;
   };
   effectiveModel: string;
-}): Promise<{ assistantMessageId: string | undefined; versionIndex: number; versionCount: number }> {
+}): Promise<{ assistantMessageId: string | undefined; versionIndex: number; versionCount: number; parentId: string | null }> {
   const { services, sessionId, prepared, result, effectiveModel } = opts;
   let assistantMessageId: string | undefined;
   let versionIndex = 0;
@@ -239,7 +259,9 @@ export async function persistAssistantSuccess(opts: {
       const initial = buildInitialVersionMeta(result.content, result.toolCalls);
       persistedToolResults = initial.toolResults;
       const { appendChatMessage } = await import("../chatTree.js");
-      const created = await appendChatMessage(tx, {
+      const created = await appendChatMessage(
+        tx,
+        {
         id: opts.pendingAssistantId,
         sessionId,
         role: "assistant",
@@ -249,7 +271,10 @@ export async function persistAssistantSuccess(opts: {
         tokenUsage: result.tokenUsage
           ? { ...result.tokenUsage, model: result.model || effectiveModel }
           : undefined,
-      });
+        ...(prepared.anchorUserMessageId ? { parentId: prepared.anchorUserMessageId } : {}),
+        },
+        { advanceLeaf: prepared.advanceLeaf !== false },
+      );
       assistantMessageId = created.id;
       createdParentId = created.parentId ?? null;
       persistedCreatedAt =
@@ -311,7 +336,25 @@ export async function persistAssistantSuccess(opts: {
     /* StreamHub 未初始化，忽略 */
   }
 
-  return { assistantMessageId, versionIndex, versionCount };
+  return { assistantMessageId, versionIndex, versionCount, parentId: createdParentId };
+}
+
+/**
+ * 用户点停：即使还没吐出第一个 token，也必须落 aborted 气泡。
+ * 否则界面没有「已停止生成」，用户会以为停没停到。
+ */
+export function shouldPersistAbortedAssistant(opts: {
+  isUserSoftStop: boolean;
+  partialContent: string;
+  partialToolCalls: ReadonlyArray<unknown>;
+  resultContent?: string;
+}): boolean {
+  if (opts.isUserSoftStop) return true;
+  return Boolean(
+    opts.partialContent.trim() ||
+      opts.partialToolCalls.length > 0 ||
+      opts.resultContent?.trim(),
+  );
 }
 
 export async function persistAbortedAssistant(opts: {
@@ -350,6 +393,8 @@ export async function persistAbortedAssistant(opts: {
       toolCalls: partialToolCalls,
       toolResults: initial.toolResults,
       finishReason: "aborted",
+      ...(prepared?.anchorUserMessageId ? { parentId: prepared.anchorUserMessageId } : {}),
+      ...(prepared?.advanceLeaf === false ? { advanceLeaf: false } : {}),
     });
   }
 }
@@ -368,15 +413,12 @@ export async function markSessionActiveAfterUserStop(
       where: { id: sessionId },
       select: { agentId: true },
     });
-    if (row?.agentId) {
-      const { notifyAgentUi } = await import("../uiStateNotify.js");
-      await notifyAgentUi(services.prisma, row.agentId, {
-        type: "session_list_changed",
-        agentId: row.agentId,
-        sessionId,
-        reason: "update",
-      });
-    }
+    const { notifySessionListChanged } = await import("../uiStateNotify.js");
+    await notifySessionListChanged(services.prisma, {
+      agentId: row?.agentId ?? undefined,
+      sessionId,
+      reason: "update",
+    });
   } catch (activeErr) {
     console.warn("[chatAgentStream] 停止后标 active 失败:", activeErr);
   }

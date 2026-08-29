@@ -3,8 +3,9 @@
  */
 
 import type { ChatMessage } from "@oasismind/shared";
-import { formatToolResultHint, formatToolTimingHint, parseApprovalPending } from "@oasismind/shared";
+import { formatToolResultHint, formatToolTimingHint, isToolResultFailed, parseApprovalPending } from "@oasismind/shared";
 import { isCompactBoundaryMessage } from "@/lib/compactMarkers";
+import { isBranchSummaryMessage } from "@/lib/chatTreeUi";
 
 export type ToolCallRecord = {
   id: string;
@@ -85,6 +86,7 @@ export function buildMessageGroups(messages: ChatMessage[]): MessageGroup[] {
   for (const msg of messages) {
     // 压缩边界不挂到上一轮 assistant，避免盖住真实回复
     if (isCompactBoundaryMessage(msg)) continue;
+    if (isBranchSummaryMessage(msg)) continue;
     if (msg.role === "user") {
       const skill = parseUserSkill(msg.toolResults);
       groups.push({
@@ -110,19 +112,51 @@ export type ChatTimelineItem =
   | { kind: "group"; group: MessageGroup }
   | { kind: "compact"; message: ChatMessage };
 
+function isTimelineCompactMessage(msg: ChatMessage): boolean {
+  return isCompactBoundaryMessage(msg) || isBranchSummaryMessage(msg);
+}
+
+function attachOrphanAssistant(items: ChatTimelineItem[], msg: ChatMessage): void {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const t = items[i];
+    if (t?.kind === "group") {
+      attachAssistantToGroup(t.group, msg);
+      return;
+    }
+  }
+}
+
+/**
+ * 旁路摘要 / 压缩边界单独成卡，但不得把「用户 ↔ 助手」拆断。
+ * 换叶后摘要挂在分叉点、createdAt 早于重试/重生的新助手：若在摘要处冲掉未完成的组，
+ * 新助手变成孤儿，主栏只剩用户气泡 + 摘要卡（树条却能看到新叶）。
+ */
 export function buildChatTimeline(messages: ChatMessage[]): ChatTimelineItem[] {
   const items: ChatTimelineItem[] = [];
   let current: MessageGroup | null = null;
+  const pendingCompacts: ChatMessage[] = [];
+
+  const emitPendingCompacts = () => {
+    for (const compact of pendingCompacts) {
+      items.push({ kind: "compact", message: compact });
+    }
+    pendingCompacts.length = 0;
+  };
 
   const flush = () => {
     if (current) {
       items.push({ kind: "group", group: current });
       current = null;
     }
+    emitPendingCompacts();
   };
 
   for (const msg of messages) {
-    if (isCompactBoundaryMessage(msg)) {
+    if (isTimelineCompactMessage(msg)) {
+      if (current && !current.assistantMessage) {
+        pendingCompacts.push(msg);
+        continue;
+      }
       flush();
       items.push({ kind: "compact", message: msg });
       continue;
@@ -141,8 +175,12 @@ export function buildChatTimeline(messages: ChatMessage[]): ChatTimelineItem[] {
       };
       continue;
     }
-    if (msg.role === "assistant" && current) {
-      attachAssistantToGroup(current, msg);
+    if (msg.role === "assistant") {
+      if (current) {
+        attachAssistantToGroup(current, msg);
+      } else {
+        attachOrphanAssistant(items, msg);
+      }
     }
   }
   flush();
@@ -199,6 +237,19 @@ export function ownsLiveRender(opts: {
   return asTarget || asInFlight;
 }
 
+/** 尾部 live：无钉点或钉点已在乐观气泡上才挂；钉点在旁路禁止盖住正在看的枝 */
+export function shouldRenderTrailingLive(opts: {
+  showLiveStream: boolean;
+  inFlightMaterialized: boolean;
+  targetOwnedByGroup: boolean;
+  streamTargetUserId: string | null;
+  targetOwnedByOptimistic?: boolean;
+}): boolean {
+  if (!opts.showLiveStream || opts.inFlightMaterialized || opts.targetOwnedByGroup) return false;
+  if (opts.streamTargetUserId && !opts.targetOwnedByOptimistic) return false;
+  return true;
+}
+
 export type TimelineStep =
   | { type: "thinking"; content: string; round: number }
   | { type: "content"; content: string; round: number }
@@ -225,7 +276,7 @@ export type TimelineStep =
       status: "queued" | "running" | "done" | "failed";
     };
 
-export { formatToolResultHint, formatToolTimingHint, parseApprovalPending };
+export { formatToolResultHint, formatToolTimingHint, isToolResultFailed, parseApprovalPending };
 
 export function buildTimelineFromStored(toolCalls?: ToolCallRecord[]): TimelineStep[] {
   if (!toolCalls?.length) return [];

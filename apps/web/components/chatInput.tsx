@@ -257,7 +257,10 @@ export const ChatInputArea = memo(function ChatInputArea({
   const [historyIdx, setHistoryIdx] = useState(-1); // -1 = 不在浏览历史模式
   const [draftBackup, setDraftBackup] = useState(""); // 浏览历史前的草稿备份
 
-  // UX #6：切会话聚焦 + 清空草稿（原靠 key remount，现 pane 稳定挂载需显式重置）
+  // UX #6：切会话聚焦 + 清空草稿（原靠 key remount，现 pane 稳定挂载需显式重置）。
+  // 只跟 sessionId：resetAttachments 进 deps 会在换叶/水合重渲染时把未发送草稿清掉。
+  const resetAttachmentsRef = useRef(resetAttachments);
+  resetAttachmentsRef.current = resetAttachments;
   useEffect(() => {
     setInput("");
     setSkillOpen(false);
@@ -265,13 +268,13 @@ export const ChatInputArea = memo(function ChatInputArea({
     setMentionOpen(false);
     setMentionQuery("");
     setHighlightIdx(0);
-    resetAttachments();
+    resetAttachmentsRef.current();
     setHistoryIdx(-1);
     setDeepResearchEnabled(false);
     queueEditDraftBackupRef.current = null;
     queueEditActiveIdRef.current = null;
     textareaRef.current?.focus();
-  }, [sessionId, resetAttachments]);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!canStartDeepResearch) setDeepResearchEnabled(false);

@@ -1,7 +1,7 @@
 "use client";
 import { catchUnlessCancelled } from "@/lib/trpc";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   FileText,
   Image as ImageIcon,
@@ -15,10 +15,10 @@ import {
   FileCode,
   Files,
 } from "lucide-react";
-import { trpc } from "../lib/trpc";
 import type { ChatMessage, ChatImageAttachment } from "@oasismind/shared";
 import { PostContent } from "./post/PostContent";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
+import { sessionMessagesStore } from "@/lib/useSessionMessages";
 
 /** 从消息里提取的文件项 */
 type ExtractedFile = {
@@ -260,27 +260,27 @@ export function ChatFilesPanel({
   onClose: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const query = trpc.message.listForChat.useQuery(
-    { sessionId: sessionId!, limit: 100 },
-    { enabled: Boolean(sessionId && open), staleTime: 10_000 },
+  const messages = useSyncExternalStore(
+    sessionMessagesStore.subscribe,
+    () => sessionMessagesStore.getCachedMessages(sessionId),
+    () => sessionMessagesStore.getCachedMessages(null),
   );
 
   const files = useMemo<ExtractedFile[]>(() => {
-    const msgs = (query.data?.items ?? []) as ChatMessage[];
     const all: ExtractedFile[] = [];
-    for (const m of msgs) {
+    for (const m of messages) {
       all.push(...extractImageAttachments(m));
       all.push(...extractCreatedFiles(m));
     }
     return all;
-  }, [query.data]);
+  }, [messages]);
 
   const selected = files.find((f) => f.id === selectedId) ?? null;
 
   if (!open) return null;
 
   return (
-    <aside className="flex w-[340px] shrink-0 flex-col border-l border-[var(--om-divider)] bg-[var(--om-bg)]">
+    <aside className="flex w-[340px] shrink-0 flex-col border-l border-[var(--om-divider)] bg-[var(--om-bg)]" data-testid="chat-files-panel">
       <div className="flex items-center gap-2 border-b border-[var(--om-divider)] px-3 py-2">
         <Files className="h-4 w-4 text-[var(--om-text-2)]" />
         <span className="flex-1 text-sm font-semibold text-[var(--om-text-1)]">本会话文件</span>
@@ -299,7 +299,7 @@ export function ChatFilesPanel({
       {selected ? (
         <FilePreview file={selected} onBack={() => setSelectedId(null)} />
       ) : files.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-sm text-[var(--om-text-3)]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-sm text-[var(--om-text-3)]" data-testid="chat-files-empty">
           <Files className="h-8 w-8 opacity-40" />
           <p>本会话暂无文件</p>
           <p className="text-xs">上传图片或让 Agent 创建文章后会出现在这里</p>
@@ -311,6 +311,8 @@ export function ChatFilesPanel({
               key={f.id}
               type="button"
               onClick={() => setSelectedId(f.id)}
+              data-testid="chat-file-item"
+              data-file-name={f.name}
               className="flex w-full items-center gap-3 border-b border-[var(--om-divider)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--om-bg-alt)]"
             >
               <span className="shrink-0">{fileIcon(f.type)}</span>

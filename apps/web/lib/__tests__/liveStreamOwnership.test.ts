@@ -7,6 +7,7 @@ import {
   getUserMessageClientId,
   groupOwnsLiveStream,
   ownsLiveRender,
+  shouldRenderTrailingLive,
   type MessageGroup,
 } from "@/lib/chatMessageUtils";
 import type { ChatMessage } from "@oasismind/shared";
@@ -108,5 +109,34 @@ describe("live stream ownership", () => {
     expect(groupOwnsLiveStream(g, "db-u1")).toBe(true);
     expect(groupOwnsLiveStream(g, "other")).toBe(false);
     expect(groupOwnsLiveStream(fakeGroup(fakeUser("sys-loop")), "opt-1")).toBe(false);
+  });
+
+  it("尾部 live：钉点在旁路不挂；钉在乐观气泡上仍挂", () => {
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: "u-offpath",
+        targetOwnedByOptimistic: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: "opt-1",
+        targetOwnedByOptimistic: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldRenderTrailingLive({
+        showLiveStream: true,
+        inFlightMaterialized: false,
+        targetOwnedByGroup: false,
+        streamTargetUserId: null,
+      }),
+    ).toBe(true);
   });
 });

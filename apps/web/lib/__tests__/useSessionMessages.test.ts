@@ -154,4 +154,11 @@ describe("useSessionMessages / messageFieldsEqual", () => {
       (globalThis as unknown as { EventSource: typeof EventSource }).EventSource = Original;
     }
   });
+
+  it("getCachedMessages 缺 key 返回同一空数组", () => {
+    const a = sessionMessagesStore.getCachedMessages("no-such");
+    const b = sessionMessagesStore.getCachedMessages("no-such");
+    expect(a).toBe(b);
+    expect(a).toEqual([]);
+  });
 });

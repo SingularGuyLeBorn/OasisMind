@@ -36,6 +36,15 @@ export async function trpcQuery<T>(procedure: string, input: unknown = null): Pr
   return parseBatch<T>(res, procedure);
 }
 
+/** z.void() 的 query：不能传 json:null */
+export async function trpcQueryVoid<T>(procedure: string): Promise<T> {
+  const url = new URL(`${SERVER_URL}/api/trpc/${procedure}`);
+  url.searchParams.set("batch", "1");
+  url.searchParams.set("input", JSON.stringify({ 0: {} }));
+  const res = await fetch(url, { cache: "no-store" });
+  return parseBatch<T>(res, procedure);
+}
+
 export async function trpcMutate<T>(procedure: string, input: unknown): Promise<T> {
   const url = new URL(`${SERVER_URL}/api/trpc/${procedure}?batch=1`);
   const res = await fetch(url, {

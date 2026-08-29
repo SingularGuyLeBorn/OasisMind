@@ -15,6 +15,7 @@ import type { ChatMessage } from "@oasismind/shared";
 import { trpc, warnUnlessCancelled } from "@/lib/trpc";
 import { getAuthToken } from "@/lib/auth";
 import { streamLifecycleActions } from "@/lib/useStreamLifecycle";
+import { getSessionMessageHydrateEpoch, resetSessionMessageHydrateEpochForTests } from "@/lib/sessionMessageHydrateEpoch";
 
 type MessageMap = Map<string, ChatMessage[]>;
 type Listener = () => void;
@@ -23,8 +24,9 @@ type Listener = () => void;
  * 消息 hydrate 意图：
  * - view：用户正在看的会话水合 → INV-8 ④ 合法 drain 源
  * - prefetch：悬停/tab 预取（只读）→ 不置 drainRequested
+ * - active_path：换叶后的权威活跃路径 → 丢掉快照外的旁路，不置 drain
  */
-export type MessageHydrateSource = "view" | "prefetch";
+export type MessageHydrateSource = "view" | "prefetch" | "active_path";
 
 /**
  * INV-8 合法 drain 触发源（类型层枚举，新增调用方编译期可审）。
@@ -37,10 +39,20 @@ export type DrainTriggerSource =
   | "hydrate_view";
 
 type Action =
-  | { type: "hydrate"; sessionId: string; messages: ChatMessage[]; source: MessageHydrateSource }
+  | {
+      type: "hydrate";
+      sessionId: string;
+      messages: ChatMessage[];
+      source: MessageHydrateSource;
+      /** 换叶丢掉的旁路 id；view/prefetch 不得再加回来，直到下一次 active_path */
+      dropOffPathIds?: string[];
+    }
   | { type: "upsert"; sessionId: string; message: ChatMessage }
   | { type: "delete"; sessionId: string; messageId: string }
   | { type: "clear"; sessionId: string };
+
+/** 换叶后被踢出活跃路径的消息 id。view 陈旧快照不得把它们 merge 回来。 */
+const droppedOffPathGlobal = new Map<string, Set<string>>();
 
 function cmpByCreatedAt(a: ChatMessage, b: ChatMessage): number {
   const ta = a.createdAt instanceof Date ? a.createdAt.getTime() : Date.parse(String(a.createdAt));
@@ -146,12 +158,28 @@ function pickFresherMessage(prev: ChatMessage, incoming: ChatMessage): ChatMessa
 function reducer(state: MessageMap, action: Action): MessageMap {
   switch (action.type) {
     case "hydrate": {
+      const drop = new Set(action.dropOffPathIds ?? []);
+      if (action.source === "active_path" && action.messages.length === 0) {
+        return state;
+      }
+      const rawIncoming = action.messages.map(normalizeMessage);
+      const incoming =
+        action.source === "active_path"
+          ? rawIncoming
+          : rawIncoming.filter((m) => !drop.has(m.id));
       const existing = state.get(action.sessionId);
-      const incoming = action.messages.map(normalizeMessage);
+      if (incoming.length === 0 && (existing?.length ?? 0) > 0) {
+        return state;
+      }
       if (existing) {
         const existingById = new Map(existing.map((m) => [m.id, m]));
         const incomingIds = new Set(incoming.map((m) => m.id));
-        const older = existing.filter((m) => !incomingIds.has(m.id));
+        // view/prefetch：保留快照外旧消息（loadOlder / SSE 抢先 upsert），但换叶丢掉的旁路除外
+        // active_path：listForChat 活跃路径是权威，旁路必须掉，否则「从这里另写」气泡不换
+        const older =
+          action.source === "active_path"
+            ? []
+            : existing.filter((m) => !incomingIds.has(m.id) && !drop.has(m.id));
         // same-id：逐字段 compare-skip / 取新（禁止 stale 快照覆盖 SSE v2）
         const mergedIncoming = incoming.map((msg) => {
           const prev = existingById.get(msg.id);
@@ -199,6 +227,10 @@ function reducer(state: MessageMap, action: Action): MessageMap {
         nextList = list.slice();
         nextList[idx] = merged;
       } else {
+        // 当前路径是权威展示面：父不在列表里 = 旁路（换叶后投递的子结果等），禁止混进正在看的叶
+        if (msg.parentId && list.length > 0 && !list.some((m) => m.id === msg.parentId)) {
+          return state;
+        }
         nextList = [...list, msg].sort(cmpByCreatedAt);
       }
       const next = new Map(state);
@@ -215,6 +247,7 @@ function reducer(state: MessageMap, action: Action): MessageMap {
       return next;
     }
     case "clear": {
+      droppedOffPathGlobal.delete(action.sessionId);
       if (!state.has(action.sessionId)) return state;
       const next = new Map(state);
       next.delete(action.sessionId);
@@ -410,7 +443,21 @@ class SessionMessageStore {
     source: MessageHydrateSource = "view",
   ): void {
     this.touchSession(sessionId);
-    this.dispatch({ type: "hydrate", sessionId, messages, source });
+    if (source === "active_path" && messages.length > 0) {
+      const existing = this.getMessages(sessionId);
+      const incomingIds = new Set(messages.map((m) => m.id));
+      droppedOffPathGlobal.set(
+        sessionId,
+        new Set(existing.filter((m) => !incomingIds.has(m.id)).map((m) => m.id)),
+      );
+    }
+    this.dispatch({
+      type: "hydrate",
+      sessionId,
+      messages,
+      source,
+      dropOffPathIds: [...(droppedOffPathGlobal.get(sessionId) ?? [])],
+    });
     this.evictIdleSessions();
   }
 
@@ -426,6 +473,7 @@ class SessionMessageStore {
       toolCalls?: ChatMessage["toolCalls"];
       tokenUsage?: ChatMessage["tokenUsage"];
       finishReason?: string | null;
+      parentId?: string | null;
     },
   ): void {
     const existing = this.getMessages(sessionId).find((m) => m.id === data.assistantMessageId);
@@ -434,6 +482,7 @@ class SessionMessageStore {
       sessionId,
       role: "assistant",
       content: data.content,
+      parentId: data.parentId ?? existing?.parentId ?? null,
       toolCalls: data.toolCalls ?? existing?.toolCalls ?? null,
       toolResults: existing?.toolResults ?? null,
       tokenUsage: data.tokenUsage ?? existing?.tokenUsage ?? null,
@@ -458,6 +507,8 @@ export function __resetSessionMessageStoreForTests(): void {
   globalStore = null;
   hydratedSessionsGlobal.clear();
   inflightHydrate.clear();
+  droppedOffPathGlobal.clear();
+  resetSessionMessageHydrateEpochForTests();
 }
 
 /** 单测专用：暴露内部字段比较逻辑 */
@@ -504,11 +555,20 @@ async function fetchAndHydrateSession(
     await existing;
     return {};
   }
+  const epochAtStart = getSessionMessageHydrateEpoch(sessionId);
   const store = getStore();
   let nextCursor: string | null | undefined;
   const p = (async () => {
     const page = await fetchPage({ sessionId, limit: 50 });
-    store.hydrateSessionMessages(sessionId, page.items as ChatMessage[], source);
+    if (getSessionMessageHydrateEpoch(sessionId) !== epochAtStart) {
+      return;
+    }
+    const items = Array.isArray(page.items) ? page.items : [];
+    if (items.length === 0 && store.getMessages(sessionId).length > 0) {
+      nextCursor = page.nextCursor;
+      return;
+    }
+    store.hydrateSessionMessages(sessionId, items as ChatMessage[], source);
     hydratedSessionsGlobal.add(sessionId);
     nextCursor = page.nextCursor;
   })();
@@ -583,7 +643,7 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
       (async () => {
         try {
           const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
-            utilsRef.current.message.listForChat.fetch(opts),
+            utilsRef.current.message.listForChat.fetch(opts, { staleTime: 0 }),
           );
           if (cancelled) return;
           if (nextCursor !== undefined) {
@@ -604,7 +664,7 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
       (async () => {
         try {
           const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
-            utilsRef.current.message.listForChat.fetch(opts),
+            utilsRef.current.message.listForChat.fetch(opts, { staleTime: 0 }),
           );
           if (cancelled) return;
           if (nextCursor !== undefined) {
@@ -657,7 +717,7 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
     if (!sessionId) return;
     try {
       const { nextCursor } = await fetchAndHydrateSession(sessionId, (opts) =>
-        utilsRef.current.message.listForChat.fetch(opts),
+        utilsRef.current.message.listForChat.fetch(opts, { staleTime: 0 }),
       );
       if (nextCursor !== undefined) {
         cursorRef.current = nextCursor ?? undefined;
@@ -685,6 +745,12 @@ export function useSessionMessages(sessionId: string | null | undefined): UseSes
 /** 模块级操作：跨组件 watch 子会话、主动 hydrate 等 */
 export const sessionMessagesStore = {
   getMessages: (sessionId: string) => getStore().getMessages(sessionId),
+  /** 稳定空数组：缺 key 时禁止每次 new []，否则 useSyncExternalStore 会死循环 */
+  getCachedMessages: (sessionId: string | null | undefined): ChatMessage[] => {
+    if (!sessionId) return EMPTY_ARRAY;
+    return getStore().getState().get(sessionId) ?? EMPTY_ARRAY;
+  },
+  subscribe: (listener: () => void) => getStore().subscribe(listener),
   watchSession: (sessionId: string) => getStore().watchSession(sessionId),
   closeSessionWatch: (sessionId: string) => getStore().closeSessionWatch(sessionId),
   addSessionEventListener: (sessionId: string, eventType: string, handler: (ev: MessageEvent) => void) =>
@@ -724,6 +790,7 @@ export const sessionMessagesStore = {
       toolCalls?: ChatMessage["toolCalls"];
       tokenUsage?: ChatMessage["tokenUsage"];
       finishReason?: string | null;
+      parentId?: string | null;
     },
   ) => getStore().upsertAssistantFromDone(sessionId, data),
   /** 幂等 upsert（含 field-level merge）；供 SSE / 测试直达 reducer */

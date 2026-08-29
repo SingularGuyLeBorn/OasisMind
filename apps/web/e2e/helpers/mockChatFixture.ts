@@ -8,7 +8,7 @@
  */
 
 import { expect, type Locator, type Page } from "@playwright/test";
-import { trpcMutate, trpcQuery } from "./trpcE2e";
+import { trpcMutate, trpcQuery, trpcQueryVoid } from "./trpcE2e";
 import { consumeAssistBaseline } from "./realChatFixture";
 export {
   sendChatMessage,
@@ -150,10 +150,25 @@ export async function waitForStreamingComplete(page: Page): Promise<void> {
   await expect(page.getByTestId("chat-stop")).toHaveCount(0);
 }
 
+/** 等服务端 hub 不再占线（tRPC switchBranch 在 isRunning 时拒绝）。直打 listRunning，不靠本页 UI。 */
+export async function waitForHubIdle(sessionId: string): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const running = await trpcQueryVoid<{ items: Array<{ sessionId: string }> }>("session.listRunning");
+        return running.items.some((item) => item.sessionId === sessionId);
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(false);
+}
+
 /** 等 hub idle：助手气泡出现 ≠ session 空闲。发送钮可见（不是 chat-stop）即空闲；输入为空时发送钮本身 disabled。 */
 export async function waitForSessionIdle(page: Page): Promise<void> {
   await expect(page.getByTestId("chat-send")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("chat-stop")).toHaveCount(0);
+  const sessionId = new URL(page.url()).searchParams.get("sessionId");
+  if (sessionId) await waitForHubIdle(sessionId);
 }
 
 export async function expectToolPill(page: import("@playwright/test").Page, name: string): Promise<void> {
@@ -194,6 +209,89 @@ export async function expectAssistantAnswer(page: Page, text: string): Promise<v
   await expect
     .poll(async () => readLast(page), { timeout: 10_000, intervals: [50, 100, 200] })
     .toContain(text);
+}
+
+/** 从指定用户气泡「从这里另写」（hover 露出操作条；force 防 pointer-events-none 漏点）。 */
+export async function forkFromUserMessage(page: Page, index = 0): Promise<void> {
+  const bubble = page.getByTestId("user-message-bubble").nth(index);
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-fork-from-btn").click({ force: true });
+}
+
+/** 从指定助手气泡「从这里另写」。 */
+export async function forkFromAssistantMessage(page: Page, index = 0): Promise<void> {
+  const bubble = page.getByTestId("assistant-message-bubble").nth(index);
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-fork-from-btn").click({ force: true });
+}
+
+/** 当前路径最后一条用户消息上点「重试」（hover 露出操作条）。 */
+export async function retryLastUserMessage(page: Page): Promise<void> {
+  const bubble = page.getByTestId("user-message-bubble").last();
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-retry-btn").click({ force: true });
+}
+
+/** 当前路径最后一条助手气泡上点「重新生成」。 */
+export async function regenerateLastAssistant(page: Page): Promise<void> {
+  const bubble = page.getByTestId("assistant-message-bubble").last();
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-regenerate-btn").click({ force: true });
+}
+
+/** 编辑当前路径最后一条用户消息并保存（只落库，不截断）。 */
+export async function editLastUserMessage(page: Page, next: string): Promise<void> {
+  const bubble = page.getByTestId("user-message-bubble").last();
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-edit-btn").click({ force: true });
+  const editor = page.getByTestId("message-markdown-source");
+  await expect(editor).toBeVisible({ timeout: 8_000 });
+  await editor.fill(next);
+  await page.getByTestId("message-edit-save").click();
+}
+
+/** 编辑当前路径最后一条助手消息并保存（只落库，不截断、不重跑）。 */
+export async function editLastAssistantMessage(page: Page, next: string): Promise<void> {
+  const bubble = page.getByTestId("assistant-message-bubble").last();
+  await expect(bubble).toBeVisible({ timeout: 8_000 });
+  await bubble.hover();
+  await bubble.getByTestId("message-edit-btn").click({ force: true });
+  const editor = page.getByTestId("message-markdown-source");
+  await expect(editor).toBeVisible({ timeout: 8_000 });
+  await editor.fill(next);
+  await page.getByTestId("message-edit-save").click();
+}
+
+export type MockLlmHit = {
+  id: string;
+  scenario: string;
+  lastUserText: string;
+  lastSystemText?: string;
+  transcriptText?: string;
+  status: number;
+};
+
+function mockLlmDebugBase(): string {
+  return (process.env.MOCK_LLM_URL ?? "http://127.0.0.1:3041/v1").replace(/\/v1\/?$/, "");
+}
+
+/** 清空 mock-llm 命中环，避免上一条测例的 branch_summary 让本条假绿。 */
+export async function resetMockLlmHits(): Promise<void> {
+  const res = await fetch(`${mockLlmDebugBase()}/debug/reset`, { method: "POST" });
+  if (!res.ok) throw new Error(`mock-llm /debug/reset HTTP ${res.status}`);
+}
+
+/** mock-llm HTTP 命中环。摘要必须是 branch_summary，禁止落 greeting。 */
+export async function fetchMockLlmHits(): Promise<MockLlmHit[]> {
+  const res = await fetch(`${mockLlmDebugBase()}/debug/hits`);
+  if (!res.ok) throw new Error(`mock-llm /debug/hits HTTP ${res.status}`);
+  const body = (await res.json()) as { hits?: MockLlmHit[] };
+  return Array.isArray(body.hits) ? body.hits : [];
 }
 
 /** 确保当前选中的是 E2E 默认 Workspace（其中包含 manager 层级的 assistant Agent）。 */

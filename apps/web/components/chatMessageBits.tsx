@@ -43,6 +43,7 @@ import { PostContent } from "@/components/post/PostContent";
 import { formatTokenCount } from "@/lib/tokenBudget";
 import { formatToolDisplayName } from "@/lib/toolDisplayName";
 import type { ChatMessage } from "@oasismind/shared";
+import { isBranchSummaryMessage } from "@/lib/chatTreeUi";
 
 const SOURCE_LABEL_STYLES: Record<string, { label: string; bg: string; text: string; border: string }> = {
   super: { label: "子 Agent 任务", bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200" },
@@ -622,6 +623,7 @@ export function MessageMarkdownSourceEditor({
         onChange={(e) => onChange(e.target.value)}
         rows={Math.max(3, Math.min(24, value.split("\n").length + 1))}
         disabled={disabled}
+        data-testid="message-markdown-source"
         autoFocus
         spellCheck={false}
         className={cn(
@@ -700,7 +702,7 @@ export function MessageUsageDetails({
   );
 }
 
-/** 压缩边界：摘要不进正文，点击展开 session.contextSummary */
+/** 压缩边界 / 旁路摘要：不进正文，点击展开 */
 export function CompactBoundaryCard({
   message,
   contextSummary,
@@ -709,6 +711,41 @@ export function CompactBoundaryCard({
   contextSummary?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  if (isBranchSummaryMessage(message)) {
+    const body = (message.content ?? "").replace(/\[om-branch-summary\]\s*/g, "").trim();
+    return (
+      <div className="my-3 flex w-full justify-center px-4" data-testid="branch-summary-card">
+        <div className="w-full max-w-xl rounded-xl border border-dashed border-[var(--om-divider)] bg-[var(--om-bg-alt)]/80 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center gap-2 text-left text-[12px] text-[var(--om-text-2)] transition hover:text-[var(--om-text-1)]"
+            aria-expanded={open}
+            data-testid="branch-summary-toggle"
+          >
+            <GitFork className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand)]" />
+            <span className="min-w-0 flex-1 font-medium">旁路摘要</span>
+            <span className="shrink-0 text-[10px] text-[var(--om-text-3)]">
+              {open ? "收起摘要" : "查看摘要"}
+            </span>
+            {open ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+          </button>
+          {open ? (
+            <div
+              className="mt-2 max-h-64 overflow-y-auto rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)] px-3 py-2 text-[12px] leading-relaxed text-[var(--om-text-2)] whitespace-pre-wrap"
+              data-testid="branch-summary-body"
+            >
+              {body || "（暂无旁路摘要正文）"}
+            </div>
+          ) : (
+            <p className="mt-1 truncate text-[11px] text-[var(--om-text-3)]" data-testid="branch-summary-preview">
+              {body || "（暂无旁路摘要正文）"}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
   const args =
     Array.isArray(message.toolCalls) && message.toolCalls[0] && typeof message.toolCalls[0] === "object"
       ? (message.toolCalls[0] as { args?: { messagesSummarized?: number; trigger?: string; generation?: number } }).args
@@ -895,7 +932,15 @@ export function MessageActions({
         </button>
       )}
       {showRegenerate && onRegenerate && (
-        <button type="button" onClick={onRegenerate} disabled={disabled} className={btnClass} title="重新生成" aria-label="重新生成">
+        <button
+          type="button"
+          onClick={onRegenerate}
+          disabled={disabled}
+          className={btnClass}
+          title="重新生成"
+          aria-label="重新生成"
+          data-testid="message-regenerate-btn"
+        >
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
       )}
@@ -939,7 +984,15 @@ export function MessageActions({
         </button>
       )}
       {showRetry && onRetry && (
-        <button type="button" onClick={onRetry} disabled={disabled} className={btnClass} title="重试" aria-label="重试">
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={disabled}
+          className={btnClass}
+          title="重试"
+          aria-label="重试"
+          data-testid="message-retry-btn"
+        >
           <RefreshCw className="h-3.5 w-3.5" />
         </button>
       )}

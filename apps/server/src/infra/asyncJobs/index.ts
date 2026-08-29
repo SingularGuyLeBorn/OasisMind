@@ -25,6 +25,7 @@ export {
   markAsyncDeliveryConsumed,
   notifyAndAutoConsumeAsyncDelivery,
   notifySubagentSessionUpdate,
+  resolveAsyncDeliveryAnchor,
 } from "./delivery.js";
 export {
   RECONCILER_BATCH_LIMIT,

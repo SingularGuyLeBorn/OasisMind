@@ -487,9 +487,20 @@ export const sessionRouter = router({
     .mutation(({ ctx, input }) => ctx.services.session.resume(input)),
   // W1：会话树分支切换（更新 activeLeafId；旁路可生成 branch_summary）
   switchBranch: publicProcedure
-    .meta({ description: "切换会话树当前叶（游标）。切到当前叶幂等；若放弃旁路有新内容则生成 branch_summary。", aiReadable: false })
+    .meta({
+      description:
+        "切换会话树当前叶（游标）。切到当前叶幂等；若放弃旁路有新内容则生成 branch_summary。会话正在回复时拒绝（Goal revision 走内核 switchBranch，不经本 procedure）。",
+      aiReadable: false,
+    })
     .input(switchBranchSchema)
     .mutation(async ({ ctx, input }) => {
+      const hub = ctx.streamHub ?? getStreamHub();
+      if (hub?.isRunning(input.sessionId)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "会话正在回复，请停后再换枝",
+        });
+      }
       const { switchBranch } = await import("../chatTree.js");
       return switchBranch(ctx.prisma, ctx.config, input);
     }),

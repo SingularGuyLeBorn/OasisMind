@@ -18,6 +18,8 @@ import {
   notifyInboxUpdated,
   notifyApprovalUpdated,
   notifyRunUpdated,
+  notifySessionListChanged,
+  notifySessionTreeUpdated,
 } from "../infra/uiStateNotify.js";
 
 function prismaWithSessions(ids: string[]) {
@@ -108,6 +110,33 @@ describe("uiStateNotify PUSH", () => {
     expect(pushExternalEvent).toHaveBeenCalledWith(
       "main-1",
       expect.objectContaining({ type: "run_updated", runId: "run-z", status: "interrupted" }),
+    );
+  });
+
+  it("notifySessionTreeUpdated 推 session_tree_updated 到该会话", () => {
+    notifySessionTreeUpdated("sess-tree", "leaf-9");
+    expect(pushExternalEvent).toHaveBeenCalledWith(
+      "sess-tree",
+      expect.objectContaining({
+        type: "session_tree_updated",
+        sessionId: "sess-tree",
+        activeLeafId: "leaf-9",
+      }),
+    );
+  });
+
+  it("notifySessionListChanged 推到所有活跃会话，不只第一条/主会话", async () => {
+    await notifySessionListChanged(prismaWithSessions(["main-sess", "fork-sess"]), {
+      sessionId: "fork-sess",
+      reason: "update",
+    });
+    expect(pushExternalEvent).toHaveBeenCalledWith(
+      "fork-sess",
+      expect.objectContaining({ type: "session_list_changed", sessionId: "fork-sess", reason: "update" }),
+    );
+    expect(pushExternalEvent).toHaveBeenCalledWith(
+      "main-sess",
+      expect.objectContaining({ type: "session_list_changed", sessionId: "fork-sess" }),
     );
   });
 });

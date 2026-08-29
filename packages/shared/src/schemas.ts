@@ -548,6 +548,10 @@ export const agentChatSchema = z
     /** 发送队列项 id：busy 时按此 unclaim/幂等，禁止仅靠 kind+content 误认 child_notify */
     queueItemId: z.string().cuid().optional(),
     resumeAfter: z.number().int().min(0).optional(),
+    /** 显式挂到这颗消息下；省略则 append 用当前 activeLeafId */
+    parentMessageId: z.string().cuid().optional(),
+    /** false：旁路写入（换叶后投递子结果）不推进 activeLeafId，禁止偷走用户正在看的叶 */
+    advanceLeaf: z.boolean().optional(),
   })
   .refine(
     (data) =>
@@ -850,6 +854,8 @@ export const createMessageSchema = z.object({
   sessionId: z.string().cuid(),
   role: z.enum(["user", "assistant", "system", "tool"]),
   content: z.string().min(1, "内容不能为空"),
+  /** 显式父节点；省略则 appendChatMessage 用当前 activeLeafId */
+  parentId: z.string().cuid().optional(),
   attachments: z.array(chatAttachmentSchema).optional(),
   toolCalls: z.any().optional(),
   toolResults: z.any().optional(),
@@ -862,6 +868,8 @@ export const createMessageSchema = z.object({
   }).optional(),
   finishReason: z.string().optional(),
   source: z.enum(["user", "super", "manager", "sub", "system", "cron", "channel"]).optional(), // 不传则 service 层默认 "user"
+  /** false：不推进 activeLeafId（旁路投递） */
+  advanceLeaf: z.boolean().optional(),
 });
 
 export const updateMessageSchema = z.object({

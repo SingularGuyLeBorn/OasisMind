@@ -682,6 +682,7 @@ export function useChatRunStream({
                   content,
                   toolCalls: data.toolCalls,
                   tokenUsage: data.tokenUsage ?? null,
+                  parentId: data.parentId,
                 });
                 // SSE 可能已先 upsert：再试一次 content/id 匹配
                 streamLifecycleActions.tryCommitStream(originSid, {

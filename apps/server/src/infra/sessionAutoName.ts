@@ -71,6 +71,8 @@ export async function autoNameSession(sessionId: string, firstMessage: string): 
     if (!title) return;
     await prisma.chatSession.update({ where: { id: sessionId }, data: { autoName: title } });
     getStreamHub()?.pushExternalEvent(sessionId, { type: "session_title_updated", sessionId, title });
+    const { notifySessionListChanged } = await import("./uiStateNotify.js");
+    await notifySessionListChanged(prisma, { sessionId, reason: "auto_name" });
   } catch (e) {
     console.warn(`[autoNameSession] ${sessionId}:`, e instanceof Error ? e.message : e);
   }

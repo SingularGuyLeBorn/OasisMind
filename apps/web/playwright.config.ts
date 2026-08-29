@@ -4,6 +4,17 @@ import path from "path";
 const webPort = process.env.E2E_WEB_PORT ?? "3002";
 const webBaseUrl = `http://127.0.0.1:${webPort}`;
 
+// 本文件是真实 LLM E2E 套件。Mock 套件走 playwright.config.mock.ts。
+// 开发者 shell 若残留 MOCK_LLM=true / MOCK_LLM_URL=http://127.0.0.1:3041/v1，
+// Playwright 会继承并把真实 E2E 劫持到 mock。defineConfig 前剥离这些键。
+// 不删 E2E 端口、DATABASE_URL、REQUIRE_APPROVAL。
+delete process.env.MOCK_LLM;
+delete process.env.MOCK_LLM_URL;
+delete process.env.MOCK_LLM_SCENARIO;
+delete process.env.MOCK_LLM_FAIL;
+delete process.env.MOCK_LLM_DELAY_MS;
+delete process.env.MOCK_LLM_STREAM_BREAK;
+
 // server / web 进程由 e2e-global/setup.mjs 统一启动，避免 Playwright webServer 与 globalSetup 并行导致时序错乱
 
 export default defineConfig({

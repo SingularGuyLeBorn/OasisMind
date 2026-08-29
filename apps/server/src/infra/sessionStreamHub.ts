@@ -555,6 +555,12 @@ export class SessionStreamHub {
     }
 
     state.completed = true;
+    if (state.sessionId && !state.sessionId.startsWith("pending:")) {
+      this.pushExternalEvent(state.sessionId, {
+        type: "session_run_settled",
+        sessionId: state.sessionId,
+      });
+    }
     await settleSessionDbStatus(state.sessionId, terminal);
     await this.handoffUnconsumedInjects(state.sessionId);
     this.clearInjectQueues(state.sessionId);
@@ -921,12 +927,10 @@ export class SessionStreamHub {
             where: { id: sessionId },
             select: { agentId: true },
           });
-          if (!row?.agentId) return;
           // 动态 import：uiStateNotify 反向依赖本模块（getStreamHub），静态引入会成环
-          const { notifyAgentUi } = await import("./uiStateNotify.js");
-          await notifyAgentUi(prisma, row.agentId, {
-            type: "session_list_changed",
-            agentId: row.agentId,
+          const { notifySessionListChanged } = await import("./uiStateNotify.js");
+          await notifySessionListChanged(prisma, {
+            agentId: row?.agentId ?? undefined,
             sessionId,
             reason: "update",
           });

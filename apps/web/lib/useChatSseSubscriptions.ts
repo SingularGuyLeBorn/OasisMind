@@ -14,9 +14,11 @@
 import { useEffect, useRef } from "react";
 import type { AsyncQueueStats } from "@oasismind/server";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
+import { sessionMessagesStore } from "@/lib/useSessionMessages";
+import { bumpSessionMessageHydrateEpoch } from "@/lib/sessionMessageHydrateEpoch";
+import { hydrateAfterSessionTreeChange } from "@/lib/sessionTreeHydrate";
 
 const logQueryCatch = catchUnlessCancelled("[useChatSseSubscriptions] query");
-import { sessionMessagesStore } from "@/lib/useSessionMessages";
 import { streamLifecycleActions } from "@/lib/useStreamLifecycle";
 import { sessionComposeActions, sessionComposeStore } from "@/lib/useSessionComposeState";
 import { mergeUserQueueFromDb } from "@/lib/chatQueueTypes";
@@ -38,7 +40,7 @@ export interface UseChatSseSubscriptionsParams {
   /** session_rotate focusNewSession=true 时调用，前端自动聚焦新会话 */
   onFocusSession?: (sessionId: string) => void;
   /** 后端起流或异步投递完成时触发，用于即时挂接前端流 */
-  onSessionRunStarted?: (sessionId: string) => void;
+  onSessionRunStarted?: (sessionId: string, meta?: { userMessageId?: string }) => void;
   /** SSE 表明会话消息可能已变（起流/投递/树更新）时兜底水合，禁止只靠 F5 */
   onNeedHydrate?: (sessionId: string) => void | Promise<void>;
 }
@@ -133,9 +135,13 @@ export function useChatSseSubscriptions({
       });
       register("session_run_started", (ev) => {
         let targetSid = sid;
+        let userMessageId: string | undefined;
         try {
-          const data = JSON.parse(ev.data) as { sessionId?: string };
+          const data = JSON.parse(ev.data) as { sessionId?: string; userMessageId?: string };
           if (data.sessionId) targetSid = data.sessionId;
+          if (typeof data.userMessageId === "string" && data.userMessageId) {
+            userMessageId = data.userMessageId;
+          }
           utils.session.listRunning.invalidate().catch(logQueryCatch);
           refreshAsync({ heavy: true, sessionId: targetSid });
           if (data.sessionId && data.sessionId !== sid) {
@@ -148,8 +154,11 @@ export function useChatSseSubscriptions({
         }
         // 与 async_delivery 同口径：必须 resume 挂 agent 流，否则 QQ/cron 等服务端起流
         // 只有用户气泡（message_upserted），assistant live/终态只能靠 F5 hydrate。
-        if (onSessionRunStarted) onSessionRunStarted(targetSid);
+        if (onSessionRunStarted) onSessionRunStarted(targetSid, userMessageId ? { userMessageId } : undefined);
         requestHydrate(targetSid);
+      });
+      register("session_run_settled", () => {
+        utils.session.listRunning.invalidate().catch(logQueryCatch);
       });
       register("async_job_update", (ev) => {
         let status: string | undefined;
@@ -260,10 +269,20 @@ export function useChatSseSubscriptions({
         utils.agentCron.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "cron_job_updated" });
       });
-      register("session_list_changed", () => {
+      register("session_list_changed", (ev) => {
         utils.session.list.invalidate().catch(logQueryCatch);
         utils.session.listRunning.invalidate().catch(logQueryCatch);
-        postUiState({ type: "session_list_changed" });
+        let listSessionId: string | undefined;
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          if (typeof data.sessionId === "string" && data.sessionId) {
+            listSessionId = data.sessionId;
+            utils.session.getById.invalidate({ id: data.sessionId }).catch(logQueryCatch);
+          }
+        } catch {
+          /* ignore */
+        }
+        postUiState({ type: "session_list_changed", sessionId: listSessionId });
       });
       register("approval_updated", () => {
         utils.approval.list.invalidate().catch(logQueryCatch);
@@ -318,7 +337,7 @@ export function useChatSseSubscriptions({
         utils.trigger.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "task_updated" });
       });
-      register("session_tree_updated", (ev) => {
+      register("message_upserted", (ev) => {
         let targetSid = sid;
         try {
           const data = JSON.parse(ev.data) as { sessionId?: string };
@@ -327,17 +346,27 @@ export function useChatSseSubscriptions({
           /* ignore */
         }
         utils.session.tree.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
-        utils.session.inspectTurn.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
-        utils.message.listForChat
-          .fetch({ sessionId: targetSid, limit: 50 })
-          .then((page) => {
-            sessionMessagesStore.hydrateSessionMessages(
-              targetSid,
-              (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
-              "view",
-            );
-          })
-          .catch(logQueryCatch);
+      });
+      register("message_deleted", (ev) => {
+        let targetSid = sid;
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          if (data.sessionId) targetSid = data.sessionId;
+        } catch {
+          /* ignore */
+        }
+        bumpSessionMessageHydrateEpoch(targetSid);
+        utils.session.tree.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
+      });
+      register("session_tree_updated", (ev) => {
+        let targetSid = sid;
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          if (data.sessionId) targetSid = data.sessionId;
+        } catch {
+          /* ignore */
+        }
+        hydrateAfterSessionTreeChange(utils, targetSid, logQueryCatch);
         postUiState({ type: "session_tree_updated", sessionId: targetSid });
       });
       register("goal_updated", (ev) => {
@@ -368,8 +397,16 @@ export function useChatSseSubscriptions({
         }
         postUiState({ type: "daily_flow_updated", dayKey });
       });
-      register("session_title_updated", () => {
+      register("session_title_updated", (ev) => {
         utils.session.list.invalidate().catch(logQueryCatch);
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          if (typeof data.sessionId === "string" && data.sessionId) {
+            utils.session.getById.invalidate({ id: data.sessionId }).catch(logQueryCatch);
+          }
+        } catch {
+          /* ignore */
+        }
       });
       register("agent_renamed", () => {
         utils.agent.list.invalidate().catch(logQueryCatch);
@@ -477,6 +514,11 @@ export function useChatSseSubscriptions({
       if (t === "cron_session_started" || t === "session_list_changed") {
         utils.session.list.invalidate().catch(logQueryCatch);
         utils.session.listRunning.invalidate().catch(logQueryCatch);
+        const sid =
+          data && typeof data === "object" && "sessionId" in data && typeof (data as { sessionId?: unknown }).sessionId === "string"
+            ? (data as { sessionId: string }).sessionId
+            : undefined;
+        if (sid) utils.session.getById.invalidate({ id: sid }).catch(logQueryCatch);
       }
       if (isCronJobPushEvent(t)) {
         utils.agentCron.list.invalidate().catch(logQueryCatch);
@@ -540,18 +582,7 @@ export function useChatSseSubscriptions({
             ? (data as { sessionId: string }).sessionId
             : undefined;
         if (sid) {
-          utils.session.tree.invalidate({ sessionId: sid }).catch(logQueryCatch);
-          utils.session.inspectTurn.invalidate({ sessionId: sid }).catch(logQueryCatch);
-          utils.message.listForChat
-            .fetch({ sessionId: sid, limit: 50 })
-            .then((page) => {
-              sessionMessagesStore.hydrateSessionMessages(
-                sid,
-                (page.items ?? []) as import("@oasismind/shared").ChatMessage[],
-                "view",
-              );
-            })
-            .catch(logQueryCatch);
+          hydrateAfterSessionTreeChange(utils, sid, logQueryCatch);
         }
       }
       if (t === "goal_updated") {

@@ -31,8 +31,10 @@ function killTree(pid) {
 }
 
 export default async function globalTeardown() {
-  // 1. 精确清理 globalSetup 启动的进程
-  let pids = { serverPid: null, webPid: null };
+  // 1. 精确清理 globalSetup 启动的进程。
+  // mock E2E 会额外起 apps/mock-llm，setup 把 mockLlmPid 写入 .test-e2e-pids.json；
+  // teardown 必须按 pid 收掉，不能只靠后面的端口兜底（Windows 上 3041 经常杀不干净）。
+  let pids = { serverPid: null, webPid: null, mockLlmPid: null };
   try {
     if (fs.existsSync(PID_FILE)) {
       pids = JSON.parse(fs.readFileSync(PID_FILE, "utf8"));
@@ -44,6 +46,7 @@ export default async function globalTeardown() {
 
   killTree(pids.serverPid);
   killTree(pids.webPid);
+  killTree(pids.mockLlmPid);
   await sleep(500);
 
   // 2. 兜底：按端口清理残留进程

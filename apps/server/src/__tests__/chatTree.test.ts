@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { enterInProcessMockLlm, MOCK_BRANCH_SUMMARY_BODY, getInProcessMockHits, resetInProcessMockHits } from "@oasismind/mock-llm-core";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
 import { appRouter } from "../router.js";
@@ -16,11 +17,12 @@ import {
   healBrokenChatTree,
   truncateAfter,
   removeChatMessage,
+  switchBranch,
+  isSelfOrDescendantOf,
   BRANCH_SUMMARY_KIND,
   BRANCH_SUMMARY_MARKER,
 } from "../infra/chatTree.js";
 import { buildLlmMessagesFromHistory } from "../infra/chatHistory.js";
-import * as llmClient from "../infra/llmClient.js";
 
 const RUN = `w1t${Date.now().toString(36)}`;
 
@@ -31,8 +33,15 @@ async function cleanup(sessionIds: string[]) {
 
 describe("W1 会话树 chatTree", () => {
   const sessionIds: string[] = [];
+  let restoreMock: () => void;
+
+  beforeEach(() => {
+    restoreMock = enterInProcessMockLlm();
+    resetInProcessMockHits();
+  });
 
   afterEach(async () => {
+    restoreMock?.();
     await cleanup(sessionIds.splice(0));
     vi.restoreAllMocks();
   });
@@ -147,13 +156,7 @@ describe("W1 会话树 chatTree", () => {
     expect(contents).not.toContain("fork-a");
   });
 
-  it("switchBranch：幂等 / 越权拒绝 / 摘要生成与复用；branch_summary 不进 LLM", async () => {
-    vi.spyOn(llmClient, "chatCompletion").mockResolvedValue({
-      content: "旁路摘要测试",
-      model: "mock",
-      usage: { prompt: 1, completion: 1, total: 2 },
-    } as any);
-
+  it("switchBranch：幂等 / 越权拒绝 / 摘要走 MOCK_LLM；branch_summary 不进 LLM", async () => {
     const ctx = await createContextInner();
     const caller = appRouter.createCaller(ctx);
     const session = await ctx.services.session.create({
@@ -168,16 +171,20 @@ describe("W1 会话树 chatTree", () => {
     await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.data!.id } });
     const a2 = await ctx.services.message.create({ sessionId: sid, role: "assistant", content: "A2-fork" });
 
-    // 切到 a1：放弃 a2 旁路 → 应生成 summary
+    // 切到 a1：放弃 a2 旁路 → mock-llm branch_summary 场景
     const sw1 = await caller.session.switchBranch({ sessionId: sid, messageId: a1.data!.id });
     expect(sw1.switched).toBe(true);
     expect(sw1.summaryGenerated).toBe(true);
+    const summaryHit = getInProcessMockHits().find((h) => h.scenario === "branch_summary");
+    expect(summaryHit?.lastUserText).toContain("请摘要以下被切换离开的对话分支");
+    expect(summaryHit?.lastSystemText).toContain("OasisMind 分支摘要助手");
 
     const summaries = await prisma.chatMessage.findMany({
       where: { sessionId: sid, kind: BRANCH_SUMMARY_KIND },
     });
     expect(summaries.length).toBe(1);
     expect(summaries[0]!.content).toContain(BRANCH_SUMMARY_MARKER);
+    expect(summaries[0]!.content).toContain(MOCK_BRANCH_SUMMARY_BODY);
 
     // 切到 a2 再切回 a1：放弃 tip 仍为 a2 → 复用已有 summary（不新增）
     await caller.session.switchBranch({ sessionId: sid, messageId: a2.data!.id });
@@ -221,6 +228,31 @@ describe("W1 会话树 chatTree", () => {
     const joined = JSON.stringify(llmMsgs);
     expect(joined).not.toContain("秘密旁路");
     expect(joined).not.toContain(BRANCH_SUMMARY_MARKER);
+  });
+
+  it("resolveActivePathWithSummaries：只挂活跃路径上的摘要，旁路摘要不进 list", async () => {
+    const { resolveActivePathWithSummaries } = await import("../infra/chatTree.js");
+    const rows = [
+      { id: "u1", parentId: null, kind: null, createdAt: new Date("2026-01-01T00:00:00Z") },
+      { id: "a1", parentId: "u1", kind: null, createdAt: new Date("2026-01-01T00:00:01Z") },
+      { id: "a2", parentId: "u1", kind: null, createdAt: new Date("2026-01-01T00:00:02Z") },
+      {
+        id: "sum-on-path",
+        parentId: "u1",
+        kind: BRANCH_SUMMARY_KIND,
+        createdAt: new Date("2026-01-01T00:00:03Z"),
+      },
+      {
+        id: "sum-off-path",
+        parentId: "a2",
+        kind: BRANCH_SUMMARY_KIND,
+        createdAt: new Date("2026-01-01T00:00:04Z"),
+      },
+    ];
+    const path = resolveActivePathWithSummaries(rows, "a1");
+    expect(path.map((m) => m.id)).toEqual(["u1", "sum-on-path", "a1"]);
+    expect(path.some((m) => m.id === "sum-off-path")).toBe(false);
+    expect(path.some((m) => m.id === "a2")).toBe(false);
   });
 
   it("断链孤叶：resolveActivePath 不丢主链；heal 后 listForChat 恢复全文", async () => {
@@ -324,6 +356,87 @@ describe("W1 会话树 chatTree", () => {
     expect(sess?.activeLeafId).toBe(u2.id);
   });
 
+  it("truncateAfter：只剪当前叶那一叉，旁路兄弟枝留下", async () => {
+    const sid = (
+      await prisma.chatSession.create({
+        data: { title: `W1-trunc-sib-${RUN}`, model: "deepseek-v4-flash" },
+      })
+    ).id;
+    sessionIds.push(sid);
+    const u1 = await appendChatMessage(prisma, { sessionId: sid, role: "user", content: "Q" });
+    const a1 = await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A1" });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.id } });
+    const a2 = await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A2-fork" });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: a1.id } });
+
+    const { deletedIds } = await truncateAfter(prisma, sid, u1.id);
+    expect(deletedIds).toEqual([a1.id]);
+    const left = await prisma.chatMessage.findMany({ where: { sessionId: sid } });
+    expect(left.map((m) => m.id).sort()).toEqual([u1.id, a2.id].sort());
+    const sess = await prisma.chatSession.findUnique({ where: { id: sid } });
+    expect(sess?.activeLeafId).toBe(u1.id);
+  });
+
+  it("truncateAfter 不推 session_tree_updated（避免冲掉重试流）", async () => {
+    const uiStateNotify = await import("../infra/uiStateNotify.js");
+    const notifySpy = vi.spyOn(uiStateNotify, "notifySessionTreeUpdated");
+    const sid = (
+      await prisma.chatSession.create({
+        data: { title: `W1-trunc-nopush-${RUN}`, model: "deepseek-v4-flash" },
+      })
+    ).id;
+    sessionIds.push(sid);
+    const u1 = await appendChatMessage(prisma, { sessionId: sid, role: "user", content: "Q" });
+    const a1 = await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A1" });
+    notifySpy.mockClear();
+    await truncateAfter(prisma, sid, u1.id);
+    expect(notifySpy).not.toHaveBeenCalled();
+    const gone = await prisma.chatMessage.findUnique({ where: { id: a1.id } });
+    expect(gone).toBeNull();
+  });
+
+  it("switchBranch compactHint 进 MOCK_LLM 系统提示", async () => {
+    const ctx = await createContextInner();
+    const sid = (
+      await prisma.chatSession.create({
+        data: { title: `W1-hint-${RUN}`, model: "deepseek-v4-flash" },
+      })
+    ).id;
+    sessionIds.push(sid);
+    const u1 = await appendChatMessage(prisma, { sessionId: sid, role: "user", content: "Q" });
+    const a1 = await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A1" });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.id } });
+    await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A2-fork" });
+    resetInProcessMockHits();
+    await switchBranch(prisma, ctx.config, {
+      sessionId: sid,
+      messageId: a1.id,
+      compactHint: "【Intent tombstone】以下旧约束已 superseded：专家",
+    });
+    const hit = getInProcessMockHits().find((h) => h.scenario === "branch_summary");
+    expect(hit?.lastSystemText).toContain("tombstone");
+    expect(hit?.lastSystemText).toContain("专家");
+    expect(hit?.transcriptText).toContain("【Intent tombstone】");
+    expect(hit?.transcriptText).toContain("A2-fork");
+  });
+
+  it("truncateAfter：keep 已是叶则不删旁路子", async () => {
+    const sid = (
+      await prisma.chatSession.create({
+        data: { title: `W1-trunc-leaf-${RUN}`, model: "deepseek-v4-flash" },
+      })
+    ).id;
+    sessionIds.push(sid);
+    const u1 = await appendChatMessage(prisma, { sessionId: sid, role: "user", content: "Q" });
+    const a1 = await appendChatMessage(prisma, { sessionId: sid, role: "assistant", content: "A1" });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.id } });
+
+    const { deletedIds } = await truncateAfter(prisma, sid, u1.id);
+    expect(deletedIds).toEqual([]);
+    const a1row = await prisma.chatMessage.findUnique({ where: { id: a1.id } });
+    expect(a1row).not.toBeNull();
+  });
+
   it("removeChatMessage：子节点重挂，不留幽灵 parent", async () => {
     const sid = (
       await prisma.chatSession.create({
@@ -363,5 +476,58 @@ describe("W1 会话树 chatTree", () => {
     expect(labeled.label).toBe("重要");
     const cleared = await caller.message.setLabel({ messageId: msg.data!.id, label: null });
     expect(cleared.label).toBeNull();
+  });
+
+  it("message.update 只改正文，不删旁路兄弟", async () => {
+    const ctx = await createContextInner();
+    const caller = appRouter.createCaller(ctx);
+    const session = await ctx.services.session.create({
+      title: `W1-edit-${RUN}`,
+      model: "deepseek-v4-flash",
+    } as never);
+    const sid = (session.data as { id: string }).id;
+    sessionIds.push(sid);
+    const u1 = await ctx.services.message.create({ sessionId: sid, role: "user", content: "Q" });
+    const a1 = await ctx.services.message.create({
+      sessionId: sid,
+      role: "assistant",
+      content: "A1",
+    });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.data!.id } });
+    const a2 = await ctx.services.message.create({
+      sessionId: sid,
+      role: "assistant",
+      content: "A2-fork",
+    });
+    await caller.message.update({ id: u1.data!.id, content: "Q-edited" });
+    const left = await prisma.chatMessage.findMany({ where: { sessionId: sid } });
+    expect(left.map((m) => m.id).sort()).toEqual([u1.data!.id, a1.data!.id, a2.data!.id].sort());
+    const edited = await prisma.chatMessage.findUnique({ where: { id: u1.data!.id } });
+    expect(edited?.content).toBe("Q-edited");
+  });
+
+  it("isSelfOrDescendantOf：叶是助手时祖先用户为真，旁路为假", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({
+      title: `W1-desc-${RUN}`,
+      model: "deepseek-v4-flash",
+    } as never);
+    const sid = (session.data as { id: string }).id;
+    sessionIds.push(sid);
+    const u1 = await ctx.services.message.create({ sessionId: sid, role: "user", content: "Q" });
+    const a1 = await ctx.services.message.create({
+      sessionId: sid,
+      role: "assistant",
+      content: "A1",
+    });
+    await prisma.chatSession.update({ where: { id: sid }, data: { activeLeafId: u1.data!.id } });
+    const a2 = await ctx.services.message.create({
+      sessionId: sid,
+      role: "assistant",
+      content: "A2-fork",
+    });
+    expect(await isSelfOrDescendantOf(prisma, sid, a1.data!.id, u1.data!.id)).toBe(true);
+    expect(await isSelfOrDescendantOf(prisma, sid, a1.data!.id, a1.data!.id)).toBe(true);
+    expect(await isSelfOrDescendantOf(prisma, sid, a2.data!.id, a1.data!.id)).toBe(false);
   });
 });

@@ -15,6 +15,7 @@ import {
   type MutableRefObject,
 } from "react";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
+import { hydrateAfterSessionTreeChange } from "@/lib/sessionTreeHydrate";
 import { stopAgentChat, copyToClipboard } from "@/lib/agentStream";
 import { getModelOption } from "@/lib/chatConfig";
 import { buildMessageGroups } from "@/lib/chatMessageUtils";
@@ -483,6 +484,7 @@ export function ChatSessionPane({
     [sessionId, showToast],
   );
 
+  const utils = trpc.useUtils();
   const forkMut = trpc.session.switchBranch.useMutation();
   const handleForkFrom = useCallback(
     (messageId: string) => {
@@ -490,14 +492,18 @@ export function ChatSessionPane({
         showToast("请先选择会话");
         return;
       }
+      if (isStreaming) return;
+      const log = catchUnlessCancelled("session.forkFrom");
       forkMut
         .mutateAsync({ sessionId, messageId })
-        .then(() => hydrateFromServer())
+        .then(() => {
+          hydrateAfterSessionTreeChange(utils, sessionId, log);
+        })
         .catch(() => {
           showToast("换叶失败");
         });
     },
-    [sessionId, showToast, forkMut, hydrateFromServer],
+    [sessionId, showToast, forkMut, utils, isStreaming],
   );
 
   const messageListProps: ChatMessageListProps = useMemo(

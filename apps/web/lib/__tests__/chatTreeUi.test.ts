@@ -3,8 +3,10 @@ import {
   branchIndicatorLabel,
   collectBookmarks,
   countBranches,
+  isAncestorOfLeaf,
   isBranchSummaryMessage,
   listBranchChildren,
+  subtreeTipId,
 } from "../chatTreeUi";
 
 describe("chatTreeUi", () => {
@@ -41,5 +43,54 @@ describe("chatTreeUi", () => {
     ];
     const kids = listBranchChildren({ fork: ["a", "b", "s"] }, "fork", nodes);
     expect(kids.map((k) => k.id)).toEqual(["a", "b"]);
+  });
+
+  it("isAncestorOfLeaf：叶自身、祖先为真，旁路为假；环不会死循环", () => {
+    const tree = {
+      activeLeafId: "u2",
+      nodes: [
+        { id: "u1", parentId: null },
+        { id: "a1", parentId: "u1" },
+        { id: "u2", parentId: "a1" },
+        { id: "a2", parentId: "u1" },
+      ],
+    };
+    expect(isAncestorOfLeaf(tree, "u2")).toBe(true);
+    expect(isAncestorOfLeaf(tree, "a1")).toBe(true);
+    expect(isAncestorOfLeaf(tree, "u1")).toBe(true);
+    expect(isAncestorOfLeaf(tree, "a2")).toBe(false);
+    expect(isAncestorOfLeaf({ ...tree, activeLeafId: null }, "a1")).toBe(false);
+
+    const cyclic = {
+      activeLeafId: "x",
+      nodes: [
+        { id: "x", parentId: "y" },
+        { id: "y", parentId: "x" },
+      ],
+    };
+    expect(isAncestorOfLeaf(cyclic, "x")).toBe(true);
+    expect(isAncestorOfLeaf(cyclic, "y")).toBe(true);
+    expect(isAncestorOfLeaf(cyclic, "z")).toBe(false);
+  });
+
+  it("subtreeTipId：线性子树切到叶；摘要不算子；多叉取更晚的叶", () => {
+    const nodes = [
+      { id: "u2", kind: null, createdAt: "2026-01-01T00:00:02Z" },
+      { id: "a2", kind: null, createdAt: "2026-01-01T00:00:03Z" },
+      { id: "sum", kind: "branch_summary", createdAt: "2026-01-01T00:00:04Z" },
+      { id: "u3", kind: null, createdAt: "2026-01-01T00:00:05Z" },
+      { id: "a3", kind: null, createdAt: "2026-01-01T00:00:06Z" },
+    ];
+    expect(
+      subtreeTipId({ u2: ["a2"] }, "u2", [
+        { id: "u2", kind: null, createdAt: "2026-01-01T00:00:02Z" },
+        { id: "a2", kind: null, createdAt: "2026-01-01T00:00:03Z" },
+      ]),
+    ).toBe("a2");
+    expect(subtreeTipId({ a1: ["sum"] }, "a1", [{ id: "a1" }, { id: "sum", kind: "branch_summary" }])).toBe(
+      "a1",
+    );
+    expect(subtreeTipId({ u2: ["a2", "u3"], u3: ["a3"] }, "u2", nodes)).toBe("a3");
+    expect(subtreeTipId({ a1: [] }, "a1", [{ id: "a1" }])).toBe("a1");
   });
 });

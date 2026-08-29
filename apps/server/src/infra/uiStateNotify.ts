@@ -121,6 +121,28 @@ export async function notifyAllActiveSessionsUi(
 }
 
 /**
+ * 会话列表可见字段变更（新建 / 重命名 / 停跑 / 删除）。
+ * 必须推到所有活跃会话：Chat 的 SSE 订的是当前打开的 session，
+ * 而 `mainSessionId` 在普通对话里等于当前会话，不是 Agent 的 isMainSession。
+ * 只推 isMainSession 会让「开着分叉会话改名」侧栏假死，只能 F5。
+ */
+export async function notifySessionListChanged(
+  prisma: PrismaClient,
+  event: { agentId?: string; sessionId?: string; reason?: string } = {},
+): Promise<void> {
+  const payload = {
+    type: "session_list_changed" as const,
+    agentId: event.agentId,
+    sessionId: event.sessionId,
+    reason: event.reason,
+  };
+  if (event.sessionId) {
+    pushUiStateToSession(event.sessionId, payload);
+  }
+  await notifyAllActiveSessionsUi(prisma, payload);
+}
+
+/**
  * 审批等无 agent 归属的全局管理态：推到所有活跃主会话。
  * 单用户本地场景主会话数少，可接受。
  */

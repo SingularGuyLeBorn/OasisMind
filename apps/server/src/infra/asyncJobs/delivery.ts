@@ -11,6 +11,7 @@ import {
 import { markAgentMessageDeliveredByTaskRef, rollbackAgentMessageDeliveredByTaskRef } from "../agentMessageLedger.js";
 import { parseAsyncInput, parseAsyncOutput, type AsyncTaskOutput } from "./parse.js";
 import { enqueueSessionAutoConsume } from "./sessionQueue.js";
+import { isSelfOrDescendantOf } from "../chatTree.js";
 
 /**
  * v9 R-1 S3：delivered 条件写回滚（同链即时回滚与 reconciler 对账者共用的唯一回滚入口）。
@@ -34,6 +35,35 @@ export async function rollbackAsyncDeliveryClaim(jobId: string): Promise<boolean
     return r;
   });
   return result.count > 0;
+}
+
+/**
+ * 子结果必须挂回派子那一枝：用户已切走时钉 spawn 助手、不推进叶。
+ * 仍停在派子子树上则走当前叶（省略 parentMessageId）。
+ */
+export async function resolveAsyncDeliveryAnchor(
+  sessionId: string,
+  jobId: string,
+): Promise<{ parentMessageId?: string; advanceLeaf?: boolean }> {
+  const assistants = await prisma.chatMessage.findMany({
+    where: { sessionId, role: "assistant" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, toolCalls: true, toolResults: true },
+  });
+  const spawnAsst = assistants.find((row) => {
+    const blob = JSON.stringify({ toolCalls: row.toolCalls, toolResults: row.toolResults });
+    return blob.includes(jobId);
+  });
+  if (!spawnAsst) return {};
+  const session = await prisma.chatSession.findUnique({
+    where: { id: sessionId },
+    select: { activeLeafId: true },
+  });
+  const leaf = session?.activeLeafId ?? null;
+  if (leaf && (await isSelfOrDescendantOf(prisma, sessionId, leaf, spawnAsst.id))) {
+    return {};
+  }
+  return { parentMessageId: spawnAsst.id, advanceLeaf: false };
 }
 
 /**
@@ -119,12 +149,14 @@ export async function autoConsumeAsyncDelivery(options: {
   }
 
   const toolName = input?.toolCall?.tool;
+  const anchor = await resolveAsyncDeliveryAnchor(sessionId, jobId);
   const body = {
     sessionId,
     agentId: session.agentId as string,
     message,
     source: "sub" as const,
     runOrigin,
+    ...anchor,
     // toolResults.subagentResult.jobId 是 reconciler 判孤儿的 ground truth 台账（json_extract 按此路径匹配）；
     // 字段形状改动必须同步对账查询，否则全体已注入记录被误判孤儿 → 回滚重投 = 重复投喂。
     toolResults: {

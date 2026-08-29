@@ -85,6 +85,14 @@ export function buildSupersededCompactHint(goal: SessionGoalState | null): strin
   ].join("\n");
 }
 
+/** setGoal 时常 arguments={}；首次 revision 必须把旧 goal 正文钉进 tombstone。 */
+function snapshotOldArguments(goal: SessionGoalState): Record<string, unknown> {
+  const args = { ...(goal.intent?.arguments ?? {}) };
+  if (Object.keys(args).length > 0) return args;
+  const text = goal.text.trim();
+  return text ? { goal: text } : {};
+}
+
 export function assertSummaryOmitsSuperseded(summary: string, goal: SessionGoalState): void {
   const dropped = (goal.intent?.superseded ?? [])
     .flatMap((s) => Object.values(s.oldArguments))
@@ -123,16 +131,16 @@ export async function applyIntentFromUserText(args: {
   }
 
   if (classified.kind === "revision") {
-    await forkGoalBranchIfNeeded(args, goal);
-    const oldArguments = { ...(goal.intent?.arguments ?? {}) };
+    const oldArguments = snapshotOldArguments(goal);
     const nextText = applyRevisionToGoalText(goal.text, args.userText);
     const next: SessionGoalState = {
       ...goal,
       text: nextText,
+      status: "active",
       pendingContinue: null,
       intent: {
         function: (goal.intent?.function ?? nextText).slice(0, 200),
-        arguments: { ...oldArguments, ...classified.nextArguments },
+        arguments: { ...(goal.intent?.arguments ?? {}), ...classified.nextArguments },
         kind: "revision",
         superseded: [
           ...(goal.intent?.superseded ?? []),
@@ -144,13 +152,14 @@ export async function applyIntentFromUserText(args: {
         ],
       },
     };
+    // 先组好 tombstone 再换叶：摘要系统提示才能带上刚 superseded 的旧约束
+    await forkGoalBranchIfNeeded(args, next);
     await writeGoalStateRaw(args.sessionId, next);
     return next;
   }
 
-  // switch：先换到 Goal 锚点叶（废枝摘要），再停旧续跑开新 goal
-  await forkGoalBranchIfNeeded(args, goal);
-  const oldArguments = { ...(goal.intent?.arguments ?? { topic: goal.text }) };
+  // switch：先组 tombstone 再换到 Goal 锚点叶（废枝摘要），再停旧续跑开新 goal
+  const oldArguments = snapshotOldArguments(goal);
   const paused: SessionGoalState = {
     ...goal,
     status: "paused",
@@ -170,6 +179,7 @@ export async function applyIntentFromUserText(args: {
       ],
     },
   };
+  await forkGoalBranchIfNeeded(args, paused);
   await writeGoalStateRaw(args.sessionId, paused);
   const created = await setSessionGoal({
     services: args.services,
@@ -208,6 +218,7 @@ export async function forkGoalBranchIfNeeded(
       sessionId: args.sessionId,
       messageId: anchor,
       compactHint: buildSupersededCompactHint(goal),
+      notify: false,
     });
   } catch (err) {
     console.warn(

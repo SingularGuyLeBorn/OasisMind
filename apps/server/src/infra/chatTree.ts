@@ -216,6 +216,24 @@ function walkActivePath<T extends { id: string; parentId?: string | null }>(
   return { path, broken };
 }
 
+/** nodeId 是否为 ancestorId 自身或其沿 parentId 回溯能走到的后代。 */
+export async function isSelfOrDescendantOf(
+  db: Db,
+  sessionId: string,
+  nodeId: string,
+  ancestorId: string,
+): Promise<boolean> {
+  if (nodeId === ancestorId) return true;
+  const all = await db.chatMessage.findMany({
+    where: { sessionId },
+    select: { id: true, parentId: true },
+  });
+  const byId = new Map(all.map((m) => [m.id, m]));
+  if (!byId.has(nodeId) || !byId.has(ancestorId)) return false;
+  const { path } = walkActivePath(byId, nodeId);
+  return path.some((m) => m.id === ancestorId);
+}
+
 /**
  * 从 activeLeafId 沿 parentId 回溯到根，再反转 = 活跃路径（根→叶）。
  * 叶存在但祖先悬空时：回退到「能走到 parentId=null 的最新完整链」，并把孤叶挂到链尾，
@@ -347,8 +365,9 @@ export async function healBrokenChatTree(
 }
 
 /**
- * 树语义删尾：删除 keepMessageId 的全部后代，同事务 activeLeafId=keep。
- * 重试/编辑/重新生成唯一入口（禁止扁平分页 deleteMany）。
+ * 树语义删尾：只剪掉**当前叶方向**上 keep 的下一节点及其子树。
+ * 旁路兄弟枝保留——否则「从这里另写」之后再重试原问会把另一叉整枝删掉。
+ * 线性链上等价于「删 keep 的全部后代」。
  */
 export async function truncateAfter(
   db: PrismaClient,
@@ -366,10 +385,17 @@ export async function truncateAfter(
     });
   }
 
+  const session = await db.chatSession.findUnique({
+    where: { id: sessionId },
+    select: { activeLeafId: true },
+  });
   const all = await db.chatMessage.findMany({
     where: { sessionId },
     select: { id: true, parentId: true },
   });
+  const byId = new Map<string, { id: string; parentId: string | null }>(
+    all.map((m) => [m.id, m]),
+  );
   const children = new Map<string, string[]>();
   for (const m of all) {
     if (!m.parentId) continue;
@@ -378,15 +404,32 @@ export async function truncateAfter(
     children.set(m.parentId, list);
   }
 
-  const deletedIds: string[] = [];
-  const queue = [...(children.get(keepMessageId) ?? [])];
+  let cutRoot: string | null = null;
+  const leafId =
+    session?.activeLeafId && byId.has(session.activeLeafId) ? session.activeLeafId : keepMessageId;
+  let cur: string | null = leafId;
   const seen = new Set<string>();
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    deletedIds.push(id);
-    for (const c of children.get(id) ?? []) queue.push(c);
+  while (cur && byId.has(cur) && !seen.has(cur)) {
+    seen.add(cur);
+    const parentId: string | null = byId.get(cur)!.parentId;
+    if (parentId === keepMessageId) {
+      cutRoot = cur;
+      break;
+    }
+    cur = parentId;
+  }
+
+  const deletedIds: string[] = [];
+  if (cutRoot) {
+    const queue = [cutRoot];
+    const walked = new Set<string>();
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (walked.has(id)) continue;
+      walked.add(id);
+      deletedIds.push(id);
+      for (const c of children.get(id) ?? []) queue.push(c);
+    }
   }
 
   await db.$transaction(
@@ -394,7 +437,6 @@ export async function truncateAfter(
       if (deletedIds.length > 0) {
         await tx.chatMessage.deleteMany({ where: { id: { in: deletedIds } } });
       }
-      // 强制归位：不依赖「leaf 是否在删除集」猜测
       await tx.chatSession.update({
         where: { id: sessionId },
         data: { activeLeafId: keepMessageId, updatedAt: new Date() },
@@ -403,6 +445,8 @@ export async function truncateAfter(
     { maxWait: 10_000, timeout: 30_000 },
   );
 
+  // 树条靠 message_deleted SSE invalidate；禁止再推 session_tree_updated，
+  // 否则换叶水合会把紧接着的重试/重生流冲成空白。
   return { deletedIds };
 }
 
@@ -688,7 +732,14 @@ export type SwitchBranchResult = {
 export async function switchBranch(
   prisma: PrismaClient,
   config: AppConfig,
-  input: { sessionId: string; messageId: string; model?: string; compactHint?: string },
+  input: {
+    sessionId: string;
+    messageId: string;
+    model?: string;
+    compactHint?: string;
+    /** false：换叶后不立刻 PUSH。Goal revision/switch 要等助手落库后再推，避免另一标签水合冲掉正在流的回复。 */
+    notify?: boolean;
+  },
 ): Promise<SwitchBranchResult> {
   const session = await prisma.chatSession.findUnique({
     where: { id: input.sessionId },
@@ -781,8 +832,10 @@ export async function switchBranch(
     data: { activeLeafId: input.messageId },
   });
 
-  const { notifySessionTreeUpdated } = await import("./uiStateNotify.js");
-  notifySessionTreeUpdated(input.sessionId, input.messageId);
+  if (input.notify !== false) {
+    const { notifySessionTreeUpdated } = await import("./uiStateNotify.js");
+    notifySessionTreeUpdated(input.sessionId, input.messageId);
+  }
 
   return {
     switched: true,
