@@ -20,8 +20,8 @@
 | W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
 | W6 | done | files-accept-hint-mock 1 passed；gardens-list-mock 1 passed | `6897dec1` |
 | W7 | done | evalGoldenSync 3 passed；test:evals 12/12；test:bench 24/24 | `e32e417c` |
-| W8 | done | noVoidPromise 1 passed；现存违规 0 | （待填） |
-| W9 | | | |
+| W8 | done | noVoidPromise 1 passed；现存违规 0 | `3d942d90` |
+| W9 | done | 见门禁节 W9 行 | （待填） |
 | W10 | | | |
 | W11 | | | |
 | W12 | | | |
@@ -226,11 +226,12 @@
 
 ## W9 中段门禁
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：W10–W13 还要改 e2e/vitest；此处锁结构改造没把已有测弄红。
+- 改动文件：仅报告。
+- [OM-FREEPLAY]：无。
+- 验证：server lint 0；web lint 0（10 warnings 预存）；scenarioTestMap 3；noVoidPromise 1；mock-llm-core 144；evals 12/12；bench 24/24。
+- 遇到的问题：无。
+- **S1–S6 验收者可暂打 1；S7–S10 必须仍为 0**（尚未 W10–W12）。
 
 ## W10 推拉 PULL + 每日看板
 
