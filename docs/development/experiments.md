@@ -13,12 +13,14 @@
 
 | 模块 | 验收标准 | 到期 | 状态 |
 |------|----------|------|------|
-| Swarm 三层 + 心跳 | 管理 Agent 派生子任务，子 Agent `report_back` 后父会话可见结果气泡 | 2026-08-12 | active |
-| 审批 + AgentMail webhook | 破坏性操作出 pending 审批；邮件回复 APPROVE/REJECT 能决断 | 2026-08-12 | active |
-| 本地推理（Ollama 等） | Chat 选 `ollama/<model>` 能完整一轮对话；失败有可读错误 | 2026-08-05 | active |
-| Chat Store 不变量测试锁 | `chatStoreInvariants.test.ts` 全绿；INV-1/2/4 破则红 | 2026-08-05 | active |
-| Inbox / 平台抓取增强 | 知乎或小红书收藏同步 ≥1 条进 inbox 且可蒸馏 | 2026-08-19 | active |
+| Swarm 三层 + 心跳 | 管理 Agent 派生子任务，子 Agent `report_back` 后父会话可见结果气泡 | 2026-08-12 | done |
+| 审批 + AgentMail webhook | 破坏性操作出 pending 审批；邮件回复 APPROVE/REJECT 能决断 | 2026-08-12 | done |
+| 本地推理（Ollama 等） | Chat 选 `ollama/<model>` 能完整一轮对话；失败有可读错误 | 2026-08-05 | freeze |
+| Chat Store 不变量测试锁 | `chatStoreInvariants.test.ts` 全绿；INV-1/2/4 破则红 | 2026-08-05 | done |
+| Inbox / 平台抓取增强 | 知乎或小红书收藏同步 ≥1 条进 inbox 且可蒸馏 | 2026-08-19 | freeze |
 | UI 花活（Three.js Hero 等） | 不阻塞主线；视觉问题不单独立项延期 | — | freeze（按需） |
+
+> 路线图以 [`worth-doing.md`](./worth-doing.md) 为准，本表不是施工清单——只记录个人实验场的时间盒与冻结状态，到期未在真机收口的统一标 `freeze`，不再当作待办驱动调试。
 
 ## 状态枚举
 

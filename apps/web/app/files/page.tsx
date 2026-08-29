@@ -82,10 +82,15 @@ export default function FilesPage() {
       <PageHeader
         icon={Files}
         title="资源与文件柜"
-        description="为文章提供图片、图表或代码附件的集中托管。在这里上传的资源会被自动放置在本地上传文件夹，直接通过相对 URL 在 Markdown 中渲染引用。"
+        description="只收图片、PDF、zip、txt 四类附件，作为文章 Markdown 引用的集中托管。docx/xlsx 等文档请走编辑器导入或 document_to_markdown 工具转成正文，不要把这里当网盘。"
         action={{ label: uploadMutation.isPending ? "正在存盘..." : "上传本地资源", onClick: triggerUpload, icon: Upload, disabled: uploadMutation.isPending }}
         showDensityToggle
       />
+
+      {/* 收件类型提示：与 accept 一致，明确不收 docx/xlsx */}
+      <p data-testid="files-accept-hint" className="text-xs text-[var(--om-text-3)] -mt-2">
+        支持上传：图片（image/*）、PDF、zip、txt。docx/xlsx 不收，请用编辑器导入或 document_to_markdown 转正文。
+      </p>
 
       {/* 数据列表 */}
       {isLoading ? (
@@ -93,7 +98,7 @@ export default function FilesPage() {
       ) : !data?.items || data.items.length === 0 ? (
         <EmptyState
           title="文件柜空置"
-          description="没有上传过任何附件或图片资源。点击按钮立即上传您的第一张 Markdown 贴图。"
+          description="只收图片、PDF、zip、txt。没有上传过任何资源时点按钮上传第一张 Markdown 贴图或 PDF 附件。"
           actionLabel="上传示例文件"
           onAction={triggerUpload}
         />
