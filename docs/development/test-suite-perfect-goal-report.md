@@ -27,7 +27,7 @@
 | W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | `6c2b4376` |
 | W13 | done | 见「门禁」表；theme-toggle 挂场景 1 map；master fast-forward 到 `408210cc` 后复跑与施工期同数字。Goal 保持 active | `408210cc` |
 | W13′ | done | `/runs` 独立 F5 it + map claim；`admin-live-push-mock` 7 passed。Goal 仍 active | `627535e2` |
-| W13″ | done | evals 文首不再写成证明没变傻；盘点「留」改 done | 本提交 |
+| W13″ | done | evals 文首不再写成证明没变傻；盘点「留」改 done | `14a8223c` |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
@@ -291,7 +291,8 @@
 
 - 根因复述：完成判定第 10 条禁止把 mock evals 写成「模型没变傻」。诚实声明是否定句，但 README 第 3 行导语仍是肯定「证明没变傻」。盘点表「留」行还标 pending，验收者会以为第 3 节没做完。
 - 改动文件：`evals/README.md` 导语；本报告盘点「留」改 done、W13′ hash、S5 证据。
-- 不改哪些面：诚实声明四条原文一字不改；不重跑 `test:evals`（只改导语文案）。
+- 不改哪些面：诚实声明四条原文一字不改。
+- 验证：本提交之后在 `14a8223c`（与当时 master 同 SHA）复跑 W13 全套门禁，见下表末行。
 - [OM-FREEPLAY]：导语改写是为堵住 S5=0，不是改 W7 锁死的诚实声明块。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
@@ -324,6 +325,7 @@
 | `pnpm --filter @oasismind/mock-llm-core test` | 0 | 19 files / 141 tests |
 | `pnpm test:evals` | 0 | 12/12 |
 | `pnpm test:bench` | 0 | 24/24；拆卸期 prisma DATABASE_URL stderr |
-| mock e2e（本 Goal 新/改 spec） | 0 | W13：`e2e/chat-mock.spec.ts` files-accept-hint-mock gardens-list-mock daily-board-mock admin-live-push-mock：11 passed |
-| merge 后复跑（master=`408210cc`） | 0 | 与上行 W13 全量同数字（施工 worktree 当时已与 master 同 SHA） |
-| mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed（含 `/runs 创建 interrupted 后刷新页面 hint 仍在`）；master ff 到 `627535e2` 后再跑仍 7 passed |
+| mock e2e（本 Goal 新/改 spec） | 0 | W13：当时 11 passed（尚无 `/runs` 独立 F5 it） |
+| merge 后复跑（master=`408210cc`） | 0 | 与 W13 全量同数字 |
+| mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed；master=`627535e2` 后再跑仍 7 |
+| **当前 HEAD 复跑（`14a8223c`=master）** | **0** | server/web lint 0；`--project pure` 10/65；server 247/1668；web 72/374；mock-llm-core 141；evals 12/12；bench 24/24（prisma DATABASE_URL stderr）；Goal mock e2e **12 passed** |
