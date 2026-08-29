@@ -328,4 +328,5 @@
 | mock e2e（本 Goal 新/改 spec） | 0 | W13：当时 11 passed（尚无 `/runs` 独立 F5 it） |
 | merge 后复跑（master=`408210cc`） | 0 | 与 W13 全量同数字 |
 | mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed；master=`627535e2` 后再跑仍 7 |
-| **当前 HEAD 复跑（`14a8223c`=master）** | **0** | server/web lint 0；`--project pure` 10/65；server 247/1668；web 72/374；mock-llm-core 141；evals 12/12；bench 24/24（prisma DATABASE_URL stderr）；Goal mock e2e **12 passed** |
+| **当前 HEAD 复跑（`14a8223c` 施工树）** | **0** | server/web lint 0；`--project pure` 10/65；server 247/1668；web 72/374；mock-llm-core 141；evals 12/12；bench 24/24；Goal mock e2e **12 passed** |
+| **并入原仓 master 后再跑（`b51cffd1`）** | **0** | 原仓 `D:\ALL IN AI\OasisMind` master。server/web lint 0（web 10 warning）；`--project pure` 17 files / 103 tests（主干另有预算/校验纯测，闸仍绿）；server 247/1668；web 72/374；mock-llm-core 20/144；evals 12/12；bench 24/24；Goal mock e2e **12 passed** |
