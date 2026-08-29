@@ -22,12 +22,8 @@
 | W7 | done | `pnpm test:evals` 12/12；`pnpm --filter @oasismind/mock-llm-core test` 141 passed；`pnpm --filter @oasismind/server test -- evalGoldenSync` 3 passed；`pnpm test:bench` 24/24 退出码 0 | `193a6350` |
 | W8 | done | `pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；web lint 退出码 0；扫描 0 条生产违规 | `24ddc990` |
 | W9 | done | server/web lint 0；scenarioTestMap/noVoidPromise 绿；W3/W4 点名 7 files 84 tests；旧测试路径 git ls-files 空。S7–S10 尚未 W10–W12，不能交十分卷 | `e9d42654` |
-| W10 | done | mock e2e admin-live-push + daily-board + files/gardens 9 passed；scenarioTestMap 绿 | （本 W commit） |
-| W7 | | | |
-| W8 | | | |
-| W9 | | | |
-| W10 | | | |
-| W11 | | | |
+| W10 | done | mock e2e admin-live-push + daily-board + files/gardens 9 passed；scenarioTestMap 绿 | `80b8e14b` |
+| W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | |
 | W12 | | | |
 | W13 | | | |
 
@@ -69,6 +65,8 @@
 | W1 eval-mock `it` | it 必须是 it(/test( 标题子串 | golden JSON 没有 it() | 用 JSON 字段子串过 includes 闸 | 是 |
 | W3 B4 | 合并保留 resume 再入池断言 | 与重启不续跑铁律冲突 | 保留已改好的 failed 断言，记 testing.md | 是 |
 | W7 测路径 | 优先 mock-llm-core | shared 默认清单无 run_shell | server + listNativeTools | 是 |
+| W11 pageErrorGuard | 同步 `() => void` | Playwright `addInitScript` 必须 await | `installPageErrorGuard` 为 async，返回 `() => Promise<void>` | 是 |
+| W11 mock web_search | 不准放宽 chat-mock「全文已存」 | mock 叶子 JSON 仅 3945 字，低于 4000 阈值 | 对含 OasisMind 的查询垫长 snippet（repeat 500），不改断言 | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -127,11 +125,11 @@
 | 改 | evals/README.md | done | 文首诚实声明 + mini Harness 非模型质量一句 |
 | 补 | evalGoldenSync.test.ts | done | apps/server/src/__tests__/evalGoldenSync.test.ts（listNativeTools） |
 | 补 | noVoidPromise.test.ts | done | apps/web/lib/__tests__/noVoidPromise.test.ts |
-| 补 | catchUnlessCancelled.test.ts | pending | |
-| 补 | uiStateNotify.hub.test.ts | pending | |
+| 补 | catchUnlessCancelled.test.ts | done | apps/web/lib/__tests__/catchUnlessCancelled.test.ts |
+| 补 | uiStateNotify.hub.test.ts | done | apps/server/src/__tests__/uiStateNotify.hub.test.ts |
 | 补 | admin-live-push-mock F5 it | done | cron/approvals reload 后卡片仍在 |
 | 补 | daily-board-mock.spec.ts | done | apps/web/e2e/daily-board-mock.spec.ts |
-| 补 | e2e/helpers/pageErrorGuard.ts | pending | |
+| 补 | e2e/helpers/pageErrorGuard.ts | done | apps/web/e2e/helpers/pageErrorGuard.ts；仅挂 chat-mock.spec.ts |
 | 补 | src/__tests__/pure/ + vitest projects | pending | |
 | 补 | docs/development/testing.md | done | W0 |
 | 改 | scenario-test-map.json + scenarioTestMap.test.ts | done | W1：每条 asserts[]；校验 it 子串 |
@@ -252,11 +250,12 @@
 
 ## W11 运行时路径
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：jsdom 抓不到 Next overlay；W8 源码闸只防写法。当初打脸的是 CancelledError unhandled rejection。notify 单测只 spy `pushExternalEvent`，不证明 hub 里真有事件。成功 = catchUnlessCancelled 锁静默、chat-mock 装 pageerror+unhandledrejection 守卫、notify 写入真 hub 且先推再订能重放。
+- 改动文件：`apps/web/lib/__tests__/catchUnlessCancelled.test.ts`；`apps/web/e2e/helpers/pageErrorGuard.ts`；`apps/web/e2e/chat-mock.spec.ts`；`apps/server/src/__tests__/uiStateNotify.hub.test.ts`；`apps/server/src/infra/mockNativeTools.ts`（垫长，见下）。
+- 不改哪些面：不改 `catchUnlessCancelled` 生产语义；不给全部 mock spec 挂守卫；不 `vi.mock(sessionStreamHub)`；不加 `__peekForTests`。
+- [OM-FREEPLAY]：`installPageErrorGuard` 因必须 `await page.addInitScript` 改为 async，返回 `() => Promise<void>`。默认过滤列表为空。chat-mock 既有「全文已存」断言要求 compacted；实测垫 400 次仅 3945 字（阈值 4000），改 pad 为 500 次，不放宽断言。afterEach 在 page 已关闭时跳过 evaluate，避免失败测拖垮下一条。
+- 验证：`pnpm --filter @oasismind/web test -- catchUnlessCancelled` 退出码 0（2 tests）；`pnpm --filter @oasismind/server test -- uiStateNotify.hub` 退出码 0（1 test）；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 退出码 0（2 passed）。滤名必须用 `e2e/chat-mock.spec.ts`，裸 `chat-mock.spec` 会误匹配 `scenario-partial-chat-mock.spec.ts`。
+- 遇到的问题：chat-mock「全文已存」在垫长前红；属 W11 无法验收的预存断言/叶子尺寸错位，按范围外 bug 例外修了 mock 叶子。
 
 ## W12 server 纯测并行
 
@@ -284,6 +283,9 @@
 ## 铁律冲突 / 未做
 
 ## 残留（范围外发现、本 Goal 故意没修）
+
+- 其它 mock spec 未挂 pageErrorGuard（prompt 只强制 chat-mock）。预存 pageerror 若有，W13 全量 e2e 时记现象，不在本 Goal 扩守卫。
+- `pnpm --filter @oasismind/web test:e2e:mock -- chat-mock.spec` 会误匹配 `scenario-partial-chat-mock.spec.ts`；验收请用 `e2e/chat-mock.spec.ts`。
 
 ## 门禁
 

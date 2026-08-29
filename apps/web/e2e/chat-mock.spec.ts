@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { SERVER_URL } from "./helpers/trpcE2e";
+import { installPageErrorGuard } from "./helpers/pageErrorGuard";
 import {
   waitForChatReady,
   sendChatMessage,
@@ -11,10 +12,21 @@ import {
 } from "./helpers/mockChatFixture";
 
 test.describe("Chat Mock — 工具调用与回答", () => {
-  test.beforeEach(async ({ request }) => {
+  let assertPageClean: (() => Promise<void>) | undefined;
+
+  test.beforeEach(async ({ page, request }) => {
     await expect
       .poll(async () => (await request.get(`${SERVER_URL}/health`)).ok())
       .toBe(true);
+    assertPageClean = await installPageErrorGuard(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    if (!assertPageClean) return;
+    const fn = assertPageClean;
+    assertPageClean = undefined;
+    if (page.isClosed()) return;
+    await fn();
   });
 
   test("触发 web_search 工具并显示 pill/hint", async ({ page }) => {
