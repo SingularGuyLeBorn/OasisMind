@@ -1754,6 +1754,63 @@ test.describe("Chat Mock — 对话分支", () => {
     await expect(bookmarkBtn).toHaveAttribute("aria-label", "加书签", { timeout: 8_000 });
   });
 
+  test("W7 Goal 顶栏已核实步骤：注入 fixture 后展开列表，F5 仍在", async ({ page }) => {
+    await waitForChatReady(page);
+    const sessionId = new URL(page.url()).searchParams.get("sessionId");
+    expect(sessionId).toBeTruthy();
+
+    await sendChatMessage(page, "你好");
+    await waitForStreamingComplete(page);
+    await expectAssistantAnswer(page, GREETING);
+    await waitForSessionIdle(page);
+
+    await trpcMutate("session.setGoal", {
+      sessionId,
+      text: "过夜目标：把 W7 做完",
+      mode: "goal",
+      startNow: false,
+    });
+    await expect(page.getByTestId("chat-goal-bar")).toContainText("W7", { timeout: 15_000 });
+    await pauseStandingGoal(sessionId!);
+
+    // 注入 1 条已核实步骤 fixture（测试专用接口，仅 E2E 暴露）
+    await trpcMutate("session.__setVerifiedProgressForTest", {
+      sessionId,
+      items: [
+        {
+          id: "v1",
+          claim: "已核实：W7 顶栏列出已核实步骤",
+          evidenceRefs: ["e2e-verified"],
+          auditedAt: "2026-08-29T00:00:00.000Z",
+          auditor: "system",
+        },
+      ],
+    });
+    await expect(page.getByTestId("chat-goal-verified-count")).toContainText("已核实 1 步", { timeout: 10_000 });
+
+    // 展开核实列表
+    const toggle = page.getByTestId("chat-goal-verified");
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(page.getByTestId("chat-goal-verified-item")).toContainText("W7 顶栏列出已核实步骤", {
+      timeout: 10_000,
+    });
+
+    // F5 后仍在（PULL：getGoal 带回 goalState 含 verifiedProgress）
+    await page.reload();
+    await expect(
+      page.locator(`[data-testid="chat-session-pane"][data-session-id="${sessionId}"]`),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("chat-goal-bar")).toContainText("W7", { timeout: 15_000 });
+    await expect(page.getByTestId("chat-goal-verified-count")).toContainText("已核实 1 步", { timeout: 10_000 });
+    await page.getByTestId("chat-goal-verified").click();
+    await expect(page.getByTestId("chat-goal-verified-item")).toContainText("W7 顶栏列出已核实步骤", {
+      timeout: 10_000,
+    });
+
+    await trpcMutate("session.clearGoal", { sessionId });
+  });
+
   test("另写仍是同一会话，不是 session.fork 复制", async ({ page }) => {
     const sessionId = await seedGreetingSearchFork(page);
     await expectSessionIdUnchanged(page, sessionId);

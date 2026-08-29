@@ -408,6 +408,40 @@ export const sessionRouter = router({
       const tokens = getSessionTokenAttribution(input.sessionId);
       return { goal, tokens };
     }),
+  // W7 测试专用：仅 E2E 环境暴露，直接写 goalState.verifiedProgress 供 E2E 验证顶栏列表。
+  // 不动 Auditor 逻辑（不把 Auditor 打成永远通过），仅注入 fixture。
+  __setVerifiedProgressForTest:
+    process.env.E2E === "1"
+      ? publicProcedure
+          .meta({ description: "测试专用：注入 verifiedProgress fixture。", aiReadable: false })
+          .input(
+            z.object({
+              sessionId: z.string().cuid(),
+              items: z.array(
+                z.object({
+                  id: z.string(),
+                  claim: z.string().max(500),
+                  evidenceRefs: z.array(z.string()).min(1),
+                  auditedAt: z.string(),
+                  auditor: z.enum(["system", "critic"]),
+                }),
+              ),
+            }),
+          )
+          .mutation(async ({ ctx, input }) => {
+            const { readGoalStateRaw } = await import("../goalLoop.js");
+            const current = await readGoalStateRaw(input.sessionId);
+            if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "会话无 Goal" });
+            const next = { ...current, verifiedProgress: input.items };
+            await ctx.prisma.chatSession.update({
+              where: { id: input.sessionId },
+              data: { goalState: next as never },
+            });
+            return { ok: true as const, count: input.items.length };
+          })
+      : publicProcedure.input(z.object({ sessionId: z.string().cuid() })).mutation(() => {
+          throw new TRPCError({ code: "NOT_FOUND", message: "测试专用接口未启用" });
+        }),
   update: publicProcedure.meta({ description: "更新会话标题或系统提示。", aiReadable: true }).input(updateSessionSchema).mutation(({ ctx, input }) => ctx.services.session.update(input)),
   compact: publicProcedure
     .meta({ description: "手动压缩会话上下文：生成摘要、写入 contextSummary 并落库边界消息。", aiReadable: true })
