@@ -12,12 +12,12 @@
 | W | 状态 | 证据 | commit |
 |---|---|---|---|
 | W1 | done | web lint 退出码 0；`experiments.md:14-21`；`files/page.tsx:85,91-93,101` | 2277aab2 |
-| W2 | done | server `chatTree` 17 passed；web `chatSessionTreeBar` 9 passed；lint 0；E2E 已写待跑 | af220b08 |
+| W2 | done | server `chatTree` 17 passed；web `chatSessionTreeBar` 9 passed；lint 0；E2E 书签 UI 绿 | af220b08 |
 | W3 | done | server `chatHistory` 17 + `chatImageEnrich` 3 + `autoCompact/compactDataLeakage` 18 + `mock-llm-core` 141 passed；lint 0 | df6a0ce7 |
-| W4 | done | server `inboxDistill` 11 + `mock-llm-core` 141 passed；lint 0；E2E 已写待跑 | b60fefd5 |
+| W4 | done | server `inboxDistill` 11 + `mock-llm-core` 141 passed；lint 0；E2E taste 绿 | b60fefd5 |
 | W5 | done | server `morningBrief` 1 passed；lint 0 | 6339f1c4 |
 | W6 | done | server `workspaceStages+swarmHarnessExtras` 3 + web `chatStagesPanel` 3 passed；lint 0 | 4f952c85 |
-| W7 | done | web `chatGoalBar` 3 passed；lint 0；E2E 已写待跑 | 571a6a3e |
+| W7 | done | web `chatGoalBar` 3 passed；lint 0；E2E Goal verified 绿 | 571a6a3e |
 
 ## 异议与偏离
 
@@ -86,11 +86,11 @@
 ## 残留（范围外发现、本 Goal 故意没修）
 
 - 全量 `pnpm --filter @oasismind/server test` 有 4 个预存失败（非本 Goal 引入，均在未改文件）：`resilientLlmClient.test.ts` 3 条 429 重试（flaky）；`trpc.test.ts` Run entity CRUD（`run.update` 返回 success:false）。已在 master 复现确认预存，本 Goal 不修。
-- E2E（W2 书签 / W4 taste / W7 goal-verified）已写且 lint 通过；实跑需 `build:mock` + mock-llm/server/web 全套，放收尾门禁一次跑；本会话因环境与外部进程干扰未实跑，记「待收尾跑」。
+- E2E（W2 书签 / W4 taste / W7 goal-verified）已写并实跑全绿（`build:mock` + mock-llm/server/web 全套，3 条均通过）。
 
 ## 门禁（lint / 点名测试 / 全量 test）
 
 - lint：server lint 退出码 0；web lint 退出码 0（0 errors / 10 warnings，warnings 均预存）。
 - 点名测试（全绿）：server `chatTree`(17)、`chatHistory`(17)、`chatImageEnrich`(3)、`autoCompact`(12)+`compactDataLeakage`(6)、`inboxDistill`(11)、`morningBrief`(1)、`workspaceStages`(1)+`swarmHarnessExtras`(2)、`agentRunPhase/agentRunLock/toolResultMetadata`(18)；web `chatSessionTreeBar`(9)、`chatStagesPanel`(3)、`chatGoalBar`(3)；`mock-llm-core`(141)。
-- 全量 test：server 全量 4 个预存失败（见残留，非本 Goal）；web 全量未跑（单测已绿，E2E 待收尾）。
+- 全量 test：server 全量 4 个预存失败（见残留，非本 Goal）；web 全量未跑（单测 + 我新增 3 条 E2E 已绿）。
 - git status：本分支 `feat/worth-doing-w1-w7` 工作树干净（W1–W7 + 报告全部按主题提交）。
