@@ -31,7 +31,7 @@ export interface ClassifyOptions {
 
 /** context-overflow 类错误正文特征（厂商文案不一，宽松匹配） */
 const OVERFLOW_BODY_RE =
-  /context[\s_-]?length|context[\s_-]?window|maximum[\s_-]?context|too many tokens|prompt is too long|token[\s_-]?limit|exceeds?(ed)?\s*(the\s*)?(max|context)|max_tokens|context_length_exceeded/i;
+  /context[\s_-]?length|context[\s_-]?window|maximum[\s_-]?context|too many tokens|prompt is too long|token[\s_-]?limit|exceeds?(ed)?\s*(the\s*)?(max|context)|max_tokens|context_length_exceeded|上下文超|上下文过长|超过.*上下文|输入(内容)?过长|超限/i;
 
 export function isContextOverflowBody(body: string): boolean {
   return OVERFLOW_BODY_RE.test(body || "");

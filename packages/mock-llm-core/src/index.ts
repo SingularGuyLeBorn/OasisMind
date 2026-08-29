@@ -3,7 +3,7 @@
  *
  * 消费者：
  * - apps/server：llmClient.ts 在无 MOCK_LLM_URL 时走 mockChatCompletion/Stream；有 URL 时走真 HTTP
- * - apps/mock-llm：OpenAI 兼容 HTTP（chat/completions + /v1/responses） + 错误注入
+ * - apps/mock-llm：OpenAI 兼容 HTTP + 厂商 codec（错误体 / 响应装饰 / DSML 泄漏） + 错误注入
  */
 
 export type {
@@ -64,6 +64,9 @@ export {
   SUBAGENT_WAIT_SLEEP_SECONDS,
   MOCK_BRANCH_SUMMARY_BODY,
   MOCK_BRANCH_SUMMARY_FAIL_TOKEN,
+  listMatchingScenarios,
+  nonCatchAllOverlaps,
+  type ScenarioMatch,
 } from "./scenarioDefs.js";
 
 export {
@@ -105,3 +108,36 @@ export {
   normalizeChatTools,
   type OpenAiSseMeta,
 } from "./openaiWire.js";
+
+export {
+  type MockVendorId,
+  MOCK_VENDOR_IDS,
+  inferMockVendor,
+  normalizeVendorId,
+  parseMockQuirks,
+  shouldLeakDsml,
+  formatDeepseekDsml,
+  splitDsmlForPartialPrefix,
+  withVendorStreamQuirks,
+  vendorErrorBody,
+  vendorErrorHeaders,
+  vendorSuccessHeaders,
+  decorateChatCompletion,
+  decorateChatCompletionChunk,
+  encodeVendorChatCompletionSse,
+} from "./providerSim.js";
+
+export { CHAT_COVERAGE, type ChatCoverageRow } from "./chatCoverage.js";
+
+export {
+  type CassetteMode,
+  type CassetteRequest,
+  type CassetteEntry,
+  getCassetteMode,
+  getCassetteDir,
+  canonicalCassetteRequest,
+  cassetteKey,
+  loadCassettes,
+  findCassette,
+  appendCassette,
+} from "./cassette.js";

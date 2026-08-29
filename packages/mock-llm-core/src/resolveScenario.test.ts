@@ -68,6 +68,30 @@ describe("resolveScenario 强制名", () => {
     expect(resolveScenario({ messages: [{ role: "user", content: "你好" }] }).name).toBe("greeting");
   });
 
+  it("你好后跟工具结果走 tool_followup，不掉进问候", () => {
+    expect(
+      resolveScenario({
+        messages: [
+          { role: "user", content: "你好" },
+          { role: "tool", name: "web_search", content: "ok" },
+        ],
+        tools: [webSearchTool],
+      }).name,
+    ).toBe("tool_followup");
+  });
+
+  it("forced=greeting 即使已有工具结果仍可点名问候", () => {
+    expect(
+      resolveScenario({
+        messages: [
+          { role: "user", content: "你好" },
+          { role: "tool", name: "web_search", content: "ok" },
+        ],
+        scenario: "greeting",
+      }).name,
+    ).toBe("greeting");
+  });
+
   it("分支摘要提示词命中 branch_summary，不落 greeting", async () => {
     const opts = {
       messages: [
@@ -190,6 +214,7 @@ describe("resolveScenario match 容错与 register", () => {
     expect(summaries[summaries.length - 1]?.name).toBe("greeting");
     expect(summaries.find((s) => s.name === "greeting")?.catchAll).toBe(true);
     expect(summaries.find((s) => s.name === "reply_catalog")?.catchAll).toBe(true);
+    expect(summaries.find((s) => s.name === "tool_followup")?.catchAll).toBe(true);
     expect(summaries.find((s) => s.name === "queue_slow_stream")?.customStream).toBe(true);
     expect(summaries.every((s) => typeof s.catchAll === "boolean" && typeof s.customStream === "boolean")).toBe(
       true,

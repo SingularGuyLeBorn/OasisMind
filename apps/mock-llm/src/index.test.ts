@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { createMockLlmApp } from "./index.js";
 
 function listen(): Promise<{ server: Server; url: string }> {
@@ -639,5 +642,156 @@ describe("mock-llm HTTP OpenAI 协议", () => {
       expect(ring.hits[0].scenario).toBe(c.scenario);
       expect(ring.hits[0].status).toBe(400);
     }
+  });
+
+  it("按 model 回显 x-mock-provider，智谱 overflow 用中文超限体", async () => {
+    const res = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-mock-fail": "overflow" },
+      body: JSON.stringify({
+        model: "glm-4-flash",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(res.headers.get("x-mock-provider")).toBe("zhipu");
+    const body = await res.json();
+    expect(JSON.stringify(body)).toMatch(/上下文/);
+  });
+
+  it("x-mock-provider 覆盖 model 推断", async () => {
+    const res = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-mock-fail": "429",
+        "x-mock-provider": "anthropic",
+      },
+      body: JSON.stringify({
+        model: "deepseek-v4-flash",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    });
+    expect(res.status).toBe(429);
+    expect(res.headers.get("x-mock-provider")).toBe("anthropic");
+    const body = await res.json();
+    expect(body.type).toBe("error");
+    expect(body.error.type).toBe("rate_limit_error");
+  });
+
+  it("DeepSeek 工具流默认泄漏 DSML；x-mock-quirk=clean 关闭", async () => {
+    const payload = {
+      model: "deepseek-v4-flash",
+      stream: true,
+      messages: [{ role: "user", content: "请搜索 OasisMind" }],
+      tools: [
+        {
+          type: "function",
+          function: { name: "web_search", description: "search", parameters: { type: "object" } },
+        },
+      ],
+    };
+    const leaked = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then((r) => r.text());
+    expect(leaked).toMatch(/DSML/);
+    const clean = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-mock-quirk": "clean" },
+      body: JSON.stringify(payload),
+    }).then((r) => r.text());
+    expect(clean).not.toMatch(/DSML/);
+  });
+
+  it("DeepSeek 非流式工具回合 content 含 DSML，usage 带 cache 字段", async () => {
+    const res = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "deepseek-v4-flash",
+        messages: [{ role: "user", content: "请搜索 OasisMind" }],
+        tools: [
+          {
+            type: "function",
+            function: { name: "web_search", description: "search", parameters: { type: "object" } },
+          },
+        ],
+      }),
+    });
+    expect(res.headers.get("x-mock-provider")).toBe("deepseek");
+    expect(res.headers.get("ds-request-id")).toBeTruthy();
+    const body = await res.json();
+    expect(body.choices[0].message.content).toContain("DSML");
+    expect(body.choices[0].message.tool_calls[0].function.name).toBe("web_search");
+    expect(body.system_fingerprint).toBeNull();
+    expect(body.usage.prompt_cache_miss_tokens).toBe(body.usage.prompt_tokens);
+  });
+
+  it("POST /debug/resolve 返回赢家与全部命中", async () => {
+    const res = await fetch(`${url}/debug/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "你好" }] }),
+    });
+    const body = await res.json();
+    expect(body.winner).toBe("greeting");
+    expect(body.matches.some((m: { name: string }) => m.name === "greeting")).toBe(true);
+  });
+
+  it("GET /debug/coverage 金表全绿", async () => {
+    const body = await fetch(`${url}/debug/coverage`).then((r) => r.json());
+    expect(body.ok).toBe(true);
+    expect(body.rows.length).toBeGreaterThan(10);
+  });
+
+  it("你好 + 工具结果走 tool_followup 不是问候", async () => {
+    const res = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          { role: "user", content: "你好" },
+          { role: "tool", name: "web_search", content: "ok" },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: { name: "web_search", description: "search", parameters: { type: "object" } },
+          },
+        ],
+      }),
+    });
+    expect(res.headers.get("x-mock-matched-scenario")).toBe("tool_followup");
+    const body = await res.json();
+    expect(body.choices[0].message.content).toContain("已根据工具结果继续处理");
+    expect(body.choices[0].message.content).not.toContain("你好！我是 Mock LLM");
+  });
+
+  it("cassette record 后再 replay 同一请求", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-cas-http-"));
+    process.env.MOCK_LLM_CASSETTE = "record";
+    process.env.MOCK_LLM_CASSETTE_DIR = dir;
+    const payload = {
+      model: "mock-llm",
+      messages: [{ role: "user", content: "这段话本来会进目录而不是问候" }],
+    };
+    const recorded = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then((r) => r.json());
+    process.env.MOCK_LLM_CASSETTE = "replay";
+    const replay = await fetch(`${url}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    expect(replay.headers.get("x-mock-cassette")).toBeTruthy();
+    const body = await replay.json();
+    expect(body.choices[0].message.content).toBe(recorded.choices[0].message.content);
+    delete process.env.MOCK_LLM_CASSETTE;
+    delete process.env.MOCK_LLM_CASSETTE_DIR;
   });
 });

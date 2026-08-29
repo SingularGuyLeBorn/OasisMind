@@ -211,6 +211,7 @@ describe("compactCut overflow 分类与重试", () => {
       "overflow",
     );
     expect(classifyLlmError(400, "bad request")).toBe("fatal");
+    expect(classifyLlmError(400, "输入内容过长，超过模型最大上下文长度")).toBe("overflow");
     expect(isContextOverflowError(new LlmHttpError("ctx", 400, "prompt is too long"))).toBe(true);
     expect(
       isContextOverflowError(

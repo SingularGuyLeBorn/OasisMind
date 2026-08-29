@@ -1050,9 +1050,20 @@ export const scenarios: MockLlmScenario[] = [
     completion: (opts) => catalogCompletion(opts),
   },
   {
+    /** 有工具结果且没被更具体的 *_final 接住时，禁止掉进问候。 */
+    name: "tool_followup",
+    catchAll: true,
+    match: (opts, forced) => forced === "tool_followup" || hasAnyToolResult(opts),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "已根据工具结果继续处理。",
+      toolCalls: [],
+    }),
+  },
+  {
     name: "greeting",
     catchAll: true,
-    match: () => true,
+    match: (opts, forced) => forced === "greeting" || !hasAnyToolResult(opts),
     completion: (opts) => ({
       ...baseResult(opts),
       content: "你好！我是 Mock LLM，正在为你服务。",
@@ -1092,6 +1103,30 @@ function matchScenarioSafe(
     mockLog(`scenario match threw: ${s.name} ${detail}`);
     return false;
   }
+}
+
+export type ScenarioMatch = {
+  name: string;
+  index: number;
+  catchAll: boolean;
+};
+
+/** 所有 match===true 的场景（含赢家之后仍命中的），供金表 /debug/resolve。 */
+export function listMatchingScenarios(opts: MockLlmOptions): ScenarioMatch[] {
+  const forced = forcedScenarioName(opts);
+  const matches: ScenarioMatch[] = [];
+  for (let index = 0; index < scenarios.length; index++) {
+    const s = scenarios[index];
+    if (forced && s.catchAll && s.name !== forced) continue;
+    if (matchScenarioSafe(s, opts, forced)) {
+      matches.push({ name: s.name, index, catchAll: !!s.catchAll });
+    }
+  }
+  return matches;
+}
+
+export function nonCatchAllOverlaps(matches: ScenarioMatch[]): ScenarioMatch[] {
+  return matches.filter((m) => !m.catchAll);
 }
 
 export function resolveScenario(opts: MockLlmOptions): MockLlmScenario {
@@ -1142,21 +1177,34 @@ export async function mockChatCompletion(
   scenario: MockLlmScenario = resolveScenario(options),
 ): Promise<LlmCompletionResult> {
   throwIfAborted(options.signal);
-  recordInProcessMockHit({
+  const hitBase = {
     scenario: scenario.name,
     lastUserText: lastUserText(options).slice(0, 200),
     lastSystemText: lastSystemText(options).slice(0, 400),
     transcriptText: transcriptText(options),
-  });
+    model: options.model,
+    stream: !!options.stream,
+    tools: listedToolNames(options),
+    requestId: process.env.MOCK_LLM_REQUEST_ID?.trim() || undefined,
+    provider: options.model ? undefined : "mock",
+  };
   let raw: LlmCompletionResult;
   try {
     raw = scenario.completion(options);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     mockLog(`scenario completion threw: ${scenario.name} ${detail}`);
+    recordInProcessMockHit({ ...hitBase, status: 500, provider: "mock" });
     throw err;
   }
-  return finalizeMockResult(applyThinkingPolicy(normalizeCompletionShape(raw), options), options);
+  const result = finalizeMockResult(applyThinkingPolicy(normalizeCompletionShape(raw), options), options);
+  recordInProcessMockHit({
+    ...hitBase,
+    status: 200,
+    finishReason: result.finishReason,
+    provider: result.provider,
+  });
+  return result;
 }
 
 /**
@@ -1194,7 +1242,7 @@ export async function* mockChatCompletionStream(
   options: MockLlmOptions,
   scenario: MockLlmScenario = resolveScenario(options),
 ): AsyncGenerator<StreamChunk> {
-  const result = await mockChatCompletion(options, scenario);
+  const result = await mockChatCompletion({ ...options, stream: true }, scenario);
   yield* streamMockResult(options, scenario, result);
 }
 

@@ -9,23 +9,35 @@
  *   x-mock-delay-ms: 500
  *   x-mock-stream-break: after-5
  *   x-mock-scenario: web_search   （也可用 ?scenario=）
+ *   x-mock-provider: deepseek|kimi|zhipu|openai|...  （覆盖 model 推断）
+ *   x-mock-quirk: clean|dsml|dsml-split|dsml-one
  */
 
 import express from "express";
 import {
   MockLlmUnknownScenarioError,
-  encodeChatCompletionSse,
+  CHAT_COVERAGE,
+  decorateChatCompletion,
   encodeResponsesSse,
+  encodeVendorChatCompletionSse,
+  findCassette,
+  appendCassette,
+  getCassetteDir,
+  getCassetteMode,
+  inferMockVendor,
   isAbortError,
   lastUserText,
   lastSystemText,
   transcriptText,
+  listMatchingScenarios,
   listMockOpenAiModels,
   listScenarioNames,
   listScenarioSummaries,
   mockChatCompletion,
+  nonCatchAllOverlaps,
   normalizeChatTools,
   parseHttpThinking,
+  parseMockQuirks,
   parseToolChoice,
   resolveScenario,
   responsesInputToMessages,
@@ -33,11 +45,16 @@ import {
   streamMockResult,
   toChatCompletionResponse,
   toResponsesResult,
+  vendorErrorBody,
+  vendorErrorHeaders,
+  vendorSuccessHeaders,
+  withVendorStreamQuirks,
   type LlmCompletionResult,
   type LlmMessage,
   type LlmToolDefinition,
   type MockLlmOptions,
   type MockLlmScenario,
+  type MockVendorId,
   type OpenAiSseMeta,
 } from "@oasismind/mock-llm-core";
 
@@ -66,6 +83,7 @@ export interface LastMockHit {
   finishReason?: string | null;
   status: number;
   requestId?: string;
+  provider?: MockVendorId;
 }
 
 function headerStr(req: express.Request, name: string): string {
@@ -112,6 +130,24 @@ function echoRequestId(req: express.Request, res: express.Response): string | un
   const id = headerStr(req, "x-request-id");
   if (id) res.setHeader("x-request-id", id);
   return id || undefined;
+}
+
+function resolveVendor(req: express.Request, model?: string): MockVendorId {
+  return inferMockVendor(model, headerStr(req, "x-mock-provider"));
+}
+
+function resolveQuirks(req: express.Request): Set<string> {
+  // [OM-FREEPLAY] 无 header 时读进程 env，方便单独起 mock-llm 用 curl 复现脏路径。
+  return parseMockQuirks(headerStr(req, "x-mock-quirk") || process.env.MOCK_LLM_QUIRK);
+}
+
+function applyVendorHeaders(
+  res: express.Response,
+  headers: Record<string, string>,
+): void {
+  for (const [k, v] of Object.entries(headers)) {
+    if (!res.getHeader(k)) res.setHeader(k, v);
+  }
 }
 
 function sendOpenAiModel(res: express.Response, id: string): void {
@@ -223,14 +259,14 @@ function applyFailInjection(req: express.Request, res: express.Response): boolea
     "504": 504,
   };
   const status = statusMap[fail] ?? (fail === "overflow" ? 400 : 500);
-  const body =
-    fail === "overflow"
-      ? { error: { message: "context_length_exceeded: prompt is too long", type: "invalid_request_error" } }
-      : { error: { message: `Mock injected ${fail}`, type: "mock_injection" } };
+  const vendor = resolveVendor(req, (req.body as { model?: string } | undefined)?.model);
+  const payload = vendorErrorBody(vendor, fail, status);
+  const requestId = headerStr(req, "x-request-id") || undefined;
   later(() => {
     if (res.headersSent || res.destroyed) return;
     if (status === 429) res.setHeader("Retry-After", "1");
-    res.status(status).json(body);
+    applyVendorHeaders(res, vendorErrorHeaders(vendor, status, requestId));
+    res.status(status).json(payload);
   });
   return true;
 }
@@ -263,7 +299,7 @@ export function createMockLlmApp(): express.Express {
     scenario: string,
     ms: number,
     id: string,
-    extra?: { finishReason?: string | null; status?: number; requestId?: string },
+    extra?: { finishReason?: string | null; status?: number; requestId?: string; provider?: MockVendorId },
   ): void => {
     hits.unshift({
       id,
@@ -280,6 +316,7 @@ export function createMockLlmApp(): express.Express {
       finishReason: extra?.finishReason,
       status: extra?.status ?? 200,
       requestId: extra?.requestId,
+      provider: extra?.provider,
     });
     if (hits.length > HIT_RING) hits.length = HIT_RING;
     if (!process.env.VITEST) {
@@ -321,6 +358,54 @@ export function createMockLlmApp(): express.Express {
     });
   });
 
+  app.get("/debug/coverage", (_req, res) => {
+    const rows = CHAT_COVERAGE.map((row) => {
+      const actual = resolveScenario(row.opts).name;
+      const matches = listMatchingScenarios(row.opts);
+      return {
+        feature: row.feature,
+        expected: row.winner,
+        actual,
+        ok: actual === row.winner,
+        overlapNonCatchAll: nonCatchAllOverlaps(matches).map((m) => m.name),
+      };
+    });
+    res.json({ ok: rows.every((r) => r.ok), rows });
+  });
+
+  app.get("/debug/resolve", methodNotAllowed);
+  app.post("/debug/resolve", (req, res) => {
+    const { body } = parseChatBody(req);
+    const protocol = req.query.protocol === "responses" ? "responses" : "chat.completions";
+    const messages =
+      protocol === "responses" ? responsesInputToMessages(body) : (body.messages ?? []);
+    const normalized = Array.isArray(body.tools) ? normalizeChatTools(body.tools) : { ok: true as const, tools: undefined };
+    const opts: MockLlmOptions = {
+      model: body.model,
+      messages,
+      tools: normalized.ok ? normalized.tools : undefined,
+      scenario: headerStr(req, "x-mock-scenario") || queryScenario(req) || undefined,
+    };
+    try {
+      const winner = resolveScenario(opts);
+      const matches = listMatchingScenarios(opts);
+      res.json({
+        winner: winner.name,
+        matches,
+        overlapNonCatchAll: nonCatchAllOverlaps(matches),
+      });
+    } catch (err) {
+      if (err instanceof MockLlmUnknownScenarioError) {
+        res.status(400).json({
+          error: { message: err.message, type: "invalid_request_error", code: "unknown_mock_scenario" },
+          matches: listMatchingScenarios(opts),
+        });
+        return;
+      }
+      throw err;
+    }
+  });
+
   app.get("/debug/reset", methodNotAllowed);
   app.post("/debug/reset", (_req, res) => {
     hits.length = 0;
@@ -346,21 +431,27 @@ export function createMockLlmApp(): express.Express {
     protocol: LastMockHit["protocol"],
   ): Promise<void> => {
     const requestId = echoRequestId(req, res);
+    const { body, parsedThinking } = parseChatBody(req);
+    const vendor = resolveVendor(req, body.model);
+    const quirks = resolveQuirks(req);
+    res.setHeader("x-mock-provider", vendor);
+    applyVendorHeaders(res, vendorSuccessHeaders(vendor, requestId));
+
     const failKind = headerStr(req, "x-mock-fail");
     if (failKind) {
       const hitId = `hit_${++hitSeq}`;
       res.setHeader("x-mock-hit-id", hitId);
       res.setHeader("x-mock-matched-scenario", `fail:${failKind}`);
-      recordHit({ messages: [], stream: false }, protocol, `fail:${failKind}`, 0, hitId, {
+      recordHit({ messages: [], stream: false, model: body.model }, protocol, `fail:${failKind}`, 0, hitId, {
         status: failStatus(failKind),
         requestId,
+        provider: vendor,
       });
       applyFailInjection(req, res);
       return;
     }
 
     const delayMs = headerNonNegInt(req, "x-mock-delay-ms");
-    const { body, parsedThinking } = parseChatBody(req);
 
     const rejectInvalid = (scenario: string, message: string): void => {
       const hitId = `hit_${++hitSeq}`;
@@ -376,7 +467,7 @@ export function createMockLlmApp(): express.Express {
         scenario,
         0,
         hitId,
-        { status: 400, requestId },
+        { status: 400, requestId, provider: vendor },
       );
       invalidRequest(res, message);
     };
@@ -430,7 +521,35 @@ export function createMockLlmApp(): express.Express {
       reasoningEffort: parsedThinking.effort,
       toolChoice,
       signal: ac.signal,
+      stream: !!body.stream,
     };
+
+    const cassetteReq = {
+      protocol,
+      model: body.model,
+      stream: !!body.stream,
+      messages,
+      tools: body.tools,
+      tool_choice: body.tool_choice,
+    };
+    const cassetteMode = getCassetteMode();
+    const cassetteDir = getCassetteDir();
+    if (cassetteMode === "replay" && cassetteDir && !body.stream) {
+      const taped = findCassette(cassetteDir, cassetteReq);
+      if (taped?.json) {
+        const hitId = `hit_${++hitSeq}`;
+        res.setHeader("x-mock-hit-id", hitId);
+        res.setHeader("x-mock-matched-scenario", taped.scenario || "cassette");
+        res.setHeader("x-mock-cassette", taped.key);
+        recordHit({ ...opts, stream: false }, protocol, taped.scenario || "cassette", 0, hitId, {
+          status: taped.status,
+          requestId,
+          provider: vendor,
+        });
+        res.status(taped.status).json(taped.json);
+        return;
+      }
+    }
 
     try {
       if (delayMs > 0) await sleep(delayMs, ac.signal);
@@ -441,6 +560,7 @@ export function createMockLlmApp(): express.Express {
         recordHit({ ...opts, stream: !!body.stream }, protocol, opts.scenario || "aborted", 0, hitId, {
           status: 0,
           requestId,
+          provider: vendor,
         });
         return;
       }
@@ -452,6 +572,7 @@ export function createMockLlmApp(): express.Express {
       recordHit({ ...opts, stream: !!body.stream }, protocol, opts.scenario || "aborted", 0, hitId, {
         status: 0,
         requestId,
+        provider: vendor,
       });
       return;
     }
@@ -467,6 +588,7 @@ export function createMockLlmApp(): express.Express {
         recordHit({ ...opts, stream: !!body.stream }, protocol, opts.scenario || "unknown", Date.now() - started, hitId, {
           status: 400,
           requestId,
+          provider: vendor,
         });
         unknownScenarioResponse(res, err);
         return;
@@ -489,7 +611,20 @@ export function createMockLlmApp(): express.Express {
           res.json(toResponsesResult(result, { id: `resp-mock-${sseSeq}` }));
           return;
         }
-        res.json(toChatCompletionResponse(result, { id: `chatcmpl-mock-${sseSeq}` }));
+        const json = decorateChatCompletion(toChatCompletionResponse(result, { id: `chatcmpl-mock-${sseSeq}` }), vendor, {
+          toolCalls: result.toolCalls,
+          quirks,
+        });
+        if (cassetteMode === "record" && cassetteDir && !body.stream) {
+          appendCassette(cassetteDir, {
+            request: cassetteReq,
+            status: 200,
+            json,
+            scenario: matched,
+            headers: { "x-mock-provider": vendor },
+          });
+        }
+        res.json(json);
         return;
       }
 
@@ -499,7 +634,7 @@ export function createMockLlmApp(): express.Express {
         await writeResponsesSse(req, res, opts, sseId, body.model, scenario, result);
         return;
       }
-      await writeChatCompletionsSse(req, res, opts, sseId, body.model, scenario, result, includeUsage);
+      await writeChatCompletionsSse(req, res, opts, sseId, body.model, scenario, result, includeUsage, vendor, quirks);
     } catch (err) {
       if (isAbortError(err)) {
         hitStatus = 0;
@@ -513,6 +648,7 @@ export function createMockLlmApp(): express.Express {
         finishReason,
         status: hitStatus,
         requestId,
+        provider: vendor,
       });
     }
   };
@@ -529,6 +665,8 @@ export function createMockLlmApp(): express.Express {
   const handleEmbeddings = (req: express.Request, res: express.Response): void => {
     const requestId = echoRequestId(req, res);
     const body = (req.body ?? {}) as { model?: string; input?: unknown };
+    const vendor = resolveVendor(req, body.model);
+    res.setHeader("x-mock-provider", vendor);
     const count = embeddingInputCount(body.input);
     const hitId = `hit_${++hitSeq}`;
     res.setHeader("x-mock-hit-id", hitId);
@@ -536,6 +674,7 @@ export function createMockLlmApp(): express.Express {
     recordHit({ messages: [], model: body.model, stream: false }, "embeddings", "embeddings", 0, hitId, {
       status: 200,
       requestId,
+      provider: vendor,
     });
     res.json({
       object: "list",
@@ -575,11 +714,14 @@ export function createMockLlmApp(): express.Express {
     if (isJsonParseError(err)) {
       const requestId = echoRequestId(req, res);
       const hitId = `hit_${++hitSeq}`;
+      const vendor = resolveVendor(req);
       res.setHeader("x-mock-hit-id", hitId);
       res.setHeader("x-mock-matched-scenario", "invalid:json");
+      res.setHeader("x-mock-provider", vendor);
       recordHit({ messages: [], stream: false }, inferHitProtocol(req), "invalid:json", 0, hitId, {
         status: 400,
         requestId,
+        provider: vendor,
       });
       invalidRequest(res, "Invalid JSON body");
       return;
@@ -662,17 +804,26 @@ async function writeChatCompletionsSse(
   scenario: MockLlmScenario,
   result: LlmCompletionResult,
   includeUsage: boolean,
+  vendor: MockVendorId,
+  quirks: Set<string>,
 ): Promise<void> {
+  const model = opts.model || fallbackModel || "mock-llm";
   const meta: OpenAiSseMeta = {
     id,
     created: Math.floor(Date.now() / 1000),
-    model: opts.model || fallbackModel || "mock-llm",
+    model,
   };
+  const chunks = withVendorStreamQuirks(streamMockResult(opts, scenario, result), {
+    vendor,
+    toolCalls: result.toolCalls,
+    quirks,
+    model,
+  });
   await pumpSse(
     req,
     res,
     opts.signal,
-    encodeChatCompletionSse(streamMockResult(opts, scenario, result), meta, { includeUsage }),
+    encodeVendorChatCompletionSse(chunks, meta, vendor, { includeUsage }),
     (err) =>
       `data: ${JSON.stringify({ error: { message: err instanceof Error ? err.message : String(err) } })}\n\n`,
   );
@@ -724,7 +875,8 @@ export function startMockLlmServer(port = PORT) {
     console.log(`  OpenAI responses: http://localhost:${port}/v1/responses`);
     console.log(`  Health:           http://localhost:${port}/health`);
     console.log(`  \n  切换：MOCK_LLM_URL=http://localhost:${port}/v1`);
-    console.log(`  错误注入：x-mock-fail=429|500|401|timeout|network|overflow\n`);
+    console.log(`  错误注入：x-mock-fail=429|500|401|timeout|network|overflow`);
+    console.log(`  厂商模拟：x-mock-provider / 请求体 model；脏路径 x-mock-quirk=clean|dsml\n`);
   });
   const stop = () => {
     server.close(() => process.exit(0));

@@ -26,6 +26,10 @@ if (process.env.E2E_KEEP_MOCK_INJECTION !== "1") {
   delete process.env.MOCK_LLM_DELAY_MS;
   delete process.env.MOCK_LLM_STREAM_BREAK;
   delete process.env.MOCK_LLM_SCENARIO;
+  delete process.env.MOCK_LLM_PROVIDER;
+  delete process.env.MOCK_LLM_QUIRK;
+  delete process.env.MOCK_LLM_CASSETTE;
+  delete process.env.MOCK_LLM_CASSETTE_DIR;
 }
 process.env.DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "mock-e2e";
 process.env.MOCK_MCP = "true";

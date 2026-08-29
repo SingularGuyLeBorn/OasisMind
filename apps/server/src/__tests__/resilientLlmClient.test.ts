@@ -12,6 +12,7 @@ import {
   withResilience,
   LlmResilienceError,
 } from "../infra/resilientLlmClient.js";
+import { vendorErrorBody } from "@oasismind/mock-llm-core";
 import { createTempProjectDir, createTestConfig } from "./helpers/toolTestFixtures.js";
 
 /* ─── 测试配置 ─── */
@@ -102,8 +103,9 @@ function makeStreamFetchMock(steps: Array<{ status: number; sse?: string; stream
 beforeEach(() => {
   delete process.env.MOCK_LLM;
   delete process.env.MOCK_LLM_URL;
-  // 防止外部环境强制 MOCK_LLM_SCENARIO 改变 mock 场景命中，污染 greeting 文案断言
   delete process.env.MOCK_LLM_SCENARIO;
+  delete process.env.MOCK_LLM_FAIL;
+  delete process.env.MOCK_LLM_CASSETTE;
 });
 
 afterEach(() => {
@@ -141,6 +143,16 @@ describe("classifyLlmError 错误分类", () => {
     expect(classifyLlmError(null, "", { retriesExhausted: true, hasFallback: true })).toBe("degradable");
     // 无备用厂商时保持 retryable 语义
     expect(classifyLlmError(429, "", { retriesExhausted: true, hasFallback: false })).toBe("retryable");
+  });
+
+  it("厂商 overflow 正文（含智谱中文超限）→ overflow", () => {
+    expect(classifyLlmError(400, JSON.stringify(vendorErrorBody("zhipu", "overflow", 400)))).toBe("overflow");
+    expect(classifyLlmError(400, JSON.stringify(vendorErrorBody("deepseek", "overflow", 400)))).toBe("overflow");
+    expect(classifyLlmError(400, JSON.stringify(vendorErrorBody("qwen", "overflow", 400)))).toBe("overflow");
+    for (const vendor of ["deepseek", "kimi", "zhipu", "openai", "gemini", "anthropic", "qwen", "xai", "mistral", "openrouter", "ollama"] as const) {
+      expect(classifyLlmError(429, JSON.stringify(vendorErrorBody(vendor, "429", 429)))).toBe("retryable");
+      expect(classifyLlmError(401, JSON.stringify(vendorErrorBody(vendor, "401", 401)))).toBe("fatal");
+    }
   });
 });
 

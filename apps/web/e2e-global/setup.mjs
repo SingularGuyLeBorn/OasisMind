@@ -145,6 +145,10 @@ function stripMockInjectionEnv(env) {
   delete env.MOCK_LLM_FAIL;
   delete env.MOCK_LLM_DELAY_MS;
   delete env.MOCK_LLM_STREAM_BREAK;
+  delete env.MOCK_LLM_PROVIDER;
+  delete env.MOCK_LLM_QUIRK;
+  delete env.MOCK_LLM_CASSETTE;
+  delete env.MOCK_LLM_CASSETTE_DIR;
   return env;
 }
 

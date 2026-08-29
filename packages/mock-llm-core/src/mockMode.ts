@@ -37,6 +37,10 @@ const INJECTION_ENV_KEYS = [
   "MOCK_LLM_DELAY_MS",
   "MOCK_LLM_STREAM_BREAK",
   "MOCK_LLM_REQUEST_ID",
+  "MOCK_LLM_PROVIDER",
+  "MOCK_LLM_QUIRK",
+  "MOCK_LLM_CASSETTE",
+  "MOCK_LLM_CASSETTE_DIR",
 ] as const;
 
 /** 进程内递增，保证同进程每次 HTTP 的 x-request-id 可区分。 */
@@ -99,6 +103,10 @@ export function mockLlmHttpHeaders(): Record<string, string> {
   if (delay) headers["x-mock-delay-ms"] = delay;
   const brk = process.env.MOCK_LLM_STREAM_BREAK?.trim();
   if (brk) headers["x-mock-stream-break"] = brk;
+  const provider = process.env.MOCK_LLM_PROVIDER?.trim();
+  if (provider) headers["x-mock-provider"] = provider;
+  const quirk = process.env.MOCK_LLM_QUIRK?.trim();
+  if (quirk) headers["x-mock-quirk"] = quirk;
   headers["x-request-id"] = resolveMockRequestId();
   return headers;
 }

@@ -16,6 +16,10 @@ describe("mock LLM 运行模式", () => {
     delete process.env.MOCK_LLM_DELAY_MS;
     delete process.env.MOCK_LLM_STREAM_BREAK;
     delete process.env.MOCK_LLM_REQUEST_ID;
+    delete process.env.MOCK_LLM_PROVIDER;
+    delete process.env.MOCK_LLM_QUIRK;
+    delete process.env.MOCK_LLM_CASSETTE;
+    delete process.env.MOCK_LLM_CASSETTE_DIR;
   });
 
   it("非法 MOCK_LLM_URL 立刻抛错，不装成进程内", () => {
@@ -52,6 +56,15 @@ describe("mock LLM 运行模式", () => {
       "x-mock-stream-break": "after-3",
       "x-request-id": "fixed-rid",
     });
+  });
+
+  it("MOCK_LLM_URL 时转发 MOCK_LLM_PROVIDER / MOCK_LLM_QUIRK", () => {
+    process.env.MOCK_LLM_URL = "http://127.0.0.1:3040/v1";
+    process.env.MOCK_LLM_PROVIDER = "zhipu";
+    process.env.MOCK_LLM_QUIRK = "clean";
+    process.env.MOCK_LLM_REQUEST_ID = "rid";
+    expect(mockLlmHttpHeaders()["x-mock-provider"]).toBe("zhipu");
+    expect(mockLlmHttpHeaders()["x-mock-quirk"]).toBe("clean");
   });
 
   it("MOCK_LLM_URL 且无 REQUEST_ID 时每次调用生成新的 x-request-id", () => {

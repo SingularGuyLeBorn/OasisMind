@@ -7,11 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chatCompletion, chatCompletionStream } from "../infra/llmClient.js";
 import {
   SSE_DONE,
+  encodeVendorChatCompletionSse,
   formatSseData,
   streamChunkToOpenAiPayloads,
+  streamFromCompletion,
   toChatCompletionResponse,
+  withVendorStreamQuirks,
 } from "@oasismind/mock-llm-core";
 import type { StreamChunk } from "@oasismind/mock-llm-core";
+import { looksLikeDsmlLeak } from "../infra/deepseekDsmlFilter.js";
 import { createTempProjectDir, createTestConfig } from "./helpers/toolTestFixtures.js";
 
 function makeConfig() {
@@ -44,6 +48,8 @@ beforeEach(() => {
   delete process.env.MOCK_LLM_DELAY_MS;
   delete process.env.MOCK_LLM_STREAM_BREAK;
   delete process.env.MOCK_LLM_REQUEST_ID;
+  delete process.env.MOCK_LLM_PROVIDER;
+  delete process.env.MOCK_LLM_QUIRK;
 });
 
 afterEach(() => {
@@ -55,6 +61,8 @@ afterEach(() => {
   delete process.env.MOCK_LLM_DELAY_MS;
   delete process.env.MOCK_LLM_STREAM_BREAK;
   delete process.env.MOCK_LLM_REQUEST_ID;
+  delete process.env.MOCK_LLM_PROVIDER;
+  delete process.env.MOCK_LLM_QUIRK;
 });
 
 describe("llmClient MOCK_LLM_URL", () => {
@@ -80,6 +88,7 @@ describe("llmClient MOCK_LLM_URL", () => {
       urls.push(String(url));
       expect(headerOf(init, "x-mock-scenario")).toBe("greeting");
       expect(headerOf(init, "x-request-id")).toBeTruthy();
+      expect(headerOf(init, "x-mock-provider")).toBe("deepseek");
       return new Response(
         JSON.stringify(
           toChatCompletionResponse({
@@ -290,5 +299,64 @@ describe("llmClient MOCK_LLM_URL", () => {
       messages: [{ role: "user", content: "你好" }],
     });
     expect(rid).toBe("client-rid");
+  });
+
+  it("DeepSeek 流式 DSML 泄漏被滤掉，工具调用仍完整", async () => {
+    process.env.MOCK_LLM_URL = "http://127.0.0.1:3999/v1";
+    const toolCalls = [
+      {
+        id: "call_ws",
+        type: "function" as const,
+        function: { name: "web_search", arguments: '{"query":"q"}' },
+      },
+    ];
+    const result = {
+      content: null,
+      reasoningContent: null,
+      toolCalls,
+      finishReason: "tool_calls" as const,
+      model: "deepseek-v4-flash",
+      provider: "deepseek",
+      tokenUsage: { prompt: 3, completion: 5, total: 8 },
+    };
+    let sse = "";
+    for await (const f of encodeVendorChatCompletionSse(
+      withVendorStreamQuirks(
+        streamFromCompletion({ messages: [], model: "deepseek-v4-flash" }, result),
+        {
+          vendor: "deepseek",
+          toolCalls,
+          quirks: new Set(),
+          model: "deepseek-v4-flash",
+        },
+      ),
+      { id: "c", created: 1, model: "deepseek-v4-flash" },
+      "deepseek",
+    )) {
+      sse += f;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(sse, { status: 200, headers: { "Content-Type": "text/event-stream" } })),
+    );
+    const chunks: StreamChunk[] = [];
+    for await (const c of chatCompletionStream({
+      config: makeConfig(),
+      model: "deepseek-v4-flash",
+      messages: [{ role: "user", content: "搜索" }],
+      tools: [
+        {
+          type: "function",
+          function: { name: "web_search", description: "search", parameters: { type: "object" } },
+        },
+      ],
+    })) {
+      chunks.push(c);
+    }
+    const tokens = chunks.filter((c) => c.type === "token").map((c) => c.delta ?? "").join("");
+    expect(looksLikeDsmlLeak(tokens)).toBe(false);
+    const done = chunks.find((c) => c.type === "tool_calls");
+    expect(done?.toolCalls?.[0].function.name).toBe("web_search");
+    expect(done?.toolCalls?.[0].function.arguments).toBe('{"query":"q"}');
   });
 });

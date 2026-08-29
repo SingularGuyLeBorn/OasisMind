@@ -9,6 +9,13 @@ export type InProcessMockHit = {
   lastUserText: string;
   lastSystemText: string;
   transcriptText: string;
+  status: number;
+  finishReason?: string | null;
+  requestId?: string;
+  provider?: string;
+  model?: string;
+  stream: boolean;
+  tools: string[];
 };
 
 const hits: InProcessMockHit[] = [];

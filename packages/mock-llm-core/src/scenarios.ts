@@ -35,6 +35,8 @@ export interface MockLlmOptions {
   enableReasoning?: boolean;
   /** OpenAI tool_choice；省略 / auto = 场景原样；none / required / 具名 function 在 finalize 强制 */
   toolChoice?: MockToolChoice;
+  /** 仅命中环记录，不参与 match */
+  stream?: boolean;
 }
 
 export interface MockLlmScenario {

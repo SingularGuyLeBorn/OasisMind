@@ -14,6 +14,10 @@ delete process.env.MOCK_LLM_SCENARIO;
 delete process.env.MOCK_LLM_FAIL;
 delete process.env.MOCK_LLM_DELAY_MS;
 delete process.env.MOCK_LLM_STREAM_BREAK;
+delete process.env.MOCK_LLM_PROVIDER;
+delete process.env.MOCK_LLM_QUIRK;
+delete process.env.MOCK_LLM_CASSETTE;
+delete process.env.MOCK_LLM_CASSETTE_DIR;
 
 // server / web 进程由 e2e-global/setup.mjs 统一启动，避免 Playwright webServer 与 globalSetup 并行导致时序错乱
 
