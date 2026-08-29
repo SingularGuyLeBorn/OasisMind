@@ -181,3 +181,6 @@ scripts/ngrok.zip
 # NapCatQQ 聊天机器人二进制
 tools/napcat/
 tools/napcat_framework/
+
+# 本机一次性关机助手（脚本自述不入库）
+scripts/shutdown-this-pc.ps1
