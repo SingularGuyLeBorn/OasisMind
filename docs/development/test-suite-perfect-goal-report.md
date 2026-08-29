@@ -14,8 +14,8 @@
 |---|---|---|---|
 | W0 | done | `docs/development/testing.md` 含满分定义/四层/内环/禁止/设计错误/map 字段；`AGENTS.md` 快速导航加「测试圣经」；`docs/development/README.md` §8 加 testing.md 条目 | `6e02f755` |
 | W1 | done | `pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0（3 tests）；map 每条有 asserts[]；covered 无仅 heading/`*-real`/单独 cases.json | `d91d1fd7` |
-| W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | （待填） |
-| W3 | | | |
+| W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | `1e41ed13` |
+| W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | （待填） |
 | W4 | | | |
 | W5 | | | |
 | W6 | | | |
@@ -63,6 +63,7 @@
 | 位置 | 本文要求 | 我觉得不合理的点 | 实际落地 | 是否 [OM-FREEPLAY] |
 |---|---|---|---|---|
 | W1 eval-mock `it` | it 必须是 it(/test( 标题子串 | golden JSON 没有 it() | 用 JSON 字段子串过 includes 闸 | 是 |
+| W3 B4 | 合并保留 resume 再入池断言 | 与重启不续跑铁律冲突 | 保留已改好的 failed 断言，记 testing.md | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -94,14 +95,14 @@
 |---|---|---|---|
 | 留 | sessionBranch.brutal / toolPipelineOffload.brutal / toolResultConclusion.brutal | pending | |
 | 留 | chatHistory / chatImageEnrich / compactCutPoints / chatTree / prd* / uiStateNotify / importOrder | pending | |
-| 合 | asyncDeliveryQueueB1–B5、B7 | pending | → asyncDeliveryReconciler.table.test.ts |
-| 留空 | B6 | pending | 不补造 |
-| 合 | heartbeatSchedulerC1 / heartbeatRefreshC2 / heartbeatCounterC4 | pending | → heartbeatEngine.table.test.ts 或 heartbeatDecisionEngine |
+| 合 | asyncDeliveryQueueB1–B5、B7 | done | asyncDeliveryReconciler.table.test.ts（14 it） |
+| 留空 | B6 | done | 不补造 |
+| 合 | heartbeatSchedulerC1 / heartbeatRefreshC2 / heartbeatCounterC4 | done | heartbeatEngine.table.test.ts（8 it；未并入 decisionEngine，并完会 >500） |
 | 留 | heartbeatDecision.test.ts | pending | |
-| 合或删 | reentrantResume.test.ts | pending | → startupRecovery.test.ts 后删 |
-| 改名 | cClassRemainingAbort.test.ts | pending | → nativeToolAbortSignal.test.ts |
-| 改名 | safePathWriteD7.test.ts | pending | → safePathWrite.test.ts |
-| 改名 it | processSafety.test.ts 的 M-21 it | pending | 去工单号 |
+| 合或删 | reentrantResume.test.ts | done | T3/T4 → startupRecovery.test.ts 后删源 |
+| 改名 | cClassRemainingAbort.test.ts | done | nativeToolAbortSignal.test.ts |
+| 改名 | safePathWriteD7.test.ts | done | safePathWrite.test.ts |
+| 改名 it | processSafety.test.ts 的 M-21 it | done | 去工单号 |
 
 ### 3.3 Native 工具单测
 
@@ -170,11 +171,12 @@
 
 ## W3 纪念碑收成契约表
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：B1–B7、C1/C2/C4、reentrantResume 是事故编号，半年后无法当规格读。成功 = 契约表文件 + 旧路径从工作树消失 + it 数不减（表内）+ B4 与铁律对齐。
+- 改动文件：新建 `asyncDeliveryReconciler.table.test.ts`、`heartbeatEngine.table.test.ts`；删 B*/C*/reentrantResume；改名 abort/safePath；processSafety it 去工单号；startupRecovery 迁入 T3/T4；docs/testing 旧称对照与设计错误。
+- 不改哪些面：生产 recoverStaleAsyncJobs（已是一律 failed）；heartbeatDecision.test.ts 纯决策文件不混。
+- [OM-FREEPLAY]：心跳未并入 heartbeatDecisionEngine（C*+引擎会超 500 行），按 prompt 允许新建 table 文件。B3 保留原 `setTimeout(80)` 采样（剪切不改断言）。
+- 验证：点名 6 条 server test 退出码 0。it：reconciler 14 = 旧 B 合计；heartbeat table 8 = 旧 C 合计。
+- 遇到的问题：B4 原文件已按铁律改成 failed 断言，无需再改断言体。
 
 ## W4 拆 nativeTools.test.ts
 
@@ -264,7 +266,7 @@
 
 | 发现于 | 本文原句 | 错误原因 | 正确契约 |
 |---|---|---|---|
-| | | | |
+| W3 | 「合并保留断言」针对 B4 resume 再入池 | 与 AGENTS.md 服务重启不自动续跑冲突 | 标 failed、零入池、二次 recover 幂等 |
 
 ## 铁律冲突 / 未做
 

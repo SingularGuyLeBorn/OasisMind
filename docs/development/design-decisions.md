@@ -1047,7 +1047,7 @@ LoopX 不是执行器，而是长程 Agent 的**控制平面**：跨 turn / 重�
 3. **手动 retry 不消耗自动额度**：人工介入是最后一道闸，不能被自动计数堵死——`retryAsyncJob` 清零 `retryCount` 重来（同时按当时 config + 工具声明重新物化 `maxRetries`/`reentrant`）。
 4. **先落库再入池的顺序不可换**：反过来会出现「进程死在入池后、落库前」→ 计数少记一次，crash-loop 上限被穿透。
 
-**落地**：schema commit `e624e08a`（C-1：三列 + 入队物化 `maxRetries = config.asyncJobs.maxRetries` 快照）；分叉 commit `580b5e56`（C-2）：`recoverStaleAsyncJobs` 同函数内两态分叉（`runStartupRecovery` 动作 1 唯一收拢点，不新造恢复管线）；入池被拒（maxQueued 满）维持 queued 不标 failed、不回滚计数，下轮启动恢复再试。测试 `__tests__/reentrantResume.test.ts`（T1~T5 + 变异验证）。
+**落地**：schema commit `e624e08a`（C-1：三列 + 入队物化 `maxRetries = config.asyncJobs.maxRetries` 快照）；分叉 commit `580b5e56`（C-2）：`recoverStaleAsyncJobs` 同函数内两态分叉（`runStartupRecovery` 动作 1 唯一收拢点，不新造恢复管线）；入池被拒（maxQueued 满）维持 queued 不标 failed、不回滚计数，下轮启动恢复再试。测试 `__tests__/startupRecovery.test.ts`（T1~T4 语义：僵尸标 failed、幂等、手动 retry、风暴；旧称 reentrantResume 已删）。
 
 **回答**：
 

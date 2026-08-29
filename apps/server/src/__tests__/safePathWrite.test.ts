@@ -5,7 +5,7 @@ import { createTempProjectDir, createTestConfig, createNativeCtx } from "./helpe
 import { assertWritePathSafe, resolveRealWriteTarget, resolveSafePath } from "../infra/safePath.js";
 import { executeNativeTool } from "../infra/nativeTools.js";
 
-describe("D7 safePath realpath 写隔离", () => {
+describe("safePath realpath 写隔离", () => {
   let root: string;
 
   beforeEach(() => {

@@ -23,7 +23,7 @@ session.clearGoal：3010 近 50 个会话无 standing goal，无需再清。
 |----|-----------|------|
 | e2e 空库 wipe | 跳过（已绿） | `2ba74296`；setup 杀 PID 再删 `test-e2e.db*`。「发现现有 manager」= 空库后 swarm init，预期 |
 | spawn 真管道 | 已绿，空 commit 跳过 | `mockNativeTools` 不注册 `spawn_subagent`/`async_task_run` |
-| 剩余 C 类 signal | 修补 | `a67a40c1` `cClassRemainingAbort.test.ts`：harness_gate / pinme / swanlab |
+| 剩余 C 类 signal | 修补 | `a67a40c1` `nativeToolAbortSignal.test.ts`（旧称 cClassRemainingAbort）：harness_gate / pinme / swanlab |
 | screenshot 不走 canned | 修补 | `c1eee9f4`：`MOCK_NATIVE_TOOLS` 不 mock `browser_screenshot` |
 | DSH-E2E-1 | 跳过 | 禁止改「硬调派生子代理」 |
 | C-S34 第二句 | 跳过 | 前序已绿 |

@@ -72,7 +72,7 @@
 
 | 发现于 W* | 本文原句 | 错误原因 | 正确契约 | 报告是否已记 |
 |---|---|---|---|---|
-| | | | | |
+| W3 | 「合并保留断言」针对 B4 resume 再入池 | 与 AGENTS.md「服务重启不自动续跑」冲突；生产 `recoverStaleAsyncJobs` 已一律标 failed、不入池 | 断言「标 failed、零 runAgentLoop / 零入池」；二次 recover 幂等。B4 第二 it 锁的是僵尸会话 interrupted 顺序，保留 | 是 |
 
 ---
 
@@ -131,4 +131,12 @@ W6/W10 新增的过程 E2E，若 `scenarios.md` 没有对应标题，**不准改
 
 ## 旧称对照
 
-W3 之后旧纪念碑文件名不再作为测试路径存在。对照表在 W3 落地后补全。
+| 旧测试路径 | 现契约表 / 文件 |
+|---|---|
+| `asyncDeliveryQueueB1.test.ts` … `B7`（无 B6） | `asyncDeliveryReconciler.table.test.ts`（R-exempt / R-soft-claim / R-wait-outside-pool / R-restart-failed / R-depth-server / R-queue-unique） |
+| `heartbeatSchedulerC1.test.ts` `heartbeatRefreshC2.test.ts` `heartbeatCounterC4.test.ts` | `heartbeatEngine.table.test.ts` |
+| `reentrantResume.test.ts` | 不重复的 it 在 `startupRecovery.test.ts`；文件已删 |
+| `cClassRemainingAbort.test.ts` | `nativeToolAbortSignal.test.ts` |
+| `safePathWriteD7.test.ts` | `safePathWrite.test.ts` |
+
+---

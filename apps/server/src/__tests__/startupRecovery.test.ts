@@ -21,10 +21,14 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { prisma } from "../db.js";
 import * as agentStream from "../infra/agentStream/index.js";
 import { createContextInner } from "../trpc/context.js";
-import { runStartupRecovery } from "../infra/asyncJobs/index.js";
-import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
+import { runStartupRecovery, recoverStaleAsyncJobs, retryAsyncJob } from "../infra/asyncJobs/index.js";
+import { getAsyncJobOrchestrator, resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
 import { setStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
 import { resetSwarmBus } from "../infra/swarmBus.js";
+import * as agentRuntime from "../infra/agentRuntime.js";
+import { registerNativeDomains } from "../infra/tools/native/index.js";
+import { PACKS_FULL } from "@oasismind/shared";
+import { createTestConfig } from "./helpers/toolTestFixtures.js";
 
 type Ctx = Awaited<ReturnType<typeof createContextInner>>;
 
@@ -396,4 +400,107 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       await cleanupIds({ agentIds: [parentAgentId, subAgentId], sessionIds: [subSessionId] });
     }
   }, 15_000);
+});
+
+/** 自 reentrantResume.test.ts 迁入：不与上方 C1 僵尸 failed 重复的 it（T3 手动重试、T4 风暴）。 */
+const RR_SID = "clteststartuprr";
+const RR_KIND = "async_agent";
+const RR_MOCK_LOOP = {
+  content: "续跑完成",
+  toolCalls: [],
+  tokenUsage: { prompt: 1, completion: 2, total: 3 },
+  model: "deepseek-chat",
+  provider: "deepseek",
+  roundsUsed: 1,
+};
+
+describe("启动恢复：手动重试与风暴（旧称 reentrantResume T3/T4）", () => {
+  beforeEach(() => {
+    registerNativeDomains(PACKS_FULL);
+    resetAsyncJobOrchestratorForTests();
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await prisma.task.deleteMany({ where: { sessionId: { startsWith: RR_SID } } });
+  });
+
+  it("T3 手动 retryAsyncJob 仍可重试（人工最后一道闸）", async () => {
+    const ctx = await createContextInner();
+    const exhausted = await prisma.task.create({
+      data: {
+        name: "[async] T3 耗尽",
+        type: "async_agent",
+        status: "failed",
+        sessionId: `${RR_SID}-t3`,
+        input: {
+          kind: RR_KIND,
+          sessionId: `${RR_SID}-t3`,
+          task: "等待 30ms",
+          taskLabel: "T3 耗尽",
+          agentSnapshot: { id: "t", model: "m", systemPrompt: "", tools: ["native:wait"] },
+          sourceType: "async_task_tool",
+          toolCall: { tool: "wait", args: { ms: 30 } },
+          deliverToQueue: false,
+        },
+        output: { error: "服务重启，任务中断" },
+      },
+    });
+
+    const retried = await retryAsyncJob(exhausted.id, ctx.config, ctx.services);
+    await vi.waitFor(
+      async () => {
+        const r = await prisma.task.findUnique({ where: { id: retried.jobId } });
+        expect(r?.status).toBe("success");
+      },
+      { timeout: 5000, interval: 50 },
+    );
+  });
+
+  it(
+    "T4 恢复风暴：50 个僵尸全部标 failed，不入池、零并发",
+    async () => {
+      const loopSpy = vi.spyOn(agentRuntime, "runAgentLoop").mockResolvedValue(RR_MOCK_LOOP);
+      const ctx = await createContextInner();
+      const narrow = createTestConfig(ctx.config.projectRoot, {
+        ...ctx.config,
+        asyncJobs: { ...ctx.config.asyncJobs, maxConcurrent: 3, maxPerSession: 100, maxQueued: 100 },
+      });
+      getAsyncJobOrchestrator(narrow);
+
+      const COUNT = 50;
+      const ids: string[] = [];
+      for (let i = 0; i < COUNT; i++) {
+        const t = await prisma.task.create({
+          data: {
+            name: `[async] T4-${i}`,
+            type: "async_agent",
+            status: "running",
+            sessionId: `${RR_SID}-t4-${i}`,
+            startedAt: new Date(),
+            input: {
+              kind: RR_KIND,
+              sessionId: `${RR_SID}-t4-${i}`,
+              task: `T4-${i}`,
+              taskLabel: `T4-${i}`,
+              agentSnapshot: { id: "t", model: "m", systemPrompt: "", tools: ["native:wait"] },
+              sourceType: "async_task_tool",
+              toolCall: { tool: "wait", args: { ms: 30 } },
+              deliverToQueue: false,
+            },
+          },
+        });
+        ids.push(t.id);
+      }
+
+      const r = await recoverStaleAsyncJobs(narrow, ctx.services);
+      expect(r.failed).toBe(COUNT);
+
+      const rows = await prisma.task.findMany({ where: { id: { in: ids } }, select: { status: true } });
+      expect(rows).toHaveLength(COUNT);
+      expect(rows.every((x) => x.status === "failed")).toBe(true);
+      expect(loopSpy).not.toHaveBeenCalled();
+    },
+    60_000,
+  );
 });

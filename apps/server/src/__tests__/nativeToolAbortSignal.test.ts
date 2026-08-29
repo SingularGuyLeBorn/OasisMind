@@ -1,5 +1,5 @@
 /**
- * Phase 0 WP3b 剩余 C 类：harness_gate_run / pinme_upload / swanlab C 必须听 ctx.signal。
+ * 原生 C 类工具必须听 abort signal（旧称 WP3b C 类 / cClassRemainingAbort）。
  * 旧实现不传 signal / 不看 aborted → timeout 后仍写 flag 或已 abort 仍落盘。
  */
 
@@ -11,7 +11,7 @@ import { runCooperative } from "../infra/tools/cooperativeAbort.js";
 import { __setHarnessGateExecForTests } from "../infra/harnessGate.js";
 import { createTempProjectDir, createNativeCtx } from "./helpers/toolTestFixtures.js";
 
-describe("WP3b 剩余 C 类听 abort signal", () => {
+describe("原生 C 类工具必须听 abort signal", () => {
   const dirs: string[] = [];
 
   afterEach(() => {

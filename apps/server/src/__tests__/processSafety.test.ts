@@ -20,7 +20,7 @@ describe("processSafety", () => {
     }).not.toThrow();
   });
 
-  it("M-21：listen 前同步 throw 必须 exit(1)，不得被 uncaughtException 吞掉后继续 listen", () => {
+  it("listen 前同步 throw 必须 exit(1)，不得被 uncaughtException 吞掉后继续 listen", () => {
     const script = `
       process.on("uncaughtException", () => {});
       try {
