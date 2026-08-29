@@ -5,7 +5,7 @@
 
 - 执行者：Cursor Grok 4.6（施工员）
 - 开始：2026-08-30
-- 结束（施工交卷，不是验收完成）：
+- 结束（施工交卷，不是验收完成）：2026-08-30
 - 见微 Goal / Cursor 台账：已 CreateGoal `测试十分（待原评审 10/10）`；**必须仍为 active**，直到验收者 10/10。施工员不得标 completed。
 
 ## Goal 台账（等价 verifiedProgress）
@@ -23,24 +23,24 @@
 | W8 | done | noVoidPromise 1 passed；现存违规 0 | `3d942d90` |
 | W9 | done | 见门禁节 W9 行 | `0cba2c25` |
 | W10 | done | scenarioTestMap 3；admin-live-push PULL it + daily-board | `78d756aa` |
-| W11 | done | catchUnlessCancelled 6；uiStateNotify.hub 1 | （待填） |
-| W12 | | | |
-| W13 | | | |
+| W11 | done | catchUnlessCancelled 6；uiStateNotify.hub 1 | `5dc0b512` |
+| W12 | done | `--project pure` 13 files 86 tests；`--project db -- chatTree` 17 | `1167f993` |
+| W13 | done | 见门禁节；交卷给验收者打分 | 收尾对照（本提交） |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
 | S | 分 | 证据 | 为何验收者应打 1 |
 |---|---|---|---|
-| S1 Chat 不变量 | 待验收 | | |
-| S2 场景不虚标 | 待验收 | | |
-| S3 纪念碑变契约 | 待验收 | | |
-| S4 nativeTools 按域 | 待验收 | | |
-| S5 evals 诚实 | 待验收 | | |
-| S6 CI 闸诚实 | 待验收 | | |
-| S7 产品面过程 | 待验收 | | |
-| S8 推拉 PUSH+PULL | 待验收 | | |
-| S9 运行时路径 | 待验收 | | |
-| S10 内环 pure 项目 | 待验收 | | |
+| S1 Chat 不变量 | 待验收 | `chatStoreInvariants.test.ts` 仍在且 W2 时 27 passed；golden-traces + PBT 未删；本 Goal 新测无 setTimeout/queueMicrotask/await hydrate | INV + golden-traces + PBT 三文件仍在 |
+| S2 场景不虚标 | 待验收 | `scenarioTestMap.test.ts` 3 passed；map 每条 `asserts[]` | W1 过程断言闸绿 |
+| S3 纪念碑变契约 | 待验收 | 无 `asyncDeliveryQueueB*.test.ts` / `reentrantResume.test.ts`；reconciler.table 14；heartbeatEngine.table 8 | W3 契约表 it 数不减 |
+| S4 nativeTools 按域 | 待验收 | `nativeTools.test.ts` 已删；`nativeTools.fs` 45；`it(` 111→111 | W4 可按域跑 |
+| S5 evals 诚实 | 待验收 | README 诚实声明；evalGoldenSync 3；test:evals 12/12；test:bench 24/24 | mock 不冒充模型质量 |
+| S6 CI 闸诚实 | 待验收 | 4 个 `*-real.spec.ts` 文件头降权；OCR skip 保留 | skip 不得冒充 covered |
+| S7 产品面过程 | 待验收 | files-accept-hint-mock、gardens-list-mock、daily-board-mock；theme 在 testing.md 产品面表 | 非 heading |
+| S8 推拉 PUSH+PULL | 待验收 | 场景 6/7 asserts 含无需刷新 + 刷新后仍；admin-live-push reload it；Inbox 蒸馏挂场景 17 | PUSH 与 F5 都进 map |
+| S9 运行时路径 | 待验收 | noVoidPromise 1；catchUnlessCancelled 6；chat-mock 挂 pageErrorGuard；uiStateNotify.hub 1 | 真 hub 重放 |
+| S10 内环 pure 项目 | 待验收 | vitest projects db+pure；`--project pure` 86；db 仍 singleFork | 未取消 singleFork |
 
 ## 验收者打分（提出 Goal 的人填，施工员整节留空）
 
@@ -244,28 +244,30 @@
 
 ## W11 运行时路径
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：void refetch 源码闸挡不住 CancelledError 运行时；Chat E2E 不收集 unhandledrejection；uiStateNotify 测例 mock 掉 hub 等于没测推。
+- 改动文件：`catchUnlessCancelled.test.ts`；`e2e/helpers/pageErrorGuard.ts`；只强制 `chat-mock.spec.ts` beforeEach/afterEach；`uiStateNotify.hub.test.ts` 真 `SessionStreamHub`（禁止 vi.mock hub）。
+- 不改哪些面：生产 catch 语义；其它 mock spec 不强制守卫；不 spy llmClient。
+- [OM-FREEPLAY]：CancelledError/AbortError 按 name 或 message 静默；其它 `console.warn`。hub 测先 notify 再 subscribeExternal，断言 `cron_job_updated`。prisma 浅 fake `findMany`/`findFirst` 返回 `[{ id: "sess-1" }]`。
+- 验证：catchUnlessCancelled 6 passed；uiStateNotify.hub 1 passed。chat-mock e2e 见 W13 门禁。
+- 遇到的问题：主工作区反复切到 worth-doing，导致全量 vitest 中途丢文件变红；本收尾改在独立 worktree `OasisMind-tsp` 跑。
 
 ## W12 server 纯测并行
 
-- 根因复述：
-- 改动文件：
-- pure 文件清单（≥8）：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：全量 singleFork 正确，但零 DB 测也排队。
+- 改动文件：`vitest.config.ts` projects `db`+`pure`；12 个无 db import 测例进 `src/__tests__/pure/`；`pureNoPrisma.test.ts`；map heartbeatDecision 路径；testing.md 内环。
+- pure 文件清单（≥8）：chatHistory、safeHttpUrl、stripFrontmatter、toolEnvelope、uploadDir、outputValidator、heartbeatDecision、autonomousBudget、contextReset、searchRelevance、llmBudgetReserve、toolResultMetadata，外加闸 pureNoPrisma。
+- 不改哪些面：db 仍 singleFork；importOrder / compactCutPoints（有 prisma）不进 pure。
+- [OM-FREEPLAY]：compactCutPoints 因 prisma 留下；多搬纯函数测凑内环。W13 给 db 项目加 `fileParallelism: false`，避免单 fork 内并行文件抢 SQLite/`fetch` stub（全量曾红 resilientLlmClient / trpc Run / heartbeat terminal）。
+- 验证：`--project pure` 86 passed；`--project db -- chatTree` 17 passed。commit `1167f993`。
+- 遇到的问题：工作区多次被切到 worth-doing，未提交文件丢失后重做。
 
 ## W13 十分收尾
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：S7–S10 落地后必须全量再跑，报告打分列保持待验收。
+- 改动文件：本报告门禁与证据表。
+- [OM-FREEPLAY]：无自评 10/10。Goal 保持 active。独立 worktree 防主仓自动切分支。
+- 验证：见门禁表。
+- 遇到的问题：主工作区会被切回 `feat/worth-doing-w1-w7`，施工测必须在 `OasisMind-tsp` 跑。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
 
@@ -275,17 +277,26 @@
 
 ## 铁律冲突 / 未做
 
+- W3 B4：prompt「合并保留 resume 再入池」与「服务重启不自动续跑」冲突，已按铁律改断言并记 testing.md。见异议表。
+- 未把 Goal 标 completed；十分表分列均为待验收。
+
 ## 残留（范围外发现、本 Goal 故意没修）
+
+- 其它 mock spec 预存 pageerror：本 Goal 只强制 `chat-mock.spec.ts` 挂守卫。
+- web lint 10 条预存 warning（chatSessionTreeBar / RoughAnnotation / branch-mock / dsh-screenshot）。
+- 主仓工作区会在施工中被切回 `feat/worth-doing-w1-w7`（非本 Goal 改动）；施工员不得在那条分支上改测试。
 
 ## 门禁
 
+在独立 worktree `D:\ALL IN AI\OasisMind-tsp`（`feat/test-suite-perfect`）跑，避免主仓被切到 `feat/worth-doing-w1-w7` 中途丢文件。
+
 | 命令 | 退出码 | 备注 |
 |---|---|---|
-| `pnpm --filter @oasismind/server lint` | | |
-| `pnpm --filter @oasismind/web lint` | | |
-| `pnpm --filter @oasismind/server test` | | |
-| `pnpm --filter @oasismind/web test` | | |
-| `pnpm --filter @oasismind/mock-llm-core test` | | |
-| `pnpm test:evals` | | |
-| `pnpm test:bench` | | |
-| mock e2e（W6 文件） | | |
+| `pnpm --filter @oasismind/server lint` | 0 | |
+| `pnpm --filter @oasismind/web lint` | 0 | 10 warnings 预存，0 errors |
+| `pnpm --filter @oasismind/server test` | 0 | 246 files / 1665 tests（修 Run 转移 + completions 协议假响应后） |
+| `pnpm --filter @oasismind/web test` | 0 | 72 files / 378 tests |
+| `pnpm --filter @oasismind/mock-llm-core test` | 0 | 20 files / 144 tests |
+| `pnpm test:evals` | 0 | 12/12 |
+| `pnpm test:bench` | 0 | 24/24 |
+| mock e2e（本 Goal 新/改 spec） | 0 | files-accept-hint、gardens-list、daily-board、admin-live-push（含 F5 PULL）绿；`e2e/chat-mock.spec.ts` 2 passed（pageErrorGuard 未误伤） |

@@ -12,6 +12,8 @@ export default defineConfig({
           setupFiles: ["./src/__tests__/setupPrismaIsolation.ts"],
           pool: "forks",
           poolOptions: { forks: { singleFork: true } },
+          // SQLite + 单 PrismaClient：多文件在同一 fork 里并行会抢 fetch stub / Run 行。
+          fileParallelism: false,
           testTimeout: 30_000,
         },
       },
