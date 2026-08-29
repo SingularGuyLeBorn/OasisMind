@@ -42,6 +42,7 @@ import { llmRouter } from "./infra/trpcRouters/llmRouter.js";
 import { aiRouter } from "./infra/trpcRouters/aiRouter.js";
 import { deadLetterRouter } from "./infra/trpcRouters/deadLetterRouter.js";
 import { dailyFlowRouter } from "./infra/trpcRouters/dailyFlowRouter.js";
+import { briefingRouter } from "./infra/trpcRouters/briefingRouter.js";
 
 export const appRouter = router({
   garden: gardenRouter,
@@ -79,6 +80,7 @@ export const appRouter = router({
   ai: aiRouter,
   deadLetter: deadLetterRouter,
   dailyFlow: dailyFlowRouter,
+  briefing: briefingRouter,
 });
 
 export type AppRouter = typeof appRouter;

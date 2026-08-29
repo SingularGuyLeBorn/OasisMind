@@ -6,6 +6,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -62,6 +63,120 @@ function prevStatus(s: FlowStatus): FlowStatus | null {
   return null;
 }
 
+/** W5 晨间简报锁死文案：每天 8:00 用超级 Agent 读简报。 */
+const MORNING_BRIEF_CRON_PROMPT =
+  "用工具读今日晨间简报（或打开 /daily 同类数据），用中文不超过 12 行列出：未消化 Inbox、今日未完成、进行中 Goal。不要发明没有的条目。";
+
+function MorningBriefCard({ dayKey }: { dayKey: string }) {
+  const utils = trpc.useUtils();
+  const briefQ = trpc.briefing.morning.useQuery(
+    { dayKey },
+    { refetchInterval: 60_000 },
+  );
+  // 超级 Agent 用于 cron 种子；按需查一次
+  const agentQ = trpc.agent.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
+  const superAgentId = (agentQ.data?.items ?? []).find((a) => a.tier === "super")?.id;
+  const cronUpsert = trpc.agentCron.upsert.useMutation({
+    onSuccess: () => {
+      utils.agentCron.list.invalidate().catch(catchUnlessCancelled("morning-brief.cron"));
+    },
+  });
+  const [cronHint, setCronHint] = useState<string | null>(null);
+
+  const brief = briefQ.data;
+  if (!brief) return null;
+  const dailyUndone = brief.daily.todo + brief.daily.doing;
+
+  const seedCron = () => {
+    if (!superAgentId || cronUpsert.isPending) return;
+    cronUpsert.mutate(
+      { agentId: superAgentId, name: "morning-brief", cron: "0 8 * * *", prompt: MORNING_BRIEF_CRON_PROMPT, enabled: true },
+      {
+        onSuccess: () => {
+          setCronHint("已创建/更新 8:00 cron");
+          window.setTimeout(() => setCronHint(null), 2500);
+        },
+        onError: () => setCronHint("创建失败"),
+      },
+    );
+  };
+
+  const scrollToBoard = () => {
+    document.getElementById("daily-flow-board")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div
+      data-testid="morning-brief-card"
+      className="rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-4"
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--om-text-1)]">
+          <Kanban className="h-4 w-4 text-[var(--om-brand)]" />
+          晨间简报 · {dayKey}
+        </div>
+        <button
+          type="button"
+          data-testid="morning-brief-cron-seed"
+          onClick={seedCron}
+          disabled={!superAgentId || cronUpsert.isPending}
+          className="inline-flex items-center gap-1 rounded-md border border-[var(--om-border)] px-2 py-1 text-xs text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] disabled:opacity-50"
+          title="创建/更新每天 8:00 用超级 Agent 读简报的 cron"
+        >
+          {cronUpsert.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+          每天 8:00 用超级 Agent 读简报
+        </button>
+      </div>
+      {cronHint && <div className="mb-2 text-xs text-[var(--om-text-3)]">{cronHint}</div>}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Inbox 未消化 */}
+        <Link
+          href="/inbox"
+          className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-3 hover:border-[var(--om-brand)]/40"
+        >
+          <div className="text-xs text-[var(--om-text-3)]">未消化 Inbox</div>
+          <div className="mt-1 text-2xl font-semibold text-[var(--om-text-1)]">{brief.inbox.fetched}</div>
+          <div className="mt-1 line-clamp-2 text-[11px] text-[var(--om-text-3)]">
+            {brief.inbox.items[0]?.title ?? "暂无新收藏"}
+          </div>
+        </Link>
+        {/* 今日未完成 */}
+        <button
+          type="button"
+          onClick={scrollToBoard}
+          className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-3 text-left hover:border-[var(--om-brand)]/40"
+        >
+          <div className="text-xs text-[var(--om-text-3)]">今日未完成</div>
+          <div className="mt-1 text-2xl font-semibold text-[var(--om-text-1)]">{dailyUndone}</div>
+          <div className="mt-1 line-clamp-2 text-[11px] text-[var(--om-text-3)]">
+            待办 {brief.daily.todo} · 进行中 {brief.daily.doing}
+          </div>
+        </button>
+        {/* 进行中 Goal */}
+        <div className="rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg)] p-3">
+          <div className="text-xs text-[var(--om-text-3)]">进行中 Goal</div>
+          <div className="mt-1 text-2xl font-semibold text-[var(--om-text-1)]">{brief.goals.length}</div>
+          <div className="mt-1 line-clamp-2 text-[11px] text-[var(--om-text-3)]">
+            {brief.goals[0]?.sessionTitle ?? "暂无进行中目标"}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {brief.goals.slice(0, 4).map((g) => (
+              <Link
+                key={g.sessionId}
+                href={`/chat?sessionId=${g.sessionId}`}
+                className="inline-flex items-center gap-1 rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[10px] text-[var(--om-brand-deep)] hover:underline"
+                title={g.text}
+              >
+                {g.sessionTitle.slice(0, 12)} · 已核实 {g.verifiedCount}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DailyFlowPage() {
   const utils = trpc.useUtils();
   const [dayKey, setDayKey] = useState(() => localDayKey());
@@ -85,10 +200,19 @@ export default function DailyFlowPage() {
     }
     const onMsg = (ev: MessageEvent) => {
       const data = ev.data as { type?: string; dayKey?: string } | null;
-      if (data?.type !== "daily_flow_updated") return;
-      if (data.dayKey && data.dayKey !== dayKey) return;
+      const t = data?.type;
+      if (
+        t !== "daily_flow_updated" &&
+        t !== "inbox_updated" &&
+        t !== "goal_updated" &&
+        t !== "session_list_changed"
+      ) {
+        return;
+      }
+      if (t === "daily_flow_updated" && data?.dayKey && data.dayKey !== dayKey) return;
       utils.dailyFlow.listByDay.invalidate({ dayKey }).catch(catchUnlessCancelled("app/daily/page.tsx"));
       utils.dailyFlow.dayReport.invalidate({ dayKey }).catch(catchUnlessCancelled("app/daily/page.tsx"));
+      utils.briefing.morning.invalidate({ dayKey }).catch(catchUnlessCancelled("app/daily/page.tsx"));
     };
     bc.addEventListener("message", onMsg);
     return () => {
@@ -220,6 +344,8 @@ export default function DailyFlowPage() {
           </div>
         </header>
 
+        <MorningBriefCard dayKey={dayKey} />
+
         <div className="flex flex-wrap gap-4 text-sm text-[var(--om-text-2)]">
           <span>
             合计 <strong className="text-[var(--om-text-1)]">{stats.total}</strong>
@@ -261,7 +387,7 @@ export default function DailyFlowPage() {
         {listQuery.isLoading ? (
           <LoadingState />
         ) : (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div id="daily-flow-board" className="grid gap-4 md:grid-cols-3">
             {COLUMNS.map((col) => {
               const list = byStatus[col.status];
               return (

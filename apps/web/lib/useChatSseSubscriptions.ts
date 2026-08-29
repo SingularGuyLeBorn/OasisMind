@@ -283,6 +283,7 @@ export function useChatSseSubscriptions({
           /* ignore */
         }
         postUiState({ type: "session_list_changed", sessionId: listSessionId });
+        utils.briefing.morning.invalidate().catch(logQueryCatch);
       });
       register("approval_updated", () => {
         utils.approval.list.invalidate().catch(logQueryCatch);
@@ -323,6 +324,7 @@ export function useChatSseSubscriptions({
         utils.inbox.stats.invalidate().catch(logQueryCatch);
         utils.inbox.facets.invalidate().catch(logQueryCatch);
         postUiState({ type: "inbox_updated" });
+        utils.briefing.morning.invalidate().catch(logQueryCatch);
       });
       register("dead_letter_updated", () => {
         utils.deadLetter.list.invalidate().catch(logQueryCatch);
@@ -379,6 +381,7 @@ export function useChatSseSubscriptions({
         }
         utils.session.getGoal.invalidate({ sessionId: targetSid }).catch(logQueryCatch);
         postUiState({ type: "goal_updated", sessionId: targetSid });
+        utils.briefing.morning.invalidate().catch(logQueryCatch);
       });
       register("daily_flow_updated", (ev) => {
         let dayKey: string | undefined;
@@ -396,6 +399,7 @@ export function useChatSseSubscriptions({
           utils.dailyFlow.dayReport.invalidate().catch(logQueryCatch);
         }
         postUiState({ type: "daily_flow_updated", dayKey });
+        utils.briefing.morning.invalidate().catch(logQueryCatch);
       });
       register("session_title_updated", (ev) => {
         utils.session.list.invalidate().catch(logQueryCatch);
