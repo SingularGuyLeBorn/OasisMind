@@ -387,7 +387,7 @@ export default function DailyFlowPage() {
         {listQuery.isLoading ? (
           <LoadingState />
         ) : (
-          <div id="daily-flow-board" className="grid gap-4 md:grid-cols-3">
+          <div id="daily-flow-board" data-testid="daily-flow-board" className="grid gap-4 md:grid-cols-3">
             {COLUMNS.map((col) => {
               const list = byStatus[col.status];
               return (
@@ -403,7 +403,12 @@ export default function DailyFlowPage() {
                   </div>
                   <div className="flex flex-col gap-2">
                     {list.length === 0 ? (
-                      <p className="px-1 py-8 text-center text-xs text-[var(--om-text-3)]">暂无条目</p>
+                      <p
+                        data-testid="daily-empty"
+                        className="px-1 py-8 text-center text-xs text-[var(--om-text-3)]"
+                      >
+                        暂无条目
+                      </p>
                     ) : (
                       list.map((item) => {
                         const forward = nextStatus(item.status as FlowStatus);

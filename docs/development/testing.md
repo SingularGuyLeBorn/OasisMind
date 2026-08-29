@@ -128,6 +128,7 @@ W6/W10 新增的过程 E2E，若 `scenarios.md` 没有对应标题，**不准改
 | 文件柜收件提示 | `apps/web/e2e/files-accept-hint-mock.spec.ts` | 可见 `files-accept-hint`，文案含 pdf 与 docx | 否（场景 8 是写文章；见场景 8 note） |
 | 花园列表/空态 | `apps/web/e2e/gardens-list-mock.spec.ts` | 至少一张花园卡片可点，或空态 `gardens-empty` | 仅当 claim 真是花园阅读时挂场景 11/13；列表页只登记本表 |
 | 主题切换 | `apps/web/e2e/theme-toggle-mock.spec.ts` | 已有过程；挂本表，不强塞无关 scenario | 本表 |
+| 每日看板 | `apps/web/e2e/daily-board-mock.spec.ts` | 非 heading：看板 `daily-flow-board` 或空态 `daily-empty` | 本表（scenarios.md 无专属每日标题） |
 
 ---
 
