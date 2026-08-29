@@ -26,7 +26,8 @@
 | W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | `e62598dd` |
 | W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | `6c2b4376` |
 | W13 | done | 见「门禁」表；theme-toggle 挂场景 1 map；master fast-forward 到 `408210cc` 后复跑与施工期同数字。Goal 保持 active | `408210cc` |
-| W13′ | done | `/runs` 独立 F5 it + map claim；`admin-live-push-mock` 7 passed。Goal 仍 active | 本提交 |
+| W13′ | done | `/runs` 独立 F5 it + map claim；`admin-live-push-mock` 7 passed。Goal 仍 active | `627535e2` |
+| W13″ | done | evals 文首不再写成证明没变傻；盘点「留」改 done | 本提交 |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
 
@@ -36,7 +37,7 @@
 | S2 场景不虚标 | 待验收 | `scenario-test-map.json` 每条 `asserts[]`；`scenarioTestMap.test.ts` 3 passed；covered 计分层排除 e2e-real 与 heading claim | 过程闸在 CI 路径，不是文件存在 |
 | S3 纪念碑变契约 | 待验收 | `git ls-files` 对 B1/C1/reentrantResume/nativeTools.test.ts 为空；`asyncDeliveryReconciler.table.test.ts` 14 it；`heartbeatEngine.table.test.ts` 8 it | 旧事故文件名已从工作树消失，契约表 it 不减 |
 | S4 nativeTools 按域 | 待验收 | `nativeTools.test.ts` 已删；W4 `nativeTools.fs` 45 passed；`it(` 111→111 | 可按域跑，断言没丢 |
-| S5 evals 诚实 | 待验收 | `evals/README.md` L5–10 诚实声明；`evalGoldenSync.test.ts`；W13 `pnpm test:evals` 12/12、`pnpm test:bench` 24/24 退出码 0 | mock 绿不再能冒充「没变傻」 |
+| S5 evals 诚实 | 待验收 | `evals/README.md` L5–10 诚实声明（锁死原文）；文首 P1-03 导语已改为「锁 mock 场景命中与工具名」，不再写成证明没变傻；`evalGoldenSync.test.ts`；W13 `pnpm test:evals` 12/12、`pnpm test:bench` 24/24 退出码 0 | mock 绿不再能冒充「没变傻」 |
 | S6 CI 闸诚实 | 待验收 | 4 个 `*-real.spec.ts` 文件头降权；OCR `test.skip`；map 里 e2e-real 不计 covered | skip 的 real 不能撑 covered |
 | S7 产品面过程 | 待验收 | `files-accept-hint-mock` / `gardens-list-mock` / `daily-board-mock` e2e 绿；`theme-toggle-mock` 挂场景 1 asserts（Navbar 切 light/dark） | 花园/文件柜/每日/主题都有过程 claim |
 | S8 推拉 PUSH+PULL | 待验收 | `admin-live-push-mock`：`/cron` `/approvals` `/runs` 各有 PUSH it + 独立「刷新页面…仍在」F5 it（`/runs 创建 interrupted 后刷新页面 hint 仍在`）；场景 17 Inbox 蒸馏钮 | 三页双通道都有独立 it，禁止只 spy notify、禁止 F5 只叠在 PUSH 里 |
@@ -69,6 +70,7 @@
 | W11 pageErrorGuard | 同步 `() => void` | Playwright `addInitScript` 必须 await | `installPageErrorGuard` 为 async，返回 `() => Promise<void>` | 是 |
 | W11 mock web_search | 不准放宽 chat-mock「全文已存」 | mock 叶子 JSON 仅 3945 字，低于 4000 阈值 | 对含 OasisMind 的查询垫长 snippet（repeat 500），不改断言 | 是 |
 | W13 theme-toggle map | S7 要求 map 挂过程 claim；W10 禁止硬塞无关 scenario | 无「主题」场景标题 | 挂到场景 1（spec 本身 goto /chat Navbar） | 是 |
+| W7 evals 文首 | 诚实声明锁死原文；未规定改 P1-03 导语 | 文首仍写「证明没变傻」，验收者可按完成判定第 10 条打 S5=0 | 导语改为「锁 mock 场景命中与工具名」，诚实声明原文不动 | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -91,14 +93,14 @@
 | 合 | enqueueIdleDispatch.test.ts | done | prdChatQueueTable.test.ts describe enqueueIdleDispatch |
 | 合 | claimActiveAbortController.test.ts | done | prdChatStopTable.test.ts describe claimActiveAbortController |
 | 合 | liveStreamOwnership.test.ts | done | chatStoreInvariants.test.ts describe liveStreamOwnership |
-| 留 | useSessionMessages / messageUpsertMerge / hydrateFreshnessMerge / chatQueueMerge / chatQueueDrainHead / queueDrainClaimRollback / queueEditDraft / sessionTreeHydrate / chatTreeUi / chatTimelineCompact / adminPullIntervals / uiStateChannel / ackThenMarkDelivery | pending | 不硬并 |
-| 留 | scenarioTestMap.test.ts | pending | W1 改校验 |
+| 留 | useSessionMessages / messageUpsertMerge / hydrateFreshnessMerge / chatQueueMerge / chatQueueDrainHead / queueDrainClaimRollback / queueEditDraft / sessionTreeHydrate / chatTreeUi / chatTimelineCompact / adminPullIntervals / uiStateChannel / ackThenMarkDelivery | done | 保持原路径，未硬并 |
+| 留 | scenarioTestMap.test.ts | done | 仍此文件；W1 改校验逻辑 |
 
 ### 3.2 Chat 后端 / 工具管道（`apps/server/src/__tests__`）
 
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
-| 留 | sessionBranch.brutal / toolPipelineOffload.brutal / toolResultConclusion.brutal | pending | |
+| 留 | sessionBranch.brutal / toolPipelineOffload.brutal / toolResultConclusion.brutal | done | 未改名、未删 |
 | 留 | chatHistory / chatImageEnrich / compactCutPoints / chatTree / prd* / uiStateNotify / importOrder | done | chatHistory → `pure/chatHistory.test.ts`；其余仍 db；importOrder 不准进 pure |
 | 合 | asyncDeliveryQueueB1–B5、B7 | done | asyncDeliveryReconciler.table.test.ts（14 it） |
 | 留空 | B6 | done | 不补造 |
@@ -119,9 +121,9 @@
 
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
-| 留 | admin-pages.spec.ts / blog-smoke.spec.ts | pending | heading 冒烟，不能当唯一 covered |
-| 留 | 全部 e2e/*-mock.spec.ts、fixture | pending | |
-| 留但降权 | e2e/*-real.spec.ts / chat-ocr-real.spec.ts | pending | W5 文件头声明 |
+| 留 | admin-pages.spec.ts / blog-smoke.spec.ts | done | heading 冒烟保留；不能当唯一 covered |
+| 留 | 全部 e2e/*-mock.spec.ts、fixture | done | 过程覆盖主路径，未删 |
+| 留但降权 | e2e/*-real.spec.ts / chat-ocr-real.spec.ts | done | W5 文件头声明；OCR 保持 skip |
 | 补 | files-accept-hint-mock.spec.ts | done | apps/web/e2e/files-accept-hint-mock.spec.ts |
 | 补 | gardens-list-mock.spec.ts | done | apps/web/e2e/gardens-list-mock.spec.ts；空态加 gardens-empty |
 | 改 | evals/README.md | done | 文首诚实声明 + mini Harness 非模型质量一句 |
@@ -129,7 +131,7 @@
 | 补 | noVoidPromise.test.ts | done | apps/web/lib/__tests__/noVoidPromise.test.ts |
 | 补 | catchUnlessCancelled.test.ts | done | apps/web/lib/__tests__/catchUnlessCancelled.test.ts |
 | 补 | uiStateNotify.hub.test.ts | done | apps/server/src/__tests__/uiStateNotify.hub.test.ts |
-| 补 | admin-live-push-mock F5 it | done | cron/approvals reload 后卡片仍在 |
+| 补 | admin-live-push-mock F5 it | done | cron/approvals/runs 各一条独立 reload it |
 | 补 | daily-board-mock.spec.ts | done | apps/web/e2e/daily-board-mock.spec.ts |
 | 补 | e2e/helpers/pageErrorGuard.ts | done | apps/web/e2e/helpers/pageErrorGuard.ts；仅挂 chat-mock.spec.ts |
 | 补 | src/__tests__/pure/ + vitest projects | done | vitest projects db+pure；9 个测剪切进 pure/ + pureNoPrisma 闸 |
@@ -141,11 +143,11 @@
 
 | 动作 | 文件 | 状态 | 最终路径 |
 |---|---|---|---|
-| 留 | 任何 *.brutal.test.ts | pending | 不准删 |
-| 留 | importOrder.test.ts | pending | 不准进 pure |
-| 留 | chatStorePbtInvariants / golden-traces | pending | |
-| 留 | mock-llm-core 现有 *.test.ts | pending | |
-| 留 | evals/golden/*.json G01–G12 | pending | 不准删 |
+| 留 | 任何 *.brutal.test.ts | done | 未删 |
+| 留 | importOrder.test.ts | done | 仍在 db 项目，未进 pure |
+| 留 | chatStorePbtInvariants / golden-traces | done | 未缩 command 空间、未改磁带 |
+| 留 | mock-llm-core 现有 *.test.ts | done | 未删；G01–G05 只补关键词 |
+| 留 | evals/golden/*.json G01–G12 | done | 未删 |
 
 ## W0 测试圣经 + 盘点
 
@@ -283,7 +285,14 @@
 - 根因复述：S8 锁 `/cron` `/approvals` `/runs` 的 PUSH + F5。W10 只强制 cron/approvals 各一条独立 reload it；`/runs` 的 reload 叠在 PUSH 那条 it 里，验收者按标题检索会找不到「刷新页面…仍在」。
 - 改动文件：`admin-live-push-mock.spec.ts` 追加 `/runs 创建 interrupted 后刷新页面 hint 仍在`；场景 7 map 把 PUSH claim 与 F5 claim 拆开。
 - 不改哪些面：不 `pushAdminUiState`；不改生产 `/runs` 页。
-- 验证：`pnpm --filter @oasismind/web test:e2e:mock -- admin-live-push-mock` 退出码 0（7 passed，含新 it）；`scenarioTestMap` 3 passed。首次跑因 `waitForUrl(http://127.0.0.1:3003/)` fetch failed 超时（Next 已印 Ready）；重跑即绿，属环境残留，未改 setup。
+- 验证：`pnpm --filter @oasismind/web test:e2e:mock -- admin-live-push-mock` 退出码 0（7 passed，含新 it）；`scenarioTestMap` 3 passed。首次跑因 `waitForUrl(http://127.0.0.1:3003/)` fetch failed 超时（Next 已印 Ready）；重跑即绿，属环境残留，未改 setup。master 已 ff 到 `627535e2`，同 SHA 再跑仍 7 passed。
+
+## W13″ evals 文首与盘点勾完
+
+- 根因复述：完成判定第 10 条禁止把 mock evals 写成「模型没变傻」。诚实声明是否定句，但 README 第 3 行导语仍是肯定「证明没变傻」。盘点表「留」行还标 pending，验收者会以为第 3 节没做完。
+- 改动文件：`evals/README.md` 导语；本报告盘点「留」改 done、W13′ hash、S5 证据。
+- 不改哪些面：诚实声明四条原文一字不改；不重跑 `test:evals`（只改导语文案）。
+- [OM-FREEPLAY]：导语改写是为堵住 S5=0，不是改 W7 锁死的诚实声明块。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
 
@@ -317,4 +326,4 @@
 | `pnpm test:bench` | 0 | 24/24；拆卸期 prisma DATABASE_URL stderr |
 | mock e2e（本 Goal 新/改 spec） | 0 | W13：`e2e/chat-mock.spec.ts` files-accept-hint-mock gardens-list-mock daily-board-mock admin-live-push-mock：11 passed |
 | merge 后复跑（master=`408210cc`） | 0 | 与上行 W13 全量同数字（施工 worktree 当时已与 master 同 SHA） |
-| mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed（含 `/runs 创建 interrupted 后刷新页面 hint 仍在`） |
+| mock e2e W13′ `/runs` F5 | 0 | `admin-live-push-mock` 7 passed（含 `/runs 创建 interrupted 后刷新页面 hint 仍在`）；master ff 到 `627535e2` 后再跑仍 7 passed |
