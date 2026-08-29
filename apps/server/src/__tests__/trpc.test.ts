@@ -712,6 +712,7 @@ describe("tRPC Routers Comprehensive CRUD tests (All 18 Entities)", () => {
     const list = await caller.run.list({ page: 1, pageSize: 10 });
     expect(list.items.some((item: any) => item.id === created.data.id)).toBe(true);
 
+    // [OM-FREEPLAY] W13：pending→success 非法；须经 running，对齐 isAllowedRunStatusTransition。
     const started = await caller.run.update({
       id: created.data.id,
       status: "running",

@@ -264,10 +264,10 @@
 ## W13 十分收尾
 
 - 根因复述：S7–S10 落地后必须全量再跑，报告打分列保持待验收。
-- 改动文件：本报告门禁与证据表。
-- [OM-FREEPLAY]：无自评 10/10。Goal 保持 active。独立 worktree 防主仓自动切分支。
+- 改动文件：本报告门禁与证据表；`vitest.config.ts` db `fileParallelism: false`；`trpc.test.ts` Run 经 running；`resilientLlmClient.test.ts` 锁 chat.completions；`chat-mock.spec.ts` hint「2 条」。
+- [OM-FREEPLAY]：无自评 10/10。Goal 保持 active。独立 worktree 防主仓自动切分支。上述三处测补丁是门禁扫到的假红，不是 prompt 点名。
 - 验证：见门禁表。
-- 遇到的问题：主工作区会被切回 `feat/worth-doing-w1-w7`，施工测必须在 `OasisMind-tsp` 跑。
+- 遇到的问题：主仓会被切回 `feat/worth-doing-w1-w7`。Playwright 滤 `chat-mock.spec.ts` 会误匹配 `scenario-partial-chat-mock.spec.ts`（场景 20 goal 条，非本 Goal 改动面）；W13 用 `e2e/chat-mock.spec.ts`。
 
 ## 施工期发现的设计错误（与 testing.md 同步）
 
@@ -285,6 +285,7 @@
 - 其它 mock spec 预存 pageerror：本 Goal 只强制 `chat-mock.spec.ts` 挂守卫。
 - web lint 10 条预存 warning（chatSessionTreeBar / RoughAnnotation / branch-mock / dsh-screenshot）。
 - 主仓工作区会在施工中被切回 `feat/worth-doing-w1-w7`（非本 Goal 改动）；施工员不得在那条分支上改测试。
+- Playwright 滤 `chat-mock.spec.ts` 会匹配 `scenario-partial-chat-mock.spec.ts`；场景 20 `chat-goal-bar` 非本 Goal 改动面，未修。
 
 ## 门禁
 
