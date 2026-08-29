@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Bot,
   Files,
+  GitFork,
   Loader2,
   PanelLeft,
   X,
@@ -103,6 +104,9 @@ export interface ChatCenterPaneProps {
   /** 打开右侧「本会话文件」面板；未传则不显示入口 */
   onOpenFilesPanel?: () => void;
   filesPanelOpen?: boolean;
+  /** W6 打开右侧「阶段工件」面板；未传则不显示入口 */
+  onOpenStagesPanel?: () => void;
+  stagesPanelOpen?: boolean;
   modelSupportsReasoning: boolean;
   modelReasoningRequired: boolean;
   /** 派工条：进行中 / 待消费 / 同步等待 */
@@ -161,6 +165,8 @@ export function ChatCenterPane({
   onOpenPromptEditor,
   onOpenFilesPanel,
   filesPanelOpen = false,
+  onOpenStagesPanel,
+  stagesPanelOpen = false,
   modelSupportsReasoning,
   modelReasoningRequired,
   dispatchActiveItems = [],
@@ -247,6 +253,18 @@ export function ChatCenterPane({
             data-testid="chat-open-files-panel"
           >
             <Files className="h-4 w-4" />
+          </button>
+        )}
+        {onOpenStagesPanel && !stagesPanelOpen && (
+          <button
+            type="button"
+            onClick={onOpenStagesPanel}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 shrink-0")}
+            aria-label="打开阶段工件面板"
+            title="阶段工件"
+            data-testid="chat-open-stages-panel"
+          >
+            <GitFork className="h-4 w-4" />
           </button>
         )}
       </header>

@@ -21,7 +21,8 @@ export type UiStateNotifyKind =
   | "daily_flow_updated"
   | "comment_updated"
   | "inbox_updated"
-  | "dead_letter_updated";
+  | "dead_letter_updated"
+  | "workspace_stages_updated";
 
 /** 会话树换叶后推到该会话（消息列表按活跃路径再水合） */
 export function notifySessionTreeUpdated(
@@ -46,6 +47,20 @@ export function notifyGoalUpdated(
     sessionId,
     status: status ?? undefined,
     verifiedCount,
+  });
+}
+
+/** W6 阶段工件写入后推到该会话（Chat 侧栏 listStages 刷新） */
+export function notifyWorkspaceStagesUpdated(
+  sessionId: string,
+  workspaceId?: string,
+  stage?: string,
+): void {
+  pushUiStateToSession(sessionId, {
+    type: "workspace_stages_updated",
+    sessionId,
+    workspaceId,
+    stage,
   });
 }
 

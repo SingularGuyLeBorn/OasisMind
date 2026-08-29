@@ -330,6 +330,15 @@ export function useChatSseSubscriptions({
         utils.deadLetter.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "dead_letter_updated" });
       });
+      register("workspace_stages_updated", (ev) => {
+        utils.workspace.listStages.invalidate().catch(logQueryCatch);
+        try {
+          const data = JSON.parse(ev.data) as { sessionId?: string };
+          postUiState({ type: "workspace_stages_updated", sessionId: data.sessionId });
+        } catch {
+          postUiState({ type: "workspace_stages_updated" });
+        }
+      });
       register("run_updated", () => {
         utils.run.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "run_updated" });

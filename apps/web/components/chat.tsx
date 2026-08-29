@@ -17,6 +17,7 @@ import { ChatOverlays } from "@/components/chatOverlays";
 import { ChatSidebar } from "@/components/chatSidebar";
 import { ChatSessionPane } from "@/components/chatSessionPane";
 import { ChatFilesPanel } from "@/components/chatFilesPanel";
+import { ChatStagesPanel } from "@/components/chatStagesPanel";
 import {
   useSessionMessages,
   sessionMessagesStore,
@@ -109,6 +110,8 @@ export function ChatView() {
   } | null>(null);
   /** 右侧文件 Panel：展示本 session 上传图片 + Agent 创建文件 */
   const [rightFilesOpen, setRightFilesOpen] = useState(false);
+  /** W6 右侧阶段工件 Panel：当前 Agent Workspace 的 stage 文件 */
+  const [rightStagesOpen, setRightStagesOpen] = useState(false);
   /** 可指定 session：流结束后应消费该 session，而不是当前视图 */
   const consumeRef = useRef<(preferredSessionId?: string) => void>(() => {});
 
@@ -776,6 +779,8 @@ export function ChatView() {
     onOpenPromptEditor: handleOpenPromptEditor,
     onOpenFilesPanel: () => setRightFilesOpen(true),
     filesPanelOpen: rightFilesOpen,
+    onOpenStagesPanel: () => setRightStagesOpen(true),
+    stagesPanelOpen: rightStagesOpen,
     onOpenRuntimePanel: openRuntimePanel,
     onFocusSwarm: openSwarmPanel,
     onWarmSkills: () => setSkillsQueryReady(true),
@@ -854,6 +859,11 @@ export function ChatView() {
             sessionId={effectiveSessionId}
             open={rightFilesOpen}
             onClose={() => setRightFilesOpen(false)}
+          />
+          <ChatStagesPanel
+            workspaceId={selectedWorkspaceId}
+            open={rightStagesOpen}
+            onClose={() => setRightStagesOpen(false)}
           />
         </div>
       </div>

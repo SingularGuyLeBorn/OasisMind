@@ -22,6 +22,7 @@ export type SwarmStageWriteInput = {
 };
 
 export type SwarmStageMeta = {
+  workspaceId: string | null;
   stage: string;
   fileName: string;
   relPath: string;
@@ -123,6 +124,7 @@ export async function writeSwarmStage(
   fs.writeFileSync(absFile, fm, "utf-8");
   const relPath = path.relative(config.projectRoot, absFile).replace(/\\/g, "/");
   return {
+    workspaceId,
     stage,
     fileName,
     relPath,
@@ -139,7 +141,7 @@ export async function listSwarmStages(
   config: AppConfig,
   opts: { workspaceId?: string } = {},
 ): Promise<SwarmStageMeta[]> {
-  const { absDir } = await resolveWorkspaceStagesDir(prisma, config, opts.workspaceId);
+  const { absDir, workspaceId } = await resolveWorkspaceStagesDir(prisma, config, opts.workspaceId);
   if (!fs.existsSync(absDir)) return [];
   const files = fs
     .readdirSync(absDir)
@@ -153,6 +155,7 @@ export async function listSwarmStages(
     const stage = meta.stage || fileName.replace(/\.md$/i, "");
     const st = fs.statSync(abs);
     out.push({
+      workspaceId,
       stage,
       fileName,
       relPath: path.relative(config.projectRoot, abs).replace(/\\/g, "/"),
@@ -173,7 +176,7 @@ export async function readSwarmStage(
 ): Promise<{ meta: SwarmStageMeta; body: string }> {
   const stage = String(opts.stage || "").trim();
   if (!STAGE_SLUG_RE.test(stage)) throw new Error("非法 stage 名");
-  const { absDir } = await resolveWorkspaceStagesDir(prisma, config, opts.workspaceId);
+  const { absDir, workspaceId } = await resolveWorkspaceStagesDir(prisma, config, opts.workspaceId);
   const absFile = resolveWithinDir(absDir, `${stage}.md`);
   if (!fs.existsSync(absFile)) throw new Error(`阶段工件不存在: ${stage}`);
   const raw = fs.readFileSync(absFile, "utf-8");
@@ -181,6 +184,7 @@ export async function readSwarmStage(
   const st = fs.statSync(absFile);
   return {
     meta: {
+      workspaceId,
       stage: meta.stage || stage,
       fileName: `${stage}.md`,
       relPath: path.relative(config.projectRoot, absFile).replace(/\\/g, "/"),

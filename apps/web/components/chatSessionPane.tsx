@@ -73,6 +73,9 @@ export interface ChatSessionPaneProps {
   onOpenPromptEditor: () => void;
   onOpenFilesPanel?: () => void;
   filesPanelOpen?: boolean;
+  /** W6 打开右侧「阶段工件」面板 */
+  onOpenStagesPanel?: () => void;
+  stagesPanelOpen?: boolean;
   /** 打开左栏「运行」Tab */
   onOpenRuntimePanel?: () => void;
   /** 集群 pill：打开左侧会话 / Agent 树 */
@@ -104,6 +107,8 @@ export function ChatSessionPane({
   onOpenPromptEditor,
   onOpenFilesPanel,
   filesPanelOpen,
+  onOpenStagesPanel,
+  stagesPanelOpen,
   onOpenRuntimePanel,
   onFocusSwarm,
   onWarmSkills,
@@ -636,6 +641,8 @@ export function ChatSessionPane({
         onOpenPromptEditor={onOpenPromptEditor}
         onOpenFilesPanel={onOpenFilesPanel}
         filesPanelOpen={filesPanelOpen}
+        onOpenStagesPanel={onOpenStagesPanel}
+        stagesPanelOpen={stagesPanelOpen}
         modelSupportsReasoning={!!modelOpt.supportsThinking}
         modelReasoningRequired={!!modelOpt.reasoningRequired}
         dispatchActiveItems={runtimeActiveItems}

@@ -44,6 +44,15 @@ export const workspaceRouter = router({
   list: publicProcedure.meta({ description: "列出所有工作区。", aiReadable: true }).input(listWorkspacesSchema).query(({ ctx, input }) => ctx.services.workspace.list(input)),
   update: publicProcedure.meta({ description: "更新工作区配置。", aiReadable: true }).input(updateWorkspaceSchema).mutation(({ ctx, input }) => ctx.services.workspace.update(input)),
   delete: publicProcedure.meta({ description: "删除工作区。", aiReadable: true }).input(z.object({ id: z.string().cuid() })).mutation(({ ctx, input }) => ctx.services.workspace.delete(input.id)),
+  // W6：列出 Workspace 阶段工件元信息（无 workspaceId 走系统 root 兜底）
+  listStages: publicProcedure
+    .meta({ description: "列出 Workspace 阶段工件元信息。", aiReadable: true })
+    .input(z.object({ workspaceId: z.string().cuid().optional() }))
+    .query(async ({ ctx, input }) => {
+      const { listSwarmStages } = await import("../swarmStages.js");
+      const items = await listSwarmStages(ctx.prisma, ctx.config, { workspaceId: input.workspaceId });
+      return { items, total: items.length };
+    }),
   resetAssistantHome: publicProcedure
     .meta({
       description:

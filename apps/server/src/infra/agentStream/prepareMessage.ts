@@ -51,7 +51,8 @@ export type AgentStreamEvent =
   | { type: "ask_user_pending"; sessionId: string; askId: string; question: string; options?: string[]; channel: "ui" | "email"; subject?: string }
   | { type: "artifact_created"; sessionId: string; artifactKind: string; title?: string; path: string; mime?: string; toolCallId: string; toolName: string }
   | { type: "ask_user_resolved"; sessionId: string; askId: string; outcome: "answered" | "expired" | "aborted"; answer?: string }
-  | { type: "swarm_task_update"; sessionId: string; jobId: string; origin: string; taskLabel: string; status: "queued" | "running" | "duplicate" | "completed" | "failed"; error?: string; subagentSessionId?: string };
+  | { type: "swarm_task_update"; sessionId: string; jobId: string; origin: string; taskLabel: string; status: "queued" | "running" | "duplicate" | "completed" | "failed"; error?: string; subagentSessionId?: string }
+  | { type: "workspace_stages_updated"; sessionId: string; workspaceId?: string; stage?: string };
 
 export function createTrackingEmit(
   sessionId: string,

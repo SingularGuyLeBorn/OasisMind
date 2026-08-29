@@ -21,7 +21,8 @@ export type UiStateChannelMessage = {
     | "inbox_updated"
     | "dead_letter_updated"
     | "compose_prefill"
-    | "subagent_session_update";
+    | "subagent_session_update"
+    | "workspace_stages_updated";
   [key: string]: unknown;
 };
 

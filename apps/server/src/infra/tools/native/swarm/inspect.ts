@@ -221,7 +221,7 @@ export async function swarmExportTraceTool(args: Record<string, unknown>, ctx: N
 export async function swarmStageWriteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const { writeSwarmStage } = await import("../../../swarmStages.js");
-  return writeSwarmStage(ctx.prisma, ctx.config, {
+  const meta = await writeSwarmStage(ctx.prisma, ctx.config, {
     workspaceId:
       (typeof args.workspaceId === "string" && args.workspaceId) ||
       ctx.agentSnapshot?.workspaceId ||
@@ -232,6 +232,16 @@ export async function swarmStageWriteTool(args: Record<string, unknown>, ctx: Na
     taskRef: typeof args.taskRef === "string" ? args.taskRef : undefined,
     authorAgentId: ctx.agentSnapshot?.id,
   });
+  // W6 PUSH：写入成功后推 workspace_stages_updated，Chat 侧栏 listStages 刷新
+  if (ctx.sessionId) {
+    try {
+      const { notifyWorkspaceStagesUpdated } = await import("../../../uiStateNotify.js");
+      notifyWorkspaceStagesUpdated(ctx.sessionId, meta.workspaceId ?? undefined, meta.stage);
+    } catch {
+      /* 推送失败不阻断写盘 */
+    }
+  }
+  return meta;
 }
 
 export async function swarmStageListTool(args: Record<string, unknown>, ctx: NativeToolContext) {
