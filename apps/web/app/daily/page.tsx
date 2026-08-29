@@ -387,7 +387,7 @@ export default function DailyFlowPage() {
         {listQuery.isLoading ? (
           <LoadingState />
         ) : (
-          <div id="daily-flow-board" className="grid gap-4 md:grid-cols-3">
+          <div id="daily-flow-board" data-testid="daily-flow-board" className="grid gap-4 md:grid-cols-3">
             {COLUMNS.map((col) => {
               const list = byStatus[col.status];
               return (

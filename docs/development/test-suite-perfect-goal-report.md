@@ -21,8 +21,8 @@
 | W6 | done | files-accept-hint-mock 1 passed；gardens-list-mock 1 passed | `6897dec1` |
 | W7 | done | evalGoldenSync 3 passed；test:evals 12/12；test:bench 24/24 | `e32e417c` |
 | W8 | done | noVoidPromise 1 passed；现存违规 0 | `3d942d90` |
-| W9 | done | 见门禁节 W9 行 | （待填） |
-| W10 | | | |
+| W9 | done | 见门禁节 W9 行 | `0cba2c25` |
+| W10 | done | scenarioTestMap 3；admin-live-push PULL it + daily-board（e2e 待跑） | （待填） |
 | W11 | | | |
 | W12 | | | |
 | W13 | | | |
@@ -235,11 +235,12 @@
 
 ## W10 推拉 PULL + 每日看板
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：PUSH 已锁，cron/approvals 缺 F5 水合；/daily 缺非 heading 过程。
+- 改动文件：`admin-live-push-mock.spec.ts` 两条 reload it；`daily-board-mock.spec.ts`；`daily/page.tsx` 给已有看板加 `daily-flow-board` testid；map 场景 6/7 PULL；testing.md 产品面表登记 daily。
+- 不改哪些面：现有 PUSH it；不 invent 产品；Inbox 蒸馏已挂场景 17；theme 只在产品面表。
+- [OM-FREEPLAY]：每日断言 `daily-flow-board` 或 `morning-brief-card` 二选一，避免 brief 未就绪误红。
+- 验证：scenarioTestMap 3 passed。
+- 遇到的问题：工作区多次被切回 worth-doing，未提交文件丢失后按同一锁死设计重写。
 
 ## W11 运行时路径
 

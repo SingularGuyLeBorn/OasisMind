@@ -162,6 +162,12 @@
           "layer": "e2e-mock"
         },
         {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/approvals 创建 pending 后刷新卡片仍在",
+          "claim": "/approvals 刷新后仍可见 pending 卡片",
+          "layer": "e2e-mock"
+        },
+        {
           "file": "apps/server/src/__tests__/nativeExecuteApproval.test.ts",
           "it": "native.execute(run_shell) 在审批开启时抛 PENDING_APPROVAL",
           "claim": "高风险 native.execute 未批准必须抛 PENDING_APPROVAL 禁止落库副作用",
@@ -189,6 +195,12 @@
           "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
           "it": "/cron 他处写入后开着页自己出现卡片，无需刷新",
           "claim": "/cron 开着页 PUSH 出现任务卡片，无需刷新",
+          "layer": "e2e-mock"
+        },
+        {
+          "file": "apps/web/e2e/admin-live-push-mock.spec.ts",
+          "it": "/cron upsert 后刷新卡片仍在",
+          "claim": "/cron 刷新后仍可见任务卡片",
           "layer": "e2e-mock"
         },
         {
