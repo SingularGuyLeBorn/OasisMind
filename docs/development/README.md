@@ -280,7 +280,7 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 - 想了解具体使用场景（Agent、子 Agent、异步任务）：看 `scenarios.md`。
 - 52 条原子路径目录（点什么 / UI / 变量 / 发出 / 回来 / 测 / 覆盖档）：`scenario-walkthrough.md`。人眼逐步点法：`user-interaction-playbook.md`。实现级微步：`scenario-step-by-step.md`。
 - 想了解并发和竞态条件防护：看 `concurrency.md`。
-- 想了解未来规划：看 `future-features.md`。
+- 想了解还缺什么、值得做什么：看 `worth-doing.md`（短索引：`future-features.md`）。交给别人无脑施工：`prompts/worth-doing-goal-prompt.md`。
 - 想查开发踩坑与教训：`开发心路历程.md`。
 - 想看 Swarm / 队列 / P0 架构决策：`design-decisions.md`；落地 PR 拆分：`p0-agent-arch-pr-split.md`。
 - 2026-08 Swarm 出处合同 + RSI 经验门 + 模块全景：`swarm-rsi-session-2026-08.md`。
