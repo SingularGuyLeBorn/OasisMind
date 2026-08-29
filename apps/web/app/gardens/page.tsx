@@ -214,7 +214,9 @@ export default function GardensPage() {
         {isLoading ? (
           <LoadingState />
         ) : !items.length ? (
-          <EmptyState title="还没有知识库" description="点击「新建知识库」创建第一座花园" />
+          <div data-testid="gardens-empty">
+            <EmptyState title="还没有知识库" description="点击「新建知识库」创建第一座花园" />
+          </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
             {items.map((g, index) => {

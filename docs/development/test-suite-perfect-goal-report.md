@@ -17,8 +17,8 @@
 | W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | `1e41ed13` |
 | W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | `1cd5d32e` |
 | W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
-| W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | （待填） |
-| W6 | | | |
+| W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
+| W6 | done | `pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；scenarioTestMap 绿 | （本 W commit） |
 | W7 | | | |
 | W8 | | | |
 | W9 | | | |
@@ -117,8 +117,8 @@
 | 留 | admin-pages.spec.ts / blog-smoke.spec.ts | pending | heading 冒烟，不能当唯一 covered |
 | 留 | 全部 e2e/*-mock.spec.ts、fixture | pending | |
 | 留但降权 | e2e/*-real.spec.ts / chat-ocr-real.spec.ts | pending | W5 文件头声明 |
-| 补 | files-accept-hint-mock.spec.ts | pending | |
-| 补 | gardens-list-mock.spec.ts | pending | |
+| 补 | files-accept-hint-mock.spec.ts | done | apps/web/e2e/files-accept-hint-mock.spec.ts |
+| 补 | gardens-list-mock.spec.ts | done | apps/web/e2e/gardens-list-mock.spec.ts；空态加 gardens-empty |
 | 改 | evals/README.md | pending | 诚实声明 |
 | 补 | evalGoldenSync.test.ts | pending | mock-llm-core 优先 |
 | 补 | noVoidPromise.test.ts | pending | |
@@ -199,11 +199,12 @@
 
 ## W6 产品面补测
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：Chat 测到停止表，花园/文件柜几乎只有 heading。成功 = `/files` 收件提示可见且文案含 pdf/docx（不上传 docx）；`/gardens` 至少一张可点花园链接或空态 `gardens-empty`；不强行塞进无关 scenario id，只登记 testing.md 产品面表。
+- 改动文件：新建 `apps/web/e2e/files-accept-hint-mock.spec.ts`、`apps/web/e2e/gardens-list-mock.spec.ts`；`apps/web/app/gardens/page.tsx` 空态外包 `data-testid="gardens-empty"`（文案不改）。
+- 不改哪些面：不改 scenarios.md；不把 files/gardens 升格为场景 8/11 covered 依据（场景 8 note 与场景 11 note 已在 W1 写好）；files 页 testid 已存在，不改文案。
+- [OM-FREEPLAY]：空态与列表用 `expect.poll` 二选一，避免 e2e 空库 wipe 后只断言链接变红。未给 EmptyState 组件加通用 testid，只包花园页空态根节点。
+- 验证：`pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；`pnpm --filter @oasismind/web test -- scenarioTestMap` 退出码 0。
+- 遇到的问题：无。
 
 ## W7 evals 诚实与金表防漂
 
