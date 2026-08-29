@@ -22,8 +22,8 @@
 | W7 | done | evalGoldenSync 3 passed；test:evals 12/12；test:bench 24/24 | `e32e417c` |
 | W8 | done | noVoidPromise 1 passed；现存违规 0 | `3d942d90` |
 | W9 | done | 见门禁节 W9 行 | `0cba2c25` |
-| W10 | done | scenarioTestMap 3；admin-live-push PULL it + daily-board（e2e 待跑） | （待填） |
-| W11 | | | |
+| W10 | done | scenarioTestMap 3；admin-live-push PULL it + daily-board | `78d756aa` |
+| W11 | done | catchUnlessCancelled 6；uiStateNotify.hub 1 | （待填） |
 | W12 | | | |
 | W13 | | | |
 

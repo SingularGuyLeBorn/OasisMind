@@ -9,12 +9,25 @@ import {
   expectToolHint,
   expectAssistantAnswer,
 } from "./helpers/mockChatFixture";
+import { installPageErrorGuard } from "./helpers/pageErrorGuard";
 
 test.describe("Chat Mock — 工具调用与回答", () => {
-  test.beforeEach(async ({ request }) => {
+  let uninstallGuard: (() => void) | undefined;
+
+  test.beforeEach(async ({ page, request }) => {
     await expect
       .poll(async () => (await request.get(`${SERVER_URL}/health`)).ok())
       .toBe(true);
+    uninstallGuard = installPageErrorGuard(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    const pending = await page
+      .evaluate(() => (window as unknown as { __omUnhandled?: string[] }).__omUnhandled ?? [])
+      .catch(() => [] as string[]);
+    uninstallGuard?.();
+    uninstallGuard = undefined;
+    expect(pending).toEqual([]);
   });
 
   test("触发 web_search 工具并显示 pill/hint", async ({ page }) => {
