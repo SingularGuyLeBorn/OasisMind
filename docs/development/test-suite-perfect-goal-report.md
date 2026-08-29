@@ -23,8 +23,8 @@
 | W8 | done | `pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0；web lint 退出码 0；扫描 0 条生产违规 | `24ddc990` |
 | W9 | done | server/web lint 0；scenarioTestMap/noVoidPromise 绿；W3/W4 点名 7 files 84 tests；旧测试路径 git ls-files 空。S7–S10 尚未 W10–W12，不能交十分卷 | `e9d42654` |
 | W10 | done | mock e2e admin-live-push + daily-board + files/gardens 9 passed；scenarioTestMap 绿 | `80b8e14b` |
-| W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | |
-| W12 | | | |
+| W11 | done | catchUnlessCancelled 2 passed；uiStateNotify.hub 1 passed；`pnpm --filter @oasismind/web test:e2e:mock -- e2e/chat-mock.spec.ts` 2 passed | `e62598dd` |
+| W12 | done | `--project pure` 10 files/65；`--project db -- chatTree` 17；全量 server 247/1668 | |
 | W13 | | | |
 
 ## 十分打分表（施工员填证据；分列保持待验收）
@@ -130,7 +130,7 @@
 | 补 | admin-live-push-mock F5 it | done | cron/approvals reload 后卡片仍在 |
 | 补 | daily-board-mock.spec.ts | done | apps/web/e2e/daily-board-mock.spec.ts |
 | 补 | e2e/helpers/pageErrorGuard.ts | done | apps/web/e2e/helpers/pageErrorGuard.ts；仅挂 chat-mock.spec.ts |
-| 补 | src/__tests__/pure/ + vitest projects | pending | |
+| 补 | src/__tests__/pure/ + vitest projects | done | vitest projects db+pure；9 个测剪切进 pure/ + pureNoPrisma 闸 |
 | 补 | docs/development/testing.md | done | W0 |
 | 改 | scenario-test-map.json + scenarioTestMap.test.ts | done | W1：每条 asserts[]；校验 it 子串 |
 | 改 | AGENTS.md 快速导航 | done | 只加一行 |
@@ -259,12 +259,13 @@
 
 ## W12 server 纯测并行
 
-- 根因复述：
-- 改动文件：
-- pure 文件清单（≥8）：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：全量 singleFork 正确，但 chatHistory 这类零 DB 测也排队，内环痛。成功 = Vitest projects：`db` 保持 forks+singleFork+prisma setup；`pure` threads、无 prisma setup；至少 8 个测剪切进 `src/__tests__/pure/`；闸禁止相对 db import。
+- 改动文件：`apps/server/vitest.config.ts`；`apps/server/src/__tests__/pure/*`（剪切 9 个 + `pureNoPrisma.test.ts`）；`docs/development/testing.md` 内环去掉「待 W12」；`scenario-test-map.json` heartbeatDecision 路径。
+- 不改哪些面：不取消 db 的 singleFork；`importOrder.test.ts` 留在 db；`cooperativeAbort` / `credentialVaultEncrypt` / `compactCutPoints` / `writePolicy` / `stripFrontmatter` 不进 pure。
+- pure 文件清单（≥8）：`abortReason` `chatHistory` `deepseekDsmlFilter` `heartbeatDecision` `processSafety` `safeHttpUrl` `searchRelevance` `toolEnvelope` `visibleSet`（另加闸 `pureNoPrisma`）。
+- [OM-FREEPLAY]：闸正则由片段拼出，避免闸文件自己的源码被 `../db` 字面量误伤。候选里 `stripFrontmatter` 经 `scripts/sync/utils.js` 拉 `getAppConfig`（非 prisma，但偏重）未搬；`compactCutPoints`/`writePolicy` 测试文件已 `from "../db.js"`。
+- 验证：`pnpm --filter @oasismind/server exec vitest run --project pure` 退出码 0（10 files / 65 tests）；`... exec vitest run --project db -- chatTree` 退出码 0（17）；scenarioTestMap 绿；`pnpm --filter @oasismind/server test` 退出码 0（247 files / 1668 tests）。
+- 遇到的问题：闸第一版正则写在源码里，本文件被自己打红；已改拼正则。全量 `pnpm --filter @oasismind/server test` 另有两处预存红（与搬家无关）：`resilientLlmClient` 的 fetch mock 仍是 chat.completions 体，DeepSeek 已走 Responses API；`trpc` Run CRUD `pending→success` 违反 `isAllowedRunStatusTransition`。本 Goal 不改生产；测夹具对齐当前契约（jsonBody/sseBody 双写；Run 经 running）。
 
 ## W13 十分收尾
 

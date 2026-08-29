@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   installProcessSafetyHandlers,
   __resetProcessSafetyForTests,
-} from "../infra/processSafety.js";
+} from "../../infra/processSafety.js";
 
 describe("processSafety", () => {
   beforeEach(() => {

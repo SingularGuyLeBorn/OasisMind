@@ -4,8 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CHILD_OWN_TOOLS, PACKS_FULL } from "@oasismind/shared";
-import { deriveVisibleSet } from "../infra/tools/visibleSet.js";
-import type { VisibleUniverseEntry } from "../infra/tools/visibleSet.js";
+import { deriveVisibleSet } from "../../infra/tools/visibleSet.js";
+import type { VisibleUniverseEntry } from "../../infra/tools/visibleSet.js";
 
 const BASE_UNIVERSE: VisibleUniverseEntry[] = [
   { name: "read_file", kind: "native" },

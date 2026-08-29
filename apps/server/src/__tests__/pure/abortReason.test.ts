@@ -3,7 +3,7 @@ import {
   makeAbortError,
   messageFromAbortSignal,
   resolveAbortReasonCode,
-} from "../infra/abortReason.js";
+} from "../../infra/abortReason.js";
 
 describe("abortReason", () => {
   it("按 AbortSignal.reason 生成文案，不再一律用户中断", () => {

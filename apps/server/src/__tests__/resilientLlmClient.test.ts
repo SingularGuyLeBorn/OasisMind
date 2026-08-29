@@ -46,15 +46,27 @@ interface FetchStep {
 }
 
 function jsonBody(content: string, model: string): string {
+  // DeepSeek/OpenAI 走 Responses API（output）；kimi 等走 chat.completions（choices）。双写避免弹性测绑死一种协议。
   return JSON.stringify({
     choices: [{ finish_reason: "stop", message: { content } }],
-    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+    output: [
+      { type: "message", role: "assistant", content: [{ type: "output_text", text: content }] },
+    ],
+    usage: {
+      prompt_tokens: 10,
+      completion_tokens: 5,
+      total_tokens: 15,
+      input_tokens: 10,
+      output_tokens: 5,
+    },
     model,
   });
 }
 
 function sseBody(text: string, model: string): string {
-  return `data: ${JSON.stringify({ model, choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`;
+  const completions = JSON.stringify({ model, choices: [{ delta: { content: text } }] });
+  const responses = JSON.stringify({ model, delta: text });
+  return `event: response.output_text.delta\ndata: ${responses}\n\ndata: ${completions}\n\ndata: [DONE]\n\n`;
 }
 
 function makeFetchMock(steps: FetchStep[]) {

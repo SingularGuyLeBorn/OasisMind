@@ -51,7 +51,7 @@
 
 - `pnpm --filter @oasismind/web test -- chatStore`
 - `pnpm --filter @oasismind/server test -- <文件名>`
-- `pnpm --filter @oasismind/server exec vitest run --project pure`（待 W12 落地；落地前此命令尚不存在）
+- `pnpm --filter @oasismind/server exec vitest run --project pure`
 - 全量 server 的 **db 项目**是 `singleFork` 故慢，这是正确性不是缺陷。
 - `pnpm --filter @oasismind/web test -- scenarioTestMap`
 - `pnpm --filter @oasismind/web test:e2e:mock -- <spec 文件名>`（mock Playwright；未改 E2E 生产代码不必 `build:mock`）

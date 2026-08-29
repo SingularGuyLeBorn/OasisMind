@@ -12,9 +12,9 @@ import {
   sanitizePostCompactAssistantContent,
   formatPostCompactAssistantReply,
   COMPACT_BOUNDARY_PREFIX,
-} from "../infra/chatHistory.js";
-import { resolveImageUrlForLlm, MAX_VISION_IMAGE_BYTES } from "../infra/chatImageForLlm.js";
-import type { AppConfig } from "../infra/config.js";
+} from "../../infra/chatHistory.js";
+import { resolveImageUrlForLlm, MAX_VISION_IMAGE_BYTES } from "../../infra/chatImageForLlm.js";
+import type { AppConfig } from "../../infra/config.js";
 
 describe("chatHistory 工具回放", () => {
   it("parseStoredToolCalls 保留 id", () => {
