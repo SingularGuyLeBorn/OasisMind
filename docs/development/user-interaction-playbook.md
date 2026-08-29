@@ -4,7 +4,9 @@
 > 每个场景写的是**人坐在屏幕前会经历的顺序**，不是内部变量表。  
 > 变量级断言见 [`user-action-contracts.md`](./user-action-contracts.md)（契约 ID 如 `C-S1-A1`）。  
 > Agent 该调什么工具见 [`scenarios.md`](./scenarios.md)。  
-> 状态机见 [`chat-scenario-states.md`](./chat-scenario-states.md)。
+> 状态机见 [`chat-scenario-states.md`](./chat-scenario-states.md)。  
+> 实现级逐步（字段 / HTTP / SSE / reducer / testid）见 [`scenario-step-by-step.md`](./scenario-step-by-step.md)。  
+> 52 条原子路径目录见 [`scenario-walkthrough.md`](./scenario-walkthrough.md)（每条用列表写你点、你看、变量、发出、回来、测；不要再用画布）。
 
 **读法**：每步先写「你做什么」，再写「屏上必须接着发生什么」。若某步没发生，就是这个场景坏了，不要用「刷新一下」当修复。
 

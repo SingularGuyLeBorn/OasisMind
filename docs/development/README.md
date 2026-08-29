@@ -278,6 +278,7 @@ native 工具已全部按域收拢到 `apps/server/src/infra/tools/native/`（PR
 ## 8. 接下来读什么
 
 - 想了解具体使用场景（Agent、子 Agent、异步任务）：看 `scenarios.md`。
+- 52 条原子路径目录（点什么 / UI / 变量 / 发出 / 回来 / 测 / 覆盖档）：`scenario-walkthrough.md`。人眼逐步点法：`user-interaction-playbook.md`。实现级微步：`scenario-step-by-step.md`。
 - 想了解并发和竞态条件防护：看 `concurrency.md`。
 - 想了解未来规划：看 `future-features.md`。
 - 想查开发踩坑与教训：`开发心路历程.md`。

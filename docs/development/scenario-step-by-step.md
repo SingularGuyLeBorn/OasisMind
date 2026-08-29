@@ -2,7 +2,8 @@
 
 > 给人眼验收、排障、写测用。每一微步写：你点什么 → DOM/`data-testid` → LC/CQ/MS 字段 → HTTP/tRPC → SSE 事件 → reducer action。  
 > 不是 `scenarios.md`（Agent 该调什么工具），也不是剧本那一页「你应看到」。  
-> 编号：剧本 S1–S35 + 旅程 A–D；混在一条里的机器拆成 S4a/S4b、S17a–c、S32a–d、S35a–d。
+> 编号：剧本 S1–S35 + 旅程 A–D；混在一条里的机器拆成 S4a/S4b、S17a–c、S32a–d、S35a–d。  
+> 52 条目录总表见 [`scenario-walkthrough.md`](./scenario-walkthrough.md)。
 
 ---
 
