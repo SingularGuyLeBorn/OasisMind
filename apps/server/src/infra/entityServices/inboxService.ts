@@ -30,6 +30,11 @@ import {
 } from "../../services.js";
 import { PostService } from "./postService.js";
 import { upsertFtsRow, deleteFtsRow, searchFtsByEntity } from "../ftsIndex.js";
+import fs from "fs";
+import { resilientChatCompletion } from "../resilientLlmClient.js";
+import { resolveAuxiliaryModel } from "../auxiliaryModel.js";
+import { readPinnedFile } from "../pinnedMemory.js";
+import { resolveGardenMetaPath } from "../config.js";
 
 export class InboxService extends BaseService<
   CreateInboxItemInput,
@@ -509,7 +514,7 @@ export class InboxService extends BaseService<
         continue;
       }
       try {
-        const body = formatInboxItemBody({
+        const bodyRaw = formatInboxItemBody({
           title: item.title,
           url: item.url,
           source: item.source,
@@ -519,6 +524,8 @@ export class InboxService extends BaseService<
           tags: item.tags,
           metadata: item.metadata,
         });
+        // W4：taste 模式按 USER.md/花园文风改写；raw 直写（旧行为不变）
+        const body = input.mode === "taste" ? await this.distillTasteBody(bodyRaw, garden, item) : bodyRaw;
         const slugBase = item.title
           .toLowerCase()
           .replace(/[^\w\u4e00-\u9fff]+/g, "-")
@@ -575,6 +582,66 @@ export class InboxService extends BaseService<
     }
     const data = result.data as any;
     return { id: data.id, title: data.title, slug: data.slug };
+  }
+
+  /** W4 taste 模式：按 USER.md/花园文风改写收藏为可发布草稿，保留来源 URL。失败抛错由上层记 errors。 */
+  private async distillTasteBody(
+    bodyRaw: string,
+    garden: string,
+    item: { url?: string | null; title?: string | null },
+  ): Promise<string> {
+    const userText = readPinnedFile(this.config.projectRoot, "user").content?.trim() ?? "";
+    let gardenExcerpt = "";
+    try {
+      const metaPath = resolveGardenMetaPath(this.config, garden);
+      if (fs.existsSync(metaPath)) {
+        const raw = fs.readFileSync(metaPath, "utf-8");
+        // 剥 frontmatter：取第二个 --- 之后的内容
+        const body = /---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)/.test(raw)
+          ? raw.replace(/---\s*\n[\s\S]*?\n---\s*\n/, "")
+          : raw;
+        gardenExcerpt = body.trim().slice(0, 800);
+      }
+    } catch {
+      /* 花园文件读不到则只用 USER.md */
+    }
+
+    const model = resolveAuxiliaryModel(this.config, {
+      configured: "auto",
+      mainModel: this.config.llm.defaultModel,
+      preference: "lite_free",
+    });
+    const userContent = [userText && `## USER.md\n${userText}`, gardenExcerpt && `## 花园摘录\n${gardenExcerpt}`, `## 收藏原文\n${bodyRaw}`]
+      .filter(Boolean)
+      .join("\n\n");
+
+    // [OM-FREEPLAY] 单条 taste 改写超时 25s（本文锁死）
+    const TIMEOUT_MS = 25_000;
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), TIMEOUT_MS);
+    try {
+      const result = await resilientChatCompletion({
+        config: this.config,
+        model,
+        messages: [
+          { role: "system", content: "你是见微知识园丁。按用户品味改写收藏为可发布草稿。保留事实与来源 URL。不要编造。中文。" },
+          { role: "user", content: userContent },
+        ],
+        maxTokens: 1024,
+        temperature: 0.4,
+        signal: ac.signal,
+      });
+      const content = (result.content ?? "").trim();
+      if (!content) throw new Error("品味改写未返回正文");
+      // 若模型丢掉来源 URL，强制追加
+      const url = item.url?.trim();
+      if (url && !content.includes(url)) {
+        return `${content}\n\n来源：${url}`;
+      }
+      return content;
+    } finally {
+      clearTimeout(to);
+    }
   }
 
   async stats() {

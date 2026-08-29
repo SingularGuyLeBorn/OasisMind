@@ -192,6 +192,7 @@ async function inboxDistill(args: Record<string, unknown>, ctx: NativeToolContex
     ids,
     garden: typeof args.garden === "string" ? args.garden : ctx.config.inbox.defaultGarden || "knowledge",
     published: coerceToolBoolean(args.published),
+    mode: args.mode === "taste" ? "taste" : "raw",
   });
 }
 

@@ -296,6 +296,8 @@ export default function InboxPage() {
   const [pasteUrl, setPasteUrl] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /** W4：蒸馏模式 raw=原文落入 / taste=按品味改写；默认 raw 与旧行为一致 */
+  const [distillMode, setDistillMode] = useState<"raw" | "taste">("raw");
   /** 收藏夹芯片分页（与主列表 page 独立） */
   const [facetPage, setFacetPage] = useState(0);
   // SSR 固定 list；客户端挂载后再读 localStorage，避免 aria-pressed hydration 不一致
@@ -567,7 +569,7 @@ export default function InboxPage() {
               data-testid="inbox-distill-btn"
               disabled={!selectedIds.length || !!busy}
               onClick={() =>
-                runAction("蒸馏", () => distillMutation.mutateAsync({ ids: selectedIds }))
+                runAction("蒸馏", () => distillMutation.mutateAsync({ ids: selectedIds, mode: distillMode }))
               }
             >
               {busy === "蒸馏" ? (
@@ -577,6 +579,38 @@ export default function InboxPage() {
               )}
               蒸馏{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
             </Button>
+            {/* W4：蒸馏模式 segmented；默认 raw=原文落入，taste=按 USER.md 改写 */}
+            <div
+              data-testid="inbox-distill-mode"
+              className="inline-flex items-center rounded-md border border-[var(--om-border)] bg-[var(--om-surface)] p-0.5 text-xs"
+            >
+              <button
+                type="button"
+                data-mode="raw"
+                aria-pressed={distillMode === "raw"}
+                onClick={() => setDistillMode("raw")}
+                className={
+                  distillMode === "raw"
+                    ? "rounded bg-[var(--om-brand-soft)] px-2 py-1 font-medium text-[var(--om-brand-deep)]"
+                    : "rounded px-2 py-1 text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
+                }
+              >
+                原文落入
+              </button>
+              <button
+                type="button"
+                data-mode="taste"
+                aria-pressed={distillMode === "taste"}
+                onClick={() => setDistillMode("taste")}
+                className={
+                  distillMode === "taste"
+                    ? "rounded bg-[var(--om-brand-soft)] px-2 py-1 font-medium text-[var(--om-brand-deep)]"
+                    : "rounded px-2 py-1 text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
+                }
+              >
+                按品味改写
+              </button>
+            </div>
           </div>
         </div>
 

@@ -67,6 +67,49 @@ test.describe("产品主路径补洞 Mock", () => {
     }
   });
 
+  test("Inbox 页勾选按品味改写蒸馏：正文含【Mock 品味蒸馏】与来源 URL", async ({ page }) => {
+    const stamp = Date.now();
+    const keyword = `e2e-ui-inbox-taste-${stamp}`;
+    const item = await createE2eInboxItem({
+      title: `${keyword} 单篇`,
+      url: `https://example.com/${keyword}`,
+      externalId: `${keyword}-1`,
+      content: `正文 ${keyword} 来源 https://example.com/${keyword}`,
+    });
+    const postIds: string[] = [];
+    try {
+      await page.goto("/inbox");
+      await expect(page.getByRole("heading", { name: "知识收件箱" })).toBeVisible({ timeout: 20_000 });
+      await page.getByPlaceholder("搜索标题/摘要/链接/标签…").fill(keyword);
+      await page.getByPlaceholder("搜索标题/摘要/链接/标签…").press("Enter");
+      await expect(page.getByText(keyword).first()).toBeVisible({ timeout: 15_000 });
+
+      // 切到「按品味改写」
+      await page.locator('[data-testid="inbox-distill-mode"] [data-mode="taste"]').click();
+
+      await page.getByTestId("inbox-item").first().click();
+      await expect(page.getByTestId("inbox-distill-btn")).toBeEnabled();
+      await page.getByTestId("inbox-distill-btn").click();
+      await expect(page.getByText("蒸馏完成")).toBeVisible({ timeout: 20_000 });
+
+      const distilled = await trpcQuery<{ distilledPostId?: string | null; url?: string | null }>(
+        "inbox.getById",
+        { id: item.id },
+      );
+      expect(distilled.distilledPostId).toBeTruthy();
+      postIds.push(distilled.distilledPostId!);
+      const post = await trpcQuery<{ slug: string; garden: string; content: string; title: string }>(
+        "post.getById",
+        { id: distilled.distilledPostId! },
+      );
+      expect(post.content).toContain("【Mock 品味蒸馏】");
+      expect(post.content).toContain(`example.com/${keyword}`);
+    } finally {
+      for (const id of postIds) await forceCleanupPost(id);
+      await cleanupInboxItem(item.id);
+    }
+  });
+
   test("流式中点停止：出现已停止生成，发送钮回来", async ({ page }) => {
     await openFreshChat(page);
     const stopVisible = page.getByTestId("chat-stop").waitFor({ state: "visible", timeout: 10_000 });

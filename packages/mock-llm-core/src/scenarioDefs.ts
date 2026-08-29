@@ -51,6 +51,8 @@ export const MOCK_BRANCH_SUMMARY_BODY =
   "【Mock 旁路摘要】已压缩被放弃分支的目标、决策与未完成项。";
 /** 丢进被放弃消息正文，mock-llm 对这次摘要请求抛错。 */
 export const MOCK_BRANCH_SUMMARY_FAIL_TOKEN = "OM-MOCK-BRANCH-SUMMARY-FAIL";
+/** [OM-FREEPLAY] W4：丢进 inbox 原文，mock-llm 对这次品味蒸馏请求抛错（测失败路径，本文未锁死机制，仿 branch_summary_fail）。 */
+export const MOCK_TASTE_FAIL_TOKEN = "OM-MOCK-TASTE-FAIL";
 
 function heartbeatQueryToolCall(opts: MockLlmOptions): LlmToolCall {
   if (hasTool(opts, "swarm_brief")) {
@@ -96,6 +98,27 @@ export const scenarios: MockLlmScenario[] = [
       content: "【Mock 识图】图中是测试图案。",
       toolCalls: [],
     }),
+  },
+  {
+    // W4：Inbox 蒸馏 taste 模式——按 USER.md 改写。命中 system「见微知识园丁」。
+    name: "inbox_distill_taste",
+    match: (opts, forced) =>
+      forced === "inbox_distill_taste" ||
+      /见微知识园丁/.test(lastSystemText(opts)) ||
+      /## 收藏原文/.test(lastUserText(opts)),
+    completion: (opts) => {
+      const text = lastUserText(opts);
+      if (text.includes(MOCK_TASTE_FAIL_TOKEN)) {
+        throw new Error("mock-llm 注入：品味蒸馏失败");
+      }
+      const url = text.match(/- 原文:\s*(\S+)/)?.[1] ?? text.match(/https?:\/\/\S+/)?.[0] ?? "";
+      const body = text.match(/## 内容\s*([\s\S]*?)(?:\n## |\n- 标签:|$)/)?.[1]?.trim() ?? text;
+      return {
+        ...baseResult(opts),
+        content: `【Mock 品味蒸馏】\n${body.slice(0, 200)}${url ? `\n\n来源：${url}` : ""}`,
+        toolCalls: [],
+      };
+    },
   },
   {
     name: "goal_judge",
