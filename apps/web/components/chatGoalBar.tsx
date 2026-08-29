@@ -33,6 +33,7 @@ function formatTokenCount(n: number): string {
 export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
   const utils = trpc.useUtils();
   const [expanded, setExpanded] = useState(false);
+  const [verifiedExpanded, setVerifiedExpanded] = useState(false);
 
   const goalQuery = trpc.session.getGoal.useQuery(
     { sessionId: sessionId! },
@@ -109,6 +110,21 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
           <span data-testid="chat-goal-verified-count" className="text-[var(--om-text-3)]">
             · 已核实 {goal.verifiedProgress?.length ?? 0} 步
           </span>
+          {(goal.verifiedProgress?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              data-testid="chat-goal-verified"
+              aria-expanded={verifiedExpanded}
+              onClick={() => setVerifiedExpanded((v) => !v)}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+              title="查看已核实步骤"
+            >
+              <ChevronDown
+                className={cn("h-3 w-3 transition-transform", verifiedExpanded && "rotate-180")}
+              />
+              {verifiedExpanded ? "收起核实" : "展开核实"}
+            </button>
+          )}
           <span
             className={cn(
               "rounded px-1.5 py-0.5 text-[10px]",
@@ -173,6 +189,19 @@ export function ChatGoalBar({ sessionId }: { sessionId: string | null }) {
         >
           {goal.text}
         </p>
+      )}
+      {verifiedExpanded && (goal.verifiedProgress?.length ?? 0) > 0 && (
+        <ul
+          className="mt-1.5 max-h-28 overflow-y-auto rounded-md border border-[var(--om-divider-light)] bg-[var(--om-bg)] px-2.5 py-2 text-[11px] leading-relaxed text-[var(--om-text-2)]"
+          data-testid="chat-goal-verified-list"
+        >
+          {(goal.verifiedProgress ?? []).map((v) => (
+            <li key={v.id} data-testid="chat-goal-verified-item" className="flex items-start gap-1.5 py-0.5">
+              <span className="mt-0.5 shrink-0 text-emerald-600">✓</span>
+              <span className="min-w-0 flex-1 break-words">{v.claim}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
