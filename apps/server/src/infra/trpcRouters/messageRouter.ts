@@ -6,9 +6,13 @@ import { z } from "zod";
 import {
   createMessageSchema, updateMessageSchema, listMessagesSchema,
   listMessagesForChatSchema, switchMessageVersionSchema, setMessageLabelSchema,
+  isChatImageAttachment,
+  type ChatAttachment, type ChatImageAttachment,
 } from "@oasismind/shared";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../../trpc/trpc.js";
 import { switchAssistantMessageVersion } from "../agentStream/index.js";
+import { enrichImageAttachmentsForPersist } from "../chatImageEnrich.js";
 
 export const messageRouter = router({
   create: publicProcedure.meta({ description: "发送聊天消息（用户或助手）。", aiReadable: true }).input(createMessageSchema).mutation(({ ctx, input }) => ctx.services.message.create(input)),
@@ -35,5 +39,39 @@ export const messageRouter = router({
     .meta({ description: "为消息设置或清除书签标签。", aiReadable: false })
     .input(setMessageLabelSchema)
     .mutation(({ ctx, input }) => ctx.services.message.setLabel(input)),
+  // W3：重试识图——对消息的图片附件重跑 vision 描述，成功后经 message.update → message_upserted。
+  enrichImages: publicProcedure
+    .meta({ description: "重试识图：对消息的图片附件重跑 vision 描述，成功后推 message_upserted。", aiReadable: false })
+    .input(z.object({ messageId: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const msg = await ctx.prisma.chatMessage.findUnique({
+        where: { id: input.messageId },
+        select: { id: true, sessionId: true, attachments: true },
+      });
+      if (!msg) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `消息不存在：${input.messageId}` });
+      }
+      const atts: ChatAttachment[] = Array.isArray(msg.attachments)
+        ? (msg.attachments as ChatAttachment[])
+        : [];
+      if (!atts.some(isChatImageAttachment)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "该消息没有图片附件" });
+      }
+      const session = await ctx.prisma.chatSession.findUnique({
+        where: { id: msg.sessionId },
+        select: { model: true },
+      });
+      // 清掉失败/缺失的 extractedText，让 enrich 重跑；已成功的保留不重复计费
+      const retryAtts: ChatAttachment[] = atts.map((a) =>
+        isChatImageAttachment(a) && (!a.extractedText || a.extractedText.startsWith("识图失败"))
+          ? ({ ...(a as ChatImageAttachment), extractedText: undefined } as ChatAttachment)
+          : a,
+      );
+      const enriched = await enrichImageAttachmentsForPersist(retryAtts, {
+        config: ctx.config,
+        mainModel: session?.model || ctx.config.llm.defaultModel,
+      });
+      return ctx.services.message.update({ id: msg.id, attachments: enriched });
+    }),
 });
 

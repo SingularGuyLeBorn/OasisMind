@@ -15,7 +15,7 @@ import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Ban, Check, ChevronDown, FileText, Loader2, X } from "lucide-react";
+import { Ban, Check, ChevronDown, FileText, ImageOff, Loader2, RefreshCw, X } from "lucide-react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   buildChatTimeline,
@@ -57,10 +57,29 @@ import { postDetailHref } from "@/lib/postHref";
 function UserAttachmentChips({
   attachments,
   dimmed,
+  messageId,
+  sessionId,
 }: {
   attachments: ChatAttachment[];
   dimmed?: boolean;
+  messageId?: string;
+  sessionId?: string | null;
 }) {
+  // W3：重试识图——对识图失败的图片附件重跑 vision 描述，成功后 SSE message_upserted 推回。
+  const utils = trpc.useUtils();
+  const enrichMut = trpc.message.enrichImages.useMutation({
+    onSuccess: () => {
+      if (sessionId) {
+        utils.message.listForChat
+          .invalidate({ sessionId })
+          .catch(catchUnlessCancelled("enrich.list"));
+      }
+    },
+  });
+  const handleRetry = () => {
+    if (!messageId || enrichMut.isPending) return;
+    enrichMut.mutate({ messageId });
+  };
   if (!attachments.length) return null;
   return (
     <div className={cn("mb-1.5 flex flex-wrap justify-end gap-2", dimmed && "opacity-80")}>
@@ -85,23 +104,48 @@ function UserAttachmentChips({
           );
         }
         if (!isChatImageAttachment(att)) return null;
+        const failed = !!att.extractedText && att.extractedText.startsWith("识图失败");
+        const visionOk = att.source === "vision" && !!att.extractedText && !failed;
         return (
           <div
             key={att.previewUrl}
             className="relative overflow-hidden rounded-xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] shadow-sm"
-            title={att.extractedText ? `OCR 识别 · ${att.extractedText.slice(0, 120)}` : att.name}
+            title={att.extractedText ? `识图 · ${att.extractedText.slice(0, 120)}` : att.name}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={att.previewUrl}
               alt={att.name}
               loading="lazy"
-              className="max-h-40 max-w-[min(100%,16rem)] object-contain"
+              className={cn("max-h-40 max-w-[min(100%,16rem)] object-contain", failed && "ring-1 ring-red-400")}
             />
             {att.source === "ocr" && att.extractedText && (
               <span className="absolute bottom-0 left-0 right-0 inline-flex items-center gap-0.5 truncate bg-emerald-600/80 px-1.5 py-0.5 text-[9px] text-white">
                 OCR <Check className="h-2.5 w-2.5" />
               </span>
+            )}
+            {visionOk && (
+              <span className="absolute bottom-0 left-0 right-0 inline-flex items-center gap-0.5 truncate bg-[var(--om-brand)]/80 px-1.5 py-0.5 text-[9px] text-white">
+                识图 <Check className="h-2.5 w-2.5" />
+              </span>
+            )}
+            {failed && (
+              <span className="absolute bottom-0 left-0 right-0 inline-flex items-center gap-0.5 truncate bg-red-600/85 px-1.5 py-0.5 text-[9px] text-white">
+                <ImageOff className="h-2.5 w-2.5" /> 识图失败
+              </span>
+            )}
+            {messageId && (failed || att.source === "vision") && (
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={enrichMut.isPending}
+                data-testid="chat-image-retry-enrich"
+                title="重试识图"
+                className="absolute right-1 top-1 inline-flex items-center gap-0.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] text-white opacity-0 transition hover:bg-black/75 group-hover/msg:opacity-100 disabled:opacity-50"
+              >
+                {enrichMut.isPending ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RefreshCw className="h-2.5 w-2.5" />}
+                重试识图
+              </button>
             )}
           </div>
         );
@@ -560,7 +604,11 @@ export const ChatMessageList = memo(function ChatMessageList({
             {group.userMessage.attachments &&
               group.userMessage.attachments.length > 0 &&
               !isEditing && (
-                <UserAttachmentChips attachments={group.userMessage.attachments} />
+                <UserAttachmentChips
+                  attachments={group.userMessage.attachments}
+                  messageId={group.userMessage.id}
+                  sessionId={effectiveSessionId}
+                />
               )}
             <div
               className={cn(

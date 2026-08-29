@@ -249,6 +249,8 @@ export function buildLlmContextSinceCompact(
     contextSummary?: string | null;
     /** 会话当前 compactGeneration（注入摘要 pair 的代数） */
     compactGeneration?: number | null;
+    /** W3：传 config 让 vision 模型解析相对/内网附件图 */
+    config?: AppConfig;
   },
 ): LlmMessage[] {
   const base = buildLlmMessagesFromHistory(
@@ -257,6 +259,7 @@ export function buildLlmContextSinceCompact(
     {
       modelId: options?.modelId,
       microCompactToolMaxChars: options?.microCompactToolMaxChars,
+      config: options?.config,
     },
   );
   const summary = options?.contextSummary?.trim();

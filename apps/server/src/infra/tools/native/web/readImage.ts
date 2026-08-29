@@ -33,17 +33,22 @@ function resolveLocalImagePath(config: AppConfig, rawPath: string): string {
   return resolveSafePath(config, trimmed);
 }
 
-async function readImageWithVision(
-  ctx: NativeToolContext,
+/**
+ * 用 vision 模型描述本地图片文件（纯函数，W3 抽出供 persist 侧静默识图复用）。
+ * 不依赖 NativeToolContext，只需 config + 绝对路径。
+ */
+export async function describeImageWithVision(
+  config: AppConfig,
   absPath: string,
   mimeType: string,
   prompt: string,
   model: string,
+  signal?: AbortSignal,
 ): Promise<{ text: string; model: string }> {
   const b64 = fs.readFileSync(absPath).toString("base64");
   const dataUrl = `data:${mimeType};base64,${b64}`;
   const result = await resilientChatCompletion({
-    config: ctx.config,
+    config,
     model,
     messages: [
       {
@@ -56,10 +61,21 @@ async function readImageWithVision(
     ],
     maxTokens: 2048,
     temperature: 0.2,
+    signal,
   });
   const text = (result.content ?? "").trim();
   if (!text) throw new Error("Vision 模型未返回可读描述");
   return { text, model };
+}
+
+async function readImageWithVision(
+  ctx: NativeToolContext,
+  absPath: string,
+  mimeType: string,
+  prompt: string,
+  model: string,
+): Promise<{ text: string; model: string }> {
+  return describeImageWithVision(ctx.config, absPath, mimeType, prompt, model);
 }
 
 /** 读图：OCR 或 Vision。输入 path（项目内相对路径）或 http(s)/uploads URL。 */

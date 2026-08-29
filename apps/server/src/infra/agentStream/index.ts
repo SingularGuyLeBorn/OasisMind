@@ -311,6 +311,7 @@ export async function chatAgentStream(
         microCompactToolMaxChars: resolveMicroCompactToolMaxChars(effectiveConfig),
         contextSummary: (sessionMeta as { contextSummary?: string | null }).contextSummary ?? null,
         compactGeneration: (sessionMeta as { compactGeneration?: number | null }).compactGeneration ?? 0,
+        config: effectiveConfig,
       },
     );
 

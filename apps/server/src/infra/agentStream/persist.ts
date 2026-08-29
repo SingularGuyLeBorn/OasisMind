@@ -5,6 +5,7 @@
 
 import { randomBytes } from "node:crypto";
 import type { AgentChatInput } from "@oasismind/shared";
+import { resolveModelSupportsVision } from "@oasismind/shared";
 import type { AppConfig } from "../config.js";
 import type { ServiceContainer } from "../serviceContainer.js";
 import type { StoredToolCall } from "../chatHistory.js";
@@ -15,6 +16,7 @@ import {
 } from "../messageVersions.js";
 import { getStreamHub } from "../sessionStreamHub.js";
 import { resolveChatMessageSource, type PrepareResult } from "./prepareMessage.js";
+import { enrichImageAttachmentsForPersist } from "../chatImageEnrich.js";
 
 type SessionStartEmit = (event: { type: "session_start"; sessionId: string }) => void;
 type DoneEmit = (event: {
@@ -163,11 +165,28 @@ export async function persistUserMessage(opts: {
   }
 
   if (!prepared.skipUserCreate) {
+    // W3：纯文本模型 persist 前对缺 extractedText 的图静默识图，写入附件 JSON。
+    // 多模态模型直传 vision，不在此 enrich（避免重复处理）。
+    let persistAttachments = prepared.attachments;
+    if (
+      persistAttachments?.length &&
+      !resolveModelSupportsVision(opts.effectiveModel)
+    ) {
+      try {
+        persistAttachments = await enrichImageAttachmentsForPersist(persistAttachments, {
+          config: opts.config,
+          mainModel: opts.effectiveModel,
+        });
+        prepared.attachments = persistAttachments;
+      } catch {
+        /* enrich 整体失败不阻断发送；单张失败已在 enrich 内记 extractedText */
+      }
+    }
     const createdUser = await services.message.create({
       sessionId,
       role: "user",
       content: prepared.messageText,
-      attachments: prepared.attachments?.length ? prepared.attachments : undefined,
+      attachments: persistAttachments?.length ? persistAttachments : undefined,
       toolResults: opts.skillMeta
         ? { skill: opts.skillMeta.skill, ...(input.toolResults ?? {}), ...(input.clientMessageId ? { clientMessageId: input.clientMessageId } : {}) }
         : (input.toolResults

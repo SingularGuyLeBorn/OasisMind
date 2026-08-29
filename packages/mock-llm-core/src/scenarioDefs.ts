@@ -78,6 +78,26 @@ function heartbeatQueryFollowup(opts: MockLlmOptions): string {
 
 export const scenarios: MockLlmScenario[] = [
   {
+    // W3：识图（vision_describe 工具与 persist 侧静默识图共用）。
+    // 命中任何带 image_url 的 user 消息，或显式 forced，或文案含【Mock 识图】。
+    name: "vision_describe",
+    match: (opts, forced) =>
+      forced === "vision_describe" ||
+      /【Mock 识图】/.test(lastUserText(opts)) ||
+      /【Mock 识图】/.test(lastSystemText(opts)) ||
+      opts.messages.some(
+        (m) =>
+          m.role === "user" &&
+          Array.isArray(m.content) &&
+          m.content.some((p) => p && typeof p === "object" && (p as { type?: string }).type === "image_url"),
+      ),
+    completion: (opts) => ({
+      ...baseResult(opts),
+      content: "【Mock 识图】图中是测试图案。",
+      toolCalls: [],
+    }),
+  },
+  {
     name: "goal_judge",
     match: (opts, forced) =>
       forced === "goal_judge" ||

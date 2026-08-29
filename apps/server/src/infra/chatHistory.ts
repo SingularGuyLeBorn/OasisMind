@@ -11,6 +11,8 @@ import {
   formatPostAttachmentForLlm,
 } from "@oasismind/shared";
 import type { LlmContentPart, LlmMessage } from "./llmClient.js";
+import type { AppConfig } from "./config.js";
+import { resolveImageUrlForLlm } from "./chatImageForLlm.js";
 import { getActiveAssistantPayload } from "./messageVersions.js";
 
 /** 与 autoCompact / 前端 compactMarkers 对齐 */
@@ -65,6 +67,7 @@ export function buildUserMessageContentForLlm(
   text: string,
   attachments: ChatAttachment[] | undefined,
   supportsVision: boolean,
+  config?: AppConfig,
 ): string | LlmContentPart[] {
   const trimmed = text.trim();
   const list = attachments ?? [];
@@ -86,15 +89,21 @@ export function buildUserMessageContentForLlm(
   const parts: LlmContentPart[] = [];
   const textChunks = [...postParts];
   if (trimmed) textChunks.push(trimmed);
-  if (textChunks.length) parts.push({ type: "text", text: textChunks.join("\n\n") });
   for (const att of imageAtts) {
-    if (att.previewUrl.startsWith("data:")) {
-      parts.push({
-        type: "image_url",
-        image_url: { url: att.previewUrl, detail: "auto" },
-      });
+    // 传 config 才解析相对/内网图；未传时回退旧行为（仅 data:）。
+    const url = config
+      ? resolveImageUrlForLlm(att, config)
+      : att.previewUrl.startsWith("data:")
+        ? att.previewUrl
+        : null;
+    if (url) {
+      parts.push({ type: "image_url", image_url: { url, detail: "auto" } });
+    } else if (config) {
+      // 跳过该张（过大/不可读/内网），给模型一句提示，避免图被静默吞掉
+      parts.push({ type: "text", text: `[附件 · ${att.name} · 图片过大未送入模型或不可读]` });
     }
   }
+  if (textChunks.length) parts.unshift({ type: "text", text: textChunks.join("\n\n") });
   if (parts.length === 0) return trimmed || "(空消息)";
   if (parts.length === 1 && parts[0].type === "text") return parts[0].text ?? trimmed;
   return parts;
@@ -143,10 +152,11 @@ export function historySinceLastCompactBoundary<T extends HistoryMessageLike>(hi
 export function buildLlmMessagesFromHistory(
   systemContent: string,
   history: HistoryMessageLike[],
-  options?: { modelId?: string; microCompactToolMaxChars?: number },
+  options?: { modelId?: string; microCompactToolMaxChars?: number; config?: AppConfig },
 ): LlmMessage[] {
   const supportsVision = options?.modelId ? resolveModelSupportsVision(options.modelId) : false;
   const toolMaxChars = options?.microCompactToolMaxChars ?? DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS;
+  const config = options?.config;
   const messages: LlmMessage[] = [{ role: "system", content: systemContent }];
 
   for (const msg of history) {
@@ -161,7 +171,7 @@ export function buildLlmMessagesFromHistory(
         : parseAttachmentsFromToolResults(msg.toolResults);
       messages.push({
         role: "user",
-        content: buildUserMessageContentForLlm(msg.content, attachments, supportsVision),
+        content: buildUserMessageContentForLlm(msg.content, attachments, supportsVision, config),
       });
       continue;
     }
