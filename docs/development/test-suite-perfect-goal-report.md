@@ -42,7 +42,7 @@
 | S7 产品面过程 | 待验收 | `files-accept-hint-mock` / `gardens-list-mock` / `daily-board-mock` e2e 绿；`theme-toggle-mock` 挂场景 1 asserts（Navbar 切 light/dark） | 花园/文件柜/每日/主题都有过程 claim |
 | S8 推拉 PUSH+PULL | 待验收 | `admin-live-push-mock`：`/cron` `/approvals` `/runs` 各有 PUSH it + 独立「刷新页面…仍在」F5 it（`/runs 创建 interrupted 后刷新页面 hint 仍在`）；场景 17 Inbox 蒸馏钮 | 三页双通道都有独立 it，禁止只 spy notify、禁止 F5 只叠在 PUSH 里 |
 | S9 运行时路径 | 待验收 | `noVoidPromise` 1 passed；`catchUnlessCancelled` 2；`pageErrorGuard` 挂于 `chat-mock.spec.ts`；`uiStateNotify.hub.test.ts` 真 hub 先推再订 | 写法闸 + 浏览器守卫 + hub 可观测 |
-| S10 内环 pure 项目 | 待验收 | `apps/server/vitest.config.ts` projects `db`+`pure`；`src/__tests__/pure/` 9 测 + `pureNoPrisma.test.ts`；`testing.md` 内环有 `--project pure`；`--project pure` 65 passed。db 仍 `singleFork` | 零 DB 测可并行，文件锁项目没拆掉 |
+| S10 内环 pure 项目 | 待验收 | `apps/server/vitest.config.ts` projects `db`+`pure`；施工树 `src/__tests__/pure/` 9 测 + `pureNoPrisma` 闸、`--project pure` 65 passed；并入原仓 master `b51cffd1` 后再跑为 17 files / 103（主干另有预算/校验纯测）。`testing.md` 内环有 `--project pure`。db 仍 `singleFork` | 零 DB 测可并行，文件锁项目没拆掉 |
 
 ## 验收者打分（提出 Goal 的人填，施工员整节留空）
 
