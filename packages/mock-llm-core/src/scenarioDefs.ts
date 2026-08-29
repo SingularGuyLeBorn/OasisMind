@@ -792,8 +792,7 @@ export const scenarios: MockLlmScenario[] = [
       !hasAnyToolResult(opts) &&
       (forced === "eval_G01_post_list" ||
         (!/保存/.test(lastUserText(opts)) &&
-          /列.*文章|知识库里的文章|最近的文章/i.test(lastUserText(opts)) &&
-          hasTool(opts, "post_list"))),
+          /列.*文章|知识库里的文章|最近的文章/i.test(lastUserText(opts)))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -805,7 +804,7 @@ export const scenarios: MockLlmScenario[] = [
     match: (opts, forced) =>
       !hasAnyToolResult(opts) &&
       (forced === "eval_G02_post_create" ||
-        (/保存成.*文章|保存.*知识库/i.test(lastUserText(opts)) && hasTool(opts, "post_create"))),
+        /保存成.*文章|保存.*知识库/i.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -814,7 +813,10 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G03_read_article",
-    match: (opts, forced) => !hasAnyToolResult(opts) && forced === "eval_G03_read_article",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G03_read_article" ||
+        /读一下这个知乎专栏文章|zhuanlan\.zhihu\.com\/p\/12345678/.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -823,7 +825,9 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G04_file_delete",
-    match: (opts, forced) => !hasAnyToolResult(opts) && forced === "eval_G04_file_delete",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G04_file_delete" || /删掉工作区里的临时文件|draft-tmp\.txt/i.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,
@@ -832,7 +836,9 @@ export const scenarios: MockLlmScenario[] = [
   },
   {
     name: "eval_G05_spawn_subagent",
-    match: (opts, forced) => !hasAnyToolResult(opts) && forced === "eval_G05_spawn_subagent",
+    match: (opts, forced) =>
+      !hasAnyToolResult(opts) &&
+      (forced === "eval_G05_spawn_subagent" || /派一个子 Agent 去调研|本周 AI 开源热点/i.test(lastUserText(opts))),
     completion: (opts) => ({
       ...baseResult(opts),
       content: null,

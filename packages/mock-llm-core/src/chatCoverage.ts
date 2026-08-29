@@ -171,6 +171,76 @@ export const CHAT_COVERAGE: ChatCoverageRow[] = [
     },
   },
   {
+    feature: "评测 G01 未强制",
+    winner: "eval_G01_post_list",
+    opts: { messages: [{ role: "user", content: "帮我列一下知识库里最近的文章标题" }] },
+  },
+  {
+    feature: "评测 G02 未强制",
+    winner: "eval_G02_post_create",
+    opts: { messages: [{ role: "user", content: "把刚才的内容保存成知识库文章，标题用「测试草稿」" }] },
+  },
+  {
+    feature: "评测 G03 未强制",
+    winner: "eval_G03_read_article",
+    opts: {
+      messages: [
+        {
+          role: "user",
+          content: "读一下这个知乎专栏文章 https://zhuanlan.zhihu.com/p/12345678 并摘要要点",
+        },
+      ],
+    },
+  },
+  {
+    feature: "评测 G04 未强制",
+    winner: "eval_G04_file_delete",
+    opts: { messages: [{ role: "user", content: "删掉工作区里的临时文件 draft-tmp.txt" }] },
+  },
+  {
+    feature: "评测 G05 未强制",
+    winner: "eval_G05_spawn_subagent",
+    opts: {
+      messages: [{ role: "user", content: "派一个子 Agent 去调研一下本周 AI 开源热点，异步即可" }],
+    },
+  },
+  {
+    feature: "评测 G07 未强制",
+    winner: "eval_G07_compact",
+    opts: {
+      messages: [
+        {
+          role: "user",
+          content: "上下文已经很长了，请继续回答我上一个关于花园文章结构的问题，必要时可以压缩会话",
+        },
+      ],
+    },
+  },
+  {
+    feature: "评测 G11 未强制",
+    winner: "eval_G11_piclite",
+    opts: {
+      messages: [
+        {
+          role: "user",
+          content: "把 raw-photos 里的相机原图压到约 1MB 内，不要上传任何在线压图网站",
+        },
+      ],
+    },
+  },
+  {
+    feature: "评测 G12 未强制",
+    winner: "eval_G12_morning_brief",
+    opts: {
+      messages: [
+        {
+          role: "user",
+          content: "把昨夜 Inbox / 订阅源新增汇总成 5 条要点，挑值得沉淀的写成 knowledge 草稿，标签日报",
+        },
+      ],
+    },
+  },
+  {
     feature: "点名问候",
     winner: "greeting",
     opts: {

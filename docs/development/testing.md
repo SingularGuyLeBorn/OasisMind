@@ -74,6 +74,7 @@
 | 发现于 W* | 本文原句 | 错误原因 | 正确契约 | 报告是否已记 |
 |---|---|---|---|---|
 | W3 | 「合并保留断言」针对 B4 resume 再入池 | 与 AGENTS.md「服务重启不自动续跑」冲突；生产 `recoverStaleAsyncJobs` 已一律标 failed、不入池 | 断言「标 failed、零 runAgentLoop / 零入池」；二次 recover 幂等。B4 第二 it 锁的是僵尸会话 interrupted 顺序，保留 | 是 |
+| W7 | 优先 mock-llm-core + shared 常量当工具名 | shared 默认清单不含已注册 native `run_shell` | 金表 forbidTools 可用 `run_shell`；防漂用 `listNativeTools()`，测放 `apps/server/src/__tests__/evalGoldenSync.test.ts` | 是 |
 
 ---
 

@@ -18,7 +18,8 @@
 | W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | `1cd5d32e` |
 | W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
 | W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
-| W6 | done | `pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；scenarioTestMap 绿 | （本 W commit） |
+| W6 | done | `pnpm --filter @oasismind/web test:e2e:mock -- files-accept-hint-mock gardens-list` 退出码 0（2 passed）；scenarioTestMap 绿 | `3c55deb4` |
+| W7 | done | `pnpm test:evals` 12/12；`pnpm --filter @oasismind/mock-llm-core test` 141 passed；`pnpm --filter @oasismind/server test -- evalGoldenSync` 3 passed；`pnpm test:bench` 24/24 退出码 0 | （本 W commit） |
 | W7 | | | |
 | W8 | | | |
 | W9 | | | |
@@ -64,6 +65,7 @@
 |---|---|---|---|---|
 | W1 eval-mock `it` | it 必须是 it(/test( 标题子串 | golden JSON 没有 it() | 用 JSON 字段子串过 includes 闸 | 是 |
 | W3 B4 | 合并保留 resume 再入池断言 | 与重启不续跑铁律冲突 | 保留已改好的 failed 断言，记 testing.md | 是 |
+| W7 测路径 | 优先 mock-llm-core | shared 默认清单无 run_shell | server + listNativeTools | 是 |
 
 ## 盘点表（prompt 第 3 节）
 
@@ -119,8 +121,8 @@
 | 留但降权 | e2e/*-real.spec.ts / chat-ocr-real.spec.ts | pending | W5 文件头声明 |
 | 补 | files-accept-hint-mock.spec.ts | done | apps/web/e2e/files-accept-hint-mock.spec.ts |
 | 补 | gardens-list-mock.spec.ts | done | apps/web/e2e/gardens-list-mock.spec.ts；空态加 gardens-empty |
-| 改 | evals/README.md | pending | 诚实声明 |
-| 补 | evalGoldenSync.test.ts | pending | mock-llm-core 优先 |
+| 改 | evals/README.md | done | 文首诚实声明 + mini Harness 非模型质量一句 |
+| 补 | evalGoldenSync.test.ts | done | apps/server/src/__tests__/evalGoldenSync.test.ts（listNativeTools） |
 | 补 | noVoidPromise.test.ts | pending | |
 | 补 | catchUnlessCancelled.test.ts | pending | |
 | 补 | uiStateNotify.hub.test.ts | pending | |
@@ -208,12 +210,13 @@
 
 ## W7 evals 诚实与金表防漂
 
-- 根因复述：
-- 改动文件：
-- catchAll 的 golden id：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：`pnpm test:evals` 绿只说明 mock-llm 关键词命中了 expectToolsAnyOf，文档却容易让人以为「Agent 没变傻」。成功 = README 诚实声明；金表工具名 ⊆ 已注册 native/agent；未强制场景时 resolve 不抛；有 expectToolsAnyOf 的不得只靠 catchAll。
+- 改动文件：`evals/README.md`；`apps/server/src/__tests__/evalGoldenSync.test.ts`；`packages/mock-llm-core/src/scenarioDefs.ts`（G01–G05 补关键词、去掉 G01/G02 的 hasTool 门槛）；`chatCoverage.ts` 加未强制赢家行。
+- catchAll 的 golden id：G06、G08、G09、G10（expectToolsAnyOf 均为空，闲聊/停止/列工具/HTML 落到 greeting 仍是零工具，mock 运行时约束可满足）。
+- 不改哪些面：不清空 expectToolsAnyOf；不 spy LLM；不删 G01–G12；不把 live 塞进 CI。
+- [OM-FREEPLAY]：prompt 优先 mock-llm-core，但 shared 默认清单不含 `run_shell`（金表 forbidTools 大量使用）。完整源是 `listNativeTools()`，故测放 server。G03 关键词写成金表原句 `读一下这个知乎专栏文章` / `p/12345678`，避免抢走 `zhihu_login_status`（`zhuanlan.zhihu.com/p/1`）。
+- 验证：`pnpm test:evals` 退出码 0（12/12）；`pnpm --filter @oasismind/mock-llm-core test` 退出码 0；`pnpm --filter @oasismind/server test -- evalGoldenSync` 退出码 0；`pnpm test:bench` 退出码 0（24/24）。bench 结束后 stderr 有 DATABASE_URL prisma 拆卸噪声，不改生产。
+- 遇到的问题：G03 过宽关键词曾让 partial E2E 的知乎 login 测红，已收紧。
 
 ## W8 void promise 源码闸
 
@@ -269,7 +272,7 @@
 
 | 发现于 | 本文原句 | 错误原因 | 正确契约 |
 |---|---|---|---|
-| W3 | 「合并保留断言」针对 B4 resume 再入池 | 与 AGENTS.md 服务重启不自动续跑冲突 | 标 failed、零入池、二次 recover 幂等 |
+| W7 | 优先 mock-llm-core 读 shared 常量当工具名 | shared 默认清单不含已注册 native `run_shell` | 金表 forbidTools 合法使用 `run_shell`；防漂源用 `listNativeTools()`，测放 server | 是 |
 
 ## 铁律冲突 / 未做
 
