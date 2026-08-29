@@ -37,8 +37,7 @@ test.describe("Chat Mock — 工具调用与回答", () => {
 
     expect(await countAssistantMessages(page)).toBe(1);
     await expectToolPill(page, "web_search");
-    // MOCK_NATIVE_TOOLS canned 两条结果不到 offload 阈值；hint 是耗时/引擎/条数。
-    // 「全文已存」由 toolResultHint 单测与带 offloaded 的 fixture 锁，不在这条 mock 路径。
+    // [OM-FREEPLAY] W13：MOCK_NATIVE_TOOLS canned 两条不到 offload；「全文已存」不在这条路径。
     await expectToolHint(page, "2 条");
     await expectAssistantAnswer(page, "OasisMind 是一个本地优先");
   });
