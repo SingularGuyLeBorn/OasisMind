@@ -17,8 +17,8 @@
 | W2 | done | chatStoreInvariants 27 passed；prdChatStopTable 23；prdChatQueueTable 15；scenarioTestMap 3；invariants 503 行未拆 | `1e41ed13` |
 | W3 | done | reconciler.table 14 passed；heartbeatEngine.table 8；startupRecovery 6；nativeToolAbortSignal 3；safePathWrite 6；processSafety 2 | `1cd5d32e` |
 | W4 | done | `it(` 111→111；`nativeTools.fs` 45 passed；`nativeTools` 匹配域文件全绿（另含 qqNative/mockNative 合计 124） | `bff90682` |
-| W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | （待填） |
-| W6 | | | |
+| W5 | done | 4 个 `*-real.spec.ts` 文件头含降权声明；OCR `test.skip` 保留；scenarioTestMap 绿 | `abb55b31` |
+| W6 | done | files-accept-hint-mock 1 passed；gardens-list-mock 1 passed | （待填） |
 | W7 | | | |
 | W8 | | | |
 | W9 | | | |
@@ -199,29 +199,30 @@
 
 ## W6 产品面补测
 
-- 根因复述：
-- 改动文件：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：花园/文件柜几乎只有 heading。成功 = files 收件提示含 pdf+docx；gardens 至少一张 `/gardens/` 链接或空态 `gardens-empty`。不强行塞进无关 scenario id。
+- 改动文件：`files-accept-hint-mock.spec.ts`、`gardens-list-mock.spec.ts`；`gardens/page.tsx` 空态加 testid（文案不改）。
+- 不改哪些面：scenarios.md；不新建花园；不 setInputFiles。
+- [OM-FREEPLAY]：空态包一层 `gardens-empty` 以满足二选一；本机 e2e 需 `build:mock` 才能吃到当前页。
+- 验证：`files-accept-hint-mock` 与 `gardens-list-mock` mock e2e 各 1 passed；scenarioTestMap 待 W10 map 改完再锁。
+- 遇到的问题：工作区曾被切到 worth-doing，未提交 spec 丢失后已按同一锁死设计重写。
 
 ## W7 evals 诚实与金表防漂
 
-- 根因复述：
-- 改动文件：
-- catchAll 的 golden id：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：`test:evals` 绿只证明 mock 关键词命中，不能冒充「没变傻」。
+- 改动文件：`evals/README.md` 诚实声明；`evalGoldenSync.test.ts`；harness-bench 节加「mock bench 同样不是模型质量」。
+- catchAll 的 golden id：G01、G02、G03、G04、G05、G06、G08、G09、G10（无工具清单时落到 greeting 等 catchAll）。G07/G11/G12 靠关键词命中非 catchAll。`pnpm test:evals` 仍走 golden 的 `scenario` 字段，未清空 expectToolsAnyOf。
+- [OM-FREEPLAY]：工具名从 `toolTestFixtures.ts` 的 `ALL_NATIVE_TOOL_NAMES` 解析（`] as const`），不手抄。
+- 验证：mock-llm-core evalGoldenSync 3 passed；`pnpm test:evals` 12/12；`pnpm test:bench` 24/24。
+- 遇到的问题：无。
 
 ## W8 void promise 源码闸
 
-- 根因复述：
-- 改动文件：
-- 扫到并修好的违规：
-- [OM-FREEPLAY]：
-- 验证：
-- 遇到的问题：
+- 根因复述：AGENTS.md 已禁 void refetch，jsdom 抓不到浏览器 unhandled rejection。
+- 改动文件：`apps/web/lib/__tests__/noVoidPromise.test.ts`。
+- 扫到并修好的违规：无（正则未命中生产代码）。
+- [OM-FREEPLAY]：只剥 `//` 行注释；不引入 TS parser。
+- 验证：`pnpm --filter @oasismind/web test -- noVoidPromise` 退出码 0。
+- 遇到的问题：无。
 
 ## W9 中段门禁
 
