@@ -27,10 +27,10 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：**配图波**（DP / FA v1–v4 / MHA-GQA / NSA-DSA / Gated Attention+AttnRes）。激活函数 02/03/04 并行。
-- 当前波次：**fig-dp-611 / fig-fa-v14 / fig-kv-family / fig-nsa-dsa / fig-gated-attnres**
+- 状态：**报告精读波**（Engram 体系、K3、Muse Spark、Gemini 3.7 Flash、RSI 前世今生）。b02 仍占 `2.1.3`。
+- 当前波次：**engram-248 / k3-d2-deep / muse-spark-d2 / gemini-37-flash / rsi-origin**
 - 当前正在写的文章路径：见 PLAN 租约
-- 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
+- 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）；不抢 `2.1.3`
 
 ## 防漂移口令
 

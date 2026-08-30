@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 等 b02（`2.1.3` mHC/xHC 图）。配图波与 b07 已收。**不要**抢 `2.1.3`。
-2. **1234 过文：** b01 / b07 / b08 / b09 / b10 已收。b02 重派中。
-3. **`2.1.1` 节首页：** 已改成 01–04 地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
+1. **立刻做：** 报告精读波：Engram 体系专文、K3 加深、Muse Spark、Gemini 3.7 Flash、RSI 前世今生。**不要**抢 `2.1.3`（b02）。
+2. **下一波：** Gated Attention 相关工作；Qwen3.8-Flash-Next 报告里的 n-gram/Engram 表；社区对 Qwen4 架构的预测（只收一手）。
+3. **1234：** 只剩 b02（mHC/xHC）。其它 batch 已收。
 
 ## 波次队列（未完成的留着）
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：过文 b03–b06 入库。
-- 现在立刻做：配图波（DP / FA / KV 族 / NSA-DSA / Gated Attention）。不要 `move_agent_to_root`。不要 push。
+- 上一件：过文 b07 入库；配图波五切片入库。
+- 现在立刻做：Engram / K3 / Muse / Gemini 3.7 Flash / RSI 前世今生。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -137,3 +137,8 @@ category: LLM 指南
 | fig-kv-family | done | `2.2.2/01-MHA`、`02-MQA`、`03-GQA`、`04-MLA-低秩潜变量` 四篇 md + 各夹 images + inbox `fig-kv-family.md` | 两张浅色积木图；未改 05 / 节首页；32768 vs 576 与 Table 9 分口径 |
 | fig-nsa-dsa | done | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 三分支 + DSA indexer；DSA ≠ NSA 第四分支；MSA 口述未开夹 |
 | fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
+| engram-248 | running | `2.4-前沿架构与变体/2.4.8-条件记忆与Engram/` + inbox `engram-248.md` | 不改 2.4 首页、不改 2.4.1–2.4.7、不改第 14 章、不改 live |
+| k3-d2-deep | running | `14.5-Kimi/05-Kimi-K3/`（01 精译 + 该夹 images）+ inbox `k3-d2-deep.md` | 不改 14.5 首页、不改 KDA/AttnRes/SiTU 专文、不改 live |
+| muse-spark-d2 | running | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 不 mkdir 1.1/1.2 空 SKU；不编架构表；不改 14.3 首页、不改 live |
+| gemini-37-flash | running | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 不改 14.11 首页；不 mkdir 3.6 Flash；不改 live |
+| rsi-origin | running | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 不改 `_garden.md`、不改其它 RSI 章、不 Delete、不改 live |

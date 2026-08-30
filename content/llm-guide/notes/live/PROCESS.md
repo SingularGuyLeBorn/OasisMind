@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：等 b02 交卷。
-- 正在写：1234 只剩 b02（`2.1.3`）。
-- 卡住：`move_agent_to_root` **禁止再调**。mHC/xHC 图等 b02 交卷。
-- 上次刷新记忆的时间：2026-08-30 回收 b07
+- 正在读：Engram 2601.07372；K3 2607.24653 后半；Muse 1.1/1.2；Gemini 3.7 Flash card；RSI 前世今生一手。
+- 正在写：engram-248 / k3-d2-deep / muse-spark-d2 / gemini-37-flash / rsi-origin。b02 仍占 `2.1.3`，不要抢。
+- 卡住：`move_agent_to_root` **禁止再调**。Gated Attention 相关工作与 Qwen4 架构预测等下一波。
+- 上次刷新记忆的时间：2026-08-30 派出报告精读波
 
 ## 本会话已完成（追加，不要删旧行）
 
