@@ -51,13 +51,13 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 
 🔴 **04 模型**
 
-7. [代表性扩散语言模型一览](./03-models/representative-models.md)
-8. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-9. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+8. [代表性扩散语言模型一览](./03-models/representative-models.md)
+9. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+10. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
 
 ⚖️ **05 对照**
 
-10. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+11. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
    含 ArVsDiffusion 动画。对照数字已按论文表重校。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
