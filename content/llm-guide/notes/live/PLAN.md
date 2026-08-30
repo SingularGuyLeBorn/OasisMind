@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 质检入库 GSPO / GMPO / PPO（inbox 已交）；重写 `05-TRPO`（现 2620、零图、空标题）到 ≥4000 并配浅色图。
-2. **并行：** 4.4 根上薄节（计算流程 / SFT-RL 融合 / RLVR / GSPO-DCPO）写满到 ≥4000，禁止空标题。`fig-moe-router-top2` **不要重画**。
-3. **再下一波：** RAFT 专文（2304.06767）开 `4.4.1/07`；DPO/ORPO 配图；结构 S5/S6/S8。不要碰仍在租的 `4.4.5` / `4.6.2`。
+1. **立刻做：** 重写 `4.4.2/01-DPO`（现约 2319 汉字、0 图、讲义腔/空标题）到 ≥4000，配两张浅色图；公式跟 2305.18290。
+2. **并行：** 重写 `4.4.2/02-ORPO`（现约 2720、0 图、空标题）到 ≥4000，配两张浅色图；公式跟 2403.07691；不是 DPO 再加一项。
+3. **再下一波：** `4.4.3` RLAIF 配图；`4.4.4` SLiC/RRHF/IPO 浅色图；`4.4.1` 若有空位再开 CISPO（2506.13585）/ SAPO（2511.20347）。不要发 `11`。`fig-moe-router-top2` **不要重画**。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：04-SimPO 专文入库（无 $\pi_{\mathrm{ref}}$、长度平均 $+\gamma$）；4.4 / 4.4.2 地图已链。GSPO/GMPO/PPO 子代理已交卷待监工入库。
-- 现在立刻做：按主题 commit GSPO/GMPO/PPO；重写 TRPO；薄节写满。不要 `move_agent_to_root`。不要 push。
+- 上一件：TRPO / RAFT / 4.4 根薄节 / GxPO 已入库；4.4 首页 DAPO 全称与 GSPO 定义已改正。
+- 现在立刻做：DPO、ORPO 去讲义腔并配浅色图。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -163,7 +163,7 @@ category: LLM 指南
 | attnres-thicken | done | `2.2.2/08-AttnRes-深度维注意力聚合/`（先 git mv 节根散文件）+ inbox `attnres-thicken.md` | 已入库。4045 汉字；深度维 softmax；不是 $G_1$/mHC/GR |
 | opd-state-dist | done | `4.6-OPD/4.6.3-状态从哪来/` | 已入库。读者只读一篇；≥10000 汉字；六图；一步 KL GSM8K 0.040；站住的是学生前缀上的教师续写 |
 | fig-wave-2 | running | `2.4.1/01-DeepSeek-MoE/images/fig-deepseek-moe-ffn-slot.png`；`2.4.1/images/fig-moe-dense-vs-sparse.png`；`2.4.1/images/fig-moe-router-top2.png`；`2.1.3/03-Gated-Residual/images/fig-gated-residual.png` | 只覆盖这四张 png，不改专文数字 |
-| gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
+| gxpo-family | done | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 已入库。DAPO=2503.14476；GSPO 几何平均 $s_i$；不是滑窗 |
 | opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
 | loop-tf | done | `2.4-前沿架构与变体/2.4.9-循环Transformer/` + inbox `loop-tf.md` | 5444 汉字；$N=KR$；Huginn 3.5B FLOP≠50B 参数；监工补 2.4 首页 |
 | ttc-45 | done | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 已补 token 轴 vs 深度轴 $N=KR$；链 2.4.9 |
@@ -171,8 +171,10 @@ category: LLM 指南
 | kto-442 | done | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 4227 汉字；2402.01306；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；监工改 4.4.4 错公式 |
 | simpo-442 | done | `4.4.2/04-SimPO-无参考长度平均/` | ≥4000；2405.14734；无 $\pi_{\mathrm{ref}}$；Table 4/5/16；监工链 4.4.2 / 4.4 首页 |
 | gspo-thicken | done | `4.4.1/03-GSPO/` + inbox `gspo-thicken.md` | 4000 汉字；几何平均序列 IS；两图；clip 在 $s_i$ |
-| trpo-fig | running | `4.4.1/05-TRPO/` + inbox `trpo-fig.md` | ≥4000；浅色信任域图；不改 04-PPO |
+| trpo-fig | done | `4.4.1/05-TRPO/` + inbox `trpo-fig.md` | 4184 汉字；三张浅色图；$\delta=0.01$；不是 PPO |
 | gmpo-fig | done | `4.4.1/01-GMPO/` + inbox `gmpo-fig.md` | 4012 汉字；2507.20673；不是 GSPO |
 | ppo-fig | done | `4.4.1/04-PPO/` + inbox `ppo-fig.md` | 4040 汉字；四模型 + GAE/clip 图 |
-| rl-thin-44 | running | `4.4-对齐技术/4.4-GRPO计算流程全解析.md`；`4.4-SFT与RL的融合策略.md`；`4.4-GRPO变体与改进-GSPO与DCPO.md`；`4.4-RLVR的局限性与探索边界分析.md` + inbox `rl-thin-44.md` | 写满禁止空标题；不改 4.4.1/01–07、不改 4.4.5 |
-| raft-441 | running | `4.4.1/07-RAFT-奖励排序微调/` + inbox `raft-441.md` | 2304.06767；只训 top-1；不是 RLOO；不改 06 |
+| rl-thin-44 | done | `4.4-对齐技术/` 四篇根散文件 + inbox `rl-thin-44.md` | 四篇均 ≥4000；Infer/DAC/示范进组/pass@k 图 |
+| raft-441 | done | `4.4.1/07-RAFT-奖励排序微调/` + inbox `raft-441.md` | 4838 汉字；2304.06767；只训 top-1；监工链 4.4.1 |
+| dpo-442 | running | `4.4.2/01-DPO/` + inbox `dpo-442.md` | 2305.18290；去讲义腔；≥4000；两张浅色图；不改 02/03/04、不改节首页 |
+| orpo-442 | running | `4.4.2/02-ORPO/` + inbox `orpo-442.md` | 2403.07691；去讲义腔；≥4000；两张浅色图；不改 01/03/04、不改节首页 |

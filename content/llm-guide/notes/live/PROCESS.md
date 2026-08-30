@@ -11,16 +11,20 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：TRPO 1502.05477；RAFT 2304.06767；4.4 根薄节一手。
-- 正在写：05-TRPO 重写配图；4.4 根薄节写满；GSPO/GMPO/PPO 监工入库。
-- 卡住：无。不要抢 `4.4.5`（gxpo-family）、`4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 SimPO 入库；GSPO/GMPO/PPO 子代理已交。
+- 正在读：DPO 2305.18290；ORPO 2403.07691。
+- 正在写：01-DPO / 02-ORPO 去讲义腔配图。
+- 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。
+- 上次刷新记忆的时间：2026-08-31 TRPO/RAFT/薄节/GxPO 入库；4.4 首页 DAPO/GSPO 改正。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
-| 2026-08-31 | SimPO 专文：无 $\pi_{\mathrm{ref}}$；式 (4)(6)；Table 4/5/16；两张浅色图；链 4.4.2 / 4.4 首页 | https://arxiv.org/abs/2405.14734 ；https://arxiv.org/html/2405.14734 ；https://github.com/princeton-nlp/SimPO | `4.4.2/04-SimPO-无参考长度平均/` |
+| 2026-08-31 | 入库 TRPO：4184 汉字；三张浅色图；平均 KL $\delta=0.01$；CG $k=10$；不是 PPO | https://arxiv.org/abs/1502.05477 ；https://arxiv.org/html/1502.05477 ；https://arxiv.org/abs/1506.02438 | `4.4.1/05-TRPO/` |
+| 2026-08-31 | 入库 RAFT：4838 汉字；两图；Table 3 奖励 2.294 vs PPO 2.077；只训 top-1；链 4.4.1 | https://arxiv.org/abs/2304.06767 ；https://ar5iv.labs.arxiv.org/html/2304.06767 | `4.4.1/07-RAFT-奖励排序微调/` |
+| 2026-08-31 | 写满 4.4 根四篇薄节 + Infer/DAC/示范进组/pass@k 图 | https://arxiv.org/abs/2409.19256 ；https://arxiv.org/abs/2509.02333 ；https://arxiv.org/abs/2504.14945 ；https://arxiv.org/abs/2504.13837 | `4.4-GRPO计算流程全解析.md` 等四篇 |
+| 2026-08-31 | 入库 GxPO：4261 汉字；三图；DAPO=2503.14476；GSPO $s_i$ 几何平均 | https://arxiv.org/abs/2606.16733 ；https://arxiv.org/abs/2503.14476 ；https://arxiv.org/abs/2507.18071 | `4.4.5-GxPO家族/` |
+| 2026-08-31 | 4.4 首页改正：DAPO 全称；GSPO 非滑窗；CISPO clip IS 权重；SAPO=2511.20347 温度软门 | https://arxiv.org/abs/2506.13585 ；https://arxiv.org/abs/2511.20347 | `4.4-对齐技术.md` |
 | 2026-08-31 | 入库 GSPO：4000 汉字；几何平均 $s_i$；clip 在序列级；两图 | https://arxiv.org/abs/2507.18071 ；https://arxiv.org/html/2507.18071 ；https://qwenlm.github.io/blog/gspo/ | `4.4.1/03-GSPO/` |
 | 2026-08-31 | 入库 GMPO：4012 汉字；token 级几何平均；不是 GSPO；两图 | https://arxiv.org/abs/2507.20673 ；https://arxiv.org/html/2507.20673v3 ；https://github.com/callsys/GMPO | `4.4.1/01-GMPO/` |
 | 2026-08-31 | 入库 PPO：4040 汉字；四模型 + GAE/clip 两图；InstructGPT 85±3% | https://arxiv.org/abs/1707.06347 ；https://arxiv.org/abs/1506.02438 ；https://arxiv.org/abs/2203.02155 | `4.4.1/04-PPO/` |
