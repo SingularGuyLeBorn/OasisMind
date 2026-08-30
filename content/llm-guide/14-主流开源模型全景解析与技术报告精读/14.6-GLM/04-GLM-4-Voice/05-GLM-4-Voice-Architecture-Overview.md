@@ -4,7 +4,7 @@ title: "05 · GLM-4-Voice端到端语音对话架构与低延迟设计剖析"
 
 # GLM-4-Voice 端到端语音对话架构与低延迟设计剖析
 
->  **[返回 14.6-GLM 家族总览](../../14.6-GLM.md)**
+>  **[返回 14.6-GLM 家族总览](../../14.6-GLM.md)** · 体系地图：[8.7 Omni 与全双工](../../../8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md)
 
 
 > 信息来源: GLM-4-Voice: Towards Intelligent and Human-Like End-to-End Spoken Chatbot (arXiv:2412.02612)

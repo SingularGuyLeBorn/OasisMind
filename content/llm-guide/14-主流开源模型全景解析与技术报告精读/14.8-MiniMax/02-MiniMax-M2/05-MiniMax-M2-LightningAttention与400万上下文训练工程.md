@@ -21,6 +21,10 @@ title: "05 · MiniMax M2 Lightning Attention 与 400 万上下文训练工程"
 | **架构创新** | Lightning Attention + Hybrid-lightning + MoE |
 | **训练集群** | 1500-2500 台 H800 GPU(动态调度) |
 
+## 2026-08 勘误（先读）
+
+**本文写的是 MiniMax-Text-01（2025-01），不是 MiniMax-M2。** 文件夹名 M2 是错贴。M2 系列（[arXiv:2605.26494](https://arxiv.org/abs/2605.26494)）为 **229.9B/9.8B**、**全层 softmax 注意力 + GQA**，并写明离开 Lightning 混合。456B / 4M / 32 专家是 Text-01 叙事。M2 正文：[01-MiniMax-M2-技术报告精译.md](./01-MiniMax-M2-技术报告精译.md)。下文当 2025 快照保留，不删。
+
 M2(MiniMax-Text-01)是业界**首个大规模采用线性注意力机制**的开源大模型。它将上下文窗口从当时主流的 128K-200K 直接推到 400 万 token——不是通过渐进扩展，而是通过**注意力机制的范式切换**：从 Softmax 注意力的 $O(n^2)$ 复杂度，切换到线性注意力的 $O(n)$ 复杂度。
 
 ---

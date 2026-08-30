@@ -280,3 +280,9 @@ Claude 3.7 Sonnet后来被Claude 4系列在性能上超越，但它在**推理�
 - [14.13-Claude 家族总览](../../14.13-Claude.md)
 - [07-Claude-3.5-Sonnet 编码能力突破与Agent化交互设计](../07-Claude-3.5-Sonnet/05-07-Claude-3.5-Sonnet-编码能力突破与Agent化交互设计.md)
 - [08-Gemini-2.5-Pro 思考模式与多模态推理](../../14.11-Gemini/08-Gemini-2.5-Pro/05-08-Gemini-2.5-Pro-思考模式与多模态推理的工程化实现.md)
+
+---
+
+## 2026-08 修订（不删上文）
+
+博文附录（本会话打开）：vanilla pass@1 在可跑的 489 题上 **63.7%**（11 题当失败以对齐官方 500 题榜）；high compute **70.3%**（n=489）。上文 **62.3%** 不是附录句，不要当官方主数字。思考预算上限是 **输出 128K**，不是上下文窗。见 [01-10 D2](./01-10-Claude-3.7-Sonnet-架构精译.md)。System card PDF 本轮未打开。

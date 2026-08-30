@@ -383,3 +383,9 @@ Gemini 2.5 Flash 代表了 Google DeepMind 在**轻量推理模型**方向上的
 4. **速度-能力-成本的新平衡**：2.5 Flash 在三个维度上都达到了行业领先水平，树立了轻量模型的新标杆
 
 2.5 Flash 的发布预示着大模型行业的未来趋势：**推理能力不再是旗舰模型的专利，而是所有模型的基本能力**。在这一趋势下，模型之间的竞争将从"有没有推理能力"转向"推理效率有多高"——而这正是 Flash 系列的核心战场。
+
+---
+
+## 2026-08 修订（不删上文）
+
+上文「与 2.5 Pro 同时发布」不成立：Pro Experimental = **2025-03-25**，Flash preview = **2025-04-17**（[Developers 博文](https://developers.googleblog.com/en/start-building-with-gemini-25-flash/)）。官方写的是 **first fully hybrid reasoning model**、thinking 可开关、`thinking_budget` **0–24576**（上限，prompt 不需要时不吃满）、budget=0 仍声称好过 2.0 Flash。上文 1K/4K/8K 档、LiveBench 第一、$0.15/$0.60、蒸馏 CoT 公式、TTFT 表 **不是**这篇博文，当 2025 推测快照保留。空壳 D2 标题「端到端低延迟语音」也不是这篇。见 [01-09 D2](./01-09-Gemini-2.5-Flash-技术报告精译.md)。

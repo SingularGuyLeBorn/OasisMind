@@ -86,11 +86,16 @@ Gemma-2 在工程实现上做出了多项针对端侧和单卡部署的优化：
 | 编号 | 文件名 | 技术点 | 状态 |
 |---|---|---|---|
 | 1 | [05-Gemma-2-Knowledge-Distillation.md](./05-Gemma-2-Knowledge-Distillation.md) | 知识蒸馏原理与工程实现 | 已完成 |
+| 2 | [05-Gemma-2-Local-Global-Attention.md](./05-Gemma-2-Local-Global-Attention.md) | 局部-全局交错；Table 10 推理改窗 | 已完成 |
+| 3 | [05-Gemma-2-Logit-Soft-Capping.md](./05-Gemma-2-Logit-Soft-Capping.md) | tanh cap 50/30；报告无 FP8 表 | 已完成 |
+| 4 | [05-Gemma-2-GQA.md](./05-Gemma-2-GQA.md) | Table 1 头数、Table 8、8K KV 字节 | 已完成 |
 
-## 6. 待补充专题
+## 6. 原「待补充专题」（2026-08 已写入上表）
 
-- 局部-全局注意力交错的工程权衡(深度对比测试数据)
-- Logit Soft-Capping 的数值稳定性分析(FP8 混合精度场景)
-- GQA 在端侧推理中的 KV Cache 优化与分块管理机制
+Index 曾列三句待写。现已按 2408.00118 写成 D5，不再挂空标题：
 
-> 知识库同步位置: `docs/guide/llm/distillation/gemma2-kd.md`
+- 局部-全局 → D5 #2。精译「KV 约 50%」改为交错后 **25%**（$W=L/2$）。Table 10：窗 4096/2048/1024 → PPL 1.63/1.63/1.64。
+- Soft-capping → D5 #3。FP8 消融报告没有，文中写明，不编数字。
+- GQA 端侧 KV → D5 #4。9B BF16 全层 8K ≈ 2.63 GiB；再叠交错 ≈ 2.0 GiB。
+
+> 知识库同步位置: 蒸馏篇仍指向 `docs/guide/llm/distillation/gemma2-kd.md`（若该路径不在本花园，以本目录 D5 为准）。新三篇同步位置写「本库仅此一份」。

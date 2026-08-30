@@ -265,4 +265,10 @@ Gemini 2.5 Pro代表了Google在AI竞赛中的新策略：**不追求单一维�
 **相关阅读**：
 - [14.11-Gemini 家族总览](../../14.11-Gemini.md)
 - [02-Gemini-1.5-Pro 百万上下文MoE与多模态长程推理](../02-Gemini-1.5-Pro/05-02-Gemini-1.5-Pro-百万上下文MoE与多模态长程推理.md)
-- [13-Gemini-3.1-Pro 原生多模态深度推理](../13-Gemini-3.1-Pro/05-13-Gemini-3.1-Pro-原生多模态深度推理.md)
+- [13-Gemini-3.1-Pro](../13-Gemini-3.1-Pro/05-Gemini-3.1-Pro-动态测试时计算与原生多模态生成引擎.md)
+
+---
+
+## 2026-08 修订（不删上文）
+
+2025-03-25 博文（本会话打开）能核对的是：thinking model、LMArena #1、HLE **18.8%** 无工具、SWE-bench Verified **63.8% custom agent setup**、当天 **1M** 窗（2M coming soon）。GPQA / AIME 2025 只写领先且不用 majority voting，**正文没有百分数**——上文表里的 AIME 86.7%、GPQA 84%、HumanEval 93.1% 等 **不是**这篇博文的数字，不要当官方主表。2.5 Flash **不是**与 Pro 同日首发（Flash preview = 2025-04-17）。见 [01-08 D2](./01-08-Gemini-2.5-Pro-技术报告精译.md)。

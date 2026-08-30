@@ -6,6 +6,9 @@ title: "05 · MiniMax M2.5：Agent-Native RL规模化与成本效率的极致工
 
 >  **[返回 14.8-MiniMax 家族总览](../../14.8-MiniMax.md)**
 
+## 2026-08 勘误（先读）
+
+**本目录是 `04-MiniMax-M2.5` 的重复。** 下文把 M2 写成 Lightning+4M、把 M2.5 写成 2025、并发明 State Encoder——当 2025 快照保留，**不删**。M2 系列真实骨干见 [02-M2 D2](../02-MiniMax-M2/01-MiniMax-M2-技术报告精译.md)（229.9B/9.8B，192K，非 Lightning）。M2.5 博文精译在 [04](../04-MiniMax-M2.5/01-MiniMax-M2.5技术报告精译.md)。
 
 ## 一、模型定位与发布背景
 

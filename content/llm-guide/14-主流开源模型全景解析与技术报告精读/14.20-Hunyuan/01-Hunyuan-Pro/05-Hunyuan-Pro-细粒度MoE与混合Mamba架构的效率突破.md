@@ -162,7 +162,14 @@ Hunyuan 开源了模型权重，但核心训练代码、数据 pipeline 和基�
 
 ---
 
+## 2026-08 修订
+
+不删上文。本文件夹的 **Pro** 与开源 **Hunyuan-Large** 不是同一张规格卡。Large 论文 [arXiv:2411.02265](https://arxiv.org/abs/2411.02265)（2024-11，不是表里的 2025.11）：**389B/52B**、64 层、80/8 GQA、**1 共享 + 16 路由、每 token 激活 1 个路由专家**、7T（约 1.5T 合成）、recycle routing、GQA+CLA。元宝自 2024-02 用的是**闭源万亿 MoE**，不要写成 Large。
+
+上文 **A13B 1+64 / 800B**、**TurboS 混合 Mamba**、20 万亿 tokens，是后出 SKU / 未在 Large 论文里的叙事，**不要**当成 hunyuan-pro API。公开材料 D2：[01-01](./01-01-Hunyuan-Pro-架构精译.md)。
+
 >  **关联阅读**
+> - [D2](./01-01-Hunyuan-Pro-架构精译.md)
 > - [返回 Hunyuan 家族总览](../../14.20-Hunyuan.md)
 
 

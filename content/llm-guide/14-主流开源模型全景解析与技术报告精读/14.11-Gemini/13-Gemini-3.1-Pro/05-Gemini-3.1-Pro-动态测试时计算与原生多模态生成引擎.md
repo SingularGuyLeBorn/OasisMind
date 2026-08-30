@@ -241,11 +241,16 @@ Gemini 3.1 Pro 是 Google DeepMind 在"推理效率"方向上的一次重要探�
 ---
 
 >  **延伸阅读**
-> - [Gemini 3.1 Pro 官方技术报告](https://storage.googleapis.com/deepmind-media/gemini/gemini_v3_1_report.pdf)
+> - [Gemini 3.1 Pro 官方博文](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)
 > - [Google Antigravity 代理开发平台](https://antigravity.codes/)
 > - [ARC-AGI-2 基准测试](https://arcprize.org/)
 > - [MCP 协议规范](https://modelcontextprotocol.io/)
 
+---
+
+## 2026-08 修订（不删上文）
+
+2026-02-19 博文能核对的主数字只有 ARC-AGI-2 **77.1%**（称比 3 Pro 高一倍以上）。**没有**稀疏 MoE 表、没有 64K 输出、没有 Veo/Lyria 集成句、没有把 $2/$12 重报成 3.1 官价。3 Pro 的 ARC 本文没给「~35%」。见 [01-13 D2](./01-13-Gemini-3.1-Pro-技术报告精译.md)。
 
 ---
 

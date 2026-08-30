@@ -268,5 +268,11 @@ Operator后来被集成到ChatGPT的"Agent Mode"中, 成为OpenAI Agent战略的
 
 **相关阅读**：
 - [14.12-OpenAI 家族总览](../../14.12-OpenAI.md)
-- [09-GPT-4o 原生多模态端到端架构](../09-GPT-4o/05-09-GPT-4o-原生多模态端到端架构与Omni统一表示.md)
-- [09-Claude-Computer-Use 视觉感知驱动的GUI自动化Agent](../../14.13-Claude/09-Claude-Computer-Use/05-09-Claude-Computer-Use-视觉感知驱动的GUI自动化Agent.md)
+- [09-GPT-4o](../09-GPT-4o/01-09-GPT-4o-反向工程精译.md)
+- [Claude Computer Use](../../14.13-Claude/09-Claude-Computer-Use/01-09-Claude-Computer-Use-架构精译.md)
+
+---
+
+## 2026-08 修订（不删上文）
+
+CUA 研究博文（2025-01-23）：OSWorld **38.1%**（人 72.4%）、WebArena **58.1%**、WebVoyager **87.0%**。引擎是 GPT-4o 视觉 + RL，键鼠通用界面，不是空壳里的注意力矩阵。见 [01-15 D2](./01-15-Operator-Agent-反向工程精译.md)。后文 ChatGPT agent 集成是后续产品史，1-23 预览页没写。

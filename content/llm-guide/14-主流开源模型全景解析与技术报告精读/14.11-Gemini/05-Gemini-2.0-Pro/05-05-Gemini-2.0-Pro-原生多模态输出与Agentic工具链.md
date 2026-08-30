@@ -309,3 +309,9 @@ Gemini 2.0的后续演进(2.5 Pro的Thinking Mode、3.x的更深Agentic能力)�
 - [14.11-Gemini 家族总览](../../14.11-Gemini.md)
 - [02-Gemini-1.5-Pro 百万上下文MoE与多模态长程推理](../02-Gemini-1.5-Pro/05-02-Gemini-1.5-Pro-百万上下文MoE与多模态长程推理.md)
 - [08-Gemini-2.5-Pro 思考模式与多模态推理](../08-Gemini-2.5-Pro/05-08-Gemini-2.5-Pro-思考模式与多模态推理的工程化实现.md)
+
+---
+
+## 2026-08 修订（不删上文）
+
+开篇「2024-12 旗舰、原生多模态输出」容易让人以为 **2.0 Pro** 12 月就 GA。12 月首发的是 **Flash experimental**；**Pro Experimental = 2025-02-05**，博文写 **2M** 上下文（不是 1M）。原生出图/TTS 12 月给的是 Flash early-access。见 [01-05 D2](./01-05-Gemini-2.0-Pro-技术报告精译.md)。

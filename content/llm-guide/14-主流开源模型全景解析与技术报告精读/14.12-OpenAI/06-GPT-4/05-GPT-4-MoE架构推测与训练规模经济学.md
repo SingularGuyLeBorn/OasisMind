@@ -299,3 +299,9 @@ GPT-4 的最大遗产或许在于：它证明了"大力出奇迹"在 AI 领域�
 > - [SemiAnalysis: GPT-4 架构推测报告](https://www.semianalysis.com/)
 > - [Chinchilla Scaling Laws (Hoffmann et al., 2022)](https://arxiv.org/abs/2203.15556)
 > - [Mixtral 8×7B: 开源 MoE 的验证](https://arxiv.org/abs/2401.04081)
+
+---
+
+## 2026-08 修订（不删上文）
+
+上文「没有技术报告」不成立：有 [GPT-4 Technical Report](https://arxiv.org/html/2303.08774v6)，只是 **明文不公布**架构/规模/硬件/数据/训法。Bar 是 **298/400 ~90th**（GPT-3.5 **213 ~10th**），不是笼统「前 10%」。MoE、1.76T、16 专家、~$63M、13T token **全部是推测**，报告 Table 没有这些行。报告承认的数字见 [01-06 D2](./01-06-GPT-4-反向工程精译.md)（MMLU 86.4% 5-shot、HumanEval 67.0% 0-shot、GSM-8K 92.0%\* 预训练混了部分训练集）。本长文作为 SemiAnalysis 路线的历史快照保留，不要把推测表抄进体系章当事实。

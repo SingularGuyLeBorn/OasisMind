@@ -235,3 +235,9 @@ Gemini 2.0 Flash Thinking 是 Google 在**轻量推理模型**方向上的重要
 4. **推理成本可控化**：轻量模型 + Thinking Mode 的组合使推理能力的成本大幅降低
 
 Flash Thinking 的历史价值不在于其作为产品的成功(它从未成为正式产品)，而在于其作为**技术探针**的作用——它帮助 Google 验证了推理扩展在轻量架构上的可行性，为 2.5 Flash 的突破性成功奠定了基础。在回顾 Gemini 系列的技术演进时，Flash Thinking 是连接"纯生成模型"和"推理增强模型"的关键桥梁。
+
+---
+
+## 2026-08 修订（不删上文）
+
+2 月 5 日博文只说「今年早些时候」在 AI Studio 更新过 Thinking Experimental，同日进 Gemini App 下拉框。**没有**写 8B–20B，也 **没有** 与 12 月 Flash、2 月 Pro 绑成「三模型同日首发」。Pro Experimental 是 **2025-02-05**。见 [01-07 D2](./01-07-Gemini-2.0-Flash-Thinking-技术报告精译.md)。

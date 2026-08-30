@@ -1,6 +1,10 @@
 ---
-title: "05 · InstructGPT: RLHF 对齐人类意图的里程碑 - 核心技术黑盒探测"
+title: "05 · InstructGPT 核心技术专题枢纽"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [InstructGPT, hub]
 ---
+
 # 04-InstructGPT 核心技术专题：黑盒边界与逆向工程
 
 >  **[返回 14.12-OpenAI 家族总览](../../14.12-OpenAI.md)**
@@ -11,3 +15,11 @@ title: "05 · InstructGPT: RLHF 对齐人类意图的里程碑 - 核心技术黑
 
 ## 基础设施之谜
 OpenAI 如何在万卡集群上保证连续数月的无故障训练？本专题探讨了其可能采用的 3D 并行策略、Checkpoint 异步持久化以及独特的故障恢复态机制。
+
+## 2026-08：这份空壳对应哪篇已经写过的文
+
+上面两段是 2025 占位，**原样保留**。InstructGPT 论文写的是 **SFT / 6B RM / PPO-ptx**，不是注意力探测。见 [01-04 D2](./01-04-InstructGPT-反向工程精译.md) 和 [RLHF 长 D5](./05-04-InstructGPT-RLHF对齐范式的工程化开创.md)。体系章：[4.4.1 RLHF/PPO](../../../4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md)。
+
+不要在本空壳里再发明维度跃迁。
+
+- 本文件原先是空壳；2026-08 改成枢纽

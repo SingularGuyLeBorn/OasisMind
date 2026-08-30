@@ -254,3 +254,9 @@ Claude 4代表了Anthropic"虚拟协作者"愿景的成熟产品化。理解Clau
 - [14.13-Claude 家族总览](../../14.13-Claude.md)
 - [10-Claude-3.7-Sonnet 混合推理架构与可控思考预算](../10-Claude-3.7-Sonnet/05-10-Claude-3.7-Sonnet-混合推理架构与可控思考预算.md)
 - [07-Claude-3.5-Sonnet 编码能力突破与Agent化交互设计](../07-Claude-3.5-Sonnet/05-07-Claude-3.5-Sonnet-编码能力突破与Agent化交互设计.md)
+
+---
+
+## 2026-08 修订（不删上文）
+
+[Introducing Claude 4](https://www.anthropic.com/news/claude-4)（2025-05-22）：SWE-bench **不开** extended thinking 时 Opus **72.5%** / Sonnet **72.7%**；high compute（并行+拒破坏可见回归测试的 patch+内部打分）Opus **79.4%** / Sonnet **80.2%**。上文总结把 80.2% 写成 Sonnet 主分数——那是 high compute。脚手架是 bash + 字符串替换，**不再**用 3.7 的 planning tool；满分母体 **500** 题。Terminal-bench Opus **43.2%**。「7 小时」是 Rakuten 客户引用，不是官方基准。上文把 Demis Hassabis 写成与 Dario 共同定位 Claude 4——Hassabis 是 Google，**博文没有这句**。ASL-3 博文只点名 higher levels；表里 Sonnet=ASL-2 **本轮未打开 system card**，不要当已核。见 [01-11 D2](./01-11-Claude-4-架构精译.md)。

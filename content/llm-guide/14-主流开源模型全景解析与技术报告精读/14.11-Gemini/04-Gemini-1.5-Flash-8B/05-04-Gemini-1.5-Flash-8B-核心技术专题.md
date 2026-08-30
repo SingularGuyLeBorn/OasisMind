@@ -405,3 +405,9 @@ Gemini 1.5 Flash-8B 代表了 Google 在**极致轻量模型**方向上的探索
 4. **多模态是标配而非高配**：Flash-8B 将多模态能力下放到 8B 级别，预示着未来所有模型都将具备基本的多模态理解能力
 
 Flash-8B 的历史意义在于：它证明了**大模型的民主化**不仅是价格问题，更是工程问题——通过极致的架构优化、量化技术和分层上下文管理，前沿 AI 能力可以被压缩到端侧设备中，让数亿用户无需云端连接即可享受 AI 服务。这一方向将深刻影响未来 AI 产品的设计范式——从"云端智能"走向"端云协同智能"。
+
+---
+
+## 2026-08 修订（不删上文）
+
+2024-10-03 [开发者博文](https://developers.googleblog.com/en/gemini-15-flash-8b-is-now-generally-available-for-use/) 只给了：相对 1.5 Flash **价格 −50%**、**4000 RPM**、短 prompt 更低延迟、**<128K** 时 $0.0375 / $0.15 / 缓存 $0.01，以及「smaller and faster variant」「nearly matches May 1.5 Flash」。**没有**写端侧 / INT4 / 分层 KV / 精确 8.000B。产品名带 8B ≠ 博文 Table。1.0 Nano 才是报告里写明的端侧蒸馏。见 [01-04 D2](./01-04-Gemini-1.5-Flash-8B-技术报告精译.md)。

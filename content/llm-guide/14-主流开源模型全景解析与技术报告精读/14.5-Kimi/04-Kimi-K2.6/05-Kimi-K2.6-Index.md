@@ -13,7 +13,7 @@ tags:
 
 > 返回上级：[14.5-Kimi](../../14.5-Kimi.md)
 
-Kimi K2.6(2026-04, 无独立 PDF)是 Moonshot 最新开源旗舰: **同 K2.5 架构**, post-training 强化长程编码与 Agent Swarm(300 子 Agent / 4000 步). SWE-Bench Pro **58.6%**, Verified **80.2%**, 256K 上下文.
+Kimi K2.6(2026-04, 无独立 PDF)是 Moonshot 在 K2.5 骨架上的后训练旗舰（当时）：**同 K2.5 架构**，Agent Swarm(300 子 Agent / 4000 步)，SWE-Bench Pro **58.6%**，Verified **80.2%**，256K 上下文。**2026-08：预训练换代是 [Kimi K3](../05-Kimi-K3/05-Kimi-K3-Index.md)**（2.8T、独立报告），不要再把 K2.6 写成「最新开源旗舰」。
 
 ## 文档导航
 
