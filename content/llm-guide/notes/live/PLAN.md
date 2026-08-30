@@ -170,8 +170,9 @@ category: LLM 指南
 | rloo-44 | done | `4.4.1/06-RLOO-留一法基线/` + inbox `rloo-44.md` | 4021 汉字；2402.14740；k=4 Win-rate 77.9/43.7/64.1；监工链 4.4.1 |
 | kto-442 | done | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 4227 汉字；2402.01306；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；监工改 4.4.4 错公式 |
 | simpo-442 | done | `4.4.2/04-SimPO-无参考长度平均/` | ≥4000；2405.14734；无 $\pi_{\mathrm{ref}}$；Table 4/5/16；监工链 4.4.2 / 4.4 首页 |
-| gspo-thicken | running | `4.4.1/03-GSPO/` + inbox `gspo-thicken.md` | ≥4000；几何平均序列 IS；浅色 fig；不改 4.4.5 |
+| gspo-thicken | done | `4.4.1/03-GSPO/` + inbox `gspo-thicken.md` | 4000 汉字；几何平均序列 IS；两图；clip 在 $s_i$ |
 | trpo-fig | running | `4.4.1/05-TRPO/` + inbox `trpo-fig.md` | ≥4000；浅色信任域图；不改 04-PPO |
-| gmpo-fig | running | `4.4.1/01-GMPO/` + inbox `gmpo-fig.md` | ≥4000；浅色几何均值图；不改 02-GRPO |
-| ppo-fig | running | `4.4.1/04-PPO/` + inbox `ppo-fig.md` | 补浅色 Actor-Critic / GAE / clip 图；可改 md+images，不改 05 |
-| rl-thin-44 | running | `4.4-对齐技术/4.4-GRPO计算流程全解析.md`；`4.4-SFT与RL的融合策略.md`；`4.4-GRPO变体与改进-GSPO与DCPO.md`；`4.4-RLVR的局限性与探索边界分析.md` + inbox `rl-thin-44.md` | 写满禁止空标题；不改 4.4.1/01–06、不改 4.4.5 |
+| gmpo-fig | done | `4.4.1/01-GMPO/` + inbox `gmpo-fig.md` | 4012 汉字；2507.20673；不是 GSPO |
+| ppo-fig | done | `4.4.1/04-PPO/` + inbox `ppo-fig.md` | 4040 汉字；四模型 + GAE/clip 图 |
+| rl-thin-44 | running | `4.4-对齐技术/4.4-GRPO计算流程全解析.md`；`4.4-SFT与RL的融合策略.md`；`4.4-GRPO变体与改进-GSPO与DCPO.md`；`4.4-RLVR的局限性与探索边界分析.md` + inbox `rl-thin-44.md` | 写满禁止空标题；不改 4.4.1/01–07、不改 4.4.5 |
+| raft-441 | running | `4.4.1/07-RAFT-奖励排序微调/` + inbox `raft-441.md` | 2304.06767；只训 top-1；不是 RLOO；不改 06 |
