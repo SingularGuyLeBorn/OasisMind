@@ -127,6 +127,8 @@ return strip_after_eos(x)
 
 块采样在 Instruct 上救 GSM8K，在 Base 上却不是最强。Table 7 里 Base 纯扩散整体最好。SFT 的 EOS 垫片改变了哪种解码器匹配训练分布。同一套揭开逻辑，权重从 Base 换成 Instruct，最优采样器跟着变。产品若先 SFT 再部署，不要抄 Base 附录的「纯扩散最好」当默认。先在自己的 Instruct 检查点上扫 Table 8 那四行，再锁采样器。
 
+伪代码末尾的 `strip_after_eos` 假设结束符出现之后的内容无意义。Instruct 若把 EOS 垫到画布末尾当普通 token 训过，模型可能在中间就写出结束符，后面仍是掩码。置零 EOS 置信度是补丁，块边界是结构补丁。两个补丁都在堵同一件事：结束符抢了还没写完的格子。调采样时若只动温度不动这两项，Instruct 生成任务会反复提前结束。
+
 ## 参考文献
 
 - [Nie et al., LLaDA, 2025](https://arxiv.org/abs/2502.09992) — §2.4 反向过程；附录 Table 7–9 采样消融。

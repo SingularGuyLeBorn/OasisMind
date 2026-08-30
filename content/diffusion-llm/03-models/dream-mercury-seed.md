@@ -141,7 +141,7 @@ Trip planning 17.8 对 3.6 是同一张规划表上的第三格。题目来自 Z
 
 推理接口叫 `diffusion_generate()`，不是 `generate()`。调用方要传步数、温度、是否 remask，不能假设 Hugging Face 默认因果解码能跑。开源权重的意义是可复现表上的数，不是把 Dream 丢进 vLLM 就出 1109 tok/s。那条吞吐曲线属于 Mercury 的栈。把开源 7B 和商业 Mini 合成「扩散 7B 已经四位数吞吐」，是把交付物焊错了。
 
-## 参考文献
+Base 表上 HumanEval 57.9 对 Qwen2.5 的 56.7，代码几乎打平；Instruct 表 55.5 对 84.8，缺口全在后训练。读 Dream 的人常只截 Base 的代码列当宣传，或只截 Instruct 的代码列当「扩散不会写代码」。两张表要一起截。规划列同理：Base 的 Sudoku 81.0 很强，Instruct 表根本没再报 Sudoku。任务换了，列就没了，不能把 81.0 抄进指令模型规格。
 
 ## 参考文献
 
