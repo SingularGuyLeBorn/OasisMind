@@ -120,6 +120,18 @@ flowchart LR
 - 虚线不是默认开启。AlphaEvolve 的 kernel 加快了 Gemini 训练，是回流到**训练基础设施**，要论证是否改了发现者 Agent 自身，还差一步。
 - 技能文件若把一次 Artifact 失败写成规则，虚线落到 Harness，这才是层间跳转。
 
+![三列都只改 $S'$，虚线墙下的 $I$ 不进后继系统；默认不是 RSI](./images/fig-layers-not-rsi.png)
+
+> 图 3：上排是这一次留下的状态；下排是冻着的改进器。虚线只表示「靠墙外的 $I$ 才改得动」，没有箭头把 $I$ 装进 $S'$。
+
+**图 3 解析**
+
+- **Artifact $S'$**：kernel、论文、可执行世界。评估函数、提议模型、日程仍在墙外。
+- **Harness $S'$**：技能、工具、运行时。元技能、审计条款、基座 $\theta$ 仍在墙外。
+- **Model $S'$**：权重被推过。损失形式、数据锚、裁判仍在墙外。
+- **墙标 $I$ not in $S'$**：单轮 $S'=I(S)$ 三列都有；缺的是 $I'\subseteq S'$。
+- **不要把三列加成 RSI**：一层过线不等于三层都过；默认判定仍是否。
+
 ## 5. 边界正在模糊——以及仍然成立的「不是」
 
 三层会互相送燃料：Artifact（更快 kernel）降低训练成本 → 更强 Model → 更好的 Harness 设计能力 → 更会搜 Artifact。这是**系统叙事**，不是已经闭合的 RSI 证明。判断仍按「这一次更新落在哪一层、下一轮改进器是不是升级后的系统」。
@@ -154,7 +166,7 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 
 推荐顺序不是按公司，是按「误会从哪来」。
 
-1. **先分清层**。本篇图 1 加上面那张表。把 AlphaEvolve 的 48 次乘听成「Gemini 在改自己」，就是把 Artifact 当成了 Model。把会写 `SKILL.md` 听成 RSI，就是把 Harness 当成了术语式 (2)。
+1. **先分清层**。本篇图 1、图 3 加上面那张表。把 AlphaEvolve 的 48 次乘听成「Gemini 在改自己」，就是把 Artifact 当成了 Model。把会写 `SKILL.md` 听成 RSI，就是把 Harness 当成了术语式 (2)。
 2. **先把模仿和 RLVR 拆开，再看 Model 层的靶**。把 R1 听成 RSI，是把「$\theta$ 被 0/1 推过」听成「改进器进了 $S'$」。对照见 [04 模仿学习与 RLVR](../04-模仿学习与RLVR/04-模仿学习与RLVR.md)：Yue 等大 $k$ 时基座常反超；Venhoff 等纯 RL 混合模型约收回 76% 差距。然后才看靶有没有钉死。[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) 对手是上一轮自己，赢家分布仍是人类 SFT。[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) 的法官头和生成头共享权重，主实验新 prompt 还来自冻结的 Llama 2-Chat。[Tufa](../../2-Model层-训练时自改进/03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) 把裁判冻死，Countdown 三个提示会被黑，积分自环 43% 超过 GPT-4o 的 42%——花园里最像 RLVR 的样板，裁判仍在墙外。[LADDER](../../2-Model层-训练时自改进/05-LADDER-递归拆题/05-LADDER-递归拆题.md) 用数值器做课程：Llama 3B 本科积分 1%→82%，同一 7B 在 MIT 资格赛 50%→73%，TTRL 再到 90%，答完一道把 $\theta$ 滚回。[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环 LoRA 真改 $\theta$，外环 ReST-EM 配方在墙外。这些都改权重，都还不是递归。
 3. **Harness 层先看门，再看元学习，再看自指**。[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 只回答「生成的技能凭什么留下」：SWE-Bench Pro 约 78% 对 Direct Copilot 约 59%。[SkillEvolver](../../3-Harness层-Agent运行时/08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 冻 CLI，用部署失败写领域 `SKILL.md`：SkillsBench 83 题 29.9%→56.8%，元技能自己不改。[ADAS](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 用冻结 gpt-4o 元 Agent 搜 `forward`，MGSM 53.4%，higher-order 写在未来工作里。[STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器程序对自己递归，弱模型上会掉分。[Gödel Agent](../../3-Harness层-Agent运行时/06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 公平对照只认 Gödel-base 相对 ADAS 的 MGSM 11 个百分点，不要截 Gödel-free 的 90.6%。[DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案，SWE-bench 20%→50%。[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md) 只改 `train.py`，val_bpb 在墙外。这几篇 $\theta$ 都冻着。
 4. **Artifact 层看评估器在谁手里**。[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 搜短函数，$n=8$ cap set 512，140 次里只有 4 次摸到。[AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 搜整文件，可以反哺训练栈，发现者仍可不改。[Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 交卷是论文。[MirroS](../../4-Artifact层-产物发现/02-MirroS-Physical-RSI/02-MirroS-Physical-RSI.md) 交卷是可执行世界，发现环按官方报告仍在墙外。
