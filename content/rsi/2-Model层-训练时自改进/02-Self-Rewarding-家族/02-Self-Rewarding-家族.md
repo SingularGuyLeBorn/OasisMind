@@ -144,7 +144,7 @@ Head-to-head（GPT-4 评 256 条）：$M_2$ vs $M_1$ 为 55.5% vs 11.7%；$M_3$ 
 3. **冻结黄金裁判做校准**：Self-Rewarding 论文自己对比了「固定外部奖励」的 Iterative DPO（Xu et al. 2023）。冻结裁判会牺牲「奖励模型一起变好」，换来不跟运动员漂移。EFT 种子就是一次性注入的人类排序锚；后续 AIFT 不再加 EFT，法官能力仍涨，作者假设来自通用指令变强——这假设需要独立评委才能证伪。
 4. **不要让生成用过的证据再当最终验收**。混元综述称之为 development evidence：指导过提议或内部选择的分数，不应再当唯一门禁。
 
-Tufa Labs 的 Self-Rewarding Self-Improving 实验线见 [03 Tufa Labs](../03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md)，本篇不展开。公开材料若只有博客没有损失公式，那篇会留条，不把二手数字升格成本家族主结果。
+Tufa Labs 把自裁判冻死再 GRPO，见 [03 Tufa](../03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md)：Countdown 三个提示会被黑，积分自环 43% 超过 GPT-4o 的 42%，裁判权重不进 $S'$。一手是 arXiv:2505.08827，不要和本篇的迭代 DPO 收成同一套更新规则。
 
 ## 6. 与 RSI 的关系
 
