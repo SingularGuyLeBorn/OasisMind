@@ -36,7 +36,7 @@ tags:
 
 **图 1 解析**
 
-- **底层 Model（蓝）**：SPIN、Self-Rewarding、STaR 都写在这里。改的是 $p_\theta$。
+- **底层 Model（蓝）**：SPIN、Self-Rewarding、STaR、[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 都写在这里。改的是 $p_\theta$。SEAL 的内环还是一次测试时 LoRA。
 - **中层 Harness（青）**：循环、工具、记忆、技能。Argus 的 verification-gated runtime、产品里自动写 `SKILL.md`，都落在这里。
 - **顶层 Artifact（金）**：kernel、论文、策略。AlphaEvolve 的交卷物在这里。
 - **左侧括号 Agent = Model + Harness**：这是 2026 编码榜看不懂「只报模型名」的原因——分数是两者的乘积。
@@ -144,7 +144,7 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 |----|--------|----------|----------------|
 | Artifact | 产出物 | AlphaEvolve 的 kernel / 48 次复数矩阵乘 | 否 |
 | Harness | 下次还用的脚手架 | 技能包；Argus 门控写入 | 弱候选 |
-| Model | 权重 | [SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) | 训练式自改进，不是递归 |
+| Model | 权重 | [SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)；[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) | 训练式自改进，不是递归 |
 
 下一篇机制：[SPIN 自对弈微调](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)。安全：[可靠性与独立监督](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
 

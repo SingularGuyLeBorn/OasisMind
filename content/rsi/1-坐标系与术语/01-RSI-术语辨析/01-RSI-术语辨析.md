@@ -44,7 +44,7 @@ flowchart TB
   TTT[Test-Time Training]
   CL -.->|可当零件| RSI
   TTT -.->|叙事上被连到后预训练| RSI
-  MOD --> SPIN[SPIN / Self-Rewarding / STaR]
+  MOD --> SPIN[SPIN / Self-Rewarding / SEAL]
   HAR --> SKILL[技能包 / 验证门控 runtime]
   ART --> AE[AlphaEvolve 等]
   SPIN -.->|单轮训练不是递归| RSI
