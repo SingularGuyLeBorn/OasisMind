@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：1234 过文 batch 01–02；飞书导出目录树（未抄）。
-- 正在写：子代理改 batch 01/02 与 5+14 首页。
+- 正在读：第 4 章下一批（等 01–10 交卷质检穿插）。
+- 正在写：子代理改 batch 01–10 与 5+14 首页。
 - 卡住：`move_agent_to_root` **禁止再调**。
-- 上次刷新记忆的时间：2026-08-30 删 10–12、1234 过文开工
+- 上次刷新记忆的时间：2026-08-30 1234 过文 batch 01–10 已派；第 1–3 章工单在跑
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -40,7 +40,7 @@ category: LLM 指南
 | 2026-08-30 | 写 9.1.3 互联 + 自绘拓扑图 | 见下行 NVLink/NVL72/IB 台账 | `9.1.3-卡间互联与集群拓扑.md` |
 | 2026-08-30 | 写 9.1.4 加速器全景 | AMD/TPU/Gaudi/华为云文 | `9.1.4-加速器全景.md` |
 | 2026-08-30 | P0-C 嵌图：自注意力 3、Agent 安全 2、残差图 1、LN vs RMSNorm、RoPE 2D | GenerateImage | 各文 `images/fig-*.png` |
-| 2026-08-30 | 写 xHC 专文 + 自绘图 | arXiv:2607.14530 HTML §1–3.3 / Algorithm 1 | `2.1.3/02-xHC-Expanded-Hyper-Connections.md` |
+| 2026-08-30 | 写 xHC 专文 + 自绘图 | arXiv:2607.14530 HTML §1–3.3 / Algorithm 1 | `2.1.3/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md` |
 | 2026-08-30 | 写 MuonClip / Polar Express 对照 | Polar Express HTML；K2 mineru-en Algorithm 1；Step-3.5-Flash mineru-en | `6.5/Muon/05-MuonClip与PolarExpress.md` |
 | 2026-08-30 | 第 1 章 / index / 1.3 追加 14 章与 2025H2–2026-08 修订 | 不删八章原文 | `1-导论与基础.md`、`1.3` |
 | 2026-08-30 | 勘误：第 5 章 Kimi 把 QK-Clip 写成梯度裁剪 | K2 报告 | `5.2/.../月之暗面-Kimi.md` |
@@ -158,7 +158,7 @@ category: LLM 指南
 | 本库精读 | Step-3.5-Flash mineru-en Polar Express 段 | `14.7/.../03-Step-3.5-Flash-mineru-en.md` | 05 文 §2.3 | 读了 NS/Polar Express 与 float16 对策段 |
 | 官方 blog | GLM-5.3-Flash | https://z.ai/blog/glm-5.3-flash | P2 分级 | **WebFetch 超时**；数字以 docs.z.ai 为准 |
 | 官方安全报告 | Muse Spark Safety & Preparedness | https://ai.meta.com/static-resource/muse-spark-safety-and-preparedness-report | P2 分级 A | 只读开头定位段，未当架构精读 |
-| 演进前作 | Hyper-Connections / mHC | 本库 `2.1.3/01-Hyper-Connections与mHC.md` | 2.1.3 修订 | 确认已有专文 |
+| 演进前作 | Hyper-Connections / mHC | 本库 `2.1.3/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md` | 2.1.3 修订 | 确认已有专文 |
 | 中文解析 | （本会话未当事实源） | — | — | — |
 | 官方产品页 | NVIDIA NVLink & NVLink Switch | https://www.nvidia.com/en-us/data-center/nvlink/ | 9.1.3 | 规格表读完 |
 | 官方产品页 | GB200 NVL72 | https://www.nvidia.com/en-us/data-center/gb200-nvl72/ | 9.1.3 | 规格表 + GB300 段 |
@@ -393,7 +393,7 @@ category: LLM 指南
 | QSA | Qwen Sparse Attention；tech_report §2.1.2 | **专文已写** `08-QSA-Qwen稀疏注意力.md` | 第 2.3.2 |
 | Gated Residual / GR | Qwen3.8-Next §2.2；四分支逐元素读门、无 $H_{\mathrm{res}}$ | **专文已写** `03-Gated-Residual.md` | 第 2.1.3 |
 | KDA | Kimi Delta Attention arXiv:2510.26692；K3 加 $g_{\min}=-5$ 与满秩门 | **专文已写** `01-Kimi-Delta-Attention-KDA.md`（含 §5 K3 改写） | 第 2.3.3 |
-| SiTU-GLU | Sigmoid Tanh Unit GLU；K3 §2.3.2；$\beta_1=4,\beta_2=25$，界 100 | **专文已写** `01-SiTU-GLU.md` | 第 2.1.1 |
+| SiTU-GLU | Sigmoid Tanh Unit GLU；K3 §2.3.2；$\beta_1=4,\beta_2=25$，界 100 | **专文已写** `2.1.1/01-SiTU-GLU/01-SiTU-GLU.md`（已从夹根散文件收夹） | 第 2.1.1 |
 | Stable LatentMoE / QB | LatentMoE arXiv:2601.18089；K3 加 RMSNorm + SiTU + Quantile Balancing | **专文已写** `10-Stable-LatentMoE与Quantile-Balancing.md` | 第 2.4.1 |
 | Per-Head Muon | K3 §2.5；按头 NS，不是新 polar | 已写入 05-MuonClip §1.1 | 第 6.5 |
 | MoonEP | 完美均衡 EP；https://github.com/MoonshotAI/MoonEP | 6.1 修订指针，不另起教材 | 第 6.1 |

@@ -7,9 +7,9 @@ tags: [xHC, mHC, Hyper-Connections, residual, Sinkhorn]
 
 # xHC：把残差流从 $N=4$ 扩到 $N=16$
 
-> 邻居：[01-Hyper-Connections 与 mHC](./01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](./2.1.3-残差连接.md) · 不要和 [CSA/HCA](../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) 混名 · 不要和 [AttnRes](../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制
+> 邻居：[01-Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · 不要和 [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) 混名 · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制
 
-HC / mHC 已经把残差从「一条加法高速公路」改成「$N$ 条可学习混合的流」。专文 [01](./01-Hyper-Connections与mHC.md) 讲的是：**为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。** 本篇只接一个更窄的问题：
+HC / mHC 已经把残差从「一条加法高速公路」改成「$N$ 条可学习混合的流」。专文 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 讲的是：**为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。** 本篇只接一个更窄的问题：
 
 > 既然 $N=1\to 4$ 很赚，为什么现有方法停在 $N=4$？怎样才能把 $N$ 当成第三条 scaling 轴（宽、深、残差记忆），而不是再加几条没用的副本？
 
@@ -37,7 +37,7 @@ $$
 | $\mathcal{H}^{\mathrm{post}}$ | $N\times 1$（mHC） | 把子层输出写回各条流 |
 | $\mathcal{H}^{\mathrm{res}}$ | $N\times N$ | 流与流之间混合 |
 
-mHC 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵（Birkhoff 多面体）上，用 Sinkhorn–Knopp 强制行列和为 1（论文式 (2)）。这样深度上的连乘 $\prod_l \mathcal{H}_l^{\mathrm{res}}$ 不会无界放大或衰减，恒等映射才还在。这一步的动机和公式边界见 [01 §7–9](./01-Hyper-Connections与mHC.md)，这里不重推。**不是** Tay 等人把注意力块排序的 Sparse Sinkhorn Attention（[2002.11296](https://ar5iv.labs.arxiv.org/html/2002.11296)，见 [2.3.4 §4.3.2](../../2.3-高效与稀疏注意力/2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md)）：两边都用 Sinkhorn–Knopp，作用对象一个是残差混合矩阵，一个是块置换。
+mHC 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵（Birkhoff 多面体）上，用 Sinkhorn–Knopp 强制行列和为 1（论文式 (2)）。这样深度上的连乘 $\prod_l \mathcal{H}_l^{\mathrm{res}}$ 不会无界放大或衰减，恒等映射才还在。这一步的动机和公式边界见 [01 §7–9](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)，这里不重推。**不是** Tay 等人把注意力块排序的 Sparse Sinkhorn Attention（[2002.11296](https://ar5iv.labs.arxiv.org/html/2002.11296)，见 [2.3.4 §4.3.2](../../../2.3-高效与稀疏注意力/2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md)）：两边都用 Sinkhorn–Knopp，作用对象一个是残差混合矩阵，一个是块置换。
 
 xHC 论文要解释的实验事实是：mHC 从 $N=1$ 扩到 $N=4$ 很值；再扩到 $N=16$，在他们 2.5B MoE 配方上 **loss 只再降约 0.006，训练 FLOPs 却多 32%**。残差记忆这条轴看起来「有」，但 ROI 崩了。
 
@@ -127,7 +127,7 @@ $$
 | **xHC** | 大 $N$ + 稀写密读 + MLP 时间增强 | DeepSeek 的注意力压缩（HCA/CSA） |
 | AttnRes | 用注意力在 **深度维** 聚合历史层 | 残差流条数 $N$ |
 
-xHC 论文还写：同样骨架换成 **Muon** 优化器，增益还在，不是 AdamW 专属补丁。优化器本体仍在 [第 6.5](../../../6-训练与推理优化/6.5-优化器/6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md)，这里只记「残差主干创新和优化器轴正交」。
+xHC 论文还写：同样骨架换成 **Muon** 优化器，增益还在，不是 AdamW 专属补丁。优化器本体仍在 [第 6.5](../../../../6-训练与推理优化/6.5-优化器/6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md)，这里只记「残差主干创新和优化器轴正交」。
 
 ## 6. 失效条件
 
@@ -139,9 +139,9 @@ xHC 论文还写：同样骨架换成 **Muon** 优化器，增益还在，不是
 
 ## 7. 知识库同步
 
-- HC 为何不稳、mHC 约束什么：[01](./01-Hyper-Connections与mHC.md)
-- 单流残差公式：[2.1.3](./2.1.3-残差连接.md)
-- 深度维注意力聚合（另一条残差相关轴）：[AttnRes](../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)
+- HC 为何不稳、mHC 约束什么：[01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)
+- 单流残差公式：[2.1.3](../2.1.3-残差连接.md)
+- 深度维注意力聚合（另一条残差相关轴）：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)
 - 代码入口（论文项目页）：https://github.com/aHapBean/xHC
 
 ## 本篇来源

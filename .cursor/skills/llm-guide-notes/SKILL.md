@@ -18,7 +18,7 @@ description: >-
 3. `content/llm-guide/notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
 5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
-6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层；同层约 ≤10；一夹一文同名；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
+6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层且必须是同名夹 `{NN}-foo/{NN}-foo.md`；**禁止** `{N.N.N}/01-foo.md` 夹根散文件；节首页 `{N.N.N}/{N.N.N}-….md` 合法并列；同层约 ≤10；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
 7. 需要搜论文时再读 [research.md](research.md)
 
 然后从 `PLAN.md`「下一步 3 件」继续。禁止每次从全库盘点重来。
@@ -105,6 +105,7 @@ description: >-
 - 不要 B 档 SKU 开空文件夹。
 - 不要两个子代理改同一文件。
 - 不要宣布 Goal 结束；0.8 是持续补知识点。
+- 过文 / 写专文前 `ls` 该 `{N.N.N}`：若看到 `01-foo.md` 与节首页并列，先 `git mv` 成 `01-foo/01-foo.md` 再改正文。禁止把散文件写成「已有专文夹」。金样本：`2.2.2/01-MHA-多头注意力的标准形式/`。反例：`2.1.1/01-SiTU-GLU.md`。
 
 ## 额外资源
 

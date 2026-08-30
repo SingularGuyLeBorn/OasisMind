@@ -20,7 +20,7 @@ tags: [Kimi-K2, MuonClip, MoE, Agentic, MLA]
 
 开源通用榜上砸参数边际很差。K2 把赌注改到 **Agentic**：工具生态、可验证 RL、合成轨迹。1.04T 总参 / 32.6B 激活。论文：SWE-bench Verified 65.8%、Tau2-Bench 66.1。
 
-R1 催内部推理；K2 把对外行动工程化。长文：[05-Kimi-K2-Architecture-Overview](./05-Kimi-K2-Architecture-Overview.md)。链 [4.4.1 GRPO](../../../4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO.md)、[13.4.1](../../../13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md)、[2.3.5 MLA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。
+R1 催内部推理；K2 把对外行动工程化。长文：[05-Kimi-K2-Architecture-Overview](./05-Kimi-K2-Architecture-Overview.md)。链 [4.4.1 GRPO](../../../4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)、[13.4.1](../../../13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md)、[2.3.5 MLA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。
 
 ---
 

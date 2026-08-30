@@ -12,7 +12,7 @@ DeepSeek-v1 已经是接近两年前的模型了,那时候 DeepSeek 团队就已
 
 DeepSeek MoE V1 的核心思想是在标准的 Transformer 架构中, 将前馈网络 (Feed-Forward Network, FFN) 部分替换为一个专家混合 (Mixture of Experts, MoE)层. 这个 MoE 层包含两种类型的专家: **共享专家 (Shared Experts)** 和 **路由专家 (Routed Experts)** .
 
-![](./01-DeepSeek-MoE-images/image_0.png)
+![](./images/image_0.png)
 
 图 1: DeepSeek MoE V1 架构示意图.
 
@@ -53,7 +53,7 @@ $P_i = \frac{1}{T} \sum_{t=1}^{T} s_{i,t}$
 
 V2 版本将模型规模大幅提升, 拥有 **2 个共享专家**和 **160 个路由专家**, 每次激活 **10 个**. 随着模型和专家数量的急剧增加, 训练的系统级挑战, 特别是设备间的通信开销, 变得至关重要. V2 的主要创新点在于优化路由策略以降低通信成本.
 
-![](./01-DeepSeek-MoE-images/image_1.png)
+![](./images/image_1.png)
 
 图 2: DeepSeek MoE V2 架构示意图.
 
@@ -87,7 +87,7 @@ $r_j = \frac{1}{T} \sum_{t=1}^{T} \sum_{i \in \text{Experts on Device } j} s_{i,
 
 V3 是目前规模最大的版本, 拥有 **1 个共享专家**和 **258 个路由专家**, 每次激活 **8 个**. V3 在路由算法和平衡策略上做了进一步的优化.
 
-![](./01-DeepSeek-MoE-images/image_2.png)
+![](./images/image_2.png)
 
 图 3: DeepSeek MoE V3 架构示意图.
 
@@ -128,11 +128,11 @@ V3 抛弃了 V1/V2 中的显式辅助损失函数, 转而采用一种无损失�
 
 DeepSeek V3 引入的 MLA (Multi-Head Latent Attention) 是一种创新的注意力机制, 其根本目标就是**压缩 KV 缓存**, 从而在不显著影响模型性能的前提下, 大幅减少推理时的内存占用.
 
-<!-- 2025 假 imgur 占位：https://i.imgur.com/your_image_mla.png ；本地快照仍保留 ./01-DeepSeek-MoE-images/image_4.png -->
+<!-- 2025 假 imgur 占位：https://i.imgur.com/your_image_mla.png ；本地快照仍保留 ./images/image_4.png -->
 
-![MLA：缓存低维 $c^{KV}$，再升维重建 K/V](./01-DeepSeek-MoE-images/fig-mla-latent-cache.png)
+![MLA：缓存低维 $c^{KV}$，再升维重建 K/V](./images/fig-mla-latent-cache.png)
 
-图 4: Multi-Head Latent Attention (MLA) 架构示意图. 本体推导在 [2.3.5 MLA](../../2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。2026-08 自绘。
+图 4: Multi-Head Latent Attention (MLA) 架构示意图. 本体推导在 [2.3.5 MLA](../../../2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。2026-08 自绘。
 
 MLA 的核心思想是**不直接缓存高维的 K 和 V 向量, 而是先将它们投影到一个共享的, 维度更低的 "潜空间" (latent space), 然后只缓存这个低维的 "潜激活向量" (latent activation)** . 在实际需要进行注意力计算时, 再从这个压缩后的潜向量中将 K 和 V "重建" 出来.
 
@@ -156,7 +156,7 @@ $k_t^c = W^{UK} c_t^{KV}$
 
 $v_t^c = W^{UV} c_t^{KV}$
 
-![](./01-DeepSeek-MoE-images/image_5.png)
+![](./images/image_5.png)
 
 - **变量解释**:
 
@@ -224,7 +224,7 @@ DeepSeek 的解决方案是: **保留 K 向量中的少数几个维度不参与�
 
 标准的自回归语言模型 (Autoregressive LLM) 在生成文本时效率较低, 因为它们必须逐个 token 生成: 计算出第 N 个 token 后, 才能将其作为输入来计算第 N+1 个 token. 这个过程是严格串行的, 限制了生成速度. MTP 的核心目标就是打破这一瓶颈, **通过训练一些小型的、轻量级的 "预测模块", 让模型具备一次性预测未来多个 token 的能力**, 从而在推理时实现加速.
 
-![](./01-DeepSeek-MoE-images/image_6.png)
+![](./images/image_6.png)
 
 图 5: 左侧为 DeepSeek v3 的 MTP 训练框架, 右侧为 EAGLE 论文中类似 MTP 的技术在推理时的应用 (speculative decoding).
 

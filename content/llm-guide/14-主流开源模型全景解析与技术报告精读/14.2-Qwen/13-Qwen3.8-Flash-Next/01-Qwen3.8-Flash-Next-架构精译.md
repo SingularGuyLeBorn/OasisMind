@@ -7,7 +7,7 @@ tags: [Qwen3.8-Flash-Next, QSA, Gated-Residual, Muon, MoE]
 
 # Qwen3.8-Flash-Next：把下一代积木提前开源
 
->  **[返回 14.2-Qwen](../14.2-Qwen.md)** · 前代目录：[Qwen3.7](../12-Qwen3.7/01-Qwen3.7技术报告精译.md) · 积木本体：[QSA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [GR](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md) · [KDA/GDN 对照](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA.md)
+>  **[返回 14.2-Qwen](../14.2-Qwen.md)** · 前代目录：[Qwen3.7](../12-Qwen3.7/01-Qwen3.7技术报告精译.md) · 积木本体：[QSA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [GR](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md) · [KDA/GDN 对照](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)
 
 权重 2026-08-26 开源。官方把它写成 **Qwen4 架构的早鸟预览**，角色类似当年 Qwen3-Next 之于 3.5。云上生产档 `qwen3.8-flash`（默认 1M、内置工具）是 **B 档 SKU**，不新开目录。
 

@@ -158,7 +158,7 @@ category: LLM 指南
 - 推导写全：符号先定义，从动机到公式一步步来；已经在上文推过的不要换个说法再推一遍，链回去。
 - 图文并茂：关键机制至少一张图或一张表，嵌在该节论证里，不要所有图堆文末。
 - 禁止先写 800 字「为什么重要 / 家谱定位」；直接进入问题。
-- 对齐样本：科学空间的行文节奏 + 本库 `2.1.4/.../01-RoPE本体-旋转位置编码.md`、`14.1/.../05-DeepSeek-V3-MLA.md`。
+- 对齐样本：科学空间的行文节奏 + 本库 `2.1.4/.../01-RoPE本体-旋转位置编码/01-RoPE本体-旋转位置编码.md`、`14.1/.../05-DeepSeek-V3-MLA.md`。
 
 交工时必须多一篇体系地图：
 
@@ -211,7 +211,7 @@ S 档精读之后，把新 trick 写进或链到第 2/3/4/6/9/13 章。第 1.3 �
 | 口述 | 可能的正式名 / 别名（都要搜） | 住哪 | 库里已知线索（须复核、补推导和图，不要当写完） |
 |------|-------------------------------|------|--------------------------------------------------|
 | **优化器** | AdamW；**Muon**；**MuonClip**；Newton–Schulz / **Polar Express**；SOAP；Shampoo；Lion；Adafactor；报告里的新优化器名 | 第 6.5 | 已有 Muon 几篇科普；K2 的 MuonClip；V4/Step 的 Muon×ZeRO。缺：和 AdamW 对照的完整推导、clip 家族、每个 2026 S 档报告用了哪个 |
-| **mHC / MHC** | **mHC** = Manifold-Constrained Hyper-Connections；也搜 `manifold-constrained hyper-connections`、DeepSeek 报告 | 第 2.1.3 残差，不是注意力 | 已有 `2.1.3/.../01-Hyper-Connections与mHC.md`、V4 Infra 文。按 0.4 补公式、稳定性事故、演进 |
+| **mHC / MHC** | **mHC** = Manifold-Constrained Hyper-Connections；也搜 `manifold-constrained hyper-connections`、DeepSeek 报告 | 第 2.1.3 残差，不是注意力 | 已有 `2.1.3/.../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md`、V4 Infra 文。按 0.4 补公式、稳定性事故、演进 |
 | **XHC** | 口述 **XHC / xHC**。同时搜：HC、Hyper-Connections、eXtended Hyper-Connections、报告章节标题里的 `xHC`/`XHC`。不要和 **HCA**（Hybrid Compressed Attention）混成一个东西 | 先读报告再归类：多半是残差/超连接，也可能是某家私有缩写 | 本库几乎没有以 XHC 为题的专文。搜不到官方串就标未核实，**不要删这个词** |
 | **HC** | Hyper-Connections（常见 arXiv `2409.19606`） | 第 2.1.3 | 与 mHC 同文；讲清 HC 为何不稳、mHC 约束什么 |
 | **ResidualAttention / Residual Attention** | **Attention Residuals**、**AttnRes**、residual attention mixing、depth-wise attention over residual stream；Kimi 线可搜 AttnRes | 第 2.2 注意力变体（深度维聚合），不要只当残差小补丁 | 已有 `2.2.2/.../Kimi-Attention-Residuals-深度维注意力聚合.md`（arxiv `2603.15031`）。要和 HC/mHC 边界写清，补图与推导 |
@@ -298,7 +298,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 
 不要写成灌水百科。对齐这些：
 
-- `2.1.4-位置编码/01-RoPE本体-旋转位置编码.md`
+- `2.1.4-位置编码/01-RoPE本体-旋转位置编码/01-RoPE本体-旋转位置编码.md`
 - `14.1-DeepSeek/05-DeepSeek-V3/05-DeepSeek-V3-MLA.md`
 - 精译里带「译者注」的段落
 

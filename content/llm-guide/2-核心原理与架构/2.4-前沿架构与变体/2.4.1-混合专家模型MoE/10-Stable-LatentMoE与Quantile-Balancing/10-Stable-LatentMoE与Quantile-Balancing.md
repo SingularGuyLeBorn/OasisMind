@@ -7,7 +7,7 @@ tags: [LatentMoE, Quantile-Balancing, SiTU-GLU, MoE, Kimi-K3]
 
 # Stable LatentMoE：专家不必吃满宽，负载也不靠 $\gamma$ 去拧
 
-> 邻居：[2.4.1 MoE 总览](./2.4.1-混合专家模型MoE.md) · [01 DeepSeek-MoE](./01-DeepSeek-MoE.md) · [SiTU-GLU](../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU.md) · 模型捆：[Kimi K3](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)
+> 邻居：[2.4.1 MoE 总览](../2.4.1-混合专家模型MoE.md) · [01 DeepSeek-MoE](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) · [SiTU-GLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) · 模型捆：[Kimi K3](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)
 
 Top-$k$ 变大、专家池变大，本意是让专家更专。常规 MoE 里每个被选中的专家仍吃完整的 $d$ 维 token，于是 **通信和专家权重流量跟 $k$ 一起涨**。NVIDIA 等的 LatentMoE（[arXiv:2601.18089](https://arxiv.org/abs/2601.18089)）把路由计算搬进 $\ell<d$ 的潜空间：通信和专家参数按 $d/\ell$ 变便宜，省下来的预算用来加专家数、加 $k$。Kimi K3 报告 §2.3 把这套接到 896 路由专家、每 token 16 个、稀疏度 56，并补了三块稳定性——这才叫 **Stable LatentMoE**。LatentMoE 不是 K3 发明的；K3 发明的是「这一规模上还能训」的三件套。
 
@@ -25,7 +25,7 @@ $$
 
 相对「原版 LatentMoE 直接 $\mathbf{W}^{\uparrow}\bm{u}$」：K3 在升维前加 **RMSNorm**。路由聚合的尺度随选中的专家和 $p_i$ 变，不归一化就会把共享支路打飞。报告写：这不只是稳住训练，验证 loss 和下游也一致变好。
 
-病态来源：$\mathbf{W}^{\downarrow}$ → 门控 FFN → $\mathbf{W}^{\uparrow}$ 几乎是四次连乘。激活函数从 SwiGLU 换成有界的 [SiTU-GLU](../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU.md)，是同一条事故链上的第二刀。
+病态来源：$\mathbf{W}^{\downarrow}$ → 门控 FFN → $\mathbf{W}^{\uparrow}$ 几乎是四次连乘。激活函数从 SwiGLU 换成有界的 [SiTU-GLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md)，是同一条事故链上的第二刀。
 
 ## 2. aux-loss-free 的 $\gamma$ 步长，在 896 专家上不够用
 
@@ -53,7 +53,7 @@ $$
 
 全 batch 的 margin 有数百万、跨 rank，不能 gather 做精确分位数。实践是 **每专家一份直方图**，all-reduce 桶计数，误差是桶宽。附录 C 把它连到最大权均衡分配 / 二分 $b$-matching；本篇不重推对偶。
 
-![不均衡 Top-k、分位数定 bias、均衡负载三步](./images/fig-quantile-balancing.png)
+![不均衡 Top-k、分位数定 bias、均衡负载三步](../images/fig-quantile-balancing.png)
 
 > 图 1：报告 Fig. 5 的示意重绘（$m=8,n=4,k=1$，目标 $q=2$）。左：普通 Top-$k$。中：按 margin 分位数拧 bias。右：每专家两人。不要把示意图里的 8 个点当成 K3 的真实 batch。
 

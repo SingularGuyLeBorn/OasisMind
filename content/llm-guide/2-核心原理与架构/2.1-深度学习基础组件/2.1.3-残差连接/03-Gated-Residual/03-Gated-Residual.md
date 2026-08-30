@@ -7,7 +7,7 @@ tags: [Gated-Residual, Hyper-Connections, mHC, Qwen3.8]
 
 # Gated Residual：单流残差被冲淡之后，把容量花在「怎么读」上
 
-> 邻居：[01-HC 与 mHC](./01-Hyper-Connections与mHC.md) · [02-xHC](./02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](./2.1.3-残差连接.md) · 不要和 [AttnRes](../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制 · 模型捆：[Qwen3.8-Flash-Next](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)
+> 邻居：[01-HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02-xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](../2.1.3-残差连接.md) · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制 · 模型捆：[Qwen3.8-Flash-Next](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)
 
 Pre-Norm Transformer 里每一层都从**同一条**残差流读、再写回去。层一深，早期写进去的特征要和后面所有写入抢位置，信号被冲淡。加宽残差流（多条并行分支）能给早期特征留专用通道；问题变成：加宽之后，读/写还要不要再套一套像 Hyper-Connections 那样的 $n_r\times n_r$ 混合矩阵。
 
@@ -25,7 +25,7 @@ $$
 
 ## 2. HC 的三个算子，GR 只留两个
 
-Hyper-Connections 把读/写/混合写成三个可预测算子（报告式 (23)–(28)）：$H_{\mathrm{mix}}$ 读、$H_{\mathrm{combine}}$ 写、$H_{\mathrm{res}}\in\mathbb{R}^{n_r\times n_r}$ 在分支之间交换。mHC 再把 $H_{\mathrm{res}}$ 卡在双随机流形上，细节见 [01 文](./01-Hyper-Connections与mHC.md)，这里不重推。
+Hyper-Connections 把读/写/混合写成三个可预测算子（报告式 (23)–(28)）：$H_{\mathrm{mix}}$ 读、$H_{\mathrm{combine}}$ 写、$H_{\mathrm{res}}\in\mathbb{R}^{n_r\times n_r}$ 在分支之间交换。mHC 再把 $H_{\mathrm{res}}$ 卡在双随机流形上，细节见 [01 文](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)，这里不重推。
 
 25B-A3B、560B token、同一套评测（报告 Table 5，$n_r=4$）：
 
@@ -71,7 +71,7 @@ s=2\sigma\bigl(\tfrac1{n_r} W_w\,\mathrm{vec}(\tilde R)\bigr)\in\mathbb{R}^{n_r}
 R'_i=R_i+s_i y. \tag{33--34}
 $$
 
-没有静态偏置项 $H^s_\star$：报告说当前配置下随机初始化就够。注意力子层和 MLP 子层各用一套 GR。残差状态可以 **FP8** 存，减访存。Muon 管 2D 线性层；GR 的低秩门、Embedding、Router 仍走 **AdamW**（报告优化器分工，见 [MuonClip 文](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)）。
+没有静态偏置项 $H^s_\star$：报告说当前配置下随机初始化就够。注意力子层和 MLP 子层各用一套 GR。残差状态可以 **FP8** 存，减访存。Muon 管 2D 线性层；GR 的低秩门、Embedding、Router 仍走 **AdamW**（报告优化器分工，见 [MuonClip 文](../../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)）。
 
 ```mermaid
 flowchart LR

@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 1234 过文（10 篇一代理，浅色图，成文）。batch 01/02 已派。不等上一波结束。
-2. **5+14 融合：** 先两章首页同一张地图；不今晚 `git mv` 586 个精读夹。飞书 `4. Common Models` 只对照覆盖面。
-3. **0.8：** 第 10/11/12 章已删。G-OPD / SCOPE 不升格。飞书导出走覆盖面，不抄正文。
+1. **立刻做：** 过文回收质检（路径以新夹为准）。S9 已收：`2.1.1` SiTU、`2.1.3`、`2.1.4`、`2.3.3` KDA、`2.4.1` 的 01–10、`4.4.1`/`4.4.2`。未收：`2.5`/`2.4` 节根 `01`、`2.3.1` 第五层、`2.2.2` 无号 AttnRes。不要把节首页收进第四层。不要收第 5 章扁平行。
+2. **1234 过文回收：** batch 01–10 已派；路径以新夹为准。质检成文 + 浅色图。第 4 章过文等路径收完再派。
+3. **5+14 融合：** 先两章首页同一张地图；不今晚 `git mv` 586 个精读夹。飞书只对照覆盖面，不抄正文。
 
 ## 波次队列（未完成的留着）
 
@@ -88,8 +88,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：成文口径（勘误折进正文）；S3 `2.3.4`、S4 `6.4.2` 已单轨。
-- 现在立刻做：结构 **S7**（`7.3` 链第 13 章）。不要 `move_agent_to_root`。不要 push。
+- 上一件：用户点名 `2.1.1/01-SiTU-GLU.md` 夹根散文件；已按金样本收成 `01-SiTU-GLU/01-SiTU-GLU.md`，并扫掉 1–4 章同类 `{N.N.N}/NN-*.md`。
+- 现在立刻做：1234 过文回收质检。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -119,3 +119,12 @@ category: LLM 指南
 | pass-1234-b01 | running | batch 01 十篇见 `notes/live/inbox/pass-1234-batch-01.md`（仅那些 md + 各文 images/） | 不改 live；不重画 146 张飞书截图 |
 | pass-1234-b02 | running | batch 02 十篇见 `notes/live/inbox/pass-1234-batch-02.md` | 不改 live；不与 b01 重叠 |
 | fuse-5-14 | running | `5-主流模型全解/5-主流模型全解.md`；`14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 只改两章首页；不 git mv 家族夹 |
+| pass-1234-b03 | running | batch 03 十篇见 `notes/live/inbox/pass-1234-batch-03.md` | 不改 live；不改 2.3.5 专文、不改 b02 的 2.2 节首页 |
+| pass-1234-b04 | running | batch 04 十篇见 `notes/live/inbox/pass-1234-batch-04.md` | 不改 live；不改 2.3.1 节首页（b03）、不改 2.3.5 |
+| pass-1234-b05 | running | batch 05 十篇见 `notes/live/inbox/pass-1234-batch-05.md` | 不改 live；不改 10–17、不改 2.3.1/2.3.5 |
+| pass-1234-b06 | running | batch 06 十篇见 `notes/live/inbox/pass-1234-batch-06.md` | 不改 live；不改 2.3.2 节首页与 01–09（b05）、不改 2.3.4/2.3.5 |
+| pass-1234-b07 | running | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 不改 live；不改 2.4.1 的 08–10、不改 2.4.2+、不改第 5 章图片文件 |
+| pass-1234-b08 | running | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | 不改 live；不改 2.4 节首页与 2.4.1 的 01–07（b07） |
+| pass-1234-b09 | running | batch 09 十篇见 `notes/live/inbox/pass-1234-batch-09.md` | 不改 live；不改 3.2.6+ / 3.3 / 3.4 |
+| pass-1234-b10 | running | batch 10 见 `notes/live/inbox/pass-1234-batch-10.md`（3.2.6–3.4 + 四份 stub） | 不改 live；不改 batch 09 路径 |
+| s9-fold-nnn | done | `{N.N.N}` 夹根散文件收同名夹：2.1 / 2.3.3 / 2.4.1 / 4.4.1 / 4.4.2 | 第 5 章扁平行、`2.3.1` 第五层、节根 `01` 未做 |

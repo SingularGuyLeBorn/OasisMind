@@ -7,7 +7,7 @@ tags: [Kimi-K3, KDA, AttnRes, LatentMoE, SiTU-GLU, Quantile-Balancing, MoonEP]
 
 # Kimi K3：不是再叠一层 MLA，是把三条信息流一起放大
 
-> **[返回 14.5-Kimi](../14.5-Kimi.md)** · 前代：[K2](../02-Kimi-K2/05-Kimi-K2-Architecture-Overview.md) · [K2.5](../03-Kimi-K2.5/05-Kimi-K2.5-Architecture-Overview.md) · [K2.6](../04-Kimi-K2.6/05-Kimi-K2.6-Architecture-Overview.md) · 积木：[KDA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA.md) · [AttnRes](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) · [Stable LatentMoE / QB](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing.md) · [SiTU-GLU](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)
+> **[返回 14.5-Kimi](../14.5-Kimi.md)** · 前代：[K2](../02-Kimi-K2/05-Kimi-K2-Architecture-Overview.md) · [K2.5](../03-Kimi-K2.5/05-Kimi-K2.5-Architecture-Overview.md) · [K2.6](../04-Kimi-K2.6/05-Kimi-K2.6-Architecture-Overview.md) · 积木：[KDA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [AttnRes](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) · [Stable LatentMoE / QB](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) · [SiTU-GLU](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)
 
 报告标题 *Kimi K3: Open Frontier Intelligence*（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)）。权重 [moonshotai/Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3)，仓库协议写 **Kimi K3 License**（不要写成 MIT）。官方把它叫「第一个开源的 3T 档」。本篇只拆这次发布捆了什么；公式本体在体系章。
 
@@ -95,7 +95,7 @@ K3 用论文里的 **Block Attention Residuals**：层划成块，块内求和�
 
 常规 MoE 每个被选中的专家都吃满 $d$ 维，通信和专家权重流量跟 Top-$k$ 一起涨。LatentMoE（[arXiv:2601.18089](https://arxiv.org/abs/2601.18089)）把路由专家丢进 $\ell$ 维；K3 取 $\ell=d/2=3584$。共享专家仍走满宽，$N_s=2$。
 
-这个宽度上的「先瘦再专家化」在 2.8T 上会炸：下行、门控 FFN、上行几乎是连续四次矩阵乘。Stable LatentMoE 的三件套——聚合后 RMSNorm、SiTU-GLU、Quantile Balancing——本体在 [10 文](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing.md)。
+这个宽度上的「先瘦再专家化」在 2.8T 上会炸：下行、门控 FFN、上行几乎是连续四次矩阵乘。Stable LatentMoE 的三件套——聚合后 RMSNorm、SiTU-GLU、Quantile Balancing——本体在 [10 文](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。
 
 ## 6. 视觉：MoonViT-V2 从头做 next-token
 

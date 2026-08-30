@@ -7,7 +7,7 @@ tags: [SiTU-GLU, SwiGLU, 激活函数, FFN, Kimi-K3]
 
 # SiTU-GLU：SwiGLU 在低精度里会爆，就把两条乘子都 cap 住
 
-> 邻居：[2.1.1 FFN 与激活](./2.1.1-前馈网络FFN与激活函数.md) · [Stable LatentMoE](../../2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing.md) · 模型捆：[Kimi K3 D2](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)
+> 邻居：[2.1.1 FFN 与激活](../2.1.1-前馈网络FFN与激活函数.md) · [Stable LatentMoE](../../../2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) · 模型捆：[Kimi K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)
 
 GLU 用 sigmoid 去乘一条线性；SwiGLU 把门换成 $\mathrm{Swish}(x)=x\sigma(x)$，正半轴近似线性、效果好，所以 Llama / Qwen / DeepSeek / K2 都用它当 FFN。Kimi K3 报告 §2.3.2 指出：SwiGLU **两条因子都无界**，低精度下两个大坐标一碰上就出 activation outlier。他们把光滑 cap 同时打在门的线性因子和 up 支路上，叫 **Sigmoid Tanh Unit GLU（SiTU-GLU）**。
 

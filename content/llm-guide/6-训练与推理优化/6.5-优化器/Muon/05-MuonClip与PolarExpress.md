@@ -172,7 +172,7 @@ MuonClip = Muon + 权重衰减 + RMS 对齐 + QK-Clip。少写任何一块，都
 - Newton–Schulz 逐步推导：[01](./01-Muon优化器专题.md)
 - SGD→AdamW 速览（2025 原文 + 修订指针）：[6.5.1](../6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md)
 - K2 报告里的 Algorithm 1 与 MLA 特例：第 14 章 K2，不在本篇展开 MoE
-- 残差主干 xHC 与 Muon 正交（xHC 论文的实验声明）：[02-xHC](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections.md)
+- 残差主干 xHC 与 Muon 正交（xHC 论文的实验声明）：[02-xHC](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)
 
 ## 本篇来源
 

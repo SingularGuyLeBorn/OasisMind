@@ -76,7 +76,7 @@ as_of: 2026-08-30
 
 ## 5. 2026-08-30 续：xHC + MuonClip/Polar Express + 导论 14 章
 
-- 新增 `2.1.3/02-xHC-Expanded-Hyper-Connections.md` + `fig-xhc-dense-read-sparse-write.png`。一手 arXiv:2607.14530。2.1.3 修订节改为链专文，不再写「尚未写成」。
+- 新增 `2.1.3/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md` + `fig-xhc-dense-read-sparse-write.png`。一手 arXiv:2607.14530。2.1.3 修订节改为链专文，不再写「尚未写成」。
 - 新增 `6.5/Muon/05-MuonClip与PolarExpress.md` + `fig-muonclip-polar-express.png`。Polar Express HTML（2505.16932）+ K2 mineru Algorithm 1（2507.20534）+ Step-3.5-Flash BF16→float16。第 5 章 Kimi 文勘误：QK-Clip 不是梯度裁剪。
 - 第 1 章 `1-导论与基础.md` / `index.md` 保留八章 ASCII，追加 14 章修订；`1.3` 追加 2025H2–2026-08 修订（S 档只点名、未 mkdir）。
 - 知识图谱：XHC / MuonClip / Polar Express 三行从缺/薄改为已有。

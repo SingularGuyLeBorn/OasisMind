@@ -90,10 +90,10 @@ PowerShell 无 `&&`，用 `;`。worktree 建好后把工作区切过去。不要
 - 写之前：WebSearch / WebFetch 原论文或本库 `pdfs/`、model card、官方 blog、会议页、中英文解析。URL 追加到 `content/llm-guide/notes/live/PROCESS.md` 来源表。没出现在台账里的规格不准写。
 - 找不到一手来源：写「未找到一手来源」+ `[OM-FREEPLAY]`，不要用记忆编。
 - 新文 `as_of: 2026-08-30`，文末「本篇来源」列表。
-- 图：Cursor GenerateImage，description 含 `white academic background, no watermark, no logo`。禁止保存网页/论文截图。数据表用 Markdown，数字来自官方数据表。
+- 图：Cursor GenerateImage，**必须浅色主题**（白底深字）。description 含 Skill 配图段整句 `LIGHT THEME ONLY: … white academic background, no watermark, no logo`。禁止深色底。禁止保存网页/论文截图。数据表用 Markdown，数字来自官方数据表。
 - 不要 commit。不要改 apps/。不要新 OCR 论文进 git。
 - 做完在 `PLAN.md` 把你负责的那一项打勾或改成进行中说明。
-- 文风对齐 `2.1.4/.../01-RoPE本体-旋转位置编码.md` 与 `14.1/.../05-DeepSeek-V3-MLA.md`：直接讲机制，不要 800 字「为什么重要」。
+- 文风对齐 `2.1.4/.../01-RoPE本体-旋转位置编码/01-RoPE本体-旋转位置编码.md` 与 `14.1/.../05-DeepSeek-V3-MLA.md`：直接讲机制，不要 800 字「为什么重要」。
 
 ### 父代理不要做
 
