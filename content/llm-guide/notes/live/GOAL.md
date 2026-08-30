@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：**2.4.1 机制主线 01–03/10 已入库**；**2.4.8 Engram** 已入库；**RSI 前世今生** 已入库。下一波 git mv 04–09 与 Gated 相关工作。
-- 当前波次：无 running 租约。下一件：04–09 `git mv`；`2.2.2/07` Gated 相关工作。
+- 状态：机制主线已入库。本波加厚 SnapKV/Quest/SiTU/mHC，并新建 `2.2.2/07`。
+- 当前波次：**snapkv-thicken / gated-07 / situ-thicken / mhc-thicken**（quest-thicken 已入库）
 - 当前正在写的文章路径：见 PLAN 租约
 - 本轮明确不做：在 2.4.1 里加厚 04–09 硬件/系统综述；售卖包装；不抢 Engram 的 `2.4.8`
 

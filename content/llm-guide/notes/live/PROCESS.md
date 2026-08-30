@@ -11,15 +11,17 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：无交卷待收。下一波 04–09 错位搬迁 + Gated 相关工作。
-- 正在写：无（本波机制/Engram/RSI 已入库）。
-- 卡住：04–09 仍在 2.4.1 错位箱，下一波 git mv 到 6.1 / 6.3 / 9.1。
-- 上次刷新记忆的时间：2026-08-30 回收 moe-01/10、Engram 2.4.8、RSI 前世今生。
+- 正在读：SnapKV 2404.14469；Quest 2406.10774；Gated 相关 FoT/Quantizable；SiTU K3 §2.3.2；mHC 2512.24880。
+- 正在写：snapkv-thicken / gated-07 / situ-thicken / mhc-thicken。
+- 卡住：04–09 错位箱暂不 git mv（本波与写文并行）。
+- 上次刷新记忆的时间：2026-08-30 派出加厚波 + Gated 07。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | 回收 quest-thicken：4082 汉字；Algorithm 1 增量 min/max；7.03×/2.23× 未对调；不驱逐 | https://arxiv.org/html/2406.10774 ；PMLR tang24l；hanlab 弃 2k | `2.3.2/13-Quest-查询感知稀疏/` |
+| 2026-08-30 | 派出 snapkv-thicken / quest-thicken / gated-07 / situ-thicken / mhc-thicken | 待其余回传 | 各 inbox |
 | 2026-08-30 | 回收 rsi-origin：Good 1965 / 种子 AI / Gödel machine / 2024–26 能力项；01 判定表 | DOI 10.1016/S0065-2458(08)60418-0；cs/0309048；GISAI Wayback；PF v2；Anthropic Institute | `content/rsi/0-导读/`；`01-RSI-术语辨析/` |
 | 2026-08-30 | 回收 Engram 2.4.8；补 2.4 首页行；Qwen 点名 Cheng 2026；51B 不进 6B；V4 未出厂 | 2601.07372；Qwen3.8 tech_report；阿里云博文 | `2.4.8-条件记忆与Engram/` |
 | 2026-08-30 | 回收 moe-10：$\ell\neq c^{KV}$；QB 分位数；896/16/2，$\ell=3584$ | K3 2607.24653 §2.3；LatentMoE 2601.18089 | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` |
