@@ -115,7 +115,7 @@ LeetCode 完成率对隐藏测试。循环优化的是「本地测试 + LLM 对�
 **读**：两类优化、式 (1)、$n$ 边最多 $n$ 次梯度调用、Table 1 的 0.26/0.31/0.36 与摘要 20% relative、GPQA 51→55 对上文档 53.6 diamond、MMLU 两子集、Table 3 的 91.9/79.8/81.1、36 条训练题加验证门、DSPy 拼上 82.1、问答损失无金标 / 提示优化有金标、L0 与薄 $H_t$、meta-TextGrad 是未来工作。  
 **不读**：把 TGD 听成改权重、用 20% 当绝对点、用 55 盖 51 说已经专家级、把 0.36 和 Reflexion 的 HumanEval 91.0 横加、把分子对接听成 RSI、说已经式 (2)。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的文本梯度派：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的文本梯度派：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

@@ -29,5 +29,6 @@ category: RSI
 | 13 | [CRITIC 工具交互批评](./13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) | 搜索/解释器/Perspective 验稿；ChatGPT QA F1 +7.7、数学 +7.0；无工具几乎不涨；L0 |
 | 14 | [TextGrad 文本梯度](./14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) | 批评当反传；GPQA 51→55，LeetCode-Hard 0.26→0.36；实例 L0，提示是薄 $H_t$；不改 $\theta$ |
 | 15 | [GEPA 遗传 Pareto 提示](./15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md) | 反思+Pareto 搜 $\pi$；Qwen3 均 +12.44，相对 GRPO HotpotQA +19；AppWorld 上 ACE 测到 46.4 |
+| 16 | [Promptbreeder 自我指涉提示进化](./16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md) | $M$ 进种群，$H$ 冻着；PaLM 2-L 零样本 GSM8K 83.9 对 OPRO 80.2；拓扑不改 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
