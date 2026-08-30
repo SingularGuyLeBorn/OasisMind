@@ -38,9 +38,12 @@ excerpt: "从 D3PM 的 Q_t 到 LLaDA 2.0 的 100B 改编。连续路线停在可
 | 2022 | Diffusion-LM | 连续 | 嵌入高斯 + 分类器引导 |
 | 2024 | SEDD | 离散 | score entropy；ICML 2024 |
 | 2024 | MDLM | 离散 | 吸收态 SUBS，NeurIPS 2024，arXiv:2406.07524 |
+| 2024.06 | RADD / MD4 | 离散 | 吸收态 ≅ 任意顺序 AR；$1/t$ |
+| 2024.07 | DFM | 离散流 | 路径 $p_t$；1.7B HumanEval 6.7% |
 | 2025.02 | LLaDA | 离散 | 8B 从头训，Table 1 对 LLaMA3 |
 | 2025.03 | BD3-LM | 块 | 块间 AR、块内扩散，ICLR 2025 Oral |
 | 2025.06 | Mercury | 离散 | Mini 1109 tok/s @ H100 |
+| 2025.06 | DiffuCoder | 离散 | 7B 代码；coupled-GRPO；EvalPlus 67.9 |
 | 2025.08 | Dream 7B | 离散 | 从 Qwen2.5 改编的开源 7B |
 | 2025.12 | LLaDA 2.0 | 块 | 16B / 100B MoE，AR→扩散 WSD |
 
@@ -144,6 +147,8 @@ LLaDA 8B 原文同时有从头训、同数据 ARM、采样消融、诗歌反向�
 - [BD3-LM (2025)](https://arxiv.org/abs/2503.09573)
 - [Dream 7B (2025)](https://arxiv.org/abs/2508.15487)
 - [Mercury (2025)](https://arxiv.org/abs/2506.17298)
+- [Gat et al., Discrete Flow Matching (2024)](https://arxiv.org/abs/2407.15595)
+- [Gong et al., DiffuCoder (2025)](https://arxiv.org/abs/2506.20639)
 
 ## 相关
 
@@ -152,3 +157,6 @@ LLaDA 8B 原文同时有从头训、同数据 ARM、采样消融、诗歌反向�
 - [LLaDA 专文](./llada-frontier.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [多模态扩散](./multimodal-dllm.md)
+- [任意顺序](../03-points/any-order.md)
+- [离散流匹配](../03-points/discrete-flow.md)
+- [代码向扩散](../03-points/code-dllm.md)

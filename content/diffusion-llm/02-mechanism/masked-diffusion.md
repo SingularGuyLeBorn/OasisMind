@@ -163,3 +163,5 @@ SFT 只掩回答，提示永远干净。多轮对话里历史消息全部算提�
 - [从图像扩散到离散 token](./from-image-diffusion.md)
 - [LLaDA 与前沿](../03-models/llada-frontier.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
+- [任意顺序](../03-points/any-order.md)
+- [离散流匹配](../03-points/discrete-flow.md)

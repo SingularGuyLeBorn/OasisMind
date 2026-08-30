@@ -194,3 +194,6 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [失效模式](../03-points/failure-modes.md)
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [多模态扩散](../03-models/multimodal-dllm.md)
+- [任意顺序](../03-points/any-order.md)
+- [代码向扩散](../03-points/code-dllm.md)
+- [离散流匹配](../03-points/discrete-flow.md)

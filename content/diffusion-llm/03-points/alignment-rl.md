@@ -75,7 +75,7 @@ SFT 单独做、GRPO 单独做，都不如先 SFT 再 GRPO。12 个设定里 d1 
 
 AR 的 $\log\pi(y\mid x)$ 一次前向、teacher forcing 就能精确到 token。扩散每次要对 $t$ 和掩码采样。VRPO 用预算和对偶把这件事做成「贵 8 倍但仍远小于预训练」。GRPO 用一步估计把这件事做成「有偏但能跑在线」。以后若有人把 ELBO 估进 PPO 的 KL 项，同一套降方差可以搬，1.5 文末已经把公式写出来了。
 
-原版 Instruct 没有 RL，所以「LLaDA 指令跟随接近 LLaMA3」那句话必须带后训练状态。1.5 补上偏好，GSM8K 可以到 83.3，HumanEval 到 52.4，仍低于 Qwen2.5 Instruct 主表上的代码分。d1 补上推理 RL，数独和 Countdown 跳得更明显，因为基座在这些约束满足任务上更空。想要的能力决定走 VRPO 还是 diffu-GRPO：一般偏好对走前者，可验证奖励走后者。两者都还没公开和「同数据 AR 做完 DPO/GRPO」的严格配对。缺这张表，就不能说扩散对齐已经打平同配方的自回归。本篇只把方差问题和两张主表钉住。
+原版 Instruct 没有 RL，所以「LLaDA 指令跟随接近 LLaMA3」那句话必须带后训练状态。1.5 补上偏好，GSM8K 可以到 83.3，HumanEval 到 52.4，仍低于 Qwen2.5 Instruct 主表上的代码分。d1 补上推理 RL，数独和 Countdown 跳得更明显，因为基座在这些约束满足任务上更空。想要的能力决定走 VRPO 还是 diffu-GRPO：一般偏好对走前者，可验证奖励走后者。代码测试用例是第三条可验证线，估法换成一对互补掩码，见[代码向扩散](./code-dllm.md)的 coupled-GRPO。两者都还没公开和「同数据 AR 做完 DPO/GRPO」的严格配对。缺这张表，就不能说扩散对齐已经打平同配方的自回归。本篇只把方差问题和两张主表钉住。
 
 PPO 在 AR 里还要估状态价值。GRPO 用组内相对奖励，省掉 critic，这是 d1 能在 8×A100 上跑起来的前提之一。即便如此，在线生成仍是瓶颈：每个梯度步要采一组完整回答，扩散每条回答还是多步去噪。他们把在线长度锁 256，不是因为 256 是最优思维链，是因为再长就训不起。VRPO 没有在线生成，吃的是离线偏好对，贵在每对要跑 $n$ 次 ELBO，不贵在和环境交互。离线偏好脏、在线奖励干净，两条路的数据假设不同。数学、代码、数独有对错，适合 d1；写作风格没有二元标签，适合 1.5。不要用 GSM8K 的 +4.7 去暗示 Arena-Hard 也能从 14 跳到 50。
 
@@ -129,3 +129,11 @@ VRPO 更新没有环境。抽一个偏好对，抽 $n$ 个时间步，共享掩�
 - Zhao, S. et al. d1: Scaling Reasoning in Diffusion Large Language Models via Reinforcement Learning. arXiv:2504.12216. Table 1. https://arxiv.org/abs/2504.12216
 - Shao, Z. et al. GRPO（DeepSeekMath）。diffu-GRPO 的 AR 对照。
 - Rafailov, R. et al. Direct Preference Optimization. VRPO 的损失形状来源。
+- [Gong et al., DiffuCoder](https://arxiv.org/abs/2506.20639) — 代码向上的 coupled-GRPO，一对互补掩码，不依赖半自回归。
+
+## 相关
+
+- [LLaDA 专文](../03-models/llada-frontier.md)
+- [代码向扩散](./code-dllm.md)
+- [失效模式](./failure-modes.md)
+- [采样与调度](../02-mechanism/sampling.md)

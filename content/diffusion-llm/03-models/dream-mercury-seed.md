@@ -14,7 +14,19 @@ excerpt: "开源 7B 的 Dream、商业吞吐的 Mercury、DeepMind 实验模型 
 
 LLaDA 把「8B 能不能打」钉在学术表上。产品与实验室另外几条线要回答的是：开源 7B 怎么从 AR 初始化；代码补全能不能到四位数 tokens/s；前沿实验室愿不愿意公开一张扩散对照表。四条工作不要合成「2025 年扩散已经全面超过 AR」。
 
-改编几何（移位、退火、WSD）见[从自回归改编](../03-points/ar-to-diffusion.md)。本篇只钉各家公开表和不能横比的吞吐。
+改编几何（移位、退火、WSD）见[从自回归改编](../03-points/ar-to-diffusion.md)。本篇只钉各家公开表和不能横比的吞吐。开源代码向检查点见[DiffuCoder](../03-points/code-dllm.md)，不要和下面四张交付物卡焊在一起。
+
+![](./images/fig-four-delivery-cards.png)
+
+> 图 1：四列交付物。开源质量表、H100 吞吐、实验室对照表、H20 吞吐，分母不同。
+
+**图 1 解析**
+
+- **Dream 7B**：开源权重加可核对质量表。吞吐不是卖点。
+- **Mercury**：第三方 H100 tokens/s。参数量未公开。
+- **Gemini Diffusion**：官方对照 Flash-Lite 的 demo 表。硬件未写。
+- **Seed Preview**：H20 上 2146 token/s，作者禁止和前两列横比。
+- 四列之间没有箭头相连：不能把左边的 HumanEval 焊到右边的 tok/s。
 
 ## 1. Dream 7B：开源权重里的改编样板
 
@@ -172,3 +184,4 @@ Dream Instruct 的 180 万对、3 个 epoch，是轻量后训练。基座会写�
 - [代表性年表](./representative-models.md)
 - [采样与调度](../02-mechanism/sampling.md)
 - [LLaDA 专文](./llada-frontier.md)
+- [代码向扩散](../03-points/code-dllm.md)

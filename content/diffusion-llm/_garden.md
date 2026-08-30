@@ -16,7 +16,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 |---|---|
 | 01 动机 | 自回归因式分解把什么写进了结构里，扩散换掉的是哪一步 |
 | 02 机制 | $Q_t$、吸收态、ELBO 为何长得像加权 MLM、采样时如何揭开 / remask |
-| 03 知识点 | 块扩散、AR 改编、缓存与并行解码、引导、对齐、失效模式 |
+| 03 知识点 | 块扩散、任意顺序、改编、缓存、引导、对齐、代码向、离散流、失效 |
 | 04 模型 | 从 D3PM 到 LLaDA 2.0 / Dream / Mercury 各自钉住哪件事；多模态三条接法 |
 | 05 对照 | 十个维度里哪些是机制必然，哪些只是 2026 年的工程现状 |
 
@@ -44,35 +44,44 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 6. [块扩散：AR 与扩散之间的旋钮](./03-points/block-diffusion.md)  
    BD3-LM；可变长与真 KV Cache；$B=1$ 仍不等于训好的 AR。
 
-7. [从自回归改编](./03-points/ar-to-diffusion.md)  
+7. [任意顺序：掩码扩散和自回归差在哪一种连乘](./03-points/any-order.md)  
+   $1/t$ 损失是对所有生成顺序求期望；左到右只是一种排列。RADD / MD4。
+
+8. [从自回归改编](./03-points/ar-to-diffusion.md)  
    DiffuLLaMA / Dream / LLaDA 2.0 / Fast-dLLM v2。
 
-8. [双向注意力与反转诅咒](./03-points/bidirectional-attention.md)  
+9. [双向注意力与反转诅咒](./03-points/bidirectional-attention.md)  
    Berglund 的 0% 反向；LLaDA 诗句表正向 48.8 / 反向 42.4，GPT-4o 为 82.7 / 34.3。
 
-9. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
-   Fast-dLLM DualCache、dKV-Cache、CAP。27.6× 的对照物是原版 LLaDA，不是 AR。
+10. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
+    Fast-dLLM DualCache、dKV-Cache、CAP。27.6× 的对照物是原版 LLaDA，不是 AR。
 
-10. [可控生成与引导](./03-points/controllable-generation.md)  
+11. [可控生成与引导](./03-points/controllable-generation.md)  
     Diffusion-LM 连续梯度；离散 D-CFG；8B 实际在用的掩码与定长。
 
-11. [对齐与强化学习](./03-points/alignment-rl.md)  
+12. [对齐与强化学习](./03-points/alignment-rl.md)  
     VRPO / LLaDA 1.5；d1 / diffu-GRPO。原版 Instruct 没有 RL。
 
-12. [失效模式](./03-points/failure-modes.md)  
+13. [代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO](./03-points/code-dllm.md)  
+    7B 代码专料约 130B；Table 1–2；互补掩码估对数概率。不要和 Nie 的 35.4 横减。
+
+14. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
+    DFM；吸收态 $1/t$ 是一条路径。1.7B HumanEval Pass@1 为 6.7%。
+
+15. [失效模式](./03-points/failure-modes.md)  
     定长与 EOS、并行搭配、PPL 不可比、近似缓存过期。
 
 🔴 **04 模型**
 
-13. [代表性扩散语言模型一览](./03-models/representative-models.md)
-14. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-15. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
-16. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
+16. [代表性扩散语言模型一览](./03-models/representative-models.md)
+17. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+18. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+19. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
 
 ⚖️ **05 对照**
 
-17. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
-   含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
+20. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+    含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
 
@@ -93,10 +102,12 @@ P(x) 怎么因式分解
                         │
                         ├─ 均匀跳转
                         ├─ 吸收态 [MASK]  ← 2024 后主流
-                        │       ├─ 训练：加权 MLM（MDLM / LLaDA）
-                        │       ├─ 采样：置信度揭开 / remask
+                        │       ├─ 训练：加权 MLM（MDLM / LLaDA）= 对任意顺序求期望
+                        │       ├─ 采样：置信度揭开 / remask（在挑排列）
                         │       ├─ 变体：块扩散（块间 AR，块内扩散）
+                        │       ├─ 代码向：DiffuCoder + coupled-GRPO
                         │       └─ 多模态：视觉塔+投影 / 图也离散化
+                        ├─ 离散流匹配 DFM：先定路径 p_t，吸收态是其中一条
                         └─ score entropy（SEDD）等非掩码目标
 ```
 

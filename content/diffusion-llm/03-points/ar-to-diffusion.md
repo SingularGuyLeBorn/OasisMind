@@ -129,3 +129,4 @@ v2 把预算收到约 1B，靠的是块扩散加互补掩码，不是靠发现�
 - [块扩散](./block-diffusion.md)
 - [Dream / Mercury / Seed](../03-models/dream-mercury-seed.md)
 - [LLaDA 专文](../03-models/llada-frontier.md)
+- [代码向扩散](./code-dllm.md)

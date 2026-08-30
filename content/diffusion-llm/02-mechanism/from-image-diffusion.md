@@ -143,7 +143,7 @@ $$
 | U-Net | Transformer（通常双向） | 必须上卷积 |
 | FID | 下游任务 + 生成 PPL（小心） | 和 AR 的 PPL 直接减 |
 
-本篇刻意不讲 VP / VE 日程、不讲 flow matching、不讲 consistency model。那些是连续生成模型的加速与改写，对理解「token 上乘 $Q_t$」没有前置依赖。若以后读到「扩散 LLM 用了 flow」，先问它还在不在离散吸收态里；很多标题里的 flow 其实是把连续概率流的采样器借来，骨干仍是掩码 Transformer。
+本篇刻意不讲 VP / VE 日程、不讲 consistency model。连续 Flow Matching 的 ODE 少步，对理解「token 上乘 $Q_t$」没有前置依赖。离散词表上另有一条路径族，叫 Discrete Flow Matching：先定 $p_t$ 再学速度，吸收态 $1/t$ 是其中一条。见[离散流匹配](../03-points/discrete-flow.md)。若标题里的 flow 仍停在吸收态掩码 Transformer 上，只是采样器换了说法，回本篇和[掩码扩散](./masked-diffusion.md)即可。
 
 和 llm-guide 第 2 章的衔接只有一层：注意力骨干可以共用，生成过程不共用。MHA、GQA、RoPE 仍按那边的公式理解。换掉的是「损失对哪些位置求和」和「推理循环怎样走时间」，不是 $QK^\top$ 本身。LLaDA 用双向 mask，所以 KV Cache 那一套默认失效，直到块扩散把块间因果性找回来。
 
@@ -181,3 +181,4 @@ ELBO 换算的困惑度还有一层评测陷阱。AR 的 PPL 用 teacher forcing
 - [为什么用扩散做语言生成](../01-overview/why-diffusion.md)
 - [离散扩散：转移矩阵在干什么](./discrete-diffusion.md)
 - [掩码扩散](./masked-diffusion.md)
+- [离散流匹配](../03-points/discrete-flow.md)
