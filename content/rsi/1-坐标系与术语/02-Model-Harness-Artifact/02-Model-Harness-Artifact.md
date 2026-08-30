@@ -37,7 +37,7 @@ tags:
 **图 1 解析**
 
 - **底层 Model（蓝）**：SPIN、Self-Rewarding、STaR、[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 都写在这里。改的是 $p_\theta$。SEAL 的内环还是一次测试时 LoRA。
-- **中层 Harness（青）**：循环、工具、记忆、技能。Argus 的 verification-gated runtime、产品里自动写 `SKILL.md`，都落在这里。
+- **中层 Harness（青）**：循环、工具、记忆、技能。Argus 的 verification-gated runtime、[STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md) 的改进器自指、DGM 的档案，都落在这里。
 - **顶层 Artifact（金）**：kernel、论文、策略。AlphaEvolve 的交卷物在这里。
 - **左侧括号 Agent = Model + Harness**：这是 2026 编码榜看不懂「只报模型名」的原因——分数是两者的乘积。
 - **右侧「produces」**：Agent 产出 Artifact。不要把产出物回流误认成 Agent 自改；回流要单独论证（是否写入 Harness 或权重）。
@@ -85,7 +85,7 @@ Analemma AI 的 FARS：lsl.zone 转述为连跑 417 小时、产出 166 篇全 A
 
 操作测试（写进实验记录里就能用）：改完之后，**换一道从未见过的独立任务**，Agent 是否仍然带着那次修改？否 → Artifact 或 L0。是，但权重没动、只是 prompt/技能/记忆/路由变了 → Harness。权重动了 → Model。下一轮「谁来提议修改」是否已经换成改进后的程序 → 才问 L3。
 
-弱 RSI 候选：新技能被用来写下一版技能，循环闭合在 Harness 上。仍然通常**不改基座权重**。本花园允许称之为「Harness 层自改进 / 弱 RSI」，不允许直接升级成「真 RSI」。真 RSI 还要求改进器或准则也被改，且证据在更新边界之外。
+弱 RSI 候选：新技能被用来写下一版技能，循环闭合在 Harness 上。STOP 把「改进器程序」自己交给同一套手续，是更干净的结构样本，机制见专文。仍然通常**不改基座权重**。本花园允许称之为「Harness 层自改进 / 弱 RSI」，不允许直接升级成「真 RSI」。真 RSI 还要求改进器或准则也被改，且证据在更新边界之外。
 
 多 Agent 路由是 Harness 的扩展，不是第四层。lsl.zone 的讲法是：技能和记忆堆在单 Agent 里会语义打架（「squeeze」究竟是市场还是橙子），于是出现专家 Agent + 路由器。路由器本身若被自动改写且跨任务保持，仍是 L2；若「如何改路由器」也被改，才碰 L3。本篇不把多 Agent 写成新坐标系。
 
@@ -143,7 +143,7 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 | 层 | 改什么 | 本篇例子 | 默认是不是 RSI |
 |----|--------|----------|----------------|
 | Artifact | 产出物 | AlphaEvolve 的 kernel / 48 次复数矩阵乘 | 否 |
-| Harness | 下次还用的脚手架 | 技能包；Argus 门控写入 | 弱候选 |
+| Harness | 下次还用的脚手架 | [STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md)；DGM；Argus 门控 | 弱候选 |
 | Model | 权重 | [SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)；[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) | 训练式自改进，不是递归 |
 
 下一篇机制：[SPIN 自对弈微调](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)。安全：[可靠性与独立监督](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。

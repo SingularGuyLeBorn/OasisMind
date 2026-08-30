@@ -131,7 +131,7 @@ $S$ 取「当前 Agent 的 Python + 工具」。内环 $I_{\mathrm{inner}}\subse
 **读**：内环改的是自己的 Python，$h$ 是哪份基准，外环公式有没有进 $S'$，沙箱有没有把分数通道也关住。  
 **不读**：融资通稿当机制、把 20%→50% 听成权重递归、把附录幻觉实验听成已经对齐。
 
-下一篇若问验证门谁说了算，看 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。若问产物层算法发现，回 [03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。STOP / Gödel Agent / ADAS 若以后单开专文，链回本节，不在第 5 章融资稿里展开。
+STOP / Gödel Agent / ADAS 的对照见 [05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)；验证门谁说了算看 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层回 [03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。
 
 ## 参考文献
 
