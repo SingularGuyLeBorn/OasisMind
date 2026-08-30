@@ -28,7 +28,7 @@ Minecraft 里一只 Agent 自己造木镐、挖铁、偶尔摸到钻石，技能
 
 $S$ 取「当前这次部署」：冻结的 GPT-4 / GPT-3.5、Mineflayer 原语、课程与验证提示、外加一份会涨的 `skills.json`。$I$ 是那套提示加 API。单轮 $S'=I(S)$ 显然发生——库里多了一个函数。式 (2) 还要 $I'\subseteq S'$。下一轮出题的仍是同一份课程提示，改代码的仍是同一只 `gpt-4-0314`。技能库是 $H_t$，不是改进器。
 
-和邻居先划线。Reflexion 把自然语言反思留下，不提交可执行函数。AutoGPT 拆子目标，论文重实现里没有技能库、没有自验证、没有开放课程。Argus 把技能、路由、合约全部过门，门在独立审计。Voyager 的门是 GPT-4 看当前背包是否像「任务完成」。DreamerV3 学世界模型去收钻石，那是 Model 层，本篇不混。
+和邻居先划线。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 把自然语言反思留下，不提交可执行函数。AutoGPT 拆子目标，论文重实现里没有技能库、没有自验证、没有开放课程。Argus 把技能、路由、合约全部过门，门在独立审计。Voyager 的门是 GPT-4 看当前背包是否像「任务完成」。DreamerV3 学世界模型去收钻石，那是 Model 层，本篇不混。
 
 ![课程出题，检索技能，GPT-4 写代码，Mineflayer 执行，自验证通过才入库](./images/fig-voyager-loop.png)
 
