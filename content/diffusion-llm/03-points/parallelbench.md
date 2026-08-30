@@ -15,7 +15,7 @@ excerpt: "一步里同时揭开的格子被写成条件独立。理想模型的 
 
 采样专文把并行诅咒写成：一步提交两个位置，它们在给定 $x_t$ 时被当成条件独立。失效模式专文把括号不配、标识符对不上列进清单。Kang、Galim、Oh 等人的 ParallelBench（ICLR 2026，arXiv:2510.04767）把这句话收成可算的下界，再做成 17 个对人和自回归都简单、对并行扩散却可以崩掉的任务。仓库在 [furiosa-ai/ParallelBench](https://github.com/furiosa-ai/ParallelBench)。
 
-D2F、Fast-dLLM、APD 的主表几乎都在 GSM8K / HumanEval / MBPP 上报「并行了还不掉分」。本篇的判断是：那些任务的条件总相关不够大，测不出因式分解误差。Shuffle 和 W2S-hard 在谱的右边。读加速论文之前，先问评测落在这条轴的哪一段。
+D2F、Fast-dLLM、APD 的主表几乎都在 GSM8K / HumanEval / MBPP 上报「并行了还不掉分」。本篇的判断是：那些任务的条件总相关不够大，测不出因式分解误差。Shuffle 和 W2S-hard 在谱的右边。读加速论文之前，先问评测落在这条轴的哪一段。[五条性质](./discreteness.md) 把同一条缝写成 L2 / 边际陷阱，没有重测本篇的 $\mathcal{C}$ 数字。
 
 ## 1. 一步因子分解，KL 下界就是 $\mathcal{C}$
 

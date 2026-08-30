@@ -91,6 +91,8 @@ Dream Table 1 另有一套 $*$：Dream 7B 对 Qwen2.5 7B，MMLU 69.5 对 71.9，
 
 图像里的 classifier guidance 依赖连续轨迹上的梯度。Diffusion-LM 把 token 映到嵌入，才能原样搬梯度；80M 上 Syntax Tree 86.0 对 PPLM 的 17.9。离散 8B 更常用掩码、定长和 CFG 的对数概率加权。8B 语言 CFG 的完整 γ 扫描表，未找到与 Table 2 同口径的公开细表。细节见[可控生成](../03-points/controllable-generation.md)。
 
+第三条是训练免费的粒子转向。[嵌套 SMC](../03-points/nested-smc.md) 在 MDLM（12 层 768、$T=50$）上对照 best-of-$n$ 与 bootstrap SMC。Table 1（$N=4,M=8,K=4,\lambda=10$）：基础毒性率 0.003，best-of-$n$ 0.022，bootstrap 0.25，NSMC 0.39，FA-NSMC 0.40。毒性列是稀有事件探针，不是 8B 安全评测。Uehara 教程里漏分母的权重极限下仍偏。Dream-7B / LLaDA 上的表这篇没有。
+
 AR 侧改行为靠提示、logit 后处理、RLHF。扩散侧对应 VRPO 与 diffu-GRPO，见[对齐](../03-points/alignment-rl.md)。能写成掩码的约束，不必上分类器。
 
 ## 6. 反转诅咒
@@ -111,7 +113,7 @@ Berglund：虚构名人正向 96.7%，反向约 0%。LLaDA 诗句表：LLaDA Ins
 
 ## 8. 幻觉、一致、事实
 
-并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、可算乘积层（CoDD，冻 8B）、允许再掩。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
+并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。[五条性质](../03-points/discreteness.md) 把同一条缝写成 L2：训练是按格交叉熵，乘积可以抽出「I likes tennis」。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、可算乘积层（CoDD，冻 8B）、允许再掩。CART 改的是 Dream 训练损失对近明文格的权重，7B 没有「只关 CART」消融，Sudoku 81.0 不能单记在这一项。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
 
 ## 9. 基础设施
 
@@ -212,3 +214,5 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [ParallelBench](../03-points/parallelbench.md)
 - [少步蒸馏](../03-points/few-step-distill.md)
 - [Score entropy](../03-points/score-entropy.md)
+- [五条性质](../03-points/discreteness.md)
+- [嵌套 SMC](../03-points/nested-smc.md)
