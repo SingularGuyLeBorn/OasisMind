@@ -143,7 +143,7 @@ MASE 愿景段写科学发现、软件工程、人机协作、机器人与 IoT�
 **读**：定义与三条律；式 (1) 和 \(P=(S,H)\) 在墙外；任务级 vs 实例级输入；单 Agent 四格与多 Agent 代码/图拓扑；OPTIMA 的 2.8× / <10% 是引用不是本园复现；评价既当门禁又当训练信号。  
 **不读**：把 MASE 听成已实现 RSI、把四件套听成替代三层、把 LLM 裁判听成墙外证据、把 Table 1 最后一行听成 AlphaEvolve 已经在改改进器、把 EvoAgentX 听成优化器进了 \(S'\)。
 
-同层：[01 术语](../01-RSI-术语辨析/01-RSI-术语辨析.md)、[02 三层](../02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)、[04 RLVR](../04-模仿学习与RLVR/04-模仿学习与RLVR.md)。评测：[RSIBench](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md)、[可靠性阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。Harness 样板：[ADAS](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)。
+同层：[01 术语](../01-RSI-术语辨析/01-RSI-术语辨析.md)、[02 三层](../02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)、[04 RLVR](../04-模仿学习与RLVR/04-模仿学习与RLVR.md)。评测：[RSIBench](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md)、[可靠性阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)、[SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。Harness 样板：[ADAS](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)。
 
 ## 参考文献
 

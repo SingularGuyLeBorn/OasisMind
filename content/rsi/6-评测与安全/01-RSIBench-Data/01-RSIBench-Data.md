@@ -135,7 +135,7 @@ Table 2 是官方分 + 耗时 + Tinker 成本。基座行是未适配的 Qwen3.5
 **读**：式 (1)；14/24 与 18/23；GPQA 可以掉到基座下；没有全能冠军；16 小时 / 500 美元；AIME 中位 +25.42；Kimi 试探 8%→21% 仍低于 33%。  
 **不读**：把 58.33% 听成已经会做 RSI、把历史最好选择听成过程可靠、把 SWE-bench Pro 9% 听成编码智能爆炸、把 kimi 实验听成主矩阵结果。
 
-同章机制：[02 可靠性阶梯](../02-可靠性与独立监督/02-可靠性与独立监督.md)。Model 层数据信号：[Self-Rewarding 家族](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md)。Harness 门：[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。数字只认 arXiv:2607.25886 的 14/24、18/23 与 Table 2，不认二手「Agent 已能自主做后训练」的缩写。
+同章机制：[02 可靠性阶梯](../02-可靠性与独立监督/02-可靠性与独立监督.md)；[03 SEAGym](../03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md) 冻 $M$ 只改 $H$，问验证增益会不会迁到留出集。Model 层数据信号：[Self-Rewarding 家族](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md)。Harness 门：[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。数字只认 arXiv:2607.25886 的 14/24、18/23 与 Table 2，不认二手「Agent 已能自主做后训练」的缩写。
 
 ## 参考文献
 

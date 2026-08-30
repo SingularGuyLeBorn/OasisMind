@@ -128,7 +128,7 @@ $S$ 若取「当前领域技能目录」，$v_{r+1}$ 确实来自 $v_r$ 的补�
 
 缺的刚好是导读式 (2) 的改进器身份。元技能——真正的 $I$——实验里不改自己。作者原句：它让 Agent 写另一份技能，而不是修改自己。$\theta$ 冻结。$T_{\mathrm{val}}$、Harbor 协议、九条审计、$\mathrm{Patch}$ 怎么写，都在墙外。混元台阶上最多蹭到「脚手架经验变成下次还能加载的文件」，到不了改进器递归，更到不了改考纲。
 
-和邻居再钉一次。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 的门在运行时状态；$I$ 是四角色合约，也不进 $S'$。[DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 改自己的 Python，内环改进器在 $S$ 里，才是弱 RSI 候选。[ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 元 Agent 冻死，搜下游 `forward`。SkillEvolver 更像「冻元技能 + 搜领域 SKILL.md」，结构近 ADAS，交货物近 Argus 的技能文件，递归深度浅于 DGM。自进化评测环境 SEAGym（arXiv:2606.17546）问的是另一件事：harness 改完以后留出集、回放、成本会不会一起坏；机制数字不在本篇，线索在 [第 5 章 06](../../5-实验室与公司/06-实验室动态/06-实验室动态.md)。
+和邻居再钉一次。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 的门在运行时状态；$I$ 是四角色合约，也不进 $S'$。[DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 改自己的 Python，内环改进器在 $S$ 里，才是弱 RSI 候选。[ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 元 Agent 冻死，搜下游 `forward`。SkillEvolver 更像「冻元技能 + 搜领域 SKILL.md」，结构近 ADAS，交货物近 Argus 的技能文件，递归深度浅于 DGM。自进化评测环境 SEAGym（arXiv:2606.17546）问的是另一件事：harness 改完以后留出集、回放、成本会不会一起坏；机制数字见 [第 6 章 03](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。
 
 ![上排领域技能 $v_r$ 在补丁；下排元技能、$\theta$、审计条款与 $T_{\mathrm{val}}$ 仍在墙外](./images/fig-skillevolver-not-rsi.png)
 
