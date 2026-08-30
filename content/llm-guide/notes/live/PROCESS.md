@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：S1 撞号夹（4.1 概述、ScaleRL、8.2 CLIP）。OPD 波 01–04 / 09 / 10 已入库。
-- 正在写：无专文。下一步 S1 `git mv`。
+- 正在读：S1 余量（4.4.1 同号、Muon、冒号路径）。
+- 正在写：无专文。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 03-SDFT
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 S1a git mv
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | S1a `git mv`：概述→4.0、ScaleRL→4.8、CLIP→8.8；改地图链接 | 磁盘 ls | `4.0-后训练概述/`、`4.8-ScaleRL-…/`、`8.8-CLIP与视觉编码器/` |
 | 2026-08-30 | 回收 03-SDFT 勘误；70.6/65.4 钉 Table 5 单任务 Tool Use；理论 Reverse / 实践 Forward KL | https://arxiv.org/abs/2601.19897 · https://arxiv.org/html/2601.19897 · https://github.com/idanshen/Self-Distillation | `4.6-OPD/03-SDFT-自蒸馏持续学习/` |
 | 2026-08-30 | 吸收理想结构：C/A/D；S0b 改第 4、13 章地图；4.6 一行改成 On-Policy Distillation；13 的 H1 跟路径；`index.md` 停用当首页 | 磁盘 `ls` 第 13 章；用户结构方案 | `notes/chapter-structure-plan.md`、`4-后训练.md`、`13-Agent.md`、`4.6-OPD.md` |
 | 2026-08-30 | 建 worktree `feat/llm-guide-2026-08-notes` | git HEAD 5d1c25de | 仓库根外 `OasisMind-llmguide-2026-08` |
