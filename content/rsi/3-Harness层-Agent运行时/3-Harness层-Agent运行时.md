@@ -32,5 +32,6 @@ category: RSI
 | 16 | [Promptbreeder 自我指涉提示进化](./16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md) | $M$ 进种群，$H$ 冻着；PaLM 2-L 零样本 GSM8K 83.9 对 OPRO 80.2；拓扑不改 |
 | 17 | [OPRO 元提示优化](./17-OPRO-元提示优化/17-OPRO-元提示优化.md) | 轨迹进元提示，配方冻着；PaLM 2-L 评分 GSM8K 80.2 对 Kojima 71.8；不是 ADAS 的 30.6 |
 | 18 | [EvoPrompt 进化算子提示](./18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md) | GA/DE 说明书冻着；Alpaca 理解 DE 均 77.05；BBH DE 均 +3.5 最多 +25；不是式 (2) |
+| 19 | [APE 自动提示工程师](./19-APE-自动提示工程师/19-APE-自动提示工程师.md) | 指令当程序黑盒搜；24/24 不低于人手写，IQM 0.810；迭代三轮平，默认关掉；不是式 (2) |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

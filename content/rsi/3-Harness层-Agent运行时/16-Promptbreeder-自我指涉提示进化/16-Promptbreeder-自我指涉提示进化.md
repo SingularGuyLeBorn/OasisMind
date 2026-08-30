@@ -111,7 +111,7 @@ EDA 故意不给适应度数字。GEPA / OPRO 把分数写进优化器上下文�
 **读**：单位 $(P,M)$、式 $P'=\mathrm{LLM}(M+P)$ 与 $M'=\mathrm{LLM}(H+M)$、$H$ 冻着、种群 50 / 20–30 代 / 批 100、Table 1 的 PaLM 行、GSM8K 83.9 对 OPRO 80.2、少样本 83.5、ETHOS 80→89、含糊 $D$ 的 81.6 / 64.6、Table 8 零阶超变异 42% 对拉马克 6.3%、星号切分、拓扑固定。  
 **不读**：把标题听成式 (2)、用 davinci 括号行给 PaLM 造差、用 ADAS 表的 OPRO 30.6 替换 80.2、用 99.7 当官方 MultiArith、用 GSM8K 上拉马克 6.3% 说这条算子没用、说已经在改提示算法。
 
-同层：[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
