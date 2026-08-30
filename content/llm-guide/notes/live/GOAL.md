@@ -27,10 +27,10 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：`P0-B` 尾巴已落盘；**0.8 本轮：H2O（2306.14048）专文已写**；上一件 StreamingLLM / MEA 已交
-- 当前波次：**0.8 持续**（第 5 章转载不要优先；Connest5 留条）
-- 当前正在写的文章路径：PLAN 第 1 件 = 0.8 持续（不要从全库盘点重来；一篇交完立刻下一薄项）
-- 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、git commit、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
+- 状态：H2O 已交；**S0 第 2/5/6 章首页已交**。本波仍在租：SnapKV 12、Quest 13、S0 章 8/14
+- 当前波次：**0.8 持续**（SnapKV/Quest）+ S0 收尾（8/14）
+- 当前正在写的文章路径：`2.3.2/12-SnapKV-生成前观测窗` · `2.3.2/13-Quest-查询感知稀疏`
+- 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 
 ## 防漂移口令
 

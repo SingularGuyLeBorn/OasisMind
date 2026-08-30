@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：H2O 已交。Connest5 仍无官方模型串。下一刀 0.8 持续（SnapKV 或 Quest）。
-- 正在写：本会话已交 **H2O 2306.14048**（`2.3.2/11-H2O-Heavy-Hitter-Oracle`；不是 FA / StreamingLLM / 对未来求和）
+- 正在读：本波子代理精读 SnapKV [2404.14469](https://arxiv.org/html/2404.14469v2) · Quest [2406.10774](https://arxiv.org/abs/2406.10774)。Connest5 仍无官方模型串。
+- 正在写：SnapKV `12` · Quest `13` 仍在租。S0 章 5 已质检；8 磁盘已有待官方回收；14 仍在租。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 交完 H2O
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 S0 第 5 章
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -105,6 +105,7 @@ category: LLM 指南
 | 2026-08-30 | MEA 专文：lazy softmax + running max；$O(1)/O(\log n)/O(\sqrt{n})$；Table 2–3；不是 FA/BPT/Ring | arxiv HTML 2112.05682 摘要+§1–7+Table 2–3+Figure 1 代码；FA ar5iv 2205.14135 Appendix B.5；google-research README | `2.3.1/00-MEA`；`2.3.4` §3.0；`2.3.1` 索引；`01-FA`/`02-FA-v1`；`6.1.1`；Llama-1 §4.3；知识图谱 |
 | 2026-08-30 | StreamingLLM 专文：式 (1) sink；4+窗；cache 内赋位；Table 1–6；22.2×；4M；不是 FA/H2O/标量 $z'$ | arxiv HTML 2309.17453；OpenReview NG7sS51zVF；github mit-han-lab/streaming-llm；Miller SoftMax1；gpt-oss model card PDF；V4 mineru 式 (27)；Gu 2410.10781；Barbero 2504.02732 Table 1；Star Attention 2411.17116 Table 2；hanlab blog | `2.3.2/10-StreamingLLM`；`2.3.2` 索引；综述 §5.1；`07-CSA-HCA`；`2.3.4` §4.1；`2.3` 演进表；知识图谱；`6.3.1.2` §7.2 |
 | 2026-08-30 | H2O 专文：Algorithm 1 local $F_{\mathrm{score}}$；20% 对半分；Table 1–7、9；29× / 3× / 1.9×；4M 叠 StreamLLM；不是 FA/4+窗/未来求和 | arxiv HTML 2306.14048；abs 2306.14048；NeurIPS 2023 hash 6ceefa7b…；github FMInference/H2O；NVIDIA EAI KV 压缩博文 | `2.3.2/11-H2O`；`2.3.2` 索引 §0/§9；综述 §5.2；`6.4.2` §4.3.1–4.3.2；`6.4` NeurIPS 年；`2.3.4`；`2.3` 演进表；知识图谱；`10-StreamingLLM` 图 5 |
+| 2026-08-30 | S0 第 5 章首页地图：厂商叙事 vs 第 14 章 D2；根级 `01-型号` 停新建；示例链 Claude-1/GPT-1/Gemini-1.0/Claude-2 | 库内路径确认（14.1/14.2/14.5/14.13；2.3.5；6.4） | `5-主流模型全解.md` §0 |
 
 
 
