@@ -36,16 +36,20 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 4. [掩码扩散：加权 MLM 为什么能当生成模型](./02-mechanism/masked-diffusion.md)  
    吸收态 + $1/t$ 交叉熵；和 BERT 差在日程；SFT 只掩回答。含 MaskedDiffusion 动画。
 
-计划专文（尚未落盘，不链空壳）：采样与调度。
+5. [采样与调度：揭开、重掩、步数](./02-mechanism/sampling.md)  
+   低置信 remask、纯扩散 / AR / 块三种解码器；步数与并行诅咒。
 
 🟠 **03 知识点**（机制之后仍容易混的几刀）
 
-计划专文：双向注意力与反转诅咒；块扩散；AR→扩散改编；推理加速；可控生成；对齐与 RL；失效模式。
+6. [块扩散：AR 与扩散之间的旋钮](./03-points/block-diffusion.md)  
+   BD3-LM；可变长与真 KV Cache；$B=1$ 仍不等于训好的 AR。
+
+计划专文：双向注意力与反转诅咒；AR→扩散改编；推理加速；可控生成；对齐与 RL；失效模式。
 
 🔴 **04 模型**
 
-3. [代表性扩散语言模型一览](./03-models/representative-models.md)
-4. [LLaDA 与前沿进展](./03-models/llada-frontier.md)
+7. [代表性扩散语言模型一览](./03-models/representative-models.md)
+8. [LLaDA 与前沿进展](./03-models/llada-frontier.md)
 
 计划专文：Dream / Mercury / Gemini Diffusion / Seed 单独成篇。
 
