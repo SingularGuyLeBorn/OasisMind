@@ -9,7 +9,7 @@ tags: [Hyper-Connections, mHC, residual, Sinkhorn, Birkhoff]
 
 标准残差 $x_{l+1}=x_l+\mathcal{F}(x_l)$ 让网络安全地变深，但所有层挤在**一条**流里。ByteDance **Hyper-Connections (HC)**（[arXiv:2409.19606](https://arxiv.org/abs/2409.19606)）把残差扩成 $n$ 条可学习混合的流；DeepSeek **mHC**（Manifold-Constrained Hyper-Connections，[arXiv:2512.24880](https://arxiv.org/abs/2512.24880)）把混合矩阵投到双随机流形上，把恒等映射的稳定性找回来。本篇钉住这条**残差主干拓扑**，不讲注意力头；FLOPs 仍由层内 $\mathcal{F}$（Attn / FFN）主导。
 
-后文把 $n$ 再扩到 16 见 [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)；加宽但丢掉 $H_{\mathrm{res}}$、改用逐元素读门见 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md)。**不是** HCA / CSA，也不是 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)，更不是 Tay 等人把注意力块做置换的 Sparse Sinkhorn Attention。
+后文把 $n$ 再扩到 16 见 [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)；加宽但丢掉 $H_{\mathrm{res}}$、改用逐元素读门见 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md)。**不是** HCA / CSA，也不是 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)，更不是 Tay 等人把注意力块做置换的 Sparse Sinkhorn Attention。
 
 > 邻居：[2.1.3 残差](../2.1.3-残差连接.md) · 发布捆：[GLM-5.3-Flash D2](../../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)
 

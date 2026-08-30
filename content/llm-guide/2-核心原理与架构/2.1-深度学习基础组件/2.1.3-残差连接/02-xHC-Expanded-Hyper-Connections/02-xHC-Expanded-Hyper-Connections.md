@@ -7,7 +7,7 @@ tags: [xHC, mHC, Hyper-Connections, residual, Sinkhorn]
 
 # xHC：把残差流从 $N=4$ 扩到 $N=16$
 
-> 邻居：[01-Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · 丢掉 $H_{\mathrm{res}}$、改用逐元素读门的是 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · 不要和 [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) 混名 · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制
+> 邻居：[01-Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · 丢掉 $H_{\mathrm{res}}$、改用逐元素读门的是 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · 不要和 [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) 混名 · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 混成一个机制
 
 HC / mHC 已经把残差从「一条加法高速公路」改成「$N$ 条可学习混合的流」。专文 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 讲的是：**为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。** 本篇只接一个更窄的问题：
 
@@ -318,7 +318,7 @@ Muon（Table 3，仍是 18B）：AdamW vanilla 40.6；Muon vanilla 43.1；Muon +
 - HC 为何不稳、mHC 约束什么：[01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)
 - 丢掉 $H_{\mathrm{res}}$ 的四分支读门：[03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md)
 - 单流残差公式：[2.1.3](../2.1.3-残差连接.md)
-- 深度维注意力聚合（另一条残差相关轴）：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)
+- 深度维注意力聚合（另一条残差相关轴）：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)
 - 代码入口（论文项目页）：https://github.com/aHapBean/xHC
 
 ## 本篇来源

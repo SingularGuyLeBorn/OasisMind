@@ -214,7 +214,7 @@ S 档精读之后，把新 trick 写进或链到第 2/3/4/6/9/13 章。第 1.3 �
 | **mHC / MHC** | **mHC** = Manifold-Constrained Hyper-Connections；也搜 `manifold-constrained hyper-connections`、DeepSeek 报告 | 第 2.1.3 残差，不是注意力 | 已有 `2.1.3/.../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md`、V4 Infra 文。按 0.4 补公式、稳定性事故、演进 |
 | **XHC** | 口述 **XHC / xHC**。同时搜：HC、Hyper-Connections、eXtended Hyper-Connections、报告章节标题里的 `xHC`/`XHC`。不要和 **HCA**（Hybrid Compressed Attention）混成一个东西 | 先读报告再归类：多半是残差/超连接，也可能是某家私有缩写 | 本库几乎没有以 XHC 为题的专文。搜不到官方串就标未核实，**不要删这个词** |
 | **HC** | Hyper-Connections（常见 arXiv `2409.19606`） | 第 2.1.3 | 与 mHC 同文；讲清 HC 为何不稳、mHC 约束什么 |
-| **ResidualAttention / Residual Attention** | **Attention Residuals**、**AttnRes**、residual attention mixing、depth-wise attention over residual stream；Kimi 线可搜 AttnRes | 第 2.2 注意力变体（深度维聚合），不要只当残差小补丁 | 已有 `2.2.2/.../Kimi-Attention-Residuals-深度维注意力聚合.md`（arxiv `2603.15031`）。要和 HC/mHC 边界写清，补图与推导 |
+| **ResidualAttention / Residual Attention** | **Attention Residuals**、**AttnRes**、residual attention mixing、depth-wise attention over residual stream；Kimi 线可搜 AttnRes | 第 2.2 注意力变体（深度维聚合），不要只当残差小补丁 | 已有 `2.2.2/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md`（arxiv `2603.15031`）。要和 HC/mHC 边界写清，补图与推导 |
 | **HCA / CSA** | Hybrid Compressed Attention、Compressed Sparse Attention；DeepSeek-V4 报告 | 第 2.3 | 已有 CSA-HCA 专文；和 Flash / MLA / DSA 交叉链 |
 
 **搜索死命令（针对上面这些词）：**

@@ -125,7 +125,7 @@ Table 4 在测试语言模型数据上量门分数均值（越低越稀）和第
 - **右**：门乘的是四条残差分支，写回用每分支一个标量 $s_i$，没有混合矩阵 $H_{\mathrm{res}}$。那是 Qwen3.8-Flash-Next 报告 §2.2 的残差设计，公式和表在 03 文，这里不重推。
 - **底栏 NOT**：也不要把本篇门和 FFN 里的 SwiGLU / PowLU / SiTU 并成「都是门控」。那些改的是 position-wise FFN 的升维乘积；本篇动的是注意力子层、$W_V$–$W_O$ 之间。
 
-和 [AttnRes](../Kimi-Attention-Residuals-深度维注意力聚合.md) 也不是一件事。AttnRes 在**深度维**上用注意力选历史层；Gated Attention 仍在 **token 维** softmax 上，只是给每个头的输出加了 query 门。
+和 [AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 也不是一件事。AttnRes 在**深度维**上用注意力选历史层；Gated Attention 仍在 **token 维** softmax 上，只是给每个头的输出加了 query 门。
 
 ---
 
@@ -190,7 +190,7 @@ Qwen3.5 继承这套骨架，后来把部分全注意力层换成 [QSA](../../..
 
 Gated Attention 推荐配置就一句：**SDPA 之后、head-specific（elementwise 略优于 headwise）、乘法 sigmoid**，即 $G_1$。它干两件事：在 $W_V$ 与 $W_O$ 之间插入非线性，用当前 query 的稀疏门把不相关的 SDPA 输出掐掉。15A2B、400B 上 PPL 从 6.026 降到 5.761，MMLU 从 58.79 到 60.82；1.7B dense 在 3.5T 上更稳，YaRN 到 128k 时 RULER 拉开到 58.82 vs 31.65。
 
-下一篇同目录的 [AttnRes](../Kimi-Attention-Residuals-深度维注意力聚合.md) 把注意力轴从 token 维拧到深度维，残差加法本身被改写——和本篇「残差仍是 $x+F(x)$」正好对照。
+下一篇同目录的 [AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 把注意力轴从 token 维拧到深度维，残差加法本身被改写——和本篇「残差仍是 $x+F(x)$」正好对照。
 
 ---
 

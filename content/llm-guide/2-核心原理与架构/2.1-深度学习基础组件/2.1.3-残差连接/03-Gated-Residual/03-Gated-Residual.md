@@ -7,7 +7,7 @@ tags: [Gated-Residual, Hyper-Connections, mHC, Qwen3.8]
 
 # Gated Residual：单流残差被冲淡之后，把容量花在「怎么读」上
 
-> 邻居：[01-HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02-xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](../2.1.3-残差连接.md) · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) 混成一个机制 · 不要和 [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 混名 · 模型捆：[Qwen3.8-Flash-Next](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)
+> 邻居：[01-HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02-xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](../2.1.3-残差连接.md) · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 混成一个机制 · 不要和 [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 混名 · 模型捆：[Qwen3.8-Flash-Next](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)
 
 Pre-Norm Transformer 里每一层都从**同一条**残差流读、再写回去。层一深，早期写进去的特征要和后面所有写入抢位置，信号被冲淡。加宽残差流（多条并行分支）能给早期特征留专用通道；问题变成：加宽之后，读/写还要不要再套一套像 Hyper-Connections 那样的 $n_r\times n_r$ 混合矩阵。
 
@@ -226,7 +226,7 @@ Decode 的瓶颈是搬字节。加宽之后，朴素实现每个 Attn/MLP 都要
 
 ## 10. Table 6：和 AttnRes 对照的是残差消融，不是说 Qwen3.8 用了 AttnRes
 
-AttnRes 对**历史层输出**做 softmax，决定当前子层读谁。Full AttnRes 看前面每一个子层；Block AttnRes 把 $L$ 个子层按块长 $S$ 加总再 attend。那是深度维注意力，不是残差条数，本体在 [AttnRes 文](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)。
+AttnRes 对**历史层输出**做 softmax，决定当前子层读谁。Full AttnRes 看前面每一个子层；Block AttnRes 把 $L$ 个子层按块长 $S$ 加总再 attend。那是深度维注意力，不是残差条数，本体在 [AttnRes 文](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)。
 
 Table 6 设定：28 层（$L=56$ 个子层），有无 GatedNorm（GN）。Loss 是最终训练损失；$S$ 是折进一个 Block AttnRes 表示的子层数。下标是相对左列的变化。
 

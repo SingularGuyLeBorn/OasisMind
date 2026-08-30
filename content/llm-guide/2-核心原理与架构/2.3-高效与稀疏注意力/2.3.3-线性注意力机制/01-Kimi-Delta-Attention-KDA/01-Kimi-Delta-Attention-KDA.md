@@ -7,7 +7,7 @@ tags: [KDA, Gated-DeltaNet, linear-attention, Kimi-Linear, GLM-5.3-Flash]
 
 # Kimi Delta Attention：头级遗忘太粗之后，让每个通道自己过期
 
-> 邻居：[2.3.3 线性注意力](../2.3.3-线性注意力机制.md) · [MLA](../../2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md) · [QSA](../../2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)（稀疏 softmax，不是线性）· [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)
+> 邻居：[2.3.3 线性注意力](../2.3.3-线性注意力机制.md) · [MLA](../../2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md) · [QSA](../../2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)（稀疏 softmax，不是线性）· [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)
 
 线性注意力把历史收进固定大小的矩阵状态 $\mathbf{S}_t$，解码不再读整段 KV，但状态容量有限，旧联想会互相覆盖。Delta 规则先擦掉当前 key 上的旧值再写入；Gated DeltaNet 再加一个 **头级** 标量遗忘。Kimi Delta Attention（KDA）把遗忘改成 **通道级** 对角门 $\mathrm{Diag}(\boldsymbol{\alpha}_t)$。公式来自 *Kimi Linear*（arXiv:2510.26692）§2–3。K3 把 KDA 和 AttnRes 捆在一起发布，是同一条技术在更大 MoE 上的用法，不是另一套数学。
 
@@ -55,7 +55,7 @@ $$
 - **左**：一个桃盒 $\alpha_t$ 乘进整张网格。Qwen3-Next / 3.8 的 GDN 层走这条头级门。
 - **右**：四个颜色不同的 $\alpha_1\ldots\alpha_4$ 组成 $\mathrm{Diag}(\boldsymbol{\alpha}_t)$，箭头各进一行。这才是 *Kimi Linear* 式 (1) 相对 GDN 的差。
 - **底栏**：delta 擦写两边都有；变的只是遗忘粒度。不要在这张图上读 $g_{\min}$。
-- **不是** [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)（深度维对历史层做注意力），也 **不是** [QSA](../../2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)（softmax 块稀疏，没有这份矩阵状态）。
+- **不是** [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)（深度维对历史层做注意力），也 **不是** [QSA](../../2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)（softmax 块稀疏，没有这份矩阵状态）。
 
 相对通用 DPLR，他们把 $a,b$ 都绑到 $\mathbf{k}$ 上，减少半精度里的除法和二次分块 matmul；论文称算子效率大约比通用 DPLR 好一倍（§3.2）。那是 kernel 对照，不是端到端 API。
 

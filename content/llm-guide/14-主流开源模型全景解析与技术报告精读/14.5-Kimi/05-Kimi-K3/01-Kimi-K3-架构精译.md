@@ -7,7 +7,7 @@ tags: [Kimi-K3, KDA, AttnRes, LatentMoE, SiTU-GLU, Quantile-Balancing, MoonEP]
 
 # Kimi K3：不是再叠一层 MLA，是把三条信息流一起放大
 
-> **[返回 14.5-Kimi](../14.5-Kimi.md)** · 前代：[K2](../02-Kimi-K2/05-Kimi-K2-Architecture-Overview.md) · [K2.5](../03-Kimi-K2.5/05-Kimi-K2.5-Architecture-Overview.md) · [K2.6](../04-Kimi-K2.6/05-Kimi-K2.6-Architecture-Overview.md) · 积木：[KDA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [AttnRes](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md) · [Stable LatentMoE / QB](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) · [SiTU-GLU](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)
+> **[返回 14.5-Kimi](../14.5-Kimi.md)** · 前代：[K2](../02-Kimi-K2/05-Kimi-K2-Architecture-Overview.md) · [K2.5](../03-Kimi-K2.5/05-Kimi-K2.5-Architecture-Overview.md) · [K2.6](../04-Kimi-K2.6/05-Kimi-K2.6-Architecture-Overview.md) · 积木：[KDA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [AttnRes](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · [Stable LatentMoE / QB](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) · [SiTU-GLU](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)
 
 报告标题 *Kimi K3: Open Frontier Intelligence*（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)）。权重 [moonshotai/Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3)，仓库协议写 **Kimi K3 License**（不要写成 MIT）。官方把它叫「第一个开源的 3T 档」。本篇只拆这次发布捆了什么；公式本体在体系章。
 
@@ -87,7 +87,7 @@ Flash Attention 的偏置舍入（报告引 [98]）：训练时注意力输出�
 
 AttnRes 把「固定残差加法」换成对历史层的 softmax（伪查询 $\bm{w}_l$，key/value 是 embedding 和前层输出）。全量形式 $O(L^2 d)$ 算力在 $L<100$ 还能接受，真正贵的是 **把所有层输出留着** 的 $O(Ld)$ 显存和 PP 通信。
 
-K3 用论文里的 **Block Attention Residuals**：层划成块，块内求和成一条摘要，块间做注意力。报告写经验上 $N\approx 8$ 就收回大部分收益；K3 的划法是 **8 个约 12 层的块，最后一块不满，加上 embedding 源一共 9 个可查询对象**。公式在 [AttnRes 专文](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/Kimi-Attention-Residuals-深度维注意力聚合.md)，这里不抄 (8)–(10)。
+K3 用论文里的 **Block Attention Residuals**：层划成块，块内求和成一条摘要，块间做注意力。报告写经验上 $N\approx 8$ 就收回大部分收益；K3 的划法是 **8 个约 12 层的块，最后一块不满，加上 embedding 源一共 9 个可查询对象**。公式在 [AttnRes 专文](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)，这里不抄 (8)–(10)。
 
 这和 mHC/xHC/GR **不是一个旋钮**。AttnRes 改深度维聚合；超连接改残差流条数。
 

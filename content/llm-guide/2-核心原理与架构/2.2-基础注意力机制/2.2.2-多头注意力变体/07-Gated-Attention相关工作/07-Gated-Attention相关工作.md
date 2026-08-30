@@ -227,7 +227,7 @@ NSA 的门控融合写在 [02-NSA](../../../2.3-高效与稀疏注意力/2.3.2-�
 
 ![同一句 Gate，四根管子：G1 调制全体注意力输出；SwitchHead/NSA/MoSA 做选择；GR 是残差读门；AttnRes 是深度维混合](./images/fig-g1-not-neighbors.png)
 
-> 图 2：名字都叫 Gate / Attention，数据流不是同一根。左上 $G_1$；右上 selection；左下 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)；右下 [AttnRes](../Kimi-Attention-Residuals-深度维注意力聚合.md)。2026-08 自绘。
+> 图 2：名字都叫 Gate / Attention，数据流不是同一根。左上 $G_1$；右上 selection；左下 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)；右下 [AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)。2026-08 自绘。
 
 **图 2 解析**
 
@@ -303,4 +303,4 @@ Qwen3-Next 把 $G_1$ 插在 3:1 日程里那一层全注意力上——产品捆
 9. Gu, X., et al. (2024). [When Attention Sink Emerges in Language Models](https://arxiv.org/abs/2410.10781). HTML：[arxiv.org/html/2410.10781](https://arxiv.org/html/2410.10781)。
 10. Sun, M., Chen, X., Kolter, J. Z., & Liu, Z. (2024). [Massive Activations in Large Language Models](https://arxiv.org/abs/2402.17762). *COLM 2024*. HTML：[arxiv.org/html/2402.17762](https://arxiv.org/html/2402.17762)。Table 1。
 11. NSA 细节只链 [02-原生稀疏注意力机制NSA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md)。MoSA：[2505.00315](https://arxiv.org/abs/2505.00315)。
-12. **不是**残差四分支门：[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。**不是**深度维聚合：[AttnRes](../Kimi-Attention-Residuals-深度维注意力聚合.md)。FFN 门控：[03-GLU 家族](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md)。
+12. **不是**残差四分支门：[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。**不是**深度维聚合：[AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)。FFN 门控：[03-GLU 家族](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md)。
