@@ -18,7 +18,7 @@ description: >-
 3. `content/llm-guide/notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
 5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
-6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（一夹一文同名；同一父目录 C 课程序号与 A 专文序不混用；同级序号不重复；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
+6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层；同层约 ≤10；一夹一文同名；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
 7. 需要搜论文时再读 [research.md](research.md)
 
 然后从 `PLAN.md`「下一步 3 件」继续。禁止每次从全库盘点重来。

@@ -15,7 +15,7 @@ category: LLM 指南
 
 ## 父代理每回合
 
-1. Read live 三份 + `trusted-sources.md` + `chapter-structure-plan.md`。从 PLAN 第 1 件拆切片；**新文路径必须能在结构规划落点表里找到唯一格，且符合文件名规范**（一夹一文同名；同一父目录 C 与 A 不混用；同级序号不重复；无空格冒号）。开夹前 `ls`，专文取 `max(NN)+1`。
+1. Read live 三份 + `trusted-sources.md` + `chapter-structure-plan.md`。从 PLAN 第 1 件拆切片；**新专文必须是 `{N.N.N}/{NN}-…/`**（点分号最多三层；`01` 只在第四层；同层约 ≤10；满了先拆小节，不要发 `11` 或 `4.22`）。一夹一文同名；无空格冒号。开夹前 `ls`。
 2. **先写租约再派工**：在 `PLAN.md`「路径租约」表登记每个切片的**独占路径**（两两不相交）。然后 `Task` 拉 **2～5** 个 `generalPurpose`，`run_in_background: true`。brief 里只准出现租约里的路径。
 3. 回收后质检。不合格重派（租约保留）。合格：把子代理回传的 URL **由你**追加进 PROCESS，改 PLAN/GOAL，**按主题 commit**，租约改 `done` 或删行。
 4. 还有队列就再派。不要问用户「要不要继续」。不要输出「下一会话从…」然后停。
@@ -53,13 +53,13 @@ category: LLM 指南
 - 图无水印、是 GenerateImage 或 mermaid/表，有「图 N 解析」。**必须浅色主题**（白底深字、浅色色块）。深色底 / 白字 / OLED 幻灯片风 = 不合格，重画后再收。
 - 没抄 `trusted-sources.md` 里的课/博客正文，没搬兄弟花园。
 - 没把课程当年的「最新」写成 2026-08 事实。
-- 新专文路径能对上 `chapter-structure-plan.md` 落点表 **且过文件名规范**（夹名 = 主 md 名；无空格/冒号；同级 `{NN}` 不重复；新图 `fig-kebab.png`）。章首页不是第二份专文。
+- 新专文路径能对上 `chapter-structure-plan.md`：**`{N.N.N}/{NN}-…/`**，同层 ≤10，无 `11`、无四段点分号。夹名 = 主 md 名；无空格/冒号；新图 `fig-kebab.png`。章首页不是第二份专文。
 
 ## 子代理 brief（每个 Task prompt 必须自包含，复制下列死命令）
 
 仓库：`D:\ALL IN AI\OasisMind`。只改下面列明的 `content/llm-guide/` 路径。
 
-- 先 Read：`.cursor/skills/llm-guide-notes/SKILL.md`、`canon.md`、与本篇同族的一篇金样本；`notes/trusted-sources.md`；`notes/chapter-structure-plan.md`（落点表 + **C/A/D 编号**：点分号是树坐标，两位 `NN` 是专文序，第 14 章的 `01`/`03`/`05` 不要搬进 1–13；本切片路径必须一夹一文同名、无空格冒号）。
+- 先 Read：`.cursor/skills/llm-guide-notes/SKILL.md`、`canon.md`、与本篇同族的一篇金样本；`notes/trusted-sources.md`；`notes/chapter-structure-plan.md`（落点表 + **编号**：点分号最多三层如 `4.1.1`；`01`/`02` 只挂在第三层下面；同层约 ≤10；第 14 章 D 码不要搬进 1–13；夹名 = 主 md 名、无空格冒号）。
 - 中文正文。禁止 Delete 任何既有文件。禁止 `move_agent_to_root`。禁止 commit / push / `git add -A`。禁止改 `apps/`。
 - WebSearch / WebFetch 原论文、model card、官方 blog。论文读完后可用 `pnpm --filter @oasismind/server zhihu -- search "<概念>"` 再 `zhihu -- read <url>`（`--offset` 翻页）。知乎只学讲法，数字以论文为准，禁止搬专栏正文/图。不要用 WebFetch 硬扛知乎。URL **写在回传里**（或只写进租约指定的 `notes/live/inbox/<id>.md`）。**禁止改** `notes/live/GOAL.md`、`PLAN.md`、`PROCESS.md`。没上台账的规格不准写。课程不是金科玉律。
 - 找不到一手：`[OM-FREEPLAY]` + 「未找到一手来源」。
