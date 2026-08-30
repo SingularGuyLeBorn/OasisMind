@@ -7,7 +7,7 @@ tags: [MoE, 硬件加速, FPGA, NDP, PIM]
 
 # 06 MoE 硬件加速：FPGA 到近存计算
 
-04 讲「动态路由让静态流水线失效」；本篇把加速器 **个案** 排成一张表：FPGA 上的 UbiMoE / FLAME、边缘 Edge-MoE、以及 GPU+NDP / PIM。不在这里重写 DeepSeekMoE 公式（[01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)），也不把 MLA 的 KV 压缩算进 MoE 加速比。
+04 讲「动态路由让静态流水线失效」；本篇把加速器 **个案** 排成一张表：FPGA 上的 UbiMoE / FLAME、边缘 Edge-MoE、以及 GPU+NDP / PIM。不在这里重写 DeepSeekMoE 公式（[01](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md)），也不把 MLA 的 KV 压缩算进 MoE 加速比。
 
 ---
 
@@ -120,4 +120,4 @@ N:M 剪枝、块稀疏、动态稀疏等算法层面的稀疏性, 需要硬件�
 1. Dong et al. *UbiMoE*. [arXiv:2502.05602](https://arxiv.org/abs/2502.05602).
 2. Lin et al. *FLAME: Fully Leveraging MoE Sparsity for Transformer on FPGA*. DAC 2024.
 3. Sarkar et al. *Edge-MoE*. IEEE, 2023.
-4. 系统对照：[04](../04-MoE硬件架构研究综述/04-MoE硬件架构研究综述.md) · [05](../05-MoE系统与架构优化综述/05-MoE系统与架构优化综述.md)
+4. 系统对照：[04](../04-MoE硬件架构研究综述/04-MoE硬件架构研究综述.md) · [05](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/05-MoE系统与架构优化综述/05-MoE系统与架构优化综述.md)

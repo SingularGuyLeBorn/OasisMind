@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1（不 Delete）。
-2. **再下一波：** Qwen4 架构预测（只收一手）。
-3. **再往后：** 0.8 继续补知识点。
+1. **立刻做：** Qwen4 架构预测（只收一手；不要把 51B n-gram 算进 6B 激活）。
+2. **再下一波：** 0.8 继续补知识点。
+3. **再往后：** 结构 S5 / S6 / S8（14 家族序号 / Ernie / 过满拆篮）。
 
 ## 波次队列（未完成的留着）
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：回收 Gated Residual 加厚。
-- 现在立刻做：2.4.1 的 04–09 `git mv`。不要 `move_agent_to_root`。不要 push。不要 Delete。
+- 上一件：2.4.1 的 04–09 `git mv` 到 6.1.8 / 6.3.1 / 9.1.5（不 Delete）。
+- 现在立刻做：Qwen4 架构预测（只收一手）。不要 `move_agent_to_root`。不要 push。不要 Delete。
 
 ## 路径租约（并行防撞）
 
@@ -119,7 +119,7 @@ category: LLM 指南
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
 | pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
-| moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；错位箱 04–09；未改 01–10 夹 |
+| moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；04–09 已迁 6.1.8 / 6.3.1 / 9.1.5 |
 | moe-01 | done | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 已入库。16B $K_r=6$；V3 $N_r=256$；未 git add 节根散文件 |
 | moe-02 | done | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 已入库。$C$=槽数、$\gamma$=容量因子；drop/dropless/aux/z-loss；未改旧目录名 |
 | moe-03 | done | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 已入库。STE 式 (5)–(7)；ReMoE=2412.14711；V3 Sigmoid 仍离散 |

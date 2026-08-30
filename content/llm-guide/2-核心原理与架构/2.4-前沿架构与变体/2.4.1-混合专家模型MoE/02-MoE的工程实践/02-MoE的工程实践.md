@@ -7,7 +7,7 @@ tags: [MoE, 负载均衡, 专家容量, 专家并行]
 
 # 02 MoE 工程实践：容量、负载与通信
 
-MoE 把稠密 FFN 换成「路由器 + 一排专家」之后，算力可以按激活量走，但工程上会立刻撞上：**专家容量溢出、负载塌到少数专家、路由器 logits 把 softmax 打飞。** 本篇只写专家容量 $C$、容量因子 $\gamma$、token drop / dropless、负载 aux-loss 与 router z-loss 这几件算法–工程交界；DeepSeek 门控形态在 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)，Quantile Balancing 在 [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。EP 拓扑见 [07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)，这里不展开 FPGA / All-to-All。
+MoE 把稠密 FFN 换成「路由器 + 一排专家」之后，算力可以按激活量走，但工程上会立刻撞上：**专家容量溢出、负载塌到少数专家、路由器 logits 把 softmax 打飞。** 本篇只写专家容量 $C$、容量因子 $\gamma$、token drop / dropless、负载 aux-loss 与 router z-loss 这几件算法–工程交界；DeepSeek 门控形态在 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)，Quantile Balancing 在 [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。EP 拓扑见 [07](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)，这里不展开 FPGA / All-to-All。
 
 不是「终极指南」。公式与 Top-K 分叉以 [2.4.1 总览](../2.4.1-混合专家模型MoE.md) 为准。Decoder / 注意力骨架在第 2 章，本篇不重讲。旧截图仍在 `images/`；浅色示意只换容量、负载、drop/dropless 与损失构成。
 
@@ -159,7 +159,7 @@ $n$ 是 batch 内 token 数，$e$ 是专家数，$k$ 是**每个专家取多少 
 
 #### 3.6 专家并行通信（不展开）
 
-专家放在不同 GPU 上时，Dispatch / Combine 各一次 All-to-All：token 按路由目标换 rank，算完再换回来。这不是注意力的 AllReduce。容量溢出发生在 Dispatch 写槽的时刻：目标专家的 $C$ 满了，这条 token 根本不进通信缓冲。dropless 时缓冲长度跟实际派遣走，通信形状随 step 变——通算重叠见 [07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)，不是把 $\gamma$ 写成无穷。拓扑细节同样只指向 07。
+专家放在不同 GPU 上时，Dispatch / Combine 各一次 All-to-All：token 按路由目标换 rank，算完再换回来。这不是注意力的 AllReduce。容量溢出发生在 Dispatch 写槽的时刻：目标专家的 $C$ 满了，这条 token 根本不进通信缓冲。dropless 时缓冲长度跟实际派遣走，通信形状随 step 变——通算重叠见 [07](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)，不是把 $\gamma$ 写成无穷。拓扑细节同样只指向 07。
 
 ![EP：Dispatch All2All 与 Combine All2All](./images/fig-moe-eng-ep-all2all.png)
 
@@ -230,4 +230,4 @@ $n$ 是 batch 内 token 数，$e$ 是专家数，$k$ 是**每个专家取多少 
 3. Zoph et al. (2022). *ST-MoE: Designing Stable and Transferable Sparse Expert Models*. [arXiv:2202.08906](https://arxiv.org/abs/2202.08906).（式 (4)(5)、$c_z=0.001$、Table 4、微调 Table 5 的 10–15% drop）
 4. Gale, Narayanan, De Sa, Zaharia (2023). *MegaBlocks*. [arXiv:2211.15841](https://arxiv.org/abs/2211.15841).（dropless / block-sparse；Pile 上 $0.15$ vs $0.26$；相对 Tutel 的加速倍数）
 5. Zhou et al. (2022). *Mixture-of-Experts with Expert Choice Routing*. [arXiv:2202.09368](https://arxiv.org/abs/2202.09368).（式 (6)）
-6. 门控形态 / QB：[01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) · [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)；EP：[07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)
+6. 门控形态 / QB：[01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) · [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)；EP：[07](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)

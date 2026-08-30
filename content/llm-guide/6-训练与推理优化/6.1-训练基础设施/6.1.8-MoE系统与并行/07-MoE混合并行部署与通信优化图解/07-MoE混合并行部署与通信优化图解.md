@@ -7,7 +7,7 @@ tags: [MoE, 混合并行, TP, EP, All2All]
 
 # 07 MoE 混合并行：TP + EP 与 All2All
 
-MoE 上多卡之后，注意力侧仍是 **TP 的 AllReduce**，专家侧多出来的是 **EP 的 All2All**（Dispatch 去、Combine 回）。本篇按单卡 → 纯 TP → 纯 EP → 混合，把通信钉在计算图上。路由公式见 [2.4.1](../2.4.1-混合专家模型MoE.md)，不在这里再推一遍 DeepSeekMoE。
+MoE 上多卡之后，注意力侧仍是 **TP 的 AllReduce**，专家侧多出来的是 **EP 的 All2All**（Dispatch 去、Combine 回）。本篇按单卡 → 纯 TP → 纯 EP → 混合，把通信钉在计算图上。路由公式见 [2.4.1](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md)，不在这里再推一遍 DeepSeekMoE。
 
 ---
 
@@ -151,4 +151,4 @@ MoE 模型的混合并行部署涉及复杂的计算-通信权衡：
 
 1. DeepSeek-AI. *DeepSeek-V3 Technical Report*. [arXiv:2412.19437](https://arxiv.org/abs/2412.19437).（大规模 EP 部署的系统背景，不是本图的出处）
 2. 通信原语与 DeepEP 一类工作的对照见上表；实现以各仓库 README 为准，本页不编加速比。
-3. 路由公式：[2.4.1](../2.4.1-混合专家模型MoE.md) · [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)
+3. 路由公式：[2.4.1](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md) · [01](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md)

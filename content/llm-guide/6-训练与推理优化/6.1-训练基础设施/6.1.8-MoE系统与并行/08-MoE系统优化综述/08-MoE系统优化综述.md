@@ -7,7 +7,7 @@ tags: [MoE, 专家并行, All-to-All, SonicMoE, Grouped-GEMM]
 
 # MoE 系统优化：稀疏激活碰到硬件的并行胃口
 
-> 邻居：[2.4.1 总览](../2.4.1-混合专家模型MoE.md)（路由公式在那边）· [01 DeepSeek-MoE](../01-DeepSeek-MoE.md)（细粒度 + 共享专家）· [07 混合并行图解](../07-MoE混合并行部署与通信优化图解.md) · 卡间账：[6.1.1 EP](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md)
+> 邻居：[2.4.1 总览](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md)（路由公式在那边）· [01 DeepSeek-MoE](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md)（细粒度 + 共享专家）· [07 混合并行图解](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md) · 卡间账：[6.1.1 EP](../../6.1.1-分布式训练/6.1.1-分布式训练.md)
 
 MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「再写一遍 Top-$k$」，而是 **token 怎么送到拥有专家的那张卡、激活怎么不随粒度线性涨、Grouped GEMM 的 Tile 怎么不被填充吃掉**。本篇不重推 DeepSeek-MoE 的门控；路由与负载公式见总览和 01。
 
@@ -17,7 +17,7 @@ MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「
 
 显存不够、卡少：走 **卸载**。不活跃专家放到 CPU / 盘，用到再搬回 GPU。能跑超大池，但 PCIe 延迟比 NVLink All-to-All 更刺；没有预取就会空转。这不是另一种路由公式。
 
-![EP：token 经 All-to-All 去专家所在 GPU，结果再 Combine 回来](../images/fig-moe-ep-alltoall.png)
+![EP：token 经 All-to-All 去专家所在 GPU，结果再 Combine 回来](./images/fig-moe-ep-alltoall.png)
 
 > 图 1：EP 的通信骨架。左是各卡上的 token，右是切分后的专家；实线 Dispatch、虚线 Combine。路由本身仍在本卡算。
 
@@ -25,7 +25,7 @@ MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「
 
 - 路由器先选出 Top-$k$ 专家下标；通信只搬运激活，不搬运整份专家权重。
 - 负载不均时，持有热门专家的 GPU 算得久，别的卡在等 All-to-All——这是 EP 的典型空转，不是「再加大容量因子」能单独修掉的。
-- 节点内 TP 处理 Attention / 共享参数、跨节点 EP 切专家，是工业默认拼法；DeepEP、Wave 重叠写在 [6.1.1](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md)，本篇不重画。
+- 节点内 TP 处理 Attention / 共享参数、跨节点 EP 切专家，是工业默认拼法；DeepEP、Wave 重叠写在 [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md)，本篇不重画。
 
 ## 2. 并行怎么切：DP / TP / EP 各管一块
 
@@ -55,10 +55,10 @@ MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「
 
 | 问题 | 去哪 | 本篇不写 |
 |------|------|----------|
-| 先 Top-$k$ 再 Softmax、共享专家 | [2.4.1](../2.4.1-混合专家模型MoE.md) / [01](../01-DeepSeek-MoE.md) | 第二份 DeepSeek-MoE 公式 |
-| Contiguous vs Masked layout、DeepGEMM | [07](../07-MoE混合并行部署与通信优化图解.md) | 再抄一遍 layout |
-| Wave 藏 All-to-All、MoonEP 卡间等 token | [6.1.1](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md) | 把 MoonEP 说成新的 $p_i$ |
-| 瘦专家 $\ell$、分位数 bias | [10 LatentMoE / QB](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) | |
+| 先 Top-$k$ 再 Softmax、共享专家 | [2.4.1](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md) / [01](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md) | 第二份 DeepSeek-MoE 公式 |
+| Contiguous vs Masked layout、DeepGEMM | [07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md) | 再抄一遍 layout |
+| Wave 藏 All-to-All、MoonEP 卡间等 token | [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md) | 把 MoonEP 说成新的 $p_i$ |
+| 瘦专家 $\ell$、分位数 bias | [10 LatentMoE / QB](../../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) | |
 
 ## 5. 失效
 
@@ -67,10 +67,10 @@ MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「
 - 把 token rounding 当成负载均衡损失：它圆的是 Tile，不是 $q=mk/n$。
 - 单卡卸载却按多卡 EP 的 overlap 来估延迟：PCIe 不是 NVLink。
 
-下一篇：[09 量化](../09-MoE模型量化技术综述.md)（参数体积）；路由公式不要到量化文里再推一遍。
+下一篇：[09 量化](../../../6.3-模型压缩/6.3.1-量化/09-MoE模型量化技术综述/09-MoE模型量化技术综述.md)（参数体积）；路由公式不要到量化文里再推一遍。
 
 ## 本篇来源
 
 1. Liu et al. (2025/26). *SonicMoE: Accelerating MoE with IO and Tile-aware Optimizations*. https://arxiv.org/abs/2512.14080 （摘要：-45% 激活、Hopper 1.86× vs ScatterMoE BF16、64×H100 213B tok/天、token rounding 1.16×）
-2. 本库：[07](../07-MoE混合并行部署与通信优化图解.md)；[6.1.1 EP Wave](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md)
+2. 本库：[07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)；[6.1.1 EP Wave](../../6.1.1-分布式训练/6.1.1-分布式训练.md)
 3. 门控与 DeepSeek-MoE：总览 / 01，本篇不重推
