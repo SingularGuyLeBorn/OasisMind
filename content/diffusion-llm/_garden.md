@@ -16,7 +16,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 |---|---|
 | 01 动机 | 自回归因式分解把什么写进了结构里，扩散换掉的是哪一步 |
 | 02 机制 | $Q_t$、吸收态、ELBO 为何长得像加权 MLM、采样时如何揭开 / remask |
-| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、缓存、Eso-LM、少步蒸馏、引导、对齐、代码向、离散流、score entropy、失效 |
+| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、缓存、serving、Eso-LM、少步蒸馏、引导、对齐、代码向、离散流、score entropy、失效 |
 | 04 模型 | 从 D3PM 到 LLaDA 2.0 / MoE / Dream / Mercury 各自钉住哪件事；多模态三条接法 |
 | 05 对照 | 十个维度里哪些是机制必然，哪些只是 2026 年的工程现状 |
 
@@ -62,41 +62,44 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 12. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
     Fast-dLLM DualCache、dKV-Cache、CAP。27.6× 的对照物是原版 LLaDA，不是 AR。
 
-13. [Eso-LM：任意顺序损失，因果注意力换精确 KV](./03-points/eso-lm.md)  
+13. [Serving：vLLM 的调度器接不上扩散](./03-points/serving.md)  
+    dInfer 四块。8×H800、batch 1：680 TPS 对 Fast-dLLM 63、对 vLLM 上 Qwen2.5-3B 277。1100 是 TD 的 HumanEval 列。
+
+14. [Eso-LM：任意顺序损失，因果注意力换精确 KV](./03-points/eso-lm.md)  
     洗牌 + 原位置 RoPE。65× 对照无缓存 MDLM。不是 LLaDA 8B。
 
-14. [少步蒸馏：把老师的 1024 步塞进学生的几十步](./03-points/few-step-distill.md)  
+15. [少步蒸馏：把老师的 1024 步塞进学生的几十步](./03-points/few-step-distill.md)  
     SDTT；32 步约 4× 于带 KV 的 GPT-2。863M 质量，不要抄到 8B。
 
-15. [可控生成与引导](./03-points/controllable-generation.md)  
+16. [可控生成与引导](./03-points/controllable-generation.md)  
     Diffusion-LM 连续梯度；离散 D-CFG；8B 实际在用的掩码与定长。
 
-16. [对齐与强化学习](./03-points/alignment-rl.md)  
+17. [对齐与强化学习](./03-points/alignment-rl.md)  
     VRPO / LLaDA 1.5；d1 / diffu-GRPO。原版 Instruct 没有 RL。
 
-17. [代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO](./03-points/code-dllm.md)  
+18. [代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO](./03-points/code-dllm.md)  
     7B 代码专料约 130B；Table 1–2；互补掩码估对数概率。不要和 Nie 的 35.4 横减。
 
-18. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
+19. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
     DFM；吸收态 $1/t$ 是一条路径。1.7B HumanEval Pass@1 为 6.7%。
 
-19. [Score entropy：离散扩散在估比率](./03-points/score-entropy.md)  
+20. [Score entropy：离散扩散在估比率](./03-points/score-entropy.md)  
     concrete score；$25\%{-}75\%$ 对照先前离散扩散。1BW 上界 $\leq 32.79$ 对 AR 31.98。不是 LLaDA 的损失。
 
-20. [失效模式](./03-points/failure-modes.md)  
+21. [失效模式](./03-points/failure-modes.md)  
     定长与 EOS、并行搭配、PPL 不可比、近似缓存过期。
 
 🔴 **04 模型**
 
-21. [代表性扩散语言模型一览](./03-models/representative-models.md)
-22. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-23. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
-24. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
-25. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
+22. [代表性扩散语言模型一览](./03-models/representative-models.md)
+23. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+24. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
+25. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+26. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
 
 ⚖️ **05 对照**
 
-26. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+27. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
     含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
@@ -123,6 +126,7 @@ P(x) 怎么因式分解
                         │       ├─ 纠错：已提交再 MASK（ReMDM 套预训练权重）；训练见乱词（GIDD）；Seed 改前向后 20%
                         │       ├─ 变体：块扩散（块间 AR，块内扩散）
                         │       ├─ 注意力：全双向无精确 KV；Eso-LM 洗牌+因果换精确 KV
+                        │       ├─ serving：dInfer 四块；10× 对照同节点 Fast-dLLM 63.61，2.5× 对照 vLLM Qwen2.5-3B
                         │       ├─ 少步：SDTT / FS-DFM 蒸老师多步
                         │       ├─ 稀疏：LLaDA-MoE 从零 20T，激活 1.4B，损失仍是 1/t
                         │       ├─ 代码向：DiffuCoder + coupled-GRPO

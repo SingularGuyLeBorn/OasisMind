@@ -121,4 +121,4 @@ batch size 大于 1 时，有的实现加速比会收窄，dKV-Cache 附录写�
 - Ma, X. et al. dKV-Cache: The Cache for Diffusion Language Models. arXiv:2505.15781, NeurIPS 2025. https://arxiv.org/abs/2505.15781
 - Nie, S. et al. LLaDA 2.0. arXiv:2512.15745. CAP 与 535 TPS 见该报告系统实验。
 - 吞吐对照见本花园 Dream / Mercury / Seed 专文与采样专文，不在本篇重复抄商业表。
-- 精确 KV 与少步蒸馏不在本篇展开：[Eso-LM](./eso-lm.md)、[少步蒸馏](./few-step-distill.md)。已提交 token 再掩会打碎 DualCache 前提：[提交之后还能不能改](./remask-revise.md)。
+- 精确 KV 与少步蒸馏不在本篇展开：[Eso-LM](./eso-lm.md)、[少步蒸馏](./few-step-distill.md)。已提交 token 再掩会打碎 DualCache 前提：[提交之后还能不能改](./remask-revise.md)。调度器、TPS 分母、dInfer Table 1：[Serving](./serving.md)。

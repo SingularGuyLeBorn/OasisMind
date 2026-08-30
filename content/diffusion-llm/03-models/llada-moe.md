@@ -136,7 +136,7 @@ SFT 之后 MATH 从 Base 的 36.10 到 Instruct 的 58.68，跳得很猛。对�
 
 对 8B 密扩散。激活少了大约六倍，平均分在他们的表上反而高。这不能直接读成「稀疏一定更强」：MoE 看了约 20T，8B 看了 2.3T，数据不是对照实验。能说的是：双向 $1/t$ 目标和 Top-$k$ 路由可以同时稳住，没有出现「一加 MoE 扩散就崩」的反例。代码列的优势更大，和 Stage 2 加重数学、代码的配比方向一致，仍然混了数据与结构。
 
-对 2.0。名字共享 LLaDA，训练哲学相反。2.0 承认 100B 从零太贵，继承 Ling。MoE 承认 8B 密模型推理贵，从零训稀疏。评价「扩散能不能从噪声长出知识」，MoE 和 8B 是合格样本，2.0 不是。评价「扩散能不能接到现有 MoE serving」，2.0 才是合格样本，这篇 7B-A1.4B 的 serving 栈论文几乎没写。
+对 2.0。名字共享 LLaDA，训练哲学相反。2.0 承认 100B 从零太贵，继承 Ling。MoE 承认 8B 密模型推理贵，从零训稀疏。评价「扩散能不能从噪声长出知识」，MoE 和 8B 是合格样本，2.0 不是。评价「扩散能不能接到现有 MoE serving」，2.0 才是合格样本。7B-A1.4B 自己的吞吐表在 dInfer：同节点 8×H800、batch 1，带 KV 平均 TPS 680.71，细节见[Serving](../03-points/serving.md)。
 
 对 Qwen2.5-3B。激活 1.4B 对 3B，Instruct 平均分贴上，表头还写明对面有 RL。这是作者最想要的产品句。缺口写在 MATH 和部分中文考试（CEval Instruct 63.93 对 68.20）。「可比」是平均分语言，不是「每一项都打平有 RL 的 3B」。
 
@@ -191,3 +191,4 @@ Instruct 没有 RL。落后 Qwen 的 MATH，推不出「扩散 MoE 不会数学�
 - [采样与调度](../02-mechanism/sampling.md)
 - [从自回归改编](../03-points/ar-to-diffusion.md)
 - [失效模式](../03-points/failure-modes.md)
+- [Serving](../03-points/serving.md)

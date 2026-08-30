@@ -189,6 +189,7 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [为什么用扩散做语言生成](../01-overview/why-diffusion.md)
 - [双向注意力与反转诅咒](../03-points/bidirectional-attention.md)
 - [推理加速](../03-points/inference-acceleration.md)
+- [Serving](../03-points/serving.md)
 - [可控生成](../03-points/controllable-generation.md)
 - [对齐与 RL](../03-points/alignment-rl.md)
 - [失效模式](../03-points/failure-modes.md)

@@ -67,7 +67,7 @@ Fast-dLLM 和 dKV-Cache 的前提是相邻步 $K,V$ 很像。一块之内揭开�
 
 LLaDA 8B 预训练 2.3T token、约 13 万 H800 小时。LLaMA3 8B 是 15T。同数据 ARM baseline 才能谈样本效率；跨语料比「扩散更省数据」不成立。改编路线（Dream、LLaDA 2.0、Fast-dLLM v2）把账单转到「AR 预训练已经付过、再花 1B–580B 级 token 做扩散头」。1B 和 580B 差两个数量级，对应块扩散轻改编和全注意力深改编，质量与吞吐的落点不同。
 
-系统栈：vLLM / SGLang 的 CUDA graph、连续 batch、speculative decoding 都围着 AR。开源扩散推理往往是论文仓库加 batch 1。测速时 AR 用了编译器和 paged attention，扩散用了 Python 循环，倍数会骗人。LLaDA 2.0 用 dInfer 对 SGLang，算是把对照拉回同一类系统问题。仍不要和 Artificial Analysis 上的 Mercury 混报。
+系统栈：vLLM / SGLang 的 CUDA graph、连续 batch、speculative decoding 都围着 AR。开源扩散推理往往是论文仓库加 batch 1。测速时 AR 用了编译器和 paged attention，扩散用了 Python 循环，倍数会骗人。dInfer 把调度器拆成四块，LLaDA-MoE 在 8×H800 上的 TPS 表见[Serving](./serving.md)。LLaDA 2.0 用同一框架对 SGLang，算是把对照拉回同一类系统问题。仍不要和 Artificial Analysis 上的 Mercury 混报。
 
 评测污染、知识截止、工具使用、多模态，扩散没有豁免。本花园不把这些写成「扩散特有缺陷」，只提醒：换生成过程不会把 LLM 的老问题一笔勾销。
 

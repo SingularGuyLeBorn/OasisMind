@@ -193,3 +193,4 @@ SFT 450 万对只掩回答，损失仍是 $1/t$ 加权掩码交叉熵。模型�
 - [代表性工作](./representative-models.md)
 - [多模态扩散](./multimodal-dllm.md)
 - [LLaDA-MoE](./llada-moe.md)
+- [Serving](../03-points/serving.md)
