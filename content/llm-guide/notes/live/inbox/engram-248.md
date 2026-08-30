@@ -2,7 +2,7 @@
 title: 切片 · Engram 条件记忆体系专文
 date: 2026-08-30
 published: false
-status: running
+status: done
 ---
 
 # engram-248 · 监工点评
@@ -28,3 +28,49 @@ DeepSeek *Conditional Memory via Scalable Lookup*（[arXiv:2601.07372](https://a
 7. 节首页 `2.4.8-….md` 做短地图（定义 + 链 01），长文在 01。`as_of: 2026-08-30`。成文，禁止「2026-08 修订」块。
 
 金样本：MHA `01-MHA-…`；MoE 总览学「条件计算」对照写法。
+
+## 本切片读过的 URL
+
+- https://arxiv.org/abs/2601.07372
+- https://arxiv.org/html/2601.07372
+- https://arxiv.org/html/2601.07372v2
+- https://arxiv.org/pdf/2601.07372
+- https://github.com/deepseek-ai/Engram
+- https://github.com/QwenLM/Qwen3.8-Flash-Next
+- https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf
+- https://huggingface.co/Qwen/Qwen3.8-Flash-Next
+- https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501
+- https://docs.nvidia.com/nemo/automodel/nemo-automodel/nemo_automodel/components/models/qwen3_8_flash_next/engram （实现对照，不当 Qwen 官方超参）
+- https://arxiv.org/abs/1911.00172 （kNN-LM）
+- https://arxiv.org/abs/2106.04426 （Hash Layers）
+- https://arxiv.org/abs/2407.04153 （PEER）
+- https://arxiv.org/abs/2605.20309 （Tiny-Engram）
+- https://arxiv.org/abs/2606.19172 （User as Engram）
+- https://arxiv.org/abs/2605.20948 （Memory Grafting）
+- https://arxiv.org/html/2603.10087v1 （CXL pooling）
+- https://zhuanlan.zhihu.com/p/1994713080131772751 （讲法，未搬正文）
+- https://www.zhihu.com/question/1994233409871050526/answer/1994740953269954243
+- https://zhuanlan.zhihu.com/p/2026419832371836848
+- https://zhuanlan.zhihu.com/p/1994358127429190544
+- https://zhuanlan.zhihu.com/p/2034232780020770031
+
+## 交卷备注
+
+路径：
+
+- `content/llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.8-条件记忆与Engram/2.4.8-条件记忆与Engram.md`（节首页地图）
+- `…/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md`（长文）
+- `…/01-…/images/fig-engram-ngram-hash.png` / `fig-engram-gate-residual.png` / `fig-engram-host-prefetch.png`
+
+质检优先看：01 文首「不是」三句；§3 式 (3)(4) 哈希；§4 式 (5) 与 20%–25% / $\rho=74.3\%$；§5 门控与图 2；§6 第 2/15 层插槽；§7 Table 4 2.8%；§8 Table 1（MMLU 表上 +3.0，摘要 +3.4 已标明以表为准）；§10 Qwen 是否点名 Cheng 2026；§11 V4 未出厂。
+
+Qwen3.8：技术报告参考文献列出 Cheng et al. 2026 全文题目（即 2601.07372），正文 `Cheng et al., 2026`；PDF 无字符串 `Engram` / `2601.07372`；阿里云博文点名 DeepSeek Engram。51B 不计入 6B 激活。未升格「第一个 Engram 级别百 B」。
+
+还有谁用：出厂公开权重仅核到 Qwen3.8-Flash-Next；V4 是未来路线；Tiny-Engram / User as Engram / Memory Grafting / CXL 为跟进论文。其它型号未找到一手，正文已 `[OM-FREEPLAY]`。未 commit。
+
+## 监工质检（2026-08-30）
+
+- 专文汉字 **4581**；节首页地图 **524**（地图可短）。
+- Qwen 报告点名 Cheng et al. 2026（即 2601.07372），PDF 无 `Engram` 字符串；博文点名 DeepSeek Engram。51B **不计入** 6B 激活。V4 未写成出厂。
+- MMLU 以 Table 1 的 **+3.0** 为准（摘要 +3.4 已标明）。Table 4 8B 骨干 **2.8%**。
+- 监工补 2.4 章首页 2.4.8 行，并在 2.4.1 地图加「不是条件记忆」一句。未改第 14 章。

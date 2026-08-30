@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 `2.4.1` 机制专文 01 / 10（汉字 ≥ 4000）。02 / 03 已入库。节首页已是地图。04–09 错位，本波不加厚。
-2. **并行中：** Engram 仍在跑；RSI 导读已交待质检。K3 / Gemini 3.7 / Muse Spark 已入库。
-3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。过文 SiTU / mHC / GR 汉字未满 4000，回头加厚（派工早于规矩）。
+1. **立刻做：** 把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作新开 `2.2.2/07`（不改 06）。
+2. **回头加厚：** 过文 SiTU / mHC / GR 汉字未满 4000（派工早于规矩）。
+3. **再下一波：** Qwen4 架构预测（只收一手）。机制主线 01/02/03/10 与 Engram / RSI 导读已入库。
 
 ## 波次队列（未完成的留着）
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：用户点名 2.4.1 的 01–10 垃圾且错位。4000 汉字规矩已写入 Skill。
-- 现在立刻做：质检入库 01 / 10；RSI 导读质检。不要 `move_agent_to_root`。不要 push。
+- 上一件：回收 2.4.1 机制主线 01/02/03/10 + Engram 2.4.8 + RSI 前世今生。
+- 现在立刻做：04–09 `git mv`；Gated Attention 相关工作 `2.2.2/07`。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -120,10 +120,10 @@ category: LLM 指南
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
 | pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
 | moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；错位箱 04–09；未改 01–10 夹 |
-| moe-01 | running | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 不改节根散文件 `01-DeepSeek-MoE.md`；汉字≥4000 |
+| moe-01 | done | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 已入库。16B $K_r=6$；V3 $N_r=256$；未 git add 节根散文件 |
 | moe-02 | done | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 已入库。$C$=槽数、$\gamma$=容量因子；drop/dropless/aux/z-loss；未改旧目录名 |
 | moe-03 | done | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 已入库。STE 式 (5)–(7)；ReMoE=2412.14711；V3 Sigmoid 仍离散 |
-| moe-10 | running | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` + inbox `moe-10.md` | 不改 01–03；汉字≥4000 |
+| moe-10 | done | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` + inbox `moe-10.md` | 已入库。$\ell\neq c^{KV}$；896/Top-16/2 共享，$\ell=3584$ |
 | fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
 | pass-1234-b03 | done | batch 03 十篇见 inbox | 已交；AttnRes/MLA 浅色图；2.3 章地图 |
 | pass-1234-b04 | done | batch 04 十篇见 inbox | 已交；FA3=2407.08608；Paged 只留 2309.06180 |
@@ -142,8 +142,8 @@ category: LLM 指南
 | fig-kv-family | done | `2.2.2/01-MHA`、`02-MQA`、`03-GQA`、`04-MLA-低秩潜变量` 四篇 md + 各夹 images + inbox `fig-kv-family.md` | 两张浅色积木图；未改 05 / 节首页；32768 vs 576 与 Table 9 分口径 |
 | fig-nsa-dsa | done | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 三分支 + DSA indexer；DSA ≠ NSA 第四分支；MSA 口述未开夹 |
 | fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
-| engram-248 | running | `2.4-前沿架构与变体/2.4.8-条件记忆与Engram/` + inbox `engram-248.md` | 不改 2.4 首页、不改 2.4.1–2.4.7、不改第 14 章、不改 live |
+| engram-248 | done | `2.4-前沿架构与变体/2.4.8-条件记忆与Engram/` + inbox `engram-248.md` | 已入库。Qwen 点名 Cheng 2026；51B 不进 6B；V4 未出厂；监工补 2.4 首页行 |
 | k3-d2-deep | done | `14.5-Kimi/05-Kimi-K3/`（01 精译 + 该夹 images）+ inbox `k3-d2-deep.md` | 已入库。2.78T/104.2B 与 2.8T/104B 分口径；QAT MXFP4/8；MTP→EAGLE-3 用 LK 不是 KL；未改 14.5 首页 |
 | muse-spark-d2 | done | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 已入库。未 mkdir 1.1/1.2；无架构表，文首声明不够 4000；BioDesign 46.2/39.2 分口径 |
 | gemini-37-flash | done | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 已入库。监工补 14.11 表行；不 mkdir 3.6；DeepSWE 65.3% / 对照 48.6%；无架构表，文首声明不够 4000 |
-| rsi-origin | running | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 不改 `_garden.md`、不改其它 RSI 章、不 Delete、不改 live |
+| rsi-origin | done | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 已入库。Good / 种子 / Gödel；未 Delete；监工改 garden 先读标题 |
