@@ -11,6 +11,18 @@ tags: [LatentMoE, Quantile-Balancing, SiTU-GLU, MoE, Kimi-K3]
 
 Top-$k$ 变大、专家池变大，本意是让专家更专。常规 MoE 里每个被选中的专家仍吃完整的 $d$ 维 token，于是 **通信和专家权重流量跟 $k$ 一起涨**。NVIDIA 等的 LatentMoE（[arXiv:2601.18089](https://arxiv.org/abs/2601.18089)）把路由计算搬进 $\ell<d$ 的潜空间：通信和专家参数按 $d/\ell$ 变便宜，省下来的预算用来加专家数、加 $k$。Kimi K3 报告 §2.3 把这套接到 896 路由专家、每 token 16 个、稀疏度 56，并补了三块稳定性——这才叫 **Stable LatentMoE**。LatentMoE 不是 K3 发明的；K3 发明的是「这一规模上还能训」的三件套。
 
+$\ell$ 是 **FFN 路由专家的宽度**，不是 MLA 里压缩 KV 的 $c^{KV}$。两个潜空间：一个在注意力缓存，一个在专家 MLP。不要混名。
+
+![满宽专家吃完整 $d$；LatentMoE 先降到 $\ell$ 再升回去。共享专家仍满宽](../images/fig-latentmoe-fullwidth-vs-ell.png)
+
+> 图 1：满宽路由专家 vs $\ell=d/2$ 的 LatentMoE（K3 取 $\ell=3584=d/2$）。红框：$\ell$ **不是** MLA 的 $c^{KV}$。
+
+**图 1 解析**
+
+- 左：每个被选中的专家矩阵宽度仍是 $d$，All-to-All 和专家参数都跟 $d$ 走。
+- 右：$\mathbf{W}^{\downarrow}$ 把 token 收到 $\ell$，专家只在瘦空间里算，再 $\mathbf{W}^{\uparrow}$ 升回；$d/\ell$ 的节省用来加 $N$ 和 $k$。
+- 共享专家 $E^{\mathrm{shared}}$ 仍是 $\mathbb{R}^d\to\mathbb{R}^d$，所以「稀疏度 56」**不是**「只有 1/56 的参数在动」。
+
 ## 1. 满宽共享 + 瘦路由
 
 DeepSeekMoE 的共享 / 路由分工还在。共享专家 $E^{\mathrm{shared}}:\mathbb{R}^d\to\mathbb{R}^d$ 处理所有 token；路由侧先 $\bm{z}=\mathbf{W}^{\downarrow}\bm{x}\in\mathbb{R}^\ell$，专家在 $\ell$ 维里算，再升回去。K3 的 $\ell=3584=d/2$，$N_s=2$。
@@ -55,9 +67,7 @@ $$
 
 ![不均衡 Top-k、分位数定 bias、均衡负载三步](../images/fig-quantile-balancing.png)
 
-> 图 1：报告 Fig. 5 的示意重绘（$m=8,n=4,k=1$，目标 $q=2$）。左：普通 Top-$k$。中：按 margin 分位数拧 bias。右：每专家两人。不要把示意图里的 8 个点当成 K3 的真实 batch。
-
-<!-- GenerateImage prompt: Three-panel Quantile Balancing: imbalanced Top-k, quantile cutoff on margins, balanced assignment. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
+> 图 2：报告 Fig. 5 的示意重绘（$m=8,n=4,k=1$，目标 $q=2$）。左：普通 Top-$k$。中：按 margin 分位数拧 bias。右：每专家两人。不要把示意图里的 8 个点当成 K3 的真实 batch。QB 公式以 K3 §2.3 为准，本篇不另编分位数。
 
 ## 4. 和 DeepSeek aux-loss-free、Switch aux-loss 的边界
 
