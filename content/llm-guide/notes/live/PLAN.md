@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 配图接线 wave-2：`fig-deepseek-moe-ffn-slot` / `fig-moe-dense-vs-sparse` / `fig-moe-router-top2` / `fig-gated-residual`。覆盖原 `fig-*.png`。假坐标曲线不画。
-2. **并行：** 人味。读者页禁止 Agent 元句；H1 尽量短。机械标签已扫过约 79 篇，正文口气按篇收。
-3. **再下一波：** 结构 S5/S6/S8。4.6.3 状态分布视角已入库。GxPO / OPD 综述仍在路径租约里，不要和 4.6.3 混交。
+1. **立刻做：** 用户点名 **Loop Transformer** 进体系。新小节 `2.4.9-循环Transformer/`（地图 + `01-Loop-Transformer-层重复用/`）。不是序列 RNN（那是 2.4.4），不是 CoT 多吐 token（那是 4.5）。
+2. **并行：** 4.5 地图补「潜空间循环 vs CoT」一行，只链 2.4.9，不重推公式。`fig-moe-router-top2` **不要重画**。wave-2 其余三张仍在租约 `fig-wave-2`。
+3. **再下一波：** 结构 S5/S6/S8；人味扫尾。GxPO / OPD 综述租约仍在跑，不要和 2.4.9 混交。
 
 ## 波次队列（未完成的留着）
 
@@ -93,8 +93,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：4.6.3 状态分布视角（nrehiew + Nie 2605.22731）已入库。
-- 现在立刻做：wave-2 其余架构图。不要 `move_agent_to_root`。不要 push。
+- 上一件：4.6-OPD 夹名与读者页磁盘备忘已清。
+- 现在立刻做：2.4.9 Loop Transformer 专文。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -161,7 +161,9 @@ category: LLM 指南
 | qsa-thicken | done | `2.3.2/08-QSA-Qwen稀疏注意力/` + inbox `qsa-thicken.md` | 已入库。4101 汉字；7.6×≠8.6×；$K_B=512$ 是块预算 |
 | xhc-thicken | done | `2.1.3/02-xHC-Expanded-Hyper-Connections/` + inbox `xhc-thicken.md` | 已入库。4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 |
 | attnres-thicken | done | `2.2.2/08-AttnRes-深度维注意力聚合/`（先 git mv 节根散文件）+ inbox `attnres-thicken.md` | 已入库。4045 汉字；深度维 softmax；不是 $G_1$/mHC/GR |
-| opd-state-dist | done | `4.6-OPD/4.6.3-状态从哪来/` | 已入库。nrehiew 博客 + Nie 2605.22731；精读 4001 汉字；一步 KL GSM8K 0.040 |
+| opd-state-dist | done | `4.6-OPD/4.6.3-状态从哪来/` | 已入库。读者只读一篇；≥10000 汉字；六图；一步 KL GSM8K 0.040；站住的是学生前缀上的教师续写 |
 | fig-wave-2 | running | `2.4.1/01-DeepSeek-MoE/images/fig-deepseek-moe-ffn-slot.png`；`2.4.1/images/fig-moe-dense-vs-sparse.png`；`2.4.1/images/fig-moe-router-top2.png`；`2.1.3/03-Gated-Residual/images/fig-gated-residual.png` | 只覆盖这四张 png，不改专文数字 |
 | gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
 | opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
+| loop-tf | running | `2.4-前沿架构与变体/2.4.9-循环Transformer/` + inbox `loop-tf.md` | 新建 2.4.9 地图 + 01 专文 + images；不改 2.4.md / 2.4.4 / 4.5 |
+| ttc-45 | running | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 只补地图「潜空间循环 vs CoT」；不 mkdir；不改 2.4.9 |

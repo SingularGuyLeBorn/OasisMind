@@ -11,15 +11,18 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：无阻塞。4.6.3 状态分布视角已交。
-- 正在写：回到 fig-wave-2。
+- 正在读：Loop Transformer 一手（Universal Transformer / Giannou 2301.13196 / Saunshi 2502.17416 / Huginn 2502.05171 / Fully Looped 2605.18797 / DeepLoop 2607.13491）。
+- 正在写：2.4.9 专文（子代理 loop-tf）；4.5 地图一行（ttc-45）。
 - 卡住：无。
-- 上次刷新记忆的时间：2026-08-30 入库 nrehiew + Nie 2605.22731。
+- 上次刷新记忆的时间：2026-08-31 Goal 续跑，点名 Loop Transformer。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 4.6.3 加厚到 ≥10000 汉字；补自己的机制判断（KV/雅可比、信用分配谱、LoRA 低秩遗忘、可证伪格）；第六图 fig-credit-assignment-spectrum；读者页仍只链这一篇 | https://nrehiew.github.io/blog/sft_rl_opd/ ；https://arxiv.org/abs/2605.22731 | `4.6-OPD/4.6.3-状态从哪来/` |
+| 2026-08-31 | Goal 续跑：用户点名 Loop Transformer；落点 2.4.9；派 loop-tf / ttc-45 | https://arxiv.org/abs/1807.03819 ；https://arxiv.org/abs/2301.13196 ；https://arxiv.org/abs/2502.17416 ；https://arxiv.org/abs/2502.05171 ；https://arxiv.org/abs/2605.18797 ；https://arxiv.org/abs/2607.13491 | `2.4.9-循环Transformer/`（在写） |
+| 2026-08-30 | 用户点名 4.6-OPD 文件名差：夹名=主 md；01–10、假 4.6.1、4.6.2/01、4.6.3 子夹已改；YAML/H1 对齐夹名；地图去掉 S8 备忘 | 磁盘 ls + 4.6-OPD.md | `4.6-OPD/` |
 | 2026-08-30 | 4.6.3：nrehiew 博客原文+精译；Nie 2605.22731 PDF/HTML+原文+精译；精读两图；一步 KL GSM8K 0.040；代码仓 404 | https://nrehiew.github.io/blog/sft_rl_opd/ ；https://arxiv.org/abs/2605.22731 ；https://arxiv.org/html/2605.22731 ；https://thinkingmachines.ai/blog/on-policy-distillation/ ；https://zhuanlan.zhihu.com/p/2044017882586206645 ；https://zhuanlan.zhihu.com/p/2070597972572771514 ；https://www.themoonlight.io/zh/review/post-training-is-about-states-not-tokens-a-state-distribution-view-of-sft-rl-and-on-policy-distillation ；https://github.com/ginobilinie/unifyPostTraining （404） | `4.6-OPD/4.6.3-状态从哪来/` |
 | 2026-08-30 | 用户点名删 2.4.1 夹根 04/05/06/07/09；加厚 03（≥5000 汉字、5 图）与 08（系统优化，5 图） | 2512.14080；2206.03382；ATC 2023 SmartMoE；2211.15841；2403.08245；2310.00811；2409.12136 | `2.4.1/03`；`6.1.8/08`（2.4.1 同名夹副本） |
 | 2026-08-30 | `git mv` 2.4.1 的 04–09 → 6.1.8 / 9.1.5 / 6.3.1；不 Delete；节根散文件未入库 | 磁盘 ls + chapter-structure-plan | `6.1.8-MoE系统与并行/`；`9.1.5-MoE硬件与加速/`；`6.3.1/09-…/` |
