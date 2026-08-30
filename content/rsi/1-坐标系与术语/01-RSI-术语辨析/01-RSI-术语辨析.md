@@ -163,7 +163,7 @@ OPD（On-Policy Distillation）改的是这一次训练里的学生权重，监�
 
 ### 5.6 Gödel machine vs 实验室 RSI 能力项
 
-Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / Anthropic 的 system card 把 self-improvement / AI R&D 写成**能力阈值**（会不会把每位研究员变成配备 mid-career 助手、会不会压缩 AI 研发日历）。两者都与 RSI 有关，度量完全不同：一个是可证自改的理论机器，一个是「离全自动研发有多近」的评测。不要用前者的定理给后者的分数背书，也不要用后者的 SWE-bench 数字证明前者已实现。公开链：[0 导读 §3](../../0-导读/0-导读.md)、[第 6 章](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / Anthropic 的 system card 把 self-improvement / AI R&D 写成**能力阈值**（会不会把每位研究员变成配备 mid-career 助手、会不会压缩 AI 研发日历）。两者都与 RSI 有关，度量完全不同：一个是可证自改的理论机器，一个是「离全自动研发有多近」的评测。不要用前者的定理给后者的分数背书，也不要用后者的 SWE-bench 数字证明前者已实现。公开链：[0 导读 §3](../../0-导读/0-导读.md)、[04 System Card](../../6-评测与安全/04-System-Card-RSI/04-System-Card-RSI.md)。
 
 ## 6. 什么时候能把一个系统叫 RSI
 
@@ -195,7 +195,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | 混元 L3：改提议/选择/回滚程序 | 是 | 后继改进器被替换 | Improver / L3 | 必须评后继系统，不是本轮任务分 | 结构意义上的 RSI 前沿 |
 | 混元 L4：改奖励/准则 | 是 | 连「什么叫好」一起变 | Criterion / L4 | 必须有边界外授权；否则是安全事故 | 最深 |
 | Gödel machine（理论） | 是（整段 $p$） | 是：搜索器可被 $\texttt{switchprog}$ 改 | 全自指软件 | 证明系统本身是门；效用不可证则改不了 | 前世最硬的形式 RSI |
-| OpenAI PF「AI Self-improvement」High | 评测项，不是一个已部署循环 | 不自动等于式 (2) | 能力阈值 | 实验室自己的 eval | 能力项，见第 6 章 |
+| OpenAI PF「AI Self-improvement」High | 评测项，不是一个已部署循环 | 不自动等于式 (2) | 能力阈值 | 实验室自己的 eval | 能力项，见 [04](../../6-评测与安全/04-System-Card-RSI/04-System-Card-RSI.md) |
 | Anthropic「全自主设计后继者」 | 官方定义的 RSI | 原文：We are not there yet | 实验室叙事 | 内部生产率 ≠ 闭合递归 | 叙事；链第 5–6 章 |
 
 生产级「三层全改且闭环」的公开落地，截至 `as_of` **几乎还没有**。实验室叙事和预备度指标在第 5、6 章，不要倒灌进本篇当成已发生的机制。

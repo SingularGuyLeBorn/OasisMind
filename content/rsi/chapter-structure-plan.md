@@ -31,7 +31,7 @@ _garden.md / 0-导读
     → 3 Harness 层专文（Argus / Auto-Research / …）
     → 4 Artifact 层专文（Polaris / AlphaEvolve 线索）
     → 5 实验室与公司（田渊栋 / Anthropic / OpenAI）
-    → 6 评测与安全（RSIBench / 可靠性阶梯 / SEAGym）
+    → 6 评测与安全（RSIBench / 可靠性阶梯 / SEAGym / system card RSI）
 ```
 
 ## 落点
@@ -45,7 +45,7 @@ _garden.md / 0-导读
 | verification-gated runtime、STOP、Gödel Agent、DGM、技能包自改、ACE playbook | 第 3 章 | 不要写成 Cursor 产品手册 |
 | AlphaEvolve、FunSearch、科研 agent、论文工厂 | 第 4 章 | |
 | 融资、访谈、实验室动态 | 第 5 章 | 不要当机制专文 |
-| RSIBench、可靠性阶梯、SEAGym、system card RSI | 第 6 章 | |
+| RSIBench、可靠性阶梯、SEAGym、system card RSI | 第 6 章（04 已落） | |
 
 ## 质检
 

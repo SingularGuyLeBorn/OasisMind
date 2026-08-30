@@ -15,6 +15,6 @@ AI 改进 AI 自身的研发、训练与安全。整理日：2026-08-30 起按�
 3. [Harness 层 · Agent 运行时](3-Harness层-Agent运行时/3-Harness层-Agent运行时) — Argus、Auto-Research、ADAS、STOP、Gödel、DGM、SkillEvolver、ACE；产品 harness 回 llm-guide 13
 4. [Artifact 层 · 产物发现](4-Artifact层-产物发现/4-Artifact层-产物发现) — FunSearch、AlphaEvolve、Polaris、Code-as-World
 5. [实验室与公司](5-实验室与公司/5-实验室与公司) — 田渊栋 / Anthropic / OpenAI；叙事不是机制
-6. [评测与安全](6-评测与安全/6-评测与安全) — RSIBench、可靠性阶梯、SEAGym
+6. [评测与安全](6-评测与安全/6-评测与安全) — RSIBench、可靠性阶梯、SEAGym、system card 两把尺
 
 结构规则：[chapter-structure-plan.md](chapter-structure-plan.md)。禁止再往 `notes/` 写专文。`.trash/` 不删。
