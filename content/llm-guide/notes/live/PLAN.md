@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 OAIF（4.4.2/06，2402.04792）与 Best-of-N（4.4.4/07，2210.10760）。交卷后链进地图。
+1. **立刻做：** 回收 OAIF（4.4.2/06，2402.04792）。交卷后链进 4.4.2 地图。
 2. **并行：** 继续补 4.4（Online IPO 2403.08635 / BOND 等）；同层满 10 先拆小节。不要发 4.4.1/11。
 3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
@@ -21,8 +21,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：入库 JustRL / SPIN / Nash-MD，并链进 4.4.2 / 4.4.4 / 4.4.6。
-- 现在立刻做：派 OAIF / Best-of-N。不要 `move_agent_to_root`。不要 push。
+- 上一件：入库 Best-of-N（4.4.4/07），链进地图。
+- 现在立刻做：回收 OAIF。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -193,4 +193,4 @@ category: LLM 指南
 | spin-442 | done | `4.4.2-无奖励模型的对齐DPO-KTO/05-SPIN-自对弈微调/` | 已入库。4006 汉字；两图；人标 $y$ vs 自生成 $y'$；Open LLM 58.14→63.16；不是 UltraFeedback DPO |
 | nash-444 | done | `4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/` | 已入库。4068 汉字；两图；几何混合对手；MD1 对 RLHF 0.598；$\beta=0$ 不是 SPIN |
 | oaif-442 | running | `4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/` + inbox `oaif-442.md` | 2402.04792；在线 AI 标再 DPO；不是 Lee RLAIF；不要改 4.4.2 节首页 |
-| bon-444 | running | `4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/` + inbox `bon-444.md` | 2210.10760；BoN 不是训练损失；不是 RAFT；不要改 4.4.4 节首页 |
+| bon-444 | done | `4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/` | 已入库。4096 汉字；两图；$\mathrm{KL}_{\mathrm{bon}}=\log n-(n-1)/n$；金标 6B / 策略 1.2B；不是 RAFT |
