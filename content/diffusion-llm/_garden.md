@@ -33,8 +33,8 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 3. [离散扩散：转移矩阵在干什么](./02-mechanism/discrete-diffusion.md)  
    D3PM 的 $Q_t$：均匀、吸收态、离散化高斯。BERT 为何是单步扩散。
 
-4. [掩码扩散：从马尔可夫链到掩码预测](./02-mechanism/masked-diffusion.md)  
-   现行机制文，下一刀会按 MDLM / LLaDA 公式重写并补采样专文。
+4. [掩码扩散：加权 MLM 为什么能当生成模型](./02-mechanism/masked-diffusion.md)  
+   吸收态 + $1/t$ 交叉熵；和 BERT 差在日程；SFT 只掩回答。含 MaskedDiffusion 动画。
 
 计划专文（尚未落盘，不链空壳）：采样与调度。
 
