@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：PyramidKV 2406.02069 / FastGen 2310.01801 / ScissorHands 2305.17118。TOVA 已交。OPD 波等本波交完。
-- 正在写：`14-PyramidKV-层间漏斗` / `15-FastGen-按头自适应` / `16-ScissorHands-重要性持久`。
+- 正在读：FastGen 2310.01801 / ScissorHands 2305.17118。PyramidKV / TOVA 已交。OPD 波等本波交完。
+- 正在写：`15-FastGen-按头自适应` / `16-ScissorHands-重要性持久`。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 TOVA
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 PyramidKV
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -111,6 +111,7 @@ category: LLM 指南
 | 2026-08-30 | Quest 专文：页 min/max 上界；不驱逐；Table 1 passkey；Fig 9 **7.03×** 自注意力 / Fig 10 **2.23×** 4-bit e2e；PMLR 摘要对调 | arxiv HTML/PDF 2406.10774；PMLR v235/tang24l；hanlab；github mit-han-lab/Quest；知乎两篇只学讲法 | `2.3.2/13-Quest`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 | 2026-08-30 | SnapKV 专文：观测**窗** + per-head Top-$k$ + 1D pooling；Listing `capacity-window`；Table 1 Mistral；**3.6×**=16k·bs=2 ms/token；**8.2×**=16k→131k；NIAH **380K** / 基线 33k OOM；纠正 6.4.2 观察头 | arxiv HTML v2 / abs 2404.14469；NeurIPS hash 28ab4182…；github FasterDecoding/SnapKV `snapkv_utils.py`；知乎两篇只学讲法（16K→380K 未采用） | `2.3.2/12-SnapKV`；`2.3.2` 索引；`6.4.2` §4.3.3 修订；`6.4`；`2.3.4`；知识图谱 |
 | 2026-08-30 | TOVA 专文：unbounded MSRNN vs 政策；层内平均 $\arg\min$；Table 3 TOVA-layer；**1/8**=512/4096；**4.8×**=V100 Table 1 的 512 列；Quest passkey 当驱逐 | arxiv HTML/PDF 2401.06104；Anthology 2024.emnlp-main.1043；github schwartz-lab-NLP/TOVA；知乎只学讲法 | `2.3.2/17-TOVA`；`2.3.2` 索引；`2.3.4`；知识图谱 |
+| 2026-08-30 | PyramidKV 专文：v4 式 (1) 等差漏斗；层内 Following SnapKV；**12%** 拆回 Table 2 的 1024/8192=12.5%；0.7% 弃用 0.8%；纠正 6.4.2 Sinks / 6.3.1.2 Maps | arxiv HTML v4 2406.02069；COLM 2025 Spotlight；github Zefan-Cai/KVCache-Factory；知乎只学讲法（2.5%/0.2% 未采用） | `2.3.2/14-PyramidKV`；`2.3.2` 索引；`2.3.4`；`6.4`；`6.4.2`；`6.3.1.2`；知识图谱 |
 
 
 
@@ -323,6 +324,9 @@ category: LLM 指南
 | 会场 PDF | EMNLP 2024 Anthology | https://aclanthology.org/2024.emnlp-main.1043.pdf | 17-TOVA | Table 1 Maximal batch 139/70/35/17/8；吞吐 8.5/4.8/3.1/1.7/1；Memory 0.15/0.28/0.56/1.11/2.18 |
 | 官方仓库 | schwartz-lab-NLP/TOVA | https://github.com/schwartz-lab-NLP/TOVA | 17-TOVA | `mean` + `topk(cache_size)`；`transformers==4.36.2` |
 | 知乎（只学讲法） | 夕小瑶 TOVA 专栏 | https://zhuanlan.zhihu.com/p/677482083 | 17-TOVA | 只学讲法；数字未进正文 |
+| 原论文 HTML v4 | PyramidKV Information Funneling | https://arxiv.org/html/2406.02069v4 ；abs https://arxiv.org/abs/2406.02069 | 14-PyramidKV | COLM 2025 Spotlight；式 (1)–(3)；Table 1–2；Appendix P Table 15 NIAH |
+| 官方仓库 | Zefan-Cai/KVCache-Factory | https://github.com/Zefan-Cai/KVCache-Factory | 14-PyramidKV | `PyramidKVCluster`：min_num/max_num、窗 64、kernel 5、avgpool、β=20 |
+| 知乎（只学讲法） | 量子位 PyramidKV | https://zhuanlan.zhihu.com/p/703313505 | 14-PyramidKV | 学层间不该均一；2.5%/0.2%/65.0 未采用 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -353,6 +357,7 @@ category: LLM 指南
 | Attention Sink / StreamingLLM | arXiv:2309.17453；ICLR 2024；gpt-oss 标量；V4 $z'$ | **专文已写** `10-StreamingLLM与Attention-Sink.md` | 第 2.3.2 |
 | Quest / Query-Aware Sparsity | arXiv:2406.10774；ICML 2024；页 min/max；不驱逐 | **专文已写** `13-Quest-查询感知稀疏.md` | 第 2.3.2 |
 | TOVA / Token Omission Via Attention | arXiv:2401.06104；EMNLP 2024；当前步最低分；层内平均 | **专文已写** `17-TOVA-注意力省略.md` | 第 2.3.2 |
+| PyramidKV / Information Funneling | arXiv:2406.02069；COLM 2025；层间等差；不是 Sinks | **专文已写** `14-PyramidKV-层间漏斗.md` | 第 2.3.2 |
 | SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
 | OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **排队**：KV 四篇交完再勘误 `01-OPD基础原理` | 第 4.6 |
 | OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **排队** `02-OPSD-自蒸馏` | 第 4.6 |
