@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：OAIF 2402.04792。
-- 正在写：OAIF（4.4.2/06）。
-- 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。
-- 上次刷新记忆的时间：2026-08-31 入库 Best-of-N；等 OAIF 交卷。
+- 正在读：Online IPO 2403.08635；BOND 2407.14622。
+- 正在写：Online IPO（4.4.4/08）、BOND（4.4.4/09）。
+- 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。4.4.4 本波到 09。
+- 上次刷新记忆的时间：2026-08-31 入库 OAIF；派 Online IPO / BOND。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 OAIF：4006 汉字；两图；Table 2/3；4-way 58.00%；不是 Lee RLAIF、不是 SPIN | https://arxiv.org/abs/2402.04792 ；https://arxiv.org/html/2402.04792 | 4.4.2/06-OAIF-在线AI反馈/ |
 | 2026-08-31 | 入库 Best-of-N：4096 汉字；两图；解码 argmax 不是训练损失；KL_bon=log n-(n-1)/n；金标 6B / 策略 1.2B；不是 RAFT | https://arxiv.org/abs/2210.10760 ；https://arxiv.org/html/2210.10760 | 4.4.4/07-Best-of-N-奖励模型过优化/ |
 | 2026-08-31 | 入库 Nash-MD：4068 汉字；两图；几何混合对手；Table 1 MD1 对 RLHF 0.598；$\beta\in[0.125,0.375]$ 较好；不是 SPIN、不是 IPO 的 $\tau$ | https://arxiv.org/abs/2312.00886 ；https://arxiv.org/html/2312.00886 | `4.4.4/06-Nash-MD-纳什镜像下降/` |
 | 2026-08-31 | 入库 SPIN：4006 汉字；两图；人标 $y$ vs 自生成 $y'$；zephyr-7b-sft-full Open LLM 58.14→63.16；不是 UltraFeedback DPO | https://arxiv.org/abs/2401.01335 ；https://arxiv.org/html/2401.01335 | `4.4.2/05-SPIN-自对弈微调/` |
