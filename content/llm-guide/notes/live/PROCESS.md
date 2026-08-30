@@ -11,15 +11,17 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：子代理在读 GxPO 2606.16733、OPD 综述 2604.00626。
-- 正在写：无（监工）。Qwen4 / QSA / AttnRes / xHC 已入库；gxpo-family / opd-survey running。
+- 正在读：无阻塞。4.6.3 状态分布视角已交。
+- 正在写：回到 fig-wave-2。
 - 卡住：无。
-- 上次刷新记忆的时间：2026-08-30 回收 qwen4-pred / qsa-thicken / attnres-thicken。
+- 上次刷新记忆的时间：2026-08-30 入库 nrehiew + Nie 2605.22731。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | 4.6.3：nrehiew 博客原文+精译；Nie 2605.22731 PDF/HTML+原文+精译；精读两图；一步 KL GSM8K 0.040；代码仓 404 | https://nrehiew.github.io/blog/sft_rl_opd/ ；https://arxiv.org/abs/2605.22731 ；https://arxiv.org/html/2605.22731 ；https://thinkingmachines.ai/blog/on-policy-distillation/ ；https://zhuanlan.zhihu.com/p/2044017882586206645 ；https://zhuanlan.zhihu.com/p/2070597972572771514 ；https://www.themoonlight.io/zh/review/post-training-is-about-states-not-tokens-a-state-distribution-view-of-sft-rl-and-on-policy-distillation ；https://github.com/ginobilinie/unifyPostTraining （404） | `4.6-OPD/4.6.3-状态从哪来/` |
+| 2026-08-30 | 用户点名删 2.4.1 夹根 04/05/06/07/09；加厚 03（≥5000 汉字、5 图）与 08（系统优化，5 图） | 2512.14080；2206.03382；ATC 2023 SmartMoE；2211.15841；2403.08245；2310.00811；2409.12136 | `2.4.1/03`；`6.1.8/08`（2.4.1 同名夹副本） |
 | 2026-08-30 | `git mv` 2.4.1 的 04–09 → 6.1.8 / 9.1.5 / 6.3.1；不 Delete；节根散文件未入库 | 磁盘 ls + chapter-structure-plan | `6.1.8-MoE系统与并行/`；`9.1.5-MoE硬件与加速/`；`6.3.1/09-…/` |
 | 2026-08-30 | 回收 gr-thicken：4329 汉字；Table 5 九列；丢掉 $H_{res}$；不是 $G_1$/mHC | Qwen3.8 tech_report.pdf §2.2；GatedNorm 2601.22966 | `2.1.3/03-Gated-Residual/` |
 | 2026-08-30 | 回收 xhc-thicken：4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 | 2607.14530 HTML Table 1–7/9–12；GitHub aHapBean/xHC | `2.1.3/02-xHC-Expanded-Hyper-Connections/` |
@@ -69,7 +71,7 @@ category: LLM 指南
 | 2026-08-30 | S1a `git mv`：概述→4.0、ScaleRL→4.8、CLIP→8.8；改地图链接 | 磁盘 ls | `4.0-后训练概述/`、`4.8-ScaleRL-…/`、`8.8-CLIP与视觉编码器/` |
 | 2026-08-30 | 编号收紧：点分号最多三层；`01` 只挂 `{N.N.N}` 下；同层约 ≤10；4.6 不发 11、2.3.2 不发 18 | 用户拍板 | `chapter-structure-plan.md`、`4.6-OPD.md`、`2.3.2` 节首页、Skill / supervisor |
 | 2026-08-30 | 成文：禁止修订双轨；S3 `2.3.4`、S4 `6.4.2` 折成单轨地图 | 用户拍板；既有专文 | `2.3.4-高效注意力全景综述.md`、`6.4.2-KVCache压缩与优化技术.md` |
-| 2026-08-30 | 回收 03-SDFT 勘误；70.6/65.4 钉 Table 5 单任务 Tool Use；理论 Reverse / 实践 Forward KL | https://arxiv.org/abs/2601.19897 · https://arxiv.org/html/2601.19897 · https://github.com/idanshen/Self-Distillation | `4.6-OPD/03-SDFT-自蒸馏持续学习/` |
+| 2026-08-30 | 回收 03-SDFT 勘误；70.6/65.4 钉 Table 5 单任务 Tool Use；理论 Reverse / 实践 Forward KL | https://arxiv.org/abs/2601.19897 · https://arxiv.org/html/2601.19897 · https://github.com/idanshen/Self-Distillation | `4.6-OPD/03-SDFT-示范持续学习/` |
 | 2026-08-30 | 吸收理想结构：C/A/D；S0b 改第 4、13 章地图；4.6 一行改成 On-Policy Distillation；13 的 H1 跟路径；`index.md` 停用当首页 | 磁盘 `ls` 第 13 章；用户结构方案 | `notes/chapter-structure-plan.md`、`4-后训练.md`、`13-Agent.md`、`4.6-OPD.md` |
 | 2026-08-30 | 建 worktree `feat/llm-guide-2026-08-notes` | git HEAD 5d1c25de | 仓库根外 `OasisMind-llmguide-2026-08` |
 | 2026-08-30 | 主题树打勾 + 知识图谱草稿 | 本库文件系统 | `1.1/.../知识图谱-2026-08.md`、enrichment-log §3 |
@@ -168,7 +170,7 @@ category: LLM 指南
 | 2026-08-30 | 01-OPD 勘误：On-Policy Distillation 不是 Online Preference；MiniLLM reverse KL+PG vs GKD stop-grad forward KL；Table 21 分母 Qwen3-8B math+code 17920 vs 1800；150 steps/77K 未找到 | MiniLLM 2306.08543；GKD 2306.13649；综述 2604.00626；Qwen3 2505.09388 Table 21 + mineru；知乎只学讲法 | `4.6/01-OPD`；`4.6-OPD.md`；`4.4` OPD 深度解析；知识图谱 |
 | 2026-08-30 | 02-OPSD 勘误：特权上下文自教师；同一权重两种条件、教师只 prefill、冻 θ_init；37.1→43.4 是三集平均；AIME25 单列 36.7→43.9；1/125=1×1024 vs GRPO 8×16k | 2601.18734 HTML Table 2/3/5/6；github siyan-zhao/OPSD；知乎只学讲法 | `4.6/02-OPSD`；`4.6-OPD.md`；知识图谱 |
 | 2026-08-30 | 04-SDPO 勘误：环境 rich feedback 自教师换 GRPO 的 token 级 A；不是塞进 DPO；LCBv6 Qwen3-8B 48.8 vs GRPO 41.2 | 2601.20802 v2 HTML Table 3–6/8–10；github lasgroup/SDPO；知乎只学讲法 | `4.6/04-SDPO`；`4.6-OPD.md`；知识图谱 |
-| 2026-08-30 | 10-OPD-报告落地对照：官方名/教师槽/损失/分母一行一家；Table 21=Qwen3-8B math+code 17920 vs 1800；V4=OPD 全词表 reverse KL、K3=MOPD token-level clip；点名第 5 章勿把小时安到 V4（未改第 5/14 章） | Qwen3 mineru Table 21；V4 mineru §5.1.2；K3 HTML 式 (15)；MiMo mineru §4.1；GLM-5 D2 §3.5；Step Limitations 一句 | `4.6/10-OPD-报告落地对照`；`4.6-OPD.md`；知识图谱 |
+| 2026-08-30 | 10-OPD-各家报告对照：官方名/教师槽/损失/分母一行一家；Table 21=Qwen3-8B math+code 17920 vs 1800；V4=OPD 全词表 reverse KL、K3=MOPD token-level clip；点名第 5 章勿把小时安到 V4（未改第 5/14 章） | Qwen3 mineru Table 21；V4 mineru §5.1.2；K3 HTML 式 (15)；MiMo mineru §4.1；GLM-5 D2 §3.5；Step Limitations 一句 | `4.6/10-OPD-各家报告对照`；`4.6-OPD.md`；知识图谱 |
 | 2026-08-30 | 09-MOPD 新文：三家损失分叉；V4 仍叫 OPD 式 (29) 全词表 reverse KL；K3 式 (15) clip 对数比九专家；MiMo Flash 式 (5)–(9) 训推比 + ORM，Table 7 原表；Xiaomi 另文 Table 2 不与 Flash 合成超参 | V4 HTML 2606.19348；K3 HTML 2607.24653v2；MiMo PDF/mineru；另文 2606.30406；知乎只学讲法 | `4.6/09-MOPD`；`4.6-OPD.md`；知识图谱 |
 
 
@@ -450,11 +452,11 @@ category: LLM 指南
 | FastGen / Adaptive KV | arXiv:2310.01801；ICLR 2024 Oral；按头 profiling | **专文已写** `15-FastGen-按头自适应.md` | 第 2.3.2 |
 | ScissorHands / Persistence of Importance | arXiv:2305.17118；NeurIPS 2023；pivotal；5×=内存 | **专文已写** `16-ScissorHands-重要性持久.md` | 第 2.3.2 |
 | SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
-| OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **勘误已写** `01-OPD基础原理.md` | 第 4.6 |
-| OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **勘误已写** `02-OPSD-自蒸馏.md`；特权上下文自教师；37.1 是三集平均 | 第 4.6 |
-| SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **勘误已写** `04-SDPO-自蒸馏策略优化.md`；rich feedback 自教师；不是塞进 DPO | 第 4.6 |
-| MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **专文已写** `09-MOPD-多教师在线蒸馏.md`；三家损失分叉，不合成超参 | 第 4.6 |
-| SDFT | Self-Distillation Enables Continual Learning arXiv:2601.19897 | **排队** `03-SDFT-自蒸馏持续学习` | 第 4.6 |
+| OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **勘误已写** `01-OPD-学生前缀蒸馏.md` | 第 4.6 |
+| OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **勘误已写** `02-OPSD-参考解自蒸馏.md`；特权上下文自教师；37.1 是三集平均 | 第 4.6 |
+| SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **勘误已写** `04-SDPO-环境反馈蒸馏.md`；rich feedback 自教师；不是塞进 DPO | 第 4.6 |
+| MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **专文已写** `09-MOPD-多教师蒸馏.md`；三家损失分叉，不合成超参 | 第 4.6 |
+| SDFT | Self-Distillation Enables Continual Learning arXiv:2601.19897 | **排队** `03-SDFT-示范持续学习` | 第 4.6 |
 
 ## 2026 模型分级（P2，先填再写）
 

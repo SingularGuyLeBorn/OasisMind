@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 **GxPO 家族**（综述 2606.16733 + DAPO/GSPO/GHPO 原文）与 **OPD 综述**（2604.00626）。
-2. **再下一波：** 0.8 继续补知识点。
-3. **再往后：** 结构 S5 / S6 / S8（14 家族序号 / Ernie / 过满拆篮）。
+1. **立刻做：** 配图接线 wave-2：`fig-deepseek-moe-ffn-slot` / `fig-moe-dense-vs-sparse` / `fig-moe-router-top2` / `fig-gated-residual`。覆盖原 `fig-*.png`。假坐标曲线不画。
+2. **并行：** 人味。读者页禁止 Agent 元句；H1 尽量短。机械标签已扫过约 79 篇，正文口气按篇收。
+3. **再下一波：** 结构 S5/S6/S8。4.6.3 状态分布视角已入库。GxPO / OPD 综述仍在路径租约里，不要和 4.6.3 混交。
 
 ## 波次队列（未完成的留着）
 
@@ -74,7 +74,7 @@ category: LLM 指南
 - [x] 0.8 本轮：01-OPD 勘误；On-Policy Distillation 不是 Online Preference；MiniLLM ≠ GKD 梯度；Table 21 = Qwen3-8B math+code 17920 vs 1800
 - [x] 0.8 本轮：02-OPSD 勘误；特权上下文自教师；37.1→43.4 是三集平均；1/125=1×1024 vs GRPO 8×16k
 - [x] 0.8 本轮：04-SDPO 勘误；环境 rich feedback 自教师；LCBv6 48.8 vs GRPO 41.2；不是塞进 DPO
-- [x] 0.8 本轮：10-OPD-报告落地对照；Qwen3 Table 21 分母；V4=OPD 全词表 vs K3=MOPD token-level；1800/17920 不要安到 V4
+- [x] 0.8 本轮：10-OPD-各家报告对照；Qwen3 Table 21 分母；V4=OPD 全词表 vs K3=MOPD token-level；1800/17920 不要安到 V4
 - [x] 0.8 本轮：09-MOPD 新文；V4 全词表 OPD / K3 clip 对数比 / MiMo 训推比+ORM；三套超参不合成
 - [x] **结构 S0b**：第 4、13 章首页按磁盘发 C 号；4.6 不是「开放领域对话」；`index.md` 停用当首页；13 正文 H1 跟路径走。
 - [x] 0.8 本轮：03-SDFT 勘误；示范 $d$ 当特权上下文；70.6/65.4 = Table 5 单任务 Tool Use；理论 Reverse、实践 Forward KL
@@ -83,14 +83,18 @@ category: LLM 指南
 - [x] **结构 S3**：`2.3.4` 收成单轨导航（FA/H2O 链专文；无修订双轨）。
 - [x] **结构 S4**：`6.4.2` 收成 KV 系统地图（H2O/StreamingLLM/SnapKV 链 2.3.2；无修订双轨）。
 - [x] **结构 S7**：`7.3-Agent.md` 改成第 13 章应用入口（ReAct/schema/重试留本篇）。
+- [ ] **配图接线（长期）：** llm-guide 约 300 张 `fig-*.png`，绝大多数架构图接线不合格。规范：`.cursor/skills/academic-diagrams`。好对照：`08-QSA/.../fig-qsa-hybrid-slot.png`。每波 4 张左右，覆盖原文件。不画假曲线。
+- [x] wave-1：`fig-deepseek-moe-shared-routed` / `fig-moe-topk-ste` / `fig-moe-eng-ep-all2all` / `fig-spin-self-play`（用户点名；已覆盖入库）
+- [ ] wave-2：`fig-deepseek-moe-ffn-slot` / `fig-moe-dense-vs-sparse` / `fig-moe-router-top2` / `fig-gated-residual`
+- [ ] wave-3：MoE 工程其余（capacity / load / drop / aux-zloss）+ LatentMoE 插槽
 - [ ] **结构 S5 / S6 / S8**：14 家族序号 / Ernie / 过满拆篮。成文：碰一篇折一篇修订块。编号：三层点分号 + 第四层 `01`–`10`。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：回收 qwen4-pred / qsa-thicken / attnres-thicken（Qwen4 4305；QSA 4101；AttnRes 4045）。
-- 现在立刻做：回收 gxpo-family / opd-survey。不要 `move_agent_to_root`。不要 push。不要 Delete。
+- 上一件：4.6.3 状态分布视角（nrehiew + Nie 2605.22731）已入库。
+- 现在立刻做：wave-2 其余架构图。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -104,12 +108,12 @@ category: LLM 指南
 | fastgen-15 | done | `2.3.2/15-FastGen-按头自适应/` | 已交；按头 profiling，不是 DeepSpeed-FastGen |
 | scissorhands-16 | done | `2.3.2/16-ScissorHands-重要性持久/` | 已交；5× 是 KV 内存，不是吞吐 |
 | tova-17 | done | `2.3.2/17-TOVA-注意力省略/` | 已交；层内平均驱逐，不是 SnapKV per-head |
-| opd-01 | done | `4.6-OPD/01-OPD基础原理/` | 已交；On-Policy Distillation；Table 21 分母 |
-| opsd-02 | done | `4.6-OPD/02-OPSD-自蒸馏/` | 已交；特权上下文自教师；37.1 是三集平均 |
-| sdpo-04 | done | `4.6-OPD/04-SDPO-自蒸馏策略优化/` | 已交；rich feedback 自教师；不是塞进 DPO |
-| mopd-09 | done | `4.6-OPD/09-MOPD-多教师在线蒸馏/` | 已交；三家损失分叉；不合成超参 |
-| sdft-03 | done | `4.6-OPD/03-SDFT-自蒸馏持续学习/` | 已交；示范 $d$；70.6/65.4 是 Table 5 单任务 Tool Use |
-| opd-10 | done | `4.6-OPD/10-OPD-报告落地对照/` | 已交；Table 21 分母；V4≠K3 损失 |
+| opd-01 | done | `4.6-OPD/01-OPD-学生前缀蒸馏/` | 已交；On-Policy Distillation；Table 21 分母 |
+| opsd-02 | done | `4.6-OPD/02-OPSD-参考解自蒸馏/` | 已交；特权上下文自教师；37.1 是三集平均 |
+| sdpo-04 | done | `4.6-OPD/04-SDPO-环境反馈蒸馏/` | 已交；rich feedback 自教师；不是塞进 DPO |
+| mopd-09 | done | `4.6-OPD/09-MOPD-多教师蒸馏/` | 已交；三家损失分叉；不合成超参 |
+| sdft-03 | done | `4.6-OPD/03-SDFT-示范持续学习/` | 已交；示范 $d$；70.6/65.4 是 Table 5 单任务 Tool Use |
+| opd-10 | done | `4.6-OPD/10-OPD-各家报告对照/` | 已交；Table 21 分母；V4≠K3 损失 |
 | s0-ch5 | done | `5-主流模型全解/5-主流模型全解.md` | 已交；禁止再 mkdir 根级 `01-型号` |
 | s0-ch8 | done | `8-多模态/8-多模态.md` | 已交；`8.2` 撞号留给 S1 |
 | s0-ch14 | done | `14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 已交；Ernie/Erine 留给 S6 |
@@ -157,5 +161,7 @@ category: LLM 指南
 | qsa-thicken | done | `2.3.2/08-QSA-Qwen稀疏注意力/` + inbox `qsa-thicken.md` | 已入库。4101 汉字；7.6×≠8.6×；$K_B=512$ 是块预算 |
 | xhc-thicken | done | `2.1.3/02-xHC-Expanded-Hyper-Connections/` + inbox `xhc-thicken.md` | 已入库。4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 |
 | attnres-thicken | done | `2.2.2/08-AttnRes-深度维注意力聚合/`（先 git mv 节根散文件）+ inbox `attnres-thicken.md` | 已入库。4045 汉字；深度维 softmax；不是 $G_1$/mHC/GR |
+| opd-state-dist | done | `4.6-OPD/4.6.3-状态从哪来/` | 已入库。nrehiew 博客 + Nie 2605.22731；精读 4001 汉字；一步 KL GSM8K 0.040 |
+| fig-wave-2 | running | `2.4.1/01-DeepSeek-MoE/images/fig-deepseek-moe-ffn-slot.png`；`2.4.1/images/fig-moe-dense-vs-sparse.png`；`2.4.1/images/fig-moe-router-top2.png`；`2.1.3/03-Gated-Residual/images/fig-gated-residual.png` | 只覆盖这四张 png，不改专文数字 |
 | gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
 | opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
