@@ -20,6 +20,7 @@ category: LLM 指南
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 SPIN：4006 汉字；两图；人标 $y$ vs 自生成 $y'$；zephyr-7b-sft-full Open LLM 58.14→63.16；不是 UltraFeedback DPO | https://arxiv.org/abs/2401.01335 ；https://arxiv.org/html/2401.01335 | `4.4.2/05-SPIN-自对弈微调/` |
 | 2026-08-31 | 入库 JustRL：4011 汉字；两图；九项平均 54.87%/64.32% 不是 AIME 单列；clip $[0.8,1.28]$；链 4.4.6 | https://arxiv.org/abs/2512.16649 ；https://arxiv.org/html/2512.16649 ；https://github.com/thunlp/JustRL | `4.4.6/02-JustRL-极简配方/` |
 | 2026-08-31 | 2.4.1/02 收成路标；Switch Table 1/2、ST-MoE Table 4/5、MegaBlocks drop/dropless 并进节首页 §4–5；阅读序 01→03→10 | Switch 2101.03961；ST-MoE 2202.08906；MegaBlocks 2211.15841 | `2.4.1` 节首页；`2.4.1/02`；`01`/`03`/`08`/`10`；`6.1.8/08` |
 | 2026-08-31 | 2.4.1/08 收成路标；10 LatentMoE/QB 留机制主线，不并进 6.1.8 | 落点表：机制=2.4.1/10，系统=6.1.8/08 | `2.4.1/08`；`2.4.1/10`；`6.1.8` |
