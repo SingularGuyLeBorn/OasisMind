@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：V4 式 (29)；K3 式 (15)；MiMo MOPD；GLM-5 cross-stage。01/02/04 已勘误。
-- 正在写：`09-MOPD` / `10-OPD-报告落地对照`。
+- 正在读：V4 式 (29)；K3 式 (15)；MiMo MOPD。01/02/04/10 已入库。
+- 正在写：`09-MOPD`。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 04-SDPO
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 10-OPD-报告落地对照
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -117,6 +117,7 @@ category: LLM 指南
 | 2026-08-30 | 01-OPD 勘误：On-Policy Distillation 不是 Online Preference；MiniLLM reverse KL+PG vs GKD stop-grad forward KL；Table 21 分母 Qwen3-8B math+code 17920 vs 1800；150 steps/77K 未找到 | MiniLLM 2306.08543；GKD 2306.13649；综述 2604.00626；Qwen3 2505.09388 Table 21 + mineru；知乎只学讲法 | `4.6/01-OPD`；`4.6-OPD.md`；`4.4` OPD 深度解析；知识图谱 |
 | 2026-08-30 | 02-OPSD 勘误：特权上下文自教师；同一权重两种条件、教师只 prefill、冻 θ_init；37.1→43.4 是三集平均；AIME25 单列 36.7→43.9；1/125=1×1024 vs GRPO 8×16k | 2601.18734 HTML Table 2/3/5/6；github siyan-zhao/OPSD；知乎只学讲法 | `4.6/02-OPSD`；`4.6-OPD.md`；知识图谱 |
 | 2026-08-30 | 04-SDPO 勘误：环境 rich feedback 自教师换 GRPO 的 token 级 A；不是塞进 DPO；LCBv6 Qwen3-8B 48.8 vs GRPO 41.2 | 2601.20802 v2 HTML Table 3–6/8–10；github lasgroup/SDPO；知乎只学讲法 | `4.6/04-SDPO`；`4.6-OPD.md`；知识图谱 |
+| 2026-08-30 | 10-OPD-报告落地对照：官方名/教师槽/损失/分母一行一家；Table 21=Qwen3-8B math+code 17920 vs 1800；V4=OPD 全词表 reverse KL、K3=MOPD token-level clip；点名第 5 章勿把小时安到 V4（未改第 5/14 章） | Qwen3 mineru Table 21；V4 mineru §5.1.2；K3 HTML 式 (15)；MiMo mineru §4.1；GLM-5 D2 §3.5；Step Limitations 一句 | `4.6/10-OPD-报告落地对照`；`4.6-OPD.md`；知识图谱 |
 
 
 
@@ -350,6 +351,13 @@ category: LLM 指南
 | 原论文 HTML v2 | Reinforcement Learning via Self-Distillation / SDPO | https://arxiv.org/html/2601.20802v2 ；abs https://arxiv.org/abs/2601.20802 | 04-SDPO | 式 (1) KL(学生∥stopgrad 教师)；Table 5/9 LCBv6 48.8 vs 41.2；Table 3 墙钟 1h/5h |
 | 官方仓库 | lasgroup/SDPO | https://github.com/lasgroup/SDPO | 04-SDPO | 实现仓；未当第二套数字 |
 | 知乎（只学讲法） | SDPO 阅读笔记 / ETH 解读 | https://zhuanlan.zhihu.com/p/2012207043948345108 ；https://zhuanlan.zhihu.com/p/2000992368460056411 | 04-SDPO | 换优势函数；忌把失败 y 塞进教师 prompt |
+| 官方报告 | Qwen3 Table 21（10 再核） | https://arxiv.org/abs/2505.09388 ；库内 09-Qwen3 mineru-en §4.5 | 10-对照 | 8B、同一 off-policy ckpt、math+code；17920 vs 1800；括号 pass@64 |
+| 本库 mineru | DeepSeek-V4 §5.1.2 | 库内 `14.1/.../03-DeepSeek-V4-mineru-en.md` | 10-对照 | 式 (29) 全词表 reverse KL；反对 token 级 sg log 比 |
+| 原论文 HTML | Kimi K3 §4.1.3 | https://arxiv.org/html/2607.24653 | 10-对照 | 式 (15) clip sg log 比；九专家；官方名 MOPD |
+| 本库 mineru | MiMo-V2-Flash §4.1 / §4.4 | 库内 `14.9/.../03-MiMo-V2-Flash-mineru-en.md` | 10-对照 | MOPD 三阶段伞；Table 7 不是 GPU hours |
+| 本库 D2 | GLM-5 §3.5 | 库内 `14.6/08-GLM-5/01-GLM-5技术报告精译.md` | 10-对照 | cross-stage；sg log 比换 GRPO 优势；组大小 1 |
+| 本库 mineru | Step-3.5-Flash Limitations | 库内 `14.7/.../03-Step-3.5-Flash-mineru-en.md` | 10-对照 | 只有 variants of on-policy distillation 一句 |
+| 第 5 章（只读未改） | V4 技术解读 §5.5 | `5.2/.../27-DeepSeek-V4技术解读.md` | 10-对照点名 | 把 1800/17920 安到 V4；专文纠正、未改该文件 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
