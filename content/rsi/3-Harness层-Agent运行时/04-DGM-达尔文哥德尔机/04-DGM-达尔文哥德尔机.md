@@ -104,6 +104,17 @@ SWE-bench 那次 DGM 用 Claude 3.5 Sonnet (New) 跑。把最好 Agent 的脚手
 
 $S$ 取「当前 Agent 的 Python + 工具」。内环 $I_{\mathrm{inner}}\subseteq S$，自改之后 $I'_{\mathrm{inner}}\subseteq S'$，并且 $S''=I'(S')$ 有定义——子代继续当父母。按导读式 (2)，**Harness 层弱 RSI 候选成立**。
 
+![上排内环在 $S$ 里自改 Python；下排外环公式、冻结 $\theta$、基准 $B$ 仍在墙外](./images/fig-dgm-frozen.png)
+
+> 图 2：实线是一轮 SelfModify → 评估 → 入档。虚线来自墙外：谁被抽当父母、$T=80$、FM 权重、题集本身。
+
+**图 2 解析**
+
+- **Inner harness in $S$**：父母、自改、基准评估、档案。子代下一轮还当父母，式 (2) 在这一层闭合。
+- **outer $I$**：抽父母的公式、80 轮、级联题数。Algorithm 1 没把这些交给子代去改。
+- **frozen FM $\theta$**：论文把「改训练脚本、训新 FM」留作未来。
+- **benchmark $B$**：SWE-bench / Polyglot 既是训练信号也是汇报数字，考纲不在 $S'$ 里。
+
 仍缺三件，所以本花园不允许直接写成「真 RSI / 智能爆炸」。外环 $I_{\mathrm{outer}}$（抽父母的公式、80 轮、级联题集、基准本身）仍由人固定；$\theta$ 冻结；评价标准是 SWE-bench / Polyglot，不是系统自己改考纲。混元综述把改改进器放在 L3、改评价标准放在 L4，DGM 最多蹭到 L3 的脚手架切片。STOP（Zelikman 等，COLM 2024）更早把「改进器程序」当成递归对象：种子改进器 $I_0$ 用 LM 去改进任意解，再把 $I$ 自己交给同一套手续。它证明过 GPT-4 上下游任务随迭代变好，更弱的模型上递归结构会把分数拉下去——脚手架递归本身不够，基座得够用。Gödel Agent（Yin 等，arXiv:2410.04444）用运行时改自己的逻辑，没有 DGM 这套开放档案。ADAS 的元 Agent 固定，是 DGM 消融 w/o self-improve 的原型；机制与 Table 1 见 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。四篇都是 Harness 自指，深浅不同，本篇以 DGM 为可核对的数字样板。
 
 和 AlphaEvolve 再对一次。AlphaEvolve 也可以反哺 Gemini 训练时间 1%，那是 Artifact 回流到基础设施，$I$ 仍在墙外。DGM 的回流是：更好的编辑工具让下一轮自改更可能成功。回流落在脚手架上，这才是弱递归。不要把两篇的「20→50」和「23% kernel」加成同一件事。实验室若把 DGM 写成「已经智能爆炸」，对照清单只有一句：外环和 $\theta$ 有没有进 $S'$。没有，就停在弱候选。
