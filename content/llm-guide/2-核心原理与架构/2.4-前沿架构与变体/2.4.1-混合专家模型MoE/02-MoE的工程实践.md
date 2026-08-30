@@ -126,7 +126,10 @@ MoE的核心创新在于用稀疏激活的专家层替换了Transformer模块中
 
 路由过程如下:
 
-1. 路由器接收一个token的嵌入向量.2. 输出一个在所有专家上的得分(logits).3. 通过softmax将得分转换为概率.4. 选择概率最高的**top-K**个专家来处理该token. $K$ 是一个超参数, 通常为1或2.
+1. 路由器接收一个 token 的嵌入向量.
+2. 输出一个在所有专家上的得分 (logits).
+3. 通过 softmax 将得分转换为概率.
+4. 选择概率最高的 **top-K** 个专家来处理该 token. $K$ 是一个超参数, 通常为 1 或 2.
 
 ![](./02-MoE的工程实践-images/image_10.png)
 
@@ -146,7 +149,9 @@ MoE的核心创新在于用稀疏激活的专家层替换了Transformer模块中
 **解决方案**: **专家容量**(Expert Capacity).
 我们为每个专家预先设定一个固定的缓冲区大小, 即**专家容量**.
 
-$\text{ExpertCapacity} = \text{round}\left(\frac{\text{TokensPerBatch} \times K}{\text{NumExperts}}\right) \times \text{CapacityFactor}$
+$$
+\text{ExpertCapacity} = \text{round}\left(\frac{\text{TokensPerBatch} \times K}{\text{NumExperts}}\right) \times \text{CapacityFactor}
+$$
 
 CapacityFactor 是一个大于1的超参数, 用于提供冗余空间. 如果路由到某个专家的token数超过其容量, 多余的token将被“丢弃”, 其信息通过残差连接直接传递到下一层, 不经过专家计算.
 
