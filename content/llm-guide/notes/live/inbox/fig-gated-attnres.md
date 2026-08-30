@@ -20,7 +20,7 @@ published: false
 - **不是** `2.1.3` 的 Gated Residual（残差四分支读门）。
 - **不是** SwiGLU / PowLU / SiTU。
 - 消融：15B MoE + 1.7B dense、3.5T token。Table 1 抽样：SDPA Elementwise $G_1$ PPL **5.761**、MMLU **74.64**（只抄表，不要 15 行全贴）。$G_1$ 优于 $G_2$–$G_5$。作用：非线性补 $W_v$–$W_O$ 低秩、query-dependent 稀疏、缓解 attention sink / massive activation。
-- Qwen3-Next 用了 SDPA output gating——链第 14 章 Qwen，不要在本篇抄整份 Next 报告。
+- Qwen3-Next 用了 SDPA output gating：必须在本篇写清它加在 SDPA 之后、head-specific 门、和 $G_1$ 是不是同一插槽。第 14 章 Qwen 精读可以链，但**不要用链接代替这段展开**。不要把整份 Next 报告（数据、RL、SKU）搬进来。
 - 图 1：`fig-gated-attn-g1-after-sdpa.png`（Q,K,V → SDPA → 每头 sigmoid 门 → $W_O$），旁标 $G_2$–$G_5$ 位置「不是推荐」。
 - 图 2：`fig-gated-attn-not-gated-residual.png`：左边注意力输出门，右边残差流门。标题写「不是」。
 

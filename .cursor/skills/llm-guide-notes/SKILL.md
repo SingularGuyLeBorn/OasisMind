@@ -52,7 +52,7 @@ description: >-
 
 1. 一句话定义对象 + 它卡住的瓶颈（KV 字节、负载不均、相对位置进不了点积…）。
 2. 本篇在系列里的位置（后文拿它当**度量零点**或对照）。
-3. 明确「不是」什么（不是专栏转写、不是把第 14 章厂商文再抄一遍）。
+3. 明确「不是」什么。体系章要把组件**放进整机写透**（插在哪、改了哪条数据流、和邻居积木怎么分工）。第 14 章是某次发布的报告精读，侧重不同，**允许重复**。禁止用「细节见第 14 章」代替展开。禁止把 D2 目录结构搬进 1–13。
 
 金样本开头：MHA 先立 KV Cache 参照系；RoPE 先点破「相对位置在点积里自动出现」；GQA 一句话插在 MHA 与 MQA 之间。
 
@@ -77,10 +77,19 @@ description: >-
 - 先矩阵式，需要时再坐标展开（MHA 式 (7)–(14) 是上限，不是每篇都要双求和）。
 - 关键等式写「先 Top-K 再 Softmax」这类**实现分叉**，并点名谁用哪条（Qwen / DeepSeek V1–V2）。
 
+### 体系章 vs 第 14 章（用户 2026-08-30 拍板）
+
+| | 1–13 体系 / 机制专文 | 第 14 章报告精读 |
+|--|----------------------|------------------|
+| 问什么 | 这个组件加进整层发挥什么作用 | 这次发版把哪些积木捆在一起、报告怎么写 |
+| 必须写 | 插槽、数据流、和邻居的分工、配图、数字 | 按报告章节走：数据、infra、评分、消融表 |
+| 禁止 | 「详见第 14 章 / mineru」一句话打发 | 在型号夹再推一遍 MLA 公式（链回第 2 章） |
+| 重复 | **允许**。GQA / SwiGLU / QKNorm 可以两边都出现 | 同一事实，精读口吻 |
+
 ### 配图
 
 - 用 Cursor `GenerateImage` 自绘，或 mermaid / Markdown 表。
-- **必须浅色主题，禁止深色主题。** 画布白底或极浅灰；字和箭头用深灰/深蓝；色块用浅色填充 + 深色描边。用户明确不喜欢深色底。
+- **必须浅色主题，禁止深色主题。** 画布白底或极浅灰；字和箭头用深灰/深蓝；色块用浅色填充 + 深色描边。用户明确不喜欢深色底。用户希望**整库详尽配图**：机制数据流、整机插槽、对照「不是」都要有图，不要只丢公式。
 - description **必须整段带上**（缺任一句 = 不合格，重画）：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
 - 落点：`./images/fig-kebab-case.png`（或 `.jpg`），正文相对路径引用。
 - **禁止**语雀 CDN、Substack、微信/知乎截图、论文 PDF 截图当配图。已有水印图：保留旧文件，新生成无水印版改引用。

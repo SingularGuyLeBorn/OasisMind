@@ -127,7 +127,7 @@ $$
 
 $768\times 8/3=2048$，与式 (7) 是同一件事。**$8d/3$ 不是第三种魔法宽度**，只是「原来 $4d$、三矩阵再乘 $2/3$」的算术结果。
 
-后面 Llama 写「用 $\tfrac{2}{3}\times 4d$，而不是 PaLM 的 $4d$」：PaLM 已经上了 SwiGLU，但中间宽仍取 $4d$，三矩阵会比两矩阵 $4d$ **更贵**；Llama / 后来的 Qwen 回到式 (8) 这条保参线。本篇只把这条算术钉死；具体型号表留给第 14 章。
+后面 Llama 写「用 $\tfrac{2}{3}\times 4d$，而不是 PaLM 的 $4d$」：PaLM 已经上了 SwiGLU，但中间宽仍取 $4d$，三矩阵会比两矩阵 $4d$ **更贵**；Llama / 后来的 Qwen 回到式 (8) 这条保参线。算术在这里钉死；§6 用 Llama / Qwen3 / DeepSeek 说明产品默认怎么落，不把数字推给第 14 章。
 
 ---
 
@@ -166,7 +166,7 @@ Shazeer 2020 的结论停在「GLU 变体在 T5 设定里 ppl 更好，GEGLU 与
 - **Qwen3** dense：FFN 用 SwiGLU，并写明 `intermediate_size = 2/3 × hidden_size × 4`，即式 (8) 的 $8d/3$。
 - **DeepSeek**：Coder 超参表 Hidden Activation = SwiGLU；V3 把 MoE 专家前馈写成 SwiGLU 算子（报告写 cache 其输入、反传再重算）。这是产品默认，不是 2020 论文的选型结论。
 
-本篇到此为止。谁在某次发布里改过门函数、要不要 clamp，**不在这里展开**。
+谁在某次发布里改过门函数、要不要 clamp，机制在 [04 PowLU](../04-PowLU-Ling对SwiGLU的稳定化改写/04-PowLU-Ling对SwiGLU的稳定化改写.md) 与 [6.1.7](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md)；第 14 章对应家族是报告怎么捆这些积木，不是本篇的省略号。
 
 ---
 

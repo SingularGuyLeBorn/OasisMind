@@ -7,9 +7,9 @@ tags: [PowLU, SwiGLU, 激活函数, FFN, Ling, FP8]
 
 # 04 PowLU：Ling 对 SwiGLU 的稳定化改写
 
-PowLU（Power Linear Unit）是 Ling Team（Ant Group）在 2026-05 提出的激活：把标量 SwiGLU 在大正输入上趋近 $x^{2}$ 的增长律改成趋近线性 $x$，用来压 outlier、稳住低精度预训练。本篇接 [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) 的 SwiGLU 默认形态，对照 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) 的光滑上界路线，只回答「增长律怎么改」。它**不是** Ling-2.0 / Ling-1T 出厂激活——产品块仍写 SwiGLU + RMSNorm + QKNorm + Partial RoPE；PowLU 是挂在 Ling 架构 MoE 专家 / 共享专家上的实验。也**不是** hard clamp，不是 SiTU。
+PowLU（Power Linear Unit）是 Ling Team（Ant Group）在 2026-05 提出的激活：把标量 SwiGLU 在大正输入上趋近 $x^{2}$ 的增长律改成趋近线性 $x$，用来压专家 FFN 里的 outlier、稳住低精度预训练。本篇接 [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) 的 SwiGLU 默认形态，对照 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) 的光滑上界路线。公式回答「增长律怎么改」；§4 回答它**插进 Ling 这一整层之后干什么**——改的是专家 / 共享专家两层线性中间的非线性，不改 GQA、QKNorm、Partial RoPE、路由。也**不是** hard clamp，不是 SiTU。Ling-2.0 出厂仍用 SwiGLU，对照写在 §4.4，不甩到第 14 章代替展开。
 
-> 邻居：[2.1.1 FFN 与激活](../2.1.1-前馈网络FFN与激活函数.md) · [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) · [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) · [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) · [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md)
+> 邻居：[2.1.1 FFN 与激活](../2.1.1-前馈网络FFN与激活函数.md) · [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) · [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) · [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) · [Ling-2.0 报告精读](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md)（逐段精读，和本篇侧重不同，允许重复）
 
 ---
 
@@ -73,11 +73,54 @@ $x_{2}>0$ 时 $f(x_{2})=x_{2}^{m/(\sqrt{x_{2}}+1)}\sigma(x_{2})$；$x_{2}\le 0$ 
 
 ---
 
-## 4. 挂在 Ling 架构上的实验，不是产品出厂件
+## 4. 插进 Ling 这一整层：激活改的是专家 FFN
 
-激活插在 MoE **专家和共享专家**的两层线性之间，骨架跟 Ling 架构走（论文引 Ling Team, 2025, [arXiv:2510.22115](https://arxiv.org/abs/2510.22115)）。规模：scaling 用 26M–368M **激活**参数的小 MoE；大实验是 **7.9B 总参 / 600B token** 和 **124B 总参 / 800B token**。默认 $m=3$。
+PowLU 论文的实验声明（§4.1.1）只有一句落点，但这一句决定了它在整机里的职责：把 SwiGLU / SwiGLU-Clip / PowLU **放在 MoE 专家和共享专家的两层线性之间**，骨架 follow Ling 架构（Ling Team, 2025, [arXiv:2510.22115](https://arxiv.org/abs/2510.22115)）。默认 $m=3$。scaling 用 26M–368M **激活**参数的小 MoE（Table 1：10–24 层，hidden 512–1280，序列 4096）；大实验是 **7.9B 总参 / 600B token** 和 **124B 总参 / 800B token**。论文没有另给这两档的专家数表，所以下面用 2.0 系列写清**同一家族整层长什么样**，再用 PowLU 文写清**这一刀切在哪**。不要把「见第 14 章」当成展开。
 
-把这件事链到第 14 章时必须停在这句：**Ling-2.0 / Ling-1T 出厂没有换成 PowLU。** 库内 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md) 写的是标准 GQA，以及 **SwiGLU + 预归一化 RMSNorm + QKNorm + Partial RoPE**（仅头的前 64 维做旋转）。PowLU 是 2026-05-25 那篇激活论文在同一家族 MoE 专家上的对照实验，不是 2.0 系列报告里的产品配方。
+### 4.1 一层里各块干什么
+
+Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN 各管一类病：
+
+1. **注意力支路。** 预归一化 RMSNorm 之后做 **GQA**（分组共享 KV，压 decode 时的 KV 字节）。Q、K 再走 **QKNorm**：Ling-2.0 报告写明，早期在 `attention.linear_qkv` 的激活和梯度里看到随层放大的 outlier，低精度下会变成量化误差；QKNorm 是注意力侧的稳定锚。位置用 **Partial RoPE**：只旋转每个头的**前 64 维**，后面维不转——长度外推靠前 64 维带位置，后半截留给偏语义的通道。这一支路 **PowLU 论文一个符号都没改**。
+2. **MoE 支路。** 再一次 Pre-RMSNorm 之后进混合专家。2.0 产品配方是 **256 个路由专家、每 token Top-8，外加 1 个共享专家**（激活率约 3.5%）；前几层可以是 dense，减轻早期路由不均。每个被选中的专家（共享专家也一样）是三矩阵门控 FFN：两路升维 → 逐元素门控 → 降维，和 [03](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) 的 $\mathrm{FFN}_{\mathrm{SwiGLU}}$ 同构。
+3. **PowLU 的插槽。** 论文把 $f$ 放在「第一组线性」和「第二组线性」之间，实现 $\mathrm{PowLU}(x_1,x_2)=x_1\cdot f(x_2)$。共享专家与路由专家**同一把刀**：token 每层要过 1 个共享 + 8 个路由，激活函数会被乘进九份专家计算里。Fig. 2 画的分位数，明确是 **experts 的线性层**，不是注意力投影。
+
+![PowLU 插在 Ling 块的专家 FFN，不插在注意力](./images/fig-powlu-in-ling-block.png)
+
+> 图 2：浅色自绘。一层 Ling 块里，GQA / QKNorm / Partial RoPE 走注意力残差；PowLU 只替换专家（含共享专家）升维与降维之间的非线性。不是论文插图。
+
+**图 2 解析**
+
+- **上半 Attention（蓝）**：GQA 少存 KV；QKNorm 压 Q/K 侧 outlier，服务 FP8；Partial RoPE 只转前 64 维。这三件是注意力配方，换激活**碰不到**它们。
+- **下半 MoE（绿）**：路由器选 Top-8 / 256，加 1 个共享专家。两列专家内部都是 `Linear up/gate → 激活 → Linear down`。珊瑚框是本篇对象：把 SwiGLU 换成 PowLU 的唯一位置。
+- **底栏分工**：QKNorm 打注意力侧、PowLU 打专家 FFN 的二次放大。二者互补，不是「有了 QKNorm 就不用改激活」。
+- **残差两次相加**：激活输出还要乘专家权重、再加回主干。outlier 若在专家线性层炸开，会沿深度累积——这就是论文 Fig. 2 红带随专家层变宽的整机含义。
+
+### 4.2 这一刀在整机里发挥什么作用
+
+把 SwiGLU 换成 PowLU，**没有**改路由、没有改 KV 形状、没有改 RoPE 切分。对照实验能读成一句工程命题：
+
+> 在同一套 Ling 块上，只换专家 FFN 的非线性，能否在不牺牲 scaling 曲线的前提下，把专家线性层的动态范围收住，从而让 FP8 预训练少 spike。
+
+整机因果链是这样接的：
+
+- **表达力仍在门控 FFN。** 值支路 $x_1$ 还是线性，门 $f(x_2)$ 仍提供非线性。小规模 scaling（Fig. 3）两条 loss 曲线几乎重叠，意思是：改增长阶没有把容量换没。
+- **稀疏 MoE 会放大激活的问题。** 每个 token 每层要过多份专家 MLP；共享专家**每个 token 都走**。SwiGLU 在正半轴 $\approx x^2$ 的放大，会在「被频繁选中的专家」和「人人必经的共享专家」上反复出现。论文 Fig. 5 还专门画了**共享专家**里、激活之后第二条线性的输入，以及激活之前第一条线性的梯度——稳定化必须覆盖共享专家，不能只改 routed 那 8 个。
+- **和 QKNorm 分工。** 2.0 报告把 QKNorm 写成压 `linear_qkv` 的 outlier、减少全网 FP8 误差。PowLU 文 Fig. 2 画的是专家线性层。注意力投影和专家 MLP 是两条激活路径；只修一条，另一条仍能把范围撑破。
+- **和 hard clip 的差别在整机里也成立。** SwiGLU-Clip 把线性支路截断、把门封顶，FP8 曲线只能把 spike **推迟**到约 77000 step，仍炸；PowLU 不设水平帽，正无穷仍 $\sim x$。对整层来说：clip 是在专家 FFN 出口砍一刀，PowLU 是改那一刀之前的增长律。
+
+### 4.3 实验规模：同一家族，不是同一 SKU
+
+| 设定 | 总参 | 数据 | 激活 | 论文写了什么 |
+|------|------|------|------|----------------|
+| scaling | 激活 26M–368M | seq 4096 | SwiGLU vs PowLU | Table 1 层数 / hidden / lr / batch；曲线几乎重叠 |
+| 大实验 A | **7.9B** | 600B token | 三者对照 | Table 2，17 项 |
+| 大实验 B | **124B** | 800B token | SwiGLU vs PowLU | Table 3 |
+| Ling-2.0 产品 | mini 16B（激活 1.4B）/ flash 103B（6.1B）/ **1T（51B）** | 报告自己的预训练预算 | **SwiGLU** | 256 专家、8+1、GQA、QKNorm、Partial RoPE 64、预 RMSNorm；另捆 MTP 与无辅助损失路由 |
+
+7.9B / 124B 是 PowLU 文自己训的 MoE，**不是** mini / flash / 1T 三个产品名。2.0 还捆了 1 层 MTP（损失权重 0.1）和无辅助损失 load balance——PowLU 文没有把这两项当消融因子，不要写成「PowLU 论文验证了 MTP」。
+
+**Ling-2.0 / Ling-1T 出厂没有换成 PowLU。** 产品块仍是 SwiGLU + 预 RMSNorm + GQA + QKNorm + Partial RoPE（头的前 64 维）。PowLU 是 2026-05-25 激活论文在同一家族专家 FFN 上的对照：问「只换这一处，整机稳不稳、分还在不在」，不是一次发版配方。第 14 章 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md) 按报告章节精读 EL、数据、RL、流水线；和本篇重复的 GQA / QKNorm / 专家数，是同一套积木的两种写法。
 
 ---
 
@@ -124,7 +167,7 @@ $x_{2}>0$ 时 $f(x_{2})=x_{2}^{m/(\sqrt{x_{2}}+1)}\sigma(x_{2})$；$x_{2}\le 0$ 
 
 | 现象 | 原因 | 说明 |
 |------|------|------|
-| 写成 Ling-mini / flash / 1T 已经换 PowLU | 把实验文和产品报告叠在一起 | mineru 仍是 SwiGLU；本篇只覆盖 2026-05 激活论文 |
+| 写成 Ling-mini / flash / 1T 已经换 PowLU | 把 7.9B/124B 实验和 2.0 产品 SKU 叠在一起 | 2.0 出厂仍是 SwiGLU；本篇只覆盖 2026-05 激活论文 |
 | 把 PowLU 画成水平饱和 | 和 SiTU / clamp 搞混 | 正无穷仍 $\to+\infty$，只是 $\sim x$ 而不是 $\sim x^{2}$ |
 | 把 $m$ 写成可学习温度 | 式 (1) 里 $m$ 是超参 | 实验固定 $3$，消融只试了 $2,3,4$ |
 | 用 FP8 的 1.32 打 BF16 SwiGLU | 忽略换激活 recovery 与精度差 | 论文自己把蓝线解释成「精度更高 + 没换激活」 |
@@ -136,5 +179,5 @@ $x_{2}>0$ 时 $f(x_{2})=x_{2}^{m/(\sqrt{x_{2}}+1)}\sigma(x_{2})$；$x_{2}\le 0$ 
 
 1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704. 式 (1)、§3.1 实现、$m=3$；Fig. 3 / Table 1–4；§4.3.1 FP8 spike。HTML：[arxiv.org/html/2605.25704](https://arxiv.org/html/2605.25704)。
 2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925. 仅核脚注「clamping and a residual connection」；未见官方 clamp limit。
-3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. PowLU 文所称 Ling 架构；产品激活仍以库内 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md) 的 SwiGLU + RMSNorm + QKNorm + Partial RoPE 为准。
+3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. PowLU 文所称 Ling 架构；2.0 产品块（GQA、QKNorm、Partial RoPE 64、256 专家 8+1、SwiGLU）按报告 §2.1 / 表 1 写在本篇 §4，精读全文见 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md)。
 4. Noam Shazeer. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv:2002.05202. SwiGLU 名称与门控形态；标量 $x\cdot\mathrm{SiLU}(x)$ 是 PowLU 文的对照写法。

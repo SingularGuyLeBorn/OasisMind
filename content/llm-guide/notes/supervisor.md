@@ -55,6 +55,7 @@ category: LLM 指南
 - 没把课程当年的「最新」写成 2026-08 事实。
 - 新专文路径能对上 `chapter-structure-plan.md`：**`{N.N.N}/{NN}-…/{NN}-….md`**，同层 ≤10，无 `11`、无四段点分号。夹名 = 主 md 名；无空格/冒号；新图 `fig-kebab.png`。章首页不是第二份专文。**`ls` 小节根不得出现 `01-foo.md` 散文件**（节首页同名 md 除外）。过文 brief 必须写：散文件先 `git mv` 再写。
 - **成文：** 可见正文没有 `2026-08 修订（不删上文）`，也没有「上文说错、下面改正」双轨。对的数字只出现一次。碰过的文件必须折完再收。
+- **整机展开：** 体系专文若出现「细节见第 14 章 / mineru」且该组件的插槽、数据流、和邻居分工没写完 → 不合格，重写。第 14 章精读与体系章允许重复。浅色机制图要有。
 
 ## 子代理 brief（每个 Task prompt 必须自包含，复制下列死命令）
 
@@ -62,6 +63,7 @@ category: LLM 指南
 
 - 先 Read：`.cursor/skills/llm-guide-notes/SKILL.md`、`canon.md`、与本篇同族的一篇金样本；`notes/trusted-sources.md`；`notes/chapter-structure-plan.md`（落点表 + **编号**：点分号最多三层如 `4.1.1`；`01`/`02` 只挂在第三层下面且必须是同名夹；禁止 `{N.N.N}/01-foo.md` 散文件；同层约 ≤10；第 14 章 D 码不要搬进 1–13；夹名 = 主 md 名、无空格冒号）。租约里的路径若是散文件，先 `git mv` 进同名夹再写。
 - 中文正文。禁止 Delete 任何既有文件。禁止 `move_agent_to_root`。禁止 commit / push / `git add -A`。禁止改 `apps/`。
+- 体系章把组件放进整机写透（插在哪、改哪条数据流）。第 14 章是报告精读，允许重复。禁止「细节见第 14 章」代替展开。禁止搬 D2 目录结构进 1–13。配图必须浅色、详尽。
 - WebSearch / WebFetch 原论文、model card、官方 blog。论文读完后可用 `pnpm --filter @oasismind/server zhihu -- search "<概念>"` 再 `zhihu -- read <url>`（`--offset` 翻页）。知乎只学讲法，数字以论文为准，禁止搬专栏正文/图。不要用 WebFetch 硬扛知乎。URL **写在回传里**（或只写进租约指定的 `notes/live/inbox/<id>.md`）。**禁止改** `notes/live/GOAL.md`、`PLAN.md`、`PROCESS.md`。没上台账的规格不准写。课程不是金科玉律。
 - 找不到一手：`[OM-FREEPLAY]` + 「未找到一手来源」。
 - 禁止抄袭：不搬 CS336/Lil'Log/科学空间/兄弟花园正文或图。
