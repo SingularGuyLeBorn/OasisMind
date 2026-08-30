@@ -9,6 +9,8 @@ tags: [NSA, Sparse Attention, DeepSeek]
 
 NSA（Native Sparse Attention，[arXiv:2502.11089](https://arxiv.org/abs/2502.11089)）是 DeepSeek 的 **可训练** 块级稀疏注意力。64K 上注意力可占延迟 70%–80%；FlashAttention 只降 HBM 往返，不降 FLOPs。后处理稀疏（H2O 一类驱逐、Quest 一类 **不驱逐只选页**）解决不了训练成本。本篇只写三分支：**压缩 / 选择 / 滑动窗口**。块均值 top-$k$ 路由见 [01 MoBA](../01-MoBA架构深度解析/01-MoBA架构深度解析.md)，不要把 MoBA 公式抄进来。
 
+口述 **MSA**：ViT 文献里的 MSA = Multi-head Self-Attention，就是 [01-MHA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的同一算子，本篇不开夹，也不要把 MoBA 改名成 MSA。另检索到 MiniMax Sparse Attention（[arXiv:2606.13392](https://arxiv.org/abs/2606.13392)，官方也缩写 MSA）与 Memory Sparse Attention（[arXiv:2603.23516](https://arxiv.org/abs/2603.23516)）两篇独立稀疏一手论文——机制不是 NSA 三分支，本切片不建专文夹。[OM-FREEPLAY]
+
 ## 1. 现有稀疏方法差在哪
 
 为了理解NSA的创新之处,我们首先需要深入分析大模型在处理长上下文时面临的挑战,并审视现有稀疏注意力方法的不足. 
@@ -65,17 +67,20 @@ $\mathbf{o}^*_t = \sum_{c \in \mathcal{C}} g_t^c \cdot \text{Attn}(\mathbf{q}_t,
 
 其中,$\mathcal{C} = \{cmp, slc, win\}$ 代表三种注意力方法. $g_t^c \in$ 是对应策略 $c$ 的门控得分,由输入特征 $x_t$ 经过一个多层感知器(MLP)和Sigmoid激活函数计算得出. 
 
-![NSA 整体稀疏框架（论文 Figure 2）](./images/fig-nsa-02-three-branch-framework.jpg)
+![NSA 三分支：压缩 / 选择 / 滑动窗口，再门控融合](./images/fig-nsa-three-branch.png)
 
-> 图 1: NSA 三分支稀疏框架——压缩、选择、滑动窗口并行（论文 Figure 2）。
+<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. NSA three-branch: Compress / Select / Sliding Window then gated fusion. -->
+
+> 图 1：NSA 三分支——窗管局部、压缩管全局粗扫、选择管细检索，门控 $g_t^c$ 加权融合。自绘，对应论文 Figure 2；论文原图仍保留为 `fig-nsa-02-three-branch-framework.jpg`（不删）。
 
 **图 1 解析**
 
-- **左侧面板**：输入序列的 KV 被组织成时间块；三支路并行 — **cmp** 压缩粗粒度、**slc** 选择细粒度块、**win** 滑动窗口局部上下文。
-- **右侧面板**：绿色区域 = 需要算 attention 的位置，白色 = 可跳过 — 直观看到 **稀疏模式因分支而异**，最终由门控 $g_t^c$ 加权融合。
-- **与 Full Attention 对比**：Full 为下三角全绿；NSA 大部分区域留白 — 理论 FLOPs 与 HBM 访问量同步下降。
-- **训练原生性**：三支路均可微 — 非「推理时剪枝」；从预训练起学习 $g_t^c$ 与压缩 MLP $\phi$，避免 post-hoc 稀疏掉点。
-- **读图顺序**：先理解三支路 **各管什么尺度**，再读 §3.2–3.4 的分支公式；内核实现见 §3.5 与图 4。
+- **顶行**：输入 KV 按连续块排开；$q_t$ 同时送进三路 Attention，不是三套互不相关的 query。
+- **Compress（cmp）**：块经 MLP $\phi$ 收成摘要 token，再算 Compressed Attention——**全局粗扫**，看的是块摘要，不是原 token。
+- **Select（slc）**：用压缩支路的 $p^{\mathrm{cmp}}$ 给块打分，取 Top-$n$ 块，把**原 token** 拼起来做 Selected Attention——细检索。
+- **Sliding window（win）**：只看最近 $w$ 个 token，保局部。
+- **底栏门控**：$o^*_t=\sum_{c\in\{\mathrm{cmp},\mathrm{slc},\mathrm{win}\}} g_t^c\cdot\mathrm{Attn}_c$。三路各自 softmax 再加权，不是把三套 KV 拼成一条长 Softmax。
+- **不是**：不是 [01 MoBA](../01-MoBA架构深度解析/01-MoBA架构深度解析.md) 的块均值路由；不是 [13 Quest](../13-Quest-查询感知稀疏/13-Quest-查询感知稀疏.md) 的页级不驱逐选页；也不是下文 DSA 的 MLA indexer 插件。64K 相对 Full 的加速倍数见下文图 2 / 图 4（论文 Figure 1、6 的 11.6× / 9× / 6×），不要从图 1 读倍数。
 
 ### 3.2 性能与效率总览（论文 Figure 1）
 
@@ -333,6 +338,21 @@ Input Hidden States
         ├─→ 用 topk_indices 筛选 KV
         └─→ 稀疏 Attention 输出
 ```
+
+![DSA：Lightning indexer 打分 → Top-K → MLA 主注意力只打选中 token](./images/fig-dsa-indexer-topk.png)
+
+<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. DSA Lightning Indexer then Top-K then MLA sparse attention. -->
+
+> 图 7：DSA 挂在 MLA 上——Lightning indexer 打分 → Top-K（默认 $k=2048$）→ 主注意力只算选中 token。全量 MLA KV 仍驻留。自绘；官方 [DeepSeek-V3.2-Exp](https://github.com/deepseek-ai/DeepSeek-V3.2-Exp)。
+
+**图 7 解析**
+
+- **左栏 Lightning Indexer**：输入是当前层 hidden $x$ 与 MLA 的 latent query $q_r$。$q^I=W^{Q,I}q_r$（从 latent 升维），$k^I=W^{K,I}x$、$w^I=W^{W,I}x$（从 hidden 投影）。
+- **打分**：$I_{t,s}=\sum_j w^I_{t,j}\cdot\mathrm{ReLU}(q^I_{t,j}\cdot k^I_s)$。图上写 **no softmax**——indexer 只出重要性，不做注意力归一化。
+- **Top-K**：默认 $k=2048$；序列短于 $k$ 时短路，跳过 indexer，走完整 MLA。
+- **右栏 MLA 主注意力**：一排槽都还在（**全量 KV 驻留**）。填色槽 = 这一步进入 softmax 的选中 token；白槽 = 驻留但不参与本步计算。
+- **降的是 FLOPs $O(L\cdot k)$，不是 KV 条数**。Indexer 另加一份很窄的 $k^I$ cache，主 MLA 的 $c_t^{KV},k_t^R$ 不删条。
+- **不是**：不是 NSA 的第四条分支（NSA 是预训练三路门控；DSA 是 MLA 上的推理侧插件）。不是 MoBA 块路由，也不是 Quest 的页 min/max 上界（Quest 同样不驱逐，但打分器不是这套 Lightning indexer）。
 
 ### 2.2 Indexer 模块详解
 
