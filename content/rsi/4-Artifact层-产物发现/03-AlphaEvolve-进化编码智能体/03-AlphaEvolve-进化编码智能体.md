@@ -110,7 +110,7 @@ $\mathcal{D}$ 是程序数据库。Prompt sampler 从 $\mathcal{D}$ 里抽出若
 
 AlphaEvolve 不直接在张量条目上做 RL，而是进化一个**搜分解的程序**：初始化、重构损失、Adam/AdamW、超参扫描都可以进进化块。评估时对一组乘法目标、多个随机种子跑这个搜索器，分数是达到的最低 rank，以及有多少种子打到这个 rank。为避免浮点装成「新算法」，评估会把条目四舍五入到整数或半整数，并在提示里用自然语言要求接近整数解。论文 Figure 4 给过一次 15 步变异的例子：优化器从 Adam 换成 AdamW、初始化尺度改掉、损失里加上离散化项和余弦退火——改的是搜索器源码，不是 Gemini。
 
-Table 2 里 14 个目标刷新已知最好。$\langle 4,4,4\rangle$ 从 49（Strassen 递归，任意域）到 **48**（复乘，也可用于实矩阵的精确乘）。脚注写清：存在乘法次数更少但不对应张量分解、因而不能递归放大到更大矩阵的算法；AlphaEvolve 给的是可递归的 rank-48 分解。$\langle 3,3,3\rangle$ 仍停在 23，没有假装什么都破了。完整表和构造在配套 [Colab](https://colab.research.google.com/github/google-deepmind/alphaevolve_results/blob/master/mathematical_results.ipynb)。
+Table 2 里 14 个目标刷新已知最好，覆盖 $\langle 2,4,5\rangle$ 到 $\langle 4,5,6\rangle$ 这一段常用形状。$\langle 4,4,4\rangle$ 从 49（Strassen 递归，任意域）到 **48**（复乘，也可用于实矩阵的精确乘）。脚注写清：存在乘法次数更少但不对应张量分解、因而不能递归放大到更大矩阵的算法；AlphaEvolve 给的是可递归的 rank-48 分解。$\langle 3,3,3\rangle$ 仍停在 23，没有假装什么都破了。完整表和构造在配套 [Colab](https://colab.research.google.com/github/google-deepmind/alphaevolve_results/blob/master/mathematical_results.ipynb)。
 
 同一套系统还可以换抽象层级：直接进化解的字符串、进化从零构造解的函数、进化在固定算力预算里找解的搜索算法，或者让中间解和搜索算法一起进化。对称性强的对象更吃构造函数（FunSearch 那一路）；不对称的更吃定制搜索。这是用法，不是另一套坐标系。
 
