@@ -48,7 +48,7 @@ Shilong Liu（2026-07-08）用同一套三要素给现有工作分了三档：�
 
 动机最简单：用强 LLM 为可自动打分的问题创造新产物。人定目标与评估函数，Agent 反复「提议代码 → 自动评测 → 进化保留」。循环可以跑很久，**Agent 的权重和脚手架都可以不动**。
 
-Google DeepMind 官方博客（2025-05-14）把 AlphaEvolve 写成「evolutionary coding agent」。循环可以拆成四段，全部发生在固定 Agent 之外的程序空间里：
+机制、公式和白皮书数字的展开在 [03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。这里只留不能再缩的层判断。Google DeepMind 官方博客（2025-05-14）把 AlphaEvolve 写成「evolutionary coding agent」。循环可以拆成四段，全部发生在固定 Agent 之外的程序空间里：
 
 1. **Prompt sampler** 从程序数据库里组装提示，告诉模型「现在要改哪段代码、上一轮分数是多少」。
 2. **模型提议**：Gemini Flash 扩搜索宽度，Gemini Pro 给深度建议，输出的是程序（或 diff），不是新权重。
