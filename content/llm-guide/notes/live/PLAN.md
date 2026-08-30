@@ -13,9 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 用户点名 **Loop Transformer** 进体系。新小节 `2.4.9-循环Transformer/`（地图 + `01-Loop-Transformer-层重复用/`）。不是序列 RNN（那是 2.4.4），不是 CoT 多吐 token（那是 4.5）。
-2. **并行：** 4.5 地图补「潜空间循环 vs CoT」一行，只链 2.4.9，不重推公式。`fig-moe-router-top2` **不要重画**。wave-2 其余三张仍在租约 `fig-wave-2`。
-3. **再下一波：** 结构 S5/S6/S8；人味扫尾。GxPO / OPD 综述租约仍在跑，不要和 2.4.9 混交。
+1. **立刻做：** 回收 Loop Transformer 子代理（`2.4.9`）；不合格重派。监工补 `2.4-前沿架构与变体.md` 索引一行。
+2. **并行：** 回收 RLOO / KTO 专文；4.4.1 地图链上 06。`fig-moe-router-top2` **不要重画**。
+3. **再下一波：** 4.4 根上薄节（计算流程 / SFT-RL 融合）写满或并进专文；结构 S5/S6/S8。
+
+## 续跑锚点（不是停机指令）
+
+刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
+
+- 上一件：02-GRPO 占位已写满（仓库第一天就有「保留原文章」，不是后来改坏）；GSPO 5.2/5.3 与 PPO 7.1–7.4 补了代码。
+- 现在立刻做：2.4.9 Loop Transformer 交卷质检。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -89,13 +96,6 @@ category: LLM 指南
 - [ ] wave-3：MoE 工程其余（capacity / load / drop / aux-zloss）+ LatentMoE 插槽
 - [ ] **结构 S5 / S6 / S8**：14 家族序号 / Ernie / 过满拆篮。成文：碰一篇折一篇修订块。编号：三层点分号 + 第四层 `01`–`10`。不删文件。
 
-## 续跑锚点（不是停机指令）
-
-刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
-
-- 上一件：4.6-OPD 夹名与读者页磁盘备忘已清。
-- 现在立刻做：2.4.9 Loop Transformer 专文。不要 `move_agent_to_root`。不要 push。
-
 ## 路径租约（并行防撞）
 
 派子代理**之前**由监工填写；收回后删行或改 `done`。路径集合必须两两不相交。`notes/live/*.md`、Skill、trusted-sources、supervisor **永不出租**（只许监工改）。`notes/live/inbox/<id>.md` 可租给对应切片。
@@ -166,4 +166,6 @@ category: LLM 指南
 | gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
 | opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
 | loop-tf | running | `2.4-前沿架构与变体/2.4.9-循环Transformer/` + inbox `loop-tf.md` | 新建 2.4.9 地图 + 01 专文 + images；不改 2.4.md / 2.4.4 / 4.5 |
-| ttc-45 | running | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 只补地图「潜空间循环 vs CoT」；不 mkdir；不改 2.4.9 |
+| ttc-45 | done | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 已补 token 轴 vs 深度轴 $N=KR$；链 2.4.9 |
+| rloo-44 | running | `4.4.1/06-RLOO-留一法基线/` + inbox `rloo-44.md` | 2402.14740；不改 01–05 |
+| kto-442 | running | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 2402.01306；不改 01-DPO / 02-ORPO / 4.4.4 |

@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：Loop Transformer 一手（Universal Transformer / Giannou 2301.13196 / Saunshi 2502.17416 / Huginn 2502.05171 / Fully Looped 2605.18797 / DeepLoop 2607.13491）。
-- 正在写：2.4.9 专文（子代理 loop-tf）；4.5 地图一行（ttc-45）。
+- 正在读：Loop Transformer 一手；RLOO 2402.14740；KTO 2402.01306。
+- 正在写：2.4.9（loop-tf）；4.4.1/06 RLOO；4.4.2/03 KTO。
 - 卡住：无。
-- 上次刷新记忆的时间：2026-08-31 Goal 续跑，点名 Loop Transformer。
+- 上次刷新记忆的时间：2026-08-31 写满 02-GRPO 占位（初始提交 91d651d3 就有「保留原文章」）。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 写满 02-GRPO §3–5；浅色图 fig-grpo-group-advantage / fig-grpo-vs-ppo；补 03-GSPO 梯度与代码、04-PPO 7.1–7.4、4.4.1 节首页伪代码 | https://ar5iv.labs.arxiv.org/html/2402.03300 ；https://arxiv.org/abs/2402.03300 | `4.4.1/02-GRPO/` |
 | 2026-08-31 | 4.6.3 加厚到 ≥10000 汉字；补自己的机制判断（KV/雅可比、信用分配谱、LoRA 低秩遗忘、可证伪格）；第六图 fig-credit-assignment-spectrum；读者页仍只链这一篇 | https://nrehiew.github.io/blog/sft_rl_opd/ ；https://arxiv.org/abs/2605.22731 | `4.6-OPD/4.6.3-状态从哪来/` |
 | 2026-08-31 | Goal 续跑：用户点名 Loop Transformer；落点 2.4.9；派 loop-tf / ttc-45 | https://arxiv.org/abs/1807.03819 ；https://arxiv.org/abs/2301.13196 ；https://arxiv.org/abs/2502.17416 ；https://arxiv.org/abs/2502.05171 ；https://arxiv.org/abs/2605.18797 ；https://arxiv.org/abs/2607.13491 | `2.4.9-循环Transformer/`（在写） |
 | 2026-08-30 | 用户点名 4.6-OPD 文件名差：夹名=主 md；01–10、假 4.6.1、4.6.2/01、4.6.3 子夹已改；YAML/H1 对齐夹名；地图去掉 S8 备忘 | 磁盘 ls + 4.6-OPD.md | `4.6-OPD/` |

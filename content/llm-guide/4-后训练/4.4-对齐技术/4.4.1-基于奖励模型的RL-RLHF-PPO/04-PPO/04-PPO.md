@@ -397,19 +397,84 @@ $L(\theta, \phi) = L^{CLIP}(\theta) - c_1 L^{VF}(\phi) + c_2 S[\pi_{\theta}](s_t
 
 ### 7.1 准备阶段: 奖励模型 (Reward Model) 的训练
 
-奖励模型的训练独立于PPO. 它使用一个包含(prompt, chosen_response, rejected_response)的数据集. 其损失函数旨在最大化chosen和rejected回答之间的分数差距.
+奖励模型在 PPO 循环之外先训完。数据是 `(prompt, chosen, rejected)` 三元组。Bradley-Terry 损失把 chosen 的标量分抬到 rejected 之上：
+
+```python
+def reward_model_loss(rm, prompt, chosen, rejected):
+    r_w = rm(prompt, chosen)      # 标量
+    r_l = rm(prompt, rejected)
+    return -F.logsigmoid(r_w - r_l).mean()
+```
+
+训完的 `rm` 在 rollout 里只做前向打分，不再更新（除非像 GRPO 迭代那样另开奖励模型续训）。参考模型通常是冻结的 SFT 权重，用来算 KL。
 
 ### 7.2 核心流程(一): 经验数据的收集 (Rollout)
 
-这是训练循环的第一步, Actor模型根据一批prompts生成responses.
+Actor 用当前 $\pi_{\theta_{\mathrm{old}}}$ 对一批 prompt 自回归采样。每个时间步记下：生成的 token、$\log\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$、Critic 的 $V_{\phi}(s_t)$。序列结束（或撞到最大长度）后，奖励模型对完整回答打一个标量，写到最后一个有效 token 上，前面 token 的即时奖励为 0（KL 若按 InstructGPT 写法，会再减逐 token KL，见第五部分式 (1) 的邻居 GRPO 文对照）。
+
+```python
+@torch.no_grad()
+def rollout(actor, critic, tokenizer, prompts, max_new):
+    sequences, old_logp, values = [], [], []
+    for prompt in prompts:
+        ids = prompt
+        logps, vs = [], []
+        for _ in range(max_new):
+            logits, v = actor_critic_forward(actor, critic, ids)
+            dist = Categorical(logits=logits[:, -1])
+            tok = dist.sample()
+            logps.append(dist.log_prob(tok))
+            vs.append(v[:, -1])
+            ids = torch.cat([ids, tok[:, None]], dim=1)
+            if tok.item() == tokenizer.eos_id:
+                break
+        sequences.append(ids)
+        old_logp.append(torch.stack(logps, dim=1))
+        values.append(torch.stack(vs, dim=1))
+    return sequences, old_logp, values
+```
+
+采样期间 Actor 和 Critic 的权重冻结。这批轨迹是后面 K 个 PPO-epoch 反复使用的经验，所以叫 on-policy 采样、off-policy 多次更新。
 
 ### 7.3 核心流程(二): 优势与回报的计算
 
-这一步对应理论中的评估和GAE计算.
+GAE 需要逐步的 TD 残差。LLM 里即时奖励稀疏，常用「最后一个 token 放 $r$，前面为 0」，价值序列仍逐步估。$\delta_t=r_t+\gamma V_{t+1}-V_t$，$A_t=\sum_{l\ge 0}(\gamma\lambda)^l\delta_{t+l}$，回报 $R_t=A_t+V_t$ 给 Critic 当回归目标。
+
+```python
+def gae(rewards, values, mask, gamma=0.99, lam=0.95):
+    T = rewards.size(-1)
+    adv = torch.zeros_like(rewards)
+    last = 0.0
+    next_v = 0.0
+    for t in range(T - 1, -1, -1):
+        delta = rewards[:, t] + gamma * next_v * mask[:, t] - values[:, t]
+        last = delta + gamma * lam * mask[:, t] * last
+        adv[:, t] = last
+        next_v = values[:, t]
+    returns = adv + values
+    return adv * mask, returns
+```
+
+$\lambda=1$ 时接近蒙特卡洛，$\lambda=0$ 时只信一步 TD。LLM 对齐常用偏高的 $\lambda$，因为中途 $V$ 不准，太信 Critic 会把偏差写进 $A_t$。
 
 ### 7.4 核心流程(三): Actor与Critic的损失计算与更新
 
-这是PPO更新的核心步骤, 完全对应第五部分的理论.
+同一批经验上循环 `ppo_epochs` 次，每次抽 mini-batch。Actor 用第五部分的 $L^{\mathrm{CLIP}}$：先算新策略的 $\log\pi_\theta$，比率 $r_t=\exp(\log\pi_\theta-\mathrm{old\_logp})$，再 `min(r A, clip(r) A)`。Critic 对 `returns` 做 MSE。可选熵奖励防止过早塌。
+
+```python
+def ppo_update(actor, critic, batch, clip_eps=0.2, c1=0.5, c2=0.01):
+    logp, entropy, v_pred = actor_critic_eval(actor, critic, batch.ids)
+    ratio = torch.exp(logp - batch.old_logp)
+    surr1 = ratio * batch.adv
+    surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * batch.adv
+    actor_loss = -torch.minimum(surr1, surr2)
+    actor_loss = (actor_loss * batch.mask).sum() / batch.mask.sum()
+    critic_loss = ((v_pred - batch.returns) ** 2 * batch.mask).sum() / batch.mask.sum()
+    loss = actor_loss + c1 * critic_loss - c2 * entropy
+    loss.backward()
+```
+
+监控：`kl`（Actor 对 Reference）、`clipfrac`（被 clip 的比例，长期 >0.5 说明步子太大）、`scores`（奖励模型均分）。这些数掉下去再回头调 $\epsilon$、学习率和 KL 系数，不要先改 GAE 公式。
 
 ### 7.5 训练监控: 关键指标解读
 

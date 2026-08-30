@@ -1,292 +1,328 @@
 ---
-title: "02 · 深入解析组相对策略优化 (GRPO): 从基础原理到2025-2026最新变体家族"
-date: 2026-05-11
-tags: []
+title: "02 · GRPO：组内相对优势"
+date: 2026-08-31
+as_of: 2026-08-31
+tags: [GRPO, PPO, RLHF, DeepSeekMath, 组相对策略优化]
 ---
 
-# 02 深入解析组相对策略优化 (GRPO): 从基础原理到2025-2026最新变体家族
+# 02 GRPO：组内相对优势
 
+GRPO（Group Relative Policy Optimization）是 PPO 的变体：同一道题采 $G$ 条回答，用组内奖励的均值和标准差当基线，不再训一个和策略差不多大的价值网络。DeepSeekMath 把它写进 [2402.03300](https://arxiv.org/abs/2402.03300)；Instruct 7B 在 GSM8K 上从 82.9% 到 88.2%，MATH 从 46.8% 到 51.7%。本篇钉公式、走数值、对照结果监督和过程监督。邻居：[04-PPO](../04-PPO/04-PPO.md) 讲 Critic 和 GAE；[03-GSPO](../03-GSPO/03-GSPO.md) 把重要性采样从 token 提到序列；变体对照在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)。**不是** DPO（离线偏好对、没有在线 rollout）。**不是** 留一法 RLOO（baseline 不含自己那一条）。
 
----
+## 1. PPO 卡在哪
 
-## 1. 奠基石——理解PPO的瓶颈与GRPO的动机
-
-### 1.1 PPO的核心机制：演员-评论家框架
-
-PPO是一种典型的"演员-评论家"算法. 策略模型(Actor)负责生成文本，价值模型(Critic)负责评估每个状态下的期望回报. 优势函数 $A = Q - V$ 指导策略更新的方向：$A > 0$ 鼓励当前动作，$A < 0$ 抑制当前动作. 
-
-### 1.2 PPO的实践困境
-
-- **资源之重**：价值模型与策略模型大小相当，显存中同时维护两个巨大模型使训练成本极高
-- **训练之难**：LLM的奖励通常是稀疏的(只在序列末尾给出)，价值模型难以精确估计
-- **系统复杂性**：PPO需要协调策略模型、价值模型、奖励模型、参考模型四个模型
-
-**引导性问题**：如果"评论家"如此昂贵且难以训练，能否在没有它的情况下也能有效指导"演员"？
-
----
-
-## 2. GRPO的核心革新——两大支柱
-
-### 2.1 设计哲学：告别"评论家"，拥抱"同行评审"
-
-GRPO的核心洞见：优势的本质是"相对好坏"而非"绝对价值". 
-
-### 2.2 支柱一：组相对优势
-
-对于同一个输入prompt，生成 $G$ 个回答组成一个组，优势计算为：
+PPO 是演员–评论家。策略 $\pi_\theta$ 吐 token，价值网络 $V_\psi$ 估每个前缀的期望回报，优势 $A_t$ 走 GAE，再套 clip。InstructGPT 那一套还要把奖励模型的分数改成逐 token 的 $r_t$，并在奖励里扣 KL：
 
 $$
-\hat{A}_i = \frac{r_i - \text{mean}(\mathbf{r})}{\text{std}(\mathbf{r}) + \epsilon} \tag{1}
+r_t = r_\varphi(q, o_{\le t}) - \beta \log\frac{\pi_\theta(o_t\mid q,o_{<t})}{\pi_{\mathrm{ref}}(o_t\mid q,o_{<t})} \tag{1}
 $$
 
-- **无需价值模型**：直接从奖励信号中计算出基线，移除PPO中的价值模型
-- **计算简单直观**：仅涉及基本统计计算
+工程上这套东西同时驻四份权重：Actor、Critic、Reward、Reference。Critic 往往和策略同量级。LLM 的奖励又几乎只打在最后一个 token 上，中间步的 $V$ 很难学准。显存翻一倍还只是账单的一半；另一半是价值估偏了，优势跟着偏，策略更新跟着歪。
 
-### 2.3 支柱二：优化的KL散度正则化
+组相对的想法很土：同一道 $q$，当场采 $G$ 条，用这 $G$ 个分数的均值去近似 $\mathbb{E}[r\mid q]$。基线不再是网络输出，而是同题对照。$G=1$ 时组内没有对照，均值就是自己，$z$-score 无定义，算法退化为不带 baseline 的 REINFORCE，方差会回去。DeepSeekMath 图 4 就是左右两套：左边 PPO 要 $V$，右边 GRPO 用组分数。
 
-GRPO采用数学上更优的KL散度无偏估计器：
+价值网络在 LLM 里难训，还有一层更具体的原因。GAE 假定每个前缀都有一个靠谱的 $V(s_t)$。对话短句还能凑合；数学 CoT 动辄几百 token，中间某步看起来像在推导，最终答案可能已经错了。$V$ 若按「当前前缀像不像好证明」来拟合，会把文风和正确性搅在一起。组内相对绕开「这个前缀值多少」，只问「这 $G$ 份答卷谁高谁低」。奖励模型本来也是同一题两条回答成对比较训的，和这个问法同构。
+
+采样成本从「多一份 Critic 前向」换成「同题多 $G$ 倍生成」。推理模型反正要多采样，这笔账往往划得过来。显存账单则是少一份与策略同量级的 $V_\psi$，这是论文写 GRPO 的直接动机。
+
+![PPO 四模型与 GRPO 无价值网络](./images/fig-grpo-vs-ppo.png)
+
+> 图 1：左栏 PPO 用 Critic 做 GAE，KL 进奖励；右栏 GRPO 用组内 $z$-score，KL 进损失。中间那句是结构差：右边没有 $V$。
+
+**图 1 解析**
+
+- 两栏都从上往下。绿框是正在更新的策略。
+- 左：Actor 分叉到 Critic（鲑肉色）和奖励模型（黄）。两者进橙色 GAE，$A=r-V$。紫框 $\pi_{\mathrm{ref}}$ 用虚线进 GAE，对应式 (1) 那种「KL 写进 $r_t$」。
+- 右：Actor 先扩成一组 $o_1,\ldots,o_G$，再打分，再 $z$-score。紫框虚线进损失，不进 $A_i$。
+- 读图时不要把右边的 Group 当成 MoE 专家。那只是同题多采样。
+
+## 2. 组内相对优势，KL 改挂损失
+
+优势要的是「相对好坏」，不是绝对打分。奖励模型本身也是拿同一题的两条回答做比较训出来的，组内 $z$-score 和它的比较本性一致。
+
+对每个问题 $q$，从旧策略 $\pi_{\theta_{\mathrm{old}}}$ 采一组输出 $\{o_1,\ldots,o_G\}$，奖励（模型或规则）给出 $\mathbf{r}=\{r_1,\ldots,r_G\}$。结果监督下，整条回答共用一个归一化分数：
 
 $$
-\hat{D}_{KL} = \frac{\pi_{ref}}{\pi_{\theta}} - \log\frac{\pi_{ref}}{\pi_{\theta}} - 1 \tag{2}
-$$
-这个估计器具有 **始终为正、无偏且方差更小** 的优良特性. 
-
-### 2.4 完整目标函数
-
-$$
-\mathcal{J}_{\text{GRPO}}(\theta) = \mathbb{E}\left[\frac{1}{G}\sum_{i=1}^G\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}\left(\mathcal{L}_{policy}(o_{i,t}) - \beta\hat{D}_{KL}(o_{i,t})\right)\right] \tag{3}
+\hat{A}_{i,t}=\widetilde{r}_i=\frac{r_i-\mathrm{mean}(\mathbf{r})}{\mathrm{std}(\mathbf{r})} \tag{2}
 $$
 
-GRPO 的目标函数在每个组内对所有 token 的损失取平均，同时用 KL 散度约束防止策略偏离参考模型过远. 其中策略部分采用裁剪机制：
+所有 $t$ 都拿同一个 $\widetilde{r}_i$。没有 $V_\psi$。分母通常加 $\epsilon$，避免组内全对或全错时除零——后面第 6 节会说，这个 $\mathrm{std}$ 本身会引入难度偏差。
+
+![组内采样、打分、$z$-score、广播到 token](./images/fig-grpo-group-advantage.png)
+
+> 图 2：一道 $q$ 采 $G$ 条（图里画 4 条），打分后算组均值和标准差，得到 $A_i$，再整段广播。
+
+**图 2 解析**
+
+- 自上而下：蓝框 $q$ → 四条绿 $o_i$ → 四条黄 $r_i$ → 中间橙框算 mean/std → 粉框 $A_i$ → 底栏「一条里的 token 共用 $A_i$」。
+- 左廊标注 sample $G$ / score / $z$-score / broadcast，对应四个计算阶段。
+- 底栏是结果监督的定义，不是实现细节。过程监督会在步骤边界给不同的 $A_{i,t}$，见 §4.1。
+
+第二条是 KL 的挂法。PPO 把 KL 扣进 $r_t$，会污染优势。GRPO 把 KL 直接加进目标，优势只由组内相对奖励决定。估计器用 Schulman 2020 那条无偏、恒非负的形式：
 
 $$
-\mathcal{L}_{policy}(o_{i,t}) = \min\left(\eta_{i,t}\cdot\hat{A}_i,\ \text{clip}(\eta_{i,t},1-\epsilon,1+\epsilon)\cdot\hat{A}_i\right) \tag{4}
+\mathbb{D}_{\mathrm{KL}}[\pi_\theta\Vert\pi_{\mathrm{ref}}]=\frac{\pi_{\mathrm{ref}}(o_{i,t}\mid q,o_{i,<t})}{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}-\log\frac{\pi_{\mathrm{ref}}(o_{i,t}\mid q,o_{i,<t})}{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}-1 \tag{3}
 $$
-此式描述了变量之间的定量关系，其物理意义将在下文详细阐述. 
----
 
-## 3. GRPO的目标函数详解与数值示例
+完整目标（论文式 (3)）是组内、逐 token 平均，再减 $\beta$ 倍 KL：
 
-(保留原文章 3.1~3.3 节内容：目标函数详细解析、数值示例、PyTorch伪代码)
+$$
+\begin{aligned}
+\mathcal{J}_{\mathrm{GRPO}}(\theta)
+&=\mathbb{E}_{q\sim P(Q),\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}}
+\Bigg[
+\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|o_i|}\sum_{t=1}^{|o_i|}
+\Big(
+\min\big(\eta_{i,t}\hat{A}_{i,t},\;
+\mathrm{clip}(\eta_{i,t},1-\varepsilon,1+\varepsilon)\hat{A}_{i,t}\big)
+-\beta\,\mathbb{D}_{\mathrm{KL}}[\pi_\theta\Vert\pi_{\mathrm{ref}}]
+\Big)
+\Bigg]
+\end{aligned} \tag{4}
+$$
 
----
+其中重要性比率
 
-## 4. GRPO的应用与扩展
+$$
+\eta_{i,t}=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})} \tag{5}
+$$
 
-### 4.1 监督方式：结果监督 vs 过程监督
+clip 仍是 PPO 那套，作用在 **token 级** 比率上。这和后面 GSPO 的序列级 $s_i$ 不是同一件事。附录在 $\pi_{\theta_{\mathrm{old}}}=\pi_\theta$ 时去掉 min/clip，梯度系数是 $\hat{A}_{i,t}+\beta(\pi_{\mathrm{ref}}/\pi_\theta-1)$ 乘在 $\nabla\log\pi_\theta$ 前面（论文式 (20)(21)）。
 
-### 4.2 训练范式：迭代式强化学习
+## 3. 目标函数怎么算：拆项、数字、代码
 
-### 4.3 统一视角：GRPO在强化学习谱系中的位置
+### 3.1 三项各管什么
 
-(保留原文章 4.1~4.3 节内容)
+式 (4) 里同时有三件东西，不要混成「一个 loss」。
 
----
+第一项是 clip 代理。$\hat{A}_{i,t}>0$ 时想抬 $\eta_{i,t}$，但抬过 $1+\varepsilon$ 就不再加分；$\hat{A}_{i,t}<0$ 时想压 $\eta_{i,t}$，压过 $1-\varepsilon$ 也不再加罚。信任域还在，只是用一阶 clip 代替 TRPO 的 KL 约束。
 
-## 5. 实践洞见与讨论
+第二项是 $1/|o_i|$。论文把每个回答先在自己的长度上平均，再对组平均。短回答的每个 token 会分到更大的权重。2025 年 Dr. GRPO 指出这会推「对的要短、错的要长」。DAPO 后来改成 batch 内 token 总数做分母。本篇先按 2402.03300 写；偏差见 §6。
 
-### 5.1 DeepSeekMath的经验教训
+第三项是式 (3) 的 KL。$\beta$ 在 DeepSeekMath 的 GRPO 实验里取 0.04。它不进入 $\hat{A}$，所以组内相对好坏和「别离 SFT 太远」是两条绳。
 
-### 5.2 为什么强化学习有效？
+### 3.2 一组四个分数
 
-(保留原文章 5.1~5.2 节内容)
+取 $G=4$，规则奖励对错为 1/0，$\mathbf{r}=(1,0,1,0)$。
 
----
+均值 $\mathrm{mean}(\mathbf{r})=0.5$。若用总体标准差，$\mathrm{std}=\sqrt{0.25}=0.5$，于是
 
-## 6.  第六部分：GRPO的固有偏差分析(2025年新发现)
+$$
+\widetilde{r}=(1,-1,1,-1)
+$$
 
-2025年初，对GRPO的深入分析揭示了其目标函数中存在的两种系统性偏差，这些发现直接催生了DrGRPO和DAPO等改进算法. 
+结果监督下四条回答的每个 token 分别拿到 $+1,-1,+1,-1$。第一条里无论哪个 token，梯度方向都是「再提高这条轨迹的概率」；第二条整段往下压。
+
+把重要性比率也写进同一张表。设 clip $\varepsilon=0.2$。某条正优势回答上，一个 token 的 $\eta=1.5$，已经超出 $1.2$，clip 分支生效，代理目标锁在 $1.2\times\hat{A}$，再加大 $\eta$ 不再加分。负优势回答上 $\eta=0.5$ 低于 $0.8$，同样被锁。这和 PPO 教科书里的图是同一件事，只是 $\hat{A}$ 来自组统计，不是 GAE。
+
+全对或全错时 $\mathrm{std}\to 0$。实现里 clamp 一个 $\epsilon$。数值上 $\hat{A}$ 会被放得很大，而组内又几乎没有可比较的差异——这就是 §6.2 的难度偏差。论文训练时每题采 $G=64$，比这里的 4 稳定得多，但全 1 / 全 0 的组仍然会出现。
+
+过程监督用同一套 $z$-score，粒度换成步骤。设 $G=2$，两条回答都拆成三步，六步奖励（未归一化）为
+
+$$
+(0.2,\;0.8,\;1.0),\qquad (0.1,\;0.1,\;0.0)
+$$
+
+全体六个数的均值约 $0.37$，标准差大约 $0.40$。归一化后第一条三步约为 $(-0.4,\;1.1,\;1.6)$，第二条约为 $(-0.7,\;-0.7,\;-0.9)$。按式 (6)，第一条第一步的 token 吃后面三步之和 $1.1+1.6-0.4$，末步只吃 $1.6$；第二条每步都是负的，越靠前累加越狠。这和结果监督「整段同一个 $\widetilde{r}$」不是同一张表。数字是为了把求和方向看清，不是论文表格。
+
+### 3.3 一段可对照的 PyTorch
+
+下面不是框架源码，只把式 (2) 和 masked 平均写清楚。形状约定：`token_level_rewards` 为 $(B,T)$，结果监督时通常只有最后一个有效 token 非零；$B$ 能被组数整除。
+
+```python
+import torch
+import torch.nn.functional as F
+
+def group_zscore_advantage(
+    token_level_rewards: torch.Tensor,
+    response_mask: torch.Tensor,
+    group_size: int,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    """结果监督：每条回答一个标量 r，组内 z-score，再广播到 token。"""
+    B, T = token_level_rewards.shape
+    assert B % group_size == 0
+    n_groups = B // group_size
+    r = (token_level_rewards * response_mask).sum(dim=-1)  # (B,)
+    r = r.view(n_groups, group_size)
+    mean = r.mean(dim=-1, keepdim=True)
+    std = r.std(dim=-1, keepdim=True).clamp_min(eps)
+    adv = (r - mean) / std  # (n_groups, group_size)
+    adv = adv.reshape(B, 1).expand(-1, T) * response_mask
+    return adv
+
+
+def grpo_clip_and_kl(
+    log_prob: torch.Tensor,
+    old_log_prob: torch.Tensor,
+    ref_log_prob: torch.Tensor,
+    advantages: torch.Tensor,
+    response_mask: torch.Tensor,
+    clip_eps: float = 0.2,
+    beta: float = 0.04,
+) -> torch.Tensor:
+    """式 (4) 的 token 平均：clip 代理减去 KL 估计。"""
+    log_ratio = log_prob - old_log_prob
+    eta = torch.exp(log_ratio)
+    unclipped = eta * advantages
+    clipped = torch.clamp(eta, 1.0 - clip_eps, 1.0 + clip_eps) * advantages
+    policy = torch.minimum(unclipped, clipped)
+    # 式 (3)：pi_ref / pi_theta - log(pi_ref / pi_theta) - 1
+    ratio_ref = torch.exp(ref_log_prob - log_prob)
+    kld = ratio_ref - (ref_log_prob - log_prob) - 1.0
+    per_token = policy - beta * kld
+    denom = response_mask.sum().clamp_min(1.0)
+    return (per_token * response_mask).sum() / denom
+```
+
+`group_zscore_advantage` 里的 `std` 是样本标准差还是总体标准差，实现之间不一致。DeepSeekMath 正文写 $\mathrm{std}(\mathbf{r})$，没有写 Bessel 修正。verl 一类代码常用 `std` 再 `clamp_min`。对账时以你用的训练器为准，不要把两种 std 合成一个数。
+
+`grpo_clip_and_kl` 的分母用了 batch 内有效 token 总数，更接近后文 DAPO 的 token-level 聚合，而不是论文式 (4) 那种先 $1/|o_i|$ 再对 $G$ 平均。对照论文时把最后一行改成「先按 mask 对每条求均值，再对 $B$ 平均」。两种分母会改变 §6.1 的长度偏差大小。
+
+## 4. 结果监督、过程监督、迭代 RL
+
+### 4.1 结果监督 vs 过程监督
+
+结果监督（Outcome Supervision，论文 §4.1.2）：奖励只打在整段输出结束。归一化之后 $\hat{A}_{i,t}=\widetilde{r}_i$，整段同号。数学题对错分明时，这已经够用。短板是信用分配：中间某步写错、最后凑对了，整段仍吃正优势；中间全对、最后抄错答案，整段挨打。
+
+过程监督（Process Supervision，§4.1.3）：跟 Wang et al. 2023b，在每个推理步骤结束给分。第 $i$ 条有 $K_i$ 步，第 $j$ 步结束下标是 $\mathrm{index}(j)$，得到
+
+$$
+\mathbf{R}=\big\{\{r_i^{\mathrm{index}(1)},\ldots,r_i^{\mathrm{index}(K_i)}\}\big\}_{i=1}^{G}
+$$
+
+全体步骤奖励一起做 $z$-score：
+
+$$
+\widetilde{r}_i^{\mathrm{index}(j)}=\frac{r_i^{\mathrm{index}(j)}-\mathrm{mean}(\mathbf{R})}{\mathrm{std}(\mathbf{R})}
+$$
+
+token $t$ 的优势是**后面所有步骤**归一化奖励之和：
+
+$$
+\hat{A}_{i,t}=\sum_{\mathrm{index}(j)\ge t}\widetilde{r}_i^{\mathrm{index}(j)} \tag{6}
+$$
+
+目标仍是式 (4)，只换 $\hat{A}_{i,t}$。论文在 1.3B Instruct 上看到 GRPO+PS 优于 GRPO+OS：梯度系数按步骤变细，比整段同一个 $z$-score 更对得上多步题。PRM 自己会标错。OpenAI PRM800K 的 issue 里大约 20% 标注不可靠。过程监督不是免费的细粒度，错标会沿式 (6) 往后累加。
+
+### 4.2 迭代式强化学习
+
+单轮 RL 用固定奖励模型盯正在变的策略，过一阵 $r_\varphi$ 就不够格。论文 Algorithm 1：外层迭代 $I$ 次；每次先令 $\pi_{\mathrm{ref}}\leftarrow\pi_\theta$，内层 $M$ 步采样、算组相对优势、最大化式 (4)（实现里他们写 Equation 21，指附录梯度系数那套），然后用策略新采样给奖励模型续训，replay 掺 10% 历史。实验做了两轮。图 6 显示迭代明显抬分，第一轮最陡。
+
+Algorithm 1 按时间展开是这样：$\pi_\theta\leftarrow\pi_{\mathrm{init}}$。外层 $i=1\ldots I$：把当前策略拷成参考 $\pi_{\mathrm{ref}}\leftarrow\pi_\theta$；内层 $m=1\ldots M$ 从题集抽 batch，令 $\pi_{\theta_{\mathrm{old}}}\leftarrow\pi_\theta$，对每道题采 $G$ 条，跑 $r_\varphi$ 得 $\{r_i\}$，按 §4.1 算 $\hat{A}_{i,t}$，再对 $\mu$ 步最大化式 (4)。内层结束后用新采样给 $r_\varphi$ 续训，replay 里留 10% 旧数据。外层一圈走完，参考模型已经是上一圈的策略，奖励模型也跟着策略挪了位置。
+
+内层还有一个实现选择：DeepSeekMath 的 GRPO 每次探索之后策略只更新一次，于是 $\pi_{\theta_{\mathrm{old}}}\approx\pi_\theta$，clip 几乎不触发。后来 R1 一类训练会提高 $\mu$（同一批经验上多 epoch），clip 才重新成为主约束。不要把「论文实验 $\mu=1$」写成「GRPO 没有 clip」。
+
+组大小在论文 GRPO 实验里是每题 64 条，最大长度 1024，policy 学习率 $10^{-6}$，batch 1024。这是 7B 数学 RL 的配置，不是 R1 的长 CoT 配置。抄超参要带模型档。
+
+### 4.3 在谱系里的位置
+
+论文把 SFT、RFT、DPO、Online RFT、PPO、GRPO 收进同一张表（Table 10）：数据从哪来、奖励是规则还是模型、梯度系数怎么从奖励变成 $\nabla\log\pi$。
+
+| 方法 | 采样 | 奖励 | 梯度系数 |
+|------|------|------|----------|
+| SFT | 离线示范 | 无（似然） | 正例 token 均匀 |
+| RFT | 离线，过滤正确 | 规则 0/1 | 只抬对的，不打错的 |
+| DPO | 离线偏好对 | 隐含在 $(y_w,y_l)$ | 成对 logistic |
+| Online RFT | 在线 | 规则 | 对的均匀抬，错的不打 |
+| PPO | 在线 | 模型 + GAE | $A_t$（要 $V$） |
+| GRPO | 在线 | 模型或规则 | 组内 $\hat{A}_{i,t}$，无 $V$ |
+
+图 5 在 Instruct 1.3B 上：Online RFT 后期明显超过离线 RFT，在线采样赢在策略已经离开 SFT 之后。GRPO 再超过 Online RFT，因为梯度系数按奖励幅度分正负，不是「对了就同样抬一把」。附录把几家方法写成同一个梯度模具：$\nabla\theta$ 正比于梯度系数 $GC$ 乘 $\nabla\log\pi_\theta(o_t\mid q,o_{<t})$。SFT / RFT 的 $GC$ 是 0/1 开关；Online RFT 在线但仍不按分数幅度分档；PPO 的 $GC$ 是 GAE 的 $A_t$；GRPO 的 $GC$ 是 $\hat{A}_{i,t}+\beta(\pi_{\mathrm{ref}}/\pi_\theta-1)$（论文式 (21)）。差别全在 $GC$ 怎么从奖励变出来，不在「还算不算强化学习」。
+
+GRPO 仍是策略梯度，没有把 RL 改写成分类。DPO 在这张表里是离线、成对、无 rollout；和 GRPO 分工，不是谁取代谁。通用偏好对齐仍常见 DPO；数学和代码这类可验证奖励，组相对更省事。
+
+式 (3) 为什么恒非负：令 $x=\pi_{\mathrm{ref}}/\pi_\theta>0$，则 $x-\log x-1$。$f(x)=x-\log x-1$ 在 $x=1$ 取 0，二阶导数 $1/x^2>0$，是凸函数，最小值就是 0。策略和参考重合时 KL 项不出力；偏离时永远往回拉，不会像 $\log(\pi_\theta/\pi_{\mathrm{ref}})$ 那样在某些区间变号。这是把它从奖励里挪到损失里之后，优势不再被一个可正可负的 KL 搅浑的原因。
+
+## 5. DeepSeekMath 里实际看到什么
+
+### 5.1 训练设定和数字
+
+RL 数据只用 SFT 里 GSM8K、MATH 的 CoT 题，大约 144K 道，故意不喂其它 SFT 题，好观察「没在 RL 里见过的基准」会不会动。初始奖励模型从 DeepSeekMath-Base 7B 训，学习率 $2\times 10^{-5}$。策略从 Instruct 7B 出发。
+
+表 5：CoT 设定下 GSM8K 88.2%、MATH 51.7%，盖过当时 7B–70B 开源和多数闭源。起点是 Instruct 的 82.9% / 46.8%。领域外中文 CMATH 84.6% → 88.8%。RL 题集很窄，基准却普涨——论文把没出现在 RL 集里的基准都叫 out-of-domain。摘要里另一条 64 样本自一致性 MATH 60.9%，那是解码时的 majority vote，不是 GRPO 目标函数里的组大小 $G$，不要把两个 64 合成一件事。奖励模型学习率 $2\times 10^{-5}$、策略 $10^{-6}$，差一个数量级：RM 先拟合比较数据，策略只在组相对优势上小步挪。
+
+预训练侧两句不要安到 GRPO 头上，但和「为什么这套 RL 有东西可挖」有关：代码训练对有工具和无工具的数学都有帮助；单纯堆 arXiv 对解题帮助不大。形式上看起来像数学的数据，不等于会做题。
+
+预训练侧两句不要安到 GRPO 头上，但和「为什么这套 RL 有东西可挖」有关：代码训练对有工具和无工具的数学都有帮助；单纯堆 arXiv 对解题帮助不大。形式上看起来像数学的数据，不等于会做题。
+
+### 5.2 为什么 RL 有效
+
+图 7：Instruct 和 RL 两个 7B，温度 0.7，画 Maj@K 和 Pass@K。RL 抬的是 Maj@K，Pass@K 几乎不动。论文的判断：输出分布更稳了，正确回答从 Top-K 里被抬到更常被采到的位置，不是基础能力又上了一层。这和后来「RLVR 抬 pass@1、pass@K 不动」是同一类观察，细节在 [4.4-RLVR 边界](../../4.4-RLVR的局限性与探索边界分析.md)。
+
+论文自己给的后续方向也按那三个零件拆：数据源（OOD 题、树搜索解码、更快的推理引擎）、算法（奖励噪声下别全信 GC；PRM 会标错）、奖励（结果不够就加过程，过程不够就想办法自动标）。不要把这段读成「GRPO 已经解决推理」。它解决的是：在可验证或可比较的组内分数上，去掉 Critic 也能做 PPO 式更新。
+
+## 6. 长度偏差和难度偏差
+
+2025 年初对式 (4) 分母和 $\mathrm{std}$ 的分析指出两个系统性偏差，后面 Dr. GRPO、DAPO 都冲着它们改。本篇只把机制钉清，变体公式以各专文和 [4.4.5](../../4.4.5-GxPO家族/01-GxPO结构扩展/01-GxPO结构扩展.md) 为准。
 
 ### 6.1 响应长度偏差
 
-**现象**：GRPO倾向于在正确答案中选择更短的表达，在错误答案中选择更长的表达. 
+$\frac{1}{|o_i|}$ 让同样大小的 $\hat{A}_i$ 摊在不同长度上。正优势短回答：每个 token 梯度更大，策略更爱短的正确写法。负优势长回答：惩罚被摊薄，长的错解压不干净。优势按整段算，更新按 token 均摊，两套粒度拧着。
 
-**根因**：损失函数中的 $\frac{1}{|o_i|}$ 归一化导致：
-- 对于**正优势**的短回答：每个token获得更强的梯度更新，模型更倾向于生成简洁的正确表达
-- 对于**负优势**的长回答：惩罚被均摊到更多token上，惩罚力度不足，模型不容易抑制长的错误答案
-
-其核心问题在于：**advantage计算基于完整响应，但梯度更新按token均摊**. 短响应和长响应的advantage数值大小相同，但短响应的每个token获得更强的梯度更新. 
+不少 PPO 实现也按 mask 长度做均值，预训练时 pad 到固定上下文、用上下文长度归一化，迁移到变长 RL 时把习惯带过来。这不是 GRPO 独有，但组相对把问题暴露得更干净，因为没有 Critic 把长度相关的价值偏置再抹一层。
 
 ### 6.2 问题难度偏差
 
-**现象**：极简单或极困难的问题(组内奖励几乎全为1或全为0)在策略更新中被赋予过高权重. 
+$\mathrm{std}(\mathbf{r})$ 在组内几乎全 1 或全 0 时趋近 0，微小差异被放大成极端 $\hat{A}$。简单题和难题的「差一点」统计意义不同，梯度里却被放成同类。DAPO 的动态采样直接丢掉准确率 0% 或 100% 的组；Dr. GRPO 选择去掉 $\mathrm{std}$ 归一化。
 
-**根因**：优势计算中的 $\text{std}(\mathbf{r})$ 归一化导致：
-- 对于简单问题(奖励全为1)：组内标准差趋近于零，优势被放大到极端值
-- 对于困难问题(奖励全为0)：同样标准差趋近于零，优势也被放大
-- 这些极端优势值主导了梯度更新，产生难度偏差
-
-**示意图**：将简单问题的微小差异放大等同于困难问题的微小差异放大，两者的统计意义完全不同. 
-
-### 6.3 代码层面的偏差来源
+### 6.3 代码里的分母
 
 ```python
 def masked_mean(tensor, mask, dim):
-    return (tensor * mask).sum(axis=dim) / mask.sum(axis=dim)  # 原始实现(有偏)
+    return (tensor * mask).sum(axis=dim) / mask.sum(axis=dim)  # 按真实长度，有偏
 
-# 修改后的无偏实现(使用固定常数 MAX_TOKENS)
-return (tensor * mask).sum(axis=-1) / MAX_TOKENS
+# Dr. GRPO 一类改法：固定常数（生成预算）
+# return (tensor * mask).sum(axis=-1) / MAX_TOKENS
 ```
 
-有趣的是，**现有很多PPO框架的实现也存在着同样的长度偏差**. 论文猜测这种偏差可能来源于预训练——预训练时token会被填充到固定长度上下文，按上下文长度归一化损失有助于数值稳定性; 但在强化微调阶段，响应长度是不固定的，这无意中引入了长度偏差. 
+分母用 `mask.sum` 还是 `MAX_TOKENS`，就是 §6.1 在代码里的开关。改分母前先确认你要复现的是 2402.03300、Dr. GRPO 还是 DAPO。
 
----
+## 7. 变体只作索引
 
-## 7.  第七部分：GRPO变体家族全景(2025-2026)
+2025–2026 的名字很多，本夹 01 / 03 和 4.4.5 是正本。这里只留「相对 GRPO 改了哪一侧」，避免再写一套互相打架的公式。
 
-2025年见证了GRPO变体的集中爆发，从不同角度切入优化GRPO的缺陷. 下表汇总了所有重要变体：
+| 算法 | 时间 | 相对 GRPO 改什么 | 正本 |
+|------|------|------------------|------|
+| GRPO | 2024.2 | 组内 $z$-score 替代 $V$ | 本篇 |
+| Dr. GRPO | 2025.3 | 去掉长度分母和 $\mathrm{std}$ | 4.4.5 可选对照 |
+| DAPO | 2025.3 | Clip-Higher、动态采样、token 级损失、超长惩罚 | 4.4.5；arXiv:2503.14476 |
+| GSPO | 2025.7 | 序列级几何平均重要性比率 | [03-GSPO](../03-GSPO/03-GSPO.md)；2507.18071 |
+| GMPO | 2025 | 几何平均压离群比率 | [01-GMPO](../01-GMPO/01-GMPO.md) |
 
-| 算法 | 时间 | 核心改进 | 解决的主要问题 |
-|:----|:----|:---------|:-------------|
-| **GRPO** | 2024.2 | 组相对优势替代价值模型 | PPO的评论家资源瓶颈 |
-| **DrGRPO** | 2025.3 | 移除长度/难度归一化 | GRPO的两种固有偏差 |
-| **DAPO** | 2025.3 | Clip-Higher + 动态采样 + token级损失 | 熵崩溃、梯度消失、训练噪声 |
-| **GSPO** | 2025 | 序列级重要性采样 | Token级更新导致MoE模型崩溃 |
-| **GMPO** | 2025 | 几何平均替代算术平均 | 奖励异常值的鲁棒性 |
-| **GFPO** | 2025 | 拒绝采样过滤冗长回答 | 推理长度膨胀(减40~80%) |
-| **LitePPO** | 2025 | 鲁棒优势归一化 + token级聚合 | 最小配置超越复杂系统 |
-
-### 7.1 DrGRPO——修正固有偏差
-
-DrGRPO(2025年3月，来自 Understanding R1-Zero-Like Training 团队)的解决方案非常直接：**移除导致偏差的两个归一化项**. 
-
-- 移除损失中的 $\frac{1}{|o_i|}$ 长度归一化，改用固定常数(如最大生成预算)进行归一化
-- 移除优势中的 $\frac{1}{\text{std}(\mathbf{r})}$ 标准差归一化
-
-修正后的无偏策略梯度：
+DAPO 全称是 Decoupled Clip and Dynamic sAmpling Policy Optimization，不要写成别的扩写。GSPO 的序列级比率是长度归一化的几何平均
 
 $$
-\nabla_{\theta}\mathcal{J}_{\text{DrGRPO}} \approx \frac{1}{G}\sum_{i=1}^G\frac{1}{\text{MAX\_TOKENS}}\sum_{t=1}^{|o_i|}\left(\mathcal{L}_{policy}(o_{i,t}) - \beta\hat{D}_{KL}(o_{i,t})\right) \tag{5}
+s_i(\theta)=\Big(\frac{\pi_\theta(y_i\mid x)}{\pi_{\theta_{\mathrm{old}}}(y_i\mid x)}\Big)^{1/|y_i|}
 $$
 
-这种修正显著减少了错误响应的长度，在保持推理性能的同时提升了token效率，缓解了模型的"过度思考"问题. 
+不是 token 比率的算术平均。本篇 §2 的 $\eta_{i,t}$ 仍是 token 级，那正是 Qwen 说 GRPO 和奖励粒度不匹配的地方。
 
-### 7.2 DAPO——面向规模化RL的四大技术
+LitePPO、GFPO 等名字在社区笔记里常见，本篇不展开；没有一手数字就不要写成「减 40%～80%」这类口口相传的幅度。
 
-DAPO(Decoupled Clip and Dynamic sAmpling Policy Optimization，字节跳动+清华大学，2025年3月)并非全新框架，而是集成了四种实用技术的工程系统：
+## 8. 怎么选
 
-**1. Clip-Higher(解耦截断)** 
-将截断区间解耦为 $[\epsilon_{low}, \epsilon_{high}]$，设置 $\epsilon_{high} > \epsilon_{low}$，允许低概率token有更大提升空间，增强策略熵和探索能力. 
+PPO：要 GAE、要过程中的价值、safety 在线探索仍常见。显存按四模型估。
 
-**2. 动态采样(Dynamic Sampling)** 
-过滤掉准确率为100%或0%的样本组(它们产生的advantage全为零，无学习信号)，确保每个batch都包含有效信息. 
+GRPO：可验证奖励或组内可比较打分，愿意用采样宽度换 Critic 显存。组太小（$G=2$）均值晃；论文数学实验用到 64。
 
-**3. Token级策略梯度损失**
-原始GRPO的损失在序列级别平均，长序列中每个token的贡献被稀释. DAPO采用token级聚合，分母为批次内所有token总数，确保每个token贡献均等. 
+GSPO：MoE 上 token 级 IS 方差炸掉时，换序列级。公式和代码在 03。
 
-**4. 超长回答奖励塑造**
-对超过长度限制的回答施加软性惩罚，引导模型避免生成不必要的冗长回答. 
+DPO：静态偏好对、不跑在线 RL。和 GRPO 叠在同一条后训练流水线里很常见，不是二选一。
 
-这些技术的集成使DAPO在AIME 2024上以50分刷新纪录，仅用一半训练步数超越此前SOTA. 
+RLOO：同样多采样去 Critic，但第 $i$ 条的 baseline 是其余 $K-1$ 条的均值，不含自己，也通常不做 $\mathrm{std}$ 归一化。和本篇的组内 $z$-score 不是同一条基线。
 
-### 7.3 GSPO——序列级优化确保MoE稳定性
+## 9. 收束
 
-GSPO(Group Sequence Policy Optimization)的核心发现：GRPO在token级别应用重要性采样是MoE模型训练崩溃的根因. 
+GRPO 把 PPO 的 clip 留下，把 $V_\psi$ 换成同题 $G$ 条的相对分数，KL 从奖励里挪到损失里。DeepSeekMath 用窄题集做出 GSM8K / MATH 的那两跳，并写明 Maj@K 动、Pass@K 不动。长度分母和 $\mathrm{std}$ 是后文变体的入口，不是本算法的彩蛋。下一篇要看序列级 IS 就进 GSPO；要看几何平均进 GMPO；要看家族对照进 4.4.5。
 
-**问题**：每个token的分布只有一个采样点，重要性权重充满高方差噪声，在长序列中累积并被截断放大. 
+## 参考文献
 
-既然问题在于token级别采样的高方差噪声，GSPO自然地将重要性采样提升到序列级别：
-
-$$
-\eta_i^{\text{seq}} = \frac{1}{|o_i|}\sum_{t=1}^{|o_i|}\frac{\pi_{\theta}(o_{i,t})}{\pi_{\theta_{old}}(o_{i,t})} \tag{6}
-$$
-序列级采样从根本上解决了专家激活不稳定的问题，训练大型MoE模型时具有卓越的稳定性. 
-
-### 7.4 GMPO——几何平均值增强鲁棒性
-
-GMPO(Geometric-Mean Policy Optimization)的核心思想：用**几何平均值**替代算术平均来处理异常值. 
-
-算术平均值对极端值敏感，而几何平均值通过乘积和开方操作，使单个极大项的影响被其他项"拉平". 这使得重要性采样比率保持稳定，允许使用更大的截断范围，促进更充分的策略探索. 
-
-### 7.5 GFPO——拒绝采样实现简洁推理
-
-GFPO(Group Filtered Policy Optimization)的理念是"多采样，少思考"：在训练时生成更大的候选回答组，根据简洁性等指标筛选出精英子集，只用这部分更新模型. 
-
-$$
-\hat{A}_i^{\text{filtered}} = \frac{r_i - \text{mean}(\mathbf{r}_{\text{selected}})}{\text{std}(\mathbf{r}_{\text{selected}}) + \epsilon} \cdot m_i \tag{7}
-$$
-
-其中 $m_i$ 是掩码，被拒绝的回答贡献为零. 
-
-引入过滤机制后，GFPO在保持准确率的同时将长度膨胀减少了40%~80%. 
-
-### 7.6 LitePPO——有原则的简约
-
-LitePPO的价值在于"少即是多". 通过系统性解构RL中的各种"技巧"，发现仅需两种核心技术的组合：
-
-1. **鲁棒优势归一化**：均值在组级别计算，标准差在整个批次级别计算——兼顾稳定性和正则化
-2. **Token级损失聚合**：批次内所有token求和除以token总数
-
-这个极简组合在多种模型和数据集上，性能持续优于GRPO和DAPO等更复杂的系统. 
-
----
-
-## 8.  第八部分：统一对比与选型建议
-
-### 8.1 九大算法全景对比
-
-| 算法 | 核心思想 | 是否使用评论家 | 主要创新点 | 最佳适用场景 |
-|:----|:--------|:------------:|:---------|:-----------|
-| PPO | 信任区域策略优化 |  是 | 截断代理目标 | 通用RL对齐 |
-| DPO | 分类损失直接优化偏好 |  否 | 奖励重参数化 | 通用偏好对齐基础设施 |
-| GRPO | 组样本统计量估计优势 |  否 | 基于组的优势估计 | 资源密集推理任务 |
-| DrGRPO | 移除长度/难度归一化 |  否 | 无偏损失函数 | 长度膨胀严重的场景 |
-| DAPO | 四技术工程集成 |  否 | Clip-Higher+动态采样 | 大规模规模化训练 |
-| GSPO | 序列级重要性采样 |  否 | 序列级IS | MoE模型的稳定训练 |
-| GMPO | 几何平均目标函数 |  否 | 几何平均损失 | 奖励噪声大的场景 |
-| GFPO | 拒绝采样过滤轨迹 |  否 | 行为筛选 | 推理效率敏感场景 |
-| LitePPO | 有原则的极简组合 |  否 | 鲁棒归一化+Token聚合 | 通用高效训练 |
-
-### 8.2 DPO vs GRPO：不是竞争，而是分工
-
-一个常见的误解是DPO"过时了"而GRPO才是未来. 实际上，两者是**互补关系**：
-
-- **DPO的领域**：通用偏好对齐(风格、安全、无害性)，是**基础设施**
-- **GRPO的领域**：提升推理能力(数学、编程、科学)，是**探索上限的利器**
-
-### 8.3 选型指导
-
-| 场景 | 推荐算法 | 理由 |
-|:----|:--------|:------|
-| 通用偏好对齐(风格/安全) | **DPO** | 简洁、稳定、无需RL |
-| 资源有限的推理训练 | **GRPO** | 无评论家，内存高效 |
-| 推理训练+长度膨胀 | **DrGRPO** | 修正偏差，token高效 |
-| 大规模MoE训练 | **GSPO** | 序列级优化保证稳定 |
-| 生产环境严格效率要求 | **GFPO** | 减40~80%推理长度 |
-| 兼顾性能与简约 | **LitePPO** | 最少技巧，最优性能 |
-
----
-
-## 9. 总结与未来展望
-
-### 9.1 GRPO的核心贡献
-
-GRPO以其**以简驭繁**的哲学，通过创新的组相对优势计算，成功摆脱了PPO中资源密集的价值模型，大幅降低了RLHF的实现门槛. 其价值已在DeepSeek-R1等顶尖开源模型中得到充分验证. 
-
-### 9.2 演进趋势
-
-1. **向无评论家方法的转变**：从PPO到GRPO是计算效率的革命
-2. **复杂性与简约性的钟摆效应**：PPO(复杂)→ GRPO(简化)→ DAPO(再次复杂化)→ LitePPO(有原则的简约)
-3. **从结果优化到行为塑造**：GFPO关注推理过程本身的简洁性
-4. **数据中心的优化**：未来突破可能来自对学习过程的洞察和数据分布的设计
-
-### 9.3 未来方向
-
-- DrGRPO和DAPO的偏差修复可以互补结合
-- 将相对比较思想推广到其他需要"评价"的AI领域
-- 更关注长思维链中的中间监督信号
-
----
-
-## 10. 参考文献
-
-1. Shao, Z., et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300.
-2. Guo, D., et al. (2025). *DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning*. arXiv:2501.12948.
-3. *Understanding R1-Zero-Like Training: A Critical Perspective* (DrGRPO). (2025).
-4. Yu, Q., et al. (2025). *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*. arXiv:2503.14476.
-5. *GSPO: Group Sequence Policy Optimization* (2025).
-6. *GMPO: Geometric-Mean Policy Optimization* (2025).
-7. *GFPO: Group Filtered Policy Optimization* (2025).
-8. *LitePPO: A Principled Simplification of RL for LLMs* (2025).
-9. 长琴. (2025). *异曲同工之妙的DrGRPO——DAPO几乎同时出现的又一GRPO优化！*. 知乎专栏.
-10. 智泊AI官方. (2025). *PPO、DPO、GRPO及其变体策略优化算法综述*. CSDN.
+1. Shao, Z., et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. arXiv:2402.03300. https://arxiv.org/abs/2402.03300
+2. Schulman, J., et al. (2017). *Proximal Policy Optimization Algorithms*. arXiv:1707.06347.
+3. Schulman, J. (2020). *Approximating KL Divergence*. http://joschu.net/blog/kl-approx.html
+4. Ouyang, L., et al. (2022). *Training language models to follow instructions with human feedback*. NeurIPS.
+5. Guo, D., et al. (2025). *DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning*. arXiv:2501.12948.
+6. Yu, Q., et al. (2025). *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*. arXiv:2503.14476.
+7. Zheng, C., et al. (2025). *Group Sequence Policy Optimization*. arXiv:2507.18071.
+8. Wang, P., et al. (2023). *Math-Shepherd: Verify and Reinforce LLMs Step-by-step without Human Annotations*. arXiv:2312.08935.

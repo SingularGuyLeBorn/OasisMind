@@ -100,11 +100,29 @@ $\mathcal{J}_{GSPO} (\theta) = \mathbb{E}_{x \sim \mathcal{D}, \{y_i\} \sim \pi_
 
 ### 3.3 梯度分析: GSPO 为何更稳定?
 
-梯是指导模型参数更新的方向. 对比两者的梯度公式 (为简洁省略裁剪), 能清晰地看到它们的本质区别:
+省略 clip 时，两种梯度差在重要性权重停在哪一层。
 
-- **GRPO 的梯度**:
+GRPO 把 token 级比率 $\eta_{i,t}$ 留在对 $t$ 的求和里面。单个 token 的 $\eta_{i,t}$ 一跳，那一项的梯度就跟着跳，长序列上噪声会堆。
 
-- **GSPO 的梯度**:
+$$
+\nabla_\theta \mathcal{J}_{\mathrm{GRPO}}
+\;\propto\;
+\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|y_i|}\sum_{t=1}^{|y_i|}
+\hat{A}_i\,\eta_{i,t}\,\nabla_\theta\log\pi_\theta(y_{i,t}\mid x,y_{i,<t})
+$$
+
+GSPO 先把长度归一化的序列比率 $s_i(\theta)$ 提出求和号。$s_i$ 对整段是一个数，再乘上平均后的 $\nabla\log\pi$。奖励是序列级时，权重也是序列级。
+
+$$
+\nabla_\theta \mathcal{J}_{\mathrm{GSPO}}
+\;\propto\;
+\frac{1}{G}\sum_{i=1}^{G}
+\hat{A}_i\,s_i(\theta)\cdot
+\frac{1}{|y_i|}\sum_{t=1}^{|y_i|}
+\nabla_\theta\log\pi_\theta(y_{i,t}\mid x,y_{i,<t})
+$$
+
+$s_i(\theta)=\exp\bigl(\frac{1}{|y_i|}\sum_t\log\eta_{i,t}\bigr)$，是几何平均，不是 $\frac{1}{|y_i|}\sum_t\eta_{i,t}$。GSPO-token 把同一个 $s_i$ 的数值广播回每个 token，并在「整段共享同一优势」时与上式梯度等价；需要逐步奖励时再给不同 $t$ 不同的 $A_{i,t}$。
 
 ### 3.4 GSPO-token: 兼顾灵活性与稳定性的变体
 
@@ -150,21 +168,45 @@ GSPO 对数值精度的差异容忍度更高, 这意味着可以直接使用推�
 
 ### 5.1 核心逻辑概览
 
-无论是 GRPO 还是 GSPO, 其在代码中的基本流程都是:
+无论是 GRPO 还是 GSPO，基本流程相同：旧策略采样并记下 `old_log_prob`；打分并算组内优势；当前策略再算一遍 `log_prob`；**重要性权重的聚合层级不同**；再 clip、反向。
 
-1. 用旧策略 old_policy 生成一批回答, 并获取其 log 概率 old_per_token_logps.2. 用奖励模型打分, 计算优势 advantages.3. 用当前策略 policy 计算这批回答的 log 概率 per_token_logps.4. 计算重要性权重. **(这是关键差异点)** 5. 计算损失并反向传播.
+### 5.2 GRPO 实现（Token 级别）
 
-### 5.2 GRPO 实现 (Token 级别)
+token 级比率直接 `exp(log_prob - old_log_prob)`，形状保持 `[B, T]`，每个位置自己 clip。
 
-### 5.3 GSPO 实现 (Sequence 级别)
+```python
+log_ratio = log_prob - old_log_prob          # [B, T]
+eta = torch.exp(log_ratio)                   # token 级 IS
+unclipped = eta * advantages
+clipped = torch.clamp(eta, 1 - eps, 1 + eps) * advantages
+policy_loss = -torch.minimum(unclipped, clipped)
+policy_loss = (policy_loss * response_mask).sum() / response_mask.sum()
+```
 
-### 5.4 关键差异对比: 一行代码的哲学之别
+一个 token 的 $\eta$ 出圈，只锁住那一个位置。长序列里这种出圈会很密，梯度噪声也密。完整组 $z$-score 见 [02-GRPO](../02-GRPO/02-GRPO.md) §3.3。
 
-| 特性 | GRPO (Token 级) | GSPO (Sequence 级) |
-| **权重计算** | weights = torch.exp(log_ratio) |
-weights = torch.exp(mean_log_ratio)
- |
-| **权重形状** | [batch_size, seq_len] | [batch_size] | **核心思想** | 每个 token 对自身负责 | 序列中的所有 token 共享同一个命运 | **稳定性** | 易受单个 token 噪声影响 | 通过平均平滑噪声, 更稳定 |
+### 5.3 GSPO 实现（Sequence 级别）
+
+先把 `log_ratio` 在长度上平均，得到几何平均的对数，再 `exp` 成 $s_i$，形状 `[B]`。clip 作用在 $s_i$ 上。需要逐 token 反传时，把 `s_i.detach()` 加回 `log_prob - log_prob.detach()`，让数值走序列级、梯度仍能落到各个 token（Qwen 论文的 GSPO-token 写法）。
+
+```python
+seq_len = response_mask.sum(dim=-1).clamp(min=1)
+log_s = ((log_prob - old_log_prob) * response_mask).sum(dim=-1) / seq_len  # [B]
+s = torch.exp(log_s)
+adv_seq = (advantages * response_mask).sum(dim=-1) / seq_len
+unclipped = s * adv_seq
+clipped = torch.clamp(s, 1 - eps, 1 + eps) * adv_seq
+policy_loss = -torch.minimum(unclipped, clipped).mean()
+```
+
+### 5.4 关键差异：权重停在哪一层
+
+| 特性 | GRPO（token 级） | GSPO（序列级） |
+|------|------------------|----------------|
+| 权重计算 | `exp(log_ratio)` 逐位置 | `exp(mean(log_ratio))` 几何平均 |
+| 权重形状 | `[B, T]` | `[B]` |
+| clip | 每个 token 独立 | 整段一个 $s_i$ |
+| 和奖励粒度 | 奖励往往序列级，权重却是 token 级 | 两者同级 |
 ---
 
 ## 6. 参考文献
