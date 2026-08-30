@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：SDPO 2601.20802；V4 式 (29)；K3 式 (15)；MiMo MOPD；GLM-5 cross-stage。01/02 已勘误。
-- 正在写：`04-SDPO` 勘误 / `09-MOPD` / `10-OPD-报告落地对照`。
+- 正在读：V4 式 (29)；K3 式 (15)；MiMo MOPD；GLM-5 cross-stage。01/02/04 已勘误。
+- 正在写：`09-MOPD` / `10-OPD-报告落地对照`。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 02-OPSD
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 04-SDPO
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -116,6 +116,7 @@ category: LLM 指南
 | 2026-08-30 | ScissorHands 专文：pivotal；非重要计数 $I$；**5×**=OPT-66B KV 内存；**20×** 只在会场摘要；NeurIPS Table 3 C4 分桶 | arxiv 2305.17118；NeurIPS hash a452a7c6…；github lzcemma/Scissorhands；知乎只学讲法 | `2.3.2/16-ScissorHands`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 | 2026-08-30 | 01-OPD 勘误：On-Policy Distillation 不是 Online Preference；MiniLLM reverse KL+PG vs GKD stop-grad forward KL；Table 21 分母 Qwen3-8B math+code 17920 vs 1800；150 steps/77K 未找到 | MiniLLM 2306.08543；GKD 2306.13649；综述 2604.00626；Qwen3 2505.09388 Table 21 + mineru；知乎只学讲法 | `4.6/01-OPD`；`4.6-OPD.md`；`4.4` OPD 深度解析；知识图谱 |
 | 2026-08-30 | 02-OPSD 勘误：特权上下文自教师；同一权重两种条件、教师只 prefill、冻 θ_init；37.1→43.4 是三集平均；AIME25 单列 36.7→43.9；1/125=1×1024 vs GRPO 8×16k | 2601.18734 HTML Table 2/3/5/6；github siyan-zhao/OPSD；知乎只学讲法 | `4.6/02-OPSD`；`4.6-OPD.md`；知识图谱 |
+| 2026-08-30 | 04-SDPO 勘误：环境 rich feedback 自教师换 GRPO 的 token 级 A；不是塞进 DPO；LCBv6 Qwen3-8B 48.8 vs GRPO 41.2 | 2601.20802 v2 HTML Table 3–6/8–10；github lasgroup/SDPO；知乎只学讲法 | `4.6/04-SDPO`；`4.6-OPD.md`；知识图谱 |
 
 
 
@@ -346,6 +347,9 @@ category: LLM 指南
 | 官方仓库 | siyan-zhao/OPSD | https://github.com/siyan-zhao/OPSD | 02-OPSD | 仓库存在；实现细节跟 Appendix B |
 | 作者页 PDF | opsd_v3.pdf | https://siyan-zhao.github.io/assets/img/opsd/opsd_v3.pdf | 02-OPSD | 检索到；正文以 arXiv HTML 表为准 |
 | 知乎（只学讲法） | OPSD 精读 / 非对称 OPD | https://zhuanlan.zhihu.com/p/2040838337079074881 ；https://zhuanlan.zhihu.com/p/2042240283300082829 | 02-OPSD | 教师一次阅卷；「默认 JSD」与 Table 3 冲突，弃专栏跟表 |
+| 原论文 HTML v2 | Reinforcement Learning via Self-Distillation / SDPO | https://arxiv.org/html/2601.20802v2 ；abs https://arxiv.org/abs/2601.20802 | 04-SDPO | 式 (1) KL(学生∥stopgrad 教师)；Table 5/9 LCBv6 48.8 vs 41.2；Table 3 墙钟 1h/5h |
+| 官方仓库 | lasgroup/SDPO | https://github.com/lasgroup/SDPO | 04-SDPO | 实现仓；未当第二套数字 |
+| 知乎（只学讲法） | SDPO 阅读笔记 / ETH 解读 | https://zhuanlan.zhihu.com/p/2012207043948345108 ；https://zhuanlan.zhihu.com/p/2000992368460056411 | 04-SDPO | 换优势函数；忌把失败 y 塞进教师 prompt |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -382,7 +386,7 @@ category: LLM 指南
 | SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
 | OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **勘误已写** `01-OPD基础原理.md` | 第 4.6 |
 | OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **勘误已写** `02-OPSD-自蒸馏.md`；特权上下文自教师；37.1 是三集平均 | 第 4.6 |
-| SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **排队** `04-SDPO` | 第 4.6 |
+| SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **勘误已写** `04-SDPO-自蒸馏策略优化.md`；rich feedback 自教师；不是塞进 DPO | 第 4.6 |
 | MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **排队** 新文 `09-MOPD` | 第 4.6 |
 
 ## 2026 模型分级（P2，先填再写）
