@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 配图波（用户点名：数据并行、FA v1–v4、MHA/GQA/MLA、NSA/DSA、Gated Attention、AttnRes）。浅色机制图 + 图解析；旧论文 jpg 不删。**不要**抢 `2.1.3`（b02）、`2.1.1` 节首页（b01）、ffn-act 02/03/04。
-2. **`2.1.1` 节首页：** 02/03/04 已质检。等 **b01 交还节首页租约** 后再改地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
-3. **1234 过文：** b03–b06 已收；b02 重派中。mHC/xHC 图等 b02 交卷再补。
+1. **立刻做：** 配图波（DP / FA v1–v4 / MHA-GQA-MLA / NSA-DSA / Gated Attention）。浅色机制图。**不要**抢 `2.1.3`（b02）。
+2. **1234 过文：** b01 / b09 / b10 已收。b02 重派中（mHC/xHC 图等它交还）。b07 / b08 仍 running。
+3. **`2.1.1` 节首页：** 已改成 01–04 地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
 
 ## 波次队列（未完成的留着）
 
@@ -117,8 +117,8 @@ category: LLM 指南
 | s4-642-map | done | `6-训练与推理优化/6.4-KV缓存与内存优化/6.4.2-KVCache压缩与优化技术.md` | 已交；单轨地图 |
 | s7-73-entry | done | `7-LLM应用开发/7.3-Agent/7.3-Agent.md` | 已交；应用入口，系统本体在第 13 章 |
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
-| pass-1234-b01 | running | batch 01 十篇见 `notes/live/inbox/pass-1234-batch-01.md`（仅那些 md + 各文 images/） | 不改 live；不重画 146 张飞书截图 |
-| pass-1234-b02 | running | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页；**不含** 2.1.1 节首页） | 重派。不改 2.1.1 节首页、不改 02/03/04、不改 live、不改 2.1 节首页（b01） |
+| pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
+| pass-1234-b02 | running | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页；**不含** 2.1.1 节首页） | 重派。不改 2.1.1 节首页、不改 02/03/04、不改 live、不改 2.1 节首页（b01 已收） |
 | fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
 | pass-1234-b03 | done | batch 03 十篇见 inbox | 已交；AttnRes/MLA 浅色图；2.3 章地图 |
 | pass-1234-b04 | done | batch 04 十篇见 inbox | 已交；FA3=2407.08608；Paged 只留 2309.06180 |
@@ -126,8 +126,8 @@ category: LLM 指南
 | pass-1234-b06 | done | batch 06 十篇见 inbox | 已交；2.3.3 地图 + KDA 通道门图 |
 | pass-1234-b07 | running | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 不改 live；不改 2.4.1 的 08–10、不改 2.4.2+、不改第 5 章图片文件 |
 | pass-1234-b08 | running | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | 不改 live；不改 2.4 节首页与 2.4.1 的 01–07（b07） |
-| pass-1234-b09 | running | batch 09 十篇见 `notes/live/inbox/pass-1234-batch-09.md` | 不改 live；不改 3.2.6+ / 3.3 / 3.4 |
-| pass-1234-b10 | running | batch 10 见 `notes/live/inbox/pass-1234-batch-10.md`（3.2.6–3.4 + 四份 stub） | 不改 live；不改 batch 09 路径 |
+| pass-1234-b09 | done | batch 09 第 3 章→3.2.5 | 后训练只链第 4 章；WSD=MiniCPM；Llama 3 405B 16K H100 |
+| pass-1234-b10 | done | batch 10 3.2.6–3.4 + stub | $\sqrt{C/6}$ 量纲纠正；CPT≠SFT；GPT-4 HumanEval 67.0%；MATH 12500 |
 | s9-fold-nnn | done | `{N.N.N}` 夹根散文件收同名夹：2.1 / 2.3.3 / 2.4.1 / 4.4.1 / 4.4.2 | 第 5 章扁平行、`2.3.1` 第五层、节根 `01` 未做 |
 | ffn-act-02 | done | `2.1.1/02-激活函数谱系-从饱和到软门/` | 监工抽查：浅色四曲线图；Table 1 单路 1.677/1.679/1.683；未改节首页 |
 | ffn-act-03 | done | `2.1.1/03-GLU家族-从GLU到SwiGLU/` | $8d/3$ 算术；Table 1 GEGLU 1.633 / SwiGLU 1.636；浅色两/三矩阵图 |
