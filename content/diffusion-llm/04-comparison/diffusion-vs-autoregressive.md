@@ -199,5 +199,6 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [离散流匹配](../03-points/discrete-flow.md)
 - [LLaDA-MoE](../03-models/llada-moe.md)
 - [谁决定揭开哪一格](../03-points/plan-denoise.md)
+- [提交之后还能不能改](../03-points/remask-revise.md)
 - [Eso-LM](../03-points/eso-lm.md)
 - [少步蒸馏](../03-points/few-step-distill.md)

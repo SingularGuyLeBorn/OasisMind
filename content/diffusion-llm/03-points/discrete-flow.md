@@ -41,7 +41,7 @@ excerpt: "连续 Flow Matching 学一条从噪声到数据的速度场。Discret
 
 源取全掩、路径取他们的式 (7)(9) 时，后验 $p_{1|t}$ 被证明与时间无关（Proposition 3.1）。网络不必喂 $t$。这和 RADD、和 LLaDA「掩码图案已经泄露 $t$」是同一几何的三种说法。MaskGIT 被写成 DFM 的一个实例，但采样改了关键一步：MaskGIT 按置信度优先揭开，DFM 按速度独立更新每个位置。低 NFE 时置信度优先有时好看，NFE 加大之后作者认为它引入偏置，整体更差。LLaDA 的低置信 remask 属于 MaskGIT 这一支启发式，不是 DFM 的默认采样器。两边不要混名。
 
-corrector 把已经揭开的字再掩回去，仍保证样本来自 $p_t$（Theorem 2.4）。吸收态 SUBS 训练时禁止改干净位；DFM 的 corrector 在采样时故意允许再脏。Seed Diffusion 后 20% 的编辑腐蚀是另一条「允许改已写字」的工程，前向改了一部分，不是 DFM 的 corrector 公式。三件事都叫「可以改」，法律不同。
+corrector 把已经揭开的字再掩回去，仍保证样本来自 $p_t$（Theorem 2.4）。吸收态 SUBS 训练时禁止改干净位；DFM 的 corrector 在采样时故意允许再脏。ReMDM 证明 FB / DFM corrector 是它 $\sigma_t$ 后验的特例，并且多出冻住 $\alpha_t$ 的 loop，DFM 做不到。Seed Diffusion 后 20% 的编辑腐蚀是另一条「允许改已写字」的工程，前向改了一部分，不是 DFM 的 corrector 公式。几件事都叫「可以改」，法律不同，见[提交之后还能不能改](./remask-revise.md)。
 
 150M、OpenWebText、无温度无 corrector 的无条件生成（Table 2，生成困惑度由 Llama-2 / Llama-3 / GPT-2 打分，熵用来抓重复）：
 
@@ -143,4 +143,5 @@ Oracle 长度把 HumanEval Pass@1 从 6.7 抬到 11.6，说明画布超参在 1.
 - [任意顺序](./any-order.md)
 - [代码向扩散](./code-dllm.md)
 - [少步蒸馏](./few-step-distill.md)
+- [提交之后还能不能改](./remask-revise.md)
 - [代表性年表](../03-models/representative-models.md)

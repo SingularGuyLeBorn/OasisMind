@@ -183,5 +183,6 @@ Dream Instruct 的 180 万对、3 个 epoch，是轻量后训练。基座会写�
 - [从自回归改编](../03-points/ar-to-diffusion.md)
 - [代表性年表](./representative-models.md)
 - [采样与调度](../02-mechanism/sampling.md)
+- [提交之后还能不能改](../03-points/remask-revise.md)
 - [LLaDA 专文](./llada-frontier.md)
 - [代码向扩散](../03-points/code-dllm.md)

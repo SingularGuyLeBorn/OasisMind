@@ -82,7 +82,7 @@ LLaDA 的权重在预训练之后就可以用三种方式采样，不必再训�
 
 并行诅咒指的是：一步提交的位置越多，这些位置在提交前互相看不见对方的最终取值，搭配错误上升。缓解手段分三类。
 
-解码侧：只提交高置信位置（Fast-dLLM、阈值解码）；用小 AR 或自身做验证（APD、自投机 SSD）；允许下一步把错字掩回去（ReMDM）。
+解码侧：只提交高置信位置（Fast-dLLM、阈值解码）；用小 AR 或自身做验证（APD、自投机 SSD）；允许把已经落盘的字再变成 `[MASK]`（ReMDM）。后一件和本步低置信 remask 不是同一层，见[提交之后还能不能改](../03-points/remask-revise.md)。
 
 训练侧：dParallel 的 certainty-forcing 蒸馏让边际更快变尖；LLaDA 2.0 的 CAP 在已经预测对的位置上再压熵，提高 TPF。
 
@@ -113,7 +113,7 @@ for t in (1, 1-1/T, ..., 1/T):
     n_keep ← round((1 - s/t) * n_mask(x))
     submit ← topk(conf among MASK, n_keep)
     x[submit] ← argmax(logits[submit])
-    # 其余 MASK 保持；可选：低置信已揭开位置再掩回去
+    # 其余 MASK 保持；本步低置信只盖尚未提交的预测，不是改已落盘明文
 return strip_after_eos(x)
 ```
 
@@ -164,5 +164,6 @@ return strip_after_eos(x)
 - [失效模式](../03-points/failure-modes.md)
 - [任意顺序](../03-points/any-order.md)
 - [谁决定揭开哪一格](../03-points/plan-denoise.md)
+- [提交之后还能不能改](../03-points/remask-revise.md)
 - [少步蒸馏](../03-points/few-step-distill.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
