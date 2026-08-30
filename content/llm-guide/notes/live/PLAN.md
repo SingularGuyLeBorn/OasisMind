@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 加厚 Gated Residual 到汉字 ≥4000。
-2. **本波交卷后：** 把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1（不边写边搬）。
-3. **再下一波：** Qwen4 架构预测（只收一手）。
+1. **立刻做：** 把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1（不 Delete）。
+2. **再下一波：** Qwen4 架构预测（只收一手）。
+3. **再往后：** 0.8 继续补知识点。
 
 ## 波次队列（未完成的留着）
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：回收 SnapKV / Quest / Gated 07 / SiTU / mHC。
-- 现在立刻做：加厚 Gated Residual。不要 `move_agent_to_root`。不要 push。不要 git mv 04–09（与下一篇写文分开）。
+- 上一件：回收 Gated Residual 加厚。
+- 现在立刻做：2.4.1 的 04–09 `git mv`。不要 `move_agent_to_root`。不要 push。不要 Delete。
 
 ## 路径租约（并行防撞）
 
@@ -152,4 +152,4 @@ category: LLM 指南
 | gated-07 | done | `2.2.2/07-Gated-Attention相关工作/` + inbox `gated-07.md` | 已入库。4017 汉字；FoT 在 logits、QT 是 BERT/ViT 量化门；未改 06；监工补 2.2.2 行 |
 | situ-thicken | done | `2.1.1/01-SiTU-GLU/` + inbox `situ-thicken.md` | 已入库。4134 汉字；$\ell=3584$；报告无独立 SiTU 消融；监工补 2.1.1 表注 |
 | mhc-thicken | done | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 已入库。4139 汉字；Table 4 MATH 26.0 vs HC 26.4；Manifold-Constrained；未碰节根散文件 |
-| gr-thicken | running | `2.1.3/03-Gated-Residual/` + inbox `gr-thicken.md` | 不改 01/02、不改 2.1.3 首页、不改 06/07 Gated Attention；汉字≥4000 |
+| gr-thicken | done | `2.1.3/03-Gated-Residual/` + inbox `gr-thicken.md` | 已入库。4329 汉字；Table 5 25B-A3B/560B；丢掉 $H_{res}$；不是 $G_1$/mHC；监工补 2.1.3 一句 |

@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：SnapKV/Quest/Gated07/SiTU/mHC 已入库。本波加厚 Gated Residual。
-- 当前波次：**gr-thicken**
+- 状态：GR 已入库。下一件 2.4.1 的 04–09 `git mv`。
+- 当前波次：**无 running 写文租约**
 - 当前正在写的文章路径：见 PLAN 租约
 - 本轮明确不做：在 2.4.1 里加厚 04–09 硬件/系统综述；售卖包装；不抢 Engram 的 `2.4.8`
 

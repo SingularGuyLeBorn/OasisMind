@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：Qwen3.8-Flash-Next 报告 §2.2 Gated Residual。
-- 正在写：gr-thicken。
-- 卡住：04–09 错位箱仍不 git mv（等 GR 交卷）。
-- 上次刷新记忆的时间：2026-08-30 回收 SnapKV/mHC，派出 GR。
+- 正在读：2.4.1 错位箱 04–09 落点（6.1 / 6.3.1 / 9.1）。
+- 正在写：无。下一件 git mv，不 Delete。
+- 卡住：无。
+- 上次刷新记忆的时间：2026-08-30 回收 gr-thicken。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | 回收 gr-thicken：4329 汉字；Table 5 九列；丢掉 $H_{res}$；不是 $G_1$/mHC | Qwen3.8 tech_report.pdf §2.2；GatedNorm 2601.22966 | `2.1.3/03-Gated-Residual/` |
 | 2026-08-30 | 回收 snapkv-thicken：4557 汉字；H 式 (4)–(8) 事后度量；3.6×/8.2×；不是观察头 | https://arxiv.org/html/2404.14469v2 ；NeurIPS PDF；snapkv_utils.py | `2.3.2/12-SnapKV-生成前观测窗/` |
 | 2026-08-30 | 回收 mhc-thicken：4139 汉字；Table 4 列名；MATH 26.0 vs HC 26.4；未碰节根散文件 | https://arxiv.org/html/2512.24880 ；2409.19606 | `2.1.3/01-Hyper-Connections与mHC/` |
 | 2026-08-30 | 回收 situ-thicken：4134 汉字；式 (12) $W_g$ 两次；$\ell=3584$；无独立消融表 | https://arxiv.org/html/2607.24653 §2.3.2；2002.05202 对照 | `2.1.1/01-SiTU-GLU/` |
