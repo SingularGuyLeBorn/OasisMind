@@ -27,9 +27,9 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：H2O / **Quest** / **SnapKV** 已交；S0 五章首页已交。本波在租：**PyramidKV 14**、**FastGen 15**、**ScissorHands 16**、**TOVA 17**
-- 当前波次：**0.8 持续**（推理时 KV：层间漏斗 / 按头自适应 / 重要性持久 / 注意力省略）
-- 当前正在写的文章路径：`2.3.2/14-PyramidKV-层间漏斗` 等四篇并行
+- 状态：H2O / Quest / SnapKV / **TOVA** 已交。本波仍在租：**PyramidKV 14**、**FastGen 15**、**ScissorHands 16**。下一阶段（三篇交完再开）= OPD / OPSD / SDPO / MOPD + 报告落地
+- 当前波次：**0.8 持续**（先做完推理时 KV 剩余三篇）
+- 当前正在写的文章路径：`2.3.2/14-PyramidKV-层间漏斗` 等三篇并行
 - 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 
 ## 防漂移口令
