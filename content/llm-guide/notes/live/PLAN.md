@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 配图波（DP / FA v1–v4 / MHA-GQA-MLA / NSA-DSA / Gated Attention）。浅色机制图。**不要**抢 `2.1.3`（b02）。
-2. **1234 过文：** b01 / b09 / b10 已收。b02 重派中（mHC/xHC 图等它交还）。b07 / b08 仍 running。
+1. **立刻做：** 配图波剩余 `fig-kv-family` / `fig-nsa-dsa`。DP / FA v1–v4 / Gated Attention 已收。**不要**抢 `2.1.3`（b02）。
+2. **1234 过文：** b01 / b08 / b09 / b10 已收。b02 重派中（mHC/xHC 图等它交还）。b07 仍 running。
 3. **`2.1.1` 节首页：** 已改成 01–04 地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
 
 ## 波次队列（未完成的留着）
@@ -125,15 +125,15 @@ category: LLM 指南
 | pass-1234-b05 | done | batch 05 十篇见 inbox | 已交；Quest 不驱逐；QSA/DCA 浅色图 |
 | pass-1234-b06 | done | batch 06 十篇见 inbox | 已交；2.3.3 地图 + KDA 通道门图 |
 | pass-1234-b07 | running | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 不改 live；不改 2.4.1 的 08–10、不改 2.4.2+、不改第 5 章图片文件 |
-| pass-1234-b08 | running | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | 不改 live；不改 2.4 节首页与 2.4.1 的 01–07（b07） |
+| pass-1234-b08 | done | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | SonicMoE 2512.14080；QMoE 1.6T；$\ell$≠MLA $c^{KV}$；Jamba 52B/12B；V4 MTP≠EAGLE-3 |
 | pass-1234-b09 | done | batch 09 第 3 章→3.2.5 | 后训练只链第 4 章；WSD=MiniCPM；Llama 3 405B 16K H100 |
 | pass-1234-b10 | done | batch 10 3.2.6–3.4 + stub | $\sqrt{C/6}$ 量纲纠正；CPT≠SFT；GPT-4 HumanEval 67.0%；MATH 12500 |
 | s9-fold-nnn | done | `{N.N.N}` 夹根散文件收同名夹：2.1 / 2.3.3 / 2.4.1 / 4.4.1 / 4.4.2 | 第 5 章扁平行、`2.3.1` 第五层、节根 `01` 未做 |
 | ffn-act-02 | done | `2.1.1/02-激活函数谱系-从饱和到软门/` | 监工抽查：浅色四曲线图；Table 1 单路 1.677/1.679/1.683；未改节首页 |
 | ffn-act-03 | done | `2.1.1/03-GLU家族-从GLU到SwiGLU/` | $8d/3$ 算术；Table 1 GEGLU 1.633 / SwiGLU 1.636；浅色两/三矩阵图 |
 | ffn-act-04 | done | `2.1.1/04-PowLU-Ling对SwiGLU的稳定化改写/` | 式 (1) $m=3$；Ling-2.0 仍 SwiGLU；无 limit=7.0 官方超参 |
-| fig-dp-611 | running | `6.1.1-分布式训练/6.1.1-分布式训练.md` + 该夹 `images/fig-*.png` + inbox `fig-dp-611.md` | 不改 Ring/Ulysses/BPT 已有图段；不改 live；不改 DualPipe 专文 |
-| fig-fa-v14 | running | `2.3.1/01-FlashAttention/` 的 `02`–`05` md + 该夹 `images/fig-fa-*-mech.png` + inbox `fig-fa-v14.md` | 不删论文 jpg；不改 00-MEA、不改 06-Triton（已有浅色 tile 图） |
+| fig-dp-611 | done | `6.1.1-分布式训练/6.1.1-分布式训练.md` + 该夹 `images/fig-*.png` + inbox `fig-dp-611.md` | DP/TP/PP/ZeRO 浅色图；气泡率标了 `[OM-FREEPLAY]`；未改 Ring/Ulysses/BPT |
+| fig-fa-v14 | done | `2.3.1/01-FlashAttention/` 的 `02`–`05` md + 该夹 `images/fig-fa-*-mech.png` + inbox `fig-fa-v14.md` | FA3=2407.08608 35%→75%；v2 外循环改到 Q 行；旧 jpg 未删 |
 | fig-kv-family | running | `2.2.2/01-MHA`、`02-MQA`、`03-GQA`、`04-MLA-低秩潜变量` 四篇 md + 各夹 images + inbox `fig-kv-family.md` | 不改 05 吸收双版本、不改节首页、不改 AttnRes |
 | fig-nsa-dsa | running | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 不改 01-MoBA、不改 CSA、不改 live |
-| fig-gated-attnres | running | `2.2.2/06-Gated-Attention-SDPA输出门控/`；`Kimi-Attention-Residuals-深度维注意力聚合.md` + 其 images + inbox `fig-gated-attnres.md` | 不改 01–05、不改 2.1.3 Gated Residual、不改节首页 |
+| fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
