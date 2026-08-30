@@ -142,4 +142,5 @@ Oracle 长度把 HumanEval Pass@1 从 6.7 抬到 11.6，说明画布超参在 1.
 - [掩码扩散](../02-mechanism/masked-diffusion.md)
 - [任意顺序](./any-order.md)
 - [代码向扩散](./code-dllm.md)
+- [少步蒸馏](./few-step-distill.md)
 - [代表性年表](../03-models/representative-models.md)

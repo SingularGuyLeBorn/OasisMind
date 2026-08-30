@@ -40,11 +40,15 @@ excerpt: "从 D3PM 的 Q_t 到 LLaDA 2.0 的 100B 改编。连续路线停在可
 | 2024 | MDLM | 离散 | 吸收态 SUBS，NeurIPS 2024，arXiv:2406.07524 |
 | 2024.06 | RADD / MD4 | 离散 | 吸收态 ≅ 任意顺序 AR；$1/t$ |
 | 2024.07 | DFM | 离散流 | 路径 $p_t$；1.7B HumanEval 6.7% |
+| 2024.10 | SDTT | 蒸馏 | 老师 1024 步蒸到 32–64 倍少步；延迟对照带 KV 的 GPT-2 |
 | 2025.02 | LLaDA | 离散 | 8B 从头训，Table 1 对 LLaMA3 |
 | 2025.03 | BD3-LM | 块 | 块间 AR、块内扩散，ICLR 2025 Oral |
+| 2025.06 | Eso-LM | 因果 KV | 洗牌+因果；65× 对照无缓存 MDLM |
 | 2025.06 | Mercury | 离散 | Mini 1109 tok/s @ H100 |
 | 2025.06 | DiffuCoder | 离散 | 7B 代码；coupled-GRPO；EvalPlus 67.9 |
 | 2025.08 | Dream 7B | 离散 | 从 Qwen2.5 改编的开源 7B |
+| 2025.09 | LLaDA-MoE | 稀疏 | 从零约 20T；7B-A1.4B；损失仍是 $1/t$ |
+| 2024.10 | DDPD | 规划器 | ICLR 2025；脏净头 + SEDD；GPT-2 尺度 |
 | 2025.12 | LLaDA 2.0 | 块 | 16B / 100B MoE，AR→扩散 WSD |
 
 旧稿把 MDLM 写成 ICML 2023 / arXiv:2306.08162，编号是错的。
@@ -82,7 +86,7 @@ Sahoo 等人，NeurIPS 2024，arXiv:2406.07524。前向只进 `[MASK]`。SUBS �
 
 ## LLaDA 与 2.0
 
-8B 从头训，Table 1 $*$：MMLU 65.9 对 LLaMA3 的 65.4，GSM8K 70.3 对 48.7，HumanEval 35.4 对 34.8。Instruct 只有 SFT。2.0 从 Ling AR MoE 转换，mini 16B、flash 100B，平均分 64.34 / 73.18；flash-CAP 535 TPS，文内 AR 对照约 2.1 倍。规格卡见[LLaDA 专文](./llada-frontier.md)。
+8B 从头训，Table 1 $*$：MMLU 65.9 对 LLaMA3 的 65.4，GSM8K 70.3 对 48.7，HumanEval 35.4 对 34.8。Instruct 只有 SFT。同一家族后来分出两条不该焊在一起的河：LLaDA-MoE 仍从零训稀疏 MDM，约 20T，激活 1.4B，Instruct 平均分 53.12 贴近 Qwen2.5-3B-Instruct 的 53.51，见[LLaDA-MoE](./llada-moe.md)；2.0 从 Ling AR MoE 转换，mini 16B、flash 100B，平均分 64.34 / 73.18；flash-CAP 535 TPS，文内 AR 对照约 2.1 倍。规格卡见[LLaDA 专文](./llada-frontier.md)。
 
 ## BD3-LM、Dream、Mercury、Seed
 
@@ -149,14 +153,22 @@ LLaDA 8B 原文同时有从头训、同数据 ARM、采样消融、诗歌反向�
 - [Mercury (2025)](https://arxiv.org/abs/2506.17298)
 - [Gat et al., Discrete Flow Matching (2024)](https://arxiv.org/abs/2407.15595)
 - [Gong et al., DiffuCoder (2025)](https://arxiv.org/abs/2506.20639)
+- [Zhu et al., LLaDA-MoE (2025)](https://arxiv.org/abs/2509.24389)
+- [Sahoo et al., Eso-LMs (2025)](https://arxiv.org/abs/2506.01928)
+- [Deschenaux & Gulcehre, SDTT (2025)](https://arxiv.org/abs/2410.21035)
+- [Liu et al., DDPD (ICLR 2025)](https://arxiv.org/abs/2410.06264)
 
 ## 相关
 
 - [为什么用扩散做语言生成](../01-overview/why-diffusion.md)
 - [掩码扩散](../02-mechanism/masked-diffusion.md)
 - [LLaDA 专文](./llada-frontier.md)
+- [LLaDA-MoE](./llada-moe.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [多模态扩散](./multimodal-dllm.md)
 - [任意顺序](../03-points/any-order.md)
+- [Eso-LM](../03-points/eso-lm.md)
+- [少步蒸馏](../03-points/few-step-distill.md)
+- [谁决定揭开哪一格](../03-points/plan-denoise.md)
 - [离散流匹配](../03-points/discrete-flow.md)
 - [代码向扩散](../03-points/code-dllm.md)

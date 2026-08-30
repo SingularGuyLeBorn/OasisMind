@@ -54,7 +54,7 @@ $$P_{\text{Diff}}(x)=\int p(x_T)\prod_{t=1}^{T}p_\theta(x_{t-1}\mid x_t)\,dx_{1:
 | 吞吐实例 | 基线 | Mercury Mini 1109 tok/s @ H100；LLaDA 2.0-flash-CAP 535 TPS，文内 AR 约 2.1×。LLaDA 8B 原论文没有速度表 |
 | KV Cache | 必须，且严格成立 | 全双向默认不成立；块间真缓存；跨步是近似 |
 
-短样本、$T\ll n$ 时扩散可以少跑前向。极长续写、AR 已有 KV 时，全双向每步重算整段反而更贵。Fast-dLLM 在 LLaDA-Instruct GSM8K 5-shot、生成长度 256 上从 6.7 tok/s 到 54.4 tok/s，约 8.1×；27.6× 那一格对照的是原版 LLaDA 循环，不是 AR。见[推理加速](../03-points/inference-acceleration.md)。
+短样本、$T\ll n$ 时扩散可以少跑前向。极长续写、AR 已有 KV 时，全双向每步重算整段反而更贵。Fast-dLLM 在 LLaDA-Instruct GSM8K 5-shot、生成长度 256 上从 6.7 tok/s 到 54.4 tok/s，约 8.1×；27.6× 那一格对照的是原版 LLaDA 循环，不是 AR。见[推理加速](../03-points/inference-acceleration.md)。Eso-LM 用洗牌+因果换**精确** KV，65× 对照无缓存 MDLM，尺度不是 8B，见[Eso-LM](../03-points/eso-lm.md)。SDTT 把步数蒸掉 32–64 倍，延迟对照的是带 KV 的 GPT-2（32 步约 4×），见[少步蒸馏](../03-points/few-step-distill.md)。四张倍数卡不能减。
 
 开源 Dream 和商业 Mercury 不在同一条速度曲线上。分母、prefill、batch、是否锁输出格式，都可以让 tokens/s 差一倍。本花园只并列。
 
@@ -197,3 +197,7 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [任意顺序](../03-points/any-order.md)
 - [代码向扩散](../03-points/code-dllm.md)
 - [离散流匹配](../03-points/discrete-flow.md)
+- [LLaDA-MoE](../03-models/llada-moe.md)
+- [谁决定揭开哪一格](../03-points/plan-denoise.md)
+- [Eso-LM](../03-points/eso-lm.md)
+- [少步蒸馏](../03-points/few-step-distill.md)

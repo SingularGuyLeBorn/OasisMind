@@ -139,3 +139,5 @@ KV 冲突可以写成一条硬句子。任意顺序的条件集合会变：下�
 - [双向注意力与反转诅咒](./bidirectional-attention.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [代码向扩散](./code-dllm.md)
+- [谁决定揭开哪一格](./plan-denoise.md)
+- [Eso-LM](./eso-lm.md)
