@@ -42,7 +42,7 @@ _garden.md / 0-导读
 | Model / Harness / Artifact | 第 1 章 `02` | 不要开平行分类法 |
 | SPIN / Self-Rewarding / STaR / Self-Instruct / SEAL / LADDER / Absolute Zero / R-Zero | 第 2 章 | 不要把 OPD 公式抄进本库 |
 | OPD / MOPD | 链 llm-guide 4.6 | 本库最多一节「不是 RSI」 |
-| verification-gated runtime、STOP、Gödel Agent、DGM、技能包自改、ACE playbook | 第 3 章 | 不要写成 Cursor 产品手册 |
+| verification-gated runtime、STOP、Gödel Agent、DGM、技能包自改、ACE playbook、Voyager | 第 3 章（Voyager 已落） | 不要写成 Cursor 产品手册 |
 | AlphaEvolve、FunSearch、科研 agent、论文工厂 | 第 4 章 | |
 | 融资、访谈、实验室动态 | 第 5 章 | 不要当机制专文 |
 | RSIBench、可靠性阶梯、SEAGym、system card RSI | 第 6 章（04 已落） | |
