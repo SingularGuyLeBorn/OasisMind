@@ -65,7 +65,7 @@ category: LLM 指南
 - [x] 0.8 本轮：Memory Efficient Attention（Rabe & Staats 2112.05682）独立专文；2.3.4 §3.0；不是 FA / BPT / Ring / SP
 - [x] 0.8 本轮：StreamingLLM / Attention Sink（2309.17453，ICLR 2024）；4+窗；不是 FA / H2O / gpt-oss 标量 $z'$
 - [x] 0.8 本轮：H2O Heavy-Hitter Oracle（2306.14048，NeurIPS 2023）；local 累积；20% = H2+最近对半分；不是 FA / StreamingLLM
-- [ ] **结构 S0–S7**：见 `notes/chapter-structure-plan.md`（地图 → 撞号/文件名规范 → 5/14 分工 → 综述改导航）。不删文件。
+- [ ] **结构 S1–S7**（S0 五章首页地图已交）：见 `notes/chapter-structure-plan.md`（撞号/文件名规范 → 5/14 分工已在 S0/S2 声明 → 综述改导航）。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
