@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：SnapKV [2404.14469](https://arxiv.org/html/2404.14469v2) 仍在租。Quest 已交。Connest5 仍无官方模型串。
-- 正在写：SnapKV `12-SnapKV-生成前观测窗` 仍在租。
+- 正在读：PyramidKV [2406.02069](https://arxiv.org/html/2406.02069) / FastGen 2310.01801 / ScissorHands 2305.17118 / TOVA 2401.06104 四租并行。SnapKV / Quest 已交。Connest5 仍无官方模型串。
+- 正在写：`14-PyramidKV-层间漏斗` / `15-FastGen-按头自适应` / `16-ScissorHands-重要性持久` / `17-TOVA-注意力省略`。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 Quest
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 SnapKV
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -109,6 +109,7 @@ category: LLM 指南
 | 2026-08-30 | S0 第 8 章首页地图：CLIP/VLM 同号 8.2 分链；omni 链 8.7；精读只进第 14 章 | 库内路径确认（8.1–8.7；GLM-4-Voice Index；MiniCPM-o D2） | `8-多模态.md` §0 |
 | 2026-08-30 | S0 第 14 章首页地图：D2 捆法；机制回 2/6/9.4；第 5 章叙事；Ernie/`14.21-Erine` 留 S6 | 库内路径确认（第 2/5/6 章首页；9.4；14.19；14.21 夹无家族首页） | `14-主流开源模型全景解析与技术报告精读.md` §0 |
 | 2026-08-30 | Quest 专文：页 min/max 上界；不驱逐；Table 1 passkey；Fig 9 **7.03×** 自注意力 / Fig 10 **2.23×** 4-bit e2e；PMLR 摘要对调 | arxiv HTML/PDF 2406.10774；PMLR v235/tang24l；hanlab；github mit-han-lab/Quest；知乎两篇只学讲法 | `2.3.2/13-Quest`；`2.3.2` 索引；`2.3.4`；知识图谱 |
+| 2026-08-30 | SnapKV 专文：观测**窗** + per-head Top-$k$ + 1D pooling；Listing `capacity-window`；Table 1 Mistral；**3.6×**=16k·bs=2 ms/token；**8.2×**=16k→131k；NIAH **380K** / 基线 33k OOM；纠正 6.4.2 观察头 | arxiv HTML v2 / abs 2404.14469；NeurIPS hash 28ab4182…；github FasterDecoding/SnapKV `snapkv_utils.py`；知乎两篇只学讲法（16K→380K 未采用） | `2.3.2/12-SnapKV`；`2.3.2` 索引；`6.4.2` §4.3.3 修订；`6.4`；`2.3.4`；知识图谱 |
 
 
 
@@ -310,6 +311,13 @@ category: LLM 指南
 | 会场页 | ICML 2024 Quest | https://proceedings.mlr.press/v235/tang24l.html | 13-Quest | PMLR 235:47901–47911；**网页摘要把 2.23× 与 7.03× 对调**，弃摘要 |
 | 项目页 | HAN Lab Quest | https://hanlab.mit.edu/projects/quest | 13-Quest | LongBench 写 2k，正文 1K，弃项目页 |
 | 官方仓库 | mit-han-lab/Quest | https://github.com/mit-han-lab/Quest | 13-Quest | FlashInfer kernel；2024-10 Llama-3.1/Mistral 是仓库后续 |
+| 原论文 HTML | SnapKV: LLM Knows What You are Looking for Before Generation | https://arxiv.org/html/2404.14469v2 ；abs https://arxiv.org/abs/2404.14469 | 12-SnapKV | NeurIPS 2024；观测**窗**在 prompt 末尾；**每个 head** 选成簇 KV；Listing 1；Table 1 LongBench；§5.1.2 16k·bs=2 时 >100ms vs <40ms ≈3.6×，同 batch 16k OOM vs 131k ≈8.2×；NIAH 380k / 基线 33k OOM / cache 1024 |
+| 会场页 | NeurIPS 2024 SnapKV | https://proceedings.neurips.cc/paper_files/paper/2024/hash/28ab418242603e0f7323e54185d19bde-Abstract-Conference.html | 12-SnapKV | hash `28ab418242603e0f7323e54185d19bde` |
+| 会场 PDF | NeurIPS 2024 SnapKV PDF | https://proceedings.neurips.cc/paper_files/paper/2024/file/28ab418242603e0f7323e54185d19bde-Paper-Conference.pdf | 12-SnapKV | $k=\lfloor(1-p)L_{\mathrm{prefix}}\rfloor$（HTML 写 $p\times$）；实现以 Listing `max_capacity_prompt - window_size` 为准 |
+| 会场海报 | NeurIPS 2024 poster 93531 | https://neurips.cc/virtual/2024/poster/93531 | 12-SnapKV | 作者与摘要一致 |
+| 官方仓库 | FasterDecoding/SnapKV | https://github.com/FasterDecoding/SnapKV ；https://raw.githubusercontent.com/FasterDecoding/SnapKV/main/snapkv/monkeypatch/snapkv_utils.py | 12-SnapKV | `update_kv`：窗末 query 投票 → pool1d → topk(capacity−window) → cat 观测窗；默认 avgpool / 窗 32 / 容量 2048 / kernel 5；`transformers>=4.36` |
+| 知乎（只学讲法） | 硅基捕手维克托 SnapKV | https://zhuanlan.zhihu.com/p/2036468489322501664 | 12-SnapKV | 末尾窗投票 + 1D pooling；「16K 扩到 380K」未采用 |
+| 知乎（只学讲法） | Zachary SnapKV | https://zhuanlan.zhihu.com/p/704710823 | 12-SnapKV | 容量算术 256=240+16 与 Listing 一致；数字未进正文 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -339,6 +347,7 @@ category: LLM 指南
 | Connest5 | WebSearch 2026-08-30；命中 Connic（connic.co / `connic/*`），不是模型名 | **未找到** 官方串 | 留条，禁止 mkdir |
 | Attention Sink / StreamingLLM | arXiv:2309.17453；ICLR 2024；gpt-oss 标量；V4 $z'$ | **专文已写** `10-StreamingLLM与Attention-Sink.md` | 第 2.3.2 |
 | Quest / Query-Aware Sparsity | arXiv:2406.10774；ICML 2024；页 min/max；不驱逐 | **专文已写** `13-Quest-查询感知稀疏.md` | 第 2.3.2 |
+| SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
 
 ## 2026 模型分级（P2，先填再写）
 

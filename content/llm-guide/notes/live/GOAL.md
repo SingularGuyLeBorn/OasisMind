@@ -27,9 +27,9 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：H2O 已交；**Quest 已交**；S0 五章首页已交。本波仍在租：**SnapKV 12**
-- 当前波次：**0.8 持续**（SnapKV 专文）
-- 当前正在写的文章路径：`2.3.2/12-SnapKV-生成前观测窗`
+- 状态：H2O / **Quest** / **SnapKV** 已交；S0 五章首页已交。本波在租：**PyramidKV 14**、**FastGen 15**、**ScissorHands 16**、**TOVA 17**
+- 当前波次：**0.8 持续**（推理时 KV：层间漏斗 / 按头自适应 / 重要性持久 / 注意力省略）
+- 当前正在写的文章路径：`2.3.2/14-PyramidKV-层间漏斗` 等四篇并行
 - 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 
 ## 防漂移口令
