@@ -168,6 +168,8 @@ $$
 
 ---
 
+> **2026-08 修订。** 家族画卷从 FA-v1 起画。更早一年的精确、线性显存算法是 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)）。FA 附录 B.5 对照了三件事：峰值 vs IO、K 份摘要 vs 一份增量 $O$、checkpoint vs 解析反向。本页不把 MEA 并进 v1。
+
 ## 4. FlashAttention 家族演进画卷 (The FlashAttention Family Evolutionary Roadmap)
 
 为了粉碎内存墙, 硬件感知自注意力算子 (FlashAttention) 爆发了. 其根本哲学**不是降低算法的 FLOPs 数(自注意力本身的计算下限无法突破), 而是重构计算流程, 彻底消除 HBM 上的中间张量物化, 将算术强度直接提升到计算受限区.**
@@ -188,6 +190,7 @@ $$
 
 ## 5. 参考文献 (References)
 
+- Rabe, M. N., & Staats, C. (2021). "Self-attention Does Not Need $O(n^2)$ Memory." arXiv:2112.05682. 见 [00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md).
 - Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C. (2022). "FlashAttention: Fast and memory-efficient exact attention with io-awareness." Advances in Neural Information Processing Systems, 35, 16344-16359.
 - Dao, T. (2023). "FlashAttention-2: Faster attention with better parallelism and work partitioning." arXiv preprint arXiv:2307.08691.
 - Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv preprint arXiv:2407.08691.

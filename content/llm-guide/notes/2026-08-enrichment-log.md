@@ -391,3 +391,27 @@ as_of: 2026-08-30
 - `6.1.1` 新 §4.7：2305.19370，Liu & Abbeel，NeurIPS 2023。外层 $Q_i$、内层 KV、在线 softmax 后立刻 FFN。一层激活 **$2bsh$**（FA/ME 仍 $8bsh$）。与 Korthikanti SP **正交**。全精度、无 DP。Table 1 13B $d_{\mathrm{model}}=5140$。Table 2 同一 PartitionSpec 对 vanilla **8×**；摘要 32× 不在同一行；对 ME 2–4×。Table 3 131K 仅 BPT 79/78 GB。Table 4 1B 8GPU：8K 1.17×、16K 1.2×、64K 仅 BPT 600。Table 5 ExoRL 32 轨均 **111.13**（HTML 散文 64/155.36 弃）。自绘图 `fig-bpt-blockwise-ffn.png`。
 - `move_agent_to_root` 曾 `stash -u` + reset，本轮 `stash apply` 救回 worktree；**禁止再调**。
 - 未 commit。
+
+## 48. 2026-08-30 续：MEA 是 2112.05682，不是 FlashAttention
+
+- 新增 `2.3.1/00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md`。一手 [arxiv.org/html/2112.05682](https://arxiv.org/html/2112.05682)：lazy softmax 式 (1)；running max；分数 $\ge 89$；单 query $O(1)$、self-attn $O(\log n)$、TPU 实用 $O(\sqrt{n})$；默认 1024/4096；Table 2 $n=2^{14}$ 1GB→17MB（摘要 59×）；Table 3 2.0GB→64MB（32×）；WMT 62.69 vs 62.59。自绘 5 图。
+- FA 附录 B.5（ar5iv 2205.14135）：峰值 vs IO；$K$ 份摘要 vs 一份 $O$；checkpoint vs 解析反向。
+- `2.3.4` 新 §3.0；不再把 MEA 收进 FA 名下。`2.3.1` 索引 / `01-FA` / `02-FA-v1` / `04` xFormers API 名 / `6.1.1` / Llama-1 §4.3 / 知识图谱 交叉链接。
+- Connest5 再搜未命中官方模型串，留条。
+- 未 commit。
+
+## 49. 2026-08-30 续：StreamingLLM 是 2309.17453，不是 FA，不是 H2O
+
+- 新增 `2.3.2/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md`。一手 [arxiv.org/html/2309.17453](https://arxiv.org/html/2309.17453)：式 (1) sink；默认 4 个起始 KV；cache 内赋位；RoPE 存未旋转 Key。Table 1 Llama-2-13B `0+1024` **5158.07** / `4+1020` **5.40**。Figure 5 **4M** token。相对窗内重算最多 **22.2×**。自绘 5 图。
+- 不是 FA/MEA/BPT（精确全注意力）；不是 H2O（累积分数驱逐）；gpt-oss / V4 是每头标量 $z'$ 进分母（模型卡 + mineru 式 (27)）。
+- Gu 2410.10781：key bias、sigmoid 到 1B 无 sink。Barbero 2504.02732 Table 1：Llama 3.1 405B sink metric **78.29**（$\epsilon=0.8$）。Star Attention Table 2 的 StreamingLLM 是 1000+8000，RULER 45.07。
+- `2.3.2` 索引 / 综述 §5.1 / `07-CSA-HCA` / `2.3.4` §4.1 / `2.3` 演进表 / 知识图谱 / `6.3.1.2` §7.2 交叉。vLLM/llama.cpp「广泛集成」未核一手。
+- 未 commit。
+
+## 50. 2026-08-30 续：H2O 是 2306.14048，不是 FA，不是 4+窗，不是对未来求和
+
+- 新增 `2.3.2/11-H2O-Heavy-Hitter-Oracle/11-H2O-Heavy-Hitter-Oracle.md`。一手 [arxiv.org/html/2306.14048](https://arxiv.org/html/2306.14048)：Algorithm 1 local $F_{\mathrm{score}}$；§5.1 预算对半分；20% 是总 cache。Table 2 OPT-30B COPA Local w.o. H2 **48.00** / w. H2 **84.00**。Table 3 T4 512+512 30B Accelerate **0.6** vs H2O **18.83**（摘要 29×）。Table 4 XSUM 6.7B FlexGen **10.80** vs **30.40**（摘要 3×）。Table 5 同 batch 99.5s→53.5s（1.9×）。Table 9 只留一边掉 2.85%–22.75%。Q1 叠 StreamLLM 到 4M。自绘 5 图。
+- 不是 FA/MEA/BPT（精确全注意力仍要大 cache）；不是 StreamingLLM（固定前 4 位）；综述「未来求和 / 主成分」已加修订。
+- `6.4` 把 H2O 写成 NeurIPS 2024 → 修订为 **2023**。`6.4.2` §4.3.2 的 $\epsilon=0.01$ 不是 Xiao 论文数字。
+- NVIDIA EAI 博文：FA 不暴露分数、page 驱逐还不了显存——写进专文失效模式，不把 TriAttention 数字倒进 H2O 表。
+- 未 commit。

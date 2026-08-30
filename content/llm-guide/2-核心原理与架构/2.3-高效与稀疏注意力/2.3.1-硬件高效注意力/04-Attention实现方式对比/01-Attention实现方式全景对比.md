@@ -105,6 +105,8 @@ $$
 Meta 开源的 xFormers 库提供了**多种 Attention 变体的统一接口**: 
 
 - `memory_efficient_attention`: 基于 CUTLASS 的通用融合 kernel
+
+> **2026-08 修订。** 这个 **API 名**不是 Rabe & Staats 的论文实现。2112.05682 是 JAX/TPU；Llama-1 只说 xFormers 的因果 MHA *inspired by* 那篇，反向用 Dao et al. 2022。论文本体：[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
 - `local_attention`: 滑动窗口 Attention
 - `linformer_attention`: 低秩近似 Attention
 - `nystrom_attention`: Nyström 方法近似

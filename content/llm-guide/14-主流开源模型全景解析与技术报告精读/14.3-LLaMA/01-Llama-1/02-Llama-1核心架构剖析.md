@@ -230,6 +230,8 @@ Llama 65B 实现了极高的硬件利用率：单张 A100 处理约 **380 tokens
 Llama-1 集成了由 `xFormers` 库提供的内存高效注意力机制(类似 FlashAttention 的变体)。
 传统的自注意力需要计算 $Q K^T$ 产生 $O(N^2)$ 的中间矩阵。通过 Tiling 和重计算技巧，xFormers 将注意力机制的显存复杂度从 $O(N^2)$ 降低到了 $O(N)$，彻底消灭了序列长度带来的显存墙。
 
+> **2026-08 修订（不删上文）。** Llama-1 英文稿写的是：xFormers 里的高效因果 MHA **inspired by Rabe and Staats (2021)**，反向用 **Dao et al. (2022)**。不要把 xFormers 的 `memory_efficient_attention` 入口直接叫成 FlashAttention，也不要把 2112.05682 收进 FA 名下。Rabe 本体：[00-MEA](../../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
+
 ### 4.4 优化器与训练稳定性
 
 - **优化器**：AdamW ($\beta_1=0.9, \beta_2=0.95$)。

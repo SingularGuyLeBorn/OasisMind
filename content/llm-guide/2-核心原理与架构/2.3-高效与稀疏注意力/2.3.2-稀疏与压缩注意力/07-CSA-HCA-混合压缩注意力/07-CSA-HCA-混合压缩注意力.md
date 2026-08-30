@@ -64,7 +64,11 @@ DeepSeek-V4 将上下文推至 **1M tokens**，核心不是替换 Transformer，
 - **Lightning Indexer + DSA**：对压缩条目再算 indexer 分数，**top-k** 选出 $\mathcal{C}_t^{SprsComp}$ — 这是「可微检索」：先粗压缩，再稀疏精排。
 - **滑动窗口分支**：每个 query 额外 attend 最近 $n_{win}$ 个 **未压缩** KV — 补块边界与局部语法；与 NSA 的 win 分支同角色。
 - **MQA 核心注意力**：选中压缩条目 **一对 KV 服务所有 query 头** — 与 MLA decode 的 MQA mode 一致，利于 KV 带宽。
-- **Partial RoPE + Sink**：仅部分维施加 RoPE，输出端用 $-i$ 抵消；可学习 sink 缓解超长 softmax 分母问题。
+- **Partial RoPE + Sink**：仅部分维施加 RoPE，输出端用 $-i$ 抵消；可学习 sink 缓解超长 softmax 分母问题。**不是**推理期把前 4 个 KV 钉死（那是 StreamingLLM）。
+
+> **2026-08 修订（不删上文）。** V4 mineru 式 (27)：每头可学习 $z'_h$，注意力分数
+> $$s_{h,i,j}=\frac{\mathrm{Exp}(z_{h,i,j})}{\sum_{k}\mathrm{Exp}(z_{h,i,k})+\mathrm{Exp}(z'_{h})}.$$
+> 行和可以 $\neq 1$。gpt-oss 模型卡是同一族（softmax 分母 learned bias）。现象、4+窗、与标量逃逸口的差见 [10-StreamingLLM 与 Attention Sink](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 
 ### 2.1 压缩公式（块 $i$）
 
