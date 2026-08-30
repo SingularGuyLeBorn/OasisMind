@@ -2,27 +2,32 @@
 title: 切片 · 加厚 02 MoE 工程实践
 date: 2026-08-30
 published: false
-status: running
+status: done
 ---
 
-# moe-02 · 监工点评
+# moe-02 · 回传
 
-只准改：`content/llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/02-MoE的工程实践/`（md + 该夹 `images/`）。inbox 本文件。
+汉字：**4057**（去掉 YAML 后 `[\u4e00-\u9fff]`）。未 commit。
 
-禁止：节根 `02-MoE的工程实践.md`、`02-MoE的工程实践-images/`（旧散图目录不删不改）；节首页；其它 01/03–10；live；commit；Delete。
+## 改了什么
 
-当前夹内文约 **3705 汉字**，略低于 4000。补的必须是 **容量因子、dropless、z-loss、负载 auxiliary、Expert-Choice 容量** 这些算法-工程交界，不要写成 FPGA / All-to-All 专刊（那些是错位的 04–08）。
+只动 `…/02-MoE的工程实践/02-MoE的工程实践.md` 与该夹 `images/`；本 inbox。
 
-## 要写什么
+补节（原 3.2 薄项拆开写满）：
 
-1. 汉字 ≥ 4000。禁止注水。
-2. GShard / Switch 的 capacity factor $C$、overflow、token drop vs dropless（Megablocks 等，数字回论文）。
-3. Router z-loss（ST-MoE）、aux-loss $f_i P_i$、aux-loss-free 偏置只写到「和 01/10 的分工」：本篇管容量与数值稳定，01 管 DeepSeek 门控形态，10 管 QB。
-4. 浅色图：已有 `fig-moe-eng-*` 则核浅色不重画，补解析。LIGHT THEME ONLY 若新图。
-5. 成文。`as_of: 2026-08-30`。
+- **3.2.1** 容量因子 $\gamma$ / 式 (1)、Switch Table 1、GShard 组级槽与第二专家随机派遣、No-Token-Left-Behind；图 13/14 解析加厚（旧 `fig-moe-eng-capacity/load` 未重画）。
+- **3.2.2** token drop vs dropless：ST-MoE Table 5（微调 10–15% drop）、MegaBlocks Pile $0.15$ vs $0.26$、$1.38\times$ 等；新图 `fig-moe-eng-drop-vs-dropless.png`。
+- **3.2.3** aux-loss $f_i P_i$ 式 (2)(3)，梯度只走 $P$。
+- **3.2.4** ST-MoE z-loss 式 (4)(5)、$c_z=0.001$、Table 4；新图 `fig-moe-eng-aux-zloss.png`。
+- **3.2.5** Expert-Choice 式 (6) 与 01/10 分工。
+- **3.2.6** All-to-All 只留指针，不写成通信专刊。
+- **3.3** 失效表。来源补 GShard / Switch / ST-MoE / MegaBlocks / Expert-Choice。
 
-一手：GShard 2006.16668；Switch 2101.03961；ST-MoE 2202.08906。
+## 监工质检（2026-08-30）
 
-## 回传
-
-汉字数、补了哪几节。不要 commit。
+- 删掉 Decoder-Only 教程注水；§2 只保留「这一层换掉什么」+ 图 1–3 旧截图。
+- 记号：$C$=专家容量（槽数），$\gamma$=capacity factor。文首曾把容量因子写成 $C$，已改。
+- Switch Table 1/2 对照 [2101.03961](https://ar5iv.labs.arxiv.org/html/2101.03961) 核对：$\gamma$ 行、$-3.780$ 发散、overflow=残差。
+- 汉字（去掉 YAML）：**4010+**（子代理交卷 4057，删注水后补记号过线）。
+- 未 git add 节根散文件、未改 `02-MoE的工程实践-images/` 旧目录名。All-to-All 只指向 07。
+- nanoMoE §4 保持 `[OM-FREEPLAY]`，仓库无 `train_nano_moe.py`。
