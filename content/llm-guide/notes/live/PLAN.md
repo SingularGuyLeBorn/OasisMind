@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 过文回收质检（路径以新夹为准）。S9 已收：`2.1.1` SiTU、`2.1.3`、`2.1.4`、`2.3.3` KDA、`2.4.1` 的 01–10、`4.4.1`/`4.4.2`。未收：`2.5`/`2.4` 节根 `01`、`2.3.1` 第五层、`2.2.2` 无号 AttnRes。不要把节首页收进第四层。不要收第 5 章扁平行。
-2. **1234 过文回收：** batch 01–10 已派；路径以新夹为准。质检成文 + 浅色图。第 4 章过文等路径收完再派。
-3. **5+14 融合：** 先两章首页同一张地图；不今晚 `git mv` 586 个精读夹。飞书只对照覆盖面，不抄正文。
+1. **立刻做：** `2.1.1` 激活函数补全。02/03/04 子代理仍在写。交卷后监工改节首页成地图并折掉「2026-08 修订」块。Ling = PowLU，不是 Ling-2.0 出厂换激活。
+2. **1234 过文：** b03–b06 已收；**b02 连接中断，重派**。`2.1.1` 节首页仍由监工收，b02 不要改它。
+3. **5+14 首页：** 已收成同一章两面。不今晚 `git mv` 586 个精读夹。
 
 ## 波次队列（未完成的留着）
 
@@ -82,14 +82,15 @@ category: LLM 指南
 - [x] **结构 S2**：第 5 章首页已声明停止新建根级 `01-型号`，并抽样链到 14.x（不把 40 个扁平行今晚全表化）。
 - [x] **结构 S3**：`2.3.4` 收成单轨导航（FA/H2O 链专文；无修订双轨）。
 - [x] **结构 S4**：`6.4.2` 收成 KV 系统地图（H2O/StreamingLLM/SnapKV 链 2.3.2；无修订双轨）。
-- [ ] **结构 S5–S8**：14 家族序号 / Ernie / `7.3` / 过满拆篮。成文：碰一篇折一篇修订块。编号：三层点分号 + 第四层 `01`–`10`。不删文件。
+- [x] **结构 S7**：`7.3-Agent.md` 改成第 13 章应用入口（ReAct/schema/重试留本篇）。
+- [ ] **结构 S5 / S6 / S8**：14 家族序号 / Ernie / 过满拆篮。成文：碰一篇折一篇修订块。编号：三层点分号 + 第四层 `01`–`10`。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：用户点名 `2.1.1/01-SiTU-GLU.md` 夹根散文件；已按金样本收成 `01-SiTU-GLU/01-SiTU-GLU.md`，并扫掉 1–4 章同类 `{N.N.N}/NN-*.md`。
-- 现在立刻做：1234 过文回收质检。不要 `move_agent_to_root`。不要 push。
+- 上一件：S7 `7.3` 入口、4.6 单轨、5+14 两面、过文 b03–b06。
+- 现在立刻做：等 `2.1.1` 的 02/03/04 交卷；重派卡住的 b02。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -114,17 +115,20 @@ category: LLM 指南
 | s0-ch14 | done | `14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 已交；Ernie/Erine 留给 S6 |
 | s3-234-nav | done | `2-核心原理与架构/2.3-高效与稀疏注意力/2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md` | 已交；单轨导航 |
 | s4-642-map | done | `6-训练与推理优化/6.4-KV缓存与内存优化/6.4.2-KVCache压缩与优化技术.md` | 已交；单轨地图 |
-| s7-73-entry | running | `7-LLM应用开发/7.3-Agent/7.3-Agent.md` | 改成第 13 章入口；折成单轨；不改 13 章正文、不改 live |
-| fold-46-opd | running | `4-后训练/4.6-OPD/4.6-OPD.md` | 把文首修订块折进节地图；不改 01–10 专文、不改 live |
+| s7-73-entry | done | `7-LLM应用开发/7.3-Agent/7.3-Agent.md` | 已交；应用入口，系统本体在第 13 章 |
+| fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | running | batch 01 十篇见 `notes/live/inbox/pass-1234-batch-01.md`（仅那些 md + 各文 images/） | 不改 live；不重画 146 张飞书截图 |
-| pass-1234-b02 | running | batch 02 十篇见 `notes/live/inbox/pass-1234-batch-02.md` | 不改 live；不与 b01 重叠 |
-| fuse-5-14 | running | `5-主流模型全解/5-主流模型全解.md`；`14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 只改两章首页；不 git mv 家族夹 |
-| pass-1234-b03 | running | batch 03 十篇见 `notes/live/inbox/pass-1234-batch-03.md` | 不改 live；不改 2.3.5 专文、不改 b02 的 2.2 节首页 |
-| pass-1234-b04 | running | batch 04 十篇见 `notes/live/inbox/pass-1234-batch-04.md` | 不改 live；不改 2.3.1 节首页（b03）、不改 2.3.5 |
-| pass-1234-b05 | running | batch 05 十篇见 `notes/live/inbox/pass-1234-batch-05.md` | 不改 live；不改 10–17、不改 2.3.1/2.3.5 |
-| pass-1234-b06 | running | batch 06 十篇见 `notes/live/inbox/pass-1234-batch-06.md` | 不改 live；不改 2.3.2 节首页与 01–09（b05）、不改 2.3.4/2.3.5 |
+| pass-1234-b02 | running | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页；**不含** 2.1.1 节首页） | 重派。不改 2.1.1 节首页、不改 02/03/04、不改 live、不改 2.1 节首页（b01） |
+| fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
+| pass-1234-b03 | done | batch 03 十篇见 inbox | 已交；AttnRes/MLA 浅色图；2.3 章地图 |
+| pass-1234-b04 | done | batch 04 十篇见 inbox | 已交；FA3=2407.08608；Paged 只留 2309.06180 |
+| pass-1234-b05 | done | batch 05 十篇见 inbox | 已交；Quest 不驱逐；QSA/DCA 浅色图 |
+| pass-1234-b06 | done | batch 06 十篇见 inbox | 已交；2.3.3 地图 + KDA 通道门图 |
 | pass-1234-b07 | running | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 不改 live；不改 2.4.1 的 08–10、不改 2.4.2+、不改第 5 章图片文件 |
 | pass-1234-b08 | running | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | 不改 live；不改 2.4 节首页与 2.4.1 的 01–07（b07） |
 | pass-1234-b09 | running | batch 09 十篇见 `notes/live/inbox/pass-1234-batch-09.md` | 不改 live；不改 3.2.6+ / 3.3 / 3.4 |
 | pass-1234-b10 | running | batch 10 见 `notes/live/inbox/pass-1234-batch-10.md`（3.2.6–3.4 + 四份 stub） | 不改 live；不改 batch 09 路径 |
 | s9-fold-nnn | done | `{N.N.N}` 夹根散文件收同名夹：2.1 / 2.3.3 / 2.4.1 / 4.4.1 / 4.4.2 | 第 5 章扁平行、`2.3.1` 第五层、节根 `01` 未做 |
+| ffn-act-02 | running | `2.1.1/02-激活函数谱系-从饱和到软门/` + inbox `ffn-act-02.md` | 不改节首页、不改 01/03/04、不改 live |
+| ffn-act-03 | running | `2.1.1/03-GLU家族-从GLU到SwiGLU/` + inbox `ffn-act-03.md` | 不改节首页、不改 01/02/04、不改 live |
+| ffn-act-04 | running | `2.1.1/04-PowLU-Ling对SwiGLU的稳定化改写/` + inbox `ffn-act-04.md` | 不改节首页、不改 01/02/03、不改 live；Ling-2.0 仍写 SwiGLU |

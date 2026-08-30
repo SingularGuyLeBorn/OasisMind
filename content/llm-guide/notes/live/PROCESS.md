@@ -11,15 +11,22 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：第 4 章下一批（等 01–10 交卷质检穿插）。
-- 正在写：子代理改 batch 01–10 与 5+14 首页。
-- 卡住：`move_agent_to_root` **禁止再调**。
-- 上次刷新记忆的时间：2026-08-30 1234 过文 batch 01–10 已派；第 1–3 章工单在跑
+- 正在读：PowLU arXiv:2605.25704；Shazeer 2002.05202。
+- 正在写：`2.1.1` 的 02/03/04。过文 b02 重派。b03–b06 / 4.6 / 7.3 / 5+14 已质检待提交。
+- 卡住：`move_agent_to_root` **禁止再调**。b02 曾 Connection stalled。
+- 上次刷新记忆的时间：2026-08-30 回收 S7 / 4.6 / 5+14 / b03–b06
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | S7：7.3 改成第 13 章应用入口；折掉编年/规划/多 Agent 专论 | 磁盘 13.x 叶子 | `7.3-Agent.md` |
+| 2026-08-30 | 4.6 节地图折成 On-Policy Distillation 单轨；索引 01–10 | 既有 01–10 专文数字 | `4.6-OPD.md` |
+| 2026-08-30 | 5 与 14 首页同一章两面 + 浅色分工图 | 对照飞书覆盖面，不抄正文 | 两章首页；`fig-ch5-narrative-ch14-read.png` |
+| 2026-08-30 | 过文 b03：2.2.1 粗体；2.3 地图；AttnRes/MLA 浅色图 | 既有专文 | `2.2.1` / `2.2.2` / `2.3` / `2.3.1` 节首页 |
+| 2026-08-30 | 过文 b04：FA3=2407.08608；FA4=2603.05451；Paged 2309.06180 | 各篇 arXiv | `2.3.1` 叶子 |
+| 2026-08-30 | 过文 b05：Quest 不驱逐；QSA/DCA 浅色图 | 2406.10774；V4/Qwen 报告 | `2.3.2` 节首页 + 01–09 |
+| 2026-08-30 | 过文 b06：2.3.3 地图；KDA 通道对角图 | 2510.26692；2305.13048 | `2.3.3`；`01-KDA` |
 | 2026-08-30 | 成文：勘误折进正文，禁止「修订（不删上文）」当成品；S3/S4 单轨 | 用户拍板 | `2.3.4-高效注意力全景综述.md`、`6.4.2-KVCache压缩与优化技术.md`、Skill / supervisor / `chapter-structure-plan.md` |
 | 2026-08-30 | 编号收紧：点分号最多三层；`01` 只挂第四层；同层约 ≤10；4.6 不发 11、2.3.2 不发 18 | 用户拍板 | `notes/chapter-structure-plan.md`、`4.6-OPD.md`、`2.3.2-稀疏与压缩注意力.md` |
 | 2026-08-30 | S1b：4.4.1 散文件去撞号去冒号；Muon 在地图声明 = 6.5.2 | 磁盘 ls 4.4 / 6.5 | `4.4-GRPO变体与改进-GSPO与DCPO.md`、`6.5-优化器.md` |
@@ -394,6 +401,7 @@ category: LLM 指南
 | Gated Residual / GR | Qwen3.8-Next §2.2；四分支逐元素读门、无 $H_{\mathrm{res}}$ | **专文已写** `03-Gated-Residual.md` | 第 2.1.3 |
 | KDA | Kimi Delta Attention arXiv:2510.26692；K3 加 $g_{\min}=-5$ 与满秩门 | **专文已写** `01-Kimi-Delta-Attention-KDA.md`（含 §5 K3 改写） | 第 2.3.3 |
 | SiTU-GLU | Sigmoid Tanh Unit GLU；K3 §2.3.2；$\beta_1=4,\beta_2=25$，界 100 | **专文已写** `2.1.1/01-SiTU-GLU/01-SiTU-GLU.md`（已从夹根散文件收夹） | 第 2.1.1 |
+| PowLU | Ling Team Ant Group arXiv:2605.25704；式 (1) $m=3$；**不是** Ling-2.0 出厂激活 | **排队** `2.1.1/04-PowLU-…` | 第 2.1.1 |
 | Stable LatentMoE / QB | LatentMoE arXiv:2601.18089；K3 加 RMSNorm + SiTU + Quantile Balancing | **专文已写** `10-Stable-LatentMoE与Quantile-Balancing.md` | 第 2.4.1 |
 | Per-Head Muon | K3 §2.5；按头 NS，不是新 polar | 已写入 05-MuonClip §1.1 | 第 6.5 |
 | MoonEP | 完美均衡 EP；https://github.com/MoonshotAI/MoonEP | 6.1 修订指针，不另起教材 | 第 6.1 |
