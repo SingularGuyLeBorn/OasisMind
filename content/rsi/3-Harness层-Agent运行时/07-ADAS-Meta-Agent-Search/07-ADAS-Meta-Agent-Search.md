@@ -127,7 +127,7 @@ Gödel-base 相对本篇 MGSM 53.4→64.2，那 11 个百分点比的是**同一
 
 | | 改什么 | 元 / 改进器 | 算不算 RSI |
 |--|--------|-------------|------------|
-| OPRO / PromptBreeder | 提示文本 | 冻 | 否 |
+| [OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md) / [Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md) | 提示文本 | 冻 | 否 |
 | ADAS | 下游 `forward` | 元 Agent 冻 | 否；Harness 元学习 |
 | STOP | 改进器程序 | $I$ 对自己递归 | 弱候选 |
 | Gödel Agent | 运行时 $\pi$ 与 $I$ | 可自改 | 弱候选；公平对照打的是本篇 53.4 |
