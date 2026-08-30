@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：编号口径（三层 / 每层≤10 / `01` 只在第四层）；下一步 S3 `2.3.4`。
+- 正在读：成文口径（勘误折进正文）；下一步 S7 `7.3`。
 - 正在写：无专文。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 编号收紧
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 成文
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | 成文：勘误折进正文，禁止「修订（不删上文）」当成品；S3/S4 单轨 | 用户拍板 | `2.3.4-高效注意力全景综述.md`、`6.4.2-KVCache压缩与优化技术.md`、Skill / supervisor / `chapter-structure-plan.md` |
 | 2026-08-30 | 编号收紧：点分号最多三层；`01` 只挂第四层；同层约 ≤10；4.6 不发 11、2.3.2 不发 18 | 用户拍板 | `notes/chapter-structure-plan.md`、`4.6-OPD.md`、`2.3.2-稀疏与压缩注意力.md` |
 | 2026-08-30 | S1b：4.4.1 散文件去撞号去冒号；Muon 在地图声明 = 6.5.2 | 磁盘 ls 4.4 / 6.5 | `4.4-GRPO变体与改进-GSPO与DCPO.md`、`6.5-优化器.md` |
 
@@ -29,6 +30,7 @@ category: LLM 指南
 |------|--------|-----------------|--------------|
 | 2026-08-30 | S1a `git mv`：概述→4.0、ScaleRL→4.8、CLIP→8.8；改地图链接 | 磁盘 ls | `4.0-后训练概述/`、`4.8-ScaleRL-…/`、`8.8-CLIP与视觉编码器/` |
 | 2026-08-30 | 编号收紧：点分号最多三层；`01` 只挂 `{N.N.N}` 下；同层约 ≤10；4.6 不发 11、2.3.2 不发 18 | 用户拍板 | `chapter-structure-plan.md`、`4.6-OPD.md`、`2.3.2` 节首页、Skill / supervisor |
+| 2026-08-30 | 成文：禁止修订双轨；S3 `2.3.4`、S4 `6.4.2` 折成单轨地图 | 用户拍板；既有专文 | `2.3.4-高效注意力全景综述.md`、`6.4.2-KVCache压缩与优化技术.md` |
 | 2026-08-30 | 回收 03-SDFT 勘误；70.6/65.4 钉 Table 5 单任务 Tool Use；理论 Reverse / 实践 Forward KL | https://arxiv.org/abs/2601.19897 · https://arxiv.org/html/2601.19897 · https://github.com/idanshen/Self-Distillation | `4.6-OPD/03-SDFT-自蒸馏持续学习/` |
 | 2026-08-30 | 吸收理想结构：C/A/D；S0b 改第 4、13 章地图；4.6 一行改成 On-Policy Distillation；13 的 H1 跟路径；`index.md` 停用当首页 | 磁盘 `ls` 第 13 章；用户结构方案 | `notes/chapter-structure-plan.md`、`4-后训练.md`、`13-Agent.md`、`4.6-OPD.md` |
 | 2026-08-30 | 建 worktree `feat/llm-guide-2026-08-notes` | git HEAD 5d1c25de | 仓库根外 `OasisMind-llmguide-2026-08` |

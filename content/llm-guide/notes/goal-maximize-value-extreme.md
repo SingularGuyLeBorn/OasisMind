@@ -37,7 +37,7 @@ category: LLM 指南
 
 1. **补写**：作者已经写了「要写什么」（六段提纲、空壳 D2/D5、`状态: 待完善`、目录承诺的专文），正文按提纲写满。不要另起炉灶改结构。
 2. **配图（必须自绘、禁止水印）**：文里的 prompt / `IMAGE PLACEHOLDER` / `图片占位建议` 全部用 Cursor `GenerateImage` **重新生成**并嵌入。禁止把网页/论文/公众号带水印、带 Logo、带「来源」角标的图直接下下来当配图。已有图若带水印：保留旧文件（不删），新生成一张无水印的替换正文引用。prompt 改成 HTML 注释留着。
-3. **校正并接到 2026-08**：过时的全景、时间线、默认假设、已被后文打脸的断言，用 **2026-08 修订节 / 勘误** 补上。保留 2025 原文当历史快照。数字与代际（GPU 型号、带宽、框架版本）必须先 `WebSearch` / 官方页，禁止用 2025 记忆硬写。
+3. **校正并接到 2026-08**：过时的全景、时间线、默认假设、已被后文打脸的断言，**折进主叙述**，读者只读一版完整正文。禁止把「修订（不删上文）」当成品。数字与代际必须先 `WebSearch` / 官方页，禁止用 2025 记忆硬写。
 4. **知识体系完整（含 GPU / Infra，尽可能不遗漏）**：骨干不断档 + 概念住在体系章 + 每章真地图 + 2026-08 的轴都有落点。**第 9 章 GPU 与基础设施和第 6 章训练/推理优化是体系的硬轴，不是附录。** 防遗漏清单见第 0.2 节。
 5. **以顶尖技术报告为轴，拆清每一条技术，不是给模型做名片**：一份能发布的模型报告里，通常绑着架构、积木、数据、优化器、infra、训练框架、稳定性事故与对策、训推不一致。顺着这些面找到 **每条技术的来源、演进、数学推导**，写进体系章；模型目录只当「这一次发布捆了哪些技术」。数字/公式/日期/基准必须来自读过的源。读者目标：初学者能顺着图和推导看懂，已经会的人不必看注水。纪律见第 0.4 节。
 6. **2026 年重要发布必须进库（现在差很远）**：2026 出了一大波模型，不能停在「目录里有个 2025 壳」。你 **自己判断** 哪些是架构代际 / 新 trick / 新 infra（S/A 档），读官方技术报告精读，按 0.4 拆进体系。SKU 变体（同一报告的 Flash/mini）不要每个都开空文件夹。作者点名候选与判断标准见第 0.6 节。
@@ -176,7 +176,7 @@ mermaid 必须画出 **第 6 章与第 9 章**。再加骨干概念表（只链�
 
 | 档 | 标准 | 怎么交付 |
 |----|------|----------|
-| **S** | 新架构代际、或报告里有可拆的新 trick（注意力/MoE/优化器/infra/稳定性/训推）；开源权重被别人跟；或作者点名为「下一代架构」 | 读报告全文；D2 精读 + D5 技术专题（按 0.4 拆面）+ 体系章补本体或修订节 + 第 1.3 / 家族总览 |
+| **S** | 新架构代际、或报告里有可拆的新 trick（注意力/MoE/优化器/infra/稳定性/训推）；开源权重被别人跟；或作者点名为「下一代架构」 | 读报告全文；D2 精读 + D5 技术专题（按 0.4 拆面）+ 体系章补本体（折进正文）+ 第 1.3 / 家族总览 |
 | **A** | 有正式报告或长 system card，但是增量（同一骨架换数据/RL/窗口） | 家族总览加一行；一篇讲「相对前代改了什么」的 D5，重复 trick 只链不抄 |
 | **B** | 同一报告的尺寸/速度 SKU（mini/Flash/lite/量化档），没有单独技术故事 | **禁止**新开空壳文件夹。家族总览表一行 + 链到那份报告的精读 |
 | **不写** | 搜不到官方名或报告；口误/传闻；纯营销改名 | PROCESS 记「未核实」，不要 mkdir |
@@ -202,7 +202,7 @@ mermaid 必须画出 **第 6 章与第 9 章**。再加骨干概念表（只链�
 
 #### 拆完必须进知识库，不是只堆在 14.x
 
-S 档精读之后，把新 trick 写进或链到第 2/3/4/6/9/13 章。第 1.3 时间线补 2025H2–2026-08。第 5 章叙事用修订节接到这些发布，不删旧的 Llama3/Claude3.5 段。
+S 档精读之后，把新 trick 写进或链到第 2/3/4/6/9/13 章。第 1.3 时间线补 2025H2–2026-08。第 5 章叙事接到这些发布时，改成完整段落，不要贴「修订不删上文」。
 
 ### 0.7 作者点名的技术名词（搜索经常找不到，禁止因此跳过）
 
@@ -274,7 +274,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 1. 把 Cursor 工作区切到该 worktree（`SetActiveBranch` 的 path 指向它）。
 2. 确认 `notes/live/` 下 GOAL / PLAN / PROCESS 存在（已有模板）。立刻把「本轮焦点」写成盘点或 PLAN 第一项。
 3. 只在这个 worktree 里改文件。
-4. **不要 git commit / push**，除非用户后来说提交。
+4. **一篇可验收切片做完就 commit**（`content(llm-guide): <中文摘要>`，按路径 `git add`，禁止 `git add -A`）。不要 push，除非用户明确说推远程。不要改 `git config`。
 
 工作范围：
 
@@ -357,17 +357,19 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 - 禁止 `Delete`，禁止把文件移出仓库当「清理」。
 - 禁止删 mineru、pdf、微信图文、飞书《The Document is All You Need》、第 1 章那 160+ 张图、`unused_*.jpg`、空的 `pdfs/README.md`。
 - 禁止合并第 5 章和第 14 章；禁止删 Ernie/Erine 任一侧。只许加指针。
-- 禁止把长文「去 AI 腔」重写成短文而丢掉 2025 原段落。允许**追加** 2026-08 修订节 / 勘误；允许修明显错字；允许把占位换成正文。
+- 禁止把长文「去 AI 腔」重写成空壳。允许把勘误**折进**主叙述，删掉错句与「修订（不删上文）」双轨。**禁止 Delete 文件**。历史在 git。
 - 禁止用新文件替换旧文件时丢掉旧内容。更新写在原文件里。
 
-### 3.2 2025 原文怎么改（校正，不是重写历史）
+### 3.2 2025 原文怎么改（折进正文，不是贴条）
 
-这库是 2025 的读书笔记。2026 的你在补全，不是假装 2025 就已经知道 2026 的事。
+这库是 2025 的读书笔记，要接到 2026。读者打开一篇，只该看见**现在正确的完整叙述**。
 
-- **过时但当时合理**：保留原文，文末或相关段落后追加 `## 2026-08 修订`（或「勘误」），写现在怎么理解、哪篇后文取代了旧判断、链接到新笔记。
-- **事实错误**（拼写、公式笔误、后来官方澄清的架构误读）：在原文处改对，并在修订节留一句「此处原作 …，2026-08 按官方 … 改正」。不要悄悄改掉还装成当年就写对了。
-- **数字、基准、价格、参数量、发布日**：必须有一手链接（arxiv、官方博客、model card、官方 GitHub）。找不到就写「未找到一手来源」+ `[OM-FREEPLAY]`，禁止编。
-- 新文 `date: 2026-08-30`，并写 `as_of: 2026-08-30`。你改过的旧文，加一行 `as_of: 2026-08-30` 或修订节日期，frontmatter 的原始 `date` 尽量保留（那是写作时间）。
+- **过时或事实错误**：在原处改成现在怎么理解，写成完整节。删掉被打脸的句子。不要在段落后追加 `## 2026-08 修订` / `> **2026-08 修订（不删上文）` 让人挑版本。
+- **禁止**用 HTML 注释把旧错段藏在同一篇里当第二轨。
+- **禁止 Delete 文件。** 旧版本在 git。
+- **碰一篇折一篇**：没轮到的文件可以暂时留着修订块；一旦改这篇，必须折完再交。
+- **数字、基准、价格、参数量、发布日**：必须有一手链接。找不到就写「未找到一手来源」+ `[OM-FREEPLAY]`，禁止编。
+- 新文 `date: 2026-08-30`，并写 `as_of: 2026-08-30`。改过的旧文加 `as_of`；frontmatter 原始 `date` 尽量保留（写作时间）。
 
 ### 3.3 怎么写新正文
 
@@ -389,7 +391,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 
 - 禁止把搜索到的论文图、博客图、微信/知乎截图、厂商官网带 Logo/水印/版权角标的图保存进本库当配图。
 - 禁止用「从网上找一张类似的」。图必须是你用 `GenerateImage` **新生成**的，或 mermaid / 纯 Markdown 表。
-- GenerateImage 的 description 必须带：`white academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL`。
+- GenerateImage 的 description 必须带：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels. white academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL`。**禁止深色主题。**
 - 已有 `images/` 里的图，若能看出水印、Logo、来源网址：保留旧文件不删，新生成无水印版，正文改引新文件，旧路径在 enrichment-log 记一笔「因水印停用」。
 - 论文里的架构图：用 mermaid 或 GenerateImage 按原理重画，不要从 PDF 截图。
 
@@ -426,7 +428,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 
 ### P1 · 知识体系完整（与 P0 同级，比再堆模型重要）
 
-先搜本库是否已有（NSA、MLA、GSPO、MTP、DualPipe 已有），有则补 2026-08 修订段、在体系章露出、交叉链接，不要平行再写一套。
+先搜本库是否已有（NSA、MLA、GSPO、MTP、DualPipe 已有），有则把新事实折进那篇正文、在体系章露出、交叉链接，不要平行再写一套，也不要再追加修订贴条。
 
 **P1-0. 写出验收地图（先于补文）**
 
@@ -445,14 +447,14 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 | 架构变体：MoE、SSM/Mamba、线性 RNN、MTP | 第 2.4 | DLM 一节 + 链 `diffusion-llm`；MoE 工程陷阱链第 6/9 章 |
 | 优化器 | **第 6.5** | Muon 相对 AdamW 的推导；MuonClip / Polar Express / QK-Clip；Muon×ZeRO；2026 报告里的新优化器 |
 | 长上下文 | 第 2.5 | YaRN/NTK 与 1M 级窗口；KV 压力链第 6.4 |
-| 预训练：数据、Tokenizer、Scaling Law、评估 | 第 3 章 | 修错误编号；2026 数据配比/合成数据修订段 |
+| 预训练：数据、Tokenizer、Scaling Law、评估 | 第 3 章 | 修错误编号；2026 数据配比/合成数据写进该节正文 |
 | 后训练：SFT、PEFT、RLHF/PPO、DPO、GRPO/GSPO | 第 4.1–4.4 | 链 `knowledge/algorithms`，不抄；对齐家族对照表 |
 | 测试时计算 / 思考模型 | 第 4.5 | o1→R1→混合推理；训练算力 vs 推理算力 |
 | 训练/推理优化算法 | 第 6 章 | EP/CP；FP4/MXFP4；投机解码露出；与第 9 章分工声明 |
 | **GPU 硬件** | **第 9.1** | **内存层次专文、Roofline 专文、互联与集群、2026 代际核实、非 NVIDIA 地图；自绘无水印图** |
 | **GPU 系统软件** | **第 9.2** | **把已有「CUDA 流与事件」链进 9.2；补 TMA / CUDA Graphs / Triton / torch.compile 地图** |
 | **训练系统 / 推理 Infra** | **第 9.3 / 9.4** | **SGLang、PD 分离、前缀缓存；与 vLLM/TRT-LLM 对照；不删旧 TGI 文** |
-| Prompt / RAG / 工具 / MCP / 上下文工程 | 第 7 章 | 不要重写 7.1/7.2；加 2026-08 修订链 7.6/7.5/13.x |
+| Prompt / RAG / 工具 / MCP / 上下文工程 | 第 7 章 | 不要重写 7.1/7.2 成空壳；新事实折进正文并链 7.6/7.5/13.x |
 | 多模态与 omni | 第 8 章 | MiniCPM-o / GLM-4-Voice / Astra 拉回当地图 |
 | 论文导航 | 第 10 章 | 指针到 `classic-papers` |
 | 实践与资源 | 第 11 章 | 2026 仍活跃的训练/推理/Agent 项目；链 `llm-interview` |
@@ -467,14 +469,14 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 1. `9.1-硬件基础/9.1.2-GPU内存层次与Roofline.md` — 寄存器 / SMEM / L2 / HBM；为什么 FlashAttention 存在；算力强度公式。配 **自绘** 层次图。
 2. `9.1-硬件基础/9.1.3-卡间互联与集群拓扑.md` — NVLink / NVSwitch / IB；机内 vs 跨节点；NVL72 类机箱（核实后写）。自绘拓扑示意图。
 3. `9.1-硬件基础/9.1.4-加速器全景.md` — NVIDIA 代际表（数字来自数据表）+ AMD / TPU / 国产一行级地图。不要假装全世界只有 H100。
-4. `9.1-硬件基础.md` 追加 `## 2026-08 修订`：下一代若已公开（搜 Rubin / B300 等，对不上就写「未找到一手来源」）。
+4. `9.1-硬件基础.md`：下一代若已公开（搜 Rubin / B300 等），写进该章正文；对不上就写「未找到一手来源」。不要另开修订节当第二轨。
 5. `9.2-系统软件.md` 追加地图：TMA、CUDA Graphs、CUTLASS、torch.compile；**链到已有** `CUDA流与事件编程.md`。
 6. `9.3` 与 `6.1` 互相声明分工，并露出 EP（MoE）、Context Parallel。
 7. `9.4-推理服务框架.md` 追加 2026-08：SGLang、Prefill-Decode 分离、前缀缓存。自绘服务栈图（无水印）。
 
 第 9 章索引改成真正的子文列表，与文件系统一致。金字塔图若有水印则重画。
 
-**P1-1. 按轴补正文 / 修订段**（顺序固定）
+**P1-1. 按轴补正文**（顺序固定；勘误折进该文，不要另开修订节）
 
 1. 第 1 章：八章全景改成 14 章（含第 9 章 GPU/Infra）；1.3 补 2025H2–2026-08（含 0.6 节 S 档发布）；路径改成链知识图谱里的真实文。
 2. **P1-GPU 七项。**
@@ -497,7 +499,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 2. **先出分级表** 写入 `notes/live/PROCESS.md` 和 enrichment-log：每个口述候选标 S/A/B/不写 + 依据 URL。作者点了 Qwen3.8 Flash Next、K3、Muse 等，默认当 S 去搜；搜到只是 SKU 再降档。
 3. **S/A 才精读。** 读技术报告，按 0.4 拆积木/数据/infra/稳定性/训推。最低交付：家族总览加一行 + D2 + 一篇真正 D5 + 体系章有落点。B 档只在总览一行。
 4. **新 mineru / 新 PDF OCR 不是本 Goal 的任务。** 已有 D3 全部保留。有官方 PDF 可链 arxiv 或本库已有 pdfs/。
-5. 更新 `14-主流开源模型全景解析与技术报告精读.md`、各 `14.x` 导航、第 1.3、第 5 章修订节。完成统计改成「文件存在 / 正文已写满」两行。
+5. 更新 `14-主流开源模型全景解析与技术报告精读.md`、各 `14.x` 导航、第 1.3、第 5 章叙事正文。完成统计改成「文件存在 / 正文已写满」两行。
 
 建议开工顺序（搜完可改，但不要从冷门闭源空壳开写）：**Qwen3.8 / Flash Next → DeepSeek-V4 正式线与 Flash 是否独立报告 → Kimi K3 → GLM-5.3 / 5.3 Flash → GPT-5.6 有报告的线 → Claude 4.8/Fable/Opus5 → Meta Muse → StepFun 2026 新报告**。同一家族的 3.6/3.7 若目录已在、报告未拆，先补拆再开更新的代际。
 
@@ -590,4 +592,4 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 - [ ] 没有售卖文档、没有开源立项文档。  
 - [ ] 新文没有「标题下只有一句话」的碎片节；布局仿科学空间，图嵌在论证里。  
 - [ ] 第 8 节勾完后仍按 0.8 继续，没有把 Goal 标成结束。  
-- [ ] 没有 git commit，除非用户要了。
+- [ ] 切片可验收就 commit（`content(llm-guide): …`，按路径 add）；没有 `git add -A`；没有 push，除非用户要了。

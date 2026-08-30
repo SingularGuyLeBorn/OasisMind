@@ -99,7 +99,9 @@ $$
 ## 反例（看见就改）
 
 - 语雀/Substack 图、水印、Logo、URL 角标。
+- **深色主题配图**（黑/藏青底、白字、OLED 幻灯片）。必须白底深字。
 - `## 标题` 下面只有一句或一个列表。
 - 空壳 D2/D5、Index 把「文件存在」标成 completed。
 - 把 FlashAttention、Memory Efficient Attention、BPT、Ring、序列并行揉成一篇。
+- `> **2026-08 修订（不删上文）` 与错段并排。读者只能面对一版完整正文。
 - 第 14 章厂商目录里的 trick 不反链回第 2/6/9 章本体。
