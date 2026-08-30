@@ -151,3 +151,4 @@ LLaDA 8B 原文同时有从头训、同数据 ARM、采样消融、诗歌反向�
 - [掩码扩散](../02-mechanism/masked-diffusion.md)
 - [LLaDA 专文](./llada-frontier.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
+- [多模态扩散](./multimodal-dllm.md)

@@ -17,7 +17,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 | 01 动机 | 自回归因式分解把什么写进了结构里，扩散换掉的是哪一步 |
 | 02 机制 | $Q_t$、吸收态、ELBO 为何长得像加权 MLM、采样时如何揭开 / remask |
 | 03 知识点 | 块扩散、AR 改编、缓存与并行解码、引导、对齐、失效模式 |
-| 04 模型 | 从 D3PM 到 LLaDA 2.0 / Dream / Mercury 各自钉住哪件事 |
+| 04 模型 | 从 D3PM 到 LLaDA 2.0 / Dream / Mercury 各自钉住哪件事；多模态三条接法 |
 | 05 对照 | 十个维度里哪些是机制必然，哪些只是 2026 年的工程现状 |
 
 🟢 **01 动机**
@@ -67,10 +67,11 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 13. [代表性扩散语言模型一览](./03-models/representative-models.md)
 14. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
 15. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+16. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
 
 ⚖️ **05 对照**
 
-16. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+17. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
    含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
@@ -94,7 +95,8 @@ P(x) 怎么因式分解
                         ├─ 吸收态 [MASK]  ← 2024 后主流
                         │       ├─ 训练：加权 MLM（MDLM / LLaDA）
                         │       ├─ 采样：置信度揭开 / remask
-                        │       └─ 变体：块扩散（块间 AR，块内扩散）
+                        │       ├─ 变体：块扩散（块间 AR，块内扩散）
+                        │       └─ 多模态：视觉塔+投影 / 图也离散化
                         └─ score entropy（SEDD）等非掩码目标
 ```
 
