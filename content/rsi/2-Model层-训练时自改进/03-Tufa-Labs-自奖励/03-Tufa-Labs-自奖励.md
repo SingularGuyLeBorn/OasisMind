@@ -21,7 +21,7 @@ tags:
 
 有大模型基础的读者对 RLHF 不陌生：人类偏好训一个奖励模型，再冻住它去 PPO。Tufa Labs 这篇把奖励模型换成**同一家族的 LLM 裁判**，并且故意**不给标准答案**：裁判只看见题目和作答，输出正确 / 不正确。卡住的瓶颈不是「会不会 GRPO」，而是——没有程序化奖励时，生成比验证难这一不对称，能不能撑住一条稳定的训练信号。
 
-本篇是 Model 层里 Self-Rewarding 家族的实验对照，不是另一套坐标系。Meta 的 Self-Rewarding LM 让同一 $\theta$ 既答题又打 1–5 分，迭代 DPO 时裁判跟着运动员一起变；Tufa 把裁判**离线冻死**，只更新解题器。坐标系见 [02 Model–Harness–Artifact](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。**不是** LADDER 专文（递归拆题是 [arXiv:2503.00735](https://arxiv.org/abs/2503.00735)，本篇只用它生成的 9000 道积分变体），**不是** SEAL（那边 self-edit 进 LoRA，奖励来自带标签 $\tau$），**也还不是** RSI：改进器 $I$ 是冻结裁判 + 冻结出题器 + 冻结 GRPO 配方。一手：Simonds, Lopez, Yoshiyama, Garmier，Tufa Labs，[arXiv:2505.08827](https://arxiv.org/abs/2505.08827)。主模型 **Qwen 2.5 7B**；RL 用 **GRPO**，batch size **64**。
+本篇是 Model 层里 Self-Rewarding 家族的实验对照，不是另一套坐标系。Meta 的 Self-Rewarding LM 让同一 $\theta$ 既答题又打 1–5 分，迭代 DPO 时裁判跟着运动员一起变；Tufa 把裁判**离线冻死**，只更新解题器。坐标系见 [02 Model–Harness–Artifact](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。**不是** LADDER 专文（递归拆题见 [05 LADDER](../05-LADDER-递归拆题/05-LADDER-递归拆题.md)，本篇只用它生成的 9000 道积分变体），**不是** SEAL（那边 self-edit 进 LoRA，奖励来自带标签 $\tau$），**也还不是** RSI：改进器 $I$ 是冻结裁判 + 冻结出题器 + 冻结 GRPO 配方。一手：Simonds, Lopez, Yoshiyama, Garmier，Tufa Labs，[arXiv:2505.08827](https://arxiv.org/abs/2505.08827)。主模型 **Qwen 2.5 7B**；RL 用 **GRPO**，batch size **64**。
 
 ## 1. 问题：程序化奖励写不出来时，谁来打分
 
