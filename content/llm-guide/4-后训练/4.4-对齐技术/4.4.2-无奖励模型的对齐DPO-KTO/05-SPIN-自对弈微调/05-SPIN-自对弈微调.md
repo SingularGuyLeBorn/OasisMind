@@ -165,7 +165,7 @@ Theorem 5.1 还允许相关损失、hinge、指数损失。只有 logistic 时�
 
 DPO 要 $(x,y_w,y_l)$。对照实验用 `zephyr-7b-beta`：从同一份 `zephyr-7b-sft-full` 出发，在 UltraFeedback Binarized 大约 $62$k 条上做 DPO，chosen / rejected 由 GPT-4 打序。SPIN 只用已有 SFT 集。从 UltraChat200k 随机 $50$k 条 prompt，让当前模型生成合成回答。winner 不是 GPT-4 挑出来的，是原来那条人标。
 
-DPO 默认不迭代。一次匹配偏好概率就停。SPIN 的自对弈会换对手，天然多轮。论文 §4.2 把这三条并列：要不要迭代、要不要偏好对、$\ell$ 能不能换。第三条最容易被忽略。logistic 只是 SPIN 的一个特例。Xu 等把 DPO 做成迭代偏好、Pairwise Cringe Loss；Yuan 等 Self-Rewarding LM 让模型给自己打偏好再迭代 DPO。SPIN 的自评不经过这条中间标签。没有奖励头，没有「给自己打分」的生成步骤，只有对数比。
+DPO 默认不迭代。一次匹配偏好概率就停。SPIN 的自对弈会换对手，天然多轮。论文 §4.2 把这三条并列：要不要迭代、要不要偏好对、$\ell$ 能不能换。第三条最容易被忽略。logistic 只是 SPIN 的一个特例。Xu 等把 DPO 做成迭代偏好、Pairwise Cringe Loss；Yuan 等 Self-Rewarding LM 让模型给自己打偏好再迭代 DPO，正本在 [07-Self-Rewarding](../07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md)。SPIN 的自评不经过这条中间标签。没有奖励头，没有「给自己打分」的生成步骤，只有对数比。
 
 同期还有两条别的「弱变强」。Singh 等用合成数据加二值反馈做自训练，反馈仍要人或额外 RM。Burns 等弱到强：弱模型当老师，去训更强的模型，两边都要在场。SPIN 只要一份已经 SFT 过的 LLM。论文把这写成「不需要专家对手」。专家对手若是 GPT-4 打序，账单就回到 DPO 那 $62$k。
 
@@ -273,7 +273,7 @@ SFT 集本身也不是「人类手写」四个字能概括的。UltraChat 用 Op
 
 SPIN 不是万能药。它把「人标还没被 SFT 吃干」收成自对弈分类，省掉新偏好和新 RM，前提是手里已经有一份还算像样的 SFT 集，并且接受天花板就是这份人标。成对偏好已经有了、想再涨 TruthfulQA，附录 B.3 是在 SPIN 之后接 DPO，不是把 SPIN 改回 DPO。
 
-同夹：[01-DPO](../01-DPO/01-DPO.md)、[02-ORPO](../02-ORPO/02-ORPO.md)、[03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md)、[04-SimPO](../04-SimPO-无参考长度平均/04-SimPO-无参考长度平均.md)。带奖励的采样在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)、[02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)、[07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)。AI 反馈在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md)。
+同夹：[01-DPO](../01-DPO/01-DPO.md)、[02-ORPO](../02-ORPO/02-ORPO.md)、[03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md)、[04-SimPO](../04-SimPO-无参考长度平均/04-SimPO-无参考长度平均.md)、[07-Self-Rewarding](../07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md)。带奖励的采样在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)、[02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)、[07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)。AI 反馈在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md)。
 
 ## 参考文献
 
