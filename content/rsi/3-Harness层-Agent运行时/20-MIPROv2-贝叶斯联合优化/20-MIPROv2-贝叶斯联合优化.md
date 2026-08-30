@@ -110,7 +110,7 @@ Lesson 1：多数任务只搜示范就碾压只搜指令。例外是有条件规
 **读**：七任务、Table 2 测试列、ScoNe 79.4、HoVer 39.0、HotPotQA Cond 23.3、Iris 测试 RS 94.1 高于 MIPRO 88.6、50/30/20 全量预算、Table 4 的 $N$、接地随任务、五条 tip、无 chat template、TPE 冻着、5M 摘要检索在墙外、论文 MIPRO / 库 MIPROv2、提案 GPT-3.5（部分 GPT-4）任务 Llama-3-8B。  
 **不读**：把 13 标到某一格、用 GEPA 的 55.11 改 46.4、把 MIPRO++ 听成式 (2)、说七套都是联合最好、用 v1 的六任务、把 `auto=heavy` 写进本篇主实验、把八卡 A100 听成方法。
 
-同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

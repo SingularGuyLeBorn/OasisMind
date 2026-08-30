@@ -37,7 +37,7 @@ $$
 
 $S$ 取当前这张计算图里被标了 `requires_grad` 的变量。单轮 $S'=I(S)$ 可以发生：$v$ 被写成 $v_{\mathrm{new}}$。式 (2) 还要 $I'\subseteq S'$。下一道独立题，或下一次提示优化实验，仍用同一份 TGD 提示、同一只梯度引擎、同一个迭代帽。混元台阶上，实例优化是 L0：改 $(\text{输出},\text{轨迹})$，跨独立任务状态不变。提示优化留下一条指令，接近「脚手架变了」，改进手续本身仍在墙外。
 
-和邻居先划线。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 是正向的生成–反馈–改写，历史只在本题。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 把反思推进窗口。[CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 要工具返回。TextGrad 多出来的是**计算图上的反传**：损失对下游变量的批评，可以传到上游提示或中间代码。ProTeGi 先在提示优化里用过 textual gradient，作者说自己把隐喻扩到自动微分，并且把实例本身（分子、计划、代码）也当成变量。DSPy 把 LLM 程序当可优化对象，主实验用 BootstrappedFewShotRandomSearch 加示范。作者说 DSPy 改示范，TextGrad 改指令，GSM8k 上拼在一起到 82.1%。ACE 的诊断仍然成立：自然语言梯度会吵。本方法用迭代帽（代码 5 轮、问答 3 轮、提示 12 轮 batch 3）限制变吵，没有 ACE 那种非 LLM Merge。变量整段被 TGD 写成新字符串，正是 ACE 担心的端到端重写。
+和邻居先划线。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 是正向的生成–反馈–改写，历史只在本题。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 把反思推进窗口。[CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 要工具返回。TextGrad 多出来的是**计算图上的反传**：损失对下游变量的批评，可以传到上游提示或中间代码。ProTeGi 先在提示优化里用过 textual gradient，见 [21](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)。作者说自己把隐喻扩到自动微分，并且把实例本身（分子、计划、代码）也当成变量。DSPy 把 LLM 程序当可优化对象，主实验用 BootstrappedFewShotRandomSearch 加示范。作者说 DSPy 改示范，TextGrad 改指令，GSM8k 上拼在一起到 82.1%。ACE 的诊断仍然成立：自然语言梯度会吵。本方法用迭代帽（代码 5 轮、问答 3 轮、提示 12 轮 batch 3）限制变吵，没有 ACE 那种非 LLM Merge。变量整段被 TGD 写成新字符串，正是 ACE 担心的端到端重写。
 
 ![前向算损失，LLM 写出对变量的文本梯度，TGD.step 更新字符串](./images/fig-textgrad-loop.png)
 
@@ -115,7 +115,7 @@ LeetCode 完成率对隐藏测试。循环优化的是「本地测试 + LLM 对�
 **读**：两类优化、式 (1)、$n$ 边最多 $n$ 次梯度调用、Table 1 的 0.26/0.31/0.36 与摘要 20% relative、GPQA 51→55 对上文档 53.6 diamond、MMLU 两子集、Table 3 的 91.9/79.8/81.1、36 条训练题加验证门、DSPy 拼上 82.1、问答损失无金标 / 提示优化有金标、L0 与薄 $H_t$、meta-TextGrad 是未来工作。  
 **不读**：把 TGD 听成改权重、用 20% 当绝对点、用 55 盖 51 说已经专家级、把 0.36 和 Reflexion 的 HumanEval 91.0 横加、把分子对接听成 RSI、说已经式 (2)。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的文本梯度派：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的文本梯度派：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
