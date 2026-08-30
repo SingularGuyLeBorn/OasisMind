@@ -1,20 +1,17 @@
 ---
-title: "02 · MoE大模型架构的工程实践与深度解析"
-date: 2026-05-11
-tags: []
+title: "02 · MoE 工程实践：容量、负载与通信"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [MoE, 负载均衡, 专家容量, 专家并行]
 ---
 
-# 02 MoE大模型架构的工程实践与深度解析
+# 02 MoE 工程实践：容量、负载与通信
 
-## 1. 引言: 稀疏化—LLM架构的演进前沿
+MoE 把稠密 FFN 换成「路由器 + 一排专家」之后，算力可以按激活量走，但工程上会立刻撞上三件事：**专家容量溢出、负载塌到少数专家、EP 的 All-to-All。** 本篇从 Decoder-Only 骨架讲到 nanoMoE 的稳定性组合，公式与路由分叉以 [2.4.1 总览](../2.4.1-混合专家模型MoE.md) 为准，不另写第二份 DeepSeek-MoE 推导。
 
-大语言模型(LLM)的架构演进正朝着一个关键方向发展: **参数规模与计算成本的解耦**. 在这一趋势中, **混合专家**(Mixture-of-Experts, MoE)架构已成为业界前沿的核心技术. 它允许模型参数量达到数千亿甚至万亿级别, 而在推理或训练期间的单次前向传播计算成本仅保持在一个相对固定的较低水平.
+不是「终极指南」。旧 16 张截图仍在 `images/`，下面三张浅色示意只换负载、容量、EP 通信。
 
-MoE的核心思想是**稀疏激活**: 将传统的, 对所有输入都使用相同参数的稠密层(dense layer), 替换为一组并行的, 专门化的“专家”网络. 对于每一个输入token, 一个动态路由机制会选择性地激活一小部分专家参与计算. 这种条件化计算模式不仅是通往更强大模型的路径, 也对工程实现提出了独特的挑战.
-
-本文档旨在提供一份关于MoE模型构建与训练的综合性工程实践指南. 我们将从其基础架构**Decoder-Only Transformer**开始, 逐步深入到MoE的核心组件, 并最终通过一个从零构建的案例(**nanoMoE**)展示如何解决训练稳定性等关键工程问题.
-
-![](./02-MoE的工程实践-images/image_0.png)
+![](./images/image_0.png)
 
 图 1: 混合专家(MoE)模型通过动态路由激活部分专家网络.
 
@@ -22,7 +19,7 @@ MoE的核心思想是**稀疏激活**: 将传统的, 对所有输入都使用相
 
 要构建MoE模型, 必须首先掌握其骨架——**Decoder-Only Transformer**. 该架构是现代生成式LLM的基石.
 
-![](./02-MoE的工程实践-images/image_1.png)
+![](./images/image_1.png)
 
 图 2: Decoder-Only Transformer由多个相同的模块堆叠而成.
 
@@ -36,7 +33,7 @@ MoE的核心思想是**稀疏激活**: 将传统的, 对所有输入都使用相
 
 - **嵌入**(Embedding): 通过一个嵌入矩阵, 将每个token ID转换为一个高维向量(**token embedding**). 这个嵌入矩阵是模型的可训练参数.
 
-![](./02-MoE的工程实践-images/image_2.png)
+![](./images/image_2.png)
 
 图 3: 从原始文本到离散token的转换流程.
 
@@ -46,7 +43,7 @@ MoE的核心思想是**稀疏激活**: 将传统的, 对所有输入都使用相
 
 Transformer的核心由多个完全相同的模块(Block)堆叠而成. 每个模块包含两个关键的子层.
 
-![](./02-MoE的工程实践-images/image_3.png)
+![](./images/image_3.png)
 
 图 4: Transformer模块的内部结构.
 
@@ -60,7 +57,7 @@ Transformer的核心由多个完全相同的模块(Block)堆叠而成. 每个模
 
 - **值**(Value, V): 序列中所有token包含的实际信息.
 
-![](./02-MoE的工程实践-images/image_4.png)
+![](./images/image_4.png)
 
 图 5: 输入嵌入通过独立的线性投影生成Q, K, V.
 
@@ -72,13 +69,13 @@ $\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
 
 **因果掩码**(Causal Mask)是Decoder-Only架构的关键. 它确保在计算第 $i$ 个token的表示时, 模型只能关注到 $i$ 位置及之前的信息, 从而防止在自回归生成任务中发生信息泄露.
 
-![](./02-MoE的工程实践-images/image_5.png)
+![](./images/image_5.png)
 
 图 6: 因果掩码阻止了对未来token的关注.
 
 **多头注意力**(Multi-Head Attention)将注意力计算并行化. 它设置多个独立的注意力“头”, 每个头学习不同子空间中的表示. 各个头的输出被拼接并再次线性投影, 从而整合来自不同维度的信息.
 
-![](./02-MoE的工程实践-images/image_6.png)
+![](./images/image_6.png)
 
 图 7: 将多个头的输出拼接并投影以形成最终输出.
 
@@ -98,7 +95,7 @@ $\text{FFN}(x) = \text{max}(0, xW_1 + b_1)W_2 + b_2$
 
 - **层归一化**: 在每个子层的输入处对特征进行归一化, 稳定了训练过程中的激活值分布, 加速模型收敛.
 
-![](./02-MoE的工程实践-images/image_7.png)
+![](./images/image_7.png)
 
 图 8: 层归一化通过标准化和可学习的仿射变换来稳定激活.
 
@@ -106,7 +103,7 @@ $\text{FFN}(x) = \text{max}(0, xW_1 + b_1)W_2 + b_2$
 
 经过多层Transformer模块的处理后, 最终的输出张量通过一个线性层映射到整个词汇表的维度, 得到logits. 对logits应用softmax函数即可得到每个词的概率分布, 用于**下一token预测**. LLM通过**自回归**(autoregressive)的方式生成文本: 预测一个token, 将其添加到输入序列, 然后再进行下一次预测, 循环往复.
 
-![](./02-MoE的工程实践-images/image_8.png)
+![](./images/image_8.png)
 
 图 9: 自回归解码过程示意图.
 
@@ -116,7 +113,7 @@ MoE的核心创新在于用稀疏激活的专家层替换了Transformer模块中
 
 ### 3.1 核心组件: 专家层与路由器
 
-![](./02-MoE的工程实践-images/image_9.png)
+![](./images/image_9.png)
 
 图 10: MoE架构用一组并行的专家网络替换了单个FFN.
 
@@ -131,13 +128,13 @@ MoE的核心创新在于用稀疏激活的专家层替换了Transformer模块中
 3. 通过 softmax 将得分转换为概率.
 4. 选择概率最高的 **top-K** 个专家来处理该 token. $K$ 是一个超参数, 通常为 1 或 2.
 
-![](./02-MoE的工程实践-images/image_10.png)
+![](./images/image_10.png)
 
 图 11: 路由器为输入token选择top-K个专家.
 
 最终, token的输出是所选K个专家输出的加权和, 权重即为路由器计算出的概率.
 
-![](./02-MoE的工程实践-images/image_11.png)
+![](./images/image_11.png)
 
 图 12: 专家层的最终输出是各激活专家输出的加权组合.
 
@@ -153,11 +150,26 @@ $$
 \text{ExpertCapacity} = \text{round}\left(\frac{\text{TokensPerBatch} \times K}{\text{NumExperts}}\right) \times \text{CapacityFactor}
 $$
 
-CapacityFactor 是一个大于1的超参数, 用于提供冗余空间. 如果路由到某个专家的token数超过其容量, 多余的token将被“丢弃”, 其信息通过残差连接直接传递到下一层, 不经过专家计算.
+CapacityFactor 是一个大于 1 的超参数, 用于提供冗余空间. 如果路由到某个专家的 token 数超过其容量, 多余的 token 将被丢弃, 信息走残差到下一层, 不经过专家计算.
 
-![](./02-MoE的工程实践-images/image_12.png)
+![容量因子：溢出 vs padding](./images/fig-moe-eng-capacity.png)
 
-图 13: 超过专家容量的token通过残差连接绕过专家计算.
+> 图 13：左栏 capacity factor 1.0，满槽后红 token 走 residual；右栏 1.5，红 token 进槽，空位是 padding。旧深色截图 `image_12.png` 仍在同夹。
+
+**图 13 解析**
+
+- 每个专家的槽数 = 名义容量 × 容量因子。
+- 因子太小：溢出，那条 token 这一层等于没走专家。
+- 因子太大：空槽仍要占计算/通信，账单涨。
+
+![负载塌到少数专家](./images/fig-moe-eng-load.png)
+
+> 图 13b：路由器把绝大多数 token 打进同一个专家桶。这就是路由崩溃的形状，不是「有人算得快」。
+
+**图 13b 解析**
+
+- 黄盒 Router 只是线性打分 + Top-K，没有容量意识。
+- 一个桶堆满、其余桶几乎空：辅助损失要罚的就是这个形状。
 
 #### 3.2.2 挑战二: 训练不稳定性
 
@@ -171,19 +183,33 @@ MoE训练是出了名的不稳定, 主要表现为:
 
 1. **负载均衡损失**(Load Balancing Loss): 在主损失函数中加入一个辅助项, 惩罚不均衡的专家路由. 该损失项鼓励路由器将token尽可能均匀地分配给所有专家.
 
-![](./02-MoE的工程实践-images/image_13.png)
+![](./images/image_13.png)
 
 图 14: 负载均衡损失旨在实现专家利用率的均衡.
 
 1. **路由器Z-Loss**: 另一个辅助损失项, 专门用于惩罚路由器输出的logits值过大. 这有助于在应用softmax前控制数值范围, 提高数值稳定性.
 
-![](./02-MoE的工程实践-images/image_14.png)
+![](./images/image_14.png)
 
 图 15: 最终损失由主任务损失和多个辅助损失加权构成.
 
 1. **精度控制**: 在进行混合精度训练时, 将模型大部分参数置于bfloat16或float16下以加速计算, 但**强制将路由器模块保持在全精度(float32)下运行**.
 
 1. **专门的权重初始化**: 使用方差更小的截断正态分布来初始化MoE层的权重, 也能有效提升训练初期的稳定性.
+
+#### 3.2.3 挑战三: 专家并行通信
+
+专家放在不同 GPU 上时，Dispatch / Combine 各一次 All-to-All：token 按路由目标换 rank，算完再换回来。这不是注意力的 AllReduce。拓扑与通算重叠见 [07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)。
+
+![EP：Dispatch All2All 与 Combine All2All](./images/fig-moe-eng-ep-all2all.png)
+
+> 图 16：四张卡上的专家；token 先 All2All 出去，再 All2All 回来。旧截图不替代本图。
+
+**图 16 解析**
+
+- 每张卡上有本卡专家槽。
+- 中间交叉箭头是跨 rank 的 token 搬运，带宽吃在这里。
+- Combine 是 Dispatch 的镜像，漏一次就会把输出对不回原 batch 位置。
 
 ## 4. 案例研究: 从零构建与训练nanoMoE
 
@@ -211,9 +237,9 @@ MoE训练是出了名的不稳定, 主要表现为:
 
 为了验证各项工程技巧的有效性, 我们进行了一系列消融实验. 基线模型不采用任何稳定性技巧, 然后逐一引入: (1) 负载均衡损失, (2) 路由器Z-loss, (3) 路由器全精度, (4) 专门的权重初始化.
 
-![](./02-MoE的工程实践-images/image_15.png)
+![](./images/image_15.png)
 
-图 16: 不同稳定性技术的训练损失曲线对比.
+图 17: 不同稳定性技术的训练损失曲线对比.
 
 实验结果清晰地表明:
 
@@ -241,4 +267,10 @@ MoE训练是出了名的不稳定, 主要表现为:
 
 - **采用专门的权重初始化**方案.
 
-通过**nanoMoE**的实证案例, 我们验证了这些技术组合的有效性, 证明了即使在消费级硬件上, 只要遵循严谨的工程实践, 也能成功训练先进的MoE模型. 对于致力于前沿大模型研发的工程师而言, 掌握这些实践是驾驭MoE这项强大技术的关键.
+通过**nanoMoE**的实证案例, 我们验证了这些技术组合的有效性, 证明了即使在消费级硬件上, 只要遵循严谨的工程实践, 也能成功训练先进的MoE模型.
+
+## 本篇来源
+
+1. Fedus, Zoph, Shazeer. *Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity*. [arXiv:2101.03961](https://arxiv.org/abs/2101.03961).（容量因子与负载损失的工业口径）
+2. 路由公式与 DeepSeek 分叉：[2.4.1](../2.4.1-混合专家模型MoE.md) · [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)
+3. EP 通信图解：[07](../07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)

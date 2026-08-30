@@ -1,95 +1,72 @@
 ---
-title: "03 · MoE Top-K 运算可导性分析"
-date: 2026-05-16
-tags: [MoE, Top-K, 可导性, 梯度, PyTorch, 专家选择]
+title: "03 · MoE Top-K：离散选择与 straight-through"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [MoE, Top-K, 可导性, STE]
+math: true
 ---
 
-# MoE Top-K 运算可导性分析
+# 03 MoE Top-K：离散选择与 straight-through
 
-> 本文解析 MoE 模型中 Top-K 专家选择运算的数学可导性问题, 分析 PyTorch 的实现方案, 并手撕 Top-K 算子的梯度推导. 
+稀疏 MoE 的路由要先 **选出 K 个专家**，再让这 K 路 FFN 参与前向。Top-K 是排序 + 硬掩码：分数刚好比过线的专家，梯度该不该流回去？本篇只回答这件事。负载公式、DeepSeek 的 Sigmoid / aux-loss-free 在 [2.4.1](../2.4.1-混合专家模型MoE.md) 与 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)，这里不重抄。
 
----
+不是把 Top-K 说成「数学上可导」。它不可导；框架给的是 **掩码恒等** 的反向约定。
 
-## 1. 问题背景
+## 1. 前向不可导
 
-在 Sparse MoE 中, 专家选择通过 Top-K 算子实现：
+门控分数 $g\in\mathbb{R}^{n}$，选出最大的 $k$ 个下标。排序和 $\arg\mathrm{top}k$ 在相等点不连续：两个分数对调，选中集合会跳。连续可微的定义在这里用不上。
 
-给定 gate 分数 g ∈ R^n, 选择 top-k 个专家：
+PyTorch 的 `torch.topk` **没有**把 Top-K 变成光滑函数。它只规定：
 
-indices = TopK(g, k)
+- 前向：写出 top-k 的值与下标。
+- 反向：只有被选中的坐标接到上游梯度，其余为 0。
 
-**核心问题**：Top-K 的排序和选择操作是**不连续的**, 数学上不可导. 
+设选出的下标集合为 $\mathcal{I}$，输出 $y$ 在 $\mathcal{I}$ 上等于 $x$，其余为 0（或根本不物化）。则
 
-## 2. PyTorch 的解决方案
+$$
+\frac{\partial L}{\partial x_m}
+=
+\begin{cases}
+\partial L/\partial y_m, & m\in\mathcal{I}\\
+0, & \text{otherwise.}
+\end{cases}
+$$
 
-PyTorch 的 `torch.topk()` 算子实现了**可导的 Top-K**：
+这就是 **masked identity**：把离散门当成「前向硬选、反向当恒等」的 straight-through。未选中的专家这一层收不到这条 token 的梯度。
 
-- **前向传播**：选择 top-k 元素及其索引
-- **反向传播**：仅对 top-k 所选元素反传梯度
-- **非 top-k 元素**：梯度设置为 0
+![前向硬 Top-K，反向掩码恒等](./images/fig-moe-topk-ste.png)
 
-### 2.1 数学形式
+> 图 1：玩具向量 $[1,3,2,4]$，$k=2$。前向留下 $3$ 和 $4$；反向只有这两个位置是 $1$，其余是 $0$。没有编造的训练曲线。
 
-设输入 x ∈ R^n, Top-K(x, k) 选择第 i, j, ... 号元素. 
+**图 1 解析**
 
-反向传播时, 梯度回传规则：
+- 上排：Top-K 把落选坐标打成 0，这一步没有斜率。
+- 下排：STE 把「谁被选中」当成一张固定掩码，乘在上游梯度上。
+- 虚线把前向非零位置对到反向非零位置：掩码来自前向下标，不是另学一张网。
 
-∂L/∂x_m = { ∂L/∂y_m,  if m ∈ top-k indices
-           { 0,        otherwise
-
-### 2.2 直观理解
-
-- 只有被选中的专家(top-k)会收到梯度信号
-- 未被选中的专家不会收到梯度, 因此不会更新
-- 这确保了门控网络的梯度只影响实际参与计算的专家
-
-## 3. 手动验证
-
-### 3.1 简单示例
+玩具代码（与上图同一组数）：
 
 ```python
 import torch
-
 x = torch.tensor([1.0, 3.0, 2.0, 4.0], requires_grad=True)
-values, indices = torch.topk(x, 2)  # 选择 [4.0, 3.0], 索引 [3, 1]
-loss = values.sum()
-loss.backward()
-
-print(x.grad)  # 输出: [0, 1, 0, 1]
-# 只有索引 1 和 3 的位置有梯度, 其余为 0
+values, indices = torch.topk(x, 2)
+values.sum().backward()
+# x.grad -> tensor([0., 1., 0., 1.])
 ```
 
-### 3.2 与 STE(Straight-Through Estimator)的关系
+## 2. 对 MoE 训练意味着什么
 
-Top-K 的可导实现本质上是一种 STE：
-- 前向传播：使用不可导的 Top-K 选择
-- 反向传播：使用近似梯度(identity 或 masked gradient)
+只有进了 Top-K 的专家更新，空闲专家可以一直空。这不是 STE 的实现 bug，是稀疏门控的定义。工业上用辅助损失、噪声门控、或 aux-loss-free 偏置去拧负载，见 [02 工程实践](../02-MoE的工程实践/02-MoE的工程实践.md) 与 [10 Quantile Balancing](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。
 
-## 4. 对 MoE 训练的影响
+梯度稀疏（大约 $k/n$ 条门控坐标有信号）让路由器学得慢，也让未选中专家的权重这一步不动。不要指望「换一个可导 Top-K 公式」单独治好负载；那是另一篇路由设计。
 
-### 4.1 专家负载均衡
+## 3. 不是什么
 
-由于只有 top-k 专家接收梯度, 可能导致：
-- 某些专家被频繁选中, 过度训练
-- 某些专家很少被选中, 训练不足
+- **不是** Softmax 本身不可导。Softmax 光滑；不可导的是后面的硬选择。
+- **不是** Expert-Choice 就自动可导。Expert-Choice 换了谁选谁，离散门槛还在。
+- **不是** 把 STE 写成论文里的新算法。这是自动微分对 `topk` 的默认约定。
 
-**解决方案**：
-- 辅助损失(Auxiliary Loss)：鼓励负载均衡
-- 噪声门控(Noisy Top-K Gating)：添加随机噪声打破平局
+## 本篇来源
 
-### 4.2 梯度稀疏性
-
-Top-K 的梯度稀疏性(只有 k/n 的元素有梯度)既是优势也是挑战：
-- **优势**：计算效率高, 只需反传 k 个专家的梯度
-- **挑战**：门控网络的梯度信号弱, 学习缓慢
-
-## 5. 总结
-
-| 方面 | 说明 |
-|:-----|:-----|
-| 数学可导性 | Top-K 本身不可导 |
-| PyTorch 实现 | 通过 masked gradient 实现可导近似 |
-| 梯度特征 | 仅 top-k 元素接收梯度, 其余为 0 |
-| 训练影响 | 需要辅助损失保证负载均衡 |
-
-> 参考来源：[MoE 训练中的 Top-K 运算不会导致不可导(不连续)吗？](https://www.zhihu.com/question/11071292653/answer/1913934460161852591)
+1. PyTorch `torch.topk` 文档：前向取值与下标，反向仅对选中元素。https://pytorch.org/docs/stable/generated/torch.topk.html
+2. Shazeer et al. *Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer*. [arXiv:1701.06538](https://arxiv.org/abs/1701.06538).（噪声 Top-K 门控，不是 STE 的发明文献）

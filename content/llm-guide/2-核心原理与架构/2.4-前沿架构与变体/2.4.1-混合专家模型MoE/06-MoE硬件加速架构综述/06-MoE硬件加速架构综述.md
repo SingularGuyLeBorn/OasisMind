@@ -1,12 +1,13 @@
 ---
-title: "06 · MoE 硬件加速架构综述：从 FPGA 到近存计算"
-date: 2026-05-17
-tags: [MoE, 硬件加速, FPGA, NDP, PIM, 近存计算, 专家并行]
+title: "06 · MoE 硬件加速：FPGA 到近存计算"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [MoE, 硬件加速, FPGA, NDP, PIM]
 ---
 
-# MoE 硬件加速架构综述：从 FPGA 到近存计算
+# 06 MoE 硬件加速：FPGA 到近存计算
 
-> 本文综述 MoE 模型在硬件层面的加速研究, 涵盖 FPGA、GPU+NDP 异构、PIM 等新型架构, 以及负载均衡、专家预测、N:M 剪枝等关键技术. 
+04 讲「动态路由让静态流水线失效」；本篇把加速器 **个案** 排成一张表：FPGA 上的 UbiMoE / FLAME、边缘 Edge-MoE、以及 GPU+NDP / PIM。不在这里重写 DeepSeekMoE 公式（[01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)），也不把 MLA 的 KV 压缩算进 MoE 加速比。
 
 ---
 
@@ -114,4 +115,9 @@ N:M 剪枝、块稀疏、动态稀疏等算法层面的稀疏性, 需要硬件�
 - 零值跳过机制
 - 动态数据调度
 
-> 参考来源：[MoE 研究进展：算法、系统与架构综述(四)-架构篇](https://zhuanlan.zhihu.com/p/1960776777216550865)
+## 本篇来源
+
+1. Dong et al. *UbiMoE*. [arXiv:2502.05602](https://arxiv.org/abs/2502.05602).
+2. Lin et al. *FLAME: Fully Leveraging MoE Sparsity for Transformer on FPGA*. DAC 2024.
+3. Sarkar et al. *Edge-MoE*. IEEE, 2023.
+4. 系统对照：[04](../04-MoE硬件架构研究综述/04-MoE硬件架构研究综述.md) · [05](../05-MoE系统与架构优化综述/05-MoE系统与架构优化综述.md)

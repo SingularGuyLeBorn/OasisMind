@@ -1,12 +1,13 @@
 ---
-title: "07 · MoE 混合并行部署与通信优化图解"
-date: 2026-05-16
-tags: [MoE, 混合并行, 分布式训练, TP, EP, All2All, 通信优化]
+title: "07 · MoE 混合并行：TP + EP 与 All2All"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [MoE, 混合并行, TP, EP, All2All]
 ---
 
-# MoE 混合并行部署与通信优化图解
+# 07 MoE 混合并行：TP + EP 与 All2All
 
-> 本文基于图解方式解析 MoE 模型在多卡环境下的混合并行部署策略, 涵盖 TP(张量并行)、EP(专家并行)的计算流程与通信优化, 以及通算融合的前沿实践. 
+MoE 上多卡之后，注意力侧仍是 **TP 的 AllReduce**，专家侧多出来的是 **EP 的 All2All**（Dispatch 去、Combine 回）。本篇按单卡 → 纯 TP → 纯 EP → 混合，把通信钉在计算图上。路由公式见 [2.4.1](../2.4.1-混合专家模型MoE.md)，不在这里再推一遍 DeepSeekMoE。
 
 ---
 
@@ -73,6 +74,17 @@ TP 并行中, 每次矩阵乘法后都需要 AllReduce 操作来聚合结果. �
 
 ## 4. TP + EP 混合并行
 
+![节点内 TP，跨专家 EP：Dispatch 与 Combine](./images/fig-moe-tp-ep-dispatch.png)
+
+> 图 1：Batch → Attention（TP0/TP1 + AllReduce）→ All2All Dispatch → 各 rank 上的 Expert → All2All Combine → Batch 输出。
+
+**图 1 解析**
+
+- 蓝框是节点内张量并行：QKV / 输出投影切分，靠 AllReduce 对齐。
+- 黄框是两次 All2All：进专家前 Dispatch，出专家后 Combine。
+- 紫框是专家并行：每个 expert 住在自己的 EP rank 上，不是把单个专家再按 TP 切完才算 EP。
+- 这张图只画数据流。DeepEP / Flux 等实现名见 §5.2，不在图里冒充论文 Figure。
+
 ### 4.1 混合部署结构
 
 实际大规模部署中, 通常采用 TP + EP 的混合策略：
@@ -135,4 +147,8 @@ MoE 模型的混合并行部署涉及复杂的计算-通信权衡：
 3. **通算融合**是缓解通信瓶颈的核心方向, 关键在于识别可重叠的计算与通信窗口
 4. **布局选择**(Contiguous vs Masked)需根据 Prefill/Decoding 场景动态调整
 
-> 参考来源：[图解MoE模型的混合并行部署与通信优化](https://zhuanlan.zhihu.com/p/2019814309815927081)
+## 本篇来源
+
+1. DeepSeek-AI. *DeepSeek-V3 Technical Report*. [arXiv:2412.19437](https://arxiv.org/abs/2412.19437).（大规模 EP 部署的系统背景，不是本图的出处）
+2. 通信原语与 DeepEP 一类工作的对照见上表；实现以各仓库 README 为准，本页不编加速比。
+3. 路由公式：[2.4.1](../2.4.1-混合专家模型MoE.md) · [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md)
