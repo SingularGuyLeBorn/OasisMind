@@ -1,10 +1,13 @@
 ---
 title: "01 · FlashAttention 家族全景图: 内存墙瓶颈与硬件感知优化"
-date: 2026-05-17
+date: 2026-08-30
 tags: [FlashAttention, GPU, SRAM, HBM, Roofline, Memory-Bound]
+as_of: 2026-08-30
 ---
 
 # 01 · FlashAttention 家族全景图: 内存墙瓶颈与硬件感知优化
+
+FlashAttention 解决的不是「注意力公式太贵」，而是 **HBM 上被物化的 $N\times N$ 中间矩阵把算术强度焊死在访存区**。本篇把 GPU 层次、Roofline 和 v1–v4 画成一张对照表，供后面各代专文当度量零点。精确、不物化 $N\times N$ 的算法 **更早一年**见 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）；FA 附录 B.5 对照了三件事：峰值占用 vs IO 次数、$K$ 份摘要 vs SRAM 上一份增量 $O$、checkpoint 反向 vs 解析反向。本页从 FA-v1 起画家族，**不把 MEA 并进 v1**。
 
 ## 1. 物理引言: 大模型的内存墙天堑 (The Physical Memory Wall)
 
@@ -168,8 +171,6 @@ $$
 
 ---
 
-> **2026-08 修订。** 家族画卷从 FA-v1 起画。更早一年的精确、线性显存算法是 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)）。FA 附录 B.5 对照了三件事：峰值 vs IO、K 份摘要 vs 一份增量 $O$、checkpoint vs 解析反向。本页不把 MEA 并进 v1。
-
 ## 4. FlashAttention 家族演进画卷 (The FlashAttention Family Evolutionary Roadmap)
 
 为了粉碎内存墙, 硬件感知自注意力算子 (FlashAttention) 爆发了. 其根本哲学**不是降低算法的 FLOPs 数(自注意力本身的计算下限无法突破), 而是重构计算流程, 彻底消除 HBM 上的中间张量物化, 将算术强度直接提升到计算受限区.**
@@ -180,9 +181,9 @@ $$
 |:---|:---|:---|:---|:---|
 | **核心瓶颈** | HBM 中间矩阵物化导致的显存带宽墙 | 共享内存 (SRAM) 与寄存器之间的片上带宽瓶颈 | Hopper 架构下异步载入与流水线空闲等待 | Blackwell 架构下的非对称算力暴涨与 SFU exp 指令瓶颈 |
 | **硬件目标** | Ampere (A100) / Turing 等通用 GPU | Ampere (A100) / Hopper (H100) | Hopper (H100 / SM90) | Blackwell (B200 / SM10.x) |
-| **突破性技术** | SRAM Tiling 分块 + Online Softmax 流式归一化 + 反向传播重计算 | KV外循环顺序交换 + 标度延迟融合 + Warp级零同步调度 | TMA 异步多维张量拷贝 + WGMMA 协同矩阵乘 + FP8 块级动态缩放 | Minimax 5阶秦九韶多项式逼近 exp (消除 SFU) + 元编译 CuTe-DSL |
+| **突破性技术** | SRAM Tiling 分块 + Online Softmax 流式归一化 + 反向传播重计算 | KV外循环顺序交换 + 标度延迟融合 + Warp级零同步调度 | TMA 异步多维张量拷贝 + WGMMA 协同矩阵乘 + FP8 块级动态缩放 | Cody-Waite + 多项式逼近 $2^x$（与 MUFU 并行，约 10–25% 项走 FMA）+ CuTe-DSL |
 | **HBM 流量** | $O(N^2 D_{head}^2 / M)$ ($M$为SRAM容量) | 相比 v1 进一步削减了中间累加器的物理更新 | 引入 TMA 零 CPU/Register 干扰的完全背景传输 | Blackwell 极限总线带宽下的异步并行重叠隐藏 |
-| **实测性能** | 跑满 A100 SXM 峰值的 50% 左右 | 跑满 A100 SXM 峰值的 73% (算子提速 2x+) | 达到 H100 理论峰值的 62% (算子提速 2x+) | Blackwell 实测吞吐高达 1613 TFLOPs/s (算子吞吐跑满 71%) |
+| **实测性能** | A100 上约 50% 峰值（论文 Figure 1 注意力算子最高 7.6×） | A100 上约 73% 峰值（相对 v1 再提速） | H100 上 FA2 约 35% 利用率；FA3 FP16 前向相对 FA2 **1.5–2.0×**，最高约 **740 TFLOPs/s（75%）**；FP8 接近 **1.2 PFLOPs/s** | B200 BF16 最高约 **1613 TFLOPs/s（71%）**；相对 cuDNN 9.13 最高 **1.3×**、相对 Triton **2.7×**（[2603.05451](https://arxiv.org/abs/2603.05451)） |
 
 从 v1 时代建立流式 Online Softmax 数学基础, 到 v2 时代从微观寄存器级重构指令流水, 到 v3 时代彻底释放 Hopper TMA 和 WGMMA 的专属硬件魔力, 再到 v4 (Blackwell) 时代利用纯软件数学逼近消灭物理 exp 指令硬件瓶颈. FlashAttention 的演进史, 就是一部对现代 GPU 物理硬件底座极限能效的重构史.
 
@@ -193,5 +194,6 @@ $$
 - Rabe, M. N., & Staats, C. (2021). "Self-attention Does Not Need $O(n^2)$ Memory." arXiv:2112.05682. 见 [00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md).
 - Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C. (2022). "FlashAttention: Fast and memory-efficient exact attention with io-awareness." Advances in Neural Information Processing Systems, 35, 16344-16359.
 - Dao, T. (2023). "FlashAttention-2: Faster attention with better parallelism and work partitioning." arXiv preprint arXiv:2307.08691.
-- Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv preprint arXiv:2407.08691.
+- Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv:2407.08608.
+- Shah, J., et al. (2026). "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling." arXiv:2603.05451.
 - Milakov, M., & Gimelshein, N. (2018). "Online normalizer calculation for softmax." arXiv preprint arXiv:1805.02867.

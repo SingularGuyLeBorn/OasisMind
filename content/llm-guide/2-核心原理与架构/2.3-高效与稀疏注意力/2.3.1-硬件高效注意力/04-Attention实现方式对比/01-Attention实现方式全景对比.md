@@ -1,27 +1,33 @@
 ---
 title: "01 · Attention 实现方式全景对比: 从手动实现到 FlashAttention"
-date: 2026-05-17
+date: 2026-08-30
 tags: [Attention, SDPA, FlashAttention, xFormers, 性能优化, CUDA, GPU]
+as_of: 2026-08-30
 ---
 
 # 04 Attention 实现方式全景对比: 从手动实现到 FlashAttention
 
-> 来源: 知乎专栏 (https://zhuanlan.zhihu.com/p/2029243648827467520)
-> 标签: #Attention #SDPA #FlashAttention #xFormers #性能优化
-
----
-
-## 1. 引言: 同样的 Attention, 不同的实现, 显著的效率
-
-Attention 机制的数学定义是唯一的对于查询矩阵 $Q \in \mathbb{R}^{B \times N \times H \times D}$, 键矩阵 $K$ 和值矩阵 $V$, 输出由式 (1) 计算: 
+同样一条 $\mathrm{softmax}(QK^\top/\sqrt{D})V$，eager 会把 $N\times N$ 的 $S,A$ 写进 HBM，SDPA / FlashAttention 用融合核把工作集锁在 SRAM。本篇对照四条代码路径，并给一组 **H800 微基准**（配置写在 §3.1）。xFormers 的 `memory_efficient_attention` 是 CUTLASS 调度入口，**不是** Rabe & Staats 的 JAX/TPU 论文（2112.05682）；Llama-1 写因果 MHA *inspired by* 那篇、反向用 Dao et al. 2022。MEA 本体：[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
 
 $$
 \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{D}}\right)V \tag{1}
 $$
 
-式 (1) 中 $B$ 为批次大小, $N$ 为序列长度, $H$ 为注意力头数, $D$ 为每个头的维度. 然而, **实现这一公式的代码路径有数十种**, 从最朴素的 PyTorch 逐行实现到高度优化的 CUDA kernel, 性能差距可达 **10 倍以上**, 显存占用差距可达 **20 倍以上**. 
+![naive 物化 N×N 对比 SDPA/FA 融合核](./images/fig-naive-vs-sdpa-fa-fused.png)
 
-本文基于 H800 GPU 的实测数据, 系统对比四种主流实现方式: 手动实现, PyTorch SDPA, FlashAttention 和 xFormers. 我们将从计算复杂度, 内存访问模式, 硬件利用率三个维度展开分析, 并给出工业级的选型建议. 
+> 图 1：左栏 eager 把 $S$、$A$ 两张 $N\times N$ 写回 HBM；右栏融合核只在 SRAM 上做 tile 级 online softmax，HBM 只进 $Q,K,V$、只出 $O$。底注：xFormers API 名 ≠ MEA 论文。
+
+**图 1 解析**
+
+- **左**：三次独立 kernel（$QK^\top$、softmax、$AV$）对应三次 HBM 往返。显存按 $O(BN^2H)$ 涨。
+- **右**：SDPA 若派发到 FlashAttention，与 [02-v1](../01-FlashAttention/02-FlashAttention-v1.md) 同一套累加器；不支持的 shape 才 fallback math / CUBLAS。
+- **底注**：库函数名叫 `memory_efficient_attention` 不能当成 2112.05682 的实现身份。
+
+---
+
+## 1. 同样的 Attention, 不同的实现
+
+式 (1) 中 $B$ 为批次，$N$ 为序列，$H$ 为头数，$D$ 为头维度。实现路径从朴素 PyTorch 到 CUDA 融合核，墙钟和显存可以差一个数量级以上——下面用 §3 的表说话，不另估「10× / 20×」。 
 
 ---
 
@@ -104,9 +110,7 @@ $$
 
 Meta 开源的 xFormers 库提供了**多种 Attention 变体的统一接口**: 
 
-- `memory_efficient_attention`: 基于 CUTLASS 的通用融合 kernel
-
-> **2026-08 修订。** 这个 **API 名**不是 Rabe & Staats 的论文实现。2112.05682 是 JAX/TPU；Llama-1 只说 xFormers 的因果 MHA *inspired by* 那篇，反向用 Dao et al. 2022。论文本体：[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
+- `memory_efficient_attention`: CUTLASS 融合核的统一入口，可 dispatch 多种实现。名字容易和 MEA 论文撞车：2112.05682 是 JAX/TPU；Llama-1 只说 xFormers 的因果 MHA *inspired by* 那篇，反向用 Dao et al. 2022。论文本体：[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
 - `local_attention`: 滑动窗口 Attention
 - `linformer_attention`: 低秩近似 Attention
 - `nystrom_attention`: Nyström 方法近似
@@ -116,6 +120,8 @@ xFormers 的优势在于**灵活性**当 FlashAttention 不支持特定配置时
 ---
 
 ## 3. 性能实测: H800 GPU 全维度对比
+
+§3 各表是同一套微基准（H800 80GB, CUDA 12.2, PyTorch 2.3.1, flash-attn 2.7.4.post1, xformers 0.0.27），用来对照 naive / SDPA / `flash_attn_func` / xFormers，**不是** FA 论文 Figure。换卡、换版本数字会动。
 
 ### 3.1 实验配置
 
@@ -259,7 +265,7 @@ $$
 | 场景 | 推荐实现 | 理由 |
 |:-----|:--------|:-----|
 | 生产环境(标准配置) | **SDPA** | 自动选择最优后端, 无需额外依赖 |
-| 长序列训练(N > 2048) | **FlashAttention** | 显存优化最显著, 节省 80%+ |
+| 长序列训练(N > 2048) | **FlashAttention** | 见表 3.3：N=4096 时相对 naive 显存节省 94.4% |
 | 需要 Attention 变体(稀疏/局部) | **xFormers** | 支持 Linformer, Local Attention 等 |
 | 教学/调试/算法验证 | **手动实现** | 透明可控, 便于插入断点和可视化 |
 | 超大 head_dim(D 512) | **手动实现或 SDPA math 后端** | 优化实现在大 dim 时可能负优化 |
@@ -273,7 +279,7 @@ $$
 
 **视觉 Transformer**(如 ViT-Large: H=16, D=64): 
 - 强烈推荐 SDPA/FlashAttention
-- head_dim=64 时加速比 6.9×, 显存节省 80%
+- 同配置见表 3.2：head_dim=64 时 SDPA 相对 naive 约 6.9×、显存节省约 80.7%
 
 **长上下文模型**(如 128K 上下文): 
 - FlashAttention 必选
@@ -394,15 +400,17 @@ def attention_xformers(q, k, v, causal=False):
 
 **最终建议**: 
 1. **无脑使用 SDPA**: `torch.nn.functional.scaled_dot_product_attention` 是 PyTorch 2.0+ 的默认选择, 自动选择最优后端
-2. **长序列必用 FlashAttention**: 当 seq_len > 2048 且 head_dim 256 时, 显存节省 80%+
-3. **head_dim 控制在 64~128**: 这是当前 GPU Tensor Core 的最优工作区间
-4. **混合精度训练**: FP16/BF16 可进一步提升 2~3 倍吞吐量
+2. **长序列优先融合核**: 当 seq_len > 2048 且 head_dim ≤ 256 时，§3.3 里 N=4096 的 naive 显存已经到 69 GB 量级，SDPA 约 3.9 GB
+3. **head_dim 控制在 64~128**: 这是当前 GPU Tensor Core 的常用工作区间；§3.5 显示 D≥512 时融合核可能负优化
+4. **精度**: 训练常用 BF16/FP16 走 Tensor Core；具体加速以当前卡的 micro-benchmark 为准，不在这里估一个全局倍数
 
 ---
 
 ## 9. 参考文献
 
-1. Dao, T., et al. (2022). FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. *NeurIPS*.
-2. Dao, T., et al. (2023). FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning. *ICLR*.
-3. PyTorch Documentation: `torch.nn.functional.scaled_dot_product_attention`
-4. xFormers GitHub: https://github.com/facebookresearch/xformers
+1. Dao, T., et al. (2022). FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. *NeurIPS*. arXiv:2205.14135.
+2. Dao, T. (2023). FlashAttention-2. arXiv:2307.08691.
+3. Rabe, M. N., & Staats, C. (2021). Self-attention Does Not Need $O(n^2)$ Memory. arXiv:2112.05682. 见 [00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)。
+4. PyTorch Documentation: `torch.nn.functional.scaled_dot_product_attention`
+5. xFormers GitHub: https://github.com/facebookresearch/xformers
+6. Llama-1 训练说明：xFormers 因果 MHA inspired by Rabe & Staats (2021)，backward from Dao et al. (2022)。

@@ -271,6 +271,6 @@ Rabe v2 Related Work 还写：他们在 TPU 上看不到 FA 那种加速，因�
 1. Markus N. Rabe, Charles Staats. (2021). [Self-attention Does Not Need $O(n^2)$ Memory](https://arxiv.org/abs/2112.05682). arXiv:2112.05682. HTML：[arxiv.org/html/2112.05682](https://arxiv.org/html/2112.05682)。读了摘要、§1–7、Table 2–3、Figure 1 代码、WMT 段、Figure 5 叙述。
 2. 官方代码：[google-research/memory_efficient_attention](https://github.com/google-research/google-research/tree/master/memory_efficient_attention)（Colab；需 TPU runtime）。
 3. Tri Dao et al. (2022). [FlashAttention](https://ar5iv.labs.arxiv.org/html/2205.14135). 附录 B.5「Comparison with Rabe and Staats 2021」；致谢讨论过他们的算法。
-4. Llama-1 训练段：xFormers 因果 MHA「inspired by Rabe and Staats (2021) and uses the backward from Dao et al. (2022)」。本库 [02-Llama-1核心架构剖析](../../../../14-主流开源模型全景解析与技术报告精读/14.3-LLaMA/01-Llama-1/02-Llama-1核心架构剖析.md) §4.3 的 2025 原文把这写成「类似 FlashAttention 的变体」，2026-08 修订指回本篇。
+4. Llama-1 训练段：xFormers 因果 MHA「inspired by Rabe and Staats (2021) and uses the backward from Dao et al. (2022)」。本库 [02-Llama-1核心架构剖析](../../../../14-主流开源模型全景解析与技术报告精读/14.3-LLaMA/01-Llama-1/02-Llama-1核心架构剖析.md) §4.3 曾把这写成「类似 FlashAttention 的变体」——那是工程拼接（xFormers 前向灵感来自本篇 JAX/TPU 算法，反向用 Dao et al. 2022），不是把 2112.05682 搬进 PyTorch。API 名 `memory_efficient_attention` 也不能当论文身份；对照见 [01-Attention实现方式全景对比](../04-Attention实现方式对比/01-Attention实现方式全景对比.md)。
 5. Jang et al. (2019). MNNFast，ISCA。lazy softmax 的前作（论文 §6）；本篇未打开 ISCA 全文，只按 Rabe 的转述写「未讨论显存复杂度」。
 6. Liu & Abbeel. [BPT](https://arxiv.org/html/2305.19370). 实验把 FA/MEA 打成 MemoryEfficient。一层 $8bsh$ vs $2bsh$ 见 6.1.1 §4.7。

@@ -1,10 +1,13 @@
 ---
 title: "04 · FlashAttention-v3 压榨 Hopper: TMA 异步管道与 FP8 动态量化"
-date: 2026-05-17
+date: 2026-08-30
 tags: [FlashAttention-3, Hopper, TMA, WGMMA, FP8, Block-wise Scaling]
+as_of: 2026-08-30
 ---
 
 # 04 · FlashAttention-v3 压榨 Hopper: TMA 异步管道与 FP8 动态量化
+
+FlashAttention-3（[arXiv:2407.08608](https://arxiv.org/abs/2407.08608)）把 FA-2 的分块搬上 Hopper：用 TMA / WGMMA / `mbarrier` 把 GEMM 与 softmax 重叠，再用块级 FP8 缩放吃 FP8 Tensor Core。H100 上 FA-2 大约只有 **35%** 利用率；FA-3 FP16 前向相对 FA-2 **1.5–2.0×**，最高约 **740 TFLOPs/s（75%）**，反向 **1.5–1.75×**；FP8 接近 **1.2 PFLOPs/s**。块量化 + incoherent processing 相对朴素 per-tensor FP8，误差约 **2.6× 更低**——不是「零精度损失」。论文限制段写明 **LLM inference 还没作为本核的优化目标**；`qlen=1` 时按 KV 切开占满 SM，是 2023 Flash-Decoding（FA 2.2 的 split-KV），本体在 [6.6.3](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md)，不要把本篇 pingpong 图当成 decode 核。
 
 ## 1. Hopper 架构的物理颠覆: TMA 与 WGMMA 硬件原语 (Hopper Hardware Mappings)
 
@@ -128,7 +131,7 @@ $$
 S_{ij} = \frac{1}{s_{Q_i} \cdot s_{K_j}} \cdot \text{WGMMA}(\hat{Q}_i, \hat{K}_j^T) \tag{4}
 $$
 
-这一机制的精妙之处在于: **由于缩放因子是在快速的片上 SRAM 中动态生成并直接被 WGMMA 消费的, 它完全不需要写回 HBM 显存, 因而带来了零外部带宽消耗. 同时, 它针对每一个分块进行了局部的极细粒度量化自适应, 哪怕出现极端的离群值 (Outliers), 也能够通过独立的缩放因子予以完美保护, 真正达成了 FP8 算力吞吐暴涨下的零精度损失推理.**
+这一机制的要点是：缩放因子在片上 SRAM 生成、直接被 WGMMA 消费，不必为 $s_{Q_i},s_{K_j}$ 另写一趟 HBM。块级尺度能兜住局部离群值，论文测得相对朴素 FP8 **误差约 2.6× 更低**（§4.3 / Table 3），不是「零精度损失」。FA-3 的核目标仍是训练用的长序列 attention；LLM decode（`qlen=1`）不是本篇 pingpong 调度的优化对象。
 
 ![FlashAttention-3 三阶段流水（论文 Figure 8）](./images/fig-flashattention3-3stage-pipeline.jpg)
 
@@ -170,11 +173,6 @@ $$
 
 ## 4. 参考文献 (References)
 
-- Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv preprint arXiv:2407.08691.
+- Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." [arXiv:2407.08608](https://arxiv.org/abs/2407.08608).
 - NVIDIA Corporation. (2023). "NVIDIA Hopper Architecture Technical Brief."
 
----
-
-## 5. 2026-08 修订（不删上文）
-
-参考文献 arXiv **2407.08691 是错号**，论文是 [2407.08608](https://arxiv.org/abs/2407.08608)。摘要数字：H100 上 FA2 约 35% 利用率；FA3 FP16 前向相对 FA2 **1.5–2.0×**、最高约 **740 TFLOPs/s（75%）**；反向 1.5–1.75×；FP8 接近 **1.2 PFLOPs/s**；块量化+incoherent processing 相对朴素 FP8 误差约 **2.6× 更低**。论文限制段写明 **LLM inference 还没作为本核的优化目标**。qlen=1 时按 KV 切开占满 SM，是 2023 Flash-Decoding（FA 2.2 的 split-KV），本体在 [6.6.3](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md)，不要把本篇 pingpong 图当成 decode 核。

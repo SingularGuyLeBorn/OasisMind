@@ -1,10 +1,13 @@
 ---
 title: "03 · FlashAttention-v2 执行优化: 循环交换与 Warp 调度"
-date: 2026-05-17
+date: 2026-08-30
 tags: [FlashAttention-v2, Loop Interchange, Register-level Fusion, Warp Scheduling, CUDA]
+as_of: 2026-08-30
 ---
 
 # 03 · FlashAttention-v2 执行优化: 循环交换与 Warp 调度
+
+FlashAttention-2 不改注意力公式，改的是 **循环嵌套与 Warp 分工**：外层锁定 $K,V$ 块、内层扫 $Q$，累加器写回从每 tile 变成内循环结束一次；每个 Warp 独占若干 $Q$ 行，中间 $m,d,O$ 停在寄存器。相对 v1 的增益来自 work partitioning，不是换一套 softmax。
 
 ## 1. 嵌套循环顺序交换的物理直觉 (Nested Loop Interchange)
 
@@ -43,7 +46,7 @@ FlashAttention-v2 对此执行了极其精巧的**嵌套循环顺序交换 (Nest
 这一细微的指令顺序对调, 在物理硬件层面引爆了能效革命:
 - **常量化 Key/Value 载入**: 只要外循环锁定当前 $K, V$ 的分块, 在整个内循环周期内, 这部分数据可以作为恒定不变的只读常量被片上所有线程组无锁共享.
 - **寄存器级极致局部流**: 内循环在遍历不同 $Q$ 块时, 每一个线程可以直接在其物理私有的**寄存器 (Registers)** 内完成局部输出 $O_i$ 和归一化标度的增量计算. 只有当内循环彻底结束时, 最终收敛的 $O_i$ 才会被原子地一次性写回至外部低速的 HBM. 
-这种重构几乎完全消除了 v1 阶段极高频的中间累加器写回开销, 使算子片上访存延迟瞬间暴跌了 **60% 以上**.
+这种重构把中间累加器 $O_i$ 的写回从「每个 KV tile 都可能碰 Shared Memory / HBM」改成 **内循环结束才一次性写回**：$K,V$ 在外循环锁定期间只读复用，内循环里 $O_i,m_i,d_i$ 停在寄存器。v1 外层扫 $Q$、内层扫 $KV$；v2 外层扫 $KV$、内层扫 $Q$（上表 ASCII）。加速来自写回次数与复用，不是改公式。
 
 ---
 

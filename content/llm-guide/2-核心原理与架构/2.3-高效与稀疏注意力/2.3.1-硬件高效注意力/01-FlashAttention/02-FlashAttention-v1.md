@@ -1,14 +1,13 @@
 ---
 title: "02 · FlashAttention-v1 核心推导: 分块, 在线 Softmax 与重计算"
-date: 2026-05-17
+date: 2026-08-30
 tags: [FlashAttention, Online Softmax, Mathematical Proof, Recomputation, I/O Complexity]
+as_of: 2026-08-30
 ---
 
 # 02 · FlashAttention-v1 核心推导: 分块, 在线 Softmax 与重计算
 
-FlashAttention-v1 的天才之处，在于用**在线 Softmax 递推公式**配合**分块（Tiling）计算**：$N \times N$ 的注意力分数矩阵与权重矩阵从始至终**从未在 HBM 中完整物化**——片上只维护每行的 $(m_i, d_i, O_i)$ 累加器，逐块读入 $K_j,V_j$ 即可得到与标准 attention **数学等价**的输出。
-
-> **2026-08 修订（不删上文）。** 不物化 $N\times N$ 的精确算法先见 Rabe & Staats（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）。本篇推导的是 FA 的 **SRAM 增量一份 $O$** 与 CUDA IO 核，不要把 MEA 的 JAX/TPU 分块写成 FA-v1。
+精确、不物化 $N\times N$ 的注意力先见 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）：JAX/TPU 上先留 $K$ 份块摘要再合并，反向走 checkpoint。本篇是 Dao et al. 2022 的 **SRAM 增量一份 $O$ + CUDA IO 核**——片上只维护每行 $(m_i, d_i, O_i)$，逐块读入 $K_j,V_j$，与标准 attention **数学等价**，打的是 HBM 访问次数而不是峰值字节这一项本身。不要把 MEA 的两层 `lax.scan`/`lax.map` 写成 FA-v1。
 
 ## 1. 核心数学障碍: Softmax 的全局耦合度 (The Coupling Problem of Softmax)
 
