@@ -79,7 +79,7 @@ Table 2 是 $y_w$ 的来源占比（每个语言对、双向合计）。参考�
 | en$\leftrightarrow$zh | 45% | 35% | 20% |
 | en$\leftrightarrow$ru | 31% | 44% | 25% |
 
-十个方向 $\times$ FLORES 约 2K 句得到 20K。FLORES 里有一部分也曾用于 ALMA 的 SFT。CPO 换的不是新平行句，是同一批源句上的目标：从贴参考改成对比高低分。另有内部人标偏好，只覆盖 en$\to$zh 和 en$\to$de。论文 §4.1 写成 1K；附录 D 写成两方向合计约 2K 句（含平局）。源句从维基滤过时间戳和 URL，候选是 Google 翻译对 GPT-4。Table 11：en$\to$de 上 Google 赢 418、GPT-4 赢 435、平局 203；en$\to$zh 上 362 / 412 / 282。平局丢掉。摘要写 22K parallel，口径是 FLORES 20K 加上这批人标。附录 D 后来说人标几乎没抬分：en$\to$xx 平均几乎不动，xx$\to$en 还略降。主结果仍把人标算进 22K，消融时单独拆开。
+十个方向 $\times$ FLORES 约 2K 句得到 20K。FLORES 里有一部分也曾用于 ALMA 的 SFT。CPO 换的不是新平行句，是同一批源句上的目标：从贴参考改成对比高低分。另有内部人标偏好，只覆盖 en$\to$zh 和 en$\to$de。CPO 论文 §4.1 写成 1K；附录 D 写成两方向合计约 2K 句（含平局）。源句从维基滤过时间戳和 URL，候选是 Google 翻译对 GPT-4。Table 11：en$\to$de 上 Google 赢 418、GPT-4 赢 435、平局 203；en$\to$zh 上 362 / 412 / 282。平局丢掉。摘要写 22K parallel，口径是 FLORES 20K 加上这批人标。附录 D 后来说人标几乎没抬分：en$\to$xx 平均几乎不动，xx$\to$en 还略降。主结果仍把人标算进 22K，消融时单独拆开。
 
 ## 3. 从 DPO 走到均匀先验
 
@@ -121,7 +121,7 @@ $$
 
 式 (3) 前向只跑 $\pi_\theta$。这不是把 DPO 的参考框忘了画。抵消成立，当且仅当参考在 $y_w$ 和 $y_l$ 上取同一个值；均匀先验满足，冻结 SFT 一般不满足。$\beta$ 仍沿用 Rafailov 默认 0.1，不是另造温度。
 
-式 (3) 的自变量没有除以 $|y|$，也没有间隔 $\gamma$。序列越长，对数概率越负，要让 $y_w$ 赢，模型会把长译文的逐步概率抬上去。后来 SimPO 在聊天数据上量过，CPO 生成平均比 SimPO 长约 50%。那是 04 的表，不是本篇 WMT 数字。本篇损失按式 (3) 写：未归一的序列对数概率差。
+式 (3) 的自变量没有除以 $|y|$，也没有间隔 $\gamma$。那是 SimPO 的做法，不是这篇。序列越长，对数概率越负，要让 $y_w$ 赢，模型会把长译文的逐步概率抬上去。后来 SimPO 在聊天数据上量过，CPO 生成平均比 SimPO 长约 50%。那是 04 的表，不是本篇 WMT 数字。本篇损失按式 (3) 写：未归一的序列对数概率差。
 
 ## 4. 定理 1：均匀先验是理想参考的上界
 
@@ -240,7 +240,7 @@ ALMA-13B-LoRA 自己已经走完两段：LLaMA-2 先在非英单语上满参微�
 
 对照包括：原 ALMA-13B-LoRA、在同一份 $y_w$ 上继续 SFT、原版 DPO、GPT-4、各方向 WMT 冠军、以及 WMT'23 上的 TowerInstruct（WMT'22 测集被它训过，主表不用）。7B 同样走 CPO，附录里叫 ALMA-7B-R。
 
-**en$\to$xx，Table 3。** 四行都从 ALMA-13B-LoRA 出发：在同一份 $y_w$ 上继续 SFT、原版 DPO、CPO（产物 ALMA-13B-R）。de / cs / is 上 CPO 明显高于 DPO 的格子按论文抄，不编没看的数：
+**en$\to$xx，Table 3。** 四行都从 ALMA-13B-LoRA 出发：在同一份 $y_w$ 上继续 SFT、原版 DPO、CPO（产物 ALMA-13B-R）。de / cs / is 三组如下。
 
 | 方向 | 指标 | ALMA-13B-LoRA | +SFT on preferred | +DPO | +CPO (ALMA-13B-R) |
 |--|--|--:|--:|--:|--:|

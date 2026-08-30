@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 质检/催 PRO、CPO、Constitutional AI 专文（租约仍 running）。交卷后链进 4.4.3 / 4.4.4 地图。
-2. **并行：** JustRL（2512.16649）若要专文，落点不要挤进 4.4.1 的 11；可挂 4.4.5 或 4.4.6。
+1. **立刻做：** JustRL（2512.16649）专文挂 `4.4.6/02`，不要挤 4.4.1 的 11。54.9%/64.3% 是九项数学平均，不是 AIME 单列。
+2. **并行：** 4.4 仍缺的对齐算法（SPIN / Online DPO / Nash-MD 等）开专文；同层满 10 先拆小节。
 3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：入库 ReMax（4.4.6/01）；贪婪基线；Table 2 / Table 3 数字按论文。
-- 现在立刻做：PRO / CPO / Constitutional AI 专文。不要 `move_agent_to_root`。不要 push。
+- 上一件：入库 PRO / CPO / Constitutional AI，并接到 4.4.3 / 4.4.4 / 4.4 地图。
+- 现在立刻做：JustRL 专文（4.4.6/02）。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -185,7 +185,8 @@ category: LLM 指南
 | rrhf-444 | done | `4.4.4-其他对齐技术/02-RRHF-排序响应对齐/` + inbox `rrhf-444.md` | 已入库。长度归一 $p_i$；无 margin hinge；不是 BT σ |
 | ipo-444 | done | `4.4.4-其他对齐技术/03-IPO-身份偏好优化/` + inbox `ipo-444.md` | 已入库。$\tau^{-1}/2$；3-action 玩具；不是 $1/(2\beta)$ |
 | reinforce-441 | done | `4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/` + inbox `reinforce-441.md` | 已入库。序列 bandit + $b_{\mathrm{MA}}$；Table 1 70.7/37.9/55.3 |
-| pro-444 | running | `4.4.4-其他对齐技术/04-PRO-偏好排序优化/` + inbox `pro-444.md` | 2306.17492；listwise；不要改节首页 |
-| cpo-444 | running | `4.4.4-其他对齐技术/05-CPO-对比偏好优化/` + inbox `cpo-444.md` | 2401.08417；MT；不要改节首页 |
-| cai-443 | running | `4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/` + inbox `cai-443.md` | 2212.08073；不是 Lee 2309.00267；不要改 4.4.3 节首页 |
+| pro-444 | done | `4.4.4-其他对齐技术/04-PRO-偏好排序优化/` + inbox `pro-444.md` | 2306.17492；listwise；不要改节首页 |
+| cpo-444 | done | `4.4.4-其他对齐技术/05-CPO-对比偏好优化/` + inbox `cpo-444.md` | 2401.08417；MT；不要改节首页 |
+| cai-443 | done | `4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/` + inbox `cai-443.md` | 2212.08073；不是 Lee 2309.00267；不要改 4.4.3 节首页 |
 | rem-446 | done | `4.4.6-其他策略梯度/`（节首页 + `01-ReMax-贪婪基线/`） | 2310.10505；贪婪基线；不改 4.4.1、不发 11 |
+| jrl-446 | running | `4.4.6-其他策略梯度/02-JustRL-极简配方/` + inbox `jrl-446.md` + 4.4.6 节首页只加一行 | 2512.16649；九项平均；不改 4.4.1、不发 11 |
