@@ -14,7 +14,7 @@ category: LLM 指南
 ## 下一步 3 件（最上面最先做）
 
 1. **立刻做：** 重写 `2.4.1` 机制主线（01 / 02 / 03 / 10 + 节首页去废话）。专文汉字 ≥ 4000，禁止注水。04–09 是系统/硬件/量化，**错位**，本波不在 2.4.1 里加厚它们。
-2. **并行中：** 报告精读波（Engram / K3 / Muse / Gemini 3.7 / RSI）仍在跑，路径与 2.4.1 叶子不相交。
+2. **并行中：** 报告精读波：K3、Gemini 3.7 已入库；Engram / Muse / RSI 仍在跑。路径与 2.4.1 叶子不相交。
 3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。过文 SiTU / mHC / GR 汉字未满 4000，回头加厚（派工早于规矩）。
 
 ## 波次队列（未完成的留着）
@@ -143,7 +143,7 @@ category: LLM 指南
 | fig-nsa-dsa | done | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 三分支 + DSA indexer；DSA ≠ NSA 第四分支；MSA 口述未开夹 |
 | fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
 | engram-248 | running | `2.4-前沿架构与变体/2.4.8-条件记忆与Engram/` + inbox `engram-248.md` | 不改 2.4 首页、不改 2.4.1–2.4.7、不改第 14 章、不改 live |
-| k3-d2-deep | running | `14.5-Kimi/05-Kimi-K3/`（01 精译 + 该夹 images）+ inbox `k3-d2-deep.md` | 不改 14.5 首页、不改 KDA/AttnRes/SiTU 专文、不改 live |
+| k3-d2-deep | done | `14.5-Kimi/05-Kimi-K3/`（01 精译 + 该夹 images）+ inbox `k3-d2-deep.md` | 已入库。2.78T/104.2B 与 2.8T/104B 分口径；QAT MXFP4/8；MTP→EAGLE-3 用 LK 不是 KL；未改 14.5 首页 |
 | muse-spark-d2 | running | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 不 mkdir 1.1/1.2 空 SKU；不编架构表；不改 14.3 首页、不改 live |
-| gemini-37-flash | running | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 不改 14.11 首页；不 mkdir 3.6 Flash；不改 live |
+| gemini-37-flash | done | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 已入库。监工补 14.11 表行；不 mkdir 3.6；DeepSWE 65.3% / 对照 48.6%；无架构表，文首声明不够 4000 |
 | rsi-origin | running | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 不改 `_garden.md`、不改其它 RSI 章、不 Delete、不改 live |

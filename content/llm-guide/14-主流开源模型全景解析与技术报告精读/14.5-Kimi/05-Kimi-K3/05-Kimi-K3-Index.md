@@ -20,7 +20,7 @@ Kimi K3（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)）是 Moonshot �
 
 | 文件 | 说明 |
 | --- | --- |
-| [01-Kimi-K3 架构精译](./01-Kimi-K3-架构精译.md) | D2：按 0.4 拆面，trick 链回体系章 |
+| [01-Kimi-K3 架构精译](./01-Kimi-K3-架构精译.md) | 报告精读：三条轴 + §3 数据/缩放 + §4 QAT/MOPD/MTP→EAGLE-3 + Table 2/5 评测；积木公式链回体系章 |
 
 本轮 **不做** mineru OCR、不平行第三份 D5 把 KDA 公式再抄一遍。完整 D5 若以后要加厚，只写「相对 K2 / Kimi Linear 改了什么」。
 
@@ -33,8 +33,9 @@ Kimi K3（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)）是 Moonshot �
 - **序列**：3 KDA : 1 Gated MLA；K3 给 KDA 加上有下界的 decay 和满秩输出门；MLA 全 NoPE。
 - **深度**：Block AttnRes，约 12 层一块，8 块 + embedding。
 - **宽度**：LatentMoE $\ell=d/2$，896 / Top-16 / 2 共享；SiTU-GLU + Quantile Balancing。
-- **优化 / 量化**：Per-Head Muon；后训练 QAT MXFP4/MXFP8。
-- **系统**：FlashKDA、KCP、MoonEP。
+- **优化 / 量化**：Per-Head Muon；后训练 QAT（路由专家 MXFP4 权重 / MXFP8 激活，rollout 与训练同方案）。
+- **投机**：预训练 MTP 微调成 EAGLE-3 draft，损失是 LK 接受率不是 KL。
+- **系统**：FlashKDA、KCP、MoonEP（每 rank $S\times K$，冗余 $\le E/R$）。
 
 ## 结论与适用边界
 

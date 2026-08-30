@@ -2,7 +2,7 @@
 title: 切片 · Gemini 3.7 Flash 报告精读
 date: 2026-08-30
 published: false
-status: running
+status: done
 ---
 
 # gemini-37-flash · 监工点评
@@ -29,3 +29,26 @@ status: running
 3. 价格：introductory vs 2027-01-01，分两行，不要合成。
 4. 浅色图 1–2：thinking_level 三档；相对 3.6 的「算法迭代不是扩窗」。LIGHT THEME ONLY 整段。禁止假坐标。
 5. 成文。没有开源权重就不要假装有 config.json。`as_of: 2026-08-30`。
+
+## 一手 URL（2026-08-30 已读）
+
+- https://deepmind.google/models/model-cards/gemini-3-7-flash/
+- https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/
+- https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash
+- https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/guides/gemini-3-7-flash
+- https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/thinking
+- https://deepmind.google/models/evals-methodology/gemini-3-7-flash
+- https://storage.googleapis.com/deepmind-media/gemini/gemini_3-7_flash_fsf_report.pdf
+- https://deepmind.google/frontier-safety/
+- https://deepmind.google/models/model-cards/gemini-3-6-flash/ （只读前任，不建夹）
+- https://firebase.google.com/docs/ai-logic/thinking （MINIMAL 对 3.7 会 400）
+
+## 成文落点
+
+- `14.11-Gemini/14-Gemini-3.7-Flash/01-14-Gemini-3.7-Flash-技术报告精译.md`
+- `14.11-Gemini/14-Gemini-3.7-Flash/images/fig-thinking-level-three-tiers.png`
+- `14.11-Gemini/14-Gemini-3.7-Flash/images/fig-algo-iter-not-window.png`
+- 未开 `05-`：公开材料没有可拆的骨架/MoE，thinking_level 已写进 01。
+## 监工质检（2026-08-30）
+
+合格入库。公开材料没有架构表，汉字不够 4000，文首已 `[OM-FREEPLAY]`。图号按阅读序改为图 1 算法迭代、图 2 thinking_level。监工补了 14.11 表行（同层 14 行超 ≤10，S6 未拆篮）。未 mkdir 3.6。DeepSWE 65.3% / 3.6 对照 48.6%；intro 价与 2027-01-01 分两行。
