@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 4.4 仍缺的对齐算法开专文：PRO / CPO / ReMax / Constitutional AI（Bai 2212.08073，和 Lee RLAIF 拆开）。同层满 10 先拆小节，不要发 11。
-2. **并行：** JustRL（2512.16649）若要专文，落点不要挤进 4.4.1 的 11；可挂 4.4.5 或新小节。
+1. **立刻做：** 质检/催 PRO、CPO、Constitutional AI 专文（租约仍 running）。交卷后链进 4.4.3 / 4.4.4 地图。
+2. **并行：** JustRL（2512.16649）若要专文，落点不要挤进 4.4.1 的 11；可挂 4.4.5 或 4.4.6。
 3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：折 4.4 章首页为地图；删未核对的 40%+ / HumanEval +12%；JustRL 54.9% 按九项平均来读。
-- 现在立刻做：PRO / CPO / ReMax / Constitutional AI 专文。不要 `move_agent_to_root`。不要 push。
+- 上一件：入库 ReMax（4.4.6/01）；贪婪基线；Table 2 / Table 3 数字按论文。
+- 现在立刻做：PRO / CPO / Constitutional AI 专文。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -188,3 +188,4 @@ category: LLM 指南
 | pro-444 | running | `4.4.4-其他对齐技术/04-PRO-偏好排序优化/` + inbox `pro-444.md` | 2306.17492；listwise；不要改节首页 |
 | cpo-444 | running | `4.4.4-其他对齐技术/05-CPO-对比偏好优化/` + inbox `cpo-444.md` | 2401.08417；MT；不要改节首页 |
 | cai-443 | running | `4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/` + inbox `cai-443.md` | 2212.08073；不是 Lee 2309.00267；不要改 4.4.3 节首页 |
+| rem-446 | done | `4.4.6-其他策略梯度/`（节首页 + `01-ReMax-贪婪基线/`） | 2310.10505；贪婪基线；不改 4.4.1、不发 11 |
