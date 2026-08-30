@@ -197,7 +197,7 @@ SimPO 把隐式奖励换成当前策略自己的长度平均对数概率 $(\beta
 
 KTO 吃二值 desirable / undesirable，一条 $x$ 配一条 $y$ 就能算损失。参考点是 $z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$ 的错配估计，不反传。DPO 少一条 $y$ 就训不成。
 
-IPO（Azar 等，[arXiv:2310.12036](https://arxiv.org/abs/2310.12036)）仍要 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$。它把 $\log\sigma$ 换成平方，靶心 $1/(2\beta)$，针对「间隔越大越好」放大标注噪声。DPO 没有这个靶心，也没有 MSE。
+IPO（Azar 等，[arXiv:2310.12036](https://arxiv.org/abs/2310.12036)）仍要 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$。它把 $\log\sigma$ 换成平方，靶心 $\tau^{-1}/2$，针对「间隔越大越好」放大标注噪声。正则字母是 $\tau$，不是本篇的 $\beta$。DPO 没有这个靶心，也没有 MSE。正本在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md)。
 
 PPO 是在线演员–评论家：当前策略 rollout，奖励模型打分，Critic 估价值，KL 常写进逐步奖励。DPO 离线、无 Critic、无独立 RM、训练期不对 LM 采样。组相对的 GRPO 更是另一条：[02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 用同题 $G$ 条的 $z$-score 当优势，要在线采样。DPO 没有组。
 
@@ -207,7 +207,7 @@ ORPO 把 chosen 的 SFT 交叉熵和 chosen / rejected 的几率比捆在一起�
 |--|------|----------------------|---------|-----------------|
 | PPO | 在线 $y\sim\pi_\theta$ | 要 | 要，另加 Critic | 最大化 $r_\phi$，KL 约束 |
 | DPO | $(x,y_w,y_l)$ | 要 | 不要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$，BT 的 $\log\sigma$ |
-| IPO | 成对 | 要 | 不要 | 同一对数比，MSE 靶心 $1/(2\beta)$ |
+| IPO | 成对 | 要 | 不要 | 同一对数比，MSE 靶心 $\tau^{-1}/2$ |
 | ORPO | 成对 | 不要 | 不要 | 几率比 + SFT |
 | KTO | 不成对二值 | 要 | 不要 | $r_\theta=\log(\pi_\theta/\pi_{\mathrm{ref}})$，相对 $z_0$ 的效用 |
 | SimPO | 成对 | 不要 | 不要 | $(\beta/\|y\|)\log\pi_\theta$，减 $\gamma$ |

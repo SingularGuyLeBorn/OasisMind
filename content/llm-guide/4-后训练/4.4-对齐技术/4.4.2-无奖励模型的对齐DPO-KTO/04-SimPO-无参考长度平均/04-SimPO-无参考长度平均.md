@@ -126,7 +126,7 @@ $\gamma=0$ 时还是长度平均的 BT，已经不是 DPO。Mistral-Base 上 $\g
 
 主实验四套设定里，$\beta$ 常见 $2.0$–$2.5$，$\gamma$ 常见 $0.5$–$1.5$；附录表并不死守这区间。Llama-3-Instruct 用 $\beta=2.5$、$\gamma=1.4$、学习率 $1\times10^{-6}$；Mistral-Instruct 用 $\beta=2.5$、$\gamma=0.3$、学习率 $5\times10^{-7}$。$\gamma=0.3$ 已经低于「一般」下限。复现跟附录 B，不要拿 2.0 / 1.0 当万能默认。
 
-IPO 也有一个靶心间隔 $1/(2\beta)$，但是平方损失，参考模型还在。式 (6) 是 $\log\sigma$ 加长度平均，没有 $\pi_{\mathrm{ref}}$。同数据上 IPO 打不过 SimPO，见下一节的表。
+IPO 也有一个靶心间隔 $\tau^{-1}/2$，但是平方损失，参考模型还在。式 (6) 是 $\log\sigma$ 加长度平均，没有 $\pi_{\mathrm{ref}}$。同数据上 IPO 打不过 SimPO，见下一节的表。
 
 ## 4. 不是 ORPO，不是 CPO，不是 RRHF
 
@@ -136,7 +136,7 @@ ORPO 把 chosen 的 SFT 交叉熵和 chosen / rejected 的几率比捆在一起�
 
 CPO 用 $-\log\sigma(\beta\log\pi_\theta(y_w)-\beta\log\pi_\theta(y_l))$ 再加一项 chosen 的 NLL，也没有参考模型。它的奖励是**未除长度**的对数概率差。总和对数概率对长序列更负，要让 $y_w$ 赢，模型会把长回复的逐步概率抬上去，生成自然偏长。论文观察到 CPO 生成平均比 SimPO 长约 50%。Arena-Hard 没有长度惩罚，偶尔会让 CPO 好看一点；AlpacaEval 2 的 LC 把冗长压回去之后，SimPO 仍高。Mistral-Instruct 上 CPO 的 Arena-Hard 是 22.6，SimPO 是 21.0，这是论文点名「偶尔被 CPO 超过」的那一格。
 
-IPO 吃 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$，把 DPO 的 $\log\sigma$ 换成平方，靶心 $1/(2\beta)$。它要解决的是「分得越开越好」放大噪声。SimPO 的间隔是加在长度平均奖励上的 $\gamma$，不是 MSE。Mistral-Base 上 IPO 的 LC 是 11.8，SimPO 是 21.5。
+IPO 吃 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$，把 DPO 的 $\log\sigma$ 换成平方，靶心 $\tau^{-1}/2$。它要解决的是「分得越开越好」放大噪声。SimPO 的间隔是加在长度平均奖励上的 $\gamma$，不是 MSE。Mistral-Base 上 IPO 的 LC 是 11.8，SimPO 是 21.5。正本在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md)。
 
 RRHF 的奖励看起来最像：也用 $(1/|y|)\log\pi_\theta$。差别在损失。RRHF 是 hinge，再加一项 chosen 的 NLL：
 
@@ -152,9 +152,9 @@ KTO 吃二值、不成对，参考点是 $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathr
 |--|------|----------------------|----------|-------------|
 | DPO | $(x,y_w,y_l)$ | 要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ | 无 $\gamma$ |
 | R-DPO | 成对 | 要 | 同一对数比 | 长度正则 |
-| IPO | 成对 | 要 | 同一对数比 | MSE 靶心 $1/(2\beta)$ |
+| IPO | 成对 | 要 | 同一对数比 | MSE 靶心 $\tau^{-1}/2$ |
 | RRHF | 成对 | 不要 | $(1/\|y\|)\log\pi_\theta$ | hinge + SFT |
-| SLiC-HF | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ | hinge + SFT |
+| SLiC-HF | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ | 有间隔 hinge + CE |
 | ORPO | 成对 | 不要 | 几率比 + SFT | 无 $\gamma$ |
 | CPO | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ 差 | + SFT |
 | SimPO | 成对 | 不要 | $(\beta/\|y\|)\log\pi_\theta$ | $\gamma>0$，无 SFT 项 |

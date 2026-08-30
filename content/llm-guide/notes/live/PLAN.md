@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** `4.4.4` 开 `01-SLiC` / `02-RRHF` / `03-IPO` 专文（现节首页是讲义腔、0 图；RRHF 不要写成 BT 成对 σ；IPO 正则是 $\tau$ 不是 DPO 的 $\beta$）。KTO 公式已改对，不要回写成 Forward KL 阈值。
-2. **并行：** `4.4.1` 空位 10 开序列级 REINFORCE（Williams + LLM 终局奖励；对照 PPO clip / RLOO 留一法）。不要发 `11`。
-3. **再下一波：** 4.4 章首页未核对工业数字碰一句改一句。`4.4.1` / `4.4.2` 节首页已收成地图。`fig-moe-router-top2` **不要重画**。
+1. **立刻做：** 折 4.4 章首页剩余讲义腔（§3 高速公路隐喻、§4「如式 (n) 所示」复读）；工业数字碰一句改一句（「用户满意度 40%+」「HumanEval +12%」「GPU 小时 60-80%」未核对）。
+2. **并行：** 4.4 仍缺的对齐算法开专文：PRO / CPO / ReMax / Constitutional AI（Bai 2212.08073，和 Lee RLAIF 拆开）。同层满 10 先拆小节，不要发 11。
+3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：RLAIF 专文重写入库（≥4000、两图、REINFORCE 不是 PPO、附录 L 超过 10 倍便宜）。
-- 现在立刻做：`4.4.4` 的 SLiC / RRHF / IPO 专文 + `4.4.1/10` 序列级 REINFORCE。不要 `move_agent_to_root`。不要 push。
+- 上一件：SLiC / RRHF / IPO 专文 + 序列级 REINFORCE 入库；4.4.4 节首页收成地图。
+- 现在立刻做：折 4.4 章首页讲义腔，核对未核实工业数字。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -181,7 +181,7 @@ category: LLM 指南
 | cispo-441 | done | `4.4.1/08-CISPO-裁剪重要性权重/` + inbox `cispo-441.md` | 已入库。clip IS 权重 + stop-grad；约一半步数追上 DAPO |
 | sapo-441 | done | `4.4.1/09-SAPO-温度软门/` + inbox `sapo-441.md` | 已入库。$\tau_{\mathrm{pos}}=1.0$，$\tau_{\mathrm{neg}}=1.05$；不是熵滑动 ε |
 | rlaif-443 | done | `4.4.3-RLAIF/` + 该夹 `images/` | 已入库。4003 汉字；两图；附录 E 是 REINFORCE；附录 L 超过 10 倍便宜；不是 CAI、不是 DPO |
-| slic-444 | running | `4.4.4-其他对齐技术/01-SLiC-序列似然校准/` + inbox `slic-444.md` | 2305.10425；rank hinge + cal；不要改节首页 |
-| rrhf-444 | running | `4.4.4-其他对齐技术/02-RRHF-排序响应对齐/` + inbox `rrhf-444.md` | 2304.05302；长度归一 logp + ranking hinge；不是 BT σ；不要改节首页 |
-| ipo-444 | running | `4.4.4-其他对齐技术/03-IPO-身份偏好优化/` + inbox `ipo-444.md` | 2310.12036；$h_\theta$ 对 $1/(2\tau)$ 平方；不是 DPO 的 $\beta$；不要改节首页 |
-| reinforce-441 | running | `4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/` + inbox `reinforce-441.md` | Williams 1992 + LLM 终局奖励；对照 PPO/RLOO；不要改节首页、不要发 11 |
+| slic-444 | done | `4.4.4-其他对齐技术/01-SLiC-序列似然校准/` + inbox `slic-444.md` | 已入库。≥4000；hinge+CE；sample-rank vs direct；靶心对照 IPO 用 $\tau$ |
+| rrhf-444 | done | `4.4.4-其他对齐技术/02-RRHF-排序响应对齐/` + inbox `rrhf-444.md` | 已入库。长度归一 $p_i$；无 margin hinge；不是 BT σ |
+| ipo-444 | done | `4.4.4-其他对齐技术/03-IPO-身份偏好优化/` + inbox `ipo-444.md` | 已入库。$\tau^{-1}/2$；3-action 玩具；不是 $1/(2\beta)$ |
+| reinforce-441 | done | `4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/` + inbox `reinforce-441.md` | 已入库。序列 bandit + $b_{\mathrm{MA}}$；Table 1 70.7/37.9/55.3 |

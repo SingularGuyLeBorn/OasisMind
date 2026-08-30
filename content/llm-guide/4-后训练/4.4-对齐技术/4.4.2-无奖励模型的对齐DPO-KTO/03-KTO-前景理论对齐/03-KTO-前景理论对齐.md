@@ -195,7 +195,7 @@ $$
 
 参考点是那条 $y_l$。没有 $y_l$，式 (10) 写不出来。KTO 的 $z_0$ 是对整策略的 KL 估计，单条 $y$ 就能回一个梯度。
 
-IPO（Azar 等，[AISTATS 2024](https://arxiv.org/abs/2310.12036)）仍吃 $(y_w,y_l)$。它把 DPO 的 $\log\sigma$ 换成平方，强迫两条对数比之差靠近 $1/(2\beta)$，用来压「分得越开越好」把噪声放大的病。目标还是偏好间隔，不是式 (6) 那种单样本效用。KTO 的饱和来自 $\sigma$ 的两翼，不是 MSE 的靶心。
+IPO（Azar 等，[ICML 2024](https://arxiv.org/abs/2310.12036)）仍吃 $(y_w,y_l)$。它把 DPO 的 $\log\sigma$ 换成平方，强迫两条对数比之差靠近 $\tau^{-1}/2$，用来压「分得越开越好」把噪声放大的病。目标还是偏好间隔，不是式 (6) 那种单样本效用。KTO 的饱和来自 $\sigma$ 的两翼，不是 MSE 的靶心。正本在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md)。
 
 ORPO（Hong 等，[arXiv:2403.07691](https://arxiv.org/abs/2403.07691)）把 chosen 的 SFT 交叉熵和 chosen/rejected 的几率比捆在一起，可以不加载 $\pi_{\mathrm{ref}}$，但仍要一对回复。KTO 的无参考变体是另一条叉：假定 $\pi_{\mathrm{ref}}$ 对一切 $x$ 均匀，则 $r_\theta-z_0$ 退化成 $\log\pi_\theta(y|x)-H(\pi_\theta(\cdot|x))$。Zephyr 那张表上，无 $\pi_{\mathrm{ref}}$、$\lambda_D=1.75$ 的 KTO 在部分任务上优于 DPO、全面优于同表的 ORPO（$\lambda=0.1$），仍落后标准 KTO，而且对 $\lambda_D$ 更敏。省显存和「改成 ORPO」不是同一件事。
 

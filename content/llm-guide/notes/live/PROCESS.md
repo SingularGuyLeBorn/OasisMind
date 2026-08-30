@@ -11,15 +11,20 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：SLiC 2305.10425；RRHF 2304.05302；IPO 2310.12036；Williams 1992 / Ahmadian 2402.14740。
-- 正在写：`4.4.4/01-SLiC`、`02-RRHF`、`03-IPO`；`4.4.1/10` 序列级 REINFORCE。
+- 正在读：4.4 章首页工业数字的一手来源。
+- 正在写：折 4.4 章首页讲义腔。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 RLAIF 入库。
+- 上次刷新记忆的时间：2026-08-31 SLiC / RRHF / IPO / 序列级 REINFORCE 入库。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 SLiC-HF：4879 汉字；两图；hinge+CE；sample-rank vs direct；770M 人评不差于 6B PPO | https://arxiv.org/abs/2305.10425 ；https://arxiv.org/html/2305.10425 ；https://arxiv.org/abs/2210.00045 | `4.4.4/01-SLiC-序列似然校准/` |
+| 2026-08-31 | 入库 RRHF：4021 汉字；两图；长度归一 $p_i$；无 margin hinge；Alpaca-RRHFSP -0.96 vs PPO -1.03；当 RM 61.75% | https://arxiv.org/abs/2304.05302 ；https://arxiv.org/html/2304.05302 | `4.4.4/02-RRHF-排序响应对齐/` |
+| 2026-08-31 | 入库 IPO：4115 汉字；两图；$\Psi$ 恒等；$h_\theta$ 回归 $\tau^{-1}/2$；3-action 玩具 | https://arxiv.org/abs/2310.12036 ；https://arxiv.org/html/2310.12036 | `4.4.4/03-IPO-身份偏好优化/` |
+| 2026-08-31 | 入库序列级 REINFORCE：4070 汉字；两图；$b_{\mathrm{MA}}$；Table 1 TL;DR/HH 70.7/37.9/55.3 | https://arxiv.org/abs/2402.14740 ；https://arxiv.org/html/2402.14740 ；Williams 1992 | `4.4.1/10-REINFORCE-序列级策略梯度/` |
+| 2026-08-31 | 折 4.4.4 节首页为地图；4.4.1 接第 10 行；邻居文 IPO 靶心改 $\tau$ | — | `4.4.4-其他对齐技术.md`；`4.4.1`；`01-DPO`/`03-KTO`/`04-SimPO` |
 | 2026-08-31 | 折 4.4.1 节首页为地图；去掉宠物类比与讲义腔；PPO 三阶段只链 04 | — | `4.4.1-基于奖励模型的RL-RLHF-PPO.md` |
 | 2026-08-31 | 折 4.4.2 节首页为地图；去掉 DPO/ORPO 讲义腔；章首页 4.4.1 列表补 CISPO/SAPO | — | `4.4.2-无奖励模型的对齐DPO-KTO.md`；`4.4-对齐技术.md` |
 | 2026-08-31 | 入库 RLAIF：4003 汉字；两图；附录 E REINFORCE+价值基线；Table 1 摘要 vs SFT 71%/RLHF 73%/对头 50%；无害 88% vs 76%；附录 L >10×；不是 CAI、不是 PPO | https://arxiv.org/abs/2309.00267 ；https://arxiv.org/html/2309.00267 ；https://arxiv.org/abs/2212.08073 | `4.4.3-RLAIF/` |
