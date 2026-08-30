@@ -27,9 +27,9 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：**2.1.1 激活函数补全**（02/03/04 仍在写）。结构 S7 / 4.6 / 5+14 / 过文 b03–b06 已收。b02 中断待重派。
-- 当前波次：**ffn-act-02/03/04** + **pass-1234-b02 retry**
-- 当前正在写的文章路径：见 PLAN 租约 `ffn-act-02` / `ffn-act-03` / `ffn-act-04` / `pass-1234-b02`
+- 状态：**配图波**（DP / FA v1–v4 / MHA-GQA / NSA-DSA / Gated Attention+AttnRes）。激活函数 02/03/04 并行。
+- 当前波次：**fig-dp-611 / fig-fa-v14 / fig-kv-family / fig-nsa-dsa / fig-gated-attnres**
+- 当前正在写的文章路径：见 PLAN 租约
 - 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 
 ## 防漂移口令
