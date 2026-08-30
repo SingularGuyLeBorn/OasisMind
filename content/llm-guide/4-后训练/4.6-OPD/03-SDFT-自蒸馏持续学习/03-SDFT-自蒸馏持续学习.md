@@ -2,6 +2,7 @@
 title: "03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局"
 date: 2026-05-16
 tags: [SDFT, Self-Distillation, Continual Learning, OPD, 知识蒸馏, 后训练, IRL]
+as_of: 2026-08-30
 ---
 
 # 03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局
@@ -202,3 +203,175 @@ SDFT 利用 Demonstration 让模型自己教自己，完美解决了“无外部
 **参考文献: **
 - Self-Distillation Enables Continual Learning. arXiv: 2601.19897. URL: https://arxiv.org/abs/2601.19897
 - ToolAlpaca & SciKnowEval benchmark analysis papers.
+
+---
+
+## 2026-08 修订（不删上文）
+
+旧标题「逆向强化学习视角的破局」和 §2「暴跌 / 死死咬住 / 暴涨」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Shenfeld、Damani、Hübotter、Agrawal 的 [Self-Distillation Enables Continual Learning](https://arxiv.org/abs/2601.19897)（打开的是 [HTML](https://arxiv.org/html/2601.19897)）。**SDFT = Self-Distillation Fine-Tuning**：持续学习设定下，教师条件里多塞示范 $d$（论文符号 $c$；数据集里每条 $x$ 配一条 demonstration，可很少），学生仍按 $\pi_\theta(\cdot\mid x)$ on-policy 采样，逐步贴教师 $\pi(\cdot\mid x,d)$，用来注入新技能同时抗灾难性遗忘。示范 ≈ [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 的特权上下文，只是把本题参考解 $y^{\star}$ 换成示范。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师 + 持续学习」这一格。**不是** [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 的环境 rich feedback，**不是** [09-MOPD](../09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) 的多教师合版，也不是另雇外部 72B。G-OPD / SCOPE 本波不升格。
+
+### 1. 问题：SFT 是 off-policy，顺序学就会忘
+
+没有可查询的奖励时，从示范学新技能的默认做法是 SFT。论文把这定性为 **off-policy**：监督前缀来自专家轨迹，不是学生自己的状态分布。Ross et al. 那条 compounding error 在这里变成两件事——新任务泛化差，以及旧能力被参数拽走。On-policy RL 能少忘，但要显式 $r(y)$；工业里常常只有几条 demonstration。SDFT 要回答的就是：**只有 $d$、没有 RM 时，怎么拿到 on-policy 的逐步监督。**
+
+旧稿把「顺序学 Tool Use / Science Q&A / Medical」和一组 65.5→56.0、70.6%、65.4% 写在同一段。**后一组对得上表，但不是顺序实验。** 顺序三任务是 Figure 3：纵轴把每项任务线性归一化成 0 = 底座、1 = 两种算法里的最高分，**没有** 70.6 这种点值。65.5 / 56.0 / 70.6 / 65.4 来自 Table 5 的 **单任务 Tool Use** 面板。
+
+Table 5 分母：底座 **Qwen2.5-7B-Instruct**；新任务 = 该技能 held-out 准确率；Previous Tasks 平均 = HellaSwag、HumanEval、IFEval、MMLU、TruthfulQA、Winogrande 六项（论文 §4.1 / Appendix B.2，greedy、温度 0）；超参在验证集上扫完再报测试集（Table 3 扫 LR / epoch / batch；SDFT 另扫 EMA $\alpha\in\{0.01,0.02,0.05\}$、最长生成 2048）。摘要没有这些点值，**跟表**。
+
+| 设定 | 方法 | 新任务 | Previous Avg |
+| --- | --- | ---: | ---: |
+| Tool Use（Table 5 中栏） | Base | 42.9 | **65.5** |
+| | SFT | 63.2 | **56.0** |
+| | SDFT | **70.6** | **65.4** |
+| Science Q&A | Base | 32.1 | 65.5 |
+| | SFT | 66.2 | 53.4 |
+| | SDFT | 70.2 | 64.5 |
+| Medical | Base | 30.1 | 65.5 |
+| | SFT | 35.5 | 60.2 |
+| | SDFT | 40.2 | 65.4 |
+
+读法：旧稿「SFT 旧任务均分 65.5→56.0」只对 **Tool Use 单任务**；Science 上 SFT 旧能力掉到 53.4，Medical 掉到 60.2，不要三任务共用 56.0。「SDFT 新任务 70.6%、旧能力 65.4%」同样只对 Tool Use；Science 是 70.2 / 64.5，Medical 新任务只有 40.2。相对 SFT，Tool Use 新任务是 70.6 vs 63.2，不是「略超」。
+
+顺序实验（Figure 3）只主张：SDFT 学下一项时前一项不塌；SFT 一换任务就振荡。**不要**把 Table 5 点值填进 Figure 3。
+
+推理模型 Table 2 分母：**Olmo-3-7B-Think**、HuatuoGPT-o1 医学、训练数据 **没有** 中间推理标注、报准确率 + 平均生成 token 数。旧稿这组 **对得上表**：
+
+| | Accuracy | Avg. # tokens |
+| --- | ---: | ---: |
+| Olmo-3-7B-Think | 31.2 | 4612 |
+| + SFT | 23.5 | 3273 |
+| + SDFT | 43.7 | 4180 |
+
+SFT 把长思维压短；SDFT 教师是示范条件化后的同一推理模型，目标分布还带着原来的推理风格。这是论文 §4.5 自己的对照，不是发挥。
+
+知识注入 Table 1（同一底座、2025 自然灾害维基约 200K token 生成的 QA）：SDFT 严格 89 / 宽松 100 / OOD 98，SFT 80 / 95 / 80，CPT 9 / 37 / 7。旧稿没写这张表，修订补上以免和技能表混。
+
+### 2. 公式：教师 $p(\cdot\mid x,d)$，学生 $p(\cdot\mid x)$，梯度只走学生
+
+数据集 $\mathcal{D}=\{(x_i,d_i)\}$。论文把示范写成 $c$，下文用旧稿的 $d$。同一套架构切成两种条件：
+
+$$
+\pi_T(\cdot\mid x,d)\;\triangleq\;\pi_\phi(\cdot\mid x,d),\qquad
+\pi_\theta(\cdot\mid x)\;\triangleq\;\text{学生}. \tag{R1}
+$$
+
+$\phi$ 开局等于 $\theta$（Algorithm 1 第 1 步），之后是学生的 EMA，**不是**训练全程「师生同一份当前权重」。教师提示（论文 §3）大致是：题 →「这是一个回答示范」→ $d$ →「现在用你自己的方式作答，包含思考过程」。目的是拦住逐字复读 $d$。教师 **不采样**，只在学生已经写出的前缀上做前向。
+
+学生采样
+
+$$
+y\sim\pi_\theta(\cdot\mid x). \tag{R2}
+$$
+
+理论目标是 **Reverse KL**（论文式 (1)）：
+
+$$
+\mathcal{L}(\theta)=D_{\mathrm{KL}}\bigl(\pi_\theta(\cdot\mid x)\;\big\|\;\pi(\cdot\mid x,d)\bigr)
+=\mathbb{E}_{y\sim\pi_\theta}\Bigl[\log\frac{\pi_\theta(y\mid x)}{\pi(y\mid x,d)}\Bigr]. \tag{R3}
+$$
+
+自回归拆开后，对词表求和、梯度只对 $\theta$（论文式 (2)；教师分布当常数）：
+
+$$
+\nabla_\theta\mathcal{L}
+=\mathbb{E}_{y\sim\pi_\theta}\Biggl[\sum_t\sum_{y_t\in\mathcal{V}}
+\pi_\theta(y_t\mid y_{<t},x)
+\log\frac{\pi_\theta(y_t\mid y_{<t},x)}{\pi(y_t\mid y_{<t},x,d)}
+\nabla_\theta\log\pi_\theta(y_t\mid y_{<t},x)\Biggr]. \tag{R4}
+$$
+
+主实验用的是 Appendix A.1 的 **analytic per-token** 估计器（逐步对整张词表求 KL，再沿学生回传）。token-level 偏置大、Rao–Blackwell 更贵但他们没测到好处；每条 prompt **一条** rollout。
+
+**实现分叉（必须写）：** 理论钉 Reverse KL，正文却写 “we found in practice that Forward KL yields the best performance”。旧稿式 (1) 只写 Reverse，方向跟理论，**不是**「论文主实验规定必须 Reverse」。旧稿 §6 的 `F.kl_div(student_logprobs, teacher_probs)` 在 PyTorch 里其实是 $\mathrm{KL}(\text{teacher}\|\text{student})$，注释写 Reverse、代码更接近实践的 Forward——不要把那段代码当论文公式。
+
+![学生只看 x 采样，EMA 教师看 x 和示范 d 只做 prefill，散度只沿学生回传](./images/fig-sdft-student-teacher.png)
+
+<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Two-column SDFT: student p(y|x) samples y; EMA teacher pi(·|x,d) prefill only; reverse-KL on student prefix; gradient only through student. -->
+
+> 图 1：示范条件化教师 vs 闭卷学生。对应论文 Figure 2（左）。旧图 `sdft_continual_learning.png` 不删，本节改引这张。2026-08 自绘。
+
+**图 1 解析**
+
+- **左（青）**：学生只吃 $x$，采样 $y$。这是 on-policy 的唯一采样源。
+- **右（琥珀）**：教师多吃 $d$。虚线：prefill only，教师不写卷。权重是 EMA $\phi$，不是冻结的 $\theta_{\mathrm{init}}$（那是邻居 02 的主设置）。
+- **中**：逐步比较的是学生自己的前缀 $y_{<t}$，不是专家轨迹——这就是和 SFT 的差。
+- **红箭头**：损失对教师 stop-grad。
+
+§3.1 把 Reverse KL 读成隐式奖励
+
+$$
+r(y,x,d)=\log\pi(y\mid x,d)-\log\pi_k(y\mid x), \tag{R5}
+$$
+
+再拆成 token 级 $r_t=\log\pi(y_t\mid y_{<t},x,d)-\log\pi_k(y_t\mid y_{<t},x)$。论文自己的标题是 **Self-Distillation as Inverse RL**，原话是 *can also be interpreted*、*mathematically equivalent to maximizing an implicit reward*；同时 §1 写 **rather than inferring an explicit reward function**。旧稿「隐式 IRL 的优美证明 / 无需 RM 的 IRL 算法」降调成：**这是 reverse-KL 目标的一种 IRL 解读，不是另训 RM，也不是实践里一定在优化 (R5)。** 旧稿 §5 那组 `47` / `拆分` 的 −3.5 / +2.1 **论文表里没有**，当数值例即可。
+
+In-Context Assumption（论文式 (4)）：
+
+$$
+\pi_{k+1}^{*}(y\mid x)\approx\pi(y\mid x,d). \tag{R6}
+$$
+
+§3.2 把它拆成两条可测的：教师奖励要接近最优；教师相对当前策略的 KL 要小（trust-region 要的是「能完成任务里离 $\pi_k$ 最近的那一个」）。ToolAlpaca、Qwen2.5-7B-Instruct：无示范底座约 **42%**，加上对应 $d$ 教师 **100%**；相对底座的 KL，SFT 模型 1.26 nats、示范教师 0.68 nats（Figure 2 右）。小模型 / 无 ICL 时这条假设碎，见 §4。
+
+EMA（Appendix A.3，论文有写，不是发挥）：冻底座当教师稳但跟不上学习；师生共用当前 $\theta$ 会把 token 噪声放大到散度环里崩掉。默认
+
+$$
+\phi\leftarrow\alpha\theta+(1-\alpha)\phi,\quad \alpha\in\{0.01,0.02,0.05\}. \tag{R7}
+$$
+
+旧稿 `alpha=0.99` 是衰减系数写法，和式 (R7) 的 $\alpha=0.01$ 是同一档，符号不要混。TRL 文档把默认教师写成冻结 base「matching the paper」——跟论文正文不符，本篇跟 A.3。
+
+![Algorithm 1：学生采样、双路前向、词表 KL、只更新学生、EMA 教师](./images/fig-sdft-algorithm.png)
+
+<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Five-box Algorithm 1: sample y from student; dual forward with EMA teacher on (x,d); analytic per-token KL; update student; EMA phi. -->
+
+> 图 2：Algorithm 1 数据流。Box 3 的 $D$ 左右以式 (R3) 的 $D(\pi_\theta\|\pi_T)$ 为准；实践可换成 Forward。2026-08 自绘。
+
+**图 2 解析**
+
+- **Box 1**：只从 $\pi_\theta(\cdot\mid x)$ 采样。
+- **Box 2**：学生条件 $(x,y_{<t})$；教师条件 $(x,d,y_{<t})$，权重 $\phi$。
+- **Box 3–4**：analytic per-token；只更新学生。
+- **Box 5**：EMA，不是 02 那种冻 $\theta_{\mathrm{init}}$。
+
+### 3. 不是什么
+
+| 名字 | 它在做什么 | SDFT 不是它的理由 |
+| --- | --- | --- |
+| SFT | 在专家轨迹 $d$ 上模仿 | off-policy；Table 5 / Figure 3 忘得更狠 |
+| 基础 OPD | 另一个外部教师给逐步分布 | 本篇教师是 $\pi(\cdot\mid x,d)$，同一架构 |
+| [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) | 特权信息是本题参考解 $y^{\star}$，教师冻在 $\theta_{\mathrm{init}}$ | 本篇特权信息是示范 $d$；教师 EMA；论文 Related Work 把 Zhao et al. 当并行互补，不是同一实验 |
+| [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) | 环境 rich feedback（堆栈、失败单测）条件化自教师 | 本篇没有编译器/验证器奖励；只有 $d$ |
+| [09-MOPD](../09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) | 多个 RL 专家 logits 合成一份学生 | 本篇一个自教师，没有九专家 / $R_{\max}$ |
+| Context distillation (Snell et al.) | 教师有额外上下文，但对学生做 **离线** 蒸馏 | 论文 Related Work：本篇 on-policy，且 $d$ 是逐条 query 的示范不是固定前缀 |
+| 显式 IRL / RLHF | 先学 $r$ 再 on-policy RL | 论文明确不推断显式奖励；式 (R5) 只是解读 |
+| DFT / Re-invoke | 重要性采样或 SFT 后再蒸回底座 | Table 5 的对照，不是 SDFT |
+| ACL 2024 另一篇也叫 SDFT（Yang et al. / sail-sg） | 用模型自己生成的数据做 SFT，填任务分布和底座分布的缝 | **同名不同文**，不要把仓库或数字并进来 |
+
+离线用同一教师再蒸一遍：Figure 6，Tool Use 上不如 on-policy。好处不能只归到「教师质量」。
+
+### 4. 失效：ICL 假设碎了就没有教师
+
+SDFT 吃的是 $\mathcal{D}$ 里成对的 $(x,d)$。**没有 $d$**（也没有可检索的示范）教师退化成学生，散度为 0。底座 **ICL 太弱** 时，有 $d$ 也不够：Figure 5 左，Qwen2.5 **3B** 在 Science Q&A 上 SDFT 落后 SFT；7B 相对 SFT 大约 +4 分，14B 大约 +7 分（正文叙述，没有单独的分点表）。旧稿「< 3B 则教师嘈杂」方向对，来源是 §4.4 / Figure 5，不要写成硬阈值定理。
+
+其它边界（论文 §5）：
+
+| 现象 | 原因 | 说明 |
+| --- | --- | --- |
+| 3B 上不如 SFT | In-Context Assumption 失败 | 教师信号是噪声；此时不要用 SDFT 硬扛 |
+| 非推理模型硬改成 CoT | 要改的是生成模式本身 | 论文写 struggled；示范条件化给不出这种大偏移 |
+| 「Based on the text…」口癖 | 教师提示里有示范，学生没看见却学会了开场白 | 他们 mask 前几个 token，启发式，不是定理 |
+| 师生共用当前 $\theta$ | A.3 正反馈 | 主设置是 EMA |
+| 仍会掉一点旧能力 | on-policy 减遗忘，不是零遗忘 | Figure 4：SDFT 在 Pareto 右上，不是旧分绝对不动 |
+| 计算 | 相对 SFT 约 2.5× FLOPs、4× 墙钟 | 要和「SFT + Re-invoke 两段」比总成本 |
+| 只有最终答案的推理数据 | SFT 压短思维 | Table 2 说明 SDFT 能保住长度；不是保证任意任务都涨分 |
+
+没有示范、又没有外部教师或可验证奖励：这篇给不出替代损失。不要把「武林高手看剑谱」读成无数据永动机。下一篇只链 [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)：示范换成环境 rich feedback。本篇不预写 SDPO 数字。
+
+### 本篇来源（2026-08 核对）
+
+1. Shenfeld, Damani, Hübotter, Agrawal. *Self-Distillation Enables Continual Learning*. [arXiv:2601.19897](https://arxiv.org/abs/2601.19897) / [HTML](https://arxiv.org/html/2601.19897)。式 (1)(2)(4)(5)、Algorithm 1、Table 1–5、Figure 2–8、Appendix A.1–A.3。
+2. 官方代码：[idanshen/Self-Distillation](https://github.com/idanshen/Self-Distillation)。项目页声明见论文摘要 `idanshenfeld.com/SDFT`。
+3. 论文 Related Work 点名的并行自蒸馏：Zhao et al. OPSD（2601.18734）、Hübotter et al.（2601.20802，本库 04）。数字仍以 2601.19897 的表为准。
+
+图 1–2 是示意。旧稿 §5 的 −3.5 / +2.1 不是论文表。知乎只学「示范当特权上下文、教师不写卷」的拆法；有的转述把 Table 1 的 CPT 37 和 Figure 7 的 75/89 搅在一起，**数字全部回表**。
