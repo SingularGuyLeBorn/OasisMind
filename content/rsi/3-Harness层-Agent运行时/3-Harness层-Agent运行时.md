@@ -36,5 +36,6 @@ category: RSI
 | 20 | [MIPROv2 贝叶斯联合优化](./20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md) | 指令和示范联合搜，TPE 冻着；Llama-3-8B 七套五套赢对照；不要和 GEPA 的 MIPROv2 列横加 |
 | 21 | [ProTeGi 文本梯度束搜索](./21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) | 错题出批评再改提示；相对 p0 均 +15.3%；∇ 和束宽冻着；摘要 31% 不进表 |
 | 22 | [GrIPS 短语级编辑搜索](./22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) | 人写指令上删换释义加回；Table 1 babbage +4.29；手术菜单冻着；不是式 (2) |
+| 23 | [TEMPERA 测试时提示编辑](./23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md) | 按查询 PPO 编辑；SST-2 91.9 对 RLPrompt 90.1；策略训完冻着；Yelp 上 RLPrompt 更高 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
