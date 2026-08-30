@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 Loop Transformer 子代理（`2.4.9`）；不合格重派。监工补 `2.4-前沿架构与变体.md` 索引一行。
-2. **并行：** 回收 RLOO / KTO 专文；4.4.1 地图链上 06。`fig-moe-router-top2` **不要重画**。
-3. **再下一波：** 4.4 根上薄节（计算流程 / SFT-RL 融合）写满或并进专文；结构 S5/S6/S8。
+1. **立刻做：** 加厚 `4.4.1/03-GSPO`（现约 2931 汉字、营销腔、缺浅色图）到 ≥4000，嵌入序列级几何平均 IS 图；同步加厚 TRPO / GMPO 并配图。
+2. **并行：** `04-PPO` 补浅色机制图；4.4 根上薄节（计算流程 / SFT-RL 融合 / RLVR / GSPO-DCPO 散文件）写满，禁止空标题。`fig-moe-router-top2` **不要重画**。
+3. **再下一波：** 缺的 RL 专文（RAFT、SimPO、序列级 REINFORCE 对照）；结构 S5/S6/S8。不要碰仍在租的 `4.4.5` / `4.6.2`。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：02-GRPO 占位已写满（仓库第一天就有「保留原文章」，不是后来改坏）；GSPO 5.2/5.3 与 PPO 7.1–7.4 补了代码。
-- 现在立刻做：2.4.9 Loop Transformer 交卷质检。不要 `move_agent_to_root`。不要 push。
+- 上一件：2.4.9 Loop Transformer 专文入库并接进 2.4 首页；RLOO / KTO 写满并链进 4.4.1 / 4.4.2；4.4.4 错误 KTO 公式已改。GRPO 占位来自仓库第一天 `91d651d3`，不是后来改坏。
+- 现在立刻做：GSPO 加厚 + 浅色图；TRPO / GMPO / PPO 图文并茂。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -165,7 +165,12 @@ category: LLM 指南
 | fig-wave-2 | running | `2.4.1/01-DeepSeek-MoE/images/fig-deepseek-moe-ffn-slot.png`；`2.4.1/images/fig-moe-dense-vs-sparse.png`；`2.4.1/images/fig-moe-router-top2.png`；`2.1.3/03-Gated-Residual/images/fig-gated-residual.png` | 只覆盖这四张 png，不改专文数字 |
 | gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
 | opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
-| loop-tf | running | `2.4-前沿架构与变体/2.4.9-循环Transformer/` + inbox `loop-tf.md` | 新建 2.4.9 地图 + 01 专文 + images；不改 2.4.md / 2.4.4 / 4.5 |
+| loop-tf | done | `2.4-前沿架构与变体/2.4.9-循环Transformer/` + inbox `loop-tf.md` | 5444 汉字；$N=KR$；Huginn 3.5B FLOP≠50B 参数；监工补 2.4 首页 |
 | ttc-45 | done | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 已补 token 轴 vs 深度轴 $N=KR$；链 2.4.9 |
-| rloo-44 | running | `4.4.1/06-RLOO-留一法基线/` + inbox `rloo-44.md` | 2402.14740；不改 01–05 |
-| kto-442 | running | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 2402.01306；不改 01-DPO / 02-ORPO / 4.4.4 |
+| rloo-44 | done | `4.4.1/06-RLOO-留一法基线/` + inbox `rloo-44.md` | 4021 汉字；2402.14740；k=4 Win-rate 77.9/43.7/64.1；监工链 4.4.1 |
+| kto-442 | done | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 4227 汉字；2402.01306；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；监工改 4.4.4 错公式 |
+| gspo-thicken | running | `4.4.1/03-GSPO/` + inbox `gspo-thicken.md` | ≥4000；几何平均序列 IS；浅色 fig；不改 4.4.5 |
+| trpo-fig | running | `4.4.1/05-TRPO/` + inbox `trpo-fig.md` | ≥4000；浅色信任域图；不改 04-PPO |
+| gmpo-fig | running | `4.4.1/01-GMPO/` + inbox `gmpo-fig.md` | ≥4000；浅色几何均值图；不改 02-GRPO |
+| ppo-fig | running | `4.4.1/04-PPO/` + inbox `ppo-fig.md` | 补浅色 Actor-Critic / GAE / clip 图；可改 md+images，不改 05 |
+| rl-thin-44 | running | `4.4-对齐技术/4.4-GRPO计算流程全解析.md`；`4.4-SFT与RL的融合策略.md`；`4.4-GRPO变体与改进-GSPO与DCPO.md`；`4.4-RLVR的局限性与探索边界分析.md` + inbox `rl-thin-44.md` | 写满禁止空标题；不改 4.4.1/01–06、不改 4.4.5 |

@@ -11,15 +11,18 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：Loop Transformer 一手；RLOO 2402.14740；KTO 2402.01306。
-- 正在写：2.4.9（loop-tf）；4.4.1/06 RLOO；4.4.2/03 KTO。
-- 卡住：无。
-- 上次刷新记忆的时间：2026-08-31 写满 02-GRPO 占位（初始提交 91d651d3 就有「保留原文章」）。
+- 正在读：GSPO 2507.18071；TRPO 1502.05477；GMPO 一手。
+- 正在写：03-GSPO 加厚；05-TRPO / 01-GMPO / 04-PPO 配图；4.4 根薄节。
+- 卡住：无。不要抢 `4.4.5`（gxpo-family）、`4.6.2`（opd-survey）、`fig-moe-router-top2`。
+- 上次刷新记忆的时间：2026-08-31 回收 Loop / RLOO / KTO；GRPO 占位来自 91d651d3。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 回收 Loop Transformer：5444 汉字；六图；$N=KR$；Huginn sandwich；DeepLoop $\alpha=(2N)^{1/2}$；接进 2.4 首页 | https://arxiv.org/abs/1807.03819 ；https://arxiv.org/abs/1909.11942 ；https://arxiv.org/abs/2301.13196 ；https://arxiv.org/abs/2502.05171 ；https://arxiv.org/abs/2502.17416 ；https://arxiv.org/abs/2605.18797 ；https://arxiv.org/abs/2607.13491 | `2.4.9-循环Transformer/` |
+| 2026-08-31 | 回收 RLOO：4021 汉字；两图；k=4 Win-rate 77.9/43.7/64.1；链 4.4.1 地图 | https://arxiv.org/abs/2402.14740 ；https://ar5iv.labs.arxiv.org/html/2402.14740 ；https://aclanthology.org/2024.acl-long.662/ | `4.4.1/06-RLOO-留一法基线/` |
+| 2026-08-31 | 回收 KTO：4227 汉字；两图；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；改 4.4.4 错误 Forward KL 阈值 | https://arxiv.org/abs/2402.01306 ；https://ar5iv.labs.arxiv.org/html/2402.01306 | `4.4.2/03-KTO-前景理论对齐/`；`4.4.4` §5 |
 | 2026-08-31 | 写满 02-GRPO §3–5；浅色图 fig-grpo-group-advantage / fig-grpo-vs-ppo；补 03-GSPO 梯度与代码、04-PPO 7.1–7.4、4.4.1 节首页伪代码 | https://ar5iv.labs.arxiv.org/html/2402.03300 ；https://arxiv.org/abs/2402.03300 | `4.4.1/02-GRPO/` |
 | 2026-08-31 | 4.6.3 加厚到 ≥10000 汉字；补自己的机制判断（KV/雅可比、信用分配谱、LoRA 低秩遗忘、可证伪格）；第六图 fig-credit-assignment-spectrum；读者页仍只链这一篇 | https://nrehiew.github.io/blog/sft_rl_opd/ ；https://arxiv.org/abs/2605.22731 | `4.6-OPD/4.6.3-状态从哪来/` |
 | 2026-08-31 | Goal 续跑：用户点名 Loop Transformer；落点 2.4.9；派 loop-tf / ttc-45 | https://arxiv.org/abs/1807.03819 ；https://arxiv.org/abs/2301.13196 ；https://arxiv.org/abs/2502.17416 ；https://arxiv.org/abs/2502.05171 ；https://arxiv.org/abs/2605.18797 ；https://arxiv.org/abs/2607.13491 | `2.4.9-循环Transformer/`（在写） |
