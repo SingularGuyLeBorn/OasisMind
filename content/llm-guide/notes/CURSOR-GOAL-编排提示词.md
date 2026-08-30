@@ -9,7 +9,7 @@ category: LLM 指南
 
 # 怎么用
 
-> **2026-08-30 之后请改用** [`CURSOR-GOAL-续写提示词.md`](./CURSOR-GOAL-续写提示词.md)（笔记已并入 `master`，并强制对齐 `.cursor/skills/llm-guide-notes/`）。下文保留作编排/子代理切片的历史参考。
+> **2026-08-30 之后：** Goal 用 [`CURSOR-GOAL-续写提示词.md`](./CURSOR-GOAL-续写提示词.md)；监工拆工用 [`supervisor.md`](./supervisor.md)。下文是旧编排稿，不要再贴进 Goal。
 
 1. 打开 Cursor **Goal**，把下面 **「Goal 正文」** 从标题起到文件末尾 **整段粘贴** 为 objective（不要只贴这一节说明）。
 2. 细则以同目录 `goal-maximize-value-extreme.md` 为准；本文件管 **怎么拆工、怎么盯、怎么续跑**。

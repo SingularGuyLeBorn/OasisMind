@@ -17,18 +17,20 @@ description: >-
 2. `content/llm-guide/notes/live/PLAN.md`
 3. `content/llm-guide/notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
-5. 需要搜论文时再读 [research.md](research.md)
+5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
+6. 需要搜论文时再读 [research.md](research.md)
 
 然后从 `PLAN.md`「下一步 3 件」继续。禁止每次从全库盘点重来。
 
-细则与主题树：`content/llm-guide/notes/goal-maximize-value-extreme.md`。本 Skill 管**怎么写一篇**；Goal 提示词管**怎么续跑整座库**。
+细则与主题树：`content/llm-guide/notes/goal-maximize-value-extreme.md`。本 Skill 管**怎么写一篇**。若你是 Goal 父代理：再读 `content/llm-guide/notes/supervisor.md`，自己当监工、Task 派子代理。
 
 ## 硬约束
 
 - 只改 `content/llm-guide/` 及其 `images/`、`content/uploads/llm-guide/`。不要改 `apps/`、`packages/`、Chat/SSE。
 - **禁止删除**任何既有文件（mineru、pdf、unused 图、空壳在写满前）。
 - **禁止** `move_agent_to_root`（会 stash + reset，未提交正文会从工作区消失）。
-- 不要 commit / push，除非用户明确说提交。不要 `git add -A`。不要改 `git config`。
+- 不要 push，除非用户明确说推远程。不要 `git add -A`。不要改 `git config`。
+- **一篇可验收切片做完就 commit**（专文 + 图 + PLAN/PROCESS 已改）：格式 `content(llm-guide): <中文摘要>`，按路径 `git add`。不要把十几篇堆到最后。PowerShell 用 `;`，不要 `&&`。
 - 预训练只允许用来**决定搜什么**。数字、架构、日期、基准必须能指回来源台账里的某一条。
 - 找不到一手来源：写「未找到一手来源」+ `[OM-FREEPLAY]`，宁可薄，不要编。
 - 2025 原文用 `## 2026-08 修订` / 勘误接到今天，**不删旧段落**。

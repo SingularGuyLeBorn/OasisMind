@@ -2,6 +2,8 @@
 
 吸收自本仓库 `config/skills/deep-research`、`arxiv-fetch-process`、knowledge-garden 的 RLM，以及 Cursor Goal「以磁盘为准、完成须举证」。
 
+覆盖面体检与讲法参考（**禁止搬正文/目录/图**）：`content/llm-guide/notes/trusted-sources.md`。课程不是最新真相；与 2026 报告冲突时弃课程。
+
 ## 优先级（能找到就读）
 
 | 优先级 | 读什么 |

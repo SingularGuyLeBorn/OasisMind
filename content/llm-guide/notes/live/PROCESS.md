@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：下一薄项建议 **Memory Efficient Attention**（Rabe & Staats，2112.05682；BPT/FA 都引的 TPU 在线 softmax）
-- 正在写：本会话已交 **BPT 2305.19370（NeurIPS 2023；一层 $2bsh$；Table 2 同行 8×，摘要 32× 不在同一行）**
-- 卡住：`move_agent_to_root` **禁止再调**——它会对本 worktree `stash -u` + `reset HEAD`，未提交正文会从工作区消失。本轮已用 `stash apply` + LFS smudge 救回。文件直接写在 `D:\ALL IN AI\OasisMind-llmguide-2026-08`
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 续做 PLAN：BPT
+- 正在读：H2O 已交。Connest5 仍无官方模型串。下一刀 0.8 持续（SnapKV 或 Quest）。
+- 正在写：本会话已交 **H2O 2306.14048**（`2.3.2/11-H2O-Heavy-Hitter-Oracle`；不是 FA / StreamingLLM / 对未来求和）
+- 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 交完 H2O
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -102,6 +102,9 @@ category: LLM 指南
 | 2026-08-30 | Megatron-SP：与 TP 绑的 $g$/$\bar g$；$s=2048$；选择性重算；Table 5 | ar5iv 2205.05198 摘要+§3–6+Table 1–5+Appendix A | `6.1.1` §4.5 / §5；`6.1` 前瞻 |
 | 2026-08-30 | ColAI-SP / RSA：两段环物化 $S$；参数每卡一份；13.7×=64 卡对 12 卡 TP | ar5iv 2105.13120 + ACL 2023.acl-long.134 摘要+§3–4+Table 1–4+Appendix B–E | `6.1.1` §4.6；`6.1` 前瞻；`2.3.4` 一句 |
 | 2026-08-30 | BPT：块内 attn+FFN；一层 $2bsh$；不是 Ring/SP；Table 2 同行 8× | arxiv HTML 2305.19370 摘要+§2–5+Table 1–5+Algorithm 1+Related Work | `6.1.1` §4.7；`6.1` 前瞻；`2.3.4` FA 节一句 |
+| 2026-08-30 | MEA 专文：lazy softmax + running max；$O(1)/O(\log n)/O(\sqrt{n})$；Table 2–3；不是 FA/BPT/Ring | arxiv HTML 2112.05682 摘要+§1–7+Table 2–3+Figure 1 代码；FA ar5iv 2205.14135 Appendix B.5；google-research README | `2.3.1/00-MEA`；`2.3.4` §3.0；`2.3.1` 索引；`01-FA`/`02-FA-v1`；`6.1.1`；Llama-1 §4.3；知识图谱 |
+| 2026-08-30 | StreamingLLM 专文：式 (1) sink；4+窗；cache 内赋位；Table 1–6；22.2×；4M；不是 FA/H2O/标量 $z'$ | arxiv HTML 2309.17453；OpenReview NG7sS51zVF；github mit-han-lab/streaming-llm；Miller SoftMax1；gpt-oss model card PDF；V4 mineru 式 (27)；Gu 2410.10781；Barbero 2504.02732 Table 1；Star Attention 2411.17116 Table 2；hanlab blog | `2.3.2/10-StreamingLLM`；`2.3.2` 索引；综述 §5.1；`07-CSA-HCA`；`2.3.4` §4.1；`2.3` 演进表；知识图谱；`6.3.1.2` §7.2 |
+| 2026-08-30 | H2O 专文：Algorithm 1 local $F_{\mathrm{score}}$；20% 对半分；Table 1–7、9；29× / 3× / 1.9×；4M 叠 StreamLLM；不是 FA/4+窗/未来求和 | arxiv HTML 2306.14048；abs 2306.14048；NeurIPS 2023 hash 6ceefa7b…；github FMInference/H2O；NVIDIA EAI KV 压缩博文 | `2.3.2/11-H2O`；`2.3.2` 索引 §0/§9；综述 §5.2；`6.4.2` §4.3.1–4.3.2；`6.4` NeurIPS 年；`2.3.4`；`2.3` 演进表；知识图谱；`10-StreamingLLM` 图 5 |
 
 
 
@@ -282,6 +285,23 @@ category: LLM 指南
 | 原论文 HTML | Reducing Activation Recomputation | https://ar5iv.labs.arxiv.org/html/2205.05198 | 6.1.1 §4.5 / §5 | Korthikanti et al.；SP 只切 LN/Dropout；$g$ AG↑ RS↓、$\bar g$ 相反；带宽=四个 All-Reduce；式 (4)(5)(6)；$s=2048$；Table 4 22B 一层 4% vs 整层 39%；Table 5 1T 32.1% / MFU 56.3%；530B×8 DP=2240 卡 39.15s MFU 54.2%；选择性重算 GPT-3 70%/2.7%；不是 Ulysses 换头 |
 | 原论文 HTML + ACL | Sequence Parallelism / RSA | https://ar5iv.labs.arxiv.org/html/2105.13120 ；https://aclanthology.org/2023.acl-long.134/ | 6.1.1 §4.6 | Li/Xue/Baranwal/Li/You；ACL 2023 long 2391–2404；Ulysses 称 ColAI-SP；参数每卡一份；RSA 先转 K 得 $S\in\mathbb{R}^{L/N\times L}$ 再转 V；只写双向；通信合计 $8(N-1)BZ(L/N)A$；MLP 更省当 $BL>32H$；Piz Daint P100；13.7× batch=64 卡 SP vs 12 卡 TP（Base 头数）；3.0× 序列 64 卡 batch 64；Linformer 114K / 27× 在 32 卡 batch 4；Table 4 PP=8 弱扩展；4D 留作未来 |
 | 原论文 HTML | Blockwise Parallel Transformer | https://arxiv.org/html/2305.19370 | 6.1.1 §4.7 | Liu/Abbeel；NeurIPS 2023；外层 $B_q$ 内层 $B_{kv}$；$\mathrm{Output}_i=\mathrm{FFN}(\mathrm{Attn}_i+Q_i)+\mathrm{Attn}_i+Q_i$；一层激活 $2bsh$（FA/ME 一层 $8bsh$）；KV 环内 $4bch$+$19bch$ 被 $2bsh$ 盖住；与 SP 正交；全精度无 DP；Table 1 13B $d_{\mathrm{model}}=5140$；Table 2 同行 vs vanilla **8×**（摘要 32× 不在同一行）、vs ME 2–4×；Table 3 131K 仅 BPT 79/78GB；Table 4 1B 8GPU 8K 1.17× / 16K 1.2× / 64K 仅 BPT 600；Table 5 ExoRL 32 轨均 **111.13**（HTML 散文 64/155.36 与表矛盾，以表为准）；不是 Ring、不是 FA |
+| 原论文 HTML | Self-attention Does Not Need $O(n^2)$ Memory | https://arxiv.org/html/2112.05682 ；abs https://arxiv.org/abs/2112.05682 | 00-MEA | Rabe & Staats；lazy softmax 式 (1)；running max 分数 $\ge 89$；单 query $O(1)$、self-attn $O(\log n)$、TPU 实用 $O(\sqrt{n})$；默认 query 1024 / key 4096；`jax.checkpoint`；Table 2 $n=2^{14}$ 1GB→17MB、摘要 59×；Table 3 2.0GB→64MB、摘要 32×；WMT 100K acc 62.69 vs 62.59、lr 0.005、关 packing；Jang 2019 lazy softmax 再发现；不是 FA |
+| 官方仓库 | google-research memory_efficient_attention | https://github.com/google-research/google-research/tree/master/memory_efficient_attention | 00-MEA | README：Colab 对照标准注意力；需 TPU runtime |
+| 原论文 HTML | FlashAttention Appendix B.5 | https://ar5iv.labs.arxiv.org/html/2205.14135 | 00-MEA / 2.3.4 §3.0 | 三条差：峰值 vs IO；K 份摘要 vs 一份增量 $O$；checkpoint vs 解析反向；FA 2–4×，Rabe 同速或略慢 |
+| 口述再搜 | Connest5 | WebSearch 2026-08-30 | 留条 | 未命中官方模型名；命中 Connic（connic.co / `connic/*` 托管 ID），不是 Connest5 |
+| 原论文 HTML | Efficient Streaming Language Models with Attention Sinks | https://arxiv.org/html/2309.17453 ；abs https://arxiv.org/abs/2309.17453 ；https://openreview.net/forum?id=NG7sS51zVF | 10-StreamingLLM | ICLR 2024；式 (1) $x_1\gg x_j$；式 (2) SoftMax₁；默认 4 sink；Table 1 Llama-2-13B 0+1024 **5158.07** / 4+1020 **5.40** / 4\\n **5.60**；Table 2 Llama-2-7B 0+4096 **3359.95** / 4+4092 **9.59**；Falcon 1 个起始位已够；cache 内赋位 [0..7] 不是原文下标；RoPE 存未旋转 Key；ALiBi 连续偏置；Figure 5 4M token；§4.5 相对重算最多 **22.2×**、A6000、HF Transformers、Llama-2-7B/13B；160M×143k step、batch 256、Pile；Table 3 Learnable Sink 1+1023 **18.01**；Table 5 流式 ARC 7B-Chat 71.34 vs window 3.58；Table 6 加大 cache 不单调；Impact：TRT-LLM / Intel / HF / MLC；不是 FA / H2O |
+| 官方仓库 | mit-han-lab/streaming-llm | https://github.com/mit-han-lab/streaming-llm | 10-StreamingLLM | ICLR 2024 代码 |
+| 博文 | Attention Is Off By One | https://www.evanmiller.org/attention-is-off-by-one.html | 10-StreamingLLM | SoftMax₁；论文 Zero Sink |
+| 官方 PDF | gpt-oss-120b & 20b Model Card | https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf | 10-StreamingLLM / 07-CSA-HCA | 每头 softmax 分母 learned bias；引 [16] Miller [17] 2309.17453；可 pay no attention |
+| 库内 mineru | DeepSeek-V4 式 (27) | 库内 `14.1/.../03-DeepSeek-V4-mineru-en.md` | 07-CSA-HCA / 10-StreamingLLM | $s_{h,i,j}$ 分母 $+\mathrm{Exp}(z'_h)$；行和可 ≠1 |
+| 原论文 HTML | When Attention Sink Emerges | https://arxiv.org/html/2410.10781 ；abs https://arxiv.org/abs/2410.10781 | 10-StreamingLLM | ICLR 2025 Gu et al.；key bias；sigmoid 注意力训到 1B 无 sink；小 lr 不明显、weight decay 助长 |
+| 原论文 HTML | Why do LLMs attend to the first token? | https://arxiv.org/html/2504.02732 ；abs https://arxiv.org/abs/2504.02732 | 10-StreamingLLM | Barbero；over-mixing；Llama 3.1 Table 1 sink metric $\epsilon=0.8$：8B **45.97** / 70B **73.49** / 405B **78.29**（16128 头）；约 80% 头；典型 prompt 质量占比另写 80% 在 bos，不要混 |
+| 已有台账 | Star Attention Table 2 | https://ar5iv.labs.arxiv.org/html/2411.17116 | 2.3.4 / 10-StreamingLLM | StreamingLLM 对照是 **1000 sink + 窗 8000**：RULER 均 **45.07** vs Full **85.21**；不是 Xiao 默认 4 |
+| 博文 | How Attention Sinks Keep Language Models Stable | https://hanlab.mit.edu/blog/streamingllm | 10-StreamingLLM | 2025-08；对接 gpt-oss 标量 vs 占位 token |
+| 原论文 HTML | H2O: Heavy-Hitter Oracle | https://arxiv.org/html/2306.14048 ；abs https://arxiv.org/abs/2306.14048 | 11-H2O | NeurIPS 2023；30B bs128 seq1024 → 180GB；阈值=行 max 的 1%、OPT Wiki-Text-103 稀疏 >95%；local H2 = 已见 token 累加，oracle 未来求和 impractical；Algorithm 1 $F_{\mathrm{score}}(T)=\sum o_s$ 每步最多踢 1；§5.1 evenly assigns H2 与最近 KV；20% = 总 cache；Table 1 caption 未点名模型 Full PiQA 80.09 / COPA 81.00 / Local 57.94 / H2O 79.22；Table 2 OPT-30B 20% Full COPA 85.00 / Local w.o. H2 48.00 / w. H2 84.00；Local 在 LLaMA-13B XSUM 与 LLaMA-7B CNN-DM 60% 崩、H2O 20% 仍贴满；Table 3 T4 512+512 30B Accel 0.6 vs H2O 18.83；Table 4 XSUM 6.7B FlexGen 10.80 vs 30.40；Table 5 A100 2048+2048 6.7B bs24 99.5s→53.5s、494.1→918.9、bs64 FlexGen OOM H2O 1161.0；Table 6 OPT-30B 4bit 可叠；Table 9 只 H2 或只 local 掉 2.85%–22.75%；Q1 叠 StreamLLM 到 4M、PG-19 PPL 优于原方法；Theorem 4.4 informal $(1-\alpha)(1-1/e)$；不 swap 填槽；不是 FA / StreamingLLM |
+| 会议页 | NeurIPS 2023 H2O | https://proceedings.neurips.cc/paper_files/paper/2023/hash/6ceefa7b15572587b78ecfcebb2827f8-Abstract-Conference.html | 11-H2O | 会场 NeurIPS 2023，不是 2024 |
+| 官方仓库 | FMInference/H2O | https://github.com/FMInference/H2O | 11-H2O | 论文摘要给出的代码 |
+| 实验室博文 | KV Cache Compression and Its Infra Problems | https://research.nvidia.com/labs/eai/blogs/kv-cache-compression-and-its-infra-problems/ | 11-H2O §7 | FA 不落注意力分数；paged 驱逐还不了整页；H2O 参考实现退回 eager；H2O 论文系统实验是 FlexGen |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -308,6 +328,8 @@ category: LLM 指南
 | IcePop | GLM-5 GRPO；$\rho$ pop 到 $[1/\beta,\beta]$；去 KL | 4.5 链路文 + GLM-5 D2；**6.1.7 收本体轴** | 第 6.1 / 4.5 |
 | MIS-PO | Step-3.5-Flash；二元掩码过滤离分布样本 | D2 已有；**6.1.7 指针** | 第 6.1 |
 | Routing Confidence | Step-3.5-Flash；激活专家概率质量平均，当 MoE RL 稳定性代理 | D2 已有；**6.1.7 一句** | 第 6.1 |
+| Connest5 | WebSearch 2026-08-30；命中 Connic（connic.co / `connic/*`），不是模型名 | **未找到** 官方串 | 留条，禁止 mkdir |
+| Attention Sink / StreamingLLM | arXiv:2309.17453；ICLR 2024；gpt-oss 标量；V4 $z'$ | **专文已写** `10-StreamingLLM与Attention-Sink.md` | 第 2.3.2 |
 
 ## 2026 模型分级（P2，先填再写）
 
@@ -327,7 +349,7 @@ category: LLM 指南
 | Claude Sonnet 5 | 总览表有 ID | **B** | 同代速度档 | 禁止 mkdir |
 | GPT-5.6 Sol | https://openai.com/index/gpt-5-6/ ；deploymentsafety.openai.com/gpt-5-6 | **A** | GA 2026-07-09；无架构 PDF；Preparedness High bio/cyber | **已写** `14.12/26-GPT-5.6-Sol/01-...` |
 | GPT-5.6 Terra / Luna | 同篇三档 | **B** | 同代 SKU | 写在 Sol 篇，禁止 mkdir |
-| Connest5 | — | **不写** | 本会话未命中官方字符串 | 留条 |
+| Connest5 | WebSearch 2026-08-30；connic.co 是欧盟托管平台 `connic/*`，不是模型名 | **未找到** 官方模型串 | 留条，不写、不 mkdir |
 | DeepSeek V4 Flash | 同一份 `DeepSeek_V4.pdf`（Pro+Flash） | **B** | 284B/13B、43 层、32T；1M 下相对 V3.2 FLOPs 10% / KV 7%；不另开目录 | `14.1-DeepSeek.md` 一行 + 已有 `10-DeepSeek-V4` |
 
 ## 预训练记忆拦截
