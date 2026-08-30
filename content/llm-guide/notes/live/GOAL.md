@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：用户 Goal 续跑：成体系补专文 + 配图 + 人味。Loop Transformer 已入库。4.4：TRPO / RAFT / 薄节 / GxPO 已入库；首页 DAPO/GSPO 已改正。正在重写 DPO / ORPO。
-- 当前波次：**DPO 去讲义腔配图** + **ORPO 去讲义腔配图**。wave-2 三张仍在跑；`fig-moe-router-top2` 不重画。不要抢 `4.6.2`。
+- 状态：用户 Goal 续跑：成体系补专文 + 配图 + 人味。Loop Transformer 已入库。4.4：DPO / ORPO / CISPO / SAPO 已入库并接进地图。正在给 RLAIF / 4.4.4 配浅色图。
+- 当前波次：**RLAIF 配图** + **4.4.4 SLiC/RRHF/IPO 浅色图**。wave-2 三张仍在跑；`fig-moe-router-top2` 不重画。不要抢 `4.6.2`。
 - 配图规范：`.cursor/skills/academic-diagrams/SKILL.md`。好对照：`fig-qsa-hybrid-slot.png`。覆盖原 `fig-*.png`，禁止 Delete。
 - 人味规范：`.cursor/skills/humanwrite/` + `humanizer-zh/` + `scy.md`。读者页禁止 Agent 元句。
 - 本轮明确不做：一轮画完约 300 张 fig；把 51B n-gram 算进 6B；4.6 根加 `11`；大搬迁 / Delete / `move_agent_to_root`。

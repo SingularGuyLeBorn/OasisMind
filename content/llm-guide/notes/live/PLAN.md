@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 重写 `4.4.2/01-DPO`（现约 2319 汉字、0 图、讲义腔/空标题）到 ≥4000，配两张浅色图；公式跟 2305.18290。
-2. **并行：** 重写 `4.4.2/02-ORPO`（现约 2720、0 图、空标题）到 ≥4000，配两张浅色图；公式跟 2403.07691；不是 DPO 再加一项。
-3. **再下一波：** `4.4.3` RLAIF 配图；`4.4.4` SLiC/RRHF/IPO 浅色图；`4.4.1` 若有空位再开 CISPO（2506.13585）/ SAPO（2511.20347）。不要发 `11`。`fig-moe-router-top2` **不要重画**。
+1. **立刻做：** `4.4.3` RLAIF 配浅色架构图（现 0 图）；读者页禁止 Agent 备忘。
+2. **并行：** `4.4.4` SLiC / RRHF / IPO 浅色图；KTO 公式已改对，不要回写成 Forward KL 阈值。
+3. **再下一波：** `4.4.1` 空位 10 可开序列级 REINFORCE；不要发 `11`。`4.4.1` / `4.4.2` 节首页仍是讲义腔，专文过后再折。`fig-moe-router-top2` **不要重画**。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：TRPO / RAFT / 4.4 根薄节 / GxPO 已入库；4.4 首页 DAPO 全称与 GSPO 定义已改正。
-- 现在立刻做：DPO、ORPO 去讲义腔并配浅色图。不要 `move_agent_to_root`。不要 push。
+- 上一件：DPO / ORPO 去讲义腔并配浅色图；CISPO / SAPO 专文已开并接进 4.4.1 地图。
+- 现在立刻做：RLAIF 配图；4.4.4 浅色图。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -176,7 +176,7 @@ category: LLM 指南
 | ppo-fig | done | `4.4.1/04-PPO/` + inbox `ppo-fig.md` | 4040 汉字；四模型 + GAE/clip 图 |
 | rl-thin-44 | done | `4.4-对齐技术/` 四篇根散文件 + inbox `rl-thin-44.md` | 四篇均 ≥4000；Infer/DAC/示范进组/pass@k 图 |
 | raft-441 | done | `4.4.1/07-RAFT-奖励排序微调/` + inbox `raft-441.md` | 4838 汉字；2304.06767；只训 top-1；监工链 4.4.1 |
-| dpo-442 | running | `4.4.2/01-DPO/` + inbox `dpo-442.md` | 2305.18290；去讲义腔；≥4000；两张浅色图；不改 02/03/04、不改节首页 |
-| orpo-442 | running | `4.4.2/02-ORPO/` + inbox `orpo-442.md` | 2403.07691；去讲义腔；≥4000；两张浅色图；不改 01/03/04、不改节首页 |
-| cispo-441 | running | `4.4.1/08-CISPO-裁剪重要性权重/` + inbox `cispo-441.md` | 2506.13585；clip IS 权重 + stop-grad；不改 01–07、不改节首页 |
-| sapo-441 | running | `4.4.1/09-SAPO-温度软门/` + inbox `sapo-441.md` | 2511.20347；sigmoid 软门不是熵滑动 ε；不改 01–08、不改节首页 |
+| dpo-442 | done | `4.4.2/01-DPO/` + inbox `dpo-442.md` | 已入库。4237 汉字；两图；2305.18290；TL;DR 61% vs PPO 57% |
+| orpo-442 | done | `4.4.2/02-ORPO/` + inbox `orpo-442.md` | 已入库。4007 汉字；两图；几何平均 P；不是 DPO+SFT |
+| cispo-441 | done | `4.4.1/08-CISPO-裁剪重要性权重/` + inbox `cispo-441.md` | 已入库。clip IS 权重 + stop-grad；约一半步数追上 DAPO |
+| sapo-441 | done | `4.4.1/09-SAPO-温度软门/` + inbox `sapo-441.md` | 已入库。$\tau_{\mathrm{pos}}=1.0$，$\tau_{\mathrm{neg}}=1.05$；不是熵滑动 ε |

@@ -11,15 +11,19 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：DPO 2305.18290；ORPO 2403.07691。
-- 正在写：01-DPO / 02-ORPO 去讲义腔配图。
+- 正在读：RLAIF 原论文；4.4.4 SLiC / RRHF / IPO。
+- 正在写：4.4.3 RLAIF 配图；4.4.4 浅色图。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 TRPO/RAFT/薄节/GxPO 入库；4.4 首页 DAPO/GSPO 改正。
+- 上次刷新记忆的时间：2026-08-31 DPO/ORPO/CISPO/SAPO 入库。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 DPO：4237 汉字；两张浅色图；隐式奖励 $Z(x)$ 成对抵消；TL;DR 61% vs PPO 57% | https://arxiv.org/abs/2305.18290 ；https://arxiv.org/html/2305.18290 | `4.4.2/01-DPO/` |
+| 2026-08-31 | 入库 ORPO：4007 汉字；两图；几何平均 $P$；Phi-2 AlpacaEval 1.0 71.80%；不是 DPO+SFT | https://arxiv.org/abs/2403.07691 ；https://arxiv.org/html/2403.07691 | `4.4.2/02-ORPO/` |
+| 2026-08-31 | 入库 CISPO：clip IS 权重 + stop-grad；Qwen2.5-32B 约一半步数追上 DAPO；两图；接 4.4.1 地图 | https://arxiv.org/abs/2506.13585 ；https://arxiv.org/html/2506.13585 | `4.4.1/08-CISPO-裁剪重要性权重/` |
+| 2026-08-31 | 入库 SAPO：温度软门；$\tau_{\mathrm{pos}}=1.0$，$\tau_{\mathrm{neg}}=1.05$；两图；接 4.4 首页 | https://arxiv.org/abs/2511.20347 | `4.4.1/09-SAPO-温度软门/` |
 | 2026-08-31 | 入库 TRPO：4184 汉字；三张浅色图；平均 KL $\delta=0.01$；CG $k=10$；不是 PPO | https://arxiv.org/abs/1502.05477 ；https://arxiv.org/html/1502.05477 ；https://arxiv.org/abs/1506.02438 | `4.4.1/05-TRPO/` |
 | 2026-08-31 | 入库 RAFT：4838 汉字；两图；Table 3 奖励 2.294 vs PPO 2.077；只训 top-1；链 4.4.1 | https://arxiv.org/abs/2304.06767 ；https://ar5iv.labs.arxiv.org/html/2304.06767 | `4.4.1/07-RAFT-奖励排序微调/` |
 | 2026-08-31 | 写满 4.4 根四篇薄节 + Infer/DAC/示范进组/pass@k 图 | https://arxiv.org/abs/2409.19256 ；https://arxiv.org/abs/2509.02333 ；https://arxiv.org/abs/2504.14945 ；https://arxiv.org/abs/2504.13837 | `4.4-GRPO计算流程全解析.md` 等四篇 |
