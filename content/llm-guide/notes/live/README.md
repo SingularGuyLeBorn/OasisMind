@@ -9,7 +9,7 @@ category: LLM 指南
 
 # 活文档：目标 / 计划 / 过程
 
-用户会把 `notes/goal-maximize-value-extreme.md` **反复粘贴**给新会话。聊天记录不可靠。以本目录三份文件为准。
+用户会把 `notes/goal-maximize-value-extreme.md` **反复粘贴**给新会话。续写请改用 `../CURSOR-GOAL-续写提示词.md`，并加载 `.cursor/skills/llm-guide-notes/`。聊天记录不可靠。以本目录三份文件为准。
 
 | 文件 | 职责 | 谁改 |
 |------|------|------|
