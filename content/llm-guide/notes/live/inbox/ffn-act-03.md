@@ -31,3 +31,9 @@ published: false
 
 GenerateImage，description **必须整段含**：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
 落点：`./images/fig-glu-family-two-vs-three-matrix.png`
+
+# 已读一手 URL
+
+- Shazeer (2020) 全文：https://arxiv.org/html/2002.05202 （式 (1)–(6)、Table 1、Conclusions）
+- Dauphin GLU：https://arxiv.org/html/1612.08083 （原文式 (1) 卷积 GLU）
+- Llama-1 SwiGLU 产品事实：https://arxiv.org/html/2302.13971 （$\tfrac{2}{3}\times 4d$，非 PaLM 的 $4d$）

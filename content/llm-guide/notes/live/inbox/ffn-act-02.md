@@ -35,3 +35,15 @@ published: false
 
 GenerateImage，description **必须整段含**：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
 落点：`./images/fig-act-sigmoid-relu-gelu-silu.png`
+
+# 子代理已读 URL（2026-08-30）
+
+- https://arxiv.org/html/2002.05202 — Shazeer GLU Variants；Table 1：524288 步 ReLU 1.677 / GELU 1.679 / Swish 1.683；式 (1)–(3)
+- https://arxiv.org/html/1606.08415 — Hendrycks GELU：$x\Phi(x)$、tanh 近似、$x\sigma(1.702x)$、SiLU
+- https://arxiv.org/html/1710.05941 — Ramachandran Swish：$x\sigma(\beta x)$
+- https://arxiv.org/html/1706.03762 — Vaswani §3.3 式 (2) FFN + ReLU
+- https://arxiv.org/html/1810.04805 — BERT：gelu rather than relu, following OpenAI GPT
+- https://arxiv.org/html/2005.14165 — GPT-3：same architecture as GPT-2（除稀疏注意力）；文中未点名 GELU
+- https://arxiv.org/html/1909.08053 — Megatron-LM：GPT-2 与 BERT 用 GeLU
+- GPT-2 PDF https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf — 抓取超时，未当逐句来源
+- 知乎 search「GELU ReLU 激活函数 Transformer FFN」— 只学讲法，未 read 全文、未搬图
