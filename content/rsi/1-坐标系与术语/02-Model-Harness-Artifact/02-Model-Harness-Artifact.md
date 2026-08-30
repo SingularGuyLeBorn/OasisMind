@@ -155,13 +155,13 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 推荐顺序不是按公司，是按「误会从哪来」。
 
 1. **先分清层**。本篇图 1 加上面那张表。把 AlphaEvolve 的 48 次乘听成「Gemini 在改自己」，就是把 Artifact 当成了 Model。把会写 `SKILL.md` 听成 RSI，就是把 Harness 当成了术语式 (2)。
-2. **Model 层看靶有没有钉死**。[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) 对手是上一轮自己，赢家分布仍是人类 SFT。[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) 的法官头和生成头共享权重，主实验新 prompt 还来自冻结的 Llama 2-Chat。[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环 LoRA 真改 $\theta$，外环 ReST-EM 配方在墙外。三篇都改权重，三篇都还不是递归。
+2. **Model 层看靶有没有钉死**。[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) 对手是上一轮自己，赢家分布仍是人类 SFT。[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) 的法官头和生成头共享权重，主实验新 prompt 还来自冻结的 Llama 2-Chat。[Tufa](../../2-Model层-训练时自改进/03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) 把裁判冻死，Countdown 三个提示会被黑，积分自环 43% 超过 GPT-4o 的 42%。[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环 LoRA 真改 $\theta$，外环 ReST-EM 配方在墙外。四篇都改权重，四篇都还不是递归。
 3. **Harness 层先看门，再看自指**。[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 只回答「生成的技能凭什么留下」：SWE-Bench Pro 约 78% 对 Direct Copilot 约 59%，成熟窗口少 21% token 是观测，不是因果。[STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器程序对自己递归，弱模型上会掉分。[Gödel Agent](../../3-Harness层-Agent运行时/06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 公平对照只认 Gödel-base 相对 ADAS 的 MGSM 11 个百分点，不要截 Gödel-free 的 90.6%。[DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案，SWE-bench 20%→50%。四篇 $\theta$ 都冻着。
 4. **Artifact 层看评估器在谁手里**。[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 搜短函数，$n=8$ cap set 512，140 次里只有 4 次摸到。[AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 搜整文件，可以反哺训练栈，发现者仍可不改。
 5. **评测先看过程，再看交卷分**。[RSIBench-Data](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md) 冻住后训练栈，只让 Agent 改数据：14/24 后来超过第一次有效尝试，达峰后继续搜的 23 个里 18 个最终更差。发现有了，过程不可靠。
 6. **最后才问可靠不可靠**。[可靠性阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md) 把上面专文接到 L0–L4：产物发现不爬台阶，Argus 是 L2，STOP / DGM / Gödel Agent 是 L3-facing，RSIBench 测的是 L1 数据研究切片，没有任何一篇把考纲交给循环。
 
-Tufa、Polaris、实验室访谈还薄，缺一手就留条，不要用专栏补数字。读完 1–6 步，已经能自己判断一条新闻是不是 RSI；剩下的是覆盖面，不是另一套坐标系。前世（Good、种子 AI、Gödel machine）和今生能力项的对照在 [0 导读](../../0-导读/0-导读.md)，本篇不重推证明搜索器。system card 上的 self-improvement 分数是能力阈值，和三层坐标不是同一把尺，数字回 llm-guide 第 14 章。读新闻时先问改的是哪一层，再问证据在不在更新边界之外，两问都过了才碰「算不算 RSI」。
+Polaris、实验室访谈还薄，缺一手就留条，不要用专栏补数字。读完 1–6 步，已经能自己判断一条新闻是不是 RSI；剩下的是覆盖面，不是另一套坐标系。前世（Good、种子 AI、Gödel machine）和今生能力项的对照在 [0 导读](../../0-导读/0-导读.md)，本篇不重推证明搜索器。system card 上的 self-improvement 分数是能力阈值，和三层坐标不是同一把尺，数字回 llm-guide 第 14 章。读新闻时先问改的是哪一层，再问证据在不在更新边界之外，两问都过了才碰「算不算 RSI」。
 
 ## 本篇来源
 

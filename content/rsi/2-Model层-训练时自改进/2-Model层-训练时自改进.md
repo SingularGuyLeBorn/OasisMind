@@ -16,7 +16,7 @@ category: RSI
 |------|------|------|
 | 01 | [SPIN 自对弈微调](./01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) | 无外部奖励的分布匹配 |
 | 02 | [Self-Rewarding 家族](./02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) | Self-Instruct / STaR / Self-Rewarding LM；奖励塌缩 |
-| 03 | [Tufa Labs 自奖励](./03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) | 实验线；缺一手就留条 |
+| 03 | [Tufa Labs 自奖励](./03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) | 冻结 LLM 裁判 + GRPO；不是 RSI |
 | 04 | [SEAL 自适配语言模型](./04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) | 自己写 self-edit，内环 LoRA 改权重 |
 
 **不要落在本章：** OPD / MOPD 推导 → [llm-guide 4.6](../../llm-guide/4-后训练/4.6-OPD/4.6-OPD.md)。本章最多说「OPD 也改权重，但是教师蒸馏，不是自对弈」。
