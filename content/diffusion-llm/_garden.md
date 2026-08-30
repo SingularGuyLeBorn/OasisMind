@@ -27,10 +27,16 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 
 🟡 **02 机制**（离散噪声怎么定义、怎么训、怎么采）
 
-2. [掩码扩散：从马尔可夫链到掩码预测](./02-mechanism/masked-diffusion.md)  
-   现行机制文。将拆成：图像直觉 → $Q_t$ → 吸收态 ELBO → 采样，拆完后本条改成入口索引。
+2. [从图像扩散到离散 token](./02-mechanism/from-image-diffusion.md)  
+   只保留读懂语言扩散所需的 DDPM 直觉：前向、反向、ELBO、步数旋钮。不讲 U-Net。
 
-计划专文（尚未落盘，不链空壳）：从图像扩散到离散 token；离散转移矩阵；采样与调度。
+3. [离散扩散：转移矩阵在干什么](./02-mechanism/discrete-diffusion.md)  
+   D3PM 的 $Q_t$：均匀、吸收态、离散化高斯。BERT 为何是单步扩散。
+
+4. [掩码扩散：从马尔可夫链到掩码预测](./02-mechanism/masked-diffusion.md)  
+   现行机制文，下一刀会按 MDLM / LLaDA 公式重写并补采样专文。
+
+计划专文（尚未落盘，不链空壳）：采样与调度。
 
 🟠 **03 知识点**（机制之后仍容易混的几刀）
 
