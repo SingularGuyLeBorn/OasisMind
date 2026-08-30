@@ -1,276 +1,118 @@
 ---
-title: "04 · **从零到精通: PPO算法原理、演进与大模型RLHF实战**"
-date: 2026-05-11
-tags: []
+title: "04 · PPO：近端策略优化"
+date: 2026-08-31
+as_of: 2026-08-31
+tags: [PPO, RLHF, GAE, Actor-Critic, InstructGPT]
 ---
 
-# 04 从零到精通: PPO算法原理、演进与大模型RLHF实战
+# 04 PPO：近端策略优化
 
+PPO（Proximal Policy Optimization）把策略更新锁在旧策略附近：用重要性比率乘优势，再把比率裁进 $[1-\varepsilon,1+\varepsilon]$。Schulman 等写在 [1707.06347](https://arxiv.org/abs/1707.06347)，默认 $\varepsilon=0.2$。InstructGPT 把它接到语言模型上，同时驻 Actor、Critic、奖励模型、参考模型四份权重（Ouyang 等，[2203.02155](https://arxiv.org/abs/2203.02155)）。邻居：[02-GRPO](../02-GRPO/02-GRPO.md) 用组内分数换掉 Critic；[06-RLOO](../06-RLOO-留一法基线/06-RLOO-留一法基线.md) 把整段生成当成一个动作。不是 DPO（离线偏好对、没有在线 rollout）。
 
-## 1. 引言 (Introduction)
+## 1. 策略梯度为什么抖
 
-强化学习 (Reinforcement Learning, RL) 作为机器学习的一个核心分支, 赋予了机器从与环境的互动中学习决策能力, 这种能力正是通往通用人工智能的关键阶梯. 近年来, 随着大型语言模型 (LLM) 的崛起, 如何使这些强大的模型与复杂、模糊的人类价值观和偏好对齐, 成为了一个时代性的课题. 在此背景下, 基于人类反馈的强化学习 (RLHF) 技术应运而生, 而在其核心驱动的算法中, **近端策略优化 (Proximal Policy Optimization, PPO)** 扮演了举足轻重的角色.
+语言模型生成可以写成 MDP。智能体是正在更新的策略，环境是「给定前缀、吐下一个 token」这件事本身。状态 $s_t$ 是 prompt 加上已经写出的 token，动作 $a_t$ 是词表里的下一个 token，策略 $\pi_\theta(a_t\mid s_t)$ 就是当前前缀上的下一个词分布。环境转移是确定的：写下 $a_t$，下一状态就是把这个 token 拼上去，没有骰子。奖励在通用控制任务里逐步给；在 RLHF 里，奖励模型通常只给完整 $(x,y)$ 一个标量，中间步几乎是 0，再按 InstructGPT 的写法扣逐 token KL。马尔可夫性在这里几乎是定义出来的：下一步只看当前文本，不看「十分钟前模型怎么想」。
 
-然而, 对于许多初学者和实践者而言, PPO算法宛如一座理论的迷宫. 其背后涉及的策略梯度、Actor-Critic框架、重要性采样、优势函数等一系列概念, 以及繁复的数学推导, 往往令人望而生畏. 当试图将其与LLM的代码实现相结合时, 理论与实践之间的鸿沟更显巨大.
+一条轨迹 $\tau=(s_0,a_0,s_1,a_1,\ldots)$ 就是一次完整生成。目标是最大化轨迹回报的期望。策略参数化成 $\pi_\theta$，
 
-本文旨在彻底解决这一痛点. 我们将以**“亚历山大计划”**的知识工程标准, 为您铺设一条从零基础到精通PPO的清晰路径. 本指南将:
+$$
+\theta^*=\arg\max_\theta J(\theta)=\arg\max_\theta\mathbb{E}_{\tau\sim\pi_\theta}[R(\tau)],\qquad R(\tau)=\sum_{t=0}^{T}r_t. \tag{1}
+$$
 
-- **追本溯源**: 不直接抛出PPO的最终公式, 而是带领您回顾从基础的策略梯度方法开始, 经历Actor-Critic的演进, 理解每一步技术迭代所要解决的核心问题, 从而真正明白PPO"为什么"是这样设计的.
+折扣回报写成 $G_t=\sum_{k=0}^{\infty}\gamma^k r_{t+k+1}$。$\gamma$ 靠近 1 时更看后面的分；LLM 对齐里常见 $\gamma=1$，因为奖励本来就稀。
 
-- **精妙教学**: 运用生动的类比解释抽象概念, 通过可手动计算的数值示例拆解复杂算法(如GAE), 并用引导性问题激发您的深度思考.
+对数导数把梯度从「对期望求导」变成「对 $\log\pi$ 加权」。轨迹概率 $P(\tau\mid\theta)=p(s_0)\prod_t\pi_\theta(a_t\mid s_t)P(s_{t+1}\mid s_t,a_t)$，对环境转移和初态求导会消掉，只剩策略项：
 
-- **无缝衔接**: 将抽象的RL理论与LLM-RLHF的具体应用场景紧密映射, 详细阐述包含Actor、Critic、Reward和Reference模型在内的四角色系统如何协同工作.
+$$
+\begin{aligned}
+\nabla_\theta J(\theta)
+&=\nabla_\theta\sum_\tau P(\tau\mid\theta)R(\tau)
+=\sum_\tau R(\tau)\,P(\tau\mid\theta)\,\nabla_\theta\log P(\tau\mid\theta)\\
+&=\mathbb{E}_{\tau\sim\pi_\theta}\Bigl[R(\tau)\sum_{t=0}^{T-1}\nabla_\theta\log\pi_\theta(a_t\mid s_t)\Bigr].
+\end{aligned} \tag{2}
+$$
 
-- **代码落地**: 精选核心代码片段, 逐行剖析其如何将理论公式转化为可执行的逻辑, 彻底打通理论与实践的最后一公里.
+$\nabla_\theta\log\pi_\theta(a_t\mid s_t)$ 指向提高该动作概率的方向，$R(\tau)$ 当权重。整条轨迹一个标量摊到每一步：前期一个好动作、后期一个失误，共用同一个 $R(\tau)$，好的也被按下去。信用分配粗，梯度方差大，这是 REINFORCE 的老病。只盯即时奖励更糟，智能体会学会捡眼前的分、把后面的坑留给下一时刻，下棋这种长程任务会先崩。
 
-无论您是希望夯实RL理论基础的学生, 还是渴望在LLM对齐项目中应用PPO的工程师, 本文都将成为您书架上那本值得反复查阅的**最终参考源 (Source of Truth)** . 让我们一同启程, 征服PPO这座知识的高峰.
+## 2. Actor-Critic：用优势代替整条回报
 
----
+Actor-Critic 把式 (2) 里的 $R(\tau)$ 换成优势。Actor 仍是 $\pi_\theta$，负责在前缀上采样 token。Critic 学状态价值 $V_\phi(s)$：从 $s$ 出发、跟当前策略走下去的期望回报，$V^\pi(s)=\mathbb{E}[G_t\mid s_t=s]$。动作价值 $Q^\pi(s,a)$ 是「在 $s$ 先走 $a$ 再跟 $\pi$」的期望回报。优势是两者之差，问的不是「这个动作绝对值多少」，而是「比待在这个前缀上的平均水平好多少」：
 
-## 2. 第一部分: 强化学习的基石——与环境的对话
+$$
+A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s). \tag{3}
+$$
 
-在深入PPO之前, 我们必须先掌握强化学习的通用语言. 想象一下您正在学习玩一款全新的电子游戏, 这个过程便是强化学习最直观的体现.
+减去 $V(s)$ 不改梯度期望（同一个状态下对动作的常数），方差通常下降。策略梯度变成
 
-### 1.1 核心要素: 智能体、环境、状态、动作与奖励
+$$
+\nabla_\theta J(\theta)=\mathbb{E}_{s_t,a_t\sim\pi_\theta}\bigl[A(s_t,a_t)\,\nabla_\theta\log\pi_\theta(a_t\mid s_t)\bigr]. \tag{4}
+$$
 
-- **智能体 (Agent)** : 就是您, 玩家. 在LLM的场景中, **Agent**就是那个需要学习和优化的语言模型.
+实践里不单独训 $Q$，用一步 TD 残差当优势的估计：
 
-- **环境 (Environment)** : 游戏世界本身. 对LLM来说, **环境**可以是一个对话系统、一个问答场景, 或者任何需要它生成文本的上下文.
+$$
+\delta_t=r_{t+1}+\gamma V_\phi(s_{t+1})-V_\phi(s_t). \tag{5}
+$$
 
-- **状态 (State, s)** : 游戏在某一时刻的画面, 包含了您决策所需的一切信息 (您的血量、位置、敌人的位置等). 在LLM中, **状态**通常是到目前为止的文本序列, 例如用户的提问(prompt)加上模型已经生成的部分回答(response).
+$r_{t+1}+\gamma V_\phi(s_{t+1})$ 是对 $Q$ 的单步估计，叫 TD 目标；$\delta_t$ 是预测和这个目标的差。Actor 用 $\delta_t$ 更新 $\theta$，Critic 最小化 $\delta_t^2$，两边吃同一条残差，分工不同。这仍是 on-policy：经验必须来自当前 $\pi_\theta$，参数一动，旧轨迹作废。想象每改一步棋谱就得整局重下，样本效率差。想拿旧策略 $\pi_{\theta_{\mathrm{old}}}$ 采的数据反复更新当前 $\pi_\theta$，就要重要性采样，同时不能让两个分布离太远。TRPO 用 KL 硬约束做这件事，求解要共轭梯度；公式和实现在 [05-TRPO](../05-TRPO/05-TRPO.md)。PPO 把硬约束收成一阶 clip。
 
-- **动作 (Action, a)** : 您按下的手柄按键 (前进、跳跃、攻击). 对于LLM, **动作**就是在给定当前文本序列(状态)后, 从其词汇表中选择并生成下一个词元(token).
+## 3. 重要性采样、GAE、clip
 
-- **奖励 (Reward, r)** : 您完成一个动作后得到的即时反馈. 击败一个敌人得到+10分, 掉进陷阱得到-50分. 在RLHF中, **奖励**是由一个独立的"奖励模型"给出的分数, 用来衡量生成的文本是否符合人类偏好 (例如, 是否有用、是否无害).
+从分布 $q$ 采的样本估分布 $p$ 下的期望，恒等式是 $\mathbb{E}_{x\sim p}[f(x)]=\mathbb{E}_{x\sim q}[(p(x)/q(x))f(x)]$。旧策略采样、新策略吃梯度，目标写成
 
-这五个要素构成了一个持续的循环: **智能体**在某个**状态**下, 执行一个**动作**, **环境**因此转换到新的**状态**, 并给予**智能体**一个**奖励**. 这个循环不断重复, 智能体的目标就是学会在什么状态下做什么动作, 才能让最终获得的总分最高.
+$$
+J(\theta)=\mathbb{E}_{s_t,a_t\sim\pi_{\theta_{\mathrm{old}}}}\Bigl[r_t(\theta)\,A^{\pi_{\theta_{\mathrm{old}}}}(s_t,a_t)\Bigr],\qquad r_t(\theta)=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}. \tag{6}
+$$
 
-**视觉化描述 (Visual Description):**
-想象一个闭环流程图. 左边是"智能体 (Agent)", 右边是"环境 (Environment)". 一个箭头从智能体指向环境, 标记为"动作 (Action, a_t)". 另一个箭头从环境指回智能体, 标记为"状态 (State, s_{t+1}) 与奖励 (Reward, r_{t+1})". 这清晰地展示了两者之间的动态交互.
+$r_t(\theta)$ 是重要性比率，不要和奖励符号混。两个策略差太远时，这个比值方差炸掉，估计失效。可以复用旧数据，但不能让 $\pi_\theta$ 一次走出很远。直觉上，旧策略几乎不会采到的动作，新策略若突然给它很高概率，比率会冲到十几、几十，梯度被这一下带走。clip 的作用就是不让这种「稀有动作突然翻身」写进更新。Schulman 等给了两个变体：PPO-Penalty 把 KL 罚进目标并自适应调系数；更常用的是 PPO-Clip，用裁剪比率间接守住信任域，只用一阶梯度。论文在连续控制上把 $\varepsilon=0.2$ 当默认；有的 Atari 实现收成 0.1。抄超参要带任务，不要把 MuJoCo 的数直接贴到 175B 语言模型上。
 
-### 1.2 最终目标: 最大化长期回报 (Return)
+优势本身还有偏差–方差这一档。$\delta_t$ 只看一步，偏差大；用整段 $G_t-V(s_t)$，偏差小、方差大。Schulman 等的 GAE（[1506.02438](https://arxiv.org/abs/1506.02438)）用 $\lambda$ 插在中间：
 
-聪明的玩家不会只贪图眼前的蝇头小利. 有时为了获得最终的巨大宝藏, 可能需要暂时放弃一些小怪的分数. 强化学习的目标也是如此: 最大化**累积奖励**, 而非瞬时奖励.
+$$
+A_t^{\mathrm{GAE}(\gamma,\lambda)}=\sum_{l=0}^{\infty}(\gamma\lambda)^l\delta_{t+l}. \tag{7}
+$$
 
-- **轨迹 (Trajectory, τ)** : 一场完整的游戏过程, 从开始到结束, 由一系列的状态-动作对组成: $\tau = (s_0, a_0, s_1, a_1, \dots)$.
+$\lambda=0$ 退回单步 TD；$\lambda=1$ 等价蒙特卡洛备份。实现从轨迹末端往回扫：$A_T=0$，
 
-- **回报 (Return, G_t)** : 从t时刻开始, 未来所有奖励的总和. 最简单的回报是直接相加: $G_t = r_{t+1} + r_{t+2} + \dots + r_T$.
+$$
+A_t=\delta_t+\gamma\lambda A_{t+1}. \tag{8}
+$$
 
-- **折扣回报 (Discounted Return)** : 更现实的做法是, 未来的奖励因为不确定性而需要"打折扣". 我们引入一个折扣因子 $\gamma$ (一个0到1之间的数), 越远的奖励折扣越多. 这使得回报的计算变为:
+一段 4 步、$\gamma=0.99$、$\lambda=0.95$ 的手算。奖励 $r_1=r_2=r_3=1$，$r_4=5$，终止 $V(s_4)=0$；Critic 给出 $V(s_0)=1.5$，$V(s_1)=2.0$，$V(s_2)=2.5$，$V(s_3)=3.0$。
 
-$G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots = \sum_{k=0}^{\infty} \gamma^k r_{t+k+1}$
+$$
+\begin{aligned}
+\delta_3&=5+0.99\cdot 0-3.0=2.0,\\
+\delta_2&=1+0.99\cdot 3.0-2.5=1.47,\\
+\delta_1&=1+0.99\cdot 2.5-2.0=1.475,\\
+\delta_0&=1+0.99\cdot 2.0-1.5=1.48.
+\end{aligned}
+$$
 
-**类比**: 这就像理财, 明天就能到手的100元, 比一年后才能到手的100元更有价值. $\gamma$ 就像是贴现率, 决定了我们对未来收益的"耐心"程度.
+回扫：$A_3=2.0$，$A_2=1.47+0.99\cdot 0.95\cdot 2.0=3.351$，$A_1=1.475+0.99\cdot 0.95\cdot 3.351=4.626$，$A_0=1.48+0.99\cdot 0.95\cdot 4.626=5.831$。后面的 $\delta$ 按 $(\gamma\lambda)^l$ 折进前面的 $A_t$。最后一步的 $+5$ 没有被前面三步均分掉，而是按折扣渗进去：$A_0$ 已经到 5.8，比单步 $\delta_0=1.48$ 大一截。若令 $\lambda=0$，四个 $A_t$ 就等于四个 $\delta_t$，终点那一下加分传不到开头。这些数只为把式 (8) 走通，不是论文表。
 
-智能体的终极使命, 就是学习一个**策略 (Policy)** , 来最大化这个**折扣回报的期望值**.
+PPO-Clip 的代理目标（论文式 (7) 那条）是
 
-### 1.3 数学语言: 马尔可夫决策过程 (MDP)
+$$
+L^{\mathrm{CLIP}}(\theta)=\hat{\mathbb{E}}_t\Bigl[\min\bigl(r_t(\theta)\hat{A}_t,\;\mathrm{clip}(r_t(\theta),1-\varepsilon,1+\varepsilon)\hat{A}_t\bigr)\Bigr]. \tag{9}
+$$
 
-强化学习问题通常被数学化地建模为**马尔可夫决策过程 (Markov Decision Process, MDP)** . 其核心假设是**马尔可夫性**: 未来的状态只取决于当前的状态和动作, 而与过去的历史无关. 就像下棋, 你下一步的决策只基于当前的棋盘布局, 而不是你前十步是怎么走的.
+$\varepsilon=0.2$ 时信任带是 $[0.8,1.2]$。$\min$ 取悲观分支，分两种符号看。
 
-在MDP框架下, 我们有:
+$\hat{A}_t>0$ 时这是好动作，想抬概率。代理变成 $\min(r_t\hat{A}_t,(1+\varepsilon)\hat{A}_t)$。$r_t$ 还没过 $1+\varepsilon$，损失跟着比率走；一旦超过，$L$ 锁在 $(1+\varepsilon)\hat{A}_t$，再加大 $r_t$ 不加分。$\hat{A}_t<0$ 时想压概率。因为优势是负的，$\min$ 在数值上表现为靠近 $\max(r_t\hat{A}_t,(1-\varepsilon)\hat{A}_t)$。$r_t$ 还没低于 $1-\varepsilon$，照常更新；一旦压过，$L$ 锁在 $(1-\varepsilon)\hat{A}_t$，再减小 $r_t$ 也不再加罚。正优势一侧的天花板、负优势一侧的地板，就是图 1 下栏那两扇闸。注意 $\min$ 比较的是两个已经乘过 $\hat{A}_t$ 的标量，不是先裁 $r_t$ 再决定方向。$r_t$ 掉到信任带外但 $\hat{A}_t$ 很大时，未裁剪分支可能更小，仍走未裁剪那一侧——clip 只挡住「顺着优势继续拉大步」，不挡住「往回走」。这和「比率永远被夹在 $[1-\varepsilon,1+\varepsilon]$」不是同一句话。实现里先算 `surr1` 和 `surr2` 再取 `minimum`，就是在落实这条不对称，不要先把比率硬夹再乘优势，那会在负优势一侧改掉梯度该走的方向。
 
-- **状态空间 (S)** 和 **动作空间 (A)** : 所有可能状态和动作的集合.
+![GAE 反向折 δ，clip 把比率锁在 1±ε](./images/fig-ppo-gae-clip.png)
 
-- **策略 (Policy, π)** : 智能体的大脑, 是一个函数, 告诉我们在状态s下应该如何选择动作a.
+> 图 1：上栏 GAE 用 $\gamma\lambda$ 从右往左折 $A_t$；下栏 clip 是比率闸，不是坐标曲线。$\varepsilon=0.2$ 对应 $[0.8,1.2]$。
 
-- **确定性策略**: $a = \pi(s)$. 在某个状态下, 动作是唯一的.
+**图 1 解析**
 
-- **随机性策略**: $\pi(a|s)$. 在某个状态下, 采取每个动作都有一个概率. LLM的生成过程就是一种随机性策略, 它输出的是词汇表中每个token的概率分布.
+- 上栏冰蓝 $\delta_t$ 落到桃粉 $A_t$。虚线 $\gamma\lambda$ 只从 $A_{t+1}$ 的左边进 $A_t$ 的右边，对应式 (8)。
+- 右侧两句是端点：$\lambda=0$ 只信一步，$\lambda=1$ 吃满后续残差。
+- 下栏绿框是 $\eta=\pi_\theta/\pi_{\mathrm{old}}$，黄框是 $[1-\varepsilon,1+\varepsilon]$。$A>0$ 锁 $1+\varepsilon$，$A<0$ 锁 $1-\varepsilon$，底框是式 (9)。
+- 图里没有学习曲线。训练好不好看 `clipfrac` 和 KL，不要看这张图的几何形状。
 
-- **状态转移概率 (P)** : $P(s'|s, a)$. 在状态s下执行动作a后, 转移到状态s'的概率. 在LLM中, 状态转移通常是确定的: 在文本序列s后生成token a, 状态必然变成s+a.
-
-**引导性问题:** 如果我们只关注即时奖励, 智能体会学到什么样的行为? 这种行为在复杂任务(如下棋)中会带来什么问题?
-
----
-
-## 2. 第二部分: 策略梯度 (Policy Gradient)——让模型直接学习动作
-
-我们知道了目标是最大化期望回报, 那么具体如何操作呢? 最直接的想法就是直接优化策略本身, 这就是策略梯度方法的核心.
-
-### 2.1 核心思想与优化目标
-
-我们将策略参数化, 通常用一个神经网络来表示, 记为 $\pi_{\theta}$, 其中 $\theta$ 是网络的权重. 我们的目标是找到一组最优的参数 $\theta^*$ , 使得期望回报 $J(\theta)$ 最大化.
-
-$\theta^* = \arg\max_{\theta} J(\theta) = \arg\max_{\theta} \mathbb{E}_{\tau \sim \pi_{\theta}}[R(\tau)]$
-
-这里的 $R(\tau) = \sum_{t=0}^{T} r_t$ 是一整条轨迹的总回报. 这个期望 $\mathbb{E}_{\tau \sim \pi_{\theta}}$ 的意思是, 我们用当前策略 $\pi_{\theta}$ 去玩很多次游戏(采样很多条轨迹), 然后计算这些轨迹回报的平均值.
-
-### 2.2 策略梯度定理: 梯度如何计算?
-
-为了用梯度上升法优化 $\theta$, 我们需要计算目标函数 $J(\theta)$ 对 $\theta$ 的梯度 $\nabla_{\theta}J(\theta)$. 这里涉及一个精妙的数学技巧, 称为"对数-导数技巧" (Log-derivative Trick).
-
-推导过程如下:
-
-$\begin{aligned}
-\nabla_{\theta} J(\theta) &= \nabla_{\theta} \mathbb{E}_{\tau \sim \pi_{\theta}}[R(\tau)] \\
-&= \nabla_{\theta} \sum_{\tau} P(\tau|\theta) R(\tau) \\
-&= \sum_{\tau} R(\tau) \nabla_{\theta} P(\tau|\theta) \\
-&= \sum_{\tau} R(\tau) P(\tau|\theta) \frac{\nabla_{\theta} P(\tau|\theta)}{P(\tau|\theta)} \\
-&= \sum_{\tau} P(\tau|\theta) \left( R(\tau) \nabla_{\theta} \log P(\tau|\theta) \right) \\
-&= \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ R(\tau) \nabla_{\theta} \log P(\tau|\theta) \right]
-\end{aligned}$
-而轨迹的概率 
-$P(\tau|\theta) = p(s_0) \prod_{t=0}^{T-1} \pi_{\theta}(a_t|s_t) P(s_{t+1}|s_t, a_t)$
-. 对其取对数并求梯度, 与 $\theta$ 无关的项(环境的初始状态和转移概率)都会消失, 只剩下:
-$\nabla_{\theta} \log P(\tau|\theta) = \sum_{t=0}^{T-1} \nabla_{\theta} \log \pi_{\theta}(a_t|s_t)$
-
-将此代入, 我们得到最终的策略梯度形式:
-
-$\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \left( \sum_{t=0}^{T-1} \nabla_{\theta} \log \pi_{\theta}(a_t|s_t) \right) R(\tau) \right]$
-
-**直观解读**:
-
-- $\nabla_{\theta} \log \pi_{\theta}(a_t|s_t)$: 这个梯度向量指向能**最大化**在状态 $s_t$ 采取动作 $a_t$ 概率的方向.- $R(\tau)$: 这是权重. 如果整条轨迹的回报 $R(\tau)$ 是正的且很大, 我们就沿着这个方向更新一大步, 增加这些动作出现的概率. 如果回报是负的, 我们就沿着相反方向更新, 减少这些动作出现的概率.
-
-### 2.3 致命缺陷: 高方差的困扰
-
-策略梯度方法虽然直观, 但存在一个严重问题: **高方差 (High Variance)** .
-
-想象一下, 在一局游戏中, 你在前期做出了一个绝妙的操作, 但在后期因为一个失误导致整局游戏失败, 最终回报 $R(\tau)$ 是一个负值. 根据策略梯度的公式, 前期那个绝妙操作的概率也会被降低——这是因为整条轨迹的单一回报 $R(\tau)$ 被均匀地分配给了每一个时间步的动作，无法区分各动作对最终结果的独立贡献，导致信用分配 (Credit Assignment) 机制过于粗糙. 
-
-问题的根源在于, 我们用**整条轨迹的回报** $R(\tau)$ 来评价**每一个单独的动作** $a_t$. 这种"功劳分配" (Credit Assignment) 方式非常粗糙和随机, 导致梯度估计的方差极大, 训练过程会非常不稳定, 收敛缓慢.
-
-**引导性问题:** 如何才能更精确地评价一个动作的好坏, 而不是用整局游戏的成败来一概而论? 这正是"评论家"登场的契机.
-
----
-
-## 3. 第三部分: Actor-Critic——引入"评论家"稳定大局
-
-为了解决策略梯度的高方差问题, Actor-Critic (AC) 框架应运而生. 它引入了一个新的角色——"评论家" (Critic), 来更精确地评估动作的价值, 从而为"演员" (Actor) 的策略更新提供更稳定的指导.
-
-### 3.1 策略(Actor)与价值(Critic)的分工
-
-AC框架将模型一分为二:
-
-- **演员 (Actor)** : 仍然是策略网络 $\pi_{\theta}(a|s)$, 负责做出动作.
-
-- **评论家 (Critic)** : 是一个价值网络 $V_{\phi}(s)$, 负责评估当前状态的好坏, 参数为 $\phi$.
-
-### 3.2 关键指标: 价值函数 (V/Q) 与优势函数 (Advantage)
-
-- **状态价值函数 (State-Value Function, V(s))** : "处于状态s有多好?". 它表示从状态s开始, 遵循当前策略$\pi$能获得的期望回报. $V^{\pi}(s) = \mathbb{E}_{\tau \sim \pi} [G_t | s_t=s]$. Critic网络学习的就是这个V函数.**动作价值函数 (Action-Value Function, Q(s, a))** : "在状态s下执行动作a有多好?". 它表示在状态s下执行动作a后, 再遵循策略$\pi$能获得的期望回报. 
-$Q^{\pi}(s, a) = \mathbb{E}_{\tau \sim \pi} [G_t | s_t=s, a_t=a]$
-.
-
-- **优势函数 (Advantage Function, A(s, a))** : "在状态s下, 执行动作a比通常情况好多少?". 这是AC框架的精髓. 它衡量了一个动作相对于当前状态平均价值的优劣.
-
-$A^{\pi}(s, a) = Q^{\pi}(s, a) - V^{\pi}(s)$
-
-**类比**: 假设你是一名学生(Actor), 每次考试后, 老师(Critic)不仅告诉你这次考了85分(Q值), 还会告诉你全班的平均分是70分(V值). 你的"优势"(Advantage)就是 $85 - 70 = 15$分. 这个"优势"比单纯的85分更能激励你, 因为它告诉你你的表现在平均水平之上.
-
-### 3.3 Actor-Critic的训练循环与优势
-
-在AC框架中, 策略梯度公式中的 $R(\tau)$ 被优势函数 $A(s_t, a_t)$ 替代:
-
-$\nabla_{\theta} J(\theta) = \mathbb{E}_{s_t, a_t \sim \pi_{\theta}} [A(s_t, a_t) \nabla_{\theta} \log \pi_{\theta}(a_t|s_t)]$
-
-由于优势函数减去了基线(baseline) $V(s_t)$, 它显著降低了梯度的方差, 使得训练更加稳定.
-
-同时, 我们也需要计算 $A(s_t, a_t)$. 实践中我们不直接学习Q函数, 而是利用**时序差分误差 (Temporal Difference, TD Error)** 来作为优势函数的估计:
-
-$\delta_t = r_{t+1} + \gamma V_{\phi}(s_{t+1}) - V_{\phi}(s_t)$
-
-这里的 $r_{t+1} + \gamma V_{\phi}(s_{t+1})$ 是对Q值的单步估计, 称为**TD目标**. TD误差 $\delta_t$ 衡量了Critic的预测值 $V_{\phi}(s_t)$ 和更接近"真实"的TD目标之间的差距.
-
-**训练循环**:
-
-1. **Actor**: 使用 TD误差 $\delta_t$ (作为优势的估计)来更新策略参数 $\theta$.
-
-2. **Critic**: 使用 TD误差 $\delta_t$ 来更新价值参数 $\phi$, 目标是最小化预测误差, 即最小化 $\delta_t^2$.
-
-### 3.4 遗留问题: 样本效率 (On-Policy的诅咒)
-
-Actor-Critic极大地提升了稳定性, 但它仍然是一个**On-Policy** (同策略)算法. 这意味着用于更新策略的数据, 必须是由当前策略 $\pi_{\theta}$ 产生的. 一旦策略 $\theta$ 更新, 之前收集的所有数据就都"过期"了, 必须丢弃并重新采样.
-
-这导致了巨大的**样本效率低下**问题. 想象一下, 为了让模型学会下棋, 每走一步(更新一次策略), 就得把之前的棋谱全部忘掉, 从头再来一局. 这无疑是非常浪费的.
-
-**引导性问题:** 我们能否利用"旧"策略产生的数据来训练"新"策略呢? 如果可以, 需要解决什么问题? 这就引出了PPO的核心思想.
-
----
-
-## 4. 第四部分: PPO的诞生——在稳定与效率之间取得极致平衡
-
-PPO的诞生, 旨在解决传统Actor-Critic算法的样本效率和更新稳定性问题, 使其成为一个既高效又可靠的强大算法.
-
-### 4.1 问题的根源: On-Policy到Off-Policy的渴望
-
-为了解决样本效率低下的问题, 我们渴望将AC算法改造为**Off-Policy** (异策略)算法. 这意味着我们可以使用由一个旧的、固定的策略 $\pi_{\theta_{old}}$ 采集的大量数据, 来反复训练和更新当前的策略 $\pi_{\theta}$. 这样一来, 数据的利用率就大大提高了.
-
-### 4.2 核心工具(一): 重要性采样 (Importance Sampling)
-
-如何用从一个分布 $q(x)$ 采样的数据来估计另一个分布 $p(x)$ 下的期望呢? 答案是**重要性采样**.
-
-$\mathbb{E}_{x \sim p}[f(x)] = \int p(x)f(x) dx = \int \frac{p(x)}{q(x)} q(x)f(x) dx = \mathbb{E}_{x \sim q}\left[\frac{p(x)}{q(x)}f(x)\right]$
-
-我们将这个思想应用到Actor的优化目标上, 用旧策略 $\pi_{\theta_{old}}$ (对应q) 采样, 来优化新策略 $\pi_{\theta}$ (对应p). 优化目标变为:
-
-$J(\theta) = \mathbb{E}_{s_t, a_t \sim \pi_{\theta_{old}}} \left[ \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)} A^{\pi_{\theta_{old}}}(s_t, a_t) \right]$
-这里的比值 
-$r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$
- 称为**重要性权重**.
-然而, 重要性采样有一个致命的陷阱: 如果两个策略分布 $\pi_{\theta}$ 和 $\pi_{\theta_{old}}$ 相差过大, 重要性权重的方差会变得极大, 导致估计极其不稳定, 甚至完全失效. 这意味着, 虽然我们可以用旧数据, 但我们不能让新策略偏离旧策略太远.
-
-### 4.3 核心工具(二): 广义优势估计 (GAE)
-
-在正式介绍PPO如何解决策略差异问题前, 我们先升级一下我们的"优势函数". 之前我们用单步TD误差 $\delta_t$ 来估计优势, 这引入了较大的**偏差(Bias)** (因为我们只看了一步). 另一种极端是使用蒙特卡洛方法, 即用完整的未来回报 $G_t$ 减去 $V(s_t)$, 这种方法偏差很小, 但**方差(Variance)** 极大.
-
-**广义优势估计 (Generalized Advantage Estimation, GAE)** 通过引入一个参数 $\lambda$ (通常在0.9到1之间), 精妙地在偏差和方差之间取得了平衡.
-
-#### 4.3.1 偏差与方差的权衡
-
-- 当 $\lambda=0$ 时, GAE退化为单步TD误差, 具有高偏差、低方差.- 当 $\lambda=1$ 时, GAE等价于蒙特卡洛优势估计, 具有低偏差、高方差.
-
-GAE的公式是所有未来TD误差的折扣加权和:
-
-$A_t^{\text{GAE}(\gamma, \lambda)} = \sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l} \quad \text{其中} \quad \delta_{t+l} = r_{t+l+1} + \gamma V(s_{t+l+1}) - V(s_{t+l})$
-
-#### 4.3.2 GAE公式详解与数值示例
-
-这个公式看起来复杂, 但在实践中可以通过一个简单的反向迭代来计算.
-
-**数值示例**: 假设我们有一段4步的轨迹, $\gamma=0.99, \lambda=0.95$.
-
-状态与奖励: 
-$s_0, a_0 \rightarrow r_1=1, s_1, a_1 \rightarrow r_2=1, s_2, a_2 \rightarrow r_3=1, s_3, a_3 \rightarrow r_4=5, s_4$
-(终止)- Critic的价值预测: $V(s_0)=1.5, V(s_1)=2.0, V(s_2)=2.5, V(s_3)=3.0, V(s_4)=0$
-
-**计算步骤**:
-
-1. **计算TD误差 **$\delta_t$:
-
-$\delta_3 = r_4 + \gamma V(s_4) - V(s_3) = 5 + 0.99 \times 0 - 3.0 = 2.0$
-
-$\delta_2 = r_3 + \gamma V(s_3) - V(s_2) = 1 + 0.99 \times 3.0 - 2.5 = 1.47$
-
-$\delta_1 = r_2 + \gamma V(s_2) - V(s_1) = 1 + 0.99 \times 2.5 - 2.0 = 1.475$
-
-$\delta_0 = r_1 + \gamma V(s_1) - V(s_0) = 1 + 0.99 \times 2.0 - 1.5 = 1.48$
-
-1. **反向计算GAE优势 **$A_t$:
-
-- $A_3 = \delta_3 = 2.0$ (因为 $A_4=0$)
-$A_2 = \delta_2 + \gamma \lambda A_3 = 1.47 + (0.99 \times 0.95) \times 2.0 = 1.47 + 1.881 = 3.351$
-
-$A_1 = \delta_1 + \gamma \lambda A_2 = 1.475 + (0.99 \times 0.95) \times 3.351 = 1.475 + 3.151 = 4.626$
-
-$A_0 = \delta_0 + \gamma \lambda A_1 = 1.48 + (0.99 \times 0.95) \times 4.626 = 1.48 + 4.351 = 5.831$
-
-通过这个过程, 我们为每个时间步都计算出了一个更稳定、更准确的优势估计值.
-
-### 4.4 前身TRPO: 过于复杂的"信任域"
-
-为了解决重要性采样中策略差异过大的问题, **信任域策略优化 (Trust Region Policy Optimization, TRPO)** 提出, 在最大化目标函数的同时, 增加一个**硬性约束**, 强制新旧策略的**KL散度**不能超过一个阈值 $\delta$:
-
-$\text{maximize}_{\theta} \quad J(\theta) \quad \text{subject to} \quad \mathbb{E}_t[D_{KL}(\pi_{\theta_{old}}(\cdot|s_t) || \pi_{\theta}(\cdot|s_t))] \le \delta$
-
-TRPO效果很好, 但这个带约束的优化问题求解起来非常复杂, 需要用到共轭梯度等二阶优化方法, 计算成本高昂且难以实现.
-
-### 4.5 PPO的智慧: 用"裁剪" (Clipping) 简化约束
-
-PPO巧妙地将TRPO的硬性约束思想, 转化为一个更简单、更容易实现的目标函数. 它没有直接约束KL散度, 而是通过**裁剪 (Clipping)** 重要性权重 $r_t(\theta)$ 来间接实现"信任域"的效果. 这就是PPO成功的关键.
-
-下面是一段 **PPO-Clip 可视化**（Markdown 嵌代码围栏，前端用 Remotion Player **当场播 React 动画**，不转 MP4）：
+同页还有一段 clip 带的动画，和上图讲同一件事：
 
 ```viz
 composition: PpoClip
@@ -278,139 +120,77 @@ title: PPO-Clip：概率比与 [1−ε, 1+ε] 信任带
 epsilon: 0.2
 ```
 
+Critic 的回归目标是 $R_t=\hat{A}_t+V(s_t)$，
 
----
+$$
+L^{\mathrm{VF}}(\phi)=\hat{\mathbb{E}}_t\bigl[(V_\phi(s_t)-R_t)^2\bigr]. \tag{10}
+$$
 
-## 5. 第五部分: PPO算法核心机制深度解析
+完整损失常写成三项。$L^{\mathrm{CLIP}}$ 要最大化（实现里取负再下降），价值损失要压下去，再加一项策略熵鼓励探索，防止过早收敛到次优尖峰：
 
-我们终于来到了PPO的核心. PPO放弃了TRPO复杂的约束优化, 设计了一个新颖的、无约束的损失函数, 仅使用一阶梯度方法就能高效优化.
+$$
+L(\theta,\phi)=L^{\mathrm{CLIP}}(\theta)-c_1 L^{\mathrm{VF}}(\phi)+c_2 S[\pi_\theta](s_t). \tag{11}
+$$
 
-### 5.1 最终的优化目标: PPO-Clip损失函数
+训练循环对应论文 Algorithm 1。初始化 $\pi_\theta$ 和 $V_\phi$。外层循环里，先固定 $\pi_{\theta_{\mathrm{old}}}$ 与环境交互，收集一批轨迹；对每个时间步算 $\hat{A}_t$（GAE）和回报 $R_t$；再内层循环 $K$ 次，从这批经验抽 mini-batch，算 $L^{\mathrm{CLIP}}$ 和 $L^{\mathrm{VF}}$，用 Adam 一类一阶方法同时更新 $\theta$ 和 $\phi$。内层结束令 $\pi_{\theta_{\mathrm{old}}}\leftarrow\pi_\theta$。采样是 on-policy，同一批上反复更新是带 clip 的 off-policy 小步。$K$ 太大，即使有 clip，策略也会慢慢走出采样分布；$K=1$ 则 clip 几乎不触发，退回普通策略梯度。有的实现还给价值预测加 clip，进一步压 $V$ 的步子，不是论文正文的默认项。
 
-PPO最常用也是最有效的版本是PPO-Clip. 其Actor的损失函数(或称目标函数, 因为我们要最大化它)如下:
+## 4. RLHF 里的四件套
 
-$L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( r_t(\theta) \hat{A}_t, \quad \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t \right) \right]$
+InstructGPT 把 PPO 接到已经过预训练和 SFT 的 GPT-3 上。架构仍是 GPT-3，训了 1.3B / 6B / 175B 三档；文中未特别说明时，InstructGPT 指 PPO-ptx。约 40 名承包商：先写示范，再给模型输出排序。标注分三段：示范约 **13k** prompt 做 SFT（16 epoch，余弦学习率，residual dropout 0.2；验证损失 1 epoch 后过拟合，继续训仍抬 RM 分和人评），排序约 **33k** 训奖励模型，另约 **31k** API prompt 跑 PPO。语料超过 96% 英文，只用 Playground 早期 prompt，不用生产 API。
 
-让我们来拆解这个公式:
+奖励模型从去掉最后 unembedding 的 SFT 出发，输入 $(x,y)$ 出标量。本工作 **只用 6B RM**：省算力，且 175B RM 训练不稳、不适合当 PPO 的 value。排序一次排 $K=4$–$9$ 条，得到 $\binom{K}{2}$ 对；一对 prompt 上全部 pairwise 当作一个 batch element，否则 RM 一轮就过拟合。损失是 Bradley-Terry：
 
-- $\hat{\mathbb{E}}_t$: 表示对在一个batch中所有时间步取平均.
-$r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$
-: 新旧策略的概率比.- $\hat{A}_t$: 由GAE计算出的优势函数估计值.- $\epsilon$: 一个小的超参数(如0.2), 定义了裁剪的范围.- $\text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)$: 将概率比 $r_t(\theta)$ 限制在 $[1-\epsilon, 1+\epsilon]$ 区间内.
+$$
+\operatorname{loss}(\theta)=-\frac{1}{\binom{K}{2}}\,\mathbb{E}_{(x,y_w,y_l)\sim D}\bigl[\log\sigma\bigl(r_\theta(x,y_w)-r_\theta(x,y_l)\bigr)\bigr]. \tag{12}
+$$
 
-### 5.2 Actor Loss: 戴着镣铐的舞蹈
+RL 前把示范的 RM 均分偏到 0（损失对平移不变）。
 
-这个min函数是PPO的精髓, 它构建了一个"悲观"的下界, 阻止策略更新过快. 我们分两种情况讨论:
+PPO 阶段同时要四份前向。Actor $\pi_\theta$ 从 SFT 初始化，可训，吐 $y$。Critic $V_\phi$ 可训，估每个前缀的价值，InstructGPT 从 RM 初始化 value。奖励模型 $r_\varphi$ 冻结，给完整回答打分。参考模型是冻结的 SFT，用来算 KL。塑形后的奖励（论文式 (2) 一类）是
 
-1. **当优势 **$\hat{A}_t > 0$** (这是一个好动作, 我们想增加其概率)** :
+$$
+r(x,y)=r_\varphi(x,y)-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{SFT}}(y\mid x)}. \tag{13}
+$$
 
-- 损失函数变为 $L = \min(r_t \hat{A}_t, (1+\epsilon)\hat{A}_t)$.- 如果 $r_t$ (新策略) 比旧策略更倾向于这个动作, 但没有超过 $1+\epsilon$, 那么 $L=r_t \hat{A}_t$, 策略正常更新.- 一旦 $r_t$ 增长到超过 $1+\epsilon$, 那么 $L$ 就会被"裁剪"为 $(1+\epsilon)\hat{A}_t$. 此时, 即使再增大 $r_t$, 损失函数也不再增加了, 从而限制了策略的更新幅度.
+工程上常把这个标量写到最后一个有效 token，前面 token 的即时奖励为 0，再按 token 扣 KL。$\beta$ 太大，策略不敢动；太小，Actor 会钻 RM 的空子，流畅度先塌。无惩罚地抬 $r_\varphi$ 会把连贯性掏空，这一项不能省。
 
-1. **当优势 **$\hat{A}_t < 0$** (这是一个坏动作, 我们想减小其概率)** :
+InstructGPT 还做 PPO-ptx：PPO 梯度里混预训练似然，用来压对齐税。$\gamma=0$ 就是纯 PPO。纯 PPO 在 SQuAD、DROP、HellaSwag、WMT15 Fr→En 上相对 GPT-3 退步；PPO-ptx 能压住一部分，HellaSwag 甚至超过 GPT-3，DROP / SQuADv2 / 翻译仍落后。加大 KL 不能同时救 DROP/SQuAD 又保住验证奖励。对自训的 FLAN / T0，InstructGPT 对基线 **73.4 ± 2%**，T0 / FLAN 是 **26.8 / 29.8 ± 2%**。
 
-- 损失函数变为 $L = \max(r_t \hat{A}_t, (1-\epsilon)\hat{A}_t)$. (因为 $\hat{A}_t$ 是负数, min变成了max).- 如果 $r_t$ 比旧策略更不倾向于这个动作, 但没有低于 $1-\epsilon$, 那么 $L=r_t \hat{A}_t$, 策略正常更新.- 一旦 $r_t$ 减小到低于 $1-\epsilon$, 那么 $L$ 就会被"裁剪"为 $(1-\epsilon)\hat{A}_t$. 同样地, 进一步减小 $r_t$ 也不会带来更大的损失变化, 限制了更新.
+![Actor、Critic、奖励模型、参考模型的数据流](./images/fig-ppo-four-models.png)
 
-**视觉化描述 (Visual Description):**
-想象一条以 $r_t(\theta)$ 为x轴, $L$ 为y轴的曲线. 当 $A_t > 0$ 时, 这条线是一条斜率为 $A_t$ 的直线, 但在 $x=1+\epsilon$ 处被削平, 变成一条水平线. 当 $A_t < 0$ 时, 它是一条斜率为 $A_t$ 的直线, 但在 $x=1-\epsilon$ 处被削平. 最终的损失函数是这两条被裁剪过的线的下包络线, 形成一个中间凹陷、两边平坦的形状.
+> 图 2：prompt 进 Actor 出 $y$；$y$ 分叉到可训 Critic、冻结 RM、冻结 $\pi_{\mathrm{ref}}$。KL 进 $r_t$，再和 $V$ 进 GAE，底栏分别更新 $\theta$ 和 $\phi$。
 
-### 5.3 Critic Loss: 努力看清真相的评论家
+**图 2 解析**
 
-Critic的目标是尽可能准确地预测状态价值. 它的损失函数通常是一个简单的均方误差 (MSE) Loss, 目标是让其预测的价值 $V_{\phi}(s_t)$ 逼近"真实"的回报. 这个"真实"回报, 我们用之前GAE计算中得到的 $A_t + V(s_t)$ 来表示, 记为 $R_t$.
+- 自上而下。绿 Actor、鲑鱼 Critic 标 train；黄 RM、紫 $\pi_{\mathrm{ref}}$ 标 frozen。
+- 实线是 rollout、采样、打分、$V$、$A_t$、$R_t$。虚线只走 KL，从 $\log\pi_\theta$ 和 $\pi_{\mathrm{ref}}$ 进 $r_t=r_\varphi-\beta\,\mathrm{KL}$。
+- GAE 框同时出 $A_t$ 和 $R_t=A_t+V$。$A_t$ 进 $L^{\mathrm{CLIP}}$，$R_t$ 进 $L^{\mathrm{VF}}$。
+- 图里没有从损失指回 Actor 的反馈箭。更新写在底框「→ θ / → φ」里。
 
-$L^{VF}(\phi) = \hat{\mathbb{E}}_t \left[ (V_{\phi}(s_t) - R_t)^2 \right]$
+把图 2 按一次迭代走完：prompt 进 Actor，自回归采完整 $y$；同一条 $y$ 送进 Reference 算逐 token 的 $\mathrm{ref\_log\_probs}$，Actor 自己再算一遍 $\log\pi_\theta$；完整 $(x,y)$ 进 RM 得标量 score；每个前缀进 Critic 得 $V$。$\log\pi_\theta$ 和 $\mathrm{ref\_log\_probs}$ 合成 KL 惩罚，和 score 拼成逐步 $r_t$，再和 $V$ 进 GAE，得到 $\hat{A}_t$ 与 $R_t$。更新阶段只动 Actor 和 Critic，RM 与 Reference 始终冻结。这个闭环在每个 PPO-epoch 里重复，直到外层换新的 $\pi_{\theta_{\mathrm{old}}}$。
 
-在一些实现中, Critic的损失也会被裁剪, 以进一步增强稳定性.
+评测主轴是标注员偏好，不是 HumanEval。测试集上 **1.3B InstructGPT** 被标员偏好于 **175B GPT-3**。**175B InstructGPT** 对 175B GPT-3 是 **85 ± 3%**，对 few-shot GPT-3 是 **71 ± 4%**。闭域 API 任务上幻觉 **21%** 对 GPT-3 的 **41%**。TruthfulQA 上真实且有信息的回答大约是 GPT-3 的两倍；要求尊重时 RealToxicityPrompts 有毒输出大约少 25%。Winogender / CrowS-Pairs 没有显著好过 GPT-3。训练标注员两两一致 72.6 ± 1.5%，留出标注员 77.3 ± 1.3%，5-fold RM 留出准确率 69.6 ± 0.9%（训练集 72.4 ± 0.4%）。RM 准确率到不了 90%，PPO 却仍能抬人评，说明策略吃的是比较信号的方向，不是把奖励模型当成精确的绝对分。这也是为什么 KL 和 PPO-ptx 要同时在：RM 本身会标错、会被钻空子，不能让 Actor 把 6B 裁判的分数当真值去拟合。
 
-### 5.4 完整算法流程
+这里有一条建模边界。把每个 token 当动作、部分序列当状态，折扣 $\gamma=1$，是为 GAE 和 Critic 准备的脚手架。奖励模型只给完整 $y$ 一个标量；除终点外，逐步 $R_t$ 几乎只剩 KL。环境转移还是确定的。从任务看，这更接近「以 prompt 为初态、整段生成为唯一动作、写完即终止」的 bandit。词表名义上几万维，条件在 prompt 和已写出的 token 上之后，概率质量会堆在极少几个候选上。Ahmadian 等后来在 Llama 上扫 GAE 的 $\lambda$，发现 $\lambda=1$ 奖励最高，再往下压 $\lambda$ 反而差；全程每个 batch 里真正被 clip 到的 token 平均不到 5%。他们还做过更狠的一刀：$\lambda=1$ 时关掉 clip、再去掉比率 $\pi_\theta/\pi_{\mathrm{old}}$，PPO 损失退回 Vanilla PG，奖励没垮。学习已经贴着 on-policy 走时，为「防止一步跨太远」准备的夹子很少合上。这条「token MDP 对序列 bandit」的账在 [06-RLOO](../06-RLOO-留一法基线/06-RLOO-留一法基线.md)。本篇仍按 Schulman / InstructGPT 把 PPO 写成带 Critic 的 token 级更新，因为工业 RLHF 很长一段时间就是这样跑的，公式也要从这边读起。
 
-PPO的完整损失函数通常是三项之和:
+四份权重的账单要按驻留算，不是按「多一个头」。Actor 和 Critic 往往同量级，有的实现共享主干、只分策略头和价值头，有的完全两套。RM 可以小一档（InstructGPT 用 6B 盯 175B 策略），Reference 通常是 SFT 的冻结拷贝，前向还是要算一遍 $\log\pi_{\mathrm{ref}}$。生成器、参考、Critic、RM 同时在卡上，交错更新，这是后来 GRPO / RLOO 要砍 Critic 的直接动机。显存翻一倍还只是账单的一半；另一半是价值估偏了，优势跟着偏，策略更新跟着歪。
 
-$L(\theta, \phi) = L^{CLIP}(\theta) - c_1 L^{VF}(\phi) + c_2 S[\pi_{\theta}](s_t)$
+和邻居的分工可以收成一句。GRPO 留下 clip，去掉 $V_\psi$，用同题 $G$ 条的 $z$-score 当优势，KL 改挂损失。GSPO 把重要性采样从 token 提到序列。RLOO 也不训 Critic，但第 $i$ 条的 baseline 不含自己。DPO 没有在线 rollout。选 PPO 通常是因为还要过程中的价值、还要在线探索，并且愿意付四模型显存。
 
-- $L^{CLIP}(\theta)$: Actor的核心损失, 我们要最大化它(或者最小化其相反数).- $L^{VF}(\phi)$: Critic的价值损失, 我们要最小化它.- $S[\pi_{\theta}](s_t)$: 一个可选的**熵(Entropy)** 奖励项. 熵衡量了策略的不确定性, 加入这一项可以鼓励模型进行更多的探索, 防止过早收敛到次优策略.- $c_1, c_2$: 是控制各项权重的超参数.
+## 5. 实现：奖励、rollout、GAE、clip
 
-**PPO的训练循环 (伪代码)** :
-
-1. 初始化策略网络 $\pi_{\theta}$ 和价值网络 $V_{\phi}$.2. 循环N次 (N个episodes):
-
-1. 使用当前策略 $\pi_{\theta_{old}}$ (固定参数) 与环境交互, 收集一批轨迹数据 (经验).2. 对收集到的每个时间步 $t$, 计算优势估计 $\hat{A}_t$ (使用GAE) 和回报 $R_t$.3. 循环K次 (PPO-epochs):
-
-1. 从收集的经验中随机抽取一个mini-batch.2. 计算Actor损失 $L^{CLIP}(\theta)$ 和 Critic损失 $L^{VF}(\phi)$.3. 使用梯度下降(如Adam)同时更新Actor和Critic的网络参数 $\theta$ 和 $\phi$.
-
-1. 令 $\pi_{\theta_{old}} \leftarrow \pi_{\theta}$.
-
----
-
-## 6. 第六部分: 实战篇——PPO在大型语言模型RLHF中的应用
-
-理论已经完备, 现在我们将其应用到最激动人心的领域: 使用RLHF对齐大型语言模型.
-
-### 6.1 场景映射: LLM世界中的强化学习
-
-- **Agent**: 待优化的LLM本身, 我们称之为**Actor Model**.
-
-- **Environment**: 用户输入的**Prompt**.
-
-- **State (s)** : Prompt + 已经生成的Response部分.
-
-- **Action (a)** : 生成下一个**Token**.
-
-- **Policy (**$\pi(a|s)$**)** : LLM在给定当前文本序列后, 输出的词汇表上每个Token的概率分布.
-
-### 6.2 RLHF中的四位关键角色
-
-在LLM的PPO训练中, 我们需要四个模型协同工作:
-
-- **演员 (Actor Model)** : 这就是我们要训练的主角, 通常从一个经过指令微调(SFT)的模型初始化. 它的任务是生成Response.
-
-- **评论家 (Critic Model)** : 这是价值网络 $V_{\phi}(s)$, 评估当前生成状态的价值. 它的架构通常与Actor类似, 但输出一个标量值. 它也需要训练.
-
-- **裁判 (Reward Model, RM)** : 这是一个**预训练好且参数冻结**的模型. 它的任务是给一个完整的(Prompt, Response)对打分, 这个分数就是我们强化学习中的**奖励(Reward)** . RM本身是通过在人类偏好数据集上训练得到的.
-
-- **导师 (Reference Model)** : 这通常是Actor模型的初始版本(即SFT模型), **参数同样冻结**. 它的作用是计算KL散度, 作为惩罚项, 防止Actor模型在追求高奖励时"忘本", 丧失其原有的语言能力.
-
-### 6.3 RLHF-PPO的完整训练闭环
-
-**视觉化描述 (Visual Description):**
-想象一个流程图:
-
-1. **Rollout阶段**: 一个Prompt输入给**Actor Model**, 生成一个完整的Response.
-
-2. **评估阶段**:
-
-- 同一个Response被送入**Reference Model**, 计算出每个token的ref_log_probs.- Actor Model自身也计算出每个token的log_probs.- 完整的(Prompt, Response)被送入**Reward Model**, 得到一个最终的奖励分数 score.- 生成过程中的每个中间状态(每个token)被送入**Critic Model**, 得到一系列的价值估计 values.
-
-1. **计算阶段**:
-
-- log_probs 和 ref_log_probs 用于计算**KL散度惩罚**.- KL散度惩罚和 score 结合, 形成最终的**每一步奖励 **rewards.- rewards 和 values 一起送入**GAE模块**, 计算出**优势 **advantages 和**回报 **returns.
-
-1. **更新阶段**:
-
-- advantages, log_probs (新旧) 送入**PPO Actor Loss**计算模块, 更新Actor.- returns, values (新旧) 送入**PPO Critic Loss**计算模块, 更新Critic.
-
-这个闭环在每个PPO-epoch中重复, 直到训练完成.
-
----
-
-## 7. 第七部分: 代码实现——理论与实践的握手
-
-让我们通过核心代码片段, 将上述理论与trl等流行库的实现联系起来.
-
-### 7.1 准备阶段: 奖励模型 (Reward Model) 的训练
-
-奖励模型在 PPO 循环之外先训完。数据是 `(prompt, chosen, rejected)` 三元组。Bradley-Terry 损失把 chosen 的标量分抬到 rejected 之上：
+奖励模型在 PPO 循环外先训完。数据是 `(prompt, chosen, rejected)`。Bradley-Terry 把 chosen 的标量分抬到 rejected 之上，和 InstructGPT 的 pairwise logistic 是同一族：
 
 ```python
 def reward_model_loss(rm, prompt, chosen, rejected):
-    r_w = rm(prompt, chosen)      # 标量
+    r_w = rm(prompt, chosen)
     r_l = rm(prompt, rejected)
     return -F.logsigmoid(r_w - r_l).mean()
 ```
 
-训完的 `rm` 在 rollout 里只做前向打分，不再更新（除非像 GRPO 迭代那样另开奖励模型续训）。参考模型通常是冻结的 SFT 权重，用来算 KL。
+训完的 `rm` 在 rollout 里只做前向。参考模型是冻结的 SFT，用来算式 (13) 的 KL。熵项 $S[\pi_\theta]$ 在式 (11) 里是可选项：策略过早塌成尖峰时，正优势样本会把概率质量堆到几个 token 上，`clipfrac` 还没报警，多样性已经没了。$c_2$ 过大则模型开始胡说，RM 分不一定掉，人评会先掉。
 
-### 7.2 核心流程(一): 经验数据的收集 (Rollout)
-
-Actor 用当前 $\pi_{\theta_{\mathrm{old}}}$ 对一批 prompt 自回归采样。每个时间步记下：生成的 token、$\log\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$、Critic 的 $V_{\phi}(s_t)$。序列结束（或撞到最大长度）后，奖励模型对完整回答打一个标量，写到最后一个有效 token 上，前面 token 的即时奖励为 0（KL 若按 InstructGPT 写法，会再减逐 token KL，见第五部分式 (1) 的邻居 GRPO 文对照）。
+Actor 用当前 $\pi_{\theta_{\mathrm{old}}}$ 对一批 prompt 自回归采样。每个时间步记下 token、$\log\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$、Critic 的 $V_\phi(s_t)$。序列结束或撞到最大长度后，RM 对完整回答打一个标量，写到最后一个有效 token：
 
 ```python
 @torch.no_grad()
@@ -434,11 +214,9 @@ def rollout(actor, critic, tokenizer, prompts, max_new):
     return sequences, old_logp, values
 ```
 
-采样期间 Actor 和 Critic 的权重冻结。这批轨迹是后面 K 个 PPO-epoch 反复使用的经验，所以叫 on-policy 采样、off-policy 多次更新。
+采样期间 Actor 和 Critic 的权重冻结。这批轨迹给后面 $K$ 个 PPO-epoch 反复用，所以叫 on-policy 采样、off-policy 多次更新。旧对数概率必须当时记下：事后用新权重重算 $\pi_{\theta_{\mathrm{old}}}$，比率恒等于 1，clip 失效。Reference 的 $\log\pi_{\mathrm{ref}}$ 也可以在 rollout 里一并算好，避免更新阶段再跑一遍冻结模型。
 
-### 7.3 核心流程(二): 优势与回报的计算
-
-GAE 需要逐步的 TD 残差。LLM 里即时奖励稀疏，常用「最后一个 token 放 $r$，前面为 0」，价值序列仍逐步估。$\delta_t=r_t+\gamma V_{t+1}-V_t$，$A_t=\sum_{l\ge 0}(\gamma\lambda)^l\delta_{t+l}$，回报 $R_t=A_t+V_t$ 给 Critic 当回归目标。
+GAE 需要逐步 TD 残差。LLM 里即时奖励稀疏，常用「最后一格放 $r$，前面为 0」，价值序列仍逐步估。$\delta_t=r_t+\gamma V_{t+1}-V_t$，$A_t$ 按式 (8) 回扫，$R_t=A_t+V_t$ 给 Critic：
 
 ```python
 def gae(rewards, values, mask, gamma=0.99, lam=0.95):
@@ -455,11 +233,9 @@ def gae(rewards, values, mask, gamma=0.99, lam=0.95):
     return adv * mask, returns
 ```
 
-$\lambda=1$ 时接近蒙特卡洛，$\lambda=0$ 时只信一步 TD。LLM 对齐常用偏高的 $\lambda$，因为中途 $V$ 不准，太信 Critic 会把偏差写进 $A_t$。
+$\lambda=1$ 接近蒙特卡洛，$\lambda=0$ 只信一步 TD。LLM 对齐常用偏高的 $\lambda$，因为中途 $V$ 不准，太信 Critic 会把偏差写进 $A_t$。对话短句还能凑合；数学 CoT 动辄几百 token，中间某步看起来像在推导，最终答案可能已经错了。$V$ 若按「当前前缀像不像好证明」来拟合，会把文风和正确性搅在一起。GAE 假定每个前缀都有一个靠谱的 $V(s_t)$，这个假定在稀疏奖励、长推理上最容易破。这是后来组相对、留一法要绕开 $V$ 的原因，不是 PPO 公式写错了。
 
-### 7.4 核心流程(三): Actor与Critic的损失计算与更新
-
-同一批经验上循环 `ppo_epochs` 次，每次抽 mini-batch。Actor 用第五部分的 $L^{\mathrm{CLIP}}$：先算新策略的 $\log\pi_\theta$，比率 $r_t=\exp(\log\pi_\theta-\mathrm{old\_logp})$，再 `min(r A, clip(r) A)`。Critic 对 `returns` 做 MSE。可选熵奖励防止过早塌。
+同一批经验上循环 `ppo_epochs` 次。Actor 用式 (9)：新策略 $\log\pi_\theta$，比率 $r_t=\exp(\log\pi_\theta-\mathrm{old\_logp})$，再 `min(r A, clip(r) A)`。Critic 对 `returns` 做 MSE：
 
 ```python
 def ppo_update(actor, critic, batch, clip_eps=0.2, c1=0.5, c2=0.01):
@@ -474,24 +250,28 @@ def ppo_update(actor, critic, batch, clip_eps=0.2, c1=0.5, c2=0.01):
     loss.backward()
 ```
 
-监控：`kl`（Actor 对 Reference）、`clipfrac`（被 clip 的比例，长期 >0.5 说明步子太大）、`scores`（奖励模型均分）。这些数掉下去再回头调 $\epsilon$、学习率和 KL 系数，不要先改 GAE 公式。
+要盯的数就这几个。`kl`（有的日志写成 `objective/kl`）：Actor 对 Reference，长期飙高说明在忘 SFT，先动 `kl_ctl` / $\beta$。`scores`：RM 均分，只说明在讨好 $r_\varphi$，不保证人评，奖励黑客时这条曲线照样漂亮。`clipfrac`：被裁进 $[1-\varepsilon,1+\varepsilon]$ 的比例，长期大于 0.5 说明步子太大，先降学习率或收 $\varepsilon$，不要先改 GAE 公式。`returns/mean` 和 `vpred` 长期对不齐，Critic 在瞎猜，优势不可信。这些数掉下去再回头调 $\varepsilon$、学习率和 KL 系数。监控是看闸门有没有合上，不是画一条假的奖励曲线当论文 Figure。
 
-### 7.5 训练监控: 关键指标解读
+## 6. 失效模式
 
-在训练过程中, 监控以下指标至关重要:
+| 现象 | 常见原因 | 怎么处理 |
+|------|----------|----------|
+| KL 爆炸，输出不可读 | $\beta$ 太小，或学习率太大 | 先抬 KL 系数、降 lr；不要先改 clip 公式 |
+| `clipfrac` 长期 $>0.5$ | 新旧策略一次拉太开 | 降 lr 或把 $\varepsilon$ 从 0.2 收小 |
+| RM 分涨、人评掉 | 奖励黑客 | 检查 RM 覆盖；InstructGPT 用 PPO-ptx 和 KL 顶 |
+| 中间 token 的 $V$ 乱跳 | 奖励只打在句末，Critic 难训 | 接受稀疏奖励；或换组相对 / RLOO |
+| 基准能力掉（对齐税） | 纯 PPO 挤掉预训练分布 | InstructGPT 用 PPO-ptx；加大 KL 救不了所有基准 |
+| 175B RM 当 value | 大 RM 信号极端 | 论文只用 6B RM，value 从 RM 初始化，不是再训一个 175B Critic |
 
-- objective/kl: Actor与Reference模型的KL散度. 如果过高, 说明模型可能在"忘本", 需要调整kl_ctl系数.- objective/scores: 奖励模型给出的平均分. 期望它能稳定上升.- ppo/policy/clipfrac: 策略更新被裁剪的比例. 如果此值过高(例如>0.5), 说明新旧策略差异太大, 训练可能不稳定, 可能需要减小学习率.- ppo/returns/mean: 平均回报.- ppo/val/vpred: Critic预测的平均价值.
+PPO 不是万能的。它解决的是「小步更新旧策略采来的数据」，前提是信任域还在、Critic 还估得动。奖励只打在整段上、策略已经贴着 on-policy 挪的时候，clip 和 GAE 的 $\lambda$ 会变得很闲，那是 RLOO 那篇的实验区，不是把本篇公式作废。
 
----
+还有几条实现上会反复踩的坑。优势没标准化时，一个 batch 里偶然出现的极端 $A_t$ 会把 clip 之前的代理目标拉飞，很多代码会先把 $\hat{A}$ 减均值除标准差，这是工程习惯，Schulman 正文没有写成必选项。mask 没处理好，padding token 会进 GAE 和 clip，价值回归去拟合一排零。Actor 和 Critic 学习率差一个数量级是常见配法：策略走小步，价值先拟合回报。InstructGPT 的 RM 学习率和策略学习率也不是同一档，6B RM 先拟合比较数据，175B 策略只在塑形奖励上小步挪。把两套学习率合成一个数，训不稳时很难判断是 clip 的问题还是价值网络没跟上。
 
-## 8. 总结 (Conclusion)
+下一篇要看组内相对就进 [02-GRPO](../02-GRPO/02-GRPO.md)；要看序列级重要性采样进 [03-GSPO](../03-GSPO/03-GSPO.md)；信任域的硬约束在 [05-TRPO](../05-TRPO/05-TRPO.md)。公式从这边读起，变体各自改的是优势怎么来、比率在哪一层算，不是另起一套目标函数编号。
 
-PPO算法并非横空出世, 而是站在前人的肩膀上, 对强化学习核心矛盾——探索与利用、偏差与方差、稳定与效率——进行精妙权衡的产物. 本文通过一条清晰的演进路径, 从基础的策略梯度方法出发, 揭示了其高方差的弊病; 引入Actor-Critic框架作为解决方案, 又指出了其On-Policy带来的样本效率低下问题; 最终, 通过重要性采样、GAE和革命性的"裁剪"目标函数, PPO得以登场, 成为一个在理论完备性、实践稳定性和实现简洁性上都达到极高水准的算法.
+## 参考文献
 
-在大型语言模型的对齐任务中, PPO通过其鲁棒的Off-Policy更新能力, 结合由奖励模型量化的人类偏好, 成功地将LLM从一个单纯的"文本续写机"调优为一个更符合人类期望的"智能对话伙伴". RLHF-PPO框架的成功, 雄辩地证明了强化学习在解决复杂、高维、目标模糊的AI对齐问题上的巨大潜力.
-
-当然, PPO也并非终点. 随着研究的深入, DPO (Direct Preference Optimization) 等更直接、可能更高效的对齐方法也正在涌现. 但无论技术如何迭代, PPO所蕴含的关于策略优化、信任域和稳定性控制的核心思想, 都将作为强化学习发展史上的重要里程碑, 继续为未来的研究者和实践者提供深刻的启示.
-
-## 9. 参考文献 (References)
-
-- Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). Proximal Policy Optimization Algorithms. *arXiv preprint arXiv:1707.06347*.- Schulman, J., Moritz, P., Levine, S., Jordan, M., & Abbeel, P. (2015). High-Dimensional Continuous Control Using Generalized Advantage Estimation. *arXiv preprint arXiv:1506.02438*.- Schulman, J., Levine, S., Abbeel, P., Jordan, M., & Bartlett, P. (2015). Trust Region Policy Optimization. *In International conference on machine learning (pp. 1889-1897)*.- Hugging Face TRL Library Documentation: [https://huggingface.co/docs/trl](https://huggingface.co/docs/trl)- Li, Y. (Deep Reinforcement Learning Lect.) Bilibili. [https://www.bilibili.com/video/BV1MW411w79n/](https://www.bilibili.com/video/BV1MW411w79n/)
+1. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347). *arXiv:1707.06347*.
+2. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). *NeurIPS*.
+3. Schulman, J., Moritz, P., Levine, S., Jordan, M., & Abbeel, P. (2016). [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438). *ICLR*.
+4. Schulman, J., Levine, S., Moritz, P., Jordan, M., & Abbeel, P. (2015). [Trust Region Policy Optimization](https://arxiv.org/abs/1502.05477). *ICML*.
