@@ -124,4 +124,5 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 - [APD](./apd.md)
 - [离散 copula](./discrete-copula.md)
 - [CoDD](./codd.md)
-- [离散 copula](./discrete-copula.md)
+- [EDLM](./edlm.md)
+- [自适应采样](./adaptive-sampling.md)

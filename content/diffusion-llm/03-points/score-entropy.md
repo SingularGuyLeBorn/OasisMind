@@ -152,3 +152,5 @@ Hamming 距离 1 的因式分解，和掩码扩散一步多揭的因子分解是
 - [失效模式](./failure-modes.md)
 - [离散流匹配](./discrete-flow.md)
 - [离散 copula](./discrete-copula.md)
+- [EDLM](./edlm.md)
+- [自适应采样](./adaptive-sampling.md)

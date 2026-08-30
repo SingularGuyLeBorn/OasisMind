@@ -106,7 +106,7 @@ CodeBERTScore 用预训练代码模型的上下文表示做余弦对齐，F1 高
 
 [推理加速](./inference-acceleration.md) 的 DualCache、SlowFast、dParallel 改的是已有 demasker 的采样轨迹，不另训句级扩散。CRoCoDiL 要训 $h_\phi$、$f_\theta$、$G_\psi$。训练免费的加速数字不能和 $13\times$ 减。dParallel 的 8.5× 是 GSM8K-CoT 时延 18.6s 到 2.2s。分母是任务、硬件、是否微调，三件都不同。Fast-dLLM DualCache 的 27.6× 对照原版 LLaDA 吞吐，任务在加速专文里。本篇 $13\times$ 对照的是同一颗 Python 微调 LLaDA、无条件、整段一块、NFE 从 512 降到 40。长度 1024 那档是 1024 降到 72，约 $14\times$，MAUVE 从 0.76 到 0.8。两档都过 10，摘要才写超过 10×。换一块长度、换 $K$、换是否中途更新 $\mathbf{z}_0$，倍数要重测。ConThenDisc 冻草稿，NFE 更省，质量在 Figure 6 上低于 ConWithinDisc、仍高于基础。中途更新一次是正文默认；更新更勤的档附录可以有，主叙述没有把它写成第二张倍数表。自编码器 Table 1 里块长 256、NFE 4 已经能把 CER 打到 0.205，说明草稿已知时少步译词是可行的；无条件难在草稿本身要从噪声长出来。重建容易、生成难。CER 是有参考的重建误差，MAUVE 是无参考的分布匹配，两列不能对减。Table 1 没有 MAUVE 列，Figure 6 没有 CER 列。指标跟着任务换。重建跟生成不是同一张卷，也不能当同一份分数读。
 
-能量模型那条相关工作是 Xu 等人 ICLR 2025 的 energy-based diffusion LM，作者写成小尺度上用能量补跨格。Guo/Xu 若另有 copula 能量写法，不在这篇主表里。CRoCoDiL 没有报能量函数的配分函数，连续侧走的是标准高斯扩散去噪。
+能量模型那条相关工作是 Xu 等人 ICLR 2025 的 energy-based diffusion LM，作者写成小尺度上用能量补跨格。专文见[EDLM](./edlm.md)：49% 和 $1.3\times$ 停在 GPT-2 small，不是本篇的 8B Python。Guo/Xu 若另有 copula 能量写法，不在这篇主表里。CRoCoDiL 没有报能量函数的配分函数，连续侧走的是标准高斯扩散去噪。
 
 局限按原文。条件生成没有做。连续扩散还可以蒸。潜变量设计还可以更省。对照模型还窄，主骨干就是这颗微调 LLaDA。1200 万 Python 改变了 demasker 的领域，读「LLaDA 上 13×」时，LLaDA 已经不是通用 Base。13× 不是开源 LLaDA-8B 聊天快了十三倍，领域是无条件 Python，指标是 NFE 与 MAUVE / Gen-PPL。HumanEval、GSM8K、MATH500 这篇没有。附录 H 讨论怎么把算法接到有提示的合成，正文没有那张表。蒸连续扩散、换更省的潜变量、换别的 demasker 骨干，都写在结论里当下一步。当前能核对的只有：微调 Python 的 LLaDA-8B、Qwen 0.6B 编码器、无条件、整段一块、Figure 6 两档工作点，以及 Table 1 的重建。
 

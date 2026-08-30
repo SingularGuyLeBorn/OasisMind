@@ -137,7 +137,7 @@ Table 4 按行如下。$N=4$、$K=4$：bootstrap 毒性 0.25、holdout 0.19、PP
 
 [对齐与强化学习](./alignment-rl.md) 改权重。VRPO、diffu-GRPO 把奖励写进梯度。嵌套 SMC 推理期拧，换奖励不用再训。作者把 RLHF 的模式崩塌和「焊死一份奖励」写成动机，没有在 MDLM 上对照 d1。Table 1 的 0.40 和 LLaDA 1.5 的分数不是同一张表。
 
-[离散 copula](./discrete-copula.md) 和 [CoDD](./codd.md) 补的是一步因子化的联合，目标是似然和 MATH/GSM8K 准确率。嵌套 SMC 补的是路径测度上的奖励倾斜，目标是 $p_\lambda$。一个改去噪分布的依赖结构，一个改采样器对标量奖励的倾斜。DCD 的 32× 是 NFE，对照 SEDD 多步；本篇没有步数蒸馏，默认 $T=50$ 不变。CoDD 的 +5.00 是 LLaDA 低置信 MATH500 256 步。三套分母不能减。
+[离散 copula](./discrete-copula.md) 和 [CoDD](./codd.md) 补的是一步因子化的联合，目标是似然和 MATH/GSM8K 准确率。[EDLM](./edlm.md) 也补联合，但是残差能量乘在 MDLM 提案上，主表是 OWT PPL 和 Gen PPL，尺度 GPT-2。嵌套 SMC 补的是路径测度上的奖励倾斜，目标是 $p_\lambda$。一个改去噪分布的依赖结构，一个改采样器对标量奖励的倾斜。DCD 的 32× 是 NFE，对照 SEDD 多步；EDLM 的 $1.3\times$ 是墙钟；本篇没有步数蒸馏，默认 $T=50$ 不变。CoDD 的 +5.00 是 LLaDA 低置信 MATH500 256 步。分母不能减。
 
 局限按原文抄。只有两条奖励、一颗检查点。中间势靠 $\hat x_0$ 重构和现成奖励模型，方差大。下一步他们点名 BOLD、HolisticBias、TruthfulQA、HarmBench、MT-Bench、AlpacaEval 是作者自己点名的下一步，正文没有这些套件上的分数。Dream-7B 与 LLaDA 同样被写成未来工作。正文尚未给出这些套件的实验分数。0.40 是这颗 768 维 MDLM、15 条前缀、150 段续写上的毒性率，不是 8B 可控生成排行榜。作者还点了 Wu 等人 2025 一类采样问题和 Singhal 的图像转向，都没有进本篇数字。文本侧的 0.40 不能搬到图像 FK 转向的倍数上。
 

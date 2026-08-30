@@ -133,7 +133,7 @@ Figure 3 左图把 MATH500、长度 512、256/128/64 步拿去和 d1 / wd1 / d2 
 
 DCD：推理时 I-投影，两边冻住，GPT-2 × SEDD，32× 是 NFE。CoDD：训一层 HMM，7B/8B Instruct，主表是准确率不是步数倍数。DCD 的 copula 看不见后缀；CoDD 的 PC 在块内或窗口内对任意掩码图案做精确边缘。法律都是「骨干边际不够」，接口不是同一个。Figure 4 在 SEDD 尺度上已经把两家放在同一张条件似然图里，CoDD 更高、辅助模型更轻。换到 LLaDA 8B，DCD 没有主表，不能把 1 nat 抄成 MATH500 的 +5.00。
 
-能量模型当 copula 是 DCD 结论里点过的同期路线（Guo / Xu 等人）。CoDD 相关工作把能量模型和 AR 辅助都算进「额外深度生成模型，开销大」那一筐，然后把自己放在可精确推断的轻量层。没有和能量模型打过同一张 8B 表。本篇也不编那一行。
+能量模型当 copula 是 DCD 结论里点过的同期路线。[EDLM](./edlm.md) 是 Xu 等人 ICLR 2025 那张 GPT-2 尺度表，不是 8B。CoDD 相关工作把能量模型和 AR 辅助都算进「额外深度生成模型，开销大」那一筐，然后把自己放在可精确推断的轻量层。没有和能量模型打过同一张 8B 表。本篇也不编那一行。
 
 APD：同词表 0.5B AR，从左到右截断，有损投机。CoDD 不要求同词表小模型，要求能训 PC 的问答对和预计算 logits。APD 没跑 LLaDA；CoDD 主表有 LLaDA 块扩散。APD 的联合发生在验证器拒绝草稿时；CoDD 的联合发生在候选分布里，规划器还是原来的低置信。两刀可以叠，没有联合实验。
 
@@ -168,3 +168,4 @@ d1 / diffu-GRPO 改 8B 权重，对齐数学对错。CoDD 不改骨干，3 小�
 - [采样与调度](../02-mechanism/sampling.md)
 - [块扩散](./block-diffusion.md)
 - [失效模式](./failure-modes.md)
+- [EDLM](./edlm.md)

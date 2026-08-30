@@ -80,7 +80,7 @@ $$
 - **R3**：从 $\hat p$ 抽出干净草案，再按吸收态后验写回 $\bm{x}_t$。
 - **F0**：4 步对 128 步是无条件 128 token。Table 1 是 WikiText-103 填空 MAUVE。不是 APD，也不是 8B。
 
-能量模型当 copula 是同期另一条（Guo 等人 2024），本篇实验没用。不要把能量校正和 I-投影写成同一算法。
+能量模型当 copula 是同期另一条。Guo 等人 2024 本花园没有独立主表。[EDLM](./edlm.md) 是 Xu 等人 ICLR 2025：残差能量乘在 MDLM 提案上，49% 是 Table 3 GPT-2 2048 步。不要把残差能量和 I-投影写成同一算法。
 
 ## 3. I-投影落到一组 logit 偏置
 
@@ -200,3 +200,5 @@ ReFusion 的槽间任意顺序、槽内因果，是把联合写进注意力图�
 - [Score entropy](./score-entropy.md)
 - [推理加速](./inference-acceleration.md)
 - [失效模式](./failure-modes.md)
+- [EDLM](./edlm.md)
+- [自适应采样](./adaptive-sampling.md)

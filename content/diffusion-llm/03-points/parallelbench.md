@@ -153,6 +153,8 @@ DiffuCoder 的 AR-ness 与本篇正交：AR-ness 高表示揭开顺序像从左�
 
 作者自己写：17 任务覆盖仍窄；主分析是短输出，长序列可能换形状；$n$ 可调，长生成要另测。把 Shuffle 的 $n=6$ 曲线抄进 2k token 聊天，外推无效。长 CoT 会把 $\mathcal{C}$ 摊到更多位置上，每步的 $|S_t|$ 若跟着长度线性涨，式 (4) 的和不一定降。这是局限，不是「短任务已经代表聊天」。
 
+DCD 的 $\mathrm{D}_{\mathrm{TC}}$ 是去噪链上联合相对乘积的 KL，写进 ELBO。[自适应采样](./adaptive-sampling.md) 的 $\mathrm{DTC}(X_0)$ 是干净数据的对偶总相关，写进均匀 / remasking 的步数上界。本篇的 $\mathcal{C}(Y\mid X)$ 条件在提示上。三套符号都在说格不独立，不等式和前向过程不同，不要焊成一个 $\mathcal{C}$。
+
 阈值 $\gamma>0.5$ 在 Shuffle 上 Acc$=1$，是因为并行度被阈值掐死。产品若同时报「阈值 0.9、质量不掉、TPS 很高」，在 $\mathcal{C}$ 高的任务上这三句话不能同时真：要么质量掉，要么退化成逐步，TPS 回到 AR 附近。D2F 的 $\tau_{\mathrm{conf}}=0.9$ 是同一类开关。GSM8K 上 77.3 对 77.4，推不出 Shuffle 上同样稳。
 
 闭源 Mercury 的并行度不可观测。Figure 4 只能从 Shuffle 崩、Reverse 不崩反推它没有按 $\mathcal{C}$ 自适应降并行。内部若已做块扩散或验证器，本篇看不见。Dream 7B、DiffuCoder 的全曲线在附录，主文叙事以 LLaDA 1.5 为代表，不把附录某一格的偶然持平写成「Dream 已经克服 $\mathcal{C}$」。
@@ -188,6 +190,8 @@ batch、卡、引擎：本篇是准确率–并行曲线，几乎不报 TPS。�
 - [APD](./apd.md)
 - [离散 copula](./discrete-copula.md)
 - [CoDD](./codd.md)
+- [EDLM](./edlm.md)
+- [自适应采样](./adaptive-sampling.md)
 - [谁决定揭开哪一格](./plan-denoise.md)
 - [提交之后还能不能改](./remask-revise.md)
 - [任意顺序](./any-order.md)
