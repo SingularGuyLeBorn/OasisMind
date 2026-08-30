@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：4.4 章首页工业数字的一手来源。
-- 正在写：折 4.4 章首页讲义腔。
+- 正在读：PRO / CPO / ReMax / Constitutional AI 原论文。
+- 正在写：下一波 4.4 缺算法专文。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 SLiC / RRHF / IPO / 序列级 REINFORCE 入库。
+- 上次刷新记忆的时间：2026-08-31 折 4.4 章首页。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 折 4.4 章首页为地图；去掉高速公路隐喻与未核对工业数字；JustRL 54.87% 是九项平均 | https://arxiv.org/abs/2512.16649 ；https://arxiv.org/abs/2407.21783 ；https://arxiv.org/abs/2501.12948 | `4.4-对齐技术.md` |
 | 2026-08-31 | 入库 SLiC-HF：4879 汉字；两图；hinge+CE；sample-rank vs direct；770M 人评不差于 6B PPO | https://arxiv.org/abs/2305.10425 ；https://arxiv.org/html/2305.10425 ；https://arxiv.org/abs/2210.00045 | `4.4.4/01-SLiC-序列似然校准/` |
 | 2026-08-31 | 入库 RRHF：4021 汉字；两图；长度归一 $p_i$；无 margin hinge；Alpaca-RRHFSP -0.96 vs PPO -1.03；当 RM 61.75% | https://arxiv.org/abs/2304.05302 ；https://arxiv.org/html/2304.05302 | `4.4.4/02-RRHF-排序响应对齐/` |
 | 2026-08-31 | 入库 IPO：4115 汉字；两图；$\Psi$ 恒等；$h_\theta$ 回归 $\tau^{-1}/2$；3-action 玩具 | https://arxiv.org/abs/2310.12036 ；https://arxiv.org/html/2310.12036 | `4.4.4/03-IPO-身份偏好优化/` |
