@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 加厚 `4.4.1/03-GSPO`（现约 2931 汉字、营销腔、缺浅色图）到 ≥4000，嵌入序列级几何平均 IS 图；同步加厚 TRPO / GMPO 并配图。
-2. **并行：** `04-PPO` 补浅色机制图；4.4 根上薄节（计算流程 / SFT-RL 融合 / RLVR / GSPO-DCPO 散文件）写满，禁止空标题。`fig-moe-router-top2` **不要重画**。
-3. **再下一波：** 缺的 RL 专文（RAFT、SimPO、序列级 REINFORCE 对照）；结构 S5/S6/S8。不要碰仍在租的 `4.4.5` / `4.6.2`。
+1. **立刻做：** 质检入库 GSPO / GMPO / PPO（inbox 已交）；重写 `05-TRPO`（现 2620、零图、空标题）到 ≥4000 并配浅色图。
+2. **并行：** 4.4 根上薄节（计算流程 / SFT-RL 融合 / RLVR / GSPO-DCPO）写满到 ≥4000，禁止空标题。`fig-moe-router-top2` **不要重画**。
+3. **再下一波：** RAFT 专文（2304.06767）开 `4.4.1/07`；DPO/ORPO 配图；结构 S5/S6/S8。不要碰仍在租的 `4.4.5` / `4.6.2`。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：2.4.9 Loop Transformer 专文入库并接进 2.4 首页；RLOO / KTO 写满并链进 4.4.1 / 4.4.2；4.4.4 错误 KTO 公式已改。GRPO 占位来自仓库第一天 `91d651d3`，不是后来改坏。
-- 现在立刻做：GSPO 加厚 + 浅色图；TRPO / GMPO / PPO 图文并茂。不要 `move_agent_to_root`。不要 push。
+- 上一件：04-SimPO 专文入库（无 $\pi_{\mathrm{ref}}$、长度平均 $+\gamma$）；4.4 / 4.4.2 地图已链。GSPO/GMPO/PPO 子代理已交卷待监工入库。
+- 现在立刻做：按主题 commit GSPO/GMPO/PPO；重写 TRPO；薄节写满。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -169,6 +169,7 @@ category: LLM 指南
 | ttc-45 | done | `4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md` + inbox `ttc-45.md` | 已补 token 轴 vs 深度轴 $N=KR$；链 2.4.9 |
 | rloo-44 | done | `4.4.1/06-RLOO-留一法基线/` + inbox `rloo-44.md` | 4021 汉字；2402.14740；k=4 Win-rate 77.9/43.7/64.1；监工链 4.4.1 |
 | kto-442 | done | `4.4.2/03-KTO-前景理论对齐/` + inbox `kto-442.md` | 4227 汉字；2402.01306；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；监工改 4.4.4 错公式 |
+| simpo-442 | done | `4.4.2/04-SimPO-无参考长度平均/` | ≥4000；2405.14734；无 $\pi_{\mathrm{ref}}$；Table 4/5/16；监工链 4.4.2 / 4.4 首页 |
 | gspo-thicken | running | `4.4.1/03-GSPO/` + inbox `gspo-thicken.md` | ≥4000；几何平均序列 IS；浅色 fig；不改 4.4.5 |
 | trpo-fig | running | `4.4.1/05-TRPO/` + inbox `trpo-fig.md` | ≥4000；浅色信任域图；不改 04-PPO |
 | gmpo-fig | running | `4.4.1/01-GMPO/` + inbox `gmpo-fig.md` | ≥4000；浅色几何均值图；不改 02-GRPO |

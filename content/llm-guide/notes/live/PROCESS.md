@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：GSPO 2507.18071；TRPO 1502.05477；GMPO 一手。
-- 正在写：03-GSPO 加厚；05-TRPO / 01-GMPO / 04-PPO 配图；4.4 根薄节。
+- 正在读：TRPO 1502.05477；RAFT 2304.06767；4.4 根薄节一手。
+- 正在写：05-TRPO 重写配图；4.4 根薄节写满；GSPO/GMPO/PPO 监工入库。
 - 卡住：无。不要抢 `4.4.5`（gxpo-family）、`4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 回收 Loop / RLOO / KTO；GRPO 占位来自 91d651d3。
+- 上次刷新记忆的时间：2026-08-31 SimPO 入库；GSPO/GMPO/PPO 子代理已交。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | SimPO 专文：无 $\pi_{\mathrm{ref}}$；式 (4)(6)；Table 4/5/16；两张浅色图；链 4.4.2 / 4.4 首页 | https://arxiv.org/abs/2405.14734 ；https://arxiv.org/html/2405.14734 ；https://github.com/princeton-nlp/SimPO | `4.4.2/04-SimPO-无参考长度平均/` |
 | 2026-08-31 | 回收 Loop Transformer：5444 汉字；六图；$N=KR$；Huginn sandwich；DeepLoop $\alpha=(2N)^{1/2}$；接进 2.4 首页 | https://arxiv.org/abs/1807.03819 ；https://arxiv.org/abs/1909.11942 ；https://arxiv.org/abs/2301.13196 ；https://arxiv.org/abs/2502.05171 ；https://arxiv.org/abs/2502.17416 ；https://arxiv.org/abs/2605.18797 ；https://arxiv.org/abs/2607.13491 | `2.4.9-循环Transformer/` |
 | 2026-08-31 | 回收 RLOO：4021 汉字；两图；k=4 Win-rate 77.9/43.7/64.1；链 4.4.1 地图 | https://arxiv.org/abs/2402.14740 ；https://ar5iv.labs.arxiv.org/html/2402.14740 ；https://aclanthology.org/2024.acl-long.662/ | `4.4.1/06-RLOO-留一法基线/` |
 | 2026-08-31 | 回收 KTO：4227 汉字；两图；$z_0=\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$；改 4.4.4 错误 Forward KL 阈值 | https://arxiv.org/abs/2402.01306 ；https://ar5iv.labs.arxiv.org/html/2402.01306 | `4.4.2/03-KTO-前景理论对齐/`；`4.4.4` §5 |

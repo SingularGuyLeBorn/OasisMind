@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：用户点名 4.6.3 状态分布视角（nrehiew 博客 + Nie 2605.22731）已入库。旧 Goal 的配图+人味+0.8 仍在；wave-1 四张已覆盖。
-- 当前波次：回到 **fig-wave-2** + 人味扫尾。2.4.1 夹根 04/05/06/07/09 已按用户要求删除；03 / 08 已加厚。
+- 状态：用户 Goal 续跑：成体系补专文 + 配图 + 人味。Loop Transformer 已入库。4.4 对齐算法继续补（SimPO 已入库；TRPO / 薄节未满）。
+- 当前波次：**TRPO 重写配图** + **4.4 根薄节写满** + 入库 GSPO/GMPO/PPO。wave-2 三张仍在跑；`fig-moe-router-top2` 不重画。
 - 配图规范：`.cursor/skills/academic-diagrams/SKILL.md`。好对照：`fig-qsa-hybrid-slot.png`。覆盖原 `fig-*.png`，禁止 Delete。
 - 人味规范：`.cursor/skills/humanwrite/` + `humanizer-zh/` + `scy.md`。读者页禁止 Agent 元句。
 - 本轮明确不做：一轮画完约 300 张 fig；把 51B n-gram 算进 6B；4.6 根加 `11`；大搬迁 / Delete / `move_agent_to_root`。
