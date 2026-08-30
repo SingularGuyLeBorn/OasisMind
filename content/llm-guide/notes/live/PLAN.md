@@ -13,9 +13,9 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 报告精读波：Engram 体系专文、K3 加深、Muse Spark、Gemini 3.7 Flash、RSI 前世今生。**不要**抢 `2.1.3`（b02）。
-2. **下一波：** Gated Attention 相关工作；Qwen3.8-Flash-Next 报告里的 n-gram/Engram 表；社区对 Qwen4 架构的预测（只收一手）。
-3. **1234：** 只剩 b02（mHC/xHC）。其它 batch 已收。
+1. **立刻做：** 重写 `2.4.1` 机制主线（01 / 02 / 03 / 10 + 节首页去废话）。专文汉字 ≥ 4000，禁止注水。04–09 是系统/硬件/量化，**错位**，本波不在 2.4.1 里加厚它们。
+2. **并行中：** 报告精读波（Engram / K3 / Muse / Gemini 3.7 / RSI）仍在跑，路径与 2.4.1 叶子不相交。
+3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。
 
 ## 波次队列（未完成的留着）
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：过文 b07 入库；配图波五切片入库。
-- 现在立刻做：Engram / K3 / Muse / Gemini 3.7 Flash / RSI 前世今生。不要 `move_agent_to_root`。不要 push。
+- 上一件：用户点名 2.4.1 的 01–10 垃圾且错位。4000 汉字规矩已写入 Skill。
+- 现在立刻做：重写 2.4.1 机制主线 01/02/03/10 + 节首页去废话。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -118,7 +118,12 @@ category: LLM 指南
 | s7-73-entry | done | `7-LLM应用开发/7.3-Agent/7.3-Agent.md` | 已交；应用入口，系统本体在第 13 章 |
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
-| pass-1234-b02 | running | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页；**不含** 2.1.1 节首页） | 重派。不改 2.1.1 节首页、不改 02/03/04、不改 live、不改 2.1 节首页（b01 已收） |
+| pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 重派已交。监工待质检入库。 |
+| moe-hp | running | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + 该夹 `images/` + inbox `moe-hp.md` | 不改 01–10 夹；去废话；标明 04–09 错位 |
+| moe-01 | running | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 不改节根散文件 `01-DeepSeek-MoE.md`；汉字≥4000 |
+| moe-02 | running | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 不改 `02-MoE的工程实践-images/` 旧目录名；汉字≥4000 |
+| moe-03 | running | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 不改节根散文件；汉字≥4000 |
+| moe-10 | running | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` + inbox `moe-10.md` | 不改 01–03；汉字≥4000 |
 | fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
 | pass-1234-b03 | done | batch 03 十篇见 inbox | 已交；AttnRes/MLA 浅色图；2.3 章地图 |
 | pass-1234-b04 | done | batch 04 十篇见 inbox | 已交；FA3=2407.08608；Paged 只留 2309.06180 |

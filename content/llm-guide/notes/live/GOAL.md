@@ -27,10 +27,10 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：**报告精读波**（Engram 体系、K3、Muse Spark、Gemini 3.7 Flash、RSI 前世今生）。b02 仍占 `2.1.3`。
-- 当前波次：**engram-248 / k3-d2-deep / muse-spark-d2 / gemini-37-flash / rsi-origin**
+- 状态：**2.4.1 MoE 机制主线重写**（01/02/03/10 + 节首页）。报告精读五路仍在跑。b02 已交待入库。
+- 当前波次：**moe-hp / moe-01 / moe-02 / moe-03 / moe-10**
 - 当前正在写的文章路径：见 PLAN 租约
-- 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）；不抢 `2.1.3`
+- 本轮明确不做：在 2.4.1 里加厚 04–09 硬件/系统综述；售卖包装；不抢 Engram 的 `2.4.8`
 
 ## 防漂移口令
 
