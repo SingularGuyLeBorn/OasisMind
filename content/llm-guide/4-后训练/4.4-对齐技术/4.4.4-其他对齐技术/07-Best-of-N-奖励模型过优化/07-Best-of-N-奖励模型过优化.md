@@ -166,7 +166,7 @@ DPO 连独立奖励模型都跳过，离线成对分类，隐式奖励。这边�
 
 GRPO 把组内奖励做 $z$-score，目标里还留着 PPO 式 clip。BoN 不过组均值，不除组标准差，不 clip。组内几乎同分时，GRPO 的分母趋近 0；BoN 只是「这 $n$ 条里谁分高留谁」，策略梯度根本没有。
 
-后作里有人把 BoN 再蒸馏回策略，例如 Best-of-N Distillation（BOND，[2407.14608](https://arxiv.org/abs/2407.14608)）。那是另一篇，本篇不展开，文末只列、未精读。不要把蒸馏后的训练损失，读回 Gao 等这条「解码选择 + 过优化标度」。
+后作把 BoN 再蒸馏回策略，正本在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md)（[arXiv:2407.14622](https://arxiv.org/abs/2407.14622)，不要写成 2407.14608）。那篇更新权重、推理只采 1；本篇可以永远停在解码选择，去量 $R(d)$。不要把蒸馏后的训练损失，读回 Gao 等这条「解码选择 + 过优化标度」。
 
 | | BoN（本篇） | RAFT | PPO | GRPO | DPO |
 |--|------------|------|-----|------|-----|
@@ -190,7 +190,7 @@ GRPO 把组内奖励做 $z$-score，目标里还留着 PPO 式 clip。BoN 不过
 
 BoN 的函数形状在 $\mathrm{KL}\approx 6$ 猜、在 $\approx 10$ 验过；RL 形式在原点的无穷斜率是已知瑕疵。代理分仍没有同样能外推的闭式。策略大小只比了两档。这些都是论文自己划的边。
 
-邻居链：策略梯度与 clip 在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；组内 $z$-score 在 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)；离线分类在 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md)。本夹上一篇是 [06-Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)，求的是偏好博弈的 Nash，不是对着标量 RM 做 BoN。
+邻居链：策略梯度与 clip 在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；组内 $z$-score 在 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)；离线分类在 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md)。蒸馏 $\pi_{\mathrm{BoN}}$、推理采 1，在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md)。本夹上一篇是 [06-Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)，求的是偏好博弈的 Nash，不是对着标量 RM 做 BoN。
 
 ## 参考文献
 
@@ -205,4 +205,4 @@ BoN 的函数形状在 $\mathrm{KL}\approx 6$ 猜、在 $\approx 10$ 验过；RL
 9. Dong, H., et al. (2023). [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).（「不是 RAFT」：top-1 写进 SFT）
 10. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).（「不是 DPO」）
 11. Shao, Z., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300).（GRPO 组内 $z$-score，对照用）
-12. Sessa, P. G., et al. (2024). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14608).（后作，未精读，本篇不展开）
+12. Sessa, P. G., et al. (2024/2025). [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622). *ICLR 2025*。（蒸馏回策略；论文号不是 2407.14608；正本在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md)）

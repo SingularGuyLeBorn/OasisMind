@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：BOND 2407.14622。
-- 正在写：BOND（4.4.4/09）。
-- 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。4.4.4 到 09 后不要发 11。
-- 上次刷新记忆的时间：2026-08-31 入库 Online IPO；等 BOND。
+- 正在读：Self-Rewarding 2401.10020；WARP 2406.16768；Dr.GRPO 2503.20783。
+- 正在写：4.4.2/07、4.4.4/10、4.4.6/03。
+- 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。4.4.4 到 10 后先拆小节，不要发 11。
+- 上次刷新记忆的时间：2026-08-31 入库 BOND；派 Self-Rewarding / WARP / Dr.GRPO。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 BOND：4007 汉字；两图；蒸馏 $\pi_{\mathrm{BoN}}$ 推理采 1；J-BOND 式 (17) $-\log 16$/$0$；Figure 7 Gemma 7B $\eta=0.02$ vs REINFORCE；不是 Gao、不是 RAFT；论文号 2407.14622 不是 2407.14608 | https://arxiv.org/abs/2407.14622 ；https://arxiv.org/html/2407.14622 | 4.4.4/09-BOND-Best-of-N蒸馏/ |
 | 2026-08-31 | 入库 Online IPO：4020 汉字；两图；Prop 4.1/4.2/5.1；Table 2 IPO vs IPO-MD 0.515 (0.024)；驻点是正则 Nash；IPO-MD 才混；不是 OAIF 64.81% | https://arxiv.org/abs/2403.08635 ；https://arxiv.org/html/2403.08635 | 4.4.4/08-Online-IPO-在线偏好/ |
 | 2026-08-31 | 入库 OAIF：4006 汉字；两图；Table 2/3；4-way 58.00%；不是 Lee RLAIF、不是 SPIN | https://arxiv.org/abs/2402.04792 ；https://arxiv.org/html/2402.04792 | 4.4.2/06-OAIF-在线AI反馈/ |
 | 2026-08-31 | 入库 Best-of-N：4096 汉字；两图；解码 argmax 不是训练损失；KL_bon=log n-(n-1)/n；金标 6B / 策略 1.2B；不是 RAFT | https://arxiv.org/abs/2210.10760 ；https://arxiv.org/html/2210.10760 | 4.4.4/07-Best-of-N-奖励模型过优化/ |
