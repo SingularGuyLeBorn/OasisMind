@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** H2O / Heavy-Hitter Oracle（2306.14048）已写入 `2.3.2/11-H2O-Heavy-Hitter-Oracle`。下一薄项：**0.8 持续**——推理时稀疏还缺独立专文的是 **SnapKV**（6.4.2 §4.3.3 仍薄）或 **Quest**。不要从全库盘点重来。第 5 章转载不要优先。不要把 FA / MEA / BPT / Ring / SP / StreamingLLM / H2O 写成一篇。
+1. **立刻做：** Quest（2406.10774）已写入 `2.3.2/13-Quest-查询感知稀疏`。下一薄项：**SnapKV**（仍在租；6.4.2 §4.3.3 仍薄，且把 SnapKV 写成了「观察头」）。不要从全库盘点重来。不要把 FA / MEA / BPT / Ring / SP / StreamingLLM / H2O / Quest 写成一篇。
 2. **P2 余量**：口述 **Connest5** 本轮再搜仍未命中官方模型串（搜到的是欧盟托管平台 Connic / `connic/*`，不是模型名）。**留条，不写正文、不 mkdir。** V4 后训练不 mkdir。
 3. **结构整理：** S0 地图 **2/5/6/8/14 已交**。下一波 **S1**（`4.1`/`8.2` 撞号 `git mv`）等 SnapKV/Quest 交完再开租约，不要今晚大搬迁。第 5 章禁止再新建根级 `01-型号`。
 
@@ -65,14 +65,15 @@ category: LLM 指南
 - [x] 0.8 本轮：Memory Efficient Attention（Rabe & Staats 2112.05682）独立专文；2.3.4 §3.0；不是 FA / BPT / Ring / SP
 - [x] 0.8 本轮：StreamingLLM / Attention Sink（2309.17453，ICLR 2024）；4+窗；不是 FA / H2O / gpt-oss 标量 $z'$
 - [x] 0.8 本轮：H2O Heavy-Hitter Oracle（2306.14048，NeurIPS 2023）；local 累积；20% = H2+最近对半分；不是 FA / StreamingLLM
+- [x] 0.8 本轮：Quest Query-Aware Sparsity（2406.10774，ICML 2024）；页 min/max；不驱逐；7.03× 自注意力 / 2.23× 4-bit e2e；PMLR 摘要对调
 - [ ] **结构 S1–S7**（S0 五章首页地图已交）：见 `notes/chapter-structure-plan.md`（撞号/文件名规范 → 5/14 分工已在 S0/S2 声明 → 综述改导航）。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：S0 第 8/14 章首页地图已交（CLIP/VLM 同号分链；第 14 章 D2 捆法 vs 第 5 章叙事；Ernie/Erine 留 S6）。S0 五章首页齐。
-- 现在立刻做：PLAN 第 1 件 = **SnapKV / Quest 专文**（仍在租）。Connest5 仍留条。不要 `move_agent_to_root`。不要 push。
+- 上一件：0.8 已补 **Quest 2406.10774**（专文 `2.3.2/13-Quest`；不驱逐；Fig 9/10 的 7.03× / 2.23×；PMLR 摘要对调）。S0 五章首页已齐。
+- 现在立刻做：PLAN 第 1 件 = **SnapKV**（仍在租）。Connest5 仍留条。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -81,7 +82,7 @@ category: LLM 指南
 | 切片 ID | 状态 | 只准改的路径（含该文 images/） | 禁止改 |
 |---------|------|-------------------------------|--------|
 | snapkv-12 | leased | `2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/12-SnapKV-生成前观测窗/`（含同名 md、`images/`）· `notes/live/inbox/snapkv-12.md` | 2.3.2 节首页、6.4.2、邻居专文、live 三份 |
-| quest-13 | leased | `2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/13-Quest-查询感知稀疏/`（含同名 md、`images/`）· `notes/live/inbox/quest-13.md` | 2.3.2 节首页、6.4.2、邻居专文、live 三份 |
+| quest-13 | done | `2.3.2/13-Quest-查询感知稀疏/` | 已交；不是驱逐 |
 | s0-ch5 | done | `5-主流模型全解/5-主流模型全解.md` | 已交；禁止再 mkdir 根级 `01-型号` |
 | s0-ch8 | done | `8-多模态/8-多模态.md` | 已交；`8.2` 撞号留给 S1 |
 | s0-ch14 | done | `14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 已交；Ernie/Erine 留给 S6 |

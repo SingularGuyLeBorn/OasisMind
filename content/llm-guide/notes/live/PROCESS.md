@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：本波子代理精读 SnapKV [2404.14469](https://arxiv.org/html/2404.14469v2) · Quest [2406.10774](https://arxiv.org/abs/2406.10774)。Connest5 仍无官方模型串。
-- 正在写：SnapKV `12` · Quest `13` 仍在租。S0 2/5/6/8/14 章首页已齐。
+- 正在读：SnapKV [2404.14469](https://arxiv.org/html/2404.14469v2) 仍在租。Quest 已交。Connest5 仍无官方模型串。
+- 正在写：SnapKV `12-SnapKV-生成前观测窗` 仍在租。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 S0 第 8/14 章
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 Quest
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -108,6 +108,7 @@ category: LLM 指南
 | 2026-08-30 | S0 第 5 章首页地图：厂商叙事 vs 第 14 章 D2；根级 `01-型号` 停新建；示例链 Claude-1/GPT-1/Gemini-1.0/Claude-2 | 库内路径确认（14.1/14.2/14.5/14.13；2.3.5；6.4） | `5-主流模型全解.md` §0 |
 | 2026-08-30 | S0 第 8 章首页地图：CLIP/VLM 同号 8.2 分链；omni 链 8.7；精读只进第 14 章 | 库内路径确认（8.1–8.7；GLM-4-Voice Index；MiniCPM-o D2） | `8-多模态.md` §0 |
 | 2026-08-30 | S0 第 14 章首页地图：D2 捆法；机制回 2/6/9.4；第 5 章叙事；Ernie/`14.21-Erine` 留 S6 | 库内路径确认（第 2/5/6 章首页；9.4；14.19；14.21 夹无家族首页） | `14-主流开源模型全景解析与技术报告精读.md` §0 |
+| 2026-08-30 | Quest 专文：页 min/max 上界；不驱逐；Table 1 passkey；Fig 9 **7.03×** 自注意力 / Fig 10 **2.23×** 4-bit e2e；PMLR 摘要对调 | arxiv HTML/PDF 2406.10774；PMLR v235/tang24l；hanlab；github mit-han-lab/Quest；知乎两篇只学讲法 | `2.3.2/13-Quest`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 
 
 
@@ -305,6 +306,10 @@ category: LLM 指南
 | 会议页 | NeurIPS 2023 H2O | https://proceedings.neurips.cc/paper_files/paper/2023/hash/6ceefa7b15572587b78ecfcebb2827f8-Abstract-Conference.html | 11-H2O | 会场 NeurIPS 2023，不是 2024 |
 | 官方仓库 | FMInference/H2O | https://github.com/FMInference/H2O | 11-H2O | 论文摘要给出的代码 |
 | 实验室博文 | KV Cache Compression and Its Infra Problems | https://research.nvidia.com/labs/eai/blogs/kv-cache-compression-and-its-infra-problems/ | 11-H2O §7 | FA 不落注意力分数；paged 驱逐还不了整页；H2O 参考实现退回 eager；H2O 论文系统实验是 FlexGen |
+| 原论文 HTML | Quest: Query-Aware Sparsity | https://arxiv.org/html/2406.10774 ；abs https://arxiv.org/abs/2406.10774 ；PDF https://arxiv.org/pdf/2406.10774 | 13-Quest | ICML 2024；全量 KV 驻 GPU；页 min/max；Fig 9 32K/2048 **7.03×** 自注意力；Fig 10 同设置 4-bit **2.23×** e2e / FP16 **1.74×**；Table 1 10k/100k passkey；LongBench 正文 1K；§3.5 8× 按 token budget 4K |
+| 会场页 | ICML 2024 Quest | https://proceedings.mlr.press/v235/tang24l.html | 13-Quest | PMLR 235:47901–47911；**网页摘要把 2.23× 与 7.03× 对调**，弃摘要 |
+| 项目页 | HAN Lab Quest | https://hanlab.mit.edu/projects/quest | 13-Quest | LongBench 写 2k，正文 1K，弃项目页 |
+| 官方仓库 | mit-han-lab/Quest | https://github.com/mit-han-lab/Quest | 13-Quest | FlashInfer kernel；2024-10 Llama-3.1/Mistral 是仓库后续 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -333,6 +338,7 @@ category: LLM 指南
 | Routing Confidence | Step-3.5-Flash；激活专家概率质量平均，当 MoE RL 稳定性代理 | D2 已有；**6.1.7 一句** | 第 6.1 |
 | Connest5 | WebSearch 2026-08-30；命中 Connic（connic.co / `connic/*`），不是模型名 | **未找到** 官方串 | 留条，禁止 mkdir |
 | Attention Sink / StreamingLLM | arXiv:2309.17453；ICLR 2024；gpt-oss 标量；V4 $z'$ | **专文已写** `10-StreamingLLM与Attention-Sink.md` | 第 2.3.2 |
+| Quest / Query-Aware Sparsity | arXiv:2406.10774；ICML 2024；页 min/max；不驱逐 | **专文已写** `13-Quest-查询感知稀疏.md` | 第 2.3.2 |
 
 ## 2026 模型分级（P2，先填再写）
 
