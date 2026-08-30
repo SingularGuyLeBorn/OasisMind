@@ -9,6 +9,20 @@ as_of: 2026-08-30
 
 FlashAttention-3（[arXiv:2407.08608](https://arxiv.org/abs/2407.08608)）把 FA-2 的分块搬上 Hopper：用 TMA / WGMMA / `mbarrier` 把 GEMM 与 softmax 重叠，再用块级 FP8 缩放吃 FP8 Tensor Core。H100 上 FA-2 大约只有 **35%** 利用率；FA-3 FP16 前向相对 FA-2 **1.5–2.0×**，最高约 **740 TFLOPs/s（75%）**，反向 **1.5–1.75×**；FP8 接近 **1.2 PFLOPs/s**。块量化 + incoherent processing 相对朴素 per-tensor FP8，误差约 **2.6× 更低**——不是「零精度损失」。论文限制段写明 **LLM inference 还没作为本核的优化目标**；`qlen=1` 时按 KV 切开占满 SM，是 2023 Flash-Decoding（FA 2.2 的 split-KV），本体在 [6.6.3](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md)，不要把本篇 pingpong 图当成 decode 核。
 
+![Hopper 上双 Warpgroup pingpong：一组做 softmax 时另一组跑 WGMMA](./images/fig-fa-v3-mech-pingpong.png)
+
+> 图 1：Hopper pingpong——Warpgroup 交错，使 WGMMA（GEMM）与 softmax 重叠。数字沿用 [arXiv:2407.08608](https://arxiv.org/abs/2407.08608) 摘要：FA-2 在 H100 约 **35%** 利用率；FA-3 FP16 相对 FA-2 **1.5–2.0×**、最高约 **740 TFLOPs/s（75%）**。这是调度示意，不是手绘速度坐标。论文 Figure 1 原图见下文图 2。
+
+**图 1 解析**
+
+- **两条时间线**：Warpgroup 0 与 1 交错执行 GEMM0（$QK^\top$）、softmax、GEMM1（$PV$）。
+- **Pingpong**：一组做 softmax 时，另一组占用 Tensor Core；用 `bar.sync` 把 GEMM 排到 softmax 前面，让特殊函数单元与 WGMMA 同时忙。
+- **硬件前提**：TMA 异步搬运、WGMMA 异步 GEMM、`mbarrier`。Ampere 没有这套原语，不能把本图当成 A100 核。
+- **数字从哪来**：35%、1.5–2.0×、740 TFLOPs/s（75%）均来自 2407.08608 摘要，写在色块里当标注，**不是**另画一条假 TFLOPs 曲线。
+- **不是 decode**：`qlen=1` 走 Flash-Decoding / split-KV，见 [6.6.3](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md)。
+- **和 FA-2 的差**：FA-2 改循环与 Warp 划分；FA-3 用 Hopper 异步把 softmax 藏进 GEMM 空档。
+- **论文原图**：调度细节仍保留下文论文 jpg（图 2–3）。
+
 ## 1. Hopper 架构的物理颠覆: TMA 与 WGMMA 硬件原语 (Hopper Hardware Mappings)
 
 在 NVIDIA GPU 演进到 Hopper 架构 (SM90, 如 H100) 后, 硬件底座发生了一场颠覆性的硬件级革命. 传统依靠软件指令在片上和显存之间搬运数据的模式被彻底淘汰. 取而代之的是两大专属的底层硬核武器: **张量内存加速器 (TMA, Tensor Memory Accelerator)** 与 **群组矩阵乘加指令 (WGMMA, Warp Group Matrix Multiply and Accumulate)**.
@@ -71,9 +85,9 @@ WGMMA 指令的引入, 使得矩阵乘法可以绕过繁琐的寄存器逐层加
 
 ![FlashAttention-3 Pingpong 调度（论文 Figure 1）](./images/fig-flashattention3-pingpong-scheduling.jpg)
 
-> 图 1: H100 上双 Warpgroup Pingpong 调度，使 WGMMA 与 Softmax 在时间上重叠，避免 Tensor Core 空等（论文 Figure 1）。
+> 图 2: H100 上双 Warpgroup Pingpong 调度，使 WGMMA 与 Softmax 在时间上重叠，避免 Tensor Core 空等（论文 Figure 1）。
 
-**图 1 解析**
+**图 2 解析**
 
 - **两条时间线**：Warpgroup 0 与 1 交替执行 **WGMMA（矩阵乘）** 与 **Softmax/归一化** — 当一组在做 softmax 时，另一组已在下一块 $K,V$ 上跑 GEMM。
 - **Pingpong 含义**：片上缓冲与 `mbarrier` 信号在两组间轮换 — 避免「算 softmax 时 Tensor Core 空转」。
@@ -83,15 +97,15 @@ WGMMA 指令的引入, 使得矩阵乘法可以绕过繁琐的寄存器逐层加
 
 ![FlashAttention-3 两阶段 WGMMA-Softmax 流水（论文 Figure 2）](./images/fig-flashattention3-wgmma-softmax-pipeline.jpg)
 
-> 图 2: 单 Warpgroup 内两阶段流水——阶段 1 算 $QK^\top$，阶段 2 做 softmax 与 $PV$；`mbarrier` 切开数据依赖（论文 Figure 2）。
+> 图 3: 单 Warpgroup 内两阶段流水——阶段 1 算 $QK^\top$，阶段 2 做 softmax 与 $PV$；`mbarrier` 切开数据依赖（论文 Figure 2）。
 
-**图 2 解析**
+**图 3 解析**
 
 - **Stage 划分**：将 attention tile 拆为 **阶段 1：$QK^\top$ GEMM** 与 **阶段 2：softmax + $PV$ GEMM** — 中间 $S_{ij}$ 尽量驻留 SRAM/寄存器。
 - **流水线深度**：2-stage 是 Pingpong 的细化视图 — 展示 **数据依赖** 如何被 barrier 切开而不写回 HBM。
 - **瓶颈转移**：在 H100 上，非 GEMM 的 softmax 占比上升 — 此图解释 FA3 为何花大量篇幅优化 **warpgroup 分工**。
 - **实现提示**：Triton/CUDA 中 stage 边界对应 `mbarrier` 等待点 — 错放 barrier 会导致数据竞争或性能回退。
-- **与图 1 关系**：图 1 是双 warpgroup 宏观调度；图 2 是 **单 warpgroup 内** 两阶段微观流水。
+- **与图 2 关系**：图 2 是双 warpgroup 宏观调度；图 3 是 **单 warpgroup 内** 两阶段微观流水。
 
 ---
 
@@ -135,11 +149,11 @@ $$
 
 ![FlashAttention-3 三阶段流水（论文 Figure 8）](./images/fig-flashattention3-3stage-pipeline.jpg)
 
-> 图 3: TMA 预取 + 双/三缓冲 + WGMMA 的三阶段流水，在 FA-2 分块思想上叠加 Hopper 异步搬运（论文 Figure 8）。
+> 图 4: TMA 预取 + 双/三缓冲 + WGMMA 的三阶段流水，在 FA-2 分块思想上叠加 Hopper 异步搬运（论文 Figure 8）。
 
-**图 3 解析**
+**图 4 解析**
 
-- **三缓冲**：在图 2 的 2-stage 上再叠一层 **TMA 预取** — Buffer0 计算 / Buffer1 TMA 写入 / Buffer2 HBM 预取下一 tile。
+- **三缓冲**：在图 3 的 2-stage 上再叠一层 **TMA 预取** — Buffer0 计算 / Buffer1 TMA 写入 / Buffer2 HBM 预取下一 tile。
 - **FP8 路径**：量化缩放 $s_{Q_i}, s_{K_j}$ 在 tile 进入 WGMMA 前于 SRAM 完成 — 对应式 (1)–(4)。
 - **算术强度**：目标让 Tensor Core 持续饱和 — TMA 与 WGMMA 并行度由 `mbarrier` 保证。
 - **适用 GPU**：SM90+；消费级卡若无 FP8 Tensor Core，此路径自动回退 FP16。
@@ -147,9 +161,9 @@ $$
 
 ![FlashAttention-3 H100 前向加速 FP16（论文 Figure 5）](./images/fig-flashattention3-forward-speed-fp16.jpg)
 
-> 图 4: H100 上前向 attention 吞吐（FP16/BF16），FA-3 相对 FA-2 与标准实现的 TFLOPs/s 对比（论文 Figure 5）。
+> 图 5: H100 上前向 attention 吞吐（FP16/BF16），FA-3 相对 FA-2 与标准实现的 TFLOPs/s 对比（论文 Figure 5）。
 
-**图 4 解析**
+**图 5 解析**
 
 - **对比基线**：标准 attention、FlashAttention-2、FlashAttention-3 — 纵轴为 TFLOPs/s 或相对吞吐。
 - **随序列长度**：越长 FA3 领先幅度越大 — TMA+异步对长 $N$ 更友好。
@@ -159,11 +173,11 @@ $$
 
 ![FlashAttention-3 H100 前向加速 FP8（论文 Figure 7/9）](./images/fig-flashattention3-forward-speed-fp8.jpg)
 
-> 图 5: H100 上 FP8 前向加速；块级动态量化 + WGMMA 将 Hopper FP8 峰值算力转化为实际吞吐（论文 Figure 7/9）。
+> 图 6: H100 上 FP8 前向加速；块级动态量化 + WGMMA 将 Hopper FP8 峰值算力转化为实际吞吐（论文 Figure 7/9）。
 
-**图 5 解析**
+**图 6 解析**
 
-- **相对图 4 的增量**：FP8 WGMMA 峰值算力约为 FP16 的 2× — 块级 scaling 用于 **吃掉精度损失**。
+- **相对图 5 的增量**：FP8 WGMMA 峰值算力约为 FP16 的 2× — 块级 scaling 用于 **吃掉精度损失**。
 - **短序列**：FP8 量化/反量化开销在 $N$ 小时可能吞噬收益 — 与 NSA/MoBA 类似需长度阈值。
 - **与 §3 公式对应**：每条曲线隐含 tile-wise $s_Q,s_K$ — 异常 outlier 多的模型需更小 tile 或 per-channel scale。
 - **Backward**：见同目录 backward 图（论文 Figure 6）— 反向 FP8 累加器仍多用 FP32。

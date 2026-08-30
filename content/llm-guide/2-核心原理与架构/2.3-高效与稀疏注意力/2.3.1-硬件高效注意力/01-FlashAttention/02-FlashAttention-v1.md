@@ -9,6 +9,20 @@ as_of: 2026-08-30
 
 精确、不物化 $N\times N$ 的注意力先见 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）：JAX/TPU 上先留 $K$ 份块摘要再合并，反向走 checkpoint。本篇是 Dao et al. 2022 的 **SRAM 增量一份 $O$ + CUDA IO 核**——片上只维护每行 $(m_i, d_i, O_i)$，逐块读入 $K_j,V_j$，与标准 attention **数学等价**，打的是 HBM 访问次数而不是峰值字节这一项本身。不要把 MEA 的两层 `lax.scan`/`lax.map` 写成 FA-v1。
 
+![HBM 上的 Q/K/V 与打叉的 N×N；SRAM 里 Qi 对 Kj,Vj 循环；寄存器 (m,d,O) 写回 Oi](./images/fig-fa-v1-mech-hbm-sram.png)
+
+> 图 1：不物化 $N\times N$。SRAM 里 $Q_i$ 对 $K_j,V_j$ 循环，寄存器维护 $(m,d,O)$，最后写回 $O_i$。与标准 attention **数学等价**，打的是 HBM IO。先于 v1 的精确不物化路线是 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682），不要把本图画成 MEA。论文 Dao et al., 2022, [arXiv:2205.14135](https://arxiv.org/abs/2205.14135)。
+
+**图 1 解析**
+
+- **左栏 HBM**：$Q,K,V$ 按 tile 驻留；打叉的是 $N\times N$ 分数矩阵——从不落盘。
+- **中栏 SRAM**：$Q_i$ 进片上后，内循环扫 $K_j,V_j$，只形成 `BLOCK_M × BLOCK_N` 的局部分数 $S$，立刻做 online softmax。
+- **右栏寄存器**：running max $m$、配分函数 $d/\ell$、输出累加器 $O$。三者在循环里更新。
+- **写回一次**：内循环结束才把 $O_i$（`BLOCK_M × d`）写回 HBM，不是每步写 $N\times N$。
+- **数学等价**：对应下文式 (10)(17) 的指数补偿；不是近似注意力。
+- **不是 MEA**：MEA 是 2021 的 JAX/TPU 块摘要路线；本图是 2022 FA-v1 的 CUDA IO 核。
+- **论文速度图**：实验坐标仍用下文论文 jpg（图 2），不手绘假曲线。
+
 ## 1. 核心数学障碍: Softmax 的全局耦合度 (The Coupling Problem of Softmax)
 
 要将自注意力机制的 HBM 显存读写复杂度从平方阶 $O(N^2)$ 降低到线性阶 $O(N)$, 最核心的数学屏障在于 **Softmax 算子的全局归一化耦合性**.
@@ -91,9 +105,9 @@ $$
 
 ![FlashAttention v1：运行时与 attention 显存（论文 Figure 2–3）](./images/fig-flashattention-v1-runtime-memory.jpg)
 
-> 图 1: 左为 FlashAttention 相对标准 attention 的 HBM 读写量级对比（$O(N^2)$ 中间矩阵不再落盘）；右为 GPT-2 上 attention 算子端到端加速（论文 Figure 2–3）。
+> 图 2: 左为 FlashAttention 相对标准 attention 的 HBM 读写量级对比（$O(N^2)$ 中间矩阵不再落盘）；右为 GPT-2 上 attention 算子端到端加速（论文 Figure 2–3）。
 
-**图 1 解析**
+**图 2 解析**
 
 - 左：FlashAttention 将标准 attention 的 $O(N^2)$ 显存读写压到接近线性；右：GPT-2 上 attention 算子 **7.6×** 量级加速（论文 Figure 1 右）。
 - 与 §2 在线 softmax 推导衔接：tiling 使 **一次 HBM 扫描** 即可完成分块 softmax + 加权求和。

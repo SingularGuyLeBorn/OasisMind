@@ -7,46 +7,54 @@ as_of: 2026-08-30
 
 # 03 · FlashAttention-v2 执行优化: 循环交换与 Warp 调度
 
-FlashAttention-2 不改注意力公式，改的是 **循环嵌套与 Warp 分工**：外层锁定 $K,V$ 块、内层扫 $Q$，累加器写回从每 tile 变成内循环结束一次；每个 Warp 独占若干 $Q$ 行，中间 $m,d,O$ 停在寄存器。相对 v1 的增益来自 work partitioning，不是换一套 softmax。
+FlashAttention-2 不改注意力公式，改的是 **循环嵌套与 Warp 分工**（Dao, 2023, [arXiv:2307.08691](https://arxiv.org/abs/2307.08691)）：外层改到 $Q$ 行块、内层扫 $K,V$，$O_i$ 只在内循环结束写回一次；每个 Warp 独占若干 $Q$ 行，中间 $m,d,O$ 停在寄存器。相对 v1 的增益来自 work partitioning，不是换一套 softmax。不要写无出处的「访存延迟暴跌 60%」。
 
 ## 1. 嵌套循环顺序交换的物理直觉 (Nested Loop Interchange)
 
 尽管 FlashAttention-v1 成功将 I/O 复杂度降低到了 $O(N^2 d^2 / M)$, 但在面对超长序列训练时, 其底层的指令流水线依然隐藏着巨大的片上访存开销. 
 
-在 FlashAttention-v1 的底层 CUDA 实现中, 其分块双重嵌套循环的结构形式为:
-- **外循环 (Outer Loop)**: 遍历 Query 矩阵的各个 Row Blocks ($i = 1 \dots T_r$, 其中 $T_r = N / B_r$).
-- **内循环 (Inner Loop)**: 遍历 Key 和 Value 矩阵的各个 Column Blocks ($j = 1 \dots T_c$, 其中 $T_c = N / B_c$).
+v1 论文 Algorithm 1 的嵌套顺序是:
+- **外循环**: 遍历 Key/Value 的列块 ($j = 1 \dots T_c$, $T_c = N / B_c$).
+- **内循环**: 遍历 Query 的行块 ($i = 1 \dots T_r$, $T_r = N / B_r$).
 
-### 1.1 V1 循环顺序的物理缺陷
-这一指令顺序在前向传播中看似顺理成章, 但它隐藏着一个致命的**中间累加器高频写回瓶颈**.
-当外循环锁定某一个特定的 $Q$ 分块时, 随着内循环对 $K, V$ 的流式扫描, 片上维护的注意力输出累加器 $O_i^{(j)}$, 局部配分函数 $d_i^{(j)}$ 以及局部最大值 $m_i^{(j)}$ 需要发生极其频繁的更新与覆写. 
+### 1.1 V1 循环顺序的写回代价
+外循环锁定一块 $K_j,V_j$ 时，内循环要把各个 $Q_i$ 轮流载入，算完半成品 $O_i,m_i,\ell_i$ 再写回 HBM，下一列块再读回来。$O$ 本身只有 $N\times d$，不是 $N\times N$，但「每个 KV tile × 每个 Q tile 都写一次」在长序列上仍然贵。并行当时只开在 batch × 头数上，长序列、小 batch 时 SM occupancy 不够。
 
-由于更新不得不经常性地访问 Shared Memory, 甚至在某些并发情况下需要通过显存控制器搬运中间状态, 这在底层造成了极度严重的 **L1/L2 Cache 锁冲突与片上 Shared Memory 带宽挤兑**.
+### 1.2 V2 把外循环改到 Q 行 (The Loop Swap)
 
-### 1.2 V2 循环交换的物理重构 (The Loop Swap)
-FlashAttention-v2 对此执行了极其精巧的**嵌套循环顺序交换 (Nested Loop Interchange)**: 
+论文 §3.2 写明：外循环改到行块、内循环改到列块（与 v1 论文相反）；这条顺序以及沿序列维并行，最早见于 Tillet 的 Triton fused-attention。
 
 ```
 +-------------------------------------------------------------+
-|  FlashAttention-v1:                                         |
-|  For i = 1 ... Tr (Outer: Query)                            |
-|      For j = 1 ... Tc (Inner: Key/Value)                    |
-|          Compute Tile(Q_i, K_j, V_j) -> High SRAM Traffic   |
+|  FlashAttention-v1 (论文 Algorithm 1):                      |
+|  For j = 1 ... Tc (Outer: Key/Value 列块)                   |
+|      For i = 1 ... Tr (Inner: Query 行块)                   |
+|          Load Qi, Oi, mi, ℓi → 每步写回 HBM                 |
 +-------------------------------------------------------------+
-                              | (循环顺序大对调)
+                              | (外循环改到 Q 行)
 +-------------------------------------------------------------+
 |  FlashAttention-v2:                                         |
-|  For j = 1 ... Tc (Outer: Key/Value)                        |
-|      For i = 1 ... Tr (Inner: Query)                        |
-|          Compute Tile(Q_i, K_j, V_j) -> Pure Register Flow  |
+|  For i = 1 ... Tr (Outer: Query 行块；threadblock 独占 Qi)  |
+|      For j = 1 ... Tc (Inner: Key/Value)                    |
+|          内循环结束才写回 Oi 一次                            |
 +-------------------------------------------------------------+
 ```
 
-在 v2 的重构流水线中, **外循环改为了遍历 Key/Value 矩阵的分块, 内循环遍历 Query 矩阵的分块.**
-这一细微的指令顺序对调, 在物理硬件层面引爆了能效革命:
-- **常量化 Key/Value 载入**: 只要外循环锁定当前 $K, V$ 的分块, 在整个内循环周期内, 这部分数据可以作为恒定不变的只读常量被片上所有线程组无锁共享.
-- **寄存器级极致局部流**: 内循环在遍历不同 $Q$ 块时, 每一个线程可以直接在其物理私有的**寄存器 (Registers)** 内完成局部输出 $O_i$ 和归一化标度的增量计算. 只有当内循环彻底结束时, 最终收敛的 $O_i$ 才会被原子地一次性写回至外部低速的 HBM. 
-这种重构把中间累加器 $O_i$ 的写回从「每个 KV tile 都可能碰 Shared Memory / HBM」改成 **内循环结束才一次性写回**：$K,V$ 在外循环锁定期间只读复用，内循环里 $O_i,m_i,d_i$ 停在寄存器。v1 外层扫 $Q$、内层扫 $KV$；v2 外层扫 $KV$、内层扫 $Q$（上表 ASCII）。加速来自写回次数与复用，不是改公式。
+v2 一个 thread block 独占 $Q_i$，内循环把 $K_j,V_j$ 扫完，$O_i$ 只写一次；同时还沿 $Q$ 的序列维并行，提高长序列 occupancy。Warp 级从 split-K 改成按 $Q$ 行划分，见 §3。加速来自写回次数与划分，不是改 softmax 公式。
+
+![FA-1 外循环扫 KV、每步写回 O；FA-2 外循环改到 Q 行、O 写一次，Warp 按行划分](./images/fig-fa-v2-mech-work-partition.png)
+
+> 图 1：左为 v1 论文 Algorithm 1（外 $K/V$、内 $Q$，半成品 $O_i$ 高频写回）；右为 v2（外循环改到 $Q$ 行，内循环扫完 $K,V$ 才写一次 $O_i$；Warp 按 $Q$ 行划分、不再 split-K）。同一套 online softmax，不要写无出处的「访存延迟暴跌 60%」。论文 Dao, 2023, [arXiv:2307.08691](https://arxiv.org/abs/2307.08691)。
+
+**图 1 解析**
+
+- **左栏 FA-1**：外循环 $j$ 扫 KV 列块，内循环 $i$ 扫 Q 行块；每步把 $O_i,m_i,\ell_i$ 写回 HBM。
+- **右栏 FA-2**：外循环改到 $Q$ 行，一个 threadblock 独占 $Q_i$；内循环扫 $K_j,V_j$，结束才写 $O_i$。
+- **Warp**：FA-1 四 Warp 切 K/V（split-K）要进 SMEM 规约；FA-2 按 $Q$ 行静态划分，K/V 只读共享，无 inter-warp barrier。
+- **Occupancy**：v2 还沿 $Q$ 序列维并行，长序列、小 batch 时能喂满 SM。
+- **不变的**：online softmax 与 v1 同一套数学；加速来自划分与写回，不是新公式。
+- **不要编数字**：文中不写无出处的「访存延迟暴跌 60%」。论文加速比见下文图 3 的 jpg（论文 Figure 4），不手绘假坐标。
+- **和论文 Figure 2 的关系**：论文图是 worker 按行/列分块的示意；本图补循环嵌套与 Warp 切法。
 
 ---
 
@@ -116,19 +124,19 @@ $$
 
 ![FlashAttention-2 工作划分与并行结构（论文 Figure 2）](./images/fig-flashattention2-parallel-diagram.jpg)
 
-> 图 1: FA-2 前向/反向的线程块工作划分；外循环沿 $K/V$ 块、内循环扫 $Q$ 块，使 K/V 在 SRAM 中复用。
+> 图 2: FA-2 前向/反向的线程块工作划分（论文 Figure 2）。前向每个 worker 负责注意力矩阵的一块**行**（$Q$）；反向按列块划分。
 
-**图 1 解析**
+**图 2 解析**
 
-- **外循环沿 K/V 块**：v2 将 v1 的循环顺序对调 — 先固定一块 $K_j,V_j$，再在内循环扫所有 $Q_i$ 块，使 K/V 在 SRAM 中 **复用**。
-- **Forward / Backward 分面板**：反向需重算或缓存 softmax 统计量 $m,d$；v2 在反向同样按块并行，避免全矩阵落盘。
+- **前向按 Q 行划分 worker**：与上文图 1 右栏一致——外循环在 $Q$ 行上并行，不是外循环锁 $K/V$。
+- **Forward / Backward 分面板**：反向需重算或缓存 softmax 统计量 $m,d$；v2 在反向按列块并行，避免全矩阵落盘。
 - **Warp 级分工**：每个 Warp 负责 $Q$ 的若干行，中间 $O,m,d$ 驻留寄存器 — 对应正文 §3 的「零 Shared Memory Barrier」。
 
 ![FlashAttention-2 在 A100 上的加速比（论文 Figure 4）](./images/fig-flashattention2-speedup.jpg)
 
-> 图 2: A100 上 FA-2 相对 FA-1 与标准 attention 的端到端加速比，随序列长度变化（论文 Figure 4）。
+> 图 3: A100 上 FA-2 相对 FA-1 与标准 attention 的端到端加速比，随序列长度变化（论文 Figure 4）。
 
-**图 2 解析**
+**图 3 解析**
 
 - 横轴为序列长度；纵轴为相对 PyTorch 标准 attention 的 speedup。
 - **因果 mask / head dim** 不同子图（论文 (a)(b)(c)）对应不同部署场景 — decode 常用 causal + 小 batch。

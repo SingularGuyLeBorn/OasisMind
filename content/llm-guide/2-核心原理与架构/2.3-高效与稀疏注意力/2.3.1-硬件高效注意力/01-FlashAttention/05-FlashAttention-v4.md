@@ -9,6 +9,20 @@ as_of: 2026-08-30
 
 FlashAttention-4（[arXiv:2603.05451](https://arxiv.org/abs/2603.05451)）针对 Blackwell 的**非对称缩放**：Tensor Core 涨得比 SFU / 共享内存带宽快，softmax 的 $\exp$ 变成新瓶颈。做法是 Cody-Waite 把 $2^x$ 拆成整数移位 + 分数段多项式，用 FMA 与硬件 MUFU.EX2 **并行**，只对每行约 **10–25%** 的项走软件逼近（全走 FMA 会撑爆寄存器）。B200 上 BF16 最高约 **1613 TFLOPs/s（71%）**；相对 cuDNN 9.13 最高 **1.3×**、相对 Triton **2.7×**。
 
+![Blackwell 非对称：Tensor Core 快、softmax exp 成墙；MUFU 与 FMA 多项式分摊](./images/fig-fa-v4-mech-asymmetric.png)
+
+> 图 1：Blackwell 非对称缩放——Tensor Core MMA 快，softmax $\exp$ 成新墙。一部分项走 MUFU.EX2，约 10–25% 走 Cody-Waite 多项式 $2^x$（FMA），不是 100% 软件 exp。B200 BF16 最高约 **1613 TFLOPs/s（71%）**，来自 [arXiv:2603.05451](https://arxiv.org/abs/2603.05451) 摘要，是标注不是手绘坐标。论文流水线原图见下文图 2。
+
+**图 1 解析**
+
+- **左栏硬件**：H100→B200，BF16 Tensor Core 约 1→2.25 PFLOPs；MUFU 仍是 16 ops/cycle/SM 量级。条形是示意宽窄，**不是**带刻度的吞吐图。
+- **中栏流水**：$QK^\top$ 仍走 MMA；墙在 softmax $\exp$，不是再砍一刀 HBM 上的 $N\times N$。
+- **双路径**：多数项仍走 `MUFU.EX2`；约 10–25% 用 FMA 多项式逼近 $2^x$（Cody-Waite：整数移位 + 分数段 Horner），与硬件并行。
+- **为什么不是 100% FMA**：全软件 exp 会撑爆寄存器；比例按 tile 的 MMA/exp 吞吐比调。
+- **数字从哪来**：1613 TFLOPs/s（71%）、相对 cuDNN 9.13 最高 1.3×、相对 Triton 2.7×，均来自 2603.05451 摘要。
+- **和 FA-3 的差**：FA-3 藏的是 Hopper 上 GEMM 与 softmax 的空档；FA-4 打的是 Blackwell 上 exp 单元跟不上 MMA。
+- **论文原图**：前向流水与反向计算图仍保留下文 jpg（图 2–3）。实测 TFLOPs 用论文 Figure 4/5/6，不手绘假曲线。
+
 ## 1. Blackwell 架构的物理非对称挑战: 特殊功能单元 (SFU) 的致命瓶颈 (The Blackwell Bottleneck)
 
 随着大模型硬件底座跃升至 Blackwell (SM10.x, 如 B200) 架构, 注意力算子的优化面临了更加非对称的物理限制.
@@ -54,9 +68,9 @@ Online softmax 只有在新块最大值明显更大时才必须乘补偿因子�
 
 ![FlashAttention-4 前向流水线（论文 Figure 1）](./images/fig-flashattention4-forward-pipeline.jpg)
 
-> 图 1: Blackwell 上 FA-4 前向 tile 流水；分块 $QK^\top$ 后用 FMA 多项式逼近 exp，绕开 SFU 瓶颈（论文 Figure 1）。
+> 图 2: Blackwell 上 FA-4 前向 tile 流水；分块 $QK^\top$ 后用 FMA 多项式逼近 exp，绕开 SFU 瓶颈（论文 Figure 1）。
 
-**图 1 解析**
+**图 2 解析**
 
 - **上标 H**：图中 $Q^H,K^H,V^H$ 表示 Blackwell 上的 **寄存器/张量布局** — 与 CuTe Layout 代数对应（§3）。
 - **主路径**：分块 $QK^\top$ → **多项式 exp 逼近**（非 SFU）→ online softmax → $PV$ — 与 FA2/3 相同的 IO 复杂度，换的是 **softmax 算子实现**。
@@ -66,15 +80,15 @@ Online softmax 只有在新块最大值明显更大时才必须乘补偿因子�
 
 ![FlashAttention-4 反向计算图（论文 Figure 2）](./images/fig-flashattention4-backward-graph.jpg)
 
-> 图 2: FA-4 反向计算图——5 次 MMA 与 2 次逐元素（含 softmax 导数链），同样避免 SFU 依赖（论文 Figure 2）。
+> 图 3: FA-4 反向计算图——5 次 MMA 与 2 次逐元素（含 softmax 导数链），同样避免 SFU 依赖（论文 Figure 2）。
 
-**图 2 解析**
+**图 3 解析**
 
 - **5 MMA**：对应 $dQ,dK,dV$ 等矩阵梯度的分块乘 — 与 FA2 反向结构类似，仍避免存 $N\times N$ 分数矩阵。
 - **2 elementwise**：含 softmax 反向中的指数/缩放链 — 反向同样要把非 GEMM 段从 MUFU 墙里拉出来，用 TMEM + 2-CTA MMA 减共享内存流量。
 - **重计算 (recompute)**：前向统计量 $m,d$ 在反向复用 — 省 HBM，与 FA 系列一致。
 - **确定性反向**：图 8 消融讨论 deterministic vs fast — 训练框架需可选开关。
-- **与图 1 对称**：前向用 FMA 分摊 exp；反向若非 GEMM 段仍堵在 MUFU / SMEM，训练墙钟会回来。
+- **与图 2 对称**：前向用 FMA 分摊 exp；反向若非 GEMM 段仍堵在 MUFU / SMEM，训练墙钟会回来。
 
 ---
 
@@ -103,21 +117,21 @@ using SmemLayoutQ = decltype(make_layout(make_shape(Int<64>{}, Int<128>{}),
 
 ![FlashAttention-4 B200 前向 TFLOPs（论文 Figure 4/5）](./images/fig-flashattention4-forward-tflops-b200.jpg)
 
-> 图 3: B200 上前向 attention 实测 TFLOPs/s（论文 Figure 4）。正文数字：最高约 1613 TFLOPs/s（71%）；相对 cuDNN 9.13 为 1.1–1.3×，相对 Triton 为 2.1–2.7×。
+> 图 4: B200 上前向 attention 实测 TFLOPs/s（论文 Figure 4）。正文数字：最高约 1613 TFLOPs/s（71%）；相对 cuDNN 9.13 为 1.1–1.3×，相对 Triton 为 2.1–2.7×。
 
-**图 3 解析**
+**图 4 解析**
 
 - **纵轴 TFLOPs/s**：论文正文最高约 **1613**、约 **71%** 理论峰值。对照基线是 cuDNN 9.13 / Triton，不是一条手绘「SFU-only」曲线。
 - **横轴序列长度**：中长序列收益最大；极短序列 dominated by launch/latency。
 - **Causal vs non-causal**：子图 (a)(b) 分别对应 — 推理 decode 常用 causal；训练 prefilling 可能 non-causal。
 - **Head dim=128**：LLaMA 类默认 — 其他 $d$ 需单独 benchmark。
-- **与 cuDNN 对比**：见图 4。论文也写：较新的 cuDNN 已吸收部分技巧，后期版本可与 FA4 接近。
+- **与 cuDNN 对比**：见图 5。论文也写：较新的 cuDNN 已吸收部分技巧，后期版本可与 FA4 接近。
 
 ![FlashAttention-4 vs cuDNN 前向（论文 Figure 5）](./images/fig-flashattention4-forward-tflops-vs-cudnn.jpg)
 
-> 图 4: B200 上 FA-4 与 cuDNN SDPA 的前向 TFLOPs 对比，长序列优势更明显（论文 Figure 5）。
+> 图 5: B200 上 FA-4 与 cuDNN SDPA 的前向 TFLOPs 对比，长序列优势更明显（论文 Figure 5）。
 
-**图 4 解析**
+**图 5 解析**
 
 - **基线意义**：cuDNN SDPA 已高度优化 — FA4 仍领先证明 **多项式 exp + CuTe 布局** 组合有效。
 - **差距随 $N$ 扩大**：长上下文 serving 更应优先 FA4 路径（若框架已集成）。
@@ -127,13 +141,13 @@ using SmemLayoutQ = decltype(make_layout(make_shape(Int<64>{}, Int<128>{}),
 
 ![FlashAttention-4 B200 反向 TFLOPs（论文 Figure 6）](./images/fig-flashattention4-backward-tflops-b200.jpg)
 
-> 图 5: B200 上反向 TFLOPs；训练瓶颈常在 backward，FA-4 在 FP16/BF16 下保持高吞吐（论文 Figure 6）。
+> 图 6: B200 上反向 TFLOPs；训练瓶颈常在 backward，FA-4 在 FP16/BF16 下保持高吞吐（论文 Figure 6）。
 
-**图 5 解析**
+**图 6 解析**
 
 - **反向仍重**：反向 FLOPs 约为前向 2–2.5× — 训练瓶颈常在 backward。
 - **Deterministic 模式**：图 8 显示 deterministic 略慢 — 分布式训练需权衡可复现性。
-- **dQ DSMEM**：图 2 旁注的 2-CTA exchange — 多 CTA 间交换半块 $dQ$，减少重复访存。
+- **dQ DSMEM**：图 3 旁注的 2-CTA exchange — 多 CTA 间交换半块 $dQ$，减少重复访存。
 - **与 MoBA/NSA**：稀疏注意力若 backward 不规则，FA4 的 dense 优化 **不自动传递** — 块内仍可用 FA4。
 - **硬件门槛**：仅 SM100+（B200）满血 — A100/H100 应继续用 FA2/3。
 
