@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 本波还剩两篇：**FastGen**、**ScissorHands**。**PyramidKV**（2406.02069）已写入 `2.3.2/14-PyramidKV-层间漏斗`。不要从全库盘点重来。
-2. **下一阶段（本波两篇交完再开）：OPD 家族**（经检验）+ **MOPD** + 各家技术报告落地。落点 `4.6-OPD/`。G-OPD / SCOPE 未核一手不升格。V4 后训练不 mkdir。
+1. **立刻做：** 本波还剩一篇：**ScissorHands**。**FastGen**（2310.01801）已写入 `2.3.2/15-FastGen-按头自适应`。不要从全库盘点重来。
+2. **下一阶段（ScissorHands 交完再开）：OPD 家族**（经检验）+ **MOPD** + 各家技术报告落地。落点 `4.6-OPD/`。G-OPD / SCOPE 未核一手不升格。V4 后训练不 mkdir。
 3. **P2 余量 / 结构：** Connest5 仍留条。S1 不要和本波 2.3.2 专文抢同一文件。第 5 章禁止再新建根级 `01-型号`。
 
 ## 波次队列（未完成的留着）
@@ -69,14 +69,15 @@ category: LLM 指南
 - [x] 0.8 本轮：SnapKV（2404.14469，NeurIPS 2024）；观测窗 + per-head 选簇；3.6×=16k·bs=2 ms/token；8.2×=16k→131k；380K=NIAH 单卡；不是观察头
 - [x] 0.8 本轮：TOVA（2401.06104，EMNLP 2024）；当前步最低分；层内平均；1/8=512/4096；4.8×=V100 Table 1 的 512 列；是驱逐
 - [x] 0.8 本轮：PyramidKV（2406.02069，COLM 2025）；Information Funneling；层间等差 + 层内 SnapKV；12%=1024/8192；不是 Sinks/Maps
+- [x] 0.8 本轮：FastGen（2310.01801，ICLR 2024 Oral）；按头 profiling；win>45% 才 negligible；不是 DeepSpeed-FastGen
 - [ ] **结构 S1–S7**（S0 五章首页地图已交）：见 `notes/chapter-structure-plan.md`（撞号/文件名规范 → 5/14 分工已在 S0/S2 声明 → 综述改导航）。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：0.8 已补 **PyramidKV 2406.02069**（专文 `2.3.2/14-PyramidKV`；题是 Funneling；纠正 6.4.2 Sinks / 6.3.1.2 Maps）。
-- 现在立刻做：本波还剩 **FastGen / ScissorHands**。OPD 等这两篇交完再开。不要 `move_agent_to_root`。不要 push。
+- 上一件：0.8 已补 **FastGen 2310.01801**（专文 `2.3.2/15-FastGen`；profiling 在 prompt encoding；Table 1 以 win>45% 为准）。
+- 现在立刻做：本波还剩 **ScissorHands**。OPD 等这篇交完再开。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -87,7 +88,7 @@ category: LLM 指南
 | snapkv-12 | done | `2.3.2/12-SnapKV-生成前观测窗/` | 已交；不是观察头 |
 | quest-13 | done | `2.3.2/13-Quest-查询感知稀疏/` | 已交；不是驱逐 |
 | pyramidkv-14 | done | `2.3.2/14-PyramidKV-层间漏斗/` | 已交；题是 Funneling，不是 Sinks/Maps |
-| fastgen-15 | leased | `2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/15-FastGen-按头自适应/`（含同名 md、`images/`）· `notes/live/inbox/fastgen-15.md` | 同上 |
+| fastgen-15 | done | `2.3.2/15-FastGen-按头自适应/` | 已交；按头 profiling，不是 DeepSpeed-FastGen |
 | scissorhands-16 | leased | `2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/16-ScissorHands-重要性持久/`（含同名 md、`images/`）· `notes/live/inbox/scissorhands-16.md` | 同上 |
 | tova-17 | done | `2.3.2/17-TOVA-注意力省略/` | 已交；层内平均驱逐，不是 SnapKV per-head |
 | s0-ch5 | done | `5-主流模型全解/5-主流模型全解.md` | 已交；禁止再 mkdir 根级 `01-型号` |
