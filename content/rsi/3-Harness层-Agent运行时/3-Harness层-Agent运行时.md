@@ -21,5 +21,6 @@ category: RSI
 | 05 | [STOP 自教优化器](./05-STOP-自教优化器/05-STOP-自教优化器.md) | 改进器对自己递归；基座冻结；弱模型上会掉分 |
 | 06 | [Gödel Agent 自指运行时](./06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) | monkey patch；公平对照只认相对 ADAS |
 | 07 | [ADAS Meta Agent Search](./07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) | 冻元搜下游；MGSM 53.4%；Gödel 公平对照锚点 |
+| 08 | [SkillEvolver 元技能](./08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) | 冻 CLI，写领域 SKILL.md；83 题 56.8%；元技能不自改 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
