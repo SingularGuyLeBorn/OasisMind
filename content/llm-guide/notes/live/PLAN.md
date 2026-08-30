@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 重写 `2.4.1` 机制主线（01 / 02 / 03 / 10 + 节首页去废话）。专文汉字 ≥ 4000，禁止注水。04–09 是系统/硬件/量化，**错位**，本波不在 2.4.1 里加厚它们。
-2. **并行中：** 报告精读波：K3、Gemini 3.7 已入库；Engram / Muse / RSI 仍在跑。路径与 2.4.1 叶子不相交。
+1. **立刻做：** 回收 `2.4.1` 机制专文 01 / 02 / 03 / 10（汉字 ≥ 4000）。节首页已收成地图。04–09 错位，本波不加厚。
+2. **并行中：** 报告精读波：K3、Gemini 3.7、Muse Spark 已入库；Engram / RSI 仍在跑。
 3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。过文 SiTU / mHC / GR 汉字未满 4000，回头加厚（派工早于规矩）。
 
 ## 波次队列（未完成的留着）
@@ -119,7 +119,7 @@ category: LLM 指南
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
 | pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
-| moe-hp | running | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + 该夹 `images/` + inbox `moe-hp.md` | 不改 01–10 夹；去废话；标明 04–09 错位 |
+| moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；错位箱 04–09；未改 01–10 夹 |
 | moe-01 | running | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 不改节根散文件 `01-DeepSeek-MoE.md`；汉字≥4000 |
 | moe-02 | running | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 不改 `02-MoE的工程实践-images/` 旧目录名；汉字≥4000 |
 | moe-03 | running | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 不改节根散文件；汉字≥4000 |
@@ -144,6 +144,6 @@ category: LLM 指南
 | fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
 | engram-248 | running | `2.4-前沿架构与变体/2.4.8-条件记忆与Engram/` + inbox `engram-248.md` | 不改 2.4 首页、不改 2.4.1–2.4.7、不改第 14 章、不改 live |
 | k3-d2-deep | done | `14.5-Kimi/05-Kimi-K3/`（01 精译 + 该夹 images）+ inbox `k3-d2-deep.md` | 已入库。2.78T/104.2B 与 2.8T/104B 分口径；QAT MXFP4/8；MTP→EAGLE-3 用 LK 不是 KL；未改 14.5 首页 |
-| muse-spark-d2 | running | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 不 mkdir 1.1/1.2 空 SKU；不编架构表；不改 14.3 首页、不改 live |
+| muse-spark-d2 | done | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 已入库。未 mkdir 1.1/1.2；无架构表，文首声明不够 4000；BioDesign 46.2/39.2 分口径 |
 | gemini-37-flash | done | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 已入库。监工补 14.11 表行；不 mkdir 3.6；DeepSWE 65.3% / 对照 48.6%；无架构表，文首声明不够 4000 |
 | rsi-origin | running | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 不改 `_garden.md`、不改其它 RSI 章、不 Delete、不改 live |
