@@ -8,15 +8,12 @@ tags:
   - "inference"
   - "reversal-curse"
 published: true
-excerpt: "本文从数学定义、推理效率、生成质量、可控性、反转诅咒、长文本处理等十个维度系统对比扩散与自回归两种生成范式，并给出选型决策框架。"
+as_of: 2026-08-31
+excerpt: "从因式分解、吞吐、质量、可控、反转、长文本等维度对照扩散与自回归。哪些是机制必然，哪些只是 2026 年的工程现状。数字以论文表为准。"
 ---
-# 扩散 vs 自回归：全面对比
+# 扩散 vs 自回归
 
-## 概述
-
-"扩散语言模型能不能替代自回归？"——这是该领域被问最多的问题。本文从数学根基到工程实践，系统比较两种范式的十个关键维度。读者会看到：扩散和自回归并非替代关系，而是两套不同 trade-off 的生成哲学，在不同场景下各有擅长，未来更可能是融合而非二选一。
-
-> 右侧动画直观展示了两种范式的生成过程差异，建议先观看再继续阅读。
+自回归把 $P(x)$ 写成从左到右的乘积，扩散写成一条去噪轨迹的积分。不是谁替代谁，是两套账单。机制层的差别（有没有因果掩码、KV Cache 是否严格成立、PPL 能不能横比）不会因为 Mercury 跑到四位数 tok/s 就消失。工程层的差别（吞吐、对齐、系统栈）2026 年仍在快速动。
 
 ```viz
 composition: ArVsDiffusion
@@ -76,11 +73,11 @@ Instruct 对比见 LLaDA Table 2：LLaDA 只有 SFT，LLaMA3 有 SFT+RL，GSM8K 
 
 ## 5. 可控生成
 
-这是扩散模型的**核心优势领域**。图像扩散的 guided generation 可以自然地迁移到文本：每一步去噪时注入约束，无需额外训练。AR 模型需要 RLHF、DPO 等额外训练阶段。Diffusion-LM 在情感控制、主题引导等任务上远超同期 AR 模型。
+这是扩散模型的核心优势领域之一，不是「不用训练就能任意控制」。图像里的 classifier guidance 依赖连续轨迹上的梯度。Diffusion-LM 把 token 映到嵌入，才能原样搬梯度；80M 规模上句法树成功率远高于 PPLM / FUDGE。离散 8B 模型更常用掩码、定长和 CFG 的对数概率加权。细节和 Table 2 数字见[可控生成](../03-points/controllable-generation.md)。AR 侧的 RLHF / DPO 改权重；扩散侧对应 VRPO 与 diffu-GRPO，见[对齐](../03-points/alignment-rl.md)。
 
 ## 6. 反转诅咒
 
-**反转诅咒**是 AR 模型的结构性缺陷："A 是 B"学不到"B 是 A"。扩散模型天然免疫——每步去噪时所有位置互相可见。LLaDA 的诗歌补全实验证明扩散可以同时从前后两个方向补全文本，而 GPT-4o 几乎只能单向续写。
+**反转诅咒**是 AR 的结构性问题：「A is B」学不到「B is A」。Berglund 微调实验里反向 exact-match 接近 0%。LLaDA 诗句表反向 42.4，GPT-4o 34.3，正向则是 48.8 对 82.7。机制与注意力耦合见[双向注意力](../03-points/bidirectional-attention.md)。不要写成「扩散已经全面免疫」。
 
 ## 7. 长文本处理
 
@@ -93,36 +90,33 @@ Instruct 对比见 LLaDA Table 2：LLaDA 只有 SFT，LLaMA3 有 SFT+RL，GSM8K 
 
 ## 8. 幻觉与事实性
 
-初步观察：扩散模型并行生成可能对全局一致性有优势（不太会出现"前后矛盾"），但 AR 有 RLHF 大量对齐经验；扩散的对齐研究刚刚起步。
+并行并不自动带来前后一致：一步之内各位置仍按边际乘积提交。LLaDA Base 同协议 BBH 49.8，低于 LLaMA3 的 57.6；TruthfulQA 46.4 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。细节见[失效模式](../03-points/failure-modes.md)。
 
 ## 9. 基础设施
 
 | 维度 | 自回归 | 扩散 |
 |---|---|---|
-| 推理框架 | vLLM, TGI, Ollama | 几乎没有专用框架 |
-| 预训练模型 | 数十个（LLaMA, Qwen, Mistral） | LLaDA 系列等少量开源 |
-| 社区规模 | 极大 | 较小但快速增长 |
+| 推理框架 | vLLM、SGLang、Ollama | 论文仓库 + dInfer 等；专用栈仍薄 |
+| 预训练模型 | LLaMA / Qwen / 等 | LLaDA、Dream、商业 Mercury / Gemini Diffusion / Seed |
+| KV Cache | 严格成立 | 全双向默认不成立；块间真缓存，跨步是近似 |
 
-## 10. 选型决策
+## 10. 选型
 
-| 需求 | 推荐 |
-|---|---|
-| 通用对话，对延迟不敏感 | 自回归 |
-| 低延迟批量生成（客服、翻译） | 扩散 |
-| 精细可控生成 | 扩散 |
-| 双向理解（填空、纠错、改写） | 扩散 |
-| 极长文本（>4K token） | 自回归 |
-| 研究与探索 | 扩散（大量 open problems） |
+填空、反向查询、定长表格：扩散或至少要双向。可变长闲聊、超长续写、要接现有 vLLM：AR 或块扩散。要吞吐：先看绝对 tok/s 和硬件，不要看相对原版 Python 循环的倍数。要可控：能写成掩码就不要上分类器。要对齐：有对错标签走 d1 一类，风格偏好走 VRPO。机制必然与工程现状不要焊在同一格。
 
 ## 来源
 
-- [LLaDA (2025)](https://arxiv.org/abs/2502.09992) — 8B 规模的扩散-AR 对比数据（MMLU/GSM8K/HumanEval 加速比）来源
-- [A Survey on Diffusion Language Models (2025)](https://arxiv.org/abs/2508.10875) — 综合对比框架与效率分析来源
-- [Diffusion-LM (NeurIPS 2022)](https://arxiv.org/abs/2205.14217) — 可控生成与 classifier guidance 来源
+- [LLaDA](https://arxiv.org/abs/2502.09992) Table 1–3。文中没有 8B 速度表。
+- [Fast-dLLM](https://arxiv.org/abs/2505.22618)、[dKV-Cache](https://arxiv.org/abs/2505.15781)、[LLaDA 1.5](https://arxiv.org/abs/2505.19223)、[d1](https://arxiv.org/abs/2504.12216)
+- [Diffusion-LM](https://arxiv.org/abs/2205.14217) Table 2
+- [A Survey on Diffusion Language Models](https://arxiv.org/abs/2508.10875)
 
 ## 相关
 
-- [为什么要用扩散做语言生成](../01-overview/why-diffusion.md)
-- [离散扩散模型：从马尔可夫链到掩码预测](../02-mechanism/masked-diffusion.md)
-- [代表性扩散语言模型一览](../03-models/representative-models.md)
-- [LLaDA 与最新进展](../03-models/llada-frontier.md)
+- [为什么用扩散做语言生成](../01-overview/why-diffusion.md)
+- [双向注意力与反转诅咒](../03-points/bidirectional-attention.md)
+- [推理加速](../03-points/inference-acceleration.md)
+- [可控生成](../03-points/controllable-generation.md)
+- [对齐与 RL](../03-points/alignment-rl.md)
+- [失效模式](../03-points/failure-modes.md)
+- [LLaDA 专文](../03-models/llada-frontier.md)

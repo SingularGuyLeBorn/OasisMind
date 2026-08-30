@@ -47,18 +47,31 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 7. [从自回归改编](./03-points/ar-to-diffusion.md)  
    DiffuLLaMA / Dream / LLaDA 2.0 / Fast-dLLM v2。
 
-计划专文：双向注意力与反转诅咒；推理加速专文（吞吐数字已散见采样篇与 Dream/Mercury 篇）；可控生成；对齐与 RL；失效模式。
+8. [双向注意力与反转诅咒](./03-points/bidirectional-attention.md)  
+   Berglund 的 0% 反向；LLaDA 诗句表正向 48.8 / 反向 42.4，GPT-4o 为 82.7 / 34.3。
+
+9. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
+   Fast-dLLM DualCache、dKV-Cache、CAP。27.6× 的对照物是原版 LLaDA，不是 AR。
+
+10. [可控生成与引导](./03-points/controllable-generation.md)  
+    Diffusion-LM 连续梯度；离散 D-CFG；8B 实际在用的掩码与定长。
+
+11. [对齐与强化学习](./03-points/alignment-rl.md)  
+    VRPO / LLaDA 1.5；d1 / diffu-GRPO。原版 Instruct 没有 RL。
+
+12. [失效模式](./03-points/failure-modes.md)  
+    定长与 EOS、并行搭配、PPL 不可比、近似缓存过期。
 
 🔴 **04 模型**
 
-8. [代表性扩散语言模型一览](./03-models/representative-models.md)
-9. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-10. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+13. [代表性扩散语言模型一览](./03-models/representative-models.md)
+14. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+15. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
 
 ⚖️ **05 对照**
 
-11. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
-   含 ArVsDiffusion 动画。对照数字已按论文表重校。
+16. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+   含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
 

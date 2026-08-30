@@ -137,4 +137,6 @@ D3PM（NeurIPS 2021）把转移矩阵写成三类：均匀跳到任意 token、�
 - [从图像扩散到离散 token](../02-mechanism/from-image-diffusion.md)
 - [离散扩散：转移矩阵在干什么](../02-mechanism/discrete-diffusion.md)
 - [掩码扩散](../02-mechanism/masked-diffusion.md)
+- [双向注意力与反转诅咒](../03-points/bidirectional-attention.md)
+- [可控生成](../03-points/controllable-generation.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)

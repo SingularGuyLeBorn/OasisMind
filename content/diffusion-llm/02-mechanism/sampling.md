@@ -115,4 +115,6 @@ return strip_after_eos(x)
 
 - [掩码扩散](./masked-diffusion.md)
 - [块扩散](../03-points/block-diffusion.md)
+- [推理加速](../03-points/inference-acceleration.md)
+- [失效模式](../03-points/failure-modes.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
