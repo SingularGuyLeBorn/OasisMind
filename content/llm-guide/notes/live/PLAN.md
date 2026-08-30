@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** KV 四篇已交。下一阶段开 **OPD 家族**：勘误 `01-OPD` / `02-OPSD` / `04-SDPO`，新文 `09-MOPD`、`10-OPD-报告落地对照`。落点 `4.6-OPD/`。G-OPD / SCOPE 未核一手不升格。V4 后训练不 mkdir。禁止改 `4.6-OPD.md` 节首页（监工收）。
+1. **立刻做：** 本波还剩：**02-OPSD** 勘误、**04-SDPO** 勘误、新文 **09-MOPD**、**10-OPD-报告落地对照**。**01-OPD** 已勘误（On-Policy Distillation；Table 21 分母）。G-OPD / SCOPE 未核一手不升格。V4 后训练不 mkdir。禁止改 `4.6-OPD.md` 节首页（监工收）。
 2. **P2 余量 / 结构：** Connest5 仍留条。S1（`4.1`/`8.2` 撞号）不要和本波 4.6 专文抢同一文件。第 5 章禁止再新建根级 `01-型号`。
 3. **0.8 持续：** 清单勾完继续补知识点。不要从全库盘点重来。
 
@@ -71,14 +71,15 @@ category: LLM 指南
 - [x] 0.8 本轮：PyramidKV（2406.02069，COLM 2025）；Information Funneling；层间等差 + 层内 SnapKV；12%=1024/8192；不是 Sinks/Maps
 - [x] 0.8 本轮：FastGen（2310.01801，ICLR 2024 Oral）；按头 profiling；win>45% 才 negligible；不是 DeepSpeed-FastGen
 - [x] 0.8 本轮：ScissorHands（2305.17118，NeurIPS 2023）；pivotal 持久；5×=KV 内存；20× 只在会场摘要
+- [x] 0.8 本轮：01-OPD 勘误；On-Policy Distillation 不是 Online Preference；MiniLLM ≠ GKD 梯度；Table 21 = Qwen3-8B math+code 17920 vs 1800
 - [ ] **结构 S1–S7**（S0 五章首页地图已交）：见 `notes/chapter-structure-plan.md`（撞号/文件名规范 → 5/14 分工已在 S0/S2 声明 → 综述改导航）。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：0.8 已补 **ScissorHands 2305.17118**（专文 `2.3.2/16-ScissorHands`；5× 是 KV 内存；20× 只在会场摘要）。KV 四篇交完。
-- 现在立刻做：OPD 家族五切片。不要 `move_agent_to_root`。不要 push。
+- 上一件：0.8 已勘误 **01-OPD**（On-Policy Distillation；Table 21 分母；MiniLLM reverse KL vs GKD stop-grad）。
+- 现在立刻做：等 **02 / 04 / 09 / 10** 交卷后质检入库。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -92,6 +93,11 @@ category: LLM 指南
 | fastgen-15 | done | `2.3.2/15-FastGen-按头自适应/` | 已交；按头 profiling，不是 DeepSpeed-FastGen |
 | scissorhands-16 | done | `2.3.2/16-ScissorHands-重要性持久/` | 已交；5× 是 KV 内存，不是吞吐 |
 | tova-17 | done | `2.3.2/17-TOVA-注意力省略/` | 已交；层内平均驱逐，不是 SnapKV per-head |
+| opd-01 | done | `4.6-OPD/01-OPD基础原理/` | 已交；On-Policy Distillation；Table 21 分母 |
+| opsd-02 | leased | `4-后训练/4.6-OPD/02-OPSD-自蒸馏/`（含同名 md、`images/`）· `notes/live/inbox/opsd-02.md` | 同上 |
+| sdpo-04 | leased | `4-后训练/4.6-OPD/04-SDPO-自蒸馏策略优化/`（含同名 md、`images/`）· `notes/live/inbox/sdpo-04.md` | 同上 |
+| mopd-09 | leased | `4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/`（含同名 md、`images/`）· `notes/live/inbox/mopd-09.md` | 同上；禁止 mkdir V4-Flash |
+| opd-10 | leased | `4-后训练/4.6-OPD/10-OPD-报告落地对照/`（含同名 md、`images/`）· `notes/live/inbox/opd-10.md` | 同上；第 14 章只读不改 |
 | s0-ch5 | done | `5-主流模型全解/5-主流模型全解.md` | 已交；禁止再 mkdir 根级 `01-型号` |
 | s0-ch8 | done | `8-多模态/8-多模态.md` | 已交；`8.2` 撞号留给 S1 |
 | s0-ch14 | done | `14-主流开源模型全景解析与技术报告精读/14-主流开源模型全景解析与技术报告精读.md` | 已交；Ernie/Erine 留给 S6 |

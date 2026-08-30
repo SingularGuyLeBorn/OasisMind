@@ -124,6 +124,8 @@ training_client.forward_backward(trajectories, loss_fn="importance_sampling")
 
 OPD 用约 1/10 的 RL 成本，实现了更高的性能. 
 
+> **2026-08 修订（不删上文表）。** 分母见 [01-OPD基础原理](../4.6-OPD/01-OPD基础原理/01-OPD基础原理.md)：Qwen3-**8B**、同一 off-policy distilled checkpoint、**只比 math+code**；括号是 pass@64。Off-policy 行 GPU Hours 是破折号。**不是**「所有后训练任务 1/10 算力」。文末知乎专栏不是一手来源。 
+
 ---
 
 ## 9. 总结

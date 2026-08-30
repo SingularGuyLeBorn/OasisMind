@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：OPD 一手（MiniLLM / GKD / OPSD / SDPO）与各家报告 mineru。KV 四篇已交。
-- 正在写：`4.6-OPD` 五切片（01/02/04 勘误 + 09-MOPD + 10 落地对照）。
+- 正在读：OPSD 2601.18734 / SDPO 2601.20802；V4 式 (29)；K3 式 (15)；MiMo MOPD；GLM-5 cross-stage。01-OPD 已勘误。
+- 正在写：`02-OPSD` 勘误 / `04-SDPO` 勘误 / `09-MOPD` / `10-OPD-报告落地对照`。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 ScissorHands，开 OPD
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 01-OPD
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -114,6 +114,7 @@ category: LLM 指南
 | 2026-08-30 | PyramidKV 专文：v4 式 (1) 等差漏斗；层内 Following SnapKV；**12%** 拆回 Table 2 的 1024/8192=12.5%；0.7% 弃用 0.8%；纠正 6.4.2 Sinks / 6.3.1.2 Maps | arxiv HTML v4 2406.02069；COLM 2025 Spotlight；github Zefan-Cai/KVCache-Factory；知乎只学讲法（2.5%/0.2% 未采用） | `2.3.2/14-PyramidKV`；`2.3.2` 索引；`2.3.4`；`6.4`；`6.4.2`；`6.3.1.2`；知识图谱 |
 | 2026-08-30 | FastGen 专文：双阶段；式 (1)(2) 五种嵌套；Table 1 以 win>45% 的 $T=98\%$ 行为准；官方仓几乎空 | arxiv HTML/PDF 2310.01801；ICLR 2024 Oral hash 639a9a17…；github machilusZ/FastGen；知乎只学讲法 | `2.3.2/15-FastGen`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 | 2026-08-30 | ScissorHands 专文：pivotal；非重要计数 $I$；**5×**=OPT-66B KV 内存；**20×** 只在会场摘要；NeurIPS Table 3 C4 分桶 | arxiv 2305.17118；NeurIPS hash a452a7c6…；github lzcemma/Scissorhands；知乎只学讲法 | `2.3.2/16-ScissorHands`；`2.3.2` 索引；`2.3.4`；知识图谱 |
+| 2026-08-30 | 01-OPD 勘误：On-Policy Distillation 不是 Online Preference；MiniLLM reverse KL+PG vs GKD stop-grad forward KL；Table 21 分母 Qwen3-8B math+code 17920 vs 1800；150 steps/77K 未找到 | MiniLLM 2306.08543；GKD 2306.13649；综述 2604.00626；Qwen3 2505.09388 Table 21 + mineru；知乎只学讲法 | `4.6/01-OPD`；`4.6-OPD.md`；`4.4` OPD 深度解析；知识图谱 |
 
 
 
@@ -335,6 +336,11 @@ category: LLM 指南
 | 原论文 | Scissorhands Persistence of Importance | https://arxiv.org/abs/2305.17118 ；NeurIPS https://proceedings.neurips.cc/paper_files/paper/2023/hash/a452a7c6c463e4ae8fbdc614c6e983e6-Abstract-Conference.html | 16-ScissorHands | NeurIPS 2023；Algorithm 2；$w=400$、$r=10$、$m=0.5B$；Table 1–4 |
 | 官方仓库 | lzcemma/Scissorhands | https://github.com/lzcemma/Scissorhands | 16-ScissorHands | C4 `hf_opt_dropkv.py`；Generation Coming Soon；$w$ 脚本 100 vs 论文 400 |
 | 知乎（只学讲法） | Scissorhands 专栏 | https://zhuanlan.zhihu.com/p/17195508439 ；https://zhuanlan.zhihu.com/p/708946312 | 16-ScissorHands | 8×A100-50G 未采用 |
+| 原论文 HTML | MiniLLM | https://arxiv.org/html/2306.08543 ；abs https://arxiv.org/abs/2306.08543 | 01-OPD | reverse KL + PG；teacher-mixed $\alpha=0.2$ |
+| 原论文 HTML | GKD | https://arxiv.org/html/2306.13649 ；abs https://arxiv.org/abs/2306.13649 | 01-OPD | $L_{OD}$ forward KL on student prefixes；stop-grad |
+| 综述 HTML | A Survey of On-Policy Distillation | https://arxiv.org/html/2604.00626v3 | 01-OPD | on-policy = $y\sim p_\theta$ |
+| 官方报告 | Qwen3 Table 21 | https://arxiv.org/html/2505.09388 ；本库 09-Qwen3 mineru en/zh | 01-OPD | 8B、off-policy distilled ckpt、math+code；17920 vs 1800 |
+| 知乎（只学讲法） | OPD 入门 / GKD 笔记 | https://zhuanlan.zhihu.com/p/2055657252439192532 ；https://zhuanlan.zhihu.com/p/2042176223334360025 | 01-OPD | GKD=state / MiniLLM=action；数字未进正文 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -369,7 +375,7 @@ category: LLM 指南
 | FastGen / Adaptive KV | arXiv:2310.01801；ICLR 2024 Oral；按头 profiling | **专文已写** `15-FastGen-按头自适应.md` | 第 2.3.2 |
 | ScissorHands / Persistence of Importance | arXiv:2305.17118；NeurIPS 2023；pivotal；5×=内存 | **专文已写** `16-ScissorHands-重要性持久.md` | 第 2.3.2 |
 | SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
-| OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **排队**：KV 四篇交完再勘误 `01-OPD基础原理` | 第 4.6 |
+| OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **勘误已写** `01-OPD基础原理.md` | 第 4.6 |
 | OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **排队** `02-OPSD-自蒸馏` | 第 4.6 |
 | SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **排队** `04-SDPO` | 第 4.6 |
 | MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **排队** 新文 `09-MOPD` | 第 4.6 |
