@@ -6,22 +6,38 @@ tags: [Agent, 智能体, ReAct, 多Agent系统, MCP, Agentic RL]
 
 # 13. Agent
 
-## 本章内容索引
+## 0. 本章职责（地图）
 
-| 编号 | 文章 | 核心内容 | 难度 |
-|------|------|----------|------|
-| 13.1 | [Agent 组件](./13.1-Agent组件/13.1-Agent组件.md) | 感知、推理、行动、记忆,ReAct 循环,工具执行,MCP |  |
-| 13.1.1 | [记忆系统](./13.1-Agent组件/13.1.1-记忆系统.md) | 短期/长期记忆、向量检索、知识图谱 |  |
-| 13.1.2 | [工具执行与 MCP](./13.1-Agent组件/13.1.2-工具执行与MCP.md) | Tool Registry、Function Calling、MCP 协议 |  |
-| 13.1.3 | [记忆压缩](./13.1-Agent组件/13.1.3-记忆压缩.md) | 摘要压缩、选择性保留、分层存储 |  |
-| 13.1.4 | [Agentic RL 训练](./13.1-Agent组件/13.1.4-AgenticRL训练.md) | 环境建模、奖励设计、PPO/GRPO/DAPO |  |
-| 13.1.5 | [Benchmark 与 Eval](./13.1-Agent组件/13.1.5-Benchmark与Eval.md) | SWE-Bench、WebArena、OSWorld、GAIA |  |
-| 13.1.6 | [代码沙箱](./13.1-Agent组件/13.1.6-代码沙箱.md) | Docker、Firecracker、E2B、浏览器沙箱 |  |
-| 13.1.7 | [结构化输出](./13.1-Agent组件/13.1.7-结构化输出.md) | JSON Schema、XML、约束解码、Outlines |  |
-| 13.2 | [Agent 与控制论](./13.2-Agent与控制论/13.2-Agent与控制论.md) | 反馈循环、稳定性分析、PID 控制与 Agent 的映射 |  |
-| 13.3 | [多 Agent 系统](./13.3-多Agent系统/13.3-多Agent系统.md) | 协作协议、角色分配、冲突解决、涌现行为 |  |
-| 13.4 | [设计模式与实现](./13.4-设计模式与实现/13.4-设计模式与实现.md) | ReAct、Plan-and-Solve、Reflexion、AutoGPT 模式 |  |
-| 13.5 | [IDE 解析](./13.5-IDE解析/13.5-IDE解析.md) | Cursor Agent、GitHub Copilot Agent 的工程实现 |  |
+本章写 **Agent 作为系统**：组件、认知/控制、运行时、训练、应用与治理。第 7 章只保留「应用里怎么接 Agent」：[7.3-Agent](../7-LLM应用开发/7.3-Agent/7.3-Agent.md) 是旧长稿，机制细节以本章磁盘为准。章夹真名是 `13-Agent/`，不是 `13-Agent系统/`。本节是叶子 B（课程序号 `13.1.1`…），不要在旁边再放 `01-记忆系统/`。下面 §1 起是 2025 百科快照。
+
+| 编号 | 文章 | 核心内容 |
+|------|------|----------|
+| 13.1 | [核心组件](./13.1-Agent核心组件/13.1-Agent核心组件.md) | 记忆、压缩、工具/MCP、工具调用演进、结构化输出 |
+| 13.1.1 | [记忆系统](./13.1-Agent核心组件/13.1.1-记忆系统.md) | 短期/长期记忆、向量检索 |
+| 13.1.2 | [记忆压缩](./13.1-Agent核心组件/13.1.2-记忆压缩.md) | 摘要压缩、选择性保留、分层存储 |
+| 13.1.3 | [工具使用与 MCP](./13.1-Agent核心组件/13.1.3-工具使用与MCP.md) | Tool Registry、Function Calling、MCP |
+| 13.1.4 | [工具调用演进](./13.1-Agent核心组件/13.1.4-工具调用演进.md) | Function Calling → MCP → Skill |
+| 13.1.5 | [结构化输出](./13.1-Agent核心组件/13.1.5-结构化输出.md) | JSON Schema、约束解码 |
+| 13.2 | [认知架构](./13.2-Agent认知架构/13.2-Agent认知架构.md) | 控制论、规划、反思 |
+| 13.2.1 | [Agent 与控制论](./13.2-Agent认知架构/13.2.1-Agent与控制论.md) | 反馈、稳定性 |
+| 13.2.2 | [推理与规划](./13.2-Agent认知架构/13.2.2-推理与规划.md) | ReAct、CoT、ToT、Plan-and-Execute |
+| 13.2.3 | [反思与自我修正](./13.2-Agent认知架构/13.2.3-反思与自我修正.md) | Reflection、Critic |
+| 13.3 | [系统工程](./13.3-Agent系统工程/13.3-Agent系统工程.md) | 设计模式、上下文、多 Agent、沙箱 |
+| 13.3.1 | [设计模式与实现](./13.3-Agent系统工程/13.3.1-设计模式与实现.md) | ReAct、Plan-and-Solve、Reflexion |
+| 13.3.2 | [上下文管理策略](./13.3-Agent系统工程/13.3.2-上下文管理策略.md) | 卸载、摘要、隔离 |
+| 13.3.3 | [多 Agent 系统](./13.3-Agent系统工程/13.3.3-多Agent系统.md) | 协作协议、角色、冲突 |
+| 13.3.4 | [运行时环境与沙箱](./13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md) | Docker、Firecracker、E2B |
+| 13.4 | [训练与进化](./13.4-Agent训练与进化/13.4-Agent训练与进化.md) | Agentic RL、TIR-RL |
+| 13.4.1 | [Agentic RL 训练](./13.4-Agent训练与进化/13.4.1-AgenticRL训练.md) | 环境建模、PPO/GRPO/DAPO |
+| 13.4.2 | [Tool-integrated Reasoning RL](./13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL.md) | 工具感知 RL |
+| 13.4.3 | [Off-policyness 与特权信息](./13.4-Agent训练与进化/13.4.3-Off-policyness与Privileged-Information.md) | 离线策略与特权信息 |
+| 13.4.4 | [基座模型的 Agentic 能力](./13.4-Agent训练与进化/13.4.4-基座模型的Agentic能力.md) | 预训练到后训练的注入 |
+| 13.5 | [应用与治理](./13.5-Agent应用与治理/13.5-Agent应用与治理.md) | IDE、Benchmark、安全 |
+| 13.5.1 | [IDE 与 Coding Agent](./13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md) | Cursor、Copilot、Devin |
+| 13.5.2 | [Benchmark 与 Eval](./13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md) | SWE-Bench、WebArena、OSWorld、GAIA |
+| 13.5.3 | [Agent 安全与对齐](./13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md) | 越狱、提示注入、沙箱隔离 |
+
+旧索引里的 `13.1-Agent组件/`、`13.2-Agent与控制论/`、`13.3-多Agent系统/`、`13.4-设计模式与实现/`、`13.5-IDE解析/` **磁盘上不存在**，不要再链。Agentic RL / Benchmark / 沙箱分别在 13.4.1 / 13.5.2 / 13.3.4，不在 13.1。
 
 ## 1. 章节定位与价值
 

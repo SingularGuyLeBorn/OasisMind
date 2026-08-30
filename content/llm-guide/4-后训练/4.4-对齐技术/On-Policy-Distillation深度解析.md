@@ -6,6 +6,8 @@ tags: [OPD, On-Policy Distillation, 知识蒸馏, RL, Reverse KL, MiniLLM, GKD]
 
 # On-Policy Distillation (OPD) 深度解析
 
+> **2026-08：** 本文是历史入口。机制本体、Table 21 分母、V4/K3 分叉见 [4.6 节地图](../4.6-OPD/4.6-OPD.md) 与专文 `01` / `09` / `10`。不要把本文当成 4.4 的第二份 OPD 本体。
+
 > 本文深入解析 On-Policy Distillation 的数学原理、实现变体(sampled-token / top-k / full-vocab)及其与 MiniLLM、GKD、DeepSeek V4 等实现的对应关系. 
 
 ---

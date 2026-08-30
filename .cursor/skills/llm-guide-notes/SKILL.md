@@ -18,7 +18,8 @@ description: >-
 3. `content/llm-guide/notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
 5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
-6. 需要搜论文时再读 [research.md](research.md)
+6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（一夹一文同名；同一父目录 C 课程序号与 A 专文序不混用；同级序号不重复；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
+7. 需要搜论文时再读 [research.md](research.md)
 
 然后从 `PLAN.md`「下一步 3 件」继续。禁止每次从全库盘点重来。
 
@@ -32,6 +33,7 @@ description: >-
 - 不要 push，除非用户明确说推远程。不要 `git add -A`。不要改 `git config`。
 - **一篇可验收切片做完就 commit**（专文 + 图 + PLAN/PROCESS 已改）：格式 `content(llm-guide): <中文摘要>`，按路径 `git add`。不要把十几篇堆到最后。PowerShell 用 `;`，不要 `&&`。
 - 预训练只允许用来**决定搜什么**。数字、架构、日期、基准必须能指回来源台账里的某一条。
+- 新知识点：先读顶刊顶会/官方报告，再可选 `pnpm --filter @oasismind/server zhihu -- search/read` 看知乎讲法。知乎不当事实源，禁止搬正文/图。细则 [research.md](research.md)。
 - 找不到一手来源：写「未找到一手来源」+ `[OM-FREEPLAY]`，宁可薄，不要编。
 - 2025 原文用 `## 2026-08 修订` / 勘误接到今天，**不删旧段落**。
 - 不是商品、不是开源立项。不要售卖包装、不要 PUBLIC-SLICE。
@@ -74,10 +76,12 @@ description: >-
 ### 配图
 
 - 用 Cursor `GenerateImage` 自绘，或 mermaid / Markdown 表。
-- description 必须含：`white academic background, no watermark, no logo, no copyright text, no website URL`。
+- **必须浅色主题，禁止深色主题。** 画布白底或极浅灰；字和箭头用深灰/深蓝；色块用浅色填充 + 深色描边。用户明确不喜欢深色底。
+- description **必须整段带上**（缺任一句 = 不合格，重画）：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
 - 落点：`./images/fig-kebab-case.png`（或 `.jpg`），正文相对路径引用。
 - **禁止**语雀 CDN、Substack、微信/知乎截图、论文 PDF 截图当配图。已有水印图：保留旧文件，新生成无水印版改引用。
 - 数据表用 Markdown，数字来自官方表，不要手绘假坐标曲线冒充论文 Figure。
+- 生成后自检：底是不是白的、字是不是深的。深色幻灯片风 = 立刻重画，不要入库。
 
 ### 系列写法（MHA→MQA→GQA→MLA 这组最重要）
 
