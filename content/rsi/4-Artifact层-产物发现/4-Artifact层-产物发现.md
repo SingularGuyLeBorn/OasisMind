@@ -15,7 +15,7 @@ category: RSI
 | 序号 | 专文 | 职责 |
 |------|------|------|
 | 01 | [Polaris 科研智能体](./01-Polaris-科研智能体/01-Polaris-科研智能体.md) | 六阶段科研 OS；Voyage；不是 RSI |
-| 02 | [MirroS Physical RSI](./02-MirroS-Physical-RSI/02-MirroS-Physical-RSI.md) | 概念帖；官方论文未核就不升格 |
+| 02 | [MirroS Physical RSI](./02-MirroS-Physical-RSI/02-MirroS-Physical-RSI.md) | Code-as-World 可执行世界；VL 不内化发现环；不是 RSI |
 | 03 | [AlphaEvolve 进化编码智能体](./03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) | FunSearch 后身；48 次乘 / Borg 0.7%；默认不是 RSI |
 | 04 | [FunSearch 函数空间搜索](./04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) | Nature 2024；n=8 cap set 512；装箱 Weibull 10 万件超额 0.03%；不是 RSI |
 

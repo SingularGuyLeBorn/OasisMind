@@ -1,57 +1,143 @@
 ---
-title: MirroS · Physical RSI
-category: RSI · 概念
+title: "02 · MirroS：可执行世界还不是物理 RSI"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
 published: true
 excerpt: >-
-  MirroS（社区/小红书传播）提出的 Physical RSI 概念：AI
-  改进循环不止于软件训练数据，还涉及机器人/传感器/物理交互层的自我升级——本文档为概念笔记，**待核实**官方论文与项目主页。
+  MirroS 公司口号是 Physical RSI。已交卷的是 Code-as-World：把场景写成可执行
+  (C,E,A)，MuJoCo 上 propose–verify，最多 5 轮；VL-9B 在 QuantiPhy-val
+  平均 MRA 55.4，超过 Gemini-3.1 Flash 的 54.8。发现环没有进模型。
 tags:
   - RSI
-  - Physical RSI
   - MirroS
-  - 概念
-  - 待核实
----
-# MirroS Physical RSI：物理世界递归自我改进概念
-
-> **来源**：小红书等社区讨论（MirroS 相关帖）｜ **状态**：**待核实**——未发现对齐的 arXiv/官方 GitHub 一手材料
-> **勿与**：金融指标 RSI（Relative Strength Index）混淆
-
-## 原文精读
-
-社区语境下的 **MirroS / Physical RSI** 试图把 RSI 从「纯数字/软件自训练」扩展到 **物理世界闭环**：
-
-- Agent 不仅合成 `train_messages.jsonl` 或改代码，还涉及 ** embodiment**：传感器标定、动作策略、硬件在环实验。
-- 「Mirror」隐喻：系统在物理交互中的行为镜像为可测量信号，再反馈进下一代策略/硬件配置。
-- 与 RSIBench-Data（固定 Tinker+Harbor **纯软件** post-training）形成对比轴——Physical RSI 强调 **sim2real、安全、可重复实验** 约束。
-
-因缺少一手论文，此处**不断言**具体架构或实验数字；仅记录概念在中文社区的出现，供后续挂接官方来源。
-
-## 方法/架构解析
-
-若 Physical RSI 成立，.harness 必须多一层 **deterministic physics verifier**（力矩限位、碰撞、计量溯源），否则 self-improvement loop 在物理侧不可审计。可参考：
-
-- Polaris Experiment Lab 的 SSH+metric gate（软件域）
-- Code as Agent Harness 综述中的 embodied / scientific discovery 章节
-
-**待核实清单**：官方 repo、作者机构、与 standard RSI 定义（Burns/AIDE²/Anthropic RSI 文）的关系。
-
-### 与软件 RSI 的分界
-
-| 维度 | Software RSI（RSIBench 等） | Physical RSI（概念） |
-|---|---|---|
-| 状态 | loss curve、checkpoint | 传感器、执行器、环境 |
-| 风险 | 数据污染、reward hack | 人身/设备安全 |
-| Verifier | Harbor、单元测试 | 物理限位、标定溯源 |
-
-在未见一手论文前，应把 MirroS 当作**研究议程**而非已验证系统：提醒 harness 设计者「RSI 若落地到机器人，verification 层不能照搬纯软件 benchmark」。
-
-本条目刻意保留「待核实」：避免小红书二手解读被写进知识库当作论文结论。后续若出现正式 preprint，应替换来源块并补充实验设定；若仅为营销概念，则降级为 essays 随笔而非 rsi/notes 正文。
-
-## 补充
-
-Physical RSI 在中文社交语境常与「具身智能自我进化」混谈，但软件 RSI 文献（RSIBench、AAR、autoresearch）几乎都不含力/扭矩/安全联锁。本笔记刻意与金融 RSI 指标区分，也区别于已发表的 software-only benchmark 结论；读者应默认**无实验证据**，直至一手论文出现。若后续核实为营销概念，应迁移至 essays 随笔并在此文 frontmatter 标记 deprecated。与软件 RSI 对照阅读时，请优先 RSIBench-Data、Polaris、AAR 等有 repo 或论文的一手来源。本概念笔记仅防止把社交媒体二手解读误写入知识库正文；待 MirroS 发布预印本或开源仓库后，应重写「原文精读」并移除待核实标记。
-
+  - Code-as-World
+  - HarnessEval
+  - 世界模型
 ---
 
-> 见微改进对照见 [OasisMind 2026-08 Harness 波改进清单](../../essays/oasis-improvements-2026-08-harness-wave.md)。
+# 02 MirroS：世界程序不是物理 RSI
+
+MirroS 是 2026-08 亮相的创业公司，口号写在首页：[Building Physical RSI Beyond the Known World](https://mirros.ai/blog/building-physical-rsi-beyond-the-known-world)。联合创始人 / CRO 吴佳龙（清华 THUML）个人页也写「mission to build physical recursive self-improvement」。口号是议程。已经交卷、能核数字的，是两件软件产物：把物理场景写成可执行代码的 [Code-as-World](https://github.com/mirros-lab/code-as-world)，以及给世界模型当评测脚手架的 [HarnessEval-W](https://github.com/MirroS-Lab/HarnessEval-W)。
+
+本篇落在 Artifact 层：留下的是 `scene.json` / 可执行世界，以及用这些世界造出来的 VQA 监督。坐标系见 [02 三层](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。**不是** RSI：发现环、MuJoCo、验证器、VL 的两阶段 SFT 配方都在墙外；技术报告 §5.5 自己写，模型学的是发现**结果**，没有把 propose–verify 内化。**不是** 金融 RSI。**不要**用 GitHub bibtex 里的 `arXiv:2608.xxxxx` 占位符当论文号。一手：MirroS Team，*Code as Worlds*，2026-08-27，PDF [mirros.ai/report/code-as-world.pdf](https://mirros.ai/report/code-as-world.pdf)；博客 [representing-physical-world](https://mirros.ai/blog/representing-physical-world)、[harnesseval](https://mirros.ai/blog/harnesseval)。QuantiPhy 基准是 Li et al.，CVPR 2026。
+
+## 1. 口号：软件沙盒不够，物理世界没有完整规则文件
+
+使命博客拿 Karpathy Auto-Research 当对照。那边的循环是改训练代码 → 跑固定实验 → 看验证集 → 留下或回滚，花园已写在 [Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)：环境是冻着的 `prepare.py` 和 val_bpb。博客的判断：那是封闭、规则写死的软件沙盒，Agent 发现「什么有效」，并不发现「自己在哪个世界里」。物理现实的规则从未写全，状态只通过多模态部分可见，交互枚举不起。家用机器人没有每件物体的完整规则文件；工厂数字孪生会随磨损过期。
+
+于是 Physical RSI 被写成必须同时改 **actor** 和 **world model**。OOD 事件叫 surprise。博客例子：机器狗腿被电缆缠住。世界 Agent 若复现不出电缆路径、接触、张力和腿运动，叫 **environment gap**，要先把缺失动力学抽成可复现的环境族；复现之后 actor 仍解不出，叫 **skill gap**，再在扩大后的环境里搜恢复策略。循环写成 encounter → surprise → diagnose → abstract → simulate → solve → verify → internalize。路线图四块：环境理解与抽象、Agent 物理推理、从经验巩固、主动发现未知。评测不该是固定榜，而该看系统把未知变成可复用能力的可靠性。
+
+这是议程，不是实验表。当前公开系统覆盖的是第一块（把观测变成可执行表示）和评测 harness。后三块没有花园能核的端到端数字。读口号时把「Physical RSI emerges when…」听成已经 emerge，会和 §5.5 打架。花园已有的软件 RSI 样板（SPIN、LADDER、ADAS）全部发生在规则写得清的域里；MirroS 的贡献是把「环境本身也必须被搜出来」写进议程，并先交出搜环境表示的那一环。后三块（推理编排、经验巩固、主动探未知）在公开材料里还是路线图句子，没有和 Table 1 同级的表。吴佳龙主页把 Code-as-World 和 HarnessEval-W 都标成 2026-08 技术报告；后者博客先发，GitHub 仓库在，本篇数字以 Code-as-World PDF 为准，HarnessEval 只核技能数和三轴，不编排行榜。仓库 README 与博客互相链，star 数会漂，不当作科学结果。开源许可以仓库 SPDX 为准（Code-as-World 写 Apache-2.0），本篇不把许可证听成算法贡献。轨迹保真实验把仿真渲染和 sim-to-real 视频都从同一 \(p_0\) 初始化，用 CoTracker 估图像平面中心，每条视频均匀抽 16 帧、宽缩到 512 再追踪；Traj-ADE / Velocity-ADE 对画面对角线归一。这些尺子在环外，避免验证器自己给自己打分。
+
+## 2. 可执行世界：\(p=(C,\mathcal{E},A)\)
+
+技术报告 §2 把已有表示拆成三家，方便看 Code-as-World 补哪块。像素 / 视频生成把未来帧当目标，不必显式表示变化原因：相机动和物体动、暂时遮挡和永久消失，都可以得到相近的预测分。几何重建给出表面和深度，仍可不给出质量和接触定律。语言给出物体和事件的名字，连续状态（0.7 m/s、0.2 kg）对不准。Code-as-World 不宣称替代这三家，它把机制写成可执行接口，外观仍可以交给渲染或视频模型。博客另加一条 **knowledge inheritance**：概念和规则与人类语言、科学、代码共享，表示不仅可以靠更多感官数据长大，还可以继承已经发现的抽象。博客把结构化语言收成三条内禀性质：**语义抽象**（实体、状态、事件、关系，超出单次观测）、**结构可组合**（世界能拆能改）、**机制可执行**（规则能仿真、能对照证据）。再加一条外接：知识继承。理解写成从观测构造并验证当前世界的候选抽象；预测写成在动作下展开这个已验证世界——代码侧走精确状态转移，语言侧走定性和长时程。公式在博客里写成
+
+\[
+p(s_t,s_{t+1}\mid o_{\le t},a_t)=p(s_t\mid o_{\le t})\,p(s_{t+1}\mid s_t,a_t),\qquad s_t=(s_t^{\mathrm{natural}},s_t^{\mathrm{code}}).
+\]
+
+这是组织原则，不是 Table 1 的似然。主实验评的是重建保真和 VLM 的 MRA，没有报这条联合分布的数值拟合。
+
+$$
+p=(C,\mathcal{E},A)\in\mathcal{W}_{\mathrm{exec}}.
+$$
+
+- **Composition \(C\)**：有什么。物体、几何、度量尺寸、质量 / 摩擦 / 重力；地板、桌子、墙当静态实体，能参与支撑和碰撞。
+- **Evolution \(\mathcal{E}\)**：怎么随时间展开。初态、时间变化、关键事件、仿真时长。执行后得到接触、碰撞、速度变化、终止。
+- **Appearance \(A\)**：怎么被看见。相机、背景、材质、光照、帧率、分辨率、渲染或视频生成配置。不改底层物理过程。参与碰撞的结构算 \(C\)，只提供视觉上下文的背景算 \(A\)。
+
+实现落成 `scene.json`，用 MuJoCo。附录 B.2：两套可替换引擎走同一接口。**animation engine** 用随时间变化的位姿描述运动（强调什么在动、怎么动）；**physics engine** 从力、接触、约束推运动。正文插图多用视频证据 + animation engine；附录 C.1 报 physics engine。等价优先于像素复制：改一个物体、参数、动态条件或相机，其余结构可保持。
+
+文本驱动：从说明书抽实体、空间关系、物理事件，补先验和默认值，再仿真、语义验证。语言很少钉死几何、物理参数和相机，所以初始化依赖先验，环再用仿真把缺口补上。下游用视频生成做 sim-to-real，丰富外观，运动轨迹仍对齐可执行世界。视频驱动：深度、实例掩码、轨迹当视觉证据；对分割出的物体用 3D 生成模型建网格，再和深度、轨迹一起恢复位置、尺度、动态。候选 rollout 投回输入视角，对照几何、深度、掩码、轨迹。视频候选来自 WISA-80K，先按元数据留刚体或碰撞类运动，丢掉混杂现象、大相机平移旋转、物体几乎不动、剪辑严重或事件不完整的片段，再人工看时间连续和可见性。这是数据准入，不是改进器在改过滤器。
+
+## 3. 发现环：最多五轮，不是一次前向
+
+从不完整观测恢复 \(p\) 是逆问题。报告把它写成溯因搜索，而不是一次预测。共享循环：propose → instantiate → execute → render → verify。伪代码（报告 Algorithm，符号从 PDF）：证据 \(e\) 先按模态适配——文本走 InterpretText，视频走 Depth / Segment / Track。然后 \(k=1\ldots K\)：ModifyEWR 提出或更新假设，CompileEWR 编译成仿真就绪程序，RunSimulation 执行，Render 再投影回输入视角，SelectFrames 上 CompareAndDiagnose，差异 \(\Delta\) 累积。Accept 则返回，否则带着 \(\Delta\) 进下一轮；预算用尽则 Reject，留下轨迹。
+
+视频重建实验把最大轮数设成 **\(K=5\)**。候选筛选和修订由环内验证器驱动，**报告的指标故意不进验证信号**，比较的是输入视频和重建 EWR 的仿真渲染。Figure 5：实线从 round 1（one-shot）走到 round 5；虚线是同等五次评估预算的 Best-of-5 独立采样。匹配预算下，agentic loop 在 Visual Alignment、Object IoU、Traj-ADE、Accuracy@2% 上超过 Best-of-5。附录换 physics engine 后，第五轮在五项指标上同样超过匹配预算的 Best-of-5。这是「迭代用计算比独立采样值」的证据，不是改进器升级的证据：\(K\)、验证器、MuJoCo、SAM / 深度 / 网格那条感知栈，都是人写死的 \(I\)。
+
+![文本或视频进证据适配；五轮提出、仿真、渲染、对照；验收或拒绝](./images/fig-mirros-discovery-loop.png)
+
+> 图 1：发现环。实线是执行；虚线是 \(\Delta\) 回写假设。MuJoCo 和验证器在环侧，不进 VL 权重。
+
+**图 1 解析**
+
+- **Evidence adapter**：文本和视频进同一 \(p\) 空间，约束不同。
+- **五步**：Propose / Instantiate / Execute / Render / Verify。箭头单向，只有 \(\Delta\) 虚线回去。
+- **\(K=5\)**：停条件是 Accept 或预算尽。Reject 不是「世界不存在」，是当前引擎建不出可验收的 \(p\)。
+- **墙外**：仿真器、感知工具、Accept 规则。和 FunSearch 冻评估器是同一类缺口。
+
+§4.4：真实环境复杂，仿真器覆盖不全。刚体运动也对地形、接触几何、材料、隐变量敏感。过程一旦落在仿真器建模范围外，环可能收敛到**局部看起来像**的 EWR，机制并不对。这是 Artifact 层的经典失效：验证器只能查「渲染是否对得上这段视频」，查不住「质量是否真是 0.2 kg」。
+
+## 4. 下游：用验收过的世界教 VLM 数
+
+真实视频几乎不带世界坐标系下的尺寸、速度、加速度标签。报告把验收过的 EWR 当成监督源。任务（§5.1）：单目视频 + 定量问题 → 标量。问题指定目标、时间戳、量（尺寸 / 位移 / 速度 / 加速度）和单位。世界坐标问题另给一个已知世界值的参照量做尺度标定，协议跟 QuantiPhy。
+
+两阶段。先 **image-space**：RefCOCO / + / g、RefCLEF 的框，GOT-10K 的轨迹，造像素级问答，**SFT**（式 (3)）。位移、速度、加速度从轨迹按中心差分算：\(d=c_{t_2}-c_{t_1}\)，\(v=(c_{t+1}-c_{t-1})/(2\Delta)\)，\(a=(c_{t+1}-2c_t+c_{t-1})/\Delta^{2}\)（报告式 (2)）。再 **world-space**：从 EWR 的同步视频和状态轨迹读几何与运动，造带精确世界标签的 VQA。只保留目标、时间范围、可选参照都合法的题。尺寸直接读场景几何，运动量从状态轨迹算，可选给一个已知世界值的参照当尺度先验。文本驱动和视频驱动的世界用同一题型，合成 world-level 训练集。报告写明：第一阶段 SFT 做图像空间测量，**第二阶段对 world-level VQA 用 GRPO**（引用 DeepSeekMath 的 GRPO）。不要把两阶段都听成 SFT。4B / 9B 先留下 image-space 检查点，再跑完 GRPO 得到 Code-as-World-VL-4B / 9B，直接出数字。另训 27B（Reasoning），先思维链再出答案，只给思维链之后的答案打分。训练和评测都从视频均匀抽 **16** 帧。GRPO 把可执行世界的精确标签当成可验证奖励，和 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md) 是同一类信号；验证器仍是墙外的 EWR 轨迹，不是模型自己给自己打分。
+
+QuantiPhy-validation 的 MRA 宏平均（Table 1）：
+
+| 模型 | 尺寸 | 平均 MRA |
+|------|------|----------|
+| Gemini-3.1 Flash | – | **54.8** |
+| ChatGPT-5.1 | – | 48.4 |
+| Qwen3-VL-32B-Instruct | 32B | 40.2 |
+| Qwen3.5-4B | 4B | 31.2 |
+| Code-as-World-VL-4B | 4B | **50.6** |
+| Code-as-World-VL-9B | 9B | **55.4** |
+| Code-as-World-VL-27B (Reasoning) | 27B | **58.6** |
+
+9B 超过表上的 Gemini-3.1 Flash；4B 已超过 32B 开源指令模型和自己的 4B 基座 31.2。子集 2S / 2D / 3S / 3D 的分拆以 PDF Table 1 为准，这里不把四列再抄一遍充汉字。图像空间不是配角：附录表里 Qwen3.5-9B 在 RefCOCO / RefCOCOg / RefCOCO+ / RefCLEF / GOT-10K 的 MRA 是 38.6 / 33.0 / 38.6 / 37.8 / 15.9；只做 image-space 的 9B 变体到 63.7 / 61.1 / 61.5 / 47.2 / 20.1；再加 world-space 之后到 **68.3 / 65.6 / 66.4 / 61.9 / 26.6**。4B 同样：基座 RefCOCO 28.6，完整 4B 到 62.9。world-space 阶段没有把像素测量能力吃掉，报告写成「preserves and strengthens」。27B 是另一条协议：outcome-supervised 的推理变体，先出思维链再出数字，分数只看链后答案；附录 B.5 单独写，不要和 4B/9B 的直接答题混成同一种训练。
+
+§5.5 两句比涨分重要。QuantiPhy 只覆盖单目尺度标定下的尺寸 / 位移 / 速度 / 加速度，场景相对受限；自然场景里的相机运动、形变、遮挡、流体、长时程多物体，本实验没测。第二句直接对花园：Code-as-World-VL **从验收过的可执行世界的结果学习，并不内化发现过程**——假设构造、仿真、诊断、迭代修订仍在模型外。把 55.4 听成物理 RSI，是把教师的作业当成学生会出题。结论段还写当前实现主要是刚体；范式可以扩，主实验没有流体或可变形体的数字。
+
+## 5. HarnessEval：评测也想当 Agent，递归是未来工作
+
+[HarnessEval 博客](https://mirros.ai/blog/harnesseval)（2026-08-17）把 LLM 生态里的 harness 搬到世界模型评测：人看生成世界时会定位物体、盯物体恒常、查因果和几何，这套工作流可以写成可执行 Agent。HarnessEval-W 是第一份世界模型例子。三个轴：
+
+- **Observation Quality**：渲染是否视觉可靠。
+- **Transition Correctness**：状态转移是否在对的时间执行了请求的动作。再拆探索性（改观察位置）、意图性（改指定实体 / 关系 / 事件）、物理控制是否像。
+- **World Persistence**：预测状态序列是否在演化中自洽。Drift、离开再回来、屏幕外过程是否继续。持久不是处处不变，是该不变的不变、该随动作变的按时间变。
+
+技能库当前 **9** 个：Render Quality、Physical Plausibility、Viewpoint Trajectory、Intentional Change、Physical Response、Physical Dynamics、Drift Degradation、Return Consistency、Offscreen Evolution。先按案例选技能，再把技能拆成可测子问题派给子 Agent。Intentional Change Verifier 拆成八个：目标可见、转移可见、意图改变、目标特异、终态、锚点保持、无额外事件、可判定。最终要的是证据树：测了什么、哪件工具提供视觉接地、完整逻辑链，而不只是一个标量。案例构造本身也是 Agent 管道：场景分类抽样 → 生成首帧 → 规划动作 → 校验，失败回抽样。分类覆盖环境、实体、空间结构、视觉风格和视点；再抽样要测的转移 / 持久轴；图像 Agent 出首帧，规划 Agent 按轴出动作（文本提示或相机序列），校验 Agent 看环境、前景、中景和动作是否自洽。博客写评了 **18** 个世界模型，抓取到的正文没有把那张表嵌进来，本篇不编 18 家里的分数。评测 Agent 用 LLM 子 Agent 和视觉工具当证据，本身也是「LLM 裁判」家族：花园可靠性专文要求指导过候选的分数不要再当同一更新的唯一门禁。HarnessEval 若只用来给外部世界模型打分、不拿同一套分数去改这 9 个技能，缺口小一档；一旦走第三条未来工作「评测员改自己」，就要另备墙外尺。
+
+未来三条：测试时加计算、扩大技能库、**Recursive Self-Improved Agentic Benchmark**——遇到 OOD 时评测员评自己、补技能。第三条是愿景。当前 9 个技能和人写的三轴，是冻着的评测 harness，不是 L3 改进器。花园 [可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md) 的提醒在这里同样适用：若评测 Agent 和被评模型共享更新边界，分数会变成自我证明。
+
+![口号里的 actor 与世界模型对上花园三层；已交卷的是 EWR 产物和冻着的环](./images/fig-mirros-not-rsi.png)
+
+> 图 2：使命博客的双环在上；已交卷系统在下。发现环和 9 个评测技能停在墙外。
+
+**图 2 解析**
+
+- **上排**：environment gap vs skill gap。那是路线图，不是 Table 1。
+- **下排左**：EWR 是 Artifact。
+- **下排中**：发现环 / HarnessEval 是 Harness，配方冻。
+- **下排右**：VL-4B/9B/27B 是 Model 层：先 SFT 再 GRPO，学的是标签和可验证奖励，不是发现环本身。
+- **墙**：MuJoCo、Accept、QuantiPhy 协议、技能库。
+
+## 6. 对上花园
+
+| | 改什么 | 验证 | RSI |
+|--|--------|------|-----|
+| Auto-Research | `train.py` | val_bpb | 否 |
+| FunSearch | 短函数 | 组合数学分数 | 否 |
+| AlphaEvolve | 程序产物 | 任务指标 | 否 |
+| Code-as-World | EWR / `scene.json` | 渲染对视频 | 否 |
+| Code-as-World-VL | \(\theta\)（SFT 再 GRPO） | QuantiPhy MRA | 否 |
+| Physical RSI 口号 | actor + world model | 现实复核 | 未交卷 |
+
+和 [FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 最近：冻生成器配方，搜可执行片段，墙外评估器给 0/1。差别是评估器从数学分数换成「仿真渲染是否对齐这段视频」，领域从组合数学换成刚体。FunSearch 的岛和程序数据库是进化种群；这里的种群是同一条假设的五轮修订，Best-of-5 只当对照，主主张是带 \(\Delta\) 的迭代比独立采样值。和 [Polaris](../01-Polaris-科研智能体/01-Polaris-科研智能体.md) 一样，人闸在墙外——这里的人闸是仿真器建模范围、WISA 过滤和 Accept。和 [AlphaEvolve](../03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 的差别：那边搜的是算法产物、评的是任务指标；这边搜的是物理世界的可执行假说，评的是视觉–仿真一致，再用假说当 VLM 的教师。教师环和运动员 \(\theta\) 分开，正是 §5.5。
+
+**读**：\(p=(C,\mathcal{E},A)\)；\(K=5\) 对 Best-of-5；Table 1 的 50.6 / 55.4 / 58.6 对 Gemini-3.1 Flash 54.8；§5.5 不内化发现环；HarnessEval 9 技能与三条未来工作。  
+**不读**：把公司口号听成已实现 RSI、把 55.4 听成机器狗已经会从电缆缠绕里递归改进、引用 `arXiv:2608.xxxxx`、把 MarkTechPost 当一手、把 18 个世界模型的未见表听成已核分数。
+
+同层：[FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)、[AlphaEvolve](../03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。对照软件沙盒：[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)。评测原则：[可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+
+## 参考文献
+
+1. MirroS Team (2026-08-27). [Code as Worlds: Agentic Discovery of Executable World Representations for Physical Reasoning](https://mirros.ai/report/code-as-world.pdf). 技术报告 PDF。Table 1、\(K=5\)、§4.4 / §5.5 以该文件为准。代码：[mirros-lab/code-as-world](https://github.com/mirros-lab/code-as-world)。
+2. MirroS Team. [Representing the Physical World through Structured Language](https://mirros.ai/blog/representing-physical-world)；[Building Physical RSI Beyond the Known World](https://mirros.ai/blog/building-physical-rsi-beyond-the-known-world)；[HarnessEval](https://mirros.ai/blog/harnesseval).
+3. Li, P. et al. QuantiPhy. CVPR 2026. 评测协议。
+4. 本花园：[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)；[FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)。
