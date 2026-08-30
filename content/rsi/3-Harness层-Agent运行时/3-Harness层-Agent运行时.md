@@ -14,7 +14,7 @@ category: RSI
 
 | 序号 | 专文 | 职责 |
 |------|------|------|
-| 01 | [Argus Verification-Gated](./01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) | 验证门控：谁允许写入下一状态 |
+| 01 | [Argus Verification-Gated](./01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) | 生成 ≠ 入库；SWE-Bench Pro 约 78% 对 59%；成熟窗口 −21% token（观测） |
 | 02 | [Karpathy Auto-Research](./02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md) | 单卡科研闭环 |
 | 03 | [CS329A Skill 入口](./03-CS329A-Skill入口/03-CS329A-Skill入口.md) | 课程 skill 指针；不搬讲义 |
 | 04 | [DGM 达尔文哥德尔机](./04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) | 改自己的 Python；SWE-bench 20%→50%；弱 RSI 候选 |
