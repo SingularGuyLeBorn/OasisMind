@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 加厚 SnapKV / Quest / SiTU / mHC 到汉字 ≥4000；新建 `2.2.2/07` Gated Attention 相关工作（不改 06）。
-2. **本波交卷后：** GR 加厚；把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1（不边写边搬）。
+1. **立刻做：** 加厚 Gated Residual 到汉字 ≥4000。
+2. **本波交卷后：** 把 2.4.1 的 04–09 `git mv` 到 6.1 / 6.3 / 9.1（不边写边搬）。
 3. **再下一波：** Qwen4 架构预测（只收一手）。
 
 ## 波次队列（未完成的留着）
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：回收 2.4.1 机制主线 01/02/03/10 + Engram 2.4.8 + RSI 前世今生。
-- 现在立刻做：加厚 SnapKV/Quest/SiTU/mHC；新建 `2.2.2/07`。不要 `move_agent_to_root`。不要 push。不要 git mv 04–09（本波与写文并行冲突）。
+- 上一件：回收 SnapKV / Quest / Gated 07 / SiTU / mHC。
+- 现在立刻做：加厚 Gated Residual。不要 `move_agent_to_root`。不要 push。不要 git mv 04–09（与下一篇写文分开）。
 
 ## 路径租约（并行防撞）
 
@@ -147,8 +147,9 @@ category: LLM 指南
 | muse-spark-d2 | done | `14.3-LLaMA/05-Muse-Spark/` + inbox `muse-spark-d2.md` | 已入库。未 mkdir 1.1/1.2；无架构表，文首声明不够 4000；BioDesign 46.2/39.2 分口径 |
 | gemini-37-flash | done | `14.11-Gemini/14-Gemini-3.7-Flash/` + inbox `gemini-37-flash.md` | 已入库。监工补 14.11 表行；不 mkdir 3.6；DeepSWE 65.3% / 对照 48.6%；无架构表，文首声明不够 4000 |
 | rsi-origin | done | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 已入库。Good / 种子 / Gödel；未 Delete；监工改 garden 先读标题 |
-| snapkv-thicken | running | `2.3.2/12-SnapKV-生成前观测窗/` + inbox `snapkv-thicken.md` | 不改 2.3.2 节首页、不改 Quest；汉字≥4000；不是观察头 |
+| snapkv-thicken | done | `2.3.2/12-SnapKV-生成前观测窗/` + inbox `snapkv-thicken.md` | 已入库。4557 汉字；H 事后度量；3.6×/8.2× 分口径；不是观察头 |
 | quest-thicken | done | `2.3.2/13-Quest-查询感知稀疏/` + inbox `quest-thicken.md` | 已入库。4082 汉字；7.03× 自注意力 / 2.23× 4-bit e2e；不驱逐；新图 algo1 + page collision |
 | gated-07 | done | `2.2.2/07-Gated-Attention相关工作/` + inbox `gated-07.md` | 已入库。4017 汉字；FoT 在 logits、QT 是 BERT/ViT 量化门；未改 06；监工补 2.2.2 行 |
 | situ-thicken | done | `2.1.1/01-SiTU-GLU/` + inbox `situ-thicken.md` | 已入库。4134 汉字；$\ell=3584$；报告无独立 SiTU 消融；监工补 2.1.1 表注 |
-| mhc-thicken | running | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 不改节根散文件、不改 03 GR、不改 2.1.3 首页；汉字≥4000 |
+| mhc-thicken | done | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 已入库。4139 汉字；Table 4 MATH 26.0 vs HC 26.4；Manifold-Constrained；未碰节根散文件 |
+| gr-thicken | running | `2.1.3/03-Gated-Residual/` + inbox `gr-thicken.md` | 不改 01/02、不改 2.1.3 首页、不改 06/07 Gated Attention；汉字≥4000 |

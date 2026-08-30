@@ -11,15 +11,17 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：SnapKV 2404.14469；Quest 2406.10774；Gated 相关 FoT/Quantizable；SiTU K3 §2.3.2；mHC 2512.24880。
-- 正在写：snapkv-thicken / mhc-thicken。
-- 卡住：04–09 错位箱暂不 git mv（本波与写文并行）。
-- 上次刷新记忆的时间：2026-08-30 派出加厚波 + Gated 07。
+- 正在读：Qwen3.8-Flash-Next 报告 §2.2 Gated Residual。
+- 正在写：gr-thicken。
+- 卡住：04–09 错位箱仍不 git mv（等 GR 交卷）。
+- 上次刷新记忆的时间：2026-08-30 回收 SnapKV/mHC，派出 GR。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-30 | 回收 snapkv-thicken：4557 汉字；H 式 (4)–(8) 事后度量；3.6×/8.2×；不是观察头 | https://arxiv.org/html/2404.14469v2 ；NeurIPS PDF；snapkv_utils.py | `2.3.2/12-SnapKV-生成前观测窗/` |
+| 2026-08-30 | 回收 mhc-thicken：4139 汉字；Table 4 列名；MATH 26.0 vs HC 26.4；未碰节根散文件 | https://arxiv.org/html/2512.24880 ；2409.19606 | `2.1.3/01-Hyper-Connections与mHC/` |
 | 2026-08-30 | 回收 situ-thicken：4134 汉字；式 (12) $W_g$ 两次；$\ell=3584$；无独立消融表 | https://arxiv.org/html/2607.24653 §2.3.2；2002.05202 对照 | `2.1.1/01-SiTU-GLU/` |
 | 2026-08-30 | 回收 gated-07：4017 汉字；FoT 遗忘门在 logits；QT=2306.12929 量化 no-op；未改 06 | 2505.06708 RW；2503.02130；2306.12929；2410.05258；2504.20966 | `2.2.2/07-Gated-Attention相关工作/` |
 | 2026-08-30 | 回收 quest-thicken：4082 汉字；Algorithm 1 增量 min/max；7.03×/2.23× 未对调；不驱逐 | https://arxiv.org/html/2406.10774 ；PMLR tang24l；hanlab 弃 2k | `2.3.2/13-Quest-查询感知稀疏/` |
