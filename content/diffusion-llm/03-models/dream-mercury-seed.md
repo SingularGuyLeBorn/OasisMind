@@ -139,6 +139,10 @@ Trip planning 17.8 对 3.6 是同一张规划表上的第三格。题目来自 Z
 
 0.6T 对 Qwen2.5 的 18T 同样不能直接说成样例效率。Dream 的知识主体来自 Qwen 的 18T，0.6T 是继续预训练。公平的分母是改编阶段花了多少，不是「Dream 总共只看了 0.6T」。LLaDA 8B 才是真正只看 2.3T 从头训的那一列。三列分母不一样，并排在 Table 1 里是为了让读者看见改编之后还剩多少能力，不是为了做 token 效率竞赛。
 
+推理接口叫 `diffusion_generate()`，不是 `generate()`。调用方要传步数、温度、是否 remask，不能假设 Hugging Face 默认因果解码能跑。开源权重的意义是可复现表上的数，不是把 Dream 丢进 vLLM 就出 1109 tok/s。那条吞吐曲线属于 Mercury 的栈。把开源 7B 和商业 Mini 合成「扩散 7B 已经四位数吞吐」，是把交付物焊错了。
+
+## 参考文献
+
 ## 参考文献
 
 - [Ye et al., Dream 7B, 2025](https://arxiv.org/abs/2508.15487) — Table 1–2；0.6T；Sudoku 81.0。
