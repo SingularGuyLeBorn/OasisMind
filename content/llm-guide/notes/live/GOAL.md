@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：Qwen4 波 running；已加派 GxPO 家族 + OPD 综述（用户点名）。
-- 当前波次：**qwen4-pred / qsa-thicken / attnres-thicken / gxpo-family / opd-survey running**；xhc-thicken 已入库
+- 状态：Qwen4 / QSA / AttnRes / xHC 已入库；GxPO 家族 + OPD 综述仍 running。
+- 当前波次：**gxpo-family / opd-survey running**
 - 当前正在写的文章路径：见 PLAN 租约
 - 本轮明确不做：把 51B n-gram 算进 6B；把 DAPO 全称写错；4.6 根加 `11`
 

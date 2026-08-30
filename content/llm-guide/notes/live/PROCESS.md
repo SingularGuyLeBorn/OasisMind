@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：子代理在读 Qwen3.8 报告 / HF card、QSA、AttnRes 2603.15031、GxPO 2606.16733、OPD 综述 2604.00626。
-- 正在写：无（监工）。xHC 已入库；其余五路 running。
+- 正在读：子代理在读 GxPO 2606.16733、OPD 综述 2604.00626。
+- 正在写：无（监工）。Qwen4 / QSA / AttnRes / xHC 已入库；gxpo-family / opd-survey running。
 - 卡住：无。
-- 上次刷新记忆的时间：2026-08-30 回收 xhc-thicken。
+- 上次刷新记忆的时间：2026-08-30 回收 qwen4-pred / qsa-thicken / attnres-thicken。
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -23,6 +23,9 @@ category: LLM 指南
 | 2026-08-30 | `git mv` 2.4.1 的 04–09 → 6.1.8 / 9.1.5 / 6.3.1；不 Delete；节根散文件未入库 | 磁盘 ls + chapter-structure-plan | `6.1.8-MoE系统与并行/`；`9.1.5-MoE硬件与加速/`；`6.3.1/09-…/` |
 | 2026-08-30 | 回收 gr-thicken：4329 汉字；Table 5 九列；丢掉 $H_{res}$；不是 $G_1$/mHC | Qwen3.8 tech_report.pdf §2.2；GatedNorm 2601.22966 | `2.1.3/03-Gated-Residual/` |
 | 2026-08-30 | 回收 xhc-thicken：4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 | 2607.14530 HTML Table 1–7/9–12；GitHub aHapBean/xHC | `2.1.3/02-xHC-Expanded-Hyper-Connections/` |
+| 2026-08-30 | 回收 qsa-thicken：4101 汉字；7.6×≠8.6×；$K_B=512$ 块预算 | Qwen3.8 tech_report.pdf §2.1.2；阿里云博文 | `2.3.2/08-QSA-Qwen稀疏注意力/` |
+| 2026-08-30 | 回收 attnres-thicken：4045 汉字；深度维 softmax；不是 $G_1$/mHC/GR | 2603.15031 HTML；GitHub MoonshotAI/Attention-Residuals | `2.2.2/08-AttnRes-深度维注意力聚合/` |
+| 2026-08-30 | 回收 qwen4-pred：4305 汉字；无出厂报告；51B 不进 6B；$K_B$≠专家 | tech_report.pdf；HF 卡片/config.json；阿里云博文 | `14.2/14-Qwen4-架构预测/` |
 | 2026-08-30 | 回收 snapkv-thicken：4557 汉字；H 式 (4)–(8) 事后度量；3.6×/8.2×；不是观察头 | https://arxiv.org/html/2404.14469v2 ；NeurIPS PDF；snapkv_utils.py | `2.3.2/12-SnapKV-生成前观测窗/` |
 | 2026-08-30 | 回收 mhc-thicken：4139 汉字；Table 4 列名；MATH 26.0 vs HC 26.4；未碰节根散文件 | https://arxiv.org/html/2512.24880 ；2409.19606 | `2.1.3/01-Hyper-Connections与mHC/` |
 | 2026-08-30 | 回收 situ-thicken：4134 汉字；式 (12) $W_g$ 两次；$\ell=3584$；无独立消融表 | https://arxiv.org/html/2607.24653 §2.3.2；2002.05202 对照 | `2.1.1/01-SiTU-GLU/` |
@@ -458,6 +461,7 @@ category: LLM 指南
 | 口述/检索名 | 官方名（URL） | 档 S/A/B/不写 | 依据 | 落到哪 |
 |-------------|---------------|---------------|------|--------|
 | Qwen3.8 / Flash Next | Qwen3.8-Flash-Next；生产 API `qwen3.8-flash` | **S** | 新注意力 QSA + GR + N-gram Embedding + Muon 配方；开源权重；Qwen4 架构预览。报告已读 | `14.2/13-Qwen3.8-Flash-Next/01-...`；trick 在第 2/6 章 |
+| Qwen4 | 无出厂报告；官方写 Flash-Next underpin Qwen4 | **A（预测文）** | 只读已公开积木；51B 不进 6B | **已写** `14.2/14-Qwen4-架构预测/`；禁止 mkdir `qwen3.8-flash` |
 | Qwen3.8-Flash（云上 SKU） | 同报告的生产档，1M 默认 | **B** | 同一架构的 serving SKU | 禁止新开空文件夹 |
 | Kimi K3 | Kimi K3 arXiv:2607.24653 | **S** | 2.8T MoE、KDA + AttnRes、Stable LatentMoE、开源权重 | `14.5/05-Kimi-K3/01-...`；trick 在第 2/4/6 章 |
 | K2.7 coding | Kimi K2.7 Code；https://www.kimi.ai/resources/kimi-k2-7-code ；HF moonshotai/Kimi-K2.7-Code | **A** | 官方 built upon K2.6；HF：与 K2.5/K2.6 同架构 | **已写** `14.5/06-Kimi-K2.7-Code/01-...`；MLA 只链第 2 章 |
