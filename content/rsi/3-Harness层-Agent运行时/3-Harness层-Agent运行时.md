@@ -25,5 +25,6 @@ category: RSI
 | 09 | [ACE Agentic Context Engineering](./09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) | 冻 θ 写 playbook；AppWorld 42.4→59.4；合并非 LLM；不是 RSI |
 | 10 | [Voyager Minecraft 技能库](./10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) | 冻 GPT-4 写 JS 技能；63 种物品 / 钻石 1/3；不是式 (2) |
 | 11 | [Reflexion 言语反思记忆](./11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) | 冻 Actor 写句子进窗口；AlfWorld 130/134；HumanEval 91.0 / MBPP 77.1 |
+| 12 | [Self-Refine 任务内迭代](./12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) | 同一只 M 自评自改；均分约 +20%，数学 GPT-4 92.9→93.1；L0，不是式 (2) |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

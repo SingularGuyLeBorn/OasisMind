@@ -39,7 +39,7 @@ Hu et al. 的 ADAS 把 meta 写成「基础模型去编程新 Agent」。SkillEv
 - **元技能** `skill-evolver/SKILL.md`：Understand / Iterate / Finalize / Validate，外加写技能指南和适配 README。这份在实验里不进化。
 - **领域技能** `<domain>/SKILL.md`：策略、决策规则、用法、部署备注、脚本、探针。这份才是 $v_r$。
 
-部署表面：元技能在 $T_{\mathrm{train}}$ 上把 $v^*$ 写出来；验证时 Domain-Skill Agent 只加载 $v^*$，不再加载 SkillEvolver。交货物可以离开作者会话。这是和 Reflexion / Self-Refine 的差：那些把教训留在当前轨迹里；这里教训必须写进另一只 Agent 读得懂的文件。
+部署表面：元技能在 $T_{\mathrm{train}}$ 上把 $v^*$ 写出来；验证时 Domain-Skill Agent 只加载 $v^*$，不再加载 SkillEvolver。交货物可以离开作者会话。这是和 Reflexion / [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 的差：那些把教训留在当前轨迹里；这里教训必须写进另一只 Agent 读得懂的文件。
 
 ## 3. 一轮：多样策略、对比、补丁、独立审计
 

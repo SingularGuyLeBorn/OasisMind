@@ -20,7 +20,7 @@ tags:
 
 Agent 做砸一次，自己写一段「下次别先找杯子再找台灯」，下一轮把这段读进去，成功率涨了。论文把这件事叫做 verbal reinforcement learning，并把策略参数化成「LLM 参数 + 记忆编码」。听成权重在学，就和花园式 (2) 撞车。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 把它当更浅的邻居：留下的是自然语言，不是可执行函数。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 把它当「弱任务奖励当门」的前史。本篇把尺子摊开。
 
-本篇是 Harness 层里「言语情景记忆」的样板。Self-Refine 在单次生成里自评自改，没有跨 trial 的持久 `mem`。ReAct 当 Actor，本身不写反思。ACE 的 playbook 是条目化长期上下文；这里的 `mem` 默认只留 1–3 条，滑动窗口。**不是** RSI：Actor / 反思提示 / 窗口长度都不进 $S'$。**不是** 用梯度更新 $\pi_\theta$。一手：Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao，[arXiv:2303.11366](https://arxiv.org/abs/2303.11366)；代码 [noahshinn024/reflexion](https://github.com/noahshinn024/reflexion)。数字以 HTML Table 1–5、§4、附录 B.1 为准。
+本篇是 Harness 层里「言语情景记忆」的样板。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 在单次生成里自评自改，没有跨 trial 的持久 `mem`。ReAct 当 Actor，本身不写反思。ACE 的 playbook 是条目化长期上下文；这里的 `mem` 默认只留 1–3 条，滑动窗口。**不是** RSI：Actor / 反思提示 / 窗口长度都不进 $S'$。**不是** 用梯度更新 $\pi_\theta$。一手：Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao，[arXiv:2303.11366](https://arxiv.org/abs/2303.11366)；代码 [noahshinn024/reflexion](https://github.com/noahshinn024/reflexion)。数字以 HTML Table 1–5、§4、附录 B.1 为准。
 
 ## 1. 问题：trial-and-error 太贵，上下文又太短
 
@@ -111,7 +111,7 @@ HumanEval Python +10.9，和摘要「as much as 11%」对齐。MBPP Python **掉
 
 $H_t$ 变了，下一 trial 的 Actor 读得到「先找台灯」。单轮成立。改进器——反思提示、$M_e$ 的规则、窗口长度——下一轮还是同一份。换一道 WebShop 题，旧反思帮不上，四 trial 还是停。这和 [SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) 改 $\theta$ 不是一层；和 [DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 改自己的 Python 也不是一层。混元台阶上最多蹭 L2 的「留下状态」，门还在自评或启发式里，比 Argus 浅。
 
-和同层钉死。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 的值是函数，检索走嵌入；Reflexion 的值是句子，检索走「窗口里最新几条」。Voyager 对照里 ReAct / Reflexion 在开放探索上几乎走不动——那边目标太抽象，这边 AlfWorld 的可行动作写在观察里。[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 诊断过 Reflexion 一类自然语言反馈：上下文会越改越长、越吵。Reflexion 用 $\Omega$ 硬切，吵得少，也记不久。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 要把教训写成另一只 Agent 读得懂的文件；这里教训留在当前会话的 `mem`，换一次 reset 就只剩窗口里那几句。Self-Refine 连窗口都可以没有，只改这一代文本。
+和同层钉死。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 的值是函数，检索走嵌入；Reflexion 的值是句子，检索走「窗口里最新几条」。Voyager 对照里 ReAct / Reflexion 在开放探索上几乎走不动——那边目标太抽象，这边 AlfWorld 的可行动作写在观察里。[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 诊断过 Reflexion 一类自然语言反馈：上下文会越改越长、越吵。Reflexion 用 $\Omega$ 硬切，吵得少，也记不久。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 要把教训写成另一只 Agent 读得懂的文件；这里教训留在当前会话的 `mem`，换一次 reset 就只剩窗口里那几句。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 连窗口都可以没有，只改这一代文本。
 
 [SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md) 冻 $M$ 测 $H_t$ 的 OOD。Reflexion 的 WebShop 是作者自己做的「换任务就不涨」；不是 Harbor 协议，数字不能和 AHE 横加。[System Card](../../6-评测与安全/04-System-Card-RSI/04-System-Card-RSI.md) 的 RSI Index 更不是 91.0 能证明的。HotPotQA 用金答案 EM 给重试信号：这是墙外 oracle 在喂循环，不是模型发明了自我监督。编程用自写单测喂循环：oracle 弱了，MBPP 就会掉。
 

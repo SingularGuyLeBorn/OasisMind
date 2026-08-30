@@ -103,7 +103,7 @@ $$
 
 骨干优化：用多 Agent 辩论轨迹做 SFT 或 DPO（Sirius、MALT）；MaPoRL 用任务相关奖励逼通信。协作取向的 OPTIMA（Chen et al., 2025h）被综述写成：在信息交换密集的任务上，报告 **2.8×** 表现增益、token 成本不到原来的 **10%**。数字以该论文为准，本篇不另做复现。它说明「协作能力可以当训练目标」，不说明改进器已经递归。
 
-领域章（§6）把同一套闭环接到有约束的环境。医学：MedAgentSim 用经验回放和语义记忆做诊断仿真；MDAgents 用主持 Agent 汇总；工具要接专科检查。分子：CACTUS 接 RDKit，没有化学工具的 Agent 会写出不合法结构。编程：Self-Refine 自我批评；AgentCoder 分写代码 / 评审 / 测试；Self-Debugging 把运行轨迹喂回去。金融与法律：FinCon、LawLuo、AgentCourt 用角色和规则约束。领域差异主要在环境给的 \(O\)：临床缺金标准、代码有测试、法庭有成文法。优化器设计跟着 \(O\) 走，不是另立 RSI。
+领域章（§6）把同一套闭环接到有约束的环境。医学：MedAgentSim 用经验回放和语义记忆做诊断仿真；MDAgents 用主持 Agent 汇总；工具要接专科检查。分子：CACTUS 接 RDKit，没有化学工具的 Agent 会写出不合法结构。编程：[Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 自我批评；AgentCoder 分写代码 / 评审 / 测试；Self-Debugging 把运行轨迹喂回去。金融与法律：FinCon、LawLuo、AgentCourt 用角色和规则约束。领域差异主要在环境给的 \(O\)：临床缺金标准、代码有测试、法庭有成文法。优化器设计跟着 \(O\) 走，不是另立 RSI。
 
 ## 5. 评价：分数既当门禁又当训练信号
 
@@ -120,7 +120,7 @@ LLM-as-a-Judge 用点式打分或成对比较当廉价人评替代，和人的�
 | 综述格子 | 花园落点 | 样板 |
 |----------|----------|------|
 | 训 LLM 行为 | Model | SPIN / Self-Rewarding / Tufa / LADDER / SEAL |
-| 测时搜索、Self-Refine | 多为 L0，不留 \(\theta\) | 可靠性专文 |
+| 测时搜索、Self-Refine | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；可靠性专文 |
 | 提示 / 记忆 / 工具表 / 拓扑 | Harness | Argus / ACE / SkillEvolver / ADAS / STOP / DGM / Auto-Research |
 | 代码级工作流当空间 | Harness（元 Agent 常冻） | ADAS；Gödel 才把运行时打开 |
 | 实例级搜产物 | Artifact | FunSearch / AlphaEvolve / Polaris |

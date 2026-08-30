@@ -26,7 +26,7 @@ tags:
 
 论文把现有系统收成三档，自由度从低到高。
 
-**手写 Agent。** 模块清单是人定的：提示工程、思维链、反思、工具、检索、多 Agent。部署之后这段图不变。Self-Refine、LLM Debate、Step-back 都落在这里。它们可以在一次任务里迭代答案，但**不会改自己下次怎么迭代**。
+**手写 Agent。** 模块清单是人定的：提示工程、思维链、反思、工具、检索、多 Agent。部署之后这段图不变。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、LLM Debate、Step-back 都落在这里。它们可以在一次任务里迭代答案，但**不会改自己下次怎么迭代**。机制数字只认 Madaan Table 1，不要用本篇 / ADAS 下游表回写。
 
 **元学习优化的 Agent。** 模块或提示可以被搜，搜的手续本身钉死。ADAS（Hu, Lu, Clune，[arXiv:2408.08435](https://arxiv.org/abs/2408.08435)）的 Meta Agent Search 是这一档的对照：元 Agent 永远是人写的那只，下游 Agent 的设计空间被元算法切开。DSPy、自然语言梯度、从成功轨迹里攒示范，形状同类。改进发生了，改进器 $I$ 仍在墙外。
 
