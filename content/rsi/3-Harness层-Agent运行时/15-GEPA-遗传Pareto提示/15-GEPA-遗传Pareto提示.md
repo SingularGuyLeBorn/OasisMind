@@ -108,7 +108,7 @@ DSPy 的 `auto=light/medium/heavy` 是预算预设，不是另一套算法。文
 **读**：四任务 Table 1、相对 GRPO 的 19 / 2.73 / 13.66 / 5.19、均 +12.44 对基座、Merge 在 Qwen3 IFBench 掉到 28.23、Pareto 消融 +6.4、训练 rollout 737/79/558/269、短 9.2×、NPUEval 4.25→30.52 是 overfit、ACE 46.4 是另一场。  
 **不读**：把 35× 听成绝对算力、用仓库 90× / ARC 替换 Table 1、用旧摘要 AIME 六任务、用 62.33 否 ACE、用 46.4 改 Table 1、说已经式 (2)、把 GRPO 的 LoRA 算进 GEPA。
 
-同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的进化派提示：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。综述里的进化派提示：[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

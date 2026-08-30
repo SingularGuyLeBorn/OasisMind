@@ -33,5 +33,6 @@ category: RSI
 | 17 | [OPRO 元提示优化](./17-OPRO-元提示优化/17-OPRO-元提示优化.md) | 轨迹进元提示，配方冻着；PaLM 2-L 评分 GSM8K 80.2 对 Kojima 71.8；不是 ADAS 的 30.6 |
 | 18 | [EvoPrompt 进化算子提示](./18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md) | GA/DE 说明书冻着；Alpaca 理解 DE 均 77.05；BBH DE 均 +3.5 最多 +25；不是式 (2) |
 | 19 | [APE 自动提示工程师](./19-APE-自动提示工程师/19-APE-自动提示工程师.md) | 指令当程序黑盒搜；24/24 不低于人手写，IQM 0.810；迭代三轮平，默认关掉；不是式 (2) |
+| 20 | [MIPROv2 贝叶斯联合优化](./20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md) | 指令和示范联合搜，TPE 冻着；Llama-3-8B 七套五套赢对照；不要和 GEPA 的 MIPROv2 列横加 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

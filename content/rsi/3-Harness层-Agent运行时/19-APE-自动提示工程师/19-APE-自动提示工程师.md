@@ -122,7 +122,7 @@ TruthfulQA 的真/信息拆开，证明分数函数换了，搜到的指令风�
 **读**：式 (1)、前向/反向提案、执行准确率默认、迭代三轮平、默认不迭代、24/24 与 IQM 0.810/0.749、17/21 BIG-Bench、少样本 21/24、CoT 82.0/43.0 对 78.7/40.7、5 对示范 5 种子、投稿稿 19/24 作废、davinci-002 不是 PaLM。  
 **不读**：把标题听成式 (2)、用 43.0 对 80.2、用 77.9 当本篇主表、用 58.8 说 APE 的 CoT 没用（那是换模型）、说默认在跑迭代、用 TruthfulQA 柱高进原榜。
 
-同层：[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

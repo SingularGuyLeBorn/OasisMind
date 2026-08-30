@@ -119,7 +119,7 @@ OPRO 图 12 的掉分，证明的是「没有示范、起始句又泛」时，�
 **读**：种群 10 / 步数 10、Table 1 均 76.25 / 77.05、Subj DE 75.55、SAMSum Alpaca DE ROUGE-1 39.46、ASSET SARI 约 46.4、BBH DE 均 +3.5 最多 +25、Table 12 的 75.03、Table 5 的 Diff+best、Table 13 Subj 同 15 步 DE 79.35、BBH 开发集来自测试池、算子提示冻着。  
 **不读**：把标题听成式 (2)、用 +25 当 22 任务均分、用 OPRO 图 12 替换 Table 1、用 77.05 改 80.2、用 Table 12 的 23 任务均分去改 22 条曲线、说交叉变异提示也在进化、忽略 BBH 的测试子集当开发集、把开源最优提示听成改进器开源。
 
-同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
