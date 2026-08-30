@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：RLAIF 原论文；4.4.4 SLiC / RRHF / IPO。
-- 正在写：4.4.3 RLAIF 配图；4.4.4 浅色图。
+- 正在读：SLiC 2305.10425；RRHF 2304.05302；IPO 2310.12036；Williams 1992 / Ahmadian 2402.14740。
+- 正在写：`4.4.4/01-SLiC`、`02-RRHF`、`03-IPO`；`4.4.1/10` 序列级 REINFORCE。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。
-- 上次刷新记忆的时间：2026-08-31 DPO/ORPO/CISPO/SAPO 入库。
+- 上次刷新记忆的时间：2026-08-31 RLAIF 入库。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 RLAIF：4003 汉字；两图；附录 E REINFORCE+价值基线；Table 1 摘要 vs SFT 71%/RLHF 73%/对头 50%；无害 88% vs 76%；附录 L >10×；不是 CAI、不是 PPO | https://arxiv.org/abs/2309.00267 ；https://arxiv.org/html/2309.00267 ；https://arxiv.org/abs/2212.08073 | `4.4.3-RLAIF/` |
 | 2026-08-31 | 入库 DPO：4237 汉字；两张浅色图；隐式奖励 $Z(x)$ 成对抵消；TL;DR 61% vs PPO 57% | https://arxiv.org/abs/2305.18290 ；https://arxiv.org/html/2305.18290 | `4.4.2/01-DPO/` |
 | 2026-08-31 | 入库 ORPO：4007 汉字；两图；几何平均 $P$；Phi-2 AlpacaEval 1.0 71.80%；不是 DPO+SFT | https://arxiv.org/abs/2403.07691 ；https://arxiv.org/html/2403.07691 | `4.4.2/02-ORPO/` |
 | 2026-08-31 | 入库 CISPO：clip IS 权重 + stop-grad；Qwen2.5-32B 约一半步数追上 DAPO；两图；接 4.4.1 地图 | https://arxiv.org/abs/2506.13585 ；https://arxiv.org/html/2506.13585 | `4.4.1/08-CISPO-裁剪重要性权重/` |
