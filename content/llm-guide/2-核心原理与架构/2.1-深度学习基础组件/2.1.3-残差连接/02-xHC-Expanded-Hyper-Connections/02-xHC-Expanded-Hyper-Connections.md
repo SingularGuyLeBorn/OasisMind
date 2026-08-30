@@ -67,9 +67,23 @@ $h_{l,i}^{\mathrm{post}}$ 可以随输入、随流变，但 **新注入的向量
 
 ![xHC：密读全部流，稀写 k 条，MLP 后再做因果卷积增强写回](./images/fig-xhc-dense-read-sparse-write.png)
 
-> 图 1：左列单流残差；中列 mHC 对全部 $N=4$ 做密混合；右列 xHC 从 16 条密读进 $\mathcal{F}$，只把 $k=4$ 条写回去。蓝色/橙色对应论文图注里的固定激活流 / 路由激活流。
+> 图 1：左列单流残差；中列 mHC 对全部 $N=4$ 做密混合；右列 xHC 从 16 条密读进 $\mathcal{F}$，只把 $k=4$ 条写回去。蓝色/橙色对应论文图注里的固定激活流 / 路由激活流。浅色图已有，不重画。
 
-<!-- GenerateImage prompt: Technical educational diagram of Expanded Hyper-Connections (xHC). Three columns: Residual N=1; mHC N=4 dense; xHC N=16 k=4 dense read sparse write plus causal DWConv. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
+**图 1 解析**
+
+- 左：$N=1$ 的 $x+F(x)$。
+- 中：四条流都进 $\mathcal{F}$、都写回，密混合。
+- 右：16 条密读，橙虚线只写 4 条；MLP 后叠因果 DWConv $\{4,8,12\}$。注意力子层不要叠这套卷积。
+
+![xHC 扩展连接：16 条流密读、4 条稀写](./images/fig-xhc-expanded-streams.png)
+
+> 图 2：把 $N=16$ 画成一排格子。全部箭头进入子层 $F$，只有 $k=4$ 条实心写回，其余原样拷贝。$\mathcal{H}^{\mathrm{res}}$ 是 $k\times k$ 的 Sinkhorn，不是 $16\times 16$。
+
+**图 2 解析**
+
+- 上排 16 格 = 残差记忆宽度；下排同宽，橙格才被更新。
+- 右侧步骤对应论文 Algorithm 1：密读 → $F$ →（仅 MLP）卷积扩写回基底 → $k$ 条上 Sinkhorn。
+- 图里若把 $H_{\mathrm{res}}$ 画成「在 $k$ 条之间路由」，那是写回混合；读取仍然看全部 $N$ 条。
 
 ### 3.1 时间维增强写回（只加在 MLP 后）
 

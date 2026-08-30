@@ -15,7 +15,7 @@ category: LLM 指南
 
 1. **立刻做：** 重写 `2.4.1` 机制主线（01 / 02 / 03 / 10 + 节首页去废话）。专文汉字 ≥ 4000，禁止注水。04–09 是系统/硬件/量化，**错位**，本波不在 2.4.1 里加厚它们。
 2. **并行中：** 报告精读波（Engram / K3 / Muse / Gemini 3.7 / RSI）仍在跑，路径与 2.4.1 叶子不相交。
-3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。
+3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。过文 SiTU / mHC / GR 汉字未满 4000，回头加厚（派工早于规矩）。
 
 ## 波次队列（未完成的留着）
 
@@ -118,7 +118,7 @@ category: LLM 指南
 | s7-73-entry | done | `7-LLM应用开发/7.3-Agent/7.3-Agent.md` | 已交；应用入口，系统本体在第 13 章 |
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
-| pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 重派已交。监工待质检入库。 |
+| pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
 | moe-hp | running | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + 该夹 `images/` + inbox `moe-hp.md` | 不改 01–10 夹；去废话；标明 04–09 错位 |
 | moe-01 | running | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 不改节根散文件 `01-DeepSeek-MoE.md`；汉字≥4000 |
 | moe-02 | running | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 不改 `02-MoE的工程实践-images/` 旧目录名；汉字≥4000 |

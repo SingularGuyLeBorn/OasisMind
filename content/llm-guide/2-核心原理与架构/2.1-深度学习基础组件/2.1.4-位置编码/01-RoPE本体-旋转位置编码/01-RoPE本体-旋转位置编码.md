@@ -44,9 +44,13 @@ $$
 
 ![RoPE 最小单元：二维平面上的位置旋转](./images/fig-rope-2d-rotation.png)
 
-> 图 1: RoPE 的最小计算单元不是整条向量，而是每两维构成的一个二维平面旋转.
+> 图 1：RoPE 的最小计算单元不是整条向量，而是每两维构成的一个二维平面旋转。浅色图已有，不重画。
 
-<!-- GPT-Image-2 Prompt：Create a technical educational figure showing the minimal 2D rotation unit of RoPE. Display a vector in a 2D plane before rotation and after rotation by angle m·theta_i, with x/y axes, arc annotation, and labels for original vector and rotated vector. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Research-paper style, minimal academic palette, precise arrows, no decorative art. --> 
+**图 1 解析**
+
+- 黑向量是旋转前的一对维度 $(x_1,x_2)$。
+- 蓝向量被 $R(m\theta_i)$ 转到 $(x'_1,x'_2)$，模长不变。
+- 弧标的是 $m\cdot\theta_i$：高频 $\theta_i$ 大，同样 $m$ 转得更急。 
 
 ### 1.1 一个能直接算出来的二维旋转例子
 
@@ -114,9 +118,13 @@ $$
 
 ![RoPE：绝对相位抵消后点积只剩相对相位差](./images/fig-rope-relative-phase.png)
 
-> 图 2: RoPE 的关键不是“旋转过了”，而是点积里绝对相位被抵消，只留下相对相位差.
+> 图 2：RoPE 的关键不是「旋转过了」，而是点积里绝对相位被抵消，只留下相对相位差。浅色图已有，不重画。
 
-<!-- GPT-Image-2 Prompt：Create a technical educational figure explaining why RoPE produces relative position naturally. Show query and key vectors rotated by absolute phases m·theta_i and n·theta_i on the complex plane, then indicate that inner product depends only on relative phase difference (m-n)·theta_i. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Academic diagram style, precise arrows, clean labels, no decorative art. --> 
+**图 2 解析**
+
+- 左：Query 转 $m\theta_i$；中：Key 转 $n\theta_i$。
+- 右：内积只看见夹角 $(m-n)\theta_i$。
+- 中间公式用 $R(\phi)^\top=R(-\phi)$ 把两个绝对旋转收成一个相对旋转——这就是「相对位置在点积里自动出现」。 
 
 ### 2.1 一个只剩相对距离的小例子
 
@@ -150,9 +158,13 @@ $$
 
 ![绝对位置编码绑定下标，RoPE 绑定相对位移](./images/fig-rope-vs-absolute-pe.png)
 
-> 图 3: 绝对位置编码强调“你在第几位”，RoPE 强调“你和别人相隔多远”.
+> 图 3：绝对位置编码强调「你在第几位」，RoPE 强调「你和别人相隔多远」。浅色图已有，不重画。
 
-<!-- GPT-Image-2 Prompt：Create a side-by-side technical educational figure comparing absolute positional encoding and RoPE. Left panel: tokens tied to absolute indices like 5 and 6. Right panel: token interaction tied to relative distance like delta=1 through rotation-based phase difference. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Research-paper style, minimal academic palette, readable labels, no decorative art. --> 
+**图 3 解析**
+
+- 左：$\mathbf{h}_i=\mathbf{x}_i+\mathbf{p}_i$，位置 5 和 6 用两张完全不同的查表向量，相邻关系要另学。
+- 右：同样相邻 $\Delta=1$，旋转相位差与绝对下标无关；整句平移后点积不变。
+- 长上下文外推、多模态轴、和 MLA 解耦，放到 [02 扩展](../02-RoPE扩展-长上下文、多模态与工程实现/02-RoPE扩展-长上下文、多模态与工程实现.md)，本篇不写第二份。 
 
 ## 4. 为什么现代开源模型几乎都选 RoPE
 

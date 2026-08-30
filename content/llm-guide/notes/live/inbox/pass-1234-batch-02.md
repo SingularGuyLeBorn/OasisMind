@@ -64,3 +64,24 @@ published: false
 ## 10. `2.2-基础注意力机制/2.2-基础注意力机制.md`（254 行，1 图）
 
 - 改：节地图 + 浅色 QKV 总图（若现图深色则换）；链 2.2.1 / 2.2.2；不要抄 MHA 专文。
+
+---
+
+# 回传（2026-08-30 重派完工）
+
+未 commit / 未 push / 未 `git add -A`。未改 live 三份、Skill、apps、节首页 `2.1.1-前馈网络FFN与激活函数.md`、`2.1-深度学习基础组件.md`、02/03/04 激活专文。
+
+| 路径 | `2026-08 修订` 次数（改后） | 图 |
+|------|---------------------------|----|
+| `01-SiTU-GLU/01-SiTU-GLU.md` | 0 | 核浅色已有 `images/fig-situ-glu-vs-swiglu.png`，不重画 |
+| `2.1.2-归一化层.md` | 0 | **新** `images/fig-ln-opt-landscape.png`（替深色 `image_1.png`，旧文件不删）、**新** `images/fig-preln-vs-postln.png`；浅色 `image_3`/`image_4`/`fig-norm-diagnostics`/`fig-layernorm-vs-rmsnorm` 不重画 |
+| `2.1.3-残差连接.md` | **1→0**（折进文首+前瞻） | 三张 `fig-residual-*.png` 已浅色，不重画 |
+| `01-Hyper-Connections与mHC.md` | **1→0**（GLM-5.3-Flash 捆法进 §6） | **新** `images/fig-mhc-stream-mix.png`；数字：HC 1.8×/+6 ARC；mHC $n=4$、6.7%、27B Table 4、Amax ~3000→~1.6、$t_{\max}=20$ |
+| `02-xHC-Expanded-Hyper-Connections.md` | 0 | 核浅色已有 `fig-xhc-dense-read-sparse-write.png`；**新** `images/fig-xhc-expanded-streams.png`。来源仍 arXiv:2607.14530 |
+| `03-Gated-Residual.md` | 0 | **新** `images/fig-gated-residual.png`；「不是」mHC/xHC/$H_{\mathrm{res}}$ |
+| `2.1.4-位置编码.md` | 0 | 两张 `fig-pe-four-methods` / `fig-rope-complex-plane` 已浅色；RoPE 长推导改链 01 |
+| `01-RoPE本体-旋转位置编码.md` | 0 | 三张 `fig-rope-*` 已浅色，补图解析（点积相对相位） |
+| `02-RoPE扩展-….md` | 0 | **新** `images/fig-rope-ntk-yarn.png`（相位绕圈/NTK/YaRN/PI，非假曲线） |
+| `2.2-基础注意力机制.md` | 0 | **新** `images/fig-ch22-attention-overview.png`（原稿引用缺失）；节地图链 2.2.1 / 2.2.2 |
+
+SiTU 已写成问题→门控差在哪→式 (12)→$\ell_\infty\le 100$→不是 PowLU / 不是 V3–V4 clamp；邻居链 03/04（夹已在磁盘，本批未改那些文件）。

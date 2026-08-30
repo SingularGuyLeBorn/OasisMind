@@ -73,15 +73,16 @@ $$
 
 没有静态偏置项 $H^s_\star$：报告说当前配置下随机初始化就够。注意力子层和 MLP 子层各用一套 GR。残差状态可以 **FP8** 存，减访存。Muon 管 2D 线性层；GR 的低秩门、Embedding、Router 仍走 **AdamW**（报告优化器分工，见 [MuonClip 文](../../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md)）。
 
-```mermaid
-flowchart LR
-  R["四条残差分支 R"] --> N["逐分支 RMSNorm"]
-  N --> G["低秩 sigmoid 门 G"]
-  G --> x["逐元素加权平均 → x"]
-  x --> F["Attention 或 MLP"]
-  F --> W["每分支标量 s_i"]
-  W --> Rp["R'_i = R_i + s_i y"]
-```
+![Gated Residual：四分支逐元素读门，写回标量，没有 $H_{\mathrm{res}}$](./images/fig-gated-residual.png)
+
+> 图 1：四条分支各自 RMSNorm，低秩 sigmoid 门合成块输入 $x$，块输出 $y$ 用每分支标量写回。右侧划掉 $H_{\mathrm{res}}$：GR 不在分支之间做矩阵混合。
+
+**图 1 解析**
+
+- $R_1$–$R_4$ 是加宽后的残差状态，不是四份完整 Attn。
+- 图把读门画成 4 个标量，是为了看清数据流；报告式 (30)–(32) 的门 $G$ 是 **$n_r\times d$ 逐元素**。
+- 写回 $R'_i=R_i+s_i y$ 与图一致：每分支一个标量，写**每一条**（不是 round-robin 只写一条）。
+- 没有 $H_{\mathrm{res}}$ 是和 [01 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) / [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) 的分界，不是漏画。
 
 ## 4. 和 mHC / xHC / AttnRes 的边界
 
