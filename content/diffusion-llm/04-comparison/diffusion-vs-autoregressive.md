@@ -47,23 +47,22 @@ $$P_{\text{Diff}}(x) = \int p(x_T) \prod_{t=1}^{T} p_\theta(x_{t-1} \mid x_t) \,
 
 | 场景 | 自回归 | 扩散 |
 |---|---|---|
-| 生成 n 个 token | n 次串行前向传播 | T 次并行前向传播 |
-| 短文本加速比（~128 token） | 基线 | LLaDA 8B: 2-8× |
-| KV-cache 依赖 | 必须 | 不需要（双向注意力） |
-| 批处理效率 | 低（序列长度不一致） | 高（所有样本同时去噪） |
+| 生成 n 个 token | n 次串行前向 | T 次（可并行改多位置）前向 |
+| 吞吐实例 | 基线 | Mercury Mini 1109 tok/s @ H100；LLaDA 2.0-flash-CAP 535 TPS，文内 AR 对照约 2.1×。LLaDA 8B 原论文没有速度表 |
+| KV Cache | 必须，且严格成立 | 全双向默认不成立；块间可以真缓存，跨步缓存是近似 |
 
-LLaDA 8B 的实验显示：在 128 token 的短文本生成中，扩散比同规模 AR 快 2-8 倍。但扩散的 latency 是固定 T 步，而 AR 的 latency 与生成长度线性相关。对于极长文本（>2000 token），AR 因 KV-cache 饱和反而可能更快。
+扩散的延迟跟步数 $T$ 走，AR 跟新 token 数走。短样本、$T\ll n$ 时扩散可以少跑前向；极长续写、AR 已有 KV 时，全双向每步重算整段反而更贵。开源全双向模型和商业 Mercury 不在同一条速度曲线上。
 
 ## 3. 生成质量
 
-| 指标 | 自回归（LLaMA3 8B） | 扩散（LLaDA 8B） |
+| 指标 | 自回归（LLaMA3 8B Base，LLaDA 同协议 $*$） | 扩散（LLaDA 8B Base $*$） |
 |---|---|---|
-| Perplexity | ~6-8 | ~8-12（略高） |
-| MMLU (5-shot) | ~65% | ~62% |
-| GSM8K (数学) | ~53% | ~55%（反超） |
-| HumanEval (代码) | ~41% | ~38% |
+| MMLU (5-shot) | 65.4 | 65.9 |
+| GSM8K (4-shot) | 48.7 | 70.3 |
+| HumanEval (0-shot) | 34.8 | 35.4 |
+| BBH (3-shot) | 62.1 | 49.7 |
 
-总体结论：扩散在通用能力上已接近同规模 AR 模型，差距在 5% 以内。在数学推理上甚至反超，但在代码生成上仍有差距。
+Instruct 对比见 LLaDA Table 2：LLaDA 只有 SFT，LLaMA3 有 SFT+RL，GSM8K 69.4 对 78.3，HumanEval 49.4 对 59.8。Base 的 GSM8K 优势不能直接抄到 Instruct 上。论文主表没有给出可引用的精确 perplexity 对照。
 
 ## 4. 训练效率
 
@@ -73,7 +72,7 @@ LLaDA 8B 的实验显示：在 128 token 的短文本生成中，扩散比同规
 | 训练并行度 | 高（causal mask 内并行） | 高（bidirectional + 随机 mask） |
 | 预训练数据量 | LLaMA3 8B: 15T tokens | LLaDA 8B: 2.3T tokens |
 
-扩散模型虽然每步更复杂，但双向注意力每步可看到更多上下文，有限数据下样本效率可能更高。
+2.3T 对 15T 不能直接解读成「扩散更省数据」：语料配比不同。LLaDA 用同数据 ARM baseline 才比较样例效率。
 
 ## 5. 可控生成
 

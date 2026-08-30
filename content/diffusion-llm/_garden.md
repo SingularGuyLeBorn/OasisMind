@@ -55,7 +55,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 
 ⚖️ **05 对照**
 
-5. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+9. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
    含 ArVsDiffusion 动画。对照数字将按论文表重校。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：

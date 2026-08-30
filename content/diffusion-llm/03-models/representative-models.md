@@ -22,12 +22,15 @@ excerpt: "本文按时间线梳理扩散语言模型的关键工作，从 D3PM �
 
 | 时间 | 工作 | 路线 | 关键贡献 |
 |---|---|---|---|
-| 2021 | D3PM | 离散 | 转移矩阵框架奠基 |
-| 2022 | Diffusion-LM | 连续 | 可控文本生成 |
-| 2023 | MDLM | 离散 | 掩码扩散简化，最优困惑度 |
-| 2024 | SEDD | 离散 | Score entropy 训练目标 |
-| 2025.02 | LLaDA | 离散 | 8B 规模验证，对标 LLaMA3 |
-| 2025.12 | LLaDA 2.0 | 离散 | 100B 规模，AR→扩散转换 |
+| 2021 | D3PM | 离散 | 转移矩阵 $Q_t$：均匀 / 吸收 / 近邻 |
+| 2022 | Diffusion-LM | 连续 | 嵌入空间高斯 + 可控生成 |
+| 2024 | SEDD | 离散 | score entropy（ICML 2024） |
+| 2024 | MDLM | 离散 | 吸收态 SUBS，加权 MLM，NeurIPS 2024，arXiv:2406.07524 |
+| 2025.02 | LLaDA | 离散 | 8B 从头训，Table 1 对 LLaMA3 |
+| 2025.03 | BD3-LM | 块 | 块间 AR、块内扩散，ICLR 2025 Oral |
+| 2025.06 | Mercury | 离散 | 商业代码模型，Mini 1109 tok/s @ H100 |
+| 2025.08 | Dream 7B | 离散 | AR 初始化的开源 7B |
+| 2025.12 | LLaDA 2.0 | 块 / 离散 | 16B / 100B MoE，AR→扩散 WSD |
 
 ## D3PM（NeurIPS 2021）：离散扩散的数学奠基
 
@@ -41,17 +44,11 @@ D3PM（Structured Denoising Diffusion Models in Discrete State-Spaces）是第�
 
 Diffusion-LM 走了一条不同路线：先把离散 token 映射到连续嵌入向量，在嵌入空间做标准高斯扩散，去噪后再通过一个 learned rounding 步骤映射回离散 token。虽然在生成质量上不如同期 AR 模型，但它在**可控生成**上展示了扩散模型的独特优势——通过 classifier guidance 可以精确控制文本的情感、主题等属性。这种"推理时注入约束"的能力是 AR 模型难以做到的。
 
-## MDLM（ICML 2023）：掩码扩散的极简胜利
+## MDLM（NeurIPS 2024）：掩码扩散的极简胜利
 
-**作者**：Subham Sekhar Sahoo, Marianne Arriola, Yair Schiff 等
+**作者**：Subham Sekhar Sahoo, Marianne Arriola, Yair Schiff 等。arXiv:2406.07524。旧稿写成 ICML 2023 / arXiv:2306.08162，编号是错的。
 
-MDLM（Masked Diffusion Language Model）做了一个关键简化：前向过程只需要一种转移——变成 [MASK]。反向时模型预测哪些 [MASK] 位置该恢复成什么 token。这个简化带来了三个好处：
-
-1. **训练极简**：目标函数就是被掩位置上的交叉熵，几乎与 BERT 的 MLM 一致
-2. **效果极好**：在同等参数量下达到了当时扩散模型的最佳困惑度（perplexity）
-3. **概念清晰**：扩散的"噪声"就是"不知道"，去噪就是"逐渐知道"
-
-MDLM 还提出了 top-p 掩码调度策略：每步只揭示高置信度位置，其余保持 [MASK]。这比均匀随机揭示效率更高。
+MDLM 把前向收成只进 `[MASK]`，SUBS 参数化让连续时间 ELBO 变成加权 MLM。工程配方（优化器、混合精度、实现细节）对困惑度的贡献，作者认为比理论简化还大：重实现的 D3PM 掩码也没有早期文献说的那么差。top-p 揭开、半自回归采样是推理侧。公式见掩码扩散篇。
 
 ## SEDD（ICML 2024）：Score Entropy 的理论突破
 
@@ -63,11 +60,13 @@ SEDD（Score Entropy Discrete Diffusion）从连续扩散的 score matching 理�
 
 **作者**：Shen Nie 等（中国人民大学 GSAI 实验室）
 
-LLaDA（Large Language Diffusion with mAsking）是第一个在 8B 参数规模上与主流 AR 模型正面竞争的扩散模型。它的核心设计异常简洁：架构就是 decoder-only Transformer + timestep embedding（去掉 causal mask），训练目标就是带 timestep 条件的 MLM。LLaDA 8B 在 MMLU、GSM8K、HumanEval 等 benchmark 上与 LLaMA3 8B 不相上下，还展示了 GPT-4o 都做不到的"双向诗歌补全"能力。
+LLaDA 8B 在同一评测协议下 Base MMLU 65.9 对 LLaMA3 的 65.4，GSM8K 70.3 对 48.7。Instruct 只做 SFT。双向诗歌补全超过 GPT-4o 是结构实验。数字与采样器见 [LLaDA 专文](./llada-frontier.md)。
 
 ## LLaDA 2.0（2025）：100B 扩展
 
-LLaDA 2.0 解决了"从头训练 100B 扩散模型太贵"的问题——它直接从已有 AR 模型转换而来，使用三阶段块级 WSD 训练策略（渐进 block → 全序列 → 紧凑 block），并采用 MoE 架构。最终得到两款模型：LLaDA 2.0-mini（16B 总参数，~4B 激活）和 LLaDA 2.0-flash（100B 总参数，~20B 激活）。相比同规模 AR 模型，吞吐量提升 3-8 倍。
+LLaDA 2.0 解决从头训 100B 太贵：从 Ling AR MoE 转换，三阶段块级 WSD。发布 mini（16B）与 flash（100B）。flash 平均分 73.18，与 Qwen3-30B-A3B-Instruct-2507 的 73.60 同档；flash-CAP 535 TPS，文内对照 AR 约 2.1 倍。旧稿「~4B/~20B 激活」和「3–8 倍吞吐」在 2.0 正文没有可引用的并列规格，已删。细节见 [LLaDA 专文](./llada-frontier.md)。
+
+Dream 7B（港大 NLP + 华为诺亚，2025）从 AR 初始化，保持移位预测，开源 Base 与 Instruct。Mercury Coder（Inception Labs）走产品吞吐：Mini 1109、Small 737 tokens/s（H100，Artificial Analysis）。BD3-LM 把块大小变成 AR↔扩散的旋钮，见 [块扩散](../03-points/block-diffusion.md)。
 
 ## 路线选择指南
 
@@ -81,10 +80,13 @@ LLaDA 2.0 解决了"从头训练 100B 扩散模型太贵"的问题——它直�
 
 - [D3PM (NeurIPS 2021)](https://proceedings.neurips.cc/paper/2021/file/958c530554f78bcd8e97125b70e6973d-Paper.pdf) — 离散扩散数学奠基，转移矩阵框架来源
 - [Diffusion-LM (NeurIPS 2022)](https://arxiv.org/abs/2205.14217) — 连续路线可控文本生成，classifier guidance 来源
-- [MDLM (ICML 2023)](https://arxiv.org/abs/2306.08162) — 掩码扩散框架与 top-p 调度来源
-- [SEDD (ICML 2024)](https://arxiv.org/abs/2310.16834) — score entropy 训练目标，困惑度降低 25-75% 数据来源
-- [LLaDA (2025)](https://arxiv.org/abs/2502.09992) — 8B 规模验证，benchmark 对比数据来源
-- [LLaDA 2.0 (2025)](https://arxiv.org/abs/2512.15745) — AR→扩散转换，三阶段训练，MoE 架构来源
+- [MDLM (NeurIPS 2024)](https://arxiv.org/abs/2406.07524) — 掩码扩散 SUBS 与加权 MLM
+- [SEDD (ICML 2024)](https://arxiv.org/abs/2310.16834) — score entropy；摘要中的 25%–75% 困惑度
+- [LLaDA (2025)](https://arxiv.org/abs/2502.09992) — 8B Table 1–2
+- [LLaDA 2.0 (2025)](https://arxiv.org/abs/2512.15745) — AR→扩散 WSD
+- [Dream 7B (2025)](https://arxiv.org/abs/2508.15487)
+- [Mercury (2025)](https://arxiv.org/abs/2506.17298)
+- [Block Diffusion (2025)](https://arxiv.org/abs/2503.09573)
 
 ## 相关
 

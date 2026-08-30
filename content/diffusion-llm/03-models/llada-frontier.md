@@ -1,92 +1,131 @@
 ---
-title: "LLaDA 与前沿进展：从 8B 到 100B 的扩散语言模型"
+title: "LLaDA：8B 从头训到 100B 改编"
 category: null
 tags:
-  - "LLaDA"
-  - "LLaDA2.0"
-  - "MoE"
-  - "frontier"
-  - "scaling"
+  - LLaDA
+  - LLaDA2.0
+  - MoE
+  - frontier
 published: true
-excerpt: "本文深入 LLaDA 系列的核心设计——掩码扩散、AR→扩散转换、三阶段训练与 MoE——并展望推理加速、扩散-AR 融合、长文本支持等未来方向。"
+as_of: 2026-08-31
+excerpt: "LLaDA 8B 用 2.3T token 从头做掩码扩散，Base 的 MMLU 5-shot 65.9 对 LLaMA3 8B 的 65.4。2.0 不再从头训 100B，而是把 AR MoE 经三阶段块级 WSD 转成扩散。数字全部来自论文表，旧稿那组 62.3 / 54.8 已作废。"
 ---
-# LLaDA 与前沿进展：从 8B 到 100B 的扩散语言模型
+# LLaDA：8B 从头训到 100B 改编
 
-## 概述
+LLaDA 要回答的问题很硬：LLM 的规模化、上下文学习、指令跟随，是不是必须绑在自回归连乘上。作者的答案是：这些能力来自「用似然（或其下界）拟合语言分布」，不来自「必须从左到右」。8B 从头训是把这句话做到和 LLaMA3 8B 同一张表上；2.0 是承认从头训 100B 太贵，改成继承 AR 权重。
 
-LLaDA 是扩散语言模型领域最重要的里程碑之一：**它证明了扩散模型在 8B 级别可以和 LLaMA3 正面竞争，在 100B 级别依然可扩展。** 本文深入 LLaDA 的核心设计——从"BERT + timestep"的极简架构到三阶段 AR→扩散转换训练——并梳理推理加速、扩散-AR 融合、多模态扩展等未来方向。
+机制公式见掩码扩散篇。本篇只钉架构选择、表上的数字、采样器对分数的影响、以及 2.0 的转换课程。
 
-## LLaDA 的核心设计
+## 1. 8B 骨架：去掉因果掩码的 decoder-only
 
-### 架构：BERT + timestep
+预训练 2.3T token，0.13 百万 H800 GPU 小时，序列长 4096。损失即掩码扩散篇式 (1)。SFT 450 万对，只掩回答。没有 RL。
 
-LLaDA 的架构是标准的 decoder-only Transformer，只做了两处改动：
+和 LLaMA3 8B 的对照写在附录 Table 5：都是 32 层、隐维 4096、32 个注意力头。LLaDA 用 32 个 KV 头（vanilla MHA），LLaMA3 用 8 个（GQA）。作者写明原因：当时这套全双向公式和 KV Cache 不兼容，GQA 省 KV 的前提不成立。多出来的注意力参数靠减小 FFN（12288 对 14336）对齐到 8.02B / 8.03B。词表 126464 对 128000，分词器按他们的数据改编。
 
-1. **去掉 causal mask**：改为双向注意力（所有 token 互相可见）
-2. **添加 timestep embedding**：让模型知道当前处于去噪的哪一步
+不要把「BERT + timestep」理解成换了一套完全不同的层。换掉的是 mask 和训练目标。RoPE、SwiGLU、RMSNorm 仍在。
 
-除此之外，和 LLaMA 几乎一样——同样的 RoPE、SwiGLU FFN、RMSNorm。
+## 2. Base 表：同一评测协议下的 LLaMA3
 
-训练目标是在被掩码位置上计算交叉熵：
+Table 1 是预训练模型。带 $*$ 的 LLaDA 8B 与 LLaMA3 8B、LLaMA2 7B 是作者同一套协议重测的。摘几列（括号内为 shot）：
 
-$$\mathcal{L} = -\mathbb{E}_{x, t} \left[ \sum_{i \in \mathcal{M}_t} \log p_\theta(x_i \mid x_{\setminus \mathcal{M}_t}, t) \right]$$
-
-其中 M_t 是第 t 步被掩码的位置集合。t 越大，掩码比例越高；t=0 时不掩码。
-
-### 关键结果
-
-| Benchmark | LLaDA 8B | LLaMA3 8B |
-|---|---|---|
-| MMLU (5-shot) | 62.3 | 65.0 |
-| GSM8K (8-shot) | 54.8 | 53.0 |
-| HumanEval | 38.4 | 41.5 |
-
-LLaDA 在 GSM8K 上反超 LLaMA3——说明扩散模型的全局推理在某些任务上确有优势。
-
-### 反转诅咒实验
-
-LLaDA 设计了一个诗歌补全任务：给定"床前明月光，___"，GPT-4o 只能往下续；LLaDA 同样可以往前补全。原因：扩散每步都能看到全文，没有"前"与"后"的区别。
-
-## LLaDA 2.0：从 AR 模型转换
-
-LLaDA 2.0 的核心创新是**知识继承**——直接从已有 AR 模型转换出扩散模型，大幅降低训练成本。
-
-### 三阶段块级 WSD 训练
-
-```text
-阶段 1（Warm-up）：渐进增大 block size（16→128→512→全序列）
-阶段 2（Stable）：全序列扩散训练
-阶段 3（Decay）：回到紧凑 block size，优化推理效率
-```
-
-### 模型规格
-
-| 模型 | 总参数 | 激活参数 | 架构 |
+| 任务 | LLaDA 8B Base | LLaMA3 8B Base | LLaMA2 7B Base |
 |---|---|---|---|
-| LLaDA 2.0-mini | 16B | ~4B | MoE |
-| LLaDA 2.0-flash | 100B | ~20B | MoE |
+| 训练 token | 2.3T | 15T | 2T |
+| MMLU (5) | 65.9 | 65.4 | 45.9 |
+| BBH (3) | 49.7 | 62.1 | 39.4 |
+| GSM8K (4) | 70.3 | 48.7 | 13.1 |
+| MATH (4) | 31.4 | 16.0 | 4.3 |
+| HumanEval (0) | 35.4 | 34.8 | 12.8 |
+| MBPP (4) | 40.0 | 48.6 | — |
+| Hellaswag (0) | 70.5 | 79.1 | 76.0 |
 
-相比同规模 AR 模型，吞吐量提升 **3-8×**。
+MMLU 与 HumanEval 和 LLaMA3 持平量级；GSM8K / MATH 高出一截；BBH、Hellaswag 落后。作者把优劣同时归因于闭源数据不可比，并另外训了同数据的 ARM baseline，在 $10^{20}$–$10^{23}$ FLOPs 上显示下游曲线可以跟上，MMLU 与 GSM8K 甚至更陡。讨论「扩散样例效率」用那条同数据曲线，不要用 2.3T 除以 15T。
 
-## 未来方向
+旧稿写 MMLU 62.3 / GSM8K 54.8 / HumanEval 38.4，对不上 Table 1–2，以本表为准。
 
-**1. 推理加速**：当前扩散需 32-256 步去噪。蒸馏式加速（8 步）、一致性模型（单步）、投机式去噪等正在探索中。
+Base 的 MMLU 类任务走条件似然蒙特卡洛，HumanEval 走生成。两列不是同一种解码。
 
-**2. 扩散 + AR 融合**：最直接的方案——用扩散生成大纲/关键句子，AR 填充连接词和修饰语。更深层的混合架构：某些层 bidirectional，某些层 causal。
+## 3. Instruct 表：只做了 SFT
 
-**3. 多模态扩展**：LLaDA 2.0 已提到多模态。文本和图像都可离散化为 token，在统一的离散扩散框架下联合建模——比 AR 的"逐个 token 生成"在多模态场景下更自然。
+Table 2 的对照对象大多有 SFT+RL，LLaDA 只有 SFT。
 
-**4. 长文本支持**：块级扩散（block diffusion）是最有希望的方向——长文本分成 block，block 间顺序、block 内并行扩散。
+| 任务 | LLaDA 8B Instruct | LLaMA3 8B Instruct |
+|---|---|---|
+| 后训练 | SFT | SFT+RL |
+| MMLU (5) | 65.5 | 68.4 |
+| GSM8K (4) | 69.4 | 78.3 |
+| MATH (0) | 31.9 | 29.6 |
+| HumanEval (0) | 49.4 | 59.8 |
+| MBPP (4) | 41.0 | 57.6 |
+| ARC-C (0) | 88.5 | 82.4 |
 
-## 来源
+整体略落后有 RL 的 LLaMA3 Instruct，缺口在代码和 GSM8K 更明显。ARC-C 反而更高。作者把若干指标相对 Base 下降（如 MMLU）归因于 SFT 数据质量，并明确把 RL 对齐留到后续。后续工作里 LLaDA 1.5 用 VRPO 做偏好优化，d1 用 diffu-GRPO 做推理 RL，不在 8B 原论文的表里。
 
-- [LLaDA: Large Language Diffusion Models (2025)](https://arxiv.org/abs/2502.09992) — 8B 扩散语言模型，本文架构设计与 benchmark 数据来源
-- [LLaDA 2.0: Scaling Up Diffusion Language Models to 100B (2025)](https://arxiv.org/abs/2512.15745) — AR→扩散转换、三阶段训练、MoE 架构与推理效率数据来源
-- [Awesome Diffusion Language Models](https://github.com/VILA-Lab/Awesome-DLMs) — 领域论文索引，未来方向参考
+## 4. 采样器能改分数
+
+附录 Table 8，Instruct，块长 32：
+
+| 采样 | GSM8K | MATH | HumanEval |
+|---|---|---|---|
+| 自回归 | 0 | 9.5 | 0 |
+| 块扩散 | 24.6 | 23.5 | 17.1 |
+| 块扩散 LLaDA（半自回归 remask） | 77.5 | 42.2 | 46.3 |
+| 纯扩散 | 69.4 | 31.9 | 49.4 |
+
+Table 2 的 69.4 / 31.9 / 49.4 是纯扩散。GSM8K 若改用块长 8 的块扩散 LLaDA，可到 78.6。报「LLaDA Instruct 的 GSM8K」而不写采样器，数字没有意义。自回归采样在 Instruct 上崩掉，和 `[EOS]` padding 有关，见采样篇。
+
+反转诗歌补全（Table 4）是结构实验：全双向让模型从后面往前补，GPT-4o 几乎只能续写。这是机制优势，不是通用榜单优势。不要推成「扩散全面强于 GPT-4o」。
+
+## 5. 2.0：转换，不从头堆 100B
+
+LLaDA 2.0 从 Ling-mini-2.0 / Ling-flash-2.0 出发，把 AR 看成块大小为 1 的块扩散，再用 Warmup–Stable–Decay 改块大小：warmup 增大块，stable 全序列扩散，decay 收回适合部署的块。发布的是指令微调后的 MoE：mini 16B、flash 100B。旧稿写的「~4B / ~20B 激活」在 2.0 HTML 正文里没有并列成规格表，本篇不引用。
+
+Table 1–2 的平均分：mini 64.34，对照 Ling-mini-2.0 的 65.77、Qwen3-8B (no_think) 的 63.42。flash 73.18，对照 Qwen3-30B-A3B-Instruct-2507 的 73.60、Ling-flash-2.0 的 72.15。flash 的 HumanEval 94.51、MBPP 88.29、AIME 2025 60.00、BFCL v3 75.43，作者强调编码与 agent 相对 AR 同级模型开始占优。
+
+吞吐：作者用 dInfer，阈值 0.95。flash-CAP 535 TPS，普通 flash 383 TPS，SGLang 上的 AR 基线 256 与 237 TPS，最高约 2.1 倍。不要把这段写成「3–8 倍」；那是旧稿无来源的数字。
+
+上下文：文内称 32k 内 flash 稳定。训练用 Megatron 的 DP/PP/TP/CP/EP，掩码在模型并行组内广播以保持一致。
+
+## 6. 失效与不该推出的结论
+
+8B Base 的 GSM8K 高于 LLaMA3 Base，推不出「扩散更会数学」。同数据 ARM baseline 才是公平对照；跨公司数据配比是混杂因素。作者自己写了这句。
+
+没有 RL 的 Instruct 落后有 RL 的 LLaMA3 Instruct，推不出「扩散对齐不了」。只能推出：这篇论文没有做 RL。
+
+全双向 8B 推不出「扩散不能 KV Cache」。2.0 和 Fast-dLLM 已经走块扩散与近似缓存。8B 论文的架构选择是当时公式下的简化。
+
+100B 是改编不是从噪声训出来的扩散。知识来自 AR 阶段，扩散阶段负责改生成过程。讨论「扩散能否 scale」时要把「从头训的 8B」和「转换的 100B」分开。
+
+## 7. 规模曲线和 CFG
+
+原文 Fig. 3 用预训练 FLOPs 当横轴，六个下游任务上 LLaDA 与同数据 ARM 的曲线总体可并排。作者拒绝拟合定量幂律，理由是离群点会误导。能说的只有：在他们走到的 $10^{23}$ FLOPs 量级，扩散没有在下游上突然塌掉。早期「似然要 16 倍算力才追上 AR」的观察，被他们用「似然是间接指标、优化的是界、FLOPs 区间更宽」三句话挡回。本花园不把 16 倍写成 2025 年的换算表。
+
+CFG 在附录 Table 6：有条件与无条件 logits 外推，多个任务稳定加分。这是推理技巧。8B Instruct 的主表没有把 CFG 当成默认必开项来报，读具体数字时看附录有没有开。
+
+生成长度消融 Table 10：256 / 512 / 1024 对 Base 的 Humaneval 等变化不大。定长超参不是分数的主因；采样器类别才是。
+
+## 8. 诗歌反向：机制实验，不是全能声明
+
+给定后半句补前半句。因果模型必须把「后面」改写成提示里的条件，且生成方向仍朝结束符走。掩码扩散把要补的字留成 `[MASK]`，已给的字当干净上下文，方向不存在。Table 4 上 LLaDA 超过 GPT-4o。这只证明双向结构能做这道题，不证明聊天、代码、代理全面超过 GPT-4o。把这个实验当卖点可以，当总榜不行。
+
+## 9. 读完应留下的规格卡
+
+- 8B Base：2.3T，MMLU 65.9，GSM8K 70.3，HumanEval 35.4（Table 1，$*$ 协议）。
+- 8B Instruct：仅 SFT，Table 2 纯扩散 GSM8K 69.4；块采样可到 78.6。
+- 不兼容当时的 KV Cache，故用 MHA 不是 GQA。
+- 2.0-mini 16B / flash 100B MoE，平均分 64.34 / 73.18；flash-CAP 535 TPS，约 2.1× 于文内 AR 基线。
+- 激活参数、旧稿 3–8× 吞吐：2.0 正文未给出可引用的并列规格，不写。
+
+## 参考文献
+
+- [Nie et al., LLaDA, 2025](https://arxiv.org/abs/2502.09992) — Table 1–2、5、7–9；2.3T；反转诗歌。
+- [Bie et al., LLaDA 2.0, 2025](https://arxiv.org/abs/2512.15745) — WSD；mini/flash 表；535 TPS。
+- [Zhu et al., LLaDA 1.5, 2025](https://arxiv.org/abs/2505.19223) — VRPO 偏好优化，不在 8B 原表。
+- [Zhao et al., d1, 2025](https://arxiv.org/abs/2504.12216) — diffu-GRPO。
 
 ## 相关
 
-- [为什么要用扩散做语言生成](../01-overview/why-diffusion.md)
-- [离散扩散模型：从马尔可夫链到掩码预测](../02-mechanism/masked-diffusion.md)
-- [代表性扩散语言模型一览](./representative-models.md)
-- [扩散 vs 自回归：全面对比](../04-comparison/diffusion-vs-autoregressive.md)
+- [掩码扩散](../02-mechanism/masked-diffusion.md)
+- [采样与调度](../02-mechanism/sampling.md)
+- [块扩散](../03-points/block-diffusion.md)
+- [代表性工作](./representative-models.md)
