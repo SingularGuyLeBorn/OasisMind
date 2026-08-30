@@ -178,3 +178,5 @@ category: LLM 指南
 | raft-441 | done | `4.4.1/07-RAFT-奖励排序微调/` + inbox `raft-441.md` | 4838 汉字；2304.06767；只训 top-1；监工链 4.4.1 |
 | dpo-442 | running | `4.4.2/01-DPO/` + inbox `dpo-442.md` | 2305.18290；去讲义腔；≥4000；两张浅色图；不改 02/03/04、不改节首页 |
 | orpo-442 | running | `4.4.2/02-ORPO/` + inbox `orpo-442.md` | 2403.07691；去讲义腔；≥4000；两张浅色图；不改 01/03/04、不改节首页 |
+| cispo-441 | running | `4.4.1/08-CISPO-裁剪重要性权重/` + inbox `cispo-441.md` | 2506.13585；clip IS 权重 + stop-grad；不改 01–07、不改节首页 |
+| sapo-441 | running | `4.4.1/09-SAPO-温度软门/` + inbox `sapo-441.md` | 2511.20347；sigmoid 软门不是熵滑动 ε；不改 01–08、不改节首页 |
