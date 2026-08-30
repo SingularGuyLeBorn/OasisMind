@@ -13,16 +13,16 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** JustRL（2512.16649）专文挂 `4.4.6/02`，不要挤 4.4.1 的 11。54.9%/64.3% 是九项数学平均，不是 AIME 单列。
-2. **并行：** 4.4 仍缺的对齐算法（SPIN / Online DPO / Nash-MD 等）开专文；同层满 10 先拆小节。
+1. **立刻做：** 回收 JustRL / SPIN / Nash-MD 三篇专文（租约 running）。交卷后链进地图。
+2. **并行：** 下一波 Online DPO / OAIF（2402.04792）或 Best-of-N 对照；同层满 10 先拆小节。
 3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：入库 PRO / CPO / Constitutional AI，并接到 4.4.3 / 4.4.4 / 4.4 地图。
-- 现在立刻做：JustRL 专文（4.4.6/02）。不要 `move_agent_to_root`。不要 push。
+- 上一件：把 2.4.1/02 工程实践收成路标，正本并进节首页第 4–5 节。
+- 现在立刻做：回收 JustRL / SPIN / Nash-MD。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -123,9 +123,9 @@ category: LLM 指南
 | fold-46-opd | done | `4-后训练/4.6-OPD/4.6-OPD.md` | 已交；OPD = On-Policy Distillation 单轨 |
 | pass-1234-b01 | done | batch 01 十篇 | 浅色冰山/技能树；2.1.1 改成 01–04 地图；未重画 146 张 |
 | pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
-| moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；04–09 已迁 6.1.8 / 6.3.1 / 9.1.5 |
+| moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。容量/aux/z-loss 收在节首页 §4–5；阅读序 01→03→10；04–09 已迁 6.1.8 / 6.3.1 / 9.1.5 |
 | moe-01 | done | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 已入库。16B $K_r=6$；V3 $N_r=256$；未 git add 节根散文件 |
-| moe-02 | done | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 已入库。$C$=槽数、$\gamma$=容量因子；drop/dropless/aux/z-loss；未改旧目录名 |
+| moe-02 | done | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 2026-08-31 收成路标。正本并进 2.4.1 §4–5；文件保留 |
 | moe-03 | done | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 已入库。STE 式 (5)–(7)；ReMoE=2412.14711；V3 Sigmoid 仍离散 |
 | moe-10 | done | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` + inbox `moe-10.md` | 已入库。$\ell\neq c^{KV}$；896/Top-16/2 共享，$\ell=3584$ |
 | fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
@@ -190,3 +190,5 @@ category: LLM 指南
 | cai-443 | done | `4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/` + inbox `cai-443.md` | 2212.08073；不是 Lee 2309.00267；不要改 4.4.3 节首页 |
 | rem-446 | done | `4.4.6-其他策略梯度/`（节首页 + `01-ReMax-贪婪基线/`） | 2310.10505；贪婪基线；不改 4.4.1、不发 11 |
 | jrl-446 | running | `4.4.6-其他策略梯度/02-JustRL-极简配方/` + inbox `jrl-446.md` + 4.4.6 节首页只加一行 | 2512.16649；九项平均；不改 4.4.1、不发 11 |
+| spin-442 | running | `4.4.2-无奖励模型的对齐DPO-KTO/05-SPIN-自对弈微调/` + inbox `spin-442.md` | 2401.01335；人标当 winner、上一迭代当 loser；不要改 4.4.2 节首页 |
+| nash-444 | running | `4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/` + inbox `nash-444.md` | 2312.00886；几何混合对手；不要改 4.4.4 节首页 |

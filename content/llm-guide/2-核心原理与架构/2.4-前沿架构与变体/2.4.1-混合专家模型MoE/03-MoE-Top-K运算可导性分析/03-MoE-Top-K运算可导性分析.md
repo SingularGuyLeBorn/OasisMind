@@ -154,6 +154,19 @@ $$
 
 各专家互不出现在对方的导数里。换激活函数 **没有** 把 Top-K 变成光滑选择，只改变了「没选上的人还能不能从归一化里蹭一点路由器梯度」。
 
+两条实现分叉共用同一个离散下标集合 $\mathcal{I}$，差别只在门控数字怎么归一。左栏先截再归一，选中坐标和为 $1$；右栏先 Softmax 再截，扔掉的质量还在分母里，选中和小于 $1$。图 4 把这件事钉死：换顺序不是换可导性。
+
+![先 Top-K 再 Softmax 与先 Softmax 再截断](./images/fig-moe-gate-order.png)
+
+> 图 4：同一组 logits。左：先 Top-K（落选填 $-\infty$）再 Softmax，选中门控之和为 $1$。右：先 Softmax 再硬截断，选中之和小于 $1$。两边的 $\mathcal{I}$ 都来自排序，反向都还是掩码。
+
+**图 4 解析**
+
+- 两列都从 $h\in\mathbb{R}^{E}$ 出发，黄盒是 Softmax，橙盒是硬 Top-K。左右对调的是这两步的次序，不是专家结构。
+- 左列出口写 selected sum $=1$：落选坐标被写成 $-\infty$，不进分母。对应式 (3)。
+- 右列出口写 selected sum $<1$：Softmax 已经在全体专家上归一过，截断只是把落选坐标打成 $0$。对应式 (2)。
+- 底栏那句是本图要钉的零点：离散集合相同，变的是门控数值。不要把「先 Softmax」读成「Top-K 可导了」。
+
 ---
 
 ## 5. 对 MoE 训练意味着什么
@@ -162,7 +175,7 @@ $$
 
 后果有三，和负载均衡是正交的。
 
-第一，空闲专家可以一直空。没有 token 选它，它的 FFN 不更新；路由器若再被 STE 掩成对它零梯度，它更难把自己打进 Top-K。工业上用辅助损失 $f_i P_i$、噪声门控、或 aux-loss-free 偏置去拧负载，见 [02 工程实践](../02-MoE的工程实践/02-MoE的工程实践.md) 与 [10 Quantile Balancing](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。那些项作用在 **频率 / 偏置** 上，不把 $\mathbf{1}\{e\in\mathcal{I}\}$ 变成光滑函数。
+第一，空闲专家可以一直空。没有 token 选它，它的 FFN 不更新；路由器若再被 STE 掩成对它零梯度，它更难把自己打进 Top-K。工业上用辅助损失 $f_i P_i$、噪声门控、或 aux-loss-free 偏置去拧负载，见 [2.4.1 第 4 节](../2.4.1-混合专家模型MoE.md) 与 [10 Quantile Balancing](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。那些项作用在 **频率 / 偏置** 上，不把 $\mathbf{1}\{e\in\mathcal{I}\}$ 变成光滑函数。
 
 第二，STE 有偏。选中集合在跳跃点的真实变化被忽略。训练仍能走，是因为门控数值（Softmax / Sigmoid）本身光滑，路由器至少能调整「已经选中的人谁权重大」；「该不该换人」则靠分数慢慢越过 $s_{[K]}$，加上负载项的外力。不要指望「换一个可导 Top-K 公式」单独治好负载——那是另一篇路由设计。
 
@@ -279,7 +292,27 @@ aux-loss-free 还往排序里加偏置 $b_i$：比较的是 $s_{i,t}+b_i$，真�
 
 ---
 
-## 9. 失效模式
+## 9. SparseMixer：稀疏前向还在，改的是路由梯度
+
+工业默认的 STE 把「谁被选中」当成冻结掩码。路由器因此缺少一条对 **离散选择本身** 的梯度——门控数值还能走 Softmax / Sigmoid，选中集合的跳变被假装没发生。Liu, Gao, Chen（2023）的 SparseMixer（[arXiv:2310.00811](https://arxiv.org/abs/2310.00811)）针对的就是这条被丢掉的项：前向仍然只跑 $K$ 个专家，反向用数值 ODE 的中点法（二阶，不显式要 Hessian）去逼近路由梯度。摘要写在 Switch Transformer 的预训练和机器翻译上，收敛最多大约快 **2 倍**。仓在 [microsoft/SparseMixer](https://github.com/microsoft/SparseMixer)。它 **不是** 新的专家 FFN，也 **不是** ReMoE 那种换前向函数。
+
+GRIN（Liu et al., [arXiv:2409.12136](https://arxiv.org/abs/2409.12136)）把这件事升级成 SparseMixer-v2：训练时用离散变量的随机采样替换硬 `TopK`，再用 Heun 三阶法构造反向。论文同时把并行配成 **流水线 + 张量并行、不用专家并行**，从而不必靠容量因子丢 token。落到自回归上的型号是 top-2、$16\times 3.8\mathrm{B}$：总参数 $42\mathrm{B}$，激活 $6.6\mathrm{B}$。摘要数字：MMLU **79.4**，HellaSwag **83.7**，HumanEval **74.4**，MATH **58.9**。同数据对照：优于 7B 稠密（Table 2 平均 75.74），对齐 14B 稠密（78.46）；GRIN 自己平均 79.58。这些是报告表，不另绘假曲线。
+
+![STE 掩码恒等 vs SparseMixer 的路由梯度估计](./images/fig-moe-ste-vs-sparsemixer.png)
+
+> 图 5：左列仍是 `topk` 的 scatter / 掩码恒等。右列训练时把 Top-K 换成离散采样，反向走中点法 / Heun，前向专家计算照旧稀疏。
+
+**图 5 解析**
+
+- 左列紫盒分数 $\to$ 橙盒硬 Top-K $\to$ 绿盒只在 $\mathcal{I}$ 上跑 FFN。黄盒 **Masked Identity STE** 吃的是前向留下的掩码 $m$，不是另学一张网。
+- 右列训练把硬 Top-K 换成 **sample discrete variables**，黄盒是 ODE 估计器。绿盒专家前向仍稀疏：没有把 $E$ 个 FFN 全算一遍来换可导。
+- 底注分开两件事：STE 是框架约定；SparseMixer 是论文里的路由梯度估计。ReMoE 改前向 $R=\mathrm{ReLU}$，第三条路，不要三合一。
+
+还有两条常被误认成「可导 Top-K」的邻居，这里只钉边界。Jang, Gu, Poole（[arXiv:1611.01144](https://arxiv.org/abs/1611.01144)）的 Gumbel-Softmax 用温度把离散样本松弛成单纯形上的连续向量。温度降到 $0$ 才接近 one-hot。稀疏 MoE 要的是 **精确的 $0$**，才能跳过整块 GEMM；训练期若门控是软的，省下的 FLOPs 立刻没了。所以 Gumbel 可以当研究工具，没有成为 LLM 主路路由器。Csordás, Piękos, Schmidhuber 的 SwitchHead 一类工作改的是注意力头路由，本篇不展开。Default MoE（[arXiv:2504.12463](https://arxiv.org/abs/2504.12463)）用专家输出的指数滑动平均去填「没跑到的专家」，让路由器拿到更密的梯度，前向照旧 Top-K——又是改反向估计，不是把式 (4) 写光滑。
+
+---
+
+## 10. 失效模式
 
 | 现象 | 原因 | 说明 |
 |------|------|------|
@@ -289,12 +322,14 @@ aux-loss-free 还往排序里加偏置 $b_i$：比较的是 $s_{i,t}+b_i$，真�
 | 以为 V3 Sigmoid 已可导 | 只看见激活函数换了 | 式 (17) 仍含 $\mathrm{Topk}$；独立 Sigmoid 反而 **去掉** 未选中耦合 |
 | 把 STE 写成新架构 | 论文标题党或实现注释 | STE 是 Bengio 2013 的估计器 + 框架对 `topk` 的 scatter；专家仍是 FFN |
 | 把 ReMoE 当 STE 变体 | 看见「可导 MoE」就对号 | ReMoE 换的是前向 $R(\cdot)=\mathrm{ReLU}(\cdot)$，次梯度即可，不走式 (5) |
+| 把 SparseMixer 当 STE 换皮 | 都在谈路由梯度 | SparseMixer 用 ODE / 采样估离散选择的梯度；STE 是掩码恒等。GRIN 的 v2 仍稀疏前向 |
+| 把 Gumbel-Softmax 当 MoE 默认路由 | 连续松弛看起来可导 | 软门控就不能跳过 GEMM；主路 LLM 仍要精确的 $0$ |
 | 把 Soft-MoE 当稀疏 LLM 路由 | 看见 MoE 三字 | slot 混合破因果、不稀疏；主路自回归仍是离散 Top-K + STE |
 | 误用 arXiv `2405.16345` | 节首页 / 旧 brief 错号 | 该号是 Cypher4BIM；ReMoE 是 `2412.14711` |
 
-下一篇：[02 工程实践](../02-MoE的工程实践/02-MoE的工程实践.md) 写容量、z-loss 与并行；机制总览回 [2.4.1](../2.4.1-混合专家模型MoE.md)。
+下一篇：[10 LatentMoE / QB](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。容量、z-loss 在 [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md)；EP 通信在 [6.1.8](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Bengio, Léonard, Courville. (2013). [Estimating or Propagating Gradients Through Stochastic Neurons for Conditional Computation](https://arxiv.org/abs/1308.3432). 式 (13) 为恒等 STE。
 2. PyTorch. [`torch.topk`](https://pytorch.org/docs/stable/generated/torch.topk.html). 前向 values/indices；并列下标不稳定。反向 scatter 是实现约定，文档未单列定理。
@@ -303,3 +338,6 @@ aux-loss-free 还往排序里加偏置 $b_i$：比较的是 $s_{i,t}+b_i$，真�
 5. Wang, Chen, Zhu. (2024/2025). [ReMoE: Fully Differentiable Mixture-of-Experts with ReLU Routing](https://arxiv.org/abs/2412.14711). ICLR 2025。式 (3)–(11)、Table 2。**不是** `2405.16345`。
 6. Puigcerver et al. (2023). [From Sparse to Soft Mixtures of Experts](https://arxiv.org/abs/2308.00951). 式 (1)(2)；摘要 $40\times$ 参数 / $+2\%$ 推理；Table 1 视觉塔。
 7. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). 式 (12)–(16)：Sigmoid + Top-K + 选中归一化。
+8. Liu, Gao, Chen. (2023). [Sparse Backpropagation for MoE Training](https://arxiv.org/abs/2310.00811). 中点法；Switch 上收敛最多约 2×。
+9. Liu et al. (2024). [GRIN: GRadient-INformed MoE](https://arxiv.org/abs/2409.12136). SparseMixer-v2；16×3.8B、激活 6.6B；MMLU 79.4 / HumanEval 74.4 / MATH 58.9。
+10. Jang, Gu, Poole. (2016). [Categorical Reparameterization with Gumbel-Softmax](https://arxiv.org/abs/1611.01144). 温度松弛；不是稀疏 MoE 默认路由器。

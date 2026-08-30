@@ -9,7 +9,7 @@ tags: [LatentMoE, Quantile-Balancing, SiTU-GLU, MoE, Kimi-K3]
 
 Top-$k$ 变大、专家池变大，本意是让专家更专。常规 MoE 里每个被选中的专家仍吃完整的 $d$ 维 token，于是 **All-to-All 通信和专家权重流量跟 $k$ 一起涨**。NVIDIA 等的 LatentMoE（[arXiv:2601.18089](https://arxiv.org/abs/2601.18089)）把路由计算搬进 $\ell<d$ 的潜空间：通信和专家参数按 $d/\ell$ 变便宜，省下来的预算用来加专家数、加 $k$。Kimi K3 报告 §2.3 把这套接到 **896 路由专家、每 token Top-16、稀疏度 56**，并补了三块稳定性——升维前 RMSNorm、专家内 [SiTU-GLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md)、以及替换 $\gamma\mathrm{sign}$ 的 **Quantile Balancing**。这才叫 **Stable LatentMoE**。LatentMoE 不是 K3 发明的；K3 发明的是「这一规模上还能训」的三件套。
 
-本篇是机制主线的第四篇，不是系统优化专文。卡怎么切、token 怎么 dispatch、Grouped GEMM 的 Tile 怎么填，正本在 [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)。这里只改专家看到的宽度，以及 bias 怎么用分位数拧负载。
+本篇是机制主线的第三篇（01 → 03 → 10），不是系统优化专文。容量、aux-loss、z-loss 在 [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md)。卡怎么切、token 怎么 dispatch、Grouped GEMM 的 Tile 怎么填，正本在 [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)。这里只改专家看到的宽度，以及 bias 怎么用分位数拧负载。
 
 **$\ell$ 是 FFN 路由专家的宽度，不是 MLA 里压缩 KV 的 $c^{KV}$。** 两个潜空间：一个在注意力缓存，一个在专家 MLP。混名就是把 MoE 通信账和 KV 字节账并成一笔。本篇只写宽度轴上的专家层；KDA 递推、Gated MLA 的低秩 KV 各回各的专文，这里不重推。
 
