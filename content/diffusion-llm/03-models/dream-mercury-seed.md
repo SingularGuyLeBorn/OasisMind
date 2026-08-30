@@ -135,6 +135,10 @@ Instruct 的 180 万对、3 epoch 是轻量后训练。Qwen2.5 Instruct 有 RL�
 
 `[OM-FREEPLAY]` 上一句限定来自：Dream 原文 Table 2 对照的是有 RL 的 AR Instruct，没有同数据、同后训练深度的配对实验。
 
+Trip planning 17.8 对 3.6 是同一张规划表上的第三格。题目来自 Zheng et al. 2024，few-shot、无任务微调。扩散两列（Dream 17.8、LLaDA 16.4）都明显高于 Qwen2.5 的 3.6 和 LLaMA3 的 8.7。作者把 DeepSeek V3-671B 也拉来当参考，正文写在某些 Countdown 设定上 7B 扩散甚至能超过这个大很多的 AR。那是规划题上的观察，不要写成「7B 扩散全面超过 671B」。参数量差两个数量级的对照，只能用来刺激「结构可能值钱」这种假说，不能用来做产品选型。
+
+0.6T 对 Qwen2.5 的 18T 同样不能直接说成样例效率。Dream 的知识主体来自 Qwen 的 18T，0.6T 是继续预训练。公平的分母是改编阶段花了多少，不是「Dream 总共只看了 0.6T」。LLaDA 8B 才是真正只看 2.3T 从头训的那一列。三列分母不一样，并排在 Table 1 里是为了让读者看见改编之后还剩多少能力，不是为了做 token 效率竞赛。
+
 ## 参考文献
 
 - [Ye et al., Dream 7B, 2025](https://arxiv.org/abs/2508.15487) — Table 1–2；0.6T；Sudoku 81.0。
