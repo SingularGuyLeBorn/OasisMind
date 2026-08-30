@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 `2.4.1` 机制专文 01 / 02 / 03 / 10（汉字 ≥ 4000）。节首页已收成地图。04–09 错位，本波不加厚。
-2. **并行中：** 报告精读波：K3、Gemini 3.7、Muse Spark 已入库；Engram / RSI 仍在跑。
+1. **立刻做：** 回收 `2.4.1` 机制专文 01 / 10（汉字 ≥ 4000）。02 / 03 已入库。节首页已是地图。04–09 错位，本波不加厚。
+2. **并行中：** Engram 仍在跑；RSI 导读已交待质检。K3 / Gemini 3.7 / Muse Spark 已入库。
 3. **下一波：** 把 04–09 `git mv` 到 6.1 / 6.3 / 9.1；Gated Attention 相关工作；Qwen4 架构预测。过文 SiTU / mHC / GR 汉字未满 4000，回头加厚（派工早于规矩）。
 
 ## 波次队列（未完成的留着）
@@ -90,7 +90,7 @@ category: LLM 指南
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
 - 上一件：用户点名 2.4.1 的 01–10 垃圾且错位。4000 汉字规矩已写入 Skill。
-- 现在立刻做：重写 2.4.1 机制主线 01/02/03/10 + 节首页去废话。不要 `move_agent_to_root`。不要 push。
+- 现在立刻做：质检入库 01 / 10；RSI 导读质检。不要 `move_agent_to_root`。不要 push。
 
 ## 路径租约（并行防撞）
 
@@ -121,8 +121,8 @@ category: LLM 指南
 | pass-1234-b02 | done | batch 02 见 inbox（SiTU + 2.1.2–2.1.4 + 2.2 节首页） | 已入库。SiTU/mHC/GR 汉字未满 4000（派工早于规矩）。mHC 图若写 mean-HC，正文已勘误为 Manifold-Constrained。 |
 | moe-hp | done | `2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md` + inbox `moe-hp.md` | 已入库。地图汉字 3661；阅读序 01→02→03→10；错位箱 04–09；未改 01–10 夹 |
 | moe-01 | running | `2.4.1/01-DeepSeek-MoE/`（夹内 md+images）+ inbox `moe-01.md` | 不改节根散文件 `01-DeepSeek-MoE.md`；汉字≥4000 |
-| moe-02 | running | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 不改 `02-MoE的工程实践-images/` 旧目录名；汉字≥4000 |
-| moe-03 | running | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 不改节根散文件；汉字≥4000 |
+| moe-02 | done | `2.4.1/02-MoE的工程实践/` + inbox `moe-02.md` | 已入库。$C$=槽数、$\gamma$=容量因子；drop/dropless/aux/z-loss；未改旧目录名 |
+| moe-03 | done | `2.4.1/03-MoE-Top-K运算可导性分析/` + inbox `moe-03.md` | 已入库。STE 式 (5)–(7)；ReMoE=2412.14711；V3 Sigmoid 仍离散 |
 | moe-10 | running | `2.4.1/10-Stable-LatentMoE与Quantile-Balancing/` + inbox `moe-10.md` | 不改 01–03；汉字≥4000 |
 | fuse-5-14 | done | `5-主流模型全解/5-主流模型全解.md`；`14-…/14-….md` | 已交；同一章两面；浅色 `fig-ch5-narrative-ch14-read.png` |
 | pass-1234-b03 | done | batch 03 十篇见 inbox | 已交；AttnRes/MLA 浅色图；2.3 章地图 |

@@ -2,30 +2,29 @@
 title: 切片 · 重写 03 Top-K 可导
 date: 2026-08-30
 published: false
-status: running
+status: done
 ---
 
-# moe-03 · 监工点评
+# moe-03 · 交卷
 
-只准改：`content/llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/03-MoE-Top-K运算可导性分析/`（md + images）。inbox 本文件。
+只改了：`03-MoE-Top-K运算可导性分析/`（md + images）与本 inbox。未 commit、未改 live、未改节根散文件。
 
-禁止：节根散文件 `03-MoE-Top-K运算可导性分析.md`；节首页；其它夹；live；commit；Delete。
+## 汉字与公式
 
-当前约 **919 汉字**，不合格。
+- **汉字：4103**（去掉 YAML 后 `[\u4e00-\u9fff]`）
+- **STE 公式位置：§3「STE：反向约定」**
+  - 式 (5)：Bengio 恒等 STE $\widehat{\partial L/\partial a_i}=\partial L/\partial h_i$
+  - 式 (6)：乘 $\sigma'$ 的变体
+  - 式 (7)：Top-K 掩码恒等（`torch.topk` scatter）
+- 图 1 沿用浅色 `fig-moe-topk-ste.png` 并补解析；新图 `fig-moe-ste-two-paths.png`、`fig-moe-ste-remoe-soft.png`
 
-## 要写什么
+## 勘误（一手）
 
-Top-K 是离散选择，反向怎么过。STE、ReMoE（ReLU 路由，2405.16345）、Soft-MoE 作为「不是离散 Top-K」对照。
+切片写的 `2405.16345` 打开是 Cypher4BIM，不是 ReMoE。ReMoE 正式号 **2412.14711**（ICLR 2025；Wang, Chen, Zhu）。正文已按正确号写。
 
-必须：
+## 监工质检（2026-08-30）
 
-1. 汉字 ≥ 4000。禁止注水。公式多但不晦涩：前向 `topk`、STE 把梯度看成恒等或直通到 softmax 权重。编号 `\tag{n}`。
-2. 明确：STE 是实现 trick，不是又一种专家结构。DeepSeek V3 的 sigmoid 门控仍然离散选专家。
-3. 浅色图：已有 `fig-moe-topk-ste.png` 则核浅色，补解析；缺则 GenerateImage。LIGHT THEME ONLY 整段。
-4. 成文。`as_of: 2026-08-30`。
-
-一手：Switch；Bengio STE；ReMoE 2405.16345。找不到就 `[OM-FREEPLAY]`。
-
-## 回传
-
-汉字数、STE 公式在哪一节。不要 commit。
+- 汉字 **4106**（去掉 YAML）。STE 式 (5)(6)(7) 在 §3。
+- ReMoE 真号 **2412.14711**，正文已写「本库旧 brief」错号，不再写「切片 brief」。
+- V3 Sigmoid 仍离散选专家。图：`fig-moe-topk-ste.png`、`fig-moe-ste-two-paths.png`、`fig-moe-ste-remoe-soft.png`（图 3 combine 笔误已在题注标明）。
+- 未改节根散文件、未改 live。未把 Soft-MoE 写成 LLM 稀疏主路。
