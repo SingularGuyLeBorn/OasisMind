@@ -201,4 +201,5 @@ Table 3 的 9.87 和 Table 1 的 14.57 对不上，上面已经打标。不要�
 - [Serving](./serving.md)
 - [ParallelBench](./parallelbench.md)
 - [少步蒸馏](./few-step-distill.md)
+- [dParallel](./dparallel.md)
 - [LLaDA：8B 从头训到 100B 改编](../03-models/llada-frontier.md)

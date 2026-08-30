@@ -59,7 +59,7 @@ excerpt: "离散扩散少步会把联合拆成边际。SDTT 让学生去匹配�
 
 FS-DFM 写在离散流专文：8 步生成 1024 token，生成 PPL 对齐他们的 1024 步离散流基线，摘要写成最多 128 倍。分母是「同一条 DFM 老师的 1024 步」，不是 AR，不是 LLaDA。路径语言不同，手法同类：少步学生去模仿多步老师。SDTT 的骨架是 MDLM / DiT，FS-DFM 的骨架是离散流。两张卡不要减出「谁多 2 倍」。
 
-LLaDA 2.0 的 CAP 不蒸步数，蒸的是「已经对的位置再压熵」，提高每步可提交的 token 数。对照是 flash-CAP 535 TPS 对文内 SGLang AR 约 2.1×。dParallel 的 certainty-forcing 让学生在少步下边际更快变尖，机制靠近「少步仍尖」，和 SDTT 的「少步仍像多步分布」是邻居。推理加速专文没有抄 dParallel 主表，协议要对过再写。本篇也不编它的分数。
+LLaDA 2.0 的 CAP 不蒸步数，蒸的是「已经对的位置再压熵」，提高每步可提交的 token 数。对照是 flash-CAP 535 TPS 对文内 SGLang AR 约 2.1×。dParallel 的 certainty-forcing 让学生在少步下边际更快变尖，机制靠近「少步仍尖」，和 SDTT 的「少步仍像多步分布」是邻居。8B 数字见[dParallel](./dparallel.md)：GSM8K-CoT 时延 8.5× 对照 256 步原版，不是对照带 KV 的 GPT-2。
 
 LLaDA-MoE 的 Hugging Face 集合里有 Instruct-TD 一类轨迹蒸馏权重。2509.24389 主表是 Base / Instruct，没有把 TD 的下游或 TPS 写成 Table 3。轨迹蒸馏通常让学生模仿老师整条去噪轨迹，和 SDTT「在 $z_t$ 上拟合老师再走 $m/k$ 步」同族。没有主表数字就当产品选项，不当本花园的规格卡。d3LLM 走伪轨迹蒸馏，揭开顺序来自老师、字来自标准答，表和 AUP 见[d3LLM](./d3llm.md)。
 
@@ -116,6 +116,7 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 - [SlowFast](./slowfast.md)
 - [Serving](./serving.md)
 - [d3LLM](./d3llm.md)
+- [dParallel](./dparallel.md)
 - [离散流匹配](./discrete-flow.md)
 - [Eso-LM](./eso-lm.md)
 - [失效模式](./failure-modes.md)
