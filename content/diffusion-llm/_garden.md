@@ -16,7 +16,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 |---|---|
 | 01 动机 | 自回归因式分解把什么写进了结构里，扩散换掉的是哪一步 |
 | 02 机制 | $Q_t$、吸收态、ELBO 为何长得像加权 MLM、采样时如何揭开 / remask |
-| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、缓存、Eso-LM、少步蒸馏、引导、对齐、代码向、离散流、失效 |
+| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、缓存、Eso-LM、少步蒸馏、引导、对齐、代码向、离散流、score entropy、失效 |
 | 04 模型 | 从 D3PM 到 LLaDA 2.0 / MoE / Dream / Mercury 各自钉住哪件事；多模态三条接法 |
 | 05 对照 | 十个维度里哪些是机制必然，哪些只是 2026 年的工程现状 |
 
@@ -80,20 +80,23 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 18. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
     DFM；吸收态 $1/t$ 是一条路径。1.7B HumanEval Pass@1 为 6.7%。
 
-19. [失效模式](./03-points/failure-modes.md)  
+19. [Score entropy：离散扩散在估比率](./03-points/score-entropy.md)  
+    concrete score；$25\%{-}75\%$ 对照先前离散扩散。1BW 上界 $\leq 32.79$ 对 AR 31.98。不是 LLaDA 的损失。
+
+20. [失效模式](./03-points/failure-modes.md)  
     定长与 EOS、并行搭配、PPL 不可比、近似缓存过期。
 
 🔴 **04 模型**
 
-20. [代表性扩散语言模型一览](./03-models/representative-models.md)
-21. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-22. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
-23. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
-24. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
+21. [代表性扩散语言模型一览](./03-models/representative-models.md)
+22. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+23. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
+24. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+25. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
 
 ⚖️ **05 对照**
 
-25. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+26. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
     含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
@@ -125,7 +128,7 @@ P(x) 怎么因式分解
                         │       ├─ 代码向：DiffuCoder + coupled-GRPO
                         │       └─ 多模态：视觉塔+投影 / 图也离散化
                         ├─ 离散流匹配 DFM：先定路径 p_t，吸收态是其中一条
-                        └─ score entropy（SEDD）等非掩码目标
+                        └─ score entropy（SEDD）：估 p_t(y)/p_t(x)；25%–75% 对照先前离散扩散，不是 GPT-2
 ```
 
 llm-guide 第 2.4.7 只保留指针，不把本花园抄过去。

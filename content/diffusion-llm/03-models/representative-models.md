@@ -78,7 +78,7 @@ Table 1 零样本无条件困惑度（↓），Small 档：
 
 SEDD Absorb 在多数集上优于先前扩散，部分集优于他们重算的 GPT-2（无滑动窗口，数字会比 GPT-2 原文高）。text8 上 SEDD Absorb 的 BPC 上界 ≤1.39，D3PM Absorb ≤1.45，自回归 1.23。生成侧作者报：不必温度退火，生成困惑度相对未退火 GPT-2 约 6–8 倍更好；步数换质量，32× 更少的网络评估仍可接近。这是 GPT-2 尺度的故事。不要把它写成 8B 的换算表。
 
-SEDD 不是另一种 `[MASK]`。它可以走吸收，也可以走均匀。2025 年的 7B 默认仍是吸收态加权交叉熵（MDLM / LLaDA / Dream），因为工程上就是 MLM。SEDD 证明离散扩散的目标函数还有空间；它没有成为 LLaDA 的损失函数。
+SEDD 不是另一种 `[MASK]`。它可以走吸收，也可以走均匀。2025 年的 7B 默认仍是吸收态加权交叉熵（MDLM / LLaDA / Dream），因为工程上就是 MLM。SEDD 证明离散扩散的目标函数还有空间；它没有成为 LLaDA 的损失函数。比率、势垒、Table 3 的 32.79，见[Score entropy](../03-points/score-entropy.md)。
 
 ## MDLM：加权 MLM 当生成模型
 
@@ -170,5 +170,6 @@ LLaDA 8B 原文同时有从头训、同数据 ARM、采样消融、诗歌反向�
 - [Eso-LM](../03-points/eso-lm.md)
 - [少步蒸馏](../03-points/few-step-distill.md)
 - [谁决定揭开哪一格](../03-points/plan-denoise.md)
+- [Score entropy](../03-points/score-entropy.md)
 - [离散流匹配](../03-points/discrete-flow.md)
 - [代码向扩散](../03-points/code-dllm.md)

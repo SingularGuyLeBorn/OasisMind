@@ -49,7 +49,7 @@ $$
 
 ## 2. RADD：时间可以从网络里拿掉
 
-吸收态前向是单向漏斗：干净 token 只能变成 `[MASK]`，掩码出不去。Ou 等人证明，两个状态之间的概率比（concrete score）可以写成 $P(x_0^i=\cdot\mid \text{未掩位置})$ 乘一个解析的时间系数。网络若直接输出那个与时间无关的条件分布，就不必再喂 timestep embedding。他们把这种参数化叫做 RADD。好处有两件。参数更少：去掉时间条件。采样可以缓存：一段时间内若样本没揭开新字，时间无关网络的输出不变，NFE 能省。
+吸收态前向是单向漏斗：干净 token 只能变成 `[MASK]`，掩码出不去。Ou 等人证明，两个状态之间的概率比（concrete score）可以写成 $P(x_0^i=\cdot\mid \text{未掩位置})$ 乘一个解析的时间系数。网络若直接输出那个与时间无关的条件分布，就不必再喂 timestep embedding。他们把这种参数化叫做 RADD。好处有两件。参数更少：去掉时间条件。采样可以缓存：一段时间内若样本没揭开新字，时间无关网络的输出不变，NFE 能省。SEDD 停在「直接估比率」这一层，时间条件还在 DiT 里，见[Score entropy](./score-entropy.md)。
 
 MD4（Shi 等人）和 MDLM 走的是另一条写法：连续时间 ELBO 化简成加权交叉熵，不一定去掉时间条件，但损失形状已经是「只在掩码位置」。LLaDA 的式 (1) 属于这一族。读 8B 论文时不必先会 RADD；读「为什么 $1/t$ 不是拍脑袋」时，任意顺序这张图比再抄一遍积分更有用。
 
@@ -140,4 +140,5 @@ KV 冲突可以写成一条硬句子。任意顺序的条件集合会变：下�
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [代码向扩散](./code-dllm.md)
 - [谁决定揭开哪一格](./plan-denoise.md)
+- [Score entropy](./score-entropy.md)
 - [Eso-LM](./eso-lm.md)

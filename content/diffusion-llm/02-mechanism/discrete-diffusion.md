@@ -160,4 +160,5 @@ BERT 是一步扩散那句话，限定条件要写全：吸收加一点均匀的
 - [从图像扩散到离散 token](./from-image-diffusion.md)
 - [掩码扩散](./masked-diffusion.md)
 - [提交之后还能不能改](../03-points/remask-revise.md)
+- [Score entropy](../03-points/score-entropy.md)
 - [为什么用扩散做语言生成](../01-overview/why-diffusion.md)
