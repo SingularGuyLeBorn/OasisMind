@@ -22,9 +22,9 @@ import { cn } from "@/lib/utils";
 import { useContentNavHighlight } from "@/lib/contentNavContext";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import { Input } from "@/components/ui/input";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { VirtualFlatList } from "@/components/post/VirtualFlatList";
 import { isPostPinned, PostTreeDocActions } from "@/components/post/PostTreeDocActions";
+import { flattenVisibleTree, TREE_ROW_HEIGHT } from "@/lib/postTreeFlatten";
 
 interface PostSummary {
   id: string;
@@ -238,8 +238,9 @@ function saveScrollTop(top: number) {
   }
 }
 
-const TreeNodeItem = memo(function TreeNodeItem({
+const TreeRow = memo(function TreeRow({
   node,
+  depth,
   expanded,
   activeSlug,
   onToggle,
@@ -248,6 +249,7 @@ const TreeNodeItem = memo(function TreeNodeItem({
   onPinnedChange,
 }: {
   node: TreeNode;
+  depth: number;
   expanded: Set<string>;
   activeSlug: string | null;
   onToggle: (key: string, open: boolean) => void;
@@ -262,7 +264,7 @@ const TreeNodeItem = memo(function TreeNodeItem({
   const pinned = Boolean(node.slug && node.garden && isPostPinned(node.garden, node.slug));
 
   const rowClass = cn(
-    "flex min-w-0 flex-1 items-center gap-1 rounded-lg py-1.5 pr-1 pl-0 text-left text-sm font-medium transition",
+    "flex h-full min-w-0 flex-1 items-center gap-1 rounded-lg pr-1 pl-0 text-left text-sm font-medium transition",
     isActive
       ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
       : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
@@ -279,123 +281,64 @@ const TreeNodeItem = memo(function TreeNodeItem({
   );
 
   return (
-    <div>
-      <div className="group flex min-w-0 items-center">
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => onToggle(node.key, !isExpanded)}
-            className={cn(
-              "flex h-5 w-3.5 shrink-0 items-center justify-center rounded-md text-[var(--om-text-3)] transition-colors hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-text-1)]",
-              isExpanded && "text-[var(--om-text-1)]",
-            )}
-            aria-label={isExpanded ? "折叠" : "展开"}
-          >
-            <ChevronRight
-              className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-90")}
-            />
-          </button>
-        ) : (
-          <span className="h-5 w-3.5 shrink-0" />
-        )}
-
-        {isDoc && node.slug ? (
-          <Link
-            href={postDetailHref(node.slug, node.garden)}
-            scroll={false}
-            onClick={onNavigate}
-            onPointerEnter={() => onPrefetch(node.slug!, node.garden)}
-            onFocus={() => onPrefetch(node.slug!, node.garden)}
-            className={rowClass}
-            title={node.title}
-            data-tree-slug={node.slug}
-          >
-            {iconNode}
-            <span className="min-w-0 flex-1 truncate">{node.title}</span>
-            {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--om-brand-deep)]" />}
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => hasChildren && onToggle(node.key, !isExpanded)}
-            className={rowClass}
-            title={node.title}
-          >
-            {iconNode}
-            <span className="min-w-0 flex-1 truncate">{node.title}</span>
-          </button>
-        )}
-
-        {isDoc && node.slug && node.garden && !node.id.startsWith("group-") && (
-          <PostTreeDocActions
-            postId={node.id}
-            slug={node.slug}
-            garden={node.garden}
-            title={node.title}
-            onPinnedChange={onPinnedChange}
+    <div className="group flex h-full min-w-0 items-center" style={{ paddingLeft: `${5 + depth * 10}px` }}>
+      {hasChildren ? (
+        <button
+          type="button"
+          onClick={() => onToggle(node.key, !isExpanded)}
+          className={cn(
+            "flex h-5 w-3.5 shrink-0 items-center justify-center rounded-md text-[var(--om-text-3)] transition-colors hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-text-1)]",
+            isExpanded && "text-[var(--om-text-1)]",
+          )}
+          aria-label={isExpanded ? "折叠" : "展开"}
+        >
+          <ChevronRight
+            className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-90")}
           />
-        )}
-      </div>
+        </button>
+      ) : (
+        <span className="h-5 w-3.5 shrink-0" />
+      )}
 
-      {hasChildren && (
-        <Collapsible open={isExpanded} onOpenChange={(open) => onToggle(node.key, open)}>
-          <CollapsibleContent className="data-open:animate-none data-closed:animate-none">
-            <div className="ml-1.5 border-l border-[var(--om-divider)] pl-1">
-              {node.children.map((child) => (
-                <TreeNodeItem
-                  key={child.key}
-                  node={child}
-                  expanded={expanded}
-                  activeSlug={activeSlug}
-                  onToggle={onToggle}
-                  onNavigate={onNavigate}
-                  onPrefetch={onPrefetch}
-                  onPinnedChange={onPinnedChange}
-                />
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+      {isDoc && node.slug ? (
+        <Link
+          href={postDetailHref(node.slug, node.garden)}
+          scroll={false}
+          onClick={onNavigate}
+          onPointerEnter={() => onPrefetch(node.slug!, node.garden)}
+          onFocus={() => onPrefetch(node.slug!, node.garden)}
+          className={rowClass}
+          title={node.title}
+          data-tree-slug={node.slug}
+        >
+          {iconNode}
+          <span className="min-w-0 flex-1 truncate">{node.title}</span>
+          {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--om-brand-deep)]" />}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => hasChildren && onToggle(node.key, !isExpanded)}
+          className={rowClass}
+          title={node.title}
+        >
+          {iconNode}
+          <span className="min-w-0 flex-1 truncate">{node.title}</span>
+        </button>
+      )}
+
+      {isDoc && node.slug && node.garden && !node.id.startsWith("group-") && (
+        <PostTreeDocActions
+          postId={node.id}
+          slug={node.slug}
+          garden={node.garden}
+          title={node.title}
+          onPinnedChange={onPinnedChange}
+        />
       )}
     </div>
   );
-}, (prev, next) => {
-  if (prev.node !== next.node) return false;
-  if (prev.onToggle !== next.onToggle) return false;
-  if (prev.onNavigate !== next.onNavigate) return false;
-  if (prev.onPrefetch !== next.onPrefetch) return false;
-  if (prev.onPinnedChange !== next.onPinnedChange) return false;
-  if (prev.expanded.has(prev.node.key) !== next.expanded.has(next.node.key)) return false;
-  // 激活态：仅本节点或子树内 slug 变化时才重绘
-  const prevActiveHere =
-    prev.activeSlug === prev.node.slug ||
-    (prev.activeSlug != null && nodeContainsSlug(prev.node, prev.activeSlug));
-  const nextActiveHere =
-    next.activeSlug === next.node.slug ||
-    (next.activeSlug != null && nodeContainsSlug(next.node, next.activeSlug));
-  if (prevActiveHere !== nextActiveHere) return false;
-  if (prevActiveHere && prev.activeSlug !== next.activeSlug) return false;
-  // 展开集合：子树任一 key 变化则重绘
-  if (subtreeExpandedChanged(prev.node, prev.expanded, next.expanded)) return false;
-  return true;
 });
-
-function nodeContainsSlug(node: TreeNode, slug: string): boolean {
-  if (node.slug === slug) return true;
-  return node.children.some((c) => nodeContainsSlug(c, slug));
-}
-
-function subtreeExpandedChanged(
-  node: TreeNode,
-  prev: Set<string>,
-  next: Set<string>,
-): boolean {
-  if (prev.has(node.key) !== next.has(node.key)) return true;
-  for (const child of node.children) {
-    if (subtreeExpandedChanged(child, prev, next)) return true;
-  }
-  return false;
-}
 
 export function PostTreeNav({
   className,
@@ -500,6 +443,11 @@ export function PostTreeNav({
     return next;
   }, [manuallyExpanded, activeSlug, tree, query, visibleTree]);
 
+  const browseRows = useMemo(
+    () => flattenVisibleTree(visibleTree, expanded),
+    [visibleTree, expanded],
+  );
+
   const restoreScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -510,17 +458,13 @@ export function PostTreeNav({
     restoreScroll();
   }, [restoreScroll]);
 
-  const handleScroll = useCallback(() => {
-    if (scrollRef.current) {
-      saveScrollTop(scrollRef.current.scrollTop);
-    }
-  }, []);
-
   const handleNavigate = useCallback(() => {
     if (scrollRef.current) {
       saveScrollTop(scrollRef.current.scrollTop);
     }
   }, []);
+
+  const bumpPin = useCallback(() => setPinTick((n) => n + 1), []);
 
   const utils = trpc.useUtils();
   const prefetchPost = useCallback(
@@ -551,17 +495,18 @@ export function PostTreeNav({
   const scrollToActiveItem = useCallback(
     (smooth = true) => {
       if (!activeSlug || !scrollRef.current) return;
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const el = scrollRef.current?.querySelector(
-            `[data-tree-slug="${CSS.escape(activeSlug)}"]`,
-          );
-          el?.scrollIntoView({ block: "center", behavior: smooth ? "smooth" : "auto" });
-        });
-      });
+      const idx = isSearchMode
+        ? flatSearchResults.findIndex((r) => r.slug === activeSlug)
+        : browseRows.findIndex((r) => r.node.slug === activeSlug);
+      if (idx < 0) return;
+      const el = scrollRef.current;
+      const top = Math.max(
+        0,
+        idx * TREE_ROW_HEIGHT - el.clientHeight / 2 + TREE_ROW_HEIGHT / 2,
+      );
+      el.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
     },
-    [activeSlug],
+    [activeSlug, isSearchMode, flatSearchResults, browseRows],
   );
 
   const locateCurrent = useCallback(() => {
@@ -659,9 +604,10 @@ export function PostTreeNav({
         <VirtualFlatList
           className="om-scroll-hidden pb-3 [overflow-anchor:none]"
           items={flatSearchResults}
-          rowHeight={40}
+          rowHeight={TREE_ROW_HEIGHT}
           getKey={(item) => item.key}
           emptyMessage="没有匹配的文章"
+          listRef={scrollRef}
           renderItem={(item) => {
             const isActive = item.slug === activeSlug;
             return (
@@ -688,29 +634,27 @@ export function PostTreeNav({
           }}
         />
       ) : (
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="om-scroll-hidden min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 [overflow-anchor:none]"
-        >
-          <nav className="flex flex-col gap-0.5">
-            {visibleTree.map((node) => (
-              <TreeNodeItem
-                key={node.key}
-                node={node}
-                expanded={expanded}
-                activeSlug={activeSlug}
-                onToggle={toggle}
-                onNavigate={handleNavigate}
-                onPrefetch={prefetchPost}
-                onPinnedChange={() => setPinTick((n) => n + 1)}
-              />
-            ))}
-            {visibleTree.length === 0 && (
-              <p className="py-4 pr-2 text-sm text-[var(--om-text-3)]">暂无本地文章</p>
-            )}
-          </nav>
-        </div>
+        <VirtualFlatList
+          className="om-scroll-hidden pb-3 [overflow-anchor:none]"
+          items={browseRows}
+          rowHeight={TREE_ROW_HEIGHT}
+          getKey={(item) => item.node.key}
+          emptyMessage="暂无本地文章"
+          listRef={scrollRef}
+          onScrollTop={saveScrollTop}
+          renderItem={(item) => (
+            <TreeRow
+              node={item.node}
+              depth={item.depth}
+              expanded={expanded}
+              activeSlug={activeSlug}
+              onToggle={toggle}
+              onNavigate={handleNavigate}
+              onPrefetch={prefetchPost}
+              onPinnedChange={bumpPin}
+            />
+          )}
+        />
       )}
     </div>
   );

@@ -11,6 +11,14 @@ export interface VirtualFlatListProps<T> {
   className?: string;
   overscan?: number;
   emptyMessage?: string;
+  listRef?: React.Ref<HTMLDivElement | null>;
+  onScrollTop?: (top: number) => void;
+}
+
+function assignRef<T>(ref: React.Ref<T> | undefined, value: T) {
+  if (!ref) return;
+  if (typeof ref === "function") ref(value);
+  else (ref as React.MutableRefObject<T>).current = value;
 }
 
 /** 固定行高虚拟列表（文章树等）；独立叶子，避免经 shared 拉 framer-motion */
@@ -22,8 +30,14 @@ export function VirtualFlatList<T>({
   className,
   overscan = 8,
   emptyMessage = "暂无数据",
+  listRef,
+  onScrollTop,
 }: VirtualFlatListProps<T>) {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const setContainer = (el: HTMLDivElement | null) => {
+    containerRef.current = el;
+    assignRef(listRef, el);
+  };
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(320);
 
@@ -40,6 +54,7 @@ export function VirtualFlatList<T>({
   if (items.length === 0) {
     return (
       <div
+        ref={setContainer}
         className={cn(
           "flex flex-1 items-center justify-center p-4 text-sm text-[var(--om-text-3)]",
           className,
@@ -59,9 +74,13 @@ export function VirtualFlatList<T>({
 
   return (
     <div
-      ref={containerRef}
+      ref={setContainer}
       className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", className)}
-      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      onScroll={(e) => {
+        const top = e.currentTarget.scrollTop;
+        setScrollTop(top);
+        onScrollTop?.(top);
+      }}
     >
       <div className="relative w-full" style={{ height: totalHeight }}>
         {items.slice(startIndex, endIndex).map((item, i) => {

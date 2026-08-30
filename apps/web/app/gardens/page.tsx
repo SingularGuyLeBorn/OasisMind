@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
-import { ConfirmDialog, EmptyState, LoadingState } from "@/components/shared";
+import { ConfirmDialog, EmptyState, LoadingState, QueryErrorState } from "@/components/shared";
 import { ContinueReadingCard } from "@/components/post/ContinueReading";
 import { HomeAmbientBackground } from "@/components/home/HomeAmbientBackground";
 import { CurlyMark } from "@/components/home/accentMark";
@@ -21,9 +21,12 @@ const easeOut = [0.22, 1, 0.36, 1] as const;
 
 export default function GardensPage() {
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.garden.list.useQuery(
+  const { data, isLoading, isError, refetch } = trpc.garden.list.useQuery(
     { page: 1, pageSize: 100 },
-    { refetchInterval: CONTENT_LIST_REFETCH_MS },
+    {
+      refetchInterval: (q) =>
+        q.state.status === "error" ? false : CONTENT_LIST_REFETCH_MS,
+    },
   );
   useEffect(() => {
     return subscribeUiState((msg) => {
@@ -213,6 +216,16 @@ export default function GardensPage() {
 
         {isLoading ? (
           <LoadingState />
+        ) : isError ? (
+          <div data-testid="gardens-query-error">
+            <QueryErrorState
+              title="知识库暂时连不上"
+              description="文章还在本地库里，不是被删了。确认 API 服务已启动后点重试。"
+              onRetry={() => {
+                refetch().catch(catchUnlessCancelled("app/gardens/page.tsx retry"));
+              }}
+            />
+          </div>
         ) : !items.length ? (
           <div data-testid="gardens-empty">
             <EmptyState title="还没有知识库" description="点击「新建知识库」创建第一座花园" />

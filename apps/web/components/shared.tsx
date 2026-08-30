@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Inbox,
   Plus,
+  RotateCcw,
   AlertTriangle,
   CheckCircle2,
   Globe,
@@ -222,6 +223,7 @@ interface EmptyStateProps {
   description?: string;
   icon?: React.ReactNode;
   actionLabel?: string;
+  actionIcon?: React.ReactNode;
   onAction?: () => void;
 }
 
@@ -230,6 +232,7 @@ export function EmptyState({
   description = "目前没有任何记录，请创建新数据开始。",
   icon,
   actionLabel,
+  actionIcon,
   onAction,
 }: EmptyStateProps) {
   return (
@@ -260,12 +263,34 @@ export function EmptyState({
             onClick={onAction}
             className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] px-5 text-white shadow-lg shadow-[rgba(0,135,235,0.22)] transition hover:opacity-95 hover:shadow-xl"
           >
-            <Plus className="w-4 h-4" />
+            {actionIcon ?? <Plus className="w-4 h-4" />}
             {actionLabel}
           </Button>
         )}
       </div>
     </motion.div>
+  );
+}
+
+/** tRPC / 后端不可达：禁止画成「还没有数据」，否则用户以为库被清空 */
+export function QueryErrorState({
+  title = "暂时连不上后端",
+  description = "数据还在本地库里，不是被删了。确认 API 服务已启动后点重试。",
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <EmptyState
+      title={title}
+      description={description}
+      icon={<AlertTriangle className="h-7 w-7" />}
+      actionIcon={<RotateCcw className="h-4 w-4" />}
+      actionLabel="重试"
+      onAction={onRetry}
+    />
   );
 }
 

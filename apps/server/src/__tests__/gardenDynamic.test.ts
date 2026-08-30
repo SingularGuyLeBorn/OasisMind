@@ -53,6 +53,11 @@ describe("动态 Garden + 首页", () => {
     const got = await caller.garden.getById({ id: gardenId });
     expect(got.title).toBe("动态测试库");
     expect(got.homeContent).toContain("首页正文");
+
+    const listed = await caller.garden.list({ page: 1, pageSize: 50 });
+    const row = listed.items.find((g) => g.id === gardenId);
+    expect(row).toBeTruthy();
+    expect(row?.homeContent).toBe("");
   });
 
   it("_garden.md 不会被 sync 成 Post", async () => {

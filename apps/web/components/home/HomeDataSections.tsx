@@ -1,7 +1,8 @@
 "use client";
 
 import type { Garden, Post } from "@oasismind/shared";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
+import { QueryErrorState } from "@/components/shared";
 import { StatsStrip } from "@/components/home/StatsStrip";
 import {
   ArticleUpdateCalendar,
@@ -48,6 +49,25 @@ export function HomeDataSections() {
 
   if (postsQuery.isLoading && gardensQuery.isLoading && activityQuery.isLoading) {
     return <HomeDataFallback />;
+  }
+
+  if (
+    (postsQuery.isError && !postsQuery.data) ||
+    (gardensQuery.isError && !gardensQuery.data)
+  ) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <QueryErrorState
+          title="首页内容暂时连不上"
+          description="知识库还在本地，不是被清空了。确认 API 服务已启动后点重试。"
+          onRetry={() => {
+            postsQuery.refetch().catch(catchUnlessCancelled("HomeDataSections posts"));
+            gardensQuery.refetch().catch(catchUnlessCancelled("HomeDataSections gardens"));
+            activityQuery.refetch().catch(catchUnlessCancelled("HomeDataSections activity"));
+          }}
+        />
+      </div>
+    );
   }
 
   const recentPosts = postsQuery.data ?? { items: [] as Post[], total: 0 };

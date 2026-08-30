@@ -80,6 +80,18 @@ export class GardenService extends BaseService<
     };
   }
 
+  /** 列表不带首页 Markdown（classic-papers 等库首页可达几十 KB）；详情走 getById */
+  protected override getListSelect(): any {
+    return {
+      id: true,
+      title: true,
+      description: true,
+      deletedAt: true,
+      createdAt: true,
+      updatedAt: true,
+    };
+  }
+
   protected buildListWhere(input: ListGardensInput): any {
     const where: any = { deletedAt: null };
     if (input.keyword) {

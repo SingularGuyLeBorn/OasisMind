@@ -10,14 +10,14 @@ import { useSearchParams } from "next/navigation";
 import { Calendar, Eye, Search, X, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
-import { trpc } from "@/lib/trpc";
+import { catchUnlessCancelled, trpc } from "@/lib/trpc";
 import { blogDetailHref } from "@/lib/postHref";
 import { formatGardenId } from "@/lib/gardenDisplay";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Pagination, EmptyState, LoadingState } from "@/components/shared";
+import { Pagination, EmptyState, LoadingState, QueryErrorState } from "@/components/shared";
 
 function BlogPageContent() {
   const searchParams = useSearchParams();
@@ -38,7 +38,7 @@ function BlogPageContent() {
   }, [keyword]);
 
   const { data: gardens } = trpc.garden.list.useQuery({ page: 1, pageSize: 100 });
-  const { data, isLoading, isFetching } = trpc.blog.list.useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = trpc.blog.list.useQuery({
     page,
     pageSize: 10,
     keyword: debouncedKeyword || undefined,
@@ -62,7 +62,7 @@ function BlogPageContent() {
         </div>
         <h1 className="om-display-serif text-3xl text-[var(--om-text-1)]">博客</h1>
         <p className="mt-1 text-sm text-[var(--om-text-3)]">
-          共 {data?.total ?? 0} 篇
+          共 {isError ? "—" : (data?.total ?? 0)} 篇
           {gardenFromUrl ? ` · ${gardenTitle(gardenFromUrl)}` : ""}
           {isFetching && !isLoading ? " · 刷新中…" : ""}
         </p>
@@ -128,6 +128,16 @@ function BlogPageContent() {
 
       {isLoading ? (
         <LoadingState />
+      ) : isError ? (
+        <div data-testid="blog-query-error">
+          <QueryErrorState
+            title="博客暂时连不上"
+            description="文章还在本地库里，不是被删了。确认 API 服务已启动后点重试。"
+            onRetry={() => {
+              refetch().catch(catchUnlessCancelled("app/blog/page.tsx retry"));
+            }}
+          />
+        </div>
       ) : data?.items.length ? (
         <ul className="space-y-3">
           {data.items.map((post) => (

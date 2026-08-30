@@ -6,6 +6,7 @@ import { createTRPCReact, httpLink, httpBatchLink, splitLink } from "@trpc/react
 import superjson from "superjson";
 import type { AppRouter } from "@oasismind/server/router";
 import { authHeaders } from "@/lib/auth";
+import { fetchWithTimeout } from "@/lib/trpcFetch";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -44,6 +45,9 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
             // 长会话：列表缓存多留一会，二次进页少打网；MessageStore 另有 LRU
             gcTime: 15 * 60 * 1000,
             refetchOnWindowFocus: false,
+            // 后端挂掉时默认 retry 3 × TCP 空等会让切页假死几十秒
+            retry: 1,
+            retryDelay: 400,
           },
         },
       })
@@ -61,6 +65,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
             url: `${getBaseUrl()}/api/trpc`,
             transformer: superjson,
             headers: () => authHeaders(),
+            fetch: fetchWithTimeout,
           }),
           false: httpLink({
             url: `${getBaseUrl()}/api/trpc`,

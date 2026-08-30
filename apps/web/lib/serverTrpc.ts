@@ -2,6 +2,8 @@
  * RSC / SSR 侧 tRPC 查询（走 Next rewrite 或 SERVER_INTERNAL_URL）
  */
 
+import { fetchWithTimeout } from "./trpcFetch";
+
 function getServerBaseUrl(): string {
   return (
     process.env.SERVER_INTERNAL_URL ??
@@ -34,7 +36,7 @@ async function trpcFetch<T>(
       ? { next: { revalidate: opts.revalidate } }
       : { cache: "no-store" };
 
-  const res = await fetch(url, init);
+  const res = await fetchWithTimeout(url, init);
   if (!res.ok) {
     throw new Error(`tRPC ${procedure} HTTP ${res.status}`);
   }
