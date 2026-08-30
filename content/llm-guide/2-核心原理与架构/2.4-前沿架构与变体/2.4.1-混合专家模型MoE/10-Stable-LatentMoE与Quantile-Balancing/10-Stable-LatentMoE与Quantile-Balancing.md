@@ -1,13 +1,15 @@
 ---
 title: "10 · Stable LatentMoE 与 Quantile Balancing：瘦专家空间上的超稀疏路由"
 date: 2026-08-30
-as_of: 2026-08-30
+as_of: 2026-08-31
 tags: [LatentMoE, Quantile-Balancing, SiTU-GLU, MoE, Kimi-K3]
 ---
 
 # Stable LatentMoE：专家不必吃满宽，负载也不靠 $\gamma$ 去拧
 
 Top-$k$ 变大、专家池变大，本意是让专家更专。常规 MoE 里每个被选中的专家仍吃完整的 $d$ 维 token，于是 **All-to-All 通信和专家权重流量跟 $k$ 一起涨**。NVIDIA 等的 LatentMoE（[arXiv:2601.18089](https://arxiv.org/abs/2601.18089)）把路由计算搬进 $\ell<d$ 的潜空间：通信和专家参数按 $d/\ell$ 变便宜，省下来的预算用来加专家数、加 $k$。Kimi K3 报告 §2.3 把这套接到 **896 路由专家、每 token Top-16、稀疏度 56**，并补了三块稳定性——升维前 RMSNorm、专家内 [SiTU-GLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md)、以及替换 $\gamma\mathrm{sign}$ 的 **Quantile Balancing**。这才叫 **Stable LatentMoE**。LatentMoE 不是 K3 发明的；K3 发明的是「这一规模上还能训」的三件套。
+
+本篇是机制主线的第四篇，不是系统优化专文。卡怎么切、token 怎么 dispatch、Grouped GEMM 的 Tile 怎么填，正本在 [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)。这里只改专家看到的宽度，以及 bias 怎么用分位数拧负载。
 
 **$\ell$ 是 FFN 路由专家的宽度，不是 MLA 里压缩 KV 的 $c^{KV}$。** 两个潜空间：一个在注意力缓存，一个在专家 MLP。混名就是把 MoE 通信账和 KV 字节账并成一笔。本篇只写宽度轴上的专家层；KDA 递推、Gated MLA 的低秩 KV 各回各的专文，这里不重推。
 
@@ -239,7 +241,7 @@ $$
 | **QB** | 用分位数一次性对准目标 $q$ | 不改 $p_i$；不把 bias 写进梯度；推理冻 $b$ |
 | **MoonEP**（K3 §5.2.1） | EP 上每张卡算同样多 token（冗余专家迁移） | 不是又一种 $p_i$ 公式 |
 
-MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token，使计算形状静态、通信缓冲固定为 $S\times K$。它解决的是 **卡间 token 数**；QB 解决的是 **专家间被选次数**。路由已经均衡时，专家若仍按「主 rank 持有」放置，卡间仍可能不均，需要冗余专家把过热专家的计算迁到空闲卡。两层不要并成「K3 的负载均衡就是 QB」。系统侧图解见 [07 混合并行](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/07-MoE混合并行部署与通信优化图解/07-MoE混合并行部署与通信优化图解.md)；本篇不重推 $E/R$ 冗余上界（报告附录 E）。
+MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token，使计算形状静态、通信缓冲固定为 $S\times K$。它解决的是 **卡间 token 数**；QB 解决的是 **专家间被选次数**。路由已经均衡时，专家若仍按「主 rank 持有」放置，卡间仍可能不均，需要冗余专家把过热专家的计算迁到空闲卡。两层不要并成「K3 的负载均衡就是 QB」。系统侧图解见 [08 系统优化](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)；本篇不重推 $E/R$ 冗余上界（报告附录 E）。
 
 预训练配方 §3.3 把 QB 和 Per-Head Muon、K2 的 weight-clipping 写在同一段：负载均衡走 QB，不是训练后再贴一个平衡器。学习率是 cosine（1% 线性 warmup），weight decay $0.1$。这些是训练侧配套，不改变式 (3)–(9) 的前向图。
 
@@ -258,7 +260,7 @@ MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token，使计算形状静
 
 下一篇若写量化或 EP 核，从「冻住的 $b$ + 按 $\ell$ 计的 dispatch」接着，不要从满宽专家的通信模型重开。
 
-## 本篇来源
+## 参考文献
 
 1. Moonshot AI. *Kimi K3 Technical Report*. §2.3、式 (11)–(14)、Fig. 2 / Fig. 5、Table 1、附录 C–D。[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)（HTML：[2607.24653](https://arxiv.org/html/2607.24653)）
 2. Elango et al. *LatentMoE*. [arXiv:2601.18089](https://arxiv.org/abs/2601.18089)（$\ell$ 控制通信，$d/\ell$ 用来加 $N$ 和 $k$；本篇不把硬件模型全文重推）

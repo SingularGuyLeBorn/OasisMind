@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：JustRL 2512.16649。PRO / CPO / CAI / ReMax 已入库。
-- 正在写：JustRL 专文（4.4.6/02）。
+- 正在读：JustRL 2512.16649；SPIN 2401.01335；Nash-MD 2312.00886。
+- 正在写：JustRL（4.4.6/02）、SPIN（4.4.2/05）、Nash-MD（4.4.4/06）。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。
-- 上次刷新记忆的时间：2026-08-31 入库 PRO/CPO/CAI 并接地图。
+- 上次刷新记忆的时间：2026-08-31 派 JustRL/SPIN/Nash-MD。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 2.4.1/08 收成路标；10 LatentMoE/QB 留机制主线，不并进 6.1.8 | 落点表：机制=2.4.1/10，系统=6.1.8/08 | `2.4.1/08`；`2.4.1/10`；`6.1.8` |
 | 2026-08-31 | 入库 PRO：4145 汉字；两图；式 (4) listwise PL；HH-RLHF_raw Reward 55.35 vs DPO 52.75；不是 RRHF hinge | https://arxiv.org/abs/2306.17492 ；https://arxiv.org/html/2306.17492 | `4.4.4/04-PRO-偏好排序优化/` |
 | 2026-08-31 | 入库 CPO：4046 汉字；两图；均匀先验式 (3)+NLL；ALMA-13B-R en→xx KIWI-XXL 82.66→85.74；不是 SimPO | https://arxiv.org/abs/2401.08417 ；https://arxiv.org/html/2401.08417 | `4.4.4/05-CPO-对比偏好优化/` |
 | 2026-08-31 | 入库 CAI：4241 汉字；两图；182831 红队；原则 16+16；不是 Lee 2309.00267 | https://arxiv.org/abs/2212.08073 ；https://arxiv.org/html/2212.08073 | `4.4.3/01-Constitutional-AI-宪法对齐/` |
