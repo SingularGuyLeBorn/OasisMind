@@ -11,15 +11,16 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：WARP 2406.16768。
-- 正在写：WARP（4.4.4/10）。
+- 正在读：4.4.4 同层已满，准备拆小节。
+- 正在写：无新 11。下一刀是把 4.4.4 地图收成可导航小节，不要发 11。
 - 卡住：无。不要抢 `4.6.2`（opd-survey）、`fig-moe-router-top2`。不要发 4.4.1/11。4.4.4 到 10 后先拆小节，不要发 11。
-- 上次刷新记忆的时间：2026-08-31 入库 Dr.GRPO；等 WARP。
+- 上次刷新记忆的时间：2026-08-31 入库 WARP。
 
 ## 本会话已完成（追加，不要删旧行）
 
 | 时间 | 动作 | 读过的源（URL） | 落到哪篇笔记 |
 |------|--------|-----------------|--------------|
+| 2026-08-31 | 入库 WARP：4298 汉字；两图；三次平均（EMA 当 KL 锚、任务向量 SLERP、LITI 回插）；Table 1 Mixtral 第三轮 0.18 后停滞；GSM8K $55.6\to 66.8$、MATH $25.6\to 31.0$；$\mu=0.01$ 与 §4.1 的 $\mu=0.1$ 已点明；不是 WARM、不是 J-BOND | https://arxiv.org/abs/2406.16768 ；https://arxiv.org/html/2406.16768 | 4.4.4/10-WARP-权重平均策略/ |
 | 2026-08-31 | 入库 Dr.GRPO：4365 汉字；两图；R1-Zero-like=基座+RL；两项都删 $1/\|o_i\|$ 与组 $\mathrm{std}$；Oat-Zero-7B AIME 2024 43.3%、平均 51.4；约 27 小时、8×A100；不是 JustRL 九项平均 | https://arxiv.org/abs/2503.20783 ；https://arxiv.org/html/2503.20783 | 4.4.6/03-DrGRPO-去标准差/ |
 | 2026-08-31 | 入库 Self-Rewarding：4081 汉字；两图；Llama 2 70B 自己打 0–5 分；Iterative DPO 三轮；AlpacaEval 2.0 9.94%→15.38%→20.44%；Table 4 5-best 在 $M_3$ 回落到 43.2%；不是 OAIF、SPIN、Lee RLAIF | https://arxiv.org/abs/2401.10020 ；https://arxiv.org/html/2401.10020 | 4.4.2/07-Self-Rewarding-自奖励/ |
 | 2026-08-31 | 入库 BOND：4007 汉字；两图；蒸馏 $\pi_{\mathrm{BoN}}$ 推理采 1；J-BOND 式 (17) $-\log 16$/$0$；Figure 7 Gemma 7B $\eta=0.02$ vs REINFORCE；不是 Gao、不是 RAFT；论文号 2407.14622 不是 2407.14608 | https://arxiv.org/abs/2407.14622 ；https://arxiv.org/html/2407.14622 | 4.4.4/09-BOND-Best-of-N蒸馏/ |

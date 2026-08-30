@@ -190,7 +190,7 @@ GRPO 把组内奖励做 $z$-score，目标里还留着 PPO 式 clip。BoN 不过
 
 BoN 的函数形状在 $\mathrm{KL}\approx 6$ 猜、在 $\approx 10$ 验过；RL 形式在原点的无穷斜率是已知瑕疵。代理分仍没有同样能外推的闭式。策略大小只比了两档。这些都是论文自己划的边。
 
-邻居链：策略梯度与 clip 在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；组内 $z$-score 在 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)；离线分类在 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md)。蒸馏 $\pi_{\mathrm{BoN}}$、推理采 1，在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md)。本夹上一篇是 [06-Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)，求的是偏好博弈的 Nash，不是对着标量 RM 做 BoN。
+邻居链：策略梯度与 clip 在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；组内 $z$-score 在 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md)；离线分类在 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md)。蒸馏 $\pi_{\mathrm{BoN}}$、推理采 1，在 [09-BOND](../09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md)。三次权重平均、推理也采 1，在 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md)；不是解码 $\arg\max$，也不是 WARM。本夹上一篇是 [06-Nash-MD](../06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)，求的是偏好博弈的 Nash，不是对着标量 RM 做 BoN。
 
 ## 参考文献
 

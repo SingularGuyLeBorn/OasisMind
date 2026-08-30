@@ -195,7 +195,7 @@ $$
 \tag{13}
 $$
 
-和 WARP（Ramé 等，[arXiv:2406.16768](https://arxiv.org/abs/2406.16768)）是同一类操作：锚点在权重空间里跟着走，方差更小。WARP 还有球面插值和往初始化回插两步，J-BOND 只用了 EMA 这一截。
+和 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md)（Ramé 等，[arXiv:2406.16768](https://arxiv.org/abs/2406.16768)）是同一类操作：锚点在权重空间里跟着走，方差更小。WARP 还有球面插值和往初始化回插两步，J-BOND 只用了 EMA 这一截。不要把 10 的三次平均缩成这边的 $\eta=0.02$。
 
 Figure 5 在 Gemma 7B、$\gamma=0$ 上把 $\eta=0.02$ 的 EMA 和每 50 步硬更新对照。左图平均奖励几乎重合，$\eta=0.02$ 并没有让奖励涨得更慢。中图 KL：EMA 明显更低。右图是奖励对 KL。论文把这读成稳定性：同样的奖励剖面，KL 更省。不是读成「EMA 能抬终局奖励」。
 
@@ -232,7 +232,7 @@ RAFT 更新，但只走前向 KL：冠军进交叉熵，其余丢掉。BOND 的 
 
 Amini 等的 variational BoN（[arXiv:2407.06057](https://arxiv.org/abs/2407.06057)）也做分布匹配，但只用反向 KL，没有这篇的 Jeffreys，也没有移动锚点。BOND 文把它写成并发、最近的对照。Gui 等的 BonBon 是「最好的做 SFT、最好最差做 DPO」，也不是 Jeffreys。
 
-[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 和 Calandriello 等的在线偏好，是相关工作里的对照文献：当场采样、当场标偏好，再套 DPO/IPO/SLiC。BOND 不走成对偏好损失。WARP 是权重平均策略，J-BOND 的 EMA 锚点和它同族，不是同一篇算法。WARM 平均的是奖励模型，更远。
+[OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 和 Calandriello 等的在线偏好，是相关工作里的对照文献：当场采样、当场标偏好，再套 DPO/IPO/SLiC。BOND 不走成对偏好损失。[10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md) 是权重平均策略，J-BOND 的 EMA 锚点和它同族，不是同一篇算法。WARM 平均的是奖励模型，更远。
 
 | | 解码 BoN | RAFT | J-BOND |
 |--|----------|------|--------|
@@ -263,7 +263,7 @@ Gemma 对话实验的 prompt 集、RM 大小、训练步数，HTML §6 没有给
 | 先钉死 $\beta_{\mathrm{RL}}$ 再和 J-BOND 比终局奖励 | J-BOND 不承诺单一正则 | Figure 7 比的是整条奖励–KL 前沿 |
 | EMA 当双向反传 | 式 (13) 是权重复制 | 图 2 虚线从更新指向锚点，单向 |
 
-邻居链：解码 BoN 与 $R(d)$ 在 [07-Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；留一法 baseline 在 [06-RLOO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/06-RLOO-留一法基线/06-RLOO-留一法基线.md)；在线偏好框架在 [06-OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md)。
+邻居链：解码 BoN 与 $R(d)$ 在 [07-Best-of-N](../07-Best-of-N-奖励模型过优化/07-Best-of-N-奖励模型过优化.md)；只训 top-1 在 [07-RAFT](../../4.4.1-基于奖励模型的RL-RLHF-PPO/07-RAFT-奖励排序微调/07-RAFT-奖励排序微调.md)；留一法 baseline 在 [06-RLOO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/06-RLOO-留一法基线/06-RLOO-留一法基线.md)；在线偏好框架在 [06-OAIF](../../4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md)；三次权重平均在 [10-WARP](../10-WARP-权重平均策略/10-WARP-权重平均策略.md)，不是把 J-BOND 的 EMA 当成主算法。
 
 ## 参考文献
 
