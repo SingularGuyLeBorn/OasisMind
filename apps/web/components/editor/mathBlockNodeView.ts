@@ -42,6 +42,33 @@ export function isScrollbarClick(
 /** 被表格切断的 `$` 会把后文整页塞进一个公式；超长 tex 不再整页刷红 */
 const MATH_TEX_SOFT_MAX = 8000;
 
+/** 源码框默认至少约 4 行，避免长公式进入编辑后只露一行、左边被裁掉 */
+export const MATH_SOURCE_MIN_HEIGHT_PX = 88;
+
+export function clampAutosizeHeight(scrollHeight: number, minPx: number, maxPx: number): number {
+  const needed = Math.max(minPx, scrollHeight);
+  if (Number.isFinite(maxPx) && maxPx > 0) return Math.min(needed, maxPx);
+  return needed;
+}
+
+function autosizeTextarea(textarea: HTMLTextAreaElement, extraPx = 0) {
+  textarea.style.height = "auto";
+  const cs = window.getComputedStyle(textarea);
+  const maxH = Number.parseFloat(cs.maxHeight);
+  const cssMin = Number.parseFloat(cs.minHeight);
+  const minH = Math.max(MATH_SOURCE_MIN_HEIGHT_PX, Number.isFinite(cssMin) ? cssMin : 0);
+  textarea.style.height = `${clampAutosizeHeight(textarea.scrollHeight + extraPx, minH, maxH)}px`;
+}
+
+/** hidden→显示当帧 scrollHeight 仍可能是一行，下一帧再量一次 */
+function scheduleAutosize(fn: () => void) {
+  fn();
+  requestAnimationFrame(() => {
+    fn();
+    requestAnimationFrame(fn);
+  });
+}
+
 function renderKatex(target: HTMLElement, tex: string, displayMode: boolean) {
   target.replaceChildren();
   if (tex.length > MATH_TEX_SOFT_MAX) {
@@ -106,7 +133,7 @@ function createMathBlockView(
 
   const textarea = document.createElement("textarea");
   textarea.className = "om-math-block-input";
-  textarea.rows = 1;
+  textarea.rows = 4;
   textarea.wrap = "soft";
   textarea.placeholder = "正在根据上下文补全…";
   textarea.spellcheck = false;
@@ -159,14 +186,13 @@ function createMathBlockView(
 
   const autosize = () => {
     // ghost 为 absolute，不撑开 sourceRow；按 max(输入, 幽灵) 抬高，避免叠到下方 live 预览
-    // 超过 CSS max-height 后保持封顶高度，由 textarea overflow-y 纵向滚动（禁止横向）
     textarea.style.height = "auto";
-    const textH = Math.max(28, textarea.scrollHeight);
-    const needed = Math.max(textH, measureGhostHeight());
     const cs = window.getComputedStyle(textarea);
     const maxH = Number.parseFloat(cs.maxHeight);
-    const capped = Number.isFinite(maxH) && maxH > 0 ? Math.min(needed, maxH) : needed;
-    textarea.style.height = `${capped}px`;
+    const cssMin = Number.parseFloat(cs.minHeight);
+    const minH = Math.max(MATH_SOURCE_MIN_HEIGHT_PX, Number.isFinite(cssMin) ? cssMin : 0);
+    const needed = Math.max(textarea.scrollHeight, measureGhostHeight());
+    textarea.style.height = `${clampAutosizeHeight(needed, minH, maxH)}px`;
   };
 
   const renderIdle = () => {
@@ -379,13 +405,17 @@ function createMathBlockView(
     edit.hidden = false;
     dom.classList.add("is-editing");
     renderLive();
-    autosize();
     syncGhost();
+    scheduleAutosize(() => {
+      autosize();
+      syncGhost();
+    });
     requestAnimationFrame(() => {
       textarea.focus();
       const len = textarea.value.length;
       textarea.setSelectionRange(len, len);
       syncGhost();
+      autosize();
     });
 
     // 空公式块：立刻按上下文自动补全（Copilot）
@@ -586,16 +616,17 @@ function createMathInlineView(
   edit.className = "om-math-inline-edit";
   edit.hidden = true;
 
-  const input = document.createElement("input");
-  input.type = "text";
-  input.className = "om-math-inline-input";
-  input.placeholder = "LaTeX";
-  input.spellcheck = false;
+  const textarea = document.createElement("textarea");
+  textarea.className = "om-math-inline-input";
+  textarea.rows = 4;
+  textarea.wrap = "soft";
+  textarea.placeholder = "LaTeX";
+  textarea.spellcheck = false;
 
   const live = document.createElement("span");
   live.className = "om-math-inline-live";
 
-  edit.append(input, live);
+  edit.append(textarea, live);
   dom.append(idle, edit);
 
   let editing = false;
@@ -615,8 +646,10 @@ function createMathInlineView(
     renderKatex(idle, tex, false);
   };
 
+  const autosize = () => autosizeTextarea(textarea);
+
   const renderLive = () => {
-    const tex = input.value.trim();
+    const tex = textarea.value.trim();
     if (!tex) {
       live.classList.add("is-empty");
       live.textContent = "";
@@ -627,7 +660,7 @@ function createMathInlineView(
   };
 
   const commit = () => {
-    const next = input.value;
+    const next = textarea.value;
     if (next === value) return;
     value = next;
     dom.dataset.value = value;
@@ -649,27 +682,29 @@ function createMathInlineView(
   };
 
   const refreshCompletion = () => {
-    const cur = input.selectionStart ?? input.value.length;
-    if (cur < input.value.length) {
+    const cur = textarea.selectionStart ?? textarea.value.length;
+    if (cur < textarea.value.length) {
       completion = null;
       return;
     }
-    completion = matchLatexCompletion(input.value.slice(0, cur));
+    completion = matchLatexCompletion(textarea.value.slice(0, cur));
   };
 
   const showEdit = () => {
     if (editing) return;
     editing = true;
-    input.value = value;
+    textarea.value = value;
     idle.hidden = true;
     edit.hidden = false;
     dom.classList.add("is-editing");
     renderLive();
+    scheduleAutosize(autosize);
     requestAnimationFrame(() => {
-      input.focus();
-      const len = input.value.length;
-      input.setSelectionRange(len, len);
+      textarea.focus();
+      const len = textarea.value.length;
+      textarea.setSelectionRange(len, len);
       refreshCompletion();
+      autosize();
     });
   };
 
@@ -694,63 +729,74 @@ function createMathInlineView(
     showEdit();
   });
 
-  input.addEventListener("input", () => {
+  textarea.addEventListener("input", () => {
+    autosize();
     renderLive();
     refreshCompletion();
   });
 
-  input.addEventListener("blur", () => {
+  textarea.addEventListener("blur", () => {
     blurTimer = setTimeout(() => {
       if (!dom.contains(document.activeElement)) showIdle();
     }, 120);
   });
 
   edit.addEventListener("mousedown", (e) => {
-    if (e.target === input) return;
-    if (isScrollbarClick(e, live) || isScrollbarClick(e, dom)) return;
+    if (e.target === textarea) return;
+    if (isScrollbarClick(e, live) || isScrollbarClick(e, textarea) || isScrollbarClick(e, dom)) {
+      return;
+    }
     e.preventDefault();
-    input.focus();
+    textarea.focus();
   });
 
-  input.addEventListener("keydown", (e) => {
+  textarea.addEventListener("keydown", (e) => {
     e.stopPropagation();
     if (e.key === "Tab" && completion) {
       e.preventDefault();
-      const cur = input.selectionStart ?? input.value.length;
-      const { next, cursor } = applyLatexCompletion(input.value, cur, completion);
-      input.value = next;
-      input.setSelectionRange(cursor, cursor);
+      const cur = textarea.selectionStart ?? textarea.value.length;
+      const { next, cursor } = applyLatexCompletion(textarea.value, cur, completion);
+      textarea.value = next;
+      textarea.setSelectionRange(cursor, cursor);
       completion = null;
+      autosize();
       renderLive();
       refreshCompletion();
       return;
     }
     if (e.key === "Backspace" || e.key === "Delete") {
-      const empty = !input.value;
+      const empty = !textarea.value;
       const atStart =
-        (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) === 0;
-      if (empty || (e.key === "Backspace" && atStart && !input.value)) {
+        (textarea.selectionStart ?? 0) === 0 && (textarea.selectionEnd ?? 0) === 0;
+      if (empty || (e.key === "Backspace" && atStart && !textarea.value)) {
         e.preventDefault();
         deleteSelf();
         return;
       }
     }
-    if (e.key === "Escape" || e.key === "Enter") {
+    if (e.key === "Escape") {
       e.preventDefault();
-      if (e.key === "Escape" && completion) {
+      if (completion) {
         completion = null;
         return;
       }
-      if (e.key === "Escape" && !input.value.trim()) {
+      if (!textarea.value.trim()) {
         deleteSelf();
         return;
       }
       showIdle();
       view.focus();
+      return;
+    }
+    // Enter 结束编辑；Shift+Enter 换行（长公式拆行）
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      showIdle();
+      view.focus();
     }
   });
 
-  input.addEventListener("mousedown", (e) => e.stopPropagation());
+  textarea.addEventListener("mousedown", (e) => e.stopPropagation());
 
   renderIdle();
 
@@ -771,7 +817,11 @@ function createMathInlineView(
     deselectNode() {},
     stopEvent(event) {
       if (event instanceof MouseEvent) {
-        if (isScrollbarClick(event, dom) || isScrollbarClick(event, idle)) {
+        if (
+          isScrollbarClick(event, dom) ||
+          isScrollbarClick(event, idle) ||
+          isScrollbarClick(event, textarea)
+        ) {
           return true;
         }
       }

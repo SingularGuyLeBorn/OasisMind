@@ -618,7 +618,7 @@ html.dark .om-card,
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: hidden; /* 只横滑；y 若跟 auto 会因 1px 溢出画出假竖条 */
 }
 .katex-display > .katex {
   display: block;

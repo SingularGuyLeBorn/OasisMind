@@ -57,4 +57,17 @@ describe("isScrollbarClick", () => {
     });
     expect(isScrollbarClick({ clientX: 200, clientY: 175 }, el)).toBe(false);
   });
+
+  it("右侧竖条点击算滚动条", () => {
+    const el = fakeEl({
+      scrollWidth: 400,
+      clientWidth: 400,
+      scrollHeight: 200,
+      clientHeight: 80,
+      width: 412,
+      height: 80,
+    });
+    expect(isScrollbarClick({ clientX: 447, clientY: 140 }, el)).toBe(true);
+    expect(isScrollbarClick({ clientX: 200, clientY: 140 }, el)).toBe(false);
+  });
 });

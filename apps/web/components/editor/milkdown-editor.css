@@ -468,6 +468,7 @@
         background: transparent !important;
         background-color: transparent !important;
         overflow-x: auto;
+        overflow-y: hidden; /* overflow-x:auto 会把 y 的 visible 算成 auto，假竖条 */
         min-height: 1.5rem;
         box-shadow: none;
       }
@@ -484,6 +485,8 @@
       }
       .milkdown-editor .milkdown .om-math-block-idle {
         padding: 0.35rem 0.25rem;
+        overflow-x: auto;
+        overflow-y: hidden;
       }
       .milkdown-editor .milkdown .om-math-block[data-align="center"] .om-math-block-idle,
       .milkdown-editor .milkdown .om-math-block[data-align="center"] .om-math-block-live {
@@ -559,8 +562,8 @@
         inset: 0;
         padding: 0.2rem 0.15rem;
         white-space: pre-wrap;
-        overflow-wrap: break-word;
-        word-break: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
         overflow: hidden;
         pointer-events: none;
         color: transparent;
@@ -578,7 +581,7 @@
         display: block;
         width: 100%;
         max-width: 100%;
-        min-height: 1.75rem;
+        min-height: 5.5rem; /* 约 4 行；长公式换行可见，禁止单行横裁 */
         max-height: min(40vh, 20rem);
         resize: none;
         border: 0;
@@ -591,10 +594,11 @@
         outline: none;
         caret-color: var(--om-brand-deep, var(--om-brand));
         white-space: pre-wrap;
-        overflow-wrap: break-word;
-        word-break: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
         overflow-x: hidden;
         overflow-y: auto;
+        field-sizing: content;
         box-sizing: border-box;
       }
       .milkdown-editor .milkdown .om-math-block-hint {
@@ -610,6 +614,11 @@
         border-top: 1px dashed color-mix(in oklab, var(--om-divider) 80%, transparent);
         text-align: center;
         overflow-x: auto;
+        overflow-y: hidden; /* 只允许宽公式横滑；竖向撑开，不要假滚动条 */
+      }
+      .milkdown-editor .milkdown .om-math-block-idle .katex-display,
+      .milkdown-editor .milkdown .om-math-block-live .katex-display {
+        overflow: visible; /* 横向滚动交给外层，避免双 overflow 叠出竖条 */
       }
       .milkdown-editor .milkdown .om-math-block-live.is-empty {
         color: var(--om-text-3);
@@ -644,7 +653,7 @@
         flex-direction: column;
         align-items: stretch;
         gap: 0.25rem;
-        width: min(100%, 40rem); /* 加宽；最大宽度封顶 */
+        width: 100%;
         max-width: 100%;
         padding: 0.2rem 0;
         box-sizing: border-box;
@@ -654,7 +663,9 @@
         width: 100%;
         min-width: 0;
         max-width: 100%;
-        max-height: min(32vh, 12rem);
+        min-height: 5.5rem;
+        max-height: min(40vh, 20rem);
+        resize: none;
         border: 0;
         border-bottom: 1px solid color-mix(in oklab, var(--om-divider) 90%, transparent);
         border-radius: 0;
@@ -662,13 +673,15 @@
         color: var(--om-text-1);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.875rem;
+        line-height: 1.55;
         padding: 0.15rem 0.1rem;
         outline: none;
         white-space: pre-wrap;
-        overflow-wrap: break-word;
-        word-break: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
         overflow-x: hidden;
         overflow-y: auto;
+        field-sizing: content;
         box-sizing: border-box;
       }
       .milkdown-editor .milkdown .om-math-inline-live {
@@ -677,7 +690,8 @@
         padding: 0.35rem 0.15rem 0.1rem;
         border-top: 1px dashed color-mix(in oklab, var(--om-divider) 80%, transparent);
         color: var(--om-text-2);
-        overflow-x: auto; /* 渲染后的 KaTeX 仍可横向看全式 */
+        overflow-x: auto;
+        overflow-y: hidden; /* 与块级预览相同：禁止假竖条 */
       }
       .milkdown-editor .milkdown .om-math-inline-live.is-empty {
         display: none;
