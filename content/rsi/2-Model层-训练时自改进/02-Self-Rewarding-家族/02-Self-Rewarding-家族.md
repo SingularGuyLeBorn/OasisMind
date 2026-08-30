@@ -114,6 +114,19 @@ Yuan et al. (Meta / NYU), arXiv:2401.10020。问题：RLHF / DPO 被人类偏好
 
 Self-instruction 一步：新 prompt 由**固定**的 Llama 2-Chat 70B 按 Self-Instruct 8-shot 生成（主实验不让 $M_t$ 自己写 prompt；附录 A.5 才试）。$M_t$ 对每个 prompt 采 $N=4$ 个回答（$T=0.7$），再用同一 $M_t$ 打分 3 次取平均（0–5）。最高分 vs 最低分成对，同分丢弃。AIFT($M_1$) = **3,964** 对，AIFT($M_2$) = **6,942** 对。DPO $\beta=0.1$。
 
+![同一 $M_t$ 采样并打分，新 prompt 来自冻结 Llama 2-Chat；$M_{t+1}$ 虚线回到下一轮](./images/fig-self-rewarding-judge.png)
+
+> 图 2：实线是 AIFT 一轮。虚线「prompts」标出墙外的指令工厂；底栏「next round」是把 $M_{t+1}$ 当成下一轮 $M_t$，不是改 Judge prompt。
+
+**图 2 解析**
+
+- **$M_t$ same weights**：生成头和法官头共享 $\theta$。这是和 Tufa 冻结裁判的差。
+- **sample $N$ answers**：主实验 $N=4$。
+- **LLM-as-Judge**：同一 $M_t$，3 次打分取平均。
+- **keep best vs worst**：同分丢掉；中间候选不用。
+- **iterative DPO**：得到 $M_{t+1}$。
+- **frozen Llama 2-Chat**：主实验新 prompt 不由 $M_t$ 写。把 AIFT 听成「自己决定练什么题」，漏了这堵墙。
+
 **AlpacaEval 2.0**（Table 1，对 GPT-4 Turbo 胜率）：$M_1$ **9.94%** → $M_2$ **15.38%** → $M_3$ **20.44%**。$M_3$ 超过表中 Claude 2（17.19%）、Gemini Pro（16.85%）、GPT-4 0613（15.76%）。作者强调对照模型多用专有对齐数据或更强模型蒸馏，本方法从 OA 种子自举。
 
 **MT-Bench**（Table 2）：SFT 6.85，$M_1$ 6.78，$M_2$ 7.01，$M_3$ **7.25**。Math/Code/Reasoning 从 3.93 只到 4.17，人文类从 8.60 到 9.10——种子偏非推理。
