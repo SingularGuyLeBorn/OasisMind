@@ -77,7 +77,7 @@ Table 2 是 SFT 之后。Dream Instruct 用 180 万对、3 个 epoch。MMLU 67.0
 | 起点 | — | 现成 AR | 现成 AR |
 | 部署 KV | 真 | 块间真 | 默认无，后做近似 |
 | 任意 infill | 弱 | 弱于全双向 | 强 |
-| 代表 | Qwen / LLaMA | 2.0、v2 | Dream、DiffuLLaMA |
+| 代表 | Qwen / LLaMA | 2.0、v2、[SDAR](./sdar.md) | Dream、DiffuLLaMA |
 
 ## 6. 失效
 
@@ -87,7 +87,7 @@ Table 2 是 SFT 之后。Dream Instruct 用 180 万对、3 个 epoch。MMLU 67.0
 
 把 Dream Table 1 的 LLaDA 列和 Nie et al. Table 1 的 $*$ 列横减：shot、解码、是否同一 harness 都可能不同。HumanEval 32.9 对 35.4 就是这种假差值。
 
-把 v2 的 1B 写成「Dream 白训了 580B」：两条路线交付物不同。580B 买的是全双向 7B；1B 买的是块扩散加缓存。填空产品走前者，续写吞吐走后者。
+把 v2 的 1B 写成「Dream 白训了 580B」：两条路线交付物不同。580B 买的是全双向 7B；1B 买的是块扩散加缓存。填空产品走前者，续写吞吐走后者。SDAR 另付约 50B，转换不做移位、不做掩码退火，见[SDAR](./sdar.md)。DiffuLLaMA 预算仍按 Gong 原文不到 200B，不要和 SDAR 文里的 65B 减出倍数。
 
 读完应能把四条工作放进同一句话：DiffuLLaMA 证明 7B 改得动；Dream 把移位和噪声日程做细；2.0 把块当课程接到 100B；v2 把 token 预算收到约 1B。没有一条改了 $Q_t$ 的吸收态定义。
 
@@ -130,3 +130,4 @@ v2 把预算收到约 1B，靠的是块扩散加互补掩码，不是靠发现�
 - [Dream / Mercury / Seed](../03-models/dream-mercury-seed.md)
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [代码向扩散](./code-dllm.md)
+- [SDAR](./sdar.md)

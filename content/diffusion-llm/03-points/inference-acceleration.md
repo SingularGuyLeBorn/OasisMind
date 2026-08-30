@@ -91,7 +91,7 @@ $$
 p_\theta(x^i,x^j\mid x_t)\approx p_\theta(x^i\mid x_t)\,p_\theta(x^j\mid x_t)
 $$
 
-当前 $x_t$ 里两者都是 `[MASK]` 时，右边没有「$i$ 取成左括号之后 $j$ 必须是右括号」这种联合。阈值、EB-Sampler 的联合熵上界、允许下一步 remask，都是在修这个近似。阈值 0.9 在 Fast-dLLM 的 GSM8K 上几乎不掉点，并不保证代码里括号匹配也一样稳；HumanEval 那格分数没掉，不能外推到更长的仓库级补全。
+当前 $x_t$ 里两者都是 `[MASK]` 时，右边没有「$i$ 取成左括号之后 $j$ 必须是右括号」这种联合。阈值、EB-Sampler 的联合熵上界、允许下一步 remask，都是在修这个近似。阈值 0.9 在 Fast-dLLM 的 GSM8K 上几乎不掉点，并不保证代码里括号匹配也一样稳；HumanEval 那格分数没掉，不能外推到更长的仓库级补全。要联合而不是只看边际，走[APD](./apd.md)：小 AR 管联合，有损；SSD 自验证，无损，3.46× 在 MBPP 列。
 
 步数减半是更粗的加速：把 $T$ 除以 2，等价于每步多揭一倍。dKV-Cache 的消融拿它当弱基线，分数掉得比延迟缓存狠。原因是它不看置信度，平的位置也被提交。加速论文里如果只报速度、不报同表准确率，那张表不能用。
 
@@ -121,4 +121,4 @@ batch size 大于 1 时，有的实现加速比会收窄，dKV-Cache 附录写�
 - Ma, X. et al. dKV-Cache: The Cache for Diffusion Language Models. arXiv:2505.15781, NeurIPS 2025. https://arxiv.org/abs/2505.15781
 - Nie, S. et al. LLaDA 2.0. arXiv:2512.15745. CAP 与 535 TPS 见该报告系统实验。
 - 吞吐对照见本花园 Dream / Mercury / Seed 专文与采样专文，不在本篇重复抄商业表。
-- 精确 KV 与少步蒸馏不在本篇展开：[Eso-LM](./eso-lm.md)、[少步蒸馏](./few-step-distill.md)。已提交 token 再掩会打碎 DualCache 前提：[提交之后还能不能改](./remask-revise.md)。调度器、TPS 分母、dInfer Table 1：[Serving](./serving.md)。
+- 精确 KV 与少步蒸馏不在本篇展开：[Eso-LM](./eso-lm.md)、[少步蒸馏](./few-step-distill.md)。已提交 token 再掩会打碎 DualCache 前提：[提交之后还能不能改](./remask-revise.md)。调度器、TPS 分母、dInfer Table 1：[Serving](./serving.md)。倒置投机与无损自验证：[APD](./apd.md)。

@@ -151,3 +151,4 @@ D2F 的多块并行在 Table 1 里 TPF 只有 2.88，AUP 213.8，低于 dParalle
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
 - [失效模式](./failure-modes.md)
+- [APD](./apd.md)

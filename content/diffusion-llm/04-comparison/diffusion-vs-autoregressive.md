@@ -83,7 +83,7 @@ Dream Table 1 另有一套 $*$：Dream 7B 对 Qwen2.5 7B，MMLU 69.5 对 71.9，
 | 单步目标 | next-token | 抽 $t$ 与 mask，加权交叉熵 |
 | 序列内并行 | causal mask 内并行 | 双向 + 随机 mask |
 | 公开 8B 数据量 | LLaMA3：15T | LLaDA：2.3T |
-| 改编预算 | — | DiffuLLaMA &lt;200B；Dream ~580B；v2 ~1B |
+| 改编预算 | — | DiffuLLaMA &lt;200B；Dream ~580B；v2 ~1B；[SDAR](../03-points/sdar.md) ~50B |
 
 表面上扩散每个 batch 只有被掩位置进损失，$1/t$ 把轻度掩码加权回来。被掩位置看见双向上下文，梯度里的搭配更密。谁更样例高效没有与数据无关的定理。改编路线把这个问题部分取消：知识已经在 AR 权重里，扩散阶段改生成过程。见[从自回归改编](../03-points/ar-to-diffusion.md)。
 
@@ -202,5 +202,7 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [谁决定揭开哪一格](../03-points/plan-denoise.md)
 - [提交之后还能不能改](../03-points/remask-revise.md)
 - [Eso-LM](../03-points/eso-lm.md)
+- [SDAR](../03-points/sdar.md)
+- [APD](../03-points/apd.md)
 - [少步蒸馏](../03-points/few-step-distill.md)
 - [Score entropy](../03-points/score-entropy.md)

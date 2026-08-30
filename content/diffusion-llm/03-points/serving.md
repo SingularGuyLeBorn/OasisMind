@@ -129,7 +129,7 @@ vicinity 刷新假定邻域语义局部。超长提示、块边界上的括号�
 
 生态观察会过期。dInfer 论文写明支持 LLaDA-MoE、LLaDA-1.5、LLaDA-Instruct。LLaDA 2.0 在自己的报告里用这套框架对 SGLang。vLLM 默认路径 2026 年 8 月仍是因果。两年后若 vLLM 原生接块扩散，本篇的「调度器接不上」要改成「默认路径接上了」，ELBO 和因子分解不必改。对照专文把这一维标成工程现状，不是机制必然。本篇提供 2026-08 能核对的一帧。
 
-Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖的错误中间量会提前落盘。hierarchical 用空间切开缓解局部依赖，不检查对错。验证器（APD、SSD）仍要另计延迟。serving 把启发式跑快，没有把联合分布写回来。带 KV 时 credit 平均分掉到 51.56，说明「历史分」和过期缓存叠在一起可以比 DualCache 的 52.15 还差。消融表存在的理由就是挡住「四块全开一定最好」。
+Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖的错误中间量会提前落盘。hierarchical 用空间切开缓解局部依赖，不检查对错。验证器（[APD](./apd.md)、SSD）仍要另计延迟。serving 把启发式跑快，没有把联合分布写回来。SDAR 在 H200、LMDeploy、8B、大 batch 上的 6600 TGS 是另一张卡，见[SDAR](./sdar.md)，不能减本篇 680。带 KV 时 credit 平均分掉到 51.56，说明「历史分」和过期缓存叠在一起可以比 DualCache 的 52.15 还差。消融表存在的理由就是挡住「四块全开一定最好」。
 
 ## 7. 读完应留下的判断
 
@@ -157,3 +157,5 @@ Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖�
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [失效模式](./failure-modes.md)
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
+- [SDAR](./sdar.md)
+- [APD](./apd.md)
