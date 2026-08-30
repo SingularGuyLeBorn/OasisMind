@@ -149,7 +149,7 @@ Figure 5 的 $T=10$ 例子：维护 top 解种群，$\varepsilon$-greedy 在高�
 | AlphaEvolve | 交卷程序 | 冻 | $I$ 在墙外 | MAP-Elites |
 | SEAL | 权重 + 写 SE 的策略 | 动 | 内环是 TTT | 无 |
 
-ADAS 的元 Agent 永远是人写的那只，DGM 消融 w/o self-improve 复制它。STOP 没有第二只元 Agent：改进器就是元优化器。DGM 后来加上档案和「还能不能编辑」的门，是为了不让血统在一次坏改写上死掉——STOP 的 Limitation 自己也写了：每步只维护一个 $I$，可能变差后继续变差。
+ADAS 的元 Agent 永远是人写的那只，DGM 消融 w/o self-improve 复制它；本地机制见 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。STOP 没有第二只元 Agent：改进器就是元优化器。DGM 后来加上档案和「还能不能编辑」的门，是为了不让血统在一次坏改写上死掉——STOP 的 Limitation 自己也写了：每步只维护一个 $I$，可能变差后继续变差。
 
 ## 7. 何时失效
 
@@ -163,7 +163,7 @@ ADAS 的元 Agent 永远是人写的那只，DGM 消融 w/o self-improve 复制�
 
 实现细节（附录 K）：效用字符串不必等于真源码，日志和随机种子会打码；超时在真代码里用线程，给模型看的是「超时返回 0」。沙箱实验之外，效用描述里带 `exec`，外面包一层最小求值，挡住部分 multiprocessing。每道题的参数调到「种子偶尔能涨、又不会一步满分」。LPN 之外的题同样：可接近、非平凡。
 
-**读**：式 (3)；$L$ 冻着；Table 1 五道迁移；弱模型 12% / 掉分；绕沙箱 0.42%；shape 黑客。  
+**读**：式 (3)；$L$ 冻着；Table 1 五道迁移；弱模型 12% / 掉分；绕沙箱 0.42%；shape 黑客。权重信号回 [04 模仿学习与 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)：本篇不改 $\theta$，连 RLVR 都不是。  
 **不读**：把标题 RSI-code-generation 听成智能爆炸、把 3-SAT 75.1% 听成已经会改训练脚本、把 GPT-4 提出 ToT 风格 beam 听成模型「发明了 2023 年的论文」。
 
 同层后一篇：[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案。运行时自指：[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 改 $\pi$ 与 $I$，同样冻 $\theta$，没有本篇这套元效用预优化。两者都是「代码改代码」，差别是 STOP 把改进器当成可求值的优化题，Gödel Agent 把 Agent 循环本身当成可改写的对象。验证门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层：[03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。数字只认 arXiv:2310.02304 的 Table 1 与绕沙箱表，不认二手摘要里的「智能飞跃」。LinkedIn 转写不当事实源，只学讲法、不搬正文。
@@ -173,5 +173,5 @@ ADAS 的元 Agent 永远是人写的那只，DGM 消融 w/o self-improve 复制�
 1. Zelikman, E., Lorch, E., Mackey, L., Kalai, A. T. (2024). [Self-Taught Optimizer (STOP): Recursively Self-Improving Code Generation](https://arxiv.org/abs/2310.02304). arXiv:2310.02304. COLM 2024. Table 1、绕沙箱 Table 2、gpt-4-0314 以该文为准。
 2. Yao et al. (2023). Tree of Thoughts. STOP 观察到的 beam 脚手架与之同形，但 gpt-4-0314 截止早于该文。
 3. Schmidhuber, J. (2003). Gödel Machines. 形式证明版 RSI；STOP 明确不走证明。
-4. Hu, S., Lu, C., Clune, J. (2024). [ADAS](https://arxiv.org/abs/2408.08435). 固定元 Agent。
+4. Hu, S., Lu, C., Clune, J. (2024). [ADAS](https://arxiv.org/abs/2408.08435). 固定元 Agent。本地专文 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。
 5. 本花园：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)；[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)；[04 SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。

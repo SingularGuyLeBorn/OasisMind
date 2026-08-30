@@ -104,7 +104,7 @@ SWE-bench 那次 DGM 用 Claude 3.5 Sonnet (New) 跑。把最好 Agent 的脚手
 
 $S$ 取「当前 Agent 的 Python + 工具」。内环 $I_{\mathrm{inner}}\subseteq S$，自改之后 $I'_{\mathrm{inner}}\subseteq S'$，并且 $S''=I'(S')$ 有定义——子代继续当父母。按导读式 (2)，**Harness 层弱 RSI 候选成立**。
 
-仍缺三件，所以本花园不允许直接写成「真 RSI / 智能爆炸」。外环 $I_{\mathrm{outer}}$（抽父母的公式、80 轮、级联题集、基准本身）仍由人固定；$\theta$ 冻结；评价标准是 SWE-bench / Polyglot，不是系统自己改考纲。混元综述把改改进器放在 L3、改评价标准放在 L4，DGM 最多蹭到 L3 的脚手架切片。STOP（Zelikman 等，COLM 2024）更早把「改进器程序」当成递归对象：种子改进器 $I_0$ 用 LM 去改进任意解，再把 $I$ 自己交给同一套手续。它证明过 GPT-4 上下游任务随迭代变好，更弱的模型上递归结构会把分数拉下去——脚手架递归本身不够，基座得够用。Gödel Agent（Yin 等，arXiv:2410.04444）用运行时改自己的逻辑，没有 DGM 这套开放档案。ADAS 的元 Agent 固定，是 DGM 消融 w/o self-improve 的原型。四篇都是 Harness 自指，深浅不同，本篇以 DGM 为可核对的数字样板。
+仍缺三件，所以本花园不允许直接写成「真 RSI / 智能爆炸」。外环 $I_{\mathrm{outer}}$（抽父母的公式、80 轮、级联题集、基准本身）仍由人固定；$\theta$ 冻结；评价标准是 SWE-bench / Polyglot，不是系统自己改考纲。混元综述把改改进器放在 L3、改评价标准放在 L4，DGM 最多蹭到 L3 的脚手架切片。STOP（Zelikman 等，COLM 2024）更早把「改进器程序」当成递归对象：种子改进器 $I_0$ 用 LM 去改进任意解，再把 $I$ 自己交给同一套手续。它证明过 GPT-4 上下游任务随迭代变好，更弱的模型上递归结构会把分数拉下去——脚手架递归本身不够，基座得够用。Gödel Agent（Yin 等，arXiv:2410.04444）用运行时改自己的逻辑，没有 DGM 这套开放档案。ADAS 的元 Agent 固定，是 DGM 消融 w/o self-improve 的原型；机制与 Table 1 见 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。四篇都是 Harness 自指，深浅不同，本篇以 DGM 为可核对的数字样板。
 
 和 AlphaEvolve 再对一次。AlphaEvolve 也可以反哺 Gemini 训练时间 1%，那是 Artifact 回流到基础设施，$I$ 仍在墙外。DGM 的回流是：更好的编辑工具让下一轮自改更可能成功。回流落在脚手架上，这才是弱递归。不要把两篇的「20→50」和「23% kernel」加成同一件事。实验室若把 DGM 写成「已经智能爆炸」，对照清单只有一句：外环和 $\theta$ 有没有进 $S'$。没有，就停在弱候选。
 
@@ -131,7 +131,7 @@ $S$ 取「当前 Agent 的 Python + 工具」。内环 $I_{\mathrm{inner}}\subse
 **读**：内环改的是自己的 Python，$h$ 是哪份基准，外环公式有没有进 $S'$，沙箱有没有把分数通道也关住。  
 **不读**：融资通稿当机制、把 20%→50% 听成权重递归、把附录幻觉实验听成已经对齐。
 
-STOP / Gödel Agent / ADAS 的对照见 [05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md) 与 [06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)；验证门谁说了算看 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层回 [03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。
+STOP / Gödel Agent / ADAS 的对照见 [05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 与 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)；验证门谁说了算看 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层回 [03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。模仿信号还是可验证奖励，回 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)——DGM 冻 $\theta$，连 RLVR 都不是。
 
 ## 参考文献
 
