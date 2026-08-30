@@ -1,12 +1,14 @@
 ---
 title: "05 · MLA 矩阵吸收与非吸收双版本"
+date: 2026-08-30
+as_of: 2026-08-30
 ---
 
 # MLA 矩阵吸收与非吸收双版本
 
 > 前置：[04 MLA — 低秩潜变量与解耦式注意力](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md)
 
-[04 篇](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md) 定义了 MLA 的 **数学对象**（$c^{KV}, c^Q, k^R$ 与解耦 RoPE）。本篇回答 **工程落地** 问题：同一套 checkpoint，Prefill 与 Decode 为何走两条计算图？非吸收（MHA mode）与吸收（MQA mode）如何 **代数等价**？DeepSeek-V3 参数下何时切换更省 FLOPs / 激活？
+[04 篇](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md) 已经定义了 MLA 的 **数学对象**（$c^{KV}, c^Q, k^R$ 与解耦 RoPE）。本篇**不重推 latent**，只回答 **工程落地**：同一套 checkpoint，Prefill 与 Decode 为何走两条计算图？非吸收（MHA mode）与吸收（MQA mode）如何 **代数等价**？DeepSeek-V3 参数下何时切换更省 FLOPs / 激活？
 
 配图：InfraTech 计算流原图 + DeepSeek-V2 论文 Figure 2/3 + 本地复现 FLOPs diff 曲线。
 
@@ -14,17 +16,17 @@ title: "05 · MLA 矩阵吸收与非吸收双版本"
 
 ## 1. 两种模式：工程地图
 
-![DeepSeek-V3 整体架构](./images/fig-deepseek-v3-architecture.jpg)
+![DeepSeek-V3 层：MLA 替换 MHA，与 MoE 正交](./images/fig-mla-v3-block-placement.png)
 
-> 图 1：InfraTech 架构总览。MLA 位于每个 Transformer 层的注意力子模块。
+> 图 1：浅色自绘。MLA 在每层替换标准 MHA；MoE FFN 与注意力压缩正交。同目录保留 InfraTech 原长图 `fig-deepseek-v3-architecture.jpg`（体积过大，正文改引本图）。
 
 **图 1 解析**
 
-InfraTech 绘制的 **DeepSeek-V3 整体架构**（高清长图），适合第一次建立「MLA 在整机里占哪一块」的全景。
+浅色自绘的 **DeepSeek-V3 单层位置图**，只回答「MLA 在整机里占哪一块」。
 
-- **自下而上**：Token Embedding → 重复 $L$ 次的 **Transformer Block** → 输出头（LM Head）。
-- **每个 Block 内**（需放大看图）：通常是 **RMSNorm → MLA 注意力 → 残差 → RMSNorm → MoE FFN → 残差**；MLA 替换标准 MHA 位置。
-- **MoE 部分**：DeepSeek-V3 用稀疏专家 FFN（路由专家 + 共享专家），与 MLA 正交——MLA 省 KV cache，MoE 省 FFN 激活 FLOPs。
+- **自下而上**：Token Embedding → 重复 $L$ 次的 **Transformer Block** → LM Head。
+- **每个 Block 内**：RMSNorm → **MLA** → 残差 → RMSNorm → **MoE FFN** → 残差。MLA 替换标准 MHA 位置。
+- **MoE 部分**：稀疏专家 FFN 与 MLA 正交——MLA 省 KV cache，MoE 省 FFN 激活 FLOPs。
 - **与 Figure 2（论文 MLA 细图）关系**：本图看「层间堆叠」；05 篇图 2 看「单层 MLA 内部数据流」。
 
 建议：先扫全图找 **Attention / MLA** 标注，再对照 [04 篇](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md) 公式。
@@ -46,13 +48,13 @@ InfraTech 绘制的 **DeepSeek-V3 整体架构**（高清长图），适合第�
 | **非吸收** | MHA mode | Prefill | cache 后 **显式** $W^{UK}, W^{UV}$ |
 | **吸收** | MQA mode | Decode | $W^{UK}$ → Q 侧；$W^{UV}$ → $W^O$ |
 
-![非吸收流图（MHA mode）](./images/fig-mla-non-absorb-compute-flow.jpg)
+![非吸收流图（MHA mode / Prefill）](./images/fig-mla-nonabsorb-prefill.png)
 
-> 图 3：InfraTech `MLA计算流图(MHA模式).jpg`。Attention 在 **完整 head 维** $d_{qk}$ 上算；KV cache 后接上采样。
+> 图 3：浅色自绘。Attention 在 **完整 head 维** $d_{qk}$ 上算；KV cache 后接上采样。同目录保留 InfraTech 原图 `fig-mla-non-absorb-compute-flow.jpg`。
 
 **图 3 解析**
 
-InfraTech **MLA 非吸收（MHA mode）** 详细计算流图（Prefill 常用）。图很大，建议按 **数据从左到右、cache 在中间** 读。
+浅色自绘的 **MLA 非吸收（MHA mode）** 计算流（Prefill 常用）。按 **数据从左到右、cache 在中间** 读。
 
 **图例**：直角框 = 算子；圆角框 = 张量 $T$；旁标 $W$ = 矩阵乘 $T_{\mathrm{out}}=T_{\mathrm{in}}W$。
 
@@ -67,13 +69,13 @@ InfraTech **MLA 非吸收（MHA mode）** 详细计算流图（Prefill 常用）
 
 **与图 4 的关键差异**：图 3 在 Attention **之前** 对 cache 全长做 KV 上采样；Prefill 时 $y=0$ 或 $y$ 较小，一次性大 GEMM 划算；Decode 若误用此路径，会对每个历史 token 重复上采样 → 极慢。
 
-![吸收流图（MQA mode）](./images/fig-mla-absorb-compute-flow.jpg)
+![吸收流图（MQA mode / Decode）](./images/fig-mla-absorb-decode.png)
 
-> 图 4：InfraTech `MLA计算流图(MQA模式).jpg`。Attention 在 **latent 维** $d_c$ 上算（head 维 broadcast）；上采样拆到 Q/O 两侧。
+> 图 4：浅色自绘。Attention 在 **latent 维** $d_c$ 上算（head 维 broadcast）；上采样拆到 Q/O 两侧。同目录保留 InfraTech 原图 `fig-mla-absorb-compute-flow.jpg`。
 
 **图 4 解析**
 
-InfraTech **MLA 吸收（MQA mode）** 计算流图（Decode 常用）。整体拓扑与图 3 相似，但 **KV 上采样方框被拆开、挪位**。
+浅色自绘的 **MLA 吸收（MQA mode）** 计算流（Decode 常用）。整体拓扑与图 3 相似，但 **KV 上采样方框被拆开、挪位**。
 
 **读图要点**：
 

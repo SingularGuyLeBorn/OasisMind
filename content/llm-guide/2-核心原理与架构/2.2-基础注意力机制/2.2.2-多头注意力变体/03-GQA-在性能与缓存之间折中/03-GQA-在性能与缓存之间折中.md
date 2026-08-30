@@ -1,12 +1,14 @@
 ---
 title: "03 · GQA：在性能与 KV Cache 之间折中"
+date: 2026-08-30
+as_of: 2026-08-30
 ---
 
 # GQA：在性能与 KV Cache 之间折中
 
 Grouped-Query Attention（GQA）由 Ainslie et al.（2023）系统化：将 $H$ 个 Query 头划分为 $G$ **组**，每组内共享一组 Key/Value，在 MHA 的表达力与 MQA 的缓存效率之间取折中。LLaMA-2/3（$H=32, G=8$）、Mistral、DeepSeek 等广泛采用 GQA。
 
-本文沿用 [MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 与 [MQA](../02-MQA-共享KeyValue的极致压缩/02-MQA-共享KeyValue的极致压缩.md) 记号，给出矩阵式、坐标展开、双求和、**组映射 $g(h)$**、完整数值走查、RoPE、uptrain 与 KV Cache 字节估算。
+本文沿用 [MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 与 [MQA](../02-MQA-共享KeyValue的极致压缩/02-MQA-共享KeyValue的极致压缩.md) 记号，给出矩阵式、坐标展开、双求和、**组映射 $g(h)$**、完整数值走查、RoPE、uptrain 与 KV Cache 字节估算。**公式本体在本篇**；[2.3.1/03-GQA与MQA](../../../2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/03-GQA与MQA/01-GQA与MQA源码实现分析.md) 只做 PyTorch/CUDA **源码对照**，不在那边再推一遍 $G=H$ / $G=1$。
 
 ---
 
@@ -270,7 +272,7 @@ for h in range(H):
 
 ## 14. 小结
 
-GQA 用式 (1) 的 $g(h)$ 把 MHA/MQA 连成一条轴：$G=H$  MHA，$G=1$  MQA。式 (7)–(10) 与 MHA 同构；§6 展示**同组共享 KV、异 $\alpha$**；§9 给出 cache 定量。更激进压缩见 [MLA](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md)。
+GQA 用式 (1) 的 $g(h)$ 把 MHA/MQA 连成一条轴：$G=H$  MHA，$G=1$  MQA。式 (7)–(10) 与 MHA 同构；§6 展示**同组共享 KV、异 $\alpha$**；§9 给出 cache 定量。更激进压缩见 [MLA](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md)。实现细节回 [2.3.1 源码对照](../../../2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/03-GQA与MQA/01-GQA与MQA源码实现分析.md)。
 
 ---
 

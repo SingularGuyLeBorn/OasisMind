@@ -1,5 +1,7 @@
 ---
 title: "02 · MQA：共享 Key/Value 的极致压缩"
+date: 2026-08-30
+as_of: 2026-08-30
 ---
 
 # MQA：共享 Key/Value 的极致压缩
