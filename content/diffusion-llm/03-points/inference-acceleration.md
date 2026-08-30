@@ -132,5 +132,7 @@ batch size 大于 1 时，有的实现加速比会收窄，dKV-Cache 附录写�
 - [SlowFast](./slowfast.md)
 - [ParallelBench](./parallelbench.md)
 - [APD](./apd.md)
+- [离散 copula](./discrete-copula.md)
+- [量化 dLLM](./quantization.md)
 - [Serving](./serving.md)
 - [失效模式](./failure-modes.md)

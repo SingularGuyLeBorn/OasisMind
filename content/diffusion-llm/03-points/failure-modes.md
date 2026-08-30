@@ -119,6 +119,8 @@ BBH 49.7 对 62.1 值得当冷水。BBH 含不少要从左到右逐步消元的�
 - [ParallelBench](./parallelbench.md)
 - [推理加速](./inference-acceleration.md)
 - [APD](./apd.md)
+- [离散 copula](./discrete-copula.md)
+- [量化 dLLM](./quantization.md)
 - [D2F](./d2f.md)
 - [ReFusion](./refusion.md)
 - [SlowFast](./slowfast.md)

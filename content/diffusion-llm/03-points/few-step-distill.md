@@ -12,7 +12,7 @@ excerpt: "离散扩散少步会把联合拆成边际。SDTT 让学生去匹配�
 ---
 # 少步蒸馏：把老师的 1024 步塞进学生的几十步
 
-采样专文把步数 $T$ 写成旋钮： $T\ll L$ 时每步必须同时提交许多位置，因子分解误差上来，质量掉。缓存类方法（DualCache、Eso-LM）让**每一步更便宜**，不减少「需要多少步才把联合凑回来」。蒸馏走另一头：让学生一步的边际去模仿老师很多小步之后的效果，于是总步数可以掉一个数量级。Deschenaux 与 Gulcehre 的 SDTT（Self-Distillation Through Time，ICLR 2025，arXiv:2410.21035）是掩码扩散上写得最清楚的一条。离散流那一侧的 FS-DFM 是近亲，对照物换成同一条 DFM 老师。
+采样专文把步数 $T$ 写成旋钮： $T\ll L$ 时每步必须同时提交许多位置，因子分解误差上来，质量掉。缓存类方法（DualCache、Eso-LM）让**每一步更便宜**，不减少「需要多少步才把联合凑回来」。蒸馏走另一头：让学生一步的边际去模仿老师很多小步之后的效果，于是总步数可以掉一个数量级。Deschenaux 与 Gulcehre 的 SDTT（Self-Distillation Through Time，ICLR 2025，arXiv:2410.21035）是掩码扩散上写得最清楚的一条。离散流那一侧的 FS-DFM 是近亲，对照物换成同一条 DFM 老师。DCD 也打少步，但不蒸、不改 $\theta$，32× 少的是 SEDD 自己的函数调用，尺度停在 GPT-2；和本篇相对带 KV 的 GPT-2 的 4× / 8× 延迟不是同一分母。
 
 会知识蒸馏的人，缺的往往不是 KL，而是这句话：老师和学生共享骨架，差在**采样时走多少反向步**。不是把 8B 教给 1B，是把 1024 步教给 32 步。连续扩散里有 DDIM、渐进蒸馏；离散这边没有「半个 token」可滑，不能靠确定映射一步跳很远。SDTT 因此蒸的是分布，不是一条确定性轨迹。
 
@@ -122,3 +122,4 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 - [失效模式](./failure-modes.md)
 - [LLaDA-MoE](../03-models/llada-moe.md)
 - [APD](./apd.md)
+- [离散 copula](./discrete-copula.md)

@@ -156,6 +156,7 @@ Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖�
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [失效模式](./failure-modes.md)
+- [量化 dLLM](./quantization.md)
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
 - [SDAR](./sdar.md)
 - [APD](./apd.md)

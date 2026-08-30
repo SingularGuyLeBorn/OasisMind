@@ -130,6 +130,7 @@ NELBO +4 PPL 不是「不能用」。作者认为有限时间生成更重要。�
 - [推理加速](./inference-acceleration.md)
 - [ReFusion](./refusion.md)
 - [Serving](./serving.md)
+- [量化 dLLM](./quantization.md)
 - [块扩散](./block-diffusion.md)
 - [采样与调度](../02-mechanism/sampling.md)
 - [谁决定揭开哪一格](./plan-denoise.md)
