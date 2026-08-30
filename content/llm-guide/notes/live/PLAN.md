@@ -149,6 +149,6 @@ category: LLM 指南
 | rsi-origin | done | `content/rsi/0-导读/`；`content/rsi/1-坐标系与术语/01-RSI-术语辨析/` + inbox `rsi-origin.md` | 已入库。Good / 种子 / Gödel；未 Delete；监工改 garden 先读标题 |
 | snapkv-thicken | running | `2.3.2/12-SnapKV-生成前观测窗/` + inbox `snapkv-thicken.md` | 不改 2.3.2 节首页、不改 Quest；汉字≥4000；不是观察头 |
 | quest-thicken | done | `2.3.2/13-Quest-查询感知稀疏/` + inbox `quest-thicken.md` | 已入库。4082 汉字；7.03× 自注意力 / 2.23× 4-bit e2e；不驱逐；新图 algo1 + page collision |
-| gated-07 | running | `2.2.2/07-Gated-Attention相关工作/`（新建同名夹）+ inbox `gated-07.md` | 不改 06、不改 2.2.2 首页、不改 GR/AttnRes |
-| situ-thicken | running | `2.1.1/01-SiTU-GLU/` + inbox `situ-thicken.md` | 不改 2.1.1 首页、不改 03/04；汉字≥4000 |
+| gated-07 | done | `2.2.2/07-Gated-Attention相关工作/` + inbox `gated-07.md` | 已入库。4017 汉字；FoT 在 logits、QT 是 BERT/ViT 量化门；未改 06；监工补 2.2.2 行 |
+| situ-thicken | done | `2.1.1/01-SiTU-GLU/` + inbox `situ-thicken.md` | 已入库。4134 汉字；$\ell=3584$；报告无独立 SiTU 消融；监工补 2.1.1 表注 |
 | mhc-thicken | running | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 不改节根散文件、不改 03 GR、不改 2.1.3 首页；汉字≥4000 |

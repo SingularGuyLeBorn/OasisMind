@@ -28,7 +28,7 @@ category: LLM 指南
 ## 本轮焦点（代理更新这一段）
 
 - 状态：机制主线已入库。本波加厚 SnapKV/Quest/SiTU/mHC，并新建 `2.2.2/07`。
-- 当前波次：**snapkv-thicken / gated-07 / situ-thicken / mhc-thicken**（quest-thicken 已入库）
+- 当前波次：**snapkv-thicken / mhc-thicken**（quest / gated-07 / situ 已入库）
 - 当前正在写的文章路径：见 PLAN 租约
 - 本轮明确不做：在 2.4.1 里加厚 04–09 硬件/系统综述；售卖包装；不抢 Engram 的 `2.4.8`
 
