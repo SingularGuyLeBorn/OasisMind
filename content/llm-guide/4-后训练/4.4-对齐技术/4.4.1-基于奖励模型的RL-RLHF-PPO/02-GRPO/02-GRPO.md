@@ -7,7 +7,7 @@ tags: [GRPO, PPO, RLHF, DeepSeekMath, 组相对策略优化]
 
 # 02 GRPO：组内相对优势
 
-GRPO（Group Relative Policy Optimization）是 PPO 的变体：同一道题采 $G$ 条回答，用组内奖励的均值和标准差当基线，不再训一个和策略差不多大的价值网络。DeepSeekMath 把它写进 [2402.03300](https://arxiv.org/abs/2402.03300)；Instruct 7B 在 GSM8K 上从 82.9% 到 88.2%，MATH 从 46.8% 到 51.7%。本篇钉公式、走数值、对照结果监督和过程监督。邻居：[04-PPO](../04-PPO/04-PPO.md) 讲 Critic 和 GAE；[03-GSPO](../03-GSPO/03-GSPO.md) 把重要性采样从 token 提到序列；变体对照在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)。**不是** DPO（离线偏好对、没有在线 rollout）。**不是** 留一法 RLOO（baseline 不含自己那一条）。
+GRPO（Group Relative Policy Optimization）是 PPO 的变体：同一道题采 $G$ 条回答，用组内奖励的均值和标准差当基线，不再训一个和策略差不多大的价值网络。DeepSeekMath 把它写进 [2402.03300](https://arxiv.org/abs/2402.03300)；Instruct 7B 在 GSM8K 上从 82.9% 到 88.2%，MATH 从 46.8% 到 51.7%。本篇钉公式、走数值、对照结果监督和过程监督。邻居：[04-PPO](../04-PPO/04-PPO.md) 讲 Critic 和 GAE；[03-GSPO](../03-GSPO/03-GSPO.md) 把重要性采样从 token 提到序列；变体对照在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)；两项归一化都删的无偏改法在 [4.4.6/03 Dr.GRPO](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md)。**不是** DPO（离线偏好对、没有在线 rollout）。**不是** 留一法 RLOO（baseline 不含自己那一条）。**不是** Dr.GRPO（那边 $1/|o_i|$ 和组 $\mathrm{std}$ 两项都删，不是只去标准差）。
 
 ## 1. PPO 卡在哪
 
@@ -254,7 +254,7 @@ RL 数据只用 SFT 里 GSM8K、MATH 的 CoT 题，大约 144K 道，故意不�
 
 ## 6. 长度偏差和难度偏差
 
-2025 年初对式 (4) 分母和 $\mathrm{std}$ 的分析指出两个系统性偏差，后面 Dr. GRPO、DAPO 都冲着它们改。本篇只把机制钉清，变体公式以各专文和 [4.4.5](../../4.4.5-GxPO家族/01-GxPO结构扩展/01-GxPO结构扩展.md) 为准。
+2025 年初对式 (4) 分母和 $\mathrm{std}$ 的分析指出两个系统性偏差，后面 Dr. GRPO、DAPO 都冲着它们改。本篇只把机制钉清。Dr. GRPO 正本在 [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md)，两项都删，不要缩成只去标准差。家族对照仍看 [4.4.5](../../4.4.5-GxPO家族/01-GxPO结构扩展/01-GxPO结构扩展.md)。
 
 ### 6.1 响应长度偏差
 
@@ -264,7 +264,7 @@ $\frac{1}{|o_i|}$ 让同样大小的 $\hat{A}_i$ 摊在不同长度上。正优�
 
 ### 6.2 问题难度偏差
 
-$\mathrm{std}(\mathbf{r})$ 在组内几乎全 1 或全 0 时趋近 0，微小差异被放大成极端 $\hat{A}$。简单题和难题的「差一点」统计意义不同，梯度里却被放成同类。DAPO 的动态采样直接丢掉准确率 0% 或 100% 的组；Dr. GRPO 选择去掉 $\mathrm{std}$ 归一化。
+$\mathrm{std}(\mathbf{r})$ 在组内几乎全 1 或全 0 时趋近 0，微小差异被放大成极端 $\hat{A}$。简单题和难题的「差一点」统计意义不同，梯度里却被放成同类。DAPO 的动态采样直接丢掉准确率 0% 或 100% 的组；[Dr. GRPO](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) 两项都删：$1/|o_i|$ 和组 $\mathrm{std}$，不是只去标准差。
 
 ### 6.3 代码里的分母
 
@@ -285,7 +285,7 @@ def masked_mean(tensor, mask, dim):
 | 算法 | 时间 | 相对 GRPO 改什么 | 正本 |
 |------|------|------------------|------|
 | GRPO | 2024.2 | 组内 $z$-score 替代 $V$ | 本篇 |
-| Dr. GRPO | 2025.3 | 去掉长度分母和 $\mathrm{std}$ | 4.4.5 可选对照 |
+| Dr. GRPO | 2025.3 | 去掉长度分母和 $\mathrm{std}$（两项都删） | [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) |
 | DAPO | 2025.3 | Clip-Higher、动态采样、token 级损失、超长惩罚 | 4.4.5；arXiv:2503.14476 |
 | GSPO | 2025.7 | 序列级几何平均重要性比率 | [03-GSPO](../03-GSPO/03-GSPO.md)；2507.18071 |
 | GMPO | 2025 | 几何平均压离群比率 | [01-GMPO](../01-GMPO/01-GMPO.md) |
@@ -314,7 +314,7 @@ RLOO：同样多采样去 Critic，但第 $i$ 条的 baseline 是其余 $K-1$ �
 
 ## 9. 收束
 
-GRPO 把 PPO 的 clip 留下，把 $V_\psi$ 换成同题 $G$ 条的相对分数，KL 从奖励里挪到损失里。DeepSeekMath 用窄题集做出 GSM8K / MATH 的那两跳，并写明 Maj@K 动、Pass@K 不动。长度分母和 $\mathrm{std}$ 是后文变体的入口，不是本算法的彩蛋。下一篇要看序列级 IS 就进 GSPO；要看几何平均进 GMPO；要看家族对照进 4.4.5。
+GRPO 把 PPO 的 clip 留下，把 $V_\psi$ 换成同题 $G$ 条的相对分数，KL 从奖励里挪到损失里。DeepSeekMath 用窄题集做出 GSM8K / MATH 的那两跳，并写明 Maj@K 动、Pass@K 不动。长度分母和 $\mathrm{std}$ 是后文变体的入口，不是本算法的彩蛋。下一篇要看序列级 IS 就进 GSPO；要看几何平均进 GMPO；要看两项都删的无偏改法进 [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md)；要看家族对照进 4.4.5。
 
 ## 参考文献
 

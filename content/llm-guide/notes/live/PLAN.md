@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 回收 WARP（4.4.4/10，2406.16768）与 Dr.GRPO（4.4.6/03，2503.20783）。交卷后链进各自节首页。
+1. **立刻做：** 回收 WARP（4.4.4/10，2406.16768）。交卷后链进 4.4.4 节首页。
 2. **并行：** 4.4.4 到 10 后先拆小节，不要发 11。不要发 4.4.1/11。
 3. **再下一波：** `fig-moe-router-top2` **不要重画**。不要抢 `4.6.2`。wave-2 四张仍 running。
 
@@ -21,8 +21,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：入库 Self-Rewarding（4.4.2/07），链进地图。
-- 现在立刻做：回收 WARP 与 Dr.GRPO。不要 `move_agent_to_root`。不要 push。
+- 上一件：入库 Dr.GRPO（4.4.6/03），链进地图。
+- 现在立刻做：回收 WARP（4.4.4/10）。不要 `move_agent_to_root`。不要 push。
 
 ## 波次队列（未完成的留着）
 
@@ -197,5 +197,5 @@ category: LLM 指南
 | bond-444 | done | `4.4.4-其他对齐技术/09-BOND-Best-of-N蒸馏/` | 已入库。4007 汉字；两图；式 (17) $-\log 16$/$0$；Figure 7 Gemma 7B $\eta=0.02$；不是 Gao、不是 RAFT；论文号 2407.14622 不是 2407.14608 |
 | srlm-442 | done | `4.4.2-无奖励模型的对齐DPO-KTO/07-Self-Rewarding-自奖励/` | 已入库。4081 汉字；两图；AlpacaEval 2.0 $9.94\to 15.38\to 20.44$；Table 4 5-best 在 $M_3$ 回落到 43.2%；不是 OAIF / SPIN / Lee RLAIF |
 | warp-444 | running | `4.4.4-其他对齐技术/10-WARP-权重平均策略/` + inbox `warp-444.md` | 2406.16768；权重平均策略；不是 WARM、不是 J-BOND 的 EMA 锚点主算法；不要改 4.4.4 节首页 |
-| drgrpo-446 | running | `4.4.6-其他策略梯度/03-DrGRPO-去标准差/` + inbox `drgrpo-446.md` | 2503.20783；去掉 $1/|o_i|$ 与组标准差；7B AIME 2024 43.3%；不是 GRPO 原文、不是 JustRL；不要改 4.4.6 节首页；不要发 4.4.1/11 |
+| drgrpo-446 | done | `4.4.6-其他策略梯度/03-DrGRPO-去标准差/` | 已入库。4365 汉字；两图；两项都删；$1/|o_i|$ 与组 $\mathrm{std}$；Oat-Zero-7B AIME 2024 43.3%；不是 GRPO 原文、不是 JustRL |
 | bon-444 | done | `4.4.4-其他对齐技术/07-Best-of-N-奖励模型过优化/` | 已入库。4096 汉字；两图；$\mathrm{KL}_{\mathrm{bon}}=\log n-(n-1)/n$；金标 6B / 策略 1.2B；不是 RAFT |

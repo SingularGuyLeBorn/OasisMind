@@ -291,7 +291,7 @@ Mixed 上 Base 的 AIME24 avg@32 **0.122 → 0.163**；课程学习 GRPO-CL 均�
 
 ## 8. 可选对照：Dr. GRPO 与 CISPO
 
-**Dr. GRPO**（Liu 等，*Understanding R1-Zero-like Training*，[arXiv:2503.20783](https://arxiv.org/abs/2503.20783)）在奖励侧拆 GRPO 目标里的两个归一。**长度偏差**：除以 $|o_i|$ 让正优势短句每个 token 更新更猛、负优势长句罚得更稀。**难度偏差**：除以组内 $\mathrm{std}$ 让几乎全对或全错的题权重反而更大。拆掉这两项、用生成预算常数做 masked mean，得到无偏估计。他们的最小配方：Qwen2.5-Math-7B，MATH Level 3–5，Qwen-Math 模板，**8×A100、约 27 小时**。Table 4 里 Oat-Zero-7B（即这条配方）五科均分 **51.4**（AIME24 43.3，AMC 62.7，MATH500 80.0，Minerva 30.1，OlympiadBench 41.0）；生成预算 3k。这是 Dr. GRPO 文的表，不要和 GMPO Table 1 的 52.7 直接并成「同一实验」。
+Dr. GRPO 正本在 [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md)，本夹只留对照，公式以专文为准。**Dr. GRPO**（Liu 等，*Understanding R1-Zero-like Training*，[arXiv:2503.20783](https://arxiv.org/abs/2503.20783)）在奖励侧拆 GRPO 目标里的两个归一。**长度偏差**：除以 $|o_i|$ 让正优势短句每个 token 更新更猛、负优势长句罚得更稀。**难度偏差**：除以组内 $\mathrm{std}$ 让几乎全对或全错的题权重反而更大。拆掉这两项、用生成预算常数做 masked mean，得到无偏估计。他们的最小配方：Qwen2.5-Math-7B，MATH Level 3–5，Qwen-Math 模板，**8×A100、约 27 小时**。Table 4 里 Oat-Zero-7B（即这条配方）五科均分 **51.4**（AIME24 43.3，AMC 62.7，MATH500 80.0，Minerva 30.1，OlympiadBench 41.0）；生成预算 3k。这是 Dr. GRPO 文的表，不要和 GMPO Table 1 的 52.7 直接并成「同一实验」。
 
 **CISPO** 一手在 MiniMax-M1（[arXiv:2506.13585](https://arxiv.org/abs/2506.13585)）：**Clipped IS-weight Policy Optimization**。他们的设定是每代 rollout 做 16 轮 off-policy 更新；这时 GRPO/DAPO 那种「越出 clip 带就丢掉 token」会把对长 CoT 关键的高比率 token 整段抹掉，熵也稳不住。CISPO 把 clip 加在重要性权重上，并对该权重 **stop-gradient**，梯度仍从 $\log\pi_{\theta}$ 走：
 

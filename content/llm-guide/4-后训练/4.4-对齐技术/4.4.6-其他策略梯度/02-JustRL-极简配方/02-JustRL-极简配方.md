@@ -7,7 +7,7 @@ tags: [JustRL, GRPO, DAPO, RLVR, clip-higher, 1.5B]
 
 # 02 JustRL：极简配方
 
-JustRL 没有提出新的策略梯度。He 等 *JustRL: Scaling a 1.5B LLM with a Simple RL Recipe*（[arXiv:2512.16649](https://arxiv.org/abs/2512.16649)，THU / UIUC / Shanghai AI Lab）把 veRL 默认的 GRPO 配上 DAPO 的轻量规则验证器，单阶段、固定超参，把两个已经蒸馏过的 1.5B 再抬一截。摘要里的 54.9% 和 64.3% 是九项数学基准的平均，不是 AIME 单列。精确到百分位：JustRL-DeepSeek 九项平均 **54.87%**，对照 ProRL-V2 的 **53.08%**；JustRL-Nemotron **64.32%**，对照 QuestA 的 **63.81%**。邻居 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 钉组内 $z$-score；变体地图在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)。本篇钉配方：同一套超参、一条 16k、不算力换调度。不是新算法替代 GRPO。不是「所有规模、所有任务都该拆掉调度」。
+JustRL 没有提出新的策略梯度。He 等 *JustRL: Scaling a 1.5B LLM with a Simple RL Recipe*（[arXiv:2512.16649](https://arxiv.org/abs/2512.16649)，THU / UIUC / Shanghai AI Lab）把 veRL 默认的 GRPO 配上 DAPO 的轻量规则验证器，单阶段、固定超参，把两个已经蒸馏过的 1.5B 再抬一截。摘要里的 54.9% 和 64.3% 是九项数学基准的平均，不是 AIME 单列。精确到百分位：JustRL-DeepSeek 九项平均 **54.87%**，对照 ProRL-V2 的 **53.08%**；JustRL-Nemotron **64.32%**，对照 QuestA 的 **63.81%**。邻居 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 钉组内 $z$-score；[03-Dr.GRPO](../03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) 钉两项都删，7B AIME 2024 43.3% 不要抄进本篇九项平均；变体地图在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)。本篇钉配方：同一套超参、一条 16k、不算力换调度。不是新算法替代 GRPO。不是 Dr.GRPO。不是「所有规模、所有任务都该拆掉调度」。
 
 ## 1. 小模型 RL 把调度堆成了默认动作
 
@@ -188,6 +188,8 @@ DAPO 自己的设定里 overlong penalty 是能用的。换到这条 1.5B、16k�
 和 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 的关系：JustRL 用的就是组内 $z$-score 加 clip。改了三处工程选择：KL 从目标里拿掉、clip 上沿到 1.28、奖励换成 DAPO 规则分。没有新的优势定义。把重要性采样提到序列级的是 GSPO，地图在 [4.4.5](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)。不要把 JustRL 写成「替代 GRPO 的新估计器」。
 
 和 [01-ReMax](../01-ReMax-贪婪基线/01-ReMax-贪婪基线.md) 的关系：两边都想瘦。ReMax 瘦掉 Critic，减 greedy。JustRL 瘦掉调度，保留组。ReMax 的主实验是 7B 对话 RM；JustRL 是 1.5B 数学规则分。基线不是同一种东西。
+
+和 [03-Dr.GRPO](../03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) 的关系：JustRL 保留组内 $z$-score，改的是调度和 clip 上沿。Dr.GRPO 两项都删（$1/|o_i|$ 与组 $\mathrm{std}$），clip 仍对称 $\varepsilon=0.2$。Oat-Zero-7B 的 AIME 2024 43.3% 不是本篇九项平均 54.87%/64.32%。
 
 失效写在 Limitations 里，不要替论文圆。只做了 1.5B 数学。代码、通用问答、更大尺寸，没有数。隔离不了超参、验证器、DAPO-Math-17k 谁是主因。相对 ProRL / QuestA 更省，对卡不够的人仍然贵：32×A800，两条线各约 15 天。更长 horizon、是否终究要加回技巧，没做。
 
