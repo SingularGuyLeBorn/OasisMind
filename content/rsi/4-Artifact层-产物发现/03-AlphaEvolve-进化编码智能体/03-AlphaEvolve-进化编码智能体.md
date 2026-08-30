@@ -37,7 +37,7 @@ $$
 
 ## 2. 前身 FunSearch：只进化一个短函数
 
-2023 年同一条线上已经有 FunSearch（Romera-Paredes 等，*Nature*；[DeepMind 介绍](https://deepmind.google/blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/)）：冻结的代码 LLM 当变异算子，评估器挡幻觉，在函数空间里搜。cap set 这类极值组合问题靠它刷新过已知构造。骨架仍是「人写评估 + 人写种子函数 + 岛模型保多样性」。
+2023 年同一条线上已经有 FunSearch（Romera-Paredes 等，*Nature*；机制精读见 [04 FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)）：冻结的代码 LLM 当变异算子，评估器挡幻觉，在函数空间里搜。cap set 这类极值组合问题靠它刷新过已知构造（$n=8$ 时 512）。骨架仍是「人写评估 + 人写种子函数 + 岛模型保多样性」。
 
 白皮书 Table 1 把两者并排。FunSearch 进化**单个 Python 函数**、大约 **10–20 行**、评估要快（单 CPU $\leq 20$ 分钟）、往往要**数百万**次 LLM 采样、小模型就够、提示里几乎只有以往解、单目标。AlphaEvolve 进化**整份代码文件**、可以到**数百行**、任意语言、评估可以在加速器上跑数小时、**数千**次采样就够、能吃到前沿模型、提示可以塞文献和执行反馈、可以多目标。三条扩展叠在一起，才从「发现一个启发式函数」走到「改 Gemini 训练用的 tiling 启发式 / 改 XLA IR / 改 TPU 的 Verilog」。
 
@@ -144,7 +144,7 @@ $$
 
 | 系统 | 改什么 | 改进器在哪 | 本花园 |
 |------|--------|------------|--------|
-| FunSearch | 单个短函数 | 冻结小代码 LLM + $h$ | Artifact 前身 |
+| [FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) | 单个短函数 | 冻结小代码 LLM + $h$ | Artifact 前身 |
 | AlphaTensor | 矩阵乘张量分解 | 专精 RL 策略 | 专才发现，不是通用编码 Agent |
 | AlphaEvolve | 整文件算法 / kernel / RTL / IR | 冻结 Gemini 2.0 + 人写 $h$ | Artifact；可反哺训练栈 |
 | SPIN / Self-Rewarding | 权重 | 损失与数据锚大多固定 | Model 层，见第 2 章 |
@@ -155,7 +155,7 @@ $$
 
 ## 8. 本篇之后读什么
 
-下一篇机制若走科研闭环，看 [01 Polaris](../01-Polaris-科研智能体/01-Polaris-科研智能体.md)（文献→实验→写作，默认仍是 Artifact）。若问「改自己代码的编码 Agent」，出本章，进第 3 章的 DGM / Argus。实验室把 AlphaEvolve 写进通稿的部分，[06 实验室动态](../../5-实验室与公司/06-实验室动态/06-实验室动态.md) 只当索引，数字以本篇白皮书为准。
+下一篇机制若走科研闭环，看 [01 Polaris](../01-Polaris-科研智能体/01-Polaris-科研智能体.md)（文献→实验→写作，默认仍是 Artifact）。前身机制已单开：[04 FunSearch](../04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)。若问「改自己代码的编码 Agent」，出本章，进第 3 章的 DGM / STOP / Gödel Agent。实验室把 AlphaEvolve 写进通稿的部分，[06 实验室动态](../../5-实验室与公司/06-实验室动态/06-实验室动态.md) 只当索引，数字以本篇白皮书为准。
 
 **读**：候选如何表示、$h$ 在哪、Gemini 出的是 diff 还是新 $\theta$、反哺落在训练栈的哪一层。  
 **不读**：融资通稿当机制、把 0.7% / 23% / 1% 加成「已经 RSI」。

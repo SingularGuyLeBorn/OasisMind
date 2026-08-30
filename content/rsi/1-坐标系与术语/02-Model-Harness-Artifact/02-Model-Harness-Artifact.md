@@ -142,7 +142,7 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 
 | 层 | 改什么 | 本篇例子 | 默认是不是 RSI |
 |----|--------|----------|----------------|
-| Artifact | 产出物 | AlphaEvolve 的 kernel / 48 次复数矩阵乘 | 否 |
+| Artifact | 产出物 | [FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 的 cap set 程序；AlphaEvolve 的 kernel / 48 次复数矩阵乘 | 否 |
 | Harness | 下次还用的脚手架 | [STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md)；[Gödel Agent](../../3-Harness层-Agent运行时/06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)；DGM；Argus 门控 | 弱候选 |
 | Model | 权重 | [SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)；[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) | 训练式自改进，不是递归 |
 
