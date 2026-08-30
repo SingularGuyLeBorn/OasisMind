@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 等 b02（`2.1.3` mHC/xHC 图）与 b07。配图波五切片已收。**不要**抢 `2.1.3`。
-2. **1234 过文：** b01 / b08 / b09 / b10 已收。b02 重派中。b07 仍 running。
+1. **立刻做：** 等 b02（`2.1.3` mHC/xHC 图）。配图波与 b07 已收。**不要**抢 `2.1.3`。
+2. **1234 过文：** b01 / b07 / b08 / b09 / b10 已收。b02 重派中。
 3. **`2.1.1` 节首页：** 已改成 01–04 地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
 
 ## 波次队列（未完成的留着）
@@ -124,7 +124,7 @@ category: LLM 指南
 | pass-1234-b04 | done | batch 04 十篇见 inbox | 已交；FA3=2407.08608；Paged 只留 2309.06180 |
 | pass-1234-b05 | done | batch 05 十篇见 inbox | 已交；Quest 不驱逐；QSA/DCA 浅色图 |
 | pass-1234-b06 | done | batch 06 十篇见 inbox | 已交；2.3.3 地图 + KDA 通道门图 |
-| pass-1234-b07 | running | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 不改 live；不改 2.4.1 的 08–10、不改 2.4.2+、不改第 5 章图片文件 |
+| pass-1234-b07 | done | batch 07 十篇见 `notes/live/inbox/pass-1234-batch-07.md` | 2.3.5 收成导航；2.4 四格图；MoE 01–07 成文；$\ell$≠MLA $c^{KV}$ |
 | pass-1234-b08 | done | batch 08 十篇见 `notes/live/inbox/pass-1234-batch-08.md` | SonicMoE 2512.14080；QMoE 1.6T；$\ell$≠MLA $c^{KV}$；Jamba 52B/12B；V4 MTP≠EAGLE-3 |
 | pass-1234-b09 | done | batch 09 第 3 章→3.2.5 | 后训练只链第 4 章；WSD=MiniCPM；Llama 3 405B 16K H100 |
 | pass-1234-b10 | done | batch 10 3.2.6–3.4 + stub | $\sqrt{C/6}$ 量纲纠正；CPT≠SFT；GPT-4 HumanEval 67.0%；MATH 12500 |
