@@ -17,5 +17,6 @@ category: RSI
 | 01 | [Argus Verification-Gated](./01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) | 验证门控：谁允许写入下一状态 |
 | 02 | [Karpathy Auto-Research](./02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md) | 单卡科研闭环 |
 | 03 | [CS329A Skill 入口](./03-CS329A-Skill入口/03-CS329A-Skill入口.md) | 课程 skill 指针；不搬讲义 |
+| 04 | [DGM 达尔文哥德尔机](./04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) | 改自己的 Python；SWE-bench 20%→50%；弱 RSI 候选 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

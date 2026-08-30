@@ -21,7 +21,7 @@ tags:
 
 有大模型基础的人第一次听到 AlphaEvolve，多半会把它听成「AI 在改自己」。卡住的瓶颈其实更窄：**候选必须能被机器自动打分**，进化发生在程序数据库里，提议补丁的 Gemini 权重可以整段冻结。产出物变好、甚至把 Gemini 自己的训练 kernel 加快 23%，都还不是递归自我改进。
 
-本篇是 Artifact 层的样板。三层坐标在 [02 Model–Harness–Artifact](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)；能不能叫 RSI，用 [01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md) 的式 (1)(2)。**不是** AlphaTensor 那种专打矩阵乘的强化学习，**不是** [Darwin Gödel Machine](../../3-Harness层-Agent运行时/3-Harness层-Agent运行时.md) 那种改自己脚手架的编码 Agent，也**不是**把报告里的 OPD 再推一遍。一手：Novikov, Vũ, Eisenberger 等，Google DeepMind 白皮书 [arXiv:2506.13131](https://arxiv.org/abs/2506.13131)；官方博客 [2025-05-14](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)。
+本篇是 Artifact 层的样板。三层坐标在 [02 Model–Harness–Artifact](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)；能不能叫 RSI，用 [01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md) 的式 (1)(2)。**不是** AlphaTensor 那种专打矩阵乘的强化学习，**不是** [04 DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 那种改自己脚手架的编码 Agent，也**不是**把报告里的 OPD 再推一遍。一手：Novikov, Vũ, Eisenberger 等，Google DeepMind 白皮书 [arXiv:2506.13131](https://arxiv.org/abs/2506.13131)；官方博客 [2025-05-14](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)。
 
 ## 1. 问题：LLM 会编，发现必须能跑、能打分
 
