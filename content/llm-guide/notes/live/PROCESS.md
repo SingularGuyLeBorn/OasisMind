@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：ScissorHands 2305.17118。FastGen / PyramidKV / TOVA 已交。OPD 波等本波交完。
-- 正在写：`16-ScissorHands-重要性持久`。
+- 正在读：OPD 一手（MiniLLM / GKD / OPSD / SDPO）与各家报告 mineru。KV 四篇已交。
+- 正在写：`4.6-OPD` 五切片（01/02/04 勘误 + 09-MOPD + 10 落地对照）。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 FastGen
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 ScissorHands，开 OPD
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -113,6 +113,7 @@ category: LLM 指南
 | 2026-08-30 | TOVA 专文：unbounded MSRNN vs 政策；层内平均 $\arg\min$；Table 3 TOVA-layer；**1/8**=512/4096；**4.8×**=V100 Table 1 的 512 列；Quest passkey 当驱逐 | arxiv HTML/PDF 2401.06104；Anthology 2024.emnlp-main.1043；github schwartz-lab-NLP/TOVA；知乎只学讲法 | `2.3.2/17-TOVA`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 | 2026-08-30 | PyramidKV 专文：v4 式 (1) 等差漏斗；层内 Following SnapKV；**12%** 拆回 Table 2 的 1024/8192=12.5%；0.7% 弃用 0.8%；纠正 6.4.2 Sinks / 6.3.1.2 Maps | arxiv HTML v4 2406.02069；COLM 2025 Spotlight；github Zefan-Cai/KVCache-Factory；知乎只学讲法（2.5%/0.2% 未采用） | `2.3.2/14-PyramidKV`；`2.3.2` 索引；`2.3.4`；`6.4`；`6.4.2`；`6.3.1.2`；知识图谱 |
 | 2026-08-30 | FastGen 专文：双阶段；式 (1)(2) 五种嵌套；Table 1 以 win>45% 的 $T=98\%$ 行为准；官方仓几乎空 | arxiv HTML/PDF 2310.01801；ICLR 2024 Oral hash 639a9a17…；github machilusZ/FastGen；知乎只学讲法 | `2.3.2/15-FastGen`；`2.3.2` 索引；`2.3.4`；知识图谱 |
+| 2026-08-30 | ScissorHands 专文：pivotal；非重要计数 $I$；**5×**=OPT-66B KV 内存；**20×** 只在会场摘要；NeurIPS Table 3 C4 分桶 | arxiv 2305.17118；NeurIPS hash a452a7c6…；github lzcemma/Scissorhands；知乎只学讲法 | `2.3.2/16-ScissorHands`；`2.3.2` 索引；`2.3.4`；知识图谱 |
 
 
 
@@ -331,6 +332,9 @@ category: LLM 指南
 | 原论文 HTML | FastGen Adaptive KV | https://arxiv.org/html/2310.01801 ；abs https://arxiv.org/abs/2310.01801 ；ICLR hash 639a9a172c044fbb64175b5fad42e9a5 | 15-FastGen | ICLR 2024 Oral；式 (1)(2)；Table 1–4；Algorithm 1–2 |
 | 官方仓库 | machilusZ/FastGen | https://github.com/machilusZ/FastGen | 15-FastGen | 几乎空；README 指 cold-compress / MInference |
 | 知乎（只学讲法） | FastGen 双阶段 | https://zhuanlan.zhihu.com/p/697596163 ；https://zhuanlan.zhihu.com/p/1916511096921104528 | 15-FastGen | 44.9%/45% 与 Table 1 冲突，弃 |
+| 原论文 | Scissorhands Persistence of Importance | https://arxiv.org/abs/2305.17118 ；NeurIPS https://proceedings.neurips.cc/paper_files/paper/2023/hash/a452a7c6c463e4ae8fbdc614c6e983e6-Abstract-Conference.html | 16-ScissorHands | NeurIPS 2023；Algorithm 2；$w=400$、$r=10$、$m=0.5B$；Table 1–4 |
+| 官方仓库 | lzcemma/Scissorhands | https://github.com/lzcemma/Scissorhands | 16-ScissorHands | C4 `hf_opt_dropkv.py`；Generation Coming Soon；$w$ 脚本 100 vs 论文 400 |
+| 知乎（只学讲法） | Scissorhands 专栏 | https://zhuanlan.zhihu.com/p/17195508439 ；https://zhuanlan.zhihu.com/p/708946312 | 16-ScissorHands | 8×A100-50G 未采用 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -363,6 +367,7 @@ category: LLM 指南
 | TOVA / Token Omission Via Attention | arXiv:2401.06104；EMNLP 2024；当前步最低分；层内平均 | **专文已写** `17-TOVA-注意力省略.md` | 第 2.3.2 |
 | PyramidKV / Information Funneling | arXiv:2406.02069；COLM 2025；层间等差；不是 Sinks | **专文已写** `14-PyramidKV-层间漏斗.md` | 第 2.3.2 |
 | FastGen / Adaptive KV | arXiv:2310.01801；ICLR 2024 Oral；按头 profiling | **专文已写** `15-FastGen-按头自适应.md` | 第 2.3.2 |
+| ScissorHands / Persistence of Importance | arXiv:2305.17118；NeurIPS 2023；pivotal；5×=内存 | **专文已写** `16-ScissorHands-重要性持久.md` | 第 2.3.2 |
 | SnapKV / observation window | arXiv:2404.14469；NeurIPS 2024；观测窗 + per-head；不是观察头 | **专文已写** `12-SnapKV-生成前观测窗.md` | 第 2.3.2 |
 | OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **排队**：KV 四篇交完再勘误 `01-OPD基础原理` | 第 4.6 |
 | OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **排队** `02-OPSD-自蒸馏` | 第 4.6 |

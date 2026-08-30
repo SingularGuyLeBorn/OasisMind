@@ -27,9 +27,9 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：H2O / Quest / SnapKV / TOVA / PyramidKV / **FastGen** 已交。本波仍在租：**ScissorHands 16**。下一阶段（这篇交完再开）= OPD / OPSD / SDPO / MOPD + 报告落地
-- 当前波次：**0.8 持续**（先做完推理时 KV 最后一篇）
-- 当前正在写的文章路径：`2.3.2/16-ScissorHands-重要性持久`
+- 状态：H2O / Quest / SnapKV / TOVA / PyramidKV / FastGen / **ScissorHands** 已交。KV 四篇完。下一波 = OPD / OPSD / SDPO / MOPD + 报告落地（派工见 PLAN 租约）。
+- 当前波次：**0.8 持续**（OPD 家族）
+- 当前正在写的文章路径：即将派 `4.6-OPD/01` 勘误 · `02` 勘误 · `04` 勘误 · `09-MOPD` · `10-报告落地`
 - 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 
 ## 防漂移口令
