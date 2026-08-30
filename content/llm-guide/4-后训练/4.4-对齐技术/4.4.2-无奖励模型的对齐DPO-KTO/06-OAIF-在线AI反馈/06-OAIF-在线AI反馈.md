@@ -218,12 +218,13 @@ Limitation 写得很直。本文只讨论回答分布 $\rho(y|x)$ 与 $\pi_{\the
 | 压短没有代价 | quality $4.08\to 3.72\to 3.26$ | 仍高于 SFT $3.19$ |
 | 编 AlpacaEval / MT-Bench | 论文没有 | 任务只有 TL;DR 和 Anthropic 两列 |
 | 当成 Nash-MD | 无几何混合对手 | Nash 是偏好博弈，不是 DAP 套壳 |
+| 把 64.81% 写成 Calandriello 主表 | Table 3 是 OAIF 人评 | 那边 Table 2 是成对 $p(y\succ y')$ |
 | 把 IPO 靶心焊成 $1/(2\beta)$ | OAIF 印刷体用 $\beta$ | Azar 原文是 $\tau^{-1}/2$，见 IPO 专文 |
 | 把 SLiC 当成只有 hinge | OAIF 套的是论文 (3) | SLiC-HF 另有 CE 项 |
 
 OAIF 不是万能药。它把「DAP 为什么 offline / off-policy」收成每步重新采、重新标，省掉独立 RM 和策略梯度，前提是手头有一份靠得住的标注 LLM，并且接受标注 prompt 会把长度、口吻一起拧走。人标已经采好、只想离线分类，[01-DPO](../01-DPO/01-DPO.md) 仍是那条更短的路。标注器会把偏见和长度偏好写进策略，prompt 改错了，错的目标也会被在线放大。
 
-同夹：[01-DPO](../01-DPO/01-DPO.md)、[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md)。AI 标再 RL 在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md)。另外两条 DAP 损失在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md)、[01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md)。在线偏好但走 Nash 几何混合的是 [06-Nash-MD](../../4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)。
+同夹：[01-DPO](../01-DPO/01-DPO.md)、[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md)。AI 标再 RL 在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md)。另外两条 DAP 损失在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md)、[01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md)。训好的 $p_\phi$ 打分、平方驻点变 Nash，在 [08-Online IPO](../../4.4.4-其他对齐技术/08-Online-IPO-在线偏好/08-Online-IPO-在线偏好.md)；Table 3 那行 64.81% 是本篇实验，不要抄过去。在线偏好但走 Nash 几何混合的是 [06-Nash-MD](../../4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md)。
 
 ## 参考文献
 
