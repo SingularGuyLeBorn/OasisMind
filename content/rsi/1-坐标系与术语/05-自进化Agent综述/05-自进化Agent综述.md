@@ -89,7 +89,7 @@ $$
 
 **LLM 行为。** 训练侧：SFT 模仿带推理轨迹的数据，轨迹来自自己的成功 rollout 或更强教师。STaR（Zelikman et al., 2022）只在做对的题上微调，做错的再改写；NExT 用单测过滤自生成轨迹做程序修复；DeepSeek-Prover 用已验证证明迭代训策略。RL 侧：用测试、最终对错或过程奖励模型造偏好，走 DPO；Self-Rewarding 让策略用自己的判断迭代；Tülu 3 在可验证奖励上 RL、不另训奖励模型；DeepSeek-R1 在能做对错检查时用纯 RL + GRPO。Absolute Zero 让同一只模型轮流出题和答题，机制见 [06](../../2-Model层-训练时自改进/06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)；[R-Zero](../../2-Model层-训练时自改进/07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md) 用挑战者按解题器当前能力出题——和 LADDER「自己造更简单的题」同属出题器，验证器仍在墙外。测试时侧：编译器当 outcome 反馈（CodeT、LEVER），证明助手报错（Baldur），或训练过程奖励看每一步（Math-Shepherd）。搜索侧：自洽投票、ToT、GoT。测试时加长思考不改 \(\theta\)，花园把它放在 L0 / 任务内，见可靠性专文。
 
-**提示。** LLM 对措辞、格式、词序敏感，所以提示被写成可搜空间。编辑派在人写的句子上做删、换、释义（GRIPS、TEMPERA 把编辑当成 RL）。生成派让 LLM 按旧提示和分数写出全新提示（OPRO、PromptAgent 的 MCTS、MIPRO 的贝叶斯）。文本梯度派用自然语言批评当「梯度」，再反向改提示（ProTeGi、TextGrad）。进化派维护提示种群，突变和交叉（EvoPrompt、Promptbreeder）。改的是 Harness 里的指令，不是改进器。
+**提示。** LLM 对措辞、格式、词序敏感，所以提示被写成可搜空间。编辑派在人写的句子上做删、换、释义（GRIPS、TEMPERA 把编辑当成 RL）。生成派让 LLM 按旧提示和分数写出全新提示（OPRO、PromptAgent 的 MCTS、MIPRO 的贝叶斯）。文本梯度派用自然语言批评当「梯度」，再反向改提示（ProTeGi、[TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)）。进化派维护提示种群，突变和交叉（EvoPrompt、Promptbreeder）。改的是 Harness 里的指令，不是改进器。实例优化（这道题的解、这段代码）跨题不留，和提示优化不要收成一张榜。
 
 **记忆。** 综述把训练时改权重的知识编辑划出去，只谈推理时调度：短时压缩、摘要、选择性保留（ReadAgent、MemoryBank 按遗忘曲线更新）；长时 RAG、图索引、SQL（MemGPT、HippoRAG、ChatDB）。Reflexion 把任务反馈写成可存的句子再读回来——留下的是文本记忆，不是 \(\theta\)。控制「存什么、何时取、丢什么」的策略若被优化器改写，属于 Harness。
 
@@ -120,7 +120,7 @@ LLM-as-a-Judge 用点式打分或成对比较当廉价人评替代，和人的�
 | 综述格子 | 花园落点 | 样板 |
 |----------|----------|------|
 | 训 LLM 行为 | Model | SPIN / Self-Rewarding / Tufa / LADDER / SEAL |
-| 测时搜索、Self-Refine / CRITIC | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；可靠性专文 |
+| 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；可靠性专文 |
 | 提示 / 记忆 / 工具表 / 拓扑 | Harness | Argus / ACE / SkillEvolver / ADAS / STOP / DGM / Auto-Research |
 | 代码级工作流当空间 | Harness（元 Agent 常冻） | ADAS；Gödel 才把运行时打开 |
 | 实例级搜产物 | Artifact | FunSearch / AlphaEvolve / Polaris |

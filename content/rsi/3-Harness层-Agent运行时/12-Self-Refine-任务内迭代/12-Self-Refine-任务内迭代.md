@@ -104,7 +104,7 @@ $y$ 变好了，改进器没变。下一题的 $p_{\mathrm{fb}}$ 还是人写的
 
 和 [Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 钉死。那边 Actor / Evaluator / Self-Reflection 三角色，`mem` 跨 trial，AlfWorld 重置房间但留句子。这边三角色塌成同一只 $M$ 的三份提示，历史不跨题。Reflexion 的数学不在主表；Self-Refine 的数学在主表上接近 0。两边都叫自我反馈，门完全不同。Reflexion 编程还有自写单测当 $M_e$；Self-Refine 的代码优化反馈是自然语言「太慢」，执行器不是主循环的必选零件。论文 Figure 5 的硬币 DP 是改完就交卷，没有把「下次遇到嵌套循环先写 DP」写进磁盘。
 
-[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 把 Self-Refine / Reflexion / TextGrad 写成「自然语言反馈会越改越吵」的前史。Self-Refine 用 4 轮帽限制变吵。吵完就丢，也存不下来。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 要把教训写成另一只 Agent 的文件。本方法连文件都没有。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 过门的是 JavaScript；这里过门的是本题的 $y_{t+1}$。
+[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 把 Self-Refine / Reflexion / [TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 写成「自然语言反馈会越改越吵」的前史。Self-Refine 用 4 轮帽限制变吵。吵完就丢，也存不下来。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 要把教训写成另一只 Agent 的文件。本方法连文件都没有。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 过门的是 JavaScript；这里过门的是本题的 $y_{t+1}$。
 
 [可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md) 的 L0 原句可以当本篇判定：改变输出与轨迹，跨独立任务状态不变。数学 +0.2 是 L0 在「对错可验证」任务上的诚实结果；+20% 是把偏好任务平均进去之后的海报数字。两套都要会读。附录还做过网站生成：用户给高层目标，循环改 HTML / CSS / JS。那是演示，不是 Table 1，不要拿审美迭代给 GSM8K 背书。
 

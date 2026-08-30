@@ -29,7 +29,7 @@ ACE（Agentic Context Engineering）把上下文改写成**活页 playbook**：�
 
 上下文适应 = 改输入，不改 $\theta$。系统提示、记忆、检索证据都算。优点写在引言：可解释、运行时能塞新知识、复合系统里模块能共享。长上下文模型和 KV cache 复用让「堆详细 playbook」在工程上突然显得便宜——这句是动机。本篇测定仍是 AppWorld 和金融两张表，外加附录的 DDXPlus / BIRD-SQL，不是「长上下文已经免费」的账单证明。
 
-现成方法走自然语言反馈：模型看当前上下文和执行痕迹，写出该怎么改，再写回去。Reflexion 反思失败；TextGrad 把批评当文本梯度；GEPA 用执行痕迹做遗传 Pareto 搜提示，官方 DSPy 实现、本实验 `auto="heavy"`；Dynamic Cheatsheet 在推理时攒策略备忘。作者的诊断不是「反馈没用」，是两条失效：
+现成方法走自然语言反馈：模型看当前上下文和执行痕迹，写出该怎么改，再写回去。Reflexion 反思失败；[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 把批评当文本梯度；GEPA 用执行痕迹做遗传 Pareto 搜提示，官方 DSPy 实现、本实验 `auto="heavy"`；Dynamic Cheatsheet 在推理时攒策略备忘。作者的诊断不是「反馈没用」，是两条失效：
 
 - **Brevity bias。** 优化目标偏向短而通用的指令。Gao 等在单测生成上看到迭代优化收敛到几乎同一句 “Create unit tests…”。领域启发式、工具用法、失败模式被当成噪音丢掉。Agent 和知识密集任务刚好靠这些细节。
 - **Context collapse。** 每步整本重写。上下文一长，模型倾向压成短摘要，累积知识一次性蒸发。上面 18,282 → 122 token 的例子挂在 Dynamic Cheatsheet 上，作者声明这不是该方法私有的病，是「让 LLM 做端到端重写」的结构风险。
