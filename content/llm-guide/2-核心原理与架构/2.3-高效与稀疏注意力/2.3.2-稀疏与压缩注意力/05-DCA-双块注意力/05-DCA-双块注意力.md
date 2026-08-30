@@ -1,6 +1,7 @@
 ---
 title: "05 · DCA：双块注意力"
-date: 2026-05-24
+date: 2026-08-30
+as_of: 2026-08-30
 tags: [DCA, Dual-Chunk-Attention, 长上下文, 训练无关, RoPE, ChunkLlama]
 ---
 
@@ -9,7 +10,7 @@ tags: [DCA, Dual-Chunk-Attention, 长上下文, 训练无关, RoPE, ChunkLlama]
 > 系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) · [2.3 高效与稀疏注意力](../../2.3-高效与稀疏注意力.md)  
 > 论文：[Training-Free Long-Context Scaling](https://arxiv.org/abs/2407.02490) · 代码：[ChunkLlama](https://github.com/HKUNLP/ChunkLlama)
 
-在 MHA → MQA → GQA → MLA 这条「**压缩 KV**」主线上，**DCA（Dual Chunk Attention）** 走另一条路：**不改 KV 张量形状，只改写长序列上的相对位置与注意力分解**，在 **无需继续训练** 的前提下，把 4K 预训练窗口推到 **100K+**（ChunkLlama / Llama-2-70B 设定）。
+在 MHA → MQA → GQA → MLA 这条「**压缩 KV**」主线上，**DCA（Dual Chunk Attention）** 走另一条路：**不改 KV 张量形状，只改写长序列上的相对位置与注意力分解**，**training-free** 把 4K 预训练窗口推到 **100K+**（ChunkLlama / Llama-2-70B）。位置外推（NTK / YaRN / PI）见 [2.1.4 RoPE 扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现.md)——那些改频率或插值，**同样不是改 KV 结构**；DCA 则把长序列拆成训练长度内的 chunk，用 Intra / Succ / Inter 三段相对位置重建因果图。
 
 ---
 
@@ -23,11 +24,19 @@ tags: [DCA, Dual-Chunk-Attention, 长上下文, 训练无关, RoPE, ChunkLlama]
 | 只增大 RoPE base | 短上下文性能掉点 |
 | 全量长上下文微调 | 算力与时间成本极高 |
 
-DCA 的核心洞察：**保留预训练权重与短程 RoPE 习惯，把长序列拆成多个「训练长度内」的 chunk，用三种注意力分支重建全局因果图**。
+DCA 的核心洞察：**保留预训练权重与短程 RoPE 习惯，把长序列拆成多个「训练长度内」的 chunk，用三种注意力分支重建全局因果图**。这是 training-free 外推，**不是**改 KV 结构，也不是 NSA/MoBA 那种选块路由。
 
----
+![DCA Intra / Successive / Inter 三段因果图](./images/fig-dca-intra-succ-inter.png)
 
-## 2. 三种块级注意力
+> 图 1：四块序列上 Intra（块内因果）、Succ（邻块过渡）、Inter（更远块的重映射相对位置）。自绘示意；KV 形状不变。
+
+**图 1 解析**
+
+- **Intra-Chunk（块内）**：同一 chunk 内标准因果 attention，相对位置落在 $0 \ldots C-1$ — 与预训练见过的分布一致，是 **保真局部语义** 的锚。
+- **Successive-Chunk（邻块）**：当前 chunk 的 query 看 **上一块**，用 successive 映射把边界相对距离压回训练流形，避免「块内位置 0 突然对接全局 4096」。
+- **Inter-Chunk（更远块）**：跨两块以上用 **块差重映射** 的相对位置，而不是巨大的绝对 $|t-s|$。示意里的稀疏格子只表示「不是全密 $L\times L$」，实现上仍是同一次因果 softmax 里换 $M[i,j]$ 的取法。
+- **一次 softmax**：论文 Figure 2 的三路不是三套输出相加，而是式 (1)(2) 的统一 attention。与 FlashAttention-2 分块兼容（ChunkLlama monkey patch 位置索引）。
+- **不是改 KV**：cache 仍全量 $L$；MLA 才改存什么。RoPE 频率外推见 [02-RoPE扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现.md)。
 
 设训练长度 $L_{\mathrm{train}}$（论文记 $c$），块大小 $C$（论文记 $s$，常取约 $\frac{3}{4}L_{\mathrm{train}}$）。对 $L \gg L_{\mathrm{train}}$ 的序列，DCA **并不把三路 attention 输出向量相加**；而是在 **同一次因果 softmax** 里，按 query/key 所在 chunk 的距离，为每对 $(i,j)$ 选用不同的 query 位置索引 $P_{\mathbf{q}}^{\{\mathrm{Intra,Succ,Inter}\}}[i]$ 与 key 索引 $P_{\mathbf{k}}[j]=j \bmod C$，经 RoPE 得到内积后再归一化：
 
@@ -47,16 +56,7 @@ $$
 
 下文「Intra / Inter / Succ」指 **相对位置矩阵 $M$ 的三段构造规则**（论文 Figure 2），便于理解；实现上对应式 (1)(2) 的统一 attention。
 
-![DCA 三路注意力：块内、块间与邻块过渡](./images/fig-dca-attention-patterns.jpg)
-
-> 图 1: DCA 块内/块间/邻块过渡三路注意力在因果矩阵上的非零区域（论文）。
-
-**图 1 解析**
-
-- **Intra-Chunk（块内）**：同一 chunk 内 token 两两做标准因果 attention，相对位置落在 $0 \ldots C-1$ — 与预训练时见过的位置分布一致，是 **保真局部语义** 的锚。
-- **Inter-Chunk（块间）**：当前 chunk 的 query 对 **历史 chunk 的代表 KV**（如块首 token 或池化向量）做 attention；跨块相对位置用 **重映射**（块索引差）代替巨大的绝对位置，避免 RoPE 相位飞出训练流形。
-- **Successive-Chunk（邻块过渡）**：专门连接 **相邻两块边界** 上的 token 对，缓解「块内位置 0 突然对接全局 4096」的割裂感 — 只有 Intra+Inter 时，边界处长程依赖最易断。
-- **实现方式**：对因果矩阵一次 softmax；仅 $M[i,j]$ 的取法按 Intra/Succ/Inter 分段 — 与 FlashAttention-2 分块兼容（ChunkLlama 在 FA-2 上 monkey patch 位置索引）。
+## 2. 三种块级注意力
 
 ### 2.1 Intra-Chunk
 
@@ -95,37 +95,7 @@ $$
 | 是否需要训练 | — | **否**（Training-Free） |
 | FlashAttention | 兼容 | **兼容**（分块即 DCA 块） |
 
-**与 MLA 的对比**：MLA 改 **存什么**（低秩 latent）；DCA 改 **怎么看全局**（分块近似全连接图）。可叠加：MLA 减 cache 体积，DCA 扩有效上下文。
-
-![DCA 推理内核与 FlashAttention 集成（论文）](./images/fig-dca-kernel-pipeline.jpg)
-
-> 图 4: DCA 与 FlashAttention 分块推理栈的集成管线示意（论文）。
-
-**图 4 解析**
-
-- 展示 ChunkLlama 如何把 DCA 三路 mask **映射到 FA-2 分块内核** — 不物化全长 $L\times L$ 矩阵。
-- Prefill 按 chunk 调度；与 PagedAttention 正交（DCA 不省 KV 体积）。
-
-![Needle-in-a-Haystack 与长上下文外推（论文）](./images/fig-dca-niah-haystack.jpg)
-
-> 图 3: Needle-in-a-Haystack 热力图，验证 training-free 长程检索（论文）。
-
-**图 3 解析**
-
-- 热力图颜色表示 needle 召回；DCA 在远超训练长度时仍保持可检索性。
-- 与线性外推 RoPE 对比：DCA 曲线不会在远端整块失效。
-- **局限**：图只验证检索，不保证所有生成任务同等提升。
-
-![长上下文困惑度与基线对比](./images/fig-dca-long-context-ppl.jpg)
-
-> 图 2: 外推上下文长度上的 PPL 或任务分数，DCA 相对位置外推更稳（论文）。
-
-**图 2 解析**
-
-- 横轴多为 **外推上下文长度**（4K → 32K → 100K+）；纵轴为 PPL 或任务分数。
-- **全注意力 + 位置外推** 曲线通常在超长处陡升 — RoPE 分布外推失效。
-- **DCA** 曲线更平：因每块仍在「训练长度内」做 intra，inter/succ 只补全局骨架。
-- 读图时注意：DCA **不降低 KV 显存** — 若曲线好但 OOM，仍需 GQA/MLA/PagedAttention。
+**与 MLA 的对比**：MLA 改 **存什么**（低秩 latent）；DCA 改 **怎么看全局**（分块近似全连接图）。可叠加：MLA 减 cache 体积，DCA 扩有效上下文。ChunkLlama 把三段 $M[i,j]$ **映射到 FlashAttention-2 分块内核**，不物化全长 $L\times L$。NIAH 与长上下文 PPL 以论文 Figure / Table 为准，本篇不另画假坐标。
 
 ---
 

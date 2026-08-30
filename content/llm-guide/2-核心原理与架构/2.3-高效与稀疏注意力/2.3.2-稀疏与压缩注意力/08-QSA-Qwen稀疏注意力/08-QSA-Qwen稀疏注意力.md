@@ -7,15 +7,15 @@ tags: [QSA, Sparse-Attention, DSA, GDN, Qwen3.8]
 
 # Qwen Sparse Attention：索引本身变成瓶颈之后，先把 key 收成微块
 
-> 邻居：[07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) · [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) · [09-IndexPool](../09-IndexPool/09-IndexPool.md)（GLM 加权池化，不是本篇平均池化）· [2.3.2 索引](../2.3.2-稀疏与压缩注意力.md) · 不要和 CSA/HCA 混名 · 线性侧：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA.md) · [GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual.md)
+> 邻居：[07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) · [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) · [09-IndexPool](../09-IndexPool/09-IndexPool.md)（GLM 加权池化，不是本篇平均池化）· [2.3.2 索引](../2.3.2-稀疏与压缩注意力.md) · 不要和 CSA/HCA 混名 · 线性侧：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)
 
 DSA（DeepSeek-V3.2）用轻量 indexer 做 **token 级**稀疏掩码，长序列上 indexer 自己仍是 $O(n^2)$。Qwen Sparse Attention（QSA）把 key 先收成长度为 $r$ 的微块，重要性在块上打分，再展开回 token 做核心注意力。它出现在 **GDN + 全注意力** 的混合骨架上：每四层里三层 Gated DeltaNet 压历史，一层全局注意力负责精确检索；续预训练时这层全局注意力换成 QSA。
 
-公式与超参来自 *On the Design of Qwen3.8-Next Architecture*（2026-08-26）§2.1.2。不要从 PDF 截图；下面用公式和 mermaid。
+公式与超参来自 *On the Design of Qwen3.8-Next Architecture*（2026-08-26）§2.1.2。不要从 PDF 截图。
 
 ## 1. 混合日程：谁记、谁取
 
-Qwen3.5 起的混合是 3 GDN : 1 全注意力。GDN 的状态更新见 [KDA 文里的 GDN 式](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA.md)（Qwen 报告式 (5)–(11)：$\alpha_t$ 管遗忘，$\beta_t$ 管 delta 写入，输出用 sigmoid 门而不是原版 SiLU）。全注意力层仍用 RoPE；他们试过 NoPE，预训练差不多，后训练更容易无限生成，所以不用 NoPE。
+Qwen3.5 起的混合是 3 GDN : 1 全注意力。GDN 的状态更新见 [KDA 文里的 GDN 式](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)（Qwen 报告式 (5)–(11)：$\alpha_t$ 管遗忘，$\beta_t$ 管 delta 写入，输出用 sigmoid 门而不是原版 SiLU）。全注意力层仍用 RoPE；他们试过 NoPE，预训练差不多，后训练更容易无限生成，所以不用 NoPE。
 
 QSA 不替换 GDN，只替换那 1/4 的全局层（含 MTP 里的全注意力）。一句话：GDN 负责「记住」，QSA 负责「在长上下文里便宜地取回」。
 
@@ -27,7 +27,13 @@ $$
 \tilde q^h_i=\mathrm{RMSNorm}(W^h_Q x_i),\qquad k_i=W_K x_i. \tag{12}
 $$
 
-Key 按 $r$ 个 token 一块做平均池化，**再**做 RMSNorm（式 (13)）。块起点 $p_b=b\cdot r$。压缩发生在位置编码之前，避免把不同旋转相位的 token 平均在一起。然后对 query 用 token 位置 $i$、对压缩 key 用块起点 $p_b$ 做 **partial RoPE**（indexer 头 128 维里转 64 维，和核心注意力的旋转维对齐）：
+Key 按 $r$ 个 token 一块做 **平均池化**，**再** RMSNorm。块起点 $p_b=b\cdot r$。压缩发生在位置编码之前，避免把不同旋转相位的 token 平均在一起。这是平均池化，**不是** IndexPool 的加权池化。
+
+$$
+\tilde k_b=\mathrm{RMSNorm}\!\left(\frac{1}{r}\sum_{t=0}^{r-1}k_{p_b+t}\right),\qquad p_b=b\cdot r. \tag{13}
+$$
+
+然后对 query 用 token 位置 $i$、对压缩 key 用块起点 $p_b$ 做 **partial RoPE**（indexer 头 128 维里转 64 维，和核心注意力的旋转维对齐）：
 
 $$
 q^h_i=\mathrm{PRoPE}(\tilde q^h_i,i),\qquad \bar k_b=\mathrm{PRoPE}(\tilde k_b,p_b). \tag{14}
@@ -37,16 +43,18 @@ $$
 
 给定 token 预算 $K$，块预算 $K_B=\lceil K/r\rceil$，每条 query 取 Top-$K_B$ 块，展开成 token，再截到 $K$。最后一个不完整块里的 token **一律保留**（式 (16)、(19)）。
 
-落地配置（报告 Implementation）：$H=4$，$K=2048$，$r=4$，于是每条 query 最多 **512** 个完整块，再加尾巴。
+落地配置（报告 Implementation）：$H=4$，$K=2048$，$r=4$，于是每条 query 最多 **512** 个完整块（$K_B=\lceil 2048/4\rceil$），再加尾巴。
 
-```mermaid
-flowchart LR
-  x["x_i"] --> idx["MQA indexer"]
-  idx --> pool["AvgPool r-token 块"]
-  pool --> rope["Partial RoPE"]
-  rope --> topk["块因果 Top-K"]
-  topk --> core["稀疏核心注意力"]
-```
+![QSA：微块平均池化 → Top-$K_B$ 块 → 展开 token](./images/fig-qsa-microblock-topk.png)
+
+> 图 1：indexer key 按 $r=4$ 平均池化成 $\bar k_b$，块因果 Top-$K_B$，再展开回 token 并截到 $K=2048$。自绘；不是 IndexPool 加权池化。
+
+**图 1 解析**
+
+- **Stage 1**：连续 $r$ 个 $k$ 做 AvgPool 再 RMSNorm，得到 $\bar k_b$。发生在 RoPE 之前。
+- **Stage 2**：$q_i$ 只给已经完整的块打分；选中 Top-$K_B$ 个微块。
+- **Stage 3**：选中块展开成原始 token，再截到 $K$。尾巴上不足 $r$ 的 token一律保留。
+- **数字**：$r=4,K=2048\Rightarrow K_B=512$，来自 Qwen3.8-Next 报告 Implementation，不要改成 IndexPool 的 `index_kpool=4`。
 
 ## 3. 两阶段训练，不是一上来就稀疏
 

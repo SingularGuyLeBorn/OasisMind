@@ -1,6 +1,7 @@
 ---
 title: "07 · CSA-HCA：混合压缩注意力"
-date: 2026-05-24
+date: 2026-08-30
+as_of: 2026-08-30
 tags: [DeepSeek-V4, CSA, HCA, 长上下文, 稀疏注意力, DSA]
 ---
 
@@ -37,17 +38,15 @@ DeepSeek-V4 将上下文推至 **1M tokens**，核心不是替换 Transformer，
 - **mHC**：流形约束超连接，稳定超深 MoE 的信号传播；与注意力正交，但决定 1M 训练能否收敛。
 - **DeepSeekMoE + MTP**：与 V3 同族，说明 V4 的效率增益主要来自 **注意力路径**，而非换掉 MoE 主干。
 
-![V4 与 V3.2 在 1M 上下文下的 FLOPs 与 KV Cache 对比](./images/fig-v4-benchmark-flops-kv.jpg)
+![V4 与同期模型的任务分对照（报告图，不是 FLOPs 曲线）](./images/fig-v4-benchmark-flops-kv.jpg)
 
-> 图 2: 1M 上下文下单 token FLOPs 与 KV 相对 V3.2 的比例（论文 Figure 1 右）。
+> 图 2: 下游任务对照。1M 上的效率数字 **不要**从这张任务分图读：V4 报告 Figure 1 **右侧**写明，1M 上下文下 V4-Pro 相对 V3.2 单 token FLOPs **≈ 27%**、KV Cache **≈ 10%**（等效 FP8 FLOPs）；V4-Flash 约 **10% / 7%**。
 
 **图 2 解析**
 
-- 横轴通常是上下文长度；纵轴为 **单 decode token** 的等效 FLOPs 与 **累积 KV 字节数**。
-- **V3.2 曲线**随长度近似线性爬升 — MLA 已压缩 KV，但 attention 仍要对「压缩后仍很长的序列」做稠密交互。
-- **V4-Pro**：1M 点处 FLOPs ≈ V3.2 的 27%、KV ≈ 10% — 说明 **CSA/HCA 同时砍了计算图与缓存**，不是只省 Cache。
-- **V4-Flash**：更小激活参数量，FLOPs/KV 进一步下探（约 10% / 7%）— 面向高吞吐推理 SKU。
-- 读图时注意：这是 **等效 FP8 FLOPs** 与混合精度 KV 存储后的系统账，和纯理论 $O(n^2)$ 不同。
+- 这张是质量对照，不是 FLOPs/KV 曲线。效率只认报告 Figure 1 右图那两个比例，本篇不另画假坐标。
+- **V4-Pro 27% / 10%**：CSA/HCA 同时砍计算图与缓存，不是只省 Cache。
+- **V4-Flash 10% / 7%**：更小激活参数，面向高吞吐；Flash = B 档，不另开目录。
 
 ---
 
@@ -64,11 +63,13 @@ DeepSeek-V4 将上下文推至 **1M tokens**，核心不是替换 Transformer，
 - **Lightning Indexer + DSA**：对压缩条目再算 indexer 分数，**top-k** 选出 $\mathcal{C}_t^{SprsComp}$ — 这是「可微检索」：先粗压缩，再稀疏精排。
 - **滑动窗口分支**：每个 query 额外 attend 最近 $n_{win}$ 个 **未压缩** KV — 补块边界与局部语法；与 NSA 的 win 分支同角色。
 - **MQA 核心注意力**：选中压缩条目 **一对 KV 服务所有 query 头** — 与 MLA decode 的 MQA mode 一致，利于 KV 带宽。
-- **Partial RoPE + Sink**：仅部分维施加 RoPE，输出端用 $-i$ 抵消；可学习 sink 缓解超长 softmax 分母问题。**不是**推理期把前 4 个 KV 钉死（那是 StreamingLLM）。
+- **Partial RoPE + Sink**：仅部分维施加 RoPE。Sink **不是**推理期把前 4 个 KV 钉死（那是 [10-StreamingLLM](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md) 的 4+窗）。V4 报告式 (27)：每头一个可学习标量 $z'_h$，加在 softmax **分母**上，行和可以 $\neq 1$：
 
-> **2026-08 修订（不删上文）。** V4 mineru 式 (27)：每头可学习 $z'_h$，注意力分数
-> $$s_{h,i,j}=\frac{\mathrm{Exp}(z_{h,i,j})}{\sum_{k}\mathrm{Exp}(z_{h,i,k})+\mathrm{Exp}(z'_{h})}.$$
-> 行和可以 $\neq 1$。gpt-oss 模型卡是同一族（softmax 分母 learned bias）。现象、4+窗、与标量逃逸口的差见 [10-StreamingLLM 与 Attention Sink](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
+$$
+s_{h,i,j}=\frac{\mathrm{Exp}(z_{h,i,j})}{\sum_{k}\mathrm{Exp}(z_{h,i,k})+\mathrm{Exp}(z'_{h})}. \tag{27}
+$$
+
+gpt-oss 模型卡是同一族（learned bias in the denominator）。现象差见 [10](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 
 ### 2.1 压缩公式（块 $i$）
 
@@ -120,7 +121,7 @@ $$
 
 V4 **交错** CSA 与 HCA：浅层 CSA 抓局部与候选块，深层 HCA 维持全局一致性；避免「全稀疏」导致的路由崩塌。
 
-**1M 上下文工程数据（相对 V3.2，论文摘要）**
+**1M 上下文工程数据（相对 V3.2，V4 报告 Figure 1 右）**
 
 | 指标 | V4-Pro | V4-Flash |
 |------|--------|----------|

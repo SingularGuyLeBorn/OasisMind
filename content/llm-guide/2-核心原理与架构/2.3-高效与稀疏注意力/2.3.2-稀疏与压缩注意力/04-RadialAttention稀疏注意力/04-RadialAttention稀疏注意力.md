@@ -1,13 +1,15 @@
 ---
-title: "04 · Radial Attention：O(n log n) 复杂度的稀疏注意力"
-date: 2026-05-24
-tags: [Radial Attention, 稀疏注意力, 视频生成, DiT, 能量衰减, 时空稀疏性]
+title: "04 · Radial Attention：视频 DiT 的 $O(n\log n)$ 稀疏掩码"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [Radial Attention, 稀疏注意力, 视频生成, DiT, 能量衰减]
 ---
 
-# Radial Attention：O(n log n) 复杂度的稀疏注意力
+# Radial Attention：$O(n\log n)$ 的视频 DiT 稀疏注意力
 
-> 本文介绍 MIT HAN Lab 提出的 Radial Attention（[arXiv:2506.19852](https://arxiv.org/abs/2506.19852)），通过时空能量衰减现象设计径向稀疏掩码，将视频 DiT 的注意力复杂度从 $O(n^2)$ 降低到 $O(n \log n)$。  
-> 系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) · [2.3 进度](../roadmap/进度.md)
+本文介绍 MIT HAN Lab 的 Radial Attention（[arXiv:2506.19852](https://arxiv.org/abs/2506.19852)）。它服务 **视频扩散 Transformer（DiT）** 的 3D Full Attention，把时空能量衰减写成径向稀疏掩码，复杂度从 $O(n^2)$ 降到 $O(n\log n)$。**不是** LLM decode 的 KV 驱逐，也不是 StreamingLLM / H2O / Quest 那条推理 cache 线。系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md)。
+
+HunyuanVideo / Wan2.1 上的画质对比、掩码带、复杂度曲线用论文白底图（浅色则留）。夜景视频帧是论文 teaser 的生成内容，不是深色幻灯片。
 
 ![Radial Attention 在 HunyuanVideo 上的加速与画质（论文 Figure 1）](./images/fig-radial-01-teaser-hunyuan-speedup.jpg)
 
@@ -18,7 +20,7 @@ tags: [Radial Attention, 稀疏注意力, 视频生成, DiT, 能量衰减, 时�
 - **左/上**：Dense vs Radial 同 prompt 视频帧 — 视觉质量相当，延迟显著下降。
 - **117 帧默认长度**：HunyuanVideo 上约 **1.9×** 端到端加速（PSNR 仍 ~27）。
 - **509 帧 4× 外推**：Radial + LoRA 的 Vision Reward **不低于** Dense+LoRA，且 GPU 小时与延迟双降。
-- **赛道**：视频扩散 **3D Full Attention**，非文本 LLM；与 MoBA/NSA 方法论同属「稀疏掩码」但目标模态不同。
+- **赛道**：视频扩散 **3D Full Attention**，不是文本 LLM decode。与 MoBA/NSA 同属「稀疏掩码」设计空间，目标模态不同。**不要**写成 KV 驱逐。
 - **工程**：静态掩码 + 轻量 LoRA 即可外推长度，无需全量重训。
 
 ---
@@ -115,9 +117,9 @@ $$
 - **与 SVG**：中心带已含密空间交互；远帧不再浪费算力在低相关 token。
 - **块大小 128×128**：与 FlashAttention 分块策略对齐。
 
-### 3.4 Attention Sink
+### 3.4 Attention Sink（视频首帧，不是 LLM 4+窗驱逐）
 
-每个 token **关注第一帧**（与 StreamingLLM / SVG 的 sink 同类）；3D Causal VAE 常单独处理首帧。
+每个 token **关注第一帧**（与 StreamingLLM / SVG 的 sink **同类现象**，实现不是钉死前 4 个 LLM KV）。3D Causal VAE 常单独处理首帧。LLM 上的 4+窗推导见 [10-StreamingLLM](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 
 ---
 
@@ -203,7 +205,7 @@ Radial 将 **能量衰减** 转为 **计算密度衰减**，在质量与加速�
 
 ## 7. 为何在 LLM 圈较少听到？
 
-面向 **视频 DiT（HunyuanVideo / Wan2.1 / Mochi）**，不是 Llama 长文本主线；2.3.2 收录是为对比 **稀疏掩码设计空间**（静态径向 vs 动态 SVG vs 块路由 MoBA）。
+面向 **视频 DiT（HunyuanVideo / Wan2.1 / Mochi）**，不是 Llama 长文本 decode 主线，更不是 H2O 式驱逐。2.3.2 收录是为对比 **稀疏掩码设计空间**（静态径向 vs 动态 SVG vs 块路由 MoBA）。
 
 ---
 

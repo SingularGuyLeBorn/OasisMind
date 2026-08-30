@@ -1,6 +1,7 @@
 ---
 title: "06 · S²-Attn：移位稀疏注意力"
-date: 2026-05-24
+date: 2026-08-30
+as_of: 2026-08-30
 tags: [S2-Attn, LongLoRA, 长上下文微调, 稀疏注意力, Shifted Sparse]
 ---
 
@@ -9,7 +10,7 @@ tags: [S2-Attn, LongLoRA, 长上下文微调, 稀疏注意力, Shifted Sparse]
 > 系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) · [2.3 高效与稀疏注意力](../../2.3-高效与稀疏注意力.md)  
 > 论文：[LongLoRA: Efficient Fine-tuning of Long-Context LLMs](https://arxiv.org/abs/2309.12307) · 代码：[LongLoRA](https://github.com/dvlab-research/LongLoRA)
 
-**S²-Attn**（Shifted Sparse Attention，$S^2$-Attn）来自 LongLoRA（2023）。它解决 **长上下文微调** 的算力爆炸：8192 训练相对 2048 时，self-attention FLOPs 约 **×16**。LongLoRA 用 **分组局部 attention + 半头移位** 在训练期近似全局模式，且 **推理可切回全注意力**。
+**S²-Attn**（Shifted Sparse Attention）来自 LongLoRA（2023）。它解决 **长上下文微调** 的算力：8192 训练相对 2048 时，self-attention FLOPs 约 **×16**。做法是 **分组局部 attention + 半头移位**。关键：**训练期稀疏，推理可切回全注意力**。不是 decode 驱逐，也不是 DCA 那种 training-free 改相对位置。
 
 ---
 
@@ -59,14 +60,16 @@ out = flash_attn(x, causal=True)
 
 ---
 
-## 3. 训练 vs 推理
+## 3. 训练稀疏、推理可回全注意力
 
 | 阶段 | Attention | 说明 |
 |------|-----------|------|
-| **训练** | S²-Attn | 省显存与 FLOPs |
-| **推理** | 可选 **全注意力** | 避免过拟合固定稀疏；测试用 dense 不损外推 |
+| **训练** | S²-Attn | 组内 $O(g^2)$，总计 $O(L\cdot g)$；半头移位补跨组边 |
+| **推理** | 可选 **全注意力** | 论文明确测试可用 dense，避免过拟合固定稀疏图 |
 
-这是 S² 与多数「训练推理不一致」稀疏方案的关键区别。
+这是 S² 与多数「训练推理必须同一套稀疏掩码」方案的差。部署时不要把训练期分组图当成必须上线的 decode 内核；长上下文 SFT 省算力，上线仍可用 Full。组大小 $g$ 要与目标长度、预训练长度一起调；移位只连 **邻近组**，极长依赖仍靠 LoRA + 位置外推（PI、YaRN，见 [RoPE 扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现.md)）。
+
+若 S² 曲线在超长处掉队，优先检查 **$g$** 与 **是否推理阶段恢复全注意力**，不要另编加速倍数。8192 vs 2048 的 FLOPs 约 ×16 是二次注意力的直接推论，可留。
 
 ![LongLoRA 上下文扩展与训练配置](./images/fig-s2attn-longlora-overview.jpg)
 
