@@ -15,9 +15,10 @@ tags:
 ---
 # Stanford CS329A Agent Skill：自改进 Agent 课程蒸馏
 
+本篇是 **课程入口**，不是机制专文。**不搬** CS329A 讲义进花园。闭环、验证、轨迹回写的判定回 [01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)、[02 三层](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)、[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+
 > **仓库**：[yusenthebot/stanford-ai-agent-skill](https://github.com/yusenthebot/stanford-ai-agent-skill)
-> **已安装**：`config/skills/stanford-ai-agent-skill/`（触发 `/stanford-ai-agent-skill`；标签：**非常有用 / 必装**）
-> **README**：[stanford-ai-agent-skill.md](../../uploads/github-readme/stanford-ai-agent-skill.md)
+> **README 镜像**：[stanford-ai-agent-skill.md](../../uploads/github-readme/stanford-ai-agent-skill.md)
 > **课程**：[Stanford CS329A](https://cs329a.stanford.edu/)（非官方社区资料，无学校背书）
 > **蒸馏工具**：[kangarooking/cangjie-skill](https://github.com/kangarooking/cangjie-skill)
 
@@ -82,7 +83,7 @@ tags:
 - **子模块 = 叶子 playbook**：每模块含检查清单、反模式、通过/阻断条件。
 - **证据边界单独成文**：防止 Skill 把社区解读说成官方 syllabus。
 
-这与 KnowPilot `config/skills/` 里「guidance + rubric + workflow 分包」思路同构；Polaris Skill marketplace 是产品级放大版。
+叶子模块是检查清单，不是把 9 讲搬进花园。产品级 skill marketplace 不在本篇展开。
 
 ### 与 CS329A 主题轴的映射（抽象）
 
@@ -127,12 +128,12 @@ MIT 许可；第三方归属见 `THIRD_PARTY_NOTICES.md`。
 
 ### 蒸馏方法论要点（EVIDENCE_AND_LIMITS）
 
-仓库明示：Skill 内容来自公开课程材料与社区解读，**非官方 syllabus**；视频时间点与 reading 以 `LECTURE_GUIDE` 为准。对 AI 助手而言，这降低「把传闻当铁律」风险——与 KnowPilot `design-decisions.md` 的「产品默认须显式回答」纪律同频。
+仓库明示：Skill 内容来自公开课程材料与社区解读，**非官方 syllabus**；视频时间点与 reading 以 `LECTURE_GUIDE` 为准。不要把社区蒸馏听成学校背书。
 
-作为知识库条目，本 Skill 的价值在于把 CS329A 散落的「Verifier 分层、pass@k 预算、轨迹能否回写」收成**可执行 checklist**，而不是替代完整听课。建议与 RSIBench-Data（数据研究是否可靠 progressive）、ReOPD（蒸馏 prefix 设计）、LongHorizon-Harness（审计报告作唯一跨轮记忆）交叉阅读，形成「自改进 Agent 课程轴 + 2026 论文轴」的对照学习路径。
+作为知识库条目，本 Skill 的价值在于把 CS329A 散落的「Verifier 分层、pass@k 预算、轨迹能否回写」收成 checklist，而不是替代完整听课。交叉阅读：[RSIBench-Data](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md)、[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。蒸馏 prefix / 产品 harness 细节回 llm-guide，不在本篇展开。
 
-安装后可在 Codex 项目根用 `$stanford-ai-agent-skill` 触发；模块路由由 Skill 自行判断，无需手动指定 Mod 编号。非官方资料使用时请注明出处，避免在对外文档中引用为 Stanford 官方立场。
+非官方资料使用时请注明出处，避免在对外文档中引用为 Stanford 官方立场。
 
 ---
 
-> 见微改进对照见 [OasisMind 2026-08 Harness 波改进清单](../../essays/oasis-improvements-2026-08-harness-wave.md)。
+机制判定回第 1 章。本篇不搬讲义、不对照产品改进清单。

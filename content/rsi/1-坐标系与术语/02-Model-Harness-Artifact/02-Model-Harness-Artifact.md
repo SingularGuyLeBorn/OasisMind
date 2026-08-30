@@ -6,7 +6,7 @@ category: RSI · 综述
 published: true
 excerpt: >-
   Agent = Model + Harness。三层例子：AlphaEvolve = Artifact，技能包自改 = Harness，SPIN = Model。
-  链周星星笔记与 lsl.zone，不抄正文。
+  社区三层只借名字；判定以本篇与 01 为准。
 tags:
   - RSI
   - 自进化 Agent
@@ -20,7 +20,7 @@ tags:
 
 自进化文献共用三个词，说的经常不是同一层。**Model** 是会响应 prompt 的权重；**Harness** 是循环、工具、记忆、权限、技能包；**Artifact** 是 Agent 交出去的东西。一句话：**Agent = Model + Harness**，Agent 再产出 Artifact。
 
-本篇把三层钉死，并各给一个不能再缩的例子。术语边界回 [01 术语辨析](../01-RSI-术语辨析/01-RSI-术语辨析.md)。**不是**把 [周星星三层框架笔记](../03-三层框架笔记/03-三层框架笔记.md) 再写一遍，也**不是**把 lsl.zone 博客改写成专文——两处只当讲法线索与互参。产品级 CLI 细节在 [llm-guide 第 13 章](../../../llm-guide/13-Agent/13-Agent.md)。
+本篇把三层钉死，并各给一个不能再缩的例子。术语边界回 [01 术语辨析](../01-RSI-术语辨析/01-RSI-术语辨析.md)。**不是**把 [03 社区三层](../03-三层框架笔记/03-三层框架笔记.md) 再写一遍，也**不是**把 lsl.zone 博客改写成专文——两处只当讲法线索。产品级 CLI 细节在 [llm-guide 第 13 章](../../../llm-guide/13-Agent/13-Agent.md)。
 
 ## 1. 三要素：谁在响应、谁在循环、谁被交出去
 
@@ -132,11 +132,11 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 - **不是**把「会写 skill」叫 RSI。那是 Harness，最多弱 RSI。
 - **不是**把 OPD / SPIN / Self-Rewarding 叫 RSI。那是 Model 层训练，递归缺位或靶被钉死。
 - **不是** Continual Learning，也**不是** TTT。二者可当零件。
-- **不是** CS329A 讲义或专栏的目录搬家。社区讲法见 [03 三层框架笔记](../03-三层框架笔记/03-三层框架笔记.md)（周星星）与 lsl.zone；机制以本篇与论文为准。
+- **不是** CS329A 讲义或专栏的目录搬家。社区讲法见 [03](../03-三层框架笔记/03-三层框架笔记.md) 与 lsl.zone；机制以本篇与论文为准。
 
 编码评测把这一点打得很死：同一模型换 CLI，SWE-bench 会跳。那是 Harness 的存在证明，不是 Model 变强的证明。Kimi K3 一类报告把环境做成可组合 harness，就是承认分数绑在脚手架上。本花园第 3 章写「harness 作为自进化一层」，第 13 章兄弟花园写产品循环。两章不要互相抄目录。
 
-周星星长文与 Shilong Liu 博客在三层划分上高度同构，这是 2026-07 前后社区收敛的信号，不是互抄的许可。本篇例子优先 DeepMind 官方博客与本花园已有专文，不搬专栏段落。
+2026-07 前后，社区专栏和 Shilong Liu 博客在三层划分上高度同构。这是讲法收敛，不是互抄的许可。本篇例子优先 DeepMind 官方博客与本花园已有专文，不搬专栏段落。
 
 三层对照（备查，数字回各专文）：
 
@@ -156,16 +156,16 @@ Shilong Liu 文末三问可以当实验记录模板，不搬原文修辞：进�
 
 1. **先分清层**。本篇图 1 加上面那张表。把 AlphaEvolve 的 48 次乘听成「Gemini 在改自己」，就是把 Artifact 当成了 Model。把会写 `SKILL.md` 听成 RSI，就是把 Harness 当成了术语式 (2)。
 2. **先把模仿和 RLVR 拆开，再看 Model 层的靶**。把 R1 听成 RSI，是把「$\theta$ 被 0/1 推过」听成「改进器进了 $S'$」。对照见 [04 模仿学习与 RLVR](../04-模仿学习与RLVR/04-模仿学习与RLVR.md)：Yue 等大 $k$ 时基座常反超；Venhoff 等纯 RL 混合模型约收回 76% 差距。然后才看靶有没有钉死。[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md) 对手是上一轮自己，赢家分布仍是人类 SFT。[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) 的法官头和生成头共享权重，主实验新 prompt 还来自冻结的 Llama 2-Chat。[Tufa](../../2-Model层-训练时自改进/03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) 把裁判冻死，Countdown 三个提示会被黑，积分自环 43% 超过 GPT-4o 的 42%——花园里最像 RLVR 的样板，裁判仍在墙外。[LADDER](../../2-Model层-训练时自改进/05-LADDER-递归拆题/05-LADDER-递归拆题.md) 用数值器做课程：Llama 3B 本科积分 1%→82%，同一 7B 在 MIT 资格赛 50%→73%，TTRL 再到 90%，答完一道把 $\theta$ 滚回。[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环 LoRA 真改 $\theta$，外环 ReST-EM 配方在墙外。这些都改权重，都还不是递归。
-3. **Harness 层先看门，再看元学习，再看自指**。[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 只回答「生成的技能凭什么留下」：SWE-Bench Pro 约 78% 对 Direct Copilot 约 59%。[ADAS](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 用冻结 gpt-4o 元 Agent 搜 `forward`，MGSM 53.4%，higher-order 写在未来工作里。[STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器程序对自己递归，弱模型上会掉分。[Gödel Agent](../../3-Harness层-Agent运行时/06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 公平对照只认 Gödel-base 相对 ADAS 的 MGSM 11 个百分点，不要截 Gödel-free 的 90.6%。[DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案，SWE-bench 20%→50%。五篇 $\theta$ 都冻着。
-4. **Artifact 层看评估器在谁手里**。[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 搜短函数，$n=8$ cap set 512，140 次里只有 4 次摸到。[AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 搜整文件，可以反哺训练栈，发现者仍可不改。
+3. **Harness 层先看门，再看元学习，再看自指**。[Argus](../../3-Harness层-Agent运行时/01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 只回答「生成的技能凭什么留下」：SWE-Bench Pro 约 78% 对 Direct Copilot 约 59%。[ADAS](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 用冻结 gpt-4o 元 Agent 搜 `forward`，MGSM 53.4%，higher-order 写在未来工作里。[STOP](../../3-Harness层-Agent运行时/05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器程序对自己递归，弱模型上会掉分。[Gödel Agent](../../3-Harness层-Agent运行时/06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 公平对照只认 Gödel-base 相对 ADAS 的 MGSM 11 个百分点，不要截 Gödel-free 的 90.6%。[DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案，SWE-bench 20%→50%。[Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md) 只改 `train.py`，val_bpb 在墙外。这几篇 $\theta$ 都冻着。
+4. **Artifact 层看评估器在谁手里**。[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 搜短函数，$n=8$ cap set 512，140 次里只有 4 次摸到。[AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 搜整文件，可以反哺训练栈，发现者仍可不改。[Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 交卷是论文。[MirroS](../../4-Artifact层-产物发现/02-MirroS-Physical-RSI/02-MirroS-Physical-RSI.md) 交卷是可执行世界，发现环按官方报告仍在墙外。
 5. **评测先看过程，再看交卷分**。[RSIBench-Data](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md) 冻住后训练栈，只让 Agent 改数据：14/24 后来超过第一次有效尝试，达峰后继续搜的 23 个里 18 个最终更差。发现有了，过程不可靠。
 6. **最后才问可靠不可靠**。[可靠性阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md) 把上面专文接到 L0–L4：产物发现不爬台阶，Argus 是 L2，STOP / DGM / Gödel Agent 是 L3-facing，RSIBench 测的是 L1 数据研究切片，没有任何一篇把考纲交给循环。
 
-[Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 是可部署的科研 OS（文献到审稿），交卷仍是论文不是自己；实验室访谈若缺一手就留条，不要用专栏补数字。读完 1–6 步，已经能自己判断一条新闻是不是 RSI；剩下的是覆盖面，不是另一套坐标系。前世（Good、种子 AI、Gödel machine）和今生能力项的对照在 [0 导读](../../0-导读/0-导读.md)，本篇不重推证明搜索器。system card 上的 self-improvement 分数是能力阈值，和三层坐标不是同一把尺，数字回 llm-guide 第 14 章。读新闻时先问改的是哪一层，再问证据在不在更新边界之外，两问都过了才碰「算不算 RSI」。
+[Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 与 [MirroS](../../4-Artifact层-产物发现/02-MirroS-Physical-RSI/02-MirroS-Physical-RSI.md) 已在第 4 步：交卷分别是论文和可执行世界。实验室访谈若缺一手就留条，不要用专栏补数字。读完 1–6 步，已经能自己判断一条新闻是不是 RSI；剩下的是覆盖面，不是另一套坐标系。前世（Good、种子 AI、Gödel machine）和今生能力项的对照在 [0 导读](../../0-导读/0-导读.md)，本篇不重推证明搜索器。system card 上的 self-improvement 分数是能力阈值，和三层坐标不是同一把尺，数字回 llm-guide 第 14 章。读新闻时先问改的是哪一层，再问证据在不在更新边界之外，两问都过了才碰「算不算 RSI」。
 
 ## 本篇来源
 
 1. Shilong Liu. (2026-07-08). [A Taxonomy of Self-evolving Agents](https://lsl.zone/blog/2026/a-taxonomy-of-self-evolving-agents/). Agent = Model + Harness；三档分类的讲法来源。禁止搬正文。
 2. AlphaEvolve team. (2025-05-14). [AlphaEvolve: A Gemini-powered coding agent for designing advanced algorithms](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/). Google DeepMind. 23% / 1% / 32.5% / 0.7% / 48 次乘以该页为准。
-3. 周星星笔记（库内互参，不抄）：[03 三层框架笔记](../03-三层框架笔记/03-三层框架笔记.md)。
+3. 社区三层线索（库内互参，不抄专栏）：[03](../03-三层框架笔记/03-三层框架笔记.md)。
 4. FARS 的 417 小时 / 166 篇 / 18 万美元：仅见于 lsl.zone 转述。**未找到 Analemma 一手来源**。[OM-FREEPLAY]
