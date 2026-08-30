@@ -26,7 +26,7 @@ Agent 技能今天多半是一次性产物：人写一份，或模型按任务�
 
 Trace2Skill 一类把轨迹蒸成技能，大约每个域要挖 200 条轨迹、还要手写 Python 归并管线。SkillRL 在许多训练任务上用 RL 长技能库。覆盖面够，前提是域已经备好轨迹池或跨任务分布。真来的任务经常是一道一道来的，付得起的探索只有几次，技能就得交货。SkillEvolver 不跟它们比「谁蒸得更全」——任务级对池级，哪边都不公平——它只回答：刚到的一道题，几次试验，能不能交出下次还能用的文件。
 
-SkillsBench（Li et al., 2026b, arXiv:2602.12670）把条件收成 A/B/C：无技能、人工策展技能、自生成技能。那篇已经报过：只靠参数知识盲生成技能，往往会伤分数。ACE 改的是上下文 playbook，还在同一只 Agent 的记忆里。SkillEvolver 要的是**另一只 Agent 也能加载**的独立目录。
+SkillsBench（Li et al., 2026b, arXiv:2602.12670）把条件收成 A/B/C：无技能、人工策展技能、自生成技能。那篇已经报过：只靠参数知识盲生成技能，往往会伤分数。[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 改的是上下文 playbook，还在同一只 Agent 的记忆里。SkillEvolver 要的是**另一只 Agent 也能加载**的独立目录。
 
 污染面比普通 LLM 评测多一层：写技能的 Agent 自己可能读到训练标签，再把文件名、常数写进 `SKILL.md`。论文用两层门：训练变体 $T_{\mathrm{train}}$ 和验证 $T_{\mathrm{val}}$ 文件名、数值、有时子域都不同；策展训练技能在探索前从源删除。工作区白名单 + `PreToolUse` hook，验证目录和测试套件在前缀外。这不是对齐证明，是评测纪律。没这条纪律，56.8% 没有资格对人工策展说话。
 
@@ -73,7 +73,7 @@ $$
 
 Table 3 九条机械检查。1–6 是内容过拟合：业务名词当技能名、写死文件名、超 200/400 行脚本、无来源的命令句、按列名硬索引、交叉引用训练字符串。7–9 是部署态才看得见的病：参数轴没抽象、主脚本没抬到 `SKILL.md` 头上（using-agent 先读约束再也不调脚本）、静默绕过（技能宣称有主脚本，失败轨迹里一次 Bash 都没调它）。7–9 标星，命中就强制下一轮对着这条补。干净且训练通过率够（伪代码里 $\#\mathrm{pass}(\tau_r)\ge 3K/4$）可以提前停；否则打到 $R$。Finalize 在 $\{v_j\}$ 里按训练通过率、轨迹成本、泛化风险挑一份写进部署目录，**这一步不再调 Harbor**。验证只在 $T_{\mathrm{val}}$ 上跑 $V$ 次。附录 Algorithm 1 把「部署当真依赖」写成第 7 行：从 $r=1$ 起 $v_r$ 装进试验容器的 `skills/`，第 10 行的对比才反映**使用方**被帮了还是被带偏。$v_1$ 蒸馏完会镜像一份到 `output/` 作失败安全副本。Oracle 策略是不确定度驱动：轨迹留下缺口才读 `test/outputs.py`，仍不清楚才升级到 `solve.sh`——不是开局就把标准答案灌进技能。SkillCreator-SkillsBench 相反：Eval Designer 按设计读满训练上下文，Grader / Analyzer 被禁止读技能源码。
 
-对照基线 SkillCreator-SkillsBench 把 Anthropic 官方 skill-creator 的人接点换成 Eval-Designer / Grader / Analyzer 子 Agent，看到的训练上下文与 Evolver 相同，差只在写作机制。它的探索不走 Harbor 部署，验证才进 Harbor（每题 5 次，对 Evolver 的 13 次）。所以 33.9% 对 56.8% 比的是「同样看见 $T_{\mathrm{train}}$，一种是子 Agent 采访式写作，一种是把技能当依赖再打补丁」。ACE 的 playbook 还住在同一只 Agent 的上下文编辑里；这里交货物必须离开作者会话，另一只 Agent 冷启动加载。Trace2Skill 按域蒸约 200 条轨迹，本方法声称典型只要四次部署试验、没有域级管线。池级方法更全，任务级方法更便宜，论文把它们写成动机而不是可对打的基线。
+对照基线 SkillCreator-SkillsBench 把 Anthropic 官方 skill-creator 的人接点换成 Eval-Designer / Grader / Analyzer 子 Agent，看到的训练上下文与 Evolver 相同，差只在写作机制。它的探索不走 Harbor 部署，验证才进 Harbor（每题 5 次，对 Evolver 的 13 次）。所以 33.9% 对 56.8% 比的是「同样看见 $T_{\mathrm{train}}$，一种是子 Agent 采访式写作，一种是把技能当依赖再打补丁」。[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 的 playbook 还住在同一只 Agent 的上下文编辑里；这里交货物必须离开作者会话，另一只 Agent 冷启动加载。Trace2Skill 按域蒸约 200 条轨迹，本方法声称典型只要四次部署试验、没有域级管线。池级方法更全，任务级方法更便宜，论文把它们写成动机而不是可对打的基线。
 
 ![元技能驱动：策略多样化探索 → 对比补丁 → 独立审计；领域技能离开作者会话](./images/fig-skillevolver-loop.png)
 
@@ -146,7 +146,7 @@ $S$ 若取「当前领域技能目录」，$v_{r+1}$ 确实来自 $v_r$ 的补�
 **读**：$K=4$、$R=2$、83 题 29.9 / 43.6 / 56.8、KernelBench 1.16→1.51、3.92 美元、静默绕过、法庭填表负迁移。  
 **不读**：把 56.8% 听成权重递归、把元技能听成已经自改、把三题 GPU 均加速听成第二主榜、用专栏 Hermes 规则补本篇数字。
 
-下一篇同层可回 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 看门，或 [04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 看真正改自己代码的档案。产品 CLI 细节回 llm-guide 第 13 章。
+下一篇同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 看同一窗口里的 playbook；或回 [01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 看门，或 [04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 看真正改自己代码的档案。产品 CLI 细节回 llm-guide 第 13 章。
 
 ## 参考文献
 
@@ -155,4 +155,4 @@ $S$ 若取「当前领域技能目录」，$v_{r+1}$ 确实来自 $v_r$ 的补�
 3. Li, X., et al. (2026). [SkillsBench](https://arxiv.org/abs/2602.12670). arXiv:2602.12670. A/B/C 框架与 83 题范围。
 4. Hu, S., Lu, C., & Clune, J. (2024). [Automated Design of Agentic Systems](https://arxiv.org/abs/2408.08435). meta-X 命名来源；本园 [07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。
 5. Ouyang, A., et al. (2025). [KernelBench](https://arxiv.org/abs/2502.10517). arXiv:2502.10517. 三题探针，不是第二主榜。
-6. 本花园：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+6. 本花园：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)；[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。

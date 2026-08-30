@@ -170,7 +170,7 @@ $S$ 若取「当前 $H_t$」，$U$ 确实在改下次还用的脚手架，和 [S
 **读**：式 (2)(3)、四视图、Table 2 的 OOD 符号、$E_{16}$ 的 6/80 与 66 次 ERR、NexAU 契约、batch 20 独好、HLE-only 终局 0、跨骨干不对称、主 AHE 1053.8M rollout。  
 **不读**：把 UVG 当总排名、把 AHE 听成本库新算法、用第三方榜转写的 UVG 列替代 Table 2、把 Harbor 听成已经在做 SkillEvolver、把 43/80 终局听成过程单调。
 
-上一篇发现间隙：[01 RSIBench-Data](../01-RSIBench-Data/01-RSIBench-Data.md)。原则：[02 可靠性](../02-可靠性与独立监督/02-可靠性与独立监督.md)。被测的 harness 写作回 [08 SkillEvolver](../../3-Harness层-Agent运行时/08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。
+上一篇发现间隙：[01 RSIBench-Data](../01-RSIBench-Data/01-RSIBench-Data.md)。原则：[02 可靠性](../02-可靠性与独立监督/02-可靠性与独立监督.md)。被测的 harness 写作回 [08 SkillEvolver](../../3-Harness层-Agent运行时/08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[09 ACE](../../3-Harness层-Agent运行时/09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。
 
 ## 参考文献
 
@@ -178,5 +178,5 @@ $S$ 若取「当前 $H_t$」，$U$ 确实在改下次还用的脚手架，和 [S
 2. [antropy-research/SEAGym](https://github.com/antropy-research/SEAGym). 评测环境，不接受/拒绝更新。
 3. Lin et al. (2026). [Agentic harness engineering](https://arxiv.org/abs/2604.25850). arXiv:2604.25850. AHE；本篇只借用对照数字。
 4. Cai et al. (2025). [Training-free group relative policy optimization](https://arxiv.org/abs/2510.08191). arXiv:2510.08191. TF-GRPO。
-5. Zhang et al. ACE / Agentic Context Engineering。SEAGym 实验引用为 2026；技能专文里的 arXiv:2510.04618 是同名线，机制以各文为准，本篇不合并版本号。
-6. 本花园：[01 RSIBench-Data](../01-RSIBench-Data/01-RSIBench-Data.md)；[08 SkillEvolver](../../3-Harness层-Agent运行时/08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。
+5. Zhang et al. [ACE / Agentic Context Engineering](../../3-Harness层-Agent运行时/09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。SEAGym 实验引用为 2026；机制专文 arXiv:2510.04618 是同名线，骨干与日程都不同，本篇不合并版本号。
+6. 本花园：[01 RSIBench-Data](../01-RSIBench-Data/01-RSIBench-Data.md)；[08 SkillEvolver](../../3-Harness层-Agent运行时/08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)；[09 ACE](../../3-Harness层-Agent运行时/09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。
