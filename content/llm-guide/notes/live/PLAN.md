@@ -185,3 +185,6 @@ category: LLM 指南
 | rrhf-444 | done | `4.4.4-其他对齐技术/02-RRHF-排序响应对齐/` + inbox `rrhf-444.md` | 已入库。长度归一 $p_i$；无 margin hinge；不是 BT σ |
 | ipo-444 | done | `4.4.4-其他对齐技术/03-IPO-身份偏好优化/` + inbox `ipo-444.md` | 已入库。$\tau^{-1}/2$；3-action 玩具；不是 $1/(2\beta)$ |
 | reinforce-441 | done | `4.4.1-基于奖励模型的RL-RLHF-PPO/10-REINFORCE-序列级策略梯度/` + inbox `reinforce-441.md` | 已入库。序列 bandit + $b_{\mathrm{MA}}$；Table 1 70.7/37.9/55.3 |
+| pro-444 | running | `4.4.4-其他对齐技术/04-PRO-偏好排序优化/` + inbox `pro-444.md` | 2306.17492；listwise；不要改节首页 |
+| cpo-444 | running | `4.4.4-其他对齐技术/05-CPO-对比偏好优化/` + inbox `cpo-444.md` | 2401.08417；MT；不要改节首页 |
+| cai-443 | running | `4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/` + inbox `cai-443.md` | 2212.08073；不是 Lee 2309.00267；不要改 4.4.3 节首页 |
