@@ -1,6 +1,7 @@
 ---
 title: "01 · RoPE本体：旋转位置编码"
 date: 2026-05-24
+as_of: 2026-08-30
 tags: []
 ---
 
@@ -41,11 +42,11 @@ $$
 
 这意味着每两维被视为一个二维平面，位置 $m$ 会让该平面中的向量旋转 $m\theta_i$. 高频维度旋转得快，负责短程差异; 低频维度旋转得慢，负责长程结构. 
 
-> 配图建议：画一个二维平面里的单向量旋转示意图，左侧是原始向量，右侧是经过位置 $m$ 后旋转 $m\theta_i$ 的向量，并标出角度与坐标轴. 
-> 图片描述：展示 RoPE 在单个二维子空间里的最小工作单元，让读者先看懂“每两维就是一次平面旋转”. 
-> GPT-Image-2 Prompt：Create a technical educational figure showing the minimal 2D rotation unit of RoPE. Display a vector in a 2D plane before rotation and after rotation by angle m·theta_i, with x/y axes, arc annotation, and labels for original vector and rotated vector. White background, research-paper style, minimal academic palette, precise arrows, no decorative art.
+![RoPE 最小单元：二维平面上的位置旋转](./images/fig-rope-2d-rotation.png)
 
-> 图 1: RoPE 的最小计算单元不是整条向量，而是每两维构成的一个二维平面旋转. 
+> 图 1: RoPE 的最小计算单元不是整条向量，而是每两维构成的一个二维平面旋转.
+
+<!-- GPT-Image-2 Prompt：Create a technical educational figure showing the minimal 2D rotation unit of RoPE. Display a vector in a 2D plane before rotation and after rotation by angle m·theta_i, with x/y axes, arc annotation, and labels for original vector and rotated vector. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Research-paper style, minimal academic palette, precise arrows, no decorative art. --> 
 
 ### 1.1 一个能直接算出来的二维旋转例子
 
@@ -111,11 +112,11 @@ $$
 - 不需要改写标准 attention 主体结构. 
 - 相对关系在数学上是“自带”的，而不是靠补丁拼上去的. 
 
-> 配图建议：画两组 Query/Key 向量在复平面上的旋转过程，标出绝对相位 $m\theta_i$、$n\theta_i$ 被抵消，只留下相对相位 $(m-n)\theta_i$. 
-> 图片描述：展示为什么 RoPE 的点积最终只依赖相对距离，而不是两个绝对位置各自的坐标. 
-> GPT-Image-2 Prompt：Create a technical educational figure explaining why RoPE produces relative position naturally. Show query and key vectors rotated by absolute phases m·theta_i and n·theta_i on the complex plane, then indicate that inner product depends only on relative phase difference (m-n)·theta_i. White background, academic diagram style, precise arrows, clean labels, no decorative art.
+![RoPE：绝对相位抵消后点积只剩相对相位差](./images/fig-rope-relative-phase.png)
 
-> 图 2: RoPE 的关键不是“旋转过了”，而是点积里绝对相位被抵消，只留下相对相位差. 
+> 图 2: RoPE 的关键不是“旋转过了”，而是点积里绝对相位被抵消，只留下相对相位差.
+
+<!-- GPT-Image-2 Prompt：Create a technical educational figure explaining why RoPE produces relative position naturally. Show query and key vectors rotated by absolute phases m·theta_i and n·theta_i on the complex plane, then indicate that inner product depends only on relative phase difference (m-n)·theta_i. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Academic diagram style, precise arrows, clean labels, no decorative art. --> 
 
 ### 2.1 一个只剩相对距离的小例子
 
@@ -147,11 +148,11 @@ $$
 
 式 (10) 说明，旋转后的 Query-Key 打分只依赖相对距离 $n-m$，不再依赖绝对位置本身. 这一性质让 RoPE 非常适合语言、代码、检索这类“相对关系大于绝对坐标”的任务. 
 
-> 配图建议：画一张左右对照图，左边是绝对位置编码把 token 绑定到编号，右边是 RoPE 把两个 token 的交互绑定到相对位移. 
-> 图片描述：让读者一眼看出绝对位置和相对位置建模在结构上的差异. 
-> GPT-Image-2 Prompt：Create a side-by-side technical educational figure comparing absolute positional encoding and RoPE. Left panel: tokens tied to absolute indices like 5 and 6. Right panel: token interaction tied to relative distance like delta=1 through rotation-based phase difference. White background, research-paper style, minimal academic palette, readable labels, no decorative art.
+![绝对位置编码绑定下标，RoPE 绑定相对位移](./images/fig-rope-vs-absolute-pe.png)
 
-> 图 3: 绝对位置编码强调“你在第几位”，RoPE 强调“你和别人相隔多远”. 
+> 图 3: 绝对位置编码强调“你在第几位”，RoPE 强调“你和别人相隔多远”.
+
+<!-- GPT-Image-2 Prompt：Create a side-by-side technical educational figure comparing absolute positional encoding and RoPE. Left panel: tokens tied to absolute indices like 5 and 6. Right panel: token interaction tied to relative distance like delta=1 through rotation-based phase difference. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Research-paper style, minimal academic palette, readable labels, no decorative art. --> 
 
 ## 4. 为什么现代开源模型几乎都选 RoPE
 

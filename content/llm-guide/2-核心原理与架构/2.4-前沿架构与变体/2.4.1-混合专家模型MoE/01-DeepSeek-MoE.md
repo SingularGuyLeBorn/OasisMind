@@ -128,9 +128,11 @@ V3 抛弃了 V1/V2 中的显式辅助损失函数, 转而采用一种无损失�
 
 DeepSeek V3 引入的 MLA (Multi-Head Latent Attention) 是一种创新的注意力机制, 其根本目标就是**压缩 KV 缓存**, 从而在不显著影响模型性能的前提下, 大幅减少推理时的内存占用.
 
-![](https://i.imgur.com/your_image_mla.png)![](./01-DeepSeek-MoE-images/image_4.png)
+<!-- 2025 假 imgur 占位：https://i.imgur.com/your_image_mla.png ；本地快照仍保留 ./01-DeepSeek-MoE-images/image_4.png -->
 
-图 4: Multi-Head Latent Attention (MLA) 架构示意图.
+![MLA：缓存低维 $c^{KV}$，再升维重建 K/V](./01-DeepSeek-MoE-images/fig-mla-latent-cache.png)
+
+图 4: Multi-Head Latent Attention (MLA) 架构示意图. 本体推导在 [2.3.5 MLA](../../2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。2026-08 自绘。
 
 MLA 的核心思想是**不直接缓存高维的 K 和 V 向量, 而是先将它们投影到一个共享的, 维度更低的 "潜空间" (latent space), 然后只缓存这个低维的 "潜激活向量" (latent activation)** . 在实际需要进行注意力计算时, 再从这个压缩后的潜向量中将 K 和 V "重建" 出来.
 

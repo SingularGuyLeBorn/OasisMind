@@ -172,3 +172,9 @@ $$
 
 - Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv preprint arXiv:2407.08691.
 - NVIDIA Corporation. (2023). "NVIDIA Hopper Architecture Technical Brief."
+
+---
+
+## 5. 2026-08 修订（不删上文）
+
+参考文献 arXiv **2407.08691 是错号**，论文是 [2407.08608](https://arxiv.org/abs/2407.08608)。摘要数字：H100 上 FA2 约 35% 利用率；FA3 FP16 前向相对 FA2 **1.5–2.0×**、最高约 **740 TFLOPs/s（75%）**；反向 1.5–1.75×；FP8 接近 **1.2 PFLOPs/s**；块量化+incoherent processing 相对朴素 FP8 误差约 **2.6× 更低**。论文限制段写明 **LLM inference 还没作为本核的优化目标**。qlen=1 时按 KV 切开占满 SM，是 2023 Flash-Decoding（FA 2.2 的 split-KV），本体在 [6.6.3](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md)，不要把本篇 pingpong 图当成 decode 核。

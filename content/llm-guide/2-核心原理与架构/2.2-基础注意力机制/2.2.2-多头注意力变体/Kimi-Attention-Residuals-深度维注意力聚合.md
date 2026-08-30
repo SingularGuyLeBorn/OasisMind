@@ -127,6 +127,8 @@ AttnRes 并不是停留在「小模型上做一个概念实验」. 根据论文�
 
 更重要的是, Kimi Linear 本身就带有强工程导向：它并不是在纯标准 dense Transformer 上追求理论美感, 而是在一个更强调效率与可扩展性的系统里看 AttnRes 是否还能成立. 换句话说, AttnRes 不是“理想环境里的小修饰”, 而是被放到现实预训练系统里测了一次.
 
+**2026-08 修订（K3 用法，不删上文）。** Kimi K3（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2）把 Block AttnRes 接到 93 层 MoE：层划成 **8 个约 12 层的块，最后一块不满，加上 embedding 共 9 个可查询源**。全量 $O(Ld)$ 留层输出改成 $O(Nd)$ 留块摘要。公式仍是本文 §3–6 的伪查询 + RMSNorm key，不要在第 14 章再推一遍。K3 还把 MTP/EAGLE-3 的特征取自第 1、第 4、最后一块 AttnRes。捆法见 [K3 D2](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
+
 ## 8. 为什么它不适合放进残差连接基础篇
 
 残差连接基础篇的任务, 应该优先解释：
@@ -189,3 +191,4 @@ Kimi 的 Attention Residuals 真正做的, 不是简单“把残差改一下”,
 
 1. [Kimi Team et al. (2026). Attention Residuals.](https://arxiv.org/abs/2603.15031) *arXiv:2603.15031*.
 2. [MoonshotAI/Attention-Residuals (official repository).](https://github.com/MoonshotAI/Attention-Residuals)
+3. Kimi K3 对 Block AttnRes 的规模用法：https://arxiv.org/abs/2607.24653 §2.2

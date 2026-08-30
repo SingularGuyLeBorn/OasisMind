@@ -173,7 +173,12 @@ HC / mHC 的讨论，如果只停在“效果涨没涨”，其实是不够的. 
 
 对大模型未来的架构演化而言，这可能是一条非常重要的信号. 过去十年，容量增长主要依赖更强子层; 未来一部分容量增长，也许会来自更聪明、更稳定、更有层次感的主干连接结构. 
 
-## 16. 参考文献
+## 16. 2026-08 修订：GLM-5.3-Flash 把 mHC 捆进混合注意力基座
+
+不删上文。GLM-5.3-Flash（[Z.ai 文档](https://docs.z.ai/guides/vlm/glm-5.3-flash)）把 mHC 写成「进一步提高 scaling efficiency」的残差侧改动，注意力侧另走 KDA + 稀疏 MLA。Hugging Face `config.json`：`mhc: true`，`hc_mult: 4`，`hc_sinkhorn_iters: 20`，`hc_eps: 1e-6`。这是已有 mHC 积木的一次发布捆法，不要在第 14 章再推一遍流形约束。完整捆法：[Flash D2](../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)。
+
+## 17. 参考文献
 
 1. [Zhu, D., et al. (2024/2025). Hyper-Connections.](https://arxiv.org/abs/2409.19606) *arXiv:2409.19606*.
 2. [Xie, Z., et al. (2025/2026). mHC: Manifold-Constrained Hyper-Connections.](https://arxiv.org/abs/2512.24880) *arXiv:2512.24880*.
+3. Z.ai. *GLM-5.3-Flash* 文档：https://docs.z.ai/guides/vlm/glm-5.3-flash （mHC 出现在混合架构段；不是 mHC 原论文）
