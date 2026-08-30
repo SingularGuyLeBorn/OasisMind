@@ -111,7 +111,7 @@ Berglund：虚构名人正向 96.7%，反向约 0%。LLaDA 诗句表：LLaDA Ins
 
 ## 8. 幻觉、一致、事实
 
-并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、允许再掩。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
+并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、可算乘积层（CoDD，冻 8B）、允许再掩。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
 
 ## 9. 基础设施
 
@@ -206,6 +206,7 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [SDAR](../03-points/sdar.md)
 - [APD](../03-points/apd.md)
 - [离散 copula](../03-points/discrete-copula.md)
+- [CoDD](../03-points/codd.md)
 - [量化 dLLM](../03-points/quantization.md)
 - [D2F](../03-points/d2f.md)
 - [ParallelBench](../03-points/parallelbench.md)

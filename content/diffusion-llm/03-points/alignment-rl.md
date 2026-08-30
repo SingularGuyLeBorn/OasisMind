@@ -137,3 +137,4 @@ VRPO 更新没有环境。抽一个偏好对，抽 $n$ 个时间步，共享掩�
 - [代码向扩散](./code-dllm.md)
 - [失效模式](./failure-modes.md)
 - [采样与调度](../02-mechanism/sampling.md)
+- [CoDD](./codd.md)

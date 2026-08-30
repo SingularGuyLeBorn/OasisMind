@@ -123,3 +123,5 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 - [LLaDA-MoE](../03-models/llada-moe.md)
 - [APD](./apd.md)
 - [离散 copula](./discrete-copula.md)
+- [CoDD](./codd.md)
+- [离散 copula](./discrete-copula.md)

@@ -194,6 +194,7 @@ ReFusion 的槽间任意顺序、槽内因果，是把联合写进注意力图�
 - [采样与调度](../02-mechanism/sampling.md)
 - [少步蒸馏](./few-step-distill.md)
 - [APD](./apd.md)
+- [CoDD](./codd.md)
 - [ReFusion](./refusion.md)
 - [ParallelBench](./parallelbench.md)
 - [Score entropy](./score-entropy.md)

@@ -187,6 +187,7 @@ batch、卡、引擎：本篇是准确率–并行曲线，几乎不报 TPS。�
 - [推理加速](./inference-acceleration.md)
 - [APD](./apd.md)
 - [离散 copula](./discrete-copula.md)
+- [CoDD](./codd.md)
 - [谁决定揭开哪一格](./plan-denoise.md)
 - [提交之后还能不能改](./remask-revise.md)
 - [任意顺序](./any-order.md)

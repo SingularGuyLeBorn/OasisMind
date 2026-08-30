@@ -164,6 +164,7 @@ $M$ 改 EOS，$W$ 把双向 KV 冻出训练分布。Dream 还有改编移位。d
 - [d3LLM](./d3llm.md)
 - [少步蒸馏](./few-step-distill.md)
 - [离散 copula](./discrete-copula.md)
+- [CoDD](./codd.md)
 - [Serving](./serving.md)
 - [SDAR](./sdar.md)
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
