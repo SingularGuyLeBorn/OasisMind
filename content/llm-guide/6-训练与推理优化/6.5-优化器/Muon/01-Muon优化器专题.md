@@ -1033,4 +1033,13 @@ Muon、Sophia、Adam-mini 三者共同勾勒出 2025–2026 年优化器研究�
 
 8. **AdamW**：Loshchilov, I., & Hutter, F. "Decoupled Weight Decay Regularization." *International Conference on Learning Representations (ICLR)*, 2019. 现代大模型训练的事实标准优化器. 
 
-9. **Stiefel 流形优化**：Edelman, A., Arias, T. A., & Smith, S. T. "The geometry of algorithms with orthogonality constraints." *SIAM Journal on Matrix Analysis and Applications*, 1998. Muon 更新规则在几何上等价于 Stiefel 流形上的投影梯度下降, 该文献是这一领域的奠基之作. 
+9. **Stiefel 流形优化**：Edelman, A., Arias, T. A., & Smith, S. T. "The geometry of algorithms with orthogonality constraints." *SIAM Journal on Matrix Analysis and Applications*, 1998. Muon 更新规则在几何上等价于 Stiefel 流形上的投影梯度下降, 该文献是这一领域的奠基之作.
+
+## 2026-08 修订
+
+上文把 Newton–Schulz 推完了，停在「Muon + AdamW 混用」。后面两件事不要到第 14 章才第一次看见：
+
+- **Polar Express** 替换的是 $\mathrm{polar}(M)$ 的多项式，不是优化器品牌；BF16 仍可能 spike。
+- **MuonClip / QK-Clip** 是更新后按头缩放 $W_q,W_k$，不是梯度裁剪。
+
+对照 AdamW 的专文：[05-MuonClip与PolarExpress](./05-MuonClip与PolarExpress.md)。本篇 NS 推导不删、不重写。 

@@ -96,6 +96,8 @@ EAGLE-3引入训练时测试机制：在草稿模型训练过程中, 模拟目�
 
 这使得草稿模型直接优化"被目标模型接受的概率", 而非间接优化特征/Token预测精度. 
 
+> 2026-08：上一小节把名字写反了，也把损失写偏了。论文术语是 **training-time test**（训练时做测试步），不是 Test-Time Training。正文并不把「接受/拒绝」当主损失；主损失是去掉 $l_{\mathrm{fea}}$ 之后的 **token 预测**，再在训练图里把草稿输出 $a$ 喂回下一步。直接优化 $\sum_x\min(p,q)$ 的是 Kimi K3 微调 MTP 时的 $\mathcal{L}_{\mathrm{LK}}$，不要倒灌进 2503.01840。展开见文末修订与 [6.6.2](./6.6.2-投机解码.md)。 
+
 ### 3.3 性能突破
 
 SGLang官方基准(1x H100)：
@@ -145,3 +147,13 @@ EAGLE-3相比基线提升2.36x, 相比EAGLE-2提升53%.
 2. Li, X., et al. (2024). EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees. arXiv:2406.16858.
 3. Li, X., et al. (2025). EAGLE-3: Scaling up Inference of Language Models via Training-Time Test. arXiv:2503.01840.
 4. SGLang Documentation. EAGLE Decoding. https://docs.sglang.ai/advanced_features/speculative_decoding.html
+
+---
+
+## 7. 2026-08 修订（不删上文知乎转写）
+
+上文是 2025 知乎专栏转写。EAGLE-1/2 的「特征+shifted token、动态树、置信度近似接受率」方向与 [2401.15077](https://arxiv.org/abs/2401.15077) / [2406.16858](https://arxiv.org/abs/2406.16858) 一致，Vicuna 13B / LLaMA2-Chat 70B 那张 speedup 表未在本会话逐格对原文，**不当成本库已核数字**。EAGLE-3 按 [2503.01840](https://ar5iv.labs.arxiv.org/html/2503.01840) 改三处：
+
+1. **不是 Test-Time Training，也不是把验证 accept/reject 写进主损失。** Training-time test = 训练时把草稿自己的 $a$ 当作下一步输入，适应推理时「目标还没算出 $g$」。特征预测约束拿掉之后，才把低/中/高三层拼成 $g$。草稿是一层 decoder。动态树仍是 EAGLE-2 的，树深 6→8。
+2. **§3.3 的 SGLang tok/s 表（158.34 / 244.10 / 373.25）未在论文正文找到对应表**，不升格。论文只写：相对 EAGLE-2 约 1.4× 延迟（bs=1）；SGLang **batch 64 吞吐约 1.38×**；加速比最高约 6.5×。§4 表把 EAGLE 系列训练目标写成「回归+分类+接受率」也不对：EAGLE-3 丢掉回归项。
+3. **K3 / V4。** K3：预训练 MTP 微调成 EAGLE-3 风格 draft，融合 AttnRes 块 1/4/末，损失 $\mathcal{L}_{\mathrm{LK}}$，见 [2.4.6](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP深度解析.md)。V4 MTP 与 V3 相同，不是这条微调。自绘图在 [6.6.2](./6.6.2-投机解码.md)。
