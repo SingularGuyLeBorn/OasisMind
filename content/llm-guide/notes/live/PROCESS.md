@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：Qwen4 一手来源（未开工）。
-- 正在写：无。
+- 正在读：子代理在读 Qwen3.8 报告 / HF card、QSA、AttnRes 2603.15031、GxPO 2606.16733、OPD 综述 2604.00626。
+- 正在写：无（监工）。xHC 已入库；其余五路 running。
 - 卡住：无。
-- 上次刷新记忆的时间：2026-08-30 git mv 2.4.1 的 04–09。
+- 上次刷新记忆的时间：2026-08-30 回收 xhc-thicken。
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -22,6 +22,7 @@ category: LLM 指南
 |------|--------|-----------------|--------------|
 | 2026-08-30 | `git mv` 2.4.1 的 04–09 → 6.1.8 / 9.1.5 / 6.3.1；不 Delete；节根散文件未入库 | 磁盘 ls + chapter-structure-plan | `6.1.8-MoE系统与并行/`；`9.1.5-MoE硬件与加速/`；`6.3.1/09-…/` |
 | 2026-08-30 | 回收 gr-thicken：4329 汉字；Table 5 九列；丢掉 $H_{res}$；不是 $G_1$/mHC | Qwen3.8 tech_report.pdf §2.2；GatedNorm 2601.22966 | `2.1.3/03-Gated-Residual/` |
+| 2026-08-30 | 回收 xhc-thicken：4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 | 2607.14530 HTML Table 1–7/9–12；GitHub aHapBean/xHC | `2.1.3/02-xHC-Expanded-Hyper-Connections/` |
 | 2026-08-30 | 回收 snapkv-thicken：4557 汉字；H 式 (4)–(8) 事后度量；3.6×/8.2×；不是观察头 | https://arxiv.org/html/2404.14469v2 ；NeurIPS PDF；snapkv_utils.py | `2.3.2/12-SnapKV-生成前观测窗/` |
 | 2026-08-30 | 回收 mhc-thicken：4139 汉字；Table 4 列名；MATH 26.0 vs HC 26.4；未碰节根散文件 | https://arxiv.org/html/2512.24880 ；2409.19606 | `2.1.3/01-Hyper-Connections与mHC/` |
 | 2026-08-30 | 回收 situ-thicken：4134 汉字；式 (12) $W_g$ 两次；$\ell=3584$；无独立消融表 | https://arxiv.org/html/2607.24653 §2.3.2；2002.05202 对照 | `2.1.1/01-SiTU-GLU/` |
@@ -421,7 +422,7 @@ category: LLM 指南
 |------|-------------------|---------------------|--------|
 | 优化器 Muon / MuonClip / Polar Express | Muon 库内专题；MuonClip=K2 arXiv:2507.20534；Polar Express=arXiv:2505.16932 | 已有 01 NS 推导 + **05 对照专文** | 第 6.5 |
 | mHC / MHC | Manifold-Constrained Hyper-Connections；库内 01 文 | 已有专文 | 第 2.1.3 |
-| XHC / xHC | **Expanded Hyper-Connections** arXiv:2607.14530；GitHub aHapBean/xHC | **专文已写** `02-xHC-Expanded-Hyper-Connections.md` | 第 2.1.3 |
+| XHC / xHC | **Expanded Hyper-Connections** arXiv:2607.14530；GitHub aHapBean/xHC；主设定 $N=16,k=4$；18B 44.8→48.8 | **专文已加厚** `02-xHC-Expanded-Hyper-Connections.md` | 第 2.1.3 |
 | ResidualAttention / AttnRes | Attention Residuals arXiv:2603.15031；K3 用 Block 版 8×~12 层 | 已有 2.2.2 专文 + K3 用法修订 | 第 2.2 |
 | HCA / CSA | Compressed Sparse + Heavily Compressed；DeepSeek-V4 | 已有 2.3.2/07 | 第 2.3 |
 | QSA | Qwen Sparse Attention；tech_report §2.1.2 | **专文已写** `08-QSA-Qwen稀疏注意力.md` | 第 2.3.2 |

@@ -27,10 +27,10 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：04–09 已 `git mv`。下一件 Qwen4 架构预测（只收一手）。
-- 当前波次：**无 running 写文租约**
+- 状态：Qwen4 波 running；已加派 GxPO 家族 + OPD 综述（用户点名）。
+- 当前波次：**qwen4-pred / qsa-thicken / attnres-thicken / gxpo-family / opd-survey running**；xhc-thicken 已入库
 - 当前正在写的文章路径：见 PLAN 租约
-- 本轮明确不做：加厚已迁走的 04–09；售卖包装；不抢 Engram 的 `2.4.8`
+- 本轮明确不做：把 51B n-gram 算进 6B；把 DAPO 全称写错；4.6 根加 `11`
 
 ## 防漂移口令
 

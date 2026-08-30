@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** Qwen4 架构预测（只收一手；不要把 51B n-gram 算进 6B 激活）。
+1. **立刻做：** 回收 Qwen4 / QSA / xHC / AttnRes；并行 **GxPO 家族**（综述 2606.16733 + DAPO/GSPO/GHPO 原文）与 **OPD 综述**（2604.00626）。
 2. **再下一波：** 0.8 继续补知识点。
 3. **再往后：** 结构 S5 / S6 / S8（14 家族序号 / Ernie / 过满拆篮）。
 
@@ -89,8 +89,8 @@ category: LLM 指南
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：2.4.1 的 04–09 `git mv` 到 6.1.8 / 6.3.1 / 9.1.5（不 Delete）。
-- 现在立刻做：Qwen4 架构预测（只收一手）。不要 `move_agent_to_root`。不要 push。不要 Delete。
+- 上一件：回收 xhc-thicken（4200 汉字；$N=16$/$k=4$）。
+- 现在立刻做：回收 qwen4-pred / qsa-thicken / attnres-thicken；并行等 GxPO / OPD 交卷。不要 `move_agent_to_root`。不要 push。不要 Delete。
 
 ## 路径租约（并行防撞）
 
@@ -153,3 +153,9 @@ category: LLM 指南
 | situ-thicken | done | `2.1.1/01-SiTU-GLU/` + inbox `situ-thicken.md` | 已入库。4134 汉字；$\ell=3584$；报告无独立 SiTU 消融；监工补 2.1.1 表注 |
 | mhc-thicken | done | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 已入库。4139 汉字；Table 4 MATH 26.0 vs HC 26.4；Manifold-Constrained；未碰节根散文件 |
 | gr-thicken | done | `2.1.3/03-Gated-Residual/` + inbox `gr-thicken.md` | 已入库。4329 汉字；Table 5 25B-A3B/560B；丢掉 $H_{res}$；不是 $G_1$/mHC；监工补 2.1.3 一句 |
+| qwen4-pred | running | `14.2-Qwen/14-Qwen4-架构预测/` + inbox `qwen4-pred.md` | 只收一手；51B 不进 6B；不 mkdir B SKU；不改 13-Qwen3.8 |
+| qsa-thicken | running | `2.3.2/08-QSA-Qwen稀疏注意力/` + inbox `qsa-thicken.md` | 加厚到 ≥4000；7.6×≠8.6×；512 块 ≠ 512 专家 |
+| xhc-thicken | done | `2.1.3/02-xHC-Expanded-Hyper-Connections/` + inbox `xhc-thicken.md` | 已入库。4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 |
+| attnres-thicken | running | `2.2.2/08-AttnRes-深度维注意力聚合/`（先 git mv 节根散文件）+ inbox `attnres-thicken.md` | 加厚到 ≥4000；不改 06/07；不改 2.2.2 首页 |
+| gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
+| opd-survey | running | `4.6-OPD/4.6.2-OPD综述/` + inbox `opd-survey.md` | 综述 2604.00626；不在 4.6 根加 11；不改 01–10 |
