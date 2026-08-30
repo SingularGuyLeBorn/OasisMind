@@ -61,7 +61,7 @@ FS-DFM 写在离散流专文：8 步生成 1024 token，生成 PPL 对齐他们�
 
 LLaDA 2.0 的 CAP 不蒸步数，蒸的是「已经对的位置再压熵」，提高每步可提交的 token 数。对照是 flash-CAP 535 TPS 对文内 SGLang AR 约 2.1×。dParallel 的 certainty-forcing 让学生在少步下边际更快变尖，机制靠近「少步仍尖」，和 SDTT 的「少步仍像多步分布」是邻居。推理加速专文没有抄 dParallel 主表，协议要对过再写。本篇也不编它的分数。
 
-LLaDA-MoE 的 Hugging Face 集合里有 Instruct-TD 一类轨迹蒸馏权重。2509.24389 主表是 Base / Instruct，没有把 TD 的下游或 TPS 写成 Table 3。轨迹蒸馏通常让学生模仿老师整条去噪轨迹，和 SDTT「在 $z_t$ 上拟合老师再走 $m/k$ 步」同族。没有主表数字就当产品选项，不当本花园的规格卡。d3LLM（Qian 等人，arXiv:2601.07568）走伪轨迹蒸馏，本篇不展开其表；需要时另开核对。
+LLaDA-MoE 的 Hugging Face 集合里有 Instruct-TD 一类轨迹蒸馏权重。2509.24389 主表是 Base / Instruct，没有把 TD 的下游或 TPS 写成 Table 3。轨迹蒸馏通常让学生模仿老师整条去噪轨迹，和 SDTT「在 $z_t$ 上拟合老师再走 $m/k$ 步」同族。没有主表数字就当产品选项，不当本花园的规格卡。d3LLM 走伪轨迹蒸馏，揭开顺序来自老师、字来自标准答，表和 AUP 见[d3LLM](./d3llm.md)。
 
 训练免费的 DualCache 把 1024 步变得每步更便宜；SDTT 把 1024 变成 32。可以叠：学生已经少步，每步再近似缓存。叠的时候因子分解误差和 KV 漂移会一起出现，没有论文在 8B 上把两件都打开再报 GSM8K。Eso-LM 用精确 KV 降低每步 $L^2$，仍可能要很多 NFE；和 SDTT 正交。规划器每步 2 NFE，和少步目标打架：步数已经很少还乘 2，蒸馏的收益会被规划器吃掉。少步优先还是纠错优先，先选一个。
 
@@ -114,6 +114,7 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 - [采样与调度](../02-mechanism/sampling.md)
 - [推理加速](./inference-acceleration.md)
 - [Serving](./serving.md)
+- [d3LLM](./d3llm.md)
 - [离散流匹配](./discrete-flow.md)
 - [Eso-LM](./eso-lm.md)
 - [失效模式](./failure-modes.md)

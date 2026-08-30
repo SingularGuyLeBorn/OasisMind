@@ -143,13 +143,14 @@ Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖�
 - [Wu et al., Fast-dLLM, 2025](https://arxiv.org/abs/2505.22618) — 被同一节点重跑的无缓存 / DualCache 基线。
 - [Zhu et al., LLaDA-MoE, 2025](https://arxiv.org/abs/2509.24389) — 被 serve 的 7B-A1.4B 权重。
 - [Bie et al., LLaDA 2.0, 2025](https://arxiv.org/abs/2512.15745) — 同一框架上的 535 TPS 对 SGLang AR。
-- [Qian et al., d3LLM, 2026](https://arxiv.org/abs/2601.07568) — 伪轨迹与 AUP；10× 对照原版 LLaDA/Dream，不是本篇 Table 1。
+- [Qian et al., d3LLM, 2026](https://arxiv.org/abs/2601.07568) — 伪轨迹与 AUP；10.3× 对照 HF 上原版 LLaDA 27.9 TPS，专文见[d3LLM](./d3llm.md)。不是本篇 Table 1。
 
 ## 相关
 
 - [推理加速](./inference-acceleration.md)
 - [块扩散](./block-diffusion.md)
 - [少步蒸馏](./few-step-distill.md)
+- [d3LLM](./d3llm.md)
 - [谁决定揭开哪一格](./plan-denoise.md)
 - [LLaDA-MoE](../03-models/llada-moe.md)
 - [LLaDA 专文](../03-models/llada-frontier.md)
