@@ -154,7 +154,7 @@ category: LLM 指南
 | mhc-thicken | done | `2.1.3/01-Hyper-Connections与mHC/`（夹内 md+images）+ inbox `mhc-thicken.md` | 已入库。4139 汉字；Table 4 MATH 26.0 vs HC 26.4；Manifold-Constrained；未碰节根散文件 |
 | gr-thicken | done | `2.1.3/03-Gated-Residual/` + inbox `gr-thicken.md` | 已入库。4329 汉字；Table 5 25B-A3B/560B；丢掉 $H_{res}$；不是 $G_1$/mHC；监工补 2.1.3 一句 |
 | qwen4-pred | running | `14.2-Qwen/14-Qwen4-架构预测/` + inbox `qwen4-pred.md` | 只收一手；51B 不进 6B；不 mkdir B SKU；不改 13-Qwen3.8 |
-| qsa-thicken | running | `2.3.2/08-QSA-Qwen稀疏注意力/` + inbox `qsa-thicken.md` | 加厚到 ≥4000；7.6×≠8.6×；512 块 ≠ 512 专家 |
+| qsa-thicken | done | `2.3.2/08-QSA-Qwen稀疏注意力/` + inbox `qsa-thicken.md` | 已入库。4101 汉字；7.6×≠8.6×；$K_B=512$ 是块预算 |
 | xhc-thicken | done | `2.1.3/02-xHC-Expanded-Hyper-Connections/` + inbox `xhc-thicken.md` | 已入库。4200 汉字；$N=16$/$k=4$；18B 44.8→48.8；未抄 mHC Table 4 |
 | attnres-thicken | running | `2.2.2/08-AttnRes-深度维注意力聚合/`（先 git mv 节根散文件）+ inbox `attnres-thicken.md` | 加厚到 ≥4000；不改 06/07；不改 2.2.2 首页 |
 | gxpo-family | running | `4.4-对齐技术/4.4.5-GxPO家族/` + inbox `gxpo-family.md` | 综述 2606.16733；DAPO=2503.14476 全称 Clip+Dynamic Sampling；不改 4.4.1 的 01–05 |
