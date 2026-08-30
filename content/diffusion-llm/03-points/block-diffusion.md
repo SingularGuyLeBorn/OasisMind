@@ -123,4 +123,5 @@ $B$ 的工作点跟任务和是否 SFT 过 `[EOS]` 有关。LLaDA 2.0 主评测�
 - [LLaDA 与前沿](../03-models/llada-frontier.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)
 - [SDAR](./sdar.md)
+- [D2F](./d2f.md)
 - [从自回归改编](./ar-to-diffusion.md)

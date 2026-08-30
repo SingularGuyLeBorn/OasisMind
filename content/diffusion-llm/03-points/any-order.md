@@ -142,3 +142,4 @@ KV 冲突可以写成一条硬句子。任意顺序的条件集合会变：下�
 - [谁决定揭开哪一格](./plan-denoise.md)
 - [Score entropy](./score-entropy.md)
 - [Eso-LM](./eso-lm.md)
+- [ParallelBench](./parallelbench.md)

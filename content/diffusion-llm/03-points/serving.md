@@ -159,3 +159,5 @@ Credit 会和自信的错字共谋，规划器专文写过同一句。一直尖�
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
 - [SDAR](./sdar.md)
 - [APD](./apd.md)
+- [D2F](./d2f.md)
+- [ParallelBench](./parallelbench.md)

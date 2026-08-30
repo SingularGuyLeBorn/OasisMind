@@ -159,6 +159,7 @@ $M$ 改 EOS，$W$ 把双向 KV 冻出训练分布。Dream 还有改编移位。d
 - [采样与调度](../02-mechanism/sampling.md)
 - [推理加速](./inference-acceleration.md)
 - [失效模式](./failure-modes.md)
+- [ParallelBench](./parallelbench.md)
 - [d3LLM](./d3llm.md)
 - [少步蒸馏](./few-step-distill.md)
 - [Serving](./serving.md)

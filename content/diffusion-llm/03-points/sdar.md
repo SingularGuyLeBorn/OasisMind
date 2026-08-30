@@ -164,6 +164,7 @@ Table 2 的 18 项里，LMB-Hard 和 1.7B 的 HumanEval 提醒：平均持平会
 
 - [从自回归改编](./ar-to-diffusion.md)
 - [块扩散](./block-diffusion.md)
+- [D2F](./d2f.md)
 - [推理加速](./inference-acceleration.md)
 - [Serving](./serving.md)
 - [LLaDA 专文](../03-models/llada-frontier.md)

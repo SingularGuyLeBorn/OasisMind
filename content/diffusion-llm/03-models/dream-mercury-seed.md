@@ -188,3 +188,5 @@ Dream Instruct 的 180 万对、3 个 epoch，是轻量后训练。基座会写�
 - [代码向扩散](../03-points/code-dllm.md)
 - [APD](../03-points/apd.md)
 - [SDAR](../03-points/sdar.md)
+- [D2F](../03-points/d2f.md)
+- [ParallelBench](../03-points/parallelbench.md)

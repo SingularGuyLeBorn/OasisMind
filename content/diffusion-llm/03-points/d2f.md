@@ -151,3 +151,4 @@ LoRA 只动注意力投影。MLP、词表、位置编码原样。基座不会的
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [Dream、Mercury、Seed](../03-models/dream-mercury-seed.md)
 - [失效模式](./failure-modes.md)
+- [ParallelBench](./parallelbench.md)

@@ -204,5 +204,7 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [Eso-LM](../03-points/eso-lm.md)
 - [SDAR](../03-points/sdar.md)
 - [APD](../03-points/apd.md)
+- [D2F](../03-points/d2f.md)
+- [ParallelBench](../03-points/parallelbench.md)
 - [少步蒸馏](../03-points/few-step-distill.md)
 - [Score entropy](../03-points/score-entropy.md)

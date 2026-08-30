@@ -131,3 +131,4 @@ v2 把预算收到约 1B，靠的是块扩散加互补掩码，不是靠发现�
 - [LLaDA 专文](../03-models/llada-frontier.md)
 - [代码向扩散](./code-dllm.md)
 - [SDAR](./sdar.md)
+- [D2F](./d2f.md)
