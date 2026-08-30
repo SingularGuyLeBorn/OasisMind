@@ -16,7 +16,7 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 |---|---|
 | 01 动机 | 自回归因式分解把什么写进了结构里，扩散换掉的是哪一步 |
 | 02 机制 | $Q_t$、吸收态、ELBO 为何长得像加权 MLM、采样时如何揭开 / remask |
-| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、SDAR、D2F、缓存、APD/SSD、ParallelBench、serving、Eso-LM、少步蒸馏、伪轨迹/AUP、引导、对齐、代码向、离散流、score entropy、失效 |
+| 03 知识点 | 块扩散、任意顺序、规划器、提交后能否改、改编、SDAR、D2F、ReFusion、缓存、SlowFast、APD/SSD、ParallelBench、serving、Eso-LM、少步蒸馏、伪轨迹/AUP、引导、对齐、代码向、离散流、score entropy、失效 |
 | 04 模型 | 从 D3PM 到 LLaDA 2.0 / MoE / Dream / Mercury 各自钉住哪件事；多模态三条接法 |
 | 05 对照 | 十个维度里哪些是机制必然，哪些只是 2026 年的工程现状 |
 
@@ -62,59 +62,65 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 12. [D2F：脏前缀上接着写下一块](./03-points/d2f.md)  
     teacher forcing 推不出多块流水线。52.9× 在 MBPP（0.9→47.6 TPS）。2.5× 对 AR 是 Dream 119.9 对 LLaMA3 48.0，最大长度 512。
 
-13. [双向注意力与反转诅咒](./03-points/bidirectional-attention.md)  
+13. [ReFusion：槽级规划，槽内自回归](./03-points/refusion.md)  
+    槽间任意顺序、槽内从左到右；因果注意力加原位置 RoPE。18× 对照 LLaDA / Dream 原版吞吐，不是 Qwen3。2.33× 是相对 Qwen3-8B 的逐任务 TPS 均值。单卡 A100。
+
+14. [双向注意力与反转诅咒](./03-points/bidirectional-attention.md)  
     Berglund 的 0% 反向；LLaDA 诗句表正向 48.8 / 反向 42.4，GPT-4o 为 82.7 / 34.3。
 
-14. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
+15. [推理加速：近似缓存与并行揭开](./03-points/inference-acceleration.md)  
     Fast-dLLM DualCache、dKV-Cache、CAP。27.6× 的对照物是原版 LLaDA，不是 AR。
 
-15. [APD：倒置投机，小 AR 管联合](./03-points/apd.md)  
+16. [SlowFast：慢探索，快揭开](./03-points/slowfast.md)  
+    训练免费动态采样。15.63× 在 GPQA、长度 1024：1.60→25.00 TPS。叠缓存 34.22× 到 54.75，分掉到 28.79。GSM8K Table 1 只是 3.20×。RTX 4090。
+
+17. [APD：倒置投机，小 AR 管联合](./03-points/apd.md)  
     Dream 边际草稿 × Qwen 0.5B 联合。有损。SSD 3.46× 在 MBPP，均值 2.43×。
 
-16. [ParallelBench：GSM8K 测不出并行诅咒](./03-points/parallelbench.md)  
+18. [ParallelBench：GSM8K 测不出并行诅咒](./03-points/parallelbench.md)  
     一步 KL 下界是 $\mathcal{C}(Y|X)$。Shuffle 即使每步 2 token 也随 $n$ 趋向 0。微调修不好 $\mathcal{C}>0$。
 
-17. [Serving：vLLM 的调度器接不上扩散](./03-points/serving.md)  
+19. [Serving：vLLM 的调度器接不上扩散](./03-points/serving.md)  
     dInfer 四块。8×H800、batch 1：680 TPS 对 Fast-dLLM 63、对 vLLM 上 Qwen2.5-3B 277。1100 是 TD 的 HumanEval 列。
 
-18. [Eso-LM：任意顺序损失，因果注意力换精确 KV](./03-points/eso-lm.md)  
+20. [Eso-LM：任意顺序损失，因果注意力换精确 KV](./03-points/eso-lm.md)  
     洗牌 + 原位置 RoPE。65× 对照无缓存 MDLM。不是 LLaDA 8B。
 
-19. [少步蒸馏：把老师的 1024 步塞进学生的几十步](./03-points/few-step-distill.md)  
+21. [少步蒸馏：把老师的 1024 步塞进学生的几十步](./03-points/few-step-distill.md)  
     SDTT；32 步约 4× 于带 KV 的 GPT-2。863M 质量，不要抄到 8B。
 
-20. [d3LLM：伪轨迹蒸馏与 AUP](./03-points/d3llm.md)  
+22. [d3LLM：伪轨迹蒸馏与 AUP](./03-points/d3llm.md)  
     顺序来自老师、字来自标准答。GSM8K-CoT 单卡 H100：288.9 TPS 对原版 27.9 约 10.3×。AUP 切掉掉分超过 5 点的工作点。
 
-21. [可控生成与引导](./03-points/controllable-generation.md)  
+23. [可控生成与引导](./03-points/controllable-generation.md)  
     Diffusion-LM 连续梯度；离散 D-CFG；8B 实际在用的掩码与定长。
 
-22. [对齐与强化学习](./03-points/alignment-rl.md)  
+24. [对齐与强化学习](./03-points/alignment-rl.md)  
     VRPO / LLaDA 1.5；d1 / diffu-GRPO。原版 Instruct 没有 RL。
 
-23. [代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO](./03-points/code-dllm.md)  
+25. [代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO](./03-points/code-dllm.md)  
     7B 代码专料约 130B；Table 1–2；互补掩码估对数概率。不要和 Nie 的 35.4 横减。
 
-24. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
+26. [离散流匹配：概率路径比 Q_t 更宽的那一族](./03-points/discrete-flow.md)  
     DFM；吸收态 $1/t$ 是一条路径。1.7B HumanEval Pass@1 为 6.7%。
 
-25. [Score entropy：离散扩散在估比率](./03-points/score-entropy.md)  
+27. [Score entropy：离散扩散在估比率](./03-points/score-entropy.md)  
     concrete score；$25\%{-}75\%$ 对照先前离散扩散。1BW 上界 $\leq 32.79$ 对 AR 31.98。不是 LLaDA 的损失。
 
-26. [失效模式](./03-points/failure-modes.md)  
+28. [失效模式](./03-points/failure-modes.md)  
     定长与 EOS、并行搭配、PPL 不可比、近似缓存过期。
 
 🔴 **04 模型**
 
-27. [代表性扩散语言模型一览](./03-models/representative-models.md)
-28. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
-29. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
-30. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
-31. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
+29. [代表性扩散语言模型一览](./03-models/representative-models.md)
+30. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+31. [LLaDA-MoE：从头训的稀疏掩码扩散](./03-models/llada-moe.md)
+32. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
+33. [多模态扩散：LLaDA-V、MMaDA、Dimple](./03-models/multimodal-dllm.md)
 
 ⚖️ **05 对照**
 
-32. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+34. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
     含 ArVsDiffusion 动画。对照数字已按论文表重校。知识点专文写完后，十个维度应对到 03。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
@@ -141,7 +147,9 @@ P(x) 怎么因式分解
                         │       ├─ 纠错：已提交再 MASK（ReMDM 套预训练权重）；训练见乱词（GIDD）；Seed 改前向后 20%
                         │       ├─ 变体：块扩散（块间 AR，块内扩散）；SDAR 先付 AR 再转，不移位
                         │       ├─ D2F：训练见脏前缀；52.9× 在 MBPP 原版 0.9 TPS；2.5× 是 Dream 119.9 对 LLaMA3 48.0
+                        │       ├─ ReFusion：槽间任意、槽内 AR；18× 对照原版 LLaDA/Dream TPS，2.33× 对照 Qwen3-8B 逐任务均值
                         │       ├─ 注意力：全双向无精确 KV；Eso-LM 洗牌+因果换精确 KV
+                        │       ├─ 采样器：SlowFast 慢探快揭；15.63× 在 GPQA 长度 1024（1.60→25.00），不是 GSM8K 的 3.20×
                         │       ├─ 验证并行：APD 小 AR 管联合（有损）；SSD 自验证（无损，3.46× 在 MBPP）
                         │       ├─ 评测轴：ParallelBench；C(Y|X)=0 可并行；Shuffle 的 C 发散，GSM8K 测不出
                         │       ├─ serving：dInfer 四块；10× 对照同节点 Fast-dLLM 63.61，2.5× 对照 vLLM Qwen2.5-3B

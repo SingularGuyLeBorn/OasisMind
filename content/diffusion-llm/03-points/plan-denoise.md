@@ -124,6 +124,7 @@ LLaDA-MoE 评测用半自回归、块长 64、低置信 remask，规划器仍是
 - [提交之后还能不能改](./remask-revise.md)
 - [任意顺序](./any-order.md)
 - [推理加速](./inference-acceleration.md)
+- [SlowFast](./slowfast.md)
 - [失效模式](./failure-modes.md)
 - [ParallelBench](./parallelbench.md)
 - [代码向扩散](./code-dllm.md)

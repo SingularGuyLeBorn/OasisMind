@@ -29,7 +29,7 @@ excerpt: "全双向掩码扩散没有严格 KV Cache，一步揭太多又会因�
 
 训练侧让边际更快变尖，同样步数里可提交的位置变多，等效减少前向次数。dParallel 的 certainty-forcing、LLaDA 2.0 的 CAP 属于这一类。它不修复 KV，它减少「需要跑多少次带注意力的前向」。
 
-三条可以叠。报倍数时必须写清叠了哪几条、对照的是哪条基线、生成长度多少。把 27.6× 和 Mercury 的 1109 tok/s 写在同一格里，读者会以为开源模型已经到四位数吞吐。前者是相对「原版逐步揭开的 LLaDA」的加速比，后者是绝对吞吐，硬件还不是同一块卡。
+三条可以叠。报倍数时必须写清叠了哪几条、对照的是哪条基线、生成长度多少。把 27.6× 和 Mercury 的 1109 tok/s 写在同一格里，读者会以为开源模型已经到四位数吞吐。前者是相对「原版逐步揭开的 LLaDA」的加速比，后者是绝对吞吐，硬件还不是同一块卡。训练免费还可以改揭开的时间结构：[SlowFast](./slowfast.md) 慢阶段探 span、快阶段冲高置信团，15.63× 钉在 GPQA 长度 1024，不是 GSM8K。架构侧把并行从格子抬到槽，见 [ReFusion](./refusion.md)。
 
 ## 2. Fast-dLLM：块内复用 + 阈值揭开
 
@@ -128,6 +128,8 @@ batch size 大于 1 时，有的实现加速比会收窄，dKV-Cache 附录写�
 - [采样与调度](../02-mechanism/sampling.md)
 - [块扩散](./block-diffusion.md)
 - [D2F](./d2f.md)
+- [ReFusion](./refusion.md)
+- [SlowFast](./slowfast.md)
 - [ParallelBench](./parallelbench.md)
 - [APD](./apd.md)
 - [Serving](./serving.md)

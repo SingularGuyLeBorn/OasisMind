@@ -113,6 +113,7 @@ batch 8 的延迟倍数在 batch 1 的聊天里会变。AR 的 KV 在 batch 1 �
 
 - [采样与调度](../02-mechanism/sampling.md)
 - [推理加速](./inference-acceleration.md)
+- [SlowFast](./slowfast.md)
 - [Serving](./serving.md)
 - [d3LLM](./d3llm.md)
 - [离散流匹配](./discrete-flow.md)

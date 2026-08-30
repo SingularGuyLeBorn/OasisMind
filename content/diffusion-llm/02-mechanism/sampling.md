@@ -82,7 +82,7 @@ LLaDA 的权重在预训练之后就可以用三种方式采样，不必再训�
 
 并行诅咒指的是：一步提交的位置越多，这些位置在提交前互相看不见对方的最终取值，搭配错误上升。缓解手段分三类。
 
-解码侧：只提交高置信位置（Fast-dLLM、阈值解码）；用小 AR 或自身做验证（APD、自投机 SSD）；允许把已经落盘的字再变成 `[MASK]`（ReMDM）。后一件和本步低置信 remask 不是同一层，见[提交之后还能不能改](../03-points/remask-revise.md)。
+解码侧：只提交高置信位置（Fast-dLLM、阈值解码）；用小 AR 或自身做验证（APD、自投机 SSD）；允许把已经落盘的字再变成 `[MASK]`（ReMDM）。后一件和本步低置信 remask 不是同一层，见[提交之后还能不能改](../03-points/remask-revise.md)。静态阈值之外还有动态 $S$：[SlowFast](../03-points/slowfast.md) 用终点方差决定何时从慢探切到快揭，15.63× 在 GPQA 长度 1024。
 
 训练侧：dParallel 的 certainty-forcing 蒸馏让边际更快变尖；LLaDA 2.0 的 CAP 在已经预测对的位置上再压熵，提高 TPF。
 
@@ -169,4 +169,6 @@ return strip_after_eos(x)
 - [APD](../03-points/apd.md)
 - [ParallelBench](../03-points/parallelbench.md)
 - [D2F](../03-points/d2f.md)
+- [SlowFast](../03-points/slowfast.md)
+- [ReFusion](../03-points/refusion.md)
 - [扩散 vs 自回归](../04-comparison/diffusion-vs-autoregressive.md)

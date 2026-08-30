@@ -143,6 +143,8 @@ LoRA 只动注意力投影。MLP、词表、位置编码原样。基座不会的
 - [块扩散](./block-diffusion.md)
 - [SDAR](./sdar.md)
 - [推理加速](./inference-acceleration.md)
+- [ReFusion](./refusion.md)
+- [SlowFast](./slowfast.md)
 - [d3LLM](./d3llm.md)
 - [少步蒸馏](./few-step-distill.md)
 - [Serving](./serving.md)
