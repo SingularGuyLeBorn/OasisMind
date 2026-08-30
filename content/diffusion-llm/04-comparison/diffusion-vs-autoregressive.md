@@ -54,7 +54,7 @@ $$P_{\text{Diff}}(x)=\int p(x_T)\prod_{t=1}^{T}p_\theta(x_{t-1}\mid x_t)\,dx_{1:
 | 吞吐实例 | 基线 | Mercury Mini 1109 tok/s @ H100；LLaDA 2.0-flash-CAP 535 TPS，文内 AR 约 2.1×。LLaDA 8B 原论文没有速度表 |
 | KV Cache | 必须，且严格成立 | 全双向默认不成立；块间真缓存；跨步是近似 |
 
-短样本、$T\ll n$ 时扩散可以少跑前向。极长续写、AR 已有 KV 时，全双向每步重算整段反而更贵。Fast-dLLM 在 LLaDA-Instruct GSM8K 5-shot、生成长度 256 上从 6.7 tok/s 到 54.4 tok/s，约 8.1×；27.6× 那一格对照的是原版 LLaDA 循环，不是 AR。见[推理加速](../03-points/inference-acceleration.md)。Eso-LM 用洗牌+因果换**精确** KV，65× 对照无缓存 MDLM，尺度不是 8B，见[Eso-LM](../03-points/eso-lm.md)。SDTT 把步数蒸掉 32–64 倍，延迟对照的是带 KV 的 GPT-2（32 步约 4×），见[少步蒸馏](../03-points/few-step-distill.md)。四张倍数卡不能减。
+短样本、$T\ll n$ 时扩散可以少跑前向。极长续写、AR 已有 KV 时，全双向每步重算整段反而更贵。Fast-dLLM 在 LLaDA-Instruct GSM8K 5-shot、生成长度 256 上从 6.7 tok/s 到 54.4 tok/s，约 8.1×；27.6× 那一格对照的是原版 LLaDA 循环，不是 AR。见[推理加速](../03-points/inference-acceleration.md)。Eso-LM 用洗牌+因果换**精确** KV，65× 对照无缓存 MDLM，尺度不是 8B，见[Eso-LM](../03-points/eso-lm.md)。SDTT 把步数蒸掉 32–64 倍，延迟对照的是带 KV 的 GPT-2（32 步约 4×），见[少步蒸馏](../03-points/few-step-distill.md)。DCD 用 I-投影外挂 GPT-2 copula，4 步对上 SEDD 128 步，少的是函数调用、尺度停在 GPT-2，墙钟不一定掉，见[离散 copula](../03-points/discrete-copula.md)。SlowFast 15.63× 钉在 GPQA 长度 1024，不是 GSM8K；dParallel 8.5× 是 GSM8K 时延；ReFusion 18× 对照原版扩散吞吐。STaR-Quant 相对 FP16：Dream 吞吐 1.69×、显存 3.14×，LLaDA GSM8K 会从 67.48 掉到 57.29，见[量化](../03-points/quantization.md)。这些倍数分母全不一样，不能减。
 
 开源 Dream 和商业 Mercury 不在同一条速度曲线上。分母、prefill、batch、是否锁输出格式，都可以让 tokens/s 差一倍。本花园只并列。
 
@@ -111,13 +111,14 @@ Berglund：虚构名人正向 96.7%，反向约 0%。LLaDA 诗句表：LLaDA Ins
 
 ## 8. 幻觉、一致、事实
 
-并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒。缓解靠低置信 remask、阈值、验证、允许再掩。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)。
+并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、允许再掩。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
 
 ## 9. 基础设施
 
 | 维度 | 自回归 | 扩散 |
 |---|---|---|
 | 推理框架 | vLLM、SGLang、Ollama | 论文仓库、dInfer；专用栈仍薄 |
+| 权重量化 | GPTQ / AWQ 生态默认 | AR 向 PTQ 直接搬会掉；STaR-Quant 管掩码态和跨步误差，见[量化](../03-points/quantization.md) |
 | 开源权重 | LLaMA / Qwen / 等 | LLaDA、Dream |
 | 商业演示 | 满地都是 | Mercury、Gemini Diffusion、Seed Preview |
 | KV / GQA | 生态默认成立 | 8B 原论文不用 GQA；块间才真缓存 |
