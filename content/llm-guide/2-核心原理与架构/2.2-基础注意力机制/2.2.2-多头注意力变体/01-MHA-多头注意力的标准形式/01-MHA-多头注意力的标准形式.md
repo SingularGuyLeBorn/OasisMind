@@ -303,7 +303,22 @@ $$
 = 2 \times 32 \times 4096 \times 32 \times 128 \times 2 \approx 2.1\,\text{GB} \tag{19}
 $$
 
-仅 KV 已占单卡显存显著比例；$B$ 或 $L$ 再翻倍，Cache 近似线性跟着翻倍——这是 MHA 在 serving 里最先触顶的原因。
+仅 KV 已占单卡显存显著比例；$B$ 或 $L$ 再翻倍，Cache 近似线性跟着翻倍——这是 MHA 在 serving 里最先触顶的原因。后文 MQA / GQA 不改 Query 头数 $H$，只改 **decode 要缓存几份 KV**；浅色积木把式 (18) 的 $H$ 因子画出来（论文 jpg 仍见图 1–3，不删）。
+
+![Decode 时 KV 头数：MHA / GQA / MQA](./images/fig-mha-gqa-mqa-kv-heads.png)
+
+> 图 4：浅色自绘。Query 保持 $H$ 头；斜线块 = decode 写入 KV cache 的 Key/Value。字节用已有符号 $H,G,d_h$，不另编压缩比。
+
+**图 4 解析**
+
+三列同一套色块：浅蓝 Query **不**进 cache；斜线粉 Key、斜线橙 Value 才是 decode 要读回的对象。虚线表示「哪些 Query 头读哪一份 KV」。
+
+- **左 MHA**：示例画 $H=6$，Q/K/V 一一对应。式 (18) 的因子就是这个 $H$——每 token 每层 $2 H d_h$ 个元素（Key 与 Value 各一份）。
+- **中 GQA**：同一 $H$ 个 Query 分成 $G$ 组（图中 $H=6,\,G=3$，每 2 个 Q 读 1 组 KV）。把式 (18) 的 $H$ 换成 $G$，得 $2 G d_h$。推导见 [03-GQA](../03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md) 式 (1)(13)。
+- **右 MQA**：全体 Query 读 **1** 份 KV，字节 $2 d_h$（$G=1$ 的端点）。见 [02-MQA](../02-MQA-共享KeyValue的极致压缩/02-MQA-共享KeyValue的极致压缩.md) 式 (15)。
+- 列间条数只示 **份数**；具体 GB 仍用式 (18)–(19) 与后文表格，不要把「6 根 vs 1 根」读成新的压缩比。
+
+<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Title Decode KV heads. Three columns: MHA H KV bytes 2 H d_h; GQA G groups bytes 2 G d_h; MQA 1 shared KV bytes 2 d_h. Pastel blue Q not cached; hatched pink K and orange V cached. -->
 
 ### 5.3 Decoding 单步在算什么
 

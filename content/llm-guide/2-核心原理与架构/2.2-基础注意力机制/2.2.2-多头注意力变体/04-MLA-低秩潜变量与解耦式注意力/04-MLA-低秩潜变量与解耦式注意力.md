@@ -320,6 +320,21 @@ Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块。训练始终用式 (4)–(12) 
 | GQA | $G$ 组 KV | $2 G d_h$ |
 | MLA | $c_j^{KV}, k_j^R$ | $d_c + d_h^R$ |
 
+MQA/GQA 改的是 KV **份数**（见 [01-MHA 图 4](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md)）；MLA 改的是 **存什么维度**。下面这张浅色图只对比 cache 内容，**不**画 Prefill 上采样 vs Decode 吸收（那是 [05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md) 已有的两张计算图）。
+
+![MHA 高维 KV vs MLA 低秩 latent](./images/fig-mla-latent-kv-vs-mha.png)
+
+> 图 4：浅色自绘。左：MHA 存 $H$ 份 $d_h$ 维 K/V。右：只持久化 $c^{KV}$ 与解耦 RoPE $k^R$；多头 $K^C,V^C$ 算分时恢复、不写 cache。数字回 §14.2 与 Table 9，不另编压缩比。DeepSeek-V2 Figure 3 jpg 仍见图 1。
+
+**图 4 解析**
+
+- **左 MHA**：斜线 K/V 按头堆叠，每头 $d_h$ 维；Query 浅蓝行不进 cache。绿框用 §14.2 已有配置：$n_h=128$, $d_h=128$ → $2 n_h d_h=$ **32768** / token / layer。
+- **右 MLA**：斜线块只有两块——$c^{KV}$（$d_c=512$）与 $k^R$（$d_h^R=64$）→ **576**。虚线框里的 $K^C,V^C$ 标「restore, not cached」：对应式 (5) 的 $W^{UK},W^{UV}$，不是 05 篇的吸收/非吸收分叉。
+- 绿框第二行是论文 **Table 9**（Large MoE：MHA 860.2K elem vs MLA 34.6K elem），与上一行「每层宽度 32768 vs 576」**不是同一口径**。不要把两行相除当成新的压缩比；Table 9 还给出 MMLU 59.0 vs 57.5，见 §14.4。
+- 文首「相对 MHA KV cache 仅 4%–14%」与 Figure 1(b) 的 **−93.3%** 仍以论文为准，本图不重标那些百分比。
+
+<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Two columns Decode cache MHA vs MLA. Left: hatched K/V grid, 2 n_h d_h, V2 n_h=128 d_h=128, 32768. Right: hatched c^KV d_c=512 and k^R d_h^R=64 = 576; restore K^C V^C not cached; Table 9 860.2K vs 34.6K. No absorb/non-absorb. -->
+
 ### 14.2 DeepSeek-V2（论文配置）
 
 $d_c=512,\ d_h^R=64,\ n_h=128,\ d_h=128$ → MLA **576** vs MHA **32768** / token / layer（≈ **57×**）。

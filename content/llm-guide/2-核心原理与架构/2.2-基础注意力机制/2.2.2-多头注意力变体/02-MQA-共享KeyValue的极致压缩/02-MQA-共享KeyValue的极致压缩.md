@@ -8,7 +8,7 @@ as_of: 2026-08-30
 
 Multi-Query Attention（MQA）由 Shazeer 在 2019 提出：所有 Query 头**共用同一组** Key、Value 投影，在保持多头 Query 表达能力的同时，把 KV Cache 从 $O(H \cdot d_h)$ 压到 $O(d_h)$。自回归解码的瓶颈往往在**读 KV Cache 的带宽**而非 FLOPs；MQA 用「多 Q、单 KV」换显存与带宽，是 PaLM、Falcon、StarCoder 等模型的常见选型。
 
-本文在 [MHA 标准形式](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的记号下，给出矩阵式、隐藏维坐标展开、双求和、**输出投影再展开**、完整数值走查、RoPE 兼容性、Prefill/Decode 差异与 KV Cache 字节估算。配图均来自原论文（GQA 论文中的 MHA→MQA 转换图、DeepSeek-V2 中的注意力族对比图）。
+本文在 [MHA 标准形式](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的记号下，给出矩阵式、隐藏维坐标展开、双求和、**输出投影再展开**、完整数值走查、RoPE 兼容性、Prefill/Decode 差异与 KV Cache 字节估算。族谱与 checkpoint 转换仍用原论文 jpg（图 1–3）；Decode 时 KV **份数**的浅色积木见图 4（与 MHA 篇同一文件，不复制第二份）。
 
 ---
 
@@ -272,7 +272,17 @@ $W^Q_h$ 与 $W^O$ 通常**原样保留**。Mean pool 比「只取第 1 头」或
 | MHA | $H$ 组 $(k^{(h)}, v^{(h)})$ | $2 H d_h = 2 d_{\mathrm{model}}$ |
 | MQA | **1 组** $(k, v)$ | $2 d_h$ |
 
-压缩比 $1/H$。
+压缩比 $1/H$（来自本表 $H$ 因子，不是从图上数条）。
+
+![Decode KV 头数：MHA / GQA / MQA](../01-MHA-多头注意力的标准形式/images/fig-mha-gqa-mqa-kv-heads.png)
+
+> 图 4：浅色自绘，文件在 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 `images/`。本篇读 **右列 MQA**。GQA 论文 Figure 2 与 DeepSeek-V2 Figure 3 的 jpg 仍见图 1–3。
+
+**图 4 解析**
+
+- 三列 Query 都是多头（图中 6 根浅蓝，**不**进 cache）。变的是斜线 K/V 的份数。
+- **右列**：6 条虚线汇到 1 份宽 Key 与 1 份宽 Value，对应式 (2)–(3) 的共享 $K,V$，以及式 (15) 的 $2 d_h$。
+- 左列对照 MHA 的 $2 H d_h$；中列是 [GQA](../03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md) 的 $2 G d_h$。Decode 每步只 append 一组 $k_t,v_t$，宽度不再随 $H$ 涨。
 
 ### 9.2 全模型字节（$N$ 层，batch $B$，长 $L$，元素 $s$ 字节）
 
