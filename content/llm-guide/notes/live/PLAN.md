@@ -13,7 +13,7 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 本波还剩：新文 **09-MOPD**。**01 / 02 / 04** 已勘误，**10-报告落地对照** 已写。G-OPD / SCOPE 未核一手不升格。V4 后训练不 mkdir。禁止改 `4.6-OPD.md` 节首页（监工收）。
+1. **立刻做：** 勘误 **03-SDFT**（arXiv:2601.19897）。OPD 波 **01 / 02 / 04 / 09 / 10** 已入库。**G-OPD / SCOPE** 未核一手不升格。V4 后训练不 mkdir。禁止改 `4.6-OPD.md` 节首页（监工收）。生图必须浅色主题。
 2. **P2 余量 / 结构：** Connest5 仍留条。S1（`4.1`/`8.2` 撞号）不要和本波 4.6 专文抢同一文件。第 5 章禁止再新建根级 `01-型号`。
 3. **0.8 持续：** 清单勾完继续补知识点。不要从全库盘点重来。
 
@@ -75,14 +75,15 @@ category: LLM 指南
 - [x] 0.8 本轮：02-OPSD 勘误；特权上下文自教师；37.1→43.4 是三集平均；1/125=1×1024 vs GRPO 8×16k
 - [x] 0.8 本轮：04-SDPO 勘误；环境 rich feedback 自教师；LCBv6 48.8 vs GRPO 41.2；不是塞进 DPO
 - [x] 0.8 本轮：10-OPD-报告落地对照；Qwen3 Table 21 分母；V4=OPD 全词表 vs K3=MOPD token-level；1800/17920 不要安到 V4
+- [x] 0.8 本轮：09-MOPD 新文；V4 全词表 OPD / K3 clip 对数比 / MiMo 训推比+ORM；三套超参不合成
 - [ ] **结构 S1–S7**（S0 五章首页地图已交）：见 `notes/chapter-structure-plan.md`（撞号/文件名规范 → 5/14 分工已在 S0/S2 声明 → 综述改导航）。不删文件。
 
 ## 续跑锚点（不是停机指令）
 
 刚做完的上一件，以及现在该立刻做的下一件。**不要把本节理解成「本回合可以收工」。**
 
-- 上一件：0.8 已写 **10-OPD-报告落地对照**（Table 21 分母；V4 vs K3 命名；未改第 5/14 章）。
-- 现在立刻做：等 **09-MOPD** 交卷后质检入库。不要 `move_agent_to_root`。不要 push。
+- 上一件：0.8 已写 **09-MOPD**（三家损失分叉；V4 不叫 MOPD；MiMo 不用 K3 的 $R_{\max}$）。
+- 现在立刻做：派 **03-SDFT** 勘误。不要 `move_agent_to_root`。不要 push。生图必须浅色主题。
 
 ## 路径租约（并行防撞）
 
@@ -99,7 +100,8 @@ category: LLM 指南
 | opd-01 | done | `4.6-OPD/01-OPD基础原理/` | 已交；On-Policy Distillation；Table 21 分母 |
 | opsd-02 | done | `4.6-OPD/02-OPSD-自蒸馏/` | 已交；特权上下文自教师；37.1 是三集平均 |
 | sdpo-04 | done | `4.6-OPD/04-SDPO-自蒸馏策略优化/` | 已交；rich feedback 自教师；不是塞进 DPO |
-| mopd-09 | leased | `4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/`（含同名 md、`images/`）· `notes/live/inbox/mopd-09.md` | 同上；禁止 mkdir V4-Flash |
+| mopd-09 | done | `4.6-OPD/09-MOPD-多教师在线蒸馏/` | 已交；三家损失分叉；不合成超参 |
+| sdft-03 | leased | `4-后训练/4.6-OPD/03-SDFT-自蒸馏持续学习/`（含同名 md、`images/`）· `notes/live/inbox/sdft-03.md` | 同上；禁止改 4.6 节首页 / 01/02/04/09/10 |
 | opd-10 | done | `4.6-OPD/10-OPD-报告落地对照/` | 已交；Table 21 分母；V4≠K3 损失 |
 | s0-ch5 | done | `5-主流模型全解/5-主流模型全解.md` | 已交；禁止再 mkdir 根级 `01-型号` |
 | s0-ch8 | done | `8-多模态/8-多模态.md` | 已交；`8.2` 撞号留给 S1 |

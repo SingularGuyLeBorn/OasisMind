@@ -11,10 +11,10 @@ category: LLM 指南
 
 ## 此刻
 
-- 正在读：V4 式 (29)；K3 式 (15)；MiMo MOPD。01/02/04/10 已入库。
-- 正在写：`09-MOPD`。
+- 正在读：SDFT 2601.19897。OPD 波 01/02/04/09/10 已入库。G-OPD / SCOPE 未核一手不升格。
+- 正在写：下一薄项 `03-SDFT` 勘误（待派）。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 10-OPD-报告落地对照
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 09-MOPD
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -118,6 +118,7 @@ category: LLM 指南
 | 2026-08-30 | 02-OPSD 勘误：特权上下文自教师；同一权重两种条件、教师只 prefill、冻 θ_init；37.1→43.4 是三集平均；AIME25 单列 36.7→43.9；1/125=1×1024 vs GRPO 8×16k | 2601.18734 HTML Table 2/3/5/6；github siyan-zhao/OPSD；知乎只学讲法 | `4.6/02-OPSD`；`4.6-OPD.md`；知识图谱 |
 | 2026-08-30 | 04-SDPO 勘误：环境 rich feedback 自教师换 GRPO 的 token 级 A；不是塞进 DPO；LCBv6 Qwen3-8B 48.8 vs GRPO 41.2 | 2601.20802 v2 HTML Table 3–6/8–10；github lasgroup/SDPO；知乎只学讲法 | `4.6/04-SDPO`；`4.6-OPD.md`；知识图谱 |
 | 2026-08-30 | 10-OPD-报告落地对照：官方名/教师槽/损失/分母一行一家；Table 21=Qwen3-8B math+code 17920 vs 1800；V4=OPD 全词表 reverse KL、K3=MOPD token-level clip；点名第 5 章勿把小时安到 V4（未改第 5/14 章） | Qwen3 mineru Table 21；V4 mineru §5.1.2；K3 HTML 式 (15)；MiMo mineru §4.1；GLM-5 D2 §3.5；Step Limitations 一句 | `4.6/10-OPD-报告落地对照`；`4.6-OPD.md`；知识图谱 |
+| 2026-08-30 | 09-MOPD 新文：三家损失分叉；V4 仍叫 OPD 式 (29) 全词表 reverse KL；K3 式 (15) clip 对数比九专家；MiMo Flash 式 (5)–(9) 训推比 + ORM，Table 7 原表；Xiaomi 另文 Table 2 不与 Flash 合成超参 | V4 HTML 2606.19348；K3 HTML 2607.24653v2；MiMo PDF/mineru；另文 2606.30406；知乎只学讲法 | `4.6/09-MOPD`；`4.6-OPD.md`；知识图谱 |
 
 
 
@@ -358,6 +359,11 @@ category: LLM 指南
 | 本库 D2 | GLM-5 §3.5 | 库内 `14.6/08-GLM-5/01-GLM-5技术报告精译.md` | 10-对照 | cross-stage；sg log 比换 GRPO 优势；组大小 1 |
 | 本库 mineru | Step-3.5-Flash Limitations | 库内 `14.7/.../03-Step-3.5-Flash-mineru-en.md` | 10-对照 | 只有 variants of on-policy distillation 一句 |
 | 第 5 章（只读未改） | V4 技术解读 §5.5 | `5.2/.../27-DeepSeek-V4技术解读.md` | 10-对照点名 | 把 1800/17920 安到 V4；专文纠正、未改该文件 |
+| 原论文 HTML | DeepSeek-V4 | https://arxiv.org/html/2606.19348 ；abs https://arxiv.org/abs/2606.19348 | 09-MOPD | 式 (29) 全词表 reverse KL；十余教师；hidden 缓存 + 按教师索引排 batch |
+| 原论文 HTML v2 | Kimi K3 | https://arxiv.org/html/2607.24653v2 ；abs https://arxiv.org/abs/2607.24653 | 09-MOPD | 式 (15) clip sg log 比；九专家；top-k 无明益 |
+| 官方 PDF / mineru | MiMo-V2-Flash | https://mimo.xiaomi.com/papers/mimo-v2-flash.pdf ；abs 2601.02780；库内 mineru-en §4.1/§4.4 | 09-MOPD | 式 (5)–(9)；Table 7；w_t 裁训推比 |
+| 原论文 HTML | Xiaomi MOPD 因式 | https://arxiv.org/html/2606.30406 ；abs https://arxiv.org/abs/2606.30406 | 09-MOPD §4.2 | Qwen3-30B-A3B Table 2；A_max clip 不与 Flash / K3 R_max 合成 |
+| 知乎（只学讲法） | Lei Tian / K3 MOPD | https://zhuanlan.zhihu.com/p/2057418377912755064 ；https://zhuanlan.zhihu.com/p/2065779889832204199 | 09-MOPD | 一名 prompt 一名域教师；数字不以专栏为准 |
 
 
 **没出现在这张表里的数字和架构断言，不准写进正文。**
@@ -395,7 +401,8 @@ category: LLM 指南
 | OPD / On-Policy Distillation | MiniLLM 2306.08543；GKD 2306.13649；**不是** Online Preference Distillation | **勘误已写** `01-OPD基础原理.md` | 第 4.6 |
 | OPSD | Self-Distilled Reasoner arXiv:2601.18734 | **勘误已写** `02-OPSD-自蒸馏.md`；特权上下文自教师；37.1 是三集平均 | 第 4.6 |
 | SDPO | Reinforcement Learning via Self-Distillation arXiv:2601.20802 | **勘误已写** `04-SDPO-自蒸馏策略优化.md`；rich feedback 自教师；不是塞进 DPO | 第 4.6 |
-| MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **排队** 新文 `09-MOPD` | 第 4.6 |
+| MOPD | K3 式 (15)；MiMo-V2-Flash §4.1；V4 叫多教师 OPD 式 (29) | **专文已写** `09-MOPD-多教师在线蒸馏.md`；三家损失分叉，不合成超参 | 第 4.6 |
+| SDFT | Self-Distillation Enables Continual Learning arXiv:2601.19897 | **排队** `03-SDFT-自蒸馏持续学习` | 第 4.6 |
 
 ## 2026 模型分级（P2，先填再写）
 
