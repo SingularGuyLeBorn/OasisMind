@@ -10,6 +10,8 @@ focus: "Omni-Flow unified streaming framework, TAIL, proactive behavior"
 > **arXiv**: 2604.27393  
 > **模型规模**: 9B 参数  
 > **核心创新**: Omni-Flow 统一流式框架 + TAIL 时间对齐交错语音生成
+>
+> 体系地图：[8.7 Omni 与全双工](../../../8-多模态/8.7-Omni与全双工/8.7-Omni与全双工.md)（级联 / SpeechLM / 时间窗；本篇仍是 Omni-Flow 本体）
 
 ---
 
