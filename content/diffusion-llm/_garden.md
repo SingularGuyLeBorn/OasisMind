@@ -44,19 +44,21 @@ description: 写给已有自回归 LLM 基础、还没系统学过扩散大模�
 6. [块扩散：AR 与扩散之间的旋钮](./03-points/block-diffusion.md)  
    BD3-LM；可变长与真 KV Cache；$B=1$ 仍不等于训好的 AR。
 
-计划专文：双向注意力与反转诅咒；AR→扩散改编；推理加速；可控生成；对齐与 RL；失效模式。
+7. [从自回归改编](./03-points/ar-to-diffusion.md)  
+   DiffuLLaMA / Dream / LLaDA 2.0 / Fast-dLLM v2。
+
+计划专文：双向注意力与反转诅咒；推理加速专文（吞吐数字已散见采样篇与 Dream/Mercury 篇）；可控生成；对齐与 RL；失效模式。
 
 🔴 **04 模型**
 
 7. [代表性扩散语言模型一览](./03-models/representative-models.md)
-8. [LLaDA 与前沿进展](./03-models/llada-frontier.md)
-
-计划专文：Dream / Mercury / Gemini Diffusion / Seed 单独成篇。
+8. [LLaDA：8B 从头训到 100B 改编](./03-models/llada-frontier.md)
+9. [Dream、Mercury、Gemini Diffusion、Seed](./03-models/dream-mercury-seed.md)
 
 ⚖️ **05 对照**
 
-9. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
-   含 ArVsDiffusion 动画。对照数字将按论文表重校。
+10. [扩散 vs 自回归](./04-comparison/diffusion-vs-autoregressive.md)  
+   含 ArVsDiffusion 动画。对照数字已按论文表重校。
 
 动画源码在 `apps/algo-viz/src/compositions/`，预览：
 
