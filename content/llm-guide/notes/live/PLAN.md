@@ -13,8 +13,8 @@ category: LLM 指南
 
 ## 下一步 3 件（最上面最先做）
 
-1. **立刻做：** 配图波剩余 `fig-kv-family` / `fig-nsa-dsa`。DP / FA v1–v4 / Gated Attention 已收。**不要**抢 `2.1.3`（b02）。
-2. **1234 过文：** b01 / b08 / b09 / b10 已收。b02 重派中（mHC/xHC 图等它交还）。b07 仍 running。
+1. **立刻做：** 等 b02（`2.1.3` mHC/xHC 图）与 b07。配图波五切片已收。**不要**抢 `2.1.3`。
+2. **1234 过文：** b01 / b08 / b09 / b10 已收。b02 重派中。b07 仍 running。
 3. **`2.1.1` 节首页：** 已改成 01–04 地图。Ling 激活实验 = PowLU，产品仍 SwiGLU。
 
 ## 波次队列（未完成的留着）
@@ -134,6 +134,6 @@ category: LLM 指南
 | ffn-act-04 | done | `2.1.1/04-PowLU-Ling对SwiGLU的稳定化改写/` | 式 (1) $m=3$；Ling-2.0 仍 SwiGLU；无 limit=7.0 官方超参 |
 | fig-dp-611 | done | `6.1.1-分布式训练/6.1.1-分布式训练.md` + 该夹 `images/fig-*.png` + inbox `fig-dp-611.md` | DP/TP/PP/ZeRO 浅色图；气泡率标了 `[OM-FREEPLAY]`；未改 Ring/Ulysses/BPT |
 | fig-fa-v14 | done | `2.3.1/01-FlashAttention/` 的 `02`–`05` md + 该夹 `images/fig-fa-*-mech.png` + inbox `fig-fa-v14.md` | FA3=2407.08608 35%→75%；v2 外循环改到 Q 行；旧 jpg 未删 |
-| fig-kv-family | running | `2.2.2/01-MHA`、`02-MQA`、`03-GQA`、`04-MLA-低秩潜变量` 四篇 md + 各夹 images + inbox `fig-kv-family.md` | 不改 05 吸收双版本、不改节首页、不改 AttnRes |
-| fig-nsa-dsa | running | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 不改 01-MoBA、不改 CSA、不改 live |
+| fig-kv-family | done | `2.2.2/01-MHA`、`02-MQA`、`03-GQA`、`04-MLA-低秩潜变量` 四篇 md + 各夹 images + inbox `fig-kv-family.md` | 两张浅色积木图；未改 05 / 节首页；32768 vs 576 与 Table 9 分口径 |
+| fig-nsa-dsa | done | `2.3.2/02-原生稀疏注意力机制NSA/` + inbox `fig-nsa-dsa.md` | 三分支 + DSA indexer；DSA ≠ NSA 第四分支；MSA 口述未开夹 |
 | fig-gated-attnres | done | `2.2.2/06-Gated-Attention-SDPA输出门控/`；AttnRes + inbox `fig-gated-attnres.md` | Table 1：PPL 5.761 / Hellaswag 74.64 / MMLU 60.82；Qwen3-Next 3:1 插槽已写 |
