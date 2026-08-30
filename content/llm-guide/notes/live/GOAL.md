@@ -27,8 +27,8 @@ category: LLM 指南
 
 ## 本轮焦点（代理更新这一段）
 
-- 状态：H2O 已交；**S0 第 2/5/6 章首页已交**。本波仍在租：SnapKV 12、Quest 13、S0 章 8/14
-- 当前波次：**0.8 持续**（SnapKV/Quest）+ S0 收尾（8/14）
+- 状态：H2O 已交；**S0 第 2/5/6/8/14 章首页已交**。本波仍在租：SnapKV 12、Quest 13
+- 当前波次：**0.8 持续**（SnapKV/Quest 专文）
 - 当前正在写的文章路径：`2.3.2/12-SnapKV-生成前观测窗` · `2.3.2/13-Quest-查询感知稀疏`
 - 本轮明确不做：售卖包装、开源立项、新 OCR 论文进 git、从网上盗带水印的图、B 档 mkdir（V4-Flash / Flash-Lite / Terra/Luna / Mythos 5 / Sonnet 5）
 

@@ -12,9 +12,9 @@ category: LLM 指南
 ## 此刻
 
 - 正在读：本波子代理精读 SnapKV [2404.14469](https://arxiv.org/html/2404.14469v2) · Quest [2406.10774](https://arxiv.org/abs/2406.10774)。Connest5 仍无官方模型串。
-- 正在写：SnapKV `12` · Quest `13` 仍在租。S0 章 5 已质检；8 磁盘已有待官方回收；14 仍在租。
+- 正在写：SnapKV `12` · Quest `13` 仍在租。S0 2/5/6/8/14 章首页已齐。
 - 卡住：`move_agent_to_root` **禁止再调**。本会话写在 `D:\ALL IN AI\OasisMind`。
-- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 S0 第 5 章
+- 上次刷新记忆的时间（读 GOAL+PLAN 的时刻）：2026-08-30 回收 S0 第 8/14 章
 
 ## 本会话已完成（追加，不要删旧行）
 
@@ -106,6 +106,8 @@ category: LLM 指南
 | 2026-08-30 | StreamingLLM 专文：式 (1) sink；4+窗；cache 内赋位；Table 1–6；22.2×；4M；不是 FA/H2O/标量 $z'$ | arxiv HTML 2309.17453；OpenReview NG7sS51zVF；github mit-han-lab/streaming-llm；Miller SoftMax1；gpt-oss model card PDF；V4 mineru 式 (27)；Gu 2410.10781；Barbero 2504.02732 Table 1；Star Attention 2411.17116 Table 2；hanlab blog | `2.3.2/10-StreamingLLM`；`2.3.2` 索引；综述 §5.1；`07-CSA-HCA`；`2.3.4` §4.1；`2.3` 演进表；知识图谱；`6.3.1.2` §7.2 |
 | 2026-08-30 | H2O 专文：Algorithm 1 local $F_{\mathrm{score}}$；20% 对半分；Table 1–7、9；29× / 3× / 1.9×；4M 叠 StreamLLM；不是 FA/4+窗/未来求和 | arxiv HTML 2306.14048；abs 2306.14048；NeurIPS 2023 hash 6ceefa7b…；github FMInference/H2O；NVIDIA EAI KV 压缩博文 | `2.3.2/11-H2O`；`2.3.2` 索引 §0/§9；综述 §5.2；`6.4.2` §4.3.1–4.3.2；`6.4` NeurIPS 年；`2.3.4`；`2.3` 演进表；知识图谱；`10-StreamingLLM` 图 5 |
 | 2026-08-30 | S0 第 5 章首页地图：厂商叙事 vs 第 14 章 D2；根级 `01-型号` 停新建；示例链 Claude-1/GPT-1/Gemini-1.0/Claude-2 | 库内路径确认（14.1/14.2/14.5/14.13；2.3.5；6.4） | `5-主流模型全解.md` §0 |
+| 2026-08-30 | S0 第 8 章首页地图：CLIP/VLM 同号 8.2 分链；omni 链 8.7；精读只进第 14 章 | 库内路径确认（8.1–8.7；GLM-4-Voice Index；MiniCPM-o D2） | `8-多模态.md` §0 |
+| 2026-08-30 | S0 第 14 章首页地图：D2 捆法；机制回 2/6/9.4；第 5 章叙事；Ernie/`14.21-Erine` 留 S6 | 库内路径确认（第 2/5/6 章首页；9.4；14.19；14.21 夹无家族首页） | `14-主流开源模型全景解析与技术报告精读.md` §0 |
 
 
 
