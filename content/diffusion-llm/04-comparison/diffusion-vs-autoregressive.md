@@ -113,7 +113,7 @@ Berglund：虚构名人正向 96.7%，反向约 0%。LLaDA 诗句表：LLaDA Ins
 
 ## 8. 幻觉、一致、事实
 
-并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。[五条性质](../03-points/discreteness.md) 把同一条缝写成 L2：训练是按格交叉熵，乘积可以抽出「I likes tennis」。缓解靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、可算乘积层（CoDD，冻 8B）、允许再掩。CART 改的是 Dream 训练损失对近明文格的权重，7B 没有「只关 CART」消融，Sudoku 81.0 不能单记在这一项。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
+并行不自动带来前后一致：一步之内各位置仍按边际乘积提交。这是采样篇的并行诅咒，ParallelBench 把下界写成 $\mathcal{C}(Y\mid X)$。[五条性质](../03-points/discreteness.md) 把同一条缝写成 L2：训练是按格交叉熵，乘积可以抽出「I likes tennis」。[CRoCoDiL](../03-points/crocodil.md) 把长程结构先写进连续草稿，再让 MDM 译词；无条件 Python 上 NFE 512 对 40 约 13×，不是 Nie 的 GSM8K。缓解还靠低置信 remask、阈值、小 AR 验证（APD，有损）、I-投影 copula（DCD，GPT-2 尺度）、可算乘积层（CoDD，冻 8B）、允许再掩。CART 改的是 Dream 训练损失对近明文格的权重，7B 没有「只关 CART」消融，Sudoku 81.0 不能单记在这一项。LLaDA Base 同协议 BBH 49.7 低于 LLaMA3 的 62.1；TruthfulQA 46.1 对 44.0。对齐侧 AR 有多年 RLHF，扩散刚有 VRPO 与 d1。见[失效模式](../03-points/failure-modes.md)、[ParallelBench](../03-points/parallelbench.md)。
 
 ## 9. 基础设施
 
@@ -216,3 +216,4 @@ HumanEval-FIM 那一格也属于对照纪律。LLaDA Base 73.8 对 LLaMA3 的 73
 - [Score entropy](../03-points/score-entropy.md)
 - [五条性质](../03-points/discreteness.md)
 - [嵌套 SMC](../03-points/nested-smc.md)
+- [CRoCoDiL](../03-points/crocodil.md)

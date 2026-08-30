@@ -133,3 +133,4 @@ v2 把预算收到约 1B，靠的是块扩散加互补掩码，不是靠发现�
 - [SDAR](./sdar.md)
 - [D2F](./d2f.md)
 - [五条性质](./discreteness.md)
+- [CRoCoDiL](./crocodil.md)

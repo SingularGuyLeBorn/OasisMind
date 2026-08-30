@@ -182,4 +182,5 @@ ELBO 换算的困惑度还有一层评测陷阱。AR 的 PPL 用 teacher forcing
 - [离散扩散：转移矩阵在干什么](./discrete-diffusion.md)
 - [掩码扩散](./masked-diffusion.md)
 - [五条性质](../03-points/discreteness.md)
+- [CRoCoDiL](../03-points/crocodil.md)
 - [离散流匹配](../03-points/discrete-flow.md)
