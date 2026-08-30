@@ -146,7 +146,7 @@ RSI 清单。单轮 $S'=I(S)$：RLVR 成立，$\theta$ 变了。式 (2) 还要 $
 **读**：模仿 vs RLVR 两笔账；Yue 的 pass@1 / 大 $k$ / Table 2 子集；Venhoff 的约 76% vs 约 11%、steer 5–12%；Karan Table 1 与无验证器采样；Tufa 才是花园里最像 RLVR 的样板；式 (2)。  
 **不读**：把 R1 听成 RSI、把 0.01% 听成测定值、把 76% 听成任意基准、把 DPO 自动分类成 RLVR、把「有验证器的域终将被掌握」听成已经发生、把 ProRL 听成已经证伪 Yue。
 
-同章：[01 术语](../01-RSI-术语辨析/01-RSI-术语辨析.md)；[02 三层](../02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。Model 层：[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)、[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md)、[Tufa](../../2-Model层-训练时自改进/03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md)、[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。可靠性：[02 阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+同章：[01 术语](../01-RSI-术语辨析/01-RSI-术语辨析.md)；[02 三层](../02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。Model 层：[SPIN](../../2-Model层-训练时自改进/01-SPIN-自对弈微调/01-SPIN-自对弈微调.md)、[Self-Rewarding](../../2-Model层-训练时自改进/02-Self-Rewarding-家族/02-Self-Rewarding-家族.md)、[Tufa](../../2-Model层-训练时自改进/03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md)、[SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)、[LADDER](../../2-Model层-训练时自改进/05-LADDER-递归拆题/05-LADDER-递归拆题.md)、[Absolute Zero](../../2-Model层-训练时自改进/06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)。可靠性：[02 阶梯](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
 
 ## 参考文献
 
