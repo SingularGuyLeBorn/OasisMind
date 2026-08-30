@@ -87,7 +87,7 @@ $$
 
 综述 §4 按被优化组件切，不按公司切。Figure 4 / Figure 5 是论文目录树，本篇只取和花园接头的几条。
 
-**LLM 行为。** 训练侧：SFT 模仿带推理轨迹的数据，轨迹来自自己的成功 rollout 或更强教师。STaR（Zelikman et al., 2022）只在做对的题上微调，做错的再改写；NExT 用单测过滤自生成轨迹做程序修复；DeepSeek-Prover 用已验证证明迭代训策略。RL 侧：用测试、最终对错或过程奖励模型造偏好，走 DPO；Self-Rewarding 让策略用自己的判断迭代；Tülu 3 在可验证奖励上 RL、不另训奖励模型；DeepSeek-R1 在能做对错检查时用纯 RL + GRPO。Absolute Zero 让同一只模型轮流出题和答题，机制见 [06](../../2-Model层-训练时自改进/06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)；R-Zero 用挑战者按解题器当前能力出题——和 LADDER「自己造更简单的题」同属出题器，验证器仍在墙外。测试时侧：编译器当 outcome 反馈（CodeT、LEVER），证明助手报错（Baldur），或训练过程奖励看每一步（Math-Shepherd）。搜索侧：自洽投票、ToT、GoT。测试时加长思考不改 \(\theta\)，花园把它放在 L0 / 任务内，见可靠性专文。
+**LLM 行为。** 训练侧：SFT 模仿带推理轨迹的数据，轨迹来自自己的成功 rollout 或更强教师。STaR（Zelikman et al., 2022）只在做对的题上微调，做错的再改写；NExT 用单测过滤自生成轨迹做程序修复；DeepSeek-Prover 用已验证证明迭代训策略。RL 侧：用测试、最终对错或过程奖励模型造偏好，走 DPO；Self-Rewarding 让策略用自己的判断迭代；Tülu 3 在可验证奖励上 RL、不另训奖励模型；DeepSeek-R1 在能做对错检查时用纯 RL + GRPO。Absolute Zero 让同一只模型轮流出题和答题，机制见 [06](../../2-Model层-训练时自改进/06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)；[R-Zero](../../2-Model层-训练时自改进/07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md) 用挑战者按解题器当前能力出题——和 LADDER「自己造更简单的题」同属出题器，验证器仍在墙外。测试时侧：编译器当 outcome 反馈（CodeT、LEVER），证明助手报错（Baldur），或训练过程奖励看每一步（Math-Shepherd）。搜索侧：自洽投票、ToT、GoT。测试时加长思考不改 \(\theta\)，花园把它放在 L0 / 任务内，见可靠性专文。
 
 **提示。** LLM 对措辞、格式、词序敏感，所以提示被写成可搜空间。编辑派在人写的句子上做删、换、释义（GRIPS、TEMPERA 把编辑当成 RL）。生成派让 LLM 按旧提示和分数写出全新提示（OPRO、PromptAgent 的 MCTS、MIPRO 的贝叶斯）。文本梯度派用自然语言批评当「梯度」，再反向改提示（ProTeGi、TextGrad）。进化派维护提示种群，突变和交叉（EvoPrompt、Promptbreeder）。改的是 Harness 里的指令，不是改进器。
 

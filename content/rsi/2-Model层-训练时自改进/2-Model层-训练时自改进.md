@@ -4,7 +4,7 @@ date: 2026-08-30
 as_of: 2026-08-30
 tags: [RSI, 地图]
 published: true
-excerpt: 改权重的自改进：SPIN、Self-Rewarding、Tufa、SEAL、LADDER、Absolute Zero。OPD 只链 llm-guide，不在本章重推公式。
+excerpt: 改权重的自改进：SPIN、Self-Rewarding、Tufa、SEAL、LADDER、Absolute Zero、R-Zero。OPD 只链 llm-guide，不在本章重推公式。
 category: RSI
 ---
 
@@ -20,5 +20,6 @@ category: RSI
 | 04 | [SEAL 自适配语言模型](./04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) | 自己写 self-edit，内环 LoRA 改权重 |
 | 05 | [LADDER 递归拆题](./05-LADDER-递归拆题/05-LADDER-递归拆题.md) | 积分变体树 + GRPO；TTRL 答完回滚；不是 RSI |
 | 06 | [Absolute Zero](./06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md) | 自造 $(p,i,o)$；Coder-7B 总均 50.4；解释器在墙外 |
+| 07 | [R-Zero 挑战者解题器](./07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md) | 两只克隆 co-evolve；4B 数学 +6.49；多数票会脏；Iter 4 塌 |
 
 **不要落在本章：** OPD / MOPD 推导 → [llm-guide 4.6](../../llm-guide/4-后训练/4.6-OPD/4.6-OPD.md)。本章最多说「OPD 也改权重，但是教师蒸馏，不是自对弈」。
