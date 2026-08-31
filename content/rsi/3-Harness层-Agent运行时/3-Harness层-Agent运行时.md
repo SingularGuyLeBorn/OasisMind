@@ -51,5 +51,6 @@ category: RSI
 | 35 | [AWM 工作流记忆](./35-AWM-工作流记忆/35-AWM-工作流记忆.md) | 网页子程序进记忆；WebArena 23.5→35.5；摘要 51.1/24.6 是相对涨幅；不是式 (2) |
 | 36 | [MemGPT 操作系统式记忆](./36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md) | 窗口当 RAM、外存当磁盘；DMR Turbo 35.3→93.4；裁判慷慨；不是式 (2) |
 | 37 | [A-Mem 卡片盒记忆](./37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) | 原子笔记连边并改旧卡片；4o-mini 多跳 27.02 不是两倍；提示冻着 |
+| 38 | [HippoRAG 海马索引检索](./38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md) | OpenIE 建图再 PPR；2Wiki R@5 68.2→89.1 是百分点；HotpotQA 单步更低 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
