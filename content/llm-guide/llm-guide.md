@@ -21,13 +21,12 @@ category: "LLM 指南"
 | 2 | [核心原理与架构](/posts/2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84%2F2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84?garden=llm-guide) | Transformer 与注意力 |
 | 3 | [预训练](/posts/3-%E9%A2%84%E8%AE%AD%E7%BB%83%2F3-%E9%A2%84%E8%AE%AD%E7%BB%83?garden=llm-guide) | 数据、Tokenizer、Scaling Law |
 | 4 | [后训练](/posts/4-%E5%90%8E%E8%AE%AD%E7%BB%83%2F4-%E5%90%8E%E8%AE%AD%E7%BB%83?garden=llm-guide) | SFT、RLHF、对齐 |
-| 5 | [主流模型全解](/posts/5-%E4%B8%BB%E6%B5%81%E6%A8%A1%E5%9E%8B%E5%85%A8%E8%A7%A3%2F5-%E4%B8%BB%E6%B5%81%E6%A8%A1%E5%9E%8B%E5%85%A8%E8%A7%A3?garden=llm-guide) | 叙事 + 精读（与第 14 章同一章两面） |
+| 5 | [模型家族与选型](/posts/05-%E6%A8%A1%E5%9E%8B%E5%AE%B6%E6%97%8F%E4%B8%8E%E9%80%89%E5%9E%8B%2F05-%E6%A8%A1%E5%9E%8B%E5%AE%B6%E6%97%8F%E4%B8%8E%E9%80%89%E5%9E%8B?garden=llm-guide) | 任务约束、证据比较、模型家族与版本选型 |
 | 6 | [训练与推理优化](/posts/6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96%2F6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96?garden=llm-guide) | 量化、KV Cache、并行 |
 | 7 | [LLM 应用开发](/posts/7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91%2F7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91?garden=llm-guide) | RAG、Agent、Prompt |
 | 8 | [多模态](/posts/8-%E5%A4%9A%E6%A8%A1%E6%80%81%2F8-%E5%A4%9A%E6%A8%A1%E6%80%81?garden=llm-guide) | VLM、CLIP、音视频 |
 | 9 | [AI 工程化与基础设施](/posts/9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%2F9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD?garden=llm-guide) | 硬件、分布式、推理框架 |
 | 13 | [Agent](/posts/13-Agent%2F13-Agent?garden=llm-guide) | 智能体系统工程 |
-| 14 | [主流模型精读夹](/posts/14-%E4%B8%BB%E6%B5%81%E5%BC%80%E6%BA%90%E6%A8%A1%E5%9E%8B%E5%85%A8%E6%99%AF%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A%E7%B2%BE%E8%AF%BB%2F14-%E4%B8%BB%E6%B5%81%E5%BC%80%E6%BA%90%E6%A8%A1%E5%9E%8B%E5%85%A8%E6%99%AF%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A%E7%B2%BE%E8%AF%BB?garden=llm-guide) | 与第 5 章同一章：报告精读 |
 
 ## 专栏
 

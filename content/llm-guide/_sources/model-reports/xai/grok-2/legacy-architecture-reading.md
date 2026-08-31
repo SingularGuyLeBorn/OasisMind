@@ -1,0 +1,65 @@
+---
+title: "01 · Grok-2: 混合黑林模型与 X 数据飞轮 架构精译"
+date: 2026-08-30
+as_of: 2026-08-30
+tags: [Grok-2, Grok-2-mini, FLUX.1, LMSYS, 公开材料精读]
+---
+
+> 来源快照：保留旧稿供事实追溯；公开、已校勘版本见 [公开校勘页](../../../../05-模型家族与选型/5.3-模型家族/xai/grok-2/grok-2.md)。
+
+
+
+
+# Grok-2: 混合黑林模型与 X 数据飞轮
+
+>  **[返回 14.15-xAI 家族总览](../../../../05-模型家族与选型/5.3-模型家族/xai/xai.md)** · 前代多模态：[Grok-1.5V](../../../../05-模型家族与选型/5.3-模型家族/xai/grok-1-5v/grok-1-5v.md)
+
+> 该家族依靠其独特的算力优势与数据护城河, 在 LLM 红海中占据了核心生态位。
+
+产品博文 [Grok-2 Beta Release](https://x.ai/news/grok-2)（2024-08-13）。**没有**层数、MoE、参数量。「混合黑林」不是架构名词：正文是和 **Black Forest Labs** 的 **FLUX.1** 做 X 上的图像实验。X 实时信息是产品能力，不是单独的数据配比表。Grok-2 mini = 同博文的小档，本篇只记一行。
+
+## 1. 产品：相对 Grok-1.5 的预览，Arena 用了化名
+
+相对 **Grok-1.5**（不是 1.5V 那篇）前进：chat / coding / reasoning。同时发 **Grok-2 mini**。早期 Grok-2 在 LMSYS / LMArena 用名 **sus-column-r**。博文当时句：总体 Elo **超过 Claude 3.5 Sonnet 和 GPT-4-Turbo**。Elo 整数在图里，**正文没有数字，本篇不估柱**。
+
+当时 beta 在 𝕏；enterprise API「本月稍后」。Premium / Premium+ 用 Grok-2 与 mini；Grok-2 文本+视觉，接 𝕏 实时信息。mini 是速度/质量折中。内部 AI Tutors 做 pairwise：指令遵循 + 事实；改进点写成：检索内容上的推理、tool use（缺信息、事件顺序、丢掉无关帖）。
+
+图像：**与 Black Forest Labs 合作，用他们的 FLUX.1 在 𝕏 上扩展 Grok 能力**。这是外接生图模型实验，不是「Grok-2 内部混合了某种黑林注意力」。
+
+API 栈：多区域推理、强制 MFA（Yubikey / TouchID / TOTP）、流量统计、billing analytics、management API。都是产品句，没有并行策略。
+
+下一步：𝕏 上 multimodal understanding 预览；下一跳靠 new compute cluster 做 core reasoning。**不要把后文 Grok 3 / Colossus 倒灌进 8-13 这篇。**
+
+## 2. 学术表（能抄的百分数）
+
+官方：相对 Grok-1.5 明显提升；在 GPQA / MMLU / MMLU-Pro / MATH 上和当时前沿可比。Grok-2 在 MathVista、DocVQA 自称领先。脚注必须跟着走。
+
+| 基准 | Grok-1.5 | Grok-2 mini‡ | Grok-2‡ | GPT-4 Turbo* | Claude 3 Opus† | Gemini Pro 1.5 | Llama 3 405B | GPT-4o* | Claude 3.5 Sonnet† |
+|------|----------|--------------|---------|--------------|----------------|----------------|--------------|---------|---------------------|
+| GPQA | 35.9% | 51.0% | **56.0%** | 48.0% | 50.4% | 46.2% | 51.1% | 53.6% | 59.6% |
+| MMLU | 81.3% | 86.2% | 87.5% | 86.5% | 85.7% | 85.9% | 88.6% | 88.7% | 88.3% |
+| MMLU-Pro | 51.0% | 72.0% | 75.5% | 63.7% | 68.5% | 69.0% | 73.3% | 72.6% | 76.1% |
+| MATH§ | 50.6% | 73.0% | 76.1% | 72.6% | 60.1% | 67.7% | 73.8% | 76.6% | 71.1% |
+| HumanEval¶ | 74.1% | 85.7% | 88.4% | 87.1% | 84.9% | 71.9% | 89.0% | 90.2% | 92.0% |
+| MMMU | 53.6% | 63.2% | 66.1% | 63.1% | 59.4% | 62.2% | 64.5% | 69.1% | 68.3% |
+| MathVista | 52.8% | 68.1% | **69.0%** | 58.1% | 50.5% | 63.9% | — | 63.8% | 67.7% |
+| DocVQA | 85.6% | 93.2% | 93.6% | 87.2% | 89.3% | 93.1% | 92.2% | 92.8% | 95.2% |
+
+\* GPT-4-Turbo 与 GPT-4o 用 **2024-05** 发布成绩。
+† Claude 3 Opus 与 3.5 Sonnet 用 **2024-06** 发布成绩。
+‡ Grok-2 的 MMLU / MMLU-Pro / MMMU / MathVista = **0-shot CoT**。
+§ MATH = **maj@1**。
+¶ HumanEval = **pass@1**。
+
+注意：Grok-1.5V 那篇的 MMMU 53.6% 与本表 Grok-1.5 列的 MMMU 53.6% 数字相同，但是 **1.5V 博文写的是 zero-shot 无 CoT**。协议不同，不要合成「同一模型两种评测」。
+
+## 3. 失效条件
+
+- 把 FLUX.1 写成 Grok-2 的骨干网络。
+- 给 Grok-2 / mini 编参数量、专家数。
+- 从 Arena 截图估 Elo。
+- 为 mini 新建空文件夹。
+
+## 参考文献
+
+- https://x.ai/news/grok-2 （读完产品段、Arena 化名句、整张基准表与脚注、FLUX.1、API 段）
