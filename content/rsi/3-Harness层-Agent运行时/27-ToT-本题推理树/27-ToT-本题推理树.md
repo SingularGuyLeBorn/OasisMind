@@ -27,7 +27,7 @@ tags:
 
 \(S\) 取「当前这道题的搜索树」。单轮 \(S'=I(S)\) 可以发生：多保留一条可能到 24 的中间式。术语式 (2) 还要 \(I'\subseteq S'\)。下一道独立题仍用同一套提案提示、同一套估价提示、同一个 \(b\) 和步数上限 \(T\)，没有把这棵树写进磁盘，也没有把搜索配方改掉。混元 L0：改 \((\text{输出},\text{轨迹})\)，保留的 Agent 状态跨独立任务不变。可靠性专文把 ToT 和 Self-Refine、链式验证并列在 L0，本篇把那一行还原成 Table 2 的 74% 和 4%。
 
-和邻居先划线。Self-Refine 最多 4 轮，历史只拼在本题提示里；ToT 的历史是树，可以剪掉一整枝再换一条。两边题换了都清空。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 把失败写成 `mem`，下一 trial 还能读，同一间 AlfWorld 房间会重置、句子留下。ToT 没有跨 trial 的句子。[CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 要搜索或解释器当墙外检查；Game of 24 的估价是模型自己说 sure / maybe / impossible，填字的剪枝也是模型说某个空「填不进去」。门在模型嘴里时，L0 仍然成立，只是错估会剪掉真解——填字消融里关掉剪枝，100 步内能摸到 ToT+剪枝摸不到的 3 盘。PromptAgent 的节点是提示版本，奖励来自训练切出来的保留集；ToT 的节点是本题中间思维，没有跨题共用的 \(H_t\)。[Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 后来把 Game of 24 的求解器整段换成排列搜索，报到 100%。那是另一套协议、另一只自改运行时，不要拿 100% 替换本篇 74%，也不要用 74% 去盖那次重写。
+和邻居先划线。Self-Refine 最多 4 轮，历史只拼在本题提示里；ToT 的历史是树，可以剪掉一整枝再换一条。两边题换了都清空。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 把失败写成 `mem`，下一 trial 还能读，同一间 AlfWorld 房间会重置、句子留下。ToT 没有跨 trial 的句子。[CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 要搜索或解释器当墙外检查；Game of 24 的估价是模型自己说 sure / maybe / impossible，填字的剪枝也是模型说某个空「填不进去」。门在模型嘴里时，L0 仍然成立，只是错估会剪掉真解——填字消融里关掉剪枝，100 步内能摸到 ToT+剪枝摸不到的 3 盘。PromptAgent 的节点是提示版本，奖励来自训练切出来的保留集；ToT 的节点是本题中间思维，没有跨题共用的 \(H_t\)。[Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 后来把 Game of 24 的求解器整段换成排列搜索，报到 100%。那是另一套协议、另一只自改运行时，不要拿 100% 替换本篇 74%，也不要用 74% 去盖那次重写。[BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md) 同骨干 GPT-4 的 Table 1 里 ToT 仍是 74.0，BoT 是 82.4；摘要 11% 是相对涨幅，不要听成比本篇 74 高 11 个百分点。
 
 ![提案 G、估价 V、BFS 或 DFS、本题输出 y；实线只在本题内转](./images/fig-tot-loop.png)
 
@@ -101,7 +101,7 @@ Gödel Agent 把手写脚手架放进「部署之后模块图不变」。ToT 正
 **读**：Table 2 的 74 / 4.0 / 7.3 / 9.0、\(b=1\) 的 45、CoT 第一步约 60% 已死、Refine 27% 用了等式真值、写作 7.56 对 6.93 以及人评 41/21/38、IO+Refine 写作 7.67、填字 4/20 与 oracle 7/20、GPT-3.5 的 19%、生成/估价对调 64 / 31、附录 GSM8K 90 对 86、Table 7 的 $0.74 对 CoT×100 的 49%、L0、会场 NeurIPS 2023。  
 **不读**：用 74% 改 PromptAgent 的 0.802 或 APE 的 0.810、用 90 盖主表、把 CoT 4% 当成笔误改成高于 IO、把 IO+Refine 27% 写成 Self-Refine、把填字 Game 列的 1 改成 1/20、把 Gödel 的 100% 写进本表、说 MCTS 已经是本篇主实验、把 ToT 听成提示版本树、说已经 RSI、把资源清单的 ICML'24 当会场。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

@@ -191,6 +191,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | [GoT](../../3-Harness层-Agent运行时/31-GoT-思维图聚合/31-GoT-思维图聚合.md) 本题思维图 | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有；排序用局部误差 | 任务内图聚合，不是 RSI |
 | [ExpeL](../../3-Harness层-Agent运行时/32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md) 跨题洞察清单 | 是（Harness 洞察） | 否 | Harness / 近 L2 | 本任务可执行结果可以有 | 跨题经验，不是 RSI |
 | [Dynamic Cheatsheet](../../3-Harness层-Agent运行时/33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 测试时备忘录 | 是（Harness 记忆） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；策展无金标 | 跨查询记忆，不是 RSI |
+| [BoT](../../3-Harness层-Agent运行时/34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md) 思维模板缓冲 | 是（Harness 模板库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有 | 跨题模板，不是 RSI |
 | 经典 TTT（测完可丢） | 弱：改的是当前样本上的权重/状态 | 否：通常不构成下一代 $I$ | 推理时 Model | 往往没有跨请求验收 | TTT |
 | Replay / EWC | 是（权重） | 否：$I$ 仍是固定 CL 算法 | Model / CL | 旧任务保持测试 | 持续学习零件 |
 | OPD 一次训练作业 | 是（学生 $\theta$） | 否：教师与脚本在墙外 | Model 后训练 | 可以有 held-out | 不是 RSI |

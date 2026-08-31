@@ -93,7 +93,7 @@ ACE 的 AppWorld 表不要搬过来当本方法主结果。那边骨干是 DeepS
 
 同一句「测试时学习」，至少分四截。TTT / SEAL 改 \(\theta\)（SEAL 内环还会回滚）。DC 改文本 \(M\)。ToT 改本题树，题换了空。多数票改的是本题采样，Table 4 证明三票抬不动 AIME。四截不要收成「都在推理时自我进化」。附录把 dynamic evaluation、域适应、传统 RAG 写成对照：那些要么碰权重，要么检索一份部署前冻死的语料。DC 检索的是这轮自己刚写下的问答对和蒸馏过的句子。MemoryLLM、CAMEL 一类把记忆写进权重或关联槽，本篇不收：DC 明确不碰参数。
 
-相关工作里点名的邻居，花园已经有落点的，不要再发明第四套分类。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) / [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) / [CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 是本题或本任务上的反馈环；[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 用文本梯度改本题变量或一条薄指令。DC 要留下跨查询还能读的策略库。Thought-Retriever 存的是旧思维链原文；Buffer of Thoughts 蒸馏高阶模板，作者写它更像预定义、偏实验里见过的题型。DC 强调选择性蒸馏，避免把整段 transcript 和一次性思维链堆爆窗口。Madaan 等 2022 的记忆编辑要用户反馈；Zhang 等 2024 的医学生双记忆要微调。DC 训练免费、黑盒、自策展。这些对照是定位，不是另一张准确率表。
+相关工作里点名的邻居，花园已经有落点的，不要再发明第四套分类。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) / [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) / [CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 是本题或本任务上的反馈环；[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 用文本梯度改本题变量或一条薄指令。DC 要留下跨查询还能读的策略库。Thought-Retriever 存的是旧思维链原文；[Buffer of Thoughts](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md) 蒸馏高阶模板，作者写它更像预定义、偏实验里见过的题型。本花园钉死：六类和粗模板是人写的起点，buffer-manager 仍可追加；摘要 11% 是相对 ToT 的比例，Table 1 是 82.4 对 74.0。DC 强调选择性蒸馏，避免把整段 transcript 和一次性思维链堆爆窗口。Madaan 等 2022 的记忆编辑要用户反馈；Zhang 等 2024 的医学生双记忆要微调。DC 训练免费、黑盒、自策展。这些对照是定位，不是另一张准确率表。
 
 24 点和配平能满分，因为解法是一段可执行代码，Python 解释器在墙外验算。AIME 没有这种硬脚本，涨的是代数 / 组合的句子，Curator 仍在自评。GPQA 上 GPT-4o 几乎不涨，说明杂题上检索会吵。MMLU-Pro 上 GPT-4o 会掉，说明「参考指南」写错了就污染后续选择题。小模型写不好 \(M\)，DC 放大弱点。R1 / o1 答太长，策展跟不上。这些是机制边界，不是没写完的 RSI。
 
@@ -104,7 +104,7 @@ ACE 的 AppWorld 表不要搬过来当本方法主结果。那边骨干是 DeepS
 **读**：Table 1 的 23.3→50.0、6.7→36.7、10→99、Claude 24 点几乎不涨、GPQA 9.1 个点只属于 Sonnet、GPT-4o 的 MMLU 会掉、FH 会伤 GPT-4o、多数票无效、空记忆 19 对 99 才是 24 点的因果、没有金标、ACE 的塌缩数字不进本表、不是 74%、不是式 (2)。  
 **不读**：用 99 改 ToT 的 74、用 27% 听成准确率从某数涨到 27、把 18,282→122 写进本表、说小模型一样涨、说已经 RSI。
 
-同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[04 SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[04 SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
