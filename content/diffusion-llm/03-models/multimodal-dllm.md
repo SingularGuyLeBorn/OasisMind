@@ -1,6 +1,6 @@
 ---
 title: "多模态扩散：LLaDA-V、MMaDA、Dimple"
-category: null
+category: "03-模型谱系"
 tags:
   - multimodal
   - LLaDA-V
@@ -20,7 +20,7 @@ excerpt: "语言塔换成掩码扩散之后，视觉怎么接进去。LLaDA-V �
 
 自回归多模态的默认接法是 LLaVA：视觉塔抽出图块特征，MLP 投进 LLM 的词嵌入空间，后面仍按从左到右写回答。LLaDA-V（You 等人，arXiv:2505.16933）把最后那一截换成掩码扩散。视觉塔用 SigLIP 2，投影用两层 MLP，语言塔就是 LLaDA 8B。训练目标仍是只掩回答、提示保持干净，只是提示里现在既有字，也有一串视觉嵌入。
 
-![](./images/fig-llada-v-slot.png)
+![LLaDA-V 将视觉编码结果投影到语言槽位并参与掩码扩散去噪](./images/fig-llada-v-slot.png)
 
 > 图 1：图像经视觉塔和 MLP 进入 LLaDA 的嵌入空间。虚线是干净的文本提示；实线是回答段上的迭代揭开。像素本身不进 $Q_t$。
 

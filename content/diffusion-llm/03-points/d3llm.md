@@ -1,6 +1,6 @@
 ---
 title: "d3LLM：伪轨迹蒸馏与 AUP"
-category: null
+category: "05-训练、后训练与迁移"
 tags:
   - d3LLM
   - distillation
@@ -58,7 +58,7 @@ $$
 
 数据量很小。Dream 侧约 122k 条、65M token；LLaDA 侧约 92k 条、40M token。来源与 dParallel 相同：PRM12K、AceCode、GSM8K 训练集、Numina-Math。LoRA $r=256$，学习率 $2\times 10^{-5}$。LLaDA 蒸 6 个 epoch，Dream 3 个。这不是 580B 改编，也不是 dInfer 附录那种「只留答对轨迹」。黄金轨迹要验证器；伪轨迹要老师愿意逐步揭开，并记下顺序。
 
-![](./images/fig-d3llm-pseudo-traj.png)
+![d3LLM 由教师揭开顺序构造伪轨迹并蒸馏到学生的流程](./images/fig-d3llm-pseudo-traj.png)
 
 > 图 1：左列伪轨迹蒸馏，顺序来自老师、字来自标准答；右列按熵同时解多块，稳定期刷新 KV。底栏 AUP 的 10× 对照原版 LLaDA/Dream 的 TPS，不是 dInfer 的八卡表。
 

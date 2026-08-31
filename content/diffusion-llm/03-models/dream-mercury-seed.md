@@ -1,6 +1,6 @@
 ---
 title: "Dream、Mercury、Gemini Diffusion、Seed"
-category: null
+category: "03-模型谱系"
 tags:
   - Dream
   - Mercury
@@ -16,7 +16,7 @@ LLaDA 把「8B 能不能打」钉在学术表上。产品与实验室另外几�
 
 改编几何（移位、退火、WSD）见[从自回归改编](../03-points/ar-to-diffusion.md)。本篇只钉各家公开表和不能横比的吞吐。开源代码向检查点见[DiffuCoder](../03-points/code-dllm.md)，不要和下面四张交付物卡焊在一起。
 
-![](./images/fig-four-delivery-cards.png)
+![Dream、Mercury、Gemini Diffusion 与 Seed 的交付形态和证据等级卡片](./images/fig-four-delivery-cards.png)
 
 > 图 1：四列交付物。开源质量表、H100 吞吐、实验室对照表、H20 吞吐，分母不同。
 

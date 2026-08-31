@@ -1,6 +1,6 @@
 ---
 title: "可控生成与引导"
-category: null
+category: "07-控制、评测与选型"
 tags:
   - controllable-generation
   - Diffusion-LM
@@ -30,7 +30,7 @@ $$
 
 句法树例子能把「前面写错不能回」说死。目标树要求名词短语三个词、动词短语若干词。FUDGE 一旦在前三个词里多写了一个形容词，前缀判别器对所有后续都打低分，后面只能硬续。Diffusion-LM 的样本里出现过「Family friendly Indian food」比目标多一个词，后面的 span 仍然对得上，因为它在后续去噪步把连接词丢掉，把后缀对齐回来。微调 AR 在「The Mill」少一个词之后，后缀全部错位。连续潜变量的修改是非因果的，错误不必向右传播。这是 Table 2 句法树 86.0 对 FUDGE 17.9 的机制原因，不是分类器魔法。
 
-![](./images/fig-diffusion-lm-guidance.png)
+![连续梯度引导、离散 CFG 与序列级奖励转向三种控制路线](./images/fig-diffusion-lm-guidance.png)
 
 > 图 1：反向一步里，去噪网络负责流畅，分类器把 $\log p(c\mid x_t)$ 的梯度加到连续潜变量上，最后 rounding 成词。
 

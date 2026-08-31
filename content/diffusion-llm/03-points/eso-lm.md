@@ -1,6 +1,6 @@
 ---
 title: "Eso-LM：任意顺序损失，因果注意力换精确 KV"
-category: null
+category: "06-推理加速与系统"
 tags:
   - Eso-LM
   - KV-cache
@@ -22,7 +22,7 @@ excerpt: "损失对排列求期望，并不强迫注意力全双向。Eso-LM 把
 
 任意顺序 AR 本来就允许因果注意力：把序列按某条排列 $\sigma$ 排好，再做下三角。Eso-LM 把这条老路接回掩码扩散。给定 $z_t$，把干净 token 聚到左边、MASK 聚到右边，**位置编码仍用原句的下标**（RoPE / 绝对位置都不跟洗牌走）。然后走标准因果注意力。左边的干净前缀再也不会依赖右边尚未揭开的 MASK，KV 可以写进缓存。MASK 之间按洗牌后的次序因果可见：本步要揭的那些 MASK 能看见全部干净字，以及排在自己前面的其它 MASK。
 
-![](./images/fig-eso-shuffle-causal.png)
+![Eso-LM 通过随机顺序训练与原位置编码在因果注意力下实现任意顺序生成](./images/fig-eso-shuffle-causal.png)
 
 > 图 1：左列原序全双向，没有精确 KV。右列洗牌后因果，干净前缀的 KV 可写死。页脚：任意顺序损失不要求解码时双向。
 

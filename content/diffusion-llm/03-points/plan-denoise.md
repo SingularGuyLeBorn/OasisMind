@@ -1,6 +1,6 @@
 ---
 title: "谁决定揭开哪一格：启发式、规划器、学顺序"
-category: null
+category: "06-推理加速与系统"
 tags:
   - planner
   - remask
@@ -30,7 +30,7 @@ $\mathrm{N}$ 表示「这一维还算噪声」。指示函数把规划器冻死�
 
 低置信 remask 属于第二层。网络先对所有掩码位出词表分布，再按 $\max_v p_\theta(x^i=v\mid x_t)$ 排序，把最平的盖回去。Table 9 在 Instruct、相同生成长度下，随机 21.3、低置信 70.0（GSM8K）。随机策略更贴近前向后验的比例，生成却差，因为校准不是处处一样。这是 MaskGIT 式退火，不是 ELBO 推出来的最优规划。
 
-![](./images/fig-planner-denoiser.png)
+![固定置信度规划器、显式规划网络与可学习生成顺序的层级关系](./images/fig-planner-denoiser.png)
 
 > 图 1：左列把「掩码=噪声」冻住，只用置信度决定盖回哪几格。右列另有一个规划器逐格输出脏或净，去噪器只填被标脏的位置。
 

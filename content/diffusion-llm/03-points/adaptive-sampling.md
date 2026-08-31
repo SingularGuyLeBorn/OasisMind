@@ -1,6 +1,6 @@
 ---
 title: "自适应采样：步数跟 DTC 走，不跟维数 d 走"
-category: null
+category: "06-推理加速与系统"
 tags:
   - adaptive-sampling
   - DTC
@@ -11,9 +11,11 @@ published: true
 as_of: 2026-08-31
 excerpt: "Dmitriev、Huang、Wei（arXiv:2608.23554）证明：均匀与 remasking 扩散用 leave-one-out 一阶采样器时，离散化步数 N=O~(DTC(X0)/ε)，不是环境维 d。τ-leaping 的 O~(d/ε) 是采样器病，不是均匀前向本身。实验是结构化合成分布（二元马尔可夫链、k 分量稀疏混合），精确 LOO 分数，误差只剩离散化。N=20/30/40，T=8，δ=1e-5，7 次平均。不是 LLaDA 8B。DTC 不是 ParallelBench 的 C，也不是 DCD 的 D_TC ELBO 下界。"
 ---
-# 自适应采样：步数跟 DTC 走
+# 自适应采样：步数跟 DTC 走，不跟维数 d 走
 
-[采样与调度](../02-mechanism/sampling.md) 把步数写成测试时的旋钮：切得越细，离散化误差越小，前向越贵。[Score entropy](./score-entropy.md) 把离散反向写成状态比 $p_t(y)/p_t(x)$。[ParallelBench](./parallelbench.md) 问的是数据本身能不能并行。[离散 copula](./discrete-copula.md) 把因子化反向在 ELBO 里留下的总相关写成 $\mathrm{D}_{\mathrm{TC}}$。Dmitriev、Huang、Wei 的 *Provably adaptive sampling with uniform and remasking discrete diffusion models*（arXiv:2608.23554，2026-08-24）问的是另一件事：均匀前向配上常见的 $\tau$-leaping，已有下界随环境维 $d$ 线性涨。这线性是前向过程固有的，还是采样器写错了？
+[采样与调度](../02-mechanism/sampling.md) 把步数写成测试时的旋钮：切得越细，离散化误差越小，前向越贵。[Score entropy](./score-entropy.md) 把离散反向写成状态比 $p_t(y)/p_t(x)$。[ParallelBench](./parallelbench.md) 问的是数据本身能不能并行。[离散 copula](./discrete-copula.md) 把因子化反向在 ELBO 里留下的总相关写成 $\mathrm{D}_{\mathrm{TC}}$。Dmitriev、Huang、Wei 的 [*Provably adaptive sampling with uniform and remasking discrete diffusion models*](https://arxiv.org/abs/2608.23554) 问的是另一件事：均匀前向配上常见的 $\tau$-leaping，已有下界随环境维 $d$ 线性涨。这线性是前向过程固有的，还是采样器写错了？
+
+> **论文状态与实验边界**：本文按 arXiv:2608.23554v1（2026-08-24）记录，仍是预印本。数值实验只覆盖可精确计算 leave-one-out 分数的结构化合成分布；没有训练语言模型，没有自然语言 benchmark，也没有 7B/8B 推理结果。下面的步数保证不能直接外推为 LLaDA 的产品延迟。
 
 答案写在摘要里。leave-one-out 去噪器给出的一阶采样器，坐标更新可以并行。均匀和 remasking 两条前向都适用，掩码过程是 remasking 的特例。采样误差 $O(\varepsilon_{\mathrm{score}}+\varepsilon)$ 时，离散化步数只要
 
@@ -59,7 +61,7 @@ $\tau$-leaping 评转移时用区间**起点**的状态去冒充区间内部，�
 
 几何网格 $t_{k+1}-t_k\le\kappa\min(1,T-t_{k+1})$ 是定理假设。$\kappa$ 既出现在网格里，也出现在误差 $\kappa\,\mathrm{DTC}(X_0)$ 里。切得越贪心（$\kappa$ 大），同样 $N$ 下离散化项越大。实验里均匀和 remasking 用 $\kappa\approx 1.3$ 的几何网格；掩码用等距网格 $(T-\delta)/N$。网格选错，定理保证还在，经验曲线会很难看。Figure 2 专门把两种网格并排：掩码吃等距，均匀吃几何，remasking 两种都能用。这和 Dmitriev 等人 COLT 对小 DTC 分布的观察一致，不是新的主表数字。
 
-![](./images/fig-adaptive-sampling-dtc.png)
+![基于 leave-one-out 去噪器的采样步数由对偶总相关而非环境维数控制](./images/fig-adaptive-sampling-dtc.png)
 
 > 图 1：左列是 $\tau$-leaping 的 $d$ 下界、leave-one-out、区间拆成一维链。右列是 DTC 定义、$N$ 跟 DTC、两条合成分布。底栏钉合成实验设定，不是 8B。
 
@@ -131,7 +133,7 @@ $T=8$、$\delta=10^{-5}$ 是实验超参。定理里 $T$ 要大到终点边际�
 
 ## 参考文献
 
-- [Dmitriev, Huang, Wei. Provably adaptive sampling with uniform and remasking discrete diffusion models. arXiv:2608.23554](https://arxiv.org/abs/2608.23554)：式 (1)(2)(14)；Theorem 1–2；Section 5；Figure 1–4。
+- [Dmitriev, Huang, Wei. *Provably adaptive sampling with uniform and remasking discrete diffusion models*. arXiv:2608.23554v1, 2026-08-24](https://arxiv.org/abs/2608.23554)：式 (1)(2)(14)；Theorem 1–2；Section 5；Figure 1–4。
 - Dmitriev, Huang, Wei. Efficient sampling with discrete diffusion models: sharp and adaptive guarantees. COLT 2026, PMLR 336:2038–2104。掩码自适应；均匀 $\tau$-leaping 的 $\widetilde{O}(d/\varepsilon)$ 下界。
 - [Lou et al., SEDD](https://arxiv.org/abs/2310.16834)：score entropy，Assumption 1 用的损失。
 - [Campbell et al., 2022](https://arxiv.org/abs/2205.14987)：CTMC 离散扩散；$\tau$-leaping。

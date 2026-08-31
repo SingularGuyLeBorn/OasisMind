@@ -1,6 +1,6 @@
 ---
 title: "块扩散：AR 与扩散之间的旋钮"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - block-diffusion
   - BD3-LM
@@ -24,7 +24,7 @@ $$
 
 每一项 $p_\theta(x^{(m)}\mid x^{(<m)})$ 不再是「下一个 token」，而是一个条件掩码扩散：前缀块已经干净，当前块从全 `[MASK]` 去噪，注意力对前缀因果、对块内双向。
 
-![](./images/fig-block-diffusion-attn.png)
+![块扩散在块间使用因果依赖并在块内使用双向去噪的注意力结构](./images/fig-block-diffusion-attn.png)
 
 > 图 1：当前块的 query 对干净前缀走因果，对块内走双向；未来块不可见。前缀的 KV 可以真缓存。
 

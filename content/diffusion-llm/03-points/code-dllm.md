@@ -1,6 +1,6 @@
 ---
 title: "代码向扩散：DiffuCoder、AR-ness 与 coupled-GRPO"
-category: null
+category: "05-训练、后训练与迁移"
 tags:
   - DiffuCoder
   - coupled-GRPO
@@ -55,7 +55,7 @@ Stage 1 训到 65B 时 AR-ness 已经偏低；硬训到 700B，AR-ness 回升、
 
 coupled-GRPO 抽 $\lambda$ 对互补时间 $(t,\hat t)$，满足 $t+\hat t=T$。两个掩码并起来盖住全部 completion，且每个位置恰好在其中一个里当预测目标。实践取 $\lambda=1$，再加一次全掩 $t=T$，对数概率对这几次平均。 antithetic：一对噪声负相关，方差下降。每个 token 都有非零学习信号，又都在「部分可见」的真实上下文里被估，而不是永远全盲。
 
-![](./images/fig-coupled-grpo.png)
+![代码扩散中互补掩码样本配对并进行 coupled-GRPO 优化的流程](./images/fig-coupled-grpo.png)
 
 > 图 1：同一段 completion 抽一对互补掩码，汇成 coupled-GRPO 的对数概率。每个 token 恰好当一次目标。
 

@@ -1,6 +1,6 @@
 ---
 title: "失效模式：定长、并行冲突、困惑度不可比"
-category: null
+category: "07-控制、评测与选型"
 tags:
   - failure-modes
   - perplexity
@@ -14,7 +14,7 @@ excerpt: "掩码扩散不是「AR 去掉因果掩码」。画布长度要事先�
 
 前面几篇把机制能做什么写清楚了。本篇把同样的公式会在哪里翻车集中放在一页，避免读者只记住 Mercury 的四位数吞吐和 LLaDA 的 GSM8K。失效分三类。结构上必然的：定长画布、因子分解、似然不可比。2026 年工程上仍在修的：近似缓存、结束符、对齐数据。和 AR 共有、扩散并不自动免疫的：幻觉、知识截止、评测污染。
 
-![](./images/fig-dlm-failure-modes.png)
+![扩散语言模型在长度、联合依赖、缓存和评测协议上的主要失效模式](./images/fig-dlm-failure-modes.png)
 
 > 图 1：三列彼此独立。左列 `[EOS]` 垫满之后纯扩散会提前结束；中列一步两个 `[MASK]` 独立 argmax 会对不上括号；右列 AR 的精确 NLL 和 MDM 的 ELBO 不能横比。
 

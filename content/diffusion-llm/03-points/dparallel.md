@@ -1,6 +1,6 @@
 ---
 title: "dParallel：把确定性逼成并行"
-category: null
+category: "05-训练、后训练与迁移"
 tags:
   - dParallel
   - certainty-forcing
@@ -53,7 +53,7 @@ $$
 
 实现上 Complementary mask 把当前块的掩码图案取反再算一次损失，同一条 $\tilde Y$ 上两套 $\mathcal{M}_a$。附录一笔带过，没有消融表。主结果仍按 50% 单图案报。
 
-![](./images/fig-dparallel-certainty-forcing.png)
+![dParallel 以 certainty-forcing 压低正确 token 熵并减少并行采样步数](./images/fig-dparallel-certainty-forcing.png)
 
 > 图 1：左列是确定性仍按邻居爬。右列老师半自回归出轨迹，学生在当前块 50% 掩码上抄字，只对已经对的格压熵。底栏把 8.5× 钉在 GSM8K 时延，把 10.5× 钉在 MBPP 步数，硬件是 RTX 6000 Ada。
 

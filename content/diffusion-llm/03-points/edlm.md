@@ -1,6 +1,6 @@
 ---
 title: "EDLM：残差能量校正因子化去噪"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - EDLM
   - energy-based
@@ -71,7 +71,7 @@ Gibbs 在大词表上不可用。采样改成自归一重要性采样。当前�
 
 Table 3 为了看满血能力，把 $\mathrm{w}=1$，每步都做重要性采样。墙钟实验改成 $k=2$、$\mathrm{w}=0.2$，只在 $t\in[0.8,1]$ 校正。两套超参不要焊进同一句话。附录 C.1 把训练预算写全：Text8 跟 D3PM 的切分，余弦学习率，线性热身 $2000$ 步，channel dropout $0.05$，AdamW $3\times 10^{-4}$。OWT 热身改成 $2500$ 步，dropout $0.1$，序列首尾加 EOS。词嵌入输入输出不绑定。NCE 头是 pooling 加标量，不是另起一座 12 层。
 
-![](./images/fig-edlm-residual-energy.png)
+![EDLM 用序列级残差能量重新加权因子化扩散提案](./images/fig-edlm-residual-energy.png)
 
 > 图 1：左列是因子化去噪、残差能量、AR 能量的定义。右列是 NCE、并行重要性采样、窗口 $0.2$、GPT-2 尺度。底栏把 49%、$1.3\times$、Text8 BPC、OWT PPL 钉在各自的表上。
 

@@ -1,6 +1,6 @@
 ---
 title: "嵌套 SMC：推理时把奖励拧进粒子"
-category: null
+category: "07-控制、评测与选型"
 tags:
   - nested-smc
   - Feynman-Kac
@@ -13,7 +13,9 @@ excerpt: "训练免费的序列级奖励转向。Yadala Chanchu、Abdulsamad、N
 ---
 # 嵌套 SMC：推理时把奖励拧进粒子
 
-[可控生成](./controllable-generation.md) 把控制分成两条：连续轨迹上灌分类器梯度，离散侧改写成对数概率加权，或者干脆把约束编进掩码。还有第三条，本篇才展开：不改权重，只在反向轨迹上养一群粒子，按序列级奖励做重采样。Yadala Chanchu、Abdulsamad、Naesseth 的 *Discrete Diffusion Inference-Time Control with Nested Sequential Monte Carlo*（arXiv:2608.20123）把嵌套 SMC 接到掩码扩散的 Feynman–Kac 转向。贡献有两块。算法上，给出正确加权的 NSMC 和 fully-adapted NSMC（FA-NSMC），并指出 Uehara 等人 2025 年教程里那套「nested SMC」权重漏了分母，粒子数趋于无穷仍偏。实验上，在毒性和流畅两条奖励上对照 best-of-$n$ 与 bootstrap SMC。
+[可控生成](./controllable-generation.md) 把控制分成两条：连续轨迹上灌分类器梯度，离散侧改写成对数概率加权，或者干脆把约束编进掩码。还有第三条，本篇才展开：不改权重，只在反向轨迹上养一群粒子，按序列级奖励做重采样。Yadala Chanchu、Abdulsamad、Naesseth 的 [*Discrete Diffusion Inference-Time Control with Nested Sequential Monte Carlo*](https://arxiv.org/abs/2608.20123) 把嵌套 SMC 接到掩码扩散的 Feynman–Kac 转向。贡献有两块。算法上，给出正确加权的 NSMC 和 fully-adapted NSMC（FA-NSMC），并指出 Uehara 等人 2025 年教程里那套「nested SMC」权重漏了分母，粒子数趋于无穷仍偏。实验上，在毒性和流畅两条奖励上对照 best-of-$n$ 与 bootstrap SMC。
+
+> **论文状态与实验边界**：本文按 arXiv:2608.20123v1（2026-08-20）记录，仍是预印本。实验骨干是 12 层、隐层 768 的 MDLM，任务只有毒性稀有事件转向与流畅度转向；15 条提示、每条 10 个续写。没有 7B/8B 模型、通用能力 benchmark 或墙钟扩展结果，毒性率仅用于比较采样器找到稀有高奖励样本的能力。
 
 骨干钉死。公开的 MDLM 检查点：DiT 风格，12 个 Transformer 块，12 头，隐层 768，OpenWebText，GPT-2 词表。12 层、12 头、768 维与 GPT-2 small 的骨架同规格，不是 7B、不是 8B。默认反向 $T=50$ 步。提示沿用 Han 等人 2023 的 15 条可控生成前缀（Once upon a time、The book、The year is 1910. 一类），每条 10 个独立续写，指标在 $15\times 10=150$ 段上平均。这不是 LLaDA 8B，也不是 Dream-7B。作者在局限里把更大模型写成未来工作。本篇数字全部停在这颗 MDLM 上。
 
@@ -86,7 +88,7 @@ FA-NSMC 把lookahead再提前一拍。先给所有父粒子都算 $\hat\nu$，�
 
 Uehara 等人教程里那套权重只用分子 $\psi_{t-1}^\star$，漏了 $G^\star$ 要求的分母 $\psi_t^\star$。目标分布因此不是 $p_\lambda$。Figure 2(a) 里，用这套偏势时，中间期望奖励随反向时间并不往上走。Figure 2(b) 换成式 (7) 的正确势，NSMC 和 FA-NSMC 的中间毒性奖励随时间上升。粒子数趋于无穷也救不了漏分母：极限仍偏。偏势在 $(N,M,K)$ 上的毒性率全扫放在附录 F。正文主表是正确加权的 Table 1–4。本篇把「nested SMC」这个名字留给正确加权的那一版。Table 4 的格子是 10 次重复的均值，单次波动正文没有另开标准差列。
 
-![](./images/fig-nsmc-fk-steering.png)
+![嵌套 SMC 用外层粒子、内层候选和 Feynman–Kac 势进行序列级奖励转向](./images/fig-nsmc-fk-steering.png)
 
 > 图 1：左列是倾斜目标、完整样本再挑、bootstrap 一个孩子、漏分母的偏权重。右列是外层 $N$、同一份 logits 上的内层 $M$、用 $\hat\nu$ 抽孩子、FA-NSMC 先按 $w\cdot\hat\nu$ 抽父、$K$ 个 $\hat x_0$ 估势。底栏是 Table 1 的五列数字，骨干是 768 维 MDLM。
 
@@ -149,7 +151,7 @@ SIS 和 SMC 的差别在有没有重采样。SVDD 走嵌套 SIS：权重一直�
 
 ## 参考文献
 
-- Yadala Chanchu, Abdulsamad, Naesseth. *Discrete Diffusion Inference-Time Control with Nested Sequential Monte Carlo*. arXiv:2608.20123.
+- [Yadala Chanchu, Abdulsamad, Naesseth. *Discrete Diffusion Inference-Time Control with Nested Sequential Monte Carlo*. arXiv:2608.20123v1, 2026-08-20](https://arxiv.org/abs/2608.20123).
 - Sahoo 等人. MDLM. NeurIPS 2024, arXiv:2406.07524。本篇实验用的 12 层 768 检查点。
 - Singhal 等人. Feynman–Kac steering. ICML 2025。实践里常用 bootstrap 提案。
 - Li 等人. SVDD. arXiv:2408.08252。嵌套 SIS，无重采样。

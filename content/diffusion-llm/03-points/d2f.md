@@ -1,6 +1,6 @@
 ---
 title: "D2F：脏前缀上接着写下一块"
-category: null
+category: "06-推理加速与系统"
 tags:
   - D2F
   - block-diffusion
@@ -42,7 +42,7 @@ $$
 
 对照实验把同一份数据、同一套 LoRA 直接微调原版 Dream-Base，得到 Dream-Base*。Table 6：GSM8K-CoT 从 9.5 TPS 掉到 6.7，分从 75.0 到 77.8；MBPP 从 10.4 掉到 4.2；HumanEval 从 20.2 掉到 8.8。分有的略涨，墙钟一律更慢。作者把慢写成 LoRA 层的额外计算。加速不是这份 17k 推理数据带来的，是块因果加流水线带来的。把 D2F 写成「再 SFT 一遍就快了」，Table 6 打回。
 
-![](./images/fig-d2f-pipeline.png)
+![D2F 在带噪前缀上预测下一块并形成多块流水线的训练推理流程](./images/fig-d2f-pipeline.png)
 
 > 图 1：左列训练，老师全双向、学生块因果、掩码率单调、不对称 KL；右列推理流水线，完成块写真 KV，新块先半激活，前驱够尖再全激活。底栏把 52.9× 钉在 MBPP，把 2.5× 钉在 Dream 对 LLaMA3 的 GSM8K。
 

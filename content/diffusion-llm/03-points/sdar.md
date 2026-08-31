@@ -1,6 +1,6 @@
 ---
 title: "SDAR：先把 AR 训满，再改成块扩散"
-category: null
+category: "05-训练、后训练与迁移"
 tags:
   - SDAR
   - block-diffusion
@@ -81,7 +81,7 @@ $$
 
 从得到的分布里挑一个位置子集落盘，其余继续当 `[MASK]`。静态：一块 $B$、总步 $T$，每步揭 $\lceil B/T\rceil$ 个最高置信的掩码格，步数固定。动态：置信超过阈值 $\tau$ 就落盘；不够则至少揭若干格（例如 1 或 $\lceil B/T\rceil$），保证每步有进展。一块填满才写 KV、才进入下一块。可变长靠的是块间因果：生成长度不必预先钉死整句，只要一块一块往后续。结束符出现之后，后面的块可以整块填 EOS。这和 dInfer 早停同族，SDAR 主文没有报早停的 TPS 加成，serving 专文那 15% 到 40% 是另一套引擎。低熵既是质量，也是并行的燃料，后面 TPF 曲线会再碰到这件事。
 
-![](./images/fig-sdar-ar-to-block.png)
+![SDAR 从充分训练的自回归模型切换到块扩散目标的阶段流程](./images/fig-sdar-ar-to-block.png)
 
 > 图 1：左列先付 AR 的 NLL，再短转换；右列块间真 KV、块内从全掩码去噪。底栏 ChemBench 和 6600 TGS 的分母分开写。
 

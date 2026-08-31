@@ -1,6 +1,6 @@
 ---
 title: "Serving：vLLM 的调度器接不上扩散"
-category: null
+category: "06-推理加速与系统"
 tags:
   - serving
   - dInfer
@@ -27,7 +27,7 @@ dInfer 的提案是：不要把扩散塞进因果调度器，把扩散推理自�
 
 论文 Algorithm 1 把四块收成两层循环。外层问迭代器要下一块 $[start:end]$。内层只要这块里还有掩码：先问缓存要不要刷新，再对当前区域做一次模型前向，再把 logits 交给解码器，解码器改写 $X$ 和未定集合。块空了才出内层。这和 Fast-dLLM 的「外层扫块、内层揭阈值」同构，差别在四块都是可替换对象，而不是写死在一篇伪代码里。论文 Figure 3 把一次迭代画成：找当前块里的掩码 → 嵌入（可融上一步）→ TP/EP 前向 → 邻域未命中的 KV 复用 → 解码器落盘 → smoothing 留下加权嵌入给下一步。四块的接口在这一圈里各出现一次。
 
-![](./images/fig-dinfer-vs-vllm.png)
+![dInfer 面向扩散解码的批调度与 vLLM 自回归调度路径对比](./images/fig-dinfer-vs-vllm.png)
 
 > 图 1：左列 vLLM 因果调度，一步一个 token，KV 精确追加。右列 dInfer 四块：迭代器、解码器、邻域刷新、再报 TPS。同一节点 $8\times$ H800、batch 1、长度 1024。
 

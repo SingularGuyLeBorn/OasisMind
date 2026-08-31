@@ -1,6 +1,6 @@
 ---
 title: "从图像扩散到离散 token"
-category: null
+category: "02-数学与生成机制"
 tags:
   - diffusion
   - DDPM
@@ -46,7 +46,7 @@ $$
 
 训练时随机抽一个 $t$、抽一个 $\epsilon$，立刻得到该噪声水平的 $x_t$。不需要真的走 $t$ 步链。语言里的吸收态扩散后来也有类似的「直接按比例掩码」：掩码率 $t$ 抽出来，每个 token 独立变成 `[MASK]`，不必真的模拟 $T$ 次转移。思想同源，分布族不同。
 
-![](./images/fig-ddpm-forward-reverse.png)
+![DDPM 前向加噪与反向去噪在时间轴上的对应关系](./images/fig-ddpm-forward-reverse.png)
 
 > 图 1：上行前向 $q$ 把 $x_0$ 加到近乎 $\mathcal{N}(0,I)$；下行反向 $p_\theta$ 从噪声出发，用 $\epsilon_\theta$ 一步步退回 $x_0$。
 

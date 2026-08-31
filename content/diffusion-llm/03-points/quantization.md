@@ -1,6 +1,6 @@
 ---
 title: "量化 dLLM：掩码态和去噪步都要管"
-category: null
+category: "06-推理加速与系统"
 tags:
   - quantization
   - PTQ
@@ -31,7 +31,7 @@ AR 的 PTQ 默认：当前要算的是最新位置，激活分布沿序列缓慢
 
 评测九项跟 LLaDA 论文的任务清单走：TruthfulQA-MC2、ARC-Challenge、HellaSwag、WinoGrande、PIQA、MMLU、C-EVAL、HumanEval、GSM8K。均分是这九个数的算术平均。作者写「跟随 LLaDA 评测设定」，**Table 1 的 FP 列不是 Nie Table 1**。本表 LLaDA FP：MMLU 65.85、GSM8K 67.48、HumanEval 32.92，均分 58.99。Nie 的 8B Base 是 MMLU 65.9、GSM8K 70.3、HumanEval 35.4。协议一换，GSM8K 就能差两点以上。量化掉分只能相对**同一张表的 FP 列**谈。
 
-![](./images/fig-starquant-state-time.png)
+![STaR-Quant 同时校准掩码状态差异与不同去噪时间步的量化误差](./images/fig-starquant-state-time.png)
 
 > 图 1：左列是 AR 向 PTQ 看不见的两态激活和跨步误差。右列 SGAT 分空间、权重仍一份，TAC 在 $o_{\mathrm{proj}}$ 前按 $g=16$ 做块对角校正。底栏把 1.69× 钉在 Dream 吞吐，把 1.69 分钉在均分差之外。
 

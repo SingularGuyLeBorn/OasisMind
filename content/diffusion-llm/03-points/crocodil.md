@@ -1,6 +1,6 @@
 ---
 title: "CRoCoDiL：连续草稿，掩码解码"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - CRoCoDiL
   - hybrid-diffusion
@@ -13,7 +13,9 @@ excerpt: "Uziel 等人（arXiv:2603.20210）把长程结构交给连续句级潜
 ---
 # CRoCoDiL：连续草稿，掩码解码
 
-[五条性质](./discreteness.md) 把 L2 写成：按格边际对了，乘积仍可抽出假句。[CoDD](./codd.md) 在冻住的 logits 上接可算联合。[离散 copula](./discrete-copula.md) 用 GPT-2 当 copula。Uziel、Belhasin、Levy、Bercovich、El-Yaniv、Zilberstein、Elad 的 CRoCoDiL（arXiv:2603.20210）走第三条：长程结构先在连续句级空间里扩散成一份草稿 $\mathbf{z}_0$，再让掩码去噪器条件在这份草稿上把词揭开。解码器仍是 MDM，一步之内各格仍按边际抽。卖点是草稿已经把「整段在说什么」钉住，并行揭开时不那么容易写成互不相干的局部最优。
+[五条性质](./discreteness.md) 把 L2 写成：按格边际对了，乘积仍可抽出假句。[CoDD](./codd.md) 在冻住的 logits 上接可算联合。[离散 copula](./discrete-copula.md) 用 GPT-2 当 copula。Uziel、Belhasin、Levy、Bercovich、El-Yaniv、Zilberstein、Elad 的 [CRoCoDiL](https://arxiv.org/abs/2603.20210) 走第三条：长程结构先在连续句级空间里扩散成一份草稿 $\mathbf{z}_0$，再让掩码去噪器条件在这份草稿上把词揭开。解码器仍是 MDM，一步之内各格仍按边际抽。卖点是草稿已经把「整段在说什么」钉住，并行揭开时不那么容易写成互不相干的局部最优。
+
+> **论文状态与实验边界**：本文按 arXiv:2603.20210v3（首次提交 2026-03-02，当前版修订于 2026-04-17）记录，仍是预印本。生成实验只覆盖 StarCoder Python 子集上适配后的 LLaDA-8B 无条件代码生成；13×/14× 来自长度 512/1024 的 NFE 比，不是墙钟、tok/s 或 HumanEval 加速。带提示的条件生成仍是未来工作。
 
 实验钉死在无条件代码生成。骨干是 LLaDA-8B，在 StarCoder 的 Python 子集上用 1200 万条、长度 $[0,4096]$ 的程序微调 demasker，从开源 Base 初始化。编码器 $h_\phi$ 从 Qwen embedding 0.6B 初始化，和 demasker 一起再训。潜变量尺寸 $1024\times K$，$K$ 是寄存器个数，训练里 $1\le K\le 128$，dropout 偏好前面的寄存器，好让推理用更短的 $K$。这不是 Nie Table 1 那份通用 Base 的 GSM8K / MMLU。条件（带提示）合成作者写成未来工作，附录 H。本篇倍数全部停在无条件 Python、整段当一块的 Figure 6。
 
@@ -49,7 +51,7 @@ Table 1 是自编码器，长度 256，潜变量 $1024\times 128$，扫块长和
 
 连续扩散的 demasker 另训。2M 条变长序列经 $h_\phi$ 变成 $1024\times 128$ 的矩阵，拿去训潜空间去噪器。细节在附录 E。推理时 ConThenDisc 先从噪声用 $G_\psi$ 抽出 $\mathbf{z}_0$，再冻住它跑 MDM。ConWithinDisc 在 MDM 中途用条件连续扩散，按当前部分掩码序列的嵌入 $h_\phi(\mathbf{x}_t)$ 把 $\mathbf{z}_0$ 更新一轮。正文实现只在中途加一次，NFE 额外少于 2。编码器没为掩码输入训过，$h_\phi(\mathbf{x}_t)$ 是权宜；作者提到可以另训 $h_\mu$，主实验没有换。附录 F 给自编码器更多设定，附录 E 给连续扩散训练，本篇主叙述只用 Table 1 和 Figure 6 正文里写出的两档工作点。
 
-![](./images/fig-crocodil-conthendisc.png)
+![CRoCoDiL 先生成连续句级草稿再用掩码扩散解码 token 的两种方案](./images/fig-crocodil-conthendisc.png)
 
 > 图 1：左列是微调过的 LLaDA、Qwen 编码器、寄存器潜变量、Table 1 重建。右列是先连续后离散、中途更新草稿、400M 连续步折算成约 6 次 8B、长度 512 的 $13\times$ 与长度 1024 的 $14\times$。底栏钉无条件 Python。
 
@@ -114,7 +116,7 @@ ICML 关键词写在摘要页。投稿年份按 arXiv 2603.20210 的 2026 年 3 
 
 ## 参考文献
 
-- Uziel, Belhasin, Levy, Bercovich, El-Yaniv, Zilberstein, Elad. *CRoCoDiL: Continuous and Robust Conditioned Diffusion for Language*. arXiv:2603.20210.
+- [Uziel, Belhasin, Levy, Bercovich, El-Yaniv, Zilberstein, Elad. *CRoCoDiL: Continuous and Robust Conditioned Diffusion for Language*. arXiv:2603.20210v3, 2026-04-17](https://arxiv.org/abs/2603.20210).
 - Nie 等人. LLaDA-8B Base 作 demasker 初始化，不是 Table 1 通用评测。
 - Li 等人. StarCoder。Python 子集 1200 万条。
 - Ren 等人. Qwen3 Embedding。0.6B 编码器初始化。

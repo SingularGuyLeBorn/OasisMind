@@ -1,6 +1,6 @@
 ---
 title: "推理加速：近似缓存与并行揭开"
-category: null
+category: "06-推理加速与系统"
 tags:
   - inference
   - KV-cache
@@ -37,7 +37,7 @@ Fast-dLLM（Wu 等人，arXiv:2505.22618）是训练免费方法，骨架仍是 
 
 第一件是块级近似 KV。生成按块进行。进入一块之前，把提示和已经完成的块的 KV 算好存住；块还没轮到的后缀此时全是 `[MASK]`，它们的 KV 也可以先算一份。块内多步去噪都读这份缓存，不每步重算整段。一块完成后再刷新。只缓存前缀叫 PrefixCache；前缀和仍是掩码的后缀都缓存叫 DualCache。论文 Figure 3 用相邻步的余弦相似度接近 1 来为近似辩护：块内表示漂移不大， suff 上几乎全掩码，漂移更小。
 
-![](./images/fig-fastdllm-dualcache.png)
+![Fast-dLLM DualCache 对高置信 token 与低置信活跃位置采用不同缓存策略](./images/fig-fastdllm-dualcache.png)
 
 > 图 1：提示写入 Prefix KV 后，当前块去噪时同时复用前缀缓存和仍为 `[MASK]` 的后缀缓存；块提交后再刷新。
 

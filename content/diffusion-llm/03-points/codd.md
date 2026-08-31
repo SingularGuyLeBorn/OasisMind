@@ -1,6 +1,6 @@
 ---
 title: "CoDD：在冻住的 dLLM 上接一层可算联合"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - CoDD
   - probabilistic-circuit
@@ -58,7 +58,7 @@ LLaDA 走块扩散，PC 定义在块长 $L_b=32$ 上，块间仍半自回归。D
 
 块内一步在代码里长什么样。当前块窗口 `[k L_b,(k+1)L_b)`，前面的块已经是明文。算块内掩码率 $r_m$。低于 $\gamma$ 时，骨干前向给出块内各格势能，PC 用这些势能做一次可分解前向得到 $Z$，再按 $\hat p$ 采样或按 AO 一格一格条件。提交哪些格仍由原来的低置信 / 熵 / Margin 启发式挑。PC 不改规划器，改的是候选分布。高于 $\gamma$ 时 PC 整段跳过，块内退回乘积。块填满，窗口右移。Dream 的整段版本把 PC 开在宽度 $W$ 的窗口上，窗口里掩码格多于 1 个才调用，避免单格还跑联合。Algorithm 1 / 2 在附录，主文只把门控和几何钉死。
 
-![](./images/fig-codd-pc-layer.png)
+![CoDD 在冻结扩散语言模型输出上增加可计算联合依赖层](./images/fig-codd-pc-layer.png)
 
 > 图 1：左列是因子化输出造成的误设。右列冻骨干、HMM 回路、掩码率低于 $\gamma$ 才接通。底栏把 +5.00 钉在 LLaDA 256 步 MATH500，把 +10.84 钉在 Dream 128 步 GSM8K，把 64 步 56.4 钉在 Dream。
 

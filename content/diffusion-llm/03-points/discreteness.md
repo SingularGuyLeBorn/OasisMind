@@ -1,6 +1,6 @@
 ---
 title: "五条性质：平滑噪声对不上字"
-category: null
+category: "02-数学与生成机制"
 tags:
   - discreteness
   - CART
@@ -39,7 +39,7 @@ CANDI 把连续路线里的张力说得更具体：保住词身份的信号，�
 
 这张表不是选边。连续路线不是「更像真正的扩散所以更好」，离散路线也不是「更像语言所以已经做完」。2024 年以后能训到 7B/8B 的，几乎都走掩码离散。原因在工程：词 ID 上的交叉熵和现成 Transformer 对齐，吸收态日程好写，SFT 可以只掩回答。付出的是 D1 和 L2 两处缺口。本篇余下两节分别写这两处在推理时怎么露出来。
 
-![](./images/fig-five-properties-d1-l2.png)
+![离散扩散三条离散性质与两条联合依赖限制的对应图](./images/fig-five-properties-d1-l2.png)
 
 > 图 1：左列是扩散要的 D1–D3，连续路线占满、丢 L1。右列是语言要的 L1–L2，离散掩码保住符号，均匀 $t$ 让远处塌成 unigram，乘积采样写出「I likes tennis」。底栏是 LLaDA-Instruct 一次前向、128 个 MASK、LIMA 探针；CART 上加权近明文的格。
 

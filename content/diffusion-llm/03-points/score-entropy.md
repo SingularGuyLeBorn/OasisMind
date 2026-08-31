@@ -1,6 +1,6 @@
 ---
 title: "Score entropy：离散扩散在估比率"
-category: null
+category: "02-数学与生成机制"
 tags:
   - SEDD
   - score-entropy
@@ -36,7 +36,7 @@ $$
 
 比率必须为正。$\ell_2$ 对 $s=0$ 或 $s<0$ 的惩罚不够，梯度会把网络推到非法区。附录 D 里这条路实证上挣扎。Ratio matching 更早，要专门架构，贵，也没赢过 mean prediction。2023 年以前离散扩散的似然竞赛，缺的不是再换一张 $Q_t$，是缺一个既承认正值、又能当似然界的损失。
 
-![](./images/fig-score-entropy.png)
+![Score entropy 通过离散状态概率比学习反向跳转率的关系](./images/fig-score-entropy.png)
 
 > 图 1：左列连续 score 进反向 SDE。中列离散比率必须为正，$\ell_2$ 不够，score entropy 用 $-\log$ 的 Bregman 加上对数势垒。右列同一张吸收态 $Q$，SEDD 估比率，MDLM 估加权交叉熵；2025 年 7B 默认走右边那条损失。
 

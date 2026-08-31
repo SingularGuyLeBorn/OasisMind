@@ -1,6 +1,6 @@
 ---
 title: "ParallelBench：GSM8K 测不出并行诅咒"
-category: null
+category: "07-控制、评测与选型"
 tags:
   - ParallelBench
   - parallel-decoding
@@ -53,7 +53,7 @@ $$
 
 GSM8K 的最终答案往往是一个数，中间 CoT 虽长，位置之间的硬约束没有「全排列不能重复」那么紧。HumanEval 的局部句法有括号配对，但评测看的是跑通，很多函数体可以一步填一片还碰巧能过。这就是 Figure 7 把它们放在左边的原因：不是这两项简单，是并行掉分这项指标对它们不敏感。加速论文只报这两列，等于在 $\mathcal{L}_T$ 已经接近 0 的区域刷 TPS。
 
-![](./images/fig-parallelbench-ct.png)
+![ParallelBench 用条件总相关刻画答案位置能否安全并行生成](./images/fig-parallelbench-ct.png)
 
 > 图 1：左列 Copy 的 $\mathcal{C}=0$，理想模型可以一步全揭；中列 Shuffle 的 $\mathcal{C}$ 随 $n$ 发散，每步 2 个 token 准确率仍趋向 0；右列 17 任务把 GSM8K 放在 Shuffle 左边。底栏：微调修不好 $\mathcal{C}>0$，CoT 用大约 8 倍 token 换缓降。
 

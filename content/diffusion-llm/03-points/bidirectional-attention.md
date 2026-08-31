@@ -1,6 +1,6 @@
 ---
 title: "双向注意力与反转诅咒"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - bidirectional-attention
   - reversal-curse
@@ -26,7 +26,7 @@ Tom Cruise / Mary Lee Pfeiffer 是原文 Figure 1 的那对。正向问母亲，
 
 这和「模型不懂逻辑」不是同一件事。它懂，只要两个方向都作为 next-token 出现过。没出现过的那个方向，似然不会因为对称性被抬起来。知识图谱会写无向边，自回归写的是有向条件。
 
-![](./images/fig-causal-vs-bidir-attention.png)
+![因果注意力只读取左侧前缀而双向注意力读取两侧已知 token](./images/fig-causal-vs-bidir-attention.png)
 
 > 图 1：左边预测 $x_3$ 时只能看见前缀；右边揭开中间的 `[MASK]` 时，左右已揭开的 token 都进注意力。
 

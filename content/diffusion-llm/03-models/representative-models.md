@@ -1,6 +1,6 @@
 ---
 title: "代表性扩散语言模型一览"
-category: null
+category: "03-模型谱系"
 tags:
   - models
   - D3PM
@@ -17,7 +17,7 @@ excerpt: "从 D3PM 的 Q_t 到 LLaDA 2.0 的 100B 改编。连续路线停在可
 
 读者已经知道掩码扩散的损失长什么样。本篇按时间把名字钉回各自解决的那一刀：谁定义了 $Q_t$，谁把 ELBO 收成加权 MLM，谁把分数做到 8B，谁把块当成旋钮。不是家谱展览。数字能指回论文表的才写；一句口号当贡献的不写。
 
-![](./images/fig-dlm-timeline.png)
+![D3PM、MDLM、LLaDA 与后续扩散语言模型按机制和年份排列的时间线](./images/fig-dlm-timeline.png)
 
 > 图 1：离散吸收态从 $Q_t$ 走到 8B 从头训，再走到块级 WSD 的 100B。Diffusion-LM 的连续嵌入是侧枝，不是 2025 年大模型的默认。
 

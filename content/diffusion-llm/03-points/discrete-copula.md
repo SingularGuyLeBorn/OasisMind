@@ -1,6 +1,6 @@
 ---
 title: "离散 copula：外挂 AR 补一步联合"
-category: null
+category: "04-联合依赖与结构设计"
 tags:
   - DCD
   - copula
@@ -68,7 +68,7 @@ $$
 
 式 (5) 有偏：AR 看不见后面已经揭开的后缀。扩散看得见双向明文，却把 $I$ 里的字写成独立。I-投影把两份残缺焊回去。文中的 Switzerland 例子：后缀「in Switzerland」AR 条件不到，skiing 的边缘不会动；扩散看见 Switzerland 会把 $Y$ 的边缘推向 skiing；投影改边缘、保留 copula 里 alpine 和 skiing 的搭配，句子才变成 how about alpine skiing。
 
-![](./images/fig-dcd-copula-marginals.png)
+![离散 copula 将扩散边缘分布与自回归联合依赖通过 I 投影组合](./images/fig-dcd-copula-marginals.png)
 
 > 图 1：左列是因子化反向在少步时把联合丢掉。右列 GPT-2 small 当 copula，扩散出边缘，I-投影合成 $\hat p$。底栏 32 倍少的是函数调用次数，尺度停在 GPT-2。
 

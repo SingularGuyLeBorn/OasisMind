@@ -1,6 +1,6 @@
 ---
 title: "SlowFast：慢探索，快揭开"
-category: null
+category: "06-推理加速与系统"
 tags:
   - SlowFast
   - sampling
@@ -29,7 +29,7 @@ excerpt: "训练免费的动态采样器。慢阶段松探索、预测 span 终�
 
 会 next-token 的人容易把「快阶段」听成投机解码的草稿。不是。草稿仍是扩散自己的边际 argmax，验证器不是外挂小 AR。会 DualCache 的人容易把它听成又一种 KV 近似。也不是。慢快切换改的是揭开策略；dLLM-Cache 另算，可以叠，主表分开展示。
 
-![](./images/fig-slowfast-explore-sprint.png)
+![SlowFast 依据终点方差在慢速探索与快速揭开阶段之间切换](./images/fig-slowfast-explore-sprint.png)
 
 > 图 1：左列三条原则。右列一个周期：慢阶段预测 $e_{\mathrm{cand}}$，窗口方差过关后进快阶段，span 内揭 $\tau_{\mathrm{high\_conf}}$，不够一格就退回 top-$k$。底栏把 15.63× 钉在 GPQA 长度 1024，不是 Table 1 的 GSM8K 3.20×。
 

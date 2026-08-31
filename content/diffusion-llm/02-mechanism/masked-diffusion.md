@@ -1,6 +1,6 @@
 ---
 title: "掩码扩散：加权 MLM 为什么能当生成模型"
-category: null
+category: "02-数学与生成机制"
 tags:
   - masked-diffusion
   - MDLM
@@ -51,7 +51,7 @@ $$
 
 $\alpha_t=1-t$ 时 $\alpha'_t=-1$、$1-\alpha_t=t$，系数就是 $1/t$。式 (1) 和式 (2) 是同一条界的两种写法。LLaDA 还证明 $-\mathbb{E}\log p_\theta(x_0)\le\mathcal{L}(\theta)$，所以这不是启发式 MLM，是生成模型的似然上界。
 
-![](./images/fig-masked-diffusion-train.png)
+![掩码扩散从随机掩码率采样到加权交叉熵训练的流程](./images/fig-masked-diffusion-train.png)
 
 > 图 1：抽 $t$，按概率 $t$ 掩码，双向 Transformer 只在 `[MASK]` 上算交叉熵，再乘 $1/t$。虚线表示未掩位置不进损失。
 

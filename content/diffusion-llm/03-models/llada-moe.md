@@ -1,6 +1,6 @@
 ---
 title: "LLaDA-MoE：从头训的稀疏掩码扩散"
-category: null
+category: "03-模型谱系"
 tags:
   - LLaDA-MoE
   - MoE
@@ -20,7 +20,7 @@ excerpt: "Zhu 等人从头训约 20T token 的稀疏 MDM：非嵌入 7B、激活
 
 骨架仍是 decoder-only Transformer，注意力全双向。Table 2：16 层、隐维 2048、16 头、64 个专家、每次激活 8 个、专家隐维 1024、RoPE base 50,000。非嵌入参数 7B，激活 1.4B。主表表头把激活写成 1B，和 7B-A1B 的产品名对齐；规格以 Table 2 的 1.4B 为准。RMSNorm、SwiGLU、RoPE 都在，注意力里加了 QK-LayerNorm。论文 Figure 2 为了好看画过 Top-2 示意，规格是 Top-8，不要按示意图记路由宽度。
 
-![](./images/fig-llada-moe-sparse.png)
+![LLaDA-MoE 的稀疏专家路由、总参数与激活参数关系](./images/fig-llada-moe-sparse.png)
 
 > 图 1：隐状态进路由器，64 里挑 8 个专家加权求和，再接到掩码预测头。虚线强调损失仍是 $1/t$ MLM，没有新的转移矩阵。
 

@@ -1,6 +1,6 @@
 ---
 title: "离散流匹配：概率路径比 Q_t 更宽的那一族"
-category: null
+category: "02-数学与生成机制"
 tags:
   - discrete-flow-matching
   - DFM
@@ -10,7 +10,7 @@ published: true
 as_of: 2026-08-31
 excerpt: "连续 Flow Matching 学一条从噪声到数据的速度场。Discrete Flow Matching 把同一套话搬到词表上：源分布、耦合、日程 κ_t、去噪器，再变成 CTMC 的概率速度。吸收态 1/t 掩码是其中一条路径，不是全部。Gat 等人 1.7B 的 HumanEval Pass@1 是 6.7%，不要和 DiffuCoder 的 73.2 焊。"
 ---
-# 离散流匹配：概率路径比 $Q_t$ 更宽的那一族
+# 离散流匹配：概率路径比 Q_t 更宽的那一族
 
 从图像走到语言的那一篇故意没讲 flow matching：当时只需要高斯前向和 ELBO。2024 年之后，标题里带 Flow 的离散生成模型变多。有的只是把采样器写成概率流，骨干仍是吸收态掩码 Transformer。有的真的换了定义：不再先约定一张 $Q_t$，而是先约定一条从源分布到数据的概率路径 $p_t$，再学沿着这条路径走的速度。Gat 等人（Meta FAIR，arXiv:2407.15595）把后一种叫做 Discrete Flow Matching（DFM）。Campbell 等人 2024 的离散流是它的近亲，$\kappa_t=t$ 时公式退回去。
 
@@ -24,7 +24,7 @@ excerpt: "连续 Flow Matching 学一条从噪声到数据的速度场。Discret
 
 训练常见做法是学概率去噪器 $p_{1|t}(x_1^i\mid x_t)$，损失是对位置求和的交叉熵，期望里抽 $t$、抽耦合、抽 $x_t$。看起来又像 MLM。差别在采样：去噪器的输出要代入闭式的生成速度 $u_t$，再按 $\delta_{X_t}(x^i)+h u_t^i$ 独立更新每个位置。这是连续性方程推出来的，不是 MaskGIT 那种按置信度挑谁先揭开。
 
-![](./images/fig-dfm-probability-path.png)
+![离散流匹配从源分布经概率路径、去噪器和速度场到数据的过程](./images/fig-dfm-probability-path.png)
 
 > 图 1：源分布经日程 $\kappa_t$ 走到 $p_t$，去噪器给出 $x$-prediction，再变成速度 $u_t$，CTMC 走一小步。虚线：吸收态 $1/t$ MLM 是其中一条路径。
 

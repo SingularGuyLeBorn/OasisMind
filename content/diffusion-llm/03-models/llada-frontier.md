@@ -1,6 +1,6 @@
 ---
 title: "LLaDA：8B 从头训到 100B 改编"
-category: null
+category: "03-模型谱系"
 tags:
   - LLaDA
   - LLaDA2.0
@@ -104,7 +104,7 @@ Table 3 / Table 4：GPT-4o（2024-08-06）正向 82.7、反向 34.3。Qwen2.5 7B
 
 LLaDA 2.0 从 Ling-mini-2.0 / Ling-flash-2.0 出发，把 AR 看成块大小为 1 的块扩散，再用 Warmup–Stable–Decay 改块大小。
 
-![](./images/fig-llada-wsd.png)
+![LLaDA 2.0 从自回归权重经三阶段块级 WSD 改编为扩散模型](./images/fig-llada-wsd.png)
 
 > 图 1：2.0 把现成 AR MoE 当成 $B=1$，warmup 加大块并打开双向，stable 做全序列扩散，decay 再收到适合部署、能接 KV 的块。
 
