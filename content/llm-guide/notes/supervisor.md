@@ -48,9 +48,9 @@ category: LLM 指南
 
 ## 质检（抽查磁盘，凭记忆不算过）
 
-- 有「本篇来源」或等价参考文献，且 PROCESS 台账有对应 URL。
+- 有「参考文献」，且 PROCESS 台账有对应 URL。
 - 不是空壳、不是标题下只有一句话。
-- 图无水印、是 GenerateImage 或 mermaid/表，有「图 N 解析」。**必须浅色主题**（白底深字、浅色色块）。深色底 / 白字 / OLED 幻灯片风 = 不合格，重画后再收。
+- 图无水印、是 GenerateImage 或 mermaid/表，有「图 N 解析」。**必须浅色主题**（白底深字、浅色色块）。深色底 / 白字 / OLED 幻灯片风 = 不合格，重画后再收。**接线：** 箭头必须停在框边缘；禁止穿进填充、未声明双向箭头、空白处出线、箭头头糊成墨团。规范：`.cursor/skills/academic-diagrams/SKILL.md`。好对照：`fig-qsa-hybrid-slot.png`。用户说挺好就入库。每波只派几张，不要一轮 300 张。**图注只讲图：** 禁止 `（Author et al., YEAR；2026-08 自绘）`、`浅色自绘`、`不重画`、`旧文件仍在同夹`、`配置数字以 … 为准`、`文件保留，正文不再引用`、`同夹 fig-xxx 本篇不引用`、`旧文件仍保留在同目录（不删）`、`不引用、不删除`、`提醒不要在本页展开`；禁止把 prompt 留成读者页 HTML 注释。论文出处写正文或文末参考文献。夹里还有什么未引用的图，读者页一句都不写。
 - 没抄 `trusted-sources.md` 里的课/博客正文，没搬兄弟花园。
 - 没把课程当年的「最新」写成 2026-08 事实。
 - 新专文路径能对上 `chapter-structure-plan.md`：**`{N.N.N}/{NN}-…/{NN}-….md`**，同层 ≤10，无 `11`、无四段点分号。夹名 = 主 md 名；无空格/冒号；新图 `fig-kebab.png`。章首页不是第二份专文。**`ls` 小节根不得出现 `01-foo.md` 散文件**（节首页同名 md 除外）。过文 brief 必须写：散文件先 `git mv` 再写。
@@ -63,13 +63,14 @@ category: LLM 指南
 
 仓库：`D:\ALL IN AI\OasisMind`。只改下面列明的 `content/llm-guide/` 路径。
 
-- 先 Read：`.cursor/skills/llm-guide-notes/SKILL.md`、`canon.md`、与本篇同族的一篇金样本；`notes/trusted-sources.md`；`notes/chapter-structure-plan.md`（落点表 + **编号**：点分号最多三层如 `4.1.1`；`01`/`02` 只挂在第三层下面且必须是同名夹；禁止 `{N.N.N}/01-foo.md` 散文件；同层约 ≤10；第 14 章 D 码不要搬进 1–13；夹名 = 主 md 名、无空格冒号）。租约里的路径若是散文件，先 `git mv` 进同名夹再写。
+- 先 Read：`.cursor/skills/llm-guide-notes/SKILL.md`、`canon.md`、`.cursor/skills/academic-diagrams/SKILL.md`（生图接线）、与本篇同族的一篇金样本；`notes/trusted-sources.md`；`notes/chapter-structure-plan.md`（落点表 + **编号**：点分号最多三层如 `4.1.1`；`01`/`02` 只挂在第三层下面且必须是同名夹；禁止 `{N.N.N}/01-foo.md` 散文件；同层约 ≤10；第 14 章 D 码不要搬进 1–13；夹名 = 主 md 名、无空格冒号）。租约里的路径若是散文件，先 `git mv` 进同名夹再写。
 - 中文正文。禁止 Delete 任何既有文件。禁止 `move_agent_to_root`。禁止 commit / push / `git add -A`。禁止改 `apps/`。
+- **人味（读者页）：** 先 Read `.cursor/skills/humanwrite/SKILL.md`、`humanizer-zh/SKILL.md`、`humanwrite/references/scy.md`。禁止把监工指令写进正文（`地图（只读、不改）`、`本篇只链`、`B 档 SKU`、标题里的「不要读未发…」）。H1 汉字尽量 ≤ 20。数字和公式不准为了人味改掉。
 - 体系章把组件放进整机写透（插在哪、改哪条数据流）。第 14 章是报告精读，允许重复。禁止「细节见第 14 章」代替展开。禁止搬 D2 目录结构进 1–13。配图必须浅色、详尽。
 - WebSearch / WebFetch 原论文、model card、官方 blog。论文读完后可用 `pnpm --filter @oasismind/server zhihu -- search "<概念>"` 再 `zhihu -- read <url>`（`--offset` 翻页）。知乎只学讲法，数字以论文为准，禁止搬专栏正文/图。不要用 WebFetch 硬扛知乎。URL **写在回传里**（或只写进租约指定的 `notes/live/inbox/<id>.md`）。**禁止改** `notes/live/GOAL.md`、`PLAN.md`、`PROCESS.md`。没上台账的规格不准写。课程不是金科玉律。
 - 找不到一手：`[OM-FREEPLAY]` + 「未找到一手来源」。
 - 禁止抄袭：不搬 CS336/Lil'Log/科学空间/兄弟花园正文或图。
-- 新文 `as_of: 2026-08-30`，文末「本篇来源」。图：GenerateImage，无水印，**浅色主题**（description 必须含 Skill「配图」里那整段 `LIGHT THEME ONLY: …`；禁止深色底白字）。
+- 新文 `as_of: 2026-08-30`，文末「参考文献」。图：GenerateImage，无水印，**浅色主题**（description 必须含 `LIGHT THEME ONLY: …` **以及** `CONNECTOR GEOMETRY: …`，见 academic-diagrams skill；禁止深色底白字；禁止箭头穿框）。
 - 禁止标题下只有一句话。勘误写进主叙述，禁止新追加「修订（不删上文）」块。专文汉字 ≥ 4000（见 Skill）；回传必须写汉字数。做完在回传里写：改了哪些路径、读了哪些 URL、质检员该看哪一段、汉字计数。
 
 再写清：**本切片要写什么、只准动哪些文件、不要和别人的切片重叠。**

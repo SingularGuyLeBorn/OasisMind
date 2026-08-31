@@ -17,6 +17,7 @@ category: LLM 指南
 ## 死命令（违反 = 本篇不合格）
 
 - **禁止抄袭**：不要复述、改写、翻译、拼接他人正文；不要移植别人的章节树当本库目录；不要下载或临摹其配图（含语雀/知乎/论文 PDF 截图）。
+- **知乎当讲法参考，不当事实源。** 顶刊顶会读完后，可用本机 `pnpm --filter @oasismind/server zhihu -- search/read` 看高质量专栏/回答：学拆问题的方式、工程口碑、争议点。冲突时仍以原论文 / 官方报告为准。不要把知乎正文搬进花园。
 - **课程与公开课不是金科玉律。** LLM 按月变。CS336 / CS224N / 李宏毅 / HF Course / d2l 只是**某一学期的覆盖面快照**：用来发现「整块主题是不是漏了」。它们的默认假设、SOTA 名单、GPU 代际、框架默认值**经常已经过时**。课上没有的 2026 报告 trick 必须写；课上有但已被后文打脸的，用勘误接到今天，不要把讲义当年的「最新」抄进正文当现在。
 - 事实冲突时的排序：**2026 原论文 / 官方技术报告 / model card / 官方 blog** ≫ 本库已读过的一手台账 ≫ 课程与二次博客。课程赢不了报告。
 - 本仓库兄弟花园（`knowledge/cs336`、`classic-papers`、`diffusion-llm`、`llm-interview`）**只链不抄**，同样不当 2026 真相。
@@ -50,6 +51,7 @@ category: LLM 指南
 | 源 | URL | 学什么（学完合上） |
 |----|-----|-------------------|
 | 科学空间 | https://spaces.ac.cn/ | 问题 → 已有差在哪 → 公式；本库文风锚 |
+| 知乎专栏/回答 | 本机 `zhihu search` → `zhihu read` | 中文工程口吻、争议、实现分叉的线索；数字回论文核对 |
 | Lil'Log | https://lilianweng.github.io/ | 一篇一个机制；公式 + 图 + 失效 |
 | Illustrated Transformer | https://jalammar.github.io/illustrated-transformer/ | 图嵌在论证里；图必须自绘 |
 | Ahead of AI（Raschka） | https://sebastianraschka.com/blog/ | 报告拆成积木的拆法（对应 brief 0.4） |

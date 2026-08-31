@@ -59,7 +59,7 @@ PowerShell 无 `&&`，用 `;`。worktree 建好后把工作区切过去。不要
 2. 看哪些切片能并行（不同文件、不打架）。
 3. **立刻用 Task 拉起 2～5 个子代理**（`subagent_type: generalPurpose` 写正文；盘点可用 `explore`）。`run_in_background: true`，好继续盯下一波。
 4. 每个子代理的 prompt 必须自包含：工作区绝对路径、只准改哪些路径、禁止删除、必须 WebSearch/WebFetch 读源、把 URL 写进 `notes/live/PROCESS.md`、写完改 `PLAN.md` 对应勾。
-5. 子代理回传后：抽查是否有「本篇来源」、有没有空壳新文件、有没有水印图。不合格就带评语重派。
+5. 子代理回传后：抽查是否有「参考文献」、有没有空壳新文件、有没有水印图。不合格就带评语重派。
 6. 更新 `GOAL.md` 本轮焦点、`PLAN.md` 下一步 3 件、`PROCESS.md` 此刻与来源台账。长流水追加 `notes/2026-08-enrichment-log.md`。
 7. 还有队列就再派。不要问用户「要不要继续」。
 
@@ -76,7 +76,7 @@ PowerShell 无 `&&`，用 `;`。worktree 建好后把工作区切过去。不要
 | **P0B-DS** | 第 14 章 DeepSeek/Qwen/Kimi/GLM 空壳 D2/D5 | `14.1` `14.2` `14.5` `14.6` |
 | **P0B-US** | Gemini/OpenAI/Claude 空壳 | `14.11` `14.12` `14.13` |
 | **P0B-OT** | 其余家族空壳 | `14.3` 起除上列以外 |
-| **P0C** | 按文内 prompt GenerateImage，无水印，嵌入，prompt 改 HTML 注释 | 已点名的第 2 章组件文、Mistral-AI、13.5.3、第 9 章需重画的图；不删旧 png |
+| **P0C** | 按文内 prompt GenerateImage，无水印，嵌入；不要把 prompt 留成读者页 HTML 注释 | 已点名的第 2 章组件文、Mistral-AI、13.5.3、第 9 章需重画的图；不删旧 png |
 | **GPU** | 细则 P1-GPU 七项：内存层次、Roofline、互联集群、加速器全景、9.1 修订、9.2 地图、9.4 SGLang/PD 分离 | `9-AI工程化与基础设施/` 与交叉链到第 6 章（第 6 章只加指针不重写） |
 | **SYS** | 第 1 章 14 章对齐、知识图谱-2026-08、4.5 测试时计算、13 章 harness、8 章 omni 地图 | 对应体系章；先读一手源 |
 | **P2** | 核实后的 2026 后沿模型 D2+D5 | 新目录仅在核实后建 |
@@ -89,7 +89,7 @@ PowerShell 无 `&&`，用 `;`。worktree 建好后把工作区切过去。不要
 - 中文正文。不要删任何已有文件。
 - 写之前：WebSearch / WebFetch 原论文或本库 `pdfs/`、model card、官方 blog、会议页、中英文解析。URL 追加到 `content/llm-guide/notes/live/PROCESS.md` 来源表。没出现在台账里的规格不准写。
 - 找不到一手来源：写「未找到一手来源」+ `[OM-FREEPLAY]`，不要用记忆编。
-- 新文 `as_of: 2026-08-30`，文末「本篇来源」列表。
+- 新文 `as_of: 2026-08-30`，文末「参考文献」列表。
 - 图：Cursor GenerateImage，**必须浅色主题**（白底深字）。description 含 Skill 配图段整句 `LIGHT THEME ONLY: … white academic background, no watermark, no logo`。禁止深色底。禁止保存网页/论文截图。数据表用 Markdown，数字来自官方数据表。
 - 不要 commit。不要改 apps/。不要新 OCR 论文进 git。
 - 做完在 `PLAN.md` 把你负责的那一项打勾或改成进行中说明。

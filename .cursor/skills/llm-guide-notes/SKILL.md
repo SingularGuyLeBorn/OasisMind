@@ -17,6 +17,7 @@ description: >-
 2. `content/llm-guide/notes/live/PLAN.md`
 3. `content/llm-guide/notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
+4b. 人味：`.cursor/skills/humanwrite/SKILL.md` + `.cursor/skills/humanizer-zh/SKILL.md` + `humanwrite/references/scy.md`。读者页禁止出现对 Agent 说的话（`只读、不改`、`本篇只链`、`B 档 SKU`、标题里的禁令）。H1 汉字尽量 ≤ 20。
 5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
 6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层且必须是同名夹 `{NN}-foo/{NN}-foo.md`；**禁止** `{N.N.N}/01-foo.md` 夹根散文件；节首页 `{N.N.N}/{N.N.N}-….md` 合法并列；同层约 ≤10；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
 7. 需要搜论文时再读 [research.md](research.md)
@@ -30,7 +31,7 @@ description: >-
 - 只改 `content/llm-guide/` 及其 `images/`、`content/uploads/llm-guide/`。不要改 `apps/`、`packages/`、Chat/SSE。
 - **禁止删除**既有文件，**例外**：用户已拍板删掉整个第 10 / 11 / 12 章（综述堆、实践堆、访谈堆）。其余 mineru/pdf/旧图仍不删。
 - 接到今天：把正确事实写进主叙述，读者只读一版。**禁止**再写 `> **2026-08 修订（不删上文）`。
-- 配图：**必须浅色**。深色底图保留旧文件，新生成浅色 `fig-*.png` 改引用。
+- 配图：**必须浅色**，且箭头必须接到框边上。深色底图保留旧文件，新生成浅色 `fig-*.png` 改引用。生图前 Read `.cursor/skills/academic-diagrams/SKILL.md`（PaperBanana 五角色 × `GenerateImage`，禁止单次交差）。
 - 第 5 章与第 14 章 **融为一章两面**（叙事+精读），不要再写成永远分家。
 - `data/feishu-wiki-export/` 只作覆盖面/讲法参考，**禁止搬正文或图**。
 - **禁止** `move_agent_to_root`（会 stash + reset，未提交正文会从工作区消失）。
@@ -51,9 +52,11 @@ description: >-
 
 ### 文首（2–5 句，禁止 800 字「为什么重要」）
 
-1. 一句话定义对象 + 它卡住的瓶颈（KV 字节、负载不均、相对位置进不了点积…）。
-2. 本篇在系列里的位置（后文拿它当**度量零点**或对照）。
+1. 一句话定义对象 + 它卡住的瓶颈（KV 字节、负载不均、相对位置进不了点积…）。第一句给判断或事实，不要给监工指令。
+2. 本篇在系列里的位置，用正常人会说的话（「公式在第 2 章」可以；「本篇只链、只读不改」不行）。
 3. 明确「不是」什么。体系章要把组件**放进整机写透**（插在哪、改了哪条数据流、和邻居积木怎么分工）。第 14 章是某次发布的报告精读，侧重不同，**允许重复**。禁止用「细节见第 14 章」代替展开。禁止把 D2 目录结构搬进 1–13。
+
+H1 不要写成禁令或流程备注。坏例子：`不要读未发的旗舰规格`。好例子：`Qwen4 现在能预测什么`。
 
 金样本开头：MHA 先立 KV Cache 参照系；RoPE 先点破「相对位置在点积里自动出现」；GQA 一句话插在 MHA 与 MQA 之间。
 
@@ -65,12 +68,12 @@ description: >-
 
 1. 问题（带数量级更好：`32768L`、`$2bsh$`）。
 2. 符号定义，再公式。编号 `\tag{n}`，上文推过的只链不重推。
-3. **图嵌在该节论证里**，紧跟 `> 图 N：…（论文 Figure x）`，再写 **图 N 解析**（自下而上或按色块讲数据流，3–8 条）。
+3. **图嵌在该节论证里**，紧跟 `> 图 N：这张图画的是什么`（只讲图里的数据流 / 色块），再写 **图 N 解析**（自下而上或按色块，3–8 条）。**禁止**图注末尾钉 `（Author et al., YEAR；2026-08 自绘）`、`浅色自绘`、`不重画`、`旧文件仍在同夹`、`配置数字以 … 为准`、`文件保留，正文不再引用`。**禁止**在读者页写 `同夹 fig-xxx 本篇不引用`、`旧文件仍保留在同目录（不删）`、`不引用、不删除`、`提醒不要在本页展开`——夹里还有什么图是磁盘事，不是正文。论文号写正文或文末参考文献。禁止把生图 prompt 留成读者页 HTML 注释。
 4. 工程变体 / 消融 / 和邻居算法的**不是**关系（BPT 不是 Ring、不是 FA、不是 SP）。
 5. 失效模式表或局限。
 6. 链到下一篇或章索引。
 
-文末：`## 本篇来源` 或 `## 参考文献`（至少 1 条一手：arXiv / 官方 blog / model card / 顶会）。
+文末：`## 参考文献`（至少 1 条一手：arXiv / 官方 blog / model card / 顶会）。
 
 ### 公式
 
@@ -90,12 +93,14 @@ description: >-
 ### 配图
 
 - 用 Cursor `GenerateImage` 自绘，或 mermaid / Markdown 表。
+- **生图前必须 Read** `.cursor/skills/academic-diagrams/SKILL.md`。流程是 PaperBanana 五角色、像素走 `GenerateImage`；接线死命令仍强制。PaperSpine 是论文编排器，不管箭头几何。
 - **必须浅色主题，禁止深色主题。** 画布白底或极浅灰；字和箭头用深灰/深蓝；色块用浅色填充 + 深色描边。用户明确不喜欢深色底。用户希望**整库详尽配图**：机制数据流、整机插槽、对照「不是」都要有图，不要只丢公式。
-- description **必须整段带上**（缺任一句 = 不合格，重画）：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
+- description **必须整段带上**（缺任一句 = 不合格，重画）Skill 里的 `LIGHT THEME ONLY: …` **以及** `CONNECTOR GEOMETRY: …`。
+- 箭头只从框 **边缘中点** 出发/终止；禁止穿进填充、禁止未声明的双向箭头、禁止标签旁凭空出线、禁止箭头头糊成墨团。好对照：`08-QSA-Qwen稀疏注意力/images/fig-qsa-hybrid-slot.png`（可作 `reference_image_paths`）。
 - 落点：`./images/fig-kebab-case.png`（或 `.jpg`），正文相对路径引用。
 - **禁止**语雀 CDN、Substack、微信/知乎截图、论文 PDF 截图当配图。已有水印图：保留旧文件，新生成无水印版改引用。
 - 数据表用 Markdown，数字来自官方表，不要手绘假坐标曲线冒充论文 Figure。
-- 生成后自检：底是不是白的、字是不是深的。深色幻灯片风 = 立刻重画，不要入库。
+- 生成后 `Read` 图：底是不是白的、字是不是深的、线是不是接到框边上。深色幻灯片风或接线病 = 立刻重画，不要入库。
 
 ### 系列写法（MHA→MQA→GQA→MLA 这组最重要）
 

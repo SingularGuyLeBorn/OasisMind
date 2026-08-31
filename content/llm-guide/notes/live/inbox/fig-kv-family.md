@@ -4,25 +4,34 @@ date: 2026-08-30
 published: false
 ---
 
-# 只准改
+# 切片 fig-kv-family · 交卷
 
-- `…/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md` + 该夹 images
-- `…/02-MQA-共享KeyValue的极致压缩/` md + images
-- `…/03-GQA-在性能与缓存之间折中/` md + images
-- `…/04-MLA-低秩潜变量与解耦式注意力/` md + images
-- 本 inbox
+未 commit。未改 PLAN / PROCESS / GOAL。未改 `05-MLA`、节首页、AttnRes、`apps/`。未删 Vaswani / DeepSeek jpg。
 
-禁止改 `05-MLA矩阵吸收`（已有 Prefill/Decode 浅色图）、节首页、AttnRes。禁止删 Vaswani / DeepSeek 论文 jpg。禁止 commit。
+## 路径
 
-# 要做什么
+| 图 | 落点 | 引用 |
+|----|------|------|
+| `fig-mha-gqa-mqa-kv-heads.png` | `content/llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/images/` | 01 图 4（`./images/…`）；02/03 图 4 相对链 `../01-MHA-多头注意力的标准形式/images/fig-mha-gqa-mqa-kv-heads.png`（不复制第二份） |
+| `fig-mla-latent-kv-vs-mha.png` | `…/04-MLA-低秩潜变量与解耦式注意力/images/` | 04 图 4（`./images/…`） |
 
-论文族谱 jpg 还在，但用户说「纯公式不够」。补**浅色积木图**，同一套色块贯穿四篇。
+生成缓存（Cursor assets，非花园事实源）：`C:\Users\Administrator\.cursor\projects\d-ALL-IN-AI-OasisMind\assets\` 同名 png。
 
-1. 落在 01-MHA：`fig-mha-gqa-mqa-kv-heads.png`  
-   四列或三列：MHA 每头一份 KV；GQA $G$ 组共享；MQA 全头一份 KV。标 decode 时 KV 字节随头数怎么变。GQA/MQA 篇用相对路径引用这张（或各夹复制一份同名文件，禁止只改一处引用死链）。
-2. 落在 04-MLA：`fig-mla-latent-kv-vs-mha.png`  
-   MHA 存 $H$ 份 $d$ 维 K/V vs MLA 存低秩 $c^{KV}$ + 解耦 RoPE $k^R$。**不要**把吸收/非吸收再画一遍（那是 05）。数字回 V2 Table 9 / 既有正文，不要编压缩比。
+## 一手 URL（数字回正文已有段，未另编压缩比）
 
-每图 **图 N 解析**。不要重推 2.2.1 单头公式。
+- Vaswani et al. 2017. https://arxiv.org/abs/1706.03762
+- Shazeer 2019 MQA. https://arxiv.org/abs/1911.02150
+- Ainslie et al. 2023 GQA. https://arxiv.org/abs/2305.13245
+- DeepSeek-V2 Dai et al. 2024. https://arxiv.org/abs/2405.04434 （Table 9；§14.2 配置 $n_h=128,d_h=128,d_c=512,d_h^R=64$）
 
-GenerateImage：LIGHT THEME ONLY 整段（Skill 配图）。
+## 质检看哪段
+
+1. **浅色**：两张均为白底、深灰字、pastel 块 + 深描边；斜线 = cache。第一稿图例把 prompt 句子印进画布，已重画。
+2. **01-MHA §5.2 图 4**：三列 $2 H d_h$ / $2 G d_h$ / $2 d_h$；示例 $H=6,G=3$ 只为条数可读。Vaswani jpg 仍为图 1–3。
+3. **02-MQA §9.1 图 4**：读右列；压缩比 $1/H$ 仍来自原表，不是从图上数 6 根。
+4. **03-GQA §9 图 4**：读中列；相对倍数仍是表内 $G/H$（文中 LLaMA $H=32,G=8$ 的 4× 是旧文数字，图未新编）。
+5. **04-MLA §14.1 图 4**：32768 vs 576 对齐 §14.2；Table 9 的 860.2K / 34.6K 与每层宽度 **分口径**，解析里写明不要相除。未画吸收/非吸收（05 已有 Prefill/Decode 浅色图）。
+
+## 旧 jpg 保留
+
+`fig-scaled-dot-product-attention.jpg`、`fig-multi-head-attention.jpg`、`fig-transformer-architecture.jpg`、`fig-attention-mechanism-family.jpg`、`fig-gqa-grouped-kv-blocks.jpg`、`fig-deepseek-v2-mla-block.jpg` 等未动。

@@ -244,7 +244,7 @@ as_of: 2026-08-30
 ## 23. 2026-08-30 续：2.4.1 概念图收完 + V4 OPD 式 (29)
 
 - `2.4.1` 外链配图：Expert-Choice / overflow / VRAM / DeepSeekMoE a–c / Switch Top-1 / ViT / V-MoE 优先 / Soft-MoE / Upcycling 架构 / Router z-loss 换成自绘。LBL 曲线、损失尖峰、微调过拟合、Upcycling 准确率、消融柱、缺失的 `img.png`/`img_1.png` **不画假坐标**，只留 2025 读图结论 + 论文链。
-- `4.6-OPD`：写入 V4 mineru 式 (29) 多教师 reverse KL、全词表 logit、十余教师；QAT 仍指 6.1.7。**不 mkdir**。`01-OPD基础原理` 本来就有正文，去掉「待补全」。
+- `4.6-OPD`：写入 V4 mineru 式 (29) 多教师 reverse KL、全词表 logit、十余教师；QAT 仍指 6.1.7。**不 mkdir**。`01-OPD-学生前缀蒸馏` 本来就有正文，去掉「待补全」。
 - Connest5 仍未命中官方串，留条。
 - 未 commit。
 

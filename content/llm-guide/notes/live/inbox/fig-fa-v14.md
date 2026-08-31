@@ -4,29 +4,37 @@ date: 2026-08-30
 published: false
 ---
 
-# 只准改
+# 切片 `fig-fa-v14` 回传（已交）
 
-`content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/01-FlashAttention/` 下：
+未改 `01-FlashAttention.md`、`06-FlashAttention-Triton实现.md`、`00-MEA`、live 三份、`apps/`。未删论文 jpg。未 commit。
 
-- `02-FlashAttention-v1.md`
-- `03-FlashAttention-v2.md`
-- `04-FlashAttention-v3.md`
-- `05-FlashAttention-v4.md`
-- 该夹 `images/fig-fa-v1-mech.png` 等新浅色 png
+## 新图路径（已复制进专文 `images/`）
 
-禁止改 `01-FlashAttention.md`、`06-FlashAttention-Triton实现.md`（已有 `fig-fa-triton-tile-online-softmax.png`）、`00-MEA`。禁止删论文 jpg。禁止 commit。
+GenerateImage 落点（客户端预览用这条；工具未另给 http URL）：
 
-# 要做什么
+| 代 | 专文引用 | GenerateImage 绝对路径 | 边角 luma / 全图 meanRGB |
+|----|----------|------------------------|--------------------------|
+| v1 | `01-FlashAttention/images/fig-fa-v1-mech-hbm-sram.png` | `C:\Users\Administrator\.cursor\projects\d-ALL-IN-AI-OasisMind\assets\fig-fa-v1-mech-hbm-sram.png` | 254 / 239.7 |
+| v2 | `01-FlashAttention/images/fig-fa-v2-mech-work-partition.png` | `…\assets\fig-fa-v2-mech-work-partition.png` | 254 / 234.4 |
+| v3 | `01-FlashAttention/images/fig-fa-v3-mech-pingpong.png` | `…\assets\fig-fa-v3-mech-pingpong.png` | 254 / 233.3 |
+| v4 | `01-FlashAttention/images/fig-fa-v4-mech-asymmetric.png` | `…\assets\fig-fa-v4-mech-asymmetric.png` | 254 / 236.4 |
 
-现有图几乎全是论文截图。用户要**浅色教学示意图**讲清每一代改了数据流的哪一步。
+四张 `dark_frac` 均 ≤ 0.056，`bright_frac` ≥ 0.92，白底深字。金样本对照：`images/fig-fa-triton-tile-online-softmax.png`（未改 06 正文）。
 
-| 代 | 新图文件 | 必须画清 |
-|----|----------|----------|
-| v1 | `fig-fa-v1-mech-hbm-sram.png` | 不物化 $N\times N$；SRAM 里 $Q_i$ 对 $K_j,V_j$ 循环；寄存器 $(m,d,O)$；写回 $O_i$ 一次。数学等价，打的是 HBM IO。先于 v1 的是 MEA，只在图注写一句。 |
-| v2 | `fig-fa-v2-mech-work-partition.png` | 工作划分：outer 循环改到 Q 行、减少写回次数。不要写无出处「访存延迟暴跌 60%」。 |
-| v3 | `fig-fa-v3-mech-pingpong.png` | Hopper：GEMM 与 softmax 重叠 / pingpong。数字已在正文：FA2~35% 利用率；FA3 FP16 1.5–2.0×、740 TFLOPs（75%）。arXiv **2407.08608**。 |
-| v4 | `fig-fa-v4-mech-asymmetric.png` | Blackwell 非对称：Tensor Core 快、softmax exp 成瓶颈；Cody-Waite + 部分 MUFU。1613 TFLOPs（71%）。arXiv **2603.05451**。 |
+## 论文 URL（质检看哪段）
 
-每张图嵌入对应 md 论证处，**图 N 解析**。旧 jpg 保留并仍可引用论文 Figure。不要手绘假坐标冒充论文速度图。
+| 代 | 一手 | 核对了什么 |
+|----|------|------------|
+| v1 | https://arxiv.org/abs/2205.14135 | 图注：不物化 $N\times N$；MEA 2112.05682 只写一句「先于 v1、不要画成 v1」 |
+| v2 | https://arxiv.org/html/2307.08691 | **§3.2**：外循环改到行块、内循环改到列块（与 v1 论文相反）；§3.3 Warp 按 Q 行划分、不再 split-K。Tillet Triton 脚注 |
+| v3 | https://arxiv.org/abs/2407.08608 （HTML 同号 v2） | **摘要**：FA2 H100 **35%**；FA3 FP16 **1.5–2.0×**、**740 TFLOPs/s（75%）**；FP8 ~1.2 PFLOPs。§3.1 pingpong。**不要用 2407.08691**（那是 FA2） |
+| v4 | https://arxiv.org/abs/2603.05451 | **摘要**：B200 BF16 **1613 TFLOPs/s（71%）**；相对 cuDNN 9.13 最高 1.3×、Triton 2.7× |
 
-GenerateImage description 必须含整段 LIGHT THEME ONLY（同 Skill 配图段）。
+## 正文改动（只插图 + 必要纠错）
+
+- `02-FlashAttention-v1.md`：文首新图 1 + 7 条解析；原论文 jpg 改为图 2。推导未重写。
+- `03-FlashAttention-v2.md`：新图 1。按 2307.08691 §3.2 **改正文写反的循环顺序**（旧 ASCII 把 v2 画成外 KV；论文是外 Q）。未写「60%」。原 jpg 为图 2/3。
+- `04-FlashAttention-v3.md`：新图 1 pingpong；数字只引用 2407.08608 摘要。原 jpg 顺延为图 2–6。
+- `05-FlashAttention-v4.md`：新图 1 非对称；1613/71% 来自 2603.05451 摘要，画成标注不是假坐标。原 jpg 顺延为图 2–6。
+
+层级：v1 图讲「不物化 $N\times N$ + 一份增量 $O$」；v2 图按论文 Algorithm 1 讲循环对调与写回次数。不是同一张循环顺序画两遍。

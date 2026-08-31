@@ -27,3 +27,14 @@ ASCII 块保留，新图紧跟对应节。不要重写 §4 以后的 CP/EP。不
 GenerateImage，description 必须整段含：`LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL`
 
 成文，禁止修订双轨。
+
+# 完成（2026-08-30）
+
+已在 `6.1.1-分布式训练.md` 的 §2.1 / §2.2 / §2.3 / §3.1 插入图 1–4，ASCII 保留。落点：
+
+- `images/fig-dp-allreduce.png`
+- `images/fig-tp-column-row.png`
+- `images/fig-pp-1f1b.png`
+- `images/fig-zero-123-shard.png`
+
+未改 §4 以后、未改 DualPipe、未改 live GOAL/PLAN/PROCESS。气泡率沿用正文 ~10-15% / ~5-10%；ZeRO 倍数沿用 4× / 8× / $N_d$。
