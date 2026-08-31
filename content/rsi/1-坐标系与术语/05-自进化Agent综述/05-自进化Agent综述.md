@@ -120,7 +120,7 @@ LLM-as-a-Judge 用点式打分或成对比较当廉价人评替代，和人的�
 | 综述格子 | 花园落点 | 样板 |
 |----------|----------|------|
 | 训 LLM 行为 | Model | SPIN / Self-Rewarding / Tufa / LADDER / SEAL |
-| 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[27 ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md)；可靠性专文 |
+| 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[27 ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md)；[28 LATS](../../3-Harness层-Agent运行时/28-LATS-Agent树搜/28-LATS-Agent树搜.md)；可靠性专文 |
 | 提示 / 记忆 / 工具表 / 拓扑 | Harness | Argus / ACE / SkillEvolver / ADAS / STOP / DGM / Auto-Research |
 | 代码级工作流当空间 | Harness（元 Agent 常冻） | ADAS；Gödel 才把运行时打开 |
 | 实例级搜产物 | Artifact | FunSearch / AlphaEvolve / Polaris |
