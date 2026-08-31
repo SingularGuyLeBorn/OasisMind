@@ -18,7 +18,7 @@ tags:
 本篇是 **课程入口**，不是机制专文。**不搬** CS329A 讲义进花园。闭环、验证、轨迹回写的判定回 [01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)、[02 三层](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)、[05 综述](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 > **仓库**：[yusenthebot/stanford-ai-agent-skill](https://github.com/yusenthebot/stanford-ai-agent-skill)
-> **README 镜像**：[stanford-ai-agent-skill.md](../../uploads/github-readme/stanford-ai-agent-skill.md)
+> **README 镜像**：[stanford-ai-agent-skill.md](../../../uploads/github-readme/stanford-ai-agent-skill.md)
 > **课程**：[Stanford CS329A](https://cs329a.stanford.edu/)（非官方社区资料，无学校背书）
 > **蒸馏工具**：[kangarooking/cangjie-skill](https://github.com/kangarooking/cangjie-skill)
 
