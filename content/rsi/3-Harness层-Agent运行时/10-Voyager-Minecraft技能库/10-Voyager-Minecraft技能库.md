@@ -131,7 +131,7 @@ $H_t$ 变了，下次检索能调到 `craftStoneShovel`。单轮成立。改进�
 **读**：三件套、`gpt-4-0314`、63 / 160、木器 6±2 对 AutoGPT 92±72（15.3×）、钻石 102（1/3）、Table 2 四任务全 3/3、随机课程 −93%、自验证 −73%、GPT-3.5 代码 $1/5.7$、库可插到 AutoGPT 上。  
 **不读**：把终身学习听成改权重、把 1/3 钻石听成稳定通关、用 63 种物品证明式 (2)、把自验证听成独立审计、和 DreamerV3 的钻石混成一篇、用专栏里的「无需人类」覆盖论文的黑盒查询原句、把 AutoGPT 插上技能库的涨分听成 AutoGPT 自己变成了 Voyager。
 
-同层：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。判定：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。读完应能把「Minecraft 里越玩越强」翻译成：冻结的 GPT-4，加上一份会涨的 JavaScript 库，身体和出题规则仍在墙外。越玩越强的是 $H_t$，不是 $I$。课程提示一行不改，钻石仍可能三局里只有一局摸到。这不是失败叙事，是 Table 1 自己写在格子里的分数。请去原文核那一格。
+同层：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。判定：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。读完应能把「Minecraft 里越玩越强」翻译成：冻结的 GPT-4，加上一份会涨的 JavaScript 库，身体和出题规则仍在墙外。越玩越强的是 $H_t$，不是 $I$。课程提示一行不改，钻石仍可能三局里只有一局摸到。这不是失败叙事，是 Table 1 自己写在格子里的分数。请去原文核那一格。
 
 ## 参考文献
 

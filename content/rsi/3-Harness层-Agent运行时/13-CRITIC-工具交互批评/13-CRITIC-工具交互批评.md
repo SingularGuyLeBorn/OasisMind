@@ -132,7 +132,7 @@ few-shot 里的工具轨迹是人钉的示范，不会因为这题搜到了 Wiki
 **读**：Verify–Correct、$T$ 三类、QA 500 题、$n=3/4$、ChatGPT F1 +7.7 与数学 +7.0、毒性概率 0.192→0.040、w/o Tool 的 −0.03 / +2.33 / 毒性变差、SVAMP davinci −3.3、Table 5 AUROC、HotpotQA 幻觉 36%→7% 与 FN 49%、GSM8k 错题修对 32.2%、Table 10 Self-Refine 26.7 不可回写 12 篇、CRITIC$^*$ 是 oracle、L0。  
 **不读**：用 +7.7 盖 w/o Tool、把 CRITIC$^*$ 当主结果、用 Codex Self-Refine −44.6 替换 Madaan Table 1、把 Perspective 自洽听成墙外安全证书、用 HotpotQA 手工 100 条外推全验证集、说已经 RSI。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

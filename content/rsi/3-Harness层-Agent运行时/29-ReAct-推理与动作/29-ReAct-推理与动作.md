@@ -107,7 +107,7 @@ few-shot 里的人手轨迹不会因为某题做对就多一条示范进仓库�
 **读**：Table 1 的 27.4 低于 CoT 29.4、组合 35.1 / 64.6、Table 2 幻觉 0% 对 56%、AlfWorld 最好 71 对 Act 45 对 BUTLER 37、WebShop 66.6 / 40.0 对 500 条、附录 GPT-3 的 30.8 / 78.4 是另一张表、微调 3000 条是另一条实验、L0。  
 **不读**：用 71% 改 Reflexion 的 130/134、用 40.0 改 LATS 的 38.0、用 27.4 改 LATS 的 0.32、用附录 29.4 替换 Table 1、说 ReAct 在 HotpotQA 上全面超过 CoT、把 34% 听成相对涨幅、把微调 8B 写成主方法已经 RSI、把 ACE 的 42.4 写进本表。
 
-同层：[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

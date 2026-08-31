@@ -102,7 +102,7 @@ GPT-3.5 行尤其要钉死。窗口比 PaLM 更大，全文已经装得下 QuALI
 **读**：Table 1 的 86.16 / 87.17 对全文 85.83、只 gist 77.52，72.17% \(CR\) 约 3.5×，Gutenberg 测试 LR-1 60.55 对 BM25 53.60 是相对约 13%，94.84% \(CR\) 约 20×，20.4% 是摊销词数，GPT-3.5 上 72.10 低于全文 73.30，不是 9.15，不是式 (2)。  
 **不读**：把 20× 听成一次吃下 16 万 token、把 12.97 / 31.98 听成百分点、用 0.716 或 82% 改 86.16、说分页提示已经在优化自己、说已经 RSI、把 A-Mem 的 9.15 写进本表、把附录网页导航写进 Table 1。
 
-同层：[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

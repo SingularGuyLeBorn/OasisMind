@@ -55,5 +55,6 @@ category: RSI
 | 39 | [ChatDB 符号 SQL 记忆](./39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) | GPT-3.5 写 SQL 改 MySQL；合成店账 41/50 对 11/50；语料故意塞进 4096 |
 | 40 | [MemoryBank 遗忘曲线记忆](./40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) | 艾宾浩斯改强度；英文正确 0.716 是 97 题人打分；表上没有无记忆列 |
 | 41 | [ReadAgent gist 分页记忆](./41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md) | 切页压 gist 再回看；QuALITY 86.16 对全文 85.83；20× 是终查询压缩率 |
+| 42 | [LATM 函数缓存造工具](./42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) | GPT-4 造 Python，3.5 调用；中国剩余 CoT 0.0、LATM 100.0；提示冻着 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
