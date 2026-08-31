@@ -1,169 +1,217 @@
 ---
-title: "应用类：RAG、Agent 与工具调用"
-category: null
+title: 应用与 Agent：RAG、工具调用、MCP 与 A2A
+category: LLM 面试
 tags:
-  - "应用"
-  - "RAG"
-  - "Agent"
-  - "ReAct"
-  - "MCP"
-  - "A2A"
-  - "工具调用"
+  - RAG
+  - Agent
+  - Function Calling
+  - MCP
+  - A2A
+  - 安全
 published: true
-excerpt: null
+excerpt: 从端到端应用视角复习 RAG、工具调用和 Agent 运行时，区分 MCP 与 A2A 的职责，并覆盖权限、幂等、恢复、评测和提示注入防护。
 ---
-# 应用类：RAG、Agent 与工具调用
+# 应用与 Agent：RAG、工具调用、MCP 与 A2A
 
-> ⚠️ **时效性说明**：本专题是 2025-2026 面试增长最快的领域。MCP/A2A 协议 2025 年才提出，2026 成必问。纯 RAG 基础题已不够，需理解 Agentic RAG、Multi-Agent 编排。
->
-> **来源**：小林面试题、AgentGuide 面经、知乎面经汇总、掘金、Google A2A 白皮书
+应用题的评价重点不是能否说出框架名，而是能否把模型置于一个可观测、可恢复、受权限约束的系统中。回答协议问题时必须注明规范版本；回答 Agent 问题时必须区分“模型建议动作”和“系统实际执行动作”。
 
----
+> 核验日期：2026-08-31。MCP 部分以 2025-11-25 稳定规范为主要基线，并提示后续 draft 的变化；A2A 部分以 0.3.0 规范为基线。
 
-## 1. RAG 完整流程与关键设计决策
+## 1. 怎样设计一条可评测的 RAG 流程？
 
-- **元数据**：`{topic: "应用·RAG", quality: ⭐⭐⭐⭐⭐, year: "经典题·持续有效", difficulty: mid}`
-- **来源**：AgentGuide 面经、掘金
+**短答案：** RAG 不是“向量检索后把 Top-K 拼进提示词”，而是一条包含语料治理、索引、召回、重排、上下文构建、生成、引用和评测的链路。
 
-**标准流程**：
-```
-Query → Embedding → 向量检索 (Top-K) → 重排序 (Reranker) → Prompt 拼接 → LLM 生成
-```
-
-**面试必问的三个决策点**：
-1. **Chunk 策略**：固定大小（256-512 tokens）vs 语义分割 vs 递归分割？→ 取决于文档类型和技术文档兼顾
-2. **检索方式**：纯向量 vs Hybrid Search（向量 + BM25）→ BM25 对精确关键词匹配更好
-3. **时间衰减处理**：score = sim(q, d)·(1 - λ·Δt) 或按时间窗口过滤
-
-> ✅ **时效判断**：RAG 基础流程是持续有效的经典题。2025-2026 新增"Chunk 策略选型"和"时间衰减"细节追问。
-
----
-
-## 2. Agentic RAG：单次检索不够时怎么办
-
-- **元数据**：`{topic: "应用·RAG·进阶", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: senior}`
-- **来源**：小林笔记、知乎面经
-
-**RAG 的两个致命短板**（面试必点）：
-1. **多步推理**：需要 A→B→C 的推理链时，单次检索无法串联
-2. **跨文档交叉**：信息在多个文档中要对比时
-
-**解决方案 — Agentic RAG**：
-```
-Query → [循环] 检索 → 推理 → 判断信息是否足够 → 不够则再检索
-```
-- Self-RAG：模型自己判断是否需要检索
-- Corrective RAG：对检索结果打分，低分触发重检索
-
-**追问**：「Agentic RAG 和 Multi-Hop QA 有什么区别？」→ Multi-Hop 是问题分解，Agentic RAG 是模型自主决策检索时机和次数。
-
-> ✅ **时效判断**：2025-2026 面试热门，RAG 方向最常被追问的进阶题。
-
----
-
-## 3. ReAct 框架：Think → Act → Observe
-
-- **元数据**：`{topic: "应用·Agent", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: mid}`
-- **来源**：小林笔记、知乎面经
-
-**ReAct (Reasoning + Acting)** 核心循环：
-```
-Thought: 我需要查天气 → 应该调用 weather API
-Action: call weather_api(location="北京")
-Observation: {"temp": 28, "condition": "晴"}
-Thought: 北京今天 28°C，晴 → 可以建议用户去户外
-Final Answer: 北京今天天气晴朗，28°C，适合户外活动
+```text
+来源接入
+  → 解析与权限过滤
+  → 切分、元数据和版本化
+  → 稀疏/稠密索引
+  → 查询理解与召回
+  → 融合、去重和重排
+  → 上下文选择与证据标识
+  → 生成与引用
+  → 检索/回答/端到端评测
 ```
 
-**面试追问**：
-- 「ReAct 和 Plan-then-Execute 的区别？」→ ReAct 边想边做，Plan-then-Execute 先全部规划再执行。ReAct 更灵活，但可能无限循环
-- 「无限循环怎么解决？」→ 最大轮次限制 + 超时 + 人工兜底
+### 关键设计问题
 
-> ✅ **时效判断**：Agent 面试核心题。2025-2026 新增 A2A 和 MCP 后常结合提问。
+1. **切分**：按标题、段落、语义或固定窗口切分；chunk 大小和 overlap 没有通用最优值，需要按文档结构、检索粒度和模型上下文验证。
+2. **召回**：BM25 擅长词项匹配，稠密检索擅长语义匹配；混合检索需要归一化或融合排名，不能直接相加不同量纲分数。
+3. **重排**：cross-encoder、生成式重排或规则过滤能提高精度，但增加延迟和成本。
+4. **权限**：访问控制必须在检索和读取阶段落实，不能等生成后再过滤敏感文本。
+5. **新鲜度**：用版本、时间过滤、增量索引和失效策略管理；任意 `相似度×时间衰减` 公式都只是候选，需要实验校准。
+6. **引用**：保存来源 id、版本和片段位置；引用存在不等于答案被证据支持。
 
----
+### 评测至少分三层
 
-## 4. Tool Calling (Function Calling) 工程化
-
-- **元数据**：`{topic: "应用·Agent", quality: ⭐⭐⭐⭐⭐, year: "2025-2026", difficulty: mid~senior}`
-- **来源**：小林笔记、AgentGuide
-
-**三种实现方式**：
-1. **原生 FC** (OpenAI/Claude) — 模型输出 JSON schema，系统执行
-2. **结构化输出** — 约束输出格式（JSON Mode）
-3. **代码生成** — 让模型写代码并执行（最危险最灵活）
-
-**面试高频问题**：
-- 「工具调用失控怎么兜底？」→ 最大调用次数 + 单次超时 + 权限分级 + 人工审批
-- 「模型选错工具怎么办？」→ 提升工具描述质量（instruction + example） + 微调 FC 数据
-- 「并行 vs 串行调用？」→ 不依赖的工具并行；依赖关系明确的串行
-
-> ✅ **时效判断**：2025-2026 每个 Agent 岗必问。特别关注"失控兜底"的工程方案。
-
----
-
-## 5. MCP (Model Context Protocol) 协议
-
-- **元数据**：`{topic: "应用·Agent·前沿", quality: ⭐⭐⭐⭐⭐, year: "2025-2026 新题", difficulty: senior}`
-- **来源**：小林笔记、Anthropic MCP 文档
-
-**核心思想**：统一 LLM 与外部工具的接口协议。类比"AI 世界的 USB 接口"。
-
-**架构**：
-```
-LLM ↔ MCP Client ↔ MCP Server (工具 / 数据源 / 数据库)
-```
-
-**面试追问**：
-- 「MCP 和 Function Calling 的关系？」→ FC 是模型 API 的升级；MCP 是更通用的协议层，FC 可以跑在 MCP 之上
-- 「MCP 的 Server 可以做什么？」→ 文件系统、数据库、API 网关、搜索引擎等
-- 「自定义 MCP 需要什么？」→ 实现 MCP 协议的 Server 端接口 + JSON Schema 描述
-
-> ✅ **时效判断**：2025 年提出，2026 年已成面试高频题。Anthropic + OpenAI 都支持，行业趋势。
-
----
-
-## 6. A2A (Agent-to-Agent) 协议
-
-- **元数据**：`{topic: "应用·Agent·前沿", quality: ⭐⭐⭐⭐, year: "2025-2026 新题", difficulty: senior}`
-- **来源**：小林笔记、Google A2A 白皮书
-
-**Google 提出的 Agent 间通信协议**，解决"不同 Agent 系统怎么协作"的问题。
-
-**MCP vs A2A**（2026 面试新题）：
-| | MCP | A2A |
+| 层 | 示例指标 | 主要问题 |
 |---|---|---|
-| 连接对象 | Agent → 工具 | Agent → Agent |
-| 角色 | Agent 的外设接口 | Agent 的社交协议 |
-| 提出方 | Anthropic | Google |
+| 检索 | Recall@k、MRR、nDCG | 正确证据是否进入候选与前列 |
+| 回答 | 正确性、完整性、忠实性、引用支持率 | 生成是否受证据支持 |
+| 系统 | P50/P95 延迟、成本、失败率、权限泄漏率 | 能否稳定、安全地服务 |
 
-**追问**：「MCP 和 A2A 能共存吗？」→ 可以。A2A 协调各 Agent，MCP 让每个 Agent 获取工具能力。两者不是替代关系。
+RAG 可以改善模型获得相关证据的机会，但不保证消除幻觉或保证事实正确。
 
-> ✅ **时效判断**：2026 年面试新题，关注 Agent 方向的同学建议重点准备。
+## 2. Agentic RAG、查询分解和多跳问答有什么区别？
 
----
+这些概念存在重叠，不应给出互斥的教科书定义：
 
-## 7. LangChain Memory 组件设计
+- **查询分解**：把复杂问题拆成可检索的子问题；
+- **多跳问答**：答案依赖多个证据之间的组合；
+- **Agentic RAG**：运行时根据当前状态决定是否检索、检索什么、是否改写查询、调用哪种检索器以及何时停止。
 
-- **元数据**：`{topic: "应用·Agent·工程", quality: ⭐⭐⭐, year: "2024-2025 → 2026 热度下降", difficulty: junior}`
-- **来源**：小林笔记
+一个可靠循环需要：
 
-**类型**：
-- Buffer Memory：完整历史（简单但 token 暴涨）
-- Summary Memory：压缩摘要（信息有损）
-- Vector Store Memory：检索式（需要 embedding 模型）
-- **混合策略**：短窗口用 Buffer，长对话用 Summary
+1. 显式状态与剩余信息缺口；
+2. 最大轮次、时间和成本预算；
+3. 检索结果的相关性与可信度判断；
+4. 重复查询和无进展检测；
+5. 证据不足时能够拒答或请求更多信息；
+6. 对每一步保存可审计事件，而不是依赖不可见的内部推理文本。
 
-> ⚠️ **时效提示**：LangChain 的 Memory 组件在 2025 年后被 MCP/A2A 等新话题抢了风头。建议把时间留给 MCP/A2A 等新协议。
+Self-RAG、Corrective RAG 等论文提供了不同的检索/反思机制，但产品系统通常还要解决权限、索引更新、超时和观测问题。
 
----
+## 3. Function Calling 到底完成了哪一步？
 
-## 来源汇总
+**短答案：** 模型根据工具描述和 schema 生成结构化的调用建议；真正的参数校验、授权、执行、重试和结果处理由宿主系统负责。模型输出了 JSON 不等于工具已经执行，更不等于执行安全。
 
-- 小林面试题（xiaolinnote.com）— Agent 框架、MCP/A2A 图解（615 张手绘）
-- AgentGuide 面经 — RAG 流程、知识图谱 Agent 面试追问
-- 掘金·大模型面试题讲解 — RAG 整体流程
-- 知乎面经汇总 — Agent 元年趋势、A2A 协议动态
-- Anthropic MCP 文档 / Google A2A 白皮书
+### 一条完整的执行路径
 
-**🔍 下次搜索关键词**：Agentic RAG 实现案例、Multi-Agent 编排器模式、Tool Calling 微调数据构造方法
+```text
+用户请求
+  → 候选工具过滤
+  → 模型选择工具并生成参数
+  → schema 与业务语义校验
+  → 身份、权限和审批
+  → 幂等键与执行
+  → 超时、取消、重试和部分失败处理
+  → 结构化结果/错误回注模型
+  → 最终回答与审计日志
+```
+
+### 高频追问
+
+**如何防止重复扣款或重复发信？**
+
+- 把副作用操作设计为幂等；
+- 使用业务级 idempotency key，不以模型文本作为唯一标识；
+- 在重试前查询执行状态；
+- 对不可逆动作增加用户确认或审批。
+
+**模型选错工具怎么办？**
+
+- 缩小当前可见工具集合；
+- 改善工具名称、描述、输入约束和反例；
+- 用离线数据评测选择与参数正确率；
+- 低置信或高风险动作交给确定性策略，不让模型自行授权。
+
+**能否直接执行模型生成的代码？**
+
+只有在明确的沙箱、最小权限、资源限制、网络策略和审计机制下才可考虑。代码生成是高风险执行形态，不是 Function Calling 的默认升级路线。
+
+## 4. MCP 的核心对象、生命周期和传输是什么？
+
+MCP 用客户端—服务器协议把模型应用与上下文和能力连接起来。服务器侧三类核心 primitive 是：
+
+| Primitive | 典型控制方 | 含义 |
+|---|---|---|
+| Prompts | 用户 | 可选择的提示模板或工作流入口 |
+| Resources | 应用 | 可读取或附加的上下文数据 |
+| Tools | 模型 | 可请求调用的函数或动作 |
+
+客户端还可向服务器提供 sampling、roots、elicitation 等能力，实际可用项取决于双方在初始化阶段协商的 capabilities。
+
+### 标准传输
+
+- **stdio**：客户端启动服务器子进程，通过标准输入/输出交换 JSON-RPC 消息；stdout 只能输出协议消息，日志写 stderr。
+- **Streamable HTTP**：服务器提供支持 POST/GET 的 MCP endpoint，可使用 SSE 进行流式消息；它取代旧的 HTTP+SSE 传输。
+
+对于 Streamable HTTP，规范明确要求关注 Origin 校验、本地服务绑定地址和认证，以降低 DNS rebinding 等风险。MCP 本身不会自动把工具放进沙箱，也不会自动赋予最小权限。
+
+### 规范版本问题
+
+面试回答要声明版本。2025-11-25 稳定规范仍包含会话相关机制；后续 draft 已提出移除协议级 session，并增加请求头与扩展机制。draft 变化不能倒写成所有稳定实现都已经支持的事实。
+
+## 5. MCP 与 Function Calling、A2A 的边界是什么？
+
+| 对象 | 主要解决的问题 | 不负责什么 |
+|---|---|---|
+| Function Calling | 模型 API 怎样表达结构化工具调用 | 工具发现、跨宿主协议和安全执行的完整生命周期 |
+| MCP | 应用怎样以统一协议接入工具、资源和提示 | 独立 Agent 之间的长期任务协作本身 |
+| A2A | 独立、可能不透明的 Agent 怎样发现能力并交换消息、任务和产物 | Agent 内部具体怎样接工具或组织推理 |
+
+“MCP 是 USB、A2A 是网络”可以帮助记忆，但面试时应继续说出对象、状态和安全边界，不能停在比喻。
+
+## 6. A2A 0.3.0 的核心概念是什么？
+
+A2A 的目标是在不同框架和供应商的 Agent 之间建立互操作语言，同时不要求对方暴露内部状态、记忆或工具。
+
+一个完整回答应包括：
+
+- **Agent Card**：描述服务地址、能力、输入输出模态、认证需求和 skills；
+- **Message**：Agent 与用户/Agent 之间的通信内容；
+- **Task**：需要跟踪状态的工作单元；
+- **Artifact**：任务产生的文件、结构化数据或其他产物；
+- **流式与异步更新**：用于长任务的状态和产物更新；
+- **认证与授权**：Agent Card 声明能力不等于调用方自动获得权限。
+
+规范迭代较快，旧版 `tasks/send` 等接口名不能直接代表 0.3.0。回答实现细节时必须绑定具体版本和所选 transport。
+
+## 7. ReAct、Plan-and-Execute 和状态机怎样组合？
+
+ReAct 将推理与动作交替组织；Plan-and-Execute 先形成较完整计划，再由执行器推进。工程系统通常不是二选一：可以先生成粗计划，再在每一步通过观察动态调整。
+
+可靠 Agent 运行时至少需要：
+
+1. 明确的任务状态，而不是只依赖对话文本；
+2. 合法状态转移与终态；
+3. 最大轮次、时间、token、费用和工具预算；
+4. 超时、取消、重试、幂等和恢复语义；
+5. 工具错误与模型错误的区分；
+6. 可验证的行动摘要、来源和产物；
+7. 人工审批与升级路径。
+
+“达到最大轮次就停止”只能防止无限运行，不能保证任务正确完成。生产系统还要检测无进展循环、重复副作用和状态竞争。
+
+## 8. 怎样防御提示注入与工具越权？
+
+提示注入的关键风险是把不可信内容中的指令误当成高权限指令。仅在系统提示里写“忽略恶意内容”不是充分防御。
+
+分层措施包括：
+
+- 把网页、邮件、文档和工具返回值标记为不可信数据；
+- 在进入模型前限制可见工具和可访问资源；
+- 权限检查在确定性执行层完成，不由模型 confidence 决定；
+- 对高风险副作用要求审批；
+- 凭据不进入提示词，按调用临时注入；
+- 工具参数做 schema、路径、域名和业务规则校验；
+- 限制网络出口、文件根、进程能力和资源；
+- 记录调用者、参数摘要、结果、错误与审批；
+- 用攻击样本持续测试越权、数据外泄和跨租户访问。
+
+## 9. Agent 系统应该怎样评测？
+
+不要只统计最终成功率。至少覆盖：
+
+| 维度 | 示例 |
+|---|---|
+| 任务结果 | 正确性、完成率、可验证产物 |
+| 过程 | 工具选择/参数正确率、无效步骤、恢复能力 |
+| 效率 | 延迟、token、工具次数、费用 |
+| 可靠性 | 超时、重复执行、取消、部分失败、重放 |
+| 安全 | 越权率、注入成功率、敏感数据泄漏、审批绕过 |
+| 可复现性 | 模型/提示/工具/数据版本与随机性记录 |
+
+离线基准、仿真环境、回放测试和线上 shadow/canary 各自回答不同问题。基准成绩不能替代真实权限和故障路径测试。
+
+## 一手资料
+
+- [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
+- [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629)
+- [Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection](https://arxiv.org/abs/2310.11511)
+- [Corrective Retrieval Augmented Generation](https://arxiv.org/abs/2401.15884)
+- [Model Context Protocol 2025-11-25 Specification](https://modelcontextprotocol.io/specification/2025-11-25)
+- [MCP Transports](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
+- [MCP Draft Changelog](https://modelcontextprotocol.io/specification/draft/changelog)
+- [Agent2Agent Protocol 0.3.0 Specification](https://a2a-protocol.org/v0.3.0/specification/)
+- [OWASP Top 10 for LLM Applications: Prompt Injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
