@@ -124,7 +124,7 @@ Table 3，GPT-4o-mini 消融。去掉连边和演化：多跳 9.65 / 7.09，时�
 
 「没有预定操作」要拆开。预定的是提示和 \(k\) 表；不预定的是这次会连哪几张。Table 8 把 GPT 的 \(k\) 调到 40/50，等于人按题型改检索预算。附录写已经 SOTA 的就不再调、保持 10——小模型那几行。人改 \(k\) 就是改 \(I\)。Figure 3 还显示 \(k\) 不是越大越好。这是 L2 脚手架在流内变厚的证据，也是配方冻着的证据：每张新卡片仍走同一份 \(P_{s1}\)。
 
-对照四家要按附录 A.1 读。LoCoMo 没有记忆模块，整段对话进提示。ReadAgent 先分页、再 gist、再按需回看。MemoryBank 按艾宾浩斯曲线调强度，还建用户画像。MemGPT 是主上下文加外存。A-Mem 赢的是结构化笔记加连边，不是「又一种压缩」。HippoRAG、ChatDB 出现在综述记忆段，本篇主表没有它们，花园也不拿来垫 27.02。
+对照四家要按附录 A.1 读。LoCoMo 没有记忆模块，整段对话进提示。ReadAgent 先分页、再 gist、再按需回看。MemoryBank 按艾宾浩斯曲线调强度，还建用户画像。MemGPT 是主上下文加外存。A-Mem 赢的是结构化笔记加连边，不是「又一种压缩」。[HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) 出现在综述记忆段，本篇主表没有它们，花园也不拿来垫 27.02。
 
 对抗题是这张表的诚实格。全上下文 69.23，A-Mem 50.03。记忆系统更会把可答的时间题连起来，不一定更会拒绝不可答。开放域 GPT-4o-mini 上 12.14 对 12.04，几乎没动。把五类平均听成「全面更好」，缺的是对抗和开放域。排序 1.2 是五类名次平均，不是 F1 均分。正文把 GPT 上的多跳写成至少两倍，花园以表为准：4o-mini 27.02 对 26.65，4o 32.86 对 30.36。
 
@@ -137,7 +137,7 @@ LoCoMo 均长约 9K token、最多 35 段，相对旧对话集大约 1K token、
 **读**：Table 1 的 27.02 / 45.85 / 50.03、全上下文对抗 69.23、GPT-4o 多跳 32.86 仍不是两倍、DialSim 3.45 的 35% / 192% 是相对涨幅、token 1,216 对 16,900、消融 9.65 / 21.35 / 27.02、Table 8 的 40/50、三份提示冻着、不是 93.4、不是式 (2)。  
 **不读**：把多跳听成至少两倍、把 35% 听成百分点、用 93.4 改 26.65、用手抄 t-SNE 说已经自己会分类、说提示已经在优化自己、说已经 RSI。
 
-同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
