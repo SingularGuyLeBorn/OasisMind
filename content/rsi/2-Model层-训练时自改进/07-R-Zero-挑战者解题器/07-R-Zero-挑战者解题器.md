@@ -154,7 +154,7 @@ $I$ 在这里是：式 (2) 的 50% 形状、式 (4) 的 $\delta=0.25$、$m=10$�
 **读**：式 (2)(4)(5)、Table 1 的 42.58→49.07、AIME-25 的 9.17→4.27、Table 2 用 4.81 不用摘要 7.54、伪标签 79%→63%、Iter 4 塌、双模型对单模型。  
 **不读**：把 zero data 听成零考官、用 +7.54 替换 Table 2、把多数票听成解释器、把三轮上涨听成已经稳、把 GPT-4o 听成训练环里的金标。
 
-同层出题器：[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)、[05 LADDER](../05-LADDER-递归拆题/05-LADDER-递归拆题.md)。信号类型：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+同层出题器：[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)、[05 LADDER](../05-LADDER-递归拆题/05-LADDER-递归拆题.md)。同层也接解释器、题仍是人出的：[08 ReTool](../08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md)（AIME2024 67.0 是 32 次平均 pass@1，不要和本表数学均 49.07 横加）。信号类型：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
 
 ## 参考文献
 

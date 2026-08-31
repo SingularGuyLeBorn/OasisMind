@@ -125,7 +125,7 @@ RSI 清单。单轮 $S'=I(S)$：$\theta$ 从 1% 走到 82%，成立。式 (2)：
 **读**：变体树与 8% 废题；数值器协议；无变体 30 步塌零；1% / 2% / 82%；MIT 50% / 73% / 90% 与 o1 80% 不同约束；TTRL 回滚；Tufa 只用题。  
 **不读**：把 82% 听成 RSI、把摘要 1% 和贡献列表 2% 混成两次实验、把 90% 听成 o1 同条件对打、把 TTRL 听成测试集泄漏官方解答、把 9000 道和自裁判 43% 加成一张表、把讨论里的孪生素数树听成已经刷榜。
 
-同层：[03 Tufa](../03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) 换奖励通道、题库同源；[04 SEAL](../04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环改权重但考题 $\tau$ 在墙外；[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md) 连题也自己出，验证器换成 Python；[07 R-Zero](../07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md) 用多数票当金标、不接解释器。信号：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。Harness 过夜循环改的是训练脚本而不是积分变体：[02 Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)。TTRL 的「答完回滚」和 SEAL 外环筛 self-edit 不是同一件事：SEAL 留下 LoRA，TTRL 故意不留下题与题之间的 $\theta$。
+同层：[03 Tufa](../03-Tufa-Labs-自奖励/03-Tufa-Labs-自奖励.md) 换奖励通道、题库同源；[04 SEAL](../04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 内环改权重但考题 $\tau$ 在墙外；[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md) 连题也自己出，验证器换成 Python；[07 R-Zero](../07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md) 用多数票当金标、不接解释器；[08 ReTool](../08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 题仍是人出的 DAPO-17k，解释器进 PPO rollout，AIME2024 67.0 不要和本科积分 82% 横加。信号：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。Harness 过夜循环改的是训练脚本而不是积分变体：[02 Auto-Research](../../3-Harness层-Agent运行时/02-Karpathy-Auto-Research/02-Karpathy-Auto-Research.md)。TTRL 的「答完回滚」和 SEAL 外环筛 self-edit 不是同一件事：SEAL 留下 LoRA，TTRL 故意不留下题与题之间的 $\theta$。
 
 ## 参考文献
 
