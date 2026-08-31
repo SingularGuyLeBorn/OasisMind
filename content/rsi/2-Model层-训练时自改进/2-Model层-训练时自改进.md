@@ -4,7 +4,7 @@ date: 2026-08-30
 as_of: 2026-08-30
 tags: [RSI, 地图]
 published: true
-excerpt: 改权重的自改进：SPIN、Self-Rewarding、Tufa、SEAL、LADDER、Absolute Zero、R-Zero、ReTool、ToolRL、ToRL、Gorilla。OPD 只链 llm-guide，不在本章重推公式。
+excerpt: 改权重的自改进：SPIN、Self-Rewarding、Tufa、SEAL、LADDER、Absolute Zero、R-Zero、ReTool、ToolRL、ToRL、Gorilla、ToolLLM。OPD 只链 llm-guide，不在本章重推公式。
 category: RSI
 ---
 
@@ -25,5 +25,6 @@ category: RSI
 | 09 | [ToolRL 多工具奖励](./09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) | GRPO 拆格式与槽位；3B BFCL 52.98；摘要 17% 不是某一格 |
 | 10 | [ToRL 从基座做工具 RL](./10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md) | GRPO 从 Math Base；7B AIME24 greedy 43.3；不是 ReTool 67.0 |
 | 11 | [Gorilla API 调用微调](./11-Gorilla-API调用微调/11-Gorilla-API调用微调.md) | LLaMA-7B 轨迹 SFT；TorchHub 0-shot 59.13；20.43 钉 TorchHub，不是 BFCL |
+| 12 | [ToolLLM RapidAPI 轨迹 SFT](./12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md) | LLaMA-2-7B 轨迹 SFT；均 pass 66.7 钉 ToolEval，不要改 Gorilla 67.20 / ReTool 67.0 |
 
 **不要落在本章：** OPD / MOPD 推导 → [llm-guide 4.6](../../llm-guide/4-后训练/4.6-OPD/4.6-OPD.md)。本章最多说「OPD 也改权重，但是教师蒸馏，不是自对弈」。
