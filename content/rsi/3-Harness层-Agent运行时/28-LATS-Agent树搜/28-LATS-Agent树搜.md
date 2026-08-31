@@ -103,7 +103,7 @@ WebShop 反思太泛、卡在局部，是 Reflexion 专文已经见过的病：�
 **读**：HumanEval 92.7 / 91.0 / 80.1、GPT-3.5 的 83.8、MBPP 81.1、HotPotQA oracle 与 0.63 / 0.71、ToT（ReAct）0.39 低于纯推理 ToT 0.55、WebShop 75.9 分对成功率 38.0、22.1 是分差、Table 7 的 GPT-3.5 0.44 对 ToT 专文 74%、\(\lambda\) 两档、\(w=1\)、L0。  
 **不读**：用 92.7 改 Reflexion 专文的 91.0、用 0.44 改 ToT 的 74%、用 0.71 当非 oracle 维基问答、用 75.9 盖成功率 38.0、把 22.1 当分点相对涨幅、说记忆已经跨题、把 PromptAgent 的 \(c=2.5\) 写进本篇、说已经 RSI。
 
-同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
