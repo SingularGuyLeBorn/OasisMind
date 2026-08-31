@@ -1,7 +1,7 @@
 """
 算法名称: Guided Hybrid Policy Optimization (GHPO)
 别名: Hybrid RLHF / PPO-ptx
-核心思想: 在 RL 训练过程中混入高质量 SFT 数据，防止遗忘和对齐税. 
+核心思想: 在 RL 训练过程中混入高质量 SFT 数据，防止遗忘和对齐税.
 
 公式:
 L_total = L_RL + lambda * L_SFT
@@ -20,7 +20,7 @@ def compute_hybrid_loss(
 ) -> torch.Tensor:
     """
     计算混合 Loss
-    
+
     Args:
         sft_coef: 混合系数 (lambda)
     """
@@ -28,18 +28,18 @@ def compute_hybrid_loss(
     # (假设已经完成了 rollout 和 advantage math)
     # 这里只是示意
     rl_loss, rl_metrics = rl_loss_fn(model, rl_batch)
-    
+
     # 2. SFT Loss Calculation (Standard LM Loss)
     # 需要对 SFT Batch 进行 forward
     sft_input_ids = sft_batch['input_ids']
     sft_labels = sft_batch['labels']
-    
+
     sft_outputs = model(sft_input_ids, labels=sft_labels)
     sft_loss = sft_outputs.loss
-    
+
     # 3. Combine
     total_loss = rl_loss + sft_coef * sft_loss
-    
+
     return total_loss, {
         "rl_loss": rl_loss.item(),
         "sft_loss": sft_loss.item(),

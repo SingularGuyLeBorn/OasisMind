@@ -12,22 +12,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def simulate_critic_stability(
-    policy_params_b: float, 
+    policy_params_b: float,
     critic_params_b: float,
     scaling_exponent: float = 1.2
 ) -> str:
     """
     检查 Value Network 是否会发生 Collapse
-    
+
     Args:
         policy_params_b: Policy参数量 (Billion)
         critic_params_b: Critic参数量 (Billion)
     """
     # 理论要求的最小 Critic 容量
     required_critic_capacity = np.power(policy_params_b, scaling_exponent)
-    
+
     ratio = critic_params_b / required_critic_capacity
-    
+
     if ratio >= 1.0:
         status = "STABLE"
         risk = 0.0
@@ -37,7 +37,7 @@ def simulate_critic_stability(
     else:
         status = "COLLAPSE"
         risk = 1.0
-        
+
     return status, required_critic_capacity
 
 def simulate_snr_decay(
@@ -47,7 +47,7 @@ def simulate_snr_decay(
 ):
     """
     模拟梯度信噪比 (Signal-to-Noise Ratio) 随推理链长度的衰减
-    
+
     Formula: SNR_ORM ~ 1/sqrt(L) * exp(-kappa * L)
              SNR_PRM ~ Constant (if step-level supervision exists)
     """
@@ -57,7 +57,7 @@ def simulate_snr_decay(
     else:
         # ORM 只有最后有监督，中间衰减
         snr = (1.0 / np.sqrt(chain_length)) * np.exp(-kappa * chain_length)
-        
+
     return snr
 
 def optimal_temperature(compute_budget: float):
@@ -68,13 +68,13 @@ def optimal_temperature(compute_budget: float):
     # Normalize by 1e18
     norm_compute = compute_budget / 1e18
     tau = 1.0 * np.power(norm_compute, -0.25)
-    
+
     # Clip for stability
     return max(0.1, min(1.0, tau))
 
 def main():
     print("=== Meta 2025 RL Scaling Dynamics Simulator ===\n")
-    
+
     # 1. Critic Stability Check
     print("--- 1. Dual-Scaling Hypothesis Check ---")
     scenarios = [
@@ -84,11 +84,11 @@ def main():
         (405, 405), # Llama-3-405B (Shared)
         (405, 1300) # Llama-3-405B + Huge MoE Critic
     ]
-    
+
     for p_size, c_size in scenarios:
         status, req = simulate_critic_stability(p_size, c_size)
         print(f"Policy: {p_size:3d}B | Critic: {c_size:4d}B | Req: {req:4.0f}B | Status: {status}")
-        
+
     # 2. ORM vs PRM Scaling Wall
     print("\n--- 2. Outcomes vs Process Wall ---")
     lengths = [10, 50, 100, 500, 1000]
