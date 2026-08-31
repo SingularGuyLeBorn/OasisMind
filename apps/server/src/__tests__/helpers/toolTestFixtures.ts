@@ -134,6 +134,7 @@ export function createTestConfig(
       maxDurationSec: 120,
     },
     search: {
+      tinyfishApiKey: "",
       tavilyApiKey: "",
       serpApiKey: "",
       baiduQianfanApiKey: "",

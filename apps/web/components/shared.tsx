@@ -30,6 +30,7 @@ import {
   List,
   Search,
   Telescope,
+  Fish,
   Database,
   Shield,
   Cloud,
@@ -777,6 +778,7 @@ const ENGINE_STYLES: Record<
   }
 > = {
   bing_crawler: { label: "Bing Crawler", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200", icon: Search },
+  tinyfish: { label: "TinyFish", bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", icon: Fish },
   tavily: { label: "Tavily", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", icon: Telescope },
   serpapi: { label: "SerpAPI", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200", icon: Database },
   duckduckgo: { label: "DuckDuckGo", bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200", icon: Shield },

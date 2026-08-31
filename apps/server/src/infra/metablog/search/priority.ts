@@ -7,6 +7,7 @@ import type { SearchEngineName } from "./types.js";
 export const DEFAULT_SEARCH_PRIORITY: SearchEngineName[] = [
   "bing_crawler",
   "duckduckgo",
+  "tinyfish",
   "baidu_qianfan",
   "tavily",
   "metaso",
@@ -21,6 +22,7 @@ export const DEFAULT_SEARCH_PRIORITY: SearchEngineName[] = [
 export interface SearchPriorityOptions {
   /** SEARCH_ENGINE_PRIORITY 原始字符串 */
   envPriority?: string;
+  hasTinyfish?: boolean;
   hasTavily?: boolean;
   hasSerpApi?: boolean;
   hasBaiduQianfan?: boolean;
@@ -45,6 +47,7 @@ export function resolveSearchEnginePriority(opts: SearchPriorityOptions): Search
   if (opts.hasSearXNGLocal) {
     return dedupePriority([
       "searxng",
+      "tinyfish",
       "bing_crawler",
       "duckduckgo",
       "baidu_qianfan",
@@ -55,6 +58,24 @@ export function resolveSearchEnginePriority(opts: SearchPriorityOptions): Search
       "serpapi",
       "brave",
       "bing",
+    ]);
+  }
+
+  // TinyFish Search 免费且结构化 JSON：有 Key 时作为首选，避免 bing_crawler HTML 抢先导致从不走到 TinyFish
+  if (opts.hasTinyfish) {
+    return dedupePriority([
+      "tinyfish",
+      "bing_crawler",
+      "tavily",
+      "serpapi",
+      "duckduckgo",
+      "baidu_qianfan",
+      "metaso",
+      "bocha",
+      "langsearch",
+      "brave",
+      "bing",
+      "searxng",
     ]);
   }
 
@@ -94,14 +115,20 @@ function dedupePriority(list: SearchEngineName[]): SearchEngineName[] {
 }
 
 /** integration:smoke / 诊断用：单引擎 env 时扩展降级链 */
-export function expandSmokeSearchPriority(envPriority: string, hasTavily: boolean): string {
+export function expandSmokeSearchPriority(
+  envPriority: string,
+  hasTavily: boolean,
+  hasTinyfish = false,
+): string {
   if (envPriority.includes(",")) return envPriority;
+  if (hasTinyfish) return "tinyfish,bing_crawler,tavily,serpapi,duckduckgo";
   if (hasTavily) return "bing_crawler,tavily,serpapi,duckduckgo";
   return "bing_crawler,duckduckgo,tavily,serpapi";
 }
 
 export interface SearchKeyFlags {
   envPriority?: string;
+  tinyfishApiKey?: string;
   tavilyApiKey?: string;
   serpApiKey?: string;
   baiduQianfanApiKey?: string;
@@ -114,11 +141,13 @@ export function buildEffectiveSearchPriorityString(flags: SearchKeyFlags): strin
   if (envRaw.includes(",")) return envRaw;
 
   const hasTavily = !!(flags.tavilyApiKey && flags.tavilyApiKey.length > 5);
+  const hasTinyfish = !!(flags.tinyfishApiKey && flags.tinyfishApiKey.length > 5);
   if (envRaw && !envRaw.includes(",")) {
-    return expandSmokeSearchPriority(envRaw, hasTavily);
+    return expandSmokeSearchPriority(envRaw, hasTavily, hasTinyfish);
   }
 
   return resolveSearchEnginePriority({
+    hasTinyfish,
     hasTavily,
     hasSerpApi: !!(flags.serpApiKey && flags.serpApiKey.length > 5),
     hasBaiduQianfan: !!(flags.baiduQianfanApiKey && flags.baiduQianfanApiKey.length > 5),

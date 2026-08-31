@@ -12,7 +12,7 @@ import {
   isArticleFetchFatalError,
   type SearchEngineName,
 } from "../../../metablog/index.js";
-import { fetchWithTimeout } from "../../../metablog/search/engines.js";
+import { fetchWithTimeout, searchTinyFish } from "../../../metablog/search/engines.js";
 import { getRefererForUrl } from "../../../metablog/ocrBridge.js";
 import { resolveSafePath } from "../../../safePath.js";
 import { isSmokeInfoSource } from "../../../smokeArtifacts.js";
@@ -172,6 +172,7 @@ async function serpApiSearch(apiKey: string, query: string, maxResults: number) 
 
 export function syncSearchEnvFromConfig(config: AppConfig) {
   const entries: Array<[string, string | undefined]> = [
+    ["SEARCH_TINYFISH_API_KEY", config.search.tinyfishApiKey],
     ["SEARCH_BAIDU_QIANFAN_API_KEY", config.search.baiduQianfanApiKey],
     ["SEARCH_TAVILY_API_KEY", config.search.tavilyApiKey],
     ["SEARCH_SERPAPI_API_KEY", config.search.serpApiKey],
@@ -216,7 +217,23 @@ async function tryScopedInfoSourceSearch(
   const { query, maxResults } = args;
   const domains = getInfoSourceDomains(infoSources);
   const infoSourcesUsed = summarizeInfoSources(infoSources);
-  const { tavilyApiKey, serpApiKey } = ctx.config.search;
+  const { tinyfishApiKey, tavilyApiKey, serpApiKey } = ctx.config.search;
+
+  if (tinyfishApiKey && domains.length > 0) {
+    try {
+      const results = await searchTinyFish(query, maxResults, tinyfishApiKey, domains);
+      if (results.length > 0) {
+        return {
+          provider: "tinyfish" as const,
+          results: results.map((r) => ({ title: r.title, url: r.url, content: r.snippet })),
+          infoSourcesUsed,
+          searchPhase: "infoSource-scoped" as const,
+        };
+      }
+    } catch {
+      /* continue */
+    }
+  }
 
   if (tavilyApiKey && domains.length > 0) {
     try {
@@ -251,7 +268,7 @@ async function fallbackInfoSourceSearch(
 ) {
   const { query, maxResults } = args;
   const infoSourcesUsed = summarizeInfoSources(infoSources);
-  const { tavilyApiKey, serpApiKey } = ctx.config.search;
+  const { tinyfishApiKey, tavilyApiKey, serpApiKey } = ctx.config.search;
 
   if (infoSources.length > 0) {
     return {
@@ -261,6 +278,15 @@ async function fallbackInfoSourceSearch(
       infoSourcesUsed,
       searchPhase: "infoSource-catalog" as const,
       note: "MetaBlog 多引擎搜索失败，回退至已启用信息源目录。",
+    };
+  }
+
+  if (tinyfishApiKey) {
+    const results = await searchTinyFish(query, maxResults, tinyfishApiKey);
+    return {
+      provider: "tinyfish" as const,
+      results: results.map((r) => ({ title: r.title, url: r.url, content: r.snippet })),
+      searchPhase: "general-fallback" as const,
     };
   }
 

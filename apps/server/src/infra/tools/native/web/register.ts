@@ -25,7 +25,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
     concurrencyClass: "B",
     // 纯搜索只读（syncSearchEnvFromConfig 只写进程内 env 且幂等）
     description:
-      "搜索互联网（MetaBlog smartSearch 多引擎；/sources 信息源启用后 Tavily/SerpAPI 优先 scoped 到信息源域名）。",
+      "搜索互联网（MetaBlog smartSearch 多引擎；配置 TinyFish Key 后优先走免费 Search API；/sources 信息源启用后 TinyFish/Tavily/SerpAPI 优先 scoped 到信息源域名）。",
     parameters: {
       type: "object",
       properties: {
@@ -33,7 +33,7 @@ const WEB_DEFS: NativeToolDefinition[] = [
         maxResults: { type: "number", description: "最大结果数，默认 5" },
         engine: {
           type: "string",
-          description: "优先引擎：baidu_qianfan|metaso|bocha|tavily|bing_crawler|duckduckgo|searxng|serpapi 等",
+          description: "优先引擎：tinyfish|baidu_qianfan|metaso|bocha|tavily|bing_crawler|duckduckgo|searxng|serpapi 等",
         },
       },
       required: ["query"],

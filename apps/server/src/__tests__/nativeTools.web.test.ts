@@ -36,6 +36,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "",
           serpApiKey: "",
           baiduQianfanApiKey: "",
@@ -65,6 +66,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "",
           serpApiKey: "",
           baiduQianfanApiKey: "",
@@ -122,6 +124,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "test-key",
           serpApiKey: "",
           baiduQianfanApiKey: "",
@@ -197,6 +200,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "test-key",
           serpApiKey: "",
           baiduQianfanApiKey: "",
@@ -256,6 +260,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "t",
           serpApiKey: "",
           baiduQianfanApiKey: "bq-key",
@@ -284,6 +289,7 @@ describe("native:web_search", () => {
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "test-key",
           serpApiKey: "",
           baiduQianfanApiKey: "",
@@ -314,11 +320,124 @@ describe("native:web_search", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
+  it("TinyFish 优先在信息源域名内搜索", async () => {
+    const root = createTempProjectDir();
+    const fetchMock = vi.fn(async (url: string) => {
+      const href = String(url);
+      if (href.includes("api.search.tinyfish.ai")) {
+        return {
+          ok: true,
+          json: async () => ({
+            results: [{ title: "TF Doc", url: "https://api-docs.deepseek.com/x", snippet: "body" }],
+          }),
+        };
+      }
+      return { ok: false, status: 503, text: async () => "unavailable" };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ctx = createNativeCtx(root, {
+      config: {
+        search: {
+          tinyfishApiKey: "tf-test-key",
+          tavilyApiKey: "",
+          serpApiKey: "",
+          baiduQianfanApiKey: "",
+          metasoApiKey: "",
+          bochaApiKey: "",
+          langsearchApiKey: "",
+          braveApiKey: "",
+          bingApiKey: "",
+          enginePriority: "tinyfish",
+        },
+      },
+      services: {
+        infoSource: {
+          list: vi.fn(async () => ({
+            items: [
+              {
+                name: "DeepSeek 官方文档",
+                url: "https://api-docs.deepseek.com/",
+                type: "official",
+                description: "DeepSeek API",
+                reliability: 5,
+                enabled: true,
+              },
+            ],
+            total: 1,
+            page: 1,
+            pageSize: 100,
+            totalPages: 1,
+          })),
+        },
+      } as never,
+    });
+
+    const result = (await executeNativeTool("web_search", { query: "thinking mode", maxResults: 3 }, ctx)) as {
+      provider: string;
+      searchPhase: string;
+      results: Array<{ title: string }>;
+    };
+    expect(result.provider).toBe("tinyfish");
+    expect(result.searchPhase).toBe("infoSource-scoped");
+    expect(result.results[0]?.title).toBe("TF Doc");
+
+    const called = String(fetchMock.mock.calls[0]?.[0]);
+    expect(called).toContain("api.search.tinyfish.ai");
+    expect(called).toContain("include_domains=api-docs.deepseek.com");
+
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("TinyFish 成功返回结果（无信息源时）", async () => {
+    const root = createTempProjectDir();
+    const ctx = createNativeCtx(root, {
+      config: {
+        search: {
+          tinyfishApiKey: "tf-test-key",
+          tavilyApiKey: "",
+          serpApiKey: "",
+          baiduQianfanApiKey: "",
+          metasoApiKey: "",
+          bochaApiKey: "",
+          langsearchApiKey: "",
+          braveApiKey: "",
+          bingApiKey: "",
+          enginePriority: "tinyfish",
+        },
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("api.search.tinyfish.ai")) {
+          return {
+            ok: true,
+            json: async () => ({
+              results: [{ title: "TinyFish Hit", url: "https://example.com/tf", snippet: "ok" }],
+            }),
+          };
+        }
+        return { ok: false, status: 503, text: async () => "unavailable" };
+      }),
+    );
+    const result = (await executeNativeTool("web_search", { query: "web automation", maxResults: 3 }, ctx)) as {
+      provider: string;
+      searchPhase: string;
+      results: Array<{ title: string }>;
+    };
+    expect(result.provider).toBe("tinyfish");
+    expect(result.results[0]?.title).toBe("TinyFish Hit");
+    expect(result.searchPhase).toBe("smart-search");
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it("query 为空时抛错", async () => {
     const root = createTempProjectDir();
     const ctx = createNativeCtx(root, {
       config: {
         search: {
+          tinyfishApiKey: "",
           tavilyApiKey: "k",
           serpApiKey: "",
           baiduQianfanApiKey: "",

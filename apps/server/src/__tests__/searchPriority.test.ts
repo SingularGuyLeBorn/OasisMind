@@ -10,6 +10,13 @@ describe("search priority", () => {
     expect(list.indexOf("duckduckgo")).toBeGreaterThan(list.indexOf("tavily"));
   });
 
+  it("puts tinyfish first when key configured", () => {
+    const list = resolveSearchEnginePriority({ hasTinyfish: true, hasTavily: true });
+    expect(list[0]).toBe("tinyfish");
+    expect(list[1]).toBe("bing_crawler");
+    expect(list.indexOf("tavily")).toBeGreaterThan(list.indexOf("tinyfish"));
+  });
+
   it("respects comma-separated env override", () => {
     expect(resolveSearchEnginePriority({ envPriority: "tavily,bing_crawler" })).toEqual([
       "tavily",
@@ -30,6 +37,20 @@ describe("search priority", () => {
     expect(
       buildEffectiveSearchPriorityString({ envPriority: "bing_crawler", tavilyApiKey: "tv-test-key-12345" }),
     ).toBe("bing_crawler,tavily,serpapi,duckduckgo");
+  });
+
+  it("buildEffectiveSearchPriorityString boosts tinyfish when no env", () => {
+    const s = buildEffectiveSearchPriorityString({
+      tinyfishApiKey: "tf-test-key-12345",
+      tavilyApiKey: "tv-test-key-12345",
+    });
+    expect(s.startsWith("tinyfish,bing_crawler")).toBe(true);
+  });
+
+  it("expands smoke priority with tinyfish key", () => {
+    expect(expandSmokeSearchPriority("bing_crawler", true, true)).toBe(
+      "tinyfish,bing_crawler,tavily,serpapi,duckduckgo",
+    );
   });
 });
 

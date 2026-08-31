@@ -51,6 +51,7 @@ export interface SearchEngineConfig {
  *
  */
 export type SearchEngineName =
+  | "tinyfish"
   | "baidu_qianfan"
   | "metaso"
   | "bocha"

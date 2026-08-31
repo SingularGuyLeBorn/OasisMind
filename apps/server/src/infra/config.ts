@@ -346,6 +346,7 @@ export interface AppConfig {
     maxDurationSec: number;
   };
   search: {
+    tinyfishApiKey: string;
     tavilyApiKey: string;
     serpApiKey: string;
     baiduQianfanApiKey: string;
@@ -354,7 +355,7 @@ export interface AppConfig {
     langsearchApiKey: string;
     braveApiKey: string;
     bingApiKey: string;
-    /** 逗号分隔，如 bing_crawler,baidu_qianfan,tavily */
+    /** 逗号分隔，如 tinyfish,bing_crawler,tavily */
     enginePriority: string;
   };
   integrations: {
@@ -1039,10 +1040,12 @@ export function createAppConfig(): AppConfig {
       maxDurationSec: Math.max(60, parseInt(readEnv("STT_MAX_DURATION_SEC") || "1200", 10)),
     },
     search: (() => {
+      const tinyfishApiKey = readEnv("SEARCH_TINYFISH_API_KEY", "TINYFISH_API_KEY");
       const tavilyApiKey = readEnv("SEARCH_TAVILY_API_KEY", "TAVILY_API_KEY");
       const serpApiKey = readEnv("SEARCH_SERPAPI_API_KEY", "SERPAPI_API_KEY");
       const baiduQianfanApiKey = readEnv("SEARCH_BAIDU_QIANFAN_API_KEY", "BAIDU_QIANFAN_API_KEY", "QIANFAN_API_KEY");
       return {
+        tinyfishApiKey,
         tavilyApiKey,
         serpApiKey,
         baiduQianfanApiKey,
@@ -1053,6 +1056,7 @@ export function createAppConfig(): AppConfig {
         bingApiKey: readEnv("SEARCH_BING_API_KEY", "BING_API_KEY"),
         enginePriority: buildEffectiveSearchPriorityString({
           envPriority: readEnv("SEARCH_ENGINE_PRIORITY"),
+          tinyfishApiKey,
           tavilyApiKey,
           serpApiKey,
           baiduQianfanApiKey,

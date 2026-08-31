@@ -11,7 +11,7 @@
 
 /**
  * 多搜索引擎实现
- * 支持的引擎: 百度千帆、秘塔、博查、LangSearch、Tavily、Brave、Bing、DuckDuckGo、SearXNG、SerpAPI
+ * 支持的引擎: TinyFish、百度千帆、秘塔、博查、LangSearch、Tavily、Brave、Bing、DuckDuckGo、SearXNG、SerpAPI
  *
  * 设计原则: 
  * 1. 每个引擎独立实现,统一返回 SearchResult[] 格式
@@ -87,6 +87,58 @@ function decodeHtmlEntities(str: string): string {
     "&nbsp;": " ",
   };
   return str.replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entities[match] || match);
+}
+
+// ==================== 0. TinyFish ====================
+/**
+ * TinyFish Search API
+ * 免费（不扣 Wallet），默认 30 RPM；Fetch 同 Key 也免费
+ * 文档: https://docs.tinyfish.ai/search-api
+ */
+export async function searchTinyFish(
+  query: string,
+  limit: number,
+  apiKey: string,
+  includeDomains?: string[],
+): Promise<SearchResult[]> {
+  const url = new URL("https://api.search.tinyfish.ai");
+  url.searchParams.set("query", query);
+  url.searchParams.set("language", "zh");
+  url.searchParams.set("location", "CN");
+  if (includeDomains && includeDomains.length > 0) {
+    url.searchParams.set("include_domains", includeDomains.join(","));
+  }
+
+  const response = await fetchWithTimeout(
+    url.toString(),
+    {
+      headers: {
+        "X-API-Key": apiKey,
+        Accept: "application/json",
+      },
+    },
+    10_000,
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`TinyFish 搜索失败: HTTP ${response.status}, ${text.slice(0, 200)}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: Array<{ title?: string; url?: string; snippet?: string; content?: string }>;
+  };
+  const results = data.results || [];
+
+  return results
+    .filter((r) => r.url && r.title)
+    .slice(0, limit)
+    .map((r) => ({
+      title: r.title as string,
+      url: r.url as string,
+      snippet: r.snippet || r.content || "",
+      source: "tinyfish",
+    }));
 }
 
 // ==================== 1. 百度千帆搜索 ====================

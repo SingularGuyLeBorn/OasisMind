@@ -23,6 +23,7 @@ import {
   searchSearXNG,
   searchSerpApi,
   searchTavily,
+  searchTinyFish,
 } from "./engines";
 import { filterRelevantResults } from "./relevance.js";
 import { resolveSearchEnginePriority } from "./priority.js";
@@ -53,6 +54,7 @@ function initEngineConfigs(): Map<SearchEngineName, SearchEngineConfig> {
   const customPriority = env("SEARCH_ENGINE_PRIORITY");
   const priorityList = resolveSearchEnginePriority({
     envPriority: customPriority,
+    hasTinyfish: !!getApiKeyForEngine("tinyfish"),
     hasTavily: !!getApiKeyForEngine("tavily"),
     hasSerpApi: !!getApiKeyForEngine("serpapi"),
     hasBaiduQianfan: !!getApiKeyForEngine("baidu_qianfan"),
@@ -90,6 +92,7 @@ function initEngineConfigsFallback(priorityList: SearchEngineName[]): Map<Search
 /** 获取引擎对应的 API Key */
 function getApiKeyForEngine(name: SearchEngineName): string {
   const keyMap: Record<SearchEngineName, string[]> = {
+    tinyfish: ["SEARCH_TINYFISH_API_KEY", "TINYFISH_API_KEY"],
     baidu_qianfan: ["SEARCH_BAIDU_QIANFAN_API_KEY", "BAIDU_QIANFAN_API_KEY", "QIANFAN_API_KEY"],
     metaso: ["SEARCH_METASO_API_KEY", "METASO_API_KEY"],
     bocha: ["SEARCH_BOCHA_API_KEY", "BOCHA_API_KEY"],
@@ -122,6 +125,9 @@ async function executeEngine(
   apiKey?: string
 ): Promise<SearchResult[]> {
   switch (name) {
+    case "tinyfish":
+      if (!apiKey) throw new Error("API Key not configured");
+      return await searchTinyFish(query, limit, apiKey);
     case "baidu_qianfan":
       if (!apiKey) throw new Error("API Key not configured");
       return await searchBaiduQianfan(query, limit, apiKey);
