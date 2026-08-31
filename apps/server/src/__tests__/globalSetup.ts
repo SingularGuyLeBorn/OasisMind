@@ -37,6 +37,10 @@ export default async function globalSetup() {
       /* ignore */
     }
   }
+  // Windows + Prisma 6.9 在部分非系统盘上无法稳定创建全新的 SQLite 文件，
+  // 但对已存在的空文件可以正常 schema push。先显式建空文件，避免无信息的
+  // `Schema engine error`，同时仍保证每次测试都从全新数据库开始。
+  fs.writeFileSync(path.join(serverDir, "prisma", "test.db"), "");
 
   // 2. 隔离三桶存储目录（content/config/data）
   fs.mkdirSync(TEST_CONTENT_DIR, { recursive: true });
