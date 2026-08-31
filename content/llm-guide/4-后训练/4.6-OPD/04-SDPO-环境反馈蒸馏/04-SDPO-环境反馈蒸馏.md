@@ -1,11 +1,11 @@
 ---
-title: "04 · SDPO：自蒸馏策略优化 — Rich Feedback 驱动的自我进化"
+title: "04 · SDPO：环境反馈蒸馏"
 date: 2026-05-16
 tags: [SDPO, Self-Distillation, RLVR, Rich Feedback, OPD, 后训练, 强化学习]
 as_of: 2026-08-30
 ---
 
-# 04 · SDPO：自蒸馏策略优化 — Rich Feedback 驱动的自我进化
+# 04 · SDPO：环境反馈蒸馏
 
 > 2026-08：文末修订按 Hübotter 等 *Reinforcement Learning via Self-Distillation*（arXiv:2601.20802 v2）重钉机制与分母。上文 2026-05 快照整段保留。
 
@@ -181,7 +181,7 @@ JS 散度天然有界(在 $[0, \ln 2]$ 之间)，这意味着即使老师和学�
 
 它卡住的瓶颈是 RLVR 的 **标量结果奖励**：一条几千 token 的轨迹只拿到 $r\in\mathbb{R}$（常是 0/1），组内全对或全错时 GRPO 优势塌成 0。蒸馏本来能给 token 级稠密监督，但在线学习往往 **没有更强的外部教师**。SDPO 的回答是：不要另请教师，让当前策略在事后看见 $f$，再对 **已经生成的** $y$ 重算 log-prob——不重新采样。
 
-本篇在 [4.6-OPD](../4.6-OPD.md) 里只钉这一条。沿用上文记号 $\pi_\theta$，但 **纠正家谱**：SDPO 不是「OPD 家族里把 reverse KL 塞进 DPO 损失的那一块」。也 **不是** [01-OPD](../01-OPD基础原理/01-OPD基础原理.md) 的外部强教师、**不是** [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 的标准答案特权上下文、**不是** 多教师 MOPD。同缩写的扩散对齐（Stepwise Diffusion Policy Optimization）更不是这篇。
+本篇在 [4.6-OPD](../4.6-OPD.md) 里只钉这一条。沿用上文记号 $\pi_\theta$，但 **纠正家谱**：SDPO 不是「OPD 家族里把 reverse KL 塞进 DPO 损失的那一块」。也 **不是** [01-OPD](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的外部强教师、**不是** [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) 的标准答案特权上下文、**不是** 多教师 MOPD。同缩写的扩散对齐（Stepwise Diffusion Policy Optimization）更不是这篇。
 
 ---
 
@@ -197,9 +197,7 @@ $$
 
 ![RLVR 整条轨迹共用一个标量优势，SDPO 用自教师按 token 同意或反对](./images/fig-sdpo-rlvr-vs-rlrf.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two columns: RLVR same A for all tokens vs RLRF self-teacher logit-level A. -->
-
-> 图 6：RLVR 对 RLRF。对应论文 Figure 2 的信息瓶颈，加上 Figure 4 / 9 的逐位置同意–反对。2026-08 自绘。旧图 `sdpo_rich_feedback.png` 保留不删。
+> 图 6：RLVR 对 RLRF。对应论文 Figure 2 的信息瓶颈，加上 Figure 4 / 9 的逐位置同意–反对。
 
 **图 6 解析**
 
@@ -243,9 +241,7 @@ $$
 
 ![采样、环境反馈、同权重重算 log-prob、KL 蒸馏四步](./images/fig-sdpo-self-teacher-loop.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Four-box Algorithm 1 pipeline. -->
-
-> 图 7：Algorithm 1。第三步不新采样。2026-08 自绘。
+> 图 7：Algorithm 1。第三步不新采样。
 
 **图 7 解析**
 
@@ -322,7 +318,7 @@ Table 8（§3 任务、on-policy 均值）：Qwen3-8B GRPO 820.8 → SDPO 255.8�
 
 下一篇旧稿仍指向 G-OPD / VLA-OPD。本切片不改节首页、不改邻居。
 
-## 本篇来源（2026-08）
+## 参考文献
 
 1. Hübotter et al. *Reinforcement Learning via Self-Distillation*. arXiv:2601.20802 v2。Table 1、3–6、8–10，Figure 1–2、6–13，Algorithm 1，式 (1)(2)(3)，§2–5、附录 A。
 2. 对照算法：Shao et al. DeepSeekMath / GRPO（arXiv:2402.03300）；Agarwal et al. On-policy Distillation（ICLR 2024）只作 Table 1「外部教师」那一格，不当 SDPO 公式来源。

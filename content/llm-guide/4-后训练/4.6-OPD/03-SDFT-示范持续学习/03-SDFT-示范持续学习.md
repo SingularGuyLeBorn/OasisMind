@@ -1,11 +1,11 @@
 ---
-title: "03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局"
+title: "03 · SDFT：示范持续学习"
 date: 2026-05-16
 tags: [SDFT, Self-Distillation, Continual Learning, OPD, 知识蒸馏, 后训练, IRL]
 as_of: 2026-08-30
 ---
 
-# 03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局
+# 03 · SDFT：示范持续学习
 
 ## 1. 背景与核心痛点 (Background & Pain Points)
 
@@ -208,7 +208,7 @@ SDFT 利用 Demonstration 让模型自己教自己，完美解决了“无外部
 
 ## 2026-08 修订（不删上文）
 
-旧标题「逆向强化学习视角的破局」和 §2「暴跌 / 死死咬住 / 暴涨」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Shenfeld、Damani、Hübotter、Agrawal 的 [Self-Distillation Enables Continual Learning](https://arxiv.org/abs/2601.19897)（打开的是 [HTML](https://arxiv.org/html/2601.19897)）。**SDFT = Self-Distillation Fine-Tuning**：持续学习设定下，教师条件里多塞示范 $d$（论文符号 $c$；数据集里每条 $x$ 配一条 demonstration，可很少），学生仍按 $\pi_\theta(\cdot\mid x)$ on-policy 采样，逐步贴教师 $\pi(\cdot\mid x,d)$，用来注入新技能同时抗灾难性遗忘。示范 ≈ [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 的特权上下文，只是把本题参考解 $y^{\star}$ 换成示范。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师 + 持续学习」这一格。**不是** [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 的环境 rich feedback，**不是** [09-MOPD](../09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) 的多教师合版，也不是另雇外部 72B。G-OPD / SCOPE 本波不升格。
+旧标题「逆向强化学习视角的破局」和 §2「暴跌 / 死死咬住 / 暴涨」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Shenfeld、Damani、Hübotter、Agrawal 的 [Self-Distillation Enables Continual Learning](https://arxiv.org/abs/2601.19897)（打开的是 [HTML](https://arxiv.org/html/2601.19897)）。**SDFT = Self-Distillation Fine-Tuning**：持续学习设定下，教师条件里多塞示范 $d$（论文符号 $c$；数据集里每条 $x$ 配一条 demonstration，可很少），学生仍按 $\pi_\theta(\cdot\mid x)$ on-policy 采样，逐步贴教师 $\pi(\cdot\mid x,d)$，用来注入新技能同时抗灾难性遗忘。示范 ≈ [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) 的特权上下文，只是把本题参考解 $y^{\star}$ 换成示范。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师 + 持续学习」这一格。**不是** [04-SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) 的环境 rich feedback，**不是** [09-MOPD](../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) 的多教师合版，也不是另雇外部 72B。G-OPD / SCOPE 本波不升格。
 
 ### 1. 问题：SFT 是 off-policy，顺序学就会忘
 
@@ -286,9 +286,7 @@ $$
 
 ![学生只看 x 采样，EMA 教师看 x 和示范 d 只做 prefill，散度只沿学生回传](./images/fig-sdft-student-teacher.png)
 
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Two-column SDFT: student p(y|x) samples y; EMA teacher pi(·|x,d) prefill only; reverse-KL on student prefix; gradient only through student. -->
-
-> 图 1：示范条件化教师 vs 闭卷学生。对应论文 Figure 2（左）。旧图 `sdft_continual_learning.png` 不删，本节改引这张。2026-08 自绘。
+> 图 1：示范条件化教师 vs 闭卷学生。对应论文 Figure 2（左）。
 
 **图 1 解析**
 
@@ -323,9 +321,7 @@ $$
 
 ![Algorithm 1：学生采样、双路前向、词表 KL、只更新学生、EMA 教师](./images/fig-sdft-algorithm.png)
 
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Five-box Algorithm 1: sample y from student; dual forward with EMA teacher on (x,d); analytic per-token KL; update student; EMA phi. -->
-
-> 图 2：Algorithm 1 数据流。Box 3 的 $D$ 左右以式 (R3) 的 $D(\pi_\theta\|\pi_T)$ 为准；实践可换成 Forward。2026-08 自绘。
+> 图 2：Algorithm 1 数据流。Box 3 的 $D$ 左右以式 (R3) 的 $D(\pi_\theta\|\pi_T)$ 为准；实践可换成 Forward。
 
 **图 2 解析**
 
@@ -340,9 +336,9 @@ $$
 | --- | --- | --- |
 | SFT | 在专家轨迹 $d$ 上模仿 | off-policy；Table 5 / Figure 3 忘得更狠 |
 | 基础 OPD | 另一个外部教师给逐步分布 | 本篇教师是 $\pi(\cdot\mid x,d)$，同一架构 |
-| [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) | 特权信息是本题参考解 $y^{\star}$，教师冻在 $\theta_{\mathrm{init}}$ | 本篇特权信息是示范 $d$；教师 EMA；论文 Related Work 把 Zhao et al. 当并行互补，不是同一实验 |
-| [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) | 环境 rich feedback（堆栈、失败单测）条件化自教师 | 本篇没有编译器/验证器奖励；只有 $d$ |
-| [09-MOPD](../09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) | 多个 RL 专家 logits 合成一份学生 | 本篇一个自教师，没有九专家 / $R_{\max}$ |
+| [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) | 特权信息是本题参考解 $y^{\star}$，教师冻在 $\theta_{\mathrm{init}}$ | 本篇特权信息是示范 $d$；教师 EMA；论文 Related Work 把 Zhao et al. 当并行互补，不是同一实验 |
+| [04-SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) | 环境 rich feedback（堆栈、失败单测）条件化自教师 | 本篇没有编译器/验证器奖励；只有 $d$ |
+| [09-MOPD](../09-MOPD-多教师蒸馏/09-MOPD-多教师蒸馏.md) | 多个 RL 专家 logits 合成一份学生 | 本篇一个自教师，没有九专家 / $R_{\max}$ |
 | Context distillation (Snell et al.) | 教师有额外上下文，但对学生做 **离线** 蒸馏 | 论文 Related Work：本篇 on-policy，且 $d$ 是逐条 query 的示范不是固定前缀 |
 | 显式 IRL / RLHF | 先学 $r$ 再 on-policy RL | 论文明确不推断显式奖励；式 (R5) 只是解读 |
 | DFT / Re-invoke | 重要性采样或 SFT 后再蒸回底座 | Table 5 的对照，不是 SDFT |
@@ -366,9 +362,9 @@ SDFT 吃的是 $\mathcal{D}$ 里成对的 $(x,d)$。**没有 $d$**（也没有�
 | 计算 | 相对 SFT 约 2.5× FLOPs、4× 墙钟 | 要和「SFT + Re-invoke 两段」比总成本 |
 | 只有最终答案的推理数据 | SFT 压短思维 | Table 2 说明 SDFT 能保住长度；不是保证任意任务都涨分 |
 
-没有示范、又没有外部教师或可验证奖励：这篇给不出替代损失。不要把「武林高手看剑谱」读成无数据永动机。下一篇只链 [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)：示范换成环境 rich feedback。本篇不预写 SDPO 数字。
+没有示范、又没有外部教师或可验证奖励：这篇给不出替代损失。不要把「武林高手看剑谱」读成无数据永动机。下一篇只链 [04-SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md)：示范换成环境 rich feedback。本篇不预写 SDPO 数字。
 
-### 本篇来源（2026-08 核对）
+### 参考文献
 
 1. Shenfeld, Damani, Hübotter, Agrawal. *Self-Distillation Enables Continual Learning*. [arXiv:2601.19897](https://arxiv.org/abs/2601.19897) / [HTML](https://arxiv.org/html/2601.19897)。式 (1)(2)(4)(5)、Algorithm 1、Table 1–5、Figure 2–8、Appendix A.1–A.3。
 2. 官方代码：[idanshen/Self-Distillation](https://github.com/idanshen/Self-Distillation)。项目页声明见论文摘要 `idanshenfeld.com/SDFT`。

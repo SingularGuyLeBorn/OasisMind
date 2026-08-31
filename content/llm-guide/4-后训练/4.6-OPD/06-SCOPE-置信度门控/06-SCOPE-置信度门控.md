@@ -1,9 +1,9 @@
 ---
-title: "06 · SCOPE 选择性反馈: 工程防崩与置信度门控"
+title: "06 · SCOPE：置信度门控"
 date: 2026-05-16
 tags: [OPD, SCOPE, Selective Feedback, Confidence Gating, 后训练, 工程化]
 ---
-# 06 · SCOPE 选择性反馈: 工程防崩与置信度门控
+# 06 · SCOPE：置信度门控
 
 ## 1. 背景与核心痛点 (Background & Pain Points)
 
@@ -297,7 +297,7 @@ $$
 
 ## 4. 数学推导与公式对比 (Mathematical Rigor)
 
->  **前置约定**: 本节符号体系与01-OPD基础原理、05-G-OPD保持一致.
+>  **前置约定**: 本节符号体系与01-OPD-学生前缀蒸馏、05-G-OPD保持一致.
 >
 > - $\pi_\theta(a|s)$: 学生策略(当前待优化的模型).
 > - $\pi_T(a|s)$: 教师策略(外部强模型、领域专家、或经过特权上下文增强的自身).

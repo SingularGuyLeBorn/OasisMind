@@ -1,5 +1,5 @@
 ---
-title: "03 · 原文：Post-Training is About States, Not Tokens"
+title: "03 · 英文：状态轴"
 date: 2026-08-30
 tags: [OPD, SFT, RL, 状态分布, 原文]
 as_of: 2026-08-30

@@ -1,11 +1,11 @@
 ---
-title: "01 · OPD 基础原理：Reverse KL、On-Policy 与后训练革命"
+title: "01 · OPD：学生前缀蒸馏"
 date: 2026-05-16
 tags: [OPD, On-Policy Distillation, Reverse KL, MiniLLM, GKD, 知识蒸馏, 后训练]
 as_of: 2026-08-30
 ---
 
-# 01 · OPD 基础原理：Reverse KL、On-Policy 与后训练革命
+# 01 · OPD：学生前缀蒸馏
 
 本库 OPD 的全称是 **On-Policy Distillation**：学生按当前策略自己采样轨迹，教师只在这些学生前缀上给逐 token 的密集监督。卡住的瓶颈是 off-policy 蒸馏只在教师/数据集前缀上教、推理却走学生自己的前缀（暴露偏差），而 RL 虽然 on-policy，监督却往往稀到整条轨迹一个标量。本篇是 [4.6-OPD](../4.6-OPD.md) 的地基专文；Qwen3 的数字只引用 Table 21，厂商捆法见第 14 章，不在这里再抄一遍。**不是** Online Preference Distillation，也不是把 DPO 换个名字。
 
@@ -48,51 +48,59 @@ OPD 的核心在于目标函数的根本性转变. 让我们直接对比 SFT 和
 ### 4.1 SFT 隐含的 Forward KL
 
 在标准的 SFT 或 Off-Policy Distillation 中，学生模型 $\pi_\theta$ 试图最小化负对数似然损失：
+
 $$
- \mathcal{L}_{SFT} = \mathbb{E}_{s_t \sim \pi_T} [ - \log \pi_\theta(a_t | s_t) ] \tag{1}
+\mathcal{L}_{SFT} = \mathbb{E}_{s_t \sim \pi_T} \bigl[ -\log \pi_\theta(a_t \mid s_t) \bigr] \tag{1}
 $$
 
-- $\mathbb{E}_{s_t \sim \pi_T}$：期望的采样来自**教师模型 $\pi_T$**(或人类演示数据集). 状态 $s_t$ 是预设的. 
-- $\log \pi_\theta(a_t | s_t)$：学生模型在给定教师状态下，生成正确动作 $a_t$ 的对数概率. 
+- $\mathbb{E}_{s_t \sim \pi_T}$：期望的采样来自教师模型 $\pi_T$（或人类演示数据集）。状态 $s_t$ 是预设的。
+- $\log \pi_\theta(a_t \mid s_t)$：学生模型在给定教师状态下，生成正确动作 $a_t$ 的对数概率。
 
-这在数学上等价于最小化 **Forward KL (前向 KL 散度)** $D_{KL}(\pi_T \| \pi_\theta)$. 
+这在数学上等价于最小化 **Forward KL（前向 KL 散度）** $D_{\mathrm{KL}}(\pi_T \Vert \pi_\theta)$。 
 Forward KL 的致命特点是 **Mean-Seeking(求均值)** 或 **Mass-Covering**. 如果老师会三种解法，学生为了把 KL 散度降到最低，会被迫将概率质量平均分配给这三种解法. 当学生能力有限时，它很容易在三种解法中产生四不像的“幻觉”. 
 
 ### 4.2 OPD 的 Reverse KL
 
-OPD 逆转了这一过程，使用的是 **Reverse KL (逆向 KL 散度)** . 同族算法(如 GRPO, PPO)通常基于优势函数(Advantage)，而 **<u>OPD 的核心是直接对分布的差异求期望</u>**：
+OPD 逆转了这一过程，使用的是 **Reverse KL (逆向 KL 散度)** . 同族算法(如 GRPO, PPO)通常基于优势函数(Advantage)，而 **OPD 的核心是直接对分布的差异求期望**：
 
 $$
- \mathcal{L}_{OPD} = \mathbb{E}_{s_t \sim \pi_\theta} [ D_{KL}(\pi_\theta(\cdot|s_t) \| \pi_T(\cdot|s_t)) ] \tag{2}
+\mathcal{L}_{OPD} = \mathbb{E}_{s_t \sim \pi_\theta} \bigl[ D_{\mathrm{KL}}\bigl(\pi_\theta(\cdot \mid s_t) \Vert \pi_T(\cdot \mid s_t)\bigr) \bigr] \tag{2}
 $$
+
 让我们拆解这个极其优美的公式：
-- $\mathbb{E}_{s_t \sim \pi_\theta}$：**[高亮差异项：采样源]** 注意期望的下标！现在的状态 $s_t$ 是由**学生模型 $\pi_\theta$ 自己生成**的(On-Policy). 这解决了 Exposure Bias，因为学生在训练时看到的就是它在推理时会遇到的状态. 
-- $D_{KL}(\pi_\theta \| \pi_T)$：**[高亮差异项：散度方向]** 这是 Reverse KL. 展开它：
-  $$
- \sum_{a} \pi_\theta(a|s_t) \left[ \log \pi_\theta(a|s_t) - \log \pi_T(a|s_t) \right] \tag{3}
+
+- $\mathbb{E}_{s_t \sim \pi_\theta}$：**采样源。** 注意期望的下标！现在的状态 $s_t$ 是由学生模型 $\pi_\theta$ 自己生成的（On-Policy）。这解决了 Exposure Bias，因为学生在训练时看到的就是它在推理时会遇到的状态。
+- $D_{\mathrm{KL}}(\pi_\theta \Vert \pi_T)$：**散度方向。** 这是 Reverse KL。展开即
+
 $$
-  - $\pi_\theta(a|s_t)$：权重项. 学生自己觉得概率很低的 token，哪怕老师觉得很重要，损失的权重也极小. 这意味着 **Reverse KL 是 Mode-Seeking(寻模态)的**. 
-  - $\log \pi_\theta - \log \pi_T$：对数概率的差值，作为优化的梯度信号. 
+\sum_{a} \pi_\theta(a \mid s_t) \bigl[ \log \pi_\theta(a \mid s_t) - \log \pi_T(a \mid s_t) \bigr] \tag{3}
+$$
+
+- $\pi_\theta(a \mid s_t)$：权重项。学生自己觉得概率很低的 token，哪怕老师觉得很重要，损失的权重也极小。这意味着 Reverse KL 是 Mode-Seeking（寻模态）的。
+- $\log \pi_\theta - \log \pi_T$：对数概率的差值，作为优化的梯度信号。 
 
 学生不再强求学会老师所有的技能(Mass-covering). 只要在自己生成的轨迹上，挑一个自己最擅长、且老师也认可的方向(高概率对齐)，就能把 Loss 降下来. 这极大程度地避免了幻觉. 
 
 ## 5. 数值走查 (Numerical Example)
 
-为了彻底理解 Forward KL 和 Reverse KL 对行为的影响，我们来看一个极其简化的 2-token 词表：$\mathcal{V} = \{A, B\}$. 
+为了彻底理解 Forward KL 和 Reverse KL 对行为的影响，我们来看一个极其简化的 2-token 词表：$\mathcal{V}=\lbrace A,\,B\rbrace$。 
 
 假设在一个特定的状态下，**教师(Teacher)** 的认知是模糊的，给出的真实分布为 $P_T = [0.5, 0.5]$(既可以选 A 也可以选 B). 
 由于能力限制，**学生(Student)** 只能是极端的，只能输出 $P_S = [1.0, 0.0]$(死磕 A)或者 $P_S = [0.0, 1.0]$(死磕 B). 
 
-**场景 1：如果强制使用 Forward KL (SFT 范式)** 
+**场景 1：如果强制使用 Forward KL (SFT 范式)**
+
 $$
- D_{KL}(P_T \| P_S) = \sum P_T \log \frac{P_T}{P_S} \tag{4}
+D_{\mathrm{KL}}(P_T \Vert P_S) = \sum P_T \log \frac{P_T}{P_S} \tag{4}
 $$
-- 若学生选 $P_S = [1.0, 0.0]$，计算 $B$ 的 KL：$0.5 \log(0.5 / 0) \to +\infty$. 
+
+- 若学生选 $P_S = [1.0, 0.0]$，计算 $B$ 的 KL：$0.5 \log(0.5 / 0) \to +\infty$。 
 - 结果：Loss 爆炸！Forward KL 强迫学生必须学会 B，即便学生没这个能力，最终导致崩溃. 
 
-**场景 2：如果使用 Reverse KL (OPD 范式)** 
+**场景 2：如果使用 Reverse KL (OPD 范式)**
+
 $$
- D_{KL}(P_S \| P_T) = \sum P_S \log \frac{P_S}{P_T} \tag{5}
+D_{\mathrm{KL}}(P_S \Vert P_T) = \sum P_S \log \frac{P_S}{P_T} \tag{5}
 $$
 - 学生选 $P_S = [1.0, 0.0]$，此时只计算 $A$ 的项，因为当 $P_S(B)=0$ 时权重为 0. 
 - 计算：$1.0 \times \log(1.0 / 0.5) = 1.0 \times 0.693 = 0.693$. 
@@ -197,7 +205,7 @@ def opd_train_step(student_model, teacher_model, prompts, temperature=1.0):
 综述 [A Survey of On-Policy Distillation for Large Language Models](https://arxiv.org/abs/2604.00626)（Song & Zheng，HTML 已开）把 OPD 写成：训练数据来自学生**当前**策略 $p_\theta$，而不是固定语料或教师生成分布。形式是
 
 $$
-\min_{\theta}\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim p_{\theta}(\cdot|x)}\bigl[\mathcal{L}(y,x;\theta,T)\bigr]. \tag{6}
+\min_{\theta}\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim p_{\theta}(\cdot \mid x)}\bigl[\mathcal{L}(y,x;\theta,T)\bigr]. \tag{6}
 $$
 
 $\mathcal{L}$ 可以是散度、奖励或混合；关键是外层期望在学生自己的生成上。这和 DPO 不是一条路：DPO 优化的是成对偏好、不必在学生前缀上查教师全词表 logits。黑盒设定里可以拿 pairwise preference 当教师信号，那是 OPD 的一种**降级接口**，不是把 OPD 定义成 preference optimization。
@@ -206,15 +214,15 @@ $\mathcal{L}$ 可以是散度、奖励或混合；关键是外层期望在学生
 
 ### 10.2 采样从哪来：off-policy 抄教师前缀，on-policy 在自己的前缀上挨打
 
-Off-policy KD / SeqKD：轨迹来自数据集或教师，$y_{<t}$ 几乎总是「标准解前缀」。学生推理时前缀是自己刚写出的 token，一步偏了后面全是没练过的状态。GKD 把这叫 train–inference mismatch；MiniLLM 用 ExAccErr 量暴露偏差。On-policy distillation 换的是**状态从哪来**：先让 $\pi_\theta$ 自己生成，再让教师在这些前缀上给 dense 监督。
+Off-policy KD / SeqKD：轨迹来自数据集或教师，$y_{\lt t}$ 几乎总是「标准解前缀」。学生推理时前缀是自己刚写出的 token，一步偏了后面全是没练过的状态。GKD 把这叫 train–inference mismatch；MiniLLM 用 ExAccErr 量暴露偏差。On-policy distillation 换的是**状态从哪来**：先让 $\pi_\theta$ 自己生成，再让教师在这些前缀上给 dense 监督。
 
 ![Off-policy KD trains on teacher prefixes; OPD trains on student prefixes with teacher logits](./images/fig-on-policy-vs-off-policy-sampling.png)
 
-> 图 1：采样从哪来。左：off-policy KD，学生只在教师（或数据集）前缀上匹配。右：OPD，学生自己采样，教师在学生前缀上给密集 logits / KL。红标 **NOT**：不是 DPO，不是 Online Preference。2026-08 自绘；示意，不是论文 Figure。
+> 图 1：采样从哪来。左：off-policy KD，学生只在教师（或数据集）前缀上匹配。右：OPD，学生自己采样，教师在学生前缀上给密集 logits / KL。红标 **NOT**：不是 DPO，不是 Online Preference。
 
 **图 1 解析**
 
-- **左，青格**：token 由教师（或固定语料）写出。学生在这些前缀上做 NLL 或 $D_{\mathrm{KL}}(p_T\|p_S)$。推理时一旦自己写偏，就离开了训练状态。
+- **左，青格**：token 由教师（或固定语料）写出。学生在这些前缀上做 NLL 或 $D_{\mathrm{KL}}(p_T \Vert p_S)$。推理时一旦自己写偏，就离开了训练状态。
 - **右，橙格**：token 由学生写出。教师不再重写一条满分答案，而是对同一条学生轨迹上的每个前缀打 logits。这就是「dense on student states」。
 - **红标**：偏好对 $(y^+,y^-)$ 没有这条「教师在学生前缀上给分布」的结构。不要把 OPD 读成 Online Preference Distillation。
 - §3 驾校类比（自己握方向盘、教练每个瞬间给分布）**讲的就是右图**。类比可留；错的是把它叫成 Online Preference，以及把「每个瞬间」理解成必须 reverse KL（见 §10.3）。
@@ -226,35 +234,35 @@ Off-policy KD / SeqKD：轨迹来自数据集或教师，$y_{<t}$ 几乎总是�
 **MiniLLM**（[arXiv:2306.08543](https://arxiv.org/abs/2306.08543)，HTML 标题现作 *MiniLLM: On-Policy Distillation of Large Language Models*）把目标换成 reverse KL，再对 $y\sim q_\theta$ 做 on-policy 优化：
 
 $$
-\theta=\arg\min_{\theta}\operatorname{KL}[q_{\theta}\|p]
-=\arg\min_{\theta}\Bigl[-\mathbb{E}_{x\sim p_x,\,y\sim q_{\theta}}\log\frac{p(y|x)}{q_{\theta}(y|x)}\Bigr]. \tag{7}
+\theta=\arg\min_{\theta}\operatorname{KL}[q_{\theta}\Vert p]
+=\arg\min_{\theta}\Bigl[-\mathbb{E}_{x\sim p_x,\,y\sim q_{\theta}}\log\frac{p(y \mid x)}{q_{\theta}(y \mid x)}\Bigr]. \tag{7}
 $$
 
-梯度走 Policy Gradient（论文式 (2)）。$r_{t}=\log(p(y_t|\cdot)/q_\theta(y_t|\cdot))$，回报 $R_t$ 是从 $t$ 往后累加。为了稳，他们还加了：单步分解降方差、教师混合采样 $\tilde p=\alpha p+(1-\alpha)q_\theta$（文中 $\alpha=0.2$）、长度归一化（否则 $R_t$ 偏爱短句、学生会输出空回复）、以及预训练 LM 辅助损失。这是 **action on-policy**：被采样的 token 自己进 REINFORCE。
+梯度走 Policy Gradient（论文式 (2)）。$r_{t}=\log(p(y_t \mid \cdot)/q_\theta(y_t \mid \cdot))$，回报 $R_t$ 是从 $t$ 往后累加。为了稳，他们还加了：单步分解降方差、教师混合采样 $\tilde p=\alpha p+(1-\alpha)q_\theta$（文中 $\alpha=0.2$）、长度归一化（否则 $R_t$ 偏爱短句、学生会输出空回复）、以及预训练 LM 辅助损失。这是 **action on-policy**：被采样的 token 自己进 REINFORCE。
 
 **GKD**（Agarwal et al.，[arXiv:2306.13649](https://arxiv.org/abs/2306.13649)，*On-policy Distillation of Language Models: Learning from Self-Generated Mistakes*）把自回归蒸馏看成带交互专家的模仿学习。纯 on-policy 一项是
 
 $$
-L_{\mathrm{OD}}(\theta)=\mathbb{E}_{x\sim X}\Bigl[\mathbb{E}_{y\sim p_{\mathrm{S}}(\cdot|x)}\bigl[\mathcal{D}_{\mathrm{KL}}\bigl(p_{\mathrm{T}}\|p_{\mathrm{S}}^{\theta}\bigr)(y|x)\bigr]\Bigr], \tag{8}
+L_{\mathrm{OD}}(\theta)=\mathbb{E}_{x\sim X}\Bigl[\mathbb{E}_{y\sim p_{\mathrm{S}}(\cdot \mid x)}\bigl[\mathcal{D}_{\mathrm{KL}}\bigl(p_{\mathrm{T}}\Vert p_{\mathrm{S}}^{\theta}\bigr)(y \mid x)\bigr]\Bigr], \tag{8}
 $$
 
-其中 $\mathcal{D}_{\mathrm{KL}}(p_T\|p_S)(y|x)$ 是沿序列对 **token 级** $D_{\mathrm{KL}}(p_T(\cdot|y_{<n},x)\|p_S(\cdot|y_{<n},x))$ 取平均（论文式 (2)(4)）。注意两点：
+其中 $\mathcal{D}_{\mathrm{KL}}(p_T \Vert p_S)(y \mid x)$ 是沿序列对 **token 级** $D_{\mathrm{KL}}(p_T(\cdot \mid y_{\lt n},x)\Vert p_S(\cdot \mid y_{\lt n},x))$ 取平均（论文式 (2)(4)）。注意两点：
 
-1. 论文默认写出的 $D_{\mathrm{KL}}(p_T\|p_S)$ 是 **forward KL**（教师在前）。散度本身可选 reverse KL / JSD$(\beta)$；哪一种更好，他们写成 **task-dependent**（摘要任务温度采样偏 mode-seeking，指令跟随 held-out 上 reverse KL 更好）。
+1. 论文默认写出的 $D_{\mathrm{KL}}(p_T \Vert p_S)$ 是 **forward KL**（教师在前）。散度本身可选 reverse KL / $\mathrm{JSD}(\beta)$；哪一种更好，他们写成 **task-dependent**（摘要任务温度采样偏 mode-seeking，指令跟随 held-out 上 reverse KL 更好）。
 2. **不对采样路径反传**（stop-gradient）。$y\sim p_S$ 只负责制造学生会走到的前缀；loss 仍是这些前缀上的全词表匹配。这是 **state on-policy**。
 
 统一写法把 off-policy 数据按 $\lambda$ 混进来：
 
 $$
-L_{\mathrm{GKD}}(\theta)=(1-\lambda)\,\mathbb{E}_{(x,y)\sim(X,Y)}\bigl[\mathcal{D}(p_T\|p_S^{\theta})(y|x)\bigr]
-+\lambda\,\mathbb{E}_{x\sim X}\Bigl[\mathbb{E}_{y\sim p_S}\bigl[\mathcal{D}(p_T\|p_S^{\theta})(y|x)\bigr]\Bigr]. \tag{9}
+L_{\mathrm{GKD}}(\theta)=(1-\lambda)\,\mathbb{E}_{(x,y)\sim(X,Y)}\bigl[\mathcal{D}(p_T\Vert p_S^{\theta})(y \mid x)\bigr]
++\lambda\,\mathbb{E}_{x\sim X}\Bigl[\mathbb{E}_{y\sim p_S}\bigl[\mathcal{D}(p_T\Vert p_S^{\theta})(y \mid x)\bigr]\Bigr]. \tag{9}
 $$
 
 $\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。实验从已经 SFT 过的学生起步，不是随机初始化。
 
 因此 §4.2「OPD 的核心是 reverse KL、同族算法如 GRPO/PPO」需要拆开：reverse KL 是 MiniLLM 的目标，不是 OPD 的定义；GKD 的 on-policy 性在状态分布，梯度更像带 stop-grad 的监督 KD。Qwen3 只写 “aligning its logits … to minimize the KL divergence”，**未点名** forward 还是 reverse。
 
-§6 的 `F.kl_div(input=student_logprobs, target=teacher_probs)`：PyTorch 这条是 $\mathrm{KL}(\texttt{target}\|\exp(\texttt{input}))$，即 $\mathrm{KL}(p_T\|p_S)$，是 **forward KL**。注释写成 Reverse KL，与公式 (2) 也不一致。代码可当「学生轨迹 + 教师分布」的示意，不要当 MiniLLM 实现。
+§6 的 `F.kl_div(input=student_logprobs, target=teacher_probs)`：PyTorch 这条是 $\mathrm{KL}(\texttt{target}\Vert\exp(\texttt{input}))$，即 $\mathrm{KL}(p_T \Vert p_S)$，是 **forward KL**。注释写成 Reverse KL，与公式 (2) 也不一致。代码可当「学生轨迹 + 教师分布」的示意，不要当 MiniLLM 实现。
 
 ### 10.4 Qwen3 Table 21：分母必须写全
 
@@ -286,7 +294,7 @@ $\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。实验从已经 SFT 
 
 ### 10.5 失效：没有外部教师，这套不成立
 
-基础 OPD 预设一个**可查询的教师**：至少能在学生前缀上给出 token 分布或 logprob。没有这名教师（训练自己已经是 frontier、掏不出更强开源模型、或不愿把教师常驻显存），式 (6)–(9) 没有监督源。那是另一条线——用特权上下文或自博弈当教师，见 [02-OPSD-自蒸馏](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)。本切片不改 02。
+基础 OPD 预设一个**可查询的教师**：至少能在学生前缀上给出 token 分布或 logprob。没有这名教师（训练自己已经是 frontier、掏不出更强开源模型、或不愿把教师常驻显存），式 (6)–(9) 没有监督源。那是另一条线——用特权上下文或自博弈当教师，见 [02-OPSD-参考解自蒸馏](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md)。本切片不改 02。
 
 其它边界（论文里有、现稿 §7 只写了一部分）：
 
@@ -298,9 +306,9 @@ $\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。实验从已经 SFT 
 | Reverse KL 在高熵处捏尖峰 | 现稿 §7.2 方向对 | 这是 MiniLLM 目标的失效，不是 GKD 选 forward KL / JSD 时的同一件事 |
 | 把 Table 21 套到通用 RL | 表只含 math + code-related queries | 指令遵循 / Agent 那条线 Qwen3 另有 Stage 4，不是这张表 |
 
-下一篇（无外部教师）：[02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)。
+下一篇（无外部教师）：[02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Gu, Dong, Wei, Huang. *MiniLLM*（[arXiv:2306.08543](https://arxiv.org/abs/2306.08543) / [HTML](https://arxiv.org/html/2306.08543)）。reverse KL 式 (1)、on-policy 梯度式 (2)、teacher-mixed sampling、Algorithm 1。
 2. Agarwal, Vieillard, Zhou, Stanczyk, Ramos, Geist, Bachem. *On-policy Distillation of Language Models: Learning from Self-Generated Mistakes*（GKD；[arXiv:2306.13649](https://arxiv.org/abs/2306.13649) / [HTML](https://arxiv.org/html/2306.13649)）。$L_{\mathrm{OD}}$ 式 (4)、$L_{\mathrm{GKD}}$、$\lambda$、不对采样反传。

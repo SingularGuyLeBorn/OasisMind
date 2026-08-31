@@ -1,22 +1,22 @@
 ---
-title: "10 · OPD：报告落地对照"
+title: "10 · OPD：各家报告对照"
 date: 2026-08-30
 tags: [OPD, MOPD, On-Policy Distillation, Qwen3, DeepSeek-V4, Kimi-K3, GLM-5]
 as_of: 2026-08-30
 category: LLM 指南
 ---
 
-# 10 OPD：报告落地对照
+# 10 · OPD：各家报告对照
 
-报告里的 on-policy distillation 不是同一道工序。Qwen3 用大号教师压小号学生；V4 用十几个领域专家合进一个权重，损失写全词表 reverse KL；K3 / MiMo-V2-Flash 把合版叫 **MOPD**，损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$；GLM-5 的教师是自己流水线的旧 checkpoint。本篇是对照表 + 机制分叉，**不是**再推一遍 MiniLLM。记号沿用 [01-OPD基础原理](../01-OPD基础原理/01-OPD基础原理.md) 的 $\pi_\theta$、$\pi_T$；公式只写各报告自己写下的那一行。第 14 章 mineru / D2 **只链不改、不整段复制**。
+报告里的 on-policy distillation 不是同一道工序。Qwen3 用大号教师压小号学生；V4 用十几个领域专家合进一个权重，损失写全词表 reverse KL；K3 / MiMo-V2-Flash 把合版叫 **MOPD**，损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$；GLM-5 的教师是自己流水线的旧 checkpoint。本篇是对照表 + 机制分叉，**不是**再推一遍 MiniLLM。记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 $\pi_\theta$、$\pi_T$；公式只写各报告自己写下的那一行。第 14 章 mineru / D2 **只链不改、不整段复制**。
 
 ---
 
 ## 1. 具体问题：同一个英文名，卡在三个不同槽里
 
-[01](../01-OPD基础原理/01-OPD基础原理.md) 把 OPD 立成 Reverse KL + 学生自己采样。学术起点是 Gu et al. MiniLLM 与 GKD，厂商报告也引用它们。本篇不重推。落地之后名字开始打架：
+[01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 把 OPD 立成 Reverse KL + 学生自己采样。学术起点是 Gu et al. MiniLLM 与 GKD，厂商报告也引用它们。本篇不重推。落地之后名字开始打架：
 
-- [4.6 节首页](../4.6-OPD.md) 把 OPD 写成 Online Preference/Policy Distillation，又「泛指」Online Self-Distillation。报告里的官方名是 **On-Policy Distillation**（同策略蒸馏）。自蒸馏是另一条线，见 [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)。
+- [4.6 节首页](../4.6-OPD.md) 把 OPD 写成 Online Preference/Policy Distillation，又「泛指」Online Self-Distillation。报告里的官方名是 **On-Policy Distillation**（同策略蒸馏）。自蒸馏是另一条线，见 [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md)。
 - 01 把 17,920 / 1,800 GPU hours、AIME 67.6→74.4 指回了 Qwen3 报告，但漏了分母：**Qwen3-8B、同一份 off-policy 蒸馏检查点、只做 math+code、括号里是 pass@64**。
 - [5.2 的 V4 解读](../../../5-主流模型全解/5.2-国内大模型/DeepSeek深度求索/27-DeepSeek-V4技术解读.md) §5.5 把 1,800 写成 V4 四阶段合计，再拿 17,920 做分母宣称「V4 只要传统 RL 的 1/10」。**那两个格子是 Qwen3 Table 21 的，不要安到 V4。** 本篇只点名，不改那篇第 5 章文件。
 
@@ -24,9 +24,7 @@ category: LLM 指南
 
 ![三列教师来源：Qwen3 大号教师压 8B；V4/K3/MiMo 多专家合版；GLM-5 用前阶段 checkpoint](./images/fig-opd-teacher-source.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three columns: Qwen3 strong-to-weak; V4/K3/MiMo expert merge; GLM-5 previous-stage checkpoints. -->
-
-> 图 1：教师从哪来。同一句 on-policy distillation，槽位不同。2026-08 自绘。
+> 图 1：教师从哪来。同一句 on-policy distillation，槽位不同。
 
 **图 1 解析**
 
@@ -90,9 +88,7 @@ $$
 
 ![左：每步对整张词表做 reverse KL；右：只在采样 token 上写 sg log 比](./images/fig-opd-loss-fork.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Left: full-vocab reverse KL. Right: token-level sg log ratio with clip. -->
-
-> 图 2：损失分叉。左是 V4 §5.1.2；右是 K3 式 (15) / MiMo 式 (8) / GLM-5 式 (2) 这一族。2026-08 自绘。
+> 图 2：损失分叉。左是 V4 §5.1.2；右是 K3 式 (15) / MiMo 式 (8) / GLM-5 式 (2) 这一族。
 
 **图 2 解析**
 
@@ -120,9 +116,7 @@ Qwen3 对轻量档走 Strong-to-Weak：先 off-policy 打底，再 on-policy 对
 
 ![17920 与 1800 锁在 Qwen3 Table 21 框内；右侧 V4 框打叉](./images/fig-qwen3-table21-denominator.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Qwen3 Table 21 box vs do-not-attach-to-V4. -->
-
-> 图 3：分母。17,920 与 1,800 是 Qwen3 Table 21 的格子。2026-08 自绘。
+> 图 3：分母。17,920 与 1,800 是 Qwen3 Table 21 的格子。
 
 **图 3 解析**
 
@@ -166,13 +160,13 @@ GLM-5 连 MOPD / OPD 缩写都不打，官方名是 on-policy **cross-stage** di
 
 ## 7. 下一篇
 
-- Reverse KL 与 on-policy 采样的教材推导：[01-OPD基础原理](../01-OPD基础原理/01-OPD基础原理.md)。本篇数字以第 14 章表为准，01 里未出现在 Table 21 的步数不跟。
-- 自蒸馏（同一权重、不同上下文）：[02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)。
+- Reverse KL 与 on-policy 采样的教材推导：[01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md)。本篇数字以第 14 章表为准，01 里未出现在 Table 21 的步数不跟。
+- 自蒸馏（同一权重、不同上下文）：[02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md)。
 - 厂商精读只走第 14 章入口，见 §2 表最后一列。**不要**在第 5 章再抄一套 D2。
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Qwen Team. *Qwen3 Technical Report*. [arXiv:2505.09388](https://arxiv.org/abs/2505.09388)。库内 [03-Qwen3-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/03-Qwen3-mineru-en.md) §4.5 Strong-to-Weak、Discussion 中 Table 21（8B、同一 off-policy 检查点、math+code、括号 pass@64、17,920 vs 1,800）。
 2. DeepSeek-AI. *DeepSeek-V4*. [HuggingFace PDF](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf)。库内 [03-DeepSeek-V4-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md) §5.1.2 式 (29)、全词表 vs token-level sg log 比、§5.2.2 教师调度。QAT/MXFP4 在 §5.2.1，不写入本篇 OPD 目标。

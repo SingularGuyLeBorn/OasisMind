@@ -1,18 +1,18 @@
 ---
-title: "02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明"
+title: "02 · OPSD：参考解自蒸馏"
 date: 2026-05-16
 tags: [OPSD, Self-Distillation, On-Policy, OPD, 知识蒸馏, 后训练]
 as_of: 2026-08-30
 category: LLM 指南
 ---
 
-# 02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明
+# 02 · OPSD：参考解自蒸馏
 
 ## 1. 背景与核心痛点 (Background & Pain Points)
 
 **家谱定位**: 本算法属于 OPD(在线策略蒸馏)家族的核心演进变体. 
 
-在上一篇《01-OPD基础原理》中，我们见证了 OPD 如何利用逐 Token 的密集监督(Dense Supervision)对 RL 实现了降维打击. 
+在上一篇《01-OPD-学生前缀蒸馏》中，我们见证了 OPD 如何利用逐 Token 的密集监督(Dense Supervision)对 RL 实现了降维打击. 
 **前车之鉴**: 然而，基础 OPD 有一个致命的物理约束: **它需要一个极其强大的外部教师模型(External Teacher)驻留在显存中**. 如果你正在训练一个 7B 的模型，你可以用 72B 当老师; 但如果你正在训练世界上最强的万亿参数 SOTA 模型呢？谁来当它的老师？
 
 **核心动机**: OPSD(On-Policy Self-Distillation，在线自蒸馏)正是为了解决“无外部教师”的约束而提出的. 它的核心哲学极其疯狂: 既然找不到比自己更聪明的大脑，那可不可以通过**赋予当前的自己“特权信息”(Privileged Context)** ，强行制造出一个高维的“神明视角”来教导低维的自己？
@@ -171,7 +171,7 @@ def opsd_train_step(model, question_tokens, golden_answer_tokens, tau_clip=10.0)
 
 ## 2026-08 修订（不删上文）
 
-旧标题「神明」和 §2「暴拉 / 1/125 / 100 步」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Zhao、Xie、Liu、Huang、Pang、Chen、Grover 的 [Self-Distilled Reasoner](https://arxiv.org/abs/2601.18734)（打开的是 [HTML](https://arxiv.org/html/2601.18734)）。**OPSD = On-Policy Self-Distillation**：没有更强外部教师时，把特权上下文 $y^{\star}$（参考解，可含 CoT）条件进教师前向；学生仍按自己的 on-policy 轨迹 $\hat y$ 学。教师和学生是**同一套权重的两种条件**，不是另雇一个 72B。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师」这一格，记号跟论文 $p_S,p_T,\hat y,y^{\star}$。**不是** [01](../01-OPD基础原理/01-OPD基础原理.md) 的外部教师 logits，**不是** [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 的环境 rich feedback，**不是** 把 OPD 塞进 DPO。G-OPD / SCOPE 本波不升格。
+旧标题「神明」和 §2「暴拉 / 1/125 / 100 步」是 2025 稿修辞，**机制与数字以本节为准**。对象钉死 Zhao、Xie、Liu、Huang、Pang、Chen、Grover 的 [Self-Distilled Reasoner](https://arxiv.org/abs/2601.18734)（打开的是 [HTML](https://arxiv.org/html/2601.18734)）。**OPSD = On-Policy Self-Distillation**：没有更强外部教师时，把特权上下文 $y^{\star}$（参考解，可含 CoT）条件进教师前向；学生仍按自己的 on-policy 轨迹 $\hat y$ 学。教师和学生是**同一套权重的两种条件**，不是另雇一个 72B。本文是 [4.6 OPD](../4.6-OPD.md) 里「自教师」这一格，记号跟论文 $p_S,p_T,\hat y,y^{\star}$。**不是** [01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的外部教师 logits，**不是** [04 SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) 的环境 rich feedback，**不是** 把 OPD 塞进 DPO。G-OPD / SCOPE 本波不升格。
 
 ### 1. 旧稿数字对回 Table 2 / Table 6
 
@@ -253,9 +253,7 @@ $$
 
 ![同一套权重：闭卷学生只看题生成，开卷教师看参考解却只做 prefill，散度只沿学生轨迹回传](./images/fig-opsd-open-closed.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two-column OPSD: student p_S(x) closed-book generates y-hat; teacher p_T(x,y*) open-book prefill only; D(p_T || p_S); gradient only through student. -->
-
-> 图 1：开卷教师 vs 闭卷学生。对应论文 Figure 1。旧图 `opsd_open_book.png` 不删，本节改引这张。2026-08 自绘。
+> 图 1：开卷教师 vs 闭卷学生。对应论文 Figure 1。
 
 **图 1 解析**
 
@@ -296,9 +294,7 @@ Appendix B：他们**没有**扫 $\tau$。Figure 4：1.7B、AIME24，clip 能挡
 
 ![Algorithm 1：学生采样、双路前向、全词表散度、词表维 clip、只更新学生且教师冻在 theta init](./images/fig-opsd-algorithm.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Five-box Algorithm 1: sample y-hat; dual forward; full-vocab D; pointwise clip; update student, freeze teacher. -->
-
-> 图 2：Algorithm 1 数据流。Box 3 若把 $D$ 的左右写反，以式 (R3) 的 $D(p_T\|p_S)$ 为准。2026-08 自绘。
+> 图 2：Algorithm 1 数据流。Box 3 若把 $D$ 的左右写反，以式 (R3) 的 $D(p_T\|p_S)$ 为准。
 
 **图 2 解析**
 
@@ -316,16 +312,16 @@ Appendix B：他们**没有**扫 $\tau$。Figure 4：1.7B、AIME24，clip 能挡
 | 基础 OPD / GKD 式 on-policy distillation | 学生自己采样，**另一个**教师给逐步分布 | 本篇教师是 $p_\theta(\cdot\mid x,y^{\star})$，不是 72B |
 | SFT / 式 (2) | 在专家轨迹 $y^{\star}$ 上模仿 | 监督前缀来自 $\hat y\sim p_S$，不是 $y^{\star}$ |
 | GRPO | 组内 8 条、句级 0/1 | Table 1：稀疏、采样贵；本篇稠密、每题 1 条 |
-| SDPO | 环境 rich feedback 当自教师 | 邻居 [04](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md)；特权信息不是报错回注 |
+| SDPO | 环境 rich feedback 当自教师 | 邻居 [04](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md)；特权信息不是报错回注 |
 | 把 OPD 塞进 DPO | 偏好对上的分类损失 | 式 (R4) 是逐步 $D(p_T\|p_S)$，没有 chosen/rejected 对 |
 | Context distillation (Snell et al.) | 同一模型、教师有特权上下文，但对学生做 **SFT 硬标签** | 论文 Related Work：off-policy、离散 token；本篇是 on-policy 软分布 |
 | STaR / ReST | 生成→按对错过滤→SFT | 句级奖励；全错则无更新 |
 | G-OPD / SCOPE | 后文变体 | 本波不升格，不当金科玉律 |
-| SDFT | 持续学习、示范当特权上下文 | 下一篇 [03](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md)；本篇不写遗忘实验 |
+| SDFT | 持续学习、示范当特权上下文 | 下一篇 [03](../03-SDFT-示范持续学习/03-SDFT-示范持续学习.md)；本篇不写遗忘实验 |
 
 ### 5. 失效：没有特权上下文时怎么办
 
-OPSD 吃的是 $\mathcal{S}$ 里成对的 $(x,y^{\star})$。**没有 $y^{\star}$**（开放生成、没有参考解的对话、只有对错没有过程）就变不回自教师：式 (R1) 的 $p_T$ 退化成 $p_S$，散度是 0，学不到东西。这时只能退回 [01](../01-OPD基础原理/01-OPD基础原理.md) 的外部教师，或 GRPO 那种可验证奖励——本算法不负责凭空造特权信息。
+OPSD 吃的是 $\mathcal{S}$ 里成对的 $(x,y^{\star})$。**没有 $y^{\star}$**（开放生成、没有参考解的对话、只有对错没有过程）就变不回自教师：式 (R1) 的 $p_T$ 退化成 $p_S$，散度是 0，学不到东西。这时只能退回 [01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的外部教师，或 GRPO 那种可验证奖励——本算法不负责凭空造特权信息。
 
 即使有 $y^{\star}$，Appendix A 写得很死：题目难过模型的理解阈值，教师「开卷」也讲不明白，监督是噪声。他们只做到 **8B**，再大未测。旧稿「底座太蠢则开卷也看不懂」方向对，来源是这篇附录，不是发挥。
 
@@ -341,9 +337,9 @@ OPSD 吃的是 $\mathcal{S}$ 里成对的 $(x,y^{\star})$。**没有 $y^{\star}$
 
 没有特权上下文、又没有外部教师：这篇给不出替代损失。不要把「左脚踩右脚」读成无数据永动机。
 
-下一篇只链 [03-SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md)：把特权上下文从参考解换成示范、并讨论遗忘。本篇不预写 SDFT 数字。
+下一篇只链 [03-SDFT](../03-SDFT-示范持续学习/03-SDFT-示范持续学习.md)：把特权上下文从参考解换成示范、并讨论遗忘。本篇不预写 SDFT 数字。
 
-### 本篇来源（2026-08 核对）
+### 参考文献
 
 1. Zhao, Xie, Liu, Huang, Pang, Chen, Grover. *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models*. [arXiv:2601.18734](https://arxiv.org/abs/2601.18734) / [HTML](https://arxiv.org/html/2601.18734)。Table 1–8、Figure 1–5、Algorithm 1、式 (1)(6)(7)(8)(9)、§4.1 冻结初始教师、Appendix A/B/D。
 2. 官方代码：[siyan-zhao/OPSD](https://github.com/siyan-zhao/OPSD)。

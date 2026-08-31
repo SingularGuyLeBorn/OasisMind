@@ -1,14 +1,14 @@
 ---
-title: "09 · MOPD：多教师在线蒸馏"
+title: "09 · MOPD：多教师蒸馏"
 date: 2026-08-30
 tags: [MOPD, OPD, 多教师, On-Policy Distillation, DeepSeek-V4, Kimi K3, MiMo-V2-Flash]
 as_of: 2026-08-30
 category: LLM 指南
 ---
 
-# 09 MOPD：多教师在线蒸馏
+# 09 · MOPD：多教师蒸馏
 
-分域 RL 能把数学、代码、agent 各自推到峰值，交付却只要**一份**权重。多教师在线蒸馏做的事很窄：学生 $\pi_\theta$ **自己采样**，按题目找对应教师，用教师分布给学生稠密监督，把多份专家并进一个学生。本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」专文，记号沿用 [01-OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) 的 reverse KL 与 on-policy 采样。**不是** 把三家合成一条「标准 MOPD」：DeepSeek-V4 报告仍叫 **OPD**（全词表 reverse KL）；Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词，损失和裁剪也不一样。一手链接只记 inbox，正文链库内 mineru / 精译。
+分域 RL 能把数学、代码、agent 各自推到峰值，交付却只要**一份**权重。多教师在线蒸馏做的事很窄：学生 $\pi_\theta$ **自己采样**，按题目找对应教师，用教师分布给学生稠密监督，把多份专家并进一个学生。本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」专文，记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 reverse KL 与 on-policy 采样。**不是** 把三家合成一条「标准 MOPD」：DeepSeek-V4 报告仍叫 **OPD**（全词表 reverse KL）；Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词，损失和裁剪也不一样。正文链库内 mineru / 精译。
 
 ---
 
@@ -17,16 +17,14 @@ category: LLM 指南
 2026 年几家开源报告走同一条流水线骨架：先 SFT 冷启动，再按域（有时再按 reasoning effort）各自做 RL，得到一排专家。剩下的问题不是「会不会 RL」，而是 **怎么并**：
 
 1. **权重合并。** 省一次训练。MiMo-V2-Flash 报告点名它会和顺序训练一样做能力 trade-off。Xiaomi 另文《MOPD》（数字以该文 Table 2 为准，链接见 inbox）在 Qwen3-30B-A3B 上把线性平均的归一化分打到 **0.328**（Task Arithmetic 才回到 0.857）。这是权重空间融合，不是策略空间对齐。
-2. **离线蒸馏 / 拿教师轨迹做 SFT。** 学生拟合的是教师写过的前缀。推理时它走自己的前缀——[01](../01-OPD基础原理/01-OPD基础原理.md) 里的暴露偏差。
+2. **离线蒸馏 / 拿教师轨迹做 SFT。** 学生拟合的是教师写过的前缀。推理时它走自己的前缀——[01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 里的暴露偏差。
 3. **混合 RL / 级联 RL。** 多域奖励进同一条策略，或按域串着训。V4 写他们用 OPD **整段换掉** V3.2 的 mixed RL 合并；Xiaomi 另文把 Mix-RL、Cascade RL 当作对照，归一化分分别是 **0.882 / 0.775**，都低于他们的 MOPD **0.937**。
 
 三家给出的合并手段，共同的只有半句：**轨迹从学生来（on-policy），监督从多个冻结教师来。** 损失怎么写、裁剪裁哪一项、一次前向看几个词表位置，必须分节读，不能共用一套超参。
 
 ![三列对照：V4 全词表 reverse KL、K3 clip 对数比、MiMo 训练-推理重要性采样加 ORM](./images/fig-mopd-three-forks.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three columns: V4 full-vocab reverse KL; K3 3x3 experts plus clip log-ratio; MiMo sampling vs train engine importance sampling plus ORM. -->
-
-> 图 1：三家损失分叉。不是论文某一张 Figure 的临摹；公式以各报告原文为准。2026-08 自绘。
+> 图 1：三家损失分叉。
 
 **图 1 解析**
 
@@ -71,9 +69,7 @@ $$
 
 ![教师权重卸载；只缓存末层 hidden；按教师索引排序后一次只加载一个 head](./images/fig-v4-teacher-hidden-cache.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Teacher offload, hidden-state cache, reconstruct logits, sort mini-batch by teacher index. -->
-
-> 图 2：V4 §5.2.2 全词表 OPD 的调度。格子数是示意。2026-08 自绘。
+> 图 2：V4 §5.2.2 全词表 OPD 的调度。格子数是示意。
 
 **图 2 解析**
 
@@ -107,9 +103,7 @@ $\mathrm{sg}$ 仍是 stop-gradient。$R_{\max}>0$ 用来夹住极端 advantage�
 
 ![3×3 专家网格，一条轨迹只连向当前域和 effort 的教师，奖励做 clip](./images/fig-k3-nine-experts.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. 3x3 teacher grid, student rollout, clipped log-ratio reward. -->
-
-> 图 3：K3 九专家与式 (15)。2026-08 自绘。
+> 图 3：K3 九专家与式 (15)。
 
 **图 3 解析**
 
@@ -158,9 +152,7 @@ $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数�
 
 ![prompt 按域路由到一名教师；mu 采样、pi 算梯度；w_t 丢离群 token；优势可加 ORM](./images/fig-mimo-is-orm.png)
 
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels. white academic background, no watermark, no logo, no copyright text, no website URL. Domain-routed teacher, sampling vs train engine, importance-sampling gate, ORM added to token advantage. -->
-
-> 图 4：Flash §4.4 数据流。对应报告式 (5)–(9)。2026-08 自绘。
+> 图 4：Flash §4.4 数据流。对应报告式 (5)–(9)。
 
 **图 4 解析**
 
@@ -217,10 +209,10 @@ Flash Table 7 与该文 Table 3 对 Flash 的列不完全同一套基准（该�
 
 | 对象 | 差在哪 | 去哪篇 |
 |------|--------|--------|
-| MiniLLM / GKD 式单教师 on-policy | 一个 $\pi_T$，没有「按域派教师再并进一份权重」 | [01-OPD](../01-OPD基础原理/01-OPD基础原理.md) |
-| OPSD 特权上下文 | 教师和学生**同一份权重**，差在输入里塞不塞标准答案 | [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) |
-| SDPO rich feedback | 监督来自编译器/验证器的富反馈，不是多份冻结专家的 logits | [04-SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) |
-| GLM-5 跨阶段 OPD | 顺序 RL 之后用蒸馏收尾，打的是遗忘/阶段切换，不是「十余或九个并行专家」这套捆法 | 对照见 [10-OPD-报告落地对照](../10-OPD-报告落地对照/10-OPD-报告落地对照.md) |
+| MiniLLM / GKD 式单教师 on-policy | 一个 $\pi_T$，没有「按域派教师再并进一份权重」 | [01-OPD](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) |
+| OPSD 特权上下文 | 教师和学生**同一份权重**，差在输入里塞不塞标准答案 | [02-OPSD](../02-OPSD-参考解自蒸馏/02-OPSD-参考解自蒸馏.md) |
+| SDPO rich feedback | 监督来自编译器/验证器的富反馈，不是多份冻结专家的 logits | [04-SDPO](../04-SDPO-环境反馈蒸馏/04-SDPO-环境反馈蒸馏.md) |
+| GLM-5 跨阶段 OPD | 顺序 RL 之后用蒸馏收尾，打的是遗忘/阶段切换，不是「十余或九个并行专家」这套捆法 | 对照见 [10-OPD-各家报告对照](../10-OPD-各家报告对照/10-OPD-各家报告对照.md) |
 
 V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-policy distillation：学生采样、教师打分、常用 reverse KL。本篇只把「教师从 1 变成一排、损失各家怎么裁」钉死。
 
@@ -237,16 +229,16 @@ V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-
 | top-$k$ 更细未必更强 | K3 §4.1.3；Xiaomi 另文 $k=64$ | 两家各自写「没有明显好处 / 差不多」；不要合成一个 $k$ |
 | 把三家超参抄进同一份配置 | 本篇 | $w_i$、$R_{\max}$、$(\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha)$、$A_{\max}$、$k$ 从未在同一张表里出现过 |
 
-下一篇：[10-OPD-报告落地对照](../10-OPD-报告落地对照/10-OPD-报告落地对照.md)（GLM-5 跨阶段等发布捆法）。QAT / 训推量化不在本篇，见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md)。
+下一篇：[10-OPD-各家报告对照](../10-OPD-各家报告对照/10-OPD-各家报告对照.md)（GLM-5 跨阶段等发布捆法）。QAT / 训推量化不在本篇，见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md)。
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告。§5.1.2 式 (29)、§5.2.2 教师调度。库内：[03-DeepSeek-V4-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md)。
 2. Moonshot AI. (2026). Kimi K3 技术报告。§4.1.3 式 (15)。公式以 HTML 为准。导航：[01-Kimi-K3-架构精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
 3. Xiaomi LLM-Core. (2026). MiMo-V2-Flash 技术报告。§4.1、§4.4 式 (5)–(9)、Table 7。库内：[03-MiMo-V2-Flash-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.9-MiMo/02-MiMo-V2-Flash/03-MiMo-V2-Flash-mineru-en.md)。
 4. Ma et al. (2026). 《MOPD》因式论文。Qwen3-30B-A3B Table 2；与 Flash 正文公式分列，不合并超参。链接只在 inbox。
-5. MiniLLM；Agarwal et al. on-policy distillation / GKD；Lu and Thinking Machines Lab (2025) On-Policy Distillation——三家报告共同引用的单教师祖先，细节在 [01](../01-OPD基础原理/01-OPD基础原理.md)。
+5. MiniLLM；Agarwal et al. on-policy distillation / GKD；Lu and Thinking Machines Lab (2025) On-Policy Distillation——三家报告共同引用的单教师祖先，细节在 [01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md)。
 
 知乎只学讲法（「一个 prompt 派一名域教师，梯度在 batch 上合成」），数字与公式不以专栏为准。

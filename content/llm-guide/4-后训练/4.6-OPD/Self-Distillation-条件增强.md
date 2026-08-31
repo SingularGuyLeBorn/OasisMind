@@ -1,10 +1,10 @@
 ---
-title: "4.6.1 · Self-Distillation 统一框架: 从 OPSD 到 SDFT 的共性抽象"
+title: "Self-Distillation：条件增强"
 date: 2026-05-17
 tags: [Self-Distillation, OPSD, SDFT, SDPO, 统一框架, 条件增强, On-Policy, 持续学习]
 ---
 
-# Self-Distillation 统一框架
+# Self-Distillation：条件增强
 
 > 本文提出 Self-Distillation 的统一数学抽象，揭示 OPSD、SDFT、SDPO 等方法的共同结构: 让"条件更强的自己"纠正"条件更弱的自己". 
 
