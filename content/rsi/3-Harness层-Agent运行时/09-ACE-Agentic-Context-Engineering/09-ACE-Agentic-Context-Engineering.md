@@ -149,4 +149,4 @@ $S$ 若取当前 $H_t$，式 (1) 确实在改下次还用的脚手架。条目�
 2. [ace-agent/ace](https://github.com/ace-agent/ace)。
 3. Suzgun et al. (2025). [Dynamic Cheatsheet](https://arxiv.org/abs/2504.07952). arXiv:2504.07952. 记忆前身；collapse 个案挂在该方法的重写上。
 4. Agrawal et al. (2025). [GEPA](https://arxiv.org/abs/2507.19457). arXiv:2507.19457. 短指令优化对照。
-5. 本花园：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)；[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+5. 本花园：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)；[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)；[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。

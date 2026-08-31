@@ -1,0 +1,119 @@
+---
+title: "32 · ExpeL：跨题留下洞察，权重不动"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  Zhao 等用训练题攒轨迹，抽出自然语言洞察再评新题。
+  HotpotQA 39.0 对 ReAct 28.0；ALFWorld 59.0 对 40.0。
+  评测默认一次。洞察留下，抽取配方冻着。不是术语式 (2)。
+tags:
+  - RSI
+  - ExpeL
+  - Harness
+  - 经验学习
+  - L2
+---
+
+# 32 ExpeL：跨题留下洞察，权重不动
+
+Reflexion 把失败写成下一 trial 还能读的句子，同一间房间可以再开一局。ExpeL 要的是另一件事：训练题上可以重试、可以反思，考试那天只许交一次。交卷时读的不是本题刚写的 `mem`，是从一堆训练轨迹里抽出来的洞察，外加按题目相似度捞回来的成功示范。HotpotQA 上 Table 3 写 ExpeL **39.0 ± 1.7**，同表 ReAct **28.0 ± 1.4**。ALFWorld 同表 **59.0 ± 0.3** 对 **40.0 ± 0.3**。人把「从经验里学习」听成自我进化，缺的是：权重冻着，怎么抽洞察、怎么检索、训练时最多重试几次，都是人写死的 \(I\)。
+
+本篇夹在 [Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 和 [ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md) 旁边。Reflexion 是题内重试，窗口通常 1–3 条，换一道 WebShop 题旧反思帮不上。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 留下可执行 JavaScript。ACE 留下带编号的 playbook，合并是非 LLM 代码。ExpeL 留下的是一份自然语言洞察清单 \(\hat{\iota}\)，加上 Faiss 里的成功轨迹。评测默认单次。**不是** RSI。**不是** 改 \(\theta\)。**不是** 术语式 (2)。一手：Zhao, Huang, Xu, Lin, Liu, Gao Huang，清华大学自动化系 / 计算机系、BNRist，[arXiv:2308.10144](https://arxiv.org/abs/2308.10144)，AAAI 2024（*Proceedings of the AAAI Conference on Artificial Intelligence* 38(17):19632–19642）。代码 [LeapLabTHU/ExpeL](https://github.com/LeapLabTHU/ExpeL)。数字以 HTML §5、Table 1–3、附录 Table 5、实验窗口 2023-07-10 到 08-10 为准。禁止用手抄 Figure 5 柱高去改 Table 3。禁止和 [ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 专文 PaLM-540B 的 AlfWorld **71%** 横加，也禁止和 Reflexion 专文启发式 **130/134** 横加：这边评测骨干是 **gpt-3.5-turbo-0613**，温度 **0**，贪心解码，四折交叉。
+
+## 1. 问题：题内重试不是跨题学习
+
+微调要权重、要数据、还可能把常识挤掉。闭源模型根本不给 \(\theta\)。提示方法把几条示范塞进窗口，窗口一满，上一题的轨迹就没了。作者借 Mitchell 那句：相对任务类 \(T\) 和度量 \(P\)，经验 \(E\) 变了，表现才叫学。Reflexion 的 \(E\) 几乎只覆盖本题的若干 trial。考试不能重考时，那套言语 RL 用不上。
+
+ExpeL 把学习拆成两段寿命。训练：用 Reflexion 在训练集上最多重试 \(Z\) 次，轨迹进经验池 \(\mathcal{B}\)。离线：从 \(\mathcal{B}\) 里抽洞察。评测：新题一次做完，提示里拼上全份 \(\hat{\iota}\)，再按任务相似度取 top-\(k\) 成功轨迹当 few-shot。作者写成学生刷题再进考场。花园读成：刷题阶段允许墙外对错和重试；考场阶段把刷题产物冻进 \(H_t\)。
+
+\(S\) 取「这次部署里会留下的东西」：洞察清单、成功轨迹向量库，外加冻着的几只 LLM。单轮 \(S'=I(S)\) 可以发生：\(\mathcal{B}\) 多一条轨迹，或 \(\hat{\iota}\) 多一条洞察。术语式 (2) 还要 \(I'\subseteq S'\)。下一轮抽洞察的仍是同一份操作符说明书，仍是 **gpt-4-0613**；评测时出动作的仍是 **gpt-3.5-turbo-0613**。混元台阶上这不是 L0：评测题换了，洞察还在。也到不了改改进器。更像 ACE 那一档：留下的是脚手架状态，出状态的程序冻着。
+
+和邻居先划线。[ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 是底座规划，轨迹随题清空。Reflexion 在同一任务上写 \(sr_t\)。ExpeL 训练时借用 Reflexion 攒多样性，评测时故意关掉重试。[LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md) 的树仍随题清空。[GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md) 的图也随题清空。ACE 的 playbook 跨题还在，合并不经过 LLM；这边洞察清单的 ADD / EDIT / UPVOTE / DOWNVOTE 全是 GPT-4 在改字符串。Voyager 交的是过了自验证的函数。本篇交的是人能读、也能手改的句子。
+
+![攒池、抽洞察、检索加评测、本题输出 y；评测默认不回到攒池](./images/fig-expel-loop.png)
+
+> 图 1：实线是训练时攒池、抽洞察，再拿到评测题上走一次。回到 Gather 的是下一道训练题，不是评测重试。
+
+**图 1 解析**
+
+- **Gather**：ReAct 做题，失败则反思再试，最多 \(Z=3\)。成功或用尽次数，整条轨迹进 \(\mathcal{B}\)。
+- **Extract**：GPT-4 对失败/成功对照，或对 \(L\) 条成功轨迹，给已有洞察做 ADD / EDIT / UPVOTE / DOWNVOTE。
+- **Retrieve + eval**：Faiss 按任务相似度取 top-\(k\) 成功轨迹，拼上全份洞察，gpt-3.5 一次做完。
+- **this-task output y**：评测交卷。默认没有下一 trial。
+
+温度 0。评测动作模型全是 gpt-3.5-turbo-0613。抽洞察默认 gpt-4-0613。训练时的 Reflexion 用 3.5，超窗换 16k。这些都是人钉的 \(I\)。
+
+## 2. 机制：池子、四则运算、一次考试
+
+经验采集写在算法 1。第 \(n\) 道训练题，第 \(z\) 次尝试，策略是 \(\mathrm{LLM}_{\mathrm{ReAct}}(\cdot\mid\tau_{n,z},F_{\mathrm{manual}},\nu_{n,z})\)。\(\nu_{n,0}\) 是空串。跑完或步数到 \(H\)，轨迹进 \(\mathcal{B}\)。成功或 \(z=Z\) 就换下一题。失败则 \(\nu_{n,z+1}=\mathrm{concat}(\nu_{n,z},\mathrm{LLM}_{\mathrm{reflect}}(\tau_{n,z}))\)。这不是评测协议。评测协议写在算法 3：每道题一次，没有 \(\nu\)。
+
+洞察抽取写在算法 2。\(\hat{\iota}\) 从空集长。两类输入轮流喂 GPT-4。一类是同一任务上的失败–成功对照，让模型看见哪步走歪。一类是把成功轨迹切成大小 \(L\) 的块，让模型从不同任务里归纳「好习惯」。\(L\) 在 HotpotQA / ALFWorld 是 **8**，WebShop 是 **4**。新洞察重要性计数从 **2** 起；UPVOTE 或 EDIT 加一，DOWNVOTE 减一，到 0 删掉。作者写：成功轨迹也可以是次优的，计数是为了别让一条偶然的成功把清单带歪。算法 1 把人手写 few-shot 也放进 \(\mathcal{B}\) 当起点。只从这几条示范抽洞察、不采集自己的轨迹，Figure 6 的文字结论是：相对 ReAct 没有优势。经验必须自己跑出来。采集若只用 ReAct、不许失败重试，成功轨迹变少，也没有失败–成功对照，完整 ExpeL 仍高于这一档，但低于带 Reflexion 采集的默认。多样性来自对照，不只来自成功条数。抽取模型选 gpt-4-0613，作者写它更会遵守四则运算说明书、更少幻觉。换成 3.5 就掉到和人手写同一档 32.0。评测动作模型全程 3.5，所以 39.0 相对 28.0 的涨，主要不是换了一只更强的答题模型，是提示里多了清单和检索示范。把抽取也换成 3.5，涨幅就削掉一半还多。Figure 25–27 把训练和评测拆成成功 / 失败 / 中止，花园不手抄扇区。中止来自步数帽，不是另一套门。实验窗口钉在 2023-07-10 到 08-10，Langchain 调 OpenAI。换一天的模型快照，同一套提示会抖，这是闭源 API 的老病，不是洞察自己在进化。重要性计数从 2 起、到 0 才删，是人钉的稳健性，不是清单自己学会了遗忘。成功轨迹也可以是次优的，计数就是为了挡住偶然的好结果，别让一条碰巧的成功把清单带歪。
+
+检索用 Faiss、kNN、`all-mpnet-base-v2`，按任务文本内积取最像的成功轨迹。ALFWorld 消融：按「当前这步推理」相似度动态换 few-shot 是 **48.5 ± 2.1**；随机抽成功轨迹 **42.5 ± 0.8**；按任务相似度才是 **59.0**。动态换示范会抖。随机等于没学检索。
+
+迁移是另一段离线加工。源任务 HotpotQA 抽出的洞察，用目标任务 FEVER 的 few-shot 再改写成更贴 FEVER 的句子，改写模型 gpt-4-0613。源和目标任务分布不同，没有可检索的成功池，评测 few-shot 仍是人写的那几条。作者把这步也叫做 finetune。花园读成改字符串，不是改 \(\theta\)。没有目标任务示范时，迁移仍有一点用，Table 1 小于带示范的那一档。
+
+评测环境跟 ReAct / Reflexion 对齐：HotpotQA distractor dev **100** 题，ALFWorld **134** 道可解，WebShop **100** 题，四折。一半训练一半评测再对调，报折间均值和标准误。成功标准：HotpotQA / FEVER 用 exact match；ALFWorld 看是否及时做完；WebShop 看买到的商品是否匹配全部属性。WebShop 另报 \([0,1]\) 奖励，公式在附录 (1)(2)，花园不重推。他们改过环境：原版价格从均匀分布采样，这里改成取平均，保证多次实例化可复现；每页商品从 3 提到 **10**。相对 ReAct 原设定，WebShop 还多加了一条示范，凑成两条。不要拿这张表去改 ReAct 专文 Table 4 的 66.6 / 40.0：骨干、商品数、是否改价格，都不是同一设定。
+
+步数帽和 \(k\) 写在附录 Table 4。HotpotQA / FEVER 的 \(H=7\)，WebShop 15，ALFWorld 20。few-shot 上限 \(k\)：HotpotQA 6，WebShop / ALFWorld 2，FEVER 3。训练采集最多反思 3 次；评测算法 3 没有这个循环。策略提示几乎原样借 ReAct，只在前面拼洞察。相关工作把 Retroformer 写成带策略梯度的回顾式 Agent，本篇没有梯度。AdaPlanner 用反馈改计划，仍偏本题。Generative Agents 的记忆按近因、相关、重要检索，实验是开放社会模拟，不是 HotpotQA 这种交卷。作者把经验回放的出处写到 Lin 1992 和 Q-learning 的 off-policy：采集策略是 Reflexion，评测策略是带洞察的 ReAct，改进发生在提示里。这是类比，不是已经实现了 DQN。
+
+## 3. 数字：39 和 59 来自 Table 3，不是 130/134
+
+主结论钉在文字和表上。Figure 5 是柱，禁止手抄柱高当主数字。Table 3 把完整 ExpeL 写成 HotpotQA **39.0 ± 1.7**、ALFWorld **59.0 ± 0.3**。同表 ReAct 是 **28.0** / **40.0**。人手写洞察 HotpotQA **32.0 ± 1.1**，高于 ReAct，低于 GPT-4 抽的 **39.0**。gpt-3.5-turbo 当抽取模型也是 **32.0 ± 0.4**。更好的抽取模型会抬清单质量；作者把这句写成「基座变强，本方法白捡」，不是已经把抽取器装进 \(S'\)。
+
+只开一种学习时，正文给出 insights-only / retrieve-only。HotpotQA **36% / 31%**，分析偏重；ALFWorld **50% / 55%**，示范更有用；WebShop 成功率 **37% / 38%**，奖励 **0.675 / 0.67**，两边差不多。完整 ExpeL 的 WebShop 奖励在附录 Table 5 是 **0.701**。成功率仍以 Figure 5 为准，不另造一个百分数。WebShop 要比价、改查询、点选项，两种学习都要，单开哪边都不够。
+
+和 Reflexion 比，正文写 HotpotQA 上 ExpeL 一次 **39%**，Reflexion 到 R3 是 **40%**；ALFWorld 上 ExpeL 一次 **59%**，Reflexion R3 是 **54%**。评测默认不重试。Table 2 另开「评测也 Reflexion」：从 R0 失败检查点接着试。ReAct+Reflexion：R0 **40.3%**，R3 **54.4%**。ExpeL retrieve-only：R0 **54.5%**，R3 **60.4%**。ExpeL+Reflexion：R0 **59.0%**，R3 **64.2%**。这张表证明两套可以叠，不证明评测必须重试。不要用 64.2 替换 Table 3 的 59.0，也不要用 54.4 去改 Reflexion 专文的 130/134：那边 GPT-3、启发式、12 个连续 trial，不是四折 gpt-3.5。
+
+附录 Table 5 把 ALFWorld 拆开。ReAct / 完整 ExpeL：put **50 / 83**，clean **61 / 74**，heat **13 / 43**，cool **71 / 67**，look **0 / 39**，puttwo **0 / 29**。cool 上 ExpeL 低于 ReAct。heat、look、puttwo 从很低往上抬，也远没满。把 59.0 听成「家务全会了」，缺的是子类方差。IL 列是从 ReAct 论文抄来的：cool 写 100、heat 74、look 只有 22，作者用这列说明从零模仿不稳定，本篇主列仍是 prompt-based。
+
+附录 Table 6 不要拿去改成功率。HotpotQA 上完整 ExpeL 平均每条轨迹大约 **4310** token，ReAct 大约 **1320**，多出来的主要是洞察和检索示范，不是想了更多步——想法数 5.02 对 5.19。ALFWorld 非法动作 ReAct 平均 2.84，ExpeL 2.32，retrieve-only 1.95，并没有清零。WebShop 上 retrieve-only 的非法动作 0.61 反而高于 ReAct 的 0.42。token 更贵、非法动作少一点，都不是另一张准确率表。
+
+附录给过几条 GPT-4 抽出来的句子方向：复杂问题先拆成简单查询；答案可能已经出现在观察里；找物品要考虑它通常出现在哪、用来干什么；一步没进展就重新评估。人手写洞察也强调搜不到就换关键词、穷尽步骤再认输。GPT-4 能抽出和人手写重叠的部分，Table 3 仍是 39 高于 32：重叠不等于等价。作者把 Auto-GPT 式的拆问写进洞察阅读，花园读成提示里多了几句策略，不是已经接上 Auto-GPT 那套任务列表。
+
+迁移 Table 1，FEVER 成功率：Act **58 ± 0.0**，ReAct **63 ± 0.4**，无目标示范的迁移 **65 ± 1.7**，带示范 **70 ± 0.7**。源任务洞察有用，目标任务的几条示范能把胡写的句子钉回去。没有经验池可检索，所以这张表测的是洞察迁移，不是检索迁移。
+
+定性观察不要升级成准确率。HotpotQA 上出现过「答案可能已经在观察里」这类洞察，模型会猜一个最可能的，而不是输出 Unknown。ALFWorld 上平底锅的先验从抽屉 / 台面改到炉灶；拿错花瓶会放回去。作者写这些可能从某条洞察长出来。ReAct 偶尔知道拿错了，实验里没见它放下。这是轨迹阅读，不是另一张表。
+
+## 4. 这不是术语式 (2)，洞察也不是改进器
+
+\(H_t\) 变了：新题能读到训练时抽出的句子。改进器没变。下一轮的操作符、Faiss 配方、\(Z=3\)、温度 0、哪只模型负责抽取，还是附录 Table 4 那份。混元 L0 装不下跨题保持；L3 要改提议 / 选择程序。本篇停在留下状态、不改程序。不要用 59.0 给 [SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md) 的 LoRA 或 [DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 的自改 Python 背书，也不要用 39.0 去改 ReAct 专文的 27.4 或 Reflexion 的 0.55。
+
+和 Reflexion 钉死。那边 `mem` 服务同一任务剩下的 trial，容量按上下文砍。这边 \(\hat{\iota}\) 服务分布内的新题，评测可以一次交卷。训练阶段借用了 Reflexion，评测阶段把重试关了。和 ACE 钉死。playbook 是条目加计数、非 LLM 合并；洞察是 GPT-4 用四则运算改的一份清单，重要性到 0 才删。和 Voyager 钉死。技能是函数，门是自验证；洞察是句子，门是训练时的环境对错。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：改的是本题草稿，没有跨题池。和 [CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md) 钉死：工具检查服务本题改稿。
+
+对有大模型基础的读者，读完应能回答四句。改的是哪一层？Harness 里的洞察和示范库。权重动了没有？没有。39% 能不能当 Agent 已经会自己改抽取规则？不能。还缺什么才叫花园 RSI？抽取操作符或检索配方进入 \(S'\)，并且下一轮改进器用的就是升级后的那份。作者写洞察变长以后可以再检索；主实验还把全清单塞进窗口。
+
+![上排经验池、洞察清单、本题 y；下排 3.5 策略、GPT-4 抽取、Faiss 配方、Reflexion 采集冻着](./images/fig-expel-frozen.png)
+
+> 图 2：实线只更新池子和洞察。虚线是冻着的模型和操作说明书。
+
+**图 2 解析**
+
+- **会变**：\(\mathcal{B}\) 里的轨迹、\(\hat{\iota}\) 里的句子和计数、本题 \(y\)。
+- **冻 \(\theta\)**：评测 gpt-3.5-turbo-0613；抽取 gpt-4-0613。
+- **冻 \(I\)**：ADD / EDIT / 投票、\(L\)、\(Z=3\)、\(H\)、\(k\)、温度 0、嵌入模型。
+- **门**：HotpotQA EM、ALFWorld 任务完成、WebShop 属性匹配。训练采集用得到这些门，评测一次用一次。
+- **下一题**：洞察携带。抽取提示不携带「上次该怎么抽」的升级。
+
+## 5. 跨题句子还在，改进器仍在墙外
+
+同一句「从经验里学习」，至少分四截。Reflexion 的经验是本题 trial。ExpeL 的经验是训练集上的池子加一份清单。ACE 的经验是活页 playbook。Voyager 的经验是可执行技能。四截都改 \(H_t\)，都不是式 (2)。Generative Agents 那类社会模拟记忆（近因 / 相关 / 重要）作者点名过，本篇不收：那些实验偏开放互动，这边是解题。
+
+洞察可解释、可手改、可加专家句子，这是相对微调的好处，也是相对 RSI 的界限：人随时能改清单，等于 \(I\) 的一部分仍在人手里。终身学习要额外检索洞察，作者写在局限里；主实验还没走到那一步。没有图像观察、没有开源小模型主表、没有策略改进的理论保证，同样是局限，不是没写完的 RSI。
+
+WebShop 上相对 Reflexion 偏弱，作者承认。Reflexion 专文也说 WebShop 四 trial 看不见涨。两边都在电商搜索上吃力，不要用哪一边的失败给另一边的 59.0 背书。IL 数字来自 ReAct 论文，只说明从零学动作补不了常识，不要写进本篇主列。安全段只写：给互联网访问可能造成意外伤害，RLHF 或许能压。这不是评测。计算写的是一台 i9-9900K 加一块 2080 Ti，实验走 Langchain 调 OpenAI。复现账单跟 2023 年 7–8 月的 API 绑定。没有图像观察、没有开源小模型主表、没有策略改进的理论保证，局限节自己写了；终身学习若洞察超窗，还要再做一次检索，主实验还把全清单塞进窗口。
+
+few-shot 手册和抽取操作符都不会因为某题做对就多一条规则进仓库。人要改 \(L\)、改 \(k\)、换 gpt-4o 抽取，都是改 \(I\)。这和 DGM 改自己的 Python、STOP 改改进器源码正好相反。作者把 ExpeL 写成提示方法上的经验回放，花园读成 2024 年这篇的定位，不读成强化学习或记忆系统的发明权。
+
+**读**：Table 3 的 39.0 / 59.0、insights-only 与 retrieve-only 的 36/31 与 50/55、WebShop 奖励 0.701、FEVER 70、Table 2 的 64.2 是叠了重试、cool 子类会掉、抽取配方冻着、评测一次、不是 71、不是 130/134、不是式 (2)。  
+**不读**：用 59.0 改 Reflexion 的 130/134、用 39.0 改 ReAct 的 27.4、用手抄 Figure 5 替换 Table 3、把 Table 2 的 R3 当主设定、说模型自己改了抽取规则、说已经 RSI。
+
+同层：[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+
+## 参考文献
+
+1. Zhao, A., Huang, D., Xu, Q., Lin, M., Liu, Y.-J., & Huang, G. (2024). [ExpeL: LLM Agents Are Experiential Learners](https://arxiv.org/abs/2308.10144). AAAI 2024. arXiv:2308.10144. Table 3 的 39.0 / 59.0 与 Table 1 的 FEVER 70 以正文表为准。
+2. 代码：[LeapLabTHU/ExpeL](https://github.com/LeapLabTHU/ExpeL)。
+3. 本花园：[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)；[ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)；[ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。
