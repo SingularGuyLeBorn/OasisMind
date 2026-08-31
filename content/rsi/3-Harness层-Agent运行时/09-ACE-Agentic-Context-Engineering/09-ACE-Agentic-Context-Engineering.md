@@ -19,7 +19,7 @@ tags:
 
 # 09 ACE：上下文当活页，不当摘要
 
-会写 skill、会往 prompt 里塞一段「下次注意」，看起来像自进化。现成的提示优化器却经常把这段话**越改越短**：GEPA 一类把简洁当优点，领域启发式、工具失败模式被压成一句空话。另一条路更狠——每步让 LLM **整段重写**累积上下文。AppWorld 上 Dynamic Cheatsheet 的个案：第 60 步还有 18,282 token、准确率 66.7；下一步塌成 122 token，准确率 57.1，比不适应的 63.7 还差。作者把这两件事叫做 **brevity bias** 和 **context collapse**。
+会写 skill、会往 prompt 里塞一段「下次注意」，看起来像自进化。现成的提示优化器却经常把这段话**越改越短**：GEPA 一类把简洁当优点，领域启发式、工具失败模式被压成一句空话。另一条路更狠——每步让 LLM **整段重写**累积上下文。AppWorld 上 [Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 的个案：第 60 步还有 18,282 token、准确率 66.7；下一步塌成 122 token，准确率 57.1，比不适应的 63.7 还差。作者把这两件事叫做 **brevity bias** 和 **context collapse**。这两格是 ACE 在 AppWorld、DeepSeek-V3.1 上跑 DC 得到的，不要拿去改 Suzgun 主表的 AIME / 24 点。
 
 ACE（Agentic Context Engineering）把上下文改写成**活页 playbook**：一条条带编号的策略，只追加或就地改计数，不整本重抄。权重不动。三项分工冻死：Generator 跑轨迹，Reflector 提炼教训，Curator 写成增量条目，再由**非 LLM 逻辑**合并。宣传句是 self-improving language models。花园要钉的是：改的是 $H_t$，三项角色和合并代码都在墙外。
 
@@ -29,10 +29,10 @@ ACE（Agentic Context Engineering）把上下文改写成**活页 playbook**：�
 
 上下文适应 = 改输入，不改 $\theta$。系统提示、记忆、检索证据都算。优点写在引言：可解释、运行时能塞新知识、复合系统里模块能共享。长上下文模型和 KV cache 复用让「堆详细 playbook」在工程上突然显得便宜——这句是动机。本篇测定仍是 AppWorld 和金融两张表，外加附录的 DDXPlus / BIRD-SQL，不是「长上下文已经免费」的账单证明。
 
-现成方法走自然语言反馈：模型看当前上下文和执行痕迹，写出该怎么改，再写回去。Reflexion 反思失败；[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 把批评当文本梯度；[GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md) 用执行痕迹做遗传 Pareto 搜提示，官方 DSPy 实现、本实验 `auto="heavy"`；Dynamic Cheatsheet 在推理时攒策略备忘。作者的诊断不是「反馈没用」，是两条失效：
+现成方法走自然语言反馈：模型看当前上下文和执行痕迹，写出该怎么改，再写回去。Reflexion 反思失败；[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 把批评当文本梯度；[GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md) 用执行痕迹做遗传 Pareto 搜提示，官方 DSPy 实现、本实验 `auto="heavy"`；[Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 在推理时攒策略备忘。作者的诊断不是「反馈没用」，是两条失效：
 
 - **Brevity bias。** 优化目标偏向短而通用的指令。Gao 等在单测生成上看到迭代优化收敛到几乎同一句 “Create unit tests…”。领域启发式、工具用法、失败模式被当成噪音丢掉。Agent 和知识密集任务刚好靠这些细节。
-- **Context collapse。** 每步整本重写。上下文一长，模型倾向压成短摘要，累积知识一次性蒸发。上面 18,282 → 122 token 的例子挂在 Dynamic Cheatsheet 上，作者声明这不是该方法私有的病，是「让 LLM 做端到端重写」的结构风险。
+- **Context collapse。** 每步整本重写。上下文一长，模型倾向压成短摘要，累积知识一次性蒸发。上面 18,282 → 122 token 的例子挂在 [Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 上，作者声明这不是该方法私有的病，是「让 LLM 做端到端重写」的结构风险。
 
 ACE 把审美从人挪到模型。当前提示优化器几乎都在奖励更短、更通、更好读。人读起来干净，Agent 做题时却缺工具坑、缺失败模式、缺「上次 API 返回空列表时该怎么办」。短指令在 HotPotQA、Game of 24 上够用，作者自己把这两类任务写成反例。AppWorld 和 XBRL 金融抽取要的是另一类东西：工具片段、失败案例、领域概念。长上下文里模型自己会挑段落，人觉得啰嗦的条目对 Generator 往往更有用。上下文于是被写成带编号的 playbook，而不是压缩后的口号。
 
@@ -52,7 +52,7 @@ $\tau_t$ 是 Generator 在当前 $H_t$ 和查询 $x$ 上跑出的轨迹，$f_t$ 
 
 一条 bullet 可以写成 $(id,\;c^{+},\;c^{-},\;\mathrm{content})$。$c^{+}$ / $c^{-}$ 是 Generator 事后投票，不是形式验证。下次解题时 Generator 先读整本，再在轨迹里点名哪些 id 帮了忙、哪些在误导。Reflector 看见的是轨迹加这份投票，外加 $f_t$。Curator 只被允许交 $\Delta$：若干条新内容，或对旧 id 的计数修正。Merge 按 id 做并集。语义嵌入去重发生在追加之后，或窗口告急时：太像的两条合成一条，防止同一条失败模式换措辞进十遍。作者把这一步叫 grow-and-refine。它防的是冗余，不防有害。有害条目靠 $c^{-}$ 涨、Generator 少引用，没有「删掉这条」的证明义务。Argus 用四角色合约挡入库；这里用计数软挡。软挡在有执行器的环境里够用，在金融抽取里不够——Table 2 会给出负号。
 
-三项分工故意拆开。Dynamic Cheatsheet 已经是 agentic 记忆；ACE 多出来的是独立 Reflector：评价和提炼不跟「往书里写什么」挤在同一只嘴里。消融 Table 3 把这句话钉成数。去掉 Reflector 和多 epoch，离线均从 59.4 掉到 55.1；只去掉多 epoch，掉到 56.8。Reflector 不是装饰，多扫几遍训练题也不是装饰。batch size 钉死为 1 的理由写在方法里：每条样本的教训局部、可并行合并；放大 batch 会把多条轨迹的 delta 搅在一次 LLM 调用里，条目化的好处就没了。
+三项分工故意拆开。[Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 已经是 agentic 记忆；ACE 多出来的是独立 Reflector：评价和提炼不跟「往书里写什么」挤在同一只嘴里。消融 Table 3 把这句话钉成数。去掉 Reflector 和多 epoch，离线均从 59.4 掉到 55.1；只去掉多 epoch，掉到 56.8。Reflector 不是装饰，多扫几遍训练题也不是装饰。batch size 钉死为 1 的理由写在方法里：每条样本的教训局部、可并行合并；放大 batch 会把多条轨迹的 delta 搅在一次 LLM 调用里，条目化的好处就没了。
 
 三项用同一只 LLM、同一套非 thinking 模式。这不是省钱，是防漏。若 Reflector 换成更强模型，它可能把 Generator 根本写不出的策略写进 playbook，分数涨了却说不清是上下文适应还是暗中蒸馏。换骨干时三只一起换，算法和 prompt 不改。附录在 GPT-OSS-120B、GPT-5.1、Llama-3.3-70B-Instruct 上重复了 AppWorld 或金融。弱模型增益更小，因为反思更吵——Llama 在 FiNER 上只 +2.4，同一套角色几乎空转。这是局限段自己写的：$I$ 假设了「Reflector 提得出能用的教训」。
 
@@ -121,7 +121,7 @@ $S$ 若取当前 $H_t$，式 (1) 确实在改下次还用的脚手架。条目�
 
 若要把 ACE 推到式 (2)，至少得让下一轮的改进器身份来自本轮产物。一种写法是把三项角色的系统提示本身做成 playbook 的一章，允许 Curator 改 Reflector 怎么抽教训；另一种是把 Merge 从确定性代码改成可被改写的程序，允许系统重新打开整本重写。论文恰好把第二条路封死。无论哪一种，都还要面对 Table 2 已经给出的负号：改进器若能改自己，脏反馈也会被写进改进器。$f_t$ 的身份在这里分叉：代码成不成功是环境给的，实体标签对不对常常没有环境。没有墙外的考官，递归只是把噪声写得更勤。
 
-和邻居钉死。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 的领域技能必须离开作者会话；ACE 的活页还在同一只 Agent 的窗口里。SEAGym 里 ACE 选出的 E4 快照有 13 条执行习惯，验证只 +2.9——那是冻 $M$、Harbor 日程下的过程评测，本篇 Table 1 的 59.4 不能拿去对那张 OOD 表。两套实验共用「ACE」这个名字，骨干、日程、切分都不同，禁止横加。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 要任务原生证据和提交人才能入库；ACE 靠计数和去重，没有 campaign 级合约。[ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 冻元 Agent 搜 `forward` 代码；ACE 冻三项角色搜条目文本。GEPA 优化的是一条短指令，ACE 优化的是越来越厚的书。[Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md) 在 GSM8K 上可以找到 *SOLUTION* 这种极短串，和 brevity bias 是同一根针的两头：算术词题够用，AppWorld 不够。骨干、环境、适应度都不同，不要用 83.9 改 46.4。Dynamic Cheatsheet 是记忆前身；ACE 把 Reflector 拆出来，并把合并从 LLM 手里拿走。
+和邻居钉死。[SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md) 的领域技能必须离开作者会话；ACE 的活页还在同一只 Agent 的窗口里。SEAGym 里 ACE 选出的 E4 快照有 13 条执行习惯，验证只 +2.9——那是冻 $M$、Harbor 日程下的过程评测，本篇 Table 1 的 59.4 不能拿去对那张 OOD 表。两套实验共用「ACE」这个名字，骨干、日程、切分都不同，禁止横加。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 要任务原生证据和提交人才能入库；ACE 靠计数和去重，没有 campaign 级合约。[ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 冻元 Agent 搜 `forward` 代码；ACE 冻三项角色搜条目文本。GEPA 优化的是一条短指令，ACE 优化的是越来越厚的书。[Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md) 在 GSM8K 上可以找到 *SOLUTION* 这种极短串，和 brevity bias 是同一根针的两头：算术词题够用，AppWorld 不够。骨干、环境、适应度都不同，不要用 83.9 改 46.4。[Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 是记忆前身；ACE 把 Reflector 拆出来，并把合并从 LLM 手里拿走。
 
 局限按原文。Reflector 提不出有用教训，上下文就会吵，甚至有害——和 Cheatsheet 绑在底层模型策展能力上是同一类依赖。不是所有任务都需要厚书：HotPotQA 更吃短指令，Game of 24 一条可复用规则就够。ACE 适合领域知识、复杂工具、环境特定策略已经写不进权重和一句系统提示的地方。无执行器、无金标时，Table 2 已经给出负号。排行榜上的 IBM CUGA 对照是情境，不是公平对打。playbook 随任务变长本身不是失败；脏条目才是。KV cache 只让长前缀便宜，不替 $f_t$ 把关。
 
@@ -141,12 +141,12 @@ $S$ 若取当前 $H_t$，式 (1) 确实在改下次还用的脚手架。条目�
 **读**：式 (1)、18,282→122 的 collapse、Table 1 的 42.4 / 59.4 / 59.5、无标签 +14.8、金融 81.9 与 FiNER 在线 −3.4、摘要 +10.6 对 +17.0 的分母差、GEPA 延迟 −82.3%、CUGA 只当情境。  
 **不读**：把 self-improving 听成权重递归、把 59.4 听成已经赢下 IBM CUGA 方法对照、用 SEAGym 的 +2.9 替换 Table 1、用第三方文档的 +17.1 当作摘要平均、把 KV cache 命中听成算法变便宜。
 
-同层技能文件：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。同层门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。过程评测：[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。
+同层技能文件：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。同层门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。记忆前身：[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)。过程评测：[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。
 
 ## 参考文献
 
 1. Zhang, Q., Hu, C., Upasani, S., Ma, B., Hong, F., Kamanuru, V., Rainton, J., Wu, C., Ji, M., Li, H., Thakker, U., Zou, J., & Olukotun, K. (2025). [Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models](https://arxiv.org/abs/2510.04618). arXiv:2510.04618. Table 1–4 与 18,282→122 以 HTML 为准。
 2. [ace-agent/ace](https://github.com/ace-agent/ace)。
-3. Suzgun et al. (2025). [Dynamic Cheatsheet](https://arxiv.org/abs/2504.07952). arXiv:2504.07952. 记忆前身；collapse 个案挂在该方法的重写上。
+3. Suzgun et al. (2025/2026). [Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)（[arXiv:2504.07952](https://arxiv.org/abs/2504.07952)）。记忆前身；collapse 个案挂在该方法的重写上，数字以本篇 AppWorld 表为准，不要用 99% 改 ACE。
 4. Agrawal et al. (2025). [GEPA](https://arxiv.org/abs/2507.19457). arXiv:2507.19457. 短指令优化对照。
-5. 本花园：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)；[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)；[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+5. 本花园：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)；[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)；[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)；[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)；[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
