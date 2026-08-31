@@ -1,67 +1,44 @@
 ---
 title: 经典论文
-description: 经典论文库：Ilya 推荐 27 篇完整精读为基座，叠加 HiPPO、MoE 等技术路线
+description: 以原始论文和作者资料为依据的经典工作精读，包含 Sutskever–Carmack 社区重建书目与补充专题
 ---
 # 经典论文 Classic Papers
 
-经典论文专题库。基座是 Ilya Sutskever 给 John Carmack 的推荐阅读（权威清单 **27 项**，不是自媒体加戏的「30 篇」），每篇都有完整精读。另收沧海遗珠（HiPPO）与各技术路线经典（MoE 等）。
+这是一个按问题与知识依赖组织的经典工作精读库。当前主体来自一份与 Sutskever–Carmack 轶事相关的 **27 项社区重建书目**，另收 HiPPO、稀疏门控 MoE 等补充专题。
+
+必须先说明证据边界：John Carmack 在公开采访中回忆，Ilya Sutskever 曾给他一份“大约 40 篇研究论文”的私人清单；Carmack 也曾公开期待 Ilya 发布一份 canonical list。该私人原件并未完整公开。因此，本库不把网络流传的 27 项版本称为“权威原始清单”，也不声称它保存了 Ilya 的精确顺序。
 
 ## 怎么读
 
-1. 先看 [Ilya Sutskever 推荐阅读清单](ilya-30-papers-reading-list) 了解原文顺序与主题分布。
-2. 按下面主题分组逐篇精读（01–05 先建立复杂度/信息论元框架，再 CNN → RNN → Attention，最后结构记忆与规模化）。
-3. HiPPO 与 MoE 是清单之外、但今天架构绕不开的补充。
+1. 先读 [阅读指南](00-阅读指南/00-阅读指南.md)，分清私人原始清单、社区重建书目与本站学习路线。
+2. 再看 [Sutskever–Carmack 阅读书目](01-sutskever阅读清单/01-sutskever阅读清单.md)，逐项核对社区版本与一手材料。
+3. 按六个主题学习；章节编号只表示本站建议顺序，不代表 Ilya 的排序或编排意图。
+4. 用 [补充经典](02-补充经典/02-补充经典.md) 连接状态空间模型与 MoE 等后续技术路线。
 
-## 基座索引
+## 三套坐标不要混用
 
-- [Ilya Sutskever 推荐阅读：约 30 篇深度学习论文清单](ilya-30-papers-reading-list) — 「学会这些就掌握今天 90% 的重要知识」
+| 坐标 | 能确认什么 | 不能据此断言什么 |
+|---|---|---|
+| 私人原始清单 | Carmack 确认曾收到过一份材料清单 | 精确条目、篇数和原始顺序 |
+| 社区重建书目 | 某个公开重建版本当前列出 27 项 | 它就是私人原件，或未收录项目都是错误版本 |
+| 本站学习路线 | 本库按知识依赖组织的阅读次序 | Ilya 的作者意图或私人排序 |
 
-## Ilya 推荐 27 篇 · 逐篇精读
+## 本站主题学习路线
 
-### 信息论、复杂度与智能的边界
-1. [The First Law of Complexodynamics](ilya-30/01-the-first-law-of-complexodynamics/01-the-first-law-of-complexodynamics)
-2. [Quantifying the Rise and Fall of Complexity in Closed Systems: The Coffee Automaton](ilya-30/02-quantifying-the-rise-and-fall-of-complexity-in-closed-systems-the-coffee-automaton/02-quantifying-the-rise-and-fall-of-complexity-in-closed-systems-the-coffee-automaton)
-3. [A Tutorial Introduction to the Minimum Description Length Principle](ilya-30/03-a-tutorial-introduction-to-the-minimum-description-length-principle/03-a-tutorial-introduction-to-the-minimum-description-length-principle)
-4. [Machine Super Intelligence](ilya-30/04-machine-super-intelligence/04-machine-super-intelligence)
-5. [Kolmogorov Complexity and Algorithmic Randomness](ilya-30/05-kolmogorov-complexity-and-algorithmic-randomness/05-kolmogorov-complexity-and-algorithmic-randomness)
+- `1.1` [复杂度、信息论与智能](01-sutskever阅读清单/1.1-复杂度信息论与智能/1.1-复杂度信息论与智能.md)：先建立“结构、随机性、描述长度”的语言。
+- `1.2` [CNN 与视觉基础](01-sutskever阅读清单/1.2-cnn与视觉基础/1.2-cnn与视觉基础.md)：从 AlexNet 到残差网络与感受野。
+- `1.3` [RNN 与序列建模](01-sutskever阅读清单/1.3-rnn与序列建模/1.3-rnn与序列建模.md)：现象、机制与正则化。
+- `1.4` [Attention 与 Transformer](01-sutskever阅读清单/1.4-attention与transformer/1.4-attention与transformer.md)：从对齐机制到纯注意力架构与代码实现。
+- `1.5` [结构、记忆与推理](01-sutskever阅读清单/1.5-结构记忆与推理/1.5-结构记忆与推理.md)：指针、集合、关系、图与外部记忆。
+- `1.6` [训练、规模与生成](01-sutskever阅读清单/1.6-训练规模与生成/1.6-训练规模与生成.md)：描述长度正则、并行训练、端到端系统、规模律与生成表示。
 
-### CNN 与视觉基础
-6. [ImageNet Classification with Deep Convolutional Neural Networks (AlexNet)](ilya-30/06-imagenet-classification-with-deep-convolutional-neural-networks-alexnet/06-imagenet-classification-with-deep-convolutional-neural-networks-alexnet)
-7. [Deep Residual Learning for Image Recognition](ilya-30/07-deep-residual-learning-for-image-recognition-resnet/07-deep-residual-learning-for-image-recognition-resnet)
-8. [Identity Mappings in Deep Residual Networks](ilya-30/08-identity-mappings-in-deep-residual-networks/08-identity-mappings-in-deep-residual-networks)
-9. [Multi-Scale Context Aggregation by Dilated Convolutions](ilya-30/09-multi-scale-context-aggregation-by-dilated-convolutions/09-multi-scale-context-aggregation-by-dilated-convolutions)
-10. [CS231n: Convolutional Neural Networks for Visual Recognition](ilya-30/10-cs231n-convolutional-neural-networks-for-visual-recognition/10-cs231n-convolutional-neural-networks-for-visual-recognition)
+## 补充经典
 
-### RNN 与序列建模
-11. [The Unreasonable Effectiveness of Recurrent Neural Networks](ilya-30/11-the-unreasonable-effectiveness-of-recurrent-neural-networks/11-the-unreasonable-effectiveness-of-recurrent-neural-networks)
-12. [Understanding LSTM Networks](ilya-30/12-understanding-lstm-networks/12-understanding-lstm-networks)
-13. [Recurrent Neural Network Regularization](ilya-30/13-recurrent-neural-network-regularization/13-recurrent-neural-network-regularization)
+- `2.1` [状态空间模型](02-补充经典/2.1-状态空间模型/2.1-状态空间模型.md)：以 HiPPO 连接连续时间记忆与现代 SSM。
+- `2.2` [混合专家模型](02-补充经典/2.2-混合专家模型/2.2-混合专家模型.md)：从稀疏门控 MoE 到 Switch Transformer。
 
-### Attention 与 Transformer
-14. [Neural Machine Translation by Jointly Learning to Align and Translate](ilya-30/14-neural-machine-translation-by-jointly-learning-to-align-and-translate/14-neural-machine-translation-by-jointly-learning-to-align-and-translate)
-15. [Attention Is All You Need](ilya-30/15-attention-is-all-you-need/15-attention-is-all-you-need)
-16. [The Annotated Transformer](ilya-30/16-the-annotated-transformer/16-the-annotated-transformer)
+## 证据入口
 
-### 结构、记忆与推理
-17. [Pointer Networks](ilya-30/17-pointer-networks/17-pointer-networks)
-18. [Order Matters: Sequence to Sequence for Sets](ilya-30/18-order-matters-sequence-to-sequence-for-sets/18-order-matters-sequence-to-sequence-for-sets)
-19. [A Simple Neural Network Module for Relational Reasoning](ilya-30/19-a-simple-neural-network-module-for-relational-reasoning/19-a-simple-neural-network-module-for-relational-reasoning)
-20. [Relational Recurrent Neural Networks](ilya-30/20-relational-recurrent-neural-networks/20-relational-recurrent-neural-networks)
-21. [Neural Message Passing for Quantum Chemistry](ilya-30/21-neural-message-passing-for-quantum-chemistry/21-neural-message-passing-for-quantum-chemistry)
-22. [Neural Turing Machines](ilya-30/22-neural-turing-machines/22-neural-turing-machines)
-
-### 训练、规模与生成
-23. [Keeping Neural Networks Simple by Minimizing the Description Length of the Weights](ilya-30/23-keeping-neural-networks-simple-by-minimizing-the-description-length-of-the-weights/23-keeping-neural-networks-simple-by-minimizing-the-description-length-of-the-weights)
-24. [GPipe: Easy Scaling with Micro-Batch Pipeline Parallelism for Giant Neural Networks](ilya-30/24-gpipe-easy-scaling-with-micro-batch-pipeline-parallelism/24-gpipe-easy-scaling-with-micro-batch-pipeline-parallelism)
-25. [Deep Speech 2: End-to-End Speech Recognition in English and Mandarin](ilya-30/25-deep-speech-2-end-to-end-speech-recognition-in-english-and-mandarin/25-deep-speech-2-end-to-end-speech-recognition-in-english-and-mandarin)
-26. [Scaling Laws for Neural Language Models](ilya-30/26-scaling-laws-for-neural-language-models/26-scaling-laws-for-neural-language-models)
-27. [Variational Lossy Autoencoder](ilya-30/27-variational-lossy-autoencoder/27-variational-lossy-autoencoder)
-
-## 沧海遗珠
-
-- [HiPPO: 最优多项式投影记忆](hippo-最优多项式投影记忆) — 连续记忆的最优多项式投影，S4 / Mamba 的理论起点
-
-## 用户贡献：MoE 技术路线
-
-- [MoE 经典（一）：Outrageously Large Neural Networks（Shazeer et al. 2017）](moe-classic-1-sparsely-gated) — 稀疏门控 MoE 层、137B 参数、容量涨 1000 倍
-- [MoE 经典（二）：Switch Transformer（Fedus et al. 2021）](moe-classic-2-switch-transformer) — top-1 门控、7 倍加速、万亿参数
+- [John Carmack 访谈](https://dallasinnovates.com/exclusive-qa-john-carmacks-different-path-to-artificial-general-intelligence/)：Carmack 对私人清单规模和“90%”说法的公开回忆。
+- [John Carmack 公开帖](https://x.com/ID_AA_Carmack/status/1622673143469858816)：他期待 Ilya 公开 canonical list，也侧面说明流传书目并非已认证原件。
+- [27 项社区重建仓库](https://github.com/dzyim/ilya-sutskever-recommended-reading)：只能作为该重建版本的来源说明。
