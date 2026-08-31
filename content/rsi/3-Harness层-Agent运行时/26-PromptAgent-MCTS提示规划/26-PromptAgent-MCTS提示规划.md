@@ -106,7 +106,7 @@ Epistemic 上 Figure 4b：训练奖励和测试随深度先升，大约深度 3 
 **读**：状态是提示、动作是错题反馈、论文式 (1)(2)、12 次、\(c=2.5\)、深度 8/6/4 三档、批大小 5、GPT-3.5 基座 / GPT-4 优化器、BBH 均 0.802、Object Counting 输 CoT、NCBI 0.645、Table 3 迁移均 0.839 / 0.441、消融 0.754 对 Greedy 0.698、APE 约 150 条、摘要百分比是百分点差、不是术语式 (2)。  
 **不读**：用 0.802 改 APE 专文的 0.810、用 11.2% 当相对涨幅、用 Table 3 的 0.797 替换 Table 1 的 0.873、说六套 BBH 全赢 CoT、把 GPT Agent 插件写成 AutoGPT 主实验、说 MCTS 配方也在进化、把 ToT 的推理树听成本篇、用 Biosses 40 条测试当主证据、把 `{steps_per_gradient}` 听成真反向。
 
-同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)。综述里的生成派规划：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)。综述里的生成派规划：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

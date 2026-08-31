@@ -140,7 +140,7 @@ Gödel-base 相对本篇 MGSM 53.4→64.2，那 11 个百分点比的是**同一
 **读**：三件套；`forward`；GPT-4 写 / GPT-3.5 考；DROP 79.4、MGSM 53.4、+13.6 F1、+14.4 MGSM；GSM8K 转移 +25.9；ARC 子集 13.7→Sonnet 48.3；higher-order 是未来工作。  
 **不读**：把 53.4% 听成 RSI、把 ARC 子集听成 ARC-AGI 榜、把「nearly 50%」听成在 GPT-3.5 上搜出来的、把 Gödel-free 90.6% 和本篇 53.4 拼成一条涨幅。
 
-同层自指：[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)（公平对照打本篇 Table 1）；[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)（无自改 ≈ 本篇）；[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)。产物层代码搜索：[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)。数字只认 arXiv:2408.08435 的 Table 1–3 与 §4.3，不认二手「自动设计 Agent 已经自我进化」。
+同层自指：[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)（公平对照打本篇 Table 1）；[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)（无自改 ≈ 本篇）；[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)。同层工作流 MCTS：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)（本表 ADAS 的 MBPP 53.4 不要改本篇 MGSM 53.4）。产物层代码搜索：[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)。数字只认 arXiv:2408.08435 的 Table 1–3 与 §4.3，不认二手「自动设计 Agent 已经自我进化」。
 
 ## 参考文献
 

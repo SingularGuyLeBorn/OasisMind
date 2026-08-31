@@ -200,6 +200,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | [MemoryBank](../../3-Harness层-Agent运行时/40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) 遗忘曲线记忆 | 是（Harness 检索库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；表上没有无记忆列 | 跨天改库，不是 RSI |
 | [ReadAgent](../../3-Harness层-Agent运行时/41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md) gist 分页记忆 | 是（Harness gist 库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；GPT-3.5 上可低于全文 | 跨题复用文档 gist，不是 RSI |
 | [LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) 函数缓存造工具 | 是（Harness 函数表） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；GPT-4 用户可低于 CoT | 跨实例复用 Python，不是 RSI |
+| [AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 工作流 MCTS | 是（Harness 工作流） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；4.55% 是成本比 | 跨题复用搜到的图，不是 RSI |
 | 经典 TTT（测完可丢） | 弱：改的是当前样本上的权重/状态 | 否：通常不构成下一代 $I$ | 推理时 Model | 往往没有跨请求验收 | TTT |
 | Replay / EWC | 是（权重） | 否：$I$ 仍是固定 CL 算法 | Model / CL | 旧任务保持测试 | 持续学习零件 |
 | OPD 一次训练作业 | 是（学生 $\theta$） | 否：教师与脚本在墙外 | Model 后训练 | 可以有 held-out | 不是 RSI |

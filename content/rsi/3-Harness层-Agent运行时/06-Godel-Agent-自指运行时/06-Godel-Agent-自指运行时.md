@@ -163,7 +163,7 @@ STOP 把改进器当成可求值的优化题，元效用 $\hat u$ 是预优化�
 **读**：式 (1) 四个动作；Gödel-base 相对 ADAS 的 MGSM 11 个百分点；15 美元 / 30 轮；100 次试验的 4% / 92% / 14%；think 与 err 消融；Game of 24 换成搜索。  
 **不读**：把 Gödel-free 的 90.6% 写成公平对照、把标题 Gödel 听成已实现可证自改、把 monkey patch 听成改了 gpt-4o 的权重、把 100% 的 24 点游戏听成开放编码智能。
 
-同层元学习锚点：[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。同层前一篇：[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器当成优化题。同层档案版：[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。验证门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层：[03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。数字只认 arXiv:2410.04444 的 Table 1、Table 2、附录 B/D，不认百科把 Gödel-free 和 ADAS 拼成一条涨幅。LinkedIn / 专栏转写不当事实源。
+同层元学习锚点：[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)。同层工作流搜索：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)（MCTS 搜下游工作流，优化器仍冻）。同层前一篇：[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器当成优化题。同层档案版：[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。验证门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层：[03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。数字只认 arXiv:2410.04444 的 Table 1、Table 2、附录 B/D，不认百科把 Gödel-free 和 ADAS 拼成一条涨幅。LinkedIn / 专栏转写不当事实源。
 
 ## 参考文献
 
