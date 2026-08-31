@@ -574,7 +574,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 ## 8. 交工前自检
 
 - [ ] 重复投喂时先读了 `live/GOAL.md`、`PLAN.md`、`PROCESS.md`，并按 PLAN 续做。  
-- [ ] 新写/写满的文都有「参考文献」，且能在 PROCESS 台账找到。  
+- [ ] 新写/写满的文都有「参考文献」，且能在 PROCESS 台账找到。
 - [ ] 没有用预训练记忆填规格/日期/基准（否则已标 `[OM-FREEPLAY]` 或已删去补读）。  
 - [ ] 新写/写满的模型文按 0.4 拆过积木/数据/infra/稳定性/训推；trick 能链到体系章本体。  
 - [ ] 新文推导完整、有图、不注水重复。  

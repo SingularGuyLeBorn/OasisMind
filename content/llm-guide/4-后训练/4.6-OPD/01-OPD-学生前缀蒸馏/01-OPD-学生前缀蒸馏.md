@@ -56,7 +56,7 @@ $$
 - $\mathbb{E}_{s_t \sim \pi_T}$：期望的采样来自教师模型 $\pi_T$（或人类演示数据集）。状态 $s_t$ 是预设的。
 - $\log \pi_\theta(a_t \mid s_t)$：学生模型在给定教师状态下，生成正确动作 $a_t$ 的对数概率。
 
-这在数学上等价于最小化 **Forward KL（前向 KL 散度）** $D_{\mathrm{KL}}(\pi_T \Vert \pi_\theta)$。 
+这在数学上等价于最小化 **Forward KL（前向 KL 散度）** $D_{\mathrm{KL}}(\pi_T \Vert \pi_\theta)$。
 Forward KL 的致命特点是 **Mean-Seeking(求均值)** 或 **Mass-Covering**. 如果老师会三种解法，学生为了把 KL 散度降到最低，会被迫将概率质量平均分配给这三种解法. 当学生能力有限时，它很容易在三种解法中产生四不像的“幻觉”. 
 
 ### 4.2 OPD 的 Reverse KL
@@ -77,13 +77,13 @@ $$
 $$
 
 - $\pi_\theta(a \mid s_t)$：权重项。学生自己觉得概率很低的 token，哪怕老师觉得很重要，损失的权重也极小。这意味着 Reverse KL 是 Mode-Seeking（寻模态）的。
-- $\log \pi_\theta - \log \pi_T$：对数概率的差值，作为优化的梯度信号。 
+- $\log \pi_\theta - \log \pi_T$：对数概率的差值，作为优化的梯度信号。
 
 学生不再强求学会老师所有的技能(Mass-covering). 只要在自己生成的轨迹上，挑一个自己最擅长、且老师也认可的方向(高概率对齐)，就能把 Loss 降下来. 这极大程度地避免了幻觉. 
 
 ## 5. 数值走查 (Numerical Example)
 
-为了彻底理解 Forward KL 和 Reverse KL 对行为的影响，我们来看一个极其简化的 2-token 词表：$\mathcal{V}=\lbrace A,\,B\rbrace$。 
+为了彻底理解 Forward KL 和 Reverse KL 对行为的影响，我们来看一个极其简化的 2-token 词表：$\mathcal{V}=\lbrace A,\,B\rbrace$。
 
 假设在一个特定的状态下，**教师(Teacher)** 的认知是模糊的，给出的真实分布为 $P_T = [0.5, 0.5]$(既可以选 A 也可以选 B). 
 由于能力限制，**学生(Student)** 只能是极端的，只能输出 $P_S = [1.0, 0.0]$(死磕 A)或者 $P_S = [0.0, 1.0]$(死磕 B). 
@@ -94,7 +94,7 @@ $$
 D_{\mathrm{KL}}(P_T \Vert P_S) = \sum P_T \log \frac{P_T}{P_S} \tag{4}
 $$
 
-- 若学生选 $P_S = [1.0, 0.0]$，计算 $B$ 的 KL：$0.5 \log(0.5 / 0) \to +\infty$。 
+- 若学生选 $P_S = [1.0, 0.0]$，计算 $B$ 的 KL：$0.5 \log(0.5 / 0) \to +\infty$。
 - 结果：Loss 爆炸！Forward KL 强迫学生必须学会 B，即便学生没这个能力，最终导致崩溃. 
 
 **场景 2：如果使用 Reverse KL (OPD 范式)**
