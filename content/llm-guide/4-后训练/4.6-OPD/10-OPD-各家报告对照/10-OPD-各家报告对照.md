@@ -1,14 +1,14 @@
 ---
-title: "10 · OPD：各家报告对照"
+title: "OPD：各家报告对照"
 date: 2026-08-30
 tags: [OPD, MOPD, On-Policy Distillation, Qwen3, DeepSeek-V4, Kimi-K3, GLM-5]
 as_of: 2026-08-30
 category: LLM 指南
 ---
 
-# 10 · OPD：各家报告对照
+# OPD：各家报告对照
 
-报告里的 on-policy distillation 不是同一道工序。Qwen3 用大号教师压小号学生；V4 用十几个领域专家合进一个权重，损失写全词表 reverse KL；K3 / MiMo-V2-Flash 把合版叫 **MOPD**，损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$；GLM-5 的教师是自己流水线的旧 checkpoint。本篇是对照表 + 机制分叉，**不是**再推一遍 MiniLLM。记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 $\pi_\theta$、$\pi_T$；公式只写各报告自己写下的那一行。第 14 章 mineru / D2 **只链不改、不整段复制**。
+报告里的 on-policy distillation 不是同一道工序。Qwen3 用大号教师压小号学生；V4 用十几个领域专家合进一个权重，损失写全词表 reverse KL；K3 / MiMo-V2-Flash 把合版叫 **MOPD**，损失仍是逐 token 的 $\mathrm{sg}[\log\pi_T/\pi_\theta]$；GLM-5 的教师是自己流水线的旧 checkpoint。本篇是对照表 + 机制分叉，**不是**再推一遍 MiniLLM。记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 $\pi_\theta$、$\pi_T$；公式只写各报告自己写下的那一行，模型身份统一回到第 5 章，技术细节引用原始报告。
 
 ---
 
@@ -43,7 +43,7 @@ category: LLM 指南
 | Qwen3 | On-policy Distillation（Strong-to-Weak 第二阶段；Table 21 **不写** OPD 缩写） | Qwen3-32B 或 Qwen3-235B-A22B。第一阶段先 off-policy：把教师 `/think` 与 `/no think` 输出拼起来做 response 蒸馏 | 学生自己生成 `/think` 或 `/no think` 序列，再把 student logits 对齐 teacher logits，最小化 KL。**报告未写正反向** | Table 21：Qwen3-**8B**、**同一** off-policy 蒸馏检查点、**只** math+code；GPU hours **17,920 vs 1,800**；括号 = pass@64 | [03-Qwen3-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/03-Qwen3-mineru-en.md) §4.5 / Table 21 |
 | DeepSeek-V4 | multi-teacher **OPD**（混合 RL **整段换成** OPD 合版） | 各域先 SFT 再 GRPO，**十余个**领域教师 | 式 (29)：$\sum_i w_i\,\mathrm{D}_{\mathrm{KL}}(\pi_\theta\parallel\pi_{E_i})$，轨迹从学生采样。明确改用 **全词表 logit** reverse KL，反对把 KL 收成 token 级 $\mathrm{sg}[\log\pi_E/\pi_\theta]$ 当 advantage | **没有** 17,920 / 1,800。不要用 Qwen3 Table 21 给 V4 算 1/10 | [03-DeepSeek-V4-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md) §5.1.2 |
 | Kimi K3 | **MOPD**（Multi-Teacher On-Policy Distillation） | 三域 × 三档 reasoning effort $\{\mathrm{low},\mathrm{high},\mathrm{max}\}$ = **九个** RL 专家 | 式 (15)：逐 token 奖励 $\mathrm{clip}(\mathrm{sg}(\log\pi_{\mathrm{teacher}}^{(d,e)}/\pi_\theta),-R_{\max},R_{\max})$。试过更细的 top-$k$ 蒸馏，报告写没有明显好处 | 无 Table 21 那种 GPU 小时对照。不要把九个专家合成 V4 的「十余个」超参 | [01-Kimi-K3-架构精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md) §8；一手 [arXiv:2607.24653](https://arxiv.org/html/2607.24653) §4.1.3 |
-| MiMo-V2-Flash | **MOPD**（三阶段**范式名**：SFT → 领域 RL/SFT 教师 → 合版） | 搜索 / 代码 / 数学 / 推理 / 安全等域教师；报告写也可以是另一个 SFT，或**学生自己** | 式 (5)–(9)：reverse KL 先写成采样 token 上的 log 比，再当 on-policy RL surrogate；默认可加 ORM/GRPO 优势 $\alpha\hat A_{\mathrm{ORM}}$ | Table 7：MOPD 前后 vs 最强教师（如 AIME 2025 89.3→94.1），**不是** GPU hours | [03-MiMo-V2-Flash-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.9-MiMo/02-MiMo-V2-Flash/03-MiMo-V2-Flash-mineru-en.md) §4.1 / §4.4 |
+| MiMo-V2-Flash | **MOPD**（三阶段**范式名**：SFT → 领域 RL/SFT 教师 → 合版） | 搜索 / 代码 / 数学 / 推理 / 安全等域教师；报告写也可以是另一个 SFT，或**学生自己** | 式 (5)–(9)：reverse KL 先写成采样 token 上的 log 比，再当 on-policy RL surrogate；默认可加 ORM/GRPO 优势 $\alpha\hat A_{\mathrm{ORM}}$ | Table 7：MOPD 前后 vs 最强教师（如 AIME 2025 89.3→94.1），**不是** GPU hours | [MiMo-V2-Flash 技术报告](https://arxiv.org/abs/2601.02780) §4.1 / §4.4；[版本入口](../../../05-模型家族与选型/5.3-模型家族/mimo/mimo-v2-flash/mimo-v2-flash.md) |
 | GLM-5 | **on-policy cross-stage distillation** | 前面 SFT / Reasoning RL / General RL 的**最终 checkpoint**；prompt 从相应教师的 RL 训练集按比例混合 | 把 GRPO 式 (1) 的优势换成 $\mathrm{sg}[\log(\pi_{\theta_{\mathrm{teacher}}}^{\mathrm{infer}}/\pi_\theta^{\mathrm{train}})]$。组大小 **1**，batch **1024** | 组大小 1 是因为优势不再靠组内相对奖励。不是 17,920 | [01-GLM-5技术报告精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/08-GLM-5/01-GLM-5技术报告精译.md) §3.5 |
 | Step-3.5-Flash | “variants of on-policy distillation” | Limitations 里一句：要统一通才与领域专长 | **没有公式**。本篇不发明 | 无 | [03-Step-3.5-Flash-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.7-StepFun/03-Step-3.5-Flash/03-Step-3.5-Flash-mineru-en.md) Limitations |
 | G-OPD / SCOPE | — | **本波不展开**（未核一手，不升格） | — | 不要用第 5 章那套 300 / 800 / 200 GPU 小时故事 | — |
@@ -171,7 +171,7 @@ GLM-5 连 MOPD / OPD 缩写都不打，官方名是 on-policy **cross-stage** di
 1. Qwen Team. *Qwen3 Technical Report*. [arXiv:2505.09388](https://arxiv.org/abs/2505.09388)。库内 [03-Qwen3-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/03-Qwen3-mineru-en.md) §4.5 Strong-to-Weak、Discussion 中 Table 21（8B、同一 off-policy 检查点、math+code、括号 pass@64、17,920 vs 1,800）。
 2. DeepSeek-AI. *DeepSeek-V4*. [HuggingFace PDF](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf)。库内 [03-DeepSeek-V4-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md) §5.1.2 式 (29)、全词表 vs token-level sg log 比、§5.2.2 教师调度。QAT/MXFP4 在 §5.2.1，不写入本篇 OPD 目标。
 3. Kimi Team. *Kimi K3: Open Frontier Intelligence*. [arXiv:2607.24653 HTML](https://arxiv.org/html/2607.24653) §4.1.3 式 (15)、九专家、top-$k$ 蒸馏无明益。精译入口 [01-Kimi-K3-架构精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
-4. Xiaomi LLM-Core. *MiMo-V2-Flash Technical Report*. [arXiv:2601.02780](https://arxiv.org/abs/2601.02780)。库内 [03-MiMo-V2-Flash-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.9-MiMo/02-MiMo-V2-Flash/03-MiMo-V2-Flash-mineru-en.md) §4.1 三阶段、Table 7、§4.4 式 (5)–(9)。
+4. Xiaomi LLM-Core. *MiMo-V2-Flash Technical Report*. [arXiv:2601.02780](https://arxiv.org/abs/2601.02780)，§4.1 三阶段、Table 7、§4.4 式 (5)–(9)；[版本入口](../../../05-模型家族与选型/5.3-模型家族/mimo/mimo-v2-flash/mimo-v2-flash.md)。
 5. GLM-5 Team. *GLM-5: from Vibe Coding to Agentic Engineering*. [arXiv:2602.15763](https://arxiv.org/abs/2602.15763)。库内 [01-GLM-5技术报告精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/08-GLM-5/01-GLM-5技术报告精译.md) §3.5：cross-stage、sg log 比替换 GRPO 优势、组大小 1。
 6. StepFun. *Step 3.5 Flash*. [arXiv:2602.10604](https://arxiv.org/abs/2602.10604)。库内 [03-Step-3.5-Flash-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.7-StepFun/03-Step-3.5-Flash/03-Step-3.5-Flash-mineru-en.md) Limitations：「variants of on-policy distillation」一句。
 7. 报告共同引用、本篇不重推：Gu et al. MiniLLM [arXiv:2306.08543](https://arxiv.org/abs/2306.08543)；Agarwal et al. GKD [arXiv:2306.13649](https://arxiv.org/abs/2306.13649)；Lu and Lab, Thinking Machines Lab, [On-policy distillation](https://thinkingmachines.ai/blog/on-policy-distillation)（2025）。

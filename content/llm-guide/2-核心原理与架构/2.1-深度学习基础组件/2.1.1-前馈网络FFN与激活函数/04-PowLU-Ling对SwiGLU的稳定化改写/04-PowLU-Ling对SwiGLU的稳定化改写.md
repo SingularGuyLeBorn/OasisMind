@@ -1,15 +1,15 @@
 ---
-title: "04 · PowLU：Ling 对 SwiGLU 的稳定化改写"
+title: "PowLU：Ling 对 SwiGLU 的稳定化改写"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [PowLU, SwiGLU, 激活函数, FFN, Ling, FP8]
 ---
 
-# 04 PowLU：Ling 对 SwiGLU 的稳定化改写
+# PowLU：Ling 对 SwiGLU 的稳定化改写
 
 PowLU（Power Linear Unit）是 Ling Team（Ant Group）在 2026-05 提出的激活：把标量 SwiGLU 在大正输入上趋近 $x^{2}$ 的增长律改成趋近线性 $x$，用来压专家 FFN 里的 outlier、稳住低精度预训练。本篇接 [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) 的 SwiGLU 默认形态，对照 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) 的光滑上界路线。公式回答「增长律怎么改」；§4 回答它**插进 Ling 这一整层之后干什么**——改的是专家 / 共享专家两层线性中间的非线性，不改 GQA、QKNorm、Partial RoPE、路由。也**不是** hard clamp，不是 SiTU。Ling-2.0 出厂仍用 SwiGLU，对照写在 §4.4，不甩到第 14 章代替展开。
 
-> 邻居：[2.1.1 FFN 与激活](../2.1.1-前馈网络FFN与激活函数.md) · [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) · [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) · [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) · [Ling-2.0 报告精读](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md)（逐段精读，和本篇侧重不同，允许重复）
+> 邻居：[2.1.1 FFN 与激活](../2.1.1-前馈网络FFN与激活函数.md) · [03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) · [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) · [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) · [Ling 2.0 版本入口](../../../../05-模型家族与选型/5.3-模型家族/ling/ling-2-0/ling-2-0.md)
 
 ---
 
@@ -120,7 +120,7 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 
 7.9B / 124B 是 PowLU 文自己训的 MoE，**不是** mini / flash / 1T 三个产品名。2.0 还捆了 1 层 MTP（损失权重 0.1）和无辅助损失 load balance——PowLU 文没有把这两项当消融因子，不要写成「PowLU 论文验证了 MTP」。
 
-**Ling-2.0 / Ling-1T 出厂没有换成 PowLU。** 产品块仍是 SwiGLU + 预 RMSNorm + GQA + QKNorm + Partial RoPE（头的前 64 维）。PowLU 是 2026-05-25 激活论文在同一家族专家 FFN 上的对照：问「只换这一处，整机稳不稳、分还在不在」，不是一次发版配方。第 14 章 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md) 按报告章节精读 EL、数据、RL、流水线；和本篇重复的 GQA / QKNorm / 专家数，是同一套积木的两种写法。
+**Ling-2.0 / Ling-1T 出厂没有换成 PowLU。** 产品块仍是 SwiGLU + 预 RMSNorm + GQA + QKNorm + Partial RoPE（头的前 64 维）。PowLU 是 2026-05-25 激活论文在同一家族专家 FFN 上的对照：问「只换这一处，整机稳不稳、分还在不在」，不是一次发版配方。模型身份与已披露边界见 [Ling 2.0 版本入口](../../../../05-模型家族与选型/5.3-模型家族/ling/ling-2-0/ling-2-0.md)；本文只讨论激活函数替换实验，不把实验配方冒充产品发版事实。
 
 ---
 
@@ -179,5 +179,5 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 
 1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704. 式 (1)、§3.1 实现、$m=3$；Fig. 3 / Table 1–4；§4.3.1 FP8 spike。HTML：[arxiv.org/html/2605.25704](https://arxiv.org/html/2605.25704)。
 2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925. 仅核脚注「clamping and a residual connection」；未见官方 clamp limit。
-3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. PowLU 文所称 Ling 架构；2.0 产品块（GQA、QKNorm、Partial RoPE 64、256 专家 8+1、SwiGLU）按报告 §2.1 / 表 1 写在本篇 §4，精读全文见 [Ling-2.0 mineru](../../../../14-主流开源模型全景解析与技术报告精读/14.16-Ling/03-Ling-2.0/04-Ling-2.0-mineru-zh.md)。
+3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115。2.0 产品块（GQA、QKNorm、Partial RoPE 64、256 专家 8+1、SwiGLU）按报告 §2.1 / 表 1 写在本篇 §4；[Ling 2.0 版本入口](../../../../05-模型家族与选型/5.3-模型家族/ling/ling-2-0/ling-2-0.md) 只承担身份与边界导航。
 4. Noam Shazeer. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv:2002.05202. SwiGLU 名称与门控形态；标量 $x\cdot\mathrm{SiLU}(x)$ 是 PowLU 文的对照写法。

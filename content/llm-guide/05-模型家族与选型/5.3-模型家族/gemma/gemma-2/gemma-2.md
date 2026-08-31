@@ -1,0 +1,53 @@
+---
+title: "Gemma 2"
+category: "模型家族与选型"
+tags: ["gemma", "模型版本", "证据"]
+published: true
+as_of: "2026-09-01"
+excerpt: "Gemma 2 的多尺寸文本模型、训练数据口径和选型边界。"
+---
+
+# Gemma 2
+
+> 核验日期：2026-09-01。参数、上下文和许可只对应下列官方身份；不同尺寸、Base/Instruct 或滚动服务别名不得自动互换。
+
+## 结论卡
+
+| 字段 | 结论 |
+|---|---|
+| 官方身份 | Gemma 2 2B/9B/27B，Pretrained 与 Instruction-tuned |
+| 证据日期 | 2024 年模型卡/报告 |
+| 模态 | 文本输入与文本输出 |
+| 训练数据口径 | 2B=2T、9B=8T、27B=13T tokens |
+| 许可 | Gemma Terms |
+
+## 定位与相对变化
+
+Gemma 2 保持文本模型定位，将尺寸扩展为 2B/9B/27B；报告涉及局部/全局注意力、soft-capping 和蒸馏，但机制推导不在版本页重复。
+
+## 已披露事实
+
+- 官方模型卡分别披露三个尺寸的训练 token 数。
+- 尺寸不同意味着显存、吞吐和可能的训练配方不同。
+
+## 未披露与证据边界
+
+- 旧稿中 GQA、知识蒸馏和 soft-capping 的长教程归档，不视为官方模型卡。
+- 不能把厂商同尺寸 benchmark 直接外推到量化或微调 checkpoint。
+
+## 部署与选型
+
+在纯文本、有限算力场景按 2B/9B/27B 逐档实测；不要只依据参数量忽略上下文 KV、量化和批量大小。
+
+评测数字只有在模型快照、提示模板、采样、工具链、数据版本和计分器一致时才可横向比较；本页不转抄厂商榜单制造永久排名。
+
+## 迁移说明
+
+本页是该身份在公开知识树中的唯一首页。旧第 14 章报告翻译、MinerU 提取物和原图进入 _sources/model-reports/gemma/；未逐项核证的架构解读与重复索引进入 _archive/model-knowledge/gemma/。
+
+## 一手来源
+
+- [Gemma 2 模型卡](https://ai.google.dev/gemma/docs/core/model_card_2)
+- [Gemma 2 技术报告](https://arxiv.org/abs/2408.00118)
+
+[← 返回 Gemma 家族](../gemma.md)

@@ -1,0 +1,53 @@
+---
+title: "Olmo 3"
+category: "模型家族与选型"
+tags: ["olmo", "模型版本", "证据"]
+published: true
+as_of: "2026-09-01"
+excerpt: "真正的 Olmo 3 完整模型流程、7B/32B 身份和能力边界。"
+---
+
+# Olmo 3
+
+> 核验日期：2026-09-01。参数、上下文和许可只对应下列官方身份；不同尺寸、Base/Instruct 或滚动服务别名不得自动互换。
+
+## 结论卡
+
+| 字段 | 结论 |
+|---|---|
+| 官方身份 | Olmo 3 Base / Instruct / Think 等公开阶段 |
+| 证据日期 | 2025-12-15 论文 v1；2026-04-14 v2 |
+| 尺寸 | 7B、32B |
+| 公开范围 | 完整模型流程、各阶段 checkpoint、数据与依赖 |
+| 证据级别 | 技术报告与 AI2 官方发布 |
+
+## 定位与相对变化
+
+Olmo 3 是 2025 年发布的 7B/32B 家族，覆盖长上下文推理、函数调用、代码、指令和思考模型；它与 2024 年 OLMoE 不同。
+
+## 已披露事实
+
+- 报告公开从基座到后训练阶段的完整 model flow。
+- Think、Instruct、Base 等身份面向不同推理和交互方式。
+
+## 未披露与证据边界
+
+- “最强完全开放 thinking”是论文发布时的作者结论，不作为永久排名。
+- 每一阶段的精确数据混合、窗口和部署要求应查对应 checkpoint 卡。
+
+## 部署与选型
+
+需要完整可追溯 reasoning/post-training 流程时优先；实际服务必须锁定具体阶段和 chat template。
+
+评测数字只有在模型快照、提示模板、采样、工具链、数据版本和计分器一致时才可横向比较；本页不转抄厂商榜单制造永久排名。
+
+## 迁移说明
+
+本页是该身份在公开知识树中的唯一首页。旧第 14 章报告翻译、MinerU 提取物和原图进入 _sources/model-reports/olmo/；未逐项核证的架构解读与重复索引进入 _archive/model-knowledge/olmo/。
+
+## 一手来源
+
+- [Olmo 3 技术报告](https://arxiv.org/abs/2512.13961)
+- [AI2 Olmo 3 官方发布](https://allenai.org/blog/olmo3)
+
+[← 返回 OLMo 家族](../olmo.md)
