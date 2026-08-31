@@ -13,7 +13,6 @@ tags: [MXFP4, NVFP4, E2M1, E8M0, Blackwell, 混合精度]
 
 ![MXFP4 每 32 个 E2M1 共享 E8M0；NVFP4 每 16 个共享 E4M3 再乘张量级 FP32](./images/fig-mxfp4-nvfp4-block-scale.png)
 
-<!-- GPT-Image-2 Prompt: Technical educational diagram comparing MXFP4 and NVFP4 block-scaled 4-bit floats on a white academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. Research-paper systems figure, two side-by-side panels, blue and orange accents, clean typography, precise arrows, no decorative art. Left panel labeled MXFP4 OCP: a horizontal row of 32 small squares labeled E2M1 elements, one shared scale box labeled E8M0 power-of-two, arrow to reconstructed values v = X times 2 to the e. Right panel labeled NVFP4 NVIDIA: a shorter row of 16 small squares labeled E2M1, scale box labeled E4M3 FP8, plus an outer FP32 per-tensor scale, arrow to v = X times s8 times s32. Bottom caption bar: both use the same E2M1 grid in minus 6 to plus 6. Minimal academic palette, readable labels. -->
 
 ## 1. 问题：4-bit 浮点自己站不住
 
@@ -129,7 +128,7 @@ flowchart TB
 - 把 V4 的两级 FP8 tile 说成 NVFP4。
 - 用 25×/50× 当通用加速比。
 
-## 本篇来源
+## 参考文献
 
 - OCP Microscaling Formats (MX) Specification v1.0（2023-09-07）：https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf （§5.1–5.4、Table 1/5/7）
 - NVIDIA：Introducing NVFP4 for Efficient and Accurate Low-Precision Inference：https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference/ （Table 1、两级 scale、R1-0528 PTQ、footprint、能效图注）

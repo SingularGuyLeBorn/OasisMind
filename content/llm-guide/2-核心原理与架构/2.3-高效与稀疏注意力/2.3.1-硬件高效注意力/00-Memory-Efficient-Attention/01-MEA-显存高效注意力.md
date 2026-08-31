@@ -67,7 +67,7 @@ Self-attention 只是对 query **依次**做上面这件事，再多数一个 qu
 
 ![标准注意力物化 n×n；lazy softmax 只留 v* 与 s*](./images/fig-mea-lazy-softmax-stream.png)
 
-> 图 1：左栏标准注意力物化 $S=QK^\top$ 再 softmax 再乘 $V$；右栏单 query 流式累加 $v^*,s^*$，最后相除。对应论文 §2 与式 (1)。2026-08 自绘。
+> 图 1：左栏标准注意力物化 $S=QK^\top$ 再 softmax 再乘 $V$；右栏单 query 流式累加 $v^*,s^*$，最后相除。对应论文 §2 与式 (1)。
 
 **图 1 解析**
 
@@ -101,7 +101,7 @@ $$
 
 ![running max 重标度 v* 与 s*](./images/fig-mea-running-max-renorm.png)
 
-> 图 2：§3 的数值稳定更新。$v^*$ 是 $d$ 维加权和，$s^*$ 是配分函数标量，$m^*$ 是 running max。底部警告对应正文「分数 $\ge 89$」。2026-08 自绘。
+> 图 2：§3 的数值稳定更新。$v^*$ 是 $d$ 维加权和，$s^*$ 是配分函数标量，$m^*$ 是 running max。底部警告对应正文「分数 $\ge 89$」。
 
 **图 2 解析**
 
@@ -140,7 +140,7 @@ Query 先除 $\sqrt{d_k}$（代码第 9 行）。精度默认 `jax.lax.Precision
 
 ![外层 scan query、内层 map KV、checkpoint 摘要](./images/fig-mea-tpu-two-level-chunks.png)
 
-> 图 3：论文 Figure 1 的控制流。外层 `lax.scan` 写输出；内层 `lax.map` 得每块 $(V_j,w_j,m_j)$，再按全局 max 重标度。2026-08 自绘。
+> 图 3：论文 Figure 1 的控制流。外层 `lax.scan` 写输出；内层 `lax.map` 得每块 $(V_j,w_j,m_j)$，再按全局 max 重标度。
 
 **图 3 解析**
 
@@ -213,7 +213,7 @@ Figure 5 右：把只切 query 的显存**限制成** MEA 默认块长对应的�
 
 ![MEA、FlashAttention、BPT 三列对照](./images/fig-mea-vs-fa-vs-bpt.png)
 
-> 图 4：三篇不是一篇。左 MEA（JAX/TPU，块摘要最后合并，$K$ 份临时输出，checkpoint 反向）；中 FA（CUDA 融合核，SRAM 上增量更新**一份** $O$，打的是 HBM 访问次数）；右 BPT（query 块上接着做 FFN，一层 $2bsh$，划掉设备环）。2026-08 自绘。
+> 图 4：三篇不是一篇。左 MEA（JAX/TPU，块摘要最后合并，$K$ 份临时输出，checkpoint 反向）；中 FA（CUDA 融合核，SRAM 上增量更新**一份** $O$，打的是 HBM 访问次数）；右 BPT（query 块上接着做 FFN，一层 $2bsh$，划掉设备环）。
 
 **图 4 解析**
 
@@ -233,7 +233,7 @@ Rabe v2 Related Work 还写：他们在 TPU 上看不到 FA 那种加速，因�
 
 ![不是只切 query、不是 Ring、不是 SP](./images/fig-mea-not-query-chunk-only.png)
 
-> 图 5：三个「不是」。左：只切 query 且块 $\le 64$ 会慢（论文 Figure 5）。中：Ring 在设备环上转 KV。右：序列并行按 rank 切序列。中间：MEA 在单设备上同时切 Q 和 K，不物化满 $n\times n$。2026-08 自绘。
+> 图 5：三个「不是」。左：只切 query 且块 $\le 64$ 会慢（论文 Figure 5）。中：Ring 在设备环上转 KV。右：序列并行按 rank 切序列。中间：MEA 在单设备上同时切 Q 和 K，不物化满 $n\times n$。
 
 **图 5 解析**
 
@@ -266,7 +266,7 @@ Rabe v2 Related Work 还写：他们在 TPU 上看不到 FA 那种加速，因�
 
 下一篇：[02-FlashAttention-v1](../01-FlashAttention/02-FlashAttention-v1.md)（在线 softmax 在 SRAM 上的增量更新）。全景入口：[2.3.4](../../2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md) §3.0。BPT：[6.1.1 §4.7](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Markus N. Rabe, Charles Staats. (2021). [Self-attention Does Not Need $O(n^2)$ Memory](https://arxiv.org/abs/2112.05682). arXiv:2112.05682. HTML：[arxiv.org/html/2112.05682](https://arxiv.org/html/2112.05682)。读了摘要、§1–7、Table 2–3、Figure 1 代码、WMT 段、Figure 5 叙述。
 2. 官方代码：[google-research/memory_efficient_attention](https://github.com/google-research/google-research/tree/master/memory_efficient_attention)（Colab；需 TPU runtime）。

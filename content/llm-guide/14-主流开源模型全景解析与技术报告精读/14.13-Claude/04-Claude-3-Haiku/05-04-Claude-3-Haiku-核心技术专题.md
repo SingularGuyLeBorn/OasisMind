@@ -18,7 +18,7 @@ tags: [Claude-3-Haiku, index]
 
 公开材料精读：[01-04-Claude-3-Haiku-架构精译](./01-04-Claude-3-Haiku-架构精译.md)
 
-## 本篇来源
+## 参考文献
 
 - 本文件原先是空壳；2026-08 改成枢纽
 - https://www.anthropic.com/news/claude-3-haiku

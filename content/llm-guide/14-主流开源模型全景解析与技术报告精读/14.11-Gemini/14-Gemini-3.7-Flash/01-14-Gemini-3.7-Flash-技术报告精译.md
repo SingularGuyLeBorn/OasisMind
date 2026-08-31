@@ -212,7 +212,7 @@ Card：整体相对 3.6 **safety 与 tone 相近**，无理拒绝低。开发期
 - 把 card 主表当成默认 **MEDIUM**。编码 / agent 主表在方法页钉 **high thinking**。
 - 把 CharXiv 两行改成「全面超过 3.6」。card 上 3.7 略低（84.5 / 88.7 vs 85.2 / 89.4）。
 
-## 本篇来源
+## 参考文献
 
 1. Google DeepMind. (2026-08-13). [Gemini 3.7 Flash model card](https://deepmind.google/models/model-cards/gemini-3-7-flash/).
 2. Doshi, T., Gemini team. (2026-08-13). [Introducing Gemini 3.7 Flash](https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/). Google.

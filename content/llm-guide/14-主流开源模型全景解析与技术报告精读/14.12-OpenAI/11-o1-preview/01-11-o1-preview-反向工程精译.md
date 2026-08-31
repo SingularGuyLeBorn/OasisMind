@@ -11,7 +11,7 @@ tags: [o1-preview, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重，本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**产品博文 + 技术博文附录**。占位段不是这两篇。
+**产品博文 + 技术博文附录**。占位段不是这两篇。
 
 - 产品：[Introducing OpenAI o1-preview](https://web.archive.org/web/20240913000000/https://openai.com/index/introducing-openai-o1-preview/)（2024-09-12）
 - 评测表：[Learning to Reason with LLMs](https://web.archive.org/web/20240912185410/https://openai.com/index/learning-to-reason-with-llms/) Appendix A
@@ -52,7 +52,7 @@ Plus/Team 当天可选 o1-preview / o1-mini；周限额 **30** / **50** 条。En
 - 把 IOI 金牌 / Elo 1807 写成 preview（那是从 o1 再训的编程特化模型）。
 - 空壳「隐式注意力维度跃迁」。
 
-## 本篇来源
+## 参考文献
 
 - Introducing o1-preview Wayback（产品限额与 83%/89th 归属）
 - Learning to Reason Wayback（Appendix A + 安全表 + 隐藏 CoT 段）

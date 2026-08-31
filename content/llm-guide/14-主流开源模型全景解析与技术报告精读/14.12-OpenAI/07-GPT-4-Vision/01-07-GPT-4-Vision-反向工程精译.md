@@ -11,7 +11,7 @@ tags: [GPT-4V, system-card, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重, 本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**系统卡**，不是架构论文。上面「背景」保留。占位段的「数据飞轮 / 拒绝采样 / 几十项代码数学 Benchmark」**不是**这篇：[GPT-4V(ision) System Card](https://cdn.openai.com/papers/GPTV_System_Card.pdf)（2023-09-25）几乎全是 **安全评测与拒答**，没有层配置、没有 MMMU 主表。
+**系统卡**，不是架构论文。上面「背景」保留。占位段的「数据飞轮 / 拒绝采样 / 几十项代码数学 Benchmark」**不是**这篇：[GPT-4V(ision) System Card](https://cdn.openai.com/papers/GPTV_System_Card.pdf)（2023-09-25）几乎全是 **安全评测与拒答**，没有层配置、没有 MMMU 主表。
 
 GPT-4 技术报告已经写过「图文交错输入、只出文本」。本篇只补系统卡里相对 GPT-4 报告多出来的部署与拒答数字。视觉能力的公开评测仍以 [01-06](../06-GPT-4/01-06-GPT-4-反向工程精译.md) 为准，不要在本卡里估图柱。
 
@@ -46,7 +46,7 @@ GPT-4 with vision = 用户可以让 GPT-4 **分析用户给的图像**。训练 
 - 把后来的 GPT-4o / MMMU 表倒灌进 2023-09-25 系统卡。
 - 把 DevDay 的 `gpt-4-vision-preview` 定价写进本卡（那是 11-06 博文，见 Turbo D2）。
 
-## 本篇来源
+## 参考文献
 
 - https://cdn.openai.com/papers/GPTV_System_Card.pdf （读完 §1–3、附录图注；未把柱高估成第三个数）
 - 交叉：[GPT-4 Technical Report](https://arxiv.org/html/2303.08774v6) 视觉输入段（已在 01-06 落盘）

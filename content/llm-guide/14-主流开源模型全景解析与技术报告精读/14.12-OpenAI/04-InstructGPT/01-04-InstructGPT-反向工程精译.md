@@ -11,7 +11,7 @@ tags: [InstructGPT, RLHF, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重，本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**论文精读**。上面「背景」原样保留。事实源是 Ouyang et al. *Training language models to follow instructions with human feedback*（[arXiv:2203.02155](https://arxiv.org/abs/2203.02155)）。占位段的「数据飞轮 / 拒绝采样 / 几十项 Benchmark」是模板，**不是**这篇：InstructGPT 是 **SFT + RM + PPO**，评测主轴是 **标注员偏好**，不是 HumanEval 表。没有独立 System Card。
+**论文精读**。上面「背景」原样保留。事实源是 Ouyang et al. *Training language models to follow instructions with human feedback*（[arXiv:2203.02155](https://arxiv.org/abs/2203.02155)）。占位段的「数据飞轮 / 拒绝采样 / 几十项 Benchmark」是模板，**不是**这篇：InstructGPT 是 **SFT + RM + PPO**，评测主轴是 **标注员偏好**，不是 HumanEval 表。没有独立 System Card。
 
 ## 1. 主张
 
@@ -57,6 +57,6 @@ RL 前把示范的 RM 均分偏到 **0**（损失对平移不变）。
 - 把「没有 alignment tax」写成结论。
 - 空壳 05 的「隐式注意力维度跃迁」**不是** 2203.02155。
 
-## 本篇来源
+## 参考文献
 
 - https://arxiv.org/html/2203.02155 （摘要、§1、§3.2–3.5 式 (1)(2)、§4 偏好/幻觉/毒性/对齐税句）

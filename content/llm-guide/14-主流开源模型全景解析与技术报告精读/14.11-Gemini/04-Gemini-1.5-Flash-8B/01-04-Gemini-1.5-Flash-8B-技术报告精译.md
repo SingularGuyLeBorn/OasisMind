@@ -5,13 +5,13 @@ as_of: 2026-08-30
 tags: [Gemini-1.5-Flash-8B, 公开材料精读]
 ---
 
-# Gemini 1.5 Flash-8B: 端侧与边缘计算的微型巨头 - 技术报告精译
+# Gemini 1.5 Flash-8B：更小更快的 1.5 Flash
 
 >  **[返回 14.11-Gemini 家族总览](../../14.11-Gemini.md)** · 同系列：[1.5 Flash](../03-Gemini-1.5-Flash/01-03-Gemini-1.5-Flash-技术报告精译.md) · [1.5 Pro](../02-Gemini-1.5-Pro/01-02-Gemini-1.5-Pro-技术报告精译.md)
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文**，不是架构论文。空壳标题把「端侧 / 边缘」写进名字——**2024-10-03 Google Developers 博文没有写端侧部署、没有写层数/头数、没有写蒸馏公式**。产品名带 `8B`，博文正文把它叫「smaller and faster variant of 1.5 Flash」，**没有**另给一张参数表。第三方聚合站的 8.000 亿整数和评测柱 **不要**倒灌。
+**产品博文**，不是架构论文。**2024-10-03 Google Developers 博文没有写端侧部署、没有写层数/头数、没有写蒸馏公式**。产品名带 `8B`，博文正文把它叫「smaller and faster variant of 1.5 Flash」，**没有**另给一张参数表。第三方聚合站的 8.000 亿整数和评测柱 **不要**倒灌。
 
 事实源：[Gemini 1.5 Flash-8B is now production ready](https://developers.googleblog.com/en/gemini-15-flash-8b-is-now-generally-available-for-use/)（Logan Kilpatrick / Shrestha Basu Mallick，2024-10-03）。
 
@@ -54,6 +54,6 @@ API id：`gemini-1.5-flash-8b`。Google AI Studio 与 Gemini API 可免费用。
 - 用 Model Beats / 第三方站的 BBH 69.5% 等填本篇。
 - 把 2025-09 下线写进 2024-10 博文（那是后话，本篇不写）。
 
-## 本篇来源
+## 参考文献
 
-- https://developers.googleblog.com/en/gemini-15-flash-8b-is-now-generally-available-for-use/ （本会话读完全文；无评测表）
+- https://developers.googleblog.com/en/gemini-15-flash-8b-is-now-generally-available-for-use/ （无评测表）

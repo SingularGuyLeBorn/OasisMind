@@ -6,7 +6,6 @@ title: "01 · GLM-4-Voice 技术报告精译"
 
 >  **[返回 14.6-GLM 家族总览](../../14.6-GLM.md)**
 
-
 > 原文标题: GLM-4-Voice: Towards Intelligent and Human-Like End-to-End Spoken Chatbot
 > 原文链接: https://arxiv.org/abs/2412.02612
 > 发布日期: 2024-12-03
@@ -86,7 +85,7 @@ title: "01 · GLM-4-Voice 技术报告精译"
 
 我们通过微调 ASR 模型的准确率来衡量语音 token 中语义信息的保留程度. LibriSpeech [34] 和 AISHELL-1 [6] 上的结果如表 1 所示,以 whisper-large-v3 [36] 和 SenseVoice-Large [1] 为基线. 总体而言,所有分词器都保留了足够的语义信息以实现准确的 ASR 性能. 综合考虑下一节中的重建结果,我们为 GLM-4-Voice 选择了 12.5 Hz 的分词器.
 
-> 图 1: GLM-4-Voice 的语音分词器与语音Decoder  架构. 语音分词器将连续波形转换为离散语音 token,保留语义信息和部分声学信息. 语音Decoder  基于条件流匹配模型和 HiFi-GAN 声码器,将语音 token 还原为语音波形.
+> 图 1: GLM-4-Voice 的语音分词器与语音Decoder 架构. 语音分词器将连续波形转换为离散语音 token,保留语义信息和部分声学信息. 语音Decoder 基于条件流匹配模型和 HiFi-GAN 声码器,将语音 token 还原为语音波形.
 
 ![语音分词器与Decoder  架构](images/fig1_tokenizer_decoder.png)
 

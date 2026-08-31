@@ -38,7 +38,7 @@ $$
 
 ![](./images/fig-scaled-dot-product-attention.jpg)
 
-> 图 1：缩放点积注意力（Vaswani et al., 2017, Figure 2 左）。
+> 图 1：缩放点积注意力。
 
 **图 1 解析**
 
@@ -173,7 +173,7 @@ $$
 
 ![](./images/fig-multi-head-attention.jpg)
 
-> 图 2：多头注意力结构（Vaswani et al., 2017, Figure 2 右）；式 (9)–(14) 为其代数展开。
+> 图 2：多头注意力结构；式 (9)–(14) 为其代数展开。
 
 **图 2 解析**
 
@@ -307,7 +307,7 @@ $$
 
 ![Decode 时 KV 头数：MHA / GQA / MQA](./images/fig-mha-gqa-mqa-kv-heads.png)
 
-> 图 4：浅色自绘。Query 保持 $H$ 头；斜线块 = decode 写入 KV cache 的 Key/Value。字节用已有符号 $H,G,d_h$，不另编压缩比。
+> 图 4：Query 保持 $H$ 头；斜线块 = decode 写入 KV cache 的 Key/Value。字节用已有符号 $H,G,d_h$，不另编压缩比。
 
 **图 4 解析**
 
@@ -317,8 +317,6 @@ $$
 - **中 GQA**：同一 $H$ 个 Query 分成 $G$ 组（图中 $H=6,\,G=3$，每 2 个 Q 读 1 组 KV）。把式 (18) 的 $H$ 换成 $G$，得 $2 G d_h$。推导见 [03-GQA](../03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md) 式 (1)(13)。
 - **右 MQA**：全体 Query 读 **1** 份 KV，字节 $2 d_h$（$G=1$ 的端点）。见 [02-MQA](../02-MQA-共享KeyValue的极致压缩/02-MQA-共享KeyValue的极致压缩.md) 式 (15)。
 - 列间条数只示 **份数**；具体 GB 仍用式 (18)–(19) 与后文表格，不要把「6 根 vs 1 根」读成新的压缩比。
-
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Title Decode KV heads. Three columns: MHA H KV bytes 2 H d_h; GQA G groups bytes 2 G d_h; MQA 1 shared KV bytes 2 d_h. Pastel blue Q not cached; hatched pink K and orange V cached. -->
 
 ### 5.3 Decoding 单步在算什么
 
@@ -395,7 +393,7 @@ class MultiHeadAttention(torch.nn.Module):
 
 ![](./images/fig-transformer-architecture.jpg)
 
-> 图 3：Transformer 整体架构（Vaswani et al., 2017, Figure 1）。
+> 图 3：Transformer 整体架构。
 
 **图 3 解析**
 

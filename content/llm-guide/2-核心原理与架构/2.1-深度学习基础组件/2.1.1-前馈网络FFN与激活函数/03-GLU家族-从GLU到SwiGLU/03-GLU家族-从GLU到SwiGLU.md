@@ -205,7 +205,7 @@ Shazeer 2020 的结论停在「GLU 变体在 T5 设定里 ppl 更好，GEGLU 与
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Shazeer, N. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). *arXiv:2002.05202*. 式 (1)–(6)、Table 1（524,288 step）、§4 Conclusions（divine benevolence）。HTML：[arxiv.org/html/2002.05202](https://arxiv.org/html/2002.05202)。
 2. Dauphin, Y. N., Fan, A., Auli, M., & Grangier, D. (2017). [Language Modeling with Gated Convolutional Networks](https://arxiv.org/abs/1612.08083). *ICML*. 原文式 (1)：$(X\ast W+b)\otimes\sigma(X\ast V+c)$。HTML：[arxiv.org/html/1612.08083](https://arxiv.org/html/1612.08083)。

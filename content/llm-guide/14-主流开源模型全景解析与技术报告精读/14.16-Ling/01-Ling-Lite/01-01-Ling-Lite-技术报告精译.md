@@ -11,7 +11,7 @@ tags: [Ling-Lite, inclusionAI, EDiT, MoE]
 
 > 零一万物 Yi 家族的延续。在极高的 INF (推理吞吐率) 要求下，该版本模型对显存碎片化与 PagedAttention 进行了深度调优。
 
-**材料类型（2026-08）**：上面两句 2025 占位 **全错**。Ling **不是** Yi（零一万物）；是蚂蚁 **inclusionAI**。PagedAttention 不是这篇论文的卖点。轴心：[arXiv:2503.05139](https://arxiv.org/abs/2503.05139) *Every FLOP Counts: Scaling a 300B Mixture-of-Experts Ling LLM without Premium GPUs*。同目录已有摘要与 EDiT 专文，**不造第三份全书**。
+上面两句 2025 占位 **全错**。Ling **不是** Yi（零一万物）；是蚂蚁 **inclusionAI**。PagedAttention 不是这篇论文的卖点。轴心：[arXiv:2503.05139](https://arxiv.org/abs/2503.05139) *Every FLOP Counts: Scaling a 300B Mixture-of-Experts Ling LLM without Premium GPUs*。同目录已有摘要与 EDiT 专文，**不造第三份全书**。
 
 ## 1. 规格（论文）
 
@@ -42,6 +42,6 @@ HF：https://huggingface.co/inclusionAI
 - 把 Ling 写成 Yi / PagedAttention 调优。
 - 把 GitHub 后来的 64K/128K 卡倒灌进 2503.05139 正文而不标注代差。
 
-## 本篇来源
+## 参考文献
 
 - https://arxiv.org/html/2503.05139 （摘要、§1、MoE 段、16K 续训、EDiT 66.1%、成本 20%）

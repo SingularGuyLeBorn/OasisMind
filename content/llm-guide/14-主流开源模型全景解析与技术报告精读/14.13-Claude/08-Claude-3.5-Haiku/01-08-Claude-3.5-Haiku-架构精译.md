@@ -11,7 +11,7 @@ tags: [Claude-3.5-Haiku, 公开材料精读]
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。上面「解析」原文保留。没有独立「Haiku 发布页」——[claude-3-5-haiku](https://www.anthropic.com/news/claude-3-5-haiku) 已 404。事实源是 2024-10-22 全家博文 + October Model Card Addendum。
+**公开材料精读**。上面「解析」原文保留。没有独立「Haiku 发布页」——[claude-3-5-haiku](https://www.anthropic.com/news/claude-3-5-haiku) 已 404。事实源是 2024-10-22 全家博文 + October Model Card Addendum。
 
 | 源 | 日期 | 钉死什么 |
 |----|------|----------|
@@ -68,7 +68,7 @@ Table 8（3.5 Haiku vs 3 Haiku 等，抽几格）：
 - 说 Haiku 带 Computer Use。
 - 为 3.5 Opus mkdir。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/3-5-models-and-computer-use
 - https://www-cdn.anthropic.com/c7822cdc35ad788ec87e14b3a9d45010f1f86c38.pdf

@@ -21,7 +21,7 @@ tags: [Mistral-Large, index]
 
 官方能钉死的数字在 D2。旧 D5 表头「Large 3 = 2026.01、参数未公开」已勘误为 **2025-12-02、41B/675B**。
 
-## 本篇来源
+## 参考文献
 
 - 本文件原先是空壳；2026-08 改成枢纽
 - 博文：https://mistral.ai/news/mistral-large/ · https://mistral.ai/news/mistral-large-2407/ · https://mistral.ai/news/mistral-3/

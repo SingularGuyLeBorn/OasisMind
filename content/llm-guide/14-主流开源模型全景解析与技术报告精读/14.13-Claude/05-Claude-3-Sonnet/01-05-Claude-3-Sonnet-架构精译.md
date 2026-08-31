@@ -7,11 +7,11 @@ tags: [Claude-3-Sonnet, 公开材料精读, vision]
 
 # Claude 3 Sonnet: 企业级多模态生产力中枢 - 架构还原与精译
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · [Haiku D2](../04-Claude-3-Haiku/01-04-Claude-3-Haiku-架构精译.md) · [Opus D2](../06-Claude-3-Opus/01-06-Claude-3-Opus-架构精译.md) · 已有长 D5：[05-05 核心技术专题](./05-05-Claude-3-Sonnet-核心技术专题.md)（勿平行第三份）
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · [Haiku D2](../04-Claude-3-Haiku/01-04-Claude-3-Haiku-架构精译.md) · [Opus D2](../06-Claude-3-Opus/01-06-Claude-3-Opus-架构精译.md) · 已有长 D5：[05-05 核心技术专题](./05-05-Claude-3-Sonnet-核心技术专题.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。上面「解析」原文保留。2024-03-04 当天 **Sonnet 上线**：免费 claude.ai 用它，API GA（159 国），Bedrock 当天、Vertex 私有预览。定价 **$3 / $15** per million in/out。上下文生产 **200K**。
+**公开材料精读**。上面「解析」原文保留。2024-03-04 当天 **Sonnet 上线**：免费 claude.ai 用它，API GA（159 国），Bedrock 当天、Vertex 私有预览。定价 **$3 / $15** per million in/out。上下文生产 **200K**。
 
 ## 1. 速度叙事要对照 2.1，不是对照 Opus
 
@@ -37,7 +37,7 @@ tags: [Claude-3-Sonnet, 公开材料精读, vision]
 
 与 Haiku/Opus 相同的空白：无层数、无优化器、无数据配比。视觉、ASL-2、知识截止 2023-08、CAI 延续，见卡。长 D5 里若把「企业 SLA」写成官方架构选择，当 2025 叙事保留，不要标成 model card 句子。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-3-family
 - Claude 3 Model Card PDF Table 1 / Table 5

@@ -11,7 +11,7 @@ tags: [Hunyuan-Pro, Hunyuan-Large, recycle-routing, 公开材料精读]
 
 > 该家族依靠其独特的算力优势与数据护城河，在 LLM 红海中占据了核心生态位。
 
-**材料类型（2026-08）**：本文件夹名叫 **Hunyuan-Pro**（云上 SKU / 元宝旗舰叙事），**开源论文是 Hunyuan-Large** [arXiv:2411.02265](https://arxiv.org/abs/2411.02265)（2024-11-05 v2）。**禁止**把 389B/52B 写成 hunyuan-pro API 的官方规格。长 D5 把 TurboS Mamba、A13B 1+64 写进「Pro」——那些是后出 SKU，修订节处理，本 D2 不跟写。
+本文件夹名叫 **Hunyuan-Pro**（云上 SKU / 元宝旗舰叙事），**开源论文是 Hunyuan-Large** [arXiv:2411.02265](https://arxiv.org/abs/2411.02265)（2024-11-05 v2）。**禁止**把 389B/52B 写成 hunyuan-pro API 的官方规格。长 D5 把 TurboS Mamba、A13B 1+64 写进「Pro」——那些是后出 SKU，修订节处理，本 D2 不跟写。
 
 ## 1. 两条线必须分开
 
@@ -58,7 +58,7 @@ HTML 里出现过「top-$11$」——那是 top-1 的公式残片。Table 1 与�
 - 把 TurboS 的 AMF/Mamba 写成 Pro/Large 骨干。
 - 把 A13B「1+64 / 800B」写进本 D2。
 
-## 本篇来源
+## 参考文献
 
 - https://arxiv.org/html/2411.02265v2 （摘要、§1–2.2、Table 1–2、7T/1.5T、recycle、专家学习率）
 - https://github.com/Tencent/Tencent-Hunyuan-Large

@@ -46,9 +46,7 @@ $$
 
 ![头级标量 α_t 整头同一遗忘；KDA 用对角 Diag(α_t) 让每个通道自己过期](./images/fig-kda-channel-diag.png)
 
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Two-panel: left Gated DeltaNet scalar alpha_t one color for whole S; right KDA Diag(alpha_t) four pastel channel gates. -->
-
-> 图 1：遗忘门粒度。左：Gated DeltaNet 一头一个 $\alpha_t$，整份 $S_{t-1}$ 同一速度过期。右：KDA 的 $\mathrm{Diag}(\boldsymbol{\alpha}_t)$，一行一个 $\alpha_i$。两边的 rank-1 擦写仍是 $\mathbf{k}_t\mathbf{k}_t^\top$。K3 的 $g_{\min}=-5$ **不在这张图上**（见 §5）。2026-08 自绘。
+> 图 1：遗忘门粒度。左：Gated DeltaNet 一头一个 $\alpha_t$，整份 $S_{t-1}$ 同一速度过期。右：KDA 的 $\mathrm{Diag}(\boldsymbol{\alpha}_t)$，一行一个 $\alpha_i$。两边的 rank-1 擦写仍是 $\mathbf{k}_t\mathbf{k}_t^\top$。K3 的 $g_{\min}=-5$ **不在这张图上**（见 §5）。
 
 **图 1 解析**
 
@@ -117,7 +115,7 @@ Gated MLA 用同一只满秩门，但 **不对 MLA 输出做 RMSNorm**（K3 式 
 - 用 unbounded Softplus 门描述 K3 的 KDA。
 - 把 Flash 的 `gate_lower_bound=-5.0` 写成已经公开了 K3 式 (5)。
 
-## 本篇来源
+## 参考文献
 
 - Zhang et al. / Kimi Team, *Kimi Linear*, arXiv:2510.26692（本会话读了摘要、§1–3.2、式 (1)–(9) 的角色；未逐行核完 §6）
 - K3 对 decay / 输出门的改写：arXiv:2607.24653 §2.1.1 式 (5)–(7)

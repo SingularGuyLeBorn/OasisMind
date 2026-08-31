@@ -53,7 +53,7 @@ $d_k<d_{\mathrm{model}}$，所以 $W_V^k W_O^k$ 是低秩。实验里注意力�
 
 ![Q,K,V 进 SDPA，之后是推荐的逐头 sigmoid 门 G1，再 Concat 和 W_O；右侧虚线标 G2–G5 不是推荐位置](./images/fig-gated-attn-g1-after-sdpa.png)
 
-> 图 1：门的五个位置。推荐 $G_1$ = SDPA 之后、head-specific sigmoid。对应 Qiu et al.，arXiv:2505.06708，Figure 1 左。2026-08 自绘。
+> 图 1：门的五个位置。推荐 $G_1$ = SDPA 之后、head-specific sigmoid。
 
 **图 1 解析**
 
@@ -117,7 +117,7 @@ Table 4 在测试语言模型数据上量门分数均值（越低越稀）和第
 
 ![左：注意力子层里 SDPA 输出门；右：四条残差分支上的读门。标题级「不是」](./images/fig-gated-attn-not-gated-residual.png)
 
-> 图 2：Gated Attention **不是** Gated Residual。左：Qiu et al. 的 $G_1$。右：[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的 $n_r=4$ 逐元素读门。2026-08 自绘。
+> 图 2：Gated Attention **不是** Gated Residual。左：Qiu et al. 的 $G_1$。右：[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的 $n_r=4$ 逐元素读门。
 
 **图 2 解析**
 
@@ -194,7 +194,7 @@ Gated Attention 推荐配置就一句：**SDPA 之后、head-specific（elementw
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., et al. (2025). [Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free](https://arxiv.org/abs/2505.06708). *NeurIPS 2025* Oral. HTML：[arxiv.org/html/2505.06708](https://arxiv.org/html/2505.06708)。本篇 Table 1 / 2 / 4 / 5 与式 (1)–(8) 按该 HTML 核对。
 2. 官方实现：[qiuzh20/gated_attention](https://github.com/qiuzh20/gated_attention)（`Qwen3Attention`：SDPA 后 `sigmoid` 再 `o_proj`）。

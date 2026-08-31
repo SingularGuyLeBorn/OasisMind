@@ -6,7 +6,6 @@ title: "01 · MiMo-V2.5 技术报告精译"
 
 >  **[返回 14.9-MiMo 家族总览](../../14.9-MiMo.md)**
 
-
 > 原文标题: MiMo-V2.5 / MiMo-V2.5-Pro
 > 原文链接: https://mimo.xiaomi.com/mimo-v2-5/ (Standard), https://mimo.xiaomi.com/mimo-v2-5-pro/ (Pro)
 > 发布日期: 2026-04-22 (V2.5 Standard) / 2026-04-27 (V2.5-Pro)
@@ -21,7 +20,7 @@ MiMo-V2.5 是一个 310B 参数的 Sparse MoE 模型(每 pass 激活 15B 参数)
 
 ![MiMo-V2.5 架构示意](images/mimo-v25-arch.svg)
 
-> 图 1: MiMo-V2.5 架构示意,展示语言 backbone、自研视觉/音频Encoder 及轻量 projector 的连接方式. 
+> 图 1: MiMo-V2.5 架构示意,展示语言 backbone、自研视觉/音频Encoder 及轻量 projector 的连接方式.
 
 > 译者注: 310B 总参数 / 15B 激活参数的比例意味着约 4.8% 的稀疏度,这在当前 MoE 模型中属于中等偏高的稀疏水平. 作为对比,Kimi K2.6 是 1T/32B(3.2% 稀疏),GLM-5.1 是 754B/40B(5.3% 稀疏). MiMo-V2.5 的 48T 训练数据量也非常可观——DeepSeek-V3 的训练数据约为 14.8T,这意味着 MiMo-V2.5 的预训练数据量约为 V3 的 3.2 倍. 但数据量的绝对值并不直接等同于质量,数据构成、去污染策略和课程学习设计同样关键. 原文未披露 48T 的具体来源分布,这是一个信息缺口. 
 
@@ -76,7 +75,6 @@ MiMo-V2.5 系列已完全开源. 权重、tokenizer 和完整模型卡可在 Hug
 从今天起,Token Plan 对 100 万 token 上下文窗口不再收取倍率乘数. 
 
 > 译者注: 1M 上下文不加收额外费用是一个非常有竞争力的定价策略. 作为对比,GLM-5.1 的 200K 上下文在长文本场景下已经需要显著更高的成本,而 MiMo-V2.5 将 1M 上下文与标准定价对齐,这大大降低了长程 agentic 任务的运行成本. 但需要注意「不加收倍率乘数」不等于「成本不增加」——1M token 的推理本身就需要更多的 KV Cache 存储和计算,只是 Xiaomi 选择不将这部分成本转嫁给用户. 这可能是小米作为新进入者的一种市场渗透策略. 
-
 
 ## MiMo-V2.5-Pro: 为更困难的目标而生
 
@@ -182,7 +180,6 @@ MiMo-V2.5-Pro 现已完全开源,采用 permissive license. 权重、tokenizer �
 | MiMo-V2.5-Pro | 1.02T | 42B | 1M | FP8 (E4M3) Mixed | Hugging Face |
 
 完整的 benchmark 结果、架构细节和 SGLang / vLLM 部署指南请参阅 Hugging Face 上的模型卡. 
-
 
 ## 附录
 

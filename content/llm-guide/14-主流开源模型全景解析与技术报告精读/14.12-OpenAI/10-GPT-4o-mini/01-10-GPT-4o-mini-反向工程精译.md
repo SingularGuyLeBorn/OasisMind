@@ -5,13 +5,13 @@ as_of: 2026-08-30
 tags: [GPT-4o-mini, 公开材料精读]
 ---
 
-# GPT-4o-mini: 端侧与边缘的高性价比之王 - 技术探测与反向工程
+# GPT-4o mini：API 上的小模型
 
 >  **[返回 14.12-OpenAI 家族总览](../../14.12-OpenAI.md)** · 同族旗舰：[GPT-4o](../09-GPT-4o/01-09-GPT-4o-反向工程精译.md) · 已有长 D5：[成本极限](./05-10-GPT-4o-mini-核心技术专题.md)
 
 > **背景**：该模型并未完全开源其底层代码与权重，本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**产品博文**。空壳标题「端侧与边缘」——[GPT-4o mini: advancing cost-efficient intelligence](https://web.archive.org/web/20240719000627/https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/)（2024-07-18）**没有**写端侧部署、没有层数。当天是 **API 文本+视觉**。
+[GPT-4o mini: advancing cost-efficient intelligence](https://web.archive.org/web/20240719000627/https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/)（2024-07-18）**没有**写端侧部署、没有层数。当天是 **API 文本+视觉**。
 
 ## 1. 产品
 
@@ -36,6 +36,6 @@ tags: [GPT-4o-mini, 公开材料精读]
 - 把 LMSYS「好过 GPT-4」写成无日期、无 4T-0125 脚注。
 - 把 4o 的 88.7% MMLU 安到 mini 头上。
 
-## 本篇来源
+## 参考文献
 
 - https://web.archive.org/web/20240719000627/https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/

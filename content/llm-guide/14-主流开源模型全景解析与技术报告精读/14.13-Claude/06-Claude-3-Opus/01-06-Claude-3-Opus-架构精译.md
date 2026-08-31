@@ -7,11 +7,11 @@ tags: [Claude-3-Opus, 公开材料精读, vision, NIAH]
 
 # Claude 3 Opus: 全面反超 GPT-4 的巅峰之作 - 架构还原与精译
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · [Haiku](../04-Claude-3-Haiku/01-04-Claude-3-Haiku-架构精译.md) · [Sonnet](../05-Claude-3-Sonnet/01-05-Claude-3-Sonnet-架构精译.md) · 已有长 D5：[长上下文与多模态](./05-06-Claude-3-Opus-长上下文推理与多模态理解的双重突破.md)（勿平行第三份）· 针测体系：[2.5](../../../2-核心原理与架构/2.5-长上下文处理/2.5-长上下文处理.md)
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · [Haiku](../04-Claude-3-Haiku/01-04-Claude-3-Haiku-架构精译.md) · [Sonnet](../05-Claude-3-Sonnet/01-05-Claude-3-Sonnet-架构精译.md) · 已有长 D5：[长上下文与多模态](./05-06-Claude-3-Opus-长上下文推理与多模态理解的双重突破.md)· 针测体系：[2.5](../../../2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。上面「解析」原文保留。2024-03-04：**Opus 当天可调**，claude.ai 上给 Claude Pro。定价 **$15 / $75**。速度「与 Claude 2 / 2.1 相近、智能高很多」。
+**公开材料精读**。上面「解析」原文保留。2024-03-04：**Opus 当天可调**，claude.ai 上给 Claude Pro。定价 **$15 / $75**。速度「与 Claude 2 / 2.1 相近、智能高很多」。
 
 ## 1. Table 1：全家数字写在这一篇
 
@@ -48,7 +48,7 @@ GPQA Diamond 0-shot CoT：卡写 $T=1$ 方差很大，**10 次打乱选项取平
 
 空壳 `05-06-核心技术专题` 改枢纽，CAI 公式链 Claude 1 / 4.4.3。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-3-family
 - https://www-cdn.anthropic.com/de8ba9b01c9ab7cbabf5c33b80b7bbc618857627/Model_Card_Claude_3.pdf（Table 1、§5.1 GPQA 方差说明、§5.8）

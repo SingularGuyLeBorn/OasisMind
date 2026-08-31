@@ -6,23 +6,25 @@ tags: [QSA, Sparse-Attention, DSA, GDN, Qwen3.8]
 category: LLM 指南
 ---
 
-# Qwen Sparse Attention：索引本身变成瓶颈之后，先把 key 收成微块
+# QSA：先把 key 收成微块
 
-DSA（DeepSeek-V3.2）用轻量 indexer 做 **token 级**稀疏掩码：核心注意力从 $O(L^2)$ 降到 $O(Lk)$，但 indexer 自己仍是 $O(L^2)$。Qwen Sparse Attention（QSA）把 indexer 的 key 先收成长度为 $r$ 的微块，重要性在块上打分，再展开回 token 做核心注意力——索引成本变成 $O(n^2/r)$。
+DSA（DeepSeek-V3.2）用轻量 indexer 做 **token 级**稀疏掩码。核心注意力从 $O(L^2)$ 降到 $O(Lk)$，indexer 自己仍是 $O(L^2)$。Qwen Sparse Attention（QSA）把 indexer 的 key 先收成长度为 $r$ 的微块，重要性在块上打分，再展开回 token 做核心注意力。索引成本变成 $O(n^2/r)$。
 
-它插在 **GDN + 全局注意力** 的混合骨架上：每四层里三层 Gated DeltaNet 把历史压进固定大小的状态，一层全局注意力负责精确检索；**256K 续预训练**时，这层全局注意力（含 MTP 里的全注意力）换成 QSA。QSA **不**替换 GDN，**不**改残差怎么读怎么写。
+它插在 **GDN + 全局注意力** 的混合骨架上。每四层里三层 Gated DeltaNet 把历史压进固定大小的状态，一层全局注意力负责精确检索。**256K 续预训练**时，这层全局注意力（含 MTP 里的全注意力）换成 QSA。QSA **不**替换 GDN，也**不**改残差怎么读怎么写。
 
-本文是 [2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) 里「先压 indexer、再 Top-K」的 Qwen 专文。记号沿用 [01-MHA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $q,k,v$ 与行归一化 softmax。公式与超参来自 *On the Design of Qwen3.8-Next Architecture*（2026-08-26）§2.1.2 式 (12)–(20)。**不是** [09-IndexPool](../09-IndexPool/09-IndexPool.md) 的加权池化。**不是** [07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)。**不是** [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) 的压缩/选择/窗口三路。本篇只写注意力数据流；$K_B=512$ 是 **块预算**，不是专家数。
+它在 [2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) 这条线上：先压 indexer，再 Top-K。记号沿用 [01-MHA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $q,k,v$ 与行归一化 softmax。公式与超参来自 *On the Design of Qwen3.8-Next Architecture*（2026-08-26）§2.1.2 式 (12)–(20）。
+
+不是 [09-IndexPool](../09-IndexPool/09-IndexPool.md) 的加权池化，不是 [07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)，也不是 [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) 的压缩/选择/窗口三路。QSA 动的是这一层怎么取回，不是专家路由。$K_B=512$ 是 **块预算**，不是专家数。GDN 怎么记、残差怎么读写，见下面邻居。
 
 > 邻居：[KDA / GDN](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [DSA 报告精读](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/08-DeepSeek-V3.2/01-DeepSeek-V3.2技术报告精译.md)
 
 ---
 
-## 1. 整机插槽：每四层换哪一层、改哪条数据流
+## 1. 每四层里，只换那一层全局注意力
 
 Qwen3.5 起的混合是 **3 GDN : 1 全注意力**。报告 Figure 1 把四层重复画成：三层 GDN、一层全局；每个子层进出都经 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 读、再写。QSA 出现之后，全局那一层的 **token mixer** 从满 softmax 换成稀疏 softmax，GR 的读/写接口不变——子层看到的仍是一份 $d$ 维隐状态。
 
-数据流按层拆开，不要揉成「整网都稀疏」：
+数据流按层拆开，不是「整网都稀疏」：
 
 | 层 | mixer | 改了什么 | 没改什么 |
 |----|--------|----------|----------|
@@ -30,7 +32,7 @@ Qwen3.5 起的混合是 **3 GDN : 1 全注意力**。报告 Figure 1 把四层�
 | 四层里的一层全局 | 预训练是全注意力；CPT 换成 **QSA** | query 仍按 token；indexer 在微块上打分；核心注意力只看选中 token + 尾巴 | 仍是 softmax 注意力，不是线性状态；RoPE 仍在 |
 | MTP 里的全注意力 | 同样换成 QSA | 多步草稿 **复用** 同一套 top-k 下标 | 接受长度几乎不动（报告 Table 4） |
 
-推理阶段两条墙也按层分工，不要让 QSA 独扛。报告引言：prefill 的时间主要花在整段上下文的注意力上，QSA 把 indexer 的 key 序列按 $r$ 压缩，索引从 $O(n^2)$ 降到 $O(n^2/r)$；decode 的时间主要花在访存上，所以三层 GDN 保持定长循环状态，GR 丢掉分支混合 $H_{\mathrm{res}}$、残差还能存 FP8——那两笔是残差/线性层的账，本篇只记「QSA 不负责 decode 访存墙」。GDN 负责「记住」：前缀进 $S_t$，decode 不再按历史长度读 KV。QSA 负责「在长上下文里便宜地取回」：该看的位置还是精确 softmax，只是先用压缩 indexer 决定看哪些微块。官方博文同一句：GDN efficiently remembers，QSA precisely retrieves。日程形状和 Kimi 的 **3 KDA : 1 MLA** 像，门的粒度和全局层不是同一块积木，见 [KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)。
+推理阶段两条墙也按层分工。QSA 扛不住 decode 访存。报告引言：prefill 的时间主要花在整段上下文的注意力上，QSA 把 indexer 的 key 序列按 $r$ 压缩，索引从 $O(n^2)$ 降到 $O(n^2/r)$；decode 的时间主要花在访存上，所以三层 GDN 保持定长循环状态，GR 丢掉分支混合 $H_{\mathrm{res}}$、残差还能存 FP8——那两笔是残差/线性层的账，QSA 不负责 decode 访存墙。GDN 负责「记住」：前缀进 $S_t$，decode 不再按历史长度读 KV。QSA 负责「在长上下文里便宜地取回」：该看的位置还是精确 softmax，只是先用压缩 indexer 决定看哪些微块。官方博文同一句：GDN efficiently remembers，QSA precisely retrieves。日程形状和 Kimi 的 **3 KDA : 1 MLA** 像，门的粒度和全局层不是同一块积木，见 [KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)。
 
 留 1/4 全局层，是因为纯线性记不住精确检索。报告 Table 1 在 28 层、25B-A3B、先 400B@4K 再 80B@32K 的同一套评测上：全注意力 Avg 49.87，窗口 128 的 SWA hybrid 51.15，GDN hybrid **53.81**（九项里七项最好）。SWA hybrid 只在 MMLU 和 EvalPlus 上略高。所以日程停在「三层压历史、一层准取回」，不是把全局层也改成窗。QSA 动的是这一层取回怎么算，不是把 3:1 拆掉。
 
@@ -38,7 +40,7 @@ Qwen3.5 起的混合是 **3 GDN : 1 全注意力**。报告 Figure 1 把四层�
 
 ![每四层三层 GDN、一层 QSA；GR 包住每个子层](./images/fig-qsa-hybrid-slot.png)
 
-> 图 1：Qwen3.8-Next 的 token mixing 插槽。对应报告 Figure 1 的「三 GDN + 一 QSA」。GR 是残差读写，不是 mixer。$K_B=512$ 写在底栏，避免和专家数撞名。2026-08 自绘。
+> 图 1：Qwen3.8-Next 的 token mixing 插槽。对应报告 Figure 1 的「三 GDN + 一 QSA」。GR 是残差读写，不是 mixer。$K_B=512$ 写在底栏，避免和专家数撞名。
 
 **图 1 解析**
 
@@ -103,18 +105,18 @@ $$
 B_i=\mathrm{TopK}_{K_B}\bigl(\{I_{ib}\}_b\bigr),\qquad K_B=\Bigl\lceil\frac{K}{r}\Bigr\rceil. \tag{16}
 $$
 
-选中块展开成原始 token 下标，再截到 $K$。最后一个不完整块里的 token **一律保留**。落地配置（报告 Implementation）：$H=4$，$K=2048$，$r=4$，于是每条 query 最多 **512** 个完整块（$K_B=\lceil 2048/4\rceil$），再加尾巴。512 是块数上限，不要读成 MoE 专家数。
+选中块展开成原始 token 下标，再截到 $K$。最后一个不完整块里的 token **一律保留**。落地配置（报告 Implementation）：$H=4$，$K=2048$，$r=4$，于是每条 query 最多 **512** 个完整块（$K_B=\lceil 2048/4\rceil$），再加尾巴。512 是块数上限，不是 MoE 专家数。
 
 ![QSA：微块平均池化 → Top-$K_B$ 块 → 展开 token](./images/fig-qsa-microblock-topk.png)
 
-> 图 2：indexer key 按 $r=4$ 平均池化成 $\bar k_b$，块因果 Top-$K_B$，再展开回 token 并截到 $K=2048$。自绘；不是 IndexPool 加权池化。
+> 图 2：indexer key 按 $r=4$ 平均池化成 $\bar k_b$，块因果 Top-$K_B$，再展开回 token 并截到 $K=2048$。不是 IndexPool 加权池化。
 
 **图 2 解析**
 
 - **Stage 1**：连续 $r$ 个 $k$ 做 AvgPool 再 RMSNorm，得到 $\bar k_b$。发生在 RoPE 之前。
 - **Stage 2**：$q_i$ 只给已经完整的块打分；选中 Top-$K_B$ 个微块。
 - **Stage 3**：选中块展开成原始 token，再截到 $K$。尾巴上不足 $r$ 的 token 一律保留。
-- **数字**：$r=4,K=2048\Rightarrow K_B=512$，来自 Qwen3.8-Next 报告 Implementation，不要改成 IndexPool 的 `index_kpool=4`。
+- **数字**：$r=4,K=2048\Rightarrow K_B=512$，来自 Qwen3.8-Next 报告 Implementation，不是 IndexPool 的 `index_kpool=4`。
 
 ### 3.1 不完整块为什么不能靠打分、只能硬留
 
@@ -126,11 +128,11 @@ $$
 S_i=\mathrm{Expand}(B_i)\cup\Bigl\{r\Bigl\lfloor\frac{i+1}{r}\Bigr\rfloor,\ldots,i\Bigr\}. \tag{19}
 $$
 
-$\mathrm{Expand}$ 把块号映回该块内 $r$ 个 token 下标；并上的集合就是「最后一个不完整块」。GLM 的 IndexPool 配置里有 `index_kpool_always_select_tail=true`，语义同类，公式以 QSA 式 (19) 为准，不要把加权池化抄过来。
+$\mathrm{Expand}$ 把块号映回该块内 $r$ 个 token 下标；并上的集合就是「最后一个不完整块」。GLM 的 IndexPool 配置里有 `index_kpool_always_select_tail=true`，语义同类，公式以 QSA 式 (19) 为准，加权池化的公式不在这里。
 
 ![块因果：未完成块打不了分，所以尾巴一律进核心注意力](./images/fig-qsa-block-causal-tail.png)
 
-> 图 3：query 在 $i=13$、$r=4$ 时只能给 Block 0–2 打分；token 12、13 不在 $I_{ib}$ 里，靠式 (19) 硬留。示意图。2026-08 自绘。
+> 图 3：query 在 $i=13$、$r=4$ 时只能给 Block 0–2 打分；token 12、13 不在 $I_{ib}$ 里，靠式 (19) 硬留。示意图。
 
 **图 3 解析**
 
@@ -165,13 +167,13 @@ $$
 \mathcal{L}_{\mathrm{KL}}=\frac{1}{N}\sum_i D_{\mathrm{KL}}\bigl(\hat a_{i,B_i}\,\big\|\,\mathrm{Softmax}(I_{i,B_i})\bigr). \tag{20}
 $$
 
-主干和 indexer 联合 **8000** step，lr $2.5\times 10^{-5}$，每步 **96** 条 256K，大约 **200B** token。报告 Fig. 4：这一阶段和全注意力的 LM loss 差大约 $10^{-4}$（200-step 滑动平均；插图是逐步差）。DSA 稀疏阶段是 15000 step、约 943.7B、lr $7.3\times 10^{-6}$、仍按 **token 集合** $S_t$ 做 KL——同一两阶段骨架，老师对齐的粒度不同，token 预算不要对调。
+主干和 indexer 联合 **8000** step，lr $2.5\times 10^{-5}$，每步 **96** 条 256K，大约 **200B** token。报告 Fig. 4：这一阶段和全注意力的 LM loss 差大约 $10^{-4}$（200-step 滑动平均；插图是逐步差）。DSA 稀疏阶段是 15000 step、约 943.7B、lr $7.3\times 10^{-6}$、仍按 **token 集合** $S_t$ 做 KL——同一两阶段骨架，老师对齐的粒度不同，token 预算也对不齐。
 
 训练核：fused QSA kernel 一次算出稀疏注意力输出和 KL，不物化中间张量，显存才扛得住 256K 上「老师全注意力分布 + 学生块分数」这条蒸馏带。推理侧多步 MTP **复用** 同一套 top-k 下标（报告写跟 GLM 学），草稿模型少算一遍 indexer；Table 4 说明接受长度几乎不动，复用换的是草稿成本，不是另训一套路由。
 
 ![阶段 1 全块 KL；阶段 2 只在选中块上重归一化再 KL](./images/fig-qsa-two-stage-kl.png)
 
-> 图 4：式 (17)–(20)。左：冻结主干，token 老师经 MaxPool+L1 对齐到块。右：Top-$K_B$ 之后老师在 $B_i$ 内重归一化。图上若把「重归一化」标成式 (19)，以正文为准：式 (19) 是 Expand ∪ 尾巴，式 (20) 才是选中块 KL。2026-08 自绘。
+> 图 4：式 (17)–(20)。左：冻结主干，token 老师经 MaxPool+L1 对齐到块。右：Top-$K_B$ 之后老师在 $B_i$ 内重归一化。图上若把「重归一化」标成式 (19)，以正文为准：式 (19) 是 Expand ∪ 尾巴，式 (20) 才是选中块 KL。
 
 **图 4 解析**
 
@@ -190,11 +192,11 @@ Fig. 5(b) 补充：稠密初始化之后 **直接** 拿 indexer 做稀疏，RULE
 - **QSA** 微块压缩：相对 indexer 延迟 **0.25** 时，RULER 贴全注意力基线（图上 Block 4 对应 $r=4$）。
 - **IndexShare**：相对延迟 **0.5** 仍低于基线。这里的 0.5 表示两层全注意力 **合用一个** index，中间隔着三层 GDN。图例 Keep 3/4/5 是还保留几层 IndexShare 的 indexer。
 
-报告原句：混合架构里层间相似度不够，**层内**压缩更合适。官方博文同一判断：QSA 每层自己压序列，少依赖跨层注意力相似性，因此特别适合 GDN 与 Attention 交错。不要把 IndexShare 的失败读成「共享 index 这个想法永远差」——它失败在 **GDN 夹层** 这个插槽上。
+报告原句：混合架构里层间相似度不够，**层内**压缩更合适。官方博文同一判断：QSA 每层自己压序列，少依赖跨层注意力相似性，因此特别适合 GDN 与 Attention 交错。IndexShare 失败，不是因为「共享 index」这个想法永远差。它失败在 **GDN 夹层** 这个插槽上。
 
 ---
 
-## 6. 数字（只能指回报告表；两套加速分母不要合成）
+## 6. 短评测、长检索、两套加速分母
 
 短上下文（报告 Table 2，**同一份** Qwen3.8-Flash-Next，全注意力 vs QSA）：
 
@@ -216,9 +218,9 @@ Kernel（报告 Fig. 6）。基线是 FlashInfer 的 **paged GQA**。Chunked pre
 | Fig. 6(a)(b) indexer，$r=4$ vs $r=1$ | **3.8×** | **4.4×** | 同一套 QSA indexer，只改压缩比 |
 | Fig. 6(c)(d) 注意力模块（**含 indexer** + 稀疏核心） | **7.6×** | **4.9×** | FlashInfer paged GQA |
 
-博文另有一条 serving 口径：90% 前缀缓存命中时，1M 上 Prefill 吞吐相对 **Qwen3.7-Plus** **8.6×**。分子分母都不是 Fig. 6 那次 kernel 对照：一边是注意力模块延迟、一边是带缓存命中的端到端 Prefill 吞吐；一边对 GQA kernel，一边对上一代产品。禁止合成一个「加速倍数」。
+博文另有一条 serving 口径：90% 前缀缓存命中时，1M 上 Prefill 吞吐相对 **Qwen3.7-Plus** **8.6×**。分子分母都不是 Fig. 6 那次 kernel 对照：一边是注意力模块延迟、一边是带缓存命中的端到端 Prefill 吞吐；一边对 GQA kernel，一边对上一代产品。7.6× / 4.9× 和 8.6× 不是同一条加速倍数。
 
-Indexer 复杂度从 $O(n^2)$ 降到 $O(n^2/r)$。Fig. 6(a)(b) 的倍数和 $r=4$ 同量级，是「压缩比本身」；7.6× / 4.9× 还叠了稀疏核心注意力，不要和 3.8× / 4.4× 对调。
+Indexer 复杂度从 $O(n^2)$ 降到 $O(n^2/r)$。Fig. 6(a)(b) 的倍数和 $r=4$ 同量级，是「压缩比本身」；7.6× / 4.9× 还叠了稀疏核心注意力，3.8× / 4.4× 是另一档。
 
 ---
 
@@ -228,7 +230,7 @@ Indexer 复杂度从 $O(n^2)$ 降到 $O(n^2/r)$。Fig. 6(a)(b) 的倍数和 $r=4
 |--|----------------|--------------|----------|
 | DSA | token 级 indexer，$I_{t,s}$；indexer 仍 $O(L^2)$ | 挂在 MLA 主干上，不是为 3:1 GDN 日程设计 | token 分布 L1；稀疏阶段在选中 token 集上 KL |
 | NSA | 压缩+选择+窗口三路，门控融合 | DeepSeek 稠密/稀疏主干 | 原生预训练，不是 CPT 换槽 |
-| CSA/HCA | DeepSeek-V4 压缩注意力 | 不要和 QSA 混名 | — |
+| CSA/HCA | DeepSeek-V4 压缩注意力 | 和 QSA 不是同一条路 | — |
 | **QSA** | **微块** AvgPool indexer + 展开；indexer $O(n^2/r)$ | 只替换 1/4 全局层；层内压缩，适合 GDN 夹层 | MaxPool 到块再 L1；稀疏阶段在选中 **块** 上 KL |
 | IndexPool | 四个 indexer key **加权**池化 | GLM-5.3-Flash 稀疏 MLA | 公式未公开，见 [09](../09-IndexPool/09-IndexPool.md) |
 | IndexShare | 跨层复用 top-k | 在三层 GDN 夹缝里 RULER 贴不上全注意力 | 省的是层间 indexer，不是微块 |
@@ -248,7 +250,7 @@ Quest、H2O、SnapKV 是推理期选页或驱逐，不改训练期注意力公�
 | 跨层 IndexShare 代替层内压缩 | GDN 夹层相似度不够 | Fig. 5(a) 在相对延迟 0.5 仍低于全注意力 |
 | 把 Fig. 6 的 7.6× / 4.9× 写成 API 延迟 | 那是注意力模块 kernel，含 indexer | 8.6× 是另一套分母（90% 前缀缓存 vs 3.7-Plus） |
 | 把 $K_B=512$ 读成专家数 | 符号撞车 | 512 是 $\lceil 2048/4\rceil$ 个完整块 |
-| 为云上 `qwen3.8-flash` SKU 再开空目录 | B 档 | 同一份报告，不新开夹 |
+| 把云上 Flash 产品名当成另一套注意力 | 同一份报告 | 数据流就是本文这一套 |
 
 ---
 
@@ -257,18 +259,18 @@ Quest、H2O、SnapKV 是推理期选页或驱逐，不改训练期注意力公�
 - 加权池化、公式未公开：[09-IndexPool](../09-IndexPool/09-IndexPool.md)。
 - token 级闪电 indexer：[DSA · V3.2](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/08-DeepSeek-V3.2/01-DeepSeek-V3.2技术报告精译.md)。
 - 三分支原生稀疏：[02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md)。
-- 不要混名：[07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)。
+- 压缩注意力（不是 QSA）：[07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)。
 - 线性侧「记住」：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)。
 - 残差怎么包住这一层：[GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。
 - 推理期按 query 选页、不改权重：[13-Quest](../13-Quest-查询感知稀疏/13-Quest-查询感知稀疏.md)。
 
 ---
 
-## 本篇来源
+## 参考文献
 
-1. Qwen Team. *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*（2026-08-26）。PDF：https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf （本会话 raw 下载后 PyMuPDF 抽 28 页，**不把 OCR 进 git**）。§2.1.1 混合日程与 NoPE；§2.1.2 式 (12)–(20)、Implementation（$H=4,K=2048,r=4\Rightarrow K_B=512$）、Table 2–4、Fig. 4–6。
+1. Qwen Team. *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*（2026-08-26）。PDF：https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf。§2.1.1 混合日程与 NoPE；§2.1.2 式 (12)–(20)、Implementation（$H=4,K=2048,r=4\Rightarrow K_B=512$）、Table 2–4、Fig. 4–6。
 2. 博文镜像：https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501 。GDN 记 / QSA 取；1M kernel 7.6× / 4.9×；90% 前缀缓存 Prefill 吞吐相对 3.7-Plus **8.6×**；DSA / IndexCache 为参考文献 [2][3]。
 3. GitHub README：https://github.com/QwenLM/Qwen3.8-Flash-Next 。GDN + QSA hybrid；serving 示例上下文 262144。
-4. DSA 对照（indexer 仍 $O(L^2)$、两阶段 KL、稀疏阶段 $k=2048$）：DeepSeek-V3.2 报告 [arXiv:2512.02556](https://arxiv.org/html/2512.02556) §2.1。不要用二次博客填 $H^I$。
+4. DSA 对照（indexer 仍 $O(L^2)$、两阶段 KL、稀疏阶段 $k=2048$）：DeepSeek-V3.2 报告 [arXiv:2512.02556](https://arxiv.org/html/2512.02556) §2.1。$H^I$ 以该报告为准。
 
 图 3 的 $i=13$ 和下标、图 4 的色块是示意图。知乎只学讲法（25% 全局层才换成 QSA；GDN 记、QSA 取），数字未采用专栏。

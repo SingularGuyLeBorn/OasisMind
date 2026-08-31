@@ -1,24 +1,28 @@
 ---
-title: "14 · Qwen4 架构预测：Flash-Next 早鸟捆了哪些积木"
+title: "Qwen4 预测：Flash-Next 早鸟捆了什么"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [Qwen4, Qwen3.8-Flash-Next, QSA, Gated-Residual, Muon, MoE, n-gram]
 ---
 
-# 14 Qwen4 架构预测：从已公开的 Flash-Next 读积木，不要读未发的旗舰规格
+# Qwen4 现在能预测什么
 
->  **[返回 14.2-Qwen](../14.2-Qwen.md)** · 地图（只读、不改）：[13 · Qwen3.8-Flash-Next 架构精译](../13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md) · 积木本体：[QSA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [GR](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [n-gram / Engram](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.8-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md) · [KDA / GDN](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)
+> [返回 14.2-Qwen](../14.2-Qwen.md) · [Flash-Next 架构精译](../13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md) · [QSA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [GR](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [n-gram / Engram](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.8-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md) · [Muon](../../../6-训练与推理优化/6.5-优化器/Muon/05-MuonClip与PolarExpress.md) · [KDA / GDN](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)
 
-**没有 Qwen4 出厂技术报告，也没有 Qwen4 权重。** 2026-08-26 开源的是 **Qwen3.8-Flash-Next**：官方 README、阿里云博文镜像和 HF 卡片都把它写成「将 underpin Qwen4 的架构的早鸟预览」，角色明确类比当年 [Qwen3-Next](https://qwen.ai/blog?id=qwen3-next) 之于 Qwen3.5——先把积木放到社区里检验，再在这套骨架上长完整家族。本篇只读这一只已经公开的鸟：报告怎么捆、卡片写了哪些整数、哪三本参数账不能合成。不编 Qwen4-Max 的层数、专家池、发布日。云上生产档 `qwen3.8-flash`（默认 1M、内置工具）是 **B 档 SKU**，第 14 章不给它开夹。
+Qwen4 还没有出厂技术报告，也没有权重。2026-08-26 开源的是 Qwen3.8-Flash-Next。官方 README、阿里云博文和 HF 卡片都把它写成「会 underpin Qwen4 的架构」的早鸟，角色对标当年 [Qwen3-Next](https://qwen.ai/blog?id=qwen3-next) 之于 Qwen3.5：积木先放到社区里检验。
 
-检查点的 `config.json` 把 `model_type` 写成 `qwen4_exp`、架构类名写成 `Qwen4ExpForConditionalGeneration`。这是 Flash-Next 这一只的代码名，不是「Qwen4 已经发报告」。
+所以下面只谈这只已经公开的鸟。报告怎么捆、卡片上有哪些整数、哪三本参数账不能加在一起。Qwen4-Max 的层数、专家池、发布日，没有材料就不写。
 
-## 1. 预测边界：官方声称会 underpin Qwen4 的，是四条轴，不是一张旗舰规格表
+云上的 `qwen3.8-flash`（默认 1M、带工具）是产品名，不是另一套架构，第 14 章也不单独给它开目录。
+
+检查点 `config.json` 里 `model_type` 是 `qwen4_exp`，类名是 `Qwen4ExpForConditionalGeneration`。这是 Flash-Next 这一只的代码名，不是 Qwen4 已经发报告。
+
+## 1. 官方说会 underpin Qwen4 的，是四条轴
 
 报告标题是 *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*（Qwen Team，2026-08-26，28 页）。摘要把设计目标写死：用更小的激活量和大约九分之一的训练 FLOPs，去追上一世代 397B-A17B（Qwen3.7-Plus）的预训练质量。四条轴各自对一个瓶颈：
 
-| 轴 | Flash-Next 这次捆什么 | 官方怎么说它和 Qwen4 的关系 | 本体（本篇只链） |
-|----|------------------------|------------------------------|------------------|
+| 轴 | Flash-Next 这次捆什么 | 官方怎么说它和 Qwen4 的关系 | 详见 |
+|----|------------------------|------------------------------|------|
 | Attention | 3 GDN : 1 全局；CPT 后全局换成 **QSA**；MTP 的全注意力同样换成 QSA | 混合日程从 Qwen3-Next 沿用到 3.5–3.8；这一次改的是**全局那一层** | [QSA](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) |
 | Residual | **GR**，$n_r=4$，丢掉 $H_{\mathrm{res}}$ | 加宽残差流 + 逐元素读门；博文写残差态可 FP8 | [GR](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) |
 | Embedding | 靠前 **一层** n-gram 表，+51B，Host prefetch | 报告点名 Cheng et al. 2026；PDF **没有**字符串 `Engram` | [2.4.8](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.8-条件记忆与Engram/01-Engram-从Ngram到可扩展查找/01-Engram-从Ngram到可扩展查找.md) |
@@ -46,7 +50,7 @@ HF 页面另有一处 Safetensors「Model size **180B** params」。那是把 A+
 
 ![三本参数账：6B 激活、51B Host 表、4B MTP 头](./images/fig-qwen4-param-ledgers.png)
 
-> 图 1：三本账并排，禁止把 51B 或 4B 加进 6B。查表只在 Layer 2，地址可 prefetch。自绘；不是报告 Figure 1 描图。图中表格列名是示意，报告写的是 n-gram 键→嵌入向量，不是 logit bias。
+> 图 1：三本账并排，51B 或 4B 不要加进 6B。查表只在 Layer 2，地址可 prefetch。
 
 **图 1 解析**
 
@@ -80,7 +84,7 @@ MTP 也换 QSA。报告写骨干和 MTP 模块里的全注意力层都换成 QSA
 
 ![一个宏块：三层 GDN+MoE，一层 QSA+MoE，外包 GR](./images/fig-qwen4-gdn-qsa-stack.png)
 
-> 图 2：48 层里的 1/12 个宏块。三层 GDN 压缩历史，一层 QSA 做稀疏全局检索；每层后面都是 MoE；四层外包 $n_r=4$ 的 GR。底注：CPT 后全局注意力换成 QSA，MTP 同样换。自绘示意，不是报告 Figure 1 描图。
+> 图 2：48 层里的 1/12 个宏块。三层 GDN 压缩历史，一层 QSA 做稀疏全局检索；每层后面都是 MoE；四层外包 $n_r=4$ 的 GR。底注：CPT 后全局注意力换成 QSA，MTP 同样换。
 
 **图 2 解析**
 
@@ -111,7 +115,7 @@ MTP 也换 QSA。报告写骨干和 MTP 模块里的全注意力层都换成 QSA
 
 HF 卡片其它只属于这只鸟的整数，供对照、不外推旗舰：隐藏维 2560；词表 248320（padded）；QSA 核心注意力 24 个 Q 头、2 个 KV 头、头维 256、RoPE 维 64；GDN 48 个 V 头、16 个 QK 头、头维 128。
 
-## 5. 积木只链不重推：GR、n-gram、Muon
+## 5. GR、n-gram、Muon 怎么捆进这只鸟
 
 **GR。** 报告 §2.2：残差流加宽到 $n_r=4$，读是逐元素、数据依赖的 sigmoid 门，写是每分支一个标量，**丢掉混合算子 $H_{\mathrm{res}}$**。公式与「为何丢掉」在 [GR 专文式 (29)–(34)](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。本篇只保留报告的设计句：一旦读和写够表达，再加 $n_r\times n_r$ 混合没有显著收益。探针（简化 AltUp）在 25B-A3B、400B token 上把 loss 降约 0.01，说明「变宽」本身值钱；完整 GR 的门是 $n_r\times d$，不要把探针的每分支标量读当成线上实现。推理侧：稀疏只读最高门控的两支，预训练几乎无伤、后训练明显变差，所以没采用——报告把这写成「只看预训练会做错决定」的例子。残差态 FP8 能减半访存，门把写入幅度卡住，低精度才匹配。
 
@@ -121,7 +125,7 @@ HF 卡片其它只属于这只鸟的整数，供对照、不外推旗舰：隐�
 
 ![Muon 打哪些矩阵、AdamW 留哪些](./images/fig-qwen4-muon-adamw.png)
 
-> 图 3：报告 §3.1 的参数分工。左栏 2D 线性走 Muon；右栏 Embedding / Router / GR 低秩 / 输出门走 AdamW；n-gram 表走无衰减 Adam。中间：融合矩阵先拆再正交化。自绘，不是损失曲线。
+> 图 3：报告 §3.1 的参数分工。左栏 2D 线性走 Muon；右栏 Embedding / Router / GR 低秩 / 输出门走 AdamW；n-gram 表走无衰减 Adam。中间：融合矩阵先拆再正交化。
 
 **图 3 解析**
 
@@ -133,7 +137,7 @@ HF 卡片其它只属于这只鸟的整数，供对照、不外推旗舰：隐�
 
 超参：为新架构 + Muon 重拟合后，最优 batch 与 lr 上移。小模型 4T token 上，$B=25.2\mathrm{M}$ 优于旧配方 $12.6\mathrm{M}$（末 20B token 上 loss 差 $7.2\times 10^{-3}$）。从 6.3M 爬到 25.2M 的 warmup **不比一开始就用目标 batch 更好**，却多 **18.8%** 的 optimizer step（Fig. 8b）。生产 run 取消 warmup。压力测试（28 层 25B-A3B，恒定 lr 拉到最优的 2×/4×）：AdamW + 旧结构在 4× 上每 10k step 尖峰 183 次；Muon + GR 零次过 clip、零次 loss spike。全尺寸训练报告写：没有一次 loss spike，也没有靠 qk-clip / SwiGLU-clip。
 
-## 6. 两套加速比，分母不同，禁止合成
+## 6. 两套加速比，分母不是同一个
 
 | 口径 | 数字 | 分子 / 分母 | 一手 |
 |------|------|-------------|------|
@@ -170,9 +174,9 @@ Table 11 是预训练 **Base** 对照，不是后训练 agent 表。Flash-Next-B
 2. **MTP 多步**，训练与推理一致，提高投机接受率；注意力换成 QSA（报告 Table 4 有接受长度，博文有动机）。
 3. **稳定性套件**：零中心 RMSNorm 并对 norm 权重做 decay、注意力输出门、归一化 MoE router 初始化。报告 §3.3 用压力测试说明 GR 门提供 rescaling，全尺寸 run 不靠 qk-clip。
 
-服务：开源权重走 Hugging Face / ModelScope；推理框架博文与 README 点名 SGLang、vLLM、TokenSpeed，示例上下文 262144。云上 API 名是 `qwen3.8-flash`，定价写在博文（约 $0.16 / $0.47 per M tokens），那是 SKU 不是架构。
+服务：开源权重走 Hugging Face / ModelScope；推理框架博文与 README 点名 SGLang、vLLM、TokenSpeed，示例上下文 262144。云上 API 名是 `qwen3.8-flash`，定价写在博文（约 $0.16 / $0.47 per M tokens），那是产品定价，不是架构数字。
 
-## 8. 失效模式：怎样把「Qwen4 预测」写坏
+## 8. 怎样把这篇预测写坏
 
 | 写法 | 为什么失效 |
 |------|------------|
@@ -182,14 +186,14 @@ Table 11 是预训练 **Base** 对照，不是后训练 agent 表。Flash-Next-B
 | 假装 Qwen4 已经发报告，或编发布日、旗舰层数 | 官方只承诺 Flash-Next 是早鸟；`qwen4_exp` 是检查点代码名 |
 | 把 7.6× 与 8.6× 合成一个加速比 | 分母分别是 paged GQA kernel 与 3.7-Plus + 90% 前缀缓存 |
 | 在本篇重推 QSA (12)–(20)、GR (29)–(34)、Engram 哈希 | 第 14 章只写捆法；公式在第 2 / 6 章 |
-| 为云上 `qwen3.8-flash` 新建第 14 章目录 | B 档 SKU |
+| 为云上 `qwen3.8-flash` 再开一章 | 那是产品名，不是另一套架构 |
 | 说报告点名了字符串 Engram | PDF 无此词；点名的是 Cheng et al. 2026。Engram 三字在博文 |
 
-下一篇地图仍是 [13 · Flash-Next 架构精译](../13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)。等真正的 Qwen4 出厂报告出现之前，本夹不升级成「Qwen4 规格书」。
+细节仍以 [Flash-Next 架构精译](../13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md) 为准。真有 Qwen4 出厂报告之前，这里不会改成规格书。
 
-## 本篇来源
+## 参考文献
 
-1. Qwen Team. (2026-08-26). *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*. 技术报告 PDF：https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf （本会话下载后用 PyMuPDF 抽 28 页全文，**不把 PDF 进 git**）。
+1. Qwen Team. (2026-08-26). *On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability*. 技术报告 PDF：https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf （28 页）。
 2. Qwen Team. README：https://github.com/QwenLM/Qwen3.8-Flash-Next
 3. Qwen Team. 博文镜像：https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501 ；官方入口：https://qwen.ai/blog?id=qwen3.8-flash-next
 4. Hugging Face 卡片：https://huggingface.co/Qwen/Qwen3.8-Flash-Next ；`config.json`：https://huggingface.co/Qwen/Qwen3.8-Flash-Next/raw/main/config.json

@@ -6,7 +6,6 @@ title: "01 · DeepSeek-V4 技术报告精译"
 
 >  **[返回 14.1-DeepSeek 家族总览](../../14.1-DeepSeek.md)**
 
-
 > 原文标题: DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence
 > 作者: DeepSeek-AI
 > 原文链接: https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf
@@ -53,7 +52,7 @@ title: "01 · DeepSeek-V4 技术报告精译"
 
 ![图 1: 左: DeepSeek-V4-Pro-Max 与同类模型在知识、推理和 Agent 能力上的基准测试对比。右: DeepSeek-V3.2 与 DeepSeek-V4 系列的单 token 推理 FLOPs 和累积 KV Cache  size 对比,在 1M token 上下文中 V4-Pro 的 FLOPs 仅为 V3.2 的 27%,KV Cache 仅为 10%。](./assets/figure_01.png)
 
-> 图 1: 左: DeepSeek-V4-Pro-Max 与同类模型在知识、推理和 Agent 能力上的基准测试对比。右: DeepSeek-V3.2 与 DeepSeek-V4 系列的单 token 推理 FLOPs 和累积 KV Cache  size 对比,在 1M token 上下文中 V4-Pro 的 FLOPs 仅为 V3.2 的 27%,KV Cache 仅为 10%。在 1M token 上下文场景中,即使是激活参数更多的 DeepSeek-V4-Pro,也仅达到 DeepSeek-V3.2 单 token FLOPs(以等效 FP8 FLOPs 计)的 27% 和 KV Cache  size 的 10%。此外,激活参数更少的 DeepSeek-V4-Flash 将效率推向更高:在 1M token 上下文设定下,它仅达到 DeepSeek-V3.2 单 token FLOPs 的 10% 和 KV Cache  size 的 7%。另外,对于 DeepSeek-V4 系列,路由专家参数采用 FP4 精度。虽然现有硬件上 FP4 × FP8 操作的峰值 FLOPs 与 FP8 × FP8 相同,但理论上在未来硬件上可以实现 1/3 的效率提升,这将进一步增强 DeepSeek-V4 系列的效率。
+> 图 1: 左: DeepSeek-V4-Pro-Max 与同类模型在知识、推理和 Agent 能力上的基准测试对比。右: DeepSeek-V3.2 与 DeepSeek-V4 系列的单 token 推理 FLOPs 和累积 KV Cache size 对比,在 1M token 上下文中 V4-Pro 的 FLOPs 仅为 V3.2 的 27%,KV Cache 仅为 10%。在 1M token 上下文场景中,即使是激活参数更多的 DeepSeek-V4-Pro,也仅达到 DeepSeek-V3.2 单 token FLOPs(以等效 FP8 FLOPs 计)的 27% 和 KV Cache size 的 10%。此外,激活参数更少的 DeepSeek-V4-Flash 将效率推向更高:在 1M token 上下文设定下,它仅达到 DeepSeek-V3.2 单 token FLOPs 的 10% 和 KV Cache size 的 7%。另外,对于 DeepSeek-V4 系列,路由专家参数采用 FP4 精度。虽然现有硬件上 FP4 × FP8 操作的峰值 FLOPs 与 FP8 × FP8 相同,但理论上在未来硬件上可以实现 1/3 的效率提升,这将进一步增强 DeepSeek-V4 系列的效率。
 
 在预训练期间,我们分别在 32T token 上训练 DeepSeek-V4-Flash,在 33T token 上训练 DeepSeek-V4-Pro。预训练后,这两个模型可以原生且高效地支持 1M 长度上下文。在我们的内部评估中,DeepSeek-V4-Flash-Base 已经以其更高效的参数设计在大多数基准上超越了 DeepSeek-V3.2-Base。DeepSeek-V4-Pro-Base 进一步扩展了这一优势,为 DeepSeek 基础模型树立了新的性能标准,在推理、编码、长上下文和世界知识任务上实现了全面的优越性。
 

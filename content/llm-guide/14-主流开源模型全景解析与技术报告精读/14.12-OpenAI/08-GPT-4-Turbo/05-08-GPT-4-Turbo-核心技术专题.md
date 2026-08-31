@@ -1,11 +1,10 @@
 ---
-title: "05 · GPT-4 Turbo：128K上下文窗口与推理效率的工程突破"
+title: "GPT-4 Turbo：128K 窗与推理效率"
 ---
 
-# 08-GPT-4-Turbo 核心技术专题：128K上下文窗口与推理效率的工程突破
+# GPT-4 Turbo：128K 窗与推理效率
 
 >  **[返回 14.12-OpenAI 家族总览](../../14.12-OpenAI.md)**
-
 
 ## 一、发布背景与战略定位
 
@@ -33,7 +32,6 @@ GPT-4 Turbo 并非全新架构，而是 GPT-4 的**工程优化版本**：
 - 引入新的后训练技术(RLHF 改进、指令微调增强)
 
 这种"相同架构、更好实现"的策略，与 Google 从 Gemini 1.0 到 1.5 的渐进式演进形成对照。
-
 
 ## 二、128K 上下文窗口的技术实现
 
@@ -137,7 +135,6 @@ OpenAI 声称 GPT-4 Turbo 在 128K 上下文中保持"近乎完美的检索准�
 - **长文档理解**：能够处理整本书(如《哈利波特》全文约 300K 英文单词，约 400K tokens，超出 128K，但可以处理大部分章节)
 - **代码库分析**：可以一次性分析中型项目的完整代码库
 
-
 ## 三、JSON Mode：结构化输出的约束解码
 
 ### 3.1 问题背景
@@ -203,7 +200,6 @@ response = client.chat.completions.create(
 - 确保并行计算(如多头注意力)的执行顺序一致
 - 注意：由于 GPU 浮点运算的非结合性(non-associativity)，严格的比特级可复现仍然困难，OpenAI 承诺"**近似可复现**"
 
-
 ## 四、Function Calling v2：从工具调用到智能体编排
 
 ### 4.1 Function Calling 的演进
@@ -267,7 +263,6 @@ GPT-4 Turbo 可以从自然语言描述中更准确推断需要调用的函数�
 
 这要求模型具备**意图分解**和**参数提取**的双重能力，是走向 Agent 系统的关键一步。
 
-
 ## 五、GPT-4 Turbo with Vision：视觉能力的工程集成
 
 ### 5.1 架构整合
@@ -307,7 +302,6 @@ GPT-4 Turbo Transformer → 处理
 - **视觉问答**：基于图像内容回答问题
 - **多模态推理**：结合图像和文本进行复杂推理
 
-
 ## 六、推理效率优化与成本下降
 
 ### 6.1 成本下降的技术来源
@@ -345,7 +339,6 @@ GPT-4 Turbo 的首 Token 延迟(Time to First Token, TTFT)相比 GPT-4 有显著
 - **Prefix Caching**：缓存系统提示(System Prompt)的 KV-Cache，避免重复计算
 - **Pipeline Parallelism 优化**：减少 pipeline bubble，提高硬件利用率
 
-
 ## 七、局限性与后续演进
 
 ### 7.1 已知局限
@@ -369,7 +362,6 @@ GPT-4 Turbo 的多个技术方向直接启发了后续模型：
 
 GPT-4 Turbo 可以被视为 OpenAI 从"研究突破"到"工程产品化"的转折点——它证明了顶尖大模型可以通过系统优化实现大规模商业化部署。
 
-
 ## 八、总结
 
 GPT-4 Turbo 在 OpenAI 的技术演进史上占据承前启后的关键位置：
@@ -386,4 +378,4 @@ GPT-4 Turbo 的成功验证了一个核心命题：**大模型的商业化不仅
 
 ## 2026-08 修订（不删上文）
 
-DevDay 博文（本会话 Wayback 20231106235404）**没有**写 MoE、8×220B、RoPE 外推、FlashAttention、KV-Cache 压缩。128K、知识截止 April 2023、输入 3× / 输出 2× 更便宜、$0.01/$0.03 **每 1,000 tokens**、`gpt-4-1106-preview`、JSON mode、`seed`、`gpt-4-vision-preview`、1080²=$0.00765 才是原文。上文 §1.2 / §2 / §8 的架构实现是 2025 推测，当历史快照保留。见 [01-08 D2](./01-08-GPT-4-Turbo-反向工程精译.md)。
+DevDay 博文（Wayback 20231106235404）**没有**写 MoE、8×220B、RoPE 外推、FlashAttention、KV-Cache 压缩。128K、知识截止 April 2023、输入 3× / 输出 2× 更便宜、$0.01/$0.03 **每 1,000 tokens**、`gpt-4-1106-preview`、JSON mode、`seed`、`gpt-4-vision-preview`、1080²=$0.00765 才是原文。上文 §1.2 / §2 / §8 的架构实现是 2025 推测，当历史快照保留。见 [01-08 D2](./01-08-GPT-4-Turbo-反向工程精译.md)。

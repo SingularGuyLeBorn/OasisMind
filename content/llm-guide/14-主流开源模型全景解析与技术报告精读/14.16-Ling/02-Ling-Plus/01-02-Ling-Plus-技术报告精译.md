@@ -11,7 +11,7 @@ tags: [Ling-Plus, inclusionAI, MoE]
 
 > 零一万物 Yi 家族的延续。在极高的 INF (推理吞吐率) 要求下，该版本模型对显存碎片化与 PagedAttention 进行了深度调优。
 
-**材料类型（2026-08）**：占位同样把 Plus 写成 Yi + PagedAttention，**错**。Plus 与 Lite **同一篇** [arXiv:2503.05139](https://arxiv.org/abs/2503.05139)。本 01-02 只锁 Plus 增量，机制不重写。
+占位同样把 Plus 写成 Yi + PagedAttention，**错**。Plus 与 Lite **同一篇** [arXiv:2503.05139](https://arxiv.org/abs/2503.05139)。本 01-02 只锁 Plus 增量，机制不重写。
 
 ## Plus 相对 Lite
 
@@ -28,6 +28,6 @@ Scaling law 实验把小 MoE 对齐 Plus 结构，算力 \(1\times10^{18}\)–\(
 
 失效条件：把 01-02 写成第二份全书；把 Ling-2.5 混合线性注意力倒灌。
 
-## 本篇来源
+## 参考文献
 
 - 同 Lite：arXiv:2503.05139

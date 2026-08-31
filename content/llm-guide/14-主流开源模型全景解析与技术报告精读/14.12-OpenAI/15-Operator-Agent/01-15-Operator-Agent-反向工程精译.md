@@ -11,7 +11,7 @@ tags: [Operator, CUA, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重, 本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**产品博文 + 研究博文**。占位段不是这两篇。openai.com/index/introducing-operator 现页本轮超时；产品句用 Wayback [Introducing Operator](https://web.archive.org/web/20250123210058/https://openai.com/index/introducing-operator/)（2025-01-23）。评测表用 [Computer-Using Agent](https://openai.com/index/computer-using-agent/)（同日）。系统卡 **未打开**。
+**产品博文 + 研究博文**。占位段不是这两篇。openai.com/index/introducing-operator 现页本轮超时；产品句用 Wayback [Introducing Operator](https://web.archive.org/web/20250123210058/https://openai.com/index/introducing-operator/)（2025-01-23）。评测表用 [Computer-Using Agent](https://openai.com/index/computer-using-agent/)（同日）。系统卡 **未打开**。
 
 ## 1. 产品（1-23 预览）
 
@@ -41,7 +41,7 @@ WebVoyager 任务相对简单；WebArena 离人还远。OSWorld：步数上限�
 - 把 OSWorld 38.1% 写成接近人类 72.4%。
 - 把后来 ChatGPT agent mode / 下线独立 Operator 的产品史 **倒灌进 1-23 预览**（本轮未读成 2025-07 更新页）。
 
-## 本篇来源
+## 参考文献
 
 - https://web.archive.org/web/20250123210058/https://openai.com/index/introducing-operator/
 - https://openai.com/index/computer-using-agent/ （评测表、循环、安全；未读系统卡）

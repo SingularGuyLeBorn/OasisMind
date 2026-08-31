@@ -11,7 +11,7 @@ tags: [Kimi-K2.7-Code, MoE, MLA, MoonViT, 公开材料精读]
 
 **档（2026-08）**：**A**。官方写明 **built upon Kimi K2.6**，部署「与 K2.5/K2.6 相同架构」。没有新注意力/MoE 论文。不要把它写成 K3。
 
-**材料类型**：产品页 + Hugging Face 卡。不是独立架构 PDF。
+产品页 + Hugging Face 卡。不是独立架构 PDF。
 
 ![K2.6 与 K2.7 Code 同骨架](./images/fig-k27-code-same-moe-coding-sku.png)
 
@@ -80,7 +80,7 @@ MLA / SwiGLU / MoE 路由公式住体系章，本篇不抄。K3 的 KDA + Latent
 - 为「非 thinking」再建空目录。
 - 把第三方「2026-06-12 上架」收成官方日（权重卡没写；产品页是 08-12）。
 
-## 本篇来源
+## 参考文献
 
 - https://www.kimi.ai/resources/kimi-k2-7-code （读完正文、规格表、价表、FAQ）
 - https://huggingface.co/moonshotai/Kimi-K2.7-Code/raw/main/README.md （规格、评测脚注、INT4、preserve_thinking）

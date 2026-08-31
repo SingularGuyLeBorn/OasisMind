@@ -11,7 +11,7 @@ tags: [Llama-3.1, 405B, 128K, GQA, 公开材料精读]
 
 > **核心定位**：Meta 开源帝国的巅峰之作，高达 405B 的密集参数模型首次在多项基准上逼平甚至超越闭源王者 GPT-4o 与 Claude 3.5 Sonnet。
 
-**材料类型（2026-08）**：2024-07-23 的 Llama 3.1 **就是** herd 论文 [arXiv:2407.21783](https://arxiv.org/abs/2407.21783) 里的 8B/70B/405B + 128K 那一档。本文件夹的 01 原先只有两段猜测；架构本体不要再抄一遍 03 目录。数字以 Hugging Face **Llama-3.1-405B** 模型卡为准（与论文同日）。上面「逼平 GPT-4o」是 2025 口号，**模型卡没有这句对照表**，本篇不写进评测。
+2024-07-23 的 Llama 3.1 **就是** herd 论文 [arXiv:2407.21783](https://arxiv.org/abs/2407.21783) 里的 8B/70B/405B + 128K 那一档。本文件夹的 01 原先只有两段猜测；架构本体不要再抄一遍 03 目录。数字以 Hugging Face **Llama-3.1-405B** 模型卡为准（与论文同日）。上面「逼平 GPT-4o」是 2025 口号，**模型卡没有这句对照表**，本篇不写进评测。
 
 ## 1. 相对 Llama 3（2024-04）多了什么
 
@@ -52,7 +52,7 @@ Herd 论文 Table 1：3.1 Instruct 才标多语言 / 长上下文 / 工具使用
 - 把 405B 写成 MoE。
 - 给 Muse Spark 另开架构论文——那是 2026 安全报告，见 [05-Muse-Spark](../05-Muse-Spark/01-Muse-Spark-公开材料精读.md)。
 
-## 本篇来源
+## 参考文献
 
 - https://huggingface.co/meta-llama/Llama-3.1-405B （模型卡：尺寸、15T+、128k、8 语言、39.3M GPU-hours、Instruct 表）
 - https://arxiv.org/abs/2407.21783 （herd；本仓库已有 03 精译）

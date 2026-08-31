@@ -19,7 +19,7 @@ tags: [Claude-2, index]
 - 公开材料精读（D2）：[01-02-Claude-2-架构精译](./01-02-Claude-2-架构精译.md)
 - 已有长 D5：[05-02-Claude-2-超长上下文与Constitutional AI的工程实践](./05-02-Claude-2-超长上下文与Constitutional AI的工程实践.md)
 
-## 本篇来源
+## 参考文献
 
 - 本文件原先是空壳；2026-08 改成枢纽
 - https://www.anthropic.com/news/claude-2

@@ -5,9 +5,13 @@ as_of: 2026-08-30
 tags: [AttnRes, Attention-Residuals, PreNorm-dilution, Block-AttnRes, Kimi]
 ---
 
-# 08 AttnRes：深度维上的历史层聚合
+# AttnRes：深度维上的历史层聚合
 
-[Attention Residuals（AttnRes）](https://arxiv.org/abs/2603.15031) 改的是 **深度维**上历史层表示怎样被当前层聚合：把 Pre-Norm 残差里固定为单位权重的累积，换成对前序层输出的 softmax 注意力。它卡住的瓶颈叫 **PreNorm dilution**——未加权求和让隐状态幅值随深度按 $O(L)$ 涨，每一层的相对贡献被冲淡。记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的子层 $f$，但注意力轴从 token 拧到层。本篇是 2.2.2 里相对 [06 $G_1$](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的对照：**不是** SDPA 后逐头 sigmoid，**不是** [mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 的 $H_{\mathrm{res}}$ 双随机，**不是** [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 丢掉 $H_{\mathrm{res}}$ 的读门/写标量，**不是** [xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)。也不是把 $x+F(x)$ 换成另一种加法，更不是 token 维 KV 份数。
+[Attention Residuals（AttnRes）](https://arxiv.org/abs/2603.15031) 改的是 **深度维**：历史层表示怎样被当前层聚合。Pre-Norm 残差里，前序层输出按单位权重往上加。AttnRes 换成对前序层输出做 softmax。
+
+卡住的瓶颈叫 **PreNorm dilution**。未加权求和让隐状态幅值随深度按 $O(L)$ 涨，每一层的相对贡献被冲淡。
+
+记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的子层 $f$，注意力轴从 token 拧到层。它和 [06 $G_1$](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 对照：不是 SDPA 后逐头 sigmoid，不是 [mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 的 $H_{\mathrm{res}}$ 双随机，不是 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 丢掉 $H_{\mathrm{res}}$ 的读门/写标量，也不是 [xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)。$x+F(x)$ 那种加法还在，只是权重不再恒为 1。token 维的 KV 份数也不动。
 
 ---
 
@@ -77,7 +81,7 @@ $$
 
 ![左：PreNorm 固定 +1 累积，幅值按 O(L) 涨；右：伪查询对历史层 softmax，轴是深度不是 token](./images/fig-attnres-fixed-vs-depth.png)
 
-> 图 1：固定残差累积 vs 深度维注意力选择。对应 Kimi Team, arXiv:2603.15031，Figure 1(a)(b)。2026-08 自绘。
+> 图 1：固定残差累积 vs 深度维注意力选择。
 
 **图 1 解析**
 
@@ -110,11 +114,11 @@ $$
 
 键和权重仍走式 (3)(2)。块内第一层只读已完成的块摘要 + embedding；后续层额外读当前块的部分和。$N=L$ 退回 Full AttnRes；$N=1$ 退回「标准残差 + 把 embedding 单独成 $\mathbf{b}_0$」。经验上 **$N\approx 8$** 收回 Full 的大部分收益，每 token 只存大约八份隐状态（§3.2、§5）。
 
-官方 README 的 `forward` 把切分写进实现：进入注意力子层之前做一次 `block_attn_res`，进 MLP 之前再做一次，两次各有自己的伪查询与 RMSNorm。`block_size` 计的是 ATTN+MLP，所以 48B 实验里「每块 6 层」对应 3 个 Transformer block。块边界上把 `partial_block` 追加进 `blocks` 再清零。不要理解成「每个 Transformer block 只聚合一次」——论文把 attn 与 MLP 分成两层，查询也是两套。
+官方 README 的 `forward` 把切分写进实现：进入注意力子层之前做一次 `block_attn_res`，进 MLP 之前再做一次，两次各有自己的伪查询与 RMSNorm。`block_size` 计的是 ATTN+MLP，所以 48B 实验里「每块 6 层」对应 3 个 Transformer block。块边界上把 `partial_block` 追加进 `blocks` 再清零。不是「每个 Transformer block 只聚合一次」。论文把 attn 与 MLP 分成两层，查询也是两套。
 
 两阶段计算（Algorithm 1）利用「$\mathbf{w}_l$ 与前向解耦」：Phase 1 把一块内全部 $S$ 个伪查询对已缓存块表示一次 batched 打完，记下 softmax 的 max 与 log-sum-exp；Phase 2 按层推进部分和，用 online softmax 与 Phase 1 合并。块内第一层直接用 Phase 1 的归一化输出；从第二层起，Phase 2 只对当前部分和 $\mathbf{b}_n^i$ 做一次注意，再把两路的加权分子和分母并起来。这保证「已经看到的部分和」与「更早的块摘要」在同一套 $\alpha$ 下竞争，而不是先加再注意。代数上与逐层 Full 计算等价，不是再发明一套残差加法。
 
-Kimi Linear 48B 实验（论文 §5.2）不是 K3：27 个 Transformer block（54 层，attn 与 MLP 分开计），Block AttnRes 每块 6 层，得到 9 个块再加 embedding，一共 **10 个深度维源**。K3（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2）是另一份捆法：93 层划成 **8 个约 12 层的块，最后一块不满，加 embedding 共 9 个可查询源**。公式仍是本节的伪查询 + RMSNorm key，不要把 10 和 9 并成一个数。
+Kimi Linear 48B 实验（论文 §5.2）不是 K3：27 个 Transformer block（54 层，attn 与 MLP 分开计），Block AttnRes 每块 6 层，得到 9 个块再加 embedding，一共 **10 个深度维源**。K3（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2）是另一份捆法：93 层划成 **8 个约 12 层的块，最后一块不满，加 embedding 共 9 个可查询源**。公式仍是本节的伪查询 + RMSNorm key，10 和 9 不是同一个数。
 
 ---
 
@@ -124,12 +128,12 @@ Kimi Linear 48B 实验（论文 §5.2）不是 K3：27 个 Transformer block（5
 
 ![2×2：AttnRes 深度 softmax；G1 乘 SDPA 头输出；mHC 双随机 H_res；GR 四分支读门且丢掉 H_res](./images/fig-attnres-not-g1-mhc-gr.png)
 
-> 图 2：AttnRes **不是** $G_1$、**不是** mHC、**不是** Gated Residual（也不是 xHC）。2026-08 自绘。
+> 图 2：AttnRes **不是** $G_1$、**不是** mHC、**不是** Gated Residual（也不是 xHC）。
 
 **图 2 解析**
 
 - **左上（本篇）**：softmax 的轴是**历史层**。$\mathbf{v}_i$ 是同一 token 位置上前序子层的输出。残差加法本身被式 (1)(4) 替换。
-- **右上（不是 $G_1$）**：[06](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 乘在 SDPA **各头输出**上，残差仍是普通 $x+F(x)$。门分数来自 pre-norm 隐状态，轴是 token 维注意力子层、$W_V$–$W_O$ 之间。$G_1$ 的零点在 06，本篇不是它。
+- **右上（不是 $G_1$）**：[06](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) 的 $G_1$ 乘在 SDPA **各头输出**上，残差仍是普通 $x+F(x)$。门分数来自 pre-norm 隐状态，轴是 token 维注意力子层、$W_V$–$W_O$ 之间。$G_1$ 的零点在 06，AttnRes 不是它。
 - **左下（不是 mHC）**：mHC 把残差**加宽成 $m$ 条流**，用双随机 $H_{\mathrm{res}}$（Sinkhorn）在流之间混合。当前层仍然只读上一时刻的多流状态，并不能单独检索第 $i$ 层的输出。论文 §6.2 把 (m)HC 的展开权重写成式 (10)：$\mathbf{M}_{i\to l}=\boldsymbol{\beta}_i^\top\mathbf{A}_{i+1\to l}^\times\boldsymbol{\alpha}_l$，并明确这是深度维上的**线性**注意力（矩阵值状态）；AttnRes 才是深度维 **softmax**。
 - **右下（不是 GR）**：Qwen3.8 的 Gated Residual 把流加宽到 $n_r=4$，读用逐元素 sigmoid 门、写用每分支标量，**丢掉 $H_{\mathrm{res}}$**。子层 $\mathcal{F}$ 仍只有一份，四条是残差分支。图里若画成四份 $F$，那是示意加宽，不是四份完整注意力。GR 仍在残差主干上做读/写，不对历史层做 softmax。
 - **底注（不是 xHC）**：xHC 把流再扩、稀写密读，混合仍是流形上的 $k\times k$ Sinkhorn，对象还是残差条数，不是深度维检索。
@@ -142,11 +146,11 @@ Kimi Linear 48B 实验（论文 §5.2）不是 K3：27 个 Transformer block（5
 | GR | 残差流条数 | 四条分支上的逐元素读 | 加宽但无 $H_{\mathrm{res}}$ |
 | xHC | 残差流条数 | 更大 $n$ 的流 | 仍是流混合 |
 
-论文 Table 4 把这件事做成消融，不要靠名字猜：同一套 16 头模型、同一算力，PreNorm 基线 **1.766**；DenseFormer（能看所有前序输出，但权重是**与输入无关的标量**）**1.767**，几乎不涨；mHC **1.747**；Full AttnRes **1.737**；Block（$S=4$）**1.746**。能看历史层但权重不随内容变，等于没改稀释；加宽流是另一条路；深度维 softmax 才是本篇。
+论文 Table 4 把这件事做成消融，名字对不上数字：同一套 16 头模型、同一算力，PreNorm 基线 **1.766**；DenseFormer（能看所有前序输出，但权重是**与输入无关的标量**）**1.767**，几乎不涨；mHC **1.747**；Full AttnRes **1.737**；Block（$S=4$）**1.746**。能看历史层但权重不随内容变，等于没改稀释；加宽流是另一条路；深度维 softmax 才是本篇。
 
-Table 5 还列了几条「能看见前序层」但不是本篇的路。DenseFormer 给每层一组训完就冻住的标量，上面那行 1.767 已经说明：**光有跨层访问、没有输入相关权重**不够。MRLA 用可分的 query-key 乘积加 sigmoid，论文把它归到深度维线性注意一侧，不是联合 softmax。Value Residual Learning 只接回某一个更早层，不是对全部历史做选择。SiameseNorm 维持 PreNorm / PostNorm 两条参数共享的流，仍读上一时刻状态。这些可以和 AttnRes 同时出现在文献里，不要并成一个算法。
+Table 5 还列了几条「能看见前序层」但不是本篇的路。DenseFormer 给每层一组训完就冻住的标量，上面那行 1.767 已经说明：**光有跨层访问、没有输入相关权重**不够。MRLA 用可分的 query-key 乘积加 sigmoid，论文把它归到深度维线性注意一侧，不是联合 softmax。Value Residual Learning 只接回某一个更早层，不是对全部历史做选择。SiameseNorm 维持 PreNorm / PostNorm 两条参数共享的流，仍读上一时刻状态。这些可以和 AttnRes 同时出现在文献里，不是同一个算法。
 
-Qwen3.8 报告 Table 6 也拿 AttnRes 做过**残差消融**，那是对照实验，**不要写成「Qwen3.8 用了 AttnRes」**。28 层（$L=56$ 个子层）上：Pre-norm 1.789 / 加 GatedNorm 1.787；Block $S=4$ 为 1.773 / 1.768；$S=2$ 为 1.770 / 1.766；Full 为 1.762 / 1.758；GR（$n_r=4$）无 GN 那一格是破折号，带 GN 是 **1.762**。48 层上 Block $S=4$ 到 1.711，GR 到 **1.707**。旗舰残差选择是 GR。Qwen3.8 官方写成 Qwen4 架构的早鸟预览，但**没有一手把 AttnRes 塞进 Qwen4 主干**——不要写进去。
+Qwen3.8 报告 Table 6 也拿 AttnRes 做过**残差消融**，那是对照实验，Qwen3.8 **没有**把 AttnRes 写进主干。28 层（$L=56$ 个子层）上：Pre-norm 1.789 / 加 GatedNorm 1.787；Block $S=4$ 为 1.773 / 1.768；$S=2$ 为 1.770 / 1.766；Full 为 1.762 / 1.758；GR（$n_r=4$）无 GN 那一格是破折号，带 GN 是 **1.762**。48 层上 Block $S=4$ 到 1.711，GR 到 **1.707**。旗舰残差选择是 GR。Qwen3.8 官方写成 Qwen4 架构的早鸟预览，但**没有一手把 AttnRes 塞进 Qwen4 主干**。
 
 ---
 
@@ -193,7 +197,7 @@ $$
 | C-Eval | 79.6 | **82.5** |
 | MMLU-Pro | 52.2 | 52.2 |
 
-论文点名涨得多的是多步推理与代码：GPQA-Diamond **+7.5**、Minerva Math **+3.6**、HumanEval **+3.1**；知识向的 MMLU 只 +1.1。MMLU-Pro 打平 52.2，不要把「全部任务都涨」读成每一格都严格更大。
+论文点名涨得多的是多步推理与代码：GPQA-Diamond **+7.5**、Minerva Math **+3.6**、HumanEval **+3.1**；知识向的 MMLU 只 +1.1。MMLU-Pro 打平 52.2，「全部任务都涨」不等于每一格都严格更大。
 
 训练动态（Fig. 5）：基线的块输出幅值随深度单调涨，Block 在块边界做选择等于把累积复位，幅值变成有界的周期图案；基线浅层梯度偏大，softmax 让源去抢概率质量，梯度沿深度更均匀。学到的 $\alpha$ 仍以对角（最近一层）为主，但会出现跳回浅层的 off-diagonal，embedding 源一直留着非平凡权重——论文把它写成深度维上的 skip，不是 token 维 sink 的复读。
 
@@ -205,9 +209,9 @@ Table 4 其余设计选择（同一 16 头档）：输入相关查询能再降�
 
 ## 7. 整机插槽：只改残差聚合，不改 KDA/MLA 日程
 
-AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，每层后面仍跟 MoE FFN。改的是子层输出怎样写回、下一子层怎样读历史，不是把 MLA 的 KV 压缩换成另一套，也不是给 SDPA 加 $G_1$。K3 把 Block AttnRes 接到 93 层 MoE 上，MTP / EAGLE-3 风格草稿融合的是 **第 1、第 4、最后一块** AttnRes 特征，不是随便抽三层 Transformer；捆法见 [K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)，公式不在第 14 章重推。
+AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，每层后面仍跟 MoE FFN。改的是子层输出怎样写回、下一子层怎样读历史，不是把 MLA 的 KV 压缩换成另一套，也不是给 SDPA 加 $G_1$。K3 把 Block AttnRes 接到 93 层 MoE 上，MTP / EAGLE-3 风格草稿融合的是 **第 1、第 4、最后一块** AttnRes 特征，不是随便抽三层 Transformer；捆法见 [K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)，公式仍是上文式 (1)–(6)。
 
-不要把「Kimi 主干里有 AttnRes」读成「Qwen 主干里也有」。Qwen3-Next 的 3:1 是 GDN + 带 $G_1$ 的全注意力；Qwen3.8 残差旗舰是 GR。两家都可以讨论稀释，解法不是同一个算子。
+Kimi 主干里有 AttnRes，不表示 Qwen 主干里也有。Qwen3-Next 的 3:1 是 GDN + 带 $G_1$ 的全注意力；Qwen3.8 残差旗舰是 GR。两家都可以讨论稀释，解法不是同一个算子。
 
 ---
 
@@ -217,9 +221,9 @@ AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，
 |------|------|------|
 | 写成 $G_1$ | 都叫 Gate / Attention | $G_1$ 乘 SDPA 头输出，残差仍是 $x+F(x)$。零点在 06。 |
 | 写成 mHC / xHC | 都在改 residual mixing | 那是流条数与 $H_{\mathrm{res}}$；AttnRes 是对历史层 softmax。式 (10) 是线性深度注意，本篇是 softmax。 |
-| 写成 GR | Qwen Table 6 出现过 AttnRes | Table 6 是残差消融。Qwen3.8 选的是 GR。不要写「Qwen3.8 用了 AttnRes」，更不要无一手地写进 Qwen4。 |
+| 写成 GR | Qwen Table 6 出现过 AttnRes | Table 6 是残差消融。Qwen3.8 选的是 GR。Qwen3.8 没有用 AttnRes 做旗舰残差，Qwen4 主干也没有一手材料。 |
 | 当成另一种 $x+\lambda F(x)$ | 公式里还有求和 | 求和的权重是内容相关的 $\alpha$，源是各层 $\mathbf{v}_i$，不是只对上一份 $F$ 乘标量。 |
-| 当成 token 维 KV 压缩 | 「Attention」 | 轴是层。GQA/MLA 改 KV 份数，本篇不改。 |
+| 当成 token 维 KV 压缩 | 「Attention」 | 轴是层。GQA/MLA 改 KV 份数，AttnRes 不改。 |
 | 把 48B 的 10 个源写成 K3 的 9 | 都是 Block + embedding | Linear 实验：9 块 + embedding = 10；K3：约 8 块 + embedding = 9。 |
 | 把 Table 2 的 1.737 当成 48B 下游 | 规模抄错 | 1.737 是 436M / 16 头档 Full 的 val loss。48B 看 Table 3 的 74.6 / 44.4。 |
 | 伪查询随机初始化 | 没读零初始化 | $\mathbf{w}_l=0$ 才让起步均匀。 |
@@ -228,7 +232,7 @@ AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，
 
 ---
 
-## 9. 本节小结
+## 9. 深度维 softmax，不是另一条残差流
 
 AttnRes 把深度维上的聚合从「所有历史层权重 1」换成「当前层用一个 $d$ 维伪查询做 softmax」。PreNorm dilution 的说法来自论文自己：未加权累积让幅值按 $O(L)$ 涨、层贡献被冲淡。Full 是式 (1)–(4)；规模上用 Block，式 (5)(6)，$N\approx 8$。它不是 $G_1$，不是 mHC 的双随机混合，不是 GR 的四分支读门，不是 xHC，也不是换一种加法。48B / 1.4T 上 GPQA-Diamond 从 36.9 到 44.4；缩放上 Block 约等于基线 $1.25\times$ 算力。Qwen3.8 Table 6 只说明他们拿 AttnRes 做过对照，旗舰残差是 GR。
 
@@ -236,7 +240,7 @@ AttnRes 把深度维上的聚合从「所有历史层权重 1」换成「当前�
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Kimi Team, Chen, G., Zhang, Y., Su, J., et al. (2026). [Attention Residuals](https://arxiv.org/abs/2603.15031). *arXiv:2603.15031*. HTML：[arxiv.org/html/2603.15031](https://arxiv.org/html/2603.15031)。本篇式 (1)–(8)、(10) 与 Table 1–5 按该 HTML / PDF 核对。
 2. 官方仓库：[MoonshotAI/Attention-Residuals](https://github.com/MoonshotAI/Attention-Residuals)（`master` 分支 README：伪查询公式、Block 伪代码、48B Table 节选）。

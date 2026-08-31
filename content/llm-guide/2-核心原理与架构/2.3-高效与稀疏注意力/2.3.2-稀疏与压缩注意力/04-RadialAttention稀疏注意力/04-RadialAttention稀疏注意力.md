@@ -1,5 +1,5 @@
 ---
-title: "04 · Radial Attention：视频 DiT 的 $O(n\log n)$ 稀疏掩码"
+title: '04 · Radial Attention：视频 DiT 的 $O(n log n)$ 稀疏掩码'
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [Radial Attention, 稀疏注意力, 视频生成, DiT, 能量衰减]

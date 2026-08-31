@@ -5,15 +5,17 @@ as_of: 2026-08-30
 tags: [xHC, mHC, Hyper-Connections, residual, Sinkhorn]
 ---
 
-# xHC：把残差流从 $N=4$ 扩到 $N=16$
+# xHC：残差流从 4 扩到 16
 
-> 邻居：[01-Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · 丢掉 $H_{\mathrm{res}}$、改用逐元素读门的是 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · 不要和 [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) 混名 · 不要和 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) 混成一个机制
+> 邻居：[01-Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · 丢掉 $H_{\mathrm{res}}$、改用逐元素读门的是 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · 压缩注意力是 [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) · 深度维聚合是 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)
 
-HC / mHC 已经把残差从「一条加法高速公路」改成「$N$ 条可学习混合的流」。专文 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 讲的是：**为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。** 本篇只接一个更窄的问题：
+HC / mHC 已经把残差从「一条加法高速公路」改成「$N$ 条可学习混合的流」。[01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 讲的是：为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。
+
+本篇问得更窄。
 
 > 既然 $N=1\to 4$ 很赚，为什么现有方法停在 $N=4$？怎样才能把 $N$ 当成第三条 scaling 轴（宽、深、残差记忆），而不是再加几条没用的副本？
 
-答案来自 Zhang 等人 2026 的 *xHC: Expanded Hyper-Connections*（[arXiv:2607.14530](https://arxiv.org/abs/2607.14530)，HTML：[arXiv HTML](https://arxiv.org/html/2607.14530)）。口述名 **XHC / xHC** 的官方串就是这篇标题里的 **Expanded Hyper-Connections**。单位是上海交大 / 小红书 Dots Studio 等，**不是** DeepSeek 的 mHC 原文；它明确站在 mHC 之上，把 expansion rate 从主设定 **$N=4$ 扩到 $N=16$**。mHC 那张 27B 系统表（Table 4 的 MATH 26.0 vs HC 26.4）是另一篇论文、另一套评测，**不要抄进本篇当 xHC 数字**。
+答案来自 Zhang 等人 2026 的 *xHC: Expanded Hyper-Connections*（[arXiv:2607.14530](https://arxiv.org/abs/2607.14530)，HTML：[arXiv HTML](https://arxiv.org/html/2607.14530)）。口述名 **XHC / xHC** 的官方串就是这篇标题里的 **Expanded Hyper-Connections**。单位是上海交大 / 小红书 Dots Studio 等，**不是** DeepSeek 的 mHC 原文。它站在 mHC 之上，把 expansion rate 从主设定 **$N=4$ 扩到 $N=16$**。mHC 那张 27B 系统表（Table 4 的 MATH 26.0 vs HC 26.4）是另一篇论文、另一套评测，不是 xHC 的数字。
 
 ## 1. 问题：mHC 在 $N>4$ 时账算不平
 
@@ -30,7 +32,7 @@ X_{l+1}=\mathcal{H}_l^{\mathrm{res}} X_l+\mathcal{H}_l^{\mathrm{post}}\,\mathcal
 \tag{1}
 $$
 
-三个映射的**职责**与 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 一致，后面才看得懂 xHC 改的是哪一块。记号形状跟 xHC 原文：01 把写映射记成 $1\times n$ 再转置进式 (3)；本篇跟式 (1)，写成 $N\times 1$ 列向量。mHC 的双随机投影与 Sinkhorn 手续**不在这里重推**，见 01 §5–6。
+三个映射的**职责**与 [01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 一致，后面才看得懂 xHC 改的是哪一块。记号形状跟 xHC 原文：01 把写映射记成 $1\times n$ 再转置进式 (3)；本篇跟式 (1)，写成 $N\times 1$ 列向量。mHC 的双随机投影与 Sinkhorn 手续见 01 §5–6。
 
 | 映射 | 形状（密混合时） | 干什么 |
 |------|------------------|--------|
@@ -42,7 +44,7 @@ mHC 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵（Birkhoff 多面体�
 
 xHC 论文要解释的实验事实是（摘要 / §1 / Figure 1，2.5B MoE）：mHC 从 $N=1$ 扩到 $N=4$ 很值；再扩到 $N=16$，**loss 只再降约 0.006，训练 FLOPs 却多 32%**。残差记忆这条轴看起来「有」，但 ROI 崩了。所以停在 $N=4$ 不是审美，是算术。xHC 在同一扫程里把 $N=4\to 16$ 做成 **loss 再降 0.012、额外 FLOPs 只有 4%**——这才叫 expansion rate 变成第三条轴。
 
-主实验骨干是 DeepSeekMoE 风格：GQA、144 专家 Top-8、SwiGLU FFN。附录 Table 6 钉死规模点：2.5B（$N$ 扫程，激活 0.5B / 15 层）、10B（消融，激活 1.4B）、**18B 总参 / 1.7B 激活 / 28 层**、**28B 总参 / 2.7B 激活 / 32 层**。xHC 主设定一律 $N=16$、$k=4$、$m=2$ 条固定流、Sinkhorn **20** 次、门 $\alpha$ 初始化 **0.01**、序列长度 **8192**。不要把 01 文里 DeepSeek 27B、4096 上下文那套配方填进这里。
+主实验骨干是 DeepSeekMoE 风格：GQA、144 专家 Top-8、SwiGLU FFN。附录 Table 6 钉死规模点：2.5B（$N$ 扫程，激活 0.5B / 15 层）、10B（消融，激活 1.4B）、**18B 总参 / 1.7B 激活 / 28 层**、**28B 总参 / 2.7B 激活 / 32 层**。xHC 主设定一律 $N=16$、$k=4$、$m=2$ 条固定流、Sinkhorn **20** 次、门 $\alpha$ 初始化 **0.01**、序列长度 **8192**。01 文里 DeepSeek 27B、4096 上下文那套配方不是这份实验。
 
 ## 2. 两个瓶颈：写回太瘦、混合太贵
 
@@ -71,18 +73,18 @@ $h_{l,i}^{\mathrm{post}}$ 可以随输入、随流变，但 **新注入的向量
 
 ![xHC：密读全部流，稀写 k 条，MLP 后再做因果卷积增强写回](./images/fig-xhc-dense-read-sparse-write.png)
 
-> 图 1：左列单流残差；中列 mHC 对全部 $N=4$ 做密混合；右列 xHC 从 16 条密读进 $\mathcal{F}$，只把 $k=4$ 条写回去。蓝色/橙色对应论文 Figure 3 图注里的固定激活流 / 路由激活流。旧浅色图保留，不重画。示意，禁止当成手绘 loss 曲线。
+> 图 1：左列单流残差；中列 mHC 对全部 $N=4$ 做密混合；右列 xHC 从 16 条密读进 $\mathcal{F}$，只把 $k=4$ 条写回去。蓝色/橙色对应论文 Figure 3 图注里的固定激活流 / 路由激活流。示意，不是手绘 loss 曲线。
 
 **图 1 解析**
 
 - 左：$N=1$ 的 $x+F(x)$。
 - 中：四条流都进 $\mathcal{F}$、都写回，密混合。这是 mHC 的主设定 $N=4$，不是 xHC 的 $k=4$。
-- 右：16 条密读，橙虚线只写 4 条；MLP 后叠因果 DWConv $\{4,8,12\}$。注意力子层不要叠这套卷积。
+- 右：16 条密读，橙虚线只写 4 条；MLP 后叠因果 DWConv $\{4,8,12\}$。注意力子层不加这套卷积。
 - 中间黄块始终是**一份** $\mathcal{F}$。加流不是「十六份完整注意力」。
 
 ![xHC 扩展连接：16 条流密读、4 条稀写](./images/fig-xhc-expanded-streams.png)
 
-> 图 2：把 $N=16$ 画成一排格子。全部箭头进入子层 $F$，只有 $k=4$ 条实心写回，其余原样拷贝。$\mathcal{H}^{\mathrm{res}}$ 是 $k\times k$ 的 Sinkhorn，不是 $16\times 16$。旧浅色图保留。
+> 图 2：把 $N=16$ 画成一排格子。全部箭头进入子层 $F$，只有 $k=4$ 条实心写回，其余原样拷贝。$\mathcal{H}^{\mathrm{res}}$ 是 $k\times k$ 的 Sinkhorn，不是 $16\times 16$。示意。
 
 **图 2 解析**
 
@@ -123,7 +125,7 @@ $$
 - 黄块：$\mathcal{F}$ 仍然只算一次，写回基底变厚，不算 $N$ 份子层。
 - 绿块：因果、逐通道，不在通道之间做大矩阵乘。
 - 紫块：GS 是稳定性条件，不是第三条数学机制。
-- 底注：Attn 子层 $K_r=1$，不要把卷积搬过去。
+- 底注：Attn 子层 $K_r=1$，卷积不加在注意力后面。
 
 ### 3.2 稀更新、密读取
 
@@ -143,7 +145,7 @@ $$
 \tag{8}
 $$
 
-若读也稀，上一层写过的流下一层可能根本读不到，跨层通路会被剪断。残差流和 MoE 专家不是同一类稀疏：专家不携带跨层持续状态，流会。这就是 **dense read / sparse write** 必须不对称的原因，不要写成「残差版 Top-K 专家」。
+若读也稀，上一层写过的流下一层可能根本读不到，跨层通路会被剪断。残差流和 MoE 专家不是同一类稀疏：专家不携带跨层持续状态，流会。这就是 **dense read / sparse write** 必须不对称的原因。残差流不是「残差版 Top-K 专家」。
 
 混合和写回只在激活的 $k$ 条上做（式 (9)(10)）：
 
@@ -179,7 +181,7 @@ $$
 
 两刀必须一起用。只加厚写回，密混合仍然 $O(N^3 C)$；只做稀更新，写回还是一条 $\mathrm{out}$，多出来的流仍然空。
 
-附录 Table 7 把 $N$ 扫程的 $(k,m)$ 配齐：$(N,k,m)=(2,1,0),\ (4,2,1),\ (8,4,2),\ (16,4,2)$。主文口播的 $k=4$ 钉的是 $N=16$ 那一档；不要把 $N=4$ 的 xHC 扫程点（此时 $k=2$）和 mHC 主设定 $N=4$ 混成同一个「四」。
+附录 Table 7 把 $N$ 扫程的 $(k,m)$ 配齐：$(N,k,m)=(2,1,0),\ (4,2,1),\ (8,4,2),\ (16,4,2)$。主文口播的 $k=4$ 钉的是 $N=16$ 那一档。$N=4$ 的 xHC 扫程点此时 $k=2$，和 mHC 主设定 $N=4$ 不是同一个「四」。
 
 ### 3.3 10B 消融：两刀各自解决哪头
 
@@ -235,7 +237,7 @@ $\alpha$ 是 token 标量，来自已经算过的映射系数。附录 E 强调�
 
 ![xHC-Flash：一块内共享路由，Attn 不做 H_res，标量修正 MLP 密读](./images/fig-xhc-flash-block.png)
 
-> 图 4：xHC-Flash 一块（两子层）的数据流。图示对应 §5.2 / Algorithm 2，不是四子层变体。底注里的 $40C$ vs $34C$ 是 Table 4/5 的 xHC-Flash-4sub 对照 mHC $N=4$，不要读成这块里已经做了四子层。示意。
+> 图 4：xHC-Flash 一块（两子层）的数据流。图示对应 §5.2 / Algorithm 2，不是四子层变体。底注里的 $40C$ vs $34C$ 是 Table 4/5 的 xHC-Flash-4sub 对照 mHC $N=4$，这块图还没做到四子层。示意。
 
 **图 4 解析**
 
@@ -259,9 +261,9 @@ Flash 与满配 xHC 同为 1.983；$4$ 子层均摊到 $40C$，仍明显好于 m
 
 工程上还有 fused kernel：残差态 bfloat16，路由 / 映射系数 / Sinkhorn 用 float32；路由与 pre 的投影拼成一次 GEMM，归一化校正融进 Triton；活跃流上 post 与 res 一次投影。§5.3 墙钟：他们重实现的 mHC $N=4$ 融核相对基线大约 **+15%**（与 mHC 原文 6.7% **不可直接比**，并行与 overlap 不同）；xHC-Flash-4sub 在 mHC 之上再大约 **+11%**。推理 prefill 2K：mHC +11.4%，Flash-4sub +12.9%，相对 mHC 只多 **1.3%**——多出来的训练税主要在反向，不在前向残差路径。
 
-## 6. 18B / 28B 数字：只抄 xHC 自己的表
+## 6. 18B / 28B：xHC 自己的下游表
 
-禁止把手绘柱状图或 mHC 27B Table 4 冒充下面这张表。Table 1 标题就是 18B 与 28B MoE 下游；mHC 列是 **$N=4$**，xHC 列是 **$N=16,k=4$**，训练 FLOPs 相当。分数是 %，越高越好。
+下面这张是 xHC 自己的 18B 与 28B 表，不是手绘柱状图，也不是 mHC 那张 27B 系统表。Table 1 标题就是 18B 与 28B MoE 下游；mHC 列是 **$N=4$**，xHC 列是 **$N=16,k=4$**，训练 FLOPs 相当。分数是 %，越高越好。
 
 | Benchmark | 18B Vanilla | 18B mHC | 18B xHC | 28B Vanilla | 28B mHC | 28B xHC |
 |-----------|-------------|---------|---------|-------------|---------|---------|
@@ -279,7 +281,7 @@ Flash 与满配 xHC 同为 1.983；$4$ 子层均摊到 $40C$，仍明显好于 m
 | C3 | 67.1 | 72.7 | 78.3 | 75.2 | 78.7 | 82.5 |
 | **Average** | **40.6** | **44.8** | **48.8** | **47.8** | **50.5** | **53.6** |
 
-摘要与 §4.2：18B 训练 loss **1.799 / 1.776 / 1.758**（vanilla / mHC / xHC），平均下游 **44.8 → 48.8（+4.0）**；28B 平均 **50.5 → 53.6（+3.1）**，该档相对 vanilla 只多 **3.0%** 训练 FLOPs。18B 上相对 mHC 的代表列：ARC-Challenge +5.9、BBH +5.8、C3 +5.6、HumanEval +6.1。28B 的 BBH **43.4 vs mHC 43.6** 略退，不要写成「十二项一律支配」。
+摘要与 §4.2：18B 训练 loss **1.799 / 1.776 / 1.758**（vanilla / mHC / xHC），平均下游 **44.8 → 48.8（+4.0）**；28B 平均 **50.5 → 53.6（+3.1）**，该档相对 vanilla 只多 **3.0%** 训练 FLOPs。18B 上相对 mHC 的代表列：ARC-Challenge +5.9、BBH +5.8、C3 +5.6、HumanEval +6.1。28B 的 BBH **43.4 vs mHC 43.6** 略退，十二项并不是一律支配。
 
 评测协议在附录 A，不是 mHC 那套 3-shot BBH / 4-shot MATH。多项选择走条件似然（MMLU 5-shot、ARC-C 25-shot 等），生成任务走解析（GSM8K 4-shot、HumanEval 0-shot pass@1 等）。换数据、换 tokenizer、换 MoE 配方都会动。
 
@@ -289,7 +291,7 @@ Muon（Table 3，仍是 18B）：AdamW vanilla 40.6；Muon vanilla 43.1；Muon +
 
 ## 7. 和相邻机制的边界
 
-| 名字 | 改什么 | 不要当成 |
+| 名字 | 改什么 | 不是 |
 |------|--------|----------|
 | 标准残差 | 单流 $x+F(x)$ | xHC 的 $N=1$ 特例直觉上接近，但没有可学习 $\mathcal{H}^{\mathrm{res}}$ |
 | HC | 多流 + 自由混合 | 表达有了，恒等映射没了 |
@@ -300,12 +302,12 @@ Muon（Table 3，仍是 18B）：AdamW vanilla 40.6；Muon vanilla 43.1；Muon +
 | Sparse Sinkhorn Attention | Tay 等人 [2002.11296](https://arxiv.org/abs/2002.11296)，Sinkhorn 用在注意力**块置换** | 作用对象是注意力调度，不是 $\mathcal{H}^{\mathrm{res}}$ |
 | MoE 路由 | 哪个专家被点亮 | 哪 $k$ 条残差流被更新；实验只是「在 MoE 模型上测」 |
 
-知乎专栏常用「写回只有一份 $\mathrm{out}$ / 三次方混合太贵 / 密读稀写」来拆问题，讲法清楚；数字、表号仍以论文为准，禁止搬专栏正文。
+知乎专栏常用「写回只有一份 $\mathrm{out}$ / 三次方混合太贵 / 密读稀写」来拆问题，讲法清楚；数字、表号仍以论文为准。
 
 ## 8. 失效条件
 
-- **把 18B 上 +4.0 平均下游分当成你的任务会涨 4 分。** 那是 Table 1 在他们数据与评测集上的数。
-- **把 mHC 27B Table 4（含 MATH 26.0 vs HC 26.4）填进本篇。** 配方、shot、规模都不是 xHC 的 18B/28B 表。
+- **18B 上 +4.0 平均下游分，不等于换任务也会涨 4 分。** 那是 Table 1 在他们数据与评测集上的数。
+- **mHC 27B Table 4（含 MATH 26.0 vs HC 26.4）不是本篇的表。** 配方、shot、规模都不是 xHC 的 18B/28B 表。
 - **把 xHC 的 $k=4$ 说成 mHC 的 $N=4$。** 一个是活跃更新带宽，一个是记忆宽度。
 - **注意力后再叠一套 $\{4,8,12\}$ 卷积。** 论文明确说这条会不稳。
 - **读也做成 TopK。** 跨层通路会被剪断；Table 2 行 (6) 是警告。
@@ -313,7 +315,7 @@ Muon（Table 3，仍是 18B）：AdamW vanilla 40.6；Muon vanilla 43.1；Muon +
 - **AdamW 上的 GS 规则原样搬到 Muon。** Table 3 那一列拿掉了 GS。
 - **和 HCA 抢同一个缩写槽。** 一个是残差流，一个是压缩注意力。
 
-## 9. 知识库同步
+## 9. 下一篇
 
 - HC 为何不稳、mHC 约束什么：[01](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)
 - 丢掉 $H_{\mathrm{res}}$ 的四分支读门：[03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md)
@@ -321,12 +323,12 @@ Muon（Table 3，仍是 18B）：AdamW vanilla 40.6；Muon vanilla 43.1；Muon +
 - 深度维注意力聚合（另一条残差相关轴）：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)
 - 代码入口（论文项目页）：https://github.com/aHapBean/xHC
 
-## 本篇来源
+## 参考文献
 
 1. Zhang, X., Qin, X., Zou, S., Dai, T., Shi, X., Wu, H., Yang, Y., Xia, Z., Zhang, S., Yao, L., Liu, Y., Cheng, Y., & Yan, J. (2026). *xHC: Expanded Hyper-Connections*. [arXiv:2607.14530](https://arxiv.org/abs/2607.14530)；HTML：[arXiv HTML](https://arxiv.org/html/2607.14530)。式 (1)–(15)(17)–(19)、Algorithm 1–2、Table 1–7 / 9–12、Figure 1–5、附录 A–E。主设定 $N=16,k=4,m=2$，18B 平均 44.8→48.8，28B 50.5→53.6。
 2. 演进前作 HC：Zhu et al., Hyper-Connections, [arXiv:2409.19606](https://arxiv.org/abs/2409.19606)（机制对照见本库 01 文）。
-3. 演进前作 mHC：Xie et al., *Manifold-Constrained* Hyper-Connections，[arXiv:2512.24880](https://arxiv.org/abs/2512.24880)。双随机与 27B Table 4 只在 01 文；本篇不重推、不抄 MATH 26.0 / 26.4。
+3. 演进前作 mHC：Xie et al., *Manifold-Constrained* Hyper-Connections，[arXiv:2512.24880](https://arxiv.org/abs/2512.24880)。双随机与 27B Table 4 写在 01 文；MATH 26.0 / 26.4 也在那边。
 4. 残差前作：He et al. (2016), Deep Residual Learning. https://arxiv.org/abs/1512.03385
 5. Sparse Sinkhorn Attention（对照「不是」）：Tay et al., [arXiv:2002.11296](https://arxiv.org/abs/2002.11296)
-6. Sinkhorn–Knopp：mHC / xHC 用来把 $\mathcal{H}^{\mathrm{res}}$ 拉到双随机；迭代细节以 mHC 原文为准，本篇不重推。xHC 主设定同样 20 步。
+6. Sinkhorn–Knopp：mHC / xHC 用来把 $\mathcal{H}^{\mathrm{res}}$ 拉到双随机；迭代细节以 mHC 原文为准。xHC 主设定同样 20 步。
 7. 讲法参考（不当事实源）：[从 DeepSeek mHC 到 xHC](https://zhuanlan.zhihu.com/p/2063300859472221420)；[Cici学算法 · 时序特征增强 + 稀疏写回](https://zhuanlan.zhihu.com/p/2064367105248703530)

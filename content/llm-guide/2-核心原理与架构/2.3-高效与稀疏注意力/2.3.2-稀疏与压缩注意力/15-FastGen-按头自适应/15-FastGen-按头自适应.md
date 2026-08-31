@@ -59,9 +59,7 @@ Related Work 原句把本文的位置钉死：不是再研究「某一种」驱�
 
 ![Prompt encoding 上按注意力图为每个头选定策略，生成期按该策略持续驱逐](./images/fig-fastgen-two-phase.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two panels: Algorithm 1 Prompt Encoding profiling; Algorithm 2 Token Generation eviction. Arrow: profile once then evict every step. -->
-
-> 图 1：双阶段。对应 Algorithm 1–2 与 §3.2。色块只区分「留下 / 丢掉」，不是论文里的注意力热力图。2026-08 自绘。
+> 图 1：双阶段。对应 Algorithm 1–2 与 §3.2。色块只区分「留下 / 丢掉」，不是论文里的注意力热力图。
 
 **图 1 解析**
 
@@ -88,9 +86,7 @@ Related Work 原句把本文的位置钉死：不是再研究「某一种」驱�
 
 ![五种 KV 策略：局部窗、特殊 token、标点、列稀疏高频、全量](./images/fig-fastgen-five-structures.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Five rows C_local, C_special, C_punct, C_frequent, C_full. -->
-
-> 图 2：五种结构与对应 cache。对应 §3.4 与论文 Figure 1 左。格子数是示意图。2026-08 自绘。
+> 图 2：五种结构与对应 cache。对应 §3.4 与论文 Figure 1 左。格子数是示意图。
 
 **图 2 解析**
 
@@ -136,9 +132,7 @@ Appendix A.1 把式 (1) 在这条链上的搜法写成：固定 $T$，从最省�
 
 ![贪心嵌套：special → 加标点 → 加高频 → 加局部 → 全量，按恢复比 T 停](./images/fig-fastgen-greedy-hybrids.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Nested hybrid chain of five policies with recover ratio T. -->
-
-> 图 3：式 (2) 的嵌套可行集。对应 §3.4 与 Appendix A.1。图上的格子是示意图。2026-08 自绘。
+> 图 3：式 (2) 的嵌套可行集。对应 §3.4 与 Appendix A.1。图上的格子是示意图。
 
 **图 3 解析**
 
@@ -148,9 +142,7 @@ Appendix A.1 把式 (1) 在这条链上的搜法写成：固定 $T$，从最省�
 
 ![同一层：非自适应对照所有头同一套规则；FastGen 每个头自己的 C_i](./images/fig-fastgen-per-head.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Left fixed policy all heads; right FastGen per head. -->
-
-> 图 4：为什么要按头自适应。左栏对应论文非自适应基线；右栏对应论文 Figure 1 右「同一层三个头」。2026-08 自绘。
+> 图 4：为什么要按头自适应。左栏对应论文非自适应基线；右栏对应论文 Figure 1 右「同一层三个头」。
 
 **图 4 解析**
 
@@ -271,7 +263,7 @@ FastGen 的 $C_{\mathrm{frequent}}$ **可以**看起来像 H2O 的 Heavy Hitter�
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Ge, Zhang, Liu（共一作）, Minjia Zhang, Han, Gao. *Model Tells You What to Discard: Adaptive KV Cache Compression for LLMs*. [arXiv:2310.01801](https://arxiv.org/abs/2310.01801) / [HTML](https://arxiv.org/html/2310.01801)（v4 [HTML](https://arxiv.org/html/2310.01801v4)），[ICLR 2024 摘要页](https://proceedings.iclr.cc/paper_files/paper/2024/hash/639a9a172c044fbb64175b5fad42e9a5-Abstract-Conference.html)（hash `639a9a172c044fbb64175b5fad42e9a5`），[会场 Oral](https://iclr.cc/virtual/2024/oral/19718)（Honorable Mention；[Orals 日程](https://iclr.cc/virtual/2024/events/oral) May 7, Halle A 2）。Algorithm 1–2、式 (1)(2)、§3.2–3.4、§4、Table 1–5、Figure 1–6。作者单位以 ICLR PDF 为准：UIUC + Microsoft。
 2. 论文声明的代码仓：[machilusZ/FastGen](https://github.com/machilusZ/FastGen)。README 写明仓内尚无实现，并指向 cold-compress / MInference 为复现线索；**不以第三方仓库的数字替换 Table 1**。

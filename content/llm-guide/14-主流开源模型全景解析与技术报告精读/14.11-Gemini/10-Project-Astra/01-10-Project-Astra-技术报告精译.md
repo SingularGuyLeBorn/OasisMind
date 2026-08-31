@@ -11,7 +11,7 @@ tags: [Project-Astra, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**研究原型博文**，不是模型权重报告。空壳两段与 1.0 模板相同，作废。
+**研究原型博文**，不是模型权重报告。空壳两段与 1.0 模板相同，作废。
 
 长 D5 把 I/O 2024（5 月）首秀写成「基于 Gemini 2.0」——**2.0 是 12 月才宣布的**。12 月 11 日博文原句是：Astra **在 I/O 介绍过**；此后 Android 可信测试；**latest version built with Gemini 2.0**。
 
@@ -39,6 +39,6 @@ tags: [Project-Astra, 公开材料精读]
 - 把 Mariner 83.5% 写成 Astra 的分数。
 - 把 8.7 章 GPT-4o 的 232/320 ms 写进 Astra。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/innovation-and-ai/models-and-research/google-deepmind/google-gemini-ai-update-december-2024/ （Astra/Mariner 段）

@@ -5,13 +5,13 @@ as_of: 2026-08-30
 tags: [Claude-3.7-Sonnet, hybrid-reasoning, 公开材料精读]
 ---
 
-# Claude 3.7 Sonnet: 混合推理(Hybrid Reasoning)的混合巨兽 - 架构还原与精译
+# Claude 3.7 Sonnet：混合推理
 
 >  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 前代：[3.5 Sonnet](../07-Claude-3.5-Sonnet/01-07-Claude-3.5-Sonnet-架构精译.md) · 已有长 D5：[混合推理](./05-10-Claude-3.7-Sonnet-混合推理架构与可控思考预算.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**官方博文**。上面「解析」保留。没有层配置。本会话打开了 [Claude 3.7 Sonnet and Claude Code](https://www.anthropic.com/news/claude-3-7-sonnet)（2025-02-24）。System card 博文有链，**本轮未打开 PDF**，安全数字只用不必要拒绝 **−45%** 这一句。
+没有层配置。[Claude 3.7 Sonnet and Claude Code](https://www.anthropic.com/news/claude-3-7-sonnet)（2025-02-24）。System card 博文有链，本篇没按 PDF 核安全表，安全数字只用不必要拒绝 **−45%** 这一句。
 
 ## 1. 产品主张
 
@@ -48,6 +48,6 @@ API 思考预算：最多思考 **N** token，N 可到输出上限 **128K**。�
 - 把 128K 思考预算写成上下文窗（博文写的是 **output limit**）。
 - 把免费档写成也有 extended thinking。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-3-7-sonnet （读完正文与 SWE/TAU 附录；未读 system card PDF）

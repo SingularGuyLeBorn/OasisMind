@@ -51,8 +51,6 @@ $$
 
 > 图 1：四件事不要混成一个名词。左起：AdamW 拍扁成标量；Muon 对矩阵做 $\mathrm{polar}$；Polar Express 只替换「怎么算 polar」；QK-Clip 只在注意力权重上做更新后缩放。
 
-<!-- GenerateImage prompt: Technical educational diagram comparing AdamW per-scalar, Muon polar(M), Polar Express adaptive odd polynomials, and QK-Clip post-update weight rescale. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
-
 谁管哪一层：
 
 | 层 | 解决什么 | 不解决什么 |
@@ -174,7 +172,7 @@ MuonClip = Muon + 权重衰减 + RMS 对齐 + QK-Clip。少写任何一块，都
 - K2 报告里的 Algorithm 1 与 MLA 特例：第 14 章 K2，不在本篇展开 MoE
 - 残差主干 xHC 与 Muon 正交（xHC 论文的实验声明）：[02-xHC](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)
 
-## 本篇来源
+## 参考文献
 
 1. Amsel, N., Persson, D., Musco, C., & Gower, R. M. (2025). *The Polar Express: Optimal Matrix Sign Methods and Their Application to the Muon Algorithm*. https://arxiv.org/abs/2505.16932 （本篇打开 HTML：摘要、§1–1.3、§2 多项式对照、§4.4 有限精度、Figure 1 数字、Algorithm 1）
 2. Moonshot AI. *Kimi K2: Open Agentic Intelligence*. https://arxiv.org/abs/2507.20534 （MuonClip / QK-Clip / Algorithm 1 / 附录 D；本库 `14.5-Kimi/02-Kimi-K2/03-Kimi-K2-mineru-en.md` 与精译）

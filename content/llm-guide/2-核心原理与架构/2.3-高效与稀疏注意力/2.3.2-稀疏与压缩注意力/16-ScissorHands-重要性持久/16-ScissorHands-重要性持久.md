@@ -46,9 +46,7 @@ Figure 1：C4 随机一句、OPT-6B、五个头。把大于 $1/t$ 的分数画�
 
 ![三个位置的注意力图在同一批 token 上出现深色格](./images/fig-scissorhands-repetitive-attn.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three panels position 178/228/278, dark teal at the same columns. -->
-
-> 图 1：重复注意力图案。对应论文 Figure 1。格子数与着色是示意图，不是把 PDF 描下来。2026-08 自绘。
+> 图 1：重复注意力图案。对应论文 Figure 1。格子数与着色是示意图，不是把 PDF 描下来。
 
 **图 1 解析**
 
@@ -86,9 +84,7 @@ $$
 
 ![前半句的 pivotal 集合罩住后半句仍在看的那些 key](./images/fig-scissorhands-persistence.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Sequence split at l/2; orange pivotal in first half; later queries point back only to those. -->
-
-> 图 2：式 (2) 在画什么。对应 Figure 2 的含义，不是 persistence 曲线的描图。2026-08 自绘。
+> 图 2：式 (2) 在画什么。对应 Figure 2 的含义，不是 persistence 曲线的描图。
 
 **图 2 解析**
 
@@ -149,9 +145,7 @@ $$
 
 ![预算 B 满了之后按历史窗计数丢掉非 pivotal，最近 r 条始终留下](./images/fig-scissorhands-budget-compress.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Budget B strip, compress when n>B, history window w and recent r. -->
-
-> 图 3：Algorithm 1 / 2。$r=10$、$w=400$ 是论文实验默认；格子数是示意图。2026-08 自绘。
+> 图 3：Algorithm 1 / 2。$r=10$、$w=400$ 是论文实验默认；格子数是示意图。
 
 **图 3 解析**
 
@@ -221,9 +215,7 @@ Figure 4：OPT-13B、**3×**、C4，压缩前后注意力的相对变化 $(\alph
 
 ![StreamingLLM 固定前 4；H2O decode 累积分数；Scissorhands 历史窗上的非重要计数加最近窗](./images/fig-scissorhands-not-neighbors.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three columns StreamingLLM / H2O / Scissorhands. -->
-
-> 图 4：三条推理期 KV 策略。不要互换名字。2026-08 自绘。
+> 图 4：三条推理期 KV 策略。不要互换名字。
 
 **图 4 解析**
 
@@ -273,7 +265,7 @@ Figure 4：OPT-13B、**3×**、C4，压缩前后注意力的相对变化 $(\alph
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Liu, Desai, Liao, Wang, Xie, Xu, Kyrillidis, Shrivastava. *Scissorhands: Exploiting the Persistence of Importance Hypothesis for LLM KV Cache Compression at Test Time*. [arXiv:2305.17118](https://arxiv.org/abs/2305.17118) / [HTML](https://arxiv.org/html/2305.17118) / [v2 PDF](https://arxiv.org/pdf/2305.17118)（v2，2023-08-28），[NeurIPS 2023 摘要页](https://proceedings.neurips.cc/paper_files/paper/2023/hash/a452a7c6c463e4ae8fbdc614c6e983e6-Abstract-Conference.html)（hash `a452a7c6c463e4ae8fbdc614c6e983e6`），[相机就绪 PDF](https://proceedings.neurips.cc/paper_files/paper/2023/file/a452a7c6c463e4ae8fbdc614c6e983e6-Paper-Conference.pdf)，[会场海报](https://neurips.cc/virtual/2023/poster/72050)，[OpenReview](https://openreview.net/forum?id=JZfg6wGi6g)。本文式 (1)(2)=§3.2 的 $S_{a\rightarrow b}$ 与 Persistence Ratio；式 (3)(5)=§4.1 的 $a_t$ / $\hat a_t$（相机就绪用 $W_Q$）；式 (4)=Algorithm 2 的非重要指示计数；式 (6)=Theorem 4.1 / 论文式 (4)。Theorem 3.1 仍称论文式 (3)，未在本文再占一个编号。Definition 4.1；Algorithm 1–2；Table 1–4；Figure 1–5。C4 分桶 PPL 以 NeurIPS Table 3 为准。20× 只在会场摘要，不以表为据。
 2. 官方代码：[lzcemma/Scissorhands](https://github.com/lzcemma/Scissorhands)，C4 路径 `Decentralized_FM_alpha/modules/hf_opt_dropkv.py` 与 `run_infer_opt_66b_sparse_c4.sh`。

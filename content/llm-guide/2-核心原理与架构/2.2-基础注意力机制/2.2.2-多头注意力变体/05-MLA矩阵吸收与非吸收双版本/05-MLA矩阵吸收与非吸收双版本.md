@@ -18,11 +18,11 @@ as_of: 2026-08-30
 
 ![DeepSeek-V3 层：MLA 替换 MHA，与 MoE 正交](./images/fig-mla-v3-block-placement.png)
 
-> 图 1：浅色自绘。MLA 在每层替换标准 MHA；MoE FFN 与注意力压缩正交。同目录保留 InfraTech 原长图 `fig-deepseek-v3-architecture.jpg`（体积过大，正文改引本图）。
+> 图 1：MLA 在每层替换标准 MHA；MoE FFN 与注意力压缩正交。
 
 **图 1 解析**
 
-浅色自绘的 **DeepSeek-V3 单层位置图**，只回答「MLA 在整机里占哪一块」。
+**DeepSeek-V3 单层位置图**，只回答「MLA 在整机里占哪一块」。
 
 - **自下而上**：Token Embedding → 重复 $L$ 次的 **Transformer Block** → LM Head。
 - **每个 Block 内**：RMSNorm → **MLA** → 残差 → RMSNorm → **MoE FFN** → 残差。MLA 替换标准 MHA 位置。
@@ -50,11 +50,11 @@ as_of: 2026-08-30
 
 ![非吸收流图（MHA mode / Prefill）](./images/fig-mla-nonabsorb-prefill.png)
 
-> 图 3：浅色自绘。Attention 在 **完整 head 维** $d_{qk}$ 上算；KV cache 后接上采样。同目录保留 InfraTech 原图 `fig-mla-non-absorb-compute-flow.jpg`。
+> 图 3：Attention 在 **完整 head 维** $d_{qk}$ 上算；KV cache 后接上采样。
 
 **图 3 解析**
 
-浅色自绘的 **MLA 非吸收（MHA mode）** 计算流（Prefill 常用）。按 **数据从左到右、cache 在中间** 读。
+**MLA 非吸收（MHA mode）** 计算流（Prefill 常用）。按 **数据从左到右、cache 在中间** 读。
 
 **图例**：直角框 = 算子；圆角框 = 张量 $T$；旁标 $W$ = 矩阵乘 $T_{\mathrm{out}}=T_{\mathrm{in}}W$。
 
@@ -71,11 +71,11 @@ as_of: 2026-08-30
 
 ![吸收流图（MQA mode / Decode）](./images/fig-mla-absorb-decode.png)
 
-> 图 4：浅色自绘。Attention 在 **latent 维** $d_c$ 上算（head 维 broadcast）；上采样拆到 Q/O 两侧。同目录保留 InfraTech 原图 `fig-mla-absorb-compute-flow.jpg`。
+> 图 4：Attention 在 **latent 维** $d_c$ 上算（head 维 broadcast）；上采样拆到 Q/O 两侧。
 
 **图 4 解析**
 
-浅色自绘的 **MLA 吸收（MQA mode）** 计算流（Decode 常用）。整体拓扑与图 3 相似，但 **KV 上采样方框被拆开、挪位**。
+**MLA 吸收（MQA mode）** 计算流（Decode 常用）。整体拓扑与图 3 相似，但 **KV 上采样方框被拆开、挪位**。
 
 **读图要点**：
 

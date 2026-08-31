@@ -17,8 +17,6 @@ tags: [IndexPool, Sparse-Attention, DSA, QSA, GLM-5.3-Flash]
 
 > 图：官方只保证「四键一池」。图里的方块是示意，不要当成报告插图。英文拼写以正文为准。
 
-<!-- GenerateImage prompt: IndexPool: four consecutive indexer key vectors weighted-pooled into one compressed key, then top-k K=2048. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
-
 ## 1. 它压缩的是 indexer，不是核心注意力
 
 官方文档（[docs.z.ai GLM-5.3-Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash)）把混合骨架拆成两句话：
@@ -65,7 +63,7 @@ QSA 有式 (12)–(20) 和两阶段蒸馏。IndexPool **没有**对应公开推�
 - 把 CSA/HCA、MoBA、NSA 的块大小套到 `index_kpool=4` 上。
 - 没有独立架构论文就把 GLM-5 报告（arXiv:2602.15763）里的 DSA 适配段当成 Flash 的 IndexPool 证明。
 
-## 本篇来源
+## 参考文献
 
 - Z.ai 文档 *GLM-5.3-Flash*「Architecture for Extreme Efficiency」段：https://docs.z.ai/guides/vlm/glm-5.3-flash
 - Hugging Face `config.json`：https://huggingface.co/zai-org/GLM-5.3-Flash/blob/main/config.json（本会话读了 `text_config` 注意力与 indexer 字段）

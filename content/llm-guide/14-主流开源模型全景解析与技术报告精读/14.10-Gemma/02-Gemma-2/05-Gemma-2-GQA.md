@@ -25,7 +25,7 @@ Table 1 写的是绝对头数，不要和「组数」搞反：
 
 ![Gemma-2 2B：8 个 Q 头共享 4 套 KV](./images/fig-gemma2-gqa.png)
 
-> 图 1：Q1–Q2→KV1，……，Q7–Q8→KV4。2026-08 自绘。
+> 图 1：Q1–Q2→KV1，……，Q7–Q8→KV4。
 
 MHA 对照：9B 若 $n_{\mathrm{kv}}=n_q=16$，KV 字节翻倍。MQA 对照：$n_{\mathrm{kv}}=1$，9B 会从 8 套 KV 再砍到 1 套；Gemma-2 没走这条。
 

@@ -11,7 +11,7 @@ tags: [Claude-3-Haiku, 公开材料精读, vision]
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**（家族公告 + model card）。没有层配置。上面「解析」原文保留。三档共用同一份卡，本篇只写 **Haiku 这一格**；MMLU 全家表在 Opus D2 复一份完整 Table 1，避免三篇各抄一遍评测墙。
+**公开材料精读**（家族公告 + model card）。没有层配置。上面「解析」原文保留。三档共用同一份卡，本篇只写 **Haiku 这一格**；MMLU 全家表在 Opus D2 复一份完整 Table 1，避免三篇各抄一遍评测墙。
 
 | 源 | 日期 | 钉死什么 |
 |----|------|----------|
@@ -43,8 +43,8 @@ HumanEval 上 Haiku **高于**同卡 Sonnet 的 73.0%。这是卡上的数，不
 
 积木/层数/优化器：**未公开**。后训练仍是 CAI 产品线（卡：继续用 Constitutional AI）。安全：**ASL-2**。1M 窗口：Haiku 的长上下文 loss 曲线画到 1M（Fig. 14），生产仍 200K。Tool use 在 3 月 4 日博文里是「接下来要发」，不是 Haiku GA 日的功能清单。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-3-family
 - https://www.anthropic.com/news/claude-3-haiku
-- Claude 3 Model Card PDF（本会话读了开篇、§5.1 Table 1、§5.8 长上下文）
+- Claude 3 Model Card PDF（开篇、§5.1 Table 1、§5.8 长上下文）

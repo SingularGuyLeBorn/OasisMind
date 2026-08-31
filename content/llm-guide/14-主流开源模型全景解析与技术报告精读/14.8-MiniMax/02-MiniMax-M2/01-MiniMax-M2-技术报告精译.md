@@ -11,7 +11,7 @@ tags: [MiniMax-M2, MoE, Forge, GQA]
 
 > **模型定位**：全球首批将 Transformer 与 Linear Attention(闪电注意力 Lightning Attention)深度融合的开源旗舰。
 
-**材料类型（2026-08）**：上面定位句是 2025 占位，**全错**。Lightning Attention / 4M 上下文是 **MiniMax-Text-01**（2025-01），同目录长 D5 把 Text-01 误贴成 M2。M2 系列论文原文：注意力在所有层用 **full MHA + GQA**，**明确离开** Text-01 的 Lightning 混合。
+上面定位句是 2025 占位，**全错**。Lightning Attention / 4M 上下文是 **MiniMax-Text-01**（2025-01），同目录长 D5 把 Text-01 误贴成 M2。M2 系列论文原文：注意力在所有层用 **full MHA + GQA**，**明确离开** Text-01 的 Lightning 混合。
 
 ## 1. 旗舰规格（系列论文 §2）
 
@@ -38,7 +38,7 @@ tags: [MiniMax-M2, MoE, Forge, GQA]
 - 写 456B / 4M / Lightning。
 - 把 M2.5-Lightning（产品吞吐档）当成注意力架构。
 
-## 本篇来源
+## 参考文献
 
 - https://arxiv.org/html/2605.26494v2 （摘要、§1–2、明确 vs Text-01）
 - https://www.minimax.io/news/minimax-m2

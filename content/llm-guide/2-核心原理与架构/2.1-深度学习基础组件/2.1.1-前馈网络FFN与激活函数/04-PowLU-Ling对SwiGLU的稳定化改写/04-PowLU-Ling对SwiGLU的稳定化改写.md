@@ -62,7 +62,7 @@ $x_{2}>0$ 时 $f(x_{2})=x_{2}^{m/(\sqrt{x_{2}}+1)}\sigma(x_{2})$；$x_{2}\le 0$ 
 
 ![SwiGLU 正半轴趋近二次 vs PowLU 趋近线性](./images/fig-powlu-vs-swiglu-growth.png)
 
-> 图 1：浅色自绘示意。左：标量 SwiGLU 大正输入 $\approx x^{2}$。右：PowLU（$m=3$）趋近线性 $x$，曲线不压成水平帽。坐标无刻度，**不是**论文 Figure 1 的描点（论文 Fig. 1 还画了一阶导）。
+> 图 1：左：标量 SwiGLU 大正输入 $\approx x^{2}$。右：PowLU（$m=3$）趋近线性 $x$，曲线不压成水平帽。坐标无刻度，**不是**论文 Figure 1 的描点（论文 Fig. 1 还画了一阶导）。
 
 **图 1 解析**
 
@@ -87,7 +87,7 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 
 ![PowLU 插在 Ling 块的专家 FFN，不插在注意力](./images/fig-powlu-in-ling-block.png)
 
-> 图 2：浅色自绘。一层 Ling 块里，GQA / QKNorm / Partial RoPE 走注意力残差；PowLU 只替换专家（含共享专家）升维与降维之间的非线性。不是论文插图。
+> 图 2：一层 Ling 块里，GQA / QKNorm / Partial RoPE 走注意力残差；PowLU 只替换专家（含共享专家）升维与降维之间的非线性。不是论文插图。
 
 **图 2 解析**
 
@@ -175,7 +175,7 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 
 下一篇回到节地图：[2.1.1 前馈网络 FFN 与激活函数](../2.1.1-前馈网络FFN与激活函数.md)。光滑上界对照：[01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md)。门控家族本体：[03 GLU 家族](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704. 式 (1)、§3.1 实现、$m=3$；Fig. 3 / Table 1–4；§4.3.1 FP8 spike。HTML：[arxiv.org/html/2605.25704](https://arxiv.org/html/2605.25704)。
 2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925. 仅核脚注「clamping and a residual connection」；未见官方 clamp limit。

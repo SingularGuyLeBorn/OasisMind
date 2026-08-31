@@ -67,9 +67,7 @@ $$
 
 ![上排 KV 随 decode 无限增长；下排把状态数钉死为 2，每步丢掉一条](./images/fig-tova-msrnn-unbounded.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Two-row: unbounded growing KV; bounded k=2 drop one. -->
-
-> 图 1：unbounded / bounded MSRNN。对应论文 Figure 1。青绿是还在的状态；下排红叉是这一步丢掉的那条。格子数是示意图。2026-08 自绘。
+> 图 1：unbounded / bounded MSRNN。对应论文 Figure 1。青绿是还在的状态；下排红叉是这一步丢掉的那条。格子数是示意图。
 
 **图 1 解析**
 
@@ -109,9 +107,7 @@ $t\le k$ 直接 return。官方 [`src/tova_cache.py`](https://github.com/schwart
 
 ![当前 query 对 cache 打分，最低的那条被叉掉](./images/fig-tova-drop-lowest.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. q_t arrows to five KV; lowest marked omit. -->
-
-> 图 2：单步 TOVA。对应论文 Figure 2 与 Algorithm 1。分数是示意图，不是表。2026-08 自绘。
+> 图 2：单步 TOVA。对应论文 Figure 2 与 Algorithm 1。分数是示意图，不是表。
 
 **图 2 解析**
 
@@ -122,9 +118,7 @@ $t\le k$ 直接 return。官方 [`src/tova_cache.py`](https://github.com/schwart
 
 ![每头各踢各的较差；层内平均后再踢一条更好](./images/fig-tova-layer-mean.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. TOVA-head vs TOVA-layer average. -->
-
-> 图 3：head 与 layer。对应 Appendix A / Table 3。2026-08 自绘。
+> 图 3：head 与 layer。对应 Appendix A / Table 3。
 
 **图 3 解析**
 
@@ -217,9 +211,7 @@ Quest Table 1，token budget；前两层满 cache。材料段用 FlashAttention 
 
 ![读 haystack 时当前 query 把 passkey 叉掉；问句到来后槽已空](./images/fig-tova-evict-before-question.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Passkey evicted before question. -->
-
-> 图 4：当前步注意力误杀。场景对齐 Quest 专文 Figure 2 / Table 1 的驱逐叙事；格子和 0.02 是示意图。2026-08 自绘。
+> 图 4：当前步注意力误杀。场景对齐 Quest 专文 Figure 2 / Table 1 的驱逐叙事；格子和 0.02 是示意图。
 
 **图 4 解析**
 
@@ -280,7 +272,7 @@ Table 2（NLTK 词性；数字是平均存活步数；Avg. 是所有 tag 的均�
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Oren, Hassid, Yarden, Adi, Schwartz. *Transformers are Multi-State RNNs*. [arXiv:2401.06104](https://arxiv.org/abs/2401.06104) / [HTML](https://arxiv.org/html/2401.06104)，[EMNLP 2024 · ACL Anthology 2024.emnlp-main.1043](https://aclanthology.org/2024.emnlp-main.1043/)（pp. 18724–18741，Miami）。式 (1)–(9)、Figure 1–9、Table 1–3、Algorithm 1、Appendix A。Table 1 的 Maximal batch 以 Anthology PDF 的 139/70/35/17/8 为准（HTML 会把小数点吃错）。
 2. 官方代码：[schwartz-lab-NLP/TOVA](https://github.com/schwartz-lab-NLP/TOVA)，`src/tova_cache.py` 的 `mean` + `topk(cache_size)`；README 示例 `multi_state_size = 512`。

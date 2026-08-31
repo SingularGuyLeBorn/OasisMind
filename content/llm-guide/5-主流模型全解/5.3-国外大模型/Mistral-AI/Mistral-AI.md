@@ -15,9 +15,8 @@ Mistral AI 的核心哲学是在保证高性能的前提下，极度压缩模型
 
 ![Mistral 家族示意：7B、Mixtral、Large、NeMo、Codestral](./images/fig-mistral-family-timeline.png)
 
-> 图 1：自绘家族示意图，不是带精确日期的数据图。发布日以官网/公告为准；本图只帮助记住产品线名字。
+> 图 1：家族示意图，不是带精确日期的数据图。发布日以官网/公告为准；本图只帮助记住产品线名字。
 
-<!-- IMAGE PLACEHOLDER Prompt: A timeline visualization showing the releases of Mistral models: Mistral 7B (Sep 2023) -> Mixtral 8x7B (Dec 2023) -> Mistral Large (Feb 2024) -> Mixtral 8x22B (Apr 2024) -> Mistral NeMo / Codestral (Mid 2024). Design in a sleek, modern corporate style. 2026-08 重绘约束：white academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. 改为学术示意图，不用公司风格时间轴海报。 -->
 
 ## 2. Mistral 7B：开启小模型逆袭之路
 
@@ -103,7 +102,6 @@ Mixtral 是 Mistral AI 推出的稀疏混合专家网络(Sparse Mixture of Exper
 
 > 图 2：示意 Top-2 / 8 专家。公式与负载均衡的本体在 [2.4.1 MoE](../../../2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md)，这里只标明 Mixtral 用的是这一束技术。
 
-<!-- IMAGE PLACEHOLDER Prompt: A detailed architectural diagram of a Mixture of Experts (MoE) block. Show a token entering a router network, which then dispatches the token to Top-2 experts out of 8 Feed-Forward Networks (FFNs). Finally, the outputs are linearly combined. 2026-08 重绘约束：white academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
 
 ### 3.2 MoE 路由机制原理
 
@@ -239,9 +237,8 @@ Tekken 相对 Llama 3 分词器「压缩率高 30%」是 2025 笔记里的转述
 |--------|----------------|------|
 | Tekken（NeMo） | 源码与多语言压缩优于 Llama 3 BPE | 未重测；未生成数值图 |
 | Llama 3 tokenizer | 对照基线 | 未打开官方卡重算 |
-| GPT-4 tokenizer | 占位 prompt 曾要求对比 | **不画柱状图**（GenerateImage 禁精确数值图） |
+| GPT-4 tokenizer | 对照基线 | 未打开官方卡重算 |
 
-<!-- IMAGE PLACEHOLDER Prompt: A bar chart comparing token compression efficiency between Mistral Tekken Tokenizer, LLaMA 3 Tokenizer, and GPT-4 Tokenizer across different languages (English, French, Chinese, Python code). Tekken should show visibly shorter bars representing fewer tokens required. 2026-08：按 Goal 3.4，数值柱状图改表，不生成假数据图。 -->
 
 ## 7. 部署与微调实践
 

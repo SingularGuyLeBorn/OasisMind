@@ -11,7 +11,7 @@ tags: [Claude-Opus-5, 公开材料精读]
 
 **档（2026-08）**：**A**。相对 Opus 4.8 / Fable 5 的产品增量。**没有**「全局树状状态机」或层表。Fast mode 是速度档，不 mkdir。
 
-**材料类型**：https://www.anthropic.com/research/claude-opus-5 （**2026-07-24**）；总览表同 Fable 篇。System card 本轮未打开 PDF。
+https://www.anthropic.com/research/claude-opus-5 （**2026-07-24**）；总览表同 Fable 篇。System card 本轮未打开 PDF。
 
 ![第五代：Fable / Mythos / Opus](../19-Claude-Fable-5/images/fig-claude-gen5-fable-opus-mythos.png)
 
@@ -43,7 +43,7 @@ tags: [Claude-Opus-5, 公开材料精读]
 - 把 Fast mode / Sonnet 5 开成空目录。
 - 把 Opus 5 写成 Fable 的量化版权重（官方没说是同一 checkpoint）。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/research/claude-opus-5
 - https://platform.claude.com/docs/en/about-claude/models/overview

@@ -36,9 +36,7 @@ category: LLM 指南
 
 ![稠密、窗、重算窗、StreamingLLM 四种 KV 策略](./images/fig-sllm-four-methods.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Four-panel KV cache: (a) dense all tokens O(T) cache; (b) window with red X on first token; (c) recompute loop O(T L^2); (d) four amber sinks plus rolling recent window. -->
-
-> 图 1：论文 Figure 1 的四条路。(a) 稠密：cache 随 $T$ 涨；(b) 窗：踢掉起始 token；(c) 窗内重算；(d) 留下 sink + 滚动最近段。2026-08 自绘。
+> 图 1：论文 Figure 1 的四条路。(a) 稠密：cache 随 $T$ 涨；(b) 窗：踢掉起始 token；(c) 窗内重算；(d) 留下 sink + 滚动最近段。
 
 **图 1 解析**
 
@@ -65,9 +63,7 @@ $$
 
 ![query 把质量倒进起始 sink；softmax 行和为 1](./images/fig-sllm-softmax-dump.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Query q to four amber sink keys with thick arrows and recent keys with thin arrows. Formula SoftMax with x_1 much greater. No pie-chart percentages. -->
-
-> 图 2：质量被迫加起来等于 1；对不上的部分停在起始若干 key 上。对应论文式 (1) 与 Figure 2。2026-08 自绘。
+> 图 2：质量被迫加起来等于 1；对不上的部分停在起始若干 key 上。对应论文式 (1) 与 Figure 2。
 
 **图 2 解析**
 
@@ -90,9 +86,7 @@ RoPE：cache 里存的是 **旋转之前** 的 Key，每步 decode 再按 cache 
 
 ![原文下标有洞；cache 内下标连续；RoPE 跟 cache](./images/fig-sllm-rolling-kv.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Top original positions 0 1 2 3 gap 6 7 8 9; bottom cache positions 0-7 contiguous. Note RoPE on cache indices. -->
-
-> 图 3：论文 Figure 4 的赋位。上排原文位置，下排 cache 槽。RoPE 跟下面那排。2026-08 自绘。
+> 图 3：论文 Figure 4 的赋位。上排原文位置，下排 cache 槽。RoPE 跟下面那排。
 
 **图 3 解析**
 
@@ -116,9 +110,7 @@ RoPE：cache 里存的是 **旋转之前** 的 Key，每步 decode 再按 cache 
 
 ![窗在 cache 边界炸；稠密在预训练窗后爬；StreamingLLM 持平](./images/fig-sllm-ppl-collapse.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Qualitative PPL vs length. Window spikes at cache size; dense rises after pretrain window L; StreamingLLM flat. No numeric ticks. -->
-
-> 图 4：对应论文 Figure 3 的定性形状，不是把表上的数字描成坐标。2026-08 自绘。
+> 图 4：对应论文 Figure 3 的定性形状，不是把表上的数字描成坐标。
 
 **图 4 解析**
 
@@ -174,9 +166,7 @@ $$
 
 ![四条逃逸阀：真实起始 KV、SoftMax1、标量 z'、H2O 堆](./images/fig-sllm-four-escapes.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Four columns: StreamingLLM keep 4 KVs; SoftMax1 ghost zero; learnable z' per head; H2O min-heap eviction. Each has a red NOT of the others. -->
-
-> 图 5：四条「让注意力有地方去」的路。名字相近，实现不是同一个算子。2026-08 自绘。
+> 图 5：四条「让注意力有地方去」的路。名字相近，实现不是同一个算子。
 
 **图 5 解析**
 
@@ -238,7 +228,7 @@ Xiao 给出的故事是 softmax 归一化 + 起始位全局可见。后来两篇
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Xiao, Tian, Chen, Han, Lewis. *Efficient Streaming Language Models with Attention Sinks*. [arXiv:2309.17453](https://arxiv.org/abs/2309.17453) / [HTML](https://arxiv.org/html/2309.17453)，[ICLR 2024 OpenReview](https://openreview.net/forum?id=NG7sS51zVF)。Table 1–6、Figure 1–5、式 (1)(2)、§4.5 的 22.2×、4M token、默认 4 个 sink。
 2. 官方代码：[mit-han-lab/streaming-llm](https://github.com/mit-han-lab/streaming-llm)。

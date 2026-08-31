@@ -36,9 +36,7 @@ H2O 已经说明「满 cache 里真正有用的很少」；SnapKV 把压缩时�
 
 ![四种 KV 策略：全量、StreamingLLM、各层同宽的 SnapKV/H2O、层间漏斗的 PyramidKV](./images/fig-pyramidkv-vs-uniform.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Four columns of stacked layer bars: Full teal; StreamingLLM yellow sink plus teal window; Uniform SnapKV/H2O same width orange plus teal; PyramidKV bars narrowing toward the top. -->
-
-> 图 1：四种 KV 策略。对应论文 Figure 1。(a) 全量；(b) 起始位 + 最近窗；(c) 按分数选、**各层同宽**；(d) 浅层宽、深层窄。2026-08 自绘。
+> 图 1：四种 KV 策略。对应论文 Figure 1。(a) 全量；(b) 起始位 + 最近窗；(c) 按分数选、**各层同宽**；(d) 浅层宽、深层窄。
 
 **图 1 解析**
 
@@ -61,9 +59,7 @@ H2O 已经说明「满 cache 里真正有用的很少」；SnapKV 把压缩时�
 
 ![浅层均匀、中层文档内三角、深层 sink 竖条的注意力示意](./images/fig-pyramidkv-funneling.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Six attention-grid panels Layer 0 to 30; pale uniform then diagonal triangles then sink bars. -->
-
-> 图 2：漏斗观察。对应论文 Figure 2 的分层趋势。格子是示意图，不是某一条 LongBench 样本的真实热图。2026-08 自绘。
+> 图 2：漏斗观察。对应论文 Figure 2 的分层趋势。格子是示意图，不是某一条 LongBench 样本的真实热图。
 
 **图 2 解析**
 
@@ -110,9 +106,7 @@ $$
 
 ![等差层预算加观测窗投票再 Top-k](./images/fig-pyramidkv-budget-select.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Staircase k_0 to k_{m-1} plus four-step vote-pool-topk-concat. -->
-
-> 图 3：§4.2.1 预算 + §4.2.2 选人。公式以 v4 为准。2026-08 自绘。
+> 图 3：§4.2.1 预算 + §4.2.2 选人。公式以 v4 为准。
 
 **图 3 解析**
 
@@ -152,9 +146,7 @@ Appendix H：驱逐之后 **RoPE 仍用原位置 id**，不把幸存者卷成连
 
 ![StreamingLLM、H2O、SnapKV 各层同宽；PyramidKV 浅层宽深层窄](./images/fig-pyramidkv-not-neighbors.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Four columns; bottom bar is Layer 0 widest only in PyramidKV. -->
-
-> 图 4：四条推理期 KV 策略。第四列必须读成 **浅层（Layer 0，靠近输入）更宽**。2026-08 自绘。
+> 图 4：四条推理期 KV 策略。第四列必须读成 **浅层（Layer 0，靠近输入）更宽**。
 
 **图 4 解析**
 
@@ -282,7 +274,7 @@ Appendix L Table 9：分配时间 $10^{-6}$ 秒量级，选人约 **0.013 s**，
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Cai, Zhang, Gao, Liu, Li, Liu, Lu, Xiong, Dong, Hu, Xiao. *PyramidKV: Dynamic KV Cache Compression based on Pyramidal Information Funneling*. [arXiv:2406.02069](https://arxiv.org/abs/2406.02069)。公式与层内选人跟 [HTML v4](https://arxiv.org/html/2406.02069v4) §4.2.1–4.2.2 式 (1)–(3)；v3 HTML 式 (1) 排版与顶层式冲突，弃 v3 公式、留 v3 Table 2 的 64→0.8% 行。会场：[COLM 2025 Accepted Papers](https://colmweb.org/2025/AcceptedPapers.html)（Spotlight）。[Microsoft Research 发表页](https://www.microsoft.com/en-us/research/publication/pyramidkv-dynamic-kv-cache-compression-based-on-pyramidal-information-funneling/) 只核题名/会场，不当数字源。Table 1、Table 2、Appendix I Table 4–6、Appendix P Table 15、Appendix H RoPE、Appendix R vLLM。
 2. 官方代码：[Zefan-Cai/KVCache-Factory](https://github.com/Zefan-Cai/KVCache-Factory)（原 [PyramidKV](https://github.com/Zefan-Cai/PyramidKV) 仓库现为同一 playground），`pyramidkv/pyramidkv_utils.py` 中 `PyramidKVCluster`（`min_num` / `max_num`、默认窗 64、kernel 5、`avgpool`、$\beta=20$）。

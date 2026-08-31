@@ -59,7 +59,7 @@ I-JEPA（Assran et al., CVPR 2023）是视觉里预测被遮块的表示，带 E
 - 把训练 2–3× 前向开销说成推理延迟。
 - 从知乎抄 span masking + EMA 代码当 2509.14252。
 
-## 本篇来源
+## 参考文献
 
 1. Huang, LeCun, Balestriero (2025). *LLM-JEPA*. https://arxiv.org/abs/2509.14252 （式 (1)(2)、Table 2–3、Figure 3–4；代码 https://github.com/rbalestr-lab/llm-jepa ）
 2. Assran et al. (2023). I-JEPA. CVPR. 概念对照，不是本篇实现

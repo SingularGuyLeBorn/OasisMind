@@ -53,7 +53,7 @@ Muse Spark 是 Meta Superintelligence Labs（MSL）Muse 家族的第一代：**�
 
 ![1.0 与 1.1 缓解前档位，以及共同的发布门](./images/fig-muse-spark-prep-ladder.png)
 
-> 图 1：1.0 与 1.1 在框架三域上的缓解前档位，以及共同的发布门（Advanced AI Scaling Framework）。同夹另留浅色概念图 `fig-muse-spark-prep-framework.png`（不删）。
+> 图 1：1.0 与 1.1 在框架三域上的缓解前档位，以及共同的发布门（Advanced AI Scaling Framework）。
 
 **图 1 解析**
 
@@ -230,7 +230,7 @@ Muse Code（beta）：主 agent loop + **会话级常驻**的异步 background a
 
 下一篇枢纽：[05 · Muse Spark 核心专题](./05-Muse-Spark-核心专题.md)。机制本体不在本夹展开：注意力变体见 [2.2.2](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/)，Agent 治理见 [13.5.3](../../../13-Agent/13.5-Agent应用与治理/13.5.3-Agent安全与对齐.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Meta Superintelligence Labs. (2026-05-26；arXiv HTML changelog 2026-08-24). [Muse Spark Safety & Preparedness Report](https://ai.meta.com/static-resource/muse-spark-safety-and-preparedness-report). arXiv:[2606.12429](https://arxiv.org/abs/2606.12429).
 2. Meta. [Advanced AI Scaling Framework v2](https://ai.meta.com/static-resource/Meta_Advanced-AI-Scaling-Framework-v2).

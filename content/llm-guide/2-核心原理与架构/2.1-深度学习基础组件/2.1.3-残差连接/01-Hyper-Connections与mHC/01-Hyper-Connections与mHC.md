@@ -258,7 +258,7 @@ Transformer 一层仍是 Norm → Attn/FFN → 残差合并。mHC 改的是**合
 
 下一篇：[02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)。
 
-## 本篇来源
+## 参考文献
 
 1. [Zhu, D., et al. (2024/2025). Hyper-Connections.](https://arxiv.org/abs/2409.19606) *arXiv:2409.19606*；HTML：[arXiv HTML](https://arxiv.org/html/2409.19606)。OLMoE-1B-7B-DHC $\times$ 4 的 **1.8×** 收敛、500B token ARC-Challenge **+6**（Table 6：41.8 → 47.8）来自该文摘要 / Figure 1 / Table 6，**不是** mHC Table 4。
 2. [Xie, Z., et al. (2025/2026). mHC: Manifold-Constrained Hyper-Connections.](https://arxiv.org/abs/2512.24880) *arXiv:2512.24880*；HTML：[arXiv HTML](https://arxiv.org/html/2512.24880)。式 (1)(2)(3)(4)(6)(8)(9)、Figure 1–3 / 5–7、Table 1–5、$n=4$、6.7%、27B 约 12k step、Amax ~3000 vs ~1.6、loss −0.021、Table 4 列名与八项数字。

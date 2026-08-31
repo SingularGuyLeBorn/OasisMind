@@ -19,7 +19,7 @@ tags: [Claude-3-Opus, index]
 - 公开材料精读：[01-06-Claude-3-Opus-架构精译](./01-06-Claude-3-Opus-架构精译.md)
 - 已有长 D5：[05-06-Claude-3-Opus-长上下文推理与多模态理解的双重突破](./05-06-Claude-3-Opus-长上下文推理与多模态理解的双重突破.md)
 
-## 本篇来源
+## 参考文献
 
 - 本文件原先是空壳；2026-08 改成枢纽
 - Claude 3 Model Card PDF

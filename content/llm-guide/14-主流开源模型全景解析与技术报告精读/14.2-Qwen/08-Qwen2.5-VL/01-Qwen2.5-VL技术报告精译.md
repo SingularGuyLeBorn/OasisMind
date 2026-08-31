@@ -6,7 +6,6 @@ title: "01 · Qwen2.5-VL 技术报告精译"
 
 >  **[返回 14.2-Qwen 家族总览](../../14.2-Qwen.md)**
 
-
 > **原文**: Qwen2.5-VL Technical Report (arXiv:2502.13923)
 > **发布机构**: Qwen Team, Alibaba Group
 > **翻译说明**: 以下内容为技术报告全文逐段精译,保留所有公式、表格结构与实验数据.英文术语首次出现时附原文,后续直接使用缩写.
@@ -57,7 +56,7 @@ Qwen2.5-VL 的突出特性如下:
 
 ![Qwen2.5-VL 框架架构图](images/qwen2.5vl_arc.jpeg)
 
-> **图 1**: Qwen2.5-VL 框架展示了视觉Encoder 与语言模型Decoder  的集成,用于处理包括图像和视频在内的多模态输入.视觉Encoder 设计用于处理原生分辨率输入并支持动态 FPS 采样.不同尺寸的图像和不同 FPS 率的视频帧被动态映射为不同长度的 token 序列.值得注意的是,MRoPE 将时间 ID 与绝对时间对齐,使模型能够更好地理解时间动态,如事件节奏和精确时刻定位.处理后的视觉数据随后输入 Qwen2.5 LM Decoder  .我们重新设计了 ViT 架构,引入了 SwiGLU 激活的 FFN、RMSNorm 归一化和基于窗口的注意力机制以提升性能和效率.
+> **图 1**: Qwen2.5-VL 框架展示了视觉Encoder 与语言模型Decoder 的集成,用于处理包括图像和视频在内的多模态输入.视觉Encoder 设计用于处理原生分辨率输入并支持动态 FPS 采样.不同尺寸的图像和不同 FPS 率的视频帧被动态映射为不同长度的 token 序列.值得注意的是,MRoPE 将时间 ID 与绝对时间对齐,使模型能够更好地理解时间动态,如事件节奏和精确时刻定位.处理后的视觉数据随后输入 Qwen2.5 LM Decoder .我们重新设计了 ViT 架构,引入了 SwiGLU 激活的 FFN、RMSNorm 归一化和基于窗口的注意力机制以提升性能和效率.
 
 ### 2.1 模型架构 (Model Architecture)
 

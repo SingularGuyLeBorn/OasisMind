@@ -11,7 +11,7 @@ tags: [Gemini-2.0-Flash, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文**，没有 1.0/1.5 那种技术报告。空壳两段把 TPU v5/v6 和「长程强化学习」从 1.0 模板再贴一遍——2024-12-11 博文写的是 **Trillium（第六代 TPU）承担 2.0 训练与推理的 100%**。
+**产品博文**，没有 1.0/1.5 那种技术报告。空壳两段把 TPU v5/v6 和「长程强化学习」从 1.0 模板再贴一遍——2024-12-11 博文写的是 **Trillium（第六代 TPU）承担 2.0 训练与推理的 100%**。
 
 ## 1. 时间线（不要合成一个「正式发布日」）
 
@@ -41,7 +41,7 @@ tags: [Gemini-2.0-Flash, 公开材料精读]
 - 把长 D5 的 MoE 稀疏化写成官方句（两篇博文都没写 MoE）。
 - 为 Flash-Lite mkdir。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/innovation-and-ai/models-and-research/google-deepmind/google-gemini-ai-update-december-2024/
 - https://developers.googleblog.com/en/the-next-chapter-of-the-gemini-era-for-developers/

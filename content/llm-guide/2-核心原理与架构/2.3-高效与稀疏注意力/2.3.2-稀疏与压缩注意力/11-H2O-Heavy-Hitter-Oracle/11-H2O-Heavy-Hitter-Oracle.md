@@ -36,9 +36,7 @@ Gisting 一类「学着压缩文档 KV」的方法，论文认为驱逐策略太
 
 ![Full 全留、Local 只留最近窗、H2O 最近窗加内容相关 H2](./images/fig-h2o-three-policies.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Three-row KV: (a) Full all teal; (b) Local only recent window teal, rest gray; (c) H2O orange H2 scattered in history plus teal recent window. Legend: teal kept, gray not kept, orange H2. -->
-
-> 图 1：三种 KV 策略。对应论文 Figure 1 上排示意。(a) 全量；(b) 只留最近；(c) 最近窗 + 散落的 $\mathsf{H_2}$。2026-08 自绘。
+> 图 1：三种 KV 策略。对应论文 Figure 1 上排示意。(a) 全量；(b) 只留最近；(c) 最近窗 + 散落的 $\mathsf{H_2}$。
 
 **图 1 解析**
 
@@ -77,9 +75,7 @@ $$
 
 ![当前 query 对 cache 打分，累积分最低的 key 被打叉](./images/fig-h2o-accum-evict.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Query q attending to four cached keys with accumulated scores 1.4, 0.2, 0.9, 0.05; lowest marked evict. Box F_score(T)=sum o_s. -->
-
-> 图 2：单步驱逐。分数是示意图，不是论文表。对应 Algorithm 1 与 Figure 3 的「按累积分数踢」。2026-08 自绘。
+> 图 2：单步驱逐。分数是示意图，不是论文表。对应 Algorithm 1 与 Figure 3 的「按累积分数踢」。
 
 **图 2 解析**
 
@@ -89,9 +85,7 @@ $$
 
 ![预算 k=3 时第四步踢掉 token 3，第五步 cache 仍是三条](./images/fig-h2o-step-evict.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Two panels: step i=4 four KV with KV_3 crossed; step i=5 remaining three. Budget k=3. Matches paper Figure 3. -->
-
-> 图 3：论文 Figure 3。预算 $k=3$；第四步结束踢掉第 3 个 token 的 KV；后面再也读不到它。2026-08 自绘。
+> 图 3：论文 Figure 3。预算 $k=3$；第四步结束踢掉第 3 个 token 的 KV；后面再也读不到它。
 
 **图 3 解析**
 
@@ -110,9 +104,7 @@ $$
 
 ![预算 k 对半分给 H2 和最近 token；总长约全量的 20%](./images/fig-h2o-budget-split.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Horizontal bar split k/2 yellow H2 and k/2 teal recent. Note: 20 percent of full KV length, not 20 percent H2 only. -->
-
-> 图 4：预算切分。2026-08 自绘。
+> 图 4：预算切分。
 
 **图 4 解析**
 
@@ -191,9 +183,7 @@ Table 6，OPT-30B，4-bit 量化正交：Full COPA **85.00** / OpenBookQA **43.2
 
 ![StreamingLLM 固定前 4 个 sink；H2O 的 H2 可出现在任意位置](./images/fig-h2o-not-streamingllm.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo. Two columns: StreamingLLM yellow first-4 sinks plus teal recent; H2O white first tokens evicted, yellow H2 in the middle, teal recent. Red NOT boxes. No fake PPL numbers. -->
-
-> 图 5：两条推理期 cache 策略。不要互换名字。2026-08 自绘。
+> 图 5：两条推理期 cache 策略。不要互换名字。
 
 **图 5 解析**
 
@@ -238,7 +228,7 @@ Table 6，OPT-30B，4-bit 量化正交：Full COPA **85.00** / OpenBookQA **43.2
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Zhang, Sheng, Zhou, Chen, Zheng, Cai, Song, Tian, Ré, Barrett, Wang, Chen. *H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models*. [arXiv:2306.14048](https://arxiv.org/abs/2306.14048) / [HTML](https://arxiv.org/html/2306.14048)，[NeurIPS 2023](https://proceedings.neurips.cc/paper_files/paper/2023/hash/6ceefa7b15572587b78ecfcebb2827f8-Abstract-Conference.html)。Table 1–7、Table 9、Figure 1–5、Algorithm 1、Theorem 4.4 informal、§5.1 预算对半分。
 2. 官方代码：[FMInference/H2O](https://github.com/FMInference/H2O)。

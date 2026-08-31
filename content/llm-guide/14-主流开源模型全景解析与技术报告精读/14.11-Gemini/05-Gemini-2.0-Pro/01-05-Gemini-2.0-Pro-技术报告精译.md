@@ -5,13 +5,13 @@ as_of: 2026-08-30
 tags: [Gemini-2.0-Pro, 公开材料精读]
 ---
 
-# Gemini 2.0 Pro: 全模态原生与空间智能突破 - 技术报告精译
+# Gemini 2.0 Pro：2M 上下文，偏代码
 
 >  **[返回 14.11-Gemini 家族总览](../../14.11-Gemini.md)** · 同日家族：[2.0 Flash GA](../06-Gemini-2.0-Flash/01-06-Gemini-2.0-Flash-技术报告精译.md) · 空壳 05：[枢纽](./05-05-Gemini-2.0-Pro-核心技术专题.md)
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文**。空壳标题写「空间智能突破」——2 月 5 日博文 **没有**写空间智能公式。12 月博文的空间理解段属于 **2.0 Flash** 开发者页，不要倒灌成 Pro 专有架构。
+2 月 5 日博文 **没有**写空间智能公式。12 月博文的空间理解段属于 **2.0 Flash** 开发者页，不要倒灌成 Pro 专有架构。
 
 事实源：[Gemini 2.0 model updates](https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-model-updates-february-2025/)（2025-02-05）。
 
@@ -44,6 +44,6 @@ tags: [Gemini-2.0-Pro, 公开材料精读]
 - 把 Flash 的 1M 和 Pro 的 2M 收成同一个官方窗口。
 - 把 12 月 Flash 的原生出图/TTS 写成 2 月 Pro 已 GA（2 月文对全家默认仍是「输入多模态、输出文本」）。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-model-updates-february-2025/

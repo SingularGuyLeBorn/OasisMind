@@ -9,9 +9,9 @@ tags: [Claude-Fable-5, Mythos-5, 公开材料精读]
 
 >  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 日常档：[Opus 5](../20-Claude-Opus-5/01-Claude-Opus-5-公开材料精读.md) · 限量无分类器：[Mythos 枢纽](../18-Claude-Mythos/01-Claude-Mythos-公开材料精读.md)
 
-**档（2026-08）**：**A**。第五代公开最强档。**没有**层配置。**Mythos 5 / Sonnet 5 = B**：同代矩阵，不 mkdir。Haiku 4.5 已有旧目录，不平行新建。
+第五代公开最强档。**没有**层配置。Mythos 5 / Sonnet 5 是同代矩阵，本篇只记一行。Haiku 4.5 已有旧目录，不另开一节。
 
-**材料类型**：产品页 https://www.anthropic.com/claude/fable ；模型总览 https://platform.claude.com/docs/en/about-claude/models/overview 。System card 本轮**未打开 PDF**。
+产品页 https://www.anthropic.com/claude/fable ；模型总览 https://platform.claude.com/docs/en/about-claude/models/overview 。System card 本轮**未打开 PDF**。
 
 ![第五代：Fable / Mythos / Opus](./images/fig-claude-gen5-fable-opus-mythos.png)
 
@@ -45,7 +45,7 @@ API：`claude-fable-5`。价 **$10 / $50** per MTok in/out；prompt cache 读 90
 - 把 6 月中断写成模型撤回。
 - 把 OpenAI 对照列收成 Anthropic 自评。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/claude/fable （公告时间线、定价、FAQ、护栏）
 - https://platform.claude.com/docs/en/about-claude/models/overview （对照表）

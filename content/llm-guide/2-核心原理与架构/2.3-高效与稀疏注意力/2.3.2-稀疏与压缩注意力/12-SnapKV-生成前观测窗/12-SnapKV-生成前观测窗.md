@@ -78,9 +78,7 @@ Hit rate $H$（论文 (4)–(8)）是事后度量，**不是** 运行时算法�
 
 ![观测窗在 prompt 末尾投票，选出的 prefix 簇与整段观测窗拼成压缩 cache](./images/fig-snapkv-obs-window.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. PREFIX gray plus orange clusters; teal observation window at the end; vote arrows; compressed KV = selected prefix + window. -->
-
-> 图 1：生成前压缩。对应论文 Figure 1：橙块是 **每个 head** 选出的成簇重要位置，青绿是观测窗；二者拼接后才拿去生成。2026-08 自绘。
+> 图 1：生成前压缩。对应论文 Figure 1：橙块是 **每个 head** 选出的成簇重要位置，青绿是观测窗；二者拼接后才拿去生成。
 
 **图 1 解析**
 
@@ -91,9 +89,7 @@ Hit rate $H$（论文 (4)–(8)）是事后度量，**不是** 运行时算法�
 
 ![从观测窗 query 到 per-head Top-k 再与观测窗拼接](./images/fig-snapkv-vote-pool.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Six-step flowchart: Q_obs K_prefix, softmax W_obs, sum to C, 1D pooling, Top-k per head, concat. -->
-
-> 图 2：Listing 1 的数据流。2026-08 自绘。
+> 图 2：Listing 1 的数据流。
 
 **图 2 解析**
 
@@ -135,9 +131,7 @@ $$
 
 ![事后度量 H：A_cur 过阈值得到真重要掩码，与观测窗投票掩码做与](./images/fig-snapkv-hit-rate.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Hit rate H post-hoc. -->
-
-> 图 5：式 (4)–(8)。$\mathbf{A}_{\mathrm{cur}}$ 是生成期当前 query 对 prefix 的分数；橙格是阈值掩码，青绿格是投票掩码；$H=\sum\mathbf{O}/\sum\mathbf{M}_{\mathrm{threshold\_cur}}$。对应论文 (4)–(8)。2026-08 自绘。格子是示意，不是某一层的真实 $\mathbf{A}_{\mathrm{cur}}$，也不是可读取的坐标曲线。
+> 图 5：式 (4)–(8)。$\mathbf{A}_{\mathrm{cur}}$ 是生成期当前 query 对 prefix 的分数；橙格是阈值掩码，青绿格是投票掩码；$H=\sum\mathbf{O}/\sum\mathbf{M}_{\mathrm{threshold\_cur}}$。对应论文 (4)–(8)。格子是示意，不是某一层的真实 $\mathbf{A}_{\mathrm{cur}}$，也不是可读取的坐标曲线。
 
 **图 5 解析**
 
@@ -154,9 +148,7 @@ $$
 
 ![naive Top-k 留下孤峰；1D pooling 后高峰的邻居一起留下](./images/fig-snapkv-pooling-cluster.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two rows: naive Top-k isolated orange spikes with broken cluster; after 1D pooling orange clusters of neighbors. kernel size 5 schematic. -->
-
-> 图 3：pooling 在选谁。对应 §4.3 与 Figure 8 的消融动机。格子数是示意图，不是 LongEval 表。2026-08 自绘。
+> 图 3：pooling 在选谁。对应 §4.3 与 Figure 8 的消融动机。格子数是示意图，不是 LongEval 表。
 
 **图 3 解析**
 
@@ -172,9 +164,7 @@ NeurIPS 相机就绪 §5.4 在 **Mistral-7B-Instruct-v0.2**、LongBench、prompt
 
 ![StreamingLLM 固定前 4+窗；H2O decode 逐步驱逐；SnapKV 生成前按观测窗选簇](./images/fig-snapkv-not-neighbors.png)
 
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three columns: StreamingLLM yellow first-4 plus teal recent; H2O orange scattered plus teal recent decode-time evict; SnapKV orange clusters plus teal observation window at end. -->
-
-> 图 4：三条推理期 KV 策略。不要互换名字。2026-08 自绘。
+> 图 4：三条推理期 KV 策略。不要互换名字。
 
 **图 4 解析**
 
@@ -219,9 +209,7 @@ Figure 5 caption：*The layer-wise average hit rate of important positions used 
 
 ![观测窗永远在 prompt 末尾：问题在文前则落在 prefix，问题在文末则落入窗内](./images/fig-snapkv-instr-pos.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Instruction before vs after; obs window always tail. -->
-
-> 图 6：观测窗位置。对应论文 Figure 5 的两种排版。黄块是问题 Q，青绿是 $L_{\mathrm{obs}}$，橙簇是投票选出的 prefix。2026-08 自绘。不是 Figure 4/5 的层间曲线。
+> 图 6：观测窗位置。对应论文 Figure 5 的两种排版。黄块是问题 Q，青绿是 $L_{\mathrm{obs}}$，橙簇是投票选出的 prefix。不是 Figure 4/5 的层间曲线。
 
 **图 6 解析**
 
@@ -314,9 +302,7 @@ FlashAttention 把注意力分数留在 SRAM、不落 HBM。投票要的是观�
 
 ![Prefill 仍全量注意力才能投票；decode 的 prompt KV 条数钉死](./images/fig-snapkv-prefill-decode.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Prefill vs decode slot. -->
-
-> 图 7：整机插槽。左 prefill 仍全量（及 FA 时另开 $\mathbf{W}_{\mathrm{obs}}$）；右 decode 条数钉死，生成 KV 往后追加。图上若把观测窗标成 $W_{\mathrm{obs}}$ tokens，那是记号混用：窗长是 $L_{\mathrm{obs}}$，$\mathbf{W}_{\mathrm{obs}}$ 是注意力张量。2026-08 自绘。
+> 图 7：整机插槽。左 prefill 仍全量（及 FA 时另开 $\mathbf{W}_{\mathrm{obs}}$）；右 decode 条数钉死，生成 KV 往后追加。图上若把观测窗标成 $W_{\mathrm{obs}}$ tokens，那是记号混用：窗长是 $L_{\mathrm{obs}}$，$\mathbf{W}_{\mathrm{obs}}$ 是注意力张量。
 
 **图 7 解析**
 
@@ -352,7 +338,7 @@ FlashAttention 把注意力分数留在 SRAM、不落 HBM。投票要的是观�
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Li, Y., Huang, Y., Yang, B., Venkitesh, B., Locatelli, A., Ye, H., Cai, T., Lewis, P., Chen, D. (2024). *SnapKV: LLM Knows What You are Looking for Before Generation*. [arXiv:2404.14469](https://arxiv.org/abs/2404.14469) / [HTML v2](https://arxiv.org/html/2404.14469v2)，[NeurIPS 2024 PDF](https://proceedings.neurips.cc/paper_files/paper/2024/file/28ab418242603e0f7323e54185d19bde-Paper-Conference.pdf)，[摘要页](https://proceedings.neurips.cc/paper_files/paper/2024/hash/28ab418242603e0f7323e54185d19bde-Abstract-Conference.html)（hash `28ab418242603e0f7323e54185d19bde`），[会场海报](https://neurips.cc/virtual/2024/poster/93531)。式 (1)–(8)、Listing 1、Table 1、§4.2 Figure 4–5 caption、§4.3 pooling、§5.1.1–5.1.2、§5.4 敏感性文字、§6 局限、附录 prompting/generation 时间拆解。Command-R Table 2–4 以 HTML v2 为准；窗/kernel 敏感性以相机就绪 §5.4 文字为准，不抄乱序格子。比率 $p$ 以 Listing / GitHub 绝对容量为准，不用 HTML 的 $\lfloor p\times L_{\mathrm{prefix}}\rfloor$ 或相机就绪的 $\lfloor(1-p)\times L_{\mathrm{prefix}}\rfloor$。
 2. 官方代码：[FasterDecoding/SnapKV](https://github.com/FasterDecoding/SnapKV)，算法在 [`snapkv/monkeypatch/snapkv_utils.py`](https://github.com/FasterDecoding/SnapKV/blob/main/snapkv/monkeypatch/snapkv_utils.py)（`topk(max_capacity_prompt - window_size)`；`init_snapkv` 默认窗 32 / 容量 2048 / kernel 5 / `avgpool`）。

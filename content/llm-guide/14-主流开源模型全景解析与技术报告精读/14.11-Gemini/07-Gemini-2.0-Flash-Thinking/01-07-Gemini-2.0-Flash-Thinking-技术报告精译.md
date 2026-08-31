@@ -11,7 +11,7 @@ tags: [Gemini-2.0-Flash-Thinking, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文里的一句更新**。没有 Thinking 专文、没有预算 token API 说明（那是 Claude 3.7 的写法，不要抄过来）。
+**产品博文里的一句更新**。没有 Thinking 专文、没有预算 token API 说明（那是 Claude 3.7 的写法，不要抄过来）。
 
 ## 1. 2025-02-05 博文写了什么
 
@@ -30,6 +30,6 @@ tags: [Gemini-2.0-Flash-Thinking, 公开材料精读]
 - 发明「隐式思考链」公式。
 - 把后来 2.5 的 thinking 配置写进 2.0。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-model-updates-february-2025/ （Thinking 两段）

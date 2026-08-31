@@ -60,7 +60,7 @@ Frantar & Alistarh, *QMoE: Practical Sub-1-Bit Compression of Trillion-Parameter
 - 4-bit 已经能装、3-bit 精度掉完 → MiLo 的低秩补偿，而不是再把路由器打到三值。
 - 训推一体的 MXFP4 专家（K3）→ 第 14 章该型号，不要和 GPTQ 事后压缩混成一句「MoE 都 4-bit」。
 
-## 本篇来源
+## 参考文献
 
 1. Frantar & Alistarh (2023/24). *QMoE*. https://arxiv.org/abs/2310.16795 （1.6T → <160GB，0.8 bit，20×，<5% 开销）
 2. MoQa https://arxiv.org/abs/2503.21135 ；EAQuant https://arxiv.org/abs/2506.13329 ；MiLo https://arxiv.org/abs/2504.02658 ；MoEQuant ICML 2025 PMLR v267

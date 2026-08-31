@@ -11,7 +11,7 @@ tags: [GPT-4-Turbo, DevDay, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重，本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**产品博文**。占位段不是这篇。事实源：Wayback 捕获的 [New models and developer products announced at DevDay](https://web.archive.org/web/20231106235404/https://openai.com/blog/new-models-and-developer-products-announced-at-devday)（2023-11-06）。openai.com 现页本轮超时。库内 `pdfs/GPT-4-Turbo.html` 是 Cloudflare 挑战页，**不能当正文**。
+**产品博文**。占位段不是这篇。事实源：Wayback 捕获的 [New models and developer products announced at DevDay](https://web.archive.org/web/20231106235404/https://openai.com/blog/new-models-and-developer-products-announced-at-devday)（2023-11-06）。openai.com 现页本轮超时。库内 `pdfs/GPT-4-Turbo.html` 是 Cloudflare 挑战页，**不能当正文**。
 
 ## 1. 产品主张（只抄博文）
 
@@ -44,6 +44,6 @@ GPT-4 fine-tune 只开 experimental access；Custom Models 是另一档昂贵项
 - 把 $0.01 当成每百万（那是每千 token）。
 - 把 3.5 的 38% format following 安到 GPT-4 Turbo 头上。
 
-## 本篇来源
+## 参考文献
 
 - https://web.archive.org/web/20231106235404/https://openai.com/blog/new-models-and-developer-products-announced-at-devday

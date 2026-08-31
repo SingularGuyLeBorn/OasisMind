@@ -28,7 +28,7 @@ DCA 的核心洞察：**保留预训练权重与短程 RoPE 习惯，把长序�
 
 ![DCA Intra / Successive / Inter 三段因果图](./images/fig-dca-intra-succ-inter.png)
 
-> 图 1：四块序列上 Intra（块内因果）、Succ（邻块过渡）、Inter（更远块的重映射相对位置）。自绘示意；KV 形状不变。
+> 图 1：四块序列上 Intra（块内因果）、Succ（邻块过渡）、Inter（更远块的重映射相对位置）。KV 形状不变。
 
 **图 1 解析**
 

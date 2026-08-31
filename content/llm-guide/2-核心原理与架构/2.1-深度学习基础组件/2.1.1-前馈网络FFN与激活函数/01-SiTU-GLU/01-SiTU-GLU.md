@@ -184,7 +184,7 @@ $N_s=2$，$\mathcal{T}_k$ 是 Top-16，$E_i^{\mathrm{routed}}:\mathbb{R}^{\ell}\
 
 ![SiTU-GLU 插在 LatentMoE：先降到 ℓ，门控 FFN，再升回 d](./images/fig-situ-glu-latentmoe-slot.png)
 
-> 图 2：浅色自绘。一条 K3 层的 FFN 槽：上支共享专家满宽；下支 $d\to\ell\to$ Top-16/896 $\to$ SiTU-GLU $\to$ 加权和 $\to$ RMSNorm $\to d$。红框：$\ell\neq c^{KV}$。不是论文插图。
+> 图 2：一条 K3 层的 FFN 槽：上支共享专家满宽；下支 $d\to\ell\to$ Top-16/896 $\to$ SiTU-GLU $\to$ 加权和 $\to$ RMSNorm $\to d$。红框：$\ell\neq c^{KV}$。不是论文插图。
 
 **图 2 解析**
 
@@ -211,7 +211,7 @@ $\ell=3584$ 和界 $100$ 不要读成同一个「压缩比」。$\ell$ 省的是
 
 ![SiTU 不是 PowLU、不是 V4 硬 clamp、不是 G1 / Gated Residual](./images/fig-situ-glu-not-neighbors.png)
 
-> 图 3：浅色自绘。四张卡片只钉处方差，**没有假坐标曲线**。底栏：100 是坐标 $\ell_\infty$ 界，不是平均激活，不是梯度裁剪阈值。
+> 图 3：四张卡片只钉处方差，**没有假坐标曲线**。底栏：100 是坐标 $\ell_\infty$ 界，不是平均激活，不是梯度裁剪阈值。
 
 **图 3 解析**
 
@@ -272,7 +272,7 @@ Fig. 4 的曲线是标量示意（红线 $\beta_1=4,\beta_2=25$），本篇图 1
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Kimi Team. (2026). *Kimi K3* 技术报告 §2.3、§2.3.2 式 (12)、Fig. 4、Table 1；附录 B 式 (18)–(19). https://arxiv.org/html/2607.24653
 2. Shazeer, N. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). *arXiv:2002.05202*.（家族对照；Table 1 不是 SiTU 实验）

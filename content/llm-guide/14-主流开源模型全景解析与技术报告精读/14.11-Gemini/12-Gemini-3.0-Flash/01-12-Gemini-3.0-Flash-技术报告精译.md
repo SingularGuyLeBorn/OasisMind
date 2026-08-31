@@ -11,7 +11,7 @@ tags: [Gemini-3-Flash, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品 + 开发者博文**。文件夹名沿用空壳「3.0 Flash」；官方产品名是 **Gemini 3 Flash**（2025-**12-17**），比 3 Pro 晚约一个月。不要为 3.5/3.6/3.7 Flash mkdir。
+**产品 + 开发者博文**。文件夹名沿用空壳「3.0 Flash」；官方产品名是 **Gemini 3 Flash**（2025-**12-17**），比 3 Pro 晚约一个月。不要为 3.5/3.6/3.7 Flash mkdir。
 
 事实源：
 
@@ -43,7 +43,7 @@ LMArena Elo 只在 Pareto 图里，**正文没写整数**，不估。没有层�
 - 把 3.7 Flash（2026-08）的 DeepSWE 倒灌进本目录。
 - 空壳「端到端语音」——12-17 博文没有 Live API 专章。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/products-and-platforms/products/gemini/gemini-3-flash/
 - https://blog.google/innovation-and-ai/technology/developers-tools/build-with-gemini-3-flash/

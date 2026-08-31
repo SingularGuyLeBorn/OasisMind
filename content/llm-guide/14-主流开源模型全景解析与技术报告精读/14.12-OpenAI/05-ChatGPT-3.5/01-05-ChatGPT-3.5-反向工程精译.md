@@ -11,7 +11,7 @@ tags: [ChatGPT, GPT-3.5, RLHF, 公开材料精读]
 
 > **背景**：该模型并未完全开源其底层代码与权重，本精译基于其官方发布的技术报告(Technical Report)、系统卡片(System Card)以及顶级研究团队的逆向探测论文重构。
 
-**材料类型（2026-08）**：**产品博文**，不是架构论文。上面「背景」保留。占位段的「拒绝采样 / 几十项代码数学 Benchmark」**不是**这篇：2022-11-30 博文没有 HumanEval 表，也没有参数量。
+**产品博文**，不是架构论文。上面「背景」保留。占位段的「拒绝采样 / 几十项代码数学 Benchmark」**不是**这篇：2022-11-30 博文没有 HumanEval 表，也没有参数量。
 
 事实源：Wayback 捕获的 [ChatGPT: Optimizing Language Models for Dialogue](https://web.archive.org/web/20221130211011/https://openai.com/blog/chatgpt/)（与 openai.com/blog/chatgpt 同文；openai.com/index/chatgpt 本轮超时）。
 
@@ -49,6 +49,6 @@ Iterative deployment：从 GPT-3 / Codex 部署学到的安全措施；RLHF 减�
 - 把 Fermat 示例对话里的错公式当成数论事实。
 - 把后来的 gpt-3.5-turbo 上下文窗写进 2022-11-30 博文。
 
-## 本篇来源
+## 参考文献
 
 - https://web.archive.org/web/20221130211011/https://openai.com/blog/chatgpt/ （读完 Methods / Limitations / Iterative deployment / 对照表）

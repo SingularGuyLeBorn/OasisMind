@@ -11,7 +11,7 @@ tags: [Gemini-3.1-Pro, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文**。[Gemini 3.1 Pro: A smarter model for your most complex tasks](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)（2026-**02-19**）。上一周刚更过 3 Deep Think。3.1 Pro = 升级后的 **core intelligence**，preview。渠道：Gemini API / AI Studio / CLI / Antigravity / Android Studio；Vertex / Gemini Enterprise；Gemini app 与 NotebookLM（Pro/Ultra 更高限额；NotebookLM 仅 Pro/Ultra）。
+**产品博文**。[Gemini 3.1 Pro: A smarter model for your most complex tasks](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)（2026-**02-19**）。上一周刚更过 3 Deep Think。3.1 Pro = 升级后的 **core intelligence**，preview。渠道：Gemini API / AI Studio / CLI / Antigravity / Android Studio；Vertex / Gemini Enterprise；Gemini app 与 NotebookLM（Pro/Ultra 更高限额；NotebookLM 仅 Pro/Ultra）。
 
 ## 1. 唯一写进正文的基准
 
@@ -28,6 +28,6 @@ tags: [Gemini-3.1-Pro, 公开材料精读]
 - 把 77.1% 和 3 Deep Think 的 ARC 45.1% 收成同一个设置（一个是 3.1 Pro，一个是 3 Deep Think + code execution）。
 - 为 3.1 再编 MoE 层表。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/

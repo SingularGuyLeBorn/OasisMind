@@ -69,9 +69,7 @@ $\mathbf{o}^*_t = \sum_{c \in \mathcal{C}} g_t^c \cdot \text{Attn}(\mathbf{q}_t,
 
 ![NSA 三分支：压缩 / 选择 / 滑动窗口，再门控融合](./images/fig-nsa-three-branch.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. NSA three-branch: Compress / Select / Sliding Window then gated fusion. -->
-
-> 图 1：NSA 三分支——窗管局部、压缩管全局粗扫、选择管细检索，门控 $g_t^c$ 加权融合。自绘，对应论文 Figure 2；论文原图仍保留为 `fig-nsa-02-three-branch-framework.jpg`（不删）。
+> 图 1：NSA 三分支——窗管局部、压缩管全局粗扫、选择管细检索，门控 $g_t^c$ 加权融合。
 
 **图 1 解析**
 
@@ -341,9 +339,7 @@ Input Hidden States
 
 ![DSA：Lightning indexer 打分 → Top-K → MLA 主注意力只打选中 token](./images/fig-dsa-indexer-topk.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. DSA Lightning Indexer then Top-K then MLA sparse attention. -->
-
-> 图 7：DSA 挂在 MLA 上——Lightning indexer 打分 → Top-K（默认 $k=2048$）→ 主注意力只算选中 token。全量 MLA KV 仍驻留。自绘；官方 [DeepSeek-V3.2-Exp](https://github.com/deepseek-ai/DeepSeek-V3.2-Exp)。
+> 图 7：DSA 挂在 MLA 上——Lightning indexer 打分 → Top-K（默认 $k=2048$）→ 主注意力只算选中 token。全量 MLA KV 仍驻留。 [DeepSeek-V3.2-Exp](https://github.com/deepseek-ai/DeepSeek-V3.2-Exp)。
 
 **图 7 解析**
 
@@ -399,7 +395,6 @@ $$
 
 q_fp8, q_scale = act_quant(q, block_size=64, scale_fmt="ue8m0")
 k_fp8, k_scale = act_quant(k, block_size=64, scale_fmt="ue8m0")
-
 
 index_score = fp8_index(q_fp8, weights, k_fp8, k_scale)
 ```
@@ -615,7 +610,6 @@ if mask is not None:
     
     scores = scores.softmax(dim=-1, dtype=torch.float32)
     output = torch.einsum("bsht,bthd->bshd", scores, v)
-
 
 else:
     # 矩阵吸收版本 MLA

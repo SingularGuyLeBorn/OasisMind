@@ -40,7 +40,7 @@ $$
 
 ![无界 logits 经 tanh 软限制到 ±soft_cap](./images/fig-gemma2-soft-cap.png)
 
-> 图 1：左无界尖峰，中 $\mathrm{soft\_cap}\cdot\tanh(\cdot/\mathrm{soft\_cap})$（图中中间板若只画了 $\tanh(x)$，以本式为准），右压进虚线界。无数值刻度。2026-08 自绘。
+> 图 1：左无界尖峰，中 $\mathrm{soft\_cap}\cdot\tanh(\cdot/\mathrm{soft\_cap})$（图中中间板若只画了 $\tanh(x)$，以本式为准），右压进虚线界。无数值刻度。
 
 ---
 

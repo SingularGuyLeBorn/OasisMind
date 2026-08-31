@@ -11,7 +11,7 @@ tags: [Gemini-3-Pro, 公开材料精读]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**产品博文**。空壳/长 D5 把发布写成「2025 年中」、上下文 **2M**、原生出图出声——[A new era of intelligence with Gemini 3](https://blog.google/products-and-platforms/products/gemini/gemini-3/)（2025-**11-18**）写的是 **Gemini 3 Pro preview**、**1 million-token** 窗。开发者价在 [Start building with Gemini 3](https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/)：**$2 / $12 per million** in/out（prompt **≤200k**）。没有层数、没有 MoE 表。
+**产品博文**。空壳/长 D5 把发布写成「2025 年中」、上下文 **2M**、原生出图出声——[A new era of intelligence with Gemini 3](https://blog.google/products-and-platforms/products/gemini/gemini-3/)（2025-**11-18**）写的是 **Gemini 3 Pro preview**、**1 million-token** 窗。开发者价在 [Start building with Gemini 3](https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/)：**$2 / $12 per million** in/out（prompt **≤200k**）。没有层数、没有 MoE 表。
 
 ## 1. 产品
 
@@ -45,7 +45,7 @@ API：thinking level、更细的 media resolution、多轮要传 **thought signa
 - 把 Deep Think 的 41.0 / 45.1 收成 Pro 主分。
 - 把 3 Flash（12-17）写成与 Pro 同日。
 
-## 本篇来源
+## 参考文献
 
 - https://blog.google/products-and-platforms/products/gemini/gemini-3/
 - https://blog.google/innovation-and-ai/technology/developers-tools/gemini-3-developers/

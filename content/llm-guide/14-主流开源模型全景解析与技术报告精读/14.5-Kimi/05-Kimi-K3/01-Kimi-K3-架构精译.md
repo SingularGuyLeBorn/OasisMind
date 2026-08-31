@@ -11,7 +11,7 @@ tags: [Kimi-K3, KDA, AttnRes, LatentMoE, SiTU-GLU, Quantile-Balancing, MoonEP]
 
 报告标题 *Kimi K3: Open Frontier Intelligence*（[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)）。权重 [moonshotai/Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3)，仓库协议写 **Kimi K3 License**（不要写成 MIT）。官方把它叫「第一个开源的 3T 档」。本篇只拆这次发布捆了什么；公式本体在体系章。
 
-**材料类型**：独立技术报告 HTML（本会话读了 §1–8、式 (1)–(17) 与后训练式 (15)(16)、Table 1–5、附录 B/C 开头与附录 E）。**不把 PDF OCR 进 git。** 评测柱高以 README / 报告表为准，不从图里估像素。
+有独立技术报告 HTML。本篇按 §1–8、式 (1)–(17) 与后训练式 (15)(16)、Table 1–5、附录 B/C 开头与附录 E。评测柱高以 README / 报告表为准，不从图里估像素。
 
 摘要口径：总参数 **2.8T**、激活 **104B**、原生视觉、上下文 **1M**。Table 1 更细：总参数 **2.78T**、激活 **104.2B**。后文规格表两边都标，禁止合成第三个数。
 
@@ -347,7 +347,7 @@ Table 3 是他们自己的编码体验 / 通用 agent / 对话体验榜，**不�
 - 把内部 KCB / PerceptionBench 当公开榜绝对值。
 - 把 MTP 微调说成「另训了一个 EAGLE-3」，或把 $\mathcal{L}_{\mathrm{LK}}$ 说成 KL。
 
-## 本篇来源
+## 参考文献
 
 - Kimi Team. *Kimi K3: Open Frontier Intelligence*. https://arxiv.org/abs/2607.24653 · HTML https://arxiv.org/html/2607.24653 （§1–8、式 (1)–(17)(15)(16)、Table 1–5、附录 E）
 - GitHub README 规格表与评测表：https://github.com/MoonshotAI/Kimi-K3

@@ -11,7 +11,7 @@ as_of: 2026-08-30
 
 ![HBM 上的 Q/K/V 与打叉的 N×N；SRAM 里 Qi 对 Kj,Vj 循环；寄存器 (m,d,O) 写回 Oi](./images/fig-fa-v1-mech-hbm-sram.png)
 
-> 图 1：不物化 $N\times N$。SRAM 里 $Q_i$ 对 $K_j,V_j$ 循环，寄存器维护 $(m,d,O)$，最后写回 $O_i$。与标准 attention **数学等价**，打的是 HBM IO。先于 v1 的精确不物化路线是 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682），不要把本图画成 MEA。论文 Dao et al., 2022, [arXiv:2205.14135](https://arxiv.org/abs/2205.14135)。
+> 图 1：不物化 $N\times N$。SRAM 里 $Q_i$ 对 $K_j,V_j$ 循环，寄存器维护 $(m,d,O)$，最后写回 $O_i$。与标准 attention **数学等价**，打的是 HBM IO。先于 v1 的精确不物化路线是 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682），不要把本图画成 MEA。
 
 **图 1 解析**
 

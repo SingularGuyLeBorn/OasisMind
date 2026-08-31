@@ -7,11 +7,11 @@ tags: [Claude-2.1, 长上下文, tool-use, 公开材料精读]
 
 # Claude 2.1: 幻觉抑制与 200K 窗口扩展 - 架构还原与精译
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 前代：[Claude 2 D2](../02-Claude-2/01-02-Claude-2-架构精译.md) · 已有长 D5：[05-03 核心技术专题](./05-03-Claude-2.1-核心技术专题.md)（勿平行第三份）· 工具调用本体：[7.4 Function Calling](../../../7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md)
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · 前代：[Claude 2 D2](../02-Claude-2/01-02-Claude-2-架构精译.md) · 已有长 D5：[05-03 核心技术专题](./05-03-Claude-2.1-核心技术专题.md)· 工具调用本体：[7.4 Function Calling](../../../7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。没有架构 PDF。上面「解析」原文保留。轴心：[Introducing Claude 2.1](https://www.anthropic.com/news/claude-2-1)（2023-11-21）。
+**公开材料精读**。没有架构 PDF。上面「解析」原文保留。轴心：[Introducing Claude 2.1](https://www.anthropic.com/news/claude-2-1)（2023-11-21）。
 
 ## 1. 相对 Claude 2.0 改了什么
 
@@ -54,9 +54,9 @@ tags: [Claude-2.1, 长上下文, tool-use, 公开材料精读]
 - 把内部 2x / 30% / 3–4x 抄进第 3 章评测总表当公开榜。
 - 为 Pro 档 200K 另建空目录。
 
-## 本篇来源
+## 参考文献
 
-- https://www.anthropic.com/news/claude-2-1（2023-11-21，本会话读完正文）
+- https://www.anthropic.com/news/claude-2-1（2023-11-21）
 - 前代：https://www.anthropic.com/news/claude-2
 - 同目录已有 D5：`05-03-Claude-2.1-核心技术专题.md`
 - `7.4-FunctionCalling.md`

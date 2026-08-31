@@ -7,11 +7,11 @@ tags: [Mistral-7B, GQA, SWA, rolling-buffer, Apache-2.0]
 
 # Mistral 7B: 欧洲开源之光的起跑线
 
->  **[返回 14.14-Mistral 家族总览](../../14.14-Mistral.md)** · 已有长 D5：[GQA 与 SWA](./05-Mistral-7B-GQA与SWA的效率革命.md)（勿平行第三份）· 体系：[GQA 本体](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md) · [FlashAttention](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/2.3.1-硬件高效注意力.md)
+>  **[返回 14.14-Mistral 家族总览](../14.14-Mistral.md)** · 已有长 D5：[GQA 与 SWA](./05-Mistral-7B-GQA与SWA的效率革命.md)· 体系：[GQA 本体](../../../2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md) · [FlashAttention](../../../2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/2.3.1-硬件高效注意力.md)
 
 > 该家族依靠其独特的算力优势与数据护城河，在 LLM 红海中占据了核心生态位。
 
-**材料类型（2026-08）**：有正式技术报告，按报告精读，不是「无 PDF 的公开材料凑数」。轴心是 Jiang 等人 *Mistral 7B*（[arXiv:2310.06825](https://arxiv.org/abs/2310.06825)）；官方博文 [announcing-mistral-7b](https://mistral.ai/news/announcing-mistral-7b/)（2023-09-27）与论文同套数字。上面两行是 2025 占位原文，保留；下面按 0.4 拆面。GQA / SWA 的推导住在第 2 章，本篇只写 **这一次发布捆了什么、和 Llama 2 差在哪**。
+有正式技术报告，按报告精读。轴心是 Jiang 等人 *Mistral 7B*（[arXiv:2310.06825](https://arxiv.org/abs/2310.06825)）；官方博文 [announcing-mistral-7b](https://mistral.ai/news/announcing-mistral-7b/)（2023-09-27）与论文同套数字。GQA / SWA 的推导在第 2 章，本篇只写 **这一次发布捆了什么、和 Llama 2 差在哪**。
 
 ## 1. 问题：同样 7B，推理账单为什么打不平
 
@@ -87,7 +87,7 @@ Instruct 变体（论文 §4）：在 Hugging Face 上的 **公开指令数据**
 | Code-Llama 7B | 36.9 | 62.9 | 62.3 | 72.8 | 59.4 | 34.5 | 11.0 | 34.9 | 31.1 | 52.5 | 5.2 | 20.8 |
 | Mistral 7B | 60.1 | 81.3 | 75.3 | 83.0 | 80.0 | 55.5 | 28.8 | 69.9 | 30.5 | 47.5 | 13.1 | 52.2 |
 
-知识类压缩比论文自己写低一档：推理 / 理解 / MMLU 上「等效 Llama 2 尺寸」超过 3×；Knowledge 基准大约 1.9×，归因于参数量限制能存的知识。这些是 Figure 5 的叙述，不是又一张我们可以重画的数值柱——按纪律用表，不 GenerateImage 柱状图。博文直方图带官网素材，**不入库**。
+知识类压缩比论文自己写低一档：推理 / 理解 / MMLU 上「等效 Llama 2 尺寸」超过 3×；Knowledge 基准大约 1.9×，归因于参数量限制能存的知识。这些是 Figure 5 的叙述，对照用表即可。博文直方图带官网素材，正文不用。
 
 ## 7. 稳定性与失效
 
@@ -111,9 +111,9 @@ Instruct 变体（论文 §4）：在 Hugging Face 上的 **公开指令数据**
 
 叙事侧（第 5 章，不合并）：[05-Mistral-7B-GQA与SWA](../../../5-主流模型全解/5.3-国外大模型/Mistral-AI/05-Mistral-7B-GQA与SWA的效率革命.md)。
 
-## 本篇来源
+## 参考文献
 
-- 技术报告 HTML：[arXiv:2310.06825](https://arxiv.org/abs/2310.06825)（本会话读了摘要、§1–5、Table 1–4）
+- 技术报告 HTML：[arXiv:2310.06825](https://arxiv.org/abs/2310.06825)（摘要、§1–5、Table 1–4）
 - 官方博文：https://mistral.ai/news/announcing-mistral-7b/（本库 `pdfs/Mistral-7B.html` 为该页快照；未把博文配图存进笔记）
 - GQA 前作：Ainslie et al., [arXiv:2305.13245](https://arxiv.org/abs/2305.13245)（本篇只点名，公式走第 2 章已有文）
 - SWA 前作：Child et al. Sparse Transformer [arXiv:1904.10509](https://arxiv.org/abs/1904.10509)；Beltagy et al. Longformer [arXiv:2004.05150](https://arxiv.org/abs/2004.05150)

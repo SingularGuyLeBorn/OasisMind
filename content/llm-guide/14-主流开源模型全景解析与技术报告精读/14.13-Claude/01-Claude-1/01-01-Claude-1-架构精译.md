@@ -1,17 +1,17 @@
 ---
-title: "01 · Claude 1: Constitutional AI (宪法AI) 的初试啼声 - 技术报告反向工程"
+title: "Claude 1：宪法 AI 刚起步"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [Claude-1, Constitutional-AI, RLAIF, 公开材料精读]
 ---
 
-# Claude 1: Constitutional AI (宪法AI) 的初试啼声 - 架构还原与精译
+# Claude 1：宪法 AI 刚起步
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 已有长 D5：[05-01 核心技术专题](./05-01-Claude-1-核心技术专题.md)（勿平行第三份）· 方法本体：[4.4.3 RLAIF / CAI](../../../4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md) · [4.4.1 PPO/RLHF](../../../4-后训练/4.4-对齐技术/4.4.1-基于人类反馈的强化学习RLHF/4.4.1-基于人类反馈的强化学习RLHF.md)
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · 已有长 D5：[05-01 核心技术专题](./05-01-Claude-1-核心技术专题.md)· 方法本体：[4.4.3 RLAIF / CAI](../../../4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md) · [4.4.1 PPO/RLHF](../../../4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。空壳标题写「架构精译 / 反向工程」，但 **Claude 1 没有公开 Table 1 技术报告，也没有 System Card**（System Card 是后来 Claude 3 线才成套发布的）。禁止假装有全文翻译，也禁止把 CAI 论文里的 **52B 实验模型**写成产品参数量。上面「解析」两句是 2025 占位原文，保留；下面只写本会话打开过的官方页与论文。
+Claude 1 没有公开 Table 1 技术报告，也没有 System Card（System Card 从 Claude 3 才成套发布）。CAI 论文里的 52B 是实验模型，不是产品参数量。
 
 官方轴：
 
@@ -22,7 +22,7 @@ tags: [Claude-1, Constitutional-AI, RLAIF, 公开材料精读]
 | [Claude’s Constitution](https://www.anthropic.com/research/claudes-constitution) | 2023-05-09 | 产品 Claude **用的原则已相对论文更新**；训练时每次抽一条原则，不是每次扫完全表 |
 | [100K context windows](https://www.anthropic.com/news/100k-context-windows) | 2023-05-11 | 窗口从 **9K 扩到 100K** |
 
-Claude Instant 是同一天的速度/成本 SKU，**B 档**：本目录记一行，不新开空文件夹。
+Claude Instant 是同一天的速度/成本档，本篇只记一行。
 
 ## 1. 产品面：2023-03-14 官方博文写了什么、没写什么
 
@@ -89,9 +89,9 @@ flowchart TB
 - 为 Claude Instant 新建第 14 章空目录。
 - 在每个后续 Claude 目录再完整推一遍批评–修订公式；链回 4.4.3 与本篇即可。
 
-## 本篇来源
+## 参考文献
 
-- https://www.anthropic.com/news/introducing-claude（2023-03-14，本会话读完正文）
+- https://www.anthropic.com/news/introducing-claude（2023-03-14）
 - https://arxiv.org/abs/2212.08073 / HTML（Bai et al.，读了摘要、§1–3.5、§4.1 开头；Figure 2–4 的 52B 是实验模型）
 - https://www.anthropic.com/research/claudes-constitution（2023-05-09；2026-01-21 更新提示）
 - https://www.anthropic.com/news/100k-context-windows（9K → 100K）

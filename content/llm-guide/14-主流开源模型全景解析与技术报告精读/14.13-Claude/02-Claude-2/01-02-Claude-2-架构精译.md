@@ -7,11 +7,11 @@ tags: [Claude-2, 长上下文, 公开材料精读]
 
 # Claude 2: 超长上下文 (100K) 的领跑者 - 架构还原与精译
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 前代：[Claude 1 D2](../01-Claude-1/01-01-Claude-1-架构精译.md) · 已有长 D5：[超长上下文与 CAI](./05-02-Claude-2-超长上下文与Constitutional AI的工程实践.md)（勿平行第三份）· 扩窗前作：[100K 公告](https://www.anthropic.com/news/100k-context-windows)
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · 前代：[Claude 1 D2](../01-Claude-1/01-01-Claude-1-架构精译.md) · 已有长 D5：[超长上下文与 CAI](./05-02-Claude-2-超长上下文与Constitutional AI的工程实践.md)· 扩窗前作：[100K 公告](https://www.anthropic.com/news/100k-context-windows)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。没有 Table 1，没有 System Card。CAI 公式已在 [Claude 1 D2](../01-Claude-1/01-01-Claude-1-架构精译.md) 和 [4.4.3](../../../4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md)，本篇不重推。上面「解析」原文保留。
+**公开材料精读**。没有 Table 1，没有 System Card。CAI 公式已在 [Claude 1 D2](../01-Claude-1/01-01-Claude-1-架构精译.md) 和 [4.4.3](../../../4-后训练/4.4-对齐技术/4.4.3-RLAIF/4.4.3-RLAIF.md)，本篇不重推。上面「解析」原文保留。
 
 轴心：[Claude 2](https://www.anthropic.com/news/claude-2)（2023-07-11）。
 
@@ -60,9 +60,9 @@ GRE：阅读和写作成绩「高于申请研究生的大学生的 90th percenti
 - 把 CAI 论文 52B 贴到 Claude 2。
 - 再写一份与 `05-02-Claude-2-超长上下文…` 平行的 D5。
 
-## 本篇来源
+## 参考文献
 
-- https://www.anthropic.com/news/claude-2（2023-07-11，本会话读完正文）
+- https://www.anthropic.com/news/claude-2（2023-07-11）
 - https://www.anthropic.com/news/100k-context-windows（9K→100K，前作）
 - 同目录长 D5：`05-02-Claude-2-超长上下文与Constitutional AI的工程实践.md`
 - CAI 链：`../01-Claude-1/01-01-Claude-1-架构精译.md`、`4.4.3-RLAIF.md`

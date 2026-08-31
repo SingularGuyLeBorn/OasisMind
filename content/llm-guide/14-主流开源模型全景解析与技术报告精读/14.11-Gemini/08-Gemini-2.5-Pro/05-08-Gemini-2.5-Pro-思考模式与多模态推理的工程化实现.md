@@ -1,8 +1,8 @@
 ---
-title: "05 · Gemini 2.5 Pro：思考模式与多模态推理的工程化实现——Google DeepMind的推理时代入场券"
+title: "Gemini 2.5 Pro：思考模式与多模态推理"
 ---
 
-# Gemini 2.5 Pro：思考模式与多模态推理的工程化实现
+# Gemini 2.5 Pro：思考模式与多模态推理
 
 > **模型定位**：Google DeepMind 首个引入显式思考模式(Thinking Mode)的旗舰模型(2025-03)，Gemini系列推理能力的突破者
 > **家族归属**：14.11-Gemini｜编号 08-Gemini-2.5-Pro
@@ -271,4 +271,4 @@ Gemini 2.5 Pro代表了Google在AI竞赛中的新策略：**不追求单一维�
 
 ## 2026-08 修订（不删上文）
 
-2025-03-25 博文（本会话打开）能核对的是：thinking model、LMArena #1、HLE **18.8%** 无工具、SWE-bench Verified **63.8% custom agent setup**、当天 **1M** 窗（2M coming soon）。GPQA / AIME 2025 只写领先且不用 majority voting，**正文没有百分数**——上文表里的 AIME 86.7%、GPQA 84%、HumanEval 93.1% 等 **不是**这篇博文的数字，不要当官方主表。2.5 Flash **不是**与 Pro 同日首发（Flash preview = 2025-04-17）。见 [01-08 D2](./01-08-Gemini-2.5-Pro-技术报告精译.md)。
+2025-03-25 博文能核对的是：thinking model、LMArena #1、HLE **18.8%** 无工具、SWE-bench Verified **63.8% custom agent setup**、当天 **1M** 窗（2M coming soon）。GPQA / AIME 2025 只写领先且不用 majority voting，**正文没有百分数**——上文表里的 AIME 86.7%、GPQA 84%、HumanEval 93.1% 等 **不是**这篇博文的数字，不要当官方主表。2.5 Flash **不是**与 Pro 同日首发（Flash preview = 2025-04-17）。见 [01-08 D2](./01-08-Gemini-2.5-Pro-技术报告精译.md)。

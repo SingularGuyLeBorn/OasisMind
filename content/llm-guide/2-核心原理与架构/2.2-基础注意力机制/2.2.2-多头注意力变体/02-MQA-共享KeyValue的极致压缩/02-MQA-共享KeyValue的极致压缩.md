@@ -20,7 +20,7 @@ MQA 的结构性改动只有一条：$W^K, W^V$ 去掉头下标 $h$，全头共�
 
 ![注意力机制族：MHA、GQA、MQA、MLA](./images/fig-attention-mechanism-family.jpg)
 
-> 图 1：DeepSeek-V2（Dai et al., 2024, Figure 3）。MQA 位于 GQA 与 MLA 之间：KV 份数压到 1，但仍是**显式** $d_h$ 维 K/V，而非 MLA 的低秩 latent。
+> 图 1：DeepSeek-V2。MQA 位于 GQA 与 MLA 之间：KV 份数压到 1，但仍是**显式** $d_h$ 维 K/V，而非 MLA 的低秩 latent。
 
 **图 1 解析**
 
@@ -276,7 +276,7 @@ $W^Q_h$ 与 $W^O$ 通常**原样保留**。Mean pool 比「只取第 1 头」或
 
 ![Decode KV 头数：MHA / GQA / MQA](../01-MHA-多头注意力的标准形式/images/fig-mha-gqa-mqa-kv-heads.png)
 
-> 图 4：浅色自绘，文件在 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 `images/`。本篇读 **右列 MQA**。GQA 论文 Figure 2 与 DeepSeek-V2 Figure 3 的 jpg 仍见图 1–3。
+> 图 4：文件在 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 `images/`。本篇读 **右列 MQA**。GQA 论文 Figure 2 与 DeepSeek-V2 Figure 3 的 jpg 仍见图 1–3。
 
 **图 4 解析**
 

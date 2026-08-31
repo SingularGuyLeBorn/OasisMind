@@ -7,11 +7,11 @@ tags: [Mistral-Large, 公开材料精读, function-calling, MoE]
 
 # Mistral Large: 剑指 GPT-4 的旗舰闭源模型
 
->  **[返回 14.14-Mistral 家族总览](../../14.14-Mistral.md)** · 已有长 D5：[企业级 MoE 与长上下文](./05-Mistral-Large-企业级MoE架构与多语言长上下文优化.md)（勿平行第三份）· 开源前代：[Mixtral D2](../02-Mixtral-8x7B/01-02-Mixtral-8x7B-架构精译.md) · [7.4 Function Calling](../../../7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md) · [9.4 PD 分离](../../../9-AI工程化与基础设施/9.4-推理服务框架/9.4-推理服务框架.md)
+>  **[返回 14.14-Mistral 家族总览](../14.14-Mistral.md)** · 已有长 D5：[企业级 MoE 与长上下文](./05-Mistral-Large-企业级MoE架构与多语言长上下文优化.md)· 开源前代：[Mixtral D2](../02-Mixtral-8x7B/01-02-Mixtral-8x7B-架构精译.md) · [7.4 Function Calling](../../../7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md) · [9.4 PD 分离](../../../9-AI工程化与基础设施/9.4-推理服务框架/9.4-推理服务框架.md)
 
 > 该家族依靠其独特的算力优势与数据护城河，在 LLM 红海中占据了核心生态位。
 
-**材料类型（2026-08）**：**公开材料精读**。本目录空壳标题写「架构精译」，但 **Mistral Large 24.02 没有公开成 Mixtral 那种 Table 1 技术报告**。禁止假装有全文翻译。下面只写官方博文 / 文档里能核对的面；积木公式仍链 Mixtral / 第 2 章。上面两行 2025 占位原文保留。
+Mistral Large 24.02 没有公开成 Mixtral 那种 Table 1 技术报告。没有全文可译。下面只写官方博文 / 文档里能核对的面。积木公式见 Mixtral / 第 2 章。
 
 官方轴：
 
@@ -21,7 +21,7 @@ tags: [Mistral-Large, 公开材料精读, function-calling, MoE]
 | Large 2 | `mistral-large-2407`，123B | 2024-07-24 | [Large Enough](https://mistral.ai/news/mistral-large-2407/) |
 | Large 3 | `mistral-large-2512`，41B 活跃 / 675B 总 | 2025-12-02 | [Introducing Mistral 3](https://mistral.ai/news/mistral-3/)；文档 [256k](https://docs.mistral.ai/models/mistral-large-3-25-12) |
 
-B 档：同日发布的 Mistral Small（`mistral-small-2402`）是延迟/成本 SKU，**不新开空目录**。
+同日发布的 Mistral Small（`mistral-small-2402`）是延迟/成本档，本篇只记一行。
 
 ## 1. Large 1（24.02）：产品面，不是层配置
 
@@ -71,7 +71,7 @@ Infra 面博文写的是合作栈，不是自研论文：NVFP4 检查点 + vLLM�
 
 **没有**公开 8 专家还是更多、Top-K、是否 mHC。不要把 Mixtral 的 $n=8,K=2$ 抄到 675B 上。P2 若要按 0.4 拆 Large 3 的新 trick，需要等他们真正放出的技术文档；本 Goal **不为 Large 3 另建空文件夹**（本目录已经是 Large 家族落点）。
 
-Ministral 3（3B/8B/14B dense，含 reasoning）是边缘 SKU 家族，**B 档**，只在总览记一行。
+Ministral 3（3B/8B/14B dense，含 reasoning）是边缘档，只在总览记一行。
 
 ## 4. 0.4 拆面：公开材料填得满的和填不满的
 
@@ -92,9 +92,9 @@ Ministral 3（3B/8B/14B dense，含 reasoning）是边缘 SKU 家族，**B 档**
 - 把旧 D5 的「专家级多租户配额」当成官方。那是工程想像，报告里没有。
 - 为 Ministral / Small 新建第 14 章空目录。
 
-## 本篇来源
+## 参考文献
 
-- https://mistral.ai/news/mistral-large/（2024-02-26，本会话读完正文；基准只在图里，未转录柱高）
+- https://mistral.ai/news/mistral-large/（2024-02-26；基准只在图里，未转录柱高）
 - https://mistral.ai/news/mistral-large-2407/（123B、128k、MMLU 84.0%）
 - https://mistral.ai/news/mistral-3/（41B/675B、3000×H200、Apache 2.0、PD 分离）
 - https://docs.mistral.ai/models/mistral-large-3-25-12（256k）

@@ -7,11 +7,11 @@ tags: [Claude-3.5-Sonnet, 公开材料精读, Artifacts, Computer-Use]
 
 # Claude 3.5 Sonnet：编码之神与交互式工件 (Artifacts) - 架构还原与精译
 
->  **[返回 14.13-Claude 家族总览](../../14.13-Claude.md)** · 前代：[Claude 3 Opus](../06-Claude-3-Opus/01-06-Claude-3-Opus-架构精译.md) · 同代：[3.5 Haiku](../08-Claude-3.5-Haiku/01-08-Claude-3.5-Haiku-架构精译.md) · Computer Use：[09](../09-Claude-Computer-Use/01-09-Claude-Computer-Use-架构精译.md) · 已有长 D5：[编码与 Agent 交互](./05-07-Claude-3.5-Sonnet-编码能力突破与Agent化交互设计.md)（勿平行第三份）
+>  **[返回 14.13-Claude 家族总览](../14.13-Claude.md)** · 前代：[Claude 3 Opus](../06-Claude-3-Opus/01-06-Claude-3-Opus-架构精译.md) · 同代：[3.5 Haiku](../08-Claude-3.5-Haiku/01-08-Claude-3.5-Haiku-架构精译.md) · Computer Use：[09](../09-Claude-Computer-Use/01-09-Claude-Computer-Use-架构精译.md) · 已有长 D5：[编码与 Agent 交互](./05-07-Claude-3.5-Sonnet-编码能力突破与Agent化交互设计.md)
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**公开材料精读**。上面「解析」原文保留。没有层数、没有优化器、没有数据配比。两份 addendum 是评测与安全附录，不是架构论文。博文图柱高不估像素。
+**公开材料精读**。上面「解析」原文保留。没有层数、没有优化器、没有数据配比。两份 addendum 是评测与安全附录，不是架构论文。博文图柱高不估像素。
 
 | 源 | 日期 | 钉死什么 |
 |----|------|----------|
@@ -95,7 +95,7 @@ October Table 7（新 Sonnet vs 原 3.5 Sonnet vs 3 Opus，抽几格）：
 - 假装有架构精译。
 - 把 October 的 65.0% GPQA 写回六月模型。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-3-5-sonnet
 - https://www-cdn.anthropic.com/fed9cc193a14b84131812372d8d5857f8f304c52/Model_Card_Claude_3_Addendum.pdf

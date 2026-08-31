@@ -11,7 +11,7 @@ tags: [Doubao-1.5-lite, 公开材料精读]
 
 > 该家族依靠其独特的算力优势与数据护城河，在 LLM 红海中占据了核心生态位。
 
-**材料类型（2026-08）**：标题「端侧极致压缩」是 2025 占位。**官方 1.5-lite 是云上轻量语言模型**，火山方舟 API，不是端侧小模型。轴心：[豆包 1.5 发布](https://developer.volcengine.com/articles/7462939272262189083)（2025-01-22）+ 技术页 [Doubao-1.5-pro](https://team.doubao.com/zh/special/doubao_1_5_pro)（lite 与 pro 同一套 1.5 结构叙事）。基准图在技术页里，**正文没有把 lite 的 MMLU 写成百分数**，本篇不估柱。
+标题「端侧极致压缩」是 2025 占位。**官方 1.5-lite 是云上轻量语言模型**，火山方舟 API，不是端侧小模型。轴心：[豆包 1.5 发布](https://developer.volcengine.com/articles/7462939272262189083)（2025-01-22）+ 技术页 [Doubao-1.5-pro](https://team.doubao.com/zh/special/doubao_1_5_pro)（lite 与 pro 同一套 1.5 结构叙事）。基准图在技术页里，**正文没有把 lite 的 MMLU 写成百分数**，本篇不估柱。
 
 ## 1. 产品
 
@@ -23,7 +23,7 @@ Doubao-1.5-lite：轻量档。官方：在 MMLU_pro / BBH / MATH / GPQA 上持�
 
 没有公布 lite 的总参/激活参、没有 on-device / NPU 句。W4A8、PD 分离、Prefill Tensor Core ~60% 写在 **1.5-pro 推理系统**段，见 [Pro D2](../02-Doubao-Pro/01-02-Doubao-Pro-架构精译.md)，不要假装 lite 有单独 serving 论文。
 
-## 本篇来源
+## 参考文献
 
 - https://developer.volcengine.com/articles/7462939272262189083
 - https://team.doubao.com/zh/special/doubao_1_5_pro

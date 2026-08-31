@@ -45,7 +45,7 @@ tags: [Gated-Attention, related-work, FoT, Quantizable-Transformers, DiffTransfo
 
 ![六列对照：FoT 打在分数上，G1 打在 SDPA 之后，QT 是逐头标量门，Diff 是两图相减，Sigmoid-Attn 替换 softmax，GR 在残差上](./images/fig-gate-hit-where.png)
 
-> 图 1：门打在哪。从左到右：FoT 遗忘门在 softmax **之前**的 logits；推荐 $G_1$ 在 SDPA **之后**；QT 在 $\mathrm{softmax}V$ 上做逐头标量；Diff 用减法不是 sigmoid；Sigmoid-Attn 换掉 softmax；最右 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 根本不在注意力子层。2026-08 自绘。图中个别英文是生成器笔误（如 SIGMOD），以正文公式为准。
+> 图 1：门打在哪。从左到右：FoT 遗忘门在 softmax **之前**的 logits；推荐 $G_1$ 在 SDPA **之后**；QT 在 $\mathrm{softmax}V$ 上做逐头标量；Diff 用减法不是 sigmoid；Sigmoid-Attn 换掉 softmax；最右 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 根本不在注意力子层。
 
 **图 1 解析**
 
@@ -227,7 +227,7 @@ NSA 的门控融合写在 [02-NSA](../../../2.3-高效与稀疏注意力/2.3.2-�
 
 ![同一句 Gate，四根管子：G1 调制全体注意力输出；SwitchHead/NSA/MoSA 做选择；GR 是残差读门；AttnRes 是深度维混合](./images/fig-g1-not-neighbors.png)
 
-> 图 2：名字都叫 Gate / Attention，数据流不是同一根。左上 $G_1$；右上 selection；左下 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)；右下 [AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)。2026-08 自绘。
+> 图 2：名字都叫 Gate / Attention，数据流不是同一根。左上 $G_1$；右上 selection；左下 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)；右下 [AttnRes](../08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)。
 
 **图 2 解析**
 
@@ -279,7 +279,7 @@ Qwen3-Next 把 $G_1$ 插在 3:1 日程里那一层全注意力上——产品捆
 | 把 Diff 的 $\lambda$ 写成 sigmoid 门 | 都在「降噪声」 | $\lambda$ 缩放第二张 softmax，不是 $\sigma(XW_\theta)$ |
 | 用 softpick Table 3 的 10k step 对打 06 的 3.5T | 训练预算差三个数量级 | 只用来看 sink 诊断，不用来比下游 |
 | 把 NSA 三路门重推一遍 | 都叫 gated attention | 链 [02-NSA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) |
-| 把 GR / AttnRes 并进 2.2.2 当 $G_1$ 变体 | 名字里有 Gate / Attention | 残差四分支 vs 深度维；本篇只链不改 |
+| 把 GR / AttnRes 并进 2.2.2 当 $G_1$ 变体 | 名字里有 Gate / Attention | 残差四分支 vs 深度维；本篇只对照，不改邻居正文 |
 | 指望 $G_2$ 或 QT 的 Value 侧门消 sink | massive act 与 sink 可分离 | Sun / Gu / 06 $G_2$ 三条独立证据 |
 
 ---
@@ -290,7 +290,7 @@ Qwen3-Next 把 $G_1$ 插在 3:1 日程里那一层全注意力上——产品捆
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., et al. (2025). [Gated Attention for Large Language Models](https://arxiv.org/abs/2505.06708). *NeurIPS 2025* Oral. HTML：[arxiv.org/html/2505.06708](https://arxiv.org/html/2505.06708)。本篇只采用 §5 Related Works 的邻居名单与「most closely related = Bondarenko」判定；**不**重抄 Table 1/4 的 30 变体。
 2. Lin, Z., Nikishin, E., He, X. O., & Courville, A. (2025). [Forgetting Transformer: Softmax Attention with a Forget Gate](https://arxiv.org/abs/2503.02130). HTML：[arxiv.org/html/2503.02130](https://arxiv.org/html/2503.02130)。式 (11)–(13)、Table 1 / 3。

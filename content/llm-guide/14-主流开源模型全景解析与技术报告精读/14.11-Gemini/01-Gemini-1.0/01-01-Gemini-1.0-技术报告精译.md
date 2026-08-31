@@ -11,7 +11,7 @@ tags: [Gemini-1.0, 公开材料精读, MQA]
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**报告精读**。上面「核心定位」保留。下面两段 2025 提纲把 TPU **v5/v6** 和「长程强化学习」写进 1.0——报告写的是 **TPUv5e 与 TPUv4**，后训练是常规 post-train + RLHF 变体，**不是** v6。Ultra/Pro **参数量未公布**；长 D5 里的 ~1.5T / ~180B 是猜测，本篇不采用。
+**报告精读**。上面「核心定位」保留。下面两段 2025 提纲把 TPU **v5/v6** 和「长程强化学习」写进 1.0——报告写的是 **TPUv5e 与 TPUv4**，后训练是常规 post-train + RLHF 变体，**不是** v6。Ultra/Pro **参数量未公布**；长 D5 里的 ~1.5T / ~180B 是猜测，本篇不采用。
 
 事实源：Gemini Team, *Gemini: A Family of Highly Capable Multimodal Models*（[arXiv:2312.11805](https://arxiv.org/abs/2312.11805)）。
 
@@ -57,6 +57,6 @@ Nano Table 3：Nano-2 MMLU 5-shot **55.8%**，MATH 4-shot **22.8%**。
 - 把 90.04% 和 83.7% 收成同一个 MMLU。
 - 把 1.5 的 MoE / 百万上下文写进 1.0。
 
-## 本篇来源
+## 参考文献
 
 - https://arxiv.org/html/2312.11805 （摘要、§2–5.1、Table 1–3、MMMU 62.4%、goodput 97%、model card 段 MQA）

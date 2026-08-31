@@ -11,7 +11,7 @@ tags: [Claude-4, Opus-4, Sonnet-4, 公开材料精读]
 
 > **解析**：Anthropic 极少透露具体的模型参数量与训练架构。本章内容综合了其官方 System Card、相关安全对齐论文(如 Constitutional AI)与逆向测试数据进行深度推演。
 
-**材料类型（2026-08）**：**官方博文**。上面「解析」保留。没有层配置。本文件夹是 **Claude 4 一代两档**（Opus 4 + Sonnet 4），**不为其中一档 mkdir**。
+**官方博文**。上面「解析」保留。没有层配置。本文件夹是 **Claude 4 一代两档**（Opus 4 + Sonnet 4），**不为其中一档 mkdir**。
 
 事实源：[Introducing Claude 4](https://www.anthropic.com/news/claude-4)（2025-05-22）。
 
@@ -54,6 +54,6 @@ Agent 捷径/漏洞：两档都比 3.7 **少 65%**（易走捷径的 agent 任�
 - 为 Opus 4 / Sonnet 4 再开空目录。
 - 把 3.7 的 planning tool 脚手架当成 4 的主设置。
 
-## 本篇来源
+## 参考文献
 
 - https://www.anthropic.com/news/claude-4 （读完正文与 SWE/TAU/thinking 附录；未读 system card PDF）

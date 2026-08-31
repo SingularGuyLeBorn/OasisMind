@@ -5,13 +5,13 @@ as_of: 2026-08-30
 tags: [Gemini-2.5-Flash, hybrid-reasoning, 公开材料精读]
 ---
 
-# Gemini 2.5 Flash: 端到端低延迟语音交互霸主 - 技术报告精译
+# Gemini 2.5 Flash：可开关 thinking
 
 >  **[返回 14.11-Gemini 家族总览](../../14.11-Gemini.md)** · 同代旗舰：[2.5 Pro](../08-Gemini-2.5-Pro/01-08-Gemini-2.5-Pro-技术报告精译.md)
 
 > **核心定位**：本报告深度解构了 Google DeepMind 在该阶段发布的技术细节与架构思想。作为闭源模型，其技术报告是窥探其内部机制的唯一窗口。
 
-**材料类型（2026-08）**：**开发者博文**。空壳标题「端到端低延迟语音」——[Start building with Gemini 2.5 Flash](https://developers.googleblog.com/en/start-building-with-gemini-25-flash/)（Tulsee Doshi，**2025-04-17**）**没有**写语音端到端。那是 Live API / 别的产品线，不要倒灌。
+[Start building with Gemini 2.5 Flash](https://developers.googleblog.com/en/start-building-with-gemini-25-flash/)（Tulsee Doshi，**2025-04-17**）**没有**写语音端到端。那是 Live API / 别的产品线。
 
 ## 1. 产品
 
@@ -28,9 +28,9 @@ API / Studio / Vertex 滑条。范围 **0 到 24576** token。预算是 **上限
 ## 3. 失效条件
 
 - 与 2.5 Pro 写成 3 月 25 日同发（Flash 是 4 月 17 日 preview）。
-- 把 Firebase 文档里的 −1 dynamic / Pro 不能关 thinking 写进 **本篇**（那些页本会话打开过作对照，**博文正文没写 −1**；Pro 不能关是文档句，留在 2.5 Pro 若引用文档时再说）。
-- 空壳语音标题。
+- 把 Firebase 文档里的 −1 dynamic / Pro 不能关 thinking 写进 **本篇**（对照页看过，**博文正文没写 −1**；Pro 不能关是文档句，留在 2.5 Pro）。
+- 把端到端语音写进这篇。
 
-## 本篇来源
+## 参考文献
 
 - https://developers.googleblog.com/en/start-building-with-gemini-25-flash/

@@ -81,7 +81,7 @@ Engram-27B / 40B 取 $N=3$（只用 2-gram 与 3-gram）、$K=8$、$d_{\mathrm{m
 
 ![n-gram 经压缩与多头哈希查表，拼接成 e_t](./images/fig-engram-ngram-hash.png)
 
-> 图 1：后缀 2-gram / 3-gram 经 multiplicative-XOR 多头哈希，索引素数大小的表 $E_{n,k}$，再拼接为 $e_t$。（Cheng et al., 2026, Figure 1 左半的查找相位）
+> 图 1：后缀 2-gram / 3-gram 经 multiplicative-XOR 多头哈希，索引素数大小的表 $E_{n,k}$，再拼接为 $e_t$。
 
 **图 1 解析**
 
@@ -181,7 +181,7 @@ $$
 
 ![门控融合后写入 mHC 残差，再进 Attention 与 MoE](./images/fig-engram-gate-residual.png)
 
-> 图 2：检索向量 $e_t$ 投影为 $k_t,v_t$；$h_t$ 当 Query 得到 $\alpha_t$；短卷积后加进 $M=4$ 残差，随后才是 Attention 与 MoE。（Cheng et al., 2026, Figure 1 右半 + §2.4）
+> 图 2：检索向量 $e_t$ 投影为 $k_t,v_t$；$h_t$ 当 Query 得到 $\alpha_t$；短卷积后加进 $M=4$ 残差，随后才是 Attention 与 MoE。
 
 **图 2 解析**
 
@@ -235,7 +235,7 @@ MoE 路由依赖 $h_t$，专家权重的访问模式要等到该层前向算完�
 
 ![训练 All-to-All 切表；推理表在 Host，PCIe 与第 1 层计算重叠](./images/fig-engram-host-prefetch.png)
 
-> 图 3：左栏训练期表分片 + All-to-All；右栏推理期 100B 表在 Host DRAM，地址预先算好，prefetch 与 Layer 1 重叠。（Cheng et al., 2026, Figure 2 + Table 4）
+> 图 3：左栏训练期表分片 + All-to-All；右栏推理期 100B 表在 Host DRAM，地址预先算好，prefetch 与 Layer 1 重叠。
 
 **图 3 解析**
 
@@ -352,7 +352,7 @@ Qwen3.8-Flash-Next（权重 2026-08-26）把主干写成 **125B 总 / 6B 每 tok
 
 节地图：[2.4.8 条件记忆与 Engram](../2.4.8-条件记忆与Engram.md)。MoE 对照：[2.4.1](../../2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md)。
 
-## 本篇来源
+## 参考文献
 
 1. Xin Cheng et al. (2026). [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372). arXiv:2601.07372. HTML: https://arxiv.org/html/2601.07372 。代码：https://github.com/deepseek-ai/Engram 。公式 (3)–(11) 对应论文 (1)–(7)；Table 1 / 2 / 4 数字抄 PDF 同行。
 2. Qwen Team (2026). *On the Design of Qwen3.8-Next Architecture*. https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf （引用 Cheng et al., 2026；未写 Engram 三字）。博文：https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501 （点名 DeepSeek Engram）。HF：https://huggingface.co/Qwen/Qwen3.8-Flash-Next 。

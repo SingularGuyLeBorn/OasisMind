@@ -47,9 +47,7 @@ Figure 4 把「会不会选到真正的高分 token」写成 Top-10 召回（Lon
 
 ![稠密全载、驱逐丢槽、Quest 全量驻留只载 Top-K 页](./images/fig-quest-not-eviction.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Three-row KV: dense all teal; eviction gray with red X; Quest all resident, orange Top-K pages loaded this step. -->
-
-> 图 1：三种 decode 读 KV 的方式。对应论文 Figure 1 的 Dense / Query-agnostic / Query-aware。(c) 的格子都还在 GPU 上，橙页只表示这一步载入注意力。2026-08 自绘。
+> 图 1：三种 decode 读 KV 的方式。对应论文 Figure 1 的 Dense / Query-agnostic / Query-aware。(c) 的格子都还在 GPU 上，橙页只表示这一步载入注意力。
 
 **图 1 解析**
 
@@ -59,9 +57,7 @@ Figure 4 把「会不会选到真正的高分 token」写成 Top-10 召回（Lon
 
 ![同一条 B 在 query=D 时低分，在最后的 is 上变成高分](./images/fig-quest-query-depends.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Two panels: query D vs final is; token B low then high. -->
-
-> 图 2：criticality 随 query 变。对应论文 Figure 2 的 “A is B. C is D. A is”。左栏 0.05 是示意图，不是论文表。2026-08 自绘。
+> 图 2：criticality 随 query 变。对应论文 Figure 2 的 “A is B. C is D. A is”。左栏 0.05 是示意图，不是论文表。
 
 **图 2 解析**
 
@@ -149,9 +145,7 @@ $$
 
 ![Query 与每页 min/max 做通道上界，再按分数取 Top-K 页](./images/fig-quest-page-minmax.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Page grid, m and M bars, U_i formula, ranked page scores Top-K. -->
-
-> 图 3：单页估计。对应 Algorithm 1 与 Figure 5 左半。右侧 2.1 / 0.4 / 1.7 / 0.9 是示意图。2026-08 自绘。
+> 图 3：单页估计。对应 Algorithm 1 与 Figure 5 左半。右侧 2.1 / 0.4 / 1.7 / 0.9 是示意图。
 
 **图 3 解析**
 
@@ -162,9 +156,7 @@ $$
 
 ![两阶段：先扫元数据估分，再只把 Top-K 页送进注意力；全量 KV 仍驻 GPU](./images/fig-quest-two-stage.png)
 
-<!-- GenerateImage: white academic background, no watermark, no logo, no copyright text, no website URL. Stage1 min/max scores, Top-K, Stage2 sparse attention; full KV resident; HBM bandwidth arrow. -->
-
-> 图 4：论文 Figure 5 的两阶段，加上「驻留 ≠ 这一步加载」。2026-08 自绘。
+> 图 4：论文 Figure 5 的两阶段，加上「驻留 ≠ 这一步加载」。
 
 **图 4 解析**
 
@@ -176,9 +168,7 @@ $$
 
 ![新 token 写入时增量更新该页 min/max；盒子角点通常不是真实 Key](./images/fig-quest-algo1-insert.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Algorithm 1 insert: Mi max, mi min; axis-aligned box corner is not a real Key. -->
-
-> 图 5：Algorithm 1 上半。左：新 $k$ 写入只更新该页 $m,M$。右：轴对齐盒子的角点不是页内任一条 Key。对应式 (2a)。2026-08 自绘。
+> 图 5：Algorithm 1 上半。左：新 $k$ 写入只更新该页 $m,M$。右：轴对齐盒子的角点不是页内任一条 Key。对应式 (2a)。
 
 **图 5 解析**
 
@@ -264,9 +254,7 @@ Figure 11 是 **同一无损精度约束** 下的定性比较：基线没有自�
 
 ![PagedAttention 页表管碎片；Quest 页是 min/max 盒子，省的是 HBM→SM 带宽](./images/fig-quest-page-collision.png)
 
-<!-- GenerateImage: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Same word page two problems: PagedAttention page table vs Quest bounding-box page; HBM to SM bandwidth. -->
-
-> 图 6：同一个「页」字。左：页表把逻辑页映到物理块，管碎片。右：每页另存通道极值 $m,M$，这一步只把 Top-K 页搬进 SM；未选中的页仍在 HBM。2026-08 自绘。
+> 图 6：同一个「页」字。左：页表把逻辑页映到物理块，管碎片。右：每页另存通道极值 $m,M$，这一步只把 Top-K 页搬进 SM；未选中的页仍在 HBM。
 
 **图 6 解析**
 
@@ -305,7 +293,7 @@ Figure 11 是 **同一无损精度约束** 下的定性比较：基线没有自�
 
 ---
 
-## 本篇来源
+## 参考文献
 
 1. Tang, Zhao, Zhu, Xiao, Kasikci, Han. *Quest: Query-Aware Sparsity for Efficient Long-Context LLM Inference*. [arXiv:2406.10774](https://arxiv.org/abs/2406.10774) / [HTML](https://arxiv.org/html/2406.10774) / [PDF](https://arxiv.org/pdf/2406.10774)。[ICML 2024](https://proceedings.mlr.press/v235/tang24l.html)（Vienna；PMLR 235:47901–47911）。Table 1、Figure 1–11、Algorithm 1、§3.4–§4.3。自注意力 **7.03×** 与 decode 端到端 **2.23×** 以 Figure 9 / 10 与 §4.3 为准；PMLR 网页摘要对调了这两个数。
 2. 项目页：[hanlab.mit.edu/projects/quest](https://hanlab.mit.edu/projects/quest)。LongBench budget 该页写 2k，正文 Figure 7 / §4.2.3 写 1K，弃项目页。
