@@ -98,6 +98,24 @@ describe("PostContent sanitize", () => {
     expect(container.querySelector("table")).not.toBeNull();
   });
 
+  it("空 alt 裂图仍显示占位而不是空白", async () => {
+    await act(async () => {
+      root.render(
+        <PostContent
+          content={"![](images/missing.png)"}
+          postSlug="hello/hello"
+          postGarden="rsi"
+        />,
+      );
+    });
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    await act(async () => {
+      img!.dispatchEvent(new Event("error"));
+    });
+    expect(container.textContent).toContain("配图加载失败");
+  });
+
   it("保留 heading id 用于 TOC", async () => {
     await act(async () => {
       root.render(<PostContent content={"## 标题\n"} />);

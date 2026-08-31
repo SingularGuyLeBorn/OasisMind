@@ -24,25 +24,34 @@ import { buildTocItems, type TocItem } from "@/components/post/TableOfContents";
 import dynamic from "next/dynamic";
 import "highlight.js/styles/github.css";
 
-/** 配图未加载成功前不露浏览器碎图；404 改成 alt 说明 */
+/** 配图未成功前不露碎图。禁止 hidden+lazy：display:none 的懒加载图没有布局盒，永远不发请求，看起来整页配图都是空的。 */
 function MarkdownImg({ src, alt }: { src: string; alt: string }) {
   const [status, setStatus] = useState<"pending" | "ok" | "failed">("pending");
+  const ref = useRef<HTMLImageElement>(null);
+  const fallback = alt.trim() || "配图加载失败";
+
+  useEffect(() => {
+    const img = ref.current;
+    if (!img?.complete) return;
+    setStatus(img.naturalWidth > 0 ? "ok" : "failed");
+  }, [src]);
+
   return (
     <>
-      {status === "failed" && alt ? (
+      {status === "failed" ? (
         <span className="my-3 block rounded-xl border border-dashed border-[var(--om-divider)] bg-[var(--om-bg-2)]/40 px-3 py-2 text-sm text-[var(--om-text-3)]">
-          {alt}
+          {fallback}
         </span>
       ) : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={ref}
         src={src}
         alt={alt}
         className={cn(
           "rounded-xl border border-[var(--om-divider)]",
           status !== "ok" && "hidden",
         )}
-        loading="lazy"
         onLoad={() => setStatus("ok")}
         onError={() => setStatus("failed")}
       />

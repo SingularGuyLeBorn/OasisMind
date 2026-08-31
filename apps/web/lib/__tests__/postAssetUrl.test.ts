@@ -39,6 +39,17 @@ describe("resolvePostAssetUrl", () => {
     );
   });
 
+  it("./images 前缀与 images 解析到同一篇文章目录", () => {
+    expect(
+      resolvePostAssetUrl("./images/fig-rsi-four-terms.png", {
+        slug: "1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析",
+        garden: "rsi",
+      }),
+    ).toBe(
+      "/api/posts/assets/rsi/1-坐标系与术语/01-RSI-术语辨析/images/fig-rsi-four-terms.png",
+    );
+  });
+
   it("uploads 与绝对/外链保持可访问形式", () => {
     expect(resolvePostAssetUrl("content/uploads/a.png")).toBe("/uploads/a.png");
     expect(resolvePostAssetUrl("/uploads/a.png")).toBe("/uploads/a.png");
