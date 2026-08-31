@@ -108,7 +108,7 @@ buffer-manager 四轮 50 题的设定说明：关掉它，准确率不随轮次�
 **读**：Table 1 的 82.4 / 74.0 / 8.4 个百分点、摘要 11% 是相对 ToT、23%/20%/51% 相对 Meta、79.4 相对裸 3.0 是百分点、MATH 表 52.8 / 73.4 / 78.4 是 GPT-3.5、12% 费用是作者对多查询的平均、六类和 \(\delta\) 冻着、不是 99、不是 4%、不是式 (2)。  
 **不读**：用 11 当百分点去改 74、用 79.4 当准确率、用 99 改 82.4、用手抄 Figure 6 说 8B 已经超过 70B、说蒸馏器已经在优化自己、说已经 RSI。
 
-同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
