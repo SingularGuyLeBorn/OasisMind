@@ -86,7 +86,7 @@ Table 2，解释器 GPT-4。Zero：0.0 / 0.2076 / 0.5058，均分 0.2378。CoT�
 - **右列**：语法、解释器、REINFORCE、GPT-4 解析器仍是人写的。
 - **读法**：生成器在训不等于 \(I\) 在长。AFlow 的 Claude 和这边的奖励公式都在墙外选谁留下。
 
-同一句「自动生成 Agent 工作流」，至少分五截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用 Score-DPO 训 Python 生成器。AutoFlow 用 CoRE 字符串加 REINFORCE 或分数提示。五截不要收成「都已经是 RSI」。[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 一次前向吐可执行 MAS 代码，Llama-3-70B 八列均分 65.47，3.89 是百分点。G-Designer 按任务生成图、AgentPrune 剪边省 token，综述仍裸名，本篇不代打它们的表。FlowMind 也是 LLM 出工作流，相关工作点了名，主表没有它。不要和 AFlow 收成同一张 80.3。
+同一句「自动生成 Agent 工作流」，至少分五截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用 Score-DPO 训 Python 生成器。AutoFlow 用 CoRE 字符串加 REINFORCE 或分数提示。五截不要收成「都已经是 RSI」。[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 一次前向吐可执行 MAS 代码，Llama-3-70B 八列均分 65.47，3.89 是百分点。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按任务生成图，MMLU 84.50 / HumanEval 89.90。AgentPrune 剪边省 token，综述仍裸名，本篇不代打它的表。FlowMind 也是 LLM 出工作流，相关工作点了名，主表没有它。不要和 AFlow 收成同一张 80.3。
 
 「over 40%」要和 Table 1 的 0.2483 一起读。分子是 0.3597 减 0.2483。相对涨幅约 45%，绝对差 0.11。GPT-4 解释器上相对 CoRE 只有约 5%–6.5%。Task 1 在 GPT-4 解释器上没超过 Few 的 0.3055。Mixtral 解释器上 Task 3 的大头 few-shot 已经有了。交叉生成器是观察，不是第三条学习算法。合法计划率没有表。30 轮没有曲线。无数值奖励的任务，REINFORCE 推不动，ICL 也没有标量可写。主实验能转起来，前提是 OpenAGI 的 CLIP / BERT / ViT 都能打。
 
@@ -95,7 +95,7 @@ CoRE 文本不会因为某次 0.65 就把 Adam 学习率写进 Decision 步。�
 **读**：Table 1 的 0.3597 对 CoRE 0.2483（约 45% 相对），Table 2 的 0.6501 对 0.6104（约 6.5% 相对），Task 1 上 Few 可以高于 AutoFlow，Mixtral 生成器仍过 GPT-4 解析器，不是式 (2)。  
 **不读**：把 40% 听成准确率柱、用 0.65 改 AFlow 80.3、说 CoRE 语法已经进了 \(S'\)、说已经 RSI、把 AutoFlow 和 AFlow 收成一篇。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

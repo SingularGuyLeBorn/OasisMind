@@ -94,14 +94,14 @@ GAIA。Table 1 是七只 TOT、提示版自洽、五次运行的均值和标准�
 - **右列**：REINFORCE、只许 DAG、有哪些运算节点、怎么汇合，仍是人写的。
 - **读法**：图在长不等于 \(I\) 在长。AFlow 的算子集和这边的节点清单都在墙外。
 
-同一句「自动编排多 Agent」，至少分三截。人手写 ToT / ReAct。GPTSwarm 在给定节点上学边。AFlow 用 MCTS 搜代码工作流。三截不要收成「都已经是 RSI」。G-Designer、AgentPrune 还在综述里裸名，本篇不代打它们的表。[ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md) / [AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) / MAS-GPT 仍在代码级那一侧。
+同一句「自动编排多 Agent」，至少分三截。人手写 ToT / ReAct。GPTSwarm 在给定节点上学边。AFlow 用 MCTS 搜代码工作流。三截不要收成「都已经是 RSI」。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、AgentPrune 还在综述里，G-Designer 已有专文；AgentPrune 本篇不代打它的表。[ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md) / [AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) / MAS-GPT 仍在代码级那一侧。
 
 生成提示不会因为某次 0.800 就把成环即丢写进 \(\theta\)。人要允许环、把内部拓扑放进搜索、让模型改 Adam 的 \(\beta\)，都是改 \(I\)。这和 Gödel 改自己的决策函数、DGM 改自己的 Python 正好相反。作者把 GPTSwarm 写成用图统一已有 Agent、再用 RL 学通信。花园读成 2024 年这篇通信图边概率的定位，不读成已经闭合的递归，也不读成 ToT 的 24 点已经被 0.800 作废。无数值 \(u\) 的任务，式 (2) 没有分数可回传。GAIA 主表能报 18.45，靠的是人手写的七只 TOT 加自洽，不是靠 \(\theta\)。
 
 **读**：GAIA 18.45 对 9.70 的 90.2% 是相对涨幅且未跑边优化，填字 0.575 / 0.800 / 0.668 分骨干和是否节点优化，HumanEval 0.88 在全集上爬，MMLU 对抗是拉回基线，不是式 (2)。  
 **不读**：把 90.2 / 260.2 / 0.800 / 0.88 听成同一把尺、用 24 点 74% 改填字、说 GAIA 已经在学边、说 REINFORCE 已经进了 \(S'\)、说已经 RSI。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
