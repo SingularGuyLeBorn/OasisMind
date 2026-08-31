@@ -64,5 +64,6 @@ category: RSI
 | 48 | [MAS-GPT 一次前向吐 MAS](./48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) | 32B SFT 按题吐 forward；八列均分 65.47；3.89 是百分点；配方冻着 |
 | 49 | [G-Designer 任务自适应通信图](./49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) | VGAE 按题出图；MMLU 84.50 / HumanEval 89.90；0.3 是百分点；配方冻着 |
 | 50 | [AgentPrune 时空图剪边](./50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) | 掩码加 TopK；均分 89.72；表上 27.2% 是保留比；配方冻着 |
+| 51 | [MaAS Agent 超网](./51-MaAS-Agent超网/51-MaAS-Agent超网.md) | 超网按题采样；五列均分 83.59；6%～45% 是 MATH 推理美元比；配方冻着 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

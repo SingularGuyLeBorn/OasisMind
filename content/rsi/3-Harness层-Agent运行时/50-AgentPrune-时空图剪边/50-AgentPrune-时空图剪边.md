@@ -82,7 +82,7 @@ Table 5，三只 gpt-4。GPTSwarm GSM8K 成本 **97.23** 对五只的 234.76。�
 
 测试时走的是冻住的 \(\mathcal{G}^{\text{sub}}\)。改进器没变。\(p\%\)、\(Q'\)、\(K\)、核范数、DAG 采样、策略梯度、角色池，都还在。混元 L0 装不下跨题保持的子图；L3 要改提议 / 选择程序。本篇停在留下掩码和子图，不改怎么 TopK。作者把 one-shot 写成省钱。省钱的前提是 \(K'\) 和 \(M\) 人已经选好。
 
-和邻居钉死。G-Designer 按题出图，MiniLM 和链式锚点冻着；这边按现成图剪边，掩码冻着。两边都不是改改进器。GPTSwarm 边概率可以一直 REINFORCE；插件进 GPTSwarm 之后，剪完就不再学边。AFlow 搜算子图。ScoreFlow 训 Python 生成器。MAS-GPT 一次前向吐 `forward`。五截不要收成「都已经是 RSI」。MaAS 超网仍裸名，本篇不代打它的表。
+和邻居钉死。G-Designer 按题出图，MiniLM 和链式锚点冻着；这边按现成图剪边，掩码冻着。两边都不是改改进器。GPTSwarm 边概率可以一直 REINFORCE；插件进 GPTSwarm 之后，剪完就不再学边。AFlow 搜算子图。ScoreFlow 训 Python 生成器。MAS-GPT 一次前向吐 `forward`。五截不要收成「都已经是 RSI」。[MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md) 超网按题采样，五列均分 83.59，6%～45% 是 MATH 推理美元比。
 
 没有墙外检查「这张 \(\mathcal{G}^{\text{sub}}\) 该不该改 \(p\%\)」。错边一旦在 \(Q'\) 道训练题上掩码大，就会留下。附录案例：GPTSwarm 五只里两只 ToT、三只 I/O，剪完 I/O 入边少、ToT 入边多。案例证明会偏向更会综合的节点，不证明这条规则已经进了 \(S'\)。温度 1，换 0 会动 89.72。
 
@@ -98,7 +98,7 @@ Table 5，三只 gpt-4。GPTSwarm GSM8K 成本 **97.23** 对五只的 234.76。�
 - **右列**：\(p\%\)、5 或 10 道 \(Q'\)、\(K=2\) 或 4、DAG 采样加策略梯度仍是人写的。
 - **读法**：一次性剪边不等于 \(I\) 在长。G-Designer 的 VGAE 和这边的 TopK 都在墙外选谁留下。
 
-同一句「自动编排多 Agent」，至少分四截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。G-Designer 用 VGAE 按题出图。AgentPrune 在现成图上剪边。四截不要收成「都已经是 RSI」。MaAS 把超网当可采样分布，综述仍裸名，本篇不代打它的表。AgentPrune 的连续更新发生在 \(K'\) 或 \(Q'\) 那一小段，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训图所以已经是 RSI」。
+同一句「自动编排多 Agent」，至少分四截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。G-Designer 用 VGAE 按题出图。AgentPrune 在现成图上剪边。四截不要收成「都已经是 RSI」。[MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md) 把超网当可采样分布，五列均分 83.59。AgentPrune 的连续更新发生在 \(K'\) 或 \(Q'\) 那一小段，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训图所以已经是 RSI」。
 
 「28.1%～72.8%」要和 Table 3 的保留格一起读。71.9% 是 AutoGen MMLU 还剩多少 prompt。27.2% 是 GPTSwarm HumanEval 还剩多少。5.6 对 43.7 是 MMLU 散点，不是 47.60。链式 92.92 按 82.92 读。90.30 没有赢 Reflexion 91.40。PHP 92.45 不要改 G-Designer 的 95.50。无金标的开放题，\(\phi\) 打不出来，策略梯度对就推不成。主实验能转起来，前提是六列都能用准确率或 pass@1。
 
@@ -107,7 +107,7 @@ Table 5，三只 gpt-4。GPTSwarm GSM8K 成本 **97.23** 对五只的 234.76。�
 **读**：Table 1 的 89.72 / R 的 90.30 与 95.83，Table 3 保留比与削减比，5.6 对 43.56，链式均分按 82.92，不是式 (2)。  
 **不读**：把 71.9 听成削减、用 90.30 改 91.0、用 5.6 改 Table 3 的 47.60、说剪枝率已经进了 \(S'\)、说已经 RSI、把 AgentPrune 和 G-Designer 收成一篇。
 
-同层：[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[51 MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
