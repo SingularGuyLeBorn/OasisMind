@@ -197,6 +197,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | [A-Mem](../../3-Harness层-Agent运行时/37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) 卡片盒记忆 | 是（Harness 笔记库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；对抗题全上下文可以更高 | 跨会话连边，不是 RSI |
 | [HippoRAG](../../3-Harness层-Agent运行时/38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md) 海马索引检索 | 是（Harness 知识图） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；HotpotQA 单步可以更低 | 跨查询图检索，不是 RSI |
 | [ChatDB](../../3-Harness层-Agent运行时/39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) 符号 SQL 记忆 | 是（Harness SQL 账本） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；合成店账 Easy 也不是满分 | 跨记录改库，不是 RSI |
+| [MemoryBank](../../3-Harness层-Agent运行时/40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) 遗忘曲线记忆 | 是（Harness 检索库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；表上没有无记忆列 | 跨天改库，不是 RSI |
 | 经典 TTT（测完可丢） | 弱：改的是当前样本上的权重/状态 | 否：通常不构成下一代 $I$ | 推理时 Model | 往往没有跨请求验收 | TTT |
 | Replay / EWC | 是（权重） | 否：$I$ 仍是固定 CL 算法 | Model / CL | 旧任务保持测试 | 持续学习零件 |
 | OPD 一次训练作业 | 是（学生 $\theta$） | 否：教师与脚本在墙外 | Model 后训练 | 可以有 held-out | 不是 RSI |

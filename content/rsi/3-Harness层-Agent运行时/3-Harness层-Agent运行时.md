@@ -53,5 +53,6 @@ category: RSI
 | 37 | [A-Mem 卡片盒记忆](./37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) | 原子笔记连边并改旧卡片；4o-mini 多跳 27.02 不是两倍；提示冻着 |
 | 38 | [HippoRAG 海马索引检索](./38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md) | OpenIE 建图再 PPR；2Wiki R@5 68.2→89.1 是百分点；HotpotQA 单步更低 |
 | 39 | [ChatDB 符号 SQL 记忆](./39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) | GPT-3.5 写 SQL 改 MySQL；合成店账 41/50 对 11/50；语料故意塞进 4096 |
+| 40 | [MemoryBank 遗忘曲线记忆](./40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) | 艾宾浩斯改强度；英文正确 0.716 是 97 题人打分；表上没有无记忆列 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

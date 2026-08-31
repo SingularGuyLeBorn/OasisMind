@@ -137,7 +137,7 @@ LoCoMo 均长约 9K token、最多 35 段，相对旧对话集大约 1K token、
 **读**：Table 1 的 27.02 / 45.85 / 50.03、全上下文对抗 69.23、GPT-4o 多跳 32.86 仍不是两倍、DialSim 3.45 的 35% / 192% 是相对涨幅、token 1,216 对 16,900、消融 9.65 / 21.35 / 27.02、Table 8 的 40/50、三份提示冻着、不是 93.4、不是式 (2)。  
 **不读**：把多跳听成至少两倍、把 35% 听成百分点、用 93.4 改 26.65、用手抄 t-SNE 说已经自己会分类、说提示已经在优化自己、说已经 RSI。
 
-同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
