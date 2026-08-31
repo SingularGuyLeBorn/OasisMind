@@ -18,6 +18,8 @@ out/
 .idea/
 .vscode/
 .claude/skills/
+# 上游 git clone 缓存；可用 skill 已摘到 .cursor/skills/
+.cursor/vendor/
 *.swp
 *.swo
 
@@ -145,6 +147,8 @@ experiments/feishu-api/
 # Python virtual env / cache
 experiments/.venv/
 experiments/**/__pycache__/
+**/__pycache__/
+*.py[cod]
 
 # Docker volumes
 pgdata/
