@@ -402,8 +402,10 @@ def compute_loss(log_probs: torch.Tensor, deltas: torch.Tensor,
     
     if mode == "clipped":
         epsilon = 0.1
-        # 计算概率比
-        ratios = log_probs / old_log_probs  # 注意: 这里应该是exp(log差)
+        # 概率比 πθ / πold。old_log_probs 来自采样策略，必须停止梯度。
+        if old_log_probs is None:
+            raise ValueError("clipped mode requires old_log_probs")
+        ratios = torch.exp(log_probs - old_log_probs.detach())
         
         unclipped = einsum(ratios, deltas, 
                           "batch trial pos, batch trial -> batch trial pos")
@@ -414,6 +416,15 @@ def compute_loss(log_probs: torch.Tensor, deltas: torch.Tensor,
         return -torch.minimum(unclipped, clipped).mean()
     
     raise ValueError(f"Unknown mode: {mode}")
+```
+
+这里不能写成 `log_probs / old_log_probs`：对数概率通常为负数，二者相除既不是概率比，也不具有 PPO 重要性采样的含义。最小数值检查如下：
+
+```python
+current = torch.log(torch.tensor([0.4, 0.2]))
+old = torch.log(torch.tensor([0.2, 0.25]))
+ratio = torch.exp(current - old)
+assert torch.allclose(ratio, torch.tensor([2.0, 0.8]))
 ```
 
 ### 4.8 KL惩罚
