@@ -30,7 +30,7 @@ tags:
 
 \(S\) 取这次运行里的 MySQL 表：供应商、水果、进货、顾客、销售、明细。单轮 \(S'=I(S)\) 可以发生：多一行库存、删一笔退货。术语式 (2) 还要 \(I'\subseteq S'\)。下一笔记录仍用同一套 chain-of-memory 提示、同一批少样本、同一只 GPT-3.5 Turbo、温度仍是 0。混元台阶上这不是 L0：账本跨问还在。也到不了改改进器。更像 MemGPT / HippoRAG：留下脚手架状态，出状态的程序冻着。作者把「每一步数据库操作都是符号、没有误差」写进正文。花园拆开：MySQL 执行是精确的；模型生成哪条 SQL 仍会错。容易题 13/15，不是 15/15。
 
-和邻居先划线。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) / HuggingGPT 把库当工具调用；BINDER / SQL-PaLM 是 Text-to-SQL。作者强调 ChatDB 把库当成外存模块，用 chain-of-memory 读写历史。评测没有 Spider、没有 BIRD，不要拿 SQL-PaLM 的 Text-to-SQL 榜来垫 82%。Auto-GPT / Generative Agents 是提示式记忆，Table 1 写成半结构、非符号执行、不能完整更新删除。RMT 是可训练记忆 token。MemGPT 有分页函数，没有强制 schema。HippoRAG 的边是 OpenIE 三元组，不是主键外键。A-Mem 的卡片没有 SUM。ReAct 的轨迹随题清空；这边表跨记录留下。
+和邻居先划线。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) / [HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md) 把库当工具调用；BINDER / SQL-PaLM 是 Text-to-SQL。作者强调 ChatDB 把库当成外存模块，用 chain-of-memory 读写历史。评测没有 Spider、没有 BIRD，不要拿 SQL-PaLM 的 Text-to-SQL 榜来垫 82%。Auto-GPT / Generative Agents 是提示式记忆，Table 1 写成半结构、非符号执行、不能完整更新删除。RMT 是可训练记忆 token。MemGPT 有分页函数，没有强制 schema。HippoRAG 的边是 OpenIE 三元组，不是主键外键。A-Mem 的卡片没有 SUM。ReAct 的轨迹随题清空；这边表跨记录留下。
 
 ## 2. 机制：先规划 SQL 链，再按结果改下一步，最后摘要
 
