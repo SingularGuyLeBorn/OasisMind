@@ -91,7 +91,7 @@ Table 5 把「把 GPT-4 的逐步想法当工具传给 3.5」钉死。零样本 
 - **右列**：制造者、使用者、调度的提示和温度仍是人写的。
 - **读法**：库在长不等于 \(I\) 在长。未来工作里的「升级已有工具」画在墙外，主实验没有箭头。
 
-同一句「模型给自己造工具」，至少分三截。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) 学何时调已有 API。CREATOR 按题写文档和代码。LATM 按类写函数并摊销。三截不要收成「都在推理时自我进化」。相关工作还点了 [HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、Chameleon、Voyager。Voyager 已有专文。HuggingGPT 调的是现成模型 API，单任务规划 Acc 52.62 不是本表六列。
+同一句「模型给自己造工具」，至少分三截。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) 学何时调已有 API。CREATOR 按题写文档和代码。LATM 按类写函数并摊销。三截不要收成「都在推理时自我进化」。相关工作还点了 [HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md)、Voyager。Voyager 已有专文。HuggingGPT 调的是现成模型 API，单任务规划 Acc 52.62 不是本表六列。Chameleon 把本篇写成接解释器解子步骤、不造可复用工具，ScienceQA 86.54 / TabMWP 98.78 不要改 Table 2 的 79.7，也不要改 CREATOR 的 94.7。
 
 「15 倍」要和摊销前提一起读。\(C>15c\) 是写论文时的标价比；Table 4 的 0.002 / 0.02 也是当时价。价单会变，准确率列不会因为价单变。同一类题够多，制造那一次才摊得薄。调度认错工具，便宜使用者会拿错 API，95% 不是 Table 2。GPT-4 当使用者在逻辑演绎上掉到 86.6，说明「更强骨干 + 同一把工具」不是单调改进。中国剩余 0.0→100.0 说明这一列测的是「会不会把搜索交给代码」，不是「闭循环已经比 GPT-4 更会推理」。
 
@@ -100,7 +100,7 @@ Table 5 把「把 GPT-4 的逐步想法当工具传给 3.5」钉死。零样本 
 **读**：Table 2 的 79.7 / 99.6 / 92.2 / 98.3 / 100.0 / 100.0 对 CoT，中国剩余两边 CoT 都是 0.0，GPT-4 用户逻辑演绎 86.6 低于 88.8，Table 3 难任务 3.5 制造 0/5，Table 5 的 36.8 不是 LATM，95% 是调度不是答题，不是式 (2)。  
 **不读**：把 closed-loop 听成 RSI、用 CREATOR 的 59.7 改 79.7、说 GPT-3.5 已经会造五物体演绎工具、把 +71.8 听成相对涨幅、说核验会改函数、说已经在升级已有工具。
 
-同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[54 HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[56 Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
