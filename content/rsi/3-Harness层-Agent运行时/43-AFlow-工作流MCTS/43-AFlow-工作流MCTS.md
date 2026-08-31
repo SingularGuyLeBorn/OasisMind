@@ -25,11 +25,11 @@ tags:
 
 ## 1. 问题：人手写工作流贵，线性搜代码又慢
 
-作者把 LLM 应用收成两档。Agentic workflow 按预先写好的多步调用走；autonomous agent 在环境里当场决定。工作流能把人的领域手续写进去，也因此每换一个域就要人再调一版。自动化想少用人。提示优化（DSPy / OPRO 一类）把拓扑钉死，只改话。超参优化改已有旋钮。工作流优化才动结构。GPTSwarm 用图加强化学习，条件分支不好写。ADAS 用代码表示，档案却是线性列表，有限轮次里难摸到有效结构。AFlow 仍用代码当边，但节点写成带模型、提示、温度、输出格式的调用；再把 Ensemble、Review & Revise 一类常见组合收成**算子**，用 MCTS 在这份空间里走。
+作者把 LLM 应用收成两档。Agentic workflow 按预先写好的多步调用走；autonomous agent 在环境里当场决定。工作流能把人的领域手续写进去，也因此每换一个域就要人再调一版。自动化想少用人。提示优化（DSPy / OPRO 一类）把拓扑钉死，只改话。超参优化改已有旋钮。工作流优化才动结构。GPTSwarm 用图加强化学习，条件分支不好写。花园专文见 [GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)。ADAS 用代码表示，档案却是线性列表，有限轮次里难摸到有效结构。AFlow 仍用代码当边，但节点写成带模型、提示、温度、输出格式的调用；再把 Ensemble、Review & Revise 一类常见组合收成**算子**，用 MCTS 在这份空间里走。
 
 \(S\) 取这次部署里搜到的工作流代码：节点调用顺序、提示、用了哪些算子。单轮 \(S'=I(S)\) 可以发生：第 \(t\) 轮扩出一份新工作流。术语式 (2) 还要 \(I'\subseteq S'\)。下一轮仍用同一只 Claude-3.5-sonnet 当优化器，同一套算子接口，同一条混合选择式 (3)，同一份「只改提示和边、模型温度格式冻着」的切口。混元台阶上这不是 L0：工作流跨题还在。也到不了改改进器。和 ADAS 同一档：留下脚手架，出脚手架的程序冻着。作者写 minimal human intervention。算子集仍是人从文献里抽的。没有算子时 GSM8K 还能到 93.1%，说明 Custom 节点能自己拼出类似集成的结构；有算子时搜得更快。人没退出 \(I\)。
 
-和邻居先划线。ADAS 专文的 53.4% 是 MGSM，元 Agent `gpt-4o-2024-05-13`，交卷 `gpt-3.5-turbo-0125`，多数域 30 轮。本表 ADAS 一行是作者用 Claude 优化、GPT-4o-mini 执行、30 轮重跑：HotpotQA 64.5，DROP 76.6，HumanEval 82.4，MBPP **53.4**，GSM8K 90.8，MATH 35.4，均分 67.2，**低于**同表 IO 的 72.8。这是他们的重实现，不是 Hu 等原文那张 MGSM 表。Gödel-base 相对 ADAS 的 MGSM 11 个百分点，分母仍是那张 MGSM，不要用本表 80.3 去改。Self-Refine 本表均分 70.7、HotpotQA 60.8，是 GPT-4o-mini、最多 3 轮；不要改 Madaan 七任务约 +20%。GPTSwarm 是通信图；这边是代码边。PromptAgent 的 MCTS 搜的是一条提示；这边树节点是整份工作流。
+和邻居先划线。ADAS 专文的 53.4% 是 MGSM，元 Agent `gpt-4o-2024-05-13`，交卷 `gpt-3.5-turbo-0125`，多数域 30 轮。本表 ADAS 一行是作者用 Claude 优化、GPT-4o-mini 执行、30 轮重跑：HotpotQA 64.5，DROP 76.6，HumanEval 82.4，MBPP **53.4**，GSM8K 90.8，MATH 35.4，均分 67.2，**低于**同表 IO 的 72.8。这是他们的重实现，不是 Hu 等原文那张 MGSM 表。Gödel-base 相对 ADAS 的 MGSM 11 个百分点，分母仍是那张 MGSM，不要用本表 80.3 去改。Self-Refine 本表均分 70.7、HotpotQA 60.8，是 GPT-4o-mini、最多 3 轮；不要改 Madaan 七任务约 +20%。[GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 是通信图；这边是代码边。PromptAgent 的 MCTS 搜的是一条提示；这边树节点是整份工作流。
 
 ## 2. 机制：冻模型温度格式，只搜提示、边和算子
 
@@ -108,7 +108,7 @@ Self-Refine 在这张执行器表上均分 70.7，低于 IO 的 72.8。最多 3 
 - **右列**：优化器、算子、式 (3)、切分种子仍是人写的。
 - **读法**：图在长不等于 \(I\) 在长。ADAS 的线性档案和这边的树都在墙外选父节点。
 
-同一句「自动生成 Agent 工作流」，至少分三截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。三截不要收成「都已经是 RSI」。相关工作还点了 GPTSwarm、DSPy。GPTSwarm 边概率是另一张表。DSPy 先要人搭图。
+同一句「自动生成 Agent 工作流」，至少分三截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。三截不要收成「都已经是 RSI」。相关工作还点了 [GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、DSPy。GPTSwarm 边概率是另一张表，GAIA 90.2% 不要和本表 80.3 横加。DSPy 先要人搭图。
 
 「4.55%」要和附录 D 的分子分母一起读。分子是 DeepSeek 执行、4o-mini 搜到的工作流，0.0291 美元。分母是 GPT-4o 直答 0.6371。分数 93.9 对 93.89。换成 4o-mini 自己执行自己的工作流，成本比变成 8.05%，分数 94.7。Pareto 上「弱模型胜过强模型」成立的条件是：强模型走直答，弱模型走搜过的工作流。两边都走 AFlow 时，GPT-4o 仍是 96.2，高于 DeepSeek 的 94.7。不要用 4.55% 改 80.3。
 
@@ -117,7 +117,7 @@ Self-Refine 在这张执行器表上均分 70.7，低于 IO 的 72.8。最多 3 
 **读**：Table 1 的 80.3 对 CoT-SC 76.0、对 ADAS 67.2，19.5% 和 57% 是相对涨幅，本表 ADAS 的 53.4 是 MBPP 不是 MGSM，4.55% 是 0.0291/0.6371，GSM8K 无算子 93.1，不是式 (2)。  
 **不读**：把 5.7 / 19.5 / 4.55 听成同一把尺、用 MGSM 53.4 改本表、说 Claude 已经在改自己的优化提示、说算子是模型发明的、说已经 RSI。
 
-同层：[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

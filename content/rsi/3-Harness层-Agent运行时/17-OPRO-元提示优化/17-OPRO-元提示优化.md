@@ -116,7 +116,7 @@ ADAS 的 30.6 不是 OPRO 论文的数。那边下游是 GPT-3.5，任务是 MGS
 **读**：元提示两块、每步 8 / 留 20 / 示范 3、GSM8K 3.5% 子集、BBH 20%、Table 4 的 80.2 对 71.8、text-bison 列的 68.5 / 66.5、gpt-4 优化器 74.5、第 6 步训练 78.2 对第 107 步、BBH 19/23 与 15/23、迁移 95.3 / 54.3、过拟合训练比测试高 5%–20%、拼句掉到 49.4、ADAS 30.6 另一张表、元提示冻着。  
 **不读**：把 80.2 听成式 (2)、用空指令 34.0 给 80.2 造 46 个点的海报、用 ADAS 的 30.6 替换 80.2、用训练估分 78.2 冒充测试 80.2、用 BBH 单任务 50% 当 23 任务均分、说 gpt-4 优化器一定高于 PaLM 2-L-IT、说已经在改优化算法。
 
-同层：[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[16 Promptbreeder](../16-Promptbreeder-自我指涉提示进化/16-Promptbreeder-自我指涉提示进化.md)、[15 GEPA](../15-GEPA-遗传Pareto提示/15-GEPA-遗传Pareto提示.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)。综述：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

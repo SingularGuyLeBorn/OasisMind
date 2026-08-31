@@ -166,7 +166,7 @@ ADAS 的元 Agent 永远是人写的那只，DGM 消融 w/o self-improve 复制�
 **读**：式 (3)；$L$ 冻着；Table 1 五道迁移；弱模型 12% / 掉分；绕沙箱 0.42%；shape 黑客。权重信号回 [04 模仿学习与 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)：本篇不改 $\theta$，连 RLVR 都不是。  
 **不读**：把标题 RSI-code-generation 听成智能爆炸、把 3-SAT 75.1% 听成已经会改训练脚本、把 GPT-4 提出 ToT 风格 beam 听成模型「发明了 2023 年的论文」。
 
-同层后一篇：[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案。运行时自指：[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 改 $\pi$ 与 $I$，同样冻 $\theta$，没有本篇这套元效用预优化。两者都是「代码改代码」，差别是 STOP 把改进器当成可求值的优化题，Gödel Agent 把 Agent 循环本身当成可改写的对象。验证门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层：[03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。数字只认 arXiv:2310.02304 的 Table 1 与绕沙箱表，不认二手摘要里的「智能飞跃」。LinkedIn 转写不当事实源，只学讲法、不搬正文。
+同层后一篇：[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 把单轨迹换成开放档案。运行时自指：[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md) 改 $\pi$ 与 $I$，同样冻 $\theta$，没有本篇这套元效用预优化。两者都是「代码改代码」，差别是 STOP 把改进器当成可求值的优化题，Gödel Agent 把 Agent 循环本身当成可改写的对象。同层通信图：[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 用 REINFORCE 学边，改进器不对自己递归。验证门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。产物层：[03 AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md)。数字只认 arXiv:2310.02304 的 Table 1 与绕沙箱表，不认二手摘要里的「智能飞跃」。LinkedIn 转写不当事实源，只学讲法、不搬正文。
 
 ## 参考文献
 

@@ -99,7 +99,7 @@ $$
 
 综述 §5 的判断：手写工作流把协作模式钉死，工程贵、换目标就脆。并行投票能让小模型追上单只大模型的若干报告；层次流水线适合有依赖的子任务，固定拓扑不适应动态目标；辩论能纠错，也有工作显示「只在低置信时才开辩论」能省推理。Pan et al. (2025a) 被引来说明：提示写得好的单只大模型，在多个推理基准上能打平复杂的多 Agent 讨论——MAO 不是免费的能力升级。
 
-自进化多智能体把工作流写成搜索，空间有三块：结构（谁连谁）、语义（角色和指令）、能力（用哪只骨干）。提示优化在固定拓扑上改角色说明（DSPy Assertions、AutoAgents）。拓扑优化分两家：代码级工作流（AutoFlow 的自然语言程序 + RL；[AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 的类型化算子图 + MCTS，六集均分 80.3，摘要 5.7% 不是每列都涨 5.7 个百分点，19.5% 是相对本表 ADAS 67.2 的相对涨幅，Claude 优化器冻着；ScoreFlow 把代码表示抬到连续空间做梯度；MAS-GPT 一次前向吐出可执行 MAS 代码），以及通信图（GPTSwarm 学边概率、G-Designer 生成任务自适应图、AgentPrune 剪边省 token）。统一优化承认提示和拓扑互相卡：ADAS 把提示、工作流、工具写成 Python，元 Agent 迭代生成再评价——花园 [ADAS 专文](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 钉死的是「元 Agent 自己不被搜」。AFlow 的 ADAS 对照行 MBPP 53.4 不要改 ADAS 专文的 MGSM 53.4。MASS 分三阶段近似联合优化：先局部调各 Agent 提示，再在剪过的空间搜拓扑，再全局调提示。学习派把超网或层状 Agent 队当成可采样对象（MaAS、ANN）。
+自进化多智能体把工作流写成搜索，空间有三块：结构（谁连谁）、语义（角色和指令）、能力（用哪只骨干）。提示优化在固定拓扑上改角色说明（DSPy Assertions、AutoAgents）。拓扑优化分两家：代码级工作流（AutoFlow 的自然语言程序 + RL；[AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 的类型化算子图 + MCTS，六集均分 80.3，摘要 5.7% 不是每列都涨 5.7 个百分点，19.5% 是相对本表 ADAS 67.2 的相对涨幅，Claude 优化器冻着；ScoreFlow 把代码表示抬到连续空间做梯度；MAS-GPT 一次前向吐出可执行 MAS 代码），以及通信图（[GPTSwarm](../../3-Harness层-Agent运行时/44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 学边概率，GAIA 90.2% 是相对 9.70 的相对涨幅且主表未跑边优化；G-Designer 生成任务自适应图、AgentPrune 剪边省 token）。统一优化承认提示和拓扑互相卡：ADAS 把提示、工作流、工具写成 Python，元 Agent 迭代生成再评价——花园 [ADAS 专文](../../3-Harness层-Agent运行时/07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 钉死的是「元 Agent 自己不被搜」。AFlow 的 ADAS 对照行 MBPP 53.4 不要改 ADAS 专文的 MGSM 53.4。MASS 分三阶段近似联合优化：先局部调各 Agent 提示，再在剪过的空间搜拓扑，再全局调提示。学习派把超网或层状 Agent 队当成可采样对象（MaAS、ANN）。
 
 骨干优化：用多 Agent 辩论轨迹做 SFT 或 DPO（Sirius、MALT）；MaPoRL 用任务相关奖励逼通信。协作取向的 OPTIMA（Chen et al., 2025h）被综述写成：在信息交换密集的任务上，报告 **2.8×** 表现增益、token 成本不到原来的 **10%**。数字以该论文为准，本篇不另做复现。它说明「协作能力可以当训练目标」，不说明改进器已经递归。
 
@@ -123,6 +123,7 @@ LLM-as-a-Judge 用点式打分或成对比较当廉价人评替代，和人的�
 | 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[29 ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md)；[27 ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md)；[30 RAP](../../3-Harness层-Agent运行时/30-RAP-世界模型规划/30-RAP-世界模型规划.md)；[28 LATS](../../3-Harness层-Agent运行时/28-LATS-Agent树搜/28-LATS-Agent树搜.md)；[31 GoT](../../3-Harness层-Agent运行时/31-GoT-思维图聚合/31-GoT-思维图聚合.md)；可靠性专文 |
 | 提示 / 记忆 / 工具表 / 拓扑 | Harness | Argus / ACE / SkillEvolver / ExpeL / Dynamic Cheatsheet / BoT / AWM / MemGPT / A-Mem / HippoRAG / ChatDB / MemoryBank / ReadAgent / LATM / ADAS / STOP / DGM / Auto-Research |
 | 代码级工作流当空间 | Harness（元 Agent 常冻） | ADAS；[AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)；Gödel 才把运行时打开 |
+| 通信图边概率 | Harness（REINFORCE 冻） | [GPTSwarm](../../3-Harness层-Agent运行时/44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)；G-Designer / AgentPrune 仍裸 |
 | 实例级搜产物 | Artifact | FunSearch / AlphaEvolve / Polaris |
 | 式 (1) 的 \(P\) | 默认墙外 | 几乎全部上表 |
 

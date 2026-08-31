@@ -101,7 +101,7 @@ few-shot 和 GoO 都不会因为某题并成功就多一条操作进仓库。人
 **读**：\(P=128\) 对 ToT 中位误差约少 62%、费用约少 31%、相对 CoT 质量约 70%、\(P=64\) 对 CoT / IO 约 65% / 83%、\(P=32\) 对 ToT2 几乎不涨、GPT-3.5、100 条、温度 1.0、GoO 静态、GRS 动态、error-scope 不是准确率、另一篇 Graph-of-Thought 是微调、L0。  
 **不读**：用 62% 改 ToT 专文的 74%、用手抄 Figure 5 柱高替换正文约数、把 $6 / $3 写成 GoT 主数字、把 16k / 50 条的文档合并当主设定、说模型自己长 GoO、把 qrdlgit 仓库当本实现、说已经 RSI。
 
-同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

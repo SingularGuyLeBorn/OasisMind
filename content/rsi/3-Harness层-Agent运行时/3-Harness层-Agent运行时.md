@@ -57,5 +57,6 @@ category: RSI
 | 41 | [ReadAgent gist 分页记忆](./41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md) | 切页压 gist 再回看；QuALITY 86.16 对全文 85.83；20× 是终查询压缩率 |
 | 42 | [LATM 函数缓存造工具](./42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) | GPT-4 造 Python，3.5 调用；中国剩余 CoT 0.0、LATM 100.0；提示冻着 |
 | 43 | [AFlow 工作流 MCTS](./43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) | 算子图上走 MCTS；六集均分 80.3；4.55% 是成本比；Claude 冻着 |
+| 44 | [GPTSwarm 通信图边概率](./44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) | REINFORCE 学跨 Agent 边；GAIA 90.2% 是相对涨幅且未跑边优化；不是式 (2) |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
