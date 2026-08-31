@@ -28,7 +28,7 @@ tags:
 
 $S$ 取「当前这道题的推理会话」：$M$ 冻着，提示冻着，变的是 $y_t$ 和拼进提示的历史 $\{(y_i,fb_i)\}$。单轮 $S'=I(S)$ 可以发生——$y$ 变好了。式 (2) 还要 $I'\subseteq S'$。下一道独立题仍用同一份 $p_{\mathrm{fb}}$，没有把这次教训写进磁盘或权重。混元 L0：改 $(\text{输出},\text{轨迹})$，保留的 Agent 状态跨独立任务不变。
 
-和邻居先划线。Reflexion 相关工作表给 Self-Refine 的 Memory 打叉。差不是会不会自评，是自评的句子会不会成为**下一 trial / 下一题**的条件。Self-Refine 的历史只服务这一题的后续迭代，最多 4 轮。ACE 的 playbook、Voyager 的函数、SPIN 的 checkpoint 都比这活得长。可靠性专文把本方法放在 L0，和 ToT、链式验证一类。[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md) 判定表第一行就是本方法：自身跨任务不保持，$I$ 不升级。读完本篇应能把那一行从口号还原成 Table 1 的数学格。
+和邻居先划线。Reflexion 相关工作表给 Self-Refine 的 Memory 打叉。差不是会不会自评，是自评的句子会不会成为**下一 trial / 下一题**的条件。Self-Refine 的历史只服务这一题的后续迭代，最多 4 轮。ACE 的 playbook、Voyager 的函数、SPIN 的 checkpoint 都比这活得长。可靠性专文把本方法放在 L0，和 [ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、链式验证一类。[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md) 判定表第一行就是本方法：自身跨任务不保持，$I$ 不升级。读完本篇应能把那一行从口号还原成 Table 1 的数学格。
 
 约束生成是作者新加的硬版 CommonGen：关键词从 3–5 个加到 20–30 个。漏几个表面就能看见，所以改写有抓手。数学漏的是中间一步等式，表面上看着完整。同一套 $p_{\mathrm{fb}}$，可见缺口和不可见缺口不是一类题。这不是「Self-Refine 不会数学」，是「没有墙外对错时，它不知道该骂哪一行」。
 
@@ -123,7 +123,7 @@ Gödel Agent 把手写 Self-Refine 放进「部署之后模块图不变」。读
 **读**：三份提示、最多 4 轮、Table 1 七行尤其是数学 +0.2、对话 GPT-4 +49.2 是 GPT-4 偏好、ChatGPT 数学反馈 94% everything looks good、Table 9 oracle 4.8 / 1.4 / 0.7、Table 2 无反馈情感变 0、Fig. 4 的 $y_0$–$y_3$、Vicuna 单独跑会垮、L0。  
 **不读**：用 ~20% 盖数学行、把 Self-Refine 和 Reflexion 收成一篇、用 Gödel / ADAS 表里的 Self-Refine 分替换 Table 1、把 GPT-4 偏好 74.6 听成解题率、把 Vicuna 混尺寸 24.18→40.5 写进主表、把正文 5%+ 写成 GPT-4 的数学增益、说已经 RSI。
 
-同层：[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

@@ -19,7 +19,7 @@ tags:
 
 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 用蒙特卡洛提案再挑，默认不迭代。[ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 用错题出批评再束搜索。[AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md) 要嵌入梯度换触发词。PromptAgent 把提示版本当成状态，把「看错题写出的反馈」当成动作，用 MCTS 在提示空间里选、扩、模拟、回传。默认被优化的基座是 GPT-3.5，优化器是 GPT-4。BBH 六套均 **0.802**，APE **0.690**，少样本 CoT **0.707**。作者写成相对 APE 提高 11.2%、相对 CoT 9.5%、相对人手零样本 28.9%。花园钉差：0.802−0.690=0.112，0.802−0.707=0.095，0.802−0.513=0.289，是**百分点**，不是相对涨幅（相对大约 16% / 13% / 56%）。Object Counting 上少样本 CoT **0.960** 高于本方法 **0.860**，六套不是全赢。
 
-本篇是 Harness 里「规划算法搜自然语言提示、交卷是一条专家级说明书」的样板。ToT / RAP 用树搜本题推理路径；这边树节点是提示版本，题做完留下的是 \(H_t\) 里那条指令。**不是** RSI。**不是** 改 \(\theta\)。**不是** 测试时还在长树。一手：Wang, Li, Wang, Bai, Luo, Zhang, Jojic, Xing, Hu，UC San Diego / Microsoft Research / Georgia Tech / MBZUAI，[arXiv:2310.16427](https://arxiv.org/abs/2310.16427)，ICLR 2024（OpenReview `22pyNMuIoa`）。代码 [XinyuanWangCS/PromptAgent](https://github.com/XinyuanWangCS/PromptAgent)。数字以 HTML Table 1–5、Figure 2 / 4、§3.1–3.2、§4 为准。前几作者并列。仓库 README 不要写进正文。
+本篇是 Harness 里「规划算法搜自然语言提示、交卷是一条专家级说明书」的样板。[ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md) / RAP 用树搜本题推理路径；这边树节点是提示版本，题做完留下的是 \(H_t\) 里那条指令。**不是** RSI。**不是** 改 \(\theta\)。**不是** 测试时还在长树。一手：Wang, Li, Wang, Bai, Luo, Zhang, Jojic, Xing, Hu，UC San Diego / Microsoft Research / Georgia Tech / MBZUAI，[arXiv:2310.16427](https://arxiv.org/abs/2310.16427)，ICLR 2024（OpenReview `22pyNMuIoa`）。代码 [XinyuanWangCS/PromptAgent](https://github.com/XinyuanWangCS/PromptAgent)。数字以 HTML Table 1–5、Figure 2 / 4、§3.1–3.2、§4 为准。前几作者并列。仓库 README 不要写进正文。
 
 ## 1. 问题：采样只在普通人提示附近转
 
@@ -106,7 +106,7 @@ Epistemic 上 Figure 4b：训练奖励和测试随深度先升，大约深度 3 
 **读**：状态是提示、动作是错题反馈、论文式 (1)(2)、12 次、\(c=2.5\)、深度 8/6/4 三档、批大小 5、GPT-3.5 基座 / GPT-4 优化器、BBH 均 0.802、Object Counting 输 CoT、NCBI 0.645、Table 3 迁移均 0.839 / 0.441、消融 0.754 对 Greedy 0.698、APE 约 150 条、摘要百分比是百分点差、不是术语式 (2)。  
 **不读**：用 0.802 改 APE 专文的 0.810、用 11.2% 当相对涨幅、用 Table 3 的 0.797 替换 Table 1 的 0.873、说六套 BBH 全赢 CoT、把 GPT Agent 插件写成 AutoGPT 主实验、说 MCTS 配方也在进化、把 ToT 的推理树听成本篇、用 Biosses 40 条测试当主证据、把 `{steps_per_gradient}` 听成真反向。
 
-同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)。综述里的生成派规划：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)。综述里的生成派规划：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

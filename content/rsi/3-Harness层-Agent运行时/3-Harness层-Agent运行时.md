@@ -40,5 +40,6 @@ category: RSI
 | 24 | [RLPrompt 离散提示强化学习](./24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md) | 生成离散 \(z\)，MLP 训完即丢；5 token SST-2 92.5；乱码可迁移；不是式 (2) |
 | 25 | [AutoPrompt 梯度引导触发词](./25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md) | HotFlip 换共用触发词；RoBERTa 全量 SST-2 91.4；要梯度；不是术语式 (2) |
 | 26 | [PromptAgent MCTS 提示规划](./26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md) | MCTS 搜专家提示；BBH 均 0.802 对 APE 0.690；11.2 是百分点；不是术语式 (2) |
+| 27 | [ToT 本题推理树](./27-ToT-本题推理树/27-ToT-本题推理树.md) | 树搜本题中间思维；Game of 24 GPT-4 74% 对 CoT 4%；L0，不是术语式 (2) |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
