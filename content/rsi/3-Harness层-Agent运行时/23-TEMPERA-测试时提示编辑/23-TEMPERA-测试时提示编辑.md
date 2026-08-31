@@ -108,7 +108,7 @@ Table 2 是主表。少样本分类，RoBERTa-large。TEMPERA 行：SST-2 **91.9
 
 听成「模型在测试时改自己怎么提示」差在主语。改提示的是外面那只 PPO 策略。谁规定能改哪三块？人。谁规定奖励长什么样？人写的式 (1)(2)。谁规定走几步、并行多少环境？人。测试期 $\pi$ 冻住，下一道题还是同一只 $\pi$，不会因为这道题的 $p_T$ 写得好就升级搜索器。提示跟查询走，寿命反而比 GrIPS 更短：GrIPS 至少留下一条任务级说明书；这边 $p_T$ 题做完就丢。
 
-和 [GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 钉死。那边贪心、查询无关、API 可跑、手术含释义；这边 PPO、查询相关、要隐状态、手术含示范和 verbalizer。Table 2 的 GrIPS 列不能回写 Prasad 的 Natural-Instructions 表。和 RLPrompt 钉死：Deng 等用 RL **生成**离散提示，查询无关；本篇用 RL **编辑**初稿，查询相关。Yelp 上生成派更高，情感短句不一定需要跟题走。和 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 钉死：APE 从示范整段提案，默认不迭代，骨干是 InstructGPT，GSM8K 43.0 和本篇 RoBERTa 分类不是一列。和 [ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 钉死：那边错题进批评模板；这边没有「哪里错了」的句子，只有菜单和差分奖励。ProTeGi 把短语 RL 写成 GrIPS 上界，那是另一场 gpt-3.5 分类 F1，不要和 Table 2 的 91.9 横加。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：那边改的是本题答案 $y$；这边改的是本题提示 $p$，答案仍由冻结 RoBERTa 在掩码上出。两边跨题都不留那份字符串。连续侧的 IDPG / instance-wise prompt tuning 被放在相关工作里，当作「查询相关已经在软提示上做过」。本篇要的是同一件事的离散版：人能读，也能把初稿塞进去。软提示那条线没有进主表，不要用 Wu 等的涨幅给 Table 2 垫分。
+和 [GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 钉死。那边贪心、查询无关、API 可跑、手术含释义；这边 PPO、查询相关、要隐状态、手术含示范和 verbalizer。Table 2 的 GrIPS 列不能回写 Prasad 的 Natural-Instructions 表。和 [RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md) 钉死：Deng 等用 RL **生成**离散提示，查询无关；本篇用 RL **编辑**初稿，查询相关。Yelp 上生成派更高，情感短句不一定需要跟题走。本篇 Table 2 的 RLPrompt 列（SST-2 90.1、Yelp 93.9）贴着 Deng 等 2 token 行，不要拿去改那篇 5 token 的 92.5 / 95.1。和 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 钉死：APE 从示范整段提案，默认不迭代，骨干是 InstructGPT，GSM8K 43.0 和本篇 RoBERTa 分类不是一列。和 [ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 钉死：那边错题进批评模板；这边没有「哪里错了」的句子，只有菜单和差分奖励。ProTeGi 把短语 RL 写成 GrIPS 上界，那是另一场 gpt-3.5 分类 F1，不要和 Table 2 的 91.9 横加。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：那边改的是本题答案 $y$；这边改的是本题提示 $p$，答案仍由冻结 RoBERTa 在掩码上出。两边跨题都不留那份字符串。连续侧的 IDPG / instance-wise prompt tuning 被放在相关工作里，当作「查询相关已经在软提示上做过」。本篇要的是同一件事的离散版：人能读，也能把初稿塞进去。软提示那条线没有进主表，不要用 Wu 等的涨幅给 Table 2 垫分。
 
 黑盒搜索若要对每道测试题当场搜，作者写成贵。GrIPS / Black-Box Tuning 原文都不是按查询搜的，把它们改成查询相关是作者的猜想，不是那两篇论文的设定。TEMPERA 的卖点之一是：贵的 PPO 在训练集付一次，测试只做 $T$ 次前向加策略一步。这是把搜索费从测试搬到训练，不是把 $I$ 装进 $S'$。
 
@@ -125,11 +125,11 @@ Natural-Instructions 初稿和 PromptSource 模板都冻在附录 Table 10–11�
 **读**：查询相关、$T=8$、三块菜单、式 (1)(2)、RoBERTa-large、每类 16、4 种子、Table 2 的 91.9/92.6/88.0/91.1/85.5、Yelp 上 RLPrompt 更高、No TTE 在 SST-2 持平、AG News +3.0、附录 NLI 并非全赢微调、5.33 与 4× 与 8× 分图、要隐状态、测试期 $\pi$ 冻。  
 **不读**：用 91.9 改 GrIPS 专文的 4.29、说五列都赢 RLPrompt、用 5.33 替换 Figure 1 的 4、把 TEMPERA 听成测试时还在用金标、把 Table 2 的 GrIPS 列当成 Prasad 主表、用 ProTeGi 的 +15.3% 给 PPO 背书、说动作菜单也在进化。
 
-同层：[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。综述里的编辑派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。综述里的编辑派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
 1. Zhang, T., Wang, X., Zhou, D., Schuurmans, D., & Gonzalez, J. E. (2023). [TEMPERA: Test-Time Prompt Editing via Reinforcement Learning](https://arxiv.org/abs/2211.11890). ICLR 2023. arXiv:2211.11890.
 2. 代码：[tianjunz/TEMPERA](https://github.com/tianjunz/TEMPERA)。
-3. Deng et al. (2022). RLPrompt。Table 2 生成派对照。
+3. [Deng et al. (2022). RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)。Table 2 生成派对照。
 4. 本花园：[GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)；[APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)。
