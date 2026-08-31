@@ -1,20 +1,24 @@
 ---
 title: RSI · Recursive Self-Improvement · 递归自我改进
-description: 递归自我改进专题。先读 0 导读分清 OPD / harness / RSI，再按 1–6 章走专文。不要往 notes/ 堆摘要。
+description: 递归自我改进研究导航。按证据规则、研究框架、模型自训练、监督、反馈、搜索、工具、记忆、多智能体、自动研究、评测安全逐层阅读。
 ---
 # RSI · Recursive Self-Improvement · 递归自我改进
 
-AI 改进 AI 自身的研发、训练与安全。整理日：2026-08-30 起按章收拢；旧 `notes/` 扁平行已迁走。
+本库只回答一个问题：AI 系统的哪一部分被持久改变，改进后的系统是否继续充当下一轮改进器，以及证据能否在更新边界之外复核。通用 Agent 教程、产品功能和模型参数表留在对应兄弟库，本库只保留 RSI 判定与实验边界。
 
-**先读**：[0 · 导读：RSI 的前世今生](0-导读/0-导读)。
+**先读**：[00 · 导读与证据规则](00-导读与证据规则/00-导读与证据规则.md)。页面中的判断统一标为事实、推测、情景或开放问题；没有一手来源的公司宣传与行业快照不进入公开导航。
 
-## 章
+## 公开导航
 
-1. [坐标系与术语](1-坐标系与术语/1-坐标系与术语) — self-improving ≠ RSI ≠ CL ≠ TTT；Model / Harness / Artifact；模仿 vs RLVR
-2. [Model 层 · 训练时自改进](2-Model层-训练时自改进/2-Model层-训练时自改进) — SPIN、Self-Rewarding、Tufa、SEAL、LADDER、Absolute Zero、R-Zero、ReTool、ToolRL、ToRL、Gorilla、ToolLLM、Toolformer；OPD 回 llm-guide 4.6
-3. [Harness 层 · Agent 运行时](3-Harness层-Agent运行时/3-Harness层-Agent运行时) — Argus、Auto-Research、ADAS、STOP、Gödel、DGM、SkillEvolver、ACE、Voyager、Reflexion、Self-Refine、CRITIC、TextGrad、GEPA、Promptbreeder、OPRO、EvoPrompt、APE、MIPROv2、ProTeGi、GrIPS、TEMPERA、RLPrompt、AutoPrompt、PromptAgent、ToT、LATS、ReAct、RAP、GoT、ExpeL、Dynamic Cheatsheet、BoT、AWM、MemGPT、A-Mem、HippoRAG、ChatDB、MemoryBank、ReadAgent、LATM、AFlow、GPTSwarm、ScoreFlow、MASS、AutoFlow、MAS-GPT、G-Designer、AgentPrune、MaAS、ANN、EASYTOOL、HuggingGPT、RestGPT、Chameleon、ViperGPT、VisProg；产品 harness 回 llm-guide 13
-4. [Artifact 层 · 产物发现](4-Artifact层-产物发现/4-Artifact层-产物发现) — FunSearch、AlphaEvolve、Polaris、Code-as-World
-5. [实验室与公司](5-实验室与公司/5-实验室与公司) — 田渊栋 / Anthropic / OpenAI；叙事不是机制
-6. [评测与安全](6-评测与安全/6-评测与安全) — RSIBench、可靠性阶梯、SEAGym、system card 两把尺
+1. [01 · 研究框架与术语](01-研究框架与术语/01-研究框架与术语.md) — RSI 判定边界、Model–Harness–Artifact、学习信号与综述。
+2. [02 · 模型自改进与自训练](02-模型自改进与自训练/02-模型自改进与自训练.md) — 自生成数据、自奖励、自适应与递归解题。
+3. [03 · 可扩展监督与过程监督](03-可扩展监督与过程监督/03-可扩展监督与过程监督.md) — 过程/结果监督、弱到强监督与可扩展验收。
+4. [04 · 反思批评与反馈优化](04-反思批评与反馈优化/04-反思批评与反馈优化.md) — 任务内自评、外部工具批评与文本梯度。
+5. [05 · 搜索规划与提示优化](05-搜索规划与提示优化/05-搜索规划与提示优化.md) — 提示搜索、测试时编辑、推理树与图搜索。
+6. [06 · 工具学习与程序编排](06-工具学习与程序编排/06-工具学习与程序编排.md) — 工具调用训练、工具创建与模块编排。
+7. [07 · 记忆技能与经验](07-记忆技能与经验/07-记忆技能与经验.md) — 可执行技能、跨任务经验与持久记忆。
+8. [08 · 多智能体协作与工作流](08-多智能体协作与工作流/08-多智能体协作与工作流.md) — 工作流搜索、通信拓扑与协作结构。
+9. [09 · 自动研究与科学发现](09-自动研究与科学发现/09-自动研究与科学发现.md) — 自改代码、自动研究系统与产物搜索。
+10. [10 · 评测与安全边界](10-评测与安全边界/10-评测与安全边界.md) — 独立监督、OOD、能力阈值与失败边界。
 
-结构规则：[chapter-structure-plan.md](chapter-structure-plan.md)。禁止再往 `notes/` 写专文。`.trash/` 不删。
+内部迁移记录、历史导航和未核材料分别收在 `_meta/` 与 `_archive/`，不属于公开阅读路径。
