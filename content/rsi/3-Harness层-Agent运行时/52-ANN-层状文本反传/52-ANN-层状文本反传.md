@@ -1,0 +1,136 @@
+---
+title: "52 · ANN：层状选队，文本反传冻着"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  Ma 等把多 Agent 写成层状队，训练时走文本反传，测试只前向。
+  HumanEval 4o-mini 是 90.9 不是 v1 的 93.9。创作 9.0 是约 10 分制。
+  候选池会涨，选队提示和校验手续冻着。不是术语式 (2)。
+tags:
+  - RSI
+  - ANN
+  - Harness
+  - 文本梯度
+  - 多智能体
+  - L2
+---
+
+# 52 ANN：层状选队，反传冻着
+
+相机稿 Table 1 把 HumanEval 印成 **72.7 / 90.9 / 87.8**（gpt-3.5 / 4o-mini / gpt-4）。v1 HTML 同一格是 **93.9**，更新后的 arXiv 散文一度跟 90.9 拧着。花园按 ACL Findings 相机稿：**90.9**。Creative Writing **9.0 / 8.6 / 7.9** 跟 Zhou 等 Symbolic Learning 同一套约 10 分制，禁止听成百分之九十。MMLU–ML 是 **89.2**，v1 印过 90.1，同样以相机稿为准。人把 90.9 听成已经赢过花园 [AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 专文 HumanEval 94.7，缺的是：变的是每层候选队 \(F_\ell\) 里的节点、边和提示；层模板、选队提示、全局/局部切分、动量、格式与性能校验、20 epoch，都还在墙外。
+
+本篇夹在 [TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 和 [MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md) 旁边。综述把超网和层状 Agent 队并排点名。MaAS 是层概率加算子目录，控制器按题抽 DAG；这边是固定层数上的候选队，训练时文本反传改队，测试时选队前向、架构冻着。不要和 MaAS 收成一篇。不要和 MASS / MAS-GPT 收成一篇。不要用 90.9 去改 AFlow 专文 94.7、LATS 92.7、ScoreFlow 95.9。不要用 89.2 去改 TextGrad 专文 GPQA 51→55：本表 TextGrad 的 88.4 钉的是 MMLU–ML 子集。不要用 Table 2 的 MATH 82.5 去改 MaAS 的 MATH 51.82：那边执行器 4o-mini、切分另一套。**不是** RSI。**不是** 术语式 (2)。一手：Ma, Ma, Lin, Yan, Bi, Cao, Tian, Tresp, Schuetze；慕尼黑大学 / 慕尼黑工大 / MCML / 圣母大学；[arXiv:2506.09046](https://arxiv.org/abs/2506.09046)，**ACL 2026 Findings**，[Anthology 2026.findings-acl.483](https://aclanthology.org/2026.findings-acl.483/)，页 9918–9951。相机稿题目收成 *Self-Evolving Multi-Agent Systems via Textual Backpropagation*，正文仍自称 Agentic Neural Network（\(\mathcal{ANN}\)）。检索未见官方仓，附录只给 JSON 初始化样例，花园不编 GitHub。数字以相机稿 Table 1–4、Table 6–8、§3–§4、附录 B–C 为准。引言仍写五个基准，§4.1 改成七个（外加 Natural Plan 与 AIME 2024/2025）。花园按七个读，AIME 只有 Figure 4、没有主表格子，不估分。
+
+## 1. 问题：队是人钉的，反传想改队
+
+作者把现场写成：多 Agent 能干活，可角色、提示、谁听谁仍靠人试。相关工作点了 DSPy 的示范、ADAS 的元 Agent 写代码拓扑、AFlow 的 MCTS，以及 Zhou 等把整条流水线当符号图来学。他们要搬的不是数值 SGD，是神经网络那张层图：一层一只合作队，节点是 Agent，边是语言中间量。MoE / MoA 在同一只模型里门控专家；这边层与层之间换的是整支队。切口于是从「给人一份固定 MAS」改成「训练时改候选池，测试时按题选队」。这不是发现改进器该改自己。人把前向、反传、动量、校验写成手续，手续本身不进 \(S'\)。
+
+\(S\) 取这次部署里涨过的候选池 \(F_\ell\)（节点、边、提示），以及测试时选出来的那支队 \(f_\ell\)。单轮 \(S'=I(S)\) 可以发生：训练题上文本梯度写出新块，校验通过就 `Append` 进池。术语式 (2) 还要 \(I'\subseteq S'\)。下一类题仍用同一份层切分、同一条选队提示（附录 Prompt 7）、同一套全局/局部拆法、同一个动量系数 \(\alpha\)、同一组格式/结构/性能闸门、同一个 20 epoch、同一次最多 3 次局部更新尝试。混元台阶上这不是 L0：池子可以带到后面的题。也到不了改改进器。作者写 inference is strictly forward-only with a frozen architecture。冻着的正是 \(I\)。
+
+引言点了五个集。§4.1 七个：HumanEval、Creative Writing、MATH、DABench、MMLU–ML、Natural Plan、AIME 2024&2025。Table 7 只给了前五个的切分，Natural Plan 与 AIME 没有行。MATH 跟 Song 等 Captain Agent：196 道子集，80/20 → 157 / 39，不是 Hendrycks 全量，也不是 MaAS 那份 119/486。HumanEval 164 道按 Zhou 等 8:2 → 训练 131、测试 **33**。MMLU–ML 跟 TextGrad：128 道，训练只有 **16**，验证 112。16 不是「已经在机器学习问答上充分搜索」。账单发生在这几十到两百道训练题上的文本反传，不发生在测试时再反传一遍。
+
+## 2. 机制：前向选队，训练才反传
+
+每层一份候选集 \(\mathcal{F}_\ell\)。块由节点、边、提示组成。选队
+
+$$
+f_{\ell}=\mathrm{DynamicRoutingSelect}(\mathcal{F}_{\ell},\ell,I_{\ell},I). \tag{1}
+$$
+
+\(I_{\ell}\) 是这一层输入，\(I\) 是题面。选队 Agent 看子任务说明和候选结构摘要，提示在附录 Prompt 7。选中之后
+
+$$
+O_{\ell}=\mathrm{ExecuteLayer}(\ell,f_{\ell},I_{\ell},I),\qquad I_{\ell+1}=O_{\ell}. \tag{2}
+$$
+
+轨迹 \(\tau\) 记下每层入出。算法 1 先走完所有层，再在训练分支上算全局梯度。测试丢掉反传，只留式 (1)(2)。这和 MaAS 测试时丢掉式 (11)(12)、只留采样类似：生成物按题变，手续冻着。一边抽算子 DAG，一边选现成队。不要收成同一张 83.59。
+
+训练时若分数没过阈值，才开反传。作者自己写：文本梯度是结构化的语言建议，不是形式导数。全局看层间协调：
+
+$$
+\mathcal{G}_{\mathrm{global}}=\mathrm{ComputeGlobalGradient}(S,\tau),\qquad \mathcal{S}_{\mathrm{global}}\leftarrow\mathrm{GlobalGradientUpdate}(\mathcal{G}_{\mathrm{global}},\tau). \tag{3}
+$$
+
+局部把全局建议掺进本层：
+
+$$
+\mathcal{G}_{\mathrm{local},\ell}^{t}=\beta\,\mathcal{G}_{\mathrm{global}}+(1-\beta)\,\mathrm{ComputeLocalGradient}(\ell,f_{\ell},\tau). \tag{4}
+$$
+
+\(\beta\) 相机稿没钉成数字。队的更新写成
+
+$$
+f_{\ell}^{t+1}=f_{\ell}^{t}\times\mathcal{G}_{\mathrm{local},\ell}^{t}. \tag{5}
+$$
+
+乘号是隐喻：用局部建议改节点、边、提示，不是把字符串做矩阵乘。动量再把上一轮建议掺进来：
+
+$$
+\mathcal{G}_{\mathrm{local},\ell'}^{t}=\alpha\,\mathcal{G}_{\mathrm{local},\ell}^{t}+(1-\alpha)\,\mathcal{G}_{\mathrm{local},\ell}^{t-1}. \tag{6}
+$$
+
+\(\alpha\) 同样没有主表取值。附录 Prompt 6 把「上次怎么改、这次为什么还错」写进提示。算法 2 对局部更新最多试 **3** 次，闸门按顺序：节点上的 `VariableSourcesValid` 与 `FormatValid`，边上的 `AllNodesHaveEdges`，结构上的 `StructureNotUnique`，最后 `ValidatePerformance`。全过才 `Append` 进 \(\mathcal{F}_{\ell}\)。附录后段承认自由文本更新会吵、会幻觉、会漂；他们的对策不是让改进器改校验菜单，而是把这五道闸写死，让坏块进不了池。消融 Figure 3：去掉动量、去掉性能过滤、去掉反传，四集上都低于满配，三跑平均，20 epoch。图不是表，花园不从图上估终点分。正文能钉的是：HumanEval 上砍动量掉得最明显；MATH 上砍性能过滤会让更新更晃。Prompt 1 拿金标对答案，Prompt 2 换成创作量表，Prompt 4 看整条轨迹开全局药，Prompt 5 只修一层。七条提示是 \(I\) 的一部分，不进 \(S'\)。
+
+Table 6 人手初始化：HumanEval 2 队 8 只，Creative Writing 2 队 7 只，MATH / DABench 各 3 队 7 只，MMLU–ML / Natural Plan 各 2 队 8 只。六个集初始候选最多三支。人少写几支队，不等于层数、选队提示、校验菜单已经进了 \(S'\)。附录 Config 1 是 HumanEval 代码审查层：伪代码 Agent、两只评审、一只决策，边从伪代码接到两只评审再汇到决策。案例 Figure 5 说后来会加静态分析、评审提示变长。Figure 6 把同样的加节点、写长提示接到 DABench 的任务分析子任务上。那是训练期池子在涨，不是测试期 \(I\) 在长。JSON 初始化每个集只有几百行，作者写成人工干预很少。很少指的是初始队数，不是 Prompt 1–7 已经交给模型去改。
+
+和邻居钉死。[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md) 在计算图上改变量字符串，主表 GPQA 51→55；这边把「变量」收成整支队，反传拆成全局结构加局部提示。ProTeGi 的文本梯度停在提示束搜索。AFlow 在验证集上搜一份算子图伺候整集；这边每题从池里选，池是训练期涨出来的。MaAS 学的是层上算子概率，目录八项人事先写死；这边目录是队，队里面的边还可以被局部更新改。GPTSwarm 学边概率可以一直 REINFORCE；这边测试不再反传。五截不要收成「都已经是 RSI」。Table 5 把 Aflow 标成 Li et al. 2024b，那是 [AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) 的编号，不是花园 AFlow 专文。对照清单当作者自画像读，不当两篇工作流论文的合并表。Zhou 等 Symbolic Learning 是 Table 1 对照来源，Song 等 Captain Agent 是 Table 2 对照来源。两套对照不要收成 ANN 自己重跑了全部基线。
+
+![测试题进选队，逐层执行，池子冻着；下一题虚线回去](./images/fig-ann-loop.png)
+
+> 图 1：实线是一道测试题的选队和执行。虚线是下一题。反传不在这条路上。
+
+**图 1 解析**
+
+- **User query**：测试题。不走训练分支的全局/局部梯度。
+- **Team selector**：Prompt 7 从 \(F_\ell\) 里挑一支队。
+- **Execute layers**：\(O_\ell\) 交给下一层。层数人事先钉死。
+- **Frozen output**：测试不做 backward。
+
+## 3. 数字：90.9 是 33 道测试，9.0 不是百分之九十
+
+Table 1，三骨干并排。对照多来自 Zhou 等，3.5 与 gpt-4 有数，4o-mini 他们没报，本表只给 ANN 这一行补了中间格。GPTs HumanEval 59.2 / — / 71.7，创作 4.0 / — / 6.0。Agents 59.5 / 85.0 与 4.2 / 6.0。Agents w/ AutoPE 63.5 / 82.3 与 4.4 / 6.5。DSPy/ToT 66.7 / 77.3 与 3.8 / 6.8。Symbolic 64.5 / **85.8** 与 6.9 / 7.4。ANN **72.7 / 90.9 / 87.8** 与 **9.0 / 8.6 / 7.9**。代码列 3.5 与 gpt-4 都高于本表对照；4o-mini 的 90.9 高于同表 gpt-4 的 87.8。创作列 3.5 的 9.0 高于 gpt-4 的 7.9。更强骨干没有单调抬这张约 10 分制。不要把 9.0 听成准确率。不要用 87.8 去改 Symbolic 的 85.8 当「已经是另一篇论文的复现」：对照是作者抄 Zhou 等，ANN 自己跑。90.9 钉在 33 道测试上。Table 8 同骨干 4o-mini：不训练前向 **86.8**，半份训练 **87.9**，满训练 **90.9**。从 86.8 到 90.9 大约多对 1 道量级（33×0.041≈1.4）。涨分故事主要不在 HumanEval 这一列。
+
+Table 2，对照默认 gpt-4，来自 Song 等。Vanilla MATH 51.53，DABench 6.61。Meta-prompting 68.88 / 39.69。AutoAgents 56.12 / 57.98。DyLAN MATH 62.24。AgentVerse 69.38。AutoGen 74.49 / 82.88。Captain Agent **77.55 / 88.32**。ANN gpt-4 **80.0 / 90.2**。ANN gpt-3.5 **55.0 / 76.0**。ANN 4o-mini **82.5 / 90.2**。MATH 上 4o-mini 高于 gpt-4；DABench 上两只打平 90.2。v1 把 4o-mini MATH 印成 82.8、DABench 印成 95.0，gpt-4 DABench 印成 92.0，散文还写过 88.88 和 75.6。相机稿表和这段散文已经对齐到 82.5 / 90.2 / 76.0。花园按表，不把 v1 加回来。82.5 不要改 MaAS Table 1 的 51.82：196 道子集对那边难度 5 的另一刀。Captain 88.32 对 ANN 90.2，差 1.88 个百分点，不是数量级。
+
+Table 3，MMLU–ML 与 Natural Plan。优化器用 4o-mini，执行跟先前工作用 GPT-4o / GPT-4o-0806。CoT：85.7；行程 1.0、会议 50.0、日历 60.0。ADAS：— / 3.1 / 43.0 / 66.0。TextGrad：88.4，规划三列空。ANN：**89.2**；**7.9 / 55.0 / 73.0**。不要用 89.2 去改 TextGrad 专文。不要用 7.9 去改 ADAS 专文 MGSM 53.4。行程 7.9 仍然低，作者写成层状优化在结构化规划上有优势，优势是相对 CoT 的 1.0 和 ADAS 的 3.1，不是已经把行程规划做掉。
+
+Table 4，换训练骨干，评估仍三只。训练成本按约 **244.6M** input tokens 估。训 GPT-3.5：**≈$122.30**。HumanEval **73.7 / 72.7 / 86.3**，创作 8.9 / 8.5 / 8.1，MATH 53.5 / 80.0 / 80.0，DABench 70.6 / 88.0 / 90.2。训 4o-mini：**≈$73.40**，主表那一行 72.7 / 90.9 / 87.8 与 9.0 / 8.6 / 7.9 与 55.0 / 82.5 / 80.0 与 76.0 / 90.2 / 90.2。关键拧点：训 3.5、评 4o-mini 的 HumanEval 是 **72.7**，训 4o-mini、评 4o-mini 才是 **90.9**。架构不能当与骨干无关的插件随便搬家。训 3.5、评 gpt-4 的创作是 **8.1**，高于训 mini 评 gpt-4 的 **7.9**。同一张表里，「更强训练器」不是每列都赢。v1 Table 4 中间格 HumanEval 还印过 85.5，相机稿改成 72.7。按 72.7。
+
+Table 7 单题耗时。HumanEval 前向约 7 秒，训练再加约 30 秒反传；测试仍 7 秒。创作 17+30 / 17。MATH 13+33 / 13。DABench 15+34 / 15。MMLU–ML 8+28 / 8。箭头 \(\uparrow\) 只标训练。Table 8 还给出创作不训练 **8.3**、半训 **8.5**、满训 **9.0**（仍是 10 分制）；MATH **65.0 / 70.0 / 82.5**；DABench **86.3 / 86.3 / 90.2**。DABench 半份训练与不训练打平，满训练才到 90.2。MATH 从 65.0 到 82.5 才是这张表里最大的一跳。39 道测试上约多对 7 道。Creative Writing 的题面是四个指定句，要求故事落到这四句上，量表不是 pass@1。Natural Plan 三列是行程、会议、日历，Zheng 等的约束满足，不是 MATH 那种竞赛题。MMLU–ML 只切机器学习子集，16 道训练对 112 道验证，和 HumanEval 的 131/33 方向相反：一边训练远多于测试，一边训练极少。两套 80/20 不要听成同一协议。Figure 4 把 MATH 上训完的池子直接接到 AIME 2024/2025，不再反传，作者写 4o-mini 与 GPT-5 两条都比「训前」高。图没有印格子，花园不估 AIME 分数，只记下：跨竞赛集可以搬池子，搬的仍是 \(F_\ell\)，不是选队手续。优化器和执行器可以拆开：主实验用 4o-mini 做训练期反传，HumanEval / 创作 / MATH / DABench 再拿 3.5、mini、gpt-4 三只去评；MMLU 与规划列跟先前工作改用 GPT-4o 系。这和 AFlow 专文「Claude 优化、4o-mini 执行」是同一类拆法，拆完优化器仍冻着。90.9 是 mini 训、mini 评、33 道测试；AFlow 专文 94.7 是另一套优化器和切分。两笔禁止横加。
+
+## 4. 这不是术语式 (2)，冻架构也不是改进器
+
+测试时走的是冻住的候选池加冻住的选队提示。改进器没变。层怎么切、Prompt 1–7、\(\beta\)、\(\alpha\)、三次尝试、20 epoch、8:2 切分，都还在。混元 L0 装不下跨题保持的队；L3 要改提议 / 选择程序。本篇停在留下池子，不改怎么选、怎么验。作者把 post-training 还能造新队写成卖点。新队进池的闸门仍是人写的校验。闸门不进 \(S'\)。
+
+和邻居再钉一次。TextGrad 改的是图上的字符串变量，实例优化跨题不留。ANN 把队当离散参数，训练期写入池，测试期还能按题选，寿命长一档，仍不是改 \(I\)。AFlow 的 Claude 优化器冻着；这边优化器是 4o-mini 加七条提示，也冻着。MaAS 的 \(thres=0.3\) 冻着；这边没有超网分数累加，有的是选队 LLM。GPTSwarm 边权可以一直更新；这边 epoch 用完就停。AgentPrune 剪完边冻子图；这边冻的是池和手续，边在训练期还可以被局部更新改。六截不要收成一行。
+
+没有墙外检查「这道题该不该把静态分析 Agent 写进审查层」。错块一旦在 33 道 HumanEval 或 16 道 MMLU 训练题上过了性能闸，就会进 \(F_\ell\)。16 和 33 都很小。温度、选队提示、三次尝试一改，90.9 不会自动跟上。换提示是人改 \(I\)。创作没有金标，Prompt 2 换成评分量表；量表谁写的，仍是人。AIME 只证明池子能搬到邻近数学竞赛，没有证明选队 Prompt 7 被模型改写过。仓库检索未见官方实现，复现只能靠附录 JSON 和 Prompt 1–7。缺仓不等于已经 RSI，只说明花园连他们的默认温度都抄不到。Ma 与 Yunpu Ma 并列一作，通讯邮箱写在首页。v1 作者五人，相机稿扩到九人，数字仍以表为准，不把作者名单当复现证据。Table 5 给自己七个勾：层状、反传、动量、全局、局部、动态组队、需要训练。对照行把 Symbolic、DyLAN、GPTSwarm 写成要训练，把 AutoGen、MetaGPT、CoT 写成不要。勾表是切口说明书，不是花园 RSI 判定。判定仍看 \(I\) 有没有进 \(S'\)。勾满七项，改进器也可以仍在墙外。
+
+对有大模型基础的读者，读完应能回答四句。改的是哪一层？Harness 里那份层状候选队，以及训练时追加进池的块。骨干权重动了没有？没有。90.9 和 9.0 分别是什么尺子？HumanEval 33 道测试的百分数，创作约 10 分制。还缺什么才叫花园 RSI？选队提示或校验菜单进入 \(S'\)，并且下一类新基准用的就是升级后的那份反传手续。现在换 \(\alpha\)、把层数写进可搜索空间、让模型改 Prompt 7，都是人改 \(I\)。结论写成 self-evolving。进化的接口还在墙外。简单题选短队、难题选评审更多的队，是选队 LLM 按 Prompt 7 办事，不是改进器改了选队规则。规则仍是式 (1)。换一批没有审查块的初始化，同一条 Prompt 7 会选出另一张图。这是初始 \(F_\ell\) 和选队提示的函数，不是改进器在长。ACL 摘要写 seven benchmark datasets。主表能对格子的是 Table 1–3 的六列任务加 Table 4 的骨干交叉，AIME 只在图里。不要把「七个」听成七张主表。v1 摘要写 four benchmark datasets，相机稿扩到七个，HumanEval 中间格却从 93.9 降到 90.9。扩集和改格不要收成「越改越高」。页码 9918–9951 是 Findings 长文，附录占了大半；主判定仍看 Table 1–4 和 Table 8，不看附录里的引用堆。San Diego 的 Findings 不改变花园的墙：优化器仍在 \(I\)。会议地点不进判定。DOI 10.18653/v1/2026.findings-acl.483 只用来指相机稿，不用来抬 90.9。
+
+![上排训练时池子涨；下排选队提示、校验和 epoch 帽冻着](./images/fig-ann-frozen.png)
+
+> 图 2：实线只更新候选池（训练时）。虚线墙右边是冻着的选队与校验手续。
+
+**图 2 解析**
+
+- **左列**：20 epoch 文本反传可以往 \(F_\ell\) 里追加块。
+- **右列**：选队提示、格式与性能校验、动量 \(\alpha\)、20 epoch 帽仍是人写的。
+- **读法**：测试前向不等于 \(I\) 在长。TextGrad 的 TGD 提示和这边的 Prompt 4–6 都在墙外。
+
+同一句「自动编排多 Agent」，至少分六截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。AFlow 用 MCTS 搜代码工作流。MaAS 用超网按题采样。ANN 用层状候选队加文本反传。六截不要收成「都已经是 RSI」。ANN 的连续更新发生在训练那 20 epoch，不是测试时每题再反传，也不要收成「都在训工作流所以已经是 RSI」。
+
+90.9 要和 Table 8 的 33 道、86.8 的无训前向一起读。82.5 是 196 道子集上的 4o-mini，不是 MaAS 的 51.82。89.2 不要改 88.4 更不要改 GPQA。9.0 不要听成百分之九十。73.7 训在 3.5 上可以高于 72.7，但不能把 4o-mini 评测从 90.9 搬回家。无金标的开放题靠 Prompt 2，主实验能转起来，前提是代码有单测、数学有标准答案、MMLU 有选项。创作那一列从一开始就不是同一把尺。
+
+**读**：Table 1 的 90.9 / 9.0，Table 2 的 82.5 / 90.2，Table 3 的 89.2 与 7.9/55.0/73.0，Table 4 的 72.7 对 90.9，Table 8 的 65.0→82.5，不是式 (2)。  
+**不读**：把 9.0 听成百分之九十、用 90.9 改 94.7、用 82.5 改 51.82、用 89.2 改 GPQA、说层模板已经进了 \(S'\)、说已经 RSI、把 ANN 和 MaAS / MASS / MAS-GPT 收成一篇、把 v1 的 93.9 / 82.8 / 95.0 / 90.1 加回主表。
+
+同层：[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[51 MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[50 AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+
+## 参考文献
+
+1. Ma, X., Ma, Y., Lin, C., Yan, S., Bi, J., Cao, Z., Tian, Y., Tresp, V., & Schuetze, H. (2026). [Self-Evolving Multi-Agent Systems via Textual Backpropagation](https://aclanthology.org/2026.findings-acl.483/). Findings of ACL 2026, pp. 9918–9951. 预印本 [arXiv:2506.09046](https://arxiv.org/abs/2506.09046)。Table 1 的 90.9 / 9.0 以相机稿为准，不要用 v1 的 93.9。
+2. 官方仓：检索未见。附录 B 有 JSON 初始化与 Prompt 1–7。
+3. 本花园：[TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md)；[AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)。AFlow 专文 80.3 / HumanEval 94.7 以专文为准，不要和本表 90.9 横加。
