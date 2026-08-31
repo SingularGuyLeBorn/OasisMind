@@ -1,5 +1,7 @@
 # 第3章: REINFORCE算法
 
+> 论文身份核验：REINFORCE 的原始来源是 Ronald J. Williams 1992 年论文 *Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning*。旧附件 `1807.04077` 实际是无关的心脏异常检测论文，已移入不公开归档，不能作为本章来源。
+
 **前置知识要求**: 本章假设读者已阅读第2章(策略梯度定理)，理解策略梯度的数学推导. 
 
 ---
@@ -380,3 +382,8 @@ REINFORCE的两个主要问题:
 ---
 
 **下一章预告**: [第4章: TRPO信任区域策略优化](../04_TRPO/01_Theory_Derivation.md)
+
+## 一手来源
+
+- [Williams, Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning, Machine Learning 8, 1992](https://doi.org/10.1007/BF00992696)
+- [Sutton & Barto, Reinforcement Learning: An Introduction, Chapter 13](http://incompleteideas.net/book/the-book-2nd.html)

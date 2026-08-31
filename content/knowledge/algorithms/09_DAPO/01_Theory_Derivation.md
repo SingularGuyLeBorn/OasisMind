@@ -4,7 +4,7 @@
 - **标题**: DAPO: An Open-Source LLM Reinforcement Learning System at Scale
 - **作者**: ByteDance Seed Team
 - **年份**: 2025
-- **arXiv**: 2505.14953
+- **arXiv**: [2503.14476](https://arxiv.org/abs/2503.14476)（v2，2025-05-20）
 - **验证**: Qwen2.5-32B在AIME 2024达到50分
 - **PDF**: 见 `papers/` 目录
 
@@ -367,7 +367,7 @@ R_{original} - \lambda \cdot (|y| - L_{max}) & \text{if } |y| \geq L_{max}
 
 - **官方**: https://github.com/volcengine/verl (集成DAPO)
 - **论文**: https://dapo-sia.github.io/
-- **arXiv**: https://arxiv.org/abs/2505.14953
+- **arXiv**: https://arxiv.org/abs/2503.14476
 
 ---
 

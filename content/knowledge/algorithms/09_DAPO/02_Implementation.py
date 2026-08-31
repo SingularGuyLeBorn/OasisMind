@@ -3,7 +3,7 @@
 论文: DAPO: An Open-Source LLM Reinforcement Learning System at Scale
 作者: ByteDance Seed Team
 年份: 2025
-arXiv: 2505.14953
+arXiv: 2503.14476
 
 核心创新:
 1. Clip-Higher: 解耦裁剪，正负优势使用不同边界

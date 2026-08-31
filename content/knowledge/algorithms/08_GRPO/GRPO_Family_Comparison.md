@@ -157,5 +157,5 @@ GSPO:   clip(r, 1-ε, 1+ε)               (序列级裁剪，有界)
 |------|------|-------|
 | GRPO | DeepSeekMath | 2402.03300 |
 | GSPO | Group Sequence Policy Optimization | 2507.18071 |
-| DAPO | DAPO: An Open-Source LLM RL System | 2505.14953 |
+| DAPO | DAPO: An Open-Source LLM RL System | [2503.14476](https://arxiv.org/abs/2503.14476) |
 | GMPO | Geometric-Mean Policy Optimization | ICLR 2026 |
