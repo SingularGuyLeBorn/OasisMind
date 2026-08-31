@@ -102,7 +102,7 @@ Table 9 把工作流包成可调用的高阶动作 \(\mathrm{AWM}_{AS}\)。逐�
 **读**：Table 1 的 35.5 / 23.5 / 12.0 个百分点、摘要 51.1% 是相对 BrowserGym、ax-tree 15.0 是公平对照、SteP 33.0 相对 7.6%、Mind2Web 摘要 24.6% 是逐步 45.1 对 36.2、任务级 4.8 对 2.0、Table 4 的 +8.9 / +14.0 是逐步绝对点、跨域离线任务 0.7 低于基线、在线入库走 Pan 裁判、不是式 (2)。  
 **不读**：把 51.1 或 24.6 听成准确率柱、用 35.5 改 ExpeL / Voyager / DC、用 22.5 替换总分、用正文 3.2 改 Table 9、说诱导提示已经在优化自己、说已经 RSI。
 
-同层：[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

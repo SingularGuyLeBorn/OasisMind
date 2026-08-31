@@ -141,7 +141,7 @@ $S$ 若取当前 $H_t$，式 (1) 确实在改下次还用的脚手架。条目�
 **读**：式 (1)、18,282→122 的 collapse、Table 1 的 42.4 / 59.4 / 59.5、无标签 +14.8、金融 81.9 与 FiNER 在线 −3.4、摘要 +10.6 对 +17.0 的分母差、GEPA 延迟 −82.3%、CUGA 只当情境。  
 **不读**：把 self-improving 听成权重递归、把 59.4 听成已经赢下 IBM CUGA 方法对照、用 SEAGym 的 +2.9 替换 Table 1、用第三方文档的 +17.1 当作摘要平均、把 KV cache 命中听成算法变便宜。
 
-同层技能文件：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。同层门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。记忆前身：[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)。过程评测：[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。
+同层技能文件：[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)。同层门：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。记忆前身：[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)。过程评测：[03 SEAGym](../../6-评测与安全/03-SEAGym-Harness评测环境/03-SEAGym-Harness评测环境.md)。
 
 ## 参考文献
 
