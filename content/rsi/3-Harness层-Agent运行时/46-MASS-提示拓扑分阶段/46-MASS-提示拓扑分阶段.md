@@ -103,7 +103,7 @@ Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0�
 - **右列**：MIPRO、五种积木、顺序、\(t=0.05\) 仍是人写的。
 - **读法**：分阶段搜不等于 \(I\) 在长。AFlow 的 Claude 和这边的 MIPRO 都在墙外选谁留下。
 
-同一句「自动设计多 Agent」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。MASS 把提示和拓扑拆成 1PO / 2TO / 3PO。四截不要收成「都已经是 RSI」。[AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) 把工作流写成自然语言程序再 RL，MAS-GPT 一次前向吐可执行 MAS 代码，G-Designer 按任务生成图、AgentPrune 剪边省 token，综述仍裸名，本篇不代打它们的表。MaAS 把超网当可采样分布，和这篇的离散积木配置不是同一条搜索。学习派那一档也不在 78.79 里。
+同一句「自动设计多 Agent」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。MASS 把提示和拓扑拆成 1PO / 2TO / 3PO。四截不要收成「都已经是 RSI」。[AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) 把工作流写成自然语言程序再 RL，[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 一次前向吐可执行 MAS 代码，G-Designer 按任务生成图、AgentPrune 剪边省 token，综述仍裸名，本篇不代打它们的表。MaAS 把超网当可采样分布，和这篇的离散积木配置不是同一条搜索。学习派那一档也不在 78.79 里。
 
 「约 6% / 3% / 2%」要和 Table 6 一起读。APO→1PO 表上是 7.12 个百分点，2TO→3PO 不到 2。78.79 的分母是 Gemini 1.5 Pro、八个子集、三次平均。相对 AFlow* 没有均分可比，因为横杠。相对花园 80.3 / 85.3 是不同执行器。Claude 表上辩论 MBPP 可以是 0.00，说明「多 Agent」不是免费升级，提示挪骨干就会塌。MASS 把塌掉的拓扑搜回来，搜的预算和积木名单仍是人定的。
 
@@ -112,7 +112,7 @@ Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0�
 **读**：Table 1 的 78.79 对 CoT 65.28、对 ADAS 69.72，AFlow* 的 76.51 在 2WikiMQA 更高，MATH 测试 100 道，Table 6 的 7.12 / 2.99，不是式 (2)。  
 **不读**：把 78.79 听成超过 AFlow 80.3、用 91.67 改 94.7、用 85.0 改 GPTSwarm 的 0.88、说三段分解已经进了 \(S'\)、说已经 RSI。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
