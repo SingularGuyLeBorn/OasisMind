@@ -21,7 +21,7 @@ tags:
 
 摘要写 MMLU **84.50%**、HumanEval pass@1 **89.90%**，还写 HumanEval 上 token 最多少 **95.33%**，对抗攻击准确率只掉 **0.3%**。打开 Table 1：除单模型外一律五只 `gpt-4-1106-preview`，六列均分 G-Designer **89.84**，第二名 PHP **88.17**。MMLU 84.50 相对 Vanilla 82.14，只高 **2.36 个百分点**。HumanEval 89.90 相对 Vanilla 71.68，高 18.22；HumanEval 上相对 MetaGPT 的 4.0 是 89.90 减 85.90。相对 DyLAN 的 0.20 是 89.90 减 89.70。两笔都在同一列，分母都是 pass@1，不是 token。MMLU 上相对 GPTSwarm 只有 0.52 个百分点（84.50 减 83.98），贡献段把 0.20～4.10 写成 MMLU 和 HumanEval 一起，真正撑到 4.10 的是 HumanEval 对 MetaGPT。不要把 4.10 听成 MMLU 也涨了四个百分点。College Math 那张 Figure 2 的 8.75% 是 GPTSwarm 对链，四只 Agent，不是五只 Table 1。0.5k 对 7.8k 也只属于高中生物那一格。用 Figure 2 证明「人不会选拓扑」可以；用它改 84.50 不行。GSM8K 上 PHP **95.50**，G-Designer **95.07**，这一列没有赢。人把「全面更好」听成每列都高，缺的是：变的是一张按题解码出来的通信图 \(\mathcal{G}_{com}\)。五只 gpt-4 的权重、角色池、\(K=3\) 轮、汇总 Agent，都还在墙外。VGAE 只在 \(B'\in\{40,80\}\) 道题上用策略梯度推完，测试时冻着。
 
-本篇夹在 [GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 和 [ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 旁边。综述把拓扑优化分成代码级工作流和通信图。GPTSwarm 在给定节点上学跨 Agent 边概率，一份 \(\theta\) 伺候整段任务；AFlow 在验证集上走 MCTS，一份算子图伺候整集；MAS-GPT 一次前向吐 Python `forward`。这边节点集合人事先钉死，按题用 GNN 解码一张更稀的图。不要和 AgentPrune 收成一篇：那边是剪边省 token，综述仍裸名。不要和 AFlow 专文的 HumanEval 94.7 横加：那边执行器 GPT-4o-mini。不要用 89.90 去改 MAS-GPT 的 80.25：那边执行器 Llama-3-70B。**不是** RSI。**不是** 术语式 (2)。一手：Zhang, Yue, Sun, Wan, Yu, Fang, Wang, Chen, Cheng；港中文 / 同济 / Emory / 中科大 / 国大 / UNC；[arXiv:2410.11782](https://arxiv.org/abs/2410.11782)，**ICML 2025**，PMLR 267:76678–76692。代码 [yanweiyue/GDesigner](https://github.com/yanweiyue/GDesigner)。数字以 HTML Table 1–6、式 (7)–(17)、§4–§5 为准。禁止用 84.50 去改 MAS-GPT 的 MMLU 78.38，禁止用本表 GPTSwarm 的 88.49 去改花园 GPTSwarm 专文的 0.88。
+本篇夹在 [GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 和 [ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md) 旁边。综述把拓扑优化分成代码级工作流和通信图。GPTSwarm 在给定节点上学跨 Agent 边概率，一份 \(\theta\) 伺候整段任务；AFlow 在验证集上走 MCTS，一份算子图伺候整集；MAS-GPT 一次前向吐 Python `forward`。这边节点集合人事先钉死，按题用 GNN 解码一张更稀的图。不要和 [AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 收成一篇：那边是剪边省 token，均分 89.72。不要和 AFlow 专文的 HumanEval 94.7 横加：那边执行器 GPT-4o-mini。不要用 89.90 去改 MAS-GPT 的 80.25：那边执行器 Llama-3-70B。**不是** RSI。**不是** 术语式 (2)。一手：Zhang, Yue, Sun, Wan, Yu, Fang, Wang, Chen, Cheng；港中文 / 同济 / Emory / 中科大 / 国大 / UNC；[arXiv:2410.11782](https://arxiv.org/abs/2410.11782)，**ICML 2025**，PMLR 267:76678–76692。代码 [yanweiyue/GDesigner](https://github.com/yanweiyue/GDesigner)。数字以 HTML Table 1–6、式 (7)–(17)、§4–§5 为准。禁止用 84.50 去改 MAS-GPT 的 MMLU 78.38，禁止用本表 GPTSwarm 的 88.49 去改花园 GPTSwarm 专文的 0.88。
 
 ## 1. 问题：同一份数据，链和图各有各的账
 
@@ -29,7 +29,7 @@ tags:
 
 \(S\) 取这次部署里学到的 VGAE 权重 \(\Theta\)，以及它为各题吐出的 \(\mathcal{G}_{com}\)。单轮 \(S'=I(S)\) 可以发生：策略梯度推一轮 \(\Theta\)，或推理时多一张图。术语式 (2) 还要 \(I'\subseteq S'\)。下一类题仍用同一只 all-MiniLM-L6-v2（\(D=384\)）、同一条链式锚点、同一份 \(B'\)、同一套 \(K=3\)、同一个汇总 Agent、同一条核范数稀疏项。混元台阶上这不是 L0：\(\Theta\) 和按题图跨题还在。也到不了改改进器。人没退出 \(I\)。结论写希望启发 self-organizing / self-evolving。希望不是已经闭合。
 
-和邻居先划线。[GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 学的是跨 Agent 边概率，主表 GAIA 90.2% 是相对涨幅，且那张表没跑边优化。本表 GPTSwarm HumanEval **88.49**，花园专文节点优化是 **0.88**，骨干都是 `gpt-4-1106-preview`，协议不同，不要收成一行。AFlow 专文 80.3 是六集、Claude 优化器、GPT-4o-mini 执行。MAS-GPT 65.47 是 Llama-3-70B 八列。ADAS 专文 MGSM 53.4 不要和本表任何一列横加。AgentPrune 剪边省 token，本篇不代打它的表。
+和邻居先划线。[GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 学的是跨 Agent 边概率，主表 GAIA 90.2% 是相对涨幅，且那张表没跑边优化。本表 GPTSwarm HumanEval **88.49**，花园专文节点优化是 **0.88**，骨干都是 `gpt-4-1106-preview`，协议不同，不要收成一行。AFlow 专文 80.3 是六集、Claude 优化器、GPT-4o-mini 执行。MAS-GPT 65.47 是 Llama-3-70B 八列。ADAS 专文 MGSM 53.4 不要和本表任何一列横加。[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 剪边省 token，均分 89.72，表上 27.2% 是保留比。本篇不代打它的美元散点。
 
 ## 2. 机制：虚节点进 GNN，再把草图剪稀
 
@@ -72,7 +72,7 @@ Table 6 换 `gpt-3.5-turbo`，MMLU，Agent 从 5 加到 20。G-Designer 准确�
 
 测试时每道题都会出一张新 \(\mathcal{G}_{com}\)。改进器没变。MiniLM、链式锚点、\(B'\)、\(K=3\)、summarizer、\(\tau\)、\(\zeta\)、两层 GCN、策略梯度，都还在。混元 L0 装不下跨题保持的 \(\Theta\)；L3 要改提议 / 选择程序。本篇停在留下设计器和本题图，不改怎么抽样、怎么罚稀疏。作者把 input-dependent 写成相对 GPTSwarm / DyLAN 的优点：那些图对题面不敏感。优点停在「图随题变」，不是 \(I\) 随题变。
 
-和邻居钉死。GPTSwarm 专文填字 0.800 不要改 ToT 的 24 点 74%；本表没有填字列。AFlow 80.3 / HumanEval 94.7 / 摘要 5.7% 不是每列都涨 5.7 个百分点。ScoreFlow 85.3 执行器 4o-mini。MAS-GPT 65.47 的 3.89 是对自洽的百分点差。MASS 78.79 是 Gemini 八列。AutoFlow 40% 是 OpenAGI 上相对人工 CoRE 的相对涨幅。七套数字禁止横加。AgentPrune 仍裸名。
+和邻居钉死。GPTSwarm 专文填字 0.800 不要改 ToT 的 24 点 74%；本表没有填字列。AFlow 80.3 / HumanEval 94.7 / 摘要 5.7% 不是每列都涨 5.7 个百分点。ScoreFlow 85.3 执行器 4o-mini。MAS-GPT 65.47 的 3.89 是对自洽的百分点差。MASS 78.79 是 Gemini 八列。AutoFlow 40% 是 OpenAGI 上相对人工 CoRE 的相对涨幅。七套数字禁止横加。[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 均分 89.72，不要和本表 84.50 横加。
 
 没有墙外检查「这张 \(\mathcal{G}_{com}\) 该不该改 \(B'\)」。错边一旦在 40 道训练题上累计效用高，就会写进 \(\Theta\)，测试题沿用。Figure 6 案例：strlen 被判简单，五只里只留算法设计师到程序员；难的代码题和数学题出更密的图。案例证明按题会变稀，不证明变稀规则已经进了 \(S'\)。角色池用 gpt-4 生成，人换池子等于人改 \(\mathbf{X}_{agent}\)。对话轮次正文允许预定义或 DyLAN 那种早停。实验把 \(K\) 钉死成 3，没有早停表。早停若进 \(S'\)，才算运行时自己决定何时收口。现在何时收口仍是人写的常数。仓库名 GDesigner，论文名 G-Designer，不要和 GPTSwarm 的 DAG 采样收成一份代码。GPTSwarm 加边成环就丢；这边用核范数把草图压稀，没有写成「成环即丢」。执行序式 (3) 要求后执行的点不能是先执行点的入邻居，图仍按 DAG 跑。若解码出环，拓扑序那条约束会卡住。主文没有环检测失败率表。花园不编这个率。插件列了 Mathematica 和 Python 编译器当例子，Table 1 没有单独的工具调用次数。HumanEval 的 pass@1 是跑测例，不是「编译器插件已经算进 89.90 的另一列」。单模型基线温度 0，多 Agent 温度 1，同一只 gpt-4 两次采样方差不同。PHP 那行温度按哪边走，表注只说单执行 0、多 Agent 1。PHP 既标了 Mul. 又常被当单模型技巧。温度归属不清，95.50 不要拿去打 G-Designer 的 95.07 以外的架。两行差 0.43 个百分点，本来就窄。附录没有把 \(B'=40\) 和 \(B'=80\) 拆成两张主表。区间写成 \(\{40,80\}\)，读者不知道这六列各自用了哪一档。花园不猜。少样本优化能把 153 道 MMLU 推到 84.50，也说明分母小，换切分会抖。ComplexCoT 单模型均分已经 84.99，G-Designer 均分 89.84，差 4.85 个百分点。MMLU 单列 ComplexCoT 83.78 对 84.50，只差 0.72。均分故事主要靠数学四列和 HumanEval，不要用 89.84 去形容 MMLU 那一格。MultiArith 98.30 对 PHP 98.10，只高 0.20，和 HumanEval 对 DyLAN 的 0.20 同宽，分母不同。AQuA 79.47 对 PHP 79.00，也只高 0.47。均分被 GSM8K 以外的数学列和代码列托着。PHP 把均分做到 88.17 时，G-Designer 只再高 1.67 个百分点。摘要不写这 1.67。贡献段 high-performing 把 0.20～4.10 放在 MMLU 和 HumanEval 上，均分差 1.67 不在那句话里。读摘要会觉得跳了四档，读 Table 1 会看到多数列是小数点后的缝。这和 MASS 专文把 78.79 听成全面碾压是同一类错：均分高，不等于每列都宽。花园先读列，再读均分。列不够宽的时候，摘要里的 SOTA 区间会显得比表宽。先信表，再决定摘要那句还能不能用。
 
@@ -88,7 +88,7 @@ Table 6 换 `gpt-3.5-turbo`，MMLU，Agent 从 5 加到 20。G-Designer 准确�
 - **右列**：MiniLM、链式锚点、40 或 80 道 \(B'\)、\(K=3\) 加策略梯度仍是人写的。
 - **读法**：按题出图不等于 \(I\) 在长。GPTSwarm 的 REINFORCE 和这边的 VGAE 都在墙外选谁留下。
 
-同一句「自动编排多 Agent」，至少分四截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。AFlow 用 MCTS 搜代码工作流。G-Designer 用 VGAE 按题出图。四截不要收成「都已经是 RSI」。AgentPrune 剪边省 token，综述仍裸名，本篇不代打它的表。G-Designer 的连续更新发生在 \(B'\) 那几十道题上，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训图所以已经是 RSI」。
+同一句「自动编排多 Agent」，至少分四截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。AFlow 用 MCTS 搜代码工作流。G-Designer 用 VGAE 按题出图。四截不要收成「都已经是 RSI」。[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 剪边省 token，均分 89.72。G-Designer 的连续更新发生在 \(B'\) 那几十道题上，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训图所以已经是 RSI」。
 
 「0.3%」要和 Table 3 的 84.5 减 84.2 一起读。GSM8K 掉 2.5。95.33 没有主表。92.24 和 \(1.5\times 10^{5}\) 对 \(2.6\times 10^{6}\) 除不平。89.90 不要改 94.7。153 道 MMLU 不要听成全量。PHP 在 GSM8K 更高。无金标的开放题，\(u\) 打不出来，策略梯度对就推不成。主实验能转起来，前提是六列都能用准确率或 pass@1。
 
@@ -97,7 +97,7 @@ Table 6 换 `gpt-3.5-turbo`，MMLU，Agent 从 5 加到 20。G-Designer 准确�
 **读**：Table 1 的 84.50 / 89.90 / 均分 89.84，GSM8K 低于 PHP，MMLU 153 道，0.3 是百分点，95.33 无主表，不是式 (2)。  
 **不读**：把 2.36 听成相对涨幅、用 89.90 改 94.7、用 84.50 改 78.38、说 VGAE 配方已经进了 \(S'\)、说已经 RSI、把 G-Designer 和 AgentPrune 收成一篇。
 
-同层：[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[50 AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

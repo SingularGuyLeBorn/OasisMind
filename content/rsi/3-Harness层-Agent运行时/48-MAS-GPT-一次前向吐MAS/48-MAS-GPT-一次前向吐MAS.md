@@ -90,7 +90,7 @@ AIME-2024 只有 30 题。摘要 13.3% / 10.0%，正文写相对单只 o1-previe
 - **右列**：40 种底模板、GPT-4o 提示、SFT 超参、驱动 LLM 仍是人写的。
 - **读法**：按题吐代码不等于 \(I\) 在长。AFlow 的 Claude 和这边的造数管道都在墙外选谁留下。
 
-同一句「自动生成多 Agent」，至少分五截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用 Score-DPO 训生成器。MAS-GPT 用一次 SFT 把生成收成一次前向。五截不要收成「都已经是 RSI」。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按任务生成图，MMLU 84.50，不要和本表 65.47 横加。AgentPrune 剪边省 token，综述仍裸名，本篇不代打它的表。MAS-GPT 的连续更新发生在 SFT 那三轮，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训工作流所以已经是 RSI」。
+同一句「自动生成多 Agent」，至少分五截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用 Score-DPO 训生成器。MAS-GPT 用一次 SFT 把生成收成一次前向。五截不要收成「都已经是 RSI」。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按任务生成图，MMLU 84.50，不要和本表 65.47 横加。[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 剪边省 token，均分 89.72，不要和本表 65.47 横加。MAS-GPT 的连续更新发生在 SFT 那三轮，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训工作流所以已经是 RSI」。
 
 「3.89%」要和 Table 2 的 65.47 减 61.58 一起读。GSM8K 没有赢自洽。Qwen 表上均分只高 0.13。AIME 13.34% 没有绝对表，分母是 30 题。3.53% 是他们重跑的 AFlow MATH，不是花园 80.3。0.5 次推理是 32B 对 70B 的折算。无金标的开放题，造数时的 0/1 打不出来，SFT 对就造不成。主实验能转起来，前提是八列都能用 Table 12 那种抽取–核对。
 
@@ -99,7 +99,7 @@ AIME-2024 只有 30 题。摘要 13.3% / 10.0%，正文写相对单只 o1-previe
 **读**：Table 2 的 65.47 对自洽 61.58（3.89 个百分点），GSM8K 93.39 低于 94.99，HumanEval 80.25 是 Llama-3-70B，AIME 13.34% 没有绝对表，不是式 (2)。  
 **不读**：把 3.89 听成相对涨幅、用 80.25 改 94.7、用 3.53 改花园 80.3、说 SFT 配方已经进了 \(S'\)、说已经 RSI、把 MAS-GPT 和 MASS 收成一篇。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[50 AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

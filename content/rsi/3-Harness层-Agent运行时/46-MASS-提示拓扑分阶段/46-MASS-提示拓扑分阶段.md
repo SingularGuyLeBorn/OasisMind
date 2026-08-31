@@ -81,7 +81,7 @@ Table 6 把 Base Agent 和 APO 也摊开。Base MATH 62.33，不是 Table 1 CoT 
 
 Table 7 报训练和单条推理账单。训练：AFlow 输入 11M、输出 8M、**3.89** 美元；ADAS 23M / 13M / **5.61**；MASS 24M / 11M / **5.09**。推理：MASS 每条 0.0014 美元，辩论 0.0012，ADAS 0.0016，AFlow **0.0006**。这张表的 Acc 列，自洽 69.3、Self-Refine 71.3、辩论 71.7、MASS 81.0，对得上 Flash 的 MATH；AFlow 写成 64.3、ADAS 72.7，对不上 Table 1 任何一格 MATH。不要用 81.0 去改 78.79，也不要说 MASS 推理比 AFlow 便宜。1PO / 2TO 可并行，ADAS 和 AFlow 必须等上一条轨迹结束才能提案，这是作者写的工程差别，不是分数差别。
 
-Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0，均分 80.5；MASS 84.7 / 91.7，均分 88.2。Flash：61.0 / 73.0 对 81.0 / 84.7。正文写相对图优化 MATH 约 8%、HumanEval 约 6%，差的是 8.7 和 6.7 个百分点。花园 GPTSwarm 专文的 HumanEval 0.88 是 `gpt-4-1106-preview` 节点优化、整集评；这边 85.0 是 Gemini 1.5 Pro 重跑。两笔不要横加。作者的判断是：图优化更擅长把全连接剪稀来省推理，任务分数这块提示优化贡献更大。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按题出图，MMLU 84.50；AgentPrune 仍裸名，本篇不代打它的表。
+Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0，均分 80.5；MASS 84.7 / 91.7，均分 88.2。Flash：61.0 / 73.0 对 81.0 / 84.7。正文写相对图优化 MATH 约 8%、HumanEval 约 6%，差的是 8.7 和 6.7 个百分点。花园 GPTSwarm 专文的 HumanEval 0.88 是 `gpt-4-1106-preview` 节点优化、整集评；这边 85.0 是 Gemini 1.5 Pro 重跑。两笔不要横加。作者的判断是：图优化更擅长把全连接剪稀来省推理，任务分数这块提示优化贡献更大。[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按题出图，MMLU 84.50；[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 剪边省 token，均分 89.72。本篇不代打它们的美元散点。
 
 ## 4. 这不是术语式 (2)，三段分解也不是改进器
 
@@ -103,7 +103,7 @@ Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0�
 - **右列**：MIPRO、五种积木、顺序、\(t=0.05\) 仍是人写的。
 - **读法**：分阶段搜不等于 \(I\) 在长。AFlow 的 Claude 和这边的 MIPRO 都在墙外选谁留下。
 
-同一句「自动设计多 Agent」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。MASS 把提示和拓扑拆成 1PO / 2TO / 3PO。四截不要收成「都已经是 RSI」。[AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) 把工作流写成自然语言程序再 RL，[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 一次前向吐可执行 MAS 代码，[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按任务生成图，MMLU 84.50。AgentPrune 剪边省 token，综述仍裸名，本篇不代打它的表。MaAS 把超网当可采样分布，和这篇的离散积木配置不是同一条搜索。学习派那一档也不在 78.79 里。
+同一句「自动设计多 Agent」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。MASS 把提示和拓扑拆成 1PO / 2TO / 3PO。四截不要收成「都已经是 RSI」。[AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) 把工作流写成自然语言程序再 RL，[MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md) 一次前向吐可执行 MAS 代码，[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md) 按任务生成图，MMLU 84.50。[AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md) 剪边省 token，均分 89.72，表上 27.2% 是保留比。MaAS 把超网当可采样分布，和这篇的离散积木配置不是同一条搜索。学习派那一档也不在 78.79 里。
 
 「约 6% / 3% / 2%」要和 Table 6 一起读。APO→1PO 表上是 7.12 个百分点，2TO→3PO 不到 2。78.79 的分母是 Gemini 1.5 Pro、八个子集、三次平均。相对 AFlow* 没有均分可比，因为横杠。相对花园 80.3 / 85.3 是不同执行器。Claude 表上辩论 MBPP 可以是 0.00，说明「多 Agent」不是免费升级，提示挪骨干就会塌。MASS 把塌掉的拓扑搜回来，搜的预算和积木名单仍是人定的。
 
@@ -112,7 +112,7 @@ Table 8 在 MATH 和 HumanEval 上重跑 GPTSwarm。Pro：GPTSwarm 76.0 / 85.0�
 **读**：Table 1 的 78.79 对 CoT 65.28、对 ADAS 69.72，AFlow* 的 76.51 在 2WikiMQA 更高，MATH 测试 100 道，Table 6 的 7.12 / 2.99，不是式 (2)。  
 **不读**：把 78.79 听成超过 AFlow 80.3、用 91.67 改 94.7、用 85.0 改 GPTSwarm 的 0.88、说三段分解已经进了 \(S'\)、说已经 RSI。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[50 AgentPrune](../50-AgentPrune-时空图剪边/50-AgentPrune-时空图剪边.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
