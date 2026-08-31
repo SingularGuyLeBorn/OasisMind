@@ -43,5 +43,6 @@ category: RSI
 | 27 | [ToT 本题推理树](./27-ToT-本题推理树/27-ToT-本题推理树.md) | 树搜本题中间思维；Game of 24 GPT-4 74% 对 CoT 4%；L0，不是术语式 (2) |
 | 28 | [LATS Agent 树搜](./28-LATS-Agent树搜/28-LATS-Agent树搜.md) | ReAct 上走 MCTS；HumanEval 92.7 对 Reflexion 91.0；HotPotQA 有 oracle；L0 |
 | 29 | [ReAct 推理与动作](./29-ReAct-推理与动作/29-ReAct-推理与动作.md) | 交错想–做–看；AlfWorld 最好 71% 对 BUTLER 37%；HotpotQA 27.4 低于 CoT；L0 |
+| 30 | [RAP 世界模型规划](./30-RAP-世界模型规划/30-RAP-世界模型规划.md) | LM 当世界模型走 MCTS；积木加权 64% 对 CoT 近 0；无真环境；L0 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。

@@ -64,7 +64,7 @@ Game of 24 从 4nums.com 刮 1362 局，按人类解题时间从易到难排，�
 - **门**：24 点用等式检查，写作用 GPT-4 分加盲评，填字用字母对错。估价启发式本身仍是同一只模型。
 - **下一题**：树不携带。这是 L0 的定义，不是漏写。
 
-并发的 RAP（Hao 等，arXiv:2305.14992）把推理写成带内部世界模型的规划，走 MCTS。作者写 RAP 的任务比这边简单，框架也不接别的树搜。花园不把 RAP 的数字并进 Table 2。后来的 [LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md) 把 ToT 和 Reflexion 拼进 Agent 树搜，HumanEval 92.7 对 Reflexion 91.0，HotPotQA 带对错真值，节点仍随题清空。STOP 观察到 GPT-4 会写出 ToT 风的 beam 脚手架，截止早于本文；那是「模型会复述搜索形状」，不是本文化进了 STOP 的改进器。
+并发的 [RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)（Hao 等，arXiv:2305.14992）把推理写成带内部世界模型的规划，走 MCTS。作者写 RAP 的任务比这边简单，框架也不接别的树搜。花园不把 RAP 的数字并进 Table 2。后来的 [LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md) 把 ToT 和 Reflexion 拼进 Agent 树搜，HumanEval 92.7 对 Reflexion 91.0，HotPotQA 带对错真值，节点仍随题清空。STOP 观察到 GPT-4 会写出 ToT 风的 beam 脚手架，截止早于本文；那是「模型会复述搜索形状」，不是本文化进了 STOP 的改进器。
 
 ## 3. 数字：74% 是偏难 100 局，CoT 4% 不是笔误
 
@@ -101,7 +101,7 @@ Gödel Agent 把手写脚手架放进「部署之后模块图不变」。ToT 正
 **读**：Table 2 的 74 / 4.0 / 7.3 / 9.0、\(b=1\) 的 45、CoT 第一步约 60% 已死、Refine 27% 用了等式真值、写作 7.56 对 6.93 以及人评 41/21/38、IO+Refine 写作 7.67、填字 4/20 与 oracle 7/20、GPT-3.5 的 19%、生成/估价对调 64 / 31、附录 GSM8K 90 对 86、Table 7 的 $0.74 对 CoT×100 的 49%、L0、会场 NeurIPS 2023。  
 **不读**：用 74% 改 PromptAgent 的 0.802 或 APE 的 0.810、用 90 盖主表、把 CoT 4% 当成笔误改成高于 IO、把 IO+Refine 27% 写成 Self-Refine、把填字 Game 列的 1 改成 1/20、把 Gödel 的 100% 写进本表、说 MCTS 已经是本篇主实验、把 ToT 听成提示版本树、说已经 RSI、把资源清单的 ICML'24 当会场。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

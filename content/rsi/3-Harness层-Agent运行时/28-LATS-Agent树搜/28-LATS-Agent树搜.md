@@ -27,7 +27,7 @@ CoT 把中间步骤写成独白，错了只能把错写完整。ReAct 把动作�
 
 \(S\) 取「当前这道题的搜索树加本题反思缓冲」。单轮 \(S'=I(S)\) 可以发生：多展开 \(n\) 个孩子，或写进一条失败反思。术语式 (2) 还要 \(I'\subseteq S'\)。下一道独立题仍用同一套 UCT 权重 \(w\)、同一套 \(n\) 和轨迹上限 \(k\)、同一份反思提示，没有把这棵树或这批反思写进跨题磁盘。混元 L0：改 \((\text{输出},\text{轨迹})\)，保留的 Agent 状态跨独立任务不变。Table 1 给 ToT / RAP / Reflexion / LATS 都打了 External Memory 勾，花园读成本题树或本题 trial 缓冲，不读成 ACE 那种 playbook。
 
-和邻居先划线。ToT 的状态是 \([x,z_{1\cdots i}]\)，没有 \(o\)；LATS 多了观察。Reflexion 的 `mem` 跨同一任务的若干整条 trial；LATS 的反思挂在 MCTS 的失败叶子上，服务的是本题剩下的 \(k\) 次轨迹，不是下一道 HotPotQA。Self-Refine 不接环境、不长树。PromptAgent 的 UCT 在提示空间里，奖励来自训练切出来的保留集；这边 UCT 在本题动作树上，编程任务的回传甚至是合成测试通过率。RAP 也用 MCTS，但靠语言模型当世界模型去模拟；LATS 用真环境交互，作者写不必另训动力学。Gödel Agent 后来能把 24 点求解器整段换掉，那是改运行时，不要拿本篇 GPT-3.5 的 0.44 去盖，也不要用 ToT 专文 GPT-4 的 74% 来替换 Table 7。
+和邻居先划线。ToT 的状态是 \([x,z_{1\cdots i}]\)，没有 \(o\)；LATS 多了观察。Reflexion 的 `mem` 跨同一任务的若干整条 trial；LATS 的反思挂在 MCTS 的失败叶子上，服务的是本题剩下的 \(k\) 次轨迹，不是下一道 HotPotQA。Self-Refine 不接环境、不长树。PromptAgent 的 UCT 在提示空间里，奖励来自训练切出来的保留集；这边 UCT 在本题动作树上，编程任务的回传甚至是合成测试通过率。RAP 也用 MCTS，但靠语言模型当世界模型去模拟；见 [30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)。LATS 用真环境交互，作者写不必另训动力学。Gödel Agent 后来能把 24 点求解器整段换掉，那是改运行时，不要拿本篇 GPT-3.5 的 0.44 去盖，也不要用 ToT 专文 GPT-4 的 74% 来替换 Table 7。
 
 ![UCT 选节点，展开 n 个动作，环境返回观察，失败则写本题反思](./images/fig-lats-loop.png)
 
@@ -103,7 +103,7 @@ WebShop 反思太泛、卡在局部，是 Reflexion 专文已经见过的病：�
 **读**：HumanEval 92.7 / 91.0 / 80.1、GPT-3.5 的 83.8、MBPP 81.1、HotPotQA oracle 与 0.63 / 0.71、ToT（ReAct）0.39 低于纯推理 ToT 0.55、WebShop 75.9 分对成功率 38.0、22.1 是分差、Table 7 的 GPT-3.5 0.44 对 ToT 专文 74%、\(\lambda\) 两档、\(w=1\)、L0。  
 **不读**：用 92.7 改 Reflexion 专文的 91.0、用 0.44 改 ToT 的 74%、用 0.71 当非 oracle 维基问答、用 75.9 盖成功率 38.0、把 22.1 当分点相对涨幅、说记忆已经跨题、把 PromptAgent 的 \(c=2.5\) 写进本篇、说已经 RSI。
 
-同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[30 RAP](../30-RAP-世界模型规划/30-RAP-世界模型规划.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
