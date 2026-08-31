@@ -23,7 +23,7 @@ tags:
 
 ## 1. 问题：离散提示搜不动，软提示又对不回词表
 
-少样本分类和可控生成都想冻住大模型，只换前面那截字。软提示好训：向量能梯度。坏处也硬：人读不懂、换一只 LM 对不上隐空间、API 不给梯度。离散提示是词表里的 token，能给人看、能跨模型粘贴。搜索空间却是 \(\mathcal{O}(|\mathcal{V}|^T)\)。前人两条路：释义或枚举再挑（Jiang、Gao、GrIPS），或者用梯度近似改 token（AutoPrompt）。前者不系统，后者仍要内部状态，训练还不稳。
+少样本分类和可控生成都想冻住大模型，只换前面那截字。软提示好训：向量能梯度。坏处也硬：人读不懂、换一只 LM 对不上隐空间、API 不给梯度。离散提示是词表里的 token，能给人看、能跨模型粘贴。搜索空间却是 \(\mathcal{O}(|\mathcal{V}|^T)\)。前人两条路：释义或枚举再挑（Jiang、Gao、GrIPS），或者用梯度近似改 token（[AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)）。前者不系统，后者仍要内部状态，训练还不稳。
 
 作者把找 \(z\) 写成奖励最大化：
 
@@ -86,7 +86,7 @@ $$
 
 分类模板跟人手写提示对齐：`[Input] [Prompt] [MASK]`，verbalizer 默认 terrible / great 这一对。提示插在人手模板的同一位置。作者知道加长、多位置插入往往更好，主表只跑 \(T\in\{2,5\}\)，其余留给未来。风格迁移 \(T=5\) 钉死。输出侧所有对照都采 32 个候选，再按奖励挑一条。32 是解码预算，不是提示长度。
 
-训练细节钉在附录，不要听成读者可调的产品旋钮。分类：Adam \(5\times 10^{-5}\)，每步 16 条提示，2 token 训 6k step，5 token 训 12k step，每 10 step 看一次验证。评估把验证准确率最高的 **3** 条提示平均。少样本不稳，所以抽 **5** 套训练/验证划分，每套再跑 **3** 个种子，报均分和标准差。一块 RTX 3090 上，distilRoBERTa-base 大约 1.5 小时，RoBERTa-large 大约 4 小时。Fine-Tuning 对照是整只 RoBERTa 训 100 epoch，学习率 \(1\times 10^{-5}\)，动的是 \(\theta\)，和主方法不是同一层。Black-Box Tuning 的 mixed 设定跟论文默认：50 个软 token、预算 8000。AutoPrompt 用 5 个提示 token，在少样本训练例子上搜。GrIPS 被放进 Discrete Prompt Enumeration 那一行，骨干换成 RoBERTa-large 少样本，**不是** Prasad 那篇 InstructGPT、Natural-Instructions、Table 1 的 +4.29。
+训练细节钉在附录，不要听成读者可调的产品旋钮。分类：Adam \(5\times 10^{-5}\)，每步 16 条提示，2 token 训 6k step，5 token 训 12k step，每 10 step 看一次验证。评估把验证准确率最高的 **3** 条提示平均。少样本不稳，所以抽 **5** 套训练/验证划分，每套再跑 **3** 个种子，报均分和标准差。一块 RTX 3090 上，distilRoBERTa-base 大约 1.5 小时，RoBERTa-large 大约 4 小时。Fine-Tuning 对照是整只 RoBERTa 训 100 epoch，学习率 \(1\times 10^{-5}\)，动的是 \(\theta\)，和主方法不是同一层。Black-Box Tuning 的 mixed 设定跟论文默认：50 个软 token、预算 8000。[AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md) 用 5 个提示 token，在少样本训练例子上搜。GrIPS 被放进 Discrete Prompt Enumeration 那一行，骨干换成 RoBERTa-large 少样本，**不是** Prasad 那篇 InstructGPT、Natural-Instructions、Table 1 的 +4.29。
 
 ![上排离散 z 被搜出并保留；下排任务 LM、策略 LM、SQL 和奖励公式冻着](./images/fig-rlprompt-frozen.png)
 
@@ -126,7 +126,7 @@ Yelp 情感迁移，无配对数据。奖励是内容保持加目标风格强度
 
 听成「模型用强化学习改自己怎么说话」差在主语。改提示的是外面那只 MLP 策略。谁规定长度 \(T\)？人。谁规定分段 \(\lambda\) 和 \(z\)-score？人。谁规定 SQL 而不是 PPO？人。谁规定分类用占位词、风格迁移才条件于 \(x\)？人。训完 MLP 丢掉，下一场任务不会因为这条乱码好用就升级搜索器。留下的是 \(H_t\) 里一条（或每题一条）离散串。SQL 配方原样再走。
 
-和 [TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md) 钉死。那边编辑人写初稿、PPO、要隐状态、测试时按查询改 \(T=8\) 步、题做完扔 \(p_T\)。这边从词表生成、SQL、任务 LM 可黑盒、分类查询无关、交卷留字符串。邻居表上的 90.1 对 91.9，不要改本篇 92.5。和 [GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 钉死。那边人写说明书、四种短语手术、贪心、InstructGPT 上 +4.29；这边无初稿、常是乱码、RoBERTa 少样本均 75.8 对同表 GrIPS 69.4。同表 GrIPS 不能回写 Prasad。和 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 钉死：APE 用大模型整段提案，默认不迭代，骨干 InstructGPT，GSM8K 43.0 和本篇 RoBERTa 分类不是一列。和 [OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md) 钉死：历史分数进元提示、GA/DE 说明书冻着，都不是逐步 RL 出 token。和 [ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 钉死：那边错题进批评模板；这边没有「哪里错了」的句子，只有间隔和 SQL。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：那边改本题答案 \(y\)，跨题清空；这边改 \(z\)，分类测试集共用。AutoPrompt 要梯度改离散 token，本篇故意绕开。Black-Box Tuning 混软硬提示，主表 74.7 是最近的连续侧对手，仍略低于 5 token 行。Figure 2 把测试准确率对训练步画在一起：本方法收敛步数和 BB Tuning 相近，收敛后最差的那些提示，均分仍贴着 BB Tuning。作者拿来挡「RL 更慢」。梯度免费、步数相当，赢在终点略高，不赢在更少的黑盒查询。查询预算两篇没有钉成同一列。
+和 [TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md) 钉死。那边编辑人写初稿、PPO、要隐状态、测试时按查询改 \(T=8\) 步、题做完扔 \(p_T\)。这边从词表生成、SQL、任务 LM 可黑盒、分类查询无关、交卷留字符串。邻居表上的 90.1 对 91.9，不要改本篇 92.5。和 [GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 钉死。那边人写说明书、四种短语手术、贪心、InstructGPT 上 +4.29；这边无初稿、常是乱码、RoBERTa 少样本均 75.8 对同表 GrIPS 69.4。同表 GrIPS 不能回写 Prasad。和 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 钉死：APE 用大模型整段提案，默认不迭代，骨干 InstructGPT，GSM8K 43.0 和本篇 RoBERTa 分类不是一列。和 [OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md) 钉死：历史分数进元提示、GA/DE 说明书冻着，都不是逐步 RL 出 token。和 [ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 钉死：那边错题进批评模板；这边没有「哪里错了」的句子，只有间隔和 SQL。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：那边改本题答案 \(y\)，跨题清空；这边改 \(z\)，分类测试集共用。[AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md) 要梯度改离散 token，本篇故意绕开。Black-Box Tuning 混软硬提示，主表 74.7 是最近的连续侧对手，仍略低于 5 token 行。Figure 2 把测试准确率对训练步画在一起：本方法收敛步数和 BB Tuning 相近，收敛后最差的那些提示，均分仍贴着 BB Tuning。作者拿来挡「RL 更慢」。梯度免费、步数相当，赢在终点略高，不赢在更少的黑盒查询。查询预算两篇没有钉成同一列。
 
 风格迁移的 32 候选是测试解码，不是测试时还在更新 \(\pi\)。分类验证集每 10 step 看一次、最后平均 3 条，是早停和集成协议，配方仍冻着。奖励乘 5、top-256 采样，附录写成训练技巧。没有超参搜索贯穿主表：\(\lambda\) 在验证集调过一次，之后沿用。作者把 inverse RL 写成以后可以少用手调奖励，主实验没做。Ethics 节只提醒预训练模型可被用来写有害内容，希望提示技术也能反向控住；没有安全评测表，花园不把它读成对齐结果。
 
@@ -135,7 +135,7 @@ Yelp 情感迁移，无配对数据。奖励是内容保持加目标风格强度
 **读**：生成离散 \(z\)、冻任务 LM、MLP 3.1M 训完即丢、SQL on-policy、式 (3)(4)、\(\lambda_1=180\)、每类 16、5×3 种子、Table 2 的 92.5/95.1/75.8、2 token 90.3、微调在 AG’s News 和多类上更高、\(J=61.4\) 对 DiRR 59.6、人评 DiRR 更高、流畅约束 \(J\) 掉到 46.7、乱码可迁移、无 GPT-3 表、不是术语式 (2)。  
 **不读**：用 TEMPERA 的 90.1 替换 92.5、用 95.1 改 Zhang 等的 93.9、用 75.8 改 Prasad 的 +4.29、说七套全赢微调、把 254K PPL 的串读成可解释指令、把跨模型迁移听成改进器升级、把「可 API」听成已经跑过 GPT-3。
 
-同层：[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。综述里的生成派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。综述里的生成派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 

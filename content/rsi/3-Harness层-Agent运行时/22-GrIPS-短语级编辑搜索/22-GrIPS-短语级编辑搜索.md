@@ -130,7 +130,7 @@ $|\mathcal{S}|$ 扫 100 / 50 / 20，InstructGPT babbage，Figure 3。100 条涨 
 **读**：四种短语手术、贪心 $m=5$ $n=10$ $P=2$、$|\mathcal{S}|=100$ 默认、score 是平衡准确率加 $10H$、Table 1 的 4.29 / 9.36 / 2.36、多数类 59.83、Table 3 人工改写与示范搜索、Table 4 束搜索 56.50、Table 5 任务无关、Table 6 开源约 6–7 点、FLAN-T5 可能见过 NI、20 条分数集 +1.0、不通的指令可以涨分、分类走对数概率、没有 davinci。  
 **不读**：把 4.30 写进 curie、用 9.36 改 56.50、用 Table 3 的 53.68 替换 Table 1 的 58.90、说已经超过 AutoPrompt、把 FLAN-T5 的 74.33 当没泄漏的泛化、把 Task 195 的残句当成功案例、用 ProTeGi 的 +15.3% 给短语编辑背书、把 TEMPERA 的 RL 写进本篇贪心环。
 
-同层：[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)。综述里的编辑派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[20 MIPROv2](../20-MIPROv2-贝叶斯联合优化/20-MIPROv2-贝叶斯联合优化.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)。综述里的编辑派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
