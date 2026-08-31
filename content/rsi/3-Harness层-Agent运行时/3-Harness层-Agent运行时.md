@@ -60,5 +60,6 @@ category: RSI
 | 44 | [GPTSwarm 通信图边概率](./44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) | REINFORCE 学跨 Agent 边；GAIA 90.2% 是相对涨幅且未跑边优化；不是式 (2) |
 | 45 | [ScoreFlow Score-DPO 工作流](./45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md) | LoRA 训生成器；六集均分 85.3；8.2% 是对基线均分的百分点差；配方冻着 |
 | 46 | [MASS 提示拓扑分阶段](./46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md) | 1PO/2TO/3PO；Gemini Pro 八列均分 78.79；不要和 AFlow 80.3 横加；配方冻着 |
+| 47 | [AutoFlow 自然语言工作流 RL](./47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md) | CoRE 字符串加 REINFORCE；40% 是相对 0.2483；不要和 AFlow 80.3 横加 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
