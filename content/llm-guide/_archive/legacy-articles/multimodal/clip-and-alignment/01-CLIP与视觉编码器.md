@@ -2,9 +2,14 @@
 title: "01 · CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进"
 date: 2026-05-16
 tags: [CLIP, 视觉Encoder , 对比学习, InfoNCE, SigLIP, 多模态]
+published: false
+archived_at: 2026-09-01
+archive_reason: "已由 8.8 唯一正本完整重写；原稿含绝对化历史叙述、无来源结论与跨论文不可比数字，仅作审计留档。"
 ---
 
 # 01 · CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进
+
+> **归档说明（2026-09-01）**：本页不再是公开知识正文。有效概念已核验并入 `8.8-CLIP与视觉编码器.md`；原稿含“所有现代 VLM 均以 CLIP 为基础”等不可证实概括，保留只用于追溯迁移决策，不应作为当前技术事实引用。
 
 ## 1. 背景与核心痛点 (Background & Pain Points)
 
