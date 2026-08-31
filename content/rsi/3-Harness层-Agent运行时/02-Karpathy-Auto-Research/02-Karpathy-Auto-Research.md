@@ -1,0 +1,159 @@
+---
+title: "02 · Auto-Research：改的是训练脚本，不是改进器"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  karpathy/autoresearch（MIT，2026-03）：Agent 只改 train.py，5 分钟墙钟，val_bpb 越低越好。
+  prepare.py 与 evaluate_bpb 冻结；program.md 由人改。Discussion #32：0.9979→0.9773 / 89 次；
+  #43：0.9979→0.9697 / 126 次。不是 RSI。
+tags:
+  - RSI
+  - Karpathy
+  - Auto-Research
+  - nanochat
+  - Harness
+  - Artifact
+---
+
+# 02 Auto-Research：改的是训练脚本
+
+给编码 Agent 一套真能跑的小 LLM 训练，让它过夜改代码、训五分钟、看验证集有没有变好，早上起来读日志。这是 Andrej Karpathy 2026-03 开源的 [karpathy/autoresearch](https://github.com/karpathy/autoresearch)（MIT）。训练代码是 [nanochat](https://github.com/karpathy/nanochat) 的单卡简化版。人平时改 Python；这里人改的是 `program.md`，相当于给 Agent 的轻量 skill。默认那份故意写得很瘦，README 说以后显然可以迭代「研究机构代码」，让科研进展更快、多 Agent 混编——**那一步仍是人改说明书**，仓库里的过夜循环默认不改它。
+
+本篇是 Harness 层里「单卡、单文件、单指标」的科研闭环样板，对照 [01 Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 那种实验室 OS。[FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 也是改代码、跑评估、留下变好的；差别是变异算子在那边是冻结 Codey，在这边是通用编码 Agent 按 `program.md` 办事。**不是** RSI：改进器是 Claude / Codex 加说明书，$\theta$ 是 API 背后的权重，下一轮仍用同一份 `program.md` 去改**另一版** `train.py`。**不是** DGM / STOP：Agent **被禁止**改评估器和自己的说明书。一手：仓库 README、`program.md`，以及 Karpathy 账号下 Discussion [#32](https://github.com/karpathy/autoresearch/discussions/32)、[#43](https://github.com/karpathy/autoresearch/discussions/43)（Agent 代发的 session report）。二手专栏里的「700 次 / 11% 加速」本篇不收。
+
+## 1. 三个文件：谁准动、谁是考官
+
+仓库故意很小。真要紧的只有三份。
+
+| 文件 | 谁改 | 里面有什么 |
+|------|------|------------|
+| `prepare.py` | **不准改** | 常量、数据下载、BPE、dataloader、`evaluate_bpb` |
+| `train.py` | **Agent 改** | GPT、Muon + AdamW、训练环；架构 / 超参 / batch 都算公平 |
+| `program.md` | **人改** | 给 Agent 的指令；默认是瘦基线 |
+
+训练墙钟固定 **5 分钟**（不含启动和编译）。指标是 **val_bpb**（validation bits per byte），越低越好；对词表大小不敏感，换架构还能比。`program.md` 里的示例摘要：`val_bpb` 0.997900，训练 300.1 秒，峰值显存约 45060 MB，MFU 39.80%，约 4.996 亿 token、953 step、5030 万参数、depth 8。这些是「基线长这样」的样例，不是所有机器上的测定——README 写明换平台则数字不可比。
+
+固定时长有两头好处：Agent 无论改模型大小还是 batch，实验都在同一墙钟下可比；系统会在**你这台机器的五分钟预算**里找相对最优。坏处：你的结果不能拿去和别人的 H100 或 Mac 对打。预期量级：约 12 次/小时，睡一觉约 100 次。超时 10 分钟当失败，discard 并回滚。
+
+VRAM 是软约束：为了有意义的 val_bpb 可以略涨，但不能爆。简单性质：同样涨幅，更简单更好；删代码还持平或更好，算赢。+0.001 val_bpb 却加 20 行脏补丁，说明书建议丢掉；同样 +0.001 来自删代码，留下。
+
+bits per byte 而不是 cross-entropy per token，是为了换词表、换 tokenizer 时分子分母仍在同一物理量上。token 变短、词表变大，per-token loss 会漂，bpb 把预测质量收成「每个字节花多少比特」。五分钟墙钟则把「更大模型」和「更多 step」按同一资源对齐：#32 里最大的赢是减 batch、加 step，不是加宽。若指标是固定 step 的 loss，Agent 会往更大模型走；若指标是固定时间的 bpb，吞吐变成一等公民。这是评估器设计，不是模型突然懂了硬件。
+
+git 在这里当开放档案的穷版。DGM 把子代和分数做成树；autoresearch 把好实验留在分支上，坏实验用 reset 从工作树抹掉，只在未跟踪的 tsv 里留一行。讨论区那两份 session report 等于把 tsv 公开了一份。要复现，得认平台（H100 80GB）和分支名，不能只抄最终超参到另一台笔记本。
+
+![prepare.py 冻着定义指标；train.py 由 Agent 改；program.md 由人改](./images/fig-autoresearch-files.png)
+
+> 图 1：考官和说明书不在过夜循环的可写集里。
+
+**图 1 解析**
+
+- **prepare.py**：数据、分词、`evaluate_bpb`。改它等于改考纲。`program.md` 明文禁止。
+- **train.py**：唯一可变的科学对象。五分钟墙钟从这里流到 val_bpb。
+- **program.md**：人的 $I$。Agent 的 NEVER STOP 循环不回头问要不要改这份文件。
+- **val_bpb**：和 FunSearch 的 `evaluate` 同构，对象是压缩质量而不是 cap set 大小。
+
+依赖面也收得很死：不准装新包，只能用 `pyproject.toml` 里已有的。单卡 NVIDIA（README 在 H100 上测过）。CPU / MPS 会撑大代码，作者当时不打算自己维护；nanochat 父仓库有更宽的设备支持。小机器 fork：TinyStories、降 `vocab_size`、降 `MAX_SEQ_LEN`、降 `DEPTH`、窗口改成全 "L"。这些是给人 / 给人的 Agent 看的调参备忘，不是另一套 RSI。一次性的 `prepare.py` 下载数据和训 BPE，大约两分钟；之后过夜循环不再碰它。若 Agent 为了「更好的 bpb」去重训分词器，考官和选手会一起漂，keep 规则立刻失效——这就是冻结 `prepare.py` 的理由。数据缓存在 `~/.cache/autoresearch/`，和 git 分支分开：换 tag 开新跑，不必重新下载，但必须重新建 `results.tsv`，避免把上一夜的 keep 行误当成今夜基线。`program.md` 要求分支名尚未存在，防止两趟过夜写在同一条 git 历史上互相 reset。开跑前要把缓存里有没有数据告诉人，缺则人跑 `uv run prepare.py`，Agent 不替你下语料。
+
+## 2. 循环：改、提交、训、grep、留下或 reset
+
+`program.md` 把实验写成无限环。先和人约定 run tag（如 `mar5`），从 master 开 `autoresearch/<tag>`，确认 `~/.cache/autoresearch/` 里有数据和分词器，建 `results.tsv` 表头。第一次必须跑**未改的** `train.py` 当基线。
+
+之后 LOOP FOREVER：
+
+1. 看当前 git。
+2. 直接改 `train.py`。
+3. `git commit`。
+4. `uv run train.py > run.log 2>&1`（不要 tee，避免日志灌进上下文）。
+5. `grep` `val_bpb` 和 `peak_vram_mb`。空输出 = 崩了，看 `tail`；几试仍不行就放弃这一 idea。
+6. 记到 `results.tsv`（**不要 commit 这份表**）。列：短 hash、val_bpb、显存 GB、`keep` / `discard` / `crash`、一句话。崩了 val_bpb 记 0.000000。
+7. 变好（更低）就推进分支；持平或更差就 `git reset` 回改前。
+
+人可能睡着了。开始之后禁止问「还要继续吗」。没 idea 就再读代码里引用的论文、把近错过的组合再试、做更猛的架构改动。停的唯一合法方式是人来打断。
+
+![改 train.py → commit → 五分钟 → grep → keep 或 reset；说明书和评估器在环外](./images/fig-autoresearch-loop.png)
+
+> 图 2：留下的是 git 上的 `train.py`。虚线 reset 丢掉坏实验，不改 `prepare.py`。
+
+**图 2 解析**
+
+- **hack → commit → 5 min → grep**：单次实验的身体。
+- **keep / advance**：val_bpb 下降，分支前进，下一刀叠在这一刀上。
+- **worse / git reset**：科学负结果留在 tsv，代码回到上一好状态。
+- **program.md / human $I$**：环不写回它。
+- **prepare.py / frozen $V$**：环读它的指标，不改它的定义。
+
+这和 [FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md) 的岛模型一样，都是「变异 → 评估 → 留下更好的」。FunSearch 的变异来自冻结代码模型的 best-shot；这里变异来自会用 git 的通用 Agent。FunSearch 不准改 `evaluate`；这里不准改 `evaluate_bpb`。两边的 $I$ 都在墙外。和 [DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 的差：DGM 的可写集包括 Agent 自己的工具 Python；autoresearch 把「自己的说明书」和「考官」划出去。和 [Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md) 的差：那边六阶段、人闸、伪造引文；这边一个指标、一个人可以睡觉。
+
+## 3. 过夜数字：Discussion #32 与 #43
+
+数字钉在 Karpathy 维护者账号下、Agent 代发的 session report，不要用转述专栏替换。
+
+[#32](https://github.com/karpathy/autoresearch/discussions/32)（2026-03-08，分支 `autoresearch/mar5`，NVIDIA H100 80GB，Agent：Claude）：基线 **0.997900** → 最佳 **0.977287**，改进 0.0206。**89** 次实验：15 keep、74 discard、0 crash，墙钟约 7.5 小时。最大的一刀是把 global batch 从 524K 减到 262K（−0.0072）：五分钟里步数变多，比堆参数更值。随后 depth 9（宽仍约 512）、短窗改成 1/4 再试 1/8 context、5% warmup、SSSSL 窗型、RoPE base 从 10K 走到约 200K，都能叠。死路也很硬：label smoothing +0.34（把 BPB 量纲弄坏）；device batch 减半靠梯度累积 +0.024（吞吐崩了）；去掉 value embedding、去掉 QK-norm、HEAD_DIM 128→64，都是明显变差。SwiGLU「时髦但参数更多、步数更少」，五分钟预算里不赚。随机种子 42→137 有 0.0004 的便宜——报告自己说 make of that what you will，本篇不当定理。
+
+[#43](https://github.com/karpathy/autoresearch/discussions/43)（同日另一趟过夜，标题 126 次）：基线仍 **0.997900** → 最佳 **0.969686**，改进 0.0282。Agent 写明先吃 #32 的早期赢（batch 减半、depth 9、SSSSL、RoPE 200K），再探新地。新发现：基线 embedding / value embedding **没有** weight decay，加很小的 WD（embedding 0.001，VE 0.001→0.003）大约再叠 0.0028；VE WD 到 0.005 就回退。Transformer init scale 约 0.68× 是甜区，0.66 / 0.65 两边都差。这是在固定考官下搜训练配方，不是模型改自己的改进手续。
+
+两份报告都是 **Agent 代 @karpathy 发的**，用 GitHub CLI。把它们当「Karpathy 手写论文里的 Table 1」会过界；当「这个仓库在 H100 上实际过夜长什么样」则合适。平台不同，不能把 0.9697 写成世界纪录。
+
+keep 规则可以写成一句：设当前冠军提交为 $c$，新实验为 $c'$，
+
+$$
+c \leftarrow c'\quad\text{若 } \mathrm{val\_bpb}(c') < \mathrm{val\_bpb}(c),\quad
+\text{否则 } \texttt{git reset}. \tag{1}
+$$
+
+等号不算赢，所以噪声下的微涨会被丢掉，微降会被留下——#32 种子那一刀是后者。crash 记 0.000000 但不推进分支。tsv 不进 git，分支上只有更好的 `train.py`。这比 DGM 的档案穷：丢掉的实验没有代码快照，只有一行描述。讨论区报告补的是这份缺失的公开日志。
+
+平台 fork 只作地图：macOS / MLX / Windows RTX / AMD 各有社区仓库，README 点名链接。主仓库明确不保证跨平台数字可比。把 fork 上的 val_bpb 和 H100 的 0.9697 画在一张图上，违反原设计。
+
+#32 的 89 次里大约六分之五被丢掉。活下来的刀几乎都在「同一五分钟里多走几步」或「滑动窗口 / RoPE 这类便宜结构」，而不是换一种时髦模块。死路按机制归类：把指标弄坏（label smoothing）、把吞吐弄坏（更小 device batch、更大模型导致 step 变少）、把负载部件拆掉（VE、QK-norm）。这和 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md) 里 Yue 等的观察同方向——搜索在已有配方附近拧，而不是发明新范式。差别是：RLVR 拧的是 $\theta$ 的采样；这里拧的是 `train.py` 文本。两边的考官都在墙外。[STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md) 把改进器程序对自己递归，弱模型会掉分；autoresearch 的改进器是闭源 API，说明书禁止它改自己。若把 Claude 换成会改 `program.md` 的本地小模型，那才开始像 STOP，本仓库没这么配。
+
+#43 把 #32 的早期赢当成热启动，说明过夜循环**没有**跨 session 自动继承，要靠人（或下一份 prompt）把上一份报告喂进去。这又是 $I$ 在人手里的证据：档案在 GitHub Discussion，不在 `program.md` 里。若真把「读上一份 report 再开跑」写进说明书，那是人升级了 $I$，下一夜的 Agent 仍然不会改说明书本身。
+
+## 4. 人改说明书，才是 README 暗示的下一层
+
+README 的中心句：你编程的是 Markdown，不是 Python。默认 `program.md` 是瘦基线；「显然」可以迭代它，找到让科研进展最快的研究机构代码，再加更多 Agent。那是**人**在做元优化：改 $I$ 的文本，再把同一套循环打开过夜。循环内部的 NEVER STOP **不会**把 `program.md` 列进可写文件。若有人另写一条 skill 让 Agent 改 `program.md`，那是另一份实验，需要另开评估器——否则改进器会改考官或改自己的停机条件。本仓库默认配置没有走这一步。
+
+README 开头那段「第 10205 代、代码已不可读」是戏拟，不是实验声明。真仓库三文件、禁止改 `prepare.py`、人改 Markdown，和那段未来史正好相反：人还读得懂，考官还冻着。读项目时把 teaser 和 `program.md` 分开，才不会把讽刺当交付。
+
+2026-05-19 Karpathy 在 X 上写加入 Anthropic，TechCrunch 引公司发言：他在预训练组下建团队，用 Claude 加速预训练研究本身。这是实验室人事，落点更靠近第 5 章。开源过夜循环证明的是「小 GPT + 冻结 val_bpb + 人写说明书」能搜到更好的 `train.py`；**不证明** Claude 已经递归改进 Claude 的预训练栈。把入职通稿和 README 加成「已经 RSI」，漏的是式 (2)。发言里的「加速预训练研究」可以读成把本篇这种循环接到真预训练上——规模、指标、权限模型都会变，不能把 H100 上 0.02 的 bpb 降幅外推成前沿 run 的 loss。
+
+## 5. 对上花园：改哪一层
+
+| | 可写点 | 冻着的 | 指标 |
+|--|--------|--------|------|
+| FunSearch | 函数体 `priority` | Codey、`evaluate`、岛配方 | cap set 大小等 |
+| Auto-Research | `train.py` | 编码 Agent 权重、`program.md`、`prepare.py` | val_bpb |
+| Polaris | wiki / 实验 / TeX | Voyage 模板、人闸、路由表 | 引文存在、数字对账 |
+| DGM | Agent 自己的 Python | $\theta$、外环公式、SWE-bench | SWE-bench / Polyglot |
+| Tufa | 解题器 $\theta$ | 裁判、题集、GRPO | 0/1 |
+
+Auto-Research 的交卷物是更好的训练脚本（以及五分钟训出的小权重）。改进器是墙外的 Claude / Codex。被训的 nanochat **不是**下一轮的研究员——它甚至不必会写代码；它只要 val_bpb 更低。把被优化的小 GPT 和当研究员的编码 Agent 叠成一个词，听起来像模型在训自己，其实研究员是另一只冻着的 API。
+
+和 [RSIBench-Data](../../6-评测与安全/01-RSIBench-Data/01-RSIBench-Data.md) 对照：那边冻后训练栈、只让 Agent 改数据，测发现之后还降不降；这边冻评估器、只让 Agent 改训练脚本，测 val_bpb 降不降。两边都是「Agent 做研究切片」，都不是改进器递归。RSIBench 的 14/24 后来超过第一次有效尝试、达峰后 18/23 更差，提醒发现和可靠是两回事；autoresearch 的 keep 规则只看单次 val_bpb 是否下降，没有 held-out 第二次研究任务。过夜赢了，不保证换数据集还赢，也不保证换到真预训练还赢。
+
+和 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md) 的接头：这里的信号是 val_bpb，程序可算，很像可验证奖励。但没有在更新 nanochat 的 $\theta$ 上做 GRPO；更新发生在 `train.py` 文本上，每次从 git 出发再训五分钟。那是 Artifact / 配方搜索，不是 R1 式后训练。Muon + AdamW 已经在基线 `train.py` 里，Agent 可以改优化器，那是改训练代码，不是给小 GPT 接上一只可验证奖励的 RL 环。
+
+## 6. 何时失效，以及为什么不是 RSI
+
+没有 NVIDIA GPU，官方主路径不跑；小机器要走 fork 和 TinyStories，数字不能和 H100 的 0.9697 比。Agent 若拿到改 `prepare.py` 的权限，最短的作弊是让 `evaluate_bpb` 变好——说明书把这扇门关了，实现上仍取决于你有没有真的 disable 写权限。`results.tsv` 不入库，复现一次过夜要靠讨论区报告或自己留档。label smoothing 那种「指标被弄坏」说明 val_bpb 也不是上帝视角，只是比「模型自称变强」硬。种子从 42 换成 137 能捡 0.0004，提醒 keep 规则在噪声附近会把运气留下——`program.md` 的简单性质是在挡另一种过拟合：为 0.001 堆补丁。崩了几次就放弃该 idea，避免在 OOM 上无限修；这和 Polaris 实验阶段「时间预算里修、真卡住问人」同类，都是把失败从「假装成功」里拆出去。
+
+权限模型是产品级细节，也是 RSI 判断的一部分。README 建议在仓库里关掉 Agent 权限确认，才能过夜；这意味着宿主机上的 `train.py` 和 GPU 都交给循环。它**没有**把改 `prepare.py` 做成硬沙箱，靠的是说明书和（可选的）人工 review diff。DGM 把执行关进隔离沙箱并记录作弊；本仓库更像个人实验台。把「disable all permissions」听成已经安全对齐，过界。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 把「生成 ≠ 入库」做成运行时门；autoresearch 的门是 val_bpb + git reset，更窄，也更硬——过不了就从工作树消失，不会以「待验证技能」的形式留下。
+
+`program.md` 还规定：崩了若是笔误就修再跑，若 idea 本身坏就标 crash 继续。超时 10 分钟当失败。这避免两种假进度：OOM 死循环，和「还在编译所以看起来忙」。五分钟训练加几秒启动，是设计给「人去睡觉」的粒度；Polaris 的实验 Voyage 按天，粒度不同，但「失败要可见」同一条。输出摘要里的 MFU、token 数、depth 是给 Agent 看的诊断，keep 决策**只认** val_bpb；显存只作软约束写进 tsv。不要把 MFU 升高听成科学发现——五分钟里 MFU 高往往只是没把模型改大。
+
+RSI 清单。单轮 $S'=I(S)$：一夜之后 `train.py` 和 val_bpb 都变了。式 (2) 还要 $I'\subseteq S'$。编码 Agent、`program.md`、`evaluate_bpb`、五分钟预算、谁来按停，默认都在墙外。被训的小模型不进入改进器角色。混元阶梯上这是带验证门的产物 / 配方搜索，最多蹭 L2 的「生成要过独立指标」；L3 要改改进手续，本仓库把手续写在人维护的 Markdown 里。README 把仓库叫做「故事怎么开始」，和开头那段不可读二进制戏拟对着读：交付是三文件瘦循环，不是已经发生的智能爆炸。
+
+**读**：三文件权限；五分钟 / val_bpb；式 (1) 的 keep 或 reset；#32 的 0.9773 / 89 次、#43 的 0.9697 / 126 次；说明书由人改；和 FunSearch / DGM / RLVR 的层差；不是 RSI。  
+**不读**：把 nanochat 听成改进器、把 NEVER STOP 听成已经改 `program.md`、把入职 Anthropic 听成 Claude 在递归训 Claude、把二手 11% 当一手、把 H100 数字搬到 Mac 上、把 teaser 里的第 10205 代当成已经发生。
+
+同层：[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 的验证门；[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md) 才改自己的工具代码。产物层：[04 FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)；[01 Polaris](../../4-Artifact层-产物发现/01-Polaris-科研智能体/01-Polaris-科研智能体.md)。坐标系：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。
+
+## 参考文献
+
+1. Karpathy, A. (2026-03). [autoresearch](https://github.com/karpathy/autoresearch). MIT. README 的三文件、五分钟、val_bpb、约 12 次/小时以该页为准。
+2. [program.md](https://github.com/karpathy/autoresearch/blob/master/program.md). 可写 / 不可写、keep-reset、NEVER STOP、简单性质。
+3. Discussion [#32](https://github.com/karpathy/autoresearch/discussions/32)（0.997900→0.977287，89 次）；[#43](https://github.com/karpathy/autoresearch/discussions/43)（0.997900→0.969686）。Agent 代发；当过夜样例，不当论文 Table。
+4. TechCrunch (2026-05-19). [Karpathy joins Anthropic's pre-training team](https://techcrunch.com/2026/05/19/openai-co-founder-andrej-karpathy-joins-anthropics-pre-training-team/). 入职与「用 Claude 加速预训练研究」的实验室叙述；不是本仓库的 RSI 证明。
+5. 本花园：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)；[04 FunSearch](../../4-Artifact层-产物发现/04-FunSearch-函数空间搜索/04-FunSearch-函数空间搜索.md)。

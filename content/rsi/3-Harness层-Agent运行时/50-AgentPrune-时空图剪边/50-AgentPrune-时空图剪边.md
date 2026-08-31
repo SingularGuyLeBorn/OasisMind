@@ -1,0 +1,116 @@
+---
+title: "50 · AgentPrune：时空图剪边，掩码冻着"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  Zhang 等把多 Agent 收成时空图，训练低秩掩码再一次性剪边。
+  表上括号里的 27.2% / 71.9% 是保留比例，摘要 28.1%～72.8% 是削减。
+  5.6 美元对 43.7 不是 Table 3。不是术语式 (2)。
+tags:
+  - RSI
+  - AgentPrune
+  - Harness
+  - 通信图
+  - 剪枝
+  - L2
+---
+
+# 50 AgentPrune：剪边省 token，配方冻着
+
+摘要写 MMLU 上 **5.6 美元** 打到别人 **43.7 美元** 的成绩，接进 AutoGen / GPTSwarm 能少 **28.1%～72.8%** token，两种攻击下分数还能高 **3.5%～10.8%**。打开附录 Figure 19：MMLU 上 AgentPrune **5.6** 对 GPTSwarm **43.56**，摘要把 43.56 收成 43.7。Table 3 五只 gpt-4 的 GPTSwarm MMLU 成本是 **47.60**，不是 43.7。两张账不要收成一行。Table 3 括号里 AutoGen MMLU **71.9%**、GPTSwarm HumanEval **27.2%**，除法对的是保留比例：349,583 / 486,034 ≈ 0.719，745,617 / 2,736,136 ≈ 0.272。摘要 28.1%～72.8% 是 \(1\) 减这两格。人把 71.9% 听成砍了七成，方向反了。3.5%～10.8% 没有印成主表。正文能钉的是全连接干净 83.1→84.7、提示攻击下 78.4→83.9（+5.5 个百分点），对 DyLAN / AutoGen 最多 +6.3。10.8 花园不从图上估。
+
+本篇夹在 [G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 和 [AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 旁边。同一组 Zhang / Yue / Wan / Wang / Cheng / Chen。G-Designer 用 VGAE 按题解码新图；这边不换节点集合，只在现成时空图上训掩码，再一次性幅度剪枝。GPTSwarm 学边概率一直更新；这边 \(K'\) 轮之后 \(\mathcal{G}^{\text{sub}}\) 冻着。不要和 G-Designer 的 MMLU 84.50 / HumanEval 89.90 横加：基线数字大量重合，不是两次独立复现。不要用 Table 2 的 90.30 去改 [Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 专文 HumanEval 91.0，也不要去改 AFlow 专文 94.7。**不是** RSI。**不是** 术语式 (2)。一手：Zhang, Yue, Li, Yun, Wan, Wang, Cheng, Yu, Chen；[arXiv:2410.02506](https://arxiv.org/abs/2410.02506)，**ICLR 2025**。代码 [yanweiyue/AgentPrune](https://github.com/yanweiyue/AgentPrune)。数字以 HTML Table 1–3、Table 5–6、式 (7)–(13)、§3–§4、附录 H 为准。禁止用 89.72 去改 G-Designer 的 89.84。
+
+## 1. 问题：密图贵，随机剪一点分还不掉
+
+作者把现场写成：链、树、星、全连接、GPTSwarm 都能涨分，账单跟着涨。Figure 3 用四只 gpt-3.5-turbo，在 MacNet 网状图和 LLM-Debate 上随机剪边。剪掉 **10%～30%**，MMLU 最多涨 **2.83%**。再剪下去才掉。定义 1：存在真子图 \(\mathcal{G}^{\text{sub}}\)，效用 \(\phi(\mathcal{G}^{\text{sub}})\ge\phi(\mathcal{G})\)。被剪掉的边叫通信冗余。式 (6) 想在效用波动不超过 \(\epsilon\) 时把冗余最大化。\(\epsilon\) 没给数值。这是人写的切口，不是模型发现该剪。
+
+空间边是同一轮对话里谁听谁；时间边是上一轮的话传到这一轮。执行必须是 DAG，才能拓扑序跑 I/O。剪完如果成环，还要再走 `DAGSampling`。附录写明：展示的稀疏图常常**不是** DAG，真正跑之前仍要采样成 DAG。剪枝输出不能直接当执行图。
+
+\(S\) 取这次部署里学到的掩码 \(\mathbf{S}^{\mathcal{S}},\mathbf{S}^{\mathcal{T}}\)，以及剪完的 \(\mathcal{G}^{\text{sub}}\)。单轮 \(S'=I(S)\) 可以发生：策略梯度推 \(K'\) 轮，或一次性剪出子图。术语式 (2) 还要 \(I'\subseteq S'\)。下一类题仍用同一份 \(p\%\)、同一档 \(Q'\in\{5,10\}\)、数学/常识 \(K=2\)、代码 \(K=4\)、同一条核范数、同一套 DAG 采样。混元台阶上这不是 L0：子图可以带到后面的题。也到不了改改进器。人没退出 \(I\)。作者写 plug-and-play。插件的接口还在墙外。
+
+相关工作把通信收成两刀。空间：直接输出（LATM、LLM-Debate 的独立发言）、链（ChatDev、MetaGPT）、树（作者把 AutoGen 也写进树）、图（MacNet、GPTSwarm）。时间：全量转发（Debate）、部分转发（PHP、DyLAN）、摘要转发（Reflexion、AgentVerse）。AgentPrune 的切口是两刀一起剪。GPTSwarm / MacNet 往往只动空间 DAG，时间侧仍可能全转发。插件进 AutoGen 时，附录按 Dynamic Group Chat 收成五角色：user proxy、manager、engineer、critic、code executor；三只时收成 manager / engineer / critic。这是人改节点集合，不是掩码自己长出角色。GPTSwarm 对照关掉了原文里 FileAnalyze / WebSearch 那种内部子图，改成和别的方法一样只分画像。附录还写：开源仓 MMLU 对话只传 A/B/C/D，不传推理过程，和论文 §2.2 不符，作者改代码让选项和推理一起传。本表 GPTSwarm 的 83.98 是改过仓之后的数，不要直接覆盖花园 GPTSwarm 专文。G-Designer 专文 84.50 / 89.90 / 0.3 百分点，测试 MMLU 153 道，VGAE 按题出图。本表 AgentPrune-C 84.72 / 89.38，均分 **89.72**。Vanilla、GPTSwarm、DyLAN、Complete Graph 多列和 G-Designer Table 1 **逐格相同**。同一实验室、同一批 gpt-4 对照，不是两篇互证。GPTSwarm 专文 HumanEval 0.88 是节点优化；本表 Table 1 是 88.49，Table 3 插件设定是 **84.49**。三笔不要收成一行。AFlow 80.3 执行器 4o-mini。MAS-GPT 65.47 执行器 Llama-3-70B。
+
+## 2. 机制：先训连续掩码，再一次性 TopK
+
+现成系统给出二值邻接 \(\mathbf{A}^{\mathcal{S}},\mathbf{A}^{\mathcal{T}}\)。AgentPrune 不改节点，只给每条边一个可微掩码，式 (7)：\(\mathbf{A}(\tilde{\mathcal{G}})=\{\mathbf{A}^{\mathcal{S}}\odot\mathbf{S}^{\mathcal{S}},\mathbf{A}^{\mathcal{T}}\odot\mathbf{S}^{\mathcal{T}}\}\)。空间图要先 `DAGSampling` 成 \(\hat{\mathcal{G}}^{\mathcal{S}}\)。式 (8) 一边用策略梯度推高效用，一边罚秩。效用 \(\phi\) 不可微，式 (9)(10) 用 \(M\) 次采样近似。秩改成核范数，式 (11)，约束掩码别离原图太远。只推 \(K'\ll K\) 轮，理由是 Early-bird：少训也能看出拓扑分布，兼着省 token。
+
+然后一次性幅度剪枝，式 (12)：
+
+\[
+\mathbf{B}=\mathbbm{1}\bigl(\mathbf{A}\neq 0 \wedge \operatorname{TopK}(\mathbf{S},|\mathbf{A}|\times(1-p\%))\bigr).
+\]
+
+留下最大的 \((1-p\%)\) 那些掩码，其余边关掉。后面 \(K-K'\) 轮严格走 \(\mathcal{G}^{\text{sub}}\)。仓库例子 `pruning_rate 0.5`，主文没有把六列的 \(p\%\) 印成表。人改 \(p\%\)，等于人改 \(I\)。
+
+两种训练粒度。对话级：同一道题先跑 \(K'\) 轮带掩码，剪完再跑剩下的轮。查询级：基准 \(Q\) 道题里拿 \(Q'\ll Q\) 道当训练集，剪一次，剩下 \(Q-Q'\) 用冻住的子图。实现写 \(Q'\in\{5,10\}\)。Figure 21 把 \(Q'\) 从 5 试到 25，正文仍钉 5 或 10。数学和 MMLU \(K=2\)，HumanEval \(K=4\)。温度一律 1。Agent 少于四只、结构已经是链或直接输出，作者说不适用。插件不是万能接头。
+
+式 (13) 把省下的 token 写成 \(((1+p\%)K-(M+p\%)K')\) 乘边代价，再加一项 \((1-M)K'\) 的查询代价。\(M>1\) 时训练阶段会更贵。省钱发生在剪完之后的轮次。不要把式 (13) 听成推理一定比训练便宜：\(K'\) 和 \(M\) 设大了，第一段会把省下来的吃掉。查询级训练另有附录 E，主文没把 \(Q'\) 那套 \(\Delta\) 印成数字。时间边剪的是历史，空间边剪的是同轮谁听谁。Figure 4 画成先空间后时间。顺序是人写的流水线，不是模型决定先剪哪一刀。链太简单不能插件，是因为候选边不够给 TopK 挑。全连接和随机图边多，才有 50% 那种剪法。分层图 Table 1 均分只有 88.38 的 L 变体，底图 MMLU 已经 78.41，剪完 83.50，仍低于 C 的 84.72。底图差，掩码救不全。
+
+角色池用 gpt-4 生成。Table 6 去掉画像：AgentPrune-C HumanEval 89.38→87.8，MMLU 84.72→84.3；数学列几乎不动。去掉低秩：HumanEval 88.9 / 89.3，略掉。低秩不是装饰。画像在代码和常识上更有用，数学上几乎是摆设。
+
+![密时空图进掩码训练，一次性剪出子图，冻住的 gpt-4 在稀疏图上跑；下一题虚线回去](./images/fig-agentprune-loop.png)
+
+> 图 1：实线是一道题或一小段训练。虚线是下一题。剪完之后掩码不再更新。
+
+**图 1 解析**
+
+- **Dense spat-temp graph**：系统自带的空间边加时间边。
+- **Train masks K-prime**：策略梯度加核范数，只推很少轮。
+- **One-shot prune G_sub**：TopK 留下 \((1-p\%)\)。
+- **Frozen gpt-4 sparse**：五只执行器冻着，走稀疏图。
+
+## 3. 数字：89.72 均分，链式 92.92 是印错
+
+Table 1，五只 `gpt-4-1106-preview`。Vanilla 均分 **81.65**，六列和 G-Designer 专文同一张底。CoT 83.73。ComplexCoT 84.99。自洽（ComplexCoT）85.35。链式均分印成 **92.92**。六列 82.35 / 85.57 / 94.38 / 83.41 / 70.94 / 80.88 相加除以 6 是 **82.92**。G-Designer 表上链式也是 82.92。花园按 82.92 读，不把链听成均分第一。星形 82.07，MMLU 80.79 低于 Vanilla。树形 GSM8K 84.56 低于 Vanilla。分层图 MMLU **78.41**，掉 3.73。全连接均分 86.55。随机图 84.58。GPTSwarm 均分 **86.77**，HumanEval 88.49。LLM-Debate 87.01。PHP 均分 87.02，GSM8K **92.45**。G-Designer 表上 PHP GSM8K 是 **95.50**，同列不要横加。DyLAN 均分 84.48，MMLU 80.16 低于 Vanilla，HumanEval **89.70**。
+
+AgentPrune-C：84.72 / 95.62 / 97.25 / 91.85 / 79.47 / 89.38，均分 **89.72**。AgentPrune-L 均分 88.38。AgentPrune-R：83.94 / **95.83** / 96.30 / 91.68 / 78.60 / **90.30**，均分 89.44。MMLU 最高是 C 的 84.72。GSM8K 和 HumanEval 最高是 R。正文 90.3% / 95.8% 钉的是 R，不是三变体都最高。MultiArith 上全连接 97.20、GPTSwarm 97.84，C 的 97.25 没有赢 GPTSwarm。AQuA 上 C 的 79.47 和 G-Designer 专文逐格相同，SVAMP 91.85 也相同。不是偶合能解释的宽度。读两篇专文时，把相同列当同一张实验底盘，只比较切口：一边按题出图，一边在底图上剪。C 的 HumanEval 89.38 低于 G-Designer 89.90，也低于本表 DyLAN 89.70。均分 89.72 对 G-Designer 89.84，差 0.12，没有比较意义。LLM-Blender 缺 HumanEval，均分 86.10 是缺列硬算。Star HumanEval 75.65 低于 Vanilla 71.68 吗？不，75.65 更高，但相对 Vanilla 的箭头印成 ↓3.97，方向反了。75.65−71.68=+3.97。花园按加法读，不按箭头读。这和链式均分 92.92 一样，是表上的印错，不是新方法。
+
+Table 2 另比编码专法。Reflexion **91.40**，AgentPrune-R **90.30**。这一列没有赢 Reflexion。\(\Delta\) 相对 Vanilla 71.68：R 是 +18.62，Reflexion 是 +19.72。MetaGPT 85.90，AutoGen 85.41。不要用 90.30 改 Reflexion 专文 91.0，也不要改 AFlow 94.7。DyLAN Table 1 的 89.70 已经接近 C 的 89.38，C 在 HumanEval 没有赢 DyLAN。
+
+token 故事。正文写 HumanEval 和 GSM8K 上 AgentPrune 的 token 不到 DyLAN 的 **40%**。Figure 5 是散点，主文没有把这对绝对 token 印成表。附录 Figure 19：MMLU **5.6** 对 GPTSwarm **43.56**；GSM8K AgentPrune **65.9** 对 DyLAN **357.47**。5.6 对 43.7 钉在 MMLU 散点，不是 Table 3 的插件账。GPTSwarm / DyLAN 的 prompt token 是随机图的 **2.4～5.3 倍**，也在 Figure 5，没有表。
+
+Table 3，五只 gpt-4 插件。AutoGen MMLU 82.13→82.78（+0.65），prompt 486,034→349,583（保留 71.9%，削减 28.1%），成本 7.537→6.093。HumanEval 85.41→86.65（+1.24），保留 64.0%，正文写少 **36%** prompt、省 **1.486** 美元（8.828−7.342）。GSM8K 90.06→92.85（+2.79），保留 59.9%，成本 73.21→59.60。作者把 GSM8K 写成最多 8.5K 条，训练加测试那个量级，不要听成测试集只有 1319 却花了 73 美元就完事。GPTSwarm MMLU 83.98→**83.05**（掉 0.93），prompt 保留 32.4%，成本 47.60→23.05。插件不是每列都涨。HumanEval 84.49→84.96（+0.47），保留 27.2%，削减 72.8%，成本 57.49→29.80。GSM8K 89.74→90.58（+0.84），保留 39.4%，削减 60.6%，成本 234.76→57.17，省 **177.59**，正文写 177.58。总 token 约 \(1.7\times 10^{7}\) 钉在五只 GPTSwarm 的 GSM8K。
+
+Table 5，三只 gpt-4。GPTSwarm GSM8K 成本 **97.23** 对五只的 234.76。正文 97.23 钉三只。AutoGen MMLU 保留 79.4%；GPTSwarm HumanEval 保留 29.2%。三只比五只便宜，不是剪枝单独的功劳。从 3 只加到 5 只，Figure 21 说分涨得明显；5 到 9 只边际小。不要把可扩展写成 9 只已经打过 89.72。Table 5 没有把九只的均分印成 89.72 那种六列。灵敏度图只能读趋势，不能当主表。Table 5 AutoGen GSM8K 87.23→88.51，prompt 保留 63.9%，成本 41.92→33.71。GPTSwarm MMLU 三只 83.32→83.66（+0.34），五只反而 83.98→83.05。同一插件，只数一变，MMLU 可涨可跌。不要把 Table 3 的掉分听成剪枝一定伤准确率，也不要把 Table 5 的 +0.34 听成一定涨。Completion token 有时会升：五只 AutoGen HumanEval 130,196→139,714。省的是 prompt 侧。总成本仍降，是因为 prompt 更贵。把 28.1%～72.8% 听成总 token 也会偏。
+
+攻击。链最多掉 **20.8%**。AutoGen / DyLAN 掉 3.2%～6.2%。全连接加 AgentPrune：干净 83.1→84.7，提示攻击 78.4→83.9。GPTSwarm 本身抗得住，插件边际小。替换攻击是把一只换成胡言 API，Figure 20 没有数字表。随机剪 10%～30% 涨 2.83%，用的是四只 3.5，不要和五只 gpt-4 的 89.72 横加。式 (6) 的目标写法是最大化被剪掉的部分，约束效用差不超过 \(\epsilon\)。式 (8) 又改成最大化效用减秩。两套目标拧着：一个先保证分、再剪最多，一个先推分、再靠核范数变稀。实验落地走的是式 (8)(12)，不是有 \(\epsilon\) 闸门的式 (6)。花园按掩码加 TopK 读，不把定义 1 听成已经自动满足 \(\phi(\mathcal{G}^{\text{sub}})\ge\phi(\mathcal{G})\)。Table 3 GPTSwarm MMLU 掉 0.93，就是反例。插件可以伤准确率。作者摘要写 comparable，comparable 不是单调不减。
+
+## 4. 这不是术语式 (2)，一次性剪完也不是改进器
+
+测试时走的是冻住的 \(\mathcal{G}^{\text{sub}}\)。改进器没变。\(p\%\)、\(Q'\)、\(K\)、核范数、DAG 采样、策略梯度、角色池，都还在。混元 L0 装不下跨题保持的子图；L3 要改提议 / 选择程序。本篇停在留下掩码和子图，不改怎么 TopK。作者把 one-shot 写成省钱。省钱的前提是 \(K'\) 和 \(M\) 人已经选好。
+
+和邻居钉死。G-Designer 按题出图，MiniLM 和链式锚点冻着；这边按现成图剪边，掩码冻着。两边都不是改改进器。GPTSwarm 边概率可以一直 REINFORCE；插件进 GPTSwarm 之后，剪完就不再学边。AFlow 搜算子图。ScoreFlow 训 Python 生成器。MAS-GPT 一次前向吐 `forward`。五截不要收成「都已经是 RSI」。[MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md) 超网按题采样，五列均分 83.59，6%～45% 是 MATH 推理美元比。
+
+没有墙外检查「这张 \(\mathcal{G}^{\text{sub}}\) 该不该改 \(p\%\)」。错边一旦在 \(Q'\) 道训练题上掩码大，就会留下。附录案例：GPTSwarm 五只里两只 ToT、三只 I/O，剪完 I/O 入边少、ToT 入边多。案例证明会偏向更会综合的节点，不证明这条规则已经进了 \(S'\)。温度 1，换 0 会动 89.72。
+
+对有大模型基础的读者，读完应能回答四句。改的是哪一层？Harness 里那张时空掩码，以及剪完的子图。五只 gpt-4 权重动了没有？没有。表上 27.2% 是削减还是保留？保留。还缺什么才叫花园 RSI？\(p\%\) 或 \(Q'\) 进入 \(S'\)，并且下一类新基准用的就是升级后的那份剪枝手续。现在换剪枝率、换 \(K=2\)、把 VGAE 收进掩码，都是人改 \(I\)。结论写成更便宜的多 Agent。正说明旋钮还在人手里。时间边一旦剪掉，下一轮看不到那句历史。空间边剪掉，同轮有的 Agent 变成盲的。案例里 ToT 节点留边、I/O 节点去边，像人手写的权重：会综合的多听，只会读题的少听。规则仍是掩码幅度，不是节点自己申请带宽。换一批不会综合的角色，同一套 \(p\%\) 会留下另一张图。这是底图和画像的函数，不是改进器在长。仓库 README 把 ICLR 2025 写成剪冗余也能抬推理。主表抬分最大的是 GSM8K 上相对 Vanilla 的 10.43 个百分点（R 的 95.83），不是相对 PHP 的 92.45。相对 PHP 只高 3.38。HumanEval 相对 Vanilla 18.62，相对 Reflexion 是负的。插件故事里涨得最多的是五只 AutoGen GSM8K 的 +2.79。摘要三件事（5.6 美元、28.1%～72.8%、3.5%～10.8%）分属散点、保留比换算、攻击图，不要收成同一张主表的三列。HumanEval 上 R 相对 Vanilla 的 +18.62 和 DyLAN 的 +18.02 只差 0.60 个百分点，DyLAN 没有剪枝插件也能到 89.70。C 的 89.38 还低于 DyLAN。剪枝卖的是账单，不是 HumanEval 第一。MMLU 上 C 比 Vanilla 高 2.58 个百分点，比 GPTSwarm 高 0.74，宽度和 G-Designer 专文那 2.36 / 0.52 是同一量级。两篇都不要听成常识基准被翻盘。作者把链、直接输出写成不能插件。花园读成：边太少，TopK 没有候选。这不是模型拒绝简单拓扑，是人把适用范围写死。少于四只也不适用。Table 5 的三只实验是作者自己跑的对照，和「超过三只」那句并排存在。三只仍能插，只是正文把下限写在算法段。以实验为准：三只、五只都有表。九只只有 Figure 21 的灵敏度，没有 89.72。核范数让掩码趋向低秩，作者把它写成还能挡恶意边。攻击实验没有单独把「只剪不加低秩」印成 Figure 6 的一列。Table 6 的 w/o low-rank 是干净集，不是攻击集。低秩有利于干净分，不等于已经证明核范数就是 78.4→83.9 的原因。花园把两件事并排抄，不收成因果。PHP 在本表 GSM8K 92.45，在 G-Designer 表 95.50，同名方法两张底盘。Vanilla 却逐格相同。说明对照里有的行是共用缓存，有的行重跑过。共用缓存的行不能拿来证明第二篇复现了第一篇。只比较切口：出图对剪边。出图每题一张新邻接；剪边在底图上关边。一张新图可以比底图更密，剪边默认只会更稀。稀是这边省 token 的几何原因。G-Designer 的 95.33% 是另一篇摘要，不要借来当本表 72.8%。72.8% 钉 GPTSwarm HumanEval 的 prompt 削减，5.6 美元钉 MMLU 散点，两笔分母都不是 95.33。95.33 只属于 G-Designer 摘要，本篇没有同口径列。本表只报 prompt 保留比，不报「少传百分之九十五」。少传多少只读括号那一格。括号外是准确率。
+
+![上排稀疏子图与 K′ 轮掩码；下排剪枝率、Q′、K 和 DAG 采样冻着](./images/fig-agentprune-frozen.png)
+
+> 图 2：实线只更新掩码（训练时很少轮）和本题子图。虚线墙右边是冻着的剪枝与执行手续。
+
+**图 2 解析**
+
+- **左列**：\(K'\) 轮可推掩码；剪完得到 \(\mathcal{G}^{\text{sub}}\)。
+- **右列**：\(p\%\)、5 或 10 道 \(Q'\)、\(K=2\) 或 4、DAG 采样加策略梯度仍是人写的。
+- **读法**：一次性剪边不等于 \(I\) 在长。G-Designer 的 VGAE 和这边的 TopK 都在墙外选谁留下。
+
+同一句「自动编排多 Agent」，至少分四截。人手写链 / 星 / 树。GPTSwarm 在给定节点上学边。G-Designer 用 VGAE 按题出图。AgentPrune 在现成图上剪边。四截不要收成「都已经是 RSI」。[MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md) 把超网当可采样分布，五列均分 83.59。AgentPrune 的连续更新发生在 \(K'\) 或 \(Q'\) 那一小段，不是 AutoFlow 那条 REINFORCE 循环，也不要收成「都在训图所以已经是 RSI」。
+
+「28.1%～72.8%」要和 Table 3 的保留格一起读。71.9% 是 AutoGen MMLU 还剩多少 prompt。27.2% 是 GPTSwarm HumanEval 还剩多少。5.6 对 43.7 是 MMLU 散点，不是 47.60。链式 92.92 按 82.92 读。90.30 没有赢 Reflexion 91.40。PHP 92.45 不要改 G-Designer 的 95.50。无金标的开放题，\(\phi\) 打不出来，策略梯度对就推不成。主实验能转起来，前提是六列都能用准确率或 pass@1。
+
+\(\mathcal{G}^{\text{sub}}\) 不会因为某次 89.72 就把 \(p\%\) 写进 Agent 提示。人要允许新剪枝率、让模型改 \(Q'\)、把 TopK 本身放进搜索，都是改 \(I\)。这和 Gödel 改自己的决策函数、DGM 改自己的 Python 正好相反。作者把 AgentPrune 写成省 token 的插件。花园读成 2025 年这篇时空图一次剪枝的定位，不读成已经闭合的递归，也不读成 G-Designer 的 84.50 已经被 84.72 作废。执行器切分、是否按题出新图，都不一样。
+
+**读**：Table 1 的 89.72 / R 的 90.30 与 95.83，Table 3 保留比与削减比，5.6 对 43.56，链式均分按 82.92，不是式 (2)。  
+**不读**：把 71.9 听成削减、用 90.30 改 91.0、用 5.6 改 Table 3 的 47.60、说剪枝率已经进了 \(S'\)、说已经 RSI、把 AgentPrune 和 G-Designer 收成一篇。
+
+同层：[49 G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[48 MAS-GPT](../48-MAS-GPT-一次前向吐MAS/48-MAS-GPT-一次前向吐MAS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[47 AutoFlow](../47-AutoFlow-自然语言工作流RL/47-AutoFlow-自然语言工作流RL.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[51 MaAS](../51-MaAS-Agent超网/51-MaAS-Agent超网.md)、[52 ANN](../52-ANN-层状文本反传/52-ANN-层状文本反传.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+
+## 参考文献
+
+1. Zhang, G., Yue, Y., Li, Z., Yun, S., Wan, G., Wang, K., Cheng, D., Yu, J. X., & Chen, T. (2025). [Cut the Crap: An Economical Communication Pipeline for LLM-based Multi-Agent Systems](https://arxiv.org/abs/2410.02506). ICLR 2025. Table 1 的 89.72、Table 3 的保留比以 HTML 为准。
+2. 代码：[yanweiyue/AgentPrune](https://github.com/yanweiyue/AgentPrune)。
+3. 本花园：[G-Designer](../49-G-Designer-任务自适应通信图/49-G-Designer-任务自适应通信图.md)；[GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)；[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)。G-Designer 专文 84.50 / 89.90 以专文为准，不要和本表 84.72 / 90.30 横加。

@@ -1,0 +1,135 @@
+---
+title: "23 · TEMPERA：每道题改一遍提示，策略训完就冻"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  Zhang 等用 PPO 在测试时按查询编辑指令、示范和 verbalizer。RoBERTa-large 少样本 SST-2 91.9 对 RLPrompt 90.1。
+  策略训完冻着。不是式 (2)。Yelp 上 RLPrompt 更高。5.33× 不要和 Figure 1 的 4× 收成一格。
+tags:
+  - RSI
+  - TEMPERA
+  - prompt-optimization
+  - Harness
+  - test-time-editing
+---
+
+# 23 TEMPERA：每道题改一遍提示，策略训完就冻
+
+[GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 给整场任务搜出**一条**说明书。TEMPERA 反过来：测试时看到这道查询 $x$，才用一只训好的策略把当前提示改 $T$ 步，改完的字符串只服务这一题。RoBERTa-large、每类 16 条训练，SST-2 **91.9** 对 RLPrompt **90.1**（+1.8），CR **91.1** 对 **87.2**（+3.9）。Yelp P. 上 RLPrompt **93.9** 高于本方法 **92.6**，不是五列全赢。权重不动。策略网络在训练集上用金标算奖励，测试时不再更新。
+
+本篇是 Harness 里「编辑派接到 RL、而且提示跟查询走」的样板。GrIPS 的手术菜单是人写的贪心规则；这边菜单还是人写的，但**选哪一刀**交给 PPO。交卷不是一条跨题指令，是每道题一份可读提示。**不是** RSI。**不是** 测试时优化（没有测试标签）。**不是** API 黑盒：状态用 RoBERTa 最后一层隐状态。一手：Zhang, Wang, Zhou, Schuurmans, Gonzalez，UC Berkeley / Google Brain / Alberta，[arXiv:2211.11890](https://arxiv.org/abs/2211.11890)，ICLR 2023 notable top 25%（OpenReview `gSHyqBijPFO`）；代码 [tianjunz/TEMPERA](https://github.com/tianjunz/TEMPERA)。数字以 HTML Table 2–7、附录 Table 8–12、Figure 1 / 3 为准。主实验对齐 LM-BFF / RLPrompt：每类 16 训练、每类 16 验证、标准测试集、**4** 个种子报均分和标准差。骨干 $\mathcal{L}=$ RoBERTa-large。仓库 README 里另一套 PPO 超参不要写进正文。
+
+## 1. 问题：一条提示伺候所有查询，示范顺序就已经会翻车
+
+连续软提示要梯度，API 没有。离散提示要么整段生成（RLPrompt），要么在说明书上爬山（GrIPS）。两边默认都是**查询无关**：搜完一条，测试集共用。Lu 等已经证明示范顺序能把分数拧到另一头；Liu 等用近邻示范，分数也会动。作者的观察是：查询相关的连续 prompt tuning 已经有人做，离散这边还缺一个能塞进人写初稿、又不必每道题从空串生成的搜索。
+
+TEMPERA 的补丁：把编辑收成 MDP。开局给人写的 $p_0$（Natural-Instructions 说明书 + 随机示范）。策略看 $(p_t,x)$ 的隐状态，从菜单里挑一刀，确定性改出 $p_{t+1}$。训的时候有金标，奖励是相邻两步分数差。部署时没有标签，只把训好的 $\pi$ 跑满 $T$ 步再分类。作者把这写成 test-time **editing**，并点名不是 test-time **optimization**：测的时候既没有真值，也没有代理目标可再梯度。
+
+$S$ 如果只看提示字符串，每道题的 $p_T$ 会变，题做完就扔。单轮 $S'=I(S)$ 可以发生在「这一题的 $T$ 步」里。式 (2) 还要 $I'\subseteq S'$。动作菜单、PPO、$\lambda_1/\lambda_2$、$T=8$、注意力策略的层数，下一场 SST-2 原样再走。混元台阶上，跨题留下的是那只**已经冻住的策略**，不是每题那份提示。提示寿命是 L0。策略是薄 $H_t$ 里一块训过的模块，自己不改自己。
+
+![查询进策略，挑一刀编辑，T 步后分类](./images/fig-tempera-loop.png)
+
+> 图 1：实线是这一题的提示被改。虚线在冻结图。更新的是 $p_t$，不是 PPO 配方。
+
+**图 1 解析**
+
+- **查询 $x$**：带着初稿 $p_0$。$p_0$ 的说明书来自 Natural-Instructions，示范从大小 16 的池子里随机抽 $n=4$ 条。
+- **注意力策略**：看 $\mathcal{L}(p_t,x)$ 的最后隐状态，在候选图上做 attention，挑一种编辑。
+- **一刀**：改说明书短语、换示范，或换 verbalizer。转移确定，随机只在策略。
+- **$T$ 步**：附录时间上限 8。满步之后用掩码位置做分类，这一题的 $p_T$ 丢掉。
+
+## 2. 机制：三块菜单，奖励是两步分数差
+
+算法 1 分训练和部署。训练：从 $\mathcal{D}_{\mathrm{train}}$ 抽 batch，重置 $p_0$，走 $T$ 步。每步先用当前 $p_t$ 跑冻结 $\mathcal{L}$ 得到 $s_t$，策略出 $a_t$，环境确定性改提示，记下 $r_t$。一段结束后用 PPO 损失更新 $\pi_\theta$。评估集 $\mathcal{D}_{\mathrm{eval}}$ 在算法输入里出现，正文没有把验证集写成早停协议，花园不把 16 条/类验证听成另一套可调的 $I$。部署：同一只 $\pi$ 对测试查询再走 $T$ 步，**不再更新**。作者强调 $f$ 在固定训练集上学会，测试零额外训练。
+
+状态不用生词。$s_t=\mathcal{L}(p_t,x)$，即冻结 RoBERTa 的最后隐状态。因此实现默认要白盒。GrIPS 那种只问 API 补全概率的路径，本篇主实验没走。隐状态不同样本之间方差很小，所以先做 observation normalization：跑均值方差，再送进策略和价值网络。转移确定，随机只在策略。可以设固定地平线，也可以另写终止函数；主实验用固定 $T=8$，没有学何时停。目标是 $\mathbb{E}[\sum_{k=0}^{T}\gamma^{k} r_k]$，$\gamma=0.99$。逐步奖励已经是分数差，折扣几乎不改变「最终要对初稿涨分」这件事，但 PPO 仍按折扣学。
+
+动作分三块，一次只挑一类对象。
+
+说明书。初稿来自 Natural-Instructions。NLTK 切到短语，然后 swap / delete / add。$l$ 块短语时，动作数 $(l(l-1))/2+2l$。和 GrIPS 同属短语手术，解析器不是那篇的 CRF 成分句法，加回也不走 PEGASUS 释义。Table 1 的 add 例子会把 “Given text” 重复一遍——菜单允许这种看起来像噪声的刀。
+
+示范。池子大小 $N=16$，提示里留 $n=4$ 条。允许和池里未上场的例子换，也允许提示内部换序。动作数 $nN-n(n-1)/2$，禁止和自己换。池子从训练集另抽，**不是**拿去训 PPO 的那份 few-shot 集。两套 16 不要收成同一袋。
+
+Verbalizer。从 PromptSource 的候选里，给每条示范和当前查询各挑一套标签词。作者写这一项会抬分。Table 5 定性：SST-2 把 positive/negative 换成 great/terrible；AG News 主要是换了更像当前新闻的示范。
+
+奖励跟 RLPrompt 的 step reward 同一家族。先定义当前提示对正确类 $c$ 的分数：
+
+$$
+s(c,x,p_t)=\lambda_1\log P_{\mathcal{L}}(\hat{y}_c\mid x,p_t)-\lambda_2\max_{c'\neq c}\log P_{\mathcal{L}}(\hat{y}_{c'}\mid x,p_t)
+\tag{1}
+$$
+
+附录 $\lambda_1=2.0$，$\lambda_2=1.8$。逐步奖励是差分：
+
+$$
+r_t=s(c,x,p_t)-s(c,x,p_{t-1})
+\tag{2}
+$$
+
+忽略折扣时，从 0 累到 $T$ 正好是 $s(p_T)-s(p_0)$。RL 在优化「相对初稿涨了多少」，不是某一步的绝对对数概率。不同题上编辑的涨幅量级差一截，所以再做 sample-wise reward normalization。只看隐状态会在 $p_A\leftrightarrow p_B$ 里打转，策略因此还要条件于**动作历史**，打断来回刀。
+
+策略结构：3 层 encoder、3 头、隐维 48，策略头和基线头共享这套注意力，各接 2 层 MLP，不用 dropout。作者写成 GPT 风格的 encoder 块，注意力摊在候选示范图上，用来强调和当前 $x$ 更像的例子。这和 Liu 等「测的时候检索近邻示范」是同一几何，差别是检索被收进可训练的 attention，而不是另训一个 dense retriever。PPO + GAE。附录 Table 8：学习率 $5\times 10^{-5}$，熵系数 0.005，价值损失系数 0.5，mini-batch 32，$\gamma=0.99$，GAE $\lambda=0.95$，并行环境 256，每段 8 步。并行环境写「和 few-shot 设置一样大」，正文举例 32，附录表写 256，花园主判定用附录表，不拿 README 的 `lr 6e-4` 去改。微调对照另有一套：HuggingFace 上把整只 RoBERTa 训 100 epoch，学习率 $3\times 10^{-4}$，Adam。那一行动的是 $\theta$，和主方法不是同一层。
+
+附录 Table 13 把少样本分母写死。SST-2 / CR / MR / Yelp / RTE：2 类，训练=验证=32，测试分别大约 1.8k / 2k / 2k / 38k / 0.3k。AG News：4 类，64 / 7.6k。SNLI、QNLI、MNLI：3 类，48 / 约 10k。$|\mathrm{Train}|=16\times|\mathcal{Y}|$，不是「整个 GLUE 训练集」。Yelp 测试 38k 特别大，方差却只有 1.7，作者拿来挡「只在小测试集上碰运气」。RTE 测试大约 300 条，60.3 对 60.4 那种 0.1 的差不要读成机制胜利。
+
+![上排这一题的 p 被改完即丢；下排 RoBERTa、动作菜单、训好的 π 和 PPO 配方冻着](./images/fig-tempera-frozen.png)
+
+> 图 2：实线更新当题提示。虚线是冻着的 $\theta$、菜单和测试期的 $\pi$。训练期 $\pi$ 会动，测试期不再动。
+
+**图 2 解析**
+
+- **会变（当题）**：$p_t$；动作历史；$T$ 步后丢掉。
+- **会变（训练期）**：策略参数 $\pi_\theta$。测试期冻住。
+- **冻 $\theta$**：RoBERTa-large 不微调。对照里的 Finetuning 行才动全模型。
+- **冻 $I$**：三块菜单、NLTK 切分、式 (1)(2)、$T=8$、PPO 超参、PromptSource 词表。
+- **门**：训练用金标对数概率差。测试没有金标，只执行 $\pi$。
+
+## 3. 数字：91.9 对的是 SST-2 上的 RLPrompt，不是 GrIPS 那篇的 4.29
+
+Table 2 是主表。少样本分类，RoBERTa-large。TEMPERA 行：SST-2 **91.9 (2.0)**，Yelp P. **92.6 (1.7)**，MR **88.0 (1.1)**，CR **91.1 (1.6)**，AG News **85.5 (1.5)**。相对 RLPrompt：SST-2 +1.8，CR +3.9，MR +1.3，AG News +8.3；Yelp **−1.3**。相对 GrIPS 同表：SST-2 87.1、Yelp 88.2、MR 86.1、CR 80.0、AG News 65.4。这张表上的 GrIPS 是作者在 **RoBERTa + GLUE 少样本** 上的复现，**不是** Prasad 等 InstructGPT、Natural-Instructions 八套、Table 1 的 +4.29。禁止用 91.9 去改 60.09，也禁止用 87.1 去改 58.90。
+
+微调对照：SST-2 80.6、Yelp 88.7、MR 67.4、CR 73.3、AG News 84.9。AG News 上 TEMPERA 85.5 几乎贴着全模型微调。作者还写方差小于 Soft Prompt Tuning 和 [AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)。Soft Prompt SST-2 73.8 (10.9)，AutoPrompt CR 57.5 (5.8)，确实散。Black-Box Tuning 在 SST-2 已到 89.1，本方法 91.9，差距是 2.8 不是 1.8；1.8 只对 RLPrompt。人手写 Manual Prompt 和 Instructions 两行没有标准差：SST-2 分别 82.8 和 89.0。Instructions 已经很高，GrIPS 在同表 SST-2 上 87.1，**低于**人手说明书 89.0。作者仍把 GrIPS 放进搜索对照。花园读成：在 RoBERTa 少样本情感上，短语贪心不一定赢初稿；TEMPERA 的涨幅更多来自示范和 verbalizer，不只来自说明书手术。AG News 上 Instructions 掉到 54.8，GrIPS 65.4，TEMPERA 85.5，主题分类才把编辑空间用满。四次随机种子平均，括号是标准差。作者写 TEMPERA 比 Soft Prompt / AutoPrompt 稳，看的是那些两位数的标准差，不是说 2.0 已经小到可以忽略 few-shot 抽样。AG News 上「几乎可比微调」指 85.5 对 84.9，差在置信区间里，不要读成已经稳定超过全参数微调。In-Context Demo 那一行只随机拼一条训练例子，SST-2 已到 85.9；本方法的示范编辑是在 16 条池子里换，不是「示范本身无效」。池子 16 条也从训练集抽，但和 PPO 用的 few-shot 集错开，避免策略在自己的示范上背答案。
+
+查询无关对照（HTML Table 3，正文有处写成 Tab. 4，以表内容为准）。TEMPERA (No TTE) 在训练时就不看 $x$，测到一条共用提示：SST-2 **92.0**、MR **87.4**、AG News **81.3**。加上测试时编辑：SST-2 **91.9**（几乎平，略低）、MR **88.2**（+0.8）、AG News **84.3**（+3.0）。作者读成：简单情感题共用提示就够；AG News 这类更难的题，跟查询走才拉开。主表 AG News 85.5 和这张 84.3 不是同一格，不要手工对齐。
+
+编辑消融（HTML Table 4）。去掉说明书和 verbalizer：SST-2 / MR / AG News = 91.2 / 87.2 / 82.2。只去掉说明书：91.9 / 88.2 / 84.3。全开：92.4 / 88.4 / 85.5。Verbalizer 在 AG News 上大约 1.2 点。这张全开 92.4 也高于 Table 2 的 91.9，口径是消融设定，主判定仍回 Table 2。
+
+示范条数（Table 6）默认 4。2 / 4 / 8：SST-2 91.6 / 91.9 / 92.4，MR 87.9 / 88.2 / 88.4，AG News 84.0 / 84.3 / **82.2**。AG News 从 4 加到 8 掉点，作者写 RoBERTa 512 截断。池子大小（Table 7）8 / 16 / 32 只缓涨，SST-2 91.6→91.9→92.2。作者读成对池子不敏感。
+
+数据效率不要收成一个倍数。摘要 **5.33×** 是相对传统微调的平均样本效率。Figure 1 图注：SST-2、AG News、RTE、MR 四套均分，**4×** 更少样本到相近表现。Figure 3 正文：SST-2 几乎 **8×**，Yelp 大约 **4×**，区间写成 4× 到 8×。附录 Figure 4：八套里 MRPC、QNLI 微调仍更好。三套说法并存，花园逐条钉，禁止用 5.33 去改图注 4，也不要用 8 当四套平均。
+
+附录 Table 9 是另一张主表外的 NLI / 释义。TEMPERA：RTE 60.3、QNLI 57.4、SNLI 56.4、MNLI 45.2、MRPC 74.0。微调：58.6 / **60.2** / 54.64 / **47.8** / **77.4**。In-Context Demo 在 RTE 上 60.4，略高于 TEMPERA。作者自己的图注写「除 MRPC 和 QNLI 外常常更好」。不要把 Table 2 五列胜利讲成「全面超过微调」。每类 512 条的 Table 12：SST-2 93.8 对微调 93.4，MR 88.6 对 87.0，AG News **88.6 对 89.5**（微调高），RTE 71.4 对 67.9。加数据不是本方法单边赢。
+
+定性 Table 5 只给了两道题，够用来看策略爱动哪一块。SST-2 说明书几乎原样，变动在标签词：positive / negative 换成 great / terrible，示范上的情感词跟着换。AG News 说明书不动，把一条「名字与性感」的 Technology 示范换成日本经济放缓的 Business 示范，再去预测华尔街空头那篇。作者说多数时候是选示范、换 verbalizer、偶发短语手术。可读，和 AutoPrompt 搜出来的无意义 trigger token 对照。可读不是 RSI 证书，只说明动作菜单被设计成不把句子改出词表。Table 1 的 add 仍允许 “Given text, given text”，人读得重复，菜单不管。
+
+## 4. 测试时编辑不是式 (2)
+
+听成「模型在测试时改自己怎么提示」差在主语。改提示的是外面那只 PPO 策略。谁规定能改哪三块？人。谁规定奖励长什么样？人写的式 (1)(2)。谁规定走几步、并行多少环境？人。测试期 $\pi$ 冻住，下一道题还是同一只 $\pi$，不会因为这道题的 $p_T$ 写得好就升级搜索器。提示跟查询走，寿命反而比 GrIPS 更短：GrIPS 至少留下一条任务级说明书；这边 $p_T$ 题做完就丢。
+
+和 [GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md) 钉死。那边贪心、查询无关、API 可跑、手术含释义；这边 PPO、查询相关、要隐状态、手术含示范和 verbalizer。Table 2 的 GrIPS 列不能回写 Prasad 的 Natural-Instructions 表。和 [RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md) 钉死：Deng 等用 RL **生成**离散提示，查询无关；本篇用 RL **编辑**初稿，查询相关。Yelp 上生成派更高，情感短句不一定需要跟题走。本篇 Table 2 的 RLPrompt 列（SST-2 90.1、Yelp 93.9）贴着 Deng 等 2 token 行，不要拿去改那篇 5 token 的 92.5 / 95.1。和 [APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md) 钉死：APE 从示范整段提案，默认不迭代，骨干是 InstructGPT，GSM8K 43.0 和本篇 RoBERTa 分类不是一列。和 [ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md) 钉死：那边错题进批评模板；这边没有「哪里错了」的句子，只有菜单和差分奖励。ProTeGi 把短语 RL 写成 GrIPS 上界，那是另一场 gpt-3.5 分类 F1，不要和 Table 2 的 91.9 横加。和 [Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 钉死：那边改的是本题答案 $y$；这边改的是本题提示 $p$，答案仍由冻结 RoBERTa 在掩码上出。两边跨题都不留那份字符串。连续侧的 IDPG / instance-wise prompt tuning 被放在相关工作里，当作「查询相关已经在软提示上做过」。本篇要的是同一件事的离散版：人能读，也能把初稿塞进去。软提示那条线没有进主表，不要用 Wu 等的涨幅给 Table 2 垫分。
+
+黑盒搜索若要对每道测试题当场搜，作者写成贵。GrIPS / Black-Box Tuning 原文都不是按查询搜的，把它们改成查询相关是作者的猜想，不是那两篇论文的设定。TEMPERA 的卖点之一是：贵的 PPO 在训练集付一次，测试只做 $T$ 次前向加策略一步。这是把搜索费从测试搬到训练，不是把 $I$ 装进 $S'$。
+
+Natural-Instructions 初稿和 PromptSource 模板都冻在附录 Table 10–11。SST-2 / MR / CR / Yelp 几乎同一句「great / terrible」。RTE 那一行说明书写 N/A，只靠 verbalizer。QNLI 的说明书在附录写成「两句是不是释义」，和 QNLI 本题（句子是否包含问题答案）不是同一任务定义——花园只点出附录原文如此，不拿这行去改主表 57.4，也不把它读成模型自己改了考纲。
+
+对有大模型基础的读者，读完应能回答四句。改的是哪一层？当题提示，外加一只训好的策略。RoBERTa 动了没有？主方法没有。91.9 能不能当 RSI？不能。还缺什么？策略或动作菜单进入 $S'$，并且下一轮编辑器就是升级后的那份。作者把「更好的测试时编辑」写成未来工作。主实验没有让 $\pi$ 改 PPO 自己。训练并行 256 个环境、每段 8 步，这是 $I$ 的采样预算；测试每道题固定 $T$ 刀，不能因为这道题难就临时加长地平线——加长要人改超参。这和 Self-Refine「本题最多 4 轮」同一类帽，只是帽戴在编辑步数上，不戴在答案改写上。
+
+## 5. 1.8、5.33、4 不要收成一个故事
+
+1.8 是 Table 2 SST-2 相对 RLPrompt，不是相对微调（相对微调是 91.9−80.6=11.3），也不是相对 GrIPS（91.9−87.1=4.8）。3.9 只对 CR 相对 RLPrompt。5.33 在摘要和 §5 开头，是平均样本效率口号。4 在 Figure 1 图注，分母是四套均线。8 在 Figure 3 的 SST-2 叙述。把三个倍数收成「少样本 5 倍于微调还稳赢」，已经把 Yelp、QNLI、MRPC、AG News 的 512 条表一起抹掉。
+
+训练用金标，测试不用，这条边界要写死。否则读者会把 TEMPERA 听成「带着测试标签爬山」，那就变成泄漏的 GrIPS。作者自己把 test-time editing 和 test-time optimization 拆开，花园跟着拆。并行环境和步数是 $I$ 的算力旋钮，不是模型在改自己的预算。512 token 截断证明菜单再灵活也受骨干上下文限制：AG News 示范从 4 加到 8 会掉，不是策略突然变笨。摘要还写阅读理解。主表和附录都没有 SQuAD 一类抽片段的列。情感、主题、NLI、MRPC 释义，已经把「阅读理解」用完了。不要在读者页补一场没有表的 QA。相关工作点名 Prasad 等 GrIPS、Deng 等 RLPrompt、Sun 等 Black-Box Tuning，位置是：前人要么查询无关，要么直接生成，要么要连续向量。本篇声称折中：初稿里有人的知识，搜索空间比从空生成小，输出仍是词。折中成立与否只看 Table 2 和 Table 9，不看这句话本身。SuperGLUE 出现在摘要和引言，附录实际加的是 RTE / QNLI / SNLI / MNLI / MRPC，没有 BoolQ 主表。读「GLUE 和 SuperGLUE」时，只认写进 Table 2 和 Table 9 的那些列。
+
+**读**：查询相关、$T=8$、三块菜单、式 (1)(2)、RoBERTa-large、每类 16、4 种子、Table 2 的 91.9/92.6/88.0/91.1/85.5、Yelp 上 RLPrompt 更高、No TTE 在 SST-2 持平、AG News +3.0、附录 NLI 并非全赢微调、5.33 与 4× 与 8× 分图、要隐状态、测试期 $\pi$ 冻。  
+**不读**：用 91.9 改 GrIPS 专文的 4.29、说五列都赢 RLPrompt、用 5.33 替换 Figure 1 的 4、把 TEMPERA 听成测试时还在用金标、把 Table 2 的 GrIPS 列当成 Prasad 主表、用 ProTeGi 的 +15.3% 给 PPO 背书、说动作菜单也在进化。
+
+同层：[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[25 AutoPrompt](../25-AutoPrompt-梯度引导触发词/25-AutoPrompt-梯度引导触发词.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[18 EvoPrompt](../18-EvoPrompt-进化算子提示/18-EvoPrompt-进化算子提示.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。综述里的编辑派：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+
+## 参考文献
+
+1. Zhang, T., Wang, X., Zhou, D., Schuurmans, D., & Gonzalez, J. E. (2023). [TEMPERA: Test-Time Prompt Editing via Reinforcement Learning](https://arxiv.org/abs/2211.11890). ICLR 2023. arXiv:2211.11890.
+2. 代码：[tianjunz/TEMPERA](https://github.com/tianjunz/TEMPERA)。
+3. [Deng et al. (2022). RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)。Table 2 生成派对照。
+4. 本花园：[GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)；[APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)。

@@ -44,7 +44,7 @@ flowchart TB
   TTT[Test-Time Training]
   CL -.->|可当零件| RSI
   TTT -.->|叙事上被连到后预训练| RSI
-  MOD --> SPIN[SPIN / Self-Rewarding / STaR]
+  MOD --> SPIN[SPIN / Self-Rewarding / SEAL]
   HAR --> SKILL[技能包 / 验证门控 runtime]
   ART --> AE[AlphaEvolve 等]
   SPIN -.->|单轮训练不是递归| RSI
@@ -124,14 +124,14 @@ Awesome-Self-Evolving-Agents 还用过 Model / Experience / Co-Evolution 三分�
 ## 4. 按「何时更新」分：训练时与推理时
 
 - **训练时（offline）**：SPIN、Self-Instruct、STaR、RLHF、OPD。权重在训练作业里更新，推理时通常冻结。改进发生在「下一张 checkpoint」，不是「这一个请求」。
-- **推理时（online / test-time）**：TTT、Agent 在线反思、单任务 Self-Refine。更新发生在当前输入上，可能改隐藏状态、适配器，或只改这一轮输出（混元 L0）。
+- **推理时（online / test-time）**：TTT、Agent 在线反思、单任务 [Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)。更新发生在当前输入上，可能改隐藏状态、适配器，或只改这一轮输出（混元 L0）。
 - **持续学习**：介于两者之间——按任务序列逐步更新，强调**不遗忘**。它可以在训练作业里做，也可以在部署后做，但评价标准是旧任务还在不在，不是改进器有没有升级。
 
 同一套权重更新，训练时 SPIN 和推理时 TTT 看起来都「在改模型」，时机把它们拆开：SPIN 用固定 SFT 数据分布当靶，TTT 用当前样本的自监督损失当靶。靶不同，失败模式也不同。SPIN 的天花板是人类数据；TTT 的风险是把一次分布偏移写进权重，污染后续请求。
 
 产品 CLI 的「会话内改技能文件」是推理时 Harness 更新，不是训练时 Model 更新。细节在 [llm-guide 第 13 章](../../../llm-guide/13-Agent/13-Agent.md)，本篇只钉边界。
 
-持久性是第三条轴，常被漏掉。混元综述把 L0 定义成任务局部：改完当前输出，独立下一题从干净状态开始。L1–L4 才要求保持条件——改动必须还能影响以后的任务或以后的更新。所以「推理时改了一下」可能是 L0（Self-Refine 只改这轮答案），也可能是 TTT（把适配写进权重、下一次请求还在），也可能是 Harness（把技能写进磁盘、下一次会话还在）。三个都发生在推理窗口里，保持范围完全不同。问「何时更新」而不问「留下什么」，会把 L0 和弱 RSI 候选混成一句「online self-improvement」。
+持久性是第三条轴，常被漏掉。混元综述把 L0 定义成任务局部：改完当前输出，独立下一题从干净状态开始。L1–L4 才要求保持条件——改动必须还能影响以后的任务或以后的更新。所以「推理时改了一下」可能是 L0（[Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 只改这轮答案），也可能是 TTT（把适配写进权重、下一次请求还在），也可能是 Harness（把技能写进磁盘、下一次会话还在）。三个都发生在推理窗口里，保持范围完全不同。问「何时更新」而不问「留下什么」，会把 L0 和弱 RSI 候选混成一句「online self-improvement」。
 
 对照式 (2)：L0 的 $S'$ 跨任务不保持，$I'$ 无从接任。Harness 写盘和 Model 写权重才可能让 $I'$ 活到下一轮。
 
@@ -163,7 +163,7 @@ OPD（On-Policy Distillation）改的是这一次训练里的学生权重，监�
 
 ### 5.6 Gödel machine vs 实验室 RSI 能力项
 
-Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / Anthropic 的 system card 把 self-improvement / AI R&D 写成**能力阈值**（会不会把每位研究员变成配备 mid-career 助手、会不会压缩 AI 研发日历）。两者都与 RSI 有关，度量完全不同：一个是可证自改的理论机器，一个是「离全自动研发有多近」的评测。不要用前者的定理给后者的分数背书，也不要用后者的 SWE-bench 数字证明前者已实现。公开链：[0 导读 §3](../../0-导读/0-导读.md)、[第 6 章](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / Anthropic 的 system card 把 self-improvement / AI R&D 写成**能力阈值**（会不会把每位研究员变成配备 mid-career 助手、会不会压缩 AI 研发日历）。两者都与 RSI 有关，度量完全不同：一个是可证自改的理论机器，一个是「离全自动研发有多近」的评测。不要用前者的定理给后者的分数背书，也不要用后者的 SWE-bench 数字证明前者已实现。公开链：[0 导读 §3](../../0-导读/0-导读.md)、[04 System Card](../../6-评测与安全/04-System-Card-RSI/04-System-Card-RSI.md)。
 
 ## 6. 什么时候能把一个系统叫 RSI
 
@@ -183,7 +183,27 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 
 | 系统 | 清单 1 自身？ | 清单 2–3 $I$ 升级且再跑？ | 清单 4 层 / 深度 | 清单 5 墙外证据？ | 该叫什么 |
 |------|---------------|---------------------------|------------------|-------------------|----------|
-| Self-Refine 只改这轮答案 | 否（跨任务不保持） | 否 | L0 / 输出 | 本任务可执行结果可以有 | 任务内修正，不是 RSI |
+| [Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 只改这轮答案 | 否（跨任务不保持） | 否 | L0 / 输出 | 本任务可执行结果可以有 | 任务内修正，不是 RSI |
+| [ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md) 交错想–做–看 | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有 | 任务内循环，不是 RSI |
+| [Chameleon](../../3-Harness层-Agent运行时/56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md) 一次写完模块序列 | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有；ScienceQA 低于人手 | 离线组合，不是 RSI |
+| [RAP](../../3-Harness层-Agent运行时/30-RAP-世界模型规划/30-RAP-世界模型规划.md) 本题模拟世界 MCTS | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有 | 任务内规划，不是 RSI |
+| [ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md) 本题推理树 | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有 | 任务内树搜，不是 RSI |
+| [LATS](../../3-Harness层-Agent运行时/28-LATS-Agent树搜/28-LATS-Agent树搜.md) 本题 MCTS | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有；HotPotQA 实验给了对错 | 任务内规划，不是 RSI |
+| [GoT](../../3-Harness层-Agent运行时/31-GoT-思维图聚合/31-GoT-思维图聚合.md) 本题思维图 | 否（跨任务不保持） | 否 | L0 / 轨迹 | 本任务可执行结果可以有；排序用局部误差 | 任务内图聚合，不是 RSI |
+| [ExpeL](../../3-Harness层-Agent运行时/32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md) 跨题洞察清单 | 是（Harness 洞察） | 否 | Harness / 近 L2 | 本任务可执行结果可以有 | 跨题经验，不是 RSI |
+| [Dynamic Cheatsheet](../../3-Harness层-Agent运行时/33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md) 测试时备忘录 | 是（Harness 记忆） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；策展无金标 | 跨查询记忆，不是 RSI |
+| [BoT](../../3-Harness层-Agent运行时/34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md) 思维模板缓冲 | 是（Harness 模板库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有 | 跨题模板，不是 RSI |
+| [AWM](../../3-Harness层-Agent运行时/35-AWM-工作流记忆/35-AWM-工作流记忆.md) 工作流记忆 | 是（Harness 工作流） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；在线入库走 LM 裁判 | 跨题网页手续，不是 RSI |
+| [MemGPT](../../3-Harness层-Agent运行时/36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md) 操作系统式记忆 | 是（Harness 分层记忆） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；DMR 用慷慨 LLM judge | 跨会话换页，不是 RSI |
+| [A-Mem](../../3-Harness层-Agent运行时/37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) 卡片盒记忆 | 是（Harness 笔记库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；对抗题全上下文可以更高 | 跨会话连边，不是 RSI |
+| [HippoRAG](../../3-Harness层-Agent运行时/38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md) 海马索引检索 | 是（Harness 知识图） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；HotpotQA 单步可以更低 | 跨查询图检索，不是 RSI |
+| [ChatDB](../../3-Harness层-Agent运行时/39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) 符号 SQL 记忆 | 是（Harness SQL 账本） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；合成店账 Easy 也不是满分 | 跨记录改库，不是 RSI |
+| [MemoryBank](../../3-Harness层-Agent运行时/40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) 遗忘曲线记忆 | 是（Harness 检索库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；表上没有无记忆列 | 跨天改库，不是 RSI |
+| [ReadAgent](../../3-Harness层-Agent运行时/41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md) gist 分页记忆 | 是（Harness gist 库） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；GPT-3.5 上可低于全文 | 跨题复用文档 gist，不是 RSI |
+| [LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) 函数缓存造工具 | 是（Harness 函数表） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；GPT-4 用户可低于 CoT | 跨实例复用 Python，不是 RSI |
+| [AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 工作流 MCTS | 是（Harness 工作流） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；4.55% 是成本比 | 跨题复用搜到的图，不是 RSI |
+| [GPTSwarm](../../3-Harness层-Agent运行时/44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 通信图边概率 | 是（Harness 边 \(\theta\)） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；90.2% 是相对涨幅 | 跨题复用边概率，不是 RSI |
+| [ScoreFlow](../../3-Harness层-Agent运行时/45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md) Score-DPO 工作流 | 是（Harness 生成器 LoRA） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；8.2% 是百分点差 | 跨题复用生成器，不是 RSI |
 | 经典 TTT（测完可丢） | 弱：改的是当前样本上的权重/状态 | 否：通常不构成下一代 $I$ | 推理时 Model | 往往没有跨请求验收 | TTT |
 | Replay / EWC | 是（权重） | 否：$I$ 仍是固定 CL 算法 | Model / CL | 旧任务保持测试 | 持续学习零件 |
 | OPD 一次训练作业 | 是（学生 $\theta$） | 否：教师与脚本在墙外 | Model 后训练 | 可以有 held-out | 不是 RSI |
@@ -195,7 +215,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | 混元 L3：改提议/选择/回滚程序 | 是 | 后继改进器被替换 | Improver / L3 | 必须评后继系统，不是本轮任务分 | 结构意义上的 RSI 前沿 |
 | 混元 L4：改奖励/准则 | 是 | 连「什么叫好」一起变 | Criterion / L4 | 必须有边界外授权；否则是安全事故 | 最深 |
 | Gödel machine（理论） | 是（整段 $p$） | 是：搜索器可被 $\texttt{switchprog}$ 改 | 全自指软件 | 证明系统本身是门；效用不可证则改不了 | 前世最硬的形式 RSI |
-| OpenAI PF「AI Self-improvement」High | 评测项，不是一个已部署循环 | 不自动等于式 (2) | 能力阈值 | 实验室自己的 eval | 能力项，见第 6 章 |
+| OpenAI PF「AI Self-improvement」High | 评测项，不是一个已部署循环 | 不自动等于式 (2) | 能力阈值 | 实验室自己的 eval | 能力项，见 [04](../../6-评测与安全/04-System-Card-RSI/04-System-Card-RSI.md) |
 | Anthropic「全自主设计后继者」 | 官方定义的 RSI | 原文：We are not there yet | 实验室叙事 | 内部生产率 ≠ 闭合递归 | 叙事；链第 5–6 章 |
 
 生产级「三层全改且闭环」的公开落地，截至 `as_of` **几乎还没有**。实验室叙事和预备度指标在第 5、6 章，不要倒灌进本篇当成已发生的机制。

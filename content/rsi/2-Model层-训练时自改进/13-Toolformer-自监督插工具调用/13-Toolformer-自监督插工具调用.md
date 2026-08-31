@@ -1,0 +1,149 @@
+---
+title: "13 · Toolformer：自监督插工具调用"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  Toolformer（arXiv:2302.04761，NeurIPS 2023）：FAIR 用少量示范让 GPT-J 6.7B
+  自己往 CCNet 里插 API 调用，再按未来 token 的损失过滤后 SFT。LAMA T-REx 53.5、
+  ASDiv 40.4，不要改 ToolRL 的 52.98，也不要改 ToolLLM 的 66.7。五只工具在墙外。
+tags:
+  - RSI
+  - Toolformer
+  - GPT-J
+  - 工具调用
+  - SFT
+---
+
+# 13 Toolformer：困惑度过滤插调用
+
+作者写成 6.7B 的 GPT-J 学会用工具之后，零样本常常能打过更大的模型。打开 NeurIPS 2023 相机稿 Table 3：LAMA 三列 Toolformer **33.8 / 11.5 / 53.5**，GPT-3（原版 davinci，175B）**26.8 / 7.0 / 39.8**。数学三列 **40.4 / 29.4 / 44.0** 对 GPT-3 的 **14.0 / 10.0 / 19.8**。禁止把 T-REx 的 53.5 听成 [ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 的 BFCL **52.98**，也不要把 ASDiv 的 40.4 和任何 ToolEval 收成一只。Table 4 反过来：WebQS / NQ / TriviaQA 上 Toolformer **26.3 / 17.7 / 48.8**，仍低于 GPT-3 的 **29.0 / 22.6 / 65.9**。作者写 often competitive，不是「全面超过 175B」。§4.3 的 WikiText 困惑度：GPT-J **9.9**，接 CCNet 或接带调用的 \(C^*\) 之后（关掉 API）都是 **10.3**。这是语言建模没塌的证据，不是准确率柱。
+
+本篇落第 2 章。SFT 改的是 \(\theta\)。留下的是 GPT-J 6.7B 权重。五只工具（Atlas 问答、四则计算器、BM25 维基检索、NLLB 翻译、日历）、人手示范、采样阈值 \(\tau_s\)、过滤阈值 \(\tau_f\)、CCNet 子集、解码时最多一次调用，全在墙外。坐标系见 [02 三层](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)；信号类型见 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。这边更像模仿：金标不是人标的 REST 路径，是「这段调用能不能让后面的词更好预测」。没有 boxed，没有 Jaccard，没有 PPO。[STaR](../02-Self-Rewarding-家族/02-Self-Rewarding-家族.md) 按对错滤轨迹；这边按损失差滤调用。**不是** RSI。**不是** 术语式 (2)。**不是** [Gorilla](../11-Gorilla-API调用微调/11-Gorilla-API调用微调.md)：那边 1645 张 ML 卡、AST、教师是 GPT-4。**不是** [ToolLLM](../12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md)：那边 RapidAPI 16464、ChatGPT 走 DFSDT。**不是** [EASYTOOL](../../3-Harness层-Agent运行时/53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md)：那边冻 \(\theta\)、改说明书。**不是** [LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)：那边造新 Python，这边往已有五只工具里插括号。一手：Schick, Dwivedi-Yu, Dessì, Raileanu, Lomeli, Hambro, Zettlemoyer, Cancedda, Scialom；FAIR / Meta（Dessì 挂 Pompeu Fabra）；[arXiv:2302.04761](https://arxiv.org/abs/2302.04761)；**NeurIPS 2023**。数字以会议 PDF Table 1–5、§2–§4、附录 A–B 为准。GitHub 上 conceptofmind、lucidrains 那些复现不是官方主表，不要拿第三方脚本改 53.5。
+
+## 1. 问题：工具会用，但人标不起「何时该调」
+
+2023 年初，大模型已经能做不少零样本任务，算术、查事实、低资源语言、对「今天是几号」却经常翻车。作者列的几条固有限制：跟不上新事件、会编事实、低资源语言弱、算不准、没有时间意识。给模型接搜索、计算器、日历，是当时已经在走的路。两条现成做法他们都不满意。一条靠大量人手标注（他们点名 WebGPT、LaMDA 一类），贵，而且人觉得该调的位置，模型预测下一个词时未必真吃亏。另一条把工具绑在具体任务上，提示里先写死「这道题请用计算器」，换任务就要换示范。[ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md) 也属于后一档的亲戚：题型已知、工具用法写在 in-context 里。他们要的是：工具用法只给人写几条示范；模型自己决定何时调、调哪只、参数填什么；语言建模能力不能掉。
+
+骨干钉 **GPT-J 6.7B**（Wang and Komatsuzaki, 2021）。语料 \(C\) 是 CCNet 的一个子集（Wenzek 等，2020）。对照三只：原版 GPT-J；GPT-J + CC，同一份 \(C\) 上微调、不插调用；Toolformer (disabled)，权重已经在带调用的 \(C^*\) 上训过，解码时把起始调用的 token 概率打成 0。另外两只大模型：OPT **66B**（大约十倍）、GPT-3 davinci **175B**（大约二十五倍）。davinci 是原版 GPT-3，不是后来的 ChatGPT，不要和 ToolLLM 教师那只 `gpt-3.5-turbo-16k` 收成一只。
+
+工具五只，约束两条：输入输出都能写成文本；每只都能拿到几条示范。问答用 Atlas（Izacard 等），检索增强模型，在 Natural Questions 上微调过。造 \(C^*\) 时用 Atlas large，推理换成更大的 Atlas-xxl。计算器是一段 Python，只认加减乘除，结果一律四舍五入到两位小数，句法不合法就返回空。维基检索是 BM25，索引来自 KILT 那份维基转储（Petroni 等，2021）。翻译是 NLLB **600M**（Costa-jussà 等），宣称覆盖 **200** 种语言；源语言用 fastText 自动检，目标永远是英文。日历不吃参数，调用一次返回「今天」的日期字符串。造 \(C^*\) 时他们假定文档日期应当是页面创建日，从 URL 里抽；抽不到就丢掉，大约只剩 **18%** 文档。五只工具的实现、启发式过滤、示范提示，全部写在附录 A，换其中任一项等于人改 \(I\)。
+
+启发式是为了少烧标注算力。计算器只处理「100 token 窗里至少三个数，且其中一个是另两个运算结果」「出现 equals / total of 一类后再跟数字」或者「至少三个数」；只匹配最后一条的，再随机留 **1%**。翻译先丢掉纯英文段，只留「英文夹着一段非英文、两边又是英文」的段落，中间块 10 个 token，fastText 置信度大于 0.8。翻译调用造完之后，还要丢掉「调用参数出现在调用之后、调用之前没出现过」的例子：造数据时模型能往后看，推理时不行。这些过滤器决定了 Table 2 里计算器、翻译为什么特别少，不是 \(\theta\) 自己挑的。
+
+## 2. 机制：先采样调用，再看它能不能降低后面的损失
+
+API 调用写成 \(c=(a_c,i_c)\)：名字加输入。有返回 \(r\) 时，线性化成 \(e(c,r)=a_c(i_c)\rightarrow r\)。词表不改，实际用 `[`、`]`、`->` 三段已有 token 冒充左右括号和箭头。推理时模型一旦吐出箭头 token，解码暂停，调对应 API，把返回和结束符插回去再继续。这是墙外的中断手续，不是权重里长出来的调度器。
+
+造 \(C^*\) 分三步，论文 Figure 2。对每只 API 写一份提示 \(P(x)\)，让模型给一段纯文本标注可能的调用。附录 A.2 问答那份是两段示范：拜登出生地、可口可乐别名与厂商。计算器示范更多，从 `18+12*3` 到人口百分比。维基、翻译、日历各有自己那几条。换这几条示范，候选调用的分布会漂。对位置 \(i\)，看模型在 \(P(x)\) 加前缀之后，把「开始调用」这个 token 的概率标成 \(p_i\)。默认 \(\tau_s=0.05\)，只留 \(p_i>\tau_s\) 的位置；超过 \(k=5\) 个就取 top-\(k\)。每个位置再采样最多 \(m=5\) 条调用。计算器和翻译因为启发式已经把 \(C\) 砍得很窄，改成 \(\tau_s=0\)、\(k=20\)、\(m=10\)，过滤阈值也放到 \(\tau_f=0.5\)。其余默认 \(\tau_f=1.0\)。
+
+执行之后用损失差过滤。\(L_i(z)\) 是把文本 \(z\) 当作前缀时，从位置 \(i\) 起到末尾的加权交叉熵：
+
+\[
+L_i(z)=-\sum_{j=i}^{n} w_{j-i}\log p_M(x_j\mid z,x_{1:j-1})
+\]
+
+权重让调用贴着真正用得上的后面几个词：
+
+\[
+\tilde{w}_t=\max(0,1-0.2\cdot t),\qquad w_t=\tilde{w}_t\Big/\sum_s\tilde{w}_s
+\]
+
+比较两个损失。带上调用和返回：\(L^+_i=L_i(e(c_i,r_i))\)。对照取更小的那个：什么都不插，或只插调用不给返回，\(L^-_i=\min(L_i(\varepsilon),L_i(e(c_i,\varepsilon)))\)。留下的条件是 \(L^-_i-L^+_i\ge\tau_f\)。直觉：这段调用必须真的让后面的词更好预测，空壳调用不算。过滤时把 \(e(c,r)\) 放在整段前面当前缀，不插进原文中间，因为这时模型还没见过这种格式，插中间会把流畅性打乱，困惑度会虚高。过滤完，把还活着的调用嵌回原文，得到 \(C^*\)。某段文本上所有调用都被滤掉，整段丢掉。作者承认这会改训练分布，赌剩下的还够接近原来的语言建模；§4.3 是这笔赌的收据。
+
+Table 2 是 \(\tau_f\) 三档下、带调用的例子数。默认主设定靠近 \(\tau_f=1.0\) 那列。
+
+| API | \(\tau_f=0.5\) | \(\tau_f=1.0\) | \(\tau_f=2.0\) |
+|-----|----------------|----------------|----------------|
+| Question Answering | 51987 | 18526 | 5135 |
+| Wikipedia Search | 207241 | 60974 | 13944 |
+| Calculator | 3680 | 994 | 138 |
+| Calendar | 61811 | 20587 | 3007 |
+| Machine Translation | 3156 | 1034 | 229 |
+
+计算器在 \(\tau_f=2.0\) 只剩 **138** 条。局限段写：处理超过一百万文档，有用的计算器调用仍只有几千。这是样本效率问题，不是「模型已经会算」。附录 B：每只 API 最多用 **25k** 条，最大长度 **1024**，有效 batch **128**，学习率 \(1\times10^{-5}\)，前 **10%** 线性 warmup，DeepSpeed ZeRO-3，8×A100 40G，BF16，最多 **2k** step，每 500 step 在 1000 条 CCNet 开发集上看困惑度，挑最好的 checkpoint。25k 封顶意味着维基那列 60974 进不了训练集的全部；人钉的配额也是 \(I\)。
+
+解码还有两处人钉的旋钮。普通贪心之外，只要「开始调用」落在前 \(k\) 个最高概率 token 里就允许开口，主表用 \(k=10\)。同时每道输入最多一次调用，防止模型陷入反复调 API 的环。附录把 \(k=0\) 对齐成 disabled：T-REx **34.9**、WebQS **18.9**，对得上 Table 3 / Table 4 的 disabled 行。\(k=1\) 已经是常规贪心，T-REx 47.8、WebQS 19.3；拉到 \(k=10\) 才到主表的 53.5 / 26.3。\(k\) 在墙外。一次调用也把「先问日历、再拿日期去问 Atlas」这种链式用法直接禁掉。TEMPLAMA 上日历只用了 **0.2%**，作者写最佳策略正是这种两跳，训练数据里调用又是独立采样的，学不出来。
+
+![用户文本进 SFT 后的 GPT-J，可选调用冻着的工具，把返回插回去继续解码；虚线下一查询，权重已是 SFT 后的 θ](./images/fig-toolformer-loop.png)
+
+> 图 1：实线是一次推理。虚线是下一查询。SFT 已经结束，这一步不再更新 \(\theta\)。
+
+**图 1 解析**
+
+- **User text**：零样本提示，附录 C 那种「请把下面的句子补完，使其符合事实」。训练来自 CCNet 上滤过的 \(C^*\)，表上的 53.5 不是这份语料的准确率。
+- **Toolformer GPT-J**：SFT 后的 6.7B。\(\theta\) 是本篇唯一进 \(S'\) 的状态。
+- **Frozen tool**：五只里的某一只。Atlas、BM25、NLLB、Python 四则、日历字符串，都不进 \(\theta\)。
+- **Continue tokens**：把返回插回去再解码。最多一次调用。
+- **虚线回流**：下一查询。权重留下。示范、\(\tau_f\)、工具实现不留下可改写的副本。
+
+## 3. 表：53.5 赢在 LAMA，问答仍低于 175B
+
+评测是带提示的零样本：用自然语言下达任务，不给 in-context 解题示范。这和 PAL / TALM / ReAct 那种「提示里已经写明这道题怎么用工具」不是同一设定。尺子也比 exact match 松。LAMA 原来给掩码模型用，他们丢掉掩码不在句末的例子，好让从左到右的模型能接；判定是正确答案是否出现在模型预测的前 **五个** 词里。数学题看预测里的第一个数；若输出带等式，取等号后面那个数。开放问答看前 **20** 个词是否包含答案。MLQA 看前 **10** 个词。换这套宽松口径，绝对数字会漂，对照行用的是同一口径，列内可以减，列间不能和 Gorilla 的 AST、ToolLLM 的 pass 横加。
+
+LAMA 来自维基陈述，评测时禁止维基检索，避免开卷。Table 3 左侧。GPT-J 三列 17.8 / 4.9 / 31.9。GPT-J + CC 略升。disabled 再到 22.1 / 6.3 / 34.9：光看调用和返回的文本，事实记忆也涨一点。打开工具之后 33.8 / 11.5 / 53.5。相对同表最好的无工具 GPT-J 系，作者写成分别高 11.7、5.2、18.6 个百分点。OPT 66B 是 21.6 / 2.9 / 30.1，GPT-3 是 26.8 / 7.0 / 39.8。6.7B 加工具可以压过 175B 的这三列。调用统计：几乎全用问答工具（**98.1%**），换别的工具 **0.7%**，不用 **1.2%**。53.5 是 T-REx 在这套宽松口径下、问答工具几乎全开时的数，不是三列平均，更不是 BFCL。
+
+数学三列在 Table 3 右侧。GPT-J 7.5 / 5.2 / 9.9，GPT-3 14.0 / 10.0 / 19.8。disabled 已经到 14.8 / 6.3 / 15.0，作者猜是微调时看了大量「调用加返回」的算术，模型自己也会一点。打开工具：**40.4 / 29.4 / 44.0**。三列都比无工具翻倍还多。**97.9%** 的例子选择计算器。40.4 不要改 ToRL 的 AIME24 greedy 43.3：ASDiv 是小学应用题，宽松取第一个数；AIME 是竞赛、greedy 对错。29.4 也不要和 ToolLLaMA+ReAct 的均 pass 29.0 收成一只。
+
+| 模型 | SQuAD | Google-RE | T-REx | ASDiv | SVAMP | MAWPS |
+|------|-------|-----------|-------|-------|-------|-------|
+| GPT-J | 17.8 | 4.9 | 31.9 | 7.5 | 5.2 | 9.9 |
+| GPT-J + CC | 19.2 | 5.6 | 33.2 | 9.6 | 5.0 | 9.3 |
+| Toolformer (disabled) | 22.1 | 6.3 | 34.9 | 14.8 | 6.3 | 15.0 |
+| Toolformer | **33.8** | **11.5** | **53.5** | **40.4** | **29.4** | **44.0** |
+| OPT (66B) | 21.6 | 2.9 | 30.1 | 6.0 | 4.9 | 7.9 |
+| GPT-3 (175B) | 26.8 | 7.0 | 39.8 | 14.0 | 10.0 | 19.8 |
+
+Table 4 左侧是开放问答。这里关掉问答工具，否则等于把答案模型再接一遍。WebQS / NQ / TriviaQA：GPT-J 18.5 / 12.8 / 43.9，Toolformer 26.3 / 17.7 / 48.8，GPT-3 **29.0 / 22.6 / 65.9**。作者承认仍低于 175B。维基检索用了 **99.3%**。他们把缺口写成两处：BM25 经常返回对不上的片段；模型不能改写查询，也不能翻 top-\(k\)。这和 Gorilla 的 RAT、ToolLLM 的 top-5 检索不是同一套 \(I\)，不要用 26.3 去改 TorchHub 59.13，也不要改六列均 pass 66.7。
+
+Table 4 右侧是时间。TEMPLAMA 上 Toolformer **16.3**，GPT-3 15.5，日历只用 **0.2%**，涨头主要来自维基和问答。DATESET 是他们用模板造的，附录 D：先随机 500 个「当前日期」，再在四年窗里抽过去 / 未来日期填模板，例子像「30 天前是星期几」。模板合计 **9400** 条量级（附录 Table 11）。Toolformer **27.3**，GPT-J 3.9，GPT-3 0.8。日历用了 **54.8%**。DATESET 涨、TEMPLAMA 几乎不靠日历，两列不能收成「已经有了时间意识」。
+
+| 模型 | WebQS | NQ | TriviaQA | TEMPLAMA | DATESET |
+|------|-------|-----|----------|----------|---------|
+| GPT-J | 18.5 | 12.8 | 43.9 | 13.7 | 3.9 |
+| GPT-J + CC | 18.4 | 12.2 | 45.6 | 12.9 | 2.9 |
+| Toolformer (disabled) | 18.9 | 12.6 | 46.7 | 12.7 | 5.9 |
+| Toolformer | 26.3 | 17.7 | 48.8 | **16.3** | **27.3** |
+| OPT (66B) | 18.6 | 11.4 | 45.7 | 14.5 | 1.3 |
+| GPT-3 (175B) | **29.0** | **22.6** | **65.9** | 15.5 | 0.8 |
+
+Table 5 是 MLQA。上下文英文，问题可以是西班牙、德、印地、越南、中、阿。Toolformer 相对 disabled 六列都涨一点，作者写成学会用翻译。工具使用率按语言从 **63.8%** 到 **94.9%**，印地语只有 **7.3%**。相对原版 GPT-J 并不是六列都赢：西班牙 20.6 对 15.2，德 13.5 对 16.5，中 16.8 对 18.2，阿 3.7 对 8.2。作者把锅给 CCNet 微调伤了部分语言。OPT 和 GPT-3 在这张表上崩掉（西班牙 0.3 / 3.4），因为它们不按指示用英文作答；GPT-J 预训练里有 EuroParl。全英文对照行 GPT-3 反而高于 GPT-J。翻译工具救的是「问题不在英文」这一截，不是跨语言 QA 的总榜。印地语几乎不调翻译，1.4 对 GPT-J 的 1.3，工具形同虚设。
+
+§4.3 语言建模。WikiText：GPT-J 9.9，GPT-J + CC 10.3，Toolformer disabled **10.3**。CCNet 验证 1 万篇（训练没用过）：10.6 → 10.5 → **10.5**。带调用的 \(C^*\) 相对纯 \(C\)，关掉 API 时困惑度不升。他们不算「打开 API 的困惑度」：要对所有可能调用边缘化，算不动。预印本把这三行收成 Table 8，会议稿写在正文。不要把 10.3 听成准确率。
+
+§4.4 把同一套手续接到 GPT-2 家族：124M、355M、775M、1.6B，工具只留问答、计算器、维基。Figure 4：大约 **775M** 起，打开工具才和关掉有差别。更小的模型两条线贴着。维基检索是例外，作者猜这只 API 比较好用。模型变大，不用工具也会涨，用工具涨得更多，缺口没有随规模自行合上。附录 G 把骨干换成 LLaMA v1 7B：能力更强之后，弱工具（他们点名 WikiSearch）的用处会消失；用强模型生成和打分，比「只微调」更值。7B 不是自动升级成 RSI。
+
+## 4. 这不是 RSI，也不是 Gorilla 的缩小版
+
+\(S\) 取当前 \(\theta\)。单轮 \(S'=I(S)\) 成立：2k step 之后下次推理用新权重。术语式 (2) 还要 \(I'\subseteq S'\)。五只工具、Atlas 换 large 还是 xxl、BM25 那份维基、NLLB、人手示范、\(\tau_s/\tau_f\)、\(k=10\)、最多一次调用、CCNet 启发式，都不进 \(\theta\)。模型不能把 \(\tau_f\) 从 1.0 改成 0.5 来给计算器多留例子，不能把自己解锁成链式调用去救 TEMPLAMA，不能把 BM25 换成可改写查询的浏览器。混元台阶上这是 **L1** 的轨迹模仿，过滤器是自监督损失，不是人写的对错标签。和 [04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md) 表里的 ReTool / ToolRL / ToRL 不是同一格信号。
+
+和邻居钉死。[Gorilla](../11-Gorilla-API调用微调/11-Gorilla-API调用微调.md) 相关工作把本篇收成「提示侧把工具用起来」。花园不跟这句走：本篇确实 SFT 改了 \(\theta\)，只是工具集合是五只专用 API，不是 1645 张会改版的模型卡，榜也不是 AST。TorchHub 0-shot 59.13 不要改 T-REx 53.5。[ToolLLM](../12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md) 把多步 REST 写进 7B，均 pass 66.7；本篇平均一次调用、没有 ToolEval。66.7 不要改 53.5。[ReTool](../08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 的 67.0 是 32B、AIME2024、32 次平均。[ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md) 的 43.3 是竞赛 greedy。[EASYTOOL](../../3-Harness层-Agent运行时/53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md) 冻权重改说明书，两列均 pass 69.8；97.35% 是 RestBench 文档少了多少 token，不要和本篇计算器 97.9% 的使用率收成一只。[HuggingGPT](../../3-Harness层-Agent运行时/54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md) 把本篇写成插 API 标签的先驱，自己冻 ChatGPT 调度 Hub，规划 Acc 52.62 不要改 53.5。[LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) 按类造 Python，中国剩余 100.0 不要改 40.4。[ChatDB](../../3-Harness层-Agent运行时/39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md) 把库当带状态的外存，水果店 41/50 不是本表任何一列。TALM（Parisi 等，2022）被写成最近的亲戚：自监督目标相近，但落在下游任务微调，不是通用语言建模上的零样本。PAL / PoT 在提示里写死用 Python 解本题算术，本篇的计算器是模型自己决定插不插。
+
+局限按机制读。不能链式调用，因为造数据时每只工具独立采样。不能交互式翻检索结果，WebGPT 那种浏览不在手续里。是否调用对措辞敏感。样本效率差，计算器是活标本。作者提过可以像 TALM / 其它自举那样迭代再造数据，主实验没有做。决定调不调时也不考虑调用成本。第三方复现把工具集、过滤、骨干都换过，那些数不能回写主表。
+
+![左列 θ 经 SFT 从 GPT-J 上涨；中 WALL；右列五只工具、过滤阈值、示范、CCNet、一次调用冻着](./images/fig-toolformer-frozen.png)
+
+> 图 2：实线只更新策略权重。墙右边是下次任务默认还在、且不被 \(\theta\) 改写的 \(I\)。
+
+**图 2 解析**
+
+- **Grows / \(\theta\)**：SFT from GPT-J 6.7B。没有 GRPO，没有 DFSDT。
+- **Train loop**：\(C^*\)，每 API 最多 25k，batch 128，最多 2k step。
+- **WALL Frozen \(I\)**：改进器身份。没有箭头从右列改回左列的 \(\tau_f\)。
+- **五只工具 / \(\tau_f\) / 示范 / 一次调用 / \(k=10\)**：换其中任一项等于人改 \(I\)。Table 3 里 disabled 34.9 对 53.5，是旋钮在墙外的活标本。
+
+对有大模型基础的读者，读完应能回答四句。改的是哪一层？Model，SFT 推 \(\theta\)。53.5 是哪一格？LAMA T-REx，宽松前五词，问答工具 98.1%。和 Gorilla 差在哪？五只固定小工具加自监督过滤，不是 1645 张卡加 AST。还缺什么才敢叫 RSI？工具表或 \(\tau_f\) 进入 \(S'\)，并且下一轮改进器就是升级后的那份。为什么 26.3 不能当「已经打过 GPT-3」？因为开放问答三列仍低于 davinci 的 29.0 / 22.6 / 65.9，作者自己把缺口写在检索器太简、不能改写查询。为什么 97.9% 不是准确率？那是数学三列里选择计算器的比例，ASDiv 本身是 40.4。
+
+**读**：Table 3 的 33.8 / 53.5 / 40.4、Table 4 的 26.3 低于 GPT-3 的 29.0、DATESET 27.3 对 TEMPLAMA 16.3、MLQA 不是六列都赢 GPT-J、WikiText 10.3、775M 才开始会用工具、一次调用禁掉链式、\(\tau_f=1.0\) 时计算器 994 条、不是 RSI、不是 1645、不是 16464。  
+**不读**：把 53.5 收进 52.98、把 40.4 收进 43.3、把 29.4 收进 ToolLLaMA ReAct 的 29.0、把 97.9% 收进 EASYTOOL 的 97.35%、把 davinci 听成 ChatGPT、把第三方 GitHub 听成官方主表、把 disabled 的 34.9 听成「不用工具也已经打过 GPT-3」。
+
+同层：[11 Gorilla](../11-Gorilla-API调用微调/11-Gorilla-API调用微调.md)、[12 ToolLLM](../12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md)、[08 ReTool](../08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md)、[09 ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md)、[10 ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md)、[02 Self-Rewarding 家族](../02-Self-Rewarding-家族/02-Self-Rewarding-家族.md)。信号：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。Harness 侧：[29 ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[42 LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[53 EASYTOOL](../../3-Harness层-Agent运行时/53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md)、[54 HuggingGPT](../../3-Harness层-Agent运行时/54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[55 RestGPT](../../3-Harness层-Agent运行时/55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md)、[56 Chameleon](../../3-Harness层-Agent运行时/56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md)、[39 ChatDB](../../3-Harness层-Agent运行时/39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+
+## 参考文献
+
+1. Schick, T., Dwivedi-Yu, J., Dessì, R., Raileanu, R., Lomeli, M., Hambro, E., Zettlemoyer, L., Cancedda, N., & Scialom, T. (2023). [Toolformer: Language Models Can Teach Themselves to Use Tools](https://proceedings.neurips.cc/paper_files/paper/2023/file/d842425e4bf79ba039352da0f658a906-Paper-Conference.pdf). NeurIPS 2023. Table 1–5、过滤公式以会议 PDF 为准；预印本 [arXiv:2302.04761](https://arxiv.org/abs/2302.04761)。
+2. Wang, B., & Komatsuzaki, A. (2021). GPT-J-6B: A 6 billion parameter autoregressive language model.
+3. Izacard, G., et al. (2022). Atlas: Few-shot learning with retrieval augmented language models.
+4. Costa-jussà, M. R., et al. (2022). No Language Left Behind: Scaling human-centered machine translation.
+5. Parisi, A., Zhao, Y., & Fiedel, N. (2022). TALM: Tool Augmented Language Models. arXiv:2205.12255.

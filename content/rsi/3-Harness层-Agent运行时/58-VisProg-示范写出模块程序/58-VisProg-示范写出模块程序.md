@@ -1,0 +1,134 @@
+---
+title: "58 · VisProg：示范写出模块程序"
+date: 2026-08-31
+as_of: 2026-08-31
+category: 论文精读
+published: true
+excerpt: >-
+  VisProg（arXiv:2211.11559，CVPR 2023 Best Paper）：Allen AI 用冻着的 GPT-3
+  看指令–程序对，吐 python-like 模块行。GQA 子集投票 Acc 50.5，相对 ViLT-VQA 47.8 高 2.7；
+  NLVRv2 零样本 62.4，低于微调 76.3。程序本题用完即丢，不是 RSI。
+tags:
+  - RSI
+  - VisProg
+  - GQA
+  - NLVRv2
+  - Harness
+---
+
+# 58 VisProg：示范写出模块程序
+
+打开 CVPR 2023 Table 1：零样本、0 个可训参数，VisProg 在 **GQA testdev 子集**上投票 Acc **50.5**。作者写成相对基座 ViLT-VQA 的 **47.8** 高 **2.7** 个百分点（50.5−47.8=2.7）。随机抽示范那一格只有 **48.2**，只比 47.8 高 **0.4**。禁止把 2.7 听成相对 48.2，也不要把 50.5 收进 [ViperGPT](../57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md) 全量 testdev **48.1**：那边是完整 test-dev，这边为了省 GPT-3 钱按题型最多抽 \(k=20\)，两格不能减。人手策展 20 条示范 **50.0**，作者写成和投票差不多、算力大约 **5×** 少。NLVRv2 Table 2 全量公开测试：投票 **62.4**，作者写成没在图像对上训过；微调上限 ViLT-NLVR **76.3**，差 **13.9**。禁止把 62.4 写成已经摸到微调。知识标注 Table 3 原指令打标 F1 **63.7**、定位 **80.6**；人看视觉依据改指令后 **75.7 / 84.9**。图像编辑 Table 4 人评语义正确 **59.8→66.4**。后两张表的涨分是人改 \(q\)，不是模型改 \(H\)。
+
+本篇落第 3 章。冻的是 GPT-3（会议稿只写名字；官方仓库 README 写论文版 `text-davinci-002`，后来换成 `003`，VQA 模块从 ViLT 换成 BLIP）和 Figure 2 那 **20** 只模块：OWL-ViT、DSFD、MaskFormer、CLIP、ViLT、Stable Diffusion，外加 OpenCV 和算术。改的是 in-context 的指令–程序对 \(H\)。坐标系见 [02 三层](../../1-坐标系与术语/02-Model-Harness-Artifact/02-Model-Harness-Artifact.md)。**不是** RSI。**不是** 术语式 (2)。**不是** ViperGPT：那边吐不受限 Python，作者写成可以不给示范；这边每行一只命名模块，**必须**给人手写的示范。**不是** [Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md)：那边自然语言模块名，ScienceQA 86.54；这边 python-like 赋值行，GQA 子集 50.5。**不是** [HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md) 伪标签 Acc 52.62。**不是** [RestGPT](../55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md)：那边在线粗到细，Table 1 给 ViperGPT 写的 **11** 不要改成本篇的 20。一手：Gupta, Kembhavi；Allen Institute for AI PRIOR；[arXiv:2211.11559](https://arxiv.org/abs/2211.11559)；**CVPR 2023 Best Paper**。数字以会议 Open Access PDF Table 1–4、§3–§5、Figure 2/6/9 为准。项目 [prior.allenai.org/projects/visprog](https://prior.allenai.org/projects/visprog)；代码 [allenai/visprog](https://github.com/allenai/visprog)。主表钉会议稿，不钉仓库换引擎之后的演示，也不钉后来同仓库宣传的 CodeNav。检索可以用 arXiv 号，对表必须翻会议稿。ar5iv HTML 把错误分析图编成 Figure 8，会议稿是 **Figure 9**。
+
+## 1. 问题：长尾任务养不起一套监督数据
+
+作者把缺口写成：端到端系统靠海量无监督预训练再加多任务监督，每只新任务都要一份干净标注，长尾养不起。想象一句「给这张图里《生活大爆炸》的七个主角打标签」：先检人脸，再问知识库要角色名单，再用开放词表分类。Neural Module Networks 把题收成可微模块网，布局要么靠脆的解析器，要么用 REINFORCE 弱监督学，域一换就垮。Socratic Models 把多模态预训练模型按任务预先串好，构图对任务固定。PICa 把图收成配文再喂 GPT-3 直接出答案，没有可检查的中间程序。本篇要的是：任务换了只换几条示范，梯度学习不做（脚注把 training 限定成基于梯度的学习，和 in-context 那一次前向拆开）。
+
+生成器是冻着的 GPT-3。提示里是人手写的「自然语言指令 + 高层程序」对，通常**不需要配图**。新指令贴在后面。GPT-3 **看不见图像内容**就吐出程序，再拿到图上执行。每一行是一步：模块名、命名参数、输出变量。后面的行读前面的变量。模块名写成 `Select` / `ColorPop` / `Replace`，参数名写成 `image` / `object` / `query`，变量名写成 `IMAGE` / `OBJ`，让 GPT-3 从名字猜类型。执行期变量可以装任意类型：`OBJ` 是物体列表，带掩码、框和文本。这和 ViperGPT 的 `ImagePatch` 方法调用不是同一套语法：这边是领域 DSL，那边是真 Python。
+
+模块实现成 Python 类，三件事：解析这一行拿到参数和输出名；执行（可能调预训练模型）并更新程序状态；用 HTML 把这一步的入出图画出来，后面拼成视觉依据。新模块只要实现并注册，解释器自动跑。作者写成当前 **20** 只，红的是神经网络，蓝的是图像处理和 Python 子程序。加模块是人改库存，不是模型自己扩 \(\mathcal{M}\)。仓库后来把 ViLT 换成 BLIP、把 davinci-002 换成 003，等于人改实现；主表 50.5 仍是会议稿那套 ViLT + 论文版 GPT-3。
+
+解释器按行执行，状态字典留下中间量。程序本身人能读，逻辑对不对可以先查；中间框和裁块又能查感知错在哪一步。作者把这套 HTML 轨迹叫做 visual rationale。GQA 那道「戴头盔的人左边还是右边有小卡车」：先 `LOC` 头盔人群，按介词裁一侧，再问这一侧有没有小卡车。ViLT 不吃整句复杂题，只吃裁块上的简单问。作者写成因此比直接把原题丢给 ViLT 更准，也更好解释。换成 CLIP 加检测、完全去掉 QA 模块，写成未来工作。
+
+仓库示例把「图里有多少人或动物」写成六行：`LOC` 人、`LOC` 动物、两次 `COUNT`、`EVAL` 把两个计数加起来、`RESULT` 取出最终变量。这是 DSL，不是 `for` 循环。`EVAL` 的表达式里用花括号引用前面的输出名，由解释器代入后再交给 Python 求值。`RESULT` 是收口模块，不是又一次感知。状态字典按输出名存框、计数、字符串；下一步只通过名字取，没有隐式全局图像。生成器仍然看不见这些中间量——它们只在执行期出现。
+
+四套任务共用框架，示范和模块子集不同。GQA：开放词表定位、VQA、按框或介词裁切、数框、`EVAL` 跑 Python 表达式。为了省钱，按约 **100** 种细题型，balanced val 每型最多 **5** 条，testdev 每型最多 **20** 条。示范：从 balanced train 随机标了 **31** 道的程序，每次再抽一个更小的子集塞进窗口。31 条示范来自 balanced train，测试子集来自 testdev，两份按切分不相交。val 上每型最多 5 条只用来看 Figure 6 和挑提示，50.5 不在那张验证曲线上。
+
+NLVRv2：把关于图像对的陈述拆成单图问题和算术逻辑表达式，ViLT-VQA 只看单图；验证集从 dev 随机 **250** 条用来选提示，测试走全量公开测试集。示范 **16** 条，策展去掉 4 条结构重复剩 **12**。知识标注：GPT-3 当隐式知识库（「列出生活大爆炸主要角色，逗号分隔」），CLIP 给定位或人脸检测出来的块分类；「前 5 家德国车企」把名单长度钉成 5，「德国车企」则由 GPT-3 决定、截断在 **20**。评测： **100** 条指令、**46** 张图、**253** 个实例，IoU 阈值 **0.5**，打标要框和名字都对，定位忽略名字，两边都报指令平均的 P/R 再取 F1。示范 **14** 条，指令是编的，没有配图。图像编辑：去标识、颜色弹出、替换，Stable Diffusion 做重绘；**107** 条指令、**65** 张图，人评语义正确，替换子任务不因生成伪影扣分。示范 **10** 条，同样无图。
+
+## 2. 机制：看不见图也能写出下一步用哪只模块
+
+作者把 in-context 比成英法翻译：给两对例子再给新的英文，GPT-3 吐法文，不必微调。这边给指令–程序对，吐新程序。Figure 3 的编辑提示是人手写的。生成阶段没有观察，和 [ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 的交错想–做–看相反，也和 RestGPT 每步看 REST 返回相反。错了只能换示范或换人写的指令，不能在执行中重写后面的行。这和 [Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md) 一样是离线一次写完，语法更接近 ViperGPT，抽象层级更接近 Chameleon 的模块名。
+
+![指令进冻着的 GPT-3，一次写出模块行，解释器执行并留下视觉依据；虚线下一问，权重仍冻](./images/fig-visprog-loop.png)
+
+> 图 1：实线是一次推理。虚线是下一查询。程序在执行前就写完，中间变量只服务本题。
+
+**图 1 解析**
+
+- **User instruction**：图加自然语言。50.5 是 GQA 子集 Acc，62.4 是 NLVRv2 全量测试，不是规划重合。
+- **GPT-3 planner**：看不见图。示范是人手程序。没有 Continue。
+- **Module inventory**：论文 Figure 2 的 20 只。仓库换 BLIP 不改这张会稿表。
+- **Sequential execute**：行级解释器。HTML 轨迹给人看，不写回 \(\theta\)。
+- **虚线回流**：下一查询。\(H\) 和卡留下。本题程序和状态不留下。
+
+提示条数（Figure 6）不进主表。验证集上条数变多，GQA 和 NLVR 都涨；五次随机种子投票高于单次平均。NLVR 更早饱和，作者写成程序用到的模块更少、示范需求更低。柱上的验证分不要口算进 Table 1 的 50.5。投票等于同一道题看五套示范再取众数，作者写成等效于增加总示范量。策展把 16 条真实示范加 4 条对着验证失败编出来的，20 条一次跑到 50.0，接近五次 24 条的 50.5。换 4 条编造示范等于人改 \(D\)。
+
+错误分析（Figure 9）人工看每任务大约 **100** 条轨迹。GQA 上错误程序是最大头，伤到 **16%** 样本；补和失败题相似的示范，是人扩 \(D\)。NLVR 上若把 ViLT-VQA 换成更好的单图 QA，作者写成最多能挖 **24%**——这是错误来源上界，不是表上已经涨了 24 个百分点。知识标注和编辑的大头是 `List` 和 `Select`。指令调优（Figure 8）：人看轨迹把「item」改成「kitchen appliance」，把「CEO of IBM」改成「most recent CEO of IBM」，给 `Select` 加类别名，或把 `List` 的 max 写死。Table 3 / 4 的 Modified 列就是这些人改过的 \(q\)。下次默认仍用原指令，除非人把改写写进产品。那也是人改 \(H\)，不是 \(I'\subseteq S'\)。
+
+## 3. 表：50.5 是子集投票，62.4 低于微调 76.3
+
+GQA testdev **子集**，Accuracy：
+
+| 方法 | 策略 | Runs | 每轮示范 | Acc |
+|------|------|------|----------|-----|
+| ViLT-VQA | — | 1 | — | 47.8 |
+| VisProg | curated | 1 | 20 | 50.0 |
+| VisProg | random | 1 | 24 | 48.2 |
+| VisProg | voting | 5 | 24 | **50.5** |
+
+2.7 的减数是 47.8，不是 48.2。48.2 只比基座高 0.4，作者写成略高。50.0 对 50.5，策展几乎追上投票。子集协议见 §4.1，禁止和 ViperGPT 全量 48.1 减，也禁止和 HuggingGPT 伪标签 52.62 减，更禁止和 Chameleon ScienceQA 86.54 减。ViLT-VQA 47.8 是同一子集上把原题直接丢给 ViLT，不是 ViperGPT 表上的 BLIP-2 **44.7**。
+
+NLVRv2 **全量**公开测试：
+
+| 方法 | 策略 | 微调图像对 | Runs | 每轮示范 | Acc |
+|------|------|------------|------|----------|-----|
+| ViLT-NLVR | — | 是 | 1 | — | **76.3** |
+| VisProg | curated | 否 | 1 | 12 | 61.8 |
+| VisProg | random | 否 | 1 | 16 | 61.3 |
+| VisProg | voting | 否 | 5 | 16 | **62.4** |
+
+62.4−61.3=**1.1** 是投票相对随机。76.3−62.4=**13.9** 是微调上限还没摸到。VQA 模块训在 VQAv2 单图，没有吃 NLVRv2。作者的「strong zero-shot」钉在「没用图像对训练」，盖不住 76.3。62.4 不要改 ViperGPT NExT-QA 全量 **60.0**，也不要改 LXMERT GQA 监督 **60.0**。
+
+知识标注，IoU 0.5，指令平均 F1：
+
+| 指令 | 打标 P | 打标 R | 打标 F1 | 定位 P | 定位 R | 定位 F1 |
+|------|--------|--------|---------|--------|--------|---------|
+| Original | 69.0 | 59.1 | **63.7** | 87.2 | 74.9 | **80.6** |
+| Modified | 77.6 | 73.9 | **75.7** | 87.4 | 82.5 | **84.9** |
+
+打标 F1 涨 12.0，定位涨 4.3。定位本来就高，名字错得更多。100 / 46 / 253 是这张表的分母，不是 GQA 子集大小。对象检测单独做不到这道题，因为类别名单来自 GPT-3。Modified 是人改指令，不是第二套模型。
+
+图像编辑，人评语义正确：
+
+| | Original | Modified |
+|--|----------|----------|
+| Acc | **59.8** | **66.4** |
+
++6.6 个百分点。107 条、65 图。Stable Diffusion 的伪影只要语义对就不扣。59.8 不要改 OK-VQA 的 51.9，也不要改编辑生成模型自己的 FID。这把尺是作者自己打的语义分，比 GQA 选项金标软，比 RestGPT 的人评 Success 同类。
+
+失效按构造读。GPT-3 看不见图，空间关系只能靠示范里的介词模块；示范不够，GQA 就出现那 16% 错程序。ViLT 在裁块上仍会答错，NLVR 的 24% 上界指的是这一档。`List` 名单截断在 20，太长就吵，太短就漏。编辑的 `Select` 选错掩码，Stable Diffusion 会在错的地方重绘。解释器忠实跑错程序，没有退回「直接 ViLT」的默认路径，这点和 Chameleon 非法计划退回 CoT 不同。窗口要装示范，GQA 31 条不能一次全塞，所以才随机抽；抽哪些，50.5 会漂。
+
+## 4. 这不是 RSI，也不是 ViperGPT 的子集版主表
+
+\(S\) 取当前 GPT-3 加冻着的 20 只模块。单轮连 \(S'=I(S)\) 都不成立：推理结束权重还是原样。程序和 HTML 轨迹随题清空。术语式 (2) 要的 \(I'\subseteq S'\) 更谈不上。示范、20 只清单、ViLT、davinci-002，下次请求默认还在。人看轨迹改指令，改的是这一题的 \(q\)；Table 3 Modified 不会自动变成下一题的默认 \(H\)。模型不能把自己的规划器从 davinci-002 换成 Codex 去追 ViperGPT 的不受限 Python，不能把 ViLT 换成 BLIP 来重报 50.5，不能把 GQA 子集协议改成全量 testdev 再和 48.1 减。混元台阶上这是 **L0**：任务内组合，跨请求 \(H\) 冻着。人把改写过的指令写进产品提示，那是人改 Harness，改进器仍在墙外。要跨到术语式 (2)，至少得看见下一题的生成器读的是上一题改过的示范集或模块表，并且这些改动已经接任。本篇没有这一列。仓库 README 写 visprog 解决不了就「你自己加示范 / 加模块」，正是旋钮在墙外。
+
+和邻居钉死。[ViperGPT](../57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md) 同是 2023、同是离线视觉程序。那边 `code-davinci-002` 吐真 Python，可以不给示范，RefCOCO 72.0 / 全量 GQA 48.1；这边必须给示范，子集 GQA 50.5。50.5 不要改 48.1。[Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md) 自然语言模块名，ScienceQA 86.54；作者那边写成领域程序更易错，本篇用的正是领域 DSL。[HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md) 按下载量挑 Hub 卡，伪标签 52.62 不要改 50.5。[RestGPT](../55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md) 在线 REST，75.0；他们表上的 ViperGPT 11 不是本篇 20。[LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) 按类缓存函数，中国剩余 100.0；本篇程序不进缓存。[ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 每步看观察。Visual ChatGPT 把视觉模型接到对话，构图更像固定工具表。Socratic Models 任务级固定串接。PICa 无程序。仓库后来的 CodeNav 改成迭代写代码、看执行错误再修，那是后文，禁止把「会重规划」写进本篇主表。
+
+GPT-3、OWL-ViT、Stable Diffusion 都在墙外。GQA / NLVRv2 有公开金标，知识标注和编辑是作者自建小集加人评。零样本最好的句子只覆盖「相对同一子集上的 ViLT-VQA」和「图像对上没微调」，盖不住全量 GQA 别人的表，也盖不住 76.3。可靠性专文要的墙外监督，GQA 子集至少有选项金标；缺的是「这段程序该不该留下」的独立门：视觉依据给人改指令，没有第二套生成器对照 GPT-3 写错没有。GPT-3 既当程序生成器又当 `List` 知识库，和 HuggingGPT 里 GPT-4 既造伪标签又当裁判是同一类身份重叠。
+
+和 ViperGPT 的规划器再拆一次。那边 API 签名加 docstring，Codex 不看实现，执行是标准 CPython。这边模块名加命名参数，解释器按注册表调度，每行一只函数调用，没有 `for` / `if` 那种不受限控制流写在生成文本里——循环和分支若出现，也是模块内部或 `EVAL` 表达式，不是任意脚本。那边作者强调可以零示范；这边 Figure 6 把示范条数当成主旋钮。两边都冻 \(\theta\)，都是离线，主表却不是同一把尺：72.0 是框的 IoU，50.5 是子集答题。
+
+![左列权重不涨，示范对冻着；中 WALL；右列 GPT-3、20 只模块、四套题冻着](./images/fig-visprog-frozen.png)
+
+> 图 2：没有箭头更新 \(\theta\)。墙右边是下次任务默认还在、且不被本题程序改写的 \(I\)。
+
+**图 2 解析**
+
+- **Grows**：\(\theta\) 不动。程序只在本查询。
+- **Prompt \(H\)**：指令–程序对。编造的 4 条策展示范也在这里。
+- **WALL Frozen \(I\)**：改进器身份。
+- **GPT-3 / OWL-ViT / ViLT / CLIP / SD / 20 只 / 四套题**：换其中任一项等于人改 \(I\)。仓库把 ViLT 换成 BLIP，是旋钮在墙外的活标本。人看 Figure 8 改指令，改的是 \(q\)，默认 \(H\) 仍冻着。
+
+对有大模型基础的读者，读完应能回答这几句。改的是哪一层？Harness，一次写出冻着的模块行。50.5 是哪一格？GQA testdev 子集、五次 24 条示范投票。为什么不能减 48.1？全量和子集。和 ViperGPT 差在哪？这边必须给示范、语法是 DSL；那边可以零示范、语法是 Python。62.4 为什么不是 SOTA？微调 76.3。Modified 列是谁改的？人看视觉依据改指令。还缺什么才敢叫 RSI？示范集或模块表进入 \(S'\)，并且下一轮生成器就是升级后的那份。为什么 2.7 不能写成相对 random？因为减数是 ViLT-VQA 的 47.8。为什么 20 不能改 RestGPT 的 11？一个是本篇模块库存，一个是邻居给 ViperGPT 写的定性格。
+
+**读**：Table 1 的 50.5 / 50.0 / 48.2 / 47.8、2.7≠0.4、GQA 是子集、Table 2 的 62.4 / 76.3 / 13.9、Table 3 的 63.7 / 80.6 / 75.7、100/46/253、Table 4 的 59.8 / 66.4、20 只模块、16% 错程序、24% 是 NLVR 上界、看不见图就生成、不是 RSI。  
+**不读**：把 50.5 收进 48.1 / 52.62 / 86.54、把 2.7 听成相对 48.2、把 62.4 听成超过 76.3、把 20 改成 11、把 Modified 听成模型自改 \(H\)、把仓库 BLIP / davinci-003 改会议稿、把 Figure 6 柱口算进主表、把 CodeNav 的重规划写进本篇。
+
+同层工具：[57 ViperGPT](../57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md)、[56 Chameleon](../56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md)、[55 RestGPT](../55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md)、[54 HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[53 EASYTOOL](../53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md)。Model 侧：[13 Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+
+## 参考文献
+
+1. Gupta, T., & Kembhavi, A. (2023). [Visual Programming: Compositional Visual Reasoning Without Training](https://openaccess.thecvf.com/content/CVPR2023/papers/Gupta_Visual_Programming_Compositional_Visual_Reasoning_Without_Training_CVPR_2023_paper.pdf). CVPR 2023 Best Paper. Table 1–4、§3–§5、Figure 2/6/9 以会议 Open Access PDF 为准；预印本 [arXiv:2211.11559](https://arxiv.org/abs/2211.11559)。项目 [prior.allenai.org/projects/visprog](https://prior.allenai.org/projects/visprog)。代码 [allenai/visprog](https://github.com/allenai/visprog)。仓库 README 写论文后把 GPT-3 换成 `text-davinci-003`、把 VQA 换成 BLIP，主表仍钉会议稿。
