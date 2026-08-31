@@ -29,7 +29,7 @@ R1、o1 一类把文本长链训成会自我纠正的推理模型，几何、精
 
 RL 的赌注是：让策略在交错执行里自己摸「何时调、调什么、调完怎么接」。奖励只看最终答案等不等价，不另加「代码能跑」分。这样设计是为了少给 hacking 口子，也把可执行性、调用时机、代码复杂度都交给探索。代价立刻可见：沙箱、标签、等价判定、题库金标，全部是人钉的 \(I\)。\(\theta\) 再强，也改不了「怎样才算 equivalent」。
 
-相关工作把 Tool-Integrated Reasoning 收成一条线：Chen 等 2025 的 R1 风格 SFT 仍绑在那份代码 CoT 分布上；并发的 [ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md)（Li 等，[arXiv:2503.23383](https://arxiv.org/abs/2503.23383)）在 Qwen2.5-Math 的 1.5B / 7B 上做工具 RL，7B AIME24 greedy 43.3；作者写成规模不够、分数不理想，那是站在 32B、32 次平均上看。ReTool 把骨干拉到 32B，工具钉死为代码解释器，不做多 API 选择。不要和 ToolLLM / Gorilla 的 API 轨迹 SFT 收成一张表，也不要和 Search-R1 的搜索引擎 RL 收成一篇。并发的 [ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 才是多 API、拆槽位奖励，3B BFCL 52.98，不要和本篇 AIME 67.0 横加。PoT / PAL 是提示侧把计算交给 Python，权重不动；本篇的差是：同样接解释器，但 \(\theta\) 会被 +1/−1 推过。差在训练，不在「会不会 print」。
+相关工作把 Tool-Integrated Reasoning 收成一条线：Chen 等 2025 的 R1 风格 SFT 仍绑在那份代码 CoT 分布上；并发的 [ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md)（Li 等，[arXiv:2503.23383](https://arxiv.org/abs/2503.23383)）在 Qwen2.5-Math 的 1.5B / 7B 上做工具 RL，7B AIME24 greedy 43.3；作者写成规模不够、分数不理想，那是站在 32B、32 次平均上看。ReTool 把骨干拉到 32B，工具钉死为代码解释器，不做多 API 选择。不要和 ToolLLM / [Gorilla](../11-Gorilla-API调用微调/11-Gorilla-API调用微调.md) 的 API 轨迹 SFT 收成一张表（那边 TorchHub 0-shot 59.13，Oracle 67.20 不要改本篇 67.0），也不要和 Search-R1 的搜索引擎 RL 收成一篇。并发的 [ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 才是多 API、拆槽位奖励，3B BFCL 52.98，不要和本篇 AIME 67.0 横加。PoT / PAL 是提示侧把计算交给 Python，权重不动；本篇的差是：同样接解释器，但 \(\theta\) 会被 +1/−1 推过。差在训练，不在「会不会 print」。
 
 ## 2. 机制：冷启动改格式，PPO 只认 boxed
 
@@ -136,7 +136,7 @@ Figure 5 用 Doubao-1.5-pro 给代码片段的主要用途分类，再画词云�
 **读**：式 (1)(2)、Table 1 的 67.0 / 49.3 与 72.5 / 54.3、400 对 1080、冷启动 40.9 贴着文本 RL 40.0、10.3 与 11.4 两把尺、10k→6k、代码约 98%、行数约 5 倍、1k→5k、HF dump 2000 不进主表、不是 50.0、不是 AZR 的自造题。  
 **不读**：把 72.5 听成 67.0 的加步、把两个 40.0 收成一格、把 32 次平均听成 greedy、把 aha 听成改进器进了 \(S'\)、把 ReTool 听成 Retool.com、把解释器听成已经递归。
 
-同层：[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)、[07 R-Zero](../07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md)、[05 LADDER](../05-LADDER-递归拆题/05-LADDER-递归拆题.md)、[04 SEAL](../04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)、[09 ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md)、[10 ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md)。信号：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。Harness 侧工具：[42 LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+同层：[06 Absolute Zero](../06-Absolute-Zero-Reasoner/06-Absolute-Zero-Reasoner.md)、[07 R-Zero](../07-R-Zero-挑战者解题器/07-R-Zero-挑战者解题器.md)、[05 LADDER](../05-LADDER-递归拆题/05-LADDER-递归拆题.md)、[04 SEAL](../04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)、[09 ToolRL](../09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md)、[10 ToRL](../10-ToRL-从基座做工具RL/10-ToRL-从基座做工具RL.md)、[11 Gorilla](../11-Gorilla-API调用微调/11-Gorilla-API调用微调.md)。信号：[04 RLVR](../../1-坐标系与术语/04-模仿学习与RLVR/04-模仿学习与RLVR.md)。Harness 侧工具：[42 LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
 
 ## 参考文献
 
