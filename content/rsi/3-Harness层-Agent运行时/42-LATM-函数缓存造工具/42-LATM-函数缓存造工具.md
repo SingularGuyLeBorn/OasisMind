@@ -28,7 +28,7 @@ tags:
 
 \(S\) 取这次部署里的函数缓存：已经过核验、带调用示范的 Python 工具。单轮 \(S'=I(S)\) 可以发生：调度判定这是新任务，制造者写进库。术语式 (2) 还要 \(I'\subseteq S'\)。下一轮仍用同一句「请写只用标准库的通用函数」、同一套核验格式、同一句包装、同一句调度。混元台阶上这不是 L0：函数跨实例还在。也到不了改改进器。更像 Voyager / AWM：留下脚手架状态，出状态的程序冻着。作者把 closed-loop 写成制造和缓存可以跟着新请求继续发生。花园读成库在长，配方不在变。结论自己写未来工作：让制造者像软件开发那样升级已有工具。主实验没做这一步。
 
-和邻居先划线。Voyager 的 63 是 160 步 Minecraft 物品种类；这边测试集每任务 **240** 题，训练 / 验证各 **3** 条。CREATOR（Qian 等，[arXiv:2305.14318](https://arxiv.org/abs/2305.14318)，Findings of EMNLP 2023）按题造工具：ChatGPT 上 MATH **59.7%**、TabMWP **94.7%**、Creation Challenge **75.5%**，迁移实验最多再加 **15.3** 个百分点（63.0→78.3）。那是竞赛数学和表格题，不是本表六列。LATM 相关工作把 CREATOR 写成并发：拆成抽象创造和具体应用，但没把可复用和贵便宜分工写成主贡献。PoT / PAL 用 Python 解本题算术；这边用 Python 留下给后题用的 API。Chameleon 也接解释器，作者写成解子步骤，不是造可复用工具。Toolformer 学的是何时调已有工具。[ReTool](../../2-Model层-训练时自改进/08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 后来用 PPO 学何时写代码，改的是 \(\theta\)，函数不按类缓存；AIME2024 67.0 不要改这边的 79.7。[ToolRL](../../2-Model层-训练时自改进/09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 学的是何时调已有 API，也不缓存新函数；3B BFCL 52.98 不要改这边的 79.7。[Gorilla](../../2-Model层-训练时自改进/11-Gorilla-API调用微调/11-Gorilla-API调用微调.md) 调 Hub 里已有的模型卡，改 \(\theta\)，不按类缓存新函数；TorchHub 0-shot 59.13 不要改这边的 79.7。[ToolLLM](../../2-Model层-训练时自改进/12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md) 调 RapidAPI 已有 REST，均 pass 66.7 不要改这边的 79.7。[EASYTOOL](../53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md) 只改说明书不造函数，两列均 pass 69.8 不要改这边的 79.7。禁止用 59.7 改 79.7。
+和邻居先划线。Voyager 的 63 是 160 步 Minecraft 物品种类；这边测试集每任务 **240** 题，训练 / 验证各 **3** 条。CREATOR（Qian 等，[arXiv:2305.14318](https://arxiv.org/abs/2305.14318)，Findings of EMNLP 2023）按题造工具：ChatGPT 上 MATH **59.7%**、TabMWP **94.7%**、Creation Challenge **75.5%**，迁移实验最多再加 **15.3** 个百分点（63.0→78.3）。那是竞赛数学和表格题，不是本表六列。LATM 相关工作把 CREATOR 写成并发：拆成抽象创造和具体应用，但没把可复用和贵便宜分工写成主贡献。PoT / PAL 用 Python 解本题算术；这边用 Python 留下给后题用的 API。Chameleon 也接解释器，作者写成解子步骤，不是造可复用工具。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) 学的是何时调已有五只工具，T-REx 53.5、ASDiv 40.4 不要改这边的 79.7。[ReTool](../../2-Model层-训练时自改进/08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 后来用 PPO 学何时写代码，改的是 \(\theta\)，函数不按类缓存；AIME2024 67.0 不要改这边的 79.7。[ToolRL](../../2-Model层-训练时自改进/09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 学的是何时调已有 API，也不缓存新函数；3B BFCL 52.98 不要改这边的 79.7。[Gorilla](../../2-Model层-训练时自改进/11-Gorilla-API调用微调/11-Gorilla-API调用微调.md) 调 Hub 里已有的模型卡，改 \(\theta\)，不按类缓存新函数；TorchHub 0-shot 59.13 不要改这边的 79.7。[ToolLLM](../../2-Model层-训练时自改进/12-ToolLLM-RapidAPI轨迹SFT/12-ToolLLM-RapidAPI轨迹SFT.md) 调 RapidAPI 已有 REST，均 pass 66.7 不要改这边的 79.7。[EASYTOOL](../53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md) 只改说明书不造函数，两列均 pass 69.8 不要改这边的 79.7。禁止用 59.7 改 79.7。
 
 ## 2. 机制：三步造一把，再译成调用
 
@@ -91,7 +91,7 @@ Table 5 把「把 GPT-4 的逐步想法当工具传给 3.5」钉死。零样本 
 - **右列**：制造者、使用者、调度的提示和温度仍是人写的。
 - **读法**：库在长不等于 \(I\) 在长。未来工作里的「升级已有工具」画在墙外，主实验没有箭头。
 
-同一句「模型给自己造工具」，至少分三截。Toolformer 学何时调已有 API。CREATOR 按题写文档和代码。LATM 按类写函数并摊销。三截不要收成「都在推理时自我进化」。相关工作还点了 HuggingGPT、Chameleon、Voyager。Voyager 已有专文。HuggingGPT 调的是现成模型 API，不是本表六列。
+同一句「模型给自己造工具」，至少分三截。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) 学何时调已有 API。CREATOR 按题写文档和代码。LATM 按类写函数并摊销。三截不要收成「都在推理时自我进化」。相关工作还点了 HuggingGPT、Chameleon、Voyager。Voyager 已有专文。HuggingGPT 调的是现成模型 API，不是本表六列。
 
 「15 倍」要和摊销前提一起读。\(C>15c\) 是写论文时的标价比；Table 4 的 0.002 / 0.02 也是当时价。价单会变，准确率列不会因为价单变。同一类题够多，制造那一次才摊得薄。调度认错工具，便宜使用者会拿错 API，95% 不是 Table 2。GPT-4 当使用者在逻辑演绎上掉到 86.6，说明「更强骨干 + 同一把工具」不是单调改进。中国剩余 0.0→100.0 说明这一列测的是「会不会把搜索交给代码」，不是「闭循环已经比 GPT-4 更会推理」。
 

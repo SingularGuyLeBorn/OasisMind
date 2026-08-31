@@ -40,7 +40,7 @@ _garden.md / 0-导读
 |------------|------|--------|
 | self-improving vs RSI vs CL vs TTT | 第 1 章 | 不要在第 5 章再写一套术语 |
 | Model / Harness / Artifact | 第 1 章 `02` | 不要开平行分类法 |
-| SPIN / Self-Rewarding / STaR / Self-Instruct / SEAL / LADDER / Absolute Zero / R-Zero / ReTool / ToolRL / ToRL / Gorilla / ToolLLM | 第 2 章 | 不要把 OPD 公式抄进本库 |
+| SPIN / Self-Rewarding / STaR / Self-Instruct / SEAL / LADDER / Absolute Zero / R-Zero / ReTool / ToolRL / ToRL / Gorilla / ToolLLM / Toolformer | 第 2 章 | 不要把 OPD 公式抄进本库 |
 | OPD / MOPD | 链 llm-guide 4.6 | 本库最多一节「不是 RSI」 |
 | verification-gated runtime、STOP、Gödel Agent、DGM、技能包自改、ACE playbook、Voyager、Reflexion、Self-Refine、CRITIC、EASYTOOL | 第 3 章（Voyager / Reflexion / Self-Refine / CRITIC / EASYTOOL 已落） | 不要写成 Cursor 产品手册 |
 | AlphaEvolve、FunSearch、科研 agent、论文工厂 | 第 4 章 | |

@@ -30,7 +30,7 @@ tags:
 
 \(S\) 取这次运行里的 MySQL 表：供应商、水果、进货、顾客、销售、明细。单轮 \(S'=I(S)\) 可以发生：多一行库存、删一笔退货。术语式 (2) 还要 \(I'\subseteq S'\)。下一笔记录仍用同一套 chain-of-memory 提示、同一批少样本、同一只 GPT-3.5 Turbo、温度仍是 0。混元台阶上这不是 L0：账本跨问还在。也到不了改改进器。更像 MemGPT / HippoRAG：留下脚手架状态，出状态的程序冻着。作者把「每一步数据库操作都是符号、没有误差」写进正文。花园拆开：MySQL 执行是精确的；模型生成哪条 SQL 仍会错。容易题 13/15，不是 15/15。
 
-和邻居先划线。Toolformer / HuggingGPT 把库当工具调用；BINDER / SQL-PaLM 是 Text-to-SQL。作者强调 ChatDB 把库当成外存模块，用 chain-of-memory 读写历史。评测没有 Spider、没有 BIRD，不要拿 SQL-PaLM 的 Text-to-SQL 榜来垫 82%。Auto-GPT / Generative Agents 是提示式记忆，Table 1 写成半结构、非符号执行、不能完整更新删除。RMT 是可训练记忆 token。MemGPT 有分页函数，没有强制 schema。HippoRAG 的边是 OpenIE 三元组，不是主键外键。A-Mem 的卡片没有 SUM。ReAct 的轨迹随题清空；这边表跨记录留下。
+和邻居先划线。[Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) / HuggingGPT 把库当工具调用；BINDER / SQL-PaLM 是 Text-to-SQL。作者强调 ChatDB 把库当成外存模块，用 chain-of-memory 读写历史。评测没有 Spider、没有 BIRD，不要拿 SQL-PaLM 的 Text-to-SQL 榜来垫 82%。Auto-GPT / Generative Agents 是提示式记忆，Table 1 写成半结构、非符号执行、不能完整更新删除。RMT 是可训练记忆 token。MemGPT 有分页函数，没有强制 schema。HippoRAG 的边是 OpenIE 三元组，不是主键外键。A-Mem 的卡片没有 SUM。ReAct 的轨迹随题清空；这边表跨记录留下。
 
 ## 2. 机制：先规划 SQL 链，再按结果改下一步，最后摘要
 
@@ -73,7 +73,7 @@ Figure 5 三道题当机制说明，不当另一张表。一月总营收：ChatG
 
 账本变了，下一问可能直接 `SUM` 到 707.0。改进器没变。\(\mathrm{LLM_{getSteps}}\) / \(\mathrm{LLM_{updateOperation}}\) / \(\mathrm{LLM_{summary}}\) 的提示、少样本链、温度 0、MySQL 引擎、schema 都还在。混元 L0 装不下跨记录保持；L3 要改提议 / 选择程序。本篇停在留下状态、不改程序。摘要里的 symbolic memory 指执行层是 SQL，不是 \(I\) 在改自己。Schuurmans 的万能机是另一篇构造，本实验没有实现那套证明。
 
-和 MemGPT 钉死。93.4 是 MSC 话题级裁判；82% 是 41/50 合成店账。MemGPT 函数换页，没有强制把营收交给 SUM。和 HippoRAG 钉死。89.1 是 2Wiki R@5；这边没有检索库。HippoRAG 的图无预置 schema，ChatDB 的表有主键外键。和 A-Mem 钉死。LoCoMo 多跳 27.02 不是水果店 82%。和 ReAct / CoT 钉死。CoM 把中间步写成 SQL，不是思维树。和 Toolformer 钉死。工具调用可以是搜索；这边工具是带状态的库。和 SQL-PaLM 钉死。Text-to-SQL 榜不是 Fruit Shop。
+和 MemGPT 钉死。93.4 是 MSC 话题级裁判；82% 是 41/50 合成店账。MemGPT 函数换页，没有强制把营收交给 SUM。和 HippoRAG 钉死。89.1 是 2Wiki R@5；这边没有检索库。HippoRAG 的图无预置 schema，ChatDB 的表有主键外键。和 A-Mem 钉死。LoCoMo 多跳 27.02 不是水果店 82%。和 ReAct / CoT 钉死。CoM 把中间步写成 SQL，不是思维树。和 [Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md) 钉死。工具调用可以是搜索；这边工具是带状态的库。T-REx 53.5 不是水果店 41/50。和 SQL-PaLM 钉死。Text-to-SQL 榜不是 Fruit Shop。
 
 对有大模型基础的读者，读完应能回答四句。改的是哪一层？Harness 里的 SQL 账本和规划提示。权重动了没有？没有。82% 是不是长上下文记忆的胜利？不是，对照窗口里已经装得下 3.3k token。还缺什么才叫花园 RSI？写 SQL 链的提示进入 \(S'\)，并且下一笔进货用的就是升级后的那份。作者没有局限节。没测超长账本，没测脏 SQL，没测换骨干，没把 Auto-GPT 拉到同一张 50 题上。schema 人手写还是模型写，主表没有拆开。
 
