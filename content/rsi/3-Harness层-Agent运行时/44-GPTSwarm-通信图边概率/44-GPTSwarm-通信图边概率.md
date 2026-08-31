@@ -101,7 +101,7 @@ GAIA。Table 1 是七只 TOT、提示版自洽、五次运行的均值和标准�
 **读**：GAIA 18.45 对 9.70 的 90.2% 是相对涨幅且未跑边优化，填字 0.575 / 0.800 / 0.668 分骨干和是否节点优化，HumanEval 0.88 在全集上爬，MMLU 对抗是拉回基线，不是式 (2)。  
 **不读**：把 90.2 / 260.2 / 0.800 / 0.88 听成同一把尺、用 24 点 74% 改填字、说 GAIA 已经在学边、说 REINFORCE 已经进了 \(S'\)、说已经 RSI。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[31 GoT](../31-GoT-思维图聚合/31-GoT-思维图聚合.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[17 OPRO](../17-OPRO-元提示优化/17-OPRO-元提示优化.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

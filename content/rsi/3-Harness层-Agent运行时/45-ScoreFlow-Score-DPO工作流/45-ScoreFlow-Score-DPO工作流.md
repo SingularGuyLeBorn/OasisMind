@@ -104,7 +104,7 @@ Table 3 只报 HumanEval。Llama 生成器 + 各执行器：4o-mini **95.7**（�
 - **右列**：损失、算子、执行器、\(k=8\) / \(M=3\) 仍是人写的。
 - **读法**：生成器在训不等于 \(I\) 在长。AFlow 的 Claude 和这边的 Score-DPO 都在墙外选谁留下。
 
-同一句「自动生成 Agent 工作流」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用分数加权的 DPO 训生成器。四截不要收成「都已经是 RSI」。AutoFlow 把工作流写成自然语言程序再 RL，MAS-GPT 一次前向吐可执行 MAS 代码，综述仍裸名，本篇不代打它们的表。ScoreFlow 的连续空间是生成器 LoRA，不是 AutoFlow 那条 NL 程序上的策略梯度，也不要收成「都在训工作流所以已经是 RSI」。MASS 分三阶段调提示再调拓扑，也不在本表。本篇只负责把 Score-DPO 这条代码工作流钉死，不把联合优化那一档提前写成已经闭合的递归改进程序。下一篇再钉 MASS 的三阶段，不在这里预支分数。
+同一句「自动生成 Agent 工作流」，至少分四截。提示优化把图钉死。ADAS 线性搜代码。AFlow 用 MCTS 加算子。ScoreFlow 用分数加权的 DPO 训生成器。四截不要收成「都已经是 RSI」。AutoFlow 把工作流写成自然语言程序再 RL，MAS-GPT 一次前向吐可执行 MAS 代码，综述仍裸名，本篇不代打它们的表。ScoreFlow 的连续空间是生成器 LoRA，不是 AutoFlow 那条 NL 程序上的策略梯度，也不要收成「都在训工作流所以已经是 RSI」。[MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md) 分三阶段调提示再调拓扑，Gemini Pro 八列均分 78.79，不要和本表 85.3 横加。本篇只负责把 Score-DPO 这条代码工作流钉死。
 
 「8.2%」要和八条基线的均分一起读。分子是 85.3 减约 77.0。相对 AFlow 重跑是 4.7 个百分点或 5.8% 相对涨幅。HumanEval 上普通 DPO 已经 95.9。不要用 8.2 改 85.3，也不要用 95.9 改 MATH 的 64.4。4.55% 那笔成本比在 AFlow 专文附录 D，不要和本篇 Table 5 的 2.257 对 4.608 横加。
 
@@ -113,7 +113,7 @@ Table 3 只报 HumanEval。Llama 生成器 + 各执行器：4o-mini **95.7**（�
 **读**：Table 1 的 85.3 对 AFlow 重跑 80.6、对基线均分约 77.0 的 8.2 个百分点，MATH 64.4，拼集 88.1 不是六列均分，优化成本 2.257 对 4.608，不是式 (2)。  
 **不读**：把 8.2 听成相对 AFlow、用 80.6 改花园 80.3、用 68.7 改 53.4、说 Score-DPO 已经进了 \(S'\)、说已经 RSI。
 
-同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[44 GPTSwarm](../44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md)、[46 MASS](../46-MASS-提示拓扑分阶段/46-MASS-提示拓扑分阶段.md)、[07 ADAS](../07-ADAS-Meta-Agent-Search/07-ADAS-Meta-Agent-Search.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[05 STOP](../05-STOP-自教优化器/05-STOP-自教优化器.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
