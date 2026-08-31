@@ -202,6 +202,7 @@ Gödel machine 要求形式证明之后才改 $p$，包括搜索器。OpenAI / A
 | [LATM](../../3-Harness层-Agent运行时/42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md) 函数缓存造工具 | 是（Harness 函数表） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；GPT-4 用户可低于 CoT | 跨实例复用 Python，不是 RSI |
 | [AFlow](../../3-Harness层-Agent运行时/43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md) 工作流 MCTS | 是（Harness 工作流） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；4.55% 是成本比 | 跨题复用搜到的图，不是 RSI |
 | [GPTSwarm](../../3-Harness层-Agent运行时/44-GPTSwarm-通信图边概率/44-GPTSwarm-通信图边概率.md) 通信图边概率 | 是（Harness 边 \(\theta\)） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；90.2% 是相对涨幅 | 跨题复用边概率，不是 RSI |
+| [ScoreFlow](../../3-Harness层-Agent运行时/45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md) Score-DPO 工作流 | 是（Harness 生成器 LoRA） | 否 | Harness / 近 L2 | 本任务可执行结果可以有；8.2% 是百分点差 | 跨题复用生成器，不是 RSI |
 | 经典 TTT（测完可丢） | 弱：改的是当前样本上的权重/状态 | 否：通常不构成下一代 $I$ | 推理时 Model | 往往没有跨请求验收 | TTT |
 | Replay / EWC | 是（权重） | 否：$I$ 仍是固定 CL 算法 | Model / CL | 旧任务保持测试 | 持续学习零件 |
 | OPD 一次训练作业 | 是（学生 $\theta$） | 否：教师与脚本在墙外 | Model 后训练 | 可以有 held-out | 不是 RSI |

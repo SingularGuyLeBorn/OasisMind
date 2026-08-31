@@ -100,7 +100,7 @@ Table 5 把「把 GPT-4 的逐步想法当工具传给 3.5」钉死。零样本 
 **读**：Table 2 的 79.7 / 99.6 / 92.2 / 98.3 / 100.0 / 100.0 对 CoT，中国剩余两边 CoT 都是 0.0，GPT-4 用户逻辑演绎 86.6 低于 88.8，Table 3 难任务 3.5 制造 0/5，Table 5 的 36.8 不是 LATM，95% 是调度不是答题，不是式 (2)。  
 **不读**：把 closed-loop 听成 RSI、用 CREATOR 的 59.7 改 79.7、说 GPT-3.5 已经会造五物体演绎工具、把 +71.8 听成相对涨幅、说核验会改函数、说已经在升级已有工具。
 
-同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[08 SkillEvolver](../08-SkillEvolver-元技能/08-SkillEvolver-元技能.md)、[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[43 AFlow](../43-AFlow-工作流MCTS/43-AFlow-工作流MCTS.md)、[45 ScoreFlow](../45-ScoreFlow-Score-DPO工作流/45-ScoreFlow-Score-DPO工作流.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[04 DGM](../04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
