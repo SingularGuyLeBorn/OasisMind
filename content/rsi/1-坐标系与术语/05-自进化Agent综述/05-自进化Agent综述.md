@@ -45,7 +45,7 @@ tags:
 
 MOP→MOA 是花园 Model 层常见的单轮训练。MAO 把多个冻权重的 LLM 编排起来，改的是 Harness。MASE 才把编排本身放进搜索。作者举 AlphaEvolve（Novikov et al., 2025）和 Darwin 一类工作当 MASE 方向的例子——花园里对应 [AlphaEvolve](../../4-Artifact层-产物发现/03-AlphaEvolve-进化编码智能体/03-AlphaEvolve-进化编码智能体.md) 和 [DGM](../../3-Harness层-Agent运行时/04-DGM-达尔文哥德尔机/04-DGM-达尔文哥德尔机.md)：产物或脚手架在搜，改进器配方仍在墙外。不要把 Table 1 最后一行听成已经交差。
 
-单 Agent 的积木，综述 §2.1 写成：基座负责解释目标、做计划、出动作；外围是感知、规划、记忆、工具。规划从线性 CoT，到 ReAct 那种「想一步做一步」，再到 [ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md) / GoT 的分支。记忆分短时（任务结束丢掉）和长时（跨任务，常接 RAG）。工具把网络搜索、代码执行、浏览器自动化接到推理环里。多智能体 §2.2 把拓扑分成层次（MetaGPT SOP）、中心（经理–下属，单点故障）和去中心（仿真友好、同步贵）。通信从 JSON/XML/代码，到自然语言，再到 A2A / ANP / MCP / Agora 这类协议草案。这些是闭环里 \(A\) 的内部零件清单，不是另一套 RSI 定义。
+单 Agent 的积木，综述 §2.1 写成：基座负责解释目标、做计划、出动作；外围是感知、规划、记忆、工具。规划从线性 CoT，到 [ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md) 那种「想一步做一步」，再到 [ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md) / GoT 的分支。记忆分短时（任务结束丢掉）和长时（跨任务，常接 RAG）。工具把网络搜索、代码执行、浏览器自动化接到推理环里。多智能体 §2.2 把拓扑分成层次（MetaGPT SOP）、中心（经理–下属，单点故障）和去中心（仿真友好、同步贵）。通信从 JSON/XML/代码，到自然语言，再到 A2A / ANP / MCP / Agora 这类协议草案。这些是闭环里 \(A\) 的内部零件清单，不是另一套 RSI 定义。
 
 ## 2. 四件套：把静态部署写成搜索
 
@@ -120,7 +120,7 @@ LLM-as-a-Judge 用点式打分或成对比较当廉价人评替代，和人的�
 | 综述格子 | 花园落点 | 样板 |
 |----------|----------|------|
 | 训 LLM 行为 | Model | SPIN / Self-Rewarding / Tufa / LADDER / SEAL |
-| 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[27 ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md)；[28 LATS](../../3-Harness层-Agent运行时/28-LATS-Agent树搜/28-LATS-Agent树搜.md)；可靠性专文 |
+| 测时搜索、Self-Refine / CRITIC / TextGrad 实例优化 | 多为 L0，不留 \(\theta\) | [12 Self-Refine](../../3-Harness层-Agent运行时/12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)；[13 CRITIC](../../3-Harness层-Agent运行时/13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)；[14 TextGrad](../../3-Harness层-Agent运行时/14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)；[29 ReAct](../../3-Harness层-Agent运行时/29-ReAct-推理与动作/29-ReAct-推理与动作.md)；[27 ToT](../../3-Harness层-Agent运行时/27-ToT-本题推理树/27-ToT-本题推理树.md)；[28 LATS](../../3-Harness层-Agent运行时/28-LATS-Agent树搜/28-LATS-Agent树搜.md)；可靠性专文 |
 | 提示 / 记忆 / 工具表 / 拓扑 | Harness | Argus / ACE / SkillEvolver / ADAS / STOP / DGM / Auto-Research |
 | 代码级工作流当空间 | Harness（元 Agent 常冻） | ADAS；Gödel 才把运行时打开 |
 | 实例级搜产物 | Artifact | FunSearch / AlphaEvolve / Polaris |

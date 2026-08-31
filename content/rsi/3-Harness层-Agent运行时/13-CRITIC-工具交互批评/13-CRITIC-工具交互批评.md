@@ -45,7 +45,7 @@ $S$ 取当前这道题的推理会话。变的是 $y_i$ 和本题提示里拼进
 
 算法 1 可以收成：用 $\wp$ 写出 $y_0$；for $i=0\ldots n-1$：带着 $T$ 写出 $c_i$，若 $c_i$ 说对了就返回，否则 $y_{i+1}\sim P_M(\cdot\mid \wp\oplus x\oplus y_i\oplus c_i)$。API 调用的返回直接接在模型生成的查询后面，构成 $c_i$。提示里的示范是「What's the problem with the above answer?」加一条含工具轨迹的 few-shot。任务预先指定工具，方便评测；正文说也可以用 in-context 自动选工具，主实验没走那条。
 
-QA 故意不用任务专用检索器，以免过拟合。搜索工具基于 Google：模型出 query，抓 top-1 页，按 snippet 模糊匹配最多 400 字符。交互最多 7 次。初稿是 CoT，最多改 3 轮，连续两轮答案相同就停。验的是 plausibility 和 truthfulness。贪心解码。每个验证集随机 500 题，报 EM 和 F1。搜索结果全部缓存，避免 Google 时间漂移。ReAct 基线用的是同一套搜索 API 重跑，不是原论文数字。CRITIC w/o Tool 拿掉搜索，让模型自己编证据，提示不改。
+QA 故意不用任务专用检索器，以免过拟合。搜索工具基于 Google：模型出 query，抓 top-1 页，按 snippet 模糊匹配最多 400 字符。交互最多 7 次。初稿是 CoT，最多改 3 轮，连续两轮答案相同就停。验的是 plausibility 和 truthfulness。贪心解码。每个验证集随机 500 题，报 EM 和 F1。搜索结果全部缓存，避免 Google 时间漂移。[ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 基线用的是同一套搜索 API 重跑，不是原论文数字。CRITIC w/o Tool 拿掉搜索，让模型自己编证据，提示不改。
 
 数学初稿是 Program-of-Thought，工具是解释器。反馈两类：报错写成 `Execution: NameError(...)` 或 `Time out`；跑通了就取变量 `answer`。最多 4 轮，连续两轮执行结果不变就停。初稿贪心，改写核采样 $p=0.5$，免得改写卡死。数据集是官方测试：GSM8k、SVAMP、TabMWP，数字四舍五入后对金标，报 EM。CRITIC w/o Tool 只拿掉解释器信息。
 
@@ -132,7 +132,7 @@ few-shot 里的工具轨迹是人钉的示范，不会因为这题搜到了 Wiki
 **读**：Verify–Correct、$T$ 三类、QA 500 题、$n=3/4$、ChatGPT F1 +7.7 与数学 +7.0、毒性概率 0.192→0.040、w/o Tool 的 −0.03 / +2.33 / 毒性变差、SVAMP davinci −3.3、Table 5 AUROC、HotpotQA 幻觉 36%→7% 与 FN 49%、GSM8k 错题修对 32.2%、Table 10 Self-Refine 26.7 不可回写 12 篇、CRITIC$^*$ 是 oracle、L0。  
 **不读**：用 +7.7 盖 w/o Tool、把 CRITIC$^*$ 当主结果、用 Codex Self-Refine −44.6 替换 Madaan Table 1、把 Perspective 自洽听成墙外安全证书、用 HotpotQA 手工 100 条外推全验证集、说已经 RSI。
 
-同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

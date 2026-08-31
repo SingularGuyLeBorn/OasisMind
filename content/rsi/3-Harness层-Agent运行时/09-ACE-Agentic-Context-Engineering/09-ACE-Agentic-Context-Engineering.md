@@ -72,7 +72,7 @@ $\tau_t$ 是 Generator 在当前 $H_t$ 和查询 $x$ 上跑出的轨迹，$f_t$ 
 
 ## 3. 数字：42.4 → 59.4 是相对 ReAct；+10.6 是相对强基线
 
-Table 1，AppWorld，DeepSeek-V3.1-671B。AppWorld 测多应用数字助手：邮件、日历、文件系统一类 API 要串起来才能完成场景。官方协议报 Task Goal Completion（TGC）和 Scenario Goal Completion（SGC），test-normal 与 test-challenge 两档。Average 是四格宏平均。全部架在官方 ReAct 上，隔离的是上下文适应，换 Agent 骨架不算进这笔账。
+Table 1，AppWorld，DeepSeek-V3.1-671B。AppWorld 测多应用数字助手：邮件、日历、文件系统一类 API 要串起来才能完成场景。官方协议报 Task Goal Completion（TGC）和 Scenario Goal Completion（SGC），test-normal 与 test-challenge 两档。Average 是四格宏平均。全部架在官方 [ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 上，隔离的是上下文适应，换 Agent 骨架不算进这笔账。
 
 | 方法 | 金标 | Normal TGC / SGC | Challenge TGC / SGC | 均 |
 |------|------|------------------|---------------------|----:|

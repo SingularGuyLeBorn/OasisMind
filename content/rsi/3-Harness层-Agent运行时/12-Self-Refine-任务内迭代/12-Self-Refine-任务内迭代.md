@@ -123,7 +123,7 @@ Gödel Agent 把手写 Self-Refine 放进「部署之后模块图不变」。读
 **读**：三份提示、最多 4 轮、Table 1 七行尤其是数学 +0.2、对话 GPT-4 +49.2 是 GPT-4 偏好、ChatGPT 数学反馈 94% everything looks good、Table 9 oracle 4.8 / 1.4 / 0.7、Table 2 无反馈情感变 0、Fig. 4 的 $y_0$–$y_3$、Vicuna 单独跑会垮、L0。  
 **不读**：用 ~20% 盖数学行、把 Self-Refine 和 Reflexion 收成一篇、用 Gödel / ADAS 表里的 Self-Refine 分替换 Table 1、把 GPT-4 偏好 74.6 听成解题率、把 Vicuna 混尺寸 24.18→40.5 写进主表、把正文 5%+ 写成 GPT-4 的数学增益、说已经 RSI。
 
-同层：[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[13 CRITIC](../13-CRITIC-工具交互批评/13-CRITIC-工具交互批评.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[06 Gödel Agent](../06-Godel-Agent-自指运行时/06-Godel-Agent-自指运行时.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

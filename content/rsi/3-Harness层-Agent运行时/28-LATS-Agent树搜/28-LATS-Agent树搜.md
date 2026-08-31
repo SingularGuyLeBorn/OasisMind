@@ -17,7 +17,7 @@ tags:
 
 # 28 LATS：本题里的 MCTS，跨题清空
 
-[ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md) 在本题的思维树上走 BFS / DFS，估价多半还是模型自己打分，环境反馈进不去。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 能读失败句子，但每条轨迹仍是一条 ReAct，不在逐步岔路上做规划。LATS 把两件事收进同一次搜索：节点是 \(s=[x,a_{1\cdots i},o_{1\cdots i}]\)，边上是想法或动作，走 UCT；失败终点再写一段反思，塞进**本题后续几次**展开。GPT-4 在 HumanEval 上 pass@1 **92.7**，同表 Reflexion **91.0**、裸 GPT-4 **80.1**。GPT-3.5 的 WebShop 均分 **75.9**，比同设定 ReAct **53.8** 高 22.1 分，成功率 **38.0** 仍低于微调那列的 **45.0**。HotPotQA 上 LATS（ReAct）EM **0.63**，作者写成把 ReAct 的 **0.32** 翻倍；同一节写明这是 **oracle**：环境在收到答案时告诉对错。
+[ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md) 在本题的思维树上走 BFS / DFS，估价多半还是模型自己打分，环境反馈进不去。[Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md) 能读失败句子，但每条轨迹仍是一条 [ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)，不在逐步岔路上做规划。LATS 把两件事收进同一次搜索：节点是 \(s=[x,a_{1\cdots i},o_{1\cdots i}]\)，边上是想法或动作，走 UCT；失败终点再写一段反思，塞进**本题后续几次**展开。GPT-4 在 HumanEval 上 pass@1 **92.7**，同表 Reflexion **91.0**、裸 GPT-4 **80.1**。GPT-3.5 的 WebShop 均分 **75.9**，比同设定 ReAct **53.8** 高 22.1 分，成功率 **38.0** 仍低于微调那列的 **45.0**。HotPotQA 上 LATS（ReAct）EM **0.63**，作者写成把 ReAct 的 **0.32** 翻倍；同一节写明这是 **oracle**：环境在收到答案时告诉对错。
 
 本篇是 Harness / 推理时「会看环境、会在本题里长 MCTS」的样板。[PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md) 的节点是跨题提示版本，测试时不再长树。这边节点是本题的动作–观察前缀，下一道独立题从空根开始。ToT 专文已经把「搜自己的想法」钉在 L0；本篇把「搜自己的动作并写失败句子」也钉在同一层，只是节点里多了观察。**不是** RSI。**不是** 改 \(\theta\)。**不是** 术语式 (2)。一手：Zhou, Yan, Shlapentokh-Rothman, Wang, Wang，UIUC / Lapis Labs，[arXiv:2310.04406](https://arxiv.org/abs/2310.04406)，ICLR 2024。通信作者写在 UIUC。代码 [lapisrocks/LanguageAgentTreeSearch](https://github.com/lapisrocks/LanguageAgentTreeSearch)。数字以 HTML Table 1–10、§4–5、附录 A 的 \(n,w,\lambda,k\) 为准。仓库 README 不要写进正文。实验里的 GPT-3.5 和 GPT-4 都不微调，价值函数也不另训，全靠上下文。\(w\)、\(\lambda\)、\(k\) 写在附录，换任务由人改，不由上一题的树改。配方不动，题换了树就空。
 
@@ -103,7 +103,7 @@ WebShop 反思太泛、卡在局部，是 Reflexion 专文已经见过的病：�
 **读**：HumanEval 92.7 / 91.0 / 80.1、GPT-3.5 的 83.8、MBPP 81.1、HotPotQA oracle 与 0.63 / 0.71、ToT（ReAct）0.39 低于纯推理 ToT 0.55、WebShop 75.9 分对成功率 38.0、22.1 是分差、Table 7 的 GPT-3.5 0.44 对 ToT 专文 74%、\(\lambda\) 两档、\(w=1\)、L0。  
 **不读**：用 92.7 改 Reflexion 专文的 91.0、用 0.44 改 ToT 的 74%、用 0.71 当非 oracle 维基问答、用 75.9 盖成功率 38.0、把 22.1 当分点相对涨幅、说记忆已经跨题、把 PromptAgent 的 \(c=2.5\) 写进本篇、说已经 RSI。
 
-同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

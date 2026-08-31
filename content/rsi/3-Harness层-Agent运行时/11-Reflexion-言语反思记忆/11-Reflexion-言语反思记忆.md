@@ -20,7 +20,7 @@ tags:
 
 Agent 做砸一次，自己写一段「下次别先找杯子再找台灯」，下一轮把这段读进去，成功率涨了。论文把这件事叫做 verbal reinforcement learning，并把策略参数化成「LLM 参数 + 记忆编码」。听成权重在学，就和花园式 (2) 撞车。[Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md) 把它当更浅的邻居：留下的是自然语言，不是可执行函数。[Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md) 把它当「弱任务奖励当门」的前史。本篇把尺子摊开。
 
-本篇是 Harness 层里「言语情景记忆」的样板。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 在单次生成里自评自改，没有跨 trial 的持久 `mem`。ReAct 当 Actor，本身不写反思。ACE 的 playbook 是条目化长期上下文；这里的 `mem` 默认只留 1–3 条，滑动窗口。**不是** RSI：Actor / 反思提示 / 窗口长度都不进 $S'$。**不是** 用梯度更新 $\pi_\theta$。一手：Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao，[arXiv:2303.11366](https://arxiv.org/abs/2303.11366)；代码 [noahshinn024/reflexion](https://github.com/noahshinn024/reflexion)。数字以 HTML Table 1–5、§4、附录 B.1 为准。
+本篇是 Harness 层里「言语情景记忆」的样板。[Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md) 在单次生成里自评自改，没有跨 trial 的持久 `mem`。[ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md) 当 Actor，本身不写反思。ACE 的 playbook 是条目化长期上下文；这里的 `mem` 默认只留 1–3 条，滑动窗口。**不是** RSI：Actor / 反思提示 / 窗口长度都不进 $S'$。**不是** 用梯度更新 $\pi_\theta$。一手：Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao，[arXiv:2303.11366](https://arxiv.org/abs/2303.11366)；代码 [noahshinn024/reflexion](https://github.com/noahshinn024/reflexion)。数字以 HTML Table 1–5、§4、附录 B.1 为准。
 
 ## 1. 问题：trial-and-error 太贵，上下文又太短
 
@@ -140,7 +140,7 @@ LeetcodeHardGym 40 题卡在 GPT-4 截止日之后，15.0 对 7.5 是翻倍，�
 **读**：三个模型、$\Omega$ 1–3、AlfWorld 130/134 与 12 trial、两个 22% 要拆开、Table 5 分格、HumanEval 91.0 / MBPP 77.1 / FP 16.3%、Rust 消融 0.52、starchat-beta 0.26=0.26、WebShop 四 trial 停、think 的寿命、Table 2 的 FP。  
 **不读**：把 verbal RL 听成改权重、用 91.0 盖掉 77.1、把摘要 +22% 和幻觉率 22% 收成一个数、把 Self-Refine 和 Reflexion 当成同一篇、用 Voyager 的 0/3 给本篇 AlfWorld 背书、把 $\theta=\{M_a,\mathrm{mem}\}$ 写成已经 L3、用 15.0 说已经会做竞赛 Hard。
 
-同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)。判定：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。读完应能把「verbal RL」翻译成：冻结的 Actor，加上窗口里几句失败总结，门是启发式或自写单测，金答案和隐藏测试仍在墙外。句子会涨，改进器不会。窗口一滑，最早那句台灯计划也会丢，这和权重里的技能不是同一类寿命。Voyager 的函数默认留在磁盘上；Reflexion 的句子默认活不过三次追加。三次是 $\Omega$ 的常取值，不是模型学出来的遗忘曲线。人改窗口大小，等于人改记忆政策。Agent 改不了这条政策，也改不了 few-shot 里那两条 AlfWorld 示范轨迹。示范轨迹来自 Yao 等的 ReAct 原文，本篇不重抄。
+同层：[10 Voyager](../10-Voyager-Minecraft技能库/10-Voyager-Minecraft技能库.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[28 LATS](../28-LATS-Agent树搜/28-LATS-Agent树搜.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)。判定：[01 术语](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。读完应能把「verbal RL」翻译成：冻结的 Actor，加上窗口里几句失败总结，门是启发式或自写单测，金答案和隐藏测试仍在墙外。句子会涨，改进器不会。窗口一滑，最早那句台灯计划也会丢，这和权重里的技能不是同一类寿命。Voyager 的函数默认留在磁盘上；Reflexion 的句子默认活不过三次追加。三次是 $\Omega$ 的常取值，不是模型学出来的遗忘曲线。人改窗口大小，等于人改记忆政策。Agent 改不了这条政策，也改不了 few-shot 里那两条 AlfWorld 示范轨迹。示范轨迹来自 Yao 等的 ReAct 原文，本篇不重抄。
 
 ## 参考文献
 
