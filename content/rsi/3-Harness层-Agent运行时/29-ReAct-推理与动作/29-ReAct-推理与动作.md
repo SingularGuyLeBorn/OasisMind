@@ -27,7 +27,7 @@ CoT 在模型内部把中间步骤写成独白，事实对不对没有墙外检�
 
 \(S\) 取「当前这道题的交错轨迹」。单轮 \(S'=I(S)\) 可以发生：多一步 thought-action-observation。术语式 (2) 还要 \(I'\subseteq S'\)。下一道独立题仍用同一份 few-shot 人手轨迹、同一只冻结 PaLM、同一套 API。混元 L0：改 \((\text{输出},\text{轨迹})\)，保留的 Agent 状态跨独立任务不变。可靠性专文把工具循环仍不跨题保持的方法放在 L0，本篇是那一格的底座。
 
-和邻居先划线。CoT 去掉动作和观察。Act-only 去掉想法，作者写成松散像 WebGPT，但任务和动作空间都不同，也不是 RL。Inner Monologue 的独白主要是环境状态和还缺哪步，AlfWorld 消融 ReAct-IM 最好 **53%**，低于 ReAct 的 **71%**。Reflexion 用本方法当 Actor，另外写 `mem`。LATS 用本方法当底座，另外走 UCT。ToT 不接维基。PromptAgent 搜的是跨题提示。不要把后来的树、窗口、playbook 写回 2022 年这篇。[ReTool](../../2-Model层-训练时自改进/08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 的交错也是想、写代码、看解释器，但权重会被 PPO 推过，AIME2024 67.0 不要改 Table 3 的 71%。
+和邻居先划线。CoT 去掉动作和观察。Act-only 去掉想法，作者写成松散像 WebGPT，但任务和动作空间都不同，也不是 RL。Inner Monologue 的独白主要是环境状态和还缺哪步，AlfWorld 消融 ReAct-IM 最好 **53%**，低于 ReAct 的 **71%**。Reflexion 用本方法当 Actor，另外写 `mem`。LATS 用本方法当底座，另外走 UCT。ToT 不接维基。PromptAgent 搜的是跨题提示。不要把后来的树、窗口、playbook 写回 2022 年这篇。[ReTool](../../2-Model层-训练时自改进/08-ReTool-代码解释器RL/08-ReTool-代码解释器RL.md) 的交错也是想、写代码、看解释器，但权重会被 PPO 推过，AIME2024 67.0 不要改 Table 3 的 71%。[ToolRL](../../2-Model层-训练时自改进/09-ToolRL-多工具奖励设计/09-ToolRL-多工具奖励设计.md) 是多 API 的 GRPO，3B BFCL 52.98 不要改这边的 71。
 
 ![想法 L、动作 A、环境观察、本题输出；实线只在本题内转](./images/fig-react-loop.png)
 
