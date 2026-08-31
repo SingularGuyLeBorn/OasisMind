@@ -1,16 +1,16 @@
 ---
-title: "05 · DCA：双块注意力"
+title: "DCA：双块注意力"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [DCA, Dual-Chunk-Attention, 长上下文, 训练无关, RoPE, ChunkLlama]
 ---
 
-# 05 DCA：双块注意力（Dual Chunk Attention）
+# DCA：双块注意力（Dual Chunk Attention）
 
 > 系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) · [2.3 高效与稀疏注意力](../../2.3-高效与稀疏注意力.md)  
 > 论文：[Training-Free Long-Context Scaling](https://arxiv.org/abs/2407.02490) · 代码：[ChunkLlama](https://github.com/HKUNLP/ChunkLlama)
 
-在 MHA → MQA → GQA → MLA 这条「**压缩 KV**」主线上，**DCA（Dual Chunk Attention）** 走另一条路：**不改 KV 张量形状，只改写长序列上的相对位置与注意力分解**，**training-free** 把 4K 预训练窗口推到 **100K+**（ChunkLlama / Llama-2-70B）。位置外推（NTK / YaRN / PI）见 [2.1.4 RoPE 扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现.md)——那些改频率或插值，**同样不是改 KV 结构**；DCA 则把长序列拆成训练长度内的 chunk，用 Intra / Succ / Inter 三段相对位置重建因果图。
+在 MHA → MQA → GQA → MLA 这条「**压缩 KV**」主线上，**DCA（Dual Chunk Attention）** 走另一条路：**不改 KV 张量形状，只改写长序列上的相对位置与注意力分解**，**training-free** 把 4K 预训练窗口推到 **100K+**（ChunkLlama / Llama-2-70B）。位置外推（NTK / YaRN / PI）见 [2.1.4 RoPE 扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现/02-RoPE扩展-长上下文、多模态与工程实现.md)——那些改频率或插值，**同样不是改 KV 结构**；DCA 则把长序列拆成训练长度内的 chunk，用 Intra / Succ / Inter 三段相对位置重建因果图。
 
 ---
 
@@ -36,7 +36,7 @@ DCA 的核心洞察：**保留预训练权重与短程 RoPE 习惯，把长序�
 - **Successive-Chunk（邻块）**：当前 chunk 的 query 看 **上一块**，用 successive 映射把边界相对距离压回训练流形，避免「块内位置 0 突然对接全局 4096」。
 - **Inter-Chunk（更远块）**：跨两块以上用 **块差重映射** 的相对位置，而不是巨大的绝对 $|t-s|$。示意里的稀疏格子只表示「不是全密 $L\times L$」，实现上仍是同一次因果 softmax 里换 $M[i,j]$ 的取法。
 - **一次 softmax**：论文 Figure 2 的三路不是三套输出相加，而是式 (1)(2) 的统一 attention。与 FlashAttention-2 分块兼容（ChunkLlama monkey patch 位置索引）。
-- **不是改 KV**：cache 仍全量 $L$；MLA 才改存什么。RoPE 频率外推见 [02-RoPE扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现.md)。
+- **不是改 KV**：cache 仍全量 $L$；MLA 才改存什么。RoPE 频率外推见 [02-RoPE扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文、多模态与工程实现/02-RoPE扩展-长上下文、多模态与工程实现.md)。
 
 设训练长度 $L_{\mathrm{train}}$（论文记 $c$），块大小 $C$（论文记 $s$，常取约 $\frac{3}{4}L_{\mathrm{train}}$）。对 $L \gg L_{\mathrm{train}}$ 的序列，DCA **并不把三路 attention 输出向量相加**；而是在 **同一次因果 softmax** 里，按 query/key 所在 chunk 的距离，为每对 $(i,j)$ 选用不同的 query 位置索引 $P_{\mathbf{q}}^{\{\mathrm{Intra,Succ,Inter}\}}[i]$ 与 key 索引 $P_{\mathbf{k}}[j]=j \bmod C$，经 RoPE 得到内积后再归一化：
 

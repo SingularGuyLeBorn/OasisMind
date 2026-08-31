@@ -1,11 +1,11 @@
 ---
-title: "02 · FlashAttention-v1 核心推导: 分块, 在线 Softmax 与重计算"
+title: "FlashAttention v1 核心推导：分块、在线 Softmax 与重计算"
 date: 2026-08-30
 tags: [FlashAttention, Online Softmax, Mathematical Proof, Recomputation, I/O Complexity]
 as_of: 2026-08-30
 ---
 
-# 02 · FlashAttention-v1 核心推导: 分块, 在线 Softmax 与重计算
+# FlashAttention v1 核心推导：分块、在线 Softmax 与重计算
 
 精确、不物化 $N\times N$ 的注意力先见 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）：JAX/TPU 上先留 $K$ 份块摘要再合并，反向走 checkpoint。本篇是 Dao et al. 2022 的 **SRAM 增量一份 $O$ + CUDA IO 核**——片上只维护每行 $(m_i, d_i, O_i)$，逐块读入 $K_j,V_j$，与标准 attention **数学等价**，打的是 HBM 访问次数而不是峰值字节这一项本身。不要把 MEA 的两层 `lax.scan`/`lax.map` 写成 FA-v1。
 
@@ -309,57 +309,34 @@ $$
 O_{\text{Online}} = [0.6571, 1.0551]
 $$
 
-**这真是一个充满美感的时刻. 我们在仅使用 96KB 片上容量, 每次仅处理 2 个元素的约束下, 通过引出的在线补偿递推公式计算出的最终输出结果 $[0.6571, 1.0551]$, 与全局扫描整个序列算出的黄金真值 $[0.6572, 1.0550]$, 在浮点误差级精度内实现了完美的等价. 这彻底洗脱了任何近似的嫌疑, 证明了 FlashAttention 在数学上是 100% 严格无损的精准算法.**
+这个玩具例说明在线 max / sum 递推在实数算术下与一次性 softmax 是同一运算重排；这里的 $[0.6571, 1.0551]$ 与直接计算结果只差舍入误差。FlashAttention 因而属于 **exact attention**，不是稀疏化或低秩近似；但不同分块和归约顺序在有限精度下不承诺逐 bit 相同，也不能由这个四 token 例子推出具体 GPU 的速度或 tile 大小。
 
 ---
 
-## 4. 物理 SRAM 容量限制下一元二次方程的推导 (Hardware Constraints)
+## 4. Tile 大小：容量约束，不是“64 的物理定理”
 
-在 GPU Ampere (A100) 架构下, 每一个 SM 物理上的 Shared Memory 容量是极为受限的(以 $M = 96 \text{ KB}$ 为标准).
-我们必须精确计算如何在物理硬件上划分 $Q$ 和 $K, V$ 的 Tile 大小(分别设为 $B_r$ 和 $B_c$), 才能让数据刚好塞满 SRAM 且吞吐能效最大.
-
-### 4.1 物理存储方程推导
-我们设每一个 Attention 头的 head 维度为 $D_{head} = 128$. 所有的张量元素采用 FP16 (即每元素 $2 \text{ bytes}$) 存储.
-在片上 SRAM 中, 每一个 Thread Block 需要同时开辟三块空间来存储加载进来的 Tile:
-1. $Q$ 的分块: $\text{Tile}_Q \in \mathbb{R}^{B_r \times D_{head}}$, 占用空间为 $2 \cdot B_r \cdot D_{head} \text{ bytes}$.
-2. $K$ 的分块: $\text{Tile}_K \in \mathbb{R}^{B_c \times D_{head}}$, 占用空间为 $2 \cdot B_c \cdot D_{head} \text{ bytes}$.
-3. $V$ 的分块: $\text{Tile}_V \in \mathbb{R}^{B_c \times D_{head}}$, 占用空间为 $2 \cdot B_c \cdot D_{head} \text{ bytes}$.
-
-此外, 每一个线程需要维护中间计算的分数矩阵(即计算局部的乘加项 $S = Q K^T$), 这一局部中间矩阵的大小为 $B_r \times B_c \times 2 \text{ bytes}$. 
-
-因此, 受物理 SRAM 大小 $M$ 约束的控制方程为:
+FlashAttention v1 的算法分析使用抽象的片上 SRAM 容量 $M$，并据此选择能放入工作集的 $B_r$、$B_c$。若只做一个 **教学用上界**，假设 FP16 的 $Q_i,K_j,V_j$ 以及局部分数块 $S_{ij}$ 同时常驻，可写成：
 
 $$
-2 B_r D_{head} + 4 B_c D_{head} + 2 B_r B_c \le M \tag{18}
+2B_r d + 4B_c d + 2B_rB_c \le M_{\text{budget}}. \tag{18}
 $$
 
-### 4.2 求解最优分块大小
-在工程设计中, 为了让 SIMT 线程网格利用率最高, 我们通常令 $B_r = B_c = B$. 我们将 $D_{head} = 128$, $M = 96 \text{ KB} = 98304 \text{ bytes}$ 代入公式 (18):
+这里的 $M_{\text{budget}}$ 是分配给该 thread block 工作集的预算，不等同于“GPU 标称 shared memory 容量”；式 (18) 也没有计入寄存器、softmax 统计量、输出累加器、双缓冲、对齐填充与 kernel 分阶段等开销。因此它只能排除 **肯定放不下** 的候选，不能单独证明哪个 tile 最快。
+
+### 4.1 为什么不能由式 (18) 推出 $B_r=B_c=64$
+
+- $B_r$ 与 $B_c$ 不必相等。原论文 Algorithm 1 就分别定义两者；后续实现也会按前向/反向、head dimension、因果掩码与硬件架构选择不同形状。
+- warp 大小为 32 不意味着 tile 必须是 2 的幂，更不意味着 64 唯一最优。线程布局、Tensor Core 指令形状、向量化访存和 occupancy 共同约束候选集合。
+- shared memory 不是唯一瓶颈。tile 变大可能减少 HBM 往返，却会增加寄存器压力或降低每个 SM 可并驻的 thread block 数；最快点必须看完整 kernel 的资源使用与实测。
+- 官方实现本身就存在多种配置。以当前官方仓库为例，Triton 后端公开了 `BLOCK_M=128, BLOCK_N=64` 的默认配置，并允许 autotune 搜索；这直接反驳“生产实现全部硬编码为 64×64”。
+
+正确的工程流程是：先由容量、合法指令形状和对齐要求筛掉不可行 tile，再对目标组合
 
 $$
-2 B (128) + 4 B (128) + 2 B^2 \le 98304 \tag{19}
+(\text{GPU 架构},\ d,\ \text{dtype},\ \text{forward/backward},\ \text{causal},\ N_q,N_k)
 $$
 
-$$
-2 B^2 + 768 B - 98304 \le 0 \tag{20}
-$$
-
-$$
-B^2 + 384 B - 49152 \le 0 \tag{21}
-$$
-
-我们求解此一元二次方程以确定 $B$ 的临界上限:
-
-$$
-B \le \frac{-384 + \sqrt{384^2 - 4 \cdot 1 \cdot (-49152)}}{2} \tag{22}
-$$
-
-$$
-B \le \frac{-384 + \sqrt{147456 + 196608}}{2} = \frac{-384 + \sqrt{344064}}{2} \approx \frac{-384 + 586.56}{2} \approx 101.28 \tag{23}
-$$
-
-根据 GPU 硬件底座以 32 (Warp 大小) 和 64 字节对齐的寻址习惯, 分块大小 $B$ 必须为 2 的幂次.
-因此, 公式 (23) 推导出的数学上限判定了**分块大小的物理最优解为 $B = 64$. 这也就完美解释了为什么在 FlashAttention A100 CUDA 生产级代码中, 默认的分块大小全部被硬编码为 $B_r=64, B_c=64$ 这不是拍脑袋定的参数, 而是由严密的物理存储上限二次方程严格推导出来的黄金阈值.**
+编译或自动调优候选，最后以端到端吞吐、延迟和 occupancy 选择配置。`64×64` 可以是某个组合的好候选，但不是从一个二次方程推出的跨硬件“黄金阈值”。FlashAttention-2 进一步改变并行化与 warp 间分工，也说明 tile 选择属于 kernel 设计问题，而不是只由 SRAM 容量决定。
 
 ---
 
@@ -373,7 +350,7 @@ $$
 
 这一策略虽然额外增加了一定的浮点运算量 (FLOPs), 但其在体系结构层面的显存带宽收益是毁灭性的:
 - **I/O 带宽节省**: 反向传播原本需要从低速 HBM 中载入高达 $O(N^2)$ 字节的注意力矩阵 $A$. 现在的重计算模式完全免除了这一搬运过程, 仅需在快速的片上 SRAM 寄存器内进行重新计算.
-- **显存消耗下降**: 整体训练时的显存物理占用空间直接从标准注意力的 $O(N^2)$ 骤降至极其清爽的线性阶 $O(N)$. 这使得在相同的 A100 显存内, 训练的最大 Batch Size 和上下文长度可以直接翻倍. 在实测中, 重计算带来的带宽削减使得反向传播的运行速度直接提升了 **2 倍以上**.
+- **中间激活从二次降为线性**：不再物化 $N\times N$ 注意力矩阵，使注意力层的额外内存随序列长度按 $O(N)$ 增长。能否把 batch size、上下文长度或反向速度“翻倍”取决于模型其他激活、优化器状态、形状与硬件，不能从复杂度阶数直接换算。
 
 ---
 
@@ -405,4 +382,6 @@ ref = standard_attention(q, k, v, scale=1.0)
 
 ## 7. 参考文献 (References)
 
-- Dao, T., Fu, D., Ermon, S., Rudra, A., & Ré, C. (2022). "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness." *NeurIPS 2022*. arXiv:2205.14135.
+- Dao, T., Fu, D., Ermon, S., Rudra, A., & Ré, C. (2022). [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135). *NeurIPS 2022*；Algorithm 1 与 I/O 分析。
+- Dao, T. (2023). [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691). *ICLR 2024*；序列维并行与 warp 分工。
+- Dao-AILab. [flash-attention 官方实现](https://github.com/Dao-AILab/flash-attention)；不同后端与 workload 的 kernel 配置、autotune 入口。核验日期：2026-09-01。
