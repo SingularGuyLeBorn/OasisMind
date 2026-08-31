@@ -105,7 +105,7 @@ Wallace 等的攻击版把同一套一阶近似用来抬错误类。本篇把目
 **读**：共用触发词、HotFlip 式 (2)、式 (1) 边缘化、要输入嵌入梯度、RoBERTa SST-2 测试 91.4、人手 85.2、微调 96.7、SICK-E 3 类 69.3、LAMA 7 token P@1 43.34 对 LPAQA 34.10、事实检索 BERT 高于 RoBERTa、RE 90.73 扰动后 56.43、QQP/RTE 近随机、全量不是 16-shot、不是术语式 (2)。  
 **不读**：用 91.4 替换 RLPrompt 的 92.5、用邻居表 57.5 否定 Table 1、用 43.3 改 Jiang 等集成、说已经全面替代微调、把扰动前的 90.73 读成会抽关系、把 GPT-3 听成主实验、说搜索配方也在进化。
 
-同层：[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)。综述里的离散梯度搜：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
+同层：[26 PromptAgent](../26-PromptAgent-MCTS提示规划/26-PromptAgent-MCTS提示规划.md)、[24 RLPrompt](../24-RLPrompt-离散提示强化学习/24-RLPrompt-离散提示强化学习.md)、[23 TEMPERA](../23-TEMPERA-测试时提示编辑/23-TEMPERA-测试时提示编辑.md)、[22 GrIPS](../22-GrIPS-短语级编辑搜索/22-GrIPS-短语级编辑搜索.md)、[19 APE](../19-APE-自动提示工程师/19-APE-自动提示工程师.md)、[21 ProTeGi](../21-ProTeGi-文本梯度束搜索/21-ProTeGi-文本梯度束搜索.md)、[14 TextGrad](../14-TextGrad-文本梯度/14-TextGrad-文本梯度.md)。综述里的离散梯度搜：[05](../../1-坐标系与术语/05-自进化Agent综述/05-自进化Agent综述.md)。
 
 ## 参考文献
 
