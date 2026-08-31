@@ -115,7 +115,7 @@ MLE-Bench Lite 是进行中的第八域，不进 Table 4：九枚奖牌（金银
 
 作者把一类任务叫 dense-intelligence：在连续时间窗口里维持高频推理、工具、验证与迭代，直到产出可测结果，并且同时满足——有可重复执行的任务原生 verifier、解空间大到不能穷举、中间产物（界、反例、半成品实现）本身有价值。SWE-Bench Pro、SOL-ExecBench、nanochat BPB 符合；纯聊天问答不符合。这解释了为什么七域看起来杂：它们共享「可验证的中间物」，不共享一张排行榜。
 
-邻居也要钉死。Reflexion / Voyager 把自然语言反思或技能库直接留下，弱任务奖励当门。[MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md) / A-MEM 分层记忆，没有角色提交。DMR 上 GPT-4 Turbo 35.3→93.4 是换页加慷慨裁判，不是准入进化。LongHorizon-Harness 的 MEA 三角色把环境审计做成只读，不把 skill library 和 routing 收进准入进化。Argus 和它们同族的地方是：都拒绝「单靠变长的上下文自评进度」。多出来的是 campaign 级合约、技能库、路由政策全部过门。OpenForge / Orchard 一类在训练期让策略适应 harness，权重会动；Argus 在部署期让固定策略下的 $H_t$ 累积。完整想象可以是：训练期产出更强 Engineer，部署期把产出过门写成 Skill——那是两篇论文拼起来的故事，本实验没有走。
+邻居也要钉死。Reflexion / Voyager 把自然语言反思或技能库直接留下，弱任务奖励当门。[MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md) / [A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) 分层记忆，没有角色提交。DMR 上 GPT-4 Turbo 35.3→93.4 是换页加慷慨裁判，不是准入进化。LongHorizon-Harness 的 MEA 三角色把环境审计做成只读，不把 skill library 和 routing 收进准入进化。Argus 和它们同族的地方是：都拒绝「单靠变长的上下文自评进度」。多出来的是 campaign 级合约、技能库、路由政策全部过门。OpenForge / Orchard 一类在训练期让策略适应 harness，权重会动；Argus 在部署期让固定策略下的 $H_t$ 累积。完整想象可以是：训练期产出更强 Engineer，部署期把产出过门写成 Skill——那是两篇论文拼起来的故事，本实验没有走。
 
 ## 5. 不是 RSI：门在墙外，改进器也在墙外
 

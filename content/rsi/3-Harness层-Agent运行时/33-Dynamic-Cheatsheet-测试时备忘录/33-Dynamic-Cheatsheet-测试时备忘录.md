@@ -104,7 +104,7 @@ ACE 的 AppWorld 表不要搬过来当本方法主结果。那边骨干是 DeepS
 **读**：Table 1 的 23.3→50.0、6.7→36.7、10→99、Claude 24 点几乎不涨、GPQA 9.1 个点只属于 Sonnet、GPT-4o 的 MMLU 会掉、FH 会伤 GPT-4o、多数票无效、空记忆 19 对 99 才是 24 点的因果、没有金标、ACE 的塌缩数字不进本表、不是 74%、不是式 (2)。  
 **不读**：用 99 改 ToT 的 74、用 27% 听成准确率从某数涨到 27、把 18,282→122 写进本表、说小模型一样涨、说已经 RSI。
 
-同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[04 SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[27 ToT](../27-ToT-本题推理树/27-ToT-本题推理树.md)、[34 BoT](../34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[12 Self-Refine](../12-Self-Refine-任务内迭代/12-Self-Refine-任务内迭代.md)、[04 SEAL](../../2-Model层-训练时自改进/04-SEAL-自适配语言模型/04-SEAL-自适配语言模型.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

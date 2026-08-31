@@ -50,5 +50,6 @@ category: RSI
 | 34 | [BoT 思维模板缓冲](./34-BoT-思维模板缓冲/34-BoT-思维模板缓冲.md) | meta-buffer 存高阶模板；GPT-4 24 点 82.4 对 ToT 74.0；摘要 11% 是相对涨幅；不是式 (2) |
 | 35 | [AWM 工作流记忆](./35-AWM-工作流记忆/35-AWM-工作流记忆.md) | 网页子程序进记忆；WebArena 23.5→35.5；摘要 51.1/24.6 是相对涨幅；不是式 (2) |
 | 36 | [MemGPT 操作系统式记忆](./36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md) | 窗口当 RAM、外存当磁盘；DMR Turbo 35.3→93.4；裁判慷慨；不是式 (2) |
+| 37 | [A-Mem 卡片盒记忆](./37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md) | 原子笔记连边并改旧卡片；4o-mini 多跳 27.02 不是两倍；提示冻着 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
