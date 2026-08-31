@@ -104,7 +104,7 @@ LoRA 要单独钉。开源 SiliconFriend 改了 ChatGLM / BELLE 的低秩适配�
 **读**：Table 2 英文 0.763 / 0.716 / 0.912 对 GLM 的 0.809 / 0.438，中文 BELLE 检索 0.856、ChatGPT 正确 0.655，194=97+97，15 用户 10 天，表上没有无记忆列，没有遗忘开关消融，ChatGPT 行无 LoRA，不是 82%，不是 93.4，不是式 (2)。  
 **不读**：把 evolve 听成改进器升级、把 0.716 当通用准确率、用 41/50 或 27.02 改 0.716、说摘要提示已经在优化自己、说已经 RSI、把 38k LoRA 写成 MemoryBank 主表、把定性共情例写进 Table 2。
 
-同层：[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

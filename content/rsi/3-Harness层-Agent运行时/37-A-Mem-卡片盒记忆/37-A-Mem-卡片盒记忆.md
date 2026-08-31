@@ -84,7 +84,7 @@ e_i=f_{\mathrm{enc}}[\mathrm{concat}(c_i,K_i,G_i,X_i)].
 
 主尺是短答 F1 和 BLEU-1。附录 A.2 把 F1 写成精确匹配向的调和平均，BLEU-1 写成单词重叠。另报五类名次平均和答题 token。Ranking 1.2 是名次，不是 F1 均分。
 
-GPT-4o-mini：多跳 A-Mem **27.02 / 20.09**，MemGPT 26.65 / 17.72，LoCoMo 25.02 / 19.75。差 0.37，不是两倍。时间 **45.85 / 36.67** 对 MemGPT 25.52 / 19.44、LoCoMo 18.41 / 14.77，这一格才过两倍。开放域 12.14 / 12.00 对 LoCoMo 12.04 / 11.16，几乎贴着。单跳 44.65 / 37.06 对 MemGPT 41.04 / 34.34、LoCoMo 40.36 / 29.05。对抗 **50.03 / 49.47** 低于 LoCoMo **69.23 / 68.75**，也低于「把整段对话塞进去更会说这题没法答」。平均排序 1.2，token **2,520**。LoCoMo / MemGPT 约 **16,910 / 16,977**。ReadAgent 多跳只有 9.15，token 643；MemoryBank 多跳 5.00，token 432。压缩和遗忘曲线在这张长对话 QA 上几乎没分。
+GPT-4o-mini：多跳 A-Mem **27.02 / 20.09**，MemGPT 26.65 / 17.72，LoCoMo 25.02 / 19.75。差 0.37，不是两倍。时间 **45.85 / 36.67** 对 MemGPT 25.52 / 19.44、LoCoMo 18.41 / 14.77，这一格才过两倍。开放域 12.14 / 12.00 对 LoCoMo 12.04 / 11.16，几乎贴着。单跳 44.65 / 37.06 对 MemGPT 41.04 / 34.34、LoCoMo 40.36 / 29.05。对抗 **50.03 / 49.47** 低于 LoCoMo **69.23 / 68.75**，也低于「把整段对话塞进去更会说这题没法答」。平均排序 1.2，token **2,520**。LoCoMo / MemGPT 约 **16,910 / 16,977**。[ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md) 多跳只有 9.15，token 643；[MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md) 多跳 5.00，token 432。压缩和遗忘曲线在这张长对话 QA 上几乎没分。
 
 GPT-4o：多跳 **32.86 / 23.76** 对 MemGPT 30.36 / 22.83、LoCoMo 28.00 / 18.47，仍不是两倍。时间 **39.41 / 31.23** 对 MemGPT 17.29 / 13.18、LoCoMo 9.09 / 5.78。开放域 17.10 略高于 LoCoMo 16.47。单跳 48.43 低于 LoCoMo 61.56，也低于 MemGPT 60.16。对抗 36.35 低于 LoCoMo 52.61，略高于 MemGPT 34.96。token **1,216**。正文「约 1,200 token、降 85–93%」钉在这一行和约 16,900 的对照，不要拿 4o-mini 的 2,520 去改 1,200。排序 1.6，仍是名次平均。
 
@@ -137,7 +137,7 @@ LoCoMo 均长约 9K token、最多 35 段，相对旧对话集大约 1K token、
 **读**：Table 1 的 27.02 / 45.85 / 50.03、全上下文对抗 69.23、GPT-4o 多跳 32.86 仍不是两倍、DialSim 3.45 的 35% / 192% 是相对涨幅、token 1,216 对 16,900、消融 9.65 / 21.35 / 27.02、Table 8 的 40/50、三份提示冻着、不是 93.4、不是式 (2)。  
 **不读**：把多跳听成至少两倍、把 35% 听成百分点、用 93.4 改 26.65、用手抄 t-SNE 说已经自己会分类、说提示已经在优化自己、说已经 RSI。
 
-同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[11 Reflexion](../11-Reflexion-言语反思记忆/11-Reflexion-言语反思记忆.md)、[09 ACE](../09-ACE-Agentic-Context-Engineering/09-ACE-Agentic-Context-Engineering.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

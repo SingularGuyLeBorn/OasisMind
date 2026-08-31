@@ -106,7 +106,7 @@ Figure 5 三道题当机制说明，不当另一张表。一月总营收：ChatG
 **读**：Table 2 的 13/15、28/35、41/50 对 10/15、1/35、11/50，82% 对 22% 是 50 题准确率，语料 70 条约 3.3k 故意装进 4096，难问拉开因为 SQL 计算，易问不是满分，执行精确不等于生成精确，不是 93.4，不是式 (2)，不是计算万能的实现。  
 **不读**：把 82 听成记忆系统接近满分、把小数据外推成无穷条已测、用 89.1 或 27.02 改 41/50、说 CoM 提示已经在优化自己、说已经 RSI、把 Schuurmans 的定理写成本表。
 
-同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[38 HippoRAG](../38-HippoRAG-海马索引检索/38-HippoRAG-海马索引检索.md)、[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 

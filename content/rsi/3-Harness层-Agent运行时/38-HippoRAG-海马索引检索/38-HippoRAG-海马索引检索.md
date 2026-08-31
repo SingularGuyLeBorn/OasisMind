@@ -108,7 +108,7 @@ HotpotQA 是这张表的诚实格。单步召回和单步问答都低于 ColBERT
 **读**：Table 2 的 40.9 / 70.7 / 60.5、2Wiki R@5 68.2→89.1 是百分点、HotpotQA 单步更低、Table 4 的 19.2 / 46.6 / 41.8、IRCoT 拼上才三套都最高、Table 17 的 0.1 美元对 1–3、离线 15 美元 / 60 分钟、NER 错例约一半、\(\tau\) 和阻尼冻着、不是 39.0、不是式 (2)。  
 **不读**：把 20% 听成相对涨幅、用平均 72.9 盖掉 HotpotQA、用 93.4 或 27.02 改 89.1、说 OpenIE 已经在优化自己、说已经 RSI、把 HippoRAG 2 写进本表、把附录集成行当成主表。
 
-同层：[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
+同层：[37 A-Mem](../37-A-Mem-卡片盒记忆/37-A-Mem-卡片盒记忆.md)、[36 MemGPT](../36-MemGPT-操作系统式记忆/36-MemGPT-操作系统式记忆.md)、[39 ChatDB](../39-ChatDB-符号SQL记忆/39-ChatDB-符号SQL记忆.md)、[40 MemoryBank](../40-MemoryBank-遗忘曲线记忆/40-MemoryBank-遗忘曲线记忆.md)、[41 ReadAgent](../41-ReadAgent-gist分页记忆/41-ReadAgent-gist分页记忆.md)、[32 ExpeL](../32-ExpeL-跨题经验洞察/32-ExpeL-跨题经验洞察.md)、[35 AWM](../35-AWM-工作流记忆/35-AWM-工作流记忆.md)、[33 Dynamic Cheatsheet](../33-Dynamic-Cheatsheet-测试时备忘录/33-Dynamic-Cheatsheet-测试时备忘录.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[01 Argus](../01-Argus-Verification-Gated/01-Argus-Verification-Gated.md)。台阶：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。术语：[01](../../1-坐标系与术语/01-RSI-术语辨析/01-RSI-术语辨析.md)。
 
 ## 参考文献
 
