@@ -144,7 +144,7 @@ Bing、gpt-4、配文卡都在墙外。ScienceQA 的金标是选择题，Answer 
 **读**：Table 3 的 86.54 / 79.93 / 83.99 / 75.17、人手 88.40、MM-CoT-Large 91.68 不是少样本、Table 4 的 98.78 / 93.28 / 90.22 / 81.8*、11.37≠2.55、LAN 和 NO 上 GPT-4 CoT 略高、SOC 上 ChatGPT 版略掉、OTH 55.24 不是 BOOL、FREE 与 G1-6 共用 98.95、GPT-4 CoT BOOL 99.11 高于 Chameleon 98.56、Table 5 的 500 条、Table 7 的 14/11 与 28/19、72% / 3% 对 81% / 11%、一步生成无重规划、不是 RSI。  
 **不读**：把 86.54 收进 52.62 / 75.0 / 91.68、把 79.93 两格收成一只、把 78.31 收进 LLaMA-Adapter\(^T\)、把 98.78 收进 CREATOR 94.7、把 29.0 改 86.54、把 11.37 听成相对 GPT-4、把 55.24 听成 BOOL、把两只 98.95 收成一只、把 50 道错题听成全测试集、把配文 16 token 听成已经能读复杂图。
 
-同层工具：[57 ViperGPT](../57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md)、[55 RestGPT](../55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md)、[54 HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[53 EASYTOOL](../53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md)。Model 侧：[13 Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
+同层工具：[57 ViperGPT](../57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md)、[58 VisProg](../58-VisProg-示范写出模块程序/58-VisProg-示范写出模块程序.md)、[55 RestGPT](../55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md)、[54 HuggingGPT](../54-HuggingGPT-ChatGPT调度HF专家/54-HuggingGPT-ChatGPT调度HF专家.md)、[42 LATM](../42-LATM-函数缓存造工具/42-LATM-函数缓存造工具.md)、[29 ReAct](../29-ReAct-推理与动作/29-ReAct-推理与动作.md)、[53 EASYTOOL](../53-EASYTOOL-工具文档改写成指令/53-EASYTOOL-工具文档改写成指令.md)。Model 侧：[13 Toolformer](../../2-Model层-训练时自改进/13-Toolformer-自监督插工具调用/13-Toolformer-自监督插工具调用.md)。评测纪律：[02 可靠性](../../6-评测与安全/02-可靠性与独立监督/02-可靠性与独立监督.md)。
 
 ## 参考文献
 

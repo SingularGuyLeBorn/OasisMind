@@ -71,5 +71,6 @@ category: RSI
 | 55 | [RestGPT 粗到细调 REST](./55-RestGPT-粗到细调REST/55-RestGPT-粗到细调REST.md) | 冻 davinci-003，在线粗到细调真 REST；TMDB Success 75.0 / CP 79.0，54≠EASYTOOL 的 55 |
 | 56 | [Chameleon 离线组合推理](./56-Chameleon-离线组合推理/56-Chameleon-离线组合推理.md) | 冻 GPT-4 一次写出模块序列；ScienceQA 86.54 低于人手 88.40，TabMWP 98.78；无重规划 |
 | 57 | [ViperGPT Python 执行视觉推理](./57-ViperGPT-Python执行视觉推理/57-ViperGPT-Python执行视觉推理.md) | 冻 Codex 一次写出 Python 调视觉 API；RefCOCO 72.0，GQA 48.1，OK-VQA 51.9；无重规划 |
+| 58 | [VisProg 示范写出模块程序](./58-VisProg-示范写出模块程序/58-VisProg-示范写出模块程序.md) | 冻 GPT-3 看指令–程序对吐模块行；GQA 子集投票 50.5 不是全量 48.1，NLVRv2 62.4 低于微调 76.3 |
 
 产品 harness（Claude Code / Codex / 沙箱 / MCP）→ [llm-guide 13.5.1](../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md)、[13.3.4](../../llm-guide/13-Agent/13.3-Agent系统工程/13.3.4-运行时环境与沙箱.md)。
