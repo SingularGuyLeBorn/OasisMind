@@ -1,3 +1,10 @@
+---
+title: "EAGLE 系列深度解析（旧稿）"
+published: false
+archived: true
+archive_reason: "旧公开平行稿；错误正文与文末勘误混排，有效内容已融合进 6.6.2.1。"
+---
+
 # EAGLE系列深度解析：从特征级自回归到动态草稿树
 
 > 来源: 知乎专栏 (https://zhuanlan.zhihu.com/p/1955546570167661109)
