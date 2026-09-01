@@ -1,199 +1,135 @@
 ---
-title: "01 · FlashAttention 家族全景图: 内存墙瓶颈与硬件感知优化"
+title: "01 · FlashAttention：从注意力物化到 I/O 感知"
 date: 2026-08-30
-tags: [FlashAttention, GPU, SRAM, HBM, Roofline, Memory-Bound]
-as_of: 2026-08-30
+tags: [FlashAttention, GPU, SRAM, HBM, Roofline, I/O Complexity]
+as_of: 2026-09-01
 ---
 
-# 01 · FlashAttention 家族全景图: 内存墙瓶颈与硬件感知优化
+# 01 · FlashAttention：从注意力物化到 I/O 感知
 
-FlashAttention 解决的不是「注意力公式太贵」，而是 **HBM 上被物化的 $N\times N$ 中间矩阵把算术强度焊死在访存区**。本篇把 GPU 层次、Roofline 和 v1–v4 画成一张对照表，供后面各代专文当度量零点。精确、不物化 $N\times N$ 的算法 **更早一年**见 Rabe & Staats 的 MEA（[00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)，2112.05682）；FA 附录 B.5 对照了三件事：峰值占用 vs IO 次数、$K$ 份摘要 vs SRAM 上一份增量 $O$、checkpoint 反向 vs 解析反向。本页从 FA-v1 起画家族，**不把 MEA 并进 v1**。
-
-## 1. 物理引言: 大模型的内存墙天堑 (The Physical Memory Wall)
-
-在大语言模型 (LLM) 推理与训练演进中, 自注意力机制 (Self-Attention) 始终是算力能效比的主宰. 然而, 随着上下文序列长度向十万乃至百万级跃升, 注意力算子在物理硬件上的运行瓶颈发生了重大的转移: 从最初的计算密集型 (Compute-Bound) 彻底蜕变为了访存密集型 (Memory-Bound). 这一现象的物理本质, 源于现代 GPU 架构中高频运算核心与低速高容量显存之间不可逾越的带宽鸿沟.
-
-### 1.1 GPU 物理存储层次结构体系 (GPU Storage Hierarchy)
-为了深入探究内存墙的本质, 我们必须对 GPU 内部的物理存储架构进行精确的量化走查. 无论是 NVIDIA A100, H100 还是最新的 Blackwell B200 架构, GPU 内部的存储资源都呈现出一种金字塔型的分层机制:
-
-```
-+----------------------------------------+  容量: ~80GB-192GB
-|         Global Memory (HBM)            |  带宽: ~2TB/s-8TB/s (极慢)
-+----------------------------------------+
-                   |  (通过显存控制器搬运)
-+----------------------------------------+  容量: ~96KB-256KB/SM
-|         Shared Memory (SRAM)           |  带宽: ~19TB/s-33TB/s (极快)
-+----------------------------------------+
-                   |  (通过片上数据通路)
-+----------------------------------------+  容量: ~256KB/SM
-|             Registers (RF)             |  带宽: ~30TB/s-45TB/s (光速)
-+----------------------------------------+
-```
-
-在 A100 GPU 中, 高带宽显存 (HBM, High Bandwidth Memory) 提供了高达 80GB 的存储容量, 但其最大物理带宽仅为约 $2.0 \text{ TB/s}$. 相比之下, 位于流多处理器 (SM, Streaming Multiprocessor) 片上的静态随机存储器 (SRAM, Static RAM), 即共享内存 (Shared Memory), 容量虽然极度稀缺(每 SM 仅有约 $96 \text{ KB}$), 但其物理访问带宽却高达 $19 \text{ TB/s}$. 至于位于计算最前端的寄存器文件 (Register File), 其带宽更是直接逼近 $30 \text{ TB/s}$.
-
-### 1.2 访存瓶颈的物理内核
-大模型的计算核心主要是矩阵乘法 (GEMM). 当我们在 GPU 上执行运算时, 所有的张量最初都驻留在 HBM 中. 执行计算时, GPU 必须通过内部的显存控制器将数据从 HBM 载入到片上 SRAM 中, 进而分配到各线程的寄存器内, 由 Tensor Core 进行乘加运算, 计算结果再沿着原路写回到 HBM. 
-
-如果一个算子搬运数据所需的时间远远大于其计算所需的时间, 那么 GPU 的计算单元就会陷入严重的等待状态. 这种现象被称为**访存受限 (Memory-Bound)**. 在标准自注意力计算中, 这一问题被无限制地放大了.
-
-![GPU 存储层次与 FlashAttention 数据流](./images/fig-flashattention-gpu-memory-hierarchy.jpg)
-
-> 图 1: GPU 存储金字塔（HBM → SRAM → 寄存器）与 FlashAttention 数据流；说明标准 attention 的瓶颈在 HBM 往返，而非 FLOPs 不足。
-
-**图 1 解析**
-
-- **HBM（底部）**：容量大、带宽相对低 — 标准 attention 反复读写 $N \times N$ 中间矩阵，瓶颈在此。
-- **SRAM（中部）**：每 SM 仅数十 KB，但带宽一个数量级更高 — FlashAttention 的目标是把工作集 **锁在 SRAM** 完成分块 softmax。
-- **寄存器（顶部）**：矩阵乘累加发生处；若 SRAM tile 设计合理，Tensor Core 才能持续满载。
-- 读图时抓住对比：**不是 FLOPs 不够，而是数据在 HBM 与 SRAM 之间来回「漏」**。
-
----
-
-## 2. 标准自注意力的内存吞吐数学剖析 (Standard Attention Memory Complexity)
-
-我们从张量流动的维度, 严格形式化标准自注意力的 HBM 数据交互开销.
-
-### 2.1 张量流向与物理物化 (Materialization)
-标准自注意力机制的数学定义形式为:
+FlashAttention 保留精确注意力
 
 $$
-A = \text{softmax}\left(\frac{Q K^T}{\sqrt{D_{head}}}\right) \tag{1}
+O=\operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt d}\right)V
 $$
 
-$$
-O = A V \tag{2}
-$$
+的数学定义，改变的是计算顺序和数据在 GPU 存储层级之间的移动方式。核心做法是把分数矩阵分块，在片上存储中完成局部矩阵乘、在线 Softmax 和输出累加，不把完整的 $N\times N$ 分数矩阵与概率矩阵写入 HBM。
 
-其中隐藏层头维度为 $D_{head}$, 序列长度为 $N$, 批次大小为 $B$, 头数为 $H$. 
+## 1. 标准实现会搬运多少数据
 
-在 PyTorch 等标准深度学习框架的 eager 模式下, 上述公式被拆解为数个独立的底层算子调用. 这种执行模式强制在 GPU HBM 中为中间结果开辟物理空间并进行读写交互, 其具体的物理张量流转链路如下:
+设批量大小为 $B$，注意力头数为 $H$，序列长度为 $N$，每头维度为 $d$，每个元素占 $s$ 字节。先考察一种容易复算的前向实现：
 
-1. **矩阵乘法 $Q K^T$**: 
- - 从 HBM 读取 $Q \in \mathbb{R}^{B \times H \times N \times D_{head}}$ 与 $K \in \mathbb{R}^{B \times H \times N \times D_{head}}$, 搬运数据量为 $2 \cdot B \cdot H \cdot N \cdot D_{head} \cdot 2 \text{ bytes}$ (假设为 FP16 精度).
- - 计算得到中间注意力分数矩阵 $S = Q K^T \in \mathbb{R}^{B \times H \times N \times N}$, 将其**物理物化 (Materialize)** 并全量写入 HBM. 搬运数据量为 $B \cdot H \cdot N^2 \cdot 2 \text{ bytes}$.
-2. **Softmax 归一化**:
- - 从 HBM 全量读取中间分数矩阵 $S$, 搬运数据量为 $B \cdot H \cdot N^2 \cdot 2 \text{ bytes}$.
- - 在片上计算归一化后的注意力权重矩阵 $A \in \mathbb{R}^{B \times H \times N \times N}$, 并将 $A$ 全量写回到 HBM 中. 搬运数据量为 $B \cdot H \cdot N^2 \cdot 2 \text{ bytes}$.
-3. **加权求和 $A V$**:
- - 从 HBM 全量读取矩阵 $A$ 与值矩阵 $V \in \mathbb{R}^{B \times H \times N \times D_{head}}$, 搬运数据量为 $(B \cdot H \cdot N^2 + B \cdot H \cdot N \cdot D_{head}) \cdot 2 \text{ bytes}$.
- - 在片上完成乘加累加, 得到输出矩阵 $O \in \mathbb{R}^{B \times H \times N \times D_{head}}$, 全量写回 HBM. 搬运数据量为 $B \cdot H \cdot N \cdot D_{head} \cdot 2 \text{ bytes}$.
+1. 计算 $S=QK^\top/\sqrt d$，把 $S$ 写入 HBM；
+2. 从 HBM 读取 $S$，计算 $P=\operatorname{softmax}(S)$，再把 $P$ 写回 HBM；
+3. 从 HBM 读取 $P$ 与 $V$，计算并写出 $O=PV$。
 
-### 2.2 惊人的带宽放大效应 (Bandwidth Amplification)
-我们将所有的 HBM 读写搬运字节数进行物理加和, 得到标准注意力机制的总 HBM 数据搬运量 $T_{\text{Standard}}$:
+下面的账本采用较有利于基线的理想假设：稠密、非因果、自注意力前向；$Q,K,V,O,S,P$ 使用同一数据类型；Softmax 对 $S$ 只做一次完整读取并写出新的 $P$；忽略掩码、偏置、dropout、分配器工作区、缓存命中和矩阵乘内部的 tile 重读。它给出的是张量级的最低搬运量，不是某个具体内核的性能计数器结果。
 
-$$
-T_{\text{Standard}} = 2 B H N^2 + 5 B H N D_{head} \text{ bytes} \tag{3}
-$$
+| 阶段 | HBM 读取 | HBM 写入 | 元素数 |
+|---|---|---|---:|
+| $QK^\top$ | $Q,K$ | $S$ | $2BHNd+BHN^2$ |
+| Softmax | $S$ | $P$ | $2BHN^2$ |
+| $PV$ | $P,V$ | $O$ | $BHN^2+2BHNd$ |
 
-为了让这一数学公式展现出直接的物理冲击力, 我们代入一组生产环境下的真实数值进行定量计算:
-- Batch Size $B = 64$
-- Attention 头数 $H = 32$
-- 序列长度 $N = 8192$ (中等文本长度)
-- 头维度 $D_{head} = 128$
-- 数据精度为 FP16 (2 字节)
-
-利用公式 (3) 计算:
-- 最终有用的输入和输出张量体积 ($Q, K, V, O$) 仅为: 
-$$
-V_{\text{useful}} = 4 \cdot B \cdot H \cdot N \cdot D_{head} \cdot 2 \text{ bytes} \approx 134.2 \text{ MB}
-$$
-- 然而, 在 HBM 中实际被强制搬运的数据吞吐总量为:
-$$
-T_{\text{Standard}} = 2 \cdot 64 \cdot 32 \cdot (8192)^2 \cdot 2 + 5 \cdot 64 \cdot 32 \cdot 8192 \cdot 128 \cdot 2 \text{ bytes} \approx 549.7 \text{ GB}
-$$
-
-**这一数字令人感到窒息：为了在 GPU 上算出仅有 $134.2 \text{ MB}$ 的有用注意力输出, 由于中间矩阵 $S$ 和 $A$ 被强行物化并高频读写 HBM, 系统居然在 GPU 显存内往复搬运了高达 $549.7 \text{ GB}$ 的数据！带宽放大比达到了惊人的 4096 倍！**
-
-在 $2.0 \text{ TB/s}$ 带宽的 A100 GPU 上, 仅仅是搬运这 $549.7 \text{ GB}$ 的数据就需要耗时约 $274 \text{ ms}$, 此时 GPU Tensor Core 的实际算力利用率甚至不足 $2\%$. 这就是阻碍大模型长文本推理的最核心物理瓶颈所在.
-
----
-
-## 3. Roofline 物理性能评估模型分析 (Roofline Quantitative Analysis)
-
-为了在计算机体系结构层面彻底看清标准注意力与硬件感知优化算子的效率差距, 我们引入经典的 Roofline 模型进行定量诊断.
-
-### 3.1 Roofline 模型数学形式
-Roofline 模型定义了算子在特定硬件平台上的最大可达性能 $P$ 是**算术强度 (Operational Intensity)** $I$ 的函数:
+因此，完整前向至少搬运
 
 $$
-P(I) = \min\left(P_{\text{peak}}, I \cdot W_{\text{mem}}\right) \tag{4}
+T_{\mathrm{sep}}
+=sBH\left(4N^2+4Nd\right)\quad\text{bytes}. \tag{1}
 $$
 
-其中:
-- $P_{\text{peak}}$ 为硬件平台的物理峰值算力 (FLOPs/s).
-- $W_{\text{mem}}$ 为硬件平台的物理显存带宽 (Bytes/s).
-- 算术强度 $I$ 的物理单位为 $\text{FLOPs/Byte}$, 代表每搬运 1 字节的数据, 系统能够执行的浮点运算次数.
-- 临界算术强度阈值 $I_{\text{critical}} = P_{\text{peak}} / W_{\text{mem}}$. 当 $I < I_{\text{critical}}$ 时, 算子处于访存受限区; 当 $I \ge I_{\text{critical}}$ 时, 算子处于计算受限区.
-
-### 3.2 真实硬件平台的临界阈值
-我们以 NVIDIA A100 (SXM4 80GB FP16 精度) 和 Hopper H100 (SXM5 FP8 精度) 为例进行临界值走查:
-
-- **A100 GPU**:
-$$
-P_{\text{peak}} = 312 \text{ TFLOPs/s}, \quad W_{\text{mem}} = 2000 \text{ GB/s}
-$$
-$$
-I_{\text{critical, A100}} = \frac{312 \times 10^{12}}{2000 \times 10^9} = 156.0 \text{ FLOPs/Byte} \tag{5}
-$$
-- **H100 GPU**:
-$$
-P_{\text{peak}} = 1979 \text{ TFLOPs/s} \text{ (FP8 Tensor Core)}, \quad W_{\text{mem}} = 3350 \text{ GB/s}
-$$
-$$
-I_{\text{critical, H100}} = \frac{1979 \times 10^{12}}{3350 \times 10^9} = 590.7 \text{ FLOPs/Byte} \tag{6}
-$$
-
-这组物理常数表明: 在 H100 GPU 上计算 FP8 矩阵时, 每搬运 1 字节的数据, 必须在片上执行至少 **590 次浮点运算**, 才能将 Tensor Core 的硬件威力彻底跑满. 否则, 即使硬件算力再庞大, 也会因为显存搬运跟不上而陷入无休止的空转.
-
-### 3.3 标准自注意力的算术强度坍塌
-标准自注意力的算术强度是多少呢? 自注意力机制的浮点运算量 (FLOPs) 主要由两个 GEMM 贡献: $Q K^T$ 的运算量为 $2 B H N^2 D_{head}$, $A V$ 的运算量为 $2 B H N^2 D_{head}$, 总运算量为:
+其中，与 $S,P$ 物化有关的二次项是 $4sBHN^2$；$Q,K,V,O$ 各一次读写所对应的线性项合计为 $4sBHNd$。四个线性张量自身的总大小为
 
 $$
-F_{\text{Attention}} = 4 B H N^2 D_{head} \text{ FLOPs} \tag{7}
+V_{QKVO}=4sBHNd. \tag{2}
 $$
 
-根据公式 (3) 的 HBM 数据搬运量, 我们得出标准自注意力的算术强度 $I_{\text{Standard}}$:
+两者之比为
 
 $$
-I_{\text{Standard}} = \frac{F_{\text{Attention}}}{T_{\text{Standard}}} = \frac{4 B H N^2 D_{head}}{2 B H N^2 + 5 B H N D_{head}} = \frac{4 N D_{head}}{2 N + 5 D_{head}} \text{ FLOPs/Byte} \tag{8}
+\frac{T_{\mathrm{sep}}}{V_{QKVO}}=\frac{N}{d}+1. \tag{3}
 $$
 
-在长序列长文本场景下(即 $N \gg D_{head}$), 公式 (8) 的分母中 $2N$ 占据绝对主导, 我们对公式 (8) 求极限近似:
+以 $B=1,H=32,N=8192,d=128,s=2$ 的 BF16/FP16 前向为例：
+
+- $Q,K,V,O$ 合计 $268{,}435{,}456$ 字节，即 $256\ \mathrm{MiB}$；
+- $S,P$ 的写入与读取合计 $17{,}179{,}869{,}184$ 字节，即 $16\ \mathrm{GiB}$；
+- 式 (1) 的总量为 $16.25\ \mathrm{GiB}$，是式 (2) 的 $65$ 倍。
+
+这组数只描述上述分离实现的理想张量流量。实际内核若用多遍 Softmax、生成掩码或发生额外 tile 重读，流量会更高；若已采用融合或重计算，流量则不能再按式 (1) 计算。
+
+## 2. 算术强度与 Roofline 位置
+
+若一次乘加按 2 FLOP 计，忽略 Softmax 的标量运算，则两次矩阵乘的主要计算量约为
 
 $$
-\lim_{N \to \infty} I_{\text{Standard}} \approx 2 D_{head} \text{ FLOPs/Byte} \tag{9}
+F\approx 4BHN^2d. \tag{4}
 $$
 
-以常见的头维度 $D_{head} = 64$ 为例, 标准自注意力的算术强度极限被焊死在 $128 \text{ FLOPs/Byte}$ 左右. 当序列长度较短时(例如 $N=1024$), 实际算术强度甚至萎缩到 **十几 FLOPs/Byte**.
+结合式 (1)，分离实现的理想算术强度为
 
-这在物理上判定了标准自注意力在现代 GPU 上**永远处于极度饥饿的访存受限区** (因为 $I_{\text{Standard}} \ll I_{\text{critical, A100}} < I_{\text{critical, H100}}$). 无论 Tensor Core 升级得多么狂暴, 计算性能也会被显存带宽死死卡在瓶颈下.
+$$
+I_{\mathrm{sep}}
+=\frac{F}{T_{\mathrm{sep}}}
+=\frac{Nd}{s(N+d)}
+\xrightarrow[N\gg d]{}\frac{d}{s}
+\quad\text{FLOP/byte}. \tag{5}
+$$
 
----
+前面的例子得到 $I_{\mathrm{sep}}\approx63.0\ \mathrm{FLOP/byte}$。NVIDIA A100 80GB 数据表给出的密集 BF16/FP16 Tensor Core 峰值为 $312\ \mathrm{TFLOP/s}$，HBM2e 峰值带宽为 $2039\ \mathrm{GB/s}$，两者之比约为
 
-## 4. FlashAttention 家族演进画卷 (The FlashAttention Family Evolutionary Roadmap)
+$$
+I_{\mathrm{ridge}}\approx
+\frac{312\times10^{12}}{2039\times10^9}
+=153\ \mathrm{FLOP/byte}. \tag{6}
+$$
 
-为了粉碎内存墙, 硬件感知自注意力算子 (FlashAttention) 爆发了. 其根本哲学**不是降低算法的 FLOPs 数(自注意力本身的计算下限无法突破), 而是重构计算流程, 彻底消除 HBM 上的中间张量物化, 将算术强度直接提升到计算受限区.**
+在这组峰值和理想流量假设下，分离实现位于 Roofline 的带宽侧。它不意味着任意形状、任意精度的注意力都必然受 HBM 带宽限制；短序列、小批量、低占用率以及不同硬件都可能改变实际瓶颈。
 
-我们通过一张多维的技术演进雷达图谱, 鸟瞰 FlashAttention 家族跨越四个时代的自我跃迁:
+![FlashAttention 论文中的 A100 存储层次、分块循环与 GPT-2 运行时间](./images/fig-flashattention-gpu-memory-hierarchy.jpg)
 
-| 维度对比 | 第一代 FlashAttention-v1 | 第二代 FlashAttention-v2 | 第三代 FlashAttention-v3 | 第四代 FlashAttention-4 (Blackwell) |
-|:---|:---|:---|:---|:---|
-| **核心瓶颈** | HBM 中间矩阵物化导致的显存带宽墙 | 共享内存 (SRAM) 与寄存器之间的片上带宽瓶颈 | Hopper 架构下异步载入与流水线空闲等待 | Blackwell 架构下的非对称算力暴涨与 SFU exp 指令瓶颈 |
-| **硬件目标** | Ampere (A100) / Turing 等通用 GPU | Ampere (A100) / Hopper (H100) | Hopper (H100 / SM90) | Blackwell (B200 / SM10.x) |
-| **突破性技术** | SRAM Tiling 分块 + Online Softmax 流式归一化 + 反向传播重计算 | KV外循环顺序交换 + 标度延迟融合 + Warp级零同步调度 | TMA 异步多维张量拷贝 + WGMMA 协同矩阵乘 + FP8 块级动态缩放 | Cody-Waite + 多项式逼近 $2^x$（与 MUFU 并行，约 10–25% 项走 FMA）+ CuTe-DSL |
-| **HBM 流量** | $O(N^2 D_{head}^2 / M)$ ($M$为SRAM容量) | 相比 v1 进一步削减了中间累加器的物理更新 | 引入 TMA 零 CPU/Register 干扰的完全背景传输 | Blackwell 极限总线带宽下的异步并行重叠隐藏 |
-| **实测性能** | A100 上约 50% 峰值（论文 Figure 1 注意力算子最高 7.6×） | A100 上约 73% 峰值（相对 v1 再提速） | H100 上 FA2 约 35% 利用率；FA3 FP16 前向相对 FA2 **1.5–2.0×**，最高约 **740 TFLOPs/s（75%）**；FP8 接近 **1.2 PFLOPs/s** | B200 BF16 最高约 **1613 TFLOPs/s（71%）**；相对 cuDNN 9.13 最高 **1.3×**、相对 Triton **2.7×**（[2603.05451](https://arxiv.org/abs/2603.05451)） |
+> 图 1：FlashAttention v1 论文图 1。图中的 A100 规格和 GPT-2 测量来自论文所用平台；算法部分显示外层遍历 $K,V$ 块、内层遍历 $Q$ 块。
 
-从 v1 时代建立流式 Online Softmax 数学基础, 到 v2 时代从微观寄存器级重构指令流水, 到 v3 时代彻底释放 Hopper TMA 和 WGMMA 的专属硬件魔力, 再到 v4 (Blackwell) 时代利用纯软件数学逼近消灭物理 exp 指令硬件瓶颈. FlashAttention 的演进史, 就是一部对现代 GPU 物理硬件底座极限能效的重构史.
+## 3. FlashAttention 改变了什么
 
----
+FlashAttention 把 $Q,K,V$ 切成能够进入片上存储的块。一个分数块 $S_{ij}=Q_iK_j^\top$ 产生后，立即参与局部 Softmax 与输出更新，随后即可丢弃。跨 $K,V$ 块的行最大值、归一化分母和输出累加器通过在线 Softmax 递推，因此不需要在 HBM 中保存完整 $S$ 或 $P$。
 
-## 5. 参考文献 (References)
+这里有两个容易混淆的层次：
 
-- Rabe, M. N., & Staats, C. (2021). "Self-attention Does Not Need $O(n^2)$ Memory." arXiv:2112.05682. 见 [00-MEA](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md).
-- Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C. (2022). "FlashAttention: Fast and memory-efficient exact attention with io-awareness." Advances in Neural Information Processing Systems, 35, 16344-16359.
-- Dao, T. (2023). "FlashAttention-2: Faster attention with better parallelism and work partitioning." arXiv preprint arXiv:2307.08691.
-- Dao, T., et al. (2024). "FlashAttention-3: Fast Attention with Asynchrony and Low-Precision on Hopper GPUs." arXiv:2407.08608.
-- Shah, J., et al. (2026). "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling." arXiv:2603.05451.
-- Milakov, M., & Gimelshein, N. (2018). "Online normalizer calculation for softmax." arXiv preprint arXiv:1805.02867.
+- “不物化 $N\times N$ 矩阵”描述峰值中间存储；
+- “减少 HBM 访问”描述同一数据被片上复用的次数。
+
+v1 论文的 Algorithm 1 以 $K,V$ 块为外层循环。每处理一个 $K,V$ 块，都要逐个从 HBM 读入 $Q_i,O_i,m_i,\ell_i$，更新后再把 $O_i,m_i,\ell_i$ 写回。因此，v1 不是“所有输入只读一次、输出只写一次”；它通过选择较大的 $K,V$ tile，将对 $Q,O$ 的完整扫描次数从与 $N$ 同阶降到约 $Nd/M$ 次。其前向 HBM 访问量在论文模型中为
+
+$$
+\Theta\!\left(\frac{N^2d^2}{M}\right),
+\qquad d\le M\le Nd, \tag{7}
+$$
+
+其中 $M$ 是片上 SRAM 可容纳的元素数。标准分离实现则为 $\Theta(N^2+Nd)$ 次元素访问。Algorithm 1、在线 Softmax、反向重计算与这个界的推导见 [FlashAttention v1](./02-FlashAttention-v1.md)。
+
+早于 FlashAttention 的 [Memory-Efficient Attention](../00-Memory-Efficient-Attention/01-MEA-显存高效注意力.md)（[Rabe & Staats, 2021](https://arxiv.org/abs/2112.05682)）也能精确计算注意力而不保存完整概率矩阵；FlashAttention v1 的重点是面向 GPU 存储层次分析并减少 HBM–SRAM I/O。
+
+## 4. v1–v4 阅读路径
+
+各代文章分别处理不同硬件和并行组织问题，不能只用版本号推断同一内核在所有设备上的支持范围。
+
+| 版本 | 主要技术问题 | 专题 |
+|---|---|---|
+| v1 | 分块、在线 Softmax、I/O 复杂度与反向重计算 | [02 · FlashAttention v1](./02-FlashAttention-v1.md) |
+| v2 | 更好的序列维并行与 warp 工作划分，减少非矩阵乘开销 | [03 · FlashAttention v2](./03-FlashAttention-v2.md) |
+| v3 | 面向 Hopper 的异步流水、WGMMA/TMA 与低精度路径 | [04 · FlashAttention v3](./04-FlashAttention-v3.md) |
+| v4 | 面向 Blackwell 的非对称硬件与更深流水调度 | [05 · FlashAttention v4](./05-FlashAttention-v4.md) |
+| Triton | 用 Triton 表达分块、掩码和在线归一化的实现方法 | [06 · Triton 实现](./06-FlashAttention-Triton实现.md) |
+
+FlashAttention 的主要收益是避免二次中间张量驻留 HBM，并降低数据移动；时间复杂度仍为 $O(N^2d)$。论文中的具体加速比依赖序列长度、头维度、批量、数据类型、GPU 和基线实现，不能脱离实验协议当作固定常数。
+
+## 参考资料
+
+- Tri Dao et al., [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135), NeurIPS 2022.
+- Markus N. Rabe and Charles Staats, [Self-attention Does Not Need $O(n^2)$ Memory](https://arxiv.org/abs/2112.05682), 2021.
+- Dao-AILab, [FlashAttention 官方仓库](https://github.com/Dao-AILab/flash-attention).
+- NVIDIA, [A100 Tensor Core GPU Data Sheet](https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/a100-80gb-datasheet-update-a4-nvidia-1485612-r12-web.pdf).
+- Tri Dao, [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691), ICLR 2024.
+- Jay Shah et al., [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608), NeurIPS 2024.
+- Ted Zadouri et al., [FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling](https://arxiv.org/abs/2603.05451), 2026.

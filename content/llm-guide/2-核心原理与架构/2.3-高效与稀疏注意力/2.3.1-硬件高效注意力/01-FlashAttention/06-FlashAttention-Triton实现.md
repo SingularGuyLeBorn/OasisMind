@@ -1,89 +1,114 @@
 ---
-title: "06 · FlashAttention Triton 源码剖析与寄存器映射"
+title: "06 · Triton 分块实现：在线 softmax 与内核骨架"
 date: 2026-08-30
-tags: [FlashAttention, Triton, Source Code, CUDA, Online Softmax]
-as_of: 2026-08-30
+tags: [FlashAttention, Triton, Online Softmax, Tiling, GPU Kernel]
+as_of: 2026-09-01
 ---
 
-# 06 · FlashAttention Triton 源码剖析与寄存器映射
+# 06 · Triton 分块实现：在线 softmax 与内核骨架
 
-Triton 把 FA 的 SRAM tiling 写成 Python 分块：一个 program 独占一块 $Q$（`BLOCK_M` 行），沿列扫 $K,V$ tile，片上只留 `m_i / d_i / acc`，最后写回 $O$。本篇对照 [02-v1](./02-FlashAttention-v1.md) 的一份增量 $O$，**不是**第二份 CUDA 教程，也不把这段 kernel 当成 FA-3/4 的生产核。
+Triton 官方 fused-attention 教程给出了一种 FlashAttention-2 风格的程序映射：每个 program 持有一个 Query 行块，内循环依次扫描 Key/Value 列块，在线更新行最大值、归一化量与输出累加器。它适合用来理解分块数据流和 Triton 语义；生产内核还会加入自动调优、架构专用加载、Warp 专门化、变长序列和更多掩码分支。
 
-## 1. Triton 的分块抽象
+## 1. 一个 program 负责一个 Query 行块
 
-CUDA 要管到线程、合并访存和 `__syncthreads()`。Triton 的操作单元是 **Block**：编译器把 `tl.dot`、`tl.load` 降到 Warp / Tensor Core / barrier。开发者写的是「这块 $Q$ 对哪些 $K,V$ tile 做 online softmax」。
+设 `BLOCK_M` 为 Query 行块高度，`BLOCK_N` 为 Key/Value 列块宽度。program id 先确定 $Q_i$ 的起始行，载入一次 $Q_i$，然后执行
 
-![Q/K/V tile 进 SRAM，online softmax 累加器停在寄存器](./images/fig-fa-triton-tile-online-softmax.png)
+$$
+\text{for }j=0,\ldots,\left\lceil N/\texttt{BLOCK\_N}\right\rceil-1
+$$
 
-> 图 1：左 HBM 上的 $Q,K,V$；中 SRAM 只容纳当前 $Q_i,K_j,V_j$ 与局部 $S=QK^\top$；右寄存器累加器 $(m_i,d_i,O_i)$。KV 沿内循环流过，$O$ 只写回一次。$N\times N$ 不落 HBM。
+依次载入 $K_j,V_j$。循环期间需要长期保存的状态只有
 
-**图 1 解析**
+$$
+m_i\in\mathbb R^{B_M},\qquad
+\ell_i\in\mathbb R^{B_M},\qquad
+\widetilde O_i\in\mathbb R^{B_M\times d}.
+$$
 
-- **左栏 HBM**：$Q$ 按行切 `BLOCK_M`；$K,V$ 按列切 `BLOCK_N`。高亮块才进 SRAM。
-- **中栏 SRAM**：`tl.dot(q, k^T)` 得到 `BLOCK_M × BLOCK_N` 的局部分数，随即做 max / exp / 与 $V$ 的点积。
-- **右栏寄存器**：`m_i` 是 running max，`d_i` 是配分函数，`acc` 是未归一化的 $O$。三者在循环里更新，循环结束才 `tl.store`。
-- **底注**：这是 FA-1/2 的 Python 参考形态。Hopper 上 `tl.load` 会换成 TMA，Blackwell 上 `tl.math.exp` 的一部分会换成 FMA 多项式（见 [04-v3](./04-FlashAttention-v3.md)、[05-v4](./05-FlashAttention-v4.md)）。
+其中 $m_i$ 是运行最大值，$\ell_i$ 是指数和，$\widetilde O_i$ 是未归一化输出。局部分数块 $S_{ij}=Q_iK_j^\top$ 在当前迭代内产生并消费，不写入 HBM。
 
----
+![Triton program 的 Query tile、Key/Value 内循环与在线 softmax 状态](./images/fig-fa-triton-tile-online-softmax.png)
 
-## 2. 前向核：只看 tile 与 online softmax
+> 图 1：一个 program 载入一次 Query 行块，在内循环中扫描 Key/Value 列块；在线 softmax 状态保留在片上，结束后写回一次输出。
 
-下面是因果前向的骨架（`head_dim` 写成 64 只为读代码；生产核用 `tl.constexpr` 参数化）。指针算术、stride 样板已压掉。
+这种 Q 外层、KV 内循环的映射对应 [FlashAttention-2](./03-FlashAttention-v2.md) 的前向工作划分。[FlashAttention-1](./02-FlashAttention-v1.md) 论文 Algorithm 1 使用相反的 KV 外层、Q 内层顺序。
+
+## 2. 因果前向的教学骨架
+
+下面保留算法主线，省略真实内核中的 stride、边界掩码、stage 分支和自动调优配置。它是伪代码骨架，不能直接复制运行。
 
 ```python
 @triton.jit
-def _fwd_kernel(Q, K, V, sm_scale, L, Out, N_CTX,
-                BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr):
-    start_m = tl.program_id(0)
-    offs_m = start_m * BLOCK_M + tl.arange(0, BLOCK_M)
-    offs_n = tl.arange(0, BLOCK_N)
-    offs_d = tl.arange(0, 64)
+def attention_fwd(Q, K, V, Out, LSE, n_ctx, scale,
+                  BLOCK_M: tl.constexpr,
+                  BLOCK_N: tl.constexpr,
+                  HEAD_DIM: tl.constexpr):
+    block_m = tl.program_id(0)
+    rows = block_m * BLOCK_M + tl.arange(0, BLOCK_M)
+    cols = tl.arange(0, BLOCK_N)
+    dims = tl.arange(0, HEAD_DIM)
 
-    q = tl.load(...)  # Q tile: [BLOCK_M, d]，本 program 只载一次
-    m_i = tl.zeros([BLOCK_M], dtype=tl.float32) - float("inf")
-    d_i = tl.zeros([BLOCK_M], dtype=tl.float32)
-    acc = tl.zeros([BLOCK_M, 64], dtype=tl.float32)
+    q = tl.load(...)                         # [BLOCK_M, HEAD_DIM]
+    m_i = tl.full([BLOCK_M], -float("inf"), tl.float32)
+    l_i = tl.zeros([BLOCK_M], tl.float32)
+    acc = tl.zeros([BLOCK_M, HEAD_DIM], tl.float32)
 
-    # 因果：只扫到当前 Q 行所在块（含自身）
-    for start_n in range(0, (start_m + 1) * BLOCK_M, BLOCK_N):
-        k = tl.load(...)  # K tile: [BLOCK_N, d]
-        v = tl.load(...)
-        qk = tl.dot(q, tl.trans(k)) * sm_scale
-        qk = tl.where(offs_m[:, None] >= (start_n + offs_n)[None, :], qk, float("-inf"))
+    end_n = min(n_ctx, (block_m + 1) * BLOCK_M)
+    for start_n in range(0, end_n, BLOCK_N):
+        k = tl.load(...)                     # [BLOCK_N, HEAD_DIM]
+        v = tl.load(...)                     # [BLOCK_N, HEAD_DIM]
 
-        m_ij = tl.max(qk, 1)
-        m_next = tl.maximum(m_i, m_ij)
-        alpha = tl.math.exp(m_i - m_next)
-        p = tl.math.exp(qk - m_next[:, None])
-        d_i = d_i * alpha + tl.sum(p, 1)
-        acc = acc * alpha[:, None] + tl.dot(p, v)
+        scores = tl.dot(q, tl.trans(k)) * scale
+        causal = rows[:, None] >= start_n + cols[None, :]
+        scores = tl.where(causal, scores, -float("inf"))
+
+        block_max = tl.max(scores, axis=1)
+        m_next = tl.maximum(m_i, block_max)
+        alpha = tl.exp(m_i - m_next)
+        p = tl.exp(scores - m_next[:, None])
+
+        l_i = alpha * l_i + tl.sum(p, axis=1)
+        acc = alpha[:, None] * acc + tl.dot(p.to(q.dtype), v)
         m_i = m_next
 
-    tl.store(..., acc / d_i[:, None])          # 写 O
-    tl.store(..., m_i + tl.math.log(d_i))      # 写 LSE，供反向重算
+    tl.store(..., acc / l_i[:, None])
+    tl.store(..., m_i + tl.log(l_i))
 ```
 
-对照 [02-v1](./02-FlashAttention-v1.md) 式 (17)：`alpha` 就是 $e^{m^{(old)}-m}$，`acc` 是未除配分函数的分子。循环内 **没有** `tl.store` 到 $N\times N$。
+更新式与在线 softmax 完全对应：
 
----
+$$
+\begin{aligned}
+m_i'&=\max\!\left(m_i,\operatorname{rowmax}(S_{ij})\right),\\
+\alpha_i&=e^{m_i-m_i'},\\
+\ell_i'&=\alpha_i\ell_i+\operatorname{rowsum}\!\left(e^{S_{ij}-m_i'}\right),\\
+\widetilde O_i'&=\alpha_i\widetilde O_i+e^{S_{ij}-m_i'}V_j.
+\end{aligned}
+$$
 
-## 3. 编译器把什么降到硬件
+最后的 `LSE = m_i + log(l_i)` 供反向重算 softmax 概率。因果内核还会跳过 Query 块右侧的 Key/Value 块；对角块内部再用逐元素因果掩码处理。
 
-- `m_i`、`d_i`、`acc` 形状 `[BLOCK_M]` / `[BLOCK_M, d]`，生命周期在寄存器；循环结束才写 HBM。
-- `tl.dot` → A100 上 `mma.sync`，H100 上可降到 `wgmma.mma_async`。
-- `tl.where` 因果掩码 → 谓词，避免 warp 分叉。
+## 3. Triton 语义如何映射到硬件
 
-这仍是 Ampere 时代 FA-1/2 的调度：外循环扫 $K,V$ 块（FA-2 的 KV 外循环），softmax 用 `tl.math.exp`。FA-3 把 load 换成 TMA + `mbarrier`；FA-4 把一部分 `exp` 换成 Horner $2^x$。
+`tl.load` 描述从指针或 tensor descriptor 读取 tile。普通指针式 `tl.load` 不等于自动使用 TMA；Hopper 上的 TMA 路径需要编译器、目标后端以及相应的 tensor descriptor 或 Warp 专门化实现共同支持。
 
-| 版本 | 硬件 | 相对本篇 Triton 的增量 | 文档 |
-|------|------|------------------------|------|
-| FA-1/2 | A100 等 | 循环交换、Warp 划分 — 与本篇 `tl.dot` + online softmax **同构** | [02-v1](./02-FlashAttention-v1.md)、[03-v2](./03-FlashAttention-v2.md) |
-| FA-3 | Hopper H100 | TMA、WGMMA、`mbarrier`、FP8 块量化 | [04-v3](./04-FlashAttention-v3.md) |
-| FA-4 | Blackwell B200 | 多项式 FMA 逼近 $2^x$（与 MUFU 并行）、CuTe-DSL | [05-v4](./05-FlashAttention-v4.md) |
+`tl.dot` 表达块矩阵乘。它可能在 Ampere 上降到 `mma.sync`，也可能在 Hopper 上使用 WGMMA，具体取决于 Triton 版本、GPU 目标、数据类型、tile 形状、`num_warps`、`num_stages` 和编译配置。源码层的一个 `tl.dot` 不能保证某条固定的 PTX 指令。
 
-稀疏核（如 NSA 选择分支）在 **GQA 组 + 稀疏块索引** 上扩展本调度，块内仍可调稠密 FA — 见 [02-NSA](../../2.3.2-稀疏与压缩注意力/02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md)。
+`tl.where` 把因果条件应用到分数块。编译器通常会用谓词和选择指令实现，但最终是否产生分支、如何合并掩码访问，仍要查看生成的 PTX/SASS。
 
-## 4. 参考文献
+同理，`tl.exp` 表达指数语义，不会因为目标是 Blackwell 就必然采用 [FlashAttention-4](./05-FlashAttention-v4.md) 的“部分 MUFU、部分 FMA 多项式”方案。FlashAttention-4 的正式实现使用 CuTe-DSL，并显式组织指数双路径、TMEM 与 2-CTA MMA。
 
-- Tillet, P., Kung, H. T., & Cox, D. (2019). "Triton: an intermediate language and compiler for tiled neural network computations." MAPL.
-- OpenAI Triton 文档。公式与累加器语义对齐 Dao et al., FlashAttention, NeurIPS 2022, arXiv:2205.14135。
+## 4. tile 与编译参数的取舍
+
+增大 `BLOCK_M` 或 `BLOCK_N` 可以减少循环次数，并让矩阵乘 tile 更饱满，但会增加分数块、输出累加器和流水中间量的寄存器占用。寄存器不足时会发生 spill，过大的共享内存需求也会减少每个 SM 可驻留的线程块数。
+
+`num_warps` 决定一个 program 使用多少 Warp，`num_stages` 控制软件流水深度。更深的流水能覆盖更多加载延迟，也会同时保存更多 tile。合适配置依赖 GPU 架构、head dimension、序列长度、因果掩码和数据类型，因此生产实现通常准备多组配置并自动调优。
+
+这份骨架只解释前向主循环。变长 batch、MQA/GQA、dropout、窗口注意力、反向重算和持久化调度会改变 program grid、掩码与规约方式，应以官方教程和目标版本源码为准。
+
+## 参考资料
+
+- Philippe Tillet, H. T. Kung, David Cox. [Triton: An Intermediate Language and Compiler for Tiled Neural Network Computations](https://dl.acm.org/doi/10.1145/3315508.3329973), 2019.
+- Triton Project. [Fused Attention Tutorial](https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html), 核验于 2026-09-01.
+- Dao AI Lab. [flash-attention 官方仓库](https://github.com/Dao-AILab/flash-attention), GitHub.
+- Tri Dao. [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691), 2023.

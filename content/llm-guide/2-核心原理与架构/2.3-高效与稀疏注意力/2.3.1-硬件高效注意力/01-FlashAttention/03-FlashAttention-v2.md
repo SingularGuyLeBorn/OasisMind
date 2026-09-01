@@ -1,150 +1,114 @@
 ---
-title: "03 · FlashAttention-v2 执行优化: 循环交换与 Warp 调度"
+title: "03 · FlashAttention-2：并行划分与工作量优化"
 date: 2026-08-30
-tags: [FlashAttention-v2, Loop Interchange, Register-level Fusion, Warp Scheduling, CUDA]
-as_of: 2026-08-30
+tags: [FlashAttention-2, Online Softmax, Loop Interchange, Work Partitioning, CUDA]
+as_of: 2026-09-01
 ---
 
-# 03 · FlashAttention-v2 执行优化: 循环交换与 Warp 调度
+# 03 · FlashAttention-2：并行划分与工作量优化
 
-FlashAttention-2 不改注意力公式，改的是 **循环嵌套与 Warp 分工**（Dao, 2023, [arXiv:2307.08691](https://arxiv.org/abs/2307.08691)）：外层改到 $Q$ 行块、内层扫 $K,V$，$O_i$ 只在内循环结束写回一次；每个 Warp 独占若干 $Q$ 行，中间 $m,d,O$ 停在寄存器。相对 v1 的增益来自 work partitioning，不是换一套 softmax。不要写无出处的「访存延迟暴跌 60%」。
+[FlashAttention-1](./02-FlashAttention-v1.md) 用分块与在线 softmax 避免物化 $N\times N$ 注意力矩阵，但第一版 CUDA 核仍有三类开销：输出块及 softmax 统计量会被反复读写，线程块数量受 batch 与注意力头数限制，Warp 之间还需要借助共享内存交换中间结果。FlashAttention-2 保留精确注意力和相同的分块思想，重新安排循环、线程块与 Warp 的职责，并减少 softmax 递推中的非矩阵乘运算。
 
-## 1. 嵌套循环顺序交换的物理直觉 (Nested Loop Interchange)
+## 1. 从 KV 外循环改为 Q 外循环
 
-尽管 FlashAttention-v1 成功将 I/O 复杂度降低到了 $O(N^2 d^2 / M)$, 但在面对超长序列训练时, 其底层的指令流水线依然隐藏着巨大的片上访存开销. 
-
-v1 论文 Algorithm 1 的嵌套顺序是:
-- **外循环**: 遍历 Key/Value 的列块 ($j = 1 \dots T_c$, $T_c = N / B_c$).
-- **内循环**: 遍历 Query 的行块 ($i = 1 \dots T_r$, $T_r = N / B_r$).
-
-### 1.1 V1 循环顺序的写回代价
-外循环锁定一块 $K_j,V_j$ 时，内循环要把各个 $Q_i$ 轮流载入，算完半成品 $O_i,m_i,\ell_i$ 再写回 HBM，下一列块再读回来。$O$ 本身只有 $N\times d$，不是 $N\times N$，但「每个 KV tile × 每个 Q tile 都写一次」在长序列上仍然贵。并行当时只开在 batch × 头数上，长序列、小 batch 时 SM occupancy 不够。
-
-### 1.2 V2 把外循环改到 Q 行 (The Loop Swap)
-
-论文 §3.2 写明：外循环改到行块、内循环改到列块（与 v1 论文相反）；这条顺序以及沿序列维并行，最早见于 Tillet 的 Triton fused-attention。
-
-```
-+-------------------------------------------------------------+
-|  FlashAttention-v1 (论文 Algorithm 1):                      |
-|  For j = 1 ... Tc (Outer: Key/Value 列块)                   |
-|      For i = 1 ... Tr (Inner: Query 行块)                   |
-|          Load Qi, Oi, mi, ℓi → 每步写回 HBM                 |
-+-------------------------------------------------------------+
-                              | (外循环改到 Q 行)
-+-------------------------------------------------------------+
-|  FlashAttention-v2:                                         |
-|  For i = 1 ... Tr (Outer: Query 行块；threadblock 独占 Qi)  |
-|      For j = 1 ... Tc (Inner: Key/Value)                    |
-|          内循环结束才写回 Oi 一次                            |
-+-------------------------------------------------------------+
-```
-
-v2 一个 thread block 独占 $Q_i$，内循环把 $K_j,V_j$ 扫完，$O_i$ 只写一次；同时还沿 $Q$ 的序列维并行，提高长序列 occupancy。Warp 级从 split-K 改成按 $Q$ 行划分，见 §3。加速来自写回次数与划分，不是改 softmax 公式。
-
-![FA-1 外循环扫 KV、每步写回 O；FA-2 外循环改到 Q 行、O 写一次，Warp 按行划分](./images/fig-fa-v2-mech-work-partition.png)
-
-> 图 1：左为 v1 论文 Algorithm 1（外 $K/V$、内 $Q$，半成品 $O_i$ 高频写回）；右为 v2（外循环改到 $Q$ 行，内循环扫完 $K,V$ 才写一次 $O_i$；Warp 按 $Q$ 行划分、不再 split-K）。同一套 online softmax，不要写无出处的「访存延迟暴跌 60%」。论文 Dao, 2023, [arXiv:2307.08691](https://arxiv.org/abs/2307.08691)。
-
-**图 1 解析**
-
-- **左栏 FA-1**：外循环 $j$ 扫 KV 列块，内循环 $i$ 扫 Q 行块；每步把 $O_i,m_i,\ell_i$ 写回 HBM。
-- **右栏 FA-2**：外循环改到 $Q$ 行，一个 threadblock 独占 $Q_i$；内循环扫 $K_j,V_j$，结束才写 $O_i$。
-- **Warp**：FA-1 四 Warp 切 K/V（split-K）要进 SMEM 规约；FA-2 按 $Q$ 行静态划分，K/V 只读共享，无 inter-warp barrier。
-- **Occupancy**：v2 还沿 $Q$ 序列维并行，长序列、小 batch 时能喂满 SM。
-- **不变的**：online softmax 与 v1 同一套数学；加速来自划分与写回，不是新公式。
-- **不要编数字**：文中不写无出处的「访存延迟暴跌 60%」。论文加速比见下文图 3 的 jpg（论文 Figure 4），不手绘假坐标。
-- **和论文 Figure 2 的关系**：论文图是 worker 按行/列分块的示意；本图补循环嵌套与 Warp 切法。
-
----
-
-## 2. 非 Matmul 标度算子在寄存器端的融合与消除 (Scale Fusion)
-
-在 GPU 硬件加速器中, 真正能跑满理论峰值算力的只有执行矩阵乘加 (GEMM) 运算的 Tensor Core. 所有的非矩阵乘(如 Softmax 缩放因子相乘, 指数 exp 变换, 除法归一化等)都必须由常规的普通流处理器 (Cuda Core, 即 SFU 单元) 执行.
-
-### 2.1 标度延迟融合 (Delayed Scaling)
-在标准自注意力中, 我们需要在矩阵乘 $Q K^T$ 之后, 对生成的 $N \times N$ 元素逐个乘以一个标度因子 $1 / \sqrt{D_{head}}$.
-在 FlashAttention-v1 中, 这一缩放操作是在计算出分块分数矩阵后, 在内循环中通过逐元素相乘完成的. 这不仅占用片上寄存器, 还会因频繁调用乘法算子而打断 Tensor Core 矩阵乘指令的并行度.
-
-FlashAttention-v2 引入了**标度延迟融合 (Delayed Scaling)**: 
+设序列长度为 $N$，每个 Query 行块含 $B_r$ 行，每个 Key/Value 列块含 $B_c$ 行，块数分别为 $T_r=\lceil N/B_r\rceil$ 和 $T_c=\lceil N/B_c\rceil$。FlashAttention-1 前向算法的循环顺序是：
 
 $$
-\tilde{Q} = \frac{1}{\sqrt{D_{head}}} \cdot Q \tag{1}
+\text{for }j=1,\ldots,T_c\quad
+  \text{for }i=1,\ldots,T_r.
 $$
 
-**我们将原本需要作用于中间分数矩阵的标度运算, 通过代数等价交换, 提前在外部直接作用于输入矩阵 $Q$！因为 $Q$ 的维度是 $N \times D_{head}$, 其大小远远小于 $N \times N$ 的分数矩阵, 这一简单的等价变换, 直接消除了高达 $O(N^2)$ 次的逐元素乘法操作, 将其压缩到了极限的 $O(ND_{head})$ 次寄存器变换. **
+外层固定 $K_j,V_j$，内层依次处理所有 $Q_i$。每次访问 $(i,j)$ 都要从 HBM 读入 $O_i,m_i,\ell_i$，合并当前列块后再写回；下一轮 $j$ 又会读取这些中间状态。
 
-### 2.2 寄存器级累加标度融合 (Register Scale Fusion)
-在流式 Online Softmax 递推更新中, 每次合并不同的分块时都需要乘以指数补偿因子 $exp(m_i^{(old)} - m_i)$.
-在底层的 CUDA 汇编层面, FlashAttention-v2 通过 **Fused Multiply-Add (FMA)** 指令, 将这一指数乘法与局部输出矩阵 $O_i$ 的标度更新完美融合进了单条寄存器指令周期内：
+FlashAttention-2 交换两层循环：
 
 $$
-d_i \leftarrow d_i \cdot exp\left(m_i^{(old)} - m_i\right) + d_i^{(new)} \tag{2}
+\text{for }i=1,\ldots,T_r\quad
+  \text{for }j=1,\ldots,T_c.
+$$
+
+一个线程块负责一个 $Q_i$，在片上依次扫描全部 $K_j,V_j$。$O_i$ 与统计量在内循环期间保留在寄存器中，扫描结束后只写回一次。这样既减少了中间状态的 HBM 流量，也把 $Q$ 的行块加入并行网格：前向可同时调度约 $B\times H\times T_r$ 个线程块，长序列、小 batch 时更容易占满流式多处理器。
+
+![FlashAttention-1 与 FlashAttention-2 的循环和 Warp 划分](./images/fig-fa-v2-mech-work-partition.png)
+
+> 图 1：FlashAttention-2 让一个线程块持有一个 Query 行块，扫描全部 Key/Value 列块后再写回输出；Warp 也改为按 Query 行分工。
+
+循环交换没有改变注意力的计算图。每个 $Q_i$ 仍会与所有允许访问的 $K_j,V_j$ 交互，因果掩码也仍按相同规则生效。
+
+## 2. 在线 softmax 保留未归一化累加量
+
+处理第 $j$ 个列块时，先计算分数块
+
+$$
+S_{ij}=Q_iK_j^\top/\sqrt d.
+$$
+
+记进入该轮前的行最大值、指数和与未归一化输出为 $m^{(j-1)}$、$\ell^{(j-1)}$、$\widetilde O^{(j-1)}$。当前块的行最大值为
+
+$$
+r^{(j)}=\operatorname{rowmax}(S_{ij}),
+$$
+
+合并后的最大值为
+
+$$
+m^{(j)}=\max\!\left(m^{(j-1)},r^{(j)}\right).
+$$
+
+令
+
+$$
+P^{(j)}=\exp\!\left(S_{ij}-m^{(j)}\right),\qquad
+\alpha^{(j)}=\exp\!\left(m^{(j-1)}-m^{(j)}\right),
+$$
+
+则递推为
+
+$$
+\ell^{(j)}=\alpha^{(j)}\ell^{(j-1)}+\operatorname{rowsum}\!\left(P^{(j)}\right),
 $$
 
 $$
-O_i \leftarrow O_i \cdot \left[exp\left(m_i^{(old)} - m_i\right)\right] + \tilde{O}_i^{(new)} \tag{3}
+\widetilde O^{(j)}=\alpha^{(j)}\widetilde O^{(j-1)}+P^{(j)}V_j.
 $$
 
-公式 (2) 和 (3) 的底层操作在更新时, 寄存器指针不需要发生任何抖动, 指令完全在原位寄存器内被无缝消费, 最大化规避了寄存器溢出 (Register Spilling) 带来的显存交换开销.
+所有列块处理完后只做一次归一化：
 
----
+$$
+O_i=\operatorname{diag}\!\left(\ell^{(T_c)}\right)^{-1}\widetilde O^{(T_c)}.
+$$
 
-## 3. Warp 级行划分与零 Shared Memory Barrier 调度 (Warp-Level Scheduling)
+第一版实现会在每轮维护已归一化的输出，因此更新旧输出时还要引入旧、新归一化因子的比值。第二版保留未归一化的 $\widetilde O$，把除法推迟到内循环末尾，减少逐元素缩放与除法。对因果注意力，完全位于因果边界之外的块直接跳过，也避免在已知为零的区域执行运算。
 
-在 NVIDIA GPU SIMT 并行计算框架中, 线程是被划分为以 32 个线程为物理单元的 **Warp (线程束)** 进行调度的. Warp 之间的协作与同步开销直接决定了算子的并发吞吐率.
+这组变换仍计算精确 softmax；浮点舍入顺序会因分块而变化，但没有引入稀疏近似或低秩近似。
 
-### 3.1 V1 的协作缺陷：Warp 频繁同步
-在 FlashAttention-v1 中, 为了计算行级的 Softmax 归一化, 一个 Thread Block 内部的多个 Warp 采用协同模式：不同 Warp 合作计算同一行注意力分数, 然后通过 Shared Memory 进行规约 (Reduction) 求和与最大值同步. 
-这导致在每一个内循环周期内, 所有的 Warp 必须高频调用 `__syncthreads()` 执行物理栅栏同步 (Barrier). 这会导致所有的线程挂起等待最慢的那个 Warp, 严重破坏了 GPU 硬件的指令派发流水线.
+## 3. Warp 按 Query 行分工
 
-### 3.2 V2 的 Warp 行级静态独占重构 (Row-wise Partition)
-为了消灭这一毁灭能效的同步屏障, FlashAttention-v2 实施了彻底的 **Warp 级行独占重构 (Row-wise Partition)**：
+FlashAttention-1 在一个线程块内把 $K,V$ 分给多个 Warp。各 Warp 共同处理同一批 Query 行，需要把部分结果写入共享内存，再进行规约与同步。共享内存流量不会写到 HBM，但会占用片上带宽并形成同步点。
 
-```
-+---------------------------------------------------------------+
-|  FlashAttention-v1 (Warp 协同模式):                             |
-|  Warp 0 + Warp 1 + Warp 2 -> 协同计算 Row 0 -> 频繁 SM Sync    |
-+---------------------------------------------------------------+
-                               | (彻底消除 Warp 同步)
-+---------------------------------------------------------------+
-|  FlashAttention-v2 (Warp 行独占):                             |
-|  Warp 0 -> 独立计算 Row 0, Row 1 (寄存器独占, 0 SM Sync)       |
-|  Warp 1 -> 独立计算 Row 2, Row 3 (寄存器独占, 0 SM Sync)       |
-+---------------------------------------------------------------+
-```
+FlashAttention-2 把 $Q_i$ 的行分给不同 Warp，而 $K_j,V_j$ 作为只读数据供这些 Warp 使用。每个 Warp 独立维护自己负责行的 $m$、$\ell$ 和 $\widetilde O$，因此不再需要为不同 Warp 产生的部分输出做跨 Warp 求和。它减少的是共享内存读写和跨 Warp 同步，并不意味着整个内核没有屏障：块级装载、流水化和阶段切换仍可能需要同步原语。
 
-在 v2 的全新并行映射空间中：
-1. 我们将 Thread Block 加载进片上的整个 $Q$ 分块, 按照行维度**静态、绝对独占地**平分给内部的各个 Warp. 例如, Warp 0 独占第 $0 \dots 15$ 行, Warp 1 独占第 $16 \dots 31$ 行.
-2. 在整个自注意力的递推周期中, **Warp 0 独立且完整地负责其所分配行数的所有点积、在线 Softmax 累加与加权求和更新. 所有的中间状态 $m_i$ 和 $d_i$ 物理驻留在该 Warp 内部各线程私有的寄存器中. **
-3. 只有在外循环完全结束、生成最终完整 $O_i$ 时, Warp 0 才通过单次寻址将其一次性写回 HBM.
+这种划分还把矩阵乘的操作数分配得更均匀。论文说明了多查询注意力（MQA）与分组查询注意力（GQA）的映射，实验主要覆盖 head dimension 64 和 128；当前官方 CUDA 实现另支持到 head dimension 256。多个 Query 头共享 Key/Value 头时，调度仍需按实际头映射读取对应的 $K,V$。
 
-这一机制的达成, 带来了质的飞跃：
-由于各个 Warp 独占其负责行的全部计算流程, 它们在计算过程中**不需要与任何其他 Warp 进行任何数据交互, 因而达到了完全的“零片上 Shared Memory Barrier”状态！** 各个 Warp 可以以脱缰野马般的最高速度在 GPU 流处理器内并行奔跑, 算子的整体执行能效实现了超乎想象的飞跃.
+## 4. 反向传播的并行划分
 
-![FlashAttention-2 工作划分与并行结构（论文 Figure 2）](./images/fig-flashattention2-parallel-diagram.jpg)
+反向传播需要计算 $dQ,dK,dV$，但仍不保存完整的注意力矩阵。内核从前向保存的 log-sum-exp 统计量恢复每个分块的 softmax 概率，再计算局部梯度。
 
-> 图 2: FA-2 前向/反向的线程块工作划分（论文 Figure 2）。前向每个 worker 负责注意力矩阵的一块**行**（$Q$）；反向按列块划分。
+前向适合按 Query 行块并行，因为每个输出行可独立完成；反向则要同时累加 Query 与 Key/Value 两侧的梯度。FlashAttention-2 按注意力矩阵的列块分配反向工作，使一个线程块能在扫描 Query 行块时积累对应的 $dK_j,dV_j$，并用适当的规约或原子累加合并 $dQ$ 的分块贡献。这样无需把 $N\times N$ 的概率或梯度矩阵写入 HBM。
 
-**图 2 解析**
+重计算会增加矩阵乘次数，却省去更昂贵的二次规模中间张量读写。序列越长，二者的交换通常越有利；短序列、很小的 head dimension 或启动开销占主导时，收益需要实测。
 
-- **前向按 Q 行划分 worker**：与上文图 1 右栏一致——外循环在 $Q$ 行上并行，不是外循环锁 $K/V$。
-- **Forward / Backward 分面板**：反向需重算或缓存 softmax 统计量 $m,d$；v2 在反向按列块并行，避免全矩阵落盘。
-- **Warp 级分工**：每个 Warp 负责 $Q$ 的若干行，中间 $O,m,d$ 驻留寄存器 — 对应正文 §3 的「零 Shared Memory Barrier」。
+## 5. 性能结果与适用边界
 
-![FlashAttention-2 在 A100 上的加速比（论文 Figure 4）](./images/fig-flashattention2-speedup.jpg)
+论文在 A100 上的注意力微基准中，FlashAttention-2 相对 FlashAttention-1 约为 1.7–3.0 倍，摘要把整体提升概括为约 2 倍；内核达到 A100 理论峰值的 50%–73%，端到端 GPT 风格模型训练最高约为每张 A100 225 TFLOPs/s。范围随序列长度、head dimension、因果掩码和前向或反向而变，不能直接当作任意模型和 GPU 上的固定加速比。
 
-> 图 3: A100 上 FA-2 相对 FA-1 与标准 attention 的端到端加速比，随序列长度变化（论文 Figure 4）。
+FlashAttention-2 论文与核心设计主要围绕 Ampere 展开；当前官方 CUDA 实现的支持范围已经扩展到 Ampere、Ada 和 Hopper，要求 CUDA 12.0 以上，支持 FP16/BF16 与不超过 256 的 head dimension。Turing 使用独立的 `flash-attention-turing` 仓库，只覆盖核心功能子集。这里应区分算法的设计背景与当前软件支持矩阵。
 
-**图 3 解析**
+Hopper 增加了 TMA 与异步 WGMMA，矩阵乘和 softmax 的重叠方式随之改变；[FlashAttention-3](./04-FlashAttention-v3.md) 继续处理这部分硬件流水问题。
 
-- 横轴为序列长度；纵轴为相对 PyTorch 标准 attention 的 speedup。
-- **因果 mask / head dim** 不同子图（论文 (a)(b)(c)）对应不同部署场景 — decode 常用 causal + 小 batch。
-- v2 相对 v1 的额外增益来自 **work partitioning**，而非改公式 — 与 MoBA/NSA 等「改稀疏图」的路线正交，可叠加。
+## 参考资料
 
----
-
-## 4. 参考文献 (References)
-
-- Dao, T. (2023). "FlashAttention-2: Faster attention with better parallelism and work partitioning." arXiv preprint arXiv:2307.08691.
-- NVIDIA Corporation. (2021). "NVIDIA Ampere Architecture Tuning Guide."
+- Tri Dao. [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691), 2023.
+- Tri Dao. [FlashAttention-2 论文 HTML](https://arxiv.org/html/2307.08691), 2023.
+- Dao AI Lab. [flash-attention 官方仓库](https://github.com/Dao-AILab/flash-attention), GitHub.
+- NVIDIA. [NVIDIA Ampere GPU Architecture Tuning Guide](https://docs.nvidia.com/cuda/ampere-tuning-guide/), CUDA Documentation.
