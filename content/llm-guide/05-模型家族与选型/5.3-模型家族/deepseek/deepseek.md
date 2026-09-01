@@ -9,7 +9,7 @@ excerpt: "DeepSeek-Coder、Math、V2/V3/R1、V3.1/V3.2 与 V4 的身份、许可
 
 # DeepSeek 模型家族
 
-> 核验日期：2026-09-01。旧目录中的“DeepSeek-V3.2-Terminus”不是官方身份；正式名称为 **DeepSeek-V3.1-Terminus**，发布日期为 2025-09-22。
+> 核验日期：2026-09-01。官方正式身份是 **DeepSeek-V3.1-Terminus**，发布日期为 2025-09-22；不存在名为“DeepSeek-V3.2-Terminus”的官方版本。
 
 ## 定位与谱系
 

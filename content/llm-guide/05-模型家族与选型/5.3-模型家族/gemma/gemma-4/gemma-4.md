@@ -23,7 +23,7 @@ excerpt: "Gemma 4 Dense/MoE、多模态、thinking 与 Apache 2.0 边界。"
 
 ## 定位与相对变化
 
-Gemma 4 引入 Dense/MoE 多档、可配置 thinking、system role 与更广模态；旧稿把它写成 2025 年且只有“端侧迭代”，已由正式报告纠正。
+Gemma 4 引入 Dense/MoE 多档、可配置 thinking、system role 与更广模态；其正式身份不是 2025 年的单一“端侧迭代”。
 
 ## 已披露事实
 
@@ -41,9 +41,9 @@ Gemma 4 引入 Dense/MoE 多档、可配置 thinking、system role 与更广模�
 
 评测数字只有在模型快照、提示模板、采样、工具链、数据版本和计分器一致时才可横向比较；本页不转抄厂商榜单制造永久排名。
 
-## 迁移说明
+## 证据与版本边界
 
-本页是该身份在公开知识树中的唯一首页。旧第 14 章报告翻译、MinerU 提取物和原图进入 _sources/model-reports/gemma/；未逐项核证的架构解读与重复索引进入 _archive/model-knowledge/gemma/。
+本页按官方身份与一手证据维护唯一正本。产品名、API 型号、底层 checkpoint 与版本日期只有在官方明确映射时才视为同一对象；报告摘录、自动提取文本和未逐项核证的历史解读不构成独立证据。
 
 ## 一手来源
 

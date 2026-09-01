@@ -36,7 +36,7 @@ Claude 2.1 把上限从 100K 提高到 200K。Anthropic 同时提醒超长请求
 
 ## 不应保留的架构猜测
 
-旧稿把 200K 归因为“NTK-aware RoPE、FlashAttention、Ring Attention、PagedAttention”等具体组合。公告没有披露这些实现，不能写成 Claude 2.1 架构事实。可以确定的是对用户可见的上下文、工具和质量变化，而不是内部如何实现。
+Claude 2.1 公告没有披露 200K 上下文由“NTK-aware RoPE、FlashAttention、Ring Attention、PagedAttention”等具体组合实现，因此这些机制不能写成架构事实。可以确定的是对用户可见的上下文、工具和质量变化。
 
 ## 官方来源
 

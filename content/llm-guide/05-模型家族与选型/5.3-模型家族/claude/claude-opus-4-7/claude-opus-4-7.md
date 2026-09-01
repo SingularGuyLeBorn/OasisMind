@@ -4,12 +4,12 @@ category: "模型家族与选型"
 tags: ["claude", "anthropic", "opus", "coding", "vision"]
 published: true
 as_of: "2026-09-01"
-excerpt: "Claude Opus 4.7 的可核验产品事实，以及对旧稿架构臆测的纠正。"
+excerpt: "Claude Opus 4.7 的可核验产品事实与未披露架构边界。"
 ---
 
 # Claude Opus 4.7
 
-> 核验日期：2026-09-01。本页只保留 Anthropic 一手材料支持的产品与评测事实；旧稿的“动态混合稀疏注意力、Meta-Memory”等说法没有官方证据。
+> 核验日期：2026-09-01。本页只保留 Anthropic 一手材料支持的产品与评测事实；“动态混合稀疏注意力、Meta-Memory”等说法没有官方证据。
 
 ## 结论卡
 

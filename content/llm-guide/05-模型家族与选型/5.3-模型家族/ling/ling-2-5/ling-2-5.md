@@ -23,7 +23,7 @@ excerpt: "Ling 2.5 1T 混合线性注意力、1M 扩展与局限。"
 
 ## 定位与相对变化
 
-Ling 2.5 在 Ling 2.0 基础上用混合 MLA/Lightning Linear Attention 改造注意力，并继续预训练；两个旧物理目录已合并为一个身份。
+Ling 2.5 在 Ling 2.0 基础上用混合 MLA/Lightning Linear Attention 改造注意力，并继续预训练；同名材料统一归于这一个官方模型身份。
 
 ## 已披露事实
 
@@ -33,7 +33,7 @@ Ling 2.5 在 Ling 2.0 基础上用混合 MLA/Lightning Linear Attention 改造�
 ## 未披露与证据边界
 
 - 厂商吞吐图依赖 H20/H200、batch=64 等条件，不当作通用延迟结论。
-- 旧“从 O(n²) 到 O(n)”标题过度概括混合架构，已归档而非公开沿用。
+- “从 O(n²) 到 O(n)”过度概括了混合注意力架构，不能作为 Ling 2.5 的复杂度结论。
 
 ## 部署与选型
 
@@ -41,9 +41,9 @@ Ling 2.5 在 Ling 2.0 基础上用混合 MLA/Lightning Linear Attention 改造�
 
 评测数字只有在模型快照、提示模板、采样、工具链、数据版本和计分器一致时才可横向比较；本页不转抄厂商榜单制造永久排名。
 
-## 迁移说明
+## 证据与版本边界
 
-本页是该身份在公开知识树中的唯一首页。旧第 14 章报告翻译、MinerU 提取物和原图进入 _sources/model-reports/ling/；未逐项核证的架构解读与重复索引进入 _archive/model-knowledge/ling/。
+本页按官方身份与一手证据维护唯一正本。产品名、API 型号、底层 checkpoint 与版本日期只有在官方明确映射时才视为同一对象；报告摘录、自动提取文本和未逐项核证的历史解读不构成独立证据。
 
 ## 一手来源
 

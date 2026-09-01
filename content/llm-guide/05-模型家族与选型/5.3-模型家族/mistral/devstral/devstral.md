@@ -49,9 +49,9 @@ Devstral 是与 All Hands AI 合作的 agentic coding 线，包含开放 Small �
 
 适合 agentic software engineering；开放 Small 与企业 Medium 的成本/合规路径分开评估。
 
-## 迁移说明
+## 证据与版本边界
 
-本页是该身份在公开知识树中的唯一首页。产品名、API 型号与底层 checkpoint 只有在官方明确映射时才视为同一对象；旧第 05/14 章材料不再作为平行正文。
+本页按官方身份与一手证据维护唯一正本。产品名、API 型号、底层 checkpoint 与版本日期只有在官方明确映射时才视为同一对象；报告摘录、自动提取文本和未逐项核证的历史解读不构成独立证据。
 
 ## 一手来源
 

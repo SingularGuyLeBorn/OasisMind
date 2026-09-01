@@ -42,8 +42,8 @@ GLM 最初是清华大学知识工程实验室提出的通用预训练方法；G
 | GLM-5V-Turbo | 2026-04-01 | 多模态 API 型号；参数与权重未公开 | [GLM-5V-Turbo](./glm-5v-turbo/glm-5v-turbo.md) |
 | GLM-5.1 | 2026-04-07 | 文本开放权重与 API，MIT | [GLM-5.1](./glm-5-1/glm-5-1.md) |
 | GLM-5.2 | 2026-06-16 | 1M 文本开放权重与 API，MIT | [GLM-5.2](./glm-5-2/glm-5-2.md) |
-| GLM-5.3 | API 2026-08-18；权重 2026-08-28 | 文本开放权重，自定义 GLM-5.3 License | [GLM-5.3](./glm-5-3/glm-5-3.md) |
-| GLM-5.3-Flash | 服务 2026-08-26 | 320B/A18B 原生多模态开放权重，MIT | [GLM-5.3-Flash](./glm-5-3-flash/glm-5-3-flash.md) |
+| GLM-5.3 | 发布/API 2026-08-14；发布记录登记 2026-08-18；权重仓库 2026-08-28 | 文本开放权重，自定义 GLM-5.3 License | [GLM-5.3](./glm-5-3/glm-5-3.md) |
+| GLM-5.3-Flash | API/发布记录 2026-08-26；截至 2026-09-01 权重已公开，精确公开日未单独披露 | 320B/A18B 原生多模态开放权重，MIT | [GLM-5.3-Flash](./glm-5-3-flash/glm-5-3-flash.md) |
 
 ## 选型原则
 

@@ -23,7 +23,7 @@ excerpt: "Ling 2.0 从 mini 到 1T 的高稀疏 MoE 推理家族。"
 
 ## 定位与相对变化
 
-Ling 2.0 统一 mini、flash 和 1T 的高稀疏 MoE 路线，并披露 mid-training、Evo-CoT/DFT 与 FP8/异构流水线；旧章节将日期写成 2024-10，已纠正。
+Ling 2.0 统一 mini、flash 和 1T 的高稀疏 MoE 路线，并披露 mid-training、Evo-CoT/DFT 与 FP8/异构流水线；其正式发布日期不是 2024-10。
 
 ## 已披露事实
 
@@ -33,7 +33,7 @@ Ling 2.0 统一 mini、flash 和 1T 的高稀疏 MoE 路线，并披露 mid-trai
 ## 未披露与证据边界
 
 - “7× equivalent dense”是官方定义和对比口径，不是通用换算公式。
-- Evo-CoT/LPO 等旧专题未逐条核证部分留在归档。
+- Evo-CoT/LPO 等机制只有在报告中逐条核证后才可作为 Ling 2.0 的模型事实。
 
 ## 部署与选型
 
@@ -41,9 +41,9 @@ Ling 2.0 统一 mini、flash 和 1T 的高稀疏 MoE 路线，并披露 mid-trai
 
 评测数字只有在模型快照、提示模板、采样、工具链、数据版本和计分器一致时才可横向比较；本页不转抄厂商榜单制造永久排名。
 
-## 迁移说明
+## 证据与版本边界
 
-本页是该身份在公开知识树中的唯一首页。旧第 14 章报告翻译、MinerU 提取物和原图进入 _sources/model-reports/ling/；未逐项核证的架构解读与重复索引进入 _archive/model-knowledge/ling/。
+本页按官方身份与一手证据维护唯一正本。产品名、API 型号、底层 checkpoint 与版本日期只有在官方明确映射时才视为同一对象；报告摘录、自动提取文本和未逐项核证的历史解读不构成独立证据。
 
 ## 一手来源
 

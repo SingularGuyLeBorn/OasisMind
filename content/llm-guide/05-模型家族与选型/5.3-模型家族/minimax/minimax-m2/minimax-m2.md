@@ -13,7 +13,7 @@ excerpt: "MiniMax-M2 的全注意力 MoE 架构、Agent 定位、上下文和许
 
 MiniMax-M2 于 2025-10-27 发布并开放权重。2026-07-30 修订的 M2 系列技术报告给出 M2 基座的完整口径：229.9B 总参数、9.8B 每 token 激活，62 层 decoder-only Transformer，隐藏维 3,072、词表 200,064；每层使用 full attention（48 个 query heads、8 个 KV heads），MoE 含 256 个细粒度专家、每 token 激活 8 个，并带 MTP 模块。预训练为 29.2T tokens，最大训练上下文 192K。
 
-这意味着旧稿把 M2 写成 MiniMax-Text-01、Lightning Attention 或 4M 上下文，都是身份混淆。官方 API 截至核验日列出的 204,800 是托管服务输入与输出合计上限，也不能反写成 204.8K 原生训练长度。
+M2 不是 MiniMax-Text-01，也没有一手证据证明它采用 Lightning Attention 或 4M 上下文。官方 API 截至核验日列出的 204,800 是托管服务输入与输出合计上限，不能反写成 204.8K 原生训练长度。
 
 ## 定位与边界
 

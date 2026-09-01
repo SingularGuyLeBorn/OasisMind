@@ -22,7 +22,7 @@ excerpt: "Hunyuan Pro 的产品身份与 Hunyuan-Large 研究模型边界。"
 
 ## 发布与证据
 
-Hunyuan Pro 是云服务档位；它与公开报告 Hunyuan-Large 不是可直接画等号的同一 checkpoint。旧稿把两者和 TurboS/Mamba 线混写。
+Hunyuan Pro 是云服务档位；它与公开报告 Hunyuan-Large 不是可直接画等号的同一 checkpoint，也不能与 TurboS/Mamba 产品线合并为一个身份。
 
 ## 相对上代变化
 
@@ -48,11 +48,9 @@ Hunyuan Pro 是云服务档位；它与公开报告 Hunyuan-Large 不是可直�
 - 适合腾讯云产品选型；内部架构应记为未披露。
 - 需要研究混元 MoE 时转到 Hunyuan-Large 页面。
 
-## 迁移说明
+## 证据与版本边界
 
-本页是该身份在公开知识树中的唯一首页。旧第 05/14 章材料已按证据拆入 `_sources` 或 `_archive`；以下只记录其可核验的独有信息，不保留平行教程。
-- `5-主流模型全解/5.2-国内大模型/腾讯混元-Hunyuan/05-Hunyuan-Pro-细粒度MoE与混合Mamba架构的效率突破.md`
-- `14-主流开源模型全景解析与技术报告精读/14.20-Hunyuan/01-Hunyuan-Pro/*`
+本页按官方身份与一手证据维护唯一正本。产品名、API 型号、底层 checkpoint 与版本日期只有在官方明确映射时才视为同一对象；报告摘录、自动提取文本和未逐项核证的历史解读不构成独立证据。
 
 ## 一手来源
 

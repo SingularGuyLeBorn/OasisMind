@@ -13,7 +13,7 @@ excerpt: "Grok 官方版本、开放边界、API 身份与证据日期。"
 
 ## 家族边界
 
-Grok-1 的开放对象是预训练基座；后续 Grok 产品均为闭源服务。产品模式、reasoning 档位、partner endpoint 和底层 checkpoint 分层记录，不从 Grok-1 反推后代架构。Grok 2.5/3.5 没有可靠的一手发布证据，留在归档而不建公开正本。
+Grok-1 的开放对象是预训练基座；后续 Grok 产品均为闭源服务。产品模式、reasoning 档位、partner endpoint 和底层 checkpoint 分层记录，不从 Grok-1 反推后代架构。Grok 2.5/3.5 没有可靠的一手发布证据，因此不列为可验证的公开版本。
 
 ## 版本入口
 

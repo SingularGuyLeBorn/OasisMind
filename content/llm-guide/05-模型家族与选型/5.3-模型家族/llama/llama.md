@@ -15,7 +15,7 @@ excerpt: "从研究许可的 LLaMA 到原生多模态 MoE Llama 4：版本身份
 
 Llama 是 Meta 的基础模型家族。2023 年的初代 **LLaMA** 是面向研究者、非商业且受控访问的文本基座；Llama 2 起转为允许多数商业用途的自定义社区许可；Llama 3 系列扩展了词表、训练规模、上下文、多语言和视觉；Llama 4 则改为原生多模态 MoE。版本名相近不代表权重、提示格式、上下文或许可可以互换。
 
-截至核验日，Meta 官方 `llama-models` 清单仍列到 Llama 4。Muse Spark 虽同属 Meta 的模型产品，但不是一个 Llama 版本，因此旧第 14 章中混入的 Muse Spark 材料只保留在隐藏归档，不并入本谱系。
+截至核验日，Meta 官方 `llama-models` 清单仍列到 Llama 4。Muse Spark 虽同属 Meta 的模型产品，但不是一个 Llama 版本，因此不并入本谱系。
 
 ## 谱系
 

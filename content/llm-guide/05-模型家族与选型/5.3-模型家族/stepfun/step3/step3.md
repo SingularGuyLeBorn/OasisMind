@@ -27,7 +27,7 @@ excerpt: "321B/38B 激活的多模态 MoE：MFA 注意力、AFD 解耦推理、6
 
 ## MFA：不是只追求更小 KV
 
-Multi-Matrix Factorization Attention 在 QK 电路中使用低秩分解，同时保留较多 Query 头。报告的设计目标不是把 KV Cache 压到最小，而是在 KV 访问和注意力计算强度间找到适配多类硬件的平衡。旧文章把它简写成 GQA 或“动态 KV 换入换出”会丢失关键：MFA 是模型架构，缓存调度是系统实现，两者不能互换。
+Multi-Matrix Factorization Attention 在 QK 电路中使用低秩分解，同时保留较多 Query 头。报告的设计目标不是把 KV Cache 压到最小，而是在 KV 访问和注意力计算强度间找到适配多类硬件的平衡。MFA 不能简写成 GQA 或“动态 KV 换入换出”：前者是模型架构，缓存调度是系统实现，两者不能互换。
 
 ## AFD：部署架构而非模型层
 

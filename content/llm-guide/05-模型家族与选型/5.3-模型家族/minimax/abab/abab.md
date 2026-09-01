@@ -17,9 +17,9 @@ excerpt: "MiniMax 早期 abab 专有模型线的可核验身份与披露边界�
 
 ## 披露边界
 
-- 官方没有为 abab 文本线发布可下载 checkpoint、可复验配置文件或一份对应旧稿内容的独立技术报告。
+- 官方没有为 abab 文本线发布可下载 checkpoint、可复验配置文件或可支撑精确内部架构结论的独立技术报告。
 - “1T”来自厂商发布口径；未同时披露激活参数、层数、专家数和训练数据，因此不能据此重建 MoE 表格。
-- 官方曾在公司级材料中提到 MoE 与 Linear Attention 研发，但这不足以证明旧稿为 ABAB 编造的 Top-K、专家数、DPO/PPO、tokenizer 和多模态融合细节。
+- 官方曾在公司级材料中提到 MoE 与 Linear Attention 研发，但这不足以证明 ABAB 采用特定 Top-K、专家数、DPO/PPO、tokenizer 或多模态融合细节。
 - 许可、API 可用性与现行服务状态均需查看当时/当前服务条款；这里不把历史 API 当成今天仍可调用的 SKU。
 
 ## 一手来源

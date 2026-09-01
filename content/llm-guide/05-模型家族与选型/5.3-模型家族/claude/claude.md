@@ -134,6 +134,6 @@ Anthropic 公开过 Constitutional AI：让模型依据一组原则进行自我�
 - [Constitutional AI](https://www.anthropic.com/news/constitutional-ai-harmlessness-from-ai-feedback)
 - [Claude's new constitution](https://www.anthropic.com/research/claude-new-constitution)
 
-## 迁移说明
+## 证据与版本边界
 
-旧知识库中的全部 Markdown、PDF、HTML 与图片均按字节和 SHA-256 建账。可靠的一手快照进入隐藏来源区；推测性旧稿、失效网页快照、占位页与重复资产进入隐藏归档区。公开页不再保留“先写推测、末尾再追加纠错”的双重叙事。
+本页按官方身份与一手证据维护唯一正本。网页快照、报告转录与历史解读只用于核对，不能覆盖官方版本身份，也不能把未披露的参数、训练方法或能力边界写成事实。

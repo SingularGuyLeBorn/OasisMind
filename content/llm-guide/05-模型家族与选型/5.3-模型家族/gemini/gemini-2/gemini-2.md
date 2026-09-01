@@ -21,7 +21,7 @@ Gemini 2.0 的首发节点是 2024-12-11 的 **Gemini 2.0 Flash experimental**�
 | 2025-02-05 | Gemini 2.0 Pro experimental | 2M 上下文，定位代码与复杂提示；仅实验发布 |
 | 2025-02 | Gemini 2.0 Flash-Lite | 成本与延迟优化的服务档位 |
 
-Google DeepMind 的模型卡索引特别注明：Gemini 2.0 Pro **只以 experimental 形式发布**。旧稿把它写成 2024-12 已 GA 的旗舰，会混淆 Flash 首发和 Pro 实验档。
+Google DeepMind 的模型卡索引特别注明：Gemini 2.0 Pro **只以 experimental 形式发布**，不能把它写成 2024-12 已 GA 的旗舰，也不能混淆 Flash 首发和 Pro 实验档。
 
 ## 官方确认的能力
 

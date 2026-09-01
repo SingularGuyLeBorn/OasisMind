@@ -27,7 +27,7 @@ excerpt: "GLM-Z1-0414 推理与沉思检查点的训练关系、上下文和工�
 
 ## 工具与提示词限制
 
-普通 GLM-Z1 可通过对话模板传入工具。Rumination 版本不支持任意 system prompt 或自定义工具；模板绑定 `search`、`click`、`open`、`finish` 四类工具，并需要外部搜索/检索 API。旧稿把它写成“模型内置联网”会掩盖系统依赖。
+普通 GLM-Z1 可通过对话模板传入工具。Rumination 版本不支持任意 system prompt 或自定义工具；模板绑定 `search`、`click`、`open`、`finish` 四类工具，并需要外部搜索/检索 API，因此不能将其描述为“模型内置联网”。
 
 ## 许可
 

@@ -23,7 +23,7 @@ excerpt: "inclusionAI Ling Lite/Plus、2.0、2.5 与 2.6 的稀疏 MoE 谱系和
 
 ## 能力边界
 
-- Lite 与 Plus 共用 2025 报告，但不是同一尺寸；旧稿的两个重复“纯中文精译”只作为来源快照。
+- Lite 与 Plus 共用 2025 报告，但不是同一尺寸；报告转录或翻译不能替代两个版本各自的身份页。
 - Ling 2.0 论文覆盖 mini/flash/1T，不能把 1T 配方全部复制到 mini。
 - Ling 2.5 的 1M 是 YaRN 扩展口径；Ling 2.6 的 1T 与 flash 参数、激活量和目标不同。
 

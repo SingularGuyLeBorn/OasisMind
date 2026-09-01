@@ -25,7 +25,7 @@ excerpt: "V3.1 的稳定性/Agent 后训练更新，不是 DeepSeek-V3.2，也�
 ## 已披露事实
 
 - 官方更新聚焦中英混杂和异常字符减少，以及 Code Agent/Search Agent 能力优化。
-- 旧目录把它命名为 V3.2-Terminus 并给出 2025-06 日期，均与官方 2025-09-22 发布身份冲突，已纠正。
+- 官方正式名称是 V3.1-Terminus，发布日期为 2025-09-22；“V3.2-Terminus”和 2025-06 均不是官方发布身份。
 - 模型卡披露当前 checkpoint 的 self_attn.o_proj 存在 UE8M0 FP8 scale 已知问题。
 
 ## 证据边界

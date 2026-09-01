@@ -25,7 +25,8 @@ excerpt: "按文本、视觉语言与全模态三条谱系梳理 MiniCPM，区�
 
 | 身份 | 首次公开时间 | 已核验定位 | 页面 |
 |---|---:|---|---|
-| MiniCPM 1.x/2.x | 2024-04 | 1.2B/2.4B 非嵌入参数的文本模型；含 DPO、128K、MoE 变体 | [MiniCPM 初代](./minicpm/minicpm.md) |
+| MiniCPM-2B | 2024-02-01 | 2.4B 非嵌入参数口径的早期主模型，含 base/SFT/DPO 身份 | [MiniCPM 初代](./minicpm/minicpm.md) |
+| MiniCPM-1B / 2B-128K / MoE-8x2B | 2024-04-11 | 1.2B 级小模型、长上下文检查点与稀疏专家变体 | [MiniCPM 初代](./minicpm/minicpm.md) |
 | MiniCPM-S-1B | 2024 | ProSparse 激活稀疏实验检查点 | [MiniCPM-S](./minicpm-s/minicpm-s.md) |
 | MiniCPM3-4B | 2024-09 | 4B 文本模型，32K 模型窗口，支持函数调用 | [MiniCPM3](./minicpm3/minicpm3.md) |
 | MiniCPM4 | 2025-06-06 | 0.5B/8B 端侧文本模型，InfLLM-V2 稀疏注意力 | [MiniCPM4](./minicpm4/minicpm4.md) |
