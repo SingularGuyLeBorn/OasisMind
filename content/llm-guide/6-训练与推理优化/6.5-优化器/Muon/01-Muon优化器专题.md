@@ -1037,7 +1037,7 @@ Muon、Sophia、Adam-mini 三者共同勾勒出 2025–2026 年优化器研究�
 
 ## 2026-08 修订
 
-上文把 Newton–Schulz 推完了，停在「Muon + AdamW 混用」。后面两件事不要到第 14 章才第一次看见：
+上文把 Newton–Schulz 推完了，停在「Muon + AdamW 混用」。后面两件事不要到型号报告页才第一次看见：
 
 - **Polar Express** 替换的是 $\mathrm{polar}(M)$ 的多项式，不是优化器品牌；BF16 仍可能 spike。
 - **MuonClip / QK-Clip** 是更新后按头缩放 $W_q,W_k$，不是梯度裁剪。

@@ -7,14 +7,14 @@ tags: [Muon, MuonClip, QK-Clip, Polar Express, AdamW, 优化器]
 
 # MuonClip 与 Polar Express：AdamW 对照轴上的两把刀
 
-> 邻居：[01 Muon 专题](./01-Muon优化器专题.md)（Newton–Schulz 推导住在那里，本篇不重推）· [6.5.1 SGD→AdamW](../6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md) · 模型侧用法：[K2 架构专题 §2](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/02-Kimi-K2/05-Kimi-K2-Architecture-Overview.md) · [Step-3.5-Flash](../../../14-主流开源模型全景解析与技术报告精读/14.7-StepFun/03-Step-3.5-Flash/05-Step-3.5-Flash-Architecture-Overview.md)
+> 邻居：[01 Muon 专题](./01-Muon优化器专题.md)（Newton–Schulz 推导住在那里，本篇不重推）· [6.5.1 SGD→AdamW](../6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md) · 模型侧用法：[Kimi K2 正本 §2](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k2/kimi-k2.md) · [Step 3.5 Flash](../../../05-模型家族与选型/5.3-模型家族/stepfun/step3-5-flash/step3-5-flash.md)
 
 AdamW 把每个权重当成独立标量；Muon 把二维层当成矩阵，走谱范数意义下的最速下降。2025–2026 的训练报告里，真正把这套跑到万亿 MoE 上的，不是再发明一个「Muon 2」，而是两件更窄的事：
 
 1. **极分解怎么算**——固定 Newton–Schulz 太慢起步、启发式多项式又不一定收敛；*Polar Express* 换了一组逐步最优的奇多项式。
 2. **注意力 logit 怎么炸**——Muon 的满秩更新会把 $W_q W_k^\top$ 的谱范数平方放大；*QK-Clip* 在优化步之后按头缩放权重。Muon + 衰减 + RMS 对齐 + QK-Clip = **MuonClip**。
 
-本篇只把这两件事放到第 6.5 章对照 AdamW。K2 / Step 报告里「这次捆了它」的叙事仍在第 14 章，不在这里复制。
+本篇只把这两件事放到第 6.5 章对照 AdamW。K2 / Step 报告里「这次捆了它」的叙事统一回到第 05 章对应版本正本，不在这里复制。
 
 ## 1. 先把三套更新写在同一张纸上
 
@@ -141,7 +141,7 @@ MLA 不能动共享的旋转 Key。K2 Algorithm 1 的落地是：
 - 头专有的旋转 $q^R$：乘 $\gamma_h$（只动 Q 侧，补偿 $\sqrt{\gamma}\cdot\sqrt{\gamma}$）
 - 共享旋转 $k^R$：**不动**，以免一个头的裁剪泄漏到所有头
 
-关键约束：缩放发生在 **本步权重更新之后**。当前 step 的前向/反向已经用旧权重算完，$S_{\max}^h$ 只当传感器。所以这不是梯度裁剪，也不是改注意力公式。第 5 章有一处 2025 叙事写成「梯度裁剪」，那是误读，勘误见 [月之暗面-Kimi](../../../5-主流模型全解/5.2-国内大模型/月之暗面-Kimi/月之暗面-Kimi.md) 修订节。
+关键约束：缩放发生在 **本步权重更新之后**。当前 step 的前向/反向已经用旧权重算完，$S_{\max}^h$ 只当传感器。所以这不是梯度裁剪，也不是改注意力公式。旧第 5 章曾把它误读为「梯度裁剪」，该稿已归档；正确口径见 [Kimi K2 正本](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k2/kimi-k2.md)。
 
 ### 3.3 自停用，以及 $\tau$ 不是魔法数
 
@@ -169,15 +169,14 @@ MuonClip = Muon + 权重衰减 + RMS 对齐 + QK-Clip。少写任何一块，都
 
 - Newton–Schulz 逐步推导：[01](./01-Muon优化器专题.md)
 - SGD→AdamW 速览（2025 原文 + 修订指针）：[6.5.1](../6.5.1-优化器综述：从SGD到AdamW/6.5.1-优化器综述：从SGD到AdamW.md)
-- K2 报告里的 Algorithm 1 与 MLA 特例：第 14 章 K2，不在本篇展开 MoE
+- K2 报告里的 Algorithm 1 与 MLA 特例：[Kimi K2 正本](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k2/kimi-k2.md)，不在本篇展开 MoE
 - 残差主干 xHC 与 Muon 正交（xHC 论文的实验声明）：[02-xHC](../../../2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)
 
 ## 参考文献
 
 1. Amsel, N., Persson, D., Musco, C., & Gower, R. M. (2025). *The Polar Express: Optimal Matrix Sign Methods and Their Application to the Muon Algorithm*. https://arxiv.org/abs/2505.16932 （本篇打开 HTML：摘要、§1–1.3、§2 多项式对照、§4.4 有限精度、Figure 1 数字、Algorithm 1）
-2. Moonshot AI. *Kimi K2: Open Agentic Intelligence*. https://arxiv.org/abs/2507.20534 （MuonClip / QK-Clip / Algorithm 1 / 附录 D；本库 `14.5-Kimi/02-Kimi-K2/03-Kimi-K2-mineru-en.md` 与精译）
+2. Moonshot AI. *Kimi K2: Open Agentic Intelligence*. https://arxiv.org/abs/2507.20534 （MuonClip / QK-Clip / Algorithm 1 / 附录 D；本库导航见 [Kimi K2 正本](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k2/kimi-k2.md)）
 3. Loshchilov, I., & Hutter, F. (2019). *Decoupled Weight Decay Regularization*. https://arxiv.org/abs/1711.05101
 4. StepFun. Step-3.5-Flash 技术报告（本库 mineru-en：Polar Express $T=6$，BF16 spike → 迭代转 float16）
 5. Qwen. *Qwen3.8-Flash-Next* 官方博文：https://qwen.ai/blog?id=qwen3.8-flash-next （2D Muon + 其余 AdamW；技术报告 PDF 本篇未读）
 6. Kimi K3 Per-Head Muon 与 P2P 正交化：https://arxiv.org/html/2607.24653 §2.5、§5.2.2
-

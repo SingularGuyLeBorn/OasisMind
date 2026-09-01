@@ -1,14 +1,14 @@
 ---
-title: "07 · CSA-HCA：混合压缩注意力"
+title: "CSA-HCA：DeepSeek-V4 混合压缩注意力"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [DeepSeek-V4, CSA, HCA, 长上下文, 稀疏注意力, DSA]
 ---
 
-# 07 CSA-HCA：DeepSeek-V4 混合压缩注意力
+# CSA-HCA：DeepSeek-V4 混合压缩注意力
 
 > 系列索引：[2.3.2 稀疏与压缩注意力](../2.3.2-稀疏与压缩注意力.md) · [2.3 高效与稀疏注意力](../../2.3-高效与稀疏注意力.md)  
-> 论文：[DeepSeek-V4 Technical Report](https://arxiv.org/abs/2601.0001)（项目内 MinerU 稿：[deepseek-v4.md](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/pdfs/deepseek-v4/hybrid_auto/deepseek-v4.md)）
+> 论文：[DeepSeek-V4 Technical Report](https://arxiv.org/abs/2601.0001)（项目内 MinerU 稿：[deepseek-v4.md](../../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v4/deepseek-v4.md)）
 
 DeepSeek-V4 将上下文推至 **1M tokens**，核心不是替换 Transformer，而是 **混合压缩注意力**：**CSA（Compressed Sparse Attention）** 负责「精准找相关」，**HCA（Heavily Compressed Attention）** 负责「全局不遗漏」。在 1M 场景下，V4-Pro 相对 V3.2：**单 token FLOPs ≈ 27%，KV Cache ≈ 10%**（论文 Figure 1 右图）。
 

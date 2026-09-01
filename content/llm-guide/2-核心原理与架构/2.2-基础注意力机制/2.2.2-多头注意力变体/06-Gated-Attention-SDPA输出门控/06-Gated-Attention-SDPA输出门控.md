@@ -1,11 +1,11 @@
 ---
-title: "06 · Gated Attention：SDPA 输出上的逐头 sigmoid 门"
+title: "Gated Attention：SDPA 输出上的逐头 sigmoid 门"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [Gated-Attention, SDPA, sigmoid, attention-sink, Qiu, NeurIPS-2025]
 ---
 
-# 06 Gated Attention：SDPA 输出上的逐头 sigmoid 门
+# Gated Attention：SDPA 输出上的逐头 sigmoid 门
 
 Gated Attention 是给标准 softmax 注意力加的一小段门：Scaled Dot-Product Attention（SDPA）算出每个头的输出 $Y$ 之后，再用 **head-specific sigmoid** 做逐元素乘。Qiu、Wang、Zheng、Huang 等人在 [Gated Attention for Large Language Models](https://arxiv.org/abs/2505.06708)（NeurIPS 2025 Oral）里把这件事写成
 
@@ -14,7 +14,7 @@ Y'=Y\odot\sigma(XW_\theta),
 \tag{1}
 $$
 
-其中 $X$ 是 **pre-norm 之后** 的隐状态（论文式 (5) 脚注 1），不是残差主干上未经归一化的 $h$。记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $Q,K,V,W_O$；本篇只回答「门加在注意力子层的哪一截、为什么 $G_1$ 赢」。它**不是** [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支残差读门，也**不是** [SwiGLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) / [PowLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/04-PowLU-Ling对SwiGLU的稳定化改写/04-PowLU-Ling对SwiGLU的稳定化改写.md) / [SiTU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 那种 FFN 激活。Qwen3-Next 把推荐的 SDPA 输出门捆进产品，第 14 章只链 [Qwen 家族](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/14.2-Qwen.md) / [Qwen3.5 架构](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/10-Qwen3.5/05-Qwen3.5-Architecture-Overview.md)，不在这里抄整份 Next 报告。
+其中 $X$ 是 **pre-norm 之后** 的隐状态（论文式 (5) 脚注 1），不是残差主干上未经归一化的 $h$。记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $Q,K,V,W_O$；本篇只回答「门加在注意力子层的哪一截、为什么 $G_1$ 赢」。它**不是** [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支残差读门，也**不是** [SwiGLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) / [PowLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/04-PowLU-Ling对SwiGLU的稳定化改写/04-PowLU-Ling对SwiGLU的稳定化改写.md) / [SiTU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 那种 FFN 激活。Qwen3-Next 把推荐的 SDPA 输出门捆进产品，版本事实只链 [Qwen 模型家族](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen.md) / [Qwen3.5](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3-5/qwen3-5.md)，不在这里抄整份 Next 报告。
 
 ---
 
@@ -168,7 +168,7 @@ Qwen3-Next 的层日程是 **3:1**：每四层里三层 [Gated DeltaNet](../../.
 
 残差仍是普通 $x+F(x)$。不要把「Next 也有 Gate」读成 [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支读门，也不要把 GDN 的头级遗忘写成 $G_1$。日程形状和 [Kimi Linear](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) 的 3:1 像，积木不同：Qwen 是 GDN + 带 $G_1$ 的全注意力；Kimi 是 KDA + MLA。
 
-Qwen3.5 继承这套骨架，后来把部分全注意力层换成 [QSA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)；换的是检索怎么稀疏，$G_1$ 仍是全注意力层上的 SDPA 输出门。某次发版把哪些层捆进 397B、吞吐怎么写，见 [Qwen 14.2](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/14.2-Qwen.md)——这边不抄报告表。
+Qwen3.5 继承这套骨架，后来把部分全注意力层换成 [QSA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md)；换的是检索怎么稀疏，$G_1$ 仍是全注意力层上的 SDPA 输出门。某次发版把哪些层捆进 397B、吞吐怎么写，见 [Qwen 模型家族](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen.md)——这边不抄报告表。
 
 ---
 
@@ -200,5 +200,5 @@ Gated Attention 推荐配置就一句：**SDPA 之后、head-specific（elementw
 2. 官方实现：[qiuzh20/gated_attention](https://github.com/qiuzh20/gated_attention)（`Qwen3Attention`：SDPA 后 `sigmoid` 再 `o_proj`）。
 3. Attention sink 邻居：Xiao et al. (2023). [StreamingLLM](https://arxiv.org/abs/2309.17453)，本库 [10 文](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 4. Massive activation：Sun, Chen, Kolter, Liu (2024). [Massive Activations in Large Language Models](https://arxiv.org/abs/2402.17762)。
-5. 整机插槽：Qwen3-Next 3:1 = GDN + 带 $G_1$ 的全注意力（§5.4）；产品发版表只链 [Qwen 14.2](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/14.2-Qwen.md)。
+5. 整机插槽：Qwen3-Next 3:1 = GDN + 带 $G_1$ 的全注意力（§5.4）；产品发版表只链 [Qwen 模型家族](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen.md)。
 6. **不是** 残差四分支门：[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。

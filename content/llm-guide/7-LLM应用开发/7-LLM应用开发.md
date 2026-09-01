@@ -21,7 +21,7 @@ tags: [LLM应用, Prompt工程, RAG, Agent, Function Calling, MCP, 上下文工�
 | 7.9 | [AutoResearch](./7.9-AutoResearch/7.9-AutoResearch.md) | 自主文献调研、信息检索、知识综合 |  |
 | 7.10 | [LLMWiki](./7.10-LLMWiki/7.10-LLMWiki.md) | 自动Wiki生成、知识抽取、知识验证 |  |
 
-> 更多 Agent 深度内容见 [第 13 章: Agent 系统](../../13-Agent/13-Agent.md), 涵盖 Agent 组件、Agentic RL、多 Agent 系统、设计模式与 IDE 解析. 
+> 更多 Agent 深度内容见 [Agent 系统](../13-Agent/13-Agent.md)，涵盖 Agent 组件、Agentic RL、多 Agent 系统、设计模式与 IDE 解析。后续会随根目录统一并入第 07 章，但在迁移提交完成前保持当前有效路径。
 
 ## 1. 章节定位与价值
 

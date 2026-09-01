@@ -8,7 +8,7 @@ category: LLM 指南
 
 # MOPD：多教师蒸馏
 
-分域 RL 能把数学、代码、agent 各自推到峰值，交付却只要**一份**权重。多教师在线蒸馏做的事很窄：学生 $\pi_\theta$ **自己采样**，按题目找对应教师，用教师分布给学生稠密监督，把多份专家并进一个学生。本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」专文，记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 reverse KL 与 on-policy 采样。**不是** 把三家合成一条「标准 MOPD」：DeepSeek-V4 报告仍叫 **OPD**（全词表 reverse KL）；Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词，损失和裁剪也不一样。正文以各家原始报告为证据，并把模型身份统一收口到第 5 章。
+分域 RL 能把数学、代码、agent 各自推到峰值，交付却只要**一份**权重。多教师在线蒸馏做的事很窄：学生 $\pi_\theta$ **自己采样**，按题目找对应教师，用教师分布给学生稠密监督，把多份专家并进一个学生。本文是 [4.6 OPD](../4.6-OPD.md) 里「多教师合并」专文，记号沿用 [01-OPD-学生前缀蒸馏](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md) 的 reverse KL 与 on-policy 采样。**不是** 把三家合成一条「标准 MOPD」：DeepSeek-V4 报告仍叫 **OPD**（全词表 reverse KL）；Kimi K3 与 MiMo-V2-Flash 才用 **MOPD** 这个词，损失和裁剪也不一样。正文以各家原始报告为证据，并把模型身份统一收口到第 05 章版本正本。
 
 ---
 
@@ -36,7 +36,7 @@ category: LLM 指南
 
 ## 2. DeepSeek-V4：名字仍是 OPD，式 (29) 是全词表 reverse KL
 
-一手：库内 [V4 mineru-en §5.1.2](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md)。后训练骨架沿 V3.2，但 **mixed RL 合并阶段整段换成 OPD**（引 MiniLLM；Thinking Machines Lab 的 on-policy distillation）。专家先分域 SFT + GRPO，再蒸进一个学生。这一阶段用了 **十余个**覆盖多域的教师。
+一手：库内 [V4 mineru-en §5.1.2](../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v4/deepseek-v4.md)。后训练骨架沿 V3.2，但 **mixed RL 合并阶段整段换成 OPD**（引 MiniLLM；Thinking Machines Lab 的 on-policy distillation）。专家先分域 SFT + GRPO，再蒸进一个学生。这一阶段用了 **十余个**覆盖多域的教师。
 
 给定专家集合 $\{\pi_{E_1},\ldots,\pi_{E_N}\}$，报告式 (29)：
 
@@ -83,7 +83,7 @@ V4 §5.1.2 **没有**给出「蒸馏前学生 / 教师 / 蒸馏后学生」对�
 
 ## 3. Kimi K3：九个 RL 专家，式 (15) 是 clip 过的对数比
 
-一手：K3 报告 HTML §4.1.3（公式以 HTML 为准）；库内 [架构精译 §8](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md) 只作导航。流水线三阶段：SFT 冷启动 → 分域分 effort 的 RL → **MOPD** 合成一份权重。
+一手：K3 报告 HTML §4.1.3（公式以 HTML 为准）；库内 [Kimi K3 正本 §8](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md) 只作导航。流水线三阶段：SFT 冷启动 → 分域分 effort 的 RL → **MOPD** 合成一份权重。
 
 三个域、每域三档 reasoning effort $\{\mathrm{low},\mathrm{high},\mathrm{max}\}$，共 **九个**专家：
 
@@ -235,8 +235,8 @@ V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-
 
 ## 参考文献
 
-1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告。§5.1.2 式 (29)、§5.2.2 教师调度。库内：[03-DeepSeek-V4-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/10-DeepSeek-V4/03-DeepSeek-V4-mineru-en.md)。
-2. Moonshot AI. (2026). Kimi K3 技术报告。§4.1.3 式 (15)。公式以 HTML 为准。导航：[01-Kimi-K3-架构精译.md](../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
+1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告。§5.1.2 式 (29)、§5.2.2 教师调度。库内：[03-DeepSeek-V4-mineru-en.md](../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v4/deepseek-v4.md)。
+2. Moonshot AI. (2026). Kimi K3 技术报告。§4.1.3 式 (15)。公式以 HTML 为准。导航：[Kimi K3 正本](../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md)。
 3. Xiaomi LLM-Core. (2026). [MiMo-V2-Flash 技术报告](https://arxiv.org/abs/2601.02780)。§4.1、§4.4 式 (5)–(9)、Table 7；版本入口见 [MiMo-V2-Flash](../../../05-模型家族与选型/5.3-模型家族/mimo/mimo-v2-flash/mimo-v2-flash.md)。
 4. Ma et al. (2026). 《MOPD》因式论文。Qwen3-30B-A3B Table 2；与 Flash 正文公式分列，不合并超参。链接只在 inbox。
 5. MiniLLM；Agarwal et al. on-policy distillation / GKD；Lu and Thinking Machines Lab (2025) On-Policy Distillation——三家报告共同引用的单教师祖先，细节在 [01](../01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md)。

@@ -209,7 +209,7 @@ Table 4 其余设计选择（同一 16 头档）：输入相关查询能再降�
 
 ## 7. 整机插槽：只改残差聚合，不改 KDA/MLA 日程
 
-AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，每层后面仍跟 MoE FFN。改的是子层输出怎样写回、下一子层怎样读历史，不是把 MLA 的 KV 压缩换成另一套，也不是给 SDPA 加 $G_1$。K3 把 Block AttnRes 接到 93 层 MoE 上，MTP / EAGLE-3 风格草稿融合的是 **第 1、第 4、最后一块** AttnRes 特征，不是随便抽三层 Transformer；捆法见 [K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)，公式仍是上文式 (1)–(6)。
+AttnRes 插在 Kimi Linear 里时，**层日程仍是 3 层 KDA : 1 层 MLA**，每层后面仍跟 MoE FFN。改的是子层输出怎样写回、下一子层怎样读历史，不是把 MLA 的 KV 压缩换成另一套，也不是给 SDPA 加 $G_1$。K3 把 Block AttnRes 接到 93 层 MoE 上，MTP / EAGLE-3 风格草稿融合的是 **第 1、第 4、最后一块** AttnRes 特征，不是随便抽三层 Transformer；捆法见 [Kimi K3 正本](../../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md)，公式仍是上文式 (1)–(6)。
 
 Kimi 主干里有 AttnRes，不表示 Qwen 主干里也有。Qwen3-Next 的 3:1 是 GDN + 带 $G_1$ 的全注意力；Qwen3.8 残差旗舰是 GR。两家都可以讨论稀释，解法不是同一个算子。
 
@@ -245,6 +245,6 @@ AttnRes 把深度维上的聚合从「所有历史层权重 1」换成「当前�
 1. Kimi Team, Chen, G., Zhang, Y., Su, J., et al. (2026). [Attention Residuals](https://arxiv.org/abs/2603.15031). *arXiv:2603.15031*. HTML：[arxiv.org/html/2603.15031](https://arxiv.org/html/2603.15031)。本篇式 (1)–(8)、(10) 与 Table 1–5 按该 HTML / PDF 核对。
 2. 官方仓库：[MoonshotAI/Attention-Residuals](https://github.com/MoonshotAI/Attention-Residuals)（`master` 分支 README：伪查询公式、Block 伪代码、48B Table 节选）。
 3. 48B 所接骨架：Zhang et al. (2025). [Kimi Linear](https://arxiv.org/abs/2510.26692)。
-4. K3 对 Block 的划块与 MTP 取块：[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2；本库 [K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
+4. K3 对 Block 的划块与 MTP 取块：[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2；本库 [Kimi K3 正本](../../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md)。
 5. **不是** $G_1$：[06](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md)（Qiu et al., arXiv:2505.06708）。
 6. **不是** mHC / xHC / GR：[01 mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md)、[02 xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)、[03 GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md)。Qwen3.8 Table 6 数字来自该报告的残差消融，不是 AttnRes 论文的表。

@@ -11,7 +11,7 @@ tags: [Hyper-Connections, mHC, residual, Sinkhorn, Birkhoff]
 
 后文把 $n$ 再扩到 16 见 [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md)；加宽但丢掉 $H_{\mathrm{res}}$、改用逐元素读门见 [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md)。**不是** HCA / CSA，也不是 [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)，更不是 Tay 等人把注意力块做置换的 Sparse Sinkhorn Attention。
 
-> 邻居：[2.1.3 残差](../2.1.3-残差连接.md) · 发布捆：[GLM-5.3-Flash D2](../../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)
+> 邻居：[2.1.3 残差](../2.1.3-残差连接.md) · 发布捆：[GLM-5.3-Flash](../../../../05-模型家族与选型/5.3-模型家族/glm/glm-5-3-flash/glm-5-3-flash.md)
 
 ## 1. 标准残差真正强在哪：递归展开后的保险丝
 
@@ -229,7 +229,7 @@ Transformer 一层仍是 Norm → Attn/FFN → 残差合并。mHC 改的是**合
 - 记忆账：残差激活变 $n$ 倍，要重计算 / 融核，不是「白捡宽度」。
 - 扩展账：再把 $n$ 从 4 拉到 16，写回方向太瘦、混合矩阵生成太贵，那是 [02 xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) 的问题，本篇不重推。
 
-发布捆只链、不在这里重推第 14 章整机。智谱 GLM-5.3-Flash（[Z.ai 文档](https://docs.z.ai/guides/vlm/glm-5.3-flash)）把 mHC 写成进一步提高 scaling efficiency 的**残差侧**改动，注意力侧另走 KDA + 稀疏 MLA。Hugging Face `config.json`：`mhc: true`，`hc_mult: 4`，`hc_sinkhorn_iters: 20`，`hc_eps: 1e-6`。四流、二十次迭代、与论文主设定对齐；$\varepsilon$ 防除零。完整捆法：[Flash D2](../../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)。
+发布捆只链、不在这里重推模型整机。智谱 GLM-5.3-Flash（[Z.ai 文档](https://docs.z.ai/guides/vlm/glm-5.3-flash)）把 mHC 写成进一步提高 scaling efficiency 的**残差侧**改动，注意力侧另走 KDA + 稀疏 MLA。Hugging Face `config.json`：`mhc: true`，`hc_mult: 4`，`hc_sinkhorn_iters: 20`，`hc_eps: 1e-6`。四流、二十次迭代、与论文主设定对齐；$\varepsilon$ 防除零。完整捆法：[GLM-5.3-Flash 正本](../../../../05-模型家族与选型/5.3-模型家族/glm/glm-5-3-flash/glm-5-3-flash.md)。
 
 ## 10. 和邻居的「不是」
 

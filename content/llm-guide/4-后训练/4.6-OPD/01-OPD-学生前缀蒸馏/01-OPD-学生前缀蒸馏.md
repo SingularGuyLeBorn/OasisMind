@@ -1,13 +1,13 @@
 ---
-title: "01 · OPD：学生前缀蒸馏"
+title: "OPD：学生前缀蒸馏"
 date: 2026-05-16
 tags: [OPD, On-Policy Distillation, Reverse KL, MiniLLM, GKD, 知识蒸馏, 后训练]
 as_of: 2026-08-30
 ---
 
-# 01 · OPD：学生前缀蒸馏
+# OPD：学生前缀蒸馏
 
-本库 OPD 的全称是 **On-Policy Distillation**：学生按当前策略自己采样轨迹，教师只在这些学生前缀上给逐 token 的密集监督。卡住的瓶颈是 off-policy 蒸馏只在教师/数据集前缀上教、推理却走学生自己的前缀（暴露偏差），而 RL 虽然 on-policy，监督却往往稀到整条轨迹一个标量。本篇是 [4.6-OPD](../4.6-OPD.md) 的地基专文；Qwen3 的数字只引用 Table 21，厂商捆法见第 14 章，不在这里再抄一遍。**不是** Online Preference Distillation，也不是把 DPO 换个名字。
+本库 OPD 的全称是 **On-Policy Distillation**：学生按当前策略自己采样轨迹，教师只在这些学生前缀上给逐 token 的密集监督。卡住的瓶颈是 off-policy 蒸馏只在教师/数据集前缀上教、推理却走学生自己的前缀（暴露偏差），而 RL 虽然 on-policy，监督却往往稀到整条轨迹一个标量。本篇是 [4.6-OPD](../4.6-OPD.md) 的地基专文；Qwen3 的数字只引用 Table 21，厂商配方见 [Qwen3 正本](../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3/qwen3.md)，不在这里再抄一遍。**不是** Online Preference Distillation，也不是把 DPO 换个名字。
 
 > 2026-08：§1–§9 是 2026-05 现稿，**不删**。名字、Table 21 分母、MiniLLM / GKD 指针、以及「没有外部教师时这套不成立」见文末 [2026-08 修订](#2026-08-修订)。
 
@@ -266,7 +266,7 @@ $\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。实验从已经 SFT 
 
 ### 10.4 Qwen3 Table 21：分母必须写全
 
-数字以 [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) Table 21 为准（官方 HTML 与本库 [03-Qwen3-mineru-en.md](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/03-Qwen3-mineru-en.md) 同行一致；中文表见 [04-Qwen3-mineru-zh.md](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/04-Qwen3-mineru-zh.md)）。第 14 章只链不抄。
+数字以 [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) Table 21 为准；本库 [Qwen3 正本](../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3/qwen3.md) 只建立版本身份、结论与来源链，不在本篇复制整张报告。
 
 相邻段原文钉死的分母：
 
@@ -312,7 +312,7 @@ $\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。实验从已经 SFT 
 
 1. Gu, Dong, Wei, Huang. *MiniLLM*（[arXiv:2306.08543](https://arxiv.org/abs/2306.08543) / [HTML](https://arxiv.org/html/2306.08543)）。reverse KL 式 (1)、on-policy 梯度式 (2)、teacher-mixed sampling、Algorithm 1。
 2. Agarwal, Vieillard, Zhou, Stanczyk, Ramos, Geist, Bachem. *On-policy Distillation of Language Models: Learning from Self-Generated Mistakes*（GKD；[arXiv:2306.13649](https://arxiv.org/abs/2306.13649) / [HTML](https://arxiv.org/html/2306.13649)）。$L_{\mathrm{OD}}$ 式 (4)、$L_{\mathrm{GKD}}$、$\lambda$、不对采样反传。
-3. Yang et al. *Qwen3 Technical Report*（[arXiv:2505.09388](https://arxiv.org/abs/2505.09388) / [HTML](https://arxiv.org/html/2505.09388)）。§4.5 Strong-to-Weak；Discussion 中 On-Policy Distillation 段 + **Table 21**。本库 mineru：[en](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/03-Qwen3-mineru-en.md) / [zh](../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/09-Qwen3/04-Qwen3-mineru-zh.md)。
+3. Yang et al. *Qwen3 Technical Report*（[arXiv:2505.09388](https://arxiv.org/abs/2505.09388) / [HTML](https://arxiv.org/html/2505.09388)）。§4.5 Strong-to-Weak；Discussion 中 On-Policy Distillation 段 + **Table 21**。本库 mineru：[en](../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3/qwen3.md) / [zh](../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3/qwen3.md)。
 4. Song & Zheng. *A Survey of On-Policy Distillation for Large Language Models*（[arXiv:2604.00626](https://arxiv.org/abs/2604.00626) / [HTML](https://arxiv.org/html/2604.00626v3)）。式 (1) 的 on-policy 定义；teacher-free 指向 OPSD。
 
 数字以 Table 21 与两篇地基论文公式为准。图 1 是示意图。§2 的 150 steps / 77K prompts：未找到一手。

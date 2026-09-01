@@ -7,7 +7,7 @@ tags: [Gated-Residual, Hyper-Connections, mHC, Qwen3.8]
 
 # Gated Residual：四分支上的逐元素读门
 
-> 邻居：[01-HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02-xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](../2.1.3-残差连接.md) · 对照：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)（深度维注意力，不是残差条数） · [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md)（$G_1$ 打在 SDPA 输出上） · 整机：[Qwen3.8-Flash-Next](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)
+> 邻居：[01-HC 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [02-xHC](../02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md) · [2.1.3 残差](../2.1.3-残差连接.md) · 对照：[AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md)（深度维注意力，不是残差条数） · [06 Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md)（$G_1$ 打在 SDPA 输出上） · 整机：[Qwen3.8-Flash-Next](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3-8-flash-next/qwen3-8-flash-next.md)
 
 Pre-Norm Transformer 里每一层都从**同一条**残差流读、再写回去。层一深，早期写进去的特征要和后面所有写入抢位置，信号被冲淡。加宽残差流（多条并行分支）能给早期特征留专用通道。问题变成：加宽之后，读和写还要不要再套一套像 Hyper-Connections 那样的 $n_r\times n_r$ 混合矩阵。
 

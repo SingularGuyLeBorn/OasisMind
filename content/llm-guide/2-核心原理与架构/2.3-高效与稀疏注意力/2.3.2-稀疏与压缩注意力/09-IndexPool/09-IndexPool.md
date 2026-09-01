@@ -7,7 +7,7 @@ tags: [IndexPool, Sparse-Attention, DSA, QSA, GLM-5.3-Flash]
 
 # IndexPool：indexer 自己先变成 1M 上的瓶颈之后，先把 key 收成四合一
 
-> 邻居：[08-QSA](../08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) · [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) · [2.3.2 索引](../2.3.2-稀疏与压缩注意力.md) · 线性侧：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · 模型捆：[GLM-5.3-Flash D2](../../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)
+> 邻居：[08-QSA](../08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md) · [07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) · [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) · [2.3.2 索引](../2.3.2-稀疏与压缩注意力.md) · 线性侧：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · 模型捆：[GLM-5.3-Flash](../../../../05-模型家族与选型/5.3-模型家族/glm/glm-5-3-flash/glm-5-3-flash.md)
 
 稀疏注意力用轻量 indexer 挑 token，核心注意力只算被选中的那一段。序列拉到 **1M** 时，indexer 自己的 key 扫描会重新变成延迟和显存。GLM-5.3-Flash 官方文档把对策写成 **IndexPool**：把 **四个** indexer key 向量用 **加权池化** 压成 **一个**。
 

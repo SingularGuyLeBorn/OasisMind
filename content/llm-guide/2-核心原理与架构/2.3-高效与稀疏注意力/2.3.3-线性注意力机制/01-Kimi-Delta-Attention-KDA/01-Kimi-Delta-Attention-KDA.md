@@ -102,9 +102,9 @@ $$
 
 Gated MLA 用同一只满秩门，但 **不对 MLA 输出做 RMSNorm**（K3 式 (7)）。混合比仍是 3:1，骨干末尾再垫一层全局 MLA。
 
-来源：K3 HTML §2.1.1 式 (5)–(7)。完整捆法见 [K3 D2](../../../../14-主流开源模型全景解析与技术报告精读/14.5-Kimi/05-Kimi-K3/01-Kimi-K3-架构精译.md)。
+来源：K3 HTML §2.1.1 式 (5)–(7)。完整捆法见 [Kimi K3 正本](../../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md)。
 
-**GLM-5.3-Flash 用法（配置，不是新论文）。** vLLM / SGLang 把 Flash 的线性层点名为 KDA。Hugging Face `config.json`：`gate_lower_bound = -5.0`（与 K3 的 $g_{\min}$ 同一数值）、64 头、`head_dim=128`、`short_conv_kernel_size=4`。官方文档没有写出式 (5) 那套 Sigmoid 参数化——只记配置，不要倒灌成智谱推导。层日程 34 KDA + 11 稀疏 MLA，见 [Flash D2](../../../../14-主流开源模型全景解析与技术报告精读/14.6-GLM/12-GLM-5.3-Flash/01-GLM-5.3-Flash-架构精译.md)。
+**GLM-5.3-Flash 用法（配置，不是新论文）。** vLLM / SGLang 把 Flash 的线性层点名为 KDA。Hugging Face `config.json`：`gate_lower_bound = -5.0`（与 K3 的 $g_{\min}$ 同一数值）、64 头、`head_dim=128`、`short_conv_kernel_size=4`。官方文档没有写出式 (5) 那套 Sigmoid 参数化——只记配置，不要倒灌成智谱推导。层日程 34 KDA + 11 稀疏 MLA，见 [GLM-5.3-Flash 正本](../../../../05-模型家族与选型/5.3-模型家族/glm/glm-5-3-flash/glm-5-3-flash.md)。
 
 ## 6. 失效条件
 

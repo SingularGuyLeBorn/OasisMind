@@ -1,12 +1,12 @@
 ---
-title: "01 · Engram：从 n-gram 到可扩展查找"
+title: "Engram：从 n-gram 到可扩展查找"
 date: 2026-08-30
 as_of: 2026-08-30
 tags: [Engram, 条件记忆, n-gram, MoE, Qwen3.8]
 math: true
 ---
 
-# 01 Engram：从 n-gram 到可扩展查找
+# Engram：从 n-gram 到可扩展查找
 
 标准 Transformer 没有原生的知识查找算子。像 “Alexander the Great” 这类**静态局部模式**，早期层必须用 Attention 和 FFN 一层层把实体拼出来——等于在运行时重建一张本该查出来的表，把宝贵的深度花在套话上。Engram（Cheng et al., 2026, [arXiv:2601.07372](https://arxiv.org/abs/2601.07372)）把这条轴叫**条件记忆**：用经典 $N$-gram 当钥匙，对一张大嵌入表做 $\mathcal{O}(1)$ 哈希查找，再经上下文门控并入残差。
 
@@ -308,7 +308,7 @@ Qwen3.8-Flash-Next（权重 2026-08-26）把主干写成 **125B 总 / 6B 每 tok
 
 不要把「第一个 Engram 级别百 B」写进正文：没有一手把这个头衔授给 Qwen。能写的是——**公开权重里出现了 51B 级 n-gram 表的百 B 档**（125B 主干 + 51B 表，激活仍按 6B 计）。Gemma 3n 的 Per-Layer Embedding、RWKV DeepEmbed 是同族「大表扩容」，不是这篇 Engram 的哈希 $N$-gram 门控模块。
 
-第 14 章精读只记捆法，公式仍以本篇为准：[01 Qwen3.8-Flash-Next 架构精译](../../../../14-主流开源模型全景解析与技术报告精读/14.2-Qwen/13-Qwen3.8-Flash-Next/01-Qwen3.8-Flash-Next-架构精译.md)。
+第 05 章型号正本只记发布配方，公式仍以本篇为准：[Qwen3.8-Flash-Next 正本](../../../../05-模型家族与选型/5.3-模型家族/qwen/qwen3-8-flash-next/qwen3-8-flash-next.md)。
 
 ---
 

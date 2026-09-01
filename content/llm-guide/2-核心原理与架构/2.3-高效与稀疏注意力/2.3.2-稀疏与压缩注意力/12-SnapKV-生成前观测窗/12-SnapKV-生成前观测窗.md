@@ -298,7 +298,7 @@ Prefill 仍要整段 prompt 的注意力。Listing 第一句 `assert key_states.
 
 Decode 侧 prompt KV 条数钉在 `max_capacity_prompt`（容量 256、窗 16 则 prefix 留 240，加上窗 16 共 256）。新生成 token 的 KV 照常追加；被丢掉的 prefix 位置 **不会** 每步再投票捞回来（论文 §5.1.2：compressed KV cache size of prompt stays the same，no extra update during the inference）。这就是 3.6× 那条「16k·batch 2 的 decode ms/token 不再随输入线性涨」的机制：每步注意力扫的是 pinned 条数，不是 16k 全量。8.2× 仍是同 batch 基线 16k OOM、SnapKV 到 131k，分母不要换成这条 256 算术。
 
-FlashAttention 把注意力分数留在 SRAM、不落 HBM。投票要的是观测窗那 $L_{\mathrm{obs}}$ 行 softmax 权重。官方路径是 HuggingFace monkeypatch（README：`transformers>=4.36`，测过 `4.37.0`，`flash-attn==2.4.0`；Llama / Mistral / Mixtral），用上面那次显式 matmul 另开 $\mathbf{W}_{\mathrm{obs}}$。生产若走纯 FA 且拿不到分数，必须给观测窗单独留一条算分路径——部署约束，不是 2404.14469 的定理。H2O 专文引过同一类约束；本篇把插槽写在这里，不再用「详见第 14 章」打发。
+FlashAttention 把注意力分数留在 SRAM、不落 HBM。投票要的是观测窗那 $L_{\mathrm{obs}}$ 行 softmax 权重。官方路径是 HuggingFace monkeypatch（README：`transformers>=4.36`，测过 `4.37.0`，`flash-attn==2.4.0`；Llama / Mistral / Mixtral），用上面那次显式 matmul 另开 $\mathbf{W}_{\mathrm{obs}}$。生产若走纯 FA 且拿不到分数，必须给观测窗单独留一条算分路径——部署约束，不是 2404.14469 的定理。H2O 专文引过同一类约束；本篇把插槽写在这里，不再用「详见型号页」打发。
 
 ![Prefill 仍全量注意力才能投票；decode 的 prompt KV 条数钉死](./images/fig-snapkv-prefill-decode.png)
 

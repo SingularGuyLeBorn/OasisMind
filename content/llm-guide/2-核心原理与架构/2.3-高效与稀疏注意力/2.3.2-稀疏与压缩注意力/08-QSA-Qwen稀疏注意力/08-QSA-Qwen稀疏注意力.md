@@ -16,7 +16,7 @@ DSA（DeepSeek-V3.2）用轻量 indexer 做 **token 级**稀疏掩码。核心�
 
 不是 [09-IndexPool](../09-IndexPool/09-IndexPool.md) 的加权池化，不是 [07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)，也不是 [02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md) 的压缩/选择/窗口三路。QSA 动的是这一层怎么取回，不是专家路由。$K_B=512$ 是 **块预算**，不是专家数。GDN 怎么记、残差怎么读写，见下面邻居。
 
-> 邻居：[KDA / GDN](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [DSA 报告精读](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/08-DeepSeek-V3.2/01-DeepSeek-V3.2技术报告精译.md)
+> 邻居：[KDA / GDN](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) · [GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) · [DSA 报告精读](../../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v3-2/deepseek-v3-2.md)
 
 ---
 
@@ -53,7 +53,7 @@ Qwen3.5 起的混合是 **3 GDN : 1 全注意力**。报告 Figure 1 把四层�
 
 ## 2. 已有做法差在哪：DSA 的 indexer 仍是 token 级 $O(L^2)$
 
-稀疏注意力把「谁重要」和「对谁做精确 softmax」拆开。DeepSeek-V3.2 的 DSA 原型是闪电 indexer + 细粒度 token 选择（[报告精读](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/08-DeepSeek-V3.2/01-DeepSeek-V3.2技术报告精译.md) §2.1）。Indexer 对每个 query token $h_t$ 和每个历史位置 $h_s$ 打分：
+稀疏注意力把「谁重要」和「对谁做精确 softmax」拆开。DeepSeek-V3.2 的 DSA 原型是闪电 indexer + 细粒度 token 选择（[报告精读](../../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v3-2/deepseek-v3-2.md) §2.1）。Indexer 对每个 query token $h_t$ 和每个历史位置 $h_s$ 打分：
 
 $$
 I_{t,s}=\sum_{j=1}^{H^I} w_{t,j}^I\cdot\mathrm{ReLU}\bigl(q_{t,j}^I\cdot k_s^I\bigr). \tag{DSA-1}
@@ -257,7 +257,7 @@ Quest、H2O、SnapKV 是推理期选页或驱逐，不改训练期注意力公�
 ## 9. 下一篇
 
 - 加权池化、公式未公开：[09-IndexPool](../09-IndexPool/09-IndexPool.md)。
-- token 级闪电 indexer：[DSA · V3.2](../../../../14-主流开源模型全景解析与技术报告精读/14.1-DeepSeek/08-DeepSeek-V3.2/01-DeepSeek-V3.2技术报告精译.md)。
+- token 级闪电 indexer：[DSA · V3.2](../../../../05-模型家族与选型/5.3-模型家族/deepseek/deepseek-v3-2/deepseek-v3-2.md)。
 - 三分支原生稀疏：[02-NSA](../02-原生稀疏注意力机制NSA/02-原生稀疏注意力机制NSA.md)。
 - 压缩注意力（不是 QSA）：[07-CSA/HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)。
 - 线性侧「记住」：[KDA](../../2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md)。
