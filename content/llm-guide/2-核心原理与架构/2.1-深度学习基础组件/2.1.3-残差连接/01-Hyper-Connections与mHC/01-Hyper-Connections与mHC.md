@@ -63,17 +63,17 @@ HC 原文用 $(n+1)\times(n+1)$ 的超连接矩阵把三者捆在一起: $\mathb
 
 写回不是「每条流各算一份完整 $\mathcal{F}$」.式 (3) 里 $\mathcal{F}$ 只吃 $\mathcal{H}^{\mathrm{pre}}$ 合成的那一份 $C$ 维向量.若给每条流各跑一遍 Attn/FFN, FLOPs 会乘 $n$, 那就不是「几乎不加计算」了.$n$ 通常远小于 $C$(主设定 $n=4$), 三份映射的矩阵乘相对 $C$ 维主干可以忽略.HC 论文 OLMo-7B 前向每 token FLOPs: 基线 13.36G, DHC $\times 4$ 13.38G, 参数同为 6.9B.多流加的是拓扑, 不是另一套注意力.
 
-![mHC 插在残差主干上: 四条流读进单一 F, FLOPs 仍由 Attn/FFN 主导](./images/fig-mhc-layer-slot.png)
+![mHC 单层数据流: 读,单次子层计算,残差混合与逐流写回](./images/redrawn-fig-mhc-layer-slot-v3.png)
 
-> 图 1: mHC / HC 落在残差主干.四条流经 $\mathcal{H}^{\mathrm{pre}}$ 收成一份, 进 $\mathcal{F}$(Attn 或 FFN); $\mathcal{H}^{\mathrm{post}}$ 写回, $\mathcal{H}^{\mathrm{res}}$ 在流之间混合.示意, 不是论文描图.
+> 图 1: 四条流经 $\mathcal{H}^{\mathrm{pre}}$ 收成一份输入,$\mathcal{F}$ 只计算一次;$\mathcal{H}^{\mathrm{post}}$ 生成四条更新,$\mathcal{H}^{\mathrm{res}}$ 并行生成四条残差向量,最后逐流相加.
 
 **图 1 解析**
 
-- 左列四条薰衣草色带: $n=4$ 的残差记忆, 形状 $n\times C$, 不是 $n$ 个头.
-- 中间黄块: 真正烧 FLOPs 的 $\mathcal{F}$.读侧只有一份输入, 所以计算量几乎不随 $n$ 涨.
-- 上蓝 $\mathcal{H}^{\mathrm{pre}}$,下绿 $\mathcal{H}^{\mathrm{post}}$: 读写是 $1\times n$ 的聚合 / 分配, 不是 $n$ 份并行子层.
-- 右侧 $n\times n$ 格: $\mathcal{H}^{\mathrm{res}}$.mHC 还要再经 Sinkhorn, 见 §6.
-- 底注 "topology change, not a new attention": 不要把本篇误收进 2.2 / 2.3.
+- $X_l\in\mathbb{R}^{4\times C}$ 保存四条残差流;$\mathcal{H}^{\mathrm{pre}}\in\mathbb{R}^{1\times4}$ 把它们读成一份 $u\in\mathbb{R}^{1\times C}$.
+- $\mathcal{F}$ 只对 $u$ 计算一次.随后 $\mathcal{H}^{\mathrm{post}T}\in\mathbb{R}^{4\times1}$ 把 $y=\mathcal{F}(u)$ 分配成四条更新 $U^{(i)}$.
+- 与此同时,$\mathcal{H}^{\mathrm{res}}\in\mathbb{R}^{4\times4}$ 直接混合 $X_l$,得到四条残差向量 $R^{(i)}$;这条支路不经过 $\mathcal{F}$.
+- 每条输出独立执行 $X_{l+1}^{(i)}=R^{(i)}+U^{(i)}$.四个求和点互不相连,因此变量不会在流之间无故串线.
+- mHC 还会把 $\mathcal{H}^{\mathrm{res}}$ 投影到近似双随机矩阵,见 §6.
 
 HC 还指出一层排列可以在串行与并行之间软混合.$n=2$ 时, 一组特定的 $\mathcal{HC}$ 让深度连接退化成普通残差串行; 奇数层与偶数层换另一组矩阵, 则相邻两层近似并行(parallel transformer block).动态 HC 还允许这种排列随 token 变.mHC 没有取消这种拓扑自由度, 只是把其中的 $\mathcal{H}^{\mathrm{res}}$ 关进双随机, 禁止用无界连乘去实现排列.这是拓扑自由度, 不是路由专家.
 
@@ -167,7 +167,7 @@ $$
 
 $\mathcal{T}_{r}$,$\mathcal{T}_{c}$ 分别把行和,列和除成 1.$t_{\max}\to\infty$ 时收敛到双随机.主设定 $t_{\max}=20$(附录 Table 5).二十次是近似: 单层的反向增益已经会略偏离 1; 复合增益不再精确等于 1.论文 Figure 7(b) 写明 27B 上最大值大约 1.6.相对 HC 的 ~3000, 低三个数量级, 够用, 但不要在口播里说「Sinkhorn 二十步 = 精确双随机 = 复合增益精确为 1」.
 
-![Sinkhorn-Knopp: 先 exp, 再行归一,列归一, 循环约 20 次](./images/fig-mhc-sinkhorn.png)
+![Sinkhorn-Knopp: 先 exp, 再行归一,列归一, 循环约 20 次](./images/redrawn-fig-mhc-sinkhorn-v2.png)
 
 > 图 2: Sinkhorn-Knopp 把未约束 $\tilde H_{\mathrm{res}}$ 投到 Birkhoff 多面体.格子里的小数是示意, 不是实验测量.手续对应 mHC 式 (9), 正文编号为式 (7).
 
@@ -179,7 +179,7 @@ $\mathcal{T}_{r}$,$\mathcal{T}_{c}$ 分别把行和,列和除成 1.$t_{\max}\to\
 - 底下回流箭头: 交替直到 $t_{\max}=20$.有限步后行列和只是接近 1, 这就是复合增益能到 1.6 而不是精确 1 的来源.
 - 图中数字是为了让「除以行和 / 列和」看得见, 禁止当成论文 Table 或曲线读.
 
-![单流残差,无约束 HC,mHC 双随机投影](./images/fig-mhc-stream-mix.png)
+![单流残差,无约束 HC,mHC 双随机投影](./images/redrawn-fig-mhc-stream-mix.png)
 
 > 图 3: A 单流恒等; B 无约束 $n=4$ 混合, 恒等映射一般不再成立; C 把 $H_{\mathrm{res}}$ 投到双随机, 均值守恒.示意, 不是论文 Figure 1 描图.若图注出现 mean-HC, 以正文 **Manifold-Constrained** 为准.
 
@@ -207,7 +207,7 @@ mHC 的梯度范数轮廓接近基线, 不再跟 HC 一起炸.Figure 8 的矩阵
 
 ## 8. Table 4: 带列名抄全
 
-论文 Table 4 标题是 *System-level Benchmark Results for 27B Models*.列不是「从左到右八个匿名分」, 而是八个基准, 各有指标与 shot 数.禁止把手绘柱状图冒充这张表.mHC 多数列超过 HC, 但 MATH 那列 26.0 略低于 HC 的 26.4.旧稿若把 26.0 / 26.4 写成 BBH, 是把第五列误认成第一列.BBH 上 mHC 是 51.0 vs HC 48.9, 论文还写相对 HC 再涨 2.1 个点(DROP 再涨 2.3).
+论文 Table 4 标题是 *System-level Benchmark Results for 27B Models*.列不是「从左到右八个匿名分」, 而是八个基准, 各有指标与 shot 数.禁止把手绘柱状图冒充这张表.mHC 多数列超过 HC, 但 MATH 那列 26.0 略低于 HC 的 26.4;BBH 上 mHC 是 51.0 vs HC 48.9, 论文还写相对 HC 再涨 2.1 个点(DROP 再涨 2.3).
 
 | Benchmark | BBH | DROP | GSM8K | HellaSwag | MATH | MMLU | PIQA | TriviaQA |
 |-----------|-----|------|-------|-----------|------|------|------|----------|
@@ -274,3 +274,7 @@ mHC 的取舍是: 用双随机约束把混合矩阵关进一个几何上安全�
 4. Sinkhorn, R., & Knopp, P. (1967). Concerning nonnegative matrices and doubly stochastic matrices. *Pacific J. Math.* 21(2), 343-348.(交替归一的名字来源.)
 5. He, K., Zhang, X., Ren, S., & Sun, J. (2016). Identity mappings in deep residual networks. *ECCV*.(式 (2) 所依赖的恒等映射论述; mHC 文引 He et al., 2016b.)
 6. 讲法参考(不当事实源): [骑虎南下 · 知乎](https://zhuanlan.zhihu.com/p/2001330628306703799); [slowlyC · 知乎](https://zhuanlan.zhihu.com/p/2059777578253267850).
+
+
+
+
