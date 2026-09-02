@@ -106,6 +106,7 @@ pnpm dev          # sync 后并行 server + web
 pnpm dev:mini     # 跳过阻塞全量 sync
 pnpm dev:web / pnpm dev:server
 pnpm db:sync      # content/config → SQLite（支持 --watch）
+pnpm om-sync:build # 构建 Rust 扫描器 tools/om-sync（db:sync 的 Post 全量扫描依赖；二进制 gitignore，新机器/CI 先跑这个）
 pnpm db:push      # Prisma 推 schema（SQLite 单轨，不要 migrate）
 pnpm db:generate / pnpm db:seed / pnpm db:backup / pnpm db:studio
 pnpm lint / pnpm test / pnpm build
@@ -121,6 +122,7 @@ pnpm validate     # lint → test → build → e2e
 ## 开发约定
 
 - 注释、UI、commit、文档：**中文**；代码标识符：**英文**。
+- 写 / 改中文知识库与文档后，用 `config/skills/shuorenhua/`（说人话）过一遍去 AI 味：技术文按 `docs` 场景 minimal 档，保公式 / 数字 / 术语不漂移；同型句式骨架（如成串的「不是 X，而是 Y」）和「非常」类渲染词扎堆要降密度。改完按它的两步回读清单自查。升级走替换目录（上游：<https://github.com/MrGeDiao/shuorenhua>）。
 - 图标用 Lucide 或 `apps/web/lib/icons.tsx`；禁止 emoji 当 UI 图标。
 - 前端 class 合并用 `cn()`（`apps/web/lib/utils.ts`）。Chat 动画：`spring 260/26`。
 - 共享 Zod 放 `packages/shared/src/schemas.ts`。web `import type { AppRouter } from "@oasismind/server/router"`。

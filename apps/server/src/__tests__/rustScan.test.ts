@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import type { PrismaClient } from "@prisma/client";
 import { scanWithRust, getRustBinaryPath } from "../scripts/sync/rustScan.js";
 import { parseMarkdownFile, filePathToSlug, getFileMtime } from "../scripts/sync/utils.js";
+import { createPostGardenSyncer } from "../scripts/sync/sync-posts.js";
 
 describe("rustScan", () => {
   it("produces records compatible with TS parser", async () => {
@@ -61,5 +63,25 @@ describe("rustScan", () => {
   it("binary path resolves on Windows", () => {
     const bin = getRustBinaryPath();
     expect(fs.existsSync(bin)).toBe(true);
+  });
+
+  it("post garden syncer scan() consumes om-sync output", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "om-sync-syncer-"));
+    fs.writeFileSync(
+      path.join(dir, "post.md"),
+      "---\ntitle: T\ntags: [x, y]\npublished: false\n---\nBody\n",
+    );
+
+    const syncer = createPostGardenSyncer("knowledge");
+    // scan 不触库，prisma 参数传空即可
+    const records = await syncer.scan(null as unknown as PrismaClient, dir);
+
+    expect(records).toHaveLength(1);
+    expect(records[0].slug).toBe("post");
+    expect(records[0].mtime).toBeInstanceOf(Date);
+    expect(records[0].data.garden).toBe("knowledge");
+    expect(records[0].data.title).toBe("T");
+    expect(records[0].data.tags).toBe("x,y");
+    expect(records[0].data.published).toBe(false);
   });
 });

@@ -1,8 +1,9 @@
 /**
  * Rust om-sync CLI wrapper
  *
- * 调用 tools/om-sync 编译出的扫描器, 返回与 TS syncer 一致的记录格式.
- * 当前只覆盖 Post 花园扫描; 后续按需扩展其他实体.
+ * Post 花园全量扫描的生产路径（sync-posts.ts 的 scan() 经此处调用 tools/om-sync
+ * 编译出的扫描器，返回与 TS syncer 一致的记录格式）。二进制缺失时抛出带构建
+ * 指引的错误——构建方式见 tools/om-sync/README.md（pnpm om-sync:build）。
  */
 
 import { execFile } from "child_process";
@@ -52,16 +53,21 @@ export function getRustBinaryPath(): string {
     isWin ? "om-sync.exe" : "om-sync",
   );
   if (!fs.existsSync(bin)) {
-    throw new Error(`Rust om-sync binary not found at ${bin}. Run: cargo build --release in tools/om-sync`);
+    throw new Error(`Rust om-sync binary not found at ${bin}. Run: pnpm om-sync:build`);
   }
   return bin;
 }
 
 export async function scanWithRust(dir: string): Promise<RustSyncRecord[]> {
   const bin = getRustBinaryPath();
-  const { stdout } = await execFileAsync(bin, ["scan", dir, "--ext", ".md"], {
+  const { stdout, stderr } = await execFileAsync(bin, ["scan", dir, "--ext", ".md"], {
     maxBuffer: 64 * 1024 * 1024,
   });
+
+  // 单文件解析失败不致命（Rust 侧跳过该文件并打 stderr），透出保持失败可见
+  for (const line of stderr.split(/\r?\n/)) {
+    if (line.trim()) console.warn(`  ⚠️ [om-sync] ${line.trim()}`);
+  }
 
   return stdout
     .split(/\r?\n/)

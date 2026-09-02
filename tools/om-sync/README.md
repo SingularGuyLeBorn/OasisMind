@@ -24,11 +24,12 @@ cargo build --release
 
 ## 集成
 
-TS 侧通过 `apps/server/src/scripts/sync/rustScan.ts` 调用:
+Post 花园全量扫描的生产路径：`apps/server/src/scripts/sync/sync-posts.ts` 的
+`scan()` 经 `rustScan.ts` 调用本二进制（sidecar CLI + NDJSON）；watch 模式的
+单文件增量仍走 TS `scanFile`。二进制被 gitignore，新机器 / CI 上先构建：
 
-```ts
-import { scanWithRust } from "../scripts/sync/rustScan.js";
-const records = await scanWithRust("content/posts");
+```bash
+pnpm om-sync:build   # 定位 PATH cargo → 项目私有工具链 tools/rust/
 ```
 
 ## 测试

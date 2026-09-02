@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Post / 知识库花园同步器
  *
  * 每棵花园（posts / knowledge / resources）注册一个 Syncer，
@@ -12,6 +12,7 @@ import { getAppConfig } from "../../infra/config.js";
 import { buildPostFtsBody } from "../../services.js";
 import { Syncer, SyncRecord } from "./types.js";
 import { getFilesRecursive, parseMarkdownFile, filePathToSlug, getFileMtime, syncDetailWarn} from "./utils.js";
+import { scanWithRust } from "./rustScan.js";
 import { discoverGardenIds } from "./discover-gardens.js";
 
 interface PostData {
@@ -34,13 +35,15 @@ export function createPostGardenSyncer(garden: string): Syncer<PostData> {
     extensions: [".md"],
 
     async scan(prisma: PrismaClient, contentDir: string): Promise<SyncRecord<PostData>[]> {
-      const filePaths = getFilesRecursive(contentDir, [".md"]);
-      const records: SyncRecord<PostData>[] = [];
-      for (const filePath of filePaths) {
-        const r = await this.scanFile!(filePath, contentDir);
-        if (r) records.push(r);
-      }
-      return records;
+      // 全量扫描走 Rust om-sync（walkdir 批量 syscall + frontmatter 解析，替代 Windows 上
+      // 逐文件 readdirSync/statSync 与 gray-matter 的热路径）；单文件增量仍由 scanFile 处理。
+      // 二进制缺失时 scanWithRust 抛出带构建指引的错误，由 syncEntity 捕获并保持失败可见。
+      const rustRecords = await scanWithRust(contentDir);
+      return rustRecords.map((r) => ({
+        slug: r.slug,
+        mtime: new Date(r.mtime_ms),
+        data: { garden, ...r.data },
+      }));
     },
 
     async scanFile(filePath: string, contentDir: string): Promise<SyncRecord<PostData> | null> {

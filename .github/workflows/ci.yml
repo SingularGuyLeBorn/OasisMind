@@ -32,6 +32,9 @@ jobs:
         env:
           DATABASE_URL: "file:./ci.db"
 
+      - name: Build om-sync (Rust scanner)
+        run: cargo build --release --manifest-path tools/om-sync/Cargo.toml
+
       - name: Sync content to SQLite
         run: pnpm db:sync
         env:

@@ -32,6 +32,7 @@
     "db:seed": "pnpm --filter @oasismind/server db:seed",
     "db:sync": "pnpm --filter @oasismind/server db:sync",
     "db:backup": "node scripts/backup-db.mjs",
+    "om-sync:build": "node scripts/build-om-sync.mjs",
     "data:reset": "node scripts/reset-data.mjs",
     "data:reset:yes": "node scripts/reset-data.mjs --yes",
     "data:reset:all": "node scripts/reset-data.mjs --yes --all",
