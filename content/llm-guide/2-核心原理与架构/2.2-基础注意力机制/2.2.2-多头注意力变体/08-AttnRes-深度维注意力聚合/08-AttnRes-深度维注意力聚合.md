@@ -4,7 +4,6 @@ date: 2026-08-30
 as_of: 2026-08-30
 tags: [AttnRes, Attention-Residuals, PreNorm-dilution, Block-AttnRes, Kimi]
 ---
-
 # AttnRes:深度维上的历史层聚合
 
 [Attention Residuals(AttnRes)](https://arxiv.org/abs/2603.15031) 改的是 **深度维**:历史层表示怎样被当前层聚合.Pre-Norm 残差里,前序层输出按单位权重往上加.AttnRes 换成对前序层输出做 softmax.
@@ -23,6 +22,7 @@ tags: [AttnRes, Attention-Residuals, PreNorm-dilution, Block-AttnRes, Kimi]
 
 $$
 \mathbf{h}_l=\mathbf{h}_{l-1}+f_{l-1}(\mathbf{h}_{l-1}).
+
 $$
 
 展开后当前层收到的是 embedding 与全部前序输出的**等权求和**:$\mathbf{h}_l=\mathbf{h}_1+\sum_{i=1}^{l-1}f_i(\mathbf{h}_i)$.反传里 $\partial\mathcal{L}/\partial\mathbf{h}_l$ 展开后恒等项始终在,这是残差当梯度公路的那一半.论文强调还有另一半很少被改:**残差同时规定了深度维上怎么聚合信息**.序列混合和专家路由已经用输入相关的可学权重,深度维却仍是固定单位权重.
@@ -46,6 +46,7 @@ Highway 把更新改成 $\mathbf{h}_l=(1-\mathbf{g}_l)\odot\mathbf{h}_{l-1}+\mat
 $$
 \mathbf{h}_l=\alpha_{0\to l}\cdot\mathbf{h}_1+\sum_{i=1}^{l-1}\alpha_{i\to l}\cdot f_i(\mathbf{h}_i)
 \tag{1}
+
 $$
 
 $\alpha_{i\to l}$ 满足 $\sum_{i=0}^{l-1}\alpha_{i\to l}=1$.网络深度通常 $L<1000$,远小于序列长度,所以 $O(L^2)$ 的深度注意力算得起.权重写成核 $\phi(\mathbf{q}_l,\mathbf{k}_i)$.论文取 $\phi(\mathbf{q},\mathbf{k})=\exp(\mathbf{q}^\top\mathrm{RMSNorm}(\mathbf{k}))$,再按深度维归一化,得到式 (2):
@@ -53,6 +54,7 @@ $\alpha_{i\to l}$ 满足 $\sum_{i=0}^{l-1}\alpha_{i\to l}=1$.网络深度通常 
 $$
 \alpha_{i\to l}=\frac{\phi(\mathbf{q}_l,\mathbf{k}_i)}{\sum_{j=0}^{l-1}\phi(\mathbf{q}_l,\mathbf{k}_j)}.
 \tag{2}
+
 $$
 
 查询,键,值的定义是式 (3):
@@ -64,6 +66,7 @@ $$
 f_i(\mathbf{h}_i) & 1\le i\le l-1
 \end{cases}
 \tag{3}
+
 $$
 
 $\mathbf{w}_l\in\mathbb{R}^d$ 是**每层一个可学伪查询**,不从当前隐状态投影(默认形态).$\phi$ 里的 RMSNorm 防止幅值大的层独占 softmax.当前层输入就是式 (4):
@@ -71,6 +74,7 @@ $\mathbf{w}_l\in\mathbb{R}^d$ 是**每层一个可学伪查询**,不从当前隐
 $$
 \mathbf{h}_l=\sum_{i=0}^{l-1}\alpha_{i\to l}\cdot\mathbf{v}_i.
 \tag{4}
+
 $$
 
 这就是 Full AttnRes.每个 token 的算术量 $O(L^2 d)$,存层输出 $O(Ld)$.普通训练里 $O(Ld)$ 和反传本来就要留的激活重叠,不额外占显存;一旦开激活重计算或流水线并行,这些输出必须显式保活并跨 stage 传递,开销才变成 $O(Ld)$.
@@ -100,6 +104,7 @@ Full AttnRes 在规模训练里要跨流水线 stage 传全部 $L$ 份层输出.
 $$
 \mathbf{b}_n=\sum_{j\in\mathcal{B}_n}f_j(\mathbf{h}_j).
 \tag{5}
+
 $$
 
 $\mathbf{b}_n^i$ 是块内前 $i$ 层的部分和,$\mathbf{b}_n=\mathbf{b}_n^S$.令 $\mathbf{b}_0=\mathbf{h}_1$,embedding 永远是一个可查询源.块 $n$ 里第 $i$ 层的 value 矩阵是式 (6):
@@ -110,6 +115,7 @@ $$
 [\mathbf{b}_0,\mathbf{b}_1,\dots,\mathbf{b}_{n-1},\mathbf{b}_n^{i-1}]^\top & i\ge 2\text{(块内后续层)}
 \end{cases}
 \tag{6}
+
 $$
 
 键和权重仍走式 (3)(2).块内第一层只读已完成的块摘要 + embedding;后续层额外读当前块的部分和.$N=L$ 退回 Full AttnRes;$N=1$ 退回「标准残差 + 把 embedding 单独成 $\mathbf{b}_0$」.经验上 **$N\approx 8$** 收回 Full 的大部分收益,每 token 只存大约八份隐状态(§3.2,§5).
@@ -138,13 +144,14 @@ Kimi Linear 48B 实验(论文 §5.2)不是 K3:27 个 Transformer block(54 层,at
 - **右下(不是 GR)**:Qwen3.8 的 Gated Residual 把流加宽到 $n_r=4$,读用逐元素 sigmoid 门,写用每分支标量,**丢掉 $H_{\mathrm{res}}$**.子层 $\mathcal{F}$ 仍只有一份,四条是残差分支.图里若画成四份 $F$,那是示意加宽,不是四份完整注意力.GR 仍在残差主干上做读/写,不对历史层做 softmax.
 - **底注(不是 xHC)**:xHC 把流再扩,稀写密读,混合仍是流形上的 $k\times k$ Sinkhorn,对象还是残差条数,不是深度维检索.
 
-| | 改哪一轴 | 当前层看见谁 | 残差还是不是 $x+F(x)$ |
-|--|----------|--------------|------------------------|
-| **AttnRes** | 深度(层) | 前序层输出或块摘要 | 加法被 softmax 聚合替换 |
-| $G_1$ | token(SDPA 后) | 当前 query 的头输出 | 仍是 $x+F(x)$ |
-| mHC | 残差流条数 | 上一时刻的 $m$ 条流 | 多流 + 双随机 $H_{\mathrm{res}}$ |
-| GR | 残差流条数 | 四条分支上的逐元素读 | 加宽但无 $H_{\mathrm{res}}$ |
-| xHC | 残差流条数 | 更大 $n$ 的流 | 仍是流混合 |
+
+|             | 改哪一轴       | 当前层看见谁         | 残差还是不是$x+F(x)$            |
+| ------------- | ---------------- | ---------------------- | --------------------------------- |
+| **AttnRes** | 深度(层)       | 前序层输出或块摘要   | 加法被 softmax 聚合替换         |
+| $G_1$       | token(SDPA 后) | 当前 query 的头输出  | 仍是$x+F(x)$                    |
+| mHC         | 残差流条数     | 上一时刻的$m$ 条流   | 多流 + 双随机$H_{\mathrm{res}}$ |
+| GR          | 残差流条数     | 四条分支上的逐元素读 | 加宽但无$H_{\mathrm{res}}$      |
+| xHC         | 残差流条数     | 更大$n$ 的流         | 仍是流混合                      |
 
 论文 Table 4 把这件事做成消融,名字对不上数字:同一套 16 头模型,同一算力,PreNorm 基线 **1.766**;DenseFormer(能看所有前序输出,但权重是**与输入无关的标量**)**1.767**,几乎不涨;mHC **1.747**;Full AttnRes **1.737**;Block($S=4$)**1.746**.能看历史层但权重不随内容变,等于没改稀释;加宽流是另一条路;深度维 softmax 才是本篇.
 
@@ -163,6 +170,7 @@ Qwen3.8 报告 Table 6 也拿 AttnRes 做过**残差消融**,那是对照实验,
 $$
 \mathrm{Comm}_{\mathrm{naïve}}=\sum_{j=1}^{C-1} j N_p\cdot d=\frac{C(C-1)}{2}N_p d,
 \tag{7}
+
 $$
 
 其中 $C=PV$ 是物理 stage 数 $\times$ 虚拟 stage 数.跨 stage 缓存之后,第一虚拟 stage 仍按累积传,后续虚拟 stage 只传增量,式 (8):
@@ -170,6 +178,7 @@ $$
 $$
 \mathrm{Comm}_{\mathrm{cached}}=\frac{P(P-1)}{2}N_p d+(V-1)P^2 N_p d.
 \tag{8}
+
 $$
 
 峰值从 $O(C)$ 降到 $O(P)$.论文测:不开 PP 时墙钟开销可忽略;开 PP 时端到端 **不到 4%**.推理延迟在典型负载上 **不到 2%**.Prefill 把块表示按序列维切到 TP 设备上:128K,8 块大约 15 GB 的块缓存,切完每卡约 **1.9 GB**;再加 16K chunked prefill,可到每卡 **不到 0.3 GB**.
@@ -182,20 +191,21 @@ $$
 
 缩放律(Table 2,五档激活参数,上下文 8192,Block 用 $N=8$)超参按**基线**选,故意偏帮基线.拟合 $\mathcal{L}=A\times C^{-\alpha}$:基线 $1.891\times C^{-0.057}$,Block $1.870\times C^{-0.058}$,Full $1.865\times C^{-0.057}$.斜率差不多,AttnRes 整条曲线更低.在 **5.6 PFLOP/s-days**,Block **1.692** 对基线 **1.714**,相当于基线再花 **$1.25\times$** 算力才追上.最大一档 Full 与 Block 只差 **0.001**.同表对照 mHC-lite:436M 这一档基线 1.766,Block 1.746,Full **1.737**,mHC-lite 1.747--Full 优于 mHC,Block 打平 mHC 但访存是 5.5d 对 34d.
 
-48B 总参 / 3B 激活,1.4T token,接进 Kimi Linear(3:1 [KDA](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) : [MLA](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md),其余深度,隐维,路由不动).AttnRes 每层只多一个 RMSNorm 和一个 $\mathbf{w}_l$.训练:Muon,WSD,先 1T 再约 400B 中训,然后拉到 32K;MLA 走 NoPE,不必 YaRN.Table 3 是同一套数据配方下的下游(Block vs 基线):
+48B 总参 / 3B 激活,1.4T token,接进 Kimi Linear(3:1 [KDA](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) : [MLA](../04-MLA-低秩潜变量与矩阵吸收/04.1-MLA工程实现/04.1-MLA工程实现.md),其余深度,隐维,路由不动).AttnRes 每层只多一个 RMSNorm 和一个 $\mathbf{w}_l$.训练:Muon,WSD,先 1T 再约 400B 中训,然后拉到 32K;MLA 走 NoPE,不必 YaRN.Table 3 是同一套数据配方下的下游(Block vs 基线):
 
-| 任务 | 基线 | AttnRes |
-|------|-----:|--------:|
-| MMLU | 73.5 | **74.6** |
+
+| 任务         | 基线 |  AttnRes |
+| -------------- | -----: | ---------: |
+| MMLU         | 73.5 | **74.6** |
 | GPQA-Diamond | 36.9 | **44.4** |
-| BBH | 76.3 | **78.0** |
-| TriviaQA | 69.9 | **71.8** |
-| Math | 53.5 | **57.1** |
-| HumanEval | 59.1 | **62.2** |
-| MBPP | 72.0 | **73.9** |
-| CMMLU | 82.0 | **82.9** |
-| C-Eval | 79.6 | **82.5** |
-| MMLU-Pro | 52.2 | 52.2 |
+| BBH          | 76.3 | **78.0** |
+| TriviaQA     | 69.9 | **71.8** |
+| Math         | 53.5 | **57.1** |
+| HumanEval    | 59.1 | **62.2** |
+| MBPP         | 72.0 | **73.9** |
+| CMMLU        | 82.0 | **82.9** |
+| C-Eval       | 79.6 | **82.5** |
+| MMLU-Pro     | 52.2 |     52.2 |
 
 论文点名涨得多的是多步推理与代码:GPQA-Diamond **+7.5**,Minerva Math **+3.6**,HumanEval **+3.1**;知识向的 MMLU 只 +1.1.MMLU-Pro 打平 52.2,「全部任务都涨」不等于每一格都严格更大.
 
@@ -217,18 +227,19 @@ Kimi 主干里有 AttnRes,不表示 Qwen 主干里也有.Qwen3-Next 的 3:1 是 
 
 ## 8. 失效模式与边界
 
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| 写成 $G_1$ | 都叫 Gate / Attention | $G_1$ 乘 SDPA 头输出,残差仍是 $x+F(x)$.零点在 06. |
-| 写成 mHC / xHC | 都在改 residual mixing | 那是流条数与 $H_{\mathrm{res}}$;AttnRes 是对历史层 softmax.式 (10) 是线性深度注意,本篇是 softmax. |
-| 写成 GR | Qwen Table 6 出现过 AttnRes | Table 6 是残差消融.Qwen3.8 选的是 GR.Qwen3.8 没有用 AttnRes 做旗舰残差,Qwen4 主干也没有一手材料. |
-| 当成另一种 $x+\lambda F(x)$ | 公式里还有求和 | 求和的权重是内容相关的 $\alpha$,源是各层 $\mathbf{v}_i$,不是只对上一份 $F$ 乘标量. |
-| 当成 token 维 KV 压缩 | 「Attention」 | 轴是层.GQA/MLA 改 KV 份数,AttnRes 不改. |
-| 把 48B 的 10 个源写成 K3 的 9 | 都是 Block + embedding | Linear 实验:9 块 + embedding = 10;K3:约 8 块 + embedding = 9. |
-| 把 Table 2 的 1.737 当成 48B 下游 | 规模抄错 | 1.737 是 436M / 16 头档 Full 的 val loss.48B 看 Table 3 的 74.6 / 44.4. |
-| 伪查询随机初始化 | 没读零初始化 | $\mathbf{w}_l=0$ 才让起步均匀. |
-| 只开 SWA 当便宜 Full | 近邻窗口 | Table 4:1.764,几乎回到 1.766.远处层比对近邻做窗更重要. |
-| 按头拆深度混合 | 「多头一定更好」 | Block + $H=16$ 到 1.752,差于 1.746. |
+
+| 现象                              | 原因                        | 说明                                                                                             |
+| ----------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| 写成$G_1$                         | 都叫 Gate / Attention       | $G_1$ 乘 SDPA 头输出,残差仍是 $x+F(x)$.零点在 06.                                                |
+| 写成 mHC / xHC                    | 都在改 residual mixing      | 那是流条数与$H_{\mathrm{res}}$;AttnRes 是对历史层 softmax.式 (10) 是线性深度注意,本篇是 softmax. |
+| 写成 GR                           | Qwen Table 6 出现过 AttnRes | Table 6 是残差消融.Qwen3.8 选的是 GR.Qwen3.8 没有用 AttnRes 做旗舰残差,Qwen4 主干也没有一手材料. |
+| 当成另一种$x+\lambda F(x)$        | 公式里还有求和              | 求和的权重是内容相关的$\alpha$,源是各层 $\mathbf{v}_i$,不是只对上一份 $F$ 乘标量.                |
+| 当成 token 维 KV 压缩             | 「Attention」               | 轴是层.GQA/MLA 改 KV 份数,AttnRes 不改.                                                          |
+| 把 48B 的 10 个源写成 K3 的 9     | 都是 Block + embedding      | Linear 实验:9 块 + embedding = 10;K3:约 8 块 + embedding = 9.                                    |
+| 把 Table 2 的 1.737 当成 48B 下游 | 规模抄错                    | 1.737 是 436M / 16 头档 Full 的 val loss.48B 看 Table 3 的 74.6 / 44.4.                          |
+| 伪查询随机初始化                  | 没读零初始化                | $\mathbf{w}_l=0$ 才让起步均匀.                                                                   |
+| 只开 SWA 当便宜 Full              | 近邻窗口                    | Table 4:1.764,几乎回到 1.766.远处层比对近邻做窗更重要.                                           |
+| 按头拆深度混合                    | 「多头一定更好」            | Block +$H=16$ 到 1.752,差于 1.746.                                                               |
 
 ---
 
@@ -248,5 +259,3 @@ AttnRes 把深度维上的聚合从「所有历史层权重 1」换成「当前�
 4. K3 对 Block 的划块与 MTP 取块:[arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2;本库 [Kimi K3 正本](../../../../05-模型家族与选型/5.3-模型家族/kimi/kimi-k3/kimi-k3.md).
 5. **不是** $G_1$:[06](../06-Gated-Attention.md)(Qiu et al., arXiv:2505.06708).
 6. **不是** mHC / xHC / GR:[01 mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md),[02 xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md),[03 GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md).Qwen3.8 Table 6 数字来自该报告的残差消融,不是 AttnRes 论文的表.
-
-

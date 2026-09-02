@@ -6,9 +6,11 @@ as_of: 2026-08-30
 
 # 04 · MLA:低秩潜变量与矩阵吸收
 
-Multi-head Latent Attention(MLA)由 DeepSeek-V2(Dai et al., 2024)提出,并在 DeepSeek-V3 中延续为核心注意力模块.它回答的问题不是「再共享几份 KV」(MQA/GQA 的路子),而是:**推理时是否必须缓存与训练时同形的高维 $k_t, v_t$?** MLA 的答案是:不必--把 KV **联合** 压到低维 latent $c_t^{KV}$,只 cache $c_t^{KV}$ 与解耦的 RoPE 键 $k_t^R$;内容 Query/Key 的上投影在 decode 时可 **矩阵吸收**(详见 [04.1 矩阵吸收双版本](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md)).[04.0 MLA 作为 KV 表示压缩入口](../04.0-MLA作为KV表示压缩入口/04.0-MLA作为KV表示压缩入口.md) 保留从高效注意力章点进来的**定位说明**;数字回 DeepSeek-V2 论文 Table 9 / Figure 1(b).
+Multi-head Latent Attention(MLA)由 DeepSeek-V2(Dai et al., 2024)提出,并在 DeepSeek-V3 中延续为核心注意力模块.它回答的问题不是「再共享几份 KV」(MQA/GQA 的路子),而是:**推理时是否必须缓存与训练时同形的高维 $k_t, v_t$?** MLA 的答案是:不必--把 KV **联合** 压到低维 latent $c_t^{KV}$,只 cache $c_t^{KV}$ 与解耦的 RoPE 键 $k_t^R$;内容 Query/Key 的上投影在 decode 时可 **矩阵吸收**(详见 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md)).数字回 DeepSeek-V2 论文 Table 9 / Figure 1(b).
 
-本文在 [MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 参照系下,给出:MHA 基线 → 低秩 KV 联合压缩 → Q 侧低秩(训练激活省显存)→ **解耦 RoPE** → 全坐标展开 → 双求和 → **含 RoPE 的完整数值走查** → KV Cache 字节估算 → 与 MQA/GQA 及论文消融对比.
+**为什么 MLA 放在 2.2.2 而不是 2.3**:2.3 的前几块都在问「同样的 $QK^{\top}$,怎么少搬、少连、少平方」--FlashAttention、稀疏、线性注意力改的是 **算子**.MLA 问的是另一件事:**推理时是否必须缓存与训练时同形的高维 $k_t,v_t$?** 它改的是 KV **表示**,不是算子.表示设计放在 2.2.2 的 MHA → MQA → GQA → MLA 家谱里更顺.
+
+本文在 [MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 参照系下,给出:MHA 基线 → 低秩 KV 联合压缩 → Q 侧低秩(训练激活省显存)→ **解耦 RoPE** → 全坐标展开 → 双求和 → **含 RoPE 的完整数值走查** → KV Cache 字节估算 → 与 MQA/GQA 及论文消融对比.工程落地(Prefill/Decode 双路径、矩阵吸收、后端选择)见 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md).
 
 ---
 
@@ -69,6 +71,29 @@ DeepSeek-V2 论文 **Figure 1(b)**,对比 **DeepSeek 67B(稠密)** 与 **DeepSee
 - 读图时注意:吞吐提升 **不全是 MLA** 的功劳,MoE 稀疏激活也占一部分;但 KV 大幅下降与 MLA 直接相关.
 
 该图回答「MLA 是否只在理论上省 cache」--在完整模型尺度上,系统级指标与理论 $d_c+d_h^R$ 量级一致.
+
+### 1.1 不是 MQA,也不是 GQA 的延伸
+
+MQA 把 KV **份数**收到 1,cache 里仍是满维 $d_h$ 的 $k,v$.GQA 是份数插值($G$ 组),压缩比被组数锁死.MLA 把 KV **维度**收到 $d_c$,cache 里是更短的 $c^{KV}$ 外加解耦的 $k^{R}$;多头还在,体现在 $W^{UQ}$ 与 per-head 打分.这是另一条压缩轴,不是 GQA 的连续旋钮.
+
+| 机制 | 压缩手段 | 每 token cache(量级) |
+|------|----------|------------------------|
+| MHA | 无 | $2 n_h d_h$ |
+| MQA | 份数 → 1 | $2 d_h$ |
+| GQA | 份数 → $G$ | $2 G d_h$ |
+| MLA | 维度 → $d_c$ | $d_c + d_h^{R}$ |
+
+![MHA,MQA,GQA 与 MLA 的直接结构对照](./images/redrawn-fig-mla-archive-analogy.png)
+
+> 图 4:直接对照 MHA,MQA,GQA,MLA 的 Q/K/V 头共享关系、缓存内容与每 token 缓存规模.
+
+**图 4 解析**
+
+- MHA:每个 Query 头对应独立的 K/V 头,缓存规模最大.
+- MQA:所有 Query 头共享一对 K/V;GQA:按组共享 K/V,两者都在图中单独列出.
+- MLA:缓存低维 $c^{KV}$ 与解耦位置键,attention 前通过上投影还原各头 K/V,不把完整 K/V 写入 cache.
+
+短序列上低秩变换的固定开销可能划不来;RoPE 必须解耦,否则位置旋转会挡住矩阵吸收.吸收与不吸收的工程细节见 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md).
 
 ---
 
@@ -226,7 +251,7 @@ S_{t,j,i}^{C} = \sum_{u=1}^{d_{h,C}} q_{t,i,u}^{C}\, k_{j,i,u}^{C}
 \underbrace{\left(\sum_u (W^{UQ})_{r',u'} (W^{UK})_{r,u'}\right)}_{M_{i,r',r}} \tag{17}
 $$
 
-交换求和:$S^C$ 是 $(c_t^Q, c_j^{KV})$ 的 **双线性型**,系数 $M_i$ 与 token 位置无关.这是 decode **矩阵吸收** 的代数根([05 篇](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md) 式 (16)).
+交换求和:$S^C$ 是 $(c_t^Q, c_j^{KV})$ 的 **双线性型**,系数 $M_i$ 与 token 位置无关.这是 decode **矩阵吸收** 的代数根([04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md) 式 (16)).
 
 ---
 
@@ -307,7 +332,7 @@ Walkthrough 步骤:
 
 ---
 
-## 13. 矩阵吸收(概要,详见 05 篇)
+## 13. 矩阵吸收(概要,详见 04.1 MLA工程实现)
 
 内容分:
 
@@ -315,7 +340,7 @@ $$
 (q_{t,i}^C)^\top k_{j,i}^C = c_t^Q \underbrace{W^{UQ}_{(i)} (W^{UK}_{(i)})^\top}_{W_{\mathrm{abs},i}} (c_j^{KV})^\top \tag{20}
 $$
 
-Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块.训练始终用式 (4)–(12) **完整路径**;推理 Prefill 常用非吸收,Decode 常用吸收([05 篇](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md)).
+Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块.训练始终用式 (4)–(12) **完整路径**;推理 Prefill 常用非吸收,Decode 常用吸收([04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md)).
 
 ---
 
@@ -330,16 +355,16 @@ Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块.训练始终用式 (4)–(12) **
 | GQA | $G$ 组 KV | $2 G d_h$ |
 | MLA | $c_j^{KV}, k_j^R$ | $d_c + d_h^R$ |
 
-MQA/GQA 改的是 KV **份数**(见 [01-MHA 图 4](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md));MLA 改的是 **存什么维度**.下面这张浅色图只对比 cache 内容,**不**画 Prefill 上采样 vs Decode 吸收(那是 [05 篇](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md) 已有的两张计算图).
+MQA/GQA 改的是 KV **份数**(见 [01-MHA 图 4](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md));MLA 改的是 **存什么维度**.下面这张浅色图只对比 cache 内容,**不**画 Prefill 上采样 vs Decode 吸收(那是 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md) 的流图).
 
 ![MHA 高维 KV vs MLA 低秩 latent](./images/redrawn-fig-mla-latent-kv-vs-mha.png)
 
-> 图 4:左:MHA 存 $H$ 份 $d_h$ 维 K/V.右:只持久化 $c^{KV}$ 与解耦 RoPE $k^R$;多头 $K^C,V^C$ 算分时恢复,不写 cache.数字回 §14.2 与 Table 9,不另编压缩比.DeepSeek-V2 Figure 3 jpg 仍见图 1.
+> 图 5:左:MHA 存 $H$ 份 $d_h$ 维 K/V.右:只持久化 $c^{KV}$ 与解耦 RoPE $k^R$;多头 $K^C,V^C$ 算分时恢复,不写 cache.数字回 §14.2 与 Table 9,不另编压缩比.DeepSeek-V2 Figure 3 jpg 仍见图 1.
 
-**图 4 解析**
+**图 5 解析**
 
 - **左 MHA**:斜线 K/V 按头堆叠,每头 $d_h$ 维;Query 浅蓝行不进 cache.绿框用 §14.2 已有配置:$n_h=128$, $d_h=128$ → $2 n_h d_h=$ **32768** / token / layer.
-- **右 MLA**:斜线块只有两块--$c^{KV}$($d_c=512$)与 $k^R$($d_h^R=64$)→ **576**.虚线框里的 $K^C,V^C$ 标「restore, not cached」:对应式 (5) 的 $W^{UK},W^{UV}$,不是 05 篇的吸收/非吸收分叉.
+- **右 MLA**:斜线块只有两块--$c^{KV}$($d_c=512$)与 $k^R$($d_h^R=64$)→ **576**.虚线框里的 $K^C,V^C$ 标「restore, not cached」:对应式 (5) 的 $W^{UK},W^{UV}$,不是 04.1 里 Prefill/Decode 双路径.
 - 绿框第二行是论文 **Table 9**(Large MoE:MHA 860.2K elem vs MLA 34.6K elem),与上一行「每层宽度 32768 vs 576」**不是同一口径**.不要把两行相除当成新的压缩比;Table 9 还给出 MMLU 59.0 vs 57.5,见 §14.4.
 - 文首「相对 MHA KV cache 仅 4%–14%」与 Figure 1(b) 的 **−93.3%** 仍以论文为准,本图不重标那些百分比.
 
@@ -379,7 +404,7 @@ MLA **更小 cache,更高分**(同论文设置);不是「压 cache 必然掉点�
 | Prefill | $L$ 大,cache 空 | **非吸收**:显式 $K^C,V^C$,大 GEMM | $O(L^2)$ 算力 |
 | Decode | 每步 1 token,cache 长 | **吸收**:$c^Q W_{\mathrm{abs}} (c^{KV})^\top$ | HBM 读 $c^{KV}$ |
 
-Prefill 时输入长度 $L$ 大,但 cache 为空,显式上投影 $W^{UK},W^{UV}$ 把 $c^{KV}$ 展开成 $K^C,V^C$ 并不增加内存移动(反正要算整个序列).Decode 时 $L$ 变成已生成的 token 数,每步只新增一个 $c_t^{KV},k_t^R$,吸收避免了对每个历史 $j$ 重做上投影,把带宽从 "读 $2n_h d_{h,C}$ 每 token" 压到 "读 $d_c+d_h^R$ 每 token".切换逻辑见 [05 篇 §6–§8](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md).
+Prefill 时输入长度 $L$ 大,但 cache 为空,显式上投影 $W^{UK},W^{UV}$ 把 $c^{KV}$ 展开成 $K^C,V^C$ 并不增加内存移动(反正要算整个序列).Decode 时 $L$ 变成已生成的 token 数,每步只新增一个 $c_t^{KV},k_t^R$,吸收避免了对每个历史 $j$ 重做上投影,把带宽从 "读 $2n_h d_{h,C}$ 每 token" 压到 "读 $d_c+d_h^R$ 每 token".切换逻辑见 [04.1 MLA工程实现 §6–§8](../04.1-MLA工程实现/04.1-MLA工程实现.md).
 
 ---
 
@@ -423,7 +448,7 @@ def mla_forward(h, cache, use_cache=False):
     return merge_heads(out) @ W_O
 ```
 
-Decode 吸收路径见 05 篇 §11.
+Decode 吸收路径见 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md) §13.
 
 ---
 
@@ -440,7 +465,7 @@ Decode 吸收路径见 05 篇 §11.
 
 ## 19. 小结
 
-MLA 四步:**(1)** 式 (4)(5) KV 联合低秩;**(2)** 式 (7) Q 低秩(训练激活);**(3)** 式 (8)(9) RoPE 解耦使吸收可行;**(4)** 式 (20) decode 吸收.§11–§12 数值链可手算;§14 量化 57× cache(V2:$d_c=512,\ d_h^R=64$ vs MHA $2 n_h d_h$).工程双模式见 [05 篇](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md);章索引入口见 [2.3.5](../04.0-MLA作为KV表示压缩入口/04.0-MLA作为KV表示压缩入口.md).
+MLA 四步:**(1)** 式 (4)(5) KV 联合低秩;**(2)** 式 (7) Q 低秩(训练激活);**(3)** 式 (8)(9) RoPE 解耦使吸收可行;**(4)** 式 (20) decode 吸收.§11–§12 数值链可手算;§14 量化 57× cache(V2:$d_c=512,\ d_h^R=64$ vs MHA $2 n_h d_h$).Prefill/Decode 工程实现见 [04.1 MLA工程实现](../04.1-MLA工程实现/04.1-MLA工程实现.md).
 
 ---
 
