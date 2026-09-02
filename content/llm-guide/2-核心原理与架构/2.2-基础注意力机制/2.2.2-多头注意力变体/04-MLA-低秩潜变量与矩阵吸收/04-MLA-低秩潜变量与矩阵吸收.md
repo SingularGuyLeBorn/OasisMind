@@ -81,6 +81,8 @@ $$
 
 $d = d_{\mathrm{model}}$;$n_h$ 头数;每头总维 $d_h = d_{h,C} + d_h^R$(内容 + RoPE);KV 压缩维 $d_c$;Q 压缩维 $d_c'$.DeepSeek-V2:$d=5120$ 量级;V3:$d=7168$,$d_c=512$,$d_h^R=64$,$n_h=128$.
 
+**为什么这样设符号**:后面所有低秩矩阵都带上下标 $D$(down / 下投影)与 $U$(up / 上投影).训练时要存的是紧凑 latent($c^Q,c^{KV}$)与解耦位置($k^R$);上投影 $W^{UQ},W^{UK},W^{UV}$ 在推理吸收阶段才决定是否显式 materialize.
+
 ---
 
 ## 3. 基线:标准 MHA(论文 §2.1.1)
@@ -145,6 +147,8 @@ $$
 
 DeepSeek-V3:$d_c' = q\_lora\_rank = 1536$,$d_c = kv\_lora\_rank = 512$.
 
+**Q 低秩不减 KV cache**:推理时 Query 只在当前 token 计算,历史 Q 不存也不读;低秩只降低训练时 activations $q_{t,i}^C$ 的峰值显存.Prefill 阶段 $c_t^Q$ 仍要算,但那是 compute,不是持久化的 cache.把 Q 和 KV 的低秩混为一谈是复现 MLA 时最常见的概念错误.
+
 ---
 
 ## 6. 解耦 RoPE(论文 §2.1.3)
@@ -183,25 +187,27 @@ $$
 
 ## 7. 隐藏维坐标展开
 
-**KV 压缩**(式 (4)):
+式 (4)–(7) 是矩阵式;如果要手算一个最小例子,需要把每个标量都写成求和.下面四式只是把同一组矩阵乘法拆到元素级,没有任何新近似.
+
+**KV 压缩**(式 (4)):第 $t$ 个 token 的第 $r$ 个 latent 坐标由隐藏态 $h_t$ 与下投影 $W^{DKV}$ 的行求和得到.
 
 $$
 c_{t,r}^{KV} = \sum_{m=1}^{d} h_{t,m}\, (W^{DKV})_{m,r},\quad r=1,\ldots,d_c \tag{13}
 $$
 
-**Key 内容恢复**(头 $i$,维 $u$):
+**Key 内容恢复**(头 $i$,维 $u$):从 latent 坐标恢复出头 $i$、通道 $u$ 的内容 Key.
 
 $$
 k_{t,i,u}^{C} = \sum_{r=1}^{d_c} c_{t,r}^{KV}\, (W^{UK})_{r,\,(i-1)d_{h,C}+u} \tag{14}
 $$
 
-**Value**:
+**Value 内容恢复**:结构与 Key 相同,只是权重矩阵换成 $W^{UV}$.
 
 $$
 v_{t,i,u}^{C} = \sum_{r=1}^{d_c} c_{t,r}^{KV}\, (W^{UV})_{r,\,(i-1)d_{h,C}+u} \tag{15}
 $$
 
-**Query 内容**:
+**Query 内容**:Q 低秩分两步,先下压到 $d_c'$,再上投影到每头每维.
 
 $$
 c_{t,r'}^{Q} = \sum_{m} h_{t,m} (W^{DQ})_{m,r'},\quad
@@ -243,7 +249,11 @@ $$
 
 ## 10. 因果掩码
 
-Decoder-only 在式 (11) 分母只对 $j \le t$ 求和;$j>t$ 时令 $\tilde{S}_{t,j,i}=-\infty$.MLA 与 MHA **掩码语义相同**;每头独立 softmax.
+Decoder-only 在式 (11) 分母只对 $j \le t$ 求和;$j>t$ 时令 $\tilde{S}_{t,j,i}=-\infty$.
+
+**为什么 MLA 不改掩码语义**:MLA 压缩的是 KV **表示**,不是 softmax 的因果结构.每个 query $q_{t,i}$ 仍然只与位置 $j \le t$ 的 key 计算相似度,每个头仍然独立做 softmax.实现时容易出的错是:把 $c^{KV}$ 的压缩维当成时间维去 mask,或者把 $k^R$ 的位置编码与内容分数的 causal mask 分开处理.只要记住 mask 打在 **token 位置 $j$** 上,而不是打在 latent 坐标 $r$ 上,就不会错.
+
+Absorb 版本(04.1) 的 causal mask 同样作用在最终 score $S_{t,j,i}$ 上;吸收只是改变了 content 分数的代数计算路径,不改变哪些 $j$ 参与 softmax.
 
 ---
 
@@ -369,7 +379,7 @@ MLA **更小 cache,更高分**(同论文设置);不是「压 cache 必然掉点�
 | Prefill | $L$ 大,cache 空 | **非吸收**:显式 $K^C,V^C$,大 GEMM | $O(L^2)$ 算力 |
 | Decode | 每步 1 token,cache 长 | **吸收**:$c^Q W_{\mathrm{abs}} (c^{KV})^\top$ | HBM 读 $c^{KV}$ |
 
-Q 低秩在 Prefill 仍执行 $W^{DQ}, W^{UQ}$;KV 只 append $c_t^{KV}, k_t^R$.切换逻辑见 [05 篇 §6–§8](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md).
+Prefill 时输入长度 $L$ 大,但 cache 为空,显式上投影 $W^{UK},W^{UV}$ 把 $c^{KV}$ 展开成 $K^C,V^C$ 并不增加内存移动(反正要算整个序列).Decode 时 $L$ 变成已生成的 token 数,每步只新增一个 $c_t^{KV},k_t^R$,吸收避免了对每个历史 $j$ 重做上投影,把带宽从 "读 $2n_h d_{h,C}$ 每 token" 压到 "读 $d_c+d_h^R$ 每 token".切换逻辑见 [05 篇 §6–§8](../04.1-矩阵吸收与非吸收双版本/04.1-矩阵吸收与非吸收双版本.md).
 
 ---
 
@@ -382,6 +392,8 @@ Q 低秩在 Prefill 仍执行 $W^{DQ}, W^{UQ}$;KV 只 append $c_t^{KV}, k_t^R$.�
 | RoPE | 与内容同 tensor | **解耦** $k^R$ |
 | 训练 | 同结构 | Q/KV 低秩 + 解耦 RoPE |
 | 风险 | Key 子空间不足 | 低秩近似;实现双路径一致 |
+
+MQA/GQA 的极限问的是:"KV 份数能否从 $n_h$ 压到 1?" 答案是能,但每份仍是 $d_h$ 维.MLA 换了一个问法:"每份 KV 的维度能否从 $d_h$ 压到 $d_c$?" 答案是能,但需要低秩假设 + RoPE 解耦 + 吸收优化.两者正交:理论上可以先做 GQA 把份数压到 $G$,再做 MLA 把每份维度压到 $d_c$;DeepSeek-V2 走的是 "份数 = $n_h$,但每份压缩" 的路线,靠 Q 低秩和 RoPE 解耦把压缩做实.
 
 ---
 
