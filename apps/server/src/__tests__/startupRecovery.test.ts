@@ -8,6 +8,8 @@
  * 2. 僵尸 running ChatSession → interrupted（条件写；重启后 hub 无活跃流，running 皆尸体；
  *    interrupted 表示崩溃/重启遗留，恢复管道可自动接管；paused 保留给用户手停）；
  * 3. superior 孤儿 SessionQueueItem → 重新注册 drain（v7 W-E 机制，consume 删除即认领）；
+ *    前置邮箱对账 reconcileAgentMessageLedger：纯邮箱路径（autoRun=false）滞留 pending 补
+ *    superior 镜像（C5），同轮被 drain 接管，不再依赖前端打开子会话页才镜像；
  * 4. delivered=false 终态未投递 → 重新 notify（reconcileAsyncDeliveries Pass 2）。
  *
  * 负向断言（旧实现下必红的断言已逐条标注；旧实现 = 恢复函数不处理该项 / 函数不存在）：
@@ -400,6 +402,79 @@ describe("R-2 重启恢复四动作（runStartupRecovery 首扫）", () => {
       await cleanupIds({ agentIds: [parentAgentId, subAgentId], sessionIds: [subSessionId] });
     }
   }, 15_000);
+
+  it("C5 动作 3 前置邮箱对账：纯邮箱滞留 pending → 补 superior 镜像 → 同轮 drain 接管消费；连跑两次幂等", async () => {
+    // superior drain 走 prepareAgentRun → runAgentLoopStream，不经 chatAgentStream
+    const loopSpy = vi.spyOn(agentStream, "runAgentLoopStream").mockImplementation(async () => ({
+      content: "已消化",
+      toolCalls: [],
+      tokenUsage: { prompt: 0, completion: 0, total: 0 },
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    }));
+    const ctx = await createContextInner();
+    const parentAgentId = await createAgent(ctx, "C5父", "manager");
+    const subAgentId = await createAgent(ctx, "C5子", "sub", parentAgentId);
+    // Agent.create 已 ensureMainSession：复用该主会话（禁止第二条 isMainSession）
+    const main = await prisma.chatSession.findFirst({
+      where: { agentId: subAgentId, isMainSession: true, status: { not: "deleted" } },
+    });
+    if (!main) throw new Error("C5: 子 Agent 缺少自动主会话");
+    const subSessionId = main.id;
+    await prisma.chatSession.update({
+      where: { id: subSessionId },
+      data: { status: "running", kind: "subagent" },
+    });
+    // 纯邮箱路径（agent_send_message autoRun=false）：只有 AgentMessage(pending)，无队列镜像；
+    // createdAt 回拨超对账阈值（1h），模拟「没人打开子会话页」的永久滞留
+    const agentMsg = await prisma.agentMessage.create({
+      data: {
+        fromAgentId: parentAgentId,
+        toAgentId: subAgentId,
+        content: "C5 纯邮箱遗留任务",
+        messageType: "command",
+        source: "manager",
+        status: "pending",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      },
+    });
+
+    try {
+      const r = await runStartupRecovery({ config: ctx.config, services: ctx.services });
+      // 旧实现（对账未接线 / 不补镜像）：mirrored 恒 0、队列恒空、user 消息永不写入，以下断言必红
+      expect(r.mailboxLedger.mirrored).toBeGreaterThanOrEqual(1);
+      expect(r.superiorDrainsRegistered).toBe(1);
+
+      // 补镜像后服务端 drain 同轮接管：consume → prepareAgentRun 写 user 消息并起流（spy）→ finalize 删行
+      await vi.waitFor(
+        async () => {
+          expect(loopSpy).toHaveBeenCalled();
+          const remaining = await ctx.services.sessionQueueItem.listBySession(subSessionId);
+          expect(remaining).toHaveLength(0);
+          const userMsg = await prisma.chatMessage.findFirst({
+            where: { sessionId: subSessionId, role: "user", content: "C5 纯邮箱遗留任务" },
+          });
+          expect(userMsg).toBeTruthy();
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+      // 账本：drain finalize 把旁路邮箱回写 consumed（对账自身不越权改状态）
+      const msgRow = await prisma.agentMessage.findUnique({ where: { id: agentMsg.id } });
+      expect(msgRow?.status).toBe("consumed");
+
+      // 幂等：第二次首扫不再补镜像（消息已 consumed 出扫描集），会话无重复 user 消息
+      const r2 = await runStartupRecovery({ config: ctx.config, services: ctx.services });
+      expect(r2.mailboxLedger.mirrored).toBe(0);
+      const userMsgs = await prisma.chatMessage.findMany({
+        where: { sessionId: subSessionId, role: "user", content: "C5 纯邮箱遗留任务" },
+      });
+      expect(userMsgs).toHaveLength(1);
+    } finally {
+      await prisma.agentMessage.deleteMany({ where: { id: agentMsg.id } }).catch(() => {});
+      await cleanupIds({ agentIds: [parentAgentId, subAgentId], sessionIds: [subSessionId] });
+    }
+  }, 25_000);
 });
 
 /** 自 reentrantResume.test.ts 迁入：不与上方 C1 僵尸 failed 重复的 it（T3 手动重试、T4 风暴）。 */

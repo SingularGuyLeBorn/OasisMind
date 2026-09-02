@@ -4,6 +4,10 @@ import { prisma } from "../../db.js";
 import { catchUnlessAbort, parseAsyncInput } from "./parse.js";
 import { notifySubagentSessionUpdate } from "./delivery.js";
 import { reconcileAsyncDeliveries, type ReconcileAsyncDeliveriesResult } from "./reconciler.js";
+import {
+  reconcileAgentMessageLedger,
+  type ReconcileResult as AgentMessageLedgerReconcileResult,
+} from "../agentMessageLedger.js";
 
 /* -------------------------------------------------------------------------- */
 /* R-2 重启恢复（启动首扫，四动作，全部条件写幂等，DB 为 ground truth） */
@@ -17,6 +21,8 @@ export interface StartupRecoveryResult {
   staleQueueClaimsReleased: number;
   /** 动作 3：superior 孤儿队列项重注册 drain 的会话数 */
   superiorDrainsRegistered: number;
+  /** 动作 3.5：AgentMessage 邮箱对账（纯邮箱路径滞留 pending 补 superior 镜像） */
+  mailboxLedger: AgentMessageLedgerReconcileResult;
   /** 动作 4：合并对账首轮（R-2 动作 2 补投 delivered=false + R-1 孤儿回滚补投 delivered=true） */
   reconcile: ReconcileAsyncDeliveriesResult;
 }
@@ -33,6 +39,9 @@ export interface StartupRecoveryResult {
  * 2. 僵尸 running/queued async Task 统一标 failed（用户明确要求服务重启不自动续跑）：
  *    文案「服务重启，任务中断」。reentrant/maxRetries/retryCount 三列已删，留待人工 retryAsyncJob 手动恢复。
  * 3. superior 孤儿 SessionQueueItem → 重新注册 drain（含 B2 超龄软认领重置）。
+ *    前置邮箱对账（reconcileAgentMessageLedger）：纯邮箱路径（autoRun=false / 镜像写失败窗口）
+ *    滞留 pending 先补建 superior 镜像（agentMessageId 幂等），同轮即可被本动作重注册的 drain 接管，
+ *    不再依赖前端打开子会话页才镜像。
  * 4. 合并对账首轮（reconcileAsyncDeliveries）。
  */
 export async function runStartupRecovery(options: {
@@ -64,6 +73,9 @@ export async function runStartupRecovery(options: {
   const { failed: staleTasksFailed } = await recoverStaleAsyncJobs(config, services);
   // B2：超龄软认领重置（须在 superior drain 重注册之前）
   const staleQueueClaimsReleased = await services.sessionQueueItem.releaseStaleClaims();
+  // 邮箱对账（须在动作 3 drain 重注册之前）：纯邮箱路径滞留 pending 补 superior 镜像，
+  // 新镜像项同轮即可被下方重注册的 drain 接管（周期兜底由 startAsyncDeliveryReconciler 同节拍负责）
+  const mailboxLedger = await reconcileAgentMessageLedger(prisma);
   // 动作 3：superior 孤儿 drain 重注册（动态 import——swarm.ts 处于 ReAct 环内，静态导入成环）
   const { requeueOrphanedSuperiorDrains } = await import("../tools/native/swarm/superiorDrain.js");
   const superiorDrainsRegistered = await requeueOrphanedSuperiorDrains(config, services);
@@ -74,6 +86,7 @@ export async function runStartupRecovery(options: {
     zombieSessionsInterrupted: zombieSessions.count,
     staleQueueClaimsReleased,
     superiorDrainsRegistered,
+    mailboxLedger,
     reconcile,
   };
 }

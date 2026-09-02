@@ -3,6 +3,7 @@ import type { ServiceContainer } from "../serviceContainer.js";
 import { prisma } from "../../db.js";
 import { parseAsyncInput, parseAsyncOutput } from "./parse.js";
 import { notifyAsyncDelivery, rollbackAsyncDeliveryClaim } from "./delivery.js";
+import { reconcileAgentMessageLedger } from "../agentMessageLedger.js";
 
 /* -------------------------------------------------------------------------- */
 /* R-1 S3 第二层：投递对账者（reconciler）
@@ -184,6 +185,11 @@ let reconcilerTimer: ReturnType<typeof setInterval> | null = null;
 /**
  * 挂载投递对账者：启动即跑一轮 + 周期跑（周期复用 stream.cleanupIntervalMs 量级——
  * 与 SessionStreamHub 事件清理同节拍，不新增 config 面）。
+ * 每轮两个并列动作（全部幂等可重入，失败各自下轮重试）：
+ * 1. reconcileAsyncDeliveries：Task 管道投递对账（R-1 孤儿回滚 + R-2 未投递补投）；
+ * 2. 邮箱对账 + superior drain 重注册：纯邮箱路径（autoRun=false）滞留 pending 补镜像
+ *    （reconcileAgentMessageLedger），随后 requeueOrphanedSuperiorDrains 让新镜像/孤儿项
+ *    获得服务端 drain 接管——前端不开子会话页消息也不会永久滞留。
  * 重复调用先停旧定时器（幂等）。返回停止函数（优雅退出用）。
  */
 export function startAsyncDeliveryReconciler(config: AppConfig, services: ServiceContainer): () => void {
@@ -193,6 +199,13 @@ export function startAsyncDeliveryReconciler(config: AppConfig, services: Servic
     reconcileAsyncDeliveries({ services, config }).catch((err) => {
       console.warn("[reconciler] 对账轮次失败（下轮重试）:", err);
     });
+    // 动态 import：superiorDrain 经 sendMessage 处于 ReAct 环内，静态导入成环（同 recovery.ts 手法）
+    reconcileAgentMessageLedger(prisma)
+      .then(() => import("../tools/native/swarm/superiorDrain.js"))
+      .then(({ requeueOrphanedSuperiorDrains }) => requeueOrphanedSuperiorDrains(config, services))
+      .catch((err) => {
+        console.warn("[reconciler] 邮箱对账/drain 重注册失败（下轮重试）:", err);
+      });
   };
   runRound();
   reconcilerTimer = setInterval(runRound, intervalMs);

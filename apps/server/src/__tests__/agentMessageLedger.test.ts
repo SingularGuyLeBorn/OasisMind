@@ -8,7 +8,8 @@
  * - delivered：Task 管道原子认领成功（CLAIM 同事务）
  * - consumed：注入气泡随会话历史被 ReAct 循环读入上下文（chatAgentStream 挂点）
  * - 幂等防线：superior 镜像投递前对账（已记账 / 滞留 pending + 同内容消息 → 不重复注入）
- * - 存量对账 reconcileAgentMessageLedger（infra/agentMessageLedger.ts）
+ * - 存量对账 reconcileAgentMessageLedger（infra/agentMessageLedger.ts，含纯邮箱路径补 superior 镜像）
+ * - report_back 重复调用幂等（同子会话 + 同结果的终态跟踪 Task 命中 → 不新建、不投递、不写邮箱）
  */
 
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
@@ -898,4 +899,182 @@ describe("W14 AgentMessage 投递记账回写", () => {
       await cleanupSwarmFixture(fx);
     }
   });
+
+  it("存量对账补镜像：纯邮箱（taskRef=null）滞留 pending → 补建 superior 队列项；连跑两次幂等不重复", async () => {
+    const ctx = await createContextInner();
+    const fx = await createSwarmFixture(ctx);
+    try {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      // ① 纯邮箱派活（autoRun=false）：只有 AgentMessage(pending)，无队列镜像——旧实现永久滞留
+      const mailbox = await prisma.agentMessage.create({
+        data: {
+          fromAgentId: fx.parentAgentId,
+          toAgentId: fx.subAgentId,
+          content: `纯邮箱派活-${RUN_ID}`,
+          messageType: "command",
+          source: "manager",
+          status: "pending",
+          createdAt: twoHoursAgo,
+        },
+      });
+      // ② taskRef 关联的回报：投递归 Task 管道（reconcileAsyncDeliveries），本对账不得镜像
+      const taskBound = await prisma.agentMessage.create({
+        data: {
+          fromAgentId: fx.subAgentId,
+          toAgentId: fx.parentAgentId,
+          content: `task管道回报-${RUN_ID}`,
+          messageType: "report",
+          source: "sub",
+          taskRef: fx.trackingTaskId,
+          status: "pending",
+          createdAt: twoHoursAgo,
+        },
+      });
+
+      const r1 = await reconcileAgentMessageLedger(prisma);
+      expect(r1.mirrored).toBeGreaterThanOrEqual(1);
+      // 镜像到 toAgent（子 Agent）名下会话，权威键 agentMessageId
+      const items1 = await prisma.sessionQueueItem.findMany({ where: { agentMessageId: mailbox.id } });
+      expect(items1).toHaveLength(1);
+      expect(items1[0].kind).toBe("superior");
+      expect(items1[0].content).toBe(mailbox.content);
+      const targetSession = await prisma.chatSession.findUnique({ where: { id: items1[0].sessionId } });
+      expect(targetSession?.agentId).toBe(fx.subAgentId);
+      // AgentMessage 保持 pending：delivered/consumed 由 drain finalize 回写，对账不越权
+      expect((await prisma.agentMessage.findUnique({ where: { id: mailbox.id } }))?.status).toBe("pending");
+
+      // taskRef 非空不镜像（保持 pending + 告警）——Task 管道补投与队列 drain 双通道会重复注入
+      expect(await prisma.sessionQueueItem.findFirst({ where: { agentMessageId: taskBound.id } })).toBeNull();
+      expect(r1.warnings.some((w) => w.messageId === taskBound.id)).toBe(true);
+      expect((await prisma.agentMessage.findUnique({ where: { id: taskBound.id } }))?.status).toBe("pending");
+
+      // 可重入：第二次对账幂等命中已有队列项，不重复建行
+      const r2 = await reconcileAgentMessageLedger(prisma);
+      expect(r2.mirrored).toBe(0);
+      expect(r2.alreadyMirrored).toBeGreaterThanOrEqual(1);
+      expect(await prisma.sessionQueueItem.findMany({ where: { agentMessageId: mailbox.id } })).toHaveLength(1);
+    } finally {
+      await cleanupSwarmFixture(fx);
+    }
+  });
+
+  it("report_back 重复调用幂等：同子会话同结果只投递一次（跟踪 Task 已终态 → matched=null 路径拦截）", async () => {
+    // chatAgentStream 打桩：autoConsume 认领后不起真 LLM
+    vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (_s, _c, input, _inv, emit) => {
+      emit({
+        type: "done",
+        sessionId: input.sessionId!,
+        agentId: "w14-spy",
+        content: "已消化",
+        toolCalls: [],
+        model: "m",
+        provider: "p",
+        roundsUsed: 1,
+      });
+    });
+
+    const ctx = await createContextInner();
+    const fx = await createSwarmFixture(ctx);
+    try {
+      const first = (await executeNativeTool(
+        "agent_report_back",
+        { content: `重复上报-${RUN_ID}` },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; duplicate?: boolean; message?: string };
+      expect(first.success).toBe(true);
+      expect(first.duplicate).toBeUndefined();
+      // 第一次：精确匹配命中 running 跟踪 Task → 完成
+      expect((await prisma.task.findUnique({ where: { id: fx.trackingTaskId } }))?.status).toBe("success");
+
+      // 第二次同内容：跟踪 Task 已终态 → running/queued 匹配必 miss——旧实现会新建第二条
+      // success Task 二次投递（父会话重复气泡 + 旁路邮箱双行），以下断言在旧实现下必红
+      const second = (await executeNativeTool(
+        "agent_report_back",
+        { content: `重复上报-${RUN_ID}` },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; duplicate?: boolean; message?: string };
+      expect(second.success).toBe(true);
+      expect(second.duplicate).toBe(true);
+      expect(second.message).toContain("无需重复上报");
+
+      // 零新增：success 跟踪 Task 仍只有一条；旁路邮箱同内容只有一行（bus.send 也被拦截）
+      const successTasks = await prisma.task.findMany({
+        where: {
+          sessionId: fx.parentSessionId,
+          status: "success",
+          OR: [{ name: { startsWith: "[async]" } }, { type: "async_agent" }],
+        },
+      });
+      expect(successTasks).toHaveLength(1);
+      const mailboxRows = await prisma.agentMessage.findMany({
+        where: { fromAgentId: fx.subAgentId, toAgentId: fx.parentAgentId },
+      });
+      expect(mailboxRows).toHaveLength(1);
+    } finally {
+      await cleanupSwarmFixture(fx);
+    }
+  }, 15_000);
+
+  it("report_back 幂等不误伤：同子会话两个不同结果各自投递，同结果第二次被拦截", async () => {
+    vi.spyOn(agentStream, "chatAgentStream").mockImplementation(async (_s, _c, input, _inv, emit) => {
+      emit({
+        type: "done",
+        sessionId: input.sessionId!,
+        agentId: "w14-spy",
+        content: "已消化",
+        toolCalls: [],
+        model: "m",
+        provider: "p",
+        roundsUsed: 1,
+      });
+    });
+
+    const ctx = await createContextInner();
+    // withTrackingTask:false —— matched=null → 新建 success Task 投递路径
+    const fx = await createSwarmFixture(ctx, { withTrackingTask: false });
+    try {
+      const r1 = (await executeNativeTool(
+        "agent_report_back",
+        { content: `结果A-${RUN_ID}` },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; duplicate?: boolean };
+      expect(r1.success).toBe(true);
+      expect(r1.duplicate).toBeUndefined();
+
+      // 同结果第二次：幂等拦截，不新建 Task、不写邮箱
+      const r1dup = (await executeNativeTool(
+        "agent_report_back",
+        { content: `结果A-${RUN_ID}` },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; duplicate?: boolean };
+      expect(r1dup.success).toBe(true);
+      expect(r1dup.duplicate).toBe(true);
+
+      // 不同结果（同会话先后完成两个任务的合法场景）：幂等键不同，正常投递
+      const r2 = (await executeNativeTool(
+        "agent_report_back",
+        { content: `结果B-${RUN_ID}` },
+        makeReportCtx(ctx, fx),
+      )) as { success?: boolean; duplicate?: boolean };
+      expect(r2.success).toBe(true);
+      expect(r2.duplicate).toBeUndefined();
+
+      // A、B 各一条 success Task；A 的重复未建行
+      const successTasks = await prisma.task.findMany({
+        where: {
+          sessionId: fx.parentSessionId,
+          status: "success",
+          OR: [{ name: { startsWith: "[async]" } }, { type: "async_agent" }],
+        },
+      });
+      expect(successTasks).toHaveLength(2);
+      // 旁路邮箱两行（A、B）；A 的重复未写行
+      const mailboxRows = await prisma.agentMessage.findMany({
+        where: { fromAgentId: fx.subAgentId, toAgentId: fx.parentAgentId },
+      });
+      expect(mailboxRows).toHaveLength(2);
+    } finally {
+      await cleanupSwarmFixture(fx);
+    }
+  }, 15_000);
 });

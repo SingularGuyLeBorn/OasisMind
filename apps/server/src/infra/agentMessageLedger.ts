@@ -13,7 +13,10 @@
  * Task 记「结果内容」，两条账各记各的。
  *
  * 另含存量对账 reconcileAgentMessageLedger：原一次性脚本 scripts/fix-agent-message-ledger.ts
- * 的核心逻辑（W16c 随脚本退役迁入，脚本执行 0 命中后已删除）。
+ * 的核心逻辑（W16c 随脚本退役迁入，脚本执行 0 命中后已删除）。已接线为服务端兜底：
+ * 启动恢复首扫（runStartupRecovery，先于 superior drain 重注册）+ 周期对账
+ * （startAsyncDeliveryReconciler 同节拍）——纯邮箱路径（autoRun=false 只写 AgentMessage、
+ * 或 busy 分支镜像 create 失败窗口）的滞留 pending 不再依赖前端打开子会话页才镜像。
  */
 
 import type { PrismaClient, Prisma } from "@prisma/client";
@@ -107,11 +110,18 @@ export interface ReconcileResult {
   scanned: number;
   markedConsumed: number;
   keptPending: number;
+  /** 本轮补建 superior 队列镜像的条数（纯邮箱路径，taskRef=null） */
+  mirrored: number;
+  /** 已有同 agentMessageId 队列项（幂等命中 / 并发镜像落选），未重复创建 */
+  alreadyMirrored: number;
   warnings: ReconcileWarning[];
   dryRun: boolean;
 }
 
-type ReconcileDb = Pick<PrismaClient, "agentMessage" | "task" | "chatMessage" | "chatSession">;
+type ReconcileDb = Pick<
+  PrismaClient,
+  "agentMessage" | "task" | "chatMessage" | "chatSession" | "sessionQueueItem"
+>;
 
 function parseTaskSessionId(rawInput: unknown): string | null {
   let value = rawInput;
@@ -150,8 +160,13 @@ async function resolveTargetSessionId(
 }
 
 /**
- * 存量对账核心（可测试）：扫滞留 pending → 已注入置 consumed，未注入保持 pending 并告警。
- * dryRun=true 时只扫描与判定，不写库。
+ * 存量对账核心（可测试）：扫滞留 pending →
+ * - 已注入（目标会话有同内容消息）：置 consumed；
+ * - 未注入且 taskRef=null（纯邮箱路径：autoRun=false 派活 / busy 分支镜像 create 失败窗口）：
+ *   补建 superior SessionQueueItem 镜像（按 agentMessageId 幂等），服务端 drain 接管消费，
+ *   不再依赖前端打开子会话页才镜像；
+ * - 未注入且 taskRef 非空：投递归 Task 管道（reconcileAsyncDeliveries）负责，保持 pending 并告警。
+ * dryRun=true 时只扫描与判定，不写库。全部动作幂等，可任意重跑。
  */
 export async function reconcileAgentMessageLedger(
   db: ReconcileDb,
@@ -179,6 +194,8 @@ export async function reconcileAgentMessageLedger(
     scanned: stale.length,
     markedConsumed: 0,
     keptPending: 0,
+    mirrored: 0,
+    alreadyMirrored: 0,
     warnings: [],
     dryRun,
   };
@@ -200,7 +217,20 @@ export async function reconcileAgentMessageLedger(
       where: { sessionId, content: msg.content },
       select: { id: true },
     });
-    if (!injected) {
+    if (injected) {
+      if (!dryRun) {
+        await db.agentMessage.update({
+          where: { id: msg.id },
+          data: { status: "consumed", deliveredAt: new Date() },
+        });
+      }
+      result.markedConsumed++;
+      continue;
+    }
+
+    // taskRef 非空 = Task 管道投递（report_back）：重复投递防护与补投归 reconcileAsyncDeliveries，
+    // 本对账不镜像（否则 Task 补投与队列 drain 双通道重复注入）
+    if (msg.taskRef) {
       result.keptPending++;
       result.warnings.push({
         messageId: msg.id,
@@ -210,13 +240,46 @@ export async function reconcileAgentMessageLedger(
       continue;
     }
 
-    if (!dryRun) {
-      await db.agentMessage.update({
-        where: { id: msg.id },
-        data: { status: "consumed", deliveredAt: new Date() },
-      });
+    // 纯邮箱路径：补 superior 队列镜像（权威键 agentMessageId；@@unique([sessionId, agentMessageId])
+    // 兜底并发双建）。AgentMessage 保持 pending——drain 消费后 finalize 统一回写 consumed。
+    const existingItem = await db.sessionQueueItem.findFirst({
+      where: { sessionId, agentMessageId: msg.id },
+      select: { id: true },
+    });
+    if (existingItem) {
+      result.keptPending++;
+      result.alreadyMirrored++;
+      continue;
     }
-    result.markedConsumed++;
+    if (!dryRun) {
+      try {
+        const maxOrder = await db.sessionQueueItem.aggregate({
+          where: { sessionId },
+          _max: { order: true },
+        });
+        await db.sessionQueueItem.create({
+          data: {
+            sessionId,
+            kind: "superior",
+            content: msg.content,
+            // 与 sendMessage busy 分支镜像口径一致：source 记发送方 Agent id（drain 重建上下文用）
+            source: msg.fromAgentId,
+            agentMessageId: msg.id,
+            order: (maxOrder._max.order ?? -10) + 10,
+          },
+        });
+      } catch (err) {
+        // 唯一约束冲突 = 前端镜像 / 并行对账已抢先建行，幂等跳过
+        if ((err as { code?: string })?.code === "P2002") {
+          result.keptPending++;
+          result.alreadyMirrored++;
+          continue;
+        }
+        throw err;
+      }
+    }
+    result.keptPending++;
+    result.mirrored++;
   }
 
   return result;

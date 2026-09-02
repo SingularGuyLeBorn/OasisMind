@@ -702,6 +702,7 @@ const server = app.listen(PORT, HOST, () => {
       if (r.staleTasksFailed > 0) console.log(`  ⚠️ [AsyncJobs] 已将 ${r.staleTasksFailed} 个中断的后台任务标为 failed`);
       if (r.zombieSessionsInterrupted > 0) console.log(`  ⚠️ [Session] 已将 ${r.zombieSessionsInterrupted} 个僵尸 running 会话标为 interrupted`);
       if (r.superiorDrainsRegistered > 0) console.log(`  ♻️ [Session] 已为 ${r.superiorDrainsRegistered} 个会话重注册 superior 队列 drain`);
+      if (r.mailboxLedger.mirrored > 0) console.log(`  ♻️ [AgentMessage] 启动对账已为 ${r.mailboxLedger.mirrored} 条滞留邮箱消息补建队列镜像`);
       const healed = r.reconcile.renotified + r.reconcile.renotifiedUndelivered;
       if (healed > 0) {
         console.log(`  ♻️ [reconciler] 启动首扫补投 ${healed} 条交付（孤儿回滚 ${r.reconcile.rolledBack} / 未投递 ${r.reconcile.renotifiedUndelivered}）`);

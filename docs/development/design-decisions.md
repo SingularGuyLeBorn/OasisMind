@@ -1971,3 +1971,23 @@ reactLoop 的 Turn Snapshot 在 run 入口冻结单一模型，全程不再切�
 
 **回答**：用户要求远程助手能操控本机，同时强调危险 → 按推荐落地
 
+
+---
+
+## 消息可靠性审计遗留：child_notify 堵塞 superior 队列（2026-09-01）
+
+**问题**：`agent_notify_parent` 产生的 `SessionQueueItem(kind=child_notify)` 只有前端 drain（`useChatQueueDrain`）消费；服务端 `enqueueSuperiorQueueDrain` 遇到非 superior 队首直接 return（`sessionQueue.ts:81`）。后果：父会话没有浏览器打开时，一条滞留的 child_notify 排在队首，会**连带堵住它后面所有 superior 命令**的服务端 drain，整个队列停摆到用户打开页面为止。
+
+**推荐方案**：服务端 drain 遇到 child_notify 队首时跳过它继续处理后续 superior 项（child_notify 是过程通知，语义上不需要阻塞命令执行；顺序保证只约束同 kind 即可）。child_notify 本身仍留给前端 drain 消费呈现。
+
+**回答**：
+
+---
+
+## 消息可靠性审计遗留：8s 同文去重吞消息（2026-09-01）
+
+**问题**：`sendMessage.ts` 的 `DEDUP_WINDOW_MS=8s` 内同文消息会被当重复吞掉并直接返回上一条 assistant 答复。父 Agent 若在 8 秒内有意发两条相同内容（如两次「继续」），第二条被丢弃——去重过激导致的丢失。
+
+**推荐方案**：去重窗口收窄到 2s（只挡双击/网络重试级别的误重发），或要求去重命中时上一条消息仍处于 pending/未答复状态才吞（已答复过的同文消息视为有意重发，放行）。
+
+**回答**：

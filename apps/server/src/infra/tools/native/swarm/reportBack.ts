@@ -2,6 +2,39 @@ import { normalizeReportBack } from "../../../swarmReportContract.js";
 import { getSwarmBus } from "../../../swarmBus.js";
 import type { NativeToolContext } from "../types.js";
 
+/**
+ * 解析父会话：优先子会话 spawn 绑定的 parentSessionId；未绑时按「跟踪 Task」反查 spawn 时的
+ * 父 session（多父会话场景）。仍找不到返回 undefined（调用方按跳过桥接处理）。
+ */
+async function resolveParentSessionId(ctx: NativeToolContext): Promise<string | undefined> {
+  if (!ctx.prisma) return undefined;
+  if (ctx.sessionId) {
+    const subSession = await ctx.prisma.chatSession.findUnique({
+      where: { id: ctx.sessionId },
+      select: { parentSessionId: true },
+    });
+    if (subSession?.parentSessionId) return subSession.parentSessionId;
+  }
+  const trackers = await ctx.prisma.task.findMany({
+    where: {
+      OR: [{ name: { startsWith: "[async]" } }, { type: "async_agent" }],
+      status: { in: ["running", "queued", "success"] },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 40,
+  });
+  const bySubSession = trackers.find((row) => {
+    const input = row.input as { subagentSessionId?: string } | null;
+    return !!ctx.sessionId && input?.subagentSessionId === ctx.sessionId;
+  });
+  if (bySubSession?.sessionId) return bySubSession.sessionId;
+  const byAgent = trackers.find((row) => {
+    const input = row.input as { agentSnapshot?: { id?: string } } | null;
+    return input?.agentSnapshot?.id === ctx.agentSnapshot?.id;
+  });
+  return byAgent?.sessionId ?? undefined;
+}
+
 export async function agentReportBackTool(args: Record<string, unknown>, ctx: NativeToolContext) {
   // 软限制：有上级即可回报。异步续跑 / 用户在子会话补充后也应能 report_back。
   // 投递目标由 parentSessionId（spawn 绑定）决定，见下方桥接逻辑。
@@ -10,6 +43,49 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
   }
   if (!ctx.prisma) throw new Error("当前调用缺少服务端会话上下文，无法访问数据库与渠道绑定。请在 OasisMind 正常 Chat / Agent 会话里重试本工具；不要改参数硬刚，也不要改用 shell 直连数据库。");
   const report = normalizeReportBack(args);
+
+  // 重复投递幂等（在 bus.send 之前，query 求援不结案不参与）：
+  // LLM 第二次调用 report_back 时跟踪 Task 已是 success 终态，running/queued 精确匹配必 miss，
+  // 旧实现走 matched=null 分支**新建一条 success Task** → autoConsume 再投一次（父会话重复气泡、
+  // 旁路邮箱双行）。幂等键 = 父会话内「input.subagentSessionId = 当前子会话」且
+  // 「output.asyncResult = 本次结果」的 success 跟踪 Task——血缘 + 结果内容双键，
+  // 同一子会话先后完成两个**不同**结果的任务键不同，正常投递不误伤。
+  // 命中重复：不新建 Task、不投递、不再写旁路邮箱，直接返回已投递。
+  let parentSessionId: string | undefined;
+  if (report.messageType !== "query") {
+    try {
+      parentSessionId = await resolveParentSessionId(ctx);
+      if (parentSessionId && ctx.sessionId) {
+        const duplicate = await ctx.prisma.task.findFirst({
+          where: {
+            sessionId: parentSessionId,
+            status: "success",
+            OR: [{ name: { startsWith: "[async]" } }, { type: "async_agent" }],
+            input: { path: "$.subagentSessionId", equals: ctx.sessionId },
+            output: { path: "$.asyncResult", equals: report.asyncResult },
+          },
+          select: { id: true },
+        });
+        if (duplicate) {
+          return {
+            success: true,
+            message: "该结果已投递给上级，无需重复上报。",
+            evidenceStatus: report.evidenceStatus,
+            evidence: report.evidence,
+            outcome: report.outcome,
+            unverified: report.unverified,
+            settled: true,
+            duplicate: true,
+          };
+        }
+      }
+    } catch (err) {
+      // 幂等检查失败按未投递继续（fail-open：罕见 DB 异常下宁可偶发重复，也不丢结果）
+      console.warn("[agent_report_back] 重复投递幂等检查失败（按未投递继续）:", err);
+      parentSessionId = undefined;
+    }
+  }
+
   const bus = getSwarmBus(ctx.prisma, ctx.services);
   // report_back 本身就是正式向上回报通道，即使在工具轮次中也必须放行。
   // taskRef 不接受 LLM 入参（W16a-3）：桥接找到跟踪 Task 后由服务端强制写 jobId（下方）
@@ -44,38 +120,9 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
 
   // 桥接：完成父会话跟踪 Task（spawn 时创建）或新建投递，供 pullAsyncQueue / 异步列表消费
   try {
-    let parentSessionId: string | undefined;
-    if (ctx.sessionId) {
-      const subSession = await ctx.prisma.chatSession.findUnique({
-        where: { id: ctx.sessionId },
-        select: { parentSessionId: true },
-      });
-      parentSessionId = subSession?.parentSessionId ?? undefined;
-    }
-
-    // 子会话未绑 parentSessionId 时：按「跟踪 Task」反查 spawn 时的父 session（多父会话场景）
-    if (!parentSessionId && ctx.prisma) {
-      const trackers = await ctx.prisma.task.findMany({
-        where: {
-          OR: [{ name: { startsWith: "[async]" } }, { type: "async_agent" }],
-          status: { in: ["running", "queued", "success"] },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 40,
-      });
-      const bySubSession = trackers.find((row) => {
-        const input = row.input as { subagentSessionId?: string } | null;
-        return !!ctx.sessionId && input?.subagentSessionId === ctx.sessionId;
-      });
-      if (bySubSession?.sessionId) {
-        parentSessionId = bySubSession.sessionId;
-      } else {
-        const byAgent = trackers.find((row) => {
-          const input = row.input as { agentSnapshot?: { id?: string } } | null;
-          return input?.agentSnapshot?.id === ctx.agentSnapshot?.id;
-        });
-        if (byAgent?.sessionId) parentSessionId = byAgent.sessionId;
-      }
+    // 父会话已在上方幂等检查时解析过；解析失败/被跳过时在此重试一次
+    if (!parentSessionId) {
+      parentSessionId = await resolveParentSessionId(ctx);
     }
 
     // 仍找不到则跳过队列桥接（SwarmBus 消息已发出）；不再回退到父 Agent isMainSession，避免投错会话
@@ -117,6 +164,7 @@ export async function agentReportBackTool(args: Record<string, unknown>, ctx: Na
       // 零兼容纪律：精确匹配是唯一匹配方式，miss 时**不做**任何模糊兜底（旧「take:20 时间窗 +
       // agentSnapshot.id」语义已删除）——同 Agent 并发任务的跟踪 Task 会被误完成。matched=null
       // 走下方 create 新 success Task 投递结果：不丢、不误投。
+      // （同子会话 + 同结果的**重复** report_back 已在上方幂等检查拦截，不会走到这里）
 
       if (matched) {
         await ctx.services.task.update({
