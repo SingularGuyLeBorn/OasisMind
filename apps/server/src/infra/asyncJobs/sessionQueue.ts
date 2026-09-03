@@ -45,11 +45,14 @@ export interface SuperiorQueueDrainItem {
  * 复用 enqueueSessionAutoConsume 的 per-session 串行链——同会话的异步投递续跑与本 drain
  * 全部串行，「同会话同时至多一条流」不变量不破。
  *
- * 链上循环：hub.isRunning → waitFor；取队首（listBySession[0]，仅 claimedAt=null）；无则结束；
- * consume 软认领（置 claimedAt，落选 = 前端 drain 抢先，静默跳过看下一项）；
- * runItem 重入 prepareAgentRun（写消息、起流）；成功后 finalize 删行；抛错则保留 claimedAt 交恢复扫描。
- * 只处理 kind=superior 项：user 项归前端 drain 管（可能带附件/skill，服务端重放会丢语义），
- * 遇到即停——前端 drain 消费后会连带处理后续 superior 项；下次发消息也会重新注册本 drain。
+ * 链上循环：hub.isRunning → waitFor；取最老未认领的 superior 项（listBySession 按 order 升序，
+ * find 第一个 kind=superior）；无则结束；consume 软认领（置 claimedAt，落选 = 前端 drain 抢先，
+ * 静默跳过看下一项）；runItem 重入 prepareAgentRun（写消息、起流）；成功后 finalize 删行；
+ * 抛错则保留 claimedAt 交恢复扫描。
+ * 只处理 kind=superior 项：user / child_notify 项归前端 drain 管（可能带附件/skill 或只需呈现，
+ * 服务端重放会丢语义）——**跳过而非止步**：非 superior 队首（如父会话没人打开时滞留的
+ * child_notify）不再堵塞后续 superior 命令；顺序保证只约束同 kind，superior 项之间仍严格
+ * order FIFO。被跳过的项留在原地，仍由前端 drain 消费；下次发消息也会重新注册本 drain。
  *
  * v8 TP-1 池准入：drain 续跑属「交付消费」高优通道（runConsumeJob 队首优先 + 全局占用约束）。
  * 不变量：禁止「等槽无限挂起消费链」——等槽超时则放弃本轮 drain，队列项未 claim、
@@ -76,9 +79,12 @@ export function enqueueSuperiorQueueDrain(options: {
           await hub.waitFor(sessionId);
           continue;
         }
-        const head = (await services.sessionQueueItem.listBySession(sessionId))[0];
+        // 取最老未认领的 superior 项（listBySession 已按 order 升序）：非 superior 队首
+        // （child_notify / user，归前端 drain 消费）跳过而非止步，不再堵塞后续 superior 命令
+        const head = (await services.sessionQueueItem.listBySession(sessionId)).find(
+          (item) => item.kind === "superior",
+        );
         if (!head) return;
-        if (head.kind !== "superior") return;
         // 池准入放在 claim 之前：未获槽不 claim，队列项原样留待下次触发（不丢）
         const admitted = await orchestrator.runConsumeJob({
           jobId: `drain-${head.id}`,

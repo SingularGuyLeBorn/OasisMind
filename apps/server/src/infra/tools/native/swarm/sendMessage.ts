@@ -227,27 +227,23 @@ export async function prepareAgentRun(
         select: { id: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       });
+      // 去重命中时再看上一条同文消息是否已有 assistant 答复（2026-09-01 决策）：
+      // - 尚无答复（仍在管道中 / 上次起流中断）：吞——不重复写同文 user 消息，
+      //   直接起流处理历史里那条（兼具崩溃恢复语义）；
+      // - 已有答复：视为有意重发（父 Agent 8s 内连发两条「继续」），放行——写新消息走正常流程。
+      let skipDuplicateWrite = false;
       if (dupUser) {
-        const lastAssistant = await ctx.prisma?.chatMessage.findFirst({
+        const answered = await ctx.prisma?.chatMessage.findFirst({
           where: {
             sessionId: mainSession.id,
             role: "assistant",
             createdAt: { gte: dupUser.createdAt },
           },
-          select: { content: true },
-          orderBy: { createdAt: "desc" },
+          select: { id: true },
         });
-        if (lastAssistant) {
-          try {
-            await ctx.services.session.update({ id: mainSession.id, status: "completed" } as any);
-          } catch { /* ignore */ }
-          return {
-            kind: "started",
-            subagentSessionId: mainSession.id,
-            completion: Promise.resolve(lastAssistant.content || "(无文本输出)"),
-          };
-        }
-      } else {
+        skipDuplicateWrite = !answered;
+      }
+      if (!skipDuplicateWrite) {
         await ctx.services.message.create({
           sessionId: mainSession.id,
           role: "user",
