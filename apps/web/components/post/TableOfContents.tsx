@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useMemo, useState, useEffect, useCallback, useSyncExternalStore, type RefObject } from "react";
 import { ChevronRight, ListTree, PanelRightClose } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -63,25 +63,35 @@ function buildGroups(items: TocItem[]): TocGroup[] {
   return groups;
 }
 
-function scrollToId(id: string, attempt = 0) {
-  const el = document.getElementById(id);
+/**
+ * 滚动到指定标题。保活场景下页面同时存在多个文章 DOM（隐藏容器），
+ * 标题 id（om-h-N）跨文章重复，故容器内查找优先于全局 getElementById。
+ */
+function scrollToId(id: string, container: HTMLElement | null, attempt = 0) {
+  const el = container
+    ? container.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
+    : document.getElementById(id);
   if (el) {
     el.scrollIntoView({ behavior: "auto", block: "start" });
     history.replaceState(null, "", `#${id}`);
     return;
   }
   if (attempt < 1) {
-    window.setTimeout(() => scrollToId(id, attempt + 1), 50);
+    window.setTimeout(() => scrollToId(id, container, attempt + 1), 50);
     return;
   }
   // 兜底：按索引直接取第 N 个 h2/h3/h4，避免 id 生成/渲染不一致导致点击无响应
   const idxMatch = /^om-h-(\d+)$/.exec(id);
   if (!idxMatch) return;
   const targetIndex = Number(idxMatch[1]);
-  const container = document.querySelector(".om-post-content");
   const headings = container
     ? Array.from(container.querySelectorAll("h2, h3, h4"))
-    : Array.from(document.querySelectorAll("article.om-post-swap h2, article.om-post-swap h3, article.om-post-swap h4"));
+    : (() => {
+        const main = document.querySelector(".om-post-content");
+        return main
+          ? Array.from(main.querySelectorAll("h2, h3, h4"))
+          : Array.from(document.querySelectorAll("article.om-post-swap h2, article.om-post-swap h3, article.om-post-swap h4"));
+      })();
   const target = headings[targetIndex];
   if (target) {
     target.scrollIntoView({ behavior: "auto", block: "start" });
@@ -137,9 +147,15 @@ export function usePostTocVisible(): boolean {
 export function TableOfContents({
   content,
   className,
+  containerRef,
+  active = true,
 }: {
   content: string;
   className?: string;
+  /** 文章容器：保活多实例时把标题查找/观察收进本容器，避免命中隐藏文章的重复 id */
+  containerRef?: RefObject<HTMLElement | null>;
+  /** 保活实例隐藏时置 false：不做可见性观察 */
+  active?: boolean;
 }) {
   const visible = usePostTocVisible();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -164,7 +180,8 @@ export function TableOfContents({
   useInitialHash(items, setActiveId);
 
   useEffect(() => {
-    if (items.length === 0) return;
+    if (!active || items.length === 0) return;
+    const scope = containerRef?.current ?? null;
     const observer = new IntersectionObserver(
       (entries) => {
         let topVisible: string | null = null;
@@ -180,11 +197,13 @@ export function TableOfContents({
       { rootMargin: "-88px 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
     for (const item of items) {
-      const el = document.getElementById(item.id);
+      const el = scope
+        ? scope.querySelector<HTMLElement>(`#${CSS.escape(item.id)}`)
+        : document.getElementById(item.id);
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, [items]);
+  }, [items, active, containerRef]);
 
   const toggleGroup = useCallback((id: string) => {
     setManuallyExpanded((prev) => {
@@ -266,7 +285,7 @@ export function TableOfContents({
                     type="button"
                     onClick={() => {
                       setActiveId(group.heading.id);
-                      scrollToId(group.heading.id);
+                      scrollToId(group.heading.id, containerRef?.current ?? null);
                     }}
                     className={cn(
                       "group flex flex-1 items-start rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
@@ -290,7 +309,7 @@ export function TableOfContents({
                             type="button"
                             onClick={() => {
                               setActiveId(child.id);
-                              scrollToId(child.id);
+                              scrollToId(child.id, containerRef?.current ?? null);
                             }}
                             className={cn(
                               "group flex w-full items-start rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",

@@ -38,7 +38,7 @@ export interface PostLiveDocModel {
   viewCount: number;
 }
 
-export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
+export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; active?: boolean }) {
   const articleRef = useRef<HTMLElement>(null);
   const tocVisible = usePostTocVisible();
 
@@ -104,6 +104,7 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
           garden={post.garden}
           title={title}
           articleRef={articleRef}
+          enabled={active}
         />
         <header className="mb-4">
           <input
@@ -182,16 +183,17 @@ export function PostLiveDoc({ post }: { post: PostLiveDocModel }) {
 
       <RelatedPosts postId={post.id} />
 
-      <PageSearch containerRef={articleRef} />
+      <PageSearch containerRef={articleRef} enabled={active} />
       {!readOnly && editorReady && (
         <SelectionExplain
           containerRef={articleRef}
           title={title}
           slug={post.slug}
           garden={post.garden}
+          enabled={active}
         />
       )}
-      <TableOfContents content={content} />
+      <TableOfContents content={content} containerRef={articleRef} active={active} />
     </div>
   );
 }

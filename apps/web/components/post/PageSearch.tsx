@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 interface PageSearchProps {
   containerRef: RefObject<HTMLElement | null>;
   className?: string;
+  /** 保活实例隐藏时置 false：摘全局快捷键监听并收起浮层，避免多实例抢占 */
+  enabled?: boolean;
 }
 
 const MARK_CLASS = "om-page-search-mark";
@@ -86,7 +88,7 @@ function highlight(container: HTMLElement, rawQuery: string): HTMLElement[] {
 }
 
 /** 页内搜索：默认隐藏，Ctrl/Cmd+F 浮出；Esc 关闭并清除高亮 */
-export function PageSearch({ containerRef, className }: PageSearchProps) {
+export function PageSearch({ containerRef, className, enabled = true }: PageSearchProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -94,6 +96,9 @@ export function PageSearch({ containerRef, className }: PageSearchProps) {
   const [current, setCurrent] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const scheduled = useRef<number | null>(null);
+  // 保活实例隐藏时等价于关闭：面板是 body 级 portal，不随隐藏容器消失；
+  // open 状态保留，重新激活时面板与查询词原样恢复
+  const effectiveOpen = enabled && open;
 
   useEffect(() => {
     if (scheduled.current) window.clearTimeout(scheduled.current);
@@ -131,7 +136,7 @@ export function PageSearch({ containerRef, className }: PageSearchProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    if (!open || !debouncedQuery.trim()) {
+    if (!effectiveOpen || !debouncedQuery.trim()) {
       clearHighlights(container);
       queueMicrotask(() => {
         setMatches([]);
@@ -145,7 +150,7 @@ export function PageSearch({ containerRef, className }: PageSearchProps) {
       setMatches(found);
       setCurrent(found.length ? 0 : -1);
     });
-  }, [debouncedQuery, containerRef, open]);
+  }, [debouncedQuery, containerRef, effectiveOpen]);
 
   useEffect(() => {
     matches.forEach((el) => el.classList.remove(CURRENT_CLASS));
@@ -157,6 +162,7 @@ export function PageSearch({ containerRef, className }: PageSearchProps) {
   }, [current, matches]);
 
   useEffect(() => {
+    if (!enabled) return;
     function onKeyDown(e: KeyboardEvent) {
       const isMod = e.ctrlKey || e.metaKey;
       const target = e.target as HTMLElement;
@@ -193,9 +199,9 @@ export function PageSearch({ containerRef, className }: PageSearchProps) {
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, matches, current, goTo, handleClose, handleOpen]);
+  }, [open, matches, current, goTo, handleClose, handleOpen, enabled]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!effectiveOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <div

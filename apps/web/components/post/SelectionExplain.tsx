@@ -36,6 +36,8 @@ export interface SelectionExplainProps {
   title: string;
   slug: string;
   garden: string;
+  /** 保活实例隐藏时置 false：摘 document 级监听并收起浮层，避免多实例重复触发 */
+  enabled?: boolean;
 }
 
 export function SelectionExplain({
@@ -43,6 +45,7 @@ export function SelectionExplain({
   title,
   slug,
   garden,
+  enabled = true,
 }: SelectionExplainProps) {
   const panelId = useId();
   const [quote, setQuote] = useState("");
@@ -98,7 +101,24 @@ export function SelectionExplain({
     setBtnPos(placeNearSelection(rect, 88));
   }, [containerRef, panelOpen, placeNearSelection]);
 
+  // 保活实例被隐藏时收起浮层/按钮：渲染期调整（eslint 禁止 effect 内同步 setState）。
+  // 不调 clearUi——它写 rangeRectRef，渲染期禁碰 ref；rect 会在下次划线时被覆盖。
+  const [wasEnabled, setWasEnabled] = useState(enabled);
+  if (enabled !== wasEnabled) {
+    setWasEnabled(enabled);
+    if (!enabled) {
+      setBtnPos(null);
+      setPanelOpen(false);
+      setPanelPos(null);
+      setQuote("");
+      setSurrounding(undefined);
+      setExplanation(null);
+      setError(null);
+    }
+  }
+
   useEffect(() => {
+    if (!enabled) return;
     const onMouseUp = () => {
       // 等浏览器完成选区
       window.setTimeout(() => syncFromSelection(), 0);
@@ -118,7 +138,7 @@ export function SelectionExplain({
       document.removeEventListener("mouseup", onMouseUp);
       document.removeEventListener("keyup", onKeyUp);
     };
-  }, [syncFromSelection, clearUi]);
+  }, [syncFromSelection, clearUi, enabled]);
 
   useEffect(() => {
     if (!btnPos && !panelOpen) return;

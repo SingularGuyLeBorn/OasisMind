@@ -18,6 +18,8 @@ interface ReadingProgressTrackerProps {
   title: string;
   /** 文章根节点，用于计算进度 */
   articleRef: React.RefObject<HTMLElement | null>;
+  /** 保活实例隐藏时置 false：不挂滚动监听、不写进度，避免污染其它文章的阅读位置 */
+  enabled?: boolean;
 }
 
 /**
@@ -30,12 +32,14 @@ export function ReadingProgressTracker({
   garden,
   title,
   articleRef,
+  enabled = true,
 }: ReadingProgressTrackerProps) {
   const [banner, setBanner] = useState<"restored" | null>(null);
   const saveTimer = useRef<number | null>(null);
   const readyToSaveRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled) return;
     const main = getMainScrollEl();
     if (!main) return;
 
@@ -108,7 +112,7 @@ export function ReadingProgressTracker({
       // 离开页：若已开写则落盘最终位置
       if (readyToSaveRef.current) persist();
     };
-  }, [postId, slug, garden, title, articleRef]);
+  }, [postId, slug, garden, title, articleRef, enabled]);
 
   if (banner !== "restored") return null;
 

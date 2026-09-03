@@ -13,6 +13,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * 切文章保活上限：已打开的 PostLiveDoc（含 Milkdown 编辑器实例）只隐藏不卸载，
+ * 切回零初始化。超过上限卸载最久未访问的一篇。
+ * [OM-FREEPLAY] 3 是经验值——用户明确接受用内存换切换速度；再大内存收益比下降。
+ */
+const KEEP_ALIVE_LIMIT = 3;
+
 function PostDetailPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -44,6 +51,18 @@ function PostDetailPageContent() {
   );
   const postMatchesRoute =
     !!post && post.slug === slug && (post.garden ?? DEFAULT_POST_GARDEN) === garden;
+
+  // 编辑器保活缓存（LRU）：命中的文章只 hidden 不卸载，Milkdown 初始化成本只付一次。
+  // 渲染期调整（React 推荐替代 setState-in-effect 的模式）：数据到位的同一帧即入缓存。
+  const [liveDocs, setLiveDocs] = useState<NonNullable<typeof post>[]>([]);
+  const [cachedForId, setCachedForId] = useState<string | null>(null);
+  if (postMatchesRoute && post && cachedForId !== post.id) {
+    setCachedForId(post.id);
+    setLiveDocs((prev) => {
+      const rest = prev.filter((p) => p.id !== post.id);
+      return [post, ...rest].slice(0, KEEP_ALIVE_LIMIT);
+    });
+  }
 
   const [showSkeleton, setShowSkeleton] = useState(false);
   useEffect(() => {
@@ -90,7 +109,7 @@ function PostDetailPageContent() {
       .catch(catchUnlessCancelled("app/posts/[slug]/page.tsx"));
   }, [post?.id, post?.slug, post?.garden, utils, recordView]);
 
-  if (showSkeleton && !post) {
+  if (showSkeleton && liveDocs.length === 0) {
     return (
       <div className="w-full px-4 py-8 sm:px-5 lg:px-6">
         <PostSkeleton />
@@ -98,19 +117,32 @@ function PostDetailPageContent() {
     );
   }
 
-  if (postMatchesRoute && post) {
-    return <PostLiveDoc key={post.id} post={post} />;
+  // 展示目标：路由命中的新文；拉取期间留在上一篇（保活或 placeholder）
+  const shownId = postMatchesRoute && post ? post.id : (liveDocs[0]?.id ?? null);
+  const waitingForRoute = !postMatchesRoute && (isPending || isFetching);
+  // 数据已就位但 effect 尚未入缓存的这一帧，直接把新文插到渲染列表头（key 稳定，随后并入缓存不 remount）
+  const docsToRender =
+    postMatchesRoute && post && !liveDocs.some((p) => p.id === post.id)
+      ? [post, ...liveDocs]
+      : liveDocs;
+
+  if (docsToRender.length > 0 && (postMatchesRoute || waitingForRoute)) {
+    return (
+      <div
+        className={cn(
+          waitingForRoute && "pointer-events-none opacity-60 transition-opacity",
+        )}
+      >
+        {docsToRender.map((p) => (
+          <div key={p.id} hidden={p.id !== shownId}>
+            <PostLiveDoc post={p} active={p.id === shownId} />
+          </div>
+        ))}
+      </div>
+    );
   }
 
-  // 仍在拉新文：留上一篇（placeholder）或轻占位，不闪空
   if (isPending || isFetching) {
-    if (post) {
-      return (
-        <div className="pointer-events-none opacity-60 transition-opacity">
-          <PostLiveDoc key={post.id} post={post} />
-        </div>
-      );
-    }
     return <div className="min-h-[40vh]" aria-hidden />;
   }
 
