@@ -1974,20 +1974,38 @@ reactLoop 的 Turn Snapshot 在 run 入口冻结单一模型，全程不再切�
 
 ---
 
-## 消息可靠性审计遗留：child_notify 堵塞 superior 队列（2026-09-01）
+## 消息可靠性审计遗留：child_notify 堵塞 superior 队列（2026-09-01，已落地）
 
 **问题**：`agent_notify_parent` 产生的 `SessionQueueItem(kind=child_notify)` 只有前端 drain（`useChatQueueDrain`）消费；服务端 `enqueueSuperiorQueueDrain` 遇到非 superior 队首直接 return（`sessionQueue.ts:81`）。后果：父会话没有浏览器打开时，一条滞留的 child_notify 排在队首，会**连带堵住它后面所有 superior 命令**的服务端 drain，整个队列停摆到用户打开页面为止。
 
 **推荐方案**：服务端 drain 遇到 child_notify 队首时跳过它继续处理后续 superior 项（child_notify 是过程通知，语义上不需要阻塞命令执行；顺序保证只约束同 kind 即可）。child_notify 本身仍留给前端 drain 消费呈现。
 
-**回答**：
+**回答**：按推荐落地（2026-09-01）
 
 ---
 
-## 消息可靠性审计遗留：8s 同文去重吞消息（2026-09-01）
+## 消息可靠性审计遗留：8s 同文去重吞消息（2026-09-01，已落地）
 
 **问题**：`sendMessage.ts` 的 `DEDUP_WINDOW_MS=8s` 内同文消息会被当重复吞掉并直接返回上一条 assistant 答复。父 Agent 若在 8 秒内有意发两条相同内容（如两次「继续」），第二条被丢弃——去重过激导致的丢失。
 
 **推荐方案**：去重窗口收窄到 2s（只挡双击/网络重试级别的误重发），或要求去重命中时上一条消息仍处于 pending/未答复状态才吞（已答复过的同文消息视为有意重发，放行）。
 
-**回答**：
+**回答**：按推荐落地（2026-09-01，采用后者：窗口保持 8s，上一条同文消息已有 assistant 答复则放行写新消息走正常流程；尚无答复才不重复写、直接起流处理既有那条）
+
+---
+
+## 文章页性能：阅读态与编辑态分离（2026-09-01）
+
+**问题**：切文章慢。根因：文章页（`app/posts/[slug]/page.tsx` → `PostLiveDoc`）打开即挂载完整 Milkdown 编辑器（ProseMirror + GFM + KaTeX math + Prism 高亮 + ~27 个自定义插件），每次切换文章全量初始化一遍。content/ 最大单篇 620KB（llm-guide/_sources 的 mineru 转换稿），这个量级下编辑器初始化是秒级主线程阻塞。服务端 `getBySlug` 是索引查询，不是瓶颈。
+
+**推荐方案**：文章页默认进「阅读态」（轻量静态渲染，无编辑器初始化），点「编辑」才挂 Milkdown。编辑器 chunk 已有预热（posts 列表页 1.5s 空闲预载），阅读→编辑的切换成本可控。阅读态渲染面复用现有 `PostContent`（react-markdown 管线），大文档（>100KB）可考虑分段渲染另立工单。
+
+**回答**：按推荐落地（2026-09-01，`PostLiveDoc` 默认阅读态 = `PostContent` 静态渲染 + 顶部「编辑」按钮；点编辑后 Milkdown 只初始化一次，之后阅读/编辑显隐切换——与保活缓存叠加：首开快、切回零成本、编辑切换零成本。autosave 仅在编辑态启用）
+
+**实测数据（2026-09-01，真实内容库）**：
+
+- 最大文档 488KB（llm-guide/_sources mineru 稿）：remark 解析 240ms；该文档 0 公式、0 代码块
+- 公式最多文档（45KB、222 个公式）：KaTeX 全量渲染仅 25ms —— KaTeX/Prism 均非瓶颈
+- 首开秒级阻塞的大头是 ProseMirror 状态构建 + EditorView DOM 挂载（数千节点）+ 插件初始化，只能在浏览器发生，**无法预存为数据**
+- 已验证：Milkdown `defaultValueCtx` 支持直接吃预解析的 JSON 文档（`DefaultValue = string | JSON`），「sync 时预存 PM JSON」路线存在，但只能省解析段（大文档约 0.2~0.5s），省不掉 DOM 挂载
+- 已落地互补方案：编辑器保活缓存（LRU 3 篇，切回零初始化）；首开快仍需本 Q&A 的阅读态方案

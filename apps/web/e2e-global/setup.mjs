@@ -577,6 +577,14 @@ export default async function globalSetup() {
     );
   }
 
+  // 6.5 播种示例文章（blog-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
+  const tsxCliForSeed = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  execFileSync(process.execPath, [tsxCliForSeed, "prisma/seed.ts"], {
+    cwd: serverDir,
+    env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+    stdio: "pipe",
+  });
+
   // 7. mock E2E：先起 OpenAI 兼容 mock-llm，server 走真 fetch/SSE，只换写好的回复
   let mockLlmProc = null;
   if (useMockLlmHttp) {

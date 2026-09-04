@@ -118,6 +118,8 @@ const sanitizeSchema = {
   },
   protocols: {
     ...defaultSchema.protocols,
+    // wiki:// 内链协议（transformWikiLinks 产物）；缺失会被 sanitize 剥掉 href，内链退化成纯文本
+    href: [...(defaultSchema.protocols?.href ?? []), "wiki"],
     // 与 urlTransform 一致：允许 data: 图片
     src: ["http", "https", "data"],
   },

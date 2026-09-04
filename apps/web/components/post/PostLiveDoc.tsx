@@ -1,19 +1,21 @@
 "use client";
 
 /**
- * 文章页 = 编辑页：Milkdown 统一渲染面。
- * 默认「预览」WYSIWYG（可直接编辑），顶部模式切换可进入 Markdown 源码编辑。
+ * 文章页：阅读态优先 + 按需编辑。
+ * 默认「阅读态」（PostContent 静态渲染，首开不付 Milkdown 初始化）；
+ * 点「编辑」才挂 Milkdown，且只挂一次——之后在阅读/编辑间显隐切换（空间换时间）。
  * 实时保存与源码→预览切换都基于同一份 markdown 字符串，避免两套渲染逻辑漂移。
  */
 
 import { useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, PenLine } from "lucide-react";
 import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
 import {
   MilkdownEditor,
   type EditorViewMode,
 } from "@/components/editor/MilkdownEditor";
+import { PostContent } from "@/components/post/PostContent";
 import { TableOfContents, usePostTocVisible } from "@/components/post/TableOfContents";
 import { PageSearch } from "@/components/post/PageSearch";
 import { SelectionExplain } from "@/components/post/SelectionExplain";
@@ -45,11 +47,18 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
   const [mode, setMode] = useState<EditorViewMode>("wysiwyg");
+  // 阅读态/编辑态：默认阅读；点「编辑」后编辑器只初始化一次，之后显隐切换
+  const [editing, setEditing] = useState(false);
+  const [editorEverMounted, setEditorEverMounted] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
 
   const readOnly = false;
 
   const handleEditorReady = useCallback(() => setEditorReady(true), []);
+  const enterEditing = useCallback(() => {
+    setEditorEverMounted(true);
+    setEditing(true);
+  }, []);
 
   const { lastSavedAt, isSaving, saveNow } = useAutoSave({
     id: post.id,
@@ -58,7 +67,7 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
     category: post.category || "",
     tags: (post.tags || []).join(", "),
     published: true,
-    enabled: editorReady,
+    enabled: editorReady && editing,
   });
 
   return (
@@ -81,20 +90,40 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
           )}
         >
           <ArrowLeft className="h-4 w-4" />
-          {post.garden && post.garden !== DEFAULT_POST_GARDEN ? "返回首页" : "返回"}
+          {post.garden && post.garden !== DEFAULT_POST_GARDEN ? "返回首页" : "返回文章列表"}
         </Link>
-        <span
-          className="text-xs text-[var(--om-text-3)]"
-          title="改动 2 秒后写入 Markdown 文件；Ctrl+S 立刻保存"
-        >
-          {mode === "source"
-            ? "源码编辑 · 切换回预览即可实时渲染"
-            : isSaving
-              ? "保存中…"
-              : lastSavedAt
-                ? `已写入文件 ${lastSavedAt.toLocaleTimeString("zh-CN")}`
-                : "Ctrl+S 保存 · 停顿后自动落盘"}
-        </span>
+        {editing ? (
+          <span className="inline-flex items-center gap-3">
+            <span
+              className="text-xs text-[var(--om-text-3)]"
+              title="改动 2 秒后写入 Markdown 文件；Ctrl+S 立刻保存"
+            >
+              {mode === "source"
+                ? "源码编辑 · 切换回预览即可实时渲染"
+                : isSaving
+                  ? "保存中…"
+                  : lastSavedAt
+                    ? `已写入文件 ${lastSavedAt.toLocaleTimeString("zh-CN")}`
+                    : "Ctrl+S 保存 · 停顿后自动落盘"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--om-divider)] bg-white/60 px-3 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:border-[var(--om-brand)]/40 hover:text-[var(--om-brand)]"
+            >
+              完成
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={enterEditing}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--om-brand)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
+          >
+            <PenLine className="h-3.5 w-3.5" />
+            编辑
+          </button>
+        )}
       </div>
 
       <article ref={articleRef} className="om-post-swap om-post-content" data-testid="post-article-body">
@@ -107,12 +136,18 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
           enabled={active}
         />
         <header className="mb-4">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="box-border min-h-[1.35em] w-full overflow-visible bg-transparent py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground sm:text-4xl"
-            placeholder="标题"
-          />
+          {editing ? (
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="box-border min-h-[1.35em] w-full overflow-visible bg-transparent py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground sm:text-4xl"
+              placeholder="标题"
+            />
+          ) : (
+            <h1 className="box-border min-h-[1.35em] w-full overflow-visible py-1 text-3xl font-semibold leading-snug tracking-tight text-foreground sm:text-4xl">
+              {title}
+            </h1>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             {post.category && (
               <Link href={`/categories/${encodeURIComponent(post.category)}`}>
@@ -162,29 +197,38 @@ export function PostLiveDoc({ post, active = true }: { post: PostLiveDocModel; a
           )}
         </header>
 
-        <MilkdownEditor
-          key={post.id}
-          initialValue={content}
-          onChange={setContent}
-          onManualSave={saveNow}
-          mode={mode}
-          onModeChange={setMode}
-          readOnly={readOnly}
-          onEditorReady={handleEditorReady}
-          docMeta={{
-            title,
-            garden: post.garden,
-            slug: post.slug,
-            postId: post.id,
-          }}
-          className="border-0 shadow-none"
-        />
+        {/* 阅读态静态渲染（首开零编辑器成本）；点过「编辑」的文档两个渲染面都常驻，显隐切换 */}
+        <div hidden={editing}>
+          <PostContent content={content} postSlug={post.slug} postGarden={post.garden} />
+        </div>
+        {editorEverMounted && (
+          <div hidden={!editing}>
+            <MilkdownEditor
+              key={post.id}
+              initialValue={content}
+              onChange={setContent}
+              onManualSave={saveNow}
+              mode={mode}
+              onModeChange={setMode}
+              readOnly={readOnly}
+              onEditorReady={handleEditorReady}
+              docMeta={{
+                title,
+                garden: post.garden,
+                slug: post.slug,
+                postId: post.id,
+              }}
+              className="border-0 shadow-none"
+            />
+          </div>
+        )}
       </article>
 
       <RelatedPosts postId={post.id} />
 
       <PageSearch containerRef={articleRef} enabled={active} />
-      {!readOnly && editorReady && (
+      {/* 划线解释是阅读功能：阅读态直接可用；编辑态等编辑器就绪后再开 */}
+      {!readOnly && (!editing || editorReady) && (
         <SelectionExplain
           containerRef={articleRef}
           title={title}

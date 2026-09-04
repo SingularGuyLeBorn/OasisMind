@@ -1,24 +1,23 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { keepPreviousData } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { DEFAULT_POST_GARDEN, isValidGardenIdFormat } from "@oasismind/shared";
-import { PostLiveDoc } from "@/components/post/PostLiveDoc";
 import { trpc, catchUnlessCancelled } from "@/lib/trpc";
+import {
+  activateLiveDoc,
+  deactivateLiveDocs,
+  getLiveDocsServerSnapshot,
+  getLiveDocsSnapshot,
+  subscribeLiveDocs,
+} from "@/lib/postLiveDocsStore";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
-/**
- * 切文章保活上限：已打开的 PostLiveDoc（含 Milkdown 编辑器实例）只隐藏不卸载，
- * 切回零初始化。超过上限卸载最久未访问的一篇。
- * [OM-FREEPLAY] 3 是经验值——用户明确接受用内存换切换速度；再大内存收益比下降。
- */
-const KEEP_ALIVE_LIMIT = 3;
 
 function PostDetailPageContent() {
   const params = useParams();
@@ -30,6 +29,11 @@ function PostDetailPageContent() {
   const utils = trpc.useUtils();
   const recordView = trpc.post.recordView.useMutation();
   const viewedIdsRef = useRef<Set<string>>(new Set());
+  const { docs } = useSyncExternalStore(
+    subscribeLiveDocs,
+    getLiveDocsSnapshot,
+    getLiveDocsServerSnapshot,
+  );
 
   useEffect(() => {
     if (garden === DEFAULT_POST_GARDEN && slug.startsWith("llm-guide/")) {
@@ -52,17 +56,18 @@ function PostDetailPageContent() {
   const postMatchesRoute =
     !!post && post.slug === slug && (post.garden ?? DEFAULT_POST_GARDEN) === garden;
 
-  // 编辑器保活缓存（LRU）：命中的文章只 hidden 不卸载，Milkdown 初始化成本只付一次。
-  // 渲染期调整（React 推荐替代 setState-in-effect 的模式）：数据到位的同一帧即入缓存。
-  const [liveDocs, setLiveDocs] = useState<NonNullable<typeof post>[]>([]);
-  const [cachedForId, setCachedForId] = useState<string | null>(null);
-  if (postMatchesRoute && post && cachedForId !== post.id) {
-    setCachedForId(post.id);
-    setLiveDocs((prev) => {
-      const rest = prev.filter((p) => p.id !== post.id);
-      return [post, ...rest].slice(0, KEEP_ALIVE_LIMIT);
-    });
-  }
+  // 命中路由即激活到跨路由保活层（文章实例由 posts 布局的 Provider 渲染，本页不再渲染）
+  useEffect(() => {
+    if (postMatchesRoute && post) activateLiveDoc(post);
+  }, [postMatchesRoute, post]);
+
+  // 路由失效（文章不存在/已删除）时摘掉激活，避免旧文章悬在 NotFound 上
+  useEffect(() => {
+    if (!isPending && !isFetching && !postMatchesRoute) deactivateLiveDocs();
+  }, [isPending, isFetching, postMatchesRoute]);
+
+  // 离开详情路由（回列表等）：摘掉可见态；实例保留在保活缓存里，回来即激活
+  useEffect(() => () => deactivateLiveDocs(), []);
 
   const [showSkeleton, setShowSkeleton] = useState(false);
   useEffect(() => {
@@ -109,7 +114,7 @@ function PostDetailPageContent() {
       .catch(catchUnlessCancelled("app/posts/[slug]/page.tsx"));
   }, [post?.id, post?.slug, post?.garden, utils, recordView]);
 
-  if (showSkeleton && liveDocs.length === 0) {
+  if (showSkeleton && docs.length === 0) {
     return (
       <div className="w-full px-4 py-8 sm:px-5 lg:px-6">
         <PostSkeleton />
@@ -117,30 +122,8 @@ function PostDetailPageContent() {
     );
   }
 
-  // 展示目标：路由命中的新文；拉取期间留在上一篇（保活或 placeholder）
-  const shownId = postMatchesRoute && post ? post.id : (liveDocs[0]?.id ?? null);
-  const waitingForRoute = !postMatchesRoute && (isPending || isFetching);
-  // 数据已就位但 effect 尚未入缓存的这一帧，直接把新文插到渲染列表头（key 稳定，随后并入缓存不 remount）
-  const docsToRender =
-    postMatchesRoute && post && !liveDocs.some((p) => p.id === post.id)
-      ? [post, ...liveDocs]
-      : liveDocs;
-
-  if (docsToRender.length > 0 && (postMatchesRoute || waitingForRoute)) {
-    return (
-      <div
-        className={cn(
-          waitingForRoute && "pointer-events-none opacity-60 transition-opacity",
-        )}
-      >
-        {docsToRender.map((p) => (
-          <div key={p.id} hidden={p.id !== shownId}>
-            <PostLiveDoc post={p} active={p.id === shownId} />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // 文章本体由保活层渲染；本页只出加载占位与 NotFound
+  if (postMatchesRoute && post) return null;
 
   if (isPending || isFetching) {
     return <div className="min-h-[40vh]" aria-hidden />;
