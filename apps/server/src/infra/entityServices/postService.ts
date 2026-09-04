@@ -717,22 +717,38 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       excerpt: string | null;
       category: string | null;
       tags: string;
-      content: string | null;
       updatedAt: Date;
       published: boolean;
     };
+    // 候选行不取 content 全文：大文档花园（llm-guide 单篇几百 KB）下，标签/分类/同花园
+    // 候选查询会把几十篇全文一并拉回，拖慢每次打开文章。content 此前只用于 excerpt
+    // 兜底截断，代价远大于收益，兜底改为 null（UI 对空 excerpt 已有不渲染分支）。
+    const CAND_SELECT = {
+      id: true,
+      title: true,
+      slug: true,
+      garden: true,
+      excerpt: true,
+      category: true,
+      tags: true,
+      updatedAt: true,
+      published: true,
+    } as const;
     const byId = new Map<string, Cand>();
     const bump = (row: Cand) => {
       if (row.id === self.id) return;
       if (!byId.has(row.id)) byId.set(row.id, row);
     };
 
+    // FTS 只查一次：既喂候选也喂后面的 rank 打分（原实现同一查询跑了两遍）
+    let ftsHits: Awaited<ReturnType<typeof searchFtsByEntity>> = [];
     try {
-      const ftsHits = await searchFtsByEntity(this.prisma, "post", query, limit * 5);
+      ftsHits = await searchFtsByEntity(this.prisma, "post", query, limit * 5);
       const ids = ftsHits.map((h) => h.entityId).filter((id) => id !== self.id);
       if (ids.length > 0) {
         const rows = await this.prisma.post.findMany({
           where: { id: { in: ids }, deletedAt: null, published: true },
+          select: CAND_SELECT,
         });
         for (const r of rows) bump(r as Cand);
       }
@@ -748,6 +764,7 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
           id: { not: self.id },
           tags: { contains: tag },
         },
+        select: CAND_SELECT,
         take: 30,
       });
       for (const r of rows) bump(r as Cand);
@@ -761,6 +778,7 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
           id: { not: self.id },
           category: self.category,
         },
+        select: CAND_SELECT,
         take: 30,
         orderBy: { updatedAt: "desc" },
       });
@@ -775,22 +793,18 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
         id: { not: self.id },
         garden: self.garden,
       },
+      select: CAND_SELECT,
       take: 40,
       orderBy: { updatedAt: "desc" },
     });
     for (const r of gardenRows) bump(r as Cand);
 
-    let ftsRankById = new Map<string, number>();
-    try {
-      const ftsHits = await searchFtsByEntity(this.prisma, "post", query, limit * 5);
-      ftsHits.forEach((h, i) => {
-        // BM25 越小越好；转成正分：靠前加分
-        const bm25 = typeof h.rank === "number" ? h.rank : -i;
-        ftsRankById.set(h.entityId, Math.max(0, 40 + bm25 * -2) + Math.max(0, 20 - i));
-      });
-    } catch {
-      ftsRankById = new Map();
-    }
+    const ftsRankById = new Map<string, number>();
+    ftsHits.forEach((h, i) => {
+      // BM25 越小越好；转成正分：靠前加分
+      const bm25 = typeof h.rank === "number" ? h.rank : -i;
+      ftsRankById.set(h.entityId, Math.max(0, 40 + bm25 * -2) + Math.max(0, 20 - i));
+    });
 
     // 邻居优先：正文 / metadata.outLinks 的 [[wiki]] 出链高权重
     const { extractWikiOutLinks } = await import("../gardenNeighbors.js");
@@ -854,9 +868,8 @@ export class PostService extends FileSyncService<CreatePostInput, UpdatePostInpu
       const ageDays = (Date.now() - new Date(row.updatedAt).getTime()) / 86400000;
       if (ageDays < 30) score += Math.max(0, 6 - ageDays / 5);
 
-      const excerpt =
-        row.excerpt ||
-        (row.content ? row.content.replace(/\s+/g, " ").trim().slice(0, 140) : null);
+      // content 不再随候选行拉取，excerpt 兜底即空（见 CAND_SELECT 注释）
+      const excerpt = row.excerpt;
 
       return {
         id: row.id,
