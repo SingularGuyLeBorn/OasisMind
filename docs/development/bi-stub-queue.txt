@@ -38,3 +38,5 @@
 19-mistral/nemo-12b 91%
 20-openai/o-series 50%
 # 另: 21-xai/grok-4-7 的 bi+analysis 从未写过(源md/pdf 已删, 需要时重新收集材料)
+# 2026-09-28 主人情报: deepseek-r1 技术报告 2026-01-04 更新过 v2 (arXiv 2501.12948, 928KB→1562KB)
+# 库内 deepseek-r1 的 bi/analysis 基于 v1, v2 新增内容未覆盖; v1 源md已删, 需重新收集材料后对 v2 补写/修订
