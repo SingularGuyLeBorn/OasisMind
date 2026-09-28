@@ -61,7 +61,7 @@ Table 5 在两个规模上比较纯辅助损失和无辅助损失. 小档 15.7B 
 
 ### 1.5. MTP: 训练时多预测一个 token
 
-**MTP** 的想法来自 Gloeckle 等人 2024 年的工作, 但实现不同. Gloeckle 用 D 个独立输出头并行预测后面 D 个 token; 而 V3 直接就是串行: D 个模块一个个往后推, 每个模块保留完整的因果链(Figure 3). 第 k 个模块把上一深度第 i 个位置的表示与第 i+k 个 token 的嵌入各做 RMSNorm, 拼接后乘投影矩阵 $M_k$(式 21), 送进一个 Transformer 块(式 22), 再用与主模型共享的输出头预测第 i+k+1 个 token(式 23). 嵌入层和输出头都与主模型共享. V3 取 D = 1, 即每个位置除下一个 token 外再预测一个. 三步写成:
+**MTP** 的想法来自 Gloeckle 等人 2024 年的工作, 但实现不同. Gloeckle 用 D 个独立输出头并行预测后面 D 个 token; 而 V3 直接就是串行: D 个模块一层层往后推, 每个模块保留完整的因果链(Figure 3). 深度 0 是主模型在每个位置的隐状态, 位置 $i$ 的隐状态看完了前 $i$ 个 token. 第 $k$ 个模块负责预测第 $i+k+1$ 个 token, 输入有两个: 上一个深度在位置 $i$ 的输出(一路串下来的因果摘要), 和第 $i+k$ 个 token 的嵌入(真值序列里排在预测目标前一位的那个 token). 两者各做 RMSNorm, 拼接后乘投影矩阵 $M_k$(式 21), 送进一个 Transformer 块(式 22), 再用与主模型共享的输出头预测第 $i+k+1$ 个 token(式 23). 嵌入层和输出头都与主模型共享. V3 取 D = 1, 即每个位置除下一个 token 外再预测一个. 三步写成:
 
 $$
 \mathbf{h}_i'^{\,k}=M_k\big[\mathrm{RMSNorm}(\mathbf{h}_i^{k-1});\mathrm{RMSNorm}(\mathrm{Emb}(t_{i+k}))\big],\quad \mathbf{h}_{1:T-k}^{k}=\mathrm{TRM}_k(\mathbf{h}_{1:T-k}'^{\,k}),\quad P_{i+k+1}^{k}=\mathrm{OutHead}(\mathbf{h}_i^k),
