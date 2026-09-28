@@ -2,7 +2,7 @@
 
 来源: [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437) (arXiv: 2412.19437v2, 2025-02-18). 仓库: https://github.com/deepseek-ai/DeepSeek-V3
 
-本文大量引用了技术报告的表格、图片以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2412.19437)观看。配套对照译稿见同目录的 bi 稿。
+本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2412.19437)观看。配套对照译稿见同目录的 bi 稿。
 
 DeepSeek-V3 是一个 671B 总参, 每 token 激活 37B 的 MoE 语言模型, 在 14.8T token 上预训练, 全部训练用了 2.788M H800 GPU 小时. 注意力和 FFN 的主体沿用 V2 的 MLA 与 DeepSeekMoE, 新增的是无辅助损失的负载均衡 (auxiliary-loss-free load balancing)和 MTP 训练目标; 工程上是 FP8 混合精度, DualPipe 流水并行和自写的跨节点 all-to-all 内核; 后训练把 DeepSeek-R1 的长 CoT 蒸馏进一个不输出长思考的普通对话模型. 这些改动互相牵连: 路由限制决定了通信能不能藏进计算, 通信藏住了才敢不用张量并行, FP8 省下的显存和带宽又让大规模专家并行可行. 下面按模型结构, 训练系统, 数据与日程, 后训练, 评测的顺序读, 但每一处都会回到别的环节去核对.
 
