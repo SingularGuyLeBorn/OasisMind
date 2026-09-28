@@ -28,7 +28,7 @@ We present DeepSeek-V3, a strong Mixture-of-Experts (MoE) language model with 67
 
 解释: MLA(Multi-head Latent Attention)= 把 K/V 压到低维潜变量再展开, 推理主要缓存压缩向量与解耦 RoPE 键, KV cache 明显变小. 细推导见 llm-guide MLA 单独成篇, 本对照稿不重推.
 
-解释: DeepSeekMoE = 细粒度路由专家加共享专家; V3 亲和度改 Sigmoid, 并配无辅助损失负载均衡. 细推导见 llm-guide「01-DeepSeek-MoE」.
+解释: DeepSeekMoE = 细粒度路由专家加共享专家; V3 亲和度改 Sigmoid, 并配无辅助损失负载均衡 (auxiliary-loss-free load balancing). 细推导见 llm-guide「01-DeepSeek-MoE」.
 
 解释: 无辅助损失负载均衡 = 不靠 auxiliary loss 硬拧流量, 而是给每个专家加偏置 $b_i$, 只参与 Top-K 选路, 不进门控权重; 过载减偏置, 欠载加偏置.
 
