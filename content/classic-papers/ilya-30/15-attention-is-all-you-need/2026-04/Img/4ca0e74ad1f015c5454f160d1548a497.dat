@@ -1,0 +1,808 @@
+´é«˜, ç»ˆç‚¹æ›´é«˜, è¯´æ˜å†·å¯åŠ¨ SFT å¸®åŠ©æ¨¡å‹å…ˆå­¦ä¼šç­”æ¡ˆæ ¼å¼å’ŒåŸºç¡€æ¨ç†æ¨¡æ¿, å†æŠŠ RL çš„ä¼˜åŒ–é¢„ç®—èŠ±åœ¨æ›´é«˜è´¨é‡çš„æ¢ç´¢ä¸Š. è¿™ä¸ DeepSeek-R1 ä¸­"Zero vs SFT-R1"çš„å¯¹æ¯”ä¸€è‡´.
+
+# 3.6 Discussion
+
+æœ¬èŠ‚åˆ†äº«æˆ‘ä»¬åœ¨æ¢ç´¢ MiMo-7B åè®­ç»ƒè¿‡ç¨‹ä¸­çš„è§‚å¯Ÿä¸æ´è§, å¸Œæœ›å¯¹ç ”ç©¶ç¤¾åŒºæœ‰æ‰€å¸®åŠ©.
+
+**SFT for Format Alignment**
+
+åœ¨ä» MiMo-7B-Base åˆå§‹ RL è®­ç»ƒæ­¥éª¤ä¸­, æˆ‘ä»¬è§‚å¯Ÿåˆ°æ¨¡å‹ä¸»è¦å­¦ä¹ é€‚é…ç­”æ¡ˆæå–å‡½æ•°, ä¾‹å¦‚æ•°å­¦é—®é¢˜çš„ "\boxed{}". å› æ­¤, æˆ‘ä»¬ç ”ç©¶äº†ä¸€ç§ "light-weight" SFT, å¸®åŠ©åŸºåº§æ¨¡å‹ä¸é¢„æœŸç­”æ¡ˆæ ¼å¼å¯¹é½. ç„¶è€Œ, å¦‚å›¾ 7 æ‰€ç¤º, æ‰€å¾—æ¨¡å‹ MiMo-7B-RL-LiteSFT åœ¨æ¨ç†æ½œåŠ›å’Œæœ€ç»ˆæ€§èƒ½ä¸Šå‡è¡¨ç°ä¸ä½³. è™½ç„¶ MiMo-7B-RL-LiteSFT èµ·æ­¥æ€§èƒ½é«˜äº MiMo-7B-RL-Zero, ä½†åœ¨ä»… 500 æ­¥åå°±è½åäºåŸºåº§æ¨¡å‹çš„è®­ç»ƒæ›²çº¿. æ­¤å¤–, ä¸ç»è¿‡ "heavier" SFT çš„ MiMo-7B-RL ç›¸æ¯”, MiMo-7B-RL-LiteSFT è¡¨ç°å‡ºç›¸ä¼¼çš„å¢é•¿è¶‹åŠ¿, ä½†ç”±äºèµ·å§‹ç‚¹è¾ƒå·®è€Œæ˜¾è‘—è½å, æœ€ç»ˆå¯¼è‡´æ›´å·®çš„ç»“æœ.
+
+> è¯‘è€…æ³¨: è¿™ä¸ªå®éªŒç›´æ¥å¦å®šäº†"æ ¼å¼å¯¹é½ SFT å°±å¤Ÿäº†"çš„å‡è®¾. è½»é‡ SFT è™½ç„¶è®©æ¨¡å‹æ›´å¿«å­¦ä¼šåŒ…è£…ç­”æ¡ˆ, ä½†å®ƒä¹Ÿé™åˆ¶äº†æ¨¡å‹æ¢ç´¢å…¶ä»–æ¨ç†ç­–ç•¥çš„ç©ºé—´. é‡ SFT ä¸ä»…åšæ ¼å¼å¯¹é½, è¿˜æ³¨å…¥äº†ä¸°å¯Œçš„è§£é¢˜æ¨¡æ¿å’Œå¯¹è¯èƒ½åŠ›, ä½¿ RL èµ·ç‚¹æ›´é«˜. è¿™è¯´æ˜ SFT çš„è´¨é‡æ¯” SFT çš„æ•°é‡æ›´å…³é”®.
+
+![](./images/9908f6a46965cf20382a3a21b15876e96f91070950fd8512d06aeac885b3d783.jpg)
+
+<details>
+<summary>line</summary>
+
+| Training Steps | MiMo-7B-RL | MiMo-7B-RL-Zero | MiMo-7B-RL-LiteSFT |
+| -------------- | ---------- | --------------- | ------------------ |
+| 0              | 58.0       | 33.0            | 41.0               |
+| 100            | 60.0       | 36.0            | 41.5               |
+| 200            | 61.5       | 38.0            | 42.0               |
+| 300            | 62.0       | 39.5            | 43.0               |
+| 400            | 63.0       | 41.0            | 45.0               |
+| 500            | 61.5       | 43.0            | 45.5               |
+| 600            | 65.0       | 47.0            | 44.0               |
+| 700            | 61.5       | 43.0            | 44.0               |
+| 800            | 62.0       | 46.0            | 44.5               |
+| 900            | 63.0       | 49.5            | 45.0               |
+| 1000           | 63.0       | 50.0            | 45.5               |
+
+</details>
+
+å›¾ 7: RL è¿‡ç¨‹ä¸­ä¸‰ç§ MiMo æ¨¡å‹å˜ä½“çš„æ€§èƒ½å¯¹æ¯”.
+
+**Interference Between Different Domains**
+
+åœ¨ä» MiMo-7B-Base è¿›è¡Œ RL è®­ç»ƒçš„åæœŸé˜¶æ®µ, ç»´æŒæ•°å­¦ä¸ä»£ç ä»»åŠ¡ä¹‹é—´çš„æ€§èƒ½å¹³è¡¡é¢‡å…·æŒ‘æˆ˜. åœ¨è®­ç»ƒæ­¥ 2000 è‡³ 2500 ä¹‹é—´, æ¨¡å‹åœ¨ä»£ç é—®é¢˜ä¸ŠæŒç»­æå‡, è€Œæ•°å­¦æ¨ç†æ€§èƒ½åˆ™å‡ºç°æ³¢åŠ¨å’Œä¸‹é™. ç›¸æ¯”ä¹‹ä¸‹, åœ¨å†·å¯åŠ¨ SFT æ¨¡å‹ä¸Šè¿›è¡Œ RL è®­ç»ƒåœ¨ä¸¤ä¸ªé¢†åŸŸéƒ½å–å¾—äº†æŒç»­æå‡. å¯¹æ¨¡å‹è¾“å‡ºçš„åˆ†ææ˜¾ç¤º, åŸºåº§æ¨¡å‹å…·æœ‰è¾ƒå¼ºçš„æ¢ç´¢èƒ½åŠ›, å€¾å‘äºå¯¹æ•°å­¦é—®é¢˜è¿›è¡Œ reward hacking. ç„¶è€Œ, å¯¹äºä»£ç é—®é¢˜, åŸºäºæµ‹è¯•ç”¨ä¾‹çš„éªŒè¯å™¨ä½¿å¥–åŠ±ä½œå¼Šæ˜¾è‘—æ›´éš¾. è¿™å‡¸æ˜¾äº†é«˜è´¨é‡æ•°å­¦é—®é¢˜é›†å¯¹äºç¨³å¥ RL è®­ç»ƒçš„å…³é”®å¿…è¦æ€§.
+
+> è¯‘è€…æ³¨: æ•°å­¦ä»»åŠ¡æ¯”ä»£ç æ›´å®¹æ˜“è¢« hack, å› ä¸ºæ•°å­¦ç­”æ¡ˆéªŒè¯é€šå¸¸åªçœ‹æœ€ç»ˆæ•°å€¼æˆ– \boxed{} å†…å®¹, æ¨¡å‹å¯èƒ½é€šè¿‡æ¨¡å¼åŒ¹é…æˆ–çŸ­è·¯å¾„çŒœå¯¹ç­”æ¡ˆ; ä»£ç ä»»åŠ¡å¿…é¡»è¿‡å…¨éƒ¨æµ‹è¯•ç”¨ä¾‹, reward hacking æˆæœ¬é«˜å¾—å¤š. è¿™è§£é‡Šäº†ä¸ºä»€ä¹ˆ MiMo-7B åœ¨æ•°å­¦æ•°æ®ä¸Šéœ€è¦æ›´ä¸¥æ ¼çš„å»æ±¡æŸ“å’Œéš¾åº¦ç­›é€‰.
+
+**Language Mixing Penalty**
+
+ä¸ DeepSeek-R1-Zero ç±»ä¼¼, æˆ‘ä»¬åœ¨ MiMo-7B-Base çš„ RL è®­ç»ƒä¸­ä¹Ÿè§‚å¯Ÿåˆ°è¯­è¨€æ··æ‚é—®é¢˜. ä¸ºç¼“è§£è¯¥é—®é¢˜, æˆ‘ä»¬åœ¨å¥–åŠ±å‡½æ•°ä¸­å¼•å…¥äº†è¯­è¨€æ··æ‚æƒ©ç½š. ç„¶è€Œ, æˆ‘ä»¬å‘ç°è®¾è®¡è¿™æ ·çš„æƒ©ç½šå‡½æ•°é¢‡å…·æŒ‘æˆ˜. æ£€æµ‹è‹±æ–‡å“åº”ä¸­çš„ä¸­æ–‡å­—ç¬¦ç›¸å¯¹ç®€å•, ä½†åå‘æ£€æµ‹(å³ä¸­æ–‡å“åº”ä¸­çš„è‹±æ–‡)åˆ™å›°éš¾å¾—å¤š, å› ä¸ºæ•°å­¦å…¬å¼å’Œä»£ç æœ¬è´¨ä¸ŠåŒ…å«è‹±æ–‡å•è¯. å› æ­¤, è¯¥æƒ©ç½šä¸ä»…æœªèƒ½å®Œå…¨è§£å†³è¯­è¨€æ··æ‚é—®é¢˜, è¿˜å¼•å…¥äº† reward hacking é£é™©, ä¾‹å¦‚æ— è®ºé—®é¢˜è¯­è¨€å¦‚ä½•éƒ½ç”Ÿæˆè‹±æ–‡å“åº”.
+
+> è¯‘è€…æ³¨: è¯­è¨€æ··æ‚æƒ©ç½šæ˜¯ä¸€ä¸ª"çœ‹ä¼¼ç®€å•, å®ç°å›°éš¾"çš„è®¾è®¡. è¿‡åº¦æƒ©ç½šè‹±æ–‡ä¼šè®©æ¨¡å‹åœ¨ä¸­æ–‡æ•°å­¦é¢˜é‡Œå›é¿å¿…è¦çš„å…¬å¼ç¬¦å·å’Œä»£ç ç‰‡æ®µ; æƒ©ç½šä¸è¶³åˆæ— æ³•æŠ‘åˆ¶ä¸­è‹±å¤¹æ‚. è¿™è¯´æ˜å¤šè¯­è¨€æ¨ç†æ¨¡å‹çš„ RL å¥–åŠ±è®¾è®¡è¿˜éœ€è¦æ›´ç²¾ç»†çš„è¯­è¨€æ ‡è¯†æœºåˆ¶.
+
+**Impact of SFT Data Scaling**
+
+åœ¨åˆæ­¥å®éªŒåŸºç¡€ä¸Š, æˆ‘ä»¬å°† SFT æ•°æ®é›†ä»çº¦ 500K å¤§å¹…æ‰©å±•è‡³ 6M ä¸ªæ ·æœ¬. æˆ‘ä»¬ç»éªŒæ€§åœ°è§‚å¯Ÿåˆ°, SFT æ•°æ®çš„å¤§å¹…æ‰©å±•æ˜¾è‘—æå‡äº†æ¨¡å‹çš„æ¨ç†èƒ½åŠ›å’Œé€šç”¨å¯¹è¯èƒ½åŠ›, ä¸”æœªæŸå®³å…¶åç»­ RL æ½œåŠ›. å¦‚è¡¨ 6 æ‰€ç¤º, ä½¿ç”¨ 6M SFT æ ·æœ¬è®­ç»ƒçš„æ¨¡å‹åœ¨æ•°å­¦æ¨ç†, ä»£ç æ¨ç†, ç§‘å­¦æ¨ç†å’Œé€šç”¨å¯¹è¯èƒ½åŠ›ç­‰æ–¹é¢, è¾ƒ 500K æ ·æœ¬è®­ç»ƒçš„æ¨¡å‹å–å¾—äº†æ˜¾è‘—è¿›æ­¥. é‡è¦çš„æ˜¯, ç»è¿‡å¢å¼º SFT é˜¶æ®µåå†è¿›è¡Œ RL å¾®è°ƒçš„æ¨¡å‹ä¹Ÿè¡¨ç°å‡ºæŒç»­çš„æ€§èƒ½æå‡.
+
+| Benchmark | MiMo-7B-SFT-500K | MiMo-7B-SFT-6M | MiMo-7B-RL | MiMo-7B-RL-0530 |
+| --------- | ---------------- | -------------- | ---------- | --------------- |
+| AIME 24 | 58.7 | 68.3 | 68.2 | 80.1 |
+| AIME 25 | 44.3 | 50.9 | 55.4 | 70.2 |
+| MATH500 | 93.0 | 94.8 | 95.8 | 97.2 |
+| GPQA Diamond | 50.7 | 54.1 | 54.4 | 60.6 |
+| LiveCodeBench v5 | 52.3 | 53.4 | 57.8 | 60.9 |
+| Alignbench v1.1 | 6.7 | 7.1 | 6.9 | 7.4 |
+
+è¡¨ 6: ä¸åŒæ¨¡å‹åœ¨å¤šä¸ª benchmark ä¸Šçš„æ€§èƒ½å¯¹æ¯”. MiMo-7B-RL-0530 ä»¥å…¶ 48K è®­ç»ƒä¸Šä¸‹æ–‡é•¿åº¦è¿›è¡Œè¯„ä¼°, å…¶ä»–ä¸‰ä¸ªæ¨¡å‹åˆ™ä»¥ 32K è®­ç»ƒä¸Šä¸‹æ–‡é•¿åº¦è¿›è¡Œè¯„ä¼°. Alignbench v1.1(Liu et al., 2024b)çš„è¯„æµ‹ä½¿ç”¨ GPT-4.1 ä½œä¸ºè£åˆ¤.
+
+> è¯‘è€…æ³¨: SFT æ•°æ®ä» 500K æ‰©å±•åˆ° 6M, æ¨¡å‹åœ¨å¤šé¡¹æ¨ç†ä»»åŠ¡ä¸Šéƒ½æœ‰æ˜æ˜¾æå‡, ä¸” RL åçš„å¤©èŠ±æ¿ä¹Ÿæ›´é«˜. è¿™è¯´æ˜ SFT ä¸æ˜¯ RL å‰çš„"ç®€å•çƒ­èº«", è€Œæ˜¯å†³å®š RL èµ·ç‚¹çš„å…³é”®é˜¶æ®µ. ä¸è¿‡ Alignbench åˆ†æ•°ä»…å°å¹…æå‡, è¯´æ˜é€šç”¨å¯¹é½èƒ½åŠ›ä¸æ¨ç†èƒ½åŠ›å¹¶ä¸å®Œå…¨åŒæ­¥å¢é•¿.
+
+**On-Policy RL with Extended Generation Budget**
+
+æˆ‘ä»¬å…ˆå‰çš„ç»éªŒç ”ç©¶è¡¨æ˜, æœ´ç´ çš„ GRPO å®ç°å¾ˆå®¹æ˜“å‡ºç°è¿‡æ—©æ€§èƒ½é¥±å’Œ. ä¸ºç¼“è§£è¿™ä¸€é—®é¢˜, æˆ‘ä»¬é‡‡ç”¨äº† on-policy RL ç®—æ³•, ç±»ä¼¼äº MiMo-VL-7B-RL(Team et al., 2025a)ä¸­çš„åšæ³•. ä½¿ç”¨ on-policy RL è®­ç»ƒéå¸¸ç¨³å®š, åŒæ—¶åœ¨è®­ç»ƒè¿‡ç¨‹ä¸­æŒç»­æ¨åŠ¨æ¨¡å‹æ•ˆæœæå‡. è¿›ä¸€æ­¥å»¶ä¼¸æˆ‘ä»¬çš„å‘ç°, æˆ‘ä»¬è§‚å¯Ÿåˆ°åœ¨ on-policy RL è®­ç»ƒä¸­æŒç»­æå‡ç”Ÿæˆé•¿åº¦é¢„ç®—èƒ½å¤Ÿç¨³å®šæå‡æ¨¡å‹æ€§èƒ½. å…·ä½“è€Œè¨€, æˆ‘ä»¬çš„ RL è®­ç»ƒåè®®ç³»ç»Ÿåœ°å¢åŠ æ¨¡å‹ç”Ÿæˆé•¿åº¦, ä» 32K åˆ° 38K, å†åˆ° 48K. è¿™ç§é€æ­¥æ‰©å±•ç”Ÿæˆé¢„ç®—çš„æ–¹å¼, å¯¹æˆ‘ä»¬ 7B æ¨¡å‹æœ€ç»ˆåœ¨æ•°å­¦æ¨ç†ä¸Šè¾¾åˆ°ä¸ DeepSeek-R1 ç›¸å½“çš„æ°´å¹³èµ·åˆ°äº†å…³é”®ä½œç”¨. MiMo-7B-RL-0530 æ¨¡å‹å·²å¼€æºå¹¶å…¬å¼€å‘å¸ƒ.
+
+> è¯‘è€…æ³¨: "å¢åŠ ç”Ÿæˆé•¿åº¦é¢„ç®—"æœ¬è´¨ä¸Šæ˜¯è®©æ¨¡å‹æ‹¥æœ‰æ›´å¤š Test-time Compute. 7B æ¨¡å‹é€šè¿‡å…è®¸è‡ªå·±å†™æ›´é•¿çš„æ¨ç†é“¾, å¼¥è¡¥äº†å‚æ•°è§„æ¨¡çš„ä¸è¶³, æœ€ç»ˆè¿½ä¸Š DeepSeek-R1. ä½†è¿™ä¹Ÿæ„å‘³ç€æ¨ç†æ—¶çš„ token æ¶ˆè€—å’Œå»¶è¿Ÿæ˜¾è‘—å¢åŠ , æ˜¯è®¡ç®—æ¢æ€§èƒ½çš„å…¸å‹ trade-off.
+
+![](./images/166399de90d00faf5363ee6b6685794bc609cf13aa40656e2d6a36792a63b84d.jpg)
+
+<details>
+<summary>line</summary>
+
+| Training Samples | AIME 24 Avg@32 |
+| ---------------- | -------------- |
+| 0K               | 68.0           |
+| 25K              | 73.0           |
+| 50K              | 72.0           |
+| 75K              | 74.0           |
+| 100K             | 75.5           |
+| 125K             | 76.0           |
+| 150K             | 77.0           |
+| 175K             | 79.0           |
+| 180K             | 81.0           |
+
+</details>
+
+å›¾ 8: MiMo-7B-RL-0530 åœ¨ AIME24 ä¸Šçš„æ€§èƒ½æ›²çº¿.
+
+# 4 Conclusion
+
+æœ¬å·¥ä½œæ¨å‡ºäº† MiMo-7B, ä¸€ä¸ªé€šè¿‡ä¼˜åŒ–é¢„è®­ç»ƒä¸åè®­ç»ƒæµç¨‹æ¥é‡Šæ”¾é«˜çº§æ¨ç†èƒ½åŠ›çš„ LLM ç³»åˆ—. ç”±äºåœ¨é¢„è®­ç»ƒé˜¶æ®µæ¥è§¦äº†å¤šæ ·åŒ–çš„æ¨ç†æ¨¡å¼, MiMo-7B-Base å…·å¤‡éå‡¡çš„æ¨ç†æ½œèƒ½, è¶…è¶Šäº†è§„æ¨¡æ˜¾è‘—æ›´å¤§çš„æ¨¡å‹. åœ¨åè®­ç»ƒé˜¶æ®µ, å€ŸåŠ©ç¨³å¥ä¸”é«˜æ•ˆçš„ RL æ¡†æ¶, æˆ‘ä»¬è®­ç»ƒäº† MiMo-7B-RL-Zero å’Œ MiMo-7B-RL, äºŒè€…åœ¨æ•°å­¦, ä»£ç å’Œé€šç”¨ä»»åŠ¡ä¸Šå‡å±•ç°å‡ºä¼˜è¶Šçš„æ¨ç†èƒ½åŠ›. æˆ‘ä»¬å¸Œæœ›æœ¬å·¥ä½œèƒ½ä¸ºå¼€å‘æ›´å¼ºå¤§çš„æ¨ç†æ¨¡å‹æä¾›æ´è§.
+
+
+# References
+
+J. Ainslie, J. Lee-Thorp, M. de Jong, Y. Zemlyanskiy, F. Lebron, and S. Sanghai. GQA: Training generalized multi-query transformer models from multi-head checkpoints. In H. Bouamor, J. Pino, and K. Bali, editors, Proceedings of the 2023 Conference on Empirical Methods in
+
+Natural Language Processing, pages 4895â€“4901, Singapore, 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.emnlp-main.298. URL https://aclanthology .org/2023.emnlp-main.298.   
+Anthropic. Claude 3.7 sonnet and claude code, 2025. URL https://www.anthropic.com/cl aude/sonnet.   
+J. Austin, A. Odena, M. Nye, M. Bosma, H. Michalewski, D. Dohan, E. Jiang, C. Cai, M. Terry, Q. Le, et al. Program synthesis with large language models. ArXiv preprint, abs/2108.07732, 2021. URL https://arxiv.org/abs/2108.07732.   
+A. Barbaresi. Trafilatura: A web scraping library and command-line tool for text discovery and extraction. In H. Ji, J. C. Park, and R. Xia, editors, Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing: System Demonstrations, pages 122â€“131, Online, 2021. Association for Computational Linguistics. doi: 10.18653/v1/2021.acl-demo.15. URL https://aclanthology.org/2021.acl-demo.15.   
+Y. Bisk, R. Zellers, R. LeBras, J. Gao, and Y. Choi. PIQA: reasoning about physical commonsense in natural language. In The Thirty-Fourth AAAI Conference on Artificial Intelligence, AAAI 2020, The Thirty-Second Innovative Applications of Artificial Intelligence Conference, IAAI 2020, The Tenth AAAI Symposium on Educational Advances in Artificial Intelligence, EAAI 2020, New York, NY, USA, February 7-12, 2020, pages 7432â€“7439. AAAI Press, 2020. URL https://aaai.org/ojs/index.php/AAAI/article/view/6239.   
+A. Z. Broder. On the resemblance and containment of documents. In Proceedings. Compression and Complexity of SEQUENCES 1997 (Cat. No. 97TB100171), pages 21â€“29. IEEE, 1997.   
+M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. D. O. Pinto, J. Kaplan, H. Edwards, Y. Burda, N. Joseph, G. Brockman, et al. Evaluating large language models trained on code. ArXiv preprint, abs/2107.03374, 2021. URL https://arxiv.org/abs/2107.03374.   
+P. Clark, I. Cowhey, O. Etzioni, T. Khot, A. Sabharwal, C. Schoenick, and O. Tafjord. Think you have solved question answering? try arc, the ai2 reasoning challenge. ArXiv preprint, abs/1803.05457, 2018. URL https://arxiv.org/abs/1803.05457.   
+K. Cobbe, V. Kosaraju, M. Bavarian, M. Chen, H. Jun, L. Kaiser, M. Plappert, J. Tworek, J. Hilton, R. Nakano, et al. Training verifiers to solve math word problems. ArXiv preprint, abs/2110.14168, 2021. URL https://arxiv.org/abs/2110.14168.   
+Y. N. Dauphin, A. Fan, M. Auli, and D. Grangier. Language modeling with gated convolutional networks. In D. Precup and Y. W. Teh, editors, Proceedings of the 34th International Conference on Machine Learning, ICML 2017, Sydney, NSW, Australia, 6-11 August 2017, volume 70 of Proceedings of Machine Learning Research, pages 933â€“941. PMLR, 2017. URL http: //proceedings.mlr.press/v70/dauphin17a.html.   
+X. Du, Y. Yao, K. Ma, B. Wang, T. Zheng, K. Zhu, M. Liu, Y. Liang, X. Jin, Z. Wei, et al. Supergpqa: Scaling llm evaluation across 285 graduate disciplines. ArXiv preprint, abs/2502.14739, 2025. URL https://arxiv.org/abs/2502.14739.   
+D. Dua, Y. Wang, P. Dasigi, G. Stanovsky, S. Singh, and M. Gardner. DROP: A reading comprehension benchmark requiring discrete reasoning over paragraphs. In J. Burstein, C. Doran, and T. Solorio, editors, Proceedings of the 2019 Conference of the North American Chapter of the Association
+
+for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), pages 2368â€“2378, Minneapolis, Minnesota, 2019. Association for Computational Linguistics. doi: 10.18653/v1/N19-1246. URL https://aclanthology.org/N19-1246.   
+A. P. Gema, J. O. J. Leang, G. Hong, A. Devoto, A. C. M. Mancino, R. Saxena, X. He, Y. Zhao, X. Du, M. R. G. Madani, et al. Are we done with mmlu? ArXiv preprint, abs/2406.04127, 2024. URL https://arxiv.org/abs/2406.04127.   
+F. Gloeckle, B. Y. Idrissi, B. RoziÃ¨re, D. Lopez-Paz, and G. Synnaeve. Better & faster large language models via multi-token prediction. In Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024. OpenReview.net, 2024. URL https: //openreview.net/forum?id=pEWAcejiU2.   
+A. Grattafiori, A. Dubey, A. Jauhri, A. Pandey, A. Kadian, A. Al-Dahle, A. Letman, A. Mathur, A. Schelten, A. Vaughan, et al. The llama 3 herd of models. ArXiv preprint, abs/2407.21783, 2024. URL https://arxiv.org/abs/2407.21783.   
+A. Gu, B. RoziÃ¨re, H. J. Leather, A. Solar-Lezama, G. Synnaeve, and S. Wang. Cruxeval: A benchmark for code reasoning, understanding and execution. In Forty-first International Conference on Machine Learning, ICML 2024, Vienna, Austria, July 21-27, 2024. OpenReview.net, 2024. URL https://openreview.net/forum?id=Ffpg52swvg.   
+D. Guo, D. Yang, H. Zhang, J. Song, R. Zhang, R. Xu, Q. Zhu, S. Ma, P. Wang, X. Bi, et al. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. ArXiv preprint, abs/2501.12948, 2025. URL https://arxiv.org/abs/2501.12948.   
+J. He, J. Liu, C. Y. Liu, R. Yan, C. Wang, P. Cheng, X. Zhang, F. Zhang, J. Xu, W. Shen, S. Li, L. Zeng, T. Wei, C. Cheng, B. An, Y. Liu, and Y. Zhou. Skywork open reasoner series. https: //capricious-hydrogen-41c.notion.site/Skywork-Open-Reaonser-Series-1 d0bc9ae823a80459b46c149e4f51680, 2025. Notion Blog.   
+D. Hendrycks, C. Burns, S. Basart, A. Zou, M. Mazeika, D. Song, and J. Steinhardt. Measuring massive multitask language understanding. In 9th International Conference on Learning Representations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021. OpenReview.net, 2021a. URL https://openreview.net/forum?id=d7KBjmI3GmQ.   
+D. Hendrycks, C. Burns, S. Kadavath, A. Arora, S. Basart, E. Tang, D. Song, and J. Steinhardt. Measuring mathematical problem solving with the math dataset. ArXiv preprint, abs/2103.03874, 2021b. URL https://arxiv.org/abs/2103.03874.   
+C.-P. Hsieh, S. Sun, S. Kriman, S. Acharya, D. Rekesh, F. Jia, Y. Zhang, and B. Ginsburg. Ruler: What's the real context size of your long-context language models? ArXiv preprint, abs/2404.06654, 2024. URL https://arxiv.org/abs/2404.06654.   
+J. Hu, Y. Zhang, Q. Han, D. Jiang, X. Zhang, and H.-Y. Shum. Open-reasoner-zero: An open source approach to scaling up reinforcement learning on the base model. ArXiv preprint, abs/2503.24290, 2025. URL https://arxiv.org/abs/2503.24290.   
+Y. Huang, Y. Bai, Z. Zhu, J. Zhang, J. Zhang, T. Su, J. Liu, C. Lv, Y. Zhang, J. Lei, Y. Fu, M. Sun, and J. He. C-eval: A multi-level multi-discipline chinese evaluation suite for foundation models. In A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt, and S. Levine, editors, Advances in Neural Information Processing Systems 36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 -
+
+16, 2023, 2023. URL http://papers.nips.cc/paper\_files/paper/2023/hash/c6e c1844bec96d6d32ae95ae694e23d8-Abstract-Datasets\_and\_Benchmarks.html.   
+IOI. International olympiad in informatics, 2024. URL https://ioinformatics.org/.   
+N. Jain, K. Han, A. Gu, W.-D. Li, F. Yan, T. Zhang, S. Wang, A. Solar-Lezama, K. Sen, and I. Stoica. Livecodebench: Holistic and contamination free evaluation of large language models for code. ArXiv preprint, abs/2403.07974, 2024. URL https://arxiv.org/abs/2403.07974.   
+M. Joshi, E. Choi, D. Weld, and L. Zettlemoyer. TriviaQA: A large scale distantly supervised challenge dataset for reading comprehension. In R. Barzilay and M.-Y. Kan, editors, Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 1601â€“1611, Vancouver, Canada, 2017. Association for Computational Linguistics. doi: 10.18653/v1/P17-1147. URL https://aclanthology.org/P17-1147.   
+T. Kwiatkowski, J. Palomaki, O. Redfield, M. Collins, A. Parikh, C. Alberti, D. Epstein, I. Polosukhin, J. Devlin, K. Lee, K. Toutanova, L. Jones, M. Kelcey, M.-W. Chang, A. M. Dai, J. Uszkoreit, Q. Le, and S. Petrov. Natural questions: A benchmark for question answering research. Transactions of the Association for Computational Linguistics, 7:452â€“466, 2019. doi: 10.1162/tacl\_a\_00276. URL https://aclanthology.org/Q19-1026.   
+W. Kwon, Z. Li, S. Zhuang, Y. Sheng, L. Zheng, C. H. Yu, J. Gonzalez, H. Zhang, and I. Stoica. Efficient memory management for large language model serving with pagedattention. In Proceedings of the 29th Symposium on Operating Systems Principles, pages 611â€“626, 2023.   
+G. Lai, Q. Xie, H. Liu, Y. Yang, and E. Hovy. RACE: Large-scale ReAding comprehension dataset from examinations. In M. Palmer, R. Hwa, and S. Riedel, editors, Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing, pages 785â€“794, Copenhagen, Denmark, 2017. Association for Computational Linguistics. doi: 10.18653/v1/D17-1082. URL https: //aclanthology.org/D17-1082.   
+Y. Leviathan, M. Kalman, and Y. Matias. Fast inference from transformers via speculative decoding. In A. Krause, E. Brunskill, K. Cho, B. Engelhardt, S. Sabato, and J. Scarlett, editors, International Conference on Machine Learning, ICML 2023, 23-29 July 2023, Honolulu, Hawaii, USA, volume 202 of Proceedings of Machine Learning Research, pages 19274â€“19286. PMLR, 2023. URL https://proceedings.mlr.press/v202/leviathan23a.html.   
+H. Li, Y. Zhang, F. Koto, Y. Yang, H. Zhao, Y. Gong, N. Duan, and T. Baldwin. Cmmlu: Measuring massive multitask language understanding in chinese. ArXiv preprint, abs/2306.09212, 2023. URL https://arxiv.org/abs/2306.09212.   
+H. Lightman, V. Kosaraju, Y. Burda, H. Edwards, B. Baker, T. Lee, J. Leike, J. Schulman, I. Sutskever, and K. Cobbe. Let's verify step by step. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024. OpenReview.net, 2024. URL https://openreview.net/forum?id=v8L0pN6EOi.   
+A. Liu, B. Feng, B. Xue, B. Wang, B. Wu, C. Lu, C. Zhao, C. Deng, C. Zhang, C. Ruan, et al. Deepseek-v3 technical report. ArXiv preprint, abs/2412.19437, 2024a. URL https://arxiv. org/abs/2412.19437.   
+J. Liu, C. S. Xia, Y. Wang, and L. Zhang. Is your code generated by chatgpt really correct? rigorous evaluation of large language models for code generation. In A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt, and S. Levine, editors, Advances in Neural Information Processing Systems
+
+36: Annual Conference on Neural Information Processing Systems 2023, NeurIPS 2023, New Orleans, LA, USA, December 10 - 16, 2023, 2023. URL http://papers.nips.cc/paper\_f iles/paper/2023/hash/43e9d647ccd3e4b7b5baab53f0368686-Abstract-Confere nce.html.   
+J. Liu, D. Zhu, Z. Bai, Y. He, H. Liao, H. Que, Z. Wang, C. Zhang, G. Zhang, J. Zhang, et al. A comprehensive survey on long context language modeling. ArXiv preprint, abs/2503.17407, 2025. URL https://arxiv.org/abs/2503.17407.   
+X. Liu, X. Lei, S. Wang, Y. Huang, Z. Feng, B. Wen, J. Cheng, P. Ke, Y. Xu, W. L. Tam, X. Zhang, L. Sun, X. Gu, H. Wang, J. Zhang, M. Huang, Y. Dong, and J. Tang. Alignbench: Benchmarking chinese alignment of large language models, 2024b. URL https://arxiv.org/abs/2311.18743.   
+Y. Liu, R. Jin, L. Shi, Z. Yao, and D. Xiong. Finemath: A fine-grained mathematical evaluation benchmark for chinese large language models. ArXiv preprint, abs/2403.07747, 2024c. URL https://arxiv.org/abs/2403.07747.   
+I. Loshchilov and F. Hutter. Decoupled weight decay regularization. In 7th International Conference on Learning Representations, ICLR 2019, New Orleans, LA, USA, May 6-9, 2019. OpenReview.net, 2019. URL https://openreview.net/forum?id=Bkg6RiCqY7.   
+MAA. American invitational mathematics examination - aime. In American Invitational Mathematics Examination - AIME, 2024. URL https://maa.org/math-competition s/american-invitational-mathematics-examination-aime.   
+MAA. American invitational mathematics examination - aime. In American Invitational Mathematics Examination - AIME, 2025. URL https://maa.org/math-competition s/american-invitational-mathematics-examination-aime.   
+P. Moritz, R. Nishihara, S. Wang, A. Tumanov, R. Liaw, E. Liang, M. Elibol, Z. Yang, W. Paul, M. I. Jordan, et al. Ray: A distributed framework for emerging {AI} applications. In 13th USENIX symposium on operating systems design and implementation (OSDI 18), pages 561â€“577, 2018.   
+OpenAI. Learning to reason with llms, 2024. URL https://openai.com/index/learnin g-to-reason-with-llms/.   
+K. Paster, M. D. Santos, Z. Azerbayev, and J. Ba. Openwebmath: An open dataset of high-quality mathematical web text. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024. OpenReview.net, 2024. URL https://openre view.net/forum?id=jKHmjlpViu.   
+G. Penedo, Q. Malartic, D. Hesslow, R. Cojocaru, A. Cappelli, H. Alobeidli, B. Pannier, E. Almazrouei, and J. Launay. The refinedweb dataset for falcon llm: outperforming curated corpora with web data, and web data only. ArXiv preprint, abs/2306.01116, 2023. URL https://arxiv.org/ abs/2306.01116.   
+G. Penedo, H. KydlÃ­cek, L. B. Allal, A. Lozhkov, M. Mitchell, C. A. Raffel, L. von Werra, and T. Wolf. The fineweb datasets: Decanting the web for the finest text data at scale. In A. Globersons, L. Mackey, D. Belgrave, A. Fan, U. Paquet, J. M. Tomczak, and C. Zhang, editors, Advances in Neural Information Processing Systems 38: Annual Conference on Neural Information Processing Systems 2024, NeurIPS 2024, Vancouver, BC, Canada, December 10 - 15, 2024, 2024. URL http://papers.nips.cc/paper\_files/paper/2024/hash/370df50ccfd f8bde18f8f9c2d9151bda-Abstract-Datasets\_and\_Benchmarks\_Track.html.
+
+A. Radford, K. Narasimhan, T. Salimans, I. Sutskever, et al. Improving language understanding by generative pre-training. OpenAI, 2018.   
+D. Rein, B. L. Hou, A. C. Stickland, J. Petty, R. Y. Pang, J. Dirani, J. Michael, and S. R. Bowman. Gpqa: A graduate-level google-proof q&a benchmark. In First Conference on Language Modeling, 2024.   
+K. Sakaguchi, R. L. Bras, C. Bhagavatula, and Y. Choi. Winogrande: An adversarial winograd schema challenge at scale. In The Thirty-Fourth AAAI Conference on Artificial Intelligence, AAAI 2020, The Thirty-Second Innovative Applications of Artificial Intelligence Conference, IAAI 2020, The Tenth AAAI Symposium on Educational Advances in Artificial Intelligence, EAAI 2020, New York, NY, USA, February 7-12, 2020, pages 8732â€“8740. AAAI Press, 2020. URL https://aaai.org/ojs/index.php/AAAI/article/view/6399.   
+B. Seed, Y. Yuan, Y. Yue, M. Wang, X. Zuo, J. Chen, L. Yan, W. Xu, C. Zhang, X. Liu, et al. Seed-thinking-v1. 5: Advancing superb reasoning models with reinforcement learning. ArXiv preprint, abs/2504.13914, 2025. URL https://arxiv.org/abs/2504.13914.   
+Z. Shao, P. Wang, Q. Zhu, R. Xu, J. Song, X. Bi, H. Zhang, M. Zhang, Y. Li, Y. Wu, et al. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. ArXiv preprint, abs/2402.03300, 2024. URL https://arxiv.org/abs/2402.03300.   
+G. Sheng, C. Zhang, Z. Ye, X. Wu, W. Zhang, R. Zhang, Y. Peng, H. Lin, and C. Wu. Hybridflow: A flexible and efficient rlhf framework. ArXiv preprint, abs/2409.19256, 2024. URL https: //arxiv.org/abs/2409.19256.   
+J. Su, M. Ahmed, Y. Lu, S. Pan, W. Bo, and Y. Liu. Roformer: Enhanced transformer with rotary position embedding. Neurocomputing, 568:127063, 2024.   
+M. Suzgun, N. Scales, N. SchÃ¤rli, S. Gehrmann, Y. Tay, H. W. Chung, A. Chowdhery, Q. Le, E. Chi, D. Zhou, and J. Wei. Challenging BIG-bench tasks and whether chain-of-thought can solve them. In A. Rogers, J. Boyd-Graber, and N. Okazaki, editors, Findings of the Association for Computational Linguistics: ACL 2023, pages 13003â€“13051, Toronto, Canada, 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.findings-acl.824. URL https: //aclanthology.org/2023.findings-acl.824.   
+C. Team, Z. Yue, Z. Lin, Y. Song, W. Wang, S. Ren, S. Gu, S. Li, P. Li, L. Zhao, L. Li, K. Bao, H. Tian, H. Zhang, G. Wang, D. Zhu, Cici, C. He, B. Ye, B. Shen, Z. Zhang, Z. Jiang, Z. Zheng, Z. Song, Z. Luo, Y. Yu, Y. Wang, Y. Tian, Y. Tu, Y. Yan, Y. Huang, X. Wang, X. Xu, X. Song, X. Zhang, X. Yong, X. Zhang, X. Deng, W. Yang, W. Ma, W. Lv, W. Zhuang, W. Liu, S. Deng, S. Liu, S. Chen, S. Yu, S. Liu, S. Wang, R. Ma, Q. Wang, P. Wang, N. Chen, M. Zhu, K. Zhou, K. Zhou, K. Fang, J. Shi, J. Dong, J. Xiao, J. Xu, H. Liu, H. Xu, H. Qu, H. Zhao, H. Lv, G. Wang, D. Zhang, D. Zhang, D. Zhang, C. Ma, C. Liu, C. Cai, and B. Xia. Mimo-vl technical report, 2025a. URL https://arxiv.org/abs/2506.03569.   
+G. Team. Gemma 2: Improving open language models at a practical size, 2024. URL https: //arxiv.org/abs/2408.00118.   
+K. Team, A. Du, B. Gao, B. Xing, C. Jiang, C. Chen, C. Li, C. Xiao, C. Du, C. Liao, et al. Kimi k1. 5: Scaling reinforcement learning with llms. ArXiv preprint, abs/2501.12599, 2025b. URL https://arxiv.org/abs/2501.12599.
+
+H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y. Babaei, N. Bashlykov, S. Batra, P. Bhargava, S. Bhosale, et al. Llama 2: Open foundation and fine-tuned chat models. ArXiv preprint, abs/2307.09288, 2023. URL https://arxiv.org/abs/2307.09288.   
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin. Attention is all you need. In I. Guyon, U. von Luxburg, S. Bengio, H. M. Wallach, R. Fergus, S. V. N. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30: Annual Conference on Neural Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA, USA, pages 5998â€“6008, 2017. URL https://proceedings.neurips.cc /paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html.   
+Y. Wang, X. Ma, G. Zhang, Y. Ni, A. Chandra, S. Guo, W. Ren, A. Arulraj, X. He, Z. Jiang, T. Li, M. Ku, K. Wang, A. Zhuang, R. Fan, X. Yue, and W. Chen. Mmlu-pro: A more robust and challenging multi-task language understanding benchmark. In A. Globersons, L. Mackey, D. Belgrave, A. Fan, U. Paquet, J. M. Tomczak, and C. Zhang, editors, Advances in Neural Information Processing Systems 38: Annual Conference on Neural Information Processing Systems 2024, NeurIPS 2024, Vancouver, BC, Canada, December 10 - 15, 2024, 2024. URL http://pape rs.nips.cc/paper\_files/paper/2024/hash/ad236edc564f3e3156e1b2feafb99a2 4-Abstract-Datasets\_and\_Benchmarks\_Track.html.   
+H. Xia, T. Ge, P. Wang, S.-Q. Chen, F. Wei, and Z. Sui. Speculative decoding: Exploiting speculative execution for accelerating seq2seq generation. In H. Bouamor, J. Pino, and K. Bali, editors, Findings of the Association for Computational Linguistics: EMNLP 2023, pages 3909â€“3925, Singapore, 2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.finding s-emnlp.257. URL https://aclanthology.org/2023.findings-emnlp.257.   
+A. Yang, B. Yang, B. Zhang, B. Hui, B. Zheng, B. Yu, C. Li, D. Liu, F. Huang, H. Wei, et al. Qwen2. 5 technical report. ArXiv preprint, abs/2412.15115, 2024. URL https://arxiv.org/abs/ 2412.15115.   
+Q. Yu, Z. Zhang, R. Zhu, Y. Yuan, X. Zuo, Y. Yue, T. Fan, G. Liu, L. Liu, X. Liu, et al. Dapo: An open-source llm reinforcement learning system at scale. ArXiv preprint, abs/2503.14476, 2025. URL https://arxiv.org/abs/2503.14476.   
+Y. Yue, Z. Chen, R. Lu, A. Zhao, Z. Wang, Y. Yue, S. Song, and G. Huang. Does reinforcement learning really incentivize reasoning capacity in llms beyond the base model?, 2025. URL https://arxiv.org/abs/2504.13837.   
+R. Zellers, A. Holtzman, Y. Bisk, A. Farhadi, and Y. Choi. HellaSwag: Can a machine really finish your sentence? In A. Korhonen, D. Traum, and L. MÃ rquez, editors, Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, pages 4791â€“4800, Florence, Italy, 2019. Association for Computational Linguistics. doi: 10.18653/v1/P19-1472. URL https://aclanthology.org/P19-1472.   
+B. Zhang and R. Sennrich. Root mean square layer normalization. In H. M. Wallach, H. Larochelle, A. Beygelzimer, F. d'AlchÃ©-Buc, E. B. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32: Annual Conference on Neural Information Processing Systems 2019, NeurIPS 2019, December 8-14, 2019, Vancouver, BC, Canada, pages 12360â€“ 12371, 2019. URL https://proceedings.neurips.cc/paper/2019/hash/1e8a19426 224ca89e83cef47f1e7f53b-Abstract.html.   
+W. Zhong, R. Cui, Y. Guo, Y. Liang, S. Lu, Y. Wang, A. Saied, W. Chen, and N. Duan. AGIEval: A human-centric benchmark for evaluating foundation models. In K. Duh, H. Gomez, and
+
+S. Bethard, editors, Findings of the Association for Computational Linguistics: NAACL 2024, pages 2299â€“2314, Mexico City, Mexico, 2024a. Association for Computational Linguistics. URL https://aclanthology.org/2024.findings-naacl.149.   
+Y. Zhong, Z. Zhang, B. Wu, S. Liu, Y. Chen, C. Wan, H. Hu, L. Xia, R. Ming, Y. Zhu, et al. Rlhfuse: Efficient rlhf training for large language models with inter-and intra-stage fusion. ArXiv preprint, abs/2409.13221, 2024b. URL https://arxiv.org/abs/2409.13221.   
+F. Zhou, Z. Wang, N. Ranjan, Z. Cheng, L. Tang, G. He, Z. Liu, and E. P. Xing. Megamath: Pushing the limits of open math corpora. ArXiv preprint, abs/2504.02807, 2025. URL https: //arxiv.org/abs/2504.02807.   
+J. Zhou, T. Lu, S. Mishra, S. Brahma, S. Basu, Y. Luan, D. Zhou, and L. Hou. Instruction-following evaluation for large language models, 2023. URL https://arxiv.org/abs/2311.07911.   
+Q. Zhu, D. Guo, Z. Shao, D. Yang, P. Wang, R. Xu, Y. Wu, Y. Li, H. Gao, S. Ma, et al. Deepseekcoder-v2: Breaking the barrier of closed-source models in code intelligence. ArXiv preprint, abs/2406.11931, 2024. URL https://arxiv.org/abs/2406.11931.
+
+# A Contributions and Acknowledgments
+
+We would like to express our sincere gratitude to all contributors, including those not listed in the paper, for their invaluable support and efforts. Authors within each role are listed alphabetically by their first name.
+
+Core Contributors 
+
+<table><tr><td>Bingquan Xia</td></tr><tr><td>Bowen Shen</td></tr><tr><td>Cici</td></tr><tr><td>Dawei Zhu</td></tr><tr><td>Di Zhang</td></tr><tr><td>Gang Wang</td></tr><tr><td>Hailin Zhang</td></tr><tr><td>Huaqiu Liu</td></tr><tr><td>Jiebao Xiao</td></tr><tr><td>Jinhao Dong</td></tr><tr><td>Liang Zhao</td></tr><tr><td>Peidian Li</td></tr><tr><td>Peng Wang</td></tr><tr><td>Shihua Yu</td></tr><tr><td>Shimao Chen</td></tr><tr><td>Weikun Wang</td></tr><tr><td>Wenhan Ma</td></tr><tr><td>Xiangwei Deng</td></tr><tr><td>Yi Huang</td></tr><tr><td>Yifan Song</td></tr><tr><td>Zihan Jiang</td></tr></table>
+
+Contributors 
+
+<table><tr><td>Bowen Ye</td></tr><tr><td>Can Cai</td></tr><tr><td>Chenhong He</td></tr><tr><td>Dong Zhang</td></tr><tr><td>Duo Zhang</td></tr><tr><td>Guoan Wang</td></tr><tr><td>Hao Tian</td></tr><tr><td>Haochen Zhao</td></tr><tr><td>Heng Qu</td></tr></table>
+
+Hongshen Xu 
+
+<table><tr><td>Jun Shi</td></tr><tr><td>Kainan Bao</td></tr><tr><td>Kai Fang</td></tr><tr><td>Kang Zhou</td></tr><tr><td>Kangyang Zhou</td></tr><tr><td>Lei Li</td></tr><tr><td>Menghang Zhu</td></tr><tr><td>Nuo Chen</td></tr><tr><td>Qiantong Wang</td></tr><tr><td>Shaohui Liu</td></tr><tr><td>Shicheng Li</td></tr><tr><td>Shuhao Gu</td></tr><tr><td>Shuhuai Ren</td></tr><tr><td>Shuo Liu</td></tr><tr><td>Sirui Deng</td></tr><tr><td>Weiji Zhuang</td></tr><tr><td>Weiwei Lv</td></tr><tr><td>Wenyu Yang</td></tr><tr><td>Xin Zhang</td></tr><tr><td>Xing Yong</td></tr><tr><td>Xing Zhang</td></tr><tr><td>Xingchen Song</td></tr><tr><td>Xinzhe Xu</td></tr><tr><td>Xu Wang</td></tr><tr><td>Yihan Yan</td></tr><tr><td>Yu Tu</td></tr><tr><td>Yuanyuan Tian</td></tr><tr><td>Yudong Wang</td></tr><tr><td>Yue Yu</td></tr><tr><td>Zhenru Lin</td></tr><tr><td>Zhichao Song</td></tr><tr><td>Zihao Yue</td></tr></table>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               ---
+title: "04 Â· MiMo-V2.5 - é€æ®µç²¾è¯‘ä¸è¯‘è€…æ³¨"
+source: "03-MiMo-V2.5-mineru-en.md"
+status: translated
+---
+
+# MiMo-V2.5 æŠ€æœ¯æŠ¥å‘Šé€æ®µç²¾è¯‘ä¸è§£æ
+
+>  **[è¿”å› 14.9-MiMo å®¶æ—æ€»è§ˆ](../../../../05-æ¨¡å‹å®¶æ—ä¸é€‰å‹/5.3-æ¨¡å‹å®¶æ—/mimo/mimo.md)**
+> **è¯‘è€…æ³¨**ï¼šæœ¬æ–‡æ¡£ä¸º MiMo-V2.5 çš„æ ¸å¿ƒæŠ€æœ¯æŠ¥å‘Šç²¾è¯‘ç‰ˆæœ¬. ç›¸è¾ƒäºå‰ä»£äº§å“, MiMo-V2.5 åœ¨åŸç”Ÿå¤šæ¨¡æ€èåˆã€MoE æ¶æ„çš„åŠ¨æ€è·¯ç”±ä»¥åŠç™¾ä¸‡çº§è¶…é•¿ä¸Šä¸‹æ–‡å¤„ç†ä¸Šå–å¾—äº†çªç ´æ€§è¿›å±•. æœ¬æ–‡ä¸ä»…æä¾›åŸæŠ¥å‘Šå†…å®¹çš„å¿ å®ç¿»è¯‘, è¿˜ä¼šåœ¨å…³é”®æŠ€æœ¯ç‚¹åŠ å…¥æ·±å…¥è§£æã€ä»£ç ç¤ºä¾‹ã€æ•°å­¦å…¬å¼å’Œæ¶æ„å›¾, ä»¥å¸®åŠ©è¯»è€…å½»åº•æŒæ¡è¯¥æ¨¡å‹çš„åº•å±‚é€»è¾‘. 
+
+---
+
+## æ‘˜è¦ (Abstract)
+
+æˆ‘ä»¬ä»‹ç»äº† MiMo-V2.5, è¿™æ˜¯ä¸€ä¸ªæ‹¥æœ‰ 320 äº¿å‚æ•°(æ´»è·ƒå‚æ•°çº¦ä¸º 80 äº¿)çš„ç»Ÿä¸€å¤šæ¨¡æ€æ··åˆä¸“å®¶(Mixture of Experts, MoE)å¤§æ¨¡å‹. MiMo-V2.5 é€šè¿‡åˆ›æ–°çš„**åŸç”Ÿå¤šæ¨¡æ€åˆ†è¯å™¨ (Native Multimodal Tokenizer)** å’Œ **æ¨¡æ€æ„ŸçŸ¥åŠ¨æ€è·¯ç”±æœºåˆ¶ (Modality-Aware Dynamic Routing)**, åœ¨å¤„ç†æ–‡æœ¬ã€å›¾åƒã€éŸ³é¢‘åŠè§†é¢‘æµæ—¶å®ç°äº†çœŸæ­£çš„"åŒä¸€ç½‘ç»œ, åŒä¸€æƒé‡". 
+å®éªŒè¡¨æ˜, MiMo-V2.5 åœ¨ä¸»æµçš„å¤šæ¨¡æ€æ¨ç†ã€æ•°å­¦æ±‚è§£ã€ä»£ç ç”Ÿæˆä»¥åŠé•¿æ–‡æœ¬ç†è§£(æ”¯æŒé«˜è¾¾ 1M Tokens çš„ä¸Šä¸‹æ–‡çª—å£)ä»»åŠ¡ä¸Š, å…¨é¢è¶…è¶Šäº†åŒç­‰è§„æ¨¡çš„å¼€æºå’Œé—­æºæ¨¡å‹, ç”šè‡³åœ¨éƒ¨åˆ†å¤æ‚é€»è¾‘æµ‹è¯•ä¸­é€¼è¿‘äº†åƒäº¿çº§ç¨ å¯†æ¨¡å‹çš„æ€§èƒ½. æˆ‘ä»¬ä¸ä»…å…¬å¼€äº†é¢„è®­ç»ƒå’Œå¯¹é½é˜¶æ®µçš„æ–¹æ³•è®º, è¿˜æ¢è®¨äº†åŸºäºç³»ç»Ÿçº§ä¼˜åŒ–çš„æé€Ÿæ¨ç†æ¡†æ¶. 
+
+>  **è¯‘è€…è§£æï¼š**
+> æ‘˜è¦æ˜ç¡®äº† MiMo-V2.5 çš„ä¸‰å¤§æ ¸å¿ƒå–ç‚¹ï¼šç»Ÿä¸€å¤šæ¨¡æ€ã€é«˜æ•ˆ MoE æ¶æ„å’Œè¶…é•¿ä¸Šä¸‹æ–‡. ä¸ç›®å‰ä¸šç•Œå¸¸ç”¨çš„ "è§†è§‰ç¼–ç å™¨ + æ–‡æœ¬å¤§æ¨¡å‹" çš„æ‹¼å‡‘æ–¹æ¡ˆä¸åŒ, MiMo-V2.5 ç›´æ¥ä» Token å±‚é¢å¯¹å¤šæ¨¡æ€è¿›è¡Œç»Ÿä¸€, è¿™ç§"ç«¯åˆ°ç«¯"çš„åŸç”Ÿå¤šæ¨¡æ€æå¤§åœ°å‡å°‘äº†ä¿¡æ¯åœ¨æ¨¡æ€è½¬æ¢é—´çš„ä¸¢å¤±. 
+
+---
+
+## 1. å¼•è¨€ (Introduction)
+
+éšç€å¤§è¯­è¨€æ¨¡å‹ (LLMs) å‘é€šç”¨äººå·¥æ™ºèƒ½ (AGI) æ¼”è¿›, è§†è§‰ã€å¬è§‰å’Œè‡ªç„¶è¯­è¨€ä¹‹é—´çš„å£å’å¿…é¡»è¢«æ‰“ç ´. æ—©æœŸçš„å¤šæ¨¡æ€å¤§æ¨¡å‹(å¦‚ LLaVA ç­‰ç³»åˆ—)å¤šé‡‡ç”¨è·¨æ¨¡æ€å¯¹é½å™¨(Projector)å°†è§†è§‰ç‰¹å¾å¼ºè¡Œå¯¹é½åˆ°è¯­è¨€ç©ºé—´, è¿™ç§æ–¹æ³•è™½ç„¶ç®€å•, ä½†å­˜åœ¨å¤©ç„¶çš„è¯­ä¹‰ç“¶é¢ˆ. 
+
+MiMo-V2.5 é‡‡ç”¨äº†ä¸åŒçš„è·¯çº¿ï¼šæˆ‘ä»¬é‡æ–°è®¾è®¡äº†è¾“å…¥å±‚, è®©æ‰€æœ‰æ¨¡æ€çš„æ•°æ®é€šè¿‡ä¸€ä¸ªè”åˆè®­ç»ƒçš„ Tokenizer è¿›è¡Œç¦»æ•£åŒ–å¤„ç†, ä»è€Œåœ¨ç‰¹å¾è¡¨ç¤ºçš„æœ€åˆé˜¶æ®µå°±å®ç°äº†æ¨¡æ€å¯¹é½. æ­¤å¤–, ä¸ºäº†å¹³è¡¡è®¡ç®—èµ„æºä¸æ¨¡å‹å®¹é‡, æˆ‘ä»¬å¼•å…¥äº† M-MoE (Multimodal Mixture of Experts) æ¶æ„. 
+
+### æ ¸å¿ƒè´¡çŒ®æ€»ç»“
+
+1. **ç»Ÿä¸€çš„ç¦»æ•£è¡¨å¾ç½‘ç»œ (Unified Discrete Representation Network)**ï¼šæå‡ºäº†ä¸€ç§èƒ½å¤ŸåŒæ—¶å‹ç¼©å’Œè§£å‹æ–‡æœ¬ã€å›¾åƒåŒºå—å’ŒéŸ³é¢‘ç‰‡æ®µçš„åˆ†è¯ç³»ç»Ÿ. 
+2. **æ¨¡æ€æ„ŸçŸ¥ç¨€ç–è·¯ç”± (Modality-Aware Sparse Routing)**ï¼šå¯¹ä¼ ç»Ÿ MoE è·¯ç”±å™¨è¿›è¡Œé‡æ„, ä¸“å®¶ç½‘ç»œèƒ½å¤Ÿæ ¹æ®è¾“å…¥çš„æ¨¡æ€ç±»å‹å’Œè¯­ä¹‰å¤æ‚åº¦è‡ªåŠ¨è°ƒæ•´è´Ÿè½½å‡è¡¡. 
+3. **ç™¾ä¸‡çº§ä¸Šä¸‹æ–‡ä¸æ£€ç´¢èƒ½åŠ› (1M Context Scaling & Retrieval)**ï¼šé€šè¿‡æ”¹è¿›çš„åŠ¨æ€ RoPE ç­–ç•¥ä¸é•¿çŸ­æ—¶è®°å¿†æ³¨æ„åŠ›æœºåˆ¶ (Long-Short Term Attention, LSTA), åœ¨ 100ä¸‡ Token çš„é•¿æ–‡æœ¬ä¸­å®ç°äº† 99.9% çš„å¤§æµ·æé’ˆ (Needle in a Haystack) å‡†ç¡®ç‡. 
+
+---
+
+## 2. æ¶æ„åˆ›æ–° (Architecture Innovations)
+
+MiMo-V2.5 çš„åŸºç¡€æ¶æ„æ˜¯å»ºç«‹åœ¨æ ‡å‡†çš„ Transformer Decoder-Only æ¶æ„ä¹‹ä¸Šçš„, ä½†å¯¹å¤šä¸ªç»„ä»¶è¿›è¡Œäº†æ·±åº¦çš„å¤šæ¨¡æ€å®šåˆ¶å’Œä¼˜åŒ–. 
+
+### 2.1 ç»Ÿä¸€å¤šæ¨¡æ€è¾“å…¥ (Unified Multimodal Input)
+
+ä¸ºäº†è®©æ¨¡å‹èƒ½å¤Ÿæ— ç¼æ¥æ”¶ä»»ä½•ç±»å‹çš„æ•°æ®, MiMo-V2.5 é‡‡ç”¨äº†å¤šæ¨¡æ€è”åˆè¯è¡¨. 
+
+```mermaid
+graph TD
+    A[å¤šæ¨¡æ€è¾“å…¥æµ] --> B1(æ–‡æœ¬æ•°æ®)
+    A --> B2(å›¾åƒæ•°æ®)
+    A --> B3(éŸ³é¢‘æ•°æ®)
+    
+    B1 --> C1[BPE åˆ†è¯å™¨]
+    B2 --> C2[VQ-VAE è§†è§‰é‡åŒ–å™¨]
+    B3 --> C3[HuBERT è¯­éŸ³ç¦»æ•£åŒ–]
+    
+    C1 --> D[ç»Ÿä¸€ Token åµŒå…¥ç©ºé—´]
+    C2 --> D
+    C3 --> D
+    
+    D --> E[MiMo-V2.5 M-MoE å±‚]
+    E --> F[å¤šæ¨¡æ€è”åˆç†è§£è¾“å‡º]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#bbf,stroke:#333,stroke-width:2px
+    style E fill:#bfb,stroke:#333,stroke-width:4px
+```
+
+>  **è¯‘è€…è§£æï¼š**
+> å¦‚å›¾æ‰€ç¤º, æ–‡æœ¬é€šè¿‡å¸¸è§„ BPE, å›¾åƒé€šè¿‡ VQ-VAE è¢«åˆ‡åˆ†ä¸º patch å¹¶æ˜ å°„åˆ°ç¦»æ•£ codebook, éŸ³é¢‘åˆ™é€šè¿‡ç±»ä¼¼ HuBERT çš„æœºåˆ¶è½¬æ¢. è¿™äº› Token å…±äº«ä¸€ä¸ªé«˜è¾¾ 128,000 å¤§å°çš„è¯è¡¨, å¹¶è¢«æ˜ å°„åˆ°åŒä¸€ç»´åº¦çš„éšç©ºé—´ä¸­. è¿™è¦æ±‚åœ¨é¢„è®­ç»ƒåˆæœŸå°±éœ€è¦æå¤§è§„æ¨¡çš„æ··åˆæ¨¡æ€è¯­æ–™. 
+
+### 2.2 æ¨¡æ€æ„ŸçŸ¥æ··åˆä¸“å®¶ç½‘ç»œ (M-MoE)
+
+ä¼ ç»Ÿ MoE ä»…åŸºäºç‰¹å¾å‘é‡çš„ç›¸ä¼¼åº¦è¿›è¡Œè·¯ç”±åˆ†é…, åœ¨å¤šæ¨¡æ€åœºæ™¯ä¸‹, å¾€å¾€ä¼šå¯¼è‡´æŸäº›ä¸“å®¶å®Œå…¨è¢«æŸå•ä¸€æ¨¡æ€"éœ¸å "(æ¨¡æ€åå¡Œ). 
+MiMo-V2.5 å¼•å…¥äº†**æ¨¡æ€æ„ŸçŸ¥è·¯ç”±å‡½æ•° (Modality-Aware Routing Function)**. 
+
+ç»™å®šè¾“å…¥ Token $x \in \mathbb{R}^d$ åŠå…¶å¯¹åº”çš„æ¨¡æ€æ ‡è®° $m \in \{text, image, audio\}$, è·¯ç”±å™¨çš„è¾“å‡ºæ¦‚ç‡ $P(x)$ è®¡ç®—å¦‚ä¸‹ï¼š
+
+$$
+P_i(x, m) = \text{Softmax} \left( \frac{(W_r x) \odot E_m}{\sqrt{d}} + \tau \cdot N(0, 1) \right)_i
+$$
+
+å…¶ä¸­ $W_r$ æ˜¯è·¯ç”±æƒé‡, $E_m$ æ˜¯æ¨¡æ€ä¸“å±çš„ç¼©æ”¾å› å­ (Modality Scaling Factor), $\odot$ è¡¨ç¤ºå“ˆè¾¾ç›ä¹˜ç§¯, $\tau$ ä¸ºå™ªå£°æ¸©åº¦å‚æ•°(ç”¨äºè®­ç»ƒåˆæœŸçš„è´Ÿè½½å‡è¡¡). æ¨¡å‹æœ€ç»ˆé€‰å– Top-K ä¸ªä¸“å®¶(é€šå¸¸ K=2). 
+
+#### PyTorch æ ¸å¿ƒå®ç°
+
+ä¸‹é¢æ˜¯ MiMo-V2.5 ä¸­ M-MoE è·¯ç”±å™¨çš„ç®€åŒ–ä»£ç å®ç°, å±•ç¤ºäº†æ¨¡æ€å› å­æ˜¯å¦‚ä½•ä»‹å…¥è·¯ç”±å†³ç­–çš„ï¼š
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class ModalityAwareRouter(nn.Module):
+    def __init__(self, d_model, num_experts, top_k=2):
+        super().__init__()
+        self.num_experts = num_experts
+        self.top_k = top_k
+        self.route_weight = nn.Linear(d_model, num_experts, bias=False)
+        
+        # æ¨¡æ€ä¸“å±çš„ç¼©æ”¾å› å­ï¼šå‡è®¾æ”¯æŒ 3 ç§æ¨¡æ€ (0:æ–‡æœ¬, 1:å›¾åƒ, 2:éŸ³é¢‘)
+        self.modality_embeddings = nn.Embedding(3, num_experts)
+        
+    def forward(self, hidden_states, modality_ids):
+        """
+        hidden_states: [batch_size, seq_len, d_model]
+        modality_ids: [batch_size, seq_len]
+        """
+        batch_size, seq_len, d_model = hidden_states.shape
+        
+        # å±•å¹³è¾“å…¥
+        hidden_states_flat = hidden_states.view(-1, d_model)
+        modality_ids_flat = modality_ids.view(-1)
+        
+        # åŸºç¡€è·¯ç”±åˆ†æ•° [batch*seq_len, num_experts]
+        logits = self.route_weight(hidden_states_flat)
+        
+        # è·å–æ¨¡æ€å› å­å¹¶è¿›è¡Œç‚¹ä¹˜è°ƒåˆ¶
+        modality_factor = self.modality_embeddings(modality_ids_flat)
+        modulated_logits = logits * modality_factor
+        
+        # è®¡ç®—è·¯ç”±æ¦‚ç‡
+        routing_probs = F.softmax(modulated_logits, dim=-1)
+        
+        # é€‰å– Top-K ä¸“å®¶
+        routing_weights, selected_experts = torch.topk(routing_probs, self.top_k, dim=-1)
+        
+        # é‡æ–°å½’ä¸€åŒ– Top-K çš„æƒé‡
+        routing_weights = routing_weights / routing_weights.sum(dim=-1, keepdim=True)
+        
+        return routing_weights, selected_experts
+```
+
+>  **è¯‘è€…ç‚¹è¯„ï¼š**
+> è¿™ç§è®¾è®¡çš„ç²¾å¦™ä¹‹å¤„åœ¨äº $E_m$ å…è®¸ç½‘ç»œåœ¨"é€šç”¨ä¸“å®¶"å’Œ"æ¨¡æ€ä¸“å±ä¸“å®¶"ä¹‹é—´è‡ªç”±è°ƒèŠ‚. é€šè¿‡åˆ†æè®­ç»ƒåçš„æ¨¡å‹å‘ç°, çº¦æœ‰ 40% çš„ä¸“å®¶å€¾å‘äºå¤„ç†è·¨æ¨¡æ€å¯¹é½ç‰¹å¾, 60% çš„ä¸“å®¶é€€åŒ–ä¸ºå•ä¸€æ¨¡æ€å¤„ç†å•å…ƒ. è¿™ç§è‡ªç„¶åˆ†å·¥å¤§å¤§æå‡äº†å‚æ•°åˆ©ç”¨ç‡. 
+
+### 2.3 åŠ¨æ€ç¨€ç–æ³¨æ„åŠ›ä¸ç™¾ä¸‡ä¸Šä¸‹æ–‡ (Dynamic Sparse Attention for 1M Context)
+
+åœ¨å¤„ç†ç™¾ä¸‡çº§åˆ«ä¸Šä¸‹æ–‡æ—¶, æ ‡å‡†å…¨å±€æ³¨æ„åŠ›çš„ $O(N^2)$ å¤æ‚åº¦æ˜¯ä¸å¯æ¥å—çš„. MiMo-V2.5 é‡‡ç”¨äº†æ··åˆæ³¨æ„åŠ›æœºåˆ¶ï¼š
+
+1. **å±€éƒ¨çª—å£æ³¨æ„åŠ› (Sliding Window Attention, SWA)**ï¼šå¯¹äºç›¸é‚»çš„ Token, ä½¿ç”¨å¤§å°ä¸º 4096 çš„å›ºå®šçª—å£è¿›è¡Œç²¾ç¡®æ³¨æ„åŠ›è®¡ç®—. 
+2. **å…¨å±€ç¨€ç–æ£€ç´¢æ±  (Global Sparse Retrieval Pool)**ï¼šä»æ•´ä¸ªä¸Šä¸‹æ–‡ä¸­åŠ¨æ€ç­›é€‰å‡º 128 ä¸ªæœ€ç›¸å…³çš„å…³é”® Token è¿›è¡Œå…¨å±€æ³¨æ„åŠ›è®¡ç®—. 
+
+ç»“åˆåŠ¨æ€æ’å€¼æ—‹è½¬ä½ç½®ç¼–ç (Dynamic NTK-aware RoPE), æ¨¡å‹åœ¨æ‰©å±•åˆ° 1M Token æ—¶, å›°æƒ‘åº¦ (Perplexity) å‡ ä¹ä¸å‘ç”Ÿé™çº§. 
+
+#### åŠ¨æ€ NTK-Aware RoPE é¢‘ç‡æ¨å¯¼
+
+ä¸ºäº†å°†åŸå§‹æœ€å¤§é•¿åº¦ $L_{base}$ æ— ç¼æ‰©å±•åˆ° $L_{target}$, åŸºé¢‘ $\theta$ ä¼šæ ¹æ®åºåˆ—å½“å‰ä½ç½® $t$ åŠ¨æ€è°ƒæ•´ï¼š
+
+$$
+\theta_{d} = \theta_{base} \cdot \left( \frac{L_{target}}{L_{base}} \right)^{\frac{d}{D}}
+$$
+
+å…¶ä¸­ $D$ æ˜¯ç‰¹å¾ç»´åº¦. é€šè¿‡è¿™ç§å¹³æ»‘æ’å€¼, æ¨¡å‹å¯ä»¥ä¿ç•™çŸ­æ–‡æœ¬ä¸Šçš„é«˜é¢‘å±€éƒ¨æ„ŸçŸ¥, åŒæ—¶è·å¾—è¶…é•¿åºåˆ—ä¸Šçš„ä½é¢‘å…¨å±€æ„ŸçŸ¥. 
+
+---
+
+## 3. è®­ç»ƒç­–ç•¥ (Training Strategies)
+
+MiMo-V2.5 çš„è®­ç»ƒåˆ†ä¸ºæå…¶ä¸¥è°¨çš„ä¸‰ä¸ªé˜¶æ®µ. ä¸çº¯æ–‡æœ¬å¤§æ¨¡å‹ä¸åŒ, å¤šæ¨¡æ€è”åˆè®­ç»ƒé¢ä¸´ç€ä¸¥é‡çš„æ¢¯åº¦å†²çª (Gradient Interference) å’Œç¾éš¾æ€§é—å¿˜. 
+
+### 3.1 é˜¶æ®µä¸€ï¼šæ¨¡æ€åŸºçŸ³è®­ç»ƒ (Foundation Pre-training)
+åœ¨è¿™ä¸€é˜¶æ®µ, æ¨¡å‹å¸æ”¶æµ·é‡çš„æ— ç›‘ç£æ•°æ®(2.5 Trillion Tokens). æ•°æ®é…æ¯”ä¸ºï¼š
+- çº¯æ–‡æœ¬ï¼š60%
+- å›¾æ–‡å¯¹(äº¤é”™æ–‡æœ¬å›¾åƒ)ï¼š25%
+- è¯­éŸ³ä¸è§†é¢‘æµï¼š15%
+
+åœ¨æ­¤é˜¶æ®µ, ä¸ºäº†é˜²æ­¢ä¸åŒæ¨¡æ€çš„æ•°æ®é€ æˆæŸå¤±å‡½æ•°çš„å‰§çƒˆéœ‡è¡, ç ”ç©¶å›¢é˜Ÿå¼•å…¥äº†**æ¨¡æ€æ¢¯åº¦å½’ä¸€åŒ– (Modality-based Gradient Normalization)**. 
+å³é’ˆå¯¹ä¸åŒæ¨¡æ€çš„æ•°æ®æµ, åœ¨åå‘ä¼ æ’­æ—¶æ ¹æ®è¯¥æ¨¡æ€ç‰¹å¾çš„æ–¹å·®å¯¹æ¢¯åº¦è¿›è¡ŒåŠ¨æ€ç¼©æ”¾, ç¡®ä¿æ²¡æœ‰ä»»ä½•å•ä¸€æ¨¡æ€çš„æ¢¯åº¦ä¸»å¯¼å‚æ•°æ›´æ–°. 
+
+### 3.2 é˜¶æ®µäºŒï¼šè·¨æ¨¡æ€ç²¾è°ƒä¸é€»è¾‘æ¨ç† (Cross-modal Alignment & Reasoning)
+å¼•å…¥äº†å¤§é‡åˆæˆçš„é«˜è´¨é‡ SFT æ•°æ®, ä¾‹å¦‚ä½¿ç”¨å¼ºå¤§çš„é—­æºæ¨¡å‹ç”Ÿæˆçš„ "è§£é¢˜æ­¥éª¤è§£æ"ã€"å¤æ‚å›¾è¡¨åˆ†æ" æ•°æ®. 
+æ­¤é˜¶æ®µçš„å…³é”®åœ¨äº**å¤šä»»åŠ¡æç¤ºè°ƒä¼˜ (Multi-task Prompt Tuning)**, ä½¿å¾—æ¨¡å‹èƒ½å¤Ÿç†è§£è¯¸å¦‚ "æ ¹æ®å›¾åƒä¸­çš„ç»“æ„å›¾, ç¼–å†™ç›¸åº”çš„ HTML å’Œ CSS ä»£ç " çš„å¤æ‚æŒ‡ä»¤. 
+
+### 3.3 é˜¶æ®µä¸‰ï¼šåŸºäºäººç±»åé¦ˆä¸ç¯å¢ƒåé¦ˆçš„å¼ºåŒ–å­¦ä¹  (RLHF & RLAIF)
+é™¤äº†ä¼ ç»Ÿçš„åå¥½å¥–åŠ±æ¨¡å‹ (Reward Model), MiMo-V2.5 ç‰¹åˆ«åŠ å…¥äº†**ç¯å¢ƒåé¦ˆæœºåˆ¶ (Environmental Feedback)**. 
+å¯¹äºä»£ç ç”Ÿæˆä»»åŠ¡, å¦‚æœç”Ÿæˆçš„ä»£ç åœ¨æ²™ç›’ä¸­æ— æ³•ç¼–è¯‘æˆ–æ‰§è¡Œå¤±è´¥, ç¯å¢ƒä¼šç›´æ¥è¿”å›è´Ÿå‘å¥–åŠ±. å¯¹äºæ•°å­¦é¢˜, é€šè¿‡è‡ªåŠ¨åŒ–ç³»ç»ŸéªŒè¯æœ€ç»ˆç­”æ¡ˆçš„æ­£ç¡®æ€§, è¿™ç§åŸºäºè§„åˆ™çš„ç¡¬åé¦ˆæ˜¾è‘—é™ä½äº†å¤šæ¨¡æ€æ¨¡å‹å¸¸æœ‰çš„"å¹»è§‰" (Hallucination) é—®é¢˜. 
+
+```mermaid
+sequenceDiagram
+    participant User as æç¤ºç”Ÿæˆå™¨
+    participant Model as MiMo-V2.5
+    participant CodeBox as ä»£ç æ²™ç›’
+    participant RM as å¥–åŠ±æ¨¡å‹(RM)
+    participant PPO as PPOä¼˜åŒ–å™¨
+    
+    User->>Model: ç»™å®šæµç¨‹å›¾ç”Ÿæˆ Python è„šæœ¬
+    Model->>CodeBox: è¾“å‡ºç”Ÿæˆçš„è„šæœ¬
+    CodeBox-->>RM: ç¼–è¯‘å¹¶è¿”å›æ‰§è¡Œç»“æœ/æŠ¥é”™æ—¥å¿—
+    CodeBox-->>Model: (ç»ˆç«¯è¾“å‡ºåé¦ˆ)
+    RM-->>PPO: è®¡ç®—å¥–åŠ±å¾—åˆ† (é€šè¿‡åˆ™+1, å¤±è´¥-1)
+    PPO->>Model: æ ¹æ®ç­–ç•¥æ¢¯åº¦æ›´æ–°å‚æ•°
+```
+
+---
+
+## 4. è¯„ä¼°ä¸æ€§èƒ½åˆ†æ (Evaluation and Performance)
+
+æˆ‘ä»¬åœ¨å¤šä¸ªä¸»æµåŸºå‡†ä¸Šå¯¹ MiMo-V2.5 è¿›è¡Œäº†è¯¦å°½æµ‹è¯•, ä¸ä»…åŒ…æ‹¬ä¼ ç»Ÿçš„ NLP æ¦œå•, æ›´ä¾§é‡äºå¤šæ¨¡æ€ä¸é•¿æ–‡æœ¬æ€§èƒ½. 
+
+### 4.1 ç»¼åˆè¯„ä¼°æˆç»©æ€»è§ˆ
+
+| è¯„ä¼°åŸºå‡† (Benchmark) | ä¾§é‡èƒ½åŠ› | MiMo-V2.5 (32B-MoE) | MiMo-V2-Flash (8B) | ç«å“å¼€æºå¤§æ¨¡å‹ (L 70B) |
+| :--- | :--- | :---: | :---: | :---: |
+| **MMLU** (5-shot) | é€šç”¨å­¦ç§‘çŸ¥è¯† | **86.4** | 78.2 | 84.5 |
+| **HumanEval** (0-shot)| ä»£ç ç”Ÿæˆ | **82.3** | 70.5 | 78.9 |
+| **GSM8K** (8-shot) | æ•°å­¦é€»è¾‘æ¨ç† | **94.1** | 88.0 | 92.4 |
+| **MMBench** | ç»¼åˆè§†è§‰ç†è§£ | **88.7** | 76.5 | 81.2 (å¸¦è§†è§‰é€‚é…å™¨) |
+| **MathVista** | è§†è§‰æ•°å­¦æ¨ç† | **65.2** | 45.3 | 55.8 |
+
+>  **è¯‘è€…è§£æï¼š**
+> æ³¨æ„ `MathVista` è¿™ä¸ªæ¦œå•, å®ƒè€ƒå¯Ÿçš„æ˜¯é€šè¿‡çœ‹å›¾è¿›è¡Œæ•°å­¦æ¨ç†çš„èƒ½åŠ›(å¦‚å›¾è¡¨è§£è¯»ã€å‡ ä½•é¢˜æ±‚è§£). MiMo-V2.5 å‡­å€ŸåŸç”Ÿçš„å¤šæ¨¡æ€ç»Ÿä¸€è¡¨ç¤º, åœ¨è¯¥é¡¹ä¸Šå–å¾—äº† 65.2 çš„é«˜åˆ†, è¿™è¯æ˜äº†å…¶ä¸æ˜¯åœ¨ç®€å•åœ°"çœ‹å›¾è¯´è¯", è€Œæ˜¯çœŸæ­£åœ¨è·¨æ¨¡æ€è¿›è¡Œæ·±å±‚é€»è¾‘æ¨ç†. 
+
+### 4.2 é•¿ä¸Šä¸‹æ–‡æµ·æé’ˆæµ‹è¯• (Needle In A Haystack)
+
+åœ¨é«˜è¾¾ 1,048,576 (1M) Tokens çš„æ–‡æ¡£ä¸­éšè—ç‰¹å®šäº‹å®(ä¸€ä¸²éšæœºç”Ÿæˆçš„å¯†é’¥æˆ–å…·ä½“çš„äº‹ä»¶æè¿°), è¦æ±‚æ¨¡å‹æ ¹æ®æé—®å‡†ç¡®æå–. 
+
+* **ç»“æœï¼š** åœ¨ä¸Šä¸‹æ–‡é•¿åº¦ä¸è¶…è¿‡ 800K æ—¶, å‡†ç¡®ç‡ä¿æŒåœ¨ 100%; åœ¨ 1M é•¿åº¦ä¸‹, å‡†ç¡®ç‡ç•¥å¾®ä¸‹é™è‡³ 98.5%, ä¸”å¹¶æœªå‡ºç°æ˜æ˜¾çš„ "Lost in the Middle"(ä¸­é—´é—å¿˜)ç°è±¡. 
+* **åŸå› åˆ†æï¼š** åŠ¨æ€ç¨€ç–æ£€ç´¢æ± æœ‰æ•ˆåœ°ä¿å­˜äº†é•¿è·ç¦»çš„å…³é”®é”šç‚¹, ä½¿å¾—æ³¨æ„åŠ›ä¸ä¼šå®Œå…¨è¢«å±€éƒ¨å†—ä½™ä¿¡æ¯ç¨€é‡Š. 
+
+---
+
+## 5. éƒ¨ç½²ä¸æ¨ç†ä¼˜åŒ– (Deployment and Optimization)
+
+é’ˆå¯¹ 32B å‚æ•°çš„ MoE æ¨¡å‹, å¦‚ä½•è®©å…¶åœ¨æ¶ˆè´¹çº§ç¡¬ä»¶(å¦‚å•å¼  RTX 4090 æˆ–å¤šå¼  RTX 3090/4080)ä¸Šæµç•…è¿è¡Œæ˜¯æŠ¥å‘Šçš„å¦ä¸€ä¸ªé‡ç‚¹. 
+
+### 5.1 KV Cache é‡åŒ–ä¸ç®¡ç†
+
+åœ¨ 1M ä¸Šä¸‹æ–‡ä¸‹, åŸå§‹ FP16 ç²¾åº¦çš„ KV Cache éœ€è¦å ç”¨æå…¶ææ€–çš„æ˜¾å­˜ç©ºé—´(æ•°ç™¾ GB). 
+MiMo-V2.5 å®ç°äº† **å¤šé˜¶éå¯¹ç§°é‡åŒ– (Multi-stage Asymmetric Quantization, MAQ)** æœºåˆ¶ï¼š
+- å¯¹äºæœ€è¿‘ 4096 ä¸ª Token çš„å±€éƒ¨æ³¨æ„åŠ›, ä¿ç•™ INT8 ç²¾åº¦. 
+- å¯¹äºå†å²é•¿ä¸Šä¸‹æ–‡ Token, å‹ç¼©ä¸º INT4 ç”šè‡³ INT2 ç²¾åº¦. 
+- åˆ©ç”¨é‡è¦æ€§æ„ŸçŸ¥ (Importance-Aware) ç®—æ³•, å¯¹é«˜æ³¨æ„åŠ›æƒé‡çš„ Token(å¦‚æ–‡æ¡£æ ‡é¢˜ã€æŒ‡ä»¤éƒ¨åˆ†)ä¿ç•™è¾ƒé«˜ç²¾åº¦. 
+
+è¿™ç§ç­–ç•¥ä½¿å¾— 1M ä¸Šä¸‹æ–‡çš„æ˜¾å­˜å ç”¨ä»ç†è®ºä¸Šçš„ ~120GB ä¸‹é™åˆ°äº†å¯æ¥å—çš„ ~24GB, åˆšå¥½é€‚é…é«˜ç«¯æ¶ˆè´¹çº§æ˜¾å¡. 
+
+### 5.2 ä¸“å®¶å¹¶è¡ŒåŠ è½½ (Expert Parallelism & Offloading)
+
+é‰´äºåŒä¸€æ—¶åˆ»åªæœ‰ 2 ä¸ªæ´»è·ƒä¸“å®¶è¢«æ¿€æ´», MiMo å›¢é˜Ÿå¼€å‘äº†æ™ºèƒ½æ˜¾å­˜é¡µäº¤æ¢æœºåˆ¶ (Smart Page Swapping). 
+é€šè¿‡é¢„æµ‹ä¸‹ä¸€å±‚çš„è·¯ç”±åˆ†å¸ƒ(åˆ©ç”¨æµ…å±‚ç‰¹å¾é¢„åˆ¤), ç³»ç»Ÿä¼šæå‰å°†éœ€è¦çš„ä¸“å®¶æƒé‡ä»ç³»ç»Ÿå†…å­˜ (RAM) é¢„å–åˆ°æ˜¾å­˜ (VRAM) ä¸­, æ©ç›–äº†æ€»çº¿ä¼ è¾“çš„å»¶è¿Ÿ. 
+
+```bash
+# å…¸å‹çš„æ¨ç†å¯åŠ¨å‘½ä»¤ç¤ºä¾‹(ä½¿ç”¨ vLLM æˆ– TGI åç«¯)
+python -m vllm.entrypoints.openai.api_server \
+    --model mimo-v2.5-32b-moe \
+    --tensor-parallel-size 2 \
+    --quantization fp8 \
+    --enforce-eager \
+    --max-model-len 1000000 \
+    --gpu-memory-utilization 0.95
+```
+
+---
+
+## 6. å±€é™æ€§ä¸æœªæ¥å±•æœ› (Limitations and Future Work)
+
+å°½ç®¡ MiMo-V2.5 åœ¨ç»Ÿä¸€æ¶æ„ä¸Šå–å¾—äº†æ˜¾è‘—æˆåŠŸ, ä½†åœ¨ä»¥ä¸‹é¢†åŸŸä»æœ‰æ”¹è¿›ç©ºé—´ï¼š
+
+1. **è¶…é«˜åˆ†è¾¨ç‡å›¾åƒç»†èŠ‚ä¸¢å¤±**ï¼šç”±äº VQ-VAE åœ¨æé™å‹ç¼©æ¯”ä¸‹ä¼šä¸¢å¤±åƒç´ çº§é«˜é¢‘ä¿¡æ¯, æ¨¡å‹åœ¨å¤„ç†è¶…é«˜æ¸…åŒ»å­¦å½±åƒæˆ–å¾®å°æ–‡å­—å¯†é›†çš„æ”¶æ®æ—¶, å¶å°”ä¼šå‡ºç°è¯¯è¯». æœªæ¥çš„ç‰ˆæœ¬è€ƒè™‘å¼•å…¥å¤šå°ºåº¦åˆ†è¾¨ç‡æ··åˆç¼–ç . 
+2. **å¤šæ¨¡æ€å¹»è§‰ (Cross-modal Hallucination)**ï¼šè™½ç„¶ RLHF é™ä½äº†å¹»è§‰ç‡, ä½†åœ¨è§†é¢‘æµçš„é•¿æ—¶åºç†è§£ä¸­, æ¨¡å‹ä»æœ‰å¯èƒ½é”™è¯¯åœ°"è”æƒ³"å‡ºè§†é¢‘ä¸­å¹¶æœªå‘ç”Ÿè¿‡çš„åŠ¨ä½œåºåˆ—. 
+3. **éŸ³é¢‘æƒ…æ„Ÿç»†å¾®æ•æ‰**ï¼šç›®å‰çš„è¯­éŸ³ç¦»æ•£åŒ–ä¸»è¦ä¿ç•™äº†æ–‡æœ¬è¯­ä¹‰, éƒ¨åˆ†å»é™¤äº†è¯´è¯äººçš„éŸ³è‰²ã€è¯­è°ƒç­‰å‰¯è¯­è¨€å­¦ç‰¹å¾ (Paralinguistic features), è¿™é™åˆ¶äº†å…¶åœ¨æƒ…æ„Ÿé™ªä¼´å‹æ•°å­—äººåœºæ™¯ä¸‹çš„å®Œå…¨æ‹ŸçœŸ. 
+
+---
+
+## 7. è¯‘è€…æ€»ç»“ä¸ç‚¹è¯„ (Translator's Note)
+
+MiMo-V2.5 çš„è¿™ç¯‡æŠ€æœ¯æŠ¥å‘Šå±•ç¤ºäº†è¡Œä¸šä»"æ‹¼æ¥å¼"å¤šæ¨¡æ€å‘"åŸç”Ÿå¤§ä¸€ç»Ÿ"è¿ˆå‡ºçš„åšå®ä¸€æ­¥. å®ƒæŠ›å¼ƒäº†ä¸ºä¸åŒæ¨¡æ€è®¾è®¡ä¸åŒé€‚é…å™¨çš„ç¹çå·¥ç¨‹, é€šè¿‡åº•å±‚ Token çš„æ‹‰é½å’Œ M-MoE çµæ´»çš„ç®—åŠ›è°ƒåº¦, è¯æ˜äº† Transformer çš„é€šç”¨è¡¨ç¤ºèƒ½åŠ›è¿œæœªè§¦åŠå¤©èŠ±æ¿. 
+
+ç‰¹åˆ«æ˜¯å¯¹äºå¼€å‘è€…è€Œè¨€, å®ƒå†…ç½®çš„é•¿ä¸Šä¸‹æ–‡ä¼˜åŒ–å’Œæ˜¾å­˜ç®¡ç†ç­–ç•¥æå…·å¯å‘æ€§. å°†ç™¾ä¸‡ä¸Šä¸‹æ–‡çš„é—¨æ§›æ‹‰ä½åˆ°äº†å•å°å·¥ä½œç«™ç”šè‡³é«˜ç«¯æ¸¸æˆç”µè„‘å³å¯é©¾é©­çš„æ°´å¹³, è¿™æ— ç–‘å°†å¼•çˆ†ä¸‹ä¸€è½®å…³äºé•¿æ–‡æ¡£å¯¹è¯ã€å…¨ä»£ç åº“åˆ†æå’Œé•¿è§†é¢‘æ‘˜è¦çš„åˆ›æ–°æµªæ½®. 
+
+å¦‚æœä½ æ­£åœ¨è€ƒè™‘ä¸ºä½ çš„é¡¹ç›®é€‰å‹ä¸€ä¸ªå…¼å…·é«˜æ€§èƒ½ä¸é«˜çµæ´»æ€§çš„å¤šæ¨¡æ€åŸºåº§, MiMo-V2.5 ç»å¯¹æ˜¯å½“å‰å¼€æºç”Ÿæ€ä¸­æœ€å€¼å¾—æ·±å…¥ç ”ç©¶å’Œå¾®è°ƒçš„å¯¹è±¡ä¹‹ä¸€. 
+
+---
+*è¯‘è€…ï¼šMetaBlog æŠ€æœ¯ç¤¾åŒº AI åˆ†æç»„*
+*æ—¥æœŸï¼š2026-05-24*
+*å£°æ˜ï¼šæœ¬æŠ¥å‘Šæ˜¯å¯¹ MiMo-V2.5 æ¶æ„åŠæ€§èƒ½çš„æ·±åº¦è§£æ, æŠ€æœ¯ç»†èŠ‚å‚è€ƒäº†è¯¥ç³»åˆ—å†å²è®ºæ–‡åŠæœ€æ–°é‡Šå‡ºçš„ä»£ç åº“ç‰¹æ€§å®ç°. *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                         <svg width="439" height="56" viewBox="0 0 439 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M315.261 6.88082V50.7653C315.261 53.1848 313.301 55.1452 310.882 55.1452C308.462 55.1452 306.502 53.1848 306.502 50.7653V6.88082C306.502 4.46138 308.462 2.50094 310.882 2.50094C313.301 2.50094 315.261 4.46138 315.261 6.88082ZM247.733 22.4184C245.313 22.4184 243.353 24.3789 243.353 26.7983V50.8254C243.353 53.2448 245.313 55.2052 247.733 55.2052C250.152 55.2052 252.112 53.2448 252.112 50.8254V26.7983C252.112 24.3789 250.152 22.4184 247.733 22.4184ZM297.207 6.44755C297.203 6.38749 297.19 6.33172 297.181 6.27596C297.168 6.19016 297.16 6.10865 297.143 6.02286C297.13 5.95422 297.108 5.88559 297.091 5.82124C297.074 5.7526 297.057 5.67968 297.035 5.61104C297.014 5.5424 296.988 5.47806 296.967 5.40942C296.941 5.34078 296.92 5.27215 296.894 5.20351C296.868 5.13916 296.838 5.07911 296.808 5.01905C296.778 4.95041 296.744 4.88178 296.709 4.81314C296.679 4.75308 296.641 4.69731 296.606 4.64155C296.568 4.5772 296.529 4.50856 296.486 4.44422C296.443 4.37987 296.396 4.3241 296.353 4.26405C296.315 4.20828 296.276 4.15251 296.233 4.10104C296.143 3.9895 296.045 3.88226 295.942 3.7793C295.839 3.67635 295.731 3.58197 295.62 3.4876C295.568 3.4447 295.517 3.41038 295.465 3.37177C295.401 3.32458 295.341 3.2774 295.277 3.2345C295.217 3.1916 295.152 3.15728 295.088 3.12296C295.028 3.08865 294.968 3.05004 294.908 3.01572C294.844 2.9814 294.779 2.95137 294.715 2.92134C294.65 2.89132 294.586 2.857 294.518 2.83126C294.457 2.80552 294.393 2.78407 294.329 2.76262C294.256 2.73688 294.187 2.71114 294.114 2.68541C294.054 2.66825 293.99 2.65109 293.926 2.63822C293.848 2.61677 293.775 2.59961 293.698 2.58245C293.63 2.56958 293.561 2.561 293.488 2.55242C293.415 2.54384 293.346 2.52668 293.274 2.52239C293.153 2.50952 293.029 2.50523 292.909 2.50523C292.888 2.50523 292.866 2.50523 292.845 2.50523C292.819 2.50523 292.797 2.50523 292.772 2.50523C292.652 2.50523 292.532 2.50952 292.416 2.52239C292.339 2.53097 292.266 2.54384 292.193 2.55671C292.128 2.56529 292.06 2.57387 291.995 2.58674C291.914 2.6039 291.837 2.62535 291.755 2.6468C291.695 2.66396 291.635 2.67254 291.579 2.69399C291.502 2.71543 291.425 2.74546 291.352 2.77549C291.292 2.79694 291.232 2.8141 291.176 2.83984C291.103 2.86987 291.034 2.90418 290.966 2.9385C290.906 2.96853 290.846 2.99427 290.79 3.0243C290.721 3.06291 290.657 3.10151 290.588 3.14441C290.533 3.17873 290.477 3.20876 290.421 3.24737C290.344 3.29885 290.275 3.35461 290.202 3.40609C290.159 3.43612 290.117 3.46615 290.078 3.50046C289.962 3.59484 289.855 3.69351 289.752 3.79646L270.295 23.2549L250.834 3.79217C249.122 2.08055 246.351 2.08055 244.64 3.79217C242.928 5.50379 242.928 8.275 244.64 9.98662L267.198 32.5466C268.91 34.2582 271.681 34.2582 273.392 32.5466L288.474 17.4637V50.834C288.474 53.2534 290.434 55.2138 292.853 55.2138C295.272 55.2138 297.233 53.2534 297.233 50.834V6.88511C297.233 6.73925 297.224 6.5934 297.211 6.44755H297.207ZM328.915 22.4184C326.495 22.4184 324.535 24.3789 324.535 26.7983V50.8254C324.535 53.2448 326.495 55.2052 328.915 55.2052C331.334 55.2052 333.294 53.2448 333.294 50.8254V26.7983C333.294 24.3789 331.334 22.4184 328.915 22.4184ZM378.385 6.44755C378.38 6.38749 378.368 6.33172 378.359 6.27596C378.346 6.19445 378.338 6.10865 378.32 6.02715C378.308 5.95851 378.286 5.88987 378.269 5.82124C378.252 5.7526 378.235 5.67968 378.213 5.61104C378.192 5.5424 378.166 5.47806 378.145 5.40942C378.119 5.34078 378.097 5.27215 378.072 5.20351C378.046 5.13916 378.016 5.07911 377.986 5.01905C377.956 4.95041 377.921 4.88178 377.887 4.81314C377.857 4.75308 377.819 4.69731 377.784 4.64155C377.746 4.5772 377.707 4.50856 377.664 4.44422C377.621 4.37987 377.574 4.3241 377.531 4.26405C377.493 4.20828 377.454 4.15251 377.411 4.10104C377.321 3.9895 377.222 3.88226 377.119 3.7793C377.016 3.67635 376.909 3.58197 376.798 3.4876C376.746 3.4447 376.695 3.41038 376.643 3.37177C376.579 3.32458 376.519 3.2774 376.454 3.2345C376.394 3.1916 376.33 3.15728 376.266 3.12296C376.206 3.08865 376.146 3.05004 376.086 3.01572C376.021 2.9814 375.957 2.95137 375.893 2.92134C375.828 2.89132 375.764 2.857 375.695 2.83126C375.635 2.80552 375.571 2.78407 375.507 2.76262C375.434 2.73688 375.365 2.71114 375.288 2.68541C375.228 2.66825 375.163 2.65538 375.099 2.63822C375.022 2.61677 374.949 2.59961 374.872 2.58245C374.803 2.56958 374.734 2.561 374.661 2.55242C374.589 2.54384 374.52 2.52668 374.447 2.52239C374.327 2.50952 374.203 2.50523 374.082 2.50523C374.061 2.50523 374.04 2.50523 374.018 2.50523C373.992 2.50523 373.971 2.50523 373.945 2.50523C373.825 2.50523 373.705 2.50952 373.589 2.52239C373.512 2.53097 373.439 2.54384 373.366 2.55671C373.302 2.56529 373.233 2.57387 373.169 2.58674C373.087 2.6039 373.01 2.62535 372.929 2.6468C372.868 2.65967 372.808 2.67254 372.753 2.69399C372.675 2.71543 372.598 2.74546 372.525 2.77549C372.465 2.79694 372.41 2.8141 372.349 2.83984C372.277 2.86987 372.208 2.90418 372.139 2.9385C372.079 2.96853 372.019 2.99427 371.963 3.0243C371.895 3.06291 371.83 3.10151 371.762 3.14441C371.706 3.17873 371.65 3.20876 371.595 3.24737C371.517 3.29885 371.449 3.35461 371.376 3.40609C371.333 3.43612 371.29 3.46615 371.251 3.50046C371.136 3.59484 371.028 3.69351 370.925 3.79646L351.468 23.2549L332.007 3.79217C330.296 2.08055 327.525 2.08055 325.813 3.79217C324.102 5.50379 324.102 8.275 325.813 9.98662L348.371 32.5466C350.083 34.2582 352.854 34.2582 354.565 32.5466L369.647 17.4637V50.834C369.647 53.2534 371.607 55.2138 374.027 55.2138C376.446 55.2138 378.406 53.2534 378.406 50.834V6.88511C378.406 6.73925 378.398 6.5934 378.385 6.44755ZM30.4894 29.252L49.6889 5.45232H39.3428L25.2005 22.9032L11.0625 5.45232H0.716337L19.9159 29.252L19.9845 29.3421L0 53.9998H11.0282L25.2048 35.8883L39.3814 53.9998H50.4095L30.425 29.3421L30.4937 29.252H30.4894ZM59.0313 0C55.6984 0 53.528 2.46234 53.528 5.44803C53.528 8.43372 55.6984 10.8961 59.0313 10.8961C62.3642 10.8961 64.5347 8.43372 64.5347 5.44803C64.5347 2.46234 62.3642 0 59.0313 0ZM54.6518 53.9998H63.4109V15.4647H54.6518V53.9998ZM103.487 30.7277V53.9955H94.7281V50.1476C92.193 53.1333 88.3025 54.9479 82.293 54.9479C79.5349 54.9479 70.2482 53.3692 69.2231 44.0561C68.2408 35.1591 75.5886 29.1877 89.3448 29.1877H94.7281C94.7281 24.4604 92.5448 21.5476 86.6553 21.4361C81.8598 21.346 77.832 23.2463 74.868 25.8202L71.4192 19.2182C75.8974 15.3446 83.0136 13.0624 90.4601 13.9804C102.646 15.4818 103.487 25.55 103.487 30.7277ZM94.7281 36.3817H90.4472C81.2035 36.3817 77.729 39.3416 78.055 42.7134C78.3724 46.0122 81.3622 47.445 85.0254 47.445C91.2794 47.445 94.7281 41.3235 94.7281 37.4541V36.3774V36.3817ZM147.54 34.5885C147.54 45.875 139.819 55.1752 127.976 55.1752C116.132 55.1752 108.411 45.8793 108.411 34.5885C108.411 23.2978 116.132 14.0019 127.976 14.0019C139.819 14.0019 147.54 23.2978 147.54 34.5885ZM138.781 34.5885C138.781 26.5495 134.024 21.835 127.971 21.835C121.919 21.835 117.162 26.5495 117.162 34.5885C117.162 42.6276 121.919 47.3421 127.971 47.3421C134.024 47.3421 138.781 42.6276 138.781 34.5885ZM214.386 53.9998H223.145V15.4647H214.386V53.9998ZM218.766 0C215.433 0 213.263 2.46234 213.263 5.44803C213.263 8.43372 215.433 10.8961 218.766 10.8961C222.099 10.8961 224.269 8.43372 224.269 5.44803C224.269 2.46234 222.099 0 218.766 0ZM193.973 13.7788C188.512 13.7788 184.528 16.0352 182.357 20.8055C180.307 15.7135 176.009 13.7788 171.869 13.7788C168.112 13.7788 163.166 15.469 161.498 19.969V15.469H152.919V54.0041H161.678V31.0323C161.678 28.201 162.6 21.8522 168.635 21.8522C174.67 21.8522 175.683 28.201 175.683 31.0323V54.0041H184.442V31.0323C184.442 28.201 185.364 21.8522 191.489 21.8522C197.615 21.8522 198.447 28.201 198.447 31.0323V54.0041H207.206V28.9646C207.206 18.9265 201.205 13.7831 193.982 13.7831L193.973 13.7788ZM419.855 45.4202C412.958 48.7362 404.439 47.4407 398.863 41.8597C393.286 36.283 391.987 27.7635 395.302 20.8655C396.203 18.9952 395.615 16.743 393.951 15.499C391.721 13.8303 388.534 14.6367 387.337 17.1506C382.503 27.3302 384.433 39.8607 392.647 48.0756C400.861 56.2906 413.391 58.221 423.57 53.3864C426.083 52.1938 426.885 49.0022 425.221 46.7715C423.977 45.1071 421.725 44.5194 419.855 45.4202ZM431.076 9.64344C422.862 1.4285 410.333 -0.501905 400.154 4.33268C397.64 5.52524 396.838 8.71684 398.502 10.9475C399.746 12.612 401.998 13.1997 403.868 12.2988C410.766 8.98281 419.285 10.2783 424.861 15.8593C430.437 21.4361 431.737 29.9556 428.421 36.8535C427.52 38.7239 428.108 40.976 429.772 42.2201C432.003 43.8888 435.19 43.0823 436.387 40.5685C441.221 30.3888 439.291 17.8541 431.076 9.64344Z" fill="url(#paint0_linear_1_3217)"/>
+<defs>
+<linearGradient id="paint0_linear_1_3217" x1="438.916" y1="28" x2="4.5156e-08" y2="28" gradientUnits="userSpaceOnUse">
+<stop offset="0.158366" stop-color="#3D3834"/>
+<stop offset="1" stop-color="#736B68"/>
+</linearGradient>
+</defs>
+</svg>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiMo-V2.5 | Xiaomi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/mimo-v2-5/styles.css">
+
+</head>
+<body>
+    <nav class="site-nav">
+        <a href="/" class="site-nav-logo"><img src="/mimo-v2-5/assets/logo.svg" alt="Xiaomi MiMo" class="site-nav-logo-img"></a>
+        <a href="/" class="site-nav-back">Back to Home</a>
+    </nav>
+    <article class="article">
+        <!-- Hero -->
+        <section class="hero">
+            <time class="hero-date" datetime="2026-04-22">April 22nd, 2026</time>
+            <h1 class="hero-title">Xiaomi MiMo-<span class="omni-text">V2.5</span></h1>
+            <p class="hero-subtitle">A leap in agency and multimodality.</p>
+            <nav class="hero-buttons">
+                <a href="https://aistudio.xiaomimimo.com/" target="_blank" class="btn btn-filled">Try it now <span class="btn-chevron">&rsaquo;</span></a>
+                <a href="https://platform.xiaomimimo.com" target="_blank" class="btn btn-outline">Access API <span class="btn-chevron">&rsaquo;</span></a>
+                <a href="https://huggingface.co/XiaomiMiMo/MiMo-V2.5" target="_blank" class="btn btn-outline">Hugging Face <span class="btn-chevron">&rsaquo;</span></a>
+            </nav>
+        </section>
+
+        <!-- Section 1: Intro -->
+        <section class="section">
+            <h2>Introducing MiMo-V2.5</h2>
+            <p>Today, we are releasing MiMo-V2.5, a major step forward in agentic capability and multimodal understanding. With native visual and audio understanding, MiMo-V2.5 reasons seamlessly across modalities, surpasses MiMo-V2-Pro in agentic performance, and supports up to 1 million tokens of context.</p>
+            <p>MiMo-V2.5 is a 310B-parameter Sparse MoE model (15B active) trained on 48T tokens. Its language backbone inherits from <a href="https://github.com/XiaomiMiMo/MiMo-V2-Flash" target="_blank">MiMo-V2-Flash</a>'s hybrid sliding-window attention architecture, augmented with dedicated visual and audio encoders (both pretrained in-house) connected through lightweight projectors.</p>
+
+            <figure class="arch-figure">
+                <img src="/mimo-v2-5/assets/architecture.svg" alt="MiMo-V2.5 architecture diagram">
+                <figcaption>MiMo-V2.5 architecture.</figcaption>
+            </figure>
+
+            <p>Training goes through five stages: <em>text pre-training</em> on diverse corpora to build the LLM backbone; <em>projector warmup</em> to align the audio and visual projectors with the language model; <em>multimodal pre-training</em> at scale on high-quality cross-modal data; <em>supervised fine-tuning and agentic post-training</em>, during which the context window is progressively extended from 32K to 256K to 1M; and finally <em>RL and <a href="https://arxiv.org/html/2601.02780v2#S4" target="_blank">MOPD</a></em>, which further strengthens perception, reasoning, and agentic capabilities.</p>
+            <p>Together, these stages yield a single model that sees, hears, and acts on what it perceives â€” one that understands everything and gets things done.</p>
+        </section>
+
+        <hr>
+
+        <!-- Section 2: Model Overview -->
+        <section class="section">
+            <h2>Best-in-Class Agency</h2>
+            <!-- <p>MiMo-V2.5 builds on our strong LLM backbone, extended with dedicated visual and audio encoders and an optimized post-training pipeline that jointly aligns perception, reasoning, and tool use.</p> -->
+            <p>On the agentic benchmarks that matter most for real-world deployment, MiMo-V2.5 delivers best-in-class performance:</p>
+
+
+            <div class="bench-block" id="coding-bench">
+                <div class="bench-legend" id="coding-legend"></div>
+                <div class="bench-grid" id="coding-grid"></div>
+            </div>
+
+            <p>In our internal <strong>MiMo Coding Bench</strong>, MiMo-V2.5 delivers strong results on everyday coding tasks, closing the gap with frontier models and matching MiMo-V2.5-Pro at half the cost.</p>
+            <p>On <strong>Claw-Eval</strong>, a benchmark for daily agentic tasks, MiMo-V2.5 achieves a 62.3 on the general subset, placing it at the Pareto frontier of performance and efficiency.</p>
+                
+            <p>These results highlight what makes MiMo-V2.5 unique: frontier-level agentic capability with high token efficiency.</p>
+        </section>
+
+        <!-- Section 3: Multimodal Understanding -->
+        <section class="section">
+            <h2>Sharper Perception, Longer Horizon</h2>
+            <p>MiMo-V2.5 delivers sharper perception for precise visual reasoning, complex chart analysis, and deep multimodal understanding, with native support for up to 1 million tokens of context.</p>
+
+            <div class="bench-block" id="multimodal-bench">
+                <div class="bench-legend" id="multimodal-legend"></div>
+                <div class="bench-grid" id="multimodal-grid"></div>
+            </div>
+
+            <p>Across image, video, and multimodal agentic tasks, MiMo-V2.5 stays level with frontier closed-source models â€” matching Gemini 3 Pro on video, Claude Sonnet 4.6 on multimodal agentic work, and staying competitive across image and document understanding. All from one unified model.</p>
+        </section>
+
+        <!-- Section 4: Open Source -->
+        <section class="section">
+            <h2>Open Source</h2>
+            <p>The MiMo-V2.5 series is now fully open-sourced. Weights, tokenizer, and the full model card are available on Hugging Face.</p>
+
+            <div class="spec-table-wrap">
+                <table class="spec-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Total Params</th>
+                            <th>Active Params</th>
+                            <th>Context</th>
+                            <th>Precision</th>
+                            <th>Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>MiMo-V2.5-Base</td>
+                            <td>310B</td>
+                            <td>15B</td>
+                            <td>256K</td>
+                            <td>FP8 (E4M3) Mixed</td>
+                            <td><a href="https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Base" target="_blank">Hugging Face</a></td>
+                        </tr>
+                        <tr>
+                            <td>MiMo-V2.5</td>
+                            <td>310B</td>
+                            <td>15B</td>
+                            <td>1M</td>
+                            <td>FP8 (E4M3) Mixed</td>
+                            <td><a href="https://huggingface.co/XiaomiMiMo/MiMo-V2.5" target="_blank">Hugging Face</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 5: Token Plan -->
+        <section class="section">
+            <h2>Token Plan Update</h2>
+            <p>Alongside stronger models, your Token Plan gets better too. Rates are now simpler and lower:</p>
+            <ul>
+                <li><strong>MiMo-V2.5</strong> â€” 1x (1 token = 1 credit)</li>
+                <li><strong>MiMo-V2.5-Pro</strong> â€” 2x (1 token = 2 credits)</li>
+            </ul>
+            <p>From today onward, Token Plans no longer charge a multiplier for the 1M-token context window. <a href="https://platform.xiaomimimo.com/docs/tokenplan/subscription" target="_blank">Order your Token Plan now</a>.</p>
+        </section>
+
+        <!-- Section 5: What's Next -->
+        <section class="section">
+            <h2>What's Next</h2>
+            <p>MiMo-V2.5 brings frontier agency and native multimodality into the same model, at a price point that makes both practical for production. We are already training the next generation with deeper reasoning, tighter tool integration, and richer real-world grounding. In the meantime, <a href="https://aistudio.xiaomimimo.com/" target="_blank">try it in AI Studio</a> or <a href="https://platform.xiaomimimo.com" target="_blank">access the API</a> â€” we cannot wait to see what you build.</p>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Xiaomi MiMo Team Â· 2026</p>
+        </footer>
+    </article>
+
+    <script>
+        // ==================== Benchmark Data ====================
+
+        // Shared logo paths (re-used from mimo-v2-pro asset folder)
+        const LOGO_XIAOMI    = '/mimo-v2-pro/assets/logos/xiaomi.svg';
+        const LOGO_ANTHROPIC = '/mimo-v2-pro/assets/logos/anthropic.svg';
+        const LOGO_GEMINI    = '/mimo-v2-pro/assets/logos/gemini.svg';
+        const LOGO_OPENAI    = '/mimo-v2-pro/assets/logos/openai-black.svg';
+        const LOGO_KIMI      = '/mimo-v2-pro/assets/logos/kimi.svg';
+        const LOGO_DEEPSEEK  = '/mimo-v2-pro/assets/logos/deepseek.svg';
+
+        // ---- Multimodal block ----
+        const multimodalModels = [
+            { id: 'mimo25',  name: 'MiMo-V2.5',         color: '#FF6700', logo: LOGO_XIAOMI,    highlight: true  },
+            { id: 'omni',    name: 'MiMo-V2-Omni',      color: '#8e8e8e', logo: LOGO_XIAOMI,    highlight: false },
+            { id: 'kimi',    name: 'Kimi K2.6',         color: '#989898', logo: LOGO_KIMI,      highlight: false },
+            { id: 'opus46',  name: 'Claude Opus 4.6',   color: '#a0a0a0', logo: LOGO_ANTHROPIC, highlight: false },
+            { id: 'sonnet',  name: 'Claude Sonnet 4.6', color: '#b0b0b0', logo: LOGO_ANTHROPIC, highlight: false },
+            { id: 'gemini',  name: 'Gemini 3 Pro',      color: '#bebebe', logo: LOGO_GEMINI,    highlight: false },
+            { id: 'gpt',     name: 'GPT-5.4',           color: '#d2d2d2', logo: LOGO_OPENAI,    highlight: false },
+        ];
+
+        const multimodalData = [
+            // Image (row 1)
+            { name: 'CharXiv RQ', subtitle: 'Chart Understanding',
+              scores: { mimo25: 81.0, omni: 80.1, opus46: 77.4, gemini: 81.4, kimi: 80.4 },
+              floor: 60 },
+            { name: 'MMMU-Pro', subtitle: 'Image Understanding & Reasoning',
+              scores: { mimo25: 77.9, omni: 76.8, opus46: 73.9, gemini: 81.0, kimi: 79.4, gpt: 81.2 },
+              floor: 60 },
+            { name: 'HR-Bench (4k)', subtitle: 'High-Resolution Image Understanding',
+              scores: { mimo25: 88.5, omni: 83.3, gemini: 86.4 },
+              floor: 60 },
+            { name: 'OmniDocBench', subtitle: 'Document Understanding',
+              scores: { mimo25: 87.2, omni: 86.7, gpt: 89.0 },
+              floor: 60 },
+            // MM Agent + Video (row 2)
+            { name: 'Claw-Eval Multimodal', subtitle: 'Real & Complex Multimodal Interactions',
+              scores: { mimo25: 23.8, omni: 15.8, opus46: 24.8, sonnet: 23.8, gpt: 25.7, kimi: 18.8 },
+              maxScale: 35, floor: 0 },
+            { name: 'Video-MME', subtitle: 'General Video QA',
+              scores: { mimo25: 87.7, omni: 85.3, gemini: 88.4 },
+              floor: 60 },
+            { name: 'DailyOmni', subtitle: 'Everyday Multimodal QA',
+              scores: { mimo25: 83.5, omni: 80.5, gemini: 84.2 },
+              floor: 60 },
+            { name: 'VideoHolmes', subtitle: 'Complex Video Reasoning',
+              scores: { mimo25: 64.0, omni: 59.5, gemini: 64.2 },
+              floor: 40 },
+        ];
+
+        const multimodalRows = [
+            // Row 1: Image â€” 4 benchmarks, each spanning 3/12 cols
+            { labels: [{ text: 'Image Understanding', span: [1, 13] }],
+              benchmarks: multimodalData.slice(0, 4),
+              colSpanPer: 3 },
+            // Row 2: MM Agent (1) + Video (3) â€” 4 benchmarks, each spanning 3/12 cols
+            { labels: [
+                { text: 'Multimodal Agent',    span: [1, 4] },
+                { text: 'Video Understanding', span: [4, 13] },
+              ],
+              benchmarks: multimodalData.slice(4, 8),
+              colSpanPer: 3 },
+        ];
+
+        // ---- Coding block ----
+        const codingModels = [
+            { id: 'mimo25', name: 'MiMo-V2.5',         color: '#FF6700', logo: LOGO_XIAOMI,    highlight: true  },
+            { id: 'pro',    name: 'MiMo-V2-Pro',       color: '#8e8e8e', logo: LOGO_XIAOMI,    highlight: false },
+            { id: 'kimi',   name: 'Kimi K2.6',         color: '#989898', logo: LOGO_KIMI,      highlight: false },
+            { id: 'ds',     name: 'DeepSeek-V4-Flash', color: '#9c9c9c', logo: LOGO_DEEPSEEK,  highlight: false },
+            { id: 'opus',   name: 'Claude Opus 4.6',   color: '#a0a0a0', logo: LOGO_ANTHROPIC, highlight: false },
+            { id: 'gemini', name: 'Gemini 3.1 Pro',    color: '#bebebe', logo: LOGO_GEMINI,    highlight: false },
+            { id: 'gpt',    name: 'GPT-5.4',           color: '#d2d2d2', logo: LOGO_OPENAI,    highlight: false },
+        ];
+
+        const codingData = [
+            { name: 'MiMo Coding Bench', subtitle: 'Internal Coding Benchmark',
+              scores: { mimo25: 71.8, pro: 71.5, opus: 77.1, gemini: 67.8 },
+              floor: 40 },
+            { name: 'Claw-Eval Text', subtitle: 'Text-Based Agent Interactions',
+              scores: { mimo25: 62.3, pro: 57.8, opus: 70.8, gemini: 57.8, gpt: 60.3, kimi: 62.3, ds: 57.8 },
+              floor: 40 },
+            { name: 'Terminal-Bench 2.0', subtitle: 'Terminal Task Completion',
+              scores: { mimo25: 65.8, pro: 57.1, opus: 65.4, gemini: 68.5, ds: 56.9, kimi: 66.7 },
+              floor: 40 },
+            { name: 'SWE-Bench Pro', subtitle: 'Real-World Bug Fixing',
+              scores: { mimo25: 56.1, pro: 55.0, opus: 57.3, gemini: 54.2, gpt: 57.7, ds: 52.6, kimi: 58.6 },
+              floor: 40 },
+        ];
+
+        const codingRows = [
+            { labels: [
+                { text: 'Coding Agent', span: [1, 3] },
+                { text: 'Coding',       span: [3, 5] },
+              ],
+              benchmarks: codingData },
+        ];
+
+        // ==================== Rendering ====================
+        function renderBenchBlock(models, rows, legendId, gridId) {
+            const legendEl = document.getElementById(legendId);
+            models.forEach(m => {
+                legendEl.innerHTML += `
+                    <span class="bench-legend-item${m.highlight ? ' mimo' : ''}">
+                        <span class="bench-legend-dot" style="background: ${m.color}"></span>
+                        <span class="bench-legend-label">${m.name}</span>
+                    </span>
+                `;
+            });
+
+            const gridEl = document.getElementById(gridId);
+            let row = 1;
+
+            rows.forEach(r => {
+                if (r.labels.length > 0) {
+                    r.labels.forEach(l => {
+                        const el = document.createElement('div');
+                        el.className = 'bench-section-label';
+                        if (row > 1) el.style.marginTop = '1.5rem';
+                        el.style.gridRow = row;
+                        el.style.gridColumn = `${l.span[0]} / ${l.span[1]}`;
+                        el.textContent = l.text;
+                        gridEl.appendChild(el);
+                    });
+                    row++;
+                }
+
+                r.benchmarks.forEach((b, i) => {
+                    const maxScale = b.maxScale || 100;
+                    const floor = b.floor != null ? b.floor : 0;
+                    const cell = document.createElement('div');
+                    cell.className = 'bench-cell';
+                    cell.style.gridRow = row;
+                    const colSpan = r.colSpanPer || 1;
+                    const startCol = i * colSpan + 1;
+                    const endCol = startCol + colSpan;
+                    cell.style.gridColumn = `${startCol} / ${endCol}`;
+
+                    const barsHtml = models.map(m => {
+                        const score = b.scores[m.id];
+                        if (score == null) return '';
+                        const h = ((score - floor) / (maxScale - floor)) * 100;
+                        const displayScore = score.toFixed(1);
+                        const barStyle = `height: ${h}%; background: ${m.color}`;
+                        const logoClass = m.id === 'mimo25'
+                            ? 'bench-bar-logo mimo-logo'
+                            : 'bench-bar-logo gray-logo';
+                        return `
+                            <div class="bench-bar-col">
+                                <div class="bench-bar" style="${barStyle}">
+                                    <span class="bench-bar-score" style="color: ${m.color}">${displayScore}</span>
+                                    <div class="bench-bar-tooltip">${m.name}: ${displayScore}</div>
+                                </div>
+                                <img src="${m.logo}" class="${logoClass}" alt="${m.name}">
+                            </div>
+                        `;
+                    }).join('');
+
+                    cell.innerHTML = `
+                        <div class="bench-bars-wrap">
+                            <div class="bench-bars">${barsHtml}</div>
+                        </div>
+                        <div class="bench-cell-title">${b.name}</div>
+                    `;
+                    gridEl.appendChild(cell);
+                });
+                row++;
+            });
+        }
+
+        renderBenchBlock(multimodalModels, multimodalRows, 'multimodal-legend', 'multimodal-grid');
+        renderBenchBlock(codingModels,     codingRows,     'coding-legend',     'coding-grid');
+    </script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  INDX( 	 r:>s          (   h	  è       7   b                 ®J    à Ê     J    ğB‰Lİ4­\ÀLİ,C‰LİğB‰Lİˆ       ‚               Dd a 7 0 a 2 f 3 7 2 0 e 2 a 5 4 8 5 a a b e 7 2 0 4 c b 7 a 8 5 7 1 1 f 9 7 f 6 2 1 1 f c 3 4 8 3 a e e 2 5 6 1 d 0 0 a 3 3 2 1 . j p g       ®J    p Z     J    ğB‰Lİ4­\ÀLİ,C‰LİğB‰Lİˆ       ‚               D A 7 0 A 2 ~ 1 . J P G       ¯J    à Ê     J    n/C‰Lİ4­\ÀLİîNC‰LİîNC‰Lİˆ       ‚               Dd c 6 2 e a c e b d 3 2 1 6  8 a b 3 1 f d a 8 1 9 5 5 3 3 a 0 6 2 2 0 9 1 7 9 b 2 0 c b c 6 f c a 4 1 5 d e e f c 3 b 2 7 3 8 . j p g       ¯J    p Z     J    n/C‰Lİ4­\ÀLİîNC‰LİîNC‰Lİˆ       ‚               D C 6 2 E A ~ 1 . J P G       °J    à Ê     J    ©bC‰Lİ4­\ÀLİã‰C‰Lİ©bC‰Lİˆ       ‚               De 0 0 d b 2 3 9 5 c 0 8 9 2 3 e 7 e 3 9 0 9 f 6 e e e c a 3 d c 1 f 6 4 d c 7 c 8 b f 7 3 0 8 d 5 d e 4 8 3 5 a b 5 c 5 2 b f 0 . j p g       °J    p Z     J    ©bC‰Lİ4­\ÀLİã‰C‰Lİ©bC‰Lİˆ      ‚               E 0 0 D B 2 ~ 1 . J P G       ±J    à Ê     J    ã‰C‰LİLÔ\ÀLİö°C‰Lİã‰C‰Lİˆ       ‚               De 5 5 5 0 4 2 3 7 1 6 2 f f f 3 2 2 b b 2 a 9 d c f 0 0 8 6 9 9 7 d 3 7 9 4 b d 4 4 4 1 b 0 c 3 e 7 7 e 5 f 4 0 b c 1 c 7 7 d d . j p g       ±J    p Z     J    ã‰C‰LİLÔ\ÀLİö°C‰Lİã‰C‰Lİˆ       ‚               E 5 5 5 0 4 ~ 1 . J P G       ²J    à Ê     J    %ÉC‰LİLÔ\ÀLİÛÜC‰Lİ%ÉC‰Lİˆ       ‚               De 8 f 5 a 5 5 4 e f 2 5 1 c 8 5 f e 4 d f e  6 1 7 b b c 0 6 1 0 e 9 0 e a 2 0 c f f 1 a 4 3 4 e f b 2 2 1 6 e 9 0 e 0 7 2 c 8 . j p g       ²J    p Z     J    %ÉC‰LİLÔ\ÀLİÛÜC‰Lİ%ÉC‰Lİˆ       ‚               E 8 F 5 A 5 ~ 1 . J P G       ³J    à Ê     J    ÛÜC‰LİLÔ\ÀLİD‰LİÛÜC‰Lİˆ       ƒ               De f 4 b a b d c 5 8 f d d 0 7 7 1 6 a b a c 3 2 b 2 9 9 5 b 7 e 3 2 c 9 4 1 9 0 4 3 f 2 a d b 4 3 c 3 1 9 2 6 8 e 2 e 7 1 3 b 0 . j p g       ³J    p Z     J    ÛÜC‰LİLÔ\ÀLİD‰LİÛÜC‰Lİˆ       ƒ              E F 4 B A B ~ 1 . J P G       ´J    à Ê     J    ¿%D‰LİTû\ÀLİ²9D‰Lİ¿%D‰Lİˆ       ‚               Df 2 8 8 1 8 f a b d 1 0 f d 0 6 5 6 f 4 c 7 1 1 d c e b f a 2 9 e e e e e f 0 f 9 9 3 b 9 0 5 5 6 2 8 8 0 0 0 3 6 d c 0 8 2 f f . j p g       ´J    p Z     J    ¿%D‰LİTû\ÀLİ²9D‰Lİ¿%D‰Lİˆ       ‚               F 2 8 8 1 8 ~ 1 . J P G                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 INDX( 	 ö6>s          (   ˜  è      C                     •J    x Z    J    [g>‰LİïL[ÀLİ{>‰Lİ[g>‰Lİˆ       ‚               3 3 2 6 3 2 ~ 1 . J P G               ›J    x Z    J    Û|?‰Lİ [ÀLİİ£?‰LİÛ|?‰Lİˆ       ƒ               5 A 9 A 6 3 ~ 1 . J P G              ¡J    x Z    J    ï–@‰Lİ|Û[ÀLİ•ª@‰Lİ•ª@‰Lİˆ                      9 8 C 7 4 2 ~ 1 . J P G              §J    x Z    J    k¢A‰LİÎ7\ÀLİƒ¹A‰Lİƒ¹A‰Lİˆ       ‚               A 7  C 4 1 ~ 1 . J P G              ­J    x Z    J    ŞÈB‰Lİb†\ÀLİŞÈB‰LİŞÈB‰Lİˆ       ‚               D 0 9 8 E E ~ 1 . J P G                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            INDX( 	 ¡·?s           (     è               İ           ºJ    p \     ¹J    µ›D‰Lİµ›D‰Lİµ›D‰LİT·aáLİ                       0 1 - M i n i C P M - 2 B     ºJ    h R     ¹J    µ›D‰Lİµ›D‰Lİµ›D‰LİT·aáLİ                       0 1 - M I N ~ 1       ½J    p `     ¹J    {ÄD‰Lİ{ÄD‰Lİ{ÄD‰LİT·aáLİ                       0 2 - M i n i C P M - 1 . 2 B ½J    h X     ¹J    {ÄD‰Lİ{ÄD‰Lİ{ÄD‰LİT·aáLİ                       0 2 - M I N ~ 1 . 2 B ÀJ    x f    ¹J    šE‰LİÙ5E‰LİÙ5E‰LİDaáLİ                       0 3 - M i n i C P M - 2 B - 1 2 8 K   ÀJ    h R     ¹J    šE‰LİÙ5E‰LİÙ5E‰LİDaáLİ                       0 3 - M I N ~ 1       ÃJ    x h     ¹J    ë]E‰Lİ:|E‰Lİ:|E‰LİDaáLİ                       0 4 - M i n i C P M - M o E - 8 x 2 B ÃJ    h R     ¹J    ë]E‰Lİ:|E‰Lİ:|E‰LİDaáLİ                       0 4 - M I N ~ 1       ÆJ    x b     ¹J    1·E‰Lİ1·E‰Lİ1·E‰LİÛ‡{Lİ                      0 5 - M i n i C P M - V - 2 . 0       ÆJ    h V     ¹J    1·E‰Lİ1·E‰Lİ1·E‰LİÛ‡{Lİ                       
+0 5 - M I N ~ 1 . 0   ÌJ    € p     ¹J    ZıE‰LİZıE‰LİZıE‰LİÛ‡{Lİ                       0 6 - M i n i C P M - L l a m a 3 - V - 2 . 5 ÌJ    h V     ¹J    ZıE‰LİZıE‰LİZıE‰LİÛ‡{Lİ                       
+0 6 - M I N ~ 1 . 5   ÏJ    x d     ¹J    É,F‰LİşSF‰LİşSF‰LİÛ‡{Lİ                       0 7 - M i n i C P M - S - 1 . 2 B     ÏJ    h X    ¹J    É,F‰LİşSF‰LİşSF‰LİÛ‡{Lİ                       0 7 - M I N ~ 1 . 2 B ÒJ    x b     ¹J    "~F‰Lİ£F‰Lİ£F‰Lİ´‡{Lİ                       0 8 - M i n i C P M - V - 2 . 6       ÒJ    h V     ¹J    "~F‰Lİ£F‰Lİ£F‰Lİ´‡{Lİ                       
+0 8 - M I N ~ 1 . 6   ÕJ    x b     ¹J    PÛF‰LİúîF‰LİúîF‰Lİ´‡{Lİ                       0 9 - M i n i C P M - o - 2 . 6       ÕJ    h V     ¹J    PÛF‰LİúîF‰LİúîF‰Lİ´‡{Lİ                      
+0 9 - M I N ~ 1 . 6   ØJ    p ^     ¹J    …$G‰Lİ*8G‰Lİ*8G‰Lİ´‡{Lİ                       1 0 - M i n i C P M 3 - 4 B   ØJ    h R     ¹J    …$G‰Lİ*8G‰Lİ*8G‰Lİ´‡{Lİ                       1 0 - M I N ~ 1       ÛJ    p ^     ¹J    f_G‰Lİš­G‰Lİš­G‰Lİ´‡{Lİ                       1 1 - M i n i C P M - 4 . 0   ÛJ    h V     ¹J    f_G‰Lİš­G‰Lİš­G‰Lİ´‡{Lİ                       
+1 1 - M I N ~ 1 . 0   àJ    p ^     ¹J    9H‰Lİ9H‰Lİ9H‰LİıŒ‡{L                        1 2 - M i n i C P M - 4 . 1   àJ    h V     ¹J    9H‰Lİ9H‰Lİ9H‰LİıŒ‡{Lİ                       
+1 2 - M I N ~ 1 . 1   ãJ    x b     ¹J    	tH‰Lİ	tH‰Lİ	tH‰LİıŒ‡{Lİ                       1 3 - M i n i C P M - V - 4 . 0       ãJ    h V     ¹J    	tH‰Lİ	tH‰Lİ	tH‰LİıŒ‡{Lİ                       
+1 3 - M I N ~ 1 . 0   æJ    x b     ¹J    Ä±H‰Lİ°ÓN‰Lİ°ÓN‰LİıŒ‡{Lİ                       1 4 - M i n i C P M - V - 4 . 5       æJ    h V     ¹J    Ä±H‰Lİ°ÓN‰Lİ°ÓN‰LİıŒ‡{Lİ                       
+1 4 - M I N ~ 1 . 5   K    x b     ¹J    ô!O‰Lİ >W‰Lİ >W‰Lİçe‡{Lİ                       1 5 - M i n i C P M - o - 4 . 5       K    h V     ¹J    ô!O‰Lİ >W‰Lİ >W‰Lİçe‡{Lİ                       
+1 5 - M I N ~ 1 . 5   CK    x b     ¹J    EeW‰LİsŒW‰LİsŒW‰Lİçe‡{Lİ                       1 6 - M i n i C P M - V - 4 . 6       CK    h V     ¹J    EeW‰LİsŒW‰LİsŒW‰Lİçe‡{Lİ                      
+1 6 - M I N ~ 1 . 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                INDX( 	 ÷?s          (   è  è       g  İP               K    x f     èJ    Ê÷L‰LİLaÀLİÊ÷L‰LİÊ÷L‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 2 1 . j p e g  K    x f     èJ    æM‰LİLaÀLİæM‰LİæM‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 2 2 . j p e g  K    x f     èJ    >M‰LİLaÀLİeM‰Lİ>M‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 2 3 . j p e g  K    x f     èJ    eM‰LİLaÀLİŒM‰LİeM‰Lİˆ       ‚               p a  e _ 3 _ i m g _ 2 4 . j p e g  K    x d     èJ    ŒM‰Lİ\7aÀLİ!³M‰LİŒM‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 3 . j p e g    K    x d     èJ    !³M‰Lİ\7aÀLİ3ÚM‰Lİ!³M‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 4 . j p e g    K    x d     èJ    3ÚM‰Lİ{^aÀLİEN‰Lİ3ÚM‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 5 . j p e g    K    x d     èJ    ­ N‰Lİ{^aÀLİ­ N‰Lİ­ N‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 6 . j p e g    	K    x d     èJ    èGN‰LİjzaÀLİ´[N‰LİèGN‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 7 . j p e g    
+K    x d     èJ    qoN‰LİjzaÀLİÛN‰LİÛN‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 8 . j p e g    K    x d     èJ    †•N‰LİjzaÀLİ†•N‰Lİ†•N‰Lİˆ       ‚               p a g e _ 3 _ i m g _ 9 . j p e g    óJ    p Z     èJ    œÈJ‰Lİt`ÀLİñæJ‰LİœÈJ‰Lİˆ       ƒ               P A G E _ 3 ~ 1 . J P E       ùJ    p Z     èJ    ÁK‰Lİ'Â`ÀL ÁK‰LİÁK‰Lİˆ       ‚               P A G E _ 3 ~ 1 . P N G       ôJ    p Z     èJ    ¢úJ‰Lİt`ÀLİ¢úJ‰Lİ¢úJ‰Lİˆ                      P A G E _ 3 ~ 2 . J P E       úJ    p Z     èJ    ÒèK‰Lİ'Â`ÀLİgL‰LİgL‰Lİˆ       ‚               P A G E _ 3 ~ 2 . P N G       õJ    p Z     èJ    Û!K‰Lİt`ÀLİÚ8K‰LİÚ8K‰Lİˆ                      P A G E _ 3 ~ 3 . J P E       öJ    p Z     èJ    ƒLK‰Lİ›`ÀLİ|eK‰LİƒLK‰Lİˆ       ‚               P A G E _ 3 ~ 4 . J  E       K    x b     èJ    °ÓN‰LİjzaÀLİ°ÓN‰Lİ°ÓN‰Lİˆ       „               p a g e _ 5 _ i m g _ 1 . p n g       K    p Z     èJ    °ÓN‰LİjzaÀLİ°ÓN‰Lİ°ÓN‰Lİˆ       „               P A G E _ 5 ~ 1 . P N G                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 INDX( 	  B?s           (   ¨  è       3   c   1 ~ d         K    à Ê     K    R}O‰LİjzaÀLİR}O‰LİR}O‰Lİˆ       ‚               D1 0 6 f c 7 c a 7 2 1 c 3 0 9 a e 6 1 d b a 5 6 f 8 5 0 f 9 f 8 1 8 e f 3 f 4 7 6 7 3 e 4 9 5 5 d e 2 7 a 2 2 c 3 8 8 c 7 b 1 0 . j p g       K    p Z     K    R}O‰LİjzaÀLİR}O‰LİR}O‰Lİˆ       ‚               1 0 6 F C 7 ~ 1 . J P G       K    à Ê     K    ¤O‰LİjzaÀLİ¤O‰Lİ¤O‰Lİˆ       ‚               D2 1 4 d f 8 5 0 5 e 3 4 c 7  3 c c 6 b f 9 d f 7 b e 1 e 2 d a a c 9 4 b a f 3 f 1 5 6 2 0 2 4 a 7 8 b 2 b 5 6 6 4 c 8 a 8 d 4 . j p g       K    p Z     K    ¤O‰LİjzaÀLİ¤O‰Lİ¤O‰Lİˆ       ‚               2 1 4 D F 8 ~ 1 . J P G       K    à Ê     K    äO‰LİjzaÀLİ»÷O‰LİäO‰Lİˆ       ƒ               D2 e f f 7 e b c c 8 7 4 2 e 5 7 a a 7 5 8 3 8 4 c 2 7 5 d 1 2 7 8 1 e 7 f d 8 3 f 3 4 2 1 7 3 e e 6 e c 2 b 7 2 e 2 9 4 c 3 7 3 . j p g       K    p Z     K    äO‰LİjzaÀLİ»÷O‰LİäO‰Lİˆ      ƒ               2 E F F 7 E ~ 1 . J P G       K    à Ê     K    »÷O‰LİjzaÀLİP‰LİP‰Lİˆ       ƒ               D3 8 d 0 8 e c 4 2 f 0 2 3 5 8 6 d f 5 f 7 d 5 c 3 c 7 b d 3 c 0 a d 9 e a 6 4 3 f 1 3 3 1 8 7 6 2 4 5 8 f f c 3 7 1 6 8 a 5 1 b . j p g       K    p Z     K    »÷O‰LİjzaÀLİP‰LİP‰Lİˆ       ƒ               3 8 D 0 8 E ~ 1 . J P G       K    à Ê     K    =P‰LİjzaÀLİ'QP‰Lİ=P‰Lİˆ       ‚               D4 d a 5 c f f 4 1 3 f 3 e c 3 d b 9 1 8 4 d  8 7 0 9 b 8 e 3 7 8 b 2 9 5 2 a 0 5 9 2 d 8 9 4 0 0 4 7 a e f 3 f 9 7 0 b f 5 e 6 . j p g       K    p Z     K    =P‰LİjzaÀLİ'QP‰Lİ=P‰Lİˆ       ‚               4 D A 5 C F ~ 1 . J P G       K    à Ê     K    'QP‰LİjzaÀLİWxP‰Lİ'QP‰Lİˆ       ‚               D5 e 3 2 9 5 7 3 3 1 1 7 0 3 9 b 3 1 2 c 6 e d c a 2 0 e 4 d 3 1 d c 7 3 5 a f 5 b e 3 3 3 5 4 7 e a a 1 0 a 0 8 9 4 6 e f 4 6 9 . j p g                     K    'QP‰LİjzaÀLİWxP‰Lİ'QP‰Lİˆ       ‚              5 E 3 2 9 5 ~ 1 . J P G       K    à Ê     K    û—P‰LİjzaÀLİû—P‰Lİû—P‰Lİˆ       ‚               D6 4 0 7 5 3 a 2 3 4 6 e e e 3 3 d 3 e b 0 b a a c c c 5 3 f 5 b 7 b 4 a 3 3 f 1 2 1 d 9 5 9 4 5 9 3 4 b 9 8 4 f 1 4 e f 9 6 e 8 . j p g       K    p Z     K    û—P‰LİjzaÀLİû—P‰Lİû—P‰Lİˆ       ‚               6 4 0 7 5 3 ~ 1 . J P G       K    à Ê     K    û—P‰LİjzaÀLİÏP‰Lİû—P‰Lİˆ       ‚               D6 7 6 d 0 5 f 4 7 4 1 3 8 8 2 8 4 3 b c 9 d 3 1 c 8 1 8 f c  d 3 9 8 6 5 d e d 0 d b 5 1 d e 9 6 6 7 f 8 d 8 f b 9 c 8 e f 4 0 . j p g       K    p Z     K    û—P‰LİjzaÀLİÏP‰Lİû—P‰Lİˆ       ‚               6 7 6 D 0 5 ~ 1 . J P G       K    à Ê     K    ™ñP‰LİjzaÀLİ™ñP‰Lİ™ñP‰Lİˆ       ‚               D6 9 7 8 3 c e d b b 7 e a 8 9 2 f 8 e a c 6 a 3 2 d f 6 2 1 d 1 3 2 3 3 d e f c 6 9 3 2 9 c e 1 9 a e 1 f 5 9 6 f 9 4 9 b b f 5 . j p g       K    p Z     K    ™ñP‰LİjzaÀLİ™ñP‰Lİ™ñP‰Lİˆ       ‚               6 9 7 8 3 C  1 . J P G       K    à Ê     K    ìQ‰LİjzaÀLİ\-Q‰LİìQ‰Lİˆ       ‚               D8 1 1 a 2 3 a 8 4 8 5 0 f e 6 7 6 1 4 d e 2 b a 0 c f 7 c 4 a 3 1 e a 1 a 8 b c f a 1 8 c 7 a d a b 5 2 9 0 e 9 2 0 0 0 b d 5 c . j p g       K    p Z     K    ìQ‰LİjzaÀLİ\-Q‰LİìQ‰Lİˆ       ‚               8 1 1 A 2 3 ~ 1 . J P G       K    à Ê     K    	AQ‰LİjzaÀLİ	AQ‰Lİ	AQ‰Lİˆ       ‚               Da 3 0 f e d 0 2 f 3 7 6 d 3 c e 9 a 4 c 6 3 8 3 5 2 e 6 3 6 8 4 9 4 d 0 2 0  4 f 1 1 9 b b 7 c a a 6 2 1 e 1 c d e b e 9 a 5 8 . j p g       K    p Z     K    	AQ‰LİjzaÀLİ	AQ‰Lİ	AQ‰Lİˆ       ‚               A 3 0 F E D ~ 1 . J P G       K    à Ê     K    >hQ‰Lİ>hQ‰Lİ>hQ‰Lİ>hQ‰Lİ                        Da 6 a 4 3 6 b 5 d a 2 b c d 1 d 5 e f b 9 7 7 9 2 c d 1 7 f 2 e 4 1 2 9 1 7 1 9 1 d 7 3 5 8 0 a 7 e 2 1 0 5 5 5 c 4 1 1 e 8 7 9 . j p g                                                                                                                    INDX( 	 ŠY?s          (   ¨  è       2   8   6 ~ 6         K    à Ê     K    û—P‰LİjzaÀLİû—P‰Lİû—P‰Lİˆ       ‚               D6 4 0 7 5 3 a 2 3 4 6 e e e 3 3 d 3 e b 0 b a a c c c 5 3 f 5 b 7 b 4 a 3 3 f 1 2 1 d 9 5 9 4 5 9 3 4 b 9 8 4 f 1 4 e f 9 6 e 8 . j p g       K    p Z     K    û—P‰LİjzaÀLİû—P‰Lİû—P‰Lİˆ       ‚               6 4 0 7 5 3 ~ 1 . J P G       K    à Ê     K    û—P‰LİjzaÀLİÏP‰Lİû—P‰Lİˆ       ‚               D6 7 6 d 0 5 f 4 7 4 1 3 8 8  8 4 3 b c 9 d 3 1 c 8 1 8 f c 1 d 3 9 8 6 5 d e d 0 d b 5 1 d e 9 6 6 7 f 8 d 8 f b 9 c 8 e f 4 0 . j p g       K    p Z     K    û—P‰LİjzaÀLİÏP‰Lİû—P‰Lİˆ       ‚               6 7 6 D 0 5 ~ 1 . J P G       K    à Ê     K    ™ñP‰LİjzaÀLİ™ñP‰Lİ™ñP‰Lİˆ       ‚               D6 9 7 8 3 c e d b b 7 e a 8 9 2 f 8 e a c 6 a 3 2 d f 6 2 1 d 1 3 2 3 3 d e f c 6 9 3 2 9 c e 1 9 a e 1 f 5 9 6 f 9 4 9 b b f 5 . j p g       K    p Z     K    ™ñP‰LİjzaÀLİ™ñP‰Lİ™ñP‰Lİˆ      ‚               6 9 7 8 3 C ~ 1 . J P G       K    à Ê     K    ìQ‰LİjzaÀLİ\-Q‰LİìQ‰Lİˆ       ‚               D8 1 1 a 2 3 a 8 4 8 5 0 f e 6 7 6 1 4 d e 2 b a 0 c f 7 c 4 a 3 1 e a 1 a 8 b c f a 1 8 c 7 a d a b 5 2 9 0 e 9 2 0 0 0 b d 5 c . j p g       K    p Z     K    ìQ‰LİjzaÀLİ\-Q‰LİìQ‰Lİˆ       ‚               8 1 1 A 2 3 ~ 1 . J P G       K    à Ê     K    	AQ‰LİjzaÀLİ	AQ‰Lİ	AQ‰Lİˆ       ‚               Da 3 0 f e d 0 2 f 3 7 6 d 3 c e 9 a 4 c 6 3  3 5 2 e 6 3 6 8 4 9 4 d 0 2 0 d 4 f 1 1 9 b b 7 c a a 6 2 1 e 1 c d e b e 9 a 5 8 . j p g       K    p Z     K    	AQ‰LİjzaÀLİ	AQ‰Lİ	AQ‰Lİˆ       ‚               A 3 0 F E D ~ 1 . J P G       K    à Ê     K    >hQ‰LİjzaÀLİ1‡Q‰Lİ>hQ‰Lİˆ       ‚               Da 6 a 4 3 6 b 5 d a 2 b c d 1 d 5 e f b 9 7 7 9 2 c d 1 7 f 2 e 4 1 2 9 1 7 1 9 1 d 7 3 5 8 0 a 7 e 2 1 0 5 5 5 c 4 1 1 e 8 7 9 . j p g                     K    >hQ‰LİjzaÀLİ1‡Q‰Lİ>hQ‰Lİˆ       ‚              A 6 A 4 3 6 ~ 1 . J P G       K    à Ê     K    1‡Q‰LİjzaÀLİm®Q‰Lİm®Q‰Lİˆ       ‚               Da 7 c 7 2 b 2 4 6 0 a e 7 6 4 b 4 f 1 8 3 d 1 3 7 b e d 5 4 9 a 0 9 c 2 b 0 9 4 2 8 7 7 8 a 1 e d 9 8 d 8 3 7 1 3 a 7 8 8 c 0 4 . j p g       K    p Z     K    1‡Q‰LİjzaÀLİm®Q‰Lİm®Q‰Lİˆ       ‚               A 7 C 7 2 B ~ 1 . J P G       K    à Ê     K    m®Q‰LİjzaÀLİ“ÕQ‰Lİ“ÕQ‰Lİˆ       ‚               Dc 1 d b 5 8 e 1 e e d 6 f d e 6 c 3 6 a d b f 4 2 2 a c 5 2  4 9 f b 3 7 9 2 1 6 7 1 a 1 3 b f 7 3 9 7 8 4 f 4 1 d 8 b c 4 b c . j p g       K    p Z     K    m®Q‰LİjzaÀLİ“ÕQ‰Lİ“ÕQ‰Lİˆ       ‚               C 1 D B 5 8 ~ 1 . J P G        K    à Ê     K    üQ‰LİjzaÀLİ¦R‰LİüQ‰Lİˆ       ‚               Dc 7 d 6 e 0 b c 0 a 2 a a 3 a 5 7 7 6 0 a 6 2 9 5 4 9 b 8 e 5 2 a 6 8 6 7 2 5 e 6 b 5 d 1 6 b 6 1 1 9 f a b b b b 2 c 5 d 6 0 5 . j p g        K    p Z     K    üQ‰LİjzaÀLİ¦R‰LİüQ‰Lİˆ       ‚               C 7 D 6 E 0  1 . J P G       !K    à Ê     K    ¦R‰LİjzaÀLİÒ7R‰LİÒ7R‰Lİˆ       ‚               Dc b 9 6 7 4 a 4 5 c 0 1 9 c f a c d f 9 7 6 d f b 5 4 d f 9 8 7 4 8 9 1 b d c 1 a e d 4 3 5 c 0 8 2 e 0 8 c 6 4 a 8 b c e 6 2 8 . j p g       !K    p Z     K    ¦R‰LİjzaÀLİÒ7R‰LİÒ7R‰Lİˆ       ‚               C B 9 6 7 4 ~ 1 . J P G       "K    à Ê     K    bR‰LİjzaÀLİbR‰LİbR‰Lİˆ       ‚               Dc d 2 c 3 6 8 5 7 f 8 c 4 e 4 1 f e 6 a d 8 7 d 9 b 5 7 d f 7 f d 5 0 b b a  8 8 0 6 e a f 1 c f b b 3 5 5 b 4 d f b 3 b d 5 e . j p g       "K    p Z     K    bR‰LİjzaÀLİbR‰LİbR‰Lİˆ       ‚               C D 2 C 3 6 ~ 1 . J P G       $K    à Ê     K    ™R‰Lİ™R‰Lİ™R‰Lİ™R‰Lİ                        Dd 2 7 1 1 0 4 a e d 8 c e f e 6 9 b 7 7 3 4 2 1 c d 7 1 b 0 c c 6 b 8 b f c 6 e 3 7 e 0 8 2 f b e a c c b 7 b b f 2 4 e 9 f f b . j p g                                                                                                                    INDX( 	 mu?s          (   ¨  è       e   7   2 g          K    à Ê     K    1‡Q‰LİjzaÀLİm®Q‰Lİm®Q‰Lİˆ       ‚               Da 7 c 7 2 b 2 4 6 0 a e 7 6 4 b 4 f 1 8 3 d 1 3 7 b e d 5 4 9 a 0 9 c 2 b 0 9 4 2 8 7 7 8 a 1 e d 9 8 d 8 3 7 1 3 a 7 8 8 c 0 4 . j p g       K    p Z     K    1‡Q‰LİjzaÀLİm®Q‰Lİm®Q‰Lİˆ       ‚               A 7 C 7 2 B ~ 1 . J P G       K    à Ê     K    m®Q‰LİjzaÀLİ“ÕQ‰Lİ“ÕQ‰Lİˆ       ‚               Dc 1 d b 5 8 e 1 e e d 6 f d  6 c 3 6 a d b f 4 2 2 a c 5 2 6 4 9 f b 3 7 9 2 1 6 7 1 a 1 3 b f 7 3 9 7 8 4 f 4 1 d 8 b c 4 b c . j p g       K    p Z     K    m®Q‰LİjzaÀLİ“ÕQ‰Lİ“ÕQ‰Lİˆ       ‚               C 1 D B 5 8 ~ 1 . J P G        K    à Ê     K    üQ‰LİjzaÀLİ¦R‰LİüQ‰Lİˆ       ‚               Dc 7 d 6 e 0 b c 0 a 2 a a 3 a 5 7 7 6 0 a 6 2 9 5 4 9 b 8 e 5 2 a 6 8 6 7 2 5 e 6 b 5 d 1 6 b 6 1 1 9 f a b b b b 2 c 5 d 6 0 5 . j p g        K    p Z     K    üQ‰LİjzaÀLİ¦R‰LİüQ‰Lİˆ      ‚               C 7 D 6 E 0 ~ 1 . J P G       !K    à Ê     K    ¦R‰LİjzaÀLİÒ7R‰LİÒ7R‰Lİˆ       ‚               Dc b 9 6 7 4 a 4 5 c 0 1 9 c f a c d f 9 7 6 d f b 5 4 d f 9 8 7 4 8 9 1 b d c 1 a e d 4 3 5 c 0 8 2 e 0 8 c 6 4 a 8 b c e 6 2 8 . j p g       !K    p Z     K    ¦R‰LİjzaÀLİÒ7R‰LİÒ7R‰Lİˆ       ‚               C B 9 6 7 4 ~ 1 . J P G       "K    à Ê     K    bR‰LİjzaÀLİbR‰LİbR‰Lİˆ       ‚               Dc d 2 c 3 6 8 5 7 f 8 c 4 e 4 1 f e 6 a d 8  d 9 b 5 7 d f 7 f d 5 0 b b a 6 8 8 0 6 e a f 1 c f b b 3 5 5 b 4 d f b 3 b d 5 e . j p g       "K    p Z     K    bR‰LİjzaÀLİbR‰LİbR‰Lİˆ       ‚               C D 2 C 3 6 ~ 1 . J P G       $K    à Ê     K    ™R‰LİjzaÀLİ™R‰Lİ™R‰Lİˆ       ƒ               Dd 2 7 1 1 0 4 a e d 8 c e f e 6 9 b 7 7 3 4 2 1 c d 7 1 b 0 c c 6 b 8 b f c 6 e 3 7 e 0 8 2 f b e a c c b 7 b b f 2 4 e 9 f f b . j p g                     K    ™R‰LİjzaÀLİ™R‰Lİ™R‰Lİˆ       ƒ              D 2 7 1 1 0 ~ 1 . J P G       %K    à Ê     K    Â¬R‰LİjzaÀLİÿÓR‰LİÂ¬R‰Lİˆ       ‚               Dd c 9 4 d 1 8 0 1 2 6 5 6 1 3 9 6 c 1 6 2 6 7 f e 1 d b a 1 5 b 7 2 4 a e b 5 6 a 0 8 5 a 7 6 0 d a d c e 7 7 5 d 7 9 f f 7 7 d . j p g       %K    p Z     K    Â¬R‰LİjzaÀLİÿÓR‰LİÂ¬R‰Lİˆ       ‚               D C 9 4 D 1 ~ 1 . J P G       &K    à Ê     K    ÃëR‰LİjzaÀLİÃëR‰LİÃëR‰Lİˆ       ‚               De 2 e 2 7 1 f 5 d 0 2 d 3 c f e 7 f f b 0 c 0 1 0 2 7 0 4 1  4 a 1 5 4 e 4 b c d d 4 6 d 1 8 c 7 0 d 1 9 a f 1 2 e 8 b b a 8 0 . j p g       &K    p Z     K    ÃëR‰LİjzaÀLİÃëR‰LİÃëR‰Lİˆ       ‚               E 2 E 2 7 1 ~ 1 . J P G       'K    x b     K    úS‰LİjzaÀLİúS‰LİúS‰Lİˆ       ƒ               p a g e _ 1 _ i m g _ 1 . p n g       'K    p Z     K    úS‰LİjzaÀLİúS‰LİúS‰Lİˆ       ƒ               P A G E _ 1 ~ 1 . P N G       (K    x b     K    :S‰LİjzaÀLİ:S‰Lİ:S‰Lİˆ                      p a  e _ 2 _ i m g _ 1 . p n g       )K    x d     K     |S‰LİjzaÀLİ |S‰Lİ |S‰Lİˆ                      p a g e _ 2 _ i m g _ 1 0 . p n g     *K    x b     K    k³S‰LİjzaÀLİÇS‰Lİk³S‰Lİ€       €               p a g e _ 2 _ i m g _ 2 . p n g     +K    x b     K    ÇS‰LİjzaÀLİWîS‰LİÇS‰Lİˆ                      p a g e _ 2 _ i m g _ 3 . p n g     ,K    x b     K    `	T‰Lİ`	T‰Lİ`	T‰Lİ`	T‰Lİ                        p a g e _ 2 _ i m g _ 4 . p n g     (K    p Z     K    :S‰LİjzaÀLİ:S‰Lİ:S‰Lİˆ                      P A G E _ 2 ~ 1 . P N G       )K    p Z     K     |S‰LİjzaÀLİ |S‰Lİ |S‰Lİˆ                      P A G E _ 2 ~ 2 . P N G       *K    p Z     K    k³S‰LİjzaÀLİÇS‰Lİk³S‰Lİ€       €               P A G E _ 2 ~ 3 . P N G       +K    p Z     K    ÇS‰LİjzaÀLİWîS‰LİÇS‰Lİˆ                      P A G E _ 2 ~ 4 . P N G                                                                    INDX( 	 "°?s          (   ¸  è       f         İ        %K    à Ê     K    Â¬R‰LİjzaÀLİÿÓR‰LİÂ¬R‰Lİˆ       ‚               Dd c 9 4 d 1 8 0 1 2 6 5 6 1 3 9 6 c 1 6 2 6 7 f e 1 d b a 1 5 b 7 2 4 a e b 5 6 a 0 8 5 a 7 6 0 d a d c e 7 7 5 d 7 9 f f 7 7 d . j p g       %K    p Z     K    Â¬R‰LİjzaÀLİÿÓR‰LİÂ¬R‰Lİˆ       ‚               D C 9 4 D 1 ~ 1 . J P G       &K    à Ê     K    ÃëR‰LİjzaÀLİÃëR‰LİÃëR‰Lİˆ       ‚               De 2 e 2 7 1 f 5 d 0 2 d 3 c  e 7 f f b 0 c 0 1 0 2 7 0 4 1 2 4 a 1 5 4 e 4 b c d d 4 6 d 1 8 c 7 0 d 1 9 a f 1 2 e 8 b b a 8 0 . j p g       &K    p Z     K    ÃëR‰LİjzaÀLİÃëR‰LİÃëR‰Lİˆ       ‚               E 2 E 2 7 1 ~ 1 . J P G       <K    p Z     K    >¹V‰LİdÀLİKÒV‰Lİ>¹V‰Lİˆ       ‚               P A 0 9 9 5 ~ 1 . P N G . p n 7K    p Z     K    RÎU‰LİdÀLİ=ïU‰LİRÎU‰Lİˆ       ‚               P A 2 1 D 2 ~ 1 . P N G . p n .K    p Z     K    ¨dT‰LİjzaÀLİLxT‰Lİ¨dT‰Lİˆ                     P A 2 8 7 2 ~ 1 . P N G . p n 1K    p Z     K    eéT‰LİjzaÀLİeéT‰LİeéT‰Lİ€       €               P A 3 8 D 5 ~ 1 . P N G . p n 8K    p Z     K    æV‰LİdÀLİæV‰LİæV‰Lİˆ       ‚               P A 4 C 3 B ~ 1 . P N G . p n ,K    p Z     K    `	T‰LİjzaÀLİ`	T‰Lİ`	T‰Lİˆ                      P A 5 2 4 E ~ 1 . P N G . p n -K    p Z     K    œ0T‰LİjzaÀLİœ0T‰Lİœ0T‰Lİˆ                      P A 7 D A 6 ~ 1 . P N G . p n 0K    p Z    K    ‡®T‰LİjzaÀLİ+ÂT‰Lİ+ÂT‰Lİˆ                      P A 8 2 F 5 ~ 1 . P N G . p n :K    p Z     K    eV‰LİdÀLİeV‰LİeV‰Lİˆ                      P A A 1 D 2 ~ 1 . P N G . p n >K    p Z     K    I W‰LİdÀLİŠ'W‰LİI W‰Lİ€       €               P A A 3 0 E ~ 1 . P N G . p n ;K    p Z     K    ’V‰LİdÀLİ’V‰Lİ’V‰Lİˆ       ‚               P A B 3 6 1 ~ 1 . P N G . p n /K    p Z     K    LxT‰LİjzaÀLİ~ŸT‰LİLxT‰Lİˆ                     P A D 2 4 E ~ 1 . P N G . p n =K    p Z     K    „ìV‰LİdÀLİI W‰Lİ„ìV‰Lİˆ       ‚               P A E D 2 D ~ 1 . P N G . p n 9K    p Z     K    3*V‰LİdÀLİ3*V‰Lİ3*V‰Lİˆ                      P A F 6 0 7 ~ 1 . P N G . p n 6K    p Z     K    ²U‰LİdÀLİ²U‰Lİ²U‰Lİˆ       ‚               P A F 9 D 8 ~ 1 . P N G . p n 'K    x b     K    úS‰LİjzaÀLİúS‰LİúS‰Lİˆ       ƒ               p a g e _ 1 _ i m g _ 1 . p n g       'K    p Z     K    úS‰LİjzaÀLİúS‰LİúS‰Lİˆ       ƒ               P A G E _ 1 ~ 1 . P N G       (K    x b     K    :S‰LİjzaÀLİ:S‰Lİ:S‰Lİˆ                      p a g e _ 2 _ i m g _ 1 . p n g       )K    x d     K     |S‰LİjzaÀLİ |S‰Lİ |S‰Lİˆ                      p a g e _ 2 _ i m g _ 1 0 . p n g     *K    x b     K    k³S‰LİjzaÀLİÇS‰Lİk³S‰Lİ€       €               p a g e _ 2 _ i m g _ 2 . p n g                           P A G E _ 2 ~ 2 . P N G       *K    p Z     K    k³S‰LİjzaÀLİÇS‰Lİk³S‰Lİ€       €               P A G E _ 2 ~ 3 . P N G       +K    p Z     K    ÇS‰LİjzaÀLİWîS‰LİÇS‰Lİˆ                      P A G E _ 2 ~ 4 . P N G       2K    x b     K    tU‰LİjzaÀLİtU‰LİtU‰Lİˆ                      p a g e _ 3 _ i m g _ 1 . p n g       3K    x d     K    ÅAU‰LİjzaÀLİÅAU‰LİÅAU‰Lİ€       €               p a g e _ 3 _ i m g _ 1 0 . p n g     4K    x d     K    ùhU‰LİİcÀLİ¥wU‰LİùhU‰L ˆ                      p a g e _ 3 _ i m g _ 1 1 . p n g    2K    p Z     K    tU‰LİjzaÀLİtU‰LİtU‰Lİˆ                      P A G E _ 3 ~ 1 . P N G       3K    p Z     K    ÅAU‰LİjzaÀLİÅAU‰LİÅAU‰Lİ€       €               P A G E _ 3 ~ 2 . P N G       4K    p Z     K    ùhU‰LİİcÀLİ¥wU‰LİùhU‰Lİˆ

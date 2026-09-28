@@ -1,0 +1,157 @@
+/**
+ * Skill 管理页面 (L2 智能工作台)
+ *
+ * 展示大模型代理可以调用的 TypeScript 技能代码库。
+ */
+
+"use client";
+
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Wand2, Plus, Code } from "lucide-react";
+import Link from "next/link";
+import type { Skill } from "@oasismind/shared";
+import { useSkill } from "@/lib/hooks";
+import { useCardDensity } from "@/lib/useCardDensity";
+import { LucideIconByName } from "@/lib/icons";
+import { cn } from "@/lib/utils";
+import { EmptyState, LoadingState, ConfirmDialog, PageHeader } from "@/components/shared";
+
+function parseSkillVersion(metaJson?: string | null): string {
+  if (!metaJson) return "1.0.0";
+  try {
+    const meta = JSON.parse(metaJson) as { version?: string };
+    return meta.version?.trim() || "1.0.0";
+  } catch {
+    return "1.0.0";
+  }
+}
+
+export default function SkillsPage() {
+  const { useList, useCreate, useDelete } = useSkill();
+  const { density } = useCardDensity();
+  const [page] = useState(1);
+  const { data, isLoading } = useList({ page, pageSize: 12 });
+  const createMutation = useCreate();
+  const deleteMutation = useDelete();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleCreateDemo = () => {
+    createMutation.mutate({
+      name: `refactor_code_${Math.random().toString(36).substring(2, 6)}`,
+      description: "智能重构传入的 TypeScript/React 代码，消除坏味道。",
+      code: `export async function run(input: string) {\n  return "Refactored: " + input;\n}`,
+      icon: "Wand2",
+      trigger: "@refactor",
+      enabled: true,
+    });
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      deleteMutation.mutate({ id: deleteId });
+      setDeleteId(null);
+    }
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
+      <PageHeader
+        icon={Wand2}
+        title="Skills 专属动作库"
+        description="可被 Agent 调用的脚本/程序包（Markdown SKILL.md 或 TS）。空库很正常——点「新建」或让 Agent 用 SkillManage 生成；对话里也可用 SkillsList / SkillView。"
+        action={{ label: "新建插件技能", onClick: handleCreateDemo, icon: Plus }}
+        showDensityToggle
+      />
+
+      {/* 数据列表 */}
+      {isLoading ? (
+        <LoadingState count={3} />
+      ) : !data?.items || data.items.length === 0 ? (
+        <EmptyState
+          title="还没有 Skill"
+          description="Skill 是实体，有完整 CRUD，并同步到 config/skills/。Agent 工具：SkillsList、SkillView、SkillManage（写包）、SkillDiscover / SkillEnable / SkillPromote。点下方可加示例，或在对话里让 Agent 创建。"
+          actionLabel="添加示例技能"
+          onAction={handleCreateDemo}
+        />
+      ) : (
+        <div className={cn("grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] ", density === "compact" ? "gap-4" : "gap-6")}>
+          {data.items.map((skill: Skill, idx: number) => (
+            <motion.div
+              key={skill.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 }
+              }}
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] hover:bg-white dark:hover:bg-[var(--om-bg-soft)] hover:border-[var(--om-divider)] hover:shadow-xl transition-all duration-300",
+                density === "compact" ? "p-3" : "p-5",
+              )}
+            >
+              <div className="flex justify-between items-start gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]">
+                    <LucideIconByName name={skill.icon} className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)] transition-colors text-sm">
+                      {skill.name}
+                    </h3>
+                    <span className="text-[10px] text-[var(--om-text-3)] font-mono">{skill.trigger || "无触发词"}</span>
+                    <span className="ml-1 rounded bg-[var(--om-brand-soft)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--om-brand-deep)]">
+                      v{parseSkillVersion(skill.metaJson)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Link
+                    href={`/skills/edit/${skill.id}`}
+                    className="text-xs text-[var(--om-brand-deep)] hover:text-[var(--om-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--om-brand-soft)]"
+                  >
+                    编辑
+                  </Link>
+                  <button
+                    onClick={() => setDeleteId(skill.id)}
+                    className="text-xs text-red-500 hover:text-red-600 transition-opacity px-2 py-0.5 rounded hover:bg-red-500/10"
+                  >
+                    卸载
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-xs text-[var(--om-text-3)] min-h-[35px] mb-4">
+                {skill.description}
+              </p>
+
+              {/* 动作属性 */}
+              <div className="flex items-center justify-between border-t border-[var(--om-divider-light)] pt-3 text-[10px] text-[var(--om-text-3)]">
+                <span className="flex items-center gap-1">
+                  <Code className="w-3 h-3 text-[var(--om-brand-deep)]" />
+                  TypeScript 实装
+                </span>
+                <span className={`px-2 py-0.5 rounded-full font-medium ${
+                  skill.enabled ? "bg-green-500/10 text-green-500" : "bg-gray-500/10 text-gray-500"
+                }`}>
+                  {skill.enabled ? "已启用" : "已禁用"}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteId !== null}
+        title="卸载动作技能"
+        description="确定要从动作库中卸载（删除）该技能吗？删除后绑定此技能的 Agent 将无法调用它。"
+        isDestructive={true}
+        confirmLabel="确认卸载"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
+    </div>
+  );
+}

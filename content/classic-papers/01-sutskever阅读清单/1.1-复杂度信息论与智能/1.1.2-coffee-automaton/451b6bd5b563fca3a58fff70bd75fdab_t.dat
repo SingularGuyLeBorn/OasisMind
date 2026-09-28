@@ -1,0 +1,88 @@
+<!doctype html>
+<html class="">
+	<head>
+		<meta charset="utf-8" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+		<meta name="description" content="We’re on a journey to advance and democratize artificial intelligence through open source and open science." />
+
+		<meta property="fb:app_id" content="1321688464574422" />
+
+		<meta name="twitter:card" content="summary_large_image" />
+
+		<meta name="twitter:site" content="@huggingface" />
+
+		<meta name="twitter:image" content="https://cdn-thumbnails.huggingface.co/social-thumbnails/models/inclusionAI/Ling-2.5-1T.png" />
+
+		<meta property="og:title" content="inclusionAI/Ling-2.5-1T · Hugging Face" />
+
+		<meta property="og:description" content="We’re on a journey to advance and democratize artificial intelligence through open source and open science." />
+
+		<meta property="og:type" content="website" />
+
+		<meta property="og:url" content="https://huggingface.co/inclusionAI/Ling-2.5-1T" />
+
+		<meta property="og:image" content="https://cdn-thumbnails.huggingface.co/social-thumbnails/models/inclusionAI/Ling-2.5-1T.png" />
+
+		<link rel="stylesheet" href="/front/build/kube-c5417b6/style.css" />
+
+		<link rel="preconnect" href="https://fonts.gstatic.com" />
+
+		<link
+			href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;1,200;1,300;1,400;1,600;1,700&display=swap"
+			rel="stylesheet"
+		/>
+
+		<link
+			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap"
+			rel="stylesheet"
+		/>
+
+		<link
+			rel="preload"
+			href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css"
+			as="style"
+			onload="
+				this.onload = null;
+				this.rel = 'stylesheet';
+			"
+		/>
+
+		<noscript>
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css" />
+		</noscript>
+		<script>const guestTheme = document.cookie.match(/theme=(\w+)/)?.[1]; document.documentElement.classList.toggle('dark', guestTheme === 'dark' || ( (!guestTheme || guestTheme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches));</script>
+<link rel="canonical" href="https://huggingface.co/inclusionAI/Ling-2.5-1T">  
+		<title>inclusionAI/Ling-2.5-1T · Hugging Face</title>
+
+		<script defer src="/js/script.js"></script>
+
+		<script>
+			((window.plausible =
+				window.plausible
+				|| function () {
+					(plausible.q = plausible.q || []).push(arguments);
+				}),
+				(plausible.init =
+					plausible.init
+					|| function (i) {
+						plausible.o = i || {};
+					}));
+			plausible.init({
+				customProperties: {
+					loggedIn: "false",
+				},
+				endpoint: "/api/event",
+			});
+		</script>
+
+		<script>
+			window.hubConfig = {"features":{"signupDisabled":false},"sshGitUrl":"git@hf.co","moonHttpUrl":"https:\/\/huggingface.co","captchaApiKey":"bd5f2066-93dc-4bdd-a64b-a24646ca3859","datasetViewerPublicUrl":"https:\/\/datasets-server.huggingface.co","stripePublicKey":"pk_live_x2tdjFXBCvXo2FFmMybezpeM00J6gPCAAc","environment":"production","userAgent":"HuggingFace (production)","spacesIframeDomain":"hf.space","spacesApiUrl":"https:\/\/api.hf.space","logoDev":{"apiUrl":"https:\/\/img.logo.dev\/","apiKey":"pk_UHS2HZOeRnaSOdDp7jbd5w"}};
+			window.requestId = "Root=1-6a114034-292d57b15f360e444836c600";
+			window.featureFlags = {"placeholder":false};
+		</script>
+		<script type="text/javascript" src="https://de5282c3ca0c.edge.sdk.awswaf.com/de5282c3ca0c/526cf06acb0d/challenge.js" defer></script> 
+	</head>
+	<body class="flex flex-col min-h-dvh bg-white dark:bg-gray-950 text-black ModelPage">
+		<!--[--><div class="flex min-h-dvh flex-col"><div class="SVELTE_HYDRATER contents" data-target="ClientErrorCatcher" data-props="{}"><!----></div> <div class="SVELTE_HYDRATER contents" data-target="DeviceProvider" data-props="{}"><!----></div> <div class="SVELTE_HYDRATER contents" data-target="SystemThemeMonitor" data-props="{

@@ -1,0 +1,36 @@
+:text-[var(--om-brand-deep)]",
+              featured ? "om-display-serif text-xl md:text-2xl" : "text-lg",
+            )}
+          >
+            {post.title}
+          </Link>
+          <p
+            className={cn(
+              "mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--om-text-2)]",
+              featured && "line-clamp-3 md:text-base",
+            )}
+          >
+            {post.excerpt ||
+              (post.content ? `${post.content.slice(0, featured ? 260 : 160)}${post.content.length > (featured ? 260 : 160) ? "…" : ""}` : "暂无摘要")}
+          </p>
+
+          <div className="mt-auto pt-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--om-text-3)]">
+              <span className="om-glass-pill">
+                <Calendar className="h-3 w-3" />
+                {new Date(post.updatedAt).toLocaleDateString("zh-CN")}
+              </span>
+              <span className="om-glass-pill">
+                <Eye className="h-3 w-3" />
+                {post.viewCount} 阅读
+              </span>
+              {featured && (
+                <span className="truncate font-mono text-[11px] text-[var(--om-text-3)]">{post.slug}</span>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <Link
+                href={postDetailHref(post.slug, post.garden)}
+                className={cn(
+                  "flex flex-1 items-cente

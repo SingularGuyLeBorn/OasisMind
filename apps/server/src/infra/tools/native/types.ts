@@ -1,0 +1,95 @@
+/**
+ * Native 工具共享类型（PR-4：按域拆分的公共契约）
+ */
+
+import type { AppConfig } from "../../config.js";
+import type { ServiceContainer } from "../../serviceContainer.js";
+import type { ResolveAgentFn } from "../../agentResolver.js";
+import type { PrismaClient } from "@prisma/client";
+import type { ToolConcurrencyClass } from "../types.js";
+import type { RunRollbackStack } from "../rollback.js";
+import type { VisibleSet } from "../visibleSet.js";
+
+export interface NativeToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  /** 并发分级：A=纯CPU/内存高并发 B=网络只读中并发 C=本地进程低并发 D=写入/副作用串行（缺省按 B） */
+  concurrencyClass?: ToolConcurrencyClass;
+  /**
+   * D 类（写入/副作用）标记：run 失败（非用户 abort）时逆序补偿。
+   * 审批清单由 registry 派生（destructive && !approvalExempt）；补偿经 registerNativeDomain 第三参数挂入。
+   */
+  destructive?: boolean;
+  /**
+   * 审批豁免：destructive 默认入 AGENT_DESTRUCTIVE_APPROVAL 清单；豁免须显式声明并附理由。
+   */
+  approvalExempt?: boolean;
+  /**
+   * P1-03：默认对 LLM 隐藏（native:"all" 时不进 schema）除非 Agent 显式声明。
+   * 显式设 false 可让 destructive && !approvalExempt 的工具仍默认可见（慎用）。
+   * 未显式声明时，registerNativeDomain 对 destructive && !approvalExempt 自动设 true。
+   */
+  defaultHidden?: boolean;
+  /** WP2：长文工具显式投影；缺省走 defaultProjectContent */
+  render?(value: unknown, args: Record<string, unknown>): unknown;
+  /** WP5：VisibleSet 内才拼进 tool-guide；order 100–199 */
+  promptSection?: { order: number; text: string | ((ctx: { tier?: string }) => string) };
+}
+
+export interface NativeToolContext {
+  config: AppConfig;
+  services: ServiceContainer;
+  prisma?: PrismaClient;
+  invokeTrpc: (tool: string, args?: unknown) => Promise<unknown>;
+  /** 当前 Chat 会话 — async_task_run 等需要 */
+  sessionId?: string;
+  agentSnapshot?: {
+    id: string;
+    model: string;
+    systemPrompt: string;
+    tools: string[];
+    tier?: string;
+    workspaceId?: string | null;
+    parentId?: string | null;
+  };
+  /** 当前 ReAct 轮次是否仍在工具调用中（向上发消息时机约束 #41） */
+  inToolRound?: boolean;
+  /** 本次运行的触发来源：user=用户直接对话；parent=上级下发；heartbeat=心跳；async=后台异步任务 */
+  runOrigin?: "user" | "parent" | "heartbeat" | "async";
+  /**
+   * Agent 解析（默认 assistant 查找/补齐/创建）— W4 起由 createAgentToolContext 注入，
+   * 工具层不再直接 import agentRuntime（环内模块）。缺省时回退到 agentResolver 默认实现。
+   */
+  resolveAgent?: ResolveAgentFn;
+  /**
+   * 本 run 的 D 类工具回滚栈（reactLoop 注入；缺省 = 不跟踪，如审批直执/单测直接调工具）。
+   */
+  rollbackStack?: RunRollbackStack;
+  /**
+   * W3 safe bypass：为 true 时仅允许只读（非 destructive）工具；写工具在权限层拒绝。
+   */
+  readonlyOnly?: boolean;
+  /**
+   * WP1：本 run 的 VisibleSet。有则 execute 只认 visible.native；
+   * 单测直调无此字段时由 executeNativeTool 现场 derive 或按 registry 放行。
+   */
+  visibleSet?: VisibleSet;
+  /** WP3：合作式取消，必填。测试夹具用 new AbortController().signal */
+  signal: AbortSignal;
+}
+
+export type NativeToolHandler = (
+  args: Record<string, unknown>,
+  ctx: NativeToolContext,
+) => Promise<unknown>;
+
+/** LLM 常把 boolean 写成字符串 "true"/"false"，严格 === true 会误判为异步投递 */
+export function coerceToolBoolean(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const s = value.trim().toLowerCase();
+    return s === "true" || s === "1" || s === "yes";
+  }
+  return false;
+}

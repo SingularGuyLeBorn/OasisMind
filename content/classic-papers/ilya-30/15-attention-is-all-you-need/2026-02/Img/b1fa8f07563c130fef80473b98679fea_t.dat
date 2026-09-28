@@ -1,0 +1,39 @@
+with advanced reasoning, multimodality, long context, and next generation agentic capabilities. arXiv preprint arXiv:2507.06261, 2025a.
+
+G. DeepMind. Gemini 3 pro model card, 2025b. URL https://storage.googleapis.com /deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf.
+
+DeepSeek-AI. Deepseek-v2: A strong, economical, and efficient mixture-of-experts language model. CoRR, abs/2405.04434, 2024. doi: 10.48550/ARXIV.2405.04434. URL https: //doi.org/10.48550/arXiv.2405.04434.
+
+DeepSeek-AI. Deepseek-v3 technical report, 2024. URL https://arxiv.org/abs/2412.194 37.
+
+DeepSeek-AI. Deepseek-r1 incentivizes reasoning in llms through reinforcement learning. Nature, 645(8081):633–638, 2025.
+
+EvalSys. Mcpmark leaderboard, 2025. URL https://mcpmark.ai/leaderboard.
+
+J. Li, W. Zhao, J. Zhao, W. Zeng, H. Wu, X. Wang, R. Ge, Y. Cao, Y. Huang, W. Liu, et al. The tool decathlon: Benchmarking language agents for diverse, realistic, and long-horizon task execution. arXiv preprint arXiv:2510.25726, 2025.
+
+Z. Luo, Z. Shen, W. Yang, Z. Zhao, P. Jwalapuram, A. Saha, D. Sahoo, S. Savarese, C. Xiong, and J. Li. Mcp-universe: Benchmarking large language models with real-world model context protocol servers. arXiv preprint arXiv:2508.14704, 2025.
+
+T. Luong, D. Hwang, H. H. Nguyen, G. Ghiasi, Y. Chervonyi, I. Seo, J. Kim, G. Bingham, J. Lee, S. Mishra, A. Zhai, C. H. Hu, H. Michalewski, J. Kim, J. Ahn, J. Bae, X. Song, T. H. Trinh, Q. V. Le, and J. Jung. Towards robust mathematical reasoning. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing, 2025. URL https://aclanthology.org/2025.emnlp-main.1794/.
+
+MiniMax. https://www.minimax.io/news/minimax-m2, 2025. URL https://www.minimax. io/news/minimax-m2.
+
+MoonShot. Introducing kimi k2 thinking, 2025. URL https://moonshotai.github.io/Kim i-K2/thinking.html.
+
+OpenAI. Learning to reason with llms, 2024a. URL https://openai.com/index/learnin g-to-reason-with-llms/.
+
+OpenAI. Introducing SWE-bench verified we’re releasing a human-validated subset of swebench that more, 2024b. URL https://openai.com/index/introducing-swe-bench -verified/.
+
+OpenAI. Introducing gpt-5, 2025. URL https://openai.com/index/introducing-gpt-5 /.
+
+L. Phan, A. Gatti, Z. Han, N. Li, J. Hu, H. Zhang, C. B. C. Zhang, M. Shaaban, J. Ling, S. Shi, et al. Humanity’s last exam. arXiv preprint arXiv:2501.14249, 2025.
+
+Qwen. Qwen3 technical report, 2025. URL https://arxiv.org/abs/2505.09388.
+
+D. Rein, B. L. Hou, A. C. Stickland, J. Petty, R. Y. Pang, J. Dirani, J. Michael, and S. R. Bowman. GPQA: A graduate-level google-proof q&a benchmark. arXiv preprint arXiv:2311.12022, 2023.
+
+J. Schulman. Approximating KL divergence, 2020. URL http://joschu.net/blog/kl-app rox.html.
+
+Z. Shao, P. Wang, Q. Zhu, R. Xu, J. Song, M. Zhang, Y. K. Li, Y. Wu, and D. Guo. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. CoRR, abs/2402.03300, 2024. doi: 10.48550/ARXIV.2402.03300. URL https://doi.org/10 .48550/arXiv.2402.03300.
+
+Z. Shao, Y. Luo, C. Lu, Z. Re

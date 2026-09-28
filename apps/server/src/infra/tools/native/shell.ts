@@ -1,0 +1,363 @@
+/**
+ * Native Shell / Async 域 — run_shell, wait, sleep, async_task_*。
+ *
+ * v7 通道收敛锚点：async_task_run(waitForResult=true) 时 deliverToQueue=false，
+ * 结果唯一通道 = tool return；waitForResult=false（默认）时 deliverToQueue=true，
+ * 结果经异步队列 + 原子 CLAIM 后注入会话。两条通道互斥，防止结果二次投喂。
+ */
+import fs from "node:fs";
+import { runShellRestricted, waitMs } from "../../shellRunner.js";
+import { resolveAgentFsPath } from "../../writePolicy.js";
+import {
+  assertHostSessionAllowed,
+  findContainingHostRoot,
+  listExpandedHostRoots,
+  looksLikeHostPath,
+  resolveHostAbsolutePath,
+} from "../../hostAccess.js";
+import type { NativeToolContext, NativeToolDefinition } from "./types.js";
+import { coerceToolBoolean } from "./types.js";
+import { registerNativeDomain } from "./registerDomain.js";
+
+async function runAsyncTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (!ctx.sessionId || !ctx.agentSnapshot) {
+    throw new Error("async_task_run 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
+  }
+  const { startAsyncAgentTask, waitForAsyncJob } = await import("../../asyncJobs/index.js");
+  const timeoutMs =
+    args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined;
+  const waitForResult = coerceToolBoolean(args.waitForResult);
+  const shareToSessionIds = Array.isArray(args.shareToSessionIds)
+    ? (args.shareToSessionIds as unknown[]).filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    : undefined;
+  // 纯工具任务（W-D：工具不再提供 mode=llm；带 LLM 的后台子任务一律走 spawn_subagent）
+  const rawToolCall = args.toolCall && typeof args.toolCall === "object" ? (args.toolCall as Record<string, unknown>) : undefined;
+  const toolCall = rawToolCall
+    ? { tool: String(rawToolCall.tool || ""), args: (rawToolCall.args ?? {}) as Record<string, unknown> }
+    : undefined;
+  if (!toolCall?.tool) {
+    throw new Error("async_task_run 需要提供 toolCall.tool 参数（要执行的工具名）");
+  }
+  const sourceType = "async_task_tool";
+  const started = await startAsyncAgentTask({
+    sessionId: ctx.sessionId,
+    task: String(args.task || ""),
+    label: args.label ? String(args.label) : undefined,
+    timeoutMs,
+    config: ctx.config,
+    services: ctx.services,
+    agent: ctx.agentSnapshot,
+    source: "native_tool:async_task_run",
+    isSubagent: false,
+    mode: "tool",
+    toolCall,
+    shareToSessionIds,
+    // v7 同步等待结果唯一通道：tool return；deliverToQueue=false 阻止结果进异步队列/气泡，避免二次投喂。
+    deliverToQueue: !waitForResult,
+  });
+  if (!waitForResult) return { ...started, sourceType };
+  // 同步等待：结果直接返回。标记 delivered，杜绝 worker 侧误投递 / 竞态二次消费
+  const result = await waitForAsyncJob(started.jobId, ctx.config, ctx.services);
+  try {
+    await ctx.services.task.update({
+      id: started.jobId,
+      delivered: true,
+      deliveredAt: new Date(),
+    } as any);
+  } catch {
+    /* ignore */
+  }
+  return { ...result, sourceType };
+}
+
+async function taskStatusTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const { getAsyncJobStatus, listSessionAsyncJobs } = await import("../../asyncJobs/index.js");
+  const jobId = args.jobId ? String(args.jobId) : undefined;
+  if (jobId) return getAsyncJobStatus(jobId, ctx.config, ctx.services);
+  if (!ctx.sessionId) return { items: [] };
+  return { items: await listSessionAsyncJobs(ctx.sessionId, ctx.config, ctx.services) };
+}
+
+async function cancelAsyncTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const { cancelAsyncJob, cancelOwnedAsyncJobs } = await import("../../asyncJobs/index.js");
+  if (!ctx.sessionId) {
+    throw new Error("async_task_cancel 需要当前会话上下文（只能取消本会话创建的任务）");
+  }
+  const allActive = args.allActive === true;
+  const jobIdsRaw = Array.isArray(args.jobIds) ? args.jobIds.map(String).filter(Boolean) : [];
+  const jobId = typeof args.jobId === "string" ? args.jobId.trim() : "";
+
+  if (allActive || jobIdsRaw.length > 0) {
+    const ids = allActive ? undefined : jobId ? [...jobIdsRaw, jobId] : jobIdsRaw;
+    const result = await cancelOwnedAsyncJobs(ctx.sessionId, ctx.config, ctx.services, {
+      jobIds: ids,
+    });
+    return {
+      ...result,
+      message: `已中断 ${result.cancelled.length} 个任务` +
+        (result.skipped.length ? `，跳过 ${result.skipped.length} 个` : ""),
+    };
+  }
+  if (!jobId) {
+    throw new Error("async_task_cancel 需要 jobId，或传 allActive=true / jobIds[]");
+  }
+  return cancelAsyncJob(jobId, ctx.config, ctx.services, { ownerSessionId: ctx.sessionId });
+}
+
+async function resumeAsyncTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const { resumeAsyncJob, resumeOwnedAsyncJobs } = await import("../../asyncJobs/index.js");
+  if (!ctx.sessionId) {
+    throw new Error("async_task_resume 需要当前会话上下文（只能恢复本会话创建的任务）");
+  }
+  const allInterrupted = args.allInterrupted === true;
+  const jobIdsRaw = Array.isArray(args.jobIds) ? args.jobIds.map(String).filter(Boolean) : [];
+  const jobId = typeof args.jobId === "string" ? args.jobId.trim() : "";
+
+  if (allInterrupted || jobIdsRaw.length > 0) {
+    const ids = allInterrupted ? undefined : jobId ? [...jobIdsRaw, jobId] : jobIdsRaw;
+    const result = await resumeOwnedAsyncJobs(ctx.sessionId, ctx.config, ctx.services, {
+      jobIds: ids,
+    });
+    return {
+      ...result,
+      message:
+        `已恢复 ${result.resumed.length} 个中断任务` +
+        (result.skipped.length ? `，跳过 ${result.skipped.length} 个` : ""),
+    };
+  }
+  if (!jobId) {
+    throw new Error("async_task_resume 需要 jobId，或传 allInterrupted=true / jobIds[]");
+  }
+  return resumeAsyncJob(jobId, ctx.config, ctx.services, { ownerSessionId: ctx.sessionId });
+}
+
+/** 解析 Agent Workspace 绝对路径；无则回退 data/workspace。写策略与 write_file 同源，禁止落到 content/posts。 */
+async function resolveShellSandboxRoot(ctx: NativeToolContext): Promise<string> {
+  const { abs } = await resolveAgentFsPath(ctx, ".", "write");
+  if (!fs.existsSync(abs)) fs.mkdirSync(abs, { recursive: true });
+  return abs;
+}
+
+async function runShellTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const cwdArg = args.cwd ? String(args.cwd) : undefined;
+  if (cwdArg && looksLikeHostPath(cwdArg)) {
+    await assertHostSessionAllowed({
+      config: ctx.config,
+      prisma: ctx.prisma,
+      sessionId: ctx.sessionId,
+      tools: ctx.agentSnapshot?.tools,
+      requireCapability: true,
+    });
+    const hostAbs = resolveHostAbsolutePath(ctx.config, cwdArg);
+    if (!hostAbs) {
+      throw new Error(`run_shell cwd 不在 hostAccess.roots 内：${cwdArg}。下一步：先调 host_access。`);
+    }
+    const hostRoot = findContainingHostRoot(hostAbs, listExpandedHostRoots(ctx.config));
+    if (!hostRoot) throw new Error(`run_shell cwd 未命中授权根：${cwdArg}`);
+    if (!fs.existsSync(hostAbs)) {
+      throw new Error(`run_shell cwd 不存在：${hostAbs}`);
+    }
+    return runShellRestricted(ctx.config, String(args.command || ""), {
+      cwd: hostAbs,
+      shell: args.shell ? String(args.shell) : undefined,
+      timeoutMs: args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined,
+      rootDir: hostRoot,
+      signal: ctx.signal,
+    });
+  }
+  const rootDir = await resolveShellSandboxRoot(ctx);
+  return runShellRestricted(ctx.config, String(args.command || ""), {
+    cwd: cwdArg,
+    shell: args.shell ? String(args.shell) : undefined,
+    timeoutMs: args.timeoutMs !== undefined ? Math.max(1000, Number(args.timeoutMs)) : undefined,
+    rootDir,
+    signal: ctx.signal,
+  });
+}
+
+async function waitTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const ms =
+    args.ms !== undefined
+      ? Number(args.ms)
+      : Math.round(Number(args.seconds !== undefined ? args.seconds : 1) * 1000);
+  if (!Number.isFinite(ms)) throw new Error("seconds/ms 必须是有效数字");
+  const result = await waitMs(ms, ctx.signal);
+  return { ...result, waitedSeconds: result.waitedMs / 1000 };
+}
+
+async function sleepTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const seconds = Math.max(0, Math.min(Number(args.seconds !== undefined ? args.seconds : 10), 300));
+  if (!Number.isFinite(seconds)) throw new Error("seconds 必须是有效数字");
+
+  // LLM 常把 async 写成字符串 "true"，必须容忍并做 coercion，否则会同步阻塞几十秒看起来像卡死
+  const isAsync = coerceToolBoolean(args.async);
+
+  // v7 异步路径：deliverToQueue 默认 true，到时间后结果走 notifyAsyncDelivery 唯一投递闸。
+  if (isAsync) {
+    if (!ctx.sessionId || !ctx.agentSnapshot) {
+      throw new Error("sleep(async=true) 需要在 Chat 会话中调用（缺少 sessionId 或 Agent 上下文）");
+    }
+    const { startAsyncSleepTask } = await import("../../asyncJobs/index.js");
+    return startAsyncSleepTask({
+      sessionId: ctx.sessionId,
+      seconds,
+      config: ctx.config,
+      services: ctx.services,
+      agentSnapshot: ctx.agentSnapshot,
+    });
+  }
+
+  const ms = Math.round(seconds * 1000);
+  const result = await waitMs(ms, ctx.signal);
+  return {
+    ...result,
+    waitedSeconds: result.waitedMs / 1000,
+    message: `定时时间${seconds}s到了，请继续完成任务`,
+    hint: `定时时间${seconds}s到了，请继续完成任务`,
+  };
+}
+
+const SHELL_DEFS: NativeToolDefinition[] = [
+  {
+    name: "async_task_run",
+    concurrencyClass: "A",
+    description:
+      "后台执行一次工具调用（不跑 LLM，入全局任务池）。" +
+      "waitForResult=false（默认）=异步投递：立刻返回，完成后结果注入会话并触发父 Agent 续跑；" +
+      "waitForResult=true=同步等待：父流挂起，结果作为本轮 tool return（不进队列、无气泡）。" +
+      "短读（单篇 read_article）优先直接调 read_article 或 waitForResult=true，避免拆成二次起流；" +
+      "多篇并行抓取才用默认异步。要跑带 LLM 的子任务请用 spawn_subagent。",
+    parameters: {
+      type: "object",
+      properties: {
+        task: { type: "string", description: "任务描述（干什么，用于展示与审计）" },
+        label: { type: "string", description: "任务标签，用于前端展示" },
+        toolCall: { type: "object", description: "必填：{ tool: 工具名, args: 工具参数 }", properties: { tool: { type: "string" }, args: { type: "object" } } },
+        timeoutMs: { type: "number", description: "任务最大运行时长毫秒数，不填用全局默认值" },
+        waitForResult: {
+          type: "boolean",
+          description:
+            "true=同步等待并作 tool return（短任务推荐）；false(默认)=异步投递后父会话续跑",
+        },
+        shareToSessionIds: { type: "array", items: { type: "string" }, description: "swarm 协作：结果额外广播到这些会话 id" },
+      },
+      required: ["task", "toolCall"],
+    },
+  },
+  {
+    name: "async_task_status",
+    concurrencyClass: "A",
+    description: "查询异步任务状态（不含结果内容与执行日志——结果完成后自动进队列投递）。可传 jobId 查单个，不传则列当前会话全部任务。返回状态、已执行/排队时长等。用户问后台任务进度/状态时一律用本工具，不要为此新建任务。",
+    parameters: {
+      type: "object",
+      properties: {
+        jobId: { type: "string", description: "任务 id（async_task_run 返回的 jobId），不传则列出当前会话全部任务" },
+      },
+    },
+  },
+  {
+    name: "async_task_cancel",
+    concurrencyClass: "A",
+    description:
+      "中断本会话创建的后台异步任务（只能关自己会话派的；运行中/排队 → status=interrupted，与 failed 区分）。" +
+      "用户改主意不要这些任务时调用。jobId 单条；jobIds 批量；allActive=true 中断本会话全部活跃任务。" +
+      "之后可用 async_task_resume 恢复。",
+    parameters: {
+      type: "object",
+      properties: {
+        jobId: { type: "string", description: "单条任务 id（async_task_run / spawn 返回的 jobId）" },
+        jobIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "批量任务 id；与 allActive 二选一",
+        },
+        allActive: {
+          type: "boolean",
+          description: "true=中断本会话全部 running/queued 异步任务",
+        },
+      },
+    },
+  },
+  {
+    name: "async_task_resume",
+    concurrencyClass: "A",
+    description:
+      "恢复本会话已中断（interrupted）的异步任务：同 jobId 重新入池执行（与 failed 的 retry 不同）。" +
+      "jobId 单条；jobIds 批量；allInterrupted=true 恢复本会话全部中断任务。",
+    parameters: {
+      type: "object",
+      properties: {
+        jobId: { type: "string", description: "已中断任务的 jobId" },
+        jobIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "批量 jobId",
+        },
+        allInterrupted: {
+          type: "boolean",
+          description: "true=恢复本会话全部 interrupted 任务",
+        },
+      },
+    },
+  },
+  {
+    name: "run_shell",
+    concurrencyClass: "C",
+    // P0-02：标 destructive → 入审批清单 + native:all 默认隐藏；须显式 native:run_shell
+    destructive: true,
+    description:
+      "在主机上以当前 OS 用户权限直接执行 Shell，不是沙箱隔离。须 SHELL_ENABLED=true；host_restricted 仅拦截危险命令片段并拒绝沙箱外绝对路径，cwd 默认不出 Workspace。已授予 native:host_access 时，cwd 可传 host:Desktop 或授权绝对路径。删除/写文件请用 native 软删工具，不要 rm。Windows 默认 PowerShell。destructive 操作需审批。",
+    parameters: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "要执行的命令，如 pnpm test 或 dir" },
+        cwd: {
+          type: "string",
+          description: "工作目录：相对 Workspace，或 host:Desktop / 授权绝对路径（须 native:host_access）",
+        },
+        shell: { type: "string", enum: ["auto", "powershell", "cmd", "bash"], description: "Shell 类型，默认 auto" },
+        timeoutMs: { type: "number", description: "命令超时毫秒数，不填则使用全局默认值" },
+      },
+      required: ["command"],
+    },
+  },
+  {
+    name: "wait",
+    concurrencyClass: "A",
+    description: "等待指定时间（用于安装、服务启动、轮询前的延迟）。最多 300 秒。",
+    parameters: {
+      type: "object",
+      properties: {
+        seconds: { type: "number", description: "等待秒数，默认 1，最大 300" },
+        ms: { type: "number", description: "或直接指定毫秒数（与 seconds 二选一）" },
+      },
+    },
+  },
+  {
+    name: "sleep",
+    concurrencyClass: "A",
+    description:
+      "睡眠/定时器：阻塞等待 N 秒后返回（默认 10 秒，最大 300 秒）。设置 async=true 则不阻塞当前对话，改为创建后台异步任务，时间到后结果进入发送队列最前，可用于定时提醒。",
+    parameters: {
+      type: "object",
+      properties: {
+        seconds: { type: "number", description: "等待秒数，默认 10，最大 300" },
+        async: { type: "boolean", description: "true=不阻塞，创建后台异步任务；false(默认)=阻塞当前对话" },
+      },
+    },
+  }
+];
+
+const SHELL_HANDLERS = {
+  async_task_run: runAsyncTool,
+  async_task_status: taskStatusTool,
+  async_task_cancel: cancelAsyncTool,
+  async_task_resume: resumeAsyncTool,
+  run_shell: runShellTool,
+  wait: waitTool,
+  sleep: sleepTool,
+};
+
+export function registerShellTools(): void {
+  registerNativeDomain(SHELL_DEFS, SHELL_HANDLERS);
+}

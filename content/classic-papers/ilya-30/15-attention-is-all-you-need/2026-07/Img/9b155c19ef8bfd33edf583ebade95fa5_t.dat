@@ -1,0 +1,157 @@
+ction clashes with one of the params.
+    this.checkParams(node, !oldStrict && !useStrict && !isArrowFunction && !isMethod && this.isSimpleParamList(node.params));
+    // Ensure the function name isn't a forbidden identifier in strict mode, e.g. 'eval'
+    if (this.strict && node.id) { this.checkLValSimple(node.id, BIND_OUTSIDE); }
+    node.body = this.parseBlock(false, undefined, useStrict && !oldStrict);
+    node.expression = false;
+    this.adaptDirectivePrologue(node.body.body);
+    this.labels = oldLabels;
+  }
+  this.exitScope();
+};
+
+pp$5.isSimpleParamList = function(params) {
+  for (var i = 0, list = params; i < list.length; i += 1)
+    {
+    var param = list[i];
+
+    if (param.type !== "Identifier") { return false
+  } }
+  return true
+};
+
+// Checks function params for various disallowed patterns such as using "eval"
+// or "arguments" and duplicate parameters.
+
+pp$5.checkParams = function(node, allowDuplicates) {
+  var nameHash = Object.create(null);
+  for (var i = 0, list = node.params; i < list.length; i += 1)
+    {
+    var param = list[i];
+
+    this.checkLValInnerPattern(param, BIND_VAR, allowDuplicates ? null : nameHash);
+  }
+};
+
+// Parses a comma-separated list of expressions, and returns them as
+// an array. `close` is the token type that ends the list, and
+// `allowEmpty` can be turned on to allow subsequent commas with
+// nothing in between them to be parsed as `null` (which is needed
+// for array literals).
+
+pp$5.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructuringErrors) {
+  var elts = [], first = true;
+  while (!this.eat(close)) {
+    if (!first) {
+      this.expect(types$1.comma);
+      if (allowTrailingComma && this.afterTrailingComma(close)) { break }
+    } else { first = false; }
+
+    var elt = (void 0);
+    if (allowEmpty && this.type === types$1.comma)
+      { elt = null; }
+    else if (this.type === types$1.ellipsis) {
+      elt = this.parseSpread(refDestructuringErrors);
+      if (refDestructuringErrors && this.type === types$1.comma && refDestructuringErrors.trailingComma < 0)
+        { refDestructuringErrors.trailingComma = this.start; }
+    } else {
+      elt = this.parseMaybeAssign(false, refDestructuringErrors);
+    }
+    elts.push(elt);
+  }
+  return elts
+};
+
+pp$5.checkUnreserved = function(ref) {
+  var start = ref.start;
+  var end = ref.end;
+  var name = ref.name;
+
+  if (this.inGenerator && name === "yield")
+    { this.raiseRecoverable(start, "Cannot use 'yield' as identifier inside a generator"); }
+  if (this.inAsync && name === "await")
+    { this.raiseRecoverable(start, "Cannot use 'await' as identifier inside an async function"); }
+  if (!(this.currentThisScope().flags & SCOPE_VAR) && name === "arguments")
+    { this.raiseRecoverable(start, "Cannot use 'arguments' in class field initializer"); }
+  if (this.inClassStaticBlock && (name === "arguments" || name === "await"))
+    { this.raise(start, ("Cannot use " + name + " in class static initialization block")); }
+  if (this.keywords.test(name))
+    { this.raise(start, ("Unexpected keyword '" + name + "'")); }
+  if (this.options.ecmaVersion < 6 &&
+    this.input.slice(start, end).indexOf("\\") !== -1) { return }
+  var re = this.strict ? this.reservedWordsStrict : this.reservedWords;
+  if (re.test(name)) {
+    if (!this.inAsync && name === "await")
+      { this.raiseRecoverable(start, "Cannot use keyword 'await' outside an async function"); }
+    this.raiseRecoverable(start, ("The keyword '" + name + "' is reserved"));
+  }
+};
+
+// Parse the next token as an identifier. If `liberal` is true (used
+// when parsing properties), it will also convert keywords into
+// identifiers.
+
+pp$5.parseIdent = function(liberal) {
+  var node = this.parseIdentNode();
+  this.next(!!liberal);
+  this.finishNode(node, "Identifier");
+  if (!liberal) {
+    this.checkUnreserved(node);
+    if (node.name === "await" && !this.awaitIdentPos)
+      { this.awaitIdentPos = node.start; }
+  }
+  return node
+};
+
+pp$5.parseIdentNode = function() {
+  var node = this.startNode();
+  if (this.type === types$1.name) {
+    node.name = this.value;
+  } else if (this.type.keyword) {
+    node.name = this.type.keyword;
+
+    // To fix https://github.com/acornjs/acorn/issues/575
+    // `class` and `function` keywords push new context into this.context.
+    // But there is no chance to pop the context if the keyword is consumed as an identifier such as a property name.
+    // If the previous token is a dot, this does not apply because the context-managing code already ignored the keyword
+    if ((node.name === "class" || node.name === "function") &&
+      (this.lastTokEnd !== this.lastTokStart + 1 || this.input.charCodeAt(this.lastTokStart) !== 46)) {
+      this.context.pop();
+    }
+    this.type = types$1.name;
+  } else {
+    this.unexpected();
+  }
+  return node
+};
+
+pp$5.parsePrivateIdent = function() {
+  var node = this.startNode();
+  if (this.type === types$1.privateId) {
+    node.name = this.value;
+  } else {
+    this.unexpected();
+  }
+  this.next();
+  this.finishNode(node, "PrivateIdentifier");
+
+  // For validating existence
+  if (this.options.checkPrivateFields) {
+    if (this.privateNameStack.length === 0) {
+      this.raise(node.start, ("Private field '#" + (node.name) + "' must be declared in an enclosing class"));
+    } else {
+      this.privateNameStack[this.privateNameStack.length - 1].used.push(node);
+    }
+  }
+
+  return node
+};
+
+// Parses yield expression inside generator.
+
+pp$5.parseYield = function(forInit) {
+  if (!this.yieldPos) { this.yieldPos = this.start; }
+
+  var node = this.startNode();
+  this.next();
+  if (this.type =

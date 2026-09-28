@@ -1,0 +1,50 @@
+ align_type='similarity'
+                       '',
+                       return_trans_inv=False):
+
+    if reference_pts is None:
+        if crop_size[0] == 96 and crop_size[1] == 112:
+            reference_pts = REFERENCE_FACIAL_POINTS
+        else:
+            default_square = False
+            inner_padding_factor = 0
+            outer_padding = (0, 0)
+            output_size = crop_size
+
+            reference_pts = get_reference_facial_points(
+                output_size, inner_padding_factor, outer_padding,
+                default_square)
+
+    ref_pts = np.float32(reference_pts)
+
+    factor = ratio
+    ref_pts = (ref_pts - 112 / 2) * factor + 112 / 2
+    ref_pts *= crop_size[0] / 112.
+
+    ref_pts_shp = ref_pts.shape
+    if max(ref_pts_shp) < 3 or min(ref_pts_shp) != 2:
+        raise FaceWarpException(
+            'reference_pts.shape must be (K,2) or (2,K) and K>2')
+
+    if ref_pts_shp[0] == 2:
+        ref_pts = ref_pts.T
+
+    src_pts = np.float32(facial_pts)
+    src_pts_shp = src_pts.shape
+    if max(src_pts_shp) < 3 or min(src_pts_shp) != 2:
+        raise FaceWarpException(
+            'facial_pts.shape must be (K,2) or (2,K) and K>2')
+
+    if src_pts_shp[0] == 2:
+        src_pts = src_pts.T
+
+    if src_pts.shape != ref_pts.shape:
+        raise FaceWarpException(
+            'facial_pts and reference_pts must have the same shape')
+
+    if align_type == 'cv2_affine':
+        tfm = cv2.getAffineTransform(src_pts, ref_pts)
+        tfm_inv = cv2.getAffineTransform(ref_pts, src_pts)
+
+    elif align_type == 'affine':
+        tfm = get_affine_transform_matr

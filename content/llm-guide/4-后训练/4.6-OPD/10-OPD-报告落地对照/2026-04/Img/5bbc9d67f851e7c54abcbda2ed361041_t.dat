@@ -1,0 +1,15 @@
+---
+title: "6.4.1 · PagedAttention：KV 缓存分页、共享与 vLLM V1"
+date: 2026-09-01
+as_of: 2026-09-01
+category: 推理优化
+published: true
+excerpt: "从 KV 容量公式、逻辑块映射、碎片上界与写时复制出发，解释 PagedAttention，并区分论文设计、vLLM V1 APC 与 SGLang RadixAttention。"
+tags: [PagedAttention, KV Cache, vLLM, Automatic Prefix Caching, LLM Serving]
+---
+
+# 6.4.1 · PagedAttention：KV 缓存分页、共享与 vLLM V1
+
+PagedAttention 将每条序列逻辑连续的 KV 缓存切成等长块，再通过 Block Table 映射到不连续的物理块。请求只在需要时取得新块，结束后立即归还；共享前缀可以让多条逻辑序列引用同一物理块。注意力的数学结果没有改变，变化发生在 KV 的物理布局、寻址方式和生命周期管理。
+
+这套机制常与另外三项优化同时出现，但职责不同：Cont

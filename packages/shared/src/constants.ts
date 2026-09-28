@@ -1,0 +1,1002 @@
+/**
+ * @oasismind/shared — 共享常量定义
+ *
+ * 统一前端和后端的事件名、实体名和系统错误码。
+ */
+
+/** 实体名称 */
+export const ENTITIES = {
+  POST: "post",
+  AGENT: "agent",
+  SKILL: "skill",
+  MCP: "mcp",
+  MEMORY: "memory",
+  SESSION: "session",
+  MESSAGE: "message",
+  FILE: "file",
+  LOG: "log",
+  GIT: "git",
+  TASK: "task",
+  WORKSPACE: "workspace",
+  TRIGGER: "trigger",
+  APPROVAL: "approval",
+  TOOL: "tool",
+  RUN: "run",
+  PROMPT: "prompt",
+  CREDENTIAL: "credential",
+  INFO_SOURCE: "infoSource",
+} as const;
+
+export type EntityName = typeof ENTITIES[keyof typeof ENTITIES];
+
+/** 事件操作类型 */
+export const EVENT_ACTIONS = {
+  CREATED: "created",
+  UPDATED: "updated",
+  DELETED: "deleted",
+} as const;
+
+export type EventAction = typeof EVENT_ACTIONS[keyof typeof EVENT_ACTIONS];
+
+/** AI-first 业务错误码 */
+export const ERROR_CODES = {
+  // 通用错误
+  NOT_FOUND: "RECORD_NOT_FOUND",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  CONFLICT: "RECORD_CONFLICT",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  
+  // 实体冲突与限制
+  DUPLICATE_NAME: "DUPLICATE_NAME",
+  DUPLICATE_PATH: "DUPLICATE_PATH",
+  SLUG_CONFLICT: "SLUG_CONFLICT",
+  
+  // 文件与上传
+  FILE_UPLOAD_FAILED: "FILE_UPLOAD_FAILED",
+  PATH_TRAVERSAL_DETECTED: "PATH_TRAVERSAL_DETECTED",
+  
+  // AI 与 执行
+  AI_CALL_FAILED: "AI_CALL_FAILED",
+  AI_TOOL_NOT_FOUND: "AI_TOOL_NOT_FOUND",
+  
+  // 自动化
+  TRIGGER_FAILED: "TRIGGER_FAILED",
+  PENDING_APPROVAL: "PENDING_APPROVAL",
+} as const;
+
+export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+
+/* ─── Memory 类型（对齐 Claude Code / OpenClaw 分层，experience 仅内部） ─── */
+
+export const MEMORY_TYPES = {
+  PREFERENCE: "preference",
+  SEMANTIC: "semantic",
+  EPISODIC: "episodic",
+  NOTE: "note",
+  PROCEDURAL: "procedural",
+  EXPERIENCE: "experience",
+  /** L3 长期画像（TencentDB 分层记忆思想）：由 personaDistiller 蒸馏，Agent/用户不可直接创建 */
+  PERSONA: "persona",
+} as const;
+
+export type MemoryType = (typeof MEMORY_TYPES)[keyof typeof MEMORY_TYPES];
+
+/** Agent / 用户可创建的 Memory 类型（persona 只能经蒸馏管线写入，不在此列） */
+export const MEMORY_USER_CREATABLE_TYPES = [
+  MEMORY_TYPES.PREFERENCE,
+  MEMORY_TYPES.SEMANTIC,
+  MEMORY_TYPES.EPISODIC,
+  MEMORY_TYPES.NOTE,
+  MEMORY_TYPES.PROCEDURAL,
+] as const;
+
+export type MemoryUserCreatableType = (typeof MEMORY_USER_CREATABLE_TYPES)[number];
+
+/** 可注入 Chat system prompt 的类型（排除 experience；含 persona —— L3 画像快速启动上下文） */
+export const MEMORY_INJECTABLE_TYPES = [...MEMORY_USER_CREATABLE_TYPES, MEMORY_TYPES.PERSONA] as const;
+
+/** L2 场景层：流程 / 笔记（先恢复怎么做） */
+export const MEMORY_L2_INJECT_TYPES = [MEMORY_TYPES.PROCEDURAL, MEMORY_TYPES.NOTE] as const;
+
+/** L1 原子层：偏好 / 事实 / 经历（需要细节再下钻） */
+export const MEMORY_L1_INJECT_TYPES = [
+  MEMORY_TYPES.PREFERENCE,
+  MEMORY_TYPES.SEMANTIC,
+  MEMORY_TYPES.EPISODIC,
+] as const;
+
+/** Memory scope：global 全局共享；agent:{agentId} 归属特定 Agent；workspace:{workspaceId} 归属 Workspace */
+export const MEMORY_SCOPE_GLOBAL = "global";
+
+/** scope 前缀常量（避免散落模板字符串） */
+export const MEMORY_SCOPE_PREFIX = {
+  AGENT: "agent:",
+  WORKSPACE: "workspace:",
+} as const;
+
+export function memoryAgentScope(agentId: string): string {
+  return `${MEMORY_SCOPE_PREFIX.AGENT}${agentId}`;
+}
+
+export function memoryWorkspaceScope(workspaceId: string): string {
+  return `${MEMORY_SCOPE_PREFIX.WORKSPACE}${workspaceId}`;
+}
+
+/** Memory Flush 默认强度：用户偏好 / 一般事实（原 memoryFlush.ts 魔法数字收敛） */
+export const MEMORY_FLUSH_STRENGTH_PREFERENCE = 0.95;
+export const MEMORY_FLUSH_STRENGTH_DEFAULT = 0.85;
+
+/** 新记忆初始强度（memoryRepository.create / createMemorySchema 默认值同源） */
+export const MEMORY_INITIAL_STRENGTH = 1.0;
+
+/**
+ * L1 常驻层硬预算（Hermes 对标：USER ~500 tok / AGENT ~800 tok，按 ~4 字/token 粗估）。
+ * 写入与注入均截断到此上限；会话开始冻结快照，会话内改文件不影响本会话 prompt。
+ */
+export const PINNED_MEMORY_USER_MAX_CHARS = 2_000;
+export const PINNED_MEMORY_AGENT_MAX_CHARS = 3_200;
+/** 相对 projectRoot 的常驻层目录（`_` 前缀：db:sync 跳过，不进 Memory 表） */
+export const PINNED_MEMORY_DIR = "config/memories/_pinned";
+export const PINNED_MEMORY_USER_FILE = "USER.md";
+export const PINNED_MEMORY_AGENT_FILE = "AGENT.md";
+
+/** 长期记忆每日衰减系数（decayMemories，挂 heartbeat 每日 cron）；按类型差异化 */
+export const MEMORY_DECAY_FACTOR_PER_DAY = 0.95;
+/** 衰减后低于该强度的记忆归档删除 */
+export const MEMORY_ARCHIVE_THRESHOLD = 0.1;
+
+/**
+ * 按记忆类型的每日衰减系数。
+ * - preference/semantic：稳定事实，几乎不衰减（1.0）
+ * - note/procedural：慢衰减（0.98）
+ * - episodic：常规衰减（0.95）
+ * - experience：运行经验，快衰减（0.90）
+ * 衰减基准优先取 lastAccessedAt（被检索/注入即重置衰减），其次 updatedAt。
+ */
+export const MEMORY_DECAY_FACTORS_BY_TYPE: Record<string, number> = {
+  preference: 1.0,
+  semantic: 1.0,
+  note: 0.98,
+  procedural: 0.98,
+  episodic: MEMORY_DECAY_FACTOR_PER_DAY,
+  experience: 0.9,
+  /** L3 画像由蒸馏管线整体重写（supersede 版本链），不参与逐日衰减 */
+  persona: 1.0,
+};
+
+/** 获取某类型记忆的日衰减系数（缺省回退到全局系数） */
+export function getMemoryDecayFactor(type: string): number {
+  return MEMORY_DECAY_FACTORS_BY_TYPE[type] ?? MEMORY_DECAY_FACTOR_PER_DAY;
+}
+
+export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
+  preference: "用户偏好",
+  semantic: "稳定事实",
+  episodic: "经历事件",
+  note: "笔记",
+  procedural: "操作流程",
+  experience: "运行经验（内部）",
+  persona: "用户画像（L3）",
+};
+
+/** L3 画像蒸馏 cron（每日凌晨，错开记忆衰减/审批清理）；挂 heartbeatEngine maintenance 通道 */
+export const PERSONA_DISTILL_CRON = "17 5 * * *";
+/** 画像蒸馏最小间隔（防抖：距上次蒸馏不足该时长且记忆无新增则跳过） */
+export const PERSONA_DISTILL_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
+/** 画像注入 prompt 的字符预算（L3 快速启动层，保持轻量） */
+export const PERSONA_HINT_MAX_CHARS = 1_500;
+
+/** Auto-Compact 默认：占模型 context window 的触发比例 */
+export const DEFAULT_COMPACT_TRIGGER_RATIO = 0.75;
+export const DEFAULT_MODEL_CONTEXT_WINDOW_TOKENS = 128_000;
+export const DEFAULT_COMPACT_KEEP_RECENT = 8;
+/** 压缩切点：按 token 粗估保留的最近上下文（与 config.compact.keepRecentTokens 对齐） */
+export const DEFAULT_COMPACT_KEEP_RECENT_TOKENS = 20_000;
+export const DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS = 4_000;
+
+/* ─── LLM 模型与厂商（W8 常量化收敛：全仓引用此处，禁止裸字符串） ─── */
+
+/** DeepSeek 厂商 id（config.llm.providers key、provider 嗅探、credential key 共用） */
+export const LLM_PROVIDER_DEEPSEEK = "deepseek";
+
+/**
+ * 本地 OpenAI 兼容推理后端（Ollama / llama.cpp / LM Studio / vLLM）。
+ * 会话模型 id 约定：`{provider}/{upstreamModel}`，如 `ollama/llama3.2:latest`。
+ */
+export const LOCAL_LLM_PROVIDER_IDS = ["ollama", "llamacpp", "lmstudio", "vllm"] as const;
+export type LocalLlmProviderId = (typeof LOCAL_LLM_PROVIDER_IDS)[number];
+
+/** 各本地后端默认 OpenAI 兼容根（含 /v1） */
+export const LOCAL_LLM_DEFAULT_BASE_URLS: Record<LocalLlmProviderId, string> = {
+  ollama: "http://127.0.0.1:11434/v1",
+  llamacpp: "http://127.0.0.1:8080/v1",
+  lmstudio: "http://127.0.0.1:1234/v1",
+  vllm: "http://127.0.0.1:8000/v1",
+};
+
+export const LOCAL_LLM_PROVIDER_LABELS: Record<LocalLlmProviderId, string> = {
+  ollama: "Ollama",
+  llamacpp: "llama.cpp",
+  lmstudio: "LM Studio",
+  vllm: "vLLM",
+};
+
+export function isLocalLlmProviderId(id: string): id is LocalLlmProviderId {
+  return (LOCAL_LLM_PROVIDER_IDS as readonly string[]).includes(id);
+}
+
+/** 解析 `ollama/xxx` 形态；非本地前缀时 providerId=null、apiModel=原串 */
+export function parseLocalModelRef(model: string): {
+  providerId: LocalLlmProviderId | null;
+  apiModel: string;
+} {
+  const trimmed = model.trim();
+  const lower = trimmed.toLowerCase();
+  for (const id of LOCAL_LLM_PROVIDER_IDS) {
+    const prefix = `${id}/`;
+    if (lower.startsWith(prefix)) {
+      return { providerId: id, apiModel: trimmed.slice(prefix.length) };
+    }
+  }
+  return { providerId: null, apiModel: trimmed };
+}
+
+/** 拼本地模型会话 id（UI / ChatSession.model） */
+export function toLocalModelRef(providerId: LocalLlmProviderId, apiModel: string): string {
+  const name = apiModel.trim().replace(new RegExp(`^${providerId}/`, "i"), "");
+  return `${providerId}/${name}`;
+}
+
+/** 内置模型 id（与下方 CHAT_MODELS 注册表对齐；旧 id 由 llmClient 映射到 V4 Flash） */
+export const LLM_MODEL_IDS = {
+  DEEPSEEK_V4_FLASH: "deepseek-v4-flash",
+  DEEPSEEK_V4_PRO: "deepseek-v4-pro",
+  DEEPSEEK_VL2: "deepseek-vl2",
+  /** 旧 id：映射到 V4 Flash 非思考 */
+  DEEPSEEK_CHAT: "deepseek-chat",
+  /** 旧 id：映射到 V4 Flash 思考 */
+  DEEPSEEK_REASONER: "deepseek-reasoner",
+} as const;
+
+/**
+ * 全局默认 LLM 模型 id 的最终兜底常量。
+ * server 侧实际生效值见 config.llm.defaultModel（解析优先级：env DEFAULT_LLM_MODEL
+ * > config.yaml llm.defaultModel > 本常量）；web / 纯静态场景直接用本常量。
+ */
+export const DEFAULT_LLM_MODEL = LLM_MODEL_IDS.DEEPSEEK_V4_FLASH;
+
+/** Chat 可选模型（对齐 DeepSeek V4 API：https://api-docs.deepseek.com/guides/thinking_mode） */
+export interface ChatModelOption {
+  id: string;
+  label: string;
+  provider: string;
+  /** 模型上下文窗口（token），用于 Auto-Compact 动态阈值 */
+  contextWindowTokens?: number;
+  /** 支持 thinking.type enabled/disabled */
+  supportsThinking?: boolean;
+  /** 旧版 reasoner：强制思考模式 */
+  reasoningRequired?: boolean;
+  defaultTemperature?: number;
+  /** 是否原生多模态（可直接传图） */
+  supportsVision?: boolean;
+  /** 非多模态时是否对图片走 OCR 后拼进文本 */
+  ocrFallback?: boolean;
+  /** 输入能力说明（展示在 Chat 输入框下方） */
+  inputHint?: string;
+}
+
+export const CHAT_MODELS: ChatModelOption[] = [
+  {
+    id: LLM_MODEL_IDS.DEEPSEEK_V4_FLASH,
+    label: "DeepSeek V4 Flash",
+    provider: LLM_PROVIDER_DEEPSEEK,
+    // 官方 1M 上下文（误配 128k 会让占用/压缩百分比整体放大约 8 倍）
+    contextWindowTokens: 1_000_000,
+    supportsThinking: true,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "纯文本模型 · 1M 上下文 · 图片将 OCR 识别后以文字附在消息中发送",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: LLM_MODEL_IDS.DEEPSEEK_V4_PRO,
+    label: "DeepSeek V4 Pro",
+    provider: LLM_PROVIDER_DEEPSEEK,
+    contextWindowTokens: 1_000_000,
+    supportsThinking: true,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "纯文本模型 · 1M 上下文 · 图片将 OCR 识别后以文字附在消息中发送",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: LLM_MODEL_IDS.DEEPSEEK_VL2,
+    label: "DeepSeek VL2（识图）",
+    provider: LLM_PROVIDER_DEEPSEEK,
+    contextWindowTokens: 64_000,
+    supportsThinking: false,
+    supportsVision: true,
+    ocrFallback: false,
+    inputHint: "多模态识图 · 支持直接发送图片（JPEG/PNG/WebP）",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: LLM_MODEL_IDS.DEEPSEEK_CHAT,
+    label: "DeepSeek Chat（旧 ID → V4 Flash 非思考）",
+    provider: LLM_PROVIDER_DEEPSEEK,
+    supportsThinking: true,
+    defaultTemperature: 0.7,
+  },
+  {
+    id: LLM_MODEL_IDS.DEEPSEEK_REASONER,
+    label: "DeepSeek Reasoner（旧 ID → V4 Flash 思考）",
+    provider: LLM_PROVIDER_DEEPSEEK,
+    supportsThinking: true,
+    reasoningRequired: true,
+    defaultTemperature: 0.7,
+  },
+  { id: "moonshot-v1-auto", label: "Kimi Auto", provider: "kimi", supportsThinking: true, supportsVision: true, inputHint: "多模态 · 支持图片与文本", defaultTemperature: 0.6 },
+  {
+    id: "kimi",
+    label: "Kimi",
+    provider: "kimi",
+    supportsVision: true,
+    inputHint: "多模态 · 支持图片与文本",
+    defaultTemperature: 0.6,
+  },
+  { id: "glm-4-flash", label: "GLM-4 Flash", provider: "zhipu", supportsVision: true, inputHint: "多模态 · 支持图片与文本", defaultTemperature: 0.7 },
+  { id: "gpt-4o-mini", label: "GPT-4o Mini", provider: "openai", supportsVision: true, inputHint: "多模态 · 支持图片与文本", defaultTemperature: 0.7 },
+  // 本地后端占位（真实列表由 llm.listLocalModels 动态发现；此处保证静态菜单/Agent 页可见入口）
+  {
+    id: "ollama/llama3.2",
+    label: "Ollama · llama3.2",
+    provider: "ollama",
+    contextWindowTokens: 32_000,
+    supportsThinking: false,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "本地 Ollama · 需本机已拉取模型（ollama pull llama3.2）",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: "llamacpp/local",
+    label: "llama.cpp · local",
+    provider: "llamacpp",
+    contextWindowTokens: 32_000,
+    supportsThinking: false,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "本地 llama.cpp server（OpenAI 兼容 /v1）",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: "lmstudio/local",
+    label: "LM Studio · local",
+    provider: "lmstudio",
+    contextWindowTokens: 32_000,
+    supportsThinking: false,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "本地 LM Studio 本地服务（默认 1234）",
+    defaultTemperature: 0.7,
+  },
+  {
+    id: "vllm/local",
+    label: "vLLM · local",
+    provider: "vllm",
+    contextWindowTokens: 32_000,
+    supportsThinking: false,
+    supportsVision: false,
+    ocrFallback: true,
+    inputHint: "本地 vLLM OpenAI 兼容服务",
+    defaultTemperature: 0.7,
+  },
+];
+
+/** Chat 设置面板可选模型（V4 Flash / Pro / VL2 + Kimi） */
+export const PRIMARY_CHAT_MODEL_IDS = [
+  LLM_MODEL_IDS.DEEPSEEK_V4_FLASH,
+  LLM_MODEL_IDS.DEEPSEEK_V4_PRO,
+  LLM_MODEL_IDS.DEEPSEEK_VL2,
+  "kimi",
+] as const;
+
+export const PRIMARY_CHAT_MODELS: ChatModelOption[] = PRIMARY_CHAT_MODEL_IDS.map(
+  (id) => CHAT_MODELS.find((m) => m.id === id)!,
+);
+
+/** 判断模型是否支持 vision 直传（与前端 getModelOption 逻辑对齐） */
+export function resolveModelSupportsVision(modelId: string): boolean {
+  const found = CHAT_MODELS.find((m) => m.id === modelId);
+  if (found?.supportsVision) return true;
+  const { apiModel } = parseLocalModelRef(modelId);
+  const lower = apiModel.toLowerCase();
+  return (
+    lower.includes("vl") ||
+    lower.includes("vision") ||
+    lower.includes("llava") ||
+    lower.includes("4o") ||
+    lower.includes("glm-4")
+  );
+}
+
+/** 解析模型 context window（token），用于 Auto-Compact 百分比阈值 */
+export function resolveModelContextWindowTokens(modelId: string): number {
+  const found = CHAT_MODELS.find((m) => m.id === modelId);
+  if (found?.contextWindowTokens) return found.contextWindowTokens;
+  const lower = modelId.toLowerCase();
+  if (lower.includes("1m") || lower.includes("1000k") || lower.includes("million")) return 1_000_000;
+  if (lower.includes("200k")) return 200_000;
+  if (lower.includes("128k")) return 128_000;
+  if (lower.includes("64k")) return 64_000;
+  if (lower.includes("32k")) return 32_000;
+  if (lower.includes("16k")) return 16_000;
+  if (lower.includes("8k")) return 8_000;
+  return DEFAULT_MODEL_CONTEXT_WINDOW_TOKENS;
+}
+
+/** 字符 ≈ token×4 粗算，得到 Auto-Compact 触发字符阈值 */
+export function resolveCompactCharThreshold(
+  modelId: string,
+  triggerRatio = DEFAULT_COMPACT_TRIGGER_RATIO,
+): number {
+  const ratio = Math.min(0.95, Math.max(0.05, triggerRatio));
+  const windowTokens = resolveModelContextWindowTokens(modelId);
+  return Math.max(8_000, Math.floor(windowTokens * ratio * 4));
+}
+
+export function isMemoryInjectable(type: string): boolean {
+  return (MEMORY_INJECTABLE_TYPES as readonly string[]).includes(type);
+}
+
+export function isMemoryUserCreatable(type: string): boolean {
+  return (MEMORY_USER_CREATABLE_TYPES as readonly string[]).includes(type);
+}
+
+/* ─── Swarm 分层与队列上限（W8 单点定义，原 swarmBus / redisSwarmBus / swarmPermissionGuard 三处漂移） ─── */
+
+/** Agent 间委托最大深度（防循环） */
+export const SWARM_MAX_DEPTH = 10;
+/** 单个 Agent 待处理消息队列上限 */
+export const SWARM_MAX_QUEUE_SIZE = 100;
+
+/**
+ * 子 Agent 自己的层（DSH Q5）：父 inheritMask.deny 剥不掉。
+ * 裸名；LLM 从 own 里删 agent_report_back 无效（服务端强制并回）。
+ */
+export const CHILD_OWN_TOOLS = [
+  "agent_report_back",
+  "agent_notify_parent",
+  "todo_write",
+  "todo_read",
+  "ask_user",
+] as const;
+export type ChildOwnTool = (typeof CHILD_OWN_TOOLS)[number];
+
+/** Swarm Agent 层级（与 schemas.agentTierSchema 同源） */
+export const AGENT_TIERS = ["super", "manager", "sub"] as const;
+export type AgentTier = (typeof AGENT_TIERS)[number];
+
+/**
+ * 飞书 / 语雀 / GitHub / SwanLab / 知乎开放平台等集成工具（单点定义）。
+ * P1-01：opt-in —— 不进入 tier/assistant 默认清单（schema 体积与误触风险）；
+ * 需在 /agents 显式勾选。调用前在 Credentials / .env 配好对应密钥。
+ */
+export const INTEGRATION_OPT_IN_TOOLS: string[] = [
+  // SwanLab：深度学习实验跟踪（CLI OpenAPI）
+  "native:swanlab_status",
+  "native:swanlab_user_info",
+  "native:swanlab_project_list",
+  "native:swanlab_project_create",
+  "native:swanlab_run_list",
+  "native:swanlab_run_info",
+  "native:swanlab_run_summary",
+  "native:swanlab_run_metrics",
+  "native:swanlab_run_series",
+  "native:swanlab_scaffold_train",
+  // GitHub：单一入口（细粒度 github_* 仍注册但 defaultHidden，需显式勾选）
+  "native:github_tool",
+  // 语雀：优先 Open API v2（YUQUE_TOKEN）；Cookie 轨 defaultHidden
+  "native:yuque_session_status",
+  "native:yuque_list_repos",
+  "native:yuque_create_repo",
+  "native:yuque_update_repo",
+  "native:yuque_delete_repo",
+  "native:yuque_list_docs",
+  "native:yuque_create_doc_v2",
+  "native:yuque_update_doc_v2",
+  "native:yuque_delete_doc_v2",
+  // 飞书核心：token + 文档 + 消息 + 表格（权限/Wiki/画板为 advanced，defaultHidden）
+  "native:feishu_token_status",
+  "native:feishu_refresh_token",
+  "native:feishu_authorize",
+  "native:feishu_get_doc",
+  "native:feishu_create_doc",
+  "native:feishu_update_doc",
+  "native:feishu_append_doc_text",
+  "native:feishu_append_doc_blocks",
+  "native:feishu_delete_doc",
+  "native:feishu_search_docs",
+  "native:feishu_send_text",
+  "native:feishu_send_message",
+  "native:feishu_create_spreadsheet",
+  "native:feishu_append_spreadsheet_values",
+  // 知乎数据开放平台（Access Secret；搜索/热榜/直答/收藏夹）
+  "native:zhihu_openapi_search",
+  "native:zhihu_openapi_hot_list",
+  "native:zhihu_openapi_ask",
+  "native:zhihu_openapi_favlists",
+  "native:zhihu_openapi_recent_collections",
+  "native:zhihu_openapi_favlist_contents",
+];
+
+/**
+ * 集成进阶工具：仍注册可显式勾选，但不进 INTEGRATION_OPT_IN（避免 UI「一键全开」灌爆 schema）。
+ * GitHub 细粒度请改用 github_tool；语雀 Cookie 轨 / 飞书权限·Wiki·画板在此。
+ */
+export const INTEGRATION_ADVANCED_OPT_IN_TOOLS: string[] = [
+  "native:github_search_repos",
+  "native:github_get_repo",
+  "native:github_create_repo",
+  "native:github_update_repo",
+  "native:github_delete_repo",
+  "native:github_get_file",
+  "native:github_create_file",
+  "native:github_update_file",
+  "native:github_delete_file",
+  "native:github_list_issues",
+  "native:github_get_issue",
+  "native:github_create_issue",
+  "native:github_update_issue",
+  "native:github_create_issue_comment",
+  "native:github_list_pull_requests",
+  "native:github_get_pull_request",
+  "native:github_create_pull_request",
+  "native:github_update_pull_request",
+  "native:github_merge_pull_request",
+  "native:github_list_branches",
+  "native:github_get_branch",
+  "native:github_create_branch",
+  "native:github_delete_branch",
+  "native:github_list_workflows",
+  "native:github_trigger_workflow",
+  "native:github_create_release",
+  "native:yuque_list_books",
+  "native:yuque_get_book_toc",
+  "native:yuque_get_doc",
+  "native:yuque_create_book",
+  "native:yuque_update_book",
+  "native:yuque_delete_book",
+  "native:yuque_create_doc",
+  "native:yuque_update_doc",
+  "native:yuque_delete_doc",
+  "native:feishu_list_permission_members",
+  "native:feishu_add_permission_member",
+  "native:feishu_update_permission_member",
+  "native:feishu_remove_permission_member",
+  "native:feishu_get_permission_public",
+  "native:feishu_update_permission_public",
+  "native:feishu_lookup_user",
+  "native:feishu_add_collaborator_by_contact",
+  "native:feishu_get_wiki_space",
+  "native:feishu_get_wiki_nodes",
+  "native:feishu_create_wiki_node",
+  "native:feishu_list_doc_whiteboards",
+  "native:feishu_list_whiteboard_nodes",
+  "native:feishu_create_whiteboard_nodes",
+  "native:feishu_whiteboard_from_diagram",
+  "native:feishu_delete_whiteboard_nodes",
+  "native:feishu_get_whiteboard_theme",
+  "native:feishu_update_whiteboard_theme",
+];
+
+/**
+ * 各 tier 新建 Agent 的默认工具清单（单点定义，原 swarmInitializer / workspaceProvision /
+ * loop/setup 三处独立维护）。使用处：swarmInitializer（super）、workspaceProvision（manager）、
+ * loop/setup resolveToolsForAgentTier（sub 兜底）。
+ * 不含 INTEGRATION_OPT_IN_TOOLS（P1-01 schema 瘦身）。
+ */
+export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
+  super: [
+    "native:web_search",
+    "native:literature_search",
+    "native:literature_get",
+    "native:document_to_markdown",
+    "native:read_article",
+    "native:scrape_web_page",
+    "native:dokobot_read",
+    "native:dokobot_search",
+    "native:webbridge_status",
+    "native:webbridge_start",
+    "native:webbridge_command",
+    "native:download_file",
+    "native:browser_screenshot",
+    "native:read_image",
+    "native:vision_describe",
+    "native:generate_illustration",
+    "native:video_transcript",
+    "native:media_download",
+    "native:audio_transcribe",
+    "native:video_notes",
+    "native:search_arxiv",
+    "native:fetch_arxiv",
+    "native:search_huggingface",
+    "native:fetch_huggingface_model",
+    "native:fetch_huggingface_trending",
+    "native:read_file",
+    "native:write_file",
+    "native:list_directory",
+    "native:file_delete",
+    "native:directory_delete",
+    "native:trash_list",
+    "native:trash_restore",
+    "native:algo_viz_create",
+    "native:algo_viz_list",
+    "native:article_material_pack",
+    "native:article_video_compose",
+    "native:async_task_run",
+    "native:async_task_status",
+    "native:async_task_cancel",
+    "native:async_task_resume",
+    "native:spawn_subagent",
+    "native:session_rotate",
+    "native:session_compact",
+    "native:session_context_usage",
+    "native:session_search",
+    "native:session_message_get",
+    "native:tool_results_list",
+    "native:tool_result_meta",
+    "native:todo_write",
+    "native:todo_read",
+    "native:session_goal_set",
+    "native:session_goal_status",
+    "native:session_goal_clear",
+    "native:session_goal_pause",
+    "native:session_goal_resume",
+    "native:session_spawn_goal",
+    "native:autonomous_gate",
+    "native:garden_create",
+    "native:garden_list",
+    "native:garden_get",
+    "native:garden_update",
+    "native:garden_delete",
+    "native:garden_restore",
+    "native:post_create",
+    "native:post_update",
+    "native:post_delete",
+    "native:post_list",
+    "native:post_neighbors",
+    "native:memory_create",
+    "native:memory_update",
+    "native:memory_search",
+    "native:memory_daily_append",
+    "native:memory_daily_search",
+    "native:memory_distill_persona",
+    "native:pinned_memory_read",
+    "native:pinned_memory_write",
+    "native:agent_create",
+    "native:agent_update",
+    "native:agent_delete",
+    "native:agent_cron_set",
+    "native:agent_cron_list",
+    "native:agent_cron_clear",
+    "native:agent_inspect",
+    "native:swarm_brief",
+    "native:swarm_export_trace",
+    "native:swarm_stage_write",
+    "native:swarm_stage_list",
+    "native:swarm_stage_read",
+    "native:agent_send_message",
+    "native:workspace_create",
+    "native:workspace_archive",
+    "native:free_api_keys_list",
+    "native:free_api_keys_fetch",
+    "native:free_models_list",
+    "native:skills_list",
+    "native:skill_view",
+    "native:skill_manage",
+    "native:skill_discover",
+    "native:skill_enable",
+    "native:skill_promote",
+    "native:experiment_begin",
+    "native:experiment_decide",
+    "native:experiment_list",
+    "native:experiment_get",
+    "native:experiment_rollback",
+    "native:experiment_branch",
+    "native:harness_refine",
+    "native:harness_gate_run",
+    "native:optimize_agent_prompt",
+    "native:generate_skill_from_experience",
+    "native:ask_user",
+    "native:send_email",
+    "native:platform_login",
+    "native:browser_login_status",
+    "native:platform_doctor",
+    "native:inbox_list",
+    "native:inbox_stats",
+    "native:inbox_capture_url",
+    "native:inbox_capture_urls",
+    "native:inbox_start_platform_sync",
+    "native:inbox_platform_sync_status",
+    "native:inbox_cancel_platform_sync",
+    "native:inbox_sync_zhihu",
+    "native:inbox_sync_xhs",
+    "native:inbox_sync_bilibili",
+    "native:inbox_scan_screenshots",
+    "native:inbox_ingest_wechat",
+    "native:inbox_enrich",
+    "native:inbox_distill",
+    "native:inbox_ignore",
+    "native:pinme_upload",
+    "native:send_qq_text",
+    "native:send_qq_image",
+    "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
+  ],
+  manager: [
+    // 调度 / 审查 / 汇报 / 派生子 Agent
+    "native:spawn_subagent",
+    "native:agent_create_sub",
+    "native:agent_inspect",
+    "native:swarm_brief",
+    "native:swarm_export_trace",
+    "native:swarm_stage_write",
+    "native:swarm_stage_list",
+    "native:swarm_stage_read",
+    "native:agent_send_message",
+    "native:agent_report_back",
+    "native:agent_notify_parent",
+    "native:todo_write",
+    "native:todo_read",
+    "native:session_goal_set",
+    "native:session_goal_status",
+    "native:session_goal_clear",
+    "native:session_goal_pause",
+    "native:session_goal_resume",
+    "native:session_spawn_goal",
+    "native:autonomous_gate",
+    "native:ask_user",
+    "native:send_email",
+    "native:platform_login",
+    "native:browser_login_status",
+    "native:platform_doctor",
+    "native:generate_illustration",
+    "native:dokobot_read",
+    "native:dokobot_search",
+    "native:webbridge_status",
+    "native:webbridge_start",
+    "native:webbridge_command",
+    "native:skills_list",
+    "native:skill_view",
+    "native:skill_manage",
+    "native:skill_discover",
+    "native:skill_enable",
+    "native:skill_promote",
+    "native:optimize_agent_prompt",
+    "native:generate_skill_from_experience",
+    "native:send_qq_text",
+    "native:send_qq_image",
+    "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
+  ],
+  sub: [
+    "native:sleep",
+    "native:async_task_run",
+    "native:agent_report_back",
+    "native:agent_notify_parent",
+    "native:ask_user",
+    "native:todo_write",
+    "native:todo_read",
+    "native:session_goal_set",
+    "native:session_goal_status",
+    "native:session_goal_clear",
+    "native:session_goal_pause",
+    "native:session_goal_resume",
+    "native:swarm_stage_write",
+    "native:swarm_stage_list",
+    "native:swarm_stage_read",
+    "native:session_search",
+    "native:session_message_get",
+    "native:tool_results_list",
+    "native:tool_result_meta",
+    "native:session_context_usage",
+    "native:read_file",
+    "native:write_file",
+    "native:list_directory",
+    "native:file_delete",
+    "native:directory_delete",
+    "native:trash_list",
+    "native:trash_restore",
+    "native:algo_viz_create",
+    "native:algo_viz_list",
+    "native:article_material_pack",
+    "native:article_video_compose",
+    "native:web_search",
+    "native:dokobot_read",
+    "native:dokobot_search",
+    "native:download_file",
+    "native:literature_search",
+    "native:literature_get",
+    "native:document_to_markdown",
+    "native:browser_screenshot",
+    "native:read_image",
+    "native:vision_describe",
+    "native:generate_illustration",
+    "native:video_transcript",
+    "native:media_download",
+    "native:audio_transcribe",
+    "native:video_notes",
+    "native:search_arxiv",
+    "native:fetch_arxiv",
+    "native:search_huggingface",
+    "native:fetch_huggingface_model",
+    "native:fetch_huggingface_trending",
+    "native:pinme_upload",
+    "native:skills_list",
+    "native:skill_view",
+    "native:send_qq_text",
+    "native:send_qq_image",
+    "native:send_qq_video",
+    "native:send_qq_file",
+    "native:send_qq_voice",
+    "native:delete_qq_message",
+  ],
+};
+
+/** 内置 assistant（用户默认助手，manager tier）的工具清单 —— agentResolver 创建与补齐检查共用同一份 */
+export const ASSISTANT_DEFAULT_TOOLS: string[] = [
+  "native:web_search",
+  "native:literature_search",
+  "native:literature_get",
+  "native:document_to_markdown",
+  "native:read_article",
+  "native:scrape_web_page",
+  "native:dokobot_read",
+  "native:dokobot_search",
+  "native:webbridge_status",
+  "native:webbridge_start",
+  "native:webbridge_command",
+  "native:download_file",
+  "native:browser_screenshot",
+  "native:read_image",
+  "native:vision_describe",
+  "native:generate_illustration",
+  "native:video_transcript",
+  "native:search_arxiv",
+  "native:fetch_arxiv",
+  "native:search_huggingface",
+  "native:fetch_huggingface_model",
+  "native:fetch_huggingface_trending",
+  "native:read_file",
+  "native:write_file",
+  "native:list_directory",
+  "native:file_delete",
+  "native:directory_delete",
+  "native:trash_list",
+  "native:trash_restore",
+  "native:algo_viz_create",
+  "native:algo_viz_list",
+  "native:spawn_subagent",
+  "native:async_task_run",
+  "native:async_task_status",
+  "native:async_task_cancel",
+  "native:async_task_resume",
+  "native:session_rotate",
+  "native:session_compact",
+  "native:session_context_usage",
+  "native:session_search",
+  "native:session_message_get",
+  "native:tool_results_list",
+  "native:tool_result_meta",
+  "native:sleep",
+  "native:git_status",
+  "native:git_diff",
+  "native:git_log",
+  // 知识库：可建第 N 座花园 + 写文章；禁 write_file 直写 content/
+  "native:garden_create",
+  "native:garden_list",
+  "native:garden_get",
+  "native:garden_update",
+  "native:garden_delete",
+  "native:garden_restore",
+  "native:post_create",
+  "native:post_update",
+  "native:post_delete",
+  "native:post_list",
+  "native:post_neighbors",
+  "native:memory_create",
+  "native:memory_update",
+  "native:memory_search",
+  "native:memory_daily_append",
+  "native:memory_daily_search",
+  "native:memory_distill_persona",
+  "native:pinned_memory_read",
+  "native:pinned_memory_write",
+  "native:todo_write",
+  "native:todo_read",
+  "native:session_goal_set",
+  "native:session_goal_status",
+  "native:session_goal_clear",
+  "native:session_goal_pause",
+  "native:session_goal_resume",
+  "native:session_spawn_goal",
+  "native:agent_cron_set",
+  "native:agent_cron_list",
+  "native:agent_cron_clear",
+  "native:ask_user",
+  "native:send_email",
+  "native:skills_list",
+  "native:skill_view",
+  "native:skill_manage",
+  "native:inbox_list",
+  "native:inbox_stats",
+  "native:inbox_distill",
+  "native:inbox_enrich",
+  "native:article_material_pack",
+  "native:article_video_compose",
+  "native:experiment_begin",
+  "native:experiment_decide",
+  "native:experiment_list",
+  "native:experiment_get",
+  "native:experiment_rollback",
+  "native:experiment_branch",
+  "native:harness_refine",
+  "native:harness_gate_run",
+  "native:autonomous_gate",
+  "native:platform_login",
+  "native:browser_login_status",
+  "native:platform_doctor",
+  "native:pinme_upload",
+  "native:send_qq_text",
+  "native:send_qq_image",
+  "native:send_qq_video",
+  "native:send_qq_file",
+  "native:send_qq_voice",
+  "native:delete_qq_message",
+];
+
+/* ─── 知识库花园（动态 N 座） ───
+ *
+ * 物理根：content/{gardenId}/…；元数据+首页：_garden.md
+ * Post.garden = gardenId；库内路径仍用 slug（可含 /）。
+ * about / uploads 永远不是花园。写入只走 garden_* / post_*。
+ */
+/** 启动/同步时确保存在的种子库（不是 API 封闭枚举） */
+export const SEED_GARDENS = ["posts", "resources"] as const;
+export type SeedGarden = (typeof SEED_GARDENS)[number];
+export const DEFAULT_POST_GARDEN = "posts" as const;
+/** content/ 下禁止当作花园的目录名 */
+export const RESERVED_CONTENT_DIRS = ["about", "uploads"] as const;
+
+export function isReservedContentDir(value: string): boolean {
+  return (RESERVED_CONTENT_DIRS as readonly string[]).includes(value);
+}
+
+export function isSeedGarden(value: string): value is SeedGarden {
+  return (SEED_GARDENS as readonly string[]).includes(value);
+}
+
+/** 花园 id 格式：单段小写字母数字 + -/_，禁保留名（存在性由运行时校验） */
+const GARDEN_ID_RE = /^[a-z][a-z0-9_-]{0,62}$/;
+export function isValidGardenIdFormat(value: string): boolean {
+  if (!value || value !== value.trim()) return false;
+  if (isReservedContentDir(value)) return false;
+  if (value.startsWith("_") || value.startsWith(".")) return false;
+  return GARDEN_ID_RE.test(value);
+}
+
+/* ─── Agent 运行时阈值（W8 常量化收敛） ─── */
+
+/** Agent 工具结果进 LLM 上下文的单条截断上限（reactLoop snapshot 与 read_article 同源） */
+export const AGENT_TOOL_RESULT_MAX_CHARS = 16_000;
+
+/** 心跳连续失败达到该次数时邮件告警一次（复用 send_email 通道） */
+export const HEARTBEAT_MAX_CONSECUTIVE_FAILURES = 3;
+
+/** pending 审批默认过期毫秒（24h；env APPROVAL_PENDING_TTL_MS 可覆盖，0 关闭 TTL） */
+export const APPROVAL_DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;

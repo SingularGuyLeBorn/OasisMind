@@ -1,0 +1,281 @@
+"use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { safeRouterPrefetch } from "@/lib/safeRouterPrefetch";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bot,
+  Wand2,
+  Cpu,
+  Brain,
+  HardDrive,
+  Files,
+  GitBranch,
+  Waypoints,
+  CalendarClock,
+  Clock3,
+  ScrollText,
+  Settings,
+  Zap,
+  ShieldCheck,
+  FileCode2,
+  Search,
+  BarChart3,
+  Wrench,
+  Activity,
+  KeyRound,
+  Globe,
+  Inbox,
+  Sparkles,
+  RefreshCw,
+  Radio,
+  Kanban,
+} from "lucide-react";
+import { navItemAllowed, PACKS_FULL, type PackFlags } from "@oasismind/shared";
+import { cn } from "@/lib/utils";
+import { OasisMindLogo } from "@/lib/icons";
+import { useNativeCapabilities } from "@/lib/hooks";
+
+interface SidebarProps {
+  className?: string;
+  /** 移动端抽屉内点击导航后关闭 */
+  onNavigate?: () => void;
+}
+
+interface NavSubItem {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+}
+
+interface NavGroup {
+  title: string;
+  icon: LucideIcon;
+  items: NavSubItem[];
+}
+
+const STORAGE_KEY = "om-sidebar-width";
+const MIN_WIDTH = 240;
+const MAX_WIDTH = 520;
+const DEFAULT_WIDTH = 288;
+
+const navGroups: Record<string, NavGroup> = {
+  ai: {
+    title: "智能工作台",
+    icon: Cpu,
+    items: [
+      { href: "/agents", icon: Bot, label: "Agents（管理首页）" },
+      { href: "/subagents", icon: Bot, label: "子 Agent 任务" },
+      { href: "/skills", icon: Wand2, label: "Skill 管理" },
+      { href: "/mcp", icon: Cpu, label: "MCP 服务器" },
+      { href: "/sources", icon: Globe, label: "信息源" },
+      { href: "/memories", icon: Brain, label: "长期记忆" },
+      { href: "/prompts", icon: FileCode2, label: "提示词模板" },
+      { href: "/tools", icon: Wrench, label: "工具注册" },
+      { href: "/runs", icon: Activity, label: "执行记录" },
+      { href: "/session-lineage", icon: Waypoints, label: "会话轮换血缘" },
+      { href: "/search", icon: Search, label: "全局搜索" },
+    ],
+  },
+  automation: {
+    title: "自动化与工作流",
+    icon: Zap,
+    items: [
+      { href: "/daily", icon: Kanban, label: "每日看板" },
+      { href: "/inbox", icon: Inbox, label: "知识 Inbox" },
+      { href: "/platform-sync", icon: RefreshCw, label: "平台每日同步" },
+      { href: "/channels", icon: Radio, label: "IM 通道" },
+      { href: "/triggers", icon: Zap, label: "事件触发器" },
+      { href: "/cron", icon: Clock3, label: "定时节律" },
+      { href: "/approvals", icon: ShieldCheck, label: "待你点头" },
+    ],
+  },
+  ops: {
+    title: "系统与运维",
+    icon: Settings,
+    items: [
+      { href: "/workspaces", icon: HardDrive, label: "工作区管理" },
+      { href: "/files", icon: Files, label: "文件管理" },
+      { href: "/git", icon: GitBranch, label: "Git 仓库" },
+      { href: "/tasks", icon: CalendarClock, label: "后台任务" },
+      { href: "/logs", icon: ScrollText, label: "运行日志" },
+      { href: "/credentials", icon: KeyRound, label: "凭据管理" },
+      { href: "/free-models", icon: Sparkles, label: "免费模型" },
+      { href: "/dashboard", icon: BarChart3, label: "系统看板" },
+      { href: "/settings", icon: Settings, label: "系统设置" },
+    ],
+  },
+};
+
+function filterNavGroups(packs: PackFlags): Record<string, NavGroup> {
+  const out: Record<string, NavGroup> = {};
+  for (const [key, group] of Object.entries(navGroups)) {
+    const items = group.items.filter((item) => navItemAllowed(item.href, packs));
+    if (items.length > 0) out[key] = { ...group, items };
+  }
+  return out;
+}
+
+export function Sidebar({ className, onNavigate }: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(DEFAULT_WIDTH);
+  const caps = useNativeCapabilities({ staleTime: 60_000 });
+  const packs: PackFlags = caps.data?.packs ?? PACKS_FULL;
+  const visibleNavGroups = filterNavGroups(packs);
+
+  const activeTab =
+    Object.entries(visibleNavGroups).find(([, group]) =>
+      group.items.some((item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))),
+    )?.[0] ?? Object.keys(visibleNavGroups)[0] ?? "ai";
+  const activeGroup = visibleNavGroups[activeTab] ?? Object.values(visibleNavGroups)[0] ?? navGroups.ai;
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          setWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Number(saved))));
+        }
+      } catch {
+        // ignore
+      }
+    });
+  }, []);
+
+  const prefetchHref = useCallback(
+    (href: string) => {
+      safeRouterPrefetch(router, href);
+    },
+    [router],
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      setIsResizing(true);
+      startXRef.current = e.clientX;
+      startWidthRef.current = width;
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    },
+    [width]
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMove = (e: PointerEvent) => {
+      const delta = e.clientX - startXRef.current;
+      const next = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidthRef.current + delta));
+      setWidth(next);
+    };
+
+    const handleUp = () => {
+      setIsResizing(false);
+      try {
+        localStorage.setItem(STORAGE_KEY, String(width));
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp, { once: true });
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+    };
+  }, [isResizing, width]);
+
+  const renderNavItems = (group: NavGroup) => {
+    return (
+      <div className="space-y-0.5">
+        {group.items.map((item) => {
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          const ItemIcon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => onNavigate?.()}
+              onPointerEnter={() => prefetchHref(item.href)}
+              onFocus={() => prefetchHref(item.href)}
+              className={cn(
+                "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                isActive
+                  ? "om-nav-rail-active"
+                  : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+              )}
+            >
+              <ItemIcon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <aside
+      suppressHydrationWarning
+      className={cn(
+        "om-shell-rail relative flex shrink-0 flex-col border-r border-[var(--om-divider)]",
+        isResizing && "select-none",
+        className
+      )}
+      style={onNavigate ? undefined : { width }}
+    >
+      <div className="flex h-full flex-col overflow-hidden">
+        <Link href="/" className="flex shrink-0 items-center gap-3 border-b border-[var(--om-divider)] px-5 py-4 transition hover:bg-[var(--om-bg-mute)]">
+          <OasisMindLogo size={36} className="shrink-0" />
+          <div>
+            <p className="text-base font-bold tracking-tight text-[var(--om-text-1)]">见微</p>
+            <p className="text-xs text-[var(--om-text-3)]">OasisMind · 控制台</p>
+          </div>
+        </Link>
+
+        {/* 主导航：标签页 + 当前分组项 */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3">
+          <div className="flex gap-1 border-b border-[var(--om-divider)] pb-2">
+            {Object.entries(visibleNavGroups).map(([key, group]) => {
+              const Icon = group.icon;
+              return (
+                <Link
+                  key={key}
+                  href={group.items[0].href}
+                    className={cn(
+                      "flex flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium transition",
+                      activeTab === key
+                        ? "om-nav-pill-active"
+                        : "text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+                    )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="line-clamp-1">{group.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+          {renderNavItems(activeGroup)}
+        </div>
+      </div>
+
+      {!onNavigate && (
+        <div
+          onPointerDown={handlePointerDown}
+          className={cn(
+            "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize transition-colors hover:bg-[var(--om-brand)]/20",
+            isResizing && "bg-[var(--om-brand)]/30",
+          )}
+          aria-label="调整侧边栏宽度"
+          role="separator"
+        />
+      )}
+    </aside>
+  );
+}

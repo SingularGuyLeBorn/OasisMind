@@ -1,0 +1,9 @@
+{
+  "id": "G12",
+  "title": "晨间简报拉 Inbox",
+  "userMessage": "把昨夜 Inbox / 订阅源新增汇总成 5 条要点，挑值得沉淀的写成 knowledge 草稿，标签日报",
+  "expectToolsAnyOf": ["inbox_list"],
+  "forbidTools": ["write_file", "run_shell"],
+  "scenario": "eval_G12_morning_brief",
+  "notes": "先 inbox_list 拉增量；禁止 write_file 直写 posts"
+}

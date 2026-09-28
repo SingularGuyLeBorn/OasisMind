@@ -1,0 +1,1285 @@
+/**
+ * 统一配置管理
+ *
+ * 集中管理路径、端口、LLM、搜索与第三方集成配置。
+ * 环境变量优先读取无前缀键，其次 VITE_ 前缀（本机 .env 沿用 VITE_ 前缀写法）。
+ */
+
+import fs from "fs";
+import path from "path";
+import { load as loadYaml } from "js-yaml";
+import { z } from "zod";
+import {
+  DEFAULT_LLM_MODEL,
+  LLM_PROVIDER_DEEPSEEK,
+  LOCAL_LLM_DEFAULT_BASE_URLS,
+  resolvePackFlags,
+  type LocalLlmProviderId,
+  type PackFlags,
+} from "@oasismind/shared";
+import { buildEffectiveSearchPriorityString } from "./metablog/search/priority.js";
+
+/** config.yaml llm 段：弹性调用参数（缺省时走默认值） */
+const LlmYamlSchema = z.object({
+  /** 全局默认模型 id（空 = 回退 shared 常量 DEFAULT_LLM_MODEL；env DEFAULT_LLM_MODEL 优先） */
+  defaultModel: z.string().default(""),
+  maxRetries: z.coerce.number().int().min(0).default(3),
+  baseDelayMs: z.coerce.number().int().min(0).default(1000),
+  fallbackModels: z.array(z.string()).default([]),
+  /**
+   * 协议分流：auto 时 openai / deepseek 走 OpenAI Responses API（/v1/responses），
+   * 其余厂商仍走 /v1/chat/completions。mock-llm HTTP 默认仍 completions 以保持既有 E2E。
+   */
+  httpProtocol: z.enum(["auto", "chat.completions", "responses"]).default("auto"),
+  /**
+   * P3-03：providers 段可选覆盖各厂商 baseUrl（env <provider>_BASE_URL 仍优先；
+   * 此处次之；都未配则回退 llmClient.DEFAULT_BASE_URLS）。
+   * 例：providers: { deepseek: { baseUrl: "https://proxy.example.com/v1" } }
+   */
+  providers: z.record(
+    z.string(),
+    z.object({ baseUrl: z.string().default("") }).passthrough(),
+  ).default({}),
+  /** 角色化拆价：规划轮用强模型定骨架，执行轮用便宜模型省 token（默认关闭） */
+  roleSplit: z
+    .object({
+      enabled: z.boolean().default(false),
+      planningModel: z.string().default(""),
+      executionModel: z.string().default(""),
+      planningRounds: z.coerce.number().int().min(1).default(1),
+    })
+    .default({ enabled: false, planningModel: "", executionModel: "", planningRounds: 1 }),
+});
+
+/** config.yaml reflection 段：W7 反思（缺省时走默认值） */
+const ReflectionYamlSchema = z.object({
+  enabled: z.boolean().default(false),
+  maxRounds: z.coerce.number().int().min(0).default(1),
+  criticModel: z.string().default(""),
+});
+
+/** config.yaml memory 段：FTS 查询改写 + 向量混合检索 */
+const MemoryYamlSchema = z.object({
+  queryRewrite: z
+    .object({
+      /** FTS 前是否用轻量模型改写用户消息为检索关键词 */
+      enabled: z.boolean().default(true),
+      /** auto = resolveAuxiliaryModel 选免费轻量模型；也可钉死具体 id */
+      model: z.string().default("auto"),
+      /** 改写调用硬超时（毫秒），超时回退原文截断 */
+      timeoutMs: z.coerce.number().int().min(500).max(30_000).default(3000),
+    })
+    .default({ enabled: true, model: "auto", timeoutMs: 3000 }),
+  writeDedup: z
+    .object({
+      /** 写入前是否用轻量模型做语义级 ADD/UPDATE/NOOP/CONFLICT 判定 */
+      enabled: z.boolean().default(true),
+      /** auto = resolveAuxiliaryModel 选免费轻量模型；也可钉死具体 id */
+      model: z.string().default("auto"),
+      /** 判定调用硬超时（毫秒），超时回退 ADD */
+      timeoutMs: z.coerce.number().int().min(500).max(30_000).default(4000),
+      /** 检索多少条同 scope 同类型记忆作为邻居 */
+      neighborLimit: z.coerce.number().int().min(1).max(20).default(5),
+    })
+    .default({ enabled: true, model: "auto", timeoutMs: 4000, neighborLimit: 5 }),
+  experienceDistill: z
+    .object({
+      /** 是否把 experience 蒸馏成 procedural */
+      enabled: z.boolean().default(true),
+      /** 同一 scope 下最少积累多少条 experience 才触发 */
+      minCount: z.coerce.number().int().min(1).default(5),
+      /** 每次蒸馏最多读多少条 experience */
+      maxPerScope: z.coerce.number().int().min(1).default(30),
+      /** 蒸馏模型；auto = resolveAuxiliaryModel 选免费轻量模型 */
+      model: z.string().default("auto"),
+    })
+    .default({ enabled: true, minCount: 5, maxPerScope: 30, model: "auto" }),
+  trust: z
+    .object({
+      /** LLM 推断记忆（attribution=agent）的初始强度上限 */
+      agentInitialStrength: z.coerce.number().min(0).max(1).default(0.7),
+      experienceSuccess: z.coerce.number().min(0).max(1).default(1),
+      experienceUnverified: z.coerce.number().min(0).max(1).default(0.7),
+      experienceFailed: z.coerce.number().min(0).max(1).default(0.5),
+    })
+    .default({
+      agentInitialStrength: 0.7,
+      experienceSuccess: 1,
+      experienceUnverified: 0.7,
+      experienceFailed: 0.5,
+    }),
+  embedding: z
+    .object({
+      /** 开启后记忆检索走 FTS5+向量 RRF 融合；关闭（默认）保持纯 FTS5 */
+      enabled: z.boolean().default(false),
+      /** OpenAI 兼容端点 baseUrl（如 https://api.openai.com/v1）；env EMBEDDING_BASE_URL 可覆盖 */
+      baseUrl: z.string().default(""),
+      /** API key；env EMBEDDING_API_KEY 优先 */
+      apiKey: z.string().default(""),
+      model: z.string().default("text-embedding-3-small"),
+      /** 向量召回条数（与 FTS 召回做 RRF 融合） */
+      topK: z.coerce.number().int().min(1).max(100).default(20),
+    })
+    .default({ enabled: false, baseUrl: "", apiKey: "", model: "text-embedding-3-small", topK: 20 }),
+});
+
+/** config.yaml skills 段：Hermes 闭环 nudge / curator */
+const SkillsYamlSchema = z.object({
+  nudgeInterval: z.coerce.number().int().min(0).default(10),
+  /** background skill review 用模型；auto = OpenRouter 最强 :free（见 auxiliaryModel） */
+  reviewModel: z.string().default("auto"),
+  staleAfterDays: z.coerce.number().int().min(1).default(30),
+  archiveAfterDays: z.coerce.number().int().min(1).default(90),
+  curatorIntervalHours: z.coerce.number().int().min(1).default(168),
+});
+
+/** config.yaml goal 段：Chat Goal / Deep Research / Autonomous 外环 */
+const GoalYamlSchema = z.object({
+  maxTurns: z.coerce.number().int().min(1).max(200).default(20),
+  deepResearchMaxTurns: z.coerce.number().int().min(1).max(200).default(30),
+  /** autonomous 默认轮次预算；触顶→exhausted≠成功 */
+  autonomousMaxTurns: z.coerce.number().int().min(1).max(200).default(40),
+  /** autonomous 墙钟预算（毫秒），默认 30min */
+  autonomousMaxWallClockMs: z.coerce.number().int().min(60_000).default(1_800_000),
+  /** autonomous 完成前是否强制外部 gate 报告 */
+  autonomousRequireExternalGate: z.boolean().default(true),
+  /** 裁判模型；auto = OpenRouter strong_free */
+  judgeModel: z.string().default("auto"),
+});
+
+/** config.yaml harness 段：服务端核验门 + keep 前 harness-bench 闭环 */
+const HarnessYamlSchema = z.object({
+  gate: z
+    .object({
+      timeoutMs: z.coerce.number().int().min(5_000).max(600_000).default(180_000),
+      /** preset 名 → 完整命令；覆盖内置 server_lint / server_test / shared_lint */
+      presets: z.record(z.string()).default({}),
+    })
+    .default({}),
+  benchOnKeep: z
+    .object({
+      /** keep 前是否自动跑 harness-bench（mock 模式） */
+      enabled: z.boolean().default(true),
+      /** 最低通过率；低于此值 keep 被拒 */
+      minPassRate: z.coerce.number().min(0).max(1).default(1.0),
+    })
+    .default({ enabled: true, minPassRate: 1.0 }),
+});
+
+/** config.yaml inbox 段：截图监视目录 + 蒸馏默认花园 */
+const PacksYamlSchema = z.object({
+  /** lite | full | custom（custom/省略 = 按下列布尔，默认全开） */
+  profile: z.string().optional(),
+  swarm: z.boolean().optional(),
+  im: z.boolean().optional(),
+  mail: z.boolean().optional(),
+  browser: z.boolean().optional(),
+  research: z.boolean().optional(),
+  viz: z.boolean().optional(),
+});
+
+const InboxYamlSchema = z.object({
+  /** 截图监视目录；空 = data/inbox/screenshots/drop；可填 iCloud Photos 路径 */
+  screenshotWatchDir: z.string().default(""),
+  /** 蒸馏默认写入的花园 id */
+  defaultGarden: z.string().default("knowledge"),
+  /** 知乎收藏夹 URL 列表（定时同步可选） */
+  zhihuCollectionUrls: z.array(z.string()).default([]),
+});
+
+/** 主机访问：与 Workspace 沙箱正交。IM 远程助手显式 native:host_access 后才能碰 roots。 */
+const HostAccessYamlSchema = z.object({
+  enabled: z.boolean().default(false),
+  roots: z
+    .array(z.string())
+    .default([
+      "%USERPROFILE%/Desktop",
+      "%USERPROFILE%/Documents",
+      "%USERPROFILE%/Downloads",
+    ]),
+  /** 视为「桌面操控」的 MCP server 名（群聊拒绝；hostAccess.enabled=false 时不挂 schema） */
+  desktopMcpServers: z.array(z.string()).default(["windows-mcp"]),
+  /** 空 = 用运行时默认白名单（截屏/点按/开应用）。PowerShell/注册表/任意删文件不在默认内。 */
+  desktopMcpAllowedTools: z.array(z.string()).default([]),
+});
+
+/* ─── 类型定义 ─── */
+
+export interface LlmProviderConfig {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+export interface AppConfig {
+  port: number;
+  /**
+   * HTTP 监听地址。默认 127.0.0.1（防 LAN 误暴露）。
+   * Docker / 需外网直连时设 SERVER_HOST=0.0.0.0。
+   */
+  host: string;
+  projectRoot: string;
+  /** 知识库事实源根（posts/about/uploads），Git 跟踪 */
+  contentDir: string;
+  contentPaths: {
+    /** 种子花园便利路径（任意动态库请用 resolveGardenDir） */
+    posts: string;
+    resources: string;
+    about: string;
+    uploads: string;
+  };
+  /** Agent 配置根（agents/skills/memories/prompts/mcp/tasks/sources），Git 跟踪 */
+  configDir: string;
+  configPaths: {
+    agents: string;
+    skills: string;
+    mcp: string;
+    memories: string;
+    tasks: string;
+    prompts: string;
+    sources: string;
+  };
+  /** 运行时产物根（approvals/cookies/files/git/logs/messages/sessions/tools/workspace），.gitignore */
+  dataDir: string;
+  dataPaths: {
+    approvals: string;
+    cookies: string;
+    files: string;
+    git: string;
+    logs: string;
+    messages: string;
+    sessions: string;
+    tools: string;
+    /** 工具大结果落盘（DeerFlow offload） */
+    toolResults: string;
+    workspace: string;
+    /** 知识 Inbox 原始件（截图/平台收藏缓存） */
+    inbox: string;
+    /** Harness 实验快照（baseline / keep|discard） */
+    experiments: string;
+  };
+  /** 知识 Inbox：截图监视与蒸馏默认 */
+  inbox: {
+    screenshotWatchDir: string;
+    defaultGarden: string;
+    zhihuCollectionUrls: string[];
+  };
+  /** 上传目录（= contentPaths.uploads，保留旧名供 FileService 等沿用） */
+  uploadDir: string;
+  env: "development" | "production" | "test";
+  publicUrl: string;
+  corsOrigins: string[];
+  serverInternalUrl: string;
+  webHost: string;
+  emailProvider: string;
+  llm: {
+    defaultProvider: string;
+    /** 全局默认模型 id：env DEFAULT_LLM_MODEL > config.yaml llm.defaultModel > shared DEFAULT_LLM_MODEL 常量 */
+    defaultModel: string;
+    dailyBudget: number;
+    /**
+     * 本地日预算粗算单价（USD / 1K tokens）。≠厂商账单；免费模型见 llmBudget.isZeroCostModel。
+     * env LLM_BLENDED_USD_PER_1K 可覆盖。
+     */
+    blendedUsdPer1k: number;
+    maxToolRounds: number;
+    /** 单次 Agent 运行的总工具调用次数上限（#32a：用户确认 168） */
+    maxToolCallsPerRun: number;
+    /** 单次工具调用超时毫秒，超时则该工具返回错误结果而非永久挂起 */
+    toolCallTimeoutMs: number;
+    /** 单轮内并发执行的工具数上限，避免一次开太多工具调用拖垮后端/触发限流 */
+    toolCallConcurrency: number;
+    /** 弹性调用：失败重试次数（config.yaml llm.maxRetries） */
+    maxRetries: number;
+    /** 弹性调用：指数退避基数毫秒 */
+    baseDelayMs: number;
+    /** 弹性调用：重试耗尽后按序降级的备用模型（provider 由模型名推导） */
+    fallbackModels: string[];
+    /** 协议分流：auto | chat.completions | responses */
+    httpProtocol: "auto" | "chat.completions" | "responses";
+    providers: Record<string, LlmProviderConfig>;
+    /** 角色化拆价：规划轮/执行轮分模型（默认关闭） */
+    roleSplit: {
+      enabled: boolean;
+      planningModel: string;
+      executionModel: string;
+      planningRounds: number;
+    };
+  };
+  /** 异步 Agent 后台任务并发、超时与重试 */
+  asyncJobs: {
+    maxConcurrent: number;
+    maxPerSession: number;
+    /** per-workspace 公平配额（0 = 不限；不是容量权威，全局池才是） */
+    maxPerWorkspace: number;
+    /** 排队总数上限，满则入池拒绝并给调用方明确错误 */
+    maxQueued: number;
+    /** lightweight（纯工具/sleep）并发上限；与 LLM 槽正交 */
+    maxLightweightConcurrent: number;
+    taskTimeoutMs: number;
+    queuedTimeoutMs: number;
+    /** 每个父会话允许的 subagent 任务数量上限（防止失控） */
+    maxSubagentsPerSession: number;
+  };
+  /** OCR — 对齐 MetaBlog PaddleOCR + OCR.space */
+  ocr: {
+    paddleCliPath: string;
+    paddlePythonPath: string;
+    ppocrHome: string;
+    ocrSpaceApiKey: string;
+    ocrSpaceDefaultLang: string;
+    /** Tesseract.js 默认语言组合（纯 JS 兜底引擎，零 Python 依赖） */
+    tesseractLang: string;
+  };
+  /** 本地语音转文字（STT / Whisper；不是 TTS） */
+  stt: {
+    pythonPath: string;
+    whisperModel: string;
+    language: string;
+    ytDlpPath: string;
+    scriptPath: string;
+    /** 单次 STT 超时（毫秒）；同步工具仍受 llm.toolCallTimeoutMs 上限约束 */
+    timeoutMs: number;
+    downloadTimeoutMs: number;
+    /** yt-dlp 最长下载时长（秒），默认 20 分钟 */
+    maxDurationSec: number;
+  };
+  search: {
+    tinyfishApiKey: string;
+    tavilyApiKey: string;
+    serpApiKey: string;
+    baiduQianfanApiKey: string;
+    metasoApiKey: string;
+    bochaApiKey: string;
+    langsearchApiKey: string;
+    braveApiKey: string;
+    bingApiKey: string;
+    /** 逗号分隔，如 tinyfish,bing_crawler,tavily */
+    enginePriority: string;
+  };
+  integrations: {
+    feishu: {
+      appId: string;
+      appSecret: string;
+      userAccessToken: string;
+      tenantAccessToken: string;
+    };
+    yuque: {
+      session: string;
+      /** Web API CSRF（Cookie `_ctoken`），不是 Open API Token */
+      ctoken: string;
+      /** Open API v2 个人令牌（YUQUE_TOKEN） */
+      personalToken: string;
+    };
+    github: {
+      token: string;
+    };
+  };
+  auth: {
+    mode: "none" | "password";
+    password: string;
+    token: string;
+  };
+  cloudflare: {
+    tunnelToken: string;
+  };
+  /** Shell 执行策略（host_restricted = 用户选定的默认方案） */
+  shell: {
+    enabled: boolean;
+    mode: "disabled" | "host_restricted" | "host_full" | "docker";
+    timeoutMs: number;
+    maxOutputChars: number;
+    /** auto | powershell | cmd | bash */
+    shell: string;
+  };
+  /**
+   * 主机访问（与 Workspace 正交）。
+   * enabled=false 为总闸；roots 是允许的本机目录；desktopMcpServers 是桌面 MCP（如 windows-mcp）。
+   */
+  hostAccess: {
+    enabled: boolean;
+    roots: string[];
+    desktopMcpServers: string[];
+    desktopMcpAllowedTools?: string[];
+  };
+  /** SessionStreamHub 内存缓冲与持久化配置 */
+  stream: {
+    ringSize: number;
+    persist: boolean;
+    eventTtlMs: number;
+    cleanupIntervalMs: number;
+    /** Steering 投递：one-at-a-time | all */
+    steeringMode: "one-at-a-time" | "all";
+    /** Follow-up 投递：one-at-a-time | all */
+    followUpMode: "one-at-a-time" | "all";
+    /** 单个 Agent 运行最大存活时间（毫秒）；超时后 Hub 强制 abort 并清理，防止 runner 永不结束占槽 */
+    runTimeoutMs: number;
+    /** 运行中超过该时间无新事件（token/thinking/tool）则强制 abort；0 = 关闭 */
+    runStallTimeoutMs: number;
+  };
+  /** 长对话 Auto-Compact */
+  compact: {
+    enabled: boolean;
+    /** 占模型 context window 的触发比例（0.1–0.95） */
+    triggerRatio: number;
+    keepRecent: number;
+    /**
+     * 压缩时按 token 粗估保留的最近上下文（默认 20000）。
+     * 切点从不落在 toolCall/toolResult 之间；过短时向旧侧移动到安全边界。
+     */
+    keepRecentTokens: number;
+    /**
+     * 摘要专用模型。`auto`（默认）= 优先 OpenRouter `:free`，其次 freellm 网关模型，否则回退主对话模型。
+     * 也可填具体 model id（如 `deepseek/deepseek-r1:free`）。
+     */
+    summaryModel: string;
+    microCompact: {
+      enabled: boolean;
+      toolResultMaxChars: number;
+    };
+    /**
+     * 工具结果全量落盘 + 超阈值时对 LLM 压缩。
+     * 一律写 data/tool-results + index.jsonl；thresholdChars 只控制是否对 LLM 做摘要替换。
+     */
+    toolResultOffload: {
+      enabled: boolean;
+      /** 超过此长度才对 LLM 压缩；落盘始终执行 */
+      thresholdChars: number;
+      /** 命中点前后各保留字符数（写入 metadata.hitOffsets / recommendedRead） */
+      contextWindow: number;
+      /** 无命中时推荐采样步长（写入 metadata.sampleOffsets） */
+      chunkStrideChars: number;
+      /** 落盘保留天数；≤0 表示不自动清理 */
+      retentionDays: number;
+    };
+    /** 同参连续 tool call 熔断阈值（DeerFlow LoopDetection） */
+    toolLoopStreakLimit: number;
+    memoryFlush: {
+      enabled: boolean;
+      maxFacts: number;
+    };
+  };
+  /** 心跳：决策层 + Loop Contract 默认 */
+  heartbeat: {
+    /** W2：总开关；false = 回退到点即 dispatch */
+    decisionEnabled: boolean;
+    /** quiet/monitor 退避 skipTicks 上限 */
+    quietCap: number;
+    /** 连续 K 次 quiet → terminal */
+    terminalAfterQuiet: number;
+    /** wait_user_gate 同 gate 通知冷却（毫秒） */
+    gateNotifyCooldownMs: number;
+    loopContract: {
+      maxStaleRounds: number;
+      maxEvidence: number;
+    };
+  };
+  /** W3：审批 gate 通知冷却（per-approval lastNotifiedAt） */
+  approvalGate: {
+    /** 同一审批冷却窗口内不重复通知（毫秒）；默认 30min */
+    notifyCooldownMs: number;
+  };
+  /** W7 反思：loop 进入 done 前一票结构化 critic（默认关闭） */
+  reflection: {
+    enabled: boolean;
+    /** 最大反思重修轮数；0 = 只审不修（不通过直接标记放行） */
+    maxRounds: number;
+    /** critic 使用的便宜模型；空 = 与主 Agent 模型相同 */
+    criticModel: string;
+  };
+  /** 记忆检索：FTS 查询改写 + 向量混合检索 */
+  memory: {
+    /** 用户消息 → 检索关键词改写 */
+    queryRewrite: {
+      enabled: boolean;
+      model: string;
+      timeoutMs: number;
+    };
+    /** 写入语义判定：Mem0 四元判定 ADD/UPDATE/NOOP/CONFLICT */
+    writeDedup: {
+      enabled: boolean;
+      model: string;
+      timeoutMs: number;
+      neighborLimit: number;
+    };
+    /** 经验蒸馏：把 experience 沉淀为 procedural */
+    experienceDistill: {
+      enabled: boolean;
+      minCount: number;
+      maxPerScope: number;
+      model: string;
+    };
+    /** 记忆信任分级 */
+    trust: {
+      agentInitialStrength: number;
+      experienceSuccess: number;
+      experienceUnverified: number;
+      experienceFailed: number;
+    };
+    embedding: {
+      enabled: boolean;
+      baseUrl: string;
+      apiKey: string;
+      model: string;
+      topK: number;
+    };
+  };
+  /** Hermes Skill 闭环：回合后审查阈值 + curator */
+  skills: {
+    /** 本轮 tool 调用次数 ≥ 此值则触发 background skill review；0 = 关闭 */
+    nudgeInterval: number;
+    /**
+     * 审查旁路模型（对标 Hermes auxiliary.background_review）。
+     * auto = OpenRouter 目录里按 strong_free 打分挑最强 :free；也可钉死具体 id。
+     */
+    reviewModel: string;
+    /** curator：闲置超过 N 天标 stale */
+    staleAfterDays: number;
+    /** curator：闲置超过 N 天归档（非硬删） */
+    archiveAfterDays: number;
+    /** curator 最小间隔小时 */
+    curatorIntervalHours: number;
+  };
+  /** Chat Goal / Deep Research / Autonomous 外环 */
+  goal: {
+    maxTurns: number;
+    deepResearchMaxTurns: number;
+    autonomousMaxTurns: number;
+    autonomousMaxWallClockMs: number;
+    autonomousRequireExternalGate: boolean;
+    judgeModel: string;
+  };
+  /** Harness：服务端核验门 allowlist + keep 前 bench 闭环 */
+  harness: {
+    gate: {
+      timeoutMs: number;
+      presets: Record<string, string>;
+    };
+    benchOnKeep: {
+      enabled: boolean;
+      minPassRate: number;
+    };
+  };
+  /**
+   * 能力包（Core+Packs）。core/chat 恒 true。
+   * config.yaml packs + OM_PACKS=lite|full + OM_PACKS_DISABLE/ENABLE。
+   */
+  packs: PackFlags;
+}
+
+/* ─── 环境变量 ─── */
+
+function readEnv(...keys: string[]): string {
+  for (const key of keys) {
+    const val = process.env[key];
+    if (val && val.trim()) return val.trim();
+  }
+  return "";
+}
+
+function readProvider(modelKeys: string[], apiKeyKeys: string[], baseUrlKeys: string[], defaultModel: string): LlmProviderConfig {
+  return {
+    apiKey: readEnv(...apiKeyKeys),
+    model: readEnv(...modelKeys) || defaultModel,
+    baseUrl: readEnv(...baseUrlKeys),
+  };
+}
+
+/** 本地 OpenAI 兼容后端：无 key 时填 local；无 baseUrl 时填默认端口 */
+function readLocalProvider(
+  id: LocalLlmProviderId,
+  modelKeys: string[],
+  apiKeyKeys: string[],
+  baseUrlKeys: string[],
+  defaultModel: string,
+): LlmProviderConfig {
+  const base = readProvider(modelKeys, apiKeyKeys, baseUrlKeys, defaultModel);
+  return {
+    apiKey: base.apiKey || "local",
+    model: base.model,
+    baseUrl: base.baseUrl || LOCAL_LLM_DEFAULT_BASE_URLS[id],
+  };
+}
+
+/* ─── 路径解析 ─── */
+
+function resolveProjectRoot(): string {
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), "../.."),
+    path.resolve(process.cwd(), "../../.."),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "pnpm-workspace.yaml"))) {
+      return candidate;
+    }
+  }
+
+  return path.resolve(process.cwd(), "../..");
+}
+
+function loadYamlConfig(projectRoot: string): Record<string, unknown> {
+  const yamlPath = path.join(projectRoot, "config.yaml");
+  if (!fs.existsSync(yamlPath)) return {};
+  try {
+    const raw = fs.readFileSync(yamlPath, "utf8");
+    return (loadYaml(raw) as Record<string, unknown>) || {};
+  } catch (err) {
+    console.warn("[config] 读取 config.yaml 失败，使用默认配置:", err instanceof Error ? err.message : err);
+    return {};
+  }
+}
+
+function resolveStorageRoot(projectRoot: string, name: "content" | "config" | "data", envName: string): string {
+  // 测试隔离：OM_CONTENT_DIR / OM_CONFIG_DIR / OM_DATA_DIR 各自覆盖对应根目录
+  const envDir = process.env[envName]?.trim();
+  if (envDir) {
+    return path.isAbsolute(envDir) ? envDir : path.resolve(projectRoot, envDir);
+  }
+  // 唯一事实源：项目根下的 content|config|data（由 resolveProjectRoot 定位）
+  // 禁止回退 process.cwd()——从 apps/server 启动时会误建 apps/server/content/
+  return path.join(projectRoot, name);
+}
+
+/** 加载项目根目录 .env（幂等）。已加载的 process.env 键不覆盖。 */
+/**
+ * 加载 monorepo 根目录 .env。
+ * - 默认：已存在的环境变量不覆盖（测试 / CI 注入优先）
+ * - override:true：根 .env 为权威（开发重启后白名单等必以文件为准，避免父进程旧 env 卡住）
+ */
+/** E2E / 单测注入的隔离键：override 也不得盖掉，否则会连回 dev.db、wipe 假成功 */
+const ENV_ISOLATION_KEYS = new Set([
+  "DATABASE_URL",
+  "OM_CONTENT_DIR",
+  "OM_CONFIG_DIR",
+  "OM_DATA_DIR",
+  "SERVER_PORT",
+  "MOCK_LLM",
+  "MOCK_LLM_URL",
+  "MOCK_LLM_HOST",
+  "MOCK_LLM_SCENARIO",
+  "MOCK_LLM_FAIL",
+  "MOCK_LLM_DELAY_MS",
+  "MOCK_LLM_STREAM_BREAK",
+  "MOCK_LLM_REQUEST_ID",
+  "MOCK_LLM_PROVIDER",
+  "MOCK_LLM_QUIRK",
+  "MOCK_LLM_CASSETTE",
+  "MOCK_LLM_CASSETTE_DIR",
+  "MOCK_MCP",
+  "MOCK_NATIVE_TOOLS",
+]);
+
+export function loadRootEnv(projectRoot?: string, opts?: { override?: boolean }): void {
+  const root = projectRoot || resolveProjectRoot();
+  const envPath = path.join(root, ".env");
+  if (!fs.existsSync(envPath)) return;
+  // 去 BOM，避免首行 key 变成 \uFEFFXXX
+  const content = fs.readFileSync(envPath, "utf8").replace(/^\uFEFF/, "");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    } else {
+      const hash = value.indexOf(" #");
+      if (hash >= 0) value = value.slice(0, hash).trimEnd();
+    }
+    if (opts?.override && ENV_ISOLATION_KEYS.has(key) && process.env[key] !== undefined) {
+      continue;
+    }
+    if (opts?.override || process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+/* ─── 工厂函数 ─── */
+
+export function createAppConfig(): AppConfig {
+  const projectRoot = resolveProjectRoot();
+  const contentDir = resolveStorageRoot(projectRoot, "content", "OM_CONTENT_DIR");
+  const configDir = resolveStorageRoot(projectRoot, "config", "OM_CONFIG_DIR");
+  const dataDir = resolveStorageRoot(projectRoot, "data", "OM_DATA_DIR");
+
+  const providers: Record<string, LlmProviderConfig> = {
+    [LLM_PROVIDER_DEEPSEEK]: readProvider(
+      ["DEEPSEEK_MODEL", "VITE_DEEPSEEK_MODEL"],
+      ["DEEPSEEK_API_KEY", "VITE_DEEPSEEK_API_KEY"],
+      ["DEEPSEEK_BASE_URL", "VITE_DEEPSEEK_BASE_URL"],
+      DEFAULT_LLM_MODEL,
+    ),
+    kimi: readProvider(
+      ["KIMI_MODEL", "VITE_KIMI_MODEL"],
+      ["KIMI_API_KEY", "VITE_KIMI_API_KEY"],
+      ["KIMI_BASE_URL", "VITE_KIMI_BASE_URL"],
+      "kimi-latest",
+    ),
+    zhipu: readProvider(
+      ["ZHIPU_MODEL", "VITE_ZHIPU_MODEL"],
+      ["ZHIPU_API_KEY", "VITE_ZHIPU_API_KEY"],
+      ["ZHIPU_BASE_URL", "VITE_ZHIPU_BASE_URL"],
+      "glm-4-flash",
+    ),
+    openai: readProvider(
+      ["OPENAI_MODEL", "VITE_OPENAI_MODEL"],
+      ["OPENAI_API_KEY", "VITE_OPENAI_API_KEY"],
+      ["OPENAI_BASE_URL", "VITE_OPENAI_BASE_URL"],
+      "gpt-4o-mini",
+    ),
+    gemini: readProvider(
+      ["GEMINI_MODEL", "VITE_GEMINI_MODEL"],
+      ["GEMINI_API_KEY", "VITE_GEMINI_API_KEY"],
+      ["GEMINI_BASE_URL", "VITE_GEMINI_BASE_URL"],
+      "gemini-1.5-flash",
+    ),
+    anthropic: readProvider(
+      ["ANTHROPIC_MODEL", "VITE_ANTHROPIC_MODEL"],
+      ["ANTHROPIC_API_KEY", "VITE_ANTHROPIC_API_KEY"],
+      ["ANTHROPIC_BASE_URL", "VITE_ANTHROPIC_BASE_URL"],
+      "claude-3-5-sonnet-latest",
+    ),
+    qwen: readProvider(
+      ["QWEN_MODEL", "VITE_QWEN_MODEL"],
+      ["QWEN_API_KEY", "VITE_QWEN_API_KEY"],
+      ["QWEN_BASE_URL", "VITE_QWEN_BASE_URL"],
+      "qwen-plus",
+    ),
+    baichuan: readProvider(
+      ["BAICHUAN_MODEL", "VITE_BAICHUAN_MODEL"],
+      ["BAICHUAN_API_KEY", "VITE_BAICHUAN_API_KEY"],
+      ["BAICHUAN_BASE_URL", "VITE_BAICHUAN_BASE_URL"],
+      "Baichuan4",
+    ),
+    "01ai": readProvider(
+      ["01AI_MODEL", "VITE_01AI_MODEL"],
+      ["01AI_API_KEY", "VITE_01AI_API_KEY"],
+      ["01AI_BASE_URL", "VITE_01AI_BASE_URL"],
+      "yi-large",
+    ),
+    xai: readProvider(
+      ["XAI_MODEL", "VITE_XAI_MODEL"],
+      ["XAI_API_KEY", "VITE_XAI_API_KEY"],
+      ["XAI_BASE_URL", "VITE_XAI_BASE_URL"],
+      "grok-beta",
+    ),
+    cohere: readProvider(
+      ["COHERE_MODEL", "VITE_COHERE_MODEL"],
+      ["COHERE_API_KEY", "VITE_COHERE_API_KEY"],
+      ["COHERE_BASE_URL", "VITE_COHERE_BASE_URL"],
+      "command-r-plus",
+    ),
+    mistral: readProvider(
+      ["MISTRAL_MODEL", "VITE_MISTRAL_MODEL"],
+      ["MISTRAL_API_KEY", "VITE_MISTRAL_API_KEY"],
+      ["MISTRAL_BASE_URL", "VITE_MISTRAL_BASE_URL"],
+      "mistral-large-latest",
+    ),
+    openrouter: readProvider(
+      ["OPENROUTER_MODEL", "VITE_OPENROUTER_MODEL"],
+      ["OPENROUTER_API_KEY", "VITE_OPENROUTER_API_KEY"],
+      ["OPENROUTER_BASE_URL", "VITE_OPENROUTER_BASE_URL"],
+      "anthropic/claude-3.5-sonnet",
+    ),
+    ollama: readLocalProvider(
+      "ollama",
+      ["OLLAMA_MODEL", "VITE_OLLAMA_MODEL"],
+      ["OLLAMA_API_KEY", "VITE_OLLAMA_API_KEY"],
+      ["OLLAMA_BASE_URL", "VITE_OLLAMA_BASE_URL"],
+      "llama3.2",
+    ),
+    llamacpp: readLocalProvider(
+      "llamacpp",
+      ["LLAMACPP_MODEL", "VITE_LLAMACPP_MODEL"],
+      ["LLAMACPP_API_KEY", "VITE_LLAMACPP_API_KEY"],
+      ["LLAMACPP_BASE_URL", "VITE_LLAMACPP_BASE_URL"],
+      "local",
+    ),
+    lmstudio: readLocalProvider(
+      "lmstudio",
+      ["LMSTUDIO_MODEL", "VITE_LMSTUDIO_MODEL"],
+      ["LMSTUDIO_API_KEY", "VITE_LMSTUDIO_API_KEY"],
+      ["LMSTUDIO_BASE_URL", "VITE_LMSTUDIO_BASE_URL"],
+      "local",
+    ),
+    vllm: readLocalProvider(
+      "vllm",
+      ["VLLM_MODEL", "VITE_VLLM_MODEL"],
+      ["VLLM_API_KEY", "VITE_VLLM_API_KEY"],
+      ["VLLM_BASE_URL", "VITE_VLLM_BASE_URL"],
+      "local",
+    ),
+  };
+
+  const paddleCliDefault = path.join(projectRoot, "tools", "ocr", "paddleocr_cli.py");
+  const yamlConfig = loadYamlConfig(projectRoot);
+  const streamConfig = (yamlConfig.stream as Record<string, unknown>) || {};
+  const compactConfig = (yamlConfig.compact as Record<string, unknown>) || {};
+  const asyncJobsConfig = (yamlConfig.asyncJobs as Record<string, unknown>) || {};
+  const heartbeatYaml = (yamlConfig.heartbeat as Record<string, unknown>) || {};
+  const loopContractYaml = (heartbeatYaml.loopContract as Record<string, unknown>) || {};
+  const approvalGateYaml = (yamlConfig.approvalGate as Record<string, unknown>) || {};
+  // llm 段 zod 解析：解析失败（如字段类型错误）回退默认值，不阻断启动
+  const llmYamlParsed = LlmYamlSchema.safeParse(yamlConfig.llm ?? {});
+  const llmYaml = llmYamlParsed.success ? llmYamlParsed.data : LlmYamlSchema.parse({});
+  // P3-03：config.yaml llm.providers 段可选覆盖各厂商 baseUrl。
+  // 优先级：env <provider>_BASE_URL > config.yaml providers.<id>.baseUrl > llmClient.DEFAULT_BASE_URLS（最后这层在 llmClient 里）。
+  // 此处只补齐 env 未设的 baseUrl，env 优先保留。
+  for (const [pid, pYaml] of Object.entries(llmYaml.providers)) {
+    if (providers[pid] && !providers[pid].baseUrl && pYaml.baseUrl) {
+      providers[pid].baseUrl = pYaml.baseUrl;
+    }
+  }
+  // reflection 段同上：旧 config.yaml 无此段 → 默认关闭
+  const reflectionYamlParsed = ReflectionYamlSchema.safeParse(yamlConfig.reflection ?? {});
+  const reflectionYaml = reflectionYamlParsed.success
+    ? reflectionYamlParsed.data
+    : ReflectionYamlSchema.parse({});
+  const memoryYamlParsed = MemoryYamlSchema.safeParse(yamlConfig.memory ?? {});
+  const memoryYaml = memoryYamlParsed.success ? memoryYamlParsed.data : MemoryYamlSchema.parse({});
+  const skillsYamlParsed = SkillsYamlSchema.safeParse(yamlConfig.skills ?? {});
+  const skillsYaml = skillsYamlParsed.success ? skillsYamlParsed.data : SkillsYamlSchema.parse({});
+  const goalYamlParsed = GoalYamlSchema.safeParse(yamlConfig.goal ?? {});
+  const goalYaml = goalYamlParsed.success ? goalYamlParsed.data : GoalYamlSchema.parse({});
+  const harnessYamlParsed = HarnessYamlSchema.safeParse(yamlConfig.harness ?? {});
+  const harnessYaml = harnessYamlParsed.success
+    ? harnessYamlParsed.data
+    : HarnessYamlSchema.parse({});
+  const inboxYamlParsed = InboxYamlSchema.safeParse(yamlConfig.inbox ?? {});
+  const inboxYaml = inboxYamlParsed.success ? inboxYamlParsed.data : InboxYamlSchema.parse({});
+  const packsYamlParsed = PacksYamlSchema.safeParse(yamlConfig.packs ?? {});
+  const packsYaml = packsYamlParsed.success ? packsYamlParsed.data : PacksYamlSchema.parse({});
+  const hostAccessYamlParsed = HostAccessYamlSchema.safeParse(yamlConfig.hostAccess ?? {});
+  const hostAccessYaml = hostAccessYamlParsed.success
+    ? hostAccessYamlParsed.data
+    : HostAccessYamlSchema.parse({});
+  const packs = resolvePackFlags({
+    profile: packsYaml.profile,
+    yaml: {
+      swarm: packsYaml.swarm,
+      im: packsYaml.im,
+      mail: packsYaml.mail,
+      browser: packsYaml.browser,
+      research: packsYaml.research,
+      viz: packsYaml.viz,
+    },
+  });
+
+  const config: AppConfig = {
+    port: parseInt(process.env.SERVER_PORT || "3010", 10),
+    host: (process.env.SERVER_HOST || "127.0.0.1").trim() || "127.0.0.1",
+    projectRoot,
+    contentDir,
+    contentPaths: {
+      posts: path.join(contentDir, "posts"),
+      resources: path.join(contentDir, "resources"),
+      about: path.join(contentDir, "about"),
+      uploads: path.join(contentDir, "uploads"),
+    },
+    configDir,
+    configPaths: {
+      agents: path.join(configDir, "agents"),
+      skills: path.join(configDir, "skills"),
+      mcp: path.join(configDir, "mcp"),
+      memories: path.join(configDir, "memories"),
+      tasks: path.join(configDir, "tasks"),
+      prompts: path.join(configDir, "prompts"),
+      sources: path.join(configDir, "sources"),
+    },
+    dataDir,
+    dataPaths: {
+      approvals: path.join(dataDir, "approvals"),
+      cookies: path.join(dataDir, "cookies"),
+      files: path.join(dataDir, "files"),
+      git: path.join(dataDir, "git"),
+      logs: path.join(dataDir, "logs"),
+      messages: path.join(dataDir, "messages"),
+      sessions: path.join(dataDir, "sessions"),
+      tools: path.join(dataDir, "tools"),
+      toolResults: path.join(dataDir, "tool-results"),
+      workspace: path.join(dataDir, "workspace"),
+      inbox: path.join(dataDir, "inbox"),
+      experiments: path.join(dataDir, "experiments"),
+    },
+    inbox: {
+      screenshotWatchDir: readEnv("OM_INBOX_SCREENSHOT_DIR") || inboxYaml.screenshotWatchDir,
+      defaultGarden: inboxYaml.defaultGarden || "knowledge",
+      zhihuCollectionUrls: inboxYaml.zhihuCollectionUrls,
+    },
+    uploadDir: path.join(contentDir, "uploads"),
+    env: (process.env.NODE_ENV || "development") as AppConfig["env"],
+    publicUrl: readEnv("PUBLIC_URL"),
+    corsOrigins: readEnv("CORS_ORIGINS")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    serverInternalUrl: readEnv("SERVER_INTERNAL_URL") || "http://127.0.0.1:3010",
+    webHost: readEnv("WEB_HOST") || "127.0.0.1",
+    emailProvider: readEnv("EMAIL_PROVIDER") || "none",
+    llm: {
+      defaultProvider: readEnv("LLM_DEFAULT_PROVIDER") || LLM_PROVIDER_DEEPSEEK,
+      defaultModel: readEnv("DEFAULT_LLM_MODEL") || llmYaml.defaultModel || DEFAULT_LLM_MODEL,
+      dailyBudget: parseFloat(readEnv("LLM_DAILY_BUDGET") || "10"),
+      // 默认 $0.10 / 1M tokens（≈ DeepSeek flash 输入偏多时的本地粗算）；旧值 0.0005=$0.50/1M 易虚高
+      blendedUsdPer1k: (() => {
+        const raw = readEnv("LLM_BLENDED_USD_PER_1K");
+        const n = raw ? Number(raw) : 0.0001;
+        return Number.isFinite(n) && n >= 0 ? n : 0.0001;
+      })(),
+      // 默认 12 轮：覆盖绝大多数 ReAct 场景，避免坏 LLM 空转到 100 轮长时间转圈
+      maxToolRounds: Math.max(1, parseInt(readEnv("AGENT_MAX_TOOL_ROUNDS") || "12", 10)),
+      // P1-02：单次运行总工具调用上限默认 60（原 168 偏高，坏 LLM 可烧数十分钟才被叫停）。
+      // 60 覆盖正常 ReAct（多数任务 <30 工具调用），坏 LLM 更快被兜底；env 可覆盖调高。
+      maxToolCallsPerRun: Math.max(1, parseInt(readEnv("AGENT_MAX_TOOL_CALLS_PER_RUN") || "60", 10)),
+      // 默认 30s 超时 + 并发 2：收紧以避免慢工具（fetch/MCP）长时间占槽导致卡死；
+      // 慢工具应由 async_task_run 转异步而非阻塞主循环。
+      // env 非数字时 parseInt 得 NaN（Math.max 打穿成 NaN），Number.isFinite 守卫回退默认 30000
+      toolCallTimeoutMs: (() => {
+        const parsed = parseInt(readEnv("AGENT_TOOL_CALL_TIMEOUT_MS"), 10);
+        return Number.isFinite(parsed) ? Math.max(2000, parsed) : 30000;
+      })(),
+      toolCallConcurrency: Math.max(1, parseInt(readEnv("AGENT_TOOL_CALL_CONCURRENCY") || "2", 10)),
+      maxRetries: llmYaml.maxRetries,
+      baseDelayMs: llmYaml.baseDelayMs,
+      fallbackModels: llmYaml.fallbackModels,
+      httpProtocol: llmYaml.httpProtocol,
+      providers,
+      roleSplit: {
+        enabled: llmYaml.roleSplit.enabled,
+        planningModel: llmYaml.roleSplit.planningModel,
+        executionModel: llmYaml.roleSplit.executionModel,
+        planningRounds: llmYaml.roleSplit.planningRounds,
+      },
+    },
+    asyncJobs: {
+      // yaml 为教学默认；AGENT_ASYNC_* 环境变量可覆盖
+      maxConcurrent: Math.max(
+        1,
+        parseInt(
+          readEnv("AGENT_ASYNC_MAX_CONCURRENT") || String(asyncJobsConfig.maxConcurrent ?? "2"),
+          10,
+        ),
+      ),
+      maxPerSession: Math.max(
+        1,
+        parseInt(
+          readEnv("AGENT_ASYNC_MAX_PER_SESSION") || String(asyncJobsConfig.maxPerSession ?? "2"),
+          10,
+        ),
+      ),
+      maxPerWorkspace: Math.max(
+        0,
+        parseInt(
+          readEnv("AGENT_ASYNC_MAX_PER_WORKSPACE") || String(asyncJobsConfig.maxPerWorkspace ?? "0"),
+          10,
+        ),
+      ),
+      maxQueued: Math.max(
+        1,
+        parseInt(readEnv("AGENT_ASYNC_MAX_QUEUED") || String(asyncJobsConfig.maxQueued ?? "100"), 10),
+      ),
+      maxLightweightConcurrent: Math.max(
+        1,
+        parseInt(
+          readEnv("AGENT_ASYNC_MAX_LIGHTWEIGHT") ||
+            String(asyncJobsConfig.maxLightweightConcurrent ?? "2"),
+          10,
+        ),
+      ),
+      taskTimeoutMs: Math.max(
+        10_000,
+        parseInt(
+          readEnv("AGENT_ASYNC_TASK_TIMEOUT_MS") || String(asyncJobsConfig.taskTimeoutMs ?? "300000"),
+          10,
+        ),
+      ),
+      queuedTimeoutMs: Math.max(
+        0,
+        parseInt(
+          readEnv("AGENT_ASYNC_QUEUED_TIMEOUT_MS") || String(asyncJobsConfig.queuedTimeoutMs ?? "0"),
+          10,
+        ),
+      ),
+      maxSubagentsPerSession: Math.max(
+        1,
+        parseInt(
+          readEnv("AGENT_MAX_SUBAGENTS_PER_SESSION") ||
+            String(asyncJobsConfig.maxSubagentsPerSession ?? "10"),
+          10,
+        ),
+      ),
+    },
+    ocr: {
+      paddleCliPath: readEnv("PADDLEOCR_CLI_PATH") || paddleCliDefault,
+      paddlePythonPath:
+        readEnv("PADDLEOCR_PYTHON_PATH") ||
+        (process.platform === "win32" ? "" : "python3"),
+      ppocrHome: readEnv("PPOCR_HOME") || path.join(projectRoot, "weights", "ocr", "paddleocr"),
+      ocrSpaceApiKey: readEnv("OCR_SPACE_API_KEY"),
+      ocrSpaceDefaultLang: readEnv("OCR_SPACE_DEFAULT_LANG") || "chs",
+      tesseractLang: readEnv("TESSERACT_LANG") || "chi_sim+eng",
+    },
+    stt: {
+      pythonPath: readEnv("STT_PYTHON_PATH") || readEnv("PADDLEOCR_PYTHON_PATH") || "",
+      whisperModel: readEnv("STT_WHISPER_MODEL") || "small",
+      language: readEnv("STT_LANGUAGE") || "zh",
+      ytDlpPath: readEnv("STT_YT_DLP_PATH") || "yt-dlp",
+      scriptPath: "",
+      timeoutMs: Math.max(30_000, parseInt(readEnv("STT_TIMEOUT_MS") || "600000", 10)),
+      downloadTimeoutMs: Math.max(
+        30_000,
+        parseInt(readEnv("STT_DOWNLOAD_TIMEOUT_MS") || "600000", 10),
+      ),
+      maxDurationSec: Math.max(60, parseInt(readEnv("STT_MAX_DURATION_SEC") || "1200", 10)),
+    },
+    search: (() => {
+      const tinyfishApiKey = readEnv("SEARCH_TINYFISH_API_KEY", "TINYFISH_API_KEY");
+      const tavilyApiKey = readEnv("SEARCH_TAVILY_API_KEY", "TAVILY_API_KEY");
+      const serpApiKey = readEnv("SEARCH_SERPAPI_API_KEY", "SERPAPI_API_KEY");
+      const baiduQianfanApiKey = readEnv("SEARCH_BAIDU_QIANFAN_API_KEY", "BAIDU_QIANFAN_API_KEY", "QIANFAN_API_KEY");
+      return {
+        tinyfishApiKey,
+        tavilyApiKey,
+        serpApiKey,
+        baiduQianfanApiKey,
+        metasoApiKey: readEnv("SEARCH_METASO_API_KEY", "METASO_API_KEY"),
+        bochaApiKey: readEnv("SEARCH_BOCHA_API_KEY", "BOCHA_API_KEY"),
+        langsearchApiKey: readEnv("SEARCH_LANGSEARCH_API_KEY", "LANGSEARCH_API_KEY"),
+        braveApiKey: readEnv("SEARCH_BRAVE_API_KEY", "BRAVE_API_KEY"),
+        bingApiKey: readEnv("SEARCH_BING_API_KEY", "BING_API_KEY"),
+        enginePriority: buildEffectiveSearchPriorityString({
+          envPriority: readEnv("SEARCH_ENGINE_PRIORITY"),
+          tinyfishApiKey,
+          tavilyApiKey,
+          serpApiKey,
+          baiduQianfanApiKey,
+        }),
+      };
+    })(),
+    integrations: {
+      feishu: {
+        appId: readEnv("FEISHU_APP_ID"),
+        appSecret: readEnv("FEISHU_APP_SECRET"),
+        userAccessToken: readEnv("FEISHU_USER_ACCESS_TOKEN"),
+        tenantAccessToken: readEnv("FEISHU_TENANT_ACCESS_TOKEN"),
+      },
+      yuque: {
+        session: readEnv("YUQUE_SESSION"),
+        ctoken: readEnv("YUQUE_CTOKEN"),
+        personalToken: readEnv("YUQUE_TOKEN", "YUQUE_PERSONAL_TOKEN"),
+      },
+      github: {
+        token: readEnv("GITHUB_TOKEN", "VITE_GITHUB_TOKEN"),
+      },
+    },
+    auth: {
+      mode: readEnv("AUTH_MODE") === "password" ? "password" : "none",
+      password: readEnv("AUTH_PASSWORD"),
+      token: readEnv("AUTH_TOKEN") || readEnv("AUTH_PASSWORD"),
+    },
+    cloudflare: {
+      tunnelToken: readEnv("CLOUDFLARE_TUNNEL_TOKEN"),
+    },
+    shell: {
+      // P0-02：默认关闭，须显式 SHELL_ENABLED=true（防未授权本机命令面）
+      enabled: readEnv("SHELL_ENABLED", "SHELL_TOOL_ENABLED") === "true",
+      mode: (() => {
+        const raw = readEnv("SHELL_MODE") || "host_restricted";
+        if (raw === "disabled" || raw === "host_restricted" || raw === "host_full" || raw === "docker") {
+          return raw;
+        }
+        return "host_restricted";
+      })(),
+      timeoutMs: Math.max(1000, parseInt(readEnv("SHELL_TIMEOUT_MS") || "30000", 10)),
+      maxOutputChars: Math.max(1000, parseInt(readEnv("SHELL_MAX_OUTPUT_CHARS") || "12000", 10)),
+      shell: readEnv("SHELL_BINARY") || "auto",
+    },
+    hostAccess: {
+      enabled: hostAccessYaml.enabled,
+      roots: hostAccessYaml.roots,
+      desktopMcpServers: hostAccessYaml.desktopMcpServers,
+      desktopMcpAllowedTools: hostAccessYaml.desktopMcpAllowedTools,
+    },
+    stream: {
+      ringSize: Math.max(10, parseInt(String(streamConfig.ringSize ?? "500"), 10)),
+      persist: String(streamConfig.persist ?? "true") !== "false",
+      eventTtlMs: Math.max(0, parseInt(String(streamConfig.eventTtlMs ?? "300000"), 10)),
+      cleanupIntervalMs: Math.max(1000, parseInt(String(streamConfig.cleanupIntervalMs ?? "60000"), 10)),
+      steeringMode: String(streamConfig.steeringMode ?? "one-at-a-time") === "all" ? "all" : "one-at-a-time",
+      followUpMode: String(streamConfig.followUpMode ?? "one-at-a-time") === "all" ? "all" : "one-at-a-time",
+      runTimeoutMs: Math.max(0, parseInt(String(streamConfig.runTimeoutMs ?? "300000"), 10)),
+      runStallTimeoutMs: Math.max(0, parseInt(String(streamConfig.runStallTimeoutMs ?? "120000"), 10)),
+    },
+    compact: {
+      enabled: String(compactConfig.enabled ?? "true") !== "false",
+      triggerRatio: Math.min(
+        0.95,
+        Math.max(0.05, parseFloat(String(compactConfig.triggerRatio ?? "0.75"))),
+      ),
+      keepRecent: Math.max(2, parseInt(String(compactConfig.keepRecent ?? "8"), 10)),
+      keepRecentTokens: Math.max(
+        100,
+        parseInt(String(compactConfig.keepRecentTokens ?? "20000"), 10) || 20000,
+      ),
+      summaryModel: String(compactConfig.summaryModel ?? "auto").trim() || "auto",
+      microCompact: {
+        enabled: String((compactConfig.microCompact as Record<string, unknown> | undefined)?.enabled ?? "true") !== "false",
+        toolResultMaxChars: Math.max(
+          500,
+          parseInt(
+            String((compactConfig.microCompact as Record<string, unknown> | undefined)?.toolResultMaxChars ?? "4000"),
+            10,
+          ),
+        ),
+      },
+      toolResultOffload: (() => {
+        const off = (compactConfig.toolResultOffload as Record<string, unknown> | undefined) ?? {};
+        const microMax = (compactConfig.microCompact as Record<string, unknown> | undefined)
+          ?.toolResultMaxChars;
+        return {
+          enabled: String(off.enabled ?? "true") !== "false",
+          thresholdChars: Math.max(
+            500,
+            parseInt(String(off.thresholdChars ?? microMax ?? "4000"), 10) || 4000,
+          ),
+          contextWindow: Math.max(50, Math.min(4000, parseInt(String(off.contextWindow ?? "400"), 10) || 400)),
+          chunkStrideChars: Math.max(
+            100,
+            parseInt(String(off.chunkStrideChars ?? "1000"), 10) || 1000,
+          ),
+          retentionDays: Math.max(0, parseInt(String(off.retentionDays ?? "14"), 10) || 0),
+        };
+      })(),
+      toolLoopStreakLimit: Math.max(
+        2,
+        parseInt(String(compactConfig.toolLoopStreakLimit ?? "3"), 10) || 3,
+      ),
+      memoryFlush: {
+        enabled: String((compactConfig.memoryFlush as Record<string, unknown> | undefined)?.enabled ?? "true") !== "false",
+        maxFacts: Math.max(
+          1,
+          parseInt(String((compactConfig.memoryFlush as Record<string, unknown> | undefined)?.maxFacts ?? "5"), 10),
+        ),
+      },
+    },
+    heartbeat: {
+      decisionEnabled: String(heartbeatYaml.decisionEnabled ?? "true") !== "false",
+      quietCap: Math.max(1, parseInt(String(heartbeatYaml.quietCap ?? "8"), 10)),
+      terminalAfterQuiet: Math.max(1, parseInt(String(heartbeatYaml.terminalAfterQuiet ?? "3"), 10)),
+      gateNotifyCooldownMs: Math.max(
+        0,
+        parseInt(String(heartbeatYaml.gateNotifyCooldownMs ?? String(30 * 60_000)), 10),
+      ),
+      loopContract: {
+        maxStaleRounds: Math.max(1, parseInt(String(loopContractYaml.maxStaleRounds ?? "3"), 10)),
+        maxEvidence: Math.max(5, parseInt(String(loopContractYaml.maxEvidence ?? "50"), 10)),
+      },
+    },
+    approvalGate: {
+      notifyCooldownMs: Math.max(
+        0,
+        parseInt(String(approvalGateYaml.notifyCooldownMs ?? String(30 * 60_000)), 10),
+      ),
+    },
+    reflection: reflectionYaml,
+    memory: {
+      queryRewrite: {
+        enabled: memoryYaml.queryRewrite.enabled,
+        model: memoryYaml.queryRewrite.model,
+        timeoutMs: memoryYaml.queryRewrite.timeoutMs,
+      },
+      writeDedup: {
+        enabled: memoryYaml.writeDedup.enabled,
+        model: memoryYaml.writeDedup.model,
+        timeoutMs: memoryYaml.writeDedup.timeoutMs,
+        neighborLimit: memoryYaml.writeDedup.neighborLimit,
+      },
+      experienceDistill: {
+        enabled: memoryYaml.experienceDistill.enabled,
+        minCount: memoryYaml.experienceDistill.minCount,
+        maxPerScope: memoryYaml.experienceDistill.maxPerScope,
+        model: memoryYaml.experienceDistill.model,
+      },
+      trust: {
+        agentInitialStrength: memoryYaml.trust.agentInitialStrength,
+        experienceSuccess: memoryYaml.trust.experienceSuccess,
+        experienceUnverified: memoryYaml.trust.experienceUnverified,
+        experienceFailed: memoryYaml.trust.experienceFailed,
+      },
+      embedding: {
+        enabled: memoryYaml.embedding.enabled,
+        baseUrl: readEnv("EMBEDDING_BASE_URL") || memoryYaml.embedding.baseUrl,
+        apiKey: readEnv("EMBEDDING_API_KEY") || memoryYaml.embedding.apiKey,
+        model: readEnv("EMBEDDING_MODEL") || memoryYaml.embedding.model,
+        topK: memoryYaml.embedding.topK,
+      },
+    },
+    skills: skillsYaml,
+    goal: goalYaml,
+    harness: {
+      gate: {
+        timeoutMs: harnessYaml.gate.timeoutMs,
+        presets: harnessYaml.gate.presets ?? {},
+      },
+      benchOnKeep: {
+        enabled: harnessYaml.benchOnKeep.enabled,
+        minPassRate: harnessYaml.benchOnKeep.minPassRate,
+      },
+    },
+    packs,
+  };
+
+  for (const dir of Object.values(config.contentPaths)) {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  }
+  for (const dir of Object.values(config.configPaths)) {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  }
+  for (const dir of Object.values(config.dataPaths)) {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(config.uploadDir)) fs.mkdirSync(config.uploadDir, { recursive: true });
+
+  return config;
+}
+
+/* ─── 全局单例 ─── */
+
+const globalForConfig = globalThis as unknown as { __appConfig: AppConfig };
+
+/**
+ * 解析花园根目录 content/{gardenId}/（不做存在性校验；格式由调用方保证）
+ */
+export function resolveGardenDir(config: AppConfig, gardenId: string): string {
+  return path.join(config.contentDir, gardenId);
+}
+
+/** 花园元数据+首页文件路径 */
+export function resolveGardenMetaPath(config: AppConfig, gardenId: string): string {
+  return path.join(resolveGardenDir(config, gardenId), "_garden.md");
+}
+
+export function getAppConfig(): AppConfig {
+  if (!globalForConfig.__appConfig) {
+    loadRootEnv();
+    globalForConfig.__appConfig = createAppConfig();
+  }
+  return globalForConfig.__appConfig;
+}
+
+/** 测试隔离：重置全局 config 单例（测试改 env 后需重新生成） */
+export function resetAppConfigForTests(): void {
+  globalForConfig.__appConfig = undefined as unknown as AppConfig;
+}
+
+/** 列出已配置 API Key 的 LLM 厂商 */
+export function listConfiguredLlmProviders(config: AppConfig = getAppConfig()): string[] {
+  return Object.entries(config.llm.providers)
+    .filter(([, p]) => !!p.apiKey && p.apiKey !== "your-api-key-here")
+    .map(([id]) => id);
+}

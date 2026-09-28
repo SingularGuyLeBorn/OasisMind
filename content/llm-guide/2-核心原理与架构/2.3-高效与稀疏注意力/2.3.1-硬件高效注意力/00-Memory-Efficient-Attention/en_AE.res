@@ -1,0 +1,5 @@
+s_too_large_to_represent_2800": "L'expression produit un type de tuple trop grand pour être représenté.",
+  "Expression_produces_a_union_type_that_is_too_complex_to_represent_2590": "L'expression produit un type union trop complexe à représenter.",
+  "Expression_resolves_to_super_that_compiler_uses_to_capture_base_class_reference_2402": "Expression résolue en '_super' et utilisée par le compilateur pour capturer la référence de classe de base.",
+  "Expression_resolves_to_variable_declaration_newTarget_that_compiler_uses_to_capture_new_target_meta__2544": "L'expression génère une déclaration de variable '_newTarget' que le compilateur utilise pour capturer la référence de méta-propriété 'new.target'.",
+  "Expression_resolves_to_variable_declaration_this_that_compiler_uses_to_capture_this_reference_2400": "Expression résolue en déclaration de variable '_this' et utilisée par le compilateur pour capturer la référence 'this'.",

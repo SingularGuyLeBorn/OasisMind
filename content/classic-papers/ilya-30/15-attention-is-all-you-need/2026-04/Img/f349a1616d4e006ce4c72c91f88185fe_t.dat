@@ -1,0 +1,129 @@
+const import_meta_url=require("node:url").pathToFileURL(__filename).href;
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// ../agent/src/tools/core/read/pdf-worker.ts
+var pdf_worker_exports = {};
+__export(pdf_worker_exports, {
+  default: () => extractPdfTextWorker
+});
+module.exports = __toCommonJS(pdf_worker_exports);
+
+// ../../node_modules/.pnpm/pdfjs-dist@5.4.296/node_modules/pdfjs-dist/legacy/build/pdf.mjs
+var pdf_exports = {};
+__export(pdf_exports, {
+  AbortException: () => AbortException,
+  AnnotationEditorLayer: () => AnnotationEditorLayer,
+  AnnotationEditorParamsType: () => AnnotationEditorParamsType,
+  AnnotationEditorType: () => AnnotationEditorType,
+  AnnotationEditorUIManager: () => AnnotationEditorUIManager,
+  AnnotationLayer: () => AnnotationLayer,
+  AnnotationMode: () => AnnotationMode,
+  AnnotationType: () => AnnotationType,
+  CSSConstants: () => CSSConstants,
+  ColorPicker: () => ColorPicker,
+  DOMSVGFactory: () => DOMSVGFactory,
+  DrawLayer: () => DrawLayer,
+  FeatureTest: () => util_FeatureTest,
+  GlobalWorkerOptions: () => GlobalWorkerOptions,
+  ImageKind: () => util_ImageKind,
+  InvalidPDFException: () => InvalidPDFException,
+  MathClamp: () => MathClamp,
+  OPS: () => OPS,
+  OutputScale: () => OutputScale,
+  PDFDataRangeTransport: () => PDFDataRangeTransport,
+  PDFDateString: () => PDFDateString,
+  PDFWorker: () => PDFWorker,
+  PasswordResponses: () => PasswordResponses,
+  PermissionFlag: () => PermissionFlag,
+  PixelsPerInch: () => PixelsPerInch,
+  RenderingCancelledException: () => RenderingCancelledException,
+  ResponseException: () => ResponseException,
+  SignatureExtractor: () => SignatureExtractor,
+  SupportedImageMimeTypes: () => SupportedImageMimeTypes,
+  TextLayer: () => TextLayer,
+  TouchManager: () => TouchManager,
+  Util: () => Util,
+  VerbosityLevel: () => VerbosityLevel,
+  XfaLayer: () => XfaLayer,
+  applyOpacity: () => applyOpacity,
+  build: () => build,
+  createValidAbsoluteUrl: () => createValidAbsoluteUrl,
+  fetchData: () => fetchData,
+  findContrastColor: () => findContrastColor,
+  getDocument: () => getDocument,
+  getFilenameFromUrl: () => getFilenameFromUrl,
+  getPdfFilenameFromUrl: () => getPdfFilenameFromUrl,
+  getRGB: () => getRGB,
+  getUuid: () => getUuid,
+  getXfaPageViewport: () => getXfaPageViewport,
+  isDataScheme: () => isDataScheme,
+  isPdfFile: () => isPdfFile,
+  isValidExplicitDest: () => isValidExplicitDest,
+  noContextMenu: () => noContextMenu,
+  normalizeUnicode: () => normalizeUnicode,
+  renderRichText: () => renderRichText,
+  setLayerDimensions: () => setLayerDimensions,
+  shadow: () => shadow,
+  stopEvent: () => stopEvent,
+  updateUrlHash: () => updateUrlHash,
+  version: () => version
+});
+var __webpack_modules__ = {
+  /***/
+  34: (
+    /***/
+    ((module2, __unused_webpack_exports, __webpack_require__2) => {
+      var isCallable = __webpack_require__2(4901);
+      module2.exports = function(it) {
+        return typeof it == "object" ? it !== null : isCallable(it);
+      };
+    })
+  ),
+  /***/
+  81: (
+    /***/
+    ((module2, __unused_webpack_exports, __webpack_require__2) => {
+      var call = __webpack_require__2(9565);
+      var aCallable = __webpack_require__2(9306);
+      var anObject = __webpack_require__2(8551);
+      var tryToString = __webpack_require__2(6823);
+      var getIteratorMethod = __webpack_require__2(851);
+      var $TypeError = TypeError;
+      module2.exports = function(argument, usingIterator) {
+        var iteratorMethod = arguments.length < 2 ? getIteratorMethod(argument) : usingIterator;
+        if (aCallable(iteratorMethod)) return anObject(call(iteratorMethod, argument));
+        throw new $TypeError(tryToString(argument) + " is not iterable");
+      };
+    })
+  ),
+  /***/
+  116: (
+    /***/
+    ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__2) => {
+      var $ = __webpack_require__2(6518);
+      var call = __webpack_require__2(9565);
+      var iterate = __webpack_require__2(2652);
+      var aCallable = __webpack_require__2(9306);
+      var anObject = __webpack_require__2(8551);
+      var getIteratorDirect = __webpack_require__2(1767);
+      var iteratorClose = __webpack_require__2(9539);
+      var iteratorHelperWithoutClosingOnEarlyError = __webpack_require__2(4549);
+      var findWithoutClosingOnEarlyError = iteratorHelperWithoutClosingOnEarlyError("find", TypeError);
+      $({ target: "Iterator", proto: true, real: t

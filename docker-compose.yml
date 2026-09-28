@@ -1,0 +1,103 @@
+# OasisMind 本地开发 / 生产部署（SQLite + monorepo）
+# Swarm 模式：docker compose --profile swarm up -d
+
+services:
+  oasismind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oasismind-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "3010:3010"
+    environment:
+      DATABASE_URL: "file:/data/dev.db"
+      SERVER_PORT: "3010"
+      SERVER_HOST: "0.0.0.0"
+      NODE_ENV: "production"
+      AUTH_MODE: ${AUTH_MODE:-password}
+      CREDENTIAL_MASTER_KEY: ${CREDENTIAL_MASTER_KEY:?production 必须设置 CREDENTIAL_MASTER_KEY}
+      # Swarm 模式：取消注释启用 Redis SwarmBus（需与 redis requirepass 一致）
+      # SWARM_MODE: "redis"
+      # REDIS_URL: "redis://:${REDIS_PASSWORD:-oasismind-dev}@redis:6379"
+    volumes:
+      - om-data:/data
+      - ./data:/app/data
+      # 运行时 CRUD 会写回 config/agents、config/memories/daily、content/uploads，必须可写
+      - ./content:/app/content
+      - ./config:/app/config
+      - ./config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3010/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: oasismind-pg
+    restart: unless-stopped
+    profiles: ["postgres"]
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: oasismind
+      POSTGRES_PASSWORD: oasismind
+      POSTGRES_DB: oasismind
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Redis — Swarm 模式消息队列（BullMQ）
+  # 启用：docker compose --profile swarm up -d
+  redis:
+    image: redis:7-alpine
+    container_name: oasismind-redis
+    restart: unless-stopped
+    profiles: ["swarm"]
+    command: redis-server --requirepass ${REDIS_PASSWORD:-oasismind-dev}
+    ports:
+      # 仅本机；生产请去掉 ports 或保持 127.0.0.1
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-oasismind-dev}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redisdata:/data
+
+  # SearXNG — 本地轻量元搜索引擎（web_search 免费/通用后端）
+  # 启用：docker compose --profile searxng up -d
+  # 配置 SEARXNG_URL=http://127.0.0.1:8080 后，smartSearch 优先走本地实例
+  searxng:
+    image: searxng/searxng:latest
+    container_name: oasismind-searxng
+    restart: unless-stopped
+    profiles: ["searxng"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      SEARXNG_BASE_URL: http://127.0.0.1:8080/
+
+  # Cloudflare Tunnel — 远程安全访问（无需开放公网端口）
+  # 启用：docker compose --profile cloudflare up -d cloudflare
+  # 需先设置 CLOUDFLARE_TUNNEL_TOKEN 环境变量
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: oasismind-tunnel
+    restart: unless-stopped
+    profiles: ["cloudflare"]
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - oasismind
+
+volumes:
+  om-data:
+  pgdata:
+  redisdata:

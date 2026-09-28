@@ -1,0 +1,400 @@
+/**
+ * LLM 每日预算追踪（美元估算，OpenClaw 式网关预算）
+ *
+ * 日预算语义：spentUsd + reservedUsd 合计不得超过 limit（最小硬预留）。
+ * tryReserveLlmBudget / releaseLlmBudgetReservation / commitLlmBudgetReservation
+ * 挡住「尚未 record 的在途占用」；recordTokenUsage 仍记真实花费。
+ *
+ * 重要：spentUsd 是本地粗算（token × blendedUsdPer1k），不是厂商/OpenRouter 真实账单。
+ * 免费模型（:free / freellm / mock / 本地）只记 totalTokens，不累加美元。
+ *
+ * 状态管理：模块级内存为唯一运行时真相，LLM 调用路径上零同步 IO。
+ * - 落盘：防抖异步写（fs.promises），进程崩溃最多丢失最近一个防抖窗口的消耗
+ * - 恢复：启动期 await hydrateLlmBudget（index.ts 挂载）；同日合并 max(内存, 磁盘)，不丢已花额度
+ */
+
+import fs from "fs";
+import path from "path";
+import type { AppConfig } from "./config.js";
+
+/** 异步落盘防抖窗口（毫秒） */
+const FLUSH_DEBOUNCE_MS = 250;
+
+interface BudgetState {
+  date: string;
+  spentUsd: number;
+  /** 无产出 run 累计 token（仅观测，不拦截日预算） */
+  wastedTokens: number;
+  /** 今日累计 token（用于空转占比；含免费模型） */
+  totalTokens: number;
+}
+
+/** 模块级内存状态（替代原 globalThis 隐式全局） */
+let state: BudgetState = { date: todayKey(), spentUsd: 0, wastedTokens: 0, totalTokens: 0 };
+/** 在途预留（USD）：已 tryReserve 尚未 commit/release */
+let reservedUsd = 0;
+/** 内存状态是否已领先于磁盘（领先时落盘需跟上） */
+let dirty = false;
+/** 单调递增版本号：用于识别异步落盘期间是否发生新消耗 */
+let version = 0;
+let hydrated = false;
+let hydratePromise: Promise<void> | null = null;
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 本地日历日（不是 UTC），避免 UTC+8 跨日切错预算 */
+export function localDateKey(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function todayKey() {
+  return localDateKey();
+}
+
+function budgetFile(projectRoot: string) {
+  return path.join(projectRoot, "data", "llm-budget.json");
+}
+
+/**
+ * 不计入美元日预算的模型（仍记 totalTokens 便于观测）。
+ * OpenRouter `:free`、freellm 网关、mock、本地/ollama 等。
+ */
+export function isZeroCostModel(model?: string): boolean {
+  const m = (model ?? "").trim().toLowerCase();
+  if (!m) return false;
+  if (m.endsWith(":free")) return true;
+  if (m.includes("freellm")) return true;
+  if (m.includes("mock")) return true;
+  if (m.startsWith("ollama/") || m.startsWith("ollama:")) return true;
+  if (m.startsWith("local/") || m.startsWith("local:")) return true;
+  if (m.includes("lmstudio") || m.includes("llama.cpp")) return true;
+  return false;
+}
+
+/**
+ * 启动期一次性 hydrate：同日取 max(内存已花, 磁盘已花)，不丢额度。
+ * 可安全重入（并发调用共享同一 Promise）。
+ */
+export async function hydrateLlmBudget(projectRoot: string): Promise<void> {
+  if (hydrated) return;
+  if (hydratePromise) return hydratePromise;
+
+  hydratePromise = (async () => {
+    try {
+      const raw = await fs.promises.readFile(budgetFile(projectRoot), "utf8");
+      try {
+        const parsed = JSON.parse(raw) as BudgetState;
+        if (parsed.date === todayKey()) {
+          const diskSpent = Number(parsed.spentUsd) || 0;
+          const memSpent = state.date === todayKey() ? state.spentUsd : 0;
+          const merged = Math.max(memSpent, diskSpent);
+          const diskWaste = Number((parsed as BudgetState).wastedTokens) || 0;
+          const memWaste = state.date === todayKey() ? state.wastedTokens : 0;
+          const diskTotal = Number((parsed as BudgetState).totalTokens) || 0;
+          const memTotal = state.date === todayKey() ? state.totalTokens : 0;
+          state = {
+            date: parsed.date,
+            spentUsd: merged,
+            wastedTokens: Math.max(memWaste, diskWaste),
+            totalTokens: Math.max(memTotal, diskTotal),
+          };
+          // 内存领先磁盘 → 保持 dirty 以便落盘追上
+          if (
+            merged > diskSpent ||
+            state.wastedTokens > diskWaste ||
+            state.totalTokens > diskTotal
+          ) {
+            dirty = true;
+            version += 1;
+            scheduleFlush(projectRoot);
+          }
+        }
+      } catch {
+        /* 文件损坏：忽略，从当前内存继续 */
+      }
+    } catch {
+      /* 文件不存在：正常路径 */
+    } finally {
+      hydrated = true;
+      hydratePromise = null;
+    }
+  })();
+
+  return hydratePromise;
+}
+
+async function flushAsync(projectRoot: string, snapshotVersion: number): Promise<void> {
+  const file = budgetFile(projectRoot);
+  try {
+    await fs.promises.mkdir(path.dirname(file), { recursive: true });
+    await fs.promises.writeFile(file, JSON.stringify(state, null, 2), "utf8");
+    // 落盘期间若有新消耗（version 已前进），保持 dirty 让下一轮防抖再写
+    if (version === snapshotVersion) dirty = false;
+  } catch (err) {
+    // 落盘失败不阻断 LLM 调用路径；内存状态仍是运行时真相
+    console.warn("[llmBudget] 预算异步落盘失败:", err instanceof Error ? err.message : err);
+  }
+}
+
+function scheduleFlush(projectRoot: string): void {
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushAsync(projectRoot, version).catch((err) => {
+      console.warn("[llmBudget] flush 失败:", err instanceof Error ? err.message : err);
+    });
+  }, FLUSH_DEBOUNCE_MS);
+  flushTimer.unref?.();
+}
+
+function getState(config: AppConfig): BudgetState {
+  // 启动未 hydrate 时仍允许服务（软语义）；后台补一次合并 hydrate，不阻塞热路径
+  if (!hydrated && !hydratePromise) {
+    hydrateLlmBudget(config.projectRoot).catch((err) => {
+      console.warn("[llmBudget] 后台 hydrate 失败:", err instanceof Error ? err.message : err);
+    });
+  }
+  if (state.date !== todayKey()) {
+    // 跨天 rollover：内存内重置并标记落盘；在途预留随日切作废
+    state = { date: todayKey(), spentUsd: 0, wastedTokens: 0, totalTokens: 0 };
+    reservedUsd = 0;
+    dirty = true;
+    version += 1;
+    scheduleFlush(config.projectRoot);
+  }
+  return state;
+}
+
+export interface LlmBudgetStatus {
+  limitUsd: number;
+  spentUsd: number;
+  /** 在途预留合计 */
+  reservedUsd: number;
+  ratio: number;
+  warn: boolean;
+  exceeded: boolean;
+  date: string;
+  wastedTokens: number;
+  totalTokens: number;
+  /** wastedTokens / totalTokens；无消费时为 0 */
+  wasteRatio: number;
+  /** 当前粗算单价（USD / 1K tokens） */
+  blendedUsdPer1k: number;
+}
+
+export function getLlmBudgetStatus(config: AppConfig): LlmBudgetStatus {
+  const s = getState(config);
+  const limitUsd = config.llm.dailyBudget;
+  const blendedUsdPer1k = config.llm.blendedUsdPer1k;
+  const effectiveSpent = s.spentUsd + reservedUsd;
+  const ratio = limitUsd > 0 ? effectiveSpent / limitUsd : 0;
+  const wasteRatio = s.totalTokens > 0 ? s.wastedTokens / s.totalTokens : 0;
+  return {
+    limitUsd,
+    spentUsd: s.spentUsd,
+    reservedUsd,
+    ratio: Math.min(1, ratio),
+    warn: limitUsd > 0 && ratio >= 0.85 && ratio < 1,
+    exceeded: limitUsd > 0 && effectiveSpent >= limitUsd,
+    date: s.date,
+    wastedTokens: s.wastedTokens,
+    totalTokens: s.totalTokens,
+    wasteRatio,
+    blendedUsdPer1k,
+  };
+}
+
+/**
+ * 预算闸：spent+reserved 已超限则抛错。
+ */
+export function assertLlmBudget(config: AppConfig) {
+  const status = getLlmBudgetStatus(config);
+  if (status.exceeded) {
+    throw new Error(
+      `今日 LLM 预算（本地估算，非真实账单）已用尽（约 $${status.spentUsd.toFixed(2)}` +
+        (status.reservedUsd > 0 ? `+预留$${status.reservedUsd.toFixed(2)}` : "") +
+        ` / $${status.limitUsd}）。` +
+        "请明日再试，或在 .env 提高 LLM_DAILY_BUDGET / 调低 LLM_BLENDED_USD_PER_1K，" +
+        "或删除 data/llm-budget.json 后重启服务重置当日计数。",
+    );
+  }
+}
+
+/**
+ * 并发硬预留：估算本次 run 将花费的美元；失败返回 false（不抛）。
+ * 默认估算：blendedUsdPer1k * 4（约 4k tokens）。
+ */
+export function tryReserveLlmBudget(config: AppConfig, estimateUsd?: number): boolean {
+  const s = getState(config);
+  const limitUsd = config.llm.dailyBudget;
+  if (limitUsd <= 0) return true;
+  const est =
+    typeof estimateUsd === "number" && Number.isFinite(estimateUsd) && estimateUsd >= 0
+      ? estimateUsd
+      : config.llm.blendedUsdPer1k * 4;
+  if (s.spentUsd + reservedUsd + est > limitUsd) return false;
+  reservedUsd += est;
+  return true;
+}
+
+export function releaseLlmBudgetReservation(estimateUsd: number): void {
+  const n = Math.max(0, Number(estimateUsd) || 0);
+  reservedUsd = Math.max(0, reservedUsd - n);
+}
+
+/** 花费已由 recordTokenUsage 入账后调用，只释放预留槽 */
+export function commitLlmBudgetReservation(estimateUsd: number): void {
+  releaseLlmBudgetReservation(estimateUsd);
+}
+
+/** 默认预留估算（与 tryReserve 缺省一致） */
+export function defaultLlmBudgetReserveEstimate(config: AppConfig): number {
+  return config.llm.blendedUsdPer1k * 4;
+}
+
+export type TokenUsageAttribution = {
+  sessionId?: string;
+  parentSessionId?: string;
+  agentId?: string;
+  runId?: string;
+};
+
+/** 会话级归因（内存；日切清空；落盘到 llm-attribution.json） */
+type AttributionState = {
+  date: string;
+  bySession: Record<string, number>;
+  /** 父会话累计的子会话 token */
+  byParentFromChildren: Record<string, number>;
+};
+
+let attribution: AttributionState = { date: todayKey(), bySession: {}, byParentFromChildren: {} };
+let attributionDirty = false;
+let attributionTimer: ReturnType<typeof setTimeout> | null = null;
+
+function attributionFile(projectRoot: string) {
+  return path.join(projectRoot, "data", "llm-attribution.json");
+}
+
+function ensureAttributionDay() {
+  const d = todayKey();
+  if (attribution.date !== d) {
+    attribution = { date: d, bySession: {}, byParentFromChildren: {} };
+  }
+}
+
+function scheduleAttributionFlush(projectRoot: string) {
+  if (attributionTimer) clearTimeout(attributionTimer);
+  attributionTimer = setTimeout(() => {
+    attributionTimer = null;
+    if (!attributionDirty) return;
+    try {
+      const dir = path.dirname(attributionFile(projectRoot));
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(attributionFile(projectRoot), JSON.stringify(attribution, null, 2), "utf8");
+      attributionDirty = false;
+    } catch (err) {
+      console.warn(
+        "[llmBudget] attribution 落盘失败:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }, FLUSH_DEBOUNCE_MS);
+}
+
+export function recordTokenUsage(
+  config: AppConfig,
+  usage?: { prompt?: number; completion?: number; total?: number },
+  model?: string,
+  meta?: TokenUsageAttribution,
+) {
+  const total = usage?.total ?? (usage?.prompt ?? 0) + (usage?.completion ?? 0);
+  if (!total) return;
+  const s = getState(config);
+  s.totalTokens += total;
+  if (!isZeroCostModel(model)) {
+    const rate = config.llm.blendedUsdPer1k;
+    s.spentUsd += (total / 1000) * rate;
+  }
+  dirty = true;
+  version += 1;
+  scheduleFlush(config.projectRoot);
+
+  // DeerFlow：子 Agent 用量回记父会话账本（不重复扣美元，只记账）
+  if (meta?.sessionId || meta?.parentSessionId) {
+    ensureAttributionDay();
+    if (meta.sessionId) {
+      attribution.bySession[meta.sessionId] =
+        (attribution.bySession[meta.sessionId] ?? 0) + total;
+    }
+    if (meta.parentSessionId) {
+      attribution.byParentFromChildren[meta.parentSessionId] =
+        (attribution.byParentFromChildren[meta.parentSessionId] ?? 0) + total;
+    }
+    attributionDirty = true;
+    scheduleAttributionFlush(config.projectRoot);
+  }
+}
+
+/** 查询会话归因（含子任务回记）；供看板 / tRPC */
+export function getSessionTokenAttribution(sessionId: string): {
+  sessionTokens: number;
+  childTokens: number;
+  totalAttributed: number;
+} {
+  ensureAttributionDay();
+  const sessionTokens = attribution.bySession[sessionId] ?? 0;
+  const childTokens = attribution.byParentFromChildren[sessionId] ?? 0;
+  return {
+    sessionTokens,
+    childTokens,
+    totalAttributed: sessionTokens + childTokens,
+  };
+}
+
+/**
+ * 将已计入 totalTokens 的无产出 run token 记入 wastedTokens（不重复扣日预算）。
+ * 日预算扣减规则不变——wastedTokens 只用于观测。
+ */
+export function markTokensWasted(config: AppConfig, tokens: number) {
+  const n = Math.max(0, Math.floor(Number(tokens) || 0));
+  if (!n) return;
+  const s = getState(config);
+  s.wastedTokens += n;
+  dirty = true;
+  version += 1;
+  scheduleFlush(config.projectRoot);
+}
+
+/** 空转占比告警阈值（v1 固定 50%，仅 brief/看板提示） */
+export const WASTED_TOKEN_ALERT_RATIO = 0.5;
+
+/** 测试隔离：重置预算内存状态与待落盘任务 */
+export function resetLlmBudgetForTests(): void {
+  reservedUsd = 0;
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (attributionTimer) {
+    clearTimeout(attributionTimer);
+    attributionTimer = null;
+  }
+  state = { date: todayKey(), spentUsd: 0, wastedTokens: 0, totalTokens: 0 };
+  attribution = { date: todayKey(), bySession: {}, byParentFromChildren: {} };
+  attributionDirty = false;
+  dirty = false;
+  version = 0;
+  hydrated = false;
+  hydratePromise = null;
+}
+
+/** 测试用：等待防抖落盘完成（生产代码请勿调用） */
+export async function flushLlmBudgetForTests(projectRoot: string): Promise<void> {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (dirty) await flushAsync(projectRoot, version);
+}

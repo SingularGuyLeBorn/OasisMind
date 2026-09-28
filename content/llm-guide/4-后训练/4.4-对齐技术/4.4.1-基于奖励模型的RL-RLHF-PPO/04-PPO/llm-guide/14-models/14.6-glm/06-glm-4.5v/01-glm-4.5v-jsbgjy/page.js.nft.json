@@ -1,0 +1,63 @@
+/**
+ * post Service（从 services.ts 拆出的叶子）。
+ */
+
+import fs from "fs";
+import path from "path";
+import type {
+  CreatePostInput,
+  UpdatePostInput,
+  ListPostsInput,
+  RelatedPostsInput,
+  CreatePostFromChatInput,
+  CreatePostFromToolResultInput,
+  OperationResult,
+  NextStep,
+} from "@oasismind/shared";
+import {
+  DEFAULT_POST_GARDEN,
+  isValidGardenIdFormat,
+  isReservedContentDir,
+  canonicalListTag,
+  formatTagsCsv,
+  tagsFromCsv,
+} from "@oasismind/shared";
+import { TRPCError } from "@trpc/server";
+import matter from "gray-matter";
+import {
+  FileSyncService,
+  ServiceValidationError,
+  failureFromPrismaUnique,
+  buildPostFtsBody,
+  type PaginatedResult,
+} from "../../services.js";
+import { success, failure, failureFromError } from "../../trpc/result.js";
+import { resolveGardenDir } from "../config.js";
+import { stripLeadingMarkdownFrontmatter } from "../../scripts/sync/utils.js";
+import { upsertFtsRow, deleteFtsRow, searchFts, searchFtsByEntity } from "../ftsIndex.js";
+import { assertPathWithinProjectRoot } from "../safePath.js";
+
+export interface PostEntity {
+  id: string;
+  title: string;
+  garden: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  published: boolean;
+  category: string | null;
+  tags: string[];
+  viewCount: number;
+  metadata: any;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addLocalDays(d: Date, n: number): Date {
+  return new Date(

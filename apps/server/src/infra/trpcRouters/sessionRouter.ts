@@ -1,0 +1,668 @@
+/**
+ * session tRPC 子路由（从 router.ts 拆出的叶子）。
+ */
+
+import { z } from "zod";
+import {
+  createSessionSchema, updateSessionSchema, listSessionsSchema, stopSessionSchema, rerunSessionSchema,
+  resumeSessionSchema, ensureMainSessionSchema, openNewSessionSchema, compactSessionSchema,
+  setSessionGoalSchema, sessionGoalControlSchema, listSideRunsSchema, rotateLineageSchema,
+  listRecentRotatesSchema, rotateGraphSchema, createSessionQueueItemSchema, reorderSessionQueueItemsSchema,
+  switchBranchSchema, sessionTreeSchema, forkSessionSchema, inspectSessionTurnSchema,
+} from "@oasismind/shared";
+import { router, publicProcedure } from "../../trpc/trpc.js";
+import { TRPCError } from "@trpc/server";
+import { getStreamHub } from "../sessionStreamHub.js";
+import { createTrpcInvoker } from "../trpcInvoker.js";
+import {
+  pullAsyncDeliveries,
+  pullConsumedAsyncDeliveries,
+  markAsyncDeliveryConsumed,
+  listRunningAsyncJobs,
+  cancelAsyncJob,
+  retryAsyncJob,
+  getAsyncQueueStats,
+  startAsyncAgentTask,
+  listQueuedAsyncJobs,
+  listSyncAsyncJobs,
+} from "../asyncJobs/index.js";
+import { resolveAgent } from "../agentResolver.js";
+import { readToolResultPayload } from "../toolResultOffload.js";
+
+const createTrpcInvokerForCtx = createTrpcInvoker;
+
+export const sessionRouter = router({
+  create: publicProcedure.meta({ description: "创建聊天会话。", aiReadable: true }).input(createSessionSchema).mutation(({ ctx, input }) => ctx.services.session.create(input)),
+  fork: publicProcedure
+    .meta({
+      description:
+        "从指定会话 Fork 出一个新会话：复制会话元数据（模型、系统提示、Agent）与最近 N 条消息树，保留分支结构。",
+      aiReadable: false,
+    })
+    .input(forkSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.services.session.getByIdLite(input.sourceSessionId);
+      if (!source) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `源会话不存在: ${input.sourceSessionId}` });
+      }
+      const newTitle = input.title ?? `${source.title} 的分叉`;
+      const newSessionResult = await ctx.services.session.create({
+        title: newTitle,
+        model: source.model,
+        systemPrompt: source.systemPrompt ?? undefined,
+        agentId: source.agentId ?? undefined,
+        kind: "chat",
+        status: "active",
+      });
+      if (!newSessionResult.success || !newSessionResult.data) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: newSessionResult.error?.message ?? "Fork 会话失败",
+        });
+      }
+      const newSession = newSessionResult.data;
+
+      const { items } = await ctx.services.message.listForChat({
+        sessionId: source.id,
+        limit: input.includeMessages,
+        tree: true,
+      });
+
+      const { appendChatMessage } = await import("../chatTree.js");
+      const idMap = new Map<string, string>();
+      for (const msg of items) {
+        const oldParentId = msg.parentId ?? null;
+        const newParentId = oldParentId ? (idMap.get(oldParentId) ?? null) : null;
+        const created = await appendChatMessage(ctx.prisma, {
+          sessionId: newSession.id,
+          role: msg.role,
+          content: msg.content,
+          parentId: newParentId,
+          label: msg.label ?? undefined,
+          kind: msg.kind ?? undefined,
+          attachments: msg.attachments ?? undefined,
+          toolCalls: msg.toolCalls ?? undefined,
+          toolResults: msg.toolResults ?? undefined,
+          tokenUsage: msg.tokenUsage ?? undefined,
+          finishReason: msg.finishReason ?? undefined,
+          source: msg.source ?? undefined,
+        });
+        idMap.set(msg.id, created.id);
+        try {
+          const { messageUpsertPayload } = await import("../entityServices/messageService.js");
+          getStreamHub()?.pushExternalEvent(newSession.id, {
+            type: "message_upserted",
+            sessionId: newSession.id,
+            message: messageUpsertPayload(created),
+          });
+        } catch {
+          /* hub 未就绪不阻断 fork */
+        }
+      }
+
+      return {
+        id: newSession.id,
+        title: newSession.title,
+        sourceSessionId: source.id,
+        copiedMessages: items.length,
+      };
+    }),
+  getById: publicProcedure.meta({ description: "获取会话详情（含消息列表）。", aiReadable: true }).input(z.object({ id: z.string().cuid() })).query(({ ctx, input }) => ctx.services.session.getById(input.id)),
+  list: publicProcedure.meta({ description: "列出所有聊天会话。", aiReadable: true }).input(listSessionsSchema).query(({ ctx, input }) => ctx.services.session.list(input)),
+  ensureMain: publicProcedure
+    .meta({
+      description: "确保 Agent 有一条主会话（空亦可）。Chat 进入无会话态时调用，幂等返回 sessionId。",
+      aiReadable: true,
+    })
+    .input(ensureMainSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const agent = await ctx.services.agent.getById(input.agentId);
+      if (!agent) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `Agent 不存在: ${input.agentId}` });
+      }
+      const { ensureMainSession } = await import("../ensureMainSession.js");
+      const { session, created } = await ensureMainSession(ctx.prisma, {
+        agentId: agent.id,
+        title: `${agent.name} 主会话`,
+        model: agent.model || ctx.config.llm.defaultModel,
+      });
+      return {
+        id: session.id,
+        title: session.title,
+        agentId: session.agentId,
+        model: session.model,
+        created,
+      };
+    }),
+  openNew: publicProcedure
+    .meta({
+      description:
+        "新对话：已有空会话则复用（焦点已在其上则 already_here）；否则新建空会话。",
+      aiReadable: true,
+    })
+    .input(openNewSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const agent = await ctx.services.agent.getById(input.agentId);
+      if (!agent) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `Agent 不存在: ${input.agentId}` });
+      }
+      const { openNewSession } = await import("../openNewSession.js");
+      const { session, action } = await openNewSession(ctx.prisma, {
+        agentId: agent.id,
+        focusedSessionId: input.focusedSessionId,
+        title: input.title ?? "新对话",
+        model: input.model || agent.model || ctx.config.llm.defaultModel,
+      });
+      return {
+        id: session.id,
+        title: session.title,
+        agentId: session.agentId,
+        model: session.model,
+        action,
+      };
+    }),
+  exportTrace: publicProcedure
+    .meta({
+      description: "导出会话消息轨迹为 JSONL，供离线评测。",
+      aiReadable: true,
+    })
+    .input(z.object({ id: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const { exportSessionTraceJsonl } = await import("../runTraceExport.js");
+      try {
+        return await exportSessionTraceJsonl(ctx.prisma, input.id);
+      } catch (err) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }),
+  listRunning: publicProcedure
+    .meta({ description: "列出当前服务器上正在运行的 Agent 流式会话（用于前端断线/跨标签恢复）。", aiReadable: false })
+    .input(z.void().optional())
+    .output(z.object({ items: z.array(z.object({ sessionId: z.string(), lastEventId: z.number().int().min(0), runningSince: z.number().int() })) }))
+    .query(({ ctx }) => {
+      const hub = ctx.streamHub;
+      return { items: hub ? hub.listRunning() : [] };
+    }),
+  listChildren: publicProcedure
+    .meta({
+      description:
+        "列出指定父会话的子代理会话（Subagent），附带最新 Run 进度元信息（无消息正文）。",
+      aiReadable: true,
+    })
+    .input(z.object({ parentSessionId: z.string().cuid(), pageSize: z.number().int().min(1).max(100).optional() }))
+    .query(async ({ ctx, input }) => {
+      const listed = await ctx.services.session.list({
+        page: 1,
+        pageSize: input.pageSize ?? 50,
+        parentSessionId: input.parentSessionId,
+        kind: "subagent",
+      });
+      const items = listed.items ?? [];
+      if (items.length === 0) return listed;
+      const ids = items.map((s: { id: string }) => s.id);
+      const runs = await ctx.prisma.run.findMany({
+        where: { sessionId: { in: ids } },
+        orderBy: { updatedAt: "desc" },
+        select: { sessionId: true, status: true, output: true, updatedAt: true },
+      });
+      const latestBySession = new Map<string, (typeof runs)[0]>();
+      for (const r of runs) {
+        if (!r.sessionId || latestBySession.has(r.sessionId)) continue;
+        latestBySession.set(r.sessionId, r);
+      }
+      const agentIds = [
+        ...new Set(
+          items
+            .map((s: { agentId?: string | null }) => s.agentId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const agents =
+        agentIds.length > 0
+          ? await ctx.prisma.agent.findMany({
+              where: { id: { in: agentIds } },
+              select: { id: true, name: true, autoName: true },
+            })
+          : [];
+      const agentNameById = new Map(
+        agents.map((a) => [a.id, a.autoName || a.name || a.id] as const),
+      );
+      return {
+        ...listed,
+        items: items.map((s: { id: string; agentId?: string | null; status?: string }) => {
+          const run = latestBySession.get(s.id);
+          const out = (run?.output ?? null) as {
+            phase?: string;
+            roundsUsed?: number;
+            executedToolsCount?: number;
+            lastToolName?: string;
+          } | null;
+          return {
+            ...s,
+            agentName: s.agentId ? agentNameById.get(s.agentId) ?? null : null,
+            progress: out
+              ? {
+                  phase: out.phase,
+                  roundsUsed: out.roundsUsed,
+                  executedToolsCount: out.executedToolsCount,
+                  lastToolName: out.lastToolName,
+                  runStatus: run?.status,
+                  updatedAt: run?.updatedAt,
+                }
+              : null,
+          };
+        }),
+      };
+    }),
+  rotateLineage: publicProcedure
+    .meta({
+      description:
+        "session_rotate 血缘链派生视图：沿 rotatedFrom/rotatedTo 拉链（只读，非新协议）。",
+      aiReadable: true,
+    })
+    .input(rotateLineageSchema)
+    .query(async ({ ctx, input }) => {
+      const { getRotateLineage } = await import("../sessionRotateLineage.js");
+      const result = await getRotateLineage(ctx.prisma, input.sessionId);
+      if (result.nodes.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `会话不存在: ${input.sessionId}` });
+      }
+      return result;
+    }),
+  listRecentRotates: publicProcedure
+    .meta({
+      description: "最近由 session_rotate 产生的会话（看板派生列表）。",
+      aiReadable: true,
+    })
+    .input(listRecentRotatesSchema)
+    .query(async ({ ctx, input }) => {
+      const { listRecentRotates } = await import("../sessionRotateLineage.js");
+      return { items: await listRecentRotates(ctx.prisma, input.limit) };
+    }),
+  rotateGraph: publicProcedure
+    .meta({
+      description:
+        "session_rotate 全图派生：nodes/edges/chains 均只读 rotatedFrom/rotatedTo，供管理页血缘链与图。",
+      aiReadable: true,
+    })
+    .input(rotateGraphSchema)
+    .query(async ({ ctx, input }) => {
+      const { getRotateGraph } = await import("../sessionRotateLineage.js");
+      return getRotateGraph(ctx.prisma, input.limit);
+    }),
+  listSideRuns: publicProcedure
+    .meta({
+      description: "列出父会话下的旁路复盘会话（kind=skill_review），供 Chat 运行栏展示。",
+      aiReadable: true,
+    })
+    .input(listSideRunsSchema)
+    .query(async ({ ctx, input }) => {
+      const { listSkillReviewSideRuns } = await import("../skillBackgroundReview.js");
+      return listSkillReviewSideRuns(ctx.services, input.parentSessionId, input.pageSize);
+    }),
+  setGoal: publicProcedure
+    .meta({ description: "设定会话 Goal 或 Deep Research，可选立刻起第一轮。", aiReadable: true })
+    .input(setSessionGoalSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { setSessionGoal, buildGoalKickoffMessage } = await import("../goalLoop.js");
+      const goal = await setSessionGoal({
+        services: ctx.services,
+        config: ctx.config,
+        sessionId: input.sessionId,
+        text: input.text,
+        mode: input.mode,
+        maxTurns: input.maxTurns,
+        judgeModel: input.judgeModel,
+        execModel: input.execModel,
+      });
+      let streamStarted = false;
+      if (input.startNow) {
+        const hub = getStreamHub();
+        if (hub) {
+          const body = {
+            sessionId: input.sessionId,
+            message: buildGoalKickoffMessage(goal),
+            model: goal.execModel,
+            source: "system" as const,
+          };
+          const session = await ctx.services.session.getByIdLite(input.sessionId);
+          const fullBody = {
+            ...body,
+            agentId: session.agentId ?? undefined,
+            model: goal.execModel || session.model,
+          };
+          const invoke = createTrpcInvoker({
+            services: ctx.services,
+            config: ctx.config,
+            prisma: ctx.prisma,
+          });
+          streamStarted =
+            (await hub.startIfNotRunning(input.sessionId, fullBody, (emit, signal) =>
+              import("../agentStream/index.js").then(({ chatAgentStream }) =>
+                chatAgentStream(ctx.services, ctx.config, fullBody, invoke, emit, signal),
+              ),
+            )) === "started";
+        }
+      }
+      return { goal, streamStarted };
+    }),
+  pauseGoal: publicProcedure
+    .meta({ description: "暂停会话 Goal 自动续跑。", aiReadable: true })
+    .input(sessionGoalControlSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { pauseSessionGoal } = await import("../goalLoop.js");
+      const goal = await pauseSessionGoal(ctx.services, input.sessionId);
+      return { goal };
+    }),
+  resumeGoal: publicProcedure
+    .meta({ description: "恢复会话 Goal（重置 turnsUsed）。", aiReadable: true })
+    .input(sessionGoalControlSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { resumeSessionGoal, buildGoalContinueMessage } = await import("../goalLoop.js");
+      const goal = await resumeSessionGoal(ctx.services, input.sessionId);
+      if (!goal) return { goal: null, streamStarted: false };
+      const hub = getStreamHub();
+      let streamStarted = false;
+      if (hub) {
+        const session = await ctx.services.session.getByIdLite(input.sessionId);
+        const message = buildGoalContinueMessage(goal, "Resumed by user.");
+        const body = {
+          sessionId: input.sessionId,
+          agentId: session.agentId ?? undefined,
+          message,
+          model: goal.execModel || session.model,
+          source: "system" as const,
+        };
+        const invoke = createTrpcInvoker({
+          services: ctx.services,
+          config: ctx.config,
+          prisma: ctx.prisma,
+        });
+        streamStarted =
+          (await hub.startIfNotRunning(input.sessionId, body, (emit, signal) =>
+            import("../agentStream/index.js").then(({ chatAgentStream }) =>
+              chatAgentStream(ctx.services, ctx.config, body, invoke, emit, signal),
+            ),
+          )) === "started";
+      }
+      return { goal, streamStarted };
+    }),
+  clearGoal: publicProcedure
+    .meta({ description: "清除会话 Goal / Deep Research。", aiReadable: true })
+    .input(sessionGoalControlSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { clearSessionGoal } = await import("../goalLoop.js");
+      await clearSessionGoal(ctx.services, input.sessionId);
+      return { ok: true as const };
+    }),
+  getGoal: publicProcedure
+    .meta({ description: "读取会话当前 Goal 状态。", aiReadable: true })
+    .input(sessionGoalControlSchema)
+    .query(async ({ input }) => {
+      const { readGoalStateRaw } = await import("../goalLoop.js");
+      const { getSessionTokenAttribution } = await import("../llmBudget.js");
+      const goal = await readGoalStateRaw(input.sessionId);
+      const tokens = getSessionTokenAttribution(input.sessionId);
+      return { goal, tokens };
+    }),
+  // W7 测试专用：仅 E2E 环境暴露，直接写 goalState.verifiedProgress 供 E2E 验证顶栏列表。
+  // 不动 Auditor 逻辑（不把 Auditor 打成永远通过），仅注入 fixture。
+  __setVerifiedProgressForTest:
+    process.env.E2E === "1"
+      ? publicProcedure
+          .meta({ description: "测试专用：注入 verifiedProgress fixture。", aiReadable: false })
+          .input(
+            z.object({
+              sessionId: z.string().cuid(),
+              items: z.array(
+                z.object({
+                  id: z.string(),
+                  claim: z.string().max(500),
+                  evidenceRefs: z.array(z.string()).min(1),
+                  auditedAt: z.string(),
+                  auditor: z.enum(["system", "critic"]),
+                }),
+              ),
+            }),
+          )
+          .mutation(async ({ ctx, input }) => {
+            const { readGoalStateRaw } = await import("../goalLoop.js");
+            const current = await readGoalStateRaw(input.sessionId);
+            if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "会话无 Goal" });
+            const next = { ...current, verifiedProgress: input.items };
+            await ctx.prisma.chatSession.update({
+              where: { id: input.sessionId },
+              data: { goalState: next as never },
+            });
+            // 推 goal_updated 让前端 getGoal invalidate（推拉结合），否则顶栏 verifiedCount 不刷新
+            try {
+              const { notifyGoalUpdated } = await import("../uiStateNotify.js");
+              notifyGoalUpdated(input.sessionId, current.status, input.items.length);
+            } catch {
+              /* 推送失败不阻断 */
+            }
+            return { ok: true as const, count: input.items.length };
+          })
+      : publicProcedure.input(z.object({ sessionId: z.string().cuid() })).mutation(() => {
+          throw new TRPCError({ code: "NOT_FOUND", message: "测试专用接口未启用" });
+        }),
+  update: publicProcedure.meta({ description: "更新会话标题或系统提示。", aiReadable: true }).input(updateSessionSchema).mutation(({ ctx, input }) => ctx.services.session.update(input)),
+  compact: publicProcedure
+    .meta({ description: "手动压缩会话上下文：生成摘要、写入 contextSummary 并落库边界消息。", aiReadable: true })
+    .input(compactSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const session = await ctx.services.session.getByIdLite(input.id);
+      const { runSessionCompact } = await import("../autoCompact.js");
+      const result = await runSessionCompact({
+        config: ctx.config,
+        services: ctx.services,
+        sessionId: input.id,
+        model: session.model || ctx.config.llm.defaultModel,
+        systemPrompt: session.systemPrompt || "你是 OasisMind 助手。",
+        existingSummary: session.contextSummary,
+        existingGeneration: (session as { compactGeneration?: number }).compactGeneration ?? 0,
+        trigger: "manual",
+      });
+      if (!result.compacted) {
+        return { success: true as const, compacted: false, message: result.message };
+      }
+      return {
+        success: true as const,
+        compacted: true,
+        summaryPreview: result.summaryPreview,
+        boundaryMessageId: result.boundaryMessageId,
+        message: result.message,
+      };
+    }),
+  stop: publicProcedure
+    .meta({ description: "停止子代理会话（状态置为 paused 并真正 abort 运行中后台任务）。", aiReadable: false })
+    .input(stopSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      // A4：stop 只需 kind/status，用轻量 getByIdLite 避免拉 500 条消息
+      const session = await ctx.services.session.getByIdLite(input.id);
+      if (session.kind === "subagent") {
+        const { stopSubagentSession } = await import("../asyncJobs/index.js");
+        const result = stopSubagentSession(session.id, ctx.config);
+        // 排队中任务被移出队列后 orchestrator 不会触发 catch，需手动回写 Task 为 interrupted
+        if (result.stopped && !result.wasRunning && result.jobId) {
+          try {
+            await ctx.services.task.update({
+              id: result.jobId,
+              status: "interrupted",
+              finishedAt: new Date(),
+              delivered: true,
+              deliveredAt: new Date(),
+              output: {
+                error: "异步任务已中断（用户停止）",
+                deliveryExempt: true,
+              },
+            } as any);
+          } catch (err) {
+            console.warn(`[session.stop] 回写排队任务 ${result.jobId} 为 interrupted 失败:`, err);
+          }
+        }
+        // 运行中任务的 session 状态由 buildAsyncExecute catch 统一回写为 paused（用户停止），
+        // 此处仅对排队/未命中任务显式置 paused，避免与 catch 的 paused 写入竞争
+        if (!result.wasRunning) {
+          return ctx.services.session.update({ id: input.id, status: "paused" });
+        }
+        // 运行中：catch 会把 session 置 paused；这里不重复写，避免覆盖
+        return ctx.services.session.getByIdLite(input.id);
+      }
+      // 普通 chat：hub.stop 归 active；禁止只改 DB 导致「DB 已停但流仍在跑」
+      try {
+        const { getStreamHub } = await import("../sessionStreamHub.js");
+        getStreamHub()?.stop(session.id, "user");
+      } catch {
+        /* hub 未初始化 */
+      }
+      return ctx.services.session.update({ id: input.id, status: "active" });
+    }),
+  // 保留 API：重启僵尸 interrupted（或用户手停的 paused）可程序化续跑；Chat UI 已去掉「恢复运行」，用户直接发消息即可
+  resume: publicProcedure
+    .meta({ description: "手动恢复已暂停（paused）会话：续跑服务端重启前未完成的 ReAct 轮。幂等——并发/重复调用不报错、不重复起流。", aiReadable: false })
+    .input(resumeSessionSchema)
+    .mutation(({ ctx, input }) => ctx.services.session.resume(input)),
+  // W1：会话树分支切换（更新 activeLeafId；旁路可生成 branch_summary）
+  switchBranch: publicProcedure
+    .meta({
+      description:
+        "切换会话树当前叶（游标）。切到当前叶幂等；若放弃旁路有新内容则生成 branch_summary。会话正在回复时拒绝（Goal revision 走内核 switchBranch，不经本 procedure）。",
+      aiReadable: false,
+    })
+    .input(switchBranchSchema)
+    .mutation(async ({ ctx, input }) => {
+      const hub = ctx.streamHub ?? getStreamHub();
+      if (hub?.isRunning(input.sessionId)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "会话正在回复，请停后再换枝",
+        });
+      }
+      const { switchBranch } = await import("../chatTree.js");
+      return switchBranch(ctx.prisma, ctx.config, input);
+    }),
+  tree: publicProcedure
+    .meta({ description: "返回会话消息树邻接表（nodes + children），供 UI 渲染分支指示。", aiReadable: false })
+    .input(sessionTreeSchema)
+    .query(async ({ ctx, input }) => {
+      const { getSessionTree } = await import("../chatTree.js");
+      return getSessionTree(ctx.prisma, input.sessionId);
+    }),
+  inspectTurn: publicProcedure
+    .meta({
+      description: "只读：本轮 VisibleSet 与活跃路径上下文摘要（不改状态）。",
+      aiReadable: false,
+    })
+    .input(inspectSessionTurnSchema)
+    .query(async ({ ctx, input }) => {
+      const { inspectSessionTurn } = await import("../sessionTurnInspect.js");
+      return inspectSessionTurn(ctx.prisma, ctx.config, input.sessionId);
+    }),
+  spawn: publicProcedure
+    .meta({ description: "创建并启动子代理任务（subagent）。返回 subagentSessionId 与 jobId。", aiReadable: false })
+    .input(
+      z.object({
+        parentSessionId: z.string().cuid(),
+        agentId: z.string().cuid().optional(),
+        task: z.string().min(1).max(2000),
+        label: z.string().max(120).optional(),
+        model: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { agent } = await resolveAgent(ctx.services, input.agentId);
+      const model = input.model || agent.model;
+      const started = await startAsyncAgentTask({
+        sessionId: input.parentSessionId,
+        task: input.task,
+        label: input.label,
+        config: ctx.config,
+        services: ctx.services,
+        agent: { id: agent.id, model, systemPrompt: agent.systemPrompt, tools: agent.tools },
+        source: "session.spawn",
+        isSubagent: true,
+      });
+      return {
+        subagentSessionId: started.subagentSessionId,
+        jobId: started.jobId,
+        status: started.status,
+        message: started.message,
+      };
+    }),
+  rerun: publicProcedure
+    .meta({ description: "基于原子代理会话重跑：创建新 subagent 并启动后台任务。", aiReadable: false })
+    .input(rerunSessionSchema)
+    .mutation(async ({ ctx, input }) => {
+      // A4：rerun 只需 parentSessionId/agentId/model/taskDescription，用轻量查询
+      const original = await ctx.services.session.getByIdLite(input.id);
+      if (!original) throw new Error("原子代理会话不存在");
+      const orig = original as { parentSessionId?: string | null; agentId?: string | null; model?: string; taskDescription?: string | null };
+      if (!orig.parentSessionId) throw new Error("该会话不是子代理，无法重跑");
+      const { agent } = await resolveAgent(ctx.services, orig.agentId ?? undefined);
+      const task = input.taskDescription ?? orig.taskDescription ?? "重跑任务";
+      const started = await startAsyncAgentTask({
+        sessionId: orig.parentSessionId,
+        task,
+        label: `${orig.model ?? agent.model} 重跑`,
+        config: ctx.config,
+        services: ctx.services,
+        agent: { id: agent.id, model: orig.model ?? agent.model, systemPrompt: agent.systemPrompt, tools: agent.tools },
+        source: "session.rerun",
+        isSubagent: true,
+      });
+      return {
+        subagentSessionId: started.subagentSessionId,
+        jobId: started.jobId,
+        status: started.status,
+        message: started.message,
+      };
+    }),
+  delete: publicProcedure.meta({ description: "删除会话及其所有消息（级联删除）。", aiReadable: false }).input(z.object({ id: z.string().cuid() })).mutation(({ ctx, input }) => ctx.services.session.delete(input.id)),
+  /** Chat UI：按需读工具结果落盘原文（仅 data/tool-results，防穿越） */
+  readToolResult: publicProcedure
+    .meta({
+      description: "读取落盘工具结果原文片段（path 须在 data/tool-results 内）。",
+      aiReadable: false,
+    })
+    .input(
+      z.object({
+        path: z.string().min(1).max(500),
+        offset: z.number().int().min(0).optional(),
+        maxChars: z.number().int().min(200).max(100_000).optional(),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      try {
+        return readToolResultPayload(ctx.config, input.path, {
+          offset: input.offset,
+          maxChars: input.maxChars,
+        });
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }),
+  // #11 批量删除：多选会话一次删除
+  bulkDelete: publicProcedure
+    .meta({ description: "批量删除多个会话及其消息。", aiReadable: false })
+    .input(z.object({ ids: z.array(z.string().cuid()).min(1).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      let deleted = 0;
+      const errors: string[] = [];
+      for (const id of input.ids) {
+        try {
+          await ctx.services.session.delete(id);
+          deleted++;
+        } catch (err) {
+          errors.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      return { deleted, errors: errors.length > 0 ? errors : undefined };
+    }),
+});

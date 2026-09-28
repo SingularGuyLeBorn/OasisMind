@@ -1,0 +1,92 @@
+missing
+                     */
+                    ResourceSpans.decodeDelimited = function decodeDelimited(reader) {
+                        if (!(reader instanceof $Reader))
+                            reader = new $Reader(reader);
+                        return this.decode(reader, reader.uint32());
+                    };
+                    /**
+                     * Verifies a ResourceSpans message.
+                     * @function verify
+                     * @memberof opentelemetry.proto.trace.v1.ResourceSpans
+                     * @static
+                     * @param {Object.<string,*>} message Plain object to verify
+                     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+                     */
+                    ResourceSpans.verify = function verify(message) {
+                        if (typeof message !== "object" || message === null)
+                            return "object expected";
+                        if (message.resource != null && message.hasOwnProperty("resource")) {
+                            var error = $root.opentelemetry.proto.resource.v1.Resource.verify(message.resource);
+                            if (error)
+                                return "resource." + error;
+                        }
+                        if (message.scopeSpans != null && message.hasOwnProperty("scopeSpans")) {
+                            if (!Array.isArray(message.scopeSpans))
+                                return "scopeSpans: array expected";
+                            for (var i = 0; i < message.scopeSpans.length; ++i) {
+                                var error = $root.opentelemetry.proto.trace.v1.ScopeSpans.verify(message.scopeSpans[i]);
+                                if (error)
+                                    return "scopeSpans." + error;
+                            }
+                        }
+                        if (message.schemaUrl != null && message.hasOwnProperty("schemaUrl"))
+                            if (!$util.isString(message.schemaUrl))
+                                return "schemaUrl: string expected";
+                        return null;
+                    };
+                    /**
+                     * Creates a ResourceSpans message from a plain object. Also converts values to their respective internal types.
+                     * @function fromObject
+                     * @memberof opentelemetry.proto.trace.v1.ResourceSpans
+                     * @static
+                     * @param {Object.<string,*>} object Plain object
+                     * @returns {opentelemetry.proto.trace.v1.ResourceSpans} ResourceSpans
+                     */
+                    ResourceSpans.fromObject = function fromObject(object) {
+                        if (object instanceof $root.opentelemetry.proto.trace.v1.ResourceSpans)
+                            return object;
+                        var message = new $root.opentelemetry.proto.trace.v1.ResourceSpans();
+                        if (object.resource != null) {
+                            if (typeof object.resource !== "object")
+                                throw TypeError(".opentelemetry.proto.trace.v1.ResourceSpans.resource: object expected");
+                            message.resource = $root.opentelemetry.proto.resource.v1.Resource.fromObject(object.resource);
+                        }
+                        if (object.scopeSpans) {
+                            if (!Array.isArray(object.scopeSpans))
+                                throw TypeError(".opentelemetry.proto.trace.v1.ResourceSpans.scopeSpans: array expected");
+                            message.scopeSpans = [];
+                            for (var i = 0; i < object.scopeSpans.length; ++i) {
+                                if (typeof object.scopeSpans[i] !== "object")
+                                    throw TypeError(".opentelemetry.proto.trace.v1.ResourceSpans.scopeSpans: object expected");
+                                message.scopeSpans[i] = $root.opentelemetry.proto.trace.v1.ScopeSpans.fromObject(object.scopeSpans[i]);
+                            }
+                        }
+                        if (object.schemaUrl != null)
+                            message.schemaUrl = String(object.schemaUrl);
+                        return message;
+                    };
+                    /**
+                     * Creates a plain object from a ResourceSpans message. Also converts values to other types if specified.
+                     * @function toObject
+                     * @memberof opentelemetry.proto.trace.v1.ResourceSpans
+                     * @static
+                     * @param {opentelemetry.proto.trace.v1.ResourceSpans} message ResourceSpans
+                     * @param {$protobuf.IConversionOptions} [options] Conversion options
+                     * @returns {Object.<string,*>} Plain object
+                     */
+                    ResourceSpans.toObject = function toObject(message, options) {
+                        if (!options)
+                            options = {};
+                        var object = {};
+                        if (options.arrays || options.defaults)
+                            object.scopeSpans = [];
+                        if (options.defaults) {
+                            object.resource = null;
+                            object.schemaUrl = "";
+                        }
+                        if (message.resource != null && message.hasOwnProperty("resource"))
+                            object.resource = $root.opentelemetry.proto.resource.v1.Resource.toObject(message.resource, options);
+                        if (message.scopeSpans && message.scopeSpans.length) {
+                            object.scopeSpans = [];
+                            for (var j = 0

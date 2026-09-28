@@ -1,0 +1,1271 @@
+/**
+ * OasisMind 前端通用共享 UI 组件库 (Shared UI Components)
+ *
+ * 【扁平化单文件设计】：
+ * 1. 包含 Pagination (分页组件)、EmptyState (空状态组件)。
+ * 2. 包含 LoadingState (加载骨架屏)、ConfirmDialog (玻璃模态二次确认弹窗)。
+ * 3. 包含 KpSelect (莫兰迪风格自定义下拉，替代原生 select)。
+ * 4. 彻底删除 components/shared/ 子目录，消除一堆 index.ts 导出的冗余度。
+ */
+
+"use client";
+
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
+import Link from "next/link";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Plus,
+  RotateCcw,
+  AlertTriangle,
+  CheckCircle2,
+  Globe,
+  XCircle,
+  LayoutGrid,
+  List,
+  Search,
+  Telescope,
+  Fish,
+  Database,
+  Shield,
+  Cloud,
+  Target,
+  Radar,
+  Languages,
+  Tags,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useCardDensity, type CardDensity } from "@/lib/useCardDensity";
+import { Button, buttonVariants } from "./ui/button";
+import { Skeleton } from "./ui/skeleton";
+import {
+  HIGH_VALUE_TAGS,
+  suggestTags,
+  type TagFacet,
+} from "@oasismind/shared";
+
+/* ═══════════════════════════════════════════════════════
+   1. Pagination — 通用分页组件
+   ═══════════════════════════════════════════════════════ */
+
+interface PaginationProps {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  totalPages,
+  onPageChange,
+}: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col items-center justify-between gap-3 px-2 py-4 sm:flex-row border-t border-[var(--om-divider-light)]"
+    >
+      <div className="text-sm text-[var(--om-text-3)]">
+        共 <span className="font-medium text-[var(--om-text-1)]">{total}</span> 条记录，
+        每页 <span className="font-medium text-[var(--om-text-1)]">{pageSize}</span> 条
+      </div>
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page === 1}
+          className="h-8 w-8 rounded-lg border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:text-[var(--om-text-1)] hover:bg-[var(--om-bg-soft)] transition"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        <div className="flex items-center space-x-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+            if (totalPages > 6 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
+              if (p === 2 || p === totalPages - 1) {
+                return (
+                  <span key={p} className="px-2 text-[var(--om-text-3)] text-xs">
+                    ...
+                  </span>
+                );
+              }
+              return null;
+            }
+
+            return (
+              <motion.button
+                key={p}
+                type="button"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onPageChange(p)}
+                className={cn(
+                  "h-8 w-8 rounded-lg text-xs font-medium transition",
+                  p === page
+                    ? "border border-[var(--om-brand)] bg-gradient-to-br from-[var(--om-brand-soft)] to-[var(--om-brand-soft)] text-[var(--om-brand-deep)] shadow-sm"
+                    : "border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]",
+                )}
+              >
+                {p}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          disabled={page === totalPages}
+          className="h-8 w-8 rounded-lg border-[var(--om-divider)] bg-white/40 backdrop-blur-sm text-[var(--om-text-2)] hover:text-[var(--om-text-1)] hover:bg-[var(--om-bg-soft)] transition"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   1b. EntityCard — 通用实体卡片（支持紧凑/舒适密度）
+   ═══════════════════════════════════════════════════════ */
+
+export function EntityCard({
+  density: densityProp,
+  className,
+  children,
+  ...props
+}: {
+  density?: CardDensity;
+  className?: string;
+  children: React.ReactNode;
+} & Omit<React.ComponentProps<typeof motion.div>, "children" | "className" | "density">) {
+  const { density: densityFromHook } = useCardDensity();
+  const density = densityProp ?? densityFromHook;
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0.5);
+  const y = useMotionValue(0.5);
+  const rotateX = useSpring(useTransform(y, [0, 1], [6, -6]), { stiffness: 280, damping: 26 });
+  const rotateY = useSpring(useTransform(x, [0, 1], [-6, 6]), { stiffness: 280, damping: 26 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    x.set((e.clientX - rect.left) / rect.width);
+    y.set((e.clientY - rect.top) / rect.height);
+  };
+  const handleMouseLeave = () => {
+    x.set(0.5);
+    y.set(0.5);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      layout
+      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 240, damping: 24 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      whileHover={{ scale: 1.015, z: 12 }}
+      className={cn(
+        "om-card-sheen group relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_4px_20px_-8px_rgba(0,135,235,0.14)] transition-shadow hover:shadow-[0_8px_28px_-10px_rgba(0,135,235,0.22)]",
+        density === "compact" ? "p-3" : "p-5",
+        className,
+      )}
+      {...props}
+    >
+      {/* 顶部渐变高光：常态微光，hover 点亮并横向扩散 */}
+      <div className="absolute inset-x-0 top-0 h-[3px] origin-center scale-x-[0.82] bg-gradient-to-r from-transparent via-[var(--om-brand)]/40 to-[var(--om-accent)]/40 opacity-40 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-hover:opacity-100" />
+      <div className="relative z-10">{children}</div>
+    </motion.div>
+  );
+}
+
+export function CardDensityToggle({ className }: { className?: string }) {
+  const { density, toggle } = useCardDensity();
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      title={density === "compact" ? "切换为舒适视图" : "切换为紧凑视图"}
+      className={cn(
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--om-divider)] text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+        className,
+      )}
+    >
+      {density === "compact" ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   2. EmptyState — 通用数据为空页面
+   ═══════════════════════════════════════════════════════ */
+
+interface EmptyStateProps {
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
+  actionLabel?: string;
+  actionIcon?: React.ReactNode;
+  onAction?: () => void;
+}
+
+export function EmptyState({
+  title = "暂无数据",
+  description = "目前没有任何记录，请创建新数据开始。",
+  icon,
+  actionLabel,
+  actionIcon,
+  onAction,
+}: EmptyStateProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 200, damping: 22 }}
+      className="relative flex min-h-[300px] flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/60 bg-white/45 p-8 text-center shadow-[0_8px_32px_-16px_rgba(0,135,235,0.18)] backdrop-blur-xl"
+    >
+      {/* 流体 blob 装饰 */}
+      <div
+        className="om-fluid-blob -left-10 -top-10"
+        style={{ width: 140, height: 140, background: "color-mix(in srgb, var(--om-glow-peach) 45%, transparent)" }}
+      />
+      <div
+        className="om-fluid-blob -bottom-12 -right-12"
+        style={{ width: 160, height: 160, background: "color-mix(in srgb, var(--om-glow-blue) 45%, transparent)", animationDelay: "-5s" }}
+      />
+
+      <div className="relative z-10">
+        <div className="om-header-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
+          {icon || <Inbox className="h-7 w-7" />}
+        </div>
+        <h3 className="om-display-serif mb-1 text-lg text-[var(--om-text-1)]">{title}</h3>
+        <p className="mx-auto max-w-sm text-sm text-[var(--om-text-3)]">{description}</p>
+        {onAction && actionLabel && (
+          <Button
+            onClick={onAction}
+            className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] px-5 text-white shadow-lg shadow-[rgba(0,135,235,0.22)] transition hover:opacity-95 hover:shadow-xl"
+          >
+            {actionIcon ?? <Plus className="w-4 h-4" />}
+            {actionLabel}
+          </Button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/** tRPC / 后端不可达：禁止画成「还没有数据」，否则用户以为库被清空 */
+export function QueryErrorState({
+  title = "暂时连不上后端",
+  description = "数据还在本地库里，不是被删了。确认 API 服务已启动后点重试。",
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <EmptyState
+      title={title}
+      description={description}
+      icon={<AlertTriangle className="h-7 w-7" />}
+      actionIcon={<RotateCcw className="h-4 w-4" />}
+      actionLabel="重试"
+      onAction={onRetry}
+    />
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   3. LoadingState — 流体加载骨架屏（Motion Anything）
+   ═══════════════════════════════════════════════════════ */
+
+interface LoadingStateProps {
+  count?: number;
+  label?: string;
+}
+
+export function LoadingState({ count = 3, label }: LoadingStateProps) {
+  return (
+    <div className="space-y-4 w-full">
+      {label && (
+        <div className="flex items-center gap-2 text-sm text-[var(--om-text-3)]">
+          <span className="om-dot-bounce">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span>{label}</span>
+        </div>
+      )}
+      {Array.from({ length: count }).map((_, idx) => (
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, y: 14, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            delay: idx * 0.07,
+            duration: 0.45,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/50 p-5 shadow-[0_4px_20px_-8px_rgba(0,135,235,0.15)] backdrop-blur-xl"
+        >
+          <div className="om-shimmer absolute inset-0 opacity-40" />
+          <div className="relative z-10 flex items-center justify-between">
+            <Skeleton className="h-5 w-1/4 rounded-lg bg-[var(--om-bg-mute)]" />
+            <Skeleton className="h-4 w-12 rounded-lg bg-[var(--om-bg-mute)]" />
+          </div>
+          <Skeleton className="relative z-10 mt-3 h-4 w-2/3 rounded-lg bg-[var(--om-bg-mute)]" />
+          <div className="relative z-10 flex items-center space-x-2 pt-3">
+            <Skeleton className="h-3 w-16 rounded-md bg-[var(--om-bg-mute)]" />
+            <Skeleton className="h-3 w-20 rounded-md bg-[var(--om-bg-mute)]" />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   4. ConfirmDialog — 二次确认对话框
+   ═══════════════════════════════════════════════════════ */
+
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  isDestructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export function ConfirmDialog({
+  isOpen,
+  title,
+  description,
+  confirmLabel = "确定",
+  cancelLabel = "取消",
+  isDestructive = false,
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Portal 需在客户端挂载后渲染，避免 SSR 访问 document
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 标准 portal 挂载模式
+    setMounted(true);
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  if (!mounted) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onCancel}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ 
+              scale: 1, 
+              opacity: 1, 
+              y: 0,
+              transition: { type: "spring", stiffness: 300, damping: 25 }
+            }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-6 shadow-2xl"
+          >
+            <div className="flex items-start gap-4">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                isDestructive 
+                  ? "bg-red-500/10 text-red-500" 
+                  : "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+              }`}>
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-[var(--om-text-1)]">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[var(--om-text-3)]">
+                  {description}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={onCancel}
+                className="rounded-xl border-[var(--om-divider)] text-[var(--om-text-2)] hover:bg-[var(--om-bg-soft)]"
+              >
+                {cancelLabel}
+              </Button>
+              <Button
+                data-testid="confirm-dialog-confirm"
+                onClick={() => {
+                  onConfirm();
+                  onCancel();
+                }}
+                className={`rounded-xl text-white transition-all ${
+                  isDestructive
+                    ? "bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                    : "bg-[var(--om-brand-deep)] hover:opacity-90 focus:ring-[var(--om-brand)]"
+                }`}
+              >
+                {confirmLabel}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   5. KpSelect — 莫兰迪自定义下拉（替代原生 select）
+   ═══════════════════════════════════════════════════════ */
+
+export interface KpSelectOption<T extends string = string> {
+  value: T;
+  label: string;
+}
+
+export interface KpSelectProps<T extends string = string> {
+  value: T;
+  options: KpSelectOption<T>[];
+  onChange: (value: T) => void;
+  disabled?: boolean;
+  variant?: "default" | "capsule";
+  size?: "sm" | "md";
+  className?: string;
+  menuClassName?: string;
+  placeholder?: string;
+  "aria-label"?: string;
+  /** 与控件同一行的左侧标签（capsule 场景） */
+  label?: string;
+}
+
+export function KpSelect<T extends string = string>({
+  value,
+  options,
+  onChange,
+  disabled,
+  variant = "default",
+  size = "md",
+  className,
+  menuClassName,
+  placeholder = "请选择",
+  "aria-label": ariaLabel,
+  label,
+}: KpSelectProps<T>) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const listId = React.useId();
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const selected = options.find((o) => o.value === value);
+
+  const updateMenuPos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 6,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+    window.addEventListener("scroll", updateMenuPos, true);
+    window.addEventListener("resize", updateMenuPos);
+    return () => {
+      window.removeEventListener("scroll", updateMenuPos, true);
+      window.removeEventListener("resize", updateMenuPos);
+    };
+  }, [open, updateMenuPos]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const triggerClass = cn(
+    "inline-flex items-center justify-between gap-2 border border-[var(--om-divider)] bg-[var(--om-bg)]/80 text-[var(--om-text-1)] shadow-sm outline-none transition",
+    "hover:border-[var(--om-brand-light)] focus-visible:border-[var(--om-brand)] focus-visible:ring-2 focus-visible:ring-[var(--om-brand)]/20",
+    "disabled:cursor-not-allowed disabled:opacity-45",
+    variant === "capsule" ? "rounded-full" : "rounded-xl w-full",
+    size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-2 text-sm",
+    className,
+  );
+
+  const control = (
+    <div className={cn(label ? "flex items-center justify-between gap-3" : "relative")}>
+      {label && (
+        <span className="text-xs font-medium text-[var(--om-text-2)]">{label}</span>
+      )}
+      <button
+        ref={triggerRef}
+        type="button"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-haspopup="listbox"
+        aria-label={ariaLabel ?? label}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((v) => !v)}
+        className={cn(triggerClass, label && "shrink-0")}
+      >
+        <span className="truncate">{selected?.label ?? placeholder}</span>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-[var(--om-text-3)] transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+    </div>
+  );
+
+  const menu =
+    open &&
+    typeof document !== "undefined" &&
+    ReactDOM.createPortal(
+      <AnimatePresence>
+        <motion.div
+          ref={menuRef}
+          id={listId}
+          role="listbox"
+          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: "fixed",
+            top: menuPos.top,
+            left: menuPos.left,
+            minWidth: Math.max(menuPos.width, variant === "capsule" ? 148 : menuPos.width),
+            zIndex: 9999,
+          }}
+          className={cn(
+            "overflow-hidden rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-lg shadow-[rgba(45,42,38,0.08)] backdrop-blur-md",
+            menuClassName,
+          )}
+        >
+          {options.map((opt) => {
+            const active = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                  active
+                    ? "bg-[var(--om-brand-soft)] font-medium text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+                )}
+              >
+                <span className="truncate">{opt.label}</span>
+                {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />}
+              </button>
+            );
+          })}
+        </motion.div>
+      </AnimatePresence>,
+      document.body,
+    );
+
+  return (
+    <>
+      {control}
+      {menu}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   6. VirtualFlatList — 固定行高虚拟滚动（L5-M06）
+   ═══════════════════════════════════════════════════════ */
+
+export interface VirtualFlatListProps<T> {
+  items: T[];
+  rowHeight: number;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  getKey: (item: T, index: number) => string;
+  className?: string;
+  overscan?: number;
+  emptyMessage?: string;
+}
+
+export function VirtualFlatList<T>({
+  items,
+  rowHeight,
+  renderItem,
+  getKey,
+  className,
+  overscan = 8,
+  emptyMessage = "暂无数据",
+}: VirtualFlatListProps<T>) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(320);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setViewportHeight(el.clientHeight || 320);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  if (items.length === 0) {
+    return (
+      <div className={cn("flex flex-1 items-center justify-center p-4 text-sm text-[var(--om-text-3)]", className)}>
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  const totalHeight = items.length * rowHeight;
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+  const endIndex = Math.min(items.length, Math.ceil((scrollTop + viewportHeight) / rowHeight) + overscan);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", className)}
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+    >
+      <div className="relative w-full" style={{ height: totalHeight }}>
+        {items.slice(startIndex, endIndex).map((item, i) => {
+          const index = startIndex + i;
+          return (
+            <div
+              key={getKey(item, index)}
+              className="absolute left-0 right-0"
+              style={{ top: index * rowHeight, height: rowHeight }}
+            >
+              {renderItem(item, index)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   6. NativeCapabilitiesPanel — 搜索/OCR/浏览器/read_article 能力
+   ═══════════════════════════════════════════════════════ */
+
+export const READ_PLATFORM_LABELS: Record<string, string> = {
+  zhihu: "知乎",
+  wechat: "微信",
+  xiaohongshu: "小红书",
+  douyin: "抖音",
+  bilibili: "B站",
+  weibo: "微博",
+  juejin: "掘金",
+  csdn: "CSDN",
+  cnblogs: "博客园",
+  jianshu: "简书",
+  infoq: "InfoQ",
+  segmentfault: "SegmentFault",
+  oschina: "开源中国",
+  github: "GitHub",
+  stackoverflow: "StackOverflow",
+};
+
+export interface NativeCapabilitiesData {
+  search: { priority: string; engines: string[] };
+  ocr: { modelsReady: boolean };
+  browser: { chromeInstalled: boolean; poolReady: boolean };
+  readArticle: {
+    platforms: string[];
+    cookies?: { zhihu: boolean; wechat: boolean; xhs: boolean; douyin: boolean };
+  };
+  infoSources?: { enabled: number };
+}
+
+function CapabilityStatusDot({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+        ok ? "bg-emerald-500/10 text-emerald-700" : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
+      )}
+    >
+      {ok ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+      {label}
+    </span>
+  );
+}
+
+/* ─── 搜索引擎小药丸 ─── */
+
+const ENGINE_STYLES: Record<
+  string,
+  {
+    label: string;
+    bg: string;
+    text: string;
+    border: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+> = {
+  bing_crawler: { label: "Bing Crawler", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200", icon: Search },
+  tinyfish: { label: "TinyFish", bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", icon: Fish },
+  tavily: { label: "Tavily", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", icon: Telescope },
+  serpapi: { label: "SerpAPI", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200", icon: Database },
+  duckduckgo: { label: "DuckDuckGo", bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200", icon: Shield },
+  baidu_qianfan: { label: "百度千帆", bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200", icon: Cloud },
+  metaso: { label: "Metaso", bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200", icon: Target },
+  bocha: { label: "Bocha", bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200", icon: Radar },
+  langsearch: { label: "LangSearch", bg: "bg-cyan-50", text: "text-cyan-600", border: "border-cyan-200", icon: Languages },
+  brave: { label: "Brave", bg: "bg-red-50", text: "text-red-600", border: "border-red-200", icon: Shield },
+  bing: { label: "Bing", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-200", icon: Search },
+  searxng: { label: "SearXNG", bg: "bg-lime-50", text: "text-lime-700", border: "border-lime-200", icon: Globe },
+};
+
+function SearchEnginePill({ engine, dense = false }: { engine: string; dense?: boolean }) {
+  const style = ENGINE_STYLES[engine];
+  const Icon = style?.icon ?? Search;
+  const label = style?.label ?? engine;
+  return (
+    <span
+      title={engine}
+      className={cn(
+        "inline-flex max-w-full items-center gap-1 rounded-full border font-medium transition hover:opacity-80",
+        dense ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]",
+        style?.bg ?? "bg-[var(--om-bg-mute)]",
+        style?.text ?? "text-[var(--om-text-2)]",
+        style?.border ?? "border-[var(--om-divider)]",
+      )}
+    >
+      <Icon className={cn("shrink-0", dense ? "h-2.5 w-2.5" : "h-3 w-3")} />
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
+/** 侧栏用：纵向优先级列表，避免药丸 + 长字符串横向撑破面板 */
+function SearchEnginePriorityList({ engines }: { engines: string[] }) {
+  if (engines.length === 0) return null;
+  return (
+    <ol className="min-w-0 space-y-1" aria-label="搜索引擎优先级">
+      {engines.map((engine, index) => {
+        const style = ENGINE_STYLES[engine];
+        const label = style?.label ?? engine;
+        return (
+          <li
+            key={`${engine}-${index}`}
+            className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--om-divider-light)] bg-[var(--om-bg)]/80 px-2 py-1"
+          >
+            <span
+              className={cn(
+                "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold tabular-nums",
+                index === 0
+                  ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                  : "bg-[var(--om-bg-mute)] text-[var(--om-text-3)]",
+              )}
+              aria-hidden
+            >
+              {index + 1}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-[var(--om-text-1)]" title={engine}>
+              {label}
+            </span>
+            {index === 0 && (
+              <span className="shrink-0 rounded bg-[var(--om-brand-soft)] px-1 py-px text-[8px] font-medium text-[var(--om-brand-deep)]">
+                首选
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+export function NativeCapabilitiesPanel({
+  data,
+  compact = false,
+  sidebar = false,
+  className,
+  title = "原生运行时能力",
+  detailHref,
+  detailLabel = "Tools 能力详情",
+  showSearchEnginesInCompact = false,
+}: {
+  data: NativeCapabilitiesData;
+  compact?: boolean;
+  /** Chat 右栏窄面板：纵向优先级 + 禁止横向溢出 */
+  sidebar?: boolean;
+  className?: string;
+  title?: string;
+  detailHref?: string;
+  detailLabel?: string;
+  showSearchEnginesInCompact?: boolean;
+}) {
+  const cookieEntries = data.readArticle.cookies
+    ? ([
+        ["zhihu", "知乎 Cookie", data.readArticle.cookies.zhihu],
+        ["wechat", "微信 Cookie", data.readArticle.cookies.wechat],
+        ["xhs", "小红书 Cookie", data.readArticle.cookies.xhs],
+        ["douyin", "抖音 Cookie", data.readArticle.cookies.douyin],
+      ] as const)
+    : [];
+
+  const showEngineList = sidebar || showSearchEnginesInCompact || !compact;
+  const usePriorityList = sidebar || (compact && showSearchEnginesInCompact);
+
+  return (
+    <div
+      className={cn(
+        "min-w-0 max-w-full overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)]",
+        sidebar ? "space-y-2.5 p-2.5" : compact ? "space-y-3 p-4" : "space-y-4 p-5",
+        className,
+      )}
+      data-testid="native-capabilities-panel"
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--om-text-1)]">
+          <Globe className="h-4 w-4 shrink-0 text-[var(--om-brand-deep)]" />
+          <span className="truncate">{title}</span>
+        </div>
+        {detailHref && (
+          <Link
+            href={detailHref}
+            className="shrink-0 text-[10px] font-medium text-[var(--om-brand-deep)] hover:underline"
+          >
+            {detailLabel} →
+          </Link>
+        )}
+      </div>
+      <div className={cn(sidebar ? "grid grid-cols-2 gap-1.5" : "flex flex-wrap gap-2")}>
+        <CapabilityStatusDot
+          ok={data.search.engines.length > 0}
+          label={`搜索 ${data.search.engines.length}`}
+        />
+        <CapabilityStatusDot ok={data.ocr.modelsReady} label="OCR" />
+        <CapabilityStatusDot ok={data.browser.poolReady} label="Playwright" />
+        <CapabilityStatusDot ok={data.browser.chromeInstalled} label="Chrome" />
+        {data.infoSources !== undefined && (
+          <CapabilityStatusDot
+            ok={data.infoSources.enabled > 0}
+            label={`信息源 ${data.infoSources.enabled}`}
+          />
+        )}
+      </div>
+      {showEngineList && data.search.engines.length > 0 && (
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-[10px] font-medium text-[var(--om-text-2)]">搜索引擎优先级</p>
+          {usePriorityList ? (
+            <SearchEnginePriorityList engines={data.search.engines} />
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                {data.search.engines.map((engine) => (
+                  <SearchEnginePill key={engine} engine={engine} />
+                ))}
+              </div>
+              {data.search.priority && (
+                <p
+                  className="break-all text-[10px] leading-relaxed text-[var(--om-text-3)]"
+                  title="SEARCH_ENGINE_PRIORITY"
+                >
+                  {data.search.priority}
+                </p>
+              )}
+            </>
+          )}
+          {sidebar && data.search.priority && (
+            <p className="text-[9px] leading-snug text-[var(--om-text-3)]">
+              顺序由服务端 <code className="text-[var(--om-text-2)]">SEARCH_ENGINE_PRIORITY</code> 决定，详见 Tools 页。
+            </p>
+          )}
+        </div>
+      )}
+      {cookieEntries.length > 0 && (
+        <div className={cn(sidebar ? "grid grid-cols-2 gap-1.5" : "flex flex-wrap gap-1.5")}>
+          {cookieEntries.map(([key, label, ok]) => (
+            <CapabilityStatusDot key={key} ok={ok} label={label} />
+          ))}
+        </div>
+      )}
+      {!compact && (
+        <div>
+          <p className="mb-2 text-[10px] font-medium text-[var(--om-text-2)]">
+            read_article · {data.readArticle.platforms.length} 平台
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.readArticle.platforms.map((p) => (
+              <span
+                key={p}
+                className="rounded-full bg-[var(--om-bg-mute)] px-2 py-0.5 text-[10px] text-[var(--om-text-2)]"
+              >
+                {READ_PLATFORM_LABELS[p] ?? p}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   9. PageHeader — 管理页紧凑标题头（替代各页整屏渐变 Hero banner）
+   统一 17+ 管理页视觉，少占一屏，h1 文案不变（E2E 断言 level=1 heading）
+   ═══════════════════════════════════════════════════════ */
+
+export interface PageHeaderAction {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  disabled?: boolean;
+}
+
+export function PageHeader({
+  icon: Icon,
+  title,
+  description,
+  action,
+  children,
+  showDensityToggle = false,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  action?: PageHeaderAction;
+  children?: React.ReactNode;
+  showDensityToggle?: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 24 }}
+      className="flex flex-col gap-3 rounded-2xl border border-white/50 bg-white/45 px-3 py-3 shadow-[0_8px_28px_-18px_rgba(0,80,160,0.2)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-4"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        {Icon && (
+          <span className="om-header-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+            <Icon className="h-5 w-5" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--om-text-1)]">{title}</h1>
+          {description && (
+            <p className="mt-0.5 text-xs text-[var(--om-text-3)] whitespace-normal break-words leading-relaxed max-w-3xl">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {children}
+        {showDensityToggle && <CardDensityToggle />}
+        {action &&
+          (action.href ? (
+            <Link
+              href={action.href}
+              className={cn(buttonVariants(), "gap-1.5")}
+            >
+              {action.icon && <action.icon className="h-4 w-4" />}
+              {action.label}
+            </Link>
+          ) : (
+            <Button onClick={action.onClick} disabled={action.disabled} className="gap-1.5">
+              {action.icon && <action.icon className="h-4 w-4" />}
+              {action.label}
+            </Button>
+          ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   10. AdminPage / AdminFormShell — 管理控制台宽版布局
+   列表与编辑页统一 max-w-[1400px]，禁止 max-w-2xl 细长条
+   ═══════════════════════════════════════════════════════ */
+
+/** 管理列表页外壳：铺满主栏可用宽度，超宽屏封顶 1400px */
+export function AdminPage({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        // 只由 Shell <main> 滚动；禁止 flex-1（会锁死高度）+ 禁止本层 overflow-y 裁切
+        "om-admin-surface om-spectrum relative mx-auto w-full max-w-[1400px] space-y-4 overflow-x-hidden px-3 py-4 sm:space-y-5 sm:px-4 sm:py-6 md:px-8 md:py-8",
+        "[&_.om-table-scroll]:overflow-x-auto [&_.om-table-scroll]:overscroll-x-contain",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** 管理编辑/配置页外壳：与列表同宽，避免中间一条、两边空白 */
+export function AdminFormShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "om-admin-surface om-spectrum relative mx-auto w-full max-w-[1400px] space-y-5 overflow-x-hidden px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 md:px-8 md:py-8",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   标签筛选条 / 标签输入（统一 tags 约定）
+   ═══════════════════════════════════════════════════════ */
+
+export function TagFilterBar({
+  facets,
+  value,
+  onChange,
+  className,
+  emptyHint = "暂无标签",
+}: {
+  facets: TagFacet[];
+  value: string | null;
+  onChange: (tag: string | null) => void;
+  className?: string;
+  emptyHint?: string;
+}) {
+  const chips =
+    facets.length > 0
+      ? facets
+      : HIGH_VALUE_TAGS.map((tag) => ({ tag, count: 0, highValue: true }));
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium text-[var(--om-text-3)]">
+        <Tags className="h-3 w-3" />
+        标签
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(null)}
+        className={cn(
+          "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition backdrop-blur-sm",
+          !value
+            ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+            : "border border-white/40 bg-white/40 text-[var(--om-text-3)] hover:bg-white/60",
+        )}
+      >
+        全部
+      </button>
+      {chips.length === 0 ? (
+        <span className="text-[10px] text-[var(--om-text-3)]">{emptyHint}</span>
+      ) : (
+        chips.slice(0, 24).map((f) => {
+          const active = value === f.tag;
+          return (
+            <button
+              key={f.tag}
+              type="button"
+              onClick={() => onChange(active ? null : f.tag)}
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition backdrop-blur-sm",
+                active
+                  ? "bg-gradient-to-r from-[var(--om-brand-deep)] to-[var(--om-brand)] text-white shadow-sm"
+                  : f.highValue
+                    ? "border border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+                    : "border border-white/40 bg-white/40 text-[var(--om-text-2)] hover:bg-white/60",
+              )}
+            >
+              {f.tag}
+              {f.count > 0 ? (
+                <span className="ml-1 opacity-70">{f.count}</span>
+              ) : null}
+            </button>
+          );
+        })
+      )}
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] text-[var(--om-text-3)] hover:text-[var(--om-text-1)]"
+          title="清除筛选"
+        >
+          <X className="h-3 w-3" />
+          清除
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function TagInputField({
+  value,
+  onChange,
+  corpus = [],
+  placeholder = "非常有用, 必装, …",
+  hint,
+  className,
+}: {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  corpus?: string[];
+  placeholder?: string;
+  hint?: string;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const display = editing ? draft : value.join(", ");
+  const suggestions = suggestTags(
+    (editing ? draft : "").split(/[,，]/).pop()?.trim() ?? "",
+    value,
+    corpus,
+  );
+
+  const commit = (raw: string) => {
+    const next = raw
+      .split(/[,，\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    onChange(next);
+    setDraft(next.join(", "));
+  };
+
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <div className="relative">
+        <input
+          value={display}
+          onChange={(e) => {
+            if (!editing) setEditing(true);
+            setDraft(e.target.value);
+          }}
+          onFocus={() => {
+            setEditing(true);
+            setDraft(value.join(", "));
+          }}
+          onBlur={() => {
+            commit(draft);
+            window.setTimeout(() => setEditing(false), 150);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(draft);
+            }
+          }}
+          placeholder={placeholder}
+          className="w-full rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--om-brand-deep)]"
+        />
+        {editing && suggestions.length > 0 && (
+          <div className="absolute z-20 mt-1 max-h-40 w-full overflow-auto rounded-xl border border-[var(--om-divider)] bg-[var(--om-bg-alt)] p-1 shadow-lg">
+            {suggestions.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className="flex w-full items-center rounded-lg px-2 py-1.5 text-left text-xs text-[var(--om-text-2)] hover:bg-[var(--om-brand-soft)]"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  const base = draft
+                    .split(/[,，\n]+/)
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  base.pop();
+                  const next = [...base, tag];
+                  onChange(next);
+                  setDraft(`${next.join(", ")}, `);
+                  setEditing(true);
+                }}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {hint && <p className="text-[10px] text-[var(--om-text-3)]">{hint}</p>}
+    </div>
+  );
+}

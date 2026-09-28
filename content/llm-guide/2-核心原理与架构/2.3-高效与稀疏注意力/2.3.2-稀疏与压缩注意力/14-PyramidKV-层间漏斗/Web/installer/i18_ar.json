@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "تنزيل",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "قراءة",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "كتابة",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "عمليات",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "من"
+}

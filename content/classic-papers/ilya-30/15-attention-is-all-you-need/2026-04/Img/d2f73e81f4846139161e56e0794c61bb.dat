@@ -1,0 +1,1290 @@
+arser": "^4.1.0"
+      },
+      "engines": {
+        "node": "^10 || ^12 || >= 14"
+      },
+      "peerDependencies": {
+        "postcss": "^8.1.0"
+      }
+    },
+    "node_modules/postcss-modules-scope": {
+      "version": "3.2.1",
+      "resolved": "https://registry.npmjs.org/postcss-modules-scope/-/postcss-modules-scope-3.2.1.tgz",
+      "integrity": "sha512-m9jZstCVaqGjTAuny8MdgE88scJnCiQSlSrOWcTQgM2t32UBe+MUmFSO5t7VMSfAf/FJKImAxBav8ooCHJXCJA==",
+      "license": "ISC",
+      "dependencies": {
+        "postcss-selector-parser": "^7.0.0"
+      },
+      "engines": {
+        "node": "^10 || ^12 || >= 14"
+      },
+      "peerDependencies": {
+        "postcss": "^8.1.0"
+      }
+    },
+    "node_modules/postcss-modules-values": {
+      "version": "4.0.0",
+      "resolved": "https://registry.npmjs.org/postcss-modules-values/-/postcss-modules-values-4.0.0.tgz",
+      "integrity": "sha512-RDxHkAiEGI78gS2ofyvCsu7iycRv7oqw5xMWn9iMoR0N/7mf9D50ecQqUo5BZ9Zh2vH4bCUR/ktCqbB9m8vJjQ==",
+      "license": "ISC",
+      "dependencies": {
+        "icss-utils": "^5.0.0"
+      },
+      "engines": {
+        "node": "^10 || ^12 || >= 14"
+      },
+      "peerDependencies": {
+        "postcss": "^8.1.0"
+      }
+    },
+    "node_modules/postcss-selector-parser": {
+      "version": "7.1.4",
+      "resolved": "https://registry.npmjs.org/postcss-selector-parser/-/postcss-selector-parser-7.1.4.tgz",
+      "integrity": "sha512-HeP7D2wyhkR+XaK6v4W8oRF62Dsz4flyuczALJp61GckGm42u1saSSJ/0auvcBqxs3jMRFEcPK34At/0JBKdOg==",
+      "license": "MIT",
+      "dependencies": {
+        "cssesc": "^3.0.0",
+        "util-deprecate": "^1.0.2"
+      },
+      "engines": {
+        "node": ">=4"
+      }
+    },
+    "node_modules/postcss-value-parser": {
+      "version": "4.2.0",
+      "resolved": "https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz",
+      "integrity": "sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==",
+      "license": "MIT"
+    },
+    "node_modules/prettier": {
+      "version": "3.8.1",
+      "resolved": "https://registry.npmjs.org/prettier/-/prettier-3.8.1.tgz",
+      "integrity": "sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==",
+      "license": "MIT",
+      "bin": {
+        "prettier": "bin/prettier.cjs"
+      },
+      "engines": {
+        "node": ">=14"
+      },
+      "funding": {
+        "url": "https://github.com/prettier/prettier?sponsor=1"
+      }
+    },
+    "node_modules/prompts": {
+      "version": "2.4.2",
+      "resolved": "https://registry.npmjs.org/prompts/-/prompts-2.4.2.tgz",
+      "integrity": "sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==",
+      "license": "MIT",
+      "dependencies": {
+        "kleur": "^3.0.3",
+        "sisteransi": "^1.0.5"
+      },
+      "engines": {
+        "node": ">= 6"
+      }
+    },
+    "node_modules/punycode": {
+      "version": "2.3.1",
+      "resolved": "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz",
+      "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6"
+      }
+    },
+    "node_modules/react": {
+      "version": "19.2.3",
+      "resolved": "https://registry.npmjs.org/react/-/react-19.2.3.tgz",
+      "integrity": "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/react-dom": {
+      "version": "19.2.3",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.3.tgz",
+      "integrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==",
+      "license": "MIT",
+      "dependencies": {
+        "scheduler": "^0.27.0"
+      },
+      "peerDependencies": {
+        "react": "^19.2.3"
+      }
+    },
+    "node_modules/react-refresh": {
+      "version": "0.18.0",
+      "resolved": "https://registry.npmjs.org/react-refresh/-/react-refresh-0.18.0.tgz",
+      "integrity": "sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/recast": {
+      "version": "0.23.11",
+      "resolved": "https://registry.npmjs.org/recast/-/recast-0.23.11.tgz",
+      "integrity": "sha512-YTUo+Flmw4ZXiWfQKGcwwc11KnoRAYgzAE2E7mXKCjSviTKShtxBsN6YUUBB2gtaBzKzeKunxhUwNHQuRryhWA==",
+      "license": "MIT",
+      "dependencies": {
+        "ast-types": "^0.16.1",
+        "esprima": "~4.0.0",
+        "source-map": "~0.6.1",
+        "tiny-invariant": "^1.3.3",
+        "tslib": "^2.0.1"
+      },
+      "engines": {
+        "node": ">= 4"
+      }
+    },
+    "node_modules/recast/node_modules/source-map": {
+      "version": "0.6.1",
+      "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz",
+      "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==",
+      "license": "BSD-3-Clause",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/remotion": {
+      "version": "4.0.489",
+      "resolved": "https://registry.npmjs.org/remotion/-/remotion-4.0.489.tgz",
+      "integrity": "sha512-r7VBcWKqsGjaXT6Iv6XNFrzsZl45JvLOi6WmMYMN1zkpCoo0sm9xoi8g2pLF2Y9D7EBgygXFaG4DjjaKOVcPSg==",
+      "license": "SEE LICENSE IN LICENSE.md",
+      "peerDependencies": {
+        "react": ">=16.8.0",
+        "react-dom": ">=16.8.0"
+      }
+    },
+    "node_modules/require-from-string": {
+      "version": "2.0.2",
+      "resolved": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
+      "integrity": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/scheduler": {
+      "version": "0.27.0",
+      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz",
+      "integrity": "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==",
+      "license": "MIT"
+    },
+    "node_modules/schema-utils": {
+      "version": "4.3.3",
+      "resolved": "https://registry.npmjs.org/schema-utils/-/schema-utils-4.3.3.tgz",
+      "integrity": "sha512-eflK8wEtyOE6+hsaRVPxvUKYCpRgzLqDTb8krvAsRIwOGlHoSgYLgBXoubGgLd2fT41/OUYdb48v4k4WWHQurA==",
+      "license": "MIT",
+      "dependencies": {
+        "@types/json-schema": "^7.0.9",
+        "ajv": "^8.9.0",
+        "ajv-formats": "^2.1.1",
+        "ajv-keywords": "^5.1.0"
+      },
+      "engines": {
+        "node": ">= 10.13.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/webpack"
+      }
+    },
+    "node_modules/semver": {
+      "version": "7.5.3",
+      "resolved": "https://registry.npmjs.org/semver/-/semver-7.5.3.tgz",
+      "integrity": "sha512-QBlUtyVk/5EeHbi7X0fw6liDZc7BBmEaSYn01fMU1OUYbf6GPsbTtd8WmnqbI20SeycoHSeiybkE/q1Q+qlThQ==",
+      "license": "ISC",
+      "dependencies": {
+        "lru-cache": "^6.0.0"
+      },
+      "bin": {
+        "semver": "bin/semver.js"
+      },
+      "engines": {
+        "node": ">=10"
+      }
+    },
+    "node_modules/shebang-command": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
+      "integrity": "sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==",
+      "license": "MIT",
+      "dependencies": {
+        "shebang-regex": "^3.0.0"
+      },
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/shebang-regex": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz",
+      "integrity": "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/signal-exit": {
+      "version": "3.0.7",
+      "resolved": "https://registry.npmjs.org/signal-exit/-/signal-exit-3.0.7.tgz",
+      "integrity": "sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==",
+      "license": "ISC"
+    },
+    "node_modules/sisteransi": {
+      "version": "1.0.5",
+      "resolved": "https://registry.npmjs.org/sisteransi/-/sisteransi-1.0.5.tgz",
+      "integrity": "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==",
+      "license": "MIT"
+    },
+    "node_modules/source-map": {
+      "version": "0.8.0-beta.0",
+      "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.8.0-beta.0.tgz",
+      "integrity": "sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==",
+      "deprecated": "The work that was done in this beta branch won't be included in future versions",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "whatwg-url": "^7.0.0"
+      },
+      "engines": {
+        "node": ">= 8"
+      }
+    },
+    "node_modules/source-map-js": {
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
+      "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==",
+      "license": "BSD-3-Clause",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/source-map-support": {
+      "version": "0.5.21",
+      "resolved": "https://registry.npmjs.org/source-map-support/-/source-map-support-0.5.21.tgz",
+      "integrity": "sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==",
+      "license": "MIT",
+      "dependencies": {
+        "buffer-from": "^1.0.0",
+        "source-map": "^0.6.0"
+      }
+    },
+    "node_modules/source-map-support/node_modules/source-map": {
+      "version": "0.6.1",
+      "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz",
+      "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==",
+      "license": "BSD-3-Clause",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/stackframe": {
+      "version": "1.3.4",
+      "resolved": "https://registry.npmjs.org/stackframe/-/stackframe-1.3.4.tgz",
+      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw==",
+      "license": "MIT"
+    },
+    "node_modules/strip-final-newline": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/strip-final-newline/-/strip-final-newline-2.0.0.tgz",
+      "integrity": "sha512-BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6"
+      }
+    },
+    "node_modules/style-loader": {
+      "version": "4.0.0",
+      "resolved": "https://registry.npmjs.org/style-loader/-/style-loader-4.0.0.tgz",
+      "integrity": "sha512-1V4WqhhZZgjVAVJyt7TdDPZoPBPNHbekX4fWnCJL1yQukhCeZhJySUL+gL9y6sNdN95uEOS83Y55SqHcP7MzLA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 18.12.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/webpack"
+      },
+      "peerDependencies": {
+        "webpack": "^5.27.0"
+      }
+    },
+    "node_modules/supports-color": {
+      "version": "8.1.1",
+      "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-8.1.1.tgz",
+      "integrity": "sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==",
+      "license": "MIT",
+      "dependencies": {
+        "has-flag": "^4.0.0"
+      },
+      "engines": {
+        "node": ">=10"
+      },
+      "funding": {
+        "url": "https://github.com/chalk/supports-color?sponsor=1"
+      }
+    },
+    "node_modules/tapable": {
+      "version": "2.3.3",
+      "resolved": "https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz",
+      "integrity": "sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/webpack"
+      }
+    },
+    "node_modules/terser": {
+      "version": "5.49.0",
+      "resolved": "https://registry.npmjs.org/terser/-/terser-5.49.0.tgz",
+      "integrity": "sha512-SNiDnXyHSrxVcIOtVbULzcTmniUiwcV7Nwdyj1twVubeTmbjoa8p69KKDpfkdoOavuM4/GRm1+ykI8qqnavHoA==",
+      "license": "BSD-2-Clause",
+      "dependencies": {
+        "@jridgewell/source-map": "^0.3.3",
+        "acorn": "^8.15.0",
+        "commander": "^2.20.0",
+        "source-map-support": "~0.5.20"
+      },
+      "bin": {
+        "terser": "bin/terser"
+      },
+      "engines": {
+        "node": ">=10"
+      }
+    },
+    "node_modules/terser-webpack-plugin": {
+      "version": "5.6.1",
+      "resolved": "https://registry.npmjs.org/terser-webpack-plugin/-/terser-webpack-plugin-5.6.1.tgz",
+      "integrity": "sha512-201R5j+sJpK8nFWwKVyNfZot8FaJbLZDq5evriVzbV1wDtSXDjRUDRfJzHpAaxFDMEhsZL1QkeqM61wgsS3KaQ==",
+      "license": "MIT",
+      "dependencies": {
+        "@jridgewell/trace-mapping": "^0.3.25",
+        "jest-worker": "^27.4.5",
+        "schema-utils": "^4.3.0",
+        "terser": "^5.31.1"
+      },
+      "engines": {
+        "node": ">= 10.13.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/webpack"
+      },
+      "peerDependencies": {
+        "webpack": "^5.1.0"
+      },
+      "peerDependenciesMeta": {
+        "@minify-html/node": {
+          "optional": true
+        },
+        "@swc/core": {
+          "optional": true
+        },
+        "@swc/css": {
+          "optional": true
+        },
+        "@swc/html": {
+          "optional": true
+        },
+        "clean-css": {
+          "optional": true
+        },
+        "cssnano": {
+          "optional": true
+        },
+        "csso": {
+          "optional": true
+        },
+        "esbuild": {
+          "optional": true
+        },
+        "html-minifier-terser": {
+          "optional": true
+        },
+        "lightningcss": {
+          "optional": true
+        },
+        "postcss": {
+          "optional": true
+        },
+        "uglify-js": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/tiny-invariant": {
+      "version": "1.3.3",
+      "resolved": "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz",
+      "integrity": "sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==",
+      "license": "MIT"
+    },
+    "node_modules/to-fast-properties": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/to-fast-properties/-/to-fast-properties-2.0.0.tgz",
+      "integrity": "sha512-/OaKK0xYrs3DmxRYqL/yDc+FxFUVYhDlXMhRmv3z915w2HF1tnN1omB354j8VUGO/hbRzyD6Y3sA7v7GS/ceog==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=4"
+      }
+    },
+    "node_modules/tr46": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/tr46/-/tr46-1.0.1.tgz",
+      "integrity": "sha512-dTpowEjclQ7Kgx5SdBkqRzVhERQXov8/l9Ft9dVM9fmg0W0KQSVaXX9T4i6twCPNtYiZM53lpSSUAwJbFPOHxA==",
+      "license": "MIT",
+      "dependencies": {
+        "punycode": "^2.1.0"
+      }
+    },
+    "node_modules/tslib": {
+      "version": "2.8.1",
+      "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
+      "license": "0BSD"
+    },
+    "node_modules/typescript": {
+      "version": "5.9.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "dev": true,
+      "license": "Apache-2.0",
+      "bin": {
+        "tsc": "bin/tsc",
+        "tsserver": "bin/tsserver"
+      },
+      "engines": {
+        "node": ">=14.17"
+      }
+    },
+    "node_modules/undici-types": {
+      "version": "8.3.0",
+      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-8.3.0.tgz",
+      "integrity": "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==",
+      "license": "MIT"
+    },
+    "node_modules/update-browserslist-db": {
+      "version": "1.2.3",
+      "resolved": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz",
+      "integrity": "sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==",
+      "funding": [
+        {
+          "type": "opencollective",
+          "url": "https://opencollective.com/browserslist"
+        },
+        {
+          "type": "tidelift",
+          "url": "https://tidelift.com/funding/github/npm/browserslist"
+        },
+        {
+          "type": "github",
+          "url": "https://github.com/sponsors/ai"
+        }
+      ],
+      "license": "MIT",
+      "dependencies": {
+        "escalade": "^3.2.0",
+        "picocolors": "^1.1.1"
+      },
+      "bin": {
+        "update-browserslist-db": "cli.js"
+      },
+      "peerDependencies": {
+        "browserslist": ">= 4.21.0"
+      }
+    },
+    "node_modules/util-deprecate": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz",
+      "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==",
+      "license": "MIT"
+    },
+    "node_modules/watchpack": {
+      "version": "2.5.2",
+      "resolved": "https://registry.npmjs.org/watchpack/-/watchpack-2.5.2.tgz",
+      "integrity": "sha512-6i/00NBjP4yGPs+caKSyRfpTF/8Torsu0MOW3mMzIbhgISFder8i7xbqgHlLMwJrdiN8ndBV3UA1/AfzPSr+jg==",
+      "license": "MIT",
+      "dependencies": {
+        "graceful-fs": "^4.1.2"
+      },
+      "engines": {
+        "node": ">=10.13.0"
+      }
+    },
+    "node_modules/webidl-conversions": {
+      "version": "4.0.2",
+      "resolved": "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-4.0.2.tgz",
+      "integrity": "sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==",
+      "license": "BSD-2-Clause"
+    },
+    "node_modules/webpack": {
+      "version": "5.105.0",
+      "resolved": "https://registry.npmjs.org/webpack/-/webpack-5.105.0.tgz",
+      "integrity": "sha512-gX/dMkRQc7QOMzgTe6KsYFM7DxeIONQSui1s0n/0xht36HvrgbxtM1xBlgx596NbpHuQU8P7QpKwrZYwUX48nw==",
+      "license": "MIT",
+      "dependencies": {
+        "@types/eslint-scope": "^3.7.7",
+        "@types/estree": "^1.0.8",
+        "@types/json-schema": "^7.0.15",
+        "@webassemblyjs/ast": "^1.14.1",
+        "@webassemblyjs/wasm-edit": "^1.14.1",
+        "@webassemblyjs/wasm-parser": "^1.14.1",
+        "acorn": "^8.15.0",
+        "acorn-import-phases": "^1.0.3",
+        "browserslist": "^4.28.1",
+        "chrome-trace-event": "^1.0.2",
+        "enhanced-resolve": "^5.19.0",
+        "es-module-lexer": "^2.0.0",
+        "eslint-scope": "5.1.1",
+        "events": "^3.2.0",
+        "glob-to-regexp": "^0.4.1",
+        "graceful-fs": "^4.2.11",
+        "json-parse-even-better-errors": "^2.3.1",
+        "loader-runner": "^4.3.1",
+        "mime-types": "^2.1.27",
+        "neo-async": "^2.6.2",
+        "schema-utils": "^4.3.3",
+        "tapable": "^2.3.0",
+        "terser-webpack-plugin": "^5.3.16",
+        "watchpack": "^2.5.1",
+        "webpack-sources": "^3.3.3"
+      },
+      "bin": {
+        "webpack": "bin/webpack.js"
+      },
+      "engines": {
+        "node": ">=10.13.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/webpack"
+      },
+      "peerDependenciesMeta": {
+        "webpack-cli": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/webpack-sources": {
+      "version": "3.5.1",
+      "resolved": "https://registry.npmjs.org/webpack-sources/-/webpack-sources-3.5.1.tgz",
+      "integrity": "sha512-jyuiGJdtvY434z5bUZrjz67v76/ePNvFZTp9Mdz29IlH4+GPsgyGjiv0fKI+M7BdkU6ADjulUcKAd3tUK3WlEw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=10.13.0"
+      }
+    },
+    "node_modules/whatwg-url": {
+      "version": "7.1.0",
+      "resolved": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-7.1.0.tgz",
+      "integrity": "sha512-WUu7Rg1DroM7oQvGWfOiAK21n74Gg+T4elXEQYkOhtyLeWiJFoOGLXPKI/9gzIie9CtwVLm8wtw6YJdKyxSjeg==",
+      "license": "MIT",
+      "dependencies": {
+        "lodash.sortby": "^4.7.0",
+        "tr46": "^1.0.1",
+        "webidl-conversions": "^4.0.2"
+      }
+    },
+    "node_modules/which": {
+      "version": "2.0.2",
+      "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
+      "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
+      "license": "ISC",
+      "dependencies": {
+        "isexe": "^2.0.0"
+      },
+      "bin": {
+        "node-which": "bin/node-which"
+      },
+      "engines": {
+        "node": ">= 8"
+      }
+    },
+    "node_modules/ws": {
+      "version": "8.21.0",
+      "resolved": "https://registry.npmjs.org/ws/-/ws-8.21.0.tgz",
+      "integrity": "sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=10.0.0"
+      },
+      "peerDependencies": {
+        "bufferutil": "^4.0.1",
+        "utf-8-validate": ">=5.0.2"
+      },
+      "peerDependenciesMeta": {
+        "bufferutil": {
+          "optional": true
+        },
+        "utf-8-validate": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/yallist": {
+      "version": "4.0.0",
+      "resolved": "https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz",
+      "integrity": "sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==",
+      "license": "ISC"
+    },
+    "node_modules/zod": {
+      "version": "4.3.6",
+      "resolved": "https://registry.npmjs.org/zod/-/zod-4.3.6.tgz",
+      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/colinhacks"
+      }
+    }
+  }
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                �的支配权,确保了长思维链 (Long CoT) 训练的平稳进行.
+
+这是包含 ByteDance 与 Fudan 最新研究成果的 **DAPO** 与 **BAPO** 章节补完版本.这一部分的数学推导将聚焦于 2025 年强化学习中两个最关键的问题: **熵崩塌 (Entropy Collapse)** 与 **异策略梯度的分布失衡 (Off-Policy Distribution Shift)** .
+
+### 5.4 GFPO: 简洁性的数学约束与过滤机制
+
+**Group Filtered Policy Optimization (GFPO)** 由华为诺亚方舟实验室与腾讯 AI Lab 于 2025 年联合提出,论文标题 *《Sample More to Think Less》* 直击要害.该算法旨在解决思维链 (CoT) 中的 **"Verbosity Bias" (冗长偏差)** ——即模型倾向于生成冗长且无效的推理步骤来“骗取”奖励.这一算法的数学美感在于它如何通过简单的集合操作,解决了强化学习中极其棘手的**多目标优化 (Multi-objective Optimization)** 问题——即在保证准确率的同时极度压缩推理成本.
+
+#### 5.4.1 多目标优化的困境: 准确率 vs. 长度
+
+在标准 RLHF 中,我们通常简单地在奖励函数中加入长度惩罚: 
+
+$R(x, y) = \mathbb{I}(y \text{ is correct}) - \lambda \cdot \text{Length}(y)$
+
+这是一个数学上极其脆弱的线性组合.
+
+- 若 $\lambda$ 过小,模型无视长度惩罚,继续啰嗦.- 若 $\lambda$ 过大,模型为了缩短长度,会直接跳过关键推理步骤,导致准确率 ($Acc$) 崩塌.
+要在连续的 $\lambda$ 空间中寻找帕累托最优 (Pareto Optimal) 是极其困难的.
+
+#### 5.4.2 组过滤机制 (Group Filtering Mechanism)
+
+GFPO 放弃了显式的 $\lambda$ 惩罚项,转而使用**基于排序的过滤算子 (Sorting-based Filtering Operator)** .
+
+对于输入 $x$,我们从旧策略 $\pi_{\text{old}}$ 中采样一组输出 $\mathcal{G} = \{y_1, y_2, \dots, y_G\}$.
+定义**正确集 (Correct Set)** 为所有答案正确的轨迹集合: 
+
+$\mathcal{S}_{\text{correct}} = \{ y_i \in \mathcal{G} \mid \text{Answer}(y_i) = \text{True} \}$
+
+如果 $\mathcal{S}_{\text{correct}}$ 为空,则退化为标准探索.
+如果 $\mathcal{S}_{\text{correct}}$ 非空,我们在该集合内寻找**最短**的轨迹作为正样本 (Winner),其余作为负样本 (Loser) 或仅用于基线计算: 
+
+$y^* = \operatorname*{arg\,min}_{y \in \mathcal{S}_{\text{correct}}} \text{Length}(y)$
+
+#### 5.4.3 目标函数的数学本质: 条件概率转移
+
+GFPO 的优化目标不再是最大化所有正确路径的概率,而是最大化**最短正确路径**的概率.
+我们在数学上将其形式化为在条件分布下的似然最大化.
+
+定义过滤后的目标分布 $P_{\text{target}}$: 
+
+$P_{\text{target}}(y|x) \propto \begin{cases} 
+1, & \text{if } y = y^* \\
+0, & \text{otherwise}
+\end{cases}$
+
+GFPO 的损失函数可以写为带有**自适应权重**的策略梯度: 
+
+$\mathcal{L}_{\text{GFPO}} = -\mathbb{E}_{x} \left[ \sum_{y_i \in \mathcal{G}} w_i \log \pi_\theta(y_i|x) \right]$
+
+其中权重 $w_i$ 由过滤逻辑决定: 
+
+$w_i = \begin{cases} 
+1, & \text{if } y_i = y^* \text{ (Correct \& Shortest)} \\
+0, & \text{otherwise}
+\end{cases}$
+
+或者更平滑的 DPO 形式,将 $y^*$ 视为 Winner $y_w$,将 $\mathcal{S}_{\text{correct}}$ 中较长的轨迹视为 Loser $y_l$: 
+
+$\mathcal{L}_{\text{GFPO-DPO}} = - \log \sigma \left( \beta \log \frac{\pi(y^*|x)}{\pi_{\text{ref}}(y^*|x)} - \beta \log \frac{\pi(y_{\text{long}}|x)}{\pi_{\text{ref}}(y_{\text{long}}|x)} \right)$
+
+#### 5.4.4 梯度流形分析: 为什么能 "Think Less"?
+
+让我们分析这个梯度的物理意义.
+在标准 RL 中,所有正确的轨迹都会产生正向梯度 $\nabla \log \pi(y_{correct})$.这会导致概率密度函数 (PDF) 在所有正确路径上变得平坦 (Flat).
+
+而在 GFPO 中,梯度实际上是: 
+
+$\nabla J \approx \nabla \log \pi(y_{\text{short}}) - \nabla \log \pi(y_{\text{long}})$
+
+这在概率流形 (Probability Manifold) 上产生了一个**推力**,将概率质量 (Probability Mass) 从“正确但冗长”的区域强行挤压到“正确且简洁”的区域.
+数学上,这等价于寻找推理任务的**最小充分统计量 (Minimal Sufficient Statistic)** .模型被迫学会只输出对最终答案有贡献的 Token,从而实现了 "Sample More (to find the shortest path) to Think Less (during inference)".
+
+### 5.5 DAPO: 解耦裁剪与动态采样的工程美学
+
+**Decoupled Clip and Dynamic Sampling Policy Optimization (DAPO)** 由 ByteDance Seed 联合清华 AIR 在 2025 年提出.它并非单一的算法改进,而是一套针对大规模 Reasoning 模型的**系统级数学修正**.其核心在于解决了 PPO 在训练后期面临的“熵崩塌”问题.
+
+#### 5.5.1 熵崩塌与 PPO 的对称性缺陷
+
+标准 PPO 的 Clip 机制假设了正负偏离的对称性: 
+
+$\text{clip}(\rho_t, 1-\epsilon, 1+\epsilon)$
+
+然而,DAPO 团队观察到一个致命现象: 在 Reasoning 任务中,模型往往会过早收敛到某些特定的“答题套路”,导致策略熵 (Entropy) 急剧下降.
+数学上,这意味着 $\pi_\theta$ 在某些高分路径上的概率密度过度集中.而 PPO 严格的 $1+\epsilon$ 上界限制了策略在探索新高分路径时的更新步幅,反而在 $A < 0$ 时通过 $1-\epsilon$ 迅速打压低分路径.这种**不对称的更新动力学**导致了探索能力的丧失.
+
+#### 5.5.2 Decoupled Clip (非对称解耦裁剪)
+
+DAPO 提出打破对称性,引入**非对称裁剪区间**.具体而言,对于正优势样本 ($A > 0$),放宽上界约束,允许模型在高回报区域进行更激进的探索;而对于负优势样本,保持严格约束以维持稳定性.
+
+$\mathcal{L}_{\text{CLIP}} = \begin{cases} 
+\min(\rho_t A_t, \text{clip}(\rho_t, 1-\epsilon, 1+\epsilon_{\text{high}}) A_t), & \text{if } A_t > 0 \\
+\min(\rho_t A_t, \text{clip}(\rho_t, 1-\epsilon, 1+\epsilon) A_t), & \text{if } A_t \le 0
+\end{cases}$
+
+其中 $\epsilon_{\text{high}} > \epsilon$ (例如 $\epsilon=0.1, \epsilon_{\text{high}}=0.2$).
+**数学本质**: 这实际上是在 Trust Region 中引入了**方向性偏置 (Directional Bias)** ,即: **我们容忍策略向“好”的方向偏离得更远,但严厉禁止向“坏”的方向偏离.** 这直接对抗了熵崩塌,迫使策略保持多样性.
+
+#### 5.5.3 动态采样 (Dynamic Sampling)
+
+在大规模 RL 中,大量的样本要么是极其简单的 (Reward=1),要么是完全错误的 (Reward=0).这些样本产生的梯度方差极大且信息量极低.DAPO 引入了基于样本难度的动态滤波器: 
+
+$\mathcal{D}_{\text{eff}} = \{ (q, o) \in \mathcal{D} \mid 0 < \mathbb{E}[r(q,o)] < 1 \}$
+
+在数学上,这等价于在梯度估计中引入一个指示函数 $\mathbb{I}(\cdot)$,剔除了梯度贡献为 0 或 噪声极大的样本,使得优化器始终工作在**决策边界 (Decision Boundary)** 附近,极大提升了样本效率.
+
+---
+
+### 5.6 BAPO: 自适应平衡与异策略的救赎
+
+**Balanced Policy Optimization (BAPO)** 由复旦大学团队在论文 *《Stabilizing Off-Policy Reinforcement Learning for LLMs via Balanced Policy Optimization with Adaptive Clipping》* 中提出.它直指 Off-Policy RL (即使用过时数据训练) 中的核心痛点——**正负样本的梯度失衡**.
+
+#### 5.6.1 异策略下的梯度失衡定理
+
+在 Off-Policy 设置下,我们使用旧策略 $\pi_{\text{old}}$ 产生的数据更新新策略 $\pi_\theta$.随着训练进行,$\pi_\theta$ 与 $\pi_{\text{old}}$ 的分布差异 $D_{KL}(\pi_\theta || \pi_{\text{old}})$ 逐渐增大.
+
+BAPO 的理论分析指出: 
+当策略发生漂移时,重要性采样比率 $\rho_t$ 的分布会发生偏斜.特别是,**负优势样本 (**$A < 0$**) 往往占据主导地位**,且其梯度更容易穿透 Clipping 边界.这导致模型在训练中主要是在“学习不该做什么” (Suppression),而不是“学习该做什么” (Exploration).这种**否定式学习**极易导致策略退化.
+
+#### 5.6.2 自适应裁剪 (Adaptive Clipping)
+
+为了平衡正负样本的贡献,BAPO 抛弃了固定的 $\epsilon$,提出了**自适应裁剪边界**.其核心思想是根据当前策略与行为策略的距离,动态调整裁剪阈值.
+
+定义自适应系数 $\alpha$,BAPO 的目标函数修正为: 
+
+$\mathcal{L}_{\text{BAPO}} = \mathbb{E} \left[ \min(\rho_t A_t, \text{clip}(\rho_t, 1-\epsilon(\rho), 1+\epsilon(\rho)) A_t) \right]$
+
+这里的 $\epsilon(\rho)$ 不再是常数,而是 $\rho$ 分布统计量的函数.更精妙的是,BAPO 通过理论推导出了一个**熵保持裁剪规则 (Entropy-Preserving Clip Rule)** : 
+
+$\epsilon_{\text{adaptive}} \propto \frac{\mathbb{E}_{\rho \sim \pi_{\text{old}}} [A^+]}{\mathbb{E}_{\rho \sim \pi_{\text{old}}} [|A^-|]}$
+
+**数学本质**: 
+BAPO 实际上是在执行一种**梯度的重加权 (Gradient Re-weighting)** .
+
+- 当负样本梯度过大时,自动收缩负区间的 Clip 范围,限制其破坏力.- 当正样本稀疏时,自动扩张正区间的 Clip 范围,放大其探索信号.
+
+这一机制在数学上保证了 $\mathbb{E}[\nabla J]$ 的方向始终沿着**熵增**与**奖励最大化**的合力方向,从而在 Off-Policy 数据及其陈旧的情况下,依然能稳定地微调大模型.
+
+### 5.7 Dr.GRPO: 统计偏差的数学修正
+
+在 DeepSeek-R1 的复现研究 *《Understanding R1-Zero-Like Training》* 中，研究者发现原始 GRPO 的优势函数存在两个致命的统计学偏差: **难度偏差 (Difficulty Bias)** 与 **长度偏差 (Length Bias)** . **Dr.GRPO** 对此进行了极简却深刻的修正. 
+
+#### 5.7.1 标准差归一化的陷阱
+
+原始 GRPO 定义优势为 $A_i = \frac{r_i - \bar{r}}{\sigma}$. 
+从统计学角度看，标准化是为了让不同 Scale 的奖励具有可比性. 然而，在推理任务中，这引入了**难度偏差**: 
+
+- **全对/全错场景 (Low Variance)** : 当题目极难(全错)或极易(全对)时，组内分数的标准差 $\sigma \to 0$. - 此时，微小的随机扰动会导致 $A_i$ 趋向无穷大(数值爆炸)，或者在 $\epsilon$ 平滑下，导致简单题和困难题产生的梯度幅度相同. 
+
+**数学修正**: Dr.GRPO 证明了在 RL 语境下，**去除分母**是更优的无偏估计: 
+
+$A_i^{\text{Dr}} = r_i - \bar{r}$
+
+这恢复了奖励的绝对物理意义: 做对一道难题($\bar{r}$ 低，优势大)应当比做对一道送分题($\bar{r}$ 高，优势小)提供更强的梯度信号. 
+
+#### 5.7.2 长度归一化的去偏
+
+在原始实现中，Token 级梯度的累加往往除以序列长度 $L$ 进行归一化. 这在数学上导致了**长度偏差**: 
+
+$\nabla J \propto \frac{1}{L} \sum \nabla \log \pi$
+
+模型发现，只要生成更长的序列，$L$ 变大，梯度惩罚就被稀释. 这导致模型倾向于生成“废话”来逃避惩罚. Dr.GRPO 移除了这一归一化项(或改为除以固定常数)，迫使模型直面每个 Token 的梯度贡献. 
+
+---
+
+### 5.8 GSPO-Token: 粒度的辩证统一
+
+在 5.2 节中我们推导了序列级 GSPO. 然而，完全忽略 Token 级的细粒度信息有时过于激进. 阿里巴巴团队提出了 **GSPO-token**，试图在序列稳定性与 Token 灵活性之间寻找数学上的平衡. 
+
+#### 5.8.1 混合优势流形
+
+标准 GSPO 将整个序列视为一个整体，分配同一个优势 $A_{\text{seq}}$. 
+GSPO-token 允许优势函数在序列内部发生变化，但在梯度加权时引入序列级约束: 
+
+$\nabla J_{\text{GSPO-token}} = \mathbb{E} \left[ \sum_{t=1}^T \left( \frac{\pi_\theta(\tau)}{\pi_{\text{old}}(\tau)} \right) A(s_t, a_t) \nabla_\theta \log \pi_\theta(a_t|s_t) \right]$
+
+请注意其中的精妙之处: 
+
+- **权重项** $\frac{\pi_\theta(\tau)}{\pi_{\text{old}}(\tau)}$ 是**序列级**的比率(GSPO 的核心)，保证了 MoE 路由的稳定性. 
+
+- **优势项** $A(s_t, a_t)$ 和梯度项是 **Token 级**的，保留了对局部语法和逻辑的微调能力. 
+
+这在数学上构建了一个**受约束的梯度流形**: 模型可以在 Token 级别进行微操，但其整体更新方向必须服从序列整体概率提升的大局. 
+
+## 6. 结语: 熵减、流形与智能的数学本质
+
+回顾这万字长文,我们走过了一条从朴素到精巧,再由繁入简的数学朝圣之路.
+
+起初,我们面对的是 $\mathbb{E}[G_t]$ 这一原始的期望定义,它在贝尔曼方程的迭代中显得步履蹒跚.为了驯服高维空间中狂暴的梯度方差,一代代算法应运而生,它们不仅是工程上的补丁,更是数学思想在不同维度的投影: 
+
+- **PPO** 是**控制理论**的胜利,它用截断机制模拟了信赖域,解决了策略更新的**步长稳定性**问题.
+
+- **DPO** 是**变分法**的奇迹,它通过解析解消去了配分函数 $Z(x)$,证明了最优策略与奖励函数在数学上的**对偶性**.
+
+- **GRPO/GSPO/GMPO** 是**稳健统计学**的复兴,它们分别从群论均值、序列独立性和几何不等式的角度,解决了长思维链推理中的**方差爆炸与重尾分布**问题.
+
+- **GFPO** 是**奥卡姆剃刀**的体现,它通过寻找最小充分统计量,在概率流形上挤压冗余信息,实现了**准确率与简洁性的帕累托最优**.
+
+- **DAPO/BAPO** 则是**热力学**的防线,它们通过非对称裁剪与自适应平衡,对抗训练后期的**熵崩塌 (Entropy Collapse)** ,维持了系统的探索热度.
+
+这不仅仅是一部算法演进史,更是一部**数学家与高维空间维数灾难 (Curse of Dimensionality) 的搏斗史**.
+
+我们看到,所有的努力最终都指向了同一个方向: **如何在保持分布多样性 (Entropy) 的同时,以最小的样本代价 (Sample Efficiency),将策略网络引导至奖励流形的全局极大值点.**
+
+未来的 LLM 对齐算法,界限将更加模糊.训练 (Training) 与推理 (Inference) 将在数学上统一,我们或许会看到基于**能量模型 (Energy-based Models)** 的统一框架,或是基于**微分博弈 (Differential Games)** 的多智能体对齐.
+
+但无论形式如何变化,请永远记住: 虽然代码库会更新,架构会迭代,但支撑这一切的**不动点定理、琴生不等式、泰勒展开与贝叶斯法则**,是永恒不变的真理.
+
+**数学,才是智能的通用语言.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ng environments, the EDiT Cheng et al. [2025] method has been adopted, which is an efficient asynchronous training approach tailored for LLMs. In addition to computational efficiency, I/O also has a significant impact on overall performance. To address this, we have developed PCache and a cross-cluster synchronization solution, further enhancing the overall training efficiency. Lastly, to improve data synthesis efficiency and accelerate the evaluation process, a high-performance offline inference framework, named Flood, has been introduced.
+
+![](./images/4d024e16fbaafae4ad28c65b2753aa110e36987a8db0cd93943e7daa1ad2a6ba.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+```mermaid
+graph TD
+    A["Training process (Megatron, FSDP...)"] --> B["Event & stack"]
+    B --> C["Tracing daemon"]
+    C --> D["Fast hang-error diagnosis"]
+    D --> E["Diagnostic engine"]
+    E --> F["Slowdown diagnosis"]
+    F --> G["XPUTIMER"]
+    G --> H["Errors & Slowdown"]
+    H --> I["Algorithm Team"]
+    H --> J["Infrastructure Team"]
+    H --> K["Operations Team"]
+    E --> L["Timing"]
+    L --> C
+    E --> M["Metric"]
+    E --> N["Metric"]
+    E --> O["..."]
+    E --> P["Metric"]
+```
+</details>
+
+Figure 3: The general structure of XPUTimer.
+
+# 2.1 Lightweight Profiler
+
+To address performance bottlenecks and hidden inefficiencies in distributed training of large-scale models, we propose a lightweight analytical tool, referred to as XPUTimer (see Figure 3). XPUTimer has been integrated into our open-source DLRover system, enabling real-time diagnostic capabilities across the entire training stack. This tool also facilitates the retrieval of status information from diverse training environments. As illustrated in Figure 3, XPUTimer comprises two primary components: (1) lightweight selective tracing and (2) diagnostic engine. The selective tracing mechanism is designed to monitor critical training code segments while incurring minimal overhead. The diagnostic engine, in turn, leverages the real-time data collected by a tracking daemon to rapidly pinpoint the root causes of training anomalies.
+
+# 2.1.1 Lightweight Selective Tracing
+
+The lightweight selective tracing mechanism is designed to capture and log critical events selectively, ensuring that sufficient diagnostic information is collected without incurring the substantial memory and computational overhead of full-scale monitoring. The key features of this mechanism can be summarized as follows:
+
+• Error interception. To identify high-level operations that may introduce performance bottlenecks or errors, we implemented Python-layer interception that allows dynamic configuration of APIs for monitoring (e.g., garbage collection, synchronization, and data loading). This is achieved by modifying environment variables such as TRACED\_PYTHON\_API. In addition, we designed a framework-agnostic kernel monitoring mechanism using C++/CUDA-level interception. This approach enables the tracking of computation kernels (e.g., cuBLAS and Flash Attention), communication kernels (e.g., NCCL operations), and custom operators via an explicit registration interface.   
+• Interference avoidance. XPUTimer minimizes its impact on the training process by employing asynchronous event management. Specifically, it combines synchronous APIs for timestamp recording with asynchronous kernels of accelerators using CUDA events to monitor execution states. For instance, events are injected following NCCL kernel launches, and their completion is monitored in a background thread. This approach ensures that the diagnostic process does not interfere with the primary training workflow.
+
+![](./images/95ef1a3f8c3acd66ae78d4a5d5447b7cb149ee2c33c2b24020bbf0c6f501b08b.jpg)
+
+<details>
+<summary>bar</summary>
+
+| Framework | Torch Full (MB) | Torch w/o Stack (MB) | Torch w/o Layout&Stack (MB) | XPUTimer (MB) |
+| :--- | :--- | :--- | :--- | :--- |
+| Megatron | 150 | 50 | 40 | 0.5 |
+| FSDP | 160 | 50 | 35 | 0.8 |
+| DeepSpeed | 150 | 15 | 10 | 0.6 |
+</details>
+
+Figure 4: The memory usage comparisons between XPUTimer and other methods.
+
+![](./images/1357ee1750639a6714b5b7e6572fd10c21e737f9c945bb5bcec93f913c148c79.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+```mermaid
+graph LR
+    subgraph Traditional Distributed Method
+        A1["Worker 1"] --> B1["Global Sync"]
+        A2["Worker 2"] --> B2["Global Sync"]
+        A3["Worker 3"] --> B3["Global Sync"]
+        A4["Worker 4"] --> B4["Global Sync"]
+    end
+    subgraph EDiT Method
+        C1["Worker 1"] --> D1["Global Sync"]
+        C2["Worker 2"] --> D2["Global Sync"]
+        C3["Worker 3"] --> D3["Global Sync"]
+        C4["Worker 4"] --> D4["Global Sync"]
+    end
+    B1 -->|straggler| B2
+    B2 -->|straggler| B3
+    B3 -->|straggler| B4
+    B4 -->|straggler| B1
+    B1 -->|straggler| B3
+    B2 -->|straggler| B4
+    B3 -->|straggler| B1
+    B4 -->|straggler| B2
+    B1 -->|straggler| B4
+    B2 -->|straggler| B3
+    B3 -->|straggler| B4
+    B4 -->|straggler| B1
+    B1 -->|straggler| B4
+    B2 -->|straggler| B3
+    B3 -->|straggler| B4
+    B4 -->|straggler| B1
+    B4 -->|straggler| B2
+    B4 -->|straggler| B3
+    B4 -->|straggler| B4
+```
+</details>
+
+Figure 5: The comparisons of traditional distributed method and EDiT method.
+
+• Low overhead. XPUTimer is designed to maintain a low-cost diagnostic footprint. To enable asynchronous event management, it employs an optimized architecture that includes: (1) event pool management to reuse pre-allocated CUDA events, (2) asynchronous data processing via a dedicated background thread for event collection and logging, and (3) data compression techniques that record only essential fields, such as timestamps and kernel input layouts. These optimizations lead to significantly reduced log sizes, averaging approximately 1.5 MB per accelerator per training step, which represents an approximate 90% reduction in memory usage, as illustrated in Figure 4.
+
+# 2.1.2 Diagnostic Engine
+
+The diagnostic engine is also a core component of XPUTimer, responsible for analyzing real-time data collected by the tracing daemon to quickly pinpoint the root causes of training anomalies. It tackles the attribution challenges in large-scale distributed training through two key modules: error diagnosis and performance degradation diagnosis. The design of the diagnostic engine is built around two core objectives:
+
+• Fast attribution. Through the implementation of a multi-layered diagnostic approach that integrates call stack analysis with in-kernel tracing, the process of error localization is significantly optimized, reducing the time complexity from the conventional $\dot { O } ( l o g N )$ to O(1).   
+• Fine-grained diagnostics. By combining macro-level metrics $( \mathrm { e . g . }$ ., throughput) with micro-level metrics $( \mathrm { e . g . }$ , kernel launch latency distribution), it enables anomaly detection across computation, communication, and non-critical operations such as data loading.
+
+![](./images/af0c9919f23fac6c8a14b509d305f5a388cc88092511db68f3a14aa5ed905795.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+System architecture flowchart showing interactions between Worker A, Worker B, and Worker C with modules, parameters, and update operations.
+</details>
+
+Figure 6: The schematic illustration of the EDiT method with 4 workers as an example.
+
+![](./images/6b6c56cf403e0ed407c796636485d0e86e03790809cc86b683e1b6e5e37ef66e.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+```mermaid
+graph TD
+    A["Worker A"] -->|θ(t,τ)^(1,l)| B["Eliminate Anomalies"]
+    C["Worker B"] -->|θ(t,τ)^(2,l)| D["Eliminate Anomalies"]
+    E["Worker C"] -->|θ(t,τ)^(3,l)| F["Eliminate Anomalies"]
+    G["Worker D"] -->|θ(t,τ)^(4,l)| H["Eliminate Anomalies"]
+    B -->|Δt^(1,l)| I["Anomaly"]
+    D -->|Δt^(2,l)| I
+    F -->|Δt^(3,l)| I
+    H -->|Δt^(4,l)| I
+    I -->|Δt^(1,l) ×w1 = 0| J["Clip"]
+    J -->|Δ̄t^(l)| K["Sync"]
+    K -->|θ̄t^(1,l)| L["OuterOpt"]
+    K -->|θ̄t^(2,l)| M["OuterOpt"]
+    K -->|θ̄t^(3,l)| N["OuterOpt"]
+    K -->|θ̄t^(4,l)| O["OuterOpt"]
+    L --> P["Output"]
+    M --> Q["Output"]
+    N --> R["Output"]
+    O --> S["Output"]
+    style A fill:#f9f,stroke:#333
+    style C fill:#f9f,stroke:#333
+    style E fill:#f9f,stroke:#333
+    style G fill:#f9f,stroke:#333
+    style B fill:#ccf,stroke:#333
+    style D fill:#ccf,stroke:#333
+    style F fill:#ccf,stroke:#333
+    style H fill:#ccf,stroke:#333
+    style B fill:#cfc,stroke:#333
+    style D fill:#cfc,stroke:#333
+    style E fill:#cfc,stroke:#333
+    style F fill:#cfc,stroke:#333
+    style G fill:#cfc,stroke:#333
+    style H fill:#cfc,stroke:#333
+    style I fill:#ffc,stroke:#333
+    style J fill:#ffc,stroke:#333
+    style K fill:#ffc,stroke:#333
+    style L fill:#ffc,stroke:#333
+    style M fill:#ffc,stroke:#333
+    style N fill:#ffc,stroke:#333
+    style O fill:#ffc,stroke:#333
+    style P fill:#ffc,stroke:#333
+    style Q fill:#ffc,stroke:#333
+    style R fill:#ffc,stroke:#333
+    style S fill:#ffc,stroke:#333
+```
+</details>
+
+Figure 7: The illustration of pseudo gradient penalty strategy in EDiT method.
+
+# 2.2 High-Performance Training Strategy
+
+With the explosive growth of model size and training data volume, distributed training methods have become critical for efficient training. However, traditional synchronous distributed training methods (e.g., All-Reduce) face the following challenges: (1) high communication overhead, (2) straggler problem, (3) difficulty in elastic training, and (4) sensitivity to data noise. To address these problems, we adopted EDiT method Cheng et al. [2025], which combines a tailored Local SGD (Stochastic Gradient Descent) approach with model sharding techniques to enhance large-scale training efficiency. The comparisons of EDiT and traditional distributed method are illustrated in Figure 5, and the pipeline of EDiT is illustrated in Figure 6. The characteristics of EDiT can be summarized as follows:
+
+• Layer-wise synchronization. Different from other Local SGD-based methods, EDiT synchronizes parameters layer by layer during forward propagation, significantly reducing the volume of data communicated in a single operation. With the prefetch method, the communication and computation are further overlapped, minimizing idle time and improving overall efficiency.   
+• Pseudo gradient penalty. EDiT employs a pseudo gradient penalty strategy to suppress the loss spikes caused by diverse large-scale corpus and leverages the differences among workers to improve model performance, which is illustrated in Figure 7. This strategy consists of anomaly elimination, weighted averaging, and gradient clipping.
+
+(1) Anomaly elimination. The pseudo gradients of each worker are tracked using exponential moving average to detect anomalous workers, which are subsequently excluded from the synchronization process.   
+(2) Weighted averaging. Contributions from workers are weighted based on their pseudo gradient norms, effectively reducing the influence of noisy or outlier gradients on overall model updates.   
+(3) Gradient clipping. A predefined threshold is applied to clip overly large pseudo gradients, ensuring gradient steps remain within a stable range and preventing training instability or divergence.
+
+![](./images/c16ac3e9bd385f5b8ff8e87cacabb06e053579bf3509f33f7b64aa3b8370bb61.jpg)
+
+<details>
+<summary>line</summary>
+
+| Number of Accelerators | EDiT (Step/s) | baseline (Step/s) |
+| ---------------------- | ------------- | ----------------- |
+| 256                    | 0.091         | 0.064             |
+| 1024                   | 0.091         | 0.055             |
+| 2048                   | 0.091         | 0.055             |
+| 4096                   | 0.091         | 0.055             |
+</details>
+
+Figure 8: The speed comparisons of traditional distributed method and EDiT.
+
+• Time-based synchronization. Instead of synchronizing after a fixed number of iterations (as in conventional Local SGD-based methods), synchronization can also be triggered based on a time threshold in the EDiT method, enabling faster nodes to perform more local updates before syncing. By decoupling synchronization frequency from iteration counts, EDiT solves the problem of fixed stragglers. Furthermore, this adaptive synchronization mechanism enhances scalability and resilience by dynamically balancing workloads, particularly in heterogeneous environments with diverse hardware capabilities.
+
+As shown in Figure 8, in an ideal environment, as the number of accelerators increases, the minimum speed of the baseline approaches $5 . 4 9 e ^ { - 2 }$ step/s, at which point the speed-up ratio of EDiT would reach 66.1%. In practice, however, the average step time of slow steps tends to grow longer as the number of accelerators increases or the model size increases, making the actual acceleration effect of EDiT even more pronounced.
+
+# 2.3 Efficient and Highly-Reliable Cross-Cluster Data Synchronization
+
+The training of modern MoE models requires processing massive datasets, often involving concurrent training and data processing tasks across distributed clusters. This necessitates efficient and reliable access to diverse datasets across clusters, which becomes challenging in cross-cluster environments. To address this problem, we will introduce (1) a robust distributed storage system and (2) an optimized cross-cluster synchronization mechanism respectively to support the needs of distributed training in the following section.
+
+# 2.3.1 Distributed Storage System
+
+The exponential growth of data and increasing demands for high-performance input/output (I/O) in MoE models have set higher standards for storage system performance. We propose an in-house solution, PCache, has been developed as an all-flash distributed file caching system. PCache is specifically designed to support large-scale internal model training, addressing the performance and scalability requirements of modern distributed training environments.
+
+In contemporary storage architectures, most storage services are deployed as independent clusters. However, in multicluster environments, device multi-tenancy has become a crucial requirement. This shift introduces two significant challenges:
+
+• Dependence on cluster provider storage services. Each cluster provider offers varied storage capabilities, leading to potential inconsistencies in training performance across heterogeneous cluster environments.   
+• Challenges in building custom storage services. Independently deployed storage systems face challenges related to hardware compatibility across multiple sites, further compounded by the associated operational and maintenance costs. Networking constraints exacerbate these difficulties. Some cluster providers offer high-performance networks for data transfer, while others do not.
+
+To address these challenges, we have designed a storage service specifically optimized for large-scale model training (see Figure 9), incorporating the following core features:
+
+![](./images/bb37d44a31fafbb57f69d3dfcbc556b5772a78440010ecf353f978aad9be5ef7.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+```mermaid
+graph TD
+    A["K8s Cluster"] --> B["Node"]
+    A --> C["PCache"]
+    A --> D["Training"]
+    B --> E["Node"]
+    C --> F["PCache"]
+    D --> G["Training"]
+    H["K8s Cluster"] --> I["Node"]
+    H --> J["PCache"]
+    H --> K["Training"]
+    I --> L["Meta"]
+    J --> L
+    K --> L
+    L --> M["Unifile Python SDK / Posix (FUSE)"]
+    M --> N["Node"]
+    M --> O["Data"]
+    N --> P["Training Worker"]
+    O --> Q["Data"]
+    P --> R["Training Data"]
+    Q --> S["Data"]
+    R --> T["Checkpoint"]
+    S --> U["Checkpoint"]
+    T --> V["Node"]
+    U --> W["Node"]
+    V --> X["Node"]
+    W --> Y["Node"]
+    X --> Z["Node"]
+    Y --> AA["Node"]
+    Z --> AB["Node"]
+    AA --> AC["Node"]
+    AB --> AD["Node"]
+    AC --> AE["Node"]
+    AD --> AF["Node"]
+    AE --> AG["Node"]
+    AF --> AH["Node"]
+    AG --> AI["Node"]
+    AH --> AJ["Node"]
+    AI --> AK["Node"]
+    AJ --> AL["Node"]
+    AK --> AM["Node"]
+    AL --> AN["Node"]
+    AM --> AO["Node"]
+    AN --> AP["Node"]
+    AO --> AQ["Node"]
+    AP --> AR["Node"]
+    AQ --> AS["Node"]
+    AR --> AT["Node"]
+    AS --> AU["Node"]
+    AT --> AV["Node"]
+    AU --> AW["Node"]
+    AV --> AX["Node"]
+    AW --> AY["Node"]
+    AX --> AZ["Node"]
+    AY --> BA["Node"]
+    AZ --> BB["Node"]
+    BA --> BC["Node"]
+    BB --> BD["Node"]
+    BC --> BE["Node"]
+    BD --> BF["Node"]
+    BE --> BG["Node"]
+    BF --> BH["Node"]
+    BG --> BI["Node"]
+    BH --> BJ["Node"]
+    BI --> BK["Node"]
+    BJ --> BL["Node"]
+    BK --> BM["Node"]
+    BL --> BN["Node"]
+    BM --> BO["Node"]
+    BN --> BP["Node"]
+    BO --> BQ["Node"]
+    BP --> BR["Node"]
+    BQ --> BS["Node"]
+    BC --> BT["Node"]
+    BD --> BU["Node"]
+    BE --> BV["Node"]
+    BF --> BW["Node"]
+    BG --> BX["Node"]
+    BH --> BY["Node"]
+    BI --> BZ["Node"]
+    BJ --> CA["Node"]
+    BK --> CB["Node"]
+    BL --> CC["Node"]
+    BM --> CD["Node"]
+    BN --> CE["Node"]
+    BO --> CF["Node"]
+    BP --> CG["Node"]
+    BZ --> CH["Node"]
+    CC --> CI["Node"]
+    CF --> CJ["Node"]
+    BG --> CK["Node"]
+    BH --> CL["Node"]
+    BI --> CM["Node"]
+    BJ --> CN["Node"]
+    BC --> CO["Node"]
+    AD --> CP["Node"]
+    AE --> CQ["Node"]
+    AF --> CR["Node"]
+    BG --> CS["Node"]
+    BH --> CT["Node"]
+    BI --> CU["Node"]
+    BJ --> CV["Node"]
+    BC --> CW["Node"]
+    BD --> CX["Node"]
+    BE --> CY["Node"]
+    BF --> CZ["Node"]
+    BG --> DA["Node"]
+    BH --> DB["Node"]
+    BI --> DC["Node"]
+    BJ --> DD["Node"]
+    BC --> DE["Node"]
+    BD --> DF["Node"]
+    BE --> DG["Node"]
+    BH --> DH["Node"]
+    BI --> DI["Node"]
+    BJ --> DJ["Node"]
+    BC --> DK["Node"]
+    BD --> DL["Node"]
+    BE --> DJ["Node"]
+    BH --> DK
+    BI --> DK
+    BJ --> DK
+    BC --> DK
+    BD --> DK
+    BE --> DK
+    BH --> DL
+    BD --> DK
+    BE --> DL
+    BH --> DK
+    BI --> DM["Node"]
+    BJ --> DM
+    BC --> DM
+    BD --> DM
+    BE --> DM
+    BH --> DM
+    BI --> DM
+    BJ --> DM
+    BC --> DM
+    BD --> DM
+    BE --> DM
+    BH --> DM
+    BI --> DM
+    BJ --> DM
+    BC --> DM
+    BD --> DM
+    BE --> DM
+    BH --> DM
+    BI --> DM
+    BJ --> DM
+    BC --> DM
+    BD --> DM
+    BE --> DM
+    BH --> DM
+    BI --> DM
+    BJ --> DM
+    BC --> DM
+    
+    subgraph K8s Cluster
+        K8s Cluster
+        K8s Cluster
+    end
+```
+</details>
+
+Figure 9: The general structure of acclerator multi-tenancy.
+
+• Broad hardware compatibility and scalability. The system ensures seamless integration across multi-cluster environments.   
+• Cost-performance balance. It achieves a competitive trade-off between operational costs and performance optimization, ensuring that scalability does not compromise efficiency.
+
+Currently, most accelerators are equipped with four or more NVMe SSDs, a configuration that serves as the foundation for PCache’s design. To optimize performance and resource utilization, PCache employs a mixed deployment model, integrating the storage service directly onto computing nodes. This integrated approach minimizes the costs associated with standalone deployments while significantly reducing network latency through localized data processing. This ensures that storage throughput grows proportionally with the expansion of computing cluster computational capabilities, providing a scalable and efficient solution for large-scale distributed training systems.
+
+I/O Performance Optimization. During the distributed training of MoE models, it is essential to optimize I/O performance to prevent excessive time consumption caused by reading data, checkpoints, and other resources, which can negatively impact training efficiency. The optimization strategies adopted by the PCache system are as follows:
+
+• File system in user space (FUSE). In checkpoint read/write scenarios, PCache employs an interception mechanism to eliminate the overhead of multiple switches or data copies between user space and kernel space. By leveraging shared memory (shm), the system accelerates access efficiency for medium to large files.   
+• Metadata cache. A metadata caching strategy combining file-level and data block-level caching significantly enhances client-side read performance, particularly in scenarios involving high volumes of random reads.   
+• Worker selection strategy. This strategy prevents performance degradation caused by cluster bottlenecks or hotspots on overloaded machines.
+
+Based on these four optimization strategies, the PCache system achieves the following performance outcomes:
+
+• Single client performance. For scenarios involving single-threaded large file writes, PCache achieves throughput rates of 3–4 GB/s. In multi-threaded scenarios, throughput increases to 20–30 GB/s.   
+• Cluster-wide throughput. Across a 1,000-accelerator cluster, PCache delivers aggregate throughput of 1 TB/s. For clusters with 10,000 accelerators, throughput scales linearly to 8 TB/s.
+
+AI Co-Design. Megatron, a commonly used framework for training tasks in MoE scenarios, operates with a specific design for checkpoint writing. During the checkpoint writing phase, model and optimizer data are written based on Data Parallel (DP) groups, with the default behavior assigning the responsibility for data aggregation and storage to the rank\_0 device of each DP group. However, this approach can lead to resource contention, as the rank\_0 devices from all DP groups are often concentrated on specific physical nodes. This concentration results in competition for CPU computational resources and network bandwidth, ultimately reducing the overall efficiency of the checkpointing process. To address this issue, PCache implements a strategy to distribute DP group checkpoint writing across different physical nodes, rather than concentrating them on a subset of nodes. By dispersing the write nodes for each DP group, this approach mitigates competition for computational resources and network bandwidth. In real-world experiments with a 5,000-accelerator MoE training task, this optimization reduced checkpoint writing latency by 50%, while also lowering peak memory consumption on training nodes by 60%, as is shown in Table 2.
+
+Table 2: Comparison of checkpoint save time costs (seconds). 
+
+<table><tr><td>Test Case</td><td>PCache(cost time)</td><td>GPFS(cost time)</td></tr><tr><td>Megatron(tp=1 ep=8 pp=1, 128 accelerators)</td><td>70s</td><td>160s</td></tr><tr><td>Megatron(tp=2 ep=8 pp=8, 512 accelerators)</td><td>90s</td><td>240s</td></tr></table>
+
+# 2.3.2 Cross-Cluster Synchronization Mechanism.
+
+In distributed AI training scenarios, achieving efficient and reliable data synchronization across cluster environments presents unique challenges. To address this, we developed Babel, a data synchronization middleware specifically designed for large-scale model training. Babel is tailored to solve the complex problem of efficiently transmitting massive unstructured datasets and high-frequency checkpoint (ckpt) files in cross-cluster and cross-region environments.
+
+Whether it involves petabyte-scale datasets, billions of files, or frequently updated training state files, Babel provides a stable, high-speed, and accurate data synchronization service. Leveraging innovative features such as an adaptive data sharding strategy, efficient metadata prefetching mechanisms, and multi-dimensional data verification techniques, Babel significantly improves the transmission efficiency of large files while ensuring end-to-end data consistency. These capabilities provide robust technical support for distributed training environments. The main capabilities of Babel are summarized as follows.
+
+![](./images/2f8e89a85ceee56f0c6131538c735e7efe05b001c70204da7803563a06c14027.jpg)
+
+<details>
+<summary>flowchart</summary>
+
+```mermaid
+graph TD
+    A["List /a/b"] -->|Spawn concurrent list task| B["/a/b/"]
+    A -->|Spawn concurrent list task| C["/a/1.txt"]
+    A -->|Spawn concurrent list task| D["/a/c/"]
+    B -->|Spawn concurrent list task| C
+    C -->|Spawn concurrent list task| D
+    A -->|List /a/| E
+    E -->|List /a| F
+    F -->|List /a| G
+    G -->|List /a| H
+```
+</details>
+
+Figure 10: The parallel metadata prefetching mechanism.
+
+Metadata Prefetching Mechanism. In distributed training workflows, metadata management plays a pivotal role in determining task startup time. Synchronizing millions or even billions of file entries using traditional serial loading methods often leads to prolonged startup times, thereby significantly reducing overall efficiency. To address this challenge, we propose a parallel metadata prefetching mechanism (see Figure 10), which leverages concurrent Object Storage Service (OSS) 

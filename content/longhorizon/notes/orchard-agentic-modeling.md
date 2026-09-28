@@ -1,0 +1,187 @@
+---
+title: "Orchard：开源 Agentic Modeling 框架与 Env 基座"
+category: "长任务智能体"
+published: true
+excerpt: "微软 Orchard（arXiv 2605.15040）以 Kubernetes-native Orchard Env 为薄环境服务层， 其上叠加 SWE/GUI/Claw 三条 SFT+RL Recipe；Orchard-SWE 30B 达 73.0% SWE-bench Verified， Orchard-GUI 4B 平均 68.4% 三路 live-web benchmark，强调 harness-agnostic 环境是可复用研究底座的「第一块砖」。"
+tags: ["long-horizon", "orchard", "agentic-modeling", "kubernetes", "RL", "harness", "microsoft"]
+---
+# Orchard：开源 Agentic Modeling 框架与 Env 基座
+
+> 论文：Orchard: An Open-Source Agentic Modeling Framework
+> 作者：Baolin Peng, Wenlin Yao, Qianhui Wu, Hao Cheng, Xiao Yu, Rui Yang, Tao Ge, Alessandro Sordoni, Xingdi Yuan, Yelong Shen, Pengcheng He, Tong Zhang, Zhou Yu, Jianfeng Gao 等（Microsoft Research 等）
+> arXiv：[2605.15040](https://arxiv.org/abs/2605.15040)（2026-05）
+> GitHub：[microsoft/Orchard](https://github.com/microsoft/Orchard)
+> Dataset：[microsoft/Orchard](https://huggingface.co/datasets/microsoft/Orchard)（swe 107K + gui 3K 轨迹）
+
+## 一、原文精读
+
+### 问题动机
+
+**Agentic modeling** 的目标是把 LLM 变成能规划、推理、用工具、与外部环境多轮交互的自主 Agent。但开源社区长期存在两重断裂：
+
+1. **基础设施断裂**：高性能系统依赖闭源代码、闭源模型或托管服务；开源框架多聚焦 agent orchestration / harness 设计，**缺少可扩展的 model training 栈**。
+2. **环境不可复用**：每个研究项目重建 sandbox、rollout、eval 管道——数据集、训练配方、评测协议无法跨 harness / 域 / 项目移植。
+
+论文论断：**环境层不应是某个训练栈的副产品，而应是独立、薄、可自托管的 standalone service**——这正是 Microsoft Harness 系列（Orchard → OpenWebRL → OpenForge RL → LongHorizon 对照系）的第一块地基。
+
+### 方法贡献
+
+Orchard 分三层：
+
+| 层 | 内容 | 职责 |
+|---|---|---|
+| **Recipes** | Orchard-SWE / Orchard-GUI / Orchard-Claw | 轨迹收集、数据策展、reward、policy 优化（SFT+RL） |
+| **Orchard Env** | K8s-native sandbox service + Python SDK | 生命周期、exec、文件 I/O、网络策略、REST API |
+| **Trainer** | vendored [slime](https://github.com/THUDM/slime) fork | RL 训练；rollout 代码在 `examples/orchard/` |
+
+**Orchard Env 关键设计**：
+
+- **三层架构**：Client SDK → FastAPI Orchestrator → In-pod Agent（注入用户镜像）。
+- **Runtime agent injection**：init container 注入自包含 Python interpreter 的 exec agent，**任意 Docker 镜像零修改接入**——支持 SWE-bench 数百种异构镜像。
+- **Hot path 优化**：创建/删除走 K8s API（cold path）；exec / file / health **直连 Pod IP**（hot path），绕过 kubectl exec WebSocket 开销。
+- **Built-in harnesses**：每个 sandbox 预装 `codex`、`claude`、`pi`、`opencode`、`hermes` 等于 PATH——换 harness = 改命令，不改镜像。
+- **Multi-replica orchestrator**：Redis 状态 + 分布式锁；Calico NetworkPolicy 默认 deny-egress；TTL cleanup；API-key auth。
+
+**三条 Recipe（同 Env、不同域）**：
+
+**Orchard-SWE**（Qwen3.5-35B-A3B MoE）：
+
+- 107K 蒸馏轨迹（MiniMax-M2.5 + Qwen3.5-397B，OpenHands + mini-swe-agent harness）。
+- **保留 unresolved 轨迹**（多数 prior work 只留 success）。
+- **Credit-assignment SFT**：retrospective value estimation 从失败轨迹提取 productive rise segments。
+- **Balanced Adaptive Rollout (BAR)**：在线组装 reward-balanced 轨迹组做 sparse-reward RL。
+- 结果：SFT 64.3% → SFT+RL **67.5%** SWE-bench Verified；扩展报告 **73.0%**；Multilingual **51.0%**（OpenSWE-32B 仅 28.7%）。
+
+**Orchard-GUI**（Qwen3-VL-4B-Thinking）：
+
+- 0.4K SFT + 2.2K RL on live websites；generic ReAct browser harness。
+- WebVoyager **74.1%** / Online-Mind2Web **67.0%** / DeepShop **64.0%** → 平均 **68.4%**。
+- **超越 235B teacher**；长 horizon benchmark 增益最大。
+
+**Orchard-Claw**（Qwen3-30B-A3B-Thinking）：
+
+- 0.2K Opus 合成任务；SFT+RL across two harnesses。
+- ClawEval **59.6% pass@3**（31.7% pass³）；换 ZeroClaw 推理 → **73.9% pass@3**（+14.3）。
+
+### 实验数字
+
+**Orchard Env 系统工程指标**：
+
+| 指标 | Orchard Env | 对照 |
+|---|---:|---|
+| 平均 exec 延迟 | **0.28 s** | E2B 0.747 s（2.7×慢）、Modal 2.046 s（7.3×慢） |
+| 1000 并行 sandbox | **100% 成功**，26 s 端到端，~154 cmd/s | — |
+| 128 sandbox × 240 h 成本 | **$673 spot** / $3,362 on-demand | Daytona/E2B ~$7,078（0.10× spot） |
+
+**Terminal-Bench 2.0 无回归**（Docker → Orchard Env）：GPT-4.1 34.1→35.1，MiniMax-M2.5 52.6→54.4，Qwen3-8B 7.0→8.8——Env 是 drop-in substrate。
+
+**Generalization 主题**（论文核心 claim）：
+
+- Orchard-SWE 在**训练未见 harness** Kimi-CLI 上仍 45.0% Verified / 20.1% Terminal-Bench 2.0（OpenSWE-32B → 3.6% / 0.0%）。
+- Orchard-Claw 换强 harness 后 pass³ +9.3 / pass@3 +14.3。
+- Orchard-GUI 4B  beat 235B teacher on 2/3 benchmarks。
+
+**Dataset（HuggingFace microsoft/Orchard）**：
+
+- `swe`：107,185 rollouts，19,287 unique instances，2,788 repos，均 47.5 turns/trajectory。
+- `gui`：3,070 judge-verified per-step rollouts，409 WebVoyager-style tasks，含 screenshot multimodal。
+
+**Roadmap**：Stateful sandboxes（pause/resume/branching）——从轨迹末端的 scalar reward 转向 per-turn Monte-Carlo credit assignment。论文给出明确动机：SWE 轨迹均 47.5 turns，却只有一个 outcome reward——**branching 从同一 snapshot fork 多条 continuation** 可直接 Monte-Carlo 估计 state value，并把 per-turn credit assignment 从「事后推断」变成「可测量」；prefix sharing 使 tree-structured search 比 flat rollout 便宜。
+
+**Trainer 层（slime fork）**：Orchard 不绑定单一 RL 算法，而是在 `trainer/slime/examples/orchard/` 提供 rollout glue；`ORCHARD_CHANGES.md` 追踪相对上游 slime 的 fork diff——意味着 Recipe 层可换算法（on-policy distillation、rubric process reward、value-model reranking 均在 Orchard-SWE 出现），Env 层保持稳定。
+
+**OpenWebRL（姊妹论文，2026-06）**：在同一 Env 上把 Orchard-GUI 扩展为 **live website 在线 RL**——fault-tolerant browser env（navigation retry、timeout、structured failure attribution），OpenWebRL-4B 在 Online-Mind2Web **67.0%**、DeepShop **64.0%**，与 Orchard-GUI 数字互证。读 Orchard 时应把 OpenWebRL 视为 GUI Recipe 的在线延伸，而非无关项目。
+
+### 局限
+
+- **K8s 部署门槛**：需 AKS/EKS/GKE 或自建集群；虽提供 Azure 四脚本 ~20 min 起栈，但对个人开发者仍重。
+- **Recipe 与 Env 耦合度**：虽声明解耦，实际 RL 仍依赖 slime fork 与特定 rollout 代码。
+- **Sparse reward 间接攻击**：SWE credit-assignment 是 retrospective 推断，非环境原生 per-step reward；branching sandbox 尚未落地。
+- **Claw / GUI 数据量极小**：0.2K–2.6K 任务，稳定性与 scaling law 未充分验证。
+- **闭源 frontier gap**：SWE 73% 仍低于部分闭源 MoE 系统；GUI 与 OpenAI CUA / Gemini CUA 比仍有距离。
+- **后续工作依赖链**：OpenWebRL、OpenForge RL 才是「真实 harness 训练」的完整答案；Orchard 本体 Recipe 仍多用固定 harness。
+
+## 二、方法架构解析
+
+### 系统拆解
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Recipes（研究层，可替换）                                  │
+│  Orchard-SWE │ Orchard-GUI │ Orchard-Claw │ OpenForge…  │
+└──────────────────────────┬──────────────────────────────┘
+                           │ REST / SDK
+┌──────────────────────────▼──────────────────────────────┐
+│  Orchard Env（Foundation — 薄环境服务）                    │
+│  SandboxClient → Orchestrator → Pod + In-pod Agent       │
+│  create / exec / files / patch / delete / network policy │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│  Kubernetes 集群 + 任意任务镜像 + 预装 harness             │
+└─────────────────────────────────────────────────────────┘
+```
+
+Quick start：
+
+```python
+from orchard_env import SandboxClient
+
+with SandboxClient() as client:
+    with client.create_sandbox("python:3.11-slim") as sandbox:
+        print(sandbox.exec("echo 'Hello, Orchard!'").stdout)
+```
+
+Env **不假设**上层是 trainer、inference backend 还是 task domain——同一 API 可用于 distillation rollout、on-policy RL、evaluation 三阶段。
+
+**Recipe 共性模式**：(1) 在 Env 内跑 teacher/student rollout 收集轨迹 → (2) 数据策展（含失败轨迹）→ (3) SFT 初始化 → (4) 稀疏/延迟 reward 的 on-policy RL → (5) 跨 harness / 跨语言 / 跨 benchmark 泛化评测。
+
+### 关键不变量
+
+1. **Thin env service boundary**：环境管理是 primary scope，不是 harness 或 trainer 的附属模块。
+2. **Stable REST contract**：SDK 是薄客户端；任何语言的项目可依赖同一 substrate。
+3. **Harness swap = command change**：sandbox 内预装多 harness，训练/评测对比 harness 不需重建镜像。
+4. **Hot-path latency budget**：agentic rollout 吞吐 ∝ 1/latency；Env 优化 exec 延迟是 first-class metric。
+5. **Trajectory portability**：同一 Env 产出的数据集与 rollout 协议可跨 Recipe 复用。
+
+### 相邻对照
+
+| 系统 | Thin env? | Self-host | Agent inject | 定位 |
+|---|---|---|---|---|
+| E2B / Daytona | ✓ | 托管为主 | 需定制镜像 | 商用 sandbox |
+| SkyPilot | ✗ | ✓ | — | 计算编排，非 env 服务 |
+| ROCK / ProRL Agent | ✗ | ✓ | — | 绑定特定 trainer |
+| **Orchard Env** | ✓ | ✓ | ✓ init container | 开源 research substrate |
+| Docker direct | 非 service | ✓ | 手动 | 缺 orchestration / 隔离 |
+
+与 **LongHorizon-Harness**（阿里）：Orchard 管「训练/rollout 环境」，LH-Harness 管「部署期任务状态与审计」——互补。
+
+与 **OpenForge RL**：Orchard Env 是 OpenForge 的 rollout 底座；OpenForge 加 Proxy 解决「在真实 harness 里训」。
+
+### 可迁移抽象
+
+1. **Env-as-Foundation**：任何 agentic modeling 项目应先定 Env API，再叠 Recipe——避免每个 lab 重写 sandbox。
+2. **Fail trajectory is data**：SWE unresolved 轨迹 + credit-assignment SFT = 把 partial progress 变 supervision 的通用范式。
+3. **Harness-agnostic training → harness transfer gains**：训练环境与部署 harness 解耦，推理时换强 harness 可白捡性能——前提是 Env 层不绑定单一控制流。
+4. **Cost structure matters**：spot K8s sandbox 10× 于 managed service——大规模 RL 的经济性由 Env 设计决定。
+5. **Branching sandbox（未来）**：pause/resume/fork 是 per-turn credit assignment 的环境原语——应活在 Env 层而非某个 trainer 里。
+
+文档入口：`orchard_env/README.md`（部署）、`docs/overview.md`（全景）、`trainer/slime/ORCHARD_CHANGES.md`（fork diff）。
+
+**研究者最小路径**：
+
+1. `pip install -e "orchard_env[dev]"` + 配置 `SANDBOX_BASE_URL` / `SANDBOX_API_KEY`。
+2. 用 `SandboxClient` 跑通 exec / file / patch；确认 Terminal-Bench 子集无回归。
+3. 选一条 Recipe（SWE 数据已有 HF dataset；GUI/Claw 需自建 task pool）接 slime rollout。
+4. 对比 **至少两种 harness**（如 mini-swe-agent vs OpenHands）验证 Env 的 harness-agnostic claim。
+5. 若要消除 train-deploy mismatch，读 OpenForge RL 笔记接 Proxy 层——Orchard 本体停于「Env + 固定 harness Recipe」。
+
+**Citation 与许可**：Orchard 与 Orchard Env 均为 MIT（© Microsoft Corporation）；引用论文 arXiv:2605.15040。Dataset `microsoft/Orchard` 含 swe/gui 两 config，均可直接 HuggingFace 拉取做 distillation 或 offline RL 研究。
+
+**Table 1 定位（Env 对比）**：论文用四列刻画竞品——是否 self-host、是否 managed default、是否 **thin env service**（窄 REST 边界、不绑定 trainer/harness/inference）、相对成本。Orchard Env 是唯一同时满足 self-host + thin service 且 spot 成本约 0.10× Daytona 的开源方案；E2B/Daytona 虽也是 thin service，但托管定价与 vendor lock-in 更高。ProRL Agent、ROCK 等则绑定特定 trainer 或 HPC 栈，难以作为跨项目公共底座复用。
+
+**与 long-horizon 专题的接点**：Orchard 解决「如何 cheaply 产生/训练 47-turn 量级轨迹」；LongHorizon-Harness 解决「部署期如何不让 47-turn 轨迹 drift」。二者在同一产品栈可串联：Orchard Env 出 rollout → OpenForge/Recipe 训 policy → LH-Harness 部署期 audited state。这也是微软 Harness 系列与阿里 MEA 系列在 long-horizon 栈上的典型拼接方式。
+
+---
+
+> 产品落地对照见 [`../../essays/oasis-improvements-2026-08-harness-wave.md`](../../essays/oasis-improvements-2026-08-harness-wave.md)。

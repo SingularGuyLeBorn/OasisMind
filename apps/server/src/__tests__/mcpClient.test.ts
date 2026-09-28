@@ -1,0 +1,184 @@
+/**
+ * MCP Client — 单元测试
+ */
+
+import { beforeEach, describe, it, expect, vi } from "vitest";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import {
+  parseMcpToolName,
+  parseMcpToolNameParts,
+  parseRegisteredMcpToolName,
+  getOrCreateInflight,
+  createMcpTransport,
+  buildMcpToolSchemas,
+  disconnectAllMcpClients,
+} from "../infra/mcpClient.js";
+import {
+  mcpToolName,
+  truncateMcpResult,
+  MCP_MAX_RESULT_CHARS,
+} from "../infra/mcpUtils.js";
+import type { McpServerEntity } from "../infra/entityServices/mcpService.js";
+import { createMcpServerSchema } from "@oasismind/shared";
+import type { ServiceContainer } from "../infra/serviceContainer.js";
+
+describe("MCP 工具命名", () => {
+  it("mcpToolName 生成安全外部名", () => {
+    expect(mcpToolName("filesystem", "read_file")).toBe("mcp__filesystem__read_file");
+    expect(mcpToolName("my-server", "get/list")).toBe("mcp__my-server__get_list");
+  });
+
+  it("parseMcpToolName 解析外部名", () => {
+    const meta = parseMcpToolName("mcp__filesystem__read_file");
+    expect(meta).toEqual({ serverName: "filesystem", toolName: "read_file" });
+  });
+
+  it("结构拆分不把 server 名里的下划线改成横杠", () => {
+    expect(parseMcpToolNameParts("mcp__a_b__tool")).toEqual({ serverName: "a_b", toolName: "tool" });
+  });
+
+  it("执行路由在注册表 miss 时拒绝猜测", () => {
+    expect(parseRegisteredMcpToolName("mcp__filesystem__read_file")).toBeNull();
+  });
+
+  it("getOrCreateInflight 并发共用一个 Promise，失败摘除", async () => {
+    const cache = new Map<string, Promise<number>>();
+    let factories = 0;
+    const factory = () => {
+      factories += 1;
+      return Promise.resolve(7);
+    };
+    const [a, b] = await Promise.all([
+      getOrCreateInflight(cache, "k", factory),
+      getOrCreateInflight(cache, "k", factory),
+    ]);
+    expect(a).toBe(7);
+    expect(b).toBe(7);
+    expect(factories).toBe(1);
+
+    const boom = new Map<string, Promise<number>>();
+    await expect(
+      getOrCreateInflight(boom, "x", () => Promise.reject(new Error("fail"))),
+    ).rejects.toThrow("fail");
+    expect(boom.has("x")).toBe(false);
+  });
+
+  it("非 MCP 名返回 null", () => {
+    expect(parseMcpToolName("read_file")).toBeNull();
+    expect(parseMcpToolName("skill__foo")).toBeNull();
+  });
+});
+
+describe("truncateMcpResult", () => {
+  it("小结果原样返回", () => {
+    const data = { ok: true, items: [1, 2] };
+    expect(truncateMcpResult(data)).toEqual(data);
+  });
+
+  it("超大 JSON 截断并附 hint", () => {
+    const huge = { blob: "x".repeat(MCP_MAX_RESULT_CHARS + 500) };
+    const result = truncateMcpResult(huge) as {
+      _truncated: boolean;
+      _originalChars: number;
+      hint: string;
+    };
+    expect(result._truncated).toBe(true);
+    expect(result._originalChars).toBeGreaterThan(MCP_MAX_RESULT_CHARS);
+    expect(result.hint).toMatch(/截断/);
+  });
+});
+
+describe("createMcpTransport", () => {
+  const base = {
+    id: "m1",
+    name: "demo",
+    args: [] as string[],
+    env: {} as Record<string, string>,
+    headers: {} as Record<string, string>,
+    enabled: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  it("stdio 返回 StdioClientTransport", () => {
+    const t = createMcpTransport({
+      ...base,
+      transport: "stdio",
+      command: "npx",
+      args: ["-y", "x"],
+      url: null,
+    } as McpServerEntity);
+    expect(t).toBeInstanceOf(StdioClientTransport);
+  });
+
+  it("http 返回 StreamableHTTPClientTransport", () => {
+    const t = createMcpTransport({
+      ...base,
+      transport: "http",
+      command: "",
+      url: "https://mcp.example.com/mcp",
+      headers: { Authorization: "Bearer t" },
+    } as McpServerEntity);
+    expect(t).toBeInstanceOf(StreamableHTTPClientTransport);
+  });
+
+  it("http 缺 url 抛错", () => {
+    expect(() =>
+      createMcpTransport({
+        ...base,
+        transport: "http",
+        command: "",
+        url: null,
+      } as McpServerEntity),
+    ).toThrow(/url/);
+  });
+
+  it("stdio 缺 command 抛错", () => {
+    expect(() =>
+      createMcpTransport({
+        ...base,
+        transport: "stdio",
+        command: "",
+        url: null,
+      } as McpServerEntity),
+    ).toThrow(/command/);
+  });
+});
+
+describe("createMcpServerSchema transport", () => {
+  it("stdio 缺 command 失败", () => {
+    const r = createMcpServerSchema.safeParse({ name: "a", transport: "stdio", command: "" });
+    expect(r.success).toBe(false);
+  });
+
+  it("http 有 url 通过", () => {
+    const r = createMcpServerSchema.safeParse({
+      name: "a",
+      transport: "http",
+      url: "https://example.com/mcp",
+    });
+    expect(r.success).toBe(true);
+  });
+});
+
+describe("buildMcpToolSchemas 缺失 Server", () => {
+  beforeEach(async () => {
+    await disconnectAllMcpClients();
+    delete process.env.MOCK_MCP;
+  });
+
+  it("mcp:filesystem 未配置时跳过，不抛错拖垮 Chat", async () => {
+    const services = {
+      mcp: {
+        list: vi.fn(async () => ({ items: [], total: 0, page: 1, pageSize: 50, totalPages: 0 })),
+      },
+    } as unknown as ServiceContainer;
+
+    const schemas = await buildMcpToolSchemas(services, ["filesystem"]);
+    expect(schemas).toEqual([]);
+    expect(services.mcp.list).toHaveBeenCalled();
+  });
+});
+
+

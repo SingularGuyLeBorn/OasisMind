@@ -1,0 +1,257 @@
+# OasisMind 运行时配置（本地优先，教学/产品向）
+# 环境变量仍可覆盖敏感项与部署相关项；此处放与业务行为相关的可调参数。
+
+# ══ 能力包 Core+Packs（轻量化按需加载）══
+# core/chat 始终开启。可选：swarm / im / mail / browser / research / viz
+# profile: full（默认全开，保持现网）| lite（仅花园+Chat）| custom（用下方布尔）
+# 环境变量：OM_PACKS=lite|full 优先于本段；OM_PACKS_DISABLE=viz,research；OM_PACKS_ENABLE=im
+packs:
+  profile: full
+  # 下列布尔仅在 profile 省略或为 custom 时生效；full/lite 会覆盖它们
+  # swarm: true
+  # im: true
+  # mail: true
+  # browser: true
+  # research: true
+  # viz: true
+
+# LLM 弹性调用（错误分类 + 指数退避重试 + fallback 降级）
+llm:
+  # 全局默认模型 id（Agent/会话未指定模型时生效）；env DEFAULT_LLM_MODEL 可覆盖，缺省回退内置常量
+  defaultModel: deepseek-v4-flash
+  # 同一模型失败重试次数（指数退避 + jitter；429/5xx/网络抖动可重试，401/400 直接失败）
+  maxRetries: 3
+  # 退避基数（毫秒）；实际等待 = baseDelayMs × 2^attempt × jitter
+  baseDelayMs: 1000
+  # 重试耗尽后按序降级的备用模型（provider 由模型名自动推导，需对应厂商已配置 API Key）
+  # 例：fallbackModels: ["kimi-k2", "glm-4-flash"]
+  fallbackModels: []
+  # P3-03：可选覆盖各厂商 baseUrl（env <provider>_BASE_URL 仍优先；都未配则回退内置 DEFAULT_BASE_URLS）
+  # 例：providers: { deepseek: { baseUrl: "https://proxy.example.com/v1" } }
+  # 本地 OpenAI 兼容后端（默认端口：ollama 11434 / llamacpp 8080 / lmstudio 1234 / vllm 8000）
+  # 会话模型 id：ollama/llama3.2、llamacpp/xxx、lmstudio/xxx、vllm/xxx
+  # 例：providers: { ollama: { baseUrl: "http://127.0.0.1:11434/v1" } }
+  providers: {}
+  # 角色化拆价（默认关闭）：规划轮（round 1..planningRounds）用强模型定骨架，执行轮用便宜模型省 token
+  # 空字符串 = 未配置（回退 Agent/base 模型）；例：planningModel: "deepseek-v4-pro"，executionModel: "deepseek-v4-flash"
+  roleSplit:
+    enabled: false
+    planningModel: ""
+    executionModel: ""
+    planningRounds: 1
+
+stream:
+  # 每个运行中 session 的内存环形缓冲事件数（热缓冲，用于低延迟推送）
+  ringSize: 500
+  # 是否将事件持久化到 SQLite（服务端重启后可按 sessionId 续传）
+  persist: true
+  # 持久化事件保留时长（毫秒），超过后由定时清理任务删除
+  eventTtlMs: 300000
+  # 过期事件清理间隔（毫秒）
+  cleanupIntervalMs: 60000
+  # Steering：工具批结束后注入；one-at-a-time | all
+  steeringMode: one-at-a-time
+  # Follow-up：本会停止时注入续轮；one-at-a-time | all
+  followUpMode: one-at-a-time
+  # 单个 Agent 运行最大存活时间（毫秒）；超时后 Hub 强制 abort 并清理，防止 runner 永不结束占槽
+  runTimeoutMs: 300000
+  # 运行中超过该时间无新事件（token/thinking/tool）则强制 abort；0 = 关闭
+  runStallTimeoutMs: 120000
+
+# 长对话自动压缩（Auto-Compact）
+compact:
+  enabled: true
+  # 占模型 context window 的触发比例（0.1–0.95）；默认 75% 时 macro 摘要
+  triggerRatio: 0.75
+  # 压缩后保留的最近消息条数（过少消息时的下限守卫；实际切点见 keepRecentTokens）
+  keepRecent: 8
+  # 按 token 粗估保留的最近上下文（默认 20000）；切点不落在 toolCall/toolResult 之间
+  keepRecentTokens: 20000
+  # 摘要专用模型（与主对话解耦，避免用付费主模型烧钱压缩）
+  # auto = 优先 OpenRouter :free → freellm 网关模型 → 回退主对话模型；也可写死具体 id
+  summaryModel: auto
+  # micro-compact：先清超大 tool result，延缓触顶（学 Claude Code）
+  microCompact:
+    enabled: true
+    toolResultMaxChars: 4000
+  # 工具结果全量落盘（记录平面）：一律写 data/tool-results/{session}/ + .meta.json + 瘦 index.jsonl
+  # thresholdChars 只控制「超阈值时对 LLM 只注入 metadata+keywords」；retentionDays≤0 不自动清理
+  toolResultOffload:
+    enabled: true
+    thresholdChars: 4000
+    contextWindow: 400
+    chunkStrideChars: 1000
+    retentionDays: 14
+  # 同参连续 tool call 熔断（学 DeerFlow LoopDetection）；≥N 次注入阻断消息
+  toolLoopStreakLimit: 3
+  # memory flush：macro 摘要前静默提取事实写入 Memory（学 OpenClaw）
+  memoryFlush:
+    enabled: true
+    maxFacts: 5
+
+# ══ 全局任务池（v8 TP-1/TP-2；实现：apps/server/src/infra/asyncJobOrchestrator.ts）══
+# 池目标：全局并发上限的单一事实源 + 公平排队 + 永不丢任务。
+#   · 单一事实源：maxConcurrent 是全系统后台 LLM 并发的唯一容量权威（Q1 全局单池）；
+#     per-session / per-workspace 只是池内公平配额维度，不是容量权威。
+#   · 公平排队：准入判定链 global → session → workspace，首个命中的上限即排队原因；
+#     queued 记录 reason + position，右栏「进行中」组展示「第 N 位 · 因 X 上限排队」。
+#   · 永不丢任务：消费续跑未获槽则原样留待下次触发（CLAIM 移到获槽后），拒绝等槽无限挂起。
+# 入池 = 交付优先的异步执行（async_task_run / spawn 跟踪任务 / heartbeat / trigger 等共享）；
+# 不入池 = 交互式运行（用户直发消息走 hub 即时起流零排队，但计入全局占用，Q2）。
+# 槽位类别：llm（默认，占 maxConcurrent）/ lightweight（sleep、async_task_run mode=tool，不占 LLM 槽）。
+# 注意：池只控制并发调度（queued → running）；是否「异步投递」由工具的 waitForResult 决定。
+# 环境变量 AGENT_ASYNC_* 可覆盖下列默认值。
+asyncJobs:
+  # 全局同时 running 上限（所有 session 共享）——仅约束 slotClass=llm 的后台推理/子 Agent。
+  # 口径：全局占用 = 池内 llm running + hub 交互 running（用户聊天流不打标计入池，但占用全局容量）
+  maxConcurrent: 2
+  # 单 session 同时 running 上限
+  maxPerSession: 2
+  # per-workspace 公平配额（0 = 不限；公平策略不是容量权威，全局池才是）
+  # env AGENT_ASYNC_MAX_PER_WORKSPACE 可覆盖
+  maxPerWorkspace: 0
+  # 排队总数上限，满则入池拒绝，调用方（LLM 工具/UI）收到「队列已满，请稍后再派」明确错误
+  # env AGENT_ASYNC_MAX_QUEUED 可覆盖
+  maxQueued: 100
+  # lightweight（纯工具/sleep/Playwright 抓取）并发上限——与 LLM 槽正交；
+  # 默认 2，避免多路浏览器把 Node 打崩。env AGENT_ASYNC_MAX_LIGHTWEIGHT 可覆盖
+  maxLightweightConcurrent: 2
+  # 单任务执行超时（毫秒）
+  taskTimeoutMs: 300000
+  # 排队超时（毫秒）；0 = 不限制
+  queuedTimeoutMs: 0
+  # 每个父会话允许的 subagent 数量上限
+  # （注：asyncJobs.maxRetries 已随 v10 可重入基座一并删除；服务重启一律标 failed，仅手动 retryAsyncJob）
+  maxSubagentsPerSession: 10
+
+# W7 反思（默认关闭）：loop 进入 done 前用 criticModel 对终稿做一票结构化 critic（JSON: passed/issues）；
+# 不通过则把意见作为 user 消息经 injectUserMessages 回注，loop 重修一轮；
+# 轮数耗尽则带 [未经反思通过] 标记放行（不阻断用户）；critic 失败 = 静默跳过。
+reflection:
+  enabled: false
+  # 最大反思重修轮数；0 = 只审不修（不通过直接标记放行）
+  # 重修不占用 reactLoop maxToolRounds（P3-02）；critic 失败/解析失败会 console.warn 后跳过（不阻断）
+  maxRounds: 1
+  # critic 使用的便宜模型（空 = 与主 Agent 模型相同）
+  criticModel: ""
+
+# 记忆向量混合检索（BM25 + 向量 + RRF 融合，TencentDB Agent Memory 思想）
+# 默认关闭 = 纯 FTS5 现状；开启后记忆写入异步生成 embedding，检索走 FTS5+向量 RRF 融合
+memory:
+  # 检索查询改写：FTS 前用便宜模型把用户消息压成检索关键词（失败/超时自动回退原文截断）
+  queryRewrite:
+    enabled: true
+    model: "auto"     # auto = resolveAuxiliaryModel 选免费轻量模型
+    timeoutMs: 3000
+  # 写入语义判定（Mem0 四元判定）：写记忆前用便宜模型判 ADD/UPDATE/NOOP/CONFLICT，防语义级重复堆积
+  # 仅作用于用户可建类型（preference/semantic/episodic/note/procedural）；experience/persona 跳过
+  writeDedup:
+    enabled: true
+    model: "auto"
+    timeoutMs: 4000
+    neighborLimit: 5
+  # 经验蒸馏：把 type=experience 的运行经验沉淀为 type=procedural 的可复用规则
+  experienceDistill:
+    enabled: true
+    # 同一 scope 下最少积累多少条 experience 才触发蒸馏
+    minCount: 5
+    # 每次蒸馏最多读多少条 experience
+    maxPerScope: 30
+    # 蒸馏模型；auto = resolveAuxiliaryModel 选免费轻量模型
+    model: "auto"
+  # 记忆信任分级：LLM 推断出的记忆（attribution=agent）初始强度上限更低，
+  # 被后续 run 验证有效后 strength 提升，失败则下降。用户陈述/工具显式指定的强度不受影响。
+  trust:
+    agentInitialStrength: 0.7
+    experienceSuccess: 1.0
+    experienceUnverified: 0.7
+    experienceFailed: 0.5
+  embedding:
+    enabled: false
+    # OpenAI 兼容端点（/embeddings）；env EMBEDDING_BASE_URL / EMBEDDING_API_KEY / EMBEDDING_MODEL 可覆盖
+    baseUrl: ""
+    apiKey: ""
+    model: "text-embedding-3-small"
+    # 向量召回条数（与 FTS 召回做 RRF 融合）
+    topK: 20
+
+# Hermes Skill 闭环（主仓 Closed Learning Loop）
+skills:
+  # 本轮 tool 调用次数 ≥ 此值 → 回合后 background skill review；0 = 关闭
+  nudgeInterval: 10
+  # 审查旁路模型（对标 Hermes auxiliary.background_review）
+  # auto = OpenRouter 已同步 :free 目录里按 strong_free 打分挑「最强免费」；也可钉死如 google/gemma-3-27b-it:free
+  reviewModel: auto
+  # curator：闲置 N 天标 stale / 再闲置归档到 content/skills/.archive（非硬删）
+  staleAfterDays: 30
+  archiveAfterDays: 90
+  # curator 最小运行间隔（小时）；默认 7 天
+  curatorIntervalHours: 168
+
+# Chat Goal / Deep Research / Autonomous 外环（Hermes Ralph 环）
+goal:
+  maxTurns: 20
+  deepResearchMaxTurns: 30
+  # autonomous：触顶（轮次/墙钟）标 exhausted，绝不等于成功
+  autonomousMaxTurns: 40
+  autonomousMaxWallClockMs: 1800000
+  autonomousRequireExternalGate: true
+  # 裁判模型；auto = OpenRouter strong_free
+  judgeModel: auto
+
+# Harness：服务端核验门（禁止 Agent 自报 lintOk/testOk；keep/自治完成必须 verified）
+harness:
+  gate:
+    timeoutMs: 180000
+    # 可覆盖/追加 preset → 命令（默认已有 server_lint / server_test / shared_lint）
+    presets: {}
+  # keep 前自动跑 harness-bench（mock 模式），退化即拒 keep
+  benchOnKeep:
+    enabled: true
+    minPassRate: 1.0
+
+# W3：审批 decision-scope / gate 通知冷却（per-Approval.lastNotifiedAt）
+approvalGate:
+  # 同一审批冷却窗口内不重复通知（毫秒）；默认 30min
+  notifyCooldownMs: 1800000
+
+# 主机访问（与 Workspace 沙箱正交）
+# IM 远程助手默认仍封印在自己的 Workspace；只有 Agent tools 含 native:host_access 才能碰 roots。
+# 群聊一律拒绝。总闸：enabled=false（公网/隧道发布前务必保持关闭）。桌面点击/开应用走 MCP windows-mcp（不含 PowerShell/注册表/任意删文件）。
+hostAccess:
+  enabled: false
+  roots:
+    - "%USERPROFILE%/Desktop"
+    - "%USERPROFILE%/Documents"
+    - "%USERPROFILE%/Downloads"
+  desktopMcpServers:
+    - windows-mcp
+  # 空 = 默认白名单（Screenshot/Click/Type/App 等）。不要把 PowerShell/FileSystem/Registry 加进来。
+  desktopMcpAllowedTools: []
+
+# 知识 Inbox：截图 / 知乎 / 小红书 / 微信公众号 → 待消化 → 蒸馏
+inbox:
+  # 截图监视目录；空 = data/inbox/screenshots/drop
+  # Windows iCloud 示例：C:/Users/你的用户名/Pictures/iCloud Photos/Photos
+  # 也可设 env OM_INBOX_SCREENSHOT_DIR
+  screenshotWatchDir: ""
+  # 蒸馏默认写入的花园
+  defaultGarden: knowledge
+  # 可选：定时 inbox:sync 时自动拉这些知乎收藏夹
+  zhihuCollectionUrls: []
+
+# 超级 Agent 心跳 Loop Contract（控制平面；不替换 ReAct）
+heartbeat:
+  # W2 决策层：cron 只负责唤醒；decisionEnabled=false 可整体回退到旧「到点即跑」
+  decisionEnabled: true
+  # quiet/monitor_quiet_skip 退避 skipTicks 上限（1→3→7→cap）
+  quietCap: 8
+  # 连续 K 次 quiet（无 gate/队列）→ terminal_no_followup，复用 heartbeatSuspendedAt
+  terminalAfterQuiet: 3
+  # wait_user_gate 同 gate 通知冷却（毫秒）
+  gateNotifyCooldownMs: 1800000
+  loopContract:
+    # 连续 N 轮无新 evidence → handoff=false，跳过后续触发直至 resume
+    maxStaleRounds: 3
+    # evidence 环形保留条数
+    maxEvidence: 50

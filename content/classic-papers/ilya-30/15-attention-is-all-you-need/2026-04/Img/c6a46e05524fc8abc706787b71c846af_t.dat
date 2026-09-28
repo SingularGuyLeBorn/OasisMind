@@ -1,0 +1,150 @@
+Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+
+const core = require('@sentry/core');
+const browserUtils = require('@sentry-internal/browser-utils');
+
+// exporting a separate copy of `WINDOW` rather than exporting the one from `@sentry/browser`
+// prevents the browser package from being bundled in the CDN bundle, and avoids a
+// circular dependency between the browser and replay packages should `@sentry/browser` import
+// from `@sentry/replay` in the future
+const WINDOW = core.GLOBAL_OBJ ;
+
+const REPLAY_SESSION_KEY = 'sentryReplaySession';
+const REPLAY_EVENT_NAME = 'replay_event';
+const UNABLE_TO_SEND_REPLAY = 'Unable to send Replay';
+
+// The idle limit for a session after which recording is paused.
+const SESSION_IDLE_PAUSE_DURATION = 300000; // 5 minutes in ms
+
+// The idle limit for a session after which the session expires.
+const SESSION_IDLE_EXPIRE_DURATION = 900000; // 15 minutes in ms
+
+/** Default flush delays */
+const DEFAULT_FLUSH_MIN_DELAY = 5000;
+// XXX: Temp fix for our debounce logic where `maxWait` would never occur if it
+// was the same as `wait`
+const DEFAULT_FLUSH_MAX_DELAY = 5500;
+
+/* How long to wait for error checkouts */
+const BUFFER_CHECKOUT_TIME = 60000;
+
+const RETRY_BASE_INTERVAL = 5000;
+const RETRY_MAX_COUNT = 3;
+
+/* The max (uncompressed) size in bytes of a network body. Any body larger than this will be truncated. */
+const NETWORK_BODY_MAX_SIZE = 150000;
+
+/* The max size of a single console arg that is captured. Any arg larger than this will be truncated. */
+const CONSOLE_ARG_MAX_SIZE = 5000;
+
+/* Min. time to wait before we consider something a slow click. */
+const SLOW_CLICK_THRESHOLD = 3000;
+/* For scroll actions after a click, we only look for a very short time period to detect programmatic scrolling. */
+const SLOW_CLICK_SCROLL_TIMEOUT = 300;
+
+/** When encountering a total segment size exceeding this size, stop the replay (as we cannot properly ingest it). */
+const REPLAY_MAX_EVENT_BUFFER_SIZE = 20000000; // ~20MB
+
+/** Replays must be min. 5s long before we send them. */
+const MIN_REPLAY_DURATION = 4999;
+/* The max. allowed value that the minReplayDuration can be set to. */
+const MIN_REPLAY_DURATION_LIMIT = 15000;
+
+/** The max. length of a replay. */
+const MAX_REPLAY_DURATION = 3600000; // 60 minutes in ms;
+
+var __defProp$1 = Object.defineProperty;
+var __defNormalProp$1 = (obj, key, value) => key in obj ? __defProp$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField$1 = (obj, key, value) => __defNormalProp$1(obj, typeof key !== "symbol" ? key + "" : key, value);
+var NodeType$2 = /* @__PURE__ */ ((NodeType2) => {
+  NodeType2[NodeType2["Document"] = 0] = "Document";
+  NodeType2[NodeType2["DocumentType"] = 1] = "DocumentType";
+  NodeType2[NodeType2["Element"] = 2] = "Element";
+  NodeType2[NodeType2["Text"] = 3] = "Text";
+  NodeType2[NodeType2["CDATA"] = 4] = "CDATA";
+  NodeType2[NodeType2["Comment"] = 5] = "Comment";
+  return NodeType2;
+})(NodeType$2 || {});
+function isElement$1(n2) {
+  return n2.nodeType === n2.ELEMENT_NODE;
+}
+function isShadowRoot(n2) {
+  const host = n2?.host;
+  return Boolean(host?.shadowRoot === n2);
+}
+function isNativeShadowDom(shadowRoot) {
+  return Object.prototype.toString.call(shadowRoot) === "[object ShadowRoot]";
+}
+function fixBrowserCompatibilityIssuesInCSS(cssText) {
+  if (cssText.includes(" background-clip: text;") && !cssText.includes(" -webkit-background-clip: text;")) {
+    cssText = cssText.replace(
+      /\sbackground-clip:\s*text;/g,
+      " -webkit-background-clip: text; background-clip: text;"
+    );
+  }
+  return cssText;
+}
+function escapeImportStatement(rule) {
+  const { cssText } = rule;
+  if (cssText.split('"').length < 3) return cssText;
+  const statement = ["@import", `url(${JSON.stringify(rule.href)})`];
+  if (rule.layerName === "") {
+    statement.push(`layer`);
+  } else if (rule.layerName) {
+    statement.push(`layer(${rule.layerName})`);
+  }
+  if (rule.supportsText) {
+    statement.push(`supports(${rule.supportsText})`);
+  }
+  if (rule.media.length) {
+    statement.push(rule.media.mediaText);
+  }
+  return statement.join(" ") + ";";
+}
+function stringifyStylesheet(s2) {
+  try {
+    const rules2 = s2.rules || s2.cssRules;
+    return rules2 ? fixBrowserCompatibilityIssuesInCSS(
+      Array.from(rules2, stringifyRule).join("")
+    ) : null;
+  } catch (error) {
+    return null;
+  }
+}
+function fixAllCssProperty(rule) {
+  let styles = "";
+  for (let i2 = 0; i2 < rule.style.length; i2++) {
+    const styleDeclaration = rule.style;
+    const attribute = styleDeclaration[i2];
+    const isImportant = styleDeclaration.getPropertyPriority(attribute);
+    styles += `${attribute}:${styleDeclaration.getPropertyValue(attribute)}${isImportant ? ` !important` : ""};`;
+  }
+  return `${rule.selectorText} { ${styles} }`;
+}
+function stringifyRule(rule) {
+  let importStringified;
+  if (isCSSImportRule(rule)) {
+    try {
+      importStringified = // for same-origin stylesheets,
+      // we can access the imported stylesheet rules directly
+      stringifyStylesheet(rule.styleSheet) || // work around browser issues with the raw string `@import url(...)` statement
+      escapeImportStatement(rule);
+    } catch (error) {
+    }
+  } else if (isCSSStyleRule(rule)) {
+    let cssText = rule.cssText;
+    const needsSafariColonFix = rule.selectorText.includes(":");
+    const needsAllFix = typeof rule.style["all"] === "string" && rule.style["all"];
+    if (needsAllFix) {
+      cssText = fixAllCssProperty(rule);
+    }
+    if (needsSafariColonFix) {
+      cssText = fixSafariColons(cssText);
+    }
+    if (needsSafariColonFix || needsAllFix) {
+      return cssText;
+    }
+  }
+  return importStringified || rule.cssText;
+}
+function

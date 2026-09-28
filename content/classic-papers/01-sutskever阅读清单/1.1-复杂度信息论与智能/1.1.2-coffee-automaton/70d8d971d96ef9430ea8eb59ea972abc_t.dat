@@ -1,0 +1,221 @@
+-main-menu__subnav-sublist-link uni-main-menu__subnav-sublist-link--all"
+                   data-navigation="Technology">
+                   See all
+                </a>
+              </li>
+          
+          </ul>
+        
+      </li>
+    
+  </ul>
+  
+    <div class="uni-main-menu__subnav-list">
+      <p class="uni-cta-text uni-main-menu__learn-more-title">Learn more:</p>
+      <ul class="uni-main-menu__learn-more-list">
+
+
+      
+        <li class="uni-main-menu__learn-more-item">
+          <a href="https://deepmind.google/blog/" class="uni-cta-text uni-main-menu__learn-more-link">
+            <span class="uni-cta-text uni-main-menu__learn-more-link--text">Google DeepMind blog</span>
+            <span class="uni-main-menu__learn-more-link-icon">
+              <svg
+  
+  class="h-c-icon"
+  
+  
+  
+  
+  
+  aria-hidden="true"
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-arrow-forward-no-bg"></use>
+</svg>
+
+            </span>
+          </a>
+        </li>
+      
+        <li class="uni-main-menu__learn-more-item">
+          <a href="https://research.google/blog/" class="uni-cta-text uni-main-menu__learn-more-link">
+            <span class="uni-cta-text uni-main-menu__learn-more-link--text">Google Research blog</span>
+            <span class="uni-main-menu__learn-more-link-icon">
+              <svg
+  
+  class="h-c-icon"
+  
+  
+  
+  
+  
+  aria-hidden="true"
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-arrow-forward-no-bg"></use>
+</svg>
+
+            </span>
+          </a>
+        </li>
+      
+        <li class="uni-main-menu__learn-more-item">
+          <a href="https://developers.googleblog.com/" class="uni-cta-text uni-main-menu__learn-more-link">
+            <span class="uni-cta-text uni-main-menu__learn-more-link--text">Google Developers blog</span>
+            <span class="uni-main-menu__learn-more-link-icon">
+              <svg
+  
+  class="h-c-icon"
+  
+  
+  
+  
+  
+  aria-hidden="true"
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-arrow-forward-no-bg"></use>
+</svg>
+
+            </span>
+          </a>
+        </li>
+      
+        <li class="uni-main-menu__learn-more-item">
+          <a href="https://cloud.google.com/blog" class="uni-cta-text uni-main-menu__learn-more-link">
+            <span class="uni-cta-text uni-main-menu__learn-more-link--text">Google Cloud blog</span>
+            <span class="uni-main-menu__learn-more-link-icon">
+              <svg
+  
+  class="h-c-icon"
+  
+  
+  
+  
+  
+  aria-hidden="true"
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-arrow-forward-no-bg"></use>
+</svg>
+
+            </span>
+          </a>
+        </li>
+      
+      </ul>
+    </div>
+  
+  
+    <div class="uni-main-menu__subnav-list">
+      <a href="/innovation-and-ai/" class="uni-cta-text uni-main-menu__learn-more-item uni-main-menu__learn-more-link">
+        <span>See all AI updates</span>
+        <span class="uni-main-menu__learn-more-link-icon uni-main-menu__learn-more-link-icon--see-all">
+          <svg
+  
+  class="h-c-icon"
+  
+  
+  
+  
+  
+  aria-hidden="true"
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-arrow-forward-no-bg"></use>
+</svg>
+
+        </span>
+      </a>
+    </div>
+  
+</div>
+
+          
+          
+        </li>
+      
+        <li data-has-subnav="yes"
+            class="uni-main-menu__item uni-main-menu__item--mobile  inactive   has-submenu">
+          
+            <button class="uni-main-menu__item-label  has-submenu"
+                    tabindex="0">
+              Products &amp; platforms
+              <figure class="expand-caret">
+                <svg
+  
+  class="icon"
+  
+  
+  
+  
+  role="presentation"
+  
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-expand"></use>
+</svg>
+
+              </figure>
+            </button>
+            
+
+<div class="uni-main-menu__subnav uni-main-menu__subnav--mobile">
+  <button class="uni-main-menu__subnav-title uni-main-menu__subnav-title--mobile">
+    <figure class="expand-caret">
+      <svg
+  
+  class="icon"
+  
+  
+  
+  
+  role="presentation"
+  
+  
+  
+  
+  
+>
+  <use
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    href="/static/blogv2/images/icons.svg?version=pr20260507-1819#mi-expand"></use>
+</svg>
+
+    </figure>
+    Products &amp; platforms
+  </button>
+  <ul class="uni-main-menu__subnav-list">
+    
+      <li

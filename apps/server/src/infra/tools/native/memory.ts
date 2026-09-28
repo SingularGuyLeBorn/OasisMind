@@ -1,0 +1,945 @@
+/**
+ * Native 知识与记忆域 — post_*（本地知识库 Markdown）+ memory_*（长期记忆）
+ *
+ * PR-4b：从 nativeTools.ts 迁出，handler 与 schema 保持原语义不变。
+ */
+import {
+  DEFAULT_POST_GARDEN,
+  isMemoryUserCreatable,
+  isValidGardenIdFormat,
+  MEMORY_SCOPE_GLOBAL,
+  MEMORY_TYPES,
+  memoryAgentScope,
+  memoryWorkspaceScope,
+  type MemoryUserCreatableType,
+} from "@oasismind/shared";
+import fs from "fs";
+import path from "path";
+import type { PostEntity } from "../../entityServices/postService.js";
+import { createMemoryRepository, resolveMemoryWriteScope } from "../../memoryRepository.js";
+import { readPinnedFile, writePinnedFile, type PinnedWhich } from "../../pinnedMemory.js";
+import { appendDailyNote, searchDailyNotes } from "../../memoryDaily.js";
+import { z } from "zod";
+import { zodParams } from "./zodParams.js";
+import type { AppConfig } from "../../config.js";
+import type { ToolRollback } from "../types.js";
+import type { NativeToolContext, NativeToolDefinition, NativeToolHandler } from "./types.js";
+import { registerNativeDomain } from "./registerDomain.js";
+import { validateOutputForAgent, formatValidationErrors } from "../../outputValidator.js";
+
+/** 花园 id：仅格式校验；存在性由 GardenService / PostService 负责 */
+function parseGardenArg(raw: unknown): string {
+  if (raw === undefined || raw === null || raw === "") return DEFAULT_POST_GARDEN;
+  const g = String(raw).trim();
+  if (!isValidGardenIdFormat(g)) {
+    throw new Error(`garden 无效：${g}。须为小写字母开头的 [a-z0-9_-]，且不能是 about/uploads`);
+  }
+  return g;
+}
+
+async function gardenCreateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  const title = String(args.title || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  if (!title) throw new Error("title 不能为空");
+  const templateId = String(args.template || "").trim();
+  let homeContent: string | null = null;
+  if (templateId) {
+    homeContent = loadGardenTemplate(ctx.config, templateId, title);
+  }
+  const result = await ctx.services.garden.create({
+    id,
+    title,
+    description: args.description != null ? String(args.description) : null,
+    homeContent: homeContent ?? (args.homeContent != null ? String(args.homeContent) : `# ${title}\n`),
+  });
+  if (!result.success) throw new Error(result.error?.message || "创建花园失败");
+  return {
+    id: result.data!.id,
+    title: result.data!.title,
+    path: `content/${result.data!.id}/_garden.md`,
+    template: templateId || undefined,
+  };
+}
+
+/** 读取内置花园模板；未找到返回 null，调用方回退默认首页。 */
+function loadGardenTemplate(config: AppConfig, templateId: string, title: string): string | null {
+  if (templateId !== "knowledge") return null;
+  const filePath = path.join(config.projectRoot, "docs/templates/knowledge-garden.md");
+  if (!fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+  // 替换标题占位符；frontmatter 的 title 会在 GardenService 写文件时被 entity.title 覆盖
+  return raw.replace(/^# 主题知识库\b/m, `# ${title}`);
+}
+
+async function gardenListTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const page = Math.max(1, Number(args.page || 1));
+  const pageSize = Math.min(100, Math.max(1, Number(args.pageSize || 50)));
+  const result = await ctx.services.garden.list({
+    page,
+    pageSize,
+    keyword: args.keyword ? String(args.keyword) : undefined,
+  });
+  return {
+    total: result.total,
+    items: result.items.map((g) => ({
+      id: g.id,
+      title: g.title,
+      description: g.description,
+      path: `content/${g.id}/_garden.md`,
+    })),
+  };
+}
+
+async function gardenGetTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const g = await ctx.services.garden.getById(id);
+  return {
+    id: g.id,
+    title: g.title,
+    description: g.description,
+    homeContent: g.homeContent,
+    path: `content/${g.id}/_garden.md`,
+  };
+}
+
+async function gardenUpdateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const result = await ctx.services.garden.update({
+    id,
+    title: args.title !== undefined ? String(args.title) : undefined,
+    description:
+      args.description !== undefined
+        ? args.description
+          ? String(args.description)
+          : null
+        : undefined,
+    homeContent: args.homeContent !== undefined ? String(args.homeContent) : undefined,
+  });
+  if (!result.success) throw new Error(result.error?.message || "更新花园失败");
+  return {
+    id: result.data!.id,
+    title: result.data!.title,
+    path: `content/${result.data!.id}/_garden.md`,
+  };
+}
+
+async function gardenDeleteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const result = await ctx.services.garden.delete(id);
+  if (!result.success) throw new Error(result.error?.message || "删除花园失败");
+  return { id, deleted: true, softDelete: true, ...(result.data as object) };
+}
+
+async function gardenRestoreTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const result = await ctx.services.garden.restore(id);
+  if (!result.success) throw new Error(result.error?.message || "恢复花园失败");
+  return { id, restored: true, ...(result.data as object) };
+}
+
+async function postCreateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const title = String(args.title || "").trim();
+  if (!title) throw new Error("title 不能为空");
+  const garden = parseGardenArg(args.garden);
+  const content = String(args.content ?? "");
+  const slug = args.slug ? String(args.slug) : undefined;
+  // 输出校验：用合成 frontmatter（title 来自参数）验证最终落盘文件
+  const syntheticContent = `---\ntitle: ${JSON.stringify(title)}\n---\n\n${content}`;
+  const validation = validateOutputForAgent(
+    `content/${garden}/${slug ?? "article"}.md`,
+    syntheticContent,
+    ctx.agentSnapshot?.id,
+    ctx.config,
+  );
+  if (!validation.ok) {
+    return {
+      success: false,
+      error: `输出验证未通过，文章未创建：\n${formatValidationErrors(validation.errors!)}`,
+      validationErrors: validation.errors,
+    };
+  }
+  const input = {
+    title,
+    garden,
+    content,
+    slug,
+    excerpt: args.excerpt ? String(args.excerpt) : undefined,
+    coverImage: args.coverImage ? String(args.coverImage) : null,
+    category: args.category ? String(args.category) : null,
+    tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
+    published: args.published !== false,
+  };
+  const result = await ctx.services.post.create(input);
+  if (!result.success) throw new Error(result.error?.message || "创建文章失败");
+  const post = result.data as PostEntity;
+  return {
+    id: post.id,
+    garden: post.garden,
+    slug: post.slug,
+    title: post.title,
+    path: `content/${post.garden}/${post.slug}.md`,
+  };
+}
+
+async function postUpdateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const content = args.content !== undefined ? String(args.content) : undefined;
+  const garden = args.garden !== undefined ? parseGardenArg(args.garden) : undefined;
+  const slug = args.slug !== undefined ? String(args.slug) : undefined;
+  if (content !== undefined) {
+    const updateTitle = args.title !== undefined ? String(args.title) : " ";
+    const syntheticContent = `---\ntitle: ${JSON.stringify(updateTitle)}\n---\n\n${content}`;
+    const validation = validateOutputForAgent(
+      `content/${garden ?? "posts"}/${slug ?? "article"}.md`,
+      syntheticContent,
+      ctx.agentSnapshot?.id,
+      ctx.config,
+    );
+    if (!validation.ok) {
+      return {
+        success: false,
+        error: `输出验证未通过，文章未更新：\n${formatValidationErrors(validation.errors!)}`,
+        validationErrors: validation.errors,
+      };
+    }
+  }
+  const input = {
+    id,
+    title: args.title !== undefined ? String(args.title) : undefined,
+    content,
+    garden,
+    slug,
+    excerpt: args.excerpt !== undefined ? String(args.excerpt) : undefined,
+    coverImage: args.coverImage !== undefined ? (args.coverImage ? String(args.coverImage) : null) : undefined,
+    category: args.category !== undefined ? (args.category ? String(args.category) : null) : undefined,
+    tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
+    published: args.published !== undefined ? args.published === true : undefined,
+  };
+  const result = await ctx.services.post.update(input);
+  if (!result.success) throw new Error(result.error?.message || "更新文章失败");
+  const post = result.data as PostEntity;
+  return {
+    id: post.id,
+    garden: post.garden,
+    slug: post.slug,
+    title: post.title,
+    path: `content/${post.garden}/${post.slug}.md`,
+  };
+}
+
+async function postDeleteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const result = await ctx.services.post.delete(id);
+  if (!result.success) throw new Error(result.error?.message || "删除文章失败");
+  return { id, deleted: true };
+}
+
+async function postListTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  // 砍 invoke_api 后补的专用只读工具：列本地知识库文章。
+  // service.list 已裁剪 content（getListSelect 只返元信息），不泄露正文。
+  const page = Math.max(1, Number(args.page || 1));
+  const pageSize = Math.min(50, Math.max(1, Number(args.pageSize || 20)));
+  const garden =
+    args.garden === undefined || args.garden === null || args.garden === ""
+      ? undefined
+      : parseGardenArg(args.garden);
+  const result = await ctx.services.post.list({
+    page,
+    pageSize,
+    garden,
+    published: args.published === undefined ? undefined : args.published === true,
+    category: args.category ? String(args.category) : undefined,
+    tag: args.tag ? String(args.tag) : undefined,
+    keyword: args.keyword ? String(args.keyword) : undefined,
+    orderBy: "updatedAt",
+    order: "desc",
+  } as any);
+  return {
+    total: result.total,
+    page,
+    pageSize,
+    totalPages: result.totalPages,
+    items: result.items.map((p: PostEntity) => ({
+      id: p.id,
+      garden: p.garden,
+      title: p.title,
+      slug: p.slug,
+      path: `content/${p.garden}/${p.slug}.md`,
+      excerpt: p.excerpt,
+      category: p.category,
+      tags: p.tags,
+      published: p.published,
+      updatedAt: p.updatedAt,
+    })),
+  };
+}
+
+/** 邻居优先：[[wiki]] 出链 > related/标签；不含正文 */
+async function postNeighborsTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  if (!ctx.prisma) {
+    throw new Error("post_neighbors 需要数据库上下文（Chat / Agent 会话内调用）");
+  }
+  const { resolveGardenNeighbors } = await import("../../gardenNeighbors.js");
+  const limit = Math.min(20, Math.max(1, Number(args.limit || 8)));
+  const postId = typeof args.id === "string" && args.id.trim() ? args.id.trim() : undefined;
+  const garden =
+    args.garden === undefined || args.garden === null || args.garden === ""
+      ? undefined
+      : parseGardenArg(args.garden);
+  const slug = typeof args.slug === "string" && args.slug.trim() ? args.slug.trim() : undefined;
+  if (!postId && !(garden && slug)) {
+    throw new Error("post_neighbors 需要 id，或同时提供 garden + slug");
+  }
+  const items = await resolveGardenNeighbors({
+    prisma: ctx.prisma,
+    postId,
+    garden,
+    slug,
+    limit,
+    relatedFn: (input) => ctx.services.post.related(input),
+  });
+  return {
+    total: items.length,
+    items: items.map((n) => ({
+      id: n.id,
+      garden: n.garden,
+      title: n.title,
+      slug: n.slug,
+      path: `content/${n.garden}/${n.slug}.md`,
+      excerpt: n.excerpt,
+      score: n.score,
+      reasons: n.reasons,
+      via: n.via,
+    })),
+  };
+}
+
+async function memoryCreateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const content = String(args.content || "").trim();
+  if (!content) throw new Error("content 不能为空");
+  const validation = validateOutputForAgent(
+    "config/memories/memory.md",
+    content,
+    ctx.agentSnapshot?.id,
+    ctx.config,
+  );
+  if (!validation.ok) {
+    return {
+      success: false,
+      error: `输出验证未通过，记忆未创建：\n${formatValidationErrors(validation.errors!)}`,
+      validationErrors: validation.errors,
+    };
+  }
+  const strength = Number(args.strength ?? 1);
+  const rawType = args.type ? String(args.type) : "note";
+  if (!isMemoryUserCreatable(rawType)) {
+    throw new Error(
+      `type 无效：${rawType}。允许：preference（偏好）、semantic（事实）、episodic（经历）、note（笔记）、procedural（流程）。不要记可从代码/文档直接查到的内容。`,
+    );
+  }
+  const scope = resolveMemoryWriteScope(args.scope ? String(args.scope) : undefined, {
+    agentId: ctx.agentSnapshot?.id,
+    workspaceId: ctx.agentSnapshot?.workspaceId,
+    tier: ctx.agentSnapshot?.tier,
+  });
+  if (scope === "global") {
+    const evidence = String(args.evidence ?? args.source ?? "").trim();
+    if (!evidence) {
+      throw new Error("memory_create(scope=global) 需要 evidence 或 source（禁止无证据的全局记忆）");
+    }
+    if (ctx.services) {
+      console.warn(
+        `[memory_create] global 写入 agent=${ctx.agentSnapshot?.id ?? "?"} tier=${ctx.agentSnapshot?.tier ?? "?"} chars=${content.length}`,
+      );
+      const { forceApprovalOrProceed } = await import("../../approvalGate.js");
+      const approvalId =
+        typeof args.approvalId === "string" && args.approvalId.trim()
+          ? args.approvalId.trim()
+          : undefined;
+      const source =
+        typeof args.source === "string" && args.source.trim() ? args.source.trim() : undefined;
+      await forceApprovalOrProceed(
+        ctx.services,
+        "memory_create",
+        {
+          content,
+          type: rawType,
+          scope: "global",
+          evidence,
+          ...(source ? { source } : {}),
+          ...(Array.isArray(args.keywords) ? { keywords: args.keywords.map(String) } : {}),
+          ...(Array.isArray(args.tags) ? { tags: args.tags.map(String) } : {}),
+        },
+        approvalId,
+      );
+    }
+  }
+  const repo = createMemoryRepository(ctx.services);
+  const attributionRaw = args.attribution ? String(args.attribution) : "agent";
+  const attribution = ["user", "agent", "system"].includes(attributionRaw)
+    ? attributionRaw
+    : "agent";
+  let validTo: Date | null | undefined;
+  if (args.validTo) {
+    const d = new Date(String(args.validTo));
+    if (!Number.isNaN(d.getTime())) validTo = d;
+  }
+  const source =
+    typeof args.source === "string" && args.source.trim() ? args.source.trim() : undefined;
+  const conflictsWith = Array.isArray(args.conflictsWith)
+    ? args.conflictsWith.map(String).map((s) => s.trim()).filter(Boolean)
+    : undefined;
+  const memory = await repo.write({
+    content,
+    type: rawType as MemoryUserCreatableType,
+    scope,
+    strength: Number.isFinite(strength) ? Math.min(1, Math.max(0, strength)) : 1,
+    keywords: Array.isArray(args.keywords) ? args.keywords.map(String) : [],
+    tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
+    attribution,
+    source,
+    conflictsWith,
+    validTo,
+  });
+  return {
+    id: memory.id,
+    type: memory.type,
+    strength: memory.strength,
+    keywords: memory.keywords,
+    tags: memory.tags,
+    scope: memory.scope,
+    attribution: memory.attribution,
+    source: memory.source,
+    conflictsWith: memory.conflictsWith,
+  };
+}
+
+async function pinnedMemoryReadTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const which = String(args.which || "").trim() as PinnedWhich;
+  if (which !== "user" && which !== "agent") {
+    throw new Error("which 必须是 user 或 agent");
+  }
+  return readPinnedFile(ctx.config.projectRoot, which);
+}
+
+async function pinnedMemoryWriteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const which = String(args.which || "").trim() as PinnedWhich;
+  if (which !== "user" && which !== "agent") {
+    throw new Error("which 必须是 user 或 agent");
+  }
+  const content = String(args.content ?? "");
+  if (!content.trim()) throw new Error("content 不能为空");
+  return writePinnedFile(ctx.config.projectRoot, which, content);
+}
+
+async function memoryDailyAppendTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const content = String(args.content || "").trim();
+  if (!content) throw new Error("content 不能为空");
+  const day = args.day != null ? String(args.day).trim() : undefined;
+  return appendDailyNote(ctx.config.projectRoot, content, {
+    day: day || undefined,
+    source: ctx.agentSnapshot?.id ? `agent:${ctx.agentSnapshot.id.slice(0, 8)}` : "agent",
+  });
+}
+
+async function memoryDailySearchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const keyword = String(args.keyword || "");
+  return searchDailyNotes(ctx.config.projectRoot, keyword, {
+    maxDays: args.maxDays !== undefined ? Number(args.maxDays) : 30,
+    maxHits: args.maxHits !== undefined ? Number(args.maxHits) : 20,
+  });
+}
+
+async function memoryDistillPersonaTool(_args: Record<string, unknown>, ctx: NativeToolContext) {
+  const { distillPersona } = await import("../../personaDistiller.js");
+  const result = await distillPersona({
+    services: ctx.services,
+    config: ctx.config,
+    force: true, // 手动触发跳过防抖
+  });
+  if (result.status === "distilled") {
+    return {
+      success: true,
+      personaId: result.personaId,
+      previousId: result.previousId,
+      chars: result.chars,
+      message: "画像已蒸馏更新，新对话起自动注入 system prompt 顶部；可在 /memories 页查看/修正。",
+    };
+  }
+  return { success: false, status: result.status, reason: result.reason };
+}
+
+async function memorySearchTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const keyword = String(args.keyword || "");
+  const type = args.type ? String(args.type) : undefined;
+  const pageSize = Math.min(50, Math.max(1, Number(args.pageSize || 20)));
+  // W5-followup：三层 scope 读路径（global + 本 Agent 所在 Workspace + 本 Agent），
+  // 其他 Agent / 其他 Workspace 的私有记忆不可见。仓储一次返回 limit 条，不分页。
+  const scopes = [MEMORY_SCOPE_GLOBAL];
+  if (ctx.agentSnapshot?.workspaceId) scopes.push(memoryWorkspaceScope(ctx.agentSnapshot.workspaceId));
+  if (ctx.agentSnapshot?.id) scopes.push(memoryAgentScope(ctx.agentSnapshot.id));
+  const repo = createMemoryRepository(ctx.services);
+  const items = await repo.read({
+    keyword: keyword || undefined,
+    types: type ? [type] : undefined,
+    scopes,
+    limit: pageSize,
+  });
+  return {
+    total: items.length,
+    pageSize,
+    items: items.map((m) => ({
+      id: m.id,
+      content: m.content.slice(0, m.type === MEMORY_TYPES.EXPERIENCE ? 800 : 200),
+      type: m.type,
+      strength: m.strength,
+      keywords: m.keywords,
+      tags: m.tags,
+      source: m.source,
+      conflictsWith: m.conflictsWith,
+    })),
+  };
+}
+
+async function memoryUpdateTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  const content = String(args.content || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  if (!content) throw new Error("content 不能为空");
+  const validation = validateOutputForAgent(
+    "config/memories/memory.md",
+    content,
+    ctx.agentSnapshot?.id,
+    ctx.config,
+  );
+  if (!validation.ok) {
+    return {
+      success: false,
+      error: `输出验证未通过，记忆未更新：\n${formatValidationErrors(validation.errors!)}`,
+      validationErrors: validation.errors,
+    };
+  }
+  const rawType = args.type !== undefined ? String(args.type) : undefined;
+  if (rawType !== undefined && !isMemoryUserCreatable(rawType)) {
+    throw new Error(
+      `type 无效：${rawType}。允许：preference、semantic、episodic、note、procedural。`,
+    );
+  }
+  const strength = args.strength !== undefined ? Number(args.strength) : undefined;
+  const repo = createMemoryRepository(ctx.services);
+  const { previousId, memory } = await repo.supersedeUpdate({
+    id,
+    content,
+    type: rawType,
+    strength: strength !== undefined && Number.isFinite(strength) ? strength : undefined,
+    keywords: Array.isArray(args.keywords) ? args.keywords.map(String) : undefined,
+    tags: Array.isArray(args.tags) ? args.tags.map(String) : undefined,
+    actor: {
+      agentId: ctx.agentSnapshot?.id,
+      workspaceId: ctx.agentSnapshot?.workspaceId,
+      tier: ctx.agentSnapshot?.tier,
+    },
+  });
+  return {
+    id: memory.id,
+    previousId,
+    type: memory.type,
+    strength: memory.strength,
+    keywords: memory.keywords,
+    tags: memory.tags,
+    scope: memory.scope,
+    superseded: previousId !== memory.id,
+  };
+}
+
+async function memoryDeleteTool(args: Record<string, unknown>, ctx: NativeToolContext) {
+  const id = String(args.id || "").trim();
+  if (!id) throw new Error("id 不能为空");
+  const result = await ctx.services.memory.delete(id);
+  if (!result.success) throw new Error(result.error?.message || "删除记忆失败");
+  return { id, deleted: true };
+}
+
+const MEMORY_DEFS: NativeToolDefinition[] = [
+  {
+    name: "garden_create",
+    concurrencyClass: "D",
+    destructive: true,
+    approvalExempt: true,
+    description:
+      "新建知识库花园（第 N 座库）。id=目录名（小写 [a-z0-9_-]）；落盘 content/{id}/_garden.md（title/description + 首页正文）。可用 template='knowledge' 按知识库模板规范初始化。建库后才能 post_create 往该库写文章。禁止 write_file 直写 content/。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("花园 id（目录名），如 research-notes"),
+        title: z.string().describe("显示标题"),
+        description: z.string().describe("一句话说明").optional(),
+        homeContent: z.string().describe("首页 Markdown 正文；与 template 二选一").optional(),
+        template: z.enum(["knowledge"]).describe("使用模板快速初始化；knowledge=按知识库模板规范生成").optional(),
+      }),
+    ),
+  },
+  {
+    name: "garden_list",
+    description: "列出知识库花园（id/title/description/path）。写文前先确认目标库存在。",
+    parameters: zodParams(
+      z.object({
+        page: z.number().int().min(1).optional(),
+        pageSize: z.number().int().min(1).max(100).optional(),
+        keyword: z.string().optional(),
+      }),
+    ),
+  },
+  {
+    name: "garden_get",
+    description: "获取花园详情与首页正文（homeContent）。",
+    parameters: zodParams(z.object({ id: z.string().describe("花园 id") })),
+  },
+  {
+    name: "garden_update",
+    concurrencyClass: "D",
+    destructive: true,
+    approvalExempt: true,
+    description: "更新花园标题/说明/首页正文（写回 _garden.md）。",
+    parameters: zodParams(
+      z.object({
+        id: z.string(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        homeContent: z.string().describe("首页 Markdown").optional(),
+      }),
+    ),
+  },
+  {
+    name: "garden_delete",
+    concurrencyClass: "D",
+    destructive: true,
+    description:
+      "软删除空花园（无未删文章才可删；种子库不可删）。目录移入 content/.trash/gardens/，可 garden_restore 恢复。禁止 shell 硬删。",
+    parameters: zodParams(z.object({ id: z.string() })),
+  },
+  {
+    name: "garden_restore",
+    concurrencyClass: "D",
+    destructive: true,
+    approvalExempt: true,
+    description:
+      "从 content/.trash/gardens/ 恢复此前 garden_delete 软删的花园（取该 id 最新一份 trash）。",
+    parameters: zodParams(z.object({ id: z.string().describe("花园 id") })),
+  },
+  {
+    name: "post_create",
+    concurrencyClass: "D",
+    destructive: true,
+    approvalExempt: true,
+    description:
+      "在已存在的知识库花园创建 Markdown 文章。garden=花园 id（须先 garden_create 或选种子库 posts/knowledge/resources）；slug=库内相对路径。落盘 content/{garden}/{slug}.md。禁止 write_file 直写。",
+    parameters: zodParams(
+      z.object({
+        title: z.string().describe("文章标题"),
+        garden: z
+          .string()
+          .describe("花园 id；默认 posts。未知 id 会失败——先 garden_list/garden_create")
+          .optional(),
+        content: z.string().describe("Markdown 正文").optional(),
+        slug: z
+          .string()
+          .describe("花园内相对路径（不含 .md），如 notes/intro；不填则由标题生成")
+          .optional(),
+        excerpt: z.string().describe("摘要").optional(),
+        coverImage: z.string().describe("封面图 URL").optional(),
+        category: z.string().describe("分类（元数据，不是目录）").optional(),
+        tags: z.array(z.string()).describe("标签列表").optional(),
+        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
+      }),
+    ),
+  },
+  {
+    name: "post_update",
+    concurrencyClass: "D",
+    description:
+      "更新本地知识库文章。可改 garden 以迁移到另一已存在花园。先用 post_list 查 id。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("文章 id"),
+        title: z.string().describe("文章标题").optional(),
+        garden: z.string().describe("目标花园 id（迁移时填写）").optional(),
+        content: z.string().describe("Markdown 正文").optional(),
+        slug: z.string().describe("花园内相对路径").optional(),
+        excerpt: z.string().describe("摘要").optional(),
+        coverImage: z.string().describe("封面图 URL").optional(),
+        category: z.string().describe("分类").optional(),
+        tags: z.array(z.string()).describe("标签列表").optional(),
+        published: z.boolean().describe("写入后即可阅读，默认 true").optional(),
+      }),
+    ),
+  },
+  {
+    name: "post_delete",
+    concurrencyClass: "D",
+    destructive: true,
+    description:
+      "软删除本地知识库文章（进该花园 .trash，可恢复）。禁止 run_shell 硬删；恢复走文章回收站 / 相关 restore。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("文章 id"),
+      }),
+    ),
+  },
+  {
+    name: "post_list",
+    description:
+      "列出本地知识库文章。可按 garden 过滤。返回 id/garden/slug/path/title/excerpt 等元信息（不含正文）。",
+    parameters: zodParams(
+      z.object({
+        garden: z.string().describe("只列该花园；不填=全部花园").optional(),
+        page: z.number().int().min(1).describe("页码，默认 1").optional(),
+        pageSize: z.number().int().min(1).max(50).describe("每页条数，默认 20，最大 50").optional(),
+        published: z.boolean().describe("可选过滤；不填=全部").optional(),
+        category: z.string().describe("按分类过滤").optional(),
+        tag: z.string().describe("按标签过滤").optional(),
+        keyword: z.string().describe("关键词（标题/正文 FTS 优先，回退 LIKE）").optional(),
+      }),
+    ),
+  },
+  {
+    name: "post_neighbors",
+    description:
+      "查文章邻居（GraphRAG 薄版）：优先 [[wiki]] 出链，再 related/标签/同花园。返回元信息不含正文。读相关文章前先用本工具扩一圈上下文。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("文章 id（与 garden+slug 二选一）").optional(),
+        garden: z.string().describe("花园 id（与 slug 联用）").optional(),
+        slug: z.string().describe("花园内相对路径（与 garden 联用）").optional(),
+        limit: z.number().int().min(1).max(20).describe("返回条数，默认 8").optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_create",
+    concurrencyClass: "D",
+    destructive: true,
+    // 创建类可回滚（非删除）——记忆积累是 Agent 常态路径
+    approvalExempt: true,
+    description:
+      "创建长期记忆。type：preference=用户偏好；semantic=稳定事实/决策；episodic=某次经历；note=笔记；procedural=操作流程。scope：agent=仅自己可见（默认）；workspace=同 Workspace 的 Agent 共享；global=全局共享（仅超级 Agent）。不要记可从代码/git/文档直接查到的内容。纠正过时事实优先 memory_update；若新旧说法需并存对照，create 并填 conflictsWith 指向旧记忆 id（勿静默覆盖）。source 写出处（post:{garden}/{slug} | run:{id} | url:…）。你（Agent）推断出的记忆初始强度较低（默认 0.7），被后续任务验证有效会增强；用户明确陈述的事实才是满强度。",
+
+    parameters: zodParams(
+      z.object({
+        content: z.string().describe("记忆内容"),
+        type: z
+          .enum(["preference", "semantic", "episodic", "note", "procedural"])
+          .describe("记忆类型")
+          .optional(),
+        strength: z.number().describe("强度 0-1，默认 1").optional(),
+        keywords: z.array(z.string()).describe("检索关键词").optional(),
+        tags: z
+          .array(z.string())
+          .describe("组织标签（与 Skill/Post 统一，如「非常有用」；不同于 keywords）")
+          .optional(),
+        scope: z
+          .enum(["agent", "workspace", "global"])
+          .describe("可见范围：agent=仅自己（默认）；workspace=同 Workspace 共享；global=全局（仅超级 Agent）")
+          .optional(),
+        attribution: z
+          .enum(["user", "agent", "system"])
+          .describe("事实来源：user=用户陈述；agent=Agent 推断（默认）；system=系统")
+          .optional(),
+        source: z
+          .string()
+          .describe("引用出处：post:{garden}/{slug} | run:{id} | url:https://… | tool:{jobId}")
+          .optional(),
+        evidence: z
+          .string()
+          .describe("scope=global 时必填：可核验出处（与 source 二选一）")
+          .optional(),
+        conflictsWith: z
+          .array(z.string())
+          .describe("与本条并存的矛盾记忆 id（search 得到）；双方都会挂冲突边")
+          .optional(),
+        validTo: z
+          .string()
+          .describe("可选 ISO 时间：事实失效点（过期后不再检索/注入）")
+          .optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_update",
+    concurrencyClass: "D",
+    destructive: true,
+    // 软版本链纠正（非物理删除）——与 memory_create 同档豁免
+    approvalExempt: true,
+    description:
+      "更新长期记忆（软版本链）：新建现行版本，旧版标为 superseded 不再注入上下文。用于纠正矛盾或过时事实；可传已 superseded 的旧 id（自动跟到链尾）。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("要更新的记忆 id（search/create 返回的 id）"),
+        content: z.string().describe("新的记忆内容"),
+        type: z
+          .enum(["preference", "semantic", "episodic", "note", "procedural"])
+          .describe("记忆类型（不填则继承）")
+          .optional(),
+        strength: z.number().describe("强度 0-1（不填则继承）").optional(),
+        keywords: z.array(z.string()).describe("检索关键词（不填则继承）").optional(),
+        tags: z.array(z.string()).describe("组织标签（不填则继承）").optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_search",
+    description:
+      "搜索本地记忆库（仅返回现行 active 版本）。type 可填 experience 检索运行经验（任务→工具→成败台账），用于复盘「这类任务之前怎么做的」。",
+    parameters: zodParams(
+      z.object({
+        keyword: z.string().describe("关键词").optional(),
+        type: z.string().describe("按类型过滤").optional(),
+        pageSize: z.number().describe("返回条数上限，默认 20").optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_delete",
+    concurrencyClass: "D",
+    destructive: true,
+    description: "删除本地记忆库中的一条记忆。",
+    parameters: zodParams(
+      z.object({
+        id: z.string().describe("记忆 id"),
+      }),
+    ),
+  },
+  {
+    name: "pinned_memory_read",
+    description:
+      "读取 L1 常驻层 USER.md（用户偏好）或 AGENT.md（工作约定）。硬预算截断后的正文；会话内注入的是冻结快照，本工具读的是磁盘当前内容。",
+    parameters: zodParams(
+      z.object({
+        which: z.enum(["user", "agent"]).describe("user=USER.md；agent=AGENT.md"),
+      }),
+    ),
+  },
+  {
+    name: "pinned_memory_write",
+    concurrencyClass: "D",
+    destructive: true,
+    // L1 约定写盘（非删除）——Agent 维护自身工作约定的常态路径
+    approvalExempt: true,
+    description:
+      "写入 L1 常驻层 USER.md / AGENT.md（超硬预算自动截断）。立即写盘；当前会话仍用冻结快照，**新会话**才注入更新后的内容。勿把可检索的琐碎事实写进这里——琐碎事实用 memory_create。",
+    parameters: zodParams(
+      z.object({
+        which: z.enum(["user", "agent"]).describe("user=USER.md；agent=AGENT.md"),
+        content: z.string().describe("完整替换正文（Markdown）"),
+      }),
+    ),
+  },
+  {
+    name: "memory_daily_append",
+    concurrencyClass: "D",
+    // 追加日记文件，文件名含日期；重跑产生新行而非覆盖
+    description:
+      "追加 L2 工作日记（config/memories/daily/YYYY-MM-DD.md）。只作工作笔记，**不会**自动注入 system prompt；需要时用 memory_daily_search 召回。稳定偏好/事实仍用 memory_create。",
+    parameters: zodParams(
+      z.object({
+        content: z.string().describe("今日工作笔记一行"),
+        day: z.string().describe("可选 YYYY-MM-DD，默认今天").optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_daily_search",
+    description:
+      "搜索 L2 工作日记（最近 N 天的 daily/*.md）。结果不注入 prompt，由你主动调用后阅读。",
+    parameters: zodParams(
+      z.object({
+        keyword: z.string().describe("关键词；空则列出最近日记行").optional(),
+        maxDays: z.number().describe("回溯天数，默认 30，最大 90").optional(),
+        maxHits: z.number().describe("最多返回条数，默认 20").optional(),
+      }),
+    ),
+  },
+  {
+    name: "memory_distill_persona",
+    concurrencyClass: "D",
+    // 蒸馏写画像走 supersede 软版本链（非删除），与 memory_create 同档豁免
+    approvalExempt: true,
+    description:
+      "立即蒸馏 L3 长期用户画像：从全局记忆（偏好/事实/经历/笔记/流程）提炼一份 Markdown 画像，此后每次对话自动注入 system prompt 顶部。已有画像时整体重写（旧版走 supersede 版本链可回溯）。日常由每日 cron 自动蒸馏，本工具用于手动触发。",
+    parameters: zodParams(z.object({})),
+  },
+];
+
+const MEMORY_HANDLERS: Record<string, NativeToolHandler> = {
+  garden_create: gardenCreateTool,
+  garden_list: gardenListTool,
+  garden_get: gardenGetTool,
+  garden_update: gardenUpdateTool,
+  garden_delete: gardenDeleteTool,
+  garden_restore: gardenRestoreTool,
+  post_create: postCreateTool,
+  post_update: postUpdateTool,
+  post_delete: postDeleteTool,
+  post_list: postListTool,
+  post_neighbors: postNeighborsTool,
+  memory_create: memoryCreateTool,
+  memory_update: memoryUpdateTool,
+  memory_search: memorySearchTool,
+  memory_delete: memoryDeleteTool,
+  pinned_memory_read: pinnedMemoryReadTool,
+  pinned_memory_write: pinnedMemoryWriteTool,
+  memory_daily_append: memoryDailyAppendTool,
+  memory_daily_search: memoryDailySearchTool,
+  memory_distill_persona: memoryDistillPersonaTool,
+};
+
+/** create 类补偿共用：按结果 id 走 Service 删除（保证文件回写 / FTS 同步）；NOT_FOUND 幂等跳过 */
+async function deleteByIdCompensate(
+  entity: "post" | "memory",
+  result: unknown,
+  ctx: NativeToolContext,
+): Promise<string> {
+  const id = (result as { id?: string } | undefined)?.id;
+  if (!id) return "执行结果无 id，幂等跳过";
+  const del = await ctx.services[entity].delete(id);
+  if (!del.success) {
+    if (del.error?.code?.includes("NOT_FOUND")) return "记录已不存在（视为已回滚），幂等跳过";
+    throw new Error(del.error?.message || `${entity} 删除回补失败`);
+  }
+  return `已删除本 run 创建的 ${entity}（id=${id}）`;
+}
+
+/**
+ * D 类工具幂等补偿（W6）：post_create / memory_create 回滚 = 删除该 id（走 Service）。
+ * post_delete / memory_delete 为不可逆删除，不挂补偿（run 失败时如实 warn「需人工 revert」）。
+ */
+const MEMORY_ROLLBACKS: Record<string, ToolRollback<NativeToolContext>> = {
+  garden_create: {
+    compensate: async (_args, result, _captured, ctx) => {
+      const id = (result as { id?: string } | undefined)?.id;
+      if (!id) return "执行结果无 id，幂等跳过";
+      const del = await ctx.services.garden.delete(id);
+      if (!del.success) {
+        if (del.error?.code?.includes("NOT_FOUND")) return "花园已不存在，幂等跳过";
+        throw new Error(del.error?.message || "garden 删除回补失败");
+      }
+      return `已删除本 run 创建的花园（id=${id}）`;
+    },
+  },
+  post_create: {
+    compensate: async (_args, result, _captured, ctx) => deleteByIdCompensate("post", result, ctx),
+  },
+  memory_create: {
+    compensate: async (_args, result, _captured, ctx) => deleteByIdCompensate("memory", result, ctx),
+  },
+};
+
+export function registerMemoryTools(): void {
+  registerNativeDomain(MEMORY_DEFS, MEMORY_HANDLERS, MEMORY_ROLLBACKS);
+}

@@ -1,0 +1,46 @@
+import { AboutView } from "@/components/about/AboutView";
+import { trpcQueryCached } from "@/lib/serverTrpc";
+import { ScrollProgress } from "@/components/magicui/scroll-progress";
+import type { AboutProfile } from "@oasismind/shared";
+
+export const metadata = {
+  title: "关于应知序 | 见微 · OasisMind",
+  description: "应知序 — 粗鄙、偏颇，但还有点梦想。见微知著，本地优先的数字主力。",
+};
+
+const FALLBACK_PROFILE: AboutProfile = {
+  name: "应知序",
+  title: "粗鄙 · 偏颇 · 还有点梦想",
+  tagline: "写代码不是目的，做出东西才是。",
+  oneLiner: "正在造一个本地优先的 AI 数字花园。",
+  location: "",
+  mbti: "ENTJ",
+  github: "https://github.com/SingularGuyLeBorn",
+  site: "",
+  email: "",
+  focus: [],
+  roles: [],
+  stack: [],
+  timeline: [],
+  projects: [],
+  contents: [],
+  toolbox: [],
+  philosophy: [],
+  bodyMarkdown: "About profile 暂不可用，请确认后端已启动。",
+  socials: [],
+};
+
+export default async function AboutPage() {
+  let profile = FALLBACK_PROFILE;
+  try {
+    profile = await trpcQueryCached<AboutProfile>("about.getProfile", undefined, 60);
+  } catch {
+    /* 构建或离线时降级 */
+  }
+  return (
+    <div className="om-force-light">
+      <ScrollProgress className="h-0.5 bg-gradient-to-r from-[var(--om-accent)] via-[var(--om-brand-light)] to-[var(--om-brand)]" />
+      <AboutView profile={profile} />
+    </div>
+  );
+}

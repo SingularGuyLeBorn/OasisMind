@@ -1,0 +1,33 @@
+{
+  "id": "stop-gt3-aborted-sticky",
+  "prd": "prd-chat-stop.md GT-3",
+  "sessionId": "s0",
+  "events": [
+    {
+      "t": "UPSERT",
+      "role": "assistant",
+      "id": "msg-sticky",
+      "content": "半",
+      "finishReason": "aborted",
+      "expect": {
+        "phase": "idle",
+        "occupied": false,
+        "sendButton": "chat-send",
+        "finishReason": { "id": "msg-sticky", "value": "aborted" }
+      }
+    },
+    {
+      "t": "UPSERT",
+      "role": "assistant",
+      "id": "msg-sticky",
+      "content": "半截更长",
+      "finishReason": "stop",
+      "expect": {
+        "phase": "idle",
+        "sendButton": "chat-send",
+        "finishReason": { "id": "msg-sticky", "value": "aborted" },
+        "assistantContent": { "id": "msg-sticky", "value": "半截更长" }
+      }
+    }
+  ]
+}

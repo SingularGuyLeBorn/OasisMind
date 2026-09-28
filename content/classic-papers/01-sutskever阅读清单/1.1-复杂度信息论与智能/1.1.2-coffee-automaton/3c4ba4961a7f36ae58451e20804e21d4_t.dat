@@ -1,0 +1,101 @@
+                     * Constructs a new ScopeSpans.
+                     * @memberof opentelemetry.proto.trace.v1
+                     * @classdesc Represents a ScopeSpans.
+                     * @implements IScopeSpans
+                     * @constructor
+                     * @param {opentelemetry.proto.trace.v1.IScopeSpans=} [properties] Properties to set
+                     */
+                    function ScopeSpans(properties) {
+                        this.spans = [];
+                        if (properties)
+                            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                                if (properties[keys[i]] != null)
+                                    this[keys[i]] = properties[keys[i]];
+                    }
+                    /**
+                     * ScopeSpans scope.
+                     * @member {opentelemetry.proto.common.v1.IInstrumentationScope|null|undefined} scope
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @instance
+                     */
+                    ScopeSpans.prototype.scope = null;
+                    /**
+                     * ScopeSpans spans.
+                     * @member {Array.<opentelemetry.proto.trace.v1.ISpan>} spans
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @instance
+                     */
+                    ScopeSpans.prototype.spans = $util.emptyArray;
+                    /**
+                     * ScopeSpans schemaUrl.
+                     * @member {string|null|undefined} schemaUrl
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @instance
+                     */
+                    ScopeSpans.prototype.schemaUrl = null;
+                    /**
+                     * Creates a new ScopeSpans instance using the specified properties.
+                     * @function create
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @static
+                     * @param {opentelemetry.proto.trace.v1.IScopeSpans=} [properties] Properties to set
+                     * @returns {opentelemetry.proto.trace.v1.ScopeSpans} ScopeSpans instance
+                     */
+                    ScopeSpans.create = function create(properties) {
+                        return new ScopeSpans(properties);
+                    };
+                    /**
+                     * Encodes the specified ScopeSpans message. Does not implicitly {@link opentelemetry.proto.trace.v1.ScopeSpans.verify|verify} messages.
+                     * @function encode
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @static
+                     * @param {opentelemetry.proto.trace.v1.IScopeSpans} message ScopeSpans message or plain object to encode
+                     * @param {$protobuf.Writer} [writer] Writer to encode to
+                     * @returns {$protobuf.Writer} Writer
+                     */
+                    ScopeSpans.encode = function encode(message, writer) {
+                        if (!writer)
+                            writer = $Writer.create();
+                        if (message.scope != null && Object.hasOwnProperty.call(message, "scope"))
+                            $root.opentelemetry.proto.common.v1.InstrumentationScope.encode(message.scope, writer.uint32(/* id 1, wireType 2 =*/ 10).fork()).ldelim();
+                        if (message.spans != null && message.spans.length)
+                            for (var i = 0; i < message.spans.length; ++i)
+                                $root.opentelemetry.proto.trace.v1.Span.encode(message.spans[i], writer.uint32(/* id 2, wireType 2 =*/ 18).fork()).ldelim();
+                        if (message.schemaUrl != null && Object.hasOwnProperty.call(message, "schemaUrl"))
+                            writer.uint32(/* id 3, wireType 2 =*/ 26).string(message.schemaUrl);
+                        return writer;
+                    };
+                    /**
+                     * Encodes the specified ScopeSpans message, length delimited. Does not implicitly {@link opentelemetry.proto.trace.v1.ScopeSpans.verify|verify} messages.
+                     * @function encodeDelimited
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @static
+                     * @param {opentelemetry.proto.trace.v1.IScopeSpans} message ScopeSpans message or plain object to encode
+                     * @param {$protobuf.Writer} [writer] Writer to encode to
+                     * @returns {$protobuf.Writer} Writer
+                     */
+                    ScopeSpans.encodeDelimited = function encodeDelimited(message, writer) {
+                        return this.encode(message, writer).ldelim();
+                    };
+                    /**
+                     * Decodes a ScopeSpans message from the specified reader or buffer.
+                     * @function decode
+                     * @memberof opentelemetry.proto.trace.v1.ScopeSpans
+                     * @static
+                     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                     * @param {number} [length] Message length if known beforehand
+                     * @returns {opentelemetry.proto.trace.v1.ScopeSpans} ScopeSpans
+                     * @throws {Error} If the payload is not a reader or valid buffer
+                     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                     */
+                    ScopeSpans.decode = function decode(reader, length, error) {
+                        if (!(reader instanceof $Reader))
+                            reader = $Reader.create(reader);
+                        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.opentelemetry.proto.trace.v1.ScopeSpans();
+                        while (reader.pos < end) {
+                            var tag = reader.uint32();
+                            if (tag === error)
+                                break;
+                            switch (tag >>> 3) {
+                                case 1: {
+                        

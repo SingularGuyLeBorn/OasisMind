@@ -1,0 +1,35 @@
+按钮同一套，见 `chatSessionTreeBar.tsx`）。这样不会停在半截路径上看不见回复。
+- 占用中（hub occupied / streaming）换叶：与树条相同，按钮 disabled。不要发明软切。
+
+### 后端
+
+- `setMessageLabel` 成功后：除现有 `message_upserted` 外，再 `notifySessionTreeUpdated(sessionId, 当前 activeLeafId)`，让树条书签芯片 PULL 以外还能 PUSH。幂等：label 没变不要推树（读旧行比较）。
+- `session.tree` 节点已有或没有 `label`：没有就补上（`chatTree.ts` 组 tree 的 select 已有 `label: true`，确认 router 输出带到前端）。缺了就补，不要新表。
+- 不要新 tRPC。复用 `message.setLabel`。
+
+### 前端
+
+- `chatMessageList.tsx` 两处 `MessageActions`：`showBookmark={!isEditing}`，`bookmarked={!!message.label}`，`onToggleBookmark` 调 `trpc.message.setLabel.useMutation`。Promise `.catch(catchUnlessCancelled(...))`，禁止 `void`。
+- 乐观：可以本地先改 MS 里该消息 `label`，以服务端 upsert 为准。
+- `chatSessionTreeBar.tsx`：在分叉按钮旁渲染 `label` 非空的节点芯片，`data-testid="chat-bookmark-chip"`，`data-message-id={id}`，文案 `书签` 或 `label.slice(0, 12)`。点击逻辑同上 switchBranch。
+- 换叶后书签仍在（label 在消息行上，不在 leaf 上）。测：钉助手 → switch 到另一枝 → 再 switch 回来 → 按钮仍是实心书签。
+
+### 推拉
+
+- PUSH：`message_upserted` + `session_tree_updated`。  
+- PULL：`listForChat` / `session.tree` 必须带 `label`（刷新不丢实心星）。
+
+### 测试
+
+- 单测：`apps/server/src/__tests__/chatTree.test.ts` 已有 setLabel CRUD，补一条「setLabel 会触发树通知」——若 notify 难 mock，至少测 label 读写。前端：`chatSessionTreeBar.test.tsx` 或新测：有 label 的 node 渲染 chip。
+- E2E：在 `apps/web/e2e/chat-session-branch-mock.spec.ts` 加一条（或短文件 `chat-bookmark-mock.spec.ts`）：问候会话 → 钉助手 → 看见 chip → 点 chip（若已在该叶则 disabled）→ F5 → `message-bookmark-btn` 仍 `aria-label=去书签`。禁止 spy LLM。用已有 greeting mock。
+
+**Commit**：`feat(chat): 书签接到气泡与树条，换叶推拉不丢`
+
+---
+
+## W3 贴图默认识图
+
+**根因**：`buildUserMessageContentForLlm` 在 `supportsVision===true` 时**只把 `previewUrl.startsWith("data:")` 的图做成 `image_url`**。相对路径 / `/uploads/` / `content/uploads/...` 的图，多模态模型等于没看见。纯文本模型只在已有 `extractedText` 时才拼进 prompt；Chat 本地上传若没跑 OCR，模型两眼一抹黑，还要自己想起来调 `vision_describe`。
+
+**�

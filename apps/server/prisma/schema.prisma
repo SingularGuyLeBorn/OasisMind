@@ -1,0 +1,756 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 知识库花园 (Garden) —— 动态 N 座；事实源 content/{id}/_garden.md
+model Garden {
+  id          String    @id /// = 目录名 gardenId
+  title       String
+  description String?
+  homeContent String    @default("") /// 首页 Markdown 正文
+  sourceMtime DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([deletedAt])
+  @@index([updatedAt(sort: Desc)])
+}
+
+/// 文章 (Post) —— 多花园：garden + slug 联合唯一
+/// 物理路径 content/{garden}/{slug}.md；garden = Garden.id（动态）
+model Post {
+  id         String   @id @default(cuid())
+  title      String
+  /// 知识库花园 id（对应 content 子目录；默认 posts）
+  garden     String   @default("posts")
+  /// 花园内相对路径（可含 /，不含 .md）；不再全局唯一
+  slug       String
+  content    String            /// Markdown 原文
+  excerpt    String?           /// 摘要
+  coverImage String?           /// 封面图 URL
+  published  Boolean  @default(false)
+  category   String?
+  tags       String   @default("") /// 标签 (逗号分隔字符串)
+  viewCount  Int      @default(0)
+  metadata   Json?             /// 扩展字段
+  sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  deletedAt  DateTime?         /// 软删除时间，null 表示未删除
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([garden, slug])
+  @@index([garden, published, createdAt(sort: Desc)])
+  @@index([published, createdAt(sort: Desc)])
+  @@index([deletedAt])
+  @@index([category])
+  @@index([garden, slug])
+}
+
+/// Agent 配置
+model Agent {
+  id           String   @id @default(cuid())
+  name         String                    /// 名称（可重复，id 才是全局唯一标识）
+  autoName     String?                   /// 自动命名结果（不为空时显示优先于 name）
+  description  String?
+  model        String   @default("deepseek-chat")
+  systemPrompt String   @default("")
+  tools        String   @default("") /// 逗号分隔的工具名称列表
+  sourceSlug   String?  @unique /// 本地源文件 slug（用于增量同步与清理）
+  sourceMtime  DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  // Swarm 三层层级
+  tier         String   @default("sub")  /// "super" | "manager" | "sub"
+  workspaceId  String?                     /// 所属 Workspace（super 无）
+  parentId     String?                     /// 上级 Agent id（super 无）
+  source       String?                     /// 创建来源：ui:subagent_panel / native_tool:agent_create_sub / heartbeat / manual 等
+  heartbeatModel String?                   /// 心跳用便宜模型（不设则用 model）
+  heartbeat    Json?                       /// { enabled, cron, goal, lastRunAt, lastRunStatus, consecutiveFailures }
+  heartbeatSuspendedAt DateTime?           /// W12/W16d-2：连续失败熔断暂停时刻（持久化；null = 未暂停）。恢复语义见 heartbeatEngine
+  toolInheritMask Json?                    /// WP4：{ allow?: string[], deny?: string[] }，只打 inherited
+  toolOwn         Json?                    /// WP4：子 own 裸名数组；null 时 sub 运行时回退 CHILD_OWN_TOOLS
+  status       String   @default("active") /// "active" | "idle" | "dormant" | "deleted"（tombstone）
+  deletedAt    DateTime?                   /// 删除时间（tombstone）
+  deletedBy    String?                     /// 删除者（"user" | agentId）
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  // P1-8：补外键关系，删 Agent 后 session/run 的 agentId 置 null，不再留孤儿引用
+  sessions     ChatSession[]
+  runs         Run[]
+  // Swarm 层级关系
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  parent       Agent?     @relation("AgentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Agent[]    @relation("AgentHierarchy")
+  // Agent 间消息
+  sentMessages     AgentMessage[] @relation("AgentMsgFrom")
+  receivedMessages AgentMessage[] @relation("AgentMsgTo")
+  // Agent 自设 cron 任务（每次点火新建 session）
+  cronJobs         AgentCronJob[]
+  // Workspace 的管理 Agent 反向关系
+  managedWorkspace Workspace? @relation("WorkspaceManager")
+  @@index([tier, status])
+  @@index([workspaceId, tier])
+  @@index([parentId])
+}
+
+/// Agent 自设 cron 任务（与 heartbeat 正交：每次点火新建 ChatSession，注入 prompt / 可选 bus 文件）
+model AgentCronJob {
+  id            String    @id @default(cuid())
+  agentId       String
+  name          String    /// 同 Agent 内唯一，供 upsert / clear
+  cron          String    /// 标准 5 段 cron，如 "0 9 * * *"
+  prompt        String    /// 每次点火注入的详细初始提示词（user 消息）
+  busPath       String?   /// 可选 file-as-bus：相对 Workspace 或 projectRoot 的文件，点火时拼进首条消息
+  enabled       Boolean   @default(true)
+  lastRunAt     DateTime?
+  lastRunStatus String?   /// "success" | "failed" | "cancelled"
+  lastSessionId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  agent         Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  @@unique([agentId, name])
+  @@index([enabled])
+  @@index([agentId, enabled])
+}
+
+/// 技能 (Skill)
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  code        String   /// TypeScript/JavaScript 逻辑代码
+  icon        String?
+  trigger     String?  /// 触发规则 (关键字或正则)
+  enabled     Boolean  @default(true)
+  /// 统一组织标签（CSV）；与 Post/Prompt/Memory.tags 同约定，含「非常有用」「必装」
+  tags        String   @default("")
+  metaJson    String?  /// frontmatter 扩展：model, context, allowedTools, kind, version, source（不含 tags）
+  sourceSlug  String?  @unique /// 本地源文件 slug（用于增量同步与清理）
+  sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+/// 聊天会话
+model ChatSession {
+  id           String        @id @default(cuid())
+  title        String
+  autoName     String?       /// 自动命名结果（不为空时显示优先于 title）
+  model        String        @default("deepseek-v4-flash")
+  systemPrompt String?
+  agentId      String?
+  // Swarm/Subagent：父会话 id（普通会话为 null）
+  parentSessionId String?
+  // 会话类型："chat" | "subagent" | "heartbeat" | "skill_review" | "cron"
+  kind         String        @default("chat")
+  // 任务状态：active | queued | running | paused | interrupted | completed | failed | archived
+  status       String        @default("active")
+  // 任务描述（subagent 的任务文本）
+  taskDescription String?
+  // 主 session 标记：管理 Agent 的主 session 用于接收命令，置顶显示
+  isMainSession Boolean @default(false)
+  // Auto-Compact：持久化上下文摘要，避免每轮重复调 LLM 压缩
+  contextSummary     String?
+  contextCompactedAt DateTime?
+  /// 压缩代际（显式列；persist 用 CAS，不再解析摘要文本 vN@）
+  compactGeneration  Int       @default(0)
+  /// 最近一次压缩边界消息 id（迭代摘要起点；不靠解析摘要 marker）
+  compactBoundaryMessageId String?
+  /// L1 常驻层（USER.md/AGENT.md）会话冻结快照；首轮注入时写入，会话内不变
+  pinnedMemorySnapshot String?
+  // session_rotate：旧→新 / 新←旧（双向血缘；与 parentSessionId 派工父子正交）
+  rotatedToSessionId   String?
+  rotatedFromSessionId String?
+  /// 会话级待办清单（todo_write/todo_read）：{ todos: TodoItem[], updatedAt: string }
+  todoState    Json?
+  /// Goal / Deep Research 外环状态（standing goal + 裁判续跑）
+  goalState    Json?
+  /// 会话树当前叶消息 id（游标；新消息挂到此叶下）
+  activeLeafId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  // P1-8：外键到 Agent，删 Agent 时 agentId 置 null
+  agent        Agent?        @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  messages     ChatMessage[]
+  runs         Run[]
+  queueItems   SessionQueueItem[]
+  // Swarm：父子会话层级，删父会话时 parentSessionId 置 null
+  parent       ChatSession?  @relation("SessionChildren", fields: [parentSessionId], references: [id], onDelete: SetNull)
+  children     ChatSession[] @relation("SessionChildren")
+  @@index([parentSessionId, status, updatedAt])
+  @@index([kind, status])
+  @@index([agentId, updatedAt])
+  @@index([rotatedFromSessionId])
+  // 会话侧栏列表 ORDER BY updatedAt DESC（无 status 过滤时走此索引避免全表排序）
+  @@index([updatedAt])
+}
+
+/// 聊天消息
+model ChatMessage {
+  id           String      @id @default(cuid())
+  sessionId    String
+  role         String      /// "user" | "assistant" | "system" | "tool"
+  content      String
+  /// 会话树：指向父消息 id；首条为 null
+  parentId     String?
+  /// 书签标签（可空）
+  label        String?
+  /// 消息种类：null/普通 | "branch_summary"（分支摘要，默认不进 LLM 上下文）
+  kind         String?
+  attachments  Json?       /// ChatImageAttachment[]，用户消息的图片附件
+  toolCalls    Json?       /// 调用的工具
+  toolResults  Json?       /// 工具执行结果
+  tokenUsage   Json?       /// { prompt, completion, total }
+  finishReason String?     /// "stop" | "aborted" 等流式结束原因
+  source       String      @default("user") /// "user" | "super" | "manager" | "sub" | "system"（心跳）
+  createdAt    DateTime    @default(now())
+  session      ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([sessionId, parentId])
+}
+
+/// 会话级发送队列项（用户消息 + 上级 Agent 消息镜像）
+model SessionQueueItem {
+  id             String   @id @default(cuid())
+  sessionId      String
+  /// 队列项类型："user" | "superior" | "child_notify" | "steer" | "follow_up"（后两者为 mid-run 注入，收尾可移交 user）
+  kind           String
+  /// 消息文本内容
+  content        String
+  /// 来源标识：user 消息存 "user"；superior / child_notify 消息存来源 Agent id
+  source         String
+  /// 来源 Agent 的名字（superior 专用，UI 显示「来自父 Agent · xxx」）
+  sourceName     String?
+  /// 关联的 AgentMessage id（kind=superior 时必填，finalize 时用来 markConsumed）
+  agentMessageId String?
+  /// 排序权重（越小越靠前），用户拖拽后批量更新
+  order          Int      @default(0)
+  /// 附件 JSON（user 消息可能有图片附件）
+  attachments    Json?
+  /// skill 关联（user 消息可能带 skillId）
+  skillId        String?
+  skillPrompt    String?
+  /// B2 软认领：非空 = 已被 drain 认领、等待 ChatMessage 落地后 finalize 删行；超龄由启动恢复重置
+  claimedAt      DateTime?
+  createdAt      DateTime @default(now())
+
+  session        ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, order])
+  @@index([claimedAt])
+  @@unique([sessionId, agentMessageId])
+}
+
+/// Agent 流式事件日志（SessionStreamHub 持久化用）
+model SessionStreamEvent {
+  id        Int      @id @default(autoincrement())
+  sessionId String
+  /// per-session 单调序号（与内存 nextId 同源）；SSE id / resumeAfter / 重放均用此列
+  seq       Int      @default(0)
+  eventType String   /// token | reasoning | tool_start | tool_end | intermediate_content | done | error | session_start | round_start
+  payload   Json     /// AgentStreamEvent 完整 JSON
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, seq])
+  @@index([createdAt])
+}
+
+/// 上传的文件元数据
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  mimeType  String
+  size      Int
+  url       String
+  createdAt DateTime @default(now())
+}
+
+/// 系统日志与执行追踪
+model Log {
+  id        String   @id @default(cuid())
+  level     String   /// "info" | "warn" | "error" | "debug" | "success"
+  component String   /// "server" | "agent" | "db" | "mcp" etc.
+  event     String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([level, createdAt])
+  @@index([component])
+}
+
+/// MCP 服务器配置
+model McpServer {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  /// stdio（默认本地子进程）| http（Streamable HTTP 远程）
+  transport String   @default("stdio")
+  command   String   @default("") /// stdio 可执行文件；http 时可空
+  args      Json?    /// 参数 String[]（stdio）
+  env       Json?    /// 环境变量 Record<string, string>（stdio 注入子进程）
+  url       String?  /// http 传输的 MCP endpoint URL
+  headers   Json?    /// http 请求头 Record<string, string>（如 Authorization）
+  enabled     Boolean  @default(true)
+  sourceSlug  String?  @unique /// 本地源文件 slug（用于增量同步与清理）
+  sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// 长期记忆
+model Memory {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("episodic") /// "episodic" | "semantic"
+  strength  Float    @default(1.0)
+  keywords    String   @default("") /// 检索关键字（CSV）；与 tags 分工：keywords=找得到，tags=组织/优先级
+  /// 统一组织标签（CSV）；与 Skill/Post 同约定
+  tags        String   @default("")
+  scope       String   @default("global") /// "global" | "agent:{agentId}" | "workspace:{workspaceId}"（W5 写时隔离，替代读时过滤）
+  agentId     String?  /// scope=agent:{id} 时的冗余列，便于按 Agent 查询
+  contentHash String?  /// 内容全量 sha256（W5 去重，替代 slice(0,40) 前缀匹配）
+  /// active=可读注入；superseded=被 memory_update 软链取代（不进 prompt）
+  status      String   @default("active")
+  /// 后继记忆 id（status=superseded 时指向新版）
+  supersededBy String?
+  /// 事实来源归因：user=用户陈述 | agent=Agent 推断 | flush=压缩前抢救 | experience=运行经验 | system=系统
+  attribution String   @default("agent")
+  /// 引用出处（非文件同步键）：post:{garden}/{slug} | run:{id} | url:https://… | tool:{jobId}
+  source      String?
+  /// 与本条并存的矛盾记忆 id（CSV）；不静默覆盖，注入时显式警告
+  conflictsWith String @default("")
+  validFrom   DateTime? /// 事实生效起点（可选）
+  validTo     DateTime? /// 事实失效点；null=仍有效；过期后不进检索/注入
+  /// 最近被检索/注入时间；衰减基准优先使用本字段（被调用即重置衰减）
+  lastAccessedAt DateTime?
+  /// 被检索/注入次数（含 FTS/LIKE 命中后返回）
+  accessCount Int @default(0)
+  /// 向量嵌入（JSON number[]，OpenAI 兼容 /embeddings 产出）；null=未生成或 embedding 未启用
+  embedding   String?
+  sourceSlug  String?  @unique /// 本地源文件 slug（用于增量同步与清理）
+  sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([status, scope])
+  @@index([validTo])
+  @@index([lastAccessedAt])
+}
+
+/// Git 仓库管理
+model GitRepo {
+  id        String   @id @default(cuid())
+  name      String
+  path      String   @unique
+  branch    String   @default("main")
+  remoteUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// 后台任务/定时任务
+model Task {
+  id             String    @id @default(cuid())
+  name           String
+  type           String    /// "cron" | "oneshot" | "async_agent"
+  status         String    /// "queued" | "resuming" | "running" | "success" | "failed" | "cancelled" | "interrupted"
+  sessionId      String?   /// 异步 Agent 任务归属的 ChatSession id
+  delivered      Boolean   @default(false) /// 异步结果是否已投递给前端
+  deliveredAt    DateTime? /// 异步结果投递时间
+  pinned         Boolean   @default(false) /// 异步结果是否被用户钉住（pinned 的不被自动消费）
+  queuedAt       DateTime? /// 进入编排器队列的时间
+  startedAt      DateTime? /// 真正开始执行的时间
+  finishedAt     DateTime? /// 执行结束（成功/失败/取消）的时间
+  input          Json?
+  output         Json?
+  cronExpression String?
+  sourceSlug     String?   @unique /// 本地源文件 slug（content/tasks/）
+  sourceMtime    DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([sessionId, status, delivered])
+  @@index([status, delivered, createdAt])
+  @@index([type, status])
+}
+
+/// 信息源 (InfoSource) — Agent 可信信息来源配置
+model InfoSource {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  url             String
+  type            String    @default("general") /// blog | paper | news | official | community | general | rss
+  description     String    @default("")
+  reliability     Int       @default(3) /// 1-5 可信度
+  language        String    @default("auto") /// zh | en | auto
+  tags            String    @default("") /// 逗号分隔
+  enabled         Boolean   @default(true)
+  /// RSS/Atom Feed 抓取间隔（分钟），null 表示不自动抓取
+  fetchInterval   Int?
+  lastFetchedAt   DateTime?
+  lastFetchStatus String?   /// success | error | fetching
+  lastFetchError  String?   /// 最近一次错误信息
+  sourceSlug      String?   @unique
+  sourceMtime     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items           InfoSourceItem[]
+
+  @@index([type])
+  @@index([enabled])
+}
+
+/// 信息源抓取条目 (InfoSourceItem) — 用于 RSS/Atom 等源内容去重与溯源
+model InfoSourceItem {
+  id          String    @id @default(cuid())
+  sourceId    String
+  source      InfoSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  guid        String    /// RSS/Atom 条目唯一标识
+  link        String    /// 原文链接
+  title       String
+  description String?   /// 摘要或全文
+  publishedAt DateTime? /// 原文发布时间
+  status      String    @default("fetched") /// fetched | drafted | ignored
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([sourceId, guid])
+  @@index([sourceId])
+  @@index([status])
+}
+
+/// 知识 Inbox — 截图 / 平台收藏 / 公众号链接的待消化素材队列
+model InboxItem {
+  id              String    @id @default(cuid())
+  /// screenshot | zhihu | xhs | wechat | url
+  source          String
+  /// 去重键：URL 或文件内容 hash
+  externalId      String
+  title           String
+  url             String?
+  excerpt         String?
+  /// 相对 projectRoot 或 data/inbox 的原文/截图路径
+  contentPath     String?
+  /// OCR / 正文文本（可截断）
+  content         String?
+  /// fetched | distilled | ignored
+  status          String    @default("fetched")
+  tags            String    @default("")
+  /// JSON 元数据
+  metadata        String    @default("{}")
+  distilledPostId String?
+  /// 原平台发布时间（有则优先用于排序；无则回退 capturedAt）
+  sourceAt        DateTime?
+  capturedAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([source, externalId])
+  @@index([status])
+  @@index([source])
+  @@index([capturedAt])
+  @@index([sourceAt])
+}
+
+/// 工作区管理 (Workspace)
+model Workspace {
+  id             String   @id @default(cuid())
+  name           String                    /// 名称（可重复，id 全局唯一）
+  description    String?
+  path           String   @unique /// 对应硬盘上的目录路径
+  managerAgentId String?  @unique                /// 该 Workspace 的管理 Agent id
+  isSystem       Boolean  @default(false) /// 是否为系统级 Workspace（Root / Assistant Home）
+  systemType     String?  /// 系统 Workspace 类型："super"（Root）| "assistant"（默认助手家）
+  /// 本 Workspace 后台 LLM 异步槽上限（slotClass=llm）；0 = 不限（仍受全局 maxConcurrent 硬顶）
+  asyncSlotQuota Int      @default(2)
+  status         String   @default("active") /// "active" | "archived" | "deleted"（tombstone）
+  deletedAt      DateTime?                 /// 删除时间
+  deletedBy      String?                   /// 删除者
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  // 关系
+  managerAgent   Agent?   @relation("WorkspaceManager", fields: [managerAgentId], references: [id], onDelete: SetNull)
+  agents         Agent[]
+  @@index([status])
+  @@index([isSystem])
+}
+
+/// 触发器配置 (Trigger)
+model Trigger {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   /// "file_change" | "webhook" | "cron"
+  source      String   /// 触发源 (文件路径, webhook url, or cron expression)
+  actionType  String   /// "run_agent" | "run_task"
+  actionId    String   /// 动作关联的 Agent 或 Task ID
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// 审批队列 (Approval)
+model Approval {
+  id             String    @id @default(cuid())
+  toolName       String
+  args           Json      /// 调用参数
+  status         String    @default("pending") /// "pending" | "approved" | "rejected" | "executed"
+  decidedBy      String?   /// 决策者（当前单用户场景固定 "local-user"；超时自动拒绝为 "system-ttl"）
+  decidedAt      DateTime? /// 决策时间
+  decisionNote   String?   /// 决策说明（拒绝理由等）
+  executedAt     DateTime? /// 审批操作执行完成时间（软删除标记，记录永不物理删除）
+  /// W3：决策 scope，格式 <domain>:<verb>:<target>；调度面相交检查用（LLM 不可见）
+  decisionScope  String?
+  /// W3：上次发出 gate 通知的时间；冷却窗口内不重复打扰
+  lastNotifiedAt DateTime?
+  /// 审批通知邮件的 message_id / thread_id（AgentMail 回执匹配用）
+  lastNotifiedMessageId String?
+  lastNotifiedThreadId  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([status, decisionScope])
+}
+
+/// 文章轻留言（仅 DB，不落 Markdown；访客博客用）
+model Comment {
+  id         String   @id @default(cuid())
+  postId     String
+  authorName String
+  content    String
+  /// approved | hidden（默认即时可见；业主可隐藏）
+  status     String   @default("approved")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([postId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+/// ask_user 提问账本（进程重启后可恢复 pending / 孤儿答复入队）
+model AskUserRequest {
+  id            String    @id /// UUID（与 askUserGate askId 一致）
+  sessionId     String
+  agentId       String?
+  question      String
+  options       Json?     /// string[]
+  channel       String    @default("ui") /// "ui" | "email"
+  subject       String    @default("OasisMind 需要你的确认")
+  messageId     String?   /// AgentMail outbound Message-ID
+  threadId      String?
+  status        String    @default("pending") /// "pending" | "resolved"
+  reminderCount Int       @default(0)
+  answer        String?
+  resolution    String?   /// "answered" | "expired" | "aborted"
+  source        String?   /// "ui" | "email" | "timeout" | "abort"
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@index([sessionId, status])
+  @@index([status, createdAt])
+  @@index([messageId])
+  @@index([threadId])
+}
+
+/// 工具注册表 (Tool)
+model Tool {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  type             String   /// "skill" | "mcp" | "native"
+  targetId         String?  /// skillId 或 mcpServerId（native 可为空）
+  description      String?
+  parametersSchema String?  /// JSON Schema 字符串，描述参数
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+/// Agent 执行记录 (Run)
+model Run {
+  id         String   @id @default(cuid())
+  agentId    String?
+  sessionId  String?
+  status     String   /// "pending" | "running" | "success" | "failed" | "cancelled" | "interrupted"
+  input      Json?
+  output     Json?
+  toolCalls  Json?
+  tokenUsage Json?
+  error      Json?
+  durationMs Int?
+  toolCallCount Int?  /// 本次运行调用的工具总次数（Swarm 监控统计）
+  /// 首轮拼装的 system prompt 快照（model-visible = logged：审计「本次运行模型看到的系统设定」）
+  systemPrompt String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  // P1-8：外键，删 Agent/Session 时对应字段置 null
+  agent      Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  session    ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, status])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+/// 提示词模板 (Prompt)
+model Prompt {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  version     String   @default("1.0.0")
+  description String?
+  variables   String   @default("") /// 逗号分隔
+  tags        String   @default("") /// 逗号分隔
+  content     String
+  sourceSlug  String?  @unique /// 本地源文件 slug（用于增量同步与清理）
+  sourceMtime DateTime?        /// 本地源文件最后修改时间（用于增量同步）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// 凭据 (Credential)
+model Credential {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  type       String    /// "api_key" | "token" | "password"
+  value      String    /// 明文或 AES-GCM 密文（带 enc: 前缀）
+  scope      String    @default("") /// 逗号分隔，如 "llm,mcp"
+  lastUsedAt DateTime?
+  expiresAt  DateTime? /// 凭据过期时间（OAuth token 等）
+  metadata   String?   /// JSON 字符串，保存 refresh_token、scope 等扩展信息
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+/// Agent 间消息（Swarm 通信通道）
+model AgentMessage {
+  id          String   @id @default(cuid())
+  fromAgentId String   /// 发送方 Agent id
+  toAgentId   String   /// 接收方 Agent id
+  sessionId   String?  /// 投递到哪个 ChatSession（null 表示待投递）
+  content     String   /// 消息内容（纯文本或结构化 JSON）
+  messageType String   @default("command") /// "command" | "query" | "report" | "forward"
+  source      String   @default("manager") /// "super" | "manager" | "sub" | "user" | "system"
+  depth       Int      @default(1)  /// 委托层级（防循环）
+  taskRef     String?  /// 关联的 taskId（可选）
+  status      String   @default("pending") /// "pending" | "delivered" | "consumed"
+  createdAt   DateTime @default(now())
+  deliveredAt DateTime?
+  // 关系
+  fromAgent   Agent    @relation("AgentMsgFrom", fields: [fromAgentId], references: [id], onDelete: Cascade)
+  toAgent     Agent    @relation("AgentMsgTo", fields: [toAgentId], references: [id], onDelete: Cascade)
+  @@index([toAgentId, status])
+  @@index([fromAgentId])
+}
+
+/// 已处理的 webhook 事件幂等表（防 AgentMail 重投 / webhook 与兜底轮询跨通道重复处理）
+/// id = AgentMail event_id（webhook 通道）或 `poll:${message_id}`（兜底轮询通道）
+model ProcessedWebhookEvent {
+  id          String   @id /// event_id 或 poll:message_id（与下游 resolveAskUser/resolveApprovalFromMail 的 eventId 一致）
+  source      String   /// "webhook" | "poll"
+  kind        String   /// "approval" | "ask_user" | "unmatched"
+  processedAt DateTime @default(now())
+}
+
+/// Harness 实验账本（autoresearch 式 keep|discard；快照在 data/experiments/{id}/）
+/// Prime：按 id 回滚；DGM：归档候选 + parentExperimentId 分支探索（禁止改 runtime）
+model HarnessExperiment {
+  id                  String    @id @default(cuid())
+  agentId             String?
+  sessionId           String?
+  hypothesis          String
+  /// skill | memory | prompt_note
+  targetKind          String
+  /// skill 名 / memory slug / prompt 相对 config/prompts 路径
+  targetRef           String
+  /// 相对 projectRoot 的目标文件路径
+  targetPath          String
+  /// data/experiments/{id}/baseline 相对 projectRoot
+  baselinePath        String
+  /// data/experiments/{id}/candidate（decide 时归档，供分支/审计）
+  candidatePath       String?
+  /// 是否在 begin 时目标文件尚不存在（discard 时删文件而非还原）
+  createdNew          Boolean   @default(false)
+  candidateDigest     String?
+  metricsJson         String    @default("{}")
+  /// 主判定指标名（autoresearch 式单一可判定字段），如 gatePassed / testOk
+  primaryMetric       String?
+  /// pending | keep | discard | rolled_back
+  decision            String    @default("pending")
+  /// DGM 式谱系：从哪次实验的 baseline|candidate 分支
+  parentExperimentId  String?
+  /// 可选：sessionId:runId 等轨迹指针
+  trajectoryRef       String?
+  createdAt           DateTime  @default(now())
+  decidedAt           DateTime?
+  rolledBackAt        DateTime?
+
+  @@index([decision, createdAt])
+  @@index([agentId, createdAt])
+  @@index([targetKind, targetRef])
+  @@index([parentExperimentId])
+}
+
+/// 每日看板（TriFlow 式：按日 · 待办→进行中→已完成；权威在 SQLite，非浏览器 localStorage）
+model DailyFlowItem {
+  id        String   @id @default(cuid())
+  /// 日历日 YYYY-MM-DD（客户端本地日，避免服务端时区偏移）
+  dayKey    String
+  title     String
+  note      String   @default("")
+  /// todo | doing | done
+  status    String   @default("todo")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dayKey, status, sortOrder])
+  @@index([dayKey, createdAt])
+}
+
+/// 邮件回复死信表（处理失败 / 未匹配 pending 的邮件回复落表，方便事后追查）
+model DeadLetterMail {
+  id         String    @id @default(cuid())
+  messageId  String?   /// AgentMail message_id
+  threadId   String?
+  inReplyTo  String?
+  subject    String?
+  fromAddr   String?
+  text       String    /// 邮件回复原文
+  error      String    /// 处理失败原因
+  source     String    /// "webhook" | "poller"
+  status     String    @default("pending") /// "pending" | "reviewed"
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([messageId])
+}
+
+/// IM 通道绑定：QQ 等对端 ↔ ChatSession（本地优先，非 Markdown 事实源）
+model ChannelBinding {
+  id            String    @id @default(cuid())
+  /// qq | feishu | telegram
+  channel       String
+  /// 对端稳定 id（QQ openid 等）
+  peerId        String
+  /// 群聊 id；单聊存空串（复合唯一忌 null）
+  chatId        String    @default("")
+  sessionId     String
+  agentId       String
+  title         String?
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([channel, peerId, chatId])
+  @@index([sessionId])
+  @@index([channel, lastMessageAt])
+}

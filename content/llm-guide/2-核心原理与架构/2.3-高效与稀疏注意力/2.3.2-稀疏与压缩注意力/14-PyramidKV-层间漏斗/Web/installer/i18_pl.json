@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "POBIERANIE",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "ODCZYT",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "ZAPIS",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "PROCESY",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "z"
+}

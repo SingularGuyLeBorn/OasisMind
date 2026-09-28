@@ -1,0 +1,166 @@
+/**
+ * Agent Loop 类型 — Turn Snapshot + Transport + Hooks
+ *
+ * 设计对齐 Pi Harness：
+ * - Turn Snapshot：进入 run 时冻结 model/tools/上限，飞行中配置变更不影响本轮
+ * - Transport：sync / stream 只换「怎么拿 LLM 结果」，不换 loop 状态机
+ * - Hooks：观测与 SSE 推送，禁止在 hook 里改 phase
+ */
+
+import type { AppConfig } from "../config.js";
+import type { ServiceContainer } from "../serviceContainer.js";
+import type { LlmMessage, LlmToolCall, LlmToolDefinition } from "../llmClient.js";
+import type { StoredToolCall } from "../chatHistory.js";
+import type { AgentRunPhase } from "./phase.js";
+import type { ReasoningEffort } from "@oasismind/shared";
+
+/** 进入 run 时冻结的配置快照（学 Pi Turn Snapshot） */
+export interface TurnSnapshot {
+  model: string;
+  tools: string[];
+  maxRounds: number;
+  maxToolCalls: number;
+  toolResultMaxChars: number;
+}
+
+export interface LlmTurnResult {
+  content: string | null;
+  reasoningContent?: string | null;
+  toolCalls: LlmToolCall[];
+  tokenUsage?: { prompt: number; completion: number; total: number };
+  model: string;
+  provider: string;
+  /**
+   * W7 反思 verdict：由 withReflection 装饰器在「即将 done」的终轮附着，
+   * reactLoop 在 done 转移点消费（回注重修 / 标记放行）。未接反思时为 undefined。
+   */
+  reflection?: ReflectionVerdict;
+}
+
+/** W7 反思 verdict：评估由 transport 装饰器产出，决策（重试/放行）由 reactLoop 做出 */
+export interface ReflectionVerdict {
+  /** critic 是否通过 */
+  passed: boolean;
+  /** 不通过时的具体问题清单 */
+  issues: string[];
+  /** 回注给主模型的反思意见（由 issues 组装；passed=true 时为空串） */
+  feedback: string;
+  /** 配置的最大反思轮数：策略随 verdict 携带，消耗计数在 reactLoop 的 done 转移点 */
+  maxRounds: number;
+}
+
+/**
+ * LLM 传输层：sync 一次返回；stream 在 complete 内部边收边调 hooks，最终仍返回聚合结果。
+ */
+export interface LlmTransport {
+  complete(args: {
+    messages: LlmMessage[];
+    tools?: LlmToolDefinition[];
+    signal?: AbortSignal;
+    /** false = 合成终轮，不传 tools */
+    withTools: boolean;
+    /** 本轮模型覆盖；缺省用 transport 创建时的 base model（Turn Snapshot 冻结值） */
+    modelOverride?: string;
+  }): Promise<LlmTurnResult>;
+}
+
+export interface LoopHooks {
+  onPhase?(to: AgentRunPhase, from: AgentRunPhase): void;
+  onRoundStart?(round: number): void;
+  onThinking?(round: number, delta: string): void;
+  /** 流式正文 delta；非流式可不实现 */
+  onToken?(delta: string): void;
+  /**
+   * 流式工具参数组装中途（长 content 的 post_create 等）。
+   * 在 tool_start 之前推送，供 UI 显示「正在组装工具…」避免假死感。
+   */
+  onToolCallsPartial?(round: number, toolCalls: LlmToolCall[]): void;
+  onIntermediateContent?(round: number, content: string): void;
+  onToolStart?(info: { toolCallId: string; name: string; args: Record<string, unknown>; round: number }): void;
+  onToolEnd?(info: {
+    toolCallId: string;
+    name: string;
+    result: unknown;
+    round: number;
+  }): void;
+  onProgress?(message: string): void;
+  /** Steering / Follow-up / 审批续跑 已注入到 messages（落库后调用） */
+  onInjected?(info: {
+    kind: "steer" | "follow_up" | "approval" | "ask_user";
+    content: string;
+    messageId?: string;
+  }): void;
+  /**
+   * W7 反思 verdict 已在 done 转移点被消费（仅 critic 未通过时触发；通过 = 正常路径零噪音）。
+   * action：retry = 已回注重修；marked = 轮数耗尽标记放行。
+   * stream 链路借此把 verdict 透传为 SSE 事件进入前端时间线（跨层通信走显式事件）。
+   */
+  onReflection?(info: { round: number; issues: string[]; action: "retry" | "marked" }): void;
+}
+
+export interface ReactLoopInput {
+  config: AppConfig;
+  services: ServiceContainer;
+  /** Turn Snapshot 的源；model/tools 在入口冻结 */
+  agent: { model: string; systemPrompt: string; tools: string[] };
+  messages: LlmMessage[];
+  invokeTrpc: (tool: string, args?: unknown) => Promise<unknown>;
+  transport: LlmTransport;
+  hooks?: LoopHooks;
+  signal?: AbortSignal;
+  sessionId?: string;
+  agentMeta?: {
+    id: string;
+    /** 供 context 钩子 tier-identity 注入；缺省不注入名字 */
+    name?: string | null;
+    model: string;
+    systemPrompt: string;
+    tools: string[];
+    tier?: string;
+    parentId?: string | null;
+    workspaceId?: string | null;
+    /** WP1：Prisma 列落地前可选；缺省 sub 用 CHILD_OWN_TOOLS */
+    toolInheritMask?: { allow?: string[]; deny?: string[] };
+    toolOwn?: string[];
+  };
+  runOrigin?: "user" | "parent" | "heartbeat" | "async";
+  /** W3 safe bypass：只读 turn */
+  readonlyOnly?: boolean;
+  /** W11：Run 活状态——run 入口落库时写入 Run.input 的业务描述（消息/触发源等） */
+  runInput?: unknown;
+  /** 覆盖 snapshot.toolResultMaxChars（stream 用 micro-compact 阈值） */
+  toolResultMaxChars?: number;
+  /** 压缩阶段 SSE（仅 stream 传入；type-only 依赖 AgentStreamEvent） */
+  compactEmit?: (event: import("../agentStream/index.js").AgentStreamEvent) => void;
+  /**
+   * 运行中消息注入（Steering / Follow-up）。
+   * 由 SessionStreamHub 提供；缺省则本 run 不支持 mid-run 注入。
+   */
+  runQueues?: {
+    takeSteer: () => Array<{ id: string; content: string }>;
+    takeFollowUp: () => Array<{ id: string; content: string }>;
+  };
+}
+
+export interface ReactLoopResult {
+  content: string;
+  toolCalls: StoredToolCall[];
+  tokenUsage: { prompt: number; completion: number; total: number };
+  model: string;
+  provider: string;
+  roundsUsed: number;
+  /** 结束时的 phase（应为 done） */
+  phase: AgentRunPhase;
+  /** 是否因工具预算触发合成/停止 */
+  hitToolBudget: boolean;
+  /** W11：内核在 run 入口创建的 Run 行 id（活状态/终态已由内核写回）；创建失败时为 undefined */
+  runId?: string;
+}
+
+/** Stream facade 传入 transport 的 LLM 选项 */
+export interface StreamLlmOptions {
+  temperature?: number;
+  maxTokens?: number;
+  enableReasoning?: boolean;
+  reasoningEffort?: ReasoningEffort;
+}

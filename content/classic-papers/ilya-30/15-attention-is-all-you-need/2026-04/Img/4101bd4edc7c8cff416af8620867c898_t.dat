@@ -1,0 +1,177 @@
+email.smtpSSLClientKey`
+	configuration variable or the `--smtp-ssl-client-key` option. Defaults
+	to the value of the `sendemail.smtpSSLClientCert` configuration
+	variable, if set.
+
+--smtp-ssl-client-key <path>::
+	Path to the client private key file that corresponds to the client
+	certificate. To avoid misconfiguration, this option must be used in
+	conjunction with the `sendemail.smtpSSLClientKey` configuration variable
+	or the `--smtp-ssl-client-cert` option. If the client key is included in
+	the client certificate, the choice of private key depends on the format
+	of the certificate. Visit https://metacpan.org/pod/IO::Socket::SSL for
+	more details. Defaults to the value of the `sendemail.smtpSSLClientKey`
+	configuration variable, if set.
+
+--smtp-user=<user>::
+	Username for SMTP-AUTH. Default is the value of `sendemail.smtpUser`;
+	if a username is not specified (with `--smtp-user` or `sendemail.smtpUser`),
+	then authentication is not attempted.
+
+--smtp-debug=(0|1)::
+	Enable (1) or disable (0) debug output. If enabled, SMTP
+	commands and replies will be printed. Useful to debug TLS
+	connection and authentication problems.
+
+--imap-sent-folder=<folder>::
+	Some email providers (e.g. iCloud) do not send a copy of the emails sent
+	using SMTP to the `Sent` folder or similar in your mailbox. Use this option
+	to use `git imap-send` to send a copy of the emails to the folder specified
+	using this option. You can run `git imap-send --list` to get a list of
+	valid folder names, including the correct name of the `Sent` folder in
+	your mailbox. You can also use this option to send emails to a dedicated
+	IMAP folder of your choice.
++
+This feature requires setting up `git imap-send`. See linkgit:git-imap-send[1]
+for instructions.
+
+--use-imap-only::
+--no-use-imap-only::
+	If this is set, all emails will only be copied to the IMAP folder specified
+	with `--imap-sent-folder` or `sendemail.imapSentFolder` and will not be sent
+	to the recipients. Useful if you just want to create a draft of the emails
+	and use another email client to send them.
+	If disabled with `--no-use-imap-only`, the emails will be sent like usual.
+	Disabled by default, but the `sendemail.useImapOnly` configuration
+	variable can be used to enable it.
++
+This feature requires setting up `git imap-send`. See linkgit:git-imap-send[1]
+for instructions.
+
+--batch-size=<num>::
+	Some email servers (e.g. 'smtp.163.com') limit the number of emails to be
+	sent per session (connection) and this will lead to a failure when
+	sending many messages.  With this option, send-email will disconnect after
+	sending _<num>_ messages and wait for a few seconds
+	(see `--relogin-delay`) and reconnect, to work around such a limit.
+	You may want to use some form of credential helper to avoid having to
+	retype your password every time this happens.  Defaults to the
+	`sendemail.smtpBatchSize` configuration variable.
+
+--relogin-delay=<int>::
+	Waiting _<int>_ seconds before reconnecting to SMTP server. Used together
+	with `--batch-size` option.  Defaults to the `sendemail.smtpReloginDelay`
+	configuration variable.
+
+Automating
+~~~~~~~~~~
+
+--no-to::
+--no-cc::
+--no-bcc::
+	Clear any list of `To:`, `Cc:`, `Bcc:` addresses previously
+	set via config.
+
+--no-identity::
+	Clear the previously read value of `sendemail.identity` set
+	via config, if any.
+
+--to-cmd=<command>::
+	Specify a command to execute once per patch file which
+	should generate patch file specific `To:` entries.
+	Output of this command must be single email address per line.
+	Default is the value of `sendemail.toCmd` configuration value.
+
+--cc-cmd=<command>::
+	Specify a command to execute once per patch file which
+	should generate patch file specific `Cc:` entries.
+	Output of this command must be single email address per line.
+	Default is the value of `sendemail.ccCmd` configuration value.
+
+--header-cmd=<command>::
+	Specify a command that is executed once per outgoing message
+	and output RFC 2822 style header lines to be inserted into
+	them. When the `sendemail.headerCmd` configuration variable is
+	set, its value is always used. When `--header-cmd` is provided
+	at the command line, its value takes precedence over the
+	`sendemail.headerCmd` configuration variable.
+
+--no-header-cmd::
+	Disable any header command in use.
+
+--chain-reply-to::
+--no-chain-reply-to::
+	If this is set, each email will be sent as a reply to the previous
+	email sent.  If disabled with `--no-chain-reply-to`, all emails after
+	the first will be sent as replies to the first email sent.  When using
+	this, it is recommended that the first file given be an overview of the
+	entire patch series. Disabled by default, but the `sendemail.chainReplyTo`
+	configuration variable can be used to enable it.
+
+--identity=<identity>::
+	A configuration identity. When given, causes values in the
+	`sendemail.<identity>` subsection to take precedence over
+	values in the `sendemail` section. The default identity is
+	the value of `sendemail.identity`.
+
+--signed-off-by-cc::
+--no-signed-off-by-cc::
+	If this is set, add emails found in the `Signed-off-by` trailer or `Cc:`
+	lines to the cc list. Default is the value of `sendemail.signedOffByCc`
+	configuration value; if that is unspecified, default to
+	`--signed-off-by-cc`.
+
+--cc-cover::
+--no-cc-cover::
+	If this is set, emails found in `Cc:` headers in the first patch of
+	the series (typically the cover letter) are added to the cc list
+	for each email set. Default is the value of `sendemail.ccCover`
+	configuration value; if that is unspecified, default to `--no-cc-cover`.
+
+--to-cover::
+--no-to-cover::
+	If this is set, emails found in `To:` headers in the first patch of
+	the series (typically the cover letter) are added to the to list
+	for each email set. Default is the value of `sendemail.toCover`
+	configuration value; if that is unspecified, default to `--no-to-cover`.
+
+--suppress-cc=<category>::
+	Specify an additional category of recipients to suppress the
+	auto-cc of:
++
+--
+- `author` will avoid including the patch author.
+- `self` will avoid including the sender.
+- `cc` will avoid including anyone mentioned in Cc lines in the patch header
+  except for self (use `self` for that).
+- `bodycc` will avoid including anyone mentioned in Cc lines in the
+  patch body (commit message) except for self (use `self` for that).
+- `sob` will avoid including anyone mentioned in the Signed-off-by trailers except
+  for self (use `self` for that).
+- `misc-by` will avoid including anyone mentioned in Acked-by,
+  Reviewed-by, Tested-by and other "-by" lines in the patch body,
+  except Signed-off-by (use `sob` for that).
+- `cccmd` will avoid running the --cc-cmd.
+- `body` is equivalent to `sob` + `bodycc` + `misc-by`.
+- `all` will suppress all auto cc values.
+--
++
+Default is the value of `sendemail.suppressCc` configuration value; if
+that is unspecified, default to `self` if `--suppress-from` is
+specified, as well as `body` if `--no-signed-off-by-cc` is specified.
+
+--suppress-from::
+--no-suppress-from::
+	If this is set, do not add the `From:` address to the `Cc:` list.
+	Default is the value of `sendemail.suppressFrom` configuration
+	value; if that is unspecified, default to `--no-suppress-from`.
+
+--thread::
+--no-thread::
+	If this is set, the `In-Reply-To` and `References` headers will be
+	added to each email sent.  Whether each mail refers to the
+	previous email (`deep` threading per `git format-patch`
+	wording) or to the first email (`shallow` threading) is
+	governed by `--[no-]chain-reply-to`.
++
+If disabled with `

@@ -1,0 +1,94 @@
+d parse as TokenExchangeParameters.
+        const encodedTokenRequest = this.getTemporaryCache(TemporaryCacheKeys.REQUEST_PARAMS, true);
+        if (!encodedTokenRequest) {
+            throw createBrowserAuthError(noTokenRequestCacheError);
+        }
+        const encodedVerifier = this.getTemporaryCache(TemporaryCacheKeys.VERIFIER, true);
+        let parsedRequest;
+        let verifier = "";
+        try {
+            parsedRequest = JSON.parse(base64Decode(encodedTokenRequest));
+            if (encodedVerifier) {
+                verifier = base64Decode(encodedVerifier);
+            }
+        }
+        catch (e) {
+            this.logger.errorPii(`Attempted to parse: ${encodedTokenRequest}`);
+            this.logger.error(`Parsing cached token request threw with error: ${e}`);
+            throw createBrowserAuthError(unableToParseTokenRequestCacheError);
+        }
+        return [parsedRequest, verifier];
+    }
+    /**
+     * Gets cached native request for redirect flows
+     */
+    getCachedNativeRequest() {
+        this.logger.trace("BrowserCacheManager.getCachedNativeRequest called");
+        const cachedRequest = this.getTemporaryCache(TemporaryCacheKeys.NATIVE_REQUEST, true);
+        if (!cachedRequest) {
+            this.logger.trace("BrowserCacheManager.getCachedNativeRequest: No cached native request found");
+            return null;
+        }
+        const parsedRequest = this.validateAndParseJson(cachedRequest);
+        if (!parsedRequest) {
+            this.logger.error("BrowserCacheManager.getCachedNativeRequest: Unable to parse native request");
+            return null;
+        }
+        return parsedRequest;
+    }
+    isInteractionInProgress(matchClientId) {
+        const clientId = this.getInteractionInProgress()?.clientId;
+        if (matchClientId) {
+            return clientId === this.clientId;
+        }
+        else {
+            return !!clientId;
+        }
+    }
+    getInteractionInProgress() {
+        const key = `${PREFIX}.${TemporaryCacheKeys.INTERACTION_STATUS_KEY}`;
+        const value = this.getTemporaryCache(key, false);
+        try {
+            return value ? JSON.parse(value) : null;
+        }
+        catch (e) {
+            // Remove interaction and other temp keys if interaction status can't be parsed
+            this.logger.error(`Cannot parse interaction status. Removing temporary cache items and clearing url hash. Retrying interaction should fix the error`);
+            this.removeTemporaryItem(key);
+            this.resetRequestCache();
+            clearHash(window);
+            return null;
+        }
+    }
+    setInteractionInProgress(inProgress, type = INTERACTION_TYPE.SIGNIN) {
+        // Ensure we don't overwrite interaction in progress for a different clientId
+        const key = `${PREFIX}.${TemporaryCacheKeys.INTERACTION_STATUS_KEY}`;
+        if (inProgress) {
+            if (this.getInteractionInProgress()) {
+                throw createBrowserAuthError(interactionInProgress);
+            }
+            else {
+                // No interaction is in progress
+                this.setTemporaryCache(key, JSON.stringify({ clientId: this.clientId, type }), false);
+            }
+        }
+        else if (!inProgress &&
+            this.getInteractionInProgress()?.clientId === this.clientId) {
+            this.removeTemporaryItem(key);
+        }
+    }
+    /**
+     * Builds credential entities from AuthenticationResult object and saves the resulting credentials to the cache
+     * @param result
+     * @param request
+     */
+    async hydrateCache(result, request) {
+        const idTokenEntity = CacheHelpers.createIdTokenEntity(result.account.homeAccountId, result.account.environment, result.idToken, this.clientId, result.tenantId);
+        let claimsHash;
+        if (request.claims) {
+            claimsHash = await this.cryptoImpl.hashString(request.claims);
+        }
+        /**
+         * meta data for cache stores time in seconds from epoch
+         * AuthenticationResult returns expiresOn and extExpiresOn in milliseconds (as a Date object which is in ms)
+         * We need to map these for t

@@ -1,0 +1,958 @@
+ized JSON argument text (so newlines inside JSON string values may appear as escaped `\\n` until the accumulated JSON is parsed); custom tool calls stream raw custom input."
+        }
+      },
+      "required": [
+        "toolCallId",
+        "inputDelta"
+      ],
+      "additionalProperties": false,
+      "description": "Streaming tool-call input delta for incremental tool-call updates",
+      "title": "AssistantToolCallDeltaData"
+    },
+    "AssistantToolCallDeltaEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUID v4), generated when the event is emitted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the event was created"
+        },
+        "parentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of the chronologically preceding event in the session, forming a linked chain. Null for the first event."
+        },
+        "ephemeral": {
+          "type": "boolean",
+          "const": true,
+          "description": "Always true for events that are transient and not persisted to the session event log on disk."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Sub-agent instance identifier. Absent for events from the root/main agent and session-level events."
+        },
+        "type": {
+          "type": "string",
+          "const": "assistant.tool_call_delta",
+          "description": "Type discriminator. Always \"assistant.tool_call_delta\"."
+        },
+        "data": {
+          "$ref": "#/definitions/AssistantToolCallDeltaData",
+          "description": "Streaming tool-call input delta for incremental tool-call updates"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "parentId",
+        "ephemeral",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Session event \"assistant.tool_call_delta\". Streaming tool-call input delta for incremental tool-call updates",
+      "title": "AssistantToolCallDeltaEvent"
+    },
+    "AssistantTurnEndData": {
+      "type": "object",
+      "properties": {
+        "turnId": {
+          "type": "string",
+          "description": "Identifier of the turn that has ended, matching the corresponding assistant.turn_start event"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier used for this turn, when known"
+        }
+      },
+      "required": [
+        "turnId"
+      ],
+      "additionalProperties": false,
+      "description": "Turn completion metadata including the turn identifier",
+      "title": "AssistantTurnEndData"
+    },
+    "AssistantTurnEndEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUID v4), generated when the event is emitted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the event was created"
+        },
+        "parentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of the chronologically preceding event in the session, forming a linked chain. Null for the first event."
+        },
+        "ephemeral": {
+          "type": "boolean",
+          "description": "When true, the event is transient and not persisted to the session event log on disk"
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Sub-agent instance identifier. Absent for events from the root/main agent and session-level events."
+        },
+        "type": {
+          "type": "string",
+          "const": "assistant.turn_end",
+          "description": "Type discriminator. Always \"assistant.turn_end\"."
+        },
+        "data": {
+          "$ref": "#/definitions/AssistantTurnEndData",
+          "description": "Turn completion metadata including the turn identifier"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "parentId",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Session event \"assistant.turn_end\". Turn completion metadata including the turn identifier",
+      "title": "AssistantTurnEndEvent"
+    },
+    "AssistantTurnRetryData": {
+      "type": "object",
+      "properties": {
+        "turnId": {
+          "type": "string",
+          "description": "Identifier of the turn whose model inference is being retried"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier used for this retry, when known"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Provider or runtime classification that caused the retry, when known"
+        }
+      },
+      "required": [
+        "turnId"
+      ],
+      "additionalProperties": false,
+      "description": "Metadata for an additional model inference attempt within an existing assistant turn",
+      "title": "AssistantTurnRetryData"
+    },
+    "AssistantTurnRetryEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUID v4), generated when the event is emitted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the event was created"
+        },
+        "parentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of the chronologically preceding event in the session, forming a linked chain. Null for the first event."
+        },
+        "ephemeral": {
+          "type": "boolean",
+          "const": true,
+          "description": "Always true for events that are transient and not persisted to the session event log on disk."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Sub-agent instance identifier. Absent for events from the root/main agent and session-level events."
+        },
+        "type": {
+          "type": "string",
+          "const": "assistant.turn_retry",
+          "description": "Type discriminator. Always \"assistant.turn_retry\"."
+        },
+        "data": {
+          "$ref": "#/definitions/AssistantTurnRetryData",
+          "description": "Metadata for an additional model inference attempt within an existing assistant turn"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "parentId",
+        "ephemeral",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Session event \"assistant.turn_retry\". Metadata for an additional model inference attempt within an existing assistant turn",
+      "title": "AssistantTurnRetryEvent",
+      "visibility": "internal"
+    },
+    "AssistantTurnStartData": {
+      "type": "object",
+      "properties": {
+        "turnId": {
+          "type": "string",
+          "description": "Identifier for this turn within the agentic loop, typically a stringified turn number"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier used for this turn, when known"
+        },
+        "interactionId": {
+          "type": "string",
+          "description": "CAPI interaction ID for correlating this turn with upstream telemetry"
+        }
+      },
+      "required": [
+        "turnId"
+      ],
+      "additionalProperties": false,
+      "description": "Turn initialization metadata including identifier and interaction tracking",
+      "title": "AssistantTurnStartData"
+    },
+    "AssistantTurnStartEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUID v4), generated when the event is emitted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the event was created"
+        },
+        "parentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of the chronologically preceding event in the session, forming a linked chain. Null for the first event."
+        },
+        "ephemeral": {
+          "type": "boolean",
+          "description": "When true, the event is transient and not persisted to the session event log on disk"
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Sub-agent instance identifier. Absent for events from the root/main agent and session-level events."
+        },
+        "type": {
+          "type": "string",
+          "const": "assistant.turn_start",
+          "description": "Type discriminator. Always \"assistant.turn_start\"."
+        },
+        "data": {
+          "$ref": "#/definitions/AssistantTurnStartData",
+          "description": "Turn initialization metadata including identifier and interaction tracking"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "parentId",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Session event \"assistant.turn_start\". Turn initialization metadata including identifier and interaction tracking",
+      "title": "AssistantTurnStartEvent"
+    },
+    "AssistantUsageApiEndpoint": {
+      "type": "string",
+      "enum": [
+        "/chat/completions",
+        "/v1/messages",
+        "/responses",
+        "ws:/responses"
+      ],
+      "description": "API endpoint used for this model call, matching CAPI supported_endpoints vocabulary",
+      "title": "AssistantUsageApiEndpoint",
+      "x-enumDescriptions": {
+        "/chat/completions": "Chat Completions API endpoint.",
+        "/v1/messages": "Anthropic Messages API endpoint.",
+        "/responses": "Responses API endpoint.",
+        "ws:/responses": "WebSocket Responses API endpoint."
+      }
+    },
+    "AssistantUsageCopilotUsage": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Default billing model for token details that do not identify their own model"
+        },
+        "tokenDetails": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AssistantUsageCopilotUsageTokenDetail",
+            "description": "Token usage detail for a single billing category"
+          },
+          "description": "Itemized token usage breakdown",
+          "visibility": "internal"
+        },
+        "totalNanoAiu": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total cost in nano-AI units for this request"
+        }
+      },
+      "required": [
+        "totalNanoAiu"
+      ],
+      "additionalProperties": false,
+      "description": "Per-request cost and usage data from the CAPI copilot_usage response field",
+      "title": "AssistantUsageCopilotUsage"
+    },
+    "AssistantUsageCopilotUsageTokenDetail": {
+      "type": "object",
+      "properties": {
+        "batchSize": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tokens in this billing batch"
+        },
+        "costPerBatch": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cost per batch of tokens"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model responsible for this billing entry"
+        },
+        "tokenCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total token count for this entry"
+        },
+        "tokenType": {
+          "type": "string",
+          "description": "Token category (e.g., \"input\", \"output\")"
+        }
+      },
+      "required": [
+        "batchSize",
+        "costPerBatch",
+        "tokenCount",
+        "tokenType"
+      ],
+      "additionalProperties": false,
+      "description": "Token usage detail for a single billing category",
+      "title": "AssistantUsageCopilotUsageTokenDetail"
+    },
+    "AssistantUsageData": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Model identifier used for this API call"
+        },
+        "inputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of input tokens consumed"
+        },
+        "outputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of output tokens produced"
+        },
+        "cacheReadTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tokens read from prompt cache"
+        },
+        "cacheWriteTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tokens written to prompt cache"
+        },
+        "cacheExpiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Updated prompt-cache expiration for this model call. Present only when the call establishes or refreshes known cache state."
+        },
+        "reasoningTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of output tokens used for reasoning (e.g., chain-of-thought)"
+        },
+        "cost": {
+          "type": "number",
+          "description": "Model multiplier cost for billing purposes",
+          "stability": "experimental"
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "format": "duration",
+          "description": "Duration of the API call in milliseconds"
+        },
+        "timeToFirstTokenMs": {
+          "type": "number",
+          "minimum": 0,
+          "format": "duration",
+          "description": "Time to first token in milliseconds. Only available for streaming requests"
+        },
+        "outputTtftMs": {
+          "type": "number",
+          "minimum": 0,
+          "format": "duration",
+          "description": "Time to first observable model output in milliseconds. Includes text, reasoning, and tool-call output; only available for streaming requests that produce observable output."
+        },
+        "interTokenLatencyMs": {
+          "type": "number",
+          "minimum": 0,
+          "format": "duration",
+          "description": "Average inter-token latency in milliseconds. Only available for streaming requests"
+        },
+        "initiator": {
+          "type": "string",
+          "description": "What initiated this API call (e.g., \"sub-agent\", \"mcp-sampling\"); absent for user-initiated calls"
+        },
+        "interactionType": {
+          "type": "string",
+          "description": "Coarse classification of the interaction that produced this call, mirroring the session's per-request agent context (e.g. `conversation-agent`, `conversation-subagent`, `conversation-sampling`, `conversation-background`, `conversation-compaction`, `conversation-user`). Non-billing; lets consumers attribute a model call to a call class (e.g. sub-agent/sidekick) independently of the billing initiator. Absent when the runtime did not classify the request."
+        },
+        "isByok": {
+          "type": "boolean",
+          "description": "Whether this model call used a bring-your-own-key provider"
+        },
+        "isAuto": {
+          "type": "boolean",
+          "description": "Whether Auto mode was selected for this model call"
+        },
+        "maxPromptTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Effective maximum prompt-token limit used for this model call"
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Requested maximum output tokens used for this model call"
+        },
+        "acceptedPredictionTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of accepted speculative prediction tokens"
+        },
+        "rejectedPredictionTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of rejected speculative prediction tokens"
+        },
+        "transport": {
+          "$ref": "#/definitions/AssistantUsageTransport",
+          "description": "Transport used for this model call (http or websocket)"
+        },
+        "apiCallId": {
+          "type": "string",
+          "description": "Completion ID from the model provider (e.g., chatcmpl-abc123)"
+        },
+        "providerCallId": {
+          "type": "string",
+          "description": "GitHub request tracing ID (x-github-request-id header) for server-side log correlation"
+        },
+        "serviceRequestId": {
+          "type": "string",
+          "description": "Copilot service request ID (x-copilot-service-request-id header) for CAPI log correlation"
+        },
+        "rte": {
+          "type": "boolean",
+          "description": "Per-request treatment/eligibility signal returned by the Copilot API in the `X-GitHub-Copilot-Request-TE` response header for the associated model call; `false` when the header was absent or unparseable."
+        },
+        "apiEndpoint": {
+          "$ref": "#/definitions/AssistantUsageApiEndpoint",
+          "description": "API endpoint used for this model call, matching CAPI supported_endpoints vocabulary"
+        },
+        "parentToolCallId": {
+          "type": "string",
+          "description": "Parent tool call ID when this usage originates from a sub-agent",
+          "deprecated": true
+        },
+        "quotaSnapshots": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AssistantUsageQuotaSnapshot",
+            "description": "Internal per-quota snapshot for assistant usage, including entitlement, consumed requests, overage, reset date, and remaining quota.",
+            "visibility": "internal"
+          },
+          "description": "Per-quota resource usage snapshots, keyed by quota identifier",
+          "visibility": "internal"
+        },
+        "copilotUsage": {
+          "$ref": "#/definitions/AssistantUsageCopilotUsage",
+          "description": "Per-request cost and usage data from the CAPI copilot_usage response field"
+        },
+        "reasoningEffort": {
+          "type": "string",
+          "description": "Reasoning effort level used for model calls, if applicable (e.g. \"none\", \"low\", \"medium\", \"high\", \"xhigh\", \"max\")"
+        },
+        "reasoningSummary": {
+          "$ref": "#/definitions/ReasoningSummary",
+          "description": "Reasoning summary mode used for this model call, if applicable"
+        },
+        "availableToolCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tools available to the model for this call",
+          "visibility": "internal"
+        },
+        "toolTokenCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tokens used by tool definitions for this call",
+          "visibility": "internal"
+        },
+        "frontierSource": {
+          "type": "string",
+          "description": "How the prompt-cache frontier was determined for this call",
+          "visibility": "internal"
+        },
+        "cacheTtlSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Effective prompt-cache lifetime in seconds for this call",
+          "visibility": "internal"
+        },
+        "cacheDetailsReported": {
+          "type": "boolean",
+          "description": "Whether the provider reported prompt-cache usage details for this call",
+          "visibility": "internal"
+        },
+        "numToolCalls": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tool calls returned by the model",
+          "visibility": "internal"
+        },
+        "toolCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Tool-call counts keyed by tool name",
+          "visibility": "internal"
+        },
+        "finishReason": {
+          "type": "string",
+          "description": "Finish reason reported by the model for this API call (e.g. \"stop\", \"length\", \"tool_calls\", \"content_filter\"). Normalized to OpenAI vocabulary; for Anthropic models a \"refusal\" stop reason maps to \"content_filter\"."
+        },
+        "contentFilterTriggered": {
+          "type": "boolean",
+          "description": "Whether the model response was blocked or truncated by content filtering (finish_reason === 'content_filter'). For Anthropic models this corresponds to a 'refusal' stop reason."
+        },
+        "fusion": {
+          "$ref": "#/definitions/FusionAttribution",
+          "description": "Experimental HydraFusion attribution for this concrete model call's usage.",
+          "stability": "experimental"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "additionalProperties": false,
+      "description": "LLM API call usage metrics including tokens, costs, quotas, and billing information",
+      "title": "AssistantUsageData"
+    },
+    "AssistantUsageEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUID v4), generated when the event is emitted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the event was created"
+        },
+        "parentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of the chronologically preceding event in the session, forming a linked chain. Null for the first event."
+        },
+        "ephemeral": {
+          "type": "boolean",
+          "const": true,
+          "description": "Always true for events that are transient and not persisted to the session event log on disk."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Sub-agent instance identifier. Absent for events from the root/main agent and session-level events."
+        },
+        "type": {
+          "type": "string",
+          "const": "assistant.usage",
+          "description": "Type discriminator. Always \"assistant.usage\"."
+        },
+        "data": {
+          "$ref": "#/definitions/AssistantUsageData",
+          "description": "LLM API call usage metrics including tokens, costs, quotas, and billing information"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "parentId",
+        "ephemeral",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Session event \"assistant.usage\". LLM API call usage metrics including tokens, costs, quotas, and billing information",
+      "title": "AssistantUsageEvent"
+    },
+    "AssistantUsageQuotaSnapshot": {
+      "type": "object",
+      "properties": {
+        "isUnlimitedEntitlement": {
+          "type": "boolean",
+          "description": "Whether the user has an unlimited usage entitlement",
+          "visibility": "internal"
+        },
+        "entitlementRequests": {
+          "type": "integer",
+          "minimum": -1,
+          "description": "Total requests allowed by the entitlement",
+          "visibility": "internal"
+        },
+        "usedRequests": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requests already consumed",
+          "visibility": "internal"
+        },
+        "usageAllowedWithExhaustedQuota": {
+          "type": "boolean",
+          "description": "Whether usage is still permitted after quota exhaustion",
+          "visibility": "internal"
+        },
+        "overage": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Number of additional usage requests made this period",
+          "visibility": "internal"
+        },
+        "overageAllowedWithExhaustedQuota": {
+          "type": "boolean",
+          "description": "Whether additional usage is allowed when quota is exhausted",
+          "visibility": "internal"
+        },
+        "remainingPercentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of quota remaining (0 to 100)",
+          "visibility": "internal"
+        },
+        "resetDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when the quota resets",
+          "visibility": "internal"
+        },
+        "hasQuota": {
+          "type": "boolean",
+          "description": "Whether the user currently has quota available for use",
+          "visibility": "internal"
+        },
+        "tokenBasedBilling": {
+          "type": "boolean",
+          "description": "Whether this snapshot uses token-based billing (AI-credits allocation)",
+          "visibility": "internal"
+        },
+        "overageEntitlement": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Pay-as-you-go additional-usage budget cap in AI credits (1 credit = $0.01); present only when CAPI emits a finite value",
+          "visibility": "internal"
+        }
+      },
+      "required": [
+        "isUnlimitedEntitlement",
+        "entitlementRequests",
+        "usedRequests",
+        "usageAllowedWithExhaustedQuota",
+        "overage",
+        "overageAllowedWithExhaustedQuota",
+        "remainingPercentage"
+      ],
+      "additionalProperties": false,
+      "description": "Internal per-quota snapshot for assistant usage, including entitlement, consumed requests, overage, reset date, and remaining quota.",
+      "title": "AssistantUsageQuotaSnapshot",
+      "visibility": "internal"
+    },
+    "AssistantUsageTransport": {
+      "type": "string",
+      "enum": [
+        "http",
+        "websocket"
+      ],
+      "description": "Transport used for a successful model call",
+      "title": "AssistantUsageTransport",
+      "x-enumDescriptions": {
+        "http": "HTTP transport, including SSE streams.",
+        "websocket": "WebSocket transport."
+      }
+    },
+    "AssistedApprovalJudgeFailureReason": {
+      "type": "string",
+      "enum": [
+        "timeout",
+        "abort",
+        "empty_response",
+        "model_error",
+        "parse_error"
+      ],
+      "description": "Why the assisted-approval judge produced no usable recommendation. Present only alongside an `error` recommendation, where the human-readable reason is a fixed string and therefore cannot distinguish these cases. Intended to make a judge failure reportable by a consumer that has no access to the host's logs.",
+      "title": "AssistedApprovalJudgeFailureReason",
+      "x-enumDescriptions": {
+        "timeout": "The judge model call exceeded its deadline.",
+        "abort": "The judge model call was cancelled before it returned.",
+        "empty_response": "The judge model call completed but returned no content.",
+        "model_error": "The judge model call failed (for example a transport, authentication, or rate-limit error).",
+        "parse_error": "The judge model replied, but the reply carried no ALLOW/DENY verdict."
+      },
+      "stability": "experimental"
+    },
+    "AssistedApprovalRecommendation": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "requireApproval",
+        "excluded",
+        "error"
+      ],
+      "description": "Outcome of the assisted-approval safety judge for a permission request. Present only in assisted mode; its absence means the judge did not evaluate the request.",
+      "title": "AssistedApprovalRecommendation",
+      "x-enumDescriptions": {
+        "approve": "The judge evaluated the request and recommends automatically approving it.",
+        "requireApproval": "The judge evaluated the request and does not recommend automatically approving it; explicit approval is required. Whether that means prompting, denying, or something else is the consumer's decision.",
+        "excluded": "Assisted mode is enabled, but this request category is never automatically approvable (for example, sandbox-bypass requests), so the judge was not consulted.",
+        "error": "The judge was consulted but did not return a usable recommendation, so the request requires explicit approval."
+      },
+      "stability": "experimental"
+    },
+    "Attachment": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AttachmentFile",
+          "description": "File attachment"
+        },
+        {
+          "$ref": "#/definitions/AttachmentDirectory",
+          "description": "Directory attachment"
+        },
+        {
+          "$ref": "#/definitions/AttachmentSelection",
+          "description": "Code selection attachment from an editor"
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubReference",
+          "description": "GitHub issue, pull request, or discussion reference"
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubCommit",
+          "description": "Pointer to a GitHub commit."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubRelease",
+          "description": "Pointer to a GitHub release."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubActionsJob",
+          "description": "Pointer to a GitHub Actions job."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubRepository",
+          "description": "Pointer to a GitHub repository."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubFileDiff",
+          "description": "Pointer to a single-file diff. At least one of `head` and `base` must be present."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubTreeComparison",
+          "description": "Pointer to a comparison between two git revisions."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubUrl",
+          "description": "Generic GitHub URL reference."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubFile",
+          "description": "Pointer to a file in a GitHub repository at a specific ref."
+        },
+        {
+          "$ref": "#/definitions/AttachmentGitHubSnippet",
+          "description": "Pointer to a line range inside a file in a GitHub repository."
+        },
+        {
+          "$ref": "#/definitions/AttachmentBlob",
+          "description": "Blob attachment with inline base64-encoded data"
+        },
+        {
+          "$ref": "#/definitions/AttachmentExtensionContext",
+          "description": "Structured context contributed by an extension. Composer pills displayed in the host are forwarded back through session.send.attachments, then rendered into the model prompt as an <extension_context> XML block."
+        }
+      ],
+      "description": "A user message attachment — a file, directory, code selection, blob, GitHub reference, GitHub-anchored pointer, or extension-supplied context payload",
+      "title": "Attachment"
+    },
+    "AttachmentBlob": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "blob",
+          "description": "Attachment type discriminator"
+        },
+        "data": {
+          "type": "string",
+          "description": "Base64-encoded content. Present on input and for external consumers; replaced by an internal `assetId` reference in persisted events when interned to a content-addressed asset.",
+          "contentEncoding": "base64"
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the inline data"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User-facing display name for the attachment"
+        },
+        "assetId": {
+          "type": "string",
+          "description": "Internal: content-addressed id of the session.binary_asset event holding this attachment's model-facing bytes (e.g. \"sha256:...\"). Absent externally."
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Internal: decoded byte length of the attachment's model-facing bytes. Absent externally."
+        },
+        "omittedReason": {
+          "$ref": "#/definitions/OmittedBinaryOmittedReason",
+          "description": "Internal: why model-facing bytes are absent from persistence. Absent externally."
+        }
+      },
+      "required": [
+        "type",
+        "mimeType"
+      ],
+      "additionalProperties": false,
+      "description": "Blob attachment with inline base64-encoded data",
+      "title": "AttachmentBlob"
+    },
+    "AttachmentDirectory": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "directory",
+          "description": "Attachment type discriminator"
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute directory path"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User-facing display name for the attachment"
+        },
+        "taggedFilesEntry": {
+          "type": "string",
+          "description": "Frozen rendered line this attachment contributed to the <tagged_files> prompt block (e.g. \"* /path (12 items)\"). Captured at send time so resumed history reproduces the exact text the model saw, independent of later filesystem changes."
+        }
+      },
+      "required": [
+        "type",
+        "path",
+        "displayName"
+      ],
+      "additionalProperties": false,
+      "description": "Directory attachment",
+      "title": "AttachmentDirectory"
+    },
+    "AttachmentExtensionContext": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "extension_context",
+          "description": "Attachment type discriminator"
+        },
+        "extensionId": {
+          "type": "string",
+          "description": "Owning extension identifier. Runtime-derived from the caller's connection when produced via session.extensions.sendAttachmentsToMessage; preserved verbatim on subsequent transports."
+        },
+        "canvasId": {
+          "type": "string",
+          "description": "Provider-local canvas identifier when the push was bound to a canvas instance"
+        },
+        "instanceId": {
+          "type": "string",
+          "description": "Open canvas instance identifier when the push was bound to a canvas instance"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable composer pill label"
+        },
+        "payload": {
+          "description": "Caller-supplied JSON payload",
+          "x-opaque-json": true
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp captured by the runtime when the push was accepted"
+        }
+      },
+      "requir

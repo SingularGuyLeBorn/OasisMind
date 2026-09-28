@@ -1,0 +1,40 @@
+# bi 存疑/空壳队列 (2026-09-27 源md吸收核查发现)
+# 判定法: bi 拉丁词 < 源 md 93% 即列入。比例 ≤50% 的基本是空壳/未完成稿, 需补写;
+# 70-91% 的可能是目录/页脚未保留, 补写前先人工对照源 md 判断是否真缺段。
+# 源 md 已对这些目录保留(未删), 补写期间以它为基准; 补完并审过后可删源 md 和本行。
+01-deepseek/deepseek-v3-1-terminus 75%
+08-claude/claude-3-7-sonnet 68%
+08-claude/claude-fable-5 1%
+08-claude/claude-fable-5-1 2%
+08-claude/claude-mythos-5 3%
+08-claude/claude-mythos-5-1 2%
+08-claude/claude-mythos-preview 0%
+08-claude/claude-opus-4-5 81%
+08-claude/claude-opus-4-7 5%
+08-claude/claude-opus-4-8 1%
+08-claude/claude-opus-5 1%
+08-claude/claude-opus-5-5 15%
+08-claude/claude-sonnet-4-5 88%
+08-claude/claude-sonnet-4-6 0%
+08-claude/claude-sonnet-5 16%
+09-doubao/seed-1-5-thinking 46%
+10-ernie/3-0 3%
+10-ernie/4-5 1%
+13-glm/glm-4-6v 75%
+14-hunyuan/hy3 39%
+14-hunyuan/pro 32%
+15-ling/ling 73%
+15-ling/ling-3-0 33%
+15-ling/ring-1t 3%
+16-llama/llama3-1 0%
+17-minicpm/minicpm 13%
+17-minicpm/minicpm-o-2-6 83%
+17-minicpm/minicpm-v-2-6 91%
+17-minicpm/minicpm3 31%
+17-minicpm/minicpm4-1 0%
+18-minimax/abab 76%
+19-mistral/ministral-2024 82%
+19-mistral/mistral 72%
+19-mistral/nemo-12b 91%
+20-openai/o-series 50%
+# 另: 21-xai/grok-4-7 的 bi+analysis 从未写过(源md/pdf 已删, 需要时重新收集材料)

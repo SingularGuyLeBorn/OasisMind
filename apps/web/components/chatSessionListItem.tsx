@@ -1,0 +1,159 @@
+"use client";
+
+/**
+ * Chat 会话列表项——从 chat.tsx 拆出。
+ * 支持重命名（编辑态）与删除，纯展示型。
+ */
+
+import { memo } from "react";
+import { AlarmClock, Check, HeartPulse, MessageCircle, Pencil, Trash2, X } from "lucide-react";
+import type { ChatSession } from "@oasismind/shared";
+import { cn, formatRelativeTime } from "@/lib/utils";
+
+export const SessionListItem = memo(function SessionListItem({
+  session,
+  active,
+  editing,
+  renameDraft,
+  onSelect,
+  onHover,
+  onHoverEnd,
+  onStartRename,
+  onRenameDraftChange,
+  onConfirmRename,
+  onCancelRename,
+  onDelete,
+}: {
+  session: ChatSession;
+  active: boolean;
+  editing: boolean;
+  renameDraft: string;
+  onSelect: (id: string) => void;
+  onHover?: (id: string) => void;
+  onHoverEnd?: (id: string) => void;
+  onStartRename: (id: string) => void;
+  onRenameDraftChange: (v: string) => void;
+  onConfirmRename: (id: string) => void;
+  onCancelRename: () => void;
+  onDelete: (id: string) => void;
+}) {
+  if (editing) {
+    return (
+      <div className="mb-1 flex items-center gap-1 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-bg)] px-2 py-1.5">
+        <input
+          value={renameDraft}
+          onChange={(e) => onRenameDraftChange(e.target.value)}
+          className="min-w-0 flex-1 rounded-md border border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-2 py-1 text-xs outline-none focus:border-[var(--om-brand)]"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); onConfirmRename(session.id); }
+            if (e.key === "Escape") { e.preventDefault(); onCancelRename(); }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => onConfirmRename(session.id)}
+          className="rounded-md p-1 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
+          aria-label="确认重命名"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onCancelRename}
+          className="rounded-md p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
+          aria-label="取消"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="session-list-item"
+      data-session-id={session.id}
+      className={cn(
+        "group/sess mb-1 flex items-stretch overflow-hidden rounded-xl border transition-colors",
+        active
+          ? "border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/45 shadow-[inset_3px_0_0_0_var(--om-accent)]"
+          : "border-transparent hover:bg-[var(--om-bg-mute)]/60",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(session.id)}
+        onMouseEnter={() => onHover?.(session.id)}
+        onMouseLeave={() => onHoverEnd?.(session.id)}
+        className={cn(
+          "min-w-0 flex-1 px-3 py-2 text-left text-sm transition",
+          active ? "text-[var(--om-brand-deep)]" : "text-[var(--om-text-2)]",
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-1.5">
+          {session.kind === "channel" ? (
+            <span
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-sky-100 p-0.5 text-sky-700"
+              title="QQ / IM 通道会话"
+              aria-label="IM 通道"
+            >
+              <MessageCircle className="h-3 w-3" />
+            </span>
+          ) : null}
+          {session.kind === "cron" ? (
+            <span
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 p-0.5 text-amber-700"
+              title="定时节律"
+              aria-label="定时节律"
+            >
+              <AlarmClock className="h-3 w-3" />
+            </span>
+          ) : null}
+          {session.kind === "heartbeat" ? (
+            <span
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-orange-100 p-0.5 text-orange-700"
+              title="心跳"
+              aria-label="心跳"
+            >
+              <HeartPulse className="h-3 w-3" />
+            </span>
+          ) : null}
+          <span className="min-w-0 truncate font-medium">
+            {session.autoName || session.title || "新对话"}
+          </span>
+          {session.status === "archived" && (
+            <span className="shrink-0 rounded bg-[var(--om-bg-mute)] px-1 py-0.5 text-[10px] font-normal text-[var(--om-text-3)]">
+              已归档
+            </span>
+          )}
+        </div>
+        <div className="truncate text-xs text-[var(--om-text-3)]">
+          {session.model} · {formatRelativeTime(session.updatedAt)}
+        </div>
+      </button>
+      <div className="flex shrink-0 items-center gap-0.5 px-1 opacity-0 transition-opacity group-hover/sess:opacity-100">
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onStartRename(session.id)}
+          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+          aria-label="重命名"
+          title="重命名"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onDelete(session.id)}
+          className="rounded-md p-1.5 text-[var(--om-text-3)] hover:bg-red-50 hover:text-red-600"
+          aria-label="删除"
+          title="删除"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+});

@@ -1,0 +1,8 @@
+{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "İNDİRME",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "OKUMA",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "YAZMA",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "İŞLEMLER",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "/"
+}

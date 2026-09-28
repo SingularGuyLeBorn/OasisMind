@@ -1,0 +1,1199 @@
+/**
+ * SessionStreamHub —— 把 Agent 运行与 SSE 连接解耦，并支持持久化续传。
+ *
+ * 架构：
+ * - 每个 session 的 Agent 运行在独立 Promise 中，客户端断线不 abort。
+ * - 事件同时进入「内存环形缓冲」（热数据、低延迟推送）和「SQLite 事件日志」
+ *   （持久化、服务端重启后可按 sessionId 续传）。
+ * - 订阅时优先重放内存缓冲；若运行已结束或进程已重启，则从 SQLite 重放。
+ */
+
+import type { AgentStreamEvent } from "./agentStream/index.js";
+import type { AgentChatInput } from "@oasismind/shared";
+import type { AppConfig } from "./config.js";
+import { prisma } from "../db.js";
+import {
+  isSessionRunningClaimed,
+  releaseSessionRunning,
+  tryClaimSessionRunning,
+} from "./sessionRunningSignal.js";
+
+class RunTimeoutError extends Error {
+  constructor(
+    public readonly reason: "run_timeout" | "stall_timeout" | "force_stop" | "unhandled_exception",
+    public readonly timeoutMs: number,
+  ) {
+    super(`运行被强制终止: ${reason}${timeoutMs > 0 ? `（timeoutMs=${timeoutMs}）` : ""}`);
+  }
+}
+
+export type BufferedEvent = {
+  id: number;
+  event: AgentStreamEvent;
+};
+
+type StreamConfig = AppConfig["stream"];
+
+/** Hub 起流时允许切入 running 的会话态（archived/failed/completed 不动；interrupted 崩溃尸体可直接续聊） */
+const CLAIM_RUNNING_FROM = ["active", "paused", "running", "interrupted"] as const;
+
+/**
+ * 会话 DB 生命周期：所有起流路径（普通发消息 / resume / drain）统一经 Hub 收口。
+ * - 起流：active|paused → running
+ * - 终态：done → active（subagent/skill_review → completed）；error/abort → active（chat）/ failed（子会话）
+ * 用户点停止不再造「paused + 恢复运行」；重启僵尸仍可 paused，直接发消息即可续聊。
+ */
+async function claimSessionDbRunning(sessionId: string): Promise<void> {
+  if (!sessionId) return;
+  try {
+    await prisma.chatSession.updateMany({
+      where: { id: sessionId, status: { in: [...CLAIM_RUNNING_FROM] } },
+      data: { status: "running" },
+    });
+  } catch (err) {
+    console.warn(`[SessionStreamHub] 起流标 running 失败 session=${sessionId}:`, err);
+  }
+}
+
+async function settleSessionDbStatus(
+  sessionId: string,
+  terminal: "done" | "error",
+): Promise<void> {
+  if (!sessionId) return;
+  try {
+    const row = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { kind: true, status: true },
+    });
+    if (!row || row.status !== "running") return;
+    const isSub = row.kind === "subagent" || row.kind === "skill_review";
+    const next =
+      terminal === "done" ? (isSub ? "completed" : "active") : isSub ? "failed" : "active";
+    await prisma.chatSession.updateMany({
+      where: { id: sessionId, status: "running" },
+      data: { status: next },
+    });
+  } catch (err) {
+    console.warn(`[SessionStreamHub] 终态归位失败 session=${sessionId}:`, err);
+  }
+}
+
+/** 运行中注入的用户消息（Steering / Follow-up） */
+export type RunInjectMessage = {
+  id: string;
+  content: string;
+  createdAt: number;
+};
+
+type RunState = {
+  sessionId: string;
+  input: AgentChatInput;
+  abortController: AbortController;
+  buffer: BufferedEvent[];
+  subscribers: Set<(event: BufferedEvent) => void>;
+  promise: Promise<void>;
+  completed: boolean;
+  nextId: number;
+  runningSince: number;
+  cleanupTimer?: ReturnType<typeof setTimeout>;
+  /** tool_batch 结束后、下一轮 LLM 前注入 */
+  steeringQueue: RunInjectMessage[];
+  /** 本会停止时注入并续轮 */
+  followUpQueue: RunInjectMessage[];
+  /** token/thinking 合帧：减少 ring + SQLite 写入粒度（与 SSE 16ms/512 对齐） */
+  coalesce: {
+    token: string;
+    thinking: string;
+    timer: ReturnType<typeof setTimeout> | null;
+  };
+  /** E3：预生成的 partial assistant id；有实质内容时 stop 响应携带 */
+  pendingAssistantMessageId?: string | null;
+  hasPartialAssistant?: boolean;
+  /** 运行级看门狗：最后一次 runner 产生事件的时间戳 */
+  lastEventAt: number;
+  /** 整体运行超时计时器 */
+  runTimeoutTimer?: ReturnType<typeof setTimeout>;
+  /** 无事件 stall 超时计时器 */
+  stallTimeoutTimer?: ReturnType<typeof setTimeout>;
+  /** 是否已走过后续清理（防 watchdog 与 runner finally 双跑） */
+  finalized: boolean;
+  /** watchdog Promise 的拒绝句柄，用于 timeout/stall/forceStop 强制结束 race */
+  rejectWatchdog?: (err: RunTimeoutError) => void;
+  /** 与 runner 竞速的 watchdog Promise */
+  watchdogPromise?: Promise<never>;
+};
+
+type PersistItem = {
+  sessionId: string;
+  /** per-session 单调序号（与 BufferedEvent.id / 内存 nextId 同源） */
+  seq: number;
+  eventType: string;
+  payload: AgentStreamEvent;
+};
+
+export type RunningSessionInfo = {
+  sessionId: string;
+  lastEventId: number;
+  runningSince: number;
+};
+
+export class SessionStreamHub {
+  private runs = new Map<string, RunState>();
+  private persistQueue: PersistItem[] = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private flushBackoffMs = 500;
+  /** 独立于 Agent 运行流的外部事件订阅者（如 async_delivery） */
+  private externalSubs = new Map<string, Set<(event: AgentStreamEvent) => void>>();
+  /**
+   * 外部事件短环形缓冲：EventSource 尚未连上时 pushExternalEvent 会丢事件
+   * （无活跃 Agent run 时也不进 runs.buffer）。subscribeExternal 时重放，
+   * 让 session_queue_update 等幂等事件不依赖「先连上再推」时序。
+   */
+  private externalRing = new Map<string, AgentStreamEvent[]>();
+  private static readonly EXTERNAL_RING_SIZE = 32;
+  private config: StreamConfig;
+
+  constructor(config: Partial<StreamConfig> = {}) {
+    this.config = {
+      ringSize: 500,
+      persist: true,
+      eventTtlMs: 300_000,
+      cleanupIntervalMs: 60_000,
+      steeringMode: "one-at-a-time",
+      followUpMode: "one-at-a-time",
+      runTimeoutMs: 300_000,
+      runStallTimeoutMs: 120_000,
+      ...config,
+    };
+    if (this.config.persist && this.config.cleanupIntervalMs > 0) {
+      this.cleanupTimer = setInterval(() => this.deleteExpired(), this.config.cleanupIntervalMs);
+      // 启动时先清理一轮，避免上次崩溃残留过期数据
+      this.deleteExpired().catch((err) => {
+        console.warn("[SessionStreamHub] 启动清理过期事件失败:", err instanceof Error ? err.message : err);
+      });
+    }
+  }
+
+  /** per-session 最大 seq；无行返回 0；查询失败返回 null（调用方拒起流，禁止回 0 撞号） */
+  private async maxEventSeqFor(sessionId: string): Promise<number | null> {
+    if (!this.config.persist) return 0;
+    try {
+      const agg = await prisma.sessionStreamEvent.aggregate({
+        where: { sessionId },
+        _max: { seq: true },
+      });
+      return agg._max.seq ?? 0;
+    } catch (err) {
+      console.warn(`[SessionStreamHub] 查询 ${sessionId} 最大事件 seq 失败:`, err);
+      return null;
+    }
+  }
+
+  isRunning(sessionId: string): boolean {
+    const run = this.runs.get(sessionId);
+    return !!run && !run.completed;
+  }
+
+  /** drain 已认领、prepare 段尚未起流的会话（S2）：同步等待类轮询的空闲判定必须把它算作「忙」 */
+  private startingSessions = new Set<string>();
+
+  /** drain 认领队列项后同步宣告「即将起流」，闭合「consume 删行 → prepare 段 DB 工作 → hub.start」
+   *  间隙被 spawn waitForResult 轮询误判空闲（抓前轮旧 assistant 当本轮结果）的窗口 */
+  markRunStarting(sessionId: string): void {
+    this.startingSessions.add(sessionId);
+  }
+
+  unmarkRunStarting(sessionId: string): void {
+    this.startingSessions.delete(sessionId);
+  }
+
+  isRunStarting(sessionId: string): boolean {
+    return this.startingSessions.has(sessionId);
+  }
+
+  getLastEventId(sessionId: string): number {
+    const run = this.runs.get(sessionId);
+    if (run) return run.nextId - 1;
+    // 运行不在内存时，从持久化取最后 id（供客户端判断是否需要续传）
+    if (!this.config.persist) return 0;
+    // 同步接口不适合 await；调用方若需要精确值可改为 getLastEventIdAsync
+    return 0;
+  }
+
+  getStatus(sessionId: string): { running: boolean; lastEventId: number } {
+    const run = this.runs.get(sessionId);
+    return {
+      running: !!run && !run.completed,
+      lastEventId: run ? run.nextId - 1 : 0,
+    };
+  }
+
+  /** 运行中流总数（全部活跃 run；Q2「交互 running」口径由任务池用 occupancy claim 过滤，见 asyncJobOrchestrator） */
+  runningCount(): number {
+    let n = 0;
+    for (const run of this.runs.values()) {
+      if (!run.completed) n++;
+    }
+    return n;
+  }
+
+  listRunning(): RunningSessionInfo[] {
+    const result: RunningSessionInfo[] = [];
+    for (const [sessionId, run] of this.runs) {
+      if (!run.completed) {
+        // [OM-FREEPLAY] 起流占位期间 nextId 可能为 0，lastEventId 不能为 -1（违反 schema min(0)）
+        result.push({ sessionId, lastEventId: Math.max(0, run.nextId - 1), runningSince: run.runningSince });
+      }
+    }
+    return result;
+  }
+
+  /** 是否已有 done/error 等终态事件 */
+  private hasTerminalEvent(state: RunState): boolean {
+    const last = state.buffer.at(-1);
+    return last?.event.type === "done" || last?.event.type === "error";
+  }
+
+  private disarmRunTimeout(state: RunState): void {
+    if (state.runTimeoutTimer) {
+      clearTimeout(state.runTimeoutTimer);
+      state.runTimeoutTimer = undefined;
+    }
+  }
+
+  private disarmStallTimeout(state: RunState): void {
+    if (state.stallTimeoutTimer) {
+      clearTimeout(state.stallTimeoutTimer);
+      state.stallTimeoutTimer = undefined;
+    }
+  }
+
+  /** 整体运行超时：runTimeoutMs 到点后强制 reject race */
+  private armRunTimeout(state: RunState): void {
+    this.disarmRunTimeout(state);
+    if (this.config.runTimeoutMs <= 0) return;
+    state.runTimeoutTimer = setTimeout(() => {
+      state.rejectWatchdog?.(new RunTimeoutError("run_timeout", this.config.runTimeoutMs));
+    }, this.config.runTimeoutMs);
+  }
+
+  /** 无事件 stall 超时：runner 超过 stallTimeoutMs 未 emit 任何事件则强制终止 */
+  private armStallTimeout(state: RunState): void {
+    this.disarmStallTimeout(state);
+    if (this.config.runStallTimeoutMs <= 0) return;
+    state.stallTimeoutTimer = setTimeout(() => {
+      state.rejectWatchdog?.(new RunTimeoutError("stall_timeout", this.config.runStallTimeoutMs));
+    }, this.config.runStallTimeoutMs);
+  }
+
+  /** runner 每产生一个事件就重置 stall 计时 */
+  private resetStallTimeout(state: RunState): void {
+    if (state.completed || state.finalized) return;
+    state.lastEventAt = Date.now();
+    this.armStallTimeout(state);
+  }
+
+  /**
+   * 推送外部事件（非 Agent 运行产生的事件，如异步任务完成）。
+   * - 始终推给 async-stream 的 externalSubs（否则 autoConsume 开跑后
+   *   session_run_started / async_job_update 会只进 Agent 流，前端 EventSource 收不到、只能刷新才续上）。
+   * - 若该 session 有活跃 Agent 流，同时写入环形缓冲并推给流 subscribers。
+   */
+  pushExternalEvent(sessionId: string, event: AgentStreamEvent): void {
+    const ring = this.externalRing.get(sessionId) ?? [];
+    ring.push(event);
+    if (ring.length > SessionStreamHub.EXTERNAL_RING_SIZE) ring.shift();
+    this.externalRing.set(sessionId, ring);
+
+    const subs = this.externalSubs.get(sessionId);
+    if (subs) {
+      for (const sub of subs) {
+        try {
+          sub(event);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    const run = this.runs.get(sessionId);
+    if (run && !run.completed) {
+      // 外部事件插入 Agent 流前先冲刷合帧，避免 token 排到 async_* 之后
+      this.emitToRun(run, event);
+    }
+  }
+
+  /** 订阅外部事件（独立于 Agent 运行流）。返回 unsubscribe 函数。 */
+  subscribeExternal(sessionId: string, onEvent: (event: AgentStreamEvent) => void): () => void {
+    // 先重放短环（幂等：前端 session_queue_update / async_* 均以 refetch+merge 消化）。
+    // message_upserted 不重放：消息列表的权威恢复通道是 listForChat hydrate，
+    // 重放 stale 消息投影会把「未变更的旧消息」再推一遍——前端 no-op upsert 本不该
+    // 有任何副作用，但曾因此误标 in-flight 导致刷新后旧回复被 live 块顶替（已加双保险）。
+    const ring = this.externalRing.get(sessionId) ?? [];
+    for (const event of ring) {
+      if (event.type === "message_upserted") continue;
+      try {
+        onEvent(event);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    let subs = this.externalSubs.get(sessionId);
+    if (!subs) {
+      subs = new Set();
+      this.externalSubs.set(sessionId, subs);
+    }
+    subs.add(onEvent);
+    return () => {
+      subs!.delete(onEvent);
+      if (subs!.size === 0) this.externalSubs.delete(sessionId);
+    };
+  }
+
+  /**
+   * 起流互斥三态：
+   * - started：获槽并启动
+   * - duplicate：同 clientMessageId 的重试（允许降级订阅，不重复起流）
+   * - busy：不同消息占线（调用方应入队 / 409，禁止静默附着）
+   */
+  async startIfNotRunning(
+    sessionId: string,
+    input: AgentChatInput,
+    runner: (emit: (event: AgentStreamEvent) => void, signal: AbortSignal) => Promise<void>,
+  ): Promise<"started" | "duplicate" | "busy"> {
+    if (this.isRunning(sessionId)) {
+      return this.classifyBusyOrDuplicate(sessionId, input);
+    }
+    if (await isSessionRunningClaimed(sessionId)) {
+      return this.classifyBusyOrDuplicate(sessionId, input);
+    }
+    try {
+      await this.start(sessionId, input, runner);
+      return "started";
+    } catch (err) {
+      // 并发竞态：start 内同步占位后，第二个调用方抛「已运行」→ 再分类
+      if (err instanceof Error && /已有运行中的 Agent 流/.test(err.message)) {
+        return this.classifyBusyOrDuplicate(sessionId, input);
+      }
+      throw err;
+    }
+  }
+
+  private classifyBusyOrDuplicate(
+    sessionId: string,
+    input: AgentChatInput,
+  ): "duplicate" | "busy" {
+    const run = this.runs.get(sessionId);
+    const runningMsgId = run?.input?.clientMessageId;
+    const incomingMsgId = input.clientMessageId;
+    if (
+      typeof runningMsgId === "string" &&
+      runningMsgId.length > 0 &&
+      runningMsgId === incomingMsgId
+    ) {
+      return "duplicate";
+    }
+    return "busy";
+  }
+
+  /**
+   * 启动一次新的 Agent 运行。若已有运行中的任务则抛异常。
+   */
+  async start(
+    sessionId: string,
+    input: AgentChatInput,
+    runner: (emit: (event: AgentStreamEvent) => void, signal: AbortSignal) => Promise<void>,
+  ): Promise<void> {
+    if (this.isRunning(sessionId)) {
+      throw new Error(`会话 ${sessionId} 已有运行中的 Agent 流`);
+    }
+
+    // 多实例：先抢 Redis 宣称，避免实例 B 看不到实例 A 的内存 runs
+    const claimed = await tryClaimSessionRunning(sessionId);
+    if (!claimed) {
+      throw new Error(`会话 ${sessionId} 已有运行中的 Agent 流`);
+    }
+
+    // TOCTOU 修复：先同步占位 runs.set，再 await maxEventSeqFor。
+    // 原实现 isRunning 检查 → await maxSeq（DB 异步）→ runs.set 之间有窗口，
+    // 两个并发调用方（autoConsume + 用户发消息 / 多个异步投递）都能过 isRunning 检查，
+    // 第二个 start 覆盖第一个 runs.set，第一个 run 被孤立泄漏、信号/队列状态错乱。
+    // nextId 占位 0，await 后再赋值；runner 在 nextId 赋值后才启动，期间不会发事件，安全。
+    //
+    // cleanupTimer 覆盖竞态：上一轮 run 完成后设了 cleanupTimer（eventTtlMs 后 runs.delete），
+    // 若本轮 start 在 cleanupTimer 触发前覆盖 runs 条目，旧 timer 触发时会删掉本轮 run。
+    // 必须先清掉旧 run 的 cleanupTimer。
+    try {
+      const prevRun = this.runs.get(sessionId);
+      if (prevRun?.cleanupTimer) {
+        clearTimeout(prevRun.cleanupTimer);
+        prevRun.cleanupTimer = undefined;
+      }
+
+      const abortController = new AbortController();
+      const state: RunState = {
+        sessionId,
+        input,
+        abortController,
+        buffer: [],
+        subscribers: new Set(),
+        promise: Promise.resolve(),
+        completed: false,
+        nextId: 0,
+        runningSince: Date.now(),
+        lastEventAt: Date.now(),
+        finalized: false,
+        steeringQueue: [],
+        followUpQueue: [],
+        coalesce: { token: "", thinking: "", timer: null },
+      };
+      this.runs.set(sessionId, state);
+      // 起流占位成功后「忙」由 isRunning 接管，清除 drain 宣告的「即将起流」标记（S2）
+      this.startingSessions.delete(sessionId);
+      // DB 生命周期：占位成功即标 running（空占位 sessionId="" 时 no-op，migrate 后再标）
+      await claimSessionDbRunning(sessionId);
+
+      const maxSeq = await this.maxEventSeqFor(sessionId);
+      if (maxSeq === null) {
+        throw new Error(`无法读取会话 ${sessionId} 事件序号，拒绝起流以免续传错乱`);
+      }
+      state.nextId = maxSeq + 1;
+
+      this.armRunTimeout(state);
+      this.armStallTimeout(state);
+
+      // 推拉铁律：凡 Hub 起流，同栈通知前端 resume 挂 agent 流。
+      // QQ/cron/heartbeat 等服务端起流此前缺此推送 → 用户气泡有（message_upserted）但
+      // assistant live 气泡不出现，只能 F5 hydrate。pending: 占位键无 async-stream 订阅方，跳过。
+      if (sessionId && !sessionId.startsWith("pending:")) {
+        this.pushExternalEvent(sessionId, {
+          type: "session_run_started",
+          sessionId,
+          reason: "hub_start",
+        });
+      }
+
+      const emit = (event: AgentStreamEvent) => {
+        this.emitToRun(state, event);
+        this.resetStallTimeout(state);
+      };
+
+      let rejectWatchdog: (err: RunTimeoutError) => void = () => {};
+      state.watchdogPromise = new Promise<never>((_, reject) => {
+        rejectWatchdog = reject;
+      });
+      state.rejectWatchdog = rejectWatchdog;
+
+      state.promise = (async () => {
+        // 终态归位：按 emit 的 done/error 判定（与 resume 旧路径同口径，现收进 Hub 全覆盖）
+        const track = { terminal: "error" as "done" | "error" };
+        const trackingEmit = (event: AgentStreamEvent) => {
+          if (event.type === "done") track.terminal = "done";
+          else if (event.type === "error") track.terminal = "error";
+          emit(event);
+        };
+        const runnerPromise = runner(trackingEmit, abortController.signal);
+        // watchdog 与 runner 竞速；runner 被 timeout/stall/forceStop 击败后仍可能继续抛错，
+        // 此处 attach catch 避免其未结算的 rejection 变成 unhandled rejection
+        runnerPromise.catch(() => {});
+        try {
+          await Promise.race([runnerPromise, state.watchdogPromise!]);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          track.terminal = "error";
+          emit({ type: "error", message, sessionId });
+        } finally {
+          await this.finalizeRun(state, track.terminal, { emitError: false });
+        }
+      })().catch(async (err: unknown) => {
+        // runner 或 finally 中任何未处理抛错都必须落在这里，否则 state.promise 会变成 unhandled rejection
+        console.error(`[SessionStreamHub] 运行 promise 未捕获异常 session=${sessionId}:`, err);
+        if (!state.finalized) {
+          await this.finalizeRun(state, "error", { emitError: true, reason: "unhandled_exception" }).catch(() => {});
+        }
+        this.startingSessions.delete(sessionId);
+      });
+    } catch (err) {
+      await releaseSessionRunning(sessionId);
+      this.runs.delete(sessionId);
+      throw err;
+    }
+  }
+
+  /**
+   * 统一运行收尾：DB 归位、未消费 inject 移交、释放 running 信号、通知任务池、清理。
+   * - 幂等：state.finalized 保证只走一次
+   * - opts.emitError：在 buffer 尚无终态事件时补 error 事件（watchdog/forceStop 用）
+   */
+  private async finalizeRun(
+    state: RunState,
+    terminal: "done" | "error",
+    opts: {
+      emitError?: boolean;
+      reason?: RunTimeoutError["reason"];
+    } = {},
+  ): Promise<void> {
+    if (state.finalized) return;
+    state.finalized = true;
+
+    this.disarmRunTimeout(state);
+    this.disarmStallTimeout(state);
+    this.flushRunCoalesce(state);
+
+    if (opts.reason) {
+      state.abortController.abort(opts.reason);
+    }
+
+    if (opts.emitError && !this.hasTerminalEvent(state)) {
+      this.pushRunEvent(state, {
+        type: "error",
+        message: `运行因 ${opts.reason} 被强制终止`,
+        sessionId: state.sessionId,
+      });
+    }
+
+    state.completed = true;
+    if (state.sessionId && !state.sessionId.startsWith("pending:")) {
+      this.pushExternalEvent(state.sessionId, {
+        type: "session_run_settled",
+        sessionId: state.sessionId,
+      });
+    }
+    await settleSessionDbStatus(state.sessionId, terminal);
+    await this.handoffUnconsumedInjects(state.sessionId);
+    this.clearInjectQueues(state.sessionId);
+    try {
+      const { getAppConfig } = await import("./config.js");
+      const { getEventBus } = await import("./eventBus.js");
+      const { getServiceContainer } = await import("./serviceContainer.js");
+      const services = getServiceContainer(prisma, getEventBus(), getAppConfig());
+      await services.sessionQueueItem.reconcileClaimsAfterRun(state.sessionId);
+    } catch (err) {
+      console.warn(
+        `[SessionStreamHub] reconcileClaimsAfterRun 失败 session=${state.sessionId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+    await releaseSessionRunning(state.sessionId);
+    emitHubRunSettled(state.sessionId);
+    await this.flushPersistQueue();
+    state.cleanupTimer = setTimeout(() => {
+      this.runs.delete(state.sessionId);
+    }, this.config.eventTtlMs);
+  }
+
+  /**
+   * 等待指定 session 运行结束。
+   */
+  waitFor(sessionId: string, signal?: AbortSignal): Promise<void> {
+    const run = this.runs.get(sessionId);
+    if (!run) return Promise.resolve();
+    if (!signal) return run.promise;
+    if (signal.aborted) {
+      return Promise.reject(Object.assign(new Error("waitFor aborted"), { name: "AbortError" }));
+    }
+    return new Promise<void>((resolve, reject) => {
+      const onAbort = () => {
+        reject(Object.assign(new Error("waitFor aborted"), { name: "AbortError" }));
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      run.promise.then(
+        () => {
+          signal.removeEventListener("abort", onAbort);
+          resolve();
+        },
+        (err) => {
+          signal.removeEventListener("abort", onAbort);
+          reject(err);
+        },
+      );
+    });
+  }
+
+  /**
+   * 订阅事件流。先重放历史（内存或 SQLite），再接入实时推送。
+   * resumeAfter / BufferedEvent.id 均为 per-session seq。
+   * replayHadTerminal：重放集已含 done/error（调用方据此跳过 synthetic done）。
+   */
+  async subscribe(
+    sessionId: string,
+    afterEventId: number,
+    onEvent: (event: BufferedEvent) => void,
+  ): Promise<{ unsubscribe: () => void; replayHadTerminal: boolean }> {
+    const state = this.runs.get(sessionId);
+    let replayHadTerminal = false;
+    const noteTerminal = (ev: BufferedEvent) => {
+      if (ev.event.type === "done" || ev.event.type === "error") replayHadTerminal = true;
+    };
+
+    if (state) {
+      const replayed = state.buffer.filter((ev) => ev.id > afterEventId);
+      for (const ev of replayed) {
+        noteTerminal(ev);
+        onEvent(ev);
+      }
+
+      if (state.completed && replayed.length === 0 && state.buffer.length > 0) {
+        const last = state.buffer[state.buffer.length - 1];
+        // 订阅方错过了最终事件：补发 done/error，否则前端会卡在重连循环等不到 streaming→idle 归位
+        if (last.event.type === "done" || last.event.type === "error") {
+          noteTerminal(last);
+          onEvent(last);
+        }
+      }
+
+      if (state.completed) {
+        return { unsubscribe: () => {}, replayHadTerminal };
+      }
+
+      state.subscribers.add(onEvent);
+      return {
+        unsubscribe: () => {
+          state.subscribers.delete(onEvent);
+        },
+        replayHadTerminal,
+      };
+    }
+
+    // 内存中无运行：从持久化日志按 seq 重放（服务端重启场景）
+    if (this.config.persist) {
+      try {
+        const rows = await prisma.sessionStreamEvent.findMany({
+          where: { sessionId, seq: { gt: afterEventId } },
+          orderBy: { seq: "asc" },
+        });
+        for (const row of rows) {
+          const buffered: BufferedEvent = {
+            id: row.seq,
+            event: row.payload as AgentStreamEvent,
+          };
+          noteTerminal(buffered);
+          onEvent(buffered);
+        }
+      } catch (err) {
+        console.warn(`[SessionStreamHub] 重放 ${sessionId} 持久化事件失败:`, err);
+      }
+    }
+
+    return { unsubscribe: () => {}, replayHadTerminal };
+  }
+
+  /**
+   * 迁移运行中的 sessionId（POST 占位场景）。同时迁移已持久化事件。
+   */
+  async migrateSessionId(oldId: string, newId: string): Promise<boolean> {
+    const state = this.runs.get(oldId);
+    if (!state) return false;
+    const target = this.runs.get(newId);
+    if (target && target !== state && !target.completed) {
+      console.warn(`[SessionStreamHub] 拒绝迁移 ${oldId} → ${newId}：目标已有活跃流`);
+      return false;
+    }
+
+    state.sessionId = newId;
+    this.runs.set(newId, state);
+    this.runs.delete(oldId);
+
+    // 外部事件通道同步改键：占位窗口内推到旧 id 的事件/订阅必须随新 id 重放与投递，
+    // 否则 subscribeExternal 重放漏掉占位期的 session_queue_update 等幂等事件
+    const extRing = this.externalRing.get(oldId);
+    if (extRing) {
+      this.externalRing.delete(oldId);
+      const merged = [...(this.externalRing.get(newId) ?? []), ...extRing];
+      while (merged.length > SessionStreamHub.EXTERNAL_RING_SIZE) merged.shift();
+      this.externalRing.set(newId, merged);
+    }
+    const extSubs = this.externalSubs.get(oldId);
+    if (extSubs) {
+      this.externalSubs.delete(oldId);
+      const mergedSubs = this.externalSubs.get(newId) ?? new Set();
+      for (const sub of extSubs) mergedSubs.add(sub);
+      this.externalSubs.set(newId, mergedSubs);
+    }
+
+    // 已入队但尚未 flush 的事件也迁移 sessionId
+    for (const item of this.persistQueue) {
+      if (item.sessionId === oldId) item.sessionId = newId;
+    }
+
+    // 空占位 → 真实 session：补标 running（start 时旧 id 为空跳过了 claim）
+    await claimSessionDbRunning(newId);
+
+    if (this.config.persist) {
+      try {
+        await prisma.sessionStreamEvent.updateMany({
+          where: { sessionId: oldId },
+          data: { sessionId: newId },
+        });
+        const maxSeq = await this.maxEventSeqFor(newId);
+        if (maxSeq !== null && state.nextId <= maxSeq) state.nextId = maxSeq + 1;
+      } catch (err) {
+        console.warn(`[SessionStreamHub] 迁移持久化事件 ${oldId} -> ${newId} 失败:`, err);
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 运行中注入 Steering / Follow-up。
+   * 接受即持久：先写 SessionQueueItem（kind=steer|follow_up），内存队列只持 id 指针。
+   */
+  async enqueueInject(
+    sessionId: string,
+    kind: "steer" | "follow_up",
+    content: string,
+  ): Promise<
+    { ok: true; id: string; kind: "steer" | "follow_up"; queued: number } | { ok: false; reason: string }
+  > {
+    const state = this.runs.get(sessionId);
+    if (!state || state.completed) {
+      return { ok: false, reason: "会话当前没有运行中的 Agent，无法注入。请使用普通发送。" };
+    }
+    const text = content.trim();
+    if (!text) return { ok: false, reason: "内容不能为空" };
+
+    let persistId: string;
+    try {
+      const row = await prisma.sessionQueueItem.create({
+        data: {
+          sessionId,
+          kind,
+          content: text,
+          source: "user",
+        },
+      });
+      persistId = row.id;
+    } catch (err) {
+      console.warn(
+        `[SessionStreamHub] inject 持久化失败 session=${sessionId}:`,
+        err instanceof Error ? err.message : err,
+      );
+      return { ok: false, reason: "注入消息持久化失败，请重试。" };
+    }
+
+    const item: RunInjectMessage = {
+      id: persistId,
+      content: text,
+      createdAt: Date.now(),
+    };
+    const queue = kind === "steer" ? state.steeringQueue : state.followUpQueue;
+    queue.push(item);
+    // 与 SessionQueueItemService.create 对齐：落库即推，前端可水合（即使 UI 已不默认走 inject）
+    this.pushExternalEvent(sessionId, {
+      type: "session_queue_update",
+      sessionId,
+      kind,
+    });
+    return { ok: true, id: item.id, kind, queued: queue.length };
+  }
+
+  /**
+   * 取出待注入消息（按 config mode）。
+   * 只移出内存索引；DB 行保留至 ackInject（abort/收尾可移交 drain）。
+   */
+  takeInject(
+    sessionId: string,
+    kind: "steer" | "follow_up",
+  ): RunInjectMessage[] {
+    const state = this.runs.get(sessionId);
+    if (!state) return [];
+    const queue = kind === "steer" ? state.steeringQueue : state.followUpQueue;
+    if (queue.length === 0) return [];
+    const mode = kind === "steer" ? this.config.steeringMode : this.config.followUpMode;
+    if (mode === "all") {
+      return queue.splice(0, queue.length);
+    }
+    return [queue.shift()!];
+  }
+
+  /** 注入落库成功后删除 SessionQueueItem（消费确认） */
+  async ackInject(sessionId: string, ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    try {
+      const del = await prisma.sessionQueueItem.deleteMany({
+        where: { sessionId, id: { in: ids }, kind: { in: ["steer", "follow_up"] } },
+      });
+      // 与 handoff 对称：删行后推送，避免前端 list 仍挂幽灵 inject 行
+      if (del.count > 0) {
+        this.pushExternalEvent(sessionId, {
+          type: "session_queue_update",
+          sessionId,
+          kind: "user",
+        });
+      }
+    } catch (err) {
+      console.warn(
+        `[SessionStreamHub] ackInject 失败 session=${sessionId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * run 收尾：未消费（含 take 后未 ack）的 steer/follow_up 移交 user Inbox，
+   * 供既有 drain 通道推进。丢弃只发生在此收拢点并打日志。
+   */
+  async handoffUnconsumedInjects(sessionId: string): Promise<number> {
+    try {
+      const items = await prisma.sessionQueueItem.findMany({
+        where: { sessionId, kind: { in: ["steer", "follow_up"] } },
+        orderBy: { createdAt: "asc" },
+      });
+      if (items.length === 0) return 0;
+      for (const item of items) {
+        await prisma.sessionQueueItem.update({
+          where: { id: item.id },
+          data: { kind: "user", source: "user" },
+        });
+        console.log(
+          `[SessionStreamHub] inject 未消费移交 user 队列 session=${sessionId} id=${item.id} from=${item.kind}`,
+        );
+      }
+      // 前端靠 session_queue_update 水合；handoff 不推则 stop 后队列项「消失」
+      this.pushExternalEvent(sessionId, {
+        type: "session_queue_update",
+        sessionId,
+        kind: "user",
+      });
+      return items.length;
+    } catch (err) {
+      console.warn(
+        `[SessionStreamHub] handoffUnconsumedInjects 失败 session=${sessionId}:`,
+        err instanceof Error ? err.message : err,
+      );
+      return 0;
+    }
+  }
+
+  /** abort 时清空内存索引（DB 行由 finally handoff 移交，禁止在此丢弃） */
+  clearInjectQueues(sessionId: string): void {
+    const state = this.runs.get(sessionId);
+    if (!state) return;
+    state.steeringQueue.length = 0;
+    state.followUpQueue.length = 0;
+  }
+
+  /** E3：注册预生成的 assistant 消息 id（abort 落库与 stop 响应用同一 id） */
+  setPendingAssistantMessageId(sessionId: string, messageId: string | null): void {
+    const state = this.runs.get(sessionId);
+    if (!state || state.completed) return;
+    state.pendingAssistantMessageId = messageId;
+  }
+
+  /** E3：标记已有可落库的 partial 内容（token/tool） */
+  markPartialAssistant(sessionId: string): void {
+    const state = this.runs.get(sessionId);
+    if (!state || state.completed) return;
+    state.hasPartialAssistant = true;
+  }
+
+  /** E3：读取预生成 id（不论是否已有 partial；供 abort 落库） */
+  getPendingAssistantMessageId(sessionId: string): string | null {
+    const state = this.runs.get(sessionId);
+    return state?.pendingAssistantMessageId ?? null;
+  }
+
+  /**
+   * E3：stop 响应用。有预生成 id 且已有实质内容 → 返回 id；确定无 partial → null。
+   */
+  getPartialAssistantMessageId(sessionId: string): string | null {
+    const state = this.runs.get(sessionId);
+    if (!state?.hasPartialAssistant) return null;
+    return state.pendingAssistantMessageId ?? null;
+  }
+
+  /**
+   * 显式停止某个 session 的运行（触发 abort）。
+   * @param reason AbortSignal.reason：user=用户停止本轮（归 active，可直接再发消息；
+   *   注入已由 A5 持久化，run 收尾移交 user 队列）；session_stop=级联清理
+   */
+  stop(sessionId: string, reason: "user" | "session_stop" = "user"): boolean {
+    const state = this.runs.get(sessionId);
+    if (!state || state.completed) return false;
+    this.clearInjectQueues(sessionId);
+    state.abortController.abort(reason);
+    // 用户停止：立刻回 active（禁止留下「可恢复继续」paused 态）
+    if (reason === "user") {
+      prisma.chatSession
+        .updateMany({
+          where: { id: sessionId, status: { in: ["active", "running", "paused", "interrupted"] } },
+          data: { status: "active" },
+        })
+        .then(async () => {
+          // 推拉铁律：状态写点后推 session_list_changed，其它标签页侧栏秒级对齐
+          const row = await prisma.chatSession.findUnique({
+            where: { id: sessionId },
+            select: { agentId: true },
+          });
+          // 动态 import：uiStateNotify 反向依赖本模块（getStreamHub），静态引入会成环
+          const { notifySessionListChanged } = await import("./uiStateNotify.js");
+          await notifySessionListChanged(prisma, {
+            agentId: row?.agentId ?? undefined,
+            sessionId,
+            reason: "update",
+          });
+        })
+        .catch((err) => {
+          console.warn(`[SessionStreamHub] 停止后标 active 失败 session=${sessionId}:`, err);
+        });
+    }
+    return true;
+  }
+
+  /**
+   * 强制停止并立即结束运行（用于 IM /stop 等需要立刻释放占槽的场景）。
+   * 与 stop 的区别：stop 仅触发 abort，依赖 runner 自行收尾；
+   * forceStop 直接结束 watchdog race 并走统一 finalize，专治 runner 不响应 abort 的僵尸态。
+   */
+  forceStop(sessionId: string, reason: string = "user_force_stop"): boolean {
+    const state = this.runs.get(sessionId);
+    if (!state || state.completed || state.finalized) return false;
+    this.clearInjectQueues(sessionId);
+    state.rejectWatchdog?.(new RunTimeoutError("force_stop", 0));
+    // 触发 abort 给 runner 一次自行清理的机会；race 已结束，runner 的后续抛错被 suppress
+    state.abortController.abort(reason);
+    return true;
+  }
+
+  /**
+   * 强制清理某个 session（包括内存运行与持久化事件）。
+   */
+  async clear(sessionId: string): Promise<void> {
+    const state = this.runs.get(sessionId);
+    if (state) {
+      if (!state.completed) {
+        state.abortController.abort("session_stop");
+      }
+      this.disarmRunTimeout(state);
+      this.disarmStallTimeout(state);
+      if (state.coalesce.timer) clearTimeout(state.coalesce.timer);
+      if (state.cleanupTimer) clearTimeout(state.cleanupTimer);
+      this.runs.delete(sessionId);
+    }
+    await releaseSessionRunning(sessionId);
+    // 清理外部订阅者，避免已删除 session 的 EventSource listener 残留
+    this.externalSubs.delete(sessionId);
+    if (this.config.persist) {
+      try {
+        await prisma.sessionStreamEvent.deleteMany({ where: { sessionId } });
+      } catch (err) {
+        console.warn(`[SessionStreamHub] 清理 ${sessionId} 持久化事件失败:`, err);
+      }
+    }
+  }
+
+  /**
+   * 优雅关闭：停止清理定时器并刷盘剩余事件。
+   */
+  async dispose(): Promise<void> {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    // 显式清除 flushTimer：flushPersistQueue 在队列为空时提前 return 不清 timer，
+    // 若异步 flush 刚 drain 完队列、新 timer 又被 enqueue 但尚未触发，dispose 会漏清。
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    await this.flushPersistQueue();
+  }
+
+  /** 将事件写入 ring + persist + 实时订阅者（已合帧后的最终事件） */
+  private pushRunEvent(state: RunState, event: AgentStreamEvent): void {
+    const buffered: BufferedEvent = { id: state.nextId++, event };
+    state.buffer.push(buffered);
+    if (state.buffer.length > this.config.ringSize) {
+      state.buffer.shift();
+    }
+    this.enqueuePersist(buffered, state.sessionId);
+    for (const sub of state.subscribers) {
+      try {
+        Promise.resolve(sub(buffered)).catch((err) => {
+          // 单个订阅者失败不打扰其他订阅者
+          console.warn(
+            "[SessionStreamHub] 订阅者推送失败:",
+            err instanceof Error ? err.message : err,
+          );
+        });
+      } catch (err) {
+        console.warn(
+          "[SessionStreamHub] 订阅者同步抛错:",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+  }
+
+  private flushRunCoalesce(state: RunState): void {
+    if (state.coalesce.timer) {
+      clearTimeout(state.coalesce.timer);
+      state.coalesce.timer = null;
+    }
+    if (state.coalesce.thinking) {
+      const delta = state.coalesce.thinking;
+      state.coalesce.thinking = "";
+      this.pushRunEvent(state, { type: "thinking", delta });
+    }
+    if (state.coalesce.token) {
+      const delta = state.coalesce.token;
+      state.coalesce.token = "";
+      this.pushRunEvent(state, { type: "token", delta });
+    }
+  }
+
+  /**
+   * Agent 运行 emit：token/thinking 按 16ms 或 512 字符合帧后再进 ring/SQLite；
+   * 其它事件先冲刷合帧缓冲，保证顺序。
+   */
+  private emitToRun(state: RunState, event: AgentStreamEvent): void {
+    if (state.completed) return;
+    if (event.type === "token") {
+      state.coalesce.token += event.delta;
+      if (state.coalesce.token.length >= 512) {
+        this.flushRunCoalesce(state);
+      } else if (!state.coalesce.timer) {
+        state.coalesce.timer = setTimeout(() => this.flushRunCoalesce(state), 16);
+      }
+      return;
+    }
+    if (event.type === "thinking") {
+      state.coalesce.thinking += event.delta;
+      if (state.coalesce.thinking.length >= 512) {
+        this.flushRunCoalesce(state);
+      } else if (!state.coalesce.timer) {
+        state.coalesce.timer = setTimeout(() => this.flushRunCoalesce(state), 16);
+      }
+      return;
+    }
+    if (event.type === "done" || event.type === "error") {
+      this.disarmRunTimeout(state);
+      this.disarmStallTimeout(state);
+    }
+    this.flushRunCoalesce(state);
+    this.pushRunEvent(state, event);
+  }
+
+  /* 持久化：事件双写内存缓冲与 SQLite，支持断线续传和服务端重启恢复 */
+
+  private enqueuePersist(buffered: BufferedEvent, sessionId: string) {
+    if (!this.config.persist) return;
+    this.persistQueue.push({
+      sessionId,
+      seq: buffered.id,
+      eventType: buffered.event.type,
+      payload: buffered.event,
+    });
+    const PERSIST_QUEUE_CAP = 5000;
+    if (this.persistQueue.length > PERSIST_QUEUE_CAP) {
+      const drop = this.persistQueue.length - PERSIST_QUEUE_CAP;
+      this.persistQueue.splice(0, drop);
+      console.warn(`[SessionStreamHub] persistQueue 超限 ${PERSIST_QUEUE_CAP}，丢弃最老 ${drop} 条`);
+    }
+    const warnFlush = (err: unknown) => {
+      console.warn(
+        "[SessionStreamHub] flushPersistQueue 失败:",
+        err instanceof Error ? err.message : err,
+      );
+    };
+    if (this.persistQueue.length >= 50) {
+      this.flushPersistQueue().catch(warnFlush);
+    } else if (!this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flushPersistQueue().catch(warnFlush), 50);
+    }
+  }
+
+  private async flushPersistQueue(): Promise<void> {
+    if (!this.config.persist || this.persistQueue.length === 0) return;
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    const batch = this.persistQueue.splice(0, this.persistQueue.length);
+    try {
+      await prisma.sessionStreamEvent.createMany({
+        data: batch.map((item) => ({
+          sessionId: item.sessionId,
+          seq: item.seq,
+          eventType: item.eventType,
+          payload: item.payload as unknown as import("@prisma/client").Prisma.InputJsonValue,
+        })),
+      });
+      // 成功：重置退避
+      this.flushBackoffMs = 500;
+    } catch (err) {
+      console.warn(`[SessionStreamHub] 持久化 ${batch.length} 条事件失败:`, err);
+      // 失败重排：按 sessionId + seq 排序落回队列，保持原有顺序
+      this.persistQueue = [...batch, ...this.persistQueue].sort((a, b) => {
+        if (a.sessionId !== b.sessionId) return a.sessionId.localeCompare(b.sessionId);
+        return a.seq - b.seq;
+      });
+      // 指数退避：500ms → 1s → 2s → … → 上限 30s，避免锁竞争下雪崩
+      const backoff = this.flushBackoffMs;
+      this.flushBackoffMs = Math.min(this.flushBackoffMs * 2, 30_000);
+      if (!this.flushTimer) {
+        this.flushTimer = setTimeout(
+          () =>
+            this.flushPersistQueue().catch((err) => {
+              console.warn(
+                "[SessionStreamHub] flushPersistQueue 退避重试失败:",
+                err instanceof Error ? err.message : err,
+              );
+            }),
+          backoff,
+        );
+      }
+    }
+  }
+
+  private async deleteExpired(): Promise<void> {
+    if (!this.config.persist || this.config.eventTtlMs <= 0) return;
+    const cutoff = new Date(Date.now() - this.config.eventTtlMs);
+    try {
+      const result = await prisma.sessionStreamEvent.deleteMany({
+        where: { createdAt: { lt: cutoff } },
+      });
+      if (result.count > 0) {
+        console.log(`[SessionStreamHub] 清理 ${result.count} 条过期流式事件`);
+      }
+    } catch (err) {
+      console.warn("[SessionStreamHub] 清理过期事件失败:", err);
+    }
+  }
+}
+
+let globalStreamHub: SessionStreamHub | null = null;
+
+export function setStreamHub(hub: SessionStreamHub | null): void {
+  globalStreamHub = hub;
+}
+
+export function getStreamHub(): SessionStreamHub | null {
+  return globalStreamHub;
+}
+
+/**
+ * hub 运行结束事件（模块级订阅，与 globalStreamHub 同生命周期模式）。
+ * 典型订阅方：全局任务池——Q2 pull 口径解决「怎么算占用」，不解决「何时重排」；
+ * 交互流结束必须显式通知池重新调度，否则 queued 任务在下一次池事件前无人唤醒（TP-4 暴露）。
+ */
+type HubRunSettledListener = (sessionId: string) => void;
+const runSettledListeners = new Set<HubRunSettledListener>();
+
+export function onHubRunSettled(listener: HubRunSettledListener): () => void {
+  runSettledListeners.add(listener);
+  return () => runSettledListeners.delete(listener);
+}
+
+/** 运行收尾时触发（completed 已置位，此刻 listRunning 已不含本流） */
+export function emitHubRunSettled(sessionId: string): void {
+  for (const listener of runSettledListeners) {
+    try {
+      listener(sessionId);
+    } catch {
+      /* 监听失败不阻塞 hub 收尾 */
+    }
+  }
+}

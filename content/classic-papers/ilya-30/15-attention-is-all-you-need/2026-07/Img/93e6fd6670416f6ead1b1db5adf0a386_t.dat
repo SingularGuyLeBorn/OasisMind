@@ -1,0 +1,175 @@
+t(0x5D /* ] */)) {
+      if (negate && result === CharSetString) {
+        state.raise("Negated character class may contain strings");
+      }
+      return result
+    }
+    state.pos = start;
+  }
+  if (state.eat(0x5C /* \ */)) {
+    var result$1 = this.regexp_eatCharacterClassEscape(state);
+    if (result$1) {
+      return result$1
+    }
+    state.pos = start;
+  }
+  return null
+};
+
+// https://tc39.es/ecma262/#prod-ClassStringDisjunction
+pp$1.regexp_eatClassStringDisjunction = function(state) {
+  var start = state.pos;
+  if (state.eatChars([0x5C, 0x71] /* \q */)) {
+    if (state.eat(0x7B /* { */)) {
+      var result = this.regexp_classStringDisjunctionContents(state);
+      if (state.eat(0x7D /* } */)) {
+        return result
+      }
+    } else {
+      // Make the same message as V8.
+      state.raise("Invalid escape");
+    }
+    state.pos = start;
+  }
+  return null
+};
+
+// https://tc39.es/ecma262/#prod-ClassStringDisjunctionContents
+pp$1.regexp_classStringDisjunctionContents = function(state) {
+  var result = this.regexp_classString(state);
+  while (state.eat(0x7C /* | */)) {
+    if (this.regexp_classString(state) === CharSetString) { result = CharSetString; }
+  }
+  return result
+};
+
+// https://tc39.es/ecma262/#prod-ClassString
+// https://tc39.es/ecma262/#prod-NonEmptyClassString
+pp$1.regexp_classString = function(state) {
+  var count = 0;
+  while (this.regexp_eatClassSetCharacter(state)) { count++; }
+  return count === 1 ? CharSetOk : CharSetString
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetCharacter
+pp$1.regexp_eatClassSetCharacter = function(state) {
+  var start = state.pos;
+  if (state.eat(0x5C /* \ */)) {
+    if (
+      this.regexp_eatCharacterEscape(state) ||
+      this.regexp_eatClassSetReservedPunctuator(state)
+    ) {
+      return true
+    }
+    if (state.eat(0x62 /* b */)) {
+      state.lastIntValue = 0x08; /* <BS> */
+      return true
+    }
+    state.pos = start;
+    return false
+  }
+  var ch = state.current();
+  if (ch < 0 || ch === state.lookahead() && isClassSetReservedDoublePunctuatorCharacter(ch)) { return false }
+  if (isClassSetSyntaxCharacter(ch)) { return false }
+  state.advance();
+  state.lastIntValue = ch;
+  return true
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedDoublePunctuator
+function isClassSetReservedDoublePunctuatorCharacter(ch) {
+  return (
+    ch === 0x21 /* ! */ ||
+    ch >= 0x23 /* # */ && ch <= 0x26 /* & */ ||
+    ch >= 0x2A /* * */ && ch <= 0x2C /* , */ ||
+    ch === 0x2E /* . */ ||
+    ch >= 0x3A /* : */ && ch <= 0x40 /* @ */ ||
+    ch === 0x5E /* ^ */ ||
+    ch === 0x60 /* ` */ ||
+    ch === 0x7E /* ~ */
+  )
+}
+
+// https://tc39.es/ecma262/#prod-ClassSetSyntaxCharacter
+function isClassSetSyntaxCharacter(ch) {
+  return (
+    ch === 0x28 /* ( */ ||
+    ch === 0x29 /* ) */ ||
+    ch === 0x2D /* - */ ||
+    ch === 0x2F /* / */ ||
+    ch >= 0x5B /* [ */ && ch <= 0x5D /* ] */ ||
+    ch >= 0x7B /* { */ && ch <= 0x7D /* } */
+  )
+}
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedPunctuator
+pp$1.regexp_eatClassSetReservedPunctuator = function(state) {
+  var ch = state.current();
+  if (isClassSetReservedPunctuator(ch)) {
+    state.lastIntValue = ch;
+    state.advance();
+    return true
+  }
+  return false
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedPunctuator
+function isClassSetReservedPunctuator(ch) {
+  return (
+    ch === 0x21 /* ! */ ||
+    ch === 0x23 /* # */ ||
+    ch === 0x25 /* % */ ||
+    ch === 0x26 /* & */ ||
+    ch === 0x2C /* , */ ||
+    ch === 0x2D /* - */ ||
+    ch >= 0x3A /* : */ && ch <= 0x3E /* > */ ||
+    ch === 0x40 /* @ */ ||
+    ch === 0x60 /* ` */ ||
+    ch === 0x7E /* ~ */
+  )
+}
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ClassControlLetter
+pp$1.regexp_eatClassControlLetter = function(state) {
+  var ch = state.current();
+  if (isDecimalDigit(ch) || ch === 0x5F /* _ */) {
+    state.lastIntValue = ch % 0x20;
+    state.advance();
+    return true
+  }
+  return false
+};
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-HexEscapeSequence
+pp$1.regexp_eatHexEscapeSequence = function(state) {
+  var start = state.pos;
+  if (state.eat(0x78 /* x */)) {
+    if (this.regexp_eatFixedHexDigits(state, 2)) {
+      return true
+    }
+    if (state.switchU) {
+      state.raise("Invalid escape");
+    }
+    state.pos = start;
+  }
+  return false
+};
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-DecimalDigits
+pp$1.regexp_eatDecimalDigits = function(state) {
+  var start = state.pos;
+  var ch = 0;
+  state.lastIntValue = 0;
+  while (isDecimalDigit(ch = state.current())) {
+    state.lastIntValue = 10 * state.lastIntValue + (ch - 0x30 /* 0 */);
+    state.advance();
+  }
+  return state.pos !== start
+};
+function isDecimalDigit(ch) {
+  return ch >= 0x30 /* 0 */ && ch <= 0x39 /* 9 */
+}
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-HexDigits
+pp$1.regexp_eatHexDigits = function(state) {
+  var start = 

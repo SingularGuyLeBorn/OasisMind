@@ -1,0 +1,63 @@
+en-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_DB2 = TMP_DBSYSTEMVALUES_DB2;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_POSTGRESQL in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_POSTGRESQL = TMP_DBSYSTEMVALUES_POSTGRESQL;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_REDSHIFT in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_REDSHIFT = TMP_DBSYSTEMVALUES_REDSHIFT;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_HIVE in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_HIVE = TMP_DBSYSTEMVALUES_HIVE;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_CLOUDSCAPE in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_CLOUDSCAPE = TMP_DBSYSTEMVALUES_CLOUDSCAPE;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_HSQLDB in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_HSQLDB = TMP_DBSYSTEMVALUES_HSQLDB;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_PROGRESS in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_PROGRESS = TMP_DBSYSTEMVALUES_PROGRESS;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_MAXDB in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_MAXDB = TMP_DBSYSTEMVALUES_MAXDB;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_HANADB in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_HANADB = TMP_DBSYSTEMVALUES_HANADB;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_INGRES in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_INGRES = TMP_DBSYSTEMVALUES_INGRES;
+/**
+ * An identifier for the database management system (DBMS) product being used. See below for a list of well-known identifiers.
+ *
+ * @deprecated Use DB_SYSTEM_VALUE_FIRSTSQL in [incubating entry-point]({@link https://github.com/open-telemetry/opentelemetry-js/blob/main/semantic-conventions/README.md#unstable-semconv}).
+ */
+export const DBSYSTEMVALUES_FIRSTSQL = TMP_DBSYSTEMV

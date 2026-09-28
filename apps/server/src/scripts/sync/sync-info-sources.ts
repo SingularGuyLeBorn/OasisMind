@@ -1,0 +1,150 @@
+﻿/**
+ * InfoSource 信息源同步器
+ *
+ * 文件格式：config/sources/{slug}.json
+ */
+
+import { PrismaClient } from "@prisma/client";
+import fs from "fs";
+import { Syncer, SyncRecord } from "./types.js";
+import { getFilesRecursive, filePathToSlug, getFileMtime, readStringArray, readNumber, syncDetailWarn} from "./utils.js";
+
+interface InfoSourceData {
+  name: string;
+  url: string;
+  type: string;
+  description: string;
+  reliability: number;
+  language: string;
+  tags: string;
+  enabled: boolean;
+  fetchInterval: number | null;
+}
+
+function normalizeType(raw: unknown): string {
+  const t = String(raw ?? "general").toLowerCase();
+  const allowed = ["blog", "paper", "news", "official", "community", "general", "rss"];
+  return allowed.includes(t) ? t : "general";
+}
+
+export const infoSourceSyncer: Syncer<InfoSourceData> = {
+  entityName: "InfoSource",
+  contentDirName: "sources",
+  extensions: [".json"],
+
+  async scan(_prisma: PrismaClient, contentDir: string): Promise<SyncRecord<InfoSourceData>[]> {
+    const filePaths = getFilesRecursive(contentDir, [".json"]);
+    const records: SyncRecord<InfoSourceData>[] = [];
+    for (const filePath of filePaths) {
+      const r = await this.scanFile!(filePath, contentDir);
+      if (r) records.push(r);
+    }
+    return records;
+  },
+
+  // A13：单文件解析
+  async scanFile(filePath: string, contentDir: string): Promise<SyncRecord<InfoSourceData> | null> {
+    try {
+      const slug = filePathToSlug(contentDir, filePath);
+      const mtime = getFileMtime(filePath);
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as Record<string, unknown>;
+
+      const name = typeof data.name === "string" ? data.name : slug;
+      const url = typeof data.url === "string" ? data.url : "";
+      if (!url) {
+        console.warn(`  ⚠️ [InfoSource 跳过] ${filePath}: url 为空`);
+        return null;
+      }
+
+      return {
+        slug,
+        mtime,
+        data: {
+          name,
+          url,
+          type: normalizeType(data.type),
+          description: typeof data.description === "string" ? data.description : "",
+          reliability: Math.max(1, Math.min(5, readNumber(data.reliability, 3))),
+          language: typeof data.language === "string" ? data.language : "auto",
+          tags: readStringArray(data.tags).join(","),
+          enabled: data.enabled !== false,
+          fetchInterval: readNumber(data.fetchInterval, 60),
+        },
+      };
+    } catch (e: unknown) {
+      console.error(`  ❌ [InfoSource 解析失败] ${filePath}:`, e instanceof Error ? e.message : e);
+      return null;
+    }
+  },
+
+  async upsert(prisma: PrismaClient, record: SyncRecord<InfoSourceData>): Promise<void> {
+    const { slug, mtime, data } = record;
+
+    await prisma.infoSource.upsert({
+      where: { sourceSlug: slug },
+      update: {
+        name: data.name,
+        url: data.url,
+        type: data.type,
+        description: data.description,
+        reliability: data.reliability,
+        language: data.language,
+        tags: data.tags,
+        enabled: data.enabled,
+        fetchInterval: data.fetchInterval,
+        sourceMtime: mtime,
+      },
+      create: {
+        name: data.name,
+        url: data.url,
+        type: data.type,
+        description: data.description,
+        reliability: data.reliability,
+        language: data.language,
+        tags: data.tags,
+        enabled: data.enabled,
+        fetchInterval: data.fetchInterval,
+        sourceSlug: slug,
+        sourceMtime: mtime,
+      },
+    });
+  },
+
+  // #7：unlink 增量硬删 by sourceSlug
+  async deleteBySlug(prisma: PrismaClient, slug: string): Promise<number> {
+    const r = await prisma.infoSource.deleteMany({ where: { sourceSlug: slug } });
+    return r.count;
+  },
+
+  async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
+    if (activeSlugs.length === 0) {
+      syncDetailWarn(`  ⚠️ [InfoSource] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      return 0;
+    }
+    const allInDb = await prisma.infoSource.findMany({ select: { id: true, sourceSlug: true } });
+    let deleted = 0;
+
+    for (const row of allInDb) {
+      if (row.sourceSlug && !activeSlugs.includes(row.sourceSlug)) {
+        await prisma.infoSource.delete({ where: { id: row.id } });
+        console.log(`  🗑️ [InfoSource 已清理] "${row.sourceSlug}" (本地文件已被删除)`);
+        deleted++;
+      }
+    }
+
+    return deleted;
+  },
+
+  async getExistingMtimes(prisma: PrismaClient): Promise<Map<string, Date>> {
+    const rows = await prisma.infoSource.findMany({
+      select: { sourceSlug: true, sourceMtime: true },
+    });
+    const map = new Map<string, Date>();
+    for (const row of rows) {
+      if (row.sourceSlug && row.sourceMtime) {
+        map.set(row.sourceSlug, row.sourceMtime);
+      }
+    }
+    return map;
+  },
+};

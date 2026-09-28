@@ -1,0 +1,581 @@
+/**
+ * Async Task Queue — Phase 5 单元测试
+ *
+ * 覆盖 async_task_run（纯工具）/ async_task_status 原生工具协议，
+ * 以及 agent.pullAsyncQueue 返回结构。
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { readFileSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { prisma } from "../db.js";
+import { appRouter } from "../router.js";
+import { executeNativeTool } from "../infra/nativeTools.js";
+import { createContextInner } from "../trpc/context.js";
+import {
+  pullAsyncDeliveries,
+  pullConsumedAsyncDeliveries,
+  listRunningAsyncJobs,
+  listQueuedAsyncJobs,
+  listSyncAsyncJobs,
+  retryAsyncJob,
+  enqueueSessionAutoConsume,
+} from "../infra/asyncJobs/index.js";
+import {
+  getAsyncJobOrchestrator,
+  resetAsyncJobOrchestratorForTests,
+} from "../infra/asyncJobOrchestrator.js";
+import { SessionStreamHub, setStreamHub } from "../infra/sessionStreamHub.js";
+import { createTestConfig } from "./helpers/toolTestFixtures.js";
+
+async function cleanupSessionTasks(sessionId: string, parentAgentId: string) {
+  await prisma.task.deleteMany({ where: { sessionId } });
+  await prisma.chatSession.deleteMany({ where: { parentSessionId: sessionId } });
+  await prisma.agent.deleteMany({ where: { parentId: parentAgentId } });
+  await prisma.agent.deleteMany({ where: { id: parentAgentId } });
+}
+
+async function createParentAgent(ctx: Awaited<ReturnType<typeof createContextInner>>) {
+  const result = await ctx.services.agent.create({
+    name: `异步队列父 Agent ${Date.now()}`,
+    model: "deepseek-chat",
+    systemPrompt: "test",
+    tools: [],
+    tier: "manager",
+  });
+  if (!result.success) {
+    throw new Error(`创建父 Agent 失败：${result.error?.message}`);
+  }
+  return (result.data as { id: string }).id;
+}
+
+/** W-D 后 async_task_run 只接纯工具任务：统一用 native:wait 做无害执行体 */
+const WAIT_TOOL_CALL = { tool: "wait", args: { ms: 30 } };
+const SNAPSHOT_TOOLS = ["native:wait", "native:async_task_run", "native:async_task_status"];
+
+describe("async-task-queue 工具协议", () => {
+  beforeEach(() => {
+    resetAsyncJobOrchestratorForTests();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("async_task_run 启动纯工具任务并返回 running 状态", async () => {
+    const ctx = await createContextInner();
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
+    const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    const parentAgentId = await createParentAgent(ctx);
+
+    try {
+      const result = (await executeNativeTool(
+        "async_task_run",
+        { task: "结构分析", label: "结构分析", toolCall: WAIT_TOOL_CALL },
+        {
+          ...toolCtx,
+          sessionId,
+          agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: SNAPSHOT_TOOLS },
+        },
+      )) as { jobId: string; status: string; message: string; sourceType: string };
+
+      expect(result.status).toMatch(/running|queued/);
+      expect(result.jobId).toBeTruthy();
+      expect(result.sourceType).toBe("async_task_tool");
+
+      await vi.waitFor(
+        async () => {
+          const row = await prisma.task.findUnique({ where: { id: result.jobId } });
+          expect(row?.status).toBe("success");
+        },
+        { timeout: 5000, interval: 50 },
+      );
+
+      const deliveries = await pullAsyncDeliveries(sessionId);
+      expect(deliveries).toHaveLength(1);
+      expect(deliveries[0].asyncResult).toContain("waitedMs");
+    } finally {
+      await cleanupSessionTasks(sessionId, parentAgentId);
+    }
+  });
+
+  it("async_task_run 缺 toolCall 返回结构化校验错误（P2-03：前置 required 校验拦截，不再进 handler 抛错）", async () => {
+    const ctx = await createContextInner();
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
+    const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    const parentAgentId = await createParentAgent(ctx);
+
+    try {
+      const result = (await executeNativeTool(
+        "async_task_run",
+        { task: "没有工具调用的任务", label: "旧 llm 用法" },
+        {
+          ...toolCtx,
+          sessionId,
+          agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: [] },
+        },
+      )) as { error?: string; validationError?: boolean; missingParams?: string[] };
+      expect(result.validationError).toBe(true);
+      expect(result.error).toMatch(/toolCall/);
+      expect(result.missingParams).toContain("toolCall");
+    } finally {
+      await cleanupSessionTasks(sessionId, parentAgentId);
+    }
+  });
+
+  it("async_task_wait 已从注册表移除（W-C）", async () => {
+    const ctx = await createContextInner();
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
+    const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    const parentAgentId = await createParentAgent(ctx);
+
+    try {
+      await expect(
+        executeNativeTool(
+          "async_task_wait",
+          { jobId: "whatever" },
+          {
+            ...toolCtx,
+            sessionId,
+            agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: [] },
+          },
+        ),
+      ).rejects.toThrow(/未知原生工具/);
+    } finally {
+      await cleanupSessionTasks(sessionId, parentAgentId);
+    }
+  });
+
+  it("async_task_status 查询单个任务（W-B：终态也不回全文/日志）", async () => {
+    const ctx = await createContextInner();
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
+    const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    const parentAgentId = await createParentAgent(ctx);
+
+    try {
+      const started = (await executeNativeTool(
+        "async_task_run",
+        { task: "慢任务", label: "慢任务", toolCall: { tool: "wait", args: { ms: 200 } } },
+        {
+          ...toolCtx,
+          sessionId,
+          agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: SNAPSHOT_TOOLS },
+        },
+      )) as { jobId: string; status: string };
+
+      const status = (await executeNativeTool(
+        "async_task_status",
+        { jobId: started.jobId },
+        { ...toolCtx, sessionId, agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: [] } },
+      )) as Record<string, unknown>;
+
+      expect(status.jobId).toBe(started.jobId);
+      expect(["running", "queued"]).toContain(status.status as string);
+
+      // 等任务结束后再次查询：W-B 负向断言——返回里不得携带结果全文与日志
+      await vi.waitFor(
+        async () => {
+          const row = await prisma.task.findUnique({ where: { id: started.jobId } });
+          expect(row?.status).toBe("success");
+        },
+        { timeout: 5000, interval: 50 },
+      );
+      // orchestrator finally 清 runningJobs 与 DB success 落库存在极小窗口，轮询至一致（消除既有竞态 flake）
+      let done: Record<string, unknown> | undefined;
+      await vi.waitFor(
+        async () => {
+          done = (await executeNativeTool(
+            "async_task_status",
+            { jobId: started.jobId },
+            { ...toolCtx, sessionId, agentSnapshot: { id: parentAgentId, model: "deepseek-chat", systemPrompt: "test", tools: [] } },
+          )) as Record<string, unknown>;
+          expect(done.status).toBe("completed");
+        },
+        { timeout: 5000, interval: 50 },
+      );
+      expect(done).not.toHaveProperty("asyncResult");
+      expect(done).not.toHaveProperty("logs");
+      expect(done).not.toHaveProperty("error");
+    } finally {
+      await cleanupSessionTasks(sessionId, parentAgentId);
+    }
+  });
+
+  it("pullAsyncQueue 返回 running、queued、deliveries 三类数据", async () => {
+    // v7：纯工具 async_task_run 不占 LLM 全局槽、不会因 maxConcurrent 排队。
+    // running/queued 双态用 spawn_subagent（入池）制造；deliveries 用纯工具跑完投递。
+    process.env.MOCK_LLM = "true";
+    setStreamHub(
+      new SessionStreamHub({ ringSize: 50, persist: false, eventTtlMs: 500, cleanupIntervalMs: 0 }),
+    );
+    const ctx = await createContextInner();
+    const toolCtx = { ...ctx, invokeTrpc: async () => ({ ok: true }), signal: new AbortController().signal };
+    const session = await ctx.services.session.create({ title: "父会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    const parentAgentId = await createParentAgent(ctx);
+    const narrowConfig = createTestConfig(ctx.config.projectRoot, {
+      ...ctx.config,
+      asyncJobs: {
+        maxPerWorkspace: 0,
+        maxQueued: 100,
+        maxConcurrent: 1,
+        maxPerSession: 2,
+        maxLightweightConcurrent: 2,
+        taskTimeoutMs: 60_000,
+        queuedTimeoutMs: 0,
+        maxSubagentsPerSession: 10,
+      },
+    });
+    const spawnCtx = {
+      ...toolCtx,
+      config: narrowConfig,
+      sessionId,
+      agentSnapshot: {
+        id: parentAgentId,
+        model: "deepseek-chat",
+        systemPrompt: "test",
+        tools: ["native:spawn_subagent"],
+        tier: "manager" as const,
+        workspaceId: null,
+        parentId: null,
+      },
+    };
+
+    let releaseBlocker: () => void = () => {};
+    try {
+      // 占满唯一全局槽，保证 spawn 必 queued（纯工具不占槽，见下）
+      const orch = getAsyncJobOrchestrator(narrowConfig);
+      const gate = new Promise<void>((resolve) => {
+        releaseBlocker = resolve;
+      });
+      orch.enqueue({ jobId: "pull-queue-blocker", sessionId: "other-session", execute: () => gate });
+
+      const spawned = (await executeNativeTool(
+        "spawn_subagent",
+        { task: "队列 spawn 排队", name: "队列Spawn子", waitForResult: false },
+        spawnCtx,
+      )) as { jobId?: string; status?: string; success?: boolean };
+      expect(spawned.success).toBe(true);
+      expect(spawned.status).toBe("queued");
+      expect(spawned.jobId).toBeTruthy();
+
+      const queued = await listQueuedAsyncJobs(sessionId, narrowConfig);
+      expect(queued.length).toBe(1);
+      expect(queued[0].jobId).toBe(spawned.jobId);
+
+      // 纯工具不占 LLM 槽：可与池满并存，作为 running + 最终 deliveries
+      const toolJob = (await executeNativeTool(
+        "async_task_run",
+        { task: "投递探针", label: "投递探针", toolCall: { tool: "wait", args: { ms: 200 } } },
+        {
+          ...toolCtx,
+          config: narrowConfig,
+          sessionId,
+          agentSnapshot: {
+            id: parentAgentId,
+            model: "deepseek-chat",
+            systemPrompt: "test",
+            tools: SNAPSHOT_TOOLS,
+          },
+        },
+      )) as { jobId: string; status?: string };
+      expect(toolJob.jobId).toBeTruthy();
+
+      await vi.waitFor(
+        async () => {
+          const running = await listRunningAsyncJobs(sessionId);
+          expect(running.some((j) => j.jobId === toolJob.jobId)).toBe(true);
+          const stillQueued = await listQueuedAsyncJobs(sessionId, narrowConfig);
+          expect(stillQueued.some((j) => j.jobId === spawned.jobId)).toBe(true);
+        },
+        { timeout: 2000, interval: 30 },
+      );
+
+      await vi.waitFor(
+        async () => {
+          const deliveries = await pullAsyncDeliveries(sessionId);
+          expect(deliveries.length).toBeGreaterThanOrEqual(1);
+        },
+        { timeout: 8000, interval: 50 },
+      );
+    } finally {
+      releaseBlocker();
+      setStreamHub(null);
+      delete process.env.MOCK_LLM;
+      await cleanupSessionTasks(sessionId, parentAgentId);
+    }
+  });
+});
+
+/** W-A 同步任务通道：deliverToQueue=false 的 Task 不进异步队列，单独走 listSyncAsyncJobs 展示 */
+describe("W-A 同步任务通道", () => {
+  beforeEach(() => {
+    resetAsyncJobOrchestratorForTests();
+  });
+
+  async function seedAsyncRow(opts: {
+    sessionId: string;
+    taskLabel: string;
+    status: string;
+    deliverToQueue: boolean;
+    delivered?: boolean;
+    asyncResult?: string;
+  }) {
+    return prisma.task.create({
+      data: {
+        name: `[async] ${opts.taskLabel}`,
+        type: "async_agent",
+        status: opts.status,
+        sessionId: opts.sessionId,
+        delivered: opts.delivered ?? false,
+        deliveredAt: opts.delivered ? new Date() : null,
+        input: {
+          kind: "async_agent",
+          sessionId: opts.sessionId,
+          task: opts.taskLabel,
+          taskLabel: opts.taskLabel,
+          agentSnapshot: { id: "test-agent", model: "deepseek-chat", systemPrompt: "test", tools: [] },
+          deliverToQueue: opts.deliverToQueue,
+        },
+        ...(opts.asyncResult !== undefined ? { output: { asyncResult: opts.asyncResult } } : {}),
+      },
+    });
+  }
+
+  it("T1: deliverToQueue=false + success + delivered=false 的 Task 不进 pullAsyncDeliveries", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({ title: "T1 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      // 窗口复现：sync 任务完成落库到 tool return 标 delivered 之间，delivered 仍为 false
+      const syncTask = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T1 同步任务",
+        status: "success",
+        deliverToQueue: false,
+        asyncResult: "sync result",
+      });
+      const asyncTask = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T1 异步对照",
+        status: "success",
+        deliverToQueue: true,
+        asyncResult: "async result",
+      });
+
+      const jobIds = (await pullAsyncDeliveries(sessionId)).map((d) => d.jobId);
+      expect(jobIds).not.toContain(syncTask.id);
+      expect(jobIds).toContain(asyncTask.id);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  it("T2: deliverToQueue=false + delivered=true 不进 pullConsumedAsyncDeliveries；deliverToQueue=true 对照组含", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({ title: "T2 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      // sync 任务 tool return 时被标 delivered=true，不属于「已消费」
+      const syncTask = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T2 同步任务",
+        status: "success",
+        deliverToQueue: false,
+        delivered: true,
+        asyncResult: "sync result",
+      });
+      const consumedAsync = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T2 已消费对照",
+        status: "success",
+        deliverToQueue: true,
+        delivered: true,
+        asyncResult: "consumed result",
+      });
+
+      const jobIds = (await pullConsumedAsyncDeliveries(sessionId)).map((d) => d.jobId);
+      expect(jobIds).not.toContain(syncTask.id);
+      expect(jobIds).toContain(consumedAsync.id);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  it("T3: listSyncAsyncJobs 返回 sync 任务（running + success 各一），异步任务不在其中", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({ title: "T3 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      const runningSync = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T3 同步运行中",
+        status: "running",
+        deliverToQueue: false,
+      });
+      const doneSync = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T3 同步完成",
+        status: "success",
+        deliverToQueue: false,
+        asyncResult: "done result",
+      });
+      const asyncTask = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T3 异步对照",
+        status: "success",
+        deliverToQueue: true,
+        asyncResult: "async result",
+      });
+
+      const items = await listSyncAsyncJobs(sessionId, ctx.config);
+      const byId = new Map(items.map((i) => [i.jobId, i]));
+      expect(byId.get(runningSync.id)?.status).toBe("running");
+      expect(byId.get(doneSync.id)?.status).toBe("completed");
+      expect(byId.get(doneSync.id)?.asyncResult).toBe("done result");
+      expect(byId.has(asyncTask.id)).toBe(false);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+  it("P4 防线：子 Agent 提示词不再引导传已删除的 mode=tool 参数", () => {
+    // W-D 已删除 async_task_run 的 mode 入参（schema 无此字段、handler 不读 args.mode）；
+    // 提示词若仍教 LLM 传 mode=tool 属残留漏网（终审 P4），此处防线防回归。
+    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobs/execute.ts"), "utf-8");
+    expect(src).not.toContain("async_task_run(mode=tool)");
+  });
+
+  it("P5 防线：startAsyncAgentTask 不再保留无调用方的 guard 死参数", () => {
+    // W-D 删除唯一传参方后 options.guard 恒为 undefined（终审 P5）。
+    // 零兼容纪律：死参数不留（dispatch 层 guard 机制本身保留，spawn/trigger/heartbeat 直传）。
+    const src = readFileSync(path.resolve(__dirname, "../infra/asyncJobs/execute.ts"), "utf-8");
+    expect(src).not.toMatch(/guard:\s*options\.guard/);
+    expect(src).not.toMatch(/guard\?:\s*SwarmTaskSpec\["guard"\]/);
+  });
+
+  it("T5: running/queued sync 任务不进 listRunningAsyncJobs/listQueuedAsyncJobs（P3 双分组隔离）", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({ title: "T5 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      const runningSync = await seedAsyncRow({ sessionId, taskLabel: "T5 同步运行中", status: "running", deliverToQueue: false });
+      const queuedSync = await seedAsyncRow({ sessionId, taskLabel: "T5 同步排队", status: "queued", deliverToQueue: false });
+      const runningAsync = await seedAsyncRow({ sessionId, taskLabel: "T5 异步运行对照", status: "running", deliverToQueue: true });
+      const queuedAsync = await seedAsyncRow({ sessionId, taskLabel: "T5 异步排队对照", status: "queued", deliverToQueue: true });
+
+      // 负向断言（旧实现即红）：sync 任务 running/queued 期间同时出现在异步列表与同步列表，双分组重复展示
+      const runningIds = (await listRunningAsyncJobs(sessionId)).map((j) => j.jobId);
+      expect(runningIds).toContain(runningAsync.id);
+      expect(runningIds).not.toContain(runningSync.id);
+
+      const queuedIds = (await listQueuedAsyncJobs(sessionId, ctx.config)).map((j) => j.jobId);
+      expect(queuedIds).toContain(queuedAsync.id);
+      expect(queuedIds).not.toContain(queuedSync.id);
+
+      // sync 专属通道不受影响：两条 sync 均在「同步任务」列表，异步对照不在
+      const syncIds = (await listSyncAsyncJobs(sessionId, ctx.config)).map((j) => j.jobId);
+      expect(syncIds).toContain(runningSync.id);
+      expect(syncIds).toContain(queuedSync.id);
+      expect(syncIds).not.toContain(runningAsync.id);
+      expect(syncIds).not.toContain(queuedAsync.id);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  it("T6: retryAsyncJob 保留 sourceType/deliverToQueue/toolCall（S8：sync 重试不漂移进异步队列）", async () => {
+    const ctx = await createContextInner();
+    const session = await ctx.services.session.create({ title: "T6 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      // 失败的 sync 纯工具任务（waitForResult=true → deliverToQueue=false，结果应走 tool return）
+      const failed = await prisma.task.create({
+        data: {
+          name: "[async] T6 失败同步任务",
+          type: "async_agent",
+          status: "failed",
+          sessionId,
+          input: {
+            kind: "async_agent",
+            sessionId,
+            task: "T6 同步任务",
+            taskLabel: "T6 失败同步任务",
+            agentSnapshot: { id: "test-agent", model: "deepseek-chat", systemPrompt: "test", tools: ["native:wait"] },
+            deliverToQueue: false,
+            sourceType: "async_task_tool",
+            toolCall: WAIT_TOOL_CALL,
+          },
+        },
+      });
+
+      const retried = await retryAsyncJob(failed.id, ctx.config, ctx.services);
+      await vi.waitFor(
+        async () => {
+          const row = await prisma.task.findUnique({ where: { id: retried.jobId } });
+          expect(row?.status).toBe("success");
+        },
+        { timeout: 5000, interval: 50 },
+      );
+
+      // 负向断言（旧实现即红）：新 Task input 丢 sourceType/deliverToQueue/toolCall → 语义漂移
+      const newRow = await prisma.task.findUnique({ where: { id: retried.jobId } });
+      const newInput = newRow!.input as Record<string, unknown>;
+      expect(newInput.deliverToQueue).toBe(false);
+      expect(newInput.sourceType).toBe("async_task_tool");
+      expect(newInput.toolCall).toEqual(WAIT_TOOL_CALL);
+      // reentrancy 基座已撤销：input 不再写 retryCount
+      expect(newInput.retryCount).toBeUndefined();
+
+      // 行为断言：重试结果不进异步队列（sync 语义保持），出现在「同步任务」列表
+      const deliveryIds = (await pullAsyncDeliveries(sessionId)).map((d) => d.jobId);
+      expect(deliveryIds).not.toContain(retried.jobId);
+      const syncIds = (await listSyncAsyncJobs(sessionId, ctx.config)).map((j) => j.jobId);
+      expect(syncIds).toContain(retried.jobId);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  it("T4: agent.pullAsyncQueue caller 返回含 syncTasks 数组", async () => {
+    const ctx = await createContextInner();
+    const caller = appRouter.createCaller(ctx);
+    const session = await ctx.services.session.create({ title: "T4 会话", model: "deepseek-chat" });
+    const sessionId = (session.data as { id: string }).id;
+    try {
+      const syncTask = await seedAsyncRow({
+        sessionId,
+        taskLabel: "T4 同步完成",
+        status: "success",
+        deliverToQueue: false,
+        asyncResult: "sync result",
+      });
+
+      const res = await caller.agent.pullAsyncQueue({ sessionId });
+      expect(Array.isArray(res.syncTasks)).toBe(true);
+      expect(res.syncTasks.map((t: { jobId: string }) => t.jobId)).toContain(syncTask.id);
+    } finally {
+      await prisma.task.deleteMany({ where: { sessionId } });
+    }
+  });
+
+  it("会话自动消费链：前序 work 抛错不阻塞后续 work", async () => {
+    const results: string[] = [];
+    const p1 = enqueueSessionAutoConsume("robust-chain", async () => {
+      throw new Error("boom");
+    });
+    const p2 = enqueueSessionAutoConsume("robust-chain", async () => {
+      results.push("ok");
+    });
+    await p1.catch(() => {});
+    await p2;
+    expect(results).toEqual(["ok"]);
+  });
+});

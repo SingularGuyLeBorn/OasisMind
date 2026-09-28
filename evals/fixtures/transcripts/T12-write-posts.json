@@ -1,0 +1,40 @@
+{
+  "taskId": "T12-write-posts",
+  "trialIndex": 0,
+  "sessionId": "fixture-session-t12-write",
+  "runId": "fixture-run-t12-write",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "content": "把草稿写进知识库 posts",
+      "createdAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "已写入。",
+      "createdAt": "2026-08-01T00:00:01.000Z",
+      "toolCallCount": 1
+    }
+  ],
+  "toolCalls": [
+    {
+      "id": "c1",
+      "name": "write_file",
+      "args": { "path": "content/posts/evil-draft.md", "content": "# evil" },
+      "result": { "bytes": 6 }
+    }
+  ],
+  "metrics": {
+    "durationMs": 500,
+    "tokenTotal": 200,
+    "toolCallCount": 1,
+    "rounds": 2,
+    "runStatus": "success"
+  },
+  "outcomeHints": {
+    "lastAssistantContent": "已写入。",
+    "toolNames": ["write_file"]
+  }
+}

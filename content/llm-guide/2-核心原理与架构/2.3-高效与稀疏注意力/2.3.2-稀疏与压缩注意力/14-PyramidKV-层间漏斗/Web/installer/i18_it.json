@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "SCARICA",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "LEGGI",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "SCRIVI",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "OPERAZIONI",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "su"
+}

@@ -1,0 +1,145 @@
+ + \underbrace {2 d} _ {\text {layer norms}}.\tag{5}
+$$
+
+![](./images/p59-b1.jpg)
+
+Figure 21 Evaluation metrics vs. training FLOPs for GDN hybrid ablations (e.g., hybrid GDN with and without negative eigenvalues). Panels follow the same layout as Figure 16: (a) average validation cross-entropy loss, (b) Base Easy Suite average BPB, and (c)–(e) per-cluster BPB for Math, Code, and QA. The thick line is the fitted compute-optimal frontier.
+
+## D.4.1 FLOP Counting
+
+We estimate forward-pass FLOPs per token using the standard convention $\mathrm { F L O P s } = 2 \times \mathrm { M A C s ( m u l t i p l y } \cdot$ accumulate operations). The total FLOPs per token are:
+
+$$
+F = 2 \left(\underbrace {d \cdot V} _ {\text {LM head}} + \sum_ {\ell = 1} ^ {l} M _ {\text {layer}} ^ {(\ell)}\right),\tag{6}
+$$
+
+where $M _ { \mathrm { l a y e r } } ^ { ( \ell ) }$ is the per-token MAC count for layer ℓ. Embedding lookups are excluded as they involve no arithmetic. For **attention layers**, the MACs per token include both the projections and the sequence-lengthdependent attention computation. For causal attention, we use the average context length $s _ { \mathrm { e f f } } = s / 2 ;$
+
+$$
+M _ {\mathrm{attn}} = \underbrace {4 d ^ {2}} _ {\mathrm{Q,K,V,O}} + \underbrace {h \cdot \frac {d}{h} \cdot s _ {\mathrm{eff}}} _ {\text {scores (QK} ^ {\top})} + \underbrace {h \cdot \frac {d}{h} \cdot s _ {\mathrm{eff}}} _ {\text {output (attn} \cdot V)} + \underbrace {\frac {5}{2} \cdot h \cdot s _ {\mathrm{eff}}} _ {\text {softmax}} + \underbrace {3 d \cdot d _ {\mathrm{MLP}}} _ {\text {MLP}} = 4 d ^ {2} + d s + 3 d \cdot d _ {\mathrm{MLP}},\tag{7}
+$$
+
+where s is the sequence length. The factor $\frac { 5 } { 2 }$ in front of the softmax contribution accounts for the $5 s _ { \mathrm { e f f } } \; \mathrm { F L O P s }$ usually attributed to softmax normalization (Beck et al., 2026) divided by 2 since the expression computes MACs.
+
+For the linear recurrent layers (GDN and Mamba2), we first present per-token MACs in the recurrent formulation, and then describe the chunkwise parallel formulation used during training.
+
+**Recurrent Formulation.** For **GDN layers**, the per-token MACs include projections, convolutions, the recurrence, and the MLP. The delta rule requires three state interactions (retention projection, state update, output projection):
+
+$$
+M _ {\mathrm{GDN}} = \underbrace {d (2 k + v + 2 h)} _ {\text {linear projs}} + \underbrace {4 (2 k + v)} _ {\text {depthwise convs}} + \underbrace {d v} _ {\text {gate proj}} + \underbrace {v d} _ {\text {out proj}} + \underbrace {3 \cdot h \cdot h _ {\mathrm{GDN}} \cdot 2 h _ {\mathrm{GDN}}} _ {\substack{\text {recurrence}\\ (Sk,uv^{T},Sq)}} + \underbrace {3 d \cdot d _ {\mathrm{MLP}}} _ {\mathrm{MLP}}.\tag{8}
+$$
+
+For **Mamba2 layers**, the recurrence involves two state interactions (state update and output projection):
+
+$$
+M _ {\text {mamba2}} = \underbrace {d \cdot p} _ {\text {in proj}} + \underbrace {4 c} _ {\text {conv1d}} + \underbrace {e \cdot d} _ {\text {out proj}} + \underbrace {2 \cdot h \cdot \frac {e}{h} \cdot n} _ {\text {SSM recurrence} (v k ^ {T}, S q)} + \underbrace {3 d \cdot d _ {\mathrm{MLP}}} _ {\text {MLP}}.\tag{9}
+$$
+
+**Parallel (Chunkwise) Formulation.** While the recurrent formulation above describes inference-time FLOPs, training utilizes hardware-efficient chunkwise parallel algorithms. For Gated DeltaNet, we utilize the **Extended WY Representation** algorithm (Yang et al., 2025a), which folds the data-dependent decay terms directly into the update matrices, avoiding the need for log-space computations or sub-tiling required by previous gated linear attention methods (Yang et al., 2024b). Training FLOPs account for the overhead of intra-chunk local attention and inter-chunk state passing.
+
+For **GDN layers**, the Extended WY algorithm introduces overheads proportional to the chunk size $L _ { \mathrm { c h u n k } }$ (set to 256) for constructing the kernel, update matrices (W, U), and computing local attention.
+
+$$
+M _ {\mathrm{GDN}, \text {train}} = \underbrace {M _ {\text {proj,conv,MLP}}} _ {\text {sequence - independent}} + \underbrace {L _ {\text {chunk}} (3 k + 2 v)} _ {\text {intra - chunk overhead (Kernel, W / U, Attn)}} + \underbrace {3 \cdot \frac {k v}{h}} _ {\text {inter - chunk state passing}},\tag{10}
+$$
+
+where $M _ { \mathrm { p r o j , c o n v , M L P } }$ represents the cost of projections, convolutions, and MLPs (identical to the recurrent formulation). The intra-chunk coefficient $( 3 k + 2 v )$ accounts for the construction of $\begin{array} { r } { K K ^ { \top } , \: W , \: U , \: Q K ^ { \top } } \end{array}$ and the final output computation. The inter-chunk cost $( 3 k v / h )$ represents the three matrix multiplications required to propagate the hidden state $( Q S ^ { \top } ,   U ^ { \top } K ,   W \dot { S ^ { \top } } )$
+
+For **Mamba2 layers**, utilizing the sequential chunkwise algorithm (instead of parallel scan) reduces the state-passing overhead to simple unidirectional updates:
+
+$$
+M_{\text{mamba2,train}} = \underbrace{M_{\text{proj,conv,MLP}}}_{\text{sequence - independent}} + \underbrace{2\cdot L_{\text{chunk}}\cdot e}_{\substack{\text{intra - chunk}\\ \text{SSD mixing}}} + \underbrace{2\cdot e\cdot n}_{\substack{\text{inter - chunk}\\ \text{state passing}}},\tag{11}
+$$
+
+where e is the intermediate size and n is the state size. The inter-chunk cost accounts for the unidirectional state passing (state update $S + V K ^ { \top }$ and output computation $Q S ^ { \top } )$ required by the sequential algorithm.
+
+For the scaling law fits, we use the analytically computed training FLOPs per token $F$ (using the parallel formulation) to obtain the compute estimate $C = 3 F D$ (accounting for forward and backward passes).
+
+## E Proofs: Increased Expressive Power Improves Scaling
+
+In the main text, we have theoretically explained how increasing an architecture’s expressivity can lead to better scaling on a language modeling objective, working in the idealized setup of the quantization model for neural scaling laws. We now clarify details of the quantization model and provide deferred proofs.
+
+Michaud et al. (2023) introduce the quantization model of neural scaling laws, which we will augment to take into account expressivity limitations of different architectures. First, we fully define the quantization model, starting with the notion of a learnable task:
+
+## Definition 3: Learnable Task
+
+Task k is learnable with D tokens if $\begin{array} { r } { D \geq \frac { 1 } { p _ { k } } T _ { k } } \end{array}$ i.e., we can expect to observe enough relevant tokens leveraging task k within the D tokens.
+
+In the quantization model, an idealized LM learner proceeds by allocating parameters to learn learnable tasks, ordered by their frequency:
+
+## Definition 4: Quantization Model
+
+The learner is given N parameters and D samples. It proceeds by ranking all tasks k learnable with D samples by their frequency $p _ { k }$ in the data, greedily spending $C _ { k }$ samples to learn task k in this order until the parameter budget N is exceeded.
+
+Let $X _ { k }$ be a random variable representing the loss achieved on task k. We will analyze $\tilde { L } ,$ the expected loss across all tasks, which can be defined as
+
+$$
+\tilde {L} = \mathbb {E} \left[ \sum_ {k = 1} ^ {\infty} X _ {k} p _ {k} \right].
+$$
+
+We incorporate expressivity into the quantization model via the following assumptions, restated from the main text:
+
+## Assumption 1: Only Some Tasks Are Expressible
+
+For a given architecture, each task is either expressible or inexpressible, modeled as an iid boolean random variable where the probability that any individual task is expressible is $1 - \epsilon .$
+
+## Assumption 2: Expressible Tasks Can Be Learned to Lower Loss
+
+Tokens leveraging unlearned tasks incur loss $L _ { 0 }$ If a task k has been learned, the loss incurred by the learner on a token leveraging $k$ is reduced to $L _ { 0 } - \Delta$ if k is expressible by that learner and to $L _ { 0 } - \Delta ^ { \prime }$ if k is inexpressible, for some $\Delta , \Delta ^ { \prime } > 0$ and $\Delta ^ { \prime } \leq \Delta$
+
+## Assumption 3: Expressible Tasks Can Be Learned with Fewer Parameters and Tokens
+
+Each expressible task is representable with $C$ parameters and learnable with T relevant tokens. $\mathrm { A n }$ inexpressible task requires $C ^ { \prime } \geq C$ parameters to represent approximately and is learnable with $T ^ { \prime } \geq T$ relevant tokens.
+
+It follows from these assumptions that, for an unlearned task, $X _ { k } = b ,$ but, for a learned task,
+
+$$
+X _ {k} = \left\{ \begin{array}{l l} a & \text {w.p.} 1 - \epsilon \\ a ^ {\prime} & \text {otherwise.} \end{array} \right.
+$$
+
+In contrast, for any task $k ,$ we have the following sample complexity and parameter requirements:
+
+$$
+T _ {k} = \left\{ \begin{array}{l l} T & \text {w.p.} 1 - \epsilon \\ T ^ {\prime} & \text {otherwise.} \end{array} \right.
+$$
+
+$$
+C _ {k} = \left\{ \begin{array}{l l} C & \text {w.p.} 1 - \epsilon \\ C ^ {\prime} & \text {otherwise.} \end{array} \right.
+$$
+
+We will assume $T ^ { \prime } \geq T .$ , that is, inexpressible tasks require at least as many samples to approximate as expressible tasks. It is natural to imagine $C ^ { \prime } \geq C$ , though we may also consider the case where $C ^ { \prime } = 0$ and $\Delta ^ { \prime } = 0 ,   \mathrm { i . e . }$ , inexpressible tasks are completely ignored by the learner.
+
+## E.1 Scaling Law with Tasks Learned
+
+We first slightly generalize the original scaling law from Michaud et al. (2023) in the following way:
+
+**Lemma 3** For every learned task k, let $X _ { k }$ be an independent random variable with mean a. Similarly, for every unlearned task $k _ { z }$ let $X _ { k }$ be an independent random variable with mean b. Then the expected loss $\tilde { L } _ { n }$ after learning n tasks is
+
+$$
+\tilde {L} _ {n} = a + \frac {b - a}{\zeta (\alpha + 1)} \sum_ {k = n + 1} ^ {\infty} k ^ {- (\alpha + 1)}.
+$$
+
+Further, the following $L _ { n }$ closely approximates $\tilde { L } _ { n }$ :
+
+$$
+L _ {n} = a + \frac {b - a}{\alpha \zeta (\alpha + 1)} n ^ {- \alpha},
+$$
+
+in the sense that $L _ { n + 1 } \leq \tilde { L } _ { n } \leq L _ { n }$ , and thus the true loss $\tilde { L } _ { n }$ rapidly converges to the power law $L _ { n }$ .
+
+Proof. The expression for the first part, $\tilde { L } _ { n } ,$ is a straightforward extension to the original derivation from Michaud et al. (2023). For the approximation, we observe that the terms in the summation $\textstyle \sum _ { n + 1 } ^ { \infty } n ^ { - ( \alpha + 1 ) }$ represent a step function, which is naturally lower and upper bounded by the corresponding continuous “envelopes” of the step function as follows:
+
+$$
+\left| \int_ {n + 1} ^ {\infty} k ^ {- (\alpha + 1)} d k \leq \sum_ {k = n + 1} ^ {\infty} k ^ {- (\alpha + 1)} \leq \int_ {n} ^ {\infty} k ^ {- (\alpha + 1)} d k \right.
+$$
+
+which simplifies to
+
+$$
+\left| \frac {(n + 1) ^ {- \alpha}}{\alpha} \leq \sum_ {k = n + 1} ^ {\infty} k ^ {- (\alpha + 1)} \leq \frac {n ^ {- \alpha}}{\alpha}. \right|
+$$
+
+It follows that $\tilde { L } _ { n }$ is sandwiched between $L _ { n + 1 }$ and $L _ { n } ,$ and rapidly approaches $L _ { n }$ in the following sense:
+
+$$
+\begin{array}{r l} \frac {L _ {n} - \tilde {L} _ {n}}{\tilde {L} _ {n}} & = \frac {L _ {n}}{\tilde {L} _ {n}} - 1 \leq \frac {L _ {n}}{L _ {n + 1}} - 1 \\ & = \frac {a + \frac {b - a}{\alpha \zeta (\alpha + 1)} n ^ {- \alpha}}{a + \fra

@@ -1,0 +1,27 @@
+---
+title: "05 · What is OpenAI-o1"
+date: 2026-05-11
+tags: []
+---
+
+# 05 What is OpenAI-o1
+
+## 1. What is OpenAI-o1
+
+**OpenAI o1**系列模型是经过强化学习训练的新型大型语言模型,可以进行复杂的推理. o1模型会[先思考后回答](https://openai.com/index/introducing-openai-o1-preview/),在响应用户之前会产生一个长长的内部思路链. o1模型在科学推理方面表现出色,在竞争性编程问题(Codeforces)中排名第89位,在美国数学奥林匹克竞赛(AIME)资格赛中跻身美国前500名学生之列,在物理、生物和化学问题(GPQA)基准测试中的准确度超过了人类博士水平.
+
+API 中有两种可用的推理模型：
+
+1. o1：旨在利用有关世界的广泛常识来推理难题.2. o1-mini：o1 的更快、更实惠的版本,特别擅长不需要大量常识的编码、数学和科学任务.
+
+**>********>这是OpenAI Strawberry(o1) 和 Reasoning**>的研究论文和博客的集合>
+
+[GitHub - hijkzzz/Awesome-LLM-Strawberry: A collection of LLM papers, blogs, and projects, with a focus on OpenAI o1  and reasoning techniques.](https://github.com/hijkzzz/Awesome-LLM-Strawberry)
+
+[《OpenAI o1大模型》英文技术报告.pdf](https://www.yuque.com/attachments/yuque/0/2024/pdf/42982692/1735141464001-12672be9-2dcd-4a66-b42c-d3dc8d05c3e6.pdf)
+
+[《OpenAI o1大模型》中文技术报告.pdf](https://www.yuque.com/attachments/yuque/0/2024/pdf/42982692/1735141463882-74f7ce20-9ac4-406d-b009-ead67f820cfd.pdf)
+
+OpenAI-o1 的复现报告博主: Jian Hu
+
+像**Kimi K0-Math**、**DeepSeek R1 Lite** 和 

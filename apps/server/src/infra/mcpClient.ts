@@ -1,0 +1,408 @@
+/**
+ * MCP Client — 连接 config/mcp 配置的 MCP Server，桥接工具到 Agent
+ * 含：结果截断 · 断线重连 · 单次重试 · W12 断路器熔断
+ */
+
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { ServiceContainer } from "./serviceContainer.js";
+import type { McpServerEntity } from "./entityServices/mcpService.js";
+import { executeMockMcpTool, getMockMcpToolSchemas } from "./mockMcpRegistry.js";
+import { CircuitBreaker } from "./circuitBreaker.js";
+import { mcpToolName, truncateMcpResult } from "./mcpUtils.js";
+import { getEventBus, type EntityEventPayload } from "./eventBus.js";
+import { getAppConfig } from "./config.js";
+import {
+  agentHasHostAccess,
+  assertHostSessionAllowed,
+  isDesktopMcpServer,
+  isDesktopMcpToolAllowed,
+  isHostAccessEnabled,
+  listDesktopMcpAllowedTools,
+} from "./hostAccess.js";
+
+interface McpToolMeta {
+  serverName: string;
+  toolName: string;
+}
+
+const MCP_CONNECT_TIMEOUT_MS = 12_000;
+/** 桌面 MCP 首次 uvx 拉 Python/包可能远超 12s；失败不永久缓存空 schema。 */
+const MCP_DESKTOP_CONNECT_TIMEOUT_MS = 90_000;
+const MCP_CALL_TIMEOUT_MS = 60_000;
+const MCP_SCHEMA_FAIL_RETRY_MS = 30_000;
+
+type McpFnSchema = {
+  type: "function";
+  function: { name: string; description: string; parameters: Record<string, unknown> };
+};
+
+const clientCache = new Map<string, Promise<Client>>();
+const toolRegistry = new Map<string, McpToolMeta>();
+/** 按 server 成功缓存；失败记 until，到期重试（避免一次 uvx 超时把工具永久藏起来）。 */
+const serverSchemaOk = new Map<string, McpFnSchema[]>();
+const serverSchemaFailUntil = new Map<string, number>();
+
+/** W12：每个 MCP server 一个断路器实例（模块级；进程重启自然重置） */
+const circuitBreakers = new Map<string, CircuitBreaker>();
+
+function mcpConnectTimeoutMs(serverName: string): number {
+  try {
+    if (isDesktopMcpServer(serverName, getAppConfig())) return MCP_DESKTOP_CONNECT_TIMEOUT_MS;
+  } catch {
+    /* 测试/启动早期无完整 config */
+  }
+  return MCP_CONNECT_TIMEOUT_MS;
+}
+
+function getMcpCircuitBreaker(serverName: string): CircuitBreaker {
+  let breaker = circuitBreakers.get(serverName);
+  if (!breaker) {
+    breaker = new CircuitBreaker(); // 默认 failureThreshold=5 / openDurationMs=60s
+    circuitBreakers.set(serverName, breaker);
+  }
+  return breaker;
+}
+
+/** 测试隔离：清空全部 MCP 断路器实例 */
+export function __resetMcpCircuitBreakersForTests(): void {
+  circuitBreakers.clear();
+}
+
+/** 测试/观测用：读取某 MCP server 的断路器实例（未创建过则为 undefined） */
+export function __getMcpCircuitBreakerForTests(serverName: string): CircuitBreaker | undefined {
+  return circuitBreakers.get(serverName);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  // 修复：原实现 setTimeout 在 promise 正常完成后未清除，timer 持有 reject 闭包
+  // 12 秒不被 GC。改为 .finally 清除 timer。
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} 连接超时（${ms}ms）`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** 按 mcp__{server}__{tool} 拆分，不做 _→- 猜测（避免 a_b / a-b 误路由）。 */
+export function parseMcpToolNameParts(externalName: string): McpToolMeta | null {
+  if (!externalName.startsWith("mcp__")) return null;
+  const rest = externalName.slice(5);
+  const idx = rest.lastIndexOf("__");
+  if (idx <= 0) return null;
+  const serverName = rest.slice(0, idx);
+  const toolName = rest.slice(idx + 2);
+  if (!serverName || !toolName) return null;
+  return { serverName, toolName };
+}
+
+/** 分类用：注册表优先，miss 时只做结构拆分（禁止 dash 猜测）。 */
+export function parseMcpToolName(externalName: string): McpToolMeta | null {
+  if (!externalName.startsWith("mcp__")) return null;
+  return toolRegistry.get(externalName) ?? parseMcpToolNameParts(externalName);
+}
+
+/** 执行路由：注册表 miss 即拒绝，禁止在 schema 未构建时猜测 server。 */
+export function parseRegisteredMcpToolName(externalName: string): McpToolMeta | null {
+  if (!externalName.startsWith("mcp__")) return null;
+  return toolRegistry.get(externalName) ?? null;
+}
+
+/** 同 key 并发共用一个 Promise；失败摘除以免脏缓存。 */
+export function getOrCreateInflight<T>(
+  cache: Map<string, Promise<T>>,
+  key: string,
+  factory: () => Promise<T>,
+): Promise<T> {
+  const existing = cache.get(key);
+  if (existing) return existing;
+  const inflight = factory().catch((err) => {
+    if (cache.get(key) === inflight) cache.delete(key);
+    throw err;
+  });
+  cache.set(key, inflight);
+  return inflight;
+}
+
+async function findMcpServer(services: ServiceContainer, name: string): Promise<McpServerEntity> {
+  const list = await services.mcp.list({ page: 1, pageSize: 50, keyword: name });
+  const exact = list.items.find((s) => s.name === name);
+  if (exact) return exact;
+  throw new Error(`MCP Server "${name}" 不存在。请在 config/mcp/ 添加配置后 db:sync。`);
+}
+
+function evictClient(serverName: string): void {
+  const pending = clientCache.get(serverName);
+  clientCache.delete(serverName);
+  if (pending) {
+    pending
+      .then((client) =>
+        client.close().catch((err) => {
+          console.warn("[mcpClient.ts] best-effort failed:", err instanceof Error ? err.message : err);
+        }),
+      )
+      .catch(() => undefined);
+  }
+}
+
+export function invalidateMcpCaches(serverName?: string): void {
+  if (serverName) {
+    evictClient(serverName);
+    for (const [key, meta] of toolRegistry) {
+      if (meta.serverName === serverName) toolRegistry.delete(key);
+    }
+    serverSchemaOk.delete(serverName);
+    serverSchemaFailUntil.delete(serverName);
+  } else {
+    for (const [name] of clientCache) evictClient(name);
+    toolRegistry.clear();
+    serverSchemaOk.clear();
+    serverSchemaFailUntil.clear();
+  }
+}
+
+void (() => {
+  const bus = getEventBus();
+  const handler = (payload: EntityEventPayload<{ name?: string }>) => {
+    const name = payload.data?.name;
+    invalidateMcpCaches(typeof name === "string" && name ? name : undefined);
+  };
+  for (const ev of ["mcp.created", "mcp.updated", "mcp.deleted"] as const) {
+    bus.on(ev, handler);
+  }
+})();
+
+/** 按 transport 选择客户端传输（供测试断言，不真正连接） */
+export function createMcpTransport(server: McpServerEntity): StdioClientTransport | StreamableHTTPClientTransport {
+  const transportKind = server.transport === "http" ? "http" : "stdio";
+  if (transportKind === "http") {
+    const url = server.url?.trim();
+    if (!url) {
+      throw new Error(`MCP Server "${server.name}" 为 http 传输但未配置 url`);
+    }
+    const headers = { ...(server.headers ?? {}) };
+    return new StreamableHTTPClientTransport(new URL(url), {
+      requestInit: Object.keys(headers).length > 0 ? { headers } : undefined,
+    });
+  }
+  const command = server.command?.trim();
+  if (!command) {
+    throw new Error(`MCP Server "${server.name}" 为 stdio 传输但未配置 command`);
+  }
+  return new StdioClientTransport({
+    command,
+    args: server.args ?? [],
+    env: { ...process.env, ...server.env } as Record<string, string>,
+  });
+}
+
+async function connectClient(server: McpServerEntity): Promise<Client> {
+  const transport = createMcpTransport(server);
+  const client = new Client({ name: "oasismind", version: "1.0.0" }, { capabilities: {} });
+  await withTimeout(client.connect(transport), mcpConnectTimeoutMs(server.name), `MCP ${server.name}`);
+  return client;
+}
+
+async function getOrConnectClient(server: McpServerEntity, forceReconnect = false): Promise<Client> {
+  if (forceReconnect) evictClient(server.name);
+  return getOrCreateInflight(clientCache, server.name, () => connectClient(server));
+}
+
+async function buildSchemasForServer(
+  server: McpServerEntity,
+  hostCfg: ReturnType<typeof getAppConfig>,
+): Promise<McpFnSchema[]> {
+  const cached = serverSchemaOk.get(server.name);
+  if (cached) return cached;
+  const failUntil = serverSchemaFailUntil.get(server.name) ?? 0;
+  if (Date.now() < failUntil) return [];
+
+  try {
+    const client = await getOrConnectClient(server);
+    const listed = await withTimeout(
+      client.listTools(),
+      mcpConnectTimeoutMs(server.name),
+      `MCP ${server.name} listTools`,
+    );
+    const schemas: McpFnSchema[] = [];
+    const desktop = isDesktopMcpServer(server.name, hostCfg);
+    for (const tool of listed.tools) {
+      if (desktop && !isDesktopMcpToolAllowed(tool.name, hostCfg)) continue;
+      const externalName = mcpToolName(server.name, tool.name);
+      toolRegistry.set(externalName, { serverName: server.name, toolName: tool.name });
+      schemas.push({
+        type: "function",
+        function: {
+          name: externalName,
+          description: `[MCP:${server.name}] ${tool.description || tool.name}`,
+          parameters: (tool.inputSchema as Record<string, unknown>) || { type: "object", properties: {} },
+        },
+      });
+    }
+    serverSchemaOk.set(server.name, schemas);
+    serverSchemaFailUntil.delete(server.name);
+    return schemas;
+  } catch (err: unknown) {
+    console.warn(`[MCP] 连接 ${server.name} 失败，跳过 MCP 工具:`, err instanceof Error ? err.message : err);
+    evictClient(server.name);
+    serverSchemaFailUntil.set(server.name, Date.now() + MCP_SCHEMA_FAIL_RETRY_MS);
+    return [];
+  }
+}
+
+export async function buildMcpToolSchemas(
+  services: ServiceContainer,
+  serverNames: string[],
+  gate?: { agentTools?: string[] | null },
+): Promise<McpFnSchema[]> {
+  if (serverNames.length === 0) return [];
+
+  if (process.env.MOCK_MCP === "true") {
+    // 按 agent 配置的 serverNames 过滤，避免 Mock 模式下授权边界比真实更宽
+    const allowed = new Set(serverNames);
+    const schemas = getMockMcpToolSchemas().filter((s) => {
+      const meta = parseMcpToolNameParts(s.function.name);
+      return meta ? allowed.has(meta.serverName) : false;
+    });
+    for (const schema of schemas) {
+      const meta = parseMcpToolNameParts(schema.function.name);
+      if (meta) toolRegistry.set(schema.function.name, meta);
+    }
+    return schemas;
+  }
+
+  const hostCfg = getAppConfig();
+  const schemas: McpFnSchema[] = [];
+
+  for (const serverName of serverNames) {
+    // 未配置的 MCP 名（如默认清单残留 mcp:filesystem）必须跳过，禁止拖垮整次 Chat
+    let server: McpServerEntity;
+    try {
+      server = await findMcpServer(services, serverName);
+    } catch (err: unknown) {
+      console.warn(
+        `[MCP] Server "${serverName}" 不存在，跳过 MCP 工具（请在 config/mcp/ 添加配置后 db:sync）:`,
+        err instanceof Error ? err.message : err,
+      );
+      continue;
+    }
+    if (!server.enabled) continue;
+    if (isDesktopMcpServer(server.name, hostCfg) && !isHostAccessEnabled(hostCfg)) {
+      console.warn(`[MCP] 跳过桌面 MCP "${server.name}"：hostAccess.enabled=false`);
+      continue;
+    }
+    if (isDesktopMcpServer(server.name, hostCfg) && gate?.agentTools && !agentHasHostAccess(gate.agentTools)) {
+      console.warn(`[MCP] 跳过桌面 MCP "${server.name}"：Agent 未授予 native:host_access`);
+      continue;
+    }
+
+    const part = await buildSchemasForServer(server, hostCfg);
+    schemas.push(...part);
+  }
+
+  return schemas;
+}
+
+async function callToolOnce(
+  server: McpServerEntity,
+  toolName: string,
+  args: Record<string, unknown>,
+  reconnect: boolean,
+): Promise<unknown> {
+  const client = await getOrConnectClient(server, reconnect);
+  // 工具调用必须有顶层层超时，防止 MCP server 僵死导致请求永久挂起、占着池槽不释放
+  return withTimeout(
+    client.callTool({ name: toolName, arguments: args }),
+    MCP_CALL_TIMEOUT_MS,
+    `MCP ${server.name}.${toolName}`,
+  );
+}
+
+export async function executeMcpTool(
+  services: ServiceContainer,
+  externalName: string,
+  args: Record<string, unknown>,
+  gate?: {
+    config?: import("./config.js").AppConfig;
+    prisma?: import("@prisma/client").PrismaClient;
+    sessionId?: string;
+    agentTools?: string[] | null;
+  },
+): Promise<unknown> {
+  if (process.env.MOCK_MCP === "true") {
+    return executeMockMcpTool(externalName, args, services);
+  }
+
+  const meta = parseRegisteredMcpToolName(externalName) ?? parseMcpToolNameParts(externalName);
+  if (!meta) {
+    throw new Error(
+      `MCP 工具 schema 未构建，无法路由 ${externalName}。请确认对应 MCP server 已连接后再调用。`,
+    );
+  }
+
+  const server = await findMcpServer(services, meta.serverName);
+  if (!server.enabled) throw new Error(`MCP Server "${meta.serverName}" 已禁用`);
+
+  const hostCfg = gate?.config ?? getAppConfig();
+  if (isDesktopMcpServer(meta.serverName, hostCfg)) {
+    await assertHostSessionAllowed({
+      config: hostCfg,
+      prisma: gate?.prisma ?? services.prisma,
+      sessionId: gate?.sessionId,
+      tools: gate?.agentTools,
+      requireCapability: true,
+    });
+    if (!isDesktopMcpToolAllowed(meta.toolName, hostCfg)) {
+      throw new Error(
+        `桌面 MCP 工具「${meta.toolName}」不在白名单。允许：${listDesktopMcpAllowedTools(hostCfg).join(", ")}。PowerShell/注册表/任意删文件已禁用。`,
+      );
+    }
+  }
+
+  // W12 断路器：open 期间零真实连接尝试，结构化错误结果直接喂回 LLM（不抛）
+  const breaker = getMcpCircuitBreaker(server.name);
+  const permit = breaker.tryAcquire();
+  if (!permit.allowed) {
+    const retryAfterSec = Math.ceil(permit.retryAfterMs / 1000);
+    console.warn(`[MCP] ${server.name} 熔断中，跳过 ${meta.toolName} 真实调用（${retryAfterSec}s 后重试）`);
+    return {
+      error: `MCP 服务「${server.name}」当前熔断中：连续失败已达阈值，真实调用已被跳过，约 ${retryAfterSec} 秒后系统会自动半开探测。下一步：先用其它工具继续任务；大约 ${retryAfterSec} 秒后再重试本 MCP 工具一次。不要在熔断窗口内连打。`,
+      code: "MCP_CIRCUIT_OPEN",
+      message: `MCP 服务「${server.name}」熔断中（连续失败已达阈值），约 ${retryAfterSec} 秒后自动半开探测恢复，请稍后重试。`,
+      circuitOpen: true,
+      retryAfterMs: permit.retryAfterMs,
+    };
+  }
+  // half-open 探测令牌：closed 期迟到完成不得拿无令牌/错令牌误合闸或误重开
+  const probeToken = permit.probeToken;
+
+  try {
+    const result = await callToolOnce(server, meta.toolName, args, false);
+    breaker.recordSuccess(probeToken);
+    return truncateMcpResult(result);
+  } catch (firstErr) {
+    console.warn(`[MCP] ${meta.serverName}.${meta.toolName} 失败，尝试重连…`, firstErr instanceof Error ? firstErr.message : firstErr);
+    evictClient(server.name);
+    try {
+      const result = await callToolOnce(server, meta.toolName, args, true);
+      breaker.recordSuccess(probeToken);
+      return truncateMcpResult(result);
+    } catch (retryErr) {
+      // 首试 + 重连重试整体计一次失败（避免一次调用双重计数提前开闸）
+      breaker.recordFailure(probeToken);
+      throw new Error(
+        `MCP 工具 ${meta.toolName} 调用失败（已重连）：${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+      );
+    }
+  }
+}
+
+export async function disconnectAllMcpClients(): Promise<void> {
+  for (const [name] of clientCache) {
+    evictClient(name);
+  }
+  toolRegistry.clear();
+  serverSchemaOk.clear();
+  serverSchemaFailUntil.clear();
+}

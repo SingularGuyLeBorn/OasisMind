@@ -1,0 +1,568 @@
+"use client";
+
+/**
+ * ChatCenterPane —— 中栏结构组件（W13e 从 chat.tsx 拆出）。
+ * 纯渲染透传：所有状态、派生、mutation 单例与 INV 状态机留在 chat.tsx，经 props 注入。
+ * 不包 React.memo：messageListProps 流式期每 token 真变，memo 永远不会命中。
+ */
+
+import Link from "next/link";
+import { useState, type ComponentProps, type Dispatch, type SetStateAction } from "react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Bot,
+  Files,
+  GitFork,
+  Loader2,
+  PanelLeft,
+  X,
+} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import { type ChatSession, type ChatSessionConfig, type Skill } from "@oasismind/shared";
+import { buttonVariants } from "@/components/ui/button";
+import { SessionContextBar } from "@/components/sessionContextUsage";
+import { ChatInputArea, type SelectedSkill } from "@/components/chatInput";
+import {
+  type ChatQueueItem,
+  type SyncTaskItem,
+  countVisibleQueueItems,
+  filterVisibleQueueItems,
+  sortQueueItems,
+  splitQueueByKind,
+} from "@/lib/chatQueueTypes";
+import { UserSendQueuePanel } from "@/components/chatQueue";
+import { ChatMessageList, type ChatMessageListProps } from "@/components/chatMessageList";
+import { ChatGoalBar } from "@/components/chatGoalBar";
+import { ChatSessionTreeBar } from "@/components/chatSessionTreeBar";
+import { SessionAskUserBar } from "@/components/sessionAskUserBar";
+import { SessionArtifactsStrip } from "@/components/sessionArtifactsStrip";
+import { ChatDispatchStrip } from "@/components/chatDispatchStrip";
+import { sessionComposeActions } from "@/lib/useSessionComposeState";
+import { NEW_STREAM_KEY } from "@/lib/chatKeys";
+
+type SessionDetail = ChatSession | undefined;
+
+export interface ChatCenterPaneProps {
+  // 中栏 header 受控态与派生显示值
+  effectiveSessionId: string | null;
+  sessionDetail: SessionDetail;
+  isLoadingOlderMessages: boolean;
+  isStreaming: boolean;
+  selectedAgentName: string | undefined;
+  chatConfigModel: string;
+  chatConfigSystemPrompt: string;
+  queueLength: number;
+  compactPending: boolean;
+  onCompact: () => void;
+  leftOpen: boolean;
+  setLeftOpen: Dispatch<SetStateAction<boolean>>;
+  // 子 Agent 任务条
+  isSubagentSession: boolean;
+  parentSessionId: string | null;
+  parentSessionTitle: string | undefined;
+  /**
+   * session_rotate 血缘链（派生视图）：nodes 按时间序 A→B→C，
+   * currentIndex 为当前会话；长度 < 2 时不展示条。
+   */
+  rotateLineage: {
+    nodes: Array<{ id: string; label: string }>;
+    currentIndex: number;
+  } | null;
+  /** 空主会话才允许深度调研入口 */
+  allowDeepResearch: boolean;
+  // 横幅群：后端离线 / session_rotate 跳转
+  backendDown: boolean;
+  rotateBanner: { newSessionId: string; newTitle: string } | null;
+  setRotateBanner: (banner: { newSessionId: string; newTitle: string } | null) => void;
+  selectSession: (id: string) => void;
+  // 消息列表：W13a 组件 props 原样透传
+  messageListProps: ChatMessageListProps;
+  // 错误条：错误文本与三个动作（预算设置 / 转后台重试 / 重试）
+  error: string | null;
+  lastUserMessageId: string | null;
+  onRetry: (messageId: string) => void;
+  onTimeoutRetryInBackground: (lastText: string) => void;
+  // composer 接线：发送队列面板 + 输入区
+  userQueue: ChatQueueItem[];
+  asyncQueueData: Parameters<typeof splitQueueByKind>[1];
+  asyncStats: ComponentProps<typeof UserSendQueuePanel>["asyncStats"];
+  persistQueueOrder: (items: ChatQueueItem[]) => void;
+  deleteSessionQueueItemMutation: ReturnType<typeof trpc.agent.deleteSessionQueueItem.useMutation>;
+  onSend: ComponentProps<typeof ChatInputArea>["onSend"];
+  onStop: () => void;
+  skills: Skill[];
+  selectedSkill: SelectedSkill | null;
+  onSkillChange: (skill: SelectedSkill | null) => void;
+  modelHint: string;
+  supportsVision: boolean;
+  chatConfig: ChatSessionConfig;
+  updateConfig: (patch: Partial<ChatSessionConfig>) => void;
+  resetPromptToAgent: () => void;
+  onOpenPromptEditor: () => void;
+  /** 打开右侧「本会话文件」面板；未传则不显示入口 */
+  onOpenFilesPanel?: () => void;
+  filesPanelOpen?: boolean;
+  /** W6 打开右侧「阶段工件」面板；未传则不显示入口 */
+  onOpenStagesPanel?: () => void;
+  stagesPanelOpen?: boolean;
+  modelSupportsReasoning: boolean;
+  modelReasoningRequired: boolean;
+  /** 派工条：进行中 / 待消费 / 同步等待 */
+  dispatchActiveItems?: ChatQueueItem[];
+  dispatchToConsumeItems?: ChatQueueItem[];
+  dispatchSyncTasks?: SyncTaskItem[];
+  onOpenRuntimePanel?: () => void;
+  /** 集群 pill：打开左侧会话 / Agent 树 */
+  onFocusSwarm?: () => void;
+  /** 输入聚焦时提前拉 Skill 列表 */
+  onWarmSkills?: () => void;
+}
+
+export function ChatCenterPane({
+  effectiveSessionId,
+  sessionDetail,
+  isLoadingOlderMessages,
+  isStreaming,
+  selectedAgentName,
+  chatConfigModel,
+  chatConfigSystemPrompt,
+  queueLength,
+  compactPending,
+  onCompact,
+  leftOpen,
+  setLeftOpen,
+  isSubagentSession,
+  parentSessionId,
+  parentSessionTitle,
+  rotateLineage,
+  allowDeepResearch,
+  backendDown,
+  rotateBanner,
+  setRotateBanner,
+  selectSession,
+  messageListProps,
+  error,
+  lastUserMessageId,
+  onRetry: handleRetry,
+  onTimeoutRetryInBackground,
+  userQueue,
+  asyncQueueData,
+  asyncStats,
+  persistQueueOrder,
+  deleteSessionQueueItemMutation,
+  onSend,
+  onStop,
+  skills,
+  selectedSkill,
+  onSkillChange,
+  modelHint,
+  supportsVision,
+  chatConfig,
+  updateConfig,
+  resetPromptToAgent,
+  onOpenPromptEditor,
+  onOpenFilesPanel,
+  filesPanelOpen = false,
+  onOpenStagesPanel,
+  stagesPanelOpen = false,
+  modelSupportsReasoning,
+  modelReasoningRequired,
+  dispatchActiveItems = [],
+  dispatchToConsumeItems = [],
+  dispatchSyncTasks = [],
+  onOpenRuntimePanel,
+  onFocusSwarm,
+  onWarmSkills,
+}: ChatCenterPaneProps) {
+  const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
+  const [editingForSessionId, setEditingForSessionId] = useState(effectiveSessionId);
+  // 切会话时在 render 期清空编辑态（避免 effect 内 setState）
+  if (editingForSessionId !== effectiveSessionId) {
+    setEditingForSessionId(effectiveSessionId);
+    if (editingQueueId != null) setEditingQueueId(null);
+  }
+  // 条目已不在队列 → 派生为未编辑（不强制清 state，提交/取消路径会清）
+  const editingQueueItem =
+    editingQueueId != null
+      ? userQueue.find((i) => i.id === editingQueueId && i.kind === "user")
+      : undefined;
+  const activeEditingId = editingQueueItem?.id ?? null;
+  const { messages, messageGroups } = messageListProps;
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--om-bg)]">
+      <header className="flex items-center gap-2 border-b border-[var(--om-divider)] bg-[var(--om-glass-bg)] px-4 py-2.5 backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => setLeftOpen((v) => !v)}
+          data-testid="chat-left-panel-toggle"
+          title={leftOpen ? "折叠左侧栏" : "展开左侧栏"}
+          aria-label={leftOpen ? "折叠左侧栏" : "展开左侧栏"}
+          aria-pressed={leftOpen}
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "icon" }),
+            "h-11 w-11 shrink-0 md:h-8 md:w-8",
+          )}
+        >
+          <PanelLeft className="h-5 w-5 md:h-4 md:w-4" />
+        </button>
+        <span className="om-header-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
+          <Bot className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-sm font-semibold text-[var(--om-text-1)]">
+              {sessionDetail?.autoName || sessionDetail?.title || "Agent 对话"}
+            </h1>
+            {isLoadingOlderMessages && !isStreaming && (
+              <Loader2 className="h-3 w-3 animate-spin text-[var(--om-text-3)]" />
+            )}
+          </div>
+          <p className="truncate text-xs text-[var(--om-text-3)]">
+            {selectedAgentName ?? "—"} · {chatConfigModel}
+            {queueLength > 0 && ` · 队列 ${queueLength}`}
+          </p>
+        </div>
+        {effectiveSessionId && sessionDetail && (
+          <SessionContextBar
+            messages={messages}
+            systemPrompt={chatConfigSystemPrompt}
+            modelId={chatConfigModel}
+            contextSummary={sessionDetail.contextSummary}
+            onCompact={onCompact}
+            compactPending={compactPending}
+            onOpenPromptEditor={onOpenPromptEditor}
+            onResetPrompt={resetPromptToAgent}
+            className="hidden shrink-0 lg:flex"
+          />
+        )}
+        <Link
+          href="/agents"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden shrink-0 sm:flex text-xs")}
+        >
+          Agent 管理
+        </Link>
+        {onOpenFilesPanel && !filesPanelOpen && (
+          <button
+            type="button"
+            onClick={onOpenFilesPanel}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 shrink-0")}
+            aria-label="打开文件面板"
+            title="本会话文件"
+            data-testid="chat-open-files-panel"
+          >
+            <Files className="h-4 w-4" />
+          </button>
+        )}
+        {onOpenStagesPanel && !stagesPanelOpen && (
+          <button
+            type="button"
+            onClick={onOpenStagesPanel}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 shrink-0")}
+            aria-label="打开阶段工件面板"
+            title="阶段工件"
+            data-testid="chat-open-stages-panel"
+          >
+            <GitFork className="h-4 w-4" />
+          </button>
+        )}
+      </header>
+
+      {isSubagentSession && (
+        <div
+          data-testid="subagent-context-bar"
+          className="flex items-center gap-2 border-b border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/40 px-4 py-1.5 text-xs"
+        >
+          <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--om-brand-deep)]" />
+          <span className="font-medium text-[var(--om-brand-deep)]">子 Agent 任务</span>
+          {sessionDetail?.status && (
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                sessionDetail.status === "running" || sessionDetail.status === "queued"
+                  ? "bg-blue-100 text-blue-700"
+                  : sessionDetail.status === "completed"
+                    ? "bg-green-100 text-green-700"
+                    : sessionDetail.status === "failed"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-amber-100 text-amber-700",
+              )}
+            >
+              {sessionDetail.status === "running" && "运行中"}
+              {sessionDetail.status === "queued" && "排队中"}
+              {sessionDetail.status === "completed" && "已完成"}
+              {sessionDetail.status === "failed" && "失败"}
+              {sessionDetail.status === "paused" && "已暂停"}
+              {sessionDetail.status === "interrupted" && "已中断"}
+              {sessionDetail.status === "active" && "活跃"}
+              {!["running", "queued", "completed", "failed", "paused", "interrupted", "active"].includes(sessionDetail.status) && sessionDetail.status}
+            </span>
+          )}
+          {sessionDetail?.taskDescription && (
+            <span className="min-w-0 flex-1 truncate text-[var(--om-text-2)]">
+              {sessionDetail.taskDescription}
+            </span>
+          )}
+          {parentSessionId && (
+            <Link
+              href={`/chat?sessionId=${parentSessionId}`}
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
+              title="返回父会话"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              来自会话{parentSessionTitle ? ` · ${parentSessionTitle.slice(0, 16)}` : ""}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* rotate 血缘链（派生视图；与 parentSessionId 派工父子正交） */}
+      {!isSubagentSession && rotateLineage && rotateLineage.nodes.length > 1 && (
+        <div
+          data-testid="session-rotate-lineage-bar"
+          className="flex flex-wrap items-center gap-1 border-b border-[var(--om-divider)] bg-[color-mix(in_srgb,var(--om-bg)_90%,var(--om-brand-soft))] px-4 py-1.5 text-[11px] text-[var(--om-text-2)]"
+        >
+          <span className="mr-1 shrink-0 text-[var(--om-text-3)]">轮换链</span>
+          {rotateLineage.nodes.map((n, i) => {
+            const current = i === rotateLineage.currentIndex;
+            return (
+              <span key={n.id} className="inline-flex items-center gap-1">
+                {i > 0 && <span className="text-[var(--om-text-3)]" aria-hidden>→</span>}
+                {current ? (
+                  <span
+                    className="rounded-md bg-[var(--om-brand-soft)] px-1.5 py-0.5 font-medium text-[var(--om-brand-deep)]"
+                    title="当前会话"
+                  >
+                    {n.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={`/chat?sessionId=${n.id}`}
+                    className="rounded-md px-1.5 py-0.5 font-medium text-[var(--om-brand-deep)] hover:bg-[var(--om-brand-soft)]"
+                    title={`打开：${n.label}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      selectSession(n.id);
+                    }}
+                  >
+                    {n.label}
+                  </Link>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {effectiveSessionId && sessionDetail && (
+        <div className="flex border-b border-[var(--om-divider)] px-4 py-2 lg:hidden">
+          <SessionContextBar
+            messages={messages}
+            systemPrompt={chatConfigSystemPrompt}
+            modelId={chatConfigModel}
+            contextSummary={sessionDetail.contextSummary}
+            onCompact={onCompact}
+            compactPending={compactPending}
+            onOpenPromptEditor={onOpenPromptEditor}
+            onResetPrompt={resetPromptToAgent}
+          />
+        </div>
+      )}
+
+      {backendDown && (
+        <div className="mx-4 mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>后端未连接，请运行 <code className="rounded bg-amber-100 px-1">pnpm dev</code></span>
+        </div>
+      )}
+
+      {/* Goal / 深度调研进度：子会话永不展示；深度研究入口在输入区 chip */}
+      {!isSubagentSession &&
+        (sessionDetail?.kind ?? "chat") === "chat" &&
+        !sessionDetail?.parentSessionId && (
+          <ChatGoalBar sessionId={effectiveSessionId} />
+        )}
+      {effectiveSessionId && (sessionDetail?.kind ?? "chat") !== "heartbeat" && (
+        <ChatSessionTreeBar sessionId={effectiveSessionId} disabled={isStreaming} />
+      )}
+
+      {(rotateBanner || (sessionDetail?.status === "archived" && sessionDetail.rotatedToSessionId)) && (
+        <div
+          data-testid="session-rotate-banner"
+          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-[var(--om-brand-light)] bg-[var(--om-brand-soft)]/40 px-3 py-2 text-xs text-[var(--om-brand-deep)]"
+        >
+          <span className="min-w-0 flex-1 truncate">
+            新 session 已创建：
+            {rotateBanner?.newTitle ?? "续写会话"}
+          </span>
+          <button
+            type="button"
+            className="shrink-0 rounded-md bg-[var(--om-brand-deep)] px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90"
+            onClick={() => {
+              const id = rotateBanner?.newSessionId ?? sessionDetail?.rotatedToSessionId;
+              if (!id) return;
+              setRotateBanner(null);
+              selectSession(id);
+            }}
+          >
+            点击跳转
+          </button>
+          {rotateBanner && (
+            <button
+              type="button"
+              className="shrink-0 rounded-md px-1.5 py-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
+              aria-label="关闭提示"
+              onClick={() => setRotateBanner(null)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {!isSubagentSession && (
+        <ChatDispatchStrip
+          activeItems={dispatchActiveItems}
+          toConsumeItems={dispatchToConsumeItems}
+          syncTasks={dispatchSyncTasks}
+          onSelectSession={selectSession}
+          onOpenRuntimePanel={onOpenRuntimePanel}
+        />
+      )}
+
+      <ChatMessageList {...messageListProps} />
+
+      {error && (
+        <div
+          className="mx-4 mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-800"
+          data-testid="chat-error-banner"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="font-semibold">请求失败</p>
+              <p className="whitespace-pre-wrap leading-relaxed opacity-90">{error}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {/* 错误可操作化：按错误类型提供针对性动作（#14） */}
+              {error.includes("预算") && (
+                <Link
+                  href="/settings"
+                  className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium hover:bg-red-100"
+                >
+                  查看预算设置
+                </Link>
+              )}
+              {(error.includes("超时") || error.includes("timeout")) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // 超时 → 建议转后台任务：把上一条用户消息包装成 async_task_run 请求重新入队
+                    const lastGroup = messageGroups[messageGroups.length - 1];
+                    const lastText = lastGroup?.userMessage.content;
+                    if (lastText) {
+                      onTimeoutRetryInBackground(lastText);
+                    }
+                  }}
+                  className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium hover:bg-red-100"
+                >
+                  转后台重试
+                </button>
+              )}
+              {lastUserMessageId && (
+                <button
+                  type="button"
+                  onClick={() => handleRetry(lastUserMessageId)}
+                  className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium hover:bg-red-100"
+                >
+                  重试
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className="relative z-30 border-t border-[var(--om-divider-light)] bg-[color-mix(in_srgb,var(--om-bg)_92%,var(--om-brand-soft))] px-4 pt-3 pb-3 md:px-6"
+        style={{ paddingBottom: "max(0.75rem, calc(0.75rem + var(--om-keyboard-inset, 0px)))" }}
+      >
+        <SessionAskUserBar sessionId={effectiveSessionId} />
+        <SessionArtifactsStrip sessionId={effectiveSessionId} />
+        <UserSendQueuePanel
+          items={sortQueueItems(filterVisibleQueueItems(userQueue))}
+          editingId={activeEditingId}
+          onEdit={(id) => setEditingQueueId(id)}
+          onChange={(items) => {
+            // Panel 只编辑可见项：把 dispatching 项拼回，避免拖拽改序抹掉直发中条目
+            const dispatching = userQueue.filter((i) => i.visibility === "dispatching");
+            const merged = [...items, ...dispatching];
+            const { userQueue: uq, asyncOverlays: ao } = splitQueueByKind(merged, asyncQueueData);
+            sessionComposeActions.setUserQueue(effectiveSessionId ?? NEW_STREAM_KEY, uq);
+            sessionComposeActions.setAsyncOverlays(effectiveSessionId ?? NEW_STREAM_KEY, ao);
+            persistQueueOrder(uq);
+          }}
+          onRemove={(id) => {
+            const sid = effectiveSessionId ?? NEW_STREAM_KEY;
+            const target = userQueue.find((t) => t.id === id);
+            if (target) {
+              sessionComposeActions.claimUserQueueItem(sid, target);
+            } else {
+              sessionComposeActions.removeUserQueueItem(sid, id);
+            }
+            sessionComposeActions.patchAsyncOverlays(sid, (q) => q.filter((t) => t.id !== id));
+            if (target?.dbId) {
+              deleteSessionQueueItemMutation.mutate({ id: target.dbId });
+            }
+            if (editingQueueId === id) setEditingQueueId(null);
+          }}
+          asyncStats={asyncStats}
+        />
+        <ChatInputArea
+          onSend={onSend}
+          onStop={onStop}
+          disabled={backendDown || sessionDetail?.status === "archived"}
+          isStreaming={isStreaming}
+          queueLength={countVisibleQueueItems(userQueue)}
+          skills={skills}
+          selectedSkill={selectedSkill}
+          onSkillChange={onSkillChange}
+          modelHint={modelHint}
+          modelId={chatConfigModel}
+          supportsVision={supportsVision}
+          chatConfig={chatConfig}
+          updateConfig={updateConfig}
+          modelSupportsReasoning={modelSupportsReasoning}
+          modelReasoningRequired={modelReasoningRequired}
+          sessionHint={
+            sessionDetail?.status === "archived"
+              ? sessionDetail.rotatedToSessionId
+                ? "此会话已归档。请点击上方提示跳转到新会话继续对话。"
+                : "此会话已归档，无法继续发送消息。"
+              : isSubagentSession
+                ? "这是子 Agent 任务会话。你直接发送的消息只在本会话内处理，不会回传父会话；只有父 Agent 下发的任务结果才会投递回父会话。"
+                : undefined
+          }
+          sessionId={effectiveSessionId}
+          isSubagentSession={isSubagentSession}
+          canStartDeepResearch={allowDeepResearch}
+          onFocusSwarm={onFocusSwarm}
+          onWarmSkills={onWarmSkills}
+          queueEdit={
+            editingQueueItem
+              ? { id: editingQueueItem.id, text: editingQueueItem.text }
+              : null
+          }
+          onCommitQueueEdit={(id, text) => {
+            const sid = effectiveSessionId ?? NEW_STREAM_KEY;
+            const next = userQueue.map((i) => (i.id === id ? { ...i, text } : i));
+            sessionComposeActions.setUserQueue(sid, next);
+            persistQueueOrder(next);
+            setEditingQueueId(null);
+          }}
+          onCancelQueueEdit={() => setEditingQueueId(null)}
+        />
+      </div>
+    </div>
+  );
+}

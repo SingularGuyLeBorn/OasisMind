@@ -1,0 +1,52 @@
+/**
+ * QQ 官方 Bot Adapter：ingest / 白名单 / 终稿回发 / Identify intents。
+ */
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  QQ_GROUP_AND_C2C_INTENT,
+  buildQqIdentifyPayload,
+  createQqOfficialBotAdapter,
+  expandAllowedIds,
+  isQqInboundAllowed,
+  parseQqIdOpenIdMap,
+  parseQqInboundPayload,
+  qqReplyPlainText,
+  resolveQqNumberForOpenId,
+  shouldDispatchQqInbound,
+} from "../infra/channels/qqOfficialBot.js";
+import {
+  __resetQqGroupHistoryForTests,
+  peekQqGroupHistory,
+} from "../infra/channels/qqGroupContext.js";
+import type { UnifiedMessage } from "../infra/messageGateway.js";
+import * as messageGateway from "../infra/messageGateway.js";
+
+describe("qqOfficialBot helpers", () => {
+  it("GROUP_AND_C2C intent 为 1<<25", () => {
+    expect(QQ_GROUP_AND_C2C_INTENT).toBe(1 << 25);
+    expect(QQ_GROUP_AND_C2C_INTENT).toBe(33_554_432);
+  });
+
+  it("buildQqIdentifyPayload 含正确 intents 与 token 前缀", () => {
+    const frame = buildQqIdentifyPayload("tok-abc");
+    expect(frame.op).toBe(2);
+    expect(frame.d.intents).toBe(QQ_GROUP_AND_C2C_INTENT);
+    expect(frame.d.token).toBe("QQBot tok-abc");
+    expect(frame.d.shard).toEqual([0, 1]);
+  });
+
+  it("parseQqInboundPayload：扁平与 d 包装", () => {
+    const flat = parseQqInboundPayload({
+      author: { user_openid: "u1" },
+      content: "你好 <@!123>",
+      id: "m1",
+    });
+    expect(flat).toMatchObject({
+      openid: "u1",
+      content: "你好",
+      msgId: "m1",
+      groupOpenid: undefined,
+      hasMediaHint: false,
+    });
+    exp

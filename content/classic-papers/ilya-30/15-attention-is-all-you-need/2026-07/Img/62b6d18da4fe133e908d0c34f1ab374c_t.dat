@@ -1,0 +1,184 @@
+"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Chrome
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/products/google-health/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Google Health
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/products/workspace/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Google Workspace
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/products/education/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Learning &amp; Education
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/products/shopping/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Shopping
+
+                    
+                  </a>
+                
+              </li>
+            
+          </ul>
+        
+
+        
+          <a href="/products-and-platforms/products/"
+             data-navigation="Products"
+             role="menuitem"
+             title="See all Products articles"
+             class="uni-main-menu__submenu-item-see-all">
+            See all
+            <svg id="mi-arrow-forward-no-bg" viewBox="0 0 32 32">
+              <polygon points="16,0 13.2,2.8 24.3,14 0,14 0,18 24.3,18 13.2,29.2 16,32 32,16"></polygon>
+            </svg>
+          </a>
+        
+      </li>
+    
+      <li class="uni-main-menu__submenu-item"
+          role="group"
+          aria-labelledby="uni-main-menu__submenu-item-label-products-platforms-2">
+          <span class="uni-main-menu__submenu-item-label"
+                id="uni-main-menu__submenu-item-label-products-platforms-2">
+            Platforms
+          </span>
+
+        
+          <ul class="uni-main-menu__submenu-links">
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/platforms/android/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Android
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/platforms/google-play/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Google Play
+
+                    
+                  </a>
+                
+              </li>
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/platforms/wear-os/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Wear OS
+
+                    
+                  </a>
+                
+              </li>
+            
+          </ul>
+        
+
+        
+          <a href="/products-and-platforms/platforms/"
+             data-navigation="Platforms"
+             role="menuitem"
+             title="See all Platforms articles"
+             class="uni-main-menu__submenu-item-see-all">
+            See all
+            <svg id="mi-arrow-forward-no-bg" viewBox="0 0 32 32">
+              <polygon points="16,0 13.2,2.8 24.3,14 0,14 0,18 24.3,18 13.2,29.2 16,32 32,16"></polygon>
+            </svg>
+          </a>
+        
+      </li>
+    
+      <li class="uni-main-menu__submenu-item"
+          role="group"
+          aria-labelledby="uni-main-menu__submenu-item-label-products-platforms-3">
+          <span class="uni-main-menu__submenu-item-label"
+                id="uni-main-menu__submenu-item-label-products-platforms-3">
+            Devices
+          </span>
+
+        
+          <ul class="uni-main-menu__submenu-links">
+            
+              <li class="uni-main-menu__submenu-link">
+                
+                  
+
+                  <a href="/products-and-platforms/devices/pixel/"
+                     role="menuitem"
+                     data-navigation=products-platforms
+                     class="uni-main-menu__submenu-anchor">
+                    Pixel
+
+                    
+             

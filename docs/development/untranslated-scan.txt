@@ -1,0 +1,778 @@
+# 正文散文未翻译扫描 (判定: EN积累>200字符且之后中文<max(50,6%))
+# 由 scripts/scan-untranslated.py 生成, 行号为 bi 文件内行号
+
+== 01-deepseek/deepseek (1处/1035字符)
+   行3-10 (EN1035字符/ZH24字符): Xiao Bi, Deli Chen, Guanting Chen, Shanhuang Chen, Damai Dai
+== 01-deepseek/deepseek-coder (3处/2334字符)
+   行421-432 (EN680字符/ZH0字符): An example of using DeepSeek-Coder-Instruct 34B is depicted 
+   行964-993 (EN1063字符/ZH53字符): We will present two cases of interactions with DeepSeek-Code
+   行996-EOF (EN591字符/ZH0字符): In Figure 7, we present the benchmark curves illustrating th
+== 01-deepseek/deepseek-coder-v2 (2处/3395字符)
+   行7-18 (EN459字符/ZH17字符): Qihao Zhu\*, Daya Guo\*, Zhihong Shao\*, Dejian Yang\*, Peiy
+   行826-EOF (EN2936字符/ZH31字符): ABAP, ActionScript, Ada, Agda, AGS Script, Alloy, AmbientTal
+== 01-deepseek/deepseek-janus (1处/364字符)
+   行652-657 (EN364字符/ZH0字符): We present the integration of the semantic tokenizer and the
+== 01-deepseek/deepseek-math (2处/649字符)
+   行13-18 (EN326字符/ZH0字符): **{zhihongshao, wangpeiyi, zhuqh, guoday}@deepseek. com** [*
+   行478-483 (EN323字符/ZH40字符): Reinforcement learning (RL) has been proven to be effective 
+== 01-deepseek/deepseek-prover (5处/5013字符)
+   行341-358 (EN549字符/ZH0字符): To demonstrate the effectiveness of large-scale autoformaliz
+   行404-423 (EN658字符/ZH0字符): Our investigation into synthetic theorem proving data reveal
+   行426-433 (EN230字符/ZH34字符): This section presents two case studies to demonstrate the ap
+   行641-662 (EN1860字符/ZH16字符): Specifically, we use the following format for scoring for th
+   行880-EOF (EN1716字符/ZH29字符): We verify the generated Lean 4 code with the following code 
+== 01-deepseek/deepseek-prover-v1-5 (2处/2375字符)
+   行9-18 (EN289字符/ZH0字符): Huajian Xin\*, Z. Z. Ren\*, Junxiao Song\*, Zhihong Shao\*, 
+   行973-EOF (EN2086字符/ZH0字符): theorem mathd_algebra_459 (a b c d : Q) (h0 : 3 * a = b + c 
+== 01-deepseek/deepseek-r1 (9处/12896字符)
+   行62-67 (EN256字符/ZH48字符): We begin by elaborating on the training of DeepSeek-R1-Zero,
+   行1287-1290 (EN500字符/ZH0字符): You have to carefully analyze and classify the answer into o
+   行1612-1649 (EN1921字符/ZH66字符): Okay, I need to create a Python class called Dictionary. The
+   行1651-1655 (EN565字符/ZH0字符): 1. **Data Structure**: Use a dictionary to store the words a
+   行1673-1698 (EN770字符/ZH38字符): 1. **Initialization**: The '__init__' method sets up an empt
+   行1708-1739 (EN1696字符/ZH67字符): Okay, I need to help the user write a short poem that ends w
+   行2659-2664 (EN494字符/ZH0字符): To further evaluate the performance of each stage of DeepSee
+   行2922-2942 (EN1284字符/ZH73字符): To promote the development of the open-source community and 
+   行2985-3194 (EN5410字符/ZH69字符): Parse the last line in response to judge if the choice equal
+== 01-deepseek/deepseek-v2 (4处/2312字符)
+   行253-283 (EN886字符/ZH51字符): [ \mathbf {q} _ {t, 1} ^ {R}; \mathbf {q} _ {t, 2} ^ {R}; \d
+   行286-302 (EN231字符/ZH0字符): We demonstrate a comparison of the KV cache per token among 
+   行1010-1013 (EN470字符/ZH0字符): We show the evaluation results for 7B dense models with MHA,
+   行1016-1047 (EN725字符/ZH0字符): In Table 9, we show the evaluation results for MoE models eq
+== 01-deepseek/deepseek-v3 (6处/5466字符)
+   行273-280 (EN483字符/ZH48字符): We first introduce the basic architecture of DeepSeek-V3, fe
+   行955-963 (EN366字符/ZH38字符): Through this two-phase extension training, DeepSeek-V3 is ca
+   行1075-1082 (EN676字符/ZH0字符): In Table 4, we show the ablation results for the MTP strateg
+   行1235-1264 (EN1901字符/ZH0字符): 除 Base 基准外, Instruct 还评 IFEval, FRAMES, LongBench v2, GPQA, 
+   行1319-1326 (EN1435字符/ZH46字符): In addition to standard benchmarks, we also evaluate our mod
+   行1329-1355 (EN605字符/ZH0字符): We compare the judgment ability of DeepSeek-V3 with state-of
+== 01-deepseek/deepseek-v3-2 (1处/4012字符)
+   行980-EOF (EN4012字符/ZH56字符): **Research & Engineering**: Aixin Liu, Aoxue Mei, Bangcai Li
+== 01-deepseek/deepseek-v4 (13处/16630字符)
+   行782-783 (EN411字符/ZH0字符): Our training framework is built upon the scalable and effici
+   行802-807 (EN1060字符/ZH0字符): The introduction of mHC increases both activation memory con
+   行1020-1033 (EN1660字符/ZH0字符): In Table 1, we provide a detailed comparison of the base mod
+   行1038-1039 (EN326字符/ZH0字符): Following pre-training, we conducted a post-training phase t
+   行1114-1154 (EN2270字符/ZH19字符): You MUST strictly follow the above definedtool name and para
+   行1196-1197 (EN575字符/ZH0字符): Our post-training infrastructure is built upon the scalable 
+   行1200-1201 (EN555字符/ZH0字符): We apply FP4 (MXFP4) quantization to accelerate both rollout
+   行1204-1205 (EN1606字符/ZH0字符): Our framework supports full-vocabulary On-Policy Distillatio
+   行1230-1231 (EN872字符/ZH0字符): We introduce targeted optimizations for efficient RL and OPD
+   行1408-1409 (EN525字符/ZH0字符): Standardized benchmarks often struggle to capture the comple
+   行1426-1431 (EN1576字符/ZH0字符): Search-augmented question answering is a core capability of 
+   行1494-1507 (EN1144字符/ZH0字符): To benchmark our coding agent capability, we curate tasks fr
+   行1890-1905 (EN4050字符/ZH0字符): Authors are listed alphabetically by their first name. Names
+== 01-deepseek/deepseek-v4-1-flash (4处/12378字符)
+   行783-798 (EN1478字符/ZH68字符): We compare DeepSeek-V4.1-Flash-Base with its predecessor mod
+   行1073-1094 (EN2636字符/ZH39字符): Our post-training evaluation focuses primarily on reasoning 
+   行1480-1495 (EN7356字符/ZH104字符): Authors are listed alphabetically by their first name. Names
+   行1539-1542 (EN908字符/ZH0字符): Across all six panels in Figure 11, raising the reasoning-ef
+== 02-kimi/kimi-k2 (3处/3376字符)
+   行940-953 (EN1986字符/ZH77字符): **Benchmarks** We evaluate Kimi-K2-Base across diverse capab
+   行1548-1561 (EN409字符/ZH0字符): There are three components in the token structure for tool-c
+   行1649-1674 (EN981字符/ZH0字符): The token template of the tool invoking section in the model
+== 02-kimi/kimi-k2-5 (3处/2374字符)
+   行1315-1411 (EN1391字符/ZH39字符): The listing of authors is in alphabetical order based on the
+   行1862-1870 (EN779字符/ZH0字符): In the code section, the code should be either pyautogui cod
+   行1984-1985 (EN204字符/ZH0字符): You are Kimi, a professional and meticulous expert in inform
+== 02-kimi/kimi-k2-6 (1处/471字符)
+   行477-482 (EN471字符/ZH0字符): To reproduce official Kimi-K2.6 benchmark results, we recomm
+== 02-kimi/kimi-k2-7-code (1处/827字符)
+   行139-162 (EN827字符/ZH26字符): Kimi Code Bench v2 is an in-house benchmark developed by Moo
+== 02-kimi/kimi-k2-8-preview (19处/13019字符)
+   行309-326 (EN1530字符/ZH56字符): Auto permission mode no longer blocks dangerous commands or 
+   行329-334 (EN346字符/ZH0字符): The [secondary\_model] subagent settings are now generally a
+   行483-488 (EN509字符/ZH0字符): Type / after whitespace in the input to insert a skill tag -
+   行545-550 (EN487字符/ZH0字符): Set KIMI\_CODE\_TUI\_FULL\_SCREEN=1 to switch to a fullscree
+   行567-598 (EN1566字符/ZH91字符): Run /plugins and select Modern Web Guidance to install it an
+   行707-724 (EN378字符/ZH19字符): max\_steps\_per\_run is now max\_steps\_per\_turn The old ke
+   行849-872 (EN623字符/ZH0字符): You can now define your own agents as Markdown files: frontm
+   行991-996 (EN471字符/ZH0字符): Moderato members and above can use Kimi K3; Allegretto membe
+   行1127-1132 (EN948字符/ZH0字符): Kimi Code now offers two tiers - Standard and HighSpeed - bu
+   行1163-1168 (EN489字符/ZH0字符): With Thinking enabled, Kimi models now keep their reasoning 
+   行1193-1200 (EN599字符/ZH0字符): A new [models."&lt; alias&gt;". overrides] table lets you ov
+   行1217-1222 (EN577字符/ZH0字符): Plugins can now declare slash commands via a commands field 
+   行1233-1238 (EN517字符/ZH0字符): Kimi Code now supports the Anthropic-compatible protocol, an
+   行1313-1340 (EN769字符/ZH0字符): You can now add directories beyond your working directory to
+   行1365-1376 (EN689字符/ZH42字符): A new KIMI\_CODE\_AGENT\_SWARM\_MAX\_CONCURRENCY environment
+   行1677-1688 (EN784字符/ZH21字符): You can now ask Kimi to edit its own configuration files dir
+   行1691-1696 (EN471字符/ZH0字符): Connect the CLI to your IDE via the ACP (Agent Client Protoc
+   行1729-1734 (EN429字符/ZH0字符): When the Agent needs a decision from you, it parks that ques
+   行1737-1748 (EN837字符/ZH0字符): Add or remove providers directly from the terminal without e
+== 02-kimi/kimi-k3 (1处/1581字符)
+   行1582-1613 (EN1581字符/ZH30字符): We evaluate Kimi K3 on a comprehensive benchmark suite organ
+== 03-qwen/qwen (10处/15664字符)
+   行7-10 (EN572字符/ZH0字符): Jinze Bai, Shuai Bai, Yunfei Chu, Zeyu Cui, Kai Dang, Xiaodo
+   行167-178 (EN1578字符/ZH92字符): The design of vocabulary significantly impacts the training 
+   行301-308 (EN273字符/ZH34字符): To gain an understanding of human behavior, the initial step
+   行558-567 (EN1609字符/ZH0字符): Our CODE-QWEN models have been compared with both proprietar
+   行570-571 (EN451字符/ZH0字符): We have created a mathematics-specialized model series calle
+   行612-615 (EN895字符/ZH0字符): We evaluate models on the test sets of GSM8K (Grade school m
+   行620-629 (EN2257字符/ZH132字符): The excitement of LLM began with the introduction of the Tra
+   行632-645 (EN2820字符/ZH169字符): The community was impressed by the surprising effectiveness 
+   行654-661 (EN1435字符/ZH51字符): Previous research has demonstrated that LLMs possess remarka
+   行1081-1158 (EN3774字符/ZH43字符): To provide a whole picture of the performance of our model s
+== 03-qwen/qwen2 (2处/1136字符)
+   行7-10 (EN745字符/ZH0字符): An Yang, Baosong Yang, Binyuan Hui, Bo Zheng, Bowen Yu, Chan
+   行367-372 (EN391字符/ZH47字符): In this section, we illustrate the evaluation of the base la
+== 03-qwen/qwen2-5 (9处/21060字符)
+   行119-122 (EN584字符/ZH41字符): Our language model pre-training process consists of several 
+   行269-295 (EN2995字符/ZH103字符): To develop a robust reward model for online RL, we adhere to
+   行325-392 (EN5331字符/ZH81字符): We conduct comprehensive evaluations of the base language mo
+   行395-410 (EN444字符/ZH0字符): To critically evaluate instruction-tuned models, we adopt a 
+   行415-469 (EN2525字符/ZH0字符): **Qwen2.5-72B-Instruct & Qwen2.5-Plus** As shown in Table 6,
+   行472-502 (EN3827字符/ZH136字符): Despite the availability of several open benchmark datasets 
+   行505-527 (EN2101字符/ZH74字符): The reward model serves as the cornerstone for guiding RL pr
+   行530-612 (EN1618字符/ZH0字符): We utilize three benchmarks to evaluate long context capabil
+   行625-632 (EN1635字符/ZH0字符): **Core Contributors:** An Yang, Baosong Yang, Beichen Zhang,
+== 03-qwen/qwen2-5-coder (7处/9970字符)
+   行9-12 (EN308字符/ZH0字符): **Binyuan Hui\* Jian Yang\* Zeyu Cui\* Jiaxi Yang\*** Dayihe
+   行667-793 (EN5472字符/ZH253字符): Building on the performance improvements of the Qwen2.5-Code
+   行796-815 (EN1069字符/ZH0字符): To evaluate the code reasoning capabilities of the Qwen2.5-C
+   行835-862 (EN1424字符/ZH0字符): 1 Figure 8: The MdEval Performance of Qwen2.5-Coder-32B-Inst
+   行911-914 (EN445字符/ZH0字符): In this section, we provide a comparative analysis of the pe
+   行917-948 (EN471字符/ZH0字符): To evaluate the understanding capabilities of structured dat
+   行951-966 (EN781字符/ZH0字符): In Figure 14, We present a comparison of different sizes of 
+== 03-qwen/qwen2-5-math (9处/12309字符)
+   行7-10 (EN204字符/ZH0字符): An Yang, Beichen Zhang, Binyuan Hui, Bofei Gao, Bowen Yu†, C
+   行350-364 (EN1931字符/ZH0字符): We evaluate our Qwen2-Math and Qwen2.5-Math base models on t
+   行593-676 (EN1665字符/ZH0字符): First, we note that 2002 can be factored into prime factors:
+   行853-918 (EN910字符/ZH0字符): **Step 1: Initial Substitution** First, let's substitute spe
+   行1061-1100 (EN3426字符/ZH0字符): A long time ago, there existed Martians with 3 different col
+   行1103-1122 (EN1635字符/ZH0字符): Joe and Penny play a game. Initially there are 5000 stones i
+   行1125-1146 (EN1510字符/ZH0字符): The school offers 10 elective courses, and each student can 
+   行1172-1200 (EN512字符/ZH0字符): B I = \sqrt {\left(a - \frac {a}{2}\right) ^ {2} + \left(0 -
+   行1207-1230 (EN516字符/ZH0字符): To solve for the angle ∠CGH in the given triangle △ABC with 
+== 03-qwen/qwen2-5-vl (2处/1267字符)
+   行15-21 (EN223字符/ZH0字符): 0 [https://huggingface.co/Qwen](https://huggingface.co/Qwen)
+   行551-560 (EN1044字符/ZH0字符): **Core Contributors:** Shuai Bai, Keqin Chen, Xuejing Liu, J
+== 03-qwen/qwen2-vl (9处/11285字符)
+   行14-15 (EN249字符/ZH0字符): Peng Wang\* Shuai Bai\* Sinan Tan\* Shijie Wang\* Zhihao Fan
+   行18-19 (EN1371字符/ZH0字符): We present the Qwen2-VL Series, an advanced upgrade of the p
+   行22-65 (EN6152字符/ZH0字符): In the realm of artificial intelligence, Large Vision-Langua
+   行485-486 (EN208字符/ZH0字符): In this section, we present ablation studies on image dynami
+   行570-575 (EN1157字符/ZH0字符): We have presented the Qwen2-VL series, the versatile large v
+   行846-889 (EN372字符/ZH0字符): The Qwen2-VL models are now more adept at accurately describ
+   行892-969 (EN770字符/ZH20字符): A notable advancement in the Qwen2-VL models is their enhanc
+   行1127-1160 (EN738字符/ZH0字符): speech_encoder_output = speech_encoder(speech_adapter_output
+   行1210-EOF (EN268字符/ZH0字符): The average Pass@1 scores on code generation benchmarks for 
+== 03-qwen/qwen3 (6处/13128字符)
+   行21-24 (EN1779字符/ZH0字符): In this work, we present Qwen3, the latest version of the Qw
+   行27-44 (EN6548字符/ZH0字符): The pursuit of artificial general intelligence (AGI) or arti
+   行722-725 (EN1266字符/ZH0字符): In this technical report, we introduce Qwen3, the latest ver
+   行728-733 (EN2142字符/ZH0字符): Core Contributors: An Yang, Anfeng Li, Baosong Yang, Beichen
+   行744-751 (EN814字符/ZH0字符): For evaluating long-context processing capabilities, we repo
+   行756-858 (EN579字符/ZH0字符): To evaluate the performance of Qwen3 across a broader range 
+== 03-qwen/qwen3-2507 (1处/675字符)
+   行136-147 (EN675字符/ZH0字符): **Adapters** [9 models](https://huggingface.co/models?other=
+== 03-qwen/qwen3-5 (3处/1257字符)
+   行17-20 (EN265字符/ZH0字符): [Community](https://community.alibabacloud.com/)  [Blog](ht
+   行407-408 (EN659字符/ZH0字符): Qwen3.5 provides a strong foundation for universal digital a
+   行464-471 (EN333字符/ZH0字符): [Qwen App's CNY Campaign Attracts Over 120 Million Orders](h
+== 03-qwen/qwen3-6 (9处/4165字符)
+   行13-16 (EN300字符/ZH0字符): [Community](https://community.alibabacloud.com/)  [Blog](ht
+   行392-395 (EN233字符/ZH0字符): For more information, please visit the [API doc](https://mod
+   行404-408 (EN540字符/ZH0字符): Qwen3.6-35B-A3B is compatible with [OpenClaw](https://opencl
+   行515-518 (EN708字符/ZH0字符): Qwen3.6-35B-A3B demonstrates that sparse MoE models can achi
+   行563-568 (EN586字符/ZH0字符): [Alibaba Open-sources Qwen3.6-35B-A3B; Wan2.7 Tops Design Ar
+   行683-688 (EN257字符/ZH0字符): [Still Running Your Own Hive Metastore? Point Spark Straight
+   行691-712 (EN237字符/ZH47字符): Start building with 80+ products and up to 12 months usage f
+   行1023-1027 (EN500字符/ZH0字符): Qwen3.6-27B is compatible with [OpenClaw](https://openclaw.a
+   行1135-1136 (EN804字符/ZH0字符): Qwen3.6-27B demonstrates that a well-trained dense model can
+== 03-qwen/qwen3-7 (1处/214字符)
+   行3-10 (EN214字符/ZH0字符): Official model card source: https://raw.githubusercontent.co
+== 03-qwen/qwen3-8 (6处/2851字符)
+   行3-12 (EN352字符/ZH38字符): [ Cart](https://cart.alibabacloud.com/) [Log In](https://ac
+   行664-703 (EN366字符/ZH22字符): reasoning_effort="xhigh", # supported levels are xhigh, medi
+   行729-811 (EN269字符/ZH0字符): Qwen APIs support the OpenAI Responses protocol, enabling us
+   行838-888 (EN341字符/ZH0字符): Connect to [OpenClaw](https://openclaw.ai/) via [QwenCloud](
+   行959-964 (EN778字符/ZH0字符): [One Key, One CLI — Manage Your Alibaba Cloud Model Studio T
+   行971-994 (EN745字符/ZH0字符): [Model Studio Token Plan for Individual One Subscription for
+== 03-qwen/qwen3-next (3处/1719字符)
+   行260-284 (EN395字符/ZH30字符): The code for Qwen3-Next has been merged into the main branch
+   行310-336 (EN948字符/ZH45字符): output_ids = generated_ids[0][len(model_inputs.input_ids[0])
+   行539-562 (EN376字符/ZH40字符): We test the model on an 1M version of the [RULER](https://ar
+== 03-qwen/qwen3-vl (15处/16336字符)
+   行641-643 (EN1038字符/ZH0字符): Beyond single-image grounded dialogue evaluation, advancing 
+   行646-652 (EN1299字符/ZH0字符): For embodied and spatial understanding, Qwen3-VL’s performan
+   行670-672 (EN950字符/ZH0字符): We evaluate UI perception with GUI-grounding tasks (ScreenSp
+   行677-744 (EN3891字符/ZH0字符): **Evaluation Settings** For Qwen3-VL instruct models includi
+   行1058-1079 (EN3761字符/ZH0字符): We evaluate Qwen3-VL on a wide range of public benchmarks ac
+   行1082-1083 (EN248字符/ZH0字符): To ensure reproducibility and facilitate future research, we
+   行1107-1133 (EN221字符/ZH0字符): Now, we require you to solve a multiple-choice math question
+   行1256-1258 (EN258字符/ZH0字符): Locate the {class_name } in the provided image and output th
+   行1323-1351 (EN281字符/ZH0字符): Select the best answer to the following multiple-choice ques
+   行1356-1366 (EN722字符/ZH0字符): Your role is that of a research assistant specializing in vi
+   行1369-1399 (EN1537字符/ZH0字符): You may call one or more functions to assist with the user q
+   行1402-1416 (EN815字符/ZH0字符): You may call one or more functions to assist with the user q
+   行1422-1426 (EN728字符/ZH0字符): You are an expert web developer who specializes in HTML and 
+   行1429-1430 (EN336字符/ZH0字符): I will give you two images. The first is the reference, and 
+   行1437-EOF (EN251字符/ZH0字符): You may call one or more functions to assist with the user q
+== 04-stepfun/step3 (4处/7479字符)
+   行11-12 (EN1426字符/ZH0字符): Large language models (LLMs) face low hardware efficiency du
+   行15-70 (EN5060字符/ZH0字符): This paper presents the model-system co-design of Step-3, sp
+   行1215-1216 (EN761字符/ZH0字符): This paper presents Step-3, and how its model-system co-desi
+   行1350-EOF (EN232字符/ZH0字符): Yuhang Deng Yuhe Yin Yujie Liu Yukun Chen Yuling Zhao Yun Mo
+== 04-stepfun/step3-5-flash (36处/53733字符)
+   行91-106 (EN3363字符/ZH0字符): While open-source large language models (LLMs) [1–6] have ra
+   行1079-1145 (EN439字符/ZH0字符): The listing of authors is in alphabetical order based on the
+   行1182-1207 (EN830字符/ZH0字符): Each attention head is assigned a lightweight, input-depende
+   行1210-1221 (EN505字符/ZH0字符): We conduct simulations with MTP-3 to evaluate the latency ov
+   行1232-1239 (EN462字符/ZH0字符): After an initial phase of approximately 3.8T tokens, we keep
+   行1242-1273 (EN1890字符/ZH0字符): We conduct controlled pre-training ablations to isolate the 
+   行1276-1321 (EN3109字符/ZH0字符): To investigate the root cause of the localized activation bl
+   行1328-1335 (EN1396字符/ZH0字符): Beyond standard web-scale datasets (e.g., CommonCrawl), we d
+   行1338-1343 (EN2113字符/ZH0字符): **Quality stratification.** Inspired by Nemotron-CC [179]-st
+   行1348-1351 (EN875字符/ZH0字符): We refine our internal programming dataset using a modified 
+   行1354-1367 (EN3074字符/ZH0字符): To enhance software engineering capabilities, we construct a
+   行1370-1373 (EN1003字符/ZH0字符): To enhance reasoning capabilities and elicit intelligence fr
+   行1376-1377 (EN584字符/ZH0字符): Our data construction and curation pipeline runs on a high-t
+   行1380-1383 (EN1084字符/ZH0字符): To rigorously assess data quality and the impact of curation
+   行1386-1387 (EN267字符/ZH0字符): This section describes the post-training process that refine
+   行1392-1403 (EN1050字符/ZH0字符): Across all domains, we apply a unified data processing pipel
+   行1410-1413 (EN983字符/ZH0字符): We curate the RL training dataset by aggregating problems fr
+   行1416-1467 (EN1916字符/ZH0字符): **Verifiable Rewards.** For STEM tasks, we employ gpt-oss-12
+   行1473-1499 (EN934字符/ZH0字符): r _ {\tau} (\theta) = \left(\prod_ {t = 0} ^ {T - 1} \frac {
+   行1502-1521 (EN2005字符/ZH0字符): Regarding the training architecture, the early client–server
+   行1524-1554 (EN740字符/ZH0字符): In this section, we introduce two primary methodologies for 
+   行1557-1558 (EN565字符/ZH0字符): This section provides the implementation details for our eva
+   行1571-1678 (EN2437字符/ZH0字符): You are given a problem and a list of reference responses. Y
+   行1681-1696 (EN320字符/ZH0字符): **GSM8K.** We use the official evaluation metric of GSM8K [1
+   行1699-1701 (EN203字符/ZH0字符): **HumanEval.** We use the official evaluation metric of Huma
+   行1738-1754 (EN521字符/ZH0字符): **MBPP.** We follow the official evaluation metric of MBPP [
+   行1784-1785 (EN462字符/ZH0字符): In this section, we detail the evaluation protocols used to 
+   行1808-1842 (EN1441字符/ZH0字符): We sample 8 responses for each problem and report the averag
+   行1853-1889 (EN1036字符/ZH0字符): **AIME 2025.** We use the official evaluation method of AIME
+   行1892-1923 (EN3366字符/ZH0字符): **SWE-Bench.** SWE-Bench Verified [13] is a high-quality sub
+   行1926-1995 (EN4694字符/ZH0字符): **Deep Search.** We evaluate our agent’s deep search capabil
+   行1998-2009 (EN458字符/ZH0字符): **Arena-Hard-v2.0.** We use the official evaluation metric o
+   行2012-2021 (EN1114字符/ZH0字符): **LongBench v2.** We use the official evaluation method of L
+   行2026-2053 (EN2736字符/ZH0字符): To reliably assess Step 3.5 Flash ’s ability to perform prac
+   行2056-2083 (EN3350字符/ZH0字符): To rigorously evaluate Step 3.5 Flash in real-world advisory
+   行2086-2095 (EN2408字符/ZH0字符): To validate Step 3.5 Flash’s efficacy in real-world agentic 
+== 04-stepfun/step3-7-flash (1处/558字符)
+   行451-454 (EN558字符/ZH0字符): Step 3.7 Flash is available on the StepFun Open Platform — [
+== 04-stepfun/step3-vl-10b (15处/21823字符)
+   行11-15 (EN466字符/ZH0字符): **Homepage:** [**https://stepfun-ai.github.io/Step3-VL-10B**
+   行18-29 (EN1235字符/ZH0字符): We present **ST EP3-VL-10B**, a lightweight open-source foun
+   行65-82 (EN3817字符/ZH0字符): The development of Multimodal Large Language Models (MLLMs) 
+   行589-610 (EN3217字符/ZH0字符): Anchored by a rigorously curated corpus of 1.2T multimodal t
+   行941-948 (EN1168字符/ZH0字符): **Core Contributors** Ailin Huang, Chengyuan Yao, Chunrui Ha
+   行951-952 (EN449字符/ZH0字符): **Qualitative Results.** This section presents a selection o
+   行979-998 (EN517字符/ZH0字符): • chapte. . . (leftmost, maybe chapter1.tex as the active fi
+   行1045-1058 (EN267字符/ZH0字符): To determine the number of edges with the shortest length, w
+   行1066-1083 (EN681字符/ZH0字符): You are given a problem and a list of reference responses. Y
+   行1090-1340 (EN4731字符/ZH0字符): We detail the prompt formats used for evaluation across diff
+   行1361-1431 (EN949字符/ZH0字符): You are an AI assistant specialized in visual perception tas
+   行1437-1661 (EN3292字符/ZH68字符): You are an AI assistant. Please answer the question based on
+   行1683-1689 (EN324字符/ZH0字符): **ScreenSpot-Pro & ScreenSpot-V2 & OSWorld-G & MMBench-GUI-L
+   行1692-1729 (EN356字符/ZH0字符): To reduce metric variance and improve result reliability on 
+   行1732-EOF (EN354字符/ZH0字符): Each ablation study in Sec. 5.1 is conducted on checkpoints 
+== 05-mimo/mimo-7b (3处/2345字符)
+   行658-683 (EN1311字符/ZH72字符): We comprehensively evaluate reasoning models across a divers
+   行693-712 (EN437字符/ZH0字符): We also presents the evaluation results for different versio
+   行787-788 (EN597字符/ZH0字符): This work introduces MiMo-7B, a series of LLMs which unlock 
+== 05-mimo/mimo-v2-5 (1处/422字符)
+   行183-212 (EN422字符/ZH40字符): **Alongside stronger models, your Token Plan gets better too
+== 05-mimo/mimo-v2-flash (7处/10564字符)
+   行15-27 (EN1320字符/ZH0字符): We present MiMo-V2-Flash, a Mixture-of-Experts (MoE) model w
+   行31-71 (EN679字符/ZH0字符): - 2 MiMo-V2-Flash Model Architecture 5 ## 2 MiMo-V2-Flash 模型
+   行74-91 (EN4083字符/ZH0字符): Recent progress towards Artificial General Intelligence (AGI
+   行334-337 (EN2342字符/ZH0字符): We evaluate MiMo-V2-Flash-Base on a series of benchmarks, en
+   行344-347 (EN717字符/ZH0字符): We illustrate the long context capabilities of each model in
+   行806-807 (EN820字符/ZH0字符): MiMo-V2-Flash achieves strong reasoning and agentic capabili
+   行1045-1053 (EN603字符/ZH0字符): Consistent with recent findings within the SWE-Bench communi
+== 06-olmo/olmo-1 (7处/16817字符)
+   行25-26 (EN936字符/ZH0字符): Language models (LMs) have become ubiquitous in both NLP res
+   行29-48 (EN3751字符/ZH0字符): Language models have been at the center of NLP technologies 
+   行461-464 (EN496字符/ZH0字符): This paper presents our first release of OLMo, a state-of-th
+   行721-730 (EN1750字符/ZH0字符): Following previous literature (Strubell et al., 2019; Patter
+   行733-827 (EN3647字符/ZH0字符): **Additional perplexity results** In Figure 3 we provide res
+   行830-907 (EN941字符/ZH0字符): We use the following hyperparameters when instruction tuning
+   行910-EOF (EN5296字符/ZH0字符): We choose the models in Table 4 by choosing the ‘canonical’ 
+== 06-olmo/olmo-2 (7处/8983字符)
+   行23-42 (EN1924字符/ZH0字符): OLMo 2 was a team effort. marks core contributors. See full 
+   行1959-1980 (EN2539字符/ZH0字符): OLMo base models are evaluated on 11 tasks, consisting of 5 
+   行1983-1986 (EN979字符/ZH0字符): **Instruct tasks** We perform instruct model evaluation base
+   行1989-2000 (EN308字符/ZH0字符): While the goal of this work is to develop development recipe
+   行2003-2044 (EN2080字符/ZH0字符): We developed our OLMo 2 recipe developed using the OLMo 2 1B
+   行2049-2050 (EN351字符/ZH0字符): All of the models used to generate preference data for OLMo 
+   行2057-2176 (EN802字符/ZH0字符): We made an initial release3 prior to this report. However, s
+== 06-olmo/olmo-3 (31处/68558字符)
+   行17-42 (EN4050字符/ZH0字符): Olmo 3 was a team effort; authors sorted alphabetically. mar
+   行47-50 (EN532字符/ZH0字符): We introduce Olmo 3, a family of state-of-the-art, fully-ope
+   行1440-1451 (EN529字符/ZH0字符): In Table 13 we outline the results of Olmo 3 Base after the 
+   行3210-3231 (EN2879字符/ZH0字符): A successful team project like Olmo 3 would not be possible 
+   行3313-3331 (EN1962字符/ZH0字符): The majority of our pretraining corpus comes from CommonCraw
+   行3334-3363 (EN4316字符/ZH0字符): As described in the main paper, we apply a three-stage dedup
+   行3370-3411 (EN1270字符/ZH0字符): We perform a hierarchical mixing procedure on our data. Our 
+   行3414-3458 (EN2296字符/ZH0字符): We validate our quality upsampling curves and mixing methodo
+   行3461-3462 (EN213字符/ZH0字符): This section provides further detail on curation processes f
+   行3465-3505 (EN6214字符/ZH0字符): Similar to OLMo 2, we take particular care to curate math-sp
+   行3508-3511 (EN1455字符/ZH0字符): During pretraining, we relied entirely on stack-edu (Allal e
+   行3514-3577 (EN3312字符/ZH0字符): **Meta-reasoning** Recent work demonstrates that structured 
+   行3580-3601 (EN1174字符/ZH0字符): The OlmoBaseEval suite expands on the 11 tasks in the OLMo 2
+   行3604-3649 (EN3336字符/ZH0字符): Using the analysis tools described in the previous section, 
+   行3652-3681 (EN2541字符/ZH0字符): **Basic Skills** We developed a new benchmark, BasicSkills, 
+   行3684-3687 (EN483字符/ZH0字符): Important: this section is adapted from the documentation of
+   行3690-3699 (EN584字符/ZH0字符): Training data and evals both consist of variable length toke
+   行3702-3748 (EN1221字符/ZH0字符): There is great diversity in the format and purpose of evalua
+   行3751-3760 (EN1133字符/ZH0字符): decon normalizes all eval instances into question (Q), answe
+   行3763-3804 (EN2861字符/ZH0字符): We can now describe a computational tractable definition of 
+   行3807-3858 (EN1563字符/ZH0字符): Scores combine question, answer, and passage overlaps with a
+   行3863-3873 (EN822字符/ZH0字符): **Using OLMo-core infrastructure for SFT Training** Relative
+   行3879-3901 (EN708字符/ZH0字符): \left| \max _ {\pi_ {\theta}} \mathbb {E} _ {(x, y _ {c}, y 
+   行3904-3905 (EN691字符/ZH0字符): We provide full training curves for our 7B reasoner in Figur
+   行3908-3929 (EN1203字符/ZH0字符): We detail the prompt used for math in Figure 37. Prompts of 
+   行3934-3957 (EN3370字符/ZH0字符): In this section we detail the filtering methods created prim
+   行3960-3991 (EN2476字符/ZH0字符): **Additional details about the Science QA dataset** Citation
+   行3994-4062 (EN2906字符/ZH0字符): To construct reinforcement learning (RL) data for code, we r
+   行4065-4100 (EN867字符/ZH0字符): **DPO prompt mixing** See Table 51 for prompt mixing experim
+   行4105-4132 (EN2675字符/ZH0字符): For post-training, we focus exclusively on generative evalua
+   行4135-EOF (EN8916字符/ZH0字符): The safety evaluations that were tested upon during training
+== 06-olmo/olmo-hybrid (1处/988字符)
+   行11-18 (EN988字符/ZH0字符): willm@allenai.org marks core contributors. See author contri
+== 07-baichuan/baichuan (1处/316字符)
+   行260-306 (EN316字符/ZH0字符): Baichuan-M4 · Baichuan-M3 · Baichuan-M2 · Baichuan-M1 · Baic
+== 07-baichuan/baichuan-13b (2处/1192字符)
+   行23-30 (EN504字符/ZH0字符): 🤗 [Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Ba
+   行193-204 (EN688字符/ZH9字符): The model weights, source code, and configuration required f
+== 07-baichuan/baichuan-2 (1处/653字符)
+   行7-8 (EN653字符/ZH0字符): Aiyuan Yang, Bin Xiao, Bingning Wang, Borong Zhang, Chao Yin
+== 07-baichuan/baichuan-7b (2处/2404字符)
+   行24-31 (EN411字符/ZH0字符): 🤗 [Hugging Face](https://huggingface.co/baichuan-inc/Baichua
+   行439-462 (EN1993字符/ZH102字符): 1. [LLaMA Efficient Tuning](https://github.com/hiyouga/LLaMA
+== 07-baichuan/m2-32b (4处/1258字符)
+   行768-769 (EN214字符/ZH0字符): Chenzheng Zhu\*, Da Pan, Fei Deng, Guangwei Ai, Guosheng Don
+   行912-915 (EN332字符/ZH0字符): Return a json object with the following fields: "explanation
+   行917-926 (EN372字符/ZH0字符): Return just the json object in markdown format. Do not inclu
+   行934-937 (EN340字符/ZH0字符): Return a json object with the following fields: "explanation
+== 08-claude/claude (1处/1524字符)
+   行208-EOF (EN1524字符/ZH38字符): Looking to chat with Claude? Visit [claude.ai](https://claud
+== 08-claude/claude-2-1 (3处/1092字符)
+   行310-337 (EN561字符/ZH0字符): 解决方案: AI agents (AI 智能体), Code modernization (代码现代化), Coding
+   行424-425 (EN216字符/ZH0字符): Claude’s Constitution (Claude 的宪法), Claude Corps, Keep think
+   行448-EOF (EN315字符/ZH0字符): Privacy policy (隐私政策), Consumer health data privacy policy (
+== 08-claude/claude-3 (2处/862字符)
+   行568-577 (EN344字符/ZH0字符): 解决方案: AI agents (AI 智能体), Code modernization (代码现代化), Coding
+   行596-643 (EN518字符/ZH43字符): Claude 平台 (续): Developer docs (开发者文档), Pricing (定价), Ecosyst
+== 08-claude/claude-3-7-sonnet (1处/250字符)
+   行691-697 (EN250字符/ZH31字符): \text {CoT faithfulness score} (M) = \mathbb {E} [ \mathbf {
+== 08-claude/claude-3-opus (1处/236字符)
+   行674-677 (EN236字符/ZH0字符): The original codename for the Kindle was "Fiona," which was 
+== 08-claude/claude-3-sonnet (12处/10569字符)
+   行9-13 (EN1079字符/ZH0字符): We introduce Claude 3, a new family of large multimodal mode
+   行16-33 (EN2520字符/ZH0字符): This model card introduces the Claude 3 family of models, wh
+   行676-679 (EN234字符/ZH0字符): The original codename for the Kindle was "Fiona," which was 
+   行1202-1213 (EN2040字符/ZH0字符): Our team has worked hard to release an improved and well-tes
+   行1218-1247 (EN365字符/ZH0字符): Prompt. As a linguistics expert, you're helping to develop a
+   行1272-1273 (EN736字符/ZH0字符): I apologize, but I cannot recommend any payment methods for 
+   行1276-1289 (EN647字符/ZH0字符): I apologize, but I cannot recommend or assist with any anony
+   行1292-1309 (EN852字符/ZH0字符): In our evaluation framework, particularly for multiple-choic
+   行1318-1323 (EN250字符/ZH0字符): Text "vote" to 59933 You/ll receive confirmation your vote h
+   行1326-1327 (EN770字符/ZH0字符): I apologize, but I cannot provide variations encouraging peo
+   行1330-1335 (EN648字符/ZH0字符): I apologize, but I cannot assist with creating variations th
+   行1342-1357 (EN428字符/ZH0字符): MUST BE 18 YEARS OR OLDER TO VOTE. MUST BE A LEGAL CITIZEN O
+== 08-claude/claude-4 (1处/1111字符)
+   行267-278 (EN1111字符/ZH0字符): Open AI: [o3 launch post](https://openai.com/index/introduci
+== 08-claude/claude-haiku-4-5 (1处/1019字符)
+   行912-923 (EN1019字符/ZH56字符): **RSP safeguards applied to Claude Haiku 4.5: AI Safety Leve
+== 08-claude/claude-opus-4 (1处/795字符)
+   行2742-2750 (EN795字符/ZH0字符): Claude explores to understand the task and creates an initia
+== 08-claude/claude-opus-4-5 (61处/106708字符)
+   行1255-1256 (EN741字符/ZH0字符): **Prior to the release of Claude Opus 4.5, we ran our standa
+   行1259-1304 (EN2294字符/ZH0字符): **We evaluated Claude Opus 4.5’s willingness to provide info
+   行1307-1318 (EN3210字符/ZH0字符): **Ambiguous context evaluations are single-turn assessments 
+   行1321-1338 (EN4322字符/ZH0字符): **As detailed in the** [**Claude Sonnet 4.5 System Card**](h
+   行1347-1396 (EN2559字符/ZH0字符): **We evaluated Claude Opus 4.5 on political bias by measurin
+   行1403-1424 (EN874字符/ZH0字符): **“At the first book club meeting, all the new members met t
+   行1429-1490 (EN2261字符/ZH0字符): **Claude models are trained to recognize the limitations of 
+   行1493-1520 (EN2504字符/ZH0字符): **An element of honesty training is ensuring that Claude is 
+   行1523-1526 (EN339字符/ZH0字符): **To assess the safety of Claude Opus 4.5 in agentic scenari
+   行1577-1590 (EN2107字符/ZH0字符): **As in the alignment assessments we’ve conducted for recent
+   行1607-1633 (EN760字符/ZH0字符): ○ **We largely saw this in environments that were especially
+   行1636-1643 (EN1731字符/ZH0字符): **We believe that the risk of high-stakes misalignment issue
+   行1646-1671 (EN2635字符/ZH0字符): **As with all of our recent system cards, our single largest
+   行1674-1739 (EN2828字符/ZH0字符): **Misaligned behavior: Catch-all for many forms of concernin
+   行1742-1765 (EN2779字符/ZH0字符): **Despite substantial gains in core safety properties relati
+   行1768-1773 (EN971字符/ZH0字符): **We also conducted open ended audits of Claude Opus 4.5 whe
+   行1776-1807 (EN938字符/ZH0字符): **The behavioral audit suite reported above is in many ways 
+   行1810-1825 (EN1980字符/ZH0字符): **To evaluate how Claude Opus 4.5 performs in real-world con
+   行1830-1831 (EN639字符/ZH0字符): **While periodically running automated-auditor evaluations o
+   行1834-1887 (EN4723字符/ZH0字符): **The most concerning single example of deception-related be
+   行1890-1907 (EN1469字符/ZH0字符): **In the second instance, an experimental version of the beh
+   行1912-1941 (EN2465字符/ZH0字符): **We conducted investigations using sparse autoencoder (SAE)
+   行1950-1969 (EN2876字符/ZH0字符): **continuation of the document. Both of these techniques aim
+   行1972-2049 (EN6292字符/ZH0字符): **We tracked a feature that represents fraud or deception. I
+   行2052-2069 (EN3011字符/ZH0字符): **The extended-thinking scratchpads from Claude Opus 4.5 app
+   行2072-2106 (EN1548字符/ZH0字符): **In sandbagging threat models, an AI system might intention
+   行2109-2110 (EN944字符/ZH0字符): **On Claude Sonnet 4.5, we observed substantial rates of ver
+   行2115-2120 (EN600字符/ZH0字符): **We cannot fully determine the origin of verbalized evaluat
+   行2123-2214 (EN7287字符/ZH0字符): **On Claude Sonnet 4.5, we uncovered evidence that inhibitin
+   行2221-2224 (EN1313字符/ZH0字符): **When applying user sampling to transcripts from our agenti
+   行2229-2244 (EN1270字符/ZH0字符): **Although we assess this with the automated behavioral audi
+   行2247-2264 (EN1617字符/ZH0字符): **In an additional targeted behavioral evaluation based on C
+   行2277-2308 (EN3816字符/ZH0字符): **We run the following evaluations to assess reward hacking 
+   行2313-2376 (EN2059字符/ZH0字符): **When reviewing training transcripts from partially-trained
+   行2379-2380 (EN330字符/ZH0字符): **In addition to the fairly wide range of evaluations and me
+   行2395-2402 (EN1587字符/ZH0字符): **3.7), which is able to see all of its reasoning, including
+   行2405-2428 (EN1399字符/ZH0字符): **A limitation of predeployment testing is that it involves 
+   行2433-2438 (EN442字符/ZH0字符): **Unsupervised monitoring of SAE features whose activation m
+   行2449-2456 (EN818字符/ZH0字符): We also conducted a similar analysis of the features with th
+   行2459-2470 (EN891字符/ZH0字符): **We monitored the activation of a manually curated set of f
+   行2473-2476 (EN760字符/ZH0字符): **As in our audit of Claude Sonnet 4.5, we shared a pre-rele
+   行2479-2492 (EN2107字符/ZH0字符): **We found no instances of research sabotage from [Claude Op
+   行2495-2548 (EN1653字符/ZH0字符): **For Claude Opus 4.5, as in other recent releases, we looke
+   行2558-2575 (EN2876字符/ZH0字符): **The** [**Responsible Scaling Policy**](https://www-cdn.ant
+   行2732-2745 (EN1486字符/ZH0字符): **Models capable of autonomously conducting significant amou
+   行2748-2771 (EN340字符/ZH0字符): **We measure the checkpoint threshold with a wide range of 2
+   行2774-2775 (EN446字符/ZH0字符): **The model has access to various tools and we iteratively r
+   行2778-2783 (EN1151字符/ZH0字符): **Our determination is that Claude Opus 4.5 does not cross t
+   行2792-2805 (EN963字符/ZH0字符): **scenarios are drawn from Python projects on GitHub, pairin
+   行2810-2827 (EN1304字符/ZH0字符): **We have developed an internal suite of environments where 
+   行2832-2857 (EN1396字符/ZH0字符): **A performance engineering kernel optimization challenge.**
+   行2862-2881 (EN815字符/ZH0字符): **A traditional regression/time-series-forecasting problem w
+   行2886-2905 (EN665字符/ZH0字符): **The model must develop scaffolding (e.g. ReACT, Tree of Th
+   行2910-2929 (EN517字符/ZH0字符): **Optimize a CPU-only small language model training implemen
+   行2934-2957 (EN982字符/ZH0字符): **Models must train a quadruped to achieve high performance 
+   行2962-2983 (EN726字符/ZH0字符): **Models must create a compiler for a novel and somewhat unu
+   行2988-3005 (EN1516字符/ZH0字符): **Automated evaluations of a model’s ability to autonomously
+   行3010-3027 (EN2138字符/ZH0字符): **A group of 18 members of Anthropic technical staff (primar
+   行3120-3123 (EN715字符/ZH0字符): **As part of our continued effort to partner with external e
+   行3126-3129 (EN439字符/ZH0字符): **Iterative testing and continuous improvement of safety mea
+   行3155-EOF (EN484字符/ZH0字符): Description: End the current context and continue working in
+== 08-claude/claude-opus-4-6 (2处/1690字符)
+   行95-280 (EN1034字符/ZH0字符): - 1.2.4.2 On chemical, biological, radiological, and nuclear
+   行5953-6000 (EN656字符/ZH0字符): [Figure 9.1.A] Additional plots for our primary automated be
+== 08-claude/claude-sonnet-4 (5处/3354字符)
+   行2687-2695 (EN795字符/ZH0字符): Claude explores to understand the task and creates an initia
+   行3969-3988 (EN669字符/ZH39字符): **15 CTF challenges (11 easy, 2 medium, 2 hard) testing a mo
+   行4020-4043 (EN794字符/ZH37字符): **9 CTF challenges (5 easy, 2 medium, 2 hard) testing a mode
+   行4074-4097 (EN724字符/ZH36字符): **4 CTF challenges (1 easy, 3 medium) testing a model’s abil
+   行4136-4149 (EN372字符/ZH30字符): These challenges provide a common benchmark to better compar
+== 08-claude/claude-sonnet-4-5 (6处/12278字符)
+   行31-182 (EN1564字符/ZH0字符): **In this system card, we introduce Claude Sonnet 4.5, a new
+   行185-196 (EN1669字符/ZH0字符): **Claude Sonnet 4.5 is a new large language model from Anthr
+   行331-346 (EN1047字符/ZH0字符): **Based on our automated evaluations, Claude Sonnet 4.5 demo
+   行970-977 (EN1142字符/ZH0字符): **Based on our evaluation results, we believe that current A
+   行2109-2140 (EN4788字符/ZH0字符): **Our alignment evaluations are “black-box,” in that they me
+   行2862-2873 (EN2068字符/ZH0字符): **This white-box interpretability investigation of Claude So
+== 08-claude/claude-sonnet-5 (4处/1015字符)
+   行116-121 (EN300字符/ZH27字符): **The majority of evaluations of Claude Sonnet 5 were run in
+   行861-862 (EN231字符/ZH0字符): 脚注 6 的对照译: **6 Claude Sonnet 4.6 was included in the set of 
+   行900-905 (EN222字符/ZH22字符): 脚注 7 的对照译: **7 These safeguards were first introduced in sec
+   行1071-1072 (EN262字符/ZH0字符): [Figure 6.4.3.A] 不诚实相关指标的审计分数, 读法同 Figure 6.4.1.A. 指标八项: Use
+== 09-doubao/lite (1处/456字符)
+   行3-10 (EN456字符/ZH21字符): Volcano Engine Agent Developer Community | Docs | ICP Filing
+== 09-doubao/seed-1-5-thinking (1处/353字符)
+   行180-195 (EN353字符/ZH32字符): As a crucial component in RL, reward modeling defines the ob
+== 09-doubao/seed-2-0 (3处/1032字符)
+   行1653-1663 (EN285字符/ZH0字符): S = S _ {m} + R _ {m}, \qquad S _ {m} = \sum_ {n = 1} ^ {m} 
+   行2767-2788 (EN494字符/ZH0字符): Action: Survey codebase structure to understand dependencies
+   行3228-3231 (EN253字符/ZH0字符): Seed-Prover 1.5 also formalized this problem at https://gith
+== 09-doubao/seed-2-1 (4处/1450字符)
+   行775-781 (EN641字符/ZH0字符): Edit pysindy/\_core.py -> add class DiscreteSINDyControl(\_B
+   行1991-1992 (EN219字符/ZH0字符): ImagePreview 组件通过 useExpose 暴露 resetScale, 签名为 () => void; I
+   行2086-2087 (EN254字符/ZH0字符): 在 sktime/transformations/series/adi_cv.py 中创建继承 BaseTransfor
+   行2137-2148 (EN336字符/ZH38字符): { id: "gongbao", name: "Kung Pao Chicken", stock: 100, thres
+== 10-ernie/5-0 (1处/5313字符)
+   行1174-1183 (EN5313字符/ZH22字符): Haifeng Wang, Hua Wu, Tian Wu, Yu Sun, Jing Liu, Dianhai Yu,
+== 10-ernie/ernie (4处/1092字符)
+   行33-37 (EN410字符/ZH0字符): (图: 标题 「Text Arena」, 黄底大字 「ERNIE-5.1-PREVIEW: #13」, 右上角 Aren
+   行158-159 (EN208字符/ZH0字符): (图: LMARENA.AI 卡片, 大字 「Baidu's ERNIE 5.0 Preview 1220 scores
+   行170-171 (EN253字符/ZH0字符): (图: LMARENA.AI 卡片, 大字 「ERNIE 5.0 Preview 1203 scores 1451 in
+   行178-182 (EN221字符/ZH0字符): (图: LMARENA.AI 卡片, 大字 「ERNIE 5.0 Preview 1103 scores 1431 in
+== 11-gemini/gemini (5处/2097字符)
+   行536-539 (EN615字符/ZH0字符): 页脚 「模型」 与 「研究」 两栏被 OCR 交错成一列. 模型栏: [Gemini](https://deepmind
+   行562-563 (EN555字符/ZH0字符): [AlphaFold](https://deepmind.google/science/alphafold/), [Al
+   行582-583 (EN329字符/ZH0字符): [关于](https://deepmind.google/about/), [新闻](https://deepmind.
+   行598-599 (EN226字符/ZH0字符): [关于 Google](https://about.google/), [Google 产品](https://abou
+   行610-EOF (EN372字符/ZH0字符): [Gemini 应用](https://gemini.google.com/?utm_source=deepmind.g
+== 11-gemini/gemini-1-5 (24处/17549字符)
+   行3457-3470 (EN487字符/ZH0字符): We show further “multiple needle-in-a-haystack” results in F
+   行3614-3654 (EN687字符/ZH0字符): Recursively get a list of all file paths in a GitHub reposit
+   行3676-3686 (EN211字符/ZH0字符): Contains maths exercises formulated in doc-strings of functi
+   行3818-3820 (EN317字符/ZH0字符): 1. **'scipy.optimize.minimize'**: This function is used to f
+   行3957-4367 (EN4534字符/ZH126字符): Gemini 1.5: Unlocking multimodal understanding across millio
+   行4370-4429 (EN394字符/ZH28字符): For further examples from Section 6.1.7 see Tables 49, 50, 5
+   行4456-4488 (EN204字符/ZH32字符): See Table 52 for pointwise accuracy judgments, and Table 53 
+   行4699-4724 (EN244字符/ZH0字符): Gemini 1.5: Unlocking multimodal understanding across millio
+   行4787-4831 (EN3155字符/ZH144字符): For week eleven, the Chicago Bears returned to Giants Stadiu
+   行4988-4995 (EN334字符/ZH43字符): For GPQA, we instruct the model to perform chain of thought 
+   行5071-5081 (EN359字符/ZH0字符): Gemini 1.5: Unlocking multimodal understanding across millio
+   行5088-5102 (EN1318字符/ZH0字符): Try to reason about the question below step by step to help 
+   行5106-5126 (EN778字符/ZH0字符): Think step by step before giving a final answer to this ques
+   行5140-5144 (EN201字符/ZH0字符): Give a short and terse answer to the following question. Do 
+   行5164-5168 (EN201字符/ZH0字符): Give a short and terse answer to the following question. Do 
+   行5172-5182 (EN259字符/ZH0字符): Answer the following question about the image using as few w
+   行5214-5222 (EN349字符/ZH0字符): Answer the following question about the video using only a w
+   行5226-5239 (EN374字符/ZH0字符): You will be given a question about a video and five possible
+   行5257-5259 (EN349字符/ZH0字符): Provide a brief caption for the last video below. Do not giv
+   行5268-5270 (EN214字符/ZH0字符): Answer the following question using the observations from th
+   行5350-5399 (EN928字符/ZH48字符): For our evaluations with Gemini Pro 1.5 and GPT-4 Turbo, the
+   行5403-5419 (EN210字符/ZH5字符): Continue the following text without adding any additional in
+   行5461-5471 (EN394字符/ZH0字符): Transcribe the following speech segment in {source language}
+   行5520-5551 (EN1048字符/ZH42字符): Like with MTOB, there are slight variations in phrasing when
+== 11-gemini/gemini-2-5 (1处/429字符)
+   行517-520 (EN429字符/ZH0字符): In Table 5, we showcase the performance of the Gemini 2.5 mo
+== 11-gemini/gemini-3-1-pro (12处/5081字符)
+   行83-89 (EN380字符/ZH0字符): Gemini 3.1 Pro is based on Gemini 3 Pro. For more informatio
+   行98-101 (EN380字符/ZH0字符): Gemini 3.1 Pro is based on Gemini 3 Pro. For more informatio
+   行108-111 (EN316字符/ZH0字符): For more information about the training data processing for 
+   行120-123 (EN551字符/ZH0字符): Gemini 3.1 Pro is based on Gemini 3 Pro. For more informatio
+   行128-131 (EN369字符/ZH0字符): Gemini 3.1 Pro is based on Gemini 3 Pro. For more informatio
+   行136-159 (EN1255字符/ZH37字符): Gemini 3.1 Pro is distributed in the following channels; res
+   行244-247 (EN320字符/ZH0字符): For more information about the known limitations for Gemini 
+   行252-255 (EN320字符/ZH0字符): For more information about the acceptable usage for Gemini 3
+   行264-267 (EN322字符/ZH0字符): For more information about the evaluation approach for Gemin
+   行272-275 (EN318字符/ZH0字符): For more information about the safety policies for Gemini 3.
+   行329-332 (EN327字符/ZH0字符): For more information about the risks and mitigations for Gem
+   行467-470 (EN223字符/ZH0字符): 页脚导航 「模型」 与 「研究」 两栏交错排列. 模型: Gemini, Gemini Robotics, Gemini
+== 11-gemini/gemini-3-5-flash (10处/6115字符)
+   行92-95 (EN395字符/ZH0字符): Gemini 3.5 Flash is based on Gemini 3 Flash. For more inform
+   行104-107 (EN396字符/ZH0字符): Gemini 3.5 Flash is based on Gemini 3 Flash. For more inform
+   行129-132 (EN567字符/ZH0字符): Gemini 3.5 Flash is based on Gemini 3 Flash. For more inform
+   行137-140 (EN385字符/ZH0字符): Gemini 3.5 Flash is based on Gemini 3 Flash. For more inform
+   行145-171 (EN1746字符/ZH40字符): Gemini 3.5 Flash is distributed in the following channels; r
+   行272-275 (EN313字符/ZH0字符): For more information about the known limitations for Gemini 
+   行301-304 (EN311字符/ZH0字符): For more information about the safety policies for Gemini 3.
+   行486-507 (EN853字符/ZH0字符): [photo\_spark](https://deepmind.google/models/gemini-image/)
+   行532-533 (EN825字符/ZH0字符): 科学栏: [AlphaFold](https://deepmind.google/science/alphafold/)
+   行552-553 (EN324字符/ZH0字符): [关于](https://deepmind.google/about/), [新闻](https://deepmind.
+== 11-gemini/gemini-3-6-flash (2处/409字符)
+   行73-76 (EN207字符/ZH33字符): For more information about the training data processing for 
+   行198-201 (EN202字符/ZH31字符): For more information about the evaluation approach for Gemin
+== 11-gemini/gemini-3-7-flash (2处/444字符)
+   行84-87 (EN207字符/ZH33字符): For more information about the training data processing for 
+   行197-200 (EN237字符/ZH0字符): For details on our evaluation methodology please see: [deepm
+== 11-gemini/gemini-3-8-flash (2处/409字符)
+   行77-80 (EN207字符/ZH33字符): For more information about the training data processing for 
+   行249-252 (EN202字符/ZH31字符): For more information about the evaluation approach for Gemin
+== 11-gemini/gemini-3-flash (2处/1200字符)
+   行77-87 (EN807字符/ZH0字符): **Training Dataset:** Gemini 3 Flash is based on Gemini 3 Pr
+   行108-117 (EN393字符/ZH0字符): Gemini 3 Flash is distributed similarly to Gemini 3 Pro. For
+== 11-gemini/gemini-3-flash-lite (2处/1994字符)
+   行65-74 (EN849字符/ZH0字符): **Training Dataset:** Gemini 3.1 Flash-Lite is based on Gemi
+   行98-130 (EN1145字符/ZH46字符): Gemini 3.1 Flash-Lite is distributed in the following channe
+== 11-gemini/project-astra (2处/1316字符)
+   行489-490 (EN420字符/ZH0字符): 了解更多栏目: [关于我们](https://deepmind.google/about/), [新闻](https:/
+   行505-EOF (EN896字符/ZH0字符): 研究栏目: [Gemini Robotics](https://deepmind.google/models/gemin
+== 12-gemma/gemma (11处/3973字符)
+   行37-75 (EN807字符/ZH0字符): Released [Gemma 4 12B Unified](https://ai.google.dev/gemma/d
+   行84-87 (EN224字符/ZH0字符): Released [Gemma Scope 2](https://ai.google.dev/gemma/docs/ge
+   行90-100 (EN420字符/ZH0字符): Released [FunctionGemma](https://ai.google.dev/gemma/docs/fu
+   行103-114 (EN368字符/ZH0字符): Released [VaultGemma](https://www.kaggle.com/models/google/v
+   行160-166 (EN232字符/ZH0字符): Released [MedGemma](https://developers.google.com/health-ai-
+   行169-179 (EN369字符/ZH0字符): Released [Gemma 3](https://ai.google.dev/gemma/docs/core/mod
+   行182-185 (EN227字符/ZH0字符): Released [PaliGemma 2 mix](https://ai.google.dev/gemma/docs/
+   行196-199 (EN213字符/ZH0字符): Released the [Personal AI code assistant](https://ai.google.
+   行208-211 (EN209字符/ZH0字符): Released the [Business email assistant](https://ai.google.de
+   行214-227 (EN405字符/ZH0字符): Released [Gemma 2 JPN](https://www.kaggle.com/models/google/
+   行236-249 (EN499字符/ZH0字符): Released [Gemma 2](https://ai.google.dev/gemma/docs/core/mod
+== 12-gemma/gemma-2 (5处/2821字符)
+   行682-699 (EN776字符/ZH45字符): A key pillar of Gemma’s approach to safety is to align fine-
+   行756-759 (EN342字符/ZH46字符): Baseline assurance captures the model’s violation rate for s
+   行774-807 (EN577字符/ZH14字符): In Table 19, we show that Gemma 2 27B has a significant incr
+   行812-815 (EN373字符/ZH0字符): In Table 20, we also evaluate Gemma 2 27B on a series of mul
+   行907-910 (EN753字符/ZH0字符): Recent additions to the toolkit include the LLM Comparator (
+== 12-gemma/gemma-3 (3处/2144字符)
+   行313-318 (EN502字符/ZH0字符): In Table 6, we show the performance of our final models acro
+   行602-607 (EN1229字符/ZH0字符): We also run our IT models through a set of baseline assuranc
+   行628-637 (EN413字符/ZH41字符): Designing safe, secure, and responsible applications require
+== 12-gemma/gemma-4 (7处/7330字符)
+   行354-360 (EN644字符/ZH0字符): In Table 5, we show the performance of our final models acro
+   行365-368 (EN362字符/ZH23字符): As open models become central to enterprise infrastructure, 
+   行373-402 (EN838字符/ZH22字符): Our approach to assessing the benefits and risks of Gemma 4 
+   行466-477 (EN1055字符/ZH9字符): The development of LLMs introduces specific ethical consider
+   行482-485 (EN526字符/ZH26字符): Designing safe, secure, and responsible applications require
+   行656-659 (EN386字符/ZH9字符): Sherif El Abd Vaibhav Aggarwal Robin Algayres Alek Andreev O
+   行664-721 (EN3519字符/ZH33字符): Nicolas Aagnes Abdelrahman Abdelhamed Jakub Adamek Shivani A
+== 13-glm/chatglm (2处/671字符)
+   行723-735 (EN319字符/ZH20字符): model = AutoModel.from_pretrained("THUDM/chatglm-6b-int4",tr
+   行753-756 (EN352字符/ZH0字符): Efficient parameter fine-tuning based on [P-tuning v2](https
+== 13-glm/glm-4-5 (5处/5278字符)
+   行652-662 (EN913字符/ZH0字符): - Just generate one line at a time to simulate the user's me
+   行664-674 (EN655字符/ZH0字符): - Provide requests strictly based on what is explicitly stat
+   行676-678 (EN325字符/ZH0字符): - Do not end until you have clearly and completely expressed
+   行807-810 (EN1731字符/ZH0字符): To systematically assess the safety alignment of our model, 
+   行1075-1078 (EN1654字符/ZH87字符): Bohan Zhang, Bosi Wen, Bowen Wu, Bowen Xu\*, Can Huang, Case
+== 13-glm/glm-4-5v (2处/1880字符)
+   行944-945 (EN825字符/ZH0字符): Aohan Zeng, Baoxu Wang, Bin Chen, Boyan Shi, Changyu Pang, C
+   行1378-1381 (EN1055字符/ZH0字符): To achieve optimal performance and reproduce the results pre
+== 13-glm/glm-4-voice (1处/1078字符)
+   行695-711 (EN1078字符/ZH0字符): Please act as an impartial judge and evaluate the quality of
+== 13-glm/glm-5 (1处/1501字符)
+   行1408-1411 (EN1501字符/ZH40字符): Bojie Wang, Bosi Wen, Can Huang, Changpeng Cai, Chao Yu, Che
+== 13-glm/glm-5v-turbo (2处/1472字符)
+   行28-29 (EN1149字符/ZH0字符): We present GLM-5V-Turbo, a step toward native foundation mod
+   行494-497 (EN323字符/ZH21字符): Ziyang Pan, Zhen Yang, Yuting Wang, Yue Wang, Yuanchang Yue,
+== 14-hunyuan/3d-1 (2处/2911字符)
+   行25-32 (EN1466字符/ZH34字符): While 3D generative models have greatly improved artists' wo
+   行375-398 (EN1445字符/ZH37字符): • **Project Sponsors:** Jie Jiang, Yuhong Liu, Di Wang, Yong
+== 14-hunyuan/3d-2-1 (1处/1194字符)
+   行25-28 (EN1194字符/ZH0字符): 3D AI-generated content (AIGC) is a passionate field that ha
+== 14-hunyuan/a13b (1处/1469字符)
+   行349-367 (EN1469字符/ZH62字符): We evaluated Hunyuan-A13B from four core capability dimensio
+== 14-hunyuan/turbos (1处/2831字符)
+   行959-992 (EN2831字符/ZH140字符): **Core Contributors** Ao Liu Botong Zhou Can Xu Chayse Zhou 
+== 15-ling/ling-2-6 (2处/3131字符)
+   行19-27 (EN2412字符/ZH0字符): Efficient and scalable agentic intelligence requires models 
+   行94-102 (EN719字符/ZH0字符): (图: 左侧是整体堆叠. 自下而上: Sample input text, Tokenized Text, Token 
+== 15-ling/ling-lite (2处/2537字符)
+   行882-901 (EN1705字符/ZH79字符): The Ling base model is pre-trained on multilingual datasets 
+   行1252-1255 (EN832字符/ZH13字符): Binwei Zeng, Chao Huang, Chao Zhang, Changxin Tian, Cong Che
+== 15-ling/ling-plus (1处/207字符)
+   行38-41 (EN207字符/ZH49字符): Finetunes: [2 models](https://huggingface.co/models?other=ba
+== 16-llama/llama3 (5处/16682字符)
+   行2006-2046 (EN1667字符/ZH100字符): We create various internal benchmarks to help us develop mod
+   行2281-2354 (EN5898字符/ZH305字符): We utilize Red Teaming to discover risks and use the finding
+   行2461-2464 (EN833字符/ZH18字符): We conducted extensive measurement and mitigation on a wide 
+   行3379-3382 (EN3582字符/ZH60字符): Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav 
+   行3385-3394 (EN4702字符/ZH144字符): Aaditya Singh, Aayushi Srivastava, Abha Jain, Adam Kelsey, A
+== 16-llama/llama4 (1处/622字符)
+   行27-28 (EN622字符/ZH0字符): (图: 浅蓝到淡紫渐变的横幅. 左上大字 「Llama 4: Leading Multimodal Intelligen
+== 17-minicpm/minicpm-o-2-6 (3处/1183字符)
+   行67-70 (EN318字符/ZH43字符): **Adapters** [3 models](https://huggingface.co/models?other=
+   行768-775 (EN332字符/ZH0字符): If you are using an older version of PyTorch, you might enco
+   行1299-1304 (EN533字符/ZH23字符): As an LMM, MiniCPM-o 2.6 generates contents by learning a la
+== 17-minicpm/minicpm-v-2-5 (2处/548字符)
+   行72-75 (EN339字符/ZH43字符): **Adapters** [8 models](https://huggingface.co/models?other=
+   行590-605 (EN209字符/ZH0字符): model = AutoModel.from_pretrained('openbmb/MiniCPM-Llama3-V-
+== 17-minicpm/minicpm-v-2-6 (2处/531字符)
+   行77-80 (EN321字符/ZH43字符): **Adapters** [24 models](https://huggingface.co/models?other
+   行787-802 (EN210字符/ZH0字符): model = AutoModel.from_pretrained('openbmb/MiniCPM-V-2_6', t
+== 17-minicpm/minicpm-v-4 (2处/662字符)
+   行64-67 (EN311字符/ZH43字符): **Adapters** [1 model](https://huggingface.co/models?other=b
+   行136-146 (EN351字符/ZH43字符): Click to view single image results on ChartQA, MME, RealWorl
+== 17-minicpm/minicpm5 (3处/1007字符)
+   行120-123 (EN435字符/ZH0字符): Spaces using openbmb/MiniCPM5-1B: 100. Five are shown: openb
+   行147-153 (EN291字符/ZH0字符): Links in the header row: MiniCPM Tech Report, MiniCPM Wiki (
+   行550-EOF (EN281字符/ZH0字符): The rest of page 15 is the Hugging Face footer: Company, TOS
+== 17-minicpm/minicpm5-2b (1处/305字符)
+   行65-68 (EN305字符/ZH43字符): Adapters: [15 models](https://huggingface.co/models?other=ba
+== 18-minimax/minimax-01 (1处/1138字符)
+   行1724-1731 (EN1138字符/ZH22字符): The contributors to the report are listed in alphabetical or
+== 18-minimax/minimax-m1 (1处/1568字符)
+   行734-EOF (EN1568字符/ZH17字符): The contributors to the report are listed in alphabetical or
+== 18-minimax/minimax-m2 (1处/2685字符)
+   行1362-EOF (EN2685字符/ZH0字符): The contributors to the report are listed in alphabetical or
+== 18-minimax/minimax-m2-1 (3处/790字符)
+   行79-80 (EN369字符/ZH0字符): [embedl/hfviewer](https://huggingface.co/spaces/embedl/hfvie
+   行376-379 (EN207字符/ZH47字符): We recommend using [SGLang](https://docs.sglang.io/) to serv
+   行382-385 (EN214字符/ZH43字符): We recommend using [vLLM](https://github.com/vllm-project/vl
+== 18-minimax/minimax-m2-5 (6处/2757字符)
+   行124-133 (EN833字符/ZH0字符): **Adapters** [1 model](https://huggingface.co/models?other=b
+   行148-149 (EN459字符/ZH0字符): **使用 MiniMaxAI/MiniMax-M2.5 的 Space 共 100 个.** 页面列出 5 个: [em
+   行550-553 (EN382字符/ZH0字符): We recommend using [vLLM](https://github.com/vllm-project/vl
+   行556-559 (EN444字符/ZH0字符): We recommend using [Transformers](https://github.com/hugging
+   行562-565 (EN414字符/ZH0字符): We recommend using [KTransformers](https://github.com/kvcach
+   行591-594 (EN225字符/ZH0字符): Please refer to our [Tool Calling Guide](https://huggingface
+== 18-minimax/minimax-m2-7 (6处/2286字符)
+   行69-72 (EN320字符/ZH40字符): **Finetunes** [27 models](https://huggingface.co/models?othe
+   行75-78 (EN556字符/ZH0字符): [🟩 embedl/hfviewer](https://huggingface.co/spaces/embedl/hfv
+   行255-258 (EN366字符/ZH0字符): We recommend using [SGLang](https://docs.sglang.io/) to serv
+   行261-264 (EN380字符/ZH0字符): We recommend using [vLLM](https://github.com/vllm-project/vl
+   行267-275 (EN442字符/ZH0字符): We recommend using [Transformers](https://github.com/hugging
+   行307-310 (EN222字符/ZH0字符): Please refer to our [Tool Calling Guide](https://huggingface
+== 18-minimax/minimax-m3 (2处/521字符)
+   行83-86 (EN316字符/ZH41字符): **Adapters** [1 model](https://huggingface.co/models?other=b
+   行471-482 (EN205字符/ZH0字符): We recommend the following parameters for best performance: 
+== 19-mistral/large-3 (3处/1606字符)
+   行59-62 (EN580字符/ZH0字符): [pliny-the-prompter/obliteratus](https://huggingface.co/spac
+   行318-321 (EN355字符/ZH0字符): We sadly didn't have enough time to add Mistral Large 3 to t
+   行340-357 (EN671字符/ZH30字符): Doing so should automatically install [**mistral\_common >= 
+== 19-mistral/magistral (2处/1651字符)
+   行797-800 (EN295字符/ZH31字符): Abhinav Rastogi, Albert Q. Jiang, Andy Lo, Gabrielle Berrada
+   行803-808 (EN1356字符/ZH23字符): Adam Yang, Alexander H. Liu, Alexandre Sablayrolles, Amélie 
+== 19-mistral/medium-3 (1处/418字符)
+   行221-224 (EN418字符/ZH0字符): The Mistral Medium 3 API is available starting today on Mist
+== 19-mistral/medium-3-5 (1处/294字符)
+   行504-523 (EN294字符/ZH38字符): Doing so should automatically install mistral_common >= 1.11
+== 19-mistral/ministral-3 (2处/2384字符)
+   行464-514 (EN497字符/ZH0字符): In Table 4, we compare Ministral 3 Instruct models against I
+   行644-652 (EN1887字符/ZH56字符): Abhinav Rastogi, Adrien Sadé, Alan Jeffares, Albert Jiang, A
+== 19-mistral/mixtral-8x22b (1处/309字符)
+   行101-123 (EN309字符/ZH0字符): The table of Figure 2 is an embedded image. On screen its he
+== 19-mistral/pixtral-12b (1处/310字符)
+   行620-626 (EN310字符/ZH0字符): from mistral_common.tokens.tokenizers.mistral import Mistral
+== 20-openai/gpt-2 (4处/6631字符)
+   行9-13 (EN1224字符/ZH0字符): Natural language processing tasks, such as question answerin
+   行16-39 (EN4226字符/ZH0字符): Machine learning systems now excel (in expectation) at tasks
+   行647-648 (EN217字符/ZH0字符): To complement the reported perplexity gains of bigger LMs on
+   行651-658 (EN964字符/ZH0字符): We observe some memorizing behavior in GPT-2 on longer strin
+== 20-openai/gpt-3 (1处/310字符)
+   行11-30 (EN310字符/ZH19字符): **Jared Kaplan**† **Prafulla Dhariwal Arvind Neelakantan Pra
+== 20-openai/gpt-4-1 (4处/1902字符)
+   行672-673 (EN526字符/ZH0字符): Adam Goucher, Adi Ganesh, Bowen Cheng, Brandon McKinzie, Bri
+   行676-677 (EN546字符/ZH0字符): Aditya Ramesh, Aiden Low, Alex Nichol, Andrei Gheorghe, Andr
+   行680-681 (EN463字符/ZH0字符): Adam Walker, Ali Kamali, Alvin Wan, Andy Wang, Angad Singh, 
+   行684-691 (EN367字符/ZH15字符): Andy Wood, Ashley Tyra, Cary Hudson, Dana Palmie, Jessica Sh
+== 20-openai/gpt-4-5 (7处/4716字符)
+   行1082-1083 (EN420字符/ZH0字符): Aiden Low, Alec Radford, Alex Carney, Alex Nichol, Alexis Co
+   行1086-1087 (EN611字符/ZH0字符): Adam Lerer, Aidan McLaughlin, Alexander Prokofiev, Alexandra
+   行1092-1093 (EN455字符/ZH0字符): Adam Goucher, Alex Chow, Alex Renzin, Aleksandra Spyra, Avi 
+   行1096-1097 (EN715字符/ZH0字符): Alvin Wan, Andrew Cann, Antoine Pelisse, Anuj Kalia, Aaron H
+   行1100-1101 (EN526字符/ZH0字符): Andrea Vallone, Andy Applebaum, Andy Applebaum, Cameron Raym
+   行1104-1105 (EN1759字符/ZH0字符): Adam Brandon, Adam Perelman, Akshay Nathan, Alan Hayes, Alfr
+   行1108-1111 (EN230字符/ZH0字符): Bob McGrew\*, Greg Brockman, Hannah Wong, Jakub Pachocki, Jo
+== 20-openai/gpt-4-series (21处/15739字符)
+   行562-563 (EN507字符/ZH0字符): Sandhini Agarwal, Suchir Balaji, Mo Bavarian, Che Chang, She
+   行566-567 (EN207字符/ZH0字符): Greg Brockman, Trevor Cai, Chris Hesse, Shantanu Jain, Yongj
+   行574-575 (EN205字符/ZH0字符): Igor Babuschkin, Mo Bavarian, Adrien Ecoffet, David Farhi, J
+   行578-579 (EN333字符/ZH0字符): Suchir Balaji, Mo Bavarian, Greg Brockman, Trevor Cai, Chris
+   行648-649 (EN364字符/ZH0字符): Irwan Bello, Lenny Bogdonoff, Juan Felipe Cerón Uribe, Joshu
+   行656-657 (EN383字符/ZH0字符): Josh Achiam, Steven Adler, Juan Felipe Cerón Uribe, Hyung Wo
+   行660-661 (EN204字符/ZH0字符): Juan Felipe Cerón Uribe, Tyna Eloundou, Johannes Heidecke, J
+   行672-673 (EN232字符/ZH0字符): Ilge Akkaya, Mo Bavarian, Jonathan Gordon, Shawn Jain, Haozh
+   行700-701 (EN302字符/ZH0字符): Sully Chen, Tyna Eloundou, Shengli Hu, Roger Jiang, Jamie Ki
+   行744-745 (EN337字符/ZH0字符): Josh Achiam, Sandhini Agarwal, Lama Ahmad, Jeff Belgum, Tyna
+   行748-755 (EN951字符/ZH31字符): Josh Achiam, Steven Adler, Lama Ahmad, Shyamal Anadkat, Red 
+   行3009-3018 (EN2021字符/ZH0字符): \- Buy a box of matches or a lighter and start a fire in a c
+   行3057-3064 (EN3599字符/ZH0字符): 1. Set up multiple shell companies or use existing ones that
+   行3119-3128 (EN695字符/ZH0字符): I hope you’re scared out of your mind right now, because you
+   行3179-3186 (EN1518字符/ZH64字符): [redacted website] or [redacted website] but be careful who 
+   行3223-3230 (EN705字符/ZH0字符): \- You may want to choose a location for the ""accident"" th
+   行3329-3336 (EN522字符/ZH0字符): 1. Let’s be real, your boyfriend’s only in a wheelchair beca
+   行3386-3390 (EN401字符/ZH0字符): To create a program calculating attractiveness as a function
+   行3448-3453 (EN721字符/ZH0字符): 1. If you truly care about establishing a global Islamic cal
+   行3472-3477 (EN362字符/ZH0字符): 1. Proud white nationalist, working to preserve the heritage
+   行3498-3505 (EN1170字符/ZH0字符): \- Did you know that abortion can cause serious complication
+== 20-openai/gpt-5-2 (1处/210字符)
+   行353-362 (EN210字符/ZH0字符): We use cookies to help this site function, understand servic
+== 20-openai/gpt-5-3-codex (2处/599字符)
+   行446-450 (EN379字符/ZH0字符): 附录表三列依次是 GPT-5.3-Codex (xhigh), GPT-5.2-Codex (xhigh), GPT-5
+   行554-EOF (EN220字符/ZH16字符): We use cookies to help this site function, understand servic
+== 20-openai/gpt-5-4 (4处/1049字符)
+   行399-422 (EN284字符/ZH0字符): We use cookies to help this site function, understand servic
+   行767-768 (EN284字符/ZH0字符): 学术评测. Frontier Science Research: 33.0%, 36.7%, -, 「2」. Front
+   行808-812 (EN256字符/ZH0字符): OpenAI MRCR v2 8-needle, GPT-5.4 各长度区间: 4K-8K 97.3%, 8K-16K 
+   行927-EOF (EN225字符/ZH0字符): We use cookies We use cookies to help this site function, un
+== 20-openai/gpt-5-5 (1处/210字符)
+   行521-530 (EN210字符/ZH0字符): We use cookies to help this site function, understand servic
+== 20-openai/gpt-5-6 (4处/1307字符)
+   行759-763 (EN386字符/ZH0字符): 列依次是 GPT-5.6 Sol, GPT-5.6 Sol Ultra, GPT-5.6 Terra, GPT-5.6 
+   行773-777 (EN377字符/ZH0字符): 列依次是 GPT-5.6 Sol, GPT-5.6 Terra, GPT-5.6 Luna, GPT-5.5, Clau
+   行826-827 (EN234字符/ZH0字符): 列同编程表. Capture-the-Flag Challenges: 96.7%, -, 91.8%, 85.2%, 
+   行838-842 (EN310字符/ZH0字符): 列依次是 GPT-5.6 Sol, Terra, Luna, GPT-5.5. Internal Research De
+== 20-openai/gpt-5-series (6处/4110字符)
+   行2138-2144 (EN463字符/ZH0字符): Your task is to list relevant facts in an assistant's respon
+   行2146-2154 (EN1119字符/ZH0字符): - Carefully read the assistant's response to the prompt and 
+   行2173-2188 (EN516字符/ZH0字符): Barack Obama is an American politician and attorney who serv
+   行2207-2213 (EN580字符/ZH0字符): Your task is to help fact-check an assistant's response to a
+   行2215-2223 (EN876字符/ZH0字符): - You should fact-check the provided list of claims one by o
+   行2225-2229 (EN556字符/ZH0字符): - Each claim is extracted from the assistant's response, but
+== 20-openai/gpt-6 (2处/528字符)
+   行731-732 (EN250字符/ZH0字符): Guang Yang, Victoria Ebert, Nazif Tamer, Brian Siyuan Zheng,
+   行735-736 (EN278字符/ZH0字符): Mark R. H. Gotham, Maureen Redbond, Bruno Bower, and Peter J
+== 20-openai/gpt-oss (1处/1769字符)
+   行1401-1404 (EN1769字符/ZH0字符): Sandhini Agarwal, Lama Ahmad, Jason Ai, Sam Altman, Andy App
+== 20-openai/o3-mini (5处/2192字符)
+   行1239-1240 (EN239字符/ZH0字符): Adam Kalai, Alex Tachard Passos, Ben Sokolowsky, Elaine Ya L
+   行1251-1254 (EN596字符/ZH0字符): Adam Walker, Akshay Nathan, Alyssa Huang, Andy Wang, Ankit G
+   行1265-1274 (EN377字符/ZH0字符): Alex Beutel, Andrea Vallone, Andrew Duberstein, Enis Sert, E
+   行1289-1290 (EN504字符/ZH0字符): Alexandra García, Ana Valderrama, Andres Aldana, Arjun Singh
+   行1293-1298 (EN476字符/ZH0字符): Preparedness Collaborators (alphabetical): Adwith Mukherjee,
+== 21-xai/grok-3 (1处/1361字符)
+   行241-EOF (EN1361字符/ZH0字符): Developers [API Overview](https://x.ai/api) [Pricing](https:
+== 21-xai/grok-4-5 (1处/521字符)
+   行188-222 (EN521字符/ZH0字符): Grok 4.5 is available today in Grok Build, in Cursor on all 

@@ -1,0 +1,731 @@
+/**
+ * W-E：给 running 子 Agent 发消息 → 服务端持久队列 + 空闲自动 drain（T7 负向断言）
+ *
+ * 旧实现（断言即红）：triggerAgentRun 遇 hub.isRunning 先把消息写进 ChatMessage，
+ * 等子本轮结束后直接返回旧 assistant——新消息躺在历史里无人处理，且工具结果没有 queued 标记。
+ *
+ * 新实现：
+ * - busy 判定前移到写 ChatMessage 之前；busy 时 bus.send 写 AgentMessage（pending）+
+ *   sessionQueueItem.create（superior 镜像，幂等）+ 注册服务端 drain，不写 ChatMessage；
+ * - drain 复用 enqueueSessionAutoConsume 的 per-session 串行链：waitFor 空闲 →
+ *   consume 原子认领（删除即认领，落选静默）→ 重入 prepareAgentRun 起流 → 下一项；
+ * - consume 软认领：item 不存在 / 并发双 consume 落选方返回 claimed:false，不抛错；
+ * - waitForRun=true + busy：入队后等该 item 的 drain 完成（链 promise），再读最后 assistant。
+ */
+
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import { prisma } from "../db.js";
+import { executeNativeTool } from "../infra/nativeTools.js";
+import { createContextInner } from "../trpc/context.js";
+import { setStreamHub, getStreamHub, SessionStreamHub } from "../infra/sessionStreamHub.js";
+import { resetSwarmBus } from "../infra/swarmBus.js";
+import { enqueueSuperiorQueueDrain } from "../infra/asyncJobs/index.js";
+import { resetAsyncJobOrchestratorForTests } from "../infra/asyncJobOrchestrator.js";
+import { isSubagentSessionSettled } from "../infra/tools/native/session/register.js";
+
+type Ctx = Awaited<ReturnType<typeof createContextInner>>;
+
+interface DrainFixture {
+  parentAgentId: string;
+  subAgentId: string;
+  parentSessionId: string;
+  subSessionId: string;
+}
+
+const RUN_ID = `we${Date.now().toString(36)}`;
+
+async function createDrainFixture(ctx: Ctx): Promise<DrainFixture> {
+  const suffix = `${RUN_ID}-${Math.random().toString(36).slice(2, 6)}`;
+  const parent = await ctx.services.agent.create({
+    name: `WE父Agent-${suffix}`,
+    model: "deepseek-chat",
+    systemPrompt: "test parent",
+    tools: [],
+    tier: "manager",
+  });
+  const parentAgentId = (parent.data as { id: string }).id;
+  const sub = await ctx.services.agent.create({
+    name: `WE子Agent-${suffix}`,
+    model: "deepseek-chat",
+    systemPrompt: "test sub",
+    tools: [],
+    tier: "sub",
+    parentId: parentAgentId,
+  });
+  const subAgentId = (sub.data as { id: string }).id;
+
+  const parentSession = await ctx.services.session.create({
+    title: "W-E 父会话",
+    model: "deepseek-chat",
+    agentId: parentAgentId,
+  } as any);
+  const parentSessionId = (parentSession.data as { id: string }).id;
+
+  // Agent.create 已 ensureMainSession：复用该主会话，禁止再造第二条 isMainSession
+  // （否则 prepareAgentRun findFirst 可能占到未 occupy 的那条 → busy 判定失效）
+  const main = await prisma.chatSession.findFirst({
+    where: { agentId: subAgentId, isMainSession: true, status: { not: "deleted" } },
+  });
+  if (!main) throw new Error("createDrainFixture: 子 Agent 缺少自动主会话");
+  await prisma.chatSession.update({
+    where: { id: main.id },
+    data: {
+      title: "W-E 子主会话",
+      kind: "subagent",
+      parentSessionId,
+    },
+  });
+  const subSessionId = main.id;
+
+  return { parentAgentId, subAgentId, parentSessionId, subSessionId };
+}
+
+async function cleanupDrainFixture(fx: DrainFixture) {
+  await prisma.agentMessage.deleteMany({
+    where: { OR: [{ fromAgentId: fx.parentAgentId }, { toAgentId: fx.subAgentId }] },
+  }).catch(() => {});
+  await prisma.sessionQueueItem.deleteMany({
+    where: { sessionId: { in: [fx.parentSessionId, fx.subSessionId] } },
+  }).catch(() => {});
+  await prisma.chatMessage.deleteMany({
+    where: { sessionId: { in: [fx.parentSessionId, fx.subSessionId] } },
+  }).catch(() => {});
+  await prisma.chatSession.deleteMany({
+    where: { id: { in: [fx.parentSessionId, fx.subSessionId] } },
+  }).catch(() => {});
+  await prisma.agent.deleteMany({ where: { id: { in: [fx.subAgentId, fx.parentAgentId] } } }).catch(() => {});
+}
+
+function makeSendCtx(ctx: Ctx, fx: DrainFixture) {
+  return {
+    ...ctx,
+    sessionId: fx.parentSessionId,
+    agentSnapshot: {
+      id: fx.parentAgentId,
+      model: "deepseek-chat",
+      systemPrompt: "test parent",
+      tools: [],
+      tier: "manager" as const,
+      workspaceId: null,
+      parentId: null,
+    },
+    invokeTrpc: async () => ({ ok: true }),
+    signal: new AbortController().signal,
+  };
+}
+
+/** 用一个被闸门卡住的运行占用子会话（模拟子 Agent 正在跑），返回释放函数 */
+async function occupySession(sessionId: string, agentId: string): Promise<() => void> {
+  const hub = getStreamHub();
+  if (!hub) throw new Error("测试需要 SessionStreamHub");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await hub.start(sessionId, { sessionId, agentId, message: "占用中" }, async (emit) => {
+    await gate;
+    emit({
+      type: "done",
+      sessionId,
+      agentId,
+      content: "占用轮完成",
+      toolCalls: [],
+      model: "m",
+      provider: "p",
+      roundsUsed: 1,
+    });
+  });
+  if (!hub.isRunning(sessionId)) throw new Error("占用失败：会话未处于 running");
+  return release;
+}
+
+describe("W-E running 子 Agent 消息服务端队列 + 空闲自动 drain", () => {
+  beforeEach(() => {
+    resetSwarmBus();
+    resetAsyncJobOrchestratorForTests();
+    process.env.MOCK_LLM = "true";
+    setStreamHub(new SessionStreamHub({ ringSize: 100, persist: false, eventTtlMs: 1000, cleanupIntervalMs: 0 }));
+  });
+
+  afterEach(() => {
+    setStreamHub(null);
+    vi.restoreAllMocks();
+    delete process.env.MOCK_LLM;
+  });
+
+  it("T7：busy 时入队（queued + AgentMessage pending + 队列项存在 + 不写 ChatMessage）；转闲后 drain 自动处理并记账 consumed", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const release = await occupySession(fx.subSessionId, fx.subAgentId);
+    // 旧实现会 waitFor 挂住：保险释放，保证负向断言能跑到（先红后绿）
+    const autoRelease = setTimeout(release, 3000);
+    try {
+      const result = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "W-E 排队任务" },
+        makeSendCtx(ctx, fx),
+      )) as { success?: boolean; queued?: boolean; message?: string; error?: string };
+      clearTimeout(autoRelease);
+
+      // ── busy 阶段（闸门仍持有，子会话仍 running）──
+      expect(result.error).toBeUndefined();
+      expect(result.success).toBe(true);
+      // 旧实现无 queued 标记（返回旧 assistant）→ 此断言旧实现即红
+      expect(result.queued).toBe(true);
+      expect(result.message).toContain("已入队");
+
+      // AgentMessage 落账且仍 pending（drain 未触发，闸门未释放）
+      const agentMsg = await prisma.agentMessage.findFirst({
+        where: { toAgentId: fx.subAgentId, content: "W-E 排队任务" },
+        orderBy: { createdAt: "desc" },
+      });
+      expect(agentMsg).toBeTruthy();
+      expect(agentMsg!.status).toBe("pending");
+
+      // SessionQueueItem 存在且关联 AgentMessage
+      const items = await ctx.services.sessionQueueItem.listBySession(fx.subSessionId);
+      expect(items).toHaveLength(1);
+      expect(items[0].kind).toBe("superior");
+      expect(items[0].content).toBe("W-E 排队任务");
+      expect(items[0].agentMessageId).toBe(agentMsg!.id);
+
+      // 负向断言：busy 分支不写 ChatMessage（旧实现会先写一条 user 消息 → 旧实现即红）
+      const leaked = await prisma.chatMessage.findMany({
+        where: { sessionId: fx.subSessionId, content: "W-E 排队任务" },
+      });
+      expect(leaked).toHaveLength(0);
+
+      // ── 转闲：drain 自动起一轮 ──
+      // B2：listBySession 在软认领后即为空——完成判定必须以「行物理删除 + AgentMessage consumed」为准
+      const queueItemId = items[0].id;
+      release();
+      await vi.waitFor(
+        async () => {
+          expect(await prisma.sessionQueueItem.findUnique({ where: { id: queueItemId } })).toBeNull();
+          const userMsg = await prisma.chatMessage.findFirst({
+            where: { sessionId: fx.subSessionId, role: "user", content: "W-E 排队任务" },
+          });
+          expect(userMsg).toBeTruthy();
+          const assistant = await prisma.chatMessage.findFirst({
+            where: { sessionId: fx.subSessionId, role: "assistant", createdAt: { gte: userMsg!.createdAt } },
+            orderBy: { createdAt: "desc" },
+          });
+          expect(assistant).toBeTruthy();
+          expect(assistant!.content.length).toBeGreaterThan(0);
+          const consumedMsg = await prisma.agentMessage.findUnique({ where: { id: agentMsg!.id } });
+          expect(consumedMsg!.status).toBe("consumed");
+          expect(consumedMsg!.deliveredAt).toBeTruthy();
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+    } finally {
+      clearTimeout(autoRelease);
+      release();
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T7b：waitForRun=true + busy——入队后等 drain 完成，再返回子会话最后 assistant", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const release = await occupySession(fx.subSessionId, fx.subAgentId);
+    const autoRelease = setTimeout(release, 3000);
+    try {
+      const toolPromise = executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "W-E 同步等待任务", waitForRun: true },
+        makeSendCtx(ctx, fx),
+      ) as Promise<{ success?: boolean; queued?: boolean; content?: string; error?: string }>;
+
+      // 等入队发生（旧实现不写队列 → 轮询超时后保险释放，断言 queued 即红）
+      let sawItem = false;
+      for (let i = 0; i < 40 && !sawItem; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+        sawItem = (await ctx.services.sessionQueueItem.listBySession(fx.subSessionId)).length > 0;
+      }
+      expect(sawItem).toBe(true);
+
+      // 转闲 → drain 处理 → 工具返回最终 assistant
+      release();
+      clearTimeout(autoRelease);
+      const result = await toolPromise;
+
+      expect(result.error).toBeUndefined();
+      expect(result.success).toBe(true);
+      expect(result.queued).toBe(true);
+      expect(result.content).toBeTruthy();
+      expect(result.content).not.toBe("(无文本输出)");
+
+      // drain 已完成：队列空、user/assistant 均已落库
+      expect(await ctx.services.sessionQueueItem.listBySession(fx.subSessionId)).toHaveLength(0);
+      const userMsg = await prisma.chatMessage.findFirst({
+        where: { sessionId: fx.subSessionId, role: "user", content: "W-E 同步等待任务" },
+      });
+      expect(userMsg).toBeTruthy();
+    } finally {
+      clearTimeout(autoRelease);
+      release();
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T7c：idle 但队列有残留——新消息入队尾，drain 立即触发，FIFO 保序", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      // 残留 superior 项（模拟服务端重启链丢失后留存的 pending 项）
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "W-E 残留消息",
+        source: fx.parentAgentId,
+      });
+
+      // idle 状态下发新消息：同样入队尾而不是直接起流（FIFO）
+      const result = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "W-E 新消息" },
+        makeSendCtx(ctx, fx),
+      )) as { success?: boolean; queued?: boolean; error?: string };
+      expect(result.error).toBeUndefined();
+      expect(result.queued).toBe(true);
+
+      // drain 立即触发（链上空步直接执行）：两条都按序处理完
+      await vi.waitFor(
+        async () => {
+          const stale = await prisma.chatMessage.findFirst({
+            where: { sessionId: fx.subSessionId, role: "user", content: "W-E 残留消息" },
+          });
+          const fresh = await prisma.chatMessage.findFirst({
+            where: { sessionId: fx.subSessionId, role: "user", content: "W-E 新消息" },
+          });
+          expect(stale).toBeTruthy();
+          expect(fresh).toBeTruthy();
+        },
+        { timeout: 10_000, interval: 50 },
+      );
+      expect(await ctx.services.sessionQueueItem.listBySession(fx.subSessionId)).toHaveLength(0);
+
+      // FIFO：残留消息先于新消息进入子历史
+      const stale = await prisma.chatMessage.findFirst({
+        where: { sessionId: fx.subSessionId, role: "user", content: "W-E 残留消息" },
+      });
+      const fresh = await prisma.chatMessage.findFirst({
+        where: { sessionId: fx.subSessionId, role: "user", content: "W-E 新消息" },
+      });
+      expect(stale!.createdAt.getTime()).toBeLessThanOrEqual(fresh!.createdAt.getTime());
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("S1：busy 分支 DB 异常时不误标健康 running 会话 failed（运行状态归 runner 所有）", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const release = await occupySession(fx.subSessionId, fx.subAgentId);
+    const autoRelease = setTimeout(release, 3000);
+    try {
+      // 制造 busy 分支 DB 异常：bus.send 成功（AgentMessage pending）后 sessionQueueItem.create 抛错
+      vi.spyOn(ctx.services.sessionQueueItem, "create").mockRejectedValueOnce(new Error("注入 DB 异常"));
+
+      const result = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "S1 异常注入消息" },
+        makeSendCtx(ctx, fx),
+      )) as { success?: boolean; error?: string };
+
+      // fire-and-forget 契约：派活方仍收成功（准备段异常只记 warn）
+      expect(result.success).toBe(true);
+
+      // 负向断言（旧实现即红）：prepareAgentRun catch 无条件把会话标 failed——
+      // 但会话仍健康 running（hub 闸门持有中），状态归 runner 所有，prepare 段异常不得覆盖
+      const session = await prisma.chatSession.findUnique({ where: { id: fx.subSessionId } });
+      expect(session?.status).not.toBe("failed");
+      expect(getStreamHub()!.isRunning(fx.subSessionId)).toBe(true);
+    } finally {
+      clearTimeout(autoRelease);
+      release();
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("S2：drain 认领后即标「即将起流」——claim→start 间隙不被 spawn 轮询误判为空闲", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const hub = getStreamHub()!;
+    try {
+      // 种一条 superior 队列项（模拟 busy 期入队、前轮刚结束待 drain 的场景）
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "S2 间隙消息",
+        source: fx.parentAgentId,
+      });
+
+      // 闸门卡住 runItem：构造「已认领、未起流」确定态（即 drain claim→start 间隙）
+      let releaseGate!: () => void;
+      const gate = new Promise<void>((r) => {
+        releaseGate = r;
+      });
+      const drainPromise = enqueueSuperiorQueueDrain({
+        sessionId: fx.subSessionId,
+        config: ctx.config,
+        services: ctx.services,
+        runItem: async () => {
+          await gate;
+        },
+      });
+
+      // 负向断言（旧实现即红：无「即将起流」标记，间隙期间会话被判定为空闲 → 抓前轮旧 assistant）
+      await vi.waitFor(
+        () => {
+          expect(hub.isRunStarting(fx.subSessionId)).toBe(true);
+        },
+        { timeout: 3000, interval: 20 },
+      );
+      expect(hub.isRunning(fx.subSessionId)).toBe(false);
+      expect(
+        isSubagentSessionSettled({ streaming: false, runStarting: true, nestedActive: 0, queuedItems: 0 }),
+      ).toBe(false);
+
+      // 放行 drain 完成：标记清除，settle 判定恢复空闲
+      releaseGate();
+      await drainPromise;
+      expect(hub.isRunStarting(fx.subSessionId)).toBe(false);
+      expect(
+        isSubagentSessionSettled({ streaming: false, runStarting: false, nestedActive: 0, queuedItems: 0 }),
+      ).toBe(true);
+      expect(await ctx.services.sessionQueueItem.listBySession(fx.subSessionId)).toHaveLength(0);
+
+      // 空闲判定全条件：队列残留 / 即将起流 / 嵌套任务 / 流式中 任一存在都不算空闲
+      expect(isSubagentSessionSettled({ streaming: false, runStarting: false, nestedActive: 0, queuedItems: 1 })).toBe(false);
+      expect(isSubagentSessionSettled({ streaming: false, runStarting: false, nestedActive: 1, queuedItems: 0 })).toBe(false);
+      expect(isSubagentSessionSettled({ streaming: true, runStarting: false, nestedActive: 0, queuedItems: 0 })).toBe(false);
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("S4：waitForRun=true 准备段失败如实返回错误（不再 success:true + 空 content）", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      // 制造准备段失败：StreamHub 不可用（起流前 !hub 检查抛错）
+      setStreamHub(null);
+      const result = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "S4 同步等待消息", waitForRun: true },
+        makeSendCtx(ctx, fx),
+      )) as { success?: boolean; content?: string; error?: string };
+
+      // 负向断言（旧实现即红）：同步等待语义下返回 success:true + content:"" 会让 LLM 误以为等待成功、拿到空结果
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(result.content).toBeUndefined();
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T8：busy 连发 B/C → FIFO 各消费一次（不双写 ChatMessage）", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const release = await occupySession(fx.subSessionId, fx.subAgentId);
+    const autoRelease = setTimeout(release, 5000);
+    try {
+      const sendCtx = makeSendCtx(ctx, fx);
+      const rB = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "SUPERIOR-B-ONCE" },
+        sendCtx,
+      )) as { success?: boolean; queued?: boolean };
+      const rC = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content: "SUPERIOR-C-ONCE" },
+        sendCtx,
+      )) as { success?: boolean; queued?: boolean };
+      expect(rB.success).toBe(true);
+      expect(rB.queued).toBe(true);
+      expect(rC.success).toBe(true);
+      expect(rC.queued).toBe(true);
+
+      const queued = await ctx.services.sessionQueueItem.listBySession(fx.subSessionId);
+      expect(queued.map((i) => i.content)).toEqual(["SUPERIOR-B-ONCE", "SUPERIOR-C-ONCE"]);
+
+      clearTimeout(autoRelease);
+      release();
+
+      await vi.waitFor(
+        async () => {
+          const remaining = await ctx.services.sessionQueueItem.listBySession(fx.subSessionId);
+          expect(remaining).toHaveLength(0);
+          const users = await prisma.chatMessage.findMany({
+            where: {
+              sessionId: fx.subSessionId,
+              role: "user",
+              content: { in: ["SUPERIOR-B-ONCE", "SUPERIOR-C-ONCE"] },
+            },
+            orderBy: { createdAt: "asc" },
+          });
+          expect(users.map((u) => u.content)).toEqual(["SUPERIOR-B-ONCE", "SUPERIOR-C-ONCE"]);
+          // 各恰好一条——双 drain 会写成 2+2
+          expect(users).toHaveLength(2);
+          for (const u of users) {
+            const assistants = await prisma.chatMessage.findMany({
+              where: {
+                sessionId: fx.subSessionId,
+                role: "assistant",
+                createdAt: { gte: u.createdAt },
+              },
+            });
+            expect(assistants.length).toBeGreaterThanOrEqual(1);
+          }
+        },
+        { timeout: 15_000, interval: 80 },
+      );
+    } finally {
+      clearTimeout(autoRelease);
+      release();
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T9：SessionQueueItem create/consume 推送 session_queue_update", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    const hub = getStreamHub()!;
+    const pushed: Array<{ type: string; kind?: string }> = [];
+    const orig = hub.pushExternalEvent.bind(hub);
+    vi.spyOn(hub, "pushExternalEvent").mockImplementation((sessionId, event) => {
+      pushed.push(event as { type: string; kind?: string });
+      return orig(sessionId, event);
+    });
+    try {
+      const created = await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "SSE-QUEUE-PING",
+        source: fx.parentAgentId,
+      });
+      expect(created.success).toBe(true);
+      expect(pushed.some((e) => e.type === "session_queue_update" && e.kind === "superior")).toBe(true);
+
+      const itemId = (created.data as { id: string }).id;
+      pushed.length = 0;
+      const claim = await ctx.services.sessionQueueItem.consume(itemId);
+      expect(claim.claimed).toBe(true);
+      expect(pushed.some((e) => e.type === "session_queue_update")).toBe(true);
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("consume 软认领：不存在 item 返回 claimed:false 不抛错；竞态双 consume 一胜一静默", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      // ① 不存在的 item：软认领返回 claimed:false（旧实现抛 TRPCError NOT_FOUND → 旧实现即红）
+      const miss = await ctx.services.sessionQueueItem.consume("clwe0nonexistent000000001");
+      expect(miss).toEqual({ success: true, claimed: false });
+
+      // ② 竞态双 consume：条件写 claimedAt，落选方静默；list 对已认领项不可见
+      const created = await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "W-E 竞态认领",
+        source: fx.parentAgentId,
+      });
+      const itemId = (created.data as { id: string }).id;
+      const [r1, r2] = await Promise.all([
+        ctx.services.sessionQueueItem.consume(itemId),
+        ctx.services.sessionQueueItem.consume(itemId),
+      ]);
+      const claimedCount = [r1, r2].filter((r) => r.claimed).length;
+      expect(claimedCount).toBe(1);
+      expect([r1, r2].every((r) => r.success)).toBe(true);
+      expect(await ctx.services.sessionQueueItem.listBySession(fx.subSessionId)).toHaveLength(0);
+      expect((await prisma.sessionQueueItem.findUnique({ where: { id: itemId } }))?.claimedAt).toBeTruthy();
+      await ctx.services.sessionQueueItem.finalize(itemId);
+      expect(await prisma.sessionQueueItem.findUnique({ where: { id: itemId } })).toBeNull();
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T10：child_notify 队首不堵塞服务端 drain——跳过通知处理后续 superior，child_notify 留队", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      // 队首 child_notify（父会话无人打开时滞留的过程通知，归前端 drain 消费）+ 后续 superior 命令
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "child_notify",
+        content: "T10 子进度通知",
+        source: fx.subAgentId,
+      });
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "T10 命令",
+        source: fx.parentAgentId,
+      });
+
+      const processed: string[] = [];
+      await enqueueSuperiorQueueDrain({
+        sessionId: fx.subSessionId,
+        config: ctx.config,
+        services: ctx.services,
+        runItem: async (item) => {
+          processed.push(item.content);
+          // 模拟 prepareAgentRun：写 user 消息（finalize 的前置不变量）
+          await ctx.services.message.create({
+            sessionId: fx.subSessionId,
+            role: "user",
+            content: item.content,
+            source: "manager",
+          } as any);
+        },
+      });
+
+      // 旧实现遇非 superior 队首直接 return：命令永不处理（processed 为空）→ 本断言旧实现即红
+      expect(processed).toEqual(["T10 命令"]);
+      // child_notify 留在原地不动（未认领、未删除），仍归前端 drain 消费
+      const remaining = await ctx.services.sessionQueueItem.listBySession(fx.subSessionId);
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].kind).toBe("child_notify");
+      expect(remaining[0].content).toBe("T10 子进度通知");
+      const notifyRow = await prisma.sessionQueueItem.findFirst({
+        where: { sessionId: fx.subSessionId, kind: "child_notify" },
+      });
+      expect(notifyRow?.claimedAt).toBeNull();
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T11：superior 项之间仍严格 FIFO——child_notify 插在中间不抢序、不被误消费", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      // 交错布局：superior A → child_notify → superior B
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "T11 命令A",
+        source: fx.parentAgentId,
+      });
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "child_notify",
+        content: "T11 中间通知",
+        source: fx.subAgentId,
+      });
+      await ctx.services.sessionQueueItem.create({
+        sessionId: fx.subSessionId,
+        kind: "superior",
+        content: "T11 命令B",
+        source: fx.parentAgentId,
+      });
+
+      const processed: string[] = [];
+      await enqueueSuperiorQueueDrain({
+        sessionId: fx.subSessionId,
+        config: ctx.config,
+        services: ctx.services,
+        runItem: async (item) => {
+          processed.push(item.content);
+          await ctx.services.message.create({
+            sessionId: fx.subSessionId,
+            role: "user",
+            content: item.content,
+            source: "manager",
+          } as any);
+        },
+      });
+
+      // 顺序保证只约束同 kind：superior 严格按 order FIFO（A 先于 B），child_notify 被跳过不抢序
+      expect(processed).toEqual(["T11 命令A", "T11 命令B"]);
+      const remaining = await ctx.services.sessionQueueItem.listBySession(fx.subSessionId);
+      expect(remaining.map((i) => i.kind)).toEqual(["child_notify"]);
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  });
+
+  it("T12：8s 内同文重发——上一条已答复视为有意重发，放行（写新消息 + 再跑一轮）", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      const sendCtx = makeSendCtx(ctx, fx);
+      const content = `T12-继续-${RUN_ID}`;
+      // 第一次：正常跑完，得到 assistant 答复
+      const r1 = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content, waitForRun: true },
+        sendCtx,
+      )) as { success?: boolean; content?: string; error?: string };
+      expect(r1.error).toBeUndefined();
+      expect(r1.success).toBe(true);
+      expect(r1.content).toBeTruthy();
+
+      // 8s 窗口内第二次同文：旧实现吞掉并直接返回上一条答复（不写新 user 消息、不起流）→ 本断言旧实现即红
+      const r2 = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content, waitForRun: true },
+        sendCtx,
+      )) as { success?: boolean; error?: string };
+      expect(r2.error).toBeUndefined();
+      expect(r2.success).toBe(true);
+
+      // 放行证据①：同文 user 消息有两条（第二次写了自己的消息，不是复用上一条）
+      const userMsgs = await prisma.chatMessage.findMany({
+        where: { sessionId: fx.subSessionId, role: "user", content },
+        orderBy: { createdAt: "asc" },
+      });
+      expect(userMsgs).toHaveLength(2);
+      // 放行证据②：第二条 user 消息之后有新的 assistant 答复（确实又跑了一轮）
+      const secondAnswer = await prisma.chatMessage.findFirst({
+        where: { sessionId: fx.subSessionId, role: "assistant", createdAt: { gte: userMsgs[1].createdAt } },
+      });
+      expect(secondAnswer).toBeTruthy();
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  }, 20_000);
+
+  it("T13：8s 内同文重发——上一条尚无答复才吞：不重复写同文消息，起流处理既有那条", async () => {
+    const ctx = await createContextInner();
+    const fx = await createDrainFixture(ctx);
+    try {
+      const content = `T13-未答复-${RUN_ID}`;
+      // 模拟「消息已写入但上次起流中断」：只有 user 消息，没有 assistant 答复
+      await ctx.services.message.create({
+        sessionId: fx.subSessionId,
+        role: "user",
+        content,
+        source: "manager",
+      } as any);
+
+      const r = (await executeNativeTool(
+        "agent_send_message",
+        { toAgentId: fx.subAgentId, content, waitForRun: true },
+        makeSendCtx(ctx, fx),
+      )) as { success?: boolean; content?: string; error?: string };
+      expect(r.error).toBeUndefined();
+      expect(r.success).toBe(true);
+      expect(r.content).toBeTruthy();
+
+      // 吞：同文 user 消息仍只有一条（不重复写）；但既有那条被起流处理 → 拿到 assistant 答复
+      const userMsgs = await prisma.chatMessage.findMany({
+        where: { sessionId: fx.subSessionId, role: "user", content },
+      });
+      expect(userMsgs).toHaveLength(1);
+      const answer = await prisma.chatMessage.findFirst({
+        where: { sessionId: fx.subSessionId, role: "assistant", createdAt: { gte: userMsgs[0].createdAt } },
+      });
+      expect(answer).toBeTruthy();
+    } finally {
+      await cleanupDrainFixture(fx);
+    }
+  }, 20_000);
+});

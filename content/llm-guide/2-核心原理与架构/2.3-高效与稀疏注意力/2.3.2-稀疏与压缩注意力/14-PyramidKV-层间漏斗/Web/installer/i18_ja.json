@@ -1,0 +1,8 @@
+{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "ダウンロード",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "読み込み",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "書き込み",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "処理",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "/"
+}

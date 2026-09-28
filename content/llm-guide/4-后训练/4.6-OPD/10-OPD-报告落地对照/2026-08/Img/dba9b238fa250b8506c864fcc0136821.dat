@@ -1,0 +1,1153 @@
+/**
+ * node-compress-commons
+ *
+ * Copyright (c) 2014 Chris Talkington, contributors.
+ * Licensed under the MIT license.
+ * https://github.com/archiverjs/node-compress-commons/blob/master/LICENSE-MIT
+ */
+var inherits = require('util').inherits;
+var normalizePath = require('normalize-path');
+
+var ArchiveEntry = require('../archive-entry');
+var GeneralPurposeBit = require('./general-purpose-bit');
+var UnixStat = require('./unix-stat');
+
+var constants = require('./constants');
+var zipUtil = require('./util');
+
+var ZipArchiveEntry = module.exports = function(name) {
+  if (!(this instanceof ZipArchiveEntry)) {
+    return new ZipArchiveEntry(name);
+  }
+
+  ArchiveEntry.call(this);
+
+  this.platform = constants.PLATFORM_FAT;
+  this.method = -1;
+
+  this.name = null;
+  this.size = 0;
+  this.csize = 0;
+  this.gpb = new GeneralPurposeBit();
+  this.crc = 0;
+  this.time = -1;
+
+  this.minver = constants.MIN_VERSION_INITIAL;
+  this.mode = -1;
+  this.extra = null;
+  this.exattr = 0;
+  this.inattr = 0;
+  this.comment = null;
+
+  if (name) {
+    this.setName(name);
+  }
+};
+
+inherits(ZipArchiveEntry, ArchiveEntry);
+
+/**
+ * Returns the extra fields related to the entry.
+ *
+ * @returns {Buffer}
+ */
+ZipArchiveEntry.prototype.getCentralDirectoryExtra = function() {
+  return this.getExtra();
+};
+
+/**
+ * Returns the comment set for the entry.
+ *
+ * @returns {string}
+ */
+ZipArchiveEntry.prototype.getComment = function() {
+  return this.comment !== null ? this.comment : '';
+};
+
+/**
+ * Returns the compressed size of the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getCompressedSize = function() {
+  return this.csize;
+};
+
+/**
+ * Returns the CRC32 digest for the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getCrc = function() {
+  return this.crc;
+};
+
+/**
+ * Returns the external file attributes for the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getExternalAttributes = function() {
+  return this.exattr;
+};
+
+/**
+ * Returns the extra fields related to the entry.
+ *
+ * @returns {Buffer}
+ */
+ZipArchiveEntry.prototype.getExtra = function() {
+  return this.extra !== null ? this.extra : constants.EMPTY;
+};
+
+/**
+ * Returns the general purpose bits related to the entry.
+ *
+ * @returns {GeneralPurposeBit}
+ */
+ZipArchiveEntry.prototype.getGeneralPurposeBit = function() {
+  return this.gpb;
+};
+
+/**
+ * Returns the internal file attributes for the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getInternalAttributes = function() {
+  return this.inattr;
+};
+
+/**
+ * Returns the last modified date of the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getLastModifiedDate = function() {
+  return this.getTime();
+};
+
+/**
+ * Returns the extra fields related to the entry.
+ *
+ * @returns {Buffer}
+ */
+ZipArchiveEntry.prototype.getLocalFileDataExtra = function() {
+  return this.getExtra();
+};
+
+/**
+ * Returns the compression method used on the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getMethod = function() {
+  return this.method;
+};
+
+/**
+ * Returns the filename of the entry.
+ *
+ * @returns {string}
+ */
+ZipArchiveEntry.prototype.getName = function() {
+  return this.name;
+};
+
+/**
+ * Returns the platform on which the entry was made.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getPlatform = function() {
+  return this.platform;
+};
+
+/**
+ * Returns the size of the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getSize = function() {
+  return this.size;
+};
+
+/**
+ * Returns a date object representing the last modified date of the entry.
+ *
+ * @returns {number|Date}
+ */
+ZipArchiveEntry.prototype.getTime = function() {
+  return this.time !== -1 ? zipUtil.dosToDate(this.time) : -1;
+};
+
+/**
+ * Returns the DOS timestamp for the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getTimeDos = function() {
+  return this.time !== -1 ? this.time : 0;
+};
+
+/**
+ * Returns the UNIX file permissions for the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getUnixMode = function() {
+  return this.platform !== constants.PLATFORM_UNIX ? 0 : ((this.getExternalAttributes() >> constants.SHORT_SHIFT) & constants.SHORT_MASK);
+};
+
+/**
+ * Returns the version of ZIP needed to extract the entry.
+ *
+ * @returns {number}
+ */
+ZipArchiveEntry.prototype.getVersionNeededToExtract = function() {
+  return this.minver;
+};
+
+/**
+ * Sets the comment of the entry.
+ *
+ * @param comment
+ */
+ZipArchiveEntry.prototype.setComment = function(comment) {
+  if (Buffer.byteLength(comment) !== comment.length) {
+    this.getGeneralPurposeBit().useUTF8ForNames(true);
+  }
+
+  this.comment = comment;
+};
+
+/**
+ * Sets the compressed size of the entry.
+ *
+ * @param size
+ */
+ZipArchiveEntry.prototype.setCompressedSize = function(size) {
+  if (size < 0) {
+    throw new Error('invalid entry compressed size');
+  }
+
+  this.csize = size;
+};
+
+/**
+ * Sets the checksum of the entry.
+ *
+ * @param crc
+ */
+ZipArchiveEntry.prototype.setCrc = function(crc) {
+  if (crc < 0) {
+    throw new Error('invalid entry crc32');
+  }
+
+  this.crc = crc;
+};
+
+/**
+ * Sets the external file attributes of the entry.
+ *
+ * @param attr
+ */
+ZipArchiveEntry.prototype.setExternalAttributes = function(attr) {
+  this.exattr = attr >>> 0;
+};
+
+/**
+ * Sets the extra fields related to the entry.
+ *
+ * @param extra
+ */
+ZipArchiveEntry.prototype.setExtra = function(extra) {
+  this.extra = extra;
+};
+
+/**
+ * Sets the general purpose bits related to the entry.
+ *
+ * @param gpb
+ */
+ZipArchiveEntry.prototype.setGeneralPurposeBit = function(gpb) {
+  if (!(gpb instanceof GeneralPurposeBit)) {
+    throw new Error('invalid entry GeneralPurposeBit');
+  }
+
+  this.gpb = gpb;
+};
+
+/**
+ * Sets the internal file attributes of the entry.
+ *
+ * @param attr
+ */
+ZipArchiveEntry.prototype.setInternalAttributes = function(attr) {
+  this.inattr = attr;
+};
+
+/**
+ * Sets the compression method of the entry.
+ *
+ * @param method
+ */
+ZipArchiveEntry.prototype.setMethod = function(method) {
+  if (method < 0) {
+    throw new Error('invalid entry compression method');
+  }
+
+  this.method = method;
+};
+
+/**
+ * Sets the name of the entry.
+ *
+ * @param name
+ * @param prependSlash
+ */
+ZipArchiveEntry.prototype.setName = function(name, prependSlash = false) {
+  name = normalizePath(name, false)
+    .replace(/^\w+:/, '')
+    .replace(/^(\.\.\/|\/)+/, '');
+
+  if (prependSlash) {
+    name = `/${name}`;
+  }
+
+  if (Buffer.byteLength(name) !== name.length) {
+    this.getGeneralPurposeBit().useUTF8ForNames(true);
+  }
+
+  this.name = name;
+};
+
+/**
+ * Sets the platform on which the entry was made.
+ *
+ * @param platform
+ */
+ZipArchiveEntry.prototype.setPlatform = function(platform) {
+  this.platform = platform;
+};
+
+/**
+ * Sets the size of the entry.
+ *
+ * @param size
+ */
+ZipArchiveEntry.prototype.setSize = function(size) {
+  if (size < 0) {
+    throw new Error('invalid entry size');
+  }
+
+  this.size = size;
+};
+
+/**
+ * Sets the time of the entry.
+ *
+ * @param time
+ * @param forceLocalTime
+ */
+ZipArchiveEntry.prototype.setTime = function(time, forceLocalTime) {
+  if (!(time instanceof Date)) {
+    throw new Error('invalid entry time');
+  }
+
+  this.time = zipUtil.dateToDos(time, forceLocalTime);
+};
+
+/**
+ * Sets the UNIX file permissions for the entry.
+ *
+ * @param mode
+ */
+ZipArchiveEntry.prototype.setUnixMode = function(mode) {
+  mode |= this.isDirectory() ? constants.S_IFDIR : constants.S_IFREG;
+
+  var extattr = 0;
+  extattr |= (mode << constants.SHORT_SHIFT) | (this.isDirectory() ? constants.S_DOS_D : constants.S_DOS_A);
+
+  this.setExternalAttributes(extattr);
+  this.mode = mode & constants.MODE_MASK;
+  this.platform = constants.PLATFORM_UNIX;
+};
+
+/**
+ * Sets the version of ZIP needed to extract this entry.
+ *
+ * @param minver
+ */
+ZipArchiveEntry.prototype.setVersionNeededToExtract = function(minver) {
+  this.minver = minver;
+};
+
+/**
+ * Returns true if this entry represents a directory.
+ *
+ * @returns {boolean}
+ */
+ZipArchiveEntry.prototype.isDirectory = function() {
+  return this.getName().slice(-1) === '/';
+};
+
+/**
+ * Returns true if this entry represents a unix symlink,
+ * in which case the entry's content contains the target path
+ * for the symlink.
+ *
+ * @returns {boolean}
+ */
+ZipArchiveEntry.prototype.isUnixSymlink = function() {
+  return (this.getUnixMode() & UnixStat.FILE_TYPE_FLAG) === UnixStat.LINK_FLAG;
+};
+
+/**
+ * Returns true if this entry is using the ZIP64 extension of ZIP.
+ *
+ * @returns {boolean}
+ */
+ZipArchiveEntry.prototype.isZip64 = function() {
+  return this.csize > constants.ZIP64_MAGIC || this.size > constants.ZIP64_MAGIC;
+};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /**
+ * node-compress-commons
+ *
+ * Copyright (c) 2014 Chris Talkington, contributors.
+ * Licensed under the MIT license.
+ * https://github.com/archiverjs/node-compress-commons/blob/master/LICENSE-MIT
+ */
+var inherits = require('util').inherits;
+var crc32 = require('crc-32');
+var {CRC32Stream} = require('crc32-stream');
+var {DeflateCRC32Stream} = require('crc32-stream');
+
+var ArchiveOutputStream = require('../archive-output-stream');
+var ZipArchiveEntry = require('./zip-archive-entry');
+var GeneralPurposeBit = require('./general-purpose-bit');
+
+var constants = require('./constants');
+var util = require('../../util');
+var zipUtil = require('./util');
+
+var ZipArchiveOutputStream = module.exports = function(options) {
+  if (!(this instanceof ZipArchiveOutputStream)) {
+    return new ZipArchiveOutputStream(options);
+  }
+
+  options = this.options = this._defaults(options);
+
+  ArchiveOutputStream.call(this, options);
+
+  this._entry = null;
+  this._entries = [];
+  this._archive = {
+    centralLength: 0,
+    centralOffset: 0,
+    comment: '',
+    finish: false,
+    finished: false,
+    processing: false,
+    forceZip64: options.forceZip64,
+    forceLocalTime: options.forceLocalTime
+  };
+};
+
+inherits(ZipArchiveOutputStream, ArchiveOutputStream);
+
+ZipArchiveOutputStream.prototype._afterAppend = function(ae) {
+  this._entries.push(ae);
+
+  if (ae.getGeneralPurposeBit().usesDataDescriptor()) {
+    this._writeDataDescriptor(ae);
+  }
+
+  this._archive.processing = false;
+  this._entry = null;
+
+  if (this._archive.finish && !this._archive.finished) {
+    this._finish();
+  }
+};
+
+ZipArchiveOutputStream.prototype._appendBuffer = function(ae, source, callback) {
+  if (source.length === 0) {
+    ae.setMethod(constants.METHOD_STORED);
+  }
+
+  var method = ae.getMethod();
+
+  if (method === constants.METHOD_STORED) {
+    ae.setSize(source.length);
+    ae.setCompressedSize(source.length);
+    ae.setCrc(crc32.buf(source) >>> 0);
+  }
+
+  this._writeLocalFileHeader(ae);
+
+  if (method === constants.METHOD_STORED) {
+    this.write(source);
+    this._afterAppend(ae);
+    callback(null, ae);
+    return;
+  } else if (method === constants.METHOD_DEFLATED) {
+    this._smartStream(ae, callback).end(source);
+    return;
+  } else {
+    callback(new Error('compression method ' + method + ' not implemented'));
+    return;
+  }
+};
+
+ZipArchiveOutputStream.prototype._appendStream = function(ae, source, callback) {
+  ae.getGeneralPurposeBit().useDataDescriptor(true);
+  ae.setVersionNeededToExtract(constants.MIN_VERSION_DATA_DESCRIPTOR);
+
+  this._writeLocalFileHeader(ae);
+
+  var smart = this._smartStream(ae, callback);
+  source.once('error', function(err) {
+    smart.emit('error', err);
+    smart.end();
+  })
+  source.pipe(smart);
+};
+
+ZipArchiveOutputStream.prototype._defaults = function(o) {
+  if (typeof o !== 'object') {
+    o = {};
+  }
+
+  if (typeof o.zlib !== 'object') {
+    o.zlib = {};
+  }
+
+  if (typeof o.zlib.level !== 'number') {
+    o.zlib.level = constants.ZLIB_BEST_SPEED;
+  }
+
+  o.forceZip64 = !!o.forceZip64;
+  o.forceLocalTime = !!o.forceLocalTime;
+
+  return o;
+};
+
+ZipArchiveOutputStream.prototype._finish = function() {
+  this._archive.centralOffset = this.offset;
+
+  this._entries.forEach(function(ae) {
+    this._writeCentralFileHeader(ae);
+  }.bind(this));
+
+  this._archive.centralLength = this.offset - this._archive.centralOffset;
+
+  if (this.isZip64()) {
+    this._writeCentralDirectoryZip64();
+  }
+
+  this._writeCentralDirectoryEnd();
+
+  this._archive.processing = false;
+  this._archive.finish = true;
+  this._archive.finished = true;
+  this.end();
+};
+
+ZipArchiveOutputStream.prototype._normalizeEntry = function(ae) {
+  if (ae.getMethod() === -1) {
+    ae.setMethod(constants.METHOD_DEFLATED);
+  }
+
+  if (ae.getMethod() === constants.METHOD_DEFLATED) {
+    ae.getGeneralPurposeBit().useDataDescriptor(true);
+    ae.setVersionNeededToExtract(constants.MIN_VERSION_DATA_DESCRIPTOR);
+  }
+
+  if (ae.getTime() === -1) {
+    ae.setTime(new Date(), this._archive.forceLocalTime);
+  }
+
+  ae._offsets = {
+    file: 0,
+    data: 0,
+    contents: 0,
+  };
+};
+
+ZipArchiveOutputStream.prototype._smartStream = function(ae, callback) {
+  var deflate = ae.getMethod() === constants.METHOD_DEFLATED;
+  var process = deflate ? new DeflateCRC32Stream(this.options.zlib) : new CRC32Stream();
+  var error = null;
+
+  function handleStuff() {
+    var digest = process.digest().readUInt32BE(0);
+    ae.setCrc(digest);
+    ae.setSize(process.size());
+    ae.setCompressedSize(process.size(true));
+    this._afterAppend(ae);
+    callback(error, ae);
+  }
+
+  process.once('end', handleStuff.bind(this));
+  process.once('error', function(err) {
+    error = err;
+  });
+
+  process.pipe(this, { end: false });
+
+  return process;
+};
+
+ZipArchiveOutputStream.prototype._writeCentralDirectoryEnd = function() {
+  var records = this._entries.length;
+  var size = this._archive.centralLength;
+  var offset = this._archive.centralOffset;
+
+  if (this.isZip64()) {
+    records = constants.ZIP64_MAGIC_SHORT;
+    size = constants.ZIP64_MAGIC;
+    offset = constants.ZIP64_MAGIC;
+  }
+
+  // signature
+  this.write(zipUtil.getLongBytes(constants.SIG_EOCD));
+
+  // disk numbers
+  this.write(constants.SHORT_ZERO);
+  this.write(constants.SHORT_ZERO);
+
+  // number of entries
+  this.write(zipUtil.getShortBytes(records));
+  this.write(zipUtil.getShortBytes(records));
+
+  // length and location of CD
+  this.write(zipUtil.getLongBytes(size));
+  this.write(zipUtil.getLongBytes(offset));
+
+  // archive comment
+  var comment = this.getComment();
+  var commentLength = Buffer.byteLength(comment);
+  this.write(zipUtil.getShortBytes(commentLength));
+  this.write(comment);
+};
+
+ZipArchiveOutputStream.prototype._writeCentralDirectoryZip64 = function() {
+  // signature
+  this.write(zipUtil.getLongBytes(constants.SIG_ZIP64_EOCD));
+
+  // size of the ZIP64 EOCD record
+  this.write(zipUtil.getEightBytes(44));
+
+  // version made by
+  this.write(zipUtil.getShortBytes(constants.MIN_VERSION_ZIP64));
+
+  // version to extract
+  this.write(zipUtil.getShortBytes(constants.MIN_VERSION_ZIP64));
+
+  // disk numbers
+  this.write(constants.LONG_ZERO);
+  this.write(constants.LONG_ZERO);
+
+  // number of entries
+  this.write(zipUtil.getEightBytes(this._entries.length));
+  this.write(zipUtil.getEightBytes(this._entries.length));
+
+  // length and location of CD
+  this.write(zipUtil.getEightBytes(this._archive.centralLength));
+  this.write(zipUtil.getEightBytes(this._archive.centralOffset));
+
+  // extensible data sector
+  // not implemented at this time
+
+  // end of central directory locator
+  this.write(zipUtil.getLongBytes(constants.SIG_ZIP64_EOCD_LOC));
+
+  // disk number holding the ZIP64 EOCD record
+  this.write(constants.LONG_ZERO);
+
+  // relative offset of the ZIP64 EOCD record
+  this.write(zipUtil.getEightBytes(this._archive.centralOffset + this._archive.centralLength));
+
+  // total number of disks
+  this.write(zipUtil.getLongBytes(1));
+};
+
+ZipArchiveOutputStream.prototype._writeCentralFileHeader = function(ae) {
+  var gpb = ae.getGeneralPurposeBit();
+  var method = ae.getMethod();
+  var fileOffset = ae._offsets.file;
+
+  var size = ae.getSize();
+  var compressedSize = ae.getCompressedSize();
+
+  if (ae.isZip64() || fileOffset > constants.ZIP64_MAGIC) {
+    size = constants.ZIP64_MAGIC;
+    compressedSize = constants.ZIP64_MAGIC;
+    fileOffset = constants.ZIP64_MAGIC;
+
+    ae.setVersionNeededToExtract(constants.MIN_VERSION_ZIP64);
+
+    var extraBuf = Buffer.concat([
+      zipUtil.getShortBytes(constants.ZIP64_EXTRA_ID),
+      zipUtil.getShortBytes(24),
+      zipUtil.getEightBytes(ae.getSize()),
+      zipUtil.getEightBytes(ae.getCompressedSize()),
+      zipUtil.getEightBytes(ae._offsets.file)
+    ], 28);
+
+    ae.setExtra(extraBuf);
+  }
+
+  // signature
+  this.write(zipUtil.getLongBytes(constants.SIG_CFH));
+
+  // version made by
+  this.write(zipUtil.getShortBytes((ae.getPlatform() << 8) | constants.VERSION_MADEBY));
+
+  // version to extract and general bit flag
+  this.write(zipUtil.getShortBytes(ae.getVersionNeededToExtract()));
+  this.write(gpb.encode());
+
+  // compression method
+  this.write(zipUtil.getShortBytes(method));
+
+  // datetime
+  this.write(zipUtil.getLongBytes(ae.getTimeDos()));
+
+  // crc32 checksum
+  this.write(zipUtil.getLongBytes(ae.getCrc()));
+
+  // sizes
+  this.write(zipUtil.getLongBytes(compressedSize));
+  this.write(zipUtil.getLongBytes(size));
+
+  var name = ae.getName();
+  var comment = ae.getComment();
+  var extra = ae.getCentralDirectoryExtra();
+
+  if (gpb.usesUTF8ForNames()) {
+    name = Buffer.from(name);
+    comment = Buffer.from(comment);
+  }
+
+  // name length
+  this.write(zipUtil.getShortBytes(name.length));
+
+  // extra length
+  this.write(zipUtil.getShortBytes(extra.length));
+
+  // comments length
+  this.write(zipUtil.getShortBytes(comment.length));
+
+  // disk number start
+  this.write(constants.SHORT_ZERO);
+
+  // internal attributes
+  this.write(zipUtil.getShortBytes(ae.getInternalAttributes()));
+
+  // external attributes
+  this.write(zipUtil.getLongBytes(ae.getExternalAttributes()));
+
+  // relative offset of LFH
+  this.write(zipUtil.getLongBytes(fileOffset));
+
+  // name
+  this.write(name);
+
+  // extra
+  this.write(extra);
+
+  // comment
+  this.write(comment);
+};
+
+ZipArchiveOutputStream.prototype._writeDataDescriptor = function(ae) {
+  // signature
+  this.write(zipUtil.getLongBytes(constants.SIG_DD));
+
+  // crc32 checksum
+  this.write(zipUtil.getLongBytes(ae.getCrc()));
+
+  // sizes
+  if (ae.isZip64()) {
+    this.write(zipUtil.getEightBytes(ae.getCompressedSize()));
+    this.write(zipUtil.getEightBytes(ae.getSize()));
+  } else {
+    this.write(zipUtil.getLongBytes(ae.getCompressedSize()));
+    this.write(zipUtil.getLongBytes(ae.getSize()));
+  }
+};
+
+ZipArchiveOutputStream.prototype._writeLocalFileHeader = function(ae) {
+  var gpb = ae.getGeneralPurposeBit();
+  var method = ae.getMethod();
+  var name = ae.getName();
+  var extra = ae.getLocalFileDataExtra();
+
+  if (ae.isZip64()) {
+    gpb.useDataDescriptor(true);
+    ae.setVersionNeededToExtract(constants.MIN_VERSION_ZIP64);
+  }
+
+  if (gpb.usesUTF8ForNames()) {
+    name = Buffer.from(name);
+  }
+
+  ae._offsets.file = this.offset;
+
+  // signature
+  this.write(zipUtil.getLongBytes(constants.SIG_LFH));
+
+  // version to extract and general bit flag
+  this.write(zipUtil.getShortBytes(ae.getVersionNeededToExtract()));
+  this.write(gpb.encode());
+
+  // compression method
+  this.write(zipUtil.getShortBytes(method));
+
+  // datetime
+  this.write(zipUtil.getLongBytes(ae.getTimeDos()));
+
+  ae._offsets.data = this.offset;
+
+  // crc32 checksum and sizes
+  if (gpb.usesDataDescriptor()) {
+    this.write(constants.LONG_ZERO);
+    this.write(constants.LONG_ZERO);
+    this.write(constants.LONG_ZERO);
+  } else {
+    this.write(zipUtil.getLongBytes(ae.getCrc()));
+    this.write(zipUtil.getLongBytes(ae.getCompressedSize()));
+    this.write(zipUtil.getLongBytes(ae.getSize()));
+  }
+
+  // name length
+  this.write(zipUtil.getShortBytes(name.length));
+
+  // extra length
+  this.write(zipUtil.getShortBytes(extra.length));
+
+  // name
+  this.write(name);
+
+  // extra
+  this.write(extra);
+
+  ae._offsets.contents = this.offset;
+};
+
+ZipArchiveOutputStream.prototype.getComment = function(comment) {
+  return this._archive.comment !== null ? this._archive.comment : '';
+};
+
+ZipArchiveOutputStream.prototype.isZip64 = function() {
+  return this._archive.forceZip64 || this._entries.length > constants.ZIP64_MAGIC_SHORT || this._archive.centralLength > constants.ZIP64_MAGIC || this._archive.centralOffset > constants.ZIP64_MAGIC;
+};
+
+ZipArchiveOutputStream.prototype.setComment = function(comment) {
+  this._archive.comment = comment;
+};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              INDX( 	 ı(]oç           (   ®  Ë       ›                    O‚     X H     L‚     ˚|ö3L›|‰ú3L›|‰ú3L›ÛÀ`»L›                       l i b M‚     ` P     L‚     ˚|ö3L› ·0k˙I›˚|ö3L›˚|ö3L›       2              L I C E N S E ]‚     p Z     L‚     ˜
+ù3L›Ä‡ù3L›Ä‡ù3L› Û`»L›                       n o d e _ m o d u l e s N S E ]‚     h R     L‚     ˜
+ù3L›Ä‡ù3L›Ä‡ù3L› Û`»L›                       N O D E _ M ~ 1 j s o N‚     p Z     L‚     ˚|ö3L› ·0k˙I›˚|ö3L ˚|ö3L›                      p a c k a g e . j s o n N S E N‚     p Z     L‚     ˚|ö3L› ·0k˙I›˚|ö3L›˚|ö3L›                      P A C K A G ~ 1 . J S O                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              The MIT License (MIT)
+
+Copyright (c) Feross Aboukhadijeh, and other contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              {
+  "name": "buffer",
+  "description": "Node.js Buffer API, for the browser",
+  "version": "6.0.3",
+  "author": {
+    "name": "Feross Aboukhadijeh",
+    "email": "feross@feross.org",
+    "url": "https://feross.org"
+  },
+  "bugs": {
+    "url": "https://github.com/feross/buffer/issues"
+  },
+  "contributors": [
+    "Romain Beauxis <toots@rastageeks.org>",
+    "James Halliday <mail@substack.net>"
+  ],
+  "dependencies": {
+    "base64-js": "^1.3.1",
+    "ieee754": "^1.2.1"
+  },
+  "devDependencies": {
+    "airtap": "^3.0.0",
+    "benchmark": "^2.1.4",
+    "browserify": "^17.0.0",
+    "concat-stream": "^2.0.0",
+    "hyperquest": "^2.1.3",
+    "is-buffer": "^2.0.5",
+    "is-nan": "^1.3.0",
+    "split": "^1.0.1",
+    "standard": "*",
+    "tape": "^5.0.1",
+    "through2": "^4.0.2",
+    "uglify-js": "^3.11.5"
+  },
+  "homepage": "https://github.com/feross/buffer",
+  "jspm": {
+    "map": {
+      "./index.js": {
+        "node": "@node/buffer"
+      }
+    }
+  },
+  "keywords": [
+    "arraybuffer",
+    "browser",
+    "browserify",
+    "buffer",
+    "compatible",
+    "dataview",
+    "uint8array"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/feross/buffer.git"
+  },
+  "scripts": {
+    "perf": "browserify --debug perf/bracket-notation.js > perf/bundle.js && open perf/index.html",
+    "perf-node": "node perf/bracket-notation.js && node perf/concat.js && node perf/copy-big.js && node perf/copy.js && node perf/new-big.js && node perf/new.js && node perf/readDoubleBE.js && node perf/readFloatBE.js && node perf/readUInt32LE.js && node perf/slice.js && node perf/writeFloatBE.js",
+    "size": "browserify -r ./ | uglifyjs -c -m | gzip | wc -c",
+    "test": "standard && node ./bin/test.js",
+    "test-browser-old": "airtap -- test/*.js",
+    "test-browser-old-local": "airtap --local -- test/*.js",
+    "test-browser-new": "airtap -- test/*.js test/node/*.js",
+    "test-browser-new-local": "airtap --local -- test/*.js test/node/*.js",
+    "test-node": "tape test/*.js test/node/*.js",
+    "update-authors": "./bin/update-authors.sh"
+  },
+  "standard": {
+    "ignore": [
+      "test/node/**/*.js",
+      "test/common.js",
+      "test/_polyfill.js",
+      "perf/**/*.js"
+    ]
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/feross"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/feross"
+    },
+    {
+      "type": "consulting",
+      "url": "https://feross.org/support"
+    }
+  ]
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              MIT License
+
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   {
+	"name": "is-stream",
+	"version": "2.0.1",
+	"description": "Check if something is a Node.js stream",
+	"license": "MIT",
+	"repository": "sindresorhus/is-stream",
+	"funding": "https://github.com/sponsors/sindresorhus",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "https://sindresorhus.com"
+	},
+	"engines": {
+		"node": ">=8"
+	},
+	"scripts": {
+		"test": "xo && ava && tsd"
+	},
+	"files": [
+		"index.js",
+		"index.d.ts"
+	],
+	"keywords": [
+		"stream",
+		"type",
+		"streams",
+		"writable",
+		"readable",
+		"duplex",
+		"transform",
+		"check",
+		"detect",
+		"is"
+	],
+	"devDependencies": {
+		"@types/node": "^11.13.6",
+		"ava": "^1.4.1",
+		"tempy": "^0.3.0",
+		"tsd": "^0.7.2",
+		"xo": "^0.24.0"
+	}
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  Node.js is licensed for use as follows:
+
+"""
+Copyright Node.js contributors. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+"""
+
+This license applies to parts of Node.js originating from the
+https://github.com/joyent/node repository:
+
+"""
+Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+"""
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               {
+  "name": "readable-stream",
+  "version": "4.7.0",
+  "description": "Node.js Streams, a user-land copy of the stream library from Node.js",
+  "homepage": "https://github.com/nodejs/readable-stream",
+  "license": "MIT",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://choosealicense.com/licenses/mit/"
+    }
+  ],
+  "keywords": [
+    "readable",
+    "stream",
+    "pipe"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nodejs/readable-stream"
+  },
+  "bugs": {
+    "url": "https://github.com/nodejs/readable-stream/issues"
+  },
+  "main": "lib/ours/index.js",
+  "files": [
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "browser": {
+    "util": "./lib/ours/util.js",
+    "./lib/ours/index.js": "./lib/ours/browser.js"
+  },
+  "scripts": {
+    "build": "node build/build.mjs 18.19.0",
+    "postbuild": "prettier -w lib test",
+    "test": "tap --rcfile=./tap.yml test/parallel/test-*.js test/ours/test-*.js",
+    "test:prepare": "node test/browser/runner-prepare.mjs",
+    "test:browsers": "node test/browser/runner-browser.mjs",
+    "test:bundlers": "node test/browser/runner-node.mjs",
+    "test:readable-stream-only": "node readable-stream-test/runner-prepare.mjs",
+    "coverage": "c8 -c ./c8.json tap --rcfile=./tap.yml test/parallel/test-*.js test/ours/test-*.js",
+    "format": "prettier -w src lib test",
+    "test:format": "prettier -c src lib test",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "abort-controller": "^3.0.0",
+    "buffer": "^6.0.3",
+    "events": "^3.3.0",
+    "process": "^0.11.10",
+    "string_decoder": "^1.3.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.10",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.16.7",
+    "@babel/plugin-proposal-optional-chaining": "^7.16.7",
+    "@eslint/eslintrc": "^3.2.0",
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-inject": "^4.0.4",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@sinonjs/fake-timers": "^9.1.2",
+    "browserify": "^17.0.0",
+    "c8": "^7.11.2",
+    "esbuild": "^0.19.9",
+    "esbuild-plugin-alias": "^0.2.1",
+    "eslint": "^8.15.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "playwright": "^1.21.1",
+    "prettier": "^2.6.2",
+    "rollup": "^2.72.1",
+    "rollup-plugin-polyfill-node": "^0.9.0",
+    "tap": "^16.2.0",
+    "tap-mocha-reporter": "^5.0.3",
+    "tape": "^5.5.3",
+    "tar": "^6.1.11",
+    "undici": "^5.1.1",
+    "webpack": "^5.72.1",
+    "webpack-cli": "^4.9.2"
+  },
+  "engines": {
+    "node": "^12.22.0 || ^14.17.0 || >=16.0.0"
+  }
+}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             INDX( 	 Â¯]oç           (   8  Ë       ›t ›                p‚     h R     i‚     ‚ û3L›ÈÒû3L›ÈÒû3L› Û`»L›                       i n t e r n a l s t m Ö‚     ` J     i‚     ñ°3L›I<¢3L›I<¢3L› Û`»L›                       o u r s a m . ç‚     ` N     i‚     I<¢3L›I<¢3L›I<¢3L› Û`»L›                       s t r e a m . j‚     h T     i‚     ¢.û3L› ·0k˙I›¢.û3L›¢.û3L›        £              	s t r e a m . j s t m o‚     h X     i‚     ‚ û3L› ·0k˙I›‚ û3L ‚ û3L›x       v               _ S B 1 3 2 ~ 1 . J S k‚     x d     i‚     ≥Uû3L› ·0k˙I›≥Uû3L›≥Uû3L›x       t               _ s t r e a m _ d u p l e x . j s     l‚     Ä n     i‚     ≥Uû3L› ·0k˙I›æ|û3L›≥Uû3L›Ä       y               _ s t r e a m _ p a s s t h r o u g h . j s Gm‚     x h     i‚     æ|û3L› ·0k˙I›æ|û3L›æ|û3L›x       v               _ s t r e a m _ r e a d a b l e . j s n‚     Ä j     i‚     À£û3L› ·0k˙I›À£û3L›À£û3L›x       w               _ s  r e a m _ t r a n s f o r m . j s      o‚     x h     i‚     ‚ û3L› ·0k˙I›‚ û3L›‚ û3L›x       v               _ s t r e a m _ w r i t a b l e . j s k‚     h X     i‚     ≥Uû3L› ·0k˙I›≥Uû3L›≥Uû3L›x       t               _ S T R E A ~ 1 . J S l‚     h X     i‚     ≥Uû3L› ·0k˙I›æ|û3L›≥Uû3L›Ä       y               _ S T R E A ~ 2 . J S m‚     h X     i‚     æ|û3L› ·0k˙I›æ|û3L›æ|û3L›x       v               _ S T R E A ~ 3 . J S n‚     h X     i‚     À£û3L› ·0k˙I À£û3L›À£û3L›x       w               _ S T R E A ~ 4 . J S                                                                                                                                                                                                                     

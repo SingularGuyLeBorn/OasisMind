@@ -1,0 +1,168 @@
+, options?: StructuredSerializeOptions): void;
+    /**
+     * The **`terminate()`** method of the Worker interface immediately terminates the Worker. This does not offer the worker an opportunity to finish its operations; it is stopped at once.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Worker/terminate)
+     */
+    terminate(): void;
+    addEventListener<K extends keyof WorkerEventMap>(type: K, listener: (this: Worker, ev: WorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof WorkerEventMap>(type: K, listener: (this: Worker, ev: WorkerEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var Worker: {
+    prototype: Worker;
+    new(scriptURL: string | URL, options?: WorkerOptions): Worker;
+};
+
+interface WorkerGlobalScopeEventMap {
+    "error": ErrorEvent;
+    "languagechange": Event;
+    "offline": Event;
+    "online": Event;
+    "rejectionhandled": PromiseRejectionEvent;
+    "unhandledrejection": PromiseRejectionEvent;
+}
+
+/**
+ * The **`WorkerGlobalScope`** interface of the Web Workers API is an interface representing the scope of any worker. Workers have no browsing context; this scope contains the information usually conveyed by Window objects — in this case event handlers, the console or the associated WorkerNavigator object. Each WorkerGlobalScope has its own event loop.
+ *
+ * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope)
+ */
+interface WorkerGlobalScope extends EventTarget, FontFaceSource, WindowOrWorkerGlobalScope {
+    /**
+     * The read-only **`location`** property of the WorkerGlobalScope interface returns the WorkerLocation associated with the worker. It is a specific location object, mostly a subset of the Location for browsing scopes, but adapted to workers.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/location)
+     */
+    readonly location: WorkerLocation;
+    /**
+     * The **`navigator`** read-only property of the WorkerGlobalScope interface returns the WorkerNavigator associated with the worker. It is a specific navigator object, mostly a subset of the Navigator for browsing scopes, but adapted to workers.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/navigator)
+     */
+    readonly navigator: WorkerNavigator;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/error_event) */
+    onerror: ((this: WorkerGlobalScope, ev: ErrorEvent) => any) | null;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/languagechange_event) */
+    onlanguagechange: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/offline_event) */
+    onoffline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/online_event) */
+    ononline: ((this: WorkerGlobalScope, ev: Event) => any) | null;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/rejectionhandled_event) */
+    onrejectionhandled: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/unhandledrejection_event) */
+    onunhandledrejection: ((this: WorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null;
+    /**
+     * The **`self`** read-only property of the WorkerGlobalScope interface returns a reference to the WorkerGlobalScope itself. Most of the time it is a specific scope like DedicatedWorkerGlobalScope, SharedWorkerGlobalScope, or ServiceWorkerGlobalScope.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/self)
+     */
+    readonly self: WorkerGlobalScope & typeof globalThis;
+    /**
+     * The **`importScripts()`** method of the WorkerGlobalScope interface synchronously imports one or more scripts into the scope of a classic worker (a worker constructed from a classic script).
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerGlobalScope/importScripts)
+     */
+    importScripts(...urls: (string | URL)[]): void;
+    addEventListener<K extends keyof WorkerGlobalScopeEventMap>(type: K, listener: (this: WorkerGlobalScope, ev: WorkerGlobalScopeEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener<K extends keyof WorkerGlobalScopeEventMap>(type: K, listener: (this: WorkerGlobalScope, ev: WorkerGlobalScopeEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+}
+
+declare var WorkerGlobalScope: {
+    prototype: WorkerGlobalScope;
+    new(): WorkerGlobalScope;
+};
+
+/**
+ * The **`WorkerLocation`** interface defines the absolute location of the script executed by the Worker. Such an object is initialized for each worker and is available via the WorkerGlobalScope.location property obtained by calling self.location.
+ *
+ * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation)
+ */
+interface WorkerLocation {
+    /**
+     * The **`hash`** property of a WorkerLocation object returns the hash part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/hash)
+     */
+    readonly hash: string;
+    /**
+     * The **`host`** property of a WorkerLocation object returns the host part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/host)
+     */
+    readonly host: string;
+    /**
+     * The **`hostname`** property of a WorkerLocation object returns the hostname part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/hostname)
+     */
+    readonly hostname: string;
+    /**
+     * The **`href`** property of a WorkerLocation object returns a string containing the serialized URL for the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/href)
+     */
+    readonly href: string;
+    toString(): string;
+    /**
+     * The **`origin`** property of a WorkerLocation object returns the worker's origin.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/origin)
+     */
+    readonly origin: string;
+    /**
+     * The **`pathname`** property of a WorkerLocation object returns the pathname part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/pathname)
+     */
+    readonly pathname: string;
+    /**
+     * The **`port`** property of a WorkerLocation object returns the port part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/port)
+     */
+    readonly port: string;
+    /**
+     * The **`protocol`** property of a WorkerLocation object returns the protocol part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/protocol)
+     */
+    readonly protocol: string;
+    /**
+     * The **`search`** property of a WorkerLocation object returns the search part of the worker's location.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerLocation/search)
+     */
+    readonly search: string;
+}
+
+declare var WorkerLocation: {
+    prototype: WorkerLocation;
+    new(): WorkerLocation;
+};
+
+/**
+ * The **`WorkerNavigator`** interface represents a subset of the Navigator interface allowed to be accessed from a Worker. Such an object is initialized for each worker and is available via the self.navigator property.
+ *
+ * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerNavigator)
+ */
+interface WorkerNavigator extends NavigatorBadge, NavigatorConcurrentHardware, NavigatorGPU, NavigatorID, NavigatorLanguage, NavigatorLocks, NavigatorOnLine, NavigatorStorage {
+    /**
+     * The read-only **`mediaCapabilities`** property of the WorkerNavigator interface references a MediaCapabilities object that can expose information about the decoding and encoding capabilities for a given format and output capabilities (as defined by the Media Capabilities API).
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerNavigator/mediaCapabilities)
+     */
+    readonly mediaCapabilities: MediaCapabilities;
+    /**
+     * The **`permissions`** read-only property of the WorkerNavigator interface returns a Permissions object that can be used to query and update permission status of APIs covered by the Permissions API.
+     *
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/WorkerNavigator/permissions)
+     */
+    readonly permissions: Permissions;
+    /**
+     * The **`serviceWorker`** read-only property of the WorkerNavigator interface returns the ServiceWorkerContainer object for the 

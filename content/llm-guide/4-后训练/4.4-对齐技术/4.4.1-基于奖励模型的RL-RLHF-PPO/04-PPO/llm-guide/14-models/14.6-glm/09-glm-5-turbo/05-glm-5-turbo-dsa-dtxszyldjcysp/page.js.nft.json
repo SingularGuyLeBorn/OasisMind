@@ -1,0 +1,43 @@
+---
+title: "01 · MiniMax-M2.5 技术报告精译"
+---
+
+# MiniMax-M2.5 技术报告精译
+
+>  **[返回 14.8-MiniMax 家族总览](../../14.8-MiniMax.md)**
+
+
+> 原文标题: MiniMax M2.5: Built for Real-World Productivity.
+> 原文链接: https://www.minimax.io/news/minimax-m25
+> 发布日期: 2026-02-12
+> 发布机构: MiniMax
+
+---
+
+## 0. 核心指标与定位
+
+MiniMax-M2.5 是 MiniMax 于 2026 年 2 月 12 日发布的最新文本模型,基于在数十万个复杂真实世界环境中进行的大规模强化学习训练,在编程、agentic 工具使用与搜索、办公工作以及一系列其他具有经济价值的任务上达到 SOTA.
+
+**关键性能指标**:
+
+| 基准 | 分数 | 备注 |
+|------|------|------|
+| SWE-Bench Verified | 80.2% | Claude Code scaffold, avg@4 |
+| Multi-SWE-Bench | 51.3% | Claude Code scaffold, avg@4 |
+| BrowseComp (w/ Ctx Manage) | 76.3% | WebExplorer agent, discard-all @ 30% ctx |
+| SWE-Bench Verified (Droid) | 79.7 | > Opus 4.6 的 78.9 |
+| SWE-Bench Verified (OpenCode) | 76.1 | > Opus 4.6 的 75.9 |
+| Terminal Bench 2 | 68.5 | Claude Code 2.0.64, avg@4 |
+| VIBE-Pro (Aggregate) | 88.6 | Agent-as-a-Verifier, avg@3 |
+| GDPval-MM | 59.0% 胜率 |  pairwise LLM judge |
+| AIME 2025 | 90.2 | — |
+
+**效率与成本**:
+
+| 指标 | M2.5 | M2.5-Lightning | 对比基准 |
+|------|------|---------------|---------|
+| 推理吞吐 | 50 TPS | 100 TPS | Opus ~50 TPS |
+| Input 价格 | $0.15/MTok | $0.30/MTok | Opus $5/MTok |
+| Output 价格 | $1.20/MTok | $2.40/MTok | Opus $25/MTok |
+| 连续运行 1h 成本 | $0.30 | $1.00 | — |
+| SWE �

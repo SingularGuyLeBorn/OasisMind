@@ -1,0 +1,38 @@
+ self.infer = infer
+
+        self.block1 = conv_bn(3, int(64 * er), 3, 2, 1)
+        self.block2 = InvertedResidual(
+            int(64 * er), int(64 * er), 1, 1, False, 2)
+
+        self.block3 = InvertedResidual(
+            int(64 * er), int(64 * er), 2, 1, False, 2)
+        self.block4 = InvertedResidual(
+            int(64 * er), int(64 * er), 1, 1, True, 2)
+        self.block5 = InvertedResidual(
+            int(64 * er), int(64 * er), 1, 1, True, 2)
+        self.block6 = InvertedResidual(
+            int(64 * er), int(64 * er), 1, 1, True, 2)
+        self.block7 = InvertedResidual(
+            int(64 * er), int(64 * er), 1, 1, True, 2)
+
+        self.block8 = InvertedResidual(
+            int(64 * er), int(128 * er), 2, 1, False, 2)
+
+        self.block9 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, False, 4)
+        self.block10 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, True, 4)
+        self.block11 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, True, 4)
+        self.block12 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, True, 4)
+        self.block13 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, True, 4)
+        self.block14 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, True, 4)
+
+        self.block15 = InvertedResidual(
+            int(128 * er), int(128 * er), 1, 1, False, 2)  # [128, 14, 14]
+        self.block16 = InvertedResidual(
+            int(128 * er), int(128 * er), 2, 1, False, 2)
+        self.block17 = InvertedR

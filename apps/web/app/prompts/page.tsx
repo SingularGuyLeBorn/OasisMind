@@ -1,0 +1,148 @@
+/**
+ * Prompts 提示词模板管理页面 (L2/L4)
+ */
+
+"use client";
+
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { FileCode2, Plus, Tag } from "lucide-react";
+import Link from "next/link";
+import type { Prompt } from "@oasismind/shared";
+import { usePrompt } from "@/lib/hooks";
+import { useCardDensity } from "@/lib/useCardDensity";
+import { EmptyState, LoadingState, ConfirmDialog, Pagination, PageHeader } from "@/components/shared";
+
+export default function PromptsPage() {
+  const { useList, useCreate, useDelete } = usePrompt();
+  const { density } = useCardDensity();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useList({ page, pageSize: 12 });
+  const createMutation = useCreate();
+  const deleteMutation = useDelete();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleCreateDemo = () => {
+    createMutation.mutate({
+      name: `assistant-system-${Date.now().toString(36).slice(-4)}`,
+      version: "1.0.0",
+      description: "Agent 系统提示词模板示例",
+      variables: ["userName", "context"],
+      tags: ["system", "chat"],
+      content: "你是 OasisMind (见微) 智能助手。用户 {{userName}} 的上下文：{{context}}\n\n请用简洁中文回答。",
+    });
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      deleteMutation.mutate({ id: deleteId });
+      setDeleteId(null);
+    }
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-[var(--om-bg)] p-6 md:p-8 space-y-6">
+      <PageHeader
+        icon={FileCode2}
+        title="Prompts 提示词库"
+        description="可复用提示词模板（变量如 {{userName}}），事实源在 config/prompts/*.md。目前 Chat 默认仍用 Agent 自己的 systemPrompt；模板库供你沉淀可复用文案，或日后工作流引用。"
+        action={{ label: "新建模板", onClick: handleCreateDemo, icon: Plus, disabled: createMutation.isPending }}
+        showDensityToggle
+      />
+
+      {isLoading ? (
+        <LoadingState count={3} />
+      ) : !data?.items || data.items.length === 0 ? (
+        <EmptyState
+          title="尚无提示词模板"
+          description="空是因为 config/prompts/ 里还没有 .md，也不是 bug。点下方创建示例；CRUD 走本页 / tRPC。Agent 没有专用 Prompt 工具（改 Agent 人设用 OptimizeAgentPrompt）。"
+          actionLabel="创建示例模板"
+          onAction={handleCreateDemo}
+        />
+      ) : (
+        <>
+          <div className={cn("grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] ", density === "compact" ? "gap-4" : "gap-6")}>
+            {data.items.map((prompt: Prompt, idx: number) => (
+              <motion.div
+                key={prompt.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  transition: { delay: idx * 0.05, type: "spring", stiffness: 200, damping: 20 },
+                }}
+                className={cn("group relative overflow-hidden rounded-2xl border border-[var(--om-divider-light)] bg-[var(--om-bg-alt)] hover:bg-white dark:hover:bg-[var(--om-bg-soft)] hover:border-[var(--om-divider)] hover:shadow-xl transition-all duration-300 flex flex-col justify-between", density === "compact" ? "p-3" : "p-5")}
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-4 mb-3">
+                    <div>
+                      <h3 className="font-bold text-[var(--om-text-1)] group-hover:text-[var(--om-brand-deep)] transition-colors">
+                        {prompt.name}
+                      </h3>
+                      <p className="text-[10px] text-[var(--om-text-3)]">v{prompt.version}</p>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/prompts/edit/${prompt.id}`}
+                        className="text-xs text-[var(--om-brand-deep)] hover:text-[var(--om-brand-deep)] px-2 py-0.5 rounded hover:bg-[var(--om-brand-soft)]"
+                      >
+                        编辑
+                      </Link>
+                      <button
+                        onClick={() => setDeleteId(prompt.id)}
+                        className="text-xs text-red-500 hover:text-red-600 transition-opacity px-2 py-0.5 rounded hover:bg-red-500/10"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+
+                  {prompt.description && (
+                    <p className="text-xs text-[var(--om-text-2)] mb-3 line-clamp-2">{prompt.description}</p>
+                  )}
+
+                  <pre className="text-[10px] text-[var(--om-text-3)] bg-[var(--om-bg-mute)] rounded-lg p-2 max-h-24 overflow-hidden line-clamp-4 font-mono whitespace-pre-wrap">
+                    {prompt.content}
+                  </pre>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-[var(--om-divider-light)] flex flex-wrap gap-1">
+                  {prompt.tags?.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-0.5 rounded bg-[var(--om-bg-soft)] px-1.5 py-0.5 text-[8px] text-[var(--om-text-3)]"
+                    >
+                      <Tag className="w-2 h-2" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {data && (
+            <Pagination
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteId !== null}
+        title="删除提示词模板"
+        description="确定删除该模板吗？本地 content/prompts/ 文件也会一并移除。"
+        isDestructive
+        confirmLabel="确认删除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
+    </div>
+  );
+}

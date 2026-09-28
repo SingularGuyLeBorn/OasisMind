@@ -1,0 +1,129 @@
+/*
+ * ---------------------------------------------------------
+ * Copyright(C) Microsoft Corporation. All rights reserved.
+ * ---------------------------------------------------------
+ *
+ * ---------------------------------------------------------
+ * Generated file, DO NOT EDIT
+ * ---------------------------------------------------------
+ */
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const PolicyInterfaces = require("../interfaces/PolicyInterfaces");
+const TfsCoreInterfaces = require("../interfaces/CoreInterfaces");
+/**
+ * The status of a comment thread.
+ */
+var CommentThreadStatus;
+(function (CommentThreadStatus) {
+    /**
+     * The thread status is unknown.
+     */
+    CommentThreadStatus[CommentThreadStatus["Unknown"] = 0] = "Unknown";
+    /**
+     * The thread status is active.
+     */
+    CommentThreadStatus[CommentThreadStatus["Active"] = 1] = "Active";
+    /**
+     * The thread status is resolved as fixed.
+     */
+    CommentThreadStatus[CommentThreadStatus["Fixed"] = 2] = "Fixed";
+    /**
+     * The thread status is resolved as won't fix.
+     */
+    CommentThreadStatus[CommentThreadStatus["WontFix"] = 3] = "WontFix";
+    /**
+     * The thread status is closed.
+     */
+    CommentThreadStatus[CommentThreadStatus["Closed"] = 4] = "Closed";
+    /**
+     * The thread status is resolved as by design.
+     */
+    CommentThreadStatus[CommentThreadStatus["ByDesign"] = 5] = "ByDesign";
+    /**
+     * The thread status is pending.
+     */
+    CommentThreadStatus[CommentThreadStatus["Pending"] = 6] = "Pending";
+})(CommentThreadStatus = exports.CommentThreadStatus || (exports.CommentThreadStatus = {}));
+/**
+ * The type of a comment.
+ */
+var CommentType;
+(function (CommentType) {
+    /**
+     * The comment type is not known.
+     */
+    CommentType[CommentType["Unknown"] = 0] = "Unknown";
+    /**
+     * This is a regular user comment.
+     */
+    CommentType[CommentType["Text"] = 1] = "Text";
+    /**
+     * The comment comes as a result of a code change.
+     */
+    CommentType[CommentType["CodeChange"] = 2] = "CodeChange";
+    /**
+     * The comment represents a system message.
+     */
+    CommentType[CommentType["System"] = 3] = "System";
+})(CommentType = exports.CommentType || (exports.CommentType = {}));
+/**
+ * Current status of the asynchronous operation.
+ */
+var GitAsyncOperationStatus;
+(function (GitAsyncOperationStatus) {
+    /**
+     * The operation is waiting in a queue and has not yet started.
+     */
+    GitAsyncOperationStatus[GitAsyncOperationStatus["Queued"] = 1] = "Queued";
+    /**
+     * The operation is currently in progress.
+     */
+    GitAsyncOperationStatus[GitAsyncOperationStatus["InProgress"] = 2] = "InProgress";
+    /**
+     * The operation has completed.
+     */
+    GitAsyncOperationStatus[GitAsyncOperationStatus["Completed"] = 3] = "Completed";
+    /**
+     * The operation has failed. Check for an error message.
+     */
+    GitAsyncOperationStatus[GitAsyncOperationStatus["Failed"] = 4] = "Failed";
+    /**
+     * The operation has been abandoned.
+     */
+    GitAsyncOperationStatus[GitAsyncOperationStatus["Abandoned"] = 5] = "Abandoned";
+})(GitAsyncOperationStatus = exports.GitAsyncOperationStatus || (exports.GitAsyncOperationStatus = {}));
+var GitAsyncRefOperationFailureStatus;
+(function (GitAsyncRefOperationFailureStatus) {
+    /**
+     * No status
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["None"] = 0] = "None";
+    /**
+     * Indicates that the ref update request could not be completed because the ref name presented in the request was not valid.
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["InvalidRefName"] = 1] = "InvalidRefName";
+    /**
+     * The ref update could not be completed because, in case-insensitive mode, the ref name conflicts with an existing, differently-cased ref name.
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["RefNameConflict"] = 2] = "RefNameConflict";
+    /**
+     * The ref update request could not be completed because the user lacks the permission to create a branch
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["CreateBranchPermissionRequired"] = 3] = "CreateBranchPermissionRequired";
+    /**
+     * The ref update request could not be completed because the user lacks write permissions required to write this ref
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["WritePermissionRequired"] = 4] = "WritePermissionRequired";
+    /**
+     * Target branch was deleted after Git async operation started
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["TargetBranchDeleted"] = 5] = "TargetBranchDeleted";
+    /**
+     * Git object is too large to materialize into memory
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatus["GitObjectTooLarge"] = 6] = "GitObjectTooLarge";
+    /**
+     * Identity who authorized the operation was not found
+     */
+    GitAsyncRefOperationFailureStatus[GitAsyncRefOperationFailureStatu

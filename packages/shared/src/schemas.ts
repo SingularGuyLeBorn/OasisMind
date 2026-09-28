@@ -1,0 +1,2130 @@
+/**
+ * @oasismind/shared — 前后端共享 Zod Schema
+ *
+ * 所有 tRPC 输入验证的 schema 定义在这里，
+ * 前端和后端共用同一份类型定义。
+ */
+
+import { z } from "zod";
+import {
+  AGENT_TIERS,
+  DEFAULT_LLM_MODEL,
+  DEFAULT_POST_GARDEN,
+  isValidGardenIdFormat,
+  LLM_MODEL_IDS,
+  MEMORY_INITIAL_STRENGTH,
+  MEMORY_USER_CREATABLE_TYPES,
+} from "./constants";
+
+/* ═══════════════════════════════════════════════════════
+   实体 name / slug 路径安全（D3）
+   ═══════════════════════════════════════════════════════ */
+
+/** 禁止 `/ \ ..`、Windows 保留字符与控制字符；允许空格/中文 */
+const ENTITY_NAME_UNSAFE = /[\/\\<>:"|?*\x00-\x1f]/;
+function isSafeEntityName(value: string): boolean {
+  if (!value || value.trim() !== value) return false;
+  if (ENTITY_NAME_UNSAFE.test(value)) return false;
+  if (value.includes("..")) return false;
+  if (value === "." || value === "..") return false;
+  return true;
+}
+
+/** 文件 slug 可含单层 `/`（如 skill procedural `name/SKILL`），但每段仍走 name 规则且禁 .. */
+function isSafeEntitySlug(value: string): boolean {
+  if (!value || value.trim() !== value) return false;
+  if (/[\\<>:"|?*\x00-\x1f]/.test(value)) return false;
+  if (value.includes("..")) return false;
+  if (value.startsWith("/") || value.endsWith("/")) return false;
+  return value.split("/").every((p) => p.length > 0 && isSafeEntityName(p));
+}
+
+/** Agent/MCP/Prompt/Skill 等用作文件名的 name */
+export const safeEntityNameSchema = z
+  .string()
+  .min(1, "名称不能为空")
+  .max(100)
+  .refine(isSafeEntityName, {
+    message: "名称不能包含 / \\ ..、Windows 保留字符 <>:\"|?* 或控制字符",
+  });
+
+/** Post / 文件 slug：允许受控嵌套段，禁止穿越 */
+export const safeEntitySlugSchema = z
+  .string()
+  .min(1, "slug 不能为空")
+  .max(200)
+  .refine(isSafeEntitySlug, {
+    message: "slug 不能包含 \\、..、Windows 保留字符 <>:\"|?* 或控制字符",
+  });
+
+/* ═══════════════════════════════════════════════════════
+   Garden（动态知识库）+ Post
+   gardenId = content/{id}/；首页 = _garden.md；Post.slug = 库内路径
+   ═══════════════════════════════════════════════════════ */
+
+/** 花园 id：格式校验；「是否已存在」由 Service 运行时校验 */
+export const gardenIdSchema = z
+  .string()
+  .min(1)
+  .max(63)
+  .refine(isValidGardenIdFormat, {
+    message: "花园 id 须为小写字母开头的 [a-z0-9_-]，且不能是 about/uploads",
+  });
+
+/** Post.garden 字段（同 gardenId） */
+export const postGardenSchema = gardenIdSchema;
+
+export const createGardenSchema = z.object({
+  id: gardenIdSchema,
+  title: z.string().min(1, "标题不能为空").max(200),
+  description: z.string().max(500).optional().nullable(),
+  /** 首页 Markdown 正文（写入 _garden.md body） */
+  homeContent: z.string().default(""),
+});
+
+export const updateGardenSchema = z.object({
+  id: gardenIdSchema,
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(500).optional().nullable(),
+  homeContent: z.string().optional(),
+});
+
+export const listGardensSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+  keyword: z.string().optional(),
+});
+
+export const getGardenByIdSchema = z.object({
+  id: gardenIdSchema,
+});
+
+export const deleteGardenSchema = z.object({
+  id: gardenIdSchema,
+});
+
+export const createPostSchema = z.object({
+  title: z.string().min(1, "标题不能为空").max(200),
+  content: z.string().default(""),
+  /** 目标花园 id（须已存在）；默认 posts */
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+  /** 库内相对路径（不含 .md）；不填则由标题生成 */
+  slug: safeEntitySlugSchema.optional(),
+  excerpt: z.string().optional(),
+  coverImage: z.string().url().optional().nullable(),
+  category: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  published: z.boolean().optional(),
+  /** 创建文件夹首页：slug 为 a/b 时生成 a/b/index.md，使该文件夹节点本身成为文档 */
+  createFolderIndex: z.boolean().optional(),
+});
+
+export const updatePostSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().optional(),
+  /** 允许迁移到另一已存在花园（文件随之搬迁） */
+  garden: gardenIdSchema.optional(),
+  slug: safeEntitySlugSchema.optional(),
+  published: z.boolean().optional(),
+  excerpt: z.string().optional(),
+  coverImage: z.string().url().optional().nullable(),
+  category: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const listPostsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  /** 不传 = 全部花园；传则只列该花园 */
+  garden: gardenIdSchema.optional(),
+  published: z.boolean().optional(),
+  category: z.string().optional(),
+  tag: z.string().optional(),
+  keyword: z.string().optional(),
+  orderBy: z.enum(["createdAt", "updatedAt", "title"]).default("updatedAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+});
+
+/** 文章更新热力日历（GitHub contribution 风格）：按 updatedAt 日聚合 */
+export const postActivityCalendarSchema = z.object({
+  /** 回溯周数（含本周），默认 53 ≈ 一年 */
+  weeks: z.number().int().min(4).max(53).default(53),
+  /** 默认只统计已发布；false = 含草稿 */
+  publishedOnly: z.boolean().default(true),
+  garden: gardenIdSchema.optional(),
+});
+
+/** 点击日历某日：该日新增 / 更新 / 删除 + token 消耗 */
+export const postActivityDayDetailSchema = z.object({
+  /** 本地日 YYYY-MM-DD */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date 须为 YYYY-MM-DD"),
+  publishedOnly: z.boolean().default(true),
+  garden: gardenIdSchema.optional(),
+});
+
+export const searchPostsSchema = z.object({
+  query: z.string().min(1),
+  limit: z.number().int().min(1).max(50).default(10),
+  garden: gardenIdSchema.optional(),
+});
+
+/**
+ * 相关笔记：FTS（标题/正文/标签）+ 标签交集 + 同花园/同分类加权。
+ * 排除自身，返回带 score/reasons 的完整推荐。
+ */
+export const relatedPostsSchema = z.object({
+  id: z.string().cuid(),
+  limit: z.number().int().min(1).max(20).default(8),
+});
+
+/**
+ * Chat 消息落库为文章（完整三模式）：
+ * - create：新建
+ * - update：覆盖已有文章正文
+ * - append：在已有文章末尾追加（可选二级标题）
+ * 正文以服务端 messageId 为准，防前端篡改。
+ */
+export const createPostFromToolResultSchema = z.object({
+  path: z.string().min(1).max(500),
+  mode: z.enum(["create", "update", "append"]).default("create"),
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+  title: z.string().min(1).max(200).optional(),
+  targetPostId: z.string().cuid().optional(),
+  category: z.string().max(100).optional().nullable(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  published: z.boolean().default(true),
+  appendHeading: z.string().max(200).optional(),
+});
+
+export const inspectSessionTurnSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
+export const createPostFromChatSchema = z.object({
+  sessionId: z.string().cuid(),
+  messageId: z.string().cuid(),
+  mode: z.enum(["create", "update", "append"]).default("create"),
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+  title: z.string().min(1).max(200).optional(),
+  targetPostId: z.string().cuid().optional(),
+  category: z.string().max(100).optional().nullable(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  published: z.boolean().default(true),
+  appendHeading: z.string().max(200).optional(),
+});
+
+/** 按花园 + slug 取文 */
+export const getPostBySlugSchema = z.object({
+  slug: safeEntitySlugSchema,
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+});
+
+/** 记录一次文章阅读（与 getBySlug 分离，便于预取不刷浏览量） */
+export const postRecordViewSchema = z.object({
+  id: z.string().cuid(),
+});
+
+/** 阅读页划线解释（只读辅助，不写回文章 / 不建 ChatSession） */
+export const explainSelectionSchema = z.object({
+  quote: z.string().trim().min(1).max(2000),
+  title: z.string().min(1).max(300),
+  slug: safeEntitySlugSchema,
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+  /** 划选邻近段落，帮助消歧；可选 */
+  surrounding: z.string().max(1500).optional(),
+});
+
+export type ExplainSelectionInput = z.infer<typeof explainSelectionSchema>;
+
+/**
+ * 编辑器 @Agent 补全（Copilot 式）：带 Agent systemPrompt + 格式要求，一次 sync 生成 Markdown 片段。
+ * 不建 ChatSession、不跑工具；前端 Accept 后才写入正文。
+ */
+export const editorAgentCompleteSchema = z.object({
+  /** 省略则走默认 assistant */
+  agentId: z.string().cuid().optional(),
+  /** 用户指令，如「在这里写一个 LoRA 小节例子」 */
+  instruction: z.string().trim().min(1).max(2000),
+  /** 光标前上下文 */
+  before: z.string().max(8000).default(""),
+  /** 光标后上下文 */
+  after: z.string().max(8000).default(""),
+  /** 光标所在段落（默认上下文焦点） */
+  paragraph: z.string().max(4000).optional(),
+  /** 若有选区，将替换该段 */
+  selected: z.string().max(4000).optional(),
+  title: z.string().max(300).optional(),
+  garden: gardenIdSchema.optional(),
+  slug: safeEntitySlugSchema.optional(),
+  postId: z.string().cuid().optional(),
+  draftKey: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{8,64}$/, "draftKey 须为 8–64 位字母数字/_/-")
+    .optional(),
+  /** 默认 deepseek-v4-flash；可覆盖 */
+  model: z.string().min(1).max(120).optional(),
+  /** 生图模型；空则工具内用最强免费档 */
+  imageModel: z.string().min(1).max(160).optional(),
+});
+
+export type EditorAgentCompleteInput = z.infer<typeof editorAgentCompleteSchema>;
+
+/** 公式块 Copilot：前后约 10 行上下文 → 直接补全 LaTeX（默认 assistant，不建会话） */
+export const FORMULA_COPILOT_CONTEXT_LINES = 10;
+export const editorFormulaCopilotSchema = z.object({
+  /** 公式块前上下文（调用方截约 10 行） */
+  before: z.string().max(4000).default(""),
+  /** 公式块后上下文 */
+  after: z.string().max(4000).default(""),
+  /** 用户已输入的部分 LaTeX（可空） */
+  partial: z.string().max(2000).optional(),
+  title: z.string().max(300).optional(),
+  garden: gardenIdSchema.optional(),
+  slug: safeEntitySlugSchema.optional(),
+  model: z.string().min(1).max(120).optional(),
+});
+export type EditorFormulaCopilotInput = z.infer<typeof editorFormulaCopilotSchema>;
+
+/** 编辑器「生成配图」：上下文 → 生图 prompt → 生图 → 落盘，前端插到光标处 */
+export const editorGenerateIllustrationSchema = z.object({
+  before: z.string().max(8000).default(""),
+  after: z.string().max(8000).default(""),
+  paragraph: z.string().max(4000).optional(),
+  selected: z.string().max(4000).optional(),
+  /** 用户补充（如「画 Performer 特征映射」）；可空，由上下文自动写 prompt */
+  instruction: z.string().trim().max(2000).optional(),
+  title: z.string().max(300).optional(),
+  garden: gardenIdSchema.optional(),
+  slug: safeEntitySlugSchema.optional(),
+  postId: z.string().cuid().optional(),
+  draftKey: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{8,64}$/, "draftKey 须为 8–64 位字母数字/_/-")
+    .optional(),
+  /** 空 = 当前可用的最强免费生图模型 */
+  imageModel: z.string().min(1).max(160).optional(),
+  /** 写 prompt 的 LLM；默认 DEFAULT_LLM_MODEL */
+  promptModel: z.string().min(1).max(120).optional(),
+});
+export type EditorGenerateIllustrationInput = z.infer<typeof editorGenerateIllustrationSchema>;
+
+/* ═══════════════════════════════════════════════════════
+   Agent (AI 代理)
+   ═══════════════════════════════════════════════════════ */
+
+export const agentTierSchema = z.enum(AGENT_TIERS);
+export const agentStatusSchema = z.enum(["active", "idle", "dormant", "deleted"]);
+export const workspaceStatusSchema = z.enum(["active", "archived", "deleted"]);
+
+export const loopContractEvidenceSchema = z.object({
+  at: z.string(),
+  summary: z.string(),
+  fingerprint: z.string(),
+  taskId: z.string().optional(),
+  status: z.enum(["success", "failed", "cancelled", "budget_exceeded", "skipped"]),
+});
+
+export const loopContractSchema = z.object({
+  goal: z.string().default(""),
+  handoff: z.boolean().default(true),
+  gateOpen: z.boolean().default(true),
+  evidence: z.array(loopContractEvidenceSchema).default([]),
+  stopRule: z.object({ maxStaleRounds: z.number().int().min(1).default(3) }).default({ maxStaleRounds: 3 }),
+  staleRounds: z.number().int().min(0).default(0),
+  stoppedReason: z.string().nullable().default(null),
+});
+
+/** W2：心跳决策运行态（存 Agent.heartbeat.decision，与配置态分列） */
+export const heartbeatDecisionStateSchema = z.object({
+  skipRemaining: z.number().int().min(0).default(0),
+  resetToken: z.string().default(""),
+  lastMode: z
+    .enum([
+      "bounded_delivery",
+      "wait_user_gate",
+      "monitor_quiet_skip",
+      "quiet",
+      "repair",
+      "terminal_no_followup",
+    ])
+    .nullable()
+    .optional(),
+  quietStreak: z.number().int().min(0).default(0),
+  lastSkipTicks: z.number().int().min(0).default(0),
+  lastGateNotifyAt: z.string().nullable().optional(),
+  lastGateNotifyKey: z.string().nullable().optional(),
+  terminalAt: z.string().nullable().optional(),
+});
+
+export const heartbeatConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  cron: z.string().default("0 9 * * *"),
+  goal: z.string().default(""),
+  lastRunAt: z.string().nullable().optional(),
+  lastRunStatus: z.string().nullable().optional(),
+  consecutiveFailures: z.number().default(0),
+  /** LoopX 式控制平面（Phase 1：超级 Agent 心跳） */
+  loopContract: loopContractSchema.optional(),
+  /** W2 决策运行态（引擎 json_set 原子更新，勿整 blob 覆写） */
+  decision: heartbeatDecisionStateSchema.optional(),
+});
+
+export const agentPermissionModeSchema = z.enum(["default", "unattended", "explore"]);
+
+export const toolInheritMaskSchema = z
+  .object({
+    allow: z.array(z.string()).optional(),
+    deny: z.array(z.string()).optional(),
+  })
+  .refine((v) => !(v.allow?.length && v.deny?.length), { message: "allow 与 deny 互斥" });
+
+export const createAgentSchema = z.object({
+  name: safeEntityNameSchema,
+  description: z.string().optional(),
+  model: z.string().default(LLM_MODEL_IDS.DEEPSEEK_CHAT),
+  systemPrompt: z.string().default(""),
+  tools: z.array(z.string()).default([]),
+  permissionMode: agentPermissionModeSchema.nullish(),
+  toolInheritMask: toolInheritMaskSchema.nullable().optional(),
+  toolOwn: z.array(z.string()).nullable().optional(),
+  // Swarm 层级（不传则 service 层默认 "sub"）
+  tier: agentTierSchema.optional(),
+  workspaceId: z.string().cuid().optional(),
+  parentId: z.string().cuid().optional(),
+  source: z.string().max(64).optional(),
+  heartbeatModel: z.string().optional(),
+  heartbeat: heartbeatConfigSchema.optional(),
+});
+
+export const updateAgentSchema = z.object({
+  id: z.string().cuid(),
+  name: safeEntityNameSchema.optional(),
+  description: z.string().optional(),
+  model: z.string().optional(),
+  systemPrompt: z.string().optional(),
+  tools: z.array(z.string()).optional(),
+  permissionMode: agentPermissionModeSchema.nullish(),
+  toolInheritMask: toolInheritMaskSchema.nullable().optional(),
+  toolOwn: z.array(z.string()).nullable().optional(),
+  // Swarm
+  tier: agentTierSchema.optional(),
+  workspaceId: z.string().cuid().nullable().optional(),
+  parentId: z.string().cuid().nullable().optional(),
+  source: z.string().max(64).nullable().optional(),
+  heartbeatModel: z.string().nullable().optional(),
+  heartbeat: heartbeatConfigSchema.optional(),
+  status: agentStatusSchema.optional(),
+});
+
+export const duplicateAgentSchema = z.object({
+  id: z.string().cuid(),
+  name: safeEntityNameSchema.optional(),
+});
+
+export const listAgentsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  // Swarm 过滤
+  tier: agentTierSchema.optional(),
+  workspaceId: z.string().cuid().optional(),
+  parentId: z.string().cuid().optional(),
+  status: agentStatusSchema.optional(),
+});
+
+export const agentRunSchema = z.object({
+  agentId: z.string().cuid().optional(),
+  sessionId: z.string().cuid().optional(),
+  input: z.string().min(1).optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant", "system"]),
+        content: z.string(),
+      }),
+    )
+    .optional(),
+});
+
+export const chatConfigSchema = z.object({
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(256).max(32768).optional(),
+  systemPrompt: z.string().optional(),
+  enableReasoning: z.boolean().optional(),
+  reasoningEffort: z.enum(["low", "medium", "high", "max"]).optional(),
+  toolCallTimeoutMs: z.number().int().min(2000).max(600000).optional(),
+  maxToolRounds: z.number().int().min(1).max(50).optional(),
+});
+
+export const switchMessageVersionSchema = z.object({
+  messageId: z.string().cuid(),
+  versionIndex: z.number().int().min(0),
+});
+
+/** Chat 图片附件 — vision 模型直传 data URL，非 vision 走 OCR 文本 */
+export const chatImageAttachmentSchema = z.object({
+  type: z.literal("image").optional(),
+  name: z.string(),
+  mimeType: z.string(),
+  previewUrl: z.string(),
+  extractedText: z.string().optional(),
+  source: z.enum(["ocr", "vision", "user"]).optional(),
+});
+
+/** Chat 文章引用附件 — @ 选文后结构化落库；正文片段供 LLM 上下文 */
+export const chatPostAttachmentSchema = z.object({
+  type: z.literal("post"),
+  id: z.string().cuid(),
+  garden: z.string().min(1),
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  excerpt: z.string().optional(),
+  /** 发送时截取的正文；过长文章可后续用工具续读 */
+  contentSnippet: z.string().optional(),
+});
+
+/** 图片 | 文章引用（post 须带 type:"post"；无 type 视为图片，兼容旧数据） */
+export const chatAttachmentSchema = z.union([chatPostAttachmentSchema, chatImageAttachmentSchema]);
+
+export type ChatPostAttachment = z.infer<typeof chatPostAttachmentSchema>;
+export type ChatAttachment = z.infer<typeof chatAttachmentSchema>;
+
+export function isChatPostAttachment(a: unknown): a is ChatPostAttachment {
+  return (
+    !!a &&
+    typeof a === "object" &&
+    (a as { type?: unknown }).type === "post" &&
+    typeof (a as { id?: unknown }).id === "string" &&
+    typeof (a as { garden?: unknown }).garden === "string" &&
+    typeof (a as { slug?: unknown }).slug === "string" &&
+    typeof (a as { title?: unknown }).title === "string"
+  );
+}
+
+export function isChatImageAttachment(a: unknown): a is z.infer<typeof chatImageAttachmentSchema> {
+  if (!a || typeof a !== "object") return false;
+  if ((a as { type?: unknown }).type === "post") return false;
+  return (
+    typeof (a as { name?: unknown }).name === "string" &&
+    typeof (a as { mimeType?: unknown }).mimeType === "string" &&
+    typeof (a as { previewUrl?: unknown }).previewUrl === "string"
+  );
+}
+
+/** 文章引用 → 注入 LLM 的文本块 */
+export function formatPostAttachmentForLlm(att: ChatPostAttachment): string {
+  const head = `[引用文章 · ${att.garden}/${att.slug} · ${att.title}]`;
+  const parts = [head];
+  if (att.excerpt?.trim()) parts.push(att.excerpt.trim());
+  if (att.contentSnippet?.trim()) {
+    parts.push("---");
+    parts.push(att.contentSnippet.trim());
+  } else {
+    parts.push("（无正文片段；可用 post_list / 知识库工具续读）");
+  }
+  return parts.join("\n");
+}
+
+export const agentChatSchema = z
+  .object({
+    sessionId: z.string().cuid().optional(),
+    agentId: z.string().cuid().optional(),
+    message: z.string().min(1).optional(),
+    attachments: z.array(chatAttachmentSchema).optional(),
+    model: z.string().optional(),
+    config: chatConfigSchema.optional(),
+    regenerate: z.boolean().optional(),
+    regenerateUserMessageId: z.string().cuid().optional(),
+    retryFromMessageId: z.string().cuid().optional(),
+    editMessageId: z.string().cuid().optional(),
+    editContent: z.string().min(1).optional(),
+    skillId: z.string().cuid().optional(),
+    source: z.enum(["user", "super", "manager", "sub", "system", "cron", "channel"]).optional(),
+    /** 工具权限血统：parent=上级任务/异步续跑（允许 report_back）；user=用户直接对话 */
+    runOrigin: z.enum(["user", "parent", "heartbeat"]).optional(),
+    toolResults: z.record(z.unknown()).optional(),
+    clientMessageId: z.string().optional(),
+    /** 发送队列项 id：busy 时按此 unclaim/幂等，禁止仅靠 kind+content 误认 child_notify */
+    queueItemId: z.string().cuid().optional(),
+    resumeAfter: z.number().int().min(0).optional(),
+    /** 显式挂到这颗消息下；省略则 append 用当前 activeLeafId */
+    parentMessageId: z.string().cuid().optional(),
+    /** false：旁路写入（换叶后投递子结果）不推进 activeLeafId，禁止偷走用户正在看的叶 */
+    advanceLeaf: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.regenerate ||
+      data.retryFromMessageId ||
+      data.editMessageId ||
+      data.resumeAfter !== undefined ||
+      (typeof data.message === "string" && data.message.trim().length > 0) ||
+      (Array.isArray(data.attachments) && data.attachments.length > 0),
+    { message: "需要提供 message / 附件，或使用 regenerate / edit / retry / resumeAfter" },
+  )
+  .refine(
+    (data) => !data.editMessageId || (typeof data.editContent === "string" && data.editContent.trim().length > 0),
+    { message: "编辑消息需要提供 editContent" },
+  );
+
+export const webSearchSchema = z.object({
+  query: z.string().min(1, "搜索词不能为空"),
+  maxResults: z.number().int().min(1).max(20).default(5),
+  provider: z.enum(["auto", "tavily", "serpapi"]).default("auto"),
+});
+
+export const gitRepoPathSchema = z.object({
+  repoId: z.string().cuid().optional(),
+  repoPath: z.string().optional(),
+});
+
+export const gitLogSchema = gitRepoPathSchema.extend({
+  limit: z.number().int().min(1).max(100).default(10),
+});
+
+export const gitDiffSchema = gitRepoPathSchema.extend({
+  staged: z.boolean().default(false),
+});
+
+export const gitCommitSchema = gitRepoPathSchema.extend({
+  message: z.string().min(1, "提交信息不能为空"),
+});
+
+export const nativeExecuteSchema = z.object({
+  name: z.string().min(1),
+  args: z.record(z.any()).default({}),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Skill (技能 / 工具)
+   ═══════════════════════════════════════════════════════ */
+
+export const createSkillSchema = z.object({
+  name: safeEntityNameSchema,
+  description: z.string().min(1, "描述不能为空"),
+  code: z.string().min(1, "代码实现不能为空"),
+  icon: z.string().optional(),
+  trigger: z.string().optional(),
+  enabled: z.boolean().default(true),
+  tags: z.array(z.string().max(40)).max(20).default([]),
+  metaJson: z.string().optional(),
+});
+
+export const updateSkillSchema = z.object({
+  id: z.string().cuid(),
+  name: safeEntityNameSchema.optional(),
+  description: z.string().optional(),
+  code: z.string().optional(),
+  icon: z.string().optional(),
+  trigger: z.string().optional(),
+  enabled: z.boolean().optional(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  metaJson: z.string().optional(),
+});
+
+export const listSkillsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  /** 按统一标签筛选（contains，如「非常有用」） */
+  tag: z.string().max(40).optional(),
+  enabled: z.boolean().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Session (会话)
+   ═══════════════════════════════════════════════════════ */
+
+export const sessionStatusSchema = z.enum([
+  "active",
+  "queued",
+  "running",
+  "paused",
+  "interrupted",
+  "completed",
+  "failed",
+  "archived",
+]);
+
+export const sessionKindSchema = z.enum(["chat", "subagent", "heartbeat", "skill_review", "channel", "cron"]);
+
+export const sessionGoalModeSchema = z.enum(["goal", "deep_research", "autonomous"]);
+export const sessionGoalStatusSchema = z.enum(["active", "paused", "done", "exhausted"]);
+
+export const sessionGoalStateSchema = z.object({
+  mode: sessionGoalModeSchema,
+  text: z.string().min(1).max(8000),
+  status: sessionGoalStatusSchema,
+  turnsUsed: z.number().int().min(0).default(0),
+  maxTurns: z.number().int().min(1).max(200),
+  judgeModel: z.string().default("auto"),
+  execModel: z.string().optional(),
+  lastVerdict: z
+    .object({
+      done: z.boolean(),
+      reason: z.string(),
+    })
+    .optional(),
+  /** 本轮 done 后待 settled 钩子续跑（架构事件，非定时器） */
+  pendingContinue: z
+    .object({
+      reason: z.string(),
+    })
+    .nullable()
+    .optional(),
+  /** autonomous：墙钟起点（ISO） */
+  startedAt: z.string().optional(),
+  /** autonomous：墙钟预算 ms */
+  maxWallClockMs: z.number().int().positive().optional(),
+  /** autonomous：token 估算预算（可选） */
+  maxTokensEstimate: z.number().int().positive().optional(),
+  tokensUsedEstimate: z.number().int().min(0).optional(),
+  /** autonomous：完成前必须有外部门禁报告 */
+  requireExternalGate: z.boolean().optional(),
+  externalGate: z
+    .object({
+      passed: z.boolean(),
+      metrics: z.record(z.unknown()).optional(),
+      reportedAt: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
+  /** 仅 Auditor 可写；LLM / session_goal_set 不得直写 */
+  verifiedProgress: z
+    .array(
+      z.object({
+        id: z.string(),
+        claim: z.string().max(500),
+        evidenceRefs: z.array(z.string()).min(1),
+        auditedAt: z.string(),
+        auditor: z.enum(["system", "critic"]),
+      }),
+    )
+    .optional(),
+  intent: z
+    .object({
+      function: z.string().max(200),
+      arguments: z.record(z.unknown()).default({}),
+      kind: z.enum(["reveal", "revision", "switch"]).default("reveal"),
+      superseded: z
+        .array(
+          z.object({
+            at: z.string(),
+            oldArguments: z.record(z.unknown()),
+            reason: z.string(),
+          }),
+        )
+        .default([]),
+    })
+    .optional(),
+  /** 设立 Goal 时的 activeLeafId；revision/switch 从此叶分叉，避免旧枝污染现行路径 */
+  anchorLeafId: z.string().cuid().optional(),
+});
+
+export type SessionGoalState = z.infer<typeof sessionGoalStateSchema>;
+
+export const createSessionSchema = z.object({
+  title: z.string().min(1, "标题不能为空").max(200),
+  model: z.string().default(DEFAULT_LLM_MODEL),
+  systemPrompt: z.string().optional(),
+  agentId: z.string().cuid().optional(),
+  // Swarm/Subagent
+  parentSessionId: z.string().cuid().optional(),
+  kind: sessionKindSchema.optional(),
+  taskDescription: z.string().max(2000).optional(),
+  status: sessionStatusSchema.optional(),
+  isMainSession: z.boolean().optional(), // 管理 Agent 的主 session
+  goalState: sessionGoalStateSchema.nullable().optional(),
+  /** session_rotate：新会话指向来源旧会话 */
+  rotatedFromSessionId: z.string().cuid().optional(),
+});
+
+export const updateSessionSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).max(200).optional(),
+  autoName: z.string().max(200).nullable().optional(), // 手动重命名写此字段，显示优先于 title
+  model: z.string().optional(),
+  systemPrompt: z.string().optional(),
+  agentId: z.string().cuid().optional(),
+  // Swarm/Subagent
+  status: sessionStatusSchema.optional(),
+  taskDescription: z.string().max(2000).optional(),
+  kind: sessionKindSchema.optional(),
+  parentSessionId: z.string().cuid().nullable().optional(),
+  isMainSession: z.boolean().optional(), // 提升主会话时 SessionService 会摘掉同 Agent 其它主标记
+  // Auto-Compact 持久化摘要
+  contextSummary: z.string().max(20000).nullable().optional(),
+  contextCompactedAt: z.coerce.date().nullable().optional(),
+  rotatedToSessionId: z.string().cuid().nullable().optional(),
+  rotatedFromSessionId: z.string().cuid().nullable().optional(),
+  goalState: sessionGoalStateSchema.nullable().optional(),
+});
+
+export const setSessionGoalSchema = z.object({
+  sessionId: z.string().cuid(),
+  text: z.string().min(1).max(8000),
+  mode: sessionGoalModeSchema.default("goal"),
+  maxTurns: z.number().int().min(1).max(200).optional(),
+  judgeModel: z.string().optional(),
+  execModel: z.string().optional(),
+  /** 设置后是否立刻以 goal 文本起第一轮（默认 true） */
+  startNow: z.boolean().default(true),
+});
+
+export const sessionGoalControlSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
+export const listSideRunsSchema = z.object({
+  parentSessionId: z.string().cuid(),
+  pageSize: z.number().int().min(1).max(100).default(30),
+});
+
+/** session_rotate 血缘链（派生只读；seed = 链上任一会话） */
+export const rotateLineageSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
+/** 看板：最近由 rotate 产生的会话列表 */
+export const listRecentRotatesSchema = z.object({
+  limit: z.number().int().min(1).max(50).default(12),
+});
+
+/** 管理页：session_rotate 全图派生（只读边字段） */
+export const rotateGraphSchema = z.object({
+  limit: z.number().int().min(1).max(500).default(300),
+});
+
+export const compactSessionSchema = z.object({
+  id: z.string().cuid(),
+});
+
+export const forkSessionSchema = z.object({
+  sourceSessionId: z.string().cuid(),
+  title: z.string().min(1).max(200).optional(),
+  includeMessages: z.number().int().min(1).max(200).default(200),
+});
+
+export const listSessionsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  // 按 agentId 批量过滤（WorkspaceTree 用）：非空时不分页、服务端 take 上限 500
+  agentIds: z.array(z.string()).optional(),
+  // Swarm/Subagent 过滤
+  parentSessionId: z.string().cuid().optional(),
+  kind: sessionKindSchema.optional(),
+  status: sessionStatusSchema.optional(),
+});
+
+export const stopSessionSchema = z.object({ id: z.string().cuid() });
+
+export const rerunSessionSchema = z.object({
+  id: z.string().cuid(),
+  taskDescription: z.string().max(2000).optional(),
+});
+
+// C-3 会话手动恢复（v10）：仅恢复 paused 会话，幂等（并发/重复调用不报错）
+export const resumeSessionSchema = z.object({ id: z.string().cuid() });
+
+/** 确保 Agent 有一条主会话（空会话亦可）；Chat 无焦点进入时用，幂等。与「新对话」无关 */
+export const ensureMainSessionSchema = z.object({
+  agentId: z.string().cuid(),
+});
+
+/**
+ * 「新对话」：有空会话则复用（或提示已在其上），否则新建空会话。
+ * focusedSessionId 用于判定 already_here。
+ */
+export const openNewSessionSchema = z.object({
+  agentId: z.string().cuid(),
+  focusedSessionId: z.string().cuid().nullable().optional(),
+  title: z.string().min(1).max(200).optional(),
+  model: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Message (消息)
+   ═══════════════════════════════════════════════════════ */
+
+export const createMessageSchema = z.object({
+  /** 预生成 id（E3 abort 契约：stop 响应与落库共用同一 id） */
+  id: z.string().cuid().optional(),
+  sessionId: z.string().cuid(),
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z.string().min(1, "内容不能为空"),
+  /** 显式父节点；省略则 appendChatMessage 用当前 activeLeafId */
+  parentId: z.string().cuid().optional(),
+  attachments: z.array(chatAttachmentSchema).optional(),
+  toolCalls: z.any().optional(),
+  toolResults: z.any().optional(),
+  tokenUsage: z.object({
+    prompt: z.number(),
+    completion: z.number(),
+    total: z.number(),
+    /** 本轮实际调用的模型（可选，便于 UI 点击查看） */
+    model: z.string().optional(),
+  }).optional(),
+  finishReason: z.string().optional(),
+  source: z.enum(["user", "super", "manager", "sub", "system", "cron", "channel"]).optional(), // 不传则 service 层默认 "user"
+  /** false：不推进 activeLeafId（旁路投递） */
+  advanceLeaf: z.boolean().optional(),
+});
+
+export const updateMessageSchema = z.object({
+  id: z.string().cuid(),
+  content: z.string().min(1).optional(),
+  attachments: z.array(chatAttachmentSchema).optional(),
+  toolCalls: z.any().optional(),
+  toolResults: z.any().optional(),
+  finishReason: z.string().optional(),
+});
+
+export const listMessagesSchema = z.object({
+  sessionId: z.string().cuid(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+});
+
+// P0-1：Chat 专用 cursor 无限查询（session 元数据与消息解耦）
+export const listMessagesForChatSchema = z.object({
+  sessionId: z.string().cuid(),
+  /** cursor = 上一页最旧消息 id；省略时返最近 limit 条 */
+  cursor: z.string().cuid().optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  /** 调试：true 时返回全树（按 createdAt），默认仅活跃路径 */
+  tree: z.boolean().optional(),
+});
+
+/** 会话树：切换当前叶（游标） */
+export const switchBranchSchema = z.object({
+  sessionId: z.string().cuid(),
+  messageId: z.string().cuid(),
+});
+
+/** 会话树邻接表（UI 分支指示） */
+export const sessionTreeSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
+/** 消息书签 */
+export const setMessageLabelSchema = z.object({
+  messageId: z.string().cuid(),
+  label: z.string().max(100).nullable(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   SessionQueueItem（会话发送队列）
+   ═══════════════════════════════════════════════════════ */
+
+export const createSessionQueueItemSchema = z.object({
+  sessionId: z.string().cuid(),
+  /** im_inbound：QQ/飞书等 IM 忙碌入队，由服务端 imChannelDrain 消费（前端 drain 跳过） */
+  kind: z.enum(["user", "superior", "child_notify", "im_inbound"]),
+  content: z.string().min(1, "队列项内容不能为空"),
+  source: z.string().min(1),
+  sourceName: z.string().optional(),
+  agentMessageId: z.string().cuid().optional(),
+  attachments: z.any().optional(),
+  skillId: z.string().optional(),
+  skillPrompt: z.string().optional(),
+});
+
+/**
+ * 运行中补充用户消息：一律入发送队列（kind=user），与 chat-scenario-states §4 对齐。
+ * 不再接受 steer/follow_up（2026-07-29 撤销默认偏转）。
+ */
+export const submitAgentInjectSchema = z.object({
+  sessionId: z.string().cuid(),
+  content: z.string().min(1, "内容不能为空"),
+});
+
+/** ask_user：用户在 Chat 弹框作答 */
+export const resolveAskUserSchema = z.object({
+  askId: z.string().uuid(),
+  answer: z.string().min(1, "答复不能为空").max(8000),
+});
+
+/** ask_user：列出某会话仍在等待的提问（刷新后恢复弹框） */
+export const listAskUserPendingSchema = z.object({
+  sessionId: z.string().cuid(),
+});
+
+export const updateSessionQueueItemSchema = z.object({
+  id: z.string().cuid(),
+  content: z.string().min(1).optional(),
+  order: z.number().int().optional(),
+  attachments: z.any().optional(),
+  skillId: z.string().optional(),
+  skillPrompt: z.string().optional(),
+});
+
+export const listSessionQueueItemsSchema = z.object({
+  sessionId: z.string().cuid(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(200).default(100),
+});
+
+export const reorderSessionQueueItemsSchema = z.object({
+  sessionId: z.string().cuid(),
+  /** 有序的 item id 数组，按新顺序排列 */
+  orderedIds: z.array(z.string().cuid()).min(1),
+});
+
+/* ═══════════════════════════════════════════════════════
+   File (文件)
+   ═══════════════════════════════════════════════════════ */
+
+export const createFileSchema = z.object({
+  name: z.string().min(1),
+  path: z.string().min(1),
+  mimeType: z.string(),
+  size: z.number().int().positive(),
+  url: z.string(),
+});
+
+/**
+ * 上传文件。按文章稳定 id 分目录，改 slug 不断链：
+ * - 已有文章：content/uploads/{garden}/{postId}/…
+ * - 未落盘草稿：content/uploads/{garden}/_draft/{draftKey}/…
+ * - 无 meta：content/uploads/ 扁平
+ */
+export const uploadFileSchema = z.object({
+  name: z.string().min(1),
+  mimeType: z.string(),
+  size: z.number().int().positive(),
+  data: z.string().min(1), // base64 encoded file content
+  garden: gardenIdSchema.optional(),
+  /** 已落盘文章 id（cuid）；优先于 draftKey */
+  postId: z.string().cuid().optional(),
+  /** 新建文章编辑会话的稳定草稿键（uuid）；勿用 slug */
+  draftKey: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{8,64}$/, "draftKey 须为 8–64 位字母数字/_/-")
+    .optional(),
+});
+
+export const updateFileSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).optional(),
+});
+
+export const listFilesSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Log (日志)
+   ═══════════════════════════════════════════════════════ */
+
+export const createLogSchema = z.object({
+  level: z.enum(["info", "warn", "error", "debug", "success"]),
+  component: z.string(),
+  event: z.string(),
+  message: z.string(),
+  metadata: z.any().optional(),
+});
+
+export const updateLogSchema = z.object({
+  id: z.string().cuid(),
+  message: z.string().min(1).optional(),
+  metadata: z.any().optional(),
+});
+
+export const listLogsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(50),
+  level: z.enum(["info", "warn", "error", "debug", "success"]).optional(),
+  component: z.string().optional(),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   McpServer (MCP 服务)
+   ═══════════════════════════════════════════════════════ */
+
+const mcpTransportSchema = z.enum(["stdio", "http"]);
+
+function refineMcpTransport(
+  data: {
+    transport?: "stdio" | "http";
+    command?: string;
+    url?: string | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const transport = data.transport ?? "stdio";
+  if (transport === "stdio") {
+    if (!data.command?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "stdio 传输必须填写 command",
+        path: ["command"],
+      });
+    }
+  } else if (transport === "http") {
+    const url = data.url?.trim() ?? "";
+    if (!url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "http 传输必须填写 url",
+        path: ["url"],
+      });
+    } else {
+      try {
+        void new URL(url);
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "url 不是合法 URL",
+          path: ["url"],
+        });
+      }
+    }
+  }
+}
+
+export const createMcpServerSchema = z
+  .object({
+    name: safeEntityNameSchema,
+    transport: mcpTransportSchema.default("stdio"),
+    command: z.string().default(""),
+    args: z.array(z.string()).default([]),
+    env: z.record(z.string(), z.string()).default({}),
+    url: z.string().optional().nullable(),
+    headers: z.record(z.string(), z.string()).default({}),
+    enabled: z.boolean().default(true),
+  })
+  .superRefine(refineMcpTransport);
+
+export const updateMcpServerSchema = z
+  .object({
+    id: z.string().cuid(),
+    name: safeEntityNameSchema.optional(),
+    transport: mcpTransportSchema.optional(),
+    command: z.string().optional(),
+    args: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
+    url: z.string().optional().nullable(),
+    headers: z.record(z.string(), z.string()).optional(),
+    enabled: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // 更新时仅在显式带了 transport 或同时改了 command/url 时校验；完整校验由 Service 合并后做
+    if (data.transport !== undefined) refineMcpTransport(data, ctx);
+  });
+
+export const listMcpServersSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Memory (长期记忆)
+   ═══════════════════════════════════════════════════════ */
+
+export const memoryUserTypeSchema = z.enum(MEMORY_USER_CREATABLE_TYPES);
+
+export const memoryAttributionSchema = z.enum([
+  "user",
+  "agent",
+  "flush",
+  "experience",
+  "system",
+]);
+
+export const memoryStatusSchema = z.enum(["active", "superseded"]);
+
+export const createMemorySchema = z.object({
+  content: z.string().min(1),
+  type: memoryUserTypeSchema.default("note"),
+  strength: z.number().min(0).max(1).default(MEMORY_INITIAL_STRENGTH),
+  keywords: z.array(z.string()).default([]),
+  /** 组织标签（与 Skill/Post 统一；keywords 仍专用于检索） */
+  tags: z.array(z.string().max(40)).max(20).default([]),
+  /** 事实来源归因（可选；Agent 工具 / flush 会写入） */
+  attribution: memoryAttributionSchema.optional(),
+  /** 引用出处：post:{garden}/{slug} | run:{id} | url:… | tool:{jobId}（不是 sourceSlug） */
+  source: z.string().max(500).optional().nullable(),
+  /** 并存矛盾记忆 id 列表（薄冲突图；不静默覆盖） */
+  conflictsWith: z.array(z.string().min(1).max(64)).max(20).optional(),
+  /** 作用域：global / workspace:{id} / agent:{id}；UI 创建默认 global */
+  scope: z.string().max(120).optional(),
+  validFrom: z.coerce.date().optional().nullable(),
+  validTo: z.coerce.date().optional().nullable(),
+});
+
+export const updateMemorySchema = z.object({
+  id: z.string().cuid(),
+  content: z.string().min(1).optional(),
+  type: memoryUserTypeSchema.optional(),
+  strength: z.number().min(0).max(1).optional(),
+  keywords: z.array(z.string()).optional(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  attribution: memoryAttributionSchema.optional(),
+  source: z.string().max(500).optional().nullable(),
+  conflictsWith: z.array(z.string().min(1).max(64)).max(20).optional(),
+  scope: z.string().max(120).optional(),
+  validFrom: z.coerce.date().optional().nullable(),
+  validTo: z.coerce.date().optional().nullable(),
+  status: memoryStatusSchema.optional(),
+});
+
+export const listMemoriesSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  type: z.string().optional(),
+  scope: z.string().optional(),
+  tag: z.string().max(40).optional(),
+  status: memoryStatusSchema.optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   InfoSource (信息源)
+   ═══════════════════════════════════════════════════════ */
+
+export const infoSourceTypeSchema = z.enum([
+  "blog",
+  "paper",
+  "news",
+  "official",
+  "community",
+  "general",
+  "rss",
+]);
+
+export const infoSourceLanguageSchema = z.enum(["zh", "en", "auto"]);
+
+export const createInfoSourceSchema = z.object({
+  name: z.string().min(1, "名称不能为空").max(200),
+  url: z.string().min(1, "URL 不能为空"),
+  type: infoSourceTypeSchema.default("general"),
+  description: z.string().default(""),
+  reliability: z.number().int().min(1).max(5).default(3),
+  language: infoSourceLanguageSchema.default("auto"),
+  tags: z.array(z.string()).default([]),
+  enabled: z.boolean().default(true),
+  fetchInterval: z.number().int().min(5).max(10080).optional().nullable(), /// null = 不自动抓取
+});
+
+export const importOpmlSchema = z.object({
+  xml: z.string().min(20).max(2_000_000),
+  tags: z.array(z.string()).default(["opml"]),
+  enabled: z.boolean().default(false),
+});
+
+export const importTidingsCatalogSchema = z.object({
+  catalog: z.enum(["ai", "top200", "research"]).default("ai"),
+});
+
+export const updateInfoSourceSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).max(200).optional(),
+  url: z.string().min(1).optional(),
+  type: infoSourceTypeSchema.optional(),
+  description: z.string().optional(),
+  reliability: z.number().int().min(1).max(5).optional(),
+  language: infoSourceLanguageSchema.optional(),
+  tags: z.array(z.string()).optional(),
+  enabled: z.boolean().optional(),
+  fetchInterval: z.number().int().min(5).max(10080).optional().nullable(),
+});
+
+export const listInfoSourcesSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  type: infoSourceTypeSchema.optional(),
+  tag: z.string().optional(),
+  minReliability: z.number().int().min(1).max(5).optional(),
+  enabled: z.boolean().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Inbox（知识素材箱：截图 / 知乎 / 小红书 / B站 / 微信公众号）
+   ═══════════════════════════════════════════════════════ */
+
+export const inboxSourceSchema = z.enum(["screenshot", "zhihu", "xhs", "wechat", "bilibili", "url"]);
+export const inboxStatusSchema = z.enum(["fetched", "distilled", "ignored"]);
+
+export const createInboxItemSchema = z.object({
+  source: inboxSourceSchema,
+  externalId: z.string().min(1).max(500),
+  title: z.string().min(1).max(500),
+  url: z.string().max(2000).optional().nullable(),
+  excerpt: z.string().max(4000).optional().nullable(),
+  contentPath: z.string().max(1000).optional().nullable(),
+  content: z.string().max(200_000).optional().nullable(),
+  tags: z.array(z.string()).default([]),
+  metadata: z.record(z.unknown()).optional(),
+  status: inboxStatusSchema.default("fetched"),
+});
+
+export const updateInboxItemSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).max(500).optional(),
+  excerpt: z.string().max(4000).optional().nullable(),
+  content: z.string().max(200_000).optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  status: inboxStatusSchema.optional(),
+  distilledPostId: z.string().cuid().optional().nullable(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const listInboxItemsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  source: inboxSourceSchema.optional(),
+  status: inboxStatusSchema.optional(),
+  /** 知乎收藏夹 id；传 unknown 表示无 collectionId 的旧条目 */
+  collectionId: z.string().min(1).max(64).optional(),
+  /** 标签子筛选：like / favorite / collection 等 */
+  tag: z.string().min(1).max(64).optional(),
+  orderBy: z.enum(["capturedAt", "sourceAt", "createdAt", "updatedAt"]).default("capturedAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export const inboxFacetsSchema = z.object({
+  status: inboxStatusSchema.optional(),
+});
+
+export const inboxCaptureUrlSchema = z.object({
+  url: z.string().url(),
+  source: inboxSourceSchema.optional(),
+  fetchContent: z.boolean().default(true),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+});
+
+export const inboxCaptureUrlsSchema = z.object({
+  urls: z.array(z.string().url()).min(1).max(50),
+  source: inboxSourceSchema.optional(),
+  fetchContent: z.boolean().default(true),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+});
+
+export const inboxSyncZhihuModeSchema = z.enum(["full", "incremental"]);
+export const inboxSyncZhihuSchema = z.object({
+  /** 单个收藏夹 URL；不填则登录后自动发现并同步「我的全部收藏夹」 */
+  collectionUrl: z.string().url().optional(),
+  /** full=每夹拉到末尾；incremental=从新到旧，遇已知条目提前停（默认） */
+  mode: inboxSyncZhihuModeSchema.default("incremental"),
+  maxCollections: z.number().int().min(1).max(200).default(50),
+  /** 每个收藏夹最多拉取条数（全量护栏，默认 5000） */
+  maxItemsPerCollection: z.number().int().min(1).max(5000).default(5000),
+  /** 每夹条数上限；若传入则覆盖 maxItemsPerCollection（单夹快捷同步常用） */
+  maxItems: z.number().int().min(1).max(5000).optional(),
+  /** 入库上限（可小于列表 maxItems；试跑常用 3） */
+  maxUpsert: z.number().int().min(1).max(5000).optional(),
+  fetchContent: z.boolean().default(false),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+});
+
+export const inboxSyncXhsKindSchema = z.enum(["liked", "collect"]);
+export const inboxSyncXhsModeSchema = z.enum(["full", "incremental"]);
+export const inboxSyncXhsSchema = z.object({
+  /** liked=点赞，collect=收藏；默认两者都同步 */
+  kinds: z.array(inboxSyncXhsKindSchema).min(1).max(2).default(["liked", "collect"]),
+  /** full=小步慢滚到护栏；incremental=遇已知 noteId 批次提前停（默认） */
+  mode: inboxSyncXhsModeSchema.default("incremental"),
+  /** 每种 kind 最多拉取条数（点赞与收藏分别计数；点赞常 300+） */
+  maxItems: z.number().int().min(1).max(5000).default(500),
+  /** 入库上限（跨 kind 合计；可小于列表 maxItems） */
+  maxUpsert: z.number().int().min(1).max(5000).optional(),
+  /**
+   * true=逐条打开笔记抓正文+图片（慢、易风控）；默认 false 只落标题/作者/封面/摘要。
+   * 列表阶段已带 display_title、作者、desc 摘要、封面 URL。
+   */
+  fetchContent: z.boolean().default(false),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+});
+
+/** B 站：收藏夹 + 稍后再看（学 BiliNote：复用 platform_login SESSDATA） */
+export const inboxSyncBilibiliKindSchema = z.enum(["fav", "toview"]);
+export const inboxSyncBilibiliModeSchema = z.enum(["full", "incremental"]);
+export const inboxSyncBilibiliSchema = z.object({
+  /** fav=我创建的收藏夹；toview=稍后再看；默认两者 */
+  kinds: z.array(inboxSyncBilibiliKindSchema).min(1).max(2).default(["fav", "toview"]),
+  mode: inboxSyncBilibiliModeSchema.default("incremental"),
+  /** 每个收藏夹 / 稍后再看列表最多条数 */
+  maxItems: z.number().int().min(1).max(5000).default(200),
+  maxFolders: z.number().int().min(1).max(100).default(50),
+  /** 入库上限（可小于列表 maxItems） */
+  maxUpsert: z.number().int().min(1).max(5000).optional(),
+  /** true 时用 video_transcript 链路抓字幕摘要（更慢、耗额度） */
+  fetchContent: z.boolean().default(false),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+});
+
+export const inboxScanScreenshotsSchema = z.object({
+  dir: z.string().optional(),
+  maxFiles: z.number().int().min(1).max(200).default(50),
+  runOcr: z.boolean().default(true),
+});
+
+export const inboxIngestWechatDropSchema = z.object({
+  fetchContent: z.boolean().default(true),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+  maxUrls: z.number().int().min(1).max(100).default(50),
+});
+
+export const inboxDistillSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(30),
+  garden: z.string().min(1).max(64).default("knowledge"),
+  published: z.boolean().default(false),
+  /** W4：raw=原文直写（默认，与旧行为完全一致）；taste=按 USER.md/花园文风改写后落草稿 */
+  mode: z.enum(["raw", "taste"]).default("raw"),
+});
+
+export const inboxIgnoreSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(100),
+});
+
+/**
+ * 分批补抓缺正文条目（防风控主路径）。
+ * 先列表同步 fetchContent=false，再用本 schema 每天小批量补正文。
+ */
+export const inboxEnrichSchema = z.object({
+  source: inboxSourceSchema.optional(),
+  /** 本轮最多新抓条数，默认 12；建议单日累计 ≤40 */
+  maxItems: z.number().int().min(1).max(50).default(12),
+  maxChars: z.number().int().min(500).max(50000).default(12000),
+  /** 指定条目；不传则自动挑 content 空的 fetched */
+  ids: z.array(z.string().cuid()).max(50).optional(),
+});
+
+export const inboxBulkDeleteSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(200),
+});
+
+/** 平台批量同步：后台任务，避免 HTTP 长请求被代理掐成 fetch failed */
+export const inboxPlatformSyncModeSchema = z.enum(["full", "incremental"]);
+export const inboxPlatformSyncStartSchema = z.object({
+  mode: inboxPlatformSyncModeSchema.default("incremental"),
+  zhihu: z.boolean().default(true),
+  xhs: z.boolean().default(true),
+  bilibili: z.boolean().default(true),
+  screenshots: z.boolean().default(true),
+  wechat: z.boolean().default(true),
+  maxItems: z.number().int().min(1).max(5000).optional(),
+  /** 实际入库上限；小于 maxItems 时只写前 N 条（试跑用） */
+  maxUpsert: z.number().int().min(1).max(5000).optional(),
+  /**
+   * 试跑：列表最多 10、入库最多 3（覆盖 maxItems/maxUpsert）。
+   * 用于验证登录态，避免全量收藏测半小时。
+   */
+  probe: z.boolean().default(false),
+  fetchContent: z.boolean().default(false),
+});
+export const inboxPlatformSyncProgressSchema = z.object({
+  jobId: z.string().min(1).max(64),
+});
+
+export type InboxPlatformSyncStartInput = z.input<typeof inboxPlatformSyncStartSchema>;
+export type InboxPlatformSyncProgressInput = z.infer<typeof inboxPlatformSyncProgressSchema>;
+
+/* ═══════════════════════════════════════════════════════
+   GitRepo (Git 仓库)
+   ═══════════════════════════════════════════════════════ */
+
+const safePathString = z
+  .string()
+  .min(1)
+  .refine((v) => !v.includes("..") && /^([A-Za-z]:[\\/].*|[\\/].*|[^\\/].*)$/.test(v), {
+    message: "路径不能包含 ..，且需为合法相对或绝对路径",
+  });
+
+export const createGitRepoSchema = z.object({
+  name: z.string().min(1),
+  path: safePathString,
+  branch: z.string().default("main"),
+  remoteUrl: z.string().url().optional().nullable(),
+});
+
+export const updateGitRepoSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).optional(),
+  path: safePathString.optional(),
+  branch: z.string().optional(),
+  remoteUrl: z.string().url().optional().nullable(),
+});
+
+export const listGitReposSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Task (后台任务)
+   ═══════════════════════════════════════════════════════ */
+
+export const createTaskSchema = z.object({
+  name: z.string().min(1),
+  type: z.enum(["cron", "oneshot", "async_agent"]),
+  status: z
+    .enum(["pending", "queued", "running", "success", "failed", "cancelled", "interrupted"])
+    .default("pending"),
+  sessionId: z.string().nullish(),
+  input: z.any().optional(),
+  output: z.any().optional(),
+  cronExpression: z.string().optional(),
+  queuedAt: z.coerce.date().optional().nullable(),
+  startedAt: z.coerce.date().optional().nullable(),
+  finishedAt: z.coerce.date().optional().nullable(),
+});
+
+export const updateTaskSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).optional(),
+  status: z
+    .enum(["pending", "queued", "running", "success", "failed", "cancelled", "interrupted"])
+    .optional(),
+  sessionId: z.string().nullish(),
+  input: z.any().optional(),
+  output: z.any().optional(),
+  cronExpression: z.string().optional(),
+  queuedAt: z.coerce.date().optional().nullable(),
+  startedAt: z.coerce.date().optional().nullable(),
+  finishedAt: z.coerce.date().optional().nullable(),
+});
+
+export const listTasksSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  status: z
+    .enum(["pending", "queued", "running", "success", "failed", "cancelled", "interrupted"])
+    .optional(),
+  keyword: z.string().optional(),
+  // R7：按会话过滤（listSessionAsyncJobs 用），避免全局拉 50 条后 JS 过滤漏掉非 top-50 任务
+  sessionId: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Workspace (工作区)
+   ═══════════════════════════════════════════════════════ */
+
+export const createWorkspaceSchema = z.object({
+  name: z.string().min(1, "名称不能为空").max(100),
+  description: z.string().optional(),
+  path: safePathString,
+  /** 是否自动创建管理 Agent（默认 true）；与 withManager 同义，任一为 false 即关闭 */
+  autoCreateManager: z.boolean().optional(),
+  withManager: z.boolean().optional(),
+  managerName: z.string().min(1).max(100).optional(),
+  /** 创建后发给管理员主会话的初始任务（无管理员时忽略） */
+  initialTask: z.string().max(8000).optional(),
+  /** 本 Workspace 后台 LLM 异步槽上限；0=不限；默认 2 */
+  asyncSlotQuota: z.number().int().min(0).max(100).optional(),
+  isSystem: z.boolean().optional(), // 系统级 Workspace（内部使用）
+  systemType: z.string().optional(), // 系统 Workspace 类型，如 "super"
+});
+
+export const updateWorkspaceSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().optional(),
+  path: safePathString.optional(),
+  status: workspaceStatusSchema.optional(),
+  asyncSlotQuota: z.number().int().min(0).max(100).optional(),
+  isSystem: z.boolean().optional(),
+  systemType: z.string().optional(),
+});
+
+export const listWorkspacesSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  status: workspaceStatusSchema.optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Trigger (触发器)
+   ═══════════════════════════════════════════════════════ */
+
+export const createTriggerSchema = z.object({
+  name: z.string().min(1, "名称不能为空").max(100),
+  type: z.enum(["file_change", "webhook", "cron"]),
+  source: z.string().min(1, "触发源不能为空"),
+  actionType: z.enum(["run_agent", "run_task"]),
+  actionId: z.string().min(1, "动作关联ID不能为空"),
+  enabled: z.boolean().default(true),
+});
+
+export const updateTriggerSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).max(100).optional(),
+  type: z.enum(["file_change", "webhook", "cron"]).optional(),
+  source: z.string().min(1).optional(),
+  actionType: z.enum(["run_agent", "run_task"]).optional(),
+  actionId: z.string().min(1).optional(),
+  enabled: z.boolean().optional(),
+});
+
+export const listTriggersSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   AgentCronJob（Agent 自设定时任务）
+   ═══════════════════════════════════════════════════════ */
+
+const cronFiveField = z
+  .string()
+  .min(5)
+  .max(64)
+  .regex(/^(\S+\s+){4}\S+$/, "需为标准 5 段 cron，如 0 8 * * *");
+
+export const listAgentCronSchema = z.object({
+  agentId: z.string().cuid().optional(),
+  enabledOnly: z.boolean().optional(),
+});
+
+export const upsertAgentCronSchema = z.object({
+  agentId: z.string().cuid(),
+  name: z.string().min(1).max(100),
+  cron: cronFiveField,
+  prompt: z.string().min(8).max(12000),
+  busPath: z.string().max(500).nullable().optional(),
+  enabled: z.boolean().default(true),
+});
+
+export const clearAgentCronSchema = z.object({
+  id: z.string().min(1).optional(),
+  agentId: z.string().cuid().optional(),
+  name: z.string().min(1).max(100).optional(),
+}).refine((v) => Boolean(v.id) || (Boolean(v.agentId) && Boolean(v.name)), {
+  message: "需要 id，或 agentId+name",
+});
+
+export const setAgentCronEnabledSchema = z.object({
+  id: z.string().min(1),
+  enabled: z.boolean(),
+});
+
+export const fireAgentCronSchema = z.object({
+  id: z.string().min(1),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Approval (审批队列)
+   ═══════════════════════════════════════════════════════ */
+
+export const createApprovalSchema = z.object({
+  toolName: z.string().min(1),
+  args: z.any(),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+  /** W3：服务端派生的 decisionScope；LLM/客户端不可传业务语义，仅服务端写入 */
+  decisionScope: z.string().min(1).optional(),
+});
+
+export const updateApprovalSchema = z.object({
+  id: z.string().cuid(),
+  status: z.enum(["pending", "approved", "rejected", "executed"]),
+  decisionNote: z.string().optional(),
+  /** 批准时勾选：以后同 scope 自动放行 */
+  rememberScope: z.boolean().optional(),
+});
+
+export const listApprovalsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  status: z.enum(["pending", "approved", "rejected", "executed"]).optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Comment (文章轻留言)
+   ═══════════════════════════════════════════════════════ */
+
+export const createCommentSchema = z.object({
+  postId: z.string().cuid(),
+  authorName: z.string().trim().min(1, "请填写昵称").max(40, "昵称最多 40 字"),
+  content: z.string().trim().min(1, "请填写留言").max(2000, "留言最多 2000 字"),
+});
+
+export const updateCommentSchema = z.object({
+  id: z.string().cuid(),
+  status: z.enum(["approved", "hidden"]),
+});
+
+export const listCommentsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  postId: z.string().cuid().optional(),
+  status: z.enum(["approved", "hidden"]).optional(),
+});
+
+export const listCommentsForPostSchema = z.object({
+  postId: z.string().cuid(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(50),
+});
+
+export const listBlogPostsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(50).default(10),
+  keyword: z.string().max(200).optional(),
+  garden: gardenIdSchema.optional(),
+  tag: z.string().max(64).optional(),
+  category: z.string().max(64).optional(),
+});
+
+export const getBlogPostBySlugSchema = z.object({
+  slug: safeEntitySlugSchema,
+  garden: gardenIdSchema.default(DEFAULT_POST_GARDEN),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Tool (工具注册表)
+   ═══════════════════════════════════════════════════════ */
+
+export const createToolSchema = z.object({
+  name: z.string().min(1, "名称不能为空").max(100),
+  type: z.enum(["skill", "mcp", "native"]),
+  targetId: z.string().optional(),
+  description: z.string().optional(),
+  parametersSchema: z.string().optional(),
+  enabled: z.boolean().default(true),
+});
+
+export const updateToolSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).max(100).optional(),
+  type: z.enum(["skill", "mcp", "native"]).optional(),
+  targetId: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  parametersSchema: z.string().optional().nullable(),
+  enabled: z.boolean().optional(),
+});
+
+export const listToolsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  type: z.enum(["skill", "mcp", "native"]).optional(),
+  keyword: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Run (Agent 执行记录)
+   ═══════════════════════════════════════════════════════ */
+
+export const createRunSchema = z.object({
+  agentId: z.string().cuid().optional(),
+  sessionId: z.string().cuid().optional(),
+  status: z.enum(["pending", "running", "success", "failed", "cancelled", "interrupted"]).default("pending"),
+  input: z.any().optional(),
+  output: z.any().optional(),
+  toolCalls: z.any().optional(),
+  tokenUsage: z.any().optional(),
+  error: z.any().optional(),
+  durationMs: z.number().int().nonnegative().optional(),
+  toolCallCount: z.number().int().nonnegative().optional(),
+  systemPrompt: z.string().optional(),
+});
+
+export const updateRunSchema = z.object({
+  id: z.string().cuid(),
+  status: z.enum(["pending", "running", "success", "failed", "cancelled", "interrupted"]).optional(),
+  output: z.any().optional(),
+  toolCalls: z.any().optional(),
+  tokenUsage: z.any().optional(),
+  error: z.any().optional(),
+  durationMs: z.number().int().nonnegative().optional(),
+  toolCallCount: z.number().int().nonnegative().optional(),
+  systemPrompt: z.string().optional(),
+});
+
+export const listRunsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  agentId: z.string().optional(),
+  sessionId: z.string().optional(),
+  status: z.enum(["pending", "running", "success", "failed", "cancelled", "interrupted"]).optional(),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Prompt (提示词模板)
+   ═══════════════════════════════════════════════════════ */
+
+export const createPromptSchema = z.object({
+  name: safeEntityNameSchema,
+  version: z.string().default("1.0.0"),
+  description: z.string().optional(),
+  variables: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  content: z.string().min(1, "内容不能为空"),
+});
+
+export const updatePromptSchema = z.object({
+  id: z.string().cuid(),
+  name: safeEntityNameSchema.optional(),
+  version: z.string().optional(),
+  description: z.string().optional().nullable(),
+  variables: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  content: z.string().optional(),
+});
+
+export const listPromptsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  keyword: z.string().optional(),
+  tag: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Credential (凭据)
+   ═══════════════════════════════════════════════════════ */
+
+export const createCredentialSchema = z.object({
+  name: z.string().min(1, "名称不能为空").max(100),
+  type: z.enum(["api_key", "token", "password"]),
+  value: z.string().min(1, "值不能为空"),
+  scope: z.array(z.string()).default([]),
+  lastUsedAt: z.string().datetime().optional().or(z.date().optional()),
+  expiresAt: z.string().datetime().optional().or(z.date().optional()),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const updateCredentialSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(1).max(100).optional(),
+  type: z.enum(["api_key", "token", "password"]).optional(),
+  value: z.string().optional(),
+  scope: z.array(z.string()).optional(),
+  lastUsedAt: z.string().datetime().optional().or(z.date().optional()),
+  expiresAt: z.string().datetime().optional().or(z.date().optional()),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const listCredentialsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  type: z.enum(["api_key", "token", "password"]).optional(),
+  keyword: z.string().optional(),
+});
+
+/* ═══════════════════════════════════════════════════════
+   Daily Flow（每日看板 · TriFlow 式三栏）
+   ═══════════════════════════════════════════════════════ */
+
+export const dailyFlowDayKeySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "dayKey 须为 YYYY-MM-DD");
+
+export const dailyFlowStatusSchema = z.enum(["todo", "doing", "done"]);
+
+export const listDailyFlowByDaySchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+});
+
+export const createDailyFlowItemSchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+  title: z.string().min(1, "标题不能为空").max(200),
+  note: z.string().max(4000).default(""),
+});
+
+export const updateDailyFlowItemSchema = z.object({
+  id: z.string().cuid(),
+  title: z.string().min(1).max(200).optional(),
+  note: z.string().max(4000).optional(),
+});
+
+export const moveDailyFlowItemSchema = z.object({
+  id: z.string().cuid(),
+  status: dailyFlowStatusSchema,
+});
+
+export const dailyFlowDayReportSchema = z.object({
+  dayKey: dailyFlowDayKeySchema,
+});
+
+/* ═══════════════════════════════════════════════════════
+   L4 审批 / 任务 / 工作流
+   ═══════════════════════════════════════════════════════ */
+
+export const deleteByIdSchema = z.object({
+  id: z.string().cuid(),
+});
+
+export const deleteByIdWithApprovalSchema = deleteByIdSchema.extend({
+  approvalId: z.string().cuid().optional(),
+});
+
+export const gitPushWithApprovalSchema = gitRepoPathSchema.extend({
+  approvalId: z.string().cuid().optional(),
+});
+
+// P0-4：git.commit / git.pull 入审批，与 git.push 同档
+export const gitCommitWithApprovalSchema = gitCommitSchema.extend({
+  approvalId: z.string().cuid().optional(),
+});
+export const gitPullWithApprovalSchema = gitRepoPathSchema.extend({
+  approvalId: z.string().cuid().optional(),
+});
+
+export const runTaskSchema = z.object({
+  id: z.string().cuid(),
+});
+
+export const executeApprovalSchema = z.object({
+  id: z.string().cuid(),
+  /** 批准时勾选：以后同 scope 自动放行（仅 approveAndExecute 路径消费） */
+  rememberScope: z.boolean().optional(),
+});
+
+export const approveAndExecuteApprovalSchema = executeApprovalSchema;
+
+/** 批量批准并执行 / 批量拒绝（待你点头队列） */
+export const approvalIdsBatchSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(50),
+});
+export const approveAndExecuteBatchSchema = approvalIdsBatchSchema.extend({
+  /** 批量时按卡片勾选：需要记住 scope 的 approvalId 列表 */
+  rememberScopeIds: z.array(z.string().cuid()).optional(),
+});
+export const rejectApprovalsBatchSchema = approvalIdsBatchSchema;
+
+export const workflowStepSchema = z.object({
+  action: z.string().min(1),
+  input: z.any().optional(),
+});
+
+export const runWorkflowSchema = z.object({
+  name: z.string().min(1),
+  steps: z.array(workflowStepSchema).min(1),
+});
+
+export const globalSearchSchema = z.object({
+  query: z.string().min(1, "搜索词不能为空"),
+  entities: z
+    .array(z.enum(["post", "agent", "skill", "memory", "task", "mcp", "message"]))
+    .optional(),
+  limit: z.number().int().min(1).max(50).default(20),
+});
+
+/** 跨实体标签 facets / 浏览（Post/Skill/Memory/Prompt/InfoSource/Inbox） */
+export const tagEntityKindSchema = z.enum([
+  "post",
+  "skill",
+  "memory",
+  "prompt",
+  "infoSource",
+  "inbox",
+]);
+
+export const tagFacetsSchema = z.object({
+  entities: z.array(tagEntityKindSchema).optional(),
+  limit: z.number().int().min(1).max(200).default(80),
+});
+
+export const browseByTagSchema = z.object({
+  tag: z.string().min(1).max(40),
+  entities: z.array(tagEntityKindSchema).optional(),
+  limit: z.number().int().min(1).max(100).default(40),
+});
+
+export const analyticsDashboardSchema = z.object({
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+});
+
+export const authLoginSchema = z.object({
+  password: z.string().min(1, "密码不能为空"),
+});
+
+/* ═══════════════════════════════════════════════════════
+   通用类型响应包装
+   ═══════════════════════════════════════════════════════ */
+
+export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    items: z.array(itemSchema),
+    total: z.number(),
+    page: z.number(),
+    pageSize: z.number(),
+    totalPages: z.number(),
+  });
+
+/* ═══════════════════════════════════════════════════════
+   类型导出 (从 schema 推导)
+   ═══════════════════════════════════════════════════════ */
+
+/** 入参类型：garden/content 等有 default 的字段可省略 */
+export type CreatePostInput = z.input<typeof createPostSchema>;
+export type UpdatePostInput = z.infer<typeof updatePostSchema>;
+export type CreateGardenInput = z.input<typeof createGardenSchema>;
+export type UpdateGardenInput = z.infer<typeof updateGardenSchema>;
+/** list 入参经 zod default 后 page/pageSize 必有 */
+export type ListGardensInput = z.infer<typeof listGardensSchema>;
+export type ListPostsInput = z.infer<typeof listPostsSchema>;
+export type PostActivityCalendarInput = z.infer<typeof postActivityCalendarSchema>;
+export type PostActivityDayDetailInput = z.infer<typeof postActivityDayDetailSchema>;
+export type SearchPostsInput = z.infer<typeof searchPostsSchema>;
+export type RelatedPostsInput = z.infer<typeof relatedPostsSchema>;
+export type CreatePostFromChatInput = z.infer<typeof createPostFromChatSchema>;
+export type CreatePostFromToolResultInput = z.infer<typeof createPostFromToolResultSchema>;
+export type InspectSessionTurnInput = z.infer<typeof inspectSessionTurnSchema>;
+
+export type CreateAgentInput = z.infer<typeof createAgentSchema>;
+export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
+export type ListAgentsInput = z.infer<typeof listAgentsSchema>;
+export type AgentRunInput = z.infer<typeof agentRunSchema>;
+export type SwitchMessageVersionInput = z.infer<typeof switchMessageVersionSchema>;
+export type ChatConfigInput = z.infer<typeof chatConfigSchema>;
+export type AgentChatInput = z.infer<typeof agentChatSchema>;
+
+export type WebSearchInput = z.infer<typeof webSearchSchema>;
+export type GitRepoPathInput = z.infer<typeof gitRepoPathSchema>;
+export type NativeExecuteInput = z.infer<typeof nativeExecuteSchema>;
+export type DeleteByIdWithApprovalInput = z.infer<typeof deleteByIdWithApprovalSchema>;
+export type GitPushWithApprovalInput = z.infer<typeof gitPushWithApprovalSchema>;
+export type GitCommitWithApprovalInput = z.infer<typeof gitCommitWithApprovalSchema>;
+export type GitPullWithApprovalInput = z.infer<typeof gitPullWithApprovalSchema>;
+export type RunTaskInput = z.infer<typeof runTaskSchema>;
+export type ExecuteApprovalInput = z.infer<typeof executeApprovalSchema>;
+export type RunWorkflowInput = z.infer<typeof runWorkflowSchema>;
+export type GlobalSearchInput = z.infer<typeof globalSearchSchema>;
+export type TagFacetsInput = z.infer<typeof tagFacetsSchema>;
+export type BrowseByTagInput = z.infer<typeof browseByTagSchema>;
+export type AnalyticsDashboardInput = z.infer<typeof analyticsDashboardSchema>;
+export type AuthLoginInput = z.infer<typeof authLoginSchema>;
+
+export type CreateSkillInput = z.infer<typeof createSkillSchema>;
+export type UpdateSkillInput = z.infer<typeof updateSkillSchema>;
+export type ListSkillsInput = z.infer<typeof listSkillsSchema>;
+
+export type CreateSessionInput = z.infer<typeof createSessionSchema>;
+export type UpdateSessionInput = z.infer<typeof updateSessionSchema>;
+export type ListSessionsInput = z.infer<typeof listSessionsSchema>;
+export type StopSessionInput = z.infer<typeof stopSessionSchema>;
+export type RerunSessionInput = z.infer<typeof rerunSessionSchema>;
+export type ResumeSessionInput = z.infer<typeof resumeSessionSchema>;
+export type EnsureMainSessionInput = z.infer<typeof ensureMainSessionSchema>;
+export type OpenNewSessionInput = z.infer<typeof openNewSessionSchema>;
+export type SessionStatus = z.infer<typeof sessionStatusSchema>;
+export type SetSessionGoalInput = z.infer<typeof setSessionGoalSchema>;
+export type SessionGoalControlInput = z.infer<typeof sessionGoalControlSchema>;
+export type ListSideRunsInput = z.infer<typeof listSideRunsSchema>;
+export type RotateLineageInput = z.infer<typeof rotateLineageSchema>;
+export type ListRecentRotatesInput = z.infer<typeof listRecentRotatesSchema>;
+export type RotateGraphInput = z.infer<typeof rotateGraphSchema>;
+
+export type CreateMessageInput = z.infer<typeof createMessageSchema>;
+export type UpdateMessageInput = z.infer<typeof updateMessageSchema>;
+export type ListMessagesInput = z.infer<typeof listMessagesSchema>;
+export type ListMessagesForChatInput = z.infer<typeof listMessagesForChatSchema>;
+export type SwitchBranchInput = z.infer<typeof switchBranchSchema>;
+export type SessionTreeInput = z.infer<typeof sessionTreeSchema>;
+export type SetMessageLabelInput = z.infer<typeof setMessageLabelSchema>;
+
+export type CreateSessionQueueItemInput = z.infer<typeof createSessionQueueItemSchema>;
+export type SubmitAgentInjectInput = z.infer<typeof submitAgentInjectSchema>;
+export type ResolveAskUserInput = z.infer<typeof resolveAskUserSchema>;
+export type ListAskUserPendingInput = z.infer<typeof listAskUserPendingSchema>;
+export type UpdateSessionQueueItemInput = z.infer<typeof updateSessionQueueItemSchema>;
+export type ListSessionQueueItemsInput = z.infer<typeof listSessionQueueItemsSchema>;
+export type ReorderSessionQueueItemsInput = z.infer<typeof reorderSessionQueueItemsSchema>;
+
+export type CreateFileInput = z.infer<typeof createFileSchema>;
+export type UploadFileInput = z.infer<typeof uploadFileSchema>;
+export type UpdateFileInput = z.infer<typeof updateFileSchema>;
+export type ListFilesInput = z.infer<typeof listFilesSchema>;
+
+export type CreateLogInput = z.infer<typeof createLogSchema>;
+export type UpdateLogInput = z.infer<typeof updateLogSchema>;
+export type ListLogsInput = z.infer<typeof listLogsSchema>;
+
+export type CreateMcpServerInput = z.infer<typeof createMcpServerSchema>;
+export type UpdateMcpServerInput = z.infer<typeof updateMcpServerSchema>;
+export type ListMcpServersInput = z.infer<typeof listMcpServersSchema>;
+
+export type CreateMemoryInput = z.infer<typeof createMemorySchema>;
+export type UpdateMemoryInput = z.infer<typeof updateMemorySchema>;
+export type ListMemoriesInput = z.infer<typeof listMemoriesSchema>;
+
+export type CreateInfoSourceInput = z.infer<typeof createInfoSourceSchema>;
+export type UpdateInfoSourceInput = z.infer<typeof updateInfoSourceSchema>;
+export type ListInfoSourcesInput = z.infer<typeof listInfoSourcesSchema>;
+
+export type InboxSource = z.infer<typeof inboxSourceSchema>;
+export type InboxStatus = z.infer<typeof inboxStatusSchema>;
+export type CreateInboxItemInput = z.infer<typeof createInboxItemSchema>;
+export type UpdateInboxItemInput = z.infer<typeof updateInboxItemSchema>;
+export type ListInboxItemsInput = z.infer<typeof listInboxItemsSchema>;
+export type InboxCaptureUrlInput = z.infer<typeof inboxCaptureUrlSchema>;
+export type InboxCaptureUrlsInput = z.infer<typeof inboxCaptureUrlsSchema>;
+/** 调用方可省略带 default 的字段；service 内再 parse 补全 */
+export type InboxSyncZhihuInput = z.input<typeof inboxSyncZhihuSchema>;
+/** 调用方可省略带 default 的字段；service 内再 parse 补全 */
+export type InboxSyncXhsInput = z.input<typeof inboxSyncXhsSchema>;
+export type InboxSyncBilibiliInput = z.input<typeof inboxSyncBilibiliSchema>;
+export type InboxScanScreenshotsInput = z.infer<typeof inboxScanScreenshotsSchema>;
+export type InboxIngestWechatDropInput = z.infer<typeof inboxIngestWechatDropSchema>;
+export type InboxDistillInput = z.infer<typeof inboxDistillSchema>;
+export type InboxIgnoreInput = z.infer<typeof inboxIgnoreSchema>;
+export type InboxEnrichInput = z.input<typeof inboxEnrichSchema>;
+export type InboxBulkDeleteInput = z.infer<typeof inboxBulkDeleteSchema>;
+
+export type CreateGitRepoInput = z.infer<typeof createGitRepoSchema>;
+export type UpdateGitRepoInput = z.infer<typeof updateGitRepoSchema>;
+export type ListGitReposInput = z.infer<typeof listGitReposSchema>;
+
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type ListTasksInput = z.infer<typeof listTasksSchema>;
+
+export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
+export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>;
+export type ListWorkspacesInput = z.infer<typeof listWorkspacesSchema>;
+
+export type CreateTriggerInput = z.infer<typeof createTriggerSchema>;
+export type UpdateTriggerInput = z.infer<typeof updateTriggerSchema>;
+export type ListTriggersInput = z.infer<typeof listTriggersSchema>;
+
+export type ListAgentCronInput = z.infer<typeof listAgentCronSchema>;
+export type UpsertAgentCronInput = z.infer<typeof upsertAgentCronSchema>;
+export type ClearAgentCronInput = z.infer<typeof clearAgentCronSchema>;
+
+export type CreateApprovalInput = z.infer<typeof createApprovalSchema>;
+export type UpdateApprovalInput = z.infer<typeof updateApprovalSchema>;
+export type ListApprovalsInput = z.infer<typeof listApprovalsSchema>;
+
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
+export type ListCommentsInput = z.infer<typeof listCommentsSchema>;
+export type ListCommentsForPostInput = z.infer<typeof listCommentsForPostSchema>;
+export type ListBlogPostsInput = z.infer<typeof listBlogPostsSchema>;
+export type GetBlogPostBySlugInput = z.infer<typeof getBlogPostBySlugSchema>;
+
+export type CreateToolInput = z.infer<typeof createToolSchema>;
+export type UpdateToolInput = z.infer<typeof updateToolSchema>;
+export type ListToolsInput = z.infer<typeof listToolsSchema>;
+
+export type CreateRunInput = z.infer<typeof createRunSchema>;
+export type UpdateRunInput = z.infer<typeof updateRunSchema>;
+export type ListRunsInput = z.infer<typeof listRunsSchema>;
+
+export type CreatePromptInput = z.infer<typeof createPromptSchema>;
+export type UpdatePromptInput = z.infer<typeof updatePromptSchema>;
+export type ListPromptsInput = z.infer<typeof listPromptsSchema>;
+
+export type CreateCredentialInput = z.infer<typeof createCredentialSchema>;
+export type UpdateCredentialInput = z.infer<typeof updateCredentialSchema>;
+export type ListCredentialsInput = z.infer<typeof listCredentialsSchema>;
+
+export type DailyFlowStatus = z.infer<typeof dailyFlowStatusSchema>;
+export type ListDailyFlowByDayInput = z.infer<typeof listDailyFlowByDaySchema>;
+export type CreateDailyFlowItemInput = z.infer<typeof createDailyFlowItemSchema>;
+export type UpdateDailyFlowItemInput = z.infer<typeof updateDailyFlowItemSchema>;
+export type MoveDailyFlowItemInput = z.infer<typeof moveDailyFlowItemSchema>;
+export type DailyFlowDayReportInput = z.infer<typeof dailyFlowDayReportSchema>;
+

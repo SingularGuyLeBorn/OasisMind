@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "DOWNLOAD",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "LESEN",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "SCHREIBEN",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "OPERATIONEN",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "von"
+}

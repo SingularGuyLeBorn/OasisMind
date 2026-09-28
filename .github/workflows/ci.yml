@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @oasismind/server db:generate
+
+      - name: Push database schema
+        run: pnpm --filter @oasismind/server db:push
+        env:
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Build om-sync (Rust scanner)
+        run: cargo build --release --manifest-path tools/om-sync/Cargo.toml
+
+      - name: Sync content to SQLite
+        run: pnpm db:sync
+        env:
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+        env:
+          DATABASE_URL: "file:./ci.db"
+          REQUIRE_APPROVAL: "false"
+
+      - name: Agent golden evals (mock)
+        run: pnpm test:evals
+
+      - name: Agent harness bench (mock)
+        run: pnpm test:bench
+        env:
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Install Playwright Chromium (integration smoke)
+        run: pnpm --filter @oasismind/server exec playwright install chromium --with-deps
+
+      # 基础冒烟：脚本内 optionalStep / CI 对 OCR 已软跳过；网络硬失败必须红。
+      - name: Integration smoke (network)
+        run: pnpm integration:smoke
+        env:
+          INTEGRATION_SMOKE_CI: "1"
+          DATABASE_URL: "file:./ci.db"
+
+      # 平台层依赖外网站点 / Cookie，CI 无凭据时允许跳过，不挡主闸。
+      - name: Integration smoke (platform quick)
+        run: pnpm integration:smoke:platform:quick
+        continue-on-error: true
+        env:
+          INTEGRATION_SMOKE_CI: "1"
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Integration smoke (platform medium)
+        run: pnpm integration:smoke:platform:medium
+        continue-on-error: true
+        env:
+          INTEGRATION_SMOKE_CI: "1"
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Integration smoke (platform extended)
+        run: pnpm integration:smoke:platform:extended
+        continue-on-error: true
+        env:
+          INTEGRATION_SMOKE_CI: "1"
+          DATABASE_URL: "file:./ci.db"
+
+      - name: Build web (production)
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @oasismind/web exec playwright install chromium --with-deps
+
+      - name: E2E tests
+        run: pnpm test:e2e
+        env:
+          CI: "true"
+          DATABASE_URL: "file:./ci.db"
+          REQUIRE_APPROVAL: "false"
+
+      - name: Build web (mock)
+        run: pnpm --filter @oasismind/web build:mock
+
+      - name: E2E tests (mock, offline)
+        run: pnpm test:e2e:mock
+        env:
+          CI: "true"
+          DATABASE_URL: "file:./ci.db"

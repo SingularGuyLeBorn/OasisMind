@@ -1,0 +1,169 @@
+   `i` `m` `s`
+function isRegularExpressionModifier(ch) {
+  return ch === 0x69 /* i */ || ch === 0x6d /* m */ || ch === 0x73 /* s */
+}
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ExtendedAtom
+pp$1.regexp_eatExtendedAtom = function(state) {
+  return (
+    state.eat(0x2E /* . */) ||
+    this.regexp_eatReverseSolidusAtomEscape(state) ||
+    this.regexp_eatCharacterClass(state) ||
+    this.regexp_eatUncapturingGroup(state) ||
+    this.regexp_eatCapturingGroup(state) ||
+    this.regexp_eatInvalidBracedQuantifier(state) ||
+    this.regexp_eatExtendedPatternCharacter(state)
+  )
+};
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-InvalidBracedQuantifier
+pp$1.regexp_eatInvalidBracedQuantifier = function(state) {
+  if (this.regexp_eatBracedQuantifier(state, true)) {
+    state.raise("Nothing to repeat");
+  }
+  return false
+};
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-SyntaxCharacter
+pp$1.regexp_eatSyntaxCharacter = function(state) {
+  var ch = state.current();
+  if (isSyntaxCharacter(ch)) {
+    state.lastIntValue = ch;
+    state.advance();
+    return true
+  }
+  return false
+};
+function isSyntaxCharacter(ch) {
+  return (
+    ch === 0x24 /* $ */ ||
+    ch >= 0x28 /* ( */ && ch <= 0x2B /* + */ ||
+    ch === 0x2E /* . */ ||
+    ch === 0x3F /* ? */ ||
+    ch >= 0x5B /* [ */ && ch <= 0x5E /* ^ */ ||
+    ch >= 0x7B /* { */ && ch <= 0x7D /* } */
+  )
+}
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-PatternCharacter
+// But eat eager.
+pp$1.regexp_eatPatternCharacters = function(state) {
+  var start = state.pos;
+  var ch = 0;
+  while ((ch = state.current()) !== -1 && !isSyntaxCharacter(ch)) {
+    state.advance();
+  }
+  return state.pos !== start
+};
+
+// https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ExtendedPatternCharacter
+pp$1.regexp_eatExtendedPatternCharacter = function(state) {
+  var ch = state.current();
+  if (
+    ch !== -1 &&
+    ch !== 0x24 /* $ */ &&
+    !(ch >= 0x28 /* ( */ && ch <= 0x2B /* + */) &&
+    ch !== 0x2E /* . */ &&
+    ch !== 0x3F /* ? */ &&
+    ch !== 0x5B /* [ */ &&
+    ch !== 0x5E /* ^ */ &&
+    ch !== 0x7C /* | */
+  ) {
+    state.advance();
+    return true
+  }
+  return false
+};
+
+// GroupSpecifier ::
+//   [empty]
+//   `?` GroupName
+pp$1.regexp_groupSpecifier = function(state) {
+  if (state.eat(0x3F /* ? */)) {
+    if (!this.regexp_eatGroupName(state)) { state.raise("Invalid group"); }
+    var trackDisjunction = this.options.ecmaVersion >= 16;
+    var known = state.groupNames[state.lastStringValue];
+    if (known) {
+      if (trackDisjunction) {
+        for (var i = 0, list = known; i < list.length; i += 1) {
+          var altID = list[i];
+
+          if (!altID.separatedFrom(state.branchID))
+            { state.raise("Duplicate capture group name"); }
+        }
+      } else {
+        state.raise("Duplicate capture group name");
+      }
+    }
+    if (trackDisjunction) {
+      (known || (state.groupNames[state.lastStringValue] = [])).push(state.branchID);
+    } else {
+      state.groupNames[state.lastStringValue] = true;
+    }
+  }
+};
+
+// GroupName ::
+//   `<` RegExpIdentifierName `>`
+// Note: this updates `state.lastStringValue` property with the eaten name.
+pp$1.regexp_eatGroupName = function(state) {
+  state.lastStringValue = "";
+  if (state.eat(0x3C /* < */)) {
+    if (this.regexp_eatRegExpIdentifierName(state) && state.eat(0x3E /* > */)) {
+      return true
+    }
+    state.raise("Invalid capture group name");
+  }
+  return false
+};
+
+// RegExpIdentifierName ::
+//   RegExpIdentifierStart
+//   RegExpIdentifierName RegExpIdentifierPart
+// Note: this updates `state.lastStringValue` property with the eaten name.
+pp$1.regexp_eatRegExpIdentifierName = function(state) {
+  state.lastStringValue = "";
+  if (this.regexp_eatRegExpIdentifierStart(state)) {
+    state.lastStringValue += codePointToString(state.lastIntValue);
+    while (this.regexp_eatRegExpIdentifierPart(state)) {
+      state.lastStringValue += codePointToString(state.lastIntValue);
+    }
+    return true
+  }
+  return false
+};
+
+// RegExpIdentifierStart ::
+//   UnicodeIDStart
+//   `$`
+//   `_`
+//   `\` RegExpUnicodeEscapeSequence[+U]
+pp$1.regexp_eatRegExpIdentifierStart = function(state) {
+  var start = state.pos;
+  var forceU = this.options.ecmaVersion >= 11;
+  var ch = state.current(forceU);
+  state.advance(forceU);
+
+  if (ch === 0x5C /* \ */ && this.regexp_eatRegExpUnicodeEscapeSequence(state, forceU)) {
+    ch = state.lastIntValue;
+  }
+  if (isRegExpIdentifierStart(ch)) {
+    state.lastIntValue = ch;
+    return true
+  }
+
+  state.pos = start;
+  return false
+};
+function isRegExpIdentifierStart(ch) {
+  return isIdentifierStart(ch, true) || ch === 0x24 /* $ */ || ch === 0x5F /* _ */
+}
+
+// RegExpIdentifierPart ::
+//   UnicodeIDContinue
+//   `$`
+//   `_`
+//   `\` RegExpUnicodeEscapeSequence[+U]
+//   <ZWNJ>
+//   <ZWJ>
+pp$1.regexp_eatRegExpIdentifierPart = function(state) {

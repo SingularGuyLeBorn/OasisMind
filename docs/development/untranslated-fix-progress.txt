@@ -1,0 +1,8 @@
+# 未翻译缺口修复进度 (队列顺序 = scripts/scan-untranslated.py 输出顺序)
+# 修完一篇由父代理审查后在此记录; 扫描文件每次重跑会再生, 进度以本文件为准
+03-qwen/qwen3-8-flash-next [done] Abstract+Intro+Conclusion 补翻 7 段, 2026-09-27 审过
+01-deepseek/deepseek [done] 误报(作者名单豁免), 未改动, 2026-09-27 审过
+01-deepseek/deepseek-coder [done] 误报(三段已有译文), 未改动, 2026-09-27 审过
+01-deepseek/deepseek-coder-v2 [done] 误报(作者名单+编程语言列表豁免), 未改动, 2026-09-27 审过
+08-claude/claude-opus-4-6 [done] 4 批补翻 408 段(welfare/RSP/CBRN/bio/AIRD/cyber 全节), Changelog 已删, 扫描已出清, 2026-09-27 审过
+# 2026-09-27 全局修正: 删含 面试/钉死/写死 的疑惑块 20 块(11 文件); 删 9 个 claude 文件 Changelog 节; 记账 禁词修正(qwen3-8-flash-next)

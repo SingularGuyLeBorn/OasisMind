@@ -1,0 +1,8 @@
+{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "下载",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "阅读",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "写入",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "操作",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "/"
+}

@@ -1,0 +1,542 @@
+/**
+ * @oasismind/shared — 共享实体类型
+ *
+ * 为前端和 AI 提供纯 TypeScript 实体类型定义，
+ * 隔离数据库（Prisma）独有的私有字段，保持前后端纯净的数据交互。
+ */
+
+/** 知识库花园（缓存投影；事实源 content/{id}/_garden.md） */
+export interface Garden {
+  id: string;
+  title: string;
+  description: string | null;
+  /** 首页 Markdown 正文 */
+  homeContent: string;
+  deletedAt: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  /** list 投影：未软删文章数 */
+  postCount?: number;
+  /** list 投影：最近更新文章（最多 3） */
+  recentPosts?: Array<{ title: string; slug: string }>;
+}
+
+/** 文章实体（garden = 花园 id；slug = 该根下相对路径） */
+export interface Post {
+  id: string;
+  title: string;
+  /** 花园 id —— 对应 content/{garden}/ */
+  garden: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  published: boolean;
+  category: string | null;
+  tags: string[]; // 前端为解析后的数组
+  viewCount: number;
+  metadata: any;
+  deletedAt: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** AI Agent 实体 */
+export interface Agent {
+  id: string;
+  name: string;
+  autoName?: string | null;
+  description: string | null;
+  model: string;
+  systemPrompt: string;
+  tools: string[];
+  /** null / "default" = 现状审批；unattended = 需审批直接拒绝；explore = 只读 */
+  permissionMode?: "default" | "unattended" | "explore" | null;
+  // Swarm 层级
+  tier: "super" | "manager" | "sub";
+  workspaceId: string | null;
+  parentId: string | null;
+  heartbeatModel: string | null;
+  heartbeat: HeartbeatConfig | null;
+  /** 连续失败熔断暂停时刻；null = 未暂停 */
+  heartbeatSuspendedAt?: string | Date | null;
+  status: "active" | "idle" | "dormant" | "deleted";
+  deletedAt: string | Date | null;
+  deletedBy: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface LoopContractEvidence {
+  at: string;
+  summary: string;
+  fingerprint: string;
+  taskId?: string;
+  status: "success" | "failed" | "cancelled" | "budget_exceeded" | "skipped";
+}
+
+export interface LoopContract {
+  goal: string;
+  handoff: boolean;
+  gateOpen: boolean;
+  evidence: LoopContractEvidence[];
+  stopRule: { maxStaleRounds: number };
+  staleRounds: number;
+  stoppedReason: string | null;
+}
+
+/** W2：心跳决策运行态（Agent.heartbeat.decision） */
+export interface HeartbeatDecisionState {
+  skipRemaining: number;
+  resetToken: string;
+  lastMode:
+    | "bounded_delivery"
+    | "wait_user_gate"
+    | "monitor_quiet_skip"
+    | "quiet"
+    | "repair"
+    | "terminal_no_followup"
+    | null;
+  quietStreak: number;
+  lastSkipTicks: number;
+  lastGateNotifyAt?: string | null;
+  lastGateNotifyKey?: string | null;
+  terminalAt?: string | null;
+}
+
+export interface HeartbeatConfig {
+  enabled: boolean;
+  cron: string;
+  goal: string;
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
+  consecutiveFailures: number;
+  loopContract?: LoopContract;
+  decision?: HeartbeatDecisionState;
+}
+
+/** Agent 间消息 */
+export interface AgentMessage {
+  id: string;
+  fromAgentId: string;
+  toAgentId: string;
+  sessionId: string | null;
+  content: string;
+  messageType: "command" | "query" | "report" | "forward";
+  source: "super" | "manager" | "sub" | "user" | "system";
+  depth: number;
+  taskRef: string | null;
+  status: "pending" | "delivered" | "consumed";
+  createdAt: string | Date;
+  deliveredAt: string | Date | null;
+}
+
+/** 技能实体 */
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  code: string;
+  icon: string | null;
+  trigger: string | null;
+  enabled: boolean;
+  /** 统一组织标签（API 为 string[]） */
+  tags: string[];
+  metaJson?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** MCP 服务器实体 */
+export interface McpServer {
+  id: string;
+  name: string;
+  /** stdio（本地子进程）| http（Streamable HTTP） */
+  transport: "stdio" | "http";
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  url?: string | null;
+  headers?: Record<string, string>;
+  enabled: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 长期记忆实体 */
+export interface Memory {
+  id: string;
+  content: string;
+  type: string;
+  strength: number;
+  keywords: string[];
+  /** 统一组织标签（与 Skill/Post 同约定） */
+  tags: string[];
+  /** global | workspace:{id} | agent:{id} */
+  scope?: string;
+  agentId?: string | null;
+  status?: "active" | "superseded" | string;
+  attribution?: string | null;
+  /** 引用出处（post:/run:/url:/tool:…），非文件同步 sourceSlug */
+  source?: string | null;
+  /** 并存矛盾记忆 id */
+  conflictsWith?: string[];
+  validFrom?: string | Date | null;
+  validTo?: string | Date | null;
+  supersededBy?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 信息源实体 — Agent 可信信息来源 */
+export interface InfoSource {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  description: string;
+  reliability: number;
+  language: string;
+  tags: string[];
+  enabled: boolean;
+  fetchInterval: number | null;
+  lastFetchedAt: string | Date | null;
+  lastFetchStatus: string | null;
+  lastFetchError: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 每日看板条目（待办 → 进行中 → 已完成） */
+export interface DailyFlowItem {
+  id: string;
+  dayKey: string;
+  title: string;
+  note: string;
+  status: "todo" | "doing" | "done" | string;
+  sortOrder: number;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 知识 Inbox 素材 — 待消化的截图 / 收藏 / 链接 */
+export interface InboxItem {
+  id: string;
+  source: "screenshot" | "zhihu" | "xhs" | "wechat" | "bilibili" | "url" | string;
+  externalId: string;
+  title: string;
+  url: string | null;
+  excerpt: string | null;
+  contentPath: string | null;
+  content: string | null;
+  status: "fetched" | "distilled" | "ignored" | string;
+  tags: string[];
+  metadata: Record<string, unknown>;
+  distilledPostId: string | null;
+  /** 原平台发布时间；无则 null，列表排序回退 capturedAt */
+  sourceAt: string | Date | null;
+  capturedAt: string | Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** DeepSeek V4 思考强度（API 仅 high/max 生效，low/medium 映射为 high） */
+export type ReasoningEffort = "low" | "medium" | "high" | "max";
+
+/** 会话级 Chat 配置（扩展字段存 localStorage，model/systemPrompt 同步到 DB） */
+export interface ChatSessionConfig {
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  systemPrompt: string;
+  /** 思考模式开关（V4：对应 API thinking.type enabled/disabled） */
+  enableReasoning: boolean;
+  reasoningEffort: ReasoningEffort;
+  customSystemPrompt: boolean;
+  /** 单次工具调用超时毫秒（0/缺省走后端全局默认） */
+  toolCallTimeoutMs?: number;
+  /** 单轮对话最大工具调用轮数（0/缺省走后端全局默认） */
+  maxToolRounds?: number;
+  /** E8：该会话所属 Agent id（后台 drain 时取 systemPrompt 用） */
+  agentId?: string;
+  /** E8：该会话所属 Agent 的默认 systemPrompt（用户未自定义时作为 fallback） */
+  agentSystemPrompt?: string;
+}
+
+/** 会话实体 */
+export interface ChatSession {
+  id: string;
+  title: string;
+  autoName?: string | null;
+  model: string;
+  systemPrompt: string | null;
+  agentId?: string | null;
+  // Swarm/Subagent 扩展字段
+  parentSessionId?: string | null;
+  kind?: "chat" | "subagent" | "heartbeat" | "skill_review" | "channel" | "cron";
+  status?: import("./schemas.js").SessionStatus;
+  taskDescription?: string | null;
+  isMainSession?: boolean;
+  /** Auto-Compact 持久化摘要 */
+  contextSummary?: string | null;
+  contextCompactedAt?: string | Date | null;
+  rotatedToSessionId?: string | null;
+  /** session_rotate：本会话由哪次旧会话轮换而来（与 parentSessionId 派工正交） */
+  rotatedFromSessionId?: string | null;
+  /** Goal / Deep Research 外环 */
+  goalState?: import("./schemas.js").SessionGoalState | null;
+  /** 会话树当前叶消息 id */
+  activeLeafId?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  messages?: ChatMessage[];
+}
+
+/** Chat 图片附件（无 type 或 type:"image"；兼容旧落库） */
+export interface ChatImageAttachment {
+  type?: "image";
+  name: string;
+  mimeType: string;
+  previewUrl: string;
+  extractedText?: string;
+  source?: "ocr" | "vision" | "user";
+}
+
+/** 消息实体 */
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  /** 会话树父消息 id；首条为 null */
+  parentId?: string | null;
+  /** 书签标签 */
+  label?: string | null;
+  /** null=普通；branch_summary=分支摘要（默认不进 LLM 上下文） */
+  kind?: string | null;
+  /** 图片 | 文章引用（见 schemas.chatAttachmentSchema） */
+  attachments?: import("./schemas.js").ChatAttachment[];
+  toolCalls: any;
+  toolResults: any;
+  tokenUsage: {
+    prompt: number;
+    completion: number;
+    total: number;
+    /** 本轮实际模型（落库可选） */
+    model?: string;
+  } | null;
+  finishReason?: string | null;
+  source?: "user" | "super" | "manager" | "sub" | "system" | "cron";
+  createdAt: string | Date;
+}
+
+/** 上传文件实体 */
+export interface FileMeta {
+  id: string;
+  name: string;
+  path: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  createdAt: string | Date;
+}
+
+/** Git 仓库实体 */
+export interface GitRepo {
+  id: string;
+  name: string;
+  path: string;
+  branch: string;
+  remoteUrl: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 后台任务实体 */
+export interface Task {
+  id: string;
+  name: string;
+  type: "cron" | "oneshot";
+  status: "pending" | "running" | "success" | "failed";
+  sessionId: string | null;
+  input: any;
+  output: any;
+  delivered: boolean;
+  deliveredAt: string | Date | null;
+  cronExpression: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 工作区实体 */
+export interface Workspace {
+  id: string;
+  name: string;
+  description: string | null;
+  path: string;
+  managerAgentId: string | null;
+  /** 系统级 Root Workspace（超级 Agent 所属）；不可注销/改路径 */
+  isSystem: boolean;
+  /** 系统类型，如 "super" */
+  systemType: string | null;
+  /** 本 Workspace 后台 LLM 异步槽上限；0 = 不限（仍受全局 maxConcurrent） */
+  asyncSlotQuota: number;
+  status: "active" | "archived" | "deleted";
+  deletedAt: string | Date | null;
+  deletedBy: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 触发器实体 */
+export interface Trigger {
+  id: string;
+  name: string;
+  type: "file_change" | "webhook" | "cron";
+  source: string;
+  actionType: "run_agent" | "run_task";
+  actionId: string;
+  enabled: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 审批队列实体 */
+export interface Approval {
+  id: string;
+  toolName: string;
+  args: any;
+  status: "pending" | "approved" | "rejected" | "executed";
+  decidedBy?: string | null;
+  decidedAt?: string | Date | null;
+  decisionNote?: string | null;
+  executedAt?: string | Date | null;
+  /** W3：`<domain>:<verb>:<target>`；调度面相交检查 */
+  decisionScope?: string | null;
+  /** W3：上次 gate 通知时间 */
+  lastNotifiedAt?: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 文章轻留言 */
+export interface Comment {
+  id: string;
+  postId: string;
+  authorName: string;
+  content: string;
+  status: "approved" | "hidden";
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 工具实体 */
+export interface Tool {
+  id: string;
+  name: string;
+  type: "skill" | "mcp" | "native";
+  targetId: string | null;
+  description: string | null;
+  parametersSchema: string | null;
+  enabled: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** Agent 执行记录 */
+export interface Run {
+  id: string;
+  agentId: string | null;
+  sessionId: string | null;
+  status: "pending" | "running" | "success" | "failed" | "cancelled" | "interrupted";
+  input?: unknown;
+  output?: unknown;
+  toolCalls?: unknown;
+  tokenUsage?: unknown;
+  error?: unknown;
+  durationMs: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 提示词模板实体 */
+export interface Prompt {
+  id: string;
+  name: string;
+  version: string;
+  description: string | null;
+  variables: string[];
+  tags: string[];
+  content: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** 凭据实体 */
+export interface Credential {
+  id: string;
+  name: string;
+  type: "api_key" | "token" | "password";
+  /** 遮蔽后的预览串（首 4 + 末 4，中间 ••••）。API 永不返回明文。 */
+  valuePreview: string;
+  scope: string[];
+  lastUsedAt: string | Date | null;
+  expiresAt: string | Date | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+/** Run 执行时间线 span（Run.output.spans 的元素；轻量结构化 trace，非 OTel） */
+export interface RunSpan {
+  id: string;
+  kind: "llm" | "tool" | "compact" | "hitl";
+  name?: string;
+  round?: number;
+  startedAt: string;
+  endedAt?: string;
+  durationMs?: number;
+  status: "running" | "ok" | "error" | "aborted";
+  meta?: Record<string, unknown>;
+}
+
+/** About Me 页面 profile（来源 content/about/profile.md） */
+export interface AboutProfile {
+  name: string;
+  title: string;
+  tagline: string;
+  oneLiner: string;
+  location: string;
+  github: string;
+  site: string;
+  email: string;
+  /** MBTI 类型，如 ENTJ */
+  mbti?: string;
+  avatar?: string;
+  focus: Array<{ title: string; description: string }>;
+  roles: string[];
+  stack: Array<{ category: string; items: string[] }>;
+  timeline: Array<{ period: string; title: string; description: string; tag?: string }>;
+  projects: Array<{
+    name: string;
+    tagline: string;
+    description: string;
+    stack: string[];
+    href?: string;
+    highlight?: string;
+    coverImage?: string;
+  }>;
+  contents: Array<{ title: string; type: string; description: string; url?: string }>;
+  toolbox: Array<{ category: string; items: string[] }>;
+  philosophy: Array<{ title: string; description: string }>;
+  bodyMarkdown: string;
+  socials: Array<{ platform: string; url: string }>;
+  /** 现在在忙什么 */
+  now?: string[];
+  /** 自述片段，用于多卡片布局替代一坨 markdown */
+  storyCards?: Array<{ title: string; description: string }>;
+  /** 精选推荐 */
+  featured?: Array<{ title: string; description: string; url?: string; tag?: string; coverImage?: string }>;
+  /** 图片墙 */
+  gallery?: Array<{ url: string; caption?: string }>;
+}

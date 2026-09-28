@@ -1,0 +1,510 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import {
+  Bot,
+  ChevronDown,
+  ChevronUp,
+  CornerDownLeft,
+  FileText,
+  FolderOpen,
+  Hash,
+  Home,
+  PenLine,
+  Search,
+  Wand2,
+  UserCircle,
+  Zap,
+  ShieldCheck,
+  FileCode2,
+  BarChart3,
+  Settings2,
+  Wrench,
+  Activity,
+  KeyRound,
+  Sparkles,
+  Inbox,
+} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { postDetailHref } from "@/lib/postHref";
+import { cn } from "@/lib/utils";
+import { KbdKey, ShortcutCmdK, ShortcutEsc } from "@/lib/icons";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+
+interface CommandItem {
+  id: string;
+  type: "post" | "category" | "tag" | "action" | "agent" | "skill";
+  title: string;
+  subtitle?: string;
+  href?: string;
+  icon: React.ReactNode;
+  shortcut?: string;
+}
+
+export function CommandPalette() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [query, setQueryRaw] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const setQuery = (value: string) => {
+    setQueryRaw(value);
+    setSelectedIndex(0);
+  };
+
+  const { data: posts = [] } = trpc.post.tree.useQuery({}, { enabled: open });
+  const { data: categories = [] } = trpc.post.categories.useQuery(undefined, { enabled: open });
+  const { data: tags = [] } = trpc.post.tags.useQuery(undefined, { enabled: open });
+  const { data: agentsData } = trpc.agent.list.useQuery(
+    { page: 1, pageSize: 50 },
+    { enabled: open }
+  );
+  const { data: skillsData } = trpc.skill.list.useQuery(
+    { page: 1, pageSize: 50 },
+    { enabled: open }
+  );
+
+  const items = useMemo<CommandItem[]>(() => {
+    const q = query.trim().toLowerCase();
+    const list: CommandItem[] = [];
+
+    list.push(
+      {
+        id: "action:gardens",
+        type: "action",
+        title: "知识库",
+        href: "/gardens",
+        icon: <FolderOpen className="h-4 w-4" />,
+      },
+      {
+        id: "action:home",
+        type: "action",
+        title: "前往首页",
+        href: "/",
+        icon: <Home className="h-4 w-4" />,
+        shortcut: "H",
+      },
+      {
+        id: "action:posts",
+        type: "action",
+        title: "全部文章（跨库）",
+        href: "/posts",
+        icon: <FileText className="h-4 w-4" />,
+        shortcut: "P",
+      },
+      {
+        id: "action:new",
+        type: "action",
+        title: "新建文章",
+        href: "/editor",
+        icon: <PenLine className="h-4 w-4" />,
+        shortcut: "N",
+      },
+      {
+        id: "action:agents",
+        type: "action",
+        title: "管理",
+        subtitle: "Agents / Skill / 记忆 / Inbox / 凭据…",
+        href: "/agents",
+        icon: <Bot className="h-4 w-4" />,
+      },
+      {
+        id: "action:about",
+        type: "action",
+        title: "关于我",
+        href: "/about",
+        icon: <UserCircle className="h-4 w-4" />,
+      },
+      {
+        id: "action:inbox",
+        type: "action",
+        title: "知识 Inbox",
+        subtitle: "自动化与工作流 · 截图 / 知乎 / 小红书",
+        href: "/inbox",
+        icon: <Inbox className="h-4 w-4" />,
+      },
+      {
+        id: "action:platform-sync",
+        type: "action",
+        title: "平台每日同步",
+        subtitle: "自动化与工作流 · 知乎 / 小红书定时拉取",
+        href: "/platform-sync",
+        icon: <Inbox className="h-4 w-4" />,
+      },
+      {
+        id: "action:skills",
+        type: "action",
+        title: "Skill 管理",
+        href: "/skills",
+        icon: <Wand2 className="h-4 w-4" />,
+      },
+      {
+        id: "action:prompts",
+        type: "action",
+        title: "提示词模板",
+        href: "/prompts",
+        icon: <FileCode2 className="h-4 w-4" />,
+      },
+      {
+        id: "action:tools",
+        type: "action",
+        title: "工具注册",
+        href: "/tools",
+        icon: <Wrench className="h-4 w-4" />,
+      },
+      {
+        id: "action:runs",
+        type: "action",
+        title: "执行记录",
+        href: "/runs",
+        icon: <Activity className="h-4 w-4" />,
+      },
+      {
+        id: "action:credentials",
+        type: "action",
+        title: "凭据管理",
+        href: "/credentials",
+        icon: <KeyRound className="h-4 w-4" />,
+      },
+      {
+        id: "action:free-models",
+        type: "action",
+        title: "免费模型目录",
+        href: "/free-models",
+        icon: <Sparkles className="h-4 w-4" />,
+      },
+      {
+        id: "action:triggers",
+        type: "action",
+        title: "事件触发器",
+        href: "/triggers",
+        icon: <Zap className="h-4 w-4" />,
+      },
+      {
+        id: "action:approvals",
+        type: "action",
+        title: "审批队列",
+        href: "/approvals",
+        icon: <ShieldCheck className="h-4 w-4" />,
+      },
+      {
+        id: "action:search",
+        type: "action",
+        title: "全局搜索",
+        href: "/search",
+        icon: <Search className="h-4 w-4" />,
+      },
+      {
+        id: "action:dashboard",
+        type: "action",
+        title: "系统看板",
+        href: "/dashboard",
+        icon: <BarChart3 className="h-4 w-4" />,
+      },
+      {
+        id: "action:settings",
+        type: "action",
+        title: "系统设置",
+        href: "/settings",
+        icon: <Settings2 className="h-4 w-4" />,
+      }
+    );
+
+    for (const post of posts) {
+      if (!q || post.title.toLowerCase().includes(q) || post.slug.toLowerCase().includes(q)) {
+        list.push({
+          id: `post:${post.garden}:${post.slug}`,
+          type: "post",
+          title: post.title,
+          subtitle: `${post.garden}/${post.slug}`,
+          href: postDetailHref(post.slug, post.garden),
+          icon: <FileText className="h-4 w-4" />,
+        });
+      }
+    }
+
+    for (const agent of agentsData?.items ?? []) {
+      if (!q || agent.name.toLowerCase().includes(q) || (agent.description ?? "").toLowerCase().includes(q)) {
+        list.push({
+          id: `agent:${agent.id}`,
+          type: "agent",
+          title: agent.name,
+          subtitle: agent.description ?? "Agent",
+          href: "/agents",
+          icon: <Bot className="h-4 w-4" />,
+        });
+      }
+    }
+
+    for (const skill of skillsData?.items ?? []) {
+      if (!q || skill.name.toLowerCase().includes(q) || skill.description.toLowerCase().includes(q)) {
+        list.push({
+          id: `skill:${skill.id}`,
+          type: "skill",
+          title: skill.name,
+          subtitle: skill.description,
+          href: "/skills",
+          icon: <Wand2 className="h-4 w-4" />,
+        });
+      }
+    }
+
+    for (const category of categories) {
+      if (!q || category.toLowerCase().includes(q)) {
+        list.push({
+          id: `category:${category}`,
+          type: "category",
+          title: category,
+          href: `/categories/${encodeURIComponent(category)}`,
+          icon: <FolderOpen className="h-4 w-4" />,
+        });
+      }
+    }
+
+    for (const tag of tags) {
+      if (!q || tag.toLowerCase().includes(q)) {
+        list.push({
+          id: `tag:${tag}`,
+          type: "tag",
+          title: tag,
+          href: `/tags/${encodeURIComponent(tag)}`,
+          icon: <Hash className="h-4 w-4" />,
+        });
+      }
+    }
+
+    return list;
+  }, [posts, categories, tags, agentsData, skillsData, query]);
+
+  const openPalette = () => {
+    setQueryRaw("");
+    setSelectedIndex(0);
+    setOpen(true);
+  };
+
+  const closePalette = () => {
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (open) {
+      const id = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (open) closePalette();
+        else openPalette();
+        return;
+      }
+      if (open && e.key === "Escape") {
+        e.preventDefault();
+        closePalette();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closePalette();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((i) => (i + 1) % items.length);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((i) => (i - 1 + items.length) % items.length);
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const item = items[selectedIndex];
+      if (item?.href) {
+        router.push(item.href);
+        closePalette();
+      }
+    }
+  };
+
+  const runItem = (item: CommandItem) => {
+    if (item.href) {
+      router.push(item.href);
+      setOpen(false);
+    }
+  };
+
+  // Navbar 有 backdrop-filter，会把子孙 fixed 困在顶栏高度内 → 只剩一条顶蒙版且点空白关不掉。
+  // 必须 portal 到 body，相对视口铺满。
+  const overlay =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 p-4 pt-[12vh]"
+            onClick={closePalette}
+          >
+            <div
+              className="flex w-full max-w-2xl max-h-[min(80vh,40rem)] flex-col overflow-hidden rounded-2xl border border-[var(--om-divider)] bg-[var(--om-bg)] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={handleKeyDown}
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="flex shrink-0 items-center gap-3 border-b border-[var(--om-divider)] px-4 py-3">
+                <Search className="h-5 w-5 shrink-0 text-[var(--om-text-3)]" />
+                <Input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜索文章、Agent、Skill、分类…"
+                  className="h-auto border-0 bg-transparent px-0 text-base text-[var(--om-text-1)] shadow-none placeholder:text-[var(--om-text-3)] focus-visible:ring-0"
+                />
+                <span className="hidden shrink-0 sm:inline-block">
+                  <ShortcutEsc />
+                </span>
+              </div>
+
+              {/* 不用 ScrollArea：其 viewport size-full + 仅 max-h 时不裁切，列表会叠进页脚 */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <div className="py-2">
+                  {items.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-[var(--om-text-3)]">
+                      没有找到匹配结果
+                    </div>
+                  ) : (
+                    renderGroupedItems(items, selectedIndex, runItem, setSelectedIndex)
+                  )}
+                </div>
+              </div>
+
+              <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-t border-[var(--om-divider)] bg-[var(--om-bg-alt)] px-4 py-2.5 text-xs text-[var(--om-text-3)]">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <KbdKey icon={ChevronUp} label="上" />
+                    <KbdKey icon={ChevronDown} label="下" />
+                    <span className="hidden sm:inline">选择</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <KbdKey icon={CornerDownLeft} label="确认" />
+                    <span className="hidden sm:inline">确认</span>
+                  </span>
+                </div>
+                <span className="shrink-0 whitespace-nowrap tabular-nums">{items.length} 个结果</span>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={openPalette}
+        className="hidden items-center gap-2 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg-soft)] px-3 py-2 text-sm text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] md:inline-flex"
+      >
+        <Search className="h-4 w-4" />
+        <span>搜索</span>
+        <span className="ml-1">
+          <ShortcutCmdK />
+        </span>
+      </button>
+      {overlay}
+    </>
+  );
+}
+
+function renderGroupedItems(
+  items: CommandItem[],
+  selectedIndex: number,
+  onSelect: (item: CommandItem) => void,
+  onHover: (index: number) => void
+) {
+  const groups: { label: string; items: CommandItem[] }[] = [
+    { label: "操作", items: items.filter((i) => i.type === "action") },
+    { label: "文章", items: items.filter((i) => i.type === "post") },
+    { label: "Agent", items: items.filter((i) => i.type === "agent") },
+    { label: "Skill", items: items.filter((i) => i.type === "skill") },
+    { label: "分类", items: items.filter((i) => i.type === "category") },
+    { label: "标签", items: items.filter((i) => i.type === "tag") },
+  ];
+
+  const elements: React.ReactNode[] = [];
+  for (const group of groups) {
+    if (group.items.length === 0) continue;
+    elements.push(
+      <div key={`group-${group.label}`}>
+        <div className="sticky top-0 z-[1] bg-[var(--om-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--om-text-3)]">
+          {group.label}
+        </div>
+        <div className="px-2">
+          {group.items.map((item) => {
+            const globalIndex = items.findIndex((i) => i.id === item.id);
+            const selected = globalIndex === selectedIndex;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelect(item)}
+                onMouseEnter={() => onHover(globalIndex)}
+                data-selected={selected}
+                className={cn(
+                  "flex w-full min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition",
+                  selected
+                    ? "bg-[var(--om-brand-deep)] text-white"
+                    : "text-[var(--om-text-1)] hover:bg-[var(--om-bg-mute)]"
+                )}
+              >
+                <span className={cn("shrink-0", selected ? "text-white" : "text-[var(--om-text-3)]")}>
+                  {item.icon}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                {item.subtitle && (
+                  <span
+                    className={cn(
+                      "hidden max-w-[40%] truncate text-xs sm:inline",
+                      selected ? "text-white/80" : "text-[var(--om-text-3)]",
+                    )}
+                  >
+                    {item.subtitle}
+                  </span>
+                )}
+                {item.shortcut && (
+                  <kbd
+                    className={cn(
+                      "shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px]",
+                      selected
+                        ? "border-white/30 bg-white/10 text-white"
+                        : "border-[var(--om-divider)] bg-[var(--om-bg-soft)] text-[var(--om-text-3)]"
+                    )}
+                  >
+                    {item.shortcut}
+                  </kbd>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <Separator className="my-2 bg-[var(--om-divider)]" />
+      </div>
+    );
+  }
+  if (elements.length > 0) {
+    elements.pop();
+  }
+  return elements;
+}

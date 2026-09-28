@@ -1,0 +1,75 @@
+obust Speech Recognition via Large-Scale Weak Supervision.
+[137] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al.
+2019. Language models are unsupervised multitask learners.
+[138] Rafael Rafailov, Archit Sharma, Eric Mitchell, Stefano Ermon, Christopher D. Manning, and
+Chelsea Finn. 2023. Direct Preference Optimization: Your Language Model is Secretly a
+Reward Model.
+[139] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena,
+Yanqi Zhou, Wei Li, and Peter J. Liu. 2023. Exploring the Limits of Transfer Learning with
+a Unified Text-to-Text Transformer.
+37
+
+---
+
+
+[140] Nazneen Rajani, Lewis Tunstall, Edward Beeching, Nathan Lambert, Alexander M. Rush,
+and Thomas Wolf. 2023. No Robots.
+[141] Samyam Rajbhandari, Conglong Li, Zhewei Yao, Minjia Zhang, Reza Yazdani Aminabadi,
+Ammar Ahmad Awan, Jeff Rasley, and Yuxiong He. 2022. DeepSpeed-MoE: Advancing
+Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale.
+[142] Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. 2020. ZeRO: Memory
+Optimizations Toward Training Trillion Parameter Models.
+[143] David Raposo, Sam Ritter, Blake Richards, Timothy Lillicrap, Peter Conway Humphreys, and
+Adam Santoro. 2024. Mixture-of-Depths: Dynamically allocating compute in transformer-
+based language models.
+[144] Machel Reid, Victor Zhong, Suchin Gururangan, and Luke Zettlemoyer. 2022. M2D2: A
+Massively Multi-domain Language Modeling Dataset.
+[145] Xiaozhe Ren, Pingyi Zhou, Xinfan Meng, Xinjing Huang, Yadao Wang, Weichao Wang,
+Pengfei Li, Xiaoda Zhang, Alexander Podolskiy, Grigory Arshinov, Andrey Bout, Irina Pio-
+ntkovskaya, Jiansheng Wei, Xin Jiang, Teng Su, Qun Liu, and Jun Yao. 2023. PanGu-Sigma:
+Towards Trillion Parameter Language Model with Sparse Heterogeneous Computing.
+[146] Stephen Roller, Sainbayar Sukhbaatar, Arthur Szlam, and Jason Weston. 2021. Hash Layers
+For Large Sparse Models.
+[147] Paul R¨ottger, Hannah Rose Kirk, Bertie Vidgen, Giuseppe Attanasio, Federico Bianchi, and
+Dirk Hovy. 2024. XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in
+Large Language Models.
+[148] Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. 2019. Wino-
+Grande: An Adversarial Winograd Schema Challenge at Scale.
+[149] Victor Sanh, Albert Webson, Colin Raffel, Stephen H. Bach, Lintang Sutawika, Zaid
+Alyafeai, Antoine Chaffin, Arnaud Stiegler, Teven Le Scao, Arun Raja, et al. 2022. Mul-
+titask Prompted Training Enables Zero-Shot Task Generalization.
+[150] Maarten Sap, Hannah Rashkin, Derek Chen, Ronan LeBras, and Yejin Choi. 2019.
+So-
+cialIQA: Commonsense Reasoning about Social Interactions.
+[151] Teven Le Scao, Thomas Wang, Daniel Hesslow, Lucile Saulnier, Stas Bekman, M Saiful Bari,
+Stella Biderman, Hady Elsahar, Niklas Muennighoff, Jason Phang, Ofir Press, Colin Raffel,
+Victor Sanh, Sheng Shen, Lintang Sutawika, Jaesung Tae, Zheng Xin Yong, Julien Launay,
+and Iz Beltagy. 2022. What Language Model to Train if You Have One Million GPU Hours?
+[152] Noam Shazeer. 2019. Fast Transformer Decoding: One Write-Head is All You Need.
+[153] Noam Shazeer. 2020. GLU Variants Improve Transformer.
+[154] Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey
+Hinton, and Jeff Dean. 2017. Outrageously Large Neural Networks: The Sparsely-Gated
+Mixture-of-Experts Layer.
+[155] Noam Shazeer and Mitchell Stern. 2018. Adafactor: Adaptive Learning Rates with Sublinear
+Memory Cost.
+[156] Sheng Shen, Le Hou, Yanqi Zhou, Nan Du, Shayne Longpre, Jason Wei, Hyung Won Chung,
+Barret Zoph, William Fedus, Xinyun Chen, Tu Vu, Yuexin Wu, Wuyang Chen, Albert Web-
+son, Yunxuan Li, Vincent Zhao, Hongkun Yu, Kurt Keutzer, Trevor Darrell, and Denny Zhou.
+2023. Mixture-of-Experts Meets Instruction Tuning:A Winning Combination for Large Lan-
+guage Models.
+[157] Sheng Shen, Zhewei Yao, Chunyuan Li, Trevor Darrell, Kurt Keutzer, and Yuxiong He. 2023.
+Scaling Vision-Language Models with Sparse Mixture of Experts.
+38
+
+---
+
+
+[158] Yikang Shen, Zhen Guo, Tianle Cai, and Zengyi Qin. 2024.
+JetMoE: Reaching Llama2
+Performance with 0.1M Dollars.
+[159] Mohammad Shoeybi, Mostofa Patwary, Raul Puri, Patrick LeGresley, Jared Casper, and
+Bryan Catanzaro. 2020. Megatron-LM: Training Multi-Billion Parameter Language Mod-
+els Using Model Parallelism.
+[160] Shivalika Singh, Freddie Vargus, Daniel Dsouza, B¨orje F. Karlsson, Abinaya Mahendiran,
+Wei-Yin Ko, Herumb Shandilya, Jay Patel, Deividas Mataciunas, Laura OMahony, Mike
+Zhang, Ramith Hettiarachchi, Joseph Wilson, Marin

@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "ЗАГРУЗКА",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "ЧТЕНИЕ",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "ЗАПИСЬ",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "ОПЕРАЦИИ",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "из"
+}

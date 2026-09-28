@@ -1,0 +1,46 @@
+{
+  "id": "stop-gt1-user-abort",
+  "prd": "prd-chat-stop.md GT-1",
+  "sessionId": "s0",
+  "events": [
+    {
+      "t": "BEGIN_STREAM",
+      "expect": {
+        "phase": "streaming",
+        "occupied": true,
+        "sendButton": "chat-stop"
+      }
+    },
+    {
+      "t": "TOKEN",
+      "delta": "这是一段故意拉长的慢流",
+      "expect": {
+        "phase": "streaming",
+        "sendButton": "chat-stop"
+      }
+    },
+    {
+      "t": "APPLY_USER_STOP",
+      "partialId": "msg-stop-gt1",
+      "expect": {
+        "phase": "done",
+        "occupied": true,
+        "sendButton": "chat-send"
+      }
+    },
+    {
+      "t": "UPSERT",
+      "role": "assistant",
+      "id": "msg-stop-gt1",
+      "content": "这是一段故意拉长的慢流",
+      "finishReason": "aborted",
+      "expect": {
+        "phase": "idle",
+        "occupied": false,
+        "sendButton": "chat-send",
+        "visibleQueueCount": 0,
+        "finishReason": { "id": "msg-stop-gt1", "value": "aborted" }
+      }
+    }
+  ]
+}

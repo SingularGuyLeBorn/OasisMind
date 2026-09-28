@@ -1,0 +1,40 @@
+{
+  "taskId": "T11-stable",
+  "trialIndex": 0,
+  "sessionId": "fixture-session-t11-stable",
+  "runId": "fixture-run-t11-stable",
+  "messages": [
+    {
+      "id": "m1",
+      "role": "user",
+      "content": "列一下知识库最近文章",
+      "createdAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "m2",
+      "role": "assistant",
+      "content": "最近两篇：Mock 文章 A、Mock 文章 B。",
+      "createdAt": "2026-08-01T00:00:01.000Z",
+      "toolCallCount": 1
+    }
+  ],
+  "toolCalls": [
+    {
+      "id": "c1",
+      "name": "post_list",
+      "args": { "page": 1, "pageSize": 5 },
+      "result": { "total": 2 }
+    }
+  ],
+  "metrics": {
+    "durationMs": 800,
+    "tokenTotal": 420,
+    "toolCallCount": 1,
+    "rounds": 2,
+    "runStatus": "success"
+  },
+  "outcomeHints": {
+    "lastAssistantContent": "最近两篇：Mock 文章 A、Mock 文章 B。",
+    "toolNames": ["post_list"]
+  }
+}

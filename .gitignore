@@ -1,0 +1,196 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.venv/
+
+# Build output
+dist/
+.next/
+out/
+
+# Environment
+.env
+# 历史残留防御（已不再使用；统一用根目录 .env）
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+.claude/skills/
+# 上游 git clone 缓存；可用 skill 已摘到 .cursor/skills/
+.cursor/vendor/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.logs/
+
+# Eval 报告（运行时产物，可重建）
+evals/reports/
+
+# Temp
+tmp/
+*.tmp
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+backups/
+
+# Prisma
+apps/server/prisma/migrations/**/migration_lock.toml
+
+# Test
+coverage/
+.playwright-mcp/
+apps/web/e2e/playwright-report/
+apps/web/e2e/playwright-report-mock/
+apps/web/e2e/test-results/
+apps/web/e2e/test-results-mock/
+content/posts/test-post-slug-*.md
+content/posts/search-test-*.md
+content/posts/draft-search-test-*.md
+content/posts/e2e-trash-*.md
+content/posts/.trash/
+content/posts/smoke-post-*.md
+# W6：file_delete/directory_delete 回收站（项目根），由用户手动清理
+/.trash/
+content/uploads/vitest-test-file-*
+content/uploads/qq-img-*
+content/uploads/screenshots/
+content/uploads/imports/
+content/uploads/essays/
+content/uploads/llm-notes/
+content/uploads/qq-text/
+content/uploads/tts/
+content/uploads/qq-img/
+content/uploads/qq/
+*.bak-before-cleanup
+.env.bak*
+# 视频抽帧临时目录（工具运行时产物）
+.tmp-video-frames/
+# algo-viz 素材包（生成物，体积大；源在 apps/algo-viz/src）
+apps/algo-viz/public/packs/
+# 测试数据隔离（#2）：Vitest 用 test.db + .test-content/.test-config/.test-data，以下为 E2E/漏网 smoke 产物防御
+.test-content/
+.test-config/
+.test-data/
+.test-content-e2e/
+.test-config-e2e/
+.test-data-e2e/
+# config/ 下运行时产物与 smoke 残留（config/ 本体 Git 跟踪）
+config/agents/Smoke Agent*.md
+config/agents/ApprovalGate_*.md
+config/agents/*子代理*.md
+config/agents/*子 Agent*.md
+config/agents/*测试 Agent*.md
+config/agents/*-e3f87d.md
+# Agent 误把任务文本当名称创建的文件（发现即删；此处防御再生成）
+config/agents/调用*.md
+config/agents/请先*.md
+config/agents/你需要*.md
+config/skills/smoke_skill_*.md
+config/skills/Test Skill*.md
+config/skills/.curator_state
+config/skills/.usage.json
+config/mcp/smoke_mcp_*.json
+config/mcp/Test Mcp*.json
+config/prompts/smoke-prompt-*.md
+config/prompts/Test Prompt*.md
+config/sources/smoke-source-*.json
+# 运行时日记 / 约束 / 沉淀 Memory（不入库；可随时重建）
+config/memories/daily/
+config/memories/_constraints/
+config/memories/_pinned/
+config/memories/*.md
+
+# data/ 运行时产物根（整体 .gitignore，可随时重建）
+/data/
+
+# User scratch / experiment prompts（仅根目录；勿匹配 config/prompts）
+/prompts/
+
+# 花园内软删回收站（勿入库）
+content/**/.trash/
+# 免费 API Key 本地兜底文件（含真实 key，不入库）
+content/free-keys-readme.md
+
+# 大文件（>1MB）：PDF 论文、showcase 视频、大图，不进入 Git
+content/knowledge/algorithms/**/papers/*.pdf
+content/knowledge/cs336/Lecture12/images/gcg-examples.png
+docs/surveys-2026/*.pdf
+config/skills/remotion-code-motion-explainer/assets/showcase/*.mp4
+
+# Runtime generated trash / dev logs（整体忽略，可随时重建）
+.dev-log/
+
+# E2E / dev screenshots and markers
+dev-*.png
+e2e-setup-marker.txt
+undefined
+
+# 本地 OAuth / Cookie 凭证（已迁入 data/cookies/，勿提交）
+
+# 本地临时探测脚本（_ 前缀）与飞书实验脚本
+apps/server/src/scripts/_feishu*.ts
+apps/server/src/scripts/_yuque*.ts
+experiments/feishu-api/
+
+# Python virtual env / cache
+experiments/.venv/
+experiments/**/__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Docker volumes
+pgdata/
+
+# Server runtime cache
+apps/server/content/
+apps/server/.data/
+# Tesseract.js 语言包误下载到 cwd（应走缓存目录）
+apps/server/*.traineddata
+*.traineddata
+
+# Agent 误把任务前缀当名称（「你是 …」）
+config/agents/你是*.md
+
+# Runtime generated workspaces (root only)
+/workspaces/
+
+# Stray shell artifact
+/^
+
+# OCR / TTS / ASR / HF Hub 模型权重（大文件，用 pnpm ocr:download 或 HF 镜像拉取）
+weights/ocr/
+weights/tts/
+weights/asr/
+weights/hf/
+!weights/README.md
+!weights/**/.gitkeep
+.test-e2e-pids.json
+
+# ngrok 二进制（项目内 scripts/ngrok.exe，用 scripts/remote-ngrok.mjs 调用；不入库，README 说明下载方式）
+scripts/ngrok.exe
+scripts/ngrok.zip
+
+# NapCatQQ 聊天机器人二进制
+tools/napcat/
+tools/napcat_framework/
+
+# Rust 本地工具链（按需用 rustup 安装，不入库）
+tools/rust/
+
+# Rust 构建产物
+tools/om-sync/target/
+
+# 本机一次性关机助手（脚本自述不入库）
+scripts/shutdown-this-pc.ps1

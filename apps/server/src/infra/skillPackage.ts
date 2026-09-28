@@ -1,0 +1,222 @@
+/**
+ * Procedural Skill 包路径与 kind 约定（Hermes SKILL.md 目录形态）
+ *
+ * - procedural: config/skills/{name}/SKILL.md + references|templates|scripts
+ * - executable: config/skills/{slug}.md（沙箱 run / prompt）
+ * - reference: 参考资料，默认不启用、不进工具 schema
+ */
+
+import fs from "fs";
+import path from "path";
+
+export type SkillKind = "procedural" | "executable" | "reference";
+
+const SUPPORT_DIRS = new Set(["references", "templates", "scripts", "assets"]);
+
+export function sanitizeSkillName(raw: string): string {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+}
+
+export function parseSkillKind(metaJson?: string | null, fallback: SkillKind = "executable"): SkillKind {
+  if (!metaJson) return fallback;
+  try {
+    const meta = JSON.parse(metaJson) as { kind?: string };
+    if (meta.kind === "procedural" || meta.kind === "executable" || meta.kind === "reference") {
+      return meta.kind;
+    }
+    // 旧值 skill → executable（无兼容分支永久保留：读路径归一即可）
+    if (meta.kind === "skill") return "executable";
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
+/** FileSync / sourceSlug：procedural → `{name}/SKILL`；其余 → `{name}` */
+export function skillFileSlug(name: string, kind: SkillKind): string {
+  const safe = sanitizeSkillName(name) || "unnamed-skill";
+  return kind === "procedural" ? `${safe}/SKILL` : safe;
+}
+
+export function skillPackageDir(skillsRoot: string, name: string): string {
+  return path.join(skillsRoot, sanitizeSkillName(name) || "unnamed-skill");
+}
+
+export function skillMdPath(skillsRoot: string, name: string, kind: SkillKind): string {
+  const slug = skillFileSlug(name, kind);
+  return path.join(skillsRoot, `${slug}.md`);
+}
+
+export function isSkillSupportRelPath(relPosix: string): boolean {
+  const parts = relPosix.replace(/\\/g, "/").split("/");
+  if (parts.length < 2) return false;
+  return SUPPORT_DIRS.has(parts[1]!);
+}
+
+export function shouldSkipSkillScanPath(relPosix: string): boolean {
+  const rel = relPosix.replace(/\\/g, "/");
+  if (rel.startsWith(".archive/") || rel.includes("/.archive/")) return true;
+  if (rel === ".usage.json" || rel.endsWith("/.usage.json")) return true;
+  if (rel.endsWith("/.curator_state") || rel === ".curator_state") return true;
+  const base = path.posix.basename(rel);
+  // procedural 包：唯一入口是 SKILL.md；README/LICENSE 等是上游宣传或法律文件，不进 Skill 表
+  if (rel.includes("/")) {
+    if (base === "SKILL.md") return false;
+    if (isSkillSupportRelPath(rel)) return true;
+    return true;
+  }
+  // 顶层 executable：config/skills/foo.md
+  if (base === "README.md" || base === "LICENSE" || base === "CHANGELOG.md") return true;
+  return false;
+}
+
+export function inferKindFromScanPath(relPosix: string, fmKind?: string): SkillKind {
+  const rel = relPosix.replace(/\\/g, "/");
+  if (fmKind === "procedural" || fmKind === "executable" || fmKind === "reference") {
+    return fmKind;
+  }
+  if (fmKind === "skill") return "executable";
+  if (path.posix.basename(rel) === "SKILL.md") return "procedural";
+  if (rel.startsWith("design-references/")) return "reference";
+  return "executable";
+}
+
+function listFilesRecursive(absDir: string, relPrefix: string): string[] {
+  if (!fs.existsSync(absDir) || !fs.statSync(absDir).isDirectory()) return [];
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(absDir)) {
+    const abs = path.join(absDir, entry);
+    const rel = `${relPrefix}/${entry}`.replace(/\\/g, "/");
+    if (fs.statSync(abs).isDirectory()) {
+      out.push(...listFilesRecursive(abs, rel));
+    } else if (fs.statSync(abs).isFile()) {
+      out.push(rel);
+    }
+  }
+  return out;
+}
+
+export function listSkillLinkedFiles(skillsRoot: string, name: string): Record<string, string[]> {
+  const root = skillPackageDir(skillsRoot, name);
+  const out: Record<string, string[]> = { references: [], templates: [], scripts: [], assets: [] };
+  for (const dir of SUPPORT_DIRS) {
+    out[dir] = listFilesRecursive(path.join(root, dir), dir);
+  }
+  return out;
+}
+
+export function readSkillSupportFile(
+  skillsRoot: string,
+  name: string,
+  filePath: string,
+): { ok: true; content: string; absPath: string } | { ok: false; error: string } {
+  const safeName = sanitizeSkillName(name);
+  const normalized = filePath.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (normalized.includes("..") || path.isAbsolute(normalized)) {
+    return {
+      ok: false,
+      error:
+        `file_path「${filePath}」非法：禁止包含 \"..\"，也禁止绝对路径。` +
+        "请传 Skill 包内相对路径，例 references/api.md。",
+    };
+  }
+  const top = normalized.split("/")[0];
+  if (!SUPPORT_DIRS.has(top || "")) {
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」非法：必须以 references/、templates/、scripts/、assets/ 四个目录之一开头（正斜杠）。` +
+        "例：references/notes.md。不要传 SKILL.md（读主正文时省略 file_path）。",
+    };
+  }
+  const abs = path.resolve(skillPackageDir(skillsRoot, safeName), normalized);
+  const root = path.resolve(skillPackageDir(skillsRoot, safeName));
+  if (!abs.startsWith(root + path.sep) && abs !== root) {
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」越出 Skill「${safeName}」包目录。请只使用包内相对路径，禁止穿越到包外。`,
+    };
+  }
+  if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
+    return {
+      ok: false,
+      error:
+        `附属文件不存在：${normalized}。下一步：先 skill_view(name) 看 linked_files 列表，再填其中已有路径；不要编造文件名。`,
+    };
+  }
+  return { ok: true, content: fs.readFileSync(abs, "utf-8"), absPath: abs };
+}
+
+export function writeSkillSupportFile(
+  skillsRoot: string,
+  name: string,
+  filePath: string,
+  content: string,
+): { ok: true; absPath: string } | { ok: false; error: string } {
+  const safeName = sanitizeSkillName(name);
+  const normalized = filePath.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (normalized.includes("..") || path.isAbsolute(normalized)) {
+    return {
+      ok: false,
+      error:
+        `file_path「${filePath}」非法：禁止包含 \"..\"，也禁止绝对路径。` +
+        "写入时请用包内相对路径，例 references/notes.md。",
+    };
+  }
+  const top = normalized.split("/")[0];
+  if (!SUPPORT_DIRS.has(top || "")) {
+    return {
+      ok: false,
+      error:
+        `file_path「${normalized}」非法：必须以 references/、templates/、scripts/、assets/ 之一开头。` +
+        "例：templates/outline.md。",
+    };
+  }
+  const abs = path.resolve(skillPackageDir(skillsRoot, safeName), normalized);
+  const root = path.resolve(skillPackageDir(skillsRoot, safeName));
+  if (!abs.startsWith(root + path.sep) && abs !== root) {
+    return {
+      ok: false,
+      error: `file_path「${normalized}」越出 Skill「${safeName}」包目录，禁止写入包外。`,
+    };
+  }
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, content, "utf-8");
+  return { ok: true, absPath: abs };
+}
+
+export function archiveSkillPackage(
+  skillsRoot: string,
+  name: string,
+  kind: SkillKind,
+): { ok: true; archivedTo: string } | { ok: false; error: string } {
+  const archiveRoot = path.join(skillsRoot, ".archive");
+  fs.mkdirSync(archiveRoot, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const safe = sanitizeSkillName(name) || "unnamed-skill";
+  if (kind === "procedural") {
+    const src = skillPackageDir(skillsRoot, safe);
+    if (!fs.existsSync(src)) return { ok: false, error: `Skill 包不存在: ${safe}` };
+    const dest = path.join(archiveRoot, `${safe}-${stamp}`);
+    fs.renameSync(src, dest);
+    return { ok: true, archivedTo: dest };
+  }
+  const srcFile = skillMdPath(skillsRoot, safe, "executable");
+  if (!fs.existsSync(srcFile)) return { ok: false, error: `Skill 文件不存在: ${safe}` };
+  const dest = path.join(archiveRoot, `${safe}-${stamp}.md`);
+  fs.renameSync(srcFile, dest);
+  return { ok: true, archivedTo: dest };
+}
+
+/** Hermes HARDLINE 精简：create 时若正文过短可提示，不强制改写 */
+export function truncateSkillDescription(desc: string, max = 60): string {
+  const t = desc.trim().replace(/\s+/g, " ");
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1).trimEnd() + ".";
+}

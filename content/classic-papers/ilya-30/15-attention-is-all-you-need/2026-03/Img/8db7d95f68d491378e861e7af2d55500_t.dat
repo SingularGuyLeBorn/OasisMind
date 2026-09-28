@@ -1,0 +1,155 @@
+{
+      if ("string" !== typeof value)
+        throw Error(
+          "File/Blob fields are not yet supported in progressive forms. Will fallback to client hydration."
+        );
+    }
+    function getCustomFormFields(resumableState, formAction) {
+      if ("function" === typeof formAction.$$FORM_ACTION) {
+        var id = resumableState.nextFormID++;
+        resumableState = resumableState.idPrefix + id;
+        try {
+          var customFields = formAction.$$FORM_ACTION(resumableState);
+          if (customFields) {
+            var formData = customFields.data;
+            null != formData && formData.forEach(validateAdditionalFormField);
+          }
+          return customFields;
+        } catch (x) {
+          if (
+            "object" === typeof x &&
+            null !== x &&
+            "function" === typeof x.then
+          )
+            throw x;
+          console.error(
+            "Failed to serialize an action for progressive enhancement:\n%s",
+            x
+          );
+        }
+      }
+      return null;
+    }
+    function pushFormActionAttribute(
+      target,
+      resumableState,
+      renderState,
+      formAction,
+      formEncType,
+      formMethod,
+      formTarget,
+      name
+    ) {
+      var formData = null;
+      if ("function" === typeof formAction) {
+        null === name ||
+          didWarnFormActionName ||
+          ((didWarnFormActionName = !0),
+          console.error(
+            'Cannot specify a "name" prop for a button that specifies a function as a formAction. React needs it to encode which action should be invoked. It will get overridden.'
+          ));
+        (null === formEncType && null === formMethod) ||
+          didWarnFormActionMethod ||
+          ((didWarnFormActionMethod = !0),
+          console.error(
+            "Cannot specify a formEncType or formMethod for a button that specifies a function as a formAction. React provides those automatically. They will get overridden."
+          ));
+        null === formTarget ||
+          didWarnFormActionTarget ||
+          ((didWarnFormActionTarget = !0),
+          console.error(
+            "Cannot specify a formTarget for a button that specifies a function as a formAction. The function will always be executed in the same window."
+          ));
+        var customFields = getCustomFormFields(resumableState, formAction);
+        null !== customFields
+          ? ((name = customFields.name),
+            (formAction = customFields.action || ""),
+            (formEncType = customFields.encType),
+            (formMethod = customFields.method),
+            (formTarget = customFields.target),
+            (formData = customFields.data))
+          : (target.push(
+              attributeSeparator,
+              stringToChunk("formAction"),
+              attributeAssign,
+              actionJavaScriptURL,
+              attributeEnd
+            ),
+            (formTarget = formMethod = formEncType = formAction = name = null),
+            injectFormReplayingRuntime(resumableState, renderState));
+      }
+      null != name && pushAttribute(target, "name", name);
+      null != formAction && pushAttribute(target, "formAction", formAction);
+      null != formEncType && pushAttribute(target, "formEncType", formEncType);
+      null != formMethod && pushAttribute(target, "formMethod", formMethod);
+      null != formTarget && pushAttribute(target, "formTarget", formTarget);
+      return formData;
+    }
+    function pushAttribute(target, name, value) {
+      switch (name) {
+        case "className":
+          pushStringAttribute(target, "class", value);
+          break;
+        case "tabIndex":
+          pushStringAttribute(target, "tabindex", value);
+          break;
+        case "dir":
+        case "role":
+        case "viewBox":
+        case "width":
+        case "height":
+          pushStringAttribute(target, name, value);
+          break;
+        case "style":
+          pushStyleAttribute(target, value);
+          break;
+        case "src":
+        case "href":
+          if ("" === value) {
+            "src" === name
+              ? console.error(
+                  'An empty string ("") was passed to the %s attribute. This may cause the browser to download the whole page again over the network. To fix this, either do not render the element at all or pass null to %s instead of an empty string.',
+                  name,
+                  name
+                )
+              : console.error(
+                  'An empty string ("") was passed to the %s attribute. To fix this, either do not render the element at all or pass null to %s instead of an empty string.',
+                  name,
+                  name
+                );
+            break;
+          }
+        case "action":
+        case "formAction":
+          if (
+            null == value ||
+            "function" === typeof value ||
+            "symbol" === typeof value ||
+            "boolean" === typeof value
+          )
+            break;
+          checkAttributeStringCoercion(value, name);
+          value = sanitizeURL("" + value);
+          target.push(
+            attributeSeparator,
+            stringToChunk(name),
+            attributeAssign,
+            stringToChunk(escapeTextForBrowser(value)),
+            attributeEnd
+          );
+          break;
+        case "defaultValue":
+        case "defaultChecked":
+        case "innerHTML":
+        case "suppressContentEditableWarning":
+        case "suppressHydrationWarning":
+        case "ref":
+          break;
+        case "autoFocus":
+        case "multiple":
+        case "muted":
+          pushBooleanAttribute(target, name.toLowerCase(), value);
+          break;
+        case "xlinkHref":
+          if (
+      

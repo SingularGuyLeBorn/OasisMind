@@ -1,0 +1,51 @@
+ .mockResolvedValue({ ok: true, sessionId: "s1" });
+
+    const denied = createQqOfficialBotAdapter({
+      appId: "app",
+      secret: "sec",
+      enabled: true,
+      allowedOpenIds: ["only-me"],
+      allowedGroups: [],
+      useWs: false,
+    });
+    const ingestDenied = (
+      denied as typeof denied & {
+        ingestWebhookPayload: (b: unknown) => { ok: boolean };
+      }
+    ).ingestWebhookPayload;
+    expect(ingestDenied({ author: { user_openid: "stranger" }, content: "hi", id: "1" })).toEqual({
+      ok: true,
+    });
+    expect(spy).not.toHaveBeenCalled();
+
+    const allowed = createQqOfficialBotAdapter({
+      appId: "app",
+      secret: "sec",
+      enabled: true,
+      allowedOpenIds: ["*"],
+      allowedGroups: [],
+      useWs: false,
+    });
+    const ingestOk = (
+      allowed as typeof allowed & {
+        ingestWebhookPayload: (b: unknown) => { ok: boolean };
+      }
+    ).ingestWebhookPayload;
+    expect(ingestOk({ author: { user_openid: "anyone" }, content: "指令", id: "2" })).toEqual({
+      ok: true,
+    });
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+    const msg = spy.mock.calls[0]![0] as UnifiedMessage;
+    expect(msg.envelope.peerId).toBe("anyone");
+    expect(msg.payload.text).toBe("指令");
+  });
+
+  it("GROUP_MESSAGE_CREATE 只累计；GROUP_AT 起流并带近况+昵称", async () => {
+    const spy = vi
+      .spyOn(messageGateway, "handleIncomingMessage")
+      .mockResolvedValue({ ok: true, sessionId: "s1" });
+
+    const adapter = createQqOfficialBotAdapter({
+      appId: "app",
+      secret: "sec",
+  

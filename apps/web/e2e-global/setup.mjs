@@ -1,0 +1,658 @@
+import { execSync, execFileSync, spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const serverDir = path.resolve(__dirname, "../../server");
+const webDir = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "../../..");
+
+export const TEST_DB_NAME = "test-e2e.db";
+/** 相对 schema.prisma 目录；服务端 loadRootEnv 不得再 override 成 .env 的 dev.db */
+export const TEST_DB_URL = `file:./${TEST_DB_NAME}`;
+export const TEST_CONTENT_DIR = path.join(projectRoot, ".test-content-e2e");
+export const TEST_CONFIG_DIR = path.join(projectRoot, ".test-config-e2e");
+export const TEST_DATA_DIR = path.join(projectRoot, ".test-data-e2e");
+const PID_FILE = path.join(projectRoot, ".test-e2e-pids.json");
+
+const CONTENT_SUBDIRS = ["posts", "knowledge", "resources", "about", "uploads"];
+const CONFIG_SUBDIRS = ["agents", "skills", "mcp", "memories", "tasks", "prompts", "sources"];
+const DATA_SUBDIRS = ["approvals", "cookies", "files", "git", "logs", "messages", "sessions", "tools", "workspace"];
+
+function getE2EPorts() {
+  return {
+    serverPort: parseInt(process.env.E2E_SERVER_PORT || "3010", 10),
+    webPort: parseInt(process.env.E2E_WEB_PORT || "3002", 10),
+    mockLlmPort: parseInt(process.env.E2E_MOCK_LLM_PORT || "3041", 10),
+  };
+}
+
+export function killStaleTestProcesses() {
+  const { serverPort, webPort, mockLlmPort } = getE2EPorts();
+  const ports = [serverPort, webPort];
+  if (process.env.MOCK_LLM === "true" || process.env.MOCK_LLM_URL) ports.push(mockLlmPort);
+  killProcessesOnPorts(ports);
+}
+
+function killProcessesOnPorts(ports) {
+  if (process.platform === "win32") {
+    killProcessesOnPortsWin32(ports);
+    return;
+  }
+  killProcessesOnPortsUnix(ports);
+}
+
+function killProcessesOnPortsUnix(ports) {
+  for (const port of ports) {
+    try {
+      const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, {
+        encoding: "utf8",
+        timeout: 15000,
+      });
+      for (const pid of output.split(/\s+/).map((s) => parseInt(s, 10)).filter((n) => n > 0)) {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* 端口空闲或无 lsof */
+    }
+  }
+}
+
+function killProcessesOnPortsWin32(ports) {
+  let output = "";
+  try {
+    output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
+  } catch {
+    return;
+  }
+
+  const pids = new Set();
+  for (const line of output.split(/\r?\n/)) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 5 || parts[0] !== "TCP") continue;
+    if (parts[3] !== "LISTENING") continue;
+
+    const local = parts[1];
+    const pid = parseInt(parts[parts.length - 1], 10);
+    if (!pid || pid <= 0) continue;
+
+    for (const port of ports) {
+      if (local.endsWith(`:${port}`)) pids.add(pid);
+    }
+  }
+
+  for (const pid of pids) {
+    try {
+      execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+    } catch {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
+async function waitUntilPortsFree(ports, timeoutMs = 15_000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (ports.every((port) => !isPortListening(port))) return;
+    killProcessesOnPorts(ports);
+    await sleep(400);
+  }
+  throw new Error(`[e2e globalSetup] 端口 ${ports.join(",")} 仍被占用，无法空库启动`);
+}
+
+function isPortListening(port) {
+  if (process.platform === "win32") {
+    let output = "";
+    try {
+      output = execSync("netstat -ano", { encoding: "utf8", timeout: 15000 });
+    } catch {
+      return false;
+    }
+    return output.split(/\r?\n/).some((line) => {
+      const parts = line.trim().split(/\s+/);
+      return parts[0] === "TCP" && parts[3] === "LISTENING" && parts[1]?.endsWith(`:${port}`);
+    });
+  }
+  try {
+    const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: "utf8", timeout: 8000 });
+    return output.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 子进程不要继承开发者壳里残留的强制场景 / 错误注入。
+ * 不删 MOCK_LLM、MOCK_LLM_URL、MOCK_LLM_PORT、MOCK_LLM_LOG、MOCK_LLM_REQUEST_ID、MOCK_MCP、MOCK_NATIVE_TOOLS。
+ */
+function stripMockInjectionEnv(env) {
+  // [OM-FREEPLAY] 给刻意测注入的人留口，默认隔离。
+  if (process.env.E2E_KEEP_MOCK_INJECTION === "1") return env;
+  delete env.MOCK_LLM_SCENARIO;
+  delete env.MOCK_LLM_FAIL;
+  delete env.MOCK_LLM_DELAY_MS;
+  delete env.MOCK_LLM_STREAM_BREAK;
+  delete env.MOCK_LLM_PROVIDER;
+  delete env.MOCK_LLM_QUIRK;
+  delete env.MOCK_LLM_CASSETTE;
+  delete env.MOCK_LLM_CASSETTE_DIR;
+  return env;
+}
+
+function killPidFileProcesses() {
+  try {
+    if (!fs.existsSync(PID_FILE)) return;
+    const pids = JSON.parse(fs.readFileSync(PID_FILE, "utf8"));
+    for (const pid of [pids.serverPid, pids.webPid, pids.mockLlmPid]) {
+      if (!pid) continue;
+      if (process.platform === "win32") {
+        try {
+          execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+          continue;
+        } catch {
+          /* fall through */
+        }
+      }
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 杀掉仍握着 test-e2e.db 的残留 node（旧 schema 的 systemPrompt 列缺失即由此） */
+function killNodeHoldingTestDb() {
+  if (process.platform !== "win32") return;
+  try {
+    const out = execSync(
+      "wmic process where \"name='node.exe'\" get ProcessId,CommandLine /FORMAT:LIST",
+      { encoding: "utf8", timeout: 20000 },
+    );
+    const blocks = out.split(/\r?\n\r?\n/);
+    for (const block of blocks) {
+      const cmd = (block.match(/CommandLine=(.*)/) || [])[1] || "";
+      const pid = parseInt((block.match(/ProcessId=(\d+)/) || [])[1] || "", 10);
+      if (!pid || pid === process.pid) continue;
+      if (/test-e2e\.db|E2E_SERVER_PORT|e2e-global/i.test(cmd)) {
+        try {
+          execSync(`taskkill /PID ${pid} /F /T`, { stdio: "ignore", timeout: 10000 });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function removeDbFiles(targetDir, dbName) {
+  const files = ["", "-journal", "-wal", "-shm"].map((suffix) =>
+    path.join(targetDir, `${dbName}${suffix}`),
+  );
+  killPidFileProcesses();
+  killStaleTestProcesses();
+  killNodeHoldingTestDb();
+  await sleep(400);
+
+  for (let attempt = 0; attempt < 15; attempt++) {
+    let failed = false;
+    for (const file of files) {
+      try {
+        if (fs.existsSync(file)) fs.rmSync(file, { force: true });
+      } catch {
+        failed = true;
+      }
+    }
+    const leftover = files.filter((f) => fs.existsSync(f));
+    if (!failed && leftover.length === 0) {
+      console.log("[e2e globalSetup] 已清空 test-e2e.db*，将 prisma db push 到空库");
+      return;
+    }
+    killPidFileProcesses();
+    killStaleTestProcesses();
+    killNodeHoldingTestDb();
+    await sleep(400);
+  }
+  const leftover = files.filter((f) => fs.existsSync(f));
+  throw new Error(
+    `[e2e globalSetup] 无法删除测试库（仍被占用，禁止带旧列 push）: ${leftover.join(", ")}`,
+  );
+}
+
+function getPrismaCli() {
+  const candidates = [
+    path.join(serverDir, "node_modules", "prisma", "build", "index.js"),
+    path.join(projectRoot, "node_modules", "prisma", "build", "index.js"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+async function waitForUrl(url, timeoutMs = 60_000) {
+  const start = Date.now();
+  let lastErr = "";
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { method: "GET" });
+      if (res.ok) return;
+      lastErr = `HTTP ${res.status}`;
+    } catch (err) {
+      lastErr = err.message;
+    }
+    await sleep(250);
+  }
+  throw new Error(`等待 ${url} 就绪超时 (${timeoutMs}ms): ${lastErr}`);
+}
+
+async function trpcQuery(serverPort, procedure, input = null) {
+  const url = new URL(`http://127.0.0.1:${serverPort}/api/trpc/${procedure}`);
+  url.searchParams.set("batch", "1");
+  url.searchParams.set("input", JSON.stringify({ 0: { json: input } }));
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`tRPC ${procedure} HTTP ${res.status}`);
+  const batch = await res.json();
+  const first = batch[0];
+  const errMsg = first?.error?.json?.message ?? first?.error?.message;
+  if (errMsg) throw new Error(`tRPC ${procedure} error: ${errMsg}`);
+  return first?.result?.data?.json;
+}
+
+async function trpcMutate(serverPort, procedure, input) {
+  const res = await fetch(`http://127.0.0.1:${serverPort}/api/trpc/${procedure}?batch=1`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 0: { json: input } }),
+  });
+  if (!res.ok) throw new Error(`tRPC ${procedure} HTTP ${res.status}`);
+  const batch = await res.json();
+  const first = batch[0];
+  const errMsg = first?.error?.json?.message ?? first?.error?.message;
+  if (errMsg) throw new Error(`tRPC ${procedure} error: ${errMsg}`);
+  return first?.result?.data?.json;
+}
+
+async function seedAssistantManager(serverPort) {
+  const start = Date.now();
+  let items = [];
+  while (Date.now() - start < 30_000) {
+    try {
+      const list = await trpcQuery(serverPort, "agent.list", { page: 1, pageSize: 20 });
+      items = list?.items ?? [];
+      if (items.some((a) => a.tier === "super")) break;
+    } catch {
+      // 超级 Agent 可能还在初始化
+    }
+    await sleep(300);
+  }
+  const superAgent = items.find((a) => a.tier === "super");
+  if (!superAgent) {
+    throw new Error("[e2e globalSetup] 未找到超级 Agent，无法创建默认 manager");
+  }
+
+  // 确保存在 E2E 默认 Workspace
+  let defaultWorkspace;
+  try {
+    const createRes = await trpcMutate(serverPort, "workspace.create", {
+      name: "E2E 默认空间",
+      path: "workspaces/e2e-default",
+      description: "E2E 测试自动创建的默认 Workspace",
+    });
+    defaultWorkspace = createRes?.data;
+  } catch (err) {
+    const list = await trpcQuery(serverPort, "workspace.list", { page: 1, pageSize: 20 });
+    defaultWorkspace = (list?.items ?? []).find((w) => w.path === "workspaces/e2e-default");
+    if (!defaultWorkspace) throw err;
+  }
+
+  const e2eManagerTools = [
+    "native:spawn_subagent",
+    "native:async_task_run",
+    "native:async_task_status",
+    "native:async_task_cancel",
+    "native:sleep",
+    "native:read_article",
+    "native:web_search",
+    "native:browser_screenshot",
+    "native:inbox_list",
+    "native:inbox_distill",
+    "native:session_goal_set",
+    "native:session_compact",
+    "native:post_list",
+    "native:post_create",
+    "native:video_transcript",
+    "native:browser_login_status",
+    "native:skill_view",
+    "native:list_directory",
+    "native:article_material_pack",
+    "native:article_video_compose",
+    "native:ask_user",
+  ];
+  const existingManager = items.find((a) => a.tier === "manager" && /assistant/i.test(a.name));
+  if (existingManager) {
+    console.log("[e2e globalSetup] 发现现有 manager Agent", JSON.stringify({ id: existingManager.id, workspaceId: existingManager.workspaceId }));
+    const currentTools = Array.isArray(existingManager.tools)
+      ? existingManager.tools
+      : String(existingManager.tools ?? "").split(",").map((t) => t.trim()).filter(Boolean);
+    const nextTools = Array.from(new Set([...currentTools, ...e2eManagerTools]));
+    const patch = {};
+    if (defaultWorkspace?.id && existingManager.workspaceId !== defaultWorkspace.id) {
+      patch.workspaceId = defaultWorkspace.id;
+    }
+    if (e2eManagerTools.some((t) => !currentTools.includes(t))) {
+      patch.tools = nextTools;
+    }
+    if (Object.keys(patch).length > 0) {
+      await trpcMutate(serverPort, "agent.update", { id: existingManager.id, ...patch });
+      console.log("[e2e globalSetup] 已补齐 manager 的 E2E 空间/工具", JSON.stringify(patch));
+    }
+    return;
+  }
+
+  const created = await trpcMutate(serverPort, "agent.create", {
+    name: "assistant",
+    tier: "manager",
+    parentId: superAgent.id,
+    workspaceId: defaultWorkspace?.id,
+    model: "deepseek-chat",
+    systemPrompt: "你是 OasisMind (见微) 默认助手，可以调用 spawn_subagent / async_task_run / sleep / read_article / web_search 等工具完成任务。",
+    tools: e2eManagerTools,
+    source: "e2e-seed",
+  });
+  console.log("[e2e globalSetup] 已创建默认 Workspace 与 manager Agent", JSON.stringify({ workspaceId: defaultWorkspace.id, agentId: created?.data?.id, agentWorkspaceId: created?.data?.workspaceId }));
+}
+
+function spawnServer(serverPort) {
+  const tsxCli = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  if (!fs.existsSync(tsxCli)) {
+    throw new Error(`[e2e globalSetup] 找不到 tsx CLI: ${tsxCli}`);
+  }
+
+  const serverEnv = {
+    ...process.env,
+    SERVER_PORT: String(serverPort),
+    DATABASE_URL: TEST_DB_URL,
+    OM_CONTENT_DIR: TEST_CONTENT_DIR,
+    OM_CONFIG_DIR: TEST_CONFIG_DIR,
+    OM_DATA_DIR: TEST_DATA_DIR,
+    REQUIRE_APPROVAL: process.env.REQUIRE_APPROVAL ?? "false",
+    E2E: "1",
+  };
+  for (const key of ["MOCK_LLM", "MOCK_LLM_URL", "MOCK_MCP", "MOCK_NATIVE_TOOLS", "DEEPSEEK_API_KEY"]) {
+    if (process.env[key]) serverEnv[key] = process.env[key];
+  }
+  if (process.env.MOCK_LLM === "true") {
+    serverEnv.MOCK_LLM_LOG = path.join(TEST_DATA_DIR, "mock-llm.log");
+  }
+  stripMockInjectionEnv(serverEnv);
+
+  const proc = spawn(process.execPath, [tsxCli, "src/index.ts"], {
+    cwd: serverDir,
+    env: serverEnv,
+    stdio: "pipe",
+    windowsHide: true,
+  });
+
+  proc.stdout.on("data", (data) => {
+    process.stdout.write(`[e2e server] ${data}`);
+  });
+  proc.stderr.on("data", (data) => {
+    process.stderr.write(`[e2e server] ${data}`);
+  });
+
+  return proc;
+}
+
+function spawnMockLlm(port) {
+  const mockLlmDir = path.join(projectRoot, "apps", "mock-llm");
+  const tsxCli = path.join(mockLlmDir, "node_modules", "tsx", "dist", "cli.mjs");
+  const tsxFallback = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  const cli = fs.existsSync(tsxCli) ? tsxCli : tsxFallback;
+  if (!fs.existsSync(cli)) {
+    throw new Error(`[e2e globalSetup] 找不到 tsx CLI 启动 mock-llm: ${cli}`);
+  }
+  const proc = spawn(process.execPath, [cli, "src/index.ts"], {
+    cwd: mockLlmDir,
+    env: stripMockInjectionEnv({
+      ...process.env,
+      MOCK_LLM_PORT: String(port),
+      MOCK_LLM_LOG: path.join(TEST_DATA_DIR, "mock-llm.log"),
+    }),
+    stdio: "pipe",
+    windowsHide: true,
+  });
+  proc.stdout.on("data", (data) => {
+    process.stdout.write(`[e2e mock-llm] ${data}`);
+  });
+  proc.stderr.on("data", (data) => {
+    process.stderr.write(`[e2e mock-llm] ${data}`);
+  });
+  return proc;
+}
+
+function spawnWeb(webPort, serverPort) {
+  const nextBin = path.join(webDir, "node_modules", "next", "dist", "bin", "next");
+  if (!fs.existsSync(nextBin)) {
+    throw new Error(`[e2e globalSetup] 找不到 next CLI: ${nextBin}`);
+  }
+
+  const serverUrl = `http://127.0.0.1:${serverPort}`;
+  const webEnv = {
+    ...process.env,
+    // 禁止继承壳里残留的 mock 端口（3011）；rewrite 以本轮 E2E server 为准
+    SERVER_INTERNAL_URL: serverUrl,
+    NEXT_PUBLIC_SERVER_URL: serverUrl,
+    PORT: String(webPort),
+  };
+
+  const proc = spawn(process.execPath, [nextBin, "start", "-p", String(webPort)], {
+    cwd: webDir,
+    env: webEnv,
+    stdio: "pipe",
+    windowsHide: true,
+  });
+
+  proc.stdout.on("data", (data) => {
+    process.stdout.write(`[e2e web] ${data}`);
+  });
+  proc.stderr.on("data", (data) => {
+    process.stderr.write(`[e2e web] ${data}`);
+  });
+
+  return proc;
+}
+
+export default async function globalSetup() {
+  const { serverPort, webPort, mockLlmPort } = getE2EPorts();
+  const useMockLlmHttp = process.env.MOCK_LLM === "true";
+
+  // 1. 清理可能残留的 E2E server/web 进程，等到端口真正空闲
+  killPidFileProcesses();
+  killStaleTestProcesses();
+  killNodeHoldingTestDb();
+  await waitUntilPortsFree(useMockLlmHttp ? [serverPort, webPort, mockLlmPort] : [serverPort, webPort]);
+
+  // 2. 隔离数据库与三桶存储目录
+  process.env.DATABASE_URL = TEST_DB_URL;
+  process.env.OM_CONTENT_DIR = TEST_CONTENT_DIR;
+  process.env.OM_CONFIG_DIR = TEST_CONFIG_DIR;
+  process.env.OM_DATA_DIR = TEST_DATA_DIR;
+  if (!process.env.CREDENTIAL_MASTER_KEY?.trim()) {
+    process.env.CREDENTIAL_MASTER_KEY =
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  }
+
+  // 3. 删除旧测试库（prisma/ 与 server cwd 两处都清，防双库）
+  await removeDbFiles(path.join(serverDir, "prisma"), TEST_DB_NAME);
+  await removeDbFiles(serverDir, TEST_DB_NAME);
+  const e2eWs = path.join(projectRoot, "workspaces", "e2e-default");
+  try {
+    fs.rmSync(e2eWs, { recursive: true, force: true });
+  } catch {
+    /* 目录被锁则留给 workspace.create 走已有记录 */
+  }
+
+  // 4. 创建隔离三桶目录
+  fs.mkdirSync(TEST_CONTENT_DIR, { recursive: true });
+  for (const sub of CONTENT_SUBDIRS) {
+    fs.mkdirSync(path.join(TEST_CONTENT_DIR, sub), { recursive: true });
+  }
+  fs.mkdirSync(TEST_CONFIG_DIR, { recursive: true });
+  for (const sub of CONFIG_SUBDIRS) {
+    fs.mkdirSync(path.join(TEST_CONFIG_DIR, sub), { recursive: true });
+  }
+  fs.mkdirSync(TEST_DATA_DIR, { recursive: true });
+  for (const sub of DATA_SUBDIRS) {
+    fs.mkdirSync(path.join(TEST_DATA_DIR, sub), { recursive: true });
+  }
+
+  // 5. 复制 about profile（about.getProfile 依赖）
+  const realProfile = path.join(projectRoot, "content", "about", "profile.md");
+  const testProfile = path.join(TEST_CONTENT_DIR, "about", "profile.md");
+  if (fs.existsSync(realProfile)) {
+    fs.copyFileSync(realProfile, testProfile);
+  } else {
+    fs.writeFileSync(
+      testProfile,
+      "---\nname: Test User\n---\n\n# About\n\nE2E 测试环境占位 profile。\n",
+    );
+  }
+
+  // 6. 同步 schema 到测试库
+  const prismaCli = getPrismaCli();
+  if (!prismaCli) {
+    throw new Error("[e2e globalSetup] 找不到 prisma CLI 入口");
+  }
+  try {
+    execFileSync(
+      process.execPath,
+      [prismaCli, "db", "push", "--skip-generate", "--accept-data-loss"],
+      {
+        cwd: serverDir,
+        env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+        stdio: "pipe",
+      },
+    );
+  } catch (err) {
+    console.error("[e2e globalSetup] prisma db push 失败:", err instanceof Error ? err.message : err);
+    throw err;
+  }
+  try {
+    execFileSync(
+      process.execPath,
+      [prismaCli, "db", "execute", "--stdin", "--schema", "prisma/schema.prisma"],
+      {
+        cwd: serverDir,
+        env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+        input: "SELECT systemPrompt FROM Agent LIMIT 0;",
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    );
+  } catch (err) {
+    throw new Error(
+      `[e2e globalSetup] 空库 schema 缺 Agent.systemPrompt（wipe 未真正落到空库）: ${
+        err instanceof Error ? err.message : err
+      }`,
+    );
+  }
+
+  // 6.5 播种示例文章（blog-smoke 等 spec 依赖 welcome-to-oasismind；seed 幂等 upsert）
+  const tsxCliForSeed = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
+  execFileSync(process.execPath, [tsxCliForSeed, "prisma/seed.ts"], {
+    cwd: serverDir,
+    env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+    stdio: "pipe",
+  });
+
+  // 7. mock E2E：先起 OpenAI 兼容 mock-llm，server 走真 fetch/SSE，只换写好的回复
+  let mockLlmProc = null;
+  if (useMockLlmHttp) {
+    process.env.MOCK_LLM_URL = process.env.MOCK_LLM_URL || `http://127.0.0.1:${mockLlmPort}/v1`;
+    mockLlmProc = spawnMockLlm(mockLlmPort);
+    await waitForUrl(`http://127.0.0.1:${mockLlmPort}/health`, 30_000);
+    const mockHealthUrl = `http://127.0.0.1:${mockLlmPort}/health`;
+    try {
+      const healthRes = await fetch(mockHealthUrl);
+      const health = JSON.parse(await healthRes.text());
+      if (health.status !== "ok" || health.service !== "mock-llm") {
+        throw new Error(
+          `[e2e globalSetup] ${mockHealthUrl} 不是 mock-llm（避免端口上是别的 200 服务）: ${JSON.stringify(health)}`,
+        );
+      }
+    } catch (err) {
+      throw new Error(
+        `[e2e globalSetup] 校验 mock-llm /health 失败: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+    try {
+      const resetRes = await fetch(`http://127.0.0.1:${mockLlmPort}/debug/reset`, { method: "POST" });
+      await resetRes.text();
+      if (!resetRes.ok) {
+        console.warn(`[e2e globalSetup] mock-llm /debug/reset HTTP ${resetRes.status}，hits 环可能未清空`);
+      }
+    } catch (err) {
+      console.warn(
+        `[e2e globalSetup] mock-llm /debug/reset 失败（不阻断 E2E）: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+    console.log(`[e2e globalSetup] mock-llm=http://127.0.0.1:${mockLlmPort}/v1 已就绪`);
+  }
+
+  // 8. 启动 E2E server（由 globalSetup 托管，避免 Playwright webServer 与 globalSetup 并行导致时序问题）
+  const serverProc = spawnServer(serverPort);
+
+  // 9. 启动 E2E web（等待 server 健康后再启动，避免请求打到未就绪后端）
+  const webBuildDir = path.join(webDir, ".next");
+  if (!fs.existsSync(webBuildDir)) {
+    throw new Error(`[e2e globalSetup] 缺少 ${webBuildDir}，请先运行对应 build 命令（如 pnpm build:mock）`);
+  }
+  const webProc = spawnWeb(webPort, serverPort);
+
+  // 10. 等待 server 就绪，并预置一个 manager 级 Assistant Agent
+  // （部分 mock E2E 依赖该 Agent 作为可调用 spawn_subagent 的对话主体）
+  await waitForUrl(`http://127.0.0.1:${serverPort}/health`, 120_000);
+  await seedAssistantManager(serverPort);
+
+  // 11. 等待 web 就绪
+  await waitForUrl(`http://127.0.0.1:${webPort}/`, 120_000);
+
+  // 12. 记录 PID，供 teardown 精确清理
+  fs.writeFileSync(
+    PID_FILE,
+    JSON.stringify(
+      {
+        serverPid: serverProc.pid,
+        webPid: webProc.pid,
+        mockLlmPid: mockLlmProc?.pid ?? null,
+        serverPort,
+        webPort,
+        mockLlmPort: useMockLlmHttp ? mockLlmPort : null,
+      },
+      null,
+      2,
+    ),
+  );
+
+  console.log(`[e2e globalSetup] server=http://127.0.0.1:${serverPort} web=http://127.0.0.1:${webPort} 已就绪`);
+}

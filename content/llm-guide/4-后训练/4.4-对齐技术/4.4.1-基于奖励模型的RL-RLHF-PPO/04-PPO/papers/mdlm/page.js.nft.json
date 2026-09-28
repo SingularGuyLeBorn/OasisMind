@@ -1,0 +1,31 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+import { XML_CHARKEY } from "./interfaces.js";
+import { RestError } from "@azure/core-rest-pipeline";
+import { MapperTypeNames } from "./serializer.js";
+import { getOperationRequestInfo } from "./operationHelpers.js";
+const defaultJsonContentTypes = ["application/json", "text/json"];
+const defaultXmlContentTypes = ["application/xml", "application/atom+xml"];
+/**
+ * The programmatic identifier of the deserializationPolicy.
+ */
+export const deserializationPolicyName = "deserializationPolicy";
+/**
+ * This policy handles parsing out responses according to OperationSpecs on the request.
+ */
+export function deserializationPolicy(options = {}) {
+    const jsonContentTypes = options.expectedContentTypes?.json ?? defaultJsonContentTypes;
+    const xmlContentTypes = options.expectedContentTypes?.xml ?? defaultXmlContentTypes;
+    const parseXML = options.parseXML;
+    const serializerOptions = options.serializerOptions;
+    const updatedOptions = {
+        xml: {
+            rootName: serializerOptions?.xml.rootName ?? "",
+            includeRoot: serializerOptions?.xml.includeRoot ?? false,
+            xmlCharKey: serializerOptions?.xml.xmlCharKey ?? XML_CHARKEY,
+        },
+    };
+    return {
+        name: deserializationPolicyName,
+        async sendRequest(request, next) {
+            const respon

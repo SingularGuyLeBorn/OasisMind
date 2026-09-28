@@ -1,0 +1,434 @@
+/**
+ * Agent 流式聊天客户端 — SSE over fetch，支持断线续传与自动重连。
+ */
+
+import type { ChatAttachment, ChatConfigInput } from "@oasismind/shared";
+import { authHeaders } from "@/lib/auth";
+
+/**
+ * 浏览器端 SSE / 流式 POST 直连后端基址。
+ * 默认空串 → 走 Next.js rewrite（/api/agent/... → 后端）。
+ * 设 NEXT_PUBLIC_SERVER_URL（如 http://localhost:3010）→ 直连后端，绕过 Next.js dev rewrite 对 SSE 的缓冲，
+ * 让 token 边产生边推到前端，避免「最后一次性渲染」。
+ * 生产若前后同域可留空走 rewrite；若跨域则配 NEXT_PUBLIC_SERVER_URL + 后端 CORS。
+ */
+function streamBaseUrl(): string {
+  if (typeof window === "undefined") return "";
+  return process.env.NEXT_PUBLIC_SERVER_URL || "";
+}
+
+export interface AgentChatStreamInput {
+  sessionId?: string;
+  agentId?: string;
+  message?: string;
+  attachments?: ChatAttachment[];
+  model?: string;
+  config?: ChatConfigInput;
+  regenerate?: boolean;
+  regenerateUserMessageId?: string;
+  retryFromMessageId?: string;
+  editMessageId?: string;
+  editContent?: string;
+  skillId?: string;
+  source?: "user" | "super" | "manager" | "sub" | "system";
+  /** 额外元数据，会作为用户消息的 toolResults 持久化（如子 Agent 名字） */
+  toolResults?: Record<string, unknown>;
+  /** 前端生成的用户消息 ID，用于后端持久化后去重/替换乐观气泡 */
+  clientMessageId?: string;
+  /** 发送队列项 id：busy 时服务端按此 unclaim */
+  queueItemId?: string;
+  /** 断线续传：从该事件 ID 之后开始接收 */
+  resumeAfter?: number;
+}
+
+export interface AgentStreamDone {
+  sessionId: string;
+  agentId: string;
+  content: string;
+  toolCalls: Array<{ id: string; name: string; args: unknown; result: unknown; kind?: string }>;
+  model: string;
+  provider: string;
+  roundsUsed: number;
+  assistantMessageId?: string;
+  versionIndex?: number;
+  versionCount?: number;
+  tokenUsage?: { prompt: number; completion: number; total: number };
+  parentId?: string | null;
+}
+
+export interface AgentStreamCallbacks {
+  onSessionStart?: (sessionId: string) => void;
+  onRoundStart?: (round: number) => void;
+  onThinking?: (delta: string) => void;
+  onToken?: (delta: string) => void;
+  onIntermediateContent?: (content: string, round: number) => void;
+  onToolPreparing?: (
+    tools: Array<{ toolCallId: string; name: string; argsChars: number }>,
+    round: number,
+  ) => void;
+  onToolStart?: (name: string, args: unknown, round: number, toolCallId: string) => void;
+  onToolEnd?: (name: string, result: unknown, round: number, hint: string | undefined, toolCallId: string) => void;
+  onDone?: (data: AgentStreamDone) => void | Promise<void>;
+  onError?: (message: string, sessionId?: string, suggestion?: string) => void | Promise<void>;
+  /** 每收到一个带 id 的事件时回调，用于断线续传 */
+  onEventId?: (id: number) => void;
+}
+
+/** 409 SESSION_BUSY：消息已在服务端队列，须回滚前端软认领/tombstone，禁止当成功或当 fatal error */
+export class SessionBusyQueuedError extends Error {
+  readonly code = "SESSION_BUSY" as const;
+  readonly queueItemId: string | null;
+  constructor(queueItemId: string | null, message?: string) {
+    super(message || "会话忙碌，消息已入队");
+    this.name = "SessionBusyQueuedError";
+    this.queueItemId = queueItemId;
+  }
+}
+
+async function parseSseBlock(
+  block: string,
+  callbacks: AgentStreamCallbacks,
+): Promise<{ finished: boolean; eventId?: number }> {
+  const lines = block.split("\n");
+  let eventType = "message";
+  let dataLine = "";
+  let eventId: number | undefined;
+  for (const line of lines) {
+    if (line.startsWith("event:")) eventType = line.slice(6).trim();
+    if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+    if (line.startsWith("id:")) {
+      const parsed = Number(line.slice(3).trim());
+      if (Number.isFinite(parsed)) eventId = parsed;
+    }
+  }
+  if (eventId !== undefined) {
+    callbacks.onEventId?.(eventId);
+  }
+  if (!dataLine) return { finished: false, eventId };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SSE 事件负载为动态 JSON，由下方 switch 逐事件收窄
+  let payload: any;
+  try {
+    payload = JSON.parse(dataLine);
+  } catch {
+    // 仅 JSON 解析失败按「畸形 chunk」忽略；回调异常在下方单独捕获，不得混入此分支
+    return { finished: false, eventId };
+  }
+  try {
+    switch (eventType) {
+      case "session_start":
+        callbacks.onSessionStart?.(payload.sessionId ?? "");
+        break;
+      case "round_start":
+        callbacks.onRoundStart?.(payload.round ?? 1);
+        break;
+      case "thinking":
+        callbacks.onThinking?.(payload.delta ?? "");
+        break;
+      case "token":
+        callbacks.onToken?.(payload.delta ?? "");
+        break;
+      case "intermediate_content":
+        callbacks.onIntermediateContent?.(payload.content ?? "", payload.round ?? 1);
+        break;
+      case "tool_preparing": {
+        const tools = Array.isArray(payload.tools) ? payload.tools : [];
+        callbacks.onToolPreparing?.(
+          tools.map((t: { toolCallId?: string; name?: string; argsChars?: number }) => ({
+            toolCallId: String(t.toolCallId ?? ""),
+            name: String(t.name ?? "tool"),
+            argsChars: Number(t.argsChars ?? 0) || 0,
+          })),
+          payload.round ?? 1,
+        );
+        break;
+      }
+      case "tool_start":
+        callbacks.onToolStart?.(payload.name, payload.args, payload.round ?? 1, payload.toolCallId ?? "");
+        break;
+      case "tool_end":
+        callbacks.onToolEnd?.(payload.name, payload.result, payload.round ?? 1, payload.hint, payload.toolCallId ?? "");
+        break;
+      case "reflection": {
+        // W7 反思 verdict（仅未通过时服务端推送）：映射成 __reflection__ 伪工具条，复用时间线 UI
+        const round = payload.round ?? 0;
+        const action = payload.action === "marked" ? "marked" : "retry";
+        const issues: string[] = Array.isArray(payload.issues) ? payload.issues : [];
+        const toolCallId = `reflection_r${round}_${action}`;
+        callbacks.onToolStart?.("__reflection__", { issues, action }, round, toolCallId);
+        callbacks.onToolEnd?.(
+          "__reflection__",
+          { passed: false, issues, action },
+          round,
+          action === "retry" ? "复核未通过，已回注重修" : "复核未通过，轮数耗尽标记放行",
+          toolCallId,
+        );
+        break;
+      }
+      case "compact_start": {
+        // Auto-Compact 阶段：映射成 __context_compact__ 工具条，复用时间线转圈 UI
+        const gen = payload.generation ?? 1;
+        callbacks.onToolStart?.(
+          "__context_compact__",
+          { generation: gen, estimatedRatio: payload.estimatedRatio },
+          0,
+          `compact_v${gen}`,
+        );
+        break;
+      }
+      case "compact_end": {
+        const gen = payload.generation ?? 1;
+        const toolCallId = `compact_v${gen}`;
+        const result = {
+          generation: gen,
+          summary: payload.summaryPreview ?? "",
+          messagesSummarized: payload.messagesSummarized ?? 0,
+          memoriesFlushed: payload.memoriesFlushed ?? 0,
+          charBefore: payload.charBefore ?? 0,
+          charAfter: payload.charAfter ?? 0,
+          boundaryMessageId: payload.boundaryMessageId,
+        };
+        const hint = `已压缩 ${payload.messagesSummarized ?? 0} 条旧消息`;
+        callbacks.onToolEnd?.("__context_compact__", result, 0, hint, toolCallId);
+        break;
+      }
+      case "compact_error": {
+        const gen = (payload as { generation?: number }).generation ?? 1;
+        callbacks.onToolEnd?.(
+          "__context_compact__",
+          { error: payload.message ?? "压缩失败", fallback: payload.fallback ?? "trim" },
+          0,
+          "压缩失败（降级裁剪）",
+          `compact_v${gen}`,
+        );
+        break;
+      }
+      case "done":
+        await callbacks.onDone?.(payload as AgentStreamDone);
+        return { finished: true, eventId };
+      case "error":
+        await callbacks.onError?.(payload.message, payload.sessionId, payload.suggestion);
+        return { finished: true, eventId };
+    }
+  } catch (err) {
+    // 应用层回调自身抛错：不是畸形 chunk，禁止静默吞掉后走 12 次指数退避重连（重连修不好应用错误）。
+    // console.error 上报后按流失败收尾：通知 onError 并结束本次流（finished=true 不再重连）。
+    console.error("agentStream: SSE 事件回调异常，按流失败收尾", err);
+    try {
+      await callbacks.onError?.(err instanceof Error ? err.message : String(err));
+    } catch {
+      /* onError 自身也抛错时放弃上报 */
+    }
+    return { finished: true, eventId };
+  }
+  return { finished: false, eventId };
+}
+
+function isRetryableHttpStatus(status: number): boolean {
+  // 网关/后端短暂不可用（含 Next rewrite 代理 500）：静默重连，勿每轮 onError
+  return (
+    status === 0 ||
+    status === 408 ||
+    status === 425 ||
+    status === 429 ||
+    (status >= 500 && status <= 599)
+  );
+}
+
+async function readOneConnection(
+  res: Response,
+  callbacks: AgentStreamCallbacks,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    if (isRetryableHttpStatus(res.status)) {
+      // 交给外层 while 退避重连；耗尽后再统一 onError
+      return false;
+    }
+    // 409 SESSION_BUSY：抛给 drain 回滚认领（禁止伪成功留下 tombstone / 乐观气泡）
+    if (res.status === 409) {
+      try {
+        const body = JSON.parse(text) as {
+          code?: string;
+          message?: string;
+          queueItemId?: string | null;
+        };
+        if (body.code === "SESSION_BUSY") {
+          throw new SessionBusyQueuedError(body.queueItemId ?? null, body.message);
+        }
+      } catch (err) {
+        if (err instanceof SessionBusyQueuedError) throw err;
+        /* 非 JSON 走通用错误 */
+      }
+    }
+    await callbacks.onError?.(`流式请求失败 HTTP ${res.status}: ${text}`);
+    return true; // 非可重试错误：结束，禁止空转重连
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      if (signal?.aborted) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() ?? "";
+
+      for (const block of parts) {
+        if (!block.trim()) continue;
+        const { finished } = await parseSseBlock(block, callbacks);
+        if (finished) return true;
+      }
+    }
+
+    if (buffer.trim()) {
+      const { finished } = await parseSseBlock(buffer, callbacks);
+      if (finished) return true;
+    }
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // ignore
+    }
+  }
+
+  return false;
+}
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 本跳交付过事件则清零后再计 1；空跳才累加。禁止成功续传后仍耗尽 12 次窗口。 */
+export function nextStreamReconnectAttempt(prev: number, deliveredThisHop: boolean): number {
+  return deliveredThisHop ? 1 : prev + 1;
+}
+
+/**
+ * 启动或续传 Agent 流式聊天。
+ *
+ * - 首次调用使用 POST /api/agent/chat/stream 启动运行。
+ * - 连接断开后会自动使用 GET ?sessionId=&resumeAfter= 续传，直到收到 done/error 或 signal 被 abort。
+ * - 通过 callbacks.onEventId 可拿到每个事件 id，用于外部重连。
+ */
+export async function streamAgentChat(
+  input: AgentChatStreamInput,
+  callbacks: AgentStreamCallbacks,
+  signal?: AbortSignal,
+) {
+  let lastEventId = input.resumeAfter ?? 0;
+  const explicitResume = typeof input.resumeAfter === "number";
+  let attempt = 0;
+  const maxAttempts = 12; // 最长约 2 分钟的总重连窗口
+
+  while (true) {
+    if (signal?.aborted) return;
+
+    // 显式 resumeAfter=0 也要走 GET 续传；新流 lastEventId=0 则走 POST
+    const isResume = lastEventId > 0 || explicitResume;
+    let url: string;
+    let init: RequestInit;
+
+    if (isResume) {
+      const qs = new URLSearchParams();
+      if (input.sessionId) qs.set("sessionId", input.sessionId);
+      qs.set("resumeAfter", String(lastEventId));
+      url = `${streamBaseUrl()}/api/agent/chat/stream?${qs.toString()}`;
+      init = {
+        method: "GET",
+        headers: { ...authHeaders() },
+        signal,
+      };
+    } else {
+      url = `${streamBaseUrl()}/api/agent/chat/stream`;
+      init = {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(input),
+        signal,
+      };
+    }
+
+    const eventIdBefore = lastEventId;
+    const trackingCallbacks: AgentStreamCallbacks = {
+      ...callbacks,
+      onEventId: (id) => {
+        lastEventId = id;
+        callbacks.onEventId?.(id);
+      },
+    };
+
+    try {
+      const res = await fetch(url, init);
+      const finished = await readOneConnection(res, trackingCallbacks, signal);
+      if (finished) return;
+      // 连接正常结束但未收到 done/error：可能是连接被悄悄关闭，进入重连
+    } catch (err) {
+      if (err instanceof SessionBusyQueuedError) throw err;
+      if (signal?.aborted) {
+        const abortErr = new Error("用户中断");
+        abortErr.name = "AbortError";
+        throw abortErr;
+      }
+      // 网络错误进入重连
+    }
+
+    if (signal?.aborted) {
+      const abortErr = new Error("用户中断");
+      abortErr.name = "AbortError";
+      throw abortErr;
+    }
+
+    attempt = nextStreamReconnectAttempt(attempt, lastEventId > eventIdBefore);
+    if (attempt > maxAttempts) {
+      await callbacks.onError?.("连接已断开，多次重连失败。请检查网络或刷新页面。");
+      return;
+    }
+
+    const backoff = Math.min(1000 * 2 ** attempt, 15000);
+    await waitMs(backoff);
+  }
+}
+
+export async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+export async function stopAgentChat(
+  sessionId: string,
+): Promise<{ stopped: boolean; partialAssistantMessageId: string | null }> {
+  const res = await fetch("/api/agent/chat/stop", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`停止失败 HTTP ${res.status}: ${text}`);
+  }
+  const body = (await res.json()) as {
+    stopped: boolean;
+    partialAssistantMessageId?: string | null;
+  };
+  return {
+    stopped: body.stopped,
+    partialAssistantMessageId: body.partialAssistantMessageId ?? null,
+  };
+}

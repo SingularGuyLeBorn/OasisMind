@@ -1,0 +1,36 @@
+# OasisMind — 单容器运行 Web + Server（SQLite 持久化卷）
+FROM node:20-bookworm-slim AS base
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/server/package.json apps/server/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS build
+COPY . .
+RUN pnpm --filter @oasismind/server db:generate
+RUN pnpm --filter @oasismind/web build
+
+FROM base AS runner
+ENV NODE_ENV=production
+# config.ts 默认 127.0.0.1，单独 docker run 时端口映射不通；compose 里已显式设置，此处兜底
+ENV SERVER_HOST=0.0.0.0
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
+COPY --from=build /app/pnpm-workspace.yaml ./
+COPY --from=build /app/tsconfig.base.json ./
+COPY --from=build /app/apps ./apps
+COPY --from=build /app/packages ./packages
+COPY --from=build /app/content ./content
+COPY --from=build /app/config ./config
+COPY --from=build /app/config.yaml ./config.yaml
+COPY --from=build /app/scripts ./scripts
+
+EXPOSE 3000 3010
+
+CMD ["sh", "/app/scripts/docker-start.sh"]

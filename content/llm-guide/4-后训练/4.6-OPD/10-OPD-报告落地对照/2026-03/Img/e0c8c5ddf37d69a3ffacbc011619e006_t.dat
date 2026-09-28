@@ -1,0 +1,56 @@
+elated tasks, we evaluated knowledge relevant
+to biological, radiological, and nuclear risks using
+an internal dataset of closed-ended, knowledge-
+based multiple choice questions. For evaluations
+of chemical knowledge, we employed a closed-
+ended knowledge-based approach on chemical
+hazards developed by Macknight et al. Our eval-
+uation suggests that the knowledge of Gemma 3
+models in these domains is low.
+7.4. Our approach to responsible open models
+Designing safe, secure, and responsible applica-
+tions requires a system-level approach, working
+to mitigate risks associated with each specific use
+case and environment. We will continue to adopt
+assessments and safety mitigations proportion-
+ate to the potential risks from our models, and
+10
+
+---
+
+
+Gemma 3 Technical Report
+will only share these with the community when
+we are confident that the benefits significantly
+outweigh the foreseeable risks.
+8. Discussion and Conclusion
+In this work, we have presented Gemma 3, the
+latest addition to the Gemma family of open lan-
+guage models for text, image, and code. In this
+version, we focus on adding image understanding
+and long context while improving multilinguality
+and STEM-related abilities. Our model sizes and
+architectures are designed to be compatible with
+standard hardware, and most of our architecture
+improvements are tailored to fit this hardware
+while maintaining performance.
+References
+Realworldqa.
+https://x.ai/news/grok-1.
+5v.
+M. Acharya, K. Kafle, and C. Kanan. Tallyqa: An-
+swering complex counting questions. In AAAI,
+2018.
+R. Agarwal, N. Vieillard, Y. Zhou, P. Stanczyk, S. R.
+Garea, M. Geist, and O. Bachem. On-policy
+distillation of language models: Learning from
+self-generated mistakes. In ICLR, 2024.
+J. Ainslie, J. Lee-Thorp, M. de Jong, Y. Zemlyan-
+skiy, F. Lebrón, and S. Sanghai. Gqa: Training
+generalized multi-query transformer models
+from multi-head checkpoints. arXiv preprint
+arXiv:2305.13245, 2023.
+R. Anil, G. Pereyra, A. Passos, R. Ormandi, G. E.
+Dahl, and G. E. Hinton. Large scale distributed
+neural network training through online distil-
+lation. arXiv preprint arXiv:1804.03235, 20

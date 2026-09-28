@@ -1,0 +1,46 @@
+# -------------------------------------------------------------------------
+# Copyright (R) Microsoft Corporation.  All rights reserved.
+# Licensed under the MIT License.
+# --------------------------------------------------------------------------
+
+import logging
+
+import numpy as np
+import torch
+from PIL.Image import Image
+from sam2.modeling.sam2_base import SAM2Base
+from sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2_utils import decoder_shape_dict, encoder_shape_dict
+
+from onnxruntime import InferenceSession
+from onnxruntime.transformers.io_binding_helper import CudaSession
+
+logger = logging.getLogger(__name__)
+
+
+def create_ort_session(
+    onnx_path: str,
+    session_options=None,
+    provider="CUDAExecutionProvider",
+    enable_cuda_graph=False,
+    use_tf32=True,
+) -> InferenceSession:
+    if provider == "CUDAExecutionProvider":
+        device_id = torch.cuda.current_device()
+        provider_options = CudaSession.get_cuda_provider_options(device_id, enable_cuda_graph)
+        provider_options["use_tf32"] = int(use_tf32)
+        providers = [(provider, provider_options), "CPUExecutionProvider"]
+    else:
+        providers = ["CPUExecutionProvider"]
+    logger.info("Using providers: %s", providers)
+    return InferenceSession(onnx_path, session_options, providers=providers)
+
+
+def create_session(
+    onnx_path: str,
+    session_options=None,
+    provider="CUDAExecutionProvider",
+    device: str | torch.device = "cuda",
+    enable_cuda_graph=False,
+) -> CudaSession:
+    ort_session = create_ort_ses

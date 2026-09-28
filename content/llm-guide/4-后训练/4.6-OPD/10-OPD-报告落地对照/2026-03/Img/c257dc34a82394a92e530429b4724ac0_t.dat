@@ -1,0 +1,57 @@
+n, A. Ray,
+R. Puri, G. Krueger, M. Petrov, H. Khlaaf,
+11
+
+---
+
+
+Gemma 3 Technical Report
+G. Sastry, P. Mishkin, B. Chan, S. Gray, N. Ry-
+der, M. Pavlov, A. Power, L. Kaiser, M. Bavar-
+ian, C. Winter, P. Tillet, F. P. Such, D. Cum-
+mings, M. Plappert, F. Chantzis, E. Barnes,
+A. Herbert-Voss, W. H. Guss, A. Nichol, A. Paino,
+N. Tezak, J. Tang, I. Babuschkin, S. Balaji,
+S. Jain, W. Saunders, C. Hesse, A. N. Carr,
+J. Leike, J. Achiam, V. Misra, E. Morikawa,
+A. Radford, M. Knight, M. Brundage, M. Murati,
+K. Mayer, P. Welinder, B. McGrew, D. Amodei,
+S. McCandlish, I. Sutskever, and W. Zaremba.
+Evaluating large language models trained on
+code. CoRR, abs/2107.03374, 2021.
+S. Chen, S. Wong, L. Chen, and Y. Tian. Extend-
+ing context window of large language mod-
+els via positional interpolation. arXiv preprint
+arXiv:2306.15595, 2023.
+X. Chen, H. Fang, T.-Y. Lin, R. Vedantam, S. Gupta,
+P. Dollár, and C. L. Zitnick.
+Microsoft coco
+captions: Data collection and evaluation server.
+ArXiv, abs/1504.00325, 2015.
+W.-L. Chiang, L. Zheng, Y. Sheng, A. N. An-
+gelopoulos, T. Li, D. Li, H. Zhang, B. Zhu,
+M. Jordan, J. E. Gonzalez, and I. Stoica. Chat-
+bot arena: An open platform for evaluating
+llms by human preference, 2024.
+F. Chollet. On the measure of intelligence. arXiv
+preprint arXiv:1911.01547, 2019.
+A. Chowdhery, S. Narang, J. Devlin, M. Bosma,
+G. Mishra, A. Roberts, P. Barham, H. W.
+Chung, C. Sutton, S. Gehrmann, P. Schuh,
+K. Shi, S. Tsvyashchenko, J. Maynez, A. Rao,
+P. Barnes, Y. Tay, N. Shazeer, V. Prabhakaran,
+E. Reif, N. Du, B. Hutchinson, R. Pope, J. Brad-
+bury, J. Austin, M. Isard, G. Gur-Ari, P. Yin,
+T. Duke, A. Levskaya, S. Ghemawat, S. Dev,
+H. Michalewski, X. Garcia, V. Misra, K. Robin-
+son, L. Fedus, D. Zhou, D. Ippolito, D. Luan,
+H. Lim, B. Zoph, A. Spiridonov, R. Sepassi,
+D. Dohan, S. Agrawal, M. Omernick, A. M. Dai,
+T. S. Pillai, M. Pellat, A. Lewkowycz, E. Moreira,
+R. Child, O. Polozov, K. Lee, Z. Zhou, X. Wang,
+B. Saeta, M. Diaz, O. Firat, M. Catasta, J. Wei,
+K. Meier-Hellstern, D. Eck, J. Dean, S. Petrov,
+and N. Fiedel. Palm: Scaling language model-
+ing with pathways, 2022.
+H. W. Chung, N. Constant, X. Garcia, A. Roberts,
+Y. Tay, S. Narang, 

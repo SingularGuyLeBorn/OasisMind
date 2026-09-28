@@ -1,0 +1,134 @@
+     {
+                            "name": "animations",
+                            "description": "Animations to set the pause state of.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "name": "paused",
+                            "description": "Paused state to set to.",
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                {
+                    "name": "setPlaybackRate",
+                    "description": "Sets the playback rate of the document timeline.",
+                    "parameters": [
+                        {
+                            "name": "playbackRate",
+                            "description": "Playback rate for animations on page",
+                            "type": "number"
+                        }
+                    ]
+                },
+                {
+                    "name": "setTiming",
+                    "description": "Sets the timing of an animation node.",
+                    "parameters": [
+                        {
+                            "name": "animationId",
+                            "description": "Animation id.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "duration",
+                            "description": "Duration of the animation.",
+                            "type": "number"
+                        },
+                        {
+                            "name": "delay",
+                            "description": "Delay of the animation.",
+                            "type": "number"
+                        }
+                    ]
+                }
+            ],
+            "events": [
+                {
+                    "name": "animationCanceled",
+                    "description": "Event for when an animation has been cancelled.",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "description": "Id of the animation that was cancelled.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "name": "animationCreated",
+                    "description": "Event for each animation that has been created.",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "description": "Id of the animation that was created.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "name": "animationStarted",
+                    "description": "Event for animation that has been started.",
+                    "parameters": [
+                        {
+                            "name": "animation",
+                            "description": "Animation that was started.",
+                            "$ref": "Animation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "domain": "Audits",
+            "description": "Audits domain allows investigation of page violations and possible improvements.",
+            "experimental": true,
+            "dependencies": [
+                "Network"
+            ],
+            "types": [
+                {
+                    "id": "AffectedCookie",
+                    "description": "Information about a cookie that is affected by an inspector issue.",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "name",
+                            "description": "The following three properties uniquely identify a cookie",
+                            "type": "string"
+                        },
+                        {
+                            "name": "path",
+                            "type": "string"
+                        },
+                        {
+                            "name": "domain",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "id": "AffectedRequest",
+                    "description": "Information about a request that is affected by an inspector issue.",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "requestId",
+                            "description": "The unique request id.",
+                            "$ref": "Network.RequestId"
+                        },
+                        {
+                            "name": "url",
+                            "optional": true,
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "id": "AffectedFrame",
+                    "description": "Information about the frame affected by an inspector issue.",
+                    "type": "object",
+                    "propert

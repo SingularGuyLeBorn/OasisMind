@@ -1,0 +1,88 @@
+redentialType.ACCESS_TOKEN,
+            clientId: id,
+            realm: authority.tenant,
+            target: ScopeSet.createSearchScopes(scopeSet.asArray()),
+        };
+        const accessTokens = cacheManager.getAccessTokensByFilter(accessTokenFilter, correlationId);
+        if (accessTokens.length < 1) {
+            return null;
+        }
+        else if (accessTokens.length > 1) {
+            throw createClientAuthError(multipleMatchingTokens);
+        }
+        return accessTokens[0];
+    }
+    /**
+     * Makes a network call to request the token from the service
+     * @param request - CommonClientCredentialRequest provided by the developer
+     * @param authority - authority object
+     */
+    async executeTokenRequest(request, authority, refreshAccessToken) {
+        let serverTokenResponse;
+        let reqTimestamp;
+        if (this.appTokenProvider) {
+            this.logger.info("Using appTokenProvider extensibility.");
+            const appTokenPropviderParameters = {
+                correlationId: request.correlationId,
+                tenantId: this.config.authOptions.authority.tenant,
+                scopes: request.scopes,
+                claims: request.claims,
+            };
+            reqTimestamp = nowSeconds();
+            const appTokenProviderResult = await this.appTokenProvider(appTokenPropviderParameters);
+            serverTokenResponse = {
+                access_token: appTokenProviderResult.accessToken,
+                expires_in: appTokenProviderResult.expiresInSeconds,
+                refresh_in: appTokenProviderResult.refreshInSeconds,
+                token_type: AuthenticationScheme.BEARER,
+            };
+        }
+        else {
+            const queryParametersString = this.createTokenQueryParameters(request);
+            const endpoint = UrlString.appendQueryString(authority.tokenEndpoint, queryParametersString);
+            const requestBody = await this.createTokenRequestBody(request);
+            const headers = this.createTokenRequestHeaders();
+            const thumbprint = {
+                clientId: this.config.authOptions.clientId,
+                authority: request.authority,
+                scopes: request.scopes,
+                claims: request.claims,
+                authenticationScheme: request.authenticationScheme,
+                resourceRequestMethod: request.resourceRequestMethod,
+                resourceRequestUri: request.resourceRequestUri,
+                shrClaims: request.shrClaims,
+                sshKid: request.sshKid,
+            };
+            this.logger.info("Sending token request to endpoint: " + authority.tokenEndpoint);
+            reqTimestamp = nowSeconds();
+            const response = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
+            serverTokenResponse = response.body;
+            serverTokenResponse.status = response.status;
+        }
+        const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
+        responseHandler.validateTokenResponse(serverTokenResponse, refreshAccessToken);
+        const tokenResponse = await responseHandler.handleServerTokenResponse(serverTokenResponse, this.authority, reqTimestamp, request, ApiId.acquireTokenByClientCredential);
+        return tokenResponse;
+    }
+    /**
+     * generate the request to the server in the acceptable format
+     * @param request - CommonClientCredentialRequest provided by the developer
+     */
+    async createTokenRequestBody(request) {
+        const parameters = new Map();
+        addClientId(parameters, this.config.authOptions.clientId);
+        addScopes(parameters, request.scopes, false);
+        addGrantType(parameters, GrantType.CLIENT_CREDENTIALS_GRANT);
+        addLibraryInfo(parameters, this.config.libraryInfo);
+        addApplicationTelemetry(parameters, this.config.telemetry.application);
+        addThrottling(parameters);
+        if (this.serverTelemetryManager) {
+            addServerTelemetry(parameters, this.serverTelemetryManager);
+        }
+        const correlationId = request.correlationId ||
+            this.config.cryptoInterface.createNewGuid();
+        addCorrelationId(parameters, correlationId);
+        if (this.config.clientCredentials.clientSecret) {
+            addClientSecret(parameters, this.config.clientCredentials.clientSecret);
+        }
+        // Use clientAssertion from request, fallback to client assertion in base con

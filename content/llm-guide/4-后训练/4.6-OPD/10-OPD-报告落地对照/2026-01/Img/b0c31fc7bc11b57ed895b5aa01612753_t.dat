@@ -1,0 +1,77 @@
+S.NULL: {
+                this._err(error_codes_js_1.ERR.unexpectedNullCharacter);
+                this.state = State.SCRIPT_DATA_ESCAPED;
+                this._emitChars(unicode_js_1.REPLACEMENT_CHARACTER);
+                break;
+            }
+            case unicode_js_1.CODE_POINTS.EOF: {
+                this._err(error_codes_js_1.ERR.eofInScriptHtmlCommentLikeText);
+                this._emitEOFToken();
+                break;
+            }
+            default: {
+                this.state = State.SCRIPT_DATA_ESCAPED;
+                this._emitCodePoint(cp);
+            }
+        }
+    }
+    // Script data escaped less-than sign state
+    //------------------------------------------------------------------
+    _stateScriptDataEscapedLessThanSign(cp) {
+        if (cp === unicode_js_1.CODE_POINTS.SOLIDUS) {
+            this.state = State.SCRIPT_DATA_ESCAPED_END_TAG_OPEN;
+        }
+        else if (isAsciiLetter(cp)) {
+            this._emitChars('<');
+            this.state = State.SCRIPT_DATA_DOUBLE_ESCAPE_START;
+            this._stateScriptDataDoubleEscapeStart(cp);
+        }
+        else {
+            this._emitChars('<');
+            this.state = State.SCRIPT_DATA_ESCAPED;
+            this._stateScriptDataEscaped(cp);
+        }
+    }
+    // Script data escaped end tag open state
+    //------------------------------------------------------------------
+    _stateScriptDataEscapedEndTagOpen(cp) {
+        if (isAsciiLetter(cp)) {
+            this.state = State.SCRIPT_DATA_ESCAPED_END_TAG_NAME;
+            this._stateScriptDataEscapedEndTagName(cp);
+        }
+        else {
+            this._emitChars('</');
+            this.state = State.SCRIPT_DATA_ESCAPED;
+            this._stateScriptDataEscaped(cp);
+        }
+    }
+    // Script data escaped end tag name state
+    //------------------------------------------------------------------
+    _stateScriptDataEscapedEndTagName(cp) {
+        if (this.handleSpecialEndTag(cp)) {
+            this._emitChars('</');
+            this.state = State.SCRIPT_DATA_ESCAPED;
+            this._stateScriptDataEscaped(cp);
+        }
+    }
+    // Script data double escape start state
+    //------------------------------------------------------------------
+    _stateScriptDataDoubleEscapeStart(cp) {
+        if (this.preprocessor.startsWith(unicode_js_1.SEQUENCES.SCRIPT, false) &&
+            isScriptDataDoubleEscapeSequenceEnd(this.preprocessor.peek(unicode_js_1.SEQUENCES.SCRIPT.length))) {
+            this._emitCodePoint(cp);
+            for (let i = 0; i < unicode_js_1.SEQUENCES.SCRIPT.length; i++) {
+                this._emitCodePoint(this._consume());
+            }
+            this.state = State.SCRIPT_DATA_DOUBLE_ESCAPED;
+        }
+        else if (!this._ensureHibernation()) {
+            this.state = State.SCRIPT_DATA_ESCAPED;
+            this._stateScriptDataEscaped(cp);
+        }
+    }
+    // Script data double escaped state
+    //------------------------------------------------------------------
+    _stateScriptDataDoubleEscaped(cp) {
+        switch (cp) {
+   

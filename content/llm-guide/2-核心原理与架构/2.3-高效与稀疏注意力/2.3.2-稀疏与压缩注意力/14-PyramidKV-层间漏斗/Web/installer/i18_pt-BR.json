@@ -1,0 +1,8 @@
+﻿{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "DOWNLOAD",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "LEITURA",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "GRAVAÇÃO",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "OPERAÇÕES",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "de"
+}

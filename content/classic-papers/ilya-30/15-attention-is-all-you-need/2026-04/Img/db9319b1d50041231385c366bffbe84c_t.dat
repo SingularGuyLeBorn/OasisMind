@@ -1,0 +1,145 @@
+fuses a valid signature with no subject", () => {
+		expect(
+			interpretAuthenticodeReport({ status: "Valid", subject: "" })
+		).toMatchObject({ kind: "unverifiable" });
+	});
+});
+
+describe("derived enforcement", () => {
+	it("enforces only when the client itself is pinned-signed", () => {
+		expect(
+			derivePolicyFromClientVerdict({
+				kind: "trusted",
+				subject: "Anysphere, Inc.",
+			})
+		).toBe("enforce");
+		for (const verdict of [
+			{ kind: "unsigned", detail: "NotSigned" },
+			{ kind: "untrusted-signer", subject: "Contoso Ltd." },
+			{ kind: "unverifiable", detail: "boom" },
+		] as const) {
+			expect(derivePolicyFromClientVerdict(verdict)).toBe("audit");
+		}
+	});
+
+	it("blocks an unpinned sidecar under enforce and admits it under audit", () => {
+		const ctx = createContext();
+		const unpinned = {
+			imagePath: String.raw`C:\Cursor\cursor-cua-sidecar.exe`,
+			verdict: { kind: "untrusted-signer", subject: "Contoso Ltd." },
+		} as const;
+
+		expect(() =>
+			enforceSidecarImageSigner(ctx, { ...unpinned, policy: "enforce" })
+		).toThrow('is signed by Contoso Ltd., not "Anysphere, Inc."');
+		expect(() =>
+			enforceSidecarImageSigner(ctx, { ...unpinned, policy: "audit" })
+		).not.toThrow();
+		// A pinned sidecar is admitted regardless of the policy.
+		expect(() =>
+			enforceSidecarImageSigner(ctx, {
+				imagePath: unpinned.imagePath,
+				verdict: { kind: "trusted", subject: "Anysphere, Inc." },
+				policy: "enforce",
+			})
+		).not.toThrow();
+	});
+
+	it("describes each verdict for the log", () => {
+		expect(
+			describeSignerVerdict({ kind: "unsigned", detail: "NotSigned" })
+		).toContain("NotSigned");
+	});
+});
+
+/**
+ * The escape hatch exists so the local testing recipe (an unsigned, locally
+ * built sidecar in the dev-install slot, driven by a signed Cursor) survives
+ * enforcement. Everything about it is deliberately narrow: exact value, two
+ * sources, a warning on every launch, and a refusal that names it.
+ */
+describe("developer escape hatch", () => {
+	const unsigned = { kind: "unsigned", detail: "NotSigned" } as const;
+	const devImage = String.raw`C:\Users\jdoe\.cursor\cursor-computer-use\cursor-cua-sidecar.exe`;
+	const enabled = { [ALLOW_UNSIGNED_SIDECAR_ENV]: "1" };
+
+	function recordingContext() {
+		const entries: LogEntry[] = [];
+		const ctx = createContext().with(loggerKey, {
+			log: (_ctx, entry) => {
+				entries.push(entry);
+			},
+		});
+		return { ctx, entries };
+	}
+
+	it("is the variable CURSOR_CUA_ALLOW_UNSIGNED_SIDECAR", () => {
+		expect(ALLOW_UNSIGNED_SIDECAR_ENV).toBe("CURSOR_CUA_ALLOW_UNSIGNED_SIDECAR");
+	});
+
+	it.each(["dev-install", "env-override"] as const)(
+		"applies to the %s source only when the variable is exactly 1",
+		source => {
+			expect(developerUnsignedSidecarAllowed(source, enabled)).toBe(true);
+			for (const value of ["true", "yes", "on", "0", "", " 1", "1 ", "11"]) {
+				expect(
+					developerUnsignedSidecarAllowed(source, {
+						[ALLOW_UNSIGNED_SIDECAR_ENV]: value,
+					}),
+					`value ${JSON.stringify(value)}`
+				).toBe(false);
+			}
+			expect(developerUnsignedSidecarAllowed(source, {})).toBe(false);
+		}
+	);
+
+	it("never applies to the sidecar shipped inside the Cursor install", () => {
+		expect(developerUnsignedSidecarAllowed("embedded", enabled)).toBe(false);
+	});
+
+	it("never applies to a release the client downloaded itself", () => {
+		expect(developerUnsignedSidecarAllowed("download-cache", enabled)).toBe(false);
+		const { ctx, entries } = recordingContext();
+		expect(() =>
+			enforceSidecarImageSigner(ctx, {
+				imagePath: String.raw`C:\Users\jdoe\.cursor\computer-use-sidecar\cursor-cua-sidecar.exe`,
+				verdict: unsigned,
+				policy: "enforce",
+				source: "download-cache",
+				env: enabled,
+			})
+		).toThrow("refusing to launch");
+		expect(entries).toEqual([]);
+	});
+
+	it("refuses with the unsigned_sidecar code so the remedy reaches the user", () => {
+		const { ctx } = recordingContext();
+		let refusal: unknown;
+		try {
+			enforceSidecarImageSigner(ctx, {
+				imagePath: devImage,
+				verdict: unsigned,
+				policy: "enforce",
+				source: "dev-install",
+				env: {},
+			});
+		} catch (error) {
+			refusal = error;
+		}
+		expect(refusal).toBeInstanceOf(WindowsSidecarUnavailableError);
+		expect((refusal as WindowsSidecarUnavailableError).failure).toMatchObject({
+			code: "unsigned_sidecar",
+			retryable: false,
+		});
+		expect((refusal as Error).message).toContain("[unsigned_sidecar]");
+		expect((refusal as Error).message).toContain(`${ALLOW_UNSIGNED_SIDECAR_ENV}=1`);
+	});
+
+	it("launches an unpinned dev-install sidecar under enforce and says so", () => {
+		const { ctx, entries } = recordingContext();
+
+		expect(() =>
+			enforceSidecarImageSigner(ctx, {
+				imagePath: devImage,
+				verdict: unsigned,
+				pol

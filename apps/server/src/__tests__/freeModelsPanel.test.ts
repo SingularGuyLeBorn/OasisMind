@@ -1,0 +1,208 @@
+﻿import { describe, expect, it, beforeEach, vi } from "vitest";
+import {
+  projectOpenRouterFreeModel,
+  listFreellmChannels,
+} from "../infra/freeKeysSync.js";
+import {
+  __resetFreeLlmRuntimeForTests,
+  setOpenRouterFreeModelCatalog,
+  filterOpenRouterFreeModels,
+  setFreellmGatewayRuntime,
+} from "../infra/freeLlmRuntime.js";
+import { executeNativeTool } from "../infra/nativeTools.js";
+import { createNativeCtx, createTempProjectDir } from "./helpers/toolTestFixtures.js";
+
+describe("freeModels catalog", () => {
+  beforeEach(() => {
+    __resetFreeLlmRuntimeForTests();
+  });
+
+  it("projectOpenRouterFreeModel 只接受 :free 并投影元数据", () => {
+    expect(
+      projectOpenRouterFreeModel({
+        id: "meta-llama/llama-3.2-3b-instruct",
+        name: "Llama",
+      }),
+    ).toBeNull();
+
+    const m = projectOpenRouterFreeModel({
+      id: "meta-llama/llama-3.2-3b-instruct:free",
+      name: "Llama 3.2 3B (free)",
+      description: "A free model",
+      context_length: 131072,
+      architecture: { modality: "text->text", tokenizer: "Llama3" },
+      pricing: { prompt: "0", completion: "0" },
+      top_provider: { name: "Together" },
+    });
+    expect(m).toMatchObject({
+      id: "meta-llama/llama-3.2-3b-instruct:free",
+      name: "Llama 3.2 3B (free)",
+      contextLength: 131072,
+      modality: "text->text",
+      pricingPrompt: "0",
+      topProvider: "Together",
+    });
+  });
+
+  it("filterOpenRouterFreeModels 支持搜索与多模态筛选", () => {
+    setOpenRouterFreeModelCatalog({
+      syncedAt: new Date().toISOString(),
+      models: [
+        {
+          id: "a/text:free",
+          name: "Text Only",
+          modality: "text->text",
+          contextLength: 8_000,
+        },
+        {
+          id: "b/vision:free",
+          name: "Vision",
+          description: "sees images",
+          modality: "text+image->text",
+          contextLength: 32_000,
+        },
+      ],
+    });
+
+    expect(filterOpenRouterFreeModels({ q: "vision" })).toHaveLength(1);
+    expect(filterOpenRouterFreeModels({ modality: "multimodal" }).map((m) => m.id)).toEqual([
+      "b/vision:free",
+    ]);
+    expect(filterOpenRouterFreeModels({ sort: "context_asc" })[0]!.id).toBe("a/text:free");
+  });
+
+  it("listFreellmChannels 永不返回 value 字段", async () => {
+    setFreellmGatewayRuntime({
+      apiKey: "sk-secret-should-not-leak",
+      baseUrl: "https://aiapiv2.pekpik.com/v1",
+      model: "smart-chat",
+      credentialId: "cred-1",
+      syncedAt: new Date().toISOString(),
+    });
+
+    const prisma = {
+      credential: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "cred-1",
+            name: "free-auto-smart-chat-xxxxxxxx",
+            metadata: JSON.stringify({
+              source: "free",
+              model: "smart-chat",
+              provider: "auto",
+              baseUrl: "https://aiapiv2.pekpik.com/v1",
+              budget: "$20",
+              validated: true,
+              syncedAt: new Date().toISOString(),
+            }),
+            expiresAt: null,
+            lastUsedAt: null,
+            value: "sk-secret-should-not-leak",
+          },
+          {
+            id: "cred-2",
+            name: "paid-key",
+            metadata: JSON.stringify({ source: "env" }),
+            expiresAt: null,
+            lastUsedAt: null,
+            value: "sk-other",
+          },
+        ]),
+      },
+    };
+
+    const items = await listFreellmChannels(prisma as any);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.model).toBe("smart-chat");
+    expect(items[0]!.isRuntime).toBe(true);
+    expect(JSON.stringify(items)).not.toContain("sk-secret");
+    expect(JSON.stringify(items)).not.toContain("value");
+    expect(items[0]).not.toHaveProperty("value");
+  });
+
+  it("free_models_list：manager 可读目录；结果不含明文 key；sub 被拒", async () => {
+    const root = createTempProjectDir();
+    setOpenRouterFreeModelCatalog({
+      syncedAt: "2026-07-18T00:00:00.000Z",
+      models: [
+        {
+          id: "vendor/flash:free",
+          name: "Flash Free",
+          description: "x".repeat(400),
+          modality: "text->text",
+          contextLength: 128_000,
+        },
+        {
+          id: "vendor/vision:free",
+          name: "Vision Free",
+          modality: "text+image->text",
+          contextLength: 64_000,
+        },
+      ],
+    });
+    setFreellmGatewayRuntime({
+      apiKey: "sk-secret-runtime",
+      baseUrl: "https://example.com/v1",
+      model: "gateway-model",
+      credentialId: "cred-rt",
+      syncedAt: new Date().toISOString(),
+    });
+
+    const prisma = {
+      credential: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "cred-rt",
+            name: "free-channel",
+            metadata: JSON.stringify({
+              source: "free",
+              model: "gateway-model",
+              provider: "auto",
+              validated: true,
+            }),
+            expiresAt: null,
+            lastUsedAt: null,
+            value: "sk-secret-runtime",
+          },
+        ]),
+      },
+    };
+
+    const managerCtx = {
+      ...createNativeCtx(root, { prisma: prisma as any }),
+      prisma: prisma as any,
+      agentSnapshot: {
+        id: "mgr-1",
+        model: "deepseek-v4-flash",
+        systemPrompt: "",
+        tools: ["native:free_models_list"],
+        tier: "manager",
+        workspaceId: "ws-a",
+      },
+    };
+
+    const result = (await executeNativeTool(
+      "free_models_list",
+      { q: "flash", limit: 10 },
+      managerCtx as any,
+    )) as any;
+
+    expect(result.openRouter.totalMatched).toBe(1);
+    expect(result.openRouter.items[0].id).toBe("vendor/flash:free");
+    expect(result.openRouter.items[0].description.length).toBeLessThanOrEqual(240);
+    expect(result.freellm.runtimeModel).toBe("gateway-model");
+    expect(JSON.stringify(result)).not.toContain("sk-secret");
+
+    const subCtx = {
+      ...managerCtx,
+      agentSnapshot: { ...managerCtx.agentSnapshot, id: "sub-1", tier: "sub" },
+    };
+    const denied = (await executeNativeTool("free_models_list", {}, subCtx as any)) as {
+      error?: string;
+      permissionDenied?: boolean;
+      code?: string;
+    };
+    expect(denied.code === "NOT_VISIBLE" || denied.permissionDenied).toBe(true);
+    expect(denied.error).toMatch(/TIER_INSUFFICIENT|VisibleSet/);
+  });
+});

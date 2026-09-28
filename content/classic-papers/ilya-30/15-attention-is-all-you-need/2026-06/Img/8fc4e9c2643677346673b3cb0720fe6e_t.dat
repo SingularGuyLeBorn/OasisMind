@@ -1,0 +1,151 @@
+ng(input, debug) : [undefined];
+  const [responseBody, responseWarning] = options.networkCaptureBodies ? _getXhrResponseBody(xhr) : [undefined];
+
+  const request = buildNetworkRequestOrResponse(networkRequestHeaders, requestBodySize, requestBody);
+  const response = buildNetworkRequestOrResponse(networkResponseHeaders, responseBodySize, responseBody);
+
+  return {
+    startTimestamp,
+    endTimestamp,
+    url,
+    method,
+    statusCode,
+    request: requestWarning ? mergeWarning(request, requestWarning) : request,
+    response: responseWarning ? mergeWarning(response, responseWarning) : response,
+  };
+}
+
+function _getXhrResponseBody(xhr) {
+  // We collect errors that happen, but only log them if we can't get any response body
+  const errors = [];
+
+  try {
+    return [xhr.responseText];
+  } catch (e) {
+    errors.push(e);
+  }
+
+  // Try to manually parse the response body, if responseText fails
+  try {
+    return _parseXhrResponse(xhr.response, xhr.responseType);
+  } catch (e) {
+    errors.push(e);
+  }
+
+  DEBUG_BUILD && debug.warn('Failed to get xhr response body', ...errors);
+
+  return [undefined];
+}
+
+/**
+ * Get the string representation of the XHR response.
+ * Based on MDN, these are the possible types of the response:
+ * string
+ * ArrayBuffer
+ * Blob
+ * Document
+ * POJO
+ *
+ * Exported only for tests.
+ */
+function _parseXhrResponse(
+  body,
+  responseType,
+) {
+  try {
+    if (typeof body === 'string') {
+      return [body];
+    }
+
+    if (body instanceof Document) {
+      return [body.body.outerHTML];
+    }
+
+    if (responseType === 'json' && body && typeof body === 'object') {
+      return [JSON.stringify(body)];
+    }
+
+    if (!body) {
+      return [undefined];
+    }
+  } catch (error) {
+    DEBUG_BUILD && debug.exception(error, 'Failed to serialize body', body);
+    return [undefined, 'BODY_PARSE_ERROR'];
+  }
+
+  DEBUG_BUILD && debug.log('Skipping network body because of body type', body);
+
+  return [undefined, 'UNPARSEABLE_BODY_TYPE'];
+}
+
+function _getBodySize(
+  body,
+  responseType,
+) {
+  try {
+    const bodyStr = responseType === 'json' && body && typeof body === 'object' ? JSON.stringify(body) : body;
+    return getBodySize(bodyStr);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * This method does two things:
+ * - It enriches the regular XHR/fetch breadcrumbs with request/response size data
+ * - It captures the XHR/fetch breadcrumbs to the replay
+ *   (enriching it with further data that is _not_ added to the regular breadcrumbs)
+ */
+function handleNetworkBreadcrumbs(replay) {
+  const client = getClient();
+
+  try {
+    const {
+      networkDetailAllowUrls,
+      networkDetailDenyUrls,
+      networkCaptureBodies,
+      networkRequestHeaders,
+      networkResponseHeaders,
+    } = replay.getOptions();
+
+    const options = {
+      replay,
+      networkDetailAllowUrls,
+      networkDetailDenyUrls,
+      networkCaptureBodies,
+      networkRequestHeaders,
+      networkResponseHeaders,
+    };
+
+    if (client) {
+      client.on('beforeAddBreadcrumb', (breadcrumb, hint) => beforeAddNetworkBreadcrumb(options, breadcrumb, hint));
+    }
+  } catch {
+    // Do nothing
+  }
+}
+
+/** just exported for tests */
+function beforeAddNetworkBreadcrumb(
+  options,
+  breadcrumb,
+  hint,
+) {
+  if (!breadcrumb.data) {
+    return;
+  }
+
+  try {
+    if (_isXhrBreadcrumb(breadcrumb) && _isXhrHint(hint)) {
+      // This has to be sync, as we need to ensure the breadcrumb is enriched in the same tick
+      // Because the hook runs synchronously, and the breadcrumb is afterwards passed on
+      // So any async mutations to it will not be reflected in the final breadcrumb
+      enrichXhrBreadcrumb(breadcrumb, hint);
+
+      // This call should not reject
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      captureXhrBreadcrumbToReplay(breadcrumb, hint, options);
+    }
+
+    if (_isFetchBreadcrumb(breadcrumb) && _isFetchHint(hint)) {
+      // This has to be sync, as we need to ensure the breadcrumb is enrich

@@ -1,0 +1,573 @@
+"use client";
+
+import { createElement, type ReactElement, type ReactNode } from "react";
+
+import {
+  BookOpen,
+  Bot,
+  Brain,
+  CalendarClock,
+  CircleX,
+  Code,
+  Code2,
+  Command,
+  CornerDownLeft,
+  Cpu,
+  Eye,
+  FileText,
+  Files,
+  FolderOpen,
+  GitBranch,
+  HardDrive,
+  Hammer,
+  Keyboard,
+  MessageSquare,
+  PenLine,
+  Play,
+  ScrollText,
+  Search,
+  Settings,
+  Slash,
+  Sparkles,
+  Terminal,
+  Wand2,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+/** Lucide 图标名 → 组件（Skill.icon 等 DB 字段只允许存名称，禁止存 emoji） */
+const LUCIDE_ICON_MAP: Record<string, LucideIcon> = {
+  BookOpen,
+  Bot,
+  Brain,
+  CalendarClock,
+  Code,
+  Code2,
+  Cpu,
+  Eye,
+  FileText,
+  Files,
+  FolderOpen,
+  GitBranch,
+  HardDrive,
+  Hammer,
+  MessageSquare,
+  PenLine,
+  Play,
+  ScrollText,
+  Search,
+  Settings,
+  Sparkles,
+  Terminal,
+  Wand2,
+  Zap,
+};
+
+export function resolveLucideIcon(name?: string | null, fallback: LucideIcon = Wand2): LucideIcon {
+  if (!name) return fallback;
+  const trimmed = name.trim();
+  if (!trimmed || !/^[A-Za-z][A-Za-z0-9]*$/.test(trimmed)) return fallback;
+  return LUCIDE_ICON_MAP[trimmed] ?? fallback;
+}
+
+export function LucideIconByName({
+  name,
+  className,
+  fallback = Wand2,
+}: {
+  name?: string | null;
+  className?: string;
+  fallback?: LucideIcon;
+}) {
+  const Icon = resolveLucideIcon(name, fallback);
+  return createElement(Icon, { className, "aria-hidden": true });
+}
+
+/** 见微 · OasisMind 品牌标变体（静态稿见 /icons/logo/*.svg） */
+export type OasisMindLogoVariant =
+  | "ink-seed"
+  | "twin-leaf"
+  | "star-ripple"
+  | "folio-spark"
+  | "micro-glyph";
+
+type LogoSvgProps = {
+  className?: string;
+  size?: number;
+};
+
+function LogoFrame({
+  className,
+  size = 32,
+  children,
+}: LogoSvgProps & { children: ReactNode }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      role="img"
+      aria-label="见微 OasisMind"
+    >
+      {/* 晴空玻璃底：品牌淡染 + 细描边，替代旧暖色实底 */}
+      <rect
+        width="32"
+        height="32"
+        rx="8"
+        className="fill-[color-mix(in_srgb,var(--om-brand)_9%,var(--om-bg-alt,#ffffff))]"
+      />
+      <rect
+        x="0.5"
+        y="0.5"
+        width="31"
+        height="31"
+        rx="7.5"
+        className="stroke-[color-mix(in_srgb,var(--om-brand)_28%,transparent)]"
+        strokeWidth="1"
+      />
+      {children}
+    </svg>
+  );
+}
+
+/**
+ * 微晶（默认）：绿洲开环（Oasis O / 见）框住中心微晶（微）——
+ * 开口朝右上，一束微芒外射暗示「知著」。
+ */
+function LogoInkSeed({ className, size }: LogoSvgProps) {
+  return (
+    <LogoFrame className={className} size={size}>
+      {/* 外涟漪（淡） */}
+      <circle
+        cx="16"
+        cy="16"
+        r="11.15"
+        className="stroke-[var(--om-brand,#0087eb)]"
+        strokeWidth="0.9"
+        opacity="0.18"
+      />
+      {/* 绿洲开环 */}
+      <path
+        d="M22.6 8.4C19.1 5.6 12.9 5.7 9.5 9.2C5.8 13 5.9 19.3 9.7 23.1C13.6 26.9 19.9 26.6 23.6 22.7C25.4 20.9 26.6 18.4 26.6 16.1"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      {/* 中心微晶：竖菱三切面（顶亮 / 右深 / 左中）——不用纯白，浅底也能看清 */}
+      <path
+        d="M16 11.6L19.35 16L16 16.75L12.65 16Z"
+        className="fill-[var(--om-brand-light,#5bb4f5)]"
+      />
+      <path d="M16 16.75L19.35 16L16 20.4Z" className="fill-[var(--om-brand-deep,#005a9e)]" />
+      <path d="M16 16.75L12.65 16L16 20.4Z" className="fill-[var(--om-brand,#0087eb)]" />
+      {/* 顶角高光点 */}
+      <circle cx="16" cy="13.15" r="0.7" fill="white" opacity="0.85" />
+      {/* 开口微芒：单束外射 + 端点 */}
+      <path
+        d="M23.4 8L26.1 5.6"
+        className="stroke-[var(--om-brand,#0087eb)]"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <circle cx="26.35" cy="5.35" r="0.9" className="fill-[var(--om-brand-light,#5bb4f5)]" />
+    </LogoFrame>
+  );
+}
+
+/** 双叶：两片绿洲叶合拢成 O */
+function LogoTwinLeaf({ className, size }: LogoSvgProps) {
+  return (
+    <LogoFrame className={className} size={size}>
+      <path
+        d="M16 5.5C10 7 6.5 12 7 17C7.5 22.5 11.5 26.5 16 28C13 23 12.5 17 16 12Z"
+        className="fill-[var(--om-brand,#0087eb)]"
+        opacity="0.88"
+      />
+      <path
+        d="M16 5.5C22 7 25.5 12 25 17C24.5 22.5 20.5 26.5 16 28C19 23 19.5 17 16 12Z"
+        className="fill-[var(--om-brand-deep,#005a9e)]"
+        opacity="0.92"
+      />
+      <path d="M16 10V25" stroke="white" strokeWidth="0.9" strokeLinecap="round" opacity="0.4" />
+      <circle cx="16" cy="14.5" r="1.7" fill="white" />
+      <circle cx="16" cy="14.5" r="0.8" className="fill-[var(--om-brand-deep,#005a9e)]" />
+    </LogoFrame>
+  );
+}
+
+/** 星涟：四角星微核 + 单圈涟漪 */
+function LogoStarRipple({ className, size }: LogoSvgProps) {
+  return (
+    <LogoFrame className={className} size={size}>
+      <circle
+        cx="16"
+        cy="16"
+        r="10"
+        className="stroke-[var(--om-brand,#0087eb)]"
+        strokeWidth="1.15"
+        opacity="0.35"
+      />
+      <path
+        d="M16 7C16.6 12 17.5 14 21.5 16C17.5 18 16.6 20 16 25C15.4 20 14.5 18 10.5 16C14.5 14 15.4 12 16 7Z"
+        className="fill-[var(--om-brand-deep,#005a9e)]"
+      />
+      <circle cx="16" cy="16" r="1.4" fill="white" opacity="0.9" />
+      <circle cx="24" cy="9.5" r="0.7" className="fill-[var(--om-brand,#0087eb)]" opacity="0.55" />
+    </LogoFrame>
+  );
+}
+
+/** 书页微光：展开书页 + 中心微点 */
+function LogoFolioSpark({ className, size }: LogoSvgProps) {
+  return (
+    <LogoFrame className={className} size={size}>
+      <path d="M15 7L7 9V23L15 25Z" className="fill-[var(--om-brand,#0087eb)]" opacity="0.85" />
+      <path d="M17 7L25 9V23L17 25Z" className="fill-[var(--om-brand-deep,#005a9e)]" opacity="0.92" />
+      <path d="M16 7.5V24.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+      <circle cx="16" cy="14.5" r="2.3" fill="white" />
+      <circle cx="16" cy="14.5" r="1.05" className="fill-[var(--om-brand-deep,#005a9e)]" />
+    </LogoFrame>
+  );
+}
+
+/** 微字几何：抽象「微」旁 + 右核 */
+function LogoMicroGlyph({ className, size }: LogoSvgProps) {
+  return (
+    <LogoFrame className={className} size={size}>
+      <path
+        d="M8.5 8.5V23.5M8.5 13H13"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <rect
+        x="14.5"
+        y="9"
+        width="11.5"
+        height="14"
+        rx="4"
+        className="stroke-[var(--om-brand-deep,#005a9e)]"
+        strokeWidth="1.75"
+      />
+      <circle cx="20.2" cy="16" r="2.6" className="fill-[var(--om-brand,#0087eb)]" />
+      <circle cx="19.4" cy="15.2" r="0.85" fill="white" opacity="0.88" />
+    </LogoFrame>
+  );
+}
+
+const LOGO_VARIANTS: Record<
+  OasisMindLogoVariant,
+  (props: LogoSvgProps) => ReactElement
+> = {
+  "ink-seed": LogoInkSeed,
+  "twin-leaf": LogoTwinLeaf,
+  "star-ripple": LogoStarRipple,
+  "folio-spark": LogoFolioSpark,
+  "micro-glyph": LogoMicroGlyph,
+};
+
+/**
+ * 见微 · OasisMind 品牌 Logo。
+ * 默认 ink-seed（微晶）；其余变体文件在 /public/icons/logo/
+ */
+export function OasisMindLogo({
+  className,
+  size = 32,
+  variant = "ink-seed",
+}: LogoSvgProps & { variant?: OasisMindLogoVariant }) {
+  const Comp = LOGO_VARIANTS[variant] ?? LogoInkSeed;
+  return <Comp className={className} size={size} />;
+}
+
+export const OASISMIND_LOGO_VARIANTS: {
+  id: OasisMindLogoVariant;
+  label: string;
+  href: string;
+}[] = [
+  { id: "ink-seed", label: "微晶", href: "/icons/logo/01-ink-seed.svg" },
+  { id: "twin-leaf", label: "双叶", href: "/icons/logo/02-twin-leaf.svg" },
+  { id: "star-ripple", label: "星涟", href: "/icons/logo/03-star-ripple.svg" },
+  { id: "folio-spark", label: "书页", href: "/icons/logo/04-folio-spark.svg" },
+  { id: "micro-glyph", label: "微字", href: "/icons/logo/05-micro-glyph.svg" },
+];
+
+/** 快捷键提示键帽 — 用 Lucide 图标，不用 ↑↓↵ 等字符 */
+export function KbdKey({
+  icon: Icon,
+  label,
+}: {
+  icon: LucideIcon;
+  label?: string;
+}) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--om-divider)] bg-[var(--om-bg)] px-1">
+      <Icon className="h-3 w-3" aria-hidden />
+      {label ? <span className="sr-only">{label}</span> : null}
+    </kbd>
+  );
+}
+
+const kbdBoxClass =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border border-[var(--om-divider)] bg-[var(--om-bg)] px-1";
+
+/** SVG 键帽字母 K — 非 Unicode 字符 */
+function SvgKeyK({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" className={className} aria-hidden>
+      <path
+        d="M2.5 2v8M2.5 6h3.5M6 2.5l3 3.5M6 9.5l3-3.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** ⌘/Ctrl + K 快捷键提示 */
+export function ShortcutCmdK({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-0.5", className)}>
+      <kbd className={kbdBoxClass}>
+        <Command className="h-3 w-3" aria-hidden />
+        <span className="sr-only">Command</span>
+      </kbd>
+      <kbd className={kbdBoxClass}>
+        <SvgKeyK className="h-3 w-3" />
+        <span className="sr-only">K</span>
+      </kbd>
+    </span>
+  );
+}
+
+/** Esc 关闭提示 — 用图标，不用 ESC 文本 */
+export function ShortcutEsc({ className }: { className?: string }) {
+  return (
+    <kbd className={cn(kbdBoxClass, className)}>
+      <CircleX className="h-3 w-3" aria-hidden />
+      <span className="sr-only">Escape</span>
+    </kbd>
+  );
+}
+
+/** SVG Ctrl 修饰键 — 非 Unicode 字符 */
+function SvgKeyCtrl({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 14 12" fill="none" className={className} aria-hidden>
+      <path
+        d="M2 3.5h4.5a1.5 1.5 0 1 1 0 3H4v2.5M2 3.5V9"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Ctrl + Enter 快捷键提示 */
+export function ShortcutCtrlEnter({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-0.5", className)}>
+      <kbd className={kbdBoxClass}>
+        <SvgKeyCtrl className="h-3 w-3.5" />
+        <span className="sr-only">Ctrl</span>
+      </kbd>
+      <kbd className={kbdBoxClass}>
+        <CornerDownLeft className="h-3 w-3" aria-hidden />
+        <span className="sr-only">Enter</span>
+      </kbd>
+    </span>
+  );
+}
+
+/** / + Skill 快捷键提示 */
+export function ShortcutSlashSkill({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-0.5", className)}>
+      <kbd className={kbdBoxClass}>
+        <Slash className="h-3 w-3" aria-hidden />
+        <span className="sr-only">斜杠</span>
+      </kbd>
+      <Wand2 className="h-3.5 w-3.5 text-[var(--om-text-3)]" aria-hidden />
+    </span>
+  );
+}
+
+/**
+ * 聊天快捷键提示 — 收成一枚键盘图标，悬停看完整说明。
+ * 避免在空输入框右上角堆一排 kbd（视觉噪音大、像第二套工具栏）。
+ */
+export function ChatShortcutHints({
+  isStreaming = false,
+  className,
+}: {
+  isStreaming?: boolean;
+  className?: string;
+}) {
+  return (
+    <TooltipProvider delay={200}>
+      <Tooltip>
+        <TooltipTrigger
+          className={cn(
+            "inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--om-text-3)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-2)]",
+            className,
+          )}
+          aria-label="快捷键说明"
+        >
+          <Keyboard className="h-4 w-4" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] space-y-1 px-3 py-2 text-left text-[11px] leading-relaxed">
+          <div>Enter · 换行</div>
+          <div>{isStreaming ? "Ctrl+Enter · 加入队列" : "Ctrl+Enter · 发送"}</div>
+          <div>/ · 选择 Skill</div>
+          <div>/compact · 压缩上下文</div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/** 统一 source key（platform-sync 用 screenshots 复数） */
+function normalizePlatformSource(source: string): string {
+  if (source === "screenshots") return "screenshot";
+  return source;
+}
+
+const PLATFORM_LABELS: Record<string, string> = {
+  zhihu: "知乎",
+  xhs: "小红书",
+  bilibili: "B站",
+  wechat: "微信",
+  screenshot: "截图",
+  url: "链接",
+};
+
+export function platformSourceLabel(source: string): string {
+  const key = normalizePlatformSource(source);
+  return PLATFORM_LABELS[key] ?? source;
+}
+
+/** 主题线稿：底 brand-soft，线 brand-deep；属性写死在 path 上，避免 g 透传异常 */
+function PlatformGlyph({ source }: { source: string }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  switch (source) {
+    case "zhihu":
+      return (
+        <>
+          <path
+            {...common}
+            d="M9 12c0-3.3 3-6 7-6s6.2 2.2 6.8 5.2A5 5 0 0 1 21 20.5h-1l-3 2.2.7-2.2A6.2 6.2 0 0 1 9 12z"
+          />
+          <path {...common} d="M14.5 10.6c.8-.8 2.2-.8 3 0 .6.6.6 1.5 0 2.1-.5.5-1 .7-1.3 1.3-.2.4-.3.8-.3 1.2" />
+          <circle cx="16" cy="18.2" r="0.9" fill="currentColor" />
+        </>
+      );
+    case "xhs":
+      return (
+        <>
+          <path
+            {...common}
+            d="M10 9h10a2 2 0 0 1 2 2v11.2c0 .5-.6.8-1 .5l-3.2-2.1H10a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2z"
+          />
+          <path {...common} d="M12.2 13.5h6.5M12.2 16.5h4.5" />
+        </>
+      );
+    case "bilibili":
+      return (
+        <>
+          <rect {...common} x="7.5" y="11.5" width="17" height="12" rx="2.8" />
+          <path {...common} d="M11.5 8.2l2.8 3M20.5 8.2l-2.8 3" />
+          <circle cx="13" cy="16.8" r="1" fill="currentColor" />
+          <circle cx="19" cy="16.8" r="1" fill="currentColor" />
+          <path {...common} d="M14 19.5c1 0.9 3 0.9 4 0" />
+        </>
+      );
+    case "wechat":
+      return (
+        <>
+          <path
+            {...common}
+            d="M11.5 9.5c-3.6 0-6.5 2.4-6.5 5.3 0 1.7.9 3.2 2.4 4.1l-.5 1.8 2.1-1.1c.7.2 1.5.3 2.3.3.4 0 .7 0 1.1-.1"
+          />
+          <path
+            {...common}
+            d="M15.2 15c0-2.8 2.8-5.1 6.3-5.1S27.8 12.2 27.8 15s-2.8 5.1-6.3 5.1c-.7 0-1.4-.1-2.1-.3l-2 1 .4-1.7c-1.4-1-2.2-2.4-2.2-4.1z"
+          />
+          <circle cx="19.4" cy="14.9" r="0.75" fill="currentColor" />
+          <circle cx="23.2" cy="14.9" r="0.75" fill="currentColor" />
+        </>
+      );
+    case "screenshot":
+      return (
+        <>
+          <rect {...common} x="7.5" y="10.8" width="17" height="12.5" rx="2.4" />
+          <circle {...common} cx="16" cy="17" r="3" />
+          <path {...common} d="M11.5 10.8l1-2h7l1 2" />
+        </>
+      );
+    case "url":
+      return (
+        <>
+          <path {...common} d="M13.2 19l-1.1 1.1a2.8 2.8 0 0 1-4-4l2.5-2.5a2.8 2.8 0 0 1 4 0" />
+          <path {...common} d="M18.8 13l1.1-1.1a2.8 2.8 0 0 1 4 4l-2.5 2.5a2.8 2.8 0 0 1-4 0" />
+          <path {...common} d="M13.8 18.2l4.4-4.4" />
+        </>
+      );
+    default:
+      return (
+        <>
+          <circle {...common} cx="16" cy="16" r="6.5" />
+          <path {...common} d="M16 13v3.2l2 1.2" />
+        </>
+      );
+  }
+}
+
+export function PlatformSourceIcon({
+  source,
+  size = 20,
+  className,
+  title,
+}: {
+  source: string;
+  size?: number;
+  className?: string;
+  title?: string;
+}) {
+  const key = normalizePlatformSource(source);
+  const label = PLATFORM_LABELS[key] ?? source;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("shrink-0 text-[var(--om-brand-deep)]", className)}
+      role="img"
+      aria-label={title ?? label}
+    >
+      <rect width="32" height="32" rx="8" fill="var(--om-brand-soft)" />
+      <PlatformGlyph source={key} />
+    </svg>
+  );
+}

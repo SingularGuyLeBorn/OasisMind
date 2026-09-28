@@ -1,0 +1,168 @@
+ion early by explicitly returning `false`.
+   *
+   * @private
+   * @param {Object} object The object to iterate over.
+   * @param {Function} iteratee The function invoked per iteration.
+   * @param {Function} keysFunc The function to get the keys of `object`.
+   * @returns {Object} Returns `object`.
+   */
+  var baseFor = createBaseFor();
+
+  /**
+   * The base implementation of `_.forOwn` without support for iteratee shorthands.
+   *
+   * @private
+   * @param {Object} object The object to iterate over.
+   * @param {Function} iteratee The function invoked per iteration.
+   * @returns {Object} Returns `object`.
+   */
+  function baseForOwn(object, iteratee) {
+    return object && baseFor(object, iteratee, keys);
+  }
+
+  /**
+   * The base implementation of `_.functions` which creates an array of
+   * `object` function property names filtered from `props`.
+   *
+   * @private
+   * @param {Object} object The object to inspect.
+   * @param {Array} props The property names to filter.
+   * @returns {Array} Returns the function names.
+   */
+  function baseFunctions(object, props) {
+    return baseFilter(props, function(key) {
+      return isFunction(object[key]);
+    });
+  }
+
+  /**
+   * The base implementation of `getTag` without fallbacks for buggy environments.
+   *
+   * @private
+   * @param {*} value The value to query.
+   * @returns {string} Returns the `toStringTag`.
+   */
+  function baseGetTag(value) {
+    return objectToString(value);
+  }
+
+  /**
+   * The base implementation of `_.gt` which doesn't coerce arguments.
+   *
+   * @private
+   * @param {*} value The value to compare.
+   * @param {*} other The other value to compare.
+   * @returns {boolean} Returns `true` if `value` is greater than `other`,
+   *  else `false`.
+   */
+  function baseGt(value, other) {
+    return value > other;
+  }
+
+  /**
+   * The base implementation of `_.isArguments`.
+   *
+   * @private
+   * @param {*} value The value to check.
+   * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+   */
+  var baseIsArguments = noop;
+
+  /**
+   * The base implementation of `_.isDate` without Node.js optimizations.
+   *
+   * @private
+   * @param {*} value The value to check.
+   * @returns {boolean} Returns `true` if `value` is a date object, else `false`.
+   */
+  function baseIsDate(value) {
+    return isObjectLike(value) && baseGetTag(value) == dateTag;
+  }
+
+  /**
+   * The base implementation of `_.isEqual` which supports partial comparisons
+   * and tracks traversed objects.
+   *
+   * @private
+   * @param {*} value The value to compare.
+   * @param {*} other The other value to compare.
+   * @param {boolean} bitmask The bitmask flags.
+   *  1 - Unordered comparison
+   *  2 - Partial comparison
+   * @param {Function} [customizer] The function to customize comparisons.
+   * @param {Object} [stack] Tracks traversed `value` and `other` objects.
+   * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+   */
+  function baseIsEqual(value, other, bitmask, customizer, stack) {
+    if (value === other) {
+      return true;
+    }
+    if (value == null || other == null || (!isObjectLike(value) && !isObjectLike(other))) {
+      return value !== value && other !== other;
+    }
+    return baseIsEqualDeep(value, other, bitmask, customizer, baseIsEqual, stack);
+  }
+
+  /**
+   * A specialized version of `baseIsEqual` for arrays and objects which performs
+   * deep comparisons and tracks traversed objects enabling objects with circular
+   * references to be compared.
+   *
+   * @private
+   * @param {Object} object The object to compare.
+   * @param {Object} other The other object to compare.
+   * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+   * @param {Function} customizer The function to customize comparisons.
+   * @param {Function} equalFunc The function to determine equivalents of values.
+   * @param {Object} [stack] Tracks traversed `object` and `other` objects.
+   * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+   */
+  function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
+    var objIsArr = isArray(object),
+        othIsArr = isArray(other),
+        objTag = objIsArr ? arrayTag : baseGetTag(object),
+        othTag = othIsArr ? arrayTag : baseGetTag(other);
+
+    objTag = objTag == argsTag ? objectTag : objTag;
+    othTag = othTag == argsTag ? objectTag : othTag;
+
+    var objIsObj = objTag == objectTag,
+        othIsObj = othTag == objectTag,
+        isSameTag = objTag == othTag;
+
+    stack || (stack = []);
+    var objStack = find(stack, function(entry) {
+      return entry[0] == object;
+    });
+    var othStack = find(stack, function(entry) {
+      return entry[0] == other;
+    });
+    if (objStack && othStack) {
+      return objStack[1] == other;
+    }
+    stack.push([object, other]);
+    stack.push([other, object]);
+    if (isSameTag && !objIsObj) {
+      var result = (objIsArr)
+        ? equalArrays(object, other, bitmask, customizer, equalFunc, stack)
+        : equalByTag(object, other, objTag, bitmask, customizer, equalFunc, stack);
+      stack.pop();
+      return result;
+    }
+    if (!(bitmask & COMPARE_PARTIAL_FLAG)) {
+      var objIsWrapped = objIsObj && hasOwnProperty.call(object, '__wrapped__'),
+          othIsWrapped = othIsObj && hasOwnProperty.call(other, '__wrapped__');
+
+      if (objIsWrapped || othIsWrapped) {
+        var objUnwrapped = objIsWrapped ? object.value() : object,
+            othUnwrapped = othIsWrapped ? other.value() : other;
+
+        var result = equalFunc(objUnwrapped, othUnwrapped, bitmask, customizer, stack);
+        stack.pop();
+        return result;
+      }
+    }
+    if (!isSameTag) {
+      return false;
+    }
+    var result = equalObjects(object, other, bitmask, customizer

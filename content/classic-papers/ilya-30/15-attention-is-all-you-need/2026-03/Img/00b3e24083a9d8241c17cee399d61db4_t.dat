@@ -1,0 +1,225 @@
+   "source": "iana",
+    "compressible": true
+  },
+  "application/emergencycalldata.providerinfo+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/emergencycalldata.serviceinfo+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/emergencycalldata.subscriberinfo+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/emergencycalldata.veds+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/emma+xml": {
+    "source": "iana",
+    "compressible": true,
+    "extensions": ["emma"]
+  },
+  "application/emotionml+xml": {
+    "source": "iana",
+    "compressible": true,
+    "extensions": ["emotionml"]
+  },
+  "application/encaprtp": {
+    "source": "iana"
+  },
+  "application/entity-statement+jwt": {
+    "source": "iana"
+  },
+  "application/epp+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/epub+zip": {
+    "source": "iana",
+    "compressible": false,
+    "extensions": ["epub"]
+  },
+  "application/eshop": {
+    "source": "iana"
+  },
+  "application/exi": {
+    "source": "iana",
+    "extensions": ["exi"]
+  },
+  "application/expect-ct-report+json": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/express": {
+    "source": "iana",
+    "extensions": ["exp"]
+  },
+  "application/fastinfoset": {
+    "source": "iana"
+  },
+  "application/fastsoap": {
+    "source": "iana"
+  },
+  "application/fdf": {
+    "source": "iana",
+    "extensions": ["fdf"]
+  },
+  "application/fdt+xml": {
+    "source": "iana",
+    "compressible": true,
+    "extensions": ["fdt"]
+  },
+  "application/fhir+json": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
+  },
+  "application/fhir+xml": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
+  },
+  "application/fido.trusted-apps+json": {
+    "compressible": true
+  },
+  "application/fits": {
+    "source": "iana"
+  },
+  "application/flexfec": {
+    "source": "iana"
+  },
+  "application/font-sfnt": {
+    "source": "iana"
+  },
+  "application/font-tdpfr": {
+    "source": "iana",
+    "extensions": ["pfr"]
+  },
+  "application/font-woff": {
+    "source": "iana",
+    "compressible": false
+  },
+  "application/framework-attributes+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/geo+json": {
+    "source": "iana",
+    "compressible": true,
+    "extensions": ["geojson"]
+  },
+  "application/geo+json-seq": {
+    "source": "iana"
+  },
+  "application/geopackage+sqlite3": {
+    "source": "iana"
+  },
+  "application/geopose+json": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/geoxacml+json": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/geoxacml+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/gltf-buffer": {
+    "source": "iana"
+  },
+  "application/gml+xml": {
+    "source": "iana",
+    "compressible": true,
+    "extensions": ["gml"]
+  },
+  "application/gnap-binding-jws": {
+    "source": "iana"
+  },
+  "application/gnap-binding-jwsd": {
+    "source": "iana"
+  },
+  "application/gnap-binding-rotation-jws": {
+    "source": "iana"
+  },
+  "application/gnap-binding-rotation-jwsd": {
+    "source": "iana"
+  },
+  "application/gpx+xml": {
+    "source": "apache",
+    "compressible": true,
+    "extensions": ["gpx"]
+  },
+  "application/grib": {
+    "source": "iana"
+  },
+  "application/gxf": {
+    "source": "apache",
+    "extensions": ["gxf"]
+  },
+  "application/gzip": {
+    "source": "iana",
+    "compressible": false,
+    "extensions": ["gz"]
+  },
+  "application/h224": {
+    "source": "iana"
+  },
+  "application/held+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/hjson": {
+    "extensions": ["hjson"]
+  },
+  "application/hl7v2+xml": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
+  },
+  "application/http": {
+    "source": "iana"
+  },
+  "application/hyperstudio": {
+    "source": "iana",
+    "extensions": ["stk"]
+  },
+  "application/ibe-key-request+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/ibe-pkg-reply+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/ibe-pp-data": {
+    "source": "iana"
+  },
+  "application/iges": {
+    "source": "iana"
+  },
+  "application/im-iscomposing+xml": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
+  },
+  "application/index": {
+    "source": "iana"
+  },
+  "application/index.cmd": {
+    "source": "iana"
+  },
+  "application/index.obj": {
+    "source": "iana"
+  },
+  "application/index.response": {
+    "source": "iana"
+  },
+  "application/index.vnd": {
+    "source": "iana"
+  },
+  "application/inkml+x

@@ -1,0 +1,12 @@
+﻿{
+  "Type": "Box",
+  "Orientation": "Horizontal",
+  "RequiresBindingSource": false,
+  "AutoSize": "false",
+  "Children": [
+    {
+        "Type": "UIView",
+        "AutoSize": "false"
+    }
+  ]
+}

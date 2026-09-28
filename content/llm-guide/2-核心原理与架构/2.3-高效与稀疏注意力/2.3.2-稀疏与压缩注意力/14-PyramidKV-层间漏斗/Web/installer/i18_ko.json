@@ -1,0 +1,8 @@
+{
+    "messages.com.epicgames.launcher.installer.downloadTitle" : "다운로드",
+    "messages.com.epicgames.launcher.installer.diskReadTitle" : "읽기",
+    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "쓰기",
+    "messages.com.epicgames.launcher.installer.operationsTitle" : "작업",
+
+    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "/"
+}

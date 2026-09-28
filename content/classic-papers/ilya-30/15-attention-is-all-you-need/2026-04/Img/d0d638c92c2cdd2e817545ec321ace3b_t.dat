@@ -1,0 +1,80 @@
+{
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# REINFORCE算法: 理论与代码的逐块对应\n",
+                "\n",
+                "实现状态：教学骨架；未运行验证（未运行论文训练复现）。\n",
+                "\n",
+                "本Notebook将REINFORCE算法的理论公式与代码实现逐块对应，帮助理解每一行代码背后的数学原理. \n",
+                "\n",
+                "---"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 1. 导入依赖\n",
+                "\n",
+                "首先导入必要的库. "
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import numpy as np\n",
+                "import torch\n",
+                "import torch.nn as nn\n",
+                "import torch.nn.functional as F\n",
+                "from torch.distributions import Categorical\n",
+                "import matplotlib.pyplot as plt\n",
+                "\n",
+                "# 设置随机种子以保证可重复性\n",
+                "torch.manual_seed(42)\n",
+                "np.random.seed(42)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "---\n",
+                "\n",
+                "## 2. 策略网络 $\\pi_\\theta(a|s)$\n",
+                "\n",
+                "### 理论公式\n",
+                "\n",
+                "策略是一个从状态到动作概率分布的映射. 对于离散动作，我们使用Softmax函数: \n",
+                "\n",
+                "$$\\pi_\\theta(a|s) = \\frac{\\exp(h_\\theta(s, a))}{\\sum_{a'} \\exp(h_\\theta(s, a'))}$$\n",
+                "\n",
+                "其中: \n",
+                "- $h_\\theta(s, a)$ 是神经网络对状态-动作对的评分(logits)\n",
+                "- $\\theta$ 是神经网络的所有参数\n",
+                "\n",
+                "### 代码实现"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "class PolicyNetwork(nn.Module):\n",
+                "    \"\"\"\n",
+                "    策略网络: 将状态映射到动作概率分布\n",
+                "    \n",
+                "    结构: \n",
+                "    输入 s → 全连接层 → ReLU → 全连接层 → Softmax → 概率 π(a|s)\n",
+                "    \"\"\"\n",
+                "    def __init__(self, state_dim, action_dim, hidden_size=64):\n",
+                "        super().__init__()\n",
+                "        # 第一层: 状态 → 隐藏层\n",
+                "     

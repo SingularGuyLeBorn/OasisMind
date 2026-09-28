@@ -1,0 +1,661 @@
+"use client";
+
+import { useState, useMemo, useCallback, useRef, useEffect, useLayoutEffect, memo } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  ChevronRight,
+  FileText,
+  FoldVertical,
+  FolderClosed,
+  FolderOpen,
+  Home,
+  LocateFixed,
+  Search,
+  UnfoldVertical,
+  X,
+  Pin,
+} from "lucide-react";
+import { trpc, catchUnlessCancelled } from "@/lib/trpc";
+import { postDetailHref } from "@/lib/postHref";
+import { cn } from "@/lib/utils";
+import { useContentNavHighlight } from "@/lib/contentNavContext";
+import { DEFAULT_POST_GARDEN } from "@oasismind/shared";
+import { Input } from "@/components/ui/input";
+import { VirtualFlatList } from "@/components/post/VirtualFlatList";
+import { isPostPinned, PostTreeDocActions } from "@/components/post/PostTreeDocActions";
+import { flattenVisibleTree, TREE_ROW_HEIGHT } from "@/lib/postTreeFlatten";
+
+interface PostSummary {
+  id: string;
+  slug: string;
+  title: string;
+  garden?: string;
+  published?: boolean;
+}
+
+interface TreeNode {
+  id: string;
+  slug?: string;
+  garden?: string;
+  title: string;
+  key: string;
+  type: "doc" | "group";
+  published?: boolean;
+  children: TreeNode[];
+}
+
+interface TreeItem {
+  post: PostSummary | null;
+  children: Record<string, TreeItem>;
+}
+
+const EXPANDED_KEY = "om-tree-expanded";
+const SCROLL_KEY = "om-tree-scroll-top";
+
+const GARDEN_ROOT_LABEL: Record<string, string> = {
+  posts: "博客",
+  knowledge: "知识库",
+  resources: "资源",
+  "llm-guide": "LLM 指南",
+  diffusion: "扩散模型",
+};
+
+function buildTree(posts: PostSummary[]): TreeNode[] {
+  const root: Record<string, TreeItem> = {};
+  // 多花园并存时，顶层按花园分组，避免跨花园同 slug 路径撞车
+  const gardens = new Set(posts.map((p) => p.garden ?? "posts"));
+  const multiGarden = gardens.size > 1;
+
+  for (const post of posts) {
+    const garden = post.garden ?? "posts";
+    const parts = multiGarden
+      ? [GARDEN_ROOT_LABEL[garden] ?? garden, ...post.slug.split("/")]
+      : post.slug.split("/");
+    let map = root;
+    let parentItem: TreeItem | null = null;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+
+      if (
+        i === parts.length - 1 &&
+        parentItem &&
+        (part === "index" || part === parts[i - 1])
+      ) {
+        parentItem.post = post;
+        break;
+      }
+
+      if (!map[part]) {
+        map[part] = { post: null, children: {} };
+      }
+      const item = map[part];
+      if (i === parts.length - 1) {
+        item.post = post;
+      }
+      parentItem = item;
+      map = item.children;
+    }
+  }
+
+  const naturalCompare = (a: string, b: string): number => {
+    const re = /(\d+)|(\D+)/g;
+    const aParts = a.match(re) || [];
+    const bParts = b.match(re) || [];
+    for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
+      const aPart = aParts[i];
+      const bPart = bParts[i];
+      const aNum = parseInt(aPart, 10);
+      const bNum = parseInt(bPart, 10);
+      const bothNums = !Number.isNaN(aNum) && !Number.isNaN(bNum);
+      if (bothNums) {
+        if (aNum !== bNum) return aNum - bNum;
+      } else {
+        const cmp = aPart.localeCompare(bPart, "zh-CN");
+        if (cmp !== 0) return cmp;
+      }
+    }
+    return aParts.length - bParts.length;
+  };
+
+  /** 花园同名索引文（如 llm-guide/llm-guide）置顶，其余按自然序 */
+  const isGardenIndex = (n: TreeNode) =>
+    !!n.slug && !!n.garden && n.slug === n.garden;
+
+  const sortNodes = (a: TreeNode, b: TreeNode) => {
+    const ap = isGardenIndex(a) ? 0 : 1;
+    const bp = isGardenIndex(b) ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    const aPin = a.slug && a.garden && isPostPinned(a.garden, a.slug) ? 0 : 1;
+    const bPin = b.slug && b.garden && isPostPinned(b.garden, b.slug) ? 0 : 1;
+    if (aPin !== bPin) return aPin - bPin;
+    return naturalCompare(a.key, b.key);
+  };
+
+  const convert = (key: string, item: TreeItem): TreeNode => {
+    const children = Object.entries(item.children)
+      .map(([childKey, childItem]) => convert(childKey, childItem))
+      .sort(sortNodes);
+    const post = item.post;
+    return {
+      id: post?.id || `group-${key}`,
+      slug: post?.slug,
+      garden: post?.garden,
+      title: post?.title || key,
+      key,
+      type: post ? "doc" : "group",
+      published: post?.published,
+      children,
+    };
+  };
+
+  return Object.entries(root)
+    .map(([key, item]) => convert(key, item))
+    .sort(sortNodes);
+}
+
+function getPostSlug(pathname: string) {
+  const match = pathname.match(/^\/posts\/(.+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function collectAncestorKeys(slug: string, nodes: TreeNode[]): string[] | null {
+  for (const node of nodes) {
+    if (node.slug === slug) return [];
+    if (node.children.length) {
+      const found = collectAncestorKeys(slug, node.children);
+      if (found !== null) return [node.key, ...found];
+    }
+  }
+  return null;
+}
+
+function collectGroupKeys(nodes: TreeNode[]): string[] {
+  return nodes.flatMap((node) => {
+    const childGroups = collectGroupKeys(node.children);
+    return node.children.length ? [node.key, ...childGroups] : childGroups;
+  });
+}
+
+function collectAllKeys(nodes: TreeNode[]): string[] {
+  return nodes.flatMap((node) => [node.key, ...collectAllKeys(node.children)]);
+}
+
+function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
+  const q = query.toLowerCase();
+  return nodes.reduce<TreeNode[]>((acc, node) => {
+    const matches = node.title.toLowerCase().includes(q);
+    const children = matches ? node.children : filterTree(node.children, q);
+    if (matches || children.length) {
+      acc.push({ ...node, children });
+    }
+    return acc;
+  }, []);
+}
+
+interface FlatDocRow {
+  key: string;
+  slug: string;
+  garden?: string;
+  title: string;
+  depth: number;
+}
+
+function flattenDocNodes(nodes: TreeNode[], depth = 0): FlatDocRow[] {
+  const rows: FlatDocRow[] = [];
+  for (const node of nodes) {
+    if (node.slug) {
+      rows.push({
+        key: node.key,
+        slug: node.slug,
+        garden: node.garden,
+        title: node.title,
+        depth,
+      });
+    }
+    if (node.children.length) {
+      rows.push(...flattenDocNodes(node.children, depth + 1));
+    }
+  }
+  return rows;
+}
+
+function readScrollTop(): number {
+  try {
+    const raw = sessionStorage.getItem(SCROLL_KEY);
+    return raw ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveScrollTop(top: number) {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, String(top));
+  } catch {
+    // ignore
+  }
+}
+
+const TreeRow = memo(function TreeRow({
+  node,
+  depth,
+  expanded,
+  activeSlug,
+  onToggle,
+  onNavigate,
+  onPrefetch,
+  onPinnedChange,
+}: {
+  node: TreeNode;
+  depth: number;
+  expanded: Set<string>;
+  activeSlug: string | null;
+  onToggle: (key: string, open: boolean) => void;
+  onNavigate: () => void;
+  onPrefetch: (slug: string, garden?: string) => void;
+  onPinnedChange: () => void;
+}) {
+  const isExpanded = expanded.has(node.key);
+  const isActive = node.slug === activeSlug;
+  const hasChildren = node.children.length > 0;
+  const isDoc = node.type === "doc";
+  const pinned = Boolean(node.slug && node.garden && isPostPinned(node.garden, node.slug));
+
+  const rowClass = cn(
+    "flex h-full min-w-0 flex-1 items-center gap-1 rounded-lg pr-1 pl-0 text-left text-sm font-medium transition",
+    isActive
+      ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+      : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+  );
+
+  const iconNode = hasChildren ? (
+    isExpanded ? (
+      <FolderOpen className="h-4 w-4 shrink-0 text-[var(--om-brand-deep)]" />
+    ) : (
+      <FolderClosed className="h-4 w-4 shrink-0 text-[var(--om-brand-light)]" />
+    )
+  ) : (
+    <FileText className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
+  );
+
+  return (
+    <div className="group flex h-full min-w-0 items-center" style={{ paddingLeft: `${5 + depth * 10}px` }}>
+      {hasChildren ? (
+        <button
+          type="button"
+          onClick={() => onToggle(node.key, !isExpanded)}
+          className={cn(
+            "flex h-5 w-3.5 shrink-0 items-center justify-center rounded-md text-[var(--om-text-3)] transition-colors hover:bg-[var(--om-bg-soft)] hover:text-[var(--om-text-1)]",
+            isExpanded && "text-[var(--om-text-1)]",
+          )}
+          aria-label={isExpanded ? "折叠" : "展开"}
+        >
+          <ChevronRight
+            className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-90")}
+          />
+        </button>
+      ) : (
+        <span className="h-5 w-3.5 shrink-0" />
+      )}
+
+      {isDoc && node.slug ? (
+        <Link
+          href={postDetailHref(node.slug, node.garden)}
+          scroll={false}
+          onClick={onNavigate}
+          onPointerEnter={() => onPrefetch(node.slug!, node.garden)}
+          onFocus={() => onPrefetch(node.slug!, node.garden)}
+          className={rowClass}
+          title={node.title}
+          data-tree-slug={node.slug}
+        >
+          {iconNode}
+          <span className="min-w-0 flex-1 truncate">{node.title}</span>
+          {pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--om-brand-deep)]" />}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => hasChildren && onToggle(node.key, !isExpanded)}
+          className={rowClass}
+          title={node.title}
+        >
+          {iconNode}
+          <span className="min-w-0 flex-1 truncate">{node.title}</span>
+        </button>
+      )}
+
+      {isDoc && node.slug && node.garden && !node.id.startsWith("group-") && (
+        <PostTreeDocActions
+          postId={node.id}
+          slug={node.slug}
+          garden={node.garden}
+          title={node.title}
+          onPinnedChange={onPinnedChange}
+        />
+      )}
+    </div>
+  );
+});
+
+export function PostTreeNav({
+  className,
+  /** 非空时只拉该花园目录，树顶不再套一层花园分组 */
+  gardenId,
+}: {
+  className?: string;
+  gardenId?: string | null;
+}) {
+  const { data, isLoading } = trpc.post.tree.useQuery(
+    gardenId ? { garden: gardenId } : {},
+    { staleTime: 10 * 60 * 1000 },
+  );
+  const pathname = usePathname();
+  const navHighlight = useContentNavHighlight();
+  const activeSlug = useMemo(
+    () => getPostSlug(pathname) ?? navHighlight.slug,
+    [pathname, navHighlight.slug],
+  );
+  const [pinTick, setPinTick] = useState(0);
+  const tree = useMemo(() => {
+    void pinTick;
+    return buildTree(data || []);
+  }, [data, pinTick]);
+  const [manuallyExpanded, setManuallyExpanded] = useState<Map<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(EXPANDED_KEY);
+      if (saved) {
+        // 存储格式与 persistExpanded 写入一致：{ key: boolean } 对象
+        const parsed = JSON.parse(saved) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return new Map(
+            Object.entries(parsed as Record<string, unknown>).filter((e): e is [string, boolean] => typeof e[1] === "boolean"),
+          );
+        }
+      }
+      return new Map();
+    } catch {
+      return new Map();
+    }
+  });
+  const [query, setQuery] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const persistExpanded = useCallback((next: Map<string, boolean>) => {
+    try {
+      // 只持久化显式设置的 key（true=展开, false=折叠）
+      const obj: Record<string, boolean> = {};
+      for (const [k, v] of next) obj[k] = v;
+      localStorage.setItem(EXPANDED_KEY, JSON.stringify(obj));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggle = useCallback(
+    (key: string, open: boolean) => {
+      setManuallyExpanded((prev) => {
+        const next = new Map(prev);
+        next.set(key, open); // true=显式展开, false=显式折叠
+        persistExpanded(next);
+        return next;
+      });
+    },
+    [persistExpanded]
+  );
+
+  const visibleTree = useMemo(() => {
+    if (!query.trim()) return tree;
+    return filterTree(tree, query);
+  }, [tree, query]);
+
+  const flatSearchResults = useMemo(() => {
+    if (!query.trim()) return [];
+    return flattenDocNodes(visibleTree);
+  }, [visibleTree, query]);
+
+  const isSearchMode = query.trim().length > 0;
+
+  const expanded = useMemo(() => {
+    const next = new Set<string>();
+    // 1. 先加显式展开的 key
+    for (const [key, isOpen] of manuallyExpanded) {
+      if (isOpen) next.add(key);
+    }
+    // 2. 自动展开当前文章的祖先文件夹 — 但不覆盖显式折叠的 key
+    if (activeSlug && tree.length > 0) {
+      const ancestors = collectAncestorKeys(activeSlug, tree);
+      if (ancestors !== null) {
+        for (const key of ancestors) {
+          // 只自动展开未被显式折叠的 key
+          if (manuallyExpanded.get(key) !== false) next.add(key);
+        }
+      }
+    }
+    // 3. 搜索模式：展开所有匹配的 key（不覆盖显式折叠）
+    if (query.trim()) {
+      for (const key of collectAllKeys(visibleTree)) {
+        if (manuallyExpanded.get(key) !== false) next.add(key);
+      }
+    }
+    return next;
+  }, [manuallyExpanded, activeSlug, tree, query, visibleTree]);
+
+  const browseRows = useMemo(
+    () => flattenVisibleTree(visibleTree, expanded),
+    [visibleTree, expanded],
+  );
+
+  const restoreScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = readScrollTop();
+  }, []);
+
+  useLayoutEffect(() => {
+    restoreScroll();
+  }, [restoreScroll]);
+
+  const handleNavigate = useCallback(() => {
+    if (scrollRef.current) {
+      saveScrollTop(scrollRef.current.scrollTop);
+    }
+  }, []);
+
+  const bumpPin = useCallback(() => setPinTick((n) => n + 1), []);
+
+  const utils = trpc.useUtils();
+  const prefetchPost = useCallback(
+    (slug: string, garden?: string) => {
+      utils.post.getBySlug
+        .prefetch({ slug, garden: garden ?? DEFAULT_POST_GARDEN })
+        .catch(catchUnlessCancelled("components/post/PostTreeNav.tsx"));
+    },
+    [utils],
+  );
+
+  const allGroupKeys = useMemo(() => collectGroupKeys(tree), [tree]);
+
+  const expandAll = useCallback(() => {
+    const next = new Map<string, boolean>();
+    for (const key of allGroupKeys) next.set(key, true);
+    setManuallyExpanded(next);
+    persistExpanded(next);
+  }, [allGroupKeys, persistExpanded]);
+
+  const collapseAll = useCallback(() => {
+    const next = new Map<string, boolean>();
+    for (const key of allGroupKeys) next.set(key, false);
+    setManuallyExpanded(next);
+    persistExpanded(next);
+  }, [allGroupKeys, persistExpanded]);
+
+  const scrollToActiveItem = useCallback(
+    (smooth = true) => {
+      if (!activeSlug || !scrollRef.current) return;
+      const idx = isSearchMode
+        ? flatSearchResults.findIndex((r) => r.slug === activeSlug)
+        : browseRows.findIndex((r) => r.node.slug === activeSlug);
+      if (idx < 0) return;
+      const el = scrollRef.current;
+      const top = Math.max(
+        0,
+        idx * TREE_ROW_HEIGHT - el.clientHeight / 2 + TREE_ROW_HEIGHT / 2,
+      );
+      el.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+    },
+    [activeSlug, isSearchMode, flatSearchResults, browseRows],
+  );
+
+  const locateCurrent = useCallback(() => {
+    scrollToActiveItem(true);
+  }, [scrollToActiveItem]);
+
+  // 勿用 useLayoutEffect：与主内容挂载抢主线程，切文更粘
+  useEffect(() => {
+    if (!activeSlug || isSearchMode) return;
+    const t = window.setTimeout(() => scrollToActiveItem(false), 80);
+    return () => window.clearTimeout(t);
+  }, [activeSlug, isSearchMode, scrollToActiveItem]);
+
+  if (isLoading) {
+    return (
+      <div className={cn("flex flex-1 items-center justify-center p-4", className)}>
+        <p className="text-sm text-[var(--om-text-3)]">加载目录…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      <div className="shrink-0 pb-2 pr-2 pt-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--om-text-3)]" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="筛选文章…"
+            className="h-9 border-[var(--om-divider)] bg-[var(--om-bg)] pl-8 pr-8 text-sm"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--om-text-3)] hover:bg-[var(--om-bg-mute)]"
+              aria-label="清除筛选"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {!isSearchMode && (
+          <div className="mt-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={expandAll}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+              title="一键展开全部目录"
+            >
+              <UnfoldVertical className="h-3.5 w-3.5" />
+              展开
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]"
+              title="一键折叠全部目录"
+            >
+              <FoldVertical className="h-3.5 w-3.5" />
+              折叠
+            </button>
+            <button
+              type="button"
+              onClick={locateCurrent}
+              disabled={!activeSlug}
+              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--om-divider)] bg-[var(--om-bg)] px-2 py-1.5 text-xs font-medium text-[var(--om-text-2)] transition hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)] disabled:cursor-not-allowed disabled:opacity-40"
+              title={activeSlug ? "定位当前文章" : "当前不在文章页"}
+            >
+              <LocateFixed className="h-3.5 w-3.5" />
+              定位
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!isSearchMode && gardenId && (
+        <Link
+          href={`/gardens/${encodeURIComponent(gardenId)}`}
+          scroll={false}
+          className={cn(
+            "mb-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium transition",
+            pathname === `/gardens/${encodeURIComponent(gardenId)}`
+              ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+              : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+          )}
+        >
+          <Home className="h-4 w-4 shrink-0" />
+          <span className="truncate">首页</span>
+        </Link>
+      )}
+      {isSearchMode ? (
+        <VirtualFlatList
+          className="om-scroll-hidden pb-3 [overflow-anchor:none]"
+          items={flatSearchResults}
+          rowHeight={TREE_ROW_HEIGHT}
+          getKey={(item) => item.key}
+          emptyMessage="没有匹配的文章"
+          listRef={scrollRef}
+          renderItem={(item) => {
+            const isActive = item.slug === activeSlug;
+            return (
+              <Link
+                href={postDetailHref(item.slug, item.garden)}
+                scroll={false}
+                onClick={handleNavigate}
+                onPointerEnter={() => prefetchPost(item.slug, item.garden)}
+                onFocus={() => prefetchPost(item.slug, item.garden)}
+                className={cn(
+                  "flex h-full items-center gap-1 rounded-lg pr-1.5 text-sm font-medium transition",
+                  isActive
+                    ? "bg-[var(--om-brand-soft)] text-[var(--om-brand-deep)]"
+                    : "text-[var(--om-text-2)] hover:bg-[var(--om-bg-mute)] hover:text-[var(--om-text-1)]",
+                )}
+                style={{ paddingLeft: `${5 + item.depth * 10}px` }}
+                title={item.title}
+                data-tree-slug={item.slug}
+              >
+                <FileText className="h-4 w-4 shrink-0 text-[var(--om-text-3)]" />
+                <span className="truncate">{item.title}</span>
+              </Link>
+            );
+          }}
+        />
+      ) : (
+        <VirtualFlatList
+          className="om-scroll-hidden pb-3 [overflow-anchor:none]"
+          items={browseRows}
+          rowHeight={TREE_ROW_HEIGHT}
+          getKey={(item) => item.node.key}
+          emptyMessage="暂无本地文章"
+          listRef={scrollRef}
+          onScrollTop={saveScrollTop}
+          renderItem={(item) => (
+            <TreeRow
+              node={item.node}
+              depth={item.depth}
+              expanded={expanded}
+              activeSlug={activeSlug}
+              onToggle={toggle}
+              onNavigate={handleNavigate}
+              onPrefetch={prefetchPost}
+              onPinnedChange={bumpPin}
+            />
+          )}
+        />
+      )}
+    </div>
+  );
+}

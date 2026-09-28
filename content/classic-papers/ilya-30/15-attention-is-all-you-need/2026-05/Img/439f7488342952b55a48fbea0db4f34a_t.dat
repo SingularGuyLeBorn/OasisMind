@@ -1,0 +1,140 @@
+    }));
+        });
+    }
+    /**
+     * @param {string} languages
+     */
+    getCategories(languages) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let routeValues = {};
+                let queryValues = {
+                    languages: languages,
+                };
+                try {
+                    let verData = yield this.vsoClient.getVersioningData("7.2-preview.1", "gallery", "e0a5a71e-3ac3-43a0-ae7d-0bb5c3046a2a", routeValues, queryValues);
+                    let url = verData.requestUrl;
+                    let options = this.createRequestOptions('application/json', verData.apiVersion);
+                    let res;
+                    res = yield this.rest.get(url, options);
+                    let ret = this.formatResponse(res.result, null, true);
+                    resolve(ret);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            }));
+        });
+    }
+    /**
+     * @param {string} categoryName
+     * @param {string} languages
+     * @param {string} product
+     */
+    getCategoryDetails(categoryName, languages, product) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let routeValues = {
+                    categoryName: categoryName
+                };
+                let queryValues = {
+                    languages: languages,
+                    product: product,
+                };
+                try {
+                    let verData = yield this.vsoClient.getVersioningData("7.2-preview.1", "gallery", "75d3c04d-84d2-4973-acd2-22627587dabc", routeValues, queryValues);
+                    let url = verData.requestUrl;
+                    let options = this.createRequestOptions('application/json', verData.apiVersion);
+                    let res;
+                    res = yield this.rest.get(url, options);
+                    let ret = this.formatResponse(res.result, null, false);
+                    resolve(ret);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            }));
+        });
+    }
+    /**
+     * @param {string} product
+     * @param {string} categoryId
+     * @param {number} lcid
+     * @param {string} source
+     * @param {string} productVersion
+     * @param {string} skus
+     * @param {string} subSkus
+     * @param {string} productArchitecture
+     */
+    getCategoryTree(product, categoryId, lcid, source, productVersion, skus, subSkus, productArchitecture) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let routeValues = {
+                    product: product,
+                    categoryId: categoryId
+                };
+                let queryValues = {
+                    lcid: lcid,
+                    source: source,
+                    productVersion: productVersion,
+                    skus: skus,
+                    subSkus: subSkus,
+                    productArchitecture: productArchitecture,
+                };
+                try {
+                    let verData = yield this.vsoClient.getVersioningData("7.2-preview.1", "gallery", "1102bb42-82b0-4955-8d8a-435d6b4cedd3", routeValues, queryValues);
+                    let url = verData.requestUrl;
+                    let options = this.createRequestOptions('application/json', verData.apiVersion);
+                    let res;
+                    res = yield this.rest.get(url, options);
+                    let ret = this.formatResponse(res.result, null, false);
+                    resolve(ret);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            }));
+        });
+    }
+    /**
+     * @param {string} product
+     * @param {number} lcid
+     * @param {string} source
+     * @param {string} productVersion
+     * @param {string} skus
+     * @param {string} subSkus
+     */
+    getRootCategories(product, lcid, source, productVersion, skus, subSkus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                let routeValues = {
+                    product: product
+                };
+                let queryValues = {
+                    lcid: lcid,
+                    source: source,
+                    productVersion: productVersion,
+                    skus: skus,
+                    subSkus: subSkus,
+                };
+                try {
+                    let verData = yield this.vsoClient.getVersioningData("7.2-preview.1", "gallery", "31fba831-35b2-46f6-a641-d05de5a877d8", routeValues, queryValues);
+                    let url = verData.requestUrl;
+                    let options = this.createRequestOptions('application/json', verData.apiVersion);
+                    let res;
+                    res = yield this.rest.get(url, options);
+                    let ret = this.formatResponse(res.result, null, false);
+                    resolve(ret);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            }));
+        });
+    }
+    /**
+     * @param {string} publisherName
+     * @param {string} extensionName
+     * @param {string} version
+     */
+    getCertificate(publisher

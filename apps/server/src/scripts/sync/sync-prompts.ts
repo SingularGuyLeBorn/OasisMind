@@ -1,0 +1,145 @@
+﻿/**
+ * Prompt 同步器
+ *
+ * 文件格式：config/prompts/{slug}.md
+ * frontmatter: name, version, description, variables, tags
+ * 正文：content
+ */
+
+import { PrismaClient } from "@prisma/client";
+import { Syncer, SyncRecord } from "./types.js";
+import { upsertFtsRow, deleteFtsRow } from "../../infra/ftsIndex.js";
+import { getFilesRecursive, parseMarkdownFile, filePathToSlug, readStringArray, getFileMtime, syncDetailWarn} from "./utils.js";
+
+interface PromptData {
+  name: string;
+  version: string;
+  description: string | null;
+  variables: string;
+  tags: string;
+  content: string;
+}
+
+export const promptSyncer: Syncer<PromptData> = {
+  entityName: "Prompt",
+  contentDirName: "prompts",
+  extensions: [".md"],
+
+  async scan(prisma: PrismaClient, contentDir: string): Promise<SyncRecord<PromptData>[]> {
+    const filePaths = getFilesRecursive(contentDir, [".md"]);
+    const records: SyncRecord<PromptData>[] = [];
+    for (const filePath of filePaths) {
+      const r = await this.scanFile!(filePath, contentDir);
+      if (r) records.push(r);
+    }
+    return records;
+  },
+
+  // A13：单文件解析
+  async scanFile(filePath: string, contentDir: string): Promise<SyncRecord<PromptData> | null> {
+    try {
+      const slug = filePathToSlug(contentDir, filePath);
+      const mtime = getFileMtime(filePath);
+      const { data, content } = parseMarkdownFile(filePath);
+
+      const name = typeof data.name === "string" ? data.name : slug;
+      const version = typeof data.version === "string" ? data.version : "1.0.0";
+      const description = typeof data.description === "string" ? data.description : null;
+      const variables = readStringArray(data.variables).join(",");
+      const tags = readStringArray(data.tags).join(",");
+
+      return {
+        slug,
+        mtime,
+        data: { name, version, description, variables, tags, content: content.trim() },
+      };
+    } catch (e: any) {
+      console.error(`  ❌ [Prompt 解析失败] ${filePath}:`, e.message);
+      return null;
+    }
+  },
+
+  async upsert(prisma: PrismaClient, record: SyncRecord<PromptData>): Promise<void> {
+    const { slug, mtime, data } = record;
+
+    const row = await prisma.prompt.upsert({
+      where: { name: data.name },
+      update: {
+        version: data.version,
+        description: data.description,
+        variables: data.variables,
+        tags: data.tags,
+        content: data.content,
+        sourceSlug: slug,
+        sourceMtime: mtime,
+      },
+      create: {
+        name: data.name,
+        version: data.version,
+        description: data.description,
+        variables: data.variables,
+        tags: data.tags,
+        content: data.content,
+        sourceSlug: slug,
+        sourceMtime: mtime,
+      },
+    });
+    try {
+      await upsertFtsRow(prisma, "prompt", row.id, row.name, `${row.description ?? ""}\n${row.content ?? ""}`);
+    } catch (e) {
+      console.warn(`  ⚠️ [Prompt FTS] upsert 失败 slug=${slug}:`, e instanceof Error ? e.message : e);
+    }
+  },
+
+  // #7：unlink 增量硬删 by sourceSlug
+  async deleteBySlug(prisma: PrismaClient, slug: string): Promise<number> {
+    const rows = await prisma.prompt.findMany({ where: { sourceSlug: slug }, select: { id: true } });
+    const r = await prisma.prompt.deleteMany({ where: { sourceSlug: slug } });
+    for (const row of rows) {
+      try {
+        await deleteFtsRow(prisma, "prompt", row.id);
+      } catch (e) {
+        console.warn(`  ⚠️ [Prompt FTS] delete 失败 id=${row.id}:`, e instanceof Error ? e.message : e);
+      }
+    }
+    return r.count;
+  },
+
+  async cleanup(prisma: PrismaClient, activeSlugs: string[], _contentDir?: string): Promise<number> {
+    if (activeSlugs.length === 0) {
+      syncDetailWarn(`  ⚠️ [Prompt] activeSlugs 为空，跳过 cleanup 以防误删。`);
+      return 0;
+    }
+    const allInDb = await prisma.prompt.findMany({ select: { id: true, sourceSlug: true } });
+    let deleted = 0;
+
+    for (const dbPrompt of allInDb) {
+      if (dbPrompt.sourceSlug && !activeSlugs.includes(dbPrompt.sourceSlug)) {
+        await prisma.prompt.delete({ where: { id: dbPrompt.id } });
+        // 与 deleteBySlug 对齐：cleanup 硬删同样清 FTS，防幽灵搜索结果
+        try {
+          await deleteFtsRow(prisma, "prompt", dbPrompt.id);
+        } catch (e) {
+          console.warn(`  ⚠️ [Prompt FTS] delete 失败 id=${dbPrompt.id}:`, e instanceof Error ? e.message : e);
+        }
+        console.log(`  🗑️ [Prompt 已清理] "${dbPrompt.sourceSlug}" (本地文件已被删除)`);
+        deleted++;
+      }
+    }
+
+    return deleted;
+  },
+
+  async getExistingMtimes(prisma: PrismaClient): Promise<Map<string, Date>> {
+    const rows = await prisma.prompt.findMany({
+      select: { sourceSlug: true, sourceMtime: true },
+    });
+    const map = new Map<string, Date>();
+    for (const row of rows) {
+      if (row.sourceSlug && row.sourceMtime) {
+        map.set(row.sourceSlug, row.sourceMtime);
+      }
+    }
+    return map;
+  },
+};

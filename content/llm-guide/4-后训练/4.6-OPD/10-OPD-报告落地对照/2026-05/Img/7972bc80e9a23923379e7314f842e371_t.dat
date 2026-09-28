@@ -1,0 +1,37 @@
+/*
+ * ---------------------------------------------------------
+ * Copyright(C) Microsoft Corporation. All rights reserved.
+ * ---------------------------------------------------------
+ *
+ * ---------------------------------------------------------
+ * Generated file, DO NOT EDIT
+ * ---------------------------------------------------------
+ */
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const SystemData = require("../interfaces/common/SystemDataInterfaces");
+const TfsCoreInterfaces = require("../interfaces/CoreInterfaces");
+/**
+ * The types of test attachments.
+ */
+var AttachmentType;
+(function (AttachmentType) {
+    /**
+     * Attachment type GeneralAttachment , use this as default type unless you have other type.
+     */
+    AttachmentType[AttachmentType["GeneralAttachment"] = 0] = "GeneralAttachment";
+    AttachmentType[AttachmentType["AfnStrip"] = 1] = "AfnStrip";
+    AttachmentType[AttachmentType["BugFilingData"] = 2] = "BugFilingData";
+    /**
+     * Attachment type CodeCoverage.
+     */
+    AttachmentType[AttachmentType["CodeCoverage"] = 3] = "CodeCoverage";
+    AttachmentType[AttachmentType["IntermediateCollectorData"] = 4] = "IntermediateCollectorData";
+    AttachmentType[AttachmentType["RunConfig"] = 5] = "RunConfig";
+    AttachmentType[AttachmentType["TestImpactDetails"] = 6] = "TestImpactDetails";
+    AttachmentType[AttachmentType["TmiTestRunDeploymentFiles"] = 7] = "TmiTestRunDeploymentFiles";
+    AttachmentType[AttachmentType["TmiTestRunReverseDeploymentFiles"] = 8] = "TmiTestRunReverseDeploymentFiles";
+    AttachmentType[AttachmentType["TmiTestResultDetail"] = 9] = "TmiTestResultDetail";
+    AttachmentType[AttachmentType["TmiTestRunSummary"] = 10] = "TmiTestRunSummary";
+    /**
+     * Attachment type ConsoleL
