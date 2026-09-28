@@ -213,7 +213,7 @@ Figure 5 在 Gemma 7B,$\gamma=0$ 上把 $\eta=0.02$ 的 EMA 和每 50 步硬更�
 
 Gemma 实验把 2B 和 7B 微调成更好的对话策略.batch 128,Adam,学习率 $3\times 10^{-6}$,warmup 100 步.Jeffreys 取 $\beta=0.5$.对照是式 (1) 的 REINFORCE:每 prompt 2 条策略样本,leave-one-out baseline(Ahmadian 等).正则强度扫 $\beta_{\mathrm{RL}}\in\{0.001,0.01,0.1,1\}$.
 
-Figure 6 在 Gemma 2B 上拆两个旋钮.$\gamma=0$ 时 $\eta\in\{0.01,0.05,0.1\}$:锚点走得越快,奖励涨得越快.把 $\eta$ 钉在 $0.05$,再扫 $\gamma\in\{0,0.5,1,2\}$:$\gamma$ 越大,策略离 $\pi_{\mathrm{ref}}$ 越慢,奖励–KL 前沿可以更好.这是约束优化的那一层,不是把 $\beta_{\mathrm{RL}}$ 焊死.
+Figure 6 在 Gemma 2B 上拆两个旋钮.$\gamma=0$ 时 $\eta\in\{0.01,0.05,0.1\}$:锚点走得越快,奖励涨得越快.把 $\eta$ 钉在 $0.05$,再扫 $\gamma\in\{0,0.5,1,2\}$:$\gamma$ 越大,策略离 $\pi_{\mathrm{ref}}$ 越慢,奖励–KL 前沿可以更好.这是约束优化的那一层,不是把 $\beta_{\mathrm{RL}}$ 固定.
 
 Figure 7 是 Gemma 7B,$\eta=0.02$ 对上那组 REINFORCE.三张子图要拆开读.左图奖励:J-BOND 持续涨,REINFORCE 的四条 $\beta_{\mathrm{RL}}$ 各自饱和在不同高度.中图 KL:J-BOND 近似线性往上走,REINFORCE 随 $\beta_{\mathrm{RL}}$ 差出一截.右图才是要看的 Pareto.不能拿 $\beta_{\mathrm{RL}}=0.001$ 那条终局奖励单独去和 J-BOND 比「谁分高」,那是在比两个不同的 KL 预算.HTML 的口径是:J-BOND 不必事先承诺某一个正则强度,奖励继续涨,KL 稳定近似线性增加,奖励–KL 前沿好过列出的全部 REINFORCE 对照.图是论文里的训练曲线,这里不临摹坐标,也不伪造 Gemma 基准点.
 

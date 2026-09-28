@@ -232,7 +232,7 @@ Hugging Face TRL 的 `GeometricMixtureWrapper` 把这件事写成 logits 凸组�
 mixture_coef * ref_logits + (1 - mixture_coef) * model_logits
 ```
 
-然后 `log_softmax`.`ref_logits` 是冻结 $\mu$ 的分数,`model_logits` 是 $\pi_{\theta}$ 的分数.对照式 (13):论文 $\beta$ 乘在 $\mu$ 上,$1-\beta$ 乘在 $\pi_{\theta}$ 上.TRL 的 `mixture_coef` 乘在 `ref_logits` 上,扮演的是 $\beta$ 那个槽,默认值 $0.5$.库名不是公式源.论文摘要主表里整体最好的是 $\beta\in[0.125,0.375]$,不是把 $0.5$ 焊死成「官方推荐」.扫 $\beta$ 时按式 (13) 的字母走;填 TRL 时记住 `mixture_coef` 对应「参考 $\mu$ 的权重」.
+然后 `log_softmax`.`ref_logits` 是冻结 $\mu$ 的分数,`model_logits` 是 $\pi_{\theta}$ 的分数.对照式 (13):论文 $\beta$ 乘在 $\mu$ 上,$1-\beta$ 乘在 $\pi_{\theta}$ 上.TRL 的 `mixture_coef` 乘在 `ref_logits` 上,扮演的是 $\beta$ 那个槽,默认值 $0.5$.库名不是公式源.论文摘要主表里整体最好的是 $\beta\in[0.125,0.375]$,不是把 $0.5$ 固定成「官方推荐」.扫 $\beta$ 时按式 (13) 的字母走;填 TRL 时记住 `mixture_coef` 对应「参考 $\mu$ 的权重」.
 
 ![几何混合对手:μ 与 π_t 的 logits 凸组合;fictitious play 要存历史,本算法不走](./images/fig-nash-md-mixture.png)
 
