@@ -2253,7 +2253,7 @@ In this section, we present our safety taxonomy research for the DeepSeek-R1 mod
 
 
 
-基于内部安全基准做分类研究: 先交代构造, 再按类看 R1, 并与前沿模型比.
+内部安全基准按分类研究: 构造、R1 的分类表现、与前沿模型的对比依次给出.
 
 Although existing works have already contributed valuable safety evaluation datasets, different datasets focus on distinct domains and employ varying classification methods. Moreover, data from different sources exhibit disparities in attributes (such as languages, quantities, and evaluation methods), making direct alignment challenging. Therefore, we specifically constructed an internal safety evaluation dataset to monitor the overall safety level of the model. The construction of this dataset has the following characteristics: (1) Following unified taxonomic standards to build the testing framework, comprehensively covering various safety and ethical scenarios as much as possible; (2) Aligning the quantity, languages, and evaluation methods of safety test data across different categories, enabling us to conduct quantitative safety assessments for different safety scenarios; (3) Possessing good extensibility, where the multilingual language (D. 3.4) and the jailbreak attacks (D. 3.5) evaluations in subsequent sections are also based on extensions of this dataset.
 

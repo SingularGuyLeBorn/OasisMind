@@ -1,6 +1,8 @@
 # DeepSeek-V4: 压缩注意力撑起 1M 上下文
 
-来源: 同目录 `deepseek-v4.md`(DeepSeek-V4 Technical Report, preview, 58 页). 对照译稿: `deepseek-v4-bi.md`. 表内数字回源文 `deepseek-v4.md`.
+来源: [DeepSeek-V4 Technical Report](https://arxiv.org/abs/2606.19348) (arXiv: 2606.19348, 2026-04-26).
+
+本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2606.19348)观看。配套对照译稿见同目录的 bi 稿。
 
 V4 预览版有两个模型: V4-Pro 总参数 1.6T, 激活 49B; V4-Flash 总参数 284B, 激活 13B, 都支持 1M token 上下文. 相对 V3, 它保留 DeepSeekMoE 与 MTP, 改了四处: 注意力从 MLA 换成 CSA 与 HCA 交错的混合结构, 残差连接换成 mHC, 优化器换成 Muon, 后训练的收尾从混合 RL 换成多教师 On-Policy Distillation(OPD). 报告摘要的核心数字是: 1M 上下文下, Pro 的单 token 推理 FLOPs 只有 V3.2 的 27%, KV cache 只有 10%. 这篇报告同时覆盖了结构, 基础设施, 预训练, 后训练和评测, 各部分之间的依赖很强: 注意力压缩决定了 1M 能不能训, Muon 和 mHC 决定了训不训得稳, FP4 和批不变内核决定了 RL 采样与部署是否一致. 下面按这个顺序展开.
 

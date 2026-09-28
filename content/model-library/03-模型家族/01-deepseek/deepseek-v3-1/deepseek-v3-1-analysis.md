@@ -2,7 +2,9 @@
 
 > **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 2025-08-21 的官方动态, 共 7 页, 不是技术报告. 页上有: 混合推理开关, 编程与搜索 Agent 两张表, CoT 压缩后的长度对比图, Base 追加 840B token, UE8M0 FP8 比例因子, 分词器与 chat template 变更, API 与定价. 页上没有层数, 专家数, 数据配比, 后训练算法和消融. 下文不补这些.
 
-来源: 同目录 `deepseek-v3-1.md`(`page 1 of 7`–`page 7 of 7`). 对照译稿: `deepseek-v3-1-bi.md`. 表内数字回源文 `deepseek-v3-1.md`.
+来源: [DeepSeek-V3.1 Release](https://api-docs.deepseek.com/news/news250821/) (2025-08-21 官方发布页; V3.1 无 arXiv 论文) 与 [Hugging Face 模型页](https://huggingface.co/deepseek-ai/DeepSeek-V3.1).
+
+本文大量引用了发布材料的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原发布页](https://api-docs.deepseek.com/news/news250821/)观看。配套对照译稿见同目录的 bi 稿。
 
 V3.1 是 V3 和 R1 两条线第一次并到同一个检查点上. 此前 DeepSeek 对外是两个模型: `deepseek-chat` 背后是 V3, `deepseek-reasoner` 背后是 R1; 两者共享 V3 底座, 但后训练分开做, 部署也分开. V3.1 的说法是「一个模型同时支持思考模式与非思考模式」, 两个 API 名还在, 背后换成同一份权重. 这份动态能讲清楚的是: 切换放在哪一层, Agent 分数涨了多少, 思考长度压掉多少, 部署要改什么. 它讲不清的是这些变化分别来自数据, 训练日程还是算法, 下面每节都会把这条边界说出来.
 

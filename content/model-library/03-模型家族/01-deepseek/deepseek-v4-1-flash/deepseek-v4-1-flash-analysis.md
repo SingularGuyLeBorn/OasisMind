@@ -1,6 +1,8 @@
 # DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV
 
-来源: 同目录 `deepseek-v4-1-flash.md`(DeepSeek-V4.1-Flash: Pushing the Limits of KV Cache Compression, 51 页). 对照译稿: `deepseek-v4-1-flash-bi.md`. 表内数字回源文 `deepseek-v4-1-flash.md`.
+来源: [DeepSeek-V4.1-Flash: Pushing the Limits of KV Cache Compression](https://arxiv.org/abs/2609.19969) (arXiv: 2609.19969, 2026-09-17).
+
+本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2609.19969)观看。配套对照译稿见同目录的 bi 稿。
 
 V4.1-Flash 是一个原生多模态的 MoE 模型, 骨干 552B 参数, 另挂 196B Engram 参数, 上下文 1M token. 报告的出发点是长程 Agent 的负载越来越偏输入: 工具调用一轮接一轮, 每轮都要 prefill, KV cache 要在 HBM, 主机内存和 SSD 之间存放与搬运. V4 用稀疏注意力压下了长序列的计算, 剩下的瓶颈变成 cache 的容量和带宽. V4.1 的回答分三层: 架构上用 **Causal Encoder-Decoder(CED)** 让 prefill 只激活 8B, decode 激活 16B, 再用 **CSA2** 的跨层复用把 global KV 压到每 token 890 字节; 精度上把主 KV 存成 **FP4**; 部署上用 **SWA Bounded Replay** 把 SWA KV 从持久化缓存里拿掉. 预训练吃了 45T 多模态 token. 后训练报告自己说没有算法创新, 增益几乎都来自任务合成与环境规模. 下面先从配置复算规模和 KV 字节, 再依次讲结构, 扩展模块, 优化器, 基础设施, 数据与日程, 后训练和评测协议.
 
