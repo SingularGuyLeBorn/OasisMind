@@ -37,7 +37,7 @@ softmax 和 sigmoid 的区别在权重怎么定。V2 用 softmax: 全体 160 个
 
 ### 1.4. 无辅助损失的负载均衡
 
-常规 MoE 在训练损失里加一项辅助损失, 惩罚负载不均; 系数太小管不住, 太大又会干扰主任务的梯度. V3 采用 Wang 等人 2024 年提出的 **Loss-Free Balancing**(式 16): 给每个专家一个偏置 $b_i$, 把上式的选择条件换成
+常规 MoE 在训练损失里加一项辅助损失, 惩罚负载不均; 系数太小管不住, 太大又会干扰主任务的梯度. V3 采用 Wang 等人 2024 年提出的 **Loss-Free Balancing**(式 16): 给每个专家一个偏置 $b_i$——不训练也不反传, 训练期按负载符号步进更新, 推理期冻结——把上式的选择条件换成
 
 $$
 g'_{i,t}=\begin{cases}s_{i,t}, & s_{i,t}+b_i\in\mathrm{Topk}(\{s_{j,t}+b_j\},K_r)\\ 0, & \text{otherwise}\end{cases}
