@@ -16,7 +16,9 @@ V4 预览版有两个模型: V4-Pro 总参数 1.6T, 激活 49B; V4-Flash 总参�
 
 ### 1.2. MoE 的小改动与 MTP
 
-MoE 仍是 DeepSeekMoE 的细粒度加共享专家结构, 见 [DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). 相对 V3 有四处改动. 第一, 计算亲和度的激活从 Sigmoid 换成 $\sqrt{\mathrm{Softplus}(\cdot)}$, 后者没有上界, 在大输入时按平方根增长, 报告没有解释为什么换. 第二, 继续用无辅助损失均衡, 另加一个很小的序列级均衡损失防止单条序列内极端不均. 第三, 去掉了 V3 的「每个 token 最多发往 M 个节点」约束, 报告说为此重新设计了并行策略. 第四, 前几层的稠密 FFN 换成 **Hash 路由**的 MoE: 按输入 token ID 的预设哈希函数决定去哪个专家, 不经过门控网络, 两个模型都是前 3 个 MoE 层用 Hash 路由.
+MoE 仍是 DeepSeekMoE 的细粒度加共享专家结构, 见 [DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). 相对 V3 有四处改动。
+
+- 计算亲和度的激活从 Sigmoid 换成 $\sqrt{\mathrm{Softplus}(\cdot)}$, 后者没有上界, 在大输入时按平方根增长, 报告没有解释为什么换. - 继续用无辅助损失均衡: 另加一个很小的序列级均衡损失防止单条序列内极端不均. - 去掉了 V3 的「每个 token 最多发往 M 个节点」约束: 报告说为此重新设计了并行策略. 第四, 前几层的稠密 FFN 换成 **Hash 路由**的 MoE: 按输入 token ID 的预设哈希函数决定去哪个专家, 不经过门控网络, 两个模型都是前 3 个 MoE 层用 Hash 路由.
 
 去掉节点约束意味着通信量不再被限死在 4 个节点以内, 所以第 3.1 节的通算融合就变得必要. Hash 路由用在浅层, 可能是因为浅层的隐藏状态还接近 token 嵌入, 学出来的路由和按 token ID 分配差别不大, 固定哈希反而能避免浅层路由的不稳定(推断). MTP 按 V3 的配置不变, 深度为 1, 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP深度解析.md). 均衡超参沿用 V3: 偏置更新速度 0.001, 序列均衡损失权重 0.0001; MTP 损失权重大部分时间是 0.3, 学习率开始衰减时改为 0.1.
 
@@ -34,7 +36,9 @@ $$
 A_l=\sigma(\tilde A_l),\qquad C_l=2\sigma(\tilde C_l),\qquad B_l=\text{Sinkhorn}(\tilde B_l).
 $$
 
-$\hat X_l$ 是把 $n_{\mathrm{hc}}\times d$ 的残差流展平后做 RMSNorm 的结果. 每个矩阵都是「动态项乘门控 $\alpha$, 加静态偏置 $S$」; $\alpha$ 初始化很小, 所以训练初期三个矩阵几乎就是静态偏置, 连接方式固定, 随训练才逐步变成依赖输入. $A_l$ 过 sigmoid 落在 $(0,1)$; $C_l$ 是 $2\sigma$, 落在 $(0,2)$, 动态项为 0 且偏置为 0 时恰好等于 1, 即写回权重从 1 起步(推断). $B_l$ 的投影用 Sinkhorn-Knopp 算法: 先取指数保证为正, 再交替做行归一化 $\mathcal T_r$ 和列归一化 $\mathcal T_c$, $M^{(t)}=\mathcal T_r(\mathcal T_c(M^{(t-1)}))$, 迭代 20 次. 20 次后只是近似双随机, 行和列和不严格等于 1, 报告没给残差误差. 两个模型都取 $n_{\mathrm{hc}}=4$. mHC 的一般原理见 [Hyper-Connections 与 mHC](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). 代价在激活显存和流水线通信上, 第 3.5.2 节用融合内核, 选择性重算和调整 DualPipe, 把墙钟开销压到重叠 1F1B 流水阶段的 6.7%. 报告没有给 mHC 对损失或评测的消融, 也没有和普通残差做对照.
+$\hat X_l$ 是把 $n_{\mathrm{hc}}\times d$ 的残差流展平后做 RMSNorm 的结果. 每个矩阵都是「动态项乘门控 $\alpha$, 加静态偏置 $S$」; $\alpha$ 初始化很小, 所以训练初期三个矩阵几乎就是静态偏置, 连接方式固定, 随训练才逐步变成依赖输入. $A_l$ 过 sigmoid 落在 $(0,1)$; $C_l$ 是 $2\sigma$, 落在 $(0,2)$, 动态项为 0 且偏置为 0 时恰好等于 1, 即写回权重从 1 起步(推断). $B_l$ 的投影用 Sinkhorn-Knopp 算法: 先取指数保证为正, 再交替做行归一化 $\mathcal T_r$ 和列归一化 $\mathcal T_c$, $M^{(t)}=\mathcal T_r(\mathcal T_c(M^{(t-1)}))$, 迭代 20 次. 20 次后只是近似双随机, 行和列和不严格等于 1, 报告没给残差误差. 两个模型都取 $n_{\mathrm{hc}}=4$. mHC 的一般原理见 [Hyper-Connections 与 mHC](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). 
+
+代价在激活显存和流水线通信上, 第 3.5.2 节用融合内核, 选择性重算和调整 DualPipe, 把墙钟开销压到重叠 1F1B 流水阶段的 6.7%. 报告没有给 mHC 对损失或评测的消融, 也没有和普通残差做对照.
 
 ## 2. 混合注意力: CSA 与 HCA
 
@@ -85,6 +89,8 @@ $$
 ### 2.5. 效率: 读图 1 并按配置复算 KV
 
 图 1 右侧的单 token FLOPs 曲线上, 1M 位置处 V3.2 约 1.19T, Pro 约 0.32T(图上标「低 3.7 倍」), Flash 约 0.12T(标「低 9.8 倍」)(读图). 1/3.7 约 27%, 1/9.8 约 10%, 与正文一致. 报告的 FLOPs 按「等效 FP8 FLOPs」计. V3.2 的曲线从约 0.1T 线性涨到 1.2T, 主要是索引器随长度线性增长的开销; V4 的斜率小得多, 因为 CSA 的索引器只对四分之一的条目打分, HCA 没有索引器. KV cache 方面, 报告用了三项精度手段: RoPE 维用 BF16, 其余维用 FP8, 比纯 BF16 省近一半; 索引器的注意力计算用 FP4; top-k 比 V3.2 小.
+
+![报告 Figure 1: V4 与 V3.2 的单 token FLOPs 及 benchmark 对比](images/p01-figure-1-left-benchmark-performance-of-deepseek-v4-pro.png)
 
 可以按配置复算 KV 比例. Pro 每个 CSA 层每 token 平均存 512/4 维主 KV 加 128/4 维索引键, 约 160 个元素; 每个 HCA 层 512/128 = 4 个元素; 30 层 CSA 加 31 层 HCA 合计约 4900 个元素每 token. V3.2 每层存 576 维潜变量加 128 维索引键, 61 层约 4.3 万个元素. 两者之比约 11%, 考虑到 V4 索引键用 FP4, 与报告的 10% 接近(估算). 报告另以 BF16 GQA8, 头维 128 为基线, 说 V4 的 KV 约为其 2%: GQA8 每层每 token 存 2×8×128 = 2048 个 BF16 元素, 61 层约 25 万字节; V4 按 FP8 为主约 5000 字节, 比值约 2.0%(估算). 这两组复算都不含滑动窗口的 128 个 token, 那部分不随长度增长.
 
@@ -160,7 +166,11 @@ Table 6 的 Pro-Max 主要分数: MMLU-Pro 87.5, SimpleQA-Verified 57.9, Chinese
 
 MRCR 表中 Pro-Max 的 「MRCR 1M」 是 83.5, 高于 Gemini-3.1-Pro 的 76.3, 低于 Claude Opus 4.6 的 92.9. 但图 9 的 MRCR 8-needle 曲线上, Pro-Max 在 128K 处约 0.92, 256K 处 0.82, 512K 处 0.66, 1024K 处只有 0.59; Flash-Max 在 1024K 处 0.49(读图). 所以表里的 83.5 不是 1M 长度处的分数, 更可能是到 1M 为止各长度的平均, 按图 9 的 8 个长度简单平均约 82.3, 接近但不等于 83.5(估算), 报告没有说明口径. CorpusQA 1M 上 Pro-Max 62.0, 高于 Gemini-3.1-Pro 的 53.8.
 
+![报告 Figure 9: MRCR 8-needle 曲线上 Pro-Max 随长度的衰减](images/p40-figure-9-deepseek-v4-series-performance-on-the-mrcr-task.png)
+
 Table 7 显示推理档位的影响很大. Pro 的 HLE 从 Non-think 7.7 到 High 34.5 再到 Max 37.7; HMMT 从 31.7 到 94.0 到 95.2. Non-think 档里, Pro 在 HMMT(31.7)和 IMOAnswerBench(35.3)上反而低于 Flash(40.8, 41.9). Flash-Max 在推理上接近 Pro-Max: LiveCodeBench 91.6 对 93.5, HMMT 94.8 对 95.2; 知识上差距大: SimpleQA-Verified 34.1 对 57.9. 图 10 的成本曲线上, Terminal Bench 2.0 的 Pro 三档约用 2.8 万, 3.6 万, 5.0 万 token, Flash 三档约 3.7 万, 4.7 万, 5.7 万 token, Flash 每一档都比 Pro 用的 token 多, 分数却低(读图). 所以 Flash 单 token 便宜, 但完成同一任务的总开销要按 token 数一起算.
+
+![报告 Figure 10: 推理档位与成本——Terminal Bench 2.0 上 Pro 三档的 token 开销](images/p41-figure-10-hle-and-terminal-bench-2-0-performance-by.png)
 
 ### 6.3. 真实场景评测
 
