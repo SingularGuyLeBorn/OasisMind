@@ -61,7 +61,9 @@ Table 5 在两个规模上比较纯辅助损失和无辅助损失. 小档 15.7B 
 
 ### 1.5. MTP: 训练时多预测一个 token
 
-**MTP** 的想法来自 Gloeckle 等人 2024 年的工作, 但实现不同. Gloeckle 用 D 个独立输出头并行预测后面 D 个 token; 而 V3 直接就是串行: D 个模块一层层往后推, 每个模块保留完整的因果链(Figure 3). 主模型本身就是深度 0: 第 $i$ 个 token 的 hidden state 由前 $i$ 个 token 算出. 第 $k$ 个模块在这个 hidden state 后面再接上第 $i+k$ 个 token 的嵌入——真值序列里排在预测目标前一位的那个 token——算出第 $i+k+1$ 个 token 的预测. 两者各做 RMSNorm, 拼接后乘投影矩阵 $M_k$(式 21), 送进一个 Transformer 块(式 22), 再用与主模型共享的输出头预测第 $i+k+1$ 个 token(式 23). 嵌入层和输出头都与主模型共享. V3 取 D = 1, 即每个位置除下一个 token 外再预测一个. 三步写成:
+**MTP**: 训练时让每个位置不只预测下一个 token, 再多预测一个。思路来自 Gloeckle 等人 2024 年的工作, 但实现不同: 他们用 D 个独立输出头并行预测后面 D 个; 而 V3 直接就是串行——D 个模块一层层往后推, 每层保留完整的因果链(Figure 3)。
+
+拿 V3 实际用的 D = 1 走一遍. 主模型在「爱」这个位置算出一个 hidden state——由「我」「爱」两个 token 算出。MTP 模块收到两样输入: 这个 hidden state, 和「北」的嵌入(真值序列里紧跟其后的那个 token)。两样各做 RMSNorm, 拼起来, 乘投影矩阵 $M_k$ 压回模型宽度, 过一个小 Transformer 块, 最后用主模型共享的输出头预测「京」。嵌入层和输出头都与主模型共享, 模块自己要训的只有投影矩阵和那个小 Transformer 块。写成三步(式 21–23):
 
 $$
 \mathbf{h}_i'^{\,k}=M_k\big[\mathrm{RMSNorm}(\mathbf{h}_i^{k-1});\mathrm{RMSNorm}(\mathrm{Emb}(t_{i+k}))\big],\quad \mathbf{h}_{1:T-k}^{k}=\mathrm{TRM}_k(\mathbf{h}_{1:T-k}'^{\,k}),\quad P_{i+k+1}^{k}=\mathrm{OutHead}(\mathbf{h}_i^k),
