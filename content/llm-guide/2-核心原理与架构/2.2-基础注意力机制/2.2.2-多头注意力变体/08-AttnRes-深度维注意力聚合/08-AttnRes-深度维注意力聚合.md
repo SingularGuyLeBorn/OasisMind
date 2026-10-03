@@ -1,480 +1,483 @@
 ---
-title: "08 · AttnRes: 把深度维的等权求和换成 Softmax"
+title: "08 · AttnRes: 把深度维的等权求和换成 softmax"
 published: true
 tags: ["AttnRes", "Attention-Residuals", "PreNorm-dilution", "Block-AttnRes", "Kimi"]
-excerpt: "Attention Residuals 改的是 Transformer 里最容易被忽略的一根轴: 深度维. 不是 token 维的 KV 压缩, 也不是残差流的加宽, 而是「当前层该以什么权重组合所有历史层的输出」."
+excerpt: "Attention Residuals 把 Pre-LN 残差里所有历史层输出的等权求和, 换成每层一个可学伪查询算出的深度维 softmax 加权. Block AttnRes 先在块内求和再做块间注意力, 把显存和通信从层数级降到块数级, Kimi Linear 48B 和 Kimi K3 都用了这一版."
 ---
-# AttnRes: 把深度维的等权求和换成 Softmax
+# AttnRes: 把深度维的等权求和换成 softmax
 
-[Attention Residuals](https://arxiv.org/abs/2603.15031) 改的是 Transformer 里最容易被忽略的一根轴: 深度维. 不是 token 维的 KV 压缩, 也不是残差流的加宽, 而是「当前层该以什么权重组合所有历史层的输出」.
+Kimi Team 的 [Attention Residuals](https://arxiv.org/abs/2603.15031) (AttnRes) 改的是残差连接. Pre-LN 残差展开后, 每一层的输入都是 embedding 加上此前所有层输出的等权和, 权重固定为 1, 不随层和输入变化. AttnRes 把这组固定权重换成 softmax 注意力权重: 每层用一个可学的 $d$ 维伪查询, 对此前各层的输出打分, 再按分数加权求和.
 
-Pre-LN 残差展开后, 当前层输入等于 embedding 加上之前所有子层输出的等权求和. 层数一深, 状态幅值随深度膨胀, 单层贡献被冲淡. 这个现象论文叫 **PreNorm dilution**. AttnRes 的解法很直接: 把固定系数 1 换成由每层伪查询算出的 softmax 权重. 下游实验里, 48B / 1.4T token 的 Kimi Linear 接 AttnRes 后 GPQA-Diamond 从 36.9 涨到 44.4, 缩放曲线也整体下移.
+本文先从残差展开看等权累加带来的问题, 再过一遍 Highway, mHC, DenseFormer 这些已有改法, 然后给出 Full AttnRes 和 Block AttnRes 的公式, 训练和推理里的工程处理, 实验数字, 最后用深度混合矩阵把这些方法放在一起比较, 并说明 Kimi K3 怎样使用它.
 
-Kimi K3 用的是它的工程版 **Block AttnRes**: 块内继续用标准残差求和做压缩, 块间再做注意力, 把显存/通信从 \(O(Ld)\) 降到 \(O(Nd)\), \(N\) 是块数.
+## 太长不看版
 
----
+- **问题**: Pre-LN 残差 $h_l=h_1+\sum_{i<l}f_i(h_i)$ 是等权累加. 隐状态幅值随深度按 $O(L)$ 增长, 单层贡献被冲淡, 论文称为 PreNorm dilution.
+- **公式**: $h_l=\sum_{i=0}^{l-1}\alpha_{i\to l}v_i$, 权重 $\alpha_{i\to l}\propto\exp\bigl(w_l^\top\mathrm{RMSNorm}(v_i)\bigr)$. $w_l$ 是每层一个可学向量, 零初始化, 起步时等价于等权平均.
+- **Block AttnRes**: 把 $L$ 层分成 $N$ 块, 块内照常求和, 块间对 $N$ 个块表示和 embedding 做 softmax. 显存和通信从 $O(Ld)$ 降到 $O(Nd)$, $N\approx8$ 就能拿回 Full 版的大部分收益.
+- **工程**: 跨 stage 缓存让流水线通信峰值从 $O(C)$ 降到 $O(P)$; 两阶段计算把每层残差路径 I/O 压到 $5.5d$, mHC 是 $34d$. 开流水线时训练端到端开销不到 4%, 推理延迟开销不到 2%.
+- **缩放**: Block AttnRes 的 loss 相当于基线多花 1.25 倍算力.
+- **48B 下游**: Kimi Linear 48B / 3B 激活, 训 1.4T token, GPQA-Diamond 36.9 到 44.4, Math 53.5 到 57.1, HumanEval 59.1 到 62.2, 评测的 15 项都不低于基线.
+- **K3**: 按 12 层一块划成 8 块, 最后一块不满, 加上 embedding 共 9 个块级源. 推理阶段的 EAGLE-3 草稿模型从第 1, 第 4 和最后一个 AttnRes 块的输出取特征.
 
-## 1. 符号与基本设定
+## 1. 问题: 深度维上的等权累加
 
-先统一记号. 把一个 Transformer block 看成一个映射 \(F\), 它内部已经包含 attention 和 FFN. 我们按 **子层** 来数层, 即每个 self-attention 算一层, 每个 MLP 也算一层; 一个 Transformer block 对应两层. 这和论文一致, 也避免后面 \(L\) 的数值对不上.
+### 1.1 把残差展开
 
-| 符号 | 含义 |
-| ---- | ---- |
-| \(x_t \in \mathbb{R}^d\) | 第 \(t\) 层的输入/输出隐状态 (单个 token) |
-| \(h_t \in \mathbb{R}^d\) | 第 \(t\) 个子层的输出, \(h_t = F(\mathrm{Norm}(x_t))\) |
-| \(\mathrm{Norm}(\cdot)\) | 层归一化, 论文用 RMSNorm; 这里泛指 Pre-LN 里的归一化 |
-| \(L\) | 总子层数 |
-
-批量和序列维先压掉, 公式按单个 token 写; 实现时把 \(x_t\) 换成 \(B \times T \times d\) 的张量即可.
-
-Pre-LN 残差连接的更新规则是
+论文按单个 token 写公式. $h_l\in\mathbb R^d$ 是进入第 $l$ 层的隐状态, $h_1$ 是 token embedding, $f_l$ 是第 $l$ 层的变换. 这里的「层」按子层数: 每个 self-attention 算一层, 每个 MLP 也算一层, 一个 Transformer block 对应两层. 标准残差的更新是
 
 $$
-x_{t+1} = x_t + h_t.
+h_l=h_{l-1}+f_{l-1}(h_{l-1}).
 \tag{1}
 $$
 
-这就是标准残差. 下面要做的第一件事, 是把它逐层展开, 看看「等权求和」到底藏在哪里.
-
----
-
-## 2. Pre-LN 残差的逐层展开
-
-从 \(x_0\)(embedding) 开始, 按式 (1) 一步步写开.
-
-**第 1 层**
+Pre-LN 下 $f_l$ 内部先做归一化, 再进注意力或 MLP. 从 $h_1$ 开始逐层代入:
 
 $$
-h_0 = F(\mathrm{Norm}(x_0)), \qquad x_1 = x_0 + h_0.
+h_2=h_1+f_1(h_1),\qquad h_3=h_1+f_1(h_1)+f_2(h_2),\qquad\ldots
+$$
+
+$$
+h_l=h_1+\sum_{i=1}^{l-1}f_i(h_i).
 \tag{2}
 $$
 
-**第 2 层**
+式 (2) 说明, 第 $l$ 层看到的输入是 embedding 和此前所有层输出的和, 每一项的系数都是 1. 这组系数不随 $l$ 变, 也不随输入变.
+
+残差连接最常被提到的作用是梯度通路. 对式 (1) 求导,
 
 $$
-h_1 = F(\mathrm{Norm}(x_1)),
+\frac{\partial\mathcal L}{\partial h_l}=\frac{\partial\mathcal L}{\partial h_L}\prod_{j=l}^{L-1}\Bigl(I+\frac{\partial f_j}{\partial h_j}\Bigr).
 \tag{3}
 $$
 
-代入 \(x_1\) 得
+展开后总有一个单位阵项, 损失到任意一层都有一条不经过雅可比矩阵的路径. 式 (2) 揭示的是残差的另一个作用: 它决定了信息在深度上怎样聚合. 序列维的混合 (注意力) 和专家维的混合 (MoE 路由) 早就用上了输入相关的权重, 深度维的聚合还是固定的单位权重.
+
+### 1.2 PreNorm dilution
+
+先做一个理想化估计. 假设每层输出的范数都接近同一个常数 $c$, 由三角不等式,
 
 $$
-x_2 = x_1 + h_1 = (x_0 + h_0) + h_1 = x_0 + h_0 + h_1.
+\|h_l\|\le\|h_1\|+(l-1)\,c.
 \tag{4}
 $$
 
-**第 3 层**
+$l$ 较大时, $\|h_l\|$ 大致随 $l$ 线性增长, 某一层输出在总和里的相对份额约为
 
 $$
-x_3 = x_2 + h_2 = x_0 + h_0 + h_1 + h_2.
+\frac{\|f_i(h_i)\|}{\|h_l\|}\approx\frac{c}{l\,c}=\frac1l.
 \tag{5}
 $$
 
-由数学归纳法, 第 \(t+1\) 层的输入可写成
+真实训练里各层输出范数并不相等. Xiong 等人在 [On Layer Normalization in the Transformer Architecture](https://arxiv.org/abs/2002.04745) 里分析过, Pre-LN 下隐状态的尺度随深度增长. 后面的层输入经过归一化, 尺度固定, 输出却要在一个越来越大的累加值上产生影响, 只能学出越来越大的输出. AttnRes 论文 Figure 5 在 48B 基线上观察到的正是这种情况: 各 Transformer block 的输出幅值随深度单调上升, 最浅几层的梯度又明显偏大.
+
+论文把等权累加的后果归成三条:
+
+1. **没有选择性访问**: 注意力层和 MLP 层收到同一份聚合后的状态, 不能按层类型取不同的权重组合.
+2. **信息不可逆地混在一起**: 聚合时被冲淡的信息, 更深的层无法再单独取回.
+3. **输出增长**: 后面的层要学出越来越大的输出才能影响累加值, 训练可能因此不稳定.
+
+论文还引用了一个现象作为旁证: 训练好的 LLM 里, 相当比例的层可以剪掉而几乎不损失效果.
+
+## 2. 已有做法
+
+### 2.1 加权递推: Highway 及其变体
+
+Highway Network 给残差加逐元素门:
 
 $$
-x_{t+1} = x_0 + \sum_{i=0}^{t} h_i = x_0 + \sum_{i=0}^{t} F(\mathrm{Norm}(x_i)).
+h_l=(1-g_l)\odot h_{l-1}+g_l\odot f_{l-1}(h_{l-1}),\qquad g_l\in[0,1]^d.
 \tag{6}
 $$
 
-式 (6) 是核心. 它说明: Pre-LN 残差不是简单地把输入传给下一层, 而是把 embedding 与之前所有子层输出做**等权求和**后, 再喂给下一层. 每个 \(h_i\) 的权重都是 1, 不随当前层变化, 也不随输入变化.
+标准残差和 Highway 都可以写成加权递推 $h_l=\alpha_l\odot h_{l-1}+\beta_l\odot f_{l-1}(h_{l-1})$. 标准残差取 $\alpha_l=\beta_l=1$, Highway 取 $\alpha_l=1-g_l$, $\beta_l=g_l$. ReZero 从零学一个残差分支的缩放, LayerScale 给分支乘一个可学向量, DeepNorm 放大恒等路径. 这些方法调的都是「上一份状态」和「当前层输出」之间的比例.
 
----
+它们共有一个限制: 第 $l$ 层只能看到 $h_{l-1}$. $h_{l-1}$ 已经是此前所有层输出混在一起的一份状态, 单独某一层的输出无法从里面取出来.
 
-## 3. 深层网络中的 PreNorm dilution
+### 2.2 多流递推: HC, mHC, DDL, SiameseNorm
 
-当总层数为 \(L\) 时, 最终状态
+第二类做法把残差流加宽. Hyper-Connections 和 mHC 维护 $m$ 条并行的残差流, 用可学的矩阵在流之间混合; mHC 把流间转移矩阵约束成双随机矩阵, 让累乘在深度上保持稳定. DDL 用 delta 规则维护一个矩阵状态. SiameseNorm 维护两条参数共享的流, 一条 Pre-Norm, 一条 Post-Norm. 这些方法缓解了「所有信息压进一份状态」的问题, 但每一层仍然只依赖上一层的状态. 相关推导见 [Hyper-Connections 与 mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) 和 [xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md).
+
+### 2.3 跨层直接访问: DenseNet, DenseFormer, MRLA
+
+第三类做法让每一层直接读所有更早的层. DenseNet 把此前各层的特征拼接起来. DenseFormer 对此前所有层的输出做加权平均, 权重是与输入无关的可学标量. MRLA 用线性注意力的形式做跨层检索. AttnRes 论文认为这些方法要么权重不随输入变化, 要么在大规模训练里难以扩展.
+
+### 2.4 时间与深度的对偶
+
+论文的出发点是一个对偶关系. RNN 在时间维上把所有历史压进一个隐状态, 残差在深度维上把所有更早的层压进 $h_l$. 序列建模里, Transformer 用注意力代替了递推, 每个位置可以按数据相关的权重直接访问所有更早的位置. AttnRes 在深度维上做同样的替换.
+
+这条路在计算上可行, 原因是深度远小于序列长度. 序列可以有上百万个 token, 网络层数通常在 1000 以内, 深度维上 $O(L^2)$ 的注意力开销不大.
+
+## 3. Full AttnRes
+
+### 3.1 一般形式
+
+把式 (2) 里固定为 1 的系数换成依赖层的权重:
 
 $$
-x_L = x_0 + \sum_{i=0}^{L-1} h_i.
+h_l=\alpha_{0\to l}\,h_1+\sum_{i=1}^{l-1}\alpha_{i\to l}\,f_i(h_i),\qquad\sum_{i=0}^{l-1}\alpha_{i\to l}=1.
 \tag{7}
 $$
 
-为快速看出等权累积的后果, 先做理想化假设: 每层输出范数大致相同, \(\|h_i\| \approx c\). 真实训练中这个假设并不成立, \(\|h_i\|\) 通常随深度递增, 但理想化已经能说明问题; 3.2 会补上真实训练的观察.
-
-在 \(\|h_i\| \approx c\) 下,
+权重由核函数 $\phi:\mathbb R^d\times\mathbb R^d\to\mathbb R_{\ge0}$ 给出, $\alpha_{i\to l}\propto\phi(q_l,k_i)$. 不同的 $\phi$ 对应不同的残差变体, 第 7 节会展开. AttnRes 取
 
 $$
-\|x_L\| \approx \left\|x_0 + \sum_{i=0}^{L-1} h_i\right\| \le \|x_0\| + L \cdot c.
+\phi(q,k)=\exp\bigl(q^\top\mathrm{RMSNorm}(k)\bigr),
 \tag{8}
 $$
 
-当 \(L\) 很大时, \(\|x_L\|\) 大致随 \(L\) 线性增长. 此时某一层 \(h_i\) 对最终状态的相对占比为
+归一化后就是深度维上的 softmax:
 
 $$
-\frac{\|h_i\|}{\|x_L\|} \approx \frac{c}{L \cdot c} = \frac{1}{L}.
+\alpha_{i\to l}=\frac{\phi(q_l,k_i)}{\sum_{j=0}^{l-1}\phi(q_l,k_j)}.
 \tag{9}
 $$
 
-层数越深, 每一项 \(h_i\) 在总和中的相对占比就越小. 这就是 **PreNorm dilution** 的定量图像: 不是残差连接本身坏了, 而是固定单位权重把单层贡献按 \(1/L\) 稀释了.
+### 3.2 查询, 键, 值
 
-论文把后果总结成三条:
-
-1. **没有选择性访问**. 注意力层和 MLP 读到的是同一份已经混在一起的状态, 没法按层类型给不同权重.
-2. **不可逆损失**. 聚合时丢掉的信息, 更深的层无法再单独捞回来.
-3. **输出膨胀**. 后面的层要从固定尺度的归一化输入里挤出越来越大的输出, 才能在已经涨起来的主干上还有影响力.
-
-### 3.1 真实训练里的范数增长
-
-上面的 \(c\) 是简化. 真实 Pre-LN Transformer 里, \(\|h_i\|\) 本身也随深度递增, 而不是每层都固定在一个常数附近. Xiong et al. (2020) 在 [On Layer Normalization in the Transformer Architecture](https://arxiv.org/pdf/2002.04745) 中从理论上证明: Pre-LN 下隐藏状态的方差会沿深度线性增长. Allen AI 的 [OLMo checkpoints 分析](https://allenai.org/blog/investigating-pretraining-dynamics-and-stability-with-olmo-checkpoints-ece6f0c4947a) 也直接测量到: 浅层激活范数明显小于深层, 原文把它归因于 「reflecting the additive nature of the residual stream」.
-
-因此更准确的画面是双向放大. 一方面, 等权残差结构天然让深层状态范数更大; 另一方面, 网络为了维持浅层表达能力, 会进一步放大浅层 \(F\) 的权重. 两股力叠加, 状态爆炸和信号稀释成为深层 Pre-LN 的真实问题, 而不是仅在 \(\|h_i\| \approx c\) 的理想假设下才出现.
-
-后续推导的核心结论——标准残差导致状态范数增长、需要引入归一化加权和——仍然成立. 区别只在于: 真实训练中的 \(\|h_i\|\) 本身也会变化, 而不仅仅是一个常数.
-
-### 3.2 已有补救为什么不够
-
-Highway 把更新改成
+每一层的查询, 键, 值定义为
 
 $$
-x_{t+1} = (1 - g_t) \odot x_t + g_t \odot F(\mathrm{Norm}(x_t)),
+q_l=w_l,\qquad k_i=v_i=\begin{cases}h_1, & i=0\\ f_i(h_i), & 1\le i\le l-1\end{cases}
 \tag{10}
 $$
 
-权重 \(g_t\) 可变, 但每层仍只能看见压缩后的 \(x_t\), 看不见各层自己的输出 \(h_i\). 也就是说, 它改变了当前残差分支的混合比例, 却没有打开一条能按内容检索第 \(i\) 层历史输出的通道.
-
-ReZero、LayerScale、DeepNorm 等同属「仍只读上一份状态」这一栏. ReZero 从零学习当前残差缩放, LayerScale 给当前残差乘一个可学习向量, DeepNorm 放大 identity 路径. 它们调的都是当前层残差分支的增益, 没改历史层输出在深度维上的聚合方式.
-
-> 一点想法: 等权求和这件事, 写成 \(x_{t+1} = x_t + h_t\) 时并不显眼; 一旦展开成式 (6), 问题就变得非常明显. 很多架构改进的切入点, 其实只是把常用公式换一种写法, 让被压抑的结构暴露出来.
-
----
-
-## 4. 从等权求和到 Softmax 加权
-
-式 (6) 已经把问题讲清楚了: 当前层输入是所有历史子层输出的等权求和. 自然的推广是把等权换成加权, 并要求
+当前层的输入是
 
 $$
-x_{t+1} = \sum_{i=0}^{t} \alpha_{i \to t+1} \cdot h_i,
-\qquad
-\alpha_{i \to t+1} \ge 0,
-\qquad
-\sum_{i=0}^{t} \alpha_{i \to t+1} = 1.
+h_l=\sum_{i=0}^{l-1}\alpha_{i\to l}\,v_i.
 \tag{11}
 $$
 
-约束 \(\sum_i \alpha_i = 1\) 且 \(\alpha_i \ge 0\) 让加权残差和成为历史层输出的**凸组合**. 凸组合的直观好处是: 结果不会跑到各 \(h_i\) 张成的凸包外面, 因此累加和的范数不会随层数线性膨胀.
+几个设计点:
 
-### 4.1 约束和为 1 会不会降低表达力
+- **伪查询**: $w_l\in\mathbb R^d$ 是第 $l$ 层的可学参数, 不从当前隐状态投影得到. 每层只多一个 $d$ 维向量和一个 RMSNorm.
+- **键上加 RMSNorm**: 输出幅值大的层, 点积也大, 会在 softmax 里占满权重. 对键做 RMSNorm 后, 打分只看方向.
+- **值不归一化**: 加权求和用原始的 $v_i$, 幅值信息保留在值里.
+- **embedding 始终是一个源**: $v_0=h_1$, 任何一层都能直接读到 token embedding.
 
-不会, 前提是 \(F\) 前面有 RMSNorm / LayerNorm. 因为归一化层满足齐次性:
+### 3.3 权重和为 1 不损失表达力
+
+有人会担心: 约束 $\sum_i\alpha_{i\to l}=1$ 把 $h_l$ 限制在 $v_i$ 的凸组合里, 是否丢掉了尺度信息. Pre-LN 下这一点没有影响. RMSNorm 对正数缩放不变:
 
 $$
-\mathrm{RMSNorm}(c \cdot x) = \mathrm{RMSNorm}(x), \qquad \forall c > 0.
+\mathrm{RMSNorm}(c\,x)=\mathrm{RMSNorm}(x),\qquad c>0.
 \tag{12}
 $$
 
-无约束的加权求和 \(\tilde{x} = \sum_i \beta_i h_i\) 与归一化加权求和 \(x = \sum_i \alpha_i h_i\)(\(\sum_i \alpha_i = 1\)) 之间只差一个正数倍: 存在 \(c > 0\) 使得 \(\tilde{x} = c \cdot x\). 由于 \(F\) 内部先做 RMSNorm, 根据式 (12),
+任意一组非负系数 $\beta_i$ 的加权和 $\sum_i\beta_iv_i$, 都等于某个 $c>0$ 乘上归一化系数 $\alpha_i=\beta_i/\sum_j\beta_j$ 的加权和. $h_l$ 进入 $f_l$ 后先做归一化, 由式 (12), 两者送进注意力或 MLP 的信号完全相同. 归一化约束只固定了幅值, 子层本来就看不到这部分幅值. 反过来, 如果 $f_l$ 前面没有归一化, 这个约束就会限制模型.
+
+### 3.4 零初始化
+
+所有 $w_l$ 必须零初始化. 此时每个 logit 都是 0, 式 (9) 给出均匀权重 $\alpha_{i\to l}=1/l$, $h_l$ 是此前各层输出的平均. 训练从等权平均出发, 再逐步学出每层偏好哪些源. 这和标准残差只差一个 $1/l$ 的整体缩放, 由式 (12), 送进子层的信号与标准残差相同.
+
+### 3.5 一个手算例子
+
+取 $d=2$, 第 4 层有三个源: $v_0=(1,0)$, $v_1=(0,1)$, $v_2=(6,8)$. $v_2$ 的范数是 10, 远大于另外两个. 数值是为了演示构造的.
+
+**标准残差**: $h_4=v_0+v_1+v_2=(7,9)$, 方向几乎完全由 $v_2$ 决定.
+
+**AttnRes, $w_4=0$**: 三个权重都是 $1/3$, $h_4=(2.333,3)$. 归一化后和标准残差方向相同.
+
+**AttnRes, $w_4=(2,0)$**: 先对键做 RMSNorm. $d=2$ 时 $\mathrm{RMS}(v)=\sqrt{(a^2+b^2)/2}$, 于是
 
 $$
-F(\mathrm{Norm}(\tilde{x})) = F(\mathrm{Norm}(c \cdot x)) = F(\mathrm{Norm}(x)).
+k_0=(1.414,0),\qquad k_1=(0,1.414),\qquad k_2=(0.849,1.131).
+$$
+
+logits 为 $w_4^\top k_i=(2.828,\,0,\,1.697)$, 取指数得 $(16.92,\,1,\,5.46)$, 归一化得
+
+$$
+\alpha_{\cdot\to4}=(0.724,\,0.043,\,0.234),\qquad h_4=0.724\,v_0+0.043\,v_1+0.234\,v_2=(2.125,\,1.911).
+$$
+
+$v_0$ 拿到最大权重, $v_2$ 的范数虽大, 权重只有 0.234.
+
+**去掉键上的 RMSNorm**: logits 变成 $w_4^\top v_i=(2,0,12)$, $v_2$ 的权重是 $e^{12}/(e^2+1+e^{12})\approx0.99995$, 其他源几乎被完全忽略. 这就是 3.2 节说的大幅值层占满 softmax. 论文 Table 4 里去掉 RMSNorm 后, Full AttnRes 的 loss 从 1.737 升到 1.743.
+
+### 3.6 Full AttnRes 的开销
+
+每个 token 的计算量是 $O(L^2d)$, 存储层输出要 $O(Ld)$. 普通训练里, 这些层输出本来就要为反向传播保留, Full AttnRes 不增加显存. 大规模训练常开激活重计算和流水线并行, 这时本可释放再重算的层输出必须一直保留到后面所有层用完, 流水线下还要跨 stage 传输, 显存和通信都变成 $O(Ld)$.
+
+伪查询 $w_l$ 和前向计算解耦, 这一点带来一个好处: 同一组层的注意力权重不必等这些层依次算完, 可以分组批量计算. 把 $L$ 层分成 $N$ 组, 每组 $S$ 层, 组内批量计算, 每层的本地 I/O 能从 $O(Ld)$ 降到 $O((S+N)d)$. 但流水线的跨 stage 通信仍是 $O(Ld)$, 本地批量计算解决不了这部分. 论文因此提出 Block AttnRes.
+
+## 4. Block AttnRes
+
+### 4.1 块内求和, 块间注意力
+
+把 $L$ 层分成 $N$ 块, 每块 $S=L/N$ 层; 不能整除时, 最后一块包含剩下的 $L\bmod N$ 层. 记第 $n$ 块的层号集合为 $\mathcal B_n$. 块内按标准残差求和, 得到块表示
+
+$$
+b_n=\sum_{j\in\mathcal B_n}f_j(h_j).
 \tag{13}
 $$
 
-进入非线性子层之前的信号分布完全相同, 因此表达能力不会变小. 约束和为 1 只是把幅度固定下来, 幅度差异可以被 \(F\) 前面的线性层自由吸收.
-
-这个结论有个关键前提: **必须有前置归一化**. 如果去掉 RMSNorm, 输入幅度本身会成为有效信号, 强制和为 1 就会真的锁住模型.
-
-### 4.2 标量门控: 一个容易看懂的参数化
-
-为了让网络逐层决定「更看重哪一层历史输出」, 给每个历史层 \(i\) 引入可学习灵敏度 \(g_i\), 并用 \(k_i = \mathrm{RMS}(h_i)\) 作为该层输出的能量标量. 综合分数取 \(g_i k_i\), 再通过 softmax 归一化:
+$b_n^i$ 表示块内前 $i$ 层的部分和, $b_n=b_n^S$. embedding 单独作为 $b_0=h_1$. 第 $n$ 块第 $i$ 层的值矩阵是
 
 $$
-\alpha_i = \frac{\exp(-g_i k_i)}{\sum_{j=0}^{t} \exp(-g_j k_j)},
-\qquad
-k_i = \mathrm{RMS}(h_i).
+V=\begin{cases}[b_0,b_1,\ldots,b_{n-1}]^\top, & i=1\\ [b_0,b_1,\ldots,b_{n-1},b_n^{i-1}]^\top, & i\ge2\end{cases}
 \tag{14}
 $$
 
-负号体现「范数越大, 权重越小」: \(k_i\) 越大, 指数项越小, \(\alpha_i\) 越小. 这样大范数层被自动抑制, 小范数层获得相对更大的权重, 累加和保持有界.
+键和权重仍按式 (8)-(10). 每块第一层只看已完成的块和 embedding, 之后的层还要看当前块的部分和. 网络最后的输出层对全部 $N$ 个块表示做一次聚合. 块表示是多层输出之和, 完整块和部分和的幅值可能差很多, 键上的 RMSNorm 在这里更重要: 去掉它, Block 版 loss 从 1.746 升到 1.750, 退化比 Full 版更明显.
 
-这个标量形式不是 AttnRes 的简化版, 而是同一思想在标量参数化下的完整实现. 下面把它映射到论文的向量形式.
+### 4.2 $S=3$ 的展开
 
----
+块长 $S=3$ 时, 前 6 层各自 attend 的源如下. $y_l=f_l(h_l)$ 是第 $l$ 层的输出.
 
-## 5. Full AttnRes: 论文中的向量形式
+| 层 $l$ | 块 $n$ | 块内序号 $i$ | 当前部分和 | $h_l$ 的候选源 |
+|---|---|---|---|---|
+| 1 | 1 | 1 | 无 | $b_0$ |
+| 2 | 1 | 2 | $y_1$ | $b_0,\ y_1$ |
+| 3 | 1 | 3 | $y_1+y_2$ | $b_0,\ y_1+y_2$ |
+| 4 | 2 | 1 | 无 | $b_0,\ b_1=y_1+y_2+y_3$ |
+| 5 | 2 | 2 | $y_4$ | $b_0,\ b_1,\ y_4$ |
+| 6 | 2 | 3 | $y_4+y_5$ | $b_0,\ b_1,\ y_4+y_5$ |
 
-论文沿用的记号与式 (6) 略有不同: 令 \(\mathbf{v}_0 = \mathbf{h}_1\)(token embedding), \(\mathbf{v}_i = f_i(\mathbf{h}_i)\)(第 \(i\) 个子层输出, \(i \ge 1\)), 当前层输入写成
+第 3 层算完 $y_3$ 后, $b_1=y_1+y_2+y_3$ 进入已完成块的列表. 第 6 层算完后, $b_2=y_4+y_5+y_6$ 也进入列表. 块内各层输出的单独信息被求和合并, 块与块之间仍由 softmax 选择.
+
+### 4.3 块数的选择
+
+每层 attend 的源从 $L$ 个降到 $N$ 个左右, 显存从 $O(L)$ 降到 $O(N)$, 计算从 $O(L^2)$ 降到 $O(N^2)$. 两个极端: $N=L$ 时就是 Full AttnRes; $N=1$ 时退回标准残差, 只是 embedding 单独成为 $b_0$. 论文的经验是 $N\approx8$ 在各个规模上都能拿回大部分收益, 每个 token 只需存约 8 份隐状态.
+
+官方伪代码里有一个细节: `block_size` 同时计入注意力层和 MLP 层, 一个 Transformer block 占两层. 注意力和 MLP 之前各做一次块间注意力, 两次用不同的伪查询和 RMSNorm.
+
+## 5. 工程实现
+
+### 5.1 训练: 流水线并行下的跨 stage 缓存
+
+标准残差在相邻流水线 stage 之间只传一份固定大小的隐状态. Block AttnRes 的每个 stage 都需要此前所有块表示, 如果每次交接都把累积的块表示全传一遍, 通信量会随流水线深度二次增长.
+
+设交错调度有 $P$ 个物理 stage, 每个物理 stage 有 $V$ 个虚拟 stage, 共 $C=PV$ 个 chunk. 每个物理 stage 平均产生 $N_p$ 个维度为 $d$ 的块表示, 第 $j$ 个 chunk 累积了 $jN_p$ 个块. 每次交接都全传时, 每 token 通信量是
 
 $$
-\mathbf{h}_l = \sum_{i=0}^{l-1} \alpha_{i \to l} \cdot \mathbf{v}_i,
-\qquad
-\sum_{i=0}^{l-1} \alpha_{i \to l} = 1.
+\mathrm{Comm}_{\mathrm{naive}}=\sum_{j=1}^{C-1}jN_p\,d=\frac{C(C-1)}{2}N_p\,d.
 \tag{15}
 $$
 
-权重通过 softmax attention 计算. 取核函数 \(\phi(\mathbf{q}, \mathbf{k}) = \exp(\mathbf{q}^\top \mathrm{RMSNorm}(\mathbf{k}))\), 再按深度维归一化:
+一个物理 stage 会依次处理多个虚拟 stage, 前面虚拟 stage 收到的块可以留在本地, 后面不必再传. 第一个虚拟 stage 没有缓存, 照常累积; 从第二个起, 每次交接只传自上一轮以来新增的约 $PN_p$ 个块:
 
 $$
-\alpha_{i \to l} = \frac{\phi(\mathbf{q}_l, \mathbf{k}_i)}{\sum_{j=0}^{l-1} \phi(\mathbf{q}_l, \mathbf{k}_j)}.
+\mathrm{Comm}_{\mathrm{cached}}=\frac{P(P-1)}{2}N_p\,d+(V-1)P^2N_p\,d.
 \tag{16}
 $$
 
-查询、键、值定义为
+单次交接的峰值通信从 $O(C)$ 降到 $O(P)$, 改善 $V$ 倍, 稳态 1F1B 调度下可以和计算完全重叠. 论文 Figure 3 取 $P=4$, $V=2$, 第二个虚拟 stage 省掉了 6 次冗余的块传输. 每个块在所有虚拟 stage 中只存一份; 开激活重计算后, 块间注意力的中间量都不保留, 每层激活显存和标准架构相同.
 
-$$
-\mathbf{q}_l = \mathbf{w}_l,
-\qquad
-\mathbf{k}_i = \mathbf{v}_i =
-\begin{cases}
-\mathbf{h}_1 & i = 0 \\
-f_i(\mathbf{h}_i) & 1 \le i \le l-1
-\end{cases}
-\tag{17}
-$$
+墙钟时间上, 不开流水线并行时 Block AttnRes 的训练开销可以忽略, 开流水线时端到端开销不到 4%.
 
-其中 \(\mathbf{w}_l \in \mathbb{R}^d\) 是**每层一个可学习伪查询**, 不从当前隐状态投影. RMSNorm 加在 key 上, 防止幅值大的层独占 softmax.
+### 5.2 推理: 两阶段计算
 
-这就是 **Full AttnRes**. 每个 token 的算术量 \(O(L^2 d)\), 存层输出 \(O(Ld)\). 普通训练里 \(O(Ld)\) 和反传本来就要留的激活重叠, 不额外占显存; 一旦开激活重计算或流水线并行, 这些输出必须显式保活并跨 stage 传递, 开销才变成 \(O(Ld)\).
+逐层朴素地计算, 每层都要把此前所有块读一遍, 访存是 $O(L\times N)$. 伪查询不依赖前向结果, 一个块内 $S$ 层的查询可以拼成一个矩阵一次算完. 论文的 Algorithm 1 把计算分成两阶段:
 
-### 5.1 与标量门控的精确映射
+1. **阶段一, 块间并行**: 把当前块所有层的伪查询拼成 $[S,d]$ 的矩阵, 对已缓存的块表示做一次批量注意力, 返回输出和 softmax 统计量 (最大值和 log-sum-exp). 已完成块从读 $S$ 次变成读 1 次.
+2. **阶段二, 块内串行**: 按层推进. 块内第一层直接用阶段一的结果; 之后每层只对当前部分和 $b_n^{i-1}$ 算一次注意力, 再用 online softmax 和阶段一的结果合并, 然后更新部分和 $b_n^i=b_n^{i-1}+f_l(h_l)$.
 
-| 论文完整形式 | 标量门控形式 | 含义 |
-| ---- | ---- | ---- |
-| \(\mathbf{w}_l \in \mathbb{R}^d\) | \(g_i \in \mathbb{R}\) | query 从向量退化为标量灵敏度 |
-| \(\mathrm{RMSNorm}(\mathbf{v}_i) \in \mathbb{R}^d\) | \(k_i = \mathrm{RMS}(h_i) \in \mathbb{R}\) | key/value 从归一化向量退化为范数标量 |
-| 点积 \(\mathbf{w}_l \cdot \mathrm{RMSNorm}(\mathbf{v}_i)\) | 标量乘法 \(g_i \cdot k_i\) | 内积退化为普通乘法 |
-| 指数中无显式负号 | 指数中带 \(-g_i k_i\) | 负号来自「大范数层应获小权重」的先验 |
+合并后的结果和逐层完整计算在代数上相等: 已完成的块和当前部分和在同一个 softmax 分母里比较. online softmax 合并是逐元素运算, 可以和前后算子融合. 阶段一还能和块内第一层的计算部分重叠. 两阶段方法对 Full AttnRes 同样适用, 每层 I/O 从 $O(Ld)$ 降到 $O((S+N)d)$.
 
-从标量恢复为论文完整形式, 只需四步:
+### 5.3 残差路径的访存
 
-1. 把 \(g_i\) 扩展为可学习向量 \(\mathbf{w}_i \in \mathbb{R}^d\);
-2. 把 \(k_i\) 替换为 \(\mathrm{RMSNorm}(\mathbf{v}_i)\);
-3. 把乘法恢复为点积;
-4. 负号吸收进 \(\mathbf{w}_i\) 的某个方向, 或直接让训练学会对大范数层打低分.
+论文 Table 1 统计了每 token 每层残差机制本身的访存, 不含子层 $f_l$ 内部. 典型设定 $L=128$, $N=8$, $S=16$, $m=4$:
 
-### 5.2 零初始化
+| 方案 | 读 | 写 | 合计 | 典型值 |
+|---|---|---|---|---:|
+| 标准残差 | $2d$ | $d$ | $3d$ | $3d$ |
+| mHC ($m$ 条流) | | | $(8m+2)d+2m^2+4m$ | $34d$ |
+| Full AttnRes (两阶段) | | | $(S+N)d$ | $24d$ |
+| Block AttnRes (两阶段) | $(N/S+3)d$ | $2d$ | $(N/S+5)d$ | $5.5d$ |
 
-伪查询 \(\mathbf{w}_l\) 必须**零初始化**. 这样训练起步时, 对所有历史层都有 \(\mathbf{q}_l^\top \mathbf{k}_i \approx 0\), softmax 输出近似均匀分布. 此时式 (15) 退化成等权平均, AttnRes 在初始化点与标准残差等价, 不会因为初始权重过偏而破坏训练稳定性.
+Block AttnRes 的残差路径访存不到 mHC 的六分之一. 加上阶段一和块内第一层的重叠, 典型推理负载上端到端延迟开销不到 2%.
 
-这个 trick 的另一个好处是训练动态更平滑. 网络先在等权平均的 regime 下学会基本信号, 等深层表示稳定后, 再慢慢学出哪些历史层更值得被当前层关注. 如果随机初始化伪查询, 某些层可能在训练初期就被过度抑制或放大, 导致优化路径更难走.
+### 5.4 长上下文 prefill 的显存
 
-### 5.3 深度混合矩阵
+prefill 时要存 $N\times T\times d$ 个块表示元素. 128K token, 8 个块, 需要约 15 GB. 论文把块表示沿序列维切到 $P$ 个张量并行设备上, 阶段一在本地序列分片上独立执行; 阶段二的 online softmax 合并接进张量并行原有的 all-reduce 路径 (reduce-scatter, 本地合并, all-gather), 还能和 RMSNorm 融合. 每设备显存降到 $N\times(T/P)\times d$, 上面的例子从 15 GB 降到约 1.9 GB. 再配合 16K 的分块 prefill, 每设备开销不到 0.3 GB.
 
-把式 (15) 写成矩阵形式. 定义深度混合矩阵 \(\mathbf{M} \in \mathbb{R}^{L \times L}\), 其中 \(M_{i \to l}\) 是第 \(l\) 层分给第 \(i\) 层输出的权重. 标准残差展开后 \(\mathbf{M}\) 是全 1 下三角, 半可分秩为 1. Highway 的权重随门走, 但仍是 1-半可分, 只由对 \(x_{l-1}\) 的递推间接碰到更早层.
+## 6. 实验
 
-Full AttnRes 的 \(M_{i \to l} = \alpha_{i \to l}\) 由内容相关的 \(\phi(\mathbf{w}_l, \mathbf{k}_i)\) 直接给出, 矩阵稠密, 秩最多为 \(L\). 加法家族把 \(\mathbf{M}\) 卡在低秩递推里; softmax 才允许当前层直接点名某一层.
+### 6.1 Scaling Laws
 
-> 图 1 解析
->
-> - Pre-LN fixed accumulation 计算 $h_l=\sum_i1\cdot v_i$，权重和随 source 数量增长为 $l$；在等范数近似下，单个 source 的相对份额约为 $1/l$。
-> - Full AttnRes 使用 $q_l=w_l$ 与 $k_i=\operatorname{RMSNorm}(v_i)$ 计算 logits，在 history source index $i$ 上做 softmax，再用归一化权重聚合原始 values $v_i$。
-> - $w_l=0$ 初始化使所有 logits 为 0、$\alpha_{i\to l}=1/l$；训练随后从均匀 depth read 学出 source 偏好。
+缩放实验用 5 档 MoE 模型, 上下文 8192, Block AttnRes 取 $N=8$. 超参按基线调好后直接给所有方法用. Table 2 的验证 loss:
 
----
+| 激活参数 | token | $L_b$ | 基线 | Block | Full | mHC-lite |
+|---|---:|---:|---:|---:|---:|---:|
+| 194M | 38.7B | 12 | 1.931 | 1.909 | 1.899 | 1.906 |
+| 241M | 45.4B | 13 | 1.895 | 1.875 | 1.874 | 1.869 |
+| 296M | 62.1B | 14 | 1.829 | 1.809 | 1.804 | 1.807 |
+| 436M | 87.9B | 16 | 1.766 | 1.746 | 1.737 | 1.747 |
+| 528M | 119.0B | 17 | 1.719 | 1.693 | 1.692 | 1.694 |
 
-## 6. Block AttnRes: 块内求和, 块间注意
+$L_b=L/2$ 是 Transformer block 数. 拟合 $\mathcal L=A\,C^{-\alpha}$ ($C$ 为 PFLOP/s-days): 基线 $1.891\,C^{-0.057}$, Block $1.870\,C^{-0.058}$, Full $1.865\,C^{-0.057}$. 三条曲线斜率相近, AttnRes 整体更低. 在 5.6 PFLOP/s-days 处, Block 1.692, 基线 1.714, 相当于基线多花 1.25 倍算力. Full 和 Block 的差距随规模缩小, 最大一档只差 0.001. 和 mHC-lite 比, Full 更好, Block 基本持平, 残差路径访存是 $5.5d$ 对 $34d$.
 
-Full AttnRes 在规模训练里要跨流水线 stage 传全部 \(L\) 份层输出. Block AttnRes 把 \(L\) 层划成 \(N\) 块, 块内用标准残差把层输出**加总成一份块表示**, 块间只对 \(N\) 份块摘要(外加 embedding)做注意力. 内存和通信从 \(O(Ld)\) 降到 \(O(Nd)\).
+### 6.2 48B 主实验
 
-> 一点想法: 降本的思路不是随机丢弃历史层, 而是先压缩再做选择. 滑动窗口直接丢掉远处层, 模型无法恢复那些被丢弃层的贡献; Block 先对块内层求和, 保留全部信息, 只是把 attention 的规模降下来. 这个「压缩再选择」的策略, 比「稀疏再选择」更稳.
+主模型基于完整的 Kimi Linear 48B 配置: 27 个 Transformer block (54 层), 256 个路由专家选 8 个, 外加 1 个共享专家, 总参 48B, 激活 3B. 注意力按 3:1 交错 [KDA](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) 和 [MLA](../03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), 每层后接 MoE. 唯一改动是残差换成 Block AttnRes, 每块 6 层, 得到 9 个块, 加 embedding 共 10 个深度维源. 深度, 隐维, 专家路由和 MLP 结构都不变.
 
-### 6.1 分块规则
+训练沿用 Kimi Linear 1.4T token 的配方: 上下文 4096, Muon 优化器, WSD 学习率, 全局 batch 8M token. 先在 1T token 上做 WSD 预训练, 再用约 400B 高质量 token 做中期训练, 之后逐步把序列拉长到 32K. MLA 层不用位置编码 (NoPE), 长度扩展不需要 YaRN 或注意力温度调整.
 
-设总子层数为 \(L\), 块数为 \(N\), 块长 \(S = L/N\)(除不尽则最后一块吃余数). Embedding 单独作为 block 0:
+Table 3 是同一套配方下的下游结果:
 
-$$
-\mathbf{b}_0 = \mathbf{h}_1.
-\tag{18}
-$$
+| 类别 | 任务 | 基线 | AttnRes |
+|---|---|---:|---:|
+| 通用 | MMLU | 73.5 | 74.6 |
+| | MMLU-Pro | 52.2 | 52.2 |
+| | GPQA-Diamond | 36.9 | 44.4 |
+| | BBH | 76.3 | 78.0 |
+| | ARC-Challenge | 64.6 | 65.7 |
+| | HellaSwag | 83.2 | 83.4 |
+| | TriviaQA | 69.9 | 71.8 |
+| 数学与代码 | GSM8K | 81.7 | 82.4 |
+| | MGSM | 64.9 | 66.1 |
+| | Math | 53.5 | 57.1 |
+| | CMath | 84.7 | 85.1 |
+| | HumanEval | 59.1 | 62.2 |
+| | MBPP | 72.0 | 73.9 |
+| 中文 | CMMLU | 82.0 | 82.9 |
+| | C-Eval | 79.6 | 82.5 |
 
-非 embedding 的第 \(n\) 个 block 包含子层指标集 \(\mathcal{B}_n\), 其压缩表示为
+15 项里 14 项提升, MMLU-Pro 持平. 涨幅最大的是多步推理和代码: GPQA-Diamond +7.5, Math +3.6, HumanEval +3.1. 知识类的 MMLU +1.1, TriviaQA +1.9. 论文的解释是深度维信息流改善后, 后面的层能有选择地取回并组合前面的表示, 组合型任务受益更多.
 
-$$
-\mathbf{b}_n = \sum_{j \in \mathcal{B}_n} f_j(\mathbf{h}_j).
-\tag{19}
-$$
+### 6.3 训练动态
 
-### 6.2 当前层的输入
+Figure 5 对比了两个 48B 模型在 1T token 预训练中的三项指标:
 
-块 \(n\) 内第 \(i\) 层的部分和记 \(\mathbf{b}_n^{i-1}\)(不含当前层). 当 \(i = 1\) 时, 当前 block 还没有输出, 只 attend 已完成 block; 当 \(i \ge 2\) 时, 额外把当前 block 的部分和作为一个候选源.
+- **验证 loss**: AttnRes 全程更低, 差距在学习率衰减阶段拉大.
+- **输出幅值**: 基线各 block 的输出幅值随深度单调增长, 这就是 1.2 节的 PreNorm dilution. Block AttnRes 在块边界做选择性聚合, 累积在每块重新开始, 幅值有界, 呈周期性.
+- **梯度幅值**: 基线所有残差权重固定为 1, 无法调节梯度在深度上的分配, 最浅几层的梯度明显偏大. AttnRes 的 softmax 让各源竞争权重, 梯度在各层分布更均匀.
 
-第 \(l\) 层的 value 矩阵为
+### 6.4 消融
 
-$$
-\mathbf{V} =
-\begin{cases}
-[\mathbf{b}_0, \mathbf{b}_1, \dots, \mathbf{b}_{n-1}]^\top & i = 1 \\
-[\mathbf{b}_0, \mathbf{b}_1, \dots, \mathbf{b}_{n-1}, \mathbf{b}_n^{i-1}]^\top & i \ge 2
-\end{cases}
-\tag{20}
-$$
+消融在 Table 2 的 436M / 16 头那一档上做, 超参和算力相同. Table 4:
 
-键和权重仍走式 (16)(17). \(N = L\) 时退回 Full AttnRes; \(N = 1\) 时退回「标准残差 + 把 embedding 单独成 \(\mathbf{b}_0\)」. 经验上 **\(N \approx 8\)** 就能收回 Full 的大部分收益, 每 token 只存大约八份隐状态.
+| 变体 | loss |
+|---|---:|
+| 基线 (PreNorm) | 1.766 |
+| DenseFormer | 1.767 |
+| mHC | 1.747 |
+| Full AttnRes | 1.737 |
+| Full, 查询由输入投影 | 1.731 |
+| Full, 与输入无关的标量混合 | 1.749 |
+| Full, softmax 换成 sigmoid | 1.741 |
+| Full, 键不做 RMSNorm | 1.743 |
+| 滑动窗口 (最近 8 层 + embedding) | 1.764 |
+| Block ($S=4$) | 1.746 |
+| Block, 按头分别聚合 ($H=16$) | 1.752 |
+| Block, 键不做 RMSNorm | 1.750 |
 
-### 6.3 两阶段算法
+从这张表能读出几件事:
 
-官方实现把计算分成两阶段(Algorithm 1):
+- **权重必须依赖输入**: DenseFormer 能读到所有更早的层, 权重却是固定标量, 结果 1.767, 和基线持平. 把 AttnRes 的查询和键换成固定标量, loss 也升到 1.749.
+- **远处的层比近邻重要**: 滑动窗口只留最近 8 层和 embedding, 结果 1.764, 几乎回到基线. 有选择地读远处的层, 比读很多近邻层更有用.
+- **softmax 的竞争归一化有用**: 换成 sigmoid 后 1.741. 论文认为 softmax 迫使各源竞争, 选择更集中.
+- **一层输出整体相关**: 按头分别做深度聚合 ($H=16$) 反而变差. 论文据此认为最优的深度混合在通道间基本一致, 一层的输出要么整体相关, 要么整体无关.
+- **输入相关的查询还能更好**: 1.731, 但每层要多一个 $d\times d$ 投影, decode 时还得串行访存, 默认仍用伪查询.
 
-- **Phase 1**: 对一块内全部 \(S\) 个伪查询, 对已缓存 block 表示一次性 batched 打完, 记下 softmax 的 max 与 log-sum-exp.
-- **Phase 2**: 按层推进部分和, 用 online softmax 与 Phase 1 合并. 块内第一层直接用 Phase 1 的归一化输出; 从第二层起, Phase 2 只对当前部分和做一次注意, 再把两路加权分子和分母并起来.
+块长扫描 (Figure 6): $S=32,16,8,4,2$ 时 loss 依次为 1.757, 1.753, 1.748, 1.746, 1.746, Full ($S=1$) 是 1.737. $S$ 变大时 loss 缓慢回升. 实际部署按基础设施效率把块数固定在 8 左右.
 
-这保证「已经看到的部分和」与「更早的 block 摘要」在同一套 \(\alpha\) 下竞争, 而不是先加再注意. 代数上与逐层 Full 计算等价.
+### 6.5 容量再分配
 
-**图 2 解析**
+Figure 7 固定训练算力 (约 $6.5\times10^{19}$ FLOPs) 和激活参数 (约 $2.3\times10^8$), 在 $d_{model}/L_b\in\{15,30,45,60,75\}$ 和 $H/L_b\in\{0.3,\ldots,0.7\}$ 的 25 个配置上训练, $H$ 是注意力头数. 两种方法都在 $H/L_b\approx0.3$ 处最优. 25 个配置里 AttnRes 的 loss 都比基线低 0.019 到 0.063. 最优点不同: 基线在 $d_{model}/L_b\approx60$ (1.847), AttnRes 移到 $\approx45$ (1.802). 参数预算固定时, 比值越小网络越深越窄, AttnRes 更能利用深度. 论文说明这只是诊断: 更深的模型推理延迟更高, 不能直接当作部署建议.
 
-- 块内第一层的候选集是 $[b_0,\ldots,b_{n-1}]$；从第二层开始，候选集多出 $b_n^{i-1}=\sum_{j<i}y_j$。
-- Depth Softmax 负责生成当前层输入 $h_l$；子层输出 $y_l=f_l(\operatorname{Norm}(h_l))$ 不直接写进 completed bank，而是先更新 $b_n^i=b_n^{i-1}+y_l$。
-- 只有当 $i=S$ 时，$b_n^S$ 才成为 completed block $b_n$；下一个 block 从空 partial 开始。
-- Phase 1 批量处理 completed blocks，Phase 2 逐层加入 current partial，并通过 online softmax 合并统计量；两类 sources 在同一归一化分母中竞争。
-- 图中 $m=3$ 的六行展开与下表逐项对应，可直接检查每层 candidate sources 与 partial sum。
+### 6.6 学到的权重模式
 
-### 6.4 \(m = 3\) 的展开示例
+Figure 8 画出 16 头模型 (16 个注意力层, 16 个 MLP 层) 的深度注意力权重, 按 token 平均. 三个观察:
 
-下面给出 \(m = 3\) 时前 6 层 attend 的对象. 全局层号 \(l\), block 序号 \(n\), block 内序号 \(i\), 当前 partial sum, 输入 attend 的对象:
+1. **局部性仍是主路径**: 每层权重最大的源通常是紧邻的上一层, 同时出现了一些对角线以外的集中, 比如第 4 层回看很早的源, Block 设置下第 15, 16 层回看前面的块. 这些是标准残差路径之外学到的跳连.
+2. **层类型分工**: embedding 在整个深度上都保有不小的权重, 在注意力层之前更明显. MLP 之前的输入更集中在最近的表示上, 注意力之前的输入看得更广.
+3. **Block 保留了这些结构**: 对角占优, embedding 持续有权重, 层类型分工都从 Full 版迁移到了 Block 版, 权重分布更尖锐.
 
-| \(l\) | \(n\) | \(i\) | partial sum | \(x_{l-1}\) attend 的对象 |
-| --- | --- | --- | --- | --- |
-| 1 | 1 | 1 | — | \(\mathbf{b}_0\) |
-| 2 | 1 | 2 | \(y_1\) | \(\mathbf{b}_0, y_1\) |
-| 3 | 1 | 3 | \(y_1 + y_2\) | \(\mathbf{b}_0, y_1 + y_2\) |
-| 4 | 2 | 1 | — | \(\mathbf{b}_0, \mathbf{b}_1 = y_1 + y_2 + y_3\) |
-| 5 | 2 | 2 | \(y_4\) | \(\mathbf{b}_0, \mathbf{b}_1, y_4\) |
-| 6 | 2 | 3 | \(y_4 + y_5\) | \(\mathbf{b}_0, \mathbf{b}_1, y_4 + y_5\) |
+论文还指出, 某些层不论输入如何都持续吸走大量权重, 这是深度维上的 attention sink, 和序列维注意力里的 sink 现象对应.
 
-第 3 层算完 \(y_3\) 后, \(\mathbf{b}_1 = y_1 + y_2 + y_3\) 加入已完成 block 列表; 第 6 层算完 \(y_6\) 后, \(\mathbf{b}_2 = y_4 + y_5 + y_6\) 加入列表.
+## 7. 统一视角: 深度混合矩阵
 
-### 6.5 复杂度对比
+### 7.1 把残差写成矩阵
 
-下面把几种残差聚合方案在 attend 数量、计算、通信和退化能力上做直观对比. 注意这里只比较残差聚合路径本身的开销, 不包括子层 \(f_l\) 内部的 attention / FFN 计算.
+上面这些残差变体都可以写成对更早层输出的加权聚合. 定义深度混合矩阵 $M\in\mathbb R^{L\times L}$, $M_{i\to l}$ 是第 $l$ 层分给第 $i$ 层输出的权重, $h_l=\sum_{i=0}^{l-1}M_{i\to l}\,v_i$. 各方法的区别在于权重怎样产生 (固定, 可学, 依赖输入), 以及 $M$ 是被限制在低秩, 还是可以稠密. 用 $M$ 的半可分秩 (semiseparable rank) 可以统一比较:
 
-| 方案 | 每层 attend 数量 | 计算复杂度 | 显存/通信 | 能否退化回标准残差 |
-| ---- | ---- | ---- | ---- | ---- |
-| 标准残差 | 1(只加当前层) | \(O(Ld)\) | \(O(d)\) | 是 |
-| Full AttnRes | \(L\) | \(O(L^2 d)\) | \(O(Ld)\) | 是 |
-| Sliding Window AttnRes | \(w \ll L\) | \(O(Lwd)\) | \(O(wd)\) | 否(丢弃历史) |
-| **Block AttnRes** | \(N \approx 8\) | \(O(LNd)\) | \(O(Nd)\) | 是(block 内保留完整历史) |
+| 方法 | $M_{i\to l}$ | 结构 |
+|---|---|---|
+| 标准残差 | 全为 1 | 全 1 下三角, 1-半可分 |
+| Highway | 门的累乘 | 1-半可分, 权重依赖输入, 每列和为 1 |
+| (m)HC | $\beta_i^\top A^\times_{i+1\to l}\alpha_l$ | $m$-半可分 |
+| Full AttnRes | $\alpha_{i\to l}$ | 稠密, 秩可到 $L$ |
+| Block AttnRes | 同块的源共享 $\alpha_{n\to l}$ | 秩介于 $N$ 和 $N+S$ 之间 |
 
-### 6.6 Kimi Linear 与 K3 的块数
+Highway 的权重是门的累乘: 记 $\Pi_{i\to l}=\prod_{j=i+1}^{l}(1-g_j)$, 则 embedding 的权重是 $\Pi_{1\to l}$, 第 $i$ 层的权重是 $g_{i+1}\Pi_{i+1\to l}$. 累乘可以按标量门分解, 秩和标准残差一样是 1, 只是权重随输入变化. 这些权重和为 1, Highway 相当于不用 softmax 的 stick-breaking 注意力.
 
-Kimi Linear 48B 实验(论文 §5.2): 27 个 Transformer block(54 子层, attn 与 MLP 分开计), Block AttnRes 每块 6 子层, 得到 9 个 block 再加 embedding, 一共 **10 个深度维源**.
+(m)HC 维护 $m$ 条流, 展开后的有效权重里, $\alpha_l$ 是把各流合成子层输入的读系数, $\beta_i$ 是把输出分发回各流的写系数, $A^\times_{i+1\to l}=\prod_k A_k$ 是 $m\times m$ 转移矩阵的累乘. $m\times m$ 的转移让 $M$ 成为 $m$-半可分. Block AttnRes 里, 已完成块 $\mathcal B_n$ 中的所有源共享块表示 $b_n$ 的键和值, 权重相同; 当前块的每个位置额外多一个部分和源, 所以秩在 $N$ 和 $N+S$ 之间, 在标准残差 ($N=1$) 和 Full ($N=L$) 之间插值.
 
-K3([arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2)是另一种捆法: 93 子层划成 **8 个约 12 子层的 block, 最后一块不满, 加 embedding 共 9 个可查询源**. 公式仍是上文的伪查询 + RMSNorm key, 10 和 9 不是同一个数, 不要混.
+### 7.2 线性注意力与 softmax 注意力
 
----
+从这个矩阵看, 已有的残差变体都是深度维上的线性注意力. 以 (m)HC 为例: $\alpha_l$ 相当于第 $l$ 层发出的查询, $\beta_i$ 相当于概括第 $i$ 层贡献的键, 转移矩阵的累乘相当于深度维上的相对位置算子. $m$ 条并行流对应把递推状态从 $d$ 扩展到 $d\times m$, 也就是线性注意力里的状态扩展, 它提高了 $M$ 的半可分秩. 一般地, 当核函数能分解成 $\phi(q,k)=\varphi(q)^\top\varphi(k)$ 时, 深度维注意力就会塌缩成一个递推. MRLA 对应 GLA, DDL 对应 DeltaNet, 都是这种情况.
 
-## 7. AttnRes、\(G_1\)、mHC、GR 与 xHC 的混合轴
+序列维上的对应关系也可以接着写. Test-Time Training 把每个递推步写成一次梯度下降; $f$ 为线性时, 它就是普通的线性注意力 $S_t=S_{t-1}+k_tv_t^\top$. 标准残差沿深度有相同的加法形式, $h_l$ 是状态, 每一层像是一次「梯度步」. 序列维上数据相关的门对应深度维的 Highway, delta 规则对应 DDL. 这些方法都还在递推的框架里改进更新规则. AttnRes 把深度维的递推整个换成直接的跨层注意力, 和 Transformer 在序列维上用自注意力换掉递推是同一个动作.
 
-这五类机制都改变信息混合，但 source set、controller 与 normalized axis 各不相同。直接按张量路径对齐，比只看名称更容易判断它们插在网络的哪个位置。
+## 8. Kimi K3 中的 AttnRes
 
-**图 3 解析**
+[Kimi K3](https://arxiv.org/abs/2607.24653) 是总参 2.8T, 激活 104B 的 MoE 模型, 每个 block 含 3 层 KDA 和 1 层 Gated MLA, 每层注意力后接 Stable LatentMoE. 技术报告 §2.2 写明深度维用 Block AttnRes, 公式和本文第 3, 4 节相同: 每层一个伪查询, 键做 RMSNorm, 块内求和, 块间 softmax, embedding 始终是 $b_0$.
 
-- **AttnRes** 的 source set 是前序层输出或 completed block summaries；$w_l$ 与 RMSNorm keys 产生 depth softmax，输出当前子层输入 $h_l$。
-- **$G_1$** 的 source set 是当前 SDPA 的 head outputs；sigmoid gate 作用在 $W_V$ output 与 $W_O$ 之间，随后仍形成 $x+F_{\mathrm{attn}}(x)$。
-- **mHC** 读取当前深度的 $m$ 条 residual streams，用 read/write coefficients 与 doubly stochastic $H_{\mathrm{res}}$ 做 stream mixing。
-- **GR** 读取当前深度的 $n_r$ 个 branches，经 elementwise sigmoid read 得到一份子层输入，再把同一个 $F$ 的输出按 scalar write 写回各分支。
-- **xHC** 在 expanded streams 上组合 dense read、sparse write 与 Sinkhorn mixing，输出更新后的 expanded stream set。
+划块方式: 报告 Table 1 列出 93 层, §2.2 写「按 12 层一块划成 8 块, 最后一块不满, 加上 embedding 共 9 个块」. 按这两个数推算, 前 7 块各 12 层, 最后一块 9 层. 块数和 AttnRes 论文建议的 $N\approx8$ 一致. 注意它和 48B 实验的 10 个源是两个不同的数: Kimi Linear 48B 是 54 层按 6 层一块分成 9 块, 再加 embedding.
 
-| 机制 | mixing axis | source set | output form |
-| ---- | ---- | ---- | ---- |
-| **AttnRes** | history depth | 前序层输出或 block summaries | $h_l=\sum_i\alpha_{i\to l}v_i$ |
-| \(G_1\) | attention head output | 当前 query 的 head outputs | $F_{\mathrm{attn}}(x)$，随后 residual add |
-| mHC | residual stream | 当前深度的 \(m\) 条 streams | doubly stochastic stream mixing |
-| GR | residual branch | 当前深度的 \(n_r\) 个 branches | elementwise read + scalar writes |
-| xHC | expanded stream | 当前深度的 expanded streams | dense read + sparse write + Sinkhorn |
+块表示还被推理侧复用. K3 预训练时带一个和骨干 block 结构相同的 MTP 层, 后训练把它微调成 EAGLE-3 风格的草稿模型 (目标模型冻结, 只更新草稿层和特征融合投影). 草稿的输入融合目标模型低, 中, 高三个层级的特征, 分别取自第 1 个, 第 4 个和最后一个 AttnRes 块的输出. 三份特征拼接后由一个无偏置矩阵投影到隐维, 这个矩阵初始化为 $[\mathbf 0\ \mathbf 0\ I]$, 起步时融合结果等于高层特征, 也就是 MTP 层预训练时的输入, 微调中再逐步引入低层和中层特征. 块表示本来就要为块间注意力缓存, 草稿模型直接取用, 不需要额外保存中间层的隐状态.
 
-论文 Table 4 把这件事做成消融: 同一套 16 头模型, 同一算力, PreNorm 基线 **1.766**; DenseFormer(能看所有前序输出, 但权重是**与输入无关的标量**) **1.767**, 几乎不涨; mHC **1.747**; Full AttnRes **1.737**; Block(\(S = 4\)) **1.746**. 能看历史层但权重不随内容变, 等于没改稀释; 加宽流是另一条路; 深度维 softmax 才是本篇.
+K3 的型号细节见 [Kimi K3 对照译稿](../../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md).
 
-Qwen3.8 报告 Table 6 也拿 AttnRes 做过**残差消融**, 那是对照实验, Qwen3.8 **没有**把 AttnRes 写进主干. 28 层(\(L = 56\) 个子层)上: Pre-norm 1.789 / 加 GatedNorm 1.787; Block \(S = 4\) 为 1.773 / 1.768; \(S = 2\) 为 1.770 / 1.766; Full 为 1.762 / 1.758; GR(\(n_r = 4\)) 无 GN 那一格是破折号, 带 GN 是 **1.762**. 48 层上 Block \(S = 4\) 到 1.711, GR 到 **1.707**. 旗舰残差选择是 GR.
+## 9. 和相邻机制的区别
 
----
+AttnRes, Gated Attention 的 $G_1$, mHC, Gated Residual, xHC 都改信息混合, 但混合的轴, 源和输出形式各不相同:
 
-## 8. 工程代价、缩放与下游
+| 机制 | 混合沿哪个轴 | 源 | 输出形式 |
+|---|---|---|---|
+| AttnRes | 深度 (历史层) | 更早各层输出或块表示 | $h_l=\sum_i\alpha_{i\to l}v_i$ |
+| $G_1$ Gated Attention | 注意力头输出 | 当前 SDPA 的各头输出 | 门后进 $W_O$, 外面仍是 $x+F(x)$ |
+| mHC | 残差流 | 当前深度的 $m$ 条流 | 双随机矩阵混合各流 |
+| Gated Residual | 残差分支 | 当前深度的 $n_r$ 条分支 | 逐元素读门 + 每分支标量写回 |
+| xHC | 扩展后的残差流 | 当前深度的扩展流 | 稠密读 + 稀疏写 + Sinkhorn 混合 |
 
-### 8.1 访存与通信
+$G_1$ 在注意力子层内部, 门乘在 SDPA 输出上, 和深度维无关, 详见 [Gated Attention](../06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md). mHC, Gated Residual, xHC 都只读当前深度的那几条流, 不直接访问更早某一层的输出.
 
-标准残差每层合并只要 \(3d\) 的 I/O. mHC(\(m = 4\) 流)典型 **34d**. Full AttnRes 走两阶段后摊到 **24d**; Block 摊到 **5.5d**(典型设定 \(L = 128, N = 8, S = 16\); 论文写每层 \((\frac{N}{S} + 3)d\) 读, \(2d\) 写). Block 比 mHC 省的是残差路径上的访存, 不是说子层 \(f_l\) 内部更便宜.
+Qwen3.8 技术报告在 Table 6 里把 AttnRes 作为残差设计的对照实验 (28 层, $L=56$ 个子层, 有无 GatedNorm):
 
-流水线并行下, 若每次 stage 交接都把已累积的 block 表示全传一遍, 每 token 通信是
+| 残差设计 | loss | 加 GatedNorm |
+|---|---:|---:|
+| Pre-norm 残差 | 1.789 | 1.787 |
+| Block AttnRes, $S=4$ | 1.773 | 1.768 |
+| Block AttnRes, $S=2$ | 1.770 | 1.766 |
+| Full AttnRes | 1.762 | 1.758 |
+| Gated Residual ($n_r=4$) | - | 1.762 |
 
-$$
-\mathrm{Comm}_{\mathrm{naive}} = \sum_{j=1}^{C-1} j N_p \cdot d = \frac{C(C-1)}{2} N_p d,
-\tag{21}
-$$
+48 层上 Block AttnRes ($S=4$) 是 1.711, Gated Residual 是 1.707. Qwen3.8 的主干最终用的是 Gated Residual, AttnRes 只出现在这张对照表里. 推导见 [Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md).
 
-其中 \(C = PV\) 是物理 stage 数 \(\times\) 虚拟 stage 数. 跨 stage 缓存之后, 第一虚拟 stage 仍按累积传, 后续虚拟 stage 只传增量:
+## 10. 适用边界
 
-$$
-\mathrm{Comm}_{\mathrm{cached}} = \frac{P(P-1)}{2} N_p d + (V-1)P^2 N_p d.
-\tag{22}
-$$
+论文自己指出的限制有几条:
 
-峰值从 \(O(C)\) 降到 \(O(P)\). 论文测: 不开 PP 时墙钟开销可忽略; 开 PP 时端到端 **不到 4%**. 推理延迟典型负载上 **不到 2%**.
+- **Full AttnRes 受通信限制**: 流水线下 $O(Ld)$ 的跨 stage 通信无法靠本地批量计算消除. 论文预期互连改进后 Full 版才实用, 目前用 Block 版, 块数固定在 8 左右是为了基础设施效率.
+- **输入相关的查询**: loss 更低 (1.731), 但每层多一个 $d\times d$ 投影, decode 时要串行访存, 没有采用.
+- **偏深的最优结构**: 容量再分配实验显示 AttnRes 偏好更深更窄的网络, 但深度增加会抬高推理延迟.
+- **深度维注意力的形式**: 论文用的是普通 softmax 注意力, 理由是层数还在 softmax 能承受的范围内. 更省显存的线性复杂度替代方案留作后续工作.
 
-### 8.2 缩放律
+常见的误用:
 
-缩放律(Table 2, 五档激活参数, 上下文 8192, Block 用 \(N = 8\))超参按**基线**选, 故意偏帮基线. 拟合 \(\mathcal{L} = A \times C^{-\alpha}\): 基线 \(1.891 \times C^{-0.057}\), Block \(1.870 \times C^{-0.058}\), Full \(1.865 \times C^{-0.057}\). 斜率差不多, AttnRes 整条曲线更低. 在 **5.6 PFLOP/s-days**, Block **1.692** 对基线 **1.714**, 相当于基线再花 **\(1.25\times\)** 算力才追上. 最大一档 Full 与 Block 只差 **0.001**.
-
-同表对照 mHC-lite: 436M 这一档基线 1.766, Block 1.746, Full **1.737**, mHC-lite 1.747 — Full 优于 mHC, Block 打平 mHC 但访存是 5.5d 对 34d.
-
-### 8.3 48B 下游
-
-48B 总参 / 3B 激活, 1.4T token, 接进 Kimi Linear(3:1 [KDA](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) : [MLA](../04-MLA-低秩潜变量与矩阵吸收/04.1-MLA工程实现/04.1-MLA工程实现.md), 其余深度、隐维、路由不动). AttnRes 每层只多一个 RMSNorm 和一个 \(\mathbf{w}_l\). 训练: Muon, WSD, 先 1T 再约 400B 中训, 然后拉到 32K; MLA 走 NoPE, 不必 YaRN. Table 3 是同一套数据配方下的下游(Block vs 基线):
-
-| 任务 | 基线 | AttnRes |
-| ---- | ---: | ---: |
-| MMLU | 73.5 | **74.6** |
-| GPQA-Diamond | 36.9 | **44.4** |
-| BBH | 76.3 | **78.0** |
-| TriviaQA | 69.9 | **71.8** |
-| Math | 53.5 | **57.1** |
-| HumanEval | 59.1 | **62.2** |
-| MBPP | 72.0 | **73.9** |
-| CMMLU | 82.0 | **82.9** |
-| C-Eval | 79.6 | **82.5** |
-| MMLU-Pro | 52.2 | 52.2 |
-
-论文点名涨得多的是多步推理与代码: GPQA-Diamond **+7.5**, Minerva Math **+3.6**, HumanEval **+3.1**; 知识向的 MMLU 只 +1.1. MMLU-Pro 打平 52.2, 「全部任务都涨」不等于每一格都严格更大.
-
-### 8.4 消融与容量再分配
-
-Table 4 其余设计选择(同一 16 头档):
-
-- 输入相关查询能再降到 **1.731**, 但每层多 \(d \times d\) 投影, decode 还得串行访存, 所以默认仍用伪查询.
-- 改成与输入无关的标量混合 **1.749**.
-- softmax 换成 sigmoid **1.741**(缺竞争归一化).
-- Block 上再按头做深度聚合(\(H = 16\))反而到 **1.752**(相对 Block 1.746) — 一层输出该留就整层留, 不必按通道拆.
-- 去掉 RMSNorm, Full 1.743, Block 1.750.
-- 滑动窗口只留最近 8 层 + embedding(SWA)是 **1.764**, 几乎打回 1.766: 能看见远处的层, 比多看近邻更值钱.
-- 块长扫描: \(S = 2, 4, 8\) 都在 1.746 附近, \(S = 16, 32\) 往基线靠.
-
-容量再分配(固定约 \(6.5 \times 10^{19}\) FLOPs, 约 \(2.3 \times 10^8\) 激活): 25 个 \((d_{\mathrm{model}}/L_b, H/L_b)\) 格子里 AttnRes 都低于基线(差 0.019–0.063); 最优点从基线的 \(d_{\mathrm{model}}/L_b \approx 60\)(loss 1.847) 挪到 \(\approx 45\)(**1.802**), 同一参数预算下更偏深、窄. 论文写这是诊断, 不是部署建议 — 更深通常更伤 decode 延迟.
-
----
-
-## 9. 失效模式与边界
-
-| 现象 | 原因 | 说明 |
-| ---- | ---- | ---- |
-| 写成 \(G_1\) | 都叫 Gate / Attention | \(G_1\) 乘 SDPA 头输出, 残差仍是 \(x + F(x)\). 零点在 06. |
-| 写成 mHC / xHC | 都在改 residual mixing | 那是流条数与 \(H_{\mathrm{res}}\); AttnRes 是对历史层 softmax. 式 (10) 是线性深度注意, 本篇是 softmax. |
-| 写成 GR | Qwen Table 6 出现过 AttnRes | Table 6 是残差消融. Qwen3.8 选的是 GR. Qwen3.8 没有用 AttnRes 做旗舰残差. |
-| 当成另一种 \(x + \lambda F(x)\) | 公式里还有求和 | 求和的权重是内容相关的 \(\alpha\), 源是各层 \(\mathbf{v}_i\), 不是只对上一份 \(F\) 乘标量. |
-| 当成 token 维 KV 压缩 | 「Attention」 | 轴是层. GQA/MLA 改 KV 份数, AttnRes 不改. |
-| 把 48B 的 10 个源写成 K3 的 9 | 都是 Block + embedding | Linear 实验: 9 块 + embedding = 10; K3: 约 8 块 + embedding = 9. |
-| 把 Table 2 的 1.737 当成 48B 下游 | 规模抄错 | 1.737 是 436M / 16 头档 Full 的 val loss. 48B 看 Table 3 的 74.6 / 44.4. |
-| 伪查询随机初始化 | 没读零初始化 | \(\mathbf{w}_l = 0\) 才让起步均匀. |
-| 只开 SWA 当便宜 Full | 近邻窗口 | Table 4: 1.764, 几乎回到 1.766. 远处层比对近邻做窗更重要. |
-| 按头拆深度混合 | 「多头一定更好」 | Block + \(H = 16\) 到 1.752, 差于 1.746. |
-
----
-
-## 10. 总结
-
-AttnRes 把深度维上的聚合从「所有历史层权重 1」换成「当前层用一个 \(d\) 维伪查询做 softmax」. PreNorm dilution 的说法来自论文自己: 未加权累积让幅值按 \(O(L)\) 涨, 层贡献被冲淡. Full 是式 (15)–(17); 规模上用 Block, 式 (18)–(20), \(N \approx 8\).
-
-它不是 \(G_1\), 不是 mHC 的双随机混合, 不是 GR 的四分支读门, 不是 xHC, 也不是换一种加法. 48B / 1.4T 上 GPQA-Diamond 从 36.9 到 44.4; 缩放上 Block 约等于基线 \(1.25\times\) 算力. Qwen3.8 Table 6 只说明他们拿 AttnRes 做过对照, 旗舰残差是 GR.
-
-上一篇: [06 Gated Attention](../06-Gated-Attention/06-Gated-Attention.md)(token 维 SDPA 输出门, 残差仍是 \(x + F(x)\)). 残差主干上的加宽与读门见 [2.1.3](../../../2.1-深度学习基础组件/2.1.3-残差连接/2.1.3-残差连接.md).
-
----
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 训练初期不稳定 | 伪查询随机初始化, 起步权重偏向少数层 | $w_l$ 零初始化, 起步为等权平均 |
+| 某一层或某一块吸走几乎全部权重 | 键没做 RMSNorm, 大幅值的源占满 softmax | 键上加 RMSNorm, 块表示尤其需要 |
+| 加了跨层访问却没有收益 | 权重与输入无关 (DenseFormer, 1.767), 或只看最近几层 (1.764) | 权重由伪查询和归一化键算出, 保留对远处层的访问 |
+| 按头拆分深度聚合 | 认为多头一定更好 | Block + $H=16$ 为 1.752, 比单头 1.746 差 |
+| 流水线并行下通信过大 | 每次交接都传全部块表示 | 跨 stage 缓存, 只传增量块 |
+| 长上下文 prefill 显存不够 | 128K, 8 块需要约 15 GB 块表示 | 沿序列维分片到张量并行设备, 配合分块 prefill |
 
 ## 参考文献
 
-1. Kimi Team, Chen, G., Zhang, Y., Su, J., et al. (2026). [Attention Residuals](https://arxiv.org/abs/2603.15031). *arXiv:2603.15031*. HTML: [arxiv.org/html/2603.15031](https://arxiv.org/html/2603.15031). 本篇式 (15)–(22) 与 Table 1–5 按该 HTML / PDF 核对.
-2. 官方仓库: [MoonshotAI/Attention-Residuals](https://github.com/MoonshotAI/Attention-Residuals)(`master` 分支 README: 伪查询公式, Block 伪代码, 48B Table 节选).
-3. 48B 所接骨架: Zhang et al. (2025). [Kimi Linear](https://arxiv.org/abs/2510.26692).
-4. K3 对 Block 的划块与 MTP 取块: [arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2; 本库 [Kimi K3 正本](../../../../../model-library/03-模型家族/02-kimi/kimi-k3/kimi-k3-bi.md).
-5. **不是** \(G_1\): [06](../06-Gated-Attention/06-Gated-Attention.md)(Qiu et al., arXiv:2505.06708).
-6. **不是** mHC / xHC / GR: [01 mHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md), [02 xHC](../../../2.1-深度学习基础组件/2.1.3-残差连接/02-xHC-Expanded-Hyper-Connections/02-xHC-Expanded-Hyper-Connections.md), [03 GR](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md). Qwen3.8 Table 6 数字来自该报告的残差消融, 不是 AttnRes 论文的表.
-7. Pre-LN 方差增长: Xiong et al. (2020). [On Layer Normalization in the Transformer Architecture](https://arxiv.org/pdf/2002.04745).
-8. OLMo 激活范数实测: Allen AI blog, [Investigating pretraining dynamics and stability with OLMo checkpoints](https://allenai.org/blog/investigating-pretraining-dynamics-and-stability-with-olmo-checkpoints-ece6f0c4947a).
+1. Kimi Team. [Attention Residuals](https://arxiv.org/abs/2603.15031). arXiv:2603.15031, 2026. 代码: [GitHub 仓库](https://github.com/MoonshotAI/Attention-Residuals).
+2. Kimi Team. [Kimi Linear: An Expressive, Efficient Attention Architecture](https://arxiv.org/abs/2510.26692). 2025.
+3. Kimi Team. [Kimi K3: Open Frontier Intelligence](https://arxiv.org/abs/2607.24653). 2026.
+4. He K., Zhang X., Ren S., Sun J. [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385). CVPR 2016.
+5. Xiong R., Yang Y., He D., et al. [On Layer Normalization in the Transformer Architecture](https://arxiv.org/abs/2002.04745). ICML 2020.
+6. Srivastava R. K., Greff K., Schmidhuber J. [Highway Networks](https://arxiv.org/abs/1505.00387). 2015.
+7. Zhu D., Huang H., Huang Z., et al. [Hyper-Connections](https://arxiv.org/abs/2409.19606). ICLR 2025.
+8. Xie Z., et al. [mHC: Manifold-Constrained Hyper-Connections](https://arxiv.org/abs/2512.24880). 2025.
+9. Pagliardini M., Mohtashami A., Fleuret F., Jaggi M. [DenseFormer: Enhancing Information Flow in Transformers via Depth Weighted Averaging](https://arxiv.org/abs/2402.02622). NeurIPS 2024.
+10. Sun Y., Li X., Dalal K., et al. [Learning to (Learn at Test Time): RNNs with Expressive Hidden States](https://arxiv.org/abs/2407.04620). 2024.
+11. Qwen Team. [Qwen3.8-Flash-Next Technical Report](https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf). 2026.
+12. Li Y., Sun Y., et al. [EAGLE-3: Scaling up Inference Acceleration of Large Language Models via Training-Time Test](https://arxiv.org/abs/2503.01840). 2025.
