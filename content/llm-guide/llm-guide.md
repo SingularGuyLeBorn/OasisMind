@@ -18,7 +18,8 @@ tags: ["LLM", "大语言模型", "深度学习", "NLP", "人工智能", "知识�
 | 2 | [核心原理与架构](/posts/2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84%2F2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84?garden=llm-guide) | Transformer 与注意力 |
 | 3 | [预训练](/posts/3-%E9%A2%84%E8%AE%AD%E7%BB%83%2F3-%E9%A2%84%E8%AE%AD%E7%BB%83?garden=llm-guide) | 数据,Tokenizer,Scaling Law |
 | 4 | [后训练](/posts/4-%E5%90%8E%E8%AE%AD%E7%BB%83%2F4-%E5%90%8E%E8%AE%AD%E7%BB%83?garden=llm-guide) | SFT,RLHF,对齐 |
-| — | [主流模型知识库](../model-library/_garden.md) | 模型家族与版本选型已独立成「主流模型」知识库,本库不再设第 5 章 |
+| 5 | [评测,安全与治理](/posts/5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86%2F5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86?garden=llm-guide) | 评测科学,对抗安全,隐私与部署治理 |
+| — | [主流模型知识库](../model-library/_garden.md) | 模型家族,版本身份与选型 |
 | 6 | [训练与推理优化](/posts/6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96%2F6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96?garden=llm-guide) | 量化,KV Cache,并行 |
 | 7 | [LLM 应用开发](/posts/7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91%2F7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91?garden=llm-guide) | RAG,Agent,Prompt |
 | 8 | [多模态](/posts/8-%E5%A4%9A%E6%A8%A1%E6%80%81%2F8-%E5%A4%9A%E6%A8%A1%E6%80%81?garden=llm-guide) | VLM,CLIP,音视频 |

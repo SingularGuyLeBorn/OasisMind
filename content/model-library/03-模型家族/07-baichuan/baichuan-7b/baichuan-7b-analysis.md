@@ -49,7 +49,7 @@ loss 图横轴 Billions tokens 从 0 画到 1200, 纵轴 1.75 到 3, 前 100B to
 
 四张表都是选择题 5-shot. C-Eval 用 dev 集取示例, 在 test 集上测; Gaokao 与 AGIEval 是百川自己处理过的版本, 只留单选题 (AGIEval 限四选一), 随机划分后统一 5-shot, 结果因此不能和两个基准的官方榜直接比. MMLU 表用上标区分三种来源: 自己按 hendrycks/test 复现, 取自 Open LLM Leaderboard, 取自 paperswithcode. 第 4 页给了七行复现命令, 这是全页可复现性最好的部分. 四选一的随机水平是 25%, C-Eval 下半段和 Gaokao, AGIEval 的多数 7B 模型都落在这条线附近, **那一段的排名基本是噪声**; Baichuan-7B 在四张表上都离开了这条线.
 
-C-Eval 表把 GPT-4 (68.7), ChatGPT (54.4) 这类对齐过的闭源模型和预训练 Base 放在一起, 两类模型的比较只能看大致层级. 表里还有几处异常值得记下: Gaokao 表 Aquila 行排序错位, ChatGLM-6B 与 Open-LLaMA-v2 在两张表里分数完全相同, 这些逐条写在 bi 文件对应表格之后. 评测证据怎么读, 可参考 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).
+C-Eval 表把 GPT-4 (68.7), ChatGPT (54.4) 这类对齐过的闭源模型和预训练 Base 放在一起, 两类模型的比较只能看大致层级. 表里还有几处异常值得记下: Gaokao 表 Aquila 行排序错位, ChatGLM-6B 与 Open-LLaMA-v2 在两张表里分数完全相同, 这些逐条写在 bi 文件对应表格之后. 评测证据怎么读, 可参考 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
 
 后训练这一面页面自己没做, 第 8 页第三方资源补了空: LLaMA Efficient Tuning 支持 QLoRA 微调与 RLHF, fireballoon 用 ShareGPT, COT, Leetcode 等数据做了 vicuna 风格的 SFT 模型, fastllm 用纯 C++ 跑端侧, TheBloke 做了 GPTQ 4bit 量化. 这份清单说明第一代百川的定位: **官方交付一个中文强的 Base, 对话能力由社区用 SFT 自己接**. 许可分两层, 仓库代码 Apache 2.0, 模型权重商用需邮件登记申请书面授权.
 

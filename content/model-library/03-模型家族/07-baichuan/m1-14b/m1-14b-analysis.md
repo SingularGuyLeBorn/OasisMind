@@ -105,7 +105,7 @@ TDPO 要解决的是 DPO 的 KL 约束和长度的关系. DPO 的隐式约束作
 
 ### 3.2. 评测: 三层医学能力, 同家族的裁判, 和 Base 的通用读数
 
-§6.1 把医学能力分成三层: 医学基础 (MedNLI, MedCalc, MMLU 医学子科目), 医学考试 (USMLE, CMExam, MediQ, MedBullets, PubMedQA, ReDis-QA, 自建的儿科, 内科, 全科中级医师题), 医学实践 (CMBClin, ClinicalBench, RareArena, RareBench, 自建 NEJMQA). 每个评测集最多随机抽 1000 条, 回答全是自由文本, 由 Qwen2.5-72B-Instruct 抽取选项或按附录的提示打分. 裁判和两个对照模型 (Qwen2.5-14B-Instruct, Qwen2.5-72B-Instruct) 同属一个家族, 如果裁判偏好自家风格, 这个偏差对 M1 是不利的, M1 仍然赢了两个 Qwen, 这一点反而让结论更稳; 对闭源模型的比较则没有这层保护. 评测证据的一般读法见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).
+§6.1 把医学能力分成三层: 医学基础 (MedNLI, MedCalc, MMLU 医学子科目), 医学考试 (USMLE, CMExam, MediQ, MedBullets, PubMedQA, ReDis-QA, 自建的儿科, 内科, 全科中级医师题), 医学实践 (CMBClin, ClinicalBench, RareArena, RareBench, 自建 NEJMQA). 每个评测集最多随机抽 1000 条, 回答全是自由文本, 由 Qwen2.5-72B-Instruct 抽取选项或按附录的提示打分. 裁判和两个对照模型 (Qwen2.5-14B-Instruct, Qwen2.5-72B-Instruct) 同属一个家族, 如果裁判偏好自家风格, 这个偏差对 M1 是不利的, M1 仍然赢了两个 Qwen, 这一点反而让结论更稳; 对闭源模型的比较则没有这层保护. 评测证据的一般读法见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md).
 
 附录 D 的提示表决定了每个分数到底在测什么. NEJMQA, RareArena, RareBench 要求模型列出 5 个最可能的诊断, 裁判判断正确诊断是否在其中, 答出正确诊断的上级概念 (没判断到亚型) 也算对, 所以**这三项是宽松的 top-5 命中率, 不是首位诊断准确率**. CMBClin 由裁判对照参考答案按 0 到 4 分打分, 缺要点酌情扣分. MedCalc 要求给数值, 裁判判断是否与标准答案一致或落在给定区间. 选择题先让裁判从自由文本里抽出选项, 再和标准答案比. ClinicalBench 的科室, 诊断, 治疗三项用中文提示, 让模型扮演导诊员或科室医生. 评测里的模型都是单次作答, 没有多次采样投票, 也没有加长推理预算; 表 3 里的差距来自底座和后训练, 不是评测时多花算力换来的.
 

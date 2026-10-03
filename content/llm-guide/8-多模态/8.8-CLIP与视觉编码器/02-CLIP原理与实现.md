@@ -1,10 +1,10 @@
 ---
-title: "8.2 · CLIP 与视觉Encoder"
+title: "02 · CLIP 原理与实现"
 published: true
 tags: ["CLIP", "视觉Encoder", "对比学习", "多模态对齐", "InfoNCE", "SigLIP", "VLM"]
 excerpt: "2020 年前的计算机视觉被监督学习锁死在 ImageNet 的 1000 个类别中. AlexNet、VGG、ResNet 的迁移学习虽然强大, 但模型世界观被标注预算的上限决定. 一条关于 \"金毛犬在草地上奔跑\" 的 query, ResNet-50 最多回答 \"狗\"——它从未被训练过去理解开放…"
 ---
-# 8.2 CLIP 与视觉Encoder 
+# 02 CLIP 原理与实现
 
 ## 1. 演进脉络与技术演进
 
@@ -78,7 +78,7 @@ CLIP 不追求逐词逐像素的细粒度对齐——这种标注昂贵且难以
 
 ## 4. 数学推导与公式对比
 
-本节给出核心公式的精确定义, 完整推导与数值走查详见子文章 [01-CLIP与视觉Encoder ](./01-CLIP与视觉Encoder .md). 
+本节给出核心公式的精确定义, 完整推导与数值走查详见子文章 [01 · CLIP 与视觉编码器](./01-CLIP与视觉编码器.md). 
 
 CLIP 同时学习两个Encoder : 图像Encoder  $f_I: \mathcal{X} \to \mathbb{R}^d$ 和文本Encoder  $f_T: \mathcal{Y} \to \mathbb{R}^d$. 训练 batch 包含 $N$ 对匹配样本 $\{(x_i, y_i)\}_{i=1}^N$. 经 L2 归一化后, 余弦相似度退化为点积: 
 
@@ -150,11 +150,11 @@ $z_i^\top z_j$ 度量图像与文本的语义相似度, 与 CLIP 相同, 但此�
 | 训练数据量 | 4 亿对 | 4 亿对 | 数十亿对 |
 | Batch size | 32768 | 32768 | 相对更小即可稳定 |
 
-完整数值走查(含 $N=3$ 的相似度矩阵手动计算、CLIP 与 SigLIP 损失对比)见子文章 [01-CLIP与视觉Encoder ](./01-CLIP与视觉Encoder .md) 第 5 节. 
+完整数值走查(含 $N=3$ 的相似度矩阵手动计算、CLIP 与 SigLIP 损失对比)见子文章 [01 · CLIP 与视觉编码器](./01-CLIP与视觉编码器.md) 第 5 节. 
 
 ## 6. 极简实现与源码映射
 
-以下提供 CLIP 核心损失与模型骨架的极简 PyTorch 实现, 约 100 行的完整版本(含 ImageEncoder、TextEncoder、CLIPLoss、SigLIPLoss、CLIPModel 及公式对照表)见子文章 [01-CLIP与视觉Encoder ](./01-CLIP与视觉Encoder .md) 第 6 节. 
+以下提供 CLIP 核心损失与模型骨架的极简 PyTorch 实现, 约 100 行的完整版本(含 ImageEncoder、TextEncoder、CLIPLoss、SigLIPLoss、CLIPModel 及公式对照表)见子文章 [01 · CLIP 与视觉编码器](./01-CLIP与视觉编码器.md) 第 6 节. 
 
 ```python
 import torch
@@ -289,10 +289,10 @@ CLIP 和 SigLIP 基于判别式对比目标. 另一条路径是将图像生成�
 
 | 序号 | 标题 | 文件 | 内容定位 |
 |------|------|------|----------|
-| 01 | CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进 | [./01-CLIP与视觉Encoder .md](./01-CLIP与视觉Encoder .md) | 本章核心详解. 涵盖背景痛点、InfoNCE 完整数学推导、温度参数物理意义、相似度矩阵几何分析、SigLIP 深度对比、$N=3$ 数值走查、100 行 PyTorch 实现、边界条件与失效模式、Scaling Law 前瞻 |
+| 01 | CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进 | [01-CLIP与视觉编码器.md](./01-CLIP与视觉编码器.md) | 本章核心详解. 涵盖背景痛点、InfoNCE 完整数学推导、温度参数物理意义、相似度矩阵几何分析、SigLIP 深度对比、$N=3$ 数值走查、100 行 PyTorch 实现、边界条件与失效模式、Scaling Law 前瞻 |
 
 ## 11. 阅读路线建议
 
 - **快速了解全貌**: 精读本入口文档的全部 9 个模块, 建立 CLIP 到 SigLIP 的技术演进框架与工业应用认知. 
-- **深入数学与实现**: 阅读 [01-CLIP与视觉Encoder .md](./01-CLIP与视觉Encoder .md), 包含 InfoNCE 从互信息下界的完整推导、$\tau$ 的极限行为分析、$N=3$ 相似度矩阵的手动计算、CLIP 与 SigLIP 损失的行为差异、以及可直接运行的 PyTorch 代码. 
+- **深入数学与实现**: 阅读 [01-CLIP与视觉编码器.md](./01-CLIP与视觉编码器.md), 包含 InfoNCE 从互信息下界的完整推导、$\tau$ 的极限行为分析、$N=3$ 相似度矩阵的手动计算、CLIP 与 SigLIP 损失的行为差异、以及可直接运行的 PyTorch 代码. 
 - **工程选型决策**: 重点关注本文 "算力成本与数值走查" 和 "边界条件与失效模式" 两节, 以及子文章中的对比表格与失效分析, 据此判断具体场景下应选用 CLIP 还是 SigLIP、应预留多大的 batch size、以及应如何规避假阴性和数据偏见. 

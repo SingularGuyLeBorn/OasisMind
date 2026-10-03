@@ -53,7 +53,7 @@ Thinking 这一节的核心数字只有一句: 在 「a representative distribut
 
 演示本身也不能替代评测. 棒球统计那组, 提问要解释 BABIP 和 wRC+ 两个指标, 两栏回答在截图可视范围内都只讲到 BABIP, wRC+ 一个字都没露面. GPT-5 那栏写 「League average hovers around 300 most seasons」, 按它自己给的公式 (H−HR)/(AB−K−HR+SF), 分子不超过分母, BABIP 不会超过 1, 棒球统计习惯写 .300, 小数点在 PDF 文字层就已经丢了. 这组对比真正想演示的是第 6 页开头那句 「less jargon and fewer undefined terms」: GPT-5 用 HRs, SF 这类缩写, GPT-5.1 Thinking 用 「plain English」 把 Hits, Home Runs 拼全. 这是风格差异, 不是正确率差异, 两边给的公式其实是同一个.
 
-洒咖啡那组演示的是 「default tone is also warmer and more empathetic」. GPT-5 的回答提到 「spotlight effect」, 给了换说法, 一句话回应, 记一件做得好的事三条建议; GPT-5.1 Thinking 用 「Hey — no, they didn’t」 开头, 按 1, 2, 3 编号做心理疏导, 第 3 条被截断. 两者哪个更好, 取决于读者口味, 页面没有给偏好评测的胜率. 评测证据的一般要求可参见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md), 按那里的标准, 这页的能力主张基本停在 「有演示, 无测量」.
+洒咖啡那组演示的是 「default tone is also warmer and more empathetic」. GPT-5 的回答提到 「spotlight effect」, 给了换说法, 一句话回应, 记一件做得好的事三条建议; GPT-5.1 Thinking 用 「Hey — no, they didn’t」 开头, 按 1, 2, 3 编号做心理疏导, 第 3 条被截断. 两者哪个更好, 取决于读者口味, 页面没有给偏好评测的胜率. 评测证据的一般要求可参见 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md), 按那里的标准, 这页的能力主张基本停在 「有演示, 无测量」.
 
 ## 5. 架构与训练: 本页没有
 
@@ -75,7 +75,7 @@ Thinking 这一节的核心数字只有一句: 在 「a representative distribut
 
 推送顺序很清楚: Pro, Plus, Go, Business 这些付费用户先, 然后免费和未登录用户. Enterprise 和 Edu 有七天提前体验开关, 默认关闭, 窗口期过后 GPT-5.1 「will become the sole default model」. PDF 第 9 页开头还有一句 Markdown 丢掉的提醒: 今天打开 ChatGPT 未必马上能看到 GPT-5.1, 会在接下来几天里逐步推开. GPT-5 Pro 会 「soon」 升级为 GPT-5.1 Pro, 没有日期.
 
-两个期限要分开读. 七天管的是 「默认用哪个」, 三个月管的是 「还能不能在旧版模型下拉菜单里手动选 GPT-5」. 三个月的保留只写了 「for paid subscribers」, Enterprise 和 Edu 算不算在内, 页面没说. OpenAI 在这里还给出了一条面向以后的承诺: 新模型上线时给出充足的评估和反馈时间, 下线期会提前清楚公布. 这类部署节奏属于模型上线后的治理问题, 一般讨论见 [部署治理与持续保证](../../../../llm-guide/10-评测、安全与治理/10.4-部署治理与持续保证.md).
+两个期限要分开读. 七天管的是 「默认用哪个」, 三个月管的是 「还能不能在旧版模型下拉菜单里手动选 GPT-5」. 三个月的保留只写了 「for paid subscribers」, Enterprise 和 Edu 算不算在内, 页面没说. OpenAI 在这里还给出了一条面向以后的承诺: 新模型上线时给出充足的评估和反馈时间, 下线期会提前清楚公布. 这类部署节奏属于模型上线后的治理问题, 一般讨论见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md).
 
 API 的命名值得多看一眼. Thinking 在 API 里直接叫 GPT-5.1, Instant 叫 gpt-5.1-chat-latest. 也就是说, ChatGPT 里用得最多的那个模型, 在 API 里反而带着长后缀; 调不带后缀的 GPT-5.1 拿到的是推理模型. 页面没有解释这种安排, 也没给 API 的上线日期, 只说 「later this week」. 命名规则则写得明白: 5.1 表示 GPT-5 代内的实质改进, 以后 GPT-5 的迭代都照此命名.
 

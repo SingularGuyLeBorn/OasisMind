@@ -53,7 +53,7 @@ excerpt: "这页只做一件事: 帮开发者在当前几款 Claude 模型里挑
 
 页面的建议分三步: 不确定时先用 Opus 5.5; 任务是高难度推理或长程 agent 工作时用 Fable 5.1; 在 Opus 5.5 上调高 effort 评测仍不达标, 也换 Fable 5.1. 第三条隐含一个顺序: 先在同一模型上加 TestingTime, 不够再换更贵的模型. Opus 5.5 默认是 medium, 往上还有空间, 这个顺序才讲得通. 换到 Fable 5.1 意味着单价涨 2.5 倍, 延迟从 Moderate 变成 Slower.
 
-判据是 「your evals」, 也就是用户自己的评测. 本页不提供任何公开分数, Anthropic 把基准分和安全评测都放在各模型的系统卡里, 本库同级目录收有其中大部分. 怎样搭一个可信的评测, 可参考 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md); agent 类任务的评测口径见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). 页面另外两条建议也落在用户侧: 回答偏长就用 prompt 引导长度, 通用写法见 [Prompt工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md); 工具调用列为所有模型的共同能力, 背景见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md).
+判据是 「your evals」, 也就是用户自己的评测. 本页不提供任何公开分数, Anthropic 把基准分和安全评测都放在各模型的系统卡里, 本库同级目录收有其中大部分. 怎样搭一个可信的评测, 可参考 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md); agent 类任务的评测口径见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). 页面另外两条建议也落在用户侧: 回答偏长就用 prompt 引导长度, 通用写法见 [Prompt工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md); 工具调用列为所有模型的共同能力, 背景见 [工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md).
 
 ### 3.3. 材料边界
 

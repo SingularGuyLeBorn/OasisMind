@@ -57,7 +57,7 @@ ultra 为什么能 「更快」, 要看脚注 6 的口径: 多 agent 的延迟�
 
 分数本身也有口径问题. Agents’ Last Exam 正文说 Sol 「sets a new high of 53.6」, 比 Fable 5 高 13.1 分, 反推 Fable 5 是 40.5, 和总表一致; 可总表里 Sol 是 52.7%, 比正文低 0.9. medium 档按 11.4 分推算是 51.9, 总表的 52.7 正好夹在 51.9 和 53.6 之间, 看起来是第三个推理档的结果. 第 3 页曲线里 Sol 那条深蓝线冲出了画面顶端, 也读不出落点. 同一个评测, 正文, 总表, 图各给一个口径, 读者只能按 「53.6 是最高档」 理解.
 
-「within one point」 也值得较真. Artificial Analysis Intelligence Index v4.1 上 Sol 58.9, Fable 5 59.9, 差正好 1.0 分, 方向是 Sol 落后. 正文用 「comes within one point」 加 「61% less time at roughly half the estimated cost」 把一项输了的比较写成了效率胜利. 从 「单位成本的分数」 看这个说法站得住, 从 「谁的分数高」 看, 这一项是 Fable 5 赢. 评测证据该怎么读, 可以对照 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md) 里对口径和对照组的要求.
+「within one point」 也值得较真. Artificial Analysis Intelligence Index v4.1 上 Sol 58.9, Fable 5 59.9, 差正好 1.0 分, 方向是 Sol 落后. 正文用 「comes within one point」 加 「61% less time at roughly half the estimated cost」 把一项输了的比较写成了效率胜利. 从 「单位成本的分数」 看这个说法站得住, 从 「谁的分数高」 看, 这一项是 Fable 5 赢. 评测证据该怎么读, 可以对照 [评测科学与证据](../../../../llm-guide/5-评测、安全与治理/5.1-评测科学与证据.md) 里对口径和对照组的要求.
 
 内部使用数据是另一类 「效率」 证据. 内部测试期间, 每位活跃研究员日均输出 token 超过 GPT-5.5 时期最高水平的两倍; 过去六个月, 研究算力中用于内部编程推理的份额增长 100 倍, 内部 agentic token 用量增长约 22 倍. 页面自己说 「These adoption metrics do not measure research progress on their own」. 份额增长 100 倍意味着六个月前这个份额不到 1%, 起点和终点都没给. 这组数说明 OpenAI 内部在大量用 agent 写代码, 但换不成 「研究快了多少」.
 
@@ -93,7 +93,7 @@ ARC-AGI-3 是另一处断层. Sol 7.78%, Terra 0.8%, Luna 0.18%, GPT-5.5 0.43%, 
 
 防护结构分四层: 训练进模型的防护, 实时检查, 持续监控, 账户级执法. MinerU 丢掉的那句补上了关键一环: 「Our approach adds a reasoning monitor that reviews the conversation」, 用一个会推理的监控器审阅整段对话, 取代 「classifier flags alone decide what to block」 的做法. 由于部分防护用推理时多花算力 (TestingTime) 来判断, 发现漏洞后可以快速更新, 不必从头重训分类器. 这相当于把安全判断也做成了一个推理任务, 代价是每次判断要消耗推理算力, 页面说整个安全系统 「powered by more compute than ever before」, 与此一致.
 
-两个数字撑起了安全一节. 一是 Sol 的网络安全防护比之前模型 「block roughly ten times more potentially harmful activity」, 没说是次数还是比率, 也没给误拦率, 只承认 「can create friction for benign use」, 并在 ChatGPT 和 Codex 里提供降到低能力模型重试的出口. 二是上线前做了约 700,000 NVIDIA A100 等效 GPU 小时的黑盒自动化红队测试, 约合 80 GPU 年, 1,000 张卡连跑约 29 天. 访问控制上, Trusted Access for Cyber 的个人成员要在 9 月 1 日前开启硬件 passkey, 否则退回默认权限, 同时限制高风险实体和高风险司法辖区. 安全评测和对抗测试的一般方法见 [安全与对抗评测](../../../../llm-guide/10-评测、安全与治理/10.2-安全与对抗评测.md), 先保守上线再按真实使用放宽的部署思路见 [部署治理与持续保证](../../../../llm-guide/10-评测、安全与治理/10.4-部署治理与持续保证.md).
+两个数字撑起了安全一节. 一是 Sol 的网络安全防护比之前模型 「block roughly ten times more potentially harmful activity」, 没说是次数还是比率, 也没给误拦率, 只承认 「can create friction for benign use」, 并在 ChatGPT 和 Codex 里提供降到低能力模型重试的出口. 二是上线前做了约 700,000 NVIDIA A100 等效 GPU 小时的黑盒自动化红队测试, 约合 80 GPU 年, 1,000 张卡连跑约 29 天. 访问控制上, Trusted Access for Cyber 的个人成员要在 9 月 1 日前开启硬件 passkey, 否则退回默认权限, 同时限制高风险实体和高风险司法辖区. 安全评测和对抗测试的一般方法见 [安全与对抗评测](../../../../llm-guide/5-评测、安全与治理/5.2-安全与对抗评测.md), 先保守上线再按真实使用放宽的部署思路见 [部署治理与持续保证](../../../../llm-guide/5-评测、安全与治理/5.4-部署治理与持续保证.md).
 
 ## 9. 本文对不上的数字
 

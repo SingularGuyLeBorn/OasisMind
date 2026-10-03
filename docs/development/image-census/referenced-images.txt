@@ -589,7 +589,7 @@ content/llm-guide/10-综述与前沿论文/工具学习全面综述/images/image
 content/llm-guide/10-综述与前沿论文/工具学习全面综述/images/image_6.jpg
 content/llm-guide/10-综述与前沿论文/工具学习全面综述/images/image_7.jpg
 content/llm-guide/10-综述与前沿论文/工具学习全面综述/images/image_8.jpg
-content/llm-guide/10-评测、安全与治理/images/fig-evaluation-safety-governance-loop.png
+content/llm-guide/5-评测、安全与治理/images/fig-evaluation-safety-governance-loop.png
 content/llm-guide/11-实践与资源/11.1-项目实践与代码库/images/opensource_tech_stack.png
 content/llm-guide/11-实践与资源/11.3-资源索引/images/learning_path_roadmap.png
 content/llm-guide/11-实践与资源/images/engineering_roadmap.png
@@ -1212,10 +1212,10 @@ content/llm-guide/6-训练与推理优化/images/llm_optimization_panorama.png
 content/llm-guide/7-LLM应用开发/7.1-Prompt工程/images/reasoning_pipeline.png
 content/llm-guide/7-LLM应用开发/images/llm_app_tech_stack.png
 content/llm-guide/8-多模态/8.1-核心概念与架构/images/multimodal_architectures_comparison.png
-content/llm-guide/8-多模态/8.2-CLIP与视觉编码器/images/clip_architecture_pipeline.png
-content/llm-guide/8-多模态/8.2-CLIP与视觉编码器/images/clip_similarity_matrix.png
-content/llm-guide/8-多模态/8.2-CLIP与视觉编码器/images/clip_vs_siglip_matrix.png
-content/llm-guide/8-多模态/8.2-CLIP与视觉编码器/images/contrastive_learning_partner.png
+content/llm-guide/8-多模态/8.8-CLIP与视觉编码器/images/clip_architecture_pipeline.png
+content/llm-guide/8-多模态/8.8-CLIP与视觉编码器/images/clip_similarity_matrix.png
+content/llm-guide/8-多模态/8.8-CLIP与视觉编码器/images/clip_vs_siglip_matrix.png
+content/llm-guide/8-多模态/8.8-CLIP与视觉编码器/images/contrastive_learning_partner.png
 content/llm-guide/8-多模态/8.2-视觉语言模型/images/vlm_evolution_stages.png
 content/llm-guide/8-多模态/8.2-视觉语言模型/images/vlm_family_tree.png
 content/llm-guide/8-多模态/8.2-视觉语言模型/images/vlm_philosopher_owl.png
