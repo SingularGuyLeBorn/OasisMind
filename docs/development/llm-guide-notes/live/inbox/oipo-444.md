@@ -11,7 +11,7 @@ published: false
 - `content/llm-guide/4-后训练/4.4-对齐技术/4.4.4-其他对齐技术/08-Online-IPO-在线偏好/08-Online-IPO-在线偏好.md`
 - `.../08-Online-IPO-在线偏好/images/fig-online-ipo-self-play.png`
 - `.../08-Online-IPO-在线偏好/images/fig-ipo-md-vs-nash.png`
-- `content/llm-guide/notes/live/inbox/oipo-444.md`（本文件）
+- `docs/development/llm-guide-notes/live/inbox/oipo-444.md`（本文件）
 
 ## 一手 URL（已开 HTML）
 

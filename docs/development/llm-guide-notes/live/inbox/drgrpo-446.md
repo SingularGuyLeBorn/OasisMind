@@ -11,7 +11,7 @@ published: false
 - `content/llm-guide/4-后训练/4.4-对齐技术/4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md`
 - `.../03-DrGRPO-去标准差/images/fig-drgrpo-drop-two-terms.png`
 - `.../03-DrGRPO-去标准差/images/fig-r1zero-base-plus-rl.png`
-- 本文件 `content/llm-guide/notes/live/inbox/drgrpo-446.md`
+- 本文件 `docs/development/llm-guide-notes/live/inbox/drgrpo-446.md`
 
 ## 汉字
 

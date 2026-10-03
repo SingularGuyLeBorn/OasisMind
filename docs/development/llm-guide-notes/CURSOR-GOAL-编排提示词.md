@@ -7,7 +7,7 @@ tags: ["ops", "goal", "llm-guide"]
 ---
 # 怎么用
 
-> **2026-08-30 之后：** Goal 用 [`CURSOR-GOAL-续写提示词.md`](./CURSOR-GOAL-续写提示词.md)；监工拆工用 [`supervisor.md`](./supervisor.md)。下文是旧编排稿，不要再贴进 Goal。
+> **2026-08-30 之后：** Goal 用 [`CURSOR-GOAL-续写提示词.md`](CURSOR-GOAL-续写提示词.md)；监工拆工用 [`supervisor.md`](supervisor.md)。下文是旧编排稿，不要再贴进 Goal。
 
 1. 打开 Cursor **Goal**，把下面 **「Goal 正文」** 从标题起到文件末尾 **整段粘贴** 为 objective（不要只贴这一节说明）。
 2. 细则以同目录 `goal-maximize-value-extreme.md` 为准；本文件管 **怎么拆工，怎么盯，怎么续跑**。
@@ -25,10 +25,10 @@ tags: ["ops", "goal", "llm-guide"]
 
 按顺序 Read:
 
-1. `content/llm-guide/notes/live/GOAL.md`
-2. `content/llm-guide/notes/live/PLAN.md`
-3. `content/llm-guide/notes/live/PROCESS.md`
-4. 需要细则再读 `content/llm-guide/notes/goal-maximize-value-extreme.md`（主题树，GPU 单独成篇清单，配图纪律，一手阅读纪律都在那里）
+1. `docs/development/llm-guide-notes/live/GOAL.md`
+2. `docs/development/llm-guide-notes/live/PLAN.md`
+3. `docs/development/llm-guide-notes/live/PROCESS.md`
+4. 需要细则再读 `docs/development/llm-guide-notes/goal-maximize-value-extreme.md`（主题树，GPU 单独成篇清单，配图纪律，一手阅读纪律都在那里）
 
 从 `PLAN.md` 的「下一步 3 件」继续。禁止每次从零盘点，除非 PLAN 写着盘点还没开始。
 
@@ -85,7 +85,7 @@ PowerShell 无 `&&`，用 `;`.worktree 建好后把工作区切过去。不要 `
 ### 子代理死命令（复制进每一个写笔记的 Task prompt）
 
 - 中文正文。不要删任何已有文件。
-- 写之前：WebSearch / WebFetch 原论文或本库 `pdfs/`，model card，官方 blog，会议页，中英文解析。URL 追加到 `content/llm-guide/notes/live/PROCESS.md` 来源表。没出现在台账里的规格不准写。
+- 写之前：WebSearch / WebFetch 原论文或本库 `pdfs/`，model card，官方 blog，会议页，中英文解析。URL 追加到 `docs/development/llm-guide-notes/live/PROCESS.md` 来源表。没出现在台账里的规格不准写。
 - 找不到一手来源：写「未找到一手来源」+ `[OM-FREEPLAY]`，不要用记忆编。
 - 新文 `as_of: 2026-08-30`，文末「参考文献」列表。
 - 图：Cursor GenerateImage，**必须浅色主题**（白底深字）.description 含 Skill 配图段整句 `LIGHT THEME ONLY: ... white academic background, no watermark, no logo`。禁止深色底。禁止保存网页/论文截图。数据表用 Markdown，数字来自官方数据表。

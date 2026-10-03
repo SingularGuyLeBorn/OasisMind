@@ -4,7 +4,7 @@ published: false
 ---
 # doubao
 
-8 个模型。每个目录四份：`<slug>.pdf`、`<slug>.md`、`<slug>-bi.md`、`<slug>-analysis.md`。
+8 个模型。每个目录有对照译稿 `<slug>-bi.md` 和解析 `<slug>-analysis.md`，部分目录另有 MinerU 原文转写 `<slug>.md`。
 
 - doubao/
 - lite/

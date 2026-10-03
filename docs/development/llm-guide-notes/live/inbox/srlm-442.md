@@ -11,7 +11,7 @@ published: false
 - `content/llm-guide/4-后训练/4.4-对齐技术/4.4.2-无奖励模型的对齐DPO-KTO/07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md`
 - `.../07-Self-Rewarding-自奖励/images/fig-srlm-iterative-loop.png`
 - `.../07-Self-Rewarding-自奖励/images/fig-srlm-not-oaif-spin.png`
-- `content/llm-guide/notes/live/inbox/srlm-442.md`（本文件）
+- `docs/development/llm-guide-notes/live/inbox/srlm-442.md`（本文件）
 
 ## 一手 URL（已开 HTML）
 

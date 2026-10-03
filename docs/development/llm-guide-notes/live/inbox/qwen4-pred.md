@@ -13,7 +13,7 @@ published: false
 - `.../14-Qwen4-架构预测/images/fig-qwen4-gdn-qsa-stack.png`（浅色，3:1 宏块）
 - `.../14-Qwen4-架构预测/images/fig-qwen4-param-ledgers.png`（浅色，三本账）
 - `.../14-Qwen4-架构预测/images/fig-qwen4-muon-adamw.png`（浅色，Muon vs AdamW）
-- `content/llm-guide/notes/live/inbox/qwen4-pred.md`（本回传）
+- `docs/development/llm-guide-notes/live/inbox/qwen4-pred.md`（本回传）
 
 `ls 14.2-Qwen` 时 01–13 未动；新夹序号 14，与 13 并列。
 

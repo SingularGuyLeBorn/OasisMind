@@ -8,7 +8,7 @@ published: false
 
 - 入口（只改夹内）：`content/llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/03-GSPO/03-GSPO.md`
 - 图：嵌入已有 `images/fig-gspo-seq-vs-token-is.png`（白底，合格）；新画 `images/fig-gspo-clip-on-si.png`（clip 作用在 $s_i$）。未 Delete `images/image_0.jpg`（知乎水印曲线，正文不再引用）。
-- 本 inbox:`content/llm-guide/notes/live/inbox/gspo-thicken.md`
+- 本 inbox:`docs/development/llm-guide-notes/live/inbox/gspo-thicken.md`
 - **未碰** live 三份，Skill，`apps/`，4.4.5,02-GRPO，04-PPO，01-GMPO。未 commit / push / git add。
 
 ## URL（已读）

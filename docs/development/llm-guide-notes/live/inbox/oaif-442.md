@@ -11,7 +11,7 @@ published: false
 - `content/llm-guide/4-后训练/4.4-对齐技术/4.4.2-无奖励模型的对齐DPO-KTO/06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md`
 - `.../06-OAIF-在线AI反馈/images/fig-oaif-online-loop.png`
 - `.../06-OAIF-在线AI反馈/images/fig-oaif-vs-offline.png`
-- `content/llm-guide/notes/live/inbox/oaif-442.md`（本文件）
+- `docs/development/llm-guide-notes/live/inbox/oaif-442.md`（本文件）
 
 ## 一手 URL（已开 HTML）
 

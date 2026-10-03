@@ -13,10 +13,10 @@ tags: ["ops", "goal", "llm-guide"]
 
 按顺序 Read，禁止跳过：
 
-1. `content/llm-guide/notes/live/GOAL.md`
-2. `content/llm-guide/notes/live/PLAN.md`
-3. `content/llm-guide/notes/live/PROCESS.md`
-4. `content/llm-guide/notes/live/README.md`（只在第一次或忘了规矩时）
+1. `docs/development/llm-guide-notes/live/GOAL.md`
+2. `docs/development/llm-guide-notes/live/PLAN.md`
+3. `docs/development/llm-guide-notes/live/PROCESS.md`
+4. `docs/development/llm-guide-notes/live/README.md`（只在第一次或忘了规矩时）
 5. 需要细则再读本文件其余章节
 
 然后从 `PLAN.md` 的「下一步 3 件」继续。**禁止**每次都从「全库盘点 / P0-A」重来，除非 PLAN 明确写着盘点尚未开始。
@@ -239,7 +239,7 @@ S 档精读之后，把新 trick 写进或链到第 2/3/4/6/9/13 章。第 1.3 �
 
 ## 0.5 活文档（对抗上下文压缩）
 
-路径：`content/llm-guide/notes/live/`
+路径：`docs/development/llm-guide-notes/live/`
 
 | 文件 | 职责 | 何时更新 |
 |------|--------|----------|
@@ -279,7 +279,7 @@ git worktree add "D:\ALL IN AI\OasisMind-llmguide-2026-08" -b feat/llm-guide-202
 - **只动** `content/llm-guide/` 与其配图（同目录 `images/`,`content/uploads/llm-guide/`）。
 - **不要改** `apps/`，`packages/`，Prisma，Chat/SSE，产品 UI。
 - 可以**阅读并链接**兄弟花园，**禁止把正文抄进来**：`content/classic-papers/`,`content/knowledge/cs336/`,`content/knowledge/algorithms/`,`content/diffusion-llm/`,`content/llm-interview/`。
-- 另有一份较早的 brief:`content/llm-guide/notes/goal-enrich-opensource-2026-08.md`。若两份冲突：**以本文件为准**。「一个字都不删」永远优先。
+- 另有一份较早的 brief:`docs/development/llm-guide-notes/goal-enrich-opensource-2026-08.md`。若两份冲突：**以本文件为准**。「一个字都不删」永远优先。
 
 两本账：
 

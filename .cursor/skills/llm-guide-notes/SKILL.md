@@ -13,18 +13,18 @@ description: >-
 
 写任何 `content/llm-guide/` 正文前，按顺序 Read：
 
-1. `content/llm-guide/notes/live/GOAL.md`
-2. `content/llm-guide/notes/live/PLAN.md`
-3. `content/llm-guide/notes/live/PROCESS.md`
+1. `docs/development/llm-guide-notes/live/GOAL.md`
+2. `docs/development/llm-guide-notes/live/PLAN.md`
+3. `docs/development/llm-guide-notes/live/PROCESS.md`
 4. 本 Skill 的 [canon.md](canon.md)（样本路径与行文骨架）
 4b. 人味：`.cursor/skills/humanwrite/SKILL.md` + `.cursor/skills/humanizer-zh/SKILL.md` + `humanwrite/references/scy.md`。读者页禁止出现对 Agent 说的话（`只读、不改`、`本篇只链`、`B 档 SKU`、标题里的禁令）。H1 汉字尽量 ≤ 20。
-5. 对覆盖面、学讲法：`content/llm-guide/notes/trusted-sources.md`（禁止抄袭；课程不当最新）
-6. 新文落点与文件名：`content/llm-guide/notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层且必须是同名夹 `{NN}-foo/{NN}-foo.md`；**禁止** `{N.N.N}/01-foo.md` 夹根散文件；节首页 `{N.N.N}/{N.N.N}-….md` 合法并列；同层约 ≤10；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
+5. 对覆盖面、学讲法：`docs/development/llm-guide-notes/trusted-sources.md`（禁止抄袭；课程不当最新）
+6. 新文落点与文件名：`docs/development/llm-guide-notes/chapter-structure-plan.md`（点分号最多三层 `N.N.N`；`01`/`02` 只出现在其下第四层且必须是同名夹 `{NN}-foo/{NN}-foo.md`；**禁止** `{N.N.N}/01-foo.md` 夹根散文件；节首页 `{N.N.N}/{N.N.N}-….md` 合法并列；同层约 ≤10；禁止删文件、禁止大搬迁；第 14 章 D 码不要搬进 1–13）
 7. 需要搜论文时再读 [research.md](research.md)
 
 然后从 `PLAN.md`「下一步 3 件」继续。禁止每次从全库盘点重来。
 
-细则与主题树：`content/llm-guide/notes/goal-maximize-value-extreme.md`。本 Skill 管**怎么写一篇**。若你是 Goal 父代理：再读 `content/llm-guide/notes/supervisor.md`，自己当监工、Task 派子代理。
+细则与主题树：`docs/development/llm-guide-notes/goal-maximize-value-extreme.md`。本 Skill 管**怎么写一篇**。若你是 Goal 父代理：再读 `docs/development/llm-guide-notes/supervisor.md`，自己当监工、Task 派子代理。
 
 ## 硬约束
 
@@ -126,5 +126,5 @@ H1 不要写成禁令或流程备注。坏例子：`不要读未发的旗舰规�
 
 - 样本与反例：[canon.md](canon.md)
 - 一手阅读流水线：[research.md](research.md)
-- Goal 编排提示词：`content/llm-guide/notes/CURSOR-GOAL-续写提示词.md`
-- 过夜脚手架：`content/llm-guide/notes/live/`
+- Goal 编排提示词：`docs/development/llm-guide-notes/CURSOR-GOAL-续写提示词.md`
+- 过夜脚手架：`docs/development/llm-guide-notes/live/`

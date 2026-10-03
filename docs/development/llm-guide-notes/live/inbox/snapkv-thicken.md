@@ -10,7 +10,7 @@ published: false
 - `content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/12-SnapKV-生成前观测窗/images/fig-snapkv-hit-rate.png`（新图，浅色）
 - `content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/12-SnapKV-生成前观测窗/images/fig-snapkv-instr-pos.png`（新图，浅色）
 - `content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/12-SnapKV-生成前观测窗/images/fig-snapkv-prefill-decode.png`（新图，浅色）
-- `content/llm-guide/notes/live/inbox/snapkv-thicken.md`（本文件）
+- `docs/development/llm-guide-notes/live/inbox/snapkv-thicken.md`（本文件）
 
 旧图 `fig-snapkv-obs-window.png` / `fig-snapkv-vote-pool.png` / `fig-snapkv-pooling-cluster.png` / `fig-snapkv-not-neighbors.png` 未 Delete。未改节首页，GOAL/PLAN/PROCESS，Skill，trusted-sources，supervisor，邻居单独成篇。未 commit / push / git add -A。
 

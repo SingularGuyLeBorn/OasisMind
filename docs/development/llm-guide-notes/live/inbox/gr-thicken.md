@@ -8,7 +8,7 @@ published: false
 
 - 入口（只改夹内）：`content/llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md`
 - 图：同夹 `images/fig-gated-residual.png`（保留未删）+ 新 `images/fig-gr-elem-read-scalar-write.png` + `images/fig-gr-vs-mhc-hres.png`
-- 本 inbox:`content/llm-guide/notes/live/inbox/gr-thicken.md`
+- 本 inbox:`docs/development/llm-guide-notes/live/inbox/gr-thicken.md`
 - **未碰**节首页 `2.1.3-残差连接.md`；未改 `01-Hyper-Connections与mHC/`，`02-xHC`，`2.2.2/06`，`07`，AttnRes 散文件，live 三份，Skill，trusted-sources，supervisor。未 commit / push / git add。
 
 ## URL（已读）

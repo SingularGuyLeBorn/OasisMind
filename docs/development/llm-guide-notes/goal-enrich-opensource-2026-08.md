@@ -22,7 +22,7 @@ tags: ["ops", "goal", "llm-guide"]
 3. 原理 / 后训练 / Agent / 推理优化等**体系章节**已接到 2026 年 8 月底，而不是只停在 2025 或 2025 年初。
 4. 第 14 章家族树补上 2026 年中后沿模型（先核实再写，禁止编造发布日和分数）。
 5. **一个字都没删。** 包括 mineru 全文，微信转载，飞书搬迁，`unused_*.jpg`，空壳在写满之前的旧提纲，重复的第 5 章和第 14 章。
-6. 仓库里多一篇进度账：`content/llm-guide/notes/2026-08-enrichment-log.md`，记录新建了什么，补了什么，图放在哪，哪些 2026 条目因找不到一手来源而标了 `[OM-FREEPLAY]`。
+6. 仓库里多一篇进度账：`docs/development/llm-guide-notes/2026-08-enrichment-log.md`，记录新建了什么，补了什么，图放在哪，哪些 2026 条目因找不到一手来源而标了 `[OM-FREEPLAY]`。
 
 **不要提交 git，除非用户后来说提交。** 不要 `git add -A`。不要改 `git config`。
 

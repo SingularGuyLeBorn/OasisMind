@@ -8,7 +8,7 @@ published: false
 
 - 入口（只改夹内）：`content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/08-QSA-Qwen稀疏注意力.md`
 - 图：同夹 `images/fig-qsa-microblock-topk.png`（浅色，保留未删）+ 新 `images/fig-qsa-hybrid-slot.png` + `images/fig-qsa-block-causal-tail.png` + `images/fig-qsa-two-stage-kl.png`
-- 本 inbox:`content/llm-guide/notes/live/inbox/qsa-thicken.md`
+- 本 inbox:`docs/development/llm-guide-notes/live/inbox/qsa-thicken.md`
 - **未碰**节首页 `2.3.2-稀疏与压缩注意力.md`；未改 07-CSA，09-IndexPool，14.2 任何文件；未改 live GOAL/PLAN/PROCESS。未 commit / push / git add。未 Delete。
 
 ## URL（已读）
