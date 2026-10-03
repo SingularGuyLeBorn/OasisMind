@@ -36,7 +36,7 @@ SWA 的想法很朴素: 每一层只看前面固定长度的窗口, 层数一叠
 
 窗口的边界还有一处前后不一. 图 1 图注说每个 token 「at most W tokens」, 图中 W = 3, 掩码每行恰好 3 个 1, 连自己在内. 正文却写成位置 i - W 到 i, 闭区间是 W + 1 个位置. 图 3 的掩码可以当作裁判: 每个查询 token 都恰好看 4 个位置, 与图 2 的 W = 4 对应. 所以图的约定是 「含自己共 W 个」, 正文的区间写法多了一个. 对 W = 4096 来说差一个位置无关紧要, 但照着正文公式写实现的人会写出和官方掩码不同的边界.
 
-速度方面, 正文只给了一个数: 16K 序列, W = 4096, 改过的 FlashAttention 和 xFormers 比 vanilla attention 快 2 倍. 这个 16K 已经超过了 context_len 的 2 倍, 比较的基线是 vanilla attention 而不是同样用 FlashAttention 的全注意力, 也没有交代硬件, batch 和是否端到端. 所以这个 2 倍更像一个实现层面的示意, 不适合拿去和别的长上下文方法直接比较. 相关背景见本库 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/01-FlashAttention/01-FlashAttention.md) 和 [稀疏与压缩注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/2.3.2-稀疏与压缩注意力.md).
+速度方面, 正文只给了一个数: 16K 序列, W = 4096, 改过的 FlashAttention 和 xFormers 比 vanilla attention 快 2 倍. 这个 16K 已经超过了 context_len 的 2 倍, 比较的基线是 vanilla attention 而不是同样用 FlashAttention 的全注意力, 也没有交代硬件, batch 和是否端到端. 所以这个 2 倍更像一个实现层面的示意, 不适合拿去和别的长上下文方法直接比较. 相关背景见本库 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md) 和 [稀疏与压缩注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/2.3.2-稀疏与压缩注意力.md).
 
 ## 4. 滚动缓存与分块预填充
 
@@ -100,7 +100,7 @@ SWA 的想法很朴素: 每一层只看前面固定长度的窗口, 层数一叠
 
 从人员上看, 参考文献里能读出这支团队的来历. [25] Llama 1 的作者列表中有 Thibaut Lavril, Marie-Anne Lachaux, Timothée Lacroix, 三人都在本文作者名单里; [14] 那篇计算最优训练的论文里有 Arthur Mensch 和 Diego de Las Casas, 两人也在本文作者名单里. 结论里批评 「scaling laws in 2 dimensions」 时引的恰好是 [14], 等于是作者在修正自己参与过的框架: 只看训练成本不够, 推理成本要单独算一维. 这个立场和 Mistral 7B 用小模型换推理效率的做法一脉相承. Scaling law 的背景见本库 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md).
 
-从部署生态看, 参考实现, vLLM, SkyPilot, Hugging Face 集成在引言里占了一整段, 致谢里又专门感谢 Tri Dao 和 Daniel Haziza 在很紧的时间里把改动并入 FlashAttention 和 xFormers. 这说明本文的发布方式和技术内容同样重要: Apache 2.0 许可加开箱即用的推理栈, 是它能被广泛拿来微调的前提. 同目录的 Mistral 家族后续还有 Mixtral 8x7B 等模型, 那些是另外的报告, 数字不在本页. vLLM 的缓存管理见本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-PagedAttention/01-PagedAttention与vLLM.md), 窗口类方法的后续演化见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
+从部署生态看, 参考实现, vLLM, SkyPilot, Hugging Face 集成在引言里占了一整段, 致谢里又专门感谢 Tri Dao 和 Daniel Haziza 在很紧的时间里把改动并入 FlashAttention 和 xFormers. 这说明本文的发布方式和技术内容同样重要: Apache 2.0 许可加开箱即用的推理栈, 是它能被广泛拿来微调的前提. 同目录的 Mistral 家族后续还有 Mixtral 8x7B 等模型, 那些是另外的报告, 数字不在本页. vLLM 的缓存管理见本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/04-PagedAttention/04-PagedAttention.md), 窗口类方法的后续演化见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
 
 ## 11. 窗口, 上下文与算力: 几笔账
 

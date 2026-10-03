@@ -148,6 +148,6 @@ MT-Bench 里的 GPT-3.5 版本也要分清. 表 3 用的是 gpt-3.5-turbo-1106, 
 
 - 本库 [MoE 系统与并行](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/6.1.8-MoE系统与并行.md): 专家并行和通信, 对应第 3 页 EP 与第 11 节的超额承载问题.
 - 本库 [GQA: 在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md): 表 1 的 32 个查询头配 8 个 KV 头.
-- 本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-PagedAttention/01-PagedAttention与vLLM.md): Mixtral 开源推理接入的 vLLM.
+- 本库 [PagedAttention 与 vLLM](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/04-PagedAttention/04-PagedAttention.md): Mixtral 开源推理接入的 vLLM.
 - 本库 [DPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md): 第 4 节 Instruct 版的对齐方法.
 - 同家族 [Mistral 7B](../mistral-7b/mistral-7b-bi.md): 表 1 骨架的来源 [18].

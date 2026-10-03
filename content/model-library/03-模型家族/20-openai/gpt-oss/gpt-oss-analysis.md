@@ -121,7 +121,7 @@ MXFP4 出自 OCP 的 Microscaling 规范 [5]. 每 32 个元素组成一块, 每�
 
 训练算力给得比较具体: H100, PyTorch, 针对专家计算优化的 Triton 算子, FlashAttention [21], 120b 共 2.1M H100 小时, 20b「almost 10x fewer」. 用 $C \approx 6 N_{\text{act}} D$ 粗估: 2.1M 小时 × 3600 秒 × H100 BF16 稠密峰值约 989 TFLOPS ≈ 7.5 × 10^24 FLOPs 的峰值算力; 硬件利用率取 10% 到 40%, 对应 $D \approx$ 24T 到 97T token. 这个区间很宽, 而且 2.1M 小时是否包含后训练, MoE 在 H100 上的实际利用率, 本文都没说, 只能说明量级在几十 T. 作为对照, 按稠密模型每参数约 20 token 的经验比例, 5.13B 激活参数只需约 100B token, gpt-oss 的训练量远超这个点, 这是为推理成本而**过量训练**小激活模型的常见做法. MoE 的 Scaling 关系与稠密模型不同, 这个对照只作参考, 相关讨论见 [Scaling Law](../../../../llm-guide/3-预训练/3.2-预训练全流程/3.2.6-Scaling-Law/3.2.6-Scaling-Law.md).
 
-20b 的数字更耐琢磨. 它的激活参数是 120b 的 0.70 倍, GPU 小时却只有约 1/10; 同样利用率下, 训练 token 量约为 120b 的 (1/10) ÷ 0.70 ≈ 1/7. 要么 20b 训练 token 明显更少, 要么两者利用率差得多 (小模型通常更难把 GPU 喂饱, 这会让差距更大而不是更小). 模型卡两样都没交代. FlashAttention 如何减少显存读写见 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/01-FlashAttention/01-FlashAttention.md).
+20b 的数字更耐琢磨. 它的激活参数是 120b 的 0.70 倍, GPU 小时却只有约 1/10; 同样利用率下, 训练 token 量约为 120b 的 (1/10) ÷ 0.70 ≈ 1/7. 要么 20b 训练 token 明显更少, 要么两者利用率差得多 (小模型通常更难把 GPU 喂饱, 这会让差距更大而不是更小). 模型卡两样都没交代. FlashAttention 如何减少显存读写见 [FlashAttention](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.1-硬件高效注意力/02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md).
 
 ## 11. 后训练: CoT 强化学习与 harmony 格式
 
