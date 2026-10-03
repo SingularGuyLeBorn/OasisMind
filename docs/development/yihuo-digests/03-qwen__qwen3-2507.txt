@@ -1,0 +1,69 @@
+# 03-qwen/qwen3-2507  文件: content/model-library/03-模型家族\03-qwen/qwen3-2507\qwen3-2507-bi.md  共 17 块
+
+--- 行129 [想] ---
+> 不算同一套部署配置. Overview 写 Context Length 为 **262,144 natively and extendable up to 1,010,000 tokens**; Step 1 要求用 `config_1m.json` 替换 `config.json`, 并写明该文件 「includes the config for length extrapolation and sparse attention」. 1M 路径靠另换配置启用外推与稀疏, 不是默认原生 config 已带齐那套参数.
+
+
+--- 行202 [问] ---
+> 是. 卡末 Citation 也同时给了 `2505.09388` 与 `2501.15383`; 1M 路径正文还指向 DCA 与 MInference 两篇外链.
+
+
+--- 行239 [核对] ---
+> 是. 后文 NOTE 写明只支持 non-thinking, 且不再生成 `<think></think>` 块; 也写明不必再设 `enable_thinking=False`.
+
+
+--- 行300 [看表] ---
+> 没有. 83.0 高于旧栏 75.2 与 Deepseek-V3-0324 的 81.2, 仍低于 Claude Opus 4 Non-thinking 的 86.6.
+
+
+--- 行326 [确认] ---
+> 是. 同组知识项里 SimpleQA 与 CSimpleQA (60.8→84.3) 跳幅都很显眼; 源文未给消融, 只能当对照分数读.
+
+
+--- 行329 [回看] ---
+> 是. LiveCodeBenchv6 与 MultiPL-E 上涨, Aider-Polyglot 相对旧 Non-thinking 略降, 且仍低于 Claude Opus 4 Non-thinking.
+
+
+--- 行364 [停一下] ---
+> 是. BFCL-v3 与若干 TAU 零售/航司项上涨, 但 TAU2-Telecom 仍明显落后 Kimi K2; 脚注还提醒 GPT-4o 列用了不同 API 日期.
+
+
+--- 行413 [再看] ---
+> 不能. 脚注 * 写明 「For reproducibility, we report the win rates evaluated by GPT-4.1.」; IFEval 无星号, 是另一套对齐指标. 同表并列不代表同一评测协议.
+
+
+--- 行549 [问] ---
+> 是. 原生约 256K/262,144; 冲 1,010,000 要换 1M 配置并开 DCA / 稀疏注意力服务参数, 不是默认 config 自动到 1M.
+
+
+--- 行639 [拆开] ---
+> 是. 表意写明极端显存下限制并发, 并因 dual chunk attention 需要关闭 CUDA graph capture.
+
+
+--- 行676 [确认] ---
+> 部分相反. 第 1 条可抬 `gpu_memory_utilization` / `mem-frac` 给 KV; 第 2 条写降低这两项可能腾出激活空间, 但会挤占 KV 可用显存.
+
+
+--- 行718 [回看] ---
+> 大致如此. 两档 2507 都远高于旧 Non-thinking; Full 略高于 Sparse, 源文把稀疏写成效率侧手段, 并声明评测均开 Dual Chunk Attention.
+
+
+--- 行767 [停一下] ---
+> 没有. 公开表停在 512k; 1M 能力写在配置与显存需求里, 不在这张 Acc 表的列上.
+
+
+--- 行770 [再看] ---
+> 不是. 亮点谈的是能力覆盖; 这里是采样超参副作用. 源文把两者分开写, 不要合成一条因果.
+
+
+--- 行802 [对一下] ---
+> 相对 「standard attention implementations」. Processing Ultra-Long Texts 写 DCA 与 MInference 「Together」 改善超过 256K tokens 的 generation quality 与 inference efficiency, 并在 sequences approaching 1M tokens 时 「the system achieves up to a 3× speedup」. 卡没有把 3× 拆成单技术贡献.
+
+
+--- 行805 [想] ---
+> 不符合完整步骤. Step 1 换配置后, Step 2 仍要求 vLLM 设 `VLLM_ATTENTION_BACKEND=DUAL_CHUNK_FLASH_ATTN` (参数表: Enables the custom attention kernel for long-context efficiency), 或 SGLang `--attention-backend dual_chunk_flash_attn`. 配置替换与服务端 dual chunk 后端是串联要求.
+
+
+--- 行838 [问] ---
+> 因为前文写 「The code of Qwen3-MoE has been in the latest Hugging Face transformers」, 并 advise 用最新版; 低于 4.51.0 会遇到 `KeyError: 'qwen3_moe'`. 这张 MoE 卡的加载依赖已注册 `qwen3_moe` 架构的新版 transformers.
+

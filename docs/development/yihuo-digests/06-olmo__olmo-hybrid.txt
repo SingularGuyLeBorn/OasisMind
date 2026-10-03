@@ -1,0 +1,81 @@
+# 06-olmo/olmo-hybrid  文件: content/model-library/03-模型家族\06-olmo/olmo-hybrid\olmo-hybrid-bi.md  共 20 块
+
+--- 行27 [想] ---
+> 是部署前训练 token (因而也是训练 FLOPs). Abstract 后文写 「scale better during pretraining」; Fig. 1 明确是同一 Common Crawl loss / MMLU 下更少 training tokens. 推理省状态是另一条轴, 见 Tab. 1, 不是 Fig. 1 的纵轴.
+
+
+--- 行95 [问] ---
+> Tab. 3: Olmo 3 + YaRN 在 64k 为 70.9; Olmo Hybrid + DroPE 为 85.0; 85.0 - 70.9 = 14.1. Hybrid + YaRN 为 76.9, 相对 70.9 只高 6.0, 引言的 14.1 对齐发布所选的 DroPE 行.
+
+
+--- 行151 [看表] ---
+> 表内直接比 Elements 与 FP16 Size: SWA 8.39M / 16.0 MiB 对 GDN 0.55M / 1.05 MiB. SWA 行已把 window=4096 写进规格; GDN 行状态与序列长度无关. 不是另开 TestingTime 档, 是每层推理状态体积.
+
+
+--- 行192 [核对] ---
+> 是. 图注写 「and thus also 35% and 49% fewer FLOPs, respectively」, 在 N 固定的 7B 对照下, 训练 FLOPs 随 D 近似同比例. 这是部署前训练算力, 不是 TestingTime.
+
+
+--- 行232 [拆开] ---
+> 正文写 「We attribute these gains on long-context tasks to the presence of linear RNN layers」. YaRN/DroPE 是扩展方法; Hybrid+YaRN 在 64k 已到 76.9>70.9, DroPE 再抬到 85.0. 短窗略低, 长窗更高是表内事实.
+
+
+--- 行367 [确认] ---
+> 因为 $\| \mathbf{k}_t \| = 1$, $\mathbf{I} - c\,\mathbf{k}_t\mathbf{k}_t^{\top}$ 在 $\mathbf{k}_t$ 方向上的特征值是 1 - c, 在正交方向上保持 1. c = 1 时是投影, 得到 (a) 的 0; c = 2 时是反射, 得到 (b) 的 -1, 矩阵正好是交换两个坐标的 swap. Definition 1 里 $2\beta_t$ 配合 $\beta_t \in (0,1)$, 这个特征值就能落在 (-1, 1) 内取负值. §3.5 的消融也对得上: 去掉负特征值后, 线性 RNN 在 n = 64 与 128 时掉到 0.21484 与 0.22266.
+
+
+--- 行412 [回看] ---
+> 按证明概要: GDN 在前时, GDN 先对 5 个指针复合对换 $\pi_1, \ldots, \pi_n$ 得到 q, 注意力再去比特串里取值. 注意力在前时, 先把 $p_1, \ldots, p_5$ 处的 5 个比特取回来, GDN 再对这 5 个值做对换. 两条路都是先把问题压成另一种原语擅长的形式, 所以一次交替就够. 多次交替会不会更强, 文中列为开放问题.
+
+
+--- 行497 [停一下] ---
+> 因为 Definition 2 要先对 5 个指针复合 n 次对换, 这一半是 $\mathsf{NC}^1$-complete 的状态追踪, 按 Theorem 1 只能交给 GDN, 而 GDN 表达 swap 靠的正是 Figure 6 里的特征值 -1. 纯召回只用注意力那一半, 所以消融后 hybrid 不变. 组合任务的前半段一坏, 后面召回再准也取错了位置. 这与状态追踪实验里无负特征值 hybrid 在 n = 128 跌到 0.36328 是同一原因.
+
+
+--- 行636 [再看] ---
+> 只看数据项做粗算: 要让 $B/D^{\beta}$ 相等, token 比例约为 (94.9/83.7)^{1/0.22} ≈ 1.77. 这与 §4.1 投影的 ∼1.3–1.9× 同量级. 实际 Figure 10(b) 是按 $D^*(N)$ 反解, 还带着 E 与 $A/N^{\alpha}$, 所以 1B 只有 ∼1.3×, 70B 才到 ∼1.9×. 另外只有 B 的置信区间不重叠, A (70.1 对 71.8) 与 E 的差异都不显著, 所以文中把主优势落在 B 上.
+
+
+--- 行765 [对一下] ---
+> 能对上. Theorem 4 里的指数只来自 quantization model 的任务频率幂律 $p_k \propto k^{-(\alpha+1)}$, 与架构的 ε 无关, 所以表达力只改系数, 不改指数. 这正是 §4.1 先用无约束拟合看到指数统计上不可区分, 再固定 α=β=0.22 去比 B 的理由. 注意这里的 α 是任务分布的 Zipf 指数, 与 Eq. (1) 里参数项的 α 不是同一个量.
+
+
+--- 行966 [想] ---
+> §5.1 的依据是跨规模的一致性: 60M–190M 上 7:1 常最好或持平, 但到 600M–1B, 3:1 在所有领域都是最好或第二好 (Table 21), 1B 上 0.669 也低于 7:1 的 0.675 与 1:1 的 0.674. 表注还提醒同一名义规模实际参数量不同, 7:1 参数更多却略落后. 放置方式也一样看: 同为 3:1, 交错 0.669 对居中 0.672. 作者的结论是具体比例不如 「是否做 hybrid」 关键.
+
+
+--- 行1069 [问] ---
+> GPU 数由能否同时装下 1,024 条 rollout 的状态决定. Olmo 3 7B 用的是没有 GQA 的完整 MHA, Table 1 里 32K 时每层 512 MiB; Olmo Hybrid 的 3/4 层换成 GDN, 每层只有 1.05 MiB 的定长状态, 所以显存需求小得多. enforce eager 只是关掉 torch 编译, 影响每步计算速度, 不影响要存的状态, 所以 GPU 数不变, 墙钟时间变长 (1K 时 10.1h 变 21.7h). 按 §5.3, 开这个 flag 是因为编译引入的数值误差会在 GDN 的循环状态更新里累积.
+
+
+--- 行1558 [看表] ---
+> 31 头的吞吐是 7.7K TPS, 仍低于 Olmo 3 的 8.0K; 30 头为 7.0B,8.2K TPS, 参数最接近 6.8B, 吞吐也反超. 选 30 头同时对齐了参数量和吞吐两个维度, 只看参数量的话 31 头还不够.
+
+
+--- 行1585 [想] ---
+> 作者措辞是 「preliminary evidence」 与 「may be more stable」. 这个度量只看梯度 L2 范数, 且相对 Olmo Team (2024) 的做法已有改动, 分数偏高. 两条曲线用的是同一口径, 横向比有效; 至于能否承受更大学习率, 文中没有做对应实验.
+
+
+--- 行1661 [核对] ---
+> 表注写明: 相对 Olmo 3 baseline 45.4B, 再加 3× tool-use upscale, 公式 45.4B×(1+2×2.47%)=47.6B.
+
+
+--- 行2137 [确认] ---
+> 图在附录 D.2, 服务拟合诊断 (残差等). 主文 §4.1 的 R^2≥0.998 与 Fig. 8 自由拟合对应; 固定指数 B=83.7 vs 94.9 见 Fig. 9. Fig. 14 用来检查拟合是否可信, 不改写 Fig. 9 的系数.
+
+
+--- 行2176 [看表] ---
+> 不是同一组. Fig. 1 是 CE loss 与 MMLU; Fig. 15 是另外 6 个下游基准的扩展曲线, 文注写 sorted by token efficiency, 并指向 Fig. 1 看 CE/MMLU.
+
+
+--- 行2219 [回看] ---
+> Tab. 5 是离散规模上的平均 BPB 表; Fig. 16–21 是按 FLOPs 投影的曲线族. 读纯 Transformer/GDN/Mamba2 走势看 Fig. 17; 读选定 3:1 数字仍以 Tab. 5 为准.
+
+
+--- 行2356 [拆开] ---
+> 主文 Fig. 2 / 开源对照用 Kaplan C=6ND. 附录 D.4 给更细的参数量与 FLOP 计算, 用于 Scaling 阶梯内部对齐; 引用开源 Pareto 时仍按主文启发式, 不要把两套算法混成一行.
+
+
+--- 行2429 [对一下] ---
+> 主文 §4.2 陈述 Assumption 1–3 与 Theorem 4; 附录 E 给出 Definition 3/4 与证明细节. E.4 Main Results 收束 Corollary 4.1/4.2. 读定理先主文, 核对推导再进 E.
+

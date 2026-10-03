@@ -1,0 +1,93 @@
+# 17-minicpm/minicpm-v-2-6  文件: content/model-library/03-模型家族\17-minicpm/minicpm-v-2-6\minicpm-v-2-6-bi.md  共 23 块
+
+--- 行87 [想] ---
+> 不能这么读. 第 3 页写可信行为 「Based on the the latest RLAIF-V and VisCPM techniques」, RLAIF-V 对应的是降幻觉这一步; SigLip-400M 和 Qwen2-7B 各自的预训练数据, 以及多模态阶段用了什么数据, 这一页一个字都没写.
+
+
+--- 行156 [问] ---
+> 拿不到. o 2.6 在本页只出现在这条新闻和第 2 页的合集名里, 评测表, 雷达图和部署说明全部只写 V 2.6. 两者是不同仓库 (MiniCPM-o-2\_6 和 MiniCPM-V-2\_6), 本稿所有数字只属于 V 2.6, 「明显提升」 在这页没有数字支撑.
+
+
+--- 行165 [核对] ---
+> 0.4B + 7B = 7.4B (估算), 与 8B 差 0.6B. 400M 和 7B 都是档位名, 本身取过整; 视觉特征接进语言模型还要一层连接模块, 页面没写它的规模. 侧栏 「Model size 8B params」 也是取整显示, 页面没给精确参数量, 这 0.6B 拆不开.
+
+
+--- 行172 [看表] ---
+> 不同意. OpenCompass 一列 Claude 3.5 Sonnet 是 67.9, MiniCPM-V 2.6 是 65.2, 低 2.7 分; 逐列比, MiniCPM-V 2.6 赢 MME, OCRBench, AI2D, Object HalBench 四项, 输 MMVet, MMMU, MathVista, MMB, DocVQA, HallusionBench 六项, TextVQA 无对照. GPT-4o mini (64.1), GPT-4V (63.5), Gemini 1.5 Pro (64.4) 的 OpenCompass 确实都低于 65.2.
+
+
+--- 行193 [拆开] ---
+> 1344 × 1344 = 1,806,336 像素, 除以 640 得 2822.4, 正是表里的 2822, 所以 「1.8M」 指的就是 1344x1344. 少 75% 意味着对方约要 2560 个 token; 按表中密度倒推同样像素 (估算), InternVL2-8B (706) 约 2559 个, Claude 3.5 Sonnet (750) 约 2408 个, GPT-4o 与 GPT-4V (1088) 约 1660 个, MiniCPM-Llama-V 2.5 (1882) 约 960 个, 只有 706 这一档正好是 75%, 「most models」 指哪些模型页面没说.
+
+
+--- 行200 [确认] ---
+> 不是同一个数. 按字面, 16 是官方 int4 和 GGUF 两个仓库合起来提供的量化尺寸数; 14 是 Hugging Face 按 base\_model 统计的量化衍生仓库数, 社区上传的也算在内. 页面没有列出 16 种尺寸各是什么, 两边无法一一对应.
+
+
+--- 行209 [回看] ---
+> 大部分对得上: OpenCompass 65.2, MME 2348.4, OCRBench 852.0, TextVQA 80.1, Mantis 69.1, MMVet 67.5 (GPT-4V), DocVQA 91.6 (InternVL2-8B). 三处要小心: BLINK 外圈写 53.0, 表里 MiniCPM-V 2.6 是 54.1, GPT-4V 是 54.6; Object HalBench 外圈 91.8 等于 100 - 8.2, 是把 「越低越好」 翻成了 「越高越好」; Video-MME 的 81.3 和 ChartQA 的 83.3 在本页任何表里都找不到.
+
+
+--- 行239 [停一下] ---
+> 页面只印了这两个数, 没有解释. 9B 是模型名的一部分, 13B 是表格作者填的规模, 差 4B; 以这页为准只能说 「表里记作 13B」, 把它当成和 8B 的 MiniCPM-V 2.6 同档的对手要谨慎.
+
+
+--- 行254 [再看] ---
+> 口径不同. 注里说闭源模型的密度是按 API 计费规则倒算的 「upperbound estimation」, 开源模型是按最大分辨率除以实际视觉 token 数. 2822 / 1088 ≈ 2.59 (估算) 只能当量级参考; 各模型的最大分辨率也不一样, 密度高不等于同一张图看得更清楚.
+
+
+--- 行257 [对一下] ---
+> 两列方向相反. 正文把 Object HalBench 叫 「hallucination rates」, 越低越好, 8.2 是全表最低; 雷达图把它翻成 100 - 8.2, 却没翻 HallusionBench, 说明作者把 HallusionBench 当越高越好: 48.1 低于 GPT-4o 的 55.0 和 Claude 3.5 Sonnet 的 49.9, 高于 GPT-4V 的 43.9. 表头本身没标方向.
+
+
+--- 行260 [想] ---
+> 按上下文是同一个前代, 表里少了 「3」. 表中它的 Token Density 1882, OpenCompass 58.8; V 2.6 分别是 2822 和 65.2, 密度多 49.9%, OpenCompass 高 6.4 分 (估算). 这是本页唯一给出前代分数的地方, 前代的规模这页只印了 Size 8B.
+
+
+--- 行289 [问] ---
+> 不一样. 单图表的注是 「We evaluate this benchmark using chain-of-thought prompting」, MiniCPM-V 2.6 的 MME, OCRBench, MMMU, HallusionBench 四项带 *, 是用 CoT 提示测的; 多图表的注是 「We evaluate the officially released checkpoint by ourselves」, 带 * 的是 InternLM-XComposer-2.5 和 InternVL2-8B 由作者自己复测的分数. 同一个符号, 两种口径.
+
+
+--- 行292 [核对] ---
+> 撑不住. BLINK val 上 MiniCPM-V 2.6 是 54.1, GPT-4V 54.6, LLaVA-NeXT-Interleave-14B 54.4, 都比它高; 只算 Open-source 组, 54.1 才是第一. 另外 LLaVA-NeXT-Interleave-14B 带着 14B 的规模被放进 Proprietary 组, 分组本身可疑. MIRB 上它 53.8 低于 InternVL2-8B 的 56.9*, 正文也没把 MIRB 列进 SOTA 名单.
+
+
+--- 行295 [看表] ---
+> 页面只给数, 没给评测设置. 84.9 比 GPT-4V 高 21.9 分, 比 InternVL2-8B 的 30.5* 高 54.4 分; Sciverse mv 上 74.9 比 GPT-4V 的 66.9 高 8.0 分. 跨度这么大, 引用前要先确认各家是否用了同一套提示和同一个子集, 这一页确认不了.
+
+
+--- 行319 [拆开] ---
+> 表里只有 「LLaVA-NeXT-Video」, Size 写 32B, 和 34B 对不上. 按这一行比, 无字幕 60.9 对 60.2, 高 0.7; 有字幕 63.6 对 63.0, 高 0.6. 对 GPT-4V 分别高 1.0 和 0.3, 对 Claude 3.5 Sonnet 分别高 0.9 和 0.7, 都在 1 分以内.
+
+
+--- 行322 [确认] ---
+> 只有 Correctness 一项 (3.59). Detail 3.28 低于 CogVLM2-Video 的 3.46, Context 3.93 低于 LLaVA-NeXT-Video 的 3.95, Temporal 2.73 低于 CogVLM2-Video 的 2.98, Consistency 3.62 低于 CogVLM2-Video 和 LongVA 的 3.64. 五项平均 3.43, 是表里最高 (估算, 页面没给平均), 次高是 CogVLM2-Video 的 3.36.
+
+
+--- 行407 [回看] ---
+> 对不上. 第 2 轮照片里白圈圈住的夹子套在车架立管顶端, 座管从这里插进车架, 离座垫还有一段距离. 第 2 轮回答 「The image shows a bolt, not a lever」 与照片一致, 但没有顺带纠正第 1 轮说错的位置.
+
+
+--- 行512 [停一下] ---
+> 照片里是两只绿色玻璃瓶, 瓶身印 MAGNA; 酒单 Beers 栏 Magna 标 6. 单位写错不影响结果, 6 × 2 = 12 是对的, 这是示例里模型自己的笔误.
+
+
+--- 行622 [对一下] ---
+> 截图里已有 user.py, User 类就定义在那里, 更直接的修法是在 privilege.py 里导入它; 模型的改法等于把类复制一份, 能消掉这条 NameError, 但项目里会留下两份 User. user.py 里 「self\_lat\_name」 和 print[...] 这类写法来自截图识别, 原代码是否真有这些错, 打印稿看不清.
+
+
+--- 行735 [再看] ---
+> 对得上. 前三名金牌 48, 36, 24, 相加 108; 表里 15 行每行金银铜相加都等于奖牌总数, 例如中国 48 + 22 + 30 = 100, 美国 36 + 39 + 37 = 112. 美国奖牌总数比中国多, 但题目问的是金牌, 模型没有混淆.
+
+
+--- 行821 [想] ---
+> 不能照抄. 前面定义的变量是 msgs 和 tokenizer, news 和 newizer 是识别错字; from\_pretrained 那两行在 trust\_remote 和 trus 处被页面右边截断, 注释 「# sdpa or i」 和 「...and st」 也断了. 按页面只能看出两种调法: 普通调用, 以及 sampling=True, stream=True 的流式调用.
+
+
+--- 行856 [问] ---
+> 页面两处都写了, 没说明区别. 从路径看, 第 4 页那条是专门写给 2.6 的说明文件, 这一节的分支名还停在 v2.5, 像是从前代模型卡沿用下来的链接.
+
+
+--- 行865 [核对] ---
+> 8B × 0.5 字节 ≈ 4 GB 只是权重 (估算), 7GB 说的是运行时显存, 还要算激活, KV cache 和图像编码的中间结果; 页面没说视觉部分是否也量化成 int4, 也没给测量条件. 对照 BF16 权重约 16 GB (估算), int4 版的显存降到一半以下.
+

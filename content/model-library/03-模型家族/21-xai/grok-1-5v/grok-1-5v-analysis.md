@@ -8,7 +8,7 @@
 
 ## 1. 页面构成: 一张表, 一个示例, 一个新基准
 
-第 1 页开头是日期 Apr 12, 2024 和一句定位「Connecting the digital and physical worlds with our first multimodal model」. 正文第一段说 Grok-1.5V 是「first-generation multimodal model」, 能处理文档, 示意图, 统计图, 截图和照片, 并且「will be available soon to our early testers and existing Grok users」. 这里的「soon」没有日期, 也没说走 API 还是只在 Grok 应用里开放. 同家族 [xAI 新闻页](../xai/xai.md) 把这条列在 2024-04-12, 前面是 3 月 28 日的 Grok-1.5 (推理提升, 上下文 128,000 token), 后面要到 8 月 13 日才是 Grok-2. 所以从命名看, 1.5V 是在 Grok-1.5 文本模型上加了视觉输入, 但这层关系公告本身没写明.
+第 1 页开头是日期 Apr 12, 2024 和一句定位「Connecting the digital and physical worlds with our first multimodal model」. 正文第一段说 Grok-1.5V 是「first-generation multimodal model」, 能处理文档, 示意图, 统计图, 截图和照片, 并且「will be available soon to our early testers and existing Grok users」. 这里的「soon」没有日期, 也没说走 API 还是只在 Grok 应用里开放. 同家族 [xAI 新闻页](../xai/xai-bi.md) 把这条列在 2024-04-12, 前面是 3 月 28 日的 Grok-1.5 (推理提升, 上下文 128,000 token), 后面要到 8 月 13 日才是 Grok-2. 所以从命名看, 1.5V 是在 Grok-1.5 文本模型上加了视觉输入, 但这层关系公告本身没写明.
 
 后面的篇幅分成三块.「Capabilities」一节给基准表, 表格跨第 1, 2 页, MinerU 把每个基准名下方的类别小字 (Multi-discipline, Math, Diagrams 等) 拆成了整行空白, 读表时跳过即可. 接着是「Example Writing code from a diagram」, 这个小标题在 md 里丢了标题层级, 占第 3, 4 页. 再往后是「Real-World Understanding」一节, 介绍 RealWorldQA, 附四道示例题, 占第 4 到第 8 页. 结尾「Into the Future」一段展望, 第 9, 10 页是网站页脚.
 
@@ -42,7 +42,7 @@ RealWorldQA 是这篇公告里分量最重的部分. 按第 8 页的说明, 首�
 
 ## 6. 架构, 训练和生成能力: 本页没有
 
-模型内部本页一个字都没写. 视觉部分用什么编码器, 图像怎么变成语言模型能读的 token, 是先训好文本模型再接视觉适配层, 还是图文一起预训练, 图像输入的分辨率和数量上限, 这些都没有. 同家族材料里, [Grok-1](../grok-1/grok-1.md) 公开过 314B 参数的 MoE 结构, [xAI 新闻页](../xai/xai.md) 记录了 Grok-1.5 的上下文是 128,000 token, 但两者都不能直接套到 1.5V 上: 公告没说 1.5V 的语言部分是不是 Grok-1.5, 也没说视觉输入占多少上下文. 多模态模型常见的几种接法, 以及视觉编码器的一般做法, 可以看 [多模态核心概念与架构](../../../../llm-guide/8-多模态/8.1-核心概念与架构/8.1-核心概念与架构.md) 和 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md), 那是通用背景, **不是 Grok-1.5V 的做法**.
+模型内部本页一个字都没写. 视觉部分用什么编码器, 图像怎么变成语言模型能读的 token, 是先训好文本模型再接视觉适配层, 还是图文一起预训练, 图像输入的分辨率和数量上限, 这些都没有. 同家族材料里, [Grok-1](../grok-1/grok-1-bi.md) 公开过 314B 参数的 MoE 结构, [xAI 新闻页](../xai/xai-bi.md) 记录了 Grok-1.5 的上下文是 128,000 token, 但两者都不能直接套到 1.5V 上: 公告没说 1.5V 的语言部分是不是 Grok-1.5, 也没说视觉输入占多少上下文. 多模态模型常见的几种接法, 以及视觉编码器的一般做法, 可以看 [多模态核心概念与架构](../../../../llm-guide/8-多模态/8.1-核心概念与架构/8.1-核心概念与架构.md) 和 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md), 那是通用背景, **不是 Grok-1.5V 的做法**.
 
 训练数据, SFT 或偏好对齐, 安全评测, 本页都没有. 结尾「Into the Future」提到要同时推进「multimodal understanding and generation」, 模态包括「images, audio, and video」, 时间是「In the coming months」. 但 Grok-1.5V 本身在全文里只展示了理解能力, 没有生成图像的例子. 按新闻页的时间线, Grok 的图像生成到 2024 年 12 月 9 日才发布, 用的是「a new autoregressive image generation model」, 和这篇公告隔了 8 个月. 同期其他商业 VLM 的横向情况可以对照 [商业级 VLM 对比](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.6-商业级VLM对比.md).
 

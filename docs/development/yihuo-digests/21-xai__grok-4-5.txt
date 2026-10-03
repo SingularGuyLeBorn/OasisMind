@@ -1,0 +1,57 @@
+# 21-xai/grok-4-5  文件: content/model-library/03-模型家族\21-xai/grok-4-5\grok-4-5-bi.md  共 14 块
+
+--- 行33 [拆开] ---
+> 本页没解释. 字面读法是 Grok 4.5 的训练过程里有 Cursor 参与, 常见的合作形态有几种: Cursor 提供真实编程场景的交互数据或任务分布, 提供 agentic 评测环境, 或双方共建训练管线; 页面一种都没点名, 只给了一个指向 Cursor 博客的链接, 那个链接的内容不在本页. 能确定的是这与第 2 页「multi-step software engineering」的 RL 任务中心对得上. 训练细节, 数据分工, 权重谁持有, 页面都没写.
+
+
+--- 行50 [看表] ---
+> 第 1 页正文的复数主张「exceeds comparable leading models at these tasks」和 p2 这张图口径对不上. 第 1 页那行五个名字 (DeepSWE 1.0 / 1.1, SWE Marathon, Terminal Bench 2.1, SWE Bench Pro) 是网页上一组评测的切换标签, 抓到数据的只有 DeepSWE 1.0 一张, 图题「DeepSWE score (pass@1)」, 五根柱子从高到低: Fable (max) 66.1%, GPT 5.5 (xhigh) 64.31%, Grok 4.5 62.0% (橙色), Opus 4.8 (max) 55.75%, Opus 4.7 (max) 40.12% (后四个值取自 PDF 第 2 页文字层). 也就是说 Grok 4.5 落后前两名, 正文要成立, 得把 Fable (max) 和 GPT 5.5 (xhigh) 划成「not comparable」, 页面没给划分标准, 「comparable」成了一个可以随结果伸缩的词. 另外四个标签各自的数值没有抓到, 复数主张「these tasks」实际只有一张图支撑. pass@1 是只采样一次就判对的比例.
+
+
+--- 行61 [对一下] ---
+> 两行合起来读, 含义是: 这套评测由 Datacurve 设计, 运行方是「AA」(具体是谁, 本页没写), 跑的时候用每个模型厂商自家的 harness; 而竞品的数字又注明取自各家已发布的系统卡或排行榜. 这两种来源混在同一张图里: Grok 4.5 的 62.0% 是这次跑出来的, Fable 的 66.1% 是摘自发布材料还是同场跑出来的, 分不出来. harness 不同意味着工具集, 重试次数,  scaffold 都不一样, 跨 harness 的 pass@1 直接比柱高, 可比性有限. 页面没给运行次数, 也没给误差.
+
+
+--- 行74 [问] ---
+> 这句话有两个可能的读法, 页面没挑明. 读法一: RL 的优化目标是让模型生成的每一个 token 都更有信息量, 对应下文「efficient reasoning」——同样解出任务, 少写废 token; 这和第 3, 4 页「token efficiency」「80 TPS」的卖点是同一根线. 读法二: 强化学习本身按 token 粒度做优化或分配算力 (区别于按整条轨迹给奖励), 涉及 credit assignment 怎么做. 两种读法页面都没有机制层面的说明, 只能确定它想表达「RL 变大」且「单位 token 更聪明」, 具体哪个量随什么量 Scaling, 一个数都没给.
+
+
+--- 行77 [确认] ---
+> 页面把判分写成两类: 自动化判分 (能跑测试, 能核对答案的任务) 和基于模型的判分 (用模型当裁判, 对应常见的 LLM-as-a-judge / 奖励模型做法). 判分模型是哪个, 和正在被训练的 Grok 4.5 是什么关系, 页面没写. 这处有真实风险: 用模型做奖励, 训练中的策略可能学会迎合裁判的偏好而不是真正解决问题, 即 reward hacking; 任务以多步软件工程为中心, 一部分可以用测试用例自动核对, 判分相对硬, 另一部分「other technical work」靠什么核, 就说不准了. 数十万个任务里两类各占多少, 页面没说. 奖励设计的一般风险见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLVR的局限性与探索边界分析.md), 那是通用分析, 不是本页的做法.
+
+
+--- 行80 [想] ---
+> 页面没说任务来源, 这是评测口径上最大的洞. 如果 RL 任务采自真实仓库的 issue/PR 分布, 而 DeepSWE, SWE Bench Pro 也构建自真实仓库, 两者分布重叠时, p2 的 pass@1 里多少来自对这类任务的泛化, 多少来自训练时见过同分布, 就分不开. 这是软件工程类基准的老问题, 常规缓解是按时间切分 (训练任务不取基准快照之后的仓库状态) 或按仓库隔离, 页面一个字没提. 反过来, 若任务全是合成的, 又和「real engineering tasks」的说法矛盾. 本页能确定的只有任务量级 (hundreds of thousands) 和判分方式, 任务来源与泄漏控制全部缺失.
+
+
+--- 行83 [想] ---
+> 这正是异步 RL 的核心难点. 同步训练里所有 rollout 用同一版权重采样, 采完再更新; 异步训练里采样和更新解耦, 慢 rollout 返回时, 训练侧的权重可能已经更新了很多轮, 这条轨迹相对当前策略就是 off-policy 的 (数据变「陈」), 直接用旧策略的数据算梯度会不稳. 常见做法是重要性采样修正, 截断, 或对陈旧程度做约束 (如 decoupled PPO 一类方法). 本页只说技术栈「highly asynchronous」和 rollout 能跑「many hours」, 一个字没提怎么对付陈旧性; 「many hours」说明单条轨迹很长, 对应「multi-step」的工程任务. 异步 RL 的一般背景见 [AgenticRL 训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md) 和 [Off-policyness 与 Privileged Information](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.3-Off-policyness与Privileged-Information.md).
+
+
+--- 行86 [问] ---
+> 第 2 页训练段第一句 (p2) 给了名头不给内容. 数万张 GB300 超大规模 run 的典型不稳来源有三类: loss spike (大规模下偶发的损失发散, 通常靠回滚 checkpoint 和跳批处理), 硬件故障 (数万张卡单次 run 内节点掉线是常态, 需要容错调度和冗余并行组), 以及并行维度 (TP/PP/DP 组合) 带来的梯度同步和内存压力. 页面一个技术名都没点, 是精度方案, 异步梯度, 容错调度还是别的, 无从判断, 数据侧倒是有具体动词 (deduplication, quality scoring, domain-focused selection), 两处详略反差说明「stability techniques」更像宣传语. 可验证路径是等后续技术报告或系统博客; 「beyond raw token volume」主张数据筛选的价值, 也没给任何消融数字支撑.
+
+
+--- 行111 [确认] ---
+> 这节 (p2-3) 的全部证据是第 3 页一张 Cosmos 太阳系应用的成品截图 (地址栏 app.localhost, 带 FOCUS 面板和 TIME ACCELERATION 滑块). 「one prompt」至少有两种口径: 一是单次对话零修改直接出成品, 二是一个目标 prompt 加模型自主多轮迭代 (规划, 写码, 自测, 修错) 直到通过. 截图对两种口径无法区分: 看不出背后迭代了几轮, 看不出有没有人工干预, 也看不出运行环境是否预置 (threejs 依赖, 脚手架). 「from prompt to production」同理, 一个 localhost 演示距 production 还差部署, 观测, 回滚一整段, 页面没有定义这个词. 可验证路径只有复现: 用同一 prompt 跑一遍, 数对话轮次和人工介入点.
+
+
+--- 行120 [对一下] ---
+> 「flash」在这类语境里通常指各家的小杯低延迟档 (如 Gemini Flash 或 Grok 自家的 fast 档), 标题的隐含主张是「旗舰的智能 + flash 的延迟」. 机制上旗舰模型达到 80 TPS 的路径有几种: 走低推理档位 (低 reasoning effort, 少生成思考 token), 投机解码 (小模型起草, 大模型验证), 或 serving 层的 batch/调度优化; 页面没说走了哪条, 80 TPS 对应哪个推理档也没说 (p3). 值得注意的是这和第 2 页 RL 的「efficient reasoning」, 第 4 页 token 效率图是同一根线: 如果高效主要来自「想得更短」, 那 faster 有一部分是用思考深度换的, 速度与智能之间存在取舍, 页面把两边都当纯收益陈述. 可验证路径是对照 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 的分档推理命名, 定位 80 TPS 落在哪一档, 再测换档后的分数变化.
+
+
+--- 行149 [核对] ---
+> TPS 是速度, token 效率是完成同一任务要花的输出 token 数, 两个量独立, 合起来的主张是「又快又省」: 单 token 生成速度有 80 TPS, 任务总耗时约等于输出 token 数除以 TPS, 两者相乘才有意义. 这张图纵轴标到 70k tokens, Grok 4.5 和 Opus 4.8 (max) 两根柱子都压在底部, PDF 第 4 页文字层只抽到两个「0」, 柱顶的具体数值丢了, 「twice greater token efficiency」(2 倍) 从这张图本身读不出来. 而且对比对象只有 Opus 4.8 (max) 一个, 「the latest leading models」的复数没有着落. 另外 80 TPS 没说是单用户延迟口径还是聚合吞吐口径, 也没说在什么 batch 和硬件下测的.
+
+
+--- 行166 [问] ---
+> 页面两层都有. 正文说 Grok Build 能做 Excel 模型和 PowerPoint, Word 里的细活, 第 5 页末尾又给出 Word, PowerPoint, Excel, Outlook 四个 [Office 插件](https://marketplace.microsoft.com/en-us/product/office/WA200011055?tab=Overview) 的链接. 合理的读法是: 插件负责把模型接进 Office 的宿主环境 (操作文档对象, 读写形状和公式), 模型负责内容本身; 但页面没写清两者分工, 「leaves stickies or notes behind」这种动作具体是模型调用插件接口还是脚本完成, 本页没有机制说明. 截图 p05 里是一个 PowerPoint 演示: 右侧「Draft the deck」面板, 左側画布上已经是做好的「Q3 Business Review」封面, 状态栏写 Slide 1 of 5, 和上面「5-slide quarterly business review」的 prompt 对应.
+
+
+--- 行183 [停一下] ---
+> 一个都核不实, 而且两个量还混着用. token 效率指完成同一任务平均输出的 token 数 (第 4 页图的纵轴), step 是 agent 的决策步数, 两者不是一回事: 每步可以很短也可以很长, 「步数减半」推不出「token 减半」, 页面却用它们互相佐证同一个 2 倍. 价格本身可以对: 输出是输入的 3 倍; 但和 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 的 \$1.25 / \$2.50 相比, Grok 4.5 的单价反而更高, 「far lower costs」要成立, 完全押在 2 倍 token 效率上, 而这个效率只有对手 Opus 4.8 (max) 一张图, 数值还丢了. 「highest intelligence per unit of time and cost」没有给任何联合指标, 属宣传语.
+
+
+--- 行220 [拆开] ---
+> 这段 input 本身就是一道小题: `function median(a){a.sort();return a[a.length/2]}` 至少有四个问题. 一, `sort()` 默认按字符串字典序排, `[10, 2, 30]` 会排成 `[10, 2, 30]`, 中位数全错, 该传比较函数. 二, 偶数长度时 `a[a.length/2]` 取的是上中位元素, 中位数定义应为中间两数平均. 三, 下标 `a.length/2` 在偶数长度时恰好越界半格: length 为 4 时下标 2 其实是第 3 个元素 (0 起). 四, 原数组被原地修改, 有副作用. 另外注意请求走的是 `/v1/responses` 这个新端点,  body 里用 `input` 字段而不是 chat completions 的 `messages`, 模型名 `grok-4.5` 与 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 里带日期码和 reasoning 后缀的命名不一样, 本页没解释命名规则.
+

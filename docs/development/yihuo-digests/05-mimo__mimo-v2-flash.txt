@@ -1,0 +1,81 @@
+# 05-mimo/mimo-v2-flash  文件: content/model-library/03-模型家族\05-mimo/mimo-v2-flash\mimo-v2-flash-bi.md  共 20 块
+
+--- 行17 [核对] ---
+> 局部:全局=5:1 意味着 6 层里 1 层全全局. 摘要把该密度直接写成 nearly 6× 的 KV-cache 与 attention 计算削减; 数字来自摘要句, 不是另表测得的墙钟倍数.
+
+
+--- 行100 [想] ---
+> 不存在共享专家列. §2.1 明文 「contains no shared experts」; Table 1 的 256/8 是路由池总数与每 token 激活数, 激活 8 全部来自 256 路由专家.
+
+
+--- 行119 [问] ---
+> 层计数上仍是 48. 结构例外是第一块用 GA+dense FFN, 不是少算一层; 39 SWA + 9 GA = 48, 与 8 个 hybrid 槽位及首层 GA 替换叙述一致, 见 Figure 2 注与 Table 1.
+
+
+--- 行179 [看表] ---
+> 不能. 该行 CMMLU/MBPP 未报告. sink 恢复的可引用格是同表已填的 MMLU/BBH/TriviaQA/GSM8K/MATH; 中文与 MBPP 只能比较 All GA 与 w/ sink 两行.
+
+
+--- 行233 [拆开] ---
+> §2.2.2 用 「larger window blur local/global separation」 解释 𝑊=512 在长上下文扩展后全面弱于 𝑊=128. Table 3 的 RULER-32k 84.7 与 MRCR 19.6 是该经验结论的表内证据, 不是另一套机制.
+
+
+--- 行272 [确认] ---
+> 是. 正文用 𝐾 描述复制次数, 摘要与 §5 / Table 10 的实测固定为 3-layer MTP; 开源也提供 three-layer MTP weights.
+
+
+--- 行311 [回看] ---
+> 3×0.33B=0.99B 量级来自 Table 1 单块 0.33B 与 3-layer 设定的乘积. §3.2 写 Overall 309B total / 15B active 时, 语境是主模型配置; 摘要把 model weights 与 three-layer MTP weights 分开开源, 表明 MTP 权重按附加模块交付.
+
+
+--- 行314 [对一下] ---
+> §3.2 写 「The intermediate hidden dimension of the FFN of dense layers is set to 16384」, 同时 「All layers except the first are equipped with sparse MoE」. 首层是文中的 dense layer, 应落在 16384. MTP 只给了总参 0.33B 与 SWA 头配置, 未单独写 MTP FFN 中间维; 不能把 16384 自动写成 MTP 已披露值.
+
+
+--- 行325 [停一下] ---
+> 正文只写 Stage 3 调整 GA 的 RoPE base 到 5,000,000, 未写 SWA base 变更. 能确认的是 GA 基频与序列长度 262,144; SWA 仍以 Stage 1 的 10,000 为文中最后显式值.
+
+
+--- 行405 [再看] ---
+> Table 5 注: asterisk 表示模型未遵循 few-shot 示例格式. 9.4* 与 30.8 同表并列, 但星号提醒格式遵循可能不同, 引用时需带注, 不能当成无条件同协议分数.
+
+
+--- 行421 [对一下] ---
+> Table 6 注写 All baseline models have maximum model lengths shorter than 256K, 故对照在 256K 为 「-」. 这支持 「本表内仅 Flash 给出 256K NIAH」, 不是全球唯一, 而是该对照集的最大长度限制.
+
+
+--- 行475 [想] ---
+> 该格是明文未追平教师的例子. §4.1 主张是总体框架优势, Table 7 同时列出负 Δ (BrowseComp -6.3, CreativeWriting -3.9, GPQA -0.6, SWE -0.8). 指回本表时, 「全域峰值」 是目标陈述, 不是 BrowseComp 已达成的事实.
+
+
+--- 行593 [看表] ---
+> Figure 4 写 on-policy rollouts across approximately 120K environments, Table 8 Code 两行合计 120K tasks. 报告把二者并读为代码智能体 Scaling 曲线的数据规模; 未再拆 90K/30K 谁贡献了横轴上的每一环境.
+
+
+--- 行644 [问] ---
+> 式 (7) 的 surrogate 是 𝑤_𝑡 Â_MOPD,t 乘 log π. 式 (9) 重定义 Â_MOPD,t = sg[log ratio]+α Â_ORM. 文中未写 ORM 项单独绕过 𝑤_𝑡; 按公式结构, 进入求和的是同一 𝑤_𝑡 权重后的优势.
+
+
+--- 行667 [核对] ---
+> Figure 6 的设定就是把 ORM-RL, MOPD w/o ORM, 完整 MOPD 画在一起, 正文称 MOPD 能匹配或超过最强教师. 具体曲线高低以图为准; 机制上 w/o ORM 仍保留式 (8) 的教师 log-ratio 优势.
+
+
+--- 行735 [拆开] ---
+> 主问题是 rollout 与 training 路由因数值精度不一致 (引 Ma et al., 2025). prefix cache 存 KVCache 与 MoE routed experts, 目的是多轮同请求内复用并保证采样一致性; 文中对比 radix cache, 强调避免跨请求共享导致路由不一致.
+
+
+--- 行774 [回看] ---
+> 是正文主张的强负相关: WebDev 类低熵接受更长 (约 3.6), MMLU Pro 类高不确定接受更短. 拟合 𝑅^2=0.995 支持 「交叉熵是 MTP 吞吐主决定量」 的经验句.
+
+
+--- 行797 [确认] ---
+> 摘要 「up to ... 2.6× decoding speedup with three MTP layers」 是上界口径. Table 10 最高可见 2.70× (batch 96, accept 3.8) 与 2.67× (batch 64, accept 3.8). 2.6× 与表内 2.53–2.56× (accept 3.6) 同量级; 精确格以 Table 10 为准, 摘要为约数上界.
+
+
+--- 行1051 [再看] ---
+> 不能. Figure 8 明确是 Qwen3-32B on unprocessed images 的趋势. 对 MiMo, 正文写自建镜像已按官方修复 git hacking, 并 repeatedly confirm 本模型未表现 hacking.
+
+
+--- 行1058 [停一下] ---
+> 原文 「as low as 30%」 表示阈值可以低到 30%, 不是声明生产默认固定 30%. 经验收益写 Deep Research 类 5–10%, BrowseComp 对齐激进重置后 58.3.
+

@@ -697,15 +697,27 @@ The detailed results are as follows.
 
 **Qwen3-VL-235B-A22B** We compare our flagship model Qwen3-VL-235B-A22B with the leading instruct and thinking models. For the Qwen3-VL-235B-A22B-Instruct, we take Qwen3-235B-A22B-Instruct-2507, DeepSeek V3 0324, and Claude-Opus-4 (without thinking) as the baselines. For the Qwen3-VL-235B-A22B-Thinking, we take Qwen3-235B-A22B-Thinking-2507, OpenAI o3 (medium), Claude-Opus-4 (with thinking) as baselines. We present the evaluation results in Table 5 and Table 6.
 
+**Qwen3-VL-235B-A22B** 把旗舰与领先的 Instruct, Thinking 模型对比: Instruct 侧基线取 Qwen3-235B-A22B-Instruct-2507, DeepSeek V3 0324, Claude-Opus-4 (without thinking); Thinking 侧基线取 Qwen3-235B-A22B-Thinking-2507, OpenAI o3 (medium), Claude-Opus-4 (with thinking). 结果见表 5 与表 6.
+
 • From Table 5, Qwen3-VL-235B-A22B-Instruct achieves competitive results, comparable to or even surpassing the other leading models, including DeepSeek V3 0324, Claude-Opus-4 (without thinking), and our previous flagship model Qwen3-235B-A22B-Instruct-2507. Particularly, Qwen3-VL-235B-A22B-Instruct exceeds other models on reasoning-demand tasks (e.g., mathematics and coding). It is worth noting that DeepSeek V3 0324 and Qwen3-235B-A22B-Instruct-2507 are Large Language Models, while Qwen3-VL-235B-A22B-Instruct is a Vision Language model which can process visual and textual tasks. This means that Qwen3-VL-235B-Instruct has achieved the integration of visual and textual capabilities.
+
+表 5: Qwen3-VL-235B-A22B-Instruct 成绩有竞争力, 可比肩甚至超过 DeepSeek V3 0324, Claude-Opus-4 (without thinking) 与自家上代旗舰 Qwen3-235B-A22B-Instruct-2507, 在数学, 代码等重推理任务上反超. 值得注意的是, DeepSeek V3 0324 与 Qwen3-235B-A22B-Instruct-2507 是纯文本 LLM, 而 Qwen3-VL-235B-A22B-Instruct 是能同时处理视觉与文本任务的视觉语言模型, 即视觉与文本能力已完成整合.
 
 • From Table 6, Qwen3-VL-235B-A22B-Thinking also achieves competitive results compared with other leading thinking models. Qwen3-VL-235B-A22B-Thinking exceeds OpenAI o3 (medium) and Claude-Opus-4 (with thinking) on AIME-25 and LiveCodeBench v6, which means Qwen3-VL-235B-A22B-Thinking has better reasoning ability.
 
+表 6: Qwen3-VL-235B-A22B-Thinking 对其他领先推理模型同样有竞争力, 在 AIME-25 与 LiveCodeBench v6 上超过 OpenAI o3 (medium) 与 Claude-Opus-4 (with thinking), 推理能力更强.
+
 **Qwen3-VL-32B / 30B-A3B** We compare our Qwen3-VL-32B and Qwen3-VL-30B-A3B models with their corresponding text-only counterparts, namely Qwen3-32B, Qwen3-30B-A3B, and Qwen3-30B-A3B-2507. We present the evaluation results in Table 7 and Table 8.
+
+**Qwen3-VL-32B / 30B-A3B** 与对应纯文本模型 Qwen3-32B, Qwen3-30B-A3B, Qwen3-30B-A3B-2507 对比, 结果见表 7 与表 8.
 
 • From Table 7, for instruct models, Qwen3-VL-32B and Qwen3-VL-30B-A3B show significant performance improvement compared with Qwen3-32B and Qwen3-30B-A3B on all the benchmarks. Qwen3-VL-30B-A3B achieves comparable or even better results compared with Qwen3-30B-A3B-2507, particularly AIME-25 and HMMT-25.
 
+表 7 (Instruct): Qwen3-VL-32B 与 Qwen3-VL-30B-A3B 在所有基准上都较 Qwen3-32B, Qwen3-30B-A3B 明显提升; Qwen3-VL-30B-A3B 还可比肩甚至优于 Qwen3-30B-A3B-2507, 尤其是 AIME-25 与 HMMT-25.
+
 • From Table 8, for thinking models, Qwen3-VL-32B and Qwen3-VL-30B-A3B surpass the baselines in most of the benchmarks. Qwen3-VL-30B-A3B also shows comparable performance compared with Qwen3-30B-A3B-2507.
+
+表 8 (Thinking): Qwen3-VL-32B 与 Qwen3-VL-30B-A3B 在多数基准上超过基线; Qwen3-VL-30B-A3B 与 Qwen3-30B-A3B-2507 表现相当.
 
 <!-- page 22 of 42 -->
 
@@ -734,6 +746,8 @@ Table 9: Comparison among Qwen3-VL-2B (Instruct), Qwen3-VL-4B (Instruct), Qwen3-
 <table><tr><td></td><td>Benchmark</td><td>Qwen3-VL2BInstruct</td><td>Qwen3-VL4BInstruct</td><td>Qwen3-VL8BInstruct</td><td>Qwen31.7BInstruct</td><td>Qwen34BInstruct</td><td>Qwen38BInstruct</td><td>Qwen34BInstruct-2507</td></tr><tr><td rowspan="4">Knowledge</td><td>MMLU-Pro</td><td>49.0</td><td>67.1</td><td>71.6</td><td>42.3</td><td>58.0</td><td>63.4</td><td>69.6</td></tr><tr><td>MMLU-Redux</td><td>66.5</td><td>81.5</td><td>84.9</td><td>63.6</td><td>77.3</td><td>79.5</td><td>84.2</td></tr><tr><td>GPQA</td><td>42.0</td><td>55.9</td><td>61.9</td><td>34.7</td><td>41.7</td><td>39.3</td><td>62.0</td></tr><tr><td>SuperGPQA</td><td>24.3</td><td>40.3</td><td>44.5</td><td>22.8</td><td>32.0</td><td>35.8</td><td>42.8</td></tr><tr><td rowspan="3">Reasoning</td><td>AIME-25</td><td>22.2</td><td>46.6</td><td>45.9</td><td>10.6</td><td>19.1</td><td>20.9</td><td>47.4</td></tr><tr><td>HMMT-25</td><td>10.9</td><td>30.7</td><td>32.5</td><td>6.2</td><td>12.1</td><td>11.8</td><td>31.0</td></tr><tr><td>LiveBench 2024-11-25</td><td>39.5</td><td>60.9</td><td>62.0</td><td>35.6</td><td>48.4</td><td>53.5</td><td>63.0</td></tr><tr><td rowspan="4">Alignment Tasks</td><td>IFEval</td><td>68.2</td><td>82.3</td><td>83.7</td><td>67.1</td><td>81.2</td><td>83.0</td><td>83.4</td></tr><tr><td>Arena-Hard V2 (winrate)</td><td>6.4</td><td>30.4</td><td>46.3</td><td>4.1</td><td>9.5</td><td>15.5</td><td>43.4</td></tr><tr><td>Creative Writing v3</td><td>48.6</td><td>72.3</td><td>77.0</td><td>49.1</td><td>53.6</td><td>69.0</td><td>83.5</td></tr><tr><td>WritingBench</td><td>73.0</td><td>82.5</td><td>83.1</td><td>65.1</td><td>68.5</td><td>71.4</td><td>83.4</td></tr><tr><td rowspan="2">Coding &amp; Agent</td><td>LiveCodeBench v6</td><td>20.3</td><td>37.9</td><td>39.3</td><td>16.1</td><td>26.4</td><td>25.5</td><td>35.1</td></tr><tr><td>BFCL-v3</td><td>55.4</td><td>63.3</td><td>66.3</td><td>52.2</td><td>57.6</td><td>60.2</td><td>61.9</td></tr><tr><td rowspan="4">Multilingualism</td><td>MultiIF</td><td>43.2</td><td>61.5</td><td>66.8</td><td>43.2</td><td>61.3</td><td>69.2</td><td>69.0</td></tr><tr><td>MMLU-ProX</td><td>38.8</td><td>59.4</td><td>65.4</td><td>33.5</td><td>49.6</td><td>58.0</td><td>61.6</td></tr><tr><td>INCLUDE</td><td>45.8</td><td>61.4</td><td>67.0</td><td>42.6</td><td>53.8</td><td>62.5</td><td>60.1</td></tr><tr><td>PolyMATH</td><td>14.9</td><td>28.8</td><td>30.4</td><td>10.3</td><td>16.6</td><td>18.8</td><td>31.1</td></tr></table>
 
 the efficacy of our Strong-to-Weak Distillation approach, making it possible for us to build the lightweight models with remarkably reduced costs and efforts.
+
+**Qwen3-VL-8B / 4B / 2B** 结果见表 9 与表 10: Qwen3-VL-2B, Qwen3-VL-8B 对比 Qwen3-1.7B, Qwen3-8B; Qwen3-VL-4B 对比 Qwen3-4B 与 Qwen3-4B-2507. 总体看, 这些端侧小模型表现出众, 超过基线, 验证了 Strong-to-Weak Distillation 的有效性, 让我们能以显著更低的成本与投入构建轻量模型.
 
 <!-- page 24 of 42 -->
 
@@ -1057,6 +1071,8 @@ Chengke Zou, Xingang Guo, Rui Yang, Junyu Zhang, Bin Hu, and Huan Zhang. Dynamat
 
 We evaluate Qwen3-VL on a wide range of public benchmarks across distinct capabilities: multimodal reasoning, general visual question answering, subjective experience & instruction following, document understanding (including OCR), 2D/3D visual grounding and counting, spatial reasoning, video understanding, GUI agent, and Text-Centric tasks. Below, we provide a detailed list of all the benchmarks used.
 
+我们在覆盖多类能力的公开基准上评测 Qwen3-VL: 多模态推理, 通用视觉问答, 主观体验与指令跟随, 文档理解 (含 OCR), 2D/3D 视觉 grounding 与计数, 空间推理, 视频理解, GUI Agent 与文本中心任务. 以下列出全部所用基准.
+
 • **Multimodal Reasoning:** We evaluate the models on 12 benchmarks spanning a diverse range of domains—from mathematics and STEM to visual reasoning and puzzle-solving tasks: MMMU (Yue et al., 2024a), MMMU-Pro (Yue et al., 2024b), MathVision (Wang et al., 2024b), MathVision-Wild<sub>photo</sub>, MathVista (Lu et al., 2023), We-Math (Qiao et al., 2024), MathVerse (Zhang et al., 2024), DynaMath (Zou et al., 2024), Math-VR (Duan et al., 2025), LogicVista (Xiao et al., 2024), VisualPuzzles (Song et al., 2025b), VLM are Blind (Rahmanzadehgervi et al., 2025), ZeroBench (Main/Subtasks) (Roberts et al., 2025), and VisuLogic (Xu et al., 2025).
 
 • **General Visual Question Answering:** We evaluate the models on 4 General VQA benchmarks: MMBench-V1.1 (Liu et al., 2023b), RealWorldQA (xAI, 2024), MMStar (Chen et al., 2024a), and SimpleVQA Cheng et al. (2025).
@@ -1075,11 +1091,15 @@ We evaluate Qwen3-VL on a wide range of public benchmarks across distinct capabi
 
 • **Text-Centric Tasks:** We evaluate the models on a wide range of text-centric datasets. (1) **Knowledge:** MMLU-Pro (Wang et al., 2024f), MMLU-Redux (Gema et al., 2024), GPQA (Rein et al., 2023), SuperGPQA (Team, 2025), (2) **Reasoning:** AIME-25 (AIME, 2025), HMMT-25 (HMMT, 2025), LiveBench (2024-11-25) (White et al., 2024), (3) **Code:** LiveCodeBench v6 (Jain et al., 2024), CFEval, OJBench (Wang et al., 2025c), (4) **Alignment Tasks:** IFEval (Zhou et al., 2023), Arena-Hard v2 (Li et al., 2024d) , Creative Writing v3 (Paech, 2023), WritingBench (Wu et al., 2025b), (5) **Agent:** BFCL-v3 (Patil et al., 2024), TAU2-Retail, TAU2-Airline, TAU2-Telecom, (6) **Multilingual:** MultiIF (He et al., 2024), MMLU-ProX, INCLUDE (Romanou et al., 2025), PolyMATH (Wang et al., 2025b).
 
+基准清单按能力分组: 多模态推理 12+2 项 (数学, STEM, 视觉推理与解谜); 通用 VQA 4 项; 主观体验与指令跟随 3 项; 文档理解与 OCR 10 项; 2D/3D grounding 与空间理解 11 项; 视频理解 7 项; 多模态编码 3 项 (前端重建, 图表模仿, SVG 生成); GUI Agent 分感知 (GUI grounding, 跨设备界面布局) 与决策 (真实或模拟操作系统环境中的交互控制, 规划与执行) 两组; 文本中心任务分知识, 推理, 代码, 对齐, Agent, 多语言六类.
+
 <!-- page 34 of 42 -->
 
 ## B Evaluation Prompts
 
 To ensure reproducibility and facilitate future research, we provide here the complete set of prompts used to evaluate our model across all benchmarks. These prompts were consistently applied during inference to maintain fairness and comparability.
+
+为保证可复现并便于后续研究, 我们在此给出评测全部基准所用的完整 prompt; 推理时统一套用这些 prompt, 以保证公平与可比性.
 
 ### B.1 STEM & Puzzle
 

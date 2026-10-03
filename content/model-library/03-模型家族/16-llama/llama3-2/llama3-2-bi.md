@@ -48,7 +48,7 @@ following, and rewriting tasks running locally at the edge. These models are ena
 
 这一条在 md 里从半句开始. 页面图像上这一行被页眉挡住了一半, PDF 文本层保留了整句: "The Llama 3.2 1B and 3B models support context length of 128K tokens and are state-of-the-art in their class for on-device use cases like summarization, instruction following, and rewriting tasks running locally at the edge." 整条的意思是: Llama 3.2 的 1B 和 3B 模型支持 128K token 的上下文长度, 在端侧场景 (摘要, 指令遵循, 在边缘本地运行的改写任务) 上是同级别里最好的. 这两个模型发布当天就能在 Qualcomm 和 MediaTek 的硬件上使用, 并针对 Arm 处理器做了优化.
 
-从这里到本页 「Snowflake, and more」 为止, 页面图像上都是 Takeaways 下面的圆点条目, md 去掉了圆点.
+从这里到报告里 「Snowflake, and more」 为止, 页面图像上都是 Takeaways 下面的圆点条目, md 去掉了圆点.
 
 Supported by a broad ecosystem, the Llama 3.2 11B and 90B vision models are drop-in replacements for their corresponding text model equivalents, while exceeding on image understanding tasks compared to closed models, such as Claude 3 Haiku. Unlike other open multimodal models, both pre-trained and aligned models are available to be fine-tuned for custom applications using torchtune and deployed locally using torchchat. They’re also available to try using our smart assistant, Meta AI.
 
@@ -471,7 +471,7 @@ This work was supported by our partners across the Al community. We'd like to th
 
 ![Image block](images/p15-image.png)
 
-(图: 深色底上一个细线圆圈, 里面一个指向右上的箭头. 样式和本页 「See all open positions」 前面的圆圈箭头一致.)
+(图: 深色底上一个细线圆圈, 里面一个指向右上的箭头. 样式和报告里 「See all open positions」 前面的圆圈箭头一致.)
 
 ![Image block](images/p15-meta.png)
 

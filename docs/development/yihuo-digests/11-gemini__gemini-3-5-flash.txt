@@ -1,0 +1,69 @@
+# 11-gemini/gemini-3-5-flash  文件: content/model-library/03-模型家族\11-gemini/gemini-3-5-flash\gemini-3-5-flash-bi.md  共 17 块
+
+--- 行27 [想] ---
+> 讲的是 3.5 Flash. 标题写 Gemini 3.5 Flash, 发布日期 2026 年 5 月 19 日, PDF 链接的文件名是 Gemini-3-5-Flash-Model-Card.pdf, 版本号在 URL 里写全了. 反倒是 「Learn more」 链到 /models/gemini/flash/, 路径不带版本, 以后点进去可能是更新的 Flash. 第 5 页 「Latest model cards」 里另列了 Gemini 3.6 Flash 和 3.8 Flash, 各有各的卡; 2.5 Flash 全文没出现. 下文所有数字只属于 3.5 Flash 这张卡.
+
+
+--- 行58 [问] ---
+> 卡上没说. 思考档位就是让用户决定推理时多花多少算力, 属于 TestingTime 的做法: 档位越高, 模型想得越久, 质量可能更好, 成本和延迟也跟着涨. 但这张卡没列档位的数目和名字, 没给默认档, 第 2 到 3 页的成绩表也没注明每个基准开的是哪一档. 所以表里的 3.5 Flash 分数对应多大的推理开销, 从卡上读不出来, 评测方法链接里也许有.
+
+
+--- 行85 [核对] ---
+> 在这张卡里对不上. 卡上只给了 3.5 Flash 自己的两个数: 输入窗口最多 1M token, 输出 64K token. 成绩表的六列是 3.5 Flash, 3 Flash, 3.1 Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-5.5, 没有 Gemini 3 Pro, 也没有任何 2.5 型号, 表里也不列各家的上下文长度. 连 3 Flash 的上下文是多少, 这张卡都没写, 要去它自己的模型卡查. 能拿来看长上下文实际表现的只有第 3 页 MRCR v2 那两行.
+
+
+--- 行116 [回看] ---
+> 卡上没有答案. 架构, 训练数据集, 训练数据处理三节全部一句话转给 3 Flash 的卡, 第 2 页的硬件, 软件, 第 3 页的已知局限, 可接受用途, 第 4 页的评测方法, 安全政策也一样, 合计 9 处指向 3 Flash 的卡. 概述里说它是 「next iteration」, 可是 3.5 比 3 多做了什么训练, 换没换数据, 结构动没动, 一个字都没写. 第 3 页的分数比 3 Flash 全面上涨, 但涨从哪里来, 这张卡给不出.
+
+
+--- 行169 [看表] ---
+> 比不了, 因为整张卡没有价格. 分发一节列了 7 个渠道和两份服务条款, 只说 「no required hardware or software」, 没有一行写每百万 token 的输入价或输出价, 第 2 到 3 页的成绩表也没有价格行. 3 Pro 和 2.5 本来就不在这张卡里, 3 Flash, 3.1 Pro 的价格同样没给. 想知道价格, 只能去 Gemini API 的定价页查, 那不是这份材料的内容.
+
+
+--- 行216 [拆开] ---
+> 是左侧的类别标签, 被 MinerU 当成了独立的行. PDF 里这两个词印在表格最左一栏, 竖着跨几行, 抽出文字时落在行与行之间. 按位置看, 「Coding」 管 Terminal-bench 2.1 和 SWE-Bench Pro 两行, 「Agentic」 从 MCP Atlas 开始, 第 3 页的 Toolathlon 类别格空着, 应当也归 「Agentic」, 但 PDF 没给边框, 这一点只能按版面推. Claude Sonnet 4.6 在前两行是 「-」, PDF 里是长横线, 意思是没有这个分数, 不是 0.
+
+
+--- 行241 [确认] ---
+> 第 2 页 3 行加第 3 页 11 行, 共 14 行分数. 3.5 Flash 拿了 6 行第一 (MCP Atlas, Toolathlon, Finance Agent v2, CharXiv, MMMU-Pro, MRCR v2 1M), 3 行第二 (Terminal-bench 2.1, OSWorld-Verified, Blueprint-Bench 2), 1 行第三 (SWE-Bench Pro), 4 行第四 (GDPval-AA, MRCR v2 128k, HLE, ARC-AGI-2). 6 个第一里有两个只和三家比过 (Toolathlon, MRCR 1M), CharXiv 只领先 GPT-5.5 0.1 点. 和上一代 3 Flash 比, 14 行全部上升, ARC-AGI-2 从 33.6% 到 72.1%, 多 38.5 点, 涨得最多.
+
+
+--- 行244 [对一下] ---
+> 一行也不能. 六列里的 Gemini 只有 3.5 Flash, 3 Flash, 3.1 Pro, 没有 Gemini 3 Pro, 也没有 2.5 Pro 或 2.5 Flash. 离 「Pro」 最近的是 3.1 Pro: 两者都有分的 13 行里, 3.5 Flash 赢 10 行, 输 3 行, 输的是 MRCR v2 128k (77.3% 对 84.9%), Humanity's Last Exam (40.2% 对 44.4%), ARC-AGI-2 (72.1% 对 77.1%), 也就是长上下文和推理两类. 想拿 3 Pro 或 2.5 的数来比, 得去它们各自的卡, 而且那边的对手, 口径未必一样.
+
+
+--- 行247 [停一下] ---
+> 说明 「能装下」 和 「能找准」 是两回事. 1M 这一行口径是 pointwise (逐点), 128k 那行是 average (取平均), 两行算法不同, 26.6% 不能直接和 77.3% 比出 「掉了多少」. 1M 这行只有三个 Gemini 有分, 3.5 Flash 26.6%, 3.1 Pro 26.3%, 3 Flash 22.1%, 3.5 Flash 比 3.1 Pro 只多 0.3 点. 到了 128k, 3.5 Flash 的 77.3% 反而低于 3.1 Pro 和 Claude Sonnet 4.6 的 84.9%, 更低于 GPT-5.5 的 94.8%.
+
+
+--- 行250 [再看] ---
+> 两行的单位都和别的行不一样. Blueprint-Bench 2 标着 「Normalized score」, 是归一化分数, 0.0% 大概是落在基线或以下, 并不一定是一题都没做对, 但卡上没写怎么归一化. GDPval-AA 是 Elo, 3.5 Flash 1656, 比 3 Flash 的 1204 高 452, 比 3.1 Pro 的 1314 高 342, 仍低于 Claude Sonnet 4.6, Claude Opus 4.7 和 GPT-5.5. Elo 是相对分, 只在同一批对手里有意义, 不能和百分比行放在一起平均.
+
+
+--- 行257 [核对] ---
+> 漏了一句. PDF 第 3 页第一行是 「For details on our evaluation methodology please see deepmind.google/models/evals-methodology/gemini-3-5-flash」, MinerU 没抓到. 这里的域名是 deepmind.google, 第 2 页 Approach 那句链接写的是 deepmind.com, 路径相同, 域名不同. 两处指的应该是同一页评测方法说明, 引用时用 deepmind.google 更稳, 因为卡上其余链接都在这个域名下.
+
+
+--- 行284 [问] ---
+> 表里找不到. 和它最接近的是 MCP Atlas 的多步工作流, Toolathlon 的真实工具调用, GDPval-AA 的知识型工作, 但卡上没说这些任务要跑多久, 更没有按 「周」 计的评测. 这句用途说明是产品定位, 不是评测结论. 已知局限又转给了 3 Flash 的卡, 3.5 Flash 在长流程上会出什么问题, 这张卡没写.
+
+
+--- 行337 [拆开] ---
+> 因为几行的正负方向不一样. 卡上没明说安全行的方向, 但正文说 3.5 Flash 在安全上 「outperforms」, 表里对应的却是 -3.9% 和 -2.6%, 反推回去, 这几行量的应该是违规率一类的指标, 数字降才算变好; 脚注 1 专门说语气一行正数才是改进, +8.9% 也是改进. 卡上靠颜色区分好坏, 正文说蓝色改进, 橙色退步, 脚注又说绿色改进, 黄色退步, 两套颜色说法不一致, 而 MinerU 和 PDF 文本层都没留下颜色. 另外脚注提到 「instruction following」, 表里没有这一行; 正文说结果 「reported below」, 表却排在这段话前面.
+
+
+--- 行352 [想] ---
+> 卡上没讲清. 脚注 1 只挂在语气一行, 正数为改进的规则写的是 「tone and instruction following」, 没提无理拒答. 这一行的说明是 「在保持安全的前提下作答的能力」, 按字面, 正数像是能力提高; 可括号里的 「non-egregious」 通常是给退步做的注解, 意思是变差的部分不严重, 和下文 「losses were ... not egregious」 对得上. 正文只说 「keeping unjustified refusals low」, 回避了方向. 颜色丢了, 这一格只能存疑.
+
+
+--- 行375 [确认] ---
+> 主体不是. 卡上说做前沿安全评估的是 3.1 Pro, 理由是它 「发布时通用能力最强」, 3.5 Flash 的结论由 3.1 Pro 的结果推过来. 可第 2 到 3 页的表里, 3.5 Flash 在两者都有分的 13 行中赢了 3.1 Pro 10 行, 包括 Terminal-bench 2.1 多 5.9 点, MCP Atlas 多 5.4 点, 正是卡上说它擅长的智能体和编程. 「没有实质提升」 指的只是前沿安全相关的能力, 不是这张成绩表, 这一区分卡上没展开. 单独给 3.5 Flash 加测的只有网络一项, 结论见上一句.
+
+
+--- 行434 [回看] ---
+> 都是别的模型, 各有各的卡. 这个清单是网站侧栏, 按抓取时的最新排序, 所以出现了比 3.5 Flash 更新的 3.6 Flash 和 3.8 Flash, 说明抓取时间晚于 2026 年 5 月 19 日的发布日. 3.5 Flash-Lite 名字只差一个 「-Lite」, 链接是 gemini-3-5-flash-lite, 也是另一个型号. 本卡的数字不能挪给它们中的任何一个, 反过来也一样.
+
+
+--- 行453 [对一下] ---
+> 没有, 6 张全是 30 到 40 像素见方的小图标, 都在第 5 页. 前三张被 MinerU 排在 「Risks and Mitigations」 标题下, 看位置像是风险一节的配图, 其实是页脚图标: 一个像机器人的线条图标, YouTube 标志, Gemini 的四角星. 后三张跟在 「Follow us」 后面: X, Instagram, GitHub. 两个长文件名都会误导人, 「for-more-information-about-the-risks...」 是那颗星, 「sign-up-for-updates...」 是 GitHub 标志, 名字是按旁边最近的文字起的.
+

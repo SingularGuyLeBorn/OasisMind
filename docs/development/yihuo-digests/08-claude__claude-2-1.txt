@@ -1,0 +1,53 @@
+# 08-claude/claude-2-1  文件: content/model-library/03-模型家族\08-claude/claude-2-1\claude-2-1-bi.md  共 13 块
+
+--- 行25 [想] ---
+> 正文一个价格数字都没有, 只挂了一个 model_pricing_nov2023.pdf 链接, 这份 PDF 不在本目录. 「across models」 说明调价不只针对 Claude 2.1, 但涉及哪些模型, 按输入还是输出 token 计价, 页面都没说. 按本文能确认的只有 「价格表在发布当天一并更新」 这一件事, 具体数字要去读那份 PDF, 本文不替它报数.
+
+
+--- 行44 [核对] ---
+> 按原文数字自己算: 150,000 / 200,000 = 0.75, 即每个 token 约 0.75 个英文单词; 150,000 / 500 = 300, 即每页约 300 词. 原文用的是 「roughly」 和 「over」, 所以这只是量级换算, 不是 tokenizer 的精确比例, 换成中文或代码, 比例会不同, 页面没给. 「doubling」 反推上一代的上限约为 100,000 token, 但本页没有直接写出 Claude 2.0 的窗口数字, 引用时应注明是由 「doubling」 推出来的.
+
+
+--- 行51 [问] ---
+> 页面只给了 「a few minutes」 这个定性说法, 参照物是 「hours of human effort」, 没有首 token 延迟, 吞吐或不同长度下的耗时曲线. 这句话的作用是给用户打预防针: 窗口变大了, 但满窗口的请求会慢. 「We expect the latency to decrease substantially」 是对未来的预期, 没有时间表. 本文也没说延迟来自哪一段计算, 所以不能从这里推出 Claude 2.1 用了什么注意力结构或长上下文技术.
+
+
+--- 行66 [拆开] ---
+> 页面给出的口径是一套 rubric, 至少区分两类输出: 错误断言 (incorrect claims) 和承认不确定 (admissions of uncertainty), 并各举了一个玻利维亚城市的例子. 题目来源是 「curating a large set of complex, factual questions that probe known weaknesses」, 即专挑模型弱点的难题, 题量, 领域和判分人 (人工还是模型) 都没写. 下方图表的纵轴是 「Fraction of answers」, 说明比例的分母是全部回答. 这一点很关键: 把错误回答改成拒答, 就能在分母不变的情况下让 「Incorrect」 的比例下降.
+
+
+--- 行77 [看表] ---
+> 目测 Incorrect 从约 47% 降到约 25%, 比值接近 2, 对应正文的 「2x decrease」. 但把两组加起来: 2.0 约 47% + 24% ≈ 71%, 2.1 约 25% + 45% ≈ 70%. 如果剩下的部分就是答对 (图里没画, 页面也没说还有没有第三类), 那么两代答对的比例都在 30% 上下, 几乎没变. 也就是说, 这张图展示的进步是 「从答错转成拒答」, 而不是 「答对的更多」. 正文那句 「significantly more likely to demur rather than provide incorrect information」 说的正是这件事. 误差线长约 ±4 个百分点, 两组的 2.0 与 2.1 误差线都不重叠, 差异不是误差范围内的抖动; 不过误差线按什么方法算, 页面没交代.
+
+
+--- 行94 [确认] ---
+> 页面没有把数字和图对应起来. 目测两张图的 Average 柱: 70K 下 2.0 约 5.3%, 2.1 约 3.2%; 195K 下 2.0 约 6.1%, 2.1 约 3.6%. 相对降幅都在 40% 左右, 和正文的 30% 对不上. 所以 30% 可能来自另一组评测, 也可能是更保守的取整, 本文给不出答案. 「3-4x lower rate of mistakenly concluding a document supports a particular claim」 是另一种错误类型 (把文档没说的论断当成文档支持的), 两张图里都没有对应的柱. 引用时, 这两个数字应注明 「正文陈述, 未附图」.
+
+
+--- 行101 [再看] ---
+> 页面没解释这三个标签. 从标题 「Long context question answering」 看, 应当是答案所在信息放在上下文的开头, 中间, 结尾, 但这是按标签推断, 原文没写. 在 70K 下, 2.1 的错误集中在 Middle (约 5%), 开头和结尾都约 2%, 形状接近 「中间最差」. 2.0 则是 Middle 约 8%, Beginning 约 7%, End 只有约 3%, 开头几乎和中间一样差, 只有结尾明显好. 所以两代的改进主要落在 Beginning (约 7% 降到约 2%), Middle 降幅小一些. 至于为什么, 页面没有给任何训练或结构上的说明.
+
+
+--- 行108 [对一下] ---
+> 目测对不上. 70K 下 2.0 三根柱的平均是 (7 + 8 + 3) / 3 = 6%, Average 柱却在 6% 格线以下; 195K 下 2.1 三根柱平均 (4 + 3 + 2) / 3 = 3%, Average 柱却接近 3.6%. 比较合理的读法是: Average 是对全部测试位置求平均, 图上只挑了三个代表位置展示. 这一点页面没说, 读图时不要用三根柱反推 Average. 至于 195K, 页面同样没解释; 能确认的只是它低于 200K 上限, 而问题本身和模型回答也要占 token. 另外, 在 195K 下 End 两代都是约 2%, 没有变化, 改进全部来自 Beginning 和 Middle.
+
+
+--- 行127 [想] ---
+> 页面没有交代执行环节. 能确认的分工是: 工具由 「developer-defined」 或 「Users can define a set of tools」, 选哪个工具由 「The model will then decide」. 至于调用格式, 参数 schema, 结果怎么回传, 一次请求能不能连调多个工具, 本页都没写. 下一段又说 「Tool use is currently in early development」, 开发者功能和 prompt 指南还在建设中. 所以按本文, 只能把它读成 「模型负责选工具并发起动作」 的 beta 能力, 不能据此描述具体协议.
+
+
+--- 行166 [停一下] ---
+> 本页的描述是 「allow users to provide custom instructions」, 作用是 「set helpful context」, 落点在角色扮演和回答结构的一致性上. 从这两句看, 它首先是一个给用户写自定义指令的入口; 模型在训练上有没有专门配合它, 页面没写. 「improve performance」 没有附任何评测数字或对比图, 细节只挂了 how-to-use-system-prompts 文档链接. 所以本文只能确认 「Claude 2.1 发布时开始提供 system prompt」, 它带来多少提升, 页面没说.
+
+
+--- 行173 [回看] ---
+> 从上下文看, 这句紧跟在 claude.ai 「free and Pro tiers」 之后, 后半句说的是 「upload larger files」, 讲的是聊天界面里的上传. 所以最自然的读法是: 在 claude.ai 上, 免费版能用 Claude 2.1, 但 200K 窗口只给 Pro. API 那边, 页面只说 「available now in ourAPI」, 没说 API 调用的窗口上限是否也分档. 第2页介绍 200K 时也没有提任何档位限制. 两处合起来, 本文不能断言 API 一律可用 200K, 也不能断言 API 受限.
+
+
+--- 行176 [问] ---
+> 本页只能告诉你链接指向一份 「Claude 2 模型卡 + 附录」 的 PDF, 这份文件不在本目录, 本文没有读到其中内容. 公告正文从头到尾没有提参数量, 训练数据, 训练 token 数, 是否用了 RLHF 或 PPO, 也没有任何公式或表格. 想了解 Claude 2.1 怎么训练, 需要去读那份模型卡; 在本库里, 不能从这篇公告推出训练配方.
+
+
+--- 行221 [核对] ---
+> 因为这份 PDF 是后来抓取的网页快照. 「Related content」 下的三条推荐, 以及第7页到第10页的站点导航和页脚, 都是抓取当时的页面内容, 页脚写着 「© 2026 Anthropic PBC」. 真正属于 Claude 2.1 公告的, 是第1页到第6页 「the safest and most technically sophisticated AI systems in the industry」 为止. 后面 Models 栏里的 Mythos, Fable, Opus, Sonnet, Haiku 都不是本次发布的内容, 本文提到的模型只有 Claude 2.1 和 Claude 2.0.
+

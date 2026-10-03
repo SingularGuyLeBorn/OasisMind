@@ -1,0 +1,49 @@
+# 13-glm/glm-5-2  文件: content/model-library/03-模型家族\13-glm/glm-5-2\glm-5-2-bi.md  共 12 块
+
+--- 行43 [想] ---
+> 1M 是上下文窗口的长度, 也就是模型一次能接收的最大 token 数. 第 1 页只说 「for the first time」, 没有给旧值; 旧值印在第 6 页: 「extends the maximum context length from 200K to 1M tokens」, 第 7 页吞吐图也把 GLM-5.1 的最长上下文标成 「200k*」, 更长的格子写 OOC. 所以和 GLM-5.1 相比, 窗口上限从 200K 改成了 1M. 本页的图里没有 「1M」 这个刻度: FLOPs 曲线横轴最右是 1024 (单位 K), 吞吐图最右一格写 1024k. 1M 和 1024k 是否指同一个长度, 页面没说明, 这里正文照写 1M, 图照写 1024k. 「solid」 也没有量化标准, 全篇没有专门的长上下文检索分数, 页面拿第 2 页三个长程编程基准来说明这个能力, 放到第 2 页和第 12 页再对.
+
+
+--- 行60 [问] ---
+> 按图相减, 是百分点, 不是相对比例, 而且取整不统一. FrontierSWE: Opus 4.8 75.1%, GLM-5.2 74.4%, 差 0.7 个点, 写 1%; GPT-5.5 72.6%, 差 1.8 个点, 也写 1%; Opus 4.7 63.0%, 差 11.4 个点, 写 11%. SWE-Marathon: Opus 4.8 26.0%, GLM-5.2 13.0%, 差 13.0 个点, 写 13%; 按相对比例算, GLM-5.2 只有 Opus 4.8 的一半. PostTrainBench 正文没给差值, 图上是 Opus 4.8 37.2%, GLM-5.2 34.3%, Opus 4.7 28.6%, GPT-5.5 25.0%. 至于 「最高的开源模型」, 图里除 GLM-5.2 外只有 Opus 4.8, Opus 4.7, GPT-5.5, Gemini 3.1 Pro 四个, 本页没有把其中任何一个称为开源, 图上没有可比的开源对手. 第 10 页大表的这三行里, 只有 FrontierSWE 有另一个开源列的数 (DeepSeek-V4-Pro 29.0), PostTrainBench 和 SWE-Marathon 除两列 GLM 外都是 「-」. GLM-5.1 也不在这张图里, 它的 30.5, 20.1, 1.0 只印在大表里.
+
+
+--- 行81 [看表] ---
+> 62.1 对 58.4 是 SWE-bench Pro 那一行, 表里只有这一行 SWE-bench Pro, 没有歧义. 81.0 对 63.5 是 「Terminal Bench 2.1 / Terminus-2」 那一行, 不是下面的 「Best Reported Harness」 那一行; 后一行是 82.7 (Claude Code) 对 69 (Claude Code), 差 13.7, 比正文用的 17.5 小. 第 3 页柱状图的副标题写着 「Terminal-Bench 2.1 (Terminus)」, 柱上也是 81.0 和 63.5. 所以正文, 柱状图, 大表在这一行上口径一致, 都是 Terminus-2 框架. 「within a few points of Claude Opus 4.8 (85.0)」: 85.0 只印在柱状图上, 大表最右被截断的 「Cla」 列看不到数; 两者差 4.0. 「staying ahead of Gemini 3.1 Pro」: 柱状图上 Gemini 3.1 Pro 是 74.0. 同一张柱状图里 GPT-5.5 是 84.0, 也排在 GLM-5.2 前面, 正文没提它.
+
+
+--- 行132 [再看] ---
+> 七张对得上, 一张对不上. SWE-bench Pro 62.1 / 58.4, Terminal-Bench 2.1 81.0 / 63.5, NL2Repo 48.9 / 42.7, DeepSWE 46.2 / 18.0, ProgramBench 63.7 / 50.9, Tool-Decathlon 48.2 / 40.7, Humanity's Last Exam 40.5 (带工具 54.7) / 31.0 (带工具 52.3), GLM-5.2 和 GLM-5.1 两根柱都和表一致. MCP-Atlas 图上 GLM-5.2 印 77.0, 大表 「MCP-Atlas / Public Set」 一行印 76.8, 差 0.2; GLM-5.1 两处都是 71.8. 页面没说哪个数准, 引用时要注明出自图还是表. Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro 的数只在图上, 大表的 「Cla」 列被截断, 表里没有 GPT-5.5 和 Gemini 3.1 Pro, 这些数无从核对. 图的副标题说 「All models are evaluated under their maximum thinking effort」, 第 11, 12 页脚注逐项写的设置里, 这八项中只有 ProgramBench 写了 reasoning_effort=max.
+
+
+--- 行157 [拆开] ---
+> 点旁没印数值, 只能目测. GLM-5.1 只有两个点: Non-Thinking 约 32k, 53 分; Max 约 45k, 57 到 58 分. GLM-5.2 有三个点, 其中 High 约 44k, 72 分. 在 44k 到 45k 这一处, GLM-5.2 的 High 比 GLM-5.1 的 Max 高十几分, 这是 「comparable token budgets」 在图上能落到的位置. 从 High 到 Max, GLM-5.2 的平均输出从约 44k 涨到约 84k, 接近翻倍, 分数只多两三分; Claude Opus 4.8 从 High 到 Max 输出也翻倍多, 分数几乎不动. 「roughly positioned between Claude Opus 4.7 and Claude Opus 4.8」 在 40k 到 50k 这一段成立: Opus 4.7 的 Max 约 49k, 71 分, Opus 4.8 的 High 约 40k, 78 分. 还有两处要分开看. 一是纵轴是三项的平均, 其中 SWE-Atlas QnA 不在第 9, 10 页大表里, 本页没有它的单项分, 所以这张图的分数不能和大表任何一行直接对. 二是档位名不统一: GLM 两条线最低一档叫 Non-Thinking, Claude 两条线叫 Low; 第 10 页告诉订阅用户可选的只有 High 和 Max.
+
+
+--- 行184 [回看] ---
+> 第 4 页四张全部错开一位. PDF 第 4 页从上到下是: 档位折线图 (标题 「Agentic Coding Performance by Effort Level」), 二级标题 「Architecture for 1M Context」, 左边的结构示意图 (「Architecture Changes in GLM-5.2」), 右上的 FLOPs 曲线 (「Lower FLOPs with IndexShare」), 右下的接受长度柱状图 (「Higher MTP Acceptance Length」). md 给每张图起的名字都取自它后面那段文字: 折线图叫 `p04-architecture-for-1m-context.png`, 结构图叫 `p04-lower-flops-with-indexshare.png`, FLOPs 曲线叫 `p04-higher-mtp-acceptance-length.png`, 接受长度图叫 `p04-indexshare-for-dsa.png`, 最后这个名字来自第 5 页的小节标题. 两行说明文字也跟着错位, 各自落到了前一张图下面. 前几页是同一个规律: 第 3 页的 HLE 柱状图叫 `p03-glm-5-2-also-introduces-effort-level-control-enabling.png`; 第 2 页的 Z 字标和长程评测图, 名字分别取自各自后面的正文; 第 1 页笑脸图标叫 `p01-try-it-at-z-ai-...png`. 18 张里, 文件名和画面对不上的有 8 张 (第 1 页笑脸, 第 2 页两张, 第 3 页 HLE 图, 第 4 页四张); 名字泛但不算错的是 `p01-image.png` 和七张 `p03-chart*.png`; 取自图注或讲图正文, 内容对得上的是 `p05-...` 和 `p07-...` 两张. 引用第 1 到 4 页的图要看画面, 不能按文件名.
+
+
+--- 行197 [停一下] ---
+> 页面没有给. 这一句没有基准名, 没有表, 没有图; 第 9, 10 页大表分 REASONING, CODING, AGENTIC 三组, 没有长上下文一组, 也没有注明测到多长的检索类基准. 同一段交代的训练长度是 「from mid-training with 128K sequence length」; 1M 长度在哪个阶段训, 训了多少, 第 1 页只说 「substantially expanded 1M-context training for coding-agent scenarios」, 没有数字. 「less computation」 能对到第 4 页 FLOPs 曲线, 但那张图画的是单个 token 的计算量随位置的变化, 不是在这些基准上的总开销. 这一句只能当宣称照抄.
+
+
+--- 行244 [确认] ---
+> 不是. 这一页写明 「In the experiment we use the backbone and training data of GLM-5.1」, MTP 步数训练和推理都设为 7, 场景是编程. 表里从 4.56 到 5.47, 5.47 / 4.56 = 1.1996, 印 +20%; 三行依次加了 0.54, 0.19, 0.18, 其中 IndexShare 加 KV Share 那一步最大. 所以 20% 是在 GLM-5.1 的主干上做消融得到的, 页面没有给 GLM-5.2 自己的 MTP 接受长度. 第 1 页用的是 「up to」, 这一页只有 5.47 这一个终值, 「up to」 指哪几种设置里的最大值, 页面没说. 第 4 页那张柱状图和这张表的四个数完全相同, 是同一组结果印了两次.
+
+
+--- 行269 [问] ---
+> 图和正文都没定义. 能读到的只有图注: 以 GLM-5.1 在 32K 时为 1, 星号是 GLM-5.1 的最长上下文, OOC 是超出上下文. GLM-5.1 的柱从 32k 的 1 升到 200k* 的 2.77x, GLM-5.2 从 1.03x 升到 1024k 的 6.97x, 两个模型都随长度升高. 为什么升高, 按每秒 token 还是别的口径计, 页面没写, 这里不猜. 同长度下两者之比: 32k 约 1.03, 64k 约 1.27, 128k 约 1.60, 200k 约 1.69, 这就是正文 「increasingly larger throughput advantage」 在图上的样子. 256k 以后 GLM-5.1 是 OOC, 没有可比的柱. 并发数, 硬件, 批大小都没给, 这些倍数只能在这张图内部比. 最长一格写 1024k, 不写 1M.
+
+
+--- 行290 [想] ---
+> 从这一段看不是. 上下文是后训练: 用 slime 做并行 OPD 训练, 把十多个 「expert models」 合并进最终模型, 全程约两天. 这里的 expert models 指参与合并的若干个模型, 页面没有说它们各在什么任务上训出来, 也没有把它们和模型内部结构联系起来. OPD 这个缩写全篇没有展开, 两天用了多少卡也没写. 全篇同样没有印总参数量, 激活参数量或层数; 第 4 页结构图只画了 DSA Block, indexer, MTP 模块和共享的 KV Cache, 别的部件没有画. 所以这一句不能拿来推 GLM-5.2 的结构. 下文 「GLM-5.2 shows more potential hacking behavior than GLM-5.1」 也没有给比例或次数.
+
+
+--- 行402 [核对] ---
+> 两边都有的 13 行, 数全部相同: HLE 31.0, HLE 带工具 52.3, AIME 2026 95.3, HMMT Nov. 2025 94.0, HMMT Feb. 2026 82.6, IMOAnswerBench 83.8, GPQA-Diamond 86.2, SWE-bench Pro 58.4, NL2Repo 42.7, MCP-Atlas 71.8, Tool-Decathlon 40.7, Terminal Bench 两行 63.5 和 69. 差别在名字: GLM-5.1 卡上写的是 Terminal-Bench 2.0, 这里写的是 Terminal Bench 2.1, 两行分数一分不差 (那张卡的自报成绩写作 69.0, 这里写作 69). 版本号换了分数没变, 是重新测过恰好相同, 还是沿用了旧数, 本页没说. CritPt, DeepSWE, ProgramBench, FrontierSWE, PostTrainBench, SWE-Marathon 六行在 GLM-5.1 卡上没有, 这里第一次出现. 星号那一句在可见的格子里找不到任何星号; PDF 截图里最右一列只露出 「Cla」 和一个 「(」, 带星号的格子可能在被截掉的部分, 这是推断. 第 11 页脚注在 PDF 文字层里写 「results marked with * are from the full set」, md 把这个星号丢了.
+
+
+--- 行505 [对一下] ---
+> 只有三项写了 1M: FrontierSWE, PostTrainBench, SWE-Marathon, 分别由第三方 Proximal, PostTrainBench, Abundant AI 评测, 设置都是 「1M context length, max effort level, and 128K maximum output tokens」. 其余各项写的窗口都不到 1M: SWE-Bench Pro 400K, NL2Repo 400k, DeepSWE 400K, ProgramBench 400K, Terminal-Bench 2.1 (Terminus 2) 256K, HLE 带工具 300,000 token; HLE 等推理题只写了最大生成长度 163,840 token; Terminal-Bench 2.1 (Claude Code), MCP-Atlas, Tool-Decathlon 没写窗口. 所以评测里的 1M 是 「允许用到 1M」 的设置, 页面没报告这三项任务实际用到多长的上下文, 也没有一项专门在 1M 长度上考检索或理解的分数. 这三行 GLM-5.1 也有分 (30.5, 20.1, 1.0), 而第 6 页说 GLM-5.1 的上限是 200K, 脚注只写了一种 1M 设置, 没交代 GLM-5.1 是在什么长度下测的. 能落到 1M 附近长度的实测只有两张图: 第 4 页 FLOPs 曲线 (到 1024K) 和第 7 页吞吐图 (到 1024k), 量的是计算量和吞吐, 不是答题质量.
+

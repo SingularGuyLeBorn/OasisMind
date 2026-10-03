@@ -9,7 +9,7 @@
 标题 The Llama 3 Herd of Models, 作者署名, 摘要, 第 1 节引言开头.
 
 > **想:** 目录叫 llama3-1, 论文标题为什么是 Llama 3?
-> 本页原文写着 "All the results presented in this paper are for the Llama 3.1 models, which we will refer to as Llama 3 throughout for brevity." 论文只有一篇 (arXiv 2407.21783v3). 全文说的 Llama 3 就是 3.1. 两个目录放的是同一份源文.
+> 源文写着 "All the results presented in this paper are for the Llama 3.1 models, which we will refer to as Llama 3 throughout for brevity." 论文只有一篇 (arXiv 2407.21783v3). 全文说的 Llama 3 就是 3.1. 两个目录放的是同一份源文.
 
 <!-- page 2 of 92 -->
 
@@ -294,7 +294,7 @@
 ![图 26](images/p53-figure-26-reward-score-distribution-for-llama-3-405b.png)
 
 > **看表:** 第 53 页两张无编号碎片, 另一份里有没有?
-> 有. 本页的 `p53-image.png` 和 `p53-chart.png` 在 llama3 目录里同名同哈希. 连抽取碎片都一样, 两份是同一次抽取后复制成两个目录.
+> 有. 报告的 `p53-image.png` 和 `p53-chart.png` 在 llama3 目录里同名同哈希. 连抽取碎片都一样, 两份是同一次抽取后复制成两个目录.
 
 <!-- page 54 of 92 -->
 

@@ -1,0 +1,101 @@
+# 20-openai/gpt-5-4  文件: content/model-library/03-模型家族\20-openai/gpt-5-4\gpt-5-4-bi.md  共 25 块
+
+--- 行41 [想] ---
+> Markdown 在 「1M」 之后直接进了 Cookie 横幅, 只剩 「search, helping agents find and use the right tools more」 和 「fewer tokens to solve problems when compared to GPT‑5.2」 两段残片. 对照 PDF 第 1 页, 原文是 1M tokens 的上下文, 让 Agent 能在长周期里规划, 执行和验证任务; 接着介绍 tool search; 最后说 GPT-5.4 是 OpenAI 迄今 token 效率最高的推理模型, 与 GPT-5.2 相比解题所用 token 显著更少. 「显著更少」 没有给数字, 全页也没有再量化. 另外, 1M 在第 14 页被限定为 Codex 里的 「experimental support」, 标准窗口是 272K.
+
+
+--- 行84 [看表] ---
+> 第 15 页评测总表里 GPT-5.3-Codex 的 GDPval 同样是 70.9%, 被截断的 GPT-5.2 列显示 「70」, 与本页正文 「70.9% for GPT‑5.2」 对得上. 两张表互相一致, 不是 MinerU 抄错, 页面确实给两个模型印了同一个数. 是巧合还是原表填错, 本页没有依据判断. 第 5 页 ChatGPT Atlas Agent Mode 在 Online-Mind2Web 上也是 70.9%, 三处同数, 读的时候容易串.
+
+
+--- 行91 [核对] ---
+> 差出来的 9.3 个百分点来自测法: 74.0% 是打开 「保留原始图像分辨率」 参数后重测的结果. 表里只差 1.0 个点的这组比较, 前提是 GPT-5.3-Codex 用上了这个参数; 若按 GPT-5.3-Codex 原先公布的口径, 差距是 10.3 个点. GPT-5.4 自己的 75.0% 是否也开了原始分辨率, 本页没写.
+
+
+--- 行112 [拆开] ---
+> 按胜和平拆开: GPT-5.4 Pro 胜 69.2%, 平 12.8%; GPT-5.4 胜 70.8%, 平 12.2%; GPT-5.2 Pro 胜 60.0%, 平 14.1%; GPT-5.2 胜 49.8%, 平 21.1%. Pro 在胜和总数上都略低于 GPT-5.4, 差 1.0 到 1.6 个点, 页面没解释. GPT-5.2 那根柱也值得看: 单看 「胜」 只有 49.8%, 在基线之下, 70.9% 里有 21.1 个点是平局. 从 GPT-5.2 到 GPT-5.4, 总分涨 12.1 个点, 胜率涨了 21.0 个点, 平局少了 8.9 个点.
+
+
+--- 行131 [确认] ---
+> Markdown 这一页没有接上. PDF 第 3 页左上是这句图注的后半: 「effort was set to xhigh for GPT‑5.4 and heavy for GPT‑5.2 (a slightly lower level in ChatGPT)」. GDPval 的 83.0% 对 70.9%, 两边推理强度不同: GPT-5.4 用 xhigh, GPT-5.2 用 heavy, 页面自己说 heavy 在 ChatGPT 里是 「稍低一档」. 第 18 页的总说明 「Evals were run with reasoning effort set to xhigh, except where specified otherwise」 在这里正好是 「另有说明」 的例外.
+
+
+--- 行148 [回看] ---
+> 第 15 页 「Investment Banking Modeling Tasks (Internal)」 一行: GPT-5.4 87.3%, GPT-5.4 Pro 83.6%, GPT-5.3-Codex 79.3%, GPT-5.2 列被截成 「6」, 与 68.4% 对得上. 和 GDPval 一样, Pro 又比 GPT-5.4 低, 这回低 3.7 个点. 页面把 GPT-5.4 叫作 「most capable」, 把 Pro 定位为 「maximum performance on complex tasks」, 可在这两项专业工作评测上 Pro 都没占先.
+
+
+--- 行175 [停一下] ---
+> 不矛盾, 但页面没给能换算的底数. 一条回答里有很多条陈述, 只要其中一条错, 整条就算 「含错」. 单条错误率降三分之一时, 如果每条回答平均的陈述条数多, 或者 GPT-5.4 的回答更长, 含错回答的比例就降得少. 两个数都是相对 GPT-5.2 的降幅, 页面没给 GPT-5.2 的绝对错误率, 也没说提示集有多少条, 「most factual」 的幅度折算不成绝对值.
+
+
+--- 行228 [再看] ---
+> 不是. 这一行只剩句尾. PDF 第 5 页开头是 "actions, GPT‑5.4 achieves a state-of-the-art 75.0% success rate, far exceeding GPT‑5.2's 47.3%, and surpassing human performance at 72.4%". 72.4% 是人类表现, 脚注 1 指向 OSWorld 原论文 (第 18 页). GPT-5.4 是 75.0%, 比人类高 2.6 个点, 比 GPT-5.2 高 27.7 个点, 与第 2 页表格一致.
+
+
+--- 行259 [对一下] ---
+> 这一段三组数的对照对象不一样: OSWorld-Verified 和 WebArena-Verified 都拿 GPT-5.2 比, Online-Mind2Web 拿的是 ChatGPT Atlas 的 Agent 模式, 一个产品. GPT-5.4 在这里 「只用截图」, Atlas Agent 模式用什么观察方式, 背后是哪个模型, 本页没写. 92.8% 对 70.9% 的 21.9 个点里, 混着模型差异和产品配置差异, 不能当作 GPT-5.4 对 GPT-5.2 的提升来读. 同一段里 WebArena-Verified 对 GPT-5.2 只高 1.9 个点, 两处幅度差很多.
+
+
+--- 行302 [拆开] ---
+> 6000×6000 是 36M 像素, 远超 10.24M, 所以方图总是总像素先封顶, 10.24M 相当于 3200×3200. 最长边 6000 要先起作用, 短边须不超过 10.24M/6000 ≈ 1707 像素, 也就是长宽比约 3.5:1 以上的长条图. high 级别同理: 2.56M 相当于 1600×1600, 2048 的边长上限只在长宽比超过约 1.64:1 时先生效. 页面说 original 级别 「从 GPT-5.4 开始」 引入, 可第 2 页脚注里 GPT-5.3-Codex 的 74.0% 就是用 「新推出的保留原始图像分辨率的 API 参数」 测的, 两处怎么衔接, 本页没交代.
+
+
+--- 行327 [问] ---
+> 中间丢了半句. PDF 第 7 页是 「and 100% within three attempts, compared to ~73–79% with prior CUA models」. 完整意思是: 首次尝试 95%, 三次以内 100%, 此前的 CUA 模型约为 73% 到 79%. 只读 Markdown, 会把 79% 当成旧模型的单一成绩, 也看不到 「三次以内 100%」. 这组数来自客户 Mainstay 自己的评测, 旧模型具体是哪几个, 是否跑的同一批门户, 页面没说.
+
+
+--- 行390 [确认] ---
+> 属于本页开头 Markdown 丢掉的一句. PDF 第 8 页顶部是 「Developers can access GPT‑5.4 at the same fast speeds via the API by using priority processing」. 接上第 7 页, 意思是: Codex 里的 /fast 模式最多快 1.5 倍, API 里要拿到同样的速度, 得用 priority processing. 第 14 页写明 Priority processing 按标准 API 价格的 2 倍收费. 「same model, same intelligence, just faster」 在 API 侧对应的是翻倍的单价, 两页连起来读才看得出.
+
+
+--- 行473 [停一下] ---
+> 没有. 图注说 「Example token counts」 来自 250 个任务的平均, 对应的图没有抽出来, PDF 文字层里也没有具体 token 数. 能确认的只有条件: 250 个任务, 36 个 MCP 服务器全开, 两种模式, 「same accuracy」. 准确率本身是多少也没写; 第 16 页总表里 GPT-5.4 的 MCP Atlas 是 67.2%, 但没说这个分数用的是哪种模式. 上一页讲工具搜索能 「preserve the cache」 的那段整段被 Markdown 丢了, 47% 说的是总 token, 缓存命中带来的价格收益不在这个数里.
+
+
+--- 行502 [看表] ---
+> 本页没有数字. 这条工具让出的定义是一张图的注释, 图没抽出来, PDF 文字层里也只有注释本身. 能对上的只有准确率: 第 2 页和第 16 页都写 Toolathlon GPT-5.4 54.6%, GPT-5.3-Codex 51.9%, GPT-5.2 46.3% (第 16 页 GPT-5.2 列截成 「4」). 轮次, 让出次数的具体值, 以及对应的推理强度, 页面都没给.
+
+
+--- 行519 [再看] ---
+> 第 2 页表格: GPT-5.4 82.7%, GPT-5.2 65.8%, 相差 16.9 个百分点, 四舍五入为 17; 下标 abs 表示绝对百分点, 按相对涨幅算约为 25.7%. Pro 的 89.3% 比 GPT-5.4 高 6.6 个点, BrowseComp 是 Pro 在专业工作类之外少数明显领先的项目. 这 16.9 个点也不全是模型的功劳, 见下一页关于屏蔽名单和测量日期的说明.
+
+
+--- 行546 [对一下] ---
+> 页面自己说不能. 两个模型测于不同日期, 分数混着三样变化: 模型, OpenAI 的搜索系统, 互联网本身. 屏蔽名单也不一样, GPT-5.4 用的更长. 更长的屏蔽名单按理会让题更难, 对 GPT-5.4 偏保守; 搜索系统升级和网上新增的内容, 又可能让题更容易. 两个方向各占多少, 本页没有拆分. 两者都用 ChatGPT 搜索工具, API 用户拿到的搜索结果可能略有不同.
+
+
+--- 行639 [想] ---
+> 缺了半句. PDF 第 14 页开头是 "whether models can deliberately obfuscate their reasoning to evade monitoring. We find that GPT‑5.4 Thinking's ability to「, 连起来是: 这个评测衡量模型能否故意混淆推理来躲避监控, 结论是 GPT-5.4 Thinking 控制自身 CoT 的能力低. 」低「 是多少, 用什么指标, 和哪些模型比, 本页一个数也没给. 安全部分能拿到的只有 」High cyber capability" 这一个评级.
+
+
+--- 行660 [核对] ---
+> 两处说的是不同层面. 1M 是模型能接受的上限, 在 Codex 里目前属于实验性支持, 要手动配两个参数; 272K 是标准窗口, 超出部分按 2 倍计用量. ChatGPT 里的 GPT-5.4 Thinking 则 「unchanged from GPT‑5.2 Thinking」, 具体多少本页没写, 只给了帮助中心链接; API 侧的窗口大小也没单列. 再对照第 17 页的长上下文结果: MRCR v2 8-needle 在 512K 到 1M 区间只有 36.6%, Graphwalks BFS 在 256K 到 1M 区间是 21.4%. 1M 放得进去, 不等于在那个长度上还能准确检索.
+
+
+--- 行671 [拆开] ---
+> 按表拆开算: 输入 $2.50 对 $1.75, 贵约 43%; 缓存输入 $0.25 对 $0.175, 同样约 43%; 输出 $15 对 $14, 只贵约 7%. 涨价主要落在输入端. 工具多, 上下文长的 Agent 任务, 输入 token 往往远多于输出, 实际账单的涨幅会更接近 43%. 页面说 token 效率更高能抵消一部分, 可 「significantly fewer tokens」 从头到尾没给比例, 能否抵消本页算不出来. 只看 Markdown 还会不知道 $1.75 那一行是 gpt-5.2.
+
+
+--- 行685 [回看] ---
+> PDF 第 15 页在 gpt-5.4-pro 上面还有一行 gpt-5.2-pro: 输入 $21, 缓存输入 「-」, 输出 $168, Markdown 整行丢了. 补上后, Pro 的涨幅和标准版完全一样: 输入 30/21 ≈ 1.43 倍, 输出 180/168 ≈ 1.07 倍. Pro 对 GPT-5.4 标准版的比值也整齐: 输入 30/2.50 = 12 倍, 输出 180/15 = 12 倍. 可在 GDPval 和投行建模两项上, 单价高 12 倍的 Pro 分数反而略低.
+
+
+--- 行716 [问] ---
+> 对不上. SWE-Bench Pro 上 GPT-5.4 57.7% 对 GPT-5.3-Codex 56.8%, 高 0.9 个点, 符合 「持平或更好」; Terminal-Bench 2.0 上是 75.1% 对 77.3%, GPT-5.4 低 2.2 个点. 第 7 页只挑了 SWE-Bench Pro 来讲, Terminal-Bench 2.0 只出现在总表里. 按这张表, 终端类任务上 GPT-5.3-Codex 仍然领先.
+
+
+--- 行729 [核对] ---
+> 都出自同一个被截断的列. PDF 文字层这一格是 「79」, Markdown 又少了一位, 只剩 「7」; 第 6 页正文给的完整值是 79.5%. 这一列在整个总表里都只剩前一两位: GDPval 「70」, OSWorld 「4」 (47.3%), FrontierMath Tier 4 「18」, MRCR 128K–256K 「77」. 能用正文补全的只有 GDPval, 投行建模, SWE-Bench Pro, OSWorld-Verified, Toolathlon, BrowseComp, MMMU Pro (不用工具) 这几项, 其余格子本页没有完整值.
+
+
+--- 行775 [看表] ---
+> Markdown 丢了一行. PDF 第 17 页开头是 「Graphwalks parents 256K–1M (accuracy)」: GPT-5.4 32.4%, 其余三列都是 「—」. 补上后, 两个子任务走势一致: BFS 从 0-128K 的 93.0% 掉到 256K-1M 的 21.4%, parents 从 89.8% 掉到 32.4%. 256K 以上两项 GPT-5.2 列都是 「—」, 是没测还是不支持这么长的输入, 页面没说.
+
+
+--- 行810 [停一下] ---
+> PDF 文字层和 Markdown 一致, 不是抽取问题. 32K-64K 的 90.5% 同样比相邻的 16K-32K 低, 前五档在 86% 到 97% 之间上下起伏, 不是单调下降; 从 128K 往后才明显下滑: 79.3%, 57.5%, 36.6%. 每一档有多少题, 置信区间多宽, 本页没给, 前几档的起伏可能只是样本噪声. GPT-5.2 在 128K-256K 截成 「77」, 如果是 77.x%, GPT-5.4 只高 2 个点左右; 256K 以上 GPT-5.2 没有数.
+
+
+--- 行828 [再看] ---
+> PDF 第 17 页这张表的列是 GPT-5.4 (none), GPT-5.2 (none), GPT-4.1, 能读到两行: OmniDocBench (归一化编辑距离, 越低越好) 0.109, 0.140, —; 第 18 页还漏出一行 Tau2-bench Telecom: 64.3%, 57.2%, 43.6%. 这就是第 11 页 「For latency-sensitive use cases where reasoning effort None is preferred」 那句话的数据. 同一个 Tau2-bench Telecom, 总表里 GPT-5.4 默认 xhigh 是 98.9%, 推理强度 none 时是 64.3%, 相差 34.6 个点. 推理时多花算力 (TestingTime) 在这个客服任务上起多大作用, 这两个数直接摆着.
+

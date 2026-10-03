@@ -1,0 +1,81 @@
+# 13-glm/glm-4-5v  文件: content/model-library/03-模型家族\13-glm/glm-4-5v\glm-4-5v-bi.md  共 20 块
+
+--- 行29 [问] ---
+> 第 1 页页眉写的是 「arXiv:2507.01006v6 [cs.CV] 1 Jan 2026」: 第 6 版, 2026 年 1 月 1 日. 编号前四位 2507 是 arXiv 按年月发号的规则, 说明第一版在 2025 年 7 月提交. 正文把 4.6V 当作后加的内容来写: 第 2 页说 GLM-4.6V-Flash (9B) 和 GLM-4.6V (106B-A12B) 是 「their updated versions」, 第 16 页第 6 节开头说 「For completeness, we also report the results of the updated model, GLM-4.6V, in table 2」, 第 41 页附录 B 的三节评测协议只点了 4.1V 和 4.5V 的名字. 标题没有跟着改. 4.6V 在本文里是一个视觉语言模型, 和同家族里纯文本的 GLM-4.6 不是一回事, 本文也没有引用那篇文本模型的材料.
+
+
+--- 行52 [看表] ---
+> 看图 1B 的坐标: 纵轴是 「Accuracy (%)」, Coding 一栏 SFT 部分顶在 72 附近, SFT+RL 顶在 82.5 附近, 差值约 10.5. 如果是相对提升, 72 乘 1.106 约为 79.6, 和柱顶对不上. 所以这 8 个 「+x%」 应当读成百分点. 图题只说 「when experimented with GLM-4.5V」, 没说每一栏由哪些基准平均而来, 这几栏的分数也不在表 2 里.
+
+
+--- 行73 [核对] ---
+> 本文找不到. 第 15 页表 2 的对比列是 GLM-4.1V, GLM-4.5V, GLM-4.6V, Step-3, Qwen2.5-VL, Kimi-VL-2506, Gemma-3, 没有 Gemini-2.5-Flash; 第 42 页表 3 的闭源参照是 GPT-4o 2024-11-20, 也没有它. 全文唯一画了 Gemini-2.5-Flash 的是第 1 页图 1A 那张雷达图, 只有八个类别轴, 没有逐项分数. 所以 22 这个数在本文里无法复核, 摘要里 「competitive or even superior results compared to closed-source models such as Gemini-2.5-Flash」 也一样.
+
+
+--- 行76 [拆开] ---
+> 原文两样都没交代. 拿第 15 页表 2 算: 把 GLM-4.5V 和表里最强的非 GLM 开源模型比, 按相对提升算, MMStar 是 75.3 对 70.8 (Qwen2.5-VL), 约 6.4%; GeoBench 79.7 对 74.3, 约 7.3%; MMLongBench-Doc 44.7 对 42.1 (Kimi-VL), 约 6.2%, 这三项都不到 10%. 按百分点算, 差距更小, MMStar 4.5, GeoBench 5.4, MMLongBench-Doc 2.6, ERQA 5.2. 这句话里点名的其余基准大多能过 10%, 尤其 GUI 和编程几项差距很大, 例如 OSWorld 35.8 对 8.8, Design2Code 82.2 对 41.9. 「comparable size」 指谁也没说: 表里的对手是 72B 稠密模型, 321B-A38B 的 Step-3, 16B-A3B 的 Kimi-VL 和 27B 的 Gemma-3, 规模都和 106B-A12B 不一样.
+
+
+--- 行125 [停一下] ---
+> 回到同一段的前一句: 3D 卷积在时间维上做 2 倍下采样, 等于每两帧合成一组. 单张图只有一帧, 凑不成一组, 复制一份就变成两帧, 能走同一个卷积核. 第 4 页图 2 的 ViT 框里写的是 「Native resolution w. 2x temporal compression」, 与这句一致. 复制之后算力是否翻倍, 这两帧在进入 LLM 前是否已经合并成一份 token, 原文没有展开.
+
+
+--- 行316 [确认] ---
+> 是同一个数. 131,072 等于 128 乘 1024, 按二进制习惯就是 128K; 第 1 页摘要的 「128K context window」 说的是窗口长度. 这一段还说明了顺序: 4.1V, 4.5V 和 4.6V 都先在 32,768 上训练 10,000 步, 只有 4.6V 再多一段 2,000 步, 批大小降到 128, 把窗口拉到 131,072. 第 8 页 4.2 节的 SFT 也同样只给 4.6V 用 131,072, 其余模型是 32,768. 第 16 页评测设置里单条回答最长 8,192 token, 视频输入上限 48,000 token, 都在这个窗口以内.
+
+
+--- 行327 [拆开] ---
+> 不是整个 SFT. 这句话的主语是 「prior workflows ... that apply SFT to short CoT data」, 省掉的是 「先用短 CoT 数据做 SFT」 这一步. 长 CoT 的 SFT 照做, 第 8 页 4.1 节整节都在讲这批长 CoT 冷启动数据, 4.2 节给了它的训练配方: 全参数微调, 序列长度 32,768 (4.6V 为 131,072), 全局批大小 32. 省掉短 CoT 的理由也在这一段: 作者把 SFT 看成对齐风格, 不是注入知识.
+
+
+--- 行526 [回看] ---
+> 对不上两处. 回看每张图的标题栏: 上排三张是奖励曲线, 依次为 `p11-chart.png` (STEM), `p11-chart-2.png` (other-single-image), `p11-evolution-of-benchmark-score-under-a-low-quality-reward.png` (other-multi-image); 下排四张是评测曲线, 依次为 `p11-chart-3.png` (MMStar), `p11-chart-4.png` (MathVista), `p11-chart-5.png` (AI2D), `p11-figure-5-training-reward-curves-top-and-evaluation.png` (MMMU_Val). 第三张和第七张是 MinerU 拿相邻的文字给图起的名, 名字说的内容和图不符. 图题说 「After step 150」, 而 STEM 奖励的红框从 180 步左右才开始, other-multi-image 的奖励投机从 210 步左右开始; 评测曲线里 MathVista 在 125 步就见顶了. 150 是一个大致的分界, 不是某条曲线上的精确拐点.
+
+
+--- 行595 [核对] ---
+> 是除. 对照 PDF 第 12 页, 公式是 1 减去一个分式, 分子是 d_edit(ans, gt), 分母是 max(|ans|, |gt|), 末尾那个点是句号. MinerU 把分数线丢了, 分母被挤到同一行. 按除法读, 这是归一化编辑距离: 完全一致得 1, 编辑距离等于较长串的长度时得 0. 如果按乘法读, 奖励会随长度变成很大的负数, 和 「reward」 的取值范围对不上.
+
+
+--- 行644 [停一下] ---
+> 假设上一轮有一半样本全对或全错, not\_valid\_sample\_rate 为 0.5, 扩充比例就是 1/(1 − 0.5) = 2, 下一轮按 2 倍过采样, 扣掉无效的那一半, 剩下的有效样本大约回到原来的批大小. 比例是 0.2 时扩充 1.25 倍, 0.8 时扩充 5 倍. 实际用的是这个比例的 EMA, 不是单轮的值, 所以一轮的波动不会让采样量忽大忽小. 第 14 页 5.4 节把这一项又列进基础设施, 理由是样本数能事先算好, 并行 rollout 更好排. 原文没有给 EMA 的衰减系数.
+
+
+--- 行739 [看表] ---
+> 是, 就是这张表 2. 三个 GLM 并排在前三列, 用同一套 42 行基准, 标的都是 thinking 模式; 4.6V 这一列是 106B (A12B) 版本, 第 2 页提到的 GLM-4.6V-Flash (9B) 在全文任何一张表里都没有分数. 4.6V 在 GeoBench 上是 「-」, 其余 41 行与 4.5V 比, 27 行更高, 2 行持平 (OCRBench 86.5, AndroidWorld 57.0), 12 行更低, 例如 RefCOCO-avg 88.6 对 91.3, HallusionBench 62.3 对 65.4. 第 42 页表 3 只放 GLM-4.1V-9B-Thinking 和 10B 以下模型, 而且 4.1V 在两张表里有两行数字不一样: RefCOCO-avg (val) 表 2 是 85.3, 表 3 是 87.4; LVBench 表 2 是 44.0, 表 3 是 45.1. 原文没解释这两处差异. 引用 4.1V 分数时要注明出自哪张表.
+
+
+--- 行792 [对一下] ---
+> 把清单和表 2 对一下. 清单上的名字: 通用 VQA 7 个, STEM 9 个, OCR 图表文档 4 个, 视觉定位 3 个, GUI 智能体 4 个, 编程 2 个, 空间 4 个, 视频 6 个, 共 39 个. 第 15 页表 2 是 42 行, 多出来的 3 行来自拆分: MMBench V1.1 拆成英文和 (CN) 两行, Webquest-QA 拆成 SingleQA 和 MultiQA 两行, VideoMME 拆成 w/o sub 和 w/sub 两行. 所以 「42」 数的是表 2 的行, 不是不同基准的个数. 清单和表的写法也有出入: 清单写 ZeroBench(val), 表里写 ZeroBench (sub); 清单写 「WebVoyager Some」 和 「OminiSpatial」, 表 2 写 WebVoyager 和 OmniSpatial, 表 3 写 WebVoyageSom, 第 2 页写 WebVoyagerSom.
+
+
+--- 行845 [核对] ---
+> 分母 42 就是第 15 页表 2 的 42 行. 分子按表 2 的 GLM-4.1V 列和 Qwen2.5-VL (72B) 列逐行比, 我数出来 4.1V 更高的有 28 行, 更低的 14 行, 没有持平: 更低的是 MMBench V1.1, MMBench V1.1 (CN), ZeroBench (sub) 19.2 对 19.5, MMMU (Val), OCRBench, RefCOCO-avg, TreeBench, OmniSpatial 47.7 对 47.9, All-Angles Bench, VideoMME 两行, MMVU, LVBench, MVBench. 换成第 42 页表 3 也凑不出 29: 那张表只有 28 行, 4.1V 对 Qwen2.5-VL 72B 赢 18 行, 输 9 行, MotionBench 一行 72B 没有分数. 摘要说 「superior results ... on 29 benchmarks」, 第 2 页引言说 「competitive or superior ... on 29 benchmarks」, 这里说 「superior performance ... on 29 out of 42」. 按 v6 的表 2 严格比大小是 28, 差的一行本文没有交代. 很可能是某一行的数字在改版时变了, 但本文给不出证据.
+
+
+--- 行848 [想] ---
+> 两处都能在本文里找到答案. 第一处: 按第 15 页表 2, 只把 GLM-4.5V 和非 GLM 的开源模型比, 它在 42 行里只有 OCRBench 不是第一, 86.5 低于 Kimi-VL 的 86.9; 这一页的 OCR 段落自己也承认 「slightly behind our non-thinking version and Kimi-VL」. 所以 「across all benchmarks」 说过头了, 摘要的 「nearly all」 更准确. 要是把 GLM-4.6V 也算进开源模型, 4.5V 在 27 行上都被 4.6V 超过. 第二处: 第 16 页第 6 节开头说要给出 4.5V 「including both thinking and non-thinking modes」 的结果, 但表 2 的 4.5V 列只标 thinking, 全文没有非思考模式的分数列. OCRBench 段落里那个 「non-thinking version」 比 86.5 高多少, 本文查不到.
+
+
+--- 行877 [再看] ---
+> 再看第 17 页的正文和图 6 的数字. 正文说 OCR 与图表训练 「yields gains in STEM, GUI-agent, and general VQA benchmarks」, 这三格确实是 +3.0, +5.8, +1.3, 但同一行的 Grounding 是 −14.5, 是整张图最大的负值, 正文没提. 负值还有几格: Grounding 训练对 OCR & Chart 是 −4.6, 对 STEM −0.5, 对 Image General −0.4; STEM 训练对 OCR & Chart −0.2. 所以 「Training on one domain boosts performance in others」 只在部分组合上成立, 第 17 页那句 「in most domains」 的限定要当真. Mix-all 的两处弱项正文承认了: Grounding +30.1 略低于单训 Grounding 的 +30.4, GUI Agent +6.0 低于单训 GUI 的 +9.2. 图题说颜色 「normalized within each domain」, 所以不同列之间不能按颜色深浅比大小, 要看数字.
+
+
+--- 行1160 [对一下] ---
+> 不一样. 把第 27 页上方的对比图和下方的代码对一下: 原始界面标题栏是 「任务管理仪表盘」, 渲染界面和代码里的 title, h1 都是 「任务建议表盘」, 「管理仪」 三个字变成了 「建议」. 其余可读的文字, 如 「仪表盘摘要」, 「总任务数」, 「已完成」, 四张任务卡的标题, 两边一致. 论文没有点评这个差别. 按第 41 页附录 B.1 的口径, UI 复现是否合格看 GPT-o4-mini 给的相似度是否不低于 80, 人工评审也只看整体布局, 颜色和元素, 标题里错几个字不一定会让这个案例判为不合格.
+
+
+--- 行1283 [回看] ---
+> 回看 PDF, 漏了四处. 第 36 页 PDF 开头有小节标题 「A.10 Math Problem Solving」, md 没抓到, 所以 md 的附录编号从 A.9 直接跳到 A.11. 第 35 页 PDF 在化学作答上方标了 「Image」, 那道化学题本身是一张图, md 里没有这张图, 图 15 是全文唯一没有图片文件的 Figure, 图集合里因此只有 27 张. 第 38 页 PDF 在图 18 下面有完整的 Prompt 和作答: 问把绿点标注的杯子移到键盘左边后, 杯子在鼠标的什么方向, 模型答在鼠标左边; md 只留下照片和图题. 第 40 页 PDF 有 system prompt (定义一个 crop 工具, 坐标按千分比, 取值 0 到 999), 用户问 「金牌虾-虾仁玉米水饺的价格是多少?」, 模型两次调用 crop, 先裁 [630, 280, 999, 999], 再裁 [720, 300, 990, 580], 最后答 「40.50元」; md 同样只剩图片和图题. 我顺手核过图 16 的数学作答: 球心 O(1,0,0) 满足四个等距方程, 余弦值 √2/3 也算得对.
+
+
+--- 行1300 [再看] ---
+> 再看图里的两段文字, 有两处对不上. 中文写 OpenAI 「星际之门」, 英文译成了 「Starlink」, 星际之门对应的英文名是 Stargate, Starlink 是另一家公司的卫星网络. 中文写 「华为腾CloudMatrix 384」, 少了一个 「昇」 字, 英文却写成 「Huawei Ascend CloudMatrix 384」, 英文这边反而是对的. 这是模型输出里的错误, 论文把这个案例当作能力展示, 没有点评. 另外, 中文里的 「Scaling Law」 在英文里原样保留.
+
+
+--- 行1371 [问] ---
+> 按这一段的定义, 它是准确率: 所有测试用例里, GPT-o4-mini 给出的相似度不低于 80 的用例所占的百分比. 所以 82.2 的意思是约 82.2% 的用例过了 80 分这条线, 不是平均得了 82.2 分. 表 2 里其他模型的 Design2Code 分数大多带 「\*」, 是作者用同一协议复现的. 这一段只写了 Design2Code, Flame-React-Eval 的 72.5, 82.5, 86.3 是否也按同一阈值折算, 本文没有说明.
+
+
+--- 行1410 [确认] ---
+> 能. 第 42 页表 3 正好 28 行. 只和 10B 以下的四列 (Qwen2.5-VL 7B, InternVL3 9B, Kimi-VL A3B-Thinking, MiMo-VL 7B-RL) 比, GLM-4.1V-9B-Thinking 不是第一的有 5 行: MathVista 80.7 低于 MiMo-VL 的 81.5; WeMath 63.8 低于 MiMo-VL 的 66.3; OCRBench 84.2 低于 InternVL3 的 87.7, MiMo-VL 的 86.6 和 Qwen2.5-VL 7B 的 84.5; RefCOCO-avg 87.4 低于 MiMo-VL 的 89.6 和 InternVL3 的 88.7; LVBench 45.1 低于 Qwen2.5-VL 7B 的 45.3. 28 减 5 等于 23, 和正文一致. 这个数能复核, 第 17 页的 29/42 却复核不出来, 两处的口径不一样.
+

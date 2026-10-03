@@ -51,7 +51,7 @@ For Grok 4, we utilized Colossus, our 200,000 GPU cluster, to run reinforcement 
 为了 Grok 4, 我们动用了 Colossus, 也就是我们的 200,000 GPU 集群, 以预训练的规模跑强化学习训练, 用来打磨 Grok 的推理能力. 能做到这一点, 靠的是整个技术栈上的创新: 新的基础设施和算法工作把训练的计算效率提高了 6 倍; 还有一次大规模的数据收集, 把可验证训练数据从以数学和代码为主, 大幅扩展到更多领域. 最终这次训练用的计算量比以往多出一个数量级以上, 性能一路平滑上涨.
 
 > **拆开:**「over an order of magnitude more compute than had been used previously」里的「previously」指谁, 6 倍效率又是按什么量算的?
-> 两个都没交代.「previously」可能是 Grok 3 Reasoning 的强化学习阶段, 也可能是 xAI 以往任何一次强化学习训练; 页面没有给 FLOPs, GPU 小时或训练天数,「一个数量级」只能当相对说法.「compute efficiency ... by 6x」没说是单卡吞吐, 硬件利用率, 还是达到同样奖励所需的计算量, 三种口径差别很大. 200,000 GPU 也不等于这次训练用满了: 同目录 [Grok 3 公告](../grok-3/grok-3.md) 结尾就写过「we are preparing to train even larger models on our 200,000 GPU cluster」, 这个数字是集群规模, GPU 型号和本次实际占用本页都没写. 另外, md 把这一段开头标成了 ## 标题, 它其实是上一页句子的后半截, 译稿按正文处理.
+> 两个都没交代.「previously」可能是 Grok 3 Reasoning 的强化学习阶段, 也可能是 xAI 以往任何一次强化学习训练; 页面没有给 FLOPs, GPU 小时或训练天数,「一个数量级」只能当相对说法.「compute efficiency ... by 6x」没说是单卡吞吐, 硬件利用率, 还是达到同样奖励所需的计算量, 三种口径差别很大. 200,000 GPU 也不等于这次训练用满了: 同目录 [Grok 3 公告](../grok-3/grok-3-bi.md) 结尾就写过「we are preparing to train even larger models on our 200,000 GPU cluster」, 这个数字是集群规模, GPU 型号和本次实际占用本页都没写. 另外, md 把这一段开头标成了 ## 标题, 它其实是上一页句子的后半截, 译稿按正文处理.
 
 ## Humanity's Last Exam
 
@@ -317,7 +317,7 @@ The Grok 4 API empowers developers with frontier-level multimodal understanding,
 Grok 4 API 为开发者提供前沿水平的多模态理解, 256,000 的上下文窗口和先进的推理能力, 可以处理横跨文本和视觉的复杂任务. 它通过我们新上线的 live search API, 整合 X, 网页和多家新闻源的实时数据搜索, 靠原生工具使用给出及时, 准确的回答. API 具备企业级的安全与合规, 包括 SOC 2 Type 2, GDPR 和 CCPA 认证, 为敏感应用提供可靠保护. Grok 4 即将登陆我们的超大规模云厂商合作伙伴, 让企业更容易大规模部署创新的 AI 方案.
 
 > **确认:**「a 256,000 context window」单位是什么, 和前后几代怎么比?
-> 原文没写单位, 按惯例是 256,000 个 token. 同目录的数字对不太上: [Grok 3 公告](../grok-3/grok-3.md) 写的是「a context window of 1 million tokens」, 两个多月后的 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md) 写的是「a 2M token context window」. Grok 4 API 的 256,000 约是 Grok 3 宣称值的四分之一. 可能一个是模型能力, 一个是 API 实际开放的上限, 本页没解释, 也没有长上下文评测. 合规那一串讲的是 API 服务, 不是模型本身, 而且 GDPR 和 CCPA 是法规, 严格说谈不上「certifications」;「hyperscaler partners」没点名是哪几家, 也没有日期.
+> 原文没写单位, 按惯例是 256,000 个 token. 同目录的数字对不太上: [Grok 3 公告](../grok-3/grok-3-bi.md) 写的是「a context window of 1 million tokens」, 两个多月后的 [Grok 4 Fast](../grok-4-fast/grok-4-fast-bi.md) 写的是「a 2M token context window」. Grok 4 API 的 256,000 约是 Grok 3 宣称值的四分之一. 可能一个是模型能力, 一个是 API 实际开放的上限, 本页没解释, 也没有长上下文评测. 合规那一串讲的是 API 服务, 不是模型本身, 而且 GDPR 和 CCPA 是法规, 严格说谈不上「certifications」;「hyperscaler partners」没点名是哪几家, 也没有日期.
 
 ## Grok 4 Voice Mode
 
@@ -374,7 +374,7 @@ focus remains on making models smarter, faster, and more efficient, as we drive 
 © 2026 SpaceXAI LLC
 
 > **对一下:** 公告日期是 Jul 9, 2025, 页脚是「© 2026 SpaceXAI LLC」, 哪个是发布时间?
-> 发布时间是 2025 年 7 月 9 日, [xAI 新闻页](../xai/xai.md) 的列表里 Grok 4 也记在这一天. 页脚是抓取时的网站模板: 新闻页记着 2026 年 2 月 2 日「SpaceX announced today that it has acquired xAI」, 之后公司对外叫 SpaceXAI, 旧文章也挂上了新版权行. 页脚里的 Bot 同理, Grok Bot 到 2026 年 8 月 11 日才发布. 图片 p10-2026-spacexai-llc.png 是 SPACEX 字标, 文件名取自旁边的版权行.
+> 发布时间是 2025 年 7 月 9 日, [xAI 新闻页](../xai/xai-bi.md) 的列表里 Grok 4 也记在这一天. 页脚是抓取时的网站模板: 新闻页记着 2026 年 2 月 2 日「SpaceX announced today that it has acquired xAI」, 之后公司对外叫 SpaceXAI, 旧文章也挂上了新版权行. 页脚里的 Bot 同理, Grok Bot 到 2026 年 8 月 11 日才发布. 图片 p10-2026-spacexai-llc.png 是 SPACEX 字标, 文件名取自旁边的版权行.
 
 Products
 

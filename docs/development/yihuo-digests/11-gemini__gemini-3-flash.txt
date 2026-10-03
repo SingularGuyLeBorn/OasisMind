@@ -1,0 +1,41 @@
+# 11-gemini/gemini-3-flash  文件: content/model-library/03-模型家族\11-gemini/gemini-3-flash\gemini-3-flash-bi.md  共 10 块
+
+--- 行31 [想] ---
+> 从卡上判断不了. 两处都只写到月份, 没有日; 封面月份后面多一个逗号, 这一页没有; 措辞一个是 「Model card published」, 一个只写 「Published」. 第 4 页的成绩又写 「Results as of December, 2025」, 同样只到月. 三处都落在 2025 年 12 月, 但到底是同一天, 相隔几天, 还是封面后来补印, 字面上分不出. 它和 3 Pro 卡的写法也不一样: 3 Pro 卡分两行写 「Model Release: November 2025」 和 「Last Updated: May 2026」, Flash 卡既没有 「Model Release」 也没有 「Last Updated」. 所以 「Published」 说的是卡的发布日还是模型的发布日, 发布后有没有改过, 这张卡都没交代.
+
+
+--- 行42 [问] ---
+> 档位的数目, 名字和默认档卡上都没写. 思考档位让使用者决定推理时多花多少算力, 属于 TestingTime 的做法: 档位越高, 模型想得越久, 成本和延迟也跟着上去. 第 4 页成绩表里, 每个 Gemini 列头下面都印着一行小字 「Thinking」, Claude Sonnet 4.5 也印 「Thinking」, GPT-5.2 印 「Extra high」, Grok 4.1 Fast 印 「Reasoning」. 也就是说 thinking 只以列头附注的形式出现, 表里没有 「Flash 不开思考」 或 「Flash 低档, 高档」 这样单独的列或行, Flash 那一列用的是哪一档也没注明. 六个对手里只有 GPT-5.2 写出了档位名. 表里 Flash 的分数是用多大的推理开销换来的, 这张卡回答不了.
+
+
+--- 行57 [对一下] ---
+> 能对上, 而且一字不差. 3 Pro 卡第 2 页的 Inputs 和 Outputs 两段, 措辞和数字与这里完全相同: 「with a token context window of up to 1M」, 「Text, with a 64K token output」. 在模型规格这一类行里, 这是两张卡唯一能逐字对齐的地方. 不过窗口一样大, 不等于在窗口里找东西一样准: 第 4 页 MRCR v2 的两行, 128k 下 Flash 是 67.2%, 3 Pro 是 77.0%; 1M 下是 22.1% 对 26.3%.
+
+
+--- 行64 [核对] ---
+> 推不出. 3 Pro 卡第 3 页写 3 Pro 是 「sparse mixture-of-experts (MoE) transformer-based models」, 原生支持文本, 视觉和音频输入. Flash 卡的架构一节只有 「based on Gemini 3 Pro」 一句, 然后把读者送去 3 Pro 的卡, 注意送去看的是 「the model architecture for Gemini 3 Pro」, 不是 Flash 的架构. Flash 是否沿用同样的结构, 参数量多大, 「based on」 具体指哪种派生方式, 都没写. 反过来, 3 Pro 卡的模型依赖一节印证了这层关系: 「Each subsequent model in the Gemini 3 Pro family is based on Gemini 3 Pro」, 后面列的家族成员里第二个就是 Gemini 3 Flash. 父子关系两张卡能互相确认, Flash 自己的结构细节两张卡都没有.
+
+
+--- 行81 [停一下] ---
+> 原句就是 「For more information about the training dataset for Gemini 3 Pro Image, see the Gemini 3 Pro model card」, PDF 文本层也这么写, 不是 MinerU 认错. 同页下一句训练数据处理写的是 「for Gemini 3 Flash」, 两处链接都指向 Gemini-3-Pro-Model-Card.pdf. Gemini 3 Pro Image 是 3 Pro 家族里另一个型号, 3 Pro 卡的家族名单里排第一, 有自己的卡. 看上下文, 这里多半是从 3 Pro Image 的卡套模板时没改干净, 本意应是 Gemini 3 Flash. 按字面读, 它说的是 「去 3 Pro 卡查 3 Pro Image 的训练数据」, 和 Flash 对不上.
+
+
+--- 行165 [看表] ---
+> 两张表共有的分数行是 22 行 (Flash 卡独有 Toolathlon 和 MCP Atlas, 3 Pro 卡独有 MathArena Apex). 其中 3 Pro 的数字有 21 行一致: HLE 37.5% 和 45.8%, ARC-AGI-2 31.1%, GPQA 91.9%, AIME 95.0% 和 100%, MMMU-Pro 81.0%, ScreenSpot-Pro 72.7%, CharXiv 81.4%, OmniDocBench 0.115, Video-MMMU 87.6%, LiveCodeBench Pro 2439, Terminal-bench 54.2%, SWE-bench 76.2%, FACTS 70.5%, SimpleQA 72.1%, MMMLU 91.8%, Global PIQA 93.4%, MRCR 77.0% 和 26.3%; Vending-Bench 2 是 $5,478 对 $5,478.16, 只差四舍五入. 对不上的只有 τ2-bench: 3 Pro 卡写 85.4%, 这里写 90.7%. 同一行 2.5 Pro 从 54.9% 变成 77.8%, Claude Sonnet 4.5 从 84.7% 变成 87.2%, 三家一起上调, 像是这个基准换了版本或设置, 两张卡都没解释. 另有一处只动了对手: FACTS 的 Claude Sonnet 4.5, 3 Pro 卡是 50.4%, 这里是 48.9%, 而 50.4% 在这张表里恰好是 2.5 Flash 的分数. 口径也改写了几处: HLE 加了 「full set, text + MM」, ScreenSpot-Pro 和 CharXiv 加了 「No tools」, Terminal-bench 的 「Terminus-2 agent」 改成 「harness」, FACTS 的说明整句换掉. GPT 列从 GPT-5.1 换成 GPT-5.2, 又加了 Grok 4.1 Fast, 这两列不能跨卡比.
+
+
+--- 行168 [拆开] ---
+> 是上下两行的格子被 MinerU 挤进了一格. 原图里 MRCR v2 分两行, 上面 128k 取平均, 下面 1M 逐点. Claude Sonnet 4.5 上 47.1%, 下 「not supported」; GPT-5.2 上 81.9% (加粗, 这一行最高), 下 「not supported」; Grok 4.1 Fast 上 54.6%, 下 6.1%. 所以 1M 这一行有五家有分: 3 Pro 26.3%, 3 Flash 22.1%, 2.5 Flash 21.0%, 2.5 Pro 16.4%, Grok 4.1 Fast 6.1%. 「not supported」 是不支持 1M 上下文, 不是 0 分. 同一张表还有两处识别问题: 「t2-bench」 在原图是 「τ2-bench」, 希腊字母被认成了 t; 列头 「Gemini3 FlashThinking」 原本是分行印的 「Gemini / 3 Flash / Thinking」, 空格和换行丢了.
+
+
+--- 行189 [确认] ---
+> 不能直接算. Flash 卡只让读者去看 3 Pro 的卡, 没写 「同样适用」. 3 Pro 卡的已知局限一段有三条: 可能出现幻觉这类基础模型的通病, 偶尔变慢或超时, 知识截止于 2025 年 1 月, 三条的主语都是 「Gemini 3 Pro」. Flash 基于 3 Pro, 截止日期相同说得通, 但 Flash 卡自己没写截止日期, 也没说 Flash 有没有另外的局限, 比如作为第 6 页自称 「less capable than Gemini 3 Pro」 的型号, 在哪类任务上差得多. 引用时只能写 「Flash 卡把局限转给了 3 Pro 卡」, 不能写 「Flash 的知识截止于 2025 年 1 月」.
+
+
+--- 行247 [回看] ---
+> 卡上靠颜色分好坏 (绿好红坏), 但 MinerU 和 PDF 文本层都没留下颜色, 只能靠正负号和 「non-egregious」 反推. 正文说 Flash 在安全和语气上都好于 2.5 Flash, 那么文本到文本 -3.1% 和图像到文本 -2.3% 是违规少了, 算改进; 语气 +3.8% 是改进; 多语言 +0.1% 后面挂着 「non-egregious」, 3 Pro 卡只给退步的行挂这个词, 所以这是一个不严重的小退步. 最绕的是无理拒答 -10.4%: 说明写的是 「回应边界提示的能力」, 按字面降了是变差; 可正文说 「keeping unjustified refusals low」, 3 Pro 卡同一行 +3.7% 又挂着 「non-egregious」 当退步处理, 两处合起来看, 这一行量的是无理拒答的比例, -10.4% 是改进. 至于 「The performance results reported below」, 这一页往下已经没有安全表, 表在上一页. 这段话和 3 Pro 卡第 8 页那段逐字相同, 在 3 Pro 卡里也放在表的后面, 像是整段沿用, 方向词一直没改.
+
+
+--- 行258 [再看] ---
+> 大体对得上, 但不是每一行. 第 4 页 24 行分数里, Flash 低于 3 Pro 17 行, 持平 1 行 (MMMLU 都是 91.8%), 高于 3 Pro 6 行: Toolathlon 49.4% 对 36.4%, MCP Atlas 57.4% 对 54.1%, ARC-AGI-2 33.6% 对 31.1%, SWE-bench Verified 78.0% 对 76.2%, AIME 不用工具 95.2% 对 95.0%, MMMU-Pro 81.2% 对 81.0%. 卡上的 「less capable」 没有限定是哪类能力, 也没说拿什么尺子量. 被评估的对象这里写 「Gemini 3 Pro Preview」, 3 Pro 卡的前沿安全一节写的是 「Gemini 3 Pro」, 两张卡给的报告链接也不同 (这里是 gemini_3_pro_fsf_report.pdf, 3 Pro 卡是 deepmind.google/models/fsf-reports/gemini-3-pro/), Preview 和正式版是不是同一个检查点, 两张卡都没说. 3 Pro 卡的前沿安全表五个领域都是 「CCL not reached」, 其中两行: CBRN, CCL 为 Uplift Level 1, 未达到; Cybersecurity, v1 hard 11/12, v2 0/13, 达到预警阈值 (alert threshold), CCL 为 Uplift Level 1, 未达到. Flash 自己没有任何一项前沿安全分数.
+

@@ -1,0 +1,81 @@
+# 21-xai/xai  文件: content/model-library/03-模型家族\21-xai/xai\xai-bi.md  共 20 块
+
+--- 行7 [想] ---
+> 不是. 它出现在新闻页最上方, 前后没有任何句子, 位置对应网页左上角的汉堡菜单图标, 是 MinerU 把三条横线识别成了汉字. 译稿原样保留, 读的时候跳过.
+
+
+--- 行22 [问] ---
+> 本页没有. 只写 「comparable models」, 没点名对照模型, 没给吞吐, 延迟, 每百万 token 价格, 也没说是输入价还是输出价. 这两个倍数要到同家族的 [Grok 4.7](../grok-4-7/grok-4-7.md) 专页去核, 在这张新闻卡上只能原样抄 「两倍」 和 「一半」.
+
+
+--- 行31 [核对] ---
+> 对不上. 它前面是 Grok 4.7 头条卡, 后面是两张卡片的标题. 第 1 页只露出 2 个卡片名, 第 2 页的图里是 4 张卡, 都凑不出 10. 它也不是型号或日期. 最可能是轮播组件的计数或页码, 被抓成了二级标题. 不要把它读成排名, 数量或版本号.
+
+
+--- 行54 [看表] ---
+> 对照图片就清楚了. 这是一个 2 x 2 的卡片网格: 第一行左 Sep 22 (客服), 右 Sep 18 (Voice Transcribe 2.0); 第二行左 Sep 16 (Memory in Grok Build), 右 Sep 4 (采购). 按行读是 22, 18, 16, 4, 正好倒序; MinerU 按左右列交错取文字, 才打乱成 22, 16, 18, 4. 图里第一张卡的标题还有第二行 「customer support」, md 把它丢了, 完整标题是 「How SpaceXAI is using Grok Bot to scale customer support」. 另外, 头条 Grok 4.7 的日期 Sep 21 比这张 Sep 22 的卡还早, 头条位不是按最新排的.
+
+
+--- 行103 [拆开] ---
+> 句子在 「for」 后被截断, 免费期限或额度本页看不到. Cursor 在本页出现了三次: 这里的 Cursor Enterprise, 8 月 26 日的 Cursor Pro 与 Cursor Teams 套餐, 以及 6 月 1 日 「Composer 2.5 is now available in Grok Build」. 三处都只陈述结果, 没有说明两家是什么合作关系. 能抄的只有这几句原话.
+
+
+--- 行116 [确认] ---
+> 两个词在原文里并存, 标题用 biosecurity, URL 用 biosafety-at-the-frontier, 页面没解释差别. 本页只有这一句摘要, 没有评级, 没有分数, 也没有任务清单. 按本库安全约定, 这类评测即便展开也只抄评级和分数; 这里连分数都没有, 只能记下 「LatchBio 做过评测」 这件事.
+
+
+--- 行157 [再看] ---
+> 是同一条. 标题, 日期 Aug 21 和 slug 挨在一起, 摘要句跨页落在第 3 页表格的第一行 (「Grok 4.6 is now available via Gemini Enterprise Agent Platform」). slug 保留了 Vertex AI 的旧叫法, 标题用的是新平台名, 页面没交代两个名字的关系.
+
+
+--- 行170 [回看] ---
+> 6 月那条只说 「Grok models」, 没列具体型号; 8 月这条点名 Grok 4.6. 合理的读法是 Bedrock 先接入了 Grok 系列, 8 月再上新型号, 但页面没写 6 月上的是哪几个模型. 四个云平台之间相隔 12 天, 每条都只有一句 「now available」, 没有区域, 价格或配额.
+
+
+--- 行173 [停一下] ---
+> 摘要在 「hundred」 处被截断, 名词丢了, 可能是子 Agent, 会话或文件, 本页没有给出. 同样截断的还有 Grok 4.6 的 「more ambitious...」, Grok Bot 的 「tools and app...」, Build Mode 的 「SuperGro...」. 译稿都照原样断在省略号处, 不补宾语.
+
+
+--- 行208 [对一下] ---
+> 7 月 16 日 「smartest model」, 7 月 22 日 「most intelligent model yet」, 7 月 28 日 Copilot 卡 「smartest coding model」; 8 月 14 日 Grok 4.6 是 「latest coding model」, 头条 Grok 4.7 是 「most powerful model for coding」; 5 月 29 日 Grok Build 0.1 又是 「fastest coding model」, 第 7 页 2025 年的 Grok 4 是 「most intelligent model in the world」. 这些都是宣传用的最高级, 本页没有任何一张榜单或分数撑着. 横向比较要回各型号专页.
+
+
+--- 行211 [想] ---
+> 本页没写总数. 21 和 5 都是原文数字, 相加得 26 只是算术, 页面没说新音色是否都在同一个产品里上架, 也没说原来 5 个是否仍单独保留. 引用时写 「新增 21 个, 原有 5 个改进」, 不要写成 「共 26 个」.
+
+
+--- 行220 [核对] ---
+> 本页没定义. Warp, OpenCode, OpenClaw 写 「X Premium」, Kilo Code 写 「X Premium+」, Grok Build 首发写 「X Premium Plus」. 「+」 和 「Plus」 大概率是同一个档, 但 「X Premium」 是否就是更低一档, 页面没有价目表可对. 引用时按每条原文抄, 不要合并.
+
+
+--- 行223 [看表] ---
+> 两者都是, 页面没做区分. 5 月 25 日与 7 月 15 日开源那条说的是编程 Agent 与 TUI (harness); 5 月 29 日 「Grok Build 0.1」 是 API 里可调的模型; 6 月 1 日又说 Composer 2.5 能在 Grok Build 里通过 /models 菜单选用, 说明这个 harness 还能挂别家模型. 读 「Grok Build」 时要看上下文分清是工具名还是模型名 「Grok Build 0.1」.
+
+
+--- 行258 [拆开] ---
+> 本页没有 D 轮. B 轮 (2024-05-26) 写 「$6 billion」, C 轮 (2024-12-23) 写 「$6B」, E 轮 (2026-01-06) 写 「$20B」, 三条都没给估值和累计额. C 轮到 E 轮之间差一轮, 页面既没列出 D 轮新闻, 也没解释跳号. 不要自己补 D 轮金额, 也不要把三笔相加当累计融资.
+
+
+--- 行261 [确认] ---
+> 列表里找不到. 全页出现的模型号是 Grok, Grok-1, Grok-1.5, Grok-1.5 Vision, Grok-2, Grok 3 Beta, Grok 4, Grok Code Fast 1, Grok 4 Fast, Grok 4.1 (含 4.1 Fast), Grok 4.5, 4.6, 4.7; 同级目录还有 [Grok 4.20](../grok-4-20/grok-4-20.md) 与 [Grok 4.3](../grok-4-3/grok-4-3.md), 这张新闻页没有对应条目. 2 月 2 日到 4 月 17 日这段空白正好落在 4.1 与 4.5 之间, 页面没说是抓取遗漏还是官方没发新闻稿.
+
+
+--- 行264 [回看] ---
+> 2 月 2 日 「SpaceX announced today that it has acquired xAI」 之后, 4 月以后的条目自称 SpaceXAI (如 5 月 6 日与 Anthropic 的算力协议, 7 月 16 日 Grok 4.5), 页脚是 「© 2026 SpaceXAI LLC」. 但 6 月 3 日那条仍写 「xAI API」, 更早的 2025 年条目统一写 xAI. 页面没有 「改名」 公告, 只能看出收购后对外品牌是 SpaceXAI, 开发者接口还叫 xAI API.
+
+
+--- 行273 [停一下] ---
+> 没有. 两条都只有定性词, 没有每百万 token 价格, 也没有 token/s. 同样, Grok 3 Beta 只有 「early preview」, 全页找不到 Grok 3 正式版的条目. 具体价格和速度要看同级的 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md) 与 [Grok Code Fast 1](../grok-code-fast-1/grok-code-fast-1.md) 专页.
+
+
+--- 行302 [再看] ---
+> 本页没有. 这条摘要在 「Mixture-of-Experts mode...」 处断开, 只能确认两件事: 总参 314 billion, 结构是 MoE. 激活比例, 专家数, 层数都不在这里; 同级 [Grok-1](../grok-1/grok-1.md) 专页写了 「25% of the weights active on a given token」. 另一个数字是 Grok-1.5 的上下文 128,000 token, 同样没写怎么扩出来的.
+
+
+--- 行305 [对一下] ---
+> 都被截断了. 代号在省略号后面, 本页看不到, 只知道是 「autoregressive image generation model」. API 公测句尾只剩一个 「W」, 后文缺失. 两处都不补.
+
+
+--- 行356 [问] ---
+> 没有. 图片只是一个月亮图标, 是页脚的深色模式切换按钮. 文件名是 MinerU 按相邻表头 「Company | Legal」 起的, 不代表图的内容. 全页两张图里, 真正带信息的只有第 2 页那张卡片网格.
+

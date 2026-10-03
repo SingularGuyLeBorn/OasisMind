@@ -84,7 +84,7 @@ Grok 4.6 is trained on a wide range of agentic RL tasks, including knowledge wor
 Grok 4.6 在很大范围的 agentic RL 任务上训练, 包括知识工作, 通用编程, 以及面向内核优化, 网页开发, 计算机辅助设计等领域的专门环境, 等等.
 
 > **问:** kernel optimization 和 CAD 这类环境的奖励从哪来, 也是自动核对的吗?
-> 页面没说奖励设计, 只列了任务面. 这几类环境的好处恰恰是奖励好定: 内核优化可以测运行速度, 网页开发可以跑测试, 都是有客观判据的任务, 和数学代码一样属于答案能自动验证的一类. 这也和 [Grok 4.5 公告](../grok-4-5/grok-4-5.md) 一脉相承——那边写的是 RL 覆盖几十万任务, 用自动和模型混合打分. 但每个环境奖励的具体定义, 有没有模型当评委的部分, 占比多少, 本页没有.
+> 页面没说奖励设计, 只列了任务面. 这几类环境的好处恰恰是奖励好定: 内核优化可以测运行速度, 网页开发可以跑测试, 都是有客观判据的任务, 和数学代码一样属于答案能自动验证的一类. 这也和 [Grok 4.5 公告](../grok-4-5/grok-4-5-bi.md) 一脉相承——那边写的是 RL 覆盖几十万任务, 用自动和模型混合打分. 但每个环境奖励的具体定义, 有没有模型当评委的部分, 占比多少, 本页没有.
 
 ## Turning ambitious ideas into working projects (把大胆的想法变成可运行的项目)
 
@@ -172,7 +172,7 @@ Pricing starts at \$2 per million input tokens and \$6 per million output tokens
 定价是每百万输入 token 2 美元起, 每百万输出 token 6 美元起. 另外还有一个 fast 变体, 价格是它的两倍.
 
 > **对一下:** 表头四列里 Grok 这边是 High 档, 两个竞品都是 Max 档, 推理强度不在同一档上, 这表还能直接比吗?
-> 能读, 但留了问号. 两种读法: 一是 High 就是 Grok 4.6 的最高档, 那是同档对比, 没毛病; 二是 4.6 还有更高的档没拿出来跑, 那表中 Grok 的成绩就不是最强形态. 旁证是第 5 页另有一个 fast 低延迟变体, 说明 4.6 至少分快/高两类档; 但页面没说 High 之上有没有档, 也没给任何一档的 token 吞吐数字——和 [Grok 4.5 公告](../grok-4-5/grok-4-5.md) 里写明 80 TPS 的披露相比, 这页对速度只字未提. 验证路径: 查 API 文档的 reasoning effort 档位枚举, 确认 High 是不是顶, 以及各档对应的速度.
+> 能读, 但留了问号. 两种读法: 一是 High 就是 Grok 4.6 的最高档, 那是同档对比, 没毛病; 二是 4.6 还有更高的档没拿出来跑, 那表中 Grok 的成绩就不是最强形态. 旁证是第 5 页另有一个 fast 低延迟变体, 说明 4.6 至少分快/高两类档; 但页面没说 High 之上有没有档, 也没给任何一档的 token 吞吐数字——和 [Grok 4.5 公告](../grok-4-5/grok-4-5-bi.md) 里写明 80 TPS 的披露相比, 这页对速度只字未提. 验证路径: 查 API 文档的 reasoning effort 档位枚举, 确认 High 是不是顶, 以及各档对应的速度.
 
 We’re offering 2x included usage inside [Grok Build](https://x.ai/build) and [Cursor](https://cursor.com/?mpdid=09a0c2c6-3d21-48fb-9efd-9910c9767a0f) for the first week so you can start trying 4.6 immediately.
 

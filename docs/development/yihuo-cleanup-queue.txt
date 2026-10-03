@@ -1,14 +1,14 @@
 # 疑惑清理队列 (按 _index.md 顺序; 行尾 [done] 表示已清理并过审)
-# 进度: 4/239 已审过 (deepseek-v3 23→20, kimi-k3 20→17, qwen 20→14, qwen2 19→13+标签规范化); 下一篇 03-qwen/qwen2-5
+# 进度: 8/239 已审过 (qwen2-5 批 4 篇由 agent-50 清理: 20→16, 18→17, 18→18, 19→17, 2026-09-27 审过) (deepseek-v3 23→20, kimi-k3 20→17, qwen 20→14, qwen2 19→13+标签规范化); 下一篇 03-qwen/qwen2-5
 # 另: 21-xai 的 grok-4-3/4-5/4-6/4-fast/code-fast-1 已按新标准返工过, 无需再清; grok-4-7 待补写
 01-deepseek/deepseek-v3: 23 [done]
 02-kimi/kimi-k3: 20 [done]
 03-qwen/qwen: 20 [done]
 03-qwen/qwen2: 19 [done]
-03-qwen/qwen2-5: 20
-03-qwen/qwen2-5-coder: 20
-03-qwen/qwen2-5-math: 20
-03-qwen/qwen2-5-vl: 22
+03-qwen/qwen2-5: 20 [done]
+03-qwen/qwen2-5-coder: 20 [done]
+03-qwen/qwen2-5-math: 20 [done]
+03-qwen/qwen2-5-vl: 22 [done]
 03-qwen/qwen2-audio: 16
 03-qwen/qwen2-vl: 21
 03-qwen/qwen3: 21

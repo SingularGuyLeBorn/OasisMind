@@ -18,7 +18,7 @@
 
 第 1, 2 页的叙述是一条线. Grok 3 把下一个 token 预测的预训练推到了很大规模, Grok 3 Reasoning 用强化学习教模型「think longer about problems」; 做 Grok 3 Reasoning 时看到了规模扩展的趋势, 于是 Grok 4 在 Colossus (200,000 GPU 集群) 上「run reinforcement learning training ... at pretraining scale」. 支撑这件事的有两样: 基础设施和算法让训练的计算效率提高 6 倍, 可验证训练数据从数学和代码扩展到「many more domains」. 结果是这次训练用的计算量比以往多一个数量级以上, 性能增长「smooth」.
 
-这段话信息密度不高, 能落地的数字只有 200,000, 6x 和「an order of magnitude」三个, 而且三个都缺口径. 200,000 是集群规模, [Grok 3 公告](../grok-3/grok-3.md) 结尾已经用过同一个数字, 本次训练实际占了多少卡, 什么型号, 没写. 6 倍效率没说分子分母是什么.「previously」没说是和 Grok 3 Reasoning 的强化学习阶段比, 还是和 Grok 3 的预训练比; 如果是前者, 「at pretraining scale」说的是强化学习的计算量追上了预训练那一档, 这是全文最重要的一句话, 可惜没有 FLOPs 能核. 强化学习阶段怎么随计算量变化, 一般性的讨论见 [ScaleRL](../../../../llm-guide/4-后训练/4.8-ScaleRL-尺度定律的再发现/4.8-ScaleRL-尺度定律的再发现.md) 和 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+这段话信息密度不高, 能落地的数字只有 200,000, 6x 和「an order of magnitude」三个, 而且三个都缺口径. 200,000 是集群规模, [Grok 3 公告](../grok-3/grok-3-bi.md) 结尾已经用过同一个数字, 本次训练实际占了多少卡, 什么型号, 没写. 6 倍效率没说分子分母是什么.「previously」没说是和 Grok 3 Reasoning 的强化学习阶段比, 还是和 Grok 3 的预训练比; 如果是前者, 「at pretraining scale」说的是强化学习的计算量追上了预训练那一档, 这是全文最重要的一句话, 可惜没有 FLOPs 能核. 强化学习阶段怎么随计算量变化, 一般性的讨论见 [ScaleRL](../../../../llm-guide/4-后训练/4.8-ScaleRL-尺度定律的再发现/4.8-ScaleRL-尺度定律的再发现.md) 和 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
 
 「verifiable training data」和第 9 页「expand the scope from verifiable rewards in controlled domains」前后呼应. 两句合起来可以读出: Grok 4 的强化学习主要用答案能自动核对的任务打分, 起点是数学和代码, 这次扩到了更多领域, 下一步才想碰没有标准答案的现实问题. 用了什么算法, 有没有偏好模型或人类反馈, 扩到了哪些「domains」, 每个领域多少数据, 页面一个都没说. 这类可验证奖励训练的边界在哪, 可以对照 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLVR的局限性与探索边界分析.md), 那是通用分析, 不是 Grok 4 的做法.
 
@@ -60,13 +60,13 @@ ARC-AGI-2 的数值 md 里没有, PDF 第 7 页文字层给出 Grok 4 15.9, Clau
 
 ### 4.1 API 与语音: 产品面信息
 
-第 7 页的 API 一节给了一个硬参数: 「a 256,000 context window」, 没写单位, 按惯例是 token. 这个数字和同家族对不太上: [Grok 3 公告](../grok-3/grok-3.md) 写的是 1 million tokens, 两个多月后的 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md) 是 2M token. 可能 256,000 是 API 开放的上限而不是模型能力, 本页没解释, 也没有长上下文评测. 其余是产品描述: 文本加视觉的多模态理解, 新上线的 live search API 覆盖 X, 网页和新闻源, SOC 2 Type 2, GDPR, CCPA 合规, 以及「coming soon」的云厂商合作伙伴. 长上下文的一般技术见 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
+第 7 页的 API 一节给了一个硬参数: 「a 256,000 context window」, 没写单位, 按惯例是 token. 这个数字和同家族对不太上: [Grok 3 公告](../grok-3/grok-3-bi.md) 写的是 1 million tokens, 两个多月后的 [Grok 4 Fast](../grok-4-fast/grok-4-fast-bi.md) 是 2M token. 可能 256,000 是 API 开放的上限而不是模型能力, 本页没解释, 也没有长上下文评测. 其余是产品描述: 文本加视觉的多模态理解, 新上线的 live search API 覆盖 X, 网页和新闻源, SOC 2 Type 2, GDPR, CCPA 合规, 以及「coming soon」的云厂商合作伙伴. 长上下文的一般技术见 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
 
 语音模式分两段. 第 7 页说 Voice Mode 更真实, 反应更快, 换了一个新声音; 第 8 页说可以开摄像头, Grok 看着画面实时回应, 并称「this model trained in-house, with our state-of-the-art reinforcement learning framework and speech compression techniques」. 这里的「this model」听上去是单独的语音模型, 它和 Grok 4 是什么关系, 延迟多少, 支持哪些语言, 页面都没写. 第 9 页的截图是一个实例: 摄像头对着手写的「Grok Sibei tok kong」, Grok 解释出闽南语和新加坡式英语的意思, 屏幕上显示的是文字回复. 语音模型的通用背景见 [音频与语音模型](../../../../llm-guide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md).
 
 ### 4.2 模型本身: 本页没有
 
-参数量, 层数, 注意力结构, 词表, 上下文是怎么扩出来的, 预训练数据和配比, 本页一个字都没写. 第 1, 2 页先说 Grok 3 的预训练, 再说 Grok 4 的强化学习, 容易让人读成「Grok 4 就是 Grok 3 底座加大规模强化学习」, 但原文没有这么说, 也没说 Grok 4 有没有重新预训练. 同家族里只有 [Grok-1](../grok-1/grok-1.md) 公开过权重和结构, 那是 2024 年的模型, 不能往 Grok 4 上套.
+参数量, 层数, 注意力结构, 词表, 上下文是怎么扩出来的, 预训练数据和配比, 本页一个字都没写. 第 1, 2 页先说 Grok 3 的预训练, 再说 Grok 4 的强化学习, 容易让人读成「Grok 4 就是 Grok 3 底座加大规模强化学习」, 但原文没有这么说, 也没说 Grok 4 有没有重新预训练. 同家族里只有 [Grok-1](../grok-1/grok-1-bi.md) 公开过权重和结构, 那是 2024 年的模型, 不能往 Grok 4 上套.
 
 安全评测, 拒答率, 幻觉率, 定价和模型卡也都不在这篇公告里. 第 9 页「What's Next」只给方向: 继续把强化学习做大, 从受控领域的可验证奖励走向现实问题, 多模态继续改进, 没有时间表和指标. 对这篇材料, 能做的是把它说了什么, 数字之间是否自洽整理清楚, 结构上的空白只能留着.
 

@@ -16,7 +16,7 @@ tags: ["OPD", "MOPD", "On-Policy Distillation", "Qwen3", "DeepSeek-V4", "Kimi-K3
 
 - [4.6 节首页](../4.6-OPD.md) 把 OPD 写成 Online Preference/Policy Distillation，又「泛指」Online Self-Distillation。报告里的官方名是 **On-Policy Distillation**（同策略蒸馏）。自蒸馏是另一条线，见 [02-OPSD](../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md)。
 - 01 把 17,920 / 1,800 GPU hours、AIME 67.6→74.4 指回了 Qwen3 报告，但漏了分母：**Qwen3-8B、同一份 off-policy 蒸馏检查点、只做 math+code、括号里是 pass@64**。
-- [5.2 的 V4 解读](../../../5-主流模型全解/5.2-国内大模型/DeepSeek深度求索/27-DeepSeek-V4技术解读.md) §5.5 把 1,800 写成 V4 四阶段合计，再拿 17,920 做分母宣称「V4 只要传统 RL 的 1/10」。**那两个格子是 Qwen3 Table 21 的，不要安到 V4。** 本篇只点名，不改那篇第 5 章文件。
+- 5.2 的 V4 解读 §5.5 把 1,800 写成 V4 四阶段合计，再拿 17,920 做分母宣称「V4 只要传统 RL 的 1/10」。**那两个格子是 Qwen3 Table 21 的，不要安到 V4。** 本篇只点名，不改那篇第 5 章文件。
 
 要回答的问题因此很窄：每家官方叫什么、教师从哪来、损失写到词表还是采样 token、数字的分母是什么、第 14 章从哪进。
 
@@ -125,7 +125,7 @@ Qwen3 对轻量档走 Strong-to-Weak：先 off-policy 打底，再 on-policy 对
 **图 3 解析**
 
 - **框内**：8B、同一 off-policy 检查点、math+code、括号 pass@64。1/10 只在这组条件下成立。
-- **右侧打叉**：[27-DeepSeek-V4技术解读.md](../../../5-主流模型全解/5.2-国内大模型/DeepSeek深度求索/27-DeepSeek-V4技术解读.md) §5.5 把 1,800 当成 V4 四阶段（SFT / G-OPD / GRPO / SCOPE）合计，再除 17,920。分子分母都是 Qwen3 的格子；V4 mineru **没有**这组 GPU hours。本篇不改第 5 章。
+- **右侧打叉**：27-DeepSeek-V4技术解读.md §5.5 把 1,800 当成 V4 四阶段（SFT / G-OPD / GRPO / SCOPE）合计，再除 17,920。分子分母都是 Qwen3 的格子；V4 mineru **没有**这组 GPU hours。本篇不改第 5 章。
 - **G-OPD / SCOPE**：表里「本波不展开」。不要把第 5 章那套 300 / 800 / 200 GPU 小时当成 V4 报告数字。
 
 ---

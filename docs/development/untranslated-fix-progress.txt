@@ -6,3 +6,35 @@
 01-deepseek/deepseek-coder-v2 [done] 误报(作者名单+编程语言列表豁免), 未改动, 2026-09-27 审过
 08-claude/claude-opus-4-6 [done] 4 批补翻 408 段(welfare/RSP/CBRN/bio/AIRD/cyber 全节), Changelog 已删, 扫描已出清, 2026-09-27 审过
 # 2026-09-27 全局修正: 删含 面试/钉死/写死 的疑惑块 20 块(11 文件); 删 9 个 claude 文件 Changelog 节; 记账 禁词修正(qwen3-8-flash-next)
+
+# 2026-09-27 父代理全量复审 triage: 以下文件全部缺口均为豁免类(作者名单/贡献者名单/代码/公式/prompt/网页页脚导航/图表题注/题目与解答/红队用例/附录论文重印), 无需翻译, 不改文件:
+01-deepseek/deepseek-prover-v1-5, 01-deepseek/deepseek-v3-2, 02-kimi/kimi-k2-5,
+03-qwen/qwen2-5-math, 03-qwen/qwen2-5-vl, 03-qwen/qwen3-2507, 03-qwen/qwen3-7,
+04-stepfun/step3-7-flash, 06-olmo/olmo-hybrid, 07-baichuan/baichuan, 07-baichuan/baichuan-2,
+07-baichuan/baichuan-7b, 08-claude/claude, 08-claude/claude-2-1, 08-claude/claude-3,
+08-claude/claude-3-7-sonnet, 08-claude/claude-4, 08-claude/claude-opus-4-6,
+09-doubao/lite, 09-doubao/seed-2-1, 10-ernie/5-0, 10-ernie/ernie, 11-gemini/gemini,
+11-gemini/project-astra, 13-glm/glm-4-voice, 13-glm/glm-5, 14-hunyuan/turbos,
+15-ling/ling-plus, 16-llama/llama4, 17-minicpm 全部(10 文件), 18-minimax/minimax-01,
+18-minimax/minimax-m1, 18-minimax/minimax-m2, 19-mistral/magistral, 19-mistral/mixtral-8x22b,
+19-mistral/pixtral-12b, 20-openai/gpt-3, 20-openai/gpt-4-1, 20-openai/gpt-4-5,
+20-openai/gpt-4-series, 20-openai/gpt-5-2, 20-openai/gpt-5-3-codex, 20-openai/gpt-5-4,
+20-openai/gpt-5-5, 20-openai/gpt-5-6, 20-openai/gpt-5-series, 20-openai/gpt-6,
+20-openai/gpt-oss, 20-openai/o3-mini, 21-xai/grok-3
+# 以下文件已排入补翻队列(子代理执行中/待执行): 01-deepseek 8 篇(janus/math/prover/r1/v2/v3/v4/v4-1-flash),
+02-kimi 5 篇(k2/k2-6/k2-7-code/k2-8-preview/k3), 03-qwen 11 篇(qwen/qwen2/qwen2-5/qwen2-5-coder/
+qwen2-vl/qwen3/qwen3-vl/qwen3-5/qwen3-6/qwen3-8/qwen3-next), 04-stepfun+05-mimo 6 篇,
+06-olmo 3 篇, 08-claude 8 篇(3-opus/3-sonnet/haiku-4-5/opus-4/opus-4-5/sonnet-4/sonnet-4-5/sonnet-5),
+09+11 共 12 篇(seed-1-5-thinking/seed-2-0/gemini-1-5/2-5/3-1-pro/3-5-flash/3-6-flash/3-7-flash/3-8-flash/3-flash/3-flash-lite),
+12-21 杂项 30 篇(gemma×4/chatglm/glm-4-5/4-5v/5v-turbo/hunyuan×3/ling-2-6/ling-lite/llama3/
+mistral×4/gpt-2/minimax-m2-1/m3/grok-4-5)
+01-deepseek 批次审过 2026-09-27: janus/math/prover/r1/v2/v3/v4-1-flash 核验已有译文零改动; deepseek-v4 补 4 段(mHC 对策/Pro-Base 评测总结/后训练一句/开发者调研), diff 纯插入, 术语标点合规
+02-kimi 批次审过 2026-09-27: k2/k2-6/k2-7-code/k2-8-preview/k3 全部区间核验已有译文, 零改动 (扫描假阳性已靠修正 scan-untranslated.py 消除: 含>=4汉字的行计为中文, zh阈值降为10汉字)
+03-qwen 批次一(qwen/qwen2/qwen2-5/qwen2-5-coder)审过 2026-09-27: qwen 补 11 段, qwen2-5 补 8 段, qwen2-5-coder 补 1 段, qwen2 零改动; 全部纯插入, 禁词 0
+03-qwen 批次二(qwen2-vl/qwen3/qwen3-vl/qwen3-5/qwen3-6/qwen3-8/qwen3-next)审过 2026-09-27: 补 41 段(qwen2-vl 15, qwen3 12, qwen3-vl 10, qwen3-5 1, qwen3-6 3), qwen3-8/qwen3-next 核验已有译文零改动; 全部纯插入, 禁词 0
+08-claude 批次审过 2026-09-27 (含中断前部分): 3-sonnet +26 行/sonnet-4 拆 6 行+补 4 段/sonnet-4-5 +72 行 均纯插入过审(sonnet-4-5 的"测时"命中为"评测时"误报); opus-4 行2742-2750 实为代码块内模型 transcript, 豁免; 附带修复 opus-4-bi.md 24 处 NUL 字节(arXiv 号前补:, 其余补 --); sonnet-5 新扫描已自然出清
+# 2026-09-27 父代理亲手补翻 (子代理周配额耗尽后): deepseek-v4 782段, mimo-7b 结论, mimo-v2-flash 摘要/结论/附录B,
+# olmo-3 BasicSkills, gemma-2 表20, glm-5v-turbo 摘要, 3d-2-1 引言, gpt-2 摘要+8.1尾+8.2两段,
+# step3-vl-10b 摘要/引言/路线图/定性结果/Table 8/评测细节/消融 共19段, claude-opus-4-5 全 60 段 10.3万字符;
+# 扫描脚本三处修正: ①含>=4汉字的行计为中文译文 ②含中文的图表题注计为浓缩译文 ③代码块```内部整段跳过+西文姓名列表豁免;
+# 重跑扫描: 76→33 文件, 292K→59K 字符, 剩余 33 文件全部为豁免类, 注明于 untranslated-scan.txt 尾部

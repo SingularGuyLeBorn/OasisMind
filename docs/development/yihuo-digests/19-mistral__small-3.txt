@@ -1,0 +1,81 @@
+# 19-mistral/small-3  文件: content/model-library/03-模型家族\19-mistral/small-3\small-3-bi.md  共 20 块
+
+--- 行21 [想] ---
+> 本页只在第 2 页说它 「far fewer layers than competing models」, 没给层数, 隐藏维度, 注意力头数, 词表大小, 上下文长度. 24B 是全页唯一的结构数字.
+
+
+--- 行49 [问] ---
+> 对不上. 10.9 ms/token 折合约 92 tokens/s (估算), 150 tokens/s 要约 6.7 ms/token (估算), 比图上最左的点还靠左. 图用的是 batch size 16, 如果 150 指别的测法 (比如单条请求), 页面没交代.
+
+
+--- 行56 [核对] ---
+> 不能. 散点图只有 Small 3, GPT-4o Mini, Gemma-2 27B, Qwen-2.5 32B 四个点, 没有 Llama 3.3 70B. 图上最接近的对比是 Qwen-2.5 32B, 15.1 对 10.9 ms/token, 约 1.4 倍 (估算).
+
+
+--- 行67 [看表] ---
+> 全页只有第 6 页预训练图里有 MMLU (5-shot), 读图 Small 3 base 约 80.3, 柱顶贴着 80 的刻度线. 81 在那张图上比柱顶高约 2 个像素, 在读图误差边上, 但从图上看不出 「over 81%」.
+
+
+--- 行86 [拆开] ---
+> 句子主语是 Mistral Small 3, 放在同时发布 base 和 instruct 两个 checkpoint 的段落里, 读起来两个都算. 可指令调优用的是什么数据, 多少条, 人写还是别的来源, 页面一句没提.
+
+
+--- 行111 [确认] ---
+> 都是输. 把两档 「better」 加起来: 对 Llama-3.3 70B 是 35.6 对 53.2, 对 GPT-4o mini 是 40.4 对 43.6. 第 2 页说和 Llama 3.3 70B instruct 「on par」, 这张图上 Small 3 落后 17.6 个点.
+
+
+--- 行114 [回看] ---
+> 53.0 + 27.0 + 9.0 + 11.0 正好 100, 所以不是漏印, 这一组确实没有 Ties. 其余四组都有 5.2 到 16.0 的平局. 为什么只有代码组没有, 是题型本身还是评审规则不同, 页面没说.
+
+
+--- 行121 [停一下] ---
+> 页面没写. 四组 generalist 的每个数都是 0.4 的整数倍, 能对上的最小样本是每组 250 条; 代码组的数都是 1.0 的整数倍, 却不是 0.4 的整数倍, 最小是 100 条 (都是估算, 实际可以是这些数的倍数). 4 × 250 + 100 = 1100, 和 「over 1k」 不冲突.
+
+
+--- 行136 [再看] ---
+> 图里的对手是 Gemma-2-27b-it, Qwen2.5-32B-Instruct, Llama-3.3-70B-Instruct 和 gpt-4o-mini. 只有 Llama 3.3 70B 接近三倍, 70 / 24 约 2.9 倍; Qwen 32B 约 1.3 倍, Gemma 27B 约 1.1 倍 (都是估算).
+
+
+--- 行150 [对一下] ---
+> 看起来是. 散点图读 66.6, 61.7, 53.6, 68.3, 这里读 0.662, 0.616, 0.534, 0.683, 差都在 0.5 个点以内, 属读图误差. GPQA main 上 Small 3 比 Llama 3.3 70B 低约 7.7 个点, 是八项里差得最多的一项.
+
+
+--- 行172 [想] ---
+> 对 Llama 3.3 70B: Wildbench, Arena Hard, MTBench 三项高, MMLU Pro 持平, GPQA main, HumanEval, Math Instruct, IFEval 四项低, 其中 HumanEval 只差约 0.5 个点, 在读图误差内. 对 gpt-4o-mini: MMLU Pro, GPQA main 两项高, MTBench 持平, 其余五项低. 对 Gemma-2-27b-it 八项全高.
+
+
+--- 行175 [问] ---
+> 页面没解释 MTBench 怎么换算成百分数, 也没说 Wildbench 的 52 是什么口径. 下一页只说这三项评审式基准用 gpt-4o-2024-05-13 当评审.
+
+
+--- 行188 [核对] ---
+> 页面没讨论. 三项评审式基准里 gpt-4o-mini 是 Wildbench 和 Arena Hard 的最高分, MTBench 和 Small 3 并列最高. 评审和被评模型同出一家, 有没有偏向, 页面没给对照.
+
+
+--- 行207 [看表] ---
+> 这里是 LLama 3.1 70B, 指令图里是 Llama-3.3-70B-Instruct, 版本号不一样. 第 7 页说 「rivals with models three times larger such as Llama 3.3 70B」, 可 base 对比的其实是 3.1. 对 Qwen 2.5 32B, 五项里 Small 3 base 只在 TriviaQA 上高, Math Maj@4 低约 19 个点.
+
+
+--- 行228 [拆开] ---
+> French 持平, 其余六种都是 Qwen 高, 差得最多的是 Chinese MMLU, 88.8 对 70.1, 约 18.7 个点 (估算). 对 LLama 3.1 70B, Small 3 base 六种高一点, Spanish 持平. 七种语言里 Korean 是四个模型都最低的一项.
+
+
+--- 行263 [确认] ---
+> 没写. 24B 参数按 4 bit 算, 权重约 12 GB; 按 8 bit 算约 24 GB (都是估算, 不含 KV cache 和激活). 页面没印 RTX 4090 的显存, 也没给量化后的分数.
+
+
+--- 行297 [回看] ---
+> 链接文字就是 「Hugging Face (base model)」. 第 2 页说 base 和 instruct 两个 checkpoint 都以 Apache 2.0 发布, 可这份渠道清单里没单列 instruct 的下载处.
+
+
+--- 行319 [停一下] ---
+> 本页没说. 它只说几周内会有小的和大的推理加强模型, 没给名字, 尺寸和底座. 这里也不能拿后来发布的型号去补.
+
+
+--- 行328 [再看] ---
+> 页面没展开缩写, 也没列 MRL 许可的模型名单. 这段只说方向: 通用模型往 Apache 2.0 走, 更长上下文等专门能力放在商业模型里.
+
+
+--- 行337 [对一下] ---
+> 不同期. 页脚是抓页时的站点外壳, 第 11 页印着 「Mistral AI © 2026」, 正文日期是 January 30, 2025. 这些产品名不是这篇公告的内容.
+

@@ -1,0 +1,21 @@
+# 16-llama/llama3-1  文件: content/model-library/03-模型家族\16-llama/llama3-1\llama3-1-bi.md  共 5 块
+
+--- 行11 [想] ---
+> 本页原文写着 "All the results presented in this paper are for the Llama 3.1 models, which we will refer to as Llama 3 throughout for brevity." 论文只有一篇 (arXiv 2407.21783v3). 全文说的 Llama 3 就是 3.1. 两个目录放的是同一份源文.
+
+
+--- 行18 [核对] ---
+> 表 1 里 Llama 3.1 8B, 70B, 405B 及其 Instruct 版都标 July 2024. 这张表在 llama3.md 里是同一页同一位置. 两份 md 字节相同, 没有哪一份多一行或少一行.
+
+
+--- 行31 [问] ---
+> 不用改. 本目录自带一份 `images/`, 39 个文件和 llama3 那边同名同哈希. `images/` 在两个目录里都能打开同一张图.
+
+
+--- 行296 [看表] ---
+> 有. 本页的 `p53-image.png` 和 `p53-chart.png` 在 llama3 目录里同名同哈希. 连抽取碎片都一样, 两份是同一次抽取后复制成两个目录.
+
+
+--- 行465 [确认] ---
+> 是. 两份都是 92 页, 都停在 Zhu 等人的 MiniGPT-4. 页数, 图数, 末条一致. 这一份没有 llama3 那份以外的内容.
+

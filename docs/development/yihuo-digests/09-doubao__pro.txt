@@ -1,0 +1,61 @@
+# 09-doubao/pro  文件: content/model-library/03-模型家族\09-doubao/pro\pro-bi.md  共 15 块
+
+--- 行41 [想] ---
+> 和 Llama3.1-405B 同为 88.6, 比 GPT4o-0806 的 88.7 低 0.1, 只比 Claude-3.5-Sonnet-latest 与 DeepseekV3 的 88.5 高 0.1; 再往下看 GPQA 行, 65.0 也只是和 Claude-3.5-Sonnet-latest 的 65.0 打平. 这两行都算不上领先, 0.1 的差距在上表里分不出高下.
+
+
+--- 行44 [问] ---
+> 两行都是 Gemini-exp-1205 第一: Math 89.7 对 88.6, 差 1.1; OlympiadBench 64.7 对 59.8, 差 4.9, 这是全表最大的一处落后. OlympiadBench 上 Doubao 对 DeepseekV3 的 59.1 也只多 0.7.
+
+
+--- 行47 [核对] ---
+> 没有. MBPP+ 行 Doubao 78.0, 排在 DeepseekV3 79.3, Gemini-exp-1205 78.6, GPT4o-0806 78.3 之后, 7 列里第 4; 真正赢的是 McEval (70.2 对 DeepseekV3 的 69.4) 和 FullStackBench (65.1 对 63.3). BBH 行 91.6 低于 Gemini 与 Claude 的 92.6, DeepseekV3 的 92.3, GPT4o 的 91.7, 只压过 Llama3.1-405B 和 Qwen2.5.
+
+
+--- 行50 [看表] ---
+> IFEVal 89.5 比 Gemini-exp-1205 的 89.8 低 0.3; SysBench 67.6 比 Gemini 与 Claude 并列的 69.0 低 1.4. 逐行数下来, 严格第一的是 MMLU_PRO, McEval, FullStackBench, DROP, CMMLU, C-Eval 共 6 行, GPQA 并列 1 行, 其余 7 行不是第一; 领先幅度最大的两行是中文组的 CMMLU (比第二名高 6.6) 和 C-Eval (比 DeepseekV3 高 5.3).
+
+
+--- 行53 [拆开] ---
+> 表里没有星号或颜色标记, 读者分不出来. 官方数各家用各自的 prompt 与 shot 数, 内部数走字节的平台, 两种来源排在同一行比; MMLU 差 0.1, BBH 差 0.1, IFEVal 差 0.3, MBPP+ 差 0.3 这类格子, 换一种评测设置就可能翻转, 在这张表里只能当持平读.
+
+
+--- 行56 [确认] ---
+> 页 1 正文说「基础模型能力全面提升」, 可表头的 GPT4o-0806, Claude-3.5-Sonnet-latest, Gemini-exp-1205 对外只有对话版; Qwen2.5 没写尺寸, DeepseekV3 没写 Base 还是 Chat, Doubao-1.5-pro 那一列也没写是哪个阶段的模型. 表头给的信息不够, 无法确认两边是同一类模型.
+
+
+--- 行75 [回看] ---
+> 不能. 这段和页 3 的 loss 图, 页 4 的 Performance 对比图都没有印出专家数, 每 token 激活的专家数, 总参数量或激活参数量, 只给了页 3 的「激活参数仅为稠密模型参数量 1/7」这一个相对值, 而那个稠密模型本身多大也没印. 稀疏比例是多少, 1/7 背后是哪两个绝对数, 读者都无从复算.
+
+
+--- 行86 [停一下] ---
+> 不够. 图的横轴 Tokens(T) 只画到约 8T, 正文说的是 9T tokens; 前约 1.4T, Doubao-MoE 曲线高于 Doubao-Dense, 之后低一些, 到 7T 以后两条线基本重合, 末端都落在约 1.60. 从 loss 读只是追平, 「略优于」的依据要到页 4 的 Performance 对比图去找.
+
+
+--- 行107 [再看] ---
+> 不是. 以 Doubao-Dense 为 100, Doubao-MoE 在 MATH 是 96.4, MMLU 是 99.2, 都低于稠密模型; MBPP 正好 100.0 打平; 明显领先的只有 GPQA 110.4 和 MMLU_PRO 107.5. 7 项简单平均约 102.0, 去掉 GPQA 与 MMLU_PRO 后剩余 5 项平均约 99.2, 「略优于」主要靠这两项撑起来.
+
+
+--- 行114 [对一下] ---
+> 证明不了. 图里 Llama3.1-405B 是 15T tokens 的最终结果, Doubao 两根柱是 9T tokens 的中间结果, 参数量, token 数, 数据分布三样同时不同; GPQA 那根 Llama 柱是斜线填充, 没有数值; MMLU 上 Llama 的 99.3 比 Doubao-MoE 的 99.2 还高 0.1, MMLU_PRO 上 Llama 的 106.9 高过 Doubao-Dense 的 100. 这张图只说明了各任务上的相对位置, 分不出是哪个因素起了作用.
+
+
+--- 行149 [想] ---
+> 图上 Prefill FFN 是强计算瓶颈, 右下的 Decode FFN 才是强访存瓶颈; 这段说 W4A8 降的是「稀疏 MoE 专家的访存开销」, 再靠跨 Query Batching 给 FFN 更多输入, 每个专家分到的 token 够多, 才稳在计算瓶颈一侧. 60% 是整个 Prefill 线上系统的 Tensor Core 利用率, 0.8 是 Prefill FFN 阶段的 MFU, 口径和范围都不同, 不能互相推.
+
+
+--- 行238 [问] ---
+> 8 行: TextVQA(val) 84.7 输给 Qwen2-VL-72B 的 85.5; ChartQA 88.0 排在 Claude3.5-Sonnet 的 90.8 和两个 88.3 之后, 第 4; Charxiv 两项都不是第一; MMStar, MMBench-en, MMBench-cn 三行都输给 InternVL-2.5-78B; Video-MME 74.1 输给 Gemini-2-flash 的 78.2; EgoSchema-subest 75.4 输给 Qwen2-VL-72B 的 80.6 和 InternVL 的 78.2. 领先最稳的是 MMMU 两行和 Mathematical Reasoning 三行.
+
+
+--- 行245 [核对] ---
+> 页 2 文本表用 GPT4o-0806, 理由是它在语言公开指标上优于其它版本; 这张视觉表换成 GPT4o-1120, 理由是它多模态更强. 两处都挑对手在该方向最强的版本, 比较更严格, 但两张表的 GPT4o 不能拼在一起看. Charxiv 一格塞了 RQ/DQ 两个数: RQ 54.4 低于 Claude3.5-Sonnet 的 60.2 和 Gemini-2-flash 的 55.2, DQ 84.3 低于 GPT4o-1120 的 86.5, 与 Claude 持平.
+
+
+--- 行277 [看表] ---
+> 上一页正文写 2.4B, 这张表的 Image#param. 一行印的是 24B. 按 2.4B 算, EVA-CLIP-18B 的 17.5B 约是它的 7.3 倍, 和「7 倍」对得上; 按 24B 算, 表里就没有比它更大的对手, 所以表格那一格是漏了小数点. 表内对比也不是全胜: ImageNet-1K 84.3 与 DFN5B-CLIP-H/14+ 打平, ImageNet-R 95.4 低于 InternVL-C 与 EVA-CLIP-18B 的 95.7, ImageNet-S 74.6 低于 EVA 的 74.7, AVG 83.9 只比 EVA 的 83.6 高 0.3.
+
+
+--- 行384 [拆开] ---
+> 只有 cons@k 一行: Doubao 86.7 对 O1 的 83.3, 可 Doubao 标的是 cons@32, O1-preview 和 O1 标的是 cons@64, 采样投票的次数不一样. pass@1 一行 Doubao 70.0 低于 O1 的 74.4, 只超过 O1-preview 的 44.6. 图里也没写 AIME 是哪一年的题.
+

@@ -1958,6 +1958,8 @@ We evaluate OLMo 2 using OLMES, a unified, standardized evaluation suite and too
 
 OLMo base models are evaluated on 11 tasks, consisting of 5 multiple-choice tasks, 2 generative tasks, and 4 additional held-out tasks not utilized during model development. See Table 20 for the list of tasks along with details of the task formulations following the principles of the OLMES standard (Gu et al., 2024), described further below.
 
+OLMo 基座模型在 11 个任务上评测, 包括 5 个多项选择任务, 2 个生成式任务, 以及 4 个开发过程中未使用的 held-out 任务. 任务清单与任务形式的细节见表 20, 遵循 OLMES 标准 (Gu et al., 2024) 的原则, 下文进一步说明.
+
 <table><tr><td>task</td><td>split</td><td># inst (total)</td><td># shots</td><td>metric</td><td>reference</td></tr><tr><td colspan="6">Multiple-choice tasks</td></tr><tr><td>ARC-Challenge (ARC_C)</td><td>Test</td><td>1172</td><td>5</td><td>pmi</td><td>(Clark et al., 2018)</td></tr><tr><td>BoolQ</td><td>Val</td><td>1000 (3270)</td><td>5</td><td>none</td><td>(Clark et al., 2019)</td></tr><tr><td>HellaSwag (HSwag)</td><td>Val</td><td>1000 (10042)</td><td>5</td><td>char</td><td>(Zellers et al., 2019)</td></tr><tr><td> $MMLU^{\dagger}$ </td><td>Test</td><td>14042</td><td>5</td><td>char</td><td>(Hendrycks et al., 2021a)</td></tr><tr><td>WinoGrande (WinoG)</td><td>Val</td><td>1267</td><td>5</td><td>none</td><td>(Sakaguchi et al., 2020)</td></tr><tr><td colspan="6">Generative tasks</td></tr><tr><td>DROP</td><td>Val</td><td>1000 (9536)</td><td>5</td><td>F1</td><td>(Dua et al., 2019)</td></tr><tr><td>Natural Questions (NatQs)</td><td>Val</td><td>1000 (3610)</td><td>5</td><td>F1</td><td>(Kwiatkowski et al., 2019)</td></tr><tr><td colspan="6">Held-out tasks</td></tr><tr><td>AGIEval English</td><td>Test</td><td>2646</td><td>1</td><td>MCF</td><td>(Zhong et al., 2024)</td></tr><tr><td>GSM8K</td><td>Test</td><td>1319</td><td>8 (CoT)</td><td>EM</td><td>(Cobbe et al., 2021)</td></tr><tr><td>MMLU-Pro</td><td>Test</td><td>12032</td><td>5</td><td>MCF</td><td>(Wang et al., 2024)</td></tr><tr><td>TriviaQA</td><td>Val</td><td>7993</td><td>5</td><td>F1</td><td>(Joshi et al., 2017)</td></tr></table>
 
 Table 20 Details of OLMES benchmarks used in OLMo 2 evaluation, with standardized choices of dataset split, number of instances to use, along with total number if sampling was used. For multiple-choice tasks, when using the Cloze/Completion Formulation (CF), the “metric” column specifies which normalization scheme to use. Following the OLMES standard, we evaluate each model using both the MCF (Multiple-Choice Formulation) and CF formulations, and the best performing one is used. For efficiency reasons, we limit MMLU and held-out multiple-choice evaluations to MCF only as all the relevant models strongly prefer that format for these tasks.
@@ -1965,6 +1967,8 @@ Table 20 Details of OLMES benchmarks used in OLMo 2 evaluation, with standardize
 表 20｜Details of OLMES benchmarks used in OLMo 2 evaluation, with standardized choices of dataset split, number of instances to use, along with total number if sampling was used. For mul
 
 **Multiple-choice tasks** We use the formulation of the 10 multiple-choice tasks defined in the OLMES evaluation standard (Gu et al., 2024). OLMES (Open Language Model Evaluation Standard) is a set of principles and associated standard (with a reference implementation in the OLMES system framework) for reproducible LM evaluations that is open, practical, and documented, providing recommendations guided by experiments and results from the literature (Biderman et al., 2024; Gao et al., 2023). For multiple-choice tasks it is designed to support comparisons between smaller base models that require the cloze/completion formulation of multiple-choice questions (score each answer completion separately) against larger models that can utilize the multiple-choice formulation. To make our evaluations reproducible, we follow the OLMES standard in prompt formatting, choice of in-context examples, probability normalization, and all other details. See Table 20 and see Gu et al. (2024) for more details.
+
+**多项选择任务** 我们使用 OLMES 评测标准 (Gu et al., 2024) 定义的 10 个多项选择任务的形式. OLMES (Open Language Model Evaluation Standard) 是一套原则与配套标准 (在 OLMES 系统框架中有参考实现), 面向可复现的语言模型评测, 开放, 实用, 有文档, 其建议由文献中的实验与结果支撑 (Biderman et al., 2024; Gao et al., 2023). 对于多项选择任务, 它旨在支持两类模型的对比: 需要 cloze/completion 形式 (对每个答案续写分别打分) 的较小基座模型, 与可以使用多项选择形式的较大模型. 为保证评测可复现, 我们在 prompt 格式, in-context 样例选择, 概率归一化等所有细节上都遵循 OLMES 标准. 详见表 20 与 Gu et al. (2024).
 
 **Generative tasks** Following the principles of OLMES (Gu et al., 2024), such as prompt formatting and having 5-shot curated in-context examples, we also evaluated on a suite of generative tasks, OLMES-Gen. This suite covers factual knowledge tasks (Natural Questions (Kwiatkowski et al., 2019) and Jeopardy (MosaicML, 2024)) and tasks testing reading comprehension (SQuAD (Rajpurkar et al., 2016), DROP (Dua et al., 2019), and
 
@@ -1974,19 +1978,31 @@ Table 20 Details of OLMES benchmarks used in OLMo 2 evaluation, with standardize
 
 CoQA (Reddy et al., 2019)). For CoQA, the task comprises presenting a passage followed by a conversation so far, where each turn in the conversation contains a question and an answer. In this case, the previous question and answer pairs serve to guide the model in terms of the output format, and we do not include additional few-shot examples. For all other tasks, we follow OLMES in using 5-shot curated in-context examples. As the list of gold answers for these tasks are often incomplete, we use F1 as the primary metric to give partial credit when models produce answers that partially match. The task details of OLMES-Gen are summarized in Table 20.
 
+**生成式任务** 遵循 OLMES (Gu et al., 2024) 的原则 (如 prompt 格式, 使用 5-shot 精选 in-context 样例), 我们还在一组生成式任务 OLMES-Gen 上评测. 该套件覆盖事实性知识任务 (Natural Questions (Kwiatkowski et al., 2019) 与 Jeopardy (MosaicML, 2024)), 以及考察阅读理解的任务 (SQuAD (Rajpurkar et al., 2016), DROP (Dua et al., 2019) 与 CoQA (Reddy et al., 2019)). 对 CoQA, 任务是给出一段文本与截至目前的一段对话, 对话每轮包含一问一答; 此时前面的问答对本身即引导模型按该格式输出, 因此我们不再加 few-shot 样例. 其余任务均按 OLMES 使用 5-shot 精选 in-context 样例. 由于这些任务的标准答案列表常常不完整, 我们以 F1 为主指标, 对部分匹配的答案给部分分. OLMES-Gen 的任务细节汇总于表 20.
+
 **Held-out tasks** We also evaluate on a held-out suite of tasks that were not used when making decisions during model development. This suite includes advanced admission and qualification exams (AGIEval English<sup>36</sup> (Zhong et al., 2024)), tasks believed to be challenging to LMs (BigBenchHard, BBH; Suzgun et al., 2022), math reasoning (GSM8K; Cobbe et al., 2021), a more challenging and reasoning-focused extension of MMLU (MMLU Pro; Wang et al., 2024), and an unseen factual knowledge task (TriviaQA; Joshi et al., 2017). We use existing in-context examples where available - for GSM8K, we use the 8-shot CoT examples from Wei et al. (2023); for BBH we use the 3-shot CoT prompts from the original dataset; in evaluating MMLU-Pro, we used 5-shot examples from the original dataset. We use a 1-shot (with passage context, no CoT) prompt for AGIEval English, and a manually curated 5-shot examples from the train set for TriviaQA. Note that for the case of GSM8K, we never evaluated our models on the entire test set during the development stage, instead we use 200 examples to inform choices during development (e.g., choices of annealing mixtures); in Section 4 we refer to this 200-example subset as GSM\*.
 
+**Held-out 任务** 我们还在一组 held-out 任务上评测, 它们未用于模型开发中的任何决策. 该套件包括高级入学与资格考试 (AGIEval English<sup>36</sup> (Zhong et al., 2024)), 被认为对语言模型有挑战的任务 (BigBenchHard, BBH; Suzgun et al., 2022), 数学推理 (GSM8K; Cobbe et al., 2021), 更难且侧重推理的 MMLU 扩展 (MMLU Pro; Wang et al., 2024), 以及一个未见过的知识问答任务 (TriviaQA; Joshi et al., 2017). 只要已有现成的 in-context 样例我们就直接使用: GSM8K 用 Wei et al. (2023) 的 8-shot CoT 样例; BBH 用原始数据集的 3-shot CoT prompt; MMLU-Pro 用原始数据集的 5-shot 样例. AGIEval English 用 1-shot (带篇章上下文, 无 CoT) prompt, TriviaQA 用从训练集人工精选的 5-shot 样例. 注意, 对 GSM8K 我们开发阶段从不在整个测试集上评测, 只用 200 个样例来指导开发中的选择 (如退火混合数据的选择); 第 4 节中我们把这 200 个样例的子集记为 GSM\*.
+
 We make all implementations publicly available at [github.com/allenai/olmes.](https://github.com/allenai/olmes)
+
+所有实现均在 [github.com/allenai/olmes](https://github.com/allenai/olmes) 公开发布.
 
 ### A.2 Instruct Model Eval
 
 **Instruct tasks** We perform instruct model evaluation based on existing practices in current literature using the OLMES benchmark suite (Gu et al., 2024) using the configuration reported in Lambert et al. (2024).
 
+**Instruct 任务** 我们基于当前文献中的已有实践评测 instruct 模型, 使用 OLMES 基准套件 (Gu et al., 2024), 并采用 Lambert et al. (2024) 报告的配置.
+
 See Table 21 for a list of instruct tasks along with their configurations. These tasks include chat variations of our held-out tasks (GSM8k; Cobbe et al., 2021, BBH; Suzgun et al., 2022), additional long-tail knowledge (PopQA; Mallen et al., 2022), misconception (TruthfulQA; Lin et al., 2021) and instruction-following tasks (IFEval; Zhou et al., 2023, AlpacaEval 2; Dubois et al., 2024). For our MMLU instruct evaluation, we use the CoT version from Lambert et al. (2024) using their prompt asking the model to “summarize” its reasoning before answering the question. We evaluate Python code completion (HumanEval; Chen et al., 2021, HumanEval+; Liu et al., 2023b) and competition MATH (Hendrycks et al., 2021b) with the same setup and answer extraction in OLMES.
+
+instruct 任务清单及配置见表 21. 这些任务包括 held-out 任务的 chat 变体 (GSM8k; Cobbe et al., 2021, BBH; Suzgun et al., 2022), 长尾知识 (PopQA; Mallen et al., 2022), 认知误区 (TruthfulQA; Lin et al., 2021) 与指令遵循任务 (IFEval; Zhou et al., 2023, AlpacaEval 2; Dubois et al., 2024). MMLU 的 instruct 评测使用 Lambert et al. (2024) 的 CoT 版本, 其 prompt 要求模型在作答前先 "summarize" 推理过程. Python 代码补全 (HumanEval; Chen et al., 2021, HumanEval+; Liu et al., 2023b) 与竞赛数学 MATH (Hendrycks et al., 2021b) 沿用 OLMES 相同的设置与答案抽取方式.
 
 ## B OLMo 2 1B
 
 While the goal of this work is to develop development recipes for our target 7B, 13B and 32B sizes, often it is useful to perform experimentation at the 1B model size. We define OLMo 2 1B similar to OLMo 2 7B, but with the following departures:
+
+本工作的目标是为 7B, 13B 与 32B 规模开发训练配方, 但在 1B 规模上做实验往往很有用. OLMo 2 1B 的定义与 OLMo 2 7B 类似, 但有如下偏离:
 
 • **Layers:** 16 instead of 32
 
@@ -2014,9 +2030,15 @@ Table 21 Details of OLMES benchmarks used for to evaluate OLMo 2-Instruct. CoT a
 
 we have found scaling the number of training tokens for OLMo 2 1B to be difficult.
 
+我们的 OLMo 2 配方是用 OLMo 2 1B 模型 (附录 B) 开发出来的, 如表 6 有竞争力的结果所示, 这些发现能很好地推广到 7B, 13B 与 32B 规模. 但我们也发现, 为 OLMo 2 1B 扩大训练 token 数量是困难的.
+
 **Training** We pretrain OLMo 2 1B to 4 trillion tokens on OLMo 2 Mix 1124 and perform a single 50B token anneal on Dolmino Mix 1124. Similar to OLMo 2 7B, we use 2000 steps of warmup, set the schedule to 5 trillion tokens but truncate at the 4 trillion mark. We use a higher peak learning rate of 4.0 ⋅ 10E−4.
 
+**训练** 我们在 OLMo 2 Mix 1124 上将 OLMo 2 1B 预训练到 4 万亿 token, 并在 Dolmino Mix 1124 上做单次 50B token 的退火. 与 OLMo 2 7B 类似, 我们使用 2000 步 warmup, 训练计划设为 5 万亿 token, 但在 4 万亿处截断. 峰值学习率用更高的 4.0 ⋅ 10E−4.
+
 Base Results Table 22 presents experimental results on our main base model evaluation suite. We find that while OLMo 2 remains competitive with other similarly-sized models like SmolLM 2, it lags behind the smaller Gemma 2 and Qwen 2.5 base models.
+
+基座结果 表 22 给出了主基座模型评测套件上的实验结果. 我们发现, OLMo 2 虽然与 SmolLM 2 等相近规模模型相比仍有竞争力, 但落后于规模更小的 Gemma 2 与 Qwen 2.5 基座模型.
 
 <table><tr><td rowspan="2">Model</td><td rowspan="2" colspan="2">Avg FLOPs</td><td colspan="6">Dev Benchmarks</td><td colspan="4">Held-out Evals</td></tr><tr><td>MMLU</td><td> $ARC_C$ </td><td>HS</td><td>WG</td><td>NQ</td><td>DROP</td><td>AGI</td><td>GSM</td><td> $MMLU_P$ </td><td>TQA</td></tr><tr><td colspan="13">Open-weights models 1-2B Parameters</td></tr><tr><td>Qwen 2.5 1.5B</td><td>51.5</td><td>1.7</td><td>61.4</td><td>77.3</td><td>67.0</td><td>65.4</td><td>17.7</td><td>36.4</td><td>47.9</td><td>63.2</td><td>29.9</td><td>49.1</td></tr><tr><td>Gemma 2 2B</td><td>47.9</td><td>0.2</td><td>53.1</td><td>67.4</td><td>74.4</td><td>70.8</td><td>24.1</td><td>36.9</td><td>38.4</td><td>26.8</td><td>22.2</td><td>65.2</td></tr><tr><td colspan="13">Fully-open models</td></tr><tr><td>SmolLM 2 1.7B</td><td>44.7</td><td>1.1</td><td>50.9</td><td>62.0</td><td>73.3</td><td>66.9</td><td>19.1</td><td>26.5</td><td>35.3</td><td>30.3</td><td>22.0</td><td>60.6</td></tr><tr><td>OLMo 2 1B</td><td>43.7</td><td>0.4</td><td>44.3</td><td>51.3</td><td>69.5</td><td>66.5</td><td>20.8</td><td>34.0</td><td>36.3</td><td>43.8</td><td>16.1</td><td>54.7</td></tr></table>
 
@@ -2036,9 +2058,15 @@ Table 23 OLMo 2-Instruct 1B’s performance vs open-weights models of comparable
 
 or Gemma 2. We hypothesize that below a certain model size, the optimal pretraining recipe may require the inclusion of task-specific data, such as that seen in supervised fine-tuning (SFT) to achieve non-random performance over more challenging tasks in our evaluation suite. Better performance could also be achieved by distilling from a more powerful model, a strategy used by the smaller Gemma 2 models.
 
+**分析** 我们推测 OLMo 2 1B 在预训练 token 效率上的挣扎可能源于模型容量: OLMo 2 比 Qwen 2.5 或 Gemma 2 等竞争模型家族的最小变体还要小. 我们假设, 低于某个模型规模后, 最优预训练配方可能需要加入任务特定数据 (如监督微调 (SFT) 中见到的那些), 才能在我们的评测套件中更具挑战性的任务上取得非随机水平的表现. 另一个途径是从更强的模型蒸馏, 较小的 Gemma 2 模型采用的正是这一策略.
+
 For example, Table 9 shows the benefit of Dolmino Mix 1124 is higher with smaller base models: +37.0% for the 1B model, +18.7% for the 7B model, +15.9% for the 13B model, and +12.3% for the 32B model. These results also show that OLMo 2 1B with only Stage 1 pretraining struggles to break out of random performance for multiple-choice formatted tasks (25% for MMLU and ARC Challenge, 10% for MMLU Pro).
 
+例如, 表 9 显示 Dolmino Mix 1124 的收益随基座模型变小而增大: 1B 模型 +37.0%, 7B 模型 +18.7%, 13B 模型 +15.9%, 32B 模型 +12.3%. 这些结果还表明, 只经过 Stage 1 预训练的 OLMo 2 1B 在多项选择格式的任务上难以突破随机水平 (MMLU 与 ARC Challenge 为 25%, MMLU Pro 为 10%).
+
 As further evidence of this, Table 23 shows that applying our same OLMo 2-Instruct post-training recipe to OLMo 2 1B results in OLMo 2-Instruct 1B with highly competitive performance to even Qwen 2.5 and even Gemma 3.
+
+进一步的证据是表 23: 把我们同一套 OLMo 2-Instruct 后训练配方应用到 OLMo 2 1B 上, 得到的 OLMo 2-Instruct 1B 即使与 Qwen 2.5 乃至 Gemma 3 相比也极具竞争力.
 
 <!-- page 52 of 58 -->
 
@@ -2048,15 +2076,23 @@ As further evidence of this, Table 23 shows that applying our same OLMo 2-Instru
 
 All of the models used to generate preference data for OLMo 2-Instruct are listed in Table 25. The prompt sources for the preference datasets are listed in Table 27 – for more information on their contents, refer to Lambert et al. (2024). The hyperparameters used to train the reward models for RLVR value network initialization are shown in Table 26.
 
+为 OLMo 2-Instruct 生成偏好数据所用的全部模型列于表 25. 偏好数据集的 prompt 来源列于表 27, 其内容详见 Lambert et al. (2024). 用于训练奖励模型 (RLVR value network 初始化用) 的超参数见表 26.
+
 ### C.2 Additional RLVR Learning Curves
 
 The additional 13B RLVR learning curves of can be found at Figure 18, Figure 19, and Figure 20.
+
+13B 的额外 RLVR 训练曲线见 图 18, 图 19 与 图 20.
 
 ### C.3 OLMo 2-Instruct Preview Models
 
 We made an initial release3 prior to this report. However, soon after the release, a tokenizer issue came to our attention: **Our base model’s pre-tokenization logic differs from our instruct model’s tokenizer.**
 
+在本报告之前我们做过一次初始发布3. 然而发布后不久, 一个 tokenizer 问题引起了我们的注意: **我们基座模型的预分词逻辑与 instruct 模型的 tokenizer 不一致.**
+
 Specifically, the OLMo-2 base models utilized the GPT2Tokenizer tokenizer class, with custom pre-tokenization logic (e.g., on splitting or truncating sequences), which is lost during the instruct model’s training. Figure 17 shows the filediff between the base model’s tokenizer.json and the instruct model’s tokenizer.json.
+
+具体而言, OLMo-2 基座模型使用 GPT2Tokenizer tokenizer 类, 带有自定义的预分词逻辑 (例如序列的切分或截断), 而这部分逻辑在 instruct 模型的训练过程中丢失了. 图 17 展示了基座模型与 instruct 模型的 tokenizer.json 之间的文件 diff.
 
 ![Image block](images/p52-figure-17-the-file-diff-between-the-olmo-2-instruct-and.png)
 
@@ -2066,7 +2102,11 @@ Figure 17 The file diff between the OLMo 2-Instruct and OLMo 2-Instruct Preview�
 
 Because of this, we have decided to retrain our OLMo 2-Instruct models to be consistent with our base models and mark the existing post-trained models as preview models.
 
+因此, 我们决定重训 OLMo 2-Instruct 模型, 使其与基座模型保持一致, 并将已有的后训练模型标记为 preview 版本.
+
 Nevertheless, the OLMo 2-Instruct Preview learning curves can be found at Figure 21 and Figure 22.
+
+不过, OLMo 2-Instruct Preview 的训练曲线仍可在 图 21 与 图 22 查看.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">37<a href="https://allenai.org/blog/olmo2"><sub>https</sub>://allenai.org/blog/olmo2</a></span></small>
 

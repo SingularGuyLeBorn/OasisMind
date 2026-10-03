@@ -1,0 +1,41 @@
+# 11-gemini/gemini  文件: content/model-library/03-模型家族\11-gemini/gemini\gemini-bi.md  共 10 块
+
+--- 行23 [想] ---
+> 这页没说. Deep Think 只在第 1 页头图和第 13 页 「Gemini Ecosystem」 轮播里出现, 第 3 到 7 页的 Models 清单 (3.8 Flash, 3.5 Flash-Lite, 3.1 Pro, 3.5 Pro) 没有它, 第 9 页的表也没有它. 它和 3.1 Pro 共用 3.1 这个版本号, 但页上没有一句话把两者连起来, 是 3.1 Pro 多给 TestingTime 的一种用法, 还是另一套权重, 从这页读不出来. 它的 「Try in Gemini」 按钮和下一张头图的同名按钮 URL 一字不差, 都不带型号参数, 按钮本身不会替你选中 Deep Think.
+
+
+--- 行38 [问] ---
+> 看链接. 同屏的 「Try in Google AI Studio」 带 model=gemini-3.8-flash, 是全页唯一在 URL 里点名版本的试用入口; 第 2 页又用同一句 「frontier intelligence with action」 介绍 「latest series of models」. 所以这句口号跟的是 3.8 Flash 这一批, 不是上一张的 Deep Think. MinerU 把第一张头图的标题当成了整页标题, 这页其实是 Gemini 家族的总览页.
+
+
+--- 行85 [核对] ---
+> 不指向版本. 标题, 副标题和第 4 页的 Learn more 都链到 /models/gemini/flash/, 路径里没有 3.8; 3.5 Flash-Lite 链到 /flash-lite/, 3.1 Pro 链到 /pro/, 同样不带版本. 版本号只写在链接文字里, 同一个 URL 以后换成哪一代, 页上看不出来. 全页带版本号的 URL 只有三处: 第 1 页 AI Studio 的 gemini-3.8-flash, 第 9 页评测方法的 gemini-3-8-flash, 第 12 页安全报告的 gemini-3-pro.
+
+
+--- 行189 [看表] ---
+> 不是. 14 行分数里它 8 行第一, 2 行第二 (DeepSWE 比 Claude Opus 5 低 0.3 点, BioMysteryBench 人类可解一档), 2 行第三 (GDP.PDF, OSWorld-2.0), 2 行第四 (GDPVal-AA 的 1545 Elo, Terminal-bench 4.0 的 19.1%). 差距最大的是 Terminal-bench 4.0, Claude Opus 5 是 51.8%, 高出 32.7 点. 反过来, 第一的几行里 Terminal-bench 2.1 和 CharXiv 只领先 0.3 点, HLE-Verified 只领先 0.4 点.
+
+
+--- 行200 [拆开] ---
+> 是 2027 年起的价. 脚注把两个数对上了: 推广价 $0.75 / $3.75 到 2026 年底为止, 之后输入 $1.50, 输出 $7.50, 正好是括号里的 regular. 两代 Flash 价格完全一样, 表里它们的差别只剩分数. 按 regular 价算, 3.8 Flash 输入仍低于表里最便宜的 $2.00 (Claude Sonnet 5, GPT-5.6 Terra), 输出 $7.50 也低于其余四列里最低的 $10.00.
+
+
+--- 行211 [确认] ---
+> 只有 3.8 Flash. 紧跟标题的 p09-google-deepmind.png 是 Chromancers 截图, 第 10 页的说明也只写 3.8 Flash, 全页找不到一个 Flash-Lite 的演示. 另外游戏贴图是 Nano Banana 生成的, 第 15 页页脚把 Nano Banana 链到 /models/gemini-image/, 是另一个图像模型, 所以这个演示不全是 3.8 Flash 一个模型的产出.
+
+
+--- 行252 [回看] ---
+> 不是. Loopit 的字标是前一张 p10-image.png; 这一张只是一个被裁掉的黑色字母残片, 紧跟在 Loopit 字标后面, 像轮播里露出一角的下一家公司标志, 页上认不出是谁. 文件名是 MinerU 按紧邻的引语起的. Glean 那段引语也残缺, 「long-running many tasks as Gemini 3.7 Flash in our e」 缺了比较的另一半, 不能拿来当 「3.8 比 3.7 强多少」 的证据.
+
+
+--- 行273 [停一下] ---
+> 页上没有它的入口. Models 清单里 Flash 是 3.8, 3.5 这一代只列了 Flash-Lite 和待发布的 3.5 Pro; 3.5 Flash 只在这张视频卡的标题里出现一次, 没有链接. 这是比 3.8 早的一代 Flash, 页面把旧型号的客户案例摆在新型号旁边, 「并行子智能体做长周期分析」 不能算到 3.8 Flash 头上. 同页两个 「Build with Gemini」 链接也不同: 一个去 Cloud 控制台的 agent-platform, 带箭头的那个去 Antigravity 的介绍博客.
+
+
+--- 行326 [再看] ---
+> 指向 fsf-reports/gemini-3-pro/, 是 Gemini 3 Pro 的报告, 路径里的 fsf 与页脚 「Frontier safety」 对应. Gemini 3 Pro 不在本页 Models 清单里, 也不是 3.8 Flash, 3.1 Pro 或 3.1 Deep Think. 全页没有 3.8 Flash 的安全报告链接, 这段安全表态和上面的榜单说的不是同一个模型.
+
+
+--- 行359 [对一下] ---
+> 页上没说. 它链到 /models/gemini/cyber/, 和 3.8 Flash 的 /flash/ 是两个页面, 定位是找漏洞, 修漏洞, 第 9 页的表也没有它的分数. 名字里带 3.8 Flash, 但是不是同一套权重, 这页没有证据. 同屏两个 Learn more 一个去 /cyber/, 一个去 /deep-think/, 后者和第 1 页 Deep Think 的链接相同.
+

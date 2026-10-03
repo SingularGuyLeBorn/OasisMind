@@ -1,0 +1,49 @@
+# 11-gemini/gemini-3-1-pro  文件: content/model-library/03-模型家族\11-gemini/gemini-3-1-pro\gemini-3-1-pro-bi.md  共 12 块
+
+--- 行21 [确认] ---
+> 不是. 本地 PDF 共 7 页, 文档标题是 「Gemini 3.1 Pro - Model Card」 加站点名, 生成器是 HeadlessChrome 和 Skia, 最后两页是 DeepMind 网站页脚, 说明它是网页打印件. 链接指向 storage.googleapis.com 上的那份 PDF, 本目录里没有. gemini-3 目录的 3 Pro 卡在 Model dependencies 里给 3.1 Pro 挂的也是这个 URL, 两处链接至少指向同一个文件名. 网页上的数字和那份 PDF 里的数字是不是同一张卡, 手头没有那份 PDF, 核对不了. 下文所有数字只代表网页版.
+
+
+--- 行32 [核对] ---
+> 三个日期互不冲突, 一个到日, 两个到月. 但第 6 页 「Latest model cards」 列出了 Gemini 3.8 Flash, 3.6 Flash 和 3.5 Flash-Lite, 本地 PDF 的元数据显示打印时间是 2026-09-25. 卡片上一段自己也说会不定期更新. 能确认的只有一点: 九月抓到的网页仍标 February 2026, 页面上没有 「Last Updated」 字段. gemini-3 目录里的 3 Pro 卡写了 Last Updated: May 2026, 这张没有. 二月以后改没改过, 这 7 页看不出来.
+
+
+--- 行87 [问] ---
+> 这张卡没说. Model dependencies 一节只有一句 「Gemini 3.1 Pro is based on Gemini 3 Pro.」, 没说是继续训练, 换了后训练数据, 还是只调了推理配置. 3 Pro 卡把 3.1 Pro 列进 「Gemini 3 Pro family」, 说家族后续模型都 「based on Gemini 3 Pro」, 措辞对得上, 也没展开. 输入 1M, 输出 64K 这两个数和 3 Pro 卡一字不差. 能看到的差别只在评测表和安全表上, 架构层面的改动这 7 页里没有一个字.
+
+
+--- 行187 [拆开] ---
+> 分成数字和标签两件事看. 数字: 3 Pro 的 45.8% 两张卡相同, No tools 的 37.5% 也相同, 像是直接沿用了 2025 年 11 月的结果. 标签: 这边多了 「blocklist」 和 「full set, text + MM」 两个限定. 如果 3 Pro 当时也是屏蔽名单搜索加全集, 那只是旧卡写得简略; 如果当时没有 blocklist, 这一格的 45.8% 和 3.1 Pro 的 51.4% 就不在同一口径上. 卡上没说是哪种, 方法论链接指向的页面也不在本目录.
+
+
+--- 行198 [看表] ---
+> 设置名略有不同: 3 Pro 卡写 「Terminus-2 agent」, 这里写 「Terminus-2 harness」. 这是两张卡共有的基准里, 唯一一行 3 Pro 的数和 3 Pro 自己的卡对不上. 其余共有行一个数都不差, 所以这一行更像是重跑过, 不像抄错. 卡上没给重跑原因. 3.1 Pro 的 68.5% 对 3 Pro 卡的 54.2% 是 +14.3, 对本表的 56.9% 是 +11.6, 用哪个基线差出 2.7 个点. 另外 「Other best self-reported harness」 一行只有两个 GPT 列有数, Gemini 两列是空的, 这一行不能拿来比 Gemini.
+
+
+--- 行201 [对一下] ---
+> 都对不上. 85.3% 离 85.4% 只差 0.1, 但不相等; 两个子域的平均是 91.65%, 差得更远. 3 Pro 卡没说 85.4% 汇总了哪几个领域. 这一行换了口径: 旧卡报一个汇总数, 新卡报两个子域, 两边不能直接相减. 名字从 「τ2-bench」 变成 「t2-bench」, 应该只是字符替换.
+
+
+--- 行204 [再看] ---
+> 3 Pro 列和 3 Pro 卡完全一致的有 10 格: HLE 两行 (37.5%, 45.8%), ARC-AGI-2 (31.1%), GPQA Diamond (91.9%), LiveCodeBench Pro (2439), SWE-Bench Verified (76.2%), MMMU-Pro (81.0%), MMMLU (91.8%), MRCR v2 的 128k (77.0%) 和 1M (26.3%). 这 10 格可以拿 3.1 Pro 的数直接比. 3 Pro 卡有而这里去掉的是 AIME 2025, MathArena Apex, ScreenSpot-Pro, CharXiv Reasoning, OmniDocBench 1.5, Video-MMMU, Vending-Bench 2, FACTS Benchmark Suite, SimpleQA Verified, Global PIQA, 共 10 个. 新增的 SWE-Bench Pro, SciCode, APEX-Agents, GDPval-AA, MCP Atlas, BrowseComp 六个, 3 Pro 列的数旧卡上没有, 是新测的. 列名上 3 Pro 这里标 「Thinking (High)」, 旧卡只写 「Gemini 3 Pro」; 数字没变, 所以要么旧卡那一列本来就是 High 档, 要么标签是后补的, 卡上没说. ARC-AGI-2 的描述从 「Visual reasoning puzzles」 改成 「Abstract reasoning puzzles」, 数字没动.
+
+
+--- 行207 [回看] ---
+> 有两行. MMMU-Pro 上 3.1 Pro 80.5%, 3 Pro 81.0%, 低 0.5 个点. MRCR v2 1M (pointwise) 两者都是 26.3%. 另外 MMMLU 只高 0.8, Telecom 只高 1.3. 大幅领先集中在 ARC-AGI-2 (+46.0), BrowseComp (+26.7), APEX-Agents 和 MCP Atlas (各 +15.1), Terminal-Bench (+11.6), SWE-Bench Pro (+10.9). 原句说的是 「across a range of benchmarks」, 不是每一行都领先.
+
+
+--- 行293 [停一下] ---
+> 网页说改进标绿, 退步标红, 但本地 PDF 里这五个数字是同一种灰色 (0x45474d), 颜色信息网页打印件没留下来. 只能借 3 Pro 卡反推: 那张卡的 Text to Text 是 -10.4%, 同时被说成安全更好; 带 (non-egregious) 的都是正数. 也就是说, 安全类指标负号是改进, 正号是退步, 退步才要注明 「不严重」. 照这个读法, 3.1 Pro 的 Text to Text +0.10% 和 Multilingual +0.11% 是轻微退步, Image to Text -0.33% 是改进, Tone +0.02% 按脚注是改进, Unjustified-refusals -0.08% 是不当拒答略少. 三项安全里两项小幅退步, 正文 「outperforms across both safety and tone」 只能理解成幅度都在 0.33 个点以内. 这个符号约定是从旧卡推出来的, 本卡没写.
+
+
+--- 行304 [核对] ---
+> 表头写的是 「Gemini 3.1 Pro vs. Gemini 3 Pro」. 两条脚注和 3 Pro 卡的脚注一字一样, 是原样搬过来的. 3 Pro 卡比的是 2.5 Pro, 「compared to Gemini 2.5 Pro」 在那边是对的, 搬到这里对象就错了. 下一段的 「The performance results reported below」 也一样, 表其实在上面. 读这张表以表头为准, 对比对象是 3 Pro.
+
+
+--- 行369 [想] ---
+> 不是同一个配置, 读每一行要看括号. 3 Pro 卡正好反过来: 以 3 Pro 本体为主, 只附一句 Deep Think 的结果与之一致. Deep Think 是推理阶段多花算力的 TestingTime 模式, 两张卡的主评配置不同, 逐行对比要先认清这一点. 能对上的几处也有缺口: 有害操纵的 3.6 倍这里说和 3 Pro 相同, 但 3 Pro 卡没写 3.6 这个数; RE-Bench 的 3 Pro 基线 1.04 也不在 3 Pro 卡上, 那张卡只说总分远低于阈值. 未对齐一行, 3 Pro 卡写的是 3/11 个情境感知挑战和 1/4 个隐蔽挑战, 这里说有三个 「没有其他模型能稳定解出」 的挑战成功率接近 100%. 3 Pro 当时解出的三个是不是这三个, 两张卡都没列名字, 对不上. 这些 3 Pro 基线大概来自 Gemini 3 Pro FSF 报告, 那份报告不在本目录.
+
+
+--- 行422 [确认] ---
+> 没有. 三张都是网站小图标, 文件只有 741 到 1369 字节: p06-la-test-model-c 那张是一个方框图标, p06-image 是 X 的标志, p06-sign-up 那张是 Instagram 的标志. 文件名是 MinerU 按旁边的文字起的, 和图片内容无关. 这张卡的数据全部在表格里, 没有一张数据图.
+

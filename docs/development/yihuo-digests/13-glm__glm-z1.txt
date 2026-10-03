@@ -1,0 +1,81 @@
+# 13-glm/glm-z1  文件: content/model-library/03-模型家族\13-glm/glm-z1\glm-z1-bi.md  共 20 块
+
+--- 行15 [核对] ---
+> 是界面图标. PDF 文字层第 1 页在 「Community」 后面跟着一个单独的 「3」. 把 PDF 第 1 页渲染出来看, Community 标签右边是一个黑底白字的 3, 左边是一个黄色手形图标, 和 `p01-image.png`, `p01-search-models-datasets-users.png` 的画面对得上. 后者的文件名来自页眉搜索框, 可它的画面和页眉左上角的 Hugging Face 笑脸标志不一样, 对得上的是 Community 标签的图标. 两个文件都不到 1.5KB, 第 1 页没有结构图, 也没有数据图.
+
+
+--- 行22 [停一下] ---
+> 卡上没有解释. 全卡找不到发布日期, 也找不到 「April」 这个词. 0414 在这张卡里是一个系列后缀: 正文提到的 GLM-4-32B-0414, GLM-4-32B-Base-0414, GLM-Z1-Rumination-32B-0414, GLM-Z1-9B-0414 都带它, 第 2 页的合集也叫 「GLM-4-0414 Collection」. 按常见的命名习惯可以读成 4 月 14 日, 但页面没这么说, 年份更是一个字都没有. 卡上带日期的只有两处: 合集的 「Updated Mar 2」 没写年份, 论文的 「Published Jun 18, 2024」 是那篇论文的日期. 所以 0414 只能当作名字的一部分照录, 不能写成发布日.
+
+
+--- 行129 [想] ---
+> 不完全是. 第 1 页 Safetensors 栏印的是 「Model size 33B params」, 仓库名写的是 32B. 第 2 页正文说 GLM-4-32B-0414 系列 「featuring 32 billion parameters」, 而 Z1 是在 GLM-4-32B-0414 上训练出来的. 于是卡上同时有两个数: 名字和正文是 32B, 文件信息栏是 33B. 两个都是取整后的写法, 卡上没有精确参数量, 也没说 33B 按什么口径统计, 含不含嵌入层. 能照录的只有 「名字 32B, 信息栏 33B」 这一句, 不能自己算一个精确值填进去.
+
+
+--- 行212 [再看] ---
+> 五个: GLM-4-32B-0414, GLM-4-32B-Base-0414, GLM-Z1-32B-0414, GLM-Z1-Rumination-32B-0414, GLM-Z1-9B-0414. 合集里的第六个是什么, 这张卡没列. 「Updated Mar 2」 也没有年份, 不能拿它去推 0414 属于哪一年.
+
+
+--- 行229 [对一下] ---
+> 按卡上能看到的信息, 不是. 题目覆盖的范围是 「from GLM-130B to GLM-4 All Tools」, 发表日期是 2024 年 6 月 18 日, 题目里没有 Z1, 也没有 0414. 它是整个 ChatGLM 家族的论文, 被挂成本仓库的关联论文, 第 6 到 7 页的引用条目也是它. 所以不能把这篇论文里的结构和训练细节算到 Z1 头上, 这张卡自己也没给结构.
+
+
+--- 行236 [拆开] ---
+> 卡上有三种写法: 仓库路径 zai-org/GLM-Z1-32B-0414, 正文大标题 GLM-4-Z1-32B-0414, 第 6 页代码里的 MODEL_PATH 「THUDM/GLM-4-Z1-32B-0414」. 正文段落里说的一直是 GLM-Z1-32B-0414, 没有提到另有一个带 「4-」 的版本. 组织名也对不上, 一边是 zai-org, 一边是 THUDM. 页面没解释这几种写法的关系, 这里只照录, 不判断代码里的路径现在还能不能用.
+
+
+--- 行247 [回看] ---
+> 主语不同. 这一句说的是 GLM-4-32B-0414 系列, 不是单独给 Z1 报参数量. Z1 是在 GLM-4-32B-0414 上继续训练得到的, 页面没提训练中改过规模, 所以 32B 可以看成它沿用的名义规模. 第 1 页的 33B 是本仓库文件信息栏上的数. 两个数差 1B, 页面没有说明原因.
+
+
+--- 行250 [问] ---
+> 页面只写 「pre-trained on 15T of high-quality data」, 没写单位. 是 token 数, 字节数还是别的计量, 卡上没交代. 另外这句的主语是 GLM-4-32B-Base-0414, 讲的是底座的预训练, 不是 Z1 自己的训练数据. 数据来源, 语种比例, 合成数据占多少, 都没给.
+
+
+--- 行259 [对一下] ---
+> 这张卡上没有. 第 4 页两张柱状图的对照模型是 DeepSeek-R1, QwQ-32B, DeepSeek-R1-Distill-Llama-70B, o1-mini, 以及 DeepSeek-R1-Distill-Qwen-7B 和 14B, 里面没有 GPT-4o, 也没有 DeepSeek-V3-0324. 而且这一句的主语是 GLM-4-32B-0414, 不是 Z1. 671B 是页面给 DeepSeek-V3-0324 标的规模, 只用来说明对方更大. 「rival」 到了什么程度, 卡上读不出来.
+
+
+--- 行266 [确认] ---
+> 只有四个短语: 「cold start」, 「extended reinforcement learning」, 「further training of the model on tasks involving mathematics, code, and logic」, 「general reinforcement learning based on pairwise ranking feedback」. 冷启动用了什么数据, 用了多少; 强化学习是哪种算法, 奖励怎么算, 训练了多少步; 「extended」 是指时间更长还是规模更大; 成对排序反馈来自人还是来自模型, 卡上都没写. 四个短语的先后只是句子里的先后, 页面没画流程图. 层数, 隐藏维度, 注意力头数这类结构参数, 全卡一个都没有.
+
+
+--- 行273 [问] ---
+> 没有. 第 4 页两张图的主角分别是 Z1-32B-0414 和 Z1-9B-0414, 没有 Rumination. 「benchmarked against OpenAI's Deep Research」 只交代了对标对象, 没给对比分数. 接的是什么搜索工具, 规则奖励有几种, 每种规则是什么, 卡上也没写. 本仓库是 GLM-Z1-32B-0414, Rumination 是同系列的另一个模型, 这一段只是顺带介绍.
+
+
+--- 行280 [想] ---
+> 卡上没说. 原句是 「We employed the aforementioned series of techniques to train a 9B small-sized model」, 只说用了同一套技术. 32B 那一段写明了 「based on GLM-4-32B-0414」, 9B 这一段没有对应的 「based on」. 所以不能替它补一个底座名字, 也不能推它的层数和结构. 「leading level among open-source models of the same size」 对照的是哪些模型, 这一段没列, 要去看第 4 页的第二张图.
+
+
+--- 行293 [看表] ---
+> 按柱顶数字, 五个模型依次是 Z1-32B-0414 / DeepSeek-R1 / QwQ-32B / R1-Distill-Llama-70B / o1-mini.
+> AIME24 80.8 / 79.8 / 79.5 / 70.0 / 70.0; AIME25 63.6 / 70.0 / 66.0 / 47.3 / 53.8; Omni-MATH 68.4 / 67.3 / 65.2 / 57.7 / 60.5; LCB 59.1 / 65.9 / 61.1 / 57.5 / 53.8; SysBench 81.2 / 75.1 / 80.3 / 54.5 / 无柱; IFEval 84.5 / 83.2 / 83.9 / 57.9 / 84.8; ArenaHard 90.6 / 95.0 / 92.2 / 72.7 / 92.0; BFCL 70.5 / 60.3 / 66.4 / 49.3 / 62.8; SuperGPQA 52.6 / 61.8 / 44.8 / 32.9 / 45.2; GPQA 66.1 / 71.5 / 65.7 /
+
+--- 行302 [核对] ---
+> md 截图把图例裁掉了, 按 PDF 第 4 页核对: 原页面上这张图的图例是 「Z1-9B-0414」, 「DeepSeek-R1-Distill-Qwen-7B」, 「DeepSeek-R1-Distill-Qwen-14B」, 依次对应深蓝, 浅灰, 深灰. PDF 里嵌的原图是 1280x598 像素, 图例在上方, MinerU 裁出来的 1174x469 只剩柱子. 所以这是 9B 的对比图, 不是使用指南的配图. 第一张 `p04-chart.png` 的图例保留下来了, 不受影响.
+
+
+--- 行305 [拆开] ---
+> 三个模型依次是 Z1-9B-0414 / R1-Distill-Qwen-7B / R1-Distill-Qwen-14B.
+> AIME24 76.4 / 55.5 / 69.7; AIME25 56.6 / 40.4 / 48.9; Omni-MATH 64.4 / 49.0 / 56.1; LCB 51.8 / 37.6 / 53.1; SysBench 77.3 / 25.9 / 53.6; IFEval 81.9 / 58.4 / 72.3; ArenaHard 67.4 / 21.3 / 50.4; BFCL 66.6 / 24.0 / 50.2; SuperGPQA 43.6 / 7.2 / 40.3; GPQA 58.5 / 49.1 / 59.1. > 9B 十项都高于 7B. 和 14B 比, LCB 是 51.8 对 53.1, GPQA 是 58.5 对 59.1, 这两项 9B 略低, 其余八项 9B 更高. 对照组只有两个蒸馏模型, 一个比它小, 一个比它大. 第 3 页说的 「同尺寸
+
+--- 行346 [停一下] ---
+> 页面没写清. 原文只说 「to the first line」, 下一句说用 chat_template.jinja 时 「the prompt is automatically injected」. 从 「injected」 看, 是模板自动加上的, 用户不必手写. 可它具体插在提示的末尾还是回复的开头, 页面没说, 模板文件本身也不在这份 PDF 里. 用自己的模板时, 要去仓库里看 chat_template.jinja 的原文.
+
+
+--- 行387 [确认] ---
+> 页面没解释两者的关系. 按字段名, original_max_position_embeddings 32768 是开 YaRN 之前的原始位置长度, 而建议开启的门槛 8,192 比它小得多. 为什么超过 8,192 就建议开, 页面没给理由, 也没给开与不开的长文本分数. factor 4.0 乘 32768 等于 131072, 这只是两个字段相乘的算术, 页面没写开启后最大能到多长, 131072 不能当官方数字用. 这一节是全卡唯一和位置编码有关的配置, 除此之外没有任何结构信息.
+
+
+--- 行429 [对一下] ---
+> 页面没解释. do_sample 为 False 就是不采样, 推荐的 temperature, top_p, top_k 在这段代码里用不上; max_new_tokens 4096 还不到推荐值 30000 的七分之一. 照这段代码直接跑, 用的并不是第一节推荐的设置. 两处都照录, 实际使用以哪处为准, 卡上没说.
+
+
+--- 行432 [再看] ---
+> 有两处. 一是 md 的 message 那一行写成 `"Let a, b be positive real number")`, 末尾多出一个右括号, 引号也没闭合; PDF 文字层这一行截在 「numbe」, 没有右括号, 右括号是 MinerU 自己补的. 二是 device_map 那一行 md 截在 「a」, PDF 截在 「au」. 两处都只是截断位置不同, 代码的意思没变. 这段代码的组织名是 THUDM, 和标题栏的 zai-org 不一致, 第 2 页拆开那一条已经列过.
+
+
+--- 行483 [回看] ---
+> 没有. PDF 文字层第 7 页在 Company 下有 TOS, Privacy, About, Careers 四项, Website 下有 Models, Datasets, Spaces, Pricing, Docs 五项, 渲染页底部还有一个 Hugging Face 笑脸标志. md 只留下 Careers 一个链接. 这些都是 Hugging Face 站点的页脚, 和模型无关. `p07-system-theme.png` 和第 1 页那两张一样是界面图标. 全卡五张图, 三张是界面图标, 两张是柱状图.
+

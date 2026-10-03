@@ -8,7 +8,7 @@
 
 ## 1. 页面构成: 一张榜单图, 一张表, 两段产品介绍
 
-第 1 页给出日期 Aug 13, 2024 和定位: Grok-2 是「a significant step forward from our previous model Grok-1.5」, 能力落在「chat, coding, and reasoning」; 同时推出「a small but capable sibling」Grok-2 mini. 两个模型当天在 𝕏 上 beta, 企业 API「later this month」. 同家族 [xAI 新闻页](../xai/xai.md) 里, 这条前面是 2024 年 4 月 12 日的 [Grok-1.5V](../grok-1-5v/grok-1-5v.md), 后面依次是 11 月 4 日的 API Public Beta, 12 月 9 日的图像生成发布, 再往后是 2025 年 2 月的 [Grok 3](../grok-3/grok-3.md).
+第 1 页给出日期 Aug 13, 2024 和定位: Grok-2 是「a significant step forward from our previous model Grok-1.5」, 能力落在「chat, coding, and reasoning」; 同时推出「a small but capable sibling」Grok-2 mini. 两个模型当天在 𝕏 上 beta, 企业 API「later this month」. 同家族 [xAI 新闻页](../xai/xai-bi.md) 里, 这条前面是 2024 年 4 月 12 日的 [Grok-1.5V](../grok-1-5v/grok-1-5v-bi.md), 后面依次是 11 月 4 日的 API Public Beta, 12 月 9 日的图像生成发布, 再往后是 2025 年 2 月的 [Grok 3](../grok-3/grok-3-bi.md).
 
 正文分五节: Arena 与内部评测 (第 1, 2 页), 学术基准表和脚注 (第 2, 3 页), 𝕏 上的新界面 (第 3, 4 页), 企业 API (第 4, 5 页), 展望 (第 5 页). 第 5 页后半到第 7 页是网站页脚. 配图有 4 张, 但第 2 页 Elo 图下方还有一行截断的「Win Rate of Gr」, 像是第二张图的标题, 这张胜率图没有抓下来. 第 4 页那张以「build-with-grok-using-the-enterprise-api」命名的图, 内容是 Black Forest Labs 的白色 logo, 文件名取自紧随其后的小标题, 和图无关.
 
@@ -30,7 +30,7 @@ Grok-2 mini 和 Grok-2 的差距: GPQA 5.0 个点, MMLU 1.3, MMLU-Pro 3.5, MATH 
 
 ## 4. 表格口径: 借来的一列和没覆盖全的脚注
 
-Grok-1.5 一列的三个视觉分数 MMMU 53.6%, MathVista 52.8%, DocVQA 85.6%, 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v.md) 里 Grok-1.5V 的三个数字完全相同. Grok-1.5 是 3 月 28 日发布的文本模型, 这三格填的其实是 Grok-1.5V 的分数, 表头没注明. 两篇的评测设置也不同: 1.5V 那篇写「zero-shot setting without chain-of-thought prompting」, 本表 ‡ 写 Grok-2 的 MMMU 和 MathVista 用 **0-shot CoT**. 因此 MMMU 12.5 个点, MathVista 16.2 个点的代际提升里混着加 CoT 带来的部分, 本页拆不开. Grok-1.5 列的 GPQA 35.9%, MMLU 81.3%, MATH 50.6%, HumanEval 74.1% 应出自 3 月 28 日的 Grok-1.5 公告, 本目录没有那篇原文, 核不了. CoT 提示对分数的影响, 通用讨论见 [Prompt 工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md).
+Grok-1.5 一列的三个视觉分数 MMMU 53.6%, MathVista 52.8%, DocVQA 85.6%, 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v-bi.md) 里 Grok-1.5V 的三个数字完全相同. Grok-1.5 是 3 月 28 日发布的文本模型, 这三格填的其实是 Grok-1.5V 的分数, 表头没注明. 两篇的评测设置也不同: 1.5V 那篇写「zero-shot setting without chain-of-thought prompting」, 本表 ‡ 写 Grok-2 的 MMMU 和 MathVista 用 **0-shot CoT**. 因此 MMMU 12.5 个点, MathVista 16.2 个点的代际提升里混着加 CoT 带来的部分, 本页拆不开. Grok-1.5 列的 GPQA 35.9%, MMLU 81.3%, MATH 50.6%, HumanEval 74.1% 应出自 3 月 28 日的 Grok-1.5 公告, 本目录没有那篇原文, 核不了. CoT 提示对分数的影响, 通用讨论见 [Prompt 工程](../../../../llm-guide/7-LLM应用开发/7.1-Prompt工程/7.1-Prompt工程.md).
 
 脚注只覆盖了一部分. ‡ 只管 Grok-2 的 MMLU, MMLU-Pro, MMMU, MathVista 四行, GPQA 和 DocVQA 用几 shot, 加不加 CoT, 都没写. MATH 标 **maj@1**, 也就是只采 1 个样本做多数投票, 等于单次采样准确率, 这个记号只说明没有用多样本投票; HumanEval 标 pass@1, 同样是单次. 两者都没写采样温度, pass@k 怎么依赖采样设置见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md). 对手一侧, * 说 GPT-4 Turbo 和 GPT-4o 的分数取自 2024 年 5 月的发布, † 说两家 Claude 取自 2024 年 6 月的发布; Claude 3 Opus 本身是 3 月的模型, 这里指的应是 6 月那次发布所附的对比表. 这些都是各家自报的分数, 和 Grok-2 的设置未必一致, 协议对齐的问题见 [通用基准](../../../../llm-guide/3-预训练/3.4-预训练评估/3.4.2-通用基准/3.4.2-通用基准.md).
 
@@ -42,13 +42,13 @@ Gemini Pro 1.5 和 Llama 3 405B 两列没有任何来源脚注. Gemini Pro 1.5 �
 
 两张截图各有问题. 𝕏 App 截图底部的新闻卡片是「ChatGPT Unveils GPT-4o Model · 2 hours ago」, 按本表脚注 GPT-4o 是 2024 年 5 月发布的, 截图要么是 5 月拍的界面, 要么是摆好的演示数据; 模型选择器上写的是「Grok 2 mini (beta)」, 和正文「Grok-2 mini」的写法不同. 梗图截图展示视觉理解: 用户上传一张博物馆里机器人指着人脑说「And that is the original processor!」的黑白插画, 让 Grok「Explain this meme」, 回答的右半边被裁掉, 只能读到零散片段. 这是单个样本, 没有成功率之类的统计.
 
-企业 API 的承诺是「later this month」, 功能是多区域推理部署, 强制多因素认证, 流量统计, 账单分析和管理 API, 没有延迟, 区域数量, 限流或价格. 时间上, [xAI 新闻页](../xai/xai.md) 在 8 月 13 日之后的下一条 API 新闻是 11 月 4 日的「API Public Beta」, 和「本月晚些时候」差了近三个月, 企业 API 是否在 8 月先小范围上线, 列表里查不到. 结尾「Soon, we will release a preview of multimodal understanding」也和前文有出入: 基准表已有三项视觉分数, 第 4 页也说 Grok-2 具备视觉理解, 较合理的读法是模型已有这项能力, 产品侧的正式开放还在后面. 多区域部署背后的服务框架, 通用背景见 [推理服务框架](../../../../llm-guide/9-AI工程化与基础设施/9.4-推理服务框架/9.4-推理服务框架.md).
+企业 API 的承诺是「later this month」, 功能是多区域推理部署, 强制多因素认证, 流量统计, 账单分析和管理 API, 没有延迟, 区域数量, 限流或价格. 时间上, [xAI 新闻页](../xai/xai-bi.md) 在 8 月 13 日之后的下一条 API 新闻是 11 月 4 日的「API Public Beta」, 和「本月晚些时候」差了近三个月, 企业 API 是否在 8 月先小范围上线, 列表里查不到. 结尾「Soon, we will release a preview of multimodal understanding」也和前文有出入: 基准表已有三项视觉分数, 第 4 页也说 Grok-2 具备视觉理解, 较合理的读法是模型已有这项能力, 产品侧的正式开放还在后面. 多区域部署背后的服务框架, 通用背景见 [推理服务框架](../../../../llm-guide/9-AI工程化与基础设施/9.4-推理服务框架/9.4-推理服务框架.md).
 
 ## 6. 架构, 训练和算力: 本页没有
 
-模型内部本页一个字都没有. Grok-2 和 Grok-2 mini 的参数量, 是稠密结构还是 MoE, 层数, 上下文长度, 视觉部分怎么接入, 训练数据和 token 数, 后训练方法, 全都没写. 同家族里 [Grok-1](../grok-1/grok-1.md) 公开过 314B 参数的 MoE 结构, 新闻页记录 Grok-1.5 的上下文是 128,000 token, 这些都不能挪到 Grok-2 上, 公告没说 Grok-2 沿用了哪一代的设计. mini 的「small」也没有给尺寸, 从基准差距反推大小没有依据.
+模型内部本页一个字都没有. Grok-2 和 Grok-2 mini 的参数量, 是稠密结构还是 MoE, 层数, 上下文长度, 视觉部分怎么接入, 训练数据和 token 数, 后训练方法, 全都没写. 同家族里 [Grok-1](../grok-1/grok-1-bi.md) 公开过 314B 参数的 MoE 结构, 新闻页记录 Grok-1.5 的上下文是 128,000 token, 这些都不能挪到 Grok-2 上, 公告没说 Grok-2 沿用了哪一代的设计. mini 的「small」也没有给尺寸, 从基准差距反推大小没有依据.
 
-算力只有一句「advancing core reasoning capabilities with our new compute cluster」, 集群没有名字, 规模和上线时间. 页脚的 Colossus 链接属于 2026 年抓取时的网站模板, 不能倒推成这里说的集群; 后续 [Grok 3](../grok-3/grok-3.md) 的材料也不应倒灌进这篇. 安全评测, 红队测试和使用限制页面同样没提, 唯一与「安全」沾边的是 API 的多因素认证, 那是账户安全, 不是模型安全.
+算力只有一句「advancing core reasoning capabilities with our new compute cluster」, 集群没有名字, 规模和上线时间. 页脚的 Colossus 链接属于 2026 年抓取时的网站模板, 不能倒推成这里说的集群; 后续 [Grok 3](../grok-3/grok-3-bi.md) 的材料也不应倒灌进这篇. 安全评测, 红队测试和使用限制页面同样没提, 唯一与「安全」沾边的是 API 的多因素认证, 那是账户安全, 不是模型安全.
 
 ## 7. 本页对不上的数字
 

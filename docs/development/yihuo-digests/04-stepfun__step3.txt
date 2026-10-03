@@ -1,0 +1,41 @@
+# 04-stepfun/step3  文件: content/model-library/03-模型家族\04-stepfun/step3\step3-bi.md  共 10 块
+
+--- 行135 [想] ---
+> 没有. 页 3 原句是 「we do not discuss in this paper because it is irrelevant to decoding」. Table 2–6 与 §7 吞吐对照都只谈文本 decoding; 5B 编码器不进本文理论成本与 Hopper 实测.
+
+
+--- 行386 [问] ---
+> 是. 页 5 原句把 attention 成本写成二者取大再加线性. §5.1 进一步用 MFA 算术强度 128 vs MLA 512 解释: Table 2 里 Step-3 相对 DSv3 的 KV 访存只少约 10%, 但 Table 6 上许多硬件 attention 成本可减半或更多, 根因是强度匹配, 不是单看 KV 体积.
+
+
+--- 行541 [核对] ---
+> 不是. 同页原句明确: 「No matter how much the rest of the linear attention layers save, no matter how long the context is, the total memory access will be larger than Step-3, as shown in Figure 3.」 全注意力残段单独已大于 Step-3 整模 KV; 线性层再省也翻不过这条下界.
+
+
+--- 行644 [看表] ---
+> 原文写 MFA 128 「much closer to A800 (156) and 910B (175) than DSv3’s MLA (512)」; 相对 H20 (74) 「gap is also not too large compared with Qwen3 MoE (32)」. 对 H800 (591) 则是刻意略低, 给量化/MTP 留余量—不是去贴 H800 的峰值强度.
+
+
+--- 行703 [拆开] ---
+> 不矛盾. 前半针对 attention: 强度翻倍可能抬 attention 侧效率; 后半针对 FFN: 「FFN’s cost is always increased regardless of prediction accuracy」. AFD 已让 FFN 高 MFU, 多出来的错误预测仍照付 FFN 账单. 是否启用要两边一起算.
+
+
+--- 行866 [确认] ---
+> 原文顺序是: 先保证 「not sparser than 0.058」; 再举 DeepEP 实测可使最优稀疏抬到 0.073; 然后 「Considering all these, Step-3 chooses a sparsity of around 0.08 (including shared expert)」.0.08 是综合 roofline 下限与非理想网卡吞吐后的选型, 不是 Table 7 格子里的另一个独立公式解.
+
+
+--- 行1007 [回看] ---
+> 来自 §3.1 性能目标: 50ms TPOT 的 3 级流水, 「16.6ms per stage for A/F/communication」. 脚注 3 另给 4 级流水每级 12.5ms. L20 可行性推演用的是 3 级预算, 不是另造的延迟常数.
+
+
+--- 行1202 [停一下] ---
+> 外推值 2693 是按 $4039\times 4/6$ 的外推公式; Table 8 行 「8192 / 48(4A2F) / 2643」 是实测峰值. 二者接近但非同一数: 外推忽略实现抖动与非理想重叠, 以表内 2643 为 8K 实测口径.
+
+
+--- 行1366 [再看] ---
+> 原文结论指向后者: 「It shows the impact of over-sparsity (§5.4)」; 随后 「it shows the advantage of AFD over pure EP」. 总参对齐后 Step-3 仍更高, 说明优势不单靠更少总参; 过稀迫使微批缩小与 「3A4F」 扩卡, 才是相对原 4039 掉点的主因.
+
+
+--- 行1369 [对一下] ---
+> 仍偏袒对照. 页 2 脚注 1 与页 10 末段写明: §4 理论分析假设网络全可重叠且 FFN 高 MFU; 过稀带来的额外实际成本被忽略. 因此 Figure 1 / Table 6 上 Step-3 的优势是下界叙事—实部上对照模型可能更差.
+

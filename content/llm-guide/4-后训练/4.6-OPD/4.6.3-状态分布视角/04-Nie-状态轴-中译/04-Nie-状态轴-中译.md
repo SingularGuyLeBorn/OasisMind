@@ -8,7 +8,7 @@ tags: ["OPD", "SFT", "RL", "状态分布", "精译"]
 
 > 作者：Dong Nie（Independent Researcher, dongnie@cs.unc.edu）  
 > arXiv：[2605.22731](https://arxiv.org/abs/2605.22731) v1，2026-05-21  
-> PDF：[`../pdfs/2605.22731.pdf`](../pdfs/2605.22731.pdf) · [03 英文誊录](../03-Nie-状态非Token-原文/03-Nie-状态非Token-原文.md)  
+> PDF：[`../../4.6.3-状态从哪来/pdfs/2605.22731.pdf`](../../4.6.3-状态从哪来/pdfs/2605.22731.pdf) · [03 英文誊录](../03-Nie-状态轴-英文/03-Nie-状态轴-英文.md)  
 > 结构保真中译。公式编号、Table 数字、参考文献条目未改。
 
 ## 摘要

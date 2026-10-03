@@ -1,0 +1,45 @@
+# 03-qwen/qwen3-next  文件: content/model-library/03-模型家族\03-qwen/qwen3-next\qwen3-next-bi.md  共 11 块
+
+--- 行105 [想] ---
+> 指部署前. 同页卖点是 Hybrid Attention, High-Sparsity MoE, Stability Optimizations, MTP; Base 句写的是 「10% of the total training cost」 与长上下文吞吐, 不是推理期多采样/多步思考预算. 卡面也声明 Instruct 只走 non-thinking, 不生成 `<think></think>` 块.
+
+
+--- 行146 [问] ---
+> 按卡面公式: 每组 3 个 Gated DeltaNet 块 + 1 个 Gated Attention 块, 重复 12 次, 合计 Gated DeltaNet 36 层侧, Gated Attention 12 层侧; 且每条路径后都接 MoE. 卡没有另给层宽公式或状态维度推导, 只给这串布局与后文 head / expert 数.
+
+
+--- 行209 [核对] ---
+> 没有单独写出如 「1:50」 的比值句. 能核对的是: 总参 80B, 激活 3B, 以及 MoE 侧 512 / 10 / 1 shared 与 Expert Intermediate Dimension 512. 「extreme low」 是定性宣传; 数值激活比需自行用上列数推, 卡正文未再给公式.
+
+
+--- 行249 [看表] ---
+> 部分格支持, 不能读成全表持平. LiveCodeBenchv6 Next 56.6 高于 235B 的 51.8; Arena-Hardv2* Next 82.7 高于 235B 的 79.2; AIME25 69.5 接近 70.3. 但 Aider-Polyglot 49.8 低于 57.3; TAU2-Telecom 13.2 远低于 32.5; MMLU-Pro 80.6 也低于 83.0. 「certain benchmarks」 必须按格引用.
+
+
+--- 行331 [确认] ---
+> 卡内拆成两层: 训练侧卖点仍写 MTP; 默认 `transformers` 推理路径不保证带上 MTP 加速, 要吞吐需走 SGLang / vLLM 等专用框架, 并视设置叠加 flash-linear-attention / causal-conv1d. 卡没有给出 MTP 深度, 草稿长度或接受率数字.
+
+
+--- 行458 [回看] ---
+> 不是同一对照轴. Base 对照是稠密 32B 与训练成本 / 长上下文吞吐; Instruct 对照是 235B-A22B-Instruct-2507 与部分基准分 / 最长约 256K 任务优势. 不得把 Base 的 10% 成本句直接挪到 Instruct 对 235B 的叙事上.
+
+
+--- 行525 [停一下] ---
+> 是同一产品线的外推档. 262144 × 4 ≈ 1,048,576, 与卡上 1,010,000 同量级; 后文又举例典型上下文 524,288 时建议 `factor` 取 2.0. 卡没有另给 Dual Chunk Attention 作为本系列 1M 路径; 本卡 1M 写明走 YaRN.
+
+
+--- 行554 [再看] ---
+> 不能. 卡自己脚注写明两侧启用技术不同: Next 开 YaRN, 2507 开 Dual Chunk Attention. 平均分接近只说明在各自推荐长上下文配置下的公开结果接近; 不是消融同内核后的纯架构对比. 表列到 512k, 没有把 1M 点写进同一张 Acc 表.
+
+
+--- 行557 [对一下] ---
+> 不能覆盖. 超长优势句指向最长约 256K 的上下文任务与后文 RULER; Agent 组是另一块基准. TAU2-Telecom 等格说明 Instruct 对照 235B 并非全面领先, 须与 Coding / Alignment 亮点格分开引用.
+
+
+--- 行596 [想] ---
+> 不能横比成同一度量. 星号脚注只约束 Arena-Hardv2*; IFEval / WritingBench 等是另一套打分. Next 在 Arena-Hardv2* (82.7) 与 WritingBench (87.3) 高于或接近 235B, Creative Writingv3 (85.3) 略低于 235B 的 87.5. 引用须带脚注与分项.
+
+
+--- 行624 [问] ---
+> 不算. 正文是 Hub 模型卡加部署说明: 有 Hybrid Layout 字符串与 head/expert 表, 没有层宽推导, DeltaNet 更新式, 路由负载均衡或后训练课表. Citation 指向底座与长上下文相关报告, 读架构细节应回那些论文, 不能把本卡当专报正文.
+

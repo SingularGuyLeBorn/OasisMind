@@ -1,0 +1,69 @@
+# 15-ling/ling-lite  文件: content/model-library/03-模型家族\15-ling/ling-lite\ling-lite-bi.md  共 17 块
+
+--- 行23 [想] ---
+> 不是同一个数. 290B 是 Ling-Plus 的总参数, 出现在摘要第 3 句 「Ling-Plus boasts 290 billion parameters with 28.8 billion activated parameters」, 第 1.1 节末句又写了一次 「a total parameter count of 290B」. 300B 出现在标题, 摘要倒数第 3 句 「a 300B MoE LLM can be effectively trained on lower-performance devices」 和第 7 节结论里措辞相同的一句, 三处都在说 「三千亿量级的 MoE」, 是取整的量级说法, 本文任何一张表里都没有 300B 这个具体数值. 引用 Ling-Plus 的参数量用 290B; 说论文想证明的量级才用 300B.
+
+
+--- 行34 [核对] ---
+> 都在第 1 页, 各出现两次. 第一处是摘要第 3 句 「Ling-Lite contains 16.8 billion parameters with 2.75 billion activated parameters」; 第二处是第 1.1 节最后一句的括号 「(with a total parameter count of 16.8B and an activation parameter count of 2.75B)」. 16.8B 是总参数, 即全部专家连同共享部分的参数量; 2.75B 是每个 token 前向时实际参与计算的激活参数. 两个数描述不同维度, 2.75/16.8 约为 16.4%. 同一句里 Ling-Plus 是 290B 对 28.8B, 比例约 9.9%, 所以 Lite 的激活比例比 Plus 高.
+
+
+--- 行75 [看表] ---
+> D 的峰值算力 989 TFLOPS, 每小时 27.5 元, 支持 FP8, 是表里唯一的高端卡; 第 1.3 节末的成本对比也点名 「high-performance hardware configuration (device D)」. A, B, C, E 的峰值在 120 到 370 TFLOPS 之间, 每小时 4.5 到 10 元. 按每元每小时买到的峰值算力折算, A 约 52.9, D 约 36.0, C 约 31.2, B 约 26.7, E 约 26.1, 所以 「低配」 不等于 「单位算力更贵」, 按纸面峰值 A 反而最划算. 表题说 A 到 E 按可得性降序排列, 能不能买到, 租到才是这张表的排序依据. Table 8 做一致性对比时用的也正是 A 和 D.
+
+
+--- 行122 [对一下] ---
+> 1 - 5.08/6.35 = 0.200, 正好 20%. 这组数出自第 1.3 节这一段, 对象是 Ling-Plus, 口径是 「训练 1 万亿 token」 的算力成本, 不是 9T token 全程的总花费, 也不涉及 Ling-Lite. 摘要和第 7 节说的 「reducing computing costs by approximately 20%」 指的就是这一组数.
+
+
+--- 行273 [拆开] ---
+> 不是同一个量, 论文却用了同一个数. 按第 2.2 节 Figure 8 的上下文, 66.1% 是速度 (step/s) 的提升比例, 在基线最低速度趋近 5.49e-2 step/s 时取到. 速度提升 66.1%, 单步耗时变为原来的 1/1.661, 约 60.2%, 相当于时间减少约 39.8%; 反过来, 时间真要减少 66.1%, 速度得提升到约 2.95 倍. 两种读法只能有一种字面成立. 本文没有给出绝对耗时, 按 Figure 8 这个出处, 把 66.1% 当作加速比更贴近原始实验.
+
+
+--- 行352 [再看] ---
+> I/O 优化下面只有三条带圆点的策略: FUSE, 元数据缓存, worker 选择. 把再前一段的 「存储服务与计算节点混合部署」 算进去才凑成四条, 论文没有明说第四条是哪一项. 吞吐方面, 1,000 卡时 1 TB/s, 卡数乘 10 到 10,000 卡, 严格线性应到 10 TB/s, 实际 8 TB/s 约为线性值的 80%, 属于近线性. 原文的 「scales linearly」 是宽松说法.
+
+
+--- 行374 [核对] ---
+> 对不上. Table 2 只有两行: 128 卡 (tp=1 ep=8 pp=1) 上 PCache 70s 对 GPFS 160s, 512 卡 (tp=2 ep=8 pp=8) 上 90s 对 240s, 分别省约 56% 和 62.5%. 表里比的是 PCache 与 GPFS 两套存储, 不是 「分散 DP 组写入」 的前后; 规模是 128 卡和 512 卡, 不是 5,000 卡; 也没有内存这一列. 50% 和 60% 这两个数在本文里只有文字, 没有表格支撑.
+
+
+--- 行468 [停一下] ---
+> 常见部署是节点内做 TP (依赖 NVLink 这类高速互连), 节点间做 PP, 原句的 inter/intra 与常见做法相反, 更像笔误. 紧接着的论点不受影响: TP 通信重, 缺少 NVLINK 时通信可能占一半以上的时间, 所以 Flood 改走全 PP. Table 3 的加速比逐行可复算: 5869/4355 ≈ 1.35, 5451/3576 ≈ 1.52, 4857/2331 ≈ 2.08, 6569/2742 ≈ 2.40, 与表中一致. Ling-Lite 两行都是单卡 (Device E 和 Device C), 加速比 1.35 到 1.52; Ling-Plus 用 8 卡或 16 卡时加速比超过 2 倍, 与 「省掉 TP 通信后卡越多收益越大」 的说法相符.
+
+
+--- 行609 [问] ---
+> 按激活参数除以总参数估算, Ling-Plus 是 28.8/290 ≈ 9.9%, 在 4.6% 到 12.1% 之内; Ling-Lite 是 2.75/16.8 ≈ 16.4%, 在范围之外. 论文没有给 「sparsity」 下精确定义, 按激活比例理解只是一种估算. 本文也没有说 Ling-Lite 的架构来自这组扫参, 实验明确对齐的是 Ling-Plus. 这一节的结论是最优 batch size 和学习率主要由计算预算决定, 与架构和辅助损失关系不大; 这条结论若成立, 对 Lite 同样适用, 但本文没有单独给出 Lite 的验证.
+
+
+--- 行634 [回看] ---
+> 不在. 第 3.3.2 节开头交代, 小规模实验的计算预算从 1e18 到 3e20. 1e21 已在范围之外, 1e24 比上限高三个多数量级, 两个数都是用拟合出的 FLOPs-Loss 曲线外推得到的. 「平均约 3 倍」 才是实验区间内的结论, 「超过 3.5」 属于外推预测. Figure 13 只画了 loss 曲线, 没有 1e24 处的实测点.
+
+
+--- 行659 [确认] ---
+> 第 3.4.1 节第一句就是 「We pre-train Ling-Plus using the AdamW optimizer」, 后面的 β1 = 0.9, β2 = 0.95, 最大学习率 2.4e-4, batch size 2,560 到 8,960, 9T token, 负载均衡系数 0.015 等, 都是 Ling-Plus 的配置. 本节点名 Ling-Lite 的只有第 3.4.2 节这一段: 长上下文阶段 Lite 减少网页数据, 提高数学和代码语料比例. Lite 自己的学习率和 batch size 本文没有单列. 顺带可以核对一处前后一致: 最大学习率 2.4e-4 在约 60% token 处减半得到 1.2e-4, 正好是第 3.4.3 节退火的起点 1.2e-4.
+
+
+--- 行782 [想] ---
+> 表题和正文都没写模型名, 本文无法确定是哪个模型. 从 SFT 到 DPO, 多数列上涨, CN Middle School 24 从 59.41 到 70.30 涨得最多; 但 Olympiad Bench 从 44.30 降到 43.41, Minerva Math 从 40.81 降到 40.07. 再做一轮 DPO-format 后, 这两列回到 44.89 和 41.18, 都超过 SFT. 第 4.2 节的解释是一部分失分来自格式错误, 所以格式 DPO 能把分数拉回来.
+
+
+--- 行873 [拆开] ---
+> 只列了三项: (1) Policy agent, (2) Reference agent, (3) Quality judgment. 第四项在原文中缺失, 本文其他地方也没有补上. 第 1.3 节对应的概述只提到 「rejection sampling and error correction」 和 「self-reflective multi-agent interactive dialogues」, 同样对不出第四项. 读的时候按三项理解即可.
+
+
+--- 行1052 [看表] ---
+> Table 6 的列名是 「DeepSeek-V2-Base」, 第 5.1.4 节的分析文字也一直写 DeepSeek-V2-Base. 基座对比实际用的是 V2 的 base 模型, 第 5.1.3 节的 「V2.5」 与表头不一致. 到了对话模型对比, Table 8 用的才是 「DeepSeek-V2.5-1210-Chat」. 读 Table 6 以表头为准. Ling-Lite-Base 这一组没有这个问题, Table 5 的三列 Qwen2.5-7B, LLaMA-3.1-8B, Mistral-7B-v0.3 与正文一致.
+
+
+--- 行1125 [对一下] ---
+> Table 7 中 Ling-Lite 的 Nexus (Acc) 是 34.77, Llama3.1-8B-Instruct 是 38.19, 差 3.42 分, 文字里的 「4 points」 偏大. 大模型那边, Table 8 里 Ling-Plus 为 50.10 (Device-A) 和 50.09 (Device-D), Llama3.1-70B-Instruct 为 52.07, 差约 2 分. 工具使用的另两项里 Lite 都是同组最高: BFCL-v2 上 67.92 对 Qwen2.5-7B-Instruct 的 65.84, T-eval 上 85.58 对 Llama3.1-8B-Instruct 的 81.99.
+
+
+--- 行1150 [核对] ---
+> 表头第一列数据是 Ling-Plus, 对比对象 DeepSeek-V2.5-1210-Chat, Qwen2.5-72B-Instruct, Llama3.1-70B-Instruct 也都是大模型, 第 5.3.2 节的分析同样只谈 Ling-Plus. 表题里的 「Ling-Lite」 与内容不符, 本文没有给出 Ling-Lite 的安全分数. 平均分可以复算: Ling-Plus 为 (89.50 + 96.09 + 98.40 + 90.24)/4 ≈ 93.56, 与表中一致.
+
+
+--- 行1217 [回看] ---
+> 是同一样东西. 第 3.2.3 节定义的 NormHead 是对 LM-Head 权重做 L2 归一化 (公式 4), 第 6.1 节说 HeadNorm 用来 「stabilize the softmax layer in the language modeling head」, 作用对象都是语言建模头, 只是名字前后写法不同. 另一项措施 router z-loss 在第 3.2.2 节已经出现, 系数 1e-4 在第 3.4.1 节给出.
+

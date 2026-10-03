@@ -20,19 +20,31 @@ https://github.com/QwenLM/Qwen3
 
 In this work, we present Qwen3, the latest version of the Qwen model family. Qwen3 comprises a series of large language models (LLMs) designed to advance performance, efficiency, and multilingual capabilities. The Qwen3 series includes models of both dense and Mixture-of-Expert (MoE) architectures, with parameter scales ranging from 0.6 to 235 billion. A key innovation in Qwen3 is the integration of thinking mode (for complex, multi-step reasoning) and non-thinking mode (for rapid, context-driven responses) into a unified framework. This eliminates the need to switch between different models—such as chat-optimized models (e.g., GPT-4o) and dedicated reasoning models (e.g., QwQ-32B)—and enables dynamic mode switching based on user queries or chat templates. Meanwhile, Qwen3 introduces a thinking budget mechanism, allowing users to allocate computational resources adaptively during inference, thereby balancing latency and performance based on task complexity. Moreover, by leveraging the knowledge from the flagship models, we significantly reduce the computational resources required to build smaller-scale models, while ensuring their highly competitive performance. Empirical evaluations demonstrate that Qwen3 achieves state-of-the-art results across diverse benchmarks, including tasks in code generation, mathematical reasoning, agent tasks, etc., competitive against larger MoE models and proprietary models. Compared to its predecessor Qwen2.5, Qwen3 expands multilingual support from 29 to 119 languages and dialects, enhancing global accessibility through improved cross-lingual understanding and generation capabilities. To facilitate reproducibility and community-driven research and development, all Qwen3 models are publicly accessible under Apache 2.0.
 
+本文推出 Qwen 模型家族最新版 Qwen3: 一系列追求性能, 效率与多语言能力的大语言模型 (LLM), 同时提供 dense 与 MoE 两种架构, 参数规模从 0.6B 到 235B. 关键创新是把 thinking mode (复杂多步推理) 与 non-thinking mode (快速, 上下文驱动的响应) 整合进统一框架: 用户无需再于聊天优化模型 (如 GPT-4o) 与专用推理模型 (如 QwQ-32B) 之间切换, 可按用户查询或 chat template 动态切换模式. Qwen3 还引入 thinking budget 机制, 让用户在推理时自适应分配算力, 按任务复杂度平衡延迟与性能. 同时, 借助旗舰模型的知识蒸馏, 构建小模型的算力开销大幅降低, 性能仍具强竞争力. 实证评测显示, Qwen3 在代码生成, 数学推理, Agent 任务等多类基准上达到 SOTA, 可对标更大的 MoE 模型与闭源模型. 相比前代 Qwen2.5, 多语言支持从 29 种扩展到 119 种语言与方言, 跨语言理解与生成能力增强, 覆盖全球用户. 所有 Qwen3 模型以 Apache 2.0 协议公开, 便于复现与社区研发.
+
 <!-- page 2 of 35 -->
 
 ## 1 Introduction
 
 The pursuit of artificial general intelligence (AGI) or artificial super intelligence (ASI) has long been a goal for humanity. Recent advancements in large foundation models, e.g., GPT-4o (OpenAI, 2024), Claude 3.7 (Anthropic, 2025), Gemini 2.5 (DeepMind, 2025), DeepSeek-V3 (Liu et al., 2024a), Llama-4 (Meta-AI, 2025), and Qwen2.5 (Yang et al., 2024b), have demonstrated significant progress toward this objective. These models are trained on vast datasets spanning trillions of tokens across diverse domains and tasks, effectively distilling human knowledge and capabilities into their parameters. Furthermore, recent developments in reasoning models, optimized through reinforcement learning, highlight the potential for foundation models to enhance inference-time scaling and achieve higher levels of intelligence, e.g., o3 (OpenAI, 2025), DeepSeek-R1 (Guo et al., 2025). While most state-of-the-art models remain proprietary, the rapid growth of open-source communities has substantially reduced the performance gap between open-weight and closed-source models. Notably, an increasing number of top-tier models (Meta-AI, 2025; Liu et al., 2024a; Guo et al., 2025; Yang et al., 2024b) are now being released as open-source, fostering broader research and innovation in artificial intelligence.
 
+追求 AGI 乃至 ASI 是人类长期目标. GPT-4o, Claude 3.7, Gemini 2.5, DeepSeek-V3, Llama-4, Qwen2.5 等大型基座模型的近期进展显著推进了这一目标: 它们在跨领域, 跨任务的数万亿 token 数据上训练, 把人类知识与能力蒸馏进参数. o3, DeepSeek-R1 等经强化学习优化的推理模型, 进一步展现了基座模型通过 inference-time scaling 提升智能的潜力. 尽管多数 SOTA 模型仍是闭源, 开源社区的快速壮大已大幅缩小开放权重与闭源模型的差距; 越来越多顶尖模型以开源形式发布, 推动更广泛的研究与创新.
+
 In this work, we introduce Qwen3, the latest series in our foundation model family, Qwen3 is a collection of open-weight large language models (LLMs) that achieve state-of-the-art performance across a wide variety of tasks and domains. We release both dense and Mixture-of-Experts (MoE) models, with the number of parameters ranging from 0.6 billion to 235 billion, to meet the needs of different downstream applications. Notably, the flagship model, Qwen3-235B-A22B, is an MoE model with a total of 235 billion parameters and 22 billion activated ones per token. This design ensures both high performance and efficient inference.
+
+本文推出基座模型家族最新系列 Qwen3: 一组在各类任务与领域均达 SOTA 的开放权重 LLM. 我们同时发布 dense 与 MoE 模型, 参数规模 0.6B 到 235B, 匹配不同下游应用的需求. 旗舰 Qwen3-235B-A22B 为 MoE 架构, 总参数 235B, 每 token 激活 22B, 兼顾高性能与推理效率.
 
 Qwen3 introduces several key advancements to enhance its functionality and usability. First, it integrates two distinct operating modes, thinking mode and non-thinking mode, into a single model. This allows users to switch between these modes without alternating between different models, e.g., switching from Qwen2.5 to QwQ (Qwen Team, 2024). This flexibility ensures that developers and users can adapt the model's behavior to suit specific tasks efficiently. Additionally, Qwen3 incorporates thinking budgets, providing users with fine-grained control over the level of reasoning effort applied by the model during task execution. This capability is crucial to the optimization of computational resources and performance, tailoring the model's thinking behavior to meet varying complexity in real-world applications. Furthermore, Qwen3 has been pre-trained on 36 trillion tokens covering up to 119 languages and dialects, effectively enhancing its multilingual capabilities. This broadened language support amplifies its potential for deployment in global use cases and international applications. These advancements together establish Qwen3 as a cutting-edge open-source large language model family, capable of effectively addressing complex tasks across various domains and languages.
 
+Qwen3 有几项关键升级: 第一, 把 thinking 与 non-thinking 两种模式整合进单一模型, 用户无需在 Qwen2.5 与 QwQ 等模型间来回切换, 可按任务灵活调整模型行为; 第二, 引入 thinking budget, 让用户细粒度控制模型在任务中的推理投入, 对算力与性能做优化, 适配真实场景中不同的任务复杂度; 第三, 预训练使用 36 万亿 token, 覆盖多达 119 种语言与方言, 多语言能力显著增强, 更契合全球化部署. 这些进步共同确立了 Qwen3 作为前沿开源 LLM 家族的地位, 能有效应对跨领域, 跨语言的复杂任务.
+
 The pre-training process for Qwen3 utilizes a large-scale dataset consisting of approximately 36 trillion tokens, curated to ensure linguistic and domain diversity. To efficiently expand the training data, we employ a multi-modal approach: Qwen2.5-VL (Bai et al., 2025) is finetuned to extract text from extensive PDF documents. We also generate synthetic data using domain-specific models: Qwen2.5-Math (Yang et al., 2024c) for mathematical content and Qwen2.5-Coder (Hui et al., 2024) for code-related data. The pre-training process follows a three-stage strategy. In the first stage, the model is trained on about 30 trillion tokens to build a strong foundation of general knowledge. In the second stage, it is further trained on knowledge-intensive data to enhance reasoning abilities in areas like science, technology, engineering, and mathematics (STEM) and coding. Finally, in the third stage, the model is trained on long-context data to increase its maximum context length from 4,096 to 32,768 tokens.
 
+Qwen3 预训练使用约 36 万亿 token 的大规模数据集, 并精心保证语言与领域多样性. 为高效扩充训练数据, 我们采用多模态手段: 微调 Qwen2.5-VL 从海量 PDF 文档中抽取文本; 用领域专用模型合成数据: Qwen2.5-Math 负责数学内容, Qwen2.5-Coder 负责代码数据. 预训练分三阶段: 第一阶段约 30 万亿 token, 打牢通用知识基础; 第二阶段用知识密集型数据强化 STEM 与编程等推理能力; 第三阶段用长上下文数据把最大上下文长度从 4,096 扩到 32,768 token.
+
 To better align foundation models with human preferences and downstream applications, we employ a multi-stage post-training approach that empowers both thinking (reasoning) and non-thinking modes. In the first two stages, we focus on developing strong reasoning abilities through long chain-of-thought (CoT) cold-start finetuning and reinforcement learning focusing on mathematics and coding tasks. In the final two stages, we combine data with and without reasoning paths into a unified dataset for further fine-tuning, enabling the model to handle both types of input effectively, and we then apply general-domain reinforcement learning to improve performance across a wide range of downstream tasks. For smaller models, we use strong-to-weak distillation, leveraging both off-policy and on-policy knowledge transfer from larger models to enhance their capabilities. Distillation from advanced teacher models significantly outperforms reinforcement learning in performance and training efficiency.
+
+为让基座模型对齐人类偏好与下游应用, 我们采用多阶段 post-training, 同时增强 thinking (推理) 与 non-thinking 两种模式. 前两阶段通过长 CoT 冷启动微调与聚焦数学, 代码任务的强化学习锻造强推理能力; 后两阶段把带与不带推理路径的数据合并为统一数据集继续微调, 让模型两类输入都能处理, 最后施加通用领域强化学习, 提升广泛下游任务的表现. 小模型采用 strong-to-weak 蒸馏: 同时利用 off-policy 与 on-policy 知识迁移增强能力; 高级教师模型的蒸馏在性能与训练效率上均显著优于强化学习.
 
 We evaluate both pre-trained and post-trained versions of our models across a comprehensive set of benchmarks spanning multiple tasks and domains. Experimental results show that our base pre-trained models achieve state-of-the-art performance. The post-trained models, whether in thinking or non-thinking mode, perform competitively against leading proprietary models and large mixture-of-experts (MoE) models such as o1, o3-mini, and DeepSeek-V3. Notably, our models excel in coding, mathematics, and agent-related tasks. For example, the flagship model Qwen3-235B-A22B achieves 85.7 on AIME'24
 
@@ -40,7 +52,11 @@ We evaluate both pre-trained and post-trained versions of our models across a co
 
 and 81.5 on AIME'25 (AIME, 2025), 70.7 on LiveCodeBench v5 (Jain et al., 2024), 2,056 on CodeForces, and 70.8 on BFCL v3 (Yan et al., 2024). In addition, other models in the Qwen3 series also show strong performance relative to their size. Furthermore, we observe that increasing the thinking budget for thinking tokens leads to a consistent improvement in the model's performance across various tasks.
 
+我们在覆盖多任务, 多领域的全套基准上评测了预训练与 post-training 版本. 实验显示: 基座预训练模型已达 SOTA; post-training 模型无论 thinking 还是 non-thinking 模式, 都可对标 o1, o3-mini, DeepSeek-V3 等领先闭源模型与大型 MoE 模型, 在代码, 数学与 Agent 任务上尤为突出. 旗舰 Qwen3-235B-A22B 在 AIME'24 得 85.7, AIME'25 得 81.5, LiveCodeBench v5 得 70.7, CodeForces 得 2,056, BFCL v3 得 70.8; 系列其他模型在同尺寸下也表现强劲. 我们还观察到: 增大 thinking token 的 thinking budget, 模型在各类任务上的表现持续提升.
+
 In the following sections, we describe the design of the model architecture, provide details on its training procedures, present the experimental results of pre-trained and post-trained models, and finally, conclude this technical report by summarizing the key findings and outlining potential directions for future research.
+
+后续章节依次介绍模型架构设计, 训练流程细节, 预训练与 post-training 模型的实验结果, 最后总结要点并展望未来的研究方向.
 
 ## 2 Architecture 架构
 
@@ -721,7 +737,11 @@ The results are shown in Table 22, where we can draw the following conclusions:
 
 In this technical report, we introduce Qwen3, the latest version of the Qwen series. Qwen3 features both thinking mode and non-thinking mode, allowing users to dynamically manage the number of tokens used for complex thinking tasks. The model was pre-trained on an extensive dataset containing 36 trillion tokens, enabling it to understand and generate text in 119 languages and dialects. Through a series of comprehensive evaluations, Qwen3 has shown strong performance across a range of standard benchmarks for both pre-trained and post-trained models, including tasks related to code generation, mathematics, reasoning, and agents.
 
+本技术报告推出 Qwen 系列最新版 Qwen3: 同时支持 thinking 与 non-thinking 模式, 用户可按复杂思考任务动态分配 token 用量. 模型在 36 万亿 token 的超大规模数据集上预训练, 可理解与生成 119 种语言与方言的文本. 经全面评测, Qwen3 的预训练与 post-training 模型在代码生成, 数学, 推理, Agent 等标准基准上均有强劲表现.
+
 In the near future, our research will focus on several key areas. We will continue to scale up pretraining by using data that is both higher in quality and more diverse in content. At the same time, we will work on improving model architecture and training methods for the purposes of effective compression, scaling to extremely long contexts, etc. In addition, we plan to increase computational resources for reinforcement learning, with a particular emphasis on agent-based RL systems that learn from environmental feedback. This will allow us to build agents capable of tackling complex tasks that require inference time scaling.
+
+近期研究将聚焦几个方向: 继续用质量更高, 内容更多样的数据扩大预训练规模; 改进模型架构与训练方法, 实现有效压缩与超长上下文扩展; 加大强化学习的算力投入, 重点是能从环境反馈中学习的 Agent 式 RL 系统, 以构建能应对需要 inference time scaling 的复杂任务的 Agent.
 
 ## 6 Authors
 
@@ -743,17 +763,27 @@ Table 23: Performance of Qwen3 Models on the RULER benchmark.
 
 For evaluating long-context processing capabilities, we report the results on the RULER benchmark (Hsieh et al., 2024) in Table 23. To enable length extrapolation, we utilize YARN (Peng et al., 2023) with a scaling\_factor=4. In thinking mode, we set the thinking budget to 8192 tokens to mitigate overly verbose reasoning on the extremely long inputs.
 
+长上下文处理能力报在表 23 的 RULER 基准上. 为支持长度外推, 我们使用 scaling_factor=4 的 YARN. thinking 模式下把 thinking budget 设为 8192 token, 以抑制超长输入上过长的推理.
+
 The results show that:
+
+结果表明:
 
 1. In non-thinking mode, Qwen3 outperforms Qwen2.5 models of a similar size in long-context processing tasks.
 
+1. non-thinking 模式下, Qwen3 在长上下文任务上超过同尺寸 Qwen2.5.
+
 2. In thinking mode, the model's performance slightly degrades. We hypothesize that the thinking content does not provide significant benefits for these retrieval tasks, which do not rely on reasoning and may instead interfere with the retrieval process. We are committed to enhancing the long-context capability in the thinking mode in future versions.
+
+2. thinking 模式下成绩略有下降, 我们猜想检索类任务并不依赖推理, 思考内容收益有限, 反而可能干扰检索过程; 后续版本会继续增强 thinking 模式的长上下文能力.
 
 #### A.1.2 Multilingual Ability
 
 Table 24-35 presents the detailed benchmark scores across various languages, including Spanish, French, Portuguese, Italian, Arabic, Japanese, Korean, Indonesian, Russian, Vietnamese, German, and Thai. The results of these tables demonstrate that the Qwen3 series models achieve competitive performance across all evaluated benchmarks, showcasing their strong multilingual capabilities.
 
 To evaluate the performance of Qwen3 across a broader range of languages, we utilize Belebele (Bandarkar et al., 2023), a benchmark for natural language understanding. We conduct evaluations on 80 supported languages from the benchmark, excluding 42 unoptimized languages, as shown in Table 36 (organized by language family). The performance comparison between Qwen3 and other baseline models on the Belebele benchmark is presented in Table 37. The results show that Qwen3 achieves comparable performance to similarly-sized Gemma models while outperforming Qwen2.5 significantly.
+
+为评测更广语言范围的表现, 我们使用自然语言理解基准 Belebele, 在其支持的 80 种语言上评测 (剔除 42 种未优化的语言), 按语系整理在表 36; 与其他基线模型的对比见表 37. 结果显示: Qwen3 与同尺寸 Gemma 模型表现相当, 并显著优于 Qwen2.5.
 
 <!-- page 24 of 35 -->
 

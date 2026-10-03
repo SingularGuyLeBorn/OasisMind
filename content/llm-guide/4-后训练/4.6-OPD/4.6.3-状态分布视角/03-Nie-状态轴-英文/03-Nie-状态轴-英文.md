@@ -8,9 +8,9 @@ tags: ["OPD", "SFT", "RL", "状态分布", "原文"]
 
 > 作者：Dong Nie（Independent Researcher, dongnie@cs.unc.edu）  
 > arXiv：[2605.22731](https://arxiv.org/abs/2605.22731) v1，2026-05-21，cs.LG / cs.AI  
-> PDF：[../pdfs/2605.22731.pdf](../pdfs/2605.22731.pdf)；HTML：[../pdfs/2605.22731.html](../pdfs/2605.22731.html)  
+> PDF：[../../4.6.3-状态从哪来/pdfs/2605.22731.pdf](../../4.6.3-状态从哪来/pdfs/2605.22731.pdf)；HTML：[../../4.6.3-状态从哪来/pdfs/2605.22731.html](../../4.6.3-状态从哪来/pdfs/2605.22731.html)  
 > 代码仓库论文写了 https://github.com/ginobilinie/unifyPostTraining ，2026-08-30 访问为 404。  
-> 直觉文：[01 nrehiew 博客](../01-nrehiew-分布透镜-原文/01-nrehiew-分布透镜-原文.md)
+> 直觉文：[01 nrehiew 博客](../01-分布视角-英文/01-分布视角-英文.md)
 
 正文为 arXiv HTML 誊录。PDF 第 1 页页眉为 1st Conference 2026。
 

@@ -97,7 +97,7 @@ the-art performance in visual math reasoning (MathVista) and in document-based q
 | DocVQA |  | 85.6% | 93.2% | 93.6% | 87.2% | 89.3% | 93.1% | 92.2% | 92.8% | 95.2% |
 
 > **回看:** Grok-1.5 一列的 MMMU 53.6%, MathVista 52.8%, DocVQA 85.6%, 在哪见过?
-> 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v.md) 表里 Grok-1.5V 的三个数字一模一样. 按同家族新闻页, Grok-1.5 是 3 月 28 日发布的文本模型, 这三格实际填的是 4 月 12 日 Grok-1.5V 的分数, 表头没有说明. 评测设置也不一样: Grok-1.5V 那篇写的是「zero-shot setting without chain-of-thought prompting」, 本表 ‡ 注明 Grok-2 的 MMMU 和 MathVista 用 0-shot CoT. 所以 MMMU 上 12.5 个点, MathVista 上 16.2 个点的提升里, 有一部分可能来自加了 CoT, 本页拆不开.
+> 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v-bi.md) 表里 Grok-1.5V 的三个数字一模一样. 按同家族新闻页, Grok-1.5 是 3 月 28 日发布的文本模型, 这三格实际填的是 4 月 12 日 Grok-1.5V 的分数, 表头没有说明. 评测设置也不一样: Grok-1.5V 那篇写的是「zero-shot setting without chain-of-thought prompting」, 本表 ‡ 注明 Grok-2 的 MMMU 和 MathVista 用 0-shot CoT. 所以 MMMU 上 12.5 个点, MathVista 上 16.2 个点的提升里, 有一部分可能来自加了 CoT, 本页拆不开.
 
 > **停一下:** 去掉 Grok-1.5 和 mini, Grok-2 在 8 行里各排第几?
 > 和另外 6 家比 (MathVista 行 Llama 3 405B 是「-」, 只剩 5 家): 第 1 只有 MathVista. 第 2 有 4 行: GPQA 落后 Claude 3.5 Sonnet 3.6 个点, MMLU-Pro 落后它 0.6, MATH 落后 GPT-4o 0.5, DocVQA 落后 Claude 3.5 Sonnet 1.6. MMMU 第 3, 落后 GPT-4o 3.0. MMLU 和 HumanEval 都是第 4, 分别落后最高分 1.2 和 3.6. 正文用的词是「competitive」, 和这个分布相符.
@@ -156,7 +156,7 @@ Photo of a meme and Grok's expla
 𝕏 Premium 和 Premium+ 用户将可以使用两个新模型: Grok-2 和 Grok-2 mini. Grok-2 是我们最先进的 AI 助手, 在文本和视觉理解上都有先进能力, 能整合来自 𝕏 平台的实时信息, 可以通过 𝕏 App 里的 Grok 标签页使用. Grok-2 mini 是我们体量小但能力不弱的模型, 在速度和回答质量之间取得平衡. 与前代相比, Grok-2 更直观, 更容易引导, 也更通用, 无论你是找答案, 合作写作还是解决编程任务都能胜任. 我们正与 [Black Forest Labs](https://blackforestlabs.ai/) 合作, 试用他们的 [FLUX.1](https://blackforestlabs.ai/#get-flux) 模型来扩展 Grok 在 𝕏 上的能力. 如果你是 Premium 或 Premium+ 订阅用户, 请把 𝕏 App 更新到最新版本, 以便参与 Grok-2 的 beta 测试.
 
 > **问:** 和 FLUX.1 的合作, 是说 Grok-2 自己能画图吗?
-> 不是. 原文是「experimenting with their FLUX.1 model to expand Grok’s capabilities」, 画图的是 Black Forest Labs 的 FLUX.1, Grok-2 负责文本和视觉理解, 两者在 𝕏 的产品里拼在一起. 下方文件名为 p04-build-with-grok-using-the-enterprise-api.png 的图, 内容其实是 Black Forest Labs 的白色三角形 logo 和「black forest labs.」字样, 文件名取自紧随其后的小标题, 和图的内容无关. xAI 自己的图像生成模型要到 2024 年 12 月 9 日才发布, 见 [xAI 新闻页](../xai/xai.md).
+> 不是. 原文是「experimenting with their FLUX.1 model to expand Grok’s capabilities」, 画图的是 Black Forest Labs 的 FLUX.1, Grok-2 负责文本和视觉理解, 两者在 𝕏 的产品里拼在一起. 下方文件名为 p04-build-with-grok-using-the-enterprise-api.png 的图, 内容其实是 Black Forest Labs 的白色三角形 logo 和「black forest labs.」字样, 文件名取自紧随其后的小标题, 和图的内容无关. xAI 自己的图像生成模型要到 2024 年 12 月 9 日才发布, 见 [xAI 新闻页](../xai/xai-bi.md).
 
 ![Image block](images/p04-build-with-grok-using-the-enterprise-api.png)
 
@@ -171,7 +171,7 @@ enhanced security features such as mandatory multi-factor authentication (e.g. u
 本月晚些时候, 我们也会通过新的企业 API [平台](https://x.ai/)向开发者开放 Grok-2 和 Grok-2 mini. 即将推出的 API 构建在一套全新的定制技术栈上, 支持多区域推理部署, 让全球各地都能低延迟访问. 我们提供增强的安全功能, 例如强制多因素认证 (比如使用 Yubikey, Apple TouchID 或 TOTP), 丰富的流量统计, 以及高级账单分析 (包括详细的数据导出). 我们还提供管理 API, 让你把团队, 用户和账单管理集成到现有的内部工具和服务里. [订阅我们的通讯](https://x.ai/api), 本月晚些时候上线时会通知你.
 
 > **核对:** 企业 API 说「later this month」, 实际什么时候上线?
-> 本页只说 2024 年 8 月晚些时候. 同家族 [xAI 新闻页](../xai/xai.md) 里, 8 月 13 日这条之后, 下一条 API 新闻是 2024 年 11 月 4 日的「API Public Beta」, 中间隔了近三个月. 企业 API 有没有在 8 月底先小范围开放, 新闻列表里查不到, 两边只能记为对不上. 这一段列的多区域推理部署, 强制多因素认证, 流量统计, 账单分析和管理 API 都是产品功能, 没有延迟, 区域数量, 限流或价格数字.
+> 本页只说 2024 年 8 月晚些时候. 同家族 [xAI 新闻页](../xai/xai-bi.md) 里, 8 月 13 日这条之后, 下一条 API 新闻是 2024 年 11 月 4 日的「API Public Beta」, 中间隔了近三个月. 企业 API 有没有在 8 月底先小范围开放, 新闻列表里查不到, 两边只能记为对不上. 这一段列的多区域推理部署, 强制多因素认证, 流量统计, 账单分析和管理 API 都是产品功能, 没有延迟, 区域数量, 限流或价格数字.
 
 ## What is next? (下一步是什么?)
 
@@ -191,7 +191,7 @@ Since announcing Grok-1 in November 2023, xAI has been moving at an extraordinar
 © 2026 SpaceXAI LLC
 
 > **拆开:** 页脚的「© 2026 SpaceXAI LLC」, 以及第 1 页顶上孤零零的「A」, 各是什么?
-> 发布时间以正文的 2024 年 8 月 13 日为准. 版权行是抓取当时的网站模板: [xAI 新闻页](../xai/xai.md) 记录 2026 年 2 月 2 日 SpaceX 收购 xAI, 旧文章也就挂上了新的版权行. 本页和第 6 页页脚里的 Build, Bot, Imagine, Grokipedia, Colossus 等入口同样是 2026 年的站点结构, 上一段的「new compute cluster」没有名字, 不能拿页脚的 Colossus 去对号. 第 1 页顶上的「A」是网页顶栏图标的替代文字被抽成了正文, 没有含义, 译稿照抄.
+> 发布时间以正文的 2024 年 8 月 13 日为准. 版权行是抓取当时的网站模板: [xAI 新闻页](../xai/xai-bi.md) 记录 2026 年 2 月 2 日 SpaceX 收购 xAI, 旧文章也就挂上了新的版权行. 本页和第 6 页页脚里的 Build, Bot, Imagine, Grokipedia, Colossus 等入口同样是 2026 年的站点结构, 上一段的「new compute cluster」没有名字, 不能拿页脚的 Colossus 去对号. 第 1 页顶上的「A」是网页顶栏图标的替代文字被抽成了正文, 没有含义, 译稿照抄.
 
 Products
 

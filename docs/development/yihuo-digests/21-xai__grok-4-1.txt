@@ -1,0 +1,85 @@
+# 21-xai/grok-4-1  文件: content/model-library/03-模型家族\21-xai/grok-4-1\grok-4-1-bi.md  共 21 块
+
+--- 行5 [想] ---
+> 不是. 图里是蓝底白色字形的 App Store 图标, 属于下文「A Grok on iOS」那一行的下载入口. 文件名是 MinerU 按图后面紧跟的「Back to news」链接自动取的, 和图的内容对不上. 那一行开头孤零零的「A」, 也是这个图标的字形被识别成了字母.
+
+
+--- 行38 [问] ---
+> 只给了思路, 没给做法.「不可验证」是相对数学题, 代码单测这类能自动判对错的任务说的: 风格, 人格, 共情没有标准答案, 只能打分. xAI 的办法是让推理模型当评委. 但评委是哪个模型 (是不是 Grok 4 或 Grok 4.1 自己), 评分标准是什么, 给绝对分还是做成对比较, 策略优化用哪种算法, 训练了多少步, 本页都没写. 模型结构, 参数量, 上下文长度也一个都没有, 这是一篇面向用户的产品公告.
+
+
+--- 行47 [核对] ---
+> 对得上. 1 日到 14 日含首尾正好 14 天, 灰度结束三天后正式发布. 本页没说灰度最终覆盖了多大比例的流量, 也没说「preliminary builds」和最终发布的 Grok 4.1 是否是同一份权重.
+
+
+--- 行64 [看表] ---
+> 对手只写成「previous production model」, 没有点名. 按时间推, 11 月初 grok.com 上的生产模型可能是 Grok 4, Grok 4 Fast, 也可能是 Auto 模式下的路由组合, 本页没说. 比较次数, 平局怎么计, 置信区间也都没给. 数字保留到两位小数, 看上去很精确, 但缺了样本量, 读者判断不了误差有多大.
+
+
+--- 行85 [拆开] ---
+> 图里 grok-4.1-thinking 1483, grok-4.1 1465, 最高的非 xAI 模型是 gemini-2.5-pro 1452, 1483 − 1452 = 31, 和正文一致. 1465 也确实高于图里带 thinking 后缀的两个 Claude 配置 (1450, 1449) 和 gpt-5-high (1437). 但「#33」在图里找不到: 图只画了 16 个模型, grok-4-0709 以 1409 排在最末, 这是 xAI 挑出来的一组, 不是整张榜. 图左下角的轴名是「Overall Style Control Elo」, 即 LMArena 开启风格控制后的分数, 正文只写「1483 Elo」, 没交代这个前提.
+
+
+--- 行88 [确认] ---
+> 横线是置信区间. 按网格线 (每格 50 分, 从 1325 到 1525) 目测, grok-4.1 的区间大约在 1454 到 1476, gemini-2.5-pro 大约在 1449 到 1456, 两者一个下沿一个上沿几乎挨着. grok-4.1-thinking 的区间大约在 1472 到 1494, 和第三名分得开. 所以第一名站得住, 第二名对第三名的领先落在误差边缘. 这些区间端点是按像素估的, 页面没有印出.
+
+
+--- 行99 [回看] ---
+> 不是. PDF 里这两处是普通正文, 链接的起止位置和词的边界都不对齐, 地址也只是 `https://x.ai/` 首页, 应是网页上叠在文字上的可点区域被 MinerU 当成了超链接. 同样的残片在第 5 页的「Prompt」, 第 7 页的「conscious and is goi」, 第 10 页的「The ultimate SF sy」上还会出现. 中文按文字意思译, 不保留这些假链接. 另外, 正文说 45 个场景「大多数」是 3 轮, 剩下的场景几轮, 本页没说.
+
+
+--- 行108 [停一下] ---
+> 图里只有一种. 标题是「Emotional Intelligence Benchmark - Elo (Normalized)」, 依次是 Grok 4.1 Thinking 1586, Grok 4.1 1585, Kimi K2 Instruct 1561, Horizon Alpha 1559, Gemini 2.5 Pro 1460, GPT-5 Chat 1364, Claude Opus 4 1304, Grok 4 1206. rubric 分全文没有出现. 文件名是按图后面那句话取的, 图本身是 EQ-Bench 柱状图, 不是对话示例. Horizon Alpha 是匿名代号, 本页没说是谁的模型. 评委写作「Claude Sonnet 3.7」, Anthropic 的正式名称是 Claude 3.7 Sonnet, 词序不同, 指的应是同一个模型.
+
+
+--- 行111 [再看] ---
+> 1586 对 1585, 只差 1 分, 开不开思考在这项上几乎没区别. 对 Grok 4 是 1585 − 1206 = 379 分, Thinking 版是 380 分. 这些分数是在同一组参赛模型里归一化的, 换一组对手, 绝对值会变, 所以不能拿它和 LMArena 的 Elo 放在一起比.
+
+
+--- 行152 [对一下] ---
+> 上一代回答 5 句, 约 54 个英文词; 新版 4 段, 约 118 个词, 长了一倍多. 新版多出来的是具体画面 (睡觉的角落, 凌晨 3 点讨零食) 和「It hurts because the love was ... that big」这类情绪确认. 但这是一条单独挑出的样例, 页面没说是否经过挑选, 也没给两版在这条提示上的评分. 能支撑「更好」的数字只有上一页的 EQ-Bench 分数.
+
+
+--- 行175 [想] ---
+> 排第二和第三. 第一是 Polaris Alpha 1756.2, 表里自己注明是「early GPT 5.1」, 比 Grok 4.1 Thinking 的 1721.9 高 34.3 分. 表底的 Grok 3 只有 1126, 比 Grok 4.1 的 1708.6 低 582.6 分. Grok 4 没有出现在这张表里, 所以看不出从 Grok 4 到 4.1 这一步涨了多少. 方法说明那句等于承认, 两项分数都是 xAI 自己跑官方仓库得到的, 发文时还没登上公开排行榜, 没经过第三方复核.
+
+
+--- 行242 [问] ---
+> 属于本页下面的 FActScore 图. 对照 PDF, 这一页 FActScore 柱状图里 Grok 4 Fast (Non-Reasoning) 是 9.89%, Grok 4.1 (Non-Reasoning) 是 2.97%. MinerU 把前一个数字挪到了页首, 源 md 里 FActScore 下 Grok 4 Fast 那一行因此没有数值. 紧接着的「Hi. I'm Grok.」是上一页 X 帖子的最后一句, PDF 里它在第 8 页顶部, 被滚动卡片遮得只剩半透明的一行.
+
+
+--- 行287 [核对] ---
+> 从 12.09% 降到 4.22%, 少了 7.87 个百分点, 相对降幅约 65%. 对照组是 Grok 4 Fast 的非推理模式, 前文说的正是这类「Fast (non-reasoning) models」容易出错, 所以拿同样不推理的前代来比. Grok 4 和 Grok 4.1 Thinking 的幻觉率本页都没给. 分层抽样按什么分层, 抽了多少条, 本页也没说.
+
+
+--- 行308 [看表] ---
+> FActScore 原论文的分数是被知识源支持的原子事实所占比例, 越高越好. 这里标「Lower score is better」, 数值落在 3% 到 10% 之间, 应该是换成了错误比例再报告, 页面没交代换算方式. 按 PDF 补回的数字, Grok 4 Fast 9.89%, Grok 4.1 2.97%, 降了 6.92 个百分点, 相对降幅约 70%.
+
+
+--- 行323 [拆开] ---
+> 宏平均是先对每条回答算错误占比, 再对所有回答求平均, 每条回答权重相同, 长回答不会因为陈述多而占更大比重. 重大错误和轻微错误都算进分子, 但两者怎么划界, 由人判还是由模型判, 本页没说. 这句定义只针对幻觉率, FActScore 那张图是不是同一口径, 也没说明.
+
+
+--- 行378 [确认] ---
+> 源 md 在这里截断了. PDF 第 9 页这一栏底部还有半行「Tips: Book tickets 2 3 weeks ahead via Alcatraz Cruises ($40 $50) Ferries depart from」, 被网页的滚动框切断, 连字符也丢了, MinerU 没有收进 md. 它不影响任何评测数字, 但说明这些示例在网页上是可滚动的卡片, 快照只截到了开头.
+
+
+--- 行401 [回看] ---
+> 属于 Grok 4.1 的回答. 图里是两张并排的桥景照片, 排在 Grok 4.1 的「Golden Gate Bridge」小节上方, 上一代的回答里没有配图. 新版把上一代「Why Visit / What to Do / Tips」三段式压成了一段话, 信息点差不多: 行人免费, 拍照机位, 注意雾. 机位从 Battery Spencer, Fort Point 换成了 Battery East, Crissy Field. 两版都没给出处, 页面也没对这条示例做事实核查.
+
+
+--- 行408 [停一下] ---
+> 就是这句 model card 链接, 指向 `data.x.ai` 上日期为 2025-11-17 的 PDF. 训练方法, 安全评估, 参数规模这类信息如果有披露, 都在那份 model card 里, 本页正文没有转述. 在 PDF 版面上, 这句话夹在页脚导航的文字中间, 位置很不起眼.
+
+
+--- 行413 [再看] ---
+> 是页脚的 SpaceX 字标被识别成了文字, 末尾的 X 认成了 A. 下一行「© 2026 SpaceXAI LLC」说明这是 2026 年抓取的网页快照, 同家族 [xAI 新闻页](../xai/xai-bi.md) 记录了 2026 年 2 月 SpaceX 收购 xAI 之后网站署名的变化. 正文是 2025 年 11 月发的, 页脚按 2026 年的模板显示, 两者不矛盾.
+
+
+--- 行516 [对一下] ---
+> 页脚是并排的几列, MinerU 左右交错取文字. 对照 PDF 第 10 页的文字顺序归位: Products 列是 Chat, Build, Imagine, Voice, Bot, Grokipedia; Solutions 列是 Business, Government, Customer Support, Legal, Security, Use Cases; Download 列是 grok.com, iOS, Android, Grok on X; Grok Bot 列是 Overview, Marketplace, Guides, Use Cases. 两个 Use Cases 地址不同, 一个在 `x.ai/grok/` 下, 一个在 `x.ai/bot/` 下.
+
+
+--- 行621 [想] ---
+> 这一页的页脚比同家族 [Grok-1 译稿](../grok-1/grok-1-bi.md) 里的页脚少了 API Overview, About, News, Subprocessors, Help Center 等条目, Pricing 也丢了地址, 是跨页时漏收的. 剩下的条目照样按列交错: Developers 列是 Pricing, Models, Console, Changelog, Docs, Status; Company 列只剩 Colossus, Careers, Contact; Trust 栏里的 Security 地址是 `x.ai/security`, 和上面 Solutions 列里的 `x.ai/solutions/security` 不是同一页. 这些都和模型无关.
+

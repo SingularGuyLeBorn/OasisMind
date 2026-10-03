@@ -10,13 +10,13 @@
 
 第 1 页给出定位: Grok 4.5 是 SpaceXAI 「smartest model」, 面向 coding, agentic tasks 和 knowledge work, 「trained alongside Cursor」, 并且「strongest model ever」. 第 1, 2 页是全文唯一讲训练的地方: 「Real-world engineering excellence」一句带过数据覆盖, 「Training Grok 4.5」一段讲硬件, 数据筛选和强化学习. 第 2 页末尾是 DeepSWE 柱状图和两行来源小字. 第 3 页起进入演示: 一个 prompt 生成 Cosmos 太阳系应用, 接着「Faster than flash models」给出 80 TPS 和 token 效率的主张.
 
-第 4 页是 token 效率图 (数值在抽取中丢失), 然后是 Office 能力, 定价 \$2 / \$6, 上手代码和第 6 页的安装命令, 第 7, 8 页是网站页脚. 按篇幅算, 全文没有一处讲到模型结构, 讲训练的文字不到两段, 其余是演示截图, 价格和产品入口. 它和 [Grok 4 公告](../grok-4/grok-4.md) 是同一个模板: 一句最强定位, 一小段训练叙述, 几张图, 产品链接, 页脚.
+第 4 页是 token 效率图 (数值在抽取中丢失), 然后是 Office 能力, 定价 \$2 / \$6, 上手代码和第 6 页的安装命令, 第 7, 8 页是网站页脚. 按篇幅算, 全文没有一处讲到模型结构, 讲训练的文字不到两段, 其余是演示截图, 价格和产品入口. 它和 [Grok 4 公告](../grok-4/grok-4-bi.md) 是同一个模板: 一句最强定位, 一小段训练叙述, 几张图, 产品链接, 页脚.
 
 ## 2. 训练: 硬件换代, 数据筛选, 异步强化学习
 
 ### 2.1 硬件与数据: 从 200,000 张 H100 到数万张 GB300
 
-公告说 Grok 4.5 「trained across tens of thousands of NVIDIA GB300 GPUs」. 对照 [Grok 4 公告](../grok-4/grok-4.md) 的 Colossus 「200,000 GPU cluster」: 那次集群由 H100 组成, 这次是 GB300, 数量写法从「二十万」缩成了「数万」, 两种写法一个给的是集群总规模, 一个给的可能是本次实际占用, 口径不同, 不能直接读成「训练变小了」. GB300 是 Blackwell 一代的整机柜产品 (GB300 NVL72), 单柜算力和显存带宽比 H100 节点高出一个量级, 「数万张 GB300」的总算力未必比二十万张 H100 低, 但页面没给 FLOPs, 也没有任何换算依据.
+公告说 Grok 4.5 「trained across tens of thousands of NVIDIA GB300 GPUs」. 对照 [Grok 4 公告](../grok-4/grok-4-bi.md) 的 Colossus 「200,000 GPU cluster」: 那次集群由 H100 组成, 这次是 GB300, 数量写法从「二十万」缩成了「数万」, 两种写法一个给的是集群总规模, 一个给的可能是本次实际占用, 口径不同, 不能直接读成「训练变小了」. GB300 是 Blackwell 一代的整机柜产品 (GB300 NVL72), 单柜算力和显存带宽比 H100 节点高出一个量级, 「数万张 GB300」的总算力未必比二十万张 H100 低, 但页面没给 FLOPs, 也没有任何换算依据.
 
 数据侧的说法比 Grok 4 公告更具体: 除 raw token 量之外, 点名了 **deduplication**, **quality scoring** 和 **domain-focused selection** 三样筛选, 目标是让数据配比保持「high-coverage and high-signal」. 这是预训练数据的常规工序, 值得注意的不是它做了什么, 而是这次的叙述重心: Grok 4 公告把篇幅给了强化学习, 这次把数据筛选和强化学习并列, 说明在长训练 run 的稳定性之外, 数据配比被当成了卖点. 配比具体怎么定, 各域占比多少, 页面没写.
 
@@ -50,7 +50,7 @@ TPS 和 token 效率是两个独立的量: TPS 是单 token 的生成速度, tok
 
 ### 4.2 定价段的三个说法互相互证不了
 
-定价段在 \$2 / \$6 两个数字之外, 又叠了「roughly 2x the token efficiency」和「under half the number of steps」两个说法. token 数和 step 数不是一回事: agent 的一步可长可短, 步数减半推不出 token 减半, 页面却拿它们互相给同一个 2 倍背书. 单价横向比, [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 是 \$1.25 / \$2.50, Grok 4.5 反而更贵, 输出价是后者的 2.4 倍; 「far lower costs」要成立, 完全押在 2 倍 token 效率上, 而这个效率只有一张数值丢失的图. 至于「highest intelligence per unit of time and cost」, 没有任何联合指标支撑, 属于宣传语.
+定价段在 \$2 / \$6 两个数字之外, 又叠了「roughly 2x the token efficiency」和「under half the number of steps」两个说法. token 数和 step 数不是一回事: agent 的一步可长可短, 步数减半推不出 token 减半, 页面却拿它们互相给同一个 2 倍背书. 单价横向比, [Grok 4.20 规格页](../grok-4-20/grok-4-20-bi.md) 是 \$1.25 / \$2.50, Grok 4.5 反而更贵, 输出价是后者的 2.4 倍; 「far lower costs」要成立, 完全押在 2 倍 token 效率上, 而这个效率只有一张数值丢失的图. 至于「highest intelligence per unit of time and cost」, 没有任何联合指标支撑, 属于宣传语.
 
 ## 5. 产品面: Cursor 共训, Grok Build, Office 插件
 
@@ -62,6 +62,6 @@ Office 一段讲 Grok Build 能做复杂的 Excel 模型 (联网调研, 跨 shee
 
 ## 6. 模型本身与本文的空白
 
-参数量, 层数, 注意力结构, 词表, 上下文窗口, 预训练数据和配比, 本页一个字都没写. 「strongest model ever」和「trained alongside Cursor」之间, 读者推不出底座是延续 [Grok 4](../grok-4/grok-4.md) 的还是重训的; 推理时加了多少 TestingTime, 和 Grok 4 Heavy 那种并行 test-time compute 是什么关系, 页面也没提, 只有 80 TPS 这个数字暗示服务形态偏「快模型」而非「重推理」. 安全评测, 拒答率, 幻觉率同样不在本篇.
+参数量, 层数, 注意力结构, 词表, 上下文窗口, 预训练数据和配比, 本页一个字都没写. 「strongest model ever」和「trained alongside Cursor」之间, 读者推不出底座是延续 [Grok 4](../grok-4/grok-4-bi.md) 的还是重训的; 推理时加了多少 TestingTime, 和 Grok 4 Heavy 那种并行 test-time compute 是什么关系, 页面也没提, 只有 80 TPS 这个数字暗示服务形态偏「快模型」而非「重推理」. 安全评测, 拒答率, 幻觉率同样不在本篇.
 
-空白之外, 本页对不上的数字集中在这几处: 正文「exceeds comparable leading models」和图里第三名不一致; 图下两行小字一个说自己跑, 一个说摘自家发布材料, 来源混标; token 效率图数值丢失, 2 倍无从核对; 「2 倍 token 效率」和「不到一半步数」混用; 五个评测标签只抓到一张图, SWE Bench Pro 全篇无分数却被反复引用作效率口径. 另外公司名已是 SpaceXAI (2026 年 2 月 SpaceX 收购 xAI 后的新品牌), 发布日期 2026 年 7 月 16 日与页脚版权行同年, 不存在 [Grok 4 公告](../grok-4/grok-4.md) 里那种模板残留问题. 按 [xAI 新闻页](../xai/xai.md) 的列表, 约一个月后 Grok 4.6 以「long-running agents」为重点接续发布, 说明这次铺开的 agentic 线还在快速迭代.
+空白之外, 本页对不上的数字集中在这几处: 正文「exceeds comparable leading models」和图里第三名不一致; 图下两行小字一个说自己跑, 一个说摘自家发布材料, 来源混标; token 效率图数值丢失, 2 倍无从核对; 「2 倍 token 效率」和「不到一半步数」混用; 五个评测标签只抓到一张图, SWE Bench Pro 全篇无分数却被反复引用作效率口径. 另外公司名已是 SpaceXAI (2026 年 2 月 SpaceX 收购 xAI 后的新品牌), 发布日期 2026 年 7 月 16 日与页脚版权行同年, 不存在 [Grok 4 公告](../grok-4/grok-4-bi.md) 里那种模板残留问题. 按 [xAI 新闻页](../xai/xai-bi.md) 的列表, 约一个月后 Grok 4.6 以「long-running agents」为重点接续发布, 说明这次铺开的 agentic 线还在快速迭代.

@@ -46,7 +46,7 @@ Creative Writing v3 让每个模型对 32 个写作提示各写 3 轮, 每个模
 
 幻觉部分针对的是一个很具体的场景: 带搜索工具的非推理模型. 页面给的理由是这类模型「constrained reasoning depth and limited tool-call budgets」, 所以容易出事实错误. 评测对象写明是「non-reasoning model with web search tools」. 两项结果: 生产流量分层抽样的幻觉率, Grok 4 Fast (Non-Reasoning) 12.09%, Grok 4.1 (Non-Reasoning) 4.22%, 少了 7.87 个百分点, 相对降幅约 65%; FActScore (500 道人物传记题), 9.89% 降到 2.97%, 少了 6.92 个百分点, 相对降幅约 70%. 源 md 里 FActScore 下 Grok 4 Fast 那一行没有数值, 9.89% 按 PDF 第 8 页归位.
 
-这组数字的边界要讲清. 对照组是 Grok 4 Fast 而不是 Grok 4; 同家族 [xAI 新闻页分析](../xai/xai-analysis.md) 记录 Grok 4 Fast 在 2025 年 9 月 19 日发布, 型号专页见 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md), 比 4.1 早两个月. Thinking 模式的幻觉率一个都没给. 幻觉率定义为「macro-average of percentage of atomic claims with major/minor errors over model responses」, 即每条回答先算错误陈述比例, 再对回答求平均; 但分层按什么分, 抽了多少条, 错误由人判还是由模型判, 都没写. FActScore 原论文的分数是被知识源支持的原子事实比例, 越高越好, 这里却标「Lower score is better」, 应是换成了错误比例, 换算方式页面没交代. 还有一点: 评测时模型带着网页搜索, 结果混合了模型自身知识和检索质量, 工具调用预算设成多少也没说, 降幅里有多少来自后训练, 有多少来自搜索策略, 分不开.
+这组数字的边界要讲清. 对照组是 Grok 4 Fast 而不是 Grok 4; 同家族 [xAI 新闻页分析](../xai/xai-analysis.md) 记录 Grok 4 Fast 在 2025 年 9 月 19 日发布, 型号专页见 [Grok 4 Fast](../grok-4-fast/grok-4-fast-bi.md), 比 4.1 早两个月. Thinking 模式的幻觉率一个都没给. 幻觉率定义为「macro-average of percentage of atomic claims with major/minor errors over model responses」, 即每条回答先算错误陈述比例, 再对回答求平均; 但分层按什么分, 抽了多少条, 错误由人判还是由模型判, 都没写. FActScore 原论文的分数是被知识源支持的原子事实比例, 越高越好, 这里却标「Lower score is better」, 应是换成了错误比例, 换算方式页面没交代. 还有一点: 评测时模型带着网页搜索, 结果混合了模型自身知识和检索质量, 工具调用预算设成多少也没说, 降幅里有多少来自后训练, 有多少来自搜索策略, 分不开.
 
 ## 7. 三组示例: 风格往哪个方向变
 

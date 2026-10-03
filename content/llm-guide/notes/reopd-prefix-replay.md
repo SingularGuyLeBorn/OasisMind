@@ -9,7 +9,7 @@ tags: ["OPD", "蒸馏", "ReOPD", "prefix replay", "多轮 Agent", "Qwen3"]
 
 > **论文**：*Multi-Turn On-Policy Distillation with Prefix Replay*（Baohao Liao 等，Microsoft Research + University of Amsterdam，arXiv:2607.04763，2026-07）
 > **PDF**：[reopd-prefix-replay.pdf](../../uploads/papers/reopd-prefix-replay.pdf)
-> **代码**：[BaohaoLiao/ReOPD](https://github.com/BaohaoLiao/ReOPD) ｜ README：[ReOPD.md](../../uploads/github-readme/ReOPD.md)
+> **代码**：[BaohaoLiao/ReOPD](https://github.com/BaohaoLiao/ReOPD)
 > **数据/模型**：[Hugging Face Collection baohao/reopd](https://huggingface.co/collections/baohao/reopd)
 
 ## 原文精读

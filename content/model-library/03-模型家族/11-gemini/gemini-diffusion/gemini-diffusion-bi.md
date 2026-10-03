@@ -101,7 +101,7 @@ Generates entire blocks of tokens at once, meaning it responds more coherently t
 
 一次生成整块 token, 这意味着它对用户提示的回应比自回归模型更连贯.
 
-注: PDF 这一页卡片中央有一个蓝色图标 (几行长短不一的横线夹着圆点), 文字层里的图标名是 「stream_control」; md 没有把它抽成图片, 所以本页没有图片块.
+注: PDF 这一页卡片中央有一个蓝色图标 (几行长短不一的横线夹着圆点), 文字层里的图标名是 「stream_control」; md 没有把它抽成图片, 所以报告该页没有图片块.
 
 > **对一下:** 这里说 「entire blocks of tokens at once」, 第 2 页说 「step-by-step」, 一次成块和一步一步是不是矛盾?
 > 两句说的是两个层面. 「at once」 指的是一块里的 token 同时出现, 不像自回归那样从左到右一个一个排; 「step-by-step」 指的是这一整块要经过多轮去噪才定下来. 合起来的读法是: 整块一起生成, 整块一起逐轮修正. 至于 「more coherently than autoregressive models」, 这一页没有给任何连贯性指标或对照实验, 是一句定性的说法.

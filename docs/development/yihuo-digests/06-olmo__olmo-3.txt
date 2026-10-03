@@ -1,0 +1,81 @@
+# 06-olmo/olmo-3  文件: content/model-library/03-模型家族\06-olmo/olmo-3\olmo-3-bi.md  共 20 块
+
+--- 行153 [想] ---
+> 用来说明 Olmo 的 fully-open 优势: 可比最终 thinking, 也能回追 Base 与数据; 对方只给终点权重.
+
+
+--- 行188 [问] ---
+> 预训练至约 5.9T (32B 实际常写截到 5.5T), midtraining 100B, 长上下文 7B 50B / 32B 100B (§2.1, Fig. 4).
+
+
+--- 行261 [核对] ---
+> §2.2 写明在通用聊天与 function calling 场景, 中间思考抬延迟, 收益不足以抵消交互成本.
+
+
+--- 行279 [看表] ---
+> 同尺度最强 open-weight thinking (文内与 Qwen 3 / Qwen 3 VL 32B 等对读), 不是 fully-open 旧档.
+
+
+--- 行342 [拆开] ---
+> §2.4: 四个候选学习率, 各 256 GPU 并行约 36 小时, 再加约 12 小时评测与合并确认.
+
+
+--- 行462 [确认] ---
+> OLMo-core 覆盖预训练, midtraining, 长上下文扩展与 SFT, 但 DPO 与 RL 「planned but not yet complete」; RL 基础设施写在 §4.4.3 的 Open Instruct. 反过来, §4.2.2 的 SFT 从 Open Instruct 换到 OLMo-core, 训练吞吐提升 8×.
+
+
+--- 行561 [回看] ---
+> 7B 峰值 $3\times10^{-4}$, batch 4M token; 32B 峰值 $6\times10^{-4}$, batch 8M token. 文内说 32B 更高 LR 部分被更大 batch 抵消.
+
+
+--- 行564 [停一下] ---
+> 调度目标是峰值 10%, 但 32B 在 5.5T 处截断, 没走完 5.93T 的余弦尾段, 所以实际终学习率停在 $\mathrm{6.210\times10^{-5}}$ (Fig. 4 图注). 7B 则是前半段 5T 余弦, 后半段拉长到 5.93T (Fig. 3).
+
+
+--- 行966 [再看] ---
+> 5B 目标数据 + 5B Web 退火 10B, 再与 10B web-only 基线比, 衡量的是 「仅用 Web 继续训练」 之外的额外影响, 不是 100B 正式跑. 脚注 13 还列了变体: 只够 2.5B 的数据集用 5B microanneal, 以及省掉算力匹配基线, 直接看单次退火增益的旧式做法.
+
+
+--- 行1199 [对一下] ---
+> Reddit-to-Flashcards 抬 MCQA/部分 code, 伤 math/GenQA; meta-reasoning 与 program-verifiable 抬 math/code, 伤部分 GenQA/MCQA.
+
+
+--- 行1230 [想] ---
+> 在控制总 token 的 100B 对照里, 含 instruction 与 thinking 的 mix 在各项 OlmoBaseEval 上全面更好.
+
+
+--- 行1253 [问] ---
+> 不能一概而论. 报告对所有基准的所有划分去污染, DROP 一项就从 Flan 等来源移除超过 60,000 个训练样本, 掉分既可能是阻止记忆, 也可能是删掉了同分布训练样本. 另有反例: DeepSeek LeetCode 污染与否都接近 0, SQuAD 在 MC 指标下两种情况都饱和; GSM8K 完全泄漏反而去污染版更好, 文内引 Marin 的格式不匹配解释.
+
+
+--- 行1308 [核对] ---
+> 最可压缩 20% 与最不可压缩 20% 都剔除 (§3.6.1).
+
+
+--- 行1339 [看表] ---
+> 只对 full attention 层施加 YaRN 时 RULER 最好; 不要默认打到 SWA 层.
+
+
+--- 行1800 [拆开] ---
+> 过滤全同奖励组后 batch 变瘦; active sampling 用来维持稳定 batch 大小 (§4.4.1, §4.4.3).
+
+
+--- 行1818 [确认] ---
+> 去掉 KL 损失; advantage 计算去掉组内标准差归一化 (§4.4.1).
+
+
+--- 行1841 [回看] ---
+> $\rho$ 是截断重要性采样上限; $\varepsilon_{\mathrm{high}}$ 是 clip-higher 的上侧幅度, 允许对某些 token 更大更新.
+
+
+--- 行2573 [停一下] ---
+> Fig. 24 叙述: AIME 2024/2025 的 pass@1 是对 32 次采样做 bootstrap 平均, 并另报 pass@32.
+
+
+--- 行2584 [再看] ---
+> 16K 用来容纳数学与代码域的长 CoT; 评测改 32K, 温度 1.0 是为鼓励多样性, 因为要报告 pass@k. 除这两点外全部跟随 §4.4.1, 超参见 Table 49.
+
+
+--- 行2647 [对一下] ---
+> 说明预训练或 midtraining 数据与评测集显著重叠, 虚假奖励只是把记忆解引出来. 实际按 Shao et al. (2025b) 协议给随机二值奖励后, 任一基准都没有提升, 表现平坦或下降, 报告据此认为去污染成功.
+

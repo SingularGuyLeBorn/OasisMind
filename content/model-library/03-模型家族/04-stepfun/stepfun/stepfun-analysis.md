@@ -32,4 +32,4 @@ Step Image Edit 2 分组旁标 「即将下线」, 正文仍称最新轻量编�
 
 它能稳定回答的很少: 这是开放平台文档首页; 五类能力入口; 各推荐卡的显示名, 上下文或响应规格, 模态与场景口号; ASR 的 4B MTP 与 5 分钟 / 1 秒; Image Edit 2 的即将下线标记; 一张 API 文档区截图. 它不能回答的同样清楚: Step 5 为何到 1M, 各 Flash 的层宽与路由, Chat 与 TTS 断标题归属以外的训练细节, SOTA / 比肩闭源的评测表, 以及 2603 与旗舰推理卡是否同一权重.
 
-把这张推荐墙和同目录的技术材料对起来看, 家族的主线很清楚. [Step 3.5 Flash](../step3-5-flash/step3-5-flash.md) 的技术报告交代了 196B / 11B 的混合注意力 MoE 和它的训练方法, 平台上的 2603 版本在此基础上主打 token 效率和低推理模式; [Step 3.7 Flash](../step3-7-flash/step3-7-flash.md) 在同一底座上加原生多模态输入; [Step 5 Preview](../step5-preview/step5-preview.md) 是下一代旗舰, 上下文到 1M. 语音线里 ASR 用 MTP 做并行预测, 和 3.5 Flash 用 MTP 给投机解码出草稿, 是同一个技术在不同模态上的用法, 但页面没有说明两者是否共用实现.
+把这张推荐墙和同目录的技术材料对起来看, 家族的主线很清楚. [Step 3.5 Flash](../step3-5-flash/step3-5-flash-bi.md) 的技术报告交代了 196B / 11B 的混合注意力 MoE 和它的训练方法, 平台上的 2603 版本在此基础上主打 token 效率和低推理模式; [Step 3.7 Flash](../step3-7-flash/step3-7-flash-bi.md) 在同一底座上加原生多模态输入; [Step 5 Preview](../step5-preview/step5-preview-bi.md) 是下一代旗舰, 上下文到 1M. 语音线里 ASR 用 MTP 做并行预测, 和 3.5 Flash 用 MTP 给投机解码出草稿, 是同一个技术在不同模态上的用法, 但页面没有说明两者是否共用实现.

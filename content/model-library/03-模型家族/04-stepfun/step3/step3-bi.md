@@ -10,9 +10,13 @@ StepFun Inc.
 
 Large language models (LLMs) face low hardware efficiency during decoding, especially for long-context reasoning tasks. This paper introduces Step-3, a 321B-parameter VLM with hardware-aware model-system co-design optimized for minimizing decoding costs. Step-3 innovates in two key dimensions: (1) A novel Multi-Matrix Factorization Attention (MFA) mechanism that significantly reduces both KV cache size and computation while maintaining high attention expressiveness, and (2) Attention-FFN Disaggregation (AFD), a distributed inference system that decouples attention and Feed-Forward Network (FFN) layers into specialized subsystems. This co-design achieves unprecedented cost efficiency: Step-3 significantly reduces theoretical decoding costs compared with models like DeepSeek-V3 and Qwen3 MoE 235B, with the gains widening at longer context. Step-3 achieves low cost while activating 38B parameters per token (more than DeepSeek-V3 and Qwen3 MoE 235B), demonstrating that hardware-aligned attention arithmetic intensity, MoE sparsity, and AFD are critical to cost-effectiveness. We perform a head-to-head comparison with DeepSeek-V3 in its favorable scenarios. Our implementation on Hopper GPUs achieves a decoding throughput of up to 4,039 tokens per second per GPU under 50ms TPOT SLA (4K context, FP8, no MTP). It is higher than DeepSeek-V3’s 2,324 in the same setup and sets a new Pareto frontier for LLM decoding.
 
+大型语言模型 (LLMs) 在解码阶段硬件效率低下, 长上下文推理任务尤其如此. 本文提出 Step-3: 一个 321B 参数的 VLM, 采用硬件感知的模型-系统协同设计, 目标是最小化解码成本. Step-3 在两个关键维度上创新: (1) 全新的多矩阵分解注意力 (MFA) 机制, 在保持高注意力表达能力的同时显著降低 KV cache 大小与计算量; (2) 注意力-FFN 解耦 (AFD), 一种把注意力层与前馈网络 (FFN) 层拆分到专用子系统的分布式推理架构. 这套协同设计带来前所未有的成本效率: 与 DeepSeek-V3 和 Qwen3 MoE 235B 等模型相比, Step-3 大幅降低了理论解码成本, 且上下文越长优势越大. Step-3 每个 token 激活 38B 参数 (多于 DeepSeek-V3 与 Qwen3 MoE 235B), 这说明与硬件对齐的注意力算术强度, MoE 稀疏性与 AFD 是成本效益的关键. 我们在对 DeepSeek-V3 有利的场景下与之正面对比. 我们在 Hopper GPU 上的实现在 50ms TPOT SLA 下达到每 GPU 每秒 4,039 token 的解码吞吐 (4K 上下文, FP8, 无 MTP), 高于同设置下 DeepSeek-V3 的 2,324, 刷新了 LLM 解码的 Pareto 前沿.
+
 ## 1 Introduction
 
 This paper presents the model-system co-design of Step-3, specifically engineered for the test-time scaling paradigm with the primary optimization objective of minimizing decoding costs. Step-3 has 321 billion total parameters, while for each text token, 38B parameters are activated. We will demonstrate that, although Step-3 is in the multi-hundred billion parameter range and the activated parameters are slightly larger than representative open-weight models like DeepSeek V3 (DSv3) [4], we achieve significantly lower decoding costs with model-system co-design.
+
+本文介绍 Step-3 的模型-系统协同设计, 它专为 test-time scaling 范式打造, 首要优化目标是最小化解码成本. Step-3 总参数 3,210 亿, 每个文本 token 激活 38B 参数. 我们将证明: 尽管 Step-3 处于数千亿参数区间, 激活参数也略大于 DeepSeek V3 (DSv3) [4] 等代表性开源权重模型, 但凭借模型-系统协同设计, 我们实现了显著更低的解码成本.
 
 We focus on optimizing decoding because 1) it is the most
 
@@ -22,51 +26,95 @@ Figure 1: The Pareto frontier of recent models regarding activated parameters an
 
 expensive per token (because of low MFU) compared with training and prefill. 2) For reasoning models, longer thinking leads to higher intelligence, so lowering decoding costs can translate to higher intelligence for fixed-budget scenarios. 3) Faster and cheaper decoding also speeds up the RL training. 4) There is a large room for optimization and is therefore more technically interesting.
 
+我们聚焦解码优化, 因为: 1) 与训练和 prefill 相比, 解码的每 token 成本最高 (MFU 低); 2) 对推理模型来说, 思考越长智能越高, 降低解码成本就能在固定预算下换来更高的智能; 3) 更快更省的解码也能加速 RL 训练; 4) 这里的优化空间很大, 技术上更有意思.
+
 Recently, there emerged several large open-weight models. Some of them explored novel architecture changes on top of traditional Transformers. The innovations focus on the two main Transformer components – there are new attention designs to reduce KV cache overhead during inference, and there are Mixture-of-Experts (MoE) structures to enhance FFN while limiting the growth of computation requirements.
 
+近来涌现出多个大型开源权重模型, 其中一些在传统 Transformer 之上探索了新的架构变化. 创新集中在 Transformer 的两大组件上: 一边是有助于降低推理 KV cache 开销的新注意力设计, 另一边是用 MoE 结构增强 FFN, 同时限制计算需求的增长.
+
 We also started to work on model architecture exploration, e.g., through MoE model development (Step-2 [20]) since late 2023 and MFA [7], a new attention architecture released in late 2024. In the process, observing the recent open-weight models, we identify two common suboptimal practices:
+
+我们也较早开展了模型架构探索, 例如 2023 年末起的 MoE 模型开发 (Step-2 [20]), 以及 2024 年末发布的新注意力架构 MFA [7]. 在此过程中, 观察近来的开源权重模型, 我们识别出两种常见的次优实践:
 
 <!-- page 2 of 18 -->
 
 • For attention, some are overly emphasizing on reducing KV cache sizes, at excessive cost of computation load. It makes the model less cost-effective to run on more affordable but weaker hardware. Meanwhile, it limits the room for other acceleration techniques like quantization and speculative decoding.
 
+• 注意力方面, 有些设计过度强调减小 KV cache, 代价是计算负载过高. 这让模型在更便宜但算力较弱的硬件上运行时性价比变差, 也压缩了量化, 投机解码等其他加速技术的空间.
+
 • For FFN, some are overly emphasizing on pursuing sparser architectures without considering whether they fit today’s hardware. It either harms the hardware efficiency, or lowering model performance without gaining cost advantages.
+
+• FFN 方面, 有些设计过度追求更稀疏的架构, 却不考虑它是否匹配当今硬件. 结果是要么损害硬件效率, 要么是性能下降却换不到成本优势.
 
 Hoping to inspire more discussion and rethinking about the above trends, we report our recent progress, Step-3, and the analysis and rationale behind its design. The outcome is promising – in Figure 1, we show the best theoretical decoding costs of Step-3 and recent models. For each model, we searched for the best deployment strategy based on Attention-FFN Disaggregation (AFD, §3), which we advocate, and any combination of H800, H20, A800 or Ascend 910B.<sup>1</sup> Step-3 largely improves the Pareto frontier of activated parameters and decoding costs. Though not shown in the figure, its advantage continues to widen with longer context.<sup>2</sup>
 
+希望引发对这些趋势的更多讨论与反思, 我们报告近期的进展 Step-3, 以及设计背后的分析与理由. 结果令人鼓舞—Figure 1 展示了 Step-3 与近期模型的最优理论解码成本. 对每个模型, 我们都在自己倡导的注意力-FFN 解耦 (AFD, §3) 框架下, 搜索 H800, H20, A800 或 Ascend 910B 任意组合下的最优部署策略. Step-3 大幅推进了激活参数与解码成本的 Pareto 前沿. 图中没有画出的是, 它的优势随上下文变长还在继续扩大.
+
 Our work is based on the assumption of deploying prior work of Prefill-Decoding (PD) disaggregation [18, 31]. With it, we can focus only on optimizing decoding, without worrying about the impact on prefill. Readers will see similar benefits of deploying AFD, i.e., how it allows us to divideand-conquer attention and FFN designs. It leads to a model architecture whose both parts are more cost-effective. We implement the inference system and show that Step-3 indeed achieves much lower decoding costs compared with other multi-billion parameter models.
+
+我们的工作建立在部署已有 Prefill-Decoding (PD) 解耦 [18, 31] 的前提上. 有了它, 我们只需专注优化解码, 不必担心对 prefill 的影响. 读者将看到部署 AFD 的类似收益: 它让我们对注意力与 FFN 设计分而治之, 得到两部分都更具成本效益的模型架构. 我们实现了这套推理系统, 并表明 Step-3 确实比其他数百亿参数模型实现了低得多的解码成本.
 
 Below is a summary of our findings.
 
+以下是我们发现的总结.
+
 • **Decoding costs go beyond parameter count:** Neither the total parameter count or activated parameter count is a good indicator for decoding costs.
+
+• **解码成本不能只看参数量:** 总参数量和激活参数量都不是解码成本的好指标.
 
 – For example, Qwen-3 MoE 235B exhibits only 10% lower theoretical decoding cost (on H20, the best hardware for it) than DSv3 (on H800, the best hardware for DSv3) despite having 65% fewer total parameters and 40% fewer activated parameters.
 
+– 例如, Qwen-3 MoE 235B 的总参数少 65%, 激活参数少 40%, 但其理论解码成本 (在其最优硬件 H20 上) 仅比 DSv3 (在其最优硬件 H800 上) 低 10%.
+
 – Step-3 achieves ∼ 40% decoding cost reduction versus both models despite its total parameter count being between the two models and having the highest activation parameters.
+
+– Step-3 的总参数量介于两者之间, 激活参数却是最高, 但相对这两个模型都实现了约 40% 的解码成本下降.
 
 • **The attention design dominates decoding costs:** With AFD, we decouple the cost analysis of attention and FFN because we can run them in the most cost-effective way, respectively. Then it becomes apparent that the attention design has a larger impact on decoding costs than (total or
 
 activated) parameter count.
 
+• **注意力设计主导解码成本:** 有了 AFD, 注意力与 FFN 可以各自以最具成本效益的方式运行, 我们将两者的成本分析解耦. 于是可以清楚看到: 注意力设计对解码成本的影响大于 (总或激活) 参数量.
+
 • **KV cache size is not the single factor impacting attention costs:** We find that some attention designs requires too much computation (too high arithmetic intensity) for lowercost hardware platforms. More importantly, we are the first to show this problem indeed affects the final decoding costs and thus leaves large room for Step-3 to achieve significant cost savings.
+
+• **KV cache 大小不是影响注意力成本的唯一因素:** 我们发现, 某些注意力设计对低成本硬件平台而言计算量 (算术强度) 过高. 更重要的是, 我们首次证明这个问题确实会影响最终解码成本, 也因此给 Step-3 留出了大幅降低成本的空间.
 
 • **MoE needs hardware-aware design:** The degree of MoE sparsity must joinly consider hardware’s computation power, memory bandwidth and network bandwidth. Overly sparse models may have small activated parameters on paper, but run inefficiently on today’s hardware.
 
+• **MoE 需要硬件感知的设计:** MoE 稀疏程度必须联合考虑硬件算力, 内存带宽与网络带宽. 过度稀疏的模型纸面激活参数虽小, 在当今硬件上的运行效率却很差.
+
 • **For decoding acceleration, the devil is in the details:** Linear attention, quantization, and MTP are all promising directions to accelerate decoding. However, some design points that may seem nuance can remove most of the benefits in decoding.
+
+• **解码加速, 成败在细节:** 线性注意力, 量化与 MTP 都是有前景的解码加速方向. 但有些看似细微的设计差异, 就可能抹掉解码收益的大部分.
 
 • **AFD deployment:** We believe it is the superior decoding system design compared with existing solutions, because of the following unique advantages:
 
+• **AFD 部署:** 我们相信它是比现有方案更优的解码系统设计, 因为它有以下几个独特优势:
+
 – Facilitating divide-and-conquer model design.
+
+– 便于模型设计分而治之.
 
 – Easy scaling of attention instances to handle dynamic context length.
 
+– 注意力实例易于扩展, 应对动态上下文长度.
+
 – Always keeping an ideal batch size for FFN to achieve high MFU, independent from attention.
+
+– FFN 始终保有理想 batch size 以实现高 MFU, 不受注意力侧影响.
 
 – Overlapping communication overhead with a perfectly balanced pipeline.
 
+– 通信开销可与完美均衡的流水线重叠.
+
 – Reducing the scale requirement compared with DeepEP [30], and getting better reliability and less EP imbalance.
 
+– 相比 DeepEP [30] 降低了对集群规模的要求, 可靠性更好, EP 负载不均也更小.
+
 – Allowing the use of heterogeneous hardware to further reduce decoding costs.
+
+– 允许使用异构硬件, 进一步降低解码成本.
 
 ## 2 Step-3 Model Card
 
@@ -1213,6 +1261,8 @@ compared with the original Step-3’s 4,039. Nevertheless, it is still much high
 ## 8 Conclusion and Future Work
 
 This paper presents Step-3, and how its model-system co-design achieves state-of-the-art level of decoding efficiency among LLMs of similar sizes. Meanwhile, we also explain how we leverage AFD for analysis and realize Step-3’s potentials. The immediate next step for us is to enable MTP and evaluate its performance gain for decoding. In the future, we will work on exploring new attention variants that continue to push the Pareto frontier of model volume and system costs. We also analyzed that today’s interconnect limits the sparsity of MoE FFN if the goal is efficient decoding. To mitigate this problem, we are working with hardware vendors on novel high bandwidth domain designs [19]. With appropriate interconnect, we will pursue more sparsity for FFN.
+
+本文介绍了 Step-3, 以及它的模型-系统协同设计如何在同等规模 LLM 中达到最先进的解码效率. 同时, 我们也解释了如何借助 AFD 进行分析, 把 Step-3 的潜力兑现出来. 接下来的当务之急是启用 MTP 并评估它带来的解码收益. 未来, 我们将探索新的注意力变体, 继续推进模型体量与系统成本之间的 Pareto 前沿. 我们还分析指出: 若以高效解码为目标, 当今的互连带宽限制了 MoE FFN 的稀疏度. 为缓解这一问题, 我们正在与硬件厂商合作设计新型高带宽域 [19]. 有了合适的互连, 我们会进一步追求 FFN 的稀疏化.
 
 ## References
 

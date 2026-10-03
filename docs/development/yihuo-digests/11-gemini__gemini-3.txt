@@ -1,0 +1,41 @@
+# 11-gemini/gemini-3  文件: content/model-library/03-模型家族\11-gemini/gemini-3\gemini-3-bi.md  共 10 块
+
+--- 行33 [核对] ---
+> 第 5 页写的是 「Results as of November, 2025」, 也就是发布时的数, 表里的对手也停在 Claude Sonnet 4.5 和 GPT-5.1. 卡里能看出后来改动的是本页的家族清单: 它列出了 Gemini 3.1 Pro, 3.1 Flash-Lite, 3.1 Flash Live 和 Gemini 3.5 Flash, 而同一段把这些模型叫作 「Each subsequent model in the Gemini 3 Pro family」, 也就是晚于 3 Pro 的模型. 卡没有写 2026 年 5 月改了哪几处, 开头只说模型卡会 「from time-to-time」 更新, 例如补上新评测. 所以读这张卡要把日期分开: 能力数字是 2025 年 11 月的, 家族清单至少有一部分是后来补的.
+
+
+--- 行44 [想] ---
+> 没有. 第 5 页的表只有四列分数: Gemini 3 Pro, Gemini 2.5 Pro, Claude Sonnet 4.5, GPT-5.1. 表头和表注都没提 Deep Think, 也没说 Gemini 3 Pro 这一列用的是哪档设置. 全卡再提到 Deep Think 只有两处, 都是安全结论: 第 8 页说 "Evaluations of Gemini 3 Pro using Deep Think mode yielded results consistent with the original Gemini 3 Pro safety assessment「, 第 10 页对前沿安全评估说了同样的话. 这两句只有 」consistent", 没有分数. Deep Think 多花的 TestingTime 换来多少能力, 这张卡没有给数.
+
+
+--- 行51 [再看] ---
+> 不能. 这一段自己说 「see each model card for individual model details」, 清单里每个名字都链到另一份模型卡. 第 5 页只有 Gemini 3 Pro 一列, 第 8 页的表头是 「Gemini 3 Pro vs. Gemini 2.5 Pro」, 第 10 页的表头是 「Key Results for Gemini 3 Pro」. 「based on Gemini 3 Pro」 说的是模型从哪里来, 不是说它们共用这张卡里的数字.
+
+
+--- 行62 [拆开] ---
+> 要分开看. 1M 和 64K 是窗口长度: 一次能读进多少, 一次最多写出多少, 分别写在 Inputs 和 Outputs 两行. Deep Think 写在 Description 里, 是 「at time of inference」 的可选设置, 它多花的是 TestingTime. 1M 是窗口长度, 不是 TestingTime. 第 5 页 MRCR v2 (8-needle) 还说明窗口够长不等于用得好: 128k (average) 是 77.0%, 1M (pointwise) 只有 26.3%.
+
+
+--- 行71 [问] ---
+> 卡里没写. 这一段没有层数, 专家数, 路由方式, 也没有参数量. 段里九处文献引用的链接全部指向 gemini_v2_5_report.pdf, 也就是 Gemini 2.5 技术报告的参考文献页; 描述稀疏 MoE 的那两句话是这类模型的通用定义. 能确定的只有两点: 它是稀疏 MoE Transformer, 以及第 2 页那句 「not a modification or a fine-tune of a prior model」. 架构改进的内容和幅度, 卡里找不到.
+
+
+--- 行180 [看表] ---
+> 不是. 这句话的比较对象只有 Gemini 2.5 Pro, 对 2.5 Pro 它确实每行都赢, OmniDocBench 1.5 按越低越好算也是 0.115 对 0.145. 横着看四列, SWE-Bench Verified 单次尝试一行 Gemini 3 Pro 是 76.2%, 低于 Claude Sonnet 4.5 的 77.2%, 也低于 GPT-5.1 的 76.3%. AIME 2025 用代码执行一行, Gemini 3 Pro 和 Claude Sonnet 4.5 都是 100%. 另有一行只有 Gemini 3 Pro 有数: Humanity's Last Exam 用搜索和代码执行的 45.8%, 其余三列是 「—」, 没法比.
+
+
+--- 行183 [对一下] ---
+> 不能. 至少三行单位不同: OmniDocBench 1.5 是 「Overall Edit Distance, lower is better」, 0.115 对 0.145 是越低越好; LiveCodeBench Pro 是 Elo, 2,439 对 1,775; Vending-Bench 2 是美元净资产均值, $5,478.16 对 $573.64. MRCR v2 两档的统计方式也不同, 128k 是 average, 1M 是 pointwise. 百分比行之间也不同质, Humanity's Last Exam 和 AIME 2025 各自分成不用工具和带工具两档. 这张表只能逐行读.
+
+
+--- 行293 [停一下] ---
+> 这份 Markdown 丢了颜色, 先靠卡里的文字判断. 本页说 「We mark improvements in green and regressions in red」, 下文又说人工复核确认 「losses were overwhelmingly either a) false positives or b) not egregious」. 标了 「(non-egregious)」 的正好是 +0.2%, +3.1%, +3.7% 三格, 它们就是这里说的 losses. 所以文本到文本安全 -10.4% 和语气 +7.9% 是改进, 多语言安全, 图像到文本安全和无理拒答三行是退步, 只是被判为不严重. PDF 原件里 -10.4% 和 +7.9% 印成绿色, 另外三格是另一种偏红的颜色, 和这个读法一致. 正负号本身不代表好坏: 安全三行里负号是好, 正号是坏; 语气一行正号是好 (脚注 2); 无理拒答一行正号是坏. 正文说 「keeping unjustified refusals low」, 表里这一行其实比 2.5 Pro 多了 3.7%.
+
+
+--- 行312 [回看] ---
+> 只对上一半. 脚注 1 说顺序相对 「the 2.5 Flash-Lite model card」 的早先版本有变, 可这是 Gemini 3 Pro 的卡, 表头比的是 Gemini 2.5 Pro. 脚注 2 讲 「tone and instruction following」, 表里只有 Tone 一行, 没有指令遵循. 正文还有一句 「The performance results reported below are computed with improved evaluations」, 可这句话下面已经没有表, 表在它上面. 这几处像是从别的卡沿用的文字. 能确定的读法是: 表里五行都是和 2.5 Pro 比; 评测方法改过, 所以和以前模型卡里的安全数字不能直接比.
+
+
+--- 行377 [确认] ---
+> 卡里没有说是同一个. 三处的时间标注各不相同: 第 5 页是 「Results as of November, 2025」; 第 8 页只说是 「during the development phase」 的内部评测, 没有日期; 第 9 页说前沿安全按 「Frontier Safety Framework (September-2025)」 评估, 这是框架版本的日期, 不是模型快照的日期. 全卡没有检查点编号. Deep Think 的两句结论也只说和 「the original Gemini 3 Pro」 一致, 没说 original 指哪个版本. 所以不能把网络安全一行的 「Alert threshold met」 和第 5 页 Terminal-Bench 2.0 的 54.2% 当成同一个模型的两面来对读.
+

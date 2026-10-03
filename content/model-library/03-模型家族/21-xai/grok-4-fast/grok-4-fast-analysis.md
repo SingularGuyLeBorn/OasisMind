@@ -8,7 +8,7 @@
 
 ## 1. 定位: 不走 Heavy 路线, 走省 token 路线
 
-xAI 在两个月前的 [Grok 4 公告](../grok-4/grok-4.md) 里押的是另一条路: 大规模强化学习加上并行 test-time compute, 堆出 Grok 4 Heavy 这种「想得久, 想得贵」的顶配. Grok 4 Fast 换了一个方向: 保持与 Grok 4 相当的分数, 把推理过程本身压短. 官方给的词是 **intelligence density** (智能密度), 定义就印在页面上: maximum performance at minimum cost, 即每一块钱, 每一个 token 换多少智能. 这是全文的主轴, 后面的每个数都在给这个词做注脚.
+xAI 在两个月前的 [Grok 4 公告](../grok-4/grok-4-bi.md) 里押的是另一条路: 大规模强化学习加上并行 test-time compute, 堆出 Grok 4 Heavy 这种「想得久, 想得贵」的顶配. Grok 4 Fast 换了一个方向: 保持与 Grok 4 相当的分数, 把推理过程本身压短. 官方给的词是 **intelligence density** (智能密度), 定义就印在页面上: maximum performance at minimum cost, 即每一块钱, 每一个 token 换多少智能. 这是全文的主轴, 后面的每个数都在给这个词做注脚.
 
 对比对象选得也有讲究. 推理表 (第 2 页) 里 Grok 4 Fast 对 Grok 4 是「comparable」: 5 项里 AIME 2025, HMMT 2025, LiveCodeBench 略超, GPQA 和 HLE 略低 (HLE 20.0 对 25.4, 差 5.4 个点, 是最大的一处回落). 对 Grok 3 Mini (High) 则是全面压过: 85.7 对 79.0, 92.0 对 83.0, 93.3 对 74.0, 20.0 对 11.0, 80.0 对 70.0. 一句话同时盖住「不输旗舰」和「碾压自家小杯」, 这篇公告的比较框架就搭完了.
 
@@ -28,7 +28,7 @@ xAI 在两个月前的 [Grok 4 公告](../grok-4/grok-4.md) 里押的是另一�
 
 ## 3. 工具使用与搜索: 第二个卖点
 
-**Tool-use RL** 是这篇给的第二个机制词: 端到端训练模型决定何时调工具 (代码执行, 网页浏览), 与 [Grok 4 公告](../grok-4/grok-4.md) 的「trained with reinforcement learning to use tools」一脉相承, 一般做法见 [Tool-integrated Reasoning RL](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL.md). 六张 agentic 基准表 (第 6 页) 里, Grok 4 Fast 对 Grok 4 六战全胜: BrowseComp 44.9 对 43.0, SimpleQA 95.0 对 94.0, Reka Research Eval 66.0 对 58.0, BrowseComp (zh) 51.2 对 45.0, X Bench Deepsearch (zh) 74.0 对 66.0, X Browse 58.0 对 53.2, 涨幅 0.9 到 8.0 个点. 对 Grok 3 (No Reasoning) 是碾压局, SimpleQA 差 13 个点, 两项中文基准差 40 个点以上.
+**Tool-use RL** 是这篇给的第二个机制词: 端到端训练模型决定何时调工具 (代码执行, 网页浏览), 与 [Grok 4 公告](../grok-4/grok-4-bi.md) 的「trained with reinforcement learning to use tools」一脉相承, 一般做法见 [Tool-integrated Reasoning RL](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.2-Tool-integrated-Reasoning-RL.md). 六张 agentic 基准表 (第 6 页) 里, Grok 4 Fast 对 Grok 4 六战全胜: BrowseComp 44.9 对 43.0, SimpleQA 95.0 对 94.0, Reka Research Eval 66.0 对 58.0, BrowseComp (zh) 51.2 对 45.0, X Bench Deepsearch (zh) 74.0 对 66.0, X Browse 58.0 对 53.2, 涨幅 0.9 到 8.0 个点. 对 Grok 3 (No Reasoning) 是碾压局, SimpleQA 差 13 个点, 两项中文基准差 40 个点以上.
 
 口径上要给这张表打两个折. 其一, BrowseComp (zh), X Bench Deepsearch (zh), X Browse 三项是中文或 X 场景, X Browse 还是 xAI 自造的自测基准, 没有第三方复核. 其二, 紧跟图后的脚注「All Claude models were benchmarked with Extended Thinking」没有落点: 两张表里一个 Claude 都没有, 脚注可能属于抓取时丢失的另一张图. 各家开不开扩展思考, 评测就不在同一条件上, 这类口径问题在 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md) 里是通用风险, 本篇尤其明显.
 
@@ -42,12 +42,12 @@ API 侧又拆成 grok-4-fast-reasoning 和 grok-4-fast-non-reasoning 两个入�
 
 ## 5. 产品面: 价格, 渠道, 与首次免费
 
-定价表 (第 10 页) 分 <128k 和 ≥128k 两档: 输入 $0.20 与 $0.40 每 1M token, 输出 $0.50 与 $1.00, 输出都是输入的 2.5 倍; 缓存输入 $0.05 只标在 ≥128k 一列, 是缓存只服务长请求还是表格合并的排版问题, 页面区分不了, 命中后输入价便宜 87.5% 是按长档算的. 窗口是 2M token, 与第 1 页呼应, 比 [Grok 4 公告](../grok-4/grok-4.md) 里 API 的 256,000 大八倍, 两个数测的未必是同一件事. 渠道列了 grok.com, iOS, Android, OpenRouter, Vercel AI Gateway 和 xAI API; 产品意义上最重的一句是「包括免费用户在内, 所有人不受限制地用最新模型」, 把推理模型的门槛降到了一个账号.
+定价表 (第 10 页) 分 <128k 和 ≥128k 两档: 输入 $0.20 与 $0.40 每 1M token, 输出 $0.50 与 $1.00, 输出都是输入的 2.5 倍; 缓存输入 $0.05 只标在 ≥128k 一列, 是缓存只服务长请求还是表格合并的排版问题, 页面区分不了, 命中后输入价便宜 87.5% 是按长档算的. 窗口是 2M token, 与第 1 页呼应, 比 [Grok 4 公告](../grok-4/grok-4-bi.md) 里 API 的 256,000 大八倍, 两个数测的未必是同一件事. 渠道列了 grok.com, iOS, Android, OpenRouter, Vercel AI Gateway 和 xAI API; 产品意义上最重的一句是「包括免费用户在内, 所有人不受限制地用最新模型」, 把推理模型的门槛降到了一个账号.
 
-发布节奏上, 它是 Grok 4 之后约两个月的「快版」: 同一条 200,000 GPU 的故事线 ([Grok 4 公告](../grok-4/grok-4.md) 的 Colossus) 这篇一个字母都没提, 训练算力, 数据, 配方全部留白. 页脚「© 2026 SpaceXAI LLC」是 2026 年抓取时的网站模板, 与 2025 年 9 月 19 日的发布日期无关. 模型卡外链 (data.x.ai 的 PDF) 在, 但它的内容不在本文档范围内.
+发布节奏上, 它是 Grok 4 之后约两个月的「快版」: 同一条 200,000 GPU 的故事线 ([Grok 4 公告](../grok-4/grok-4-bi.md) 的 Colossus) 这篇一个字母都没提, 训练算力, 数据, 配方全部留白. 页脚「© 2026 SpaceXAI LLC」是 2026 年抓取时的网站模板, 与 2025 年 9 月 19 日的发布日期无关. 模型卡外链 (data.x.ai 的 PDF) 在, 但它的内容不在本文档范围内.
 
 ## 6. 本页对不上的数字
 
 第一类是宣称与证据错位. 「平均少 40% thinking token」唯一的证据图读不出任何数据点; 「98%」依赖页外的 Grok 4 单价; GPT-5 那列表头在 PDF 里同样是断的「GPT-5 (H」. 第二类是抓取损伤. 1163 Elo 和 17 分, 「18th or below」半句, 演示里的来源站点 (reddit.com, polygon.com 等) 和三个演示标签, 都只在 PDF 文字层里活着; 第 2 页推理表本身在 md 里是完整的, 但表头「GPT-5 (H」的断口在 PDF 里同样存在, 属于原页面的问题. 第三类是悬空说法: 「weight class」没有参数量支撑, Claude 脚注没有落点, 缓存价没有列归属.
 
-能对上且相对硬的是这些: agentic 六表 Grok 4 Fast 全面高于 Grok 4 (0.9 到 8.0 个点), 推理五表与 Grok 4 互有胜负且 HLE 低 5.4 个点, Search Arena 1163 Elo 领先 17 分, 定价两档比例一致 (输出恒为输入 2.5 倍). 想了解参数量, 结构和训练细节, 这篇公告里一个字都没有; 同家族的 [Grok 4.20 专页](../grok-4-20/grok-4-20.md) 同样只有规格没有结构, xAI 这一档的模型卡片化是家族性的.
+能对上且相对硬的是这些: agentic 六表 Grok 4 Fast 全面高于 Grok 4 (0.9 到 8.0 个点), 推理五表与 Grok 4 互有胜负且 HLE 低 5.4 个点, Search Arena 1163 Elo 领先 17 分, 定价两档比例一致 (输出恒为输入 2.5 倍). 想了解参数量, 结构和训练细节, 这篇公告里一个字都没有; 同家族的 [Grok 4.20 专页](../grok-4-20/grok-4-20-bi.md) 同样只有规格没有结构, xAI 这一档的模型卡片化是家族性的.

@@ -8,7 +8,7 @@
 
 ## 1. 在家族里的位置: 4.5 之后四周, 重心从「会做题」移到「做得久」
 
-[Grok 4.5 公告](../grok-4-5/grok-4-5.md) 发布于 2026 年 7 月 16 日, 自我定位是 coding, agentic 任务和知识工作的最强模型, 训练面讲的是大规模数据过滤和覆盖几十万任务的强化学习, 连推理吞吐都给了具体数字 (80 TPS). Grok 4.6 四周后到来, 定位句几乎刻意地换了个轴: 不再强调单次能力, 而是「long-running agents」和「more ambitious interactive and visual work」——能陪着一个复杂任务走很多步, 以及做出更像成品的交互和视觉结果. 定价原样保留 (后详), 对手坐标系从 Datacurve 的一套编程基准换成了 Artificial Analysis 指数加 GPT-5.6 Sol Max, Fable 5 Max 两个新名字.
+[Grok 4.5 公告](../grok-4-5/grok-4-5-bi.md) 发布于 2026 年 7 月 16 日, 自我定位是 coding, agentic 任务和知识工作的最强模型, 训练面讲的是大规模数据过滤和覆盖几十万任务的强化学习, 连推理吞吐都给了具体数字 (80 TPS). Grok 4.6 四周后到来, 定位句几乎刻意地换了个轴: 不再强调单次能力, 而是「long-running agents」和「more ambitious interactive and visual work」——能陪着一个复杂任务走很多步, 以及做出更像成品的交互和视觉结果. 定价原样保留 (后详), 对手坐标系从 Datacurve 的一套编程基准换成了 Artificial Analysis 指数加 GPT-5.6 Sol Max, Fable 5 Max 两个新名字.
 
 结构上这篇公告是家族里少见地把训练讲出了流水线感的: 补充训练 run 打底, 用上一代模型重生成 SFT 轨迹, 再上大范围的 agentic RL, 三段各有一句具体做法. 和 [Grok 4 公告](../grok-4/grok-4-analysis.md) 那种「强化学习推到了预训练量级」的宏大但缺口径的叙述相比, 4.6 这段说的都是可指认的动作, 只是每个动作都停在名称层面, 往下再一层就是空白. 按篇幅算, 正文一大半仍是评测表和产品信息, 训练部分浓缩在三段话里.
 

@@ -32,7 +32,7 @@ Codeforces 跌了 45 分, Aider-Polyglot 跌了 0.2 分, 页上第三条却写 �
 
 ## 5. 交付入口
 
-页末写 Terminus 已在 App, Web, API 上线, 并给出 Hugging Face 权重地址, 最后感谢用户反馈. 页上没有写价格, 没有写 API 路由名是否变化, 也没有写思考和非思考两种模式在 Terminus 上的分工. 这些都要回到 V3.1 发布页或 API 文档核对, 本页不能提供.
+页末写 Terminus 已在 App, Web, API 上线, 并给出 Hugging Face 权重地址, 最后感谢用户反馈. 页上没有写价格, 没有写 API 路由名是否变化, 也没有写思考和非思考两种模式在 Terminus 上的分工. 这些都要回到 V3.1 发布页或 API 文档核对, 这里不能提供.
 
 从谱系上看, Terminus 在 V3.1 和 V3.2-Exp 之间. 它不改网络结构, 只在后训练上修语言一致性并提高 Agent 分数; 下一步的 V3.2-Exp 才在这条权重线上换成稀疏注意力. 所以对比 V3.2-Exp 的效果时, 基线应是 Terminus 而不是 V3.1, 否则会把 Terminus 的后训练改进算到稀疏注意力头上(推断).
 

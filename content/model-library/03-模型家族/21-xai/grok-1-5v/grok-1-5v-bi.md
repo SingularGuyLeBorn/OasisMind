@@ -201,7 +201,7 @@ Advancing both our multimodal understanding and generation capabilities are impo
 同时推进多模态理解与生成能力, 是构建能理解宇宙的有益 AGI 的重要步骤. 在接下来的几个月里, 我们预计会在图像, 音频和视频等多种模态上, 让这两种能力都有显著提升.
 
 > **确认:** 这里说要改进「understanding and generation」, Grok-1.5V 本身能生成图像吗?
-> 本页没有任何生成能力的描述, 全文展示的都是理解: 读流程图, 答空间题, 跑理解类基准.「images, audio, and video」三个模态和「In the coming months」都没有时间表或指标. 同家族新闻页里, 图像生成要到 2024 年 12 月 9 日才出现, 见 [xAI 新闻页](../xai/xai.md).
+> 本页没有任何生成能力的描述, 全文展示的都是理解: 读流程图, 答空间题, 跑理解类基准.「images, audio, and video」三个模态和「In the coming months」都没有时间表或指标. 同家族新闻页里, 图像生成要到 2024 年 12 月 9 日才出现, 见 [xAI 新闻页](../xai/xai-bi.md).
 
 If you want to be a part of this journey, we are [hiring](https://x.ai/careers).
 
@@ -234,7 +234,7 @@ If you want to be a part of this journey, we are [hiring](https://x.ai/careers).
 © 2026 SpaceXAI LLC
 
 > **回看:** 文章日期是 Apr 12, 2024, 页脚却是「© 2026 SpaceXAI LLC」, 哪个是发布时间?
-> 发布时间是正文的 2024 年 4 月 12 日. 页脚是抓取当时的网站模板: xAI 在 2026 年 2 月 2 日被 SpaceX 收购, 之后对外改称 SpaceXAI (见 [xAI 新闻页](../xai/xai.md)), 旧文章也就挂上了新的版权行. 同理, 页脚里的 Build 和 Bot 在 2024 年 4 月还不存在, Grok Build 2026 年 5 月 25 日, Grok Bot 2026 年 8 月 11 日才首发. 图片 p09-2026-spacexai-llc.png 只是 SPACEX 字标, 文件名取自旁边的版权行.
+> 发布时间是正文的 2024 年 4 月 12 日. 页脚是抓取当时的网站模板: xAI 在 2026 年 2 月 2 日被 SpaceX 收购, 之后对外改称 SpaceXAI (见 [xAI 新闻页](../xai/xai-bi.md)), 旧文章也就挂上了新的版权行. 同理, 页脚里的 Build 和 Bot 在 2024 年 4 月还不存在, Grok Build 2026 年 5 月 25 日, Grok Bot 2026 年 8 月 11 日才首发. 图片 p09-2026-spacexai-llc.png 只是 SPACEX 字标, 文件名取自旁边的版权行.
 
 [Pricing](https://x.ai/pricing)
 

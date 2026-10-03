@@ -10,7 +10,7 @@
 
 第 1 页是头条卡 Grok 4.7 (Sep 21, 2026), 口号是 「SpaceXAI's most powerful model for coding and knowledge work」, 再加一句 「Twice as fast, at half the price of comparable models」. 后面紧跟一个孤立的 「## 10」 和两张卡片名. 第 2 页的图显示近期区是四张卡按 2 x 2 排列, MinerU 按列交错读取, 所以 md 里的日期顺序变成 22, 16, 18, 4, 按行读其实是 22, 18, 16, 4. 头条 Sep 21 反而比第一张卡 Sep 22 早一天, 说明头条位是编辑挑的, 不按时间.
 
-从第 2 页 「All posts」 开始是完整列表, 前几条是 `##` 标题加摘要, 第 3 页以后变成两列表格: 左列是标题和摘要粘在一起的一段字, 右列是日期. 很多摘要在约 100 字符处被截断, 比如 Grok 4.6 的 「more ambitious...」, Workflows 的 「across hundred...」, 图像生成的 「code-named...」. 所以这张页面适合当目录用: 先定位到某次发布, 再去同级目录的专页读正文. 同家族的 [Grok-1](../grok-1/grok-1.md), [Grok 4](../grok-4/grok-4.md), [Grok 4.5](../grok-4-5/grok-4-5.md), [Grok 4.6](../grok-4-6/grok-4-6.md), [Grok 4.7](../grok-4-7/grok-4-7.md) 都有单独材料.
+从第 2 页 「All posts」 开始是完整列表, 前几条是 `##` 标题加摘要, 第 3 页以后变成两列表格: 左列是标题和摘要粘在一起的一段字, 右列是日期. 很多摘要在约 100 字符处被截断, 比如 Grok 4.6 的 「more ambitious...」, Workflows 的 「across hundred...」, 图像生成的 「code-named...」. 所以这张页面适合当目录用: 先定位到某次发布, 再去同级目录的专页读正文. 同家族的 [Grok-1](../grok-1/grok-1-bi.md), [Grok 4](../grok-4/grok-4-bi.md), [Grok 4.5](../grok-4-5/grok-4-5-bi.md), [Grok 4.6](../grok-4-6/grok-4-6-bi.md), [Grok 4.7](../grok-4-7/grok-4-7.md) 都有单独材料.
 
 ## 2. 模型主线: 314B MoE 之后只剩形容词
 
@@ -18,7 +18,7 @@
 
 Grok-1 那条是全页唯一给出架构信息的. 它只说了总参数和 MoE 两件事, 机制见 [MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md). 激活比例在同级 Grok-1 专页里 (「25% of the weights active on a given token」), 本页没有. 专家数, 每个 token 选几个专家, 路由和负载均衡怎么做, 本页一个细节都没给. 从 Grok-2 起, 每条摘要就只剩定位词: Grok 4 是 「the most intelligent model in the world」, Grok 4.5 在一周内依次被叫作 「smartest model」, 「most intelligent model yet」, 「smartest coding model」, Grok 4.6 是 「latest coding model」, Grok 4.7 是 「most powerful model for coding」. 这些最高级词本页没有任何分数支撑, 也不能拿来互相比较.
 
-还有两处空白. 一是 Grok 3 只有 Beta 预览条目, 没有正式版新闻. 二是 2026-02-02 到 2026-04-17 之间一条新闻也没有, 而同家族目录里有 [Grok 4.20](../grok-4-20/grok-4-20.md) 和 [Grok 4.3](../grok-4-3/grok-4-3.md) 两个型号, 这张列表里都找不到. 4.1 之后直接跳到 4.5, 中间的版本要去专页里找发布信息.
+还有两处空白. 一是 Grok 3 只有 Beta 预览条目, 没有正式版新闻. 二是 2026-02-02 到 2026-04-17 之间一条新闻也没有, 而同家族目录里有 [Grok 4.20](../grok-4-20/grok-4-20-bi.md) 和 [Grok 4.3](../grok-4-3/grok-4-3-bi.md) 两个型号, 这张列表里都找不到. 4.1 之后直接跳到 4.5, 中间的版本要去专页里找发布信息.
 
 ## 3. Agent 产品线: Grok Build 与 Grok Bot
 

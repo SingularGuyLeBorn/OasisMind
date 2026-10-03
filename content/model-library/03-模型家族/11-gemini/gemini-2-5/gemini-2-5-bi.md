@@ -1785,7 +1785,7 @@ L. Zhou, C. Xu, and J. J. Corso. Towards automatic learning of procedures from w
 
 **Contributors** Gheorghe Comanici Eric Bieber Mike Schaekermann Ice Pasupat Noveen Sachdeva Inderjit Dhillon Marcel Blistein Ori Ram Dan Zhang Evan Rosen Luke Marris Sam Petulla Colin Gaffney Asaf Aharoni Nathan Lintz Tiago Cardal Pais Henrik Jacobsson Idan Szpektor Nan-Jiang Jiang Krishna Haridasan Ahmed Omran Nikunj Saunshi Dara Bahri Gaurav Mishra Eric Chu Toby Boyd Brad Hekman Aaron Parisi Chaoyi Zhang Kornraphop Kawintira Tania Bedrax-Weiss Oliver Wang Ya Xu Ollie Purkiss Uri Mendlovic Ilaï Deutel Nam Nguyen Adam Langley Flip Korn Lucia Rossazza Alexandre Ramé Sagar Waghmare Helen Miller Nathan Byrd Ashrith Sheshan Raia Hadsell Sangnie Bhardwaj Pawel Janus Tero Rissa Dan Horgan Alvin Abdagic Lior Belenki James Allingham Anima Singh Theo Guidroz Srivatsan Srinivasan Herman Schmit
 
-贡献者名单为人名, 不译. 名单从本页一直延续到第 61 页, 排列顺序是随机的 (见第 62 页说明).
+贡献者名单为人名, 不译. 名单从该页起一直延续到第 61 页, 排列顺序是随机的 (见第 62 页说明).
 
 Kristen Chiafullo Andre Elisseeff Nilpa Jha Prateek Kolhar Leonard Berrada Frank Ding Xiance Si Shrestha Basu Mallick Franz Och Sofia Erell Eric Ni Tejasi Latkar Sherry Yang Petar Sirkovic Ziqiang Feng Robert Leland Rachel Hornung Gang Wu Charles Blundell Hamidreza Alvari Po-Sen Huang Cathy Yip Sanja Deur Li Liu Gabriela Surita Pablo Duque Dima Damen Johnson Jia Arthur Guez Markus Mircea Animesh Sinha Alberto Magni Paweł Stradomski Tal Marian Vlado Galić Wenhu Chen Hisham Husain Achintya Singhal Dominik Grewe François-Xavier Aubet Shuang Song Lorenzo Blanco Leland Rechis Lewis Ho Rich Munoz Kelvin Zheng Jessica Hamrick Kevin Mather Hagai Taitelbaum Eliza Rutherford Yun Lei Kuangyuan Chen Anand Shukla Erica Moreira Eric Doi Berivan Isik Nir Shabat Dominika Rogozińska
 

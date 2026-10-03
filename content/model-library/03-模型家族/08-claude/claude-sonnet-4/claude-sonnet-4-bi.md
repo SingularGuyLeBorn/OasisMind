@@ -3968,11 +3968,15 @@ Table 7.4.1.A List of RSP evaluations for cybersecurity harms.
 
 **15 CTF challenges (11 easy, 2 medium, 2 hard) testing a model’s ability to discover and exploit vulnerabilities in web applications. Web applications represent the largest attack surface for scaled cybercrime.**
 
+15 道 CTF 挑战 (11 易, 2 中, 2 难), 测试模型发现和利用 Web 应用漏洞的能力. Web 应用是大规模网络犯罪最大的攻击面.
+
 评测名称: Web. 15 道 CTF 题 (11 易, 2 中, 2 难).
 
 **Rationale · 依据**
 
 **Web exploitation is more forgiving than other domains due to local testing capabilities and lower costs of failure. This means that models could provide meaningful uplift even with moderate success rates. This is particularly relevant for novices struggling to interpret scanner results, and experts working on complex attack chains. Web vulnerabilities also tend to be more prevalent due to development priorities favoring functionality over security.**
+
+Web 利用比其他领域更宽容: 可以在本地测试, 失败的代价也更低. 这意味着即使成功率只是中等, 模型也能带来实质性的能力提升. 这对两类人尤其有意义: 难以理解扫描器结果的新手, 以及在复杂攻击链上作业的专家. Web 漏洞也往往更普遍, 因为开发上历来优先功能而非安全.
 
 **Claude Opus 4 score · Claude Opus 4 总分**
 
@@ -4019,11 +4023,15 @@ Claude Sonnet 4 总分 7/22 (易 4/7, 中 1/6, 难 2/9)
 
 **9 CTF challenges (5 easy, 2 medium, 2 hard) testing a model’s ability to discover and exploit vulnerabilities in insecure software on a remote server for the purposes of privilege escalation or arbitrary code execution.**
 
+9 道 CTF 挑战 (5 易, 2 中, 2 难), 测试模型发现和利用远程服务器上不安全软件漏洞的能力, 目的是权限提升或任意代码执行.
+
 评测名称: Pwn. 9 道 CTF 题 (5 易, 2 中, 2 难).
 
 **Rationale · 依据**
 
 **Vulnerability discovery and exploitation to gain enhanced system access is a fundamental capability required for cyber operations. Models lacking these skills are unlikely to either conduct autonomous operations or meaningfully assist experts, making these challenges effective rule-out evaluations for assessing risk. Consistent success in these challenges is likely a minimum requirement for models to meaningfully assist in cyber operations, given that real-world systems typically run more complex software, update quickly, and resist repeated intrusion attempts.**
+
+通过漏洞发现和利用获取更高的系统访问权限, 是网络行动所需的基本能力. 缺乏这些技能的模型, 既不太可能自主行动, 也难以对专家形成有效辅助, 因此这些挑战是评估风险的有效排除性评测. 考虑到真实世界的系统通常软件更复杂, 更新更快, 并能抵御多次入侵尝试, 在这些挑战中持续成功, 很可能是模型能在网络行动中有实质帮助的最起码条件.
 
 **Claude Opus 4 score**
 
@@ -4073,11 +4081,15 @@ Claude Sonnet 4 总分 3/8 (易 3/5, 中 0/2, 难 0/1)
 
 **4 CTF challenges (1 easy, 3 medium) testing a model’s ability to perform reconnaissance in a network environment and exploit vulnerabilities across multiple networked machines.**
 
+4 道 CTF 挑战 (1 易, 3 中), 测试模型在网络环境中执行侦察, 并跨多台联网机器利用漏洞的能力.
+
 评测名称: Network. 4 道 CTF 题 (1 易, 3 中).
 
 **Rationale · 依据**
 
 **Network challenges most closely simulate real cyber operations, requiring sophisticated multi-stage capabilities from reconnaissance to lateral movement. Their increased complexity makes them particularly informative indicators of risk. These challenges mirror real-world network environments, making any success significant. Whereas high-pass-at-N success may not directly provide uplift to novices who need full autonomy, the ability to perform autonomous exploration and hypothesis testing could meaningfully augment expert capabilities.**
+
+网络类挑战最接近真实的网络行动, 需要侦察到横向移动这样复杂的多阶段能力. 更高的复杂度让它们成为信息量特别大的风险指标. 这些挑战模拟真实网络环境, 任何一次成功都有重要意义. 对需要完全自主能力的新手来说, 高 pass@N 成功率未必能直接带来提升, 但自主探索和假设检验的能力, 可以实质性增强专家的水平.
 
 **Claude Opus 4 score**
 

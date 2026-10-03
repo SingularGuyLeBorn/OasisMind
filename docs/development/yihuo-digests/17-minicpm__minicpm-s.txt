@@ -1,0 +1,41 @@
+# 17-minicpm/minicpm-s  文件: content/model-library/03-模型家族\17-minicpm/minicpm-s\minicpm-s-bi.md  共 10 块
+
+--- 行17 [停一下] ---
+> 没有. 11 页里能找到的规模信息只有 1B params 和 BF16. 后文只说 FFN 是 gated FFN, 激活函数换成 ReLU 再换成 FATReLU, 其余结构参数一个都没印.
+
+
+--- 行30 [想] ---
+> 卡上说是同一个, 只是名字不同. 第 10 页还给了一个重复仓库 SparseLLM/ProSparse-MiniCPM-1B-sft, 用的就是 ProSparse 这个名字.
+
+
+--- 行43 [核对] ---
+> 是 `<s>`. PDF 同一处的文字就是 「a bos token <s>」, 第 7 页讲 LM-Eval 时也印的是 `<s>`. $<\varsigma>$ 是 MinerU 把尖括号里的 s 认成了希腊字母.
+
+
+--- 行68 [拆开] ---
+> 对得上. 35,000 + 60,000 + 6,000 = 101,000. 下一页表里第 4 阶段累计到 35,000, decay 累计到 95,000, SFT 累计到 101,000. 这一节标题叫 Training Dataset, 但没有列任何数据集的名字和配比.
+
+
+--- 行97 [看表] ---
+> PDF 同一张表也是 5e-3, 5e-3, 不是 MinerU 抄错. 卡没有解释这两处. 另外第 0 阶段印的是 0, 正文说预热阶段是 「小常数」, 卡上也没说 0 是不是就是那个常数.
+
+
+--- 行130 [再看] ---
+> 不是. MiniCPM-1B 可见的四列是 36.85, 63.67, 60.90, 35.48, 平均约 49.23, 表里印的是 44.44. 第 5 页列了 MMLU, BBH, AGI-Eval, 表头却停在 GSM, PDF 里也只到 GSM, 右边几列在截图时被页宽切掉了. 平均分算进了看不到的那几列.
+
+
+--- 行161 [对一下] ---
+> 卡上别处没写 FATReLU 的阈值, 0.01 只出现在这个变量名里. 这三步说的是 ProSparse LLaMA 模型, 例子里的 config.json 链到 prosparse-llama-2-7b, 没有说 MiniCPM-S-1B 的阈值是多少.
+
+
+--- 行190 [确认] ---
+> 这份截图里确实只有 S2. MinerU 和 PDF 都是 8 列, 最后一列是 S2 的 Speedup to Dense. 第 9 页的注释说 steps (2) and (3) 都计了时间, S3 那两列应当在右边被页宽切掉了. 这里拿不到 S3 的数字.
+
+
+--- 行209 [回看] ---
+> 加速表里只有 LLaMA 7B 和 13B, 没有一行是 1B. 注释说 MiniCPM 架构 PowerInfer 目前不支持, 这也解释了两行 ProSparse 的 「-」. 第 2 页列的 MiniCPM-S-1B-sft-gguf 叫 「Adapted PowerInfer version」, 卡没有说它和这句 「目前不支持」 谁更新.
+
+
+--- 行222 [问] ---
+> 这一页分开写了: 仓库是 Apache-2.0, 权重的使用要遵守 GML. 学术免费, 商用要申请授权. 文首标签只显示了 apache-2.0.
+

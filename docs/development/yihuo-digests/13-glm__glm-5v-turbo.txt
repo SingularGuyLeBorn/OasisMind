@@ -1,0 +1,77 @@
+# 13-glm/glm-5v-turbo  文件: content/model-library/03-模型家族\13-glm/glm-5v-turbo\glm-5v-turbo-bi.md  共 19 块
+
+--- 行7 [确认] ---
+> 第 1 页页边印的是 arXiv:2604.26752v3, 日期 12 May 2026, 即第 3 版, 2026 年 5 月 12 日. 这个日期只属于 v3, 全文没有印 v1 或 v2 的日期, 不能拿 5 月 12 日当首发日. 编号前缀 2604 按 arXiv 的编号规则对应 2026 年 4 月首次提交; 参考文献 [4] [5] [12] [27] [28] [29] [50] 都写 「Accessed: 2026-04-15」 (第 14 到 17 页), 和 4 月成稿对得上. v1 到 v3 改了什么, 本文没有交代.
+
+
+--- 行40 [问] ---
+> 没有. 第 4 页 2.3 节再次写 「more than 30 task categories」, 随后点名的是一批评测上的涨幅 (RefCOCO-avg, PointBench, MVBench, SUNRGBD, OCRBench, CharXiv, MMMU 等, 以及 OSWorld, CC-Backend, MMSearch). 这些是评测名, 不是训练任务类别. 全文没有给出 30 多类的名单, 也没有每类的数据量.
+
+
+--- 行53 [核对] ---
+> 对不上. 第 11 页图 5 的 CC-Frontend 一行, GLM-5V-Turbo 是 68.4, GLM-5-Turbo 是 69.4, 前者低 1.0. 另外两项成立: CC-Backend 22.8 对 20.5, CC-Repo-Exploration 72.2 对 68.9. 所以 「三项都超过」 只有两项站得住. 本段的 68.4 本身和表一致, 错的是 「surpasses」 这个判断.
+
+
+--- 行56 [拆开] ---
+> 本段没写, 要回看第 11 页图 5 的行名. PinchBench 一行标的是 「Best/Avg」, 87.0 是最好一次, 80.7 是平均; ClawEval 一行标的是 「Pass^3/Pass@3」, 57.7 对应 Pass^3, 75.0 对应 Pass@3. 按常见用法, Pass^3 要求三次都通过, Pass@3 三次里通过一次即可, 论文本身没有给定义. 两组都是同一基准上的两种统计口径, 不能相加, 也不能拿一边去和别家的另一边比.
+
+
+--- 行79 [看表] ---
+> 不是. 403M 印在图例 「CogViT-L (403M)」 里, 只是视觉编码器这一个组件, 对比对象 SigLIP2-SO 427M, DFN-H 632M, MetaCLIP2-H 632M 也都是编码器. 全文没有印 GLM-5V-Turbo 整体的参数量, 也没有印 GLM-5-Turbo 的. 第 3 页另有一个 0.5B, 那是 MMTP 消融用的小模型. 本文能引用的参数数字只有 403M (编码器) 和 0.5B (消融模型), 都不能当成整机规模. 另外, 图注说 「general and fine-grained multimodal tasks」, 图上三组却都是分类或物体识别类指标, 正文说的细粒度, 几何和空间感知在图里没有单独的分数.
+
+
+--- 行96 [停一下] ---
+> 不是. 第 3 页原文是 「an 8-billion bilingual (Chinese-English) image-text corpus」, 修饰的是语料, 单位没写是图文对还是图片张数. 同段的 64K 是全局 batch size. 这两个数都和模型规模无关, 本文印出的参数数字见第 2 页图 1 的 403M 和第 3 页的 0.5B.
+
+
+--- 行117 [回看] ---
+> 两种. 左下角只有 Option1 和 Option3 两条线, Option 2 (遮掉视觉 token) 没有曲线. 第 3 页淘汰 Option 2 的理由是工程上的: 说第三种 「不需要为视觉嵌入的切分, 对齐或偏移映射做额外处理」. 可 Option 2 已经把视觉 token 遮掉, 按字面也不会有视觉嵌入进入 MTP 头, 这条理由和 Option 2 的定义放在一起读不通顺, 原文没有再解释. 损失对比也只来自 0.5B 消融模型, 两条线差距很小, 图里没有标数值; 正式规模的 GLM-5V-Turbo 上有没有同样的差距, 本文没说.
+
+
+--- 行132 [想] ---
+> 原文只写了百分号, 没说是绝对分差还是相对比例, 也没给 SFT 和 RL 两端的原始分数, 没法换算. STEM 那一项把 MMMU_Val, MMMU_Pro, MathVista, LogicVista 四个基准放在同一个 +1.8% 后面, 是平均, 求和还是每项都 +1.8%, 原文没交代. 这一段只能读成 「RL 相对 SFT 有正向变化」, 不能拿去和第 11 页图 4 的绝对分数混算. 另外这里 OSWorld 引的是 [43], MMSearch 引的是 [19], 第 2 页和第 10 页引的是 [44] 和 [18], 见第 15 页的对照.
+
+
+--- 行193 [对一下] ---
+> 八倍无法核实. 本文没有印 GLM-4.6V 在 MMSearch-Plus 上的分数, 第 11 页图 4 也没有 GLM-4.6V 这一列; 按八倍反推上一代大约 4 分上下, 这只是推算, 不是原文数字. 对 Claude 的比较看第 11 页图 4: MMSearch-Plus 30.0 对 25.6, BrowseComp-VL 51.9 对 35.9, 成立; ImageMining 一格 Claude Opus 4.6 是 「-」, 没有分数, 这一项上 「超过」 没有依据. 另外本段写 「Kimi K-2.5」, 图 4 表头和参考文献 [36] 写 「Kimi K2.5」, 是同一个模型的两种写法.
+
+
+--- 行250 [问] ---
+> 是同一团队自己出的题. 第 7 页说 217 个样例来自人工收集的轨迹, 本段又说为了让模型具备这些能力, 专门搭了数据流水线造训练数据, 两边围绕的是同样的五个推理类别. 第 11 页图 4 里 ImageMining 只有 GLM-5V-Turbo 30.7 和 Kimi K2.5 24.4 两个分, Claude Opus 4.6 是 「-」. 训练数据和评测样例是否隔离, 本文没有说明. 读这个分数时要记住: 它是自建基准上的自评分, 可比的外部对手只有一家.
+
+
+--- 行389 [再看] ---
+> 排最后. 参考文献 [14] 的作者里, 除第一作者 Z. He 无法从缩写确认外, W. Hong, Z. Yang, Z. Pan, M. Liu, X. Gu, J. Tang 都能在第 13 页名单里找到对应的全名 (Wenyi Hong, Zhen Yang, Ziyang Pan, Mingdao Liu, Xiaotao Gu, Jie Tang). 第 11 页图 4 的 Vision2Web 一行: GLM-5V-Turbo 31.0, Kimi K2.5 33.2, Claude Opus 4.6 43.5. 同属多模态编程的 Flame-VLM-Code 上 Claude 也更高 (98.8 对 93.8). 多模态编程三项里 GLM-5V-Turbo 只在 Design2Code 上领先, 第 2 页挑出来讲的也正是这一项.
+
+
+--- 行432 [看表] ---
+> 不是. 第 11 页有两张表. 多模态三类 (编程, 工具使用, GUI 智能体) 只出现在图 4, 列是 GLM-5V-Turbo, Kimi K2.5, Claude Opus 4.6 三家; 纯文本编程和 Claw 只出现在图 5, 多了一列 GLM-5-Turbo, 共四家. GLM-5-Turbo 是纯语言基座, 图 4 里没有它, 所以 「加了视觉以后多模态涨了多少」 在本文里没有基座对照, 能对照的只有图 5 里 「纯文本掉没掉」. 两张表都题为 「Figure」, 实为表格. GLM-5V-Turbo 在两张表里各有一列, 两列之间没有共同的基准, 不能合并成一个总分.
+
+
+--- 行435 [拆开] ---
+> 没有. 图 4 每个模型只有一列分数, 「Multimodal ToolUse」 七行没有 「w/ tools」 和 「w/o tools」 之分. SimpleVQA, Facts, V* 被归在工具使用类, 本文没说它们是开工具还是关工具跑的. 第 6 页表 1 的 zai_ 工具是专有工具, Kimi K2.5 和 Claude Opus 4.6 用的是什么工具集, 本文也没写; Claude 在 ImageMining 和 Facts 上是 「-」. 所以图 4 工具类的分差里, 模型差异和工具差异分不开. 第 4 页 MMSearch +3.5% 是 RL 对 SFT 的差, 也不是工具开关的差.
+
+
+--- 行450 [对一下] ---
+> 和 GLM-5-Turbo 一列逐项比: CC-Backend +2.3, CC-Repo-Exploration +3.3, PinchBench Best +0.5, ClawEval Pass^3 +6.7, Pass@3 +2.9, 这五个数更高; CC-Frontend -1.0, PinchBench Avg -0.4, ZClawBench -3.0, 这三个数更低. 八个数五高三低, 「没有实质削弱」 大体成立, 但不是每项都不掉, 第 2 页 「三项都超过」 的说法前面已经核对过. 和 Claude Opus 4.6 比, 这八个数全部低于它.
+
+
+--- 行457 [想] ---
+> 本文说法不一. 第 10 页的类别名是 「Text-only Coding and Claw」, 第 11 页图 5 题为 「text coding and claw agent benchmarks」, 都没把 Claw 明说成纯文本; 本段又说接入 Claw 框架后模型 「natively perceive on-screen content」, 意思是 Claw 评测里用到了视觉. 第 2 页则把 Claw 评测和 「text-only setting」 的编程分开列. 另一方面, GLM-5-Turbo 是纯语言模型, 它在 Claw 三行也有分, 说明这些评测至少能以纯文本方式跑. 能确定是纯文本的只有 CC-Bench-V2 三项; Claw 三项两家是否在同一输入条件下测, 本文没交代, 不能把 GLM-5-Turbo 那一列当同条件对照.
+
+
+--- 行596 [回看] ---
+> 不是. 本页 [18] 和 [19] 的作者, 标题, arXiv 号 (2409.12959) 完全相同; 第 17 页 [43] 和 [44] 的标题和页码相同, 只是年份写成 2024 和 2025, 作者里 「T. J. Hua」 和 「J. H. Toh」 不同. 正文第 2 页, 第 10 页引 MMSearch [18], OSWorld [44]; 第 4 页引 MMSearch [19], OSWorld [43]; 第 1 页 GUI 任务也引 [43]. 同一基准用了两个编号, 对照分数时按基准名认, 不按编号认. OpenClaw 也有两条: [29] 是 GitHub 仓库, [34] 是 P. Steinberger 的条目.
+
+
+--- 行705 [核对] ---
+> 本文没解释. 第 20 页的 Prompt 和图注里的 Query 是同一段英文, 前后印了两遍, 只有 「About Brand」 的引号写法不同. 生成页截图里的文字是 「全部商品」 「我们的核心价值观」 「结账」 等中文, 而参考截图 (p20-prompt 那张) 是英文商品页. 图注称这是 「full-stack」 电商网站, Prompt 要的却是 「implement everything in HTML code」, 截图里也只能看到前端页面, 看不出后端.
+
+
+--- 行953 [确认] ---
+> 目录里没有图 23 的图片文件. 第 29 页 MinerU 把试卷和英文作文两张图识别成了文字 (表格, 标题 「# 2022--2023学年度...」 和 「## 1」), 只留下一个 「(a)」, (b) 标签丢了. 紧接着的 p29-a.png 和 p29-b.png 属于图 24 (3D grounding): p29-a 是厨房里的 3D 框, p29-b 是走廊里一盆绿植的 3D 框. 所以第 29 页的两张图片文件对应图 24 的 (a)(b), 不是图 23. 源文在 p29-a 后面还多出一个孤立的 「(b)」, 也是版面识别留下的.
+
+
+--- 行980 [再看] ---
+> 图注没给答案, 只给了 Prompt. 看 p30 那张图: X 光片上是一只六指的手, 红点也是六个, 一指一个. 我的理解是, 这个例子考的是数图上实际有几根, 不按 「手有五指」 的常识作答. 论文没有给这类任务的分数; 第 4 页和空间有关的只有 SUNRGBD 3D grounding +7.7% 这一个 RL 涨幅, 图 1 里 CogViT 也没有空间感知的单独柱子.
+

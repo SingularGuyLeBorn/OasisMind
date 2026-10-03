@@ -1,0 +1,73 @@
+# 08-claude/claude-4  文件: content/model-library/03-模型家族\08-claude/claude-4\claude-4-bi.md  共 18 块
+
+--- 行31 [想] ---
+> 靠的是 Terminal-bench 和长任务. 第 3 页原话是 「leading on SWE-bench (72.5%) and Terminal-bench (43.2%)」, 第 5 页表里 Terminal-bench 上 Opus 4 为 43.2%, Sonnet 4 为 35.5%, 相差 7.7 个百分点, 两款模型真正拉开的是这一行. SWE-bench 上两者单次成绩只差 0.2, 加上并行 TestingTime 之后, Sonnet 4 的 80.2% 仍高于 Opus 4 的 79.4%. 第 4 页柱状图里 OpenAI Codex-1 是 72.1%, 比 Opus 4 只低 0.4. 所以 「best coding model」 在 SWE-bench 这一项上领先幅度很小, 其余支撑来自 「sustained performance on long-running tasks」 和第 3, 4 页的客户证言, 后者没有评测数字.
+
+
+--- 行50 [问] ---
+> 只有 TAU-bench 明说用了. 第 8 页 「TAU-bench methodology」 写: 在 Airline 与 Retail 两套 Agent Policy 后面各加了一段提示, 要求 Claude 「better leverage its reasoning abilities while using extended thinking with tool use」, 鼓励它在多轮轨迹中把想法写下来, 并说这种写法 「distinct from our usual thinking mode」. 为了容纳多出来的步数, 最大步数 (按模型补全次数计) 从 30 提到 100. SWE-bench 和 Terminal-bench 同样靠工具, 附录却注明两者 「No extended thinking」. 所以这个 beta 功能在表里的证据只落在 TAU-bench 一行, 而这一行同时叠加了提示补充和步数上限两处改动, 分不出各自贡献多少.
+
+
+--- 行75 [拆开] ---
+> 表里每一格可能来自不同模式. 第 8 页 「Performance benchmark reporting」 说报告的是 「the highest scores achieved with or without extended thinking」, 并逐项注明: SWE-bench Verified 和 Terminal-bench 没开 extended thinking; TAU-bench, GPQA Diamond, MMMLU, MMMU, AIME 开了, 思考上限 64K token. 关掉思考的分数给了四项: GPQA 上 Opus 4 为 74.9%, Sonnet 4 为 70.0%; MMMLU 87.4% 与 85.4%; MMMU 73.7% 与 72.6%; AIME 33.9% 与 33.1%. 以 GPQA 为例, 每款模型其实有三个数: Opus 4 是 74.9%, 79.6%, 83.3%, Sonnet 4 是 70.0%, 75.4%, 83.8%, 单次开思考时 Opus 4 高 4.2 个百分点, 加并行 TestingTime 后 Sonnet 4 反超 0.5. 开关思考的差距在 AIME 上最大, Opus 4 从 33.9% 到 75.5%, 多出 41.6 个百分点; 在 MMMLU 上最小, 只多 1.4. 所以近乎即时的回答模式拿不到表里那些数学和推理分数.
+
+
+--- 行102 [确认] ---
+> 没有. 7 小时出自 「Rakuten validated its capabilities with a demanding open-source refactor running independently for 7 hours」, 20% 到接近零出自 iGent 对 「navigation errors」 的描述, 两者都是客户证言. 页面没有说明那次重构的规模, 7 小时里有没有人工介入, 也没有定义 navigation error 怎么计数, 分母是多少. 第 4, 5 页表里的七项评测都不衡量连续工作时长. 第 3 页的 「thousands of steps」 同样没有对应数字; 附录里唯一关于步数的数是 TAU-bench 的上限 100 步, 且 「only one trajectory reaching above 50 steps」, 和 「thousands of steps」 不是同一量级的任务.
+
+
+--- 行119 [再看] ---
+> Claude 三列和 69.1% 对得上, 其余三个数只在图里. 图中七根柱: Opus 4 深色底段 72.5%, 浅色顶段到 79.4%; Sonnet 4 72.7%, 到 80.2%; Sonnet 3.7 62.3%, 到 70.3%. 三根的浅色顶段都标着 「with parallel test-time compute」. 然后是 OpenAI Codex-1 72.1%, OpenAI o3 69.1%, OpenAI GPT-4.1 54.6%, Gemini 2.5 Pro Preview (05-06) 63.2%, 这四根没有浅色顶段. 表里只显示四列, Codex-1, GPT-4.1, Gemini 的数只在图里出现. 非 Claude 柱没有并行 TestingTime 部分, 只能和 Claude 的深色底段比. 附录还说 OpenAI 模型按 477 题子集报告, Claude 按完整 500 题, 同一张图里的柱分母并不相同.
+
+
+--- 行128 [看表] ---
+> 斜杠前是单次作答, 斜杠后叠加了并行 TestingTime. 脚注 1 说 72.5% 和 72.7% 是 pass@1, 「averaged over 10 trials, single-attempt patches, no test-time compute」, 采样用 top_p 0.95 的 nucleus sampling. 脚注 5 说 SWE-Bench, Terminal-Bench, GPQA, AIME 四项另报 「sampling multiple sequences and selecting the single best via an internal scoring model」 的结果, 也就是斜杠后的数. 带斜杠的恰好是标了脚注 5 的四行, 而且只在 Claude 列; Sonnet 3.7 只在 SWE-bench 一格有斜杠 (62.3% / 70.3%). TAU-bench, MMMLU, MMMU 没标 5, 也没有斜杠. 引用时要讲清是哪一边, 79.4% 不是 pass@1.
+
+
+--- 行131 [核对] ---
+> 表头被截断了. PDF 第 4 页第四列表头 「OpenAI o」 后半截被页面边缘切掉, 第 5 页 TAU-bench Airline 一格只剩 「Airlin」 和 「52.0」, 旁边压着一个向右翻的箭头按钮, 表底还有一条横向滚动条. 这是网页上可以横向滚动的表格, 抓取时只截到前四列. 从数字看, 这一列 SWE-bench 为 69.1%, 与柱状图里 「OpenAI o3」 的 69.1% 相同, 第 8 页数据来源也列了 o3 的发布文章和系统卡, 所以大概率是 o3, 但表头本身没显示全. 图里的 GPT-4.1 和 Gemini 2.5 Pro 可能在被截掉的列里, 这份 PDF 看不到它们其他行的分数. md 里的 「Airlir52.0 →」 是同一处截断, 数字读作 52.0%.
+
+
+--- 行147 [停一下] ---
+> 可比性要打折扣. 第 8 页附录写明 Claude 的分数在两处改动下得到: 给 Airline 和 Retail 的 Agent Policy 加了提示补充, 最大步数从 30 放宽到 100. 附录又说大多数轨迹在 30 步内完成, 只有一条超过 50 步, 放宽上限主要照顾的是少数长轨迹. 第四列和 Sonnet 3.7 列是否在同样的提示和步数下跑, 页面没说. 附录还注明 TAU-bench 「no results w/o extended thinking reported」, 这一行没有关掉思考的对照. 看分数本身, Retail 上 Opus 4 的 81.4% 只比 Sonnet 3.7 的 81.2% 高 0.2, Airline 上 Sonnet 4 的 60.0% 高于 Opus 4 的 59.6%, 代际差距很小, 和第四列的差距反而大.
+
+
+--- 行150 [对一下] ---
+> 这两行 Claude 4 没有领先. MMMLU 上 Opus 4 的 88.8% 与第四列相同, 而脚注 3 只说 「Claude scores on MMMLU are the average over 14 non-English languages」, 第四列按什么语言集合平均没有写, 附录给的是 GPT-4.1 hosted evals 的链接, 两边口径未必一致. MMMU 上第四列 82.9% 比 Opus 4 高 6.4 个百分点, 是全表 Claude 4 落后最多的一格; Sonnet 4 的 74.4% 还低于 Sonnet 3.7 的 75.0%. 正文对视觉能力一句没提, 这两行也没有斜杠后的并行 TestingTime 分数. 「Claude 4 领先」 这句话, 在这张表上只对编码和 agent 几行成立.
+
+
+--- 行177 [拆开] ---
+> 差在 agent 框架. 43.2% 与 35.5% 用 Claude Code 当 agent 框架; 换成 「the same agent as non-Claude models」, Opus 4 是 39.2%, Sonnet 4 是 33.5%. 框架带来的差距分别是 4.0 和 2.0 个百分点. 第四列的 30.2% 按脚注用的是非 Claude 模型那套 agent, 所以同框架的比较应是 39.2% 对 30.2%, 差 9.0, 不是表面上的 13.0. Sonnet 3.7 那格 35.2% 没有注明框架; 如果它是在通用 agent 下测的, Sonnet 4 同框架的 33.5% 反而低 1.7. 页面没交代这一点, 所以 Sonnet 4 相对 3.7 在 Terminal-bench 上有没有进步, 从这页判断不了. 斜杠后的 50.0% 与 41.3% 用的是哪个框架, 脚注也没说.
+
+
+--- 行180 [想] ---
+> 三个数对应三种推理预算. 33.9% 是关掉 extended thinking (第 8 页附录); 75.5% 是开思考, 上限 64K token, 按脚注 4 用 top_p 0.95 采样; 90.0% 再叠加脚注 5 的多序列采样和内部评分模型挑选. 从 33.9% 到 75.5% 是在一条序列里多想, 从 75.5% 到 90.0% 是在多条序列里挑一条, 两段都属于推理时多花算力, 即 TestingTime, 和部署前把模型做大无关. Sonnet 4 的三个数是 33.1%, 70.5%, 85.0%, 关掉思考时两款模型只差 0.8. 第四列 88.9% 高于 Opus 4 的 75.5%, 低于它的 90.0%, 页面没说第四列用了多少推理算力, 所以它该跟哪一个数比, 定不下来.
+
+
+--- 行191 [问] ---
+> 页面没给. 原句是 "Both models are 65% less likely to engage in this behavior than Sonnet 3.7 on agentic tasks that are particularly susceptible to shortcuts and loopholes「. 这是相对降幅: 若 Sonnet 3.7 在这批任务上的发生率是 x, Claude 4 大约是 0.35x. x 本身没写, 任务集叫什么, 有多少题, 怎样判定 」shortcuts or loopholes「, 也都没写. 任务是专门挑出来的 」particularly susceptible「 那一批, 换到普通任务上比例会不同. 同一页的 SWE-bench 方法特意注明 」note no hidden test information is used「, 说明作者在意 」借测试信息取巧" 这类问题, 但 65% 这个数本身没有评测名可以核对.
+
+
+--- 行206 [核对] ---
+> 说明了载体, 没说明机制. 图左标题栏是 「Claude Plays Pokémon」, 下面是 Opus 4 写的笔记, 一级标题 「# Navigation guide」, 二级标题 「## Getting Unstuck Protocol」, 列了五条: 同一种方法最多试 5 次; 卡住了就试相反的方法; 室内导航时走到房间另一侧; 横向走不通就改 Y 坐标; 记下失败过的方法, 避免重复. 图右是一帧宝可梦游戏画面, 主角站在草丛边. 正文的前提是 「When developers build applications that provide Claude local file access」, 模型把要点写进 「memory files」, 之后再读回来. 这里的记忆是写到外部文件里的文本, 不是权重或上下文窗口本身变了. 记忆提升有多大, 页面只有 「dramatically outperforms all previous models」 这句定性描述, 没有评测数字.
+
+
+--- 行213 [再看] ---
+> 意味着长思考显示的是另一个模型写的转述. 原文是 「use a smaller model to condense lengthy thought processes」, 「only needed about 5% of the time」, 其余思考 「short enough to display in full」. 页面没有给触发摘要的长度门槛, 也没说这 5% 按请求数还是按 token 数算. 需要原始 CoT 的用户要联系销售开通 Developer Mode. 对照第 8 页附录, GPQA, AIME 这些项用到了最多 64K token 的思考, 这类长思考正是最可能被摘要的那部分; 这时界面上的思考文本出自小模型, 不是 Claude 4 自己的原文.
+
+
+--- 行246 [回看] ---
+> 页面没有这么说. 原句是这些模型 "come with extensive testing and evaluation to minimize risk and maximize safety, including implementing measures for higher AI Safety Levels like ASL-3「, 链接指向 」activating-asl3-protections「. 哪款模型在哪个等级下发布, 用了哪些评测, 阈值和结果是多少, 这一页都没写, 要看链接的文章. 页脚有 」Responsible Scaling Policy「 的链接, 等级定义在那里. 本页和安全行为直接相关的数字只有第 5 页那句走捷径 」65% less likely", 而且是相对降幅.
+
+
+--- 行331 [确认] ---
+> 页面没讲清. 这一节写 Claude 4 家族用 「the same simple scaffold」, 只有 bash 工具和字符串替换式编辑工具, 并且 「We no longer include the third ‘planning tool’ used by Claude 3.7 Sonnet」. 数据来源一节把 Claude 的对照数指向 「Claude 3.7 Sonnet launch post」, 所以 62.3% 多半是从那篇文章搬来的, 当时带着第三件工具, 这一点是推断, 页面没有明说. 若果真如此, 3.7 多一件工具, Claude 4 少一件, 从 62.3% 到 72.7% 的差距就不全是模型本身的差距. 分母方面, Claude 4 按完整 500 题报告, OpenAI 模型按 477 题子集, 少 23 题, 页面没说这 23 题难易如何, 也没给 Claude 在 477 题子集上的分数.
+
+
+--- 行356 [拆开] ---
+> 用了可见测试, 没用隐藏测试. 流程分三步: 并行采样多个尝试; 丢掉破坏仓库里可见回归测试的补丁, 类似 Agentless 的拒绝采样; 用内部评分模型从剩下的候选里挑一个. 原文特意注明 「note no hidden test information is used」, 判分用的隐藏测试没有参与筛选. 可见回归测试本来就在仓库里, 这一步相当于把 「改完先跑一遍已有测试」 自动化. 结果是 Opus 4 79.4%, Sonnet 4 80.2%, 比单次的 72.5% 和 72.7% 分别高 6.9 和 7.5 个百分点. GPQA 和 AIME 是单答案题, 没有回归测试可以先筛, 脚注 5 只写了 「sampling multiple sequences and selecting the single best via an internal scoring model」. 那里选中的是评分模型认为最好的一条, 不是出现次数最多的答案. 并行尝试多少条, 评分模型多大, 页面都没给, 外部无法复现斜杠后的分数.
+
+
+--- 行805 [停一下] ---
+> 这份 PDF 是 2026 年抓取的, 第 9 页起的 「Related content」 和整个页脚都是抓取当时的站点状态. 页脚 Models 一栏的 Mythos, Fable, 以及生命科学验证计划里提到的 Claude Mythos, 都与 Claude 4 的发布无关. 五张图里正文图只有两张: 第 4 页 SWE-bench 柱状图, 第 6 页宝可梦笔记. 第 1 页 p01-image.png 是橙底题图, 画着白色的三角, 方块, 圆, 菱形和一条黑色曲线, 没有文字; 第 7 页 p07-getting-started.png 是 「Claude Code + GitHub Actions」 视频的占位封面, 画面空白, 只有标题, 「Anthropic」 和 「前往平台观看:」, 文件名取自它后面的 「Getting started」 标题; 第 13 页那张是 LinkedIn 小图标, 文件名取自其后的 「Security and compliance」. 第 2 页 「A day with Claude」 也是嵌入视频, md 没有落图. 另外 md 的 「ourAPI」, 「NewAPI」, 「higherAI」, 「out ofthe」 都是转换时丢了空格, PDF 原文有空格.
+

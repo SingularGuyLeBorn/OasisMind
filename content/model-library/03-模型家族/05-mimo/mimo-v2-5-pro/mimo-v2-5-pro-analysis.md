@@ -1,6 +1,6 @@
 # MiMo-V2.5-Pro: 把 Flash 的配方放大到 1T, 滑窗比例改成 6:1
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 源文 `mimo-v2-5-pro.md` 是 2026-04-27 的发布页 (10 页标记, 9 图): 发布口号, 三个长程案例, Token 效率散点, Token Plan 更新, 规格表, 一段架构与训练说明, 一张对照总表. 没有层表, 专家数, 路由, 消融或损失函数. 下文把这页放进家族谱系里读; 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处, 不把它们当成本页规格.
+> **[OM-FREEPLAY] 材料不够 5000 汉字.** 源文 `mimo-v2-5-pro.md` 是 2026-04-27 的发布页 (10 页标记, 9 图): 发布口号, 三个长程案例, Token 效率散点, Token Plan 更新, 规格表, 一段架构与训练说明, 一张对照总表. 没有层表, 专家数, 路由, 消融或损失函数. 下文把这页放进家族谱系里读; 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处, 不把它们当成本报告的规格.
 
 来源: 同目录 `mimo-v2-5-pro.md`. 对照译稿见 `mimo-v2-5-pro-bi.md`. 入口: [AI Studio](https://aistudio.xiaomimimo.com/), [API](https://platform.xiaomimimo.com/), [Hugging Face](https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro). 同族报告: `../mimo-v2-flash/mimo-v2-flash.md`, `../mimo-v2-6/mimo-v2-6.md`.
 

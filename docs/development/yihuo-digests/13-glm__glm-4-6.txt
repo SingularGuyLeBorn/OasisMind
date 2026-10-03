@@ -1,0 +1,77 @@
+# 13-glm/glm-4-6  文件: content/model-library/03-模型家族\13-glm/glm-4-6\glm-4-6-bi.md  共 19 块
+
+--- 行19 [核对] ---
+> 只对上一半. `p01-image.png` 是 「Z」 字标, PDF 里 「Try it at Z.ai」 和 「Call it at Z.ai」 前面各有一个, 两处图标一样, 分不出这张截的是哪一个. `p01-z-try-it-at-z-ai-https-z-ai-z-call-it-at-z-ai-https.png` 的文件名取自链接那一行的文字, 画面却是 「Tech Report」 前那个文档图标, 和 Z.ai 没有关系. PDF 文字层里这个图标本身是一个 📄 字符, 所以 md 链接文字里还留着 📄, 同一个图标在 md 里出现了两次, 一次是图, 一次是字符. 链接行开头的两个 「Z」 和 HuggingFace 前的 「S」 也是图标被识别成了字母, PDF 文字层里没有它们; 「S」 对应的是 HuggingFace 的笑脸图标.
+
+
+--- 行26 [问] ---
+> 不是这一代的. 同家族目录 `glm-4-5/glm-4-5.md` 开头印着 「arXiv:2508.06471v1 [cs.CL] 8 Aug 2025」, 标题是 「GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models」, 比本篇的 2025-09-30 早 53 天. 博客没有说明这是上一代的报告, 按钮上只写 「Tech Report」. 本目录只有这篇博客, 没有 GLM-4.6 自己的技术报告. 所以论文里的参数量, 训练数据和评测分数, 都不能当成这篇博客给 GLM-4.6 印的数.
+
+
+--- 行37 [拆开] ---
+> 没有. 这一句只给了两个端点和一个理由 (「handle more complex agentic tasks」), 单位是 tokens. 位置编码, 注意力结构, 长文本训练阶段, 全篇都没提, 这里也不替它补. 128K 是 GLM-4.5 的窗口, 这是博客自己印的起点; 200K 是 GLM-4.6 的窗口长度, 不是任何一项得分. 还要连着第 2 页看: 评测图的副标题写 「Evaluation results under 128K context length」, 八项基准都是在旧窗口长度下跑的, 200K 没有进那张图.
+
+
+--- 行60 [看表] ---
+> 大体对得上, 细看有例外. 对 Claude Sonnet 4, GLM-4.6 八项赢七项, 输的是 SWE-bench Verified, 68.0 对 72.5. 对 DeepSeek-V3.2-Exp, 也是八项赢七项, 输的是 HLE, 不带工具时 17.2 对 19.8, 带工具的 30.4 才超过. 对 Claude Sonnet 4.5, 八项里只赢 AIME 25, LiveCodeBench v6, BrowseComp 三项. 按基准名称看和写代码直接相关的三项里 (博客没给分类, 这是按名字归的), SWE-bench Verified 68.0 对 77.2, Terminal-Bench 40.5 对 50.0, 是落后; LiveCodeBench v6 却是 82.8 对 57.7 领先. 另外 GPQA (81.0 对 83.4, 带工具 82.9 也不够), HLE (17.2 对 17.3), τ²-Bench (75.9 对 88.1) 也落后, 这三项正文没提, 正文只承认了编程落后.
+
+
+--- 行67 [停一下] ---
+> 不是. PDF 第 1 页右下角有一个圆形浮动按钮, 按钮上就是这个字; 看位置和样子像是切换中文的入口, 这是按外观推断, 页面没写它的功能. 它在 PDF 文字层里存在, 所以 md 把它当成一段正文抓了进来. 它不属于上面那段评测总结.
+
+
+--- 行84 [确认] ---
+> 没有. 这八项的分数都是在 128K 上下文长度下得出的, 也就是 GLM-4.5 的窗口长度. 第 1 页说窗口扩到 200K, 可这张图没有一项是在 200K 下跑的, 博客也没给 200K 下的长文本评测. 所以不能拿这张图证明 200K 窗口的效果; 在这篇博客里, 200K 只是一个窗口长度, 没有配分数.
+
+
+--- 行119 [再看] ---
+> 前七张是 `p02-chart.png` 到 `p02-chart-7.png` (第一张没有 「-1」 后缀), 画面依次是 AIME 25, GPQA, LiveCodeBench v6, HLE, BrowseComp, SWE-bench Verified, Terminal-Bench, 和副标题列的顺序一致. 第八张 τ²-Bench 的文件名却是 `p02-real-world-experience-matters-more-than-leaderboards-we.png`, 取自图下面那段正文的开头, 画面里没有这句话. 另外, PDF 里整块评测图是一张 3390x2654 的位图, 标题, 副标题和图例都画在图里; md 的标题行和图例行是从图里识别出来的字.
+
+
+--- 行122 [回看] ---
+> 只能靠图例顺序和灰度. 每张图的柱子上只有 Z 字标, 鲸鱼图标和 Anthropic 的字标, 没写模型名; 两根 Claude 柱图标相同, 第四根灰度稍深, 第五根更浅, 和图例里 Claude Sonnet 4, Claude Sonnet 4.5 的色块对应, 上面转录的数字都按这个顺序读. 「w/ Tools」 那一段只出现在 GLM-4.6 的柱子上, 而且只有 AIME 25, GPQA, LiveCodeBench v6, HLE 四项有. 其他四个模型没有带工具的数, 所以 98.6, 82.9, 84.5, 30.4 这四个数没有同口径的对手可比; 第 1 页 「supports tool use during inference」 在图上对应的就是这四段深蓝.
+
+
+--- 行125 [对一下] ---
+> 正文里和 GLM-4.5 比的只有定性说法 (「clear gains over GLM-4.5」, 「improves over GLM-4.5」) 和一个数: 下面这段的 「about 15% fewer tokens」. 其余都印在图上. 八张柱状图里的绿柱就是 GLM-4.5 这一行: AIME 25 85.4, GPQA 79.9, LiveCodeBench v6 63.3, HLE 14.4, BrowseComp 26.4, SWE-bench Verified 64.2, Terminal-Bench 37.5, τ²-Bench 67.5. GLM-4.6 八项全部高于它, 差值依次是 8.5, 1.1, 19.5, 2.8, 18.7, 3.8, 3.0, 8.4, 最大的是 LiveCodeBench v6 和 BrowseComp, 最小的是 GPQA. 第 3 页还有两处: CC-Bench 里 GLM-4.6 对 GLM-4.5 是 50.0% 胜, 13.5% 平, 36.5% 负; 每次交互平均 token 用量 651,525 对 762,817.
+
+
+--- 行128 [核对] ---
+> 只能对上一部分, 而且不能反过来补. 同家族目录 `glm-4-5/glm-4-5.md` (就是 arXiv:2508.06471 那篇论文) 写的 GLM-4.5 分数里, HLE 14.4, BrowseComp 26.4, SWE-bench Verified 64.2, Terminal-Bench 37.5 这四个数和本页绿柱相同. 其余对不上: 论文 GPQA 是 79.1, 本页是 79.9; 论文用的是 LiveCodeBench (2407-2501), 本页是 LiveCodeBench v6; 论文用 AIME 24, 本页是 AIME 25; 论文用 TAU-Bench, 本页是 τ²-Bench (Weighted). 这几个论文数只拿来核对, 不是这篇博客印的; 引用 GLM-4.5 的分数时, 一律以本页绿柱为准.
+
+
+--- 行135 [问] ---
+> 正文只给了胜率. 第 3 页的 CC-Bench 图补全了这一行: GLM-4.6 对 Claude Sonnet 4 是 48.6% 胜, 9.5% 平, 41.9% 负, 胜比负多 6.7 个百分点. 按这三个数, GLM-4.6 在这组人工对比里略占上风, 博客选的措辞是 「near parity」. 「other open-source baselines」 指谁, 正文没点名, 要看第 3 页图里的 Kimi-K2-0905 和 DeepSeek-V3.1-Terminus. CC-Bench 这组对比里也没有 Claude Sonnet 4.5.
+
+
+--- 行160 [拆开] ---
+> `p03-chart.png` 是 CC-Bench 的胜平负条形图, 名字泛, 但不算错. `p03-getting-started-with-glm-4-6.png` 的画面是 token 用量柱状图, 文件名却取自图下面的小节标题 「Getting started with GLM-4.6」, 画面里没有这几个字. PDF 里这两张图是同一张 8870x2898 的位图, 左右并排; md 上面那两行标题和孤立的 「Z」, 都是从这张位图里识别出来的字, 不是网页正文. 左图标题写的是 「CC-Bench-V1.1」, 第 2 页正文只说在 GLM-4.5 的 CC-Bench 上 「extended」, 版本号只在图里出现.
+
+
+--- 行163 [看表] ---
+> 四行都正好是 100.0%: 48.6+9.5+41.9, 50.0+13.5+36.5, 56.8+28.3+14.9, 64.9+8.1+27.0. 胜减负依次是 6.7, 13.5, 41.9, 37.9 个百分点; 对 Kimi-K2-0905 的平局最多, 占 28.3%. 两处 DeepSeek 不是同一个: 第 2 页八项基准比的是 DeepSeek-V3.2-Exp, 这里 CC-Bench 和 token 用量比的是 DeepSeek-V3.1-Terminus; Kimi-K2-0905 也只出现在这两张图里. 两组对比的对手不一样, 不能把 CC-Bench 的胜率和第 2 页的分数拼成一张表.
+
+
+--- 行166 [回看] ---
+> 对得上. 651,525 除以 762,817 约等于 0.854, 少了约 14.6%, 正文取整成 「about 15%」. 按同样算法, 比 Kimi-K2-0905 少约 20.7%, 比 DeepSeek-V3.1-Terminus 少约 31.2%, 这两个数博客没写. 纵轴顶端印的 「1,00,000」, 按印度式分位读是十万, 比下面的 750,000 还小, 讲不通; 按 250,000 的刻度间隔, 那一格应是 1,000,000, 图上少了一个 0. 还有一处口径没对齐: 标题是 「per Interaction」, 纵轴写 「Tokens per Round」, 一次 interaction 和一个 round 是不是一回事, 图里没解释.
+
+
+--- 行181 [想] ---
+> 全篇没说. 博客从头到尾只出现 GLM-4.6 一个名字, 没有第二个型号, 也没有任何后缀; 这一段却两次用 「both」, 一次 「both GLM-4.6 models」, 一次 「both models」. 这里不猜第二个是什么. 同样没交代的还有规模: 第 3 页只说权重在 HuggingFace 和 ModelScope 公开, 没给一个参数数字.
+
+
+--- 行200 [确认] ---
+> 原句没写比较对象. 前半句说 「Claude-level performance」, 后半句的 1/7 和 3 倍按上下文像是和 Claude 的订阅比, 但没点名是哪一档套餐, 也没给价格. 这两个数属于订阅推广, 不是模型评估的数, 也没有图表支撑. 另外, 第 1 页列应用的顺序是 Claude Code, Cline, Roo Code, Kilo Code, 这里换成 Claude Code, Kilo Code, Roo Code, Cline, 四个名字一样, 只是顺序不同.
+
+
+--- 行219 [核对] ---
+> 没给规模和结构. 这一段只说权重公开, 支持 vLLM 和 SGLang, 没有参数量, 层数, 注意力类型或精度格式. Tech Report 论文摘要里的 355B 总参数, 32B 激活参数是 GLM-4.5 的数, 博客没说 GLM-4.6 沿用, 不能挪过来当 GLM-4.6 的规模. HuggingFace 链接两处都是 `huggingface.co/zai-org/GLM-4.6`, 一致; ModelScope 链接是 `modelscope.cn/models/ZhipuAI/GLM-4.6`, 组织名写的是 ZhipuAI, 不是 zai-org. 原句 「Model weights ... is」 主谓不一致, 照录.
+
+
+--- 行228 [停一下] ---
+> 这句没有链接, PDF 里也没有, 仓库名也没写. 整页唯一的 GitHub 链接在页脚右下角的图标上, 指向 `github.com/THUDM`, 是组织主页, 不是 GLM-4.6 的仓库; 旁边的 X 图标指向 `x.com/zai_org`. md 把这两个图标识别成了末尾的 「x0」, 链接也丢了. HuggingFace 用的组织名是 zai-org, GitHub 图标用的是 THUDM, 两处不一样.
+
+
+--- 行255 [对一下] ---
+> 文件名取自图下方的 「Legal」 一词, 画面是 Z 字标, 没有 「Legal」 字样; 它确实在 「Legal」 正上方, 位置对, 内容不对. 13 张图逐一对下来: 文件名和画面相符的是 `p02-chart.png` 到 `p02-chart-7.png` 七张; `p01-image.png` 和 `p03-chart.png` 名字泛, 但不算错; 另外四张 (`p01-z-try-...`, `p02-real-world-...`, `p03-getting-started-...`, `p04-legal.png`) 都是拿相邻文字命名的, 和画面对不上. 版权年份不矛盾: 页首 2025-09-30 是发布日, 页脚 © 2026 是网页当时的版权行; PDF 的生成时间是 2026-09-25, 也就是抓取那一年.
+

@@ -1,0 +1,69 @@
+# 08-claude/claude-3-5-haiku  文件: content/model-library/03-模型家族\08-claude/claude-3-5-haiku\claude-3-5-haiku-bi.md  共 17 块
+
+--- 行21 [对一下] ---
+> 不是. 图里是橙底上的白色鼠标指针, 一只手的轮廓和一张人脸侧影, 指针旁还有三道表示点击的短线, 对应的是本页主推的 computer use: 「looking at a screen, moving a cursor, clicking buttons」. 文件名 「update-12-03-2024-we-have-revised-the-pricing-for」 只是转换工具拿图下方第一行文字命名的结果. PDF 第 1 页也只有这一张位图. 全文 9 页里, md 只落了两张图: 这张题图和第 9 页的 LinkedIn 小图标, 第 2 页的评测表在 PDF 里是一张图, md 把它转成了文字表格.
+
+
+--- 行28 [想] ---
+> 本页没给原价, 只给了调整后的数: 输入 \$0.80 / MTok, 输出 \$4 / MTok, 输出正好是输入的 5 倍. MTok 指每百万 token. 更新日期 12/03/2024 比正文发布日 Oct 22, 2024 晚了六周, 而正文写的是 Haiku 「will be released later this month」, 所以这条更新是在模型上线之后补到页首的. 调价方向和幅度都要去定价页查, 从这页读不出来. 正文里唯一的另一处价格描述是给新 Sonnet 的 「at the same price and speed as its predecessor」, 同样没有数字.
+
+
+--- 行35 [问] ---
+> 核对不了. 第 2 页的评测表有七列: Claude 3.5 Sonnet (new), Claude 3.5 Haiku, Claude 3.5 Sonnet, GPT-4o, GPT-4o mini, Gemini 1.5 Pro, Gemini 1.5 Flash, 没有 Claude 3 Opus, 也没有 Claude 3 Haiku. 所以 「on many evaluations」 到底是哪些评测, 追平的幅度多大, 本页都没给. 第 3 页 Haiku 小节把说法升级成 「surpasses even Claude 3 Opus ... on many intelligence benchmarks」, 仍然没有数字. 速度这一半也一样, 「a similar speed to the previous generation of Haiku」 是相对描述, 全页没有 token/s 或延迟毫秒数. 第 5 页 「our new models」 链接指向 Claude 3 Model Card October Addendum, 与 Opus 的逐项对比只能去那份文档里找.
+
+
+--- 行44 [拆开] ---
+> 本页给了两处线索. 第 4 页说 「we've built an API that allows Claude to perceive and interact with computer interfaces」, 并举例把一句自然语言指令翻译成 「check a spreadsheet; move the cursor to open a web browser; ... fill out a form」 这样一串电脑命令, 这是输出端: 光标移动, 点击, 键入这类动作. 输入端的线索在 OSWorld 那句: Claude 3.5 Sonnet 的 14.9% 是 「in the screenshotonly category」 拿到的, 说明模型看屏幕靠的是截图. 截图格式, 动作指令的具体 schema, 每步回传什么, 本页都没写, 第 2 页的 「today on the API」 链接指向的文档才有. md 里 「frontierAI」 与 「screenshotonly」 是转换丢了空格和连字符, PDF 原文是 「frontier AI」 和 「screenshot-only」.
+
+
+--- 行77 [看表] ---
+> 不是. 两列都有分数的只有三行: GPQA (Diamond) 41.6% 对 40.2%, HumanEval 88.1% 对 87.2%, MATH 69.2% 对 70.2%. Haiku 赢两行, 差距分别是 1.4 和 0.9 个百分点, 输一行, 差 1.0 个百分点. MMLU Pro 和 AIME 2024 上 GPT-4o mini 是 「-」, MMMU 上 Haiku 是 「-」, SWE-bench Verified 与 TAU-bench 只有三列 Claude 有数. 也就是说, 表里 Haiku 拉开差距的两项 agent 评测恰好没有 GPT-4o mini 的对照, 能对上的三项基本持平. 正文把 Haiku 的卖点放在 「particularly strong on coding tasks」 和 SWE-bench 上, 和表里这种分布是一致的.
+
+
+--- 行80 [核对] ---
+> 有. PDF 第 2 页的表是一张图: 前两列 (两款新模型) 被一个橙色框圈在一起, 每行最高分用绿字标出. 绿字几乎都落在 Claude 3.5 Sonnet (new) 一列, 唯一例外是 MATH 行的 Gemini 1.5 Pro 86.5%. 而这一格的设置是 「4-shot CoT」, Gemini 两列 MATH 都是 4-shot, 其余五列都是 0-shot CoT. 所以 MATH 这一行的最高分和别的分数不在同一种提示设置下测得, 页面只标了设置, 没有解释为何 Gemini 用 4-shot. md 转换把颜色和框都丢了, 只剩数字.
+
+
+--- 行83 [确认] ---
+> 按本页的话, 是发布时没有图像输入. 第 4 页写 Claude 3.5 Haiku 「initially as a text-only model and with image input to follow」. MMMU 这一行标题是 「Visual Q/A」, 需要看图作答, 纯文本模型没法参加, 所以这一格空着. 同一行里其余六列都有分数, 包括 GPT-4o mini 的 59.4%. 这也意味着表里 Haiku 的全部分数都是纯文本评测, 看不出它将来加上图像输入后的视觉水平.
+
+
+--- 行90 [停一下] ---
+> 两处确实用了不同口径. 脚注说 o1 系列 「depend on extensive pre-response computation time」, 所以评测表不收. 但第 3 页讲新 Sonnet 的 SWE-bench Verified 49.0% 时写的是 "scoring higher than all publicly available models—including reasoning models like OpenAI o1-preview and specialized systems designed for agentic coding". 也就是说, 在 SWE-bench 这一项上, 页面在正文里和 o1-preview 做了比较, 只是没把 o1-preview 的分数放进表. o1-preview 的具体分数, 测试条件, 花了多少 TestingTime, 本页都没给. 另外 md 里 「OpenAl's」 的 「l」 是 OCR 把大写 I 认错了, 原图是 OpenAI.
+
+
+--- 行103 [再看] ---
+> 掉得不一样. 用航空分数除以零售分数: 新 Sonnet 是 46.0 / 69.2, 约 66.5%; 旧 Sonnet 是 36.0 / 62.6, 约 57.5%; Haiku 是 22.8 / 51.0, 约 44.7%. 模型越弱, 从零售换到航空时保留下来的比例越低, Haiku 的航空分数不到零售的一半. 新 Sonnet 的两项提升也不对称: 零售加 6.6 个百分点, 航空加 10.0 个百分点, 难的一侧涨得更多. 页面没解释航空领域难在哪里, 也没给两个领域各有多少任务, 这些要看 TAU-bench 的链接.
+
+
+--- 行110 [问] ---
+> 不能. 「up to」 是上限, 说的是在他们测过的各个用例里提升最多的那个到了 10%, 其余用例可能更少. 提升的是什么指标, 相对值还是绝对百分点, 用例有几个, 本页都没写. 同一句里的 「no added latency」 和段首 「the same price and speed as its predecessor」 口径一致, 讲的都是新 Sonnet 相对旧 Sonnet 不变慢. 这一段三家客户的反馈都是定性描述, 真正能拿来算的只有 GitLab 这一个 「up to 10%」.
+
+
+--- 行121 [回看] ---
+> 没有. 这两段的主语都是 「the new Claude 3.5 Sonnet model」 和 「the upgraded Claude 3.5 Sonnet」: US AISI 与 UK AISI 的联合部署前测试, 灾难性风险评估, 「ASL-2 Standard ... remains appropriate」, 都只针对新 Sonnet. 紧接着的 Haiku 小节只讲能力, 用途和上线渠道, 没有一句安全评估. 第 4 页的安全内容 (新分类器识别 computer use 是否被用于造成危害) 针对的也是 computer use 这项能力, 不是某个模型的风险等级. Haiku 的安全信息如果有, 要去第 5 页链接的 Model Card October Addendum 里找. ASL-2 的具体要求本页也没展开, 只给了 Responsible Scaling Policy 的链接.
+
+
+--- 行132 [确认] ---
+> 不能. 把表里 Haiku 与原版 Claude 3.5 Sonnet 两列逐行对照, Haiku 只在 SWE-bench Verified 一行领先 (40.6% 对 33.4%, 高 7.2 个百分点). 其余可比的各行它都落后: GPQA 低 17.8, MMLU Pro 低 10.1, HumanEval 低 3.9, MATH 低 1.9, AIME 2024 低 4.3, TAU-bench 零售低 11.6, 航空低 13.2 个百分点. 另外句中比较对象是 「many agents using publicly available state-of-the-art models」, 比的是基于这些模型搭的 agent 系统, 而表里 GPT-4o 的 SWE-bench 一格是 「-」, 所以 「outperforming ... GPT-4o」 这半句在表里找不到对应分数. Haiku 的 40.6% 用的是什么 agent 框架, 允许多少步, 本页也没说.
+
+
+--- 行141 [想] ---
+> 没给. 全页关于 Haiku 速度的说法只有三处, 都是相对的: 「at a similar speed to the previous generation of Haiku」, 「For a similar speed to Claude 3 Haiku」, 以及这里的 「low latency」. 没有 token/s, 没有首 token 延迟, 也没有与 Sonnet 的速度比. 能落到数字上的只有页首更新后的价格, \$0.80 / \$4 每 MTok. 三类用途里, 子 agent 任务与 「more accurate tool use」 呼应, 表里对应的是 TAU-bench, 而 Haiku 在那里是零售 51.0%, 航空 22.8%, 都低于两版 Sonnet. 页面推荐它做子 agent, 理由只有延迟, 指令遵循和工具调用三条定性描述, 没说明在 agent 系统里它和更大的模型怎么分工.
+
+
+--- 行148 [拆开] ---
+> 按本页的描述, 上线时不能. computer use 的工作方式是 「looking at a screen」, OSWorld 成绩也注明是 「screenshot-only」 类别, 必须读截图; 而 Haiku 「initially as a text-only model」. 全页提到 computer use 时主语都是 Claude 3.5 Sonnet: 「Claude 3.5 Sonnet is the first frontier AI model to offer computer use in public beta」, OSWorld 的 14.9% 和 22.0% 也是 Sonnet 的. 所以 Haiku 表里那两项 agent 分数, SWE-bench Verified 和 TAU-bench, 都是纯文本工具调用环境下的成绩, 和 computer use 是两回事. 图像输入什么时候加上, 加上后是否支持 computer use, 本页没说. 另外 md 的 「first-partyAPI」 在 PDF 里是 「first-party API」.
+
+
+--- 行163 [停一下] ---
+> 本页没给. 只说 「When afforded more steps to complete the task, Claude scored 22.0%」, 没写基准设置允许多少步, 放宽到多少步. 允许更多步骤, 本质上是在推理阶段给同一个模型更多动作和观察的机会, 属于 TestingTime 的投入, 与脚注里排除 o1 时说的 「pre-response computation time」 是同一类思路, 只是这里花在多轮交互上. 从数字看, 同一模型多给步数就从 14.9% 涨到 22.0%, 加了 7.1 个百分点, 比它领先第二名 (7.8%) 的幅度还大. 第二名是哪个系统, 是否也在同样的步数下测得, 页面同样没说.
+
+
+--- 行184 [对一下] ---
+> 它指向的不是模型介绍页, 而是一份 PDF: 「Claude-3-Model-Card-October-Addendum.pdf」, 即 Claude 3 模型卡的十月增补. 本页是发布公告, 只给了一张八行评测表和若干定性描述; 表里缺的 Claude 3 Opus 对照, Haiku 的安全评估, 各项评测的具体设置, 按这个链接的名字看应当放在那份增补里. 本目录只有公告页本身, 没有那份模型卡, 所以这里读不到它的内容. 顺带一提, 这是全页唯一指向技术文档的链接, 其余链接是产品页, 基准官网, 视频和两篇博客.
+
+
+--- 行629 [核对] ---
+> 因为这份 PDF 是 2026 年抓取的, 站点页脚和 「Related content」 都是抓取当时的版本, 不是 2024 年发布时的样子. 页脚 Models 一栏列了 Mythos, Fable, Opus, Sonnet, Haiku 五个系列, 相关内容里的生命科学验证计划也提到 Claude Mythos, 这些都与正文无关. 对照 PDF, md 的页脚文字逐项对得上, 只有两处格式问题: 第 7 页开头的 「Financial services」 被转成了二级标题, 第 5 页的 「## X」 是分享按钮残留. 末尾这张 722 字节的图是 LinkedIn 小图标, 同样属于页脚. 正文里还有几处转换丢空格: 「forAI-powered」 原为 「for AI-powered」.
+

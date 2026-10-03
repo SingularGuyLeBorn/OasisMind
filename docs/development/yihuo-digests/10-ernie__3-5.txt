@@ -1,0 +1,41 @@
+# 10-ernie/3-5  文件: content/model-library/03-模型家族\10-ernie/3-5\3-5-bi.md  共 10 块
+
+--- 行73 [想] ---
+> 按截图上的字看, 对不上. 截图代码区的地址是 `https://qianfan.baidubce.com/v2/app/conversation`, Body 里唯一的必填项是 `app_id` (值 18984e58); 本页示例的地址是 `https://aip.baidu.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions`, Body 参数表里没有 app_id. 调试平台链接指向 `chat/completions`, 参数却写 `parent=ERNIE-Bot`, 路径里也没有 「3.5」 或 「8K」, 页面没说这条路径怎样对应到 ERNIE-3.5-8K. 截图里 「已鉴权」 和 「还未登录」 同时出现, 它只能当界面示意, 不能用来确认本接口的地址和参数.
+
+
+--- 行179 [问] ---
+> 表里看得到的输入上限是 5120 tokens: functions 一行写 「message 中的 content 总长度, functions 和 s(ystem)... 5120 tokens」, 第 3 页 system 一行又写了一遍 5120, messages 第 (4) 条讲的是同一件事, 却在 「字段总」 处截断. 输出另有上限, max_output_tokens 最大 2048, 两者相加是 7168; 页面没解释 「8K」 指什么, 也没说 5120 和 2048 是否共用一个窗口. 按表来: content, functions, system 三样合计不超过 5120, 不要按 8K 去估输入.
+
+
+--- 行182 [核对] ---
+> 不一样. temperature 是 (0, 1.0], 左端开, 表里还专门写了 「不能为0」; top_p 是 [0, 1.0], 两端都闭, 可以取 0. penalty_score 默认 1.0, 范围 [1.0, 2.0], 默认值就是下限, 只能往重调, 不能比默认更轻. 想把 temperature 设成 0 求稳定输出, 按这张表是非法值.
+
+
+--- 行233 [看表] ---
+> 不是. 这一行分两种情况: 设了参数, 范围是 [2, 2048]; 不设, 最大输出 token 数为 1024. 不传这个参数, 回答最多只有 2048 的一半, 长回答会停在 1024 附近, 第 5 页的 finish\_reason 此时应为 length, 可再对照 is\_truncated. 要用满 2048 必须显式传值, 同表的 stop 上限 (每个元素 20 字符, 最多 4 个) 和 metadata 上限 (16 个) 是另外两套数, 别和 token 数混在一起.
+
+
+--- 行416 [拆开] ---
+> 是一个头被拆成两行: MinerU 在连字符处把 `X-Ratelimit-Remaining-Requests` 断开, 描述也跟着断成 「将会在0-」 和 「60s后刷新」, 第 7, 8 页示例里这个头是完整的一行. 四个头都按一分钟计: Limit-Requests 是每分钟请求上限 (RPM), Limit-Tokens 是每分钟 token 上限 (TPM, 输入加输出), 两个 Remaining 是剩余额度, 用完在 0-60s 内刷新. 表里只有含义没有数值, ERNIE-3.5-8K 的 RPM 和 TPM 正文没给; 示例里的 300 和 300000 只是示例响应头的值.
+
+
+--- 行551 [确认] ---
+> 没有单价. 全页跟钱有关的只有侧栏 「平台计费」 链接和 usage 里的两个字段: search\_count (触发独立搜索计费次数) 与 prompt\_tokens\_details.search\_tokens (搜索独立计费 tokens 数). 触发独立搜索时, prompt\_tokens 会把搜索相关 tokens 算进去, 而 disable\_search 默认 false, 搜索默认是开着的. 同一个问题, 触发搜索与否 prompt\_tokens 会不同, 还多一项按次数计的搜索; 单价只能去计费页查.
+
+
+--- 行688 [回看] ---
+> 多数不是. 单轮示例 Date 是 Fri, 19 Jan 2024 08:49:13 GMT, created 1709711333 换成 UTC 是 2024-03-06 07:48:53; 多轮示例 Date 是 Wed, 28 Feb 2024 02:04:30 GMT, created 1709711455 是 2024-03-06 07:50:55; 第 10 页函数调用第二次响应 Date 是 Mon, 12 Apr 2021, created 1693450180 是 2023-08-31. 只有第 8 页流式示例对得上: Date 02:02:31, created 1709085751 也是 2024-02-28 02:02:31 UTC. 示例是不同时间拼起来的, 都早于 2025-09-05 的更新日期, 头里的 300 和 300000 只能当示例值看.
+
+
+--- 行752 [停一下] ---
+> 不能直接当. 三处都是 Limit-Tokens 300000: 单轮剩 299971 (少 29), 多轮剩 299741 (少 259), 流式剩 299994 (少 6). 流式的响应头在所有 data 行之前发出, 从先后顺序推断, 这个 6 顶多反映输入, 回答的 token 还没产生; 单轮示例 Remaining-Requests 是 298, 说明这一分钟里之前还有别的请求, 扣减不一定都来自这一次. 两个同步示例的 usage 停在 `"usage": {`, 流式 data 行里也没抓到 usage, 本页无法拿 usage 去对这三个数.
+
+
+--- 行951 [再看] ---
+> 看得见的部分不守. 单轮函数调用的第二次请求是 user, assistant (带 function\_call), function 三条, 数目是奇数, 可第 3 条的 role 是 function, 规则却说奇数位是 user. 多轮函数调用的第一次请求 (本页) 和第二次请求 (第 12 页) 都只有 user 和 assistant 两条就收尾, 是偶数. 这可能是抓取截断, 也可能示例本身就不全, 页面上分不出; role=function 的消息在奇偶规则里怎么算, 页面也没写.
+
+
+--- 行1000 [对一下] ---
+> 属于北京. 本页 curl 的参数写 「location」: 「北京市」, 返回 「temperature」: 「-1」, 「description」: 「大雪」; 可同一组示例的请求 (第 10, 12 页) 里, 用户问的是 「上海市今天天气如何?」, 模型给的 arguments 也是 location 上海市. 单轮那组 (第 9, 10 页) 才前后一致: 调用参数 「location」: 「上海市」, 回填的 temperature 是 「25」. 两组数不能混用: 25 属于单轮示例的上海, -1 和大雪属于多轮示例里的北京, 而多轮示例本身问的和查的不是同一座城市.
+

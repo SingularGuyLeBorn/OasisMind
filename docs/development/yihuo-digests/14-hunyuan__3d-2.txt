@@ -1,0 +1,69 @@
+# 14-hunyuan/3d-2  文件: content/model-library/03-模型家族\14-hunyuan/3d-2\3d-2-bi.md  共 17 块
+
+--- 行7 [停一下] ---
+> 不能. 这行戳记的是 v5 这一版的日期. 编号前缀 2501 是 arXiv 按首版提交年月分配的, 说明首版在 2025 年 1 月, 具体哪一天本文没有印. 正文也能看出这一版改过: 第 17 页第 6 节把 Hunyuan3D-Studio 链到参考文献 [90], 那是 arXiv:2509.12815, 一篇 2025 年的另一份报告, 2025 年 1 月的首版不可能引用它; 图 1 右下的 Studio 面板 (Low Poly, Sketch to 3D, Animation) 也要按 v5 的描述来读. 引用时首发只能写 「2025 年 1 月 (据编号)」, 14 May 2026 只能写成 v5 的日期. 这份报告也不是 Hunyuan3D-1.0, 后者是参考文献 [107], 编号 arXiv:2411.02293.
+
+
+--- 行60 [核对] ---
+> 全文只有这一处参数量, 而且只在图里. 它印在图 1 「Hunyuan3D-DiT Generated Shape Generation」 面板左上的标签上, 旁边另一个标签是 「High Resolution」; 正文 28 页没有一句话给出任何模块的参数量, 摘要里的 「large-scale」 也不带数字. 从面板归属看, 1.1B 说的是形状生成用的潜扩散模型 (LDM), 但它是否包含 ShapeVAE 和 DINOv2 图像编码器, 本文没说. 图 4 标了双流块 ×16, 单流块 ×32, 却没有给宽度和头数, 也推不出 1.1B. Hunyuan3D-Paint, 去光照模型, ShapeVAE 各自多大, 全文都没有印. 引用时只能写 「图 1 标注 1.1B LDM」, 不能展开成各模块的参数表.
+
+
+--- 行137 [对一下] ---
+> 是原文的笔误, 不是 MinerU 识别错, PDF 文字层里同样是 「Fn×W×D」 和 「Fo×W×D」. 同一句里查询网格写作 $Q_g \in \mathbb{R}^{(H\times W\times D)\times 3}$, 神经场和 SDF 是在这些查询点上逐点算出来的, 行数必须和 $Q_g$ 相同, 所以两处都应是 $H\times W\times D$. 图 3 右半边也是这样画的: 竖排的 Grid Queries 作为 Q 进 Cross Attention, 输出直接去做 Marching Cube, 中间没有别的维度变换. $H$, $W$, $D$ 的具体分辨率本文没有给.
+
+
+--- 行166 [拆开] ---
+> 按上面的维度, 编码器输出 $H_s$ 的行数是 $M'+N'$, 也就是两路 FPS 取出的点查询个数之和; 原始点数 $M+N$ 只作为 cross attention 的 KV, 不决定 token 数. 所以 「可变 token 长度」 就是改变 FPS 取点的个数, 多分辨率训练时这个数从一个集合里抽. 集合里有哪些值, $M'$ 和 $N'$ 怎么分配, 本文都没写, 只给了上限 3072. 第 10 页表 1 的重建对比统一用 1024 个 token (Direct3D 例外, 用 3072), 所以表 1 的 93.6% 和 89.16% 是 ShapeVAE 在 1024 长度下的成绩, 不是发布版 3072 长度下的成绩. 式 (1) 里 γ 的取值也没给.
+
+
+--- 行193 [想] ---
+> 靠内容本身. 回到第 5 页的编码器: token 来自 FPS 在表面上取的点查询, 每个查询带着傅里叶编码后的 3D 坐标进入 cross attention, 坐标信息已经写进了 token 的内容里. 这些点查询是一个无序集合, 换一个 FPS 起点, 同一个形状的 token 顺序就会变, 给序列下标加位置编码反而会引入一个没有意义的顺序. 图 3 的解码端也不依赖顺序: 网格查询 $Q_g$ 对全部潜 token 做 cross attention, 前面的 self-attention 也不带位置编码时, 任何一种排列得到的 SDF 都一样. 图 4 与此一致, PE 只出现在 Timestep 那一路, Noisy Shape Latent Tokens 只过一层 Linear 就进双流块.
+
+
+--- 行200 [问] ---
+> 正文只说 「pre-trained image encoder」, 没说冻结. 图 4 的配色给了线索: 图注说橙色块没有可学习参数, 而 DINO 画成橙色, 和 PE, Attention, Gate 同色, 紧跟其后的 Linear 是蓝色. 按图注读, DINO 在 DiT 训练里不更新, 可学的是它后面的线性投影. 第二问也看图 4 右栏: 单流块在 Scale & Shift 之后分成两支, 一支是 Linear, QK-Norm, Attention, 一支是 Linear, GELU, 两支并行后再合并. 正文的 「spatial attention and channel attention in parallel」 对应的就是这两支, 所谓通道注意力其实是逐 token 按通道计算的 MLP 分支, 不是另一种注意力. 图 4 左栏还标了块数: 双流块 ×16, 单流块 ×32.
+
+
+--- 行217 [回看] ---
+> 不对, 分子少了一个 d. 按同段给的仿射路径 $x_t = (1-t)x_0 + t x_1$ 对 t 求导, 得到 $\frac{dx_t}{dt} = x_1 - x_0$, 正好是式 (2) 里的回归目标 $u_t$. 所以速度场应是 $\frac{dx_t}{dt}$. 推理时反过来用: 从 $x_0 \sim \mathcal{N}(0,1)$ 出发, 按一阶 Euler 的 $x_{t+\Delta t} = x_t + \Delta t\, u_\theta(x_t, c, t)$ 一步步走到 $t=1$. 走多少步本文没写, 图 2 左下 DiT 的回环只标了 「Steps x N」; 是否用了 classifier-free guidance, 正文也没提.
+
+
+--- 行292 [核对] ---
+> 按算法 1 原样执行不会. 外层循环从 $i=N_{fixed}=4$ 跑到 $N_{max}-1=11$, 共 8 轮, 每轮无条件往 $\mathbb{V}_s$ 里加一个视角. 式 (3) 是面积, 最小为 0, 而 $c_{max}$ 的初值是 -1, 所以即使新增覆盖为 0, 第一个候选也会被选中. 于是只要候选集够大, 输出总是 4 + 8 = 12 个视角. 正文的 「8 to 12」 需要一个提前停止条件, 比如新增覆盖低于某个阈值就退出, 但算法 1 里没有这一步, 阈值也没给. 引用时可以说 「上限 12, 前 4 个固定」, 下限 8 在本文里找不到来源.
+
+
+--- 行321 [拆开] ---
+> 两个系数本文没给, 也没说是固定常数还是可学习. 哪些在训练要看图 5 右半的雪花和火焰: 生成块里 Self Attention 带雪花, 对应式 (4) 的 $Z_{SA}$ 「frozen-weight」; Multiview Attention 和 Reference Attention 带火焰, 是新加且可训练的两项; 下方 Reference Block 整块带雪花, 标着 Timestep=0, 对应正文冻结的 SD2.1 参考分支. 图里生成块左边的 ResBlock 带火焰, 右边的 ResBlock 带雪花, 图 5 左半生成分支一侧的 Conv-In 和 Conv-Out 也带火焰. 所以可训练部分不只两个新注意力, 还包括输入输出卷积和部分 ResBlock, 正文没有把这些写出来. 三项是相加关系, 参考和多视图两路互不嵌套, 这就是正文说的 「parallel structure」.
+
+
+--- 行352 [确认] ---
+> 靠视角嵌入和 44 个预设视角. 上面 「Geometry and View Conditioning」 一段说每个预定义视角对应一个整数, 经可学习嵌入注入网络; 图 5 右上的 Camera Embeddings 进的正是 Multiview Attention. 训练时每批从 44 个里随机抽 6 个, 多视图注意力学到的是 「任意几个视角之间互相看」, 不绑定固定的 6 个位置, 推理时就能换成更多视角. 图 5 左侧 「Dense View Inference」 画的是 8 张猴子视图, 落在 8 到 12 之间. 本文没说批大小 48 数的是物体还是图像, 也没说推理视角是否必须取自这 44 个预设视角; 如果必须, 算法 1 的候选集 $\mathbb{V}_r$ 最多就是这 44 个.
+
+
+--- 行400 [看表] ---
+> 表 1 只能说明一部分. 按上一段的 Baselines, 3DShape2VecSet 用下采样的点查询, Hunyuan3D-ShapeVAE 用 「点查询 + 重要性采样」, 两者都在 1024 个 token 下比, 表示方式相近, 差别主要在采样上. V-IoU 从 87.88% 到 93.6%, 高 5.72 个点; S-IoU 从 80.66% 到 89.16%, 高 8.50 个点. 近表面的 S-IoU 涨得更多, 和重要性采样专门往边角加点的方向一致. 但这不是严格消融: 两者的训练数据, 模型宽度, 训练步数本文都没对齐说明, 表里也没有一行 「去掉重要性采样」 的对照. Direct3D 用了 3 倍的 token (3072) 仍然只有 88.43% 和 81.55%. 表里 93.6% 只保留一位小数, 其余都是两位, 原文如此.
+
+
+--- 行435 [再看] ---
+> 不是. 表 2 四列里它只拿下 Uni3D 的两列: Uni3D-T 0.2519 比第二名 Shape Model 3 的 0.2516 高 0.0003, Uni3D-I 0.3151 比 Shape Model 3 的 0.3131 高 0.0020. ULIP-T 第一是 Shape Model 1 的 0.0799, Hunyuan3D-DiT 的 0.0771 排第二, 只比 Trellis 的 0.0769 高 0.0002; ULIP-I 第一是 Shape Model 2 的 0.1308, Hunyuan3D-DiT 的 0.1303 也排第二. 表注和第 10 页正文的 「the most condition following results」 只在 Uni3D 两列上成立. 所有差距都在小数点后第三, 四位, 本文没给方差或样本数, 看不出这些差距是否超出重复评估的波动.
+
+
+--- 行481 [问] ---
+> 第一问的答案在第 9 到 10 页 4.4 节 「General Text- and Image-to-Texture」: 文本先经 T2I 模型, 配合 ControlNet 和 IP-Adapter 生成和几何对齐的图像, 再走图 5 的图像到纹理管线. 所以表 3 里 Hunyuan3D-Paint 这一行测的是 「T2I + Paint」 整条链路, 其余五个基线是直接以文本为条件的方法; 用的是哪个 T2I 模型, 本文没点名. 第二问本文没交代: 文本到纹理没有天然的真值图像, Metrics 段只说 LPIPS 比的是渲染图和 「ground-truth images」, 真值来自原始带纹理资产的渲染还是 T2I 生成的参考图, 没有写. 表 3 的 LPIPS 从 0.0076 到 0.0059, 各方法差距都在千分位上.
+
+
+--- 行570 [对一下] ---
+> 是 Ours. PDF 第 14 页图下的标签从左到右是 TEXTure, Text2Tex, SyncMVD, Paint3D, TexPainter, Ours, PDF 文字层也是这个顺序, md 把最后两个换了位. 这和表 3 的行序一致, 表 3 最后一行也是 Hunyuan3D-Paint. 另外图 8 的六张行图文件名整体错了一行: 每张图都按它下方那行文字起名, 所以名为 bunny 的文件画的是鱼, 名为 dragon 的是兔子, 名为 soccer 的是龙, 名为 castle 的是足球, 名为 teddy 的是城堡, 名为 texture 的是泰迪熊. 读图以画面为准.
+
+
+--- 行601 [看表] ---
+> 有两处对不上. 第一, 表 4 的行是 Hunyuan3D 2.0 整个系统 (Hunyuan3D-DiT 出形状, Hunyuan3D-Paint 上纹理), 5.3 节比的也是端到端资产, 表注却写成 「Hunyuan3D-Paint produces the most condition-following texture maps」, 像是沿用了表 3 的表注. 第二, 5.3 节 Metrics 段列的是 $FID_{CLIP}$, CLIP-score, CMMD, LPIPS 四个指标, 表 4 实际的四列是 CMMD, $FID_{CLIP}$, $FID_{Incept}$, CLIP-score, 没有 LPIPS, 多了一列 $FID_{Incept}$, 正文对它没有任何说明. $FID_{Incept}$ 的数值在 282 到 306 之间, 比 $FID_{CLIP}$ 大一个数量级; 这类 FID 的绝对值受样本数影响很大, 本文没给样本数, 只能看相对顺序.
+
+
+--- 行616 [想] ---
+> 整体满意要求两项同时满意, 所以每个方法的 Overall Satisfy 不能超过它在 3D Assets Quality 和 Image Following 两组里较低的那个. 按图 10 目测: Hunyuan3D 2.0 是 79 对 min(80, 83), Trellis 是 58 对 min(61, 70), Model 1 是 30 对 min(37, 33), Model 2 是 69 对 min(76, 75), Model 3 是 60 对 min(72, 69), 五个方法都满足. 这说明柱高是 「给出满意评价的比例」, 三组共用一个口径. 两个细节本文没交代: 300 个结果是否每个都由 50 人全部评过; 正文说评的是 「results generated by Hunyuan3D 2.0」, 其他四个方法的结果从哪来, 数量是否也是 300.
+
+
+--- 行633 [回看] ---
+> PDF 第 16 页的图 11 是六行: 举牌企鹅正面 (带输入图), 举牌企鹅背面, 滑板企鹅正面 (带输入图), 滑板企鹅背面, 山峰正面 (带输入图), 山峰另一面. md 只切出五张, 第二行举牌背面没有成图, 它牌子上印的 「HY3D」 被当成文字抽出来, 成了上面那行 「# HY3D」. 其余五张的位置也乱了: 第六行排在最前, 文件名 p16-image; 第一行叫 p16-hy3d; 第三, 四行叫 p16-image-2 和 p16-image-3; 第五行按下面的列标签叫 p16-trellis. 图注说 「The first case」, 「The second penguin」, 「The last mountain」, 对应三组, 每组两行, 不是六个独立案例.
+

@@ -1,0 +1,41 @@
+# 11-gemini/gemini-2  文件: content/model-library/03-模型家族\11-gemini/gemini-2\gemini-2-bi.md  共 10 块
+
+--- 行77 [想] ---
+> 原文没这么说. 同一段里 「Gemini 2.0 Flash experimental model will be available to all Gemini users」 讲的是模型, 紧接着 「We're also launching a new feature」 讲的是功能, 用 「also」 并列, 对 Deep Research 只说它用了 「advanced reasoning and long context capabilities」, 没有点名底层模型. 它的开放范围也和 2.0 Flash 不同: 2.0 Flash 对所有 Gemini 用户开放, Deep Research 只在付费的 Gemini Advanced 里. 全文唯一明说要把 2.0 的推理能力接进去的产品是下一段的 AI Overviews, 而且只是 「limited testing」.
+
+
+--- 行88 [确认] ---
+> 不能. 原话分两层: 「built on custom hardware like Trillium」 用的是 「like」, 只把 Trillium 当举例; 「TPUs powered 100%」 说的是 TPU 这个大类, 没限定第几代. 所以能确认的是 「训练和推理都没用 TPU 以外的芯片」, 至于各代 TPU 各占多少, 集群多大, 训练用了多久, 这里都没有写. 这句还紧跟着 Trillium 对云客户 「generally available」 的消息, 更像一条硬件业务的宣传, 不是训练配置说明.
+
+
+--- 行111 [问] ---
+> Flash 先发, 而且全文只有 Flash. 这句明说 「the first model in the Gemini 2.0 family of models」 是 「an experimental version of Gemini 2.0 Flash」. 通篇没有出现 「2.0 Pro」 这个名字, 第 3 页表格里的两个 Pro 都是上一代的 「Gemini 1.5 Pro 002」. 关于后续型号, 第 4 页只有一句 「General availability will follow in January, along with more model sizes」, 没说是哪些尺寸, 叫什么名字. 所以这次发布的比较对象只能是上一代: 第 3 页那句 「2.0 Flash even outperforms 1.5 Pro」 拿新一代的 Flash 去比旧一代的 Pro, 同代 Pro 缺席, 读表时不能把 2.0 Flash 当成 2.0 家族的上限.
+
+
+--- 行128 [核对] ---
+> 表里 13 行, 2.0 Flash 对 1.5 Pro 赢 11 行, 输 2 行: MRCR (1M) 是 69.2% 对 82.6%, 低 13.4 个百分点; CoVoST2 是 39.2 对 40.1, 低 0.9 个 BLEU. 所以原文用 「on key benchmarks」 而不是 「on all benchmarks」, 措辞和表是对得上的, 只是哪些算 「key」 没有定义. 赢的 11 行里, 幅度差别也大: HiddenMath 高 11.0, Natural2Code 高 7.5, 而 MMLU-Pro 只高 0.6, LiveCodeBench 高 0.8, EgoSchema 高 0.3. 后半句 「at twice the speed」 在表里没有任何对应的列, 全文也没给延迟或吞吐的数字.
+
+
+--- 行151 [看表] ---
+> 也输给了上一代的 1.5 Flash: 69.2% 对 71.9%, 低 2.7 个百分点. 这是全表唯一一行 2.0 Flash 在三列里垫底的项目. 对照第 2 页开头那句 「Gemini 1.0 and 1.5 drove big advances with multimodality and long context」, 长上下文正是 1.5 代主打的能力, 到了 2.0 Flash 这里反而退了一步. 正文讲 2.0 Flash 的新能力时只列了多模态输出和原生工具调用, 没有提长上下文, 也没解释这一行为什么掉分. 表里对 MRCR 的说明只有 「Novel, diagnostic long-context understanding evaluation」, 1M 指多长, 怎么判分, 都没写.
+
+
+--- 行154 [再看] ---
+> 按说明列逐行看, 至少有四行带内部色彩. Natural2Code, HiddenMath 标了 「Held out dataset ... not leaked on the web」, FACTS Grounding 标了 「Held out internal dataset」, 这三项的题目外界拿不到, 分数无法复现. Vibe-Eval 的题目来自 Reka, 但说明写着 「Evaluated with a Gemini Flash model as a rater」, 即由 Gemini 自家的 Flash 模型打分, 而被评的三列里就有两个 Flash; 用的是哪一版 Flash 当评分者, 没写. 2.0 Flash 对 1.5 Pro 领先最多的两行 (HiddenMath 高 11.0, Natural2Code 高 7.5) 恰好都是留出集. 另外 FACTS Grounding 是全表唯一一行 1.5 Flash (82.9%) 高于 1.5 Pro (80.0%) 的项目.
+
+
+--- 行171 [拆开] ---
+> 要把能力和开放对象分开看. 所有开发者: 多模态输入, 文本输出. 仅早期体验合作伙伴: 文本转语音, 原生图像生成. 也就是说, 第 3 页重点介绍的 「multimodal output like natively generated images mixed with text and steerable text-to-speech」, 当天普通开发者都拿不到. 原生工具调用的开放范围这两句没提, 只在下一段的 Multimodal Live API 里出现了 「the ability to use multiple, combined tools」. 正式版定在 1 月, 年份原文没写, 按发布日 2024 年 12 月 11 日推算应是 2025 年 1 月.
+
+
+--- 行186 [回看] ---
+> 原文给了两个名字. 表头是 「Gemini 2.0 Flash Experimental」, 对应开发者通过 API 拿到的实验模型; 这里给 Gemini 应用用户的是 「a chat optimized version of 2.0 Flash experimental」, 多了 「chat optimized」 这层处理. 怎么针对聊天优化, 优化后分数变没变, 全文都没说, 所以表里的 13 行分数严格说只描述 API 版本. 第 2 页那句 「our Gemini 2.0 Flash experimental model will be available to all Gemini users」 没提这层区别, 读到这里才知道两者不完全一样.
+
+
+--- 行235 [停一下] ---
+> 是时长, 不是上下文长度. 原文没把它换算成多少内容, 也没说这 10 分钟是视频流, 音频还是对话文字. 它和表里 MRCR (1M) 的 「1M」 不是同一种单位, 两者不能直接对照. 后半句 「can remember more conversations you had with it in the past」 讲的是跨会话记忆, 只用了 「more」, 没有数字, 也没说靠什么机制记住. 下文安全部分提到 Astra 有 「privacy controls that make it easy for users to delete sessions」, 说明这些会话是被保存下来的, 这是 「keeping you in control」 在全文里唯一具体的落点.
+
+
+--- 行262 [对一下] ---
+> 原文的主语是 「Project Mariner」, 是一个原型系统的成绩, 附带条件 「working as a single agent setup」. Mariner 只说 「built with Gemini 2.0」, 没说用的是 2.0 Flash 还是别的内部版本, 也没交代浏览器扩展这层框架怎么搭. 这个数字不在第 3 页的表里, 表里没有任何 agent 或网页任务类的行, 也没有对照的其他系统分数, 「state-of-the-art」 比的是谁, 页面上看不到. 紧接着的一段还承认它 「not always accurate and slow to complete tasks today」, 83.5% 与 「慢」 同时成立, 分数本身不含耗时.
+

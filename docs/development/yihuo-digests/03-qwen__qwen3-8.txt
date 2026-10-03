@@ -1,0 +1,77 @@
+# 03-qwen/qwen3-8  文件: content/model-library/03-模型家族\03-qwen/qwen3-8\qwen3-8-bi.md  共 19 块
+
+--- 行33 [想] ---
+> 没有. 全文是产品博客, 规格只反复出现 2.4T 总参与 95B 激活 (见 page 2 图注), 没有 MoE 路由, 专家数或 Dense/MoE 层表; 底盘细节要回 Qwen3.5 / 系列技术报告, 不能从本稿反推路由超参.
+
+
+--- 行126 [问] ---
+> 钉在 「implementation is complete」 之后才触发 E2E tests and CI checks; 文案写 PR is merged after passing, 即通过后才合入. 认领与执行走状态机三段, 验证合并不在 leased 中间态, 而在实现完成之后.
+
+
+--- 行171 [核对] ---
+> 表头写 Gain vs. baseline, 正文把 Paper’s method, reproduced 标成 49.58% (baseline). Round 3 相对论文复现基线仍为正增益 (+1.67), 但相对 Round 2 最优回落; 「自我改进」指环路继续假设-试验, 不保证每轮分数单调上升. 终局以 Round 4 的 52.29% / +2.71 (nhighgate) 相对该 baseline 取胜.
+
+
+--- 行188 [拆开] ---
+> 文明确写 Chinese-CLIP 用于 「images its main model was unsure about」, 即主 VL 不确定时的 backing; 票权用 cross-validation 标定, 另加 extra image voters 破平. 主干叙事仍是 BERT/MacBERT/RoBERTa 文本集成 + Qwen2.5-VL-7B, CLIP 是不确定集上的 backing, 不是对等并行主模.
+
+
+--- 行241 [看表] ---
+> Fig 1 图注写 steady, consistent gains ... as RL training continues to scale up, 论证缩放曲线. Fig 2 图注写 comparable performance across many harnesses, 论证跨 harness 可比. 「uniformly across ... harnesses」 的水平抬升叙事与 Fig 2 更直接对齐; Fig 1 支撑的是算力/训练继续缩放时的稳态增益, 不要把两张图的主张互换.
+
+
+--- 行318 [确认] ---
+> 观测定义是 design-period metrics 与 validation-period metrics 的 misalignment. 自动动作是 triggered pruning, removing redundant factors round by round, 不是重训底座模型. 多路径收敛时加的是 multi-seed union validation, 目的写明 eliminate path dependence.
+
+
+--- 行403 [回看] ---
+> 写明 accounting for over 80% of the total area reduction (相对 8,298→678 的总降幅). 物理侧终局在 500 MHz 时序收敛, Slack +0.66 ns; 起始为 -4.46 ns. die 从约 $106\times106$ 到 $46\times46$ $\mu\mathrm{m}^{2}$, 文称物理 die 面积约降 81%.
+
+
+--- 行436 [停一下] ---
+> 起步 ¥100,000; 终局 ¥416,252 (4.16x); 对 GLM 5.2 总余额领先 38%; 对 Qwen3.7-Max 改进 152%. 大促净利超过 ¥100,000, nearly 2.4 times 对标的是第二名 GLM 5.2 的同期净利, 不是对自家上一代.
+
+
+--- 行495 [再看] ---
+> 黑盒: 只能观察真实运行应用, no source code, no internet access, 纯靠 interaction and feedback 理解后再从零重建. 互补: coding does the heavy lifting efficiently and at scale; GUI operation reaches whatever a human can see and touch, and feeds back what actually happens in a live system -- 把视觉反馈从检查自输出延伸到 verifying against a real, running application.
+
+
+--- 行536 [对一下] ---
+> 归因写 due to its stronger Chinese support. 同段另有 exceeds Opus4.8 by 28% in equivalent inference speed. 这两条是 Qoder 负责人引言里的产品数字, 不是 Full Benchmark Table 里的公开格.
+
+
+--- 行571 [想] ---
+> 会漏掉 Score 列的拉开: 同 Pass 下 Score 高 7.3. 本文把该行写成 Pass / Score 双指标, 说明 Pass 并列不等于综合分并列; 引用时必须带 Score, 不能只抽 Pass=27.0 说 「与 Opus 持平」 就结束.
+
+
+--- 行586 [看表] ---
+> 正文的 frontier-level 是定性能力声明, 钉在黑盒复刻设定与迭代 coding+交互反馈叙事; 表上 51.7 是相对对照列的量化格, 且确实低于 Fable5 56.1, 也高于 Gemini3.1-Pro 16.2 与 Qwen3.7-Plus 30.2. 读法应是: 能力叙事成立不等于每一格都第一; 引用 Hybrid Agent 时要同时带上 RecreationBench 相对位次, 避免把定性词读成榜首证明.
+
+
+--- 行623 [拆开] ---
+> reasoning_effort 默认 xhigh, 三档 xhigh / medium / low, 控制推理深度与成本. preserve_thinking 对所有 workloads 默认 enabled, 指向开箱体验 (保留思考轨迹), 不是同一旋钮的别名. 部署时两者可叠加理解: 一个调深浅, 一个调是否保留 thinking 内容.
+
+
+--- 行886 [确认] ---
+> 是, 两处都写 1000000. OpenClaw 另写 maxTokens: 65536. Codex JSON 另有 effective_context_window_percent: 95 与 default_reasoning_level: 「xhigh」, OpenClaw 片段未重复这两项.
+
+
+--- 行1045 [问] ---
+> 不是同一证明链. page 4–5 是手工叙述的单篇论文复现+自改进案例 (AIME24 等过程数字); page 21 PaperBench 是 Full Benchmark Table 里的公开/对照格. 两者都服务 「能搞研究/论文相关任务」 叙事, 但案例过程指标不能直接填进 PaperBench 格子, 反之亦然.
+
+
+--- 行1092 [核对] ---
+> 均衡器压制 inter-batch gradient variance; 轴是 tasks, difficulty, workspaces, harnesses. Universal Reward System 解决的是异构校验 (execution / rubric / agentic inspection) 收进同一奖励源, 消除任务专用 verifier 不一致. 二者同属 Real-World RL 三件套, 但一个管 batch 分布稳定性, 一个管奖励定义一致性, 不是同一旋钮.
+
+
+--- 行1095 [回看] ---
+> Dense200 是表内 grounding/感知格上的大幅领先, 可支撑 「视觉定位/感知强」 的读法; page 15–16 的反馈环是执行期自观察-纠偏的产品机制叙事, 表没有单独一列叫 visual feedback loop. 合理对齐是: 强感知/grounding 分数与闭环叙事同向, 但不能把 Dense200 单格直接等同于闭环能力的因果证明.
+
+
+--- 行1104 [想] ---
+> 会违反 「maintain bit-exact functional correctness across 4-, 6-, 8-, and 16-bit configurations」. 面积只按 WIDTH=16 报 Yosys cell count, 正确性必须跨四种位宽 bit-exact; 二者评测轴分离, 不能用面积配置偷换正确性覆盖范围.
+
+
+--- 行1107 [对一下] ---
+> 主要测 risk control capabilities. 点名三类经典骗局: membership fee traps, low-price bait, goods not as described. 雷达图面积扩大写的是合法议价上的 negotiation efficiency 持续学习, 与欺诈商户嵌入是并列压力源, 不要混成同一指标.
+

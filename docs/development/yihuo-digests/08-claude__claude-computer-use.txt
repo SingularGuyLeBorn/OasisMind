@@ -1,0 +1,65 @@
+# 08-claude/claude-computer-use  文件: content/model-library/03-模型家族\08-claude/claude-computer-use\claude-computer-use-bi.md  共 16 块
+
+--- 行21 [想] ---
+> 本页没有写修订前的数值, 只有 「revised」 一词和新价 \$0.80 / \$4 per MTok. Sonnet 的价格在第 3 页也只以 「same price and speed as its predecessor」 带过, 没有具体金额.
+
+
+--- 行28 [问] ---
+> 不能. 第 2 页那张表的 7 列里没有 Claude 3 Opus. 第 3 页 Haiku 一节又写 「surpasses even Claude 3 Opus ... on many intelligence benchmarks」, 措辞从 「matches」 变成 「surpasses」, 但同样只说 「many」, 没给 Opus 的分数. 「similar speed」 也没有配速度数字.
+
+
+--- 行37 [核对] ---
+> 限定语有三层: frontier AI model, computer use, public beta. 同一段紧接着承认它 「experimental」, 「cumbersome and error-prone」, 第 4 页又说当前能力 「imperfect」. 所以这里的 「first」 说的是以公开 beta 形式开放的先后, 不是能力成熟的先后.
+
+
+--- 行44 [拆开] ---
+> 只是任务长度. 这句描述早期客户尝试的任务需要多少步, 没有给出这些任务的成功率. Replit 的例子里, computer use 的角色是在 Replit Agent 构建应用时去评估应用, 也就是让模型操作界面做检查, 页面同样没给效果数字.
+
+
+--- 行73 [看表] ---
+> 不统一. 多数格标 0-shot CoT, HumanEval 一行只标 0-shot, 不带 CoT; MATH 一行的两列 Gemini 标 4-shot CoT, 其余列是 0-shot CoT; SWE-bench Verified 和 TAU-bench 两行没有标设置. 所以 MATH 行里 Gemini 与 Claude, GPT-4o 的比较, 条件并不相同, 表本身把差别标在格内, 正文没有另作说明.
+
+
+--- 行80 [停一下] ---
+> 两处的处理不一致. 脚注的理由是 o1 依赖 「extensive pre-response computation time」, 即 TestingTime 阶段多花算力, 所以表里不放. 第 3 页正文仍然把 「reasoning models like OpenAI o1-preview」 拿来与 49.0% 比较, 但 o1-preview 的分数没有出现在本页任何位置, 读者在本页核对不了这句.
+
+
+--- 行91 [对一下] ---
+> 对得上. SWE-bench Verified 33.4% → 49.0%, TAU-bench retail 62.6% → 69.2%, airline 36.0% → 46.0%, 分别对应表中 「Claude 3.5 Sonnet」 与 「Claude 3.5 Sonnet (new)」 两列. 正文称 airline 「more challenging」, 表中新旧两版的 airline 分数都低于各自的 retail 分数, 方向一致.
+
+
+--- 行98 [再看] ---
+> 页面没说. 原句只有 「stronger reasoning (up to 10% across use cases)」, 没交代是准确率, 通过率还是相对提升, 也没说用例有多少个, 「up to」 表示这是最高值而非平均值. 同句的 「no added latency」 也没有配数字.
+
+
+--- 行105 [回看] ---
+> 本页没有写结果, 只写了测试由这两家机构进行. 紧接着的 ASL-2 判断写的是 「We also evaluated」, 即 Anthropic 自己的灾难性风险评估, 页面没有说明两者之间的关系. 另外原文英国机构写作 「UK Safety Institute」, 缩写仍是 UK AISI.
+
+
+--- 行112 [想] ---
+> 意味着没有升级, 仍停在 ASL-2. ASL-2 具体包含哪些措施, 本页没有展开, 需要看链接的 Responsible Scaling Policy. 本页也没有给出这次灾难性风险评估用了哪些评测.
+
+
+--- 行121 [问] ---
+> 只能核对一半. 原版 Claude 3.5 Sonnet 在表中 SWE-bench Verified 为 33.4%, 确实低于 40.6%; GPT-4o 这一格是 「-」, 本页没有它的分数. 另外原句比较的对象是 「agents using publicly available state-of-the-art models」, 比的是基于这些模型搭出来的 agent, 不是模型本身在同一套脚手架下的分数.
+
+
+--- 行134 [核对] ---
+> 对得上. 表中 Haiku 的 MMMU (视觉问答) 一格是 「-」, 与发布时只支持文本一致. 第 2 页说 computer use 靠 「looking at a screen」, 第 4 页 OSWorld 成绩也标明是 screenshot-only 类别; 按这两处推断, 纯文本的 Haiku 在发布时用不上 computer use, 本页也只把 computer use 挂在 Claude 3.5 Sonnet 名下.
+
+
+--- 行147 [确认] ---
+> 只交代了用途和一个例子: 把 「填表」 这类指令拆成查表格, 移光标开浏览器, 进网页, 填表等命令. 动作集合, 截图的获取方式, 坐标格式都没有写, 这些在第 2 页链接的 API 文档和 「developing computer use」 一文里, 不在本页.
+
+
+--- 行150 [停一下] ---
+> 两者都没给. 14.9% 对 7.8% 是 screenshot-only 类别下的比较; 22.0% 对应 「more steps」, 但步数上限没写, 第二名系统在更多步条件下的分数也没写, 所以 22.0% 只能和 Claude 自己的 14.9% 比.
+
+
+--- 行157 [对一下] ---
+> 没有. 页面只说分类器能识别 computer use 何时被使用, 以及是否在发生伤害, 列出的威胁类别是 spam, misinformation, fraud, 没有准确率, 召回率或拦截率, 也没有说识别后采取什么动作. 细节被指向 「developing computer use」 一文.
+
+
+--- 行206 [回看] ---
+> 「Related content」 这一块以及第 6-9 页的导航, 是抓取时站点的当前模板, 与这篇公告的内容无关; 第 9 页的 「© 2026 Anthropic PBC」 同样属于页脚. 公告正文到 「Looking ahead」 一节就结束了.
+

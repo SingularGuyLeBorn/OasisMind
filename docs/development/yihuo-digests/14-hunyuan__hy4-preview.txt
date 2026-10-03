@@ -1,0 +1,101 @@
+# 14-hunyuan/hy4-preview  文件: content/model-library/03-模型家族\14-hunyuan/hy4-preview\hy4-preview-bi.md  共 25 块
+
+--- 行11 [停一下] ---
+> 不是. 这是浏览器把网页存成 PDF 时印在页眉上的时间, 13 页一字不差, 连分钟都一样, 说明它记的是抓取时刻. 页面正文没有发布日: News 一节只写 「We open-source Hy4 preview and Hy4 preview-FP8」, 没有日期. 能侧面推断的只有两处. 第 2 页 Collection 写 「Updated 9 days ago」, 按抓取时刻倒推, 合集最近一次更新在 9 月 16 日前后. 第 1 页 「Downloads last month」 已经累计到 21,213. 这两条只能说明权重在 9 月 25 日之前就挂出来了, 推不出具体哪一天发布. 引用时发布日只能写 「页面未印」, 9 月 25 日只能写成抓取日.
+
+
+--- 行50 [核对] ---
+> md 把 「Like」 这个词丢了, 两个数看上去都悬空. PDF 文字层的顺序是 「Community 13 Like 12.4k Follow Tencent」, 第 1 页截图上则是 「Like 496」 和 「Follow Tencent 12.4k」 两个按钮. 所以 496 是本仓库的点赞数, 12.4k 是 Tencent 组织的关注数. 还有一个 13, md 没有作为文字抽出来, 它被切成了图片 `p01-downloads-last-month.png`, 在截图上是 Community 标签页右侧的黑底徽标, 表示社区讨论数. 三个数都是抓取那一刻的站点计数, 会随时间变.
+
+
+--- 行97 [问] ---
+> 不是. 第 2 页 「Papers for tencent/Hy4-preview」 把两篇的标题印出来了: 2512.02556 是 「DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models」, 2603.12201 是 「IndexCache: Accelerating Sparse Attention via Cross-Layer Index Reuse」. 第 4 页正文也只在讲注意力模块时引用这两篇, 一篇对应 DeepSeek Sparse Attention, 一篇对应 IndexCache. 全部 13 页里没有一篇以 Hy4 为题的论文或报告. 所以这份材料是模型卡, 结构信息只有第 4 页, 第 5 页那两段文字和一张表, 不能拿 DeepSeek-V3.2 论文里的配置去补 Hy4 的空.
+
+
+--- 行152 [确认] ---
+> 没有, 六张都是网页界面上的小元素. `p01-2026-9-25-13-12.png` 是 Tencent 组织头像, `p01-search-models-datasets-users.png` 是 Hugging Face 笑脸标志, `p01-tencent-https-huggingface-co-tencent-hy4-preview-https.png` 是菜单按钮, `p01-community.png` 是挥手表情, `p01-downloads-last-month.png` 是讨论数徽标 13, `p01-safetensors.png` 是下载量走势小图. 六个文件在 340 到 7317 字节之间. 文件名都是 MinerU 按上下相邻的文字取的, 有三个和画面完全不沾边: 头像叫 「2026-9-25」, 徽标叫 「downloads-last-month」, 走势图叫 「safetensors」. 读图时要看画面, 不能看文件名.
+
+
+--- 行167 [对一下] ---
+> 第 4 页交代了: 770B 是主干的总参数, 另有 「1 native MTP layer (10B total parameters, 0.7B activated)」, 规格表上方还专门注明 「The table below lists backbone parameters only, excluding the MTP layer」. 770B 加 10B 正好是 780B. 所以第 1 页这个数是 Hugging Face 按仓库里的 safetensors 文件统计的, 连 MTP 层一起算. 两个数都对, 口径不同. 引用时要讲清是 「主干 770B」 还是 「含 MTP 共 780B」.
+
+
+--- 行280 [再看] ---
+> 只能定一半. 「9 days ago」 是相对抓取时刻说的, 按 9 月 25 日倒推是 9 月 16 日前后, 但这是合集最后一次改动的时间, 首次建立可能更早. 「2 items」 最自然的对应是第 10 页 Model Links 表里的两行, Hy4 preview 和 Hy4 preview-FP8, 可截图没有展开合集, 两个条目的名字页面上看不到. 所以这一行不能当作发布日的证据, 也不能当作 「只发了两个版本」 的证据.
+
+
+--- 行341 [看表] ---
+> 显示出来的六个都对得上. GPQA Diamond 92.3, APEX-Agents (pass@1) 37.1, DeepSWE 64.3, SWE-bench Pro 65.7, Terminal-Bench 2.1 85.4, Toolathlon-Verified 74.1, 和大表 「Hy4 preview」 列逐一相同. HLE 一行没印分数, 大表里 HLE 有两行, 带工具 55.4, 不带工具 43.4, 侧栏指的是哪一行看不出来. 被折叠的 2 项是什么, 截图里也没有. 侧栏只是大表的一个子集, 不提供新数字.
+
+
+--- 行402 [回看] ---
+> PDF 第 3 页嵌了 11 张位图, 一张横幅加十张 52 像素高的小徽标, 分别是 License 和四个托管站点的左右两半. md 没有把它们存成图片, 而是把徽标上的字转成了链接文字, 所以 「License Apache 2.0」 和四个 「Tencent Hy」 在 md 里是文字. md 只存下了显示器表情 `p03-2026-9-25-13-12.png` 这一张. 这不影响读意思, 但 images 目录里第 3 页只有一张图, 原因在这里.
+
+
+--- 行495 [拆开] ---
+> 能对上的只有计数. 1 层稠密加 77 层 MoE 正好 78 层. 每层专家总数是 256 个路由加 1 个共享, 共 257 个, 每个 token 用到 8 个路由加 1 个共享, 共 9 个, 专家层面的激活比例约 9/257, 即 3.5%. 而 49B/770B 约 6.4%, 比 3.5% 高. 差出来的部分只能来自每个 token 都要经过的那些参数, 比如注意力, 第 1 层稠密 FFN, 词表. 但页面没有给出这些部分各占多少, 也没有给单个专家的参数量公式, 所以我不再细算具体数, 只记录两个比例的方向是一致的. MTP 层 10B 中激活 0.7B, 页面没有说它内部是什么结构.
+
+
+--- 行502 [问] ---
+> 页面都没说. 「Gated」 只在名字里出现, 13 页里没有一句解释门控的位置和形式. DSA 链到的是 DeepSeek-V3.2 论文, IndexCache 的论文页面没有写作者单位, GLM 这个名字在结构段落里没有对应到任何一个具体组件. iHC 的链接是知乎专栏, 不是论文, 页面也没有复述 iHC 的做法. 这三处我只照录名称和链接, 不替它补机制.
+
+
+--- 行560 [想] ---
+> 页面只给了数, 没给定义. 「Indexer top-k 2048」 字面上是索引器选出前 2048 个, 选的是什么单位, 是不是每个 query 各选一次, 页面没写. 「Context Length 1M」 没注明 M 按 1000 还是 1024 进位, 全文也没有专门的长上下文评测行. 「Residual Streams 4」 和第 4 页的 iHC 放在一起最说得通, 但页面没有把两者连起来说. Query 压缩 2048, Key-Value 压缩 512 这两行说明注意力里有压缩维度, 压缩的具体做法页面同样没写. 这里按表照录, 不补解释.
+
+
+--- 行571 [再看] ---
+> 没有. 这一段没有一个数字. 模型规模放大到 770B 是第 4 页给的, 但上一代多大, 这一页没印. 上下文 1M 是第 5 页给的, 上一代多长, 也没印. 训练数据量完全没有出现. 「largest generation-over-generation gain」 能找到的数字依据只有第 8 页大表的 Hy3 列和 Hy4 preview 列, 那张表 46 行里 Hy4 preview 每一行都比 Hy3 高, 但差距从 1.1 分到 36.3 分不等, 「最大」 是和哪几代比的, 页面没说.
+
+
+--- 行596 [看表] ---
+> 是同一套, 而且大表里一格有两个数时, 图用的是带星号的那个. 例如 Terminal Bench 2.1 一格, DeepSeek V4 Pro 0813 标 80.3, 大表是 「87.9/80.3*」; GLM 5.3 标 88.3, 大表是 「88.2/88.3*」. HLE 一格 Claude Opus 5 标 53.2, 大表是 「54.9/53.2*」. HorizonMath 一格把大表的 4.42, 5.31, 7.08, 10.62 四舍五入成 4.4, 5.3, 7.1, 10.6. 大表写 「PostTrainBench V1.1」, 图上只写 「PostTrainBench」. 按图上的数, Hy4 preview 在 12 格里没有一格是最高. 离最高最近的是 PostTrainBench, 35.6 对 GPT 5.6 Sol 的 36.2. 最靠后的是 ALE-CLI, 22.8 只比 DeepSeek V4 Pro 0813 的 21.9 高. 大表里 Hy4 preview 唯一最高的一行是 SWE Atlas - Codebase Q&A, 64.0, 这一行没有放进图里.
+
+
+--- 行623 [问] ---
+> 页面没解释. 四类是软件工程, 办公与分析, 游戏开发, 科学研究, 安全专家没有对应的一条. 第 8 页大表倒是有一行 CyberGym, Hy4 preview 78.4, 从名字看和安全有关, 但页面没有把它和安全专家的合作连起来说. 另外 「built training data around the work they ship」 没有给数据量, 也没有说这些数据用在预训练还是后训练. 游戏开发一条在第 8 页大表里找不到对应的评测行.
+
+
+--- 行648 [核对] ---
+> 胜平负都能加到 100%: 46.8 + 12.8 + 40.4 = 100.0, 51.2 + 7.9 + 40.9 = 100.0. 两次对比里 Hy4 preview 的平均分都是 2.99, 说明它在两场里用的是同一批打分. 但满分是多少, 页面没写, 3 分制, 5 分制都有可能, 所以 2.99 对 2.92 的差距是大是小没法判断. 页面自己的措辞是 「slightly ahead」, 略占上风. 203 个任务怎么选的, 163 位专家每人评了多少, 也没交代. 对手只有 GLM 5.3 和 Kimi K3 两个, 大表里的另外四家没有参加这次盲评.
+
+
+--- 行687 [看表] ---
+> md 里找不到解释, 因为 md 把表下面的注释整段丢了. PDF 里这张表是一整张位图, 从第 8 页延续到第 9 页顶部, BrokenArXiv 一行被页边切成两半, 第 9 页顶部接着印了一段灰色小字 「Notes」. 注释第一句是 "For each model, we evaluate and report results at the highest available reasoning setting, and results with* are from our own testing.「 也就是说, 带星号的是腾讯自己跑的分, 不带星号的来自别处. 一格两个数时, 斜杠前不带星号的数应是外部公布值, 斜杠后带星号的是自测值, 这一层是按注释推出来的, 注释没有逐字写明. 标 」(official)「 的 GDPval-AA V2 和 CritPt 两行整行没有星号, 和这个读法一致. 」-" 注释没提, 看上去是缺数. 这段注释只在 PDF 里, 这里按 PDF 补读, 不改源 md.
+
+
+--- 行690 [拆开] ---
+> 和 Hy3 比, 46 行全部上升, 没有一行持平或下降. 涨得最多的是 DeepSWE, 从 28.0 到 64.3, 多 36.3 分; 其次是 MathArena Apex 2025, 多 35.5 分; SWE Atlas 代码库问答多 33.2 分. 涨得最少的是内部评测 Hy-BrowseComp-Pro2, 多 1.1 分; GPQA Diamond 多 1.4 分; WideSearch 和 WorkspaceBench 各多 2.0 分. GDPval-AA V2 是 Elo 分, 从 1213 到 1678, 多 465, 单位不同, 不和百分制放在一起比. 和最强对手比, 按每格里最大的那个数算, Hy4 preview 严格第一的只有 SWE Atlas - Codebase Q&A 一行, 64.0 对 GPT 5.6 Sol 的 58.1. 另有几行和别家打平, 例如 Toolathlon-Verified 的 74.1 和 DeepSeek V4 Pro 0813 斜杠前的数相同, OfficeQA Pro 的 66.2 和 GLM 5.3 相同, 但这两行 Claude Opus 5 更高. 46 行里有 9 行标着 「(Internal)」, 是腾讯内部评测集, 外人没法复现.
+
+
+--- 行693 [对一下] ---
+> 对不上. 第 9 页注释讲 ProgramBench 时写 "For DeepSeek-V4-Pro-0803, we found that its thinking frequently gets stuck in a repetitive loop, so we use mini-swe-agent instead", 版本号是 0803, 表头和第 6 页图例都是 0813. 页面只出现了这一处 0803, 没有解释. 可能是笔误, 也可能 ProgramBench 这一格用的是另一个版本, 页面给不出答案, 两处都照录. 同一段注释还说明, 八项推理评测里有五项 Claude Opus 5 用的是 high 档, 其他模型用 max 档, 这和第一句 「highest available reasoning setting」 是两种口径, 读 Claude Opus 5 的推理分数时要记住这一点.
+
+
+--- 行722 [想] ---
+> 是两句话, 说的是两个东西. 「This is an early version of Hy4」 说的是现在发布的这个 preview; 「it's how we will get Hy4 right」 说的是还没到来的 Hy4, 用的是将来时. 页面拿 Hy3 做先例: 先有 「Hy3 preview」, 后来才有 「Hy3」, 第 8 页大表的对比列写的正是 「Hy3」, 没有 preview 字样. 第 8 页注释还有一句 「Certain Hy3 benchmark scores may differ from previously reported results」, 说明 Hy3 的分数前后改过. 所以本目录只能记 Hy4 preview 的数, 不能把它当成 Hy4 正式版的数. 正式版什么时候发, 权重会不会换, 页面都没说. 另外, 表里 「Hy4 preview」 和 「Hy4 preview-FP8」 都是 preview, FP8 是量化版, 也不是正式版.
+
+
+--- 行762 [确认] ---
+> 没有. 表里两行都写 instruct model, 一个是原精度, 一个是 FP8 量化. 13 页里没有 「Base」 字样的模型名. 第 1 页的张量类型写 BF16 和 F32, 指的是 tencent/Hy4-preview 这个仓库, FP8 版是另一个仓库, 第 11 页的部署命令拉的都是 tencent/Hy4-preview-FP8. FP8 版是用什么工具量化的, 精度损失多少, 页面没写.
+
+
+--- 行799 [回看] ---
+> 不是, 是 MinerU 识别时插进去的. PDF 文字层是 「temperature=0.9, top_p=1.0」, 「Defaults to 」high"「, 」extra_body=「, 都没有空格. 抄参数时按 PDF 写, 否则 」0. 9「 会被当成语法错误, 」extra_ body" 会变成一个不存在的参数. 另外, 这里只列了 high 和 no_think 两档, 大表注释里提到 high 档和 max 档, 这个模型的 reasoning_effort 到底有几档, 页面没列全.
+
+
+--- 行866 [核对] ---
+> 不能直接跑. 「--speculative-config」 那一行末尾没有续行的反斜杠, 其他行都有. shell 会在这一行结束命令, 后面 「--attention-backend」 起的六行会被当成新命令报错. PDF 文字层这一行末尾也只有一个空格, 没有反斜杠, 所以这是网页原文的问题, 不是 MinerU 丢的. 抄的时候要自己补上. 另外命令加载的是 FP8 仓库, 8 路张量并行, 页面没写需要什么型号的 GPU, 也没写显存要求.
+
+
+--- 行911 [对一下] ---
+> 「--model.tencent」 不是. PDF 文字层是 「--model tencent/Hy4-preview-FP8」, 中间是空格, md 把空格认成了点. 投机解码两边写法不同: vLLM 写 「num_speculative_tokens」:3 和 「method」:「mtp」; SGLang 写 NEXTN, num-steps 3, num-draft-tokens 4, eagle-topk 1. 两边都是 3 步, SGLang 多出一个 「草稿 token 数 4」, 这个 4 和 vLLM 的 3 是不是同一个意思, 页面没解释. NEXTN 是不是就是第 4 页那个内置 MTP 层, 页面也没有直接说. 第 4 页只写了 MTP 层 「is built in for speculative decoding」, SGLang 这边的 NEXTN 和它是什么对应关系, 要去看第 11 页链接的 SGLang 手册, 本页给不出.
+
+
+--- 行940 [问] ---
+> 页面没说. 这一节只介绍 AngelSlim 这个工具, 没有一句提到 Hy4 preview-FP8 的来历. 「large-scale multimodal models」 是 AngelSlim 的适用范围, 而第 1 页给本模型的任务标签是 Text Generation, 第 8 页大表还特意标了 「text-only」, 这两处没有矛盾, 只是这段话写的是工具, 不是模型. 「speculative sampling」 被列成压缩工具的一种, 和第 11 页的投机解码是不是同一套实现, 页面也没说.
+
+
+--- 行989 [再看] ---
+> 补不上. 署名只到团队, 「Tencent Hy Team」, 13 页里没有一个人名, 也没有版权年. 两张图都是 Hugging Face 页脚的界面元素: `p13-2026-9-25-13-12.png` 是笔记本电脑图标, `p13-https-huggingface-co-tencent-hy4-preview.png` 是和页眉同款的笑脸标志, 3157 字节. 至此 10 张图全部看过: 9 张是界面图标或徽标, 1 张 `p06-built-for-productivity.png` 是评测柱状图. 没有一张是模型结构图, 也没有一张是整页的界面截图, 它们是从网页截图里切下来的小块.
+

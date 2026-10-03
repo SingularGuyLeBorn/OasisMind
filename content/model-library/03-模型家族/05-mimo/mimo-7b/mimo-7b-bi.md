@@ -786,6 +786,8 @@ extending our findings, we observed that continuous elevation of the generation 
 
 This work introduces MiMo-7B, a series of LLMs which unlock advanced reasoning capabilities through optimized pre-training and post-training process. Exposed to diverse reasoning patterns during pre-training, MiMo-7B-Base possesses exceptional reasoning potential, outperforming models of significantly larger scale. For post-training, with our robust and efficient RL frameworks, we trained MiMo-7B-RL-Zero and MiMo-7B-RL which demonstrate superior reasoning capabilities across mathematics, code and general tasks. We hope this work offers insights for developing more powerful reasoning models.
 
+本文提出 MiMo-7B, 一系列通过优化预训练与后训练流程释放高级推理能力的 LLM. 预训练阶段接触多样化推理模式后, MiMo-7B-Base 具备超出自身规模的推理潜力, 胜过规模大得多的模型. 后训练阶段, 依托稳健高效的 RL 框架, 训出 MiMo-7B-RL-Zero 与 MiMo-7B-RL, 在数学, 代码与通用任务上都展现更强推理能力. 希望本工作为开发更强的推理模型提供参考.
+
 ## References
 
 J. Ainslie, J. Lee-Thorp, M. de Jong, Y. Zemlyanskiy, F. Lebron, and S. Sanghai. GQA: Training generalized multi-query transformer models from multi-head checkpoints. In H. Bouamor, J. Pino, and K. Bali, editors, Proceedings of the 2023 Conference on Empirical Methods in

@@ -18,7 +18,7 @@ DeepSeek-V3 是一个 671B 总参, 每 token 激活 37B 的 MoE 语言模型, �
 
 MLA 的式 (1)–(11) 与 V2 完全一样: 键和值先由 $W^{DKV}$ 压成 512 维的潜向量 $c_t^{KV}$, 再分别上投影成 128 个头的 K 和 V; 另有一个 64 维的解耦键 $k_t^R$ 单独加 RoPE, 所有头共享. 推理时只需缓存这两个向量, 每 token 每层 576 个元素. 61 层合计 35,136 个元素, BF16 下约 70KB; 同样配置的标准 MHA 每层要存 2×128×128 = 32,768 个元素, MLA 只是它的约 1.76%(估算) 都约1.76了 为什么还估算 . 按此计算, 一条 128K 的序列 KV cache 约 9.2GB(估算) 约了为什么还估算? . 这是 V3 能把上下文开到 128K 并在 decode 阶段用大 batch 的前提, 矩阵吸收与缓存推导见 [MLA 低秩潜变量与矩阵吸收](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/04-MLA-低秩潜变量与矩阵吸收/04-MLA-低秩潜变量与矩阵吸收.md).
 
-query 侧的低秩压缩(式 6–9)不影响推理缓存, 报告的说法是为了降低训练时的激活显存. 注意力打分的分母是 $\sqrt{d_h + d_h^R} = \sqrt{192}$, 因为每个头的 query 和 key 都由 128 维内容部分和 64 维位置部分拼成. 报告还写了两处 V2 就有的细节: 压缩潜向量后面各加一个 RMSNorm, 在宽度瓶颈处乘额外的比例因子. 这两处都是为了训练稳定, 与第 2.2 节的 FP8 有关: 低秩瓶颈的激活值范围如果不受控, 量化误差会被上投影放大(推断). 本页没有对 MLA 做新的消融, 它在 V3 里被当作 V2 已经验证过的组件直接沿用.
+query 侧的低秩压缩(式 6–9)不影响推理缓存, 报告的说法是为了降低训练时的激活显存. 注意力打分的分母是 $\sqrt{d_h + d_h^R} = \sqrt{192}$, 因为每个头的 query 和 key 都由 128 维内容部分和 64 维位置部分拼成. 报告还写了两处 V2 就有的细节: 压缩潜向量后面各加一个 RMSNorm, 在宽度瓶颈处乘额外的比例因子. 这两处都是为了训练稳定, 与第 2.2 节的 FP8 有关: 低秩瓶颈的激活值范围如果不受控, 量化误差会被上投影放大(推断). 报告没有对 MLA 做新的消融, 它在 V3 里被当作 V2 已经验证过的组件直接沿用.
 
 ### 1.3. DeepSeekMoE: sigmoid 门控和节点受限路由
 
@@ -61,11 +61,15 @@ Table 5 在两个规模上比较纯辅助损失和无辅助损失. 小档 15.7B 
 
 ![报告 Figure 9: Pile 三个领域上 16B 模型的专家相对负载, 无辅助损失模型的专家特化更明显](images/p28-figure-9-expert-load-of-auxiliary-loss-free-and.png)
 
+*报告 Figure 9: Pile 三个领域上 16B 模型的专家相对负载, 无辅助损失模型的专家特化更明显*
+
 ### 1.5. MTP: 训练时多预测一个 token
 
 **MTP**: 训练时让每个位置不只预测下一个 token, 再多预测一个。思路来自 Gloeckle 等人 2024 年的工作, 但实现不同: 他们用 D 个独立输出头并行预测后面 D 个; 而 V3 直接就是串行——D 个模块一层层往后推, 每层保留完整的因果链(Figure 3)。
 
 ![报告 Figure 3: MTP 模块结构——每深度一个模块, 串行往后推, 嵌入层与输出头与主模型共享](images/p10-figure-3-illustration-of-our-multi-token-prediction-mtp.png)
+
+*报告 Figure 3: MTP 模块结构——每深度一个模块, 串行往后推, 嵌入层与输出头与主模型共享*
 
 拿 V3 实际用的 D = 1 走一遍. 主模型在「爱」这个位置算出一个 hidden state——由「我」「爱」两个 token 算出。MTP 模块收到两样输入: 这个 hidden state, 和「北」的嵌入——嵌入就是输入层那张查表矩阵, 把 token 查成向量, 宽度和 hidden state 一样是 7168:
 
@@ -115,7 +119,11 @@ $$
 
 ![报告 Figure 4: 一对前向/反向 chunk 的四段拆分与交错排列, all-to-all 被计算掩盖](images/p12-figure-4-overlapping-strategy-for-a-pair-of-individual.png)
 
+*报告 Figure 4: 一对前向/反向 chunk 的四段拆分与交错排列, all-to-all 被计算掩盖*
+
 ![报告 Figure 5: 8 路流水并行的 DualPipe 调度, 前向流与反向流从两端同时送入](images/p13-figure-5-example-dualpipe-scheduling-for-8-pp-ranks-and.png)
+
+*报告 Figure 5: 8 路流水并行的 DualPipe 调度, 前向流与反向流从两端同时送入*
 
 Table 2 给出三种调度的气泡与显存. 1F1B 的气泡是 (PP−1)(F+B), ZB1P 是 (PP−1)(F+B−2W), DualPipe 是 (PP/2−1)(F&B+B−3W), 其中 F&B 是一对互相重叠的前向与反向 chunk 的执行时间. V3 的 PP = 16, 1F1B 的系数是 15, DualPipe 是 7, 而且括号里的项更小. 代价是每张卡存两份模型参数, 峰值激活多 1/PP. 两份参数听起来很贵, 但专家并行已经把 MoE 参数切到 64 张卡上, 每卡上的参数本来不多, 报告认为这一开销可以接受. DualPipe 只要求流水级数和 micro-batch 数能被 2 整除, 气泡和激活显存都不随 micro-batch 数增长. 本页没有给出 DualPipe 与 1F1B 的实测吞吐对比, 只有公式层面的比较.
 
@@ -154,6 +162,8 @@ FP8 的难点是动态范围小, 常规做法按整个张量的最大绝对值�
 长上下文的评测只有两类. Figure 8 是 SFT 之后的大海捞针测试, 在 128K 以内全部通过(读图); Chat 评测里有 FRAMES(需要在约 100K token 上下文里问答), LongBench v2 和 DROP. V3 在 LongBench v2 上得 48.7, 略高于 GPT-4o 的 48.1; FRAMES 73.3, 低于 GPT-4o 的 80.5. 大海捞针只测检索, 不测长文推理; 而且图 8 测的是 SFT 后的模型, Base 模型在长上下文上的表现本页没有.
 
 ![报告 Figure 8: SFT 后的大海捞针, 128K 内全部命中; 只测检索, 不测长文推理](images/p23-figure-8-evaluation-results-on-the-needle-in-a-haystack.png)
+
+*报告 Figure 8: SFT 后的大海捞针, 128K 内全部命中; 只测检索, 不测长文推理*
 
 ### 3.3. Base 模型评测
 

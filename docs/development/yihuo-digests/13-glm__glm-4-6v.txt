@@ -1,0 +1,41 @@
+# 13-glm/glm-4-6v  文件: content/model-library/03-模型家族\13-glm/glm-4-6v\glm-4-6v-bi.md  共 10 块
+
+--- 行31 [想] ---
+> 不是. 第 9 页的引用标题是 「GLM-4.5V and GLM-4.1V-Thinking」, eprint 也是 2507.01006, year 写 2025. 本页日期是 2025-12-08, 比那篇论文的 arXiv 号所在月份更晚. 106B 和 9B 的结构细节要以这篇博客印出来的为准, 不能把 4.5V 论文里的训练步数挪过来.
+
+
+--- 行34 [问] ---
+> 不是. 链接是 `docs.z.ai/guides/llm/glm-4.6`, 路径里是 glm-4.6, 没有 V. HuggingFace 链接才是 `zai-org/GLM-4.6V`. 第 8 页又写 「GLM-4.6 is accessible through Z.ai by selecting the GLM-4.6 model option」, 主语换成了不带 V 的 GLM-4.6.
+
+
+--- 行71 [核对] ---
+> 不是. 第 7 页表头把 GLM-4.6V 写成 「106B (A12B)」, Flash 写成 「9B」, GLM-4.5V 也是 「106B (A12B)」, GLM-4.1V-9B-Thinking 是 「9B」. 106B 和 12B 同时印在括号两边, 是两个规模. 博客没有给层数或专家数, 这里也不补.
+
+
+--- 行128 [看表] ---
+> 都不是. 第 7 页长上下文只有三行: MMLongBench-Doc, MMLongBench-128K, LVBench. 没有任何一行的单位是页数, 幻灯片数或视频时长. 150, 200 和一小时是本页的约算, 换算公式没有给出. MMLongBench-128K 这个名字里的 128K 是该基准的长度档, 和窗口上限同名, 但不能当成那三句约算的实测.
+
+
+--- 行151 [拆开] ---
+> 不是. 智能体几行里就有退步或持平: AndroidWorld 两者都是 57.0; WebVoyager 81.0 对 4.5V 的 84.4; Webquest-MultiQA 59.0 对 60.6. 定位一行 RefCOCO-avg (val) 是 88.6 对 91.3, Ref-L4-test 是 88.9 对 89.5. OCRBench 两边都是 86.5. 涨得多的是 MMLongBench-Doc, 54.9 对 44.7, 以及 VideoMMMU 74.7 对 72.4, MathVista 85.2 对 84.6.
+
+
+--- 行154 [确认] ---
+> 有. AI2D 上 Flash 是 89.2, 106B 是 88.8, Qwen3-VL-235B 也是 89.2. BLINK (Val) 两边都是 65.5. 其余多数行 Flash 更低, 例如 DynaMath 43.7 对 54.5, Design2Code 69.8 对 88.6, OSWorld 21.1 对 37.2. 所以 9B 不是 106B 的同比例缩小版, 至少这两格不是.
+
+
+--- 行157 [回看] ---
+> 表里和 106B (A12B) 规模最近的开源对照是 GLM-4.5V, 也是 106B (A12B). Qwen3-VL-235B-A22B 总参数更大, Step3 是 321B (A38B), 都不能算相近规模. 即便只在开源列里找第一, Design2Code 是 Qwen 235B 的 93.4 高于 88.6, MMStar 是 78.7 高于 75.9, MathVista 是 85.8 高于 85.2, OCRBench 是 87.5 高于 86.5. 「相近规模」 和 「表里最高」 不是同一句话.
+
+
+--- 行160 [对一下] ---
+> 源表就印成 「/」. 106B 是 64.1, Flash 是 63.4, Qwen3-VL-8B 是 49.5, Qwen3-VL-235B 是 61.8. 4.5V 和 4.1V, Kimi, Step3 都是 「/」. 不能把 「/」 读成 0, 也不能用 4.5V 论文去填. 这一行能说的是: 在本表有分的四个模型里, 106B 最高, Flash 第二.
+
+
+--- 行239 [再看] ---
+> `p06-video-understanding-...` 紧挨视频理解那一段, 名字来自该段英文. `p06-overall-performance.png` 紧挨 「Overall Performance」 标题, 在表的前面. 表本身在第 7 页, 不是这两张图. `p09-legal.png` 在法律页脚旁边, 不是成绩图. `p03`, `p04`, `p05` 的文件名分别来自视觉搜索, 前端复刻, 长上下文三节的标题.
+
+
+--- 行262 [停一下] ---
+> 正文日期是 2025-12-08. 页脚 「© 2026」 是站点版权年, 和第 1 页的发布日期不是同一个字段. 引用这篇材料时, 日期写 2025-12-08.
+

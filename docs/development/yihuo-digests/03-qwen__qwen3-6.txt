@@ -1,0 +1,89 @@
+# 03-qwen/qwen3-6  文件: content/model-library/03-模型家族\03-qwen/qwen3-6\qwen3-6-bi.md  共 22 块
+
+--- 行61 [想] ---
+> 不是. 文首 slogan 把 「wide margin」 绑在 predecessor Qwen3.5-35B-A3B; Language 表 SWE-bench Verified 一格是 73.4 对前代 70.0 (+3.4), 但对齐稠密 27B 的 75.0 仍低 1.6. 「大幅」 更应落到 Terminal-Bench2.0 的 51.5 vs 40.5, SkillsBench Avg5 的 28.7 vs 4.4, QwenWebBench 的 1397 vs 978 等 agentic 格, 而不是把 Verified 单格读成全面碾压 27B.
+
+
+--- 行125 [看表] ---
+> 没有. 本页表断在 Verified 一行: Qwen3.6-35B-A3B 73.4 < Qwen3.5-27B 75.0. 「several key」 要翻到 page 3 的 Terminal-Bench2.0 (51.5 > 41.6), SkillsBench Avg5 (28.7 > 27.2), NL2Repo (29.4 > 27.3), QwenWebBench (1397 > 1068) 等格; 不能把 Verified 当成已赢 27B 的证据.
+
+
+--- 行158 [核对] ---
+> Pass^3 从 Qwen3.5-35B-A3B 的 51.0 降到 50.0, 而 Avg 从 65.4 升到 68.7. 同基准两列不同步: 平均分抬了, 三次全过的更严口径反而掉 1.0. 选型时不能只背 Avg.
+
+
+--- 行161 [问] ---
+> 不覆盖. TAU3-Bench 67.2 < 前代 68.9; Tool Decathlon 26.9 < 前代 28.7. WideSearch 60.1 > 59.1 仅微升. 前代优势叙事主要落在 Coding Agent 与部分 MCP/DeepPlanning, 不是 General Agent 全绿.
+
+
+--- 行223 [拆开] ---
+> 脚注不声明 Qwen3.6-35B-A3B 自身也走 Claude Code, 只钉 「Others」. 同表 NL2Repo 的 29.4 与对照列的可比性, 取决于未写明的本侧 scaffold; 不能默认整列共享 max_turns=900 的 Claude Code 设定.
+
+
+--- 行226 [确认] ---
+> 不能直接横比. 脚注写明使用 full AIME 2026 (I & II), 「scores may differ from Qwen 3.5 notes」. 同表内各列是同一套 AIME26 口径; 跨笔记到 3.5 旧数需要另核题集是否同为 I&II 全量.
+
+
+--- 行257 [回看] ---
+> 不能落在这两格. page 4 文案说多数 VL 基准对齐 Claude, 若干任务超过; 但 Spatial 组里 Claude 与 Gemma 对 RefCOCO/ODInW13 是空单元格. page 6 脚注: Empty cells (--) indicate scores not available or not applicable. 用 92.0 / 50.8 声称超过 Claude, 缺少同表对照分.
+
+
+--- 行260 [对一下] ---
+> 无增益. 两行都是 86.6 / 82.5, 与前代完全相同; 相对稠密 27B 的 87.0 / 82.8 还略低或持平. 多模态 「far exceed what its size would suggest」 不能靠 VideoMME 这两格支撑代际跃迁.
+
+
+--- 行317 [停一下] ---
+> 按 page 2 / page 6 文案, API 侧以 Qwen3.6-Flash / `qwen3.6-flash` 暴露本权重; Hugging Face / ModelScope 下载名仍是 `Qwen/Qwen3.6-35B-A3B`. 选型时要按通道区分显示名与仓库名, 不要把 Flash 误当成另一套更小激活参 SKU.
+
+
+--- 行377 [再看] ---
+> 正文 (page 6) 写 preserve_thinking **recommended for agentic tasks**; 示例把 `"preserve_thinking": True` 注释掉, 仅 `enable_thinking: True`. 可运行样例不等于 agentic 推荐配置; 多轮 agent 应按正文打开 preserve, 而不是照抄注释状态.
+
+
+--- 行463 [想] ---
+> 不是同一上限. page 4 SWE-Bench Series 脚注写 200K context window; OpenClaw 示例 `contextWindow`: 131072 (~128K). 榜分不是在 OpenClaw 默认 131072 配置下测出的; 复现 SWE 数字要按脚注 scaffold + 200K, 不能拿 OpenClaw JSON 当评测复现单.
+
+
+--- 行745 [核对] ---
+> 口号钉的是 major **coding** benchmarks. page 16 表里 SWE-bench Verified 77.2 > 76.2, Pro 53.5 > 50.9, Multilingual 71.3 > 69.3, Terminal-Bench 2.0 59.3 > 52.5, SkillsBench 48.2 > 30.0 等 coding 格成立; 但 Knowledge 的 SuperGPQA 66.0 < 70.4, STEM 的 HLE 24.0 < 28.7. 不要把 「all major coding」 扩读成整张 Language 表全赢.
+
+
+--- 行820 [看表] ---
+> 指向 Qwen3.5-397B-A17B: 397 / 27 ≈ 14.7, 文案取 「up to 15x」. 比较的是总参倍数, 不是激活参; 397B-A17B 激活是 17B, 相对 27B 稠密其实更小. 读 「15x」 时要钉总参口径, 否则会把激活账算反.
+
+
+--- 行843 [问] ---
+> 同表两格都是 59.3, 并列. page 16 正文列出 59.3 vs 397B-A17B 的 52.5, 没有声称超过 Claude; 相对 Claude 是打平, 不是领先.
+
+
+--- 行846 [拆开] ---
+> 脚注 (跨 page 16–17) 写经 OpenCode 评 78 题自包含子集, 排除 API 依赖, 5 次平均; 表内各列共享该脚注口径. 48.2 > Claude 45.3 > 397B 30.0. 跃迁幅度远大于 Verified 的 +1.0, 是 「压过上代旗舰」 叙事里差值最大的 coding 格之一.
+
+
+--- 行897 [确认] ---
+> 没有. RealWorldQA: 27B 84.1 < 35B-A3B 85.3; SimpleVQA: 27B 56.1 < 35B-A3B 58.9, 也远低于 397B-A17B 的 67.1. coding 旗舰叙事不能平移到 General VQA.
+
+
+--- 行900 [回看] ---
+> 不能. 脚注将 「--」 定义为 not yet available or not applicable; 缺分不是 0 分. 唯一可对的是相对上代稠密 Qwen3.5-27B 的 64.2→70.3.
+
+
+--- 行1010 [停一下] ---
+> 文案平行但模型字符串不同. 35B 篇 (page 6) 写 API as qwen3.6-flash 且 「coming soon to Model Studio」; 27B 篇 (page 18) 写 「coming soon to Alibaba Cloud Mode Studio」 (原文 Mode 拼写), 示例默认 `qwen3.6-27b`. 两套 SKU 的控制台上线状态与调用名要分开核, 不能共用 Flash 字符串.
+
+
+--- 行1155 [再看] ---
+> page 16 同表: 27B 77.2 > 35B-A3B 73.4. 「every scale 都有突破」 是系列叙事, 不是说激活 3B 的 MoE 在 Verified 上已经追上 27B 稠密. 两 SKU 的定位差在部署形态 (路由复杂度 vs 激活账单), 不是同一格分数互换.
+
+
+--- 行1158 [对一下] ---
+> 抓取原文在 27B 篇写的是 **Mode** Studio; 35B 篇与相关产品栏写 **Model** Studio. 对照译稿保留源文字面; 链到控制台时仍按 Model Studio 产品理解, 但引用本页句子要承认 Mode 拼写.
+
+
+--- 行1353 [想] ---
+> 不能. page 4 脚注写明官方裁判 (claude-3.7-sonnet) 已不可用, 改用 claude-4-sonnet; 表内各列共享新裁判, 但跨文献到仍用 3.7 的分数会混裁判代际. 只宜在本表五列内比.
+
+
+--- 行1356 [问] ---
+> 不是. MCPMark 脚钉的是 Playwright responses truncated at 32K tokens; SWE-Bench 是 200K context window; Terminal-Bench 是 256K ctx + max_tokens=80K. 三套 agent 榜的上下文与截断上限彼此独立, 不能共用一个 「长上下文 agent」 数字解释所有格.
+

@@ -569,6 +569,8 @@ It is crucial to emphasize that the evaluations mentioned previously are insuffi
 
 We have created a mathematics-specialized model series called MATH-QWEN-CHAT, which is built on top of the QWEN pretrained language models. Specifically, we have developed assistant models that are specifically designed to excel in arithmetic and mathematics and are aligned with human behavior. We are releasing two versions of this model series, MATH-QWEN-14B-CHAT and MATH-QWEN-7B-CHAT, which have 14 billion and 7 billion parameters, respectively.
 
+在 QWEN 预训练模型上造数学特化助手系列 MATH-QWEN-CHAT, 擅长算术与数学并对齐人类行为. 发两版: MATH-QWEN-14B-CHAT 与 MATH-QWEN-7B-CHAT.
+
 ### 5.1 TRAINING 训练
 
 We carry out math SFT on our augmented math instructional dataset for mathematics reasoning, and therefore we obtain the chat model, MATH-QWEN-CHAT, directly. Owing to shorter average lengths of the math SFT data, we use a sequence length of 1024 for faster training. Most user inputs in the math SFT dataset are examination questions, and it is easy for the model to predict the input
@@ -658,6 +660,8 @@ Previous research has demonstrated that LLMs possess remarkable capabilities in 
 <!-- page 22 of 59 -->
 
 have the potential to revolutionize the field of coding by providing developers with powerful tools for code comprehension, generation, and related tasks.
+
+总之, LLM 有机会重塑编程领域, 给开发者提供代码理解, 生成等环节的强力工具.
 
 ### 6.5 LLM FOR MATHEMATICS 面向数学的 LLM
 
@@ -1080,21 +1084,35 @@ You are a helpful assistant.
 
 To provide a whole picture of the performance of our model series QWEN, here in this section we illustrate the detailed performance of our models as well as the baselines in the comprehensive benchmark evaluation proposed by OpenCompass Team (2023). We report the results in multiple tables based on the officially provided categories, including examination, language, knowledge, understanding, and reasoning. In terms of the performance of the baseline models, we report the higher results between the reported ones and those on the leaderboard.
 
+本节用 OpenCompass 综合基准给 QWEN 全系列画像, 按官方分类 (考试, 语言, 知识, 理解, 推理) 分表列出. 基线取论文报告值与 leaderboard 值中的较高者.
+
 **Examination** Here we evaluate the models on a series of datasets relevant to the examination.
 
 **考试类** 评测一系列考试相关数据集. The datasets include:
 
 • **MMLU** (Hendrycks et al., 2020) Massive Multi-task Language Understanding is designed for measuring language understanding capabilities. We report 5-shot results.
 
+MMLU: 大规模多任务语言理解, 报 5-shot.
+
 • **C-Eval** (Huang et al., 2023) C-Eval is a Chinese evaluation dataset spanning 52 diverse disciplines. We report 5-shot results.
+
+C-Eval: 中文评测, 覆盖 52 个学科, 报 5-shot.
 
 • **CMMLU** (Li et al., 2023c) CMMLU is designed for assessing language understanding capabilities in Chinese. We report 5-shot results.
 
+CMMLU: 中文语言理解评测, 报 5-shot.
+
 • **AGIEval** (Zhong et al., 2023a) This is a benchmark consisting of human-centric examinations, including college entrance exams, law school admission tests, math competitions, and lawyer qualification tests. We report zero-shot results.
+
+AGIEval: 面向真实人类考试 (高考, 法学院入学, 数学竞赛, 律师资格等), 报 zero-shot.
 
 • **Gaokao-Bench** (Zhang et al., 2023b) This is a benchmark with Gaokao (Chinese collegeentrance examination) questions. We report zero-shot results.
 
+Gaokao-Bench: 高考真题基准, 报 zero-shot.
+
 • **ARC** (Clark et al., 2018) ARC is a dataset consisting of grade-school level, multiple-choice science questions. It includes an easy set and a challenge set, which are referred by ARC-e and ARC-c. We report zero-shot results.
+
+ARC: 小学科学选择题, 分简单集 ARC-e 与挑战集 ARC-c, 报 zero-shot.
 
 36
 
@@ -1120,23 +1138,43 @@ Table 15: Results on the other datasets of examination. Specifically, we report 
 
 the parts of Chinese and English, while LLAMA 2 only reported the results in the English part, so we use the results on OpenCompass. Additionally, while CMMLU, AGIEval, and Gaokao-Bench are related to Chinese, and MPT, Falcon, and the LLaMA series were not optimized for Chinese, these models achieved low performance on the datasets.
 
+MMLU 见表 13, C-Eval 见表 14, 其余数据集见表 15. AGIEval 取中英两部分, LLaMA 2 只报英文部分, 故采用 OpenCompass 上的结果. CMMLU, AGIEval, Gaokao-Bench 均与中文相关, 而 MPT, Falcon, LLaMA 系列未针对中文优化, 在这些数据集上得分偏低.
+
 **Knowledge and Understanding** Here we evaluate the models on a series of datasets relevant to knowledge and natural language understanding. The datasets include
+
+**知识与理解类** 评测知识与语言理解相关数据集, 包括:
 
 • **BoolQ** (Clark et al., 2019) This is a QA dataset, where the questions are about passages of Wikipedia, and the model should answer yes or no to the given possible answer. We report zero-shot results.
 
+BoolQ: 维基百科段落的是非问答, 报 zero-shot.
+
 • **CommonsenseQA** (Talmor et al., 2019) This is a dataset of multiple-choice question answering that asseses the understanding of commonsense knowledge. We report 8-shot results.
+
+CommonsenseQA: 常识理解选择题, 报 8-shot.
 
 • **NaturalQuestions** (Kwiatkowski et al., 2019) It is a dataset of QA where the questions are from users and the answers are verified by experts. We report zero-shot results.
 
+NaturalQuestions: 真实用户提问, 答案经专家核验, 报 zero-shot.
+
 • **LAMBADA** (Paperno et al., 2016) This is dataset to evaluate language understanding by word prediction. It consists of passages related to human subjects. We report zero-shot results.
+
+LAMBADA: 用词预测评语言理解, 语料与人文主题相关, 报 zero-shot.
 
 We report the results in Table 16.
 
+结果见表 16.
+
 **Reasoning** We report the evaluation results on the datasets concerning reasoning, focusing on natural language reasoning. For the others, such as mathematics and coding, as we have illustrated detailed results, here we do not report those results repeatedly. The datasets for evaluation include:
+
+**推理类** 报自然语言推理数据集的结果; 数学与代码前文已详列, 此处不重复. 数据集包括:
 
 • **HellaSwag** (Zellers et al., 2019) This is a commonsense natural language inference (NLI) dataset, where the questions are easy for humans but struggling for previous language models. We report zero-shot results.
 
+HellaSwag: 常识 NLI, 人对容易, 早期模型吃力, 报 zero-shot.
+
 • **PIQA** (Bisk et al., 2020) This is an NLI dataset assessing the physical knowledge. We report zero-shot results.
+
+PIQA: 物理常识 NLI, 报 zero-shot.
 
 <!-- page 39 of 59 -->
 
@@ -1150,11 +1188,17 @@ Table 17: Results on the datasets related to natural language reasoning. Specifi
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">• SIQA (Sap et al., 2019) This is an NLI dataset evaluating social commonsense intelligence. We report zero-shot results.</span></small>
 
+SIQA: 社会常识智能 NLI, 报 zero-shot.
+
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">• OCNLI (Hu et al., 2020) This is an NLI dataset focusing on Chinese. We report zero-shot results.</span></small>
+
+OCNLI: 中文 NLI, 报 zero-shot.
 
 <!-- page 40 of 59 -->
 
 We report the results in Table 17.
+
+结果见表 17.
 
 #### A.2.2 HUMAN EVALUATION 人工评测
 

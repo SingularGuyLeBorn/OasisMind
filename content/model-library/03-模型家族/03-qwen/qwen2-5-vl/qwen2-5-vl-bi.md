@@ -312,9 +312,6 @@ SFT 用 **ChatML** 组织指令数据(相对预训练 schema 有意不同, 但�
 The Supervised Fine-Tuning (SFT) phase employs a meticulously curated dataset designed to enhance the model’s instruction-following capabilities across diverse modalities. This dataset comprises approximately 2 million entries, evenly distributed between pure text data (50%) and multimodal data (50%), which includes image-text and video-text combinations. The inclusion of multimodal data enables the model to process complex inputs effectively. Notably, although pure text and multimodal entries are equally represented, multimodal entries consume significantly more tokens and computational resources during training due to the embedded visual and temporal information. The dataset is primarily composed of Chinese and English data, with supplementary multilingual entries to support broader linguistic diversity.
 SFT 集约 200 万条, 纯文本与多模态各约一半(含图文, 视频-文本). 条数对半, 但多模态因视觉/时间信息更耗 token 与算力. 以中英为主, 并补多语条目.
 
-> **拆开:** 纯文本与多模态条数各半, 算力也各半吗?
-> 条数 50/50, 但多模态因视觉与时间信息吃更多 token 与算力, 报告明确说不算力均分.
-
 The dataset is structured to reflect varying levels of dialogue complexity, including both single-turn and multi-turn interactions. These interactions are further contextualized by scenarios ranging from single-image inputs to multi-image sequences, thereby simulating realistic conversational dynamics. The query sources are primarily drawn from open-source repositories, with additional contributions from curated purchased datasets and online query data. This combination ensures broad coverage and enhances the representativeness of the dataset.
 对话复杂度覆盖单轮/多轮, 单图/多图; 查询来自开源, 采购与线上查询, 保证覆盖面.
 
@@ -537,9 +534,6 @@ The performance of Qwen2.5-VL-72B demonstrates exceptional advancements across G
 > 报告把 ScreenSpot/Pro 与后续 offline/online agent 增益写成 grounding 变强后的连锁结果; 相对 Qwen2-VL-72B 的 1.6%, 本代 43.6% 是数量级跳变, 并强调线上评测可不用 SoM.
 
 GUI grounding 大幅前进: ScreenSpot 87.1%; ScreenSpot Pro 43.6%, 远超 Aguvis-72B(23.6%)与 Qwen2-VL-72B(1.6%). 离线评测全面领先. 部分基线 grounding 弱, 在线评测对其输入加了 **SoM**(Set-of-Mark); Qwen2.5-VL-72B 无需辅助标记即可在 AndroidWorld, MobileMiniWob++ 上超过基线, OSWorld 上也可比, 说明能在真实动态环境中充当 agent.
-
-> **再看:** 线上评测不用 Set-of-Mark, 是因为 grounding 已经够强吗?
-> 报告对比里部分基线因 grounding 弱才加 SoM; Qwen2.5-VL-72B 在 AndroidWorld 与 MobileMiniWob++ 上不用辅助标记仍能超过或打平, 说明 GUI grounding 可直接支撑 agent.
 
 ## 4 Conclusion
 

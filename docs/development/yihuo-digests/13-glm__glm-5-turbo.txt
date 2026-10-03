@@ -1,0 +1,61 @@
+# 13-glm/glm-5-turbo  文件: content/model-library/03-模型家族\13-glm/glm-5-turbo\glm-5-turbo-bi.md  共 15 块
+
+--- 行31 [想] ---
+> 页面没有这样说. 第 3 页写 「GLM-5-Turbo delivers substantial improvements over GLM-5」, GLM-5 在这句里是对照对象, 两个名字分属比较的两边. Turbo 是不是在 GLM-5 权重上继续训练, 结构和参数量是多少, 本页一个字都没印. 名字里的 5 只能说明它挂在 GLM-5 这一代名下, 推不出是同一套权重, 也不能把 GLM-5 技术报告里的结构数字搬过来.
+
+
+--- 行44 [问] ---
+> 页面没有交代. 两个名字差一个 Z, 定位栏没有链接, 也没有版本号. 第 3 页介绍的是 Z.ai 自己提出的 ZClawBench, 不带 Z 的 ClawBench 在全文只出现在定位栏这一处. 两个名字要分开记, 不能默认定位栏说的就是第 4 页那张雷达图.
+
+
+--- 行59 [核对] ---
+> 是图标. `p01-overview.png` 是向下的折叠箭头, `p01-positioning.png` 是地图定位针, `p01-input-modalities-text.png` 是指向右下的箭头, `p01-output-modalitie-text.png` 是指向左下的箭头. 四个文件分别是 329, 2021, 581, 551 字节, 画面都是黑底上的单个线条符号. 文件名是 MinerU 按紧邻的文字取的, 不是图题. 第 1 页没有结构图, 也没有数据图.
+
+
+--- 行74 [停一下] ---
+> 上下文印了: 「Context Length 200K」 和 「Maximum Output Tokens 128K」 都在第 1 页的规格栏里. 价格没有印: 7 页里找不到美元, 人民币, 每百万 token 这类计价单位, Resources 里的两个链接也只是 API 文档和 OpenClaw 接入指南. 200K 的 K 按 1000 还是 1024 算, 页面没有注明.
+
+
+--- 行115 [回看] ---
+> 画面是一个纸箱形状的线条图标, 908 字节. 文件名取自它下方被识别成 「t」 的一个字符, 这个 t 不是能力名. PDF 文字层在第 2 页开头印了三段图标说明: 「Offering multiple thinking modes for different scenarios」, 「Support real-time streaming responses to enhance user interaction experience」, 「Powerful tool invocation capabilities, enabling integration with various external toolsets」. md 里这三段都没出现, 只剩一个 t. 纸箱图标对应哪一项, 页面没有标.
+
+
+--- 行154 [再看] ---
+> 是第三项 「定时与持续任务」 的句尾. md 把整段丢了, PDF 文字层还在: 小标题是 「Scheduled and Persistent Tasks」, 副标题是 「Better Understanding of Time Dimensions, Uninterrupted Long Tasks」, 正文说针对定时触发, 持续执行和长时任务做了优化, 更能理解和时间有关的要求, 并在 「complex, long-running tasks」 里保持执行连续. 概览写 「timed and persistent tasks」, 正文写 「Scheduled and Persistent Tasks」, 用词不同, 指的是同一项. 这里只按 PDF 补读, 不改源 md.
+
+
+--- 行161 [对一下] ---
+> 页面没有定义. Lobster 全文只出现这一次, 前后都在讲 OpenClaw. 从字面猜, claw 是钳子, lobster 是龙虾, 可能是 OpenClaw 任务的别称, 但页面没写. 这里保留原词 Lobster, 不替它下定义.
+
+
+--- 行176 [问] ---
+> 页面只写 「the usage of Skills has increased rapidly from 26% to 45% in a short period of time」. 分母是任务数, 会话数还是用户数, 没说. 「short period」 是几周还是几个月, 没说. 数据来自 ZClawBench 的用例样本还是平台日志, 也没说. 这两个百分数只是页面的一句描述, 不是 ZClawBench 的分数.
+
+
+--- 行211 [看表] ---
+> 图上认不出来. `p04-office-daily-tasks.png` 里有六条折线: 一条加粗的蓝线, 加上橙, 绿, 浅灰, 粉, 深灰五条细线. 图例只识别出三个名字, 图片左上角只露出被裁掉的 「Pro」 和 「2.5」. GLM-5-Turbo 和 GLM-5 这两个名字在第 4 页的文字里都没出现. 加粗线通常是主角, 但页面没写明. 轴上没有刻度, 也没有数字, 所以 「substantial improvements over GLM-5」 在这张图上读不出幅度.
+
+
+--- 行214 [拆开] ---
+> 不是. 顶部那条轴, 自动化, 办公与日常任务, 开发与运维这四个方向, 橙线都在蓝线外侧, 只有数据分析一轴两条线几乎重合. 开发与运维这一轴, 绿线也在蓝线外侧. 这和正文措辞对得上: 页面说的是 「outperforming several leading models」, 没说超过全部对照. 橙线是谁, 图例没给, 不能替它填名字.
+
+
+--- 行217 [确认] ---
+> 对不上. 雷达图能读出标签的只有四条轴: Automation, Office & Daily Tasks, Development & Operations, Data Analysis. 顶部那条轴的标签在截图里被裁掉了. 正文的五类是 environment setup, software development, information retrieval, data analysis, content creation, 只有 data analysis 两边同名. 雷达图的分类口径和正文的工作负载分类不是同一套.
+
+
+--- 行234 [想] ---
+> 没给. Resources 只有两条, API 文档和 OpenClaw 接入指南, 都在 `docs.z.ai` 下. 数据集和评测轨迹放在哪个仓库, 本页找不到链接. 「publicly available」 只能记成页面的声明, 要复现得另找来源.
+
+
+--- 行283 [核对] ---
+> 没有. PDF 文字层里两段都是 「glm-5-turbo」, md 里的 b 是 MinerU 把 5 认错了. 同一段还丢了请求头: PDF 里有 `curl -X POST "https://api.z.ai/api/paas/v4/chat/completions"`, 以及 Content-Type 和 Authorization 两个请求头, md 的代码块从 「model」 那一行才开始. 调用时模型名按 glm-5-turbo 写.
+
+
+--- 行286 [对一下] ---
+> 128K 是规格栏写的上限, 4096 是示例里设的值, 两者不冲突. 示例没说 4096 为什么这么选, 也没说思考模式下思考内容算不算进 max_tokens. temperature 1.0 同样只是示例值, 页面没给推荐范围.
+
+
+--- 行348 [停一下] ---
+> 页面没有日期. 没有发布日, 没有更新时间, 页脚也没有版权年. 能看出的只是它属于文档站: Copy page 和 Was this page helpful 都是文档站的控件, 两个链接都在 `docs.z.ai` 下. 引用时日期只能写 「未印」.
+

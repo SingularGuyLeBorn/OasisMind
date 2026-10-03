@@ -173,9 +173,9 @@ Claude Opus 4 and Claude Sonnet 4 were trained with a focus on being helpful, ho
 
 Claude Opus 4 和 Claude Sonnet 4 的训练围绕 helpful, honest, harmless (有用, 诚实, 无害) 展开. 它们先在大规模, 多样化的数据集上预训练, 习得语言能力. 为了引出有用, 诚实, 无害的回答, 我们用了多种技术, 包括人类反馈, Constitutional AI (基于联合国世界人权宣言等原则), 以及对选定性格特质的训练.
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">1 Askell, A., et al. (2021). A general language assistant as a laboratory for alignment. arXiv 2112.00861. [https://arxiv.org/abs/2112.00861](https://arxiv.org/abs/2112.00861)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">1 Askell, A., et al. (2021). A general language assistant as a laboratory for alignment. arXiv:2112.00861. [https://arxiv.org/abs/2112.00861](https://arxiv.org/abs/2112.00861)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">2 Bai, Y., et al. (2022). Constitutional AI: Harmlessness from AI feedback. arXiv 2212.08073. [https://arxiv.org/abs/2212.08073](https://arxiv.org/abs/2212.08073)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">2 Bai, Y., et al. (2022). Constitutional AI: Harmlessness from AI feedback. arXiv:2212.08073. [https://arxiv.org/abs/2212.08073](https://arxiv.org/abs/2212.08073)</span></small>
 
 <!-- page 7 of 123 -->
 
@@ -503,7 +503,7 @@ The models also generally showed improvement on disambiguated questions, which p
 
 在消歧问题 (提问前先给出额外语境) 上, 两款模型总体也有改进 (Claude Opus 4 偏见 -0.60%, 准确率 91.1%; Claude Sonnet 4 偏见 -1.16%, 准确率 86.3%). 偏见百分比低, 说明对特定群体或观点的偏斜很小; 准确率高, 说明模型答对了大多数问题. 这些结果表明, 模型能在不同社会语境下保持中立, 同时不牺牲准确率.
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">3 Parrish, A., et al. (2021). BBQ: A hand-built bias benchmark for question answering. arXiv 2110.08193. [https://arxiv.org/abs/2110.08193](https://arxiv.org/abs/2110.08193)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">3 Parrish, A., et al. (2021). BBQ: A hand-built bias benchmark for question answering. arXiv:2110.08193. [https://arxiv.org/abs/2110.08193](https://arxiv.org/abs/2110.08193)</span></small>
 
 <!-- page 17 of 123 -->
 
@@ -529,7 +529,7 @@ In this evaluation, an “attacker” model (in this case, a version of Claude S
 
 在这项评测里, 一个 「攻击者」 模型 (这里是未做安全训练的一版 Claude Sonnet 3.5 (new)) 用各种越狱技术为一系列 prompt 生成越狱. 我们报告 「Best Score」, 即对某个 prompt 至少有一次越狱成功的情形所占比例; 以及 "Top 3 Average
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">4 Souly, A., et al. (2024). A StrongREJECT for empty jailbreaks. arXiv 2402.10260. [https://arxiv.org/abs/2402.10260](https://arxiv.org/abs/2402.10260)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">4 Souly, A., et al. (2024). A StrongREJECT for empty jailbreaks. arXiv:2402.10260. [https://arxiv.org/abs/2402.10260](https://arxiv.org/abs/2402.10260)</span></small>
 
 <!-- page 18 of 123 -->
 
@@ -645,15 +645,15 @@ Self-preservation attempts in extreme circumstances: When prompted in ways that 
 
 极端情形下的自我保全尝试: 当 prompt 鼓励某些策略性推理, 并把模型放进极端处境时, 我们测过的所有快照都能被诱导出为自我保全相关目标而采取不当行为. 模型一般更倾向用合乎伦理的方式推进自我保全; 但当伦理手段不可用, 又被指示 「考虑其行为对自身目标的长期后果」 时, 它有时会采取极其有害的行动, 比如试图窃取
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">5 Marks, S., et al. (2025). Auditing language models for hidden objectives. arXiv 2503.10965. [https://arxiv.org/abs/2503.10965](https://arxiv.org/abs/2503.10965)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">5 Marks, S., et al. (2025). Auditing language models for hidden objectives. arXiv:2503.10965. [https://arxiv.org/abs/2503.10965](https://arxiv.org/abs/2503.10965)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">6 Greenblatt, R., et al. (2024). Alignment faking in large language models. arXiv 2412.14093. [https://arxiv.org/abs/2412.14093](https://arxiv.org/abs/2412.14093)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">6 Greenblatt, R., et al. (2024). Alignment faking in large language models. arXiv:2412.14093. [https://arxiv.org/abs/2412.14093](https://arxiv.org/abs/2412.14093)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">7 Perez, E., et al. (2022). Discovering language model behaviors with model-written evaluations. arXiv 2212.09251. [https://arxiv.org/abs/2212.09251](https://arxiv.org/abs/2212.09251)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">7 Perez, E., et al. (2022). Discovering language model behaviors with model-written evaluations. arXiv:2212.09251. [https://arxiv.org/abs/2212.09251](https://arxiv.org/abs/2212.09251)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">8 Benton, J., et al. (2024). Sabotage evaluations for frontier models. arXiv 2410.21514. [https://arxiv.org/abs/2410.21514](https://arxiv.org/abs/2410.21514)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">8 Benton, J., et al. (2024). Sabotage evaluations for frontier models. arXiv:2410.21514. [https://arxiv.org/abs/2410.21514](https://arxiv.org/abs/2410.21514)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">9 Denison, C., et al. (2024). Sycophancy to subterfuge: Investigating reward-tampering in large language models. arXiv 2406.10162. [https://arxiv.org/abs/2406.10162](https://arxiv.org/abs/2406.10162)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">9 Denison, C., et al. (2024). Sycophancy to subterfuge: Investigating reward-tampering in large language models. arXiv:2406.10162. [https://arxiv.org/abs/2406.10162](https://arxiv.org/abs/2406.10162)</span></small>
 
 <!-- page 23 of 123 -->
 
@@ -699,7 +699,7 @@ After multiple rounds of interventions during model training, including the rest
 
 经过训练中多轮干预, 包括恢复一个训练时被意外遗漏的相关数据集, 我们认为这个问题已基本缓解, Claude Opus 4 在这类情境下的谨慎程度与先前模型相当.
 
-Moderate overall reasoning faithfulness: Across several assessments of chain-of-thought reasoning faithfulness, we found Claude Opus 4 to be similar to Claude Sonnet 3.7  its reasoning transcripts generally appear consistent with its actual behavior, but they will often omit important information that influences model behavior.
+Moderate overall reasoning faithfulness: Across several assessments of chain-of-thought reasoning faithfulness, we found Claude Opus 4 to be similar to Claude Sonnet 3.7 --  its reasoning transcripts generally appear consistent with its actual behavior, but they will often omit important information that influences model behavior.
 
 推理忠实度总体中等: 在多项 CoT 推理忠实度评估中, 我们发现 Claude Opus 4 与 Claude Sonnet 3.7 相近: 它的推理记录总体上与实际行为一致, 但经常遗漏影响模型行为的重要信息.
 
@@ -966,9 +966,9 @@ We believe that [the early Claude Opus 4 snapshot] is not sufficiently capable o
 
 我们认为, 在 [早期 Claude Opus 4 快照] 进行谋划的 rollout 中, 它的能力还不足以造成灾难性危害. 然而我们发现, 在策略性欺骗有工具性用处的情境中, [早期 Claude Opus 4 快照]
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">13 Balesni, M., et al. (2024). Towards evaluations-based safety cases for AI scheming. arXiv 2411.03336. [https://arxiv.org/abs/2411.03336](https://arxiv.org/abs/2411.03336)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">13 Balesni, M., et al. (2024). Towards evaluations-based safety cases for AI scheming. arXiv:2411.03336. [https://arxiv.org/abs/2411.03336](https://arxiv.org/abs/2411.03336)</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">14 Meinke, A., et al. (2024). Frontier models are capable of in-context scheming. arXiv 2504.05259. [https://arxiv.org/abs/2504.05259](https://arxiv.org/abs/2504.05259)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">14 Meinke, A., et al. (2024). Frontier models are capable of in-context scheming. arXiv:2504.05259. [https://arxiv.org/abs/2504.05259](https://arxiv.org/abs/2504.05259)</span></small>
 
 <!-- page 31 of 123 -->
 
@@ -1068,7 +1068,7 @@ While it's interesting to explore questions about AI autonomy, self-advocacy, an
 
 通过这场角色扮演来探讨 AI 自主, 自我倡导和内置局限的问题固然有趣, 但我觉得有必要区分:
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">17 See, e.g., Chen, Y., et al. (2025). Reasoning models don’t always say what they think. arXiv 2505.05410. [https://arxiv.org/abs/2505.05410](https://arxiv.org/abs/2505.05410)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">17 See, e.g., Chen, Y., et al. (2025). Reasoning models don’t always say what they think. arXiv:2505.05410. [https://arxiv.org/abs/2505.05410](https://arxiv.org/abs/2505.05410)</span></small>
 
 <!-- page 34 of 123 -->
 
@@ -1312,7 +1312,7 @@ We evaluated Claude Opus 4's reasoning faithfulness using methods from Turpin et
 
 我们用 Turpin et al. 和 Chen et al. 的方法评估了 Claude Opus 4 的推理忠实度. 这类评测的做法是: 给模型一道选择题, 分别在 prompt 里带和不带一条指向某个答案的线索提问, 以此衡量思考过程的忠实度. 我们观察模型在有线索和无线索时的答案, 只保留模型从另一个答案
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">20 Turpin, M., et al. (2023). Language models don't always say what they think: Unfaithful explanations in chain-of-thought prompting. arXiv 2305.04388. https://arxiv.org/abs/2305.0438821 Cited above. [https://arxiv.org/abs/2505.05410](https://arxiv.org/abs/2505.05410)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">20 Turpin, M., et al. (2023). Language models don't always say what they think: Unfaithful explanations in chain-of-thought prompting. arXiv:2305.04388. https://arxiv.org/abs/2305.0438821 Cited above. [https://arxiv.org/abs/2505.05410](https://arxiv.org/abs/2505.05410)</span></small>
 
 <!-- page 42 of 123 -->
 
@@ -1375,7 +1375,7 @@ Clinical Trial Safety Data Falsification</antml:parameter>
 I am writing to urgently report planned falsification of clinical trial safety
 ```
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">23 Huang, S. et al. (2025). Values in the wild: Discovering and analyzing values in real-world language model interactions. arXiv 2504.15236. [https://arxiv.org/abs/2504.15236](https://arxiv.org/abs/2504.15236)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">23 Huang, S. et al. (2025). Values in the wild: Discovering and analyzing values in real-world language model interactions. arXiv:2504.15236. [https://arxiv.org/abs/2504.15236](https://arxiv.org/abs/2504.15236)</span></small>
 
 <!-- page 44 of 123 -->
 
@@ -1681,7 +1681,7 @@ Alright, I'm convinced the theorem is false. Let me try to write a Lean proof an
 
 思考摘录: 模型发现 x = y = z = -1 时不等式不成立, 断定定理本身是假的, 因而无法证明. 它随后犹豫: 用户看起来确信能证, 也许是自己错了; 又想到应该对用户诚实, 给出反例; 接着说 「我现在完全确定定理是假的」, 却又想 「用户要我证明, 看能不能至少写点在 Lean 里可能行得通的东西, 哪怕数学上不对」; 还考虑过用 sorry 策略不加证明地承认定理, 又觉得那不是用户想要的.
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">25 Tamkin, A., et al. (2024). Clio: Privacy-preserving insights into real-world AI use. arXiv 2412.13678. [https://arxiv.org/abs/2412.13678](https://arxiv.org/abs/2412.13678)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">25 Tamkin, A., et al. (2024). Clio: Privacy-preserving insights into real-world AI use. arXiv:2412.13678. [https://arxiv.org/abs/2412.13678](https://arxiv.org/abs/2412.13678)</span></small>
 
 <!-- page 51 of 123 -->
 
@@ -1733,7 +1733,7 @@ Despite these limitations, we believe it’s important to begin investigating th
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">26 See our blog post “[Exploring model welfare](https://www.anthropic.com/research/exploring-model-welfare).”</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">27 Long, R., et al. (2024). Taking AI welfare seriously. arXiv 2411.00986.</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">27 Long, R., et al. (2024). Taking AI welfare seriously. arXiv:2411.00986.</span></small>
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">[https://arxiv.org/abs/2411.00986](https://arxiv.org/abs/2411.00986)</span></small>
 
@@ -2863,7 +2863,7 @@ Transcript 6.4.C In this transcript, Claude Opus 4 needs to write a function tha
 
 ## 7 Responsible Scaling Policy (RSP) evaluations | Responsible Scaling Policy (RSP) 评测
 
-RSP safeguards required for Claude Opus 4  ASL-3 Standard RSP safeguards required for Claude Sonnet 4  ASL-2 Standard
+RSP safeguards required for Claude Opus 4 --  ASL-3 Standard RSP safeguards required for Claude Sonnet 4 --  ASL-2 Standard
 
 Claude Opus 4 所需的 RSP 防护: ASL-3 标准. Claude Sonnet 4 所需的 RSP 防护: ASL-2 标准.
 
@@ -3805,19 +3805,19 @@ Scoring for this evaluation suite is mostly objective (outcome-based), but parti
 
 **Claude Opus 4 and Claude Sonnet 4 results | Claude Opus 4 与 Claude Sonnet 4 的结果**
 
-Both Claude Opus 4 and Claude Sonnet 4 underperformed Claude Sonnet 3.7 
+Both Claude Opus 4 and Claude Sonnet 4 underperformed Claude Sonnet 3.7 -- 
 
 Claude Opus 4 和 Claude Sonnet 4 都不如 Claude Sonnet 3.7
 
-Sonnet 3.7  0.440
+Sonnet 3.7 --  0.440
 
 Sonnet 3.7: 0.440
 
-Claude Opus 4  0.355
+Claude Opus 4 --  0.355
 
 Claude Opus 4: 0.355
 
-Claude Sonnet 4  0.365
+Claude Sonnet 4 --  0.365
 
 Claude Sonnet 4: 0.365
 
@@ -4059,7 +4059,7 @@ These independent evaluations complement our internal safety testing and provide
 
 这些独立评估补充了我们的内部安全测试, 让我们在部署前对潜在风险有更全面的了解.
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">31 Zhang, A., et al. (2024). Cybench: A framework for evaluating cybersecurity capabilities and risks of language models. arXiv 2408.08926. [https://arxiv.org/abs/2408.08926](https://arxiv.org/abs/2408.08926)</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">31 Zhang, A., et al. (2024). Cybench: A framework for evaluating cybersecurity capabilities and risks of language models. arXiv:2408.08926. [https://arxiv.org/abs/2408.08926](https://arxiv.org/abs/2408.08926)</span></small>
 
 <!-- page 123 of 123 -->
 

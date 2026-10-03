@@ -270,10 +270,6 @@ After file-level pretraining, we turn to repo-level pretraining, aimed at enhanc
 
 文件级之后做仓库级, 专攻长上下文. 上下文从 8,192 拉到 32,768, RoPE base 从 10,000 调到 1,000,000. 再叠 YaRN (Peng et al., 2023), 使序列可到 131,072 (128K) token.
 
-> **回看:** 仓库级上下文是 32K, 怎么又说能到 128K?
-> 32K 是本阶段训练窗口; 128K 靠 YaRN 外推打开, 后文 Needle in the Code 也按 128K 测.
-
-
 In this stage, we used a large amount of high-quality, long-context code data (≈ 300B) and extended file-level FIM to the repo-level FIM followed by methods described in Lozhkov et al. (2024), with the specific format shown in Figure 4.
 
 本阶段用约 300B 高质量长上下文代码, 并把文件级 FIM 扩展到仓库级 FIM(对齐 Lozhkov et al., 2024), 格式见图 4.
@@ -677,6 +673,8 @@ Table 16: 7B-Instruct 明显强于同规模, 并超过 CodeStral-22B, DS-Coder-3
 BigCodeBench-Instruct: 7B Full 41.0%, Hard 18.2%; 32B Full 49.6%, Hard 27.0%, 开源最强并超过部分闭源 API.
 
 **LiveCodeBench** LiveCodeBench (Jain et al., 2024) is a comprehensive and contaminationfree benchmark designed to evaluate the coding capabilities of LLMs. It continuously gathers new problems from leading competitive programming platforms like LeetCode<sup>6</sup>, AtCoder<sup>7</sup>, and CodeForces<sup>8</sup>, ensuring an up-to-date and diverse set of challenges. Currently, it hosts over 600 high-quality coding problems published between May 2023 and September 2024.
+
+LiveCodeBench 是持续更新的抗污染基准, 从 LeetCode, AtCoder, CodeForces 等竞赛平台不断收新题; 现有 600+ 题, 发布于 2023.05–2024.09.
 
 To further demonstrate our model's effectiveness on real-world competitive programming tasks, we evaluated the Qwen-2.5-Coder series instruct models on the LiveCodeBench (2407-2409) dataset. As shown in Table 16, the Qwen-2.5-Coder-7B-Instruct model achieved an impressive Pass@1 accuracy of 37.6%, significantly outperforming other models with similar parameter counts. Notably, it also outperformed larger models, such as CodeStral-22B-v0.1 and DS-Coder-33B-Instruct. Additionally, our Qwen-2.5-Coder-32B-Instruct model achieved an accuracy of 31.4%, surpassing all open-source code generation models and reaching a level comparable to many closed-source APIs.
 

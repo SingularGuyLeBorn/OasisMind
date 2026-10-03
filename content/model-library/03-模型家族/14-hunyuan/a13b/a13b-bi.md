@@ -323,7 +323,7 @@ This All-Scenarios RL stage unifies a flexible GRM with domain-specific pipeline
 全场景 RL 阶段把一个灵活的 GRM 和覆盖 16 个子主题, 30 多个评分服务的领域专用流水线统一起来. 对抗性提示过滤和动态采样保证跨领域泛化, 让模型在确定性, 创意和专业场景中都能灵活推理.
 
 > **对一下:** 上面编号列出的方向有几个, 和这里的 「16 sub-topics」 对得上吗?
-> 对不上. 本页编号从 (1) 文本理解数到 (12) 金融, 法律和医疗, 一共 12 项; 第 12 项名字里含三个领域, 拆开算也只有 14 个, 离 16 还差 2 个, 本文没有列出其余子主题的名字. 「30 多个评分服务」 同样没有清单, 只能从上面的描述里数出一部分: 文本理解两个奖励模型, 长上下文一个幻觉奖励模型, 知识问答的有参考和无参考两种幻觉检测模型加一个用户体验模型, 等等. 所以 16 和 30 这两个数在本文里没法逐项核对.
+> 对不上. 报告里的编号从 (1) 文本理解数到 (12) 金融, 法律和医疗, 一共 12 项; 第 12 项名字里含三个领域, 拆开算也只有 14 个, 离 16 还差 2 个, 本文没有列出其余子主题的名字. 「30 多个评分服务」 同样没有清单, 只能从上面的描述里数出一部分: 文本理解两个奖励模型, 长上下文一个幻觉奖励模型, 知识问答的有参考和无参考两种幻觉检测模型加一个用户体验模型, 等等. 所以 16 和 30 这两个数在本文里没法逐项核对.
 
 <!-- page 7 of 14 -->
 
@@ -552,7 +552,7 @@ Table 4: Comparison of Hunyuan-A13B with other AI models evaluating performance 
 | 智能体 | C3-Bench | 45.4 | 52.1 | 48.4 | 65.4 |
 
 > **看表:** fast 和 slow 有没有分开的分数列? 同一个基准, Hunyuan-A13B 两种模式差多少?
-> 没有放进同一张表的两列, 而是分成两张表: 本页表 3 是 slow-thinking, 表 4 是 fast-thinking. 两张表的对照组也不同: 表 3 是 OpenAI-o1-1217, Deepseek-R1-0120, Qwen3-A22B; 表 4 是 Hunyuan-Large-1116, Qwen2.5-72B-instruct, Qwen3-A22B, 只有 Qwen3-A22B 和 Hunyuan-A13B 两列在两张表里都有. 行也不完全一样: 编程组第三行, 表 3 是 ArtifactsBench, 表 4 是 McEval, 其余 20 行同名. 把 Hunyuan-A13B 的同名行相减 (slow 减 fast): AIME2025 +57.6, AIME2024 +56.7, ZebraLogic +48.2, LiveCodeBench +36.5, OlympiadBench +18.6, BFCL v3 +12.4, τ-Bench +12.1; IF-Eval 只差 +0.3, BBH 只差 +2.1. 有两行反过来是 fast 更高: ComplexFuncBench 74.0 对 61.2, 差 12.8; C3-Bench 65.4 对 63.5. Qwen3-A22B 这两行都是 slow 略高 (40.6 对 38.1, 51.7 对 48.4), 所以这个反转只出现在 Hunyuan-A13B 身上, 本文没有解释.
+> 没有放进同一张表的两列, 而是分成两张表: 报告的表 3 是 slow-thinking, 表 4 是 fast-thinking. 两张表的对照组也不同: 表 3 是 OpenAI-o1-1217, Deepseek-R1-0120, Qwen3-A22B; 表 4 是 Hunyuan-Large-1116, Qwen2.5-72B-instruct, Qwen3-A22B, 只有 Qwen3-A22B 和 Hunyuan-A13B 两列在两张表里都有. 行也不完全一样: 编程组第三行, 表 3 是 ArtifactsBench, 表 4 是 McEval, 其余 20 行同名. 把 Hunyuan-A13B 的同名行相减 (slow 减 fast): AIME2025 +57.6, AIME2024 +56.7, ZebraLogic +48.2, LiveCodeBench +36.5, OlympiadBench +18.6, BFCL v3 +12.4, τ-Bench +12.1; IF-Eval 只差 +0.3, BBH 只差 +2.1. 有两行反过来是 fast 更高: ComplexFuncBench 74.0 对 61.2, 差 12.8; C3-Bench 65.4 对 63.5. Qwen3-A22B 这两行都是 slow 略高 (40.6 对 38.1, 51.7 对 48.4), 所以这个反转只出现在 Hunyuan-A13B 身上, 本文没有解释.
 
 ## 4.2.2 Evaluation Results (评测结果)
 

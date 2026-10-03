@@ -1,0 +1,37 @@
+# 20-openai/openai  文件: content/model-library/03-模型家族\20-openai/openai\openai-bi.md  共 9 块
+
+--- 行11 [想] ---
+> 应该是页首 logo 区的字样, PDF 里以图形呈现, 没有文字层, MinerU 做了识别. 内容本身没问题, 只是来源和正文不同.
+
+
+--- 行24 [问] ---
+> 没有. 三档的区别只用 「complex reasoning and coding」, 「balance intelligence and cost」, 「cost-sensitive, high-volume」 三句话描述, 一个数字都没印.
+
+
+--- 行31 [核对] ---
+> 页面把它们分开列, 没有解释区别. 按字面看, 前者说输入模态, 后者说能力, 但这句话本身不足以断定两者有什么不同.
+
+
+--- 行40 [看表] ---
+> 没有. 打印件只到按钮本身, 点进去的对比表不在这一页, 三档的规格对比无从核对.
+
+
+--- 行43 [拆开] ---
+> 拆开逐句比, 三档的定位措辞完全一致, 只差开头的 「If you're not sure where to start, use」 换成 「Start with」, 以及少了 「our flagship model」 这个称呼. 信息量没有增加.
+
+
+--- 行54 [确认] ---
+> PDF 文字层里 「View all」 和 「Compare models」 排在 Astra 卡片之后, 靠近页尾. md 把它们提到了图前, 本稿保留 md 的顺序, 两者没有内容差别.
+
+
+--- 行59 [回看] ---
+> 没有. 画面只有 「Astra」 一个词和星空背景. MinerU 按图旁边的链接文字给图命名, 所以文件名里混进了 developers-openai-com-api-docs-models 这段路径.
+
+
+--- 行70 [停一下] ---
+> 看字形是 「Model ID」 被截断后剩下的字母, 后面本该跟模型 ID 的取值, 但打印件在这里断了, ID 本身没有印出来. md 直接丢掉了这一行.
+
+
+--- 行77 [再看] ---
+> 打印件只截到第一张卡片. 前文两次提到 Sol 和 Luna, 但它们的卡片, 简介和 ID 都不在这一页.
+

@@ -1,0 +1,41 @@
+# 15-ling/ling  文件: content/model-library/03-模型家族\15-ling/ling\ling-bi.md  共 10 块
+
+--- 行25 [核对] ---
+> 不是. followers 链到 GitHub 的关注者列表. People 1 链到组织成员页. 两个数字差了三个数量级, 页面没有把它们定义成同一件事.
+
+
+--- 行40 [对一下] ---
+> 页面印成了两个字符串. 页头是 https://inclusion-ai.org, 标语下面是 https://www.inclusion-ai.org/. 没有写它们是不是同一个站点.
+
+
+--- 行59 [问] ---
+> 不是同一个字符串. 第 1 页是 x.com/TheInclusionAI. 第 2 页正文写 Twitter, 链接是 x.com/ant_oss. 页面没有说明这两个账号的关系.
+
+
+--- 行74 [想] ---
+> 不是. 卡片写的是会议名 ICML 2026, 没有月和日. 同一句把 performance 印成 performace. 星数 190 和复刻 3 是抓取时的计数, 也不是日期.
+
+
+--- 行77 [拆开] ---
+> 页面没有解释. 仓库链接是 LLaDA2.X, 说明第一句是 LLaDA2.0. 后面第 3 页还有一个单独仓库 LLaDA2.0-Uni. 三个字符串都在, 没有写谁包含谁.
+
+
+--- 行80 [再看] ---
+> 不在. 两张卡片只有 Public, Python, 星数和复刻数. 没有总参数, 没有激活参数, 没有上下文长度.
+
+
+--- 行115 [停一下] ---
+> 不是. 这是抓取时 GitHub 显示的相对时间. 同页还有 17 hours ago, yesterday, 2 days ago. 页面没有绝对日期, 所以这些词不能排成一条发布时间表.
+
+
+--- 行130 [看表] ---
+> 列出 15 个: 置顶 5 个 (LLaDA2.X, Ling-V2.5, Ring-V2.5, Ming, Zooming-without-Zooming), 列表 10 个 (Avernet, sandboxd, AWorld, AReno, AKernel, Ming-Image, LLaDA2.0-Uni, distill-fs, ling-cookbook, Realtime-Venus). 68 减 15 等于 53, 这是算出来的差, 页面没有印剩余名单.
+
+
+--- 行141 [确认] ---
+> 不是. 它是 GitHub topic 搜索链接, 和 rl, llm 排在同一行. 这一页没有专家数, 没有激活方式, 也没有把 moe 接到 Ling-V2.5 或 Ring-V2.5 上.
+
+
+--- 行144 [回看] ---
+> 不是. 这是 inclusionAI 的 GitHub 组织页. Ling 只出现在置顶仓库 Ling-V2.5, 指南仓库 ling-cookbook, 以及 Ming 那句 「built upon the Ling LLM」. 没有论文标题, 没有评测表, 没有参数量.
+

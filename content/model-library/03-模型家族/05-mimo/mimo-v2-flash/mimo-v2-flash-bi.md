@@ -14,6 +14,8 @@ LLM-Core Xiaomi
 
 We present MiMo-V2-Flash, a Mixture-of-Experts (MoE) model with 309B total parameters and 15B active parameters, designed for fast, strong reasoning and agentic capabilities. MiMo-V2- Flash adopts a hybrid attention architecture that interleaves **Sliding Window Attention (SWA)** with global attention, with a 128-token sliding window under a 5:1 hybrid ratio. The model is pre-trained on 27 trillion tokens with **Multi-Token Prediction (MTP)**, employing a native 32k context length and subsequently extended to 256k. To efficiently scale post-training compute, MiMo-V2-Flash introduces a novel **Multi-Teacher On-Policy Distillation (MOPD)** paradigm. In this framework, domain-specialized teachers (e.g., trained via large-scale reinforcement learning) provide dense and token-level reward, enabling the student model to perfectly master teacher expertise. MiMo-V2-Flash rivals top-tier open-weight models such as DeepSeek-V3.2 and Kimi-K2, despite using only 1/2 and 1/3 of their total parameters, respectively. During inference, by repurposing MTP as a draft model for speculative decoding, MiMo-V2-Flash achieves up to 3.6 acceptance length and 2.6× decoding speedup with three MTP layers. We open-source both the model weights and the three-layer MTP weights to foster open research and community collaboration.
 
+本文提出 MiMo-V2-Flash, 一个 309B 总参, 15B 激活的 MoE 模型, 目标是又快又强的推理与 Agent 能力. 混合注意力架构把 **Sliding Window Attention (SWA)** 与全局注意力交错排布, 滑窗 128 token, 混合比 5:1. 预训练 27T token, 用 **Multi-Token Prediction (MTP)**, 原生 32k 上下文, 后续扩到 256k. 为高效放大后训练算力, 提出 **Multi-Teacher On-Policy Distillation (MOPD)**: 各领域专门教师 (例如经大规模 RL 训练) 给出稠密的 token 级奖励, 让学生完整吸收教师专长. 总参只有 DeepSeek-V3.2 的 1/2, Kimi-K2 的 1/3, 却能与这两家顶尖开放模型对打. 推理时把 MTP 复用为投机解码的草稿模型, 三层 MTP 带来最高 3.6 的接受长度与 2.6 倍解码加速. 模型权重与三层 MTP 权重均已开源.
+
 > **核对:** 摘要写 hybrid ratio 5:1 与 nearly 6× KV/attention 节省. 5:1 局部:全局怎么对应 「约 6 倍」?
 > 局部:全局=5:1 意味着 6 层里 1 层全全局. 摘要把该密度直接写成 nearly 6× 的 KV-cache 与 attention 计算削减; 数字来自摘要句, 不是另表测得的墙钟倍数.
 
@@ -805,6 +807,8 @@ demonstrate that MTP consistently outperforms the baseline without additional ha
 
 MiMo-V2-Flash achieves strong reasoning and agentic capabilities, along with fast inference speed, through its hybrid Sliding Window Attention architecture, lightweight Multi-Token Prediction, and the MOPD post-training paradigm. With these strengths, MiMo-V2-Flash rivals larger open-weight models like DeepSeek-V3.2 and Kimi-K2. However, a clear gap remains to the strongest closed-weight models, which we aim to narrow by scaling model size and training compute. Additionally, our current architectural exploration remains preliminary, with limited analysis of design trade-offs. Future work will focus on designing more robust and efficient, agentic-oriented model architectures. Furthermore, we plan to scale the compute for the iterative co-evolution of teachers and students in MOPD to fully unlock its potential.
 
+MiMo-V2-Flash 靠混合 Sliding Window Attention 架构, 轻量 Multi-Token Prediction 与 MOPD 后训练范式, 拿到强推理与 Agent 能力, 推理速度也快. 凭这些优势, 它能与 DeepSeek-V3.2, Kimi-K2 等更大的开放模型竞争. 但与最强的闭源模型仍有明显差距, 后续靠扩大模型规模与训练算力来追. 另外, 目前的架构探索仍属初步, 设计取舍分析不足; 未来将面向 Agent 场景设计更鲁棒高效的架构, 并扩大 MOPD 中教师与学生迭代共演的算力, 充分释放其潜力.
+
 ## References
 
 R. Agarwal, N. Vieillard, Y. Zhou, P. Stańczyk, S. Ramos, M. Geist, and O. Bachem. On-policy distillation of language models: Learning from self-generated mistakes. In International Conference on Learning Representations, 2023. URL [https://api.semanticscholar.org/CorpusID:263610088](https://api.semanticscholar.org/CorpusID:263610088).
@@ -1043,6 +1047,8 @@ Wenshan Huang Wenyu Yang Xin Zhang Xing Yong Xu Wang Xueyang Xie Yilin Jiang Yix
 ## B Reward Hacking of SWE-Bench
 
 Consistent with recent findings within the SWE-Bench community, we similarly identify the bug in the official SWE-Bench images where the ground truth commits are not properly deleted. During the RL training, this could lead to reward hacking and inflated evaluation, where the model tends to obtain rewards by peeking at future commits, as shown in Figure 8. To fix this, we update to the newest SWE-Bench image for evaluation. For our self-built training images, we also follow the official SWE-Bench resolution on git hacking, and repeatedly confirm that our model does not exhibit any reward hacking.
+
+与 SWE-Bench 社区近来的发现一致, 我们也发现官方 SWE-Bench 镜像存在 ground truth commits 未被正确删除的 bug. RL 训练中这会诱发 reward hacking 与评测虚高: 模型偷看未来 commit 拿奖励, 见图 8. 修复办法: 评测换用最新 SWE-Bench 镜像; 自研训练镜像也按官方对 git hacking 的修复方案处理, 并反复确认本模型不存在任何 reward hacking.
 
 ![Chart block](images/p31-figure-8-the-tendency-of-our-experiment-on-qwen3-32b-to.png)
 

@@ -154,7 +154,7 @@ In LMArena's [Text Arena](https://lmarena.ai/leaderboard/text), grok-4-fast (cod
 在 LMArena 的 [Text Arena](https://lmarena.ai/leaderboard/text) 上, grok-4-fast (代号 tahoe) 排名第 8, 与 grok-4-0709 打平, 凸显它惊人的智能密度. 值得注意的是, 它明显压过了同重量级的对手: 所有可比规模的模型都排在它后面或更靠后.
 
 > **停一下:**「weight class (重量级)」按什么划分? 本页不是没给参数量吗?
-> 对, 这是个悬空的说法. 全篇没有参数量, 没有激活参数, 没有任何能划分「规模档位」的数,「comparable size models」具体指谁, 排第几, md 里也丢了. PDF 文字层能补回半句: 「all comparable size models rank 18th or below」, 即同档模型都在第 18 名或更低. 但「第 8 对第 18」里的档位边界是 xAI 自己划的, 哪些模型算同档, 依据是什么, 本页没写. grok-4-0709 按 [Grok 4 公告](../grok-4/grok-4.md) 的日期就是 2025 年 7 月 9 日发布的 Grok 4, 0709 是快照日期码, 与本文日期 2025 年 9 月 19 日隔两个多月.
+> 对, 这是个悬空的说法. 全篇没有参数量, 没有激活参数, 没有任何能划分「规模档位」的数,「comparable size models」具体指谁, 排第几, md 里也丢了. PDF 文字层能补回半句: 「all comparable size models rank 18th or below」, 即同档模型都在第 18 名或更低. 但「第 8 对第 18」里的档位边界是 xAI 自己划的, 哪些模型算同档, 依据是什么, 本页没写. grok-4-0709 按 [Grok 4 公告](../grok-4/grok-4-bi.md) 的日期就是 2025 年 7 月 9 日发布的 Grok 4, 0709 是快照日期码, 与本文日期 2025 年 9 月 19 日隔两个多月.
 
 ![Image block](images/p07-here-are-some-examples-of-grok-4-fast-in-action.png)
 

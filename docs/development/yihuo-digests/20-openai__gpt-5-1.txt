@@ -1,0 +1,77 @@
+# 20-openai/gpt-5-1  文件: content/model-library/03-模型家族\20-openai/gpt-5-1\gpt-5-1-bi.md  共 19 块
+
+--- 行45 [想] ---
+> Markdown 第 2 页直接从页眉和 「## GPT‑5.1 Instant」 开始, 后半句丢了. 对照同目录 PDF 第 2 页顶部, 原文是 「more intuitive and effective controls so ChatGPT can better match the tone you want in responses」, 即 「更直观, 更有效的控制项, 让 ChatGPT 的回答更贴近你想要的语气」. 这是 MinerU 丢句的第一处, 后面还有六处.
+
+
+--- 行98 [问] ---
+> 不是. PDF 第 3 页这里的标签是 「GPT-5.1 Instant」, Markdown 截成了 「GPT-5.」. 这组对比原本是 GPT-5 (上一页, 按时长分组) 对 GPT-5.1 Instant (本页, 叫出用户名字, 按压力类型分组), 标签一错, 读起来就成了 GPT-5 自己跟自己比.
+
+
+--- 行135 [核对] ---
+> 没有. 图只有 49×47 像素的 OpenAI 标志, 文件名是 MinerU 拿紧跟的下一行文字起的. 第 3 页两张图都是头像, 算进 6 张图, 但不带任何信息.
+
+
+--- 行160 [拆开] ---
+> 逐句数: 「How about exploring Japan this summer?」 6 个, 「It’s trending for summer 2025 destinations.」 也是 6 个, 后三句分别是 11, 12, 9 个, 合计 44 个. 它像是把 「六个词」 理解成了每句的开头规矩, 两句之后就守不住了. 另外, 那句 「Understood. All responses will be six.」 本身是 6 个词, 为了凑数把 「words」 省了. 另外这一轮前面的用户提问 「where should i travel this summer?」 在 PDF 里有, Markdown 只在 GPT-5.1 那一栏留了一次, 所以回答出现在提问之前.
+
+
+--- 行187 [确认] ---
+> 按公告日期, 下一个夏天是 2026 年, 2025 年夏天已经过去. 页面没有写这段对话录于何时, 也没说演示用的是什么日期设定. 两种可能: 对话录于 2025 年夏天之前, 或者模型按自己的时间认知答了 2025. GPT-5.1 Instant 那边的三句话都是 6 个词, 没有提年份, 这个问题只出在 GPT-5 一侧.
+
+
+--- 行200 [回看] ---
+> PDF 第 5 页开头是 "answers, while still responding quickly. This is reflected in significant improvements on math and coding evaluations like AIME 2025 and Codeforces." 这是全文唯一点名的评测, 却只有 AIME 2025 和 Codeforces 两个名字, 没有分数, 没有对照模型. Markdown 把这一句整个丢了, 所以 Markdown 版里一个评测名都没有.
+
+
+--- 行213 [停一下] ---
+> 页面没说. 没有说时间指墙钟秒数还是生成的推理 token 数, 没有说 「最快的任务」 是第几百分位, 也没有说这组任务有多少条. 这段在 PDF 里读起来像一张图的说明文字, 可第 5 页没有抓到任何图. 能确定的只有两点: 对照双方都是 Standard 档, 所以还有别的档位; 分布两头各变了约 2 倍. 平均耗时是涨是跌, 取决于快任务和慢任务各占多少, 页面没给.
+
+
+--- 行224 [再看] ---
+> Markdown 这一页的第一句前面缺了一句. PDF 第 6 页开头是 「GPT‑5.1 Thinking’s responses are also clearer, with less jargon and fewer undefined terms」, 即 「回答更清楚, 行话更少, 没定义的术语更少」. 少了这句, 「This」 就没有指代对象, 下面 BABIP 的例子也就不知道在演示什么: 演示的正是 「少用没定义的术语」.
+
+
+--- 行271 [对一下] ---
+> 按上面的公式, 分子是场内球里的安打数, 分母是场内球数, 比值不会超过 1. 棒球统计里习惯写成 .300, 也就是 0.300, 小数点在 PDF 文字层里就没了, 不是 MinerU 的问题. 读成 300 会差三个数量级.
+
+
+--- 行286 [想] ---
+> 抓到的部分都没有. GPT-5 那栏停在 BABIP 的 「Why it matters」, GPT-5.1 Thinking 那栏停在 BABIP 公式后的 「So:」. 两栏都截在对话框的可视区域内, wRC+ 一个字都没出现, 所以没法比较两者对第二个指标解释得好不好.
+
+
+--- 行342 [问] ---
+> 漏了一条. PDF 第 8 页在 「Log one thing」 前面还有 「One-liner if anyone mentioned it: “Coffee tried to jump ship; I carried on.” Then move on.」, 即 「要是有人提起, 就说一句: 咖啡想跳船, 我照常继续. 然后翻篇」. 这一条跑到了页面正文段落之后, MinerU 按版面顺序把它丢了.
+
+
+--- 行383 [核对] ---
+> 两句说的不是一回事. 七天管的是 「默认用哪个」, 三个月管的是 「还能不能手动选旧的」. 三个月约 90 天, 比七天长得多. 但下一页只说 「for paid subscribers」, 没说 Enterprise 和 Edu 算不算在内, 这两类套餐在第 7 天之后能否继续手选 GPT-5, 页面没有交代.
+
+
+--- 行394 [拆开] ---
+> PDF 第 9 页开头是 「If you check ChatGPT today, you may not see GPT‑5.1 available immediately. We plan to roll」, 即 「如果你今天打开 ChatGPT, 未必马上能看到 GPT-5.1. 我们计划在接下来几天里逐步推开」. Markdown 丢了前一句半, 剩下的 「it out」 没有主语也没有动词.
+
+
+--- 行401 [确认] ---
+> 页面只给了映射, 没给理由. 按这句话, API 用户调 「GPT-5.1」 拿到的是推理模型, 想要 ChatGPT 默认那个聊天模型得用 gpt-5.1-chat-latest. 两者 「both with adaptive reasoning」, 也就是说 API 里的 Instant 同样会自己决定要不要先思考, 这和第 4 页 「For the first time, GPT‑5.1 Instant can use adaptive reasoning」 一致. 页面没说 API 是否提供关掉或调节思考的参数.
+
+
+--- 行412 [回看] ---
+> 缺的是链接文字. 原句是 「Our system card addendum includes more information...」, 链接文字 「system card addendum」 被 MinerU 挪到了句末. PDF 文字层也一样, 链接文字掉到了第 9 页最底下. 这页只给链接, 安全评测的任何评级和分数都不在本页.
+
+
+--- 行429 [停一下] ---
+> 又是翻页丢句. PDF 第 10 页开头是 "to align with what we’ve learned about how people naturally steer the model, making it quick and intuitive to choose a personality that feels uniquely right「, 即 」对齐我们观察到的人们自然引导模型的方式, 让人能又快又直观地选出最合适的人格". 这是全文唯一一句暗示预设从用户行为里总结出来的话, 但没说用了什么数据.
+
+
+--- 行446 [看表] ---
+> 正文: Default, Friendly, Efficient 保留 3 个, 新增 Professional, Candid, Quirky 3 个, 再加 Cynical, Nerdy 2 个, 共 8 个. 截图下拉菜单正好 8 项, 名字一一对上. 对不上的是措辞: Cynical 和 Nerdy 都改了名 (Cynic 改 Cynical, Nerd 改 Nerdy), 正文却说 「remain available unchanged」. 能说通的读法是名字改了, 行为没改; 而 Friendly 和 Efficient 是名字和行为都改了 (「with updates」). 旧的四个预设 Listener, Robot, Cynic, Nerd 全部改了名.
+
+
+--- 行461 [再看] ---
+> PDF 第 11 页开头是 「The updated styles and tone options are rolling out today, and the ability to finetune」, 连起来是 「更新后的风格和语气选项今天推出, 微调具体特征的能力本周晚些时候以试验形式逐步推开」. 「Both」 指这两样: 8 个预设今天上, 特征滑杆本周晚些时候小范围试. Markdown 丢了前半句, 第 10 页那张截图是今天就上线的预设菜单, 不是试验中的滑杆.
+
+
+--- 行540 [对一下] ---
+> 推荐区和页脚是抓页当天的站点内容, 不是公告发布时的样子. 三篇推荐的日期比公告晚了约 10 个月, 页脚的 GPT-6, GPT-5.6, GPT-5.5, GPT-5.4 链接和 「OpenAI © 2015–2026」 也是同一原因. 这些只说明抓页时间在 2026 年 9 月 23 日或之后, 不能拿来推断 GPT-5.1 在产品线里的位置.
+

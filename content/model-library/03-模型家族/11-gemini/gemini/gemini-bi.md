@@ -324,7 +324,7 @@ As we develop these new technologies, we recognize the responsibility it entails
 [了解更多](https://deepmind.google/models/fsf-reports/gemini-3-pro/)
 
 > **再看:** Safety 的 Learn more 指向哪个型号的报告?
-> 指向 fsf-reports/gemini-3-pro/, 是 Gemini 3 Pro 的报告, 路径里的 fsf 与页脚 「Frontier safety」 对应. Gemini 3 Pro 不在本页 Models 清单里, 也不是 3.8 Flash, 3.1 Pro 或 3.1 Deep Think. 全页没有 3.8 Flash 的安全报告链接, 这段安全表态和上面的榜单说的不是同一个模型.
+> 指向 fsf-reports/gemini-3-pro/, 是 Gemini 3 Pro 的报告, 路径里的 fsf 与页脚 「Frontier safety」 对应. Gemini 3 Pro 不在报告 Models 清单里, 也不是 3.8 Flash, 3.1 Pro 或 3.1 Deep Think. 全页没有 3.8 Flash 的安全报告链接, 这段安全表态和上面的榜单说的不是同一个模型.
 
 Gemini Ecosystem
 

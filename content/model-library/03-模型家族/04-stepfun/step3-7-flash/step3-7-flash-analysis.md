@@ -6,7 +6,7 @@
 
 这篇材料要回答的问题很窄: Step 3.7 Flash 相对 Step 3.5 Flash 在哪些 Agent / Coding / 多模态面上报了涨分; Advisor Mode 怎样把 Flash 执行器与更大 advisor 绑成成本故事; 视觉侧 Visual Search / Python tool / GUI 各自给了哪些表; 部署与生态入口开到哪里. 它撑不起底座技术报告.
 
-通告点名的机制词很少. 工具调用与 Agent 编排的一般背景见 [13.1.3-工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md) 与 [13.1.4-工具调用演进](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进.md). Coding Agent / harness 评测背景见 [13.5.1-IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md) 与 [13.5.2-Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). 谱系近邻产品页: [step3-5-flash](../step3-5-flash/step3-5-flash.md), [step3](../step3/step3.md), 平台目录 [stepfun](../stepfun/stepfun.md). 单独成篇公式见上面链接; 通告没有的层表与专家数也不用单独成篇填空.
+通告点名的机制词很少. 工具调用与 Agent 编排的一般背景见 [13.1.3-工具使用与MCP](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.3-工具使用与MCP.md) 与 [13.1.4-工具调用演进](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.4-工具调用演进.md). Coding Agent / harness 评测背景见 [13.5.1-IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md) 与 [13.5.2-Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md). 谱系近邻产品页: [step3-5-flash](../step3-5-flash/step3-5-flash-bi.md), [step3](../step3/step3-bi.md), 平台目录 [stepfun](../stepfun/stepfun-bi.md). 单独成篇公式见上面链接; 通告没有的层表与专家数也不用单独成篇填空.
 
 ## 1. 定位与规格
 

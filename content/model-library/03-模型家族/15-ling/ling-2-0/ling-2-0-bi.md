@@ -150,7 +150,7 @@ This report focuses on three reflex-grade non-thinking (instruct) models in the 
 本报告聚焦 Ling 2.0 家族中三个反应级 (reflex-grade) non-thinking (instruct) 模型: Ling-mini-2.0, Ling-flash-2.0 和 Ling-1T. 这些模型强调通用推理和指令遵循能力; 基于同一 Ling 2.0 基座的 **Ring** 系列 (Ling-Team, 2025) 则走向深度思考模型. 报告其余部分介绍 Ling 2.0 的核心模型架构, 预训练与后训练方法, 以及基础设施优化.
 
 > **核对:** 这里说三个都是 non-thinking, 可后文 DFT 有 「In-Depth Reasoning」 模式, Evo-CoT 还按难度加深推理. non-thinking 和后文的推理模式是同一列吗?
-> 不是同一列. non-thinking 是发布形态的分类, 与 Ring 系列的深度思考模型相对 (本页). 「Instant Response / In-Depth Reasoning」 是 DFT 训练数据里用系统提示区分的两种回答模式 (§4.1, Table 5 的 「detailed think off / on」). Evo-CoT 从 instant-response 模式出发训练, 回答里出现 `<think>` 标记还要扣 0.5 分 (§4.2 的 $R_{\mathrm{format}}$). 所以推理深度是在 non-thinking 形态内部按题目难度调节, 模型并没有变成 thinking 模型.
+> 不是同一列. non-thinking 是发布形态的分类, 与 Ring 系列的深度思考模型相对 (报告). 「Instant Response / In-Depth Reasoning」 是 DFT 训练数据里用系统提示区分的两种回答模式 (§4.1, Table 5 的 「detailed think off / on」). Evo-CoT 从 instant-response 模式出发训练, 回答里出现 `<think>` 标记还要扣 0.5 分 (§4.2 的 $R_{\mathrm{format}}$). 所以推理深度是在 non-thinking 形态内部按题目难度调节, 模型并没有变成 thinking 模型.
 
 ## 2 Architecture (架构)
 
@@ -212,7 +212,7 @@ Table 1 Key architectural configurations and training hyperparameters of the Lin
 **负载均衡策略.** 基于系统实验, Ling 2.0 的路由均衡策略沿用与 DeepSeek-V3 (DeepSeek-AI, 2024) 类似的设计. 我们选择无辅助损失的均衡策略, 同时鼓励专家专门化和负载均衡, 并使用路由门控缩放 (router gate scaling) 提高训练稳定性. 缩放系数设为 2.5, 用来稳定门控输出的均方根. 我们对偏置更新策略做了小改动, 让偏置保持以零为中心 (Liu et al., 2025a). 具体地, 无辅助损失的偏置按 $b_i = b_i + u \times (\mathrm{sign}(e_i) - \mathrm{mean}(\mathrm{sign}(e)))$ 更新, 其中 u 是更新率, $b_i$ 是第 i 个专家的偏置, $e_i$ 是该专家的负载违反误差. 此外, 我们采用 dropless 路由保证模型性能, 并用分组路由提高训练效率, 且不带来性能下降.
 
 > **停一下:** 这里的更新率 u, 和 §3.2.1 里的 「bias-update rate γ=0.001」 是不是同一个量?
-> 是同一个量, 只是换了记号. §3.2.1 写明无辅助损失负载均衡项的偏置更新率 γ=0.001, 上下文扩展之后改为 0.0001 直到训练结束. 本页公式里的 u 就是这个更新率; 减去 mean(sign(e)) 是为了让所有偏置围绕零分布.
+> 是同一个量, 只是换了记号. §3.2.1 写明无辅助损失负载均衡项的偏置更新率 γ=0.001, 上下文扩展之后改为 0.0001 直到训练结束. 报告公式里的 u 就是这个更新率; 减去 mean(sign(e)) 是为了让所有偏置围绕零分布.
 
 **Multi Token Prediction.** To enhance model performance and inference efficiency, Ling 2.0 natively integrates MTP (Gloeckle et al., 2024; DeepSeek-AI, 2024) as an auxiliary training objective. Through rigorous validation of its effectiveness and extrapolability, we found that MTP consistently improves performance on code and math tasks across different model scales. Considering the scaling trends of MTP hyperparameters and training efficiency across various model sizes, we introduce one MTP layer for each model scale and set the MTP loss weight to 0.1. To address the additional computational overhead introduced by MTP, we performed a detailed performance analysis and implemented fine-grained Pipeline Parallelism (PP) partitioning for the MTP module within the Megatron training framework. This optimization significantly mitigates the performance overhead from MTP, ensuring high training throughput (see Section 5 for details).
 
@@ -368,7 +368,7 @@ Compared to traditional ablation studies (e.g., training a single Ling-mini-2.0 
 与传统消融研究 (例如把单个 Ling-mini-2.0 模型训练 400B token, 即图 3a 中的黑点) 相比, Ling 风洞更划算. 虽然包含更多次独立运行, 其总计算成本只有传统方法的 35%. 更重要的是, 它让我们能精确评估一项技术的扩展潜力. 这些
 
 > **对一下:** 前面说风洞把验证成本压到完整训练的 1% 以下, 这里又说只有传统方法的 35%. 两个比例的分母一样吗?
-> 不一样. 「under 1%」 (第 2 页和 §2.3) 的分母是一次完整训练的计算量; 「35%」 (本页) 的分母是传统消融, 即把单个 Ling-mini-2.0 训练 400B token (图 3a 黑点). 两句话说的是同一套 5 个模型的风洞, 只是比较对象不同.
+> 不一样. 「under 1%」 (第 2 页和 §2.3) 的分母是一次完整训练的计算量; 「35%」 (报告) 的分母是传统消融, 即把单个 Ling-mini-2.0 训练 400B token (图 3a 黑点). 两句话说的是同一套 5 个模型的风洞, 只是比较对象不同.
 
 <!-- page 9 of 58 -->
 
@@ -565,7 +565,7 @@ In the general pre-training stage, Ling 2.0 consumes massive amounts of data to 
 在通用预训练阶段, Ling 2.0 消耗海量数据以保证稳健的整体能力. 如图 5 所示, 这一阶段上下文长度为 4K, 由两个子阶段组成, 每个子阶段 10T token. 在这两个递进的子阶段中, 推理数据 (包括数学和代码) 的比例从 32% 提高到 46%, 通用数据 (如网页) 的比例相应从 68% 降到 54%. 同时, 我们提升语料质量, 执行更严格的数据去污染. 预训练中高比例的推理数据为激活和增强模型的推理能力打下坚实基础, 使 Ling 成为在推理上有内在优势的模型.
 
 > **确认:** 引言说 「20T token 的预训练」, 这 20T 包不包括 mid-training?
-> 不包括. 本页和 §3.2.1 写得很清楚: 通用预训练在 4K 上下文下分两个子阶段, 各 10T, 合计 20T; 之后的 mid-training 先用 150B token 做 32K 长上下文扩展, 再用 600B token 做推理预激活 (§3.2.2.2, 图 5).
+> 不包括. 报告和 §3.2.1 写得很清楚: 通用预训练在 4K 上下文下分两个子阶段, 各 10T, 合计 20T; 之后的 mid-training 先用 150B token 做 32K 长上下文扩展, 再用 600B token 做推理预激活 (§3.2.2.2, 图 5).
 
 ## 3.2.2.2 Mid-training (中期训练)
 
@@ -885,7 +885,7 @@ Overall, this design achieves a balance between output accuracy, clarity, and ef
 总体上, 这一设计在输出准确性, 清晰度和效率之间取得平衡, 同时仍鼓励在难题上进行更丰富的推理.
 
 > **回看:** 难题 α 小, 允许写得更长. 这算不算 TestingTime?
-> 算, 而且要和 §2.3 分开看. 这里是用 RL 奖励教模型在推理时按难度多写步骤: 同一组采样里, 正确回答越短 p(l) 越高, 错误回答的正长度奖励被 min(p(l), 0) 截掉, 难题再配小 α 放宽长度 (本页公式, 以及 §4.2 的 $R_{\mathrm{length}}$). 这种推理时多写步骤属于 TestingTime 一侧; Ling Scaling Laws 则是训练前定配置, 属于部署前的扩展. 效果见 §4.6 的 「Better and Cheaper」 和图 13.
+> 算, 而且要和 §2.3 分开看. 这里是用 RL 奖励教模型在推理时按难度多写步骤: 同一组采样里, 正确回答越短 p(l) 越高, 错误回答的正长度奖励被 min(p(l), 0) 截掉, 难题再配小 α 放宽长度 (报告公式, 以及 §4.2 的 $R_{\mathrm{length}}$). 这种推理时多写步骤属于 TestingTime 一侧; Ling Scaling Laws 则是训练前定配置, 属于部署前的扩展. 效果见 §4.6 的 「Better and Cheaper」 和图 13.
 
 **Code Reasoning.** Code reasoning emphasizes functional correctness. We employ a unified reward framework based on test-case execution for code completion, editing, software engineering, and SQL tasks, ensuring reliable functional validation.
 
@@ -1327,7 +1327,7 @@ In Ling 2.0 training, we observed that the computation cost of a MTP layer is ap
 在 Ling 2.0 训练中, 我们观察到一个 MTP 层的计算成本约为标准 MoE 层的 1.7 倍. 基于这一观察, 我们逐步细化 PP 切分策略, 最终取得 40% 的相对端到端提升. 此外, 对路由均衡的 MoE 模型, 可以把虚拟流水线 stage 从 VPP2 增加到 VPP4 以减少流水线气泡, 再获得 5% 的增益. 不过在另一些情况下, 如果一个 VPP stage 只包含一个 MoE 层, stage 间阻塞会对 MoE 路由不均更敏感, 此时我们的策略可能带不来端到端收益.
 
 > **再看:** 这里的 40% 是相对什么的提升? 和引言里 「throughput by around 40 %」 是同一个数吗?
-> 是同一件事. 引言 Infrastructure 部分说交错 1F1B 加部分重计算缓解异构模块气泡, 吞吐提升约 40%; 本页说依据 「MTP 层约为 MoE 层 1.7 倍」 逐步细化 PP 切分, 最终得到 40% 相对端到端提升. 图 14 里对应的一行是 「Heterogeneous Fine-grained Pipeline Parallel」, MFU 从 16.9% 升到 23.8%, 相对提升约 41%, 与 40% 对得上.
+> 是同一件事. 引言 Infrastructure 部分说交错 1F1B 加部分重计算缓解异构模块气泡, 吞吐提升约 40%; 报告说依据 「MTP 层约为 MoE 层 1.7 倍」 逐步细化 PP 切分, 最终得到 40% 相对端到端提升. 图 14 里对应的一行是 「Heterogeneous Fine-grained Pipeline Parallel」, MFU 从 16.9% 升到 23.8%, 相对提升约 41%, 与 40% 对得上.
 
 ## 5.3 Distributed Training Framework (分布式训练框架)
 

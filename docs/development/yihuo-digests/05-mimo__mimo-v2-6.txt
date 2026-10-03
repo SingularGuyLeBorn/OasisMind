@@ -1,0 +1,81 @@
+# 05-mimo/mimo-v2-6  文件: content/model-library/03-模型家族\05-mimo/mimo-v2-6\mimo-v2-6-bi.md  共 20 块
+
+--- 行33 [想] ---
+> 是部署前的训练放大. Abstract 把三维写成更大 batch (每步 1,568 样本, 2.7∼3.7B token), 更多环境, 以及更多 grader 算力; §4.1–§4.3 展开的都是训练过程. Fig. 1 的抬分跟着训练走, 文内没有把它写成 TestingTime 产品档.
+
+
+--- 行117 [核对] ---
+> 本文规格就是无 shared experts. Tab. 1 只列 Experts (Total/Activated) 为 256/8 与 384/8, 没有 shared 列可加.
+
+
+--- 行162 [问] ---
+> 表注写明 Main block layer counts exclude MTP modules. MTP 是另挂块, 不要把 MTP 层加进 48/70.
+
+
+--- 行201 [确认] ---
+> 文内写 embeddings, LM head, MoE router continue to use AdamW; 隐藏矩阵才走 Muown 的矩阵正交化更新, 为后续大 batch RL 准备.
+
+
+--- 行234 [看表] ---
+> §4.1 说 grading 要区分有效解与行为, 不只看二进制测试; 成本低不等于信号不重要, 后文 GRS/GAR 就是把这 12.7% 花出去.
+
+
+--- 行249 [拆开] ---
+> r 是 importance sampling ratio, M 是 token-level mask, A 是 advantage. 期望在 q 与组 {o_i} 上, 组大小 G, 与 §5.1 的 GRPO 叙述同一套.
+
+
+--- 行364 [回看] ---
+> 文内说 incomplete patch 会拒正确 PoC, 无关 commit 差会翻盘; LLM 判决不稳定. 双属性规则匹配确定性, 可复现, 便宜, 且与任务描述同源.
+
+
+--- 行463 [停一下] ---
+> Fig. 6 与 §4.2.6 写 logged confirmed-hack share remains below 2% throughout for Flash and Pro.
+
+
+--- 行512 [再看] ---
+> §4.3.1 写 multiplicative form keeps rubric supervision tied to test outcomes: 挂测仍为零, 通过样本才按质量分档.
+
+
+--- 行533 [对一下] ---
+> 文内: uncapped update preserves sum_{i in P} A'_i = sum_{i in P} A_i, 失败轨迹 A_i 不变; 实践中再 cap λ, 再减组均值.
+
+
+--- 行556 [想] ---
+> Fig. 8 叙述 With online grading, pass-rate gains are sustained through step 52, turns roughly stable.
+
+
+--- 行611 [核对] ---
+> 68+12+13+3+4=100. batch 1568 prompts × 16 rollouts, staleness 4, 异步 partial rollouts.
+
+
+--- 行688 [看表] ---
+> 文内: mean Pass@1 from approximately 50% to 66%; gap between training and held-out means also narrows.
+
+
+--- 行697 [问] ---
+> 前 20 step: CV 0.78→2.0, peak 6×→16×, cold 0.5%→22%. 恢复 router 到 RL 前则负载恢复, 基准不变, 说明是 router drift 而非专家权重坏掉.
+
+
+--- 行790 [对一下] ---
+> Fig. 3 是 DeepSWE average@3 随累计成本曲线上的叙述点; Tab. 3 是最终对照表口径. 引用时分别标明图号/表号, 不要私自合并成一个数.
+
+
+--- 行865 [拆开] ---
+> 90× 与 66×. 式 (6) 自适应 oversampling p_i, 式 (7) deficit-corrected 调度权重 w_i.
+
+
+--- 行946 [确认] ---
+> average accepted length 高 31.3%; mixed-task 上 block-6 比 block-8 全局平均吞吐约高 6%; FP8 DFlash 约高 10.3% per-node throughput.
+
+
+--- 行975 [回看] ---
+> Total 77.4B, loss 27.2B; Code 23.2B / share 29.9%.
+
+
+--- 行1021 [停一下] ---
+> Verified 61.1→66.2; Terminal Bench 2.1 37.1→52.8. 表注 Code uses single-harness RL.
+
+
+--- 行1040 [再看] ---
+> §7.2: additional gains over SFT range from 1.8 to 9.3 percentage points across seven harnesses.
+

@@ -1,0 +1,53 @@
+# 11-gemini/gemini-diffusion  文件: content/model-library/03-模型家族\11-gemini/gemini-diffusion\gemini-diffusion-bi.md  共 13 块
+
+--- 行15 [想] ---
+> 页面没有解释 「state-of-the-art」 比的是谁. 全文唯一的对照对象是第 5, 6 页表里的 Gemini 2.0 Flash-Lite, 而且十行里有六行 Gemini Diffusion 分数更低. 所以 「最先进」 只能读成 「在 Google 自家的文本扩散模型里最先进」, 这层范围标题没写出来; 「experimental」 则在第 7 页有明确落点: 当前以实验性演示开放.
+
+
+--- 行22 [问] ---
+> 只有 speed 有下文: 第 3 页 「Rapid response」 一张卡片, 第 6 页一张速度表. control 和 creativity 在后文再没出现过, 没有一张卡片, 一个例子或一个数字对应它们. 第 2 页说扩散模型擅长 「editing」, 算是离 「control」 最近的一句, 但页面没有把两者连起来.
+
+
+--- 行57 [拆开] ---
+> 不是. 按页面的说法, 自回归每一步产出一个新 token, 步数就等于输出长度; 扩散每一步是对整段输出做一次修正, 第 4 页又说它 「Generates entire blocks of tokens at once」, 所以一步管的是一整块. 两种 「步」 数不能直接比. 页面没有给扩散走多少步, 一块多长, 噪声加在什么表示上, 所以 「扩散比自回归少走多少步」 这个问题, 从这一页算不出来.
+
+
+--- 行60 [停一下] ---
+> 页面没说. 这一段只讲了迭代快, 能在生成过程中纠错, 没有一句把 「多走几步去噪」 和 「多花推理算力」 挂钩, 也没有给出步数和质量之间的关系. 所以这里只能照原话读: 纠错发生在生成过程中, 是推理阶段的事; 迭代的轮数, 每轮的开销, 页面都没给.
+
+
+--- 行87 [核对] ---
+> 这张卡片没点名, 也没给倍数. 全文唯一的速度数字在第 6 页: 采样速度 1479 tokens / sec, 另有 0.84 秒开销, 而那张表只有 Gemini Diffusion 一列, 没有任何对照模型的速度. 第 5, 6 页基准表的对照是 Gemini 2.0 Flash-Lite, 但它是不是 「our fastest model so far」, 页面没有说.
+
+
+--- 行106 [对一下] ---
+> 两句说的是两个层面. 「at once」 指的是一块里的 token 同时出现, 不像自回归那样从左到右一个一个排; 「step-by-step」 指的是这一整块要经过多轮去噪才定下来. 合起来的读法是: 整块一起生成, 整块一起逐轮修正. 至于 「more coherently than autoregressive models」, 这一页没有给任何连贯性指标或对照实验, 是一句定性的说法.
+
+
+--- 行149 [看表] ---
+> 页面没有给两边任何一方的参数量, 也没有说 Flash-Lite 比 Gemini Diffusion 大多少. 「much larger models」 用的是复数, 表里却只有一个对照模型. 所以这句标题里的 「大得多」 在页面上找不到数字支撑; 能从表里读到的只是 Gemini Diffusion 和 Flash-Lite 这两列分数.
+
+
+--- 行194 [回看] ---
+> 属于 LBPP (v2). PDF 截图里每一行是类别小字在上, 基准名在下, 分数和基准名同一行靠右; md 的顺序是 「类别, 分数, 基准名」, 所以每个分数都该挂到紧跟其后的那个基准名上. PDF 文字层把八个基准名和十六个分数按同样顺序各列了一遍, 配对结果和上面的中文表一致. 另外 SWE-Bench Verified 的 Flash-Lite 分数 28.5% 和第 5 页 LiveCodeBench 的 Flash-Lite 分数 28.5% 恰好相同, PDF 两处都印着 28.5%, 不是 md 抄串了行.
+
+
+--- 行197 [再看] ---
+> 赢四行: LiveCodeBench (v6) +2.4, LBPP (v2) +0.8, MBPP +0.2, AIME 2025 +3.3. 输六行: BigCodeBench -0.4, SWE-Bench Verified -5.6, HumanEval -0.6, GPQA Diamond -16.1, BIG-Bench Extra Hard -6.0, Global MMLU (Lite) -9.9 (单位都是百分点, 由表中数字相减得出). 六行代码基准三赢三输, 差距都在 6 个百分点以内; 代码以外的四行只有 AIME 2025 领先, 科学, 推理, 多语言三行都落后, GPQA Diamond 差了 16.1 个百分点.
+
+
+--- 行208 [确认] ---
+> 只有一半能确认. 「All scores are pass @1 (no majority voting)」 管的是全部分数, 两列都是单次作答, 不投票. 但采样设置只交代了 Flash-Lite 一边: 走 AI Studio API, 默认采样. Gemini Diffusion 一边用什么接口, 什么采样设置, 走多少步去噪, 页面都没写. 所以两列在 「pass@1, 不投票」 这一点上同口径, 在采样设置上是否对齐, 页面没有给出能核对的信息.
+
+
+--- 行215 [问] ---
+> 星号标在基准名上, 而不是标在某一个分数上, 按表格习惯应是整行两列都按 「单轮编辑, 最大提示 32K」 来跑. 页面没有单独说明 Flash-Lite 这一行是否也关掉了 agent 流程, 只能从星号的位置推断. 另外 32K 的单位没写, 结合上下文应是 token 数.
+
+
+--- 行234 [拆开] ---
+> 按表里两个数自己算: 生成 1000 个 token 约 1000 ÷ 1479 ≈ 0.68 秒, 加上 0.84 秒开销约 1.52 秒; 开销和采样时间相等的长度是 0.84 × 1479 ≈ 1242 个 token, 短于这个长度时开销占大头. 这些是推算, 页面只给了两个平均值. 比较对象方面, 这张表只有 Gemini Diffusion 一列, 没有 Flash-Lite 或其他模型的速度; 表下只说是 「reported evals」 上的平均, 输出长度, 硬件, 「overhead」 具体包含什么, 都没交代.
+
+
+--- 行255 [想] ---
+> 这是两句话, 说的是两件事. 第 1 页的 「experimental」 是给模型本身定性, 第 7 页说的是开放方式: 一个演示, 目的写得很明白, 「to help develop and refine future models」. 全文没有 Gemini Diffusion 自己的模型 ID, 价格, API 开放状态, 也没有 「generally available」 或 「stable」 一类字样; 第 6 页出现的模型 ID 只有对照组的 gemini-2.0-flash-lite. 页面也没说怎么申请试用, 「Try Gemini Diffusion」 在 PDF 里只是一行标签, 没有可点的链接.
+

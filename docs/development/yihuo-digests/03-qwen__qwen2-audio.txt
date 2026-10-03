@@ -1,0 +1,57 @@
+# 03-qwen/qwen2-audio  文件: content/model-library/03-模型家族\03-qwen/qwen2-audio\qwen2-audio-bi.md  共 14 块
+
+--- 行39 [想] ---
+> 图注写明 Librispeech 与 Aishell2 等按 1 - WER% 展示, 越高越好; Table 2 正文结果仍是原始 WER.
+
+
+--- 行77 [核对] ---
+> Methodology 只给出式 (1) 作为 training objective; SFT 段未另开损失式. 读下来: 转写把目标文本当成 $x_t$ 序列, 聊天把助手回复当成 $x_t$ 序列, 条件都是音频表征加已有文本. 模式差异在数据与自然语言 prompt, 不在第二套似然.
+
+
+--- 行83 [想] ---
+> 式 (1) 明确 θ 与 φ 都是 trainable parameters. 式 (2) 的记号停在 $\mathcal{P}_\theta$ / $\mathcal{P}_{\mathrm{ref}}$, 正文未说 DPO 时冻结 Encoder. 严格读: 报告没给出 DPO 阶段的参数子集; 不能从式号单独断定 φ 已锁死.
+
+
+--- 行91 [想] ---
+> 正文在 Whisper-large-v3 初始化之外另写 Additionally, a pooling layer with a stride of two. Whisper 编码器自身还有一层 stride 2 的时间下采样; 若两者串联, 10ms×2×2=40ms, 才与 「approximately corresponds to a 40ms」 自洽. 报告未画出两级下采样示意图, 读式 (1) 的 $\mathrm{Encoder}_\phi(a)$ 帧率时要把这层歧义标出来.
+
+
+--- 行99 [问] ---
+> 正文只写 replace ... with the natural language prompts, 并指向 Figure 2; 未给 prompt 模板表, 也未写任务路由头. 可核机制是: 任务说明进入文本条件, 与式 (1) 里的 $x_{<t}$ 合流, 由同一条 $P_\theta(x_t\mid x_{<t},\mathrm{Encoder}_\phi(a))$ 吃掉转写或对话续写; 具体措辞差异靠数据里的自然语言, 不靠标签表.
+
+
+--- 行131 [对一下] ---
+> 列表只区分功能与典型场景 (offline analysis vs online interaction); 紧接段落写 jointly trained / model uniformity. 全文唯一显式训练目标仍是式 (1), DPO 阶段才换式 (2). 没有模式专用分类头或第二套似然. 差别应在样本构造 (分析指令 vs 闲聊轮次), 不在公式分叉.
+
+
+--- 行139 [拆开] ---
+> 写清的只有: jointly trained, 用户无感 mode differentiation, 不必用 separate system prompts, seamlessly integrated (Methodology 列表后段落). 空白: 无路由头, 无模式分类损失, 无推理期启发式, 也未说明音频里的命令段如何与闲聊轮次在 batch 内抽样. Abstract 的 「do not use any system prompts to switch」 与这里互证, 仍停在产品约束, 不到实现细节.
+
+
+--- 行153 [确认] ---
+> 式 (2) 只写 $\mathcal{P}_\theta(y\mid x)$ / $\mathcal{P}_{\mathrm{ref}}(y\mid x)$, 正文定义 x is the input sequence with input audio. 与式 (1) 对照: 音频应经 $\mathrm{Encoder}_\phi(a)$ 进入条件, 但式 (2) 不再展开 $\phi$. $\mathcal{P}_{\mathrm{ref}}$ 写 initialized with $\mathcal{P}_\theta$, 通常解读为拷贝当时策略(含编码器)后冻结; 报告未写 DPO 阶段是否仍更新 $\phi$, 也未写 audio-ablated 对照.
+
+
+--- 行159 [再看] ---
+> 没有. 损失比较的是 $\mathcal{P}(y\mid x)$ 在好/坏回复上的相对对数比; 若标注对只反映文风而 x 里的音频可被忽略, 式 (2) 仍可下降. 报告未做去掉音频的 DPO 对照, 也未写 conditional preference 额外项. 音频是否真正进入偏好, 只能回退到 「x with input audio」 的定义与式 (1) 的 Encoder 通路, 不能从式 (2) 单独证伪.
+
+
+--- 行171 [核对] ---
+> 表结构本身不答训练细节. 结合 §3.2 的 without any task-specific fine-tuning: 评测侧换 prompt/协议出不同指标, 不是换头. WER/BLEU/ACC 与 GPT-4 Eval 共享 Table 2 同一模型行, 差异在评测设定, 不在另训检查点.
+
+
+--- 行191 [停一下] ---
+> 表注与正文写明: Fleurs 双方 zero-shot; Common Voice 上 Qwen2-Audio 非 zero-shot, Whisper 是 zero-shot. 故 en|zh|yue|fr 的 WER 优不能与 Fleurs zh 的 7.5 vs 7.7 同级解读. 公平点应优先看 Fleurs 行.
+
+
+--- 行197 [问] ---
+> 前四向 en-de|de-en|en-zh|zh-en 相对 Qwen-Audio 为 29.9|35.2|45.2|24.4 vs 25.1|33.9|41.5|15.7, zh-en 跳得最大. 后三向 es-en|fr-en|it-en 为 40.0|38.5|36.3 vs 39.7|38.5|36.0, 几乎持平. 「substantial margin across all seven」 与后三向表值不完全同尺度; 分方向回 Table 2.
+
+
+--- 行201 [看表] ---
+> SER-Meld 行: Qwen2-Audio ACC 0.553, Qwen-Audio 0.557, WavLM-large 0.542. 相对前作是微降, 只对 WavLM-large 仍高. 若把 baselines 读成表内全部对照(含 Qwen-Audio), 这句与 Meld 格矛盾; 若只对非本族基线, 文中未划界. 引用 SER 以 Table 2 为准.
+
+
+--- 行221 [看表] ---
+> 分差写在表内; 脚注 <sup>2</sup> 只作用于 Gemini 的 AIR-Bench-chat 样本数. 领先结论仍可陈述, 但不能当成同规模完整测集上的逐条配对优势. Speech 维 7.18 vs 6.97 的窄领先同样要带这条脚注.
+

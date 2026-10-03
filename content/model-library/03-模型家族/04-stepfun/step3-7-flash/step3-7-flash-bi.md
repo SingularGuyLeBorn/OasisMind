@@ -384,7 +384,7 @@ Android Daily 基准分数
 2. Android Daily: [https://arxiv.org/abs/2605.27761](https://arxiv.org/abs/2605.27761)
 
 > **再看:** 正文写相对去年 Step-GUI 「substantial improvement」, 图给出 Step 3.7 Flash 61.87% 等. 源文有没有列出 Step-GUI 的同分数字行?
-> 没有. 只有定性 「大幅提升」 与当前榜图. 不能从本页反推去年 Step-GUI 的精确分.
+> 没有. 只有定性 「大幅提升」 与当前榜图. 不能从报告反推去年 Step-GUI 的精确分.
 
 The same compositional pattern we observed across visual tools also surfaces here: in the following case, after writing a piece of frontend code, the model autonomously turned to the GUI to test the page it had just produced — inspecting the rendered output, exercising interactive elements, and iterating on its own code based on what it saw. Again, this code-and-GUI compositional behavior was never explicitly demonstrated or rewarded during training, yet emerges robustly in test-time use.
 

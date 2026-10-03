@@ -64,17 +64,31 @@ Figure 1 | Performance comparison of ST EP3-VL-10B against state-of-the-art mult
 
 The development of Multimodal Large Language Models (MLLMs) has largely been driven by a relentless pursuit of scale. While proprietary frontier models like Gemini-3-Pro (Team, 2025b) and GPT-5.2 (OpenAI, 2025a) have pushed the boundaries of **multimodal intelligence** through massive scaling, their heavy computational demands pose barriers to practical deployment in the real world. Conversely, lightweight models (under 10B parameters) have traditionally been characterized as “efficient but limited”, which struggle to advance sophisticated reasoning and perceptual capabilities within restricted parameter budgets.
 
+多模态大语言模型 (MLLM) 的发展 largely 被对规模的无尽追逐驱动. Gemini-3-Pro, GPT-5.2 等专有前沿模型靠大规模缩放拓宽了多模态智能的边界, 但沉重的算力需求阻碍了真实世界部署. 反过来, 轻量模型 (10B 以下) 一直被贴上"高效但有限"的标签, 在资源受限下难以推进复杂推理与感知能力.
+
 In this work, we introduce **STEP3-VL-10B**, a foundation model that redefine the trade-off between compact efficiency and frontier-level multimodal intelligence. Despite its modest 10B parameter footprint, ST EP3-VL-10B excels in **visual perception**, **complex reasoning**, and **human-centric alignment**. It consistently outperforms models under the 10B scale and rivals or even surpasses significantly larger open-weights models (10×–20× **its size**), such as GLM-4.6V (106B-A12B)(Team et al., 2025d) and Qwen3-VL-Thinking (235B-A22B)(Bai et al., 2025), as well as **established proprietary flagships** like Gemini-2.5-Pro(Team, 2025a) and Seed-1.5-VL (Guo et al., 2025a). Across representative benchmarks, STEP3-VL-10B achieves 75.95% on MathVision, 80.11% on MMMU, and a staggering 94.43% on AIME2025 (Fig. 1).
+
+本文提出 **STEP3-VL-10B**, 一个在紧凑效率与前沿级多模态智能之间重新定义权衡的基座模型. 10B 参数量不大, 却在**视觉感知**, **复杂推理**与**以人为本的对齐**上表现出色: 稳定胜过同规模 10B 以下模型, 并追平甚至超过体量大 10 到 20 倍的开放权重模型, 如 GLM-4.6V (106B-A12B) 与 Qwen3-VL-Thinking (235B-A22B), 以及成熟的专有旗舰.
 
 The success of STEP3-VL-10B is driven by two key strategic design in how we build efficient and powerful multimodal models:
 
+STEP3-VL-10B 的成功来自构建高效多模态模型的两项关键战略设计:
+
 • **Unified Pre-training on High-Quality Multimodal Corpus:** We implement a **singlestage, fully unfrozen training strategy** on a 1.2T token multimodal corpus, focusing on two foundational capabilities: **reasoning** (e.g., general knowledge and education-centric tasks) and **perception** (e.g., grounding, counting, Optical Character Recognition, and Graphical User Interface interactions). By jointly optimizing the Perception Encoder (Bolya et al., 2025) and the Qwen3-8B (Yang et al., 2025a) decoder, ST EP3-VL-10B establishes a **intrinsic vision-language synergy**.
+
+• **高质量多模态语料的统一预训练:** 在 1.2T token 多模态语料上做单阶段全解冻训练, 聚焦两项基础能力: **推理** (如通识与教学类任务) 和**感知** (如 grounding, 计数, OCR, GUI 交互). 感知编码器与 Qwen3-8B 解码器联合优化, 建立内在视觉-语言协同.
 
 • **Scaled Multimodal Reinforcement Learning (RL) and Parallel Reasoning:** We unlock frontier capabilities through a rigorous post-training pipeline, comprising two-stage supervised finetuning (SFT) and **over 1k iterations of RL** with both verifiable rewards (RLVR) and human feedback (RLHF). Beyond sequential reasoning, we adopt Parallel Coordinated Reasoning (PaCoRe) (Hu et al., 2026), which allocates test-time compute to **aggregate evidence from parallel visual exploration**. These designs enable the 10B model to solve complex perceptual and reasoning tasks that typically require substantially larger systems.
 
+• **规模化多模态 RL 与并行推理:** 后训练流水线含两阶段 SFT 与超 1k 次迭代 RL (RLVR + RLHF 并用), 由此解锁前沿能力. 除顺序推理外, 采用 Parallel Coordinated Reasoning (PaCoRe), 把 TestingTime 算力用于聚合并行视觉探索的证据. 这些设计让 10B 模型解出通常要大得多的模型才能处理的复杂感知与推理任务.
+
 To understand the drivers of this efficiency, we provide a in-depth analysis of the model’s internal mechanisms in Sec.5, with an emphasis on the learning dynamics unlocked by RL scaling. In particular, to counteract the length diminishment characteristic of perception tasks, we leverage PaCoRe to facilitate a form of multi-agent synthesis: parallel proposers generate diverse hypotheses, which are subsequently distilled through sequential cross-checking. This emergent synthesis effectively externalizes implicit visual processes, offering a promising direction for **scaling perceptual reasoning**.
 
+为理解这种效率的驱动因素, 第 5 节深入分析模型内部机制, 重点看 RL scaling 解锁的学习动态. 特别地, 为抵消感知任务特有的长度缩减, 我们借 PaCoRe 实现一种多智能体合成: 并行提出者生成多样假设, 再经顺序交叉核查蒸馏. 这种涌现合成把隐式视觉过程外化, 为**放大感知推理**指明方向.
+
 This trajectory not only sheds light on how models can progressively bridge intelligence and interaction with the physical world (Sec.6), but also motivates our commitment to closing critical technical gaps in the open ecosystem. By releasing the final model weights and detailed training documentation, ST EP3-VL-10B demonstrates that with a right perception- and reasoningcentric design, the gap between “compact” and “frontier” is no longer intractable.
+
+这条路线不只阐明模型如何逐步桥接智能与物理世界交互 (第 6 节), 也促使我们致力于补齐开放生态的关键技术缺口. 开源最终权重与详细训练文档, STEP3-VL-10B 证明: 感知与推理中心的设计得当, "紧凑"与"前沿"之间的鸿沟并非不可逾越.
 
 3
 
@@ -585,23 +599,39 @@ Crucially, this paradigm exhibits two distinctive scaling properties: (1) A stea
 
 Anchored by a rigorously curated corpus of 1.2T multimodal tokens and sharpened via over 1k iterations of sequential and parallel coordinated RL, STEP3-VL-10B has achieved capabilities in perception, reasoning, and alignment that rival the strongest proprietary and open-source frontiers. Yet, raw capability is not synonymous with systemic maturity. On the trajectory toward comprehensive multimodal intelligence, we identify critical bottlenecks in computational density
 
+凭借严格筛选的 1.2T 多模态 token 语料, 经 1k+ 次顺序与并行协同 RL 打磨, STEP3-VL-10B 在感知, 推理与对齐上的能力已可媲美最强的专有与开源前沿. 但原始能力不等于系统成熟. 在通向全面多模态智能的路上, 我们识别出算力密度与物理 grounding 上的关键瓶颈, 战略路线图要把这些限制变成下一个增长引擎:
+
 <!-- page 20 of 50 -->
 
 and physical grounding. Our strategic roadmap aims to transform these limitations into the next engines of growth:
 
 **Maximizing Token Efficiency via Universal RL Scaling.** We prioritize the principle that every unit of compute, during both training and inference, must contribute directly to intelligence density.
 
+**以通用 RL scaling 最大化 token 效率.** 我们奉行一个原则: 训练与推理的每一单位算力, 都必须直接贡献于智能密度.
+
 • **Shifting Compute from Pre-training to RL.** RL scaling demonstrates continuous, saturationfree performance leaps that pre-training alone cannot sustain. We intend to aggressively pivot computational resources toward RL. By scaling universally in both **depth** (sequential reasoning) and **width** (parallel exploration), we aim to uncover high-value perception and reasoning traces, pushing the upper bounds of multimodal intelligence for models of all scales.
+
+• **把算力从预训练挪向 RL.** RL scaling 带来持续不饱和的性能跃升, 预训练独自撑不起. 我们打算把算力激进地转向 RL. 在**深度** (顺序推理) 与**宽度** (并行探索) 两个方向同时缩放, 挖掘高价值感知与推理轨迹, 把各规模模型的多模态智能上限往上推.
 
 • **Optimizing Reasoning Density.** We aim to bridge the gap between the high performance of extensive search and the low latency of standard inference. Our goal is to **internalize** the benefits of parallel exploration and eliminate redundant “over-thinking.” We envision a regime that continuously compresses reasoning paths, transforming explicit, coordinated search into efficient sequentiality, and ultimately distilling these capabilities into instinctive, “System 1”-like responses.
 
+• **优化推理密度.** 要在大搜索的高性能与标准推理的低延迟之间架桥. 目标是把并行探索的收益**内化**, 消掉冗余的"过度思考". 设想一种不断压缩推理路径的机制: 把显式协同搜索转成高效的顺序性, 最终蒸馏成本能的, 类似"System 1"的响应.
+
 **Bridging the Reality Gap.** While the model excels in digital tasks, the "reality gap" remains the critical frontier. We posit that bridging this gap necessitates a paradigm shift: moving beyond passive data consumption to active physical grounding.
+
+**弥合现实鸿沟.** 模型在数字任务上表现出色, 但"现实鸿沟"仍是关键前沿. 要跨过它, 范式必须转变: 从被动消费数据转向主动的物理 grounding.
 
 • **From Semantic to Physical World Models.** We regard current text-based multi-agent synthesis as a foundational step—constructing a semantic world model. To achieve true embodiment, we must scale this synthesis to encompass massive video trajectories and sensorimotor action sequences. This unifies distinct modalities into a **holistic world model** that transcends linguistic logic to internalize physical causality and spatiotemporal dynamics.
 
+• **从语义世界模型到物理世界模型.** 我们把当前基于文本的多智能体合成视为奠基一步: 构建语义世界模型. 要真正具身, 必须把这类合成扩展到海量视频轨迹与感觉运动动作序列, 把不同模态统一成超越语言逻辑的**整体世界模型**, 内化物理因果与时空动态.
+
 • **Physics as the Ultimate Verifier.** Current multimodal RL often relies on static or noisy proxy labels. We intend to integrate high-fidelity simulation environments where rewards are strictly governed by immutable physical laws. This shifts the learning paradigm from **surface-level imitation to interaction-driven mastery**, grounding the model’s reasoning in verifiable causality rather than statistical correlation.
 
+• **以物理为最终验证者.** 当前多模态 RL 常依赖静态或有噪的代理标签. 我们计划接入高保真仿真环境, 奖励由不可变的物理定律严格裁定. 学习范式随之从**表层模仿转向交互驱动的掌握**, 把模型推理建立在可验证的因果上, 而非统计相关.
+
 • **Embodied Chain-of-Thought (E-CoT).** We envision extending the reasoning context to explicitly model temporal dynamics and physical state transitions. By training the model to articulate “physical intuition” via predicting dynamics prior to action, we aim to develop agents capable of robust long-horizon planning in dynamic, open-world environments.
+
+• **具身 CoT (E-CoT).** 我们设想把推理上下文扩展为显式建模时间动态与物理状态转移. 训练模型在行动前先预测动态, 以此表达"物理直觉", 最终造出在动态开放世界里做稳健长程规划的 Agent.
 
 <!-- page 21 of 50 -->
 
@@ -947,6 +977,8 @@ All authors are listed in alphabetical order by their first names. <sup>†</sup
 
 **Qualitative Results.** This section presents a selection of qualitative examples illustrating the capabilities of **ST EP3-VL-10B** through responses generated from various prompts. The provided cases underscore the model’s superior ability of fine-grained perception and structured logical reasoning. More importantly, it demonstrates a high degree of cognitive systematicity, effectively integrating domain knowledge to execute multi-step tasks.
 
+**定性结果.** 本节给出若干定性样例, 通过不同提示的响应展示 **STEP3-VL-10B** 的能力. 这些样例突出模型在细粒度感知与结构化逻辑推理上的优势. 更重要的是, 它展示出高度的认知系统性: 能有效整合领域知识执行多步任务.
+
 ### Case 1: Visual Pattern Matching and Sequential Decoding
 
 ![Image block](images/p34-figure-4-morse-code-reference.png)
@@ -1077,6 +1109,8 @@ Table 8 | Input serialization template for PaCoRe synthesis. We use this templat
 > 模板开头要求分析 Reference Responses 并给出自己的 comprehensive solution; Original Problem 槽填 current problem. 表 8 说明 𝑀=∅ 时 **bypass** 该模板, 原题输入原样进模型. 综合动机句写 framing 为 Reference Responses 以鼓励综合多样视角.
 
 As detailed in Table 8, we frame compact messages as “Reference Responses” to encourage the model to synthesize diverse perspectives. By populating the “Original Problem” slot with the latest observation while maintaining the interaction history in context, PaCoRe ensures seamless compatibility with existing reasoning ecosystems. Further implementation details regarding the synthesis process can be found in Hu et al. (2026), Section C.
+
+如表 8 所示, 我们把压缩消息设定为"参考响应", 鼓励模型综合多样视角. PaCoRe 把"原始问题"槽位填最新观测, 同时在上下文保留交互历史, 保证与现有推理生态无缝兼容. 合成过程的更多实现细节见 Hu et al. (2026) 第 C 节.
 
 ## C. Evaluation Details
 
@@ -1688,6 +1722,8 @@ Based on the instruction '{question}', locate the target element and output its 
 
 To reduce metric variance and improve result reliability on text-centric benchmarks, we perform repeated evaluation for selected benchmarks. For a benchmark with Repeat = 𝑁, each sample is evaluated independently 𝑁 times, and the final score is reported as the average over all runs.
 
+为降低以文本为中心基准的指标方差, 提高结果可靠性, 我们对选定基准做重复评测. Repeat = N 表示每个样本独立评 N 次, 最终分数取所有轮次的平均.
+
 The repetition settings for each text-centric benchmark are listed below:
 
 • **MMLU-Pro**: Repeat = 1
@@ -1727,5 +1763,7 @@ The repetition settings for each text-centric benchmark are listed below:
 ### C.3. Evaluation Details for Ablations
 
 Each ablation study in Sec. 5.1 is conducted on checkpoints pre-trained with the same number of billions of tokens, ensuring fair and controlled comparisons, but without extending to the final checkpoint due to computational cost. In terms of evaluation setups, these results are attained from a few-shot evaluation manner on the pre-trained checkpoints.
+
+第 5.1 节的每项消融都在预训练 token 数相同的检查点上进行, 保证对照公平可控; 受算力所限, 没做到最终检查点. 评测设定上, 这些结果取自预训练检查点上的 few-shot 评测.
 
 50

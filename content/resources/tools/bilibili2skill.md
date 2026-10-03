@@ -8,7 +8,6 @@ tags: ["bilibili2skill", "Skill 蒸馏", "B站", "Resource2Skill", "视频教程
 # bilibili2skill：B 站教程视频蒸馏为 Agent Skill
 
 > **仓库**：[Lambenthan/bilibili2skill](https://github.com/Lambenthan/bilibili2skill)（GPL-3.0）
-> **README**：[bilibili2skill.md](../../uploads/github-readme/bilibili2skill.md)
 > **上游格式**：[microsoft/Resource2Skill](https://github.com/microsoft/Resource2Skill)（MIT）
 
 ## 原文精读

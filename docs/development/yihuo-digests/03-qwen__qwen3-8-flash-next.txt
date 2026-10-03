@@ -1,0 +1,85 @@
+# 03-qwen/qwen3-8-flash-next  文件: content/model-library/03-模型家族\03-qwen/qwen3-8-flash-next\qwen3-8-flash-next-bi.md  共 21 块
+
+--- 行57 [想] ---
+> 只报验证点. §3.2 与 Fig. 8/9, Tab. 10 给出具体 $B=25.2\mathrm{M}$ / $12.6\mathrm{M}$ / $37.7\mathrm{M}$, 以及大模型上 $\eta=1.76\times10^{-3}$ 等设定, 没有写出新 Scaling Laws 的完整系数表. 面试里若被追问 「闭式怎么写」, 答案只能回到 「本文只验证预测点落在近优盆地」, 不能从本稿反推公式.
+
+
+--- 行130 [拆开] ---
+> 本文明确: 实现约定下 $S_t\in\mathbb{R}^{d_k\times d_v}$ 「是原文状态约定的转置」, 并给出 (1)–(4) 与等价 (5). 没有另开一节证明转置后数值与原文逐元素一致; 读公式时要以本稿实现约定为准, 不要把别处的 $d_v\times d_k$ 状态形状直接套进来.
+
+
+--- 行177 [问] ---
+> 没有单独表. 这句话落在 GDN Parameterization 段, 证据是定性 「observe consistent improvements across our experiments」. 零中心 RMSNorm 另归因于 Qwen3-Next 沿用. 面试若要求 「只换门的 delta」, 本稿指不回定量格, 只能停在定性句.
+
+
+--- 行185 [确认] ---
+> 只给定性: 「substantially higher rate of endless generation」. 没有表或脚注给出百分比. 面试若追问 「高出多少」, 指回本句定性结论即可, 不要编造比率.
+
+
+--- 行196 [看表] ---
+> 正文写 GDN 在九项中赢 Transformer 八项, 赢 SWA 七项, 「best on seven benchmarks and the highest overall average」, 并点名 SWA 在 MMLU 略高, EvalPlus 更强. 没有另开因果分析解释 EvalPlus 回落; 选型论据是整体平均与多数项, 不是每一项都赢.
+
+
+--- 行277 [对一下] ---
+> 会. 正文写选中块展开后截到预算 K, 「Together with the tokens in the final incomplete block, which are always included」. 因此完整块集合受 K 约束, 尾块额外并入, 可见 token 可以略超 K. 面试追问 「硬上限是否严格 =2048」 时, 答案指回这句 always-include 尾块, 不要说成严格截断到恰好 K.
+
+
+--- 行312 [核对] ---
+> 没有机制解释, 只给日程数字. 式 (18) 管 Stage 1 全块 KL, 式 (20) 管 Stage 2 仅 top-$K_B$ 块 KL. 面试追问学习率落差时, 答案只能指回两阶段协议数字, 不要从本稿发明因果.
+
+
+--- 行344 [回看] ---
+> 没有. Tab. 4 只证明接受长度几乎不变 (4.06→4.07), 效率主张停在定性 「further reduce draft-model inference costs」 与 Fig. 6 decode 设定含 next_n=4. 面试若要索引复用的毫秒级加速比, 本稿指不回独立表.
+
+
+--- 行370 [问] ---
+> 必须连读. Tab. 2/3 是 CPT 后带 QSA 的对照, Fig. 4 显示 Stage 2 联合训练后 LM loss 几乎贴齐全注意力. 没有 「未蒸馏直接稀疏」 的主结果表; Fig. 5(b) 才提示 dense init 后直接稀疏会掉, 需短暂联合训练恢复. 所以赢的是 「QSA + 两阶段 CPT 配方」, 不是任意稀疏掩码.
+
+
+--- 行386 [核对] ---
+> 只给表内点估计与 「no significant change」 定性句, 无误差条或多次 seed. 难度校准上可追问显著性检验, 但答案只能指回本稿未提供方差.
+
+
+--- 行453 [再看] ---
+> 不能. 正文写 「attention-module speedups」 / 「kernel-level」, 设定是 chunked prefill 与含 MTP 的 decode. 没有把非注意力算子与通信算进同一箭头. 面试若问端到端, 答案指回本稿只报注意力模块 kernel 级数字.
+
+
+--- 行488 [再看] ---
+> 不能. 前者是简化 AltUp 叙事点估计, 后者是 mHC static/dynamic/GR 端点表, 训练 token 预算也不同 (400B vs 560B). 读 「加宽值多少」 时要标明是哪一段实验, 不要把 0.01 与 Tab. 5 的 1.617→1.596 混成同一次跑.
+
+
+--- 行564 [停一下] ---
+> 必须同读 page 12: 同规模下 GR 与 mHC (dynamic) 「perform comparably」, 但 GR 去掉 $H_{\mathrm{res}}$ 少一次整支残差读 (降访存), 且 GatedNorm 与去掉需额外约束的 $H_{\mathrm{res}}$ 带来稳定性优势. 选型不只看 Tab. 5 平均分.
+
+
+--- 行735 [回看] ---
+> 不是物理删边. 正文说加权平均跨越几乎不变, 「total amount of cross-layer information is similar; what changes is its distribution」. $-3.21$ 是相对参照的份额再分配, 不是图上边被删除. 面试若说 「GR 切断中程」, 应纠正为 「份额从中程挪到相邻与长程」.
+
+
+--- 行774 [看表] ---
+> 正文明确: 2+25 的边际 loss 下降 「does not translate into improved downstream performance」, 且多层无一致收益. 选型按下游与 「单层足够」, 不是按最小 loss. 又一例 loss / 榜面分叉.
+
+
+--- 行807 [想] ---
+> 不指向同一操作点. Tab. 8 固定总参时 loss 最低在 10×(25%), 下游无清晰赢过纯 MoE; Tab. 9 额外参数时 loss 在 200× 最低, 但若干英文/多语格在更大词表上波动, 中文格持续涨. 文首那句概括的是 Tab. 9 型 「loss 单调 / 下游饱和」 叙事, 读选型时要把固定预算与额外参数两实验拆开.
+
+
+--- 行828 [确认] ---
+> 没有. 消融与全量描述反复写 25B-A3B / 35B-A3B / 125B-A6B 这类总参-激活口径, 以及 「routed and shared experts」 用语, 但未给专家池大小或 top-k 整数. 面试追问路由超参时, 只能指回本稿未披露, 不要用激活比反推专家数.
+
+
+--- 行905 [对一下] ---
+> 正文: 「the warmup requires 18.8% more optimizer steps for the same token budget」. 锚定同 token 预算. 不要把它读成墙钟或 FLOPs 的同一百分比, 除非另有测量.
+
+
+--- 行988 [拆开] ---
+> 必须保留 GR. 同页与 Fig. 11 写 GR 压低梯度范数 spike 频率/幅度与激活 outlier; Fig. 12 更在固定 AdamW+结构下单变量开关 GatedNorm, spike 率 32.0→3.2/10k. 稳定叙事是 Muon 与 GR/GatedNorm 叠乘, 不是单因子.
+
+
+--- 行1043 [停一下] ---
+> 不能直接证明. 0.058 只覆盖 early window 三跑对照; Tab. 11 与文首 1/3 激活 / 1/3 token / 1/9 FLOPs 是完整 base 评测口径. 正文用 「translates into significant benchmark gains」 衔接叙事, 但没有把 0.058 映射成 FLOPs 公式. 引用时分清 early loss 差与全量成本比.
+
+
+--- 行1089 [看表] ---
+> 不含. 规格行把 N-gram Embedding Params 单列, Abstract 用 「additional 51B」. 读账单时 125B 是骨干 (含稀疏 MoE) 总参, 6B 每 token 激活, 51B 是加速器外 n-gram 表; 三者不要加总成 「182B 激活」.
+

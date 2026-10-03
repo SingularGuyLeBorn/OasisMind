@@ -1,0 +1,45 @@
+# 03-qwen/qwen3-7  文件: content/model-library/03-模型家族\03-qwen/qwen3-7\qwen3-7-bi.md  共 11 块
+
+--- 行21 [想] ---
+> 正文把三块并列, 但表是分栏的. Coding Agent 块里 Terminal Bench 2.0-Terminus 上 Qwen3.7-Max 为 69.7, 同表最高; 办公向如 SpreadSheetBench-v1 为 87.0, 低于 Opus-4.6Max 的 89.3; 长程叙事主要落在后文 35 小时内核跑与 YC-Bench, 不在 Coding Agent 表头下给单一总分. 「equally」 是宣传句, 不是表上已对齐的三块总分.
+
+
+--- 行64 [看表] ---
+> 源文没有声明哪一项是主指标. 它只并列给出 Terminal Bench, SWE-Verified, SWE-Pro, SWE-Multilingual, NL2repo, SciCode, QwenWebDev, QwenSVG. 读表应分行引用: Terminal / SWE-Pro / SWE-Multilingual / SciCode 等格上 Max 领先或并列前列, SWE-Verified 与 QwenWebDev 并非列内第一. 不能把单格最高扩成整块 Coding Agent 全胜.
+
+
+--- 行108 [核对] ---
+> 源文正文写 deployed through Claude Code, OpenClaw, Qwen Code; General Agent 表有一行 Qwencllaw(65.5 / 54.7 / 58.7 / 59.2 / 57.2 / 64.3). 材料没有写 Qwencllaw 是否即 OpenClaw 的拼写变体, 也没有给协议链接. 引用时应保留表上原拼写 Qwencllaw, 不要自行改成 OpenClaw 分数.
+
+
+--- 行111 [拆开] ---
+> 源文只给这种复合串, 没有脚注解释分子, 分母或单位. 同节后文 Self-Evolving 另报 10.0x geometric mean speedup, 也不说明是否与 Kernel Bench L3 的 1.98/96% 同一协议. 表上只能逐格抄写复合值, 不能把 1.98 读成加速比或把 96% 读成通关率而不加限定.
+
+
+--- 行114 [问] ---
+> 源文没有用 「全面领先」 四字; STEM & Reasoning 块是分项表. Max 在 GPQA Diamond 92.4, HLE 41.4, HMMT 2026 Feb 97.1, Apex 44.5 等格列内最高或接近最高, LiveCodeBench 与 CritPT(11.4, 低于 DS 12.9 与 Opus 12.6)并非列内第一. 选型应分行读, 不要用块标题盖住回落格.
+
+
+--- 行139 [确认] ---
+> 原文写 expand ... agentic training environments, 并与 pretraining text 类比, 落点是训练环境, 属于部署前. 全篇没有写 TestingTime 预算, 采样次数或额外搜索. 不要把本节 Scaling 读成推理时加算力.
+
+
+--- 行148 [停一下] ---
+> 源文只给设计动机句 forcing the model to..., 没有消融, 没有 「换 Verifier 后分数是否掉」 的实验, 也没有捷径率指标. Cross-scaffold 表现一致是产品主张, 表上 Qwencllaw / ClawEval 等行是对照分数, 二者都不是对本句机制的证明. 能核对的只有三分法与 freely recombined 这一设计陈述.
+
+
+--- 行161 [回看] ---
+> 两处都写 ~35 小时 / 35-hour, 内核优化, 全程自主. 第 1 页用 over 1,000 的约数, 本节给出 1,158 与 432 kernel evaluations. 材料没有写另有一场独立长跑. 合理读法是同一案例: 前文约数, 后文精确计数. 若当作两次实验, 源文并未拆开描述.
+
+
+--- 行164 [再看] ---
+> 源文只给相对 Triton reference 的 10.0x geometric mean, 不列参与平均的 kernel 变体, batch, 序列长或硬件型号明细(只说 hardware it had never encountered during training). 引用时应保留 geometric mean 字样, 不要改写成单一配置上的 10× 墙钟加速.
+
+
+--- 行191 [对一下] ---
+> 原文写 integrated Qwen3.7-Max into the RL monitoring for SWE tasks, 随后动作是 retrieved and replayed training trajectories, Added ... heuristic rules, flagged ... hacking cases. 角色表述是监控侧, 不是 「Max 自己在吃 SWE 奖励被训」. 材料没有写 Max 是否同时充当 learner, 也没有给 hacking 的判定协议. 只能按 monitoring / flagged 来读.
+
+
+--- 行200 [想] ---
+> 源文只报 Max 的 2.08M USD 与 237 tasks, 前面大表没有 YC-Bench 行, 也没有 Opus / K2 / GLM / DS / Qwen3.6-Plus 的同协议营收. 「profound capacity for strategic evolution」 是定性句. 引用营收数字时须标明仅 Max 单点披露, 不是表内六列对照.
+

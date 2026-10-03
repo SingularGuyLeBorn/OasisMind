@@ -1,0 +1,49 @@
+# 16-llama/llama3-2  文件: content/model-library/03-模型家族\16-llama/llama3-2\llama3-2-bi.md  共 12 块
+
+--- 行81 [想] ---
+> 这一页写的是 「This year」. 发文日期是 2024 年 9 月 25 日, 按字面是 2024 年之内涨了 10 倍. 第 16 页相关文章的标题却写 「With 10x growth since 2023」, 日期是 2024 年 8 月 29 日, 同一篇的配图上又写 「With 10x growth this year」. 三处说法的起点对不齐. 这句挂的链接地址是 llama-usage-doubled-may-through-july-2024, 地址里说的是 5 月到 7 月翻倍, 不是 10 倍. 10 倍统计的是下载量, 调用量还是别的什么, 页面没写.
+
+
+--- 行96 [核对] ---
+> 这一段点名的只有 12 家: AMD, AWS, Databricks, Dell, Google Cloud, Groq, IBM, Intel, Microsoft Azure, NVIDIA, Oracle Cloud, Snowflake, 另外单列端侧伙伴 Arm, MediaTek, Qualcomm 三家, 合起来 15 家. 第 14 页致谢按字母排了 31 个名字, 其中 LMSYS, UC Berkeley - vLLM Project 看名字不像公司. 第 2 页 Takeaways 那条同样 12 家, 后面接 「and more」. 三处名单长短不同, 页面没有给出那 25 家以上的完整名单, 也没说致谢名单和首发合作名单是不是同一批.
+
+
+--- 行129 [停一下] ---
+> 两张表加起来只有 27 行: 视觉表 12 行 (图像 8 行, 文本 4 行), 轻量表 15 行. 两张表里 MMLU, MATH, GPQA, MGSM 重名, 去掉以后是 23 个名字. 其余 120 多个数据集叫什么, 覆盖哪些语言, 页面都没有列. 「span a wide range of languages」 落到表里, 只有 MGSM 这一行多语言数学题.
+
+
+--- 行155 [对一下] ---
+> 第 2 页说 11B 和 90B 在图像理解上 「exceeding」 Claude 3 Haiku, 这一页的说法变成和 Claude 3 Haiku, GPT4o-mini 「competitive」. 表里 11B 对 Haiku 的 DocVQA 是 88.4 对 88.8, 11B 低一点. 90B 对 GPT-4o-mini, MMMU-Pro, Vision 是 33.8 对 36.5, MATH 是 68.0 对 70.2, MGSM 是 86.9 对 87.0, 都是 90B 低. MMLU 一行里 Haiku 的 75.2 标着 5-shot, 同行别的格是 0-shot CoT, 设置不一样. ChartQA, AI2 Diagram, DocVQA 三行带星号, 17 页里找不到星号的注释. 正文写 GPT4o-mini, 表头写 GPT-4o-mini, 同一个模型两种拼法.
+
+
+--- 行206 [看表] ---
+> 第 4 页正文写 「Gemma 2 2.6B」, 这张表的表头写 「Gemma 2 2B IT (measured)」, 第 9 页柱状图的横轴又写 「Gemma 2 - 2.6B」. 同一个对手出现了 2B 和 2.6B 两种规模. Phi 这边正文写 「Phi 3.5-mini」, 表头写 「Phi-3.5-mini IT (measured)」, 只有第 9 页柱状图写出 「Phi-3.5 - 3.8B」. 也就是说拿来和 3B 比的对手里有一个是 3.8B, 这个数只出现在一张没有标题的图里. 表头的 measured 是谁测的, 用什么设置测的, 页面没说.
+
+
+--- 行209 [再看] ---
+> 正文点名的四类任务对得上: IFEval 77.4, TLDR9+ 19.0, Open-rewrite 40.1, BFCL V2 67.0, Nexus 34.3, 在 3B, Gemma, Phi 三者里都是 3B 最高. 没点名的几行 Phi-3.5-mini 更高: MMLU 69.0 对 63.4, GSM8K 86.2 对 77.7, ARC Challenge 87.4 对 78.6, Hellaswag 81.4 对 69.8. 1B 对 Gemma 2, MMLU 49.3 对 57.8, GSM8K 44.4 对 62.5, ARC Challenge 59.4 对 76.7, Hellaswag 41.2 对 61.1, 落后 8.5 到 19.9 分; 1B 赢的是 Open-rewrite 41.6 对 31.2, TLDR9+ 16.8 对 13.9, MATH 30.6 对 23.8. 「competitive」 只在一部分行上成立. 还有两行小模型反而比 3B 高: Open-rewrite 上 1B 41.6 对 3B 40.1, InfiniteBench/En.QA 上 1B 20.3 对 3B 19.8. 另外视觉表里 11B 的 GPQA (0-shot, CoT) 和这里 3B 的 GPQA (0-shot) 都是 32.8, 设置不同, 数字一样.
+
+
+--- 行254 [拆开] ---
+> 第 2 页说它们替换 「corresponding text model equivalents」, 这一页顶端 PDF 文本层补出来的半句说替换的是 「Llama 3.1 models」. 可这份页面印出来的 Llama 3.1 规模只有第 2 页的 405B 和第 7 页的 8B, 70B, 没有 11B, 也没有 90B. 哪个视觉模型对应哪个 3.1 文本模型, 多出来的参数里图像编码器占多少, 适配器占多少, 页面一个数都没给. 我不从别的材料补这层对应.
+
+
+--- 行287 [确认] ---
+> 正文写了两处来源: 结构化剪枝都从 Llama 3.1 8B 出发, 蒸馏用的是 Llama 3.1 8B 和 70B 的 logits. 同一页的流程图里还多出一个 「Llama 3.1 405B Instruct」, 它接 Synthetic Data Prompts, 产出 Synthetic Data, 再和 Collected Fine Tuning Data 一起进 1B/3B Instruct. 正文这一节没提 405B, 第 8 页讲后训练合成数据时也没写用的是哪个模型. 另外 1B 和 3B 从同一个 8B 剪出来, 剪到 1B 和剪到 3B 各去掉多少, 去掉的是层还是宽度, 页面都没写.
+
+
+--- 行312 [回看] ---
+> PDF 文本层里 Takeaways 第二条写 1B 和 3B 支持 128K token 的上下文, 这句在 md 里只剩后半截. 这一页说上下文是在后训练里 「scale」 到 128K token 的. 第 5 页长上下文三行里, 两行标 (128k), k 是小写, NIH/Multi-needle 一行没标长度. 11B 和 90B 的上下文长度, 这 17 页没写, 视觉表里也没有长上下文的行. 所以在这份页面上, 128K 只挂在 1B 和 3B 身上.
+
+
+--- 行327 [问] ---
+> 第 9, 10 页图下都写 「This demo is based on an unreleased quantized model」. 第 8 页刚说今天放出的权重是 BFloat16, 量化版还在探索. 所以演示里跑的是没发布的量化模型, 当天能下载的是 BF16 权重, 两者的速度和体积不能直接画等号. 截图顶栏印着 「6011MB」 (第 9 页), 第 14 页那张写 「6429MB」, 第 10 页那张糊得读不出. 这些数是内存占用, 剩余内存还是别的, 页面没解释, 也没说演示用的是 1B 还是 3B.
+
+
+--- 行350 [想] ---
+> 页面上的绝对日期只有几个: 本文 2024 年 9 月 25 日, 第 16 页两篇相关文章 2024 年 9 月 25 日和 2024 年 8 月 29 日, 第 17 页一篇 2024 年 9 月 18 日. 其余都是相对说法: Llama 3.1 发布是 「two months」 前, 第一次公布 Llama 是 「a year and a half」 前, Llama Stack API 征求意见是 「In July」, 没写年份. 这几个起点在页面上都查不到具体日期. 页脚又印着 「Meta © 2026」, 和正文的 2024 差两年, 看上去是抓取页面时的版权年份, 不是发文年份.
+
+
+--- 行443 [核对] ---
+> 页面只说它基于 Llama 3.2 1B, 经过剪枝和量化, 体积从 2,858 MB 变成 438 MB, 约为原来的 15%, 缩小约 6.5 倍. 第 8 页说放出的权重是 BFloat16, 按每个参数 2 字节推算, 2,858 MB 对应约 14 亿到 15 亿个参数, 比名字里的 1B 多出四成以上. 2,858 MB 是不是 BF16 的体积, 438 MB 用了几比特, 剪掉了多少, 页面都没写. 另一个 Llama Guard 3 11B Vision 基于哪个模型, 页面也没说.
+

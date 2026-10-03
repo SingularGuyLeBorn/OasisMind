@@ -1,0 +1,97 @@
+# 09-doubao/seed-2-1  文件: content/model-library/03-模型家族\09-doubao/seed-2-1\seed-2-1-bi.md  共 24 块
+
+--- 行79 [回看] ---
+> 撑不起. 图 1 只画了众测任务在各类别上的分布, 没有胜率, 平局数或排名; 图 2 到图 4 是三个单例. 全卡里带数字的众测偏好只在 §3.1.1 编程部分 (Seed2.1-Pro 对 Opus 4.6 为 136 胜 / 26 平 / 68 负). 另一个口径差异: 众测对手是 Opus 4.6, 而表 1 到表 5 的自动评测对手是 Claude-4.7 Opus.
+
+
+--- 行332 [核对] ---
+> 不是. 表 1 的 Gemini-3.1 Pro 为 Total 32.8, Pass@30/50 为 49.0 / 29.0, Pass@70/90/100 为 17.0 / 9.0 / 4.0, 与论文值 31.6 和 45.0 / 31.0 / 20.0 / 11.0 / 8.0 逐项都对不上, 所以表 1 是 Seed 自己在 OpenClaw 设定下重跑的结果. 引论文值的作用只是说明量级接近, 同一行里 Seed2.1 与对手的差距应当只在表 1 内部比较.
+
+
+--- 行423 [看表] ---
+> GPT-5.5, Total 58.7, Pass@30/50 为 81.0 / 67.0, 正文没提. Seed2.1 的两个变体里 Turbo 54.7 反而高于 Pro 53.0, 但 Pro 的 Pass@30 是 78.0, 高于 Turbo 的 74.0, 说明 Pro 在低门槛上完成得更多, 在总分上没赢. 同样的挑选也出现在下一段: OneMillion Bench 上表 1 最高是 Claude-4.7 Opus 的 73.0, 正文只拿 GPT-5.5 的 69.6 作参照.
+
+
+--- 行488 [拆开] ---
+> 很难说站得住. 基准只有 100 个任务, 0.2 分相当于零点几个任务; 自动评判与人工的一致率是 89.69%, 意味着约每 10 个 rubric 判断里有 1 个与人不同, 而这个一致率只在 37 个任务, 262 个条目上测过. 表 2 注明的是 Pass@1, 没给多次运行的方差. 所以表 2 这一行更像 「Seed2.1-Pro, GPT-5.5, Claude-4.7 Opus (64.1) 同档」, 不宜读成领先.
+
+
+--- 行514 [对一下] ---
+> 表 2 只有 xDailyBench, Doubao Multi-Turn Bench, MCP-Atlas, Toolathlon, SeedClawBench 五行, 没有 SkillsBench, 对手分数也无从核对. 同一段里 「缩小了与 Claude-4.7-Opus 的差距」 在表 2 上是 61.0 对 69.0, GPT-5.5 更高, 为 73.0; Doubao Multi-Turn Bench 上 GPT-5.5 的 62.5 比 Seed2.1-Pro 的 52.5 高 10 分, 正文也没写.
+
+
+--- 行553 [再看] ---
+> 对手两列相同, 自家和 GPT 不同: Claude-4.7 Opus 都是 76.5, Gemini-3.1 Pro 都是 72.5; GPT-5.5 从表 1 的 62.9 变成表 3 的 69.5, Seed2.1 Turbo 从 62.8 变成 71.1, Pro 从 70.9 变成 72.2. 表 3 走的是 §2.4.1 那套高分辨率感知工具的内部多模态 harness, 表 1 注明 OfficeQA-Pro 「含内部实现和适配」. 可见 Claude 和 Gemini 两列很可能是沿用的同一组数, 只有 GPT-5.5 和 Seed2.1 在新 harness 下重跑过. 正文 「Turbo 超过 GPT-5.5」 只在表 3 成立 (71.1 对 69.5), 在表 1 不成立 (62.8 对 62.9).
+
+
+--- 行588 [看表] ---
+> 对不上. 表 4 的 Seed2.1 Pro 是 OSWorld 78.8, MobileWorld 73.1; MobileWorld 三个对手在表 4 是 GPT-5.5 54.7, Claude-4.7 Opus 57.1, Gemini-3.1 Pro 48.4, 正文写的是 62.4, 56.4, 58.1, 三个数全不同. 表 4 的 OSWorld 78.8 与图 5 的通用 CUA 工作点一致, 所以表是这一节的准数. 还有一处被略过: 表 4 OSWorld 最高的是 Claude-4.7 Opus 的 82.8, 正文只说 「接近 GPT-5.5」. 另外正文说 MobileWorld 是 「仅 GUI」, 表 4 的标题却是通用 CUA 评测, 这一行到底在哪个设定下跑的, 卡里没有交代清楚.
+
+
+--- 行614 [停一下] ---
+> 按图 5 给的两端值自己算: (27.5 - 22.3) / 27.5 约为 18.9%, (28.2 - 24.2) / 28.2 约为 14.2%, 都与正文标的百分比不一致, Pro 的差得更多; 两者平均约 16.5%, 说 「五分之一」 偏高. 图 5 还有一个容易漏看的点: 仅 GUI 时 Pro 的 72.6% 低于 Turbo 的 73.2%, Pro 的优势是在允许命令和工具之后才出现的, 说明表 4 的 OSWorld 差距主要来自 harness 设定, 不全是模型本身.
+
+
+--- 行665 [回看] ---
+> 不是. 附录 E 的图 34 标题是 「Seed2.1 leverages the code tool to better interpret images」, 属于视觉工具展示; 航空运营案例在附录 D 的图 29, 标题为 Agent Startup Bench airline-operations task. §2.6 其余几个案例依次指向图 24 到图 28 和图 30, 只有这一处跳号, 应读作图 29.
+
+
+--- 行688 [确认] ---
+> 用正文数字复算: 100 / 178 约为 56.2%, (100 - 59) / 178 约为 23.0%; 136 / 230 约为 59.1%, (136 - 68) / 230 约为 29.6%, 胜率的分母含平局. 但两组对手不同, Turbo 对的是 GLM 5.1, Pro 对的是 Opus 4.6, 不能据此说 Pro 比 Turbo 强. 这一节没有表或图, 数字只在正文里; 表 5 自动评测用的对手是 Claude-4.7 Opus, 与这里的 Opus 4.6 也不是同一个版本.
+
+
+--- 行711 [拆开] ---
+> 两者测的东西不同. 29.3% 只数 「完全正确可直接用」 的那一档; 胜率看的是整体偏好, 而 Pro 同时有 11.4% 落在 「不可用」 档, 高于 Opus 4.7 的 7.8%, 扣分主要在指令遵循 (3.96 对 4.11) 和边界遵守 (4.16 对 4.38). 所以它是高方差: 上限更高, 下限的 「不听话」 更多. 这些都只在 §3.1.2 正文里, 没有进表, 图 6 只是其中一个 PySINDy 单例.
+
+
+--- 行819 [对一下] ---
+> 同一把尺子的: NL2Repo-Bench, Seed2.0 Pro 为 27.9, Seed2.1-Pro 为 47.0, 这是全卡变化最大的编程行之一; SWE-Bench Pro 从 46.9 到表 5 的 SWE-Pro Bench 57.5 (名称写法不同, 指的是同一个 SWE-bench Pro 基准). 换了尺子的: Seed2.0 报的是 Terminal Bench 2.0 (55.8), 表 5 是 Terminal-Bench 2.1 (71.0), 版本不同不能直接相减; 对手也整体换代, Seed2.0 比的是 GPT-5.2 High 和 Claude-Opus-4.5, 这里是 GPT-5.5 和 Claude-4.7 Opus. CyberGym 只记分数: GPT-5.5 81.8, Claude-4.7 Opus 73.1, Seed2.1 Turbo 67.0, Pro 70.2, 卡里没有给任何阈值.
+
+
+--- 行863 [问] ---
+> 正文确实没提. 表 5 的 DeepSWE 上 GPT-5.5 为 70.0, Claude-4.7 Opus 为 54.0, Seed2.1-Pro 只有 32.7, Turbo 23.0; Trae 的 Repo Env 上 GPT-5.5 为 90.0, Seed2.1-Pro 55.0, Turbo 46.7. 另外 Error Fix Python 上 Pro 的 70.7 低于 Turbo 的 74.0, 是表 5 里 Pro 不如 Turbo 的一行. 这几行和 §3.1.2 所说 「从零到一生成仍需改进」 是同一个方向的证据.
+
+
+--- 行1016 [看表] ---
+> 不是. PostTrainBench 上 Turbo 18.3 高于 Pro 16.5, FrontierScience-Research 上 Turbo 33.3 高于 Pro 28.3, FrontierCS 两行 Turbo 也都高于 Pro (33.5 / 33.4 与 50.8 对 29.1 / 28.2 与 46.3), HorizonMath 两者都是 2.0, 而 GPT-5.5 是 7.1. 标题说 FrontierCS 报 「三个官方子分数」, 表里实际只见一行两个数加一行一个数, Claude-4.7 Opus 两行都是 「-」; FrontierCS 上 Gemini-3.1 Pro (43.8 / 44.1, 64.4) 最高. 这一节里 Pro 不占优, 和第 2, 3 节的格局相反.
+
+
+--- 行1023 [核对] ---
+> 出现三次, 不一致. 表 6: Turbo 33.3, Pro 28.3. 表 7: 「Seed2.1 Pro」 33.3, 等于表 6 里 Turbo 的数. 表 11 的 「FS - Research」: Turbo 23.3, Pro 28.3, 且引用的是 [83] FS-Researcher, 不是 [62] FrontierScience. 三张表的对手列倒是一致 (GPT-5.5 33.9, Claude-4.7 Opus 20.0, Gemini-3.1 Pro 16.7). 与 Seed2.0 对比时也要注意, Seed2.0 卡自己就有 25.0 和 23.3 两个 Seed2.0 Pro 值. 能确定的只有 Pro 在表 6 和表 11 都是 28.3.
+
+
+--- 行1047 [想] ---
+> 卡里没说. §4.2 只描述了推理, 核验, 修改, 选择的循环以及可调用搜索和沙箱, 没有给候选数, 轮数, 每题 token 上限, 墙钟时间或工具调用次数, Gemini-3.1 Deep Think 一列的预算同样未知. 所以 IMO 2025 从 Pro 的 65.2 到 Deep Think 的 81.0, IMOProof-Adv 从 54.3 到 83.8, 都是 「未知算力换来的分数」, 不能当同等预算下的比较. 与 Seed2.0 对照时口径也不同: Seed2.0 卡用逐题得分报 IMO 2025 为 35/42 金牌, 这里是不带单位的 65.2 和 81.0.
+
+
+--- 行1333 [回看] ---
+> 影响在口径上. 按图 18 的结论, puzzle_zero_shot 上 18 个百分点的失败是评判器的假阴性, 也就是说旧评判器低估了 Seed 2.0 Pro. 如果别的基准也有类似的格式匹配问题, Seed2.0 与 Seed2.1 之间的差值里就混有评判器修正的成分. 卡里没有说修正后的评判器是否用于表 9 到表 11 的重跑, 所以两代模型之间的差值不能全部算成模型本身的进步.
+
+
+--- 行1340 [问] ---
+> 不是同一个名字, 全卡只有这里出现 Opus 4.8. 同一节的 Eval Loop 用 Opus 4.6 做对齐配置, 众测用 Opus 4.6, Trae 众测用 Opus 4.7, 自动评测表用 Claude-4.7 Opus, 四处 Claude 版本各不相同. 所以图 19 里 Seed 2.1 Pro 43.3% 对 51.6% 的差距, 不能和其他表里对 Claude-4.7 Opus 的差距放在一起读. 这里的 300M token 是清洗任务的数据预算, 不是推理算力.
+
+
+--- 行1371 [再看] ---
+> 0.70 / 0.40 = 1.75, 所以截断处应是 +75%, 是相对增幅而非百分点. 实验数: 每轮最多 5 个变体, 3 轮最多 15 个, 实际 13 个, 说明有的轮没跑满. 卡里没说这个分数是哪个 SFT 指标, 也没说 Critic 的评测集与训练数据是否隔离, 所以这是循环能跑通的证据, 不是某项能力的量化提升.
+
+
+--- 行1378 [确认] ---
+> 算得出. (576 - 296) / 576 = 280 / 576 约为 48.6%. 需要分开看的是: 这是单条任务上一次重试的结果, 不是成功率统计; 纠正技能约 40 token, 只用本地可见 UI 状态, 这正是 「防泄漏」 的含义, 即技能里不含答案 D11 本身. 图 21 没有给这个技能在其他任务上的迁移效果.
+
+
+--- 行1423 [对一下] ---
+> 不是. 图 23 是单个负载 (H800 上的分页 attention decode) 相对 eager PyTorch 的倍数, 第一版融合 kernel 为 4.54×, 调优后 5.90×, 带宽利用率 MBU 94%; 表 5 的 9.21x 是 SeedKernelBench 全部算子任务相对各自参考实现的平均加速比, 参考实现来自 FlashInfer, CUTLASS 等库. 两个数的基线和任务集都不同. 图 23 能说明的是 「追平 FlashAttention-3」, 表 5 则显示 Claude-4.7 Opus 的 10.70x 仍高于 Seed2.1-Pro.
+
+
+--- 行2366 [停一下] ---
+> 多数行可以, 结果有涨有跌. Seed2.0 Pro 到 Seed2.1 Pro (不用工具): MathVision 88.8 到 92.6, EMMA 72.0 到 79.3, VisuLogic 47.4 到 54.3, VisFactor 36.8 到 51.4, TreeBench 64.7 到 71.1, CharXiv-RQ 80.5 到 85.4; 而 ChartQAPro 从 71.2 降到 70.9. 口径可疑的一行是 DUDE: Seed2.0 Pro 72.4 到 82.8, 同时 Gemini 从 Seed2.0 表里 Gemini-3-Pro 的 70.1 变成这里 Gemini-3.1 Pro 的 82.1, 对手和自家同时跳 10 分左右, 更像评测设置变了. MMLongBench 在 Seed2.0 里不带长度后缀 (74.8), 这里是 MMLongBench-128K (78.3), 也不能直接相减. 另外 MinerU 转换丢了粗体和下划线, 表 9 的 「最佳」 只能按数字自己判断.
+
+
+--- 行2413 [看表] ---
+> 不一致, 表 10 里 Seed2.1 Pro 的 VideoSimpleQA 是 76.4. 与 Seed2.0 卡的视频表对照 (Seed2.0 Pro 到 Seed2.1 Pro): TOMATO 从 59.9 到 79.5, 涨幅最大; TVBench 75.0 到 80.5, OVOBench 77.0 到 80.7, CrossVid 60.3 到 65.0. 但有四行下降: ContPhy 67.4 到 63.6, MotionBench 75.2 到 74.9, VideoMME 89.5 到 89.2, LiveSports-3K 78.0 到 76.8. TOMATO 的大跳要结合口径看: Seed2.0 卡写明 TOMATO 用过 「Thinking with Tracking」 提示策略, 这张卡没说是否沿用. 表 10 的对手也只有两个 Gemini, 没有 GPT 和 Claude, LiveSports-3K 上 Gemini-3.1-Pro 的 89.0 比 Seed2.1 Pro 高 12.2 分.
+
+
+--- 行2442 [核对] ---
+> 同口径可比的 (Seed2.0 Pro 到 Seed2.1 Pro): SuperGPQA 68.7 到 70.8, BeyondAIME 86.5 到 87.0, AetherCode 60.6 到 65.8, FrontierScience-Olympiad 74.0 到 75.0, ARC-AGI-2 37.5 到表 11 的 ArcAGI2 62.5, MathArena Apex 20.3 到 31.3, BrowseComp (带搜索) 77.3 到 86.2. 不同口径的: Seed2.0 的 HLE-Verified 73.6 在搜索 Agent 表里, 表 11 的 HLE-Verified 明确是 「no tool」, 只有 42.9, 两数不能相减; 表 11 的 HLE-textonly (带搜索) 55.7 才对应 Seed2.0 的 HLE-text 54.2. 还有正文没说的一点: 推理行里 Turbo 多处高于 Pro, 如 LiveMathematicianBench 27.7 对 20.9, MathArena Apex 35.4 对 31.3, FrontierScience-Olympiad 76.0 对 75.0, AetherCode 67.9 对 65.8, BeyondAIME 88.0 对 87.0.
+

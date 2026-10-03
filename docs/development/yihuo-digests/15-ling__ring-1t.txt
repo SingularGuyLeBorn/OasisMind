@@ -1,0 +1,29 @@
+# 15-ling/ring-1t  文件: content/model-library/03-模型家族\15-ling/ring-1t\ring-1t-bi.md  共 7 块
+
+--- 行11 [看表] ---
+> 不是. 总参数和每个 token 的激活参数是两句. 后文又写 「one trillion total parameters」 和 「approximately 50 billion activated parameters per token」. 这页没有把 50B 写成 1T 的一个百分比.
+
+
+--- 行40 [问] ---
+> 不能. 93.4 和 86.72, 55.94 是百分数或该基准自己的分数. 2088 是 CodeForces 的评分, 数量级不同. 引言把它们写在同一句里, 没有换成同一个单位.
+
+
+--- 行43 [对一下] ---
+> 不是. 句子写做对四题, Problem 2 部分证明, 一次提交, 并称为银牌水平. 没有印出银牌的分数线, 也没有和其他模型并排的奖牌表.
+
+
+--- 行46 [核对] ---
+> 是. 两处都写 AIME-2025 93.4. HMMT-2025 两处都是 86.72. CodeForces 2088 和 ARC-AGI-v1 55.94 只在这一页的这一段出现, 摘要的截断句没有把它们再印一遍.
+
+
+--- 行95 [拆开] ---
+> 不能. 63 加 14 等于 77, 对象是 Ring-mini-2.0. 摘要的 93.4 写在 Ring-1T 的 AIME-2025 上. 两个模型, 两个分数.
+
+
+--- 行228 [停一下] ---
+> 不是. 文件名说的是 clipping ratio. 摘要的 93.4 和这张图不在同一页, 也不是同一种数.
+
+
+--- 行263 [再看] ---
+> 不是. 标题 Scaling Reinforcement Learning 是把强化学习的训练规模做大, 这是部署前的缩放. thinking 是推理时多写步骤, 写成 TestingTime. 1T 和约 50B 仍是总参数和激活参数两行, 不由思考档决定.
+

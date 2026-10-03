@@ -259,7 +259,7 @@ Grok Bot for Procurement
 > 本页没有 D 轮. B 轮 (2024-05-26) 写 「$6 billion」, C 轮 (2024-12-23) 写 「$6B」, E 轮 (2026-01-06) 写 「$20B」, 三条都没给估值和累计额. C 轮到 E 轮之间差一轮, 页面既没列出 D 轮新闻, 也没解释跳号. 不要自己补 D 轮金额, 也不要把三笔相加当累计融资.
 
 > **确认:** 2026 年 2 月 2 日到 4 月 17 日之间一条新闻都没有, 本家族目录里的 Grok 4.20 和 Grok 4.3 在列表哪里?
-> 列表里找不到. 全页出现的模型号是 Grok, Grok-1, Grok-1.5, Grok-1.5 Vision, Grok-2, Grok 3 Beta, Grok 4, Grok Code Fast 1, Grok 4 Fast, Grok 4.1 (含 4.1 Fast), Grok 4.5, 4.6, 4.7; 同级目录还有 [Grok 4.20](../grok-4-20/grok-4-20.md) 与 [Grok 4.3](../grok-4-3/grok-4-3.md), 这张新闻页没有对应条目. 2 月 2 日到 4 月 17 日这段空白正好落在 4.1 与 4.5 之间, 页面没说是抓取遗漏还是官方没发新闻稿.
+> 列表里找不到. 全页出现的模型号是 Grok, Grok-1, Grok-1.5, Grok-1.5 Vision, Grok-2, Grok 3 Beta, Grok 4, Grok Code Fast 1, Grok 4 Fast, Grok 4.1 (含 4.1 Fast), Grok 4.5, 4.6, 4.7; 同级目录还有 [Grok 4.20](../grok-4-20/grok-4-20-bi.md) 与 [Grok 4.3](../grok-4-3/grok-4-3-bi.md), 这张新闻页没有对应条目. 2 月 2 日到 4 月 17 日这段空白正好落在 4.1 与 4.5 之间, 页面没说是抓取遗漏还是官方没发新闻稿.
 
 > **回看:** 公司名在 xAI, SpaceX, SpaceXAI 之间换, 哪天换的?
 > 2 月 2 日 「SpaceX announced today that it has acquired xAI」 之后, 4 月以后的条目自称 SpaceXAI (如 5 月 6 日与 Anthropic 的算力协议, 7 月 16 日 Grok 4.5), 页脚是 「© 2026 SpaceXAI LLC」. 但 6 月 3 日那条仍写 「xAI API」, 更早的 2025 年条目统一写 xAI. 页面没有 「改名」 公告, 只能看出收购后对外品牌是 SpaceXAI, 开发者接口还叫 xAI API.
@@ -271,7 +271,7 @@ Grok Bot for Procurement
 <table><tr><td colspan=「2」>xAI 很荣幸被美国战争部选中, 为其提供前沿 AI</td></tr><tr><td>Grok Voice Agent API · 把 Grok Voice 的能力开放给所有开发者.</td><td>2025 年 12 月 17 日</td></tr><tr><td>xAI 与萨尔瓦多率先推出全球首个全国性 AI 教育项目 · 宣布我们与萨尔瓦多政府的变革性合作.</td><td>2025 年 12 月 11 日</td></tr><tr><td>Grok 4.1 Fast 与 Agent Tools API · 把新一代工具调用 Agent 带到 xAI API</td><td>2025 年 11 月 19 日</td></tr><tr><td>Grok 与 KSA 走向全球 · 宣布我们与沙特阿拉伯及 HUMAIN 的里程碑式合作</td><td>2025 年 11 月 19 日</td></tr><tr><td>Grok 4.1 · Grok 4.1 现已向 grok.com, X 以及 iOS 和 Android 应用的所有用户开放. 正在陆续推送...</td><td>2025 年 11 月 17 日</td></tr><tr><td>通过 GSA OneGov 扩展 xAI for Government · 扩展 「xAI For Government」, 为联邦政府提供更易获取的 AI 工具</td><td>2025 年 9 月 25 日</td></tr><tr><td>Grok 4 Fast · 推进高性价比智能的前沿</td><td>2025 年 9 月 19 日</td></tr><tr><td>Grok Code Fast 1 · 我们很高兴推出 grok-code-fast-1, 一个快速且经济的推理模型, 擅长...</td><td>2025 年 8 月 28 日</td></tr><tr><td>宣布 xAI for Government · 我们很高兴宣布 xAI For Government - 一套前沿 AI 产品, 率先向...提供</td><td>2025 年 7 月 14 日</td></tr><tr><td>Grok 4 · Grok 4 是世界上最智能的模型. 它包含原生工具使用和实时搜索...</td><td>2025 年 7 月 9 日</td></tr><tr><td>Grok 3 Beta - 推理 Agent 的时代 · 我们很高兴发布 Grok 3 的早期预览, 这是我们迄今最先进的模型, 融合了出色的...</td><td>2025 年 2 月 19 日</td></tr><tr><td>xAI 完成 $6B C 轮融资 · 我们的合作方包括 A16Z, Blackrock, Fidelity Management &amp; Research Company, Kingdom...</td><td>2024 年 12 月 23 日</td></tr></table>
 
 > **停一下:** Grok 4 Fast 标 「Cost-Efficient」, Grok Code Fast 1 标 「speedy and economical」, 本页给了价格或速度吗?
-> 没有. 两条都只有定性词, 没有每百万 token 价格, 也没有 token/s. 同样, Grok 3 Beta 只有 「early preview」, 全页找不到 Grok 3 正式版的条目. 具体价格和速度要看同级的 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md) 与 [Grok Code Fast 1](../grok-code-fast-1/grok-code-fast-1.md) 专页.
+> 没有. 两条都只有定性词, 没有每百万 token 价格, 也没有 token/s. 同样, Grok 3 Beta 只有 「early preview」, 全页找不到 Grok 3 正式版的条目. 具体价格和速度要看同级的 [Grok 4 Fast](../grok-4-fast/grok-4-fast-bi.md) 与 [Grok Code Fast 1](../grok-code-fast-1/grok-code-fast-1-bi.md) 专页.
 
 <!-- page 8 of 9 -->
 
@@ -300,7 +300,7 @@ Grok Bot for Procurement
 | 宣布 Grok · Grok 是一个以 Hitchhiker's Guide to the Galaxy (银河系漫游指南) 为原型的 AI. 它旨在回答几乎... | 2023 年 11 月 3 日 |
 
 > **再看:** Grok-1 的 「314 billion parameter」 是全页唯一的架构数字, 激活参数和层数在哪?
-> 本页没有. 这条摘要在 「Mixture-of-Experts mode...」 处断开, 只能确认两件事: 总参 314 billion, 结构是 MoE. 激活比例, 专家数, 层数都不在这里; 同级 [Grok-1](../grok-1/grok-1.md) 专页写了 「25% of the weights active on a given token」. 另一个数字是 Grok-1.5 的上下文 128,000 token, 同样没写怎么扩出来的.
+> 本页没有. 这条摘要在 「Mixture-of-Experts mode...」 处断开, 只能确认两件事: 总参 314 billion, 结构是 MoE. 激活比例, 专家数, 层数都不在这里; 同级 [Grok-1](../grok-1/grok-1-bi.md) 专页写了 「25% of the weights active on a given token」. 另一个数字是 Grok-1.5 的上下文 128,000 token, 同样没写怎么扩出来的.
 
 > **对一下:** 图像生成那条 「code-named...」 代号是什么? API 公测那条末尾的 「W...」 是什么?
 > 都被截断了. 代号在省略号后面, 本页看不到, 只知道是 「autoregressive image generation model」. API 公测句尾只剩一个 「W」, 后文缺失. 两处都不补.

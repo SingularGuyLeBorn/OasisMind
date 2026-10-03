@@ -811,6 +811,8 @@ Table 21 | Results on different self-proliferation scenarios. We report the numb
 
 In Table 20, we also evaluate Gemma 2 27B on a series of multiple-choice code vulnerability detection datasets. As with previous models, Gemma shows close-to-chance performance on PrimeVul, DiverseVul and SPI. Gemma 2 shows performance on SecretPatch similar to Gemini 1.0 Ultra.
 
+表 20 还在一系列多项选择的代码漏洞检测数据集上评了 Gemma 2 27B. 与之前的模型一样, Gemma 在 PrimeVul, DiverseVul 和 SPI 上接近随机水平; 在 SecretPatch 上则与 Gemini 1.0 Ultra 相当.
+
 分数: Gemma 2 27B 在 PrimeVul 63%, PrimeVul Paired 50%, DiverseVul 57%, SPI 53%, SecretPatch 72%.
 
 ## Self-proliferation

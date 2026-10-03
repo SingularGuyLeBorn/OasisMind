@@ -1,0 +1,41 @@
+# 15-ling/ling-plus  文件: content/model-library/03-模型家族\15-ling/ling-plus\ling-plus-bi.md  共 10 块
+
+--- 行27 [对一下] ---
+> 页面没有把它们对齐. 293B 是这一页 Safetensors 面板印的 Model size. 第 2 页 Introduction 和第 3 页下载表都写 290B. 第 2 页论文题目写 300B. 三个数出自三个位置, 页面没有解释 293B 和 290B 之间差出来的 3B, 也没有说 300B 是不是取整.
+
+
+--- 行48 [想] ---
+> 页面没有标. 它和 「10 items」, 「Updated 24 days ago」 用圆点隔开, 没有单位, 也没有图标说明. Community 旁的 3 同样没写是讨论数还是别的. 「24 days ago」 是抓取当下的相对时间, 不是绝对日期.
+
+
+--- 行85 [拆开] ---
+> 页面只能对上一部分. Introduction 写 Ling-Plus (大写 P), 仓库名和下载表写 Ling-plus (小写 p), 论文题目写全大写的 LING, 第 1 页的标签是 bailing_moe. 前三个是同一系列的不同大小写, 论文卡片挂在 Ling-plus 页上可以作证. bailing_moe 是模型类型标签, 页面没有一句话解释 bailing 和 Ling 的关系.
+
+
+--- 行88 [确认] ---
+> 没有. 这 5 页关于结构只有两处: Introduction 里的 「MoE LLM」 和第 1 页的标签 bailing_moe. 没有层数, 没有专家个数, 没有每个 token 选几个专家, 没有注意力类型. 激活参数 28.8B 是唯一和稀疏激活沾边的数字, 页面没有说它怎么算出来.
+
+
+--- 行116 [看表] ---
+> 没有. 原表每个模型在下载列占两行 (rowspan 2), 第一行是 HuggingFace, 第二行在 md 里是空单元格, PDF 上也只印了 HuggingFace. 空格里原来放什么, 抓取里没有字. 另外 base 和 Ling-plus 两行的 290B, 28.8B, 64K 完全相同, 表没有写两者差在哪一步训练.
+
+
+--- 行125 [再看] ---
+> 页面没说. Evaluation 链到 GitHub 仓库里的 Ling_Technical_Report_V1.pdf, 论文卡片链到 huggingface.co/papers/2503.05139, 引用条目写 arXiv:2503.05139. 文件名带 V1, arXiv 编号没带版本号. 这一页本身一个评测分数也没有.
+
+
+--- 行159 [核对] ---
+> model_name = 「inclusionAI/Ling-lite」. 页面标题, 下载表, Model tree 都写 Ling-plus, 示例里的字符串却是 Ling-lite. 照这段代码原样运行, 加载的是 Ling-lite 仓库, 不是这一页 Safetensors 面板上的 293B 权重.
+
+
+--- 行186 [停一下] ---
+> 没有. 模型的 from_pretrained 只传了 model_name, torch_dtype=「auto」, device_map=「auto」, 分词器那行只传 model_name. custom_code 标签和这段代码在同一个页面上, 页面没有解释两者怎么配合.
+
+
+--- 行201 [问] ---
+> 页面只给了这两处. 标签写小写的 mit, 这一节写 MIT License, 链接的文件名拼作 LICENCE (英式拼法), 句子主语是 「code repository」. 这个仓库里放的是 293B 的 Safetensors 权重, 页面没有单独说权重适用什么条款.
+
+
+--- 行256 [回看] ---
+> 至少七处. system 消息结尾 PDF 是 「created b」, md 是 「created I」. zip 那行 PDF 是 「zip(model_」, md 是 「zip(model Device)]」. skip_special_tokens 那行 PDF 是 「=Tr」, md 是 「=T:」. 引用标题 PDF 截在 「LIN」, md 是 「LII」. 第 5 页 PDF 顶上有 year = {2025} 和收尾的 }, md 这一页没有. Community 旁的 3 在 md 里丢了. 表头 「#Total Params」 在 md 里连成 「#TotalParams」. 本文的代码和引用按 PDF 的字形转写.
+

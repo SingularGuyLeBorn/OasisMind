@@ -1,0 +1,61 @@
+# 08-claude/claude-1  文件: content/model-library/03-模型家族\08-claude/claude-1\claude-1-bi.md  共 15 块
+
+--- 行23 [想] ---
+> 只给了三家伙伴名 (Notion, Quora, DuckDuckGo) 和 「past few months」 这个时长. 测试规模, 用户量, 出错率, 评测指标一概没写. 后文的伙伴引言是唯一的佐证, 都是定性反馈. 这一段能确认的只有两件事: 公告之前 Claude 只以封闭 alpha 对少数伙伴开放; 公告当天的动作是把入口换成 early access 申请链接.
+
+
+--- 行30 [问] ---
+> 本页没有说. 原句只是 「based on Anthropic’s research into training helpful, honest, and harmless AI systems」, 没有点名任何算法, 数据或奖励设计. 这篇公告也答不了三者怎么取舍: 它只把三个词当目标写出来, 第2页又以 「more helpful, honest, and harmless」 重复一次. 把某种方法当成 Claude 1 的训练配方, 在本文里找不到依据.
+
+
+--- 行39 [核对] ---
+> 这句的主语是 「Early customers report」, 是转述客户的说法. 页面没写对比对象, 没有有害输出比例, 也没有评测集名称. 同一句里的 「easier to converse with」 和 「more steerable」 也是同样的来源. 按本文, 这三点只能当作客户的定性评价读, 不能当作评测结果引用.
+
+
+--- 行42 [拆开] ---
+> 页面没写 system prompt, 参数开关或微调接口, 只说 Claude 能 「take direction」. 回到第1页, 能用的入口只有 「chat interface and API in our developer console」. 所以本文能确认的是: 用户在对话或 API 调用里给出要求, Claude 会照着调整个性, 语气和行为; 具体怎么实现, 页面没交代.
+
+
+--- 行49 [确认] ---
+> 正文没有任何价格, 延迟或上下文长度数字, 只有 「lighter, less expensive, and much faster」 三个比较级. 「two versions of Claude」 挂的是一个 PDF, 文件名里写着 apr-pricing-tokens_2023-05-10, 这个日期比发文日 Mar 14, 2023 晚将近两个月, 说明链接目标后来换成了新的价目表. 那份 PDF 不在本目录, 本文不替它报数.
+
+
+--- 行52 [回看] ---
+> 从 URL 看不是. 路径是 an-ai-policy-tool-for-today-ambitiously-invest-in-nist, 按标题是一篇谈 NIST 投入的政策文章. 页面没解释为什么把它挂在 「safety research」 上. 想顺着这个链接去找 Claude 的训练方法, 会扑空; 本页所有关于安全的表述, 都停留在 「helpful, honest, and harmless」 这一层.
+
+
+--- 行75 [停一下] ---
+> 不算. 这是一位 Poe 用户的单句引语, 页面没给样本量, 题目, 打分方式, 也没说对比的是哪个 ChatGPT 版本. 它说明 Anthropic 愿意在发布公告里引用与 ChatGPT 的比较, 仅此而已. 本文全篇没有一张评测表.
+
+
+--- 行86 [再看] ---
+> 能证明的是产品形态: Claude 在 Poe 里以具名对话对象出现, 回答里有蓝色高亮的词条链接, 回答下面有 「Tell me more.」 之类的追问建议. 截图里的地点介绍, 比如 Sumida Park 「around 1,000 cherry blossom trees」, 属于模型的回答内容, 页面没有核实它的准确性. 所以这张图是界面展示, 不能当作质量评测样例.
+
+
+--- 行99 [对一下] ---
+> 引语里没有竞品名称, 评估题目或指标. 给出的选择理由只有两条: 「helpful, high-quality responses」, 以及能达到 「a true tutor or teacher」 水准的对话. 跨学科的例子也只点了两个: 数学题, 批判性阅读里的象征手法. 这段引语横跨第3页和第4页, 是一句话被分页切开, 意思前后连贯.
+
+
+--- 行110 [想] ---
+> 按原句是外部接进来的: 「integrate Claude with sources of solid, real-time information」. 实时性来自接入的信息源, DuckAssist 的引语也说答案依据 「Wikipedia and other related sources」. 这篇公告只交代了接法的方向, 没写检索怎么做, 引用怎么标, 隐私要求具体是哪些条款.
+
+
+--- 行127 [拆开] ---
+> 位置上, 图紧跟在 Robin AI 引语之后, 内容也对得上 「evaluate particular parts of a contract, and to suggest new, alternative language」: 第 8 条的终止日从两周年改成一周年, 或者更早的最终文件签署日, 正好满足 Issue 栏 「expires after 1 year」. 但页面没有标注截图出自 Robin AI 的产品, 也没说右侧建议是 Claude 生成的, 还是按 playbook 规则给出的; 按钮上写的是 「View Playbook Suggestion」. 归属只能按版面位置推断, 页面本身没写明.
+
+
+--- 行134 [回看] ---
+> 页面没这么说. 原句是 AssemblyAI 的 API 「transcribe and understand audio data at scale」, Claude 参与的是 「LLM-backed Generative AI and Conversation Intelligence」 这部分. 回到第1页, Claude 的能力被写成 「conversational and text processing tasks」. 按本文, Claude 处理的是文本; 音频到文本这一步, 页面没有归到 Claude 名下.
+
+
+--- 行177 [停一下] ---
+> 因为这份 PDF 是后来抓取的网页快照. 「Related content」 下的三条推荐, 以及第6页到第10页的站点导航和页脚, 都是抓取当时的页面内容; 页脚写着 「© 2026 Anthropic PBC」. 真正属于 Claude 发布公告的, 只有第1页到第5页 「request access to Claude and we’ll be in touch!」 为止. 上面那行 「## XE」 夹在正文和推荐区之间, 也不属于公告正文.
+
+
+--- 行232 [对一下] ---
+> 文件名是抽取时取了紧随其后的 「## Models」 标题, 画面实际是 Products 栏的 14 项. 第7页的 Models 栏列的是 Mythos, Fable, Opus, Sonnet, Haiku, 其中没有 Claude 或 Claude Instant. 第2页介绍的这两个版本名, 在快照当时的导航里已经找不到了; 读这篇公告时, 模型名以第2页正文为准.
+
+
+--- 行385 [核对] ---
+> 不能. 它们只是快照当时页脚里的两个链接标题, 页面没有给正文, 也没有把它们和 2023 年的 Claude 或 Claude Instant 联系起来. 「Constitution」 这个词容易让人联想到 Constitutional AI, 但公告正文从头到尾没出现这个词. 关于 Claude 1 的训练, 本文能引用的只有第1页那句 「research into training helpful, honest, and harmless AI systems」.
+

@@ -1,6 +1,6 @@
 # Seed1.5-Thinking: 在 Doubao-1.5-pro 的数据上长出一条推理 RL 管线
 
-来源: 同目录 `seed-1-5-thinking.md` (页标记 `page 1 of 19` 起, arXiv:2504.13914v3, 文首日期 2025 年 4 月 10 日; v1, v2 用的名字是 Seed-Thinking-v1.5). 对照译稿见 `seed-1-5-thinking-bi.md`. 表号, 式号, 节号都按源 md. VAPO, DAPO 两篇前作的超参数来自它们各自的论文, 文中会单独标出, 不算本页数字.
+来源: 同目录 `seed-1-5-thinking.md` (页标记 `page 1 of 19` 起, arXiv:2504.13914v3, 文首日期 2025 年 4 月 10 日; v1, v2 用的名字是 Seed-Thinking-v1.5). 对照译稿见 `seed-1-5-thinking-bi.md`. 表号, 式号, 节号都按源 md. VAPO, DAPO 两篇前作的超参数来自它们各自的论文, 文中会单独标出, 不算报告数字.
 
 ## 1. 家族走到这一步: 从产品页的深度思考到第一份推理报告
 

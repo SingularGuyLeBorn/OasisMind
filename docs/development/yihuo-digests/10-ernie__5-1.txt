@@ -1,0 +1,73 @@
+# 10-ernie/5-1  文件: content/model-library/03-模型家族\10-ernie/5-1\5-1-bi.md  共 18 块
+
+--- 行29 [想] ---
+> 不是. 这一段没写前两个比的分母, 第 5 页补上了: 「approximately one-third and activated parameters to approximately half those of ERNIE 5.0」, 分母是 ERNIE 5.0; 6% 的分母是 「comparable models at the same scale」, 指同规模的其他模型, 不是 5.0. 前两个比也不相等, 激活占总参的比例变成 5.0 的 (1/2)/(1/3) = 1.5 倍, 5.1 反而更稠密; 博客没有印任何一方的绝对参数量.
+
+
+--- 行40 [问] ---
+> 博客没给对照. 第 7 页只出现了一个小标题 「Integration」; Stage 2 「Domain Expert Model Training」 能对上 expert, Stage 3 的 OPD 和 Stage 4 的 General-RL 都在做能力合并, 靠近 integration. environment 在全文没有单独小节, 环境怎么搭, 有多少, 用什么奖励, 都没写.
+
+
+--- 行65 [看表] ---
+> 图上看不出来. 前 15 名里 Claude Opus 4.6 Search, GPT-5.5 Search, Gemini-3.1 Pro Grounding 等都标明了带搜索或检索增强的版本, 也有 Claude Opus 4.7, Grok-4.3 这种不带后缀的; ERNIE-5.1 只写型号. 博客没说它上榜时接的是什么搜索工具, 也没说和 AIME26 w/tools 里的 「tools」 是不是同一套.
+
+
+--- 行68 [核对] ---
+> 名次和分数对得上: 图中第 4 行是 ERNIE-5.1, 1,223, 型号是正式版, 不带 Preview; 榜名两处词序相反, 按图题应读作 Search Arena. 前 15 名其余都是 Claude, GPT, Gemini, Grok, 可见范围内它是唯一的中国模型; 但它只比第 5 名 Claude Sonnet 4.6 Search 的 1,221 高 2 分, 图上没有置信区间, 这个第 4 稳不稳, 博客没说.
+
+
+--- 行75 [确认] ---
+> 都不是. 这条链接显示的是 ernie.baidu.com, 实际地址是 https://yiyan.baidu.com/, 点进去是文心一言站点. 图的文件名带 「visit-the-official-website」, 内容却是 Search Arena 榜单; MinerU 按图下方紧跟的那行文字起名, 名字只反映位置, 本文另有 4 张图也是这样错位.
+
+
+--- 行92 [看表] ---
+> τ³-bench (avg@4): ERNIE-5.1 67.9, DeepSeek-V4-Pro 67.5, 只高 0.4; Claude-Opus-4.6 72.4, Gemini 3.1 Pro 67.1, 这一项它其实略高于 Gemini. SpreadsheetBench-Verified (pass@1): 72.5 对 67.0, 比 DeepSeek 高 5.5, 但 Claude 82.4, Gemini 80.8, 落后 8 到 10 分; 同一个 「approaching」 盖住了一项反超和一项接近 10 分的差距.
+
+
+--- 行99 [拆开] ---
+> 不一样. GPQA (pass@1) ERNIE-5.1 91.0, 高于 DeepSeek-V4-Pro 90.1 和 Claude-Opus-4.6 89.6, 只低于 Gemini 3.1 Pro 94.1; MMLU-Pro (acc) ERNIE-5.1 84.3, 四个模型里最低, DeepSeek 87.5, Claude 89.5, Gemini 87.7. 创意写作那半句依据的是 「internal evaluations」, 博客没印分数, 也没说评测集和评判方式.
+
+
+--- 行106 [对一下] ---
+> 范围是图里的四个模型: AIME26 w/tools (avg@32) 上 Gemini 3.1 Pro 99.9, ERNIE-5.1 99.6, DeepSeek-V4-Pro 92.6, Claude-Opus-4.6 81.2. 图的下排还有一栏不带工具的 AIME26 (avg@32), ERNIE-5.1 95.0, 四者里最低 (DeepSeek 95.8, Claude 96.7, Gemini 98.3), 正文只引了带工具那一栏.
+
+
+--- 行127 [回看] ---
+> 博客全文没有图注, 三种记号都没有解释, 原文不写就不能替它补. DeepSearchQA (F1) 上 ERNIE-5.1 77.3, 四者里最低 (DeepSeek-V4-Pro 86.7, Claude-Opus-4.6 82.0, Gemini 3.1 Pro 79.3); 第 3 页开头把 「deep search」 列为强项, 下面三条要点却没有再提 DeepSearchQA, 只拿 Search Arena 的第 4 名作佐证.
+
+
+--- 行142 [停一下] ---
+> 博客没交代算法. 这一段说子模型矩阵是 ERNIE 5.0 「within a single pre-training run」 训出来的, 第 5 页又说 5.1 「pre-training compute cost at only 6% of comparable models at the same scale」, 中间没有写 5.0 那次的算力怎么摊到 5.1 身上, 也没点名 「comparable models」 是哪几个. 第 1 页写 「about 6%」, 本页小标题写 「Only 6%」, 措辞一松一紧, 数字都是 6%.
+
+
+--- 行163 [再看] ---
+> 博客没拆. 本段只说 5.1 取的是 「optimal sub-network architecture」, 三个维度各取了什么值没写; 下面那张图里的 Top-K=2, Top-K=4, 「Layer-N」 和骰子都是示意, 5.1 的层数, 专家总数, 每次激活几个专家, 全文一个都没给. 「inference cost is significantly reduced」 也没有数字, 不能直接等同于激活减半.
+
+
+--- 行188 [想] ---
+> 原文确实只点了三个: 流水线是 「inference, training, and reward naturally form a pipeline」, 异构调度写 「each training, inference, and reward subsystem」. agent loop 在哪条链路上跑, 占什么资源, 博客没写; 最接近的线索是异构调度一段说闲置 CPU 用来跑 「code sandboxes and verifiers」, 但也没说这些归哪个子系统.
+
+
+--- 行195 [问] ---
+> 句子没写基线. 从语序看, 50% 和 「near-zero additional training-inference latency overhead」 并列, 都挂在优化后的 R3 上, 基线可以读成不开 R3, 也可以读成优化前的 R3, 原文两种读法都说得通. K3 指哪种 KL 估计方式, 在多少步, 什么任务上量的, 博客都没给, 也没有配图.
+
+
+--- 行220 [拆开] ---
+> OPD 和 MOPD 指的都是 Stage 3: 学生从自己的策略分布采样, 同时向多个教师学习, 加上 「Multi-Teacher」 就写成 MOPD. 四段里 Stage 1 是 SFT, Stage 3 是蒸馏, 明写 online RL 的只有 Stage 4; Stage 2 只说各方向 「customizes its dedicated reward signals and training algorithms」, 没说一定用 RL, 把整条叫作 「multi-stage reinforcement learning」 比段内描述要宽.
+
+
+--- 行249 [确认] ---
+> 不是同一个量. 这里的 K 数的是教师, 图上画了 Code Expert (Teacher 1), Reasoning Expert (Teacher 2), Agent Expert (Teacher K), Stage 2 那栏还留着省略号; 第 5 页的 Top-K 数的是一次路由激活的专家. 两处都没给具体值, 正文 Stage 2 举的例子 「code, reasoning, agentic tasks」 和图上三位教师一致, 教师总数博客没写.
+
+
+--- 行252 [回看] ---
+> 博客没解释, 只能按图对位: Code 两边都有, Math 用的 √x 图标出现在 Reasoning Expert 上, Tool 与 Agent Expert 相近; Chat 在 Stage 2 找不到对应专家, 它落到了 Stage 4 的 「General Dialogue Data (Open-domain)」, 这和正文说开放式闲聊不适合 OPD, 改走 General-RL 的说法前后一致.
+
+
+--- 行285 [看表] ---
+> 型号不同: 卡片上是 Ernie-5.1-Preview, 1,476 分, 和第 12 名 GPT-5.2 Chat 同分, 开启 style control; 第 2 页是正式版 ERNIE-5.1 在 Search Arena 的第 4. 两块榜的全球名次都不是第一, 正文只对 Search Arena 写了 「1st among Chinese models」, 这张卡前 15 名里也只有它一个中国模型, 但博客没有为它写一句说明, 标题的 「Topping」 只能落在中国模型第一这层意思上.
+
+
+--- 行298 [对一下] ---
+> 只点了四个: ISEKAI ZERO, Mulan AI, Diting Huanliu, Storymaster, 其余至少六个没有名字, 「progressively rolled out」 也没给时间表. 页脚年份停在 2025, 和正文日期不一致, 只能说明页脚模板没跟着更新. 底部 「NEXT」 链到 slug 为 ernie-5.1-preview-0430-release-on-lmarena 的 ERNIE-5.1-Preview 上榜公告, 第 9 页那张 Preview 卡片出自哪次榜单更新, 本文没交代.
+

@@ -90,19 +90,31 @@ Figure 1: Step 3.5 Flash achieves frontier-level intelligence with only 11B acti
 
 While open-source large language models (LLMs) [1–6] have rapidly narrowed the performance gap with closed-source frontier systems [7–9] across verifiable tasks [10–12], new challenges emerge as agentic systems gain prominence. In particular, open-source models still trail closed-source frontiers in complex reasoning. Furthermore, critical efficiency bottlenecks hinder their application in long-context agentic tasks [13–21], let alone deployment in edge or resource-constrained settings.
 
+尽管开源大型语言模型 (LLMs) [1-6] 在可验证任务 [10-12] 上已迅速缩小与闭源前沿系统 [7-9] 的差距, 但随着 Agent 系统日益普及, 新挑战也随之浮现. 尤其在复杂推理上, 开源模型仍落后于闭源前沿. 此外, 关键的效率瓶颈阻碍了它们在长上下文 Agent 任务 [13-21] 上的应用, 更不用说部署到边缘或资源受限环境.
+
 In designing the architecture of Step 3.5 Flash, we focus on two core aspects: efficiency and capacity. We adopt a sparse Mixture-of-Experts (MoE) [22–26] architecture with 196B total parameters and only 11B activated per token, together with a 3:1 ratio of sliding-window attention (SWA) [27] to full attention and multi-token prediction (MTP-3) [3, 28–30] to reduce long-context latency. To improve capacity under hybrid attention with minimal overhead, we increase the number of query heads in sliding-window attention (SWA) layers from 64 to 96 and use head-wise gated attention [31]. This design enables large-scale online deployment, sustaining ∼170 tokens/s on Hopper GPUs during the first week on OpenRouter <sup>1</sup>.
+
+在设计 Step 3.5 Flash 的架构时, 我们聚焦两个核心: 效率与容量. 我们采用稀疏 MoE [22-26] 架构, 总参数 196B, 每 token 仅激活 11B; 滑动窗口注意力 (SWA) [27] 与全注意力按 3:1 配比, 并配合多 token 预测 (MTP-3) [3, 28-30] 降低长上下文延迟. 为了在混合注意力下以极小开销提升容量, 我们把 SWA 层的 query head 数从 64 增加到 96, 并采用 head-wise 门控注意力 [31]. 这一设计支撑了大规模在线部署, 上线 OpenRouter 的第一周就在 Hopper GPU 上稳定达到约 170 tokens/s.
 
 On the pretraining side, we treat stability as a first-class requirement and build a comprehensive observability and diagnostic stack via a lightweight asynchronous metrics server with micro-batchlevel continuous logging. This infrastructure enables systematic identification and mitigation of large-scale MoE failure modes (e.g., Muon-related precision sensitivity, expert collapse [32], and activation blow-ups [5, 33]). Combined with an improved Muon optimizer [34] that offers more accurate and stable updates, we achieve stable training over 17.2T high-quality and diverse tokens with only a single transient loss spike. With this stable training regime, Step 3.5 Flash Base achieves competitive performance against larger counterparts, such as DeepSeek-V3.2-Exp Base [1] and Kimi-K2-Base [5], on math, coding and knowledge benchmarks. Notably, on SimpleQA [35], it scores 31.6%, surpassing DeepSeek-V3.2-Exp Base despite using only one-third of the parameters.
 
+在预训练侧, 我们把稳定性当作一等需求, 通过轻量级异步指标服务器与 micro-batch 级连续日志, 构建了一套全面的可观测性与诊断栈. 这套设施能系统性地识别并缓解大规模 MoE 的故障模式 (如 Muon 相关的精度敏感, expert collapse [32] 与 activation blow-up [5, 33]). 配合改进版 Muon 优化器 [34] 带来的更精确稳定的更新, 我们在 17.2T 高质量多样化 token 上完成稳定训练, 全程仅出现一次瞬时 loss 尖峰. 在这一稳定训练 regime 下, Step 3.5 Flash Base 在数学, 代码与知识评测上可与更大的对手竞争, 例如 DeepSeek-V3.2-Exp Base [1] 与 Kimi-K2-Base [5]. 特别地, 它在 SimpleQA [35] 上得 31.6%, 参数只有对手三分之一却超过了 DeepSeek-V3.2-Exp Base.
+
 Toward frontier-level intelligence, current post-training systems face two tightly coupled challenges: inefficient iteration of domain-specific experts for self-distillation [1–4] and limited scalability of Reinforcement Learning (RL) to long-horizon reasoning for MoE models. Training a single generalist to directly cover diverse domains often sacrifices domain-specific expertise, whereas maintaining separate expert models leads to fragmentation and an unsustainable cost of continual multi-model iteration. At the same time, as models are extended to deeper reasoning trajectories, even small token-level discrepancies in off-policy rollouts can accumulate into high-variance gradients. This effect is particularly severe in MoE models, where expert-level routing induces larger distributional shifts and destabilizes optimization in the frontier performance regime [1, 36–38].
 
+迈向前沿智能, 当前后训练系统面临两个紧耦合的挑战: 用于自蒸馏 [1-4] 的领域专家迭代低效, 以及 RL 对 MoE 模型长程推理的可扩展性受限. 训练单一通才直接覆盖多领域, 往往会牺牲领域专精; 维护各自独立的专家模型又导致体系碎片化, 多模型持续迭代的成本不可持续. 同时, 把模型扩展到更深的推理轨迹时, off-policy rollout 中微小的 token 级偏差也会累积成高方差梯度. 这在 MoE 模型中尤为严重: 专家级路由带来更大的分布偏移, 会在前沿性能区间破坏优化稳定性 [1, 36-38].
+
 To address these challenges, we propose a unified post-training recipe for large-scale RL built on a shared SFT foundation. The framework alternates between domain-specific specialization and global synthesis, enabling efficient expert iteration while maintaining a single, high-performing generalist. A dedicated mid-training phase scales the context window to 128k and strengthens core agentic and reasoning capabilities via synthetic data, providing a strong initialization for downstream post-training. To support stable and scalable RL within this unified framework, we introduce Metropolis Independence Sampling-Filtered Policy Optimization (MIS-PO) [39, 40], replacing continuous importance weighting with discrete, distributional filtering at both token and trajectory levels. By restricting optimization to samples within a stable trust region, MIS-PO substantially reduces gradient variance while preserving effective learning signals, enabling RL to scale reliably to long-horizon reasoning and agentic behaviors.
+
+为应对这些挑战, 我们提出一套建立在共享 SFT 底座上的大规模 RL 统一后训练配方. 该框架在领域特化与全局综合之间交替, 既能高效迭代专家, 又始终维持一个高性能通才. 一个专门的 mid-training 阶段把上下文窗口扩到 128k, 并通过合成数据强化核心 Agent 与推理能力, 为下游后训练提供强初始化. 为在该统一框架内支撑稳定且可扩展的 RL, 我们提出 Metropolis Independence Sampling-Filtered Policy Optimization (MIS-PO) [39, 40], 在 token 与轨迹两层用离散分布过滤替代连续重要性加权. 通过把优化限制在稳定信任域内的样本上, MIS-PO 大幅降低梯度方差, 同时保留有效学习信号, 使 RL 能可靠扩展到长程推理与 Agent 行为.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>https://openrouter.ai</span></small>
 
 <!-- page 5 of 67 -->
 
 Step 3.5 Flash achieves competitive performance with leading frontier models and systems across a broad range of reasoning and agentic benchmarks, despite 11B active parameters. It delivers strong results under standard inference on reasoning tasks, including 85.4% on IMO-AnswerBench [41] and 86.4% on LiveCodeBench-v6 (2024.08–2025.05) [12], while also demonstrating robust long-horizon, tool-augmented capabilities with 88.2% on $\tau ^ { 2 } .$ -Bench [15], 69.0% on BrowseComp (with context management) [17], and 51.0% on Terminal-Bench 2.0 [16]. With PaCoRe [42] deep think inference, Step 3.5 Flash further improves performance on reasoning-intensive benchmarks requiring extended deliberation and multi-round synthesis. Taken together, these results indicate that Step 3.5 Flash substantially narrows the gap between advanced open models and frontier proprietary systems in both reasoning and agentic settings.
+
+Step 3.5 Flash 在推理与 Agent 基准上可与领先的前沿模型和系统竞争, 尽管只有 11B 激活参数. 标准推理下它在推理任务上表现出色: IMO-AnswerBench [41] 85.4%, LiveCodeBench-v6 (2024.08-2025.05) [12] 86.4%; 长程工具增强能力同样稳健: $\tau ^ { 2 } .$ -Bench [15] 88.2%, BrowseComp (带上下文管理) [17] 69.0%, Terminal-Bench 2.0 [16] 51.0%. 结合 PaCoRe [42] deep think 推理, Step 3.5 Flash 在需要长时间思考与多轮综合的推理密集基准上还能进一步提升. 这些结果共同表明, Step 3.5 Flash 大幅缩小了先进开源模型与前沿专有系统在推理与 Agent 场景上的差距.
 
 ## 2. Architecture 架构
 
@@ -1181,7 +1193,11 @@ Table 6: Key architecture hyper-parameters of Step 3.5 Flash. “Activated param
 
 Each attention head is assigned a lightweight, input-dependent scalar gate, allowing the model to dynamically modulate information flow across the hybrid layout with negligible computational overhead.
 
+我们为每个注意力头配一个轻量的, 依赖输入的标量门, 让模型能以可忽略的额外计算, 在混合布局中动态调节信息流.
+
 Formally, for a (single) head of dimension 𝑑, let $\boldsymbol { q } _ { i } , \boldsymbol { k } _ { j } , \boldsymbol { \upsilon } _ { j } \in \mathbb { R } ^ { d }$ denote the query vector at position 𝑖 and the key and value vectors at position $j ,$ the scaled dot-product scores $s ,$ the corresponding attention weights 𝛼 and the outputs 𝒚 are computed as follows:
+
+形式化地, 对维度为 𝑑 的 (单个) 头, 记位置 𝑖 的 query 向量与位置 $j$ 的 key, value 向量分别为 $\boldsymbol { q } _ { i } , \boldsymbol { k } _ { j } , \boldsymbol { \upsilon } _ { j } \in \mathbb { R } ^ { d }$, 缩放点积分数 $s$, 对应的注意力权重 𝛼 与输出 𝒚 计算如下:
 
 $$
 s _ {i, j} = \left\langle \boldsymbol {q} _ {i}, \boldsymbol {k} _ {j} \right\rangle / \sqrt {d}, \quad Z _ {i} = \sum_ {j ^ {\prime}} \exp \left(s _ {i, j ^ {\prime}}\right), \quad \alpha_ {i, j} = \exp \left(s _ {i, j}\right) / Z _ {i}, \quad \boldsymbol {y} _ {i} = \sum_ {j} \alpha_ {i, j} \boldsymbol {v} _ {j}.\tag{4}
@@ -1191,13 +1207,19 @@ $$
 
 Given the input representation $x _ { i }$ at position $i ,$ we compute a head-wise gate $g _ { i }$ to modulate the head output:
 
+给定位置 $i$ 的输入表示 $x _ { i }$, 我们计算一个 head-wise 门 $g _ { i }$ 来调节该头的输出:
+
 $$
 g _ {i} = \sigma (\boldsymbol {w} _ {g a t e} ^ {\top} \boldsymbol {x} _ {i}), \qquad o _ {i} ^ {\text {gate}} = g _ {i} \boldsymbol {y} _ {i},\tag{5}
 $$
 
 where 𝜎(·) is the sigmoid function and $w _ { g a t e }$ is a learnable vector.
 
+其中 𝜎(·) 是 sigmoid 函数, $w _ { g a t e }$ 是可学习向量.
+
 Head-wise gated attention can be viewed as introducing an input-dependent sink token [33] into the attention mechanism. Substituting $\begin{array} { r } { \sigma ( g ) = \frac { 1 } { 1 + \exp ( - g ) } } \end{array}$ into Equation 5, we have
+
+Head-wise 门控注意力可以看作向注意力机制引入了一个依赖输入的 sink token [33]. 将 $\begin{array} { r } { \sigma ( g ) = \frac { 1 } { 1 + \exp ( - g ) } } \end{array}$ 代入式 5, 可得
 
 $$
 \left| \boldsymbol {o} _ {i} ^ {\text {gate}} = \sum_ {j} \frac {\exp (s _ {i , j})}{Z _ {i} + e ^ {- g _ {i}} Z _ {i}} \boldsymbol {v} _ {j}, \right.\tag{6}
@@ -1205,9 +1227,13 @@ $$
 
 where exp $( - g _ { i } ) Z _ { i }$ acts as an input-dependent sink mass in the softmax normalizer. As shown in Section 2.3, this adaptive formulation consistently outperforms fixed (input-independent) sink tokens.
 
+其中 exp $( - g _ { i } ) Z _ { i }$ 在 softmax 归一化项中扮演依赖输入的 sink mass. 如 §2.3 所示, 这种自适应形式稳定优于固定的 (与输入无关的) sink token.
+
 ### A.2. Speed Benchmark of Attention Enhancements
 
 We conduct simulations with MTP-3 to evaluate the latency overheads of the two enhancements under an ideal workload. Table 7 presents the relative increment of theoretical FLOPs and latency. Increasing the number of query heads in SWA slightly raises the FLOPs but has less impact on latency. This is due to a query-to-𝑘𝑣 ratio of 12, which keeps SWA in the IO-bound region, even when considering MTP-3. For head-wise gating, neither FLOPs nor latency has noticeable difference because of its lightweight.
+
+我们用 MTP-3 做仿真, 评估这两项增强在理想负载下的延迟开销. Table 7 给出理论 FLOPs 与延迟的相对增量. 增加 SWA 的 query head 数会略微抬高 FLOPs, 但对延迟影响很小: query 对 𝑘𝑣 的比例为 12, 即使计入 MTP-3, SWA 仍处在 IO-bound 区间. head-wise 门控则因足够轻量, FLOPs 与延迟都几乎无变化.
 
 <table><tr><td rowspan="2">Backbone</td><td rowspan="2">SWA Heads</td><td rowspan="2">Setting</td><td colspan="2">Decode (FLOPs / Lat.)</td><td colspan="2">Prefill (FLOPs / Lat.)</td></tr><tr><td>64k</td><td>256k</td><td>64k</td><td>256k</td></tr><tr><td rowspan="4">Step 3.5 Flash (S3F1 layout)</td><td>64</td><td>no gate</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td></tr><tr><td>96</td><td>no gate</td><td>1.02 / 1.01</td><td>1.01 / 1.00</td><td>1.08 / 1.06</td><td>1.04 / 1.03</td></tr><tr><td>64</td><td>head-wise</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.02</td><td>1.00 / 1.01</td></tr><tr><td>96</td><td>head-wise</td><td>1.02 / 1.02</td><td>1.01 / 1.00</td><td>1.08 / 1.08</td><td>1.04 / 1.05</td></tr></table>
 
@@ -1223,7 +1249,11 @@ Table 8: Relative FLOPs cost across different backbones and attention patterns. 
 
 Recent literature [163–165] has shown both theoretically and empirically that pre-pending structured metadata to pre-training sequences can improve data efficiency and accelerate convergence: by exposing high-level attributes $( e . g .$ , modality, language, domain), metadata provides global cues that reduce uncertainty about the upcoming content and thus makes next-token prediction easier.
 
+近期文献 [163-165] 从理论与实验两方面表明, 在预训练序列前部拼接结构化元数据能提升数据效率并加速收敛: 元数据暴露模态, 语言, 领域等高层属性, 提供全局线索, 降低对后续内容的不确定性, 从而让 next-token prediction 更容易.
+
 Motivated by this paradigm, we associate each training example with a metadata string M in a human-readable format, including content type (e.g., Code, Book, Paper, Web), language $( e . g . , \mathrm { E N } , Z \mathrm { H } )$ domain, and source. We then prepend M to the original token sequence x, forming a single training sequence $\mathbf { s } = [ \mathbf { M } ; \mathbf { x } ]$ . During pre-training, the model is trained to maximize the likelihood of s:
+
+受这一范式启发, 我们为每个训练样本关联一段人类可读格式的元数据字符串 M, 内容包括内容类型 (如 Code, Book, Paper, Web), 语言 $( e . g . , \mathrm { E N } , Z \mathrm { H } )$, 领域与来源. 然后把 M 拼到原始 token 序列 x 之前, 构成单一训练序列 $\mathbf { s } = [ \mathbf { M } ; \mathbf { x } ]$. 预训练期间, 模型最大化 s 的似然:
 
 $$
 \mathcal {L} _ {\text {full}} (\theta) = - \sum_ {t = 1} ^ {| \mathbf {s} |} \log P _ {\theta} (s _ {t} \mid \mathbf {s} _ {<   t}).\tag{7}
@@ -1231,29 +1261,49 @@ $$
 
 After an initial phase of approximately 3.8T tokens, we keep M in the context but mask out its positions from the loss while continuing to predict the payload tokens:
 
+在约 3.8T token 的初始阶段之后, 我们把 M 保留在上下文中, 但把它的位置从 loss 中掩掉, 同时继续预测正文 token:
+
 $$
 \mathcal {L} _ {\mathrm{mask}} (\theta) = - \sum_ {t = | \mathbf {M} | + 1} ^ {| \mathbf {s} |} \log P _ {\theta} (s _ {t} \mid \mathbf {s} _ {<   t}) = - \sum_ {t = 1} ^ {| \mathbf {x} |} \log P _ {\theta} (x _ {t} \mid \mathbf {M}, \mathbf {x} _ {<   t}).\tag{8}
 $$
 
 We hypothesize that by this stage the model has already learned to effectively use metadata as a conditioning signal. Masking the metadata loss therefore allocates optimization pressure entirely to the payload tokens, while still benefiting from the explicit conditioning on data characteristics.
 
+我们推测, 到这一阶段模型已经学会把元数据用作条件信号. 因此把元数据的 loss 掩掉, 能把优化压力完全分配给正文 token, 同时仍享受对数据特征的显式条件化带来的收益.
+
 ### A.4. Pre-training Ablations Details
 
 We conduct controlled pre-training ablations to isolate the effects of (i) different hybrid attention layout and (ii) sink tokens versus head-wise gated attention.
 
+我们做了可控的预训练消融, 分离出 (i) 不同混合注意力布局与 (ii) sink token 对比 head-wise 门控这两项因素的影响.
+
 **Hybrid attention layout.** We adopt a **30B-A3B MoE** architecture to evaluate the downstream impact of different hybrid attention layout under a fixed token budget. The training follows a strict, multi-stage pipeline: a 30B-token warmup phase, followed by 1T tokens of main pre-training, a 300Btoken cooldown phase, and an additional 100B-token long-context specialization stage—totaling approximately 1.4T tokens. Supervised fine-tuning (SFT) is then performed on a 0.1× downsampled dataset. Full training details are provided in Table 9.
+
+**混合注意力布局.** 我们采用 **30B-A3B MoE** 架构, 在固定 token 预算下评估不同混合注意力布局对下游的影响. 训练遵循严格的多阶段流水线: 30B token 的 warmup, 接着 1T token 的主预训练, 300B token 的 cooldown, 以及额外的 100B token 长上下文专门化阶段, 合计约 1.4T token. 然后在 0.1× 下采样数据集上执行 SFT. 完整训练细节见 Table 9.
 
 **Gate vs. sink (scaled setting).** We pre-train a **100B-A10B MoE** model for ∼250B tokens to compare sink tokens and head-wise gating under a larger-scale regime.
 
+**Gate vs. sink (放大设置).** 我们预训练一个 **100B-A10B MoE** 模型约 250B token, 在更大规模 regime 下对比 sink token 与 head-wise 门控.
+
 Pre-training results of the architectural ablations are presented in Tables 2 and 10. We employ the evaluation protocols detailed in Section 6.1. Specifically, GPQA [142] is evaluated using 5-shot prompting, while HumanEval [166] and MBPP [167] utilize 3-shot prompting.
+
+架构消融的预训练结果见 Table 2 与 Table 10. 评测采用 §6.1 所述协议: GPQA [142] 用 5-shot prompting, HumanEval [166] 与 MBPP [167] 用 3-shot prompting.
 
 The post-training results in Table 1 are aggregated as follows:
 
+Table 1 中的后训练结果按如下方式聚合:
+
 • **Reasoning:** The average of MMLU-Pro [139], GPQA-Diamond [142], LiveCodeBench v6 [12], and LiveBench [168].
+
+• **推理:** MMLU-Pro [139], GPQA-Diamond [142], LiveCodeBench v6 [12] 与 LiveBench [168] 的均值.
 
 • **Math:** The average of AIME 2024 [169], AIME 2025 [170], HMMT 2025 Feb. [171], and CNMO 2024<sup>6</sup>.
 
+• **数学:** AIME 2024 [169], AIME 2025 [170], HMMT 2025 Feb. [171] 与 CNMO 2024 的均值.
+
 • **Code:** The average of CF-Div2-Stepfun and LiveCodeBench v6 [12].
+
+• **代码:** CF-Div2-Stepfun 与 LiveCodeBench v6 [12] 的均值.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>6</sup>https://www.cms.org.cn/Home/comp/comp/cid/12.html</span></small>
 
@@ -1267,9 +1317,15 @@ Table 9: Training configuration for the 100B-A10B and the 30B-A3B architecture a
 
 • **General:** The average of IFEval [172], IFBench [156], WildBench [173], Arena-Hard [155], and MultiChallenge [157].
 
+• **通用:** IFEval [172], IFBench [156], WildBench [173], Arena-Hard [155] 与 MultiChallenge [157] 的均值.
+
 • **LongCtx:** The average of six benchmark-level averages: (i) the average score across context lengths 8k-128k on RULER [174], (ii) the average score over the Short and Medium subsets of Long-Bench v2 [158], (iii) the average score across context lengths 8k-128k on HELMET [175], (iv) GSM-Infinite [176], (v) the overall score on FRAMES [160], and (vi) the overall score on RepoQA [161].
 
+• **长上下文:** 六项基准级均值的平均: (i) RULER [174] 上 8k-128k 各上下文长度得分的均值; (ii) Long-Bench v2 [158] 的 Short 与 Medium 子集得分的均值; (iii) HELMET [175] 上 8k-128k 各上下文长度得分的均值; (iv) GSM-Infinite [176]; (v) FRAMES [160] 的总分; (vi) RepoQA [161] 的总分.
+
 Tables 1 and 10 show that the vanilla 𝑆3𝐹1 layout underperforms the full-attention baseline on general pre-training benchmarks and consistently degrades SFT quality (e.g., BBH: −4.3; SFT Avg: −0.7). Increasing the number of SWA query heads substantially closes this gap (e.g., MMLU-Pro: +3.7; SFT Reasoning: +0.4), with only a minor regression on SFT Code (−0.6), while matching or exceeding the full-attention baseline on several metrics. Table 2 further demonstrates that head-wise gated attention yields an average improvement from 62.5 to 64.4 (+1.9) on the sink token metric.
+
+Table 1 与 Table 10 显示, 原始 𝑆3𝐹1 布局在通用预训练基准上不如全注意力基线, 并持续拉低 SFT 质量 (如 BBH: −4.3; SFT Avg: −0.7). 增加 SWA query head 数能大幅弥合这一差距 (如 MMLU-Pro: +3.7; SFT Reasoning: +0.4), 仅在 SFT Code 上有轻微回退 (−0.6), 同时在若干指标上追平甚至超过全注意力基线. Table 2 进一步表明, head-wise 门控注意力在 sink token 指标上把平均分从 62.5 提升到 64.4 (+1.9).
 
 ## B. Detail Analysis of Localized Activation Blow-up
 
@@ -1283,11 +1339,15 @@ Table 10: Pre-training evaluation results for hybrid attention layout ablations 
 
 modeling [60, 177]. Another pattern is that (2) some high-frequency bi-grams trigger extremely large activations on the first token, which represents the failure mode we are investigating. The pattern is triggered by several factors: The frequency of a bi-gram’s occurrence is sufficiently high, and the MoE FFN is fine-grained enough, allowing an expert to specialize in that bi-gram without being regulated by the load balancing mechanism. This specialization serves as a shortcut: once the expert is activated, the output becomes deterministic, and other networks no longer influence the prediction. While finding shortcuts is a reasonable approach to minimizing loss, in a MoE model with a pre-norm architecture [76, 77], there is a straightforward, pathological solution for achieving such deterministic predictions, as outlined next. The model’s final representation is the sum of the outputs from all layers, followed by a RMSNorm. This can be expressed as a combination of the outputs from the experts and the attention layers:
 
+为探究局部 activation blow-up 的根因, 我们分析了在所有层中触发最大专家激活的 token, 识别出两种不同的大激活模式: (1) 特定词法项目, 如特殊 token 与标点, 通常引发较大但不剧烈的激活, 在较浅层尤为常见. 我们不把这一模式视为故障: 它没有快速增长, 而且可能是语义建模 [60, 177] 的内部机制. (2) 另一种模式是某些高频二元组 (bi-gram) 在第一个 token 上触发极大的激活, 这正是我们要研究的故障模式. 该模式由几个因素共同触发: 二元组出现频率足够高, MoE FFN 粒度又足够细, 使得某个专家可以专门处理该二元组而不受负载均衡机制约束. 这种专门化构成一条捷径: 一旦该专家被激活, 输出就变成确定性的, 其他网络不再影响预测. 找捷径本身是降低 loss 的合理途径, 但在 pre-norm 架构 [76, 77] 的 MoE 模型中, 存在一个直接的病态方案可以实现这种确定性预测, 如下所述. 模型的最终表示是所有层输出之和再经 RMSNorm, 可写成专家输出与注意力层输出的组合:
+
 $$
 \boldsymbol {h} _ {\text {final}} = \operatorname{RMSNorm} (\underbrace {\text {expert} _ {\text {outlier}}} _ {\boldsymbol {h} _ {\text {outlier}}} + \underbrace {\sum_ {l = 1} ^ {L} \operatorname{attn} _ {l} + \sum_ {\substack {(l , e) \text {is not a outlier}\\ }} \text {expert} _ {l , e}} _ {\boldsymbol {h} _ {\text {others}}}),\tag{9}
 $$
 
 where attn, MoE, expert represent the output hidden states of their respective modules, while 𝐿 and 𝐸 denote the number of layers and experts, respectively. The straightforward solution is to boundlessly enlarge $\mathbf { e x p e r t } _ { \mathrm { o u t l i e r } } ,$ then
+
+其中 attn, MoE, expert 分别表示各模块的输出隐状态, 𝐿 与 𝐸 表示层数与专家数. 那个直接的方案就是把 $\mathbf { e x p e r t } _ { \mathrm { o u t l i e r } }$ 无约束地放大, 于是
 
 $$
 \text {RMSNorm} (\boldsymbol {h} _ {\text {final}}) = \lim _ {c \to \infty} \text {RMSNorm} (c \cdot \hat {\boldsymbol {h}} _ {\text {outlier}} + \boldsymbol {h} _ {\text {others}}) = \text {RMSNorm} (\boldsymbol {h} _ {\text {outlier}}),\tag{10}
@@ -1295,7 +1355,11 @@ $$
 
 where we decouple $h _ { \mathrm { o u t l i e r } }$ to the magnitude 𝑐 and the unit vector $\hat { h } _ { \mathrm { o u t l i e r } }$ denoting the direction.
 
+其中我们把 $h _ { \mathrm { o u t l i e r } }$ 分解为幅度 𝑐 与表示方向的单位向量 $\hat { h } _ { \mathrm { o u t l i e r } }$.
+
 SwiGLU [78], the expert architecture in Step 3.5 Flash, provides a way to generate large outputs, even when the weight decay effectively suppresses the weight norms. SwiGLU is defined as follows:
+
+Step 3.5 Flash 的专家结构 SwiGLU [78] 提供了一条产生大输出的途径, 即使 weight decay 已有效抑制权重范数. SwiGLU 定义如下:
 
 $$
 \mathrm{SwiGLU} (\boldsymbol {x}) = \boldsymbol {W} _ {\mathrm{down}} \left(\mathrm{SiLU} (\boldsymbol {W} _ {\mathrm{gate}} \boldsymbol {x}) \cdot \boldsymbol {W} _ {\mathrm{up}} \boldsymbol {x}\right).\tag{11}
@@ -1309,15 +1373,21 @@ $$
 
 in outlier experts. It can be achieved only if $\mathrm { S i L U } ( \boldsymbol { W } _ { \mathrm { g a t e } } \boldsymbol { x } )$ and $W _ { \mathtt { u p } } { \pmb x }$ are highly aligned and concentrate on a very limited number of dimensions. Consequently, only a limited number of rows from $W _ { \mathtt { u p } }$ are utilized due to the sparse input. This observation leads us to prefer activation clipping over weight clipping, as activation’s numerical property directly contribute to the blow-up and the sparsity, and activation clipping can promptly address these issues. Besides, activation clipping has negligible negative effects, as well-behaved activations rarely exceed the threshold.
 
+我们分析了 $W _ { \mathrm { g a t e } } { \pmb x }$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 的激活范数, 发现离群专家与正常专家之间没有显著差异. 但逐元素相乘产生了异常输出, 在离群专家中满足上式的近似等号. 这只有当 $\mathrm { S i L U } ( \boldsymbol { W } _ { \mathrm { g a t e } } \boldsymbol { x } )$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 高度对齐且集中在极少维度上时才可能发生. 其结果是, 由于输入稀疏, $W _ { \mathtt { u p } }$ 只有少量行被用到. 这一观察让我们倾向于 activation clipping 而非 weight clipping: 激活的数值特性直接促成 blow-up 与稀疏, activation clipping 能立刻处理这两个问题. 何况 activation clipping 的负面作用可以忽略, 因为行为正常的激活很少超过阈值.
+
 <!-- page 32 of 67 -->
 
 When using the Muon optimizer, gated linear units, such as SwiGLU, are susceptible to logit explosion. This vulnerability arises from similar mechanisms that cause explosion in attention, as reported in [5]. For an outlier expert specialized to some specific bi-gram, hidden states routed to it are expected to be closely aligned to its router embedding. We validate this by inputting the router embedding into a outlier expert and directly predicting outputs based on this expert’s output. The predicted distribution aligns with that of the real data and the entire network’s performance. Combined with the overly single training target (to predict the second token in the bi-gram), we argue that gradients w.r.t. the outlier expert’s parameters, $W _ { \mathrm { g a t e } } , W _ { \mathrm { u p } }$ and $W _ { \mathrm { d o w n } } ,$ are not only abnormally low rank (denoted as 𝑟), but also consistently point in a direction that emphasizes the magnitude as analyzed in the first factor, without rotation. Let the update matrices of a parameter matrix $\overleftarrow { W } \in \mathbb { R } ^ { N \times N }$ to be
+
+使用 Muon 优化器时, 门控线性单元 (如 SwiGLU) 容易发生 logit 爆炸. 这一脆弱性源于与 [5] 所报注意力爆炸相似的机制. 对专门处理某二元组的离群专家而言, 路由给它的隐状态预计与其 router embedding 高度对齐. 我们验证了这一点: 把 router embedding 输入离群专家, 直接基于该专家的输出做预测, 所得分布与真实数据以及整个网络的表现一致. 再叠加过于单一的训练目标 (预测二元组第二个 token), 我们认为对离群专家参数 $W _ { \mathrm { g a t e } } , W _ { \mathrm { u p } }$, $W _ { \mathrm { d o w n } }$ 的梯度不仅秩异常低 (记为 𝑟), 而且如第一个因素所分析的, 始终指向强调幅度的方向, 不发生旋转. 令参数矩阵 $\overleftarrow { W } \in \mathbb { R } ^ { N \times N }$ 的更新矩阵为
 
 $$
 \Delta \boldsymbol {W} = \sum_ {i} \sigma_ {i} \boldsymbol {u} _ {i} \boldsymbol {v} _ {i} ^ {\top} = \underbrace {\sum_ {i = 1} ^ {r} \sigma_ {i} \boldsymbol {u} _ {i} \boldsymbol {v} _ {i} ^ {\top}} _ {\text {low rank signal}} + \underbrace {\sum_ {j = r + 1} ^ {N} \sigma_ {j} \boldsymbol {u} _ {j} \boldsymbol {v} _ {j} ^ {\top}} _ {\text {noise}}\tag{13}
 $$
 
 Accumulating updates over optimization steps will rapidly increase the singular value of the low-rank signals, resulting in an explosion of the weight parameter. In the GLU structure, $\| \mathrm{SiLU}(\boldsymbol{W}_{\mathrm{gate}} \boldsymbol{x}) \cdot \boldsymbol{W}_{\mathrm{up}} \boldsymbol{x} \|$ squares the spectral norm in our strong alignment case, making the progress more sharp. Additionally, Muon completely eliminates the influence of gradient magnitudes. During the blow-up process, RMSNorm reduces the gradients of large inputs. When using the Adam optimizer, its 𝜖 acts as a threshold to filter out small gradients during the learning rate adaptation, which can hinder the progress. In contrast, Muon consistently and effectively orthogonalizes the gradients, resulting in more aggressive updates.
+
+在优化步上累积更新会迅速抬高低秩信号的奇异值, 导致权重参数爆炸. 在 GLU 结构中, 我们的强对齐情形把 $\| \mathrm{SiLU}(\boldsymbol{W}_{\mathrm{gate}} \boldsymbol{x}) \cdot \boldsymbol{W}_{\mathrm{up}} \boldsymbol{x} \|$ 的谱范数平方, 使这一进程更加陡峭. 此外, Muon 完全抹除了梯度幅度的影响. blow-up 过程中, RMSNorm 会减小大输入对应的梯度. 用 Adam 时, 其 𝜖 在学习率自适应中充当过滤小梯度的阈值, 反而能阻碍这一进程; Muon 则会持续有效地正交化梯度, 更新因此更加激进.
 
 ## C. Step Pre-training Data Foundation
 
@@ -1327,9 +1397,15 @@ Accumulating updates over optimization steps will rapidly increase the singular 
 
 Beyond standard web-scale datasets (e.g., CommonCrawl), we develop **StepCrawl**, an in-house crawling and curation system designed to acquire high-quality and diverse tokens at scale. StepCrawl serves as a primary data source for both high-signal web pages and document-like content (notably PDFs), which frequently contain long-form, high-information-density material.
 
+除了常见的网页级数据集 (如 CommonCrawl), 我们自研了 **StepCrawl** — 一套站内爬取与筛选系统, 目标是规模化获取高质量, 多样化的 token. StepCrawl 同时是两类内容的主要来源: 高信号网页与文档类内容 (尤其是 PDF), 后者常含长篇, 高信息密度材料.
+
 A key component of StepCrawl is a site and URL selection layer powered by a WebOrganizer-style model [178]. We adapt the capabilities introduced in WebOrganizer and further fine-tune a version tailored to our pipeline. During crawling, each fetched web page is analyzed by this model, forming a lightweight LM-in-the-loop feedback cycle that (i) filters SEO-driven and other low-utility pages, and (ii) guides crawl-budget allocation by balancing site categories (e.g., preventing disproportionate crawling of tool and e-commerce sites) to preserve corpus diversity and reduce topical skew. In practice, StepCrawl processes on the order of ∼1B pages per day under this quality- and diversity aware scheduling policy.
 
+StepCrawl 的一个关键组件是受 WebOrganizer [178] 启发的站点与 URL 选择层. 我们复用了 WebOrganizer 引入的能力, 并针对自己的流水线微调了一个专属版本. 爬取时, 每个抓到的网页都由该模型分析, 构成一个轻量的 LM-in-the-loop 反馈回路: (i) 过滤 SEO 驱动及其他低价值页面; (ii) 通过平衡站点类别 (如避免对工具类, 电商类站点过度爬取) 指导爬取预算分配, 保持语料多样性, 减少主题倾斜. 实践中, 在这一质量与多样性感知的调度策略下, StepCrawl 每天处理约 10 亿个页面.
+
 All crawling activities strictly adhere to robots.txt and site-specific access policies. The collected content is subsequently passed through a multi-stage filtering process (quality scoring, deduplication, and sanitization), ensuring that only high-utility and policy-compliant data are retained for training.
+
+所有爬取活动严格遵守 robots.txt 与站点访问策略. 收集的内容随后经过多阶段过滤 (质量打分, 去重, 清洗), 只有高价值且合规的数据才被保留用于训练.
 
 <!-- page 33 of 67 -->
 
@@ -1337,9 +1413,15 @@ All crawling activities strictly adhere to robots.txt and site-specific access p
 
 **Quality stratification.** Inspired by Nemotron-CC [179]-style quality bucketing, we divide the internal web data into quality tiers and sample preferentially from higher tiers. We label each document using an ensemble of six lightweight scorers/classifiers and ensemble the tier assignments across scorers. In the final recipe, we keep High/Medium-High/Medium and discard Medium-Low/Low, which substantially improves token efficiency in ablations. For book and paper corpora, we apply the same stratification but restrict retention to High/Medium-High tiers exclusively during the annealing stage to maximize diversity. In addition to the shared six-scorer ensemble, we integrate additional domainspecific filters targeting STEM and knowledge-dense content, and down-sample overrepresented domains to ensure balanced representation.
 
+**质量分层.** 受 Nemotron-CC [179] 式质量分桶启发, 我们把内部网页数据划分为质量层级, 并优先从高层级采样. 我们用六个轻量打分器/分类器组成的集成为每篇文档标注层级, 并对各打分器的层级判定做集成. 最终配方保留 High/Medium-High/Medium 层, 丢弃 Medium-Low/Low 层, 这在消融中显著提升了 token 效率. 对书籍与论文语料应用同样的分层, 但在 annealing 阶段只保留 High/Medium-High 层, 以最大化多样性. 除共享的六打分器集成外, 我们还加入了面向 STEM 与知识密集内容的领域专用过滤器, 并对占比过高的领域降采样, 保证表示均衡.
+
 **Embedding-based cluster rebalancing.** We leverage embedding-based corpus balancing as a principled way to further reduce redundancy and mitigate distribution skew. Specifically, we embed large-scale Chinese/English web data, run k-means clustering (100k+ clusters), and down-sample clusters with disproportionate mass. In ablations, this cluster-level rebalancing in the cooldown stage improves a broad set of benchmarks.
 
+**基于 embedding 的聚类再平衡.** 我们把基于 embedding 的语料平衡作为进一步降低冗余, 缓解分布倾斜的原则性方法. 具体地, 对大规模中英文网页数据做 embedding, 跑 k-means 聚类 (10 万以上簇), 对质量占比失衡的簇做降采样. 消融显示, cooldown 阶段做这种簇级再平衡能提升一大批基准的表现.
+
 **Knowledge-Intensive Mining and Augmentation.** We construct a dedicated knowledge subset using a lightweight two-stage pipeline built on the shared embedding representation described above. First, a curated inventory of high-value entities, concepts, and relations is used to retrieve knowledge-dense documents and passages from the full corpus in embedding space; these candidates are ranked by a knowledge-density model and simple coverage heuristics. Second, for a portion of the retrieved content, we apply targeted transformations such as controlled rephrasing and QA synthesis to improve learnability. The resulting samples are mixed back into the training mixture to increase effective knowledge signal density. We observe consistent gains from this pipeline in ablations, while a detailed causal analysis of its benefits is left for future work.
+
+**知识密集挖掘与增强.** 我们用一条轻量的两阶段流水线构建专门的知识子集, 基于上述共享 embedding 表示. 第一阶段, 用一份精选的高价值实体, 概念, 关系清单, 在全语料的 embedding 空间中检索知识密集的文档与段落; 这些候选再由知识密度模型与简单的覆盖启发式排序. 第二阶段, 对检索到的部分内容做有针对性的变换, 如受控改写与 QA 合成, 以提升可学习性. 所得样本被混回训练配方, 提高有效知识信号密度. 消融中这一流水线带来稳定收益, 其益处的详细因果分析留待 future work.
 
 ### C.2. Code Data
 
@@ -1347,27 +1429,45 @@ All crawling activities strictly adhere to robots.txt and site-specific access p
 
 We refine our internal programming dataset using a modified version of the OpenCoder filtering rules [80], introducing a calibrated relaxation to balance data quality and diversity. In our pipeline, applying OpenCoder filters generates a set of “hits” for each document, where each hit represents a violation of a heuristic rule (signaling potential noise). We categorize the corpus by these hit counts: hit0 for clean documents (zero violations), hit1 for one violation, and so on.
 
+我们用修改版 OpenCoder 过滤规则 [80] 精炼内部编程数据集, 并引入一处校准过的放松, 以平衡数据质量与多样性. 在我们的流水线中, 应用 OpenCoder 过滤器会为每篇文档产生一组 “hits”, 每个 hit 代表违反一条启发式规则 (意味着潜在噪声). 我们按 hit 数给语料分类: hit0 是干净文档 (零违规), hit1 是一次违规, 以此类推.
+
 Our internal ablations reveal a clear quality-diversity trade-off: strict filtering (e.g., hit0-only) overprunes the corpus, while no filtering introduces excessive noise. We find that the hit0–6 configuration (accepting documents with up to 6 violations) yields the best overall benchmark performance, retaining a wider variety of high-signal code compared to the original strict constraints.
+
+内部消融揭示出明显的质量-多样性权衡: 过滤过严 (如只留 hit0) 会过度修剪语料, 不过滤又引入过多噪声. 我们发现 hit0-6 配置 (接受最多 6 次违规的文档) 的整体基准表现最好, 相比原始的严格约束保留了更多样的高信号代码.
 
 #### C.2.2. PR/Issue/Commit Data
 
 To enhance software engineering capabilities, we construct a comprehensive dataset from GitHub repositories with over 10 stars, comprising PRs, issues, and commits. We apply strict filtering on repository popularity and content quality, and use LLMs to generate missing issue descriptions, resulting in a 5-million-sample foundation. From this, we derive four training subsets:
 
+为增强软件工程能力, 我们从 star 数超过 10 的 GitHub 仓库构建一个综合数据集, 包含 PR, issue 与 commit. 我们对仓库热度与内容质量做严格过滤, 并用 LLM 补全缺失的 issue 描述, 得到一个 500 万样本的基础集, 再从中派生四个训练子集:
+
 <!-- page 34 of 67 -->
 
 **(1) Base PR/Issue/Commit Data:** We crawl data via GHArchive and GitHub API, including full commit histories. We extract changes and validate a small portion of samples against git diff ground truth, then filter to 20+ mainstream languages (e.g., Python, Java, C++). We strictly deduplicate against SWE-Bench Verified [13] and SWE-Bench Multilingual [14] to prevent leakage.
 
+**(1) 基础 PR/Issue/Commit 数据:** 我们通过 GHArchive 与 GitHub API 爬取数据, 包含完整 commit 历史. 我们提取变更, 并拿一小部分样本对照 git diff 真值做校验, 然后过滤到 20 余种主流语言 (如 Python, Java, C++). 我们针对 SWE-Bench Verified [13] 与 SWE-Bench Multilingual [14] 做严格去重, 防止泄漏.
+
 **(2) Concatenated PR-Dialogue Data (90B tokens):** We generate 90B tokens of code-editing training data by applying two Agentless-inspired templates [82]: (1) File localization: Given a problem description and repository structure, identify target file paths; (2) Code repair: Given a problem description and file content, generate precise modifications via SEARCH/REPLACE blocks.
+
+**(2) 拼接式 PR 对话数据 (90B tokens):** 我们应用两个受 Agentless 启发的模板 [82] 生成 90B token 的代码编辑训练数据: (1) 文件定位: 给定问题描述与仓库结构, 找出目标文件路径; (2) 代码修复: 给定问题描述与文件内容, 通过 SEARCH/REPLACE 块生成精确修改.
 
 We integrate this 90B code-editing data into two training phases with phase-specific masking strategies. In the annealing stage of pre-training, only template scaffolding is masked; in mid-training, the data is converted to chat dialogs with user prompts masked. Internal ablations show consistent gains over SWE-Bench Verified and SWE-Bench Multilingual in the cooldown stage and mid-training.
 
+我们把这 90B 代码编辑数据融入两个训练阶段, 并采用阶段特定的掩码策略: 预训练 annealing 阶段只掩掉模板脚手架; mid-training 阶段把数据转成对话形式, 掩掉用户 prompt. 内部消融显示, 在 cooldown 阶段与 mid-training 加入后, SWE-Bench Verified 与 SWE-Bench Multilingual 均有稳定提升.
+
 **(3) Rewritten Reasoning-Oriented Data (12B tokens):** From the Python subset of our base dataset, we derive bug-fix samples via LLM change-type annotation. We apply two concise rewriting strategies: (1) Reasoning reconstruction: an LLM reconstructs the PR author’s problem-solving process (problem analysis, root cause identification, solution design, and code implementation), injected into PR-Dialogue format. Hallucinated/inconsistent traces are filtered via rule-based and LLM verification. (2) Active Reading notebooks: PR/issue/commit data is converted into structured learning outlines (motivation, root causes, design decisions, insights), then synthesized into coherent technical notes. These rewritten datasets (∼12B tokens) are incorporated during mid-training, yielding further gains on SWE-Bench Verified.
 
+**(3) 改写为推理导向的数据 (12B tokens):** 从基础数据集的 Python 子集出发, 我们通过 LLM 变更类型标注派生 bug-fix 样本, 并应用两种简洁的改写策略: (1) 推理重构: 由 LLM 重构 PR 作者解决问题的过程 (问题分析, 根因定位, 方案设计, 代码实现), 注入 PR 对话格式; 幻觉或与事实不一致的轨迹由规则与 LLM 双重校验过滤. (2) 主动阅读笔记: 把 PR/issue/commit 数据转成结构化学习大纲 (动机, 根因, 设计决策, 洞见), 再综合成连贯的技术笔记. 这批改写数据集 (约 12B tokens) 在 mid-training 混入, 在 SWE-Bench Verified 上带来进一步提升.
+
 **(4) Environment-based Seed Data.** We curate executable environments derived from raw PR, issue, and commit records using the environment building pipeline described in Appendix E.2.2. Candidate samples are rigorously filtered to ensure test-patch inclusion and validated via strict rule-based criteria to guarantee environmental reproducibility. Furthermore, selected issues undergo targeted rewriting to augment data quality and coverage. The resulting dataset comprises hundreds of thousands of seed samples, including problem descriptions, code changes, and test functions, and serves as the foundational bedrock for enhancing agentic coding capabilities, driving significant performance gains in downstream agent tasks.
+
+**(4) 基于环境的种子数据.** 我们用附录 E.2.2 的环境构建流水线, 从原始 PR, issue, commit 记录整理出可执行环境. 候选样本经严格过滤以确保包含 test patch, 并靠严格的规则标准验证, 保证环境可复现. 此外, 精选的 issue 会经过有针对性的改写, 提升数据质量与覆盖面. 所得数据集包含数十万种子样本, 涵盖问题描述, 代码变更与测试函数, 是增强 Agent 编码能力的基石, 显著推高了下游 Agent 任务的表现.
 
 ### C.3. Mathematics & STEM Data
 
 To enhance reasoning capabilities and elicit intelligence from knowledge, we curate a large-scale mathematics and STEM dataset. Beyond the standard Common Crawl data used in prior works [180, 181], we leverage our in-house StepCrawl system to harvest a massive scale of additional mathematics related data. Specifically, we implement a filtering pipeline inspired by MegaMath [181], utilizing an ensemble of internal classifiers alongside FineMath [182]. This allows us to retain hundreds of billions of mathematics-related tokens distinct from Common Crawl. We further collect a diverse 100Msample educational dataset encompassing exercises, quizzes, and instructional content. This collection bridges the gap between academic theory and professional application, covering domains from K-12 mathematics/physics/chemistry and humanities to adult vocational exams (CPA, Legal). Early-stage experiments confirm that this problem-solving data is crucial for optimizing token efficiency during pre-training.
+
+为增强推理能力并从知识中激发智能, 我们整理了一个大规模数学与 STEM 数据集. 除了沿用前人工作 [180, 181] 的标准 Common Crawl 数据, 我们还用自研 StepCrawl 系统采集额外的大规模数学相关数据. 具体地, 我们实现了受 MegaMath [181] 启发的过滤流水线, 使用内部分类器集成并配合 FineMath [182], 由此保留下数千亿条不同于 Common Crawl 的数学相关 token. 我们还收集了多样的 1 亿样本级教育数据集, 涵盖习题, 测验与教学内容. 这批数据弥合了学术理论与职业应用之间的鸿沟, 覆盖领域从 K-12 数学/物理/化学与人文学科, 到成人职业考试 (CPA, 法律). 早期实验证实, 这类解题数据对优化预训练 token 效率至关重要.
 
 <!-- page 35 of 67 -->
 
@@ -1375,15 +1475,23 @@ To enhance reasoning capabilities and elicit intelligence from knowledge, we cur
 
 Our data construction and curation pipeline runs on a high-throughput in-house data infrastructure system designed for large-scale deduplication, mining, and model-inference filtering. We operate hybrid CPU/GPU clusters with distributed frameworks such as Spark and Ray to execute both large-volume processing (e.g., minhash-based deduplication) and model-driven curation workloads (e.g., embedding generation and classifier/LM inference), backed by a storage layer spanning object storage (OSS), HDFS, and JuiceFS for efficient reads/writes of raw corpora and intermediate artifacts.
 
+我们的数据构建与筛选流水线跑在自研的高吞吐数据基础设施上, 它为大规模去重, 挖掘与模型推理过滤而设计. 我们使用混合 CPU/GPU 集群与 Spark, Ray 等分布式框架, 既执行大批量处理 (如基于 minhash 的去重), 也执行模型驱动的筛选负载 (如 embedding 生成与分类器/LM 推理); 存储层横跨对象存储 (OSS), HDFS 与 JuiceFS, 高效读写原始语料与中间产物.
+
 ### C.5. Data Ablations Setting
 
 To rigorously assess data quality and the impact of curation strategies, we conduct an extensive ablation suite using the 30B-A3B MoE architecture trained with the Muon optimizer, consistent with the mainline settings (Table 9). Adhering to a strict token efficiency protocol, we set a fixed training budget for all experiments. Models are evaluated on the comprehensive benchmarks listed in Section 6.1, alongside a series of carefully designed held-out compression (perplexity) test sets. We observe that compression metrics often provide a more direct measure of knowledge capacity, offering signals complementary to mainstream benchmarks.
 
+为严格评估数据质量与筛选策略的影响, 我们用 30B-A3B MoE 架构 (Muon 优化器训练, 与主线设置一致, 见 Table 9) 做了一套大规模消融. 遵循严格的 token 效率协议, 所有实验使用固定训练预算. 模型在 §6.1 列出的综合基准上评测, 同时配有一系列精心设计的留出压缩 (perplexity) 测试集. 我们观察到, 压缩指标往往更直接地度量知识容量, 提供与主流基准互补的信号.
+
 Internal experiments on the 30B-A3B MoE model demonstrate its superior performance and stability compared to smaller proxies. While smaller models are computationally cheaper, they often fail to capture the nuances of complex reasoning and lack the capacity to memorize long-tail patterns, leading to an artificial bias towards data repetition. Empirically, the 30B-A3B size offers stronger stability and better fidelity to full-scale trends.
+
+30B-A3B MoE 模型的内部实验表明, 它比更小的代理模型性能更稳, 表现更优. 小模型算起来便宜, 但往往抓不住复杂推理的细微之处, 也没有容量记住长尾模式, 从而人为偏向数据重复. 经验上, 30B-A3B 的规模稳定性更强, 对全尺度趋势的保真度更好.
 
 ## D. Post Training Details
 
 This section describes the post-training process that refines the base model into a high-performance agentic system, covering SFT with rigorous data processing and quality control, followed by large-scale RL to further improve reasoning, tool use, and generalization.
+
+本节介绍后训练流程: 如何把基座模型精炼成高性能 Agent 系统, 包括经过严格数据处理与质量控制的 SFT, 以及进一步提升推理, 工具使用与泛化能力的大规模 RL.
 
 ### D.1. SFT Details
 
@@ -1391,13 +1499,23 @@ This section describes the post-training process that refines the base model int
 
 Across all domains, we apply a unified data processing pipeline that emphasizes answer verifiability, reasoning quality, and execution realism. To ensure overall data integrity, the aggregated dataset undergoes a strict two-stage filtration process:
 
+跨所有领域, 我们应用统一的数据处理流水线, 强调答案可验证性, 推理质量与执行真实性. 为保证整体数据完整性, 聚合后的数据集要经过严格的两阶段过滤:
+
 1. **Rule-based Filtering:** We eliminate low-quality data exhibiting degenerate patterns, such as infinite repetition, harmful content, and personally identifiable information.
+
+1. **基于规则的过滤:** 我们清除表现出退化模式的低质量数据, 如无限重复, 有害内容与个人可识别信息.
 
 2. **Model-based Filtering:** We utilize specialized models to detect and filter out linguistically inconsistent data. By identifying and removing samples with unnatural language mixing, we significantly refine the dataset’s linguistic purity and overall quality.
 
+2. **基于模型的过滤:** 我们用专用模型检测并过滤语言上不一致的数据. 通过识别并移除语言混杂不自然的样本, 显著提升数据集的语言纯度与整体质量.
+
 3. **Decontamination:** We conduct comprehensive benchmark decontamination to prevent test set leakage. This involves both exact matching (with digit masking to catch numerical modifications) and 𝑁-gram matching.
 
+3. **去污染:** 我们做全面的基准去污染, 防止测试集泄漏. 手段包括精确匹配 (带数字掩码, 以捕捉数值改动) 与 𝑁-gram 匹配.
+
 This process yields a final refined dataset of 871k samples, totaling 7.23B tokens.The detailed distribution of the SFT data is presented in Table 3.
+
+这一流程产出 87.1 万样本, 共 7.23B token 的最终精炼数据集. SFT 数据的详细分布见 Table 3.
 
 <!-- page 36 of 67 -->
 
@@ -1405,15 +1523,23 @@ This process yields a final refined dataset of 871k samples, totaling 7.23B toke
 
 This section details the large-scale RL post-training, covering data curation, asynchronous search-agent training, and ablations on dense and MoE models.
 
+本节详述大规模 RL 后训练, 覆盖数据筛选, 异步搜索 Agent 训练, 以及在 dense 与 MoE 模型上的消融.
+
 #### D.2.1. Data Curation
 
 We curate the RL training dataset by aggregating problems from open-source collections and competition archives spanning competitive coding, STEM, and synthetic data for general RLVR training. To prevent data contamination, we strictly exclude problems from competitions held during 2024–2026. The dataset is further augmented with: (i) synthetic arithmetic problems involving 11–13 digit integers; (ii) a generator–validator pipeline that synthesizes additional test cases for coding tasks; and (iii) synthetic environments for general reasoning tasks, such as puzzle and instruction following.
 
+我们通过聚合开源题库与竞赛档案中的问题整理 RL 训练数据集, 涵盖竞赛编程, STEM 与一般 RLVR 训练用合成数据. 为防止数据污染, 我们严格排除 2024-2026 年间举办的竞赛题目. 数据集还做了如下扩充: (i) 涉及 11-13 位整数的合成算术题; (ii) 生成器-验证器流水线, 为编程任务合成更多测试用例; (iii) 面向一般推理任务的合成环境, 如谜题与指令跟随.
+
 We apply a two-stage filtering process. First, deterministic rule-based pruning removes prompts containing images, external links, or open-ended requirements without a unique final answer. Second, an accuracy-based filter excludes trivial or degenerate problems. During training, each batch is constructed by sampling from different domains according to predefined sampling probabilities.
+
+我们应用两阶段过滤. 第一阶段, 确定性的规则剪枝移除含图片, 外部链接, 或无唯一最终答案的开放式要求的 prompt. 第二阶段, 基于准确率的过滤器排除平凡或退化的问题. 训练时, 每个 batch 按预定义的采样概率从不同领域采样构成.
 
 #### D.2.2. Reward System
 
 **Verifiable Rewards.** For STEM tasks, we employ gpt-oss-120b [33] as the verifier model, using the following structured prompt (originally in Chinese) to rigorously assess final-answer correctness. For coding tasks, we utilize sandboxes to validate code execution against test cases with soft reward.
+
+**可验证奖励.** 对 STEM 任务, 我们用 gpt-oss-120b [33] 作为验证模型, 用下面这个结构化 prompt (原为中文) 严格评估最终答案的正确性. 对编程任务, 我们用沙箱对照测试用例验证代码执行, 给予 soft reward.
 
 ```txt
 You are a strict grader. Below you are given the problem, the student's answer, and the reference answer. Please determine whether the student's answer is correct according to the rules below.
@@ -1469,6 +1595,8 @@ Figure 7: **Performance comparison between MIS-PO and GSPO.** The top figure (a)
 
 **MIS-PO vs. GSPO.** To rigorously validate the effectiveness of our method, we benchmark MIS-PO against GSPO [36] on both Dense and MoE architectures. We select GSPO as the primary baseline because it represents a competitive strategy for reducing the gradient variance inherent in importance sampling. In our implementation, we extend the original GSPO estimator to the actor-critic setting by integrating its Generalized Importance Sampling mechanism into the actor loss. Specifically, we replace the standard token-level importance sampling ratio with the geometric mean of trajectory-level ratios. The resulting actor loss is formulated as follows $( \gamma = \lambda = 1 )$
 
+**MIS-PO vs. GSPO.** 为严格验证我们方法的有效性, 我们在 Dense 与 MoE 两种架构上把 MIS-PO 与 GSPO [36] 做了对比. 选 GSPO 作为主基线, 因为它代表了降低重要性采样固有梯度方差的一种有竞争力的策略. 实现上, 我们把原始 GSPO 估计器扩展到 actor-critic 设定, 把其广义重要性采样机制集成进 actor loss: 用轨迹级比率的几何均值替代标准的 token 级重要性采样比率. 所得 actor loss 公式如下 $( \gamma = \lambda = 1 )$
+
 $$
 r _ {\tau} (\theta) = \left(\prod_ {t = 0} ^ {T - 1} \frac {\pi_ {\theta} (a _ {t} | s _ {t})}{\pi_ {\theta_ {\mathrm{old}}} (a _ {t} | s _ {t})}\right) ^ {\frac {1}{T}}\tag{14}
 $$
@@ -1485,9 +1613,15 @@ $$
 
 To ensure a fair comparison, we apply the same token- and sample-level masking strategies used in MIS-PO to exclude data with significant training–inference mismatches. Regarding the clip ratio 𝜖, we conduct a grid search over $\{ 1 , \dot { 2 } , 3 , 4 \} \times 1 0 ^ { - 4 }$ . We adopt $\epsilon = 1 0 ^ { - 4 }$ for all experiments primarily because it achieves the best benchmark performance after 200 RL training steps. Additionally, we observe that this setting yields a clip fraction of approximately 15%, consistent with the original GSPO [36].
 
+为保证公平比较, 我们对 GSPO 也应用与 MIS-PO 相同的 token 级与样本级掩码策略, 排除训练-推理失配严重的数据. 关于 clip ratio 𝜖, 我们在 $\{ 1 , \dot { 2 } , 3 , 4 \} \times 1 0 ^ { - 4 }$ 上网格搜索. 所有实验采用 $\epsilon = 1 0 ^ { - 4 }$, 主要因为它是 200 步 RL 训练后基准表现最好的设置; 此外我们观察到该设置的 clip fraction 约为 15%, 与原始 GSPO [36] 一致.
+
 Figure 7 presents the comparative results. Empirically, MIS-PO demonstrates superior sample efficiency and scalability compared to GSPO. Crucially, MIS-PO effectively constrains the traininginference mismatch within a stable range. This stability proves particularly critical for the large-scale RL training of MoE models, where the baseline GSPO fails to maintain consistent convergence.
 
+Figure 7 给出了对比结果. 经验上, MIS-PO 的样本效率与可扩展性都优于 GSPO. 关键是, MIS-PO 能把训练-推理失配约束在稳定范围内. 这一稳定性对 MoE 模型的大规模 RL 训练尤为重要, 因为基线 GSPO 无法保持稳定收敛.
+
 **Extended Training Dynamics on MoE.** To further validate the scalability of our method, we conduct an extended training run of MIS-PO on the MoE model using a challenging dataset. As illustrated in Figure 8, the model maintains a continuous upward trend in rewards, stable actor gradient norms, and well-controlled entropy levels. These results empirically confirm that MIS-PO is reliability for large-scale MoE off-policy RL training.
+
+**MoE 上的扩展训练动态.** 为进一步验证方法的可扩展性, 我们在 MoE 模型上用一份有难度的数据集对 MIS-PO 做了延长训练. 如 Figure 8 所示, 模型奖励持续上升, actor 梯度范数稳定, 熵水平控制良好. 这些结果实证地确认, MIS-PO 能可靠地用于大规模 MoE off-policy RL 训练.
 
 ![Chart block](images/p38-chart.png)
 
@@ -1501,7 +1635,11 @@ Figure 8: Extended training dynamics of MIS-PO on the MoE model. The metrics inc
 
 Regarding the training architecture, the early client–server one-step off-policy framework is severely bottlenecked by long-tail latency: approximately 5% of samples accounted for roughly 80% of the generation cost. However, our observations indicate that the policy exhibits strong robustness to staleness, maintaining stable performance even with a latency of approximately 20 steps. Consequently, we adopt the FullyAsync paradigm, decoupling generation and updates into a completely asynchronous process. Furthermore, to minimize inference overhead during multi-turn interactions, we implement sticky scheduling, where the same session is consistently dispatched to the same node to maximize KV-cache reuse. Overall, this configuration achieves an approximate 10× efficiency gain while maintaining training stability.
 
+关于训练架构, 早期的 client-server 一步式 off-policy 框架被长尾延迟严重卡住: 约 5% 的样本占了约 80% 的生成成本. 但我们观察到, 策略对陈旧性 (staleness) 有很强的鲁棒性, 即便延迟约 20 步仍能保持稳定性能. 因此我们采用 FullyAsync 范式, 把生成与更新完全解耦成异步过程. 此外, 为降低多轮交互中的推理开销, 我们实现了 sticky scheduling: 同一会话始终调度到同一节点, 最大化 KV cache 复用. 总体看, 这套配置在保持训练稳定的同时取得了约 10 倍的效率提升.
+
 Throughout the training process, the FullyAsync paradigm demonstrates robust stability, evidenced by a sustained increase in rewards and a Truncated Importance Sampling (TIS) truncation rate maintained within a controllable range, thereby indicating limited policy drift induced by asynchrony. Notably, we observe that distinct from the limited scalability of “RL from zero” regarding training budgets, injecting task-relevant knowledge and tool-use priors during the mid-training phase elicited significantly higher performance gains and a more stable emergence of capabilities during the RL.
+
+整个训练过程中, FullyAsync 范式表现出稳健的稳定性: 奖励持续上升, Truncated Importance Sampling (TIS) 截断率维持在可控范围内, 说明异步带来的策略漂移有限. 特别值得注意的是, 与 “RL from zero” 在训练预算上扩展性受限不同, 在 mid-training 阶段注入任务相关知识与工具使用先验, 能在 RL 中带来显著更高的性能收益, 且能力涌现更稳定.
 
 <!-- page 39 of 67 -->
 
@@ -1511,23 +1649,35 @@ Table 11: Impact of Tool Usage on Agent Performance. Each cell displays the Base
 
 **Discussion.** To rigorously evaluate agentic competence isolated from parametric memorization, we focus on the tool-usage gain, defined as:
 
+**讨论.** 为严格评估剥离参数记忆后的 Agent 能力, 我们聚焦工具使用增益, 定义为:
+
 $$
 \Delta_ {\text {tool}} = \text {Score} _ {\text {with tools}} - \text {Score} _ {\text {no tools}}
 $$
 
 This metric decouples the model’s inherent knowledge from its ability to dynamically leverage external tools. As detailed in Table 11, **Step 3.5 Flash** demonstrates the most robust capability to leverage external information, achieving the highest average gain (52.0) and leading significantly on complex benchmarks such as GAIA and xbench-DeepSearch.
 
+该指标把模型内化的知识与它动态利用外部工具的能力解耦. 如 Table 11 所示, **Step 3.5 Flash** 利用外部信息的能力最稳健, 平均增益最高 (52.0), 并在 GAIA 与 xbench-DeepSearch 等复杂基准上显著领先.
+
 This distinction is critical because high absolute scores on benchmarks like BrowseComp can sometimes stem from strong internalized knowledge rather than effective search strategies. A smaller $\Delta _ { \mathrm { t o o l } }$ in a high-performing model may ambiguously indicate either high efficiency (the model already “knows” the answer) or a failure to effectively utilize tools to improve results. Conversely, a large $\Delta _ { \mathrm { t o o l } }$ explicitly signals the model’s proficiency in bridging knowledge gaps through retrieval. Therefore, we argue that future optimization should not merely chase higher absolute scores (“benchmark grinding”), but should aim to maximize this $\Delta _ { \mathrm { t o o l } }$ in long-context, evidence-critical scenarios. This ensures the agent is truly mastering the process of information retrieval and reasoning, rather than overfitting to static knowledge or benchmark artifacts.
+
+这一区分至关重要: 像 BrowseComp 这类基准上的高绝对分, 有时可能来自强大的内化知识, 而非有效的搜索策略. 高性能模型的 $\Delta _ { \mathrm { t o o l } }$ 较小, 可能含糊地意味着高效 (模型本来就知道答案), 也可能意味着没能有效利用工具改进结果. 反过来, 较大的 $\Delta _ { \mathrm { t o o l } }$ 明确说明模型擅长通过检索弥合知识缺口. 因此, 我们认为未来的优化不应只追逐更高的绝对分 (“刷榜”), 而应在长上下文, 证据关键的场景中最大化 $\Delta _ { \mathrm { t o o l } }$. 这才能保证 Agent 真正掌握信息检索与推理的过程, 而不是过拟合静态知识或基准的人造痕迹.
 
 ### D.3. Tool-integrated Reasoning and Parallel Reasoning
 
 In this section, we introduce two primary methodologies for test-time scaling in Step 3.5 Flash: tool-integrated reasoning and parallel reasoning.
 
+本节介绍 Step 3.5 Flash 中两种主要的 test-time scaling 方法: 工具集成推理与并行推理.
+
 **Tool-integrated Reasoning** For complex reasoning tasks, we integrate the model with a Python interpreter to facilitate tool-assisted reasoning. In this framework, the model operates within a sandbox to iteratively think and execute code for computational, simulation, and visualization purposes. In our experiments, we evaluate on AIME 2025, HMMT 2025, IMO-AnswerBench, GPQA, HLE<sub>text</sub>, and ARC-AGI-1 with a 100-turn limit. As shown in Table 12, tool-integrated reasoning significantly
+
+**工具集成推理.** 对复杂推理任务, 我们把模型与 Python 解释器集成, 支持工具辅助推理. 在该框架中, 模型在沙箱内迭代思考并执行代码, 用于计算, 模拟与可视化. 实验中, 我们在 AIME 2025, HMMT 2025, IMO-AnswerBench, GPQA, HLE<sub>text</sub> 与 ARC-AGI-1 上评测, 轮次上限 100. 如 Table 12 所示, 工具集成推理显著
 
 <!-- page 40 of 67 -->
 
 enhances performance across challenging mathematics, STEM, and puzzle benchmarks, highlighting the advanced agentic reasoning capabilities of Step 3.5 Flash.
+
+提升了有难度的数学, STEM 与谜题基准上的表现, 凸显了 Step 3.5 Flash 的高级 Agent 推理能力.
 
 | Benchmark | Step 3.5 Flash | Step 3.5 Flash w. Python |
 | --- | --- | --- |
@@ -1543,7 +1693,11 @@ Table 12: Comparison of Step 3.5 Flash and Step 3.5 Flash w. Python.
 
 **Tool-integrated Parallel Reasoning** We present a preliminary exploration of extending PaCoRe to a multi-turn interactive environment. By design, PaCoRe preserves the standard LLM message interface. This compatibility allows for seamless integration into existing agentic frameworks that utilize multi-turn tool interaction. To adapt PaCoRe to this setting, we implement a state-aware input serialization protocol as shown in Table 14.
 
+**工具集成并行推理.** 我们初步探索了把 PaCoRe 扩展到多轮交互环境. PaCoRe 在设计上保留了标准 LLM 消息接口, 因此可以无缝集成进使用多轮工具交互的现有 Agent 框架. 为适配这一场景, 我们实现了一个状态感知的输入序列化协议, 如 Table 14 所示.
+
 We evaluate this approach on the GPQA and $\mathrm { H L E } _ { \mathrm { t e x t } }$ benchmarks using Step 3.5 Flash equipped with a Python interpreter. As shown in Table 13, extending parallel reasoning to these agentic loops yields significant performance improvements over the standard reasoning baseline. These findings demonstrate that PaCoRe effectively generalizes to environments requiring interactive feedback, highlighting a promising avenue for agentic test-time scaling.
+
+我们在 GPQA 与 $\mathrm { H L E } _ { \mathrm { t e x t } }$ 基准上评测了这一方法, 使用配备 Python 解释器的 Step 3.5 Flash. 如 Table 13 所示, 把并行推理扩展到这些 Agent 循环中, 相比标准推理基线有显著提升. 这些发现表明, PaCoRe 能有效泛化到需要交互反馈的环境, 为 Agent 场景的 test-time scaling 指明了一条有前景的路线.
 
 | Benchmark w. Python | Step 3.5 Flash | Step 3.5 Flash + PaCoRe |
 | --- | --- | --- |
@@ -1556,11 +1710,15 @@ Table 13: Comparison of Step 3.5 Flash w. Python and the same model with PaCoRe 
 
 This section provides the implementation details for our evaluation suite. We outline the specific prompt templates, few-shot configurations, and the judge models employed across different benchmarks. For complex metrics, such as those used in long-context or reasoning tasks, we also detail the underlying calculation logic and scoring criteria to ensure reproducibility. In the templates provided below, {question} denotes the placeholder for the textual problem description, while other placeholders (e.g., {test}, {context}) represent task-specific information.
 
+本节给出评测套件的实现细节. 我们列出各基准使用的具体 prompt 模板, few-shot 配置与评判模型. 对长上下文或推理任务中的复杂指标, 我们也详细说明其底层计算逻辑与评分标准, 保证可复现. 在下面模板中, {question} 表示文本问题描述的占位符, 其他占位符 (如 {test}, {context}) 表示任务特定信息.
+
 ### E.1. Evaluation Details of Pre-trained Models
 
 #### E.1.1. General language understanding and reasoning benchmarks
 
 **BBH.** We use the official CoT-prompts <sup>7</sup> of BBH [136], with only "Q:" and $\text{" } \mathbf{A} \text{: }  \text{" }$ replaced by "Problem:" and "Solution:" as follows:
+
+**BBH.** 我们使用 BBH [136] 官方 CoT prompt, 只把 "Q:" 与 $\text{" } \mathbf{A} \text{: }  \text{" }$ 替换为 "Problem:" 与 "Solution:", 如下:
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>7</sup>https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/cot-prompts</span></small>
 
@@ -1605,15 +1763,21 @@ Table 14: Input serialization templates for Tool-integrated PaCoRe. We introduce
 
 MMLU. We use the official evaluation metric of MMLU [137] with 5-shot. We employ the following task-specific system prompt:
 
+MMLU. 我们使用 MMLU [137] 官方评测指标, 5-shot, 并使用如下任务特定的 system prompt:
+
 <!-- page 42 of 67 -->
 
 **MMLU-Pro.** We follow the official evaluation metric of MMLU-Pro [139] with 5-shot. All evaluations use the following system prompt:
+
+**MMLU-Pro.** 我们沿用 MMLU-Pro [139] 官方评测指标, 5-shot. 所有评测使用如下 system prompt:
 
 ```txt
 The following are multiple choice questions (with answers) about {category}. Think step by step and then output the answer in the format of "The answer is (X)" at the end.
 ```
 
 The question prompt is structured as follows, with a deliberate trailing space after the final period:
+
+问题 prompt 结构如下, 句末刻意保留一个尾随空格:
 
 ```txt
 Question: {question}
@@ -1622,7 +1786,11 @@ Answer: Let's think step by step.
 
 Notably, we observe that a subset of the original MMLU-Pro dataset (470 out of 12,102 questions) contained an inconsistent leading space before the ground-truth options. We explicitly remove these spaces to mitigate potential formatting bias and ensure evaluation consistency.
 
+值得注意的是, 我们发现原始 MMLU-Pro 数据集中有一部分 (12,102 题中的 470 题) 在真值选项前有一个不一致的前导空格. 我们显式移除这些空格, 以缓解潜在的格式偏差, 保证评测一致性.
+
 **HellaSwag.** We use the official evaluation metric of HellaSwag [140] with 10-shot. We employ the following question prompt:
+
+**HellaSwag.** 我们使用 HellaSwag [140] 官方评测指标, 10-shot, 并使用如下问题 prompt:
 
 ```txt
 Question: {question}
@@ -1635,6 +1803,8 @@ Answer:
 
 **WinoGrande.** We use the official evaluation metric of WinoGrande [141] with 5-shot. The question prompt is structured to present the binary choices clearly:
 
+**WinoGrande.** 我们使用 WinoGrande [141] 官方评测指标, 5-shot. 问题 prompt 被设计为清晰呈现二元选项:
+
 ```txt
 Question: {question}
 Options:
@@ -1645,6 +1815,8 @@ Answer:
 ```
 
 **GPQA.** We use the official evaluation metric of GPQA [142] with 5-shot. The question prompt is structured to present the choices clearly:
+
+**GPQA.** 我们使用 GPQA [142] 官方评测指标, 5-shot. 问题 prompt 被设计为清晰呈现各选项:
 
 ```txt
 Question: {question}
@@ -1663,6 +1835,8 @@ Answer: Let's think step by step.
 
 **SuperGPQA.** We use the official evaluation metric of SuperGPQA [143] with 5-shot. The question prompt follows a Chain-of-Thought (CoT) structure, where each few-shot example includes a step-by-step derivation leading to the final answer:
 
+**SuperGPQA.** 我们使用 SuperGPQA [143] 官方评测指标, 5-shot. 问题 prompt 采用 CoT 结构, 每个 few-shot 示例都给出逐步推导直到最终答案:
+
 ```txt
 Question:
 {question}
@@ -1672,6 +1846,8 @@ Answer: Let's think step by step.
 
 **SimpleQA.** We use the official evaluation metric of SimpleQA [144] with 5-shot. As SimpleQA requires open-ended short answers, we employ an LLM-based judgement for evaluation, specifically using gpt-oss-120b [33] as the judge model. The question prompt is formatted as a concise query:
 
+**SimpleQA.** 我们使用 SimpleQA [144] 官方评测指标, 5-shot. 由于 SimpleQA 是开放式短答案, 我们用 LLM 评判做评测, 具体以 gpt-oss-120b [33] 作为评判模型. 问题 prompt 被格式化为简洁查询:
+
 ```txt
 Question: {question} Answer:
 ```
@@ -1679,6 +1855,8 @@ Question: {question} Answer:
 #### E.1.2. Mathematics reasoning benchmarks
 
 **GSM8K.** We use the official evaluation metric of GSM8K [145] with 8-shot. The question prompt is designed to elicit CoT reasoning by using the following template:
+
+**GSM8K.** 我们使用 GSM8K [145] 官方评测指标, 8-shot. 问题 prompt 用如下模板引导 CoT 推理:
 
 ```txt
 Q: {question}
@@ -1697,6 +1875,8 @@ Solution:
 #### E.1.3. Coding benchmarks
 
 **HumanEval.** We use the official evaluation metric of HumanEval [147] with 3-shot. The question prompt is structured with three ground-truth examples to provide contextual guidance for code generation:
+
+**HumanEval.** 我们使用 HumanEval [147] 官方评测指标, 3-shot. 问题 prompt 附三个真值示例, 为代码生成提供上下文引导:
 
 ```python
 # Below are the ground-truth solutions:
@@ -1737,9 +1917,15 @@ def fast_reverse_list(some_list: list) -> list:
 
 **MBPP.** We follow the official evaluation metric of MBPP [148] with 3-shot.
 
+**MBPP.** 我们沿用 MBPP [148] 官方评测指标, 3-shot.
+
 **HumanEval+.** We follow the official evaluation metric of HumanEval+ [149] with 3-shot.
 
+**HumanEval+.** 我们沿用 HumanEval+ [149] 官方评测指标, 3-shot.
+
 **MBPP+.** We use the official evaluation metric of MBPP+ [149] with zero-shot. We employ a structured instruction prompt that specifies the task requirements and includes a sample test case for alignment:
+
+**MBPP+.** 我们使用 MBPP+ [149] 官方评测指标, zero-shot, 并使用结构化指令 prompt, 明确任务要求并附一个样例测试用例对齐:
 
 ````txt
 You are an expert Python programmer, and here is your task:
@@ -1752,9 +1938,13 @@ Here is the corresponding code:
 
 **MultiPL-E.** We use the official evaluation metric of MultiPL-E [150] with zero-shot. We follow the official test cases to judge the generated code.
 
+**MultiPL-E.** 我们使用 MultiPL-E [150] 官方评测指标, zero-shot, 沿用官方测试用例评判生成代码.
+
 #### E.1.4. Chinese understanding benchmarks
 
 **C-Eval.** We use the official evaluation metric of C-Eval [151] and add a 5-shot setting. We employ the following system prompt:
+
+**C-Eval.** 我们使用 C-Eval [151] 官方评测指标, 并加上 5-shot 设置. 使用如下 system prompt:
 
 ```txt
 你是一个中文人工智能助手, 以下是中国关于{category}考试的单项选择题, 请选出其中的正确答案.
@@ -1762,11 +1952,15 @@ Here is the corresponding code:
 
 **CMMLU.** We use the official evaluation metric of CMMLU [152] and add a 5-shot setting. We employ the following system prompt:
 
+**CMMLU.** 我们使用 CMMLU [152] 官方评测指标, 并加上 5-shot 设置. 使用如下 system prompt:
+
 <!-- page 45 of 67 -->
 
 你是一个中文人工智能**助手,**以下是中国关于{category}考试的单项**选择**题, 请选出其中的正确答案.
 
 The corresponding question prompt is structured as follows:
+
+对应的问题 prompt 结构如下:
 
 ```txt
 {question}
@@ -1774,6 +1968,8 @@ The corresponding question prompt is structured as follows:
 ```
 
 **C-SimpleQA.** We use the official evaluation metric and LLM-based judgement protocols of Chinese SimpleQA [153]. We add a 5-shot setting and use gpt-oss-120b [33] as the judge model. We employ the following question prompt:
+
+**C-SimpleQA.** 我们使用 Chinese SimpleQA [153] 的官方评测指标与 LLM 评判协议, 加上 5-shot 设置, 并以 gpt-oss-120b [33] 作为评判模型. 使用如下问题 prompt:
 
 问题:{question}
 
@@ -1783,9 +1979,13 @@ The corresponding question prompt is structured as follows:
 
 In this section, we detail the evaluation protocols used to assess the post-trained models across a diverse set of agentic tasks. Our evaluations span both code-centric and general-purpose agent settings, covering software engineering, terminal interaction, deep search, research workflows, and real-world tool use. We report standardized metrics under carefully controlled environments and inference budgets to ensure fair, stable comparisons across benchmarks.
 
+本节详述用于评估后训练模型的评测协议, 覆盖多样的 Agent 任务. 评测兼顾代码中心与通用 Agent 场景, 包括软件工程, 终端交互, 深度搜索, 研究工作流与真实工具使用. 我们在严格控制的环境与推理预算下报告标准化指标, 保证跨基准的公平稳定比较.
+
 #### E.2.1. Reasoning benchmarks
 
 **CF-Div2-Stepfun.** Recent studies and advanced benchmarks emphasize the critical need to evaluate models on fresh, competition-level problem [183, 184]. We evaluate the competitive programming capabilities of our model using a custom CodeForces Div. 2 Benchmark <sup>8</sup>. The benchmark comprises 53 problems sourced from official CodeForces Div.2 contests held between September 2024 and February 2025. We develop an offline evaluation framework that utilizes a local grading mechanism as an alternative to real-time online submissions. We try to construct test cases similar to the original test cases. Specifically, we first generate enough small-scale test cases for evaluation correctness coverage, then add randomized data for large-scale testing. Finally, we performed adversarial construction of edge cases by analyzing common error patterns and "hacked" submissions from actual users. Some edge cases are also auto-generated by the stress testing technique, which keeps generating countless test cases until one can distinguish failed submissions from correct submissions. To validate the reliability of this benchmark, we run both correct and representative failed submissions selected from the original contests. Our evaluator correctly identifies 100% of the accepted submissions as "Passed", while 92.45% of the failed submissions are accurately flagged.
+
+**CF-Div2-Stepfun.** 近期研究与更先进的基准都强调, 用新鲜, 竞赛级的问题评测模型至关重要 [183, 184]. 我们用一个定制的 CodeForces Div. 2 基准评测模型的竞赛编程能力. 该基准包含 53 道题, 取自 2024 年 9 月至 2025 年 2 月的官方 CodeForces Div.2 场次. 我们开发了一个离线评测框架, 用本地评测机制替代实时在线提交. 我们尽量构造与原始测试用例相似的用例: 先生成足够多的小数据测试用例保证正确性覆盖, 再加入随机化数据做大规模测试. 最后, 我们通过分析常见错误模式与真实用户的 "hacked" 提交, 对抗性地构造边界用例; 部分边界用例也由 stress testing 技术自动生成, 持续生成大量测试用例, 直到某个用例能区分错误提交与正确提交. 为验证基准的可靠性, 我们同时运行正确提交与原比赛中筛选出的有代表性的失败提交. 评测器把 100% 的通过提交正确判为 "Passed", 92.45% 的失败提交被准确标记.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>8</sup>https://huggingface.co/datasets/stepfun-ai/CF-Div2-Stepfun</span></small>
 
@@ -1807,12 +2007,16 @@ Table 15: Full evaluation results of variable models in CF-Div2-Stepfun.
 
 We sample 8 responses for each problem and report the average accuracy. The user prompt utilized for this process is:
 
+我们对每题采样 8 个回答, 报告平均准确率. 该过程使用的用户 prompt 如下:
+
 ```txt
 You are a coding expert. Given a competition-level coding problem, you need to write a {LANGUAGE} program to solve it. You may start by outlining your thought process. In the end, please provide the complete code in a code block enclosed with .....
 {question}
 ```
 
 The compilation and execution commands for C++, Python, Java are given below:
+
+C++, Python, Java 的编译与执行命令如下:
 
 ```batch
 g++ -std=c++20 -fno-asm -fsanitize=bounds -fno-sanitize-recover=bounds -static -02 -DONLINE_JUDGE -o code.exe code.cpp ./code.exe
@@ -1825,7 +2029,11 @@ java -XX:+UseSerialGC -Xmx544m -Xss64m -DONLINE_JUDGE {JAVA_CLASS_NAME}
 
 To maintain consistency with competitive programming norms and avoid the inconsistent overhead associated with JIT "warm-up" periods, we use the standard Python interpreter with a double time limit rather than PyPy<sup>9</sup>. We apply this same double time limit to all Java submissions.
 
+为与竞赛编程惯例保持一致, 并避开 JIT "warm-up" 阶段不一致的开销, 我们用标准 Python 解释器并给双倍时限, 而非 PyPy. 所有 Java 提交也适用同样的双倍时限.
+
 While the Table 15 reports raw accuracy, we recognize that problem difficulty varies significantly. Therefore, rating scores provide more robust metrics. Although frameworks like CodeELO [185] can calculate competitive ratings, current top-tier models perform so effectively in Division 2 contests that their ratings may result in statistical outliers. Furthermore, we adopt a simplified rating calculation that disregards submission time penalties by assuming all solutions are submitted at the onset of the contest. While this approach deviates from empirical competitive scenarios and may result in ratings that are not directly comparable to human participants, it provides a standardized benchmark for consistent cross-model comparison.
+
+Table 15 报告的是原始准确率, 但我们注意到题目难度差异很大, 因此 rating 分数是更稳健的指标. 虽然 CodeELO [185] 这类框架能计算竞赛 rating, 当前顶尖模型在 Division 2 比赛中表现太好, 算出的 rating 可能成为统计离群点. 此外, 我们采用简化的 rating 计算, 忽略提交时间惩罚, 假设所有解都在比赛开始时提交. 这种做法与真实竞赛场景有偏差, 所得 rating 也不能直接与人类选手比较, 但它提供了一个标准化的基准, 保证跨模型比较的一致性.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>9</sup>https://pypy.org/</span></small>
 
@@ -1838,6 +2046,8 @@ You are an expert Python programmer. You will be given a question (problem speci
 ```
 
 The corresponding question prompt is structured as follows:
+
+对应的问题 prompt 结构如下:
 
 ````markdown
 ### Question:
@@ -1852,12 +2062,16 @@ the problem and enclose your code within delimiters.
 
 **AIME 2025.** We use the official evaluation method of AIME 2025 [170] with repeat@64. We employ the following question prompt:
 
+**AIME 2025.** 我们使用 AIME 2025 [170] 官方评测方法, repeat@64, 并使用如下问题 prompt:
+
 ```txt
 Answer the question and place the answer inside \boxed {} with MathTeX format.
 {question}
 ```
 
 **HMMT 2025 Feb./Nov.** We use the official evaluation method of HMMT 2025 [11] with repeat@64. We employ the following question prompt:
+
+**HMMT 2025 Feb./Nov.** 我们使用 HMMT 2025 [11] 官方评测方法, repeat@64, 并使用如下问题 prompt:
 
 ```txt
 Answer the question and place the answer inside \boxed {} with MathTeX format.
@@ -1866,12 +2080,16 @@ Answer the question and place the answer inside \boxed {} with MathTeX format.
 
 **IMO-AnswerBench.** We use the official evaluation method of IMO-AnswerBench [91] with repeat@64. We employ the following question prompt:
 
+**IMO-AnswerBench.** 我们使用 IMO-AnswerBench [91] 官方评测方法, repeat@64, 并使用如下问题 prompt:
+
 ```txt
 Answer the question and place the answer inside \boxed {} with MathTeX format.
 {question}
 ```
 
 **MMLU-Pro.** We use the official evaluation method of MMLU-Pro [139]. The processing of dataset remains consistent with our pre-training MMLU-Pro evaluation methodology (see Appendix E.1.1 for details).
+
+**MMLU-Pro.** 我们使用 MMLU-Pro [139] 官方评测方法. 数据处理与预训练阶段的 MMLU-Pro 评测方法保持一致 (详见附录 E.1.1).
 
 ```txt
 Answer the question and place the option (A/B/C/D...) inside \boxed{}. {question}
@@ -1880,6 +2098,8 @@ Answer the question and place the option (A/B/C/D...) inside \boxed{}. {question
 <!-- page 48 of 67 -->
 
 GPQA-Diamond. We use the official evaluation method of GPQA-Diamond [142]. We employ the following question prompt:
+
+GPQA-Diamond. 我们使用 GPQA-Diamond [142] 官方评测方法, 并使用如下问题 prompt:
 
 | Answer the question and place the option (A/B/C/D...) inside \\boxed{}. |
 | --- |

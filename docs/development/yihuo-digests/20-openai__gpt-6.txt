@@ -1,0 +1,57 @@
+# 20-openai/gpt-6  文件: content/model-library/03-模型家族\20-openai/gpt-6\gpt-6-bi.md  共 14 块
+
+--- 行55 [核对] ---
+> PDF 文字层在同一位置能读出 「GPT」, 「Astra」 两个词, 说明原页是黑底上叠白字或动画. 抓页时文字留在了文字层, 图片层只剩背景, 所以这张图没有信息量. 本页后面 9 张图里, 只有第 4 页的曲线和第 10 页的截图有实际内容.
+
+
+--- 行84 [想] ---
+> 总表 FrontierMath Tier 4 (v2) 一行, Astra 是 97.6%, 不是 98%. 98 是把 97.6 四舍五入到整数. 第 3 页 PDF 顶部的图表标签里也有 「FrontierMath Tier 4 (v2)」, 说明正文和总表说的是同一个版本. 97.6% 离满分还差 2.4 分, 用 「saturates」 描述偏宽. 同表里 Fable 5 是 90.2%, Fable 5.1 87.8%, Sol 83.0%.
+
+
+--- 行87 [问] ---
+> 页面没印发布日期, 只写 「rolling out today」. 顶上的更新横幅是 September 22, 2026, 讲的是后来加入的 Sol 和 Luna, 说明抓页不早于 9 月 22 日, 而 Astra 本身的发布日在它之前. 第 15 页又说 Private Safety Processing 是 「as we shared last month」, 能推出发布月份的前一个月做过一次公告, 但具体哪天, 全文推不出来.
+
+
+--- 行104 [核对] ---
+> 找不到. 第 17 页 Terminal-Bench Science 0.1 一行只有一个 Astra 分数 64.6%, 总表注明 「Evaluation scores are the maximum at any effort」, 取的是各档最高. 61.1% 是低成本档, 只出现在正文. 两个数都成立, 只是口径不同: 61.1 比 Sol 最好的 22.4 高 38.7 分, 64.6 比 Fable 5.1 的 52.6 高 12.0 分. 同行 Fable 5 21.4%, Opus 5 30.0%, Gemini 没有分数.
+
+
+--- 行146 [看表] ---
+> 对得上. (75−40)/75=46.7%, 四舍五入是 47%. 分数也和第 16 页总表一致: OSWorld 2.0 一行 Astra 72.6%, Sol 65.7%. 不过同一行 Claude Opus 5 是 70.2% (上标 3), 比 Sol 高 4.5 分, 离 Astra 只差 2.4 分, 正文只拿 Sol 对比, 没提 Opus 5 用了多少时间. 这里的 「latency simulations」 是模拟耗时, 页面没说模拟按什么速度算.
+
+
+--- 行243 [拆开] ---
+> 两张都是同一个空的幻灯片查看器, 页码显示 「– / –」, 抓页时幻灯片还没加载完. 按 PDF 文字层的顺序, 第一张位于 「Reference file」 下面, 第二张位于 「GPT-6 Astra output」 下面. MinerU 取文件名时用了图下方的文字, 所以第一张被叫成 「astra-output」, 实际对应参考文件. 两张都看不出 Astra 做的幻灯片长什么样.
+
+
+--- 行400 [确认] ---
+> 第 17 页总表: Astra 96.0%, Gemini 3.8 Flash 95.3%, Sol 94.6%, Fable 5.1 和 Opus 5 都是 93.7%, Fable 5 92.6%. Astra 领先第二名 Gemini 3.8 Flash 0.7 分. 低成本档的 94.9% 只比 Sol 高 0.3 分, 却低于 Gemini 3.8 Flash 的 95.3%, 所以低成本档只比过了 Sol, 没比过全表. 6 个模型全落在 92.6% 到 96.0% 之间, 首尾只差 3.4 分, 这一项已经接近饱和.
+
+
+--- 行443 [回看] ---
+> 正文没给数字, 第 17 页总表是 Astra 39.0%, Sol 5.5%. 脚注 14 说这个评测含 20 个高危 V8 漏洞, 跨 13 个 Chrome 稳定版, 有些漏洞在评测限制下可能根本做不到任意代码执行, 所以 100% 未必可达. 脚注还说 Sol 的 5.5% 是评测 300 轮上限造成的, 限制放宽时 Sol 能到 11.5%. 按 20 题算, 39.0% 约等于 7.8 题, 5.5% 约 1.1 题, 11.5% 约 2.3 题, 都不是整数, 说明分数是多次运行的平均或按部分得分算, 页面没说是哪种. 同样的 300 轮上限对 Astra 有没有影响, 脚注也没说.
+
+
+--- 行450 [停一下] ---
+> 总表 SRE-Bench 一行只有单次尝试的分数: Astra 88.0%, Sol 55.9%, Claude Opus 5 12.5%. 四次以内的 99.2% 和 68.7% 只在正文里. Opus 5 的 12.5% 正文没提, 它和 Astra 差 75.5 分, 是整张网络安全表里差距最大的一格. 另外 PDF 文字层在 「SRE-Bench」 后有脚注号 15, 指向第 20 页的 arXiv 论文, MinerU 把它丢了, 只剩 「SRE-Bench ,」 里多出来的空格.
+
+
+--- 行577 [再看] ---
+> MinerU 把表格拆成了散行, 还丢掉了所有 「-」 占位, 只读 Markdown 会错列. 按 PDF 文字层补齐 6 列: Agents' Last Exam 是 59.3%, 53.6%, -, 48.7%, 55.5%, -, 即 Astra, Sol, Fable 5.1 空, Fable 5, Opus 5, Gemini 空; OSWorld 2.0 是 72.6%, 65.7%, -, -, 70.2%, -, 70.2% 属于 Opus 5; ScreenSpot-Pro 是 92.7%, 76.9%, -, 87.3%, -, -, 87.3% 属于 Fable 5, 脚注 17 说这个分数实际来自 Mythos, 即防护更少的 Fable. 所以 ScreenSpot-Pro 上的对手分数不是 Fable 5 的公开版本.
+
+
+--- 行601 [想] ---
+> Astra 61.2, 排第 4. 前面是 Fable 5.1 65.7, Opus 5 63.1, Fable 5 62.1; 后面是 Sol 60.9, Gemini 3.8 Flash 58.7. Astra 比 Fable 5.1 低 4.5 分, 比上一代 Sol 只高 0.3 分. 这是整张表里唯一一个第三方综合智能指数, 正文没有提它. 同一张表里, Astra 在 AutomationBench 上领先第二名 Fable 5.1 10.0 分, BrowseComp 只领先 Opus 5 0.7 分.
+
+
+--- 行617 [问] ---
+> 3 行领先: Terminal-Bench 4.0 (57.9%, 第二名 Fable 5.1 55.8%), DeepSWE v1.1 (74.1%, 第二名 Gemini 73.8%, 只差 0.3), 内部数据库迁移 (63.9%, 第二名 Fable 5.1 57.8%). 另外 3 行落后: FrontierCode Extended 上 Fable 5 64.9% 高于 Astra 64.5%; FrontierCode Main 上 Fable 5 53.5%, Opus 5 53.4% 都高于 Astra 53.3%; Coding Agent Index 上 Opus 5 68.1, Fable 5 67.2 都高于 Astra 67.0. 而且 FrontierCode 两行 Astra 还用了脚注 8 的专门提示词. 落后幅度都在 1.1 分以内, 但 「best to date」 在自家总表里就有三处反例.
+
+
+--- 行626 [核对] ---
+> Astra 57.2%, Fable 5.1 65.0%, Fable 5 63.8%, Opus 5 63.6%. Astra 比三个 Claude 模型都低, 比 Fable 5.1 低 7.8 分, 是整张总表里 Astra 落后最多的一格. Sol 这一格是 「-」, 没法看出代际进步. 正文从头到尾没提 Humanity's Last Exam, 第 11 页 「sets new records across a suite of math and science evaluations」 的图表标签里也没有它.
+
+
+--- 行682 [看表] ---
+> 同表 ARC-AGI-2 上两者是 95.0% 对 92.5%, ARC-AGI-1 是 98.5% 对 97.5%, 只差 2.5 分和 1.0 分. 唯独 ARC-AGI-3 差 92.1 分, Opus 5 也只有 30.2%. 脚注 1 说 Astra 在 ARC-AGI-3 上跑的是 「responses API harness」, 改了两个设置, 链接标题是 「How two settings tripled our ARC-AGI-3 scores」. Sol 用没用这套 harness, 脚注没说. 第 4 页 ARC Prize 的引语说的是 「96% of levels」 超过人类行动效率基线, 和 99.9% 也是两个口径. ARC-AGI-1 上 Fable 5 也是 98.5%, 和 Astra 并列.
+

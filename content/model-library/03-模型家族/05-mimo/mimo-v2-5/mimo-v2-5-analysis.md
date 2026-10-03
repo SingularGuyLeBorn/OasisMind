@@ -1,6 +1,6 @@
 # MiMo-V2.5: 在 Flash 骨干上接视听, 把窗口拉到 1M
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 源文 `mimo-v2-5.md` 是 2026-04-22 的产品发布页 (6 页标记, 11 图, 约 4900 英文字符). 页内给出规格口号 (310B 总参 / 15B 激活 / 48T tokens), 骨干继承 Flash 的 hybrid sliding window attention, 自研视听编码器加轻量 projector, 五阶段训练顺序, 一张架构图, 两组柱图, 开源表与 Token Plan. 没有专家数, 窗长, 层表, 评测协议, 也没有 MOPD 的公式. 下文把这页放进家族谱系里读; 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处, 不把它们当成本页规格.
+> **[OM-FREEPLAY] 材料不够 5000 汉字.** 源文 `mimo-v2-5.md` 是 2026-04-22 的产品发布页 (6 页标记, 11 图, 约 4900 英文字符). 页内给出规格口号 (310B 总参 / 15B 激活 / 48T tokens), 骨干继承 Flash 的 hybrid sliding window attention, 自研视听编码器加轻量 projector, 五阶段训练顺序, 一张架构图, 两组柱图, 开源表与 Token Plan. 没有专家数, 窗长, 层表, 评测协议, 也没有 MOPD 的公式. 下文把这页放进家族谱系里读; 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处, 不把它们当成本报告的规格.
 
 来源: 同目录 `mimo-v2-5.md`. 对照译稿见 `mimo-v2-5-bi.md`. 入口: [AI Studio](https://aistudio.xiaomimimo.com/), [API](https://platform.xiaomimimo.com/), [Hugging Face](https://huggingface.co/XiaomiMiMo/MiMo-V2.5). 同族报告: `../mimo-v2-flash/mimo-v2-flash.md`, `../mimo-v2-6/mimo-v2-6.md`.
 

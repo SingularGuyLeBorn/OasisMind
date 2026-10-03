@@ -1,0 +1,57 @@
+# 08-claude/claude-2  文件: content/model-library/03-模型家族\08-claude/claude-2\claude-2-bi.md  共 14 块
+
+--- 行27 [想] ---
+> 本目录只有这篇博客页和它的 PDF 打印件, 模型卡本身不在这里. 页面上的 76.5%, 73.0%, 71.2%, 56.0%, 88.0%, 85.2% 和 「2x」 都是博客正文直接给的, 正文没写它们在模型卡里对应哪一节, 也没写评测设置. 读这批数字只能以本页原句为准; 想查评测细节, 得另开那份模型卡, 而那已经超出本目录.
+
+
+--- 行30 [核对] ---
+> 原句写的是 「up from 73.0% with Claude 1.3」, 对照对象是 Claude 1.3, 不是泛称的 「previous models」. 范围也限定在 「the multiple choice section」, 只是选择题部分, 不含论述题等其他部分. 所以这组数字说的是: 在同一份选择题上, Claude 2 比 Claude 1.3 高 3.5 个百分点; 能不能通过律师资格考试, 页面没说.
+
+
+--- 行39 [拆开] ---
+> 参照人群是第1页末尾那半句定的: 「college students applying to graduate school」. 阅读和写作是 「above the 90th percentile」, 定量推理只是 「similarly to the median applicant」, 也就是大约第 50 百分位. 同一句里, 语言类考试和数学类考试差了一大截, 这和下文 GSM8k 只从 85.2% 涨到 88.0% 可以对照着读: 页面自己给出的数学进步幅度, 本来就比编程小.
+
+
+--- 行46 [问] ---
+> 页面没有给出任何价格数字, 只说 Claude 2 API 和 Claude 1.3 同价, 而且限定是 「for businesses」. 网页端的开放范围写得很具体: 「anyone in the US and UK」, 形式是 beta. 第3页又重复了一次 「generally available in the US and UK」, 并说 「coming months」 再扩大地区. 所以价格要去别处查; 这篇页面能确认的只有 「不涨价」 和 「只开美英两地」.
+
+
+--- 行53 [对一下] ---
+> 两边差得很远: 输入是 「up to 100K tokens」, 输出只是 「up to a few thousand tokens」, 差了一两个数量级. 页面对输出只给了模糊的 「a few thousand」, 没有确切上限. 至于 100K, 这个词挂的链接指向另一篇新闻 100k-context-windows, 说明 100K 上下文另有单独的发布; 本页只说 「increased the length」, 没交代 Claude 1.3 原来是多少, 也没说 100K 是不是 Claude 2 首次提供.
+
+
+--- 行60 [确认] ---
+> 这一段本身没有点名旧模型, 只写 「up from 56.0%」 和 「up from 85.2%」. 能对上的只有第1页那句 「up from 73.0% with Claude 1.3」, 按行文推断这里的对照也是 Claude 1.3, 但页面没有逐句写明. 评测设置同样缺席: HumanEval 没写是 pass@1 还是别的口径, 没写几个样本; GSM8k 没写几个示例, 有没有让模型先写推理过程. 两组数字只能当 「同一口径下的前后对比」 来读, 不宜拿去和别家报告的数字直接比.
+
+
+--- 行67 [停一下] ---
+> 页面没给分子分母. 「2x better」 可以理解成无害回答比例翻倍, 也可以理解成有害回答比例减半, 两种读法数值完全不同, 原句没说是哪种. 能确认的是评测的构成: 内部红队评测, 「a large representative set of harmful prompts」, 自动化打分, 外加定期人工核查. 题目数量, 有害的判定标准, Claude 1.3 的基线分数, 页面都没写.
+
+
+--- 行70 [回看] ---
+> 按 URL, 第一个 「here」 是 constitutional-ai-harmlessness-from-ai-feedback, 第二个是 the-capacity-for-moral-self-correction-in-large-language-models, 第三个链接是一篇关于红队测试方法, Scaling 行为和经验的研究. 原句说 「we’ve used a variety of safety techniques (which you can read about here and here)」, 所以 Constitutional AI 确实被列为用过的安全技术之一. 但页面没说它用在训练的哪一步, 和 RLHF 或 PPO 怎么配合, 占多大比重. 本页只能支撑 「用过」, 支撑不了任何具体配方.
+
+
+--- 行83 [对一下] ---
+> 对不上号, 因为页面缺一个基线. 如果按 100K 倒推, 3 倍意味着原来约 33K, 但本页从没提过 33K 这个数; Jasper 也没说 3X 是相对 Claude 1.3, 还是相对他们之前接的别家模型. 另外, 「long form low latency」 这个评价是 Anthropic 转述 Jasper 的发现, 没有延迟数字. 这句引语能读出的是合作方的体感, 不是一组可以换算的规格.
+
+
+--- 行90 [再看] ---
+> 没有. 两处都只是比较级: 一处是 Jasper 引语里的 「up-to-date knowledge training」, 一处是 Anthropic 在 Sourcegraph 段落里的陈述 「trained on more recent data」, 后面接的好处是 「knowledge of newer frameworks and libraries」. 截止月份, 数据来源, 数据量都没写. 值得注意的是, 后一句是 Anthropic 的叙述而非客户引语, 它是全文唯一一处 Anthropic 自己谈到 Claude 2 训练数据的地方.
+
+
+--- 行97 [核对] ---
+> 从行文看是明确的使用边界: 前半句先给出推荐场景 「summarize or organize information」, 后半句用 「should not be used」 划出不该用的场合, 并且和 「open beta launch」, 「can generate inappropriate responses」 放在同一段. 页面没把它写成条款, 也没说违反会怎样, 但它是全文唯一一处 Anthropic 主动给 Claude 2 划出的禁用场景. 对照页脚那批 2026 年的 Healthcare, Life sciences 链接读, 更能看出这是 2023 年发布时的口径.
+
+
+--- 行138 [停一下] ---
+> 因为 PDF 是后来抓取的网页快照. Claude 2 公告正文到第4页开头 「business who would like to start working with Claude」 为止; 之后的 「## XO」, 「Related content」 三条推荐, 以及第4页到第8页的站点导航和页脚, 都是抓取当时的页面内容, 页脚写着 「© 2026 Anthropic PBC」. 这三条推荐和 Claude 2 没有关系, 读公告时应截在 「## XO」 之前.
+
+
+--- 行195 [回看] ---
+> 没有. 这一栏只列了 Mythos, Fable, Opus, Sonnet, Haiku 五个系列名, 正文反复出现的 Claude 2 和 Claude 1.3 都不在其中. 这说明快照抓取时, 这两个版本名已经不在官网的模型导航里. 本文讨论模型时以第1页到第4页开头的正文为准, 导航栏只反映 2026 年的站点结构.
+
+
+--- 行346 [想] ---
+> 页面没有把两者关联起来. 正文那个链接的路径是 research/constitutional-ai-harmlessness-from-ai-feedback, 是 Anthropic 的一篇研究, 被写进 「a variety of safety techniques」 的括号里, 和 Claude 2 有直接关系. 页脚的 「Claude’s Constitution」 指向 /constitution, 是 2026 年快照里的站点链接, 页面没有给正文, 也没说它和 2023 年的 Claude 2 有什么关系. 讨论 Claude 2 的安全方法, 该引的是第2页正文那句, 不是页脚.
+

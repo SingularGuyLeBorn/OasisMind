@@ -1,0 +1,41 @@
+# 16-llama/llama4  文件: content/model-library/03-模型家族\16-llama/llama4\llama4-bi.md  共 10 块
+
+--- 行83 [拆开] ---
+> 第 1 页 Takeaways 说 Scout 「fitting in a single NVIDIA H100 GPU」, 没有任何前提. 这一段加了括号 「(with Int4 quantization)」. 第 6 页给出 Scout 总参数 109B. 按 Int4 每个参数半字节算, 光权重约 109 x 0.5 = 54.5 GB; 按第 5 页提到的 FP8 每参数 1 字节算约 109 GB. 页面没印 H100 的显存有多大, 也没说 10M 上下文要占的缓存算不算在 「fits」 里. Maverick 的说法前后换了三次: 这一段是 「single H100 host」, 第 4 页是 「single NVIDIA H100 DGX host」, 第 6 页表注 5 是 「On a single host」. 一台主机装几张卡, 用什么精度, 页面都没写, 所以 400B 总参数装进一台主机的条件没法从页面核对.
+
+
+--- 行154 [确认] ---
+> 图里 Routed Experts 框写的是 Expert 0, Expert 1, 省略号, Expert 15, 按编号是 16 个. 图下正文以 Maverick 为例, 说 MoE 层有 128 个路由专家加 1 个共享专家. 在页面上, 16 这个数属于 Scout 和 Behemoth (第 1, 2, 6, 10 页都写 16 experts), 可正文没说 Scout 或 Behemoth 也有共享专家, 也没说它们是不是稠密层和 MoE 层交替. 第 2 页和第 6 页说 Maverick 有 「128 experts」, 这一页拆成 128 个路由专家和 1 个共享专家, 「128 experts」 算没算共享专家, 页面没有统一说法. 再看总参数: 专家数从 Scout 的 16 到 Maverick 的 128 是 8 倍, 总参数从 109B 到 400B 约 3.7 倍. 每个专家多大, 稠密层占多少, 页面都没给, 两个倍数之间差在哪里, 从页面看不出来.
+
+
+--- 行229 [问] ---
+> 第 2 页 Takeaways 写的是 「the new DeepSeek v3」, 说 Maverick 「at less than half the active parameters」. 这一段和下面的表头都写 「DeepSeek v3.1」, 说它 「much larger」. 两处版本号不同, 页面没说 v3 和 v3.1 是不是同一个模型. DeepSeek 的激活参数和总参数全文没印, 「不到一半」 和 「大得多」 都没法用页面上的数核对. 「new」 是相对哪天说的也没写, 发文日是 2025 年 4 月 5 日. 同一段里 「lower price compared to Llama 3.3 70B」 也一样: 下面这张表的价格行没有 Llama 3.3 70B, 第 9 页 Scout 表有 Llama 3.3 70B 一列, 却没有价格行.
+
+
+--- 行274 [看表] ---
+> 表头给的区间是 10/01/2024-02/01/2025, 如果按 月/日/年 读, 是 2024 年 10 月 1 日到 2025 年 2 月 1 日, 截止日比发文日早两个多月; 页面没说是哪种日期写法. 注 3 说 DeepSeek v3.1 的区间不明, 所以同一格里放了两个数: 49.2 区间不明, 45.8 是 Meta 在规定区间上的内部结果. GPT-4o 的 32.3 来自 LCB 排行榜, 第 10 页 Gemini 2.0 Pro 的 36.0 也来自 LCB 排行榜, 这两个数是不是按同一个区间取的, 注里没说. 第 10 页 Behemoth 表注 1 说 Llama 的结果是 「current best internal runs」, 而 Behemoth 还在训练, 「current」 指哪一天也没写. 页眉的 2026/9/25 是打印时间, 不能拿来当这些数的日期.
+
+
+--- 行301 [想] ---
+> 这一页 (PDF 文本层那句) 说 Scout 预训练和后训练都用 256K 上下文. 第 5 页说 mid-training 里做了 「long context extension using specialized datasets」, 然后 「unlocking best-in-class 10M input context length」. 第 6 页说上下文从 Llama 3 的 128K 提到 1000 万 token. 按 10M / 256K 算, 两者差约 39 倍. 预训练和后训练都是 256K 的话, mid-training 扩到了多长, 页面没写; 剩下的长度是靠 「length generalization」 和推理阶段的温度缩放外推, 还是训练中见过, 页面也没讲清. 第 8 页 Scout 的检索图一直画到 10M, 代码 NLL 曲线画到 10^7, 这些是结果, 不是训练长度. iRoPE 里 「without positional embeddings」 的层和用 RoPE 的层各占多少, 这一页只说 RoPE 用在 「most layers」, 没有给比例.
+
+
+--- 行342 [对一下] ---
+> 正文从头到尾没给 Maverick 的上下文长度. 第 2 页只说 Scout 和 Maverick 都有 「unprecedented context length support」, 第 5 页和第 6 页的 10M 都只挂在 Scout 名下. 1M 这个数只出现在两张图上: 第 1 页横幅写 Maverick 「Native multimodal with 1M context length」, 这一页左边的检索图写 「text NiH up to 1M tokens」, 而且这块图里有两个白格, Scout 的文本图全蓝. 第 6 页 Maverick 表把对手的长上下文格写成 「Context window is 128K」, 却没写 Maverick 自己的窗口. 1M 是 Maverick 的上限, 还是只是这张图画到的长度, 页面没说.
+
+
+--- 行345 [核对] ---
+> 右边那块图的副标题是 「video NiH up to 20 hours, 10.4M tokens」. Scout 的上下文长度在第 1 页写 10M, 第 5 页写 「10M input context length」, 第 6 页写 「10 million tokens」. 10.4M 比 10M 多出 0.4M. 页面没说 10M 是约数, 还是按 1024 进位 (10 x 1024 x 1024 约 10.49M), 也没说 20 小时视频按什么帧率抽帧, 每帧多少 token, 怎么换算成 10.4M. 这一页正文给的多图上限是预训练 48 张, 后训练验证到 8 张, 20 小时视频折成多少帧, 和这两个上限是什么关系, 页面也没交代.
+
+
+--- 行430 [回看] ---
+> 第 1 页横幅写 「2T total parameters」, 第 9 页小标题写 「The 2T Behemoth」, 这一页开头 (PDF 文本层) 写 「nearly two trillion total parameters」, 下面一段写 「a model with two trillion parameters」, 第 11 页开头写 「a two trillion parameter model」. 同一个模型, 四处按整 2T 说, 一处说 「将近」, 差多少页面没给. 激活参数 288B 和 16 个专家在第 1, 2 页和这一页一致. 用页面上的数算激活占比: Scout 17B / 109B 约 15.6%, Maverick 17B / 400B 约 4.3%, Behemoth 288B / 2T 约 14.4%. Behemoth 和 Scout 都是 16 个专家, 占比接近; 但 Behemoth 有没有共享专家, 是不是也稠密层和 MoE 层交替, 页面没写.
+
+
+--- 行469 [再看] ---
+> 这一段说 Behemoth 剪掉 95% 的 SFT 数据, 「as opposed to 50% for smaller models」. 第 5 页讲 Maverick 时写的是 「removed more than 50% of our data tagged as easy」. 一处是整 50%, 一处是超过 50%. 口径也不一样: 第 5 页那句可以读成 「去掉了超过一半的数据, 去掉的是被标为简单的那些」, 也可以读成 「去掉了被标为简单的数据中的一半以上」, 分母不确定; 这里的分母是全部 SFT 数据. 「smaller models」 指 Maverick 一个, 还是 Maverick 和 Scout 两个, 也没写, 第 5 页整段只点了 Maverick 的名. SFT 数据总共多少条, 剪完剩多少, 全文没有数.
+
+
+--- 行596 [停一下] ---
+> 这一段先说 Llama 4 「significantly better than Llama 3」, 下面三条给的数却都拿 Llama 3.3 比: 拒答率 「from 7% in Llama 3.3」, 强烈倾向 「half of the rate of Llama 3.3」. 第 6 页 Scout 那段说上下文 「from 128K in Llama 3」, 第 9 页表里标 「Context window is 128K」 的是 Llama 3.3 70B 和 Llama 3.1 405B; 第 5 页 「10x more multilingual tokens than Llama 3」 和 「more than double the Llama 3 pre-training mixture」 又只写 Llama 3. 页面先后叫过 Llama 3, 3.1, 3.3, 哪些句子里的 「Llama 3」 泛指这一代, 哪些特指某个版本, 没有交代. 强烈倾向那条只给了相对值 (一半), Llama 3.3 和 Grok 的绝对比例都没印; 不对等拒答 「低于 1%」 也没有 Llama 3.3 的对照数.
+

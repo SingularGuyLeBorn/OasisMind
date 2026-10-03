@@ -1,0 +1,109 @@
+# 21-xai/grok-4  文件: content/model-library/03-模型家族\21-xai/grok-4\grok-4-bi.md  共 27 块
+
+--- 行9 [回看] ---
+> 有关系. 图片是 Grok 4 的镂空字标, 左边是「Grok」, 右边方框里是「4」. MinerU 把字标 OCR 成了一个「A」, 又拿这行字给图片命名, 所以文件名叫 p01-a. PDF 第 1 页的文字层从「Jul 9, 2025」开始, 没有这个字母, 读的时候跳过即可.
+
+
+--- 行26 [想] ---
+> 本页没说能. 第 1 页把 API 和 Grok 4 放在一起, 把 Heavy 和 SuperGrok Heavy 订阅放在一起; 第 7 页「Grok 4 API」一节只讲 Grok 4, 通篇没有 Heavy 的 API 名称或价格. 按本页信息, API 用户能调用的只有 Grok 4, 后面标着「Grok 4 Heavy」的分数对应的是订阅产品里的配置.
+
+
+--- 行53 [拆开] ---
+> 两个都没交代.「previously」可能是 Grok 3 Reasoning 的强化学习阶段, 也可能是 xAI 以往任何一次强化学习训练; 页面没有给 FLOPs, GPU 小时或训练天数,「一个数量级」只能当相对说法.「compute efficiency ... by 6x」没说是单卡吞吐, 硬件利用率, 还是达到同样奖励所需的计算量, 三种口径差别很大. 200,000 GPU 也不等于这次训练用满了: 同目录 [Grok 3 公告](../grok-3/grok-3.md) 结尾就写过「we are preparing to train even larger models on our 200,000 GPU cluster」, 这个数字是集群规模, GPU 型号和本次实际占用本页都没写. 另外, md 把这一段开头标成了 ## 标题, 它其实是上一页句子的后半截, 译稿按正文处理.
+
+
+--- 行94 [看表] ---
+> 不全是. 名字里带「w/ Python + Internet」的只有 3 行 (44.4, 38.6, 24.9); Grok 4 的 25.4, Gemini 2.5 Pro 的 21.6, o3 的 21 没标工具, 应是裸跑; Gemini Deep Research 的 26.9 本身是带搜索的研究产品, 工具怎么配的没写. 同一模型内比, Grok 4 加工具从 25.4 到 38.6, 涨 13.2 个点; o3 从 21 到 24.9, 只涨 3.9 个点. 带工具的三行里, Heavy 比 Grok 4 高 5.8 个点, 但 Heavy 同时多了并行 test-time compute, 两种因素分不开. PDF 这张图上还有一个「State of the art」标签, md 抽取时丢了.
+
+
+--- 行101 [核对] ---
+> 画的是 Humanity's Last Exam 的训练曲线, 文件名取自下方的标题, 图应属于上一页的 HLE 一节. 标题「Performance over training」, 副标题「Text-only subset with Python and Internet tools」, 纵轴「Pass@1 Accuracy (%)」只标了一个刻度 60; 横轴左边写「Compute」, 右边灰底区域写「Test time compute」, 两段都没有刻度. 浅色「No tool」10 个点, 深色「With tool」13 个点, 最右一点标 50.7%. 副标题说带工具, 图里却有一条「No tool」, 两处说法矛盾. 灰底区域从浅色序列最后一点的位置开始, 之后只剩深色点, 也就是说右边这段已经不是训练, 是推理时追加计算, 标题「over training」管不住它. 50.7% 和第 5 页「50.7% on Humanity's Last Exam (text-only subset)」对上, 那句的主语是 Grok 4 Heavy, 所以最右那个点应是 Heavy, 但图上没写模型名.
+
+
+--- 行118 [问] ---
+> 是网页上一组演示的切换标签, 三个名字留英文. 抓下来的只有第 4 页那一段, 内容是在 X 上找帖子, 对应 X Search; Web Search 和 Research 两个标签后面的演示没有抓到. 所以「diving as deeply as it needs」这种说法, 本页只有一个 X 搜索的例子能对照.
+
+
+--- 行155 [再看] ---
+> 不是. 图只有几十像素宽, 是一个黑色圆环加一道斜线的图标, 也就是 Grok 的标志, 放在回答前面当头像, 文件名取自紧跟着的回答第一句. 推理轨迹也只露出三行,「Show entire trace」把其余部分折叠了, 用了几次搜索, 翻了哪些帖子, 本页看不到,「Thought for 1 minute」是唯一的耗时信息.
+
+
+--- 行170 [确认] ---
+> 核不了. 回答没有附帖子链接, 截图或搜索结果来源, 期号 #756, 发帖人 @LinkofSunshine, 点赞数都只能信模型的话. 能自洽的只有时间: 用户说「a few days ago」, 轨迹里搜的是 7 月 1 日到 9 日, 回答给的 7 月 7 日落在这个区间里, 也早于公告日期 7 月 9 日. 另外, 英文原文里「July7」「intofour」「withhomophones」「gridwith」「thefrustration」「withoutguessing」都丢了空格, 是抽取问题, 译文按正常断词读.
+
+
+--- 行185 [停一下] ---
+> 本页没说. 可能是多数投票, 可能是打分器挑最优, 也可能是几个 agent 讨论后汇总, 页面一种都没点名, 也没说并行多少路, 每路预算多少, 总共多花多少计算. 唯一的线索是本页下面那张示意图, 画了三个 agent 挂在 Heavy 下面. Heavy 和 Grok 4 之间差了多少推理成本, 读者算不出来.
+
+
+--- 行188 [对一下] ---
+> 来自另一个题集. 第 2 页的 44.4 是「Full set」完整题集, 带 Python 和联网; 本页下文说的是「50.7% on Humanity's Last Exam (text-only subset)」, 即纯文本子集, 对应第 3 页曲线最右那个点. 同一个 Heavy, 换到纯文本子集高出 6.3 个点. 这一句只写「score 50%」不写子集, 容易让人把 50% 和第 2 页的完整题集排行放在一起比. 子集有多少题, 其他模型在子集上多少分, 本页都没给. 英文里的「closedended」是 PDF 换行处的「closed-ended」丢了连字符.
+
+
+--- 行191 [想] ---
+> 严格说只有 AIME'25, Heavy 配 Python 拿到 100 (数据在第 7 页那张图里). HMMT 2025 的 96.7 接近饱和. 其余离饱和都远: GPQA 88.4, LiveCodeBench 79.4, USAMO 2025 61.9, Humanity's Last Exam 完整题集 44.4, ARC-AGI-2 最高的是 Grok 4 的 15.9. 本页 8 个基准里接近满分的只有 2 个,「most」可能指页面外的其他学术基准, 但没有列出来.
+
+
+--- 行196 [回看] ---
+> 画的是 Grok 4 Heavy 的工作示意, 文件名取自下面的标题. 顶上一个空心圆, 连到写着「Grok 4 Heavy / PROCESSING / ~ 10 MIN LEFT」的方框, 下面分出 AGENT 1, AGENT 2, AGENT 3 三个框, 每个框也写着「~ 10 MIN LEFT」, 底下一块点阵进度. 它说明 Heavy 在产品里是多个 agent 并行跑, 但「3 个」和「10 分钟」都是界面示意, 正文没说 agent 数量, 也没给 Heavy 的平均耗时.
+
+
+--- 行205 [问] ---
+> 对不上. 15.9 减 8.6 是 7.3 个百分点; 要高出 8 个点, 此前最高分得是 7.9%, 可括号里刚说 Opus 约 8.6%.「nearly double」倒是成立, 15.9 除以 8.6 约 1.85 倍. 第 6 页 ARC-AGI-2 那张图在 md 里只剩标题, PDF 第 7 页的文字层给出四个值: Grok 4 15.9, Claude Opus 4 8.6, o3 6.5, Gemini 2.5 Pro 4.9. 图上的 Opus 是精确的 8.6, 正文写成了「~8.6%」; 图里只有 Grok 4, 没有 Heavy.
+
+
+--- 行208 [拆开] ---
+> 不能直接算. 硬除的话, Grok 4 每件约 1.03 美元, Claude Opus 4 约 1.47 美元, 人类约 2.45 美元, 看上去 Grok 卖得多赚得薄. 但「net worth」是净资产, 可能含初始资金和库存, 不是销售利润, 本页没给起始金额和模拟时长, 这个除法没有意义. 能直接读的是倍数: 净资产 Grok 4 是 Claude Opus 4 的 2.26 倍, 是人类的 5.56 倍; 销量分别是 3.24 倍和 13.28 倍. Grok 4 是 5 次运行的平均, 方差没给; Claude Opus 4 和人类各跑了几次, 人类基线有几个人, 页面也没写.
+
+
+--- 行253 [看表] ---
+> 分不出来. Heavy 这一行同时多了 Python 和并行 test-time compute, Grok 4 这一行两样都没有, 缺了中间那行, 工具和并行各自的作用拆不开. 页面也没说用的是 GPQA 哪个子集; 如果是常用的 198 题 Diamond 子集, 0.9 个点不到 2 道题, Grok 4 领先 Gemini 2.5 Pro 的 1.1 个点也只是 2 道题出头, 没有方差, 算不上稳定领先. Claude Opus 4 在 GPQA 里有 79.6, 在 LiveCodeBench 这组里却没有出现.
+
+
+--- 行256 [核对] ---
+> 从数字看确实几乎不涨: 加 Python 涨 0.3, 再换成 Heavy 涨 0.1, 合计 0.4 个点. 本页没解释. 一种读法是编程题本身就在考写代码, 能跑代码的收益不如数学题大; 对比 HMMT 上 Python 带来的 3.9 个点和 AIME 上的 7.1 个点, 差别很明显. 但页面没说 LiveCodeBench 里的「Python」是能执行测试用例, 还是只能跑草稿代码, 这个解释只是推测.「Jan - May」是题目的时间窗, 年份没写, 按公告日期应是 2025 年.
+
+
+--- 行273 [问] ---
+> 本页没说. 证明题没有唯一答案, 要人工或模型按评分细则给分, 评分人是谁, 一题几个人判, 是否盲评, 页面都没交代. USAMO 每年 6 题, 每题 7 分, 满分 42; 61.9% 折合约 26.0 分, Grok 4 的 37.5% 约 15.75 分, 带小数说明是多次作答或多人评分的平均. Heavy 比 Gemini Deep Think 高 12.5 个点, 比 Grok 4 高 24.4 个点, 后者同时混着 Python 和并行两个变量; Gemini Deep Think 用了什么配置, 本页也没写.
+
+
+--- 行292 [看表] ---
+> 页面没给题数. 如果按 HMMT 2025 二月赛常用的 30 题算, Heavy 96.7% 约 29 题, Grok 4 配 Python 93.9% 约 28.2 题, Grok 4 的 90% 正好 27 题, Claude Opus 4 的 58.3% 约 17.5 题. 出现小数题数, 说明至少部分分数是多次采样的平均, 采样次数本页没写. Python 给 Grok 4 带来 3.9 个点, 换成 Heavy 再加 2.8 个点, 两步合计 6.7 个点, 约 2 道题.
+
+
+--- 行303 [停一下] ---
+> md 抽取时两张图的数值没跟着标题走. AIME'25 的数值在第 7 页那张被命名为 grok-4-api 的图里; ARC-AGI-2 的数值 md 里完全没有, 只在 PDF 第 7 页的文字层: Grok 4 15.9, Claude Opus 4 8.6, o3 6.5, Gemini 2.5 Pro 4.9. 这四个值和第 5 页正文的 15.9% 与「~8.6%」吻合.
+
+
+--- 行310 [再看] ---
+> 是 AIME'25 的柱状图, 文件名取自下面的「Grok 4 API」标题. 七行从高到低: Grok 4 Heavy w/ Python 100, Grok 4 w/ Python 98.8, o3 w/ Python 98.4, Grok 4 91.7, o3 88.9, Gemini 2.5 Pro 88, Claude Opus 4 75.5. 最上面 Heavy 那一行被截去一半, 字是淡的. AIME 2025 两场共 30 题, 98.8% 合 29.64 题, 91.7% 合 27.51 题, 都不是整数, 说明是多次采样取平均. 加 Python 后, Grok 4 涨 7.1 个点, o3 涨 9.5 个点, 两家带工具只差 0.4 个点, 约 0.1 道题.
+
+
+--- 行319 [确认] ---
+> 原文没写单位, 按惯例是 256,000 个 token. 同目录的数字对不太上: [Grok 3 公告](../grok-3/grok-3.md) 写的是「a context window of 1 million tokens」, 两个多月后的 [Grok 4 Fast](../grok-4-fast/grok-4-fast.md) 写的是「a 2M token context window」. Grok 4 API 的 256,000 约是 Grok 3 宣称值的四分之一. 可能一个是模型能力, 一个是 API 实际开放的上限, 本页没解释, 也没有长上下文评测. 合规那一串讲的是 API 服务, 不是模型本身, 而且 GDPR 和 CCPA 是法规, 严格说谈不上「certifications」;「hyperscaler partners」没点名是哪几家, 也没有日期.
+
+
+--- 行334 [回看] ---
+> 不是正文. PDF 第 8 页的文字层只有下面那一段英文, 没有这个字, 它是 MinerU 对页面上某块图像做 OCR 时认出来的, 多半来自语音演示视频的画面. 本页没有对应的图片文件, 来源核不了, 译稿两行都照抄.
+
+
+--- 行341 [拆开] ---
+> 页面没讲清楚. 小标题叫「Grok 4 Voice Mode」, 这一段却说「this model」, 配的是「reinforcement learning framework and speech compression techniques」, 听起来是一个单独的语音模型. 它和 Grok 4 是同一套权重, 还是语音模型在前面把文字交给 Grok 4, 本页没说; 延迟, 支持的语言, 声音数量也都没有数字. 语音模型的常见做法见 [音频与语音模型](../../../../llm-guide/8-多模态/8.3-音频与语音模型/8.3-音频与语音模型.md), 那是通用背景, 不代表 xAI 的做法.
+
+
+--- 行352 [核对] ---
+> 截图是手机界面, 顶部有 Chat 和 Voice 两个标签, 当前在 Voice. 摄像头画面里是手写的「Grok Sibei tok kong」, 用户问「Hey Grok, can you explain what this means?」, Grok 回答「Sibei」是闽南语俚语, 意思是「very」或「super」,「tok kong」是新加坡式英语, 意思是「super awesome」或「excellent」, 整句就是「Grok is super awesome」. 解释和画面对得上. 不过屏幕上显示的是文字回复, 截图本身听不到语音, 也看不出响应用了多久,「in real-time」只能靠视频验证.
+
+
+--- 行367 [想] ---
+> 本页最多能读出「以可验证奖励为主」. 第 2 页说可验证训练数据从数学和代码扩展到「many more domains」, 这里又说下一步才走出「controlled domains」, 两句合起来, Grok 4 的强化学习主要吃的是答案能自动核对的任务. 有没有偏好模型, 人类反馈, 奖励怎么设计, 页面一个字都没写.「complex real-world problems」没有可验证答案时奖励从哪来, 也只是方向, 没有方法. RLVR 能走多远的一般讨论见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLVR的局限性与探索边界分析.md).
+
+
+--- 行376 [对一下] ---
+> 发布时间是 2025 年 7 月 9 日, [xAI 新闻页](../xai/xai.md) 的列表里 Grok 4 也记在这一天. 页脚是抓取时的网站模板: 新闻页记着 2026 年 2 月 2 日「SpaceX announced today that it has acquired xAI」, 之后公司对外叫 SpaceXAI, 旧文章也挂上了新版权行. 页脚里的 Bot 同理, Grok Bot 到 2026 年 8 月 11 日才发布. 图片 p10-2026-spacexai-llc.png 是 SPACEX 字标, 文件名取自旁边的版权行.
+
+
+--- 行559 [再看] ---
+> 是一个细线月牙图标, 大概是网站的深色模式开关, 和 FAQ 无关, 文件名取自它后面的「FAQs」链接. 至此全文 8 张图都过了一遍: 第 1 页字标, 第 3 页 HLE 训练曲线, 第 4 页 Grok 头像图标, 第 5 页 Heavy 多 agent 示意, 第 7 页 AIME'25 柱状图, 第 9 页语音视频截图, 第 10 页 SPACEX 字标, 第 11 页月牙图标. 带数据的只有第 3 页和第 7 页两张.
+

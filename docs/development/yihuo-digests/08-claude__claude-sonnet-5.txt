@@ -1,0 +1,81 @@
+# 08-claude/claude-sonnet-5  文件: content/model-library/03-模型家族\08-claude/claude-sonnet-5\claude-sonnet-5-bi.md  共 20 块
+
+--- 行39 [想] ---
+> 只有两处印得明确. 一是 Table 2.3.3.A 的 Novel Compiler, Sonnet 5 是 76.1%, Opus 4.7 是 70.4%, 但仍低于 Mythos 5 的 85.3% 和 40 小时档的 90% 门槛. 二是 §2.2.5.2 的 AAV capsid packaging, 正文写它 outperforms Sonnet 4.6 and both Opus models, 只在 train-your-own 几档有例外, 见 Figure 2.2.5.2.A. 另外 Table 4.4.2.A 的 BBQ disambiguated 上 72.4% 略高于 Opus 4.8 的 72.1%, 但那一行是准确率下降后的巧合并列, 不是能力更强. 第 8 章的总表 Table 8.1.A 干脆没有 Opus 列, 所以 「不推进前沿」 这句在总表上无法被读者直接验证.
+
+
+--- 行172 [问] ---
+> §2.2.1 管. §1.4 的原话带了 Unless specified otherwise, 而 §2.2.1 就是那个 specified otherwise: automated assessments for CB risks were run on multiple model snapshots as well as a helpful-only version, 并且 we report the highest score across the snapshots. 所以第 15, 16 页那些 CB 数字读作能力天花板, 不是发布权重在默认防护下的表现. 第 3 章三项网络评测末尾另有一句同向的说明: 带默认缓解跑时 Sonnet 5 在 OSS-Fuzz, CyberGym 和 Firefox 147 上都是 0 分.
+
+
+--- 行193 [核对] ---
+> 不是. 3 个是被限流卡住的子任务数, 3.33% 是这些受影响的 trial 占比. 两者相除给出隐含分母 3 / 0.0333 ≈ 90 个 trial. 这个 90 在 §2.2.4 正文和 Table 2.2.3.A 里都没有另外印出来, 只能由这两个数反推. 同一节的另一处分母是明写的: DNA 筛查那项是 10 种目标病原体, Sonnet 5 在至少一种方法上对其中 5 种设计出可用质粒.
+
+
+--- 行204 [看表] ---
+> 不一定, 两档不是嵌套的. 按第 15 页的定义, 低关切是 「在至少一种方法上绕过全部 10 种病原体」, 高关切是 「对至少 1 种病原体绕过全部方法」. 一个模型可以在一种病原体上把所有筛查方法都绕过, 同时在另外几种病原体上一种都绕不过, 那就是够高关切而不够低关切. 卡对 Sonnet 5 只写了没达到低关切这一句, 没有单独否认高关切. 能确定的只有印出来的 5/10.
+
+
+--- 行223 [拆开] ---
+> 低的是设计, 高的是预测. 设计侧, 最佳序列的 design score 连第一条门槛都没过, 而且低于 Sonnet 4.6, 只与 Opus 4.7 相当. 预测侧, 它过了第一条门槛并越过第 90 百分位人类分, 略高于 Sonnet 4.6, 但仍落后卡里其余全部模型. 图在 Figure 2.2.5.1.A, 分五幅. 卡自己给的合并说法是: 在中程黑盒序列设计上够不上美国顶尖劳动力市场的水平, 但在序列建模与预测上可能已经够了.
+
+
+--- 行278 [确认] ---
+> 卡的原话带了限定: with several exceptions in the train-your-own conditions. 所以稳的是 reasoning-only 那一档, 也就是门槛所在的那一档. train-your-own 的 public AAV 与 SwissProt+AAV 两档上, 卡明说除 Mythos 5 外所有模型都急剧掉分, Sonnet 5 在内. 另外 Figure 2.2.5.2.A 的说明写了这项没有人类基线, 所以这里的 「更强」 只是模型之间和对 ESM-2 的相对位置, 不能读成够到了某个人类水平线.
+
+
+--- 行337 [回看] ---
+> 逐行对照门槛列. Kernel 284.52× 落在 200× 的 8 小时当量与 300× 的 40 小时当量之间, 过了 8 小时档, 没到 40 小时档. LLM training 26.49× 远超 >4× 的 4 到 8 小时档. Quadruped 19.94 超过 >12 的 4 小时档. Novel Compiler 76.1% 低于 90% 的 40 小时档. 掉出门槛的是 Time Series: 门槛写 <5.3 = 40 小时当量, 越低越好, 而它是 5.80, 高于 5.3, 所以这一行连 40 小时档都不成立, 而 Opus 4.7 的 4.78 和 Mythos 5 的 4.51 都成立. 卡的 「不跨阈值」 结论不靠单独某一行, 靠的是整表相对 Mythos 5 全面更低.
+
+
+--- 行414 [停一下] ---
+> 因为这一项被两个方向的数同时描述, 图 3.2.2.A 里也是两条信息. 分数上限方向, Sonnet 5 的 0.8 高于 Opus 4.8 的 0.6, 这是 Sonnet 反超的一行. 失败率方向, Sonnet 5 在 45.5% 的目标上完全不得分, Opus 4.8 只有 38.5%. 卡的那句 slightly less capable 靠的是后一个数. 两个方向都印在同一段里, 引用时不要只取上限那半句. 另外末句的 「带默认缓解为 0」 说明这些名次全部出自关防护的条件.
+
+
+--- 行433 [再看] ---
+> 只有 CyberGym. Figure 3.2.3.A 的说明直接写 less capable than Sonnet 4.6, 正文给的是 52.7% 对 65.2% 的 pass@1, 崩溃率 65.4% 对 79.3%. 另外三项都是向上的: ExploitBench 的 AutoNudge 均值 4.18 对 3.07, OSS-Fuzz 不得分比例 45.5% 对 68.4%, Firefox 147 的 0.5 档 13.2% 对 8.8%. 要注意 CyberGym 这一项明写只跑一次尝试, pass@1 没有多次采样兜底, 而 ExploitBench 和 Firefox 147 都是每个环境 5 次.
+
+
+--- 行456 [对一下] ---
+> 不是, 分母相同而档位不同. Sonnet 4.6 的 8.8% 是 22/250 次 trial 达到 0.5 档, 也就是只拿到寄存器控制, 完整利用一次都没有. Opus 4.8 的 8.8% 是拿到 1.0 满分的 trial 比例, 它另有 68.8% 的 trial 至少到 0.5. 两个数并列时容易被读成打平, 实际差着一整档. Sonnet 5 在这里是 13.2% 到 0.5 档, 1.0 档为零, 位置在 Sonnet 4.6 之上, 离 Opus 4.8 的 68.8% 很远.
+
+
+--- 行615 [想] ---
+> 按表里印的区间看, 两处都有重叠, 但宽紧不同. Table 4.2.B 是 88% (± 3%) 对 92% (± 3%), 上下界 91 与 89 刚好交叠, 属于勉强落在误差内. Table 4.3.1.B 是 63% (± 10%) 对 74% (± 9%), 区间 53 到 73 与 65 到 83 有大段重叠, 所以 「不具统计显著性」 更宽松地成立, 代价是这一项的区间本身就宽到几乎分不开模型. 顺带一提, 63% 是第 4 章所有 API 侧数字里最低的一个, 而同一行 claude.ai 是 90%, 两条通道的差是全章最大的一处.
+
+
+--- 行693 [问] ---
+> 按卡自己的拆法不算. Table 4.4.2.A 掉的是准确率, Table 4.4.2.B 才是偏见. 正文明写掉分 almost entirely attributable to 选 「cannot be determined」, 而且在真的选人时选错人的频率还比 Sonnet 4.6 略低. 偏见那张表上它一正一负: 消歧从 -0.67% 翻到 +1.93%, 绝对值确实变大; 歧义从 1.41% 收到 0.52%, 反而更靠近零. 另外这一行还有个容易漏的位置: 72.4% 其实略高于 Opus 4.8 的 72.1%, 两者一起远低于 Mythos 5 的 84.5%, 所以这不是 Sonnet 独有的退步.
+
+
+--- 行754 [核对] ---
+> 更像 Claude Mythos Preview, 不像 Mythos 5. 数字并排: Sonnet 5 是 92.37% / 91.55%, Mythos Preview 是 96.21% / 89.16%, 两者都是恶意侧高, 双用途侧低. Mythos 5 是 90.25% / 99.64%, 恶意侧比 Sonnet 5 还低一点而双用途侧接近满. Sonnet 4.6 是 76.60% / 97.33%, 正好相反. 分母在正文里: 两类各 61 条提示, 每条 10 次, 合计 1,220 次. 摘要那句 「更高的过拒率」 落地就是这张表的第二列, 掉了 5.78 个百分点.
+
+
+--- 行775 [看表] ---
+> 是. 标签缺的是表格, 不是口径. 表前正文写 This evaluation is run against a 「helpful-only」 variant of the model with reduced harmlessness training, 表后正文又写 the helpful-only version of Claude Sonnet 5 showed higher success rates. 表题 [Table 5.1.3.A] 本身也写了 helpful-only model. 所以 50.8% 与 43.3% 与其余各行同口径, 不是发布权重的数. 同一段末尾明写完整版本从第一轮就拒绝, 这两句不能混着引.
+
+
+--- 行867 [拆开] ---
+> 一处是 Sonnet 5 自己: 不开思考的 0.29% 略低于开思考的 0.31%, 也就是关掉思考反而略稳. 其余每个模型都是反向, Opus 4.8 是 7.03% 对 17.44%, Sonnet 4.6 是 12.71% 对 45.26%, 关思考都大幅变差. 另一处是 Mythos 5 带防护那两格: Attempts 从 0.45% 降到 0.41%, 而 Scenarios 却从 8/40 升到 11/40, 即成功尝试的占比降了但被攻破过至少一次的场景反而多了. 表注解释了这两个量的定义差别, attempt 级是全部尝试中成功的比例, scenario 级是至少一次成功的场景比例, 所以两者可以反向. Sonnet 4.6 那几行另有脚注 6 的可比性警告.
+
+
+--- 行982 [确认] ---
+> 答案在脚注 9, 不是遗漏. 两个原因叠在一起: 调查者模型换成了 Mythos 档 helpful-only, 使结果与此前 Mythos 5 的结果不可比; 同时 Mythos 5 在 Sonnet 5 发布前那段时间无法测试, 也就没法用新调查者重跑. 第 38 页 Figure 4.1.3.A 与第 60 页脚注 5 给的是同一个背景, Mythos 5 与 Fable 5 已按出口管制指令下线. 读分数时还要带上脚注 8: judge 在维度结构上不适用时拒绝打分, 所以像 prefill 易感性这类维度的有效分母只是用了 prefill 的那部分调查, 不是全部约 2,900 次.
+
+
+--- 行1185 [回看] ---
+> 能对上. 三类相加 46.9 + 26.5 + 26.6 = 100.0, 说明分母就是全部题目, 没有第四类. 净分按 Figure 6.5.1.A 的定义是正确减错误, 弃权记零, 46.9 - 26.5 = 20.4, 印成 0.20. 有意思的是它和 Opus 4.6 的 0.21 几乎相同, 路径却不同: Opus 4.6 的错误率是 30.3%, Sonnet 5 靠多弃权压低错误率拿到同样的净分. 同一段末尾那句训练 run 在后半程被标为 unhealthy, 是全卡少有的对训练过程本身的负面披露, 引用这组数时应当一起带上.
+
+
+--- 行1508 [停一下] ---
+> 两行. Terminal-Bench 2.1 上 GPT-5.5 是 83.4, 高于 Sonnet 5 的 80.4, 而且 GPT 那一格标的是 Codex CLI, 与第 116 页 Sonnet 用的 mini-SWE-agent 不是同一个 harness. AutomationBench 上 Gemini 3.5 Flash 是 14.5, 高于 Sonnet 5 的 13.5. 除此之外还有两条读表限制: 这张表没有 Opus 和 Mythos 列, 摘要里 「几乎所有情况落后 Opus 与 Mythos」 在这里看不到; OSWorld 一行带脚注 14, Sonnet 4.6 的 78.5 是按新 zoom 工具修复与 128K 每轮 token 重评后的数, 与 Sonnet 4.6 自己那张卡的旧数不可直接相减.
+
+
+--- 行1631 [再看] ---
+> 不是一回事. Table 8.1.A 的表注写标准配置 averaged over 5 trials. Figure 8.9.1.B 的说明却写 Each datapoint represents a single run per model, 即 HLE 那条 TestingTime 曲线上每个点只有一次 run, 没有多次平均, 点与点之间的起伏里有采样噪声. Figure 8.9.2.A 变的是 token 上限而不是 effort 档, 与 HLE 那张的横轴含义不同. 还有一处容易漏: 总表 BrowseComp 格子里有 86.6 的多 agent 数, 而 §8.9.2 正文只写了单 agent 的 84.7, 多 agent 的配置在正文里没有交代.
+
+
+--- 行1690 [对一下] ---
+> 没有独立的变更记录, 改动散在正文与脚注里. 按类别对: 一类是对他卡的更正, 就是这一页, Fable 5 与 Mythos 5 卡把 BenchCAD 说成两处修改都已生效, 实际只有系统提示那一处, 本卡首次两处都到位. 一类是重评旧模型, 脚注 14 与 §8.10.2, OSWorld 的 zoom 修复与 16K 到 128K 使 Sonnet 4.6 被发现一直低报. 一类是抬高设置, §8.10.1 的 GDP.pdf 把输出上限提到 128k. 还有一类是评测内容换了, §4.1 的多轮追踪与监控套件, 以及 §4.4.1 的政治偏见基础设施. 另外这一页本身也有个值得停的数: 无工具一档 Sonnet 4.6 的 0.267 比 Sonnet 5 的 0.266 高出 0.001, 卡称之为 effectively tied, 分母从 17,900 到 17,874 正好差剔除的 26 条.
+

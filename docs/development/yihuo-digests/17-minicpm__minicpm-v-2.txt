@@ -1,0 +1,69 @@
+# 17-minicpm/minicpm-v-2  文件: content/model-library/03-模型家族\17-minicpm/minicpm-v-2\minicpm-v-2-bi.md  共 17 块
+
+--- 行59 [核对] ---
+> 两个数口径不同. 正文说模型由 SigLip-400M 和 MiniCPM-2.4B 经 perceiver resampler 连接, 名字里的数相加是 0.4B + 2.4B = 2.8B (估算), perceiver resampler 本身多少参数页面没给. 侧栏 3B 是 Hugging Face 按 safetensors 文件统计后取整的数. 评测表统一用 2.8B, 读表按 2.8B.
+
+
+--- 行98 [问] ---
+> 这 12 页里找不到. 列出的是 LLaVA-Instruct-150K, VQAv2 和 RLHF-V-Dataset, 页面没有 「展开更多」 之类的入口. 这一栏只是元数据里登记的数据集, 模型卡正文没有写训练数据的组成和规模, 不能拿这 3 个当训练集全貌.
+
+
+--- 行157 [看表] ---
+> 指这组. 来源链接是 gui-agent.github.io 的 grounding-leaderboard, 也就是界面元素定位类榜单; 模型卡正文和第 6 页的表都没提 ScreenSpot-Pro. 总分 3, 两个子项 0, 说明这个模型在这类任务上几乎拿不到分, 这组数和正文的 OCR 类分数不是一回事.
+
+
+--- 行180 [停一下] ---
+> 说的是 2024.08.06 那条里的 MiniCPM-V 2.6, 不是这页的 MiniCPM-V 2.0. 新闻列表在 2.0 发布后一直往上追加, 前三条是后续型号的公告. MiniCPM-V 2.0 自己的主张从 2024.04.12 那条开始, 对手是 Gemini Pro, Qwen-VL-Chat 9.6B 和 Yi-VL 34B, 没有说胜过 GPT-4V.
+
+
+--- 行211 [拆开] ---
+> 是同一个. 2.8B 是参数量, 2.0 是版本号: 这句先用参数量称呼模型, 后半句才说 「最新版本 MiniCPM-V 2.0」. 容易混的地方在第 6 页: 上一代 MiniCPM-V 在表里的 Size 也是 2.8B, 两代尺寸相同, 表里两代之间的差距不来自参数量.
+
+
+--- 行222 [看表] ---
+> 对不上. 表里 Yi-VL-6B 的 Size 是 6.7B, MME 1915.1, 比 MiniCPM-V 2.0 的 1808.6 高 106.5 (估算). MMB 若看 dev(zh), Yi-VL-6B 的 68.3 也比 68.1 高 0.2; dev(en) 是 MiniCPM-V 2.0 的 69.6 领先 68.6. 在 7B 以下确实最高的是 OCRBench, TextVQA 和 MathVista 三项.
+
+
+--- 行225 [对一下] ---
+> 有. 点名的三个分别是 52.1, 52.5, 52.6, 都低于 55.0. 同表 DeepSeek-VL-7B (7.3B) 是 55.6, 比 MiniCPM-V 2.0 高 0.6 (估算), 正文没有提它; 第 5 页雷达图 OpenCompass 轴的外圈刻度也是 55.6.
+
+
+--- 行228 [确认] ---
+> 只落在 TextVQA: 74.1 对 Gemini Pro Vision 的 74.6, 差 0.5. OCRBench 是 605 对 680, 差 75; DocVQA 是 71.9 对 88.1, 差 16.2 (均为估算). 正文把 OCRBench 的领先限定在开源模型里, 这样读才和表一致: 605 在开源模型中最高, CogVLM-Chat 590 次之, 两个闭源模型 (680, 645) 都更高.
+
+
+--- 行237 [回看] ---
+> 两个数都略低, 分别低 0.9 和 0.5 (估算), 「match」 是约数说法. 这一列每格两个数, 斜杠前后各是什么指标, 这 12 页没有解释; 第 5 页雷达图只画了斜杠后的 92.2, 而且把它画在最外圈, 可见图里按越高越好处理.
+
+
+--- 行246 [想] ---
+> 页面没有给. 1344 × 1344 = 1,806,336 像素 (估算), 和 「1.8 million」 对得上. 下面 High Efficiency 一段只说 perceiver resampler 把图像表示压成 「much fewer tokens」, 没有每张图或每个切片的 token 数, 也没说非正方形的图怎么切, 这页回答不了.
+
+
+--- 行271 [再看] ---
+> 8 根, 图注里的 MMBench 和 LLaVA Bench 不在图上, 要看第 6 页的表. MiniCPM-V 2.0 也不是每根轴都在最外圈: MME 轴外圈 1860.0 是 Qwen-VL-Chat, OpenCompass 轴外圈 55.6 是 DeepSeek-VL-7B, MMMU val 轴外圈 38.3 是 DeepSeek-VL-7B 和上一代 MiniCPM-V. 图里只有 6 个模型, 没有 Gemini Pro, GPT-4V 和两个 Yi-VL.
+
+
+--- 行284 [问] ---
+> 星号按脚注是团队自己用官方权重测的, 集中在 TextVQA 和 DocVQA 两列, 例如 Yi-VL-34B 的 DocVQA 16.9*, CogVLM-Chat 的 DocVQA 33.3*; 不带星号的格来源页面没说. (P) 在这 12 页里没有解释, 这一格和同列其他 MME 分数可能不是同一口径, 不宜直接比. MiniCPM-V 2.0 自己那一行没有星号.
+
+
+--- 行287 [看表] ---
+> 涨得最多的是文字密集的几列: DocVQA 38.2 到 71.9 (+33.7), TextVQA 60.6 到 74.1 (+13.5), OCRBench 366 到 605 (+239); 另外 LLaVA Bench +17.9, MathVista +9.8, OpenCompass +7.4 (均为估算). MMMU val 是 38.3 到 38.2, 降了 0.1, 是唯一没涨的一列, 学科知识类题目基本没动.
+
+
+--- 行324 [对一下] ---
+> 三处绿色高亮都对得上招牌. 招牌上是繁体 「誠忠不動產」, 回答写成简体 「诚忠不动产」. MinerU 版本在 「全家便利店」 前丢了左引号, PDF 截图里左引号在, 上面照 MinerU 原样保留. 回答没有提竖招牌上的 「金店面」.
+
+
+--- 行467 [核对] ---
+> 对不上. 截图里两处都是 4 月到 10 月: 提示框 「from April till October」, 正文 「begins in April and runs until October」. 这句在 PDF 里没有高亮, 页面也没指出. 同样没高亮的还有 「浮游生物与海水之间的化学反应」 和 「与银河相似」: 原文说的是产生光的化学反应, 银河在原文里没出现, 最接近的是比喻 「like a swirling galaxcy」. 作者名 Sarah Harvey 是对的, 截图里有署名.
+
+
+--- 行500 [拆开] ---
+> 页面没有图例, 这一组也没有脚注. 从 PDF 渲染图数, MiniCPM-V 2.0 的回答有 2 处红字 (「parked under the shelter of a large, white canopy」 和 「a red truck」), GPT-4V 有 7 处 (红紫条纹, 红色工具箱, 另一辆是红色, 白车头拖红蓝条纹挂车, 红色加油机, 禁止吸烟标志和箭头, 画面中没有人). 页面没说红字是错误还是细节, 2 对 7 不能当作幻觉率读.
+
+
+--- 行585 [确认] ---
+> 这两处是 MinerU 的识别错误, PDF 文字层是 msgs=msgs 和 'content': question}], 上面的代码按 PDF 录入. 另有两处是网页本身截断: from_pretrained 的参数只露出 trust_remote_c 和 trust_, 后半截页面上看不到 (推测是 trust_remote_code=True), 照原样保留, 直接复制会报语法错误.
+

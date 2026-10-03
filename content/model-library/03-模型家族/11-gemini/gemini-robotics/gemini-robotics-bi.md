@@ -978,7 +978,7 @@ Lucas Beyer, Andreas Steiner, André Susano Pinto, Alexander Kolesnikov, Xiao Wa
 
 Kevin Black, Noah Brown, Danny Driess, Adnan Esmail, Michael Equi, Chelsea Finn, Niccolo Fusai, Lachy Groom, Karol Hausman, Brian Ichter, Szymon Jakubczak, Tim Jones, Liyiming Ke, Sergey Levine, Adrian Li-Bell, Mohith Mothukuri, Suraj Nair, Karl Pertsch, Lucy Xiaoyang Shi, James Tanner,
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 31 of 64 -->
 
@@ -1006,7 +1006,7 @@ International Organization for Standardization. ISO 10218: Robots and Robotic De
 
 Xingyu Fu, Yushi Hu, Bangzheng Li, Yu Feng, Haoyu Wang, Xudong Lin, Dan Roth, Noah A Smith, Wei-Chiu Ma, and Ranjay Krishna. BLINK: Multimodal large language models can see but not perceive. In European Conference on Computer Vision, pages 148–166. Springer, 2024.
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 32 of 64 -->
 
@@ -1038,7 +1038,7 @@ Steven M LaValle. Planning algorithms. Cambridge university press, 2006.
 
 Yi Li, Yuquan Deng, Jesse Zhang, Joel Jang, Marius Memme, Raymond Yu, Caelan Reed Garrett, Fabio Ramos, Dieter Fox, Anqi Li, et al. Hamster: Hierarchical action models for open-world robot manipulation. arXiv preprint arXiv:2502.05485, 2025.
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 33 of 64 -->
 
@@ -1066,7 +1066,7 @@ Vignesh Ramanathan, Anmol Kalia, Vladan Petrovic, Yi Wen, Baixue Zheng, Baishan 
 
 Robotic Industries Association (RIA). ANSI/RIA R15.06-2012: Safety requirements for industrial robots and robot systems, 2012.
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 34 of 64 -->
 
@@ -1096,7 +1096,7 @@ Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, E
 
 Chuan Wen, Xingyu Lin, John So, Kai Chen, Qi Dou, Yang Gao, and Pieter Abbeel. Any-point trajectory modeling for policy learning. 2024 Robotics: Science and Systems, 2024.
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 35 of 64 -->
 
@@ -1114,7 +1114,7 @@ Tony Z. Zhao, Jonathan Tompson, Danny Driess, Pete Florence, Seyed Kamyar Seyed 
 
 Kemin Zhou and John Comstock Doyle. Essentials of robust control, volume 104. Prentice hall Upper Saddle River, NJ, 1998.
 
-本页为参考文献条目, 保留英文原文, 不逐条翻译.
+报告该页为参考文献条目, 保留英文原文, 不逐条翻译.
 
 <!-- page 36 of 64 -->
 

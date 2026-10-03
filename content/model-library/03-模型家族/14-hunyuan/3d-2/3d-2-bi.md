@@ -620,7 +620,7 @@ Figure 10: The results of user study.
 
 ![Image block](images/p16-image.png)
 
-上面这张是图 11 第六行: 山峰的另一个视角, 五个方法各一个结果, 没有输入图. MinerU 把这一行排到了本页最前面.
+上面这张是图 11 第六行: 山峰的另一个视角, 五个方法各一个结果, 没有输入图. MinerU 把这一行排到了报告该页最前面.
 
 ![Image block](images/p16-hy3d.png)
 
@@ -863,7 +863,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [17] Jasmine Collins, Shubham Goel, Kenan Deng, Achleshwar Luthra, Leon Xu, Erhan Gundogdu, Xi Zhang, Tomas F Yago Vicente, Thomas Dideriksen, Himanshu Arora, Matthieu Guillaumin, and Jitendra Malik. Abo: Dataset and benchmarks for real-world 3d object understanding. CVPR, 2022.
 
-本页是参考文献 [1] 到 [17], 条目保留原文. 其中 [6] InstructPix2Pix 是 4.1 节去光照所用的图像到图像方法, [11] Dora 是第 4 页脚注说的同期重要性采样工作, [13] InternVL 是 5.1 节为 ULIP-T 和 Uni3D-T 生成文本提示的视觉语言模型.
+报告该页是参考文献 [1] 到 [17], 条目保留原文. 其中 [6] InstructPix2Pix 是 4.1 节去光照所用的图像到图像方法, [11] Dora 是第 4 页脚注说的同期重要性采样工作, [13] InternVL 是 5.1 节为 ULIP-T 和 Uni3D-T 生成文本提示的视觉语言模型.
 
 <!-- page 23 of 28 -->
 
@@ -905,7 +905,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [36] Zehuan Huang, Yuanchen Guo, Haoran Wang, Ran Yi, Lizhuang Ma, Yan-Pei Cao, and Lu Sheng. Mv-adapter: Multi-view consistent image generation made easy. arXiv preprint arXiv:2412.03632, 2024.
 
-本页是参考文献 [18] 到 [36], 条目保留原文. 其中 [24] 是 flow matching 目标引用的 rectified flow transformer 论文, [28] 和 [35] 是 6.2 节低多边形几何编辑所用的二次误差度量网格简化.
+报告该页是参考文献 [18] 到 [36], 条目保留原文. 其中 [24] 是 flow matching 目标引用的 rectified flow transformer 论文, [28] 和 [35] 是 6.2 节低多边形几何编辑所用的二次误差度量网格简化.
 
 <!-- page 24 of 28 -->
 
@@ -947,7 +947,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [55] Ruoshi Liu, Rundi Wu, Basile Van Hoorick, Pavel Tokmakov, Sergey Zakharov, and Carl Vondrick. Zero-1-to-3: Zero-shot one image to 3d object. In Proceedings of the IEEE/CVF international conference on computer vision, pages 9298–9309, 2023.
 
-本页是参考文献 [37] 到 [55], 条目保留原文. 其中 [45] FLUX 是 Hunyuan3D-DiT 双流加单流结构的来源, [52] 是 4.4 节 ZSNR 检查点和 「trailing」 调度器的出处, [53] 和 [54] 是式 (2) flow matching 与仿射路径的出处.
+报告该页是参考文献 [37] 到 [55], 条目保留原文. 其中 [45] FLUX 是 Hunyuan3D-DiT 双流加单流结构的来源, [52] 是 4.4 节 ZSNR 检查点和 「trailing」 调度器的出处, [53] 和 [54] 是式 (2) flow matching 与仿射路径的出处.
 
 <!-- page 25 of 28 -->
 
@@ -987,7 +987,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [73] Elad Richardson, Gal Metzer, Yuval Alaluf, Raja Giryes, and Daniel Cohen-Or. Texture: Text-guided texturing of 3d shapes. In ACM SIGGRAPH 2023 conference proceedings, pages 1–11, 2023.
 
-本页是参考文献 [56] 到 [73], 条目保留原文. 其中 [64] DINOv2 是 Hunyuan3D-DiT 的条件图像编码器, [66] Clean-FID 是 $FID_{CLIP}$ 的实现, [71] CLIP 对应 CLIP-score, [73] TEXTure 是表 3 的第一个基线.
+报告该页是参考文献 [56] 到 [73], 条目保留原文. 其中 [64] DINOv2 是 Hunyuan3D-DiT 的条件图像编码器, [66] Clean-FID 是 $FID_{CLIP}$ 的实现, [71] CLIP 对应 CLIP-score, [73] TEXTure 是表 3 的第一个基线.
 
 <!-- page 26 of 28 -->
 
@@ -1029,7 +1029,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [92] Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et al. Llama 2: Open foundation and fine-tuned chat models. arXiv preprint arXiv:2307.09288, 2023.
 
-本页是参考文献 [74] 到 [92], 条目保留原文. 其中 [78] Zero123++ 和 [88] MVDiffusion++ 是 4.2 节被放弃的共享权重 reference-net 做法, [90] 是第 6 节 Hunyuan3D-Studio 链接指向的报告, arXiv:2509.12815, 年份 2025.
+报告该页是参考文献 [74] 到 [92], 条目保留原文. 其中 [78] Zero123++ 和 [88] MVDiffusion++ 是 4.2 节被放弃的共享权重 reference-net 做法, [90] 是第 6 节 Hunyuan3D-Studio 链接指向的报告, arXiv:2509.12815, 年份 2025.
 
 <!-- page 27 of 28 -->
 
@@ -1069,7 +1069,7 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [110] Fukun Yin, Xin Chen, Chi Zhang, Biao Jiang, Zibo Zhao, Jiayuan Fan, Gang Yu, Taihao Li, and Tao Chen. Shapegpt: 3d shape generation with a unified multi-modal language model. arXiv preprint arXiv:2311.17618, 2023.
 
-本页是参考文献 [93] 到 [110], 条目保留原文. 其中 [96] ESRGAN 是 4.3 节的单图超分模型, [99] Direct3D 是表 1 的基线, [101] Trellis 是表 2 和表 4 唯一的开源端到端基线, [105] 是 ULIP, [107] 是上一代 Hunyuan3D-1.0 的报告.
+报告该页是参考文献 [93] 到 [110], 条目保留原文. 其中 [96] ESRGAN 是 4.3 节的单图超分模型, [99] Direct3D 是表 1 的基线, [101] Trellis 是表 2 和表 4 唯一的开源端到端基线, [105] 是 ULIP, [107] 是上一代 Hunyuan3D-1.0 的报告.
 
 <!-- page 28 of 28 -->
 
@@ -1099,6 +1099,6 @@ Studio 组, 列了 14 个名字, 其中 Shaoxiong Yang 和 Yang Liu 各出现两
 
 [123] Qingnan Zhou and Alec Jacobson. Thingi10k: A dataset of 10,000 3d-printing models. arXiv preprint arXiv:1605.04797, 2016.
 
-本页是参考文献 [111] 到 [123], 条目保留原文. 其中 [112] 3DShape2VecSet 是 ShapeVAE 向量集表示的来源, [116] 是 reference-net 条件方法的出处, 一个 GitHub 讨论帖, [119] Michelangelo 是 ShapeVAE 编码器-解码器结构的沿用对象, [122] 是 Uni3D.
+报告该页是参考文献 [111] 到 [123], 条目保留原文. 其中 [112] 3DShape2VecSet 是 ShapeVAE 向量集表示的来源, [116] 是 reference-net 条件方法的出处, 一个 GitHub 讨论帖, [119] Michelangelo 是 ShapeVAE 编码器-解码器结构的沿用对象, [122] 是 Uni3D.
 
 28

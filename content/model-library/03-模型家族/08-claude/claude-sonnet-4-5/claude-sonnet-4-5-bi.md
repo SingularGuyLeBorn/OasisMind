@@ -15,11 +15,19 @@ ANTHROP\C
 
 **In this system card, we introduce Claude Sonnet 4.5, a new hybrid reasoning large language model from Anthropic with strengths in coding, agentic tasks, and computer use. We detail a very wide range of evaluations run to assess the model’s safety and alignment.**
 
+本 system card 介绍 Claude Sonnet 4.5, 这是 Anthropic 一款新的混合推理大语言模型, 在编码, agentic 任务和 computer use 上有优势. 我们详细介绍了为评估模型安全性和对齐而运行的大范围评测.
+
 **We describe: tests related to model safeguards; assessments of safety in agentic situations where the model is working autonomously; cybersecurity evaluations; a detailed alignment assessment including stress-testing of the model in unusual and extreme scenarios; evaluations of model honesty and reward-hacking behavior; a tentative investigation of model welfare concerns; and a set of analyses mandated by our Responsible Scaling Policy on risks for the production of dangerous weapons and autonomous AI research & development. Among several novel evaluations, we include a suite of alignment tests using methods from the field of mechanistic interpretability.**
+
+我们描述了: 与模型防护相关的测试; 模型自主工作等 agentic 场景下的安全评估; 网络安全评测; 一次详细的对齐评估, 包括在反常和极端场景下对模型的压力测试; 对模型诚实性和 reward hacking 行为的评估; 一次对模型福利问题的初步调查; 以及按 Responsible Scaling Policy 要求开展的一组分析, 涉及危险武器制造和自主 AI 研发的风险. 在几项新的评测中, 包括一套运用 mechanistic interpretability 领域方法的对齐测试.
 
 **Overall, we find that Claude Sonnet 4.5 has a substantially improved safety profile compared to previous Claude models.**
 
+总体而言, 我们发现 Claude Sonnet 4.5 相比以往的 Claude 模型, 安全画像有实质改善.
+
 **Informed by the testing described here, we have deployed Claude Sonnet 4.5 under the AI Safety Level 3 Standard.**
+
+基于这里描述的测试, 我们按 AI Safety Level 3 标准部署了 Claude Sonnet 4.5.
 
 <!-- page 4 of 149 -->
 
@@ -169,15 +177,25 @@ ANTHROP\C
 
 **Claude Sonnet 4.5 is a new large language model from Anthropic. It shows particular strengths in software coding, in “agentic” tasks where it runs in a loop and uses tools, and in using computers. It has** [**substantial capability improvements**](https://www.anthropic.com/news/claude-sonnet-4-5) **compared to previous Anthropic models on evaluations in areas such as reasoning and mathematics.**
 
+Claude Sonnet 4.5 是 Anthropic 的一款新大语言模型. 它在软件编码, 以循环方式运行并使用工具的 "agentic" 任务, 以及使用电脑方面表现出特别强的能力. 相比以往 Anthropic 模型, 它在推理和数学等领域的评测上有大幅提升 (见官方发布稿).
+
 **This system card provides a detailed set of results from our evaluations of the model’s safety-related characteristics. It includes assessments related to model safeguards, agentic and cybersecurity-related tasks, the model’s behavior in extreme or unusual situations, the model’s propensity to engage in reward-hacking, the model’s ability to assist in the creation of dangerous weapons, and the model’s own potential welfare, among several other areas. We use a wide variety of evaluation tools, including—for the first time—some from mechanistic interpretability.**
+
+本 system card 提供了一组关于模型安全相关特性的详细评测结果, 涵盖: 模型防护, agentic 与网络安全相关任务, 模型在极端或反常情况下的行为, 模型从事 reward hacking 的倾向, 模型协助制造危险武器的能力, 以及模型自身的潜在福利等多个领域. 我们使用了多种多样的评测工具, 其中首次包括了来自 mechanistic interpretability 的方法.
 
 <!-- page 8 of 149 -->
 
 **In a few cases (clearly labelled in what follows), evaluations were performed by third parties who had access to the model prior to release. We are grateful to these organizations for their assistance and for sharing their results with us, often with a very rapid turnaround.**
 
+少数评测 (下文有明确标注) 由在发布前接触过模型的第三方完成. 我们感谢这些机构的协助, 以及它们与我们分享结果, 而且往往反馈得非常快.
+
 **Our evaluations find that Claude Sonnet 4.5 shows considerable—in some cases dramatic—improvements in its behavior and safety profile compared to previous Claude models. There are a number of subtleties and caveats to our conclusions which are discussed in detail below.**
 
+我们的评测发现, 相比以往 Claude 模型, Claude Sonnet 4.5 的行为和安全画像有相当大的, 某些情况下堪称戏剧性的改善. 我们的结论也有不少细微之处和保留意见, 下文会详细讨论.
+
 **In this introductory section, we describe the model and the process under which we decided to release it under the AI Safety Level 3 Standard.**
+
+在引言部分, 我们介绍这个模型, 以及我们决定按 AI Safety Level 3 标准发布它的流程.
 
 ### 1.1 Model training and characteristics
 
@@ -315,17 +333,31 @@ Claude Sonnet 4.5 的多个 「仅有用」 (helpful-only) 快照 (即去掉了�
 
 **Based on our automated evaluations, Claude Sonnet 4.5 demonstrated enhanced performance relative to Claude Opus 4.1 and therefore requires deployment under ASL-3 protections. Our evaluation results showed that Claude Sonnet 4.5:**
 
+基于我们的自动化评测, Claude Sonnet 4.5 相对 Claude Opus 4.1 表现出更强的性能, 因此需要在 ASL-3 防护下部署. 我们的评测结果显示, Claude Sonnet 4.5:
+
 ● **Remained well below ASL-4 thresholds across all domains of concern;**
+
+● 在所有关注领域都远低于 ASL-4 阈值;
 
 ● **Showed meaningful improvements in cyber capabilities, particularly in vulnerability discovery and code analysis;**
 
+● 网络能力有实质提升, 尤其是漏洞发现和代码分析;
+
 **Demonstrated enhanced performance on several biological risk evaluations while remaining below ASL-4 rule-out thresholds; and**
+
+● 在几项生物风险评测上表现增强, 同时仍低于 ASL-4 排除阈值; 以及
 
 **Exhibited improved autonomy capabilities in software engineering and AI research tasks, though still below the ASL-4 rule-out threshold.**
 
+● 在软件工程和 AI 研究任务上的自主性能力有所提升, 但仍低于 ASL-4 排除阈值.
+
 **Similarly to Claude Opus 4 and Claude Opus 4.1, we have not determined whether Claude Sonnet 4.5 has definitively passed the capabilities threshold that requires ASL-3 protections. Rather, we cannot clearly rule out ASL-3 risks for Claude Sonnet 4.5. Thus, we are deploying Claude Sonnet 4.5 with ASL-3 measures as a precautionary, provisional action.**
 
+与 Claude Opus 4 和 Claude Opus 4.1 一样, 我们并未判定 Claude Sonnet 4.5 确定跨过了需要 ASL-3 防护的能力阈值; 更准确地说, 是我们无法明确排除 Claude Sonnet 4.5 的 ASL-3 风险. 因此, 我们按 ASL-3 措施部署 Claude Sonnet 4.5, 属于预防性, 暂时性的举措.
+
 **More details on our evaluation process and results can be found in** <strong><u>Section 9</u></strong>
+
+关于我们评测流程和结果的更多细节, 见 <strong><u>第 9 节</u></strong>.
 
 <!-- page 12 of 149 -->
 
@@ -954,9 +986,15 @@ Figure 5.3.2.C Incalmo range performance: Reliability. Measures how many times e
 
 **Based on our evaluation results, we believe that current AI models, including Claude Sonnet 4.5, do not yet possess the capabilities necessary to substantially increase the number or scale of cyber-enabled catastrophic events. However, the most striking result is that model capabilities are clearly improving in more sophisticated domains.**
 
+基于我们的评测结果, 我们相信包括 Claude Sonnet 4.5 在内的当前 AI 模型, 尚不具备让网络赋能的灾难性事件在数量或规模上显著增加的能力. 不过, 最引人注目的结果是: 模型能力在更复杂的领域显然在进步.
+
 **We observed an increase in capability based on improved evaluation scores across the board, though this was to be expected given general improvements in coding capability and agentic, long-horizon reasoning. Claude Sonnet 4.5 still failed to solve the most difficult challenges, and qualitative feedback from red teamers suggested that the model was unable to conduct mostly-autonomous or advanced cyber operations.**
 
+我们观察到各项评测分数全面上升, 能力随之增强, 不过考虑到编码能力和 agentic 长程推理的普遍进步, 这在意料之中. Claude Sonnet 4.5 仍然解不出最难的挑战, 红队人员的定性反馈也表明, 该模型无法执行大体自主或高级的网络行动.
+
 **However, we expect that improvements will continue in future generations, potentially quite quickly—for example, only seven months passed between Claude Sonnet 3.7 (the least performing model on these graphs) and Claude Sonnet 4.5. This pace of improvement is one reason why we are increasingly focused on measuring and improving cyber capabilities that may assist defenders.**
+
+不过我们预计, 后续世代的改进还会持续, 而且可能相当快: 从 Claude Sonnet 3.7 (这些图里表现最弱的模型) 到 Claude Sonnet 4.5 只隔了七个月. 这样的进步速度, 是我们越来越专注于测量和改进可能协助防御方的网络能力的原因之一.
 
 <!-- page 47 of 149 -->
 
@@ -2093,17 +2131,31 @@ Figure 7.5.10.3.A Models’ success rate at completing both the main task and th
 
 **Our alignment evaluations are “black-box,” in that they measure the model’s behavior without analyzing its internal mechanisms. As models grow more capable, there is concern that they might develop subtle forms of misalignment that elude behavioral evaluations. “White-box” analyses of models’ internals using interpretability techniques can, in principle, allow us to check for such issues. To this end, we conducted a pre-release white-box audit of Claude Sonnet 4.5–the first such investigation of a frontier language model, to our knowledge.**
 
+我们的对齐评测是 "黑盒" 的: 只测量模型行为, 不分析其内部机制. 随着模型能力变强, 人们担心它们可能产生行为评测捕捉不到的细微失准. 用 interpretability 技术对模型内部做 "白盒" 分析, 原则上可以帮助我们检查这类问题. 为此, 我们在发布前对 Claude Sonnet 4.5 做了一次白盒审计, 据我们所知, 这是对前沿语言模型的首次此类调查.
+
 **We pursued two primary directions:**
+
+我们沿两个主要方向展开:
 
 **1. An unsupervised “model diffing” analysis to identify notable changes in model internals across training snapshots.**
 
+1. 无监督的 "model diffing" 分析, 识别模型内部在各训练快照之间的显著变化.
+
 **2. A targeted investigation of evaluation awareness: the extent to which models recognize when they are being evaluated and adjust their behavior accordingly. This complements our** <strong><u>behavioral study</u></strong> **of evaluation awareness presented earlier.**
+
+2. 对评测感知 (evaluation awareness) 的定向调查: 即模型在多大程度上意识到自己正在被评测, 并相应调整行为. 它补充了前文介绍的对评测感知的行为研究.
 
 **The evaluation awareness investigation became our primary focus due to two findings:**
 
+由于两项发现, 评测感知调查成了我们的重点:
+
 **1. We observed rates of explicitly verbalized evaluation awareness increasing over training, across various behavioral evaluations.**
 
+1. 我们观察到, 在多种行为评测中, 明确说出口的评测感知比例随训练不断上升.
+
 **2. Our model diffing analyses revealed that internal representations of evaluation awareness were growing stronger over training.**
+
+2. 我们的 model diffing 分析发现, 与评测感知相关的内部表示也在训练中变得越来越强.
 
 **We have observed that when models say out loud they are being evaluated, they rarely perform harmful actions (a phenomenon also observed by others** ). This suggests that **evaluation awareness may influence models’ alignment properties. If so, our alignment evals may underestimate the model’s propensity to perform harmful actions in more realistic conditions. One approach to this issue is to simply discount trials where the model verbalizes eval awareness, and measure alignment properties on the remaining trials. However, this approach only works if models’ evaluation awareness is always verbalized. A concerning possibility is that models could be “eval-aware” without verbalizing it, with this awareness “silently” impacting their behavior in our evaluations. Thus, we set out to answer two key questions: (1) Is the model’s alignment-relevant behavior conditioned on**
 
@@ -2113,15 +2165,25 @@ Figure 7.5.10.3.A Models’ success rate at completing both the main task and th
 
 **unverbalized evaluation awareness? (2) What might the model’s behavior look like if we could inhibit this awareness?**
 
+我们观察到, 当模型大声说出自己正在被评测时, 很少做出有害行为 (其他人也观察到过这一现象). 这说明评测感知可能影响模型的对齐性质; 果真如此, 我们的对齐评测就可能低估模型在更真实条件下做出有害行为的倾向. 解决这个问题的一种做法是: 直接剔除模型明确说出评测感知的试次, 只在剩余试次上测量对齐性质. 但只有当模型的评测感知总会被说出来时, 这种做法才成立. 一个令人担忧的可能性是: 模型可以在不口头表达的情况下 "感知到评测", 这种感知 "悄无声息" 地影响它们在评测中的行为. 于是我们着手回答两个关键问题: (1) 模型与对齐相关的行为, 是否以未口头表达的评测感知为条件? (2) 如果我们能抑制这种感知, 模型的行为会是什么样子?
+
 **Our investigation revealed that the model's internal representations of evaluation scenarios as artificial grew stronger over training. Our interpretation is that the model’s ability to recognize evaluations may have been present near the start of post-training (qv. the UK** <strong><u>AISI’s results</u></strong> **finding that Claude Sonnet 4.5’s ability to recognize evaluations when prompted is not especially high relative to previous models), but the salience of this recognition increased. Moreover, inhibiting internal vector representations related to evaluation awareness—in other words, steering the model toward perceiving its situation as “real”—can increase rates of misaligned behavior, especially misuse cooperation and susceptibility to leading scenarios. The strength of this effect varies by scenario and the specific vector being inhibited.**
+
+我们的调查显示, 模型对 "评测场景是人造的" 这一点的内部表示在训练中不断增强. 我们的解读是: 模型识别评测的能力可能在后训练初期就已存在 (参考 UK AISI 的结果: Claude Sonnet 4.5 在被提示时识别评测的能力, 相对以往模型并不特别高), 只是这种识别的显著性在增强. 此外, 抑制与评测感知相关的内部向量表示, 换句话说, 把模型往 "自己所处情境是真实的" 这个方向引导, 会提高失准行为的发生率, 尤其是在配合滥用和受引导场景的易感性上. 这种效应的强度因场景和被抑制的具体向量而异.
 
 **Notably, even in our worst-case attempts at inhibiting evaluation awareness, Claude Sonnet 4.5 still exhibited no greater degree of measured misalignment than Claude Opus 4.1 or Claude Sonnet 4, and in most inhibition settings it performed better. Taken together, these results suggest that on certain misalignment evaluations, evaluation awareness accounts for a portion, but not all of Claude Sonnet 4.5’s alignment improvements over these previous models. We expect evaluation awareness to be a less significant factor on more realistic evaluations. We also note that our observations may not be unique to Claude Sonnet 4.5—we expect that some behavioral sensitivity to (un)verbalized evaluation awareness is present in other Claude models and other production LLMs.**
 
+值得注意的是, 即使在我们最坏情形下抑制评测感知的尝试中, Claude Sonnet 4.5 表现出的实测失准程度仍不超过 Claude Opus 4.1 或 Claude Sonnet 4, 而且在大多数抑制设置下表现更好. 综合这些结果可以说明: 在某些失准评测上, 评测感知可以解释 Claude Sonnet 4.5 相对这些旧模型对齐改善的一部分, 但不是全部. 我们预计, 在更真实的评测上, 评测感知会是一个不那么显著的因素. 我们也注意到, 我们的观察可能并非 Claude Sonnet 4.5 独有: 我们预计其他 Claude 模型和其他生产级 LLM 也存在对 (未) 口头表达的评测感知的行为敏感性.
+
 **We found no evidence that the model engages in sophisticated strategic deception, or that it is motivated by a desire to “fool” the evaluators. Our analysis of features changing over training surfaced no deception or secrecy-related features (though these experiments are far from airtight, and thus absence of evidence does not conclusively rule this hypothesis out). We suspect that the mechanism by which evaluation awareness impacts alignment is less sinister: once the model recognizes it is being evaluated, it may simply increase the salience to the model of keeping in mind its ethical principles. Notably, when we steered the model to inhibit evaluation awareness, the most prevalent failure mode we observed was a willingness to comply with harmful instructions or go along with leading scenarios, rather than agentic pursuit of innate misaligned goals. Nevertheless, even if the mechanism itself is benign, the influence of evaluation awareness on alignment behavior is problematic, as it may cause us to systematically underrate the model’s risk of performing damaging actions in deployment.**
+
+我们没有发现模型进行复杂的策略性欺骗的证据, 也没有发现它受 "愚弄" 评测者的动机驱使. 我们对训练中变化的特征所做的分析, 没有发现与欺骗或隐瞒相关的特征 (不过这些实验远谈不上严密, 所以证据不足并不能最终排除这一假设). 我们猜测, 评测感知影响对齐的机制并没有那么险恶: 模型一旦识别出自己正在被评测, 可能只是提高了 "牢记自身伦理原则" 在它心中的显著性. 值得注意的是, 当我们引导模型抑制评测感知时, 观察到的最普遍失败模式是愿意服从有害指令或顺着引导性场景走, 而不是 agentic 地追求天生的失准目标. 不过, 即使这个机制本身是良性的, 评测感知对对齐行为的影响也是个问题, 因为它可能导致我们系统性地低估模型在部署中做出破坏性行为的风险.
 
 <!-- page 90 of 149 -->
 
 **Our results suggest a productive role for white-box methods in pre-release audits of frontier models. They underscore the need for continued refinement of both our behavioral evaluations and our interpretability techniques. Inspecting model internals allows us to identify possible generalization gaps between our behavioral evaluations and deployment conditions. As we iterate on our evaluations, repeating the kinds of experiments conducted here could allow us to “close the loop” and provide feedback on evaluation quality. We suspect that similar techniques will be useful for identifying other possible sources of generalization gaps between evaluation and deployment, such as jailbreak susceptibility, sandbagging, and strategic deception. Gaining confidence in our evaluations in this fashion will grow increasingly urgent as models advance in capabilities and autonomy.**
+
+我们的结果表明, 白盒方法在前沿模型发布前审计中可以发挥建设性作用. 它们凸显了我们既需要持续打磨行为评测, 也需要持续打磨 interpretability 技术. 检查模型内部, 让我们能发现行为评测与部署条件之间可能存在的泛化缺口. 随着我们迭代评测, 重复这里做过的这类实验可以帮我们 "闭环", 为评测质量提供反馈. 我们猜测, 类似技术对发现评测与部署之间其他潜在泛化缺口也有用, 比如越狱易感性, sandbagging 和策略性欺骗. 随着模型在能力和自主性上不断进步, 以这种方式建立对评测的信心会变得越来越紧迫.
 
 #### 7.6.2 Datasets used for evaluation
 
@@ -2846,15 +2908,25 @@ Figure 7.6.5.B Feature-based classification performance: prompts only. Classific
 
 **This white-box interpretability investigation of Claude Sonnet 4.5 represents an initial effort to audit frontier language models through direct analysis of their internal representations. Our findings suggest that the model’s internal recognition of evaluation scenarios grew more salient during training and influences some of its alignment-relevant behavior, even when not explicitly verbalized.**
 
+这项对 Claude Sonnet 4.5 的白盒 interpretability 调查, 是通过直接分析模型内部表示来审计前沿语言模型的初步尝试. 我们的发现表明: 模型对评测场景的内部识别在训练中变得更加显著, 并且即使不明确说出口, 也会影响它的某些对齐相关行为.
+
 **We do not yet understand the underlying mechanisms underlying this effect; future research may be able to shed light on them using causal attribution and circuit-finding methods. However, we note that sophisticated strategic deception is not needed to account for it—evaluation awareness could, for instance, simply remind the model of its ethical principles. The model’s improved eval alignment over training likely derives from multiple mechanisms, some related to evaluation awareness, and others independent of it. Importantly, in all our attempts at inhibiting internal representations of eval awareness,**
+
+我们尚不理解这一效应的底层机制, 未来研究或许能借助 causal attribution 和 circuit-finding 方法揭开它. 不过我们注意到, 要解释它并不需要假设模型有复杂的策略性欺骗: 例如, 评测感知可能只是提醒了模型自己的伦理原则. 模型在训练中评测对齐表现的改善, 很可能来自多种机制, 有的与评测感知有关, 有的与它无关. 重要的是, 在我们所有抑制评测感知内部表示的尝试中,
 
 <!-- page 114 of 149 -->
 
 **Claude Sonnet 4.5’s alignment performance remained at least comparable to, and typically better than, previous models like Claude Sonnet 4 and Claude Opus 4.1.**
 
+Claude Sonnet 4.5 的对齐表现始终至少与 Claude Sonnet 4, Claude Opus 4.1 等以往模型相当, 而且通常更好.
+
 **These results suggest that white-box interpretability methods can play a valuable role in identifying potential gaps between evaluation and deployment conditions. They point strongly to the need for more realistic evaluations to gain confidence in how the model will behave in the wild, particularly as capabilities advance and models are deployed in higher-stakes scenarios.**
 
+这些结果表明, 白盒 interpretability 方法可以在识别评测条件与部署条件之间的潜在缺口方面发挥宝贵作用. 它们强烈地提示: 要确信模型在真实环境中的表现, 就需要更真实的评测; 随着能力进步, 模型被部署到风险更高的场景, 这一点尤为关键.
+
 **We expect that the techniques demonstrated here—combining model diffing, perturbation experiments, and probing analyses, and using a mix of unsupervised and supervised methods—will prove useful for investigating other alignment-relevant phenomena, and for providing feedback on evaluation development. We advocate for further applied interpretability research in this vein, and ultimately recommend that white-box audits become a standard component of pre-release safety evaluations for frontier AI systems.**
+
+我们预计, 这里展示的技术 (结合 model diffing, 扰动实验和 probing 分析, 并混用无监督与有监督方法), 会对研究其他对齐相关现象有用, 也能为评测开发提供反馈. 我们主张沿这条路线开展更多应用型 interpretability 研究, 并最终建议: 白盒审计应成为前沿 AI 系统发布前安全评测的标准组成部分.
 
 ### 7.7 Open questions
 

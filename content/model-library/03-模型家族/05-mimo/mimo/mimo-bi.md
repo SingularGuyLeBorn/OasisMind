@@ -67,7 +67,7 @@ Try Xiaomi MiMo models in the browser and explore what the stack can do.
 | 04 | MiMo-V2-Flash Technical Report · 2026年1月8日 | → |
 
 > **核对:** 论文 01 标题里同时出现 Multi-Teacher, On-Policy Distillation, Capability Integration, Post-Training, 落地页有没有再解释 MOPD 怎么训?
-> 没有. 本页只给出英文题名与日期 2026年6月29日, 外加箭头入口. 机制细节不在这份产品页里; 题名本身把场景收在 LLM Post-Training, 并把 Multi-Teacher 与 On-Policy Distillation 写进同一条标题.
+> 没有. 报告只给出英文题名与日期 2026年6月29日, 外加箭头入口. 机制细节不在这份产品页里; 题名本身把场景收在 LLM Post-Training, 并把 Multi-Teacher 与 On-Policy Distillation 写进同一条标题.
 
 > **拆开:** HySparse 标题里的 「Oracle Token Selection」 与 「KV Cache Sharing」 是不是同义反复?
 > 源文用 and 并列两项: Oracle Token Selection and KV Cache Sharing. 产品页没有定义 Oracle, 也没有写共享发生在层间还是头间. 能核对的只有: 标题把二者写成 Hybrid Sparse Attention Architecture 的两个并列构件名.

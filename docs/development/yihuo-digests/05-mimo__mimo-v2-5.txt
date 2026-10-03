@@ -1,0 +1,41 @@
+# 05-mimo/mimo-v2-5  文件: content/model-library/03-模型家族\05-mimo/mimo-v2-5\mimo-v2-5-bi.md  共 10 块
+
+--- 行35 [想] ---
+> 没有. 规格停在 310B / 15B / 48T 与 「hybrid sliding window attention」 这一句. 专家拓扑与窗配置要回 Flash 技术报告, 不能从本产品页反推.
+
+
+--- 行60 [问] ---
+> 正文只强调自研编码器 + 轻量 projector 接入 Flash 式 hybrid SWA 骨干. Local Transformer 与 MTP Block 出现在图里, 页内没有再给层宽, 接受长度或训练权重. 读图可记下组件名; 机制深度要以图注可见部分为准, 不把 Flash 报告的 MTP 数字直接安到本页.
+
+
+--- 行63 [核对] ---
+> 训练叙述把 32K/256K/1M 写成后训练渐进外扩; 开源表把 Base 写在 256K, 正式版写在 1M. 页内没有说 Base 是否停在外扩中途, 也没有给出 YaRN 或其它外推算法名. 选型时分记: 训练日程有三段窗口, 公开发布规格是 Base 256K / V2.5 1M.
+
+
+--- 行96 [看表] ---
+> 没有. 「matching MiMo V2.5-Pro at half the cost」 是文案主张; 同页柱图只给分数. Token Plan 在页 5 才写 1x / 2x credit, 且未声明 Coding Bench 评测成本按该倍率计.
+
+
+--- 行99 [拆开] ---
+> 本页同时出现 MiMo-V2-Pro, MiMo V2.5-Pro 与图例 MiMo-V2-Pro. 页 5 Token Plan 又单列 MiMo-V2.5-Pro — 2x. 产品页没有对照表解释三者是否同一 checkpoint. 精读时保留页内原名, 不要私自合并成一个型号.
+
+
+--- 行160 [确认] ---
+> 正文只写视频对齐 Gemini 3 Pro, 未点名单榜. 图上 Video-MME 橙 87.7 对星标灰柱 88.4, VideoHolmes 橙 64.0 对星标 64.2, 接近但页内未声明星标柱就是 Gemini 3 Pro. 引用时分写文案主张与图内可读分数.
+
+
+--- 行163 [回看] ---
+> 没有. Omni 只出现在图例色块. 协议, 采样次数与是否 Thinking 模式均未写. 读榜只取柱顶数字与可见标签, 不做协议外推.
+
+
+--- 行207 [停一下] ---
+> 开源表未出现 Pro 行. Pro 在本页主要作为半价对照与 2x 计费档出现. 不能从本页推断 Pro 已开源或总参不同.
+
+
+--- 行210 [再看] ---
+> 页内把它写成 Token Plan 计费变更: 1M 窗口不再另乘倍率. 训练侧 32K→256K→1M 是部署前日程外扩. 二者都不是 「靠加长采样换分」 的 TestingTime 叙事; 本页也没有给出 reasoning_effort 或并行轨迹档.
+
+
+--- 行235 [对一下] ---
+> 没有. 本页只把 「RL and MOPD」 写成第五阶段口号并外链. Multi-Teacher On-Policy Distillation 的机制细节属于 Flash 报告, 不在本页展开.
+

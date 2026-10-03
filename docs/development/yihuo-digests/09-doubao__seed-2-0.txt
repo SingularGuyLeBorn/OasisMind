@@ -1,0 +1,89 @@
+# 09-doubao/seed-2-0  文件: content/model-library/03-模型家族\09-doubao/seed-2-0\seed-2-0-bi.md  共 22 块
+
+--- 行29 [想] ---
+> 不是同一套条件. 原文从头到尾没给三者的参数量, 激活量, 训练数据或推理设置, 只说「三个尺寸」. 表上也不对称: Table 3 和 Table 11/13 的大模型组只放 Pro, Table 4 放 Lite 和 Mini, Table 12/14 的 agent 与高阶任务只放 Lite, Mini 整组缺席; 三者同框只出现在 Table 8 和 Table 9. 所以「Lite 接近 Pro」这类结论只能在 Table 8/9 里对着看, 其他表是两套对手, 两套分组.
+
+
+--- 行190 [问] ---
+> 按 Table 1 算, Seed2.0 Pro 的 decode 价 $2.37 对 GPT-5.2 High 的 $14.00 约为 5.9 倍, 对 Claude-Opus-4.5-thinking 的 $25.00 约为 10.5 倍; prefill 价 $0.47 对 GPT-5.2 的 $1.75 只有约 3.7 倍. 只有对 Opus 才接近十倍. 单价也不等于单任务成本: 单任务花费 = 单价 × token 数, 而 Table 15 的 WorldTravel 一行显示 Seed2.0 Pro 平均 1486 个 completion token, GPT-5.2 High 是 9190, token 数本身又差了约 6 倍. 两个因子要分开看.
+
+
+--- 行213 [核对] ---
+> 原文没写. 对手一侧写得很细: Table 3 的 GPT-5.2 High 和 Gemini-3-Pro High 标了推理档位, Table 1 的 Claude 写成 「Claude-Opus-4.5-thinking」, 到 Table 3 又只写 「Claude-Opus-4.5」. Seed2.0 一侧只有名字. 唯一旁证在 Table 15: XBench 一行给出 Seed2.0 Pro 平均 277.49 个 reasoning token, WorldTravel 一行是 1286, 说明这些评测里它开着思考. 但思考预算多大, 各表是否一致, 默认模式下分数是多少, 全文都没有. 对手的 Claude 在 Table 3 是否开了 thinking 也说不清, 这会直接影响 Table 3 里 Claude 那两列的解读.
+
+
+--- 行220 [看表] ---
+> 不一定. Graphwalks 按上下文长度切子集, 「<128k」 这个门槛是用 token 数量量的. 换成自研 tokenization 后, 同一道题的 token 数会变, 落进 「<128k」 的题目集合也会变, 分母就不再是官方那一批. Table 3 里 Seed2.0 Pro 的 Graphwalks Bfs 是 68.9, GPT-5.2 High 是 98.0; 如果对手的数字来自官方口径, 这一行其实是两个分母在比. Table 4 的 Graphwalks Parents 一行 Seed2.0 Lite 拿到 100.0, 同样要带着这个前提读.
+
+
+--- 行311 [拆开] ---
+> 拆成两类数字看. 一类是 Seed 自己跑的, 可以统一到 2 FPS 或 5 FPS. 另一类是 Table 9 标 * 的, 表注说它们「取自技术报告」, 例如 Gemini-3-Pro 的 VideoMMMU 87.6* 和 MotionBench 70.3*. 技术报告里的数字用的是对方自己的帧率, 不可能事后改成 2 FPS. 所以 MotionBench 这一行里 Seed2.0 Pro 的 75.2 对 Gemini-3-Pro 的 70.3*, 不在「相同设置」的承诺范围内. Morse-500 那一行没有星号, 这里的 37.4 对 33.0 才算同条件.
+
+
+--- 行334 [确认] ---
+> 这条规则只作用于竞品, Seed2.0 用的是自己的单一实测. 对竞品取 max 会系统性抬高对手, 所以在 Table 11 里 Seed2.0 仍然领先的行(如 BrowseComp-zh 82.4 对 GPT-5.2 High 76.1)是在对自己不利的口径下赢的. 反过来, 括号里是「对齐设置下」的分数: BrowseComp 一行 GPT-5.2 High 写作 77.9 (65.3), 主数字取了较高的官方值, 对齐后是 65.3; Seed2.0 Pro 的 77.3 在主数字口径下排第二, 按对齐口径则明显领先. 同一格里两个数字就是两个协议, 加粗和下划线用的是主数字.
+
+
+--- 行355 [回看] ---
+> 原文只说 Seed 这边去掉了 3 题并做了质量过滤, 没说对手的分数是否也在同一个缩小的题集上重跑. 按上一段「取官方与实测较高者」的规则, 对手的数字很可能部分来自官方全集. 于是 Table 11 的 Terminal Bench 2.0 一行(Seed2.0 Pro 55.8, GPT-5.2 High 62.4)可能是两个分母. 还有一处对不上: 同一个 Gemini-3-Pro High, 在 Table 11 是 56.9, 在 Table 13 是 54.2, 两张表都注明 「Using Terminus2」, 差出来的 2.7 分原文没有解释.
+
+
+--- 行396 [停一下] ---
+> IMO 满分 42(6 题 × 7 分), CMO 满分 126(6 题 × 21 分), 两个分母不能横比. IMO 35/42 正好压在金牌线 35 上, P6 得 0 分, 任何一题少 1 分就掉出金牌; CMO 114/126 比金牌线 87 高出 27 分, 余量大得多. 另外, Appendix E.1 说明这些成绩来自 solve-verify-refine 的迭代流水线: 模型生成候选解, 自查漏洞, 再改写, 这是典型的 TestingTime 投入, 不是单次采样. 表里既没给迭代轮数, 也没说谁按什么细则打分, 所以 Table 2 衡量的是「模型 + 流水线」的组合.
+
+
+--- 行452 [再看] ---
+> 很难. AIME 每届 30 题, 一题约合 3.33 分; HMMT 也是 30 题左右. Table 3 里 AIME 2026 一行 Seed2.0 Pro 94.2, Gemini-3-Pro High 93.3, 差 0.9 分, 不到一题; HMMT Nov 2025 一行 Claude-Opus-4.5, Gemini-3-Pro 和 Seed2.0 Pro 三家都是 93.3(即 28/30). 94.2 这种不是 3.33 整数倍的数, 说明是多次采样的平均, 但采样次数和方差原文都没给. 这类行只能看「同一档」, 不宜读出排名.
+
+
+--- 行501 [对一下] ---
+> 不能直接放一起. Table 5 是 Pass@8, 每题最多 8 次独立尝试, 且 agent 可以多轮调用 Lean, Python 和 Lean 搜索; Lean 编译器本身就是判定器, 8 次里任一次通过就算解出, 挑选几乎不花成本. 这是 TestingTime 投入与部署前缩放叠加后的结果. Seed2.0 Pro 35.5 对 Seed2.0 Lite 30.5 的差距, 才是同一 TestingTime 条件下尺寸带来的; 35.5 对 Gemini-3-Pro 26.5 则还要看 Gemini 是否也在同样的 agent 框架和 8 次预算下跑, 原文没交代. Table 3 的数学行没写 Pass@k, 按惯例是单次或多次平均, 口径不同.
+
+
+--- 行512 [想] ---
+> 对不上. Table 3 的 FactScore 一行, GPT-5.2 High 91.9, Claude-Sonnet-4.5 90.6, Claude-Opus-4.5 91.1, Gemini-3-Pro High 92.6, Seed2.0 Pro 是 71.2, 落后约 20 分; LongFact-Objects 和 LongFact-Concepts 两行 Seed2.0 Pro 是 92.9 和 92.8, 对手都在 98 以上. Table 4 更明显: Seed2.0 Mini 的 FactScore 只有 50.4, Lite 是 62.4, 对手 GPT-5-mini High 是 96.1. 三行都垫底, 这段文字的措辞比表上的数字乐观得多.
+
+
+--- 行534 [问] ---
+> 不是各列简单平均. 按表上 9 列直接平均, Seed-1.8 约 71.22, Seed2.0 Pro 约 76.67, 差 5.45; 而 Overall 分别是 72.89 和 75.26, 只差 2.37. 原因是 Overall 按 17 个加权维度, 912 个样例计算, 表上只露出 9 列, 权重和剩下 8 个维度都没给, 分母不一样. 另外, Content 一列从 90.48 降到 87.76, Format 只从 45.33 到 46.00, 正文只报了涨幅最大的三列. 三个涨幅本身核对无误: 76.45−61.29=15.16, 85.31−75.00=10.31, 65.31−55.78=9.53.
+
+
+--- 行593 [核对] ---
+> 不单调. Table 8 里 Lite 高于 Pro 的行有: DynaMath 70.5 对 68.9, ViVerBench 80.0 对 75.9, CountBench 97.1 对 95.5, LongDocURL 75.1 对 74.7; Mini 高于 Lite 的行有 SimpleVQA 68.7 对 67.2, PhyX 65.0 对 62.8, EgoTempo(Table 9) 67.2 对 61.8. 同一套评测条件下出现这种倒挂, 说明单个基准上 1–5 分的差距里有不小的噪声, 或者三个尺寸的后训练配方并不相同. 原文把 Lite 的 DynaMath 第一写成亮点, 但同一张表也说明不能拿单行分数给尺寸排序.
+
+
+--- 行660 [看表] ---
+> 原文自相矛盾. 上文说「整个家族默认具备 VideoCut」, 但 Table 10 的 「Seed2.0」 一列(CGBench 65.0, LVBench 76.4)与 Table 9 中 Seed2.0 Pro 的数字完全相同, 而 「w/ VideoCut」 一列另给 66.8 和 80.0, 可见 Table 9 是关着 VideoCut 跑的. VideoCut 是推理时多花算力回放片段, 属于 TestingTime; 尺寸差异属于部署前缩放. 两者可以对着量: LVBench 上 Mini 66.6 到 Pro 76.4 是 +9.8(缩放), Pro 76.4 到 80.0 是 +3.6(TestingTime); CGBench 上是 +5.8 对 +1.8. 只有 ZeroVideo 反过来, VideoCut 带来 +13.4(14.5 到 27.9), 而且 Table 10 的 「Seed2.0」 一列没写是哪个尺寸.
+
+
+--- 行743 [拆开] ---
+> 拆开逐行对, 有六处不一致. Scicode: Table 11 为 48.5, Table 13 为 52.1; FrontierSci-research: Table 3 为 25.0, Table 13 为 23.3; Superchem (text-only): 51.6 对 53.0; KORBench: 77.5 对 77.2; CL-Bench: 20.8 对 21.5; HealthBench - Hard: 29.1 对 28.3, 同一行 GPT-5.2 High 也从 42.0 变成 36.6. 另外 Table 3 的 「BABE」 与 Table 13 的 「BIObench」 对手分数完全相同(58.1, 44.7, 49.3), Seed2.0 Pro 却从 50.0 变成 53.5. 对手不变而 Seed 变, 像是 Seed 这一列来自不同的检查点或不同轮次, 原文没有说明. 读 Table 13 的「领先」时, 要记得同名基准在别的表里可能是另一个数.
+
+
+--- 行754 [确认] ---
+> 同一批任务, 两个分母. NL2Repo-Bench 一行更像按测试用例计的通过比例(Seed2.0 Pro 27.9, GPT-5.2 High 49.3), NL2Repo (Pass@1) 一行是整个仓库一次全部通过的比例(Seed2.0 Pro 3.0, GPT-5.2 High 8.0). 前者看「写对了多少」, 后者看「能不能交付」. 在 Pass@1 口径下五家都在 3.0–8.0 之间, 最多相差 5 个点; 在部分通过口径下差距拉到 21.4. Table 14 同理, Seed2.0 Lite 是 24.6 对 1.0. 原文没写 NL2Repo-Bench 的计分公式, 「部分通过比例」这一点是从两行量级推断的.
+
+
+--- 行977 [回看] ---
+> 不是. Pass@8 等于每题 8 次独立提交, 只要有一次通过官方数据就算解出, 模型拿不到判题反馈, 也不承担罚时; 人类队伍可以根据 WA/TLE 反馈修改, 但每次错误提交都计罚时, 且整场只有 5 小时和一台电脑. 金牌线是按人类的解题数和罚时排出来的, 把 Pass@8 的解题比例折算成奖牌, 相当于把 8 份采样预算的 TestingTime 投入换成了排名. 原文也没给 Pass@1, 看不出单次提交能否达到同样档位.
+
+
+--- 行1898 [停一下] ---
+> 33% + 30% + 25% + 28% = 116%, 说明四类失败可以同时出现在一个案例上, 是多标签计数, 各自的分母是失败案例数而不是「失败次数」. 而且这里又有两个分母: 这一格开头写 「Cases per Model: 150」, 失败统计却写 「Across 60 head-model comparisons」, 60 是从哪 150 个里怎么挑的没说. 同一格的 +0.09 对得上(0.327−0.233=0.094), 「77% fewer reasoning tokens (1286 vs 5597)」 也对得上(1−1286/5597≈0.770). 这张表的诊断结论由 LLM 自动写出, 数字需要像这样逐个复算.
+
+
+--- 行1901 [再看] ---
+> bon 和 won 应是同一题多次采样里取最好(best-of-N)和取最差(worst-of-N)的得分, 两者之差衡量采样之间的波动. 0.87−0.66=0.21, 表里写 0.211, 是保留了更多位的结果. 「21% instability」 的说法把分差直接当成百分比, 不严谨: 它是绝对分差, 不是 21% 的题不稳定. 这一格说明 Seed2.0 Pro 的上限(bon 接近 Gemini-3-Pro 的 0.92)与下限(won 低于 GPT-5.2 High 的 0.81)差得多, 也就是说多花 TestingTime 做采样加挑选, 对它的收益会比对 GPT-5.2 大. 这也解释了为何 Table 2 的竞赛成绩要配 solve-verify-refine 流水线.
+
+
+--- 行2250 [对一下] ---
+> 能. 圆柱体积 $\pi \times 40^2 \times 40 \approx 201061.93$, 凸台体积 $50 \times 30 \times 20 = 30000$, 合计 231061.93 mm³, 与 Figure 19 一致. 表面积: 圆柱全表面 $2\pi \times 40^2 + 2\pi \times 40 \times 40 \approx 20106.19$, 凸台放在顶面上, 底面遮住的面积与自己的顶面相互抵消, 只新增四个侧面 $2 \times (50+30) \times 20 = 3200$, 合计 23306.19 mm², 也一致. 但 A.4 说 「6 decimal places via Python API」, Figure 19 和 A.3 的最终输出却都只显示 2 位小数, 文中看不到那 6 位.
+
+
+--- 行2688 [想] ---
+> 分母对得上: 17/22≈77.3%, 差的 5 个正好是 C.2 里「1 个失败 + 4 个错误」. 但 § 5.1.2 列出的修复有五项(缺 pytest 依赖, read\_file, 空字符串布尔, fixture 作用域, flat/choices 参数名), C.2 只提到其中两项, 两处叙述的粒度不同. 「Test coverage 100%」 在全文找不到任何覆盖率工具的输出, 而且 22 个测试是模型自己写的, 用自己写的测试量出的覆盖率, 与 NL2Repo 用基准自带测试计分(Table 13 的 NL2Repo 两行)不是一回事. 顺带一提, C.3 第 3 条出现了 qtlog 的写法, 那是 Appendix D 的内容, 像是串到了这里.
+
+
+--- 行2995 [问] ---
+> 按 E.1 的描述, 找漏洞的 verifier 就是 Seed2.0 Pro 自己, 自我验证只能降低错误率, 谈不上「保证」. 真正的保证来自外部评分, 而原文没说 Table 2 的逐题分数由谁按什么细则给出, 也没说流水线跑了几轮, 用了多少 token. 所以 Table 2 衡量的是「Seed2.0 Pro + 若干轮 TestingTime 自我修订」的组合, 不能和单次作答的模型直接比. 对照 Table 15 的 IMO-Bench 一格: 单次采样的 bon 与 won 相差 0.211, 正是这种波动让多轮修订有收益.
+

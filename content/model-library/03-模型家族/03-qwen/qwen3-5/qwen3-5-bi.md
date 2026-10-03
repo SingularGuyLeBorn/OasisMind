@@ -406,6 +406,8 @@ You can effortlessly integrate the Bailian API with third-party coding tools, su
 
 Qwen3.5 provides a strong foundation for universal digital agents through its efficient hybrid architecture and native multimodal reasoning. The next leap requires shifting from model scaling to system integration: building agents with persistent memory for cross-session learning, embodied interfaces for real-world interaction, self-directed improvement mechanisms, and economic awareness to operate within practical constraints. The goal is coherent systems that function autonomously over time, transforming today’s task-bound assistants into persistent, trustworthy partners capable of executing complex, multi-day objectives with human-aligned judgment.
 
+Qwen3.5 以高效的混合架构与原生多模态推理, 为通用数字 Agent 打下坚实基础. 下一步的跃迁在于从模型 scaling 转向系统集成: 构建带持久记忆的 Agent 实现跨会话学习, 具身接口打通真实世界交互, 自我改进机制与经济意识让系统在现实约束下运行. 目标是能长期自主运转的连贯系统, 把今天被任务绑住的助手, 变成可执行多日复杂目标, 具备人类对齐判断力的持久, 可信伙伴.
+
 ## Citation 引用
 
 Feel free to cite the following article if you find Qwen3.5 helpful:

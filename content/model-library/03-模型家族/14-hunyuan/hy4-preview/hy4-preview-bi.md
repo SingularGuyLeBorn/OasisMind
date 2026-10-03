@@ -909,7 +909,7 @@ https://huggingface.co/tencent/Hy4-preview
 SGLang 命令的后半段: 加载 tencent/Hy4-preview-FP8, 张量并行 8 路, 推理解析器和工具调用解析器都设成 auto, 投机解码算法 NEXTN, 3 步, eagle top-k 为 1, 草稿 token 数 4, 端口 8000, 服务名 hy4-preview. 这段代码在 md 里排在第 12 页页眉之前, 是 MinerU 按版面顺序输出的, 在 PDF 截图里它接在第 11 页那段命令后面.
 
 > **对一下:** 「--model.tencent」 是参数写法吗? SGLang 和 vLLM 的投机解码设置一样吗?
-> 「--model.tencent」 不是. PDF 文字层是 「--model tencent/Hy4-preview-FP8」, 中间是空格, md 把空格认成了点. 投机解码两边写法不同: vLLM 写 「num_speculative_tokens」:3 和 「method」:「mtp」; SGLang 写 NEXTN, num-steps 3, num-draft-tokens 4, eagle-topk 1. 两边都是 3 步, SGLang 多出一个 「草稿 token 数 4」, 这个 4 和 vLLM 的 3 是不是同一个意思, 页面没解释. NEXTN 是不是就是第 4 页那个内置 MTP 层, 页面也没有直接说. 第 4 页只写了 MTP 层 「is built in for speculative decoding」, SGLang 这边的 NEXTN 和它是什么对应关系, 要去看第 11 页链接的 SGLang 手册, 本页给不出.
+> 「--model.tencent」 不是. PDF 文字层是 「--model tencent/Hy4-preview-FP8」, 中间是空格, md 把空格认成了点. 投机解码两边写法不同: vLLM 写 「num_speculative_tokens」:3 和 「method」:「mtp」; SGLang 写 NEXTN, num-steps 3, num-draft-tokens 4, eagle-topk 1. 两边都是 3 步, SGLang 多出一个 「草稿 token 数 4」, 这个 4 和 vLLM 的 3 是不是同一个意思, 页面没解释. NEXTN 是不是就是第 4 页那个内置 MTP 层, 页面也没有直接说. 第 4 页只写了 MTP 层 「is built in for speculative decoding」, SGLang 这边的 NEXTN 和它是什么对应关系, 要去看第 11 页链接的 SGLang 手册, 报告给不出.
 
 2026/9/25 13:12
 

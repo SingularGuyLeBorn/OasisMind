@@ -1,0 +1,93 @@
+# 03-qwen/qwen3-5  文件: content/model-library/03-模型家族\03-qwen/qwen3-5\qwen3-5-bi.md  共 23 块
+
+--- 行71 [想] ---
+> 没有. 页 1-2 把 open-weight 钉成 **Qwen3.5-397B-A17B**, 接着另起一段写 **Qwen3.5-Plus** 「hosted model」 与默认 1M 窗口, 内置工具. 后文预训练吞吐对比也只写 397B-A17B 相对 Max / 235B-A22B 的 32k/256k decode 倍率, 没有把 Plus 的 1M 回写到开源旗舰规格表. 读交付物时要把 「开源权重规格」 与 「托管产品默认窗口」 拆开.
+
+
+--- 行78 [看表] ---
+> 不能直接等同. 页 6 脚注把 HLE-Verified 写成 「verified and revised version of Humanity's Last Exam」, 另有 component-wise verification protocol 与 fine-grained error taxonomy, 并开源数据集. 表上两行对照模型集合也不完全一样 (Verified 行 K2.5 为 `--`). 引用时要标明是哪一行, 不要把 28.7 与 37.6 当成同一题集的两次打分.
+
+
+--- 行85 [问] ---
+> 会有这种效应. 页 10 明确说 overall performance 是对 BFCL-V4, VITA-Bench, DeepPlanning, Tool-Decathlon, MCP-Mark **五榜排名取平均**, 不是五榜原始分加权. 排名平均对 「某一格大幅落后, 其余格中上」 更友好; 读图 `images/p11-pretraining.png` 的曲线时, 不要把它当成 Tool Decathlon 分本身的 Scaling 曲线.
+
+
+--- 行92 [核对] ---
+> 不是同策略. 页 6 写明: simple context-folding 得 69.0, 与 DeepSeek-V3.2 / Kimi K2.5 相同的 discard-all 得 78.6. K2.5 的 `--/74.9` 与脚注对齐时, 更像只公开了 discard-all 一侧. 同一权重换上下文折叠策略就能差约 9.6 分, 引用 BrowseComp 必须带策略名.
+
+
+--- 行143 [拆开] ---
+> 不是. 页 6 把 Search Agent 默认写成 folding@256k (剪早先的 Tool Response), WideSearch 明确 「without any context management」. BrowseComp 又额外对比 folding 与 discard-all. 三处评测的脚手架不同, 不能把 WideSearch 的 74.0 与 BrowseComp 的 69.0/78.6 当成同一上下文协议下的可比格.
+
+
+--- 行146 [确认] ---
+> 文内意图是统一条件: 页 6 写 「all models are evaluated by applying the fixes」. 它不是只给 Qwen 开小灶, 而是把对照列也拉到同一 airline 修复协议上. 读 TAU2 86.7 时要知道 airline 子域已不是未打补丁的官方原版设置.
+
+
+--- 行157 [再看] ---
+> 是对照列 deliberately 换线. 页 7 起表头第四列是 Qwen3-VL-235B-A22B, 与页 3-6 语言表的 Qwen3-Max-Thinking 不同. 文内预训练段也写 「outperforming Qwen3-VL at similar scales」. 读跨表故事时不要把 Max-Thinking 的语言分直接叠到 VL 列上当同对照.
+
+
+--- 行164 [回看] ---
+> 不算严格同协议. 页 10: 本模型固定 「Please reason step by step, and put your final answer within boxed{}.」; 其他模型报告 with/without boxed 的更高分. 本模型没有享受 「两种格式取高」 的优惠, 对照列却可能吃到格式红利. 宣称领先时要把这条脚注绑上 88.6.
+
+
+--- 行171 [停一下] ---
+> 文内把它标成评测条件, 不是另训一条权重. 页 10: BabyVision 开 CI 为 52.3, 不开为 43.3; V* 开 CI 为 95.8, 不开为 91.1. 斜杠高侧吃的是推理期工具调用 (Code Interpreter), 属于 TestingTime 脚手架增益, 引用头条分时必须标明 CI on/off.
+
+
+--- 行198 [对一下] ---
+> 文内区分的是训练目标与展示指标. 训练叙事强调环境难度/可泛化, 反对只刷窄查询; 展示侧仍用五榜排名平均画曲线 (`images/p11-pretraining.png`). 它没有声称训练损失就是这五个榜, 也把更广 Scaling 留给 「upcoming technical report」. 读图时把它当 agent 子集的排名轨迹, 不要当成全后训练目标函数的直接可视化.
+
+
+--- 行227 [想] ---
+> 文内把效率故事绑在 Qwen3-Next 混合注意力 (Gated DeltaNet + Gated Attention) 与更高稀疏 MoE 上, 而不仅是激活参数字. 线性/混合注意力侧对长上下文 KV 成本更敏感, 所以 256k 相对 32k 的倍率差 (19.0x vs 8.6x) 与页 12 两张 Decode Throughput 图一起读更合理: 长上下文下 hybrid 栈的相对优势被放大. 文内没有给出逐层 KV 字节拆分, 不能把倍率差单归因于 「17B vs Max 激活」.
+
+
+--- 行230 [问] ---
+> 钉住的是 **Qwen3-Max-Base**. 页 11 Power 段写 cross-generation parity 对 Base; 页 3-6 的语言榜对照的是 Qwen3-Max-Thinking 等后训练型号. Base 持平叙事与 Instruct/Agent 榜不能串成同一句话.
+
+
+--- 行253 [看表] ---
+> 不能直接比. 页 12 标题是 base models; 页 3 是后训练后的综合评测对照 (含 Thinking / 闭源旗舰). Base 的 76.01 与 Instruct 侧 87.8 不在同一训练阶段, 对照列集合也不同. 用 Base 表论证 「预训练已打赢 V3.2」, 用页 3 表论证 「后训练后相对前沿」, 两句话分开说.
+
+
+--- 行260 [核对] ---
+> 没有. 页 11 只在 Qwen3-Next 能力清单里并列写出 「multi-token prediction」, 与 higher-sparsity MoE / hybrid attention / stability optimizations 同列. 没有式号, 没有头数, 没有讲清 MTP 是训练目标还是推理加速主路径. 机制细节应外链 MTP 单独成篇, 不能从本博客反推实现.
+
+
+--- 行281 [拆开] ---
+> 文内写成两条互补路径. 页 13-14 先讲异构并行 + 稀疏激活重叠, 把混合模态吞吐追到接近纯文本基线; 再讲 FP8 管线降激活显存约 50% 并 >10% 加速. 前者回答 「多模态训练会不会把吞吐打穿」, 后者回答 「精度与显存」. 不要把 ~100% 吞吐读成 FP8 的直接结果.
+
+
+--- 行284 [确认] ---
+> 没有细分. 页 14 只把 「rollout router replay」 列为抬 train-infer 一致性的技术之一, 与 FP8 e2e, speculative decoding, multi-turn rollout locking 并列, 并另说共设计约束 gradient staleness. 没有给出 replay 缓存的是 π_old 路由还是预测路由, 也没有式号. 只能记 「博客声称用了 router replay」, 机制细节不能从本页编造.
+
+
+--- 行341 [回看] ---
+> 博客没有给出一一映射. 页 15 产品侧写三模式; 同页 API 只示范 `enable_thinking: True`, `enable_search: False`. Fast 「without spending tokens on thinking」 更接近关闭 thinking, 但文内没有写 `enable_thinking=False` 就等于 Fast, 也没有第三参数. 集成时不能把产品三模式名直接当成两个布尔字段的枚举.
+
+
+--- 行396 [停一下] ---
+> 不能从本页推出. 示例挂在 ModelStudio / DashScope 兼容 API 与默认模型名 `qwen3.5-plus` 下. 开源旗舰段落没有给出等价的 transformers 生成接口字段. `reasoning_content` 是托管流式协议细节, 不是页 1 开源权重规格的一部分.
+
+
+--- 行449 [再看] ---
+> 页 17 bib 块在抓取时被截断 (`Native Multimodal Ag`), url 仍是 `https://qwen.ai/blog?id=qwen3.5`. 页 1 社区标题是 「Towards Native Multimodal Agents」. 引用时应回 qwen.ai 原文补全 title, 不要把截断串当成官方定稿题名.
+
+
+--- 行518 [对一下] ---
+> 不能. 本篇技术主张停在页 11-14 的 Qwen3-Next 表述与异步 RL 清单; 页 18 起是社区 「You may also like」 壳层. 后续博文标题出现在推荐位, 不构成本文的层比或专家数披露.
+
+
+--- 行591 [想] ---
+> 没有. 页 11 Versatility 只给区间 10–60% 与 「across most languages」, 没有语种分列, 也没有说明效率是按 token 数, 字节数还是吞吐测的. 只能记住词表扩容与效率区间主张, 不能点名某一语言拿到了上限.
+
+
+--- 行638 [问] ---
+> 没有. 页 11 只给定性句 「early text-vision fusion」 与 「outperforming Qwen3-VL at similar scales」, 加上视觉/STEM/视频数据扩展. 没有融合层号, 没有编码器是否冻结, 也没有对比 late fusion 的消融表. 「原生」 在本博客里是产品/数据叙事, 不是可复现的融合公式.
+
+
+--- 行645 [核对] ---
+> 本博客把它们写成不同评测脚注, 没有给出统一的生产默认. 页 6: MCP-Mark 专测里 Playwright 截断 32k; Search Agent 脚注是 folding@累计 Tool Response 阈值 (并提到 256k 策略标签). 没有描述两条规则的优先级. 复现某一榜分时只能跟该榜脚注, 不能假设全局只有一种截断.
+

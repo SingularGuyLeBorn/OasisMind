@@ -1,0 +1,77 @@
+# 15-ling/ling-2-5  文件: content/model-library/03-模型家族\15-ling/ling-2-5\ling-2-5-bi.md  共 19 块
+
+--- 行43 [再看] ---
+> 更像界面. 它夹在 「Tensor type」 和 「BF16 · F32」 之间, 位置是 Hugging Face 模型页侧栏的文件信息区, 同一区还有 Chat template 和 Files info 两个入口. 抽取工具给它的标签是 Image block, 不是后面那些评测图用的 Chart block. 图文件不在目录里, 只能凭位置和文件名判断: 它展示的是权重的张量类型, 不是模型结构, 也不是评测结果. BF16 和 F32 各占多少, 页面没有给数字.
+
+
+--- 行78 [问] ---
+> 只有一个. 合集卡片写 「1 item」, 链接是 collections/inclusionAI/ling-25. 卡片没列条目名, 但它挂在 「Collection including inclusionAI/Ling-2.5-1T」 下面, 说明这 1 个条目就是 Ling-2.5-1T. 第 4 页下载表也只有 Ling-2.5-1T 一行. 所以这 12 页的主体是 Ling-2.5-1T 的模型卡片, 合集只占第 1 页末尾一个小框. 后文出现的 Ling-2.0-1T, Ling-1T, Ringflash-linear-2.0, Ling-2.5-1T-base 是前代, 技术路线或中间产物, 页面没说它们在这个合集里. 末尾的 11 没有单位, 页面没写它是点赞数还是别的计数.
+
+
+--- 行107 [核对] ---
+> 是. 原文就是 「1T total parameters (with 63B active parameters)」. 第 5 页又说改造后激活参数从 51B 升到 63B, 两处的 63B 一致. 1T 除了这句, 只出现在模型名 Ling-2.5-1T, Ling-2.0-1T 和 「trillion-scale」 这个说法里, 页面没有给更精确的值. 页面也没说是什么结构让激活量小于总量: 全文没有 expert, routing 这类词, 也没给层数, 隐藏维, 头数和词表大小. 这些只能空着, 不能拿 Ling 2.0 技术报告里的配置来补.
+
+
+--- 行110 [拆开] ---
+> 20T 是上一代的预训练语料量, 29T 是 Ling-2.5-1T 的. 第 6 页写架构升级之后, 用 9T 高质量 token 在 Ling-2.5-1T-base 上继续预训练, 29 减 20 正好是 9. 页面没有明说 「29T 等于 20T 加 9T」, 只是数字对得上. 如果这样读, Ling 2.5 不是从头训练, 而是在上一代的 20T 之后再训了 9T, 这和第 4 页 「Through incremental training」 的说法一致. 这 9T 的数据成分, 配比和学习率, 页面都没给.
+
+
+--- 行117 [停一下] ---
+> 没有. 这句只说前沿 thinking models 通常消耗约 4 倍的输出 token, 没点名是哪些模型, 也没有图或表给出 Ling-2.5-1T 自己的平均输出长度. 第 3 页评测表里没有输出长度这一列. 「At comparable token efficiency levels」 比的是前代, 前代的输出 token 数同样没印. 复合奖励里 「Correctness」 和 「Process Redundancy」 两项怎么加权, 冗余怎么度量, 页面也没写. 这一段只能当作厂商的定性说法.
+
+
+--- 行144 [看表] ---
+> 页面没有明说. 正文写 「Compared to its predecessor, Ling-1T」, 表里只有一列前代, 表头是 Ling-2.0-1T. 第 10 页部署段又写 「run Ling-1T」. 按上下文, 两个名字指的应该是同一列, 但页面没有一句话把它们等同起来. 表里还有一处格式不齐: SimpleQA_Verified 一行前代写成 19.3, 只有一位小数, 其余格子都是两位.
+
+
+--- 行147 [对一下] ---
+> 推理撑得住, 指令遵循撑不住. Reasoning 六行里, Ling-2.5-1T 在 AIME26, HMMT-Nov25, IMO-AnswerBench, ARCPrize, bbeh 五行最高, 只有 livecodebench 的 68.17 低于 Kimi-K2.5-Instant 的 73.40. Instruction Following 三行一个第一也没有: LIFEBench 57.90, 低于 GPT-5.2-chat 的 61.70; IFBench 46.67 排第三, 低于 GPT-5.2-chat 的 71.47 和 DeepSeek-V3.2-nothink 的 50.00; Multi-IF 77.18, 低于 Kimi 的 78.20. 这一组能说的是比前代强, 说不上比主流模型强.
+
+
+--- 行150 [回看] ---
+> 21 行里有 20 行比 Ling-2.0-1T 高. 例外是 Alignment 组的 MultiChallenge: Ling-2.5-1T 52.01, Ling-2.0-1T 54.95, 低了 2.94, 而且这一行前代是五列中最高的. 涨得最多的是 Agentic 三行: tau2-bench 加 25.20, BFCL-v4 加 23.88, terminal-bench 2.0 加 22.47. 涨得最少的是 GPQA Diamond, 加 2.09.
+
+
+--- 行153 [确认] ---
+> 是. BFCL-v4(FC) 一行 Ling-2.5-1T 69.87, 五列里最高, GPT-5.2-chat 63.05, Kimi-K2.5-Instant 62.96, DeepSeek-V3.2-nothink 60.05 都在它下面. 页面没标哪几列算开源, 但这一行它连 GPT-5.2-chat 也超过了, 「开源领先」 的说法不受影响. 要注意 「general tool-calling benchmark」 只挑了这一个, 同组的 tau2-bench 它排第三, 低于 DeepSeek 的 68.10 和 Kimi 的 62.94.
+
+
+--- 行180 [想] ---
+> 按词序读, MLA 占 1, Lightning Linear 占 7. 后文说先把 「a subset of GQA layers」 改成 Lightning Linear, 再把 「the remaining GQA layers」 近似转成 MLA, 这和 7 份线性, 1 份 MLA 的读法不冲突. 页面没有给总层数, 所以算不出两种层各有几层, 也不知道它们是按 1 个 MLA 接 7 个线性层周期排列, 还是别的排法. 第 5 页的结构图 (p05) 也许画了排布, 但本目录没有图文件, 无法核对.
+
+
+--- 行183 [问] ---
+> 不一样. 页面把 MLA 写成 Multi-head Linear Attention, 把 QK Norm 写成 Query-Kernel Normalization, 把 RoPE 写成 Rotational Positional Encoding. 常见文献里这三个分别是 Multi-head Latent Attention, Query-Key Normalization 和 Rotary Position Embedding. 页面说转成 MLA 是为了 「further compress the KV Cache」, 这和 latent 的读法更贴; 如果 MLA 真是一种线性注意力, 它和 Lightning Linear 就分不开了, 1:7 也就没法解释. 页面没有公式, 判断不了是笔误还是另有所指, 译文照原文保留, 不替它改.
+
+
+--- 行200 [再看] ---
+> 页面的论点是: 激活参数多了, 但线性注意力省下的开销更大, 所以吞吐反而更高. 挑一个激活量更小的对手, 是为了把这一点说得更有力. 有两处要分清. 一是这里写的是 「KIMI K2 architecture」, 评测表里是 Kimi-K2.5-Instant, 名字不同, 页面没说两者结构是否相同. 二是 Kimi K2 的总参数页面没印, 这里只比激活参数这一项. 另外, 51B 到 63B 多出的 12B 来自哪些模块, 页面也没解释. 吞吐具体高多少, 要看第 6 页两张图, 正文没给数字.
+
+
+--- 行221 [核对] ---
+> 读不出. 两张图都不在目录里. 图注只给了条件: 单机 8 卡, 一张是 H20-3e, 一张是 H200, batch size 都是 64, 横向比的是不同生成长度下的 decode 吞吐. 图注没写参与比较的是哪几个模型, 按第 5 页正文推测是 Ling 2.0 和 Kimi K2 架构, 但这只是推测. 吞吐单位, 生成长度取了哪几档, 也都在图里. 第 5 页 「生成越长, 优势越明显」 这句, 要等看到图才能对.
+
+
+--- 行238 [对一下] ---
+> 一行对得上, 一行对不上. MRCR(16K-256K) 一行, Ling-2.5-1T 66.80, 高于 Kimi 的 63.22 和 DeepSeek 的 30.50, 低于 GPT-5.2-chat 的 77.93, 和 「与闭源 API 仍有差距」 一致. LongBenchV2 一行, Ling-2.5-1T 53.68, 低于 Kimi 的 59.64, 只比 DeepSeek 的 51.89 高. 正文的 「multiple ultralong context tasks」 可能主要指第 7 到 9 页图里的 NIAH, RULER, MRCR, 那几张图打不开. Gemini 3 Pro 不在评测表里, 只可能出现在图中. 括号里的 Kimi K2.5 和 DeepSeek V3.2 与前面的 MLA, DSA 只是并列, 页面没有说哪个对应哪个.
+
+
+--- 行259 [确认] ---
+> 评测表 MRCR 行自带 「(16K-256K)」, 第 9 页图注也说 RULER 和 MRCR 是在 16K 到 256K 的窗口上取平均, 两处一致. 第 8 页这张图按 16K 到 1M 逐档展示, 范围更宽. 所以表里的 66.80 不含 256K 以上的窗口, 超过 256K 的部分靠 YaRN 外推, 只在第 8 页的图里. 第 9 页的平均值和表里的 66.80 是不是同一个数, 要看图, 页面文字没有再印一遍.
+
+
+--- 行300 [想] ---
+> 多半不是. 抽取工具按紧跟在图后面的文字给图命名, p01 和 p05 都是这样. 第 9 页的顺序是: p09-ruler 图, 「Ruler」, 「LongBenchv2」, 长上下文对比的图注, p09-quickstart 图, 「Quickstart」, 「Coming Soon」, 「MRCR」, p09-txt 图, 然后第 10 页是 txt 代码块. 页上有 Ruler, LongBenchv2, MRCR 三个小标题, 图注又说这是长上下文基准对比, 这三张图更像同一组对比图的三个分图, Quickstart 一段被排版插到了中间. 两张图的标签都是 Chart block, 和 p01 的 Image block 不同. 图文件不在目录里, 这个判断只来自位置和命名, 不能算确认.
+
+
+--- 行356 [停一下] ---
+> 页面上没有. 第 4 页下载表只有 Ling-2.5-1T 一行, 第 1 页的张量类型是 BF16 和 F32, 没有 FP8. 这句说的是 SGLang 能加载 FP8 权重, 不等于这里发布了 FP8 权重. 同一句示例写的是 「run Ling-1T」, 用的是前代的名字, 看起来是从前代卡片沿用过来的写法, 页面没有改成 Ling-2.5-1T.
+
+
+--- 行374 [回看] ---
+> 不完整. 每一行都在 「--tp-size 8 --」 之后被页面右边界切断, Node 3 那行多露出一个 「p」. 能确定的只有: 四个节点, 每个节点的 tensor parallel 大小是 8, 模型路径取同一个 `$MODEL_PATH`. 被切掉的参数看不到, 这里不补. 还有一处和第 6 页不一样: 吞吐图是单机 8 卡, 这里的示例是四个节点, 页面没解释两种配置为什么不同. 第 11 页 client 的 curl 命令也在 「What」 之后被切断.
+
+
+--- 行439 [核对] ---
+> 不能. 这段自己就说了: 文档标明的是 Ling-2.5 模型家族, 不能只凭家族名就当作明确列出了 Ling-2.5-1T, 覆盖范围以文档里点名的模型和版本为准. 页面只给了 PDF 和索引两个链接, 没有摘录文档内容. 所以训练数据的成分在这 12 页里仍是空白, 20T, 29T, 9T 这三个数是仅有的数据量信息.
+

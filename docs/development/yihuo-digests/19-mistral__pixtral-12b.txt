@@ -1,0 +1,89 @@
+# 19-mistral/pixtral-12b  文件: content/model-library/03-模型家族\19-mistral/pixtral-12b\pixtral-12b-bi.md  共 22 块
+
+--- 行11 [想] ---
+> 没有. 第 1 页横幅只写 「replaced by our latest, more powerful vision and multimodal models」, 没点型号, 也没写哪天停止维护; 页面上的时间只有发布日期 September 17, 2024 和页眉打印时间 2026/9/25.
+
+
+--- 行72 [问] ---
+> 本页概要里 12B 写的是 「12B parameter multimodal decoder」, 指多模态解码器; 视觉编码器单列, 是 400M. 总参数: 本页未印, 两者相加约 12.4B (估算). 激活参数: 本页未印, 22 页里也没写层数, 隐藏维度, 头数, 词表大小.
+
+
+--- 行79 [核对] ---
+> 页面没点名. 第 4 页表里 MMMU 低于 52.5 的只有 Claude-3 Haiku (50.4) 和第 3 行 (50.7, 第 12 页合并表写作 Gemini-1.5 Flash 8B (0827)), 两者的规模页面都没给; 页面明确说更大的 LLaVA-OV 72B, 在第 12 页合并表里 MMMU 是 54.4, 比 Pixtral 高 1.9.
+
+
+--- 行98 [看表] ---
+> 只在开源模型之间成立. 第 5 页表的三列文本基准 (69.2, 48.1, 72.0) Pixtral 在五个开源模型里都最高; 本页文本理解图多画了 Gemini Flash-8B 和 Claude-3 Haiku, MATH 组 Gemini Flash-8B 的柱比 Pixtral 高, HumanEval 组两个闭源模型都比 Pixtral 高. 图没有纵轴, 差多少读不出.
+
+
+--- 行101 [拆开] ---
+> 页面没交代. maj@1 只取 1 个样本时和 Pass@1 是同一回事, 两种写法未必矛盾; 可页面既没说采样几次, 也没说温度, 读者只能按单样本理解. HumanEval 在图和表里都写 pass@1, 这一项口径一致.
+
+
+--- 行135 [确认] ---
+> 不完全成立. 本页表第 4 行 (LLaVA-OV 72B) 的 DocVQA 91.6, VQAv2 83.8 都比 Pixtral 高, 只有 MM MT-Bench 4.95 低于 6.05; 被遮的 MMMU 和 Mathvista, 第 12 页合并表给的是 54.4 和 57.2, 一输一赢. 六列里 Pixtral 赢 3 列, 输 3 列, VQAv2 差 5.2 个点.
+
+
+--- 行138 [回看] ---
+> 22 页里都没有. 正文写 「All prompts will be open-sourced」, 本页表注写 「prompts will be provided in technical report」, 两处都是将来时. 表里的数能不能复现, 本页给不出依据.
+
+
+--- 行147 [停一下] ---
+> 只算得出一半. 第 5 页表 Text IF-Eval 61.3 对最接近的 LLaVA-OV 7B 51.4, 相对提升约 19.3% (估算); Text MT-bench 7.68 对 LLaVA-OV 7B 6.94, 只有约 10.7% (估算). 换成 MM MT-Bench, 6.05 对 Qwen2-VL 7B 5.45 也只有约 11.0% (估算).
+
+
+--- 行172 [再看] ---
+> 本页表 MM IF-Eval 52.7 对次高的 LLaVA-OV 7B 42.5, 相对高约 24.0% (估算); MM MT-Bench 6.05 对次高的 Qwen2-VL 7B 5.45, 高约 11.0% (估算). 这两个基准都是本页新造的, MM-MT-Bench 写的是 「will open-source」, MM-IF-Eval 连开源承诺都没有.
+
+
+--- 行175 [对一下] ---
+> 本页表没有注释. Qwen2-VL 7B 的 DocVQA 是全表最高的 94.5, ChartQA 却比 Phi-3 Vision (72.0) 还低 33.4 个点; Phi-3 Vision 的 VQAv2 比 Phi-3.5 Vision (56.1) 低 13.7 个点. 页面只说统一用能复现 GPT-4o 和 Claude-3.5-Sonnet 的 prompt, 没讨论小模型会不会因此吃亏.
+
+
+--- 行196 [想] ---
+> 本页没给例子, 按正文规则算: 64 行乘 64 列是 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160 (估算). 128k 若按 128,000 算, 不放文字也只装得下约 30 张 (估算). 页面没写分辨率上限, 也没说大图会不会先缩小.
+
+
+--- 行207 [问] ---
+> 对得上. 本页图的猫图 3 行 4 列, 展平后是 12 个图像 token, 中间 2 个 [b], 末尾 1 个 [e], 最后一行后面不再加 [b]; 狗图 5 行 3 列应有 15 个图像 token 和 4 个 [b], 图里用省略号略去了中段. 两张图 token 数不同 (12 对 15), 并不是正文说的 「same number of tokens」 那种情形.
+
+
+--- 行214 [核对] ---
+> 页面没讲清. 正文一处写 「converting them into image tokens」, 一处写 「tokenizes images」, 本页上方示意图画的是一格格彩色方块, 看不出是离散码还是连续向量; 训练目标只写了预测下一个文本 token, 没有图像 token 的预测目标.
+
+
+--- 行245 [看表] ---
+> 本页缩略表太糊, 放大后第一行第四格像 92.3, 其余四格和正式表一致. 第 4 页和第 5 页两张正式表都印 90.7, 第 11, 第 12 页的示例也都是 90.7; 以正式表为准, 缩略图这一格只能记作 「看不清, 疑似不同」.
+
+
+--- 行304 [拆开] ---
+> 第 8 页 GDP 图把 Russia 涂成蓝色, 归在亚洲; 回答最后一句 「highlighted in green」 说明模型是按绿色挑的. 五个国家的金额和占比都和图上一致. 若把俄罗斯算进欧洲, 它会排第五, 西班牙掉到第六.
+
+
+--- 行331 [确认] ---
+> 第一次尖峰对得上: 红实线在约 9.5k 步冲到 1 附近 (读图估算). 但回答漏了更大的一次: 约 19.5k 步红实线冲到接近 1e+4 的量级, 比第一次高约四个数量级 (读图估算), 之后曲线在约 21.5k 步中止. 回答只说 「continues to spike and fluctuate」, 没点出 20k 附近这次.
+
+
+--- 行340 [回看] ---
+> 说明不了. 第 10 页图标题是 train/loss, 只有训练 loss, 没有验证 loss; 过拟合的典型表现是训练 loss 继续降, 验证 loss 回升. 图里是训练 loss 自己突然冲高, 更像训练不稳定. 页面把这段回答原样当作正面示例登出, 没有更正.
+
+
+--- 行403 [停一下] ---
+> 在本页打印件里核对不了. 第 11 页第二张输入图的左半被弹窗盖住, 第 4 页原表这两格也被盖住; 能核对的是后三列, 66.9, 91.6, 83 (83.8 被截断) 都和第 11 页露出的格子一致. 所以 「outperforms or matches LLaVA OneVision 72B」 里 MMMU 和 Mathvista 两项, 本页只能靠模型自己生成的数.
+
+
+--- 行530 [再看] ---
+> 第 13 页草图的下拉框只写 「Flavor ∨」, 没列选项; 代码里的 Vanilla, Chocolate, Strawberry, Cookie Dough, Mint Chocolate 是模型自己补的. 草图底部的 「MistralAI」 被写成页脚 「© copyright MistralAI」, 本页截图的底部也露出了这一行.
+
+
+--- 行547 [对一下] ---
+> 看不出. 本页照片是两根手指在前景作势捏住塔顶的错位摆拍, 回答前半段识别出视错觉是对的; 最后一句 「The purpose of this photo is to demonstrate the impressive height」 是模型加的解读, 照片本身只显示塔被 「捏」 得很小.
+
+
+--- 行685 [想] ---
+> 跑不通. 本页代码先写 `llm = LLM(model=model_name, tokenizer_mode="mistral")`, 最后调用的却是 `vllm_model.model.chat(...)`, 前面从没定义 `vllm_model`, 照抄会报名字未定义. 本页正文也没提这个出入.
+
+
+--- 行688 [问] ---
+> 页面没说边长不是 16 的倍数时怎么处理. 若向上补齐, 宽 200 是 13 列, 高 300 是 19 行, 共 247 个图像 token, 加 18 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 合计 266 (估算); 若向下截断, 是 12 列 18 行, 共 216 加 18, 合计 234 (估算).
+

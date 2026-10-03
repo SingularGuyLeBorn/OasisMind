@@ -32,7 +32,7 @@ April 22nd, 2026
 
 **MiMo-V2.5 是 310B 参数的稀疏 MoE 模型 (15B 激活), 在 48T tokens 上训练. 语言骨干继承自** [**MiMo-V2-Flash**](https://github.com/XiaomiMiMo/MiMo-V2-Flash) **的 hybrid sliding window attention 架构, 并配上自研预训练的专用视觉与音频编码器, 经轻量 projector 接入.**
 
-> **想:** 页 1 写 Sparse MoE, 总参 310B, 激活 15B, 训练 48T tokens, 骨干来自 MiMo-V2-Flash 的 hybrid sliding window attention. 本页有没有专家池大小, top-k, 或 sliding window 的窗长 / 混合比?
+> **想:** 页 1 写 Sparse MoE, 总参 310B, 激活 15B, 训练 48T tokens, 骨干来自 MiMo-V2-Flash 的 hybrid sliding window attention. 报告有没有专家池大小, top-k, 或 sliding window 的窗长 / 混合比?
 > 没有. 规格停在 310B / 15B / 48T 与 「hybrid sliding window attention」 这一句. 专家拓扑与窗配置要回 Flash 技术报告, 不能从本产品页反推.
 
 <!-- page 2 of 6 -->

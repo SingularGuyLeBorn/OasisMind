@@ -29,7 +29,7 @@ We are pleased to introduce Grok 3, our most advanced model yet: blending strong
 我们很高兴推出 Grok 3, 这是我们迄今最先进的模型, 把强大的推理能力和广博的预训练知识结合在一起. Grok 3 在我们的 Colossus 超级集群上训练, 所用算力是此前最先进模型的 10 倍. 它在推理, 数学, 编程, 世界知识和指令遵循任务上都有显著提升. Grok 3 的推理能力经过大规模强化学习打磨, 能思考几秒到几分钟, 在这个过程中纠正错误, 尝试其它思路, 最后给出准确答案. Grok 3 在学术基准和真实用户偏好两方面都处于领先, 在 Chatbot Arena 中拿到 1402 的 Elo 分数. 与它一同发布的还有 Grok 3 mini, 它代表了高性价比推理的新前沿. 两个模型都仍在训练中, 会随着你们的反馈快速演进. 未来几天我们会向用户陆续推出 Grok 3, 同时开放其推理能力的早期预览.
 
 > **问:**「10x the compute of previous state-of-the-art models」, 这个 10 倍是跟谁比?
-> 本页没讲清.「previous state-of-the-art models」可以读成 xAI 自己的上一代 [Grok-2](../grok-2/grok-2.md), 也可以读成业界此前最强的模型. 全文没有训练 FLOPs, GPU 数量和训练时长, 所以这个 10 倍换算不成绝对算力, 也没法拿去和别家比. 第 5 页的「200,000 GPU cluster」是用来训练「even larger models」的, 说的是下一步, 不是 Grok 3 本身的训练规模.
+> 本页没讲清.「previous state-of-the-art models」可以读成 xAI 自己的上一代 [Grok-2](../grok-2/grok-2-bi.md), 也可以读成业界此前最强的模型. 全文没有训练 FLOPs, GPU 数量和训练时长, 所以这个 10 倍换算不成绝对算力, 也没法拿去和别家比. 第 5 页的「200,000 GPU cluster」是用来训练「even larger models」的, 说的是下一步, 不是 Grok 3 本身的训练规模.
 
 > **核对:** 这里说 Grok 3 拿到 1402 Elo, 第 5 页说登顶的是代号 chocolate 的「early version」, 两处是同一个模型吗?
 > 口径不一样. 第 5 页的 Elo 图 (`images/p05-chart.png`) 横轴写的是「chocolate (Early Grok-3)」, 点位在 1400 虚线略上方, 和 1402 对得上. 所以 1402 属于早期版本, 这一段直接写成「Grok 3 ... achieving an Elo score of 1402」, 把早期版本的分数记到了这次发布的 Grok 3 名下. 两者是不是同一份权重, 本页没交代. 另外全文两处都说模型「still in training」, 这个 1402 对应训练中的哪个 checkpoint, 发布后继续训练会不会变, 同样没写, 这组分数的可复现性存疑.
@@ -148,7 +148,7 @@ With a context window of 1 million tokens — 8 times larger than our previous m
 Grok 3 的上下文窗口为 1 million token, 是我们此前模型的 8 倍. 它能处理长篇文档, 应对复杂的提示, 同时保持指令遵循的准确度. 在面向长上下文 RAG 场景的 LOFT (128k) 基准上, Grok 3 取得了最先进的准确率 (12 个不同任务的平均值), 显示出很强的信息检索能力.
 
 > **拆开:**「1 million tokens」是「previous models」的 8 倍, 上一代是多少?
-> 同家族 [xAI 新闻页](../xai/xai.md) 记着 Grok-1.5 的上下文是 128,000 token. 1,000,000 除以 128,000 约 7.8, 四舍五入是 8; 如果两边都按 2 的幂算 (1,048,576 和 131,072), 正好是 8. 本页没说「previous models」具体指哪一代. LOFT 这句也要拆开看: 测的是 128k 长度, 覆盖不到 1M 窗口; 只说「state-of-the-art accuracy」, 没有分数, 也没说和谁比.
+> 同家族 [xAI 新闻页](../xai/xai-bi.md) 记着 Grok-1.5 的上下文是 128,000 token. 1,000,000 除以 128,000 约 7.8, 四舍五入是 8; 如果两边都按 2 的幂算 (1,048,576 和 131,072), 正好是 8. 本页没说「previous models」具体指哪一代. LOFT 这句也要拆开看: 测的是 128k 长度, 覆盖不到 1M 窗口; 只说「state-of-the-art accuracy」, 没有分数, 也没说和谁比.
 
 Grok 3 also demonstrates improved factual accuracy and enhanced stylistic control. Under the codename chocolate , an early version of Grok 3 topped the LMArena Chatbot Arena leaderboard, outperforming all competitors in Elo scores across all categories. As we continue to scale, we are preparing to train even larger models on our 200,000 GPU cluster.
 

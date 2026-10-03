@@ -781,6 +781,8 @@ During the inference and rollout phases of RL training, which do not involve bac
 
 Our training framework is built upon the scalable and efficient infrastructure developed for DeepSeek-V3 (DeepSeek-AI, 2024). In training DeepSeek-V4, we inherit this robust foundation while introducing several key innovations to accommodate its novel architectural components - specifically the Muon optimizer, mHC, and the hybrid attention mechanism - while maintaining high training efficiency and stability.
 
+训练框架建立在为 DeepSeek-V3 开发的可扩展高效基础设施之上 (DeepSeek-AI, 2024). 训练 V4 时沿用这套成熟底座, 同时为其新结构组件 (Muon 优化器, mHC, 混合注意力机制) 做了几处关键创新, 且保持训练的高效与稳定.
+
 #### 3.5.1. Efficient Implementation of Muon Muon 的高效实现
 
 The Muon optimizer requires the full gradient matrix to compute parameter updates, which presents a challenge when combined with the Zero Redundancy Optimizer (ZeRO) (Rajbhandari et al., 2020). Traditional ZeRO is designed for element-wise optimizers like AdamW, where a single parameter matrix can be partitioned and updated across multiple ranks. To address this conflict, we design a hybrid strategy of ZeRO bucket assignment for Muon.
@@ -804,6 +806,8 @@ The introduction of mHC increases both activation memory consumption and communi
 Firstly, we carefully design and implement fused kernels of mHC for both training and inference. Secondly, we introduce a recomputation strategy that selectively checkpoints intermediate tensors. Specifically, we recompute most hidden states between layers and all normalized layer inputs, while avoiding recomputation of compute-intensive operations. This achieves a balance between memory saving and computational overhead. Thirdly, we adjust the DualPipe 1F1B overlapping scheme to accommodate the increased pipeline communication and enable concurrent execution of some operations in mHC.
 
 Collectively, these optimizations constrain the wall-time overhead of mHC to only 6.7% of the overlapped 1F1B pipeline stage. More details of the engineering optimization can be found in the dedicated mHC paper (Xie et al., 2026).
+
+mHC 相对传统残差连接会抬高激活显存与流水段间通信. 对策三条: 为训练与推理都写 mHC 融合 kernel; 选择性重计算-- 重算层间大部分隐状态与全部归一化层输入, 绕开算力密集操作, 在省显存与算力开销间折中; 改造 DualPipe 1F1B 重叠方案以消化新增流水通信, 并让 mHC 部分操作并发执行. 合计把 mHC 的 wall-time 开销压到重叠后 1F1B 流水段的 6.7%; 工程细节见 mHC 专文 (Xie et al., 2026).
 
 #### 3.5.3. Contextual Parallelism for Long-Context Attention 长上下文注意力的上下文并行
 
@@ -1031,11 +1035,15 @@ Table 1 统一设定对照三款 Base. Flash-Base 激活与总参都小得多, �
 
 performance highs among DeepSeek base models on the most demanding benchmarks. On knowledge-intensive evaluations, it delivers dramatic gains, while also substantially advancing long-context understanding. On most reasoning and code benchmarks, DeepSeek-V4-Pro-Base also exceeds both previous models. This comprehensive uplift confirms DeepSeek-V4-Pro-Base as the strongest foundation model in the DeepSeek series, outperforming its predecessors across the spectrum of knowledge, reasoning, coding, and long-context capabilities.
 
+在最难基准上达 DeepSeek Base 系列新高: 知识密集评测大幅抬升, 长上下文理解显著进步; 多数推理与代码基准也超过另两者. 全面抬升确认 Pro-Base 是 DeepSeek 系列最强底座, 在知识, 推理, 代码与长上下文全谱系压过前代.
+
 ## 5. Post-Training 后训练
 
 ### 5.1. Post-Training Pipeline 后训练流水
 
 Following pre-training, we conducted a post-training phase to yield the final models of DeepSeek-V4 series. Although the training pipeline largely mirrored that of DeepSeek-V3.2, a critical methodological substitution was made: the mixed Reinforcement Learning (RL) stage was entirely replaced by On-Policy Distillation (OPD).
+
+预训练之后做后训练, 产出 V4 系列最终模型. 流水大体沿用 V3.2, 关键替换一处: 混合 RL 阶段整体换成 On-Policy Distillation (OPD).
 
 #### 5.1.1. Specialist Training 专家训练
 
@@ -1504,6 +1512,8 @@ Table 8 | Comparison on R&D Coding Benchmark (external models included strictly 
 表 8｜内部研发代码基准对照(外部模型仅作评测参照). Pro-Max Pass Rate 67%.
 
 In a survey asking DeepSeek developers and researchers (𝑁 = 85) - all with experience of using DeepSeek-V4-Pro for agentic coding in their daily work - whether DeepSeek-V4-Pro is ready to serve as their default and primary coding model compared to other frontier models, 52% said yes, 39% leaned toward yes, and fewer than 9% said no. Respondents find DeepSeek-V4-Pro to deliver satisfactory results across most tasks, but note trivial mistakes, misinterpretation of vague prompts, and occasional over-thinking.
+
+内部调研 (N = 85, 均为日常用 V4-Pro 做 Agent 编码的开发者与研究者): 52% 认为 V4-Pro 已可当默认主力编码模型, 39% 倾向可以, 不到 9% 说不. 反馈是多数任务结果令人满意, 但仍有低级错误, 模糊提示理解偏差与偶尔过度思考.
 
 ## 6. Conclusion, Limitations, and Future Directions 结论, 局限与未来方向
 

@@ -43,7 +43,7 @@ In this paper, we present a new set of foundation models for language, called **
 本文介绍一组新的语言基础模型, 叫 Llama 3. Llama 3 模型群原生支持多语言, 写代码, 推理和工具调用. 最大的模型是 405B 参数的稠密 Transformer, 在最长 128K token 的上下文窗口里处理信息. 模型群的每个成员列在表 1. 本文所有结果都来自 Llama 3.1 模型, 为了简洁, 全文统称 Llama 3.
 
 > **想:** 标题写 Llama 3, 表 1 里却同时有 Llama 3 和 Llama 3.1 两批, 论文里的分数到底是哪一批的?
-> 本页这一段已经交代: 所有结果都是 Llama 3.1 模型的, 为简洁统称 Llama 3. 表 1 的图注也重复了一遍 「All results in this paper are for the Llama 3.1 models」. 2024 年 4 月那批 8B 和 70B 只在表 1 里出现, 标为不支持长上下文和工具调用.
+> 报告这一段已经交代: 所有结果都是 Llama 3.1 模型的, 为简洁统称 Llama 3. 表 1 的图注也重复了一遍 「All results in this paper are for the Llama 3.1 models」. 2024 年 4 月那批 8B 和 70B 只在表 1 里出现, 标为不支持长上下文和工具调用.
 
 We believe there are three key levers in the development of high-quality foundation models: data, scale, and managing complexity. We seek to optimize for these three levers in our development process:
 
@@ -404,7 +404,7 @@ An important observation is that IsoFLOPs curves become flatter around the minim
 一个重要观察是: 算力预算越大, IsoFLOPs 曲线在最低点附近越平. 这意味着旗舰模型的表现对 「模型大小与训练 token 数之间的取舍」 的小幅变动比较不敏感. 基于这一点, 最终决定训练 405B 参数的旗舰模型.
 
 > **核对:** 外推给的是 402B 参数, 16.55T token, 实际训练是 405B 参数, 15.6T token, 两个数都不一样, 哪个算数?
-> 算数的是实际训练的那一组. 本页说外推结果是 「402B parameter model on 16.55T tokens」, 紧接着说曲线在最低点附近变平, 小幅偏离影响不大, 所以 「ultimately decided」 选 405B. 第 1 页和第 3 页写的训练量都是 15.6T token. 402B 和 16.55T 只是拟合出的建议值.
+> 算数的是实际训练的那一组. 报告说外推结果是 「402B parameter model on 16.55T tokens」, 紧接着说曲线在最低点附近变平, 小幅偏离影响不大, 所以 「ultimately decided」 选 405B. 第 1 页和第 3 页写的训练量都是 15.6T token. 402B 和 16.55T 只是拟合出的建议值.
 
 **Predicting performance on downstream tasks.** We use the resulting compute-optimal models to forecast the performance of the flagship Llama 3 model on benchmark data sets. First, we linearly correlate the (normalized) negative log-likelihood of correct answer in the benchmark and the training FLOPs. In this analysis, we use only the scaling law models trained up to $1 0 ^ { 2 2 } \; \mathrm { F L O P s }$ on the data mix described above. Next, we establish a sigmoidal relation between the log-likelihood and accuracy using both the scaling law models and Llama 2 models, which were trained using the Llama 2 data mix and tokenizer. We show the results of this experiment on the ARC Challenge benchmark in Figure 4). We find this two-step scaling law prediction, which extrapolates over four orders of magnitude, to be quite accurate: it only slightly underestimates the final performance of the flagship Llama 3 model.
 
@@ -599,7 +599,7 @@ Llama 3 的集合通信库基于 Nvidia NCCL 的一个分支, 叫 NCCLX. NCCLX �
 表 5 列出 18 类中断原因, 按次数排序. 前几项: 故障 GPU (GPU 类) 148 次, 30.1%; GPU HBM3 显存 72 次, 17.2%; 软件 bug (依赖类) 54 次, 12.9%; 网络交换机/线缆 35 次, 8.4%; 主机维护 (计划外维护) 32 次, 7.6%; GPU SRAM 19 次, 4.5%; GPU 系统处理器 17 次, 4.1%. 其余: 网卡 7 次, NCCL watchdog 超时 7 次 (原因未知), 静默数据损坏 6 次, GPU 散热接口和传感器 6 次, 各 1.7% 或 1.4%; SSD 和电源各 3 次 (0.7%); 服务器机箱, IO 扩展板, 依赖, CPU, 系统内存各 2 次 (0.5%).
 
 > **停一下:** 表 5 的次数和百分比能互相换算吗?
-> 次数这一列加起来正好 419, 和本页正文 「remaining 419 were unexpected」 一致. 但 148 / 419 是 35.3%, 表里印的是 30.1%; 百分比这一列加起来只有 94.9%. 其余各行 (72 次 17.2%, 54 次 12.9% 等) 都按 419 换算得上, 只有故障 GPU 这一行对不上. 正文说 GPU 问题占 58.7%, 这正是表里 GPU 类百分比 30.1 + 17.2 + 4.5 + 4.1 + 1.4 + 1.4 的和; 若按 148 次算, GPU 类是 268 次, 约 64.0%. 论文没有交代哪个数是笔误.
+> 次数这一列加起来正好 419, 和报告正文 「remaining 419 were unexpected」 一致. 但 148 / 419 是 35.3%, 表里印的是 30.1%; 百分比这一列加起来只有 94.9%. 其余各行 (72 次 17.2%, 54 次 12.9% 等) 都按 419 换算得上, 只有故障 GPU 这一行对不上. 正文说 GPU 问题占 58.7%, 这正是表里 GPU 类百分比 30.1 + 17.2 + 4.5 + 4.1 + 1.4 + 1.4 的和; 若按 148 次算, GPU 类是 268 次, 约 64.0%. 论文没有交代哪个数是笔误.
 
 Table 5 Root-cause categorization of unexpected interruptions during a 54-day period of Llama 3 405B pre-training. About 78% of unexpected interruptions were attributed to confirmed or suspected hardware issues.
 

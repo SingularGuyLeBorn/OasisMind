@@ -1,0 +1,85 @@
+# 13-glm/glm-5-3-flash  文件: content/model-library/03-模型家族\13-glm/glm-5-3-flash\glm-5-3-flash-bi.md  共 21 块
+
+--- 行17 [确认] ---
+> 对得上. 标题在第 1 页面包屑末尾和正文大标题各出现一次, 两处文字相同. 日期和作者在大标题上方的同一行: 「Published: September 25, 2026」, 「Author: AutoClaw Team」. PDF 元数据的标题是 「GLM-5.3-Flash: More Intelligence with Less Compute | AutoClaw Blog」, 生成时间是 2026-09-25 05:02 (UTC), 和发布日期是同一天. 页脚第 7 页写的是 「AutoClaw by AutoGLM」, 这是站点署名, 不是文章作者, 作者栏仍以 AutoClaw Team 为准. 页面标的 「5 min read」 是站点估算的阅读时长, PDF 打印成 7 页, 其中第 6, 7 页是推广区和页脚, 两者不冲突.
+
+
+--- 行28 [想] ---
+> 320B 全文只出现一次, 就在这一段, 源文 md 第 12 行, PDF 第 1 页导语第二句 「With 320B total parameters」. 18B 出现两次: 一次在同一句 「only 18B active parameters」; 另一次在第 2 页架构节, 源文 md 第 24 行 「it reduces the number of active parameters from 32B to 18B」. 两处 18B 说的是同一个量. 320B 是模型里全部参数的总数, 18B 是处理每个输入时实际参与计算的参数量, 两个数本来就是两种口径, 页面把它们放在一句里一起报. 页面没有写专家总数, 每次激活几个专家, 共享专家有几个, 所以 18B 是怎么由路由组合出来的, 这一页查不到.
+
+
+--- 行35 [对一下] ---
+> 对不上内容, 只对得上位置. 文件名是 MinerU 用紧跟在图后面那段正文的开头 「We trained GLM-5.3-Flash from a new base model and」 生成的, 图本身是一张宣传横幅, 画的是 「GLM-5.3-Flash Coming to AutoClaw」 和一头公牛, 和 「新基座模型」 没有关系. PDF 第 1 页里, 横幅确实夹在导语和 「We trained...」 那段之间, md 的位置和 PDF 一致. 所以按文件名去猜图的内容会猜错, 引用时要看图.
+
+
+--- 行42 [拆开] ---
+> 混合注意力在第 2 页有两段文字和一张架构图, 展开最多. 流形约束超连接在正文只出现这一次, 没有解释它改了什么; 第 2 页架构图左侧每个子层旁边都有一个 「mHC」 方框, 从字母看应当就是 Manifold-Constrained Hyper-Connections 的缩写, 但页面没有把两者明确对应起来. 「scaling efficiency」 说的是模型规模或训练规模扩大时的效率, 和第 2 页讲的推理省算力不是一回事, 页面也没给这方面的数. 30T token 只有总量, 没有文本, 图像, 视频各占多少. 「new base model」 只说是新的, 没说和 GLM-5 系列其他模型的基座是什么关系.
+
+
+--- 行51 [问] ---
+> 页面都没说. 第 2 页这里和第 5 页 「Serving at Scale on Chinese AI Chips」 一节, 都只写 「Chinese AI accelerators」, 没有厂商, 型号, 集群规模. Ox Alpha 是匿名代号, 页面没说在哪个平台以这个名字上线, 跑了多久, 评估看的是什么指标. 另外一个抓取问题: PDF 这里是 「real-」 在行尾断开, 下一行接 「world」, md 合并时把连字符丢了, 写成了 「realworld」, 原文应是 「real-world」.
+
+
+--- 行62 [回看] ---
+> 本页没印 GLM-4.5 的总参数. 同家族 glm-4-5 目录的论文表 1 写的是: GLM-4.5 总参数 355B, 激活 32B, 3 层 dense 加 89 层 MoE, 合计 92 层, 另有 1 层 MTP. 所以 32B 和 92 层都对得上, 而且 92 不含那层 MTP. 320B 对 355B, 少 35B, 约少 10%, 说 「相近」 可以接受. 激活参数从 32B 到 18B, 少了 43.75%; 层数从 92 到 45, 少了约 51%. 按各自总参数算, GLM-4.5 每次激活约 9.0% 的参数 (32 / 355), GLM-5.3-Flash 约 5.6% (18 / 320). 这两个比例是用两页的数算出来的, 页面自己没写.
+
+
+--- 行69 [拆开] ---
+> 分不整. 图左侧画的是两组: 下面一组 「Linear Attention + MoE」, 旁边标 ×3; 上面一组 「IndexPool Sparse Attention + MoE」, 旁边标 ×1. 按字面理解是 3 层线性注意力配 1 层稀疏注意力, 4 层一组. 45 除以 4 是 11.25, 不是整数. 可能的情况有几种: 45 层里首尾有不按这个比例排的层; 或者 45 的计数口径和图不同, 比如是否含图顶上的 「MTP Layer」; 或者 ×3 / ×1 只是示意. 页面没有给重复次数, 也没有给线性层和稀疏层各多少层, 这里不替它算.
+
+
+--- 行76 [对一下] ---
+> 图右侧的放大框里, 「Context Hidden States」 分出两路: 一路进 「KV Cache」, 直接接到顶上的 「Attention」; 另一路是 「Indexer Keys」, 经过 「4x Pooling」 进 「Indexer Cache」, 再进 「Indexer」. 所以 「4x Pooling」 压的是索引器用的 key, 不是主注意力的 KV cache. 这和文字 「reduces indexer latency and memory overhead」 的主语一致: 省的是索引器那一侧的延迟和显存. 图上 Indexer 接 「TopK」, 再接 「KV Block Selection」, 说明稀疏注意力选的是 KV 块, 不是单个位置. 文字里没有 「block」 这个词, 这一点只有图上有.
+
+
+--- 行103 [看表] ---
+> 两个数都印在页面上, 口径看起来不同. 图的纵轴是 「每个 token」 的计算量, 3.40× 标在横轴 1M 的位置, 是最长上下文那一点的比值. 文字是 「approximately 3.0×」, 没说在哪个位置取值, 也没说是不是在整段长度上平均. 如果 GLM-5.3-Flash 的曲线在短位置有一段不随长度增长的固定开销 (线性注意力那部分就是这种形状), 越往前比值越小, 整段平均下来会低于 1M 处的 3.40, 这可以解释 3.0 和 3.40 的差. 但这是推断, 页面没写. 至于和 GLM-5.3 的比较: 全页直接拿 GLM-5.3 作对照的, 只有这两句文字 (注意力计算 3.0×, KV cache 4.4×) 和这两张折线图里的蓝线. 第 3 页的智能体基准表对照的是 GLM-5.2, 第 4 页的多模态表只有 GLM-5.3-Flash 一列, 都没有 GLM-5.3 的格子.
+
+
+--- 行106 [再看] ---
+> 对不上, 但可能是统计范围不同. 图的标题写的是 「Average Per-layer」, 每层平均; 文字写的是 「KV-cache size」, 没说是每层还是整个模型. 整个模型的 KV cache 约等于每层平均乘以层数. 如果 GLM-5.3 的层数比 45 多, 总量的比值就会比每层的比值大: 3.80 × (GLM-5.3 层数 / 45) = 4.4 时, GLM-5.3 约 52 层. 这个数只是反推, 本页没有给 GLM-5.3 的层数, 这个解释无法在本页验证. 能确定的只有: 两个数都来自作者自己公布的对比, 引用时要带上口径, 写 「文字称约 4.4 倍, 图中每层平均在 1M 处为 3.80 倍」.
+
+
+--- 行113 [核对] ---
+> 图例里除了两个 GLM, 只有 Kimi-K3 和 DeepSeek-V4, 名字里都没有 「Flash」. 文字没点名, 从 KV cache 图看, 线在紫线下方的就是这两条, 只能推断 「Flash-class」 指的是它们, 意思是同一档规模的模型, 不是名字带 Flash. 差距按目测: 1M 处 GLM-5.3-Flash 约 150, Kimi-K3 约 135, 确实只略大; DeepSeek-V4 约 80, GLM-5.3-Flash 接近它的两倍, 用 「slightly」 形容偏轻. 「lowest attention compute」 在注意力图上成立, 紫线全程最低. 另外, 注意力图里 Kimi-K3 分了 Decode 和 Prefill 两条线, 其他模型只有一条, 页面没说 GLM-5.3-Flash 那条线对应哪个阶段.
+
+
+--- 行122 [停一下] ---
+> 指推理更省算力. 这句话收束的是第 2 页整节 「Architecture for Efficient Inference」, 前面列的是激活参数 32B 到 18B, 层数 92 到 45, 注意力计算 3.0×, KV cache 4.4×, 全是推理侧的量. 训练算力页面一个数都没给, 只有 30T token 的语料总量. 页面也没有任何一处说推理时增加步数或多生成思考内容, 所以 「less compute」 就按字面写成更省算力, 不往别的方向引申. 句子把 「多模态训练语料」 和架构改动并列当原因, 语料影响的是 「more capability」 那一半, 省算力那一半靠的是架构.
+
+
+--- 行148 [看表] ---
+> 不是模型. PDF 第 3 页里 「复制」 是表格右上角的一个灰色小按钮, 点了复制整张表, 网页组件自带的. MinerU 把它识别成第四列表头, 于是 GLM-5.2 的每个数都被标成 colspan=「2」, 横跨 「GLM-5.2」 和 「复制」 两格; GDPval-AA v2 一行又多了 rowspan=「2」 和空行. 实际上这张表只有三列: 基准名, GLM-5.3-Flash, GLM-5.2. 8 行里 GLM-5.3-Flash 全部更高, 和上面 「outperforms GLM-5.2 across...」 的说法一致. 差距最小的是 HLE with Tools, 只高 0.6; 最大的是 AutomationBench, 高 22.6, 相对提升约 86%. GDPval-AA v2 的 1773 和 1504 不是百分数, 页面没说它是什么分制. 表头 「Agents' Last Exam」 的撇号, PDF 里是弯引号, md 换成了直引号.
+
+
+--- 行159 [问] ---
+> 页面没有链接, 也没有附录. 8 个基准的版本号印了几个 (Terminal Bench 2.1, DeepSWE v1.1, AutomationBench v1.0.6, GDPval-AA v2), 但每项用什么智能体框架, 最大轮数, 温度, 是否开思考模式, 跑了几次取平均, 都没写. 这句免责说明等于承认换一套设置分数会变, 所以这张表只能当作者自报的一组数来引用, 不能和别处不同设置下的分数直接相减.
+
+
+--- 行170 [回看] ---
+> 图的输入端只画了两路: 「Image」 进 「ViT」, 「Text」 进 「Embedding」. 视频和文件怎么进模型, 图上没画, 文字也没说 (比如视频是不是按帧走 ViT, 文件是渲染成图还是抽文本). 第 1 页 「first natively multimodal model in the GLM-5 family」 里的 「natively」, 这一句给了定义: 从预训练阶段就把文本和视觉一起学. 家族目录里还有 glm-5v-turbo, 本页没提它; 按这句的定义, 「第一个」 说的是预训练阶段就联合学习的模型, 不是说此前家族里没有能看图的模型. 这是按字面推的, 页面没做比较.
+
+
+--- 行204 [确认] ---
+> 是一项. PDF 文字层就是 「CharXiv Reasoning with To」 换行 「ols」, 分数 89.4 在 「ols」 之后, 网页单元格太窄把 「Tools」 折成了两行, MinerU 当成了两行表格. 合起来是 「CharXiv Reasoning with Tools」, 89.4. 表头 「GLM-5.3-Flash复制」 同样粘上了复制按钮. 所以实际是 6 个基准, 不是 7 个. 这张表只有 GLM-5.3-Flash 一列, 没有 GLM-5.3, GLM-5.2 或任何别家的对照分, 也没说满分和指标. 页面没有给出这 6 项与 GLM-5.3 对比的格子.
+
+
+--- 行273 [拆开] ---
+> 六项都只列了名字. 节点内张量并行, W8A8 量化, INT8/FP8/BF16 混合缓存量化, 编码-预填充-解码分离是常见做法的名称, 字面能看懂; ReplaySSM 和 Layer Split 是页面自己的叫法, 没有解释. ReplaySSM 里的 SSM 让人联想到线性注意力的状态 (第 2 页 「state modeling」), 但页面没说两者的关系, 这里不猜. 「Encode」 一段多半对应架构图里给图像编码的 ViT, 同样是推断. 「threefold」 和第 2 页的 「3.0× reduction in attention compute」 不是一回事: 前者是整个服务系统相对自家初始基线的提升, 硬件相同, 模型相同; 后者是模型结构相对 GLM-5.3 的注意力计算量. 而且 「serving performance」 没说是吞吐, 延迟还是单卡并发, 基线是什么配置也没写.
+
+
+--- 行292 [问] ---
+> 页面没给仓库名, 也没给链接. 「refer to our official model repository」 只是一句话, PDF 里这里没有超链接. 三个框架没写最低版本号, TokenSpeed 在页面上也没有介绍. 显存, 卡数, 精度 (BF16 还是量化权重) 都没写. 第 5 页服务栈里的 W8A8 和混合缓存量化是作者自己线上服务的配置, 页面没说公开的权重是哪种精度. 能照抄的只有三件事: 权重在 Hugging Face, 许可证 MIT, 三个框架名.
+
+
+--- 行325 [对一下] ---
+> 文件名来自图后面那篇相关文章的标题 「How to Use AutoClaw Cluster Mode: Start with These 5 Types of Complex Tasks」, 和图所在的卡片是同一篇, 这一张对得上. 但卡片的配图在 PDF 里是左右两块: 左边是橙黑大字 「Tackle complex tasks with Agent Cluster.」 的宣传图, 右边才是这张界面截图. MinerU 只把右边存成了图片, 左边那张图上的字被识别成了一行正文. PDF 第 6 页的文字层里没有 「Tackle complex tasks」 这句, 可以印证它原本是图里的字. 另外, 截图里的 「Design Expert」 和那排按钮, 看起来是 Cluster Mode 里一个设计类角色的入口, 和 GLM-5.3-Flash 本身无关.
+
+
+--- 行336 [回看] ---
+> 两处时态不同, 页面没解释. 横幅是一张预先做好的宣传图, 写的是 「即将上线」; 第 6 页是正文, 写的是 「现已上线」. 最可能的情况是配图沿用了预热时的素材, 正文按发布当天的状态写. 按页面能确认的是正文那句: 发布时 GLM-5.3-Flash 已在 AutoClaw 中可用. 横幅的 「Coming to」 不能当作抓取时还没上线的证据.
+
+
+--- 行349 [想] ---
+> 对过. 第 1 页 1 张: p01-we-trained-glm-5-3-flash-from-a-new-base-model-and.png, 是宣传横幅, 文件名取自后一段正文, 内容对不上名字. 第 2 页 3 张: p02-image.png 是架构图; p02-chart.png 是每层平均 KV cache 折线图; p02-it-has-the-lowest-attention-compute-among-the-models.png 是注意力计算折线图, 名字取自图后那句 「It has the lowest attention compute...」, 恰好和图的内容一致. PDF 里这三张是一整块: 架构图在左, 两张折线图在右上下叠放, KV cache 在上, 注意力在下, md 的顺序和它一致. 第 6 页 1 张: p06-how-to-use-autoclaw-cluster-mode-start-with-these-5.png, 是相关文章卡片右半的界面截图. 第 3, 4, 5, 7 页没有图, 两张基准表是网页表格, 不是图片. images 目录里正好这 5 个文件, 没有多余, 也没有缺.
+

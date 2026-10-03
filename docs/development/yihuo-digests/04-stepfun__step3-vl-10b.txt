@@ -1,0 +1,77 @@
+# 04-stepfun/step3-vl-10b  文件: content/model-library/03-模型家族\04-stepfun/step3-vl-10b\step3-vl-10b-bi.md  共 19 块
+
+--- 行25 [想] ---
+> 摘要未标明 SeRe/PaCoRe 或 EN/CN. 表 1 同档 SeRe 未出现精确 92.2; 表 3 正文写 PaCoRe 下 MMBench 「92.17% (average on CN & EN)」. 引用时应标模式与语种, 不要把文首 92.2 与表 1 的 92.05 当成同一格的两次测量.
+
+
+--- 行93 [问] ---
+> 正文发布架构写 1.8B language-optimized PE; 表 4 标题与括号写明消融选用 300M 「specifically selected for ablation」, 与 DINOv3 300M 对齐参数量. 不能把表 4 的 300M 分数直接当成发布用 1.8B 编码器的绝对水平.
+
+
+--- 行96 [对一下] ---
+> 原句只写后者: 用 batch 维并行避开变长 packing 的复杂度. 没有写把多 crop 拼进同一序列维, 也没有给出 16× 之后每个 crop 的 token 数.16× 与 multi-crop 是同段并列的压缩与切图设计, 不能把二者口算成 「token 变成几分之一」.
+
+
+--- 行99 [想] ---
+> 原文是并列: 用 newline 编码空间结构, **并且** 用标准 1D RoPE 做位置建模; 高级位置变体在本设定无显著收益. 不是 「只用 newline, 不用 RoPE」, 也不是在这里重写 RoPE 公式.
+
+
+--- 行170 [核对] ---
+> 不矛盾. §2.3 的全解冻仅约束预训练; §3.2.1 写明整个 RL 阶段只更新 decoder, 冻 encoder. 两段课表的可训练模块集合不同, 不能合成一句 「发布模型全程全解冻」.
+
+
+--- 行173 [拆开] ---
+> 原句写第二阶段 「transition to a higher-quality data mixture and further anneal the learning rate」, 降温期同时换更高质混合并巩固 OCR / grounding / 推理. 不是只改 LR, 数据配比不变.
+
+
+--- 行197 [问] ---
+> 不是. 比例 1:1 只约束 Stage 2 混合内的文本/多模态份额; 绝对 token 仍是 36B 对 190B. 不能把 「1:1」 读成两阶段总量对半, 或读成多模态总暴露量已经追上 Stage 1.
+
+
+--- 行248 [回看] ---
+> 优势估计本身走式 (1) 的 GAE (本文取 γ=λ=1); 「omitting standard importance sampling」 修饰的是该 PPO 变体的 off-policy 设定. 同段另写 truncated IS (`C=8`) 专门缓解训推不一致. 不能把 「省略标准 IS」 读成全程没有任何 IS, 也不能把本文写成改用 GRPO, 丢掉了 GAE 式 (1).
+
+
+--- 行251 [拆开] ---
+> §3.2.3–3.2.4 写明: RLVR 600 + RLHF 300 + PaCoRe 500 = 1,400. 「over 1k」 是摘要口径; 精确拆分以这三节为准.
+
+
+--- 行273 [停一下] ---
+> 原句写明: 「cases where the model arrives at a correct final answer through flawed or unsupported reasoning」. 罚的是终答正确, 过程却有缺陷或无支持的情形, 不是单纯格式解析失败 (格式侧另写 parse-invariant).
+
+
+--- 行285 [再看] ---
+> 原文是 zeros the reward, 中文译稿也写 「把奖励置零」. 针对伪造引用 / 链接, 把幻觉打在源头; 不是写成按比例打折的 soft penalty.
+
+
+--- 行383 [对一下] ---
+> 原句: PaCoRe 把最大长度扩到 131,072 以容纳扩展上下文, 「while other hyperparameters remain consistent」. 评测默认采样三件套在 SeRe / PaCoRe 间不变; 变的是最大长度与是否综合 16 路 SeRe.
+
+
+--- 行417 [看表] ---
+> 应按域内多数格领先, 而非逐格第一. Counting 与部分 GUI / 指令格存在第二或更低; 带 * 的格子还可能来自原论文协议. 引用 「同档新标杆」 时保留 「almost」, 不要改写成全表加粗.
+
+
+--- 行450 [回看] ---
+> 表 1 MathVision 是 70.81 (同档 SeRe). 表 3 PaCoRe 列: MathVision 75.95, MMMU 80.11, AIME2025 94.43. 文首亮点分应按表 3 PaCoRe 读, 不要与表 1 SeRe 混引.
+
+
+--- 行511 [停一下] ---
+> 正文 「yielding notable improvements in Tab. 5 for tail-knowledge tasks (+6.48% SimpleVQA)」 是以 Muon 相对 Adam 的增益叙述. 表内 Δ 行按数值是 Adam 行减 Muon 行 (SVQA 20.60−27.08=−6.48). 读表时要把 Δ 符号与正文 「Muon +6.48%」 对照, 不要把 Δ 行直接念成 「Adam 赢 6.48」.
+
+
+--- 行551 [核对] ---
+> 原文分两条: Reasoning Tasks (STEM, Puzzles) 走 standard sequential scaling, 表现与 TestingTime 延长 (思考轨迹变长) 正相关; Deterministic Perception Tasks (Grounding, OCR) 走 length diminishment / entropy reduction, 短轨迹代理更高 Pass@1 置信. 平均值回落是对消结果, 不是单一任务单调变短.
+
+
+--- 行575 [拆开] ---
+> 不否定. 图 2 明确标 RLVR dynamics; PaCoRe 的响应变长写在 Emergence via PaCoRe / Tab. 3 增益段, 对应并行综合与假说核验的 TestingTime. 阶段与机制不同: RLVR 训练动态的均值对消, 对不上 PaCoRe 推断/范式下的有意加长.
+
+
+--- 行581 [再看] ---
+> §5.2 原句是 「we hypothesize that the perceptual unscaling stems from...」. 后续用 PaCoRe 外置过程并展示表 3 / 表 7 增益, 但没有单独消融证明 「缺 cognitive traces => 长度回落」 的充要关系. 引用时应标成假说 + 干预结果, 不要写成已证因果定理.
+
+
+--- 行1076 [确认] ---
+> 模板开头要求分析 Reference Responses 并给出自己的 comprehensive solution; Original Problem 槽填 current problem. 表 8 说明 𝑀=∅ 时 **bypass** 该模板, 原题输入原样进模型. 综合动机句写 framing 为 Reference Responses 以鼓励综合多样视角.
+

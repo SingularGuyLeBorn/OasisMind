@@ -1,0 +1,85 @@
+# 08-claude/claude-3  文件: content/model-library/03-模型家族\08-claude/claude-3\claude-3-bi.md  共 21 块
+
+--- 行27 [想] ---
+> 页面没说. 全文没有参数量, 层数, 训练 token 数或训练数据的任何描述, 能拿来区分三档的只有三样东西: 这里的能力排序, 第3页的速度描述, 第7页到第9页的价格 (Opus \$15 | \$75, Sonnet \$3 | \$15, Haiku \$0.25 | \$1.25). 由价格高低去倒推模型大小, 在本文里找不到依据.
+
+
+--- 行34 [问] ---
+> 页面没解释评测是在什么时间, 用哪个版本跑的. 能确认的是, 正文三处都把 Haiku 写成未上线: 这里的 「Haiku will be available soon」, 第9页到第10页 「Model availability」 一节的同一句话, 以及云平台 「with Opus and Haiku coming soon」. 所以表里 Haiku 那一列是发布前内部跑出的数字, 读者当天没法自己复核. 第3页还有一句 「Following launch, we expect to improve performance even further」, 说的是 Haiku 的速度, 并没有说分数会不会跟着变.
+
+
+--- 行47 [核对] ---
+> 图和正文都没说. 拿第7页到第9页的价格去对: 三个点的横坐标都落在各自的输入价和输出价之间, Haiku 在 \$0.25 与 \$1.25 之间, Sonnet 在 \$3 与 \$15 之间, Opus 在 \$15 与 \$75 之间, 所以它不是单用输入价或单用输出价画的, 混合比例页面没给. 纵轴 「Benchmark scores」 没有刻度, 也没说是哪几个基准的平均. 这张图只能读出三档在价格上的相对位置和 「越贵越强」 的走势, 读不出具体分数.
+
+
+--- 行94 [看表] ---
+> 在这张表的 10 行里, Opus 每一行都是最高分, 一行也没输. 但领先幅度差别很大: GPQA, MATH, MGSM, HumanEval 几行拉开了明显差距, ARC-Challenge 和 HellaSwag 两行只比 GPT-4 高 0.1 个百分点, MMLU 高 0.4. 正文用 「most」 而不是 「all」, 页面没交代例外指哪一项. 可以对照的是脚注 1: 表里只放了 「models currently available commercially that have released evals」, 尚未发布的 Gemini 1.5 Pro 放在 model card 里比, 而且脚注承认优化过提示词的新版 GPT-4T 报过更高的分. 「most」 的保留很可能是给这些表外对比留的余地, 但这是推断, 原文没写.
+
+
+--- 行97 [拆开] ---
+> 不是. 看 GSM8K 一行: Claude 3 三款都是 0-shot CoT, GPT-4 是 5-shot CoT, GPT-3.5 是 5-shot 且没标 CoT, 两款 Gemini 是 Maj1@32, 也就是对同一道题采样 32 次再多数表决, 属于在 TestingTime 多花算力换准确率. MATH 行 Claude 用 0-shot CoT, 其他家用 4-shot; MGSM 行 Claude 用 0-shot, 其他家用 8-shot; DROP 行 Gemini 标的是 「Variable shots」. 设置完全一致的只有 MMLU, HumanEval, BIG-Bench-Hard, ARC-Challenge, HellaSwag 这几行 (GPQA 行 Gemini 空缺). 页面没说这些设置是 Anthropic 自己跑的还是抄各家公布的数字, 脚注 1 只说 「released evals」. 所以设置不同的几行, 差值里混着提示方式的影响, 不能全算作模型本身的差距.
+
+
+--- 行100 [确认] ---
+> 不是. 这一行的指标是 「F1 score」, 不带百分号, 数字后面紧跟着评测设置 「3-shot」, 抽取时两者粘在了一起, 应读作 83.1 加 3-shot. 同一行 Gemini 两格写成 「82.4Variable shots」 和 「74.1Variable shots」, 可以看出这一行的分数都保留一位小数. 同理 Sonnet 是 78.9, Haiku 是 78.4, GPT-4 是 80.9, GPT-3.5 是 64.1. 表格本身按源文原样保留, 这里只说明读法.
+
+
+--- 行103 [回看] ---
+> 不是每一行. 本页 HumanEval 一行, Haiku 的 75.9% 高于 Sonnet 的 73.0%. 第4页视觉表里也有类似情况: Chart Q&A 一行 Haiku 最高, Sonnet 次之, Opus 最低; Document visual Q&A 和 AI2D 两行 Sonnet 高于 Opus. 「ascending order」 说的是整体定位, 对应第2页那张价格与能力的走势图, 具体到单个基准, 排序会有交叉. 页面没有解释这些交叉的原因.
+
+
+--- 行116 [停一下] ---
+> 原句的动作是 「read」, 页面没说这三秒包括哪些环节: 有没有输出, 输出多长, 是首个 token 的延迟还是整次请求的耗时, 在什么硬件和并发条件下测的, 都没交代. 能换算的只有输入侧, 大约每秒三千多个 token 的读入速度. 这段还带着 「with charts and graphs」, 说明输入里有图, 但图在 token 计数里怎么折算, 页面也没写. 最后一句 「Following launch, we expect to improve performance even further」 说明这个速度是发布前的数字, 之后还会变.
+
+
+--- 行123 [再看] ---
+> 限定词在句首: 「For the vast majority of workloads」. 也就是说, 有少数工作负载不到 2x, 页面没说是哪些. 2x 是相对 Claude 2 和 Claude 2.1 两代旧模型说的, 全文没有给出任何一款模型的绝对延迟或每秒 token 数. Opus 则只是 「similar speeds to Claude 2 and 2.1」. 把这三句连起来, 本页对速度只给出一个相对刻度: Haiku 最快, Sonnet 约为旧款的两倍, Opus 与旧款持平.
+
+
+--- 行152 [对一下] ---
+> 因为这张表的数字撑不起 「outperform」. 5 行里, Gemini 1.0 Ultra 在 Document visual Q&A 和 MathVista 两行高于三款 Claude, MMMU 一行与 Opus 并列 59.4%, Chart Q&A 一行与 Opus 并列 80.8%. Claude 明显领先的只有 AI2D 一行. 另外这张表没有 GPT-3.5 列, 对比对象换成了 GPT-4V; MathVista 行只有 Claude 标了 CoT, Chart Q&A 行 Claude 是 0-shot CoT, GPT-4V 是 4-shot CoT, Gemini 两格没标设置. 用词和数据是对得上的: 视觉能力是 「相当」, 不是 「领先」.
+
+
+--- 行171 [想] ---
+> 图没放错, 是文件名错位. 抽取工具给图片取名时用了紧随其后的标题 「## Improved accuracy」, 画面内容对应的是上方 「Fewer refusals」 一节和图题 「Incorrect refusals」. 同样的错位在本页还有一次: 下一张 p05-long-context-and-near-perfect-recall 画的是准确率, 第6页的 p06-responsible-design 画的是 NIAH 热力图. 至于图本身, 页面没交代 「harmless prompts」 题集有多少题, 从哪来, 怎么判定 「harmless」, 图上也不标数值. 能读出的只是相对关系: 三款 Claude 3 的错误拒答率大致不到 Claude 2.1 的一半, Haiku 最低. 正文说的 「previous generations」 在图里只画了 Claude 2.1 一款.
+
+
+--- 行180 [问] ---
+> 下方那张 「Hard questions」 图可以对上 (文件名是 p05-long-context-and-near-perfect-recall, 原因见上一条). 目测 Opus 答对约 46%, Claude 2.1 约 22%, 确实是两倍左右; 答错一栏 Opus 约 34%, Claude 2.1 约 42%, 只降了几个百分点; 降得最多的是 「I don't know / Unsure」 一栏, 从约 31% 降到约 19%. 每个模型的三栏相加都接近 100%. 也就是说, Opus 多答对的部分, 相当一部分来自不再说 「不知道」, 而不全是从答错里挪过来的. 还要注意题集是 「target known weaknesses in current models」 挑出来的, 页面没给题数和来源, 46% 这个绝对值不能拿去和其他基准比.
+
+
+--- 行199 [核对] ---
+> 没有. 本页唯一的长上下文图 (p06-responsible-design) 标题是 「Recall accuracy over 200K」, 横轴最长到 200k, 没有一格超过 200K. 第7页到第9页的三张模型卡里, 只有 Opus 的 「200K\*」 带星号, 脚注 「\*1M tokens available for specific use cases, please inquire.」 也挂在 Opus 那一段后面; Sonnet 和 Haiku 的上下文窗口都只写 「200K」, 没有星号. 这和本段 「all three models」 的说法有出入, 页面没解释. 按本文, 1M 只是 「capable of accepting」, 发布时对外的是 200K.
+
+
+--- 行206 [拆开] ---
+> 热力图是 Opus 在 16 个上下文长度 (12k 到 200k) 乘 15 个 needle 位置 (6% 到 94%) 上的召回准确率, 图题注明 「averaged over many diverse document sources and 'needle' sentences」. 色阶从 0 (红) 到 1 (绿), 绝大多数格子是深绿, 少数格子颜色偏浅, 多落在 needle 位置 12% 到 31% 这几行和 75k 以后的列, 其余位置只有零星几格. 页面没给每格的数值, 99% 应当是整张图的总体平均, 不是每一格都过 99%. 加固手段页面写了两条: 每个提示随机取 30 组 needle/问题对之一, 语料换成众包的多样文档. 页面没写每格跑了多少次.
+
+
+--- 行209 [确认] ---
+> 没给. 原文只有一句概述: 「in some cases」, 它认出 needle 句子 「appeared to be artificially inserted into the original text by a human」. 出现了几次, 在哪个长度, 模型原话怎么说, 页面都没写. 这件事说明的是 NIAH 的题面有明显破绽: needle 与上下文不连贯, 能被模型察觉. 它不是一个召回指标, 不能和 99% 那个数字放在一起算.
+
+
+--- 行222 [回看] ---
+> 原句是 「We continue to develop methods such as Constitutional AI that improve the safety and transparency of our models」, 讲的是 Anthropic 在持续开发这类方法, 没有说 Claude 3 的后训练具体用了哪一步. 全文没有出现 RLHF, PPO, 奖励模型或偏好数据这些词. 「have tuned our models to mitigate against privacy issues」 也只说调过, 没说怎么调. 按本文, Constitutional AI 和 Claude 3 的关系只能写成 「同一家公司在推进的安全方法」, 写成训练配方就超出了页面.
+
+
+--- 行235 [停一下] ---
+> 页面只给了结论和依据的来源, 没给判定标准. 依据是红队评估的结论 「negligible potential for catastrophic risk at this time」, 分级规则挂在 Responsible Scaling Policy 的链接里, ASL-3 门槛具体是什么, 这三项各测到什么程度, 本页都没写, 统一指向 model card. 这一段能读出的逻辑是: 「能力比上一代强」 和 「达到下一安全等级」 是两回事, 前者是相对进步, 后者要跨过 RSP 定义的门槛, Anthropic 判断 Claude 3 还没跨过去. 同段的 BBQ 偏见结论也是一样, 只说 「less biases than our previous models」, 分数在 model card 里.
+
+
+--- 行360 [再看] ---
+> 三款的输出价都正好是输入价的 5 倍: \$15 对 \$75, \$3 对 \$15, \$0.25 对 \$1.25. 档与档之间, Opus 是 Sonnet 的 5 倍, Sonnet 是 Haiku 的 12 倍, Opus 与 Haiku 相差 60 倍, 输入输出同比例. 这和第2页那张对数横轴的图对得上: Haiku 到 Sonnet 的横向间距比 Sonnet 到 Opus 更宽, 正好对应 12 倍和 5 倍. 页面没说定价依据什么, 也没说批量, 缓存之类的折扣; Haiku 的 「most compact」 是全文唯一带 「大小」 意味的词, 同样没给规模数字. 另外, 这里的 「Cost」 是 API 按 token 计价, 与第10页 claude.ai 免费版和 Claude Pro 订阅是两套收费方式.
+
+
+--- 行413 [对一下] ---
+> 都还不能. 本段用的是将来时 "These new features will include Tool Use (aka function calling), interactive coding (aka REPL), and more advanced agentic capabilities「; 第5页的引用功能也是 」we will soon enable citations「. 发布当天已经具备的, 是第7页 」Easier to use「 说的更好的多步指令遵循和 JSON 等结构化输出. 另外, 第8页 Opus 模型卡的潜在用途里写了 」plan and execute complex actions across APIs and databases, interactive coding「, 和这里 」will include" 放在一起读, 说明模型卡写的是设想的用途, 相应功能当时还在路上.
+
+
+--- 行430 [想] ---
+> 表头只写 「GPT-4」, 页面没标版本或日期. 脚注给了两条筛选规则: 只放 「currently available commercially that have released evals」 的模型, 所以尚未发布的 Gemini 1.5 Pro 放到 model card 里; GPT-4T 的更高分来自工程师 「optimize prompts and few-shot samples」, 出处是 microsoft/promptbase. 脚注把这件事点出来却没把数字放进表, 意思是那组分数的提示方式与表中不同. 这和第3页评测设置不一致的问题是同一类: 提示方式本身会改变分数, 看这张表时要把它算进去.
+
+
+--- 行475 [问] ---
+> 因为这份 PDF 是后来抓取的网页快照. 「Related content」 下的三条推荐, 以及第11页到第15页的站点导航和页脚, 都是抓取当时的页面内容, 页脚写着 「© 2026 Anthropic PBC」. 属于 Claude 3 发布公告的, 只有第1页到第10页脚注为止. 顺带一提, 这里的 「Opus, and Sonnet」 指的是快照当时的模型系列, 不是本文的 Claude 3 Opus 和 Claude 3 Sonnet. 同理, 第6页到第7页正文里提到的 Responsible Scaling Policy 链接是 anthropics-responsible-scaling-policy, 页脚那条则是 announcing-our-updated-responsible-scaling-policy, 两者不是同一篇.
+

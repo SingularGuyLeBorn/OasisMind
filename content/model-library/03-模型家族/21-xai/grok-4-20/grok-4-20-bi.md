@@ -18,7 +18,7 @@ Grok 4.20 is a high-performance model with industry-leading speed and agentic to
 Grok 4.20 是一个高性能模型, 速度和 agentic 工具调用能力都处于业界领先. 它兼具市面上最低的幻觉率和对提示的严格遵循, 能稳定给出精确, 真实的回答.
 
 > **问:**「industry-leading speed」和「the lowest hallucination rate on the market」各是多少?
-> 两个都没有数. 页面没写每秒输出多少 token, 首个 token 的延迟, 也没写幻觉率的百分比, 和哪些模型比, 用什么评测集. 同家族 [Grok 4.1 专页](../grok-4-1/grok-4-1.md) 给过幻觉率的口径: 在生产流量里分层抽样的信息查询上, 统计回答中有错误的原子陈述占比, 再做宏平均, Grok 4.1 (Non-Reasoning) 是 4.22%. 那是另一个型号, 测的是非推理模式, 不能拿来填这里的「lowest」.
+> 两个都没有数. 页面没写每秒输出多少 token, 首个 token 的延迟, 也没写幻觉率的百分比, 和哪些模型比, 用什么评测集. 同家族 [Grok 4.1 专页](../grok-4-1/grok-4-1-bi.md) 给过幻觉率的口径: 在生产流量里分层抽样的信息查询上, 统计回答中有错误的原子陈述占比, 再做宏平均, Grok 4.1 (Non-Reasoning) 是 4.22%. 那是另一个型号, 测的是非推理模式, 不能拿来填这里的「lowest」.
 
 Copy for LLM [View as Markdown](https://docs.x.ai/developers/models/grok-4.20-0309-reasoning.md)
 
@@ -248,7 +248,7 @@ grok-4.20-reasoning-gv2
 > 本页没解释 gv 是什么. 这里有 gv2, 却没有 gv1, 也没有日期码, 没法和 0304, 0309 排出先后.
 
 > **停一下:** 模型名以 reasoning 结尾, 可别名里有的带 reasoning, 有的不带, 不带的是非推理版吗?
-> 按本页的写法不是. 15 个别名都指向同一个模型名 `grok-4.20-0309-reasoning`, 其中 8 个带 reasoning, 7 个不带, 连最短的 `grok-4.20` 也在里面. 照字面理解, 请求不带 reasoning 的名字, 拿到的仍是这个推理模型. 本页没提 Grok 4.20 有没有单独的非推理版, 也没提推理能不能关. 同家族 [Grok 4.3 专页](../grok-4-3/grok-4-3.md) 把推理写成 none, low, medium, high 四档可调, 本页只有一句「can think before responding」, 没有档位.
+> 按本页的写法不是. 15 个别名都指向同一个模型名 `grok-4.20-0309-reasoning`, 其中 8 个带 reasoning, 7 个不带, 连最短的 `grok-4.20` 也在里面. 照字面理解, 请求不带 reasoning 的名字, 拿到的仍是这个推理模型. 本页没提 Grok 4.20 有没有单独的非推理版, 也没提推理能不能关. 同家族 [Grok 4.3 专页](../grok-4-3/grok-4-3-bi.md) 把推理写成 none, low, medium, high 四档可调, 本页只有一句「can think before responding」, 没有档位.
 
 Region
 
@@ -286,7 +286,7 @@ Tokens per minute
 10,000,000
 
 > **看表:** 每秒 37 次和每分钟 10,000,000 个 token, 两个上限能同时用满吗?
-> 单位一个按秒, 一个按分钟. 换成每分钟, 37 次每秒是 2,220 次. 两个上限同时顶满, 平均每次请求只能用约 4,505 个 token. 反过来, 一次用满 1,000,000 窗口的请求就吃掉每分钟额度的十分之一, 一分钟最多 10 次, 离 2,220 次差得很远. 本页没说 token 数只算输入还是输入加输出, 也没说命中缓存的 token 算不算. 同家族 [Grok 4.3 专页](../grok-4-3/grok-4-3.md) 这两个数也是 37 和 10,000,000, 三档单价和上下文窗口也完全相同, 所以这组限额可能是账户默认档, 不一定是 Grok 4.20 专属.
+> 单位一个按秒, 一个按分钟. 换成每分钟, 37 次每秒是 2,220 次. 两个上限同时顶满, 平均每次请求只能用约 4,505 个 token. 反过来, 一次用满 1,000,000 窗口的请求就吃掉每分钟额度的十分之一, 一分钟最多 10 次, 离 2,220 次差得很远. 本页没说 token 数只算输入还是输入加输出, 也没说命中缓存的 token 算不算. 同家族 [Grok 4.3 专页](../grok-4-3/grok-4-3-bi.md) 这两个数也是 37 和 10,000,000, 三档单价和上下文窗口也完全相同, 所以这组限额可能是账户默认档, 不一定是 Grok 4.20 专属.
 
 ![Image block](images/p03-learn-more-https-docs-x-ai-docs-tutorial.png)
 

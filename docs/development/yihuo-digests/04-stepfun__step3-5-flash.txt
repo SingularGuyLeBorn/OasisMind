@@ -1,0 +1,81 @@
+# 04-stepfun/step3-5-flash  文件: content/model-library/03-模型家族\04-stepfun/step3-5-flash\step3-5-flash-bi.md  共 20 块
+
+--- 行223 [对一下] ---
+> 没有. 式 (1) 只引入符号 $G$ 与分组 $\{\mathcal{E}_g\}$. §3.2 写 8-way EP, 但未声明式 (1) 的 $G$ 是否等于 8. 不能把并行度直接填进公式.
+
+
+--- 行232 [停一下] ---
+> 没有换算说明. §2.2 给头参数增量 0.81B (∼0.41%); Tab. 6 给 MTP3 计入后的 198B/13B. 精读只能分列引用, 不能把 0.81B 改写成表内 +2B 的已核验等价.
+
+
+--- 行257 [再看] ---
+> 不能. §2.3 原句明确关 MTP 以隔离注意力效应. Tab. 1 只服务布局对照; 正式 MTP 日程在 Fig. 2 与 Tab. 6, 二者不可混抄.
+
+
+--- 行278 [确认] ---
+> 没有. 默认句落在 **30B-A3B** 全流水权衡. 正文未附同规模正式模型上的 𝑆1𝐹1 复表.
+
+
+--- 行304 [想] ---
+> 两套规格. Tab. 1 / Tab. 10 落在 **30B-A3B** 消融 (SWA heads 32/48); §2.2 与附录 Tab. 6 写正式 Step 3.5 Flash 为 full/SWA query 64/96. 不能把 Tab. 1 的 48 抄成发货模型的 SWA 头数.
+
+
+--- 行307 [问] ---
+> 落在均分 62.46→64.43 (+1.97), 并写随后默认采用 head-wise gated attention. 附录 A.1 式 (5)–(6) 把门写成输入依赖 sink mass, 是机制解释, 不改写 Tab. 2 的默认选型句.
+
+
+--- 行438 [回看] ---
+> 没有次数表, 也没有 𝑇 消融表. 可核对的只有 𝑇=6, 「only the Polar Express iteration ... to float16」, 以及改后不再复发的定性句.
+
+
+--- 行517 [问] ---
+> 正文结论句偏向激活裁剪: 「Activation clipping effectively bounds... Weight clipping merely delays」. 未写二者默认并用, 也未给出 𝜏 的具体数. 可核对的是监控指标 max-to-median, 以及 Fig. 4 三面板对照; 阈值留在实现细节外.
+
+
+--- 行520 [拆开] ---
+> 没有. §4.1.2 只强调需要显式系数; Tab. 6 列 Experts **288 + 1 shared** 与 top-𝑘=8, 不列缩放系数. 不能从 top-𝑘 口算出该因子.
+
+
+--- 行531 [核对] ---
+> 没有. 两处并存且口径不同: Intro 的 17.2T 与 §4.2 的 17.6T / 750B 分列. 引用须标节号, 勿私自合并或改写成单一官方总量.
+
+
+--- 行622 [想] ---
+> 不是. §4.2.3 是 mid-training 里对 RoPE 的 θ 调整; §6.2 是后训练评测解码协议. YaRN 句写明加在 「original 128k positional embeddings」 之上且 「restricting it to full-attention layers only」, 属于评测外推, 不是改写 mid 的 $\theta_{\mathrm{Full}}$.
+
+
+--- 行687 [停一下] ---
+> 换成 token 级与轨迹级二值指示 $\mathbb{I}$, 式 (2) 不再乘连续重要性权重. Fig. 5 对 PPO (样本效率 / 梯度范数尖峰 / 熵); 附录 Fig. 7 与式 (16) 对 GSPO (几何均值比 + clip). 本文写的是离散过滤替换连续加权.
+
+
+--- 行730 [对一下] ---
+> 文内可核对的上限是 20%. §5.2.1 原句是 「even at truncation rates as high as 20%」. 未另给 $V_\phi$ 的结构表或更高截断率的扫参.
+
+
+--- 行739 [看表] ---
+> 没有. 只有定性分界 (低置信 → Router Replay / 严 on-policy; 高置信 → 可 off-policy). 无阈值表, 也不能从 Fig. 5/6 反推 $\Sigma_k$ 临界值.
+
+
+--- 行760 [核对] ---
+> 没有推导表. §5.2.3 只给出界; Fig. 5/附录 Fig. 7–8 展示相对 PPO/GSPO 的效率与稳定, 不报掩码保留率. 几何均值收到约 0.4% 带宽时, 文内只给了界, 没有灵敏度扫表.
+
+
+--- 行963 [看表] ---
+> 是. 正文用 「broadly competitive」 与 「strong accuracy–efficiency trade-off」, 不是逐格全胜. Kimi-K2 Base 总参 1043B / 激活 32B, 若干知识格更高属同表可见落差; 引用时应保留激活 / 总参分列, 不要改写成对所有更大模型全面领先.
+
+
+--- 行988 [再看] ---
+> 不是. §5.2.3 约束 rollout / actor 更新时哪些轨迹可进梯度; §6.2 描述推理侧并行协调与位置外推. 正文没有把 PaCoRe 写成 MIS-PO 掩码的延续或同一超参表的下一列.
+
+
+--- 行1069 [拆开] ---
+> 能. §6.2 与 Abstract 反复写激活 11B / 总参 196B; Tab. 4 规格行同值. 「1119 B6B」 是抓取表头乱码, 不是第二套官方规格. 精读与引用必须以正文规格为准.
+
+
+--- 行1072 [确认] ---
+> 没有. §6.2 写 PaCoRe 「yielding significant gains across benchmarks」, 但 Tab. 5 同表可见 IFBench 与 MRCR-8needle (28.8→26.3) 下跌. TestingTime 档应分列引用, 不能改写成全面抬分.
+
+
+--- 行1141 [回看] ---
+> 只保留这一句. §6–§7 不再给 OpenRouter 吞吐复测. 引用时应标成 Introduction 的在线部署观察, 不要外推成 Tab. 5 协议下的官方服务 SLA.
+

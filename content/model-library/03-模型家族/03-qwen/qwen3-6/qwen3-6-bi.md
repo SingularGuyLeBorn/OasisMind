@@ -514,7 +514,11 @@ claude
 
 Qwen3.6-35B-A3B demonstrates that sparse MoE models can achieve remarkable agentic coding and reasoning capability. With only 3B active parameters, it delivers performance that rivals dense models several times its active size, while also excelling across multimodal benchmarks. As a fully open-source checkpoint, it sets a new standard for what’s possible at its scale.
 
+Qwen3.6-35B-A3B 证明稀疏 MoE 模型也能具备出色的 Agentic coding 与推理能力: 仅 3B 激活参数, 性能可对标激活量大几倍的 dense 模型, 多模态基准同样出色. 作为完全开源的 checkpoint, 它为这一规模树立了新标杆.
+
 Looking ahead, we will continue to expand the Qwen3.6 open-source family and push the boundaries of what efficient, open models can accomplish. We are grateful for the community’s feedback and look forward to seeing what you build with Qwen3.6-35B-A3B. Also, Qwen3.6 open-source family keeps expanding, stay tuned for our future releases!
+
+未来我们将继续扩充 Qwen3.6 开源家族, 拓展高效开源模型的能力边界. 感谢社区的反馈, 期待看到大家用 Qwen3.6-35B-A3B 构建的作品; 开源家族仍在持续扩充, 请继续关注后续发布.
 
 ## Citation 引用
 
@@ -1133,6 +1137,8 @@ claude
 ## Summary 总结
 
 Qwen3.6-27B demonstrates that a well-trained dense model can surpass much  larger predecessors on the tasks that matter most for developers. At 27 billion parameters — the most widely deployed open-source scale — it outperforms the 397B-parameter Qwen3.5-397B-A17B on every major agentic coding benchmark, while remaining straightforward to deploy and serve. With Qwen3.6-27B joining the roster, the Qwen3.6 open-source family now offers a comprehensive range of models, underscoring a generation where agentic coding achieved breakthroughs across every scale — from the 3B-active Qwen3.6-35B-A3B to the API-accessible Qwen3.6-Plus and Qwen3.6-Max-Preview. We are grateful for the community’s feedback and look forward to seeing what you build with these models. Stay tuned for more from the Qwen team!
+
+Qwen3.6-27B 证明, 训练到位的 dense 模型能在开发者最看重的任务上超越规模大得多的前代. 27B 是开源部署最广的体量: 它在所有主要 Agentic coding 基准上都超过 397B 参数的 Qwen3.5-397B-A17B, 部署与服务却照旧简单. 随着 Qwen3.6-27B 加入, Qwen3.6 开源家族已覆盖从 3B 激活的 Qwen3.6-35B-A3B 到 API 形式的 Qwen3.6-Plus 与 Qwen3.6-Max-Preview 的完整谱系, 标志着 Agentic coding 在各个体量全面突破的一代. 感谢社区的反馈, 期待看到大家的作品, 更多进展请继续关注 Qwen team!
 
 ## Citation 引用
 

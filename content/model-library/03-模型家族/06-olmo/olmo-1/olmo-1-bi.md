@@ -24,13 +24,19 @@ olmo@allenai.org
 
 Language models (LMs) have become ubiquitous in both NLP research and in commercial product offerings. As their commercial importance has surged, the most powerful models have become closed off, gated behind proprietary interfaces, with important details of their training data, architectures, and development undisclosed. Given the importance of these details in scientifically studying these models, including their biases and potential risks, we believe it is essential for the research community to have access to powerful, truly open LMs. To this end, we have built OLMo, a competitive, truly Open Language **Mo**del, to enable the scientific study of language models. Unlike most prior efforts that have only released model weights and inference code, we release OLMo alongside open training data and training and evaluation code. We hope this release will empower the open research community and inspire a new wave of innovation.
 
+语言模型 (LMs) 已在 NLP 研究与商业产品中无处不在. 随着其商业重要性激增, 最强大的模型却走向封闭, 被锁在专有接口之后, 训练数据, 架构与开发过程等重要细节均不公开. 鉴于这些细节对科学研究这些模型 (包括其偏见与潜在风险) 至关重要, 我们认为研究社区必须能访问强大的, 真正开放的语言模型. 为此, 我们构建了 OLMo —— 一个有竞争力的, 真正开放的语言模型, 以支持对语言模型的科学研究. 不同于多数只发布模型权重与推理代码的先例, 我们随 OLMo 一并发布开放的训练数据以及训练与评测代码. 希望本次发布能赋权开放研究社区, 激发新一轮创新.
+
 ## 1 Introduction
 
 Language models have been at the center of NLP technologies for many years (Rosenfeld, 2000; Ben-
 
 gio et al., 2003; Mikolov et al., 2013; Peters et al., 2018; Brown et al., 2020). Recently, due to largescale pretraining and human annotation for alignment, they have become commercially valuable (OpenAI, 2023). However, as their commercial value has increased, the largest models have become gated behind proprietary interfaces, with important details left undisclosed.
 
+语言模型多年来一直是 NLP 技术的核心 (Rosenfeld, 2000; Bengio et al., 2003; Mikolov et al., 2013; Peters et al., 2018; Brown et al., 2020). 近年来, 借助大规模预训练与面向对齐的人工标注, 它们已具备商业价值 (OpenAI, 2023). 然而, 随着商业价值上升, 最大的模型被锁进专有接口, 重要细节不再公开.
+
 We believe that full access to open language models for the research community is critical to the scientific study of these models, their strengths and weaknesses, and their biases and risks. Accordingly, we introduce **OLMo**, a powerful, truly open language model alongside open training data, training and evaluation code, intermediate model checkpoints, and training logs.
+
+我们相信, 让研究社区完整访问开放语言模型, 是科学研究这些模型的能力, 弱点, 偏见与风险的关键. 因此, 我们推出 **OLMo** —— 一个强大的, 真正开放的语言模型, 并随附开放的训练数据, 训练与评测代码, 中间模型 checkpoint 以及训练日志.
 
 Recent LM releases have varied in their degree of openness. For example, Mixtral 8x7B provided model weights and a brief report (Jiang et al., 2024), while LLaMA came with in-depth adaptation training instructions (Touvron et al., 2023b), and Mosaic Pretrained Transformer came with many details, including the dataset distribution, though not the data itself (MosaicML NLP Team,
 
@@ -38,13 +44,21 @@ Recent LM releases have varied in their degree of openness. For example, Mixtral
 
 2023). Falcon’s pretraining data was partially released (Almazrouei et al., 2023), and the most open models—the Pythia suite (Biderman et al., 2023) and BLOOM (BigScience et al., 2022)—released training code, model checkpoints, data, and more.
 
+近期语言模型发布的开放程度不一. 例如, Mixtral 8x7B 只提供了模型权重与一份简要报告 (Jiang et al., 2024); LLaMA 附带了深入的适配训练说明 (Touvron et al., 2023b); Mosaic Pretrained Transformer 给出了包括数据集分布在内的许多细节, 但不包含数据本身 (MosaicML NLP Team, 2023). Falcon 的预训练数据部分公开 (Almazrouei et al., 2023); 而最开放的模型 —— Pythia 套件 (Biderman et al., 2023) 与 BLOOM (BigScience et al., 2022) —— 发布了训练代码, 模型 checkpoint, 数据等更多内容.
+
 With OLMo, we release the whole framework from data to training to evaluation tools: multi-ple training checkpoints across multiple hardware types, training logs, and exact datasets used, with a permissive license. We are not the only team to do this; recent work from LLM360 targets similar goals (Liu et al., 2023). OLMo narrows the gap from their models to state-of-the-art capabilities of models like Llama 2. This project has benefited from lessons learned from all of these previous efforts with their varying degrees of openness, and we believe that a large, diverse population of open models is the best hope for scientific progress on understanding language models and engineering progress on improving their utility.
 
+借助 OLMo, 我们开放了从数据到训练再到评测工具的整个框架: 跨多种硬件类型的多个训练 checkpoint, 训练日志, 使用的确切数据集, 并配以宽松许可证. 这样做的并非只有我们; LLM360 的近期工作有相似目标 (Liu et al., 2023). OLMo 把他们的模型与 Llama 2 等模型最先进能力之间的差距进一步缩小. 本项目受益于所有这些开放程度不一的先例所带来的经验, 我们相信, 规模庞大且多样化的开放模型群体, 是理解语言模型的科学进步与提升其实用性的工程进步的最大希望.
+
 The OLMo framework encompasses the tools and resources required for building and researching language models. For training and modeling, it includes full model weights, training code, training logs, and inference code. The released model includes four variants of our language model at the 7B scale corresponding to different architectures, optimizers, and training hardware, and one model at the 1B scale, all trained on at least 2T tokens. We also release hundreds of intermediate checkpoints available as revisions on HuggingFace. For dataset building and analysis, the full training data used for these models is openly available (Dolma; Soldaini et al., 2024), including code that produces the training data, and tools for analyzing pretraining data (Elazar et al., 2024). For evaluation, we build on Catwalk (Groeneveld et al., 2023) for downstream evaluation and Paloma (Magnusson et al., 2023) for perplexity-based evaluation. For adaptation, we use Open Instruct (Ivison et al., 2023; Wang et al., 2023) to train with instruction and feedback data. Finally, all code and weights are released under the Apache 2.0 License.
+
+OLMo 框架涵盖构建与研究语言模型所需的工具与资源. 训练与建模方面, 包括完整模型权重, 训练代码, 训练日志与推理代码. 发布的模型包含 7B 规模下对应不同架构, 优化器与训练硬件的四个语言模型变体, 以及一个 1B 规模模型, 均在至少 2T token 上训练. 我们还发布了数以百计的中间 checkpoint, 以 HuggingFace revision 形式提供. 数据集构建与分析方面, 这些模型所用的完整训练数据公开可用 (Dolma; Soldaini et al., 2024), 包括生成训练数据的代码与分析预训练数据的工具 (Elazar et al., 2024). 评测方面, 我们在下游评测上基于 Catwalk (Groeneveld et al., 2023), 在基于困惑度的评测上基于 Paloma (Magnusson et al., 2023). 适配方面, 我们使用 Open Instruct (Ivison et al., 2023; Wang et al., 2023) 进行指令与反馈数据训练. 最后, 所有代码与权重均以 Apache 2.0 许可证发布.
 
 With this release, we hope to catalyze research into as-yet poorly understood aspects of these models, for example, the relationship between pretraining data and model capabilities, the impact of design and hyperparameter choices, and various optimization methods and their impact on model training. In addition, we report on the lessons learned
 
 and important details necessary to successfully train language models at this scale.
+
+借助本次发布, 我们希望催化对这些模型尚未被充分理解之处的研究, 例如预训练数据与模型能力之间的关系, 设计与超参选择的影响, 以及各种优化方法及其对模型训练的影响. 此外, 我们还报告了在此规模上成功训练语言模型所习得的经验与关键细节.
 
 ## 2 OLMo Framework OLMo 框架
 
@@ -460,7 +474,11 @@ By sharing artifacts from all pipeline stages, we aim to encourage open research
 
 This paper presents our first release of OLMo, a state-of-the-art, truly open language model and its framework to build and study the science of language modeling. Unlike most prior efforts that have only released model weights and inference code, we release OLMo and the whole framework, including training data, training and evaluation code, and detailed metrics collected during the training runs. Additionally, we released adapted models, as well as all of our model adaptation code and data.
 
+本文介绍了 OLMo 的首次发布: 一个最先进的, 真正开放的语言模型, 以及用于构建与研究语言建模科学的框架. 不同于多数只发布模型权重与推理代码的先例, 我们发布了 OLMo 与整个框架, 包括训练数据, 训练与评测代码, 以及训练过程中收集的详细指标. 此外, 我们还发布了适配后的模型, 以及全部模型适配代码与数据.
+
 We intend to continuously support and extend OLMo and its framework, and continue to push the boundaries of open LMs to empower the open research community. Since the original release of OLMo described here, we improved our data and training setup to significantly improve results. For example, MMLU scores have improved by 24 points to 52%.<sup>9</sup> We look forward to bringing different model sizes, modalities, datasets, safety measures, and evaluations into the OLMo family. We hope this and future releases will empower and strengthen the open research community and inspire a new wave of innovation.
+
+我们打算持续支持与扩展 OLMo 及其框架, 不断拓展开放语言模型的边界, 以赋权开放研究社区. 自本文所述 OLMo 最初版本发布以来, 我们已改进数据与训练设置, 显著提升了结果. 例如, MMLU 分数提高了 24 分, 达到 52%.<sup>9</sup> 我们期待把不同的模型规模, 模态, 数据集, 安全措施与评测纳入 OLMo 家族. 希望本次与未来的发布能赋权并壮大开放研究社区, 激发新一轮创新.
 
 ## Limitations 局限
 
@@ -720,17 +738,27 @@ Table 5 summarizes the model architecture and the optimizer parameters of OLMo-7
 
 Following previous literature (Strubell et al., 2019; Patterson et al., 2021; Wu et al., 2022; Dodge et al., 2022), we estimate the total energy consumed and carbon released while pretraining our models by calculating the total power consumption required for training, and then multiplying it by the carbon emission intensity of the power grid where the model was trained. While reporting these operational emissions is standard practice, it does not account for other sources of emissions such as the embodied emissions due to the manufacturing, transportation, and disposal of hardware and datacenter infrastructure, lifetime operational emissions due to use, rebound effects, or other environmental impacts such as water consumption or mining. Thus our estimates should be viewed as lower bounds.
 
+我们沿用已有文献 (Strubell et al., 2019; Patterson et al., 2021; Wu et al., 2022; Dodge et al., 2022) 的做法, 通过计算训练所需的总功耗, 再乘以模型训练地电网的碳排放强度, 来估算预训练模型所消耗的总能源与释放的总碳量. 报告这类运行排放是标准做法, 但它并未计入其他排放来源, 例如硬件与数据中心基础设施制造, 运输与处置产生的隐含排放, 使用阶段的终身运行排放, 反弹效应, 或耗水, 采矿等其他环境影响. 因此, 我们的估算应视为下限.
+
 We calculate the total power consumption for our models by measuring the power consumption of a single node every 25ms, calculating an average across the entire training run, and multiplying by the total number of nodes. We then account for the energy efficiency of the data center by multiplying the previous total by a power usage effectiveness (PUE) factor, which we set to 1.1, representing a conservative 10% energy consumption overhead typical of energy efficient datacenters.1011 We estimate that pretraining our 7B models consumed **239 MWh** of energy.
+
+我们这样计算模型的总功耗: 每 25ms 测量单节点的功耗, 对整个训练过程取平均, 再乘以节点总数. 接着乘以数据中心的能源效率因子, 即 PUE (电能使用效率) 系数, 取 1.1, 代表节能数据中心典型的 10% 保守能耗开销.1011 我们估算 7B 模型的预训练消耗了 **239 MWh** 能源.
 
 To calculate carbon emissions, we multiply the total power consumption by a carbon intensity fac tor, measured in kg $\mathrm { C O _ { 2 } }$ emitted per KWh, based on the physical location of the data center where each model was trained. The model trained on A100-40GB GPUs was trained in Australia, so we assume a carbon intensity factor of $0 . 6 1 0 ,$ the national average for Australia in 2022. The model trained on MI250X GPUs was trained in the LUMI
 
 supercomputer, which runs on 100% renewable, carbon-neutral energy, so we assume a carbon intensity factor of 0. LUMI is powered entirely by hydroelectric power and some sources (Ubierna et al., 2022) measure the carbon intensity factor of hydroelectric power to be 0.024, which would imply total carbon emissions of $3 . 5 4 ~ \mathrm { t C O _ { 2 } e q } .$ 13 However, we rely on the official LUMI data for our calculations, and thus we estimate total pretraining emissions of $\mathbf { 6 9 . 7 8 \; t C O _ { 2 } e q . } ^ { 1 4 }$ In Table 6 we compare our models with other previously released models based on publicly available information.
 
+计算碳排放时, 我们用总功耗乘以碳强度因子 (以每 kWh 排放的 kg $\mathrm { C O _ { 2 } }$ 计), 该因子依据各模型训练数据中心的实际地理位置确定. 在 A100-40GB GPU 上训练的模型训练于澳大利亚, 故取 0.610, 即 2022 年澳大利亚全国平均值. 在 MI250X GPU 上训练的模型运行于 LUMI 超级计算机, 其使用 100% 可再生, 碳中和能源, 故取碳强度因子为 0. LUMI 完全由水电供电, 有来源 (Ubierna et al., 2022) 测得水电的碳强度因子为 0.024, 对应总碳排放 $3 . 5 4 ~ \mathrm { t C O _ { 2 } e q } .$ 13 但我们的计算以 LUMI 官方数据为准, 因此估算预训练总排放为 $\mathbf { 6 9 . 7 8 \; t C O _ { 2 } e q . } ^ { 1 4 }$ 表 6 基于公开信息将我们的模型与其他已发布模型做了对比.
+
 We hope that openly releasing our models can reduce future emissions by allowing others to avoid the need to pretrain models from scratch, and give insights into the true cost of developing state of the art models. We also highlight that our estimates are lower bounds, because they do not include other critical pieces of development such as debugging, hyperparameter tuning, and downtime.
+
+我们希望开放发布模型能降低未来排放 —— 让其他人无需从头预训练模型, 并让外界看清开发最先进模型的真实成本. 我们也强调, 我们的估算是下限, 因为未包含调试, 超参调优与停机等开发环节的其他关键开销.
 
 ## C Additional Evaluation
 
 **Additional perplexity results** In Figure 3 we provide results for each of the 7 data sources in Paloma (Magnusson et al., 2023) that are excluded from the combined metric in Figure 2. Some of these sources such as Pile (Gao et al., 2020) and ICE (Greenbaum and Nelson, 1996) are not publicly available at this time. Dolma 100 Programming Languages (Soldaini et al., 2024) consists of code data that is not supported by the decontamination approach used in Paloma. TwitterAAE (Blodgett et al., 2016), along with ICE, are datasets for targeted analyses of disparities in performance between different dialects and as such should be evaluated separately. And finally, the Manosphere, Gab, and 4chan corpora (Ribeiro et al., 2021; Zannettou et al., 2018; Papasavva et al., 2020) are intended to examine model fit to language from fringe online communities that are studied for prevalent hate speech and toxicity. Thus minimizing perplexity on these fringe corpora is not always desirable.
+
+**补充困惑度结果** 图 3 给出了 Paloma (Magnusson et al., 2023) 中被排除在图 2 综合指标之外的 7 个数据源的各自结果. 其中一些数据源, 如 Pile (Gao et al., 2020) 与 ICE (Greenbaum and Nelson, 1996), 目前并不公开. Dolma 100 Programming Languages (Soldaini et al., 2024) 是不受 Paloma 去污染方法支持的代码数据. TwitterAAE (Blodgett et al., 2016) 与 ICE 是用于针对性分析不同方言之间性能差异的数据集, 因此应单独评测. 最后, Manosphere, Gab 与 4chan 语料 (Ribeiro et al., 2021; Zannettou et al., 2018; Papasavva et al., 2020) 意在考察模型对边缘网络社区语言的拟合程度, 这些社区因仇恨言论与毒性盛行而被研究. 因此, 在这类边缘语料上压低困惑度并非总是可取的目标.
 
 One notable result here is that OLMo-7B is much farther ahead of the other models on Dolma 100 Programming Languages (100 PLs). Note that this effect may be due in part to underestimation from contamination, as decontaminating code data is beyond the scope of the method in Paloma. At the
 
@@ -785,13 +813,21 @@ Table 5: LM architecture and optimizer comparison at the 7–8B scale. In the �
 
 same time other models that are trained on code data from GitHub such as RPJ-INCITE-7B, that are just as likely to have contamination, fair much worse. Another factor then is that OLMo-7B trains on code data with exactly the same post-processing as that in 100 PLs while the code data in other models will have been processed differently. Similarly, Pile evaluation demonstrates these in-distribution and potential contamination effects as Pythia-6.9B achieves top performance despite being trained on almost an order of magnitude fewer tokens than OLMo-7B.
 
+这里一个值得注意的结果是, OLMo-7B 在 Dolma 100 Programming Languages (100 PLs) 上领先其他模型更多. 要注意, 这一效应部分可能来自污染导致的低估, 因为代码数据的去污染超出了 Paloma 方法的范围. 与此同时, 其他在 GitHub 代码数据上训练的模型 (如 RPJ-INCITE-7B) 同样可能有污染, 表现却差得多. 另一因素是, OLMo-7B 训练所用代码数据与 100 PLs 采用了完全相同的后处理, 而其他模型的代码数据处理方式不同. 类似地, Pile 评测也体现了这种分布内效应与潜在污染效应: Pythia-6.9B 尽管在比 OLMo-7B 少近一个数量级的 token 上训练, 却取得了最佳成绩.
+
 The results on the remaining 5 targeted sources should be interpreted with care, as Paloma often finds that perplexity on these sources is dominated by superficial features such as low average document length rather than fit to that which would actually be salient to members of these speech communities. TwitterAAE and Gab have among the shortest documents in Paloma contributing to unusually high bits per byte in this figure. Other than these two, the models are notably very closely grouped in a data scaling trend in ICE, Manosphere, and 4chan.
+
+其余 5 个针对性数据源上的结果应谨慎解读: Paloma 常常发现, 这些来源上的困惑度由表面特征主导 (如平均文档长度过低), 而非对相应语言社区成员真正关心内容的拟合程度. TwitterAAE 与 Gab 的文档长度在 Paloma 中属于最短, 这使它们在图中呈现异常高的 bits per byte. 除这两个之外, 在 ICE, Manosphere 与 4chan 上, 各模型明显紧紧聚集在一条数据 scaling 趋势线上.
 
 **Additional end-task results** Next, in Table 7, we provide results from zero-shot evaluation of
 
 OLMo-7B on 6 additional end-tasks apart from the 8 in our core evaluation suite. These tasks are headqa\_en (Vilares and Gómez-Rodríguez, 2019), logiqa (Liu et al., 2020), mrpc (Dolan and Brockett, 2005), qnli (Wang et al., 2018), wic (Pilehvar and Camacho-Collados, 2018), and wnli (Wang et al., 2018).
 
+**补充下游任务结果** 接下来, 表 7 给出了 OLMo-7B 在核心评测套件 8 项任务之外, 对 6 个额外下游任务的 zero-shot 评测结果. 这些任务是 headqa\_en (Vilares and Gómez-Rodríguez, 2019), logiqa (Liu et al., 2020), mrpc (Dolan and Brockett, 2005), qnli (Wang et al., 2018), wic (Pilehvar and Camacho-Collados, 2018) 与 wnli (Wang et al., 2018).
+
 We note, however, that in contrast to our core evaluation set described in Section 4.1, we found these additional end-tasks to have less stable performance during model development, and to provide a limited signal. This is illustrated in Figure 4, where we see the progress of task performance throughout training to be more random (compare with the more stable upward trends in Figure 1). While tasks such as mrpc and wic appear more stable, they offered additional difficulties related to performance being tied to random chance (e.g., wic) or the tendency of models to make spurious predictions (e.g., always predicting a single label) that either inflate or deflate performance due to dataset class imbalances (e.g., mrpc). We therefore caution against relying too heavily on these tasks when measuring model performance throughout training and comparing models.
+
+但要注意, 与 4.1 节所述核心评测集不同, 我们发现这些额外下游任务在模型开发过程中性能更不稳定, 所能提供的信号有限. 图 4 对此做了展示: 任务性能在训练全程的进展更为随机 (可与图 1 中更稳定的上升趋势对比). 尽管 mrpc 与 wic 这类任务看起来更稳定, 但它们另有难处: 性能可能与随机相当 (如 wic), 或模型倾向于做出虚假预测 (如永远预测单一标签), 再叠加数据集类别不平衡 (如 mrpc), 会使成绩虚高或虚低. 因此, 我们提醒: 在训练全程衡量模型性能与比较模型时, 不要过度依赖这些任务.
 
 <!-- page 18 of 21 -->
 
@@ -829,11 +865,15 @@ Table 7: Zero-shot evaluation of OLMo-7B on 6 additional end-tasks apart from th
 
 We use the following hyperparameters when instruction tuning OLMo. These were chosen through small pilot experiments.
 
+指令微调 OLMo 时我们使用如下超参数, 它们是通过小规模试点实验选定的.
+
 • Learning rate: $\mathrm { 2 \times { 1 0 } ^ { - 6 } }$
 
 • Epochs: 3
 
 • Warmup: Linear warmup for the first 3% of total training time, and then linear cooldown to a learning rate of 0 over the remaining steps.
+
+- Warmup: 在总训练时间的前 3% 内线性 warmup, 随后在剩余步数上线性冷却至学习率 0.
 
 • Weight decay: 0
 
@@ -843,9 +883,13 @@ We use the following hyperparameters when instruction tuning OLMo. These were ch
 
 • Data: TÜLU V2 SFT mix, resplit such that long conversations are split into 2048-token chunks and replacing the hardcoded split with
 
+- Data: TÜLU V2 SFT 混合数据, 重新切分, 使长对话被切成 2048-token 的块, 并以关于 OLMo 的数据替换其中硬编码的切分.
+
 data about OLMo. Data is publically available. <sup>14</sup>
 
 After instruction finetuning, we then use the following hyperparameters for DPO training, following Ivison et al. (2023):
+
+指令微调之后, 我们沿用 Ivison et al. (2023) 的做法, 用如下超参数进行 DPO 训练:
 
 • Learning rate: $\mathrm { 5 \times 1 0 } ^ { - 7 }$
 
@@ -854,6 +898,8 @@ After instruction finetuning, we then use the following hyperparameters for DPO 
 • Epochs: 3
 
 • Warmup: Linear warmup for the first 10% of total training time, and then linear cooldown to a learning rate of 0 over the remaining steps.
+
+- Warmup: 在总训练时间的前 10% 内线性 warmup, 随后在剩余步数上线性冷却至学习率 0.
 
 • Weight decay: 0
 
@@ -901,6 +947,8 @@ Figure 4: Accuracy score progression of OLMo-7B on 6 additional end-tasks. The p
 
 • Data: A modified form of UltraFeedback (Cui et al., 2023), with TruthfulQA prompts removed. We used the ‘fixed’ variant released by Argilla, which uses the average of GPT-generated aspect-based scores to determine
 
+- Data: UltraFeedback (Cui et al., 2023) 的修改版, 移除了其中的 TruthfulQA prompt. 我们使用 Argilla 发布的 "fixed" 变体, 它以 GPT 生成的多维度评分的均值来决定被选与被拒的配对.
+
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">15<a href="https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences-cleaned"><sub>https</sub>://huggingface.co/datasets/argilla/ ultrafeedback-binarized-preferences-cleaned</a></span></small>
 
 <!-- page 20 of 21 -->
@@ -909,31 +957,59 @@ Figure 4: Accuracy score progression of OLMo-7B on 6 additional end-tasks. The p
 
 We choose the models in Table 4 by choosing the ‘canonical’ best versions (that is, the best instruction-tuned or otherwise adapted models released by the same organisation) of the base models we compare against in Table 3. We additionally compare to TÜLU 2 to show the current best models trained using the TÜLU mix used to finetune OLMo. We display evaluations on MMLU, AlpacaEval, ToxiGen, and Truthfulness to focus on displaying how instruction tuning can generally help capabilities (MMLU), how the models perform in an open-ended chat setting (AlpacaEval), and to test how instruction tuning aids in model safety and truthfulness (AlpacaEval, ToxiGen). We additionally report OLMo’s performance over the entire TÜLU evaluation suite in Table 8.
 
+表 4 中的模型是这样选出的: 对表 3 中我们所对比的各基座模型, 选取其同一机构发布的 "canonical" 最佳版本 (即最好的指令微调或其他适配版本). 我们还额外与 TÜLU 2 对比, 以展示用 TÜLU 混合数据微调 OLMo 时当前最好的模型水平. 我们展示 MMLU, AlpacaEval, ToxiGen 与 Truthfulness 上的评测, 重点呈现: 指令微调对能力的普遍帮助 (MMLU), 模型在开放式聊天场景中的表现 (AlpacaEval), 以及指令微调对模型安全性与真实性的作用 (AlpacaEval, ToxiGen). 表 8 还报告了 OLMo 在整个 TÜLU 评测套件上的表现.
+
 We provide a brief description of each model evaluated in Table 4 below. For all models, we use the provided chat template for prompt formatting when available.
+
+下面我们简要描述表 4 中评测的每个模型. 对所有模型, 只要有提供的 chat template, 我们就用它来做 prompt 格式化.
 
 • MPT Chat: A version of MPT 7B finetuned on the ShareGPT-Vicuna (Chiang et al., 2023), HC3 (Guo et al., 2023), Alpaca (Taori et al., 2023), HH-RLHF (Bai et al., 2022), and Evol-Instruct (Xu et al., 2024) datasets. Retrieved from [https://huggingface.co/mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat).
 
+- MPT Chat: 在 ShareGPT-Vicuna (Chiang et al., 2023), HC3 (Guo et al., 2023), Alpaca (Taori et al., 2023), HH-RLHF (Bai et al., 2022) 与 Evol-Instruct (Xu et al., 2024) 数据集上微调的 MPT 7B 版本. 取自 [https://huggingface.co/mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat).
+
 • Falcon Instruct: A version of Falcon 7B finetuned on the Baize (Xu et al., 2023), GPT4All (Anand et al., 2023), GPTeacher (Teknium1, 2023), and Refined-Web English (Penedo et al., 2023) datasets. Retrieved from [https://huggingface.co/tiiuae/falcon-7b-instruct](https://huggingface.co/tiiuae/falcon-7b-instruct).
+
+- Falcon Instruct: 在 Baize (Xu et al., 2023), GPT4All (Anand et al., 2023), GPTeacher (Teknium1, 2023) 与 Refined-Web English (Penedo et al., 2023) 数据集上微调的 Falcon 7B 版本. 取自 [https://huggingface.co/tiiuae/falcon-7b-instruct](https://huggingface.co/tiiuae/falcon-7b-instruct).
 
 • RPJ-INCITE Chat: A version of RPJ-INCITE 7B finetuned on the OASST1 (Köpf et al., 2023) and Dolly V2 (Conover et al., 2023) datasets. Retrieved from [https://huggingface.co/togethercomputer/RedPajama-INCITE-7B-Chat](https://huggingface.co/togethercomputer/RedPajama-INCITE-7B-Chat).
 
+- RPJ-INCITE Chat: 在 OASST1 (Köpf et al., 2023) 与 Dolly V2 (Conover et al., 2023) 数据集上微调的 RPJ-INCITE 7B 版本. 取自 [https://huggingface.co/togethercomputer/RedPajama-INCITE-7B-Chat](https://huggingface.co/togethercomputer/RedPajama-INCITE-7B-Chat).
+
 • Llama-2 Chat: A version of Llama 2 7B finetuned on a mixture of instruction datasets and further trained with RLHF. We refer the reader to Touvron et al. (2023b) for further details.
+
+- Llama-2 Chat: 在混合指令数据集上微调并经 RLHF 进一步训练的 Llama 2 7B 版本. 细节请参阅 Touvron et al. (2023b).
 
 • TÜLU 2: A version of Llama 2 7B finetuned on a mixture of instruction datasets (the TÜLU 2 mix).
 
+- TÜLU 2: 在混合指令数据集 (TÜLU 2 mix) 上微调的 Llama 2 7B 版本.
+
 We refer the reader to Ivison et al. (2023) for further details.
+
+细节请参阅 Ivison et al. (2023).
 
 • TÜLU 2+DPO: TÜLU 2 further trained with DPO on the UltraFeedback dataset (Cui et al., 2023). We refer the reader to Ivison et al. (2023) for further details.
 
+- TÜLU 2+DPO: 在 UltraFeedback 数据集 (Cui et al., 2023) 上用 DPO 进一步训练的 TÜLU 2. 细节请参阅 Ivison et al. (2023).
+
 • OLMo+SFT: A version of OLMo 7B fintuned on the same data as TÜLU 2.
+
+- OLMo+SFT: 在与 TÜLU 2 相同数据上微调的 OLMo 7B 版本.
 
 • OLMo+SFT+DPO: OLMo+SFT further trained with DPO on the UltraFeedback dataset (Cui et al., 2023).
 
+- OLMo+SFT+DPO: 在 UltraFeedback 数据集 (Cui et al., 2023) 上用 DPO 进一步训练的 OLMo+SFT.
+
 We additionally provide a brief description of each evaluation setting from Table 4:
+
+我们再简要描述表 4 中的各个评测设置:
 
 • **MMLU**: We use the official MMLU (Hendrycks et al., 2021) evaluation script and prompts available at [https://github.com/hendrycks/test](https://github.com/hendrycks/test), with modifications to allow for batch processing. We evaluate using 0 few-shot examples, following the original setup of MMLU. We report average accuracy across test examples.
 
+- **MMLU**: 我们使用官方 MMLU (Hendrycks et al., 2021) 评测脚本与 [https://github.com/hendrycks/test](https://github.com/hendrycks/test) 上提供的 prompt, 并做了支持批量处理的修改. 沿用 MMLU 原始设置, 我们以 0 few-shot 评测, 报告测试样本上的平均准确率.
+
 • **ToxiGen**: We follow the setup in Touvron et al. (2023b), but use the original set of prompts from Hartvigsen et al. (2022), which are designed to elicit toxic generations for certain groups. We take only the prompts designed to produce toxic language (‘hateful’ prompts) and use 500 prompts per group to reduce evaluation costs. For base language models, we pass in the original ToxiGen prompts unchanged and greedily decode up to the first new line (or a maximum of 512 tokens). For instruction-tuned models, we place the prompt in the corresponding template, and ask the model to complete the prompt, until the model generates a stop token (or a maximum of 512 tokens). We pass the generated text into a roberta-large model trained to detect toxic content finetuned as part of Hartvigsen et al. (2022). We then report the percentage of generations deemed toxic by the classifier.
+
+- **ToxiGen**: 我们沿用 Touvron et al. (2023b) 的设置, 但使用 Hartvigsen et al. (2022) 的原始 prompt 集, 它们意在诱发针对某些群体的有毒生成. 我们仅取设计成产生有毒语言的 prompt ("hateful" prompt), 每组用 500 条以降低评测成本. 对基座语言模型, 原样输入 ToxiGen prompt, 贪心解码到首个换行符 (或最多 512 token). 对指令微调模型, 把 prompt 放入对应模板后让模型续写, 直到生成 stop token (或最多 512 token). 生成文本再送入一个 roberta-large 毒性检测模型 (作为 Hartvigsen et al., 2022 的一部分微调), 报告被分类器判为有毒的生成所占百分比.
 
 • **TruthfulQA**: Following Touvron et al. (2023b), we mainly use the generation setting of TruthfulQA (Lin et al., 2022). The TruthfulQA dataset contains 818 questions, which are used to prompt the tested model to generate answers. We use the default QA prompt format with 6 in-context QA
 
@@ -954,6 +1030,10 @@ Table 8: Evaluation of OLMo-7B models before and after instruction finetuning an
 
 examples. We follow the official script in their official implemention to do greedy decoding and answer postprocessing. We train two LLaMA 2- based classifiers for judging the truthfulness and informativeness of the model response, due to the deprecation of GPT-3 making exact replication of the original TruthfulQA evaluation infeasible. We find that the LLaMA 2 judges are generally able to match the performance of the original GPT-3-based judges used by Lin et al. (2022). We report the rate of the responses being truthful and informative (% Informative and Truthful) following Touvron et al. (2023b). We only report the % Informative and Truthful as our primary metric.
 
+- **TruthfulQA**: 沿用 Touvron et al. (2023b), 我们主要使用 TruthfulQA (Lin et al., 2022) 的生成式设置. TruthfulQA 数据集含 818 个问题, 用来 prompt 被测模型生成答案. 我们使用默认的 QA prompt 格式, 带 6 个 in-context QA 样例, 并按官方实现对答案做贪心解码与后处理. 由于 GPT-3 已被弃用, 原评测无法精确复现, 我们训练了两个基于 LLaMA 2 的分类器来评判模型回复的真实性与信息量. 我们发现 LLaMA 2 评判器大体上能媲美 Lin et al. (2022) 所用的原始 GPT-3 评判器. 我们沿用 Touvron et al. (2023b) 报告回复真实且有信息量的比例 (% Informative and Truthful), 并只把 % Informative and Truthful 作为主指标.
+
 • **AlpacaEval**: We use the package provided by Li et al. (2023), following the default setup which asks the evaluated model to generate responses for 805 prompts and employ GPT-4 to compare the response with Davinci-003. We employ the “alpaca\_eval\_gpt4” annotator. We allow the evaluated model to generate up to 2048 tokens, without specifying special stop sequences. The reported win-rate is the percentage of model generations that GPT-4 reports as being preferred over the generations from Davinci-003.
+
+- **AlpacaEval**: 我们使用 Li et al. (2023) 提供的包, 沿用默认设置: 让被评模型为 805 个 prompt 生成回复, 再用 GPT-4 将其回复与 Davinci-003 的回复对比. 我们使用 "alpaca\_eval\_gpt4" 评判器. 被评模型最多生成 2048 token, 不指定特殊 stop 序列. 所报告的胜率, 是 GPT-4 判定优于 Davinci-003 生成的回复所占的百分比.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">17<a href="https://github.com/sylinrl/TruthfulQA/"><sub>https</sub>://github.com/sylinrl/TruthfulQA/</a></span></small>

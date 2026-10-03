@@ -1,0 +1,109 @@
+# 11-gemini/project-astra  文件: content/model-library/03-模型家族\11-gemini/project-astra\project-astra-bi.md  共 27 块
+
+--- 行19 [想] ---
+> 按这句话看不是. 主语是 「Project Astra’s capabilities」, 去向列了三个: Gemini Live, 「new experiences in Search」, 「new form factors like glasses」. Gemini Live 和搜索, 眼镜并列, 是能力的落点之一; Astra 是能力的来源. 第 2 页 「first explored using Project Astra」 和第 14 页 「Project Astra is a research prototype」 说的也是这层关系: Astra 是研究原型, Gemini Live 是面向大众的功能. 页面没有说 Astra 会改名为 Gemini Live, 也没有说两者跑的是同一个模型.
+
+
+--- 行22 [问] ---
+> 是两句话, 讲两件事. 按钮指向一个 Google 表单, 第 14 页交代这个表单是给 Astra 研究原型招 「trusted testers」 的. 这句讲的是能力往 Gemini Live 等产品里迁, 用的是 「We’re working to」 这种进行时, 没说哪一项已经上线. 已上线的说法要到第 2 页才出现. 第 1 页把两句挨着放, 读得快容易以为加入名单就能在 Gemini Live 里用上新功能.
+
+
+--- 行33 [核对] ---
+> PDF 每一页左上角都有 「Google DeepMind」 页眉标志, 它的链接区域在每页都是同一个矩形 (约 x 91 到 199, y 34 到 70), 指向 https://deepmind.google/. 这一页正文第一行正好被页眉压住, MinerU 把落进链接矩形的字母当成链接文字, 又把标志上的 「Google DeepMind」 当正文插进句子. 第 3, 12, 15, 16 页的切词也是这个原因. 这些链接不是作者写的, 补回时一并去掉.
+
+
+--- 行44 [确认] ---
+> 点名的只有两项: 「screen sharing」 和 「video understanding」, 去向是 Gemini Live, 旁边配了 「Try Gemini Live」 按钮, 链接到 gemini.google. 第 3 到 10 页那些卡片 (主动回应, Agent 高亮, 个性化推理, 多模态记忆等) 的主语都是 Project Astra, 页面没说它们已经进了 Gemini Live. 上线时间, 地区, 设备这一页也都没给. 所以 「已上线」 和 「等待名单」 在页面上是两条线: 前者是 Gemini Live 的两项能力, 后者是 Astra 原型的测试资格.
+
+
+--- 行59 [拆开] ---
+> 这是页内导航标签. PDF 里五个标签都有链接区域, 但都没有外部 URI, 应是页内跳转. 最后一个标签被横向滚动条切断, PDF 文字层也只有 「Try Pr」, 这里不补全. 标签和后面各段的对应是我按版面排的: Capabilities 对第 3 到 10 页的卡片, Blind and Low Vision 对第 10 到 12 页, Platforms 大概对第 12 到 13 页的 「Assistance across devices」, Safety 对第 13 页. 页面本身没标这种对应.
+
+
+--- 行68 [对一下] ---
+> 对不上. 文件名 `p02-natu-ral-interacti-https-deepmind-google-on-impr-oved` 是 MinerU 从下一页开头那段被切坏的文字 "Natu[ral interacti](https://deepmind.google/)on Impr[oved audio]...「 拼出来的, 连链接里的 」https deepmind google「 都进了文件名. 那段文字是第 3 页 」Natural interaction「 一节的标题, 不是这段视频的说明. 画面本身是修东西的场景, 和 」自然交互" 的关系页面没有文字交代.
+
+
+--- 行83 [回看] ---
+> 对照 PDF 版面, 上面那个字号大, 是一节的标题, 下面跟着这一节的总述; 下面那个字号小, 是这一节第一张卡片的标题. 两者同名, 描述不同: 节标题讲音频输入输出和跨语言, 卡片讲生成速度. MinerU 把两处都抽成 「Natural interaction ...」 开头的段落, 看上去像重复.
+
+
+--- 行94 [再看] ---
+> 页面没说. 没有模型名, 没有数字, 也没说 「快」 指首字延迟, 整体生成速度还是别的量. 这句只能当定性说法记下来, 不能换算成任何指标.
+
+
+--- 行97 [核对] ---
+> 对得上. 文件名取自图下方卡片的说明 「Natural interaction Generates content significantly...」, 画面是声波加星的音频图标, 和 「自然交互」 这张卡片是同一张.
+
+
+--- 行108 [停一下] ---
+> PDF 这一页卡片中央有一个图标: 带四角星的对话气泡, 连字名是 「chat\_spark」. MinerU 没有把它存进 images/, 只把连字名抽成了一个二级标题. 同样的情况还有第 6 页 (text\_select\_end, 连字名也没抽出来), 第 8 页 (personal\_recommendations), 第 10 页 (memory), 第 11 页 (route). 所以 images/ 里的 11 张图少了这 5 张卡片图标, 本文件只按 images/ 现有的 11 张引用.
+
+
+--- 行117 [想] ---
+> 页面没讲. 这句只给了效果, 没有说触发条件, 也没有说用户能不能关掉主动发起对话. 「time lag」 同样没有数字. 这里不补任何机制上的猜测.
+
+
+--- 行130 [对一下] ---
+> 对不上. 「google-deepmind」 来自每页都有的页眉标志文字, MinerU 拿它当了图注. 画面是人形加圆弧的图标, 属于下面 「Context aware dialogue」 这张卡片.
+
+
+--- 行141 [问] ---
+> 页面没说. 「Action intelligence」 在 PDF 里是节标题, 字号大, 下面跟着第 6 页的 Agent 高亮和第 7 页的工具调用两张卡片. 全页讲到约束的只有第 13 页的 Safety 一段, 那段只有 「prioritize safety and security」 这种原则性表述, 没有说替用户行动前有没有确认步骤.
+
+
+--- 行156 [再看] ---
+> 页面没说是手机摄像头画面, 共享的屏幕, 还是眼镜. 这一页的卡片图标 (连字名 「text\_select\_end」) MinerU 既没存图, 也没抽出连字名, md 里这一页只剩页眉和文字.
+
+
+--- 行175 [核对] ---
+> 不是. PDF 文字层同样是 「Calendar Maps」, 是页面原文就少了逗号. 按常理是 Calendar 和 Maps 两个工具, 中文照此译, 英文保持原样. 「interface control」 页面没解释是控制手机界面还是网页界面. 文件名 `p07-tool-use` 取自下方卡片标题, 画面是放大镜, 和 「search」 图标一致, 这张对得上.
+
+
+--- 行196 [想] ---
+> 页面没说. 没有模型名, 没有推理步数, 也没有提到推理阶段多用算力. 上一页的 「can explain the thinking that guides its answers」 也只是说能解释, 没说解释是怎么产生的. 这两句只能当能力描述, 不能拿来推断结构. 这一页的卡片图标 (连字名 「personal\_recommendations」) 也没进 images/.
+
+
+--- 行215 [对一下] ---
+> 分享的途径页面没说, 也看不出 「you’ve shared」 是只修饰菜谱还是连手册一起. 文件名 `p09-content-retrieval` 取自下方卡片标题, 画面是叠放方框加星, 对应 「auto\_tab\_group」 图标, 对得上.
+
+
+--- 行248 [拆开] ---
+> 两句挨着, 读起来像在给那个版本起名, 但页面没有写 「this version is called ...」. 能确定的只有两点: 这是和盲人及低视力群体合作做的版本; Visual Interpreter 是 Project Astra 名下的一个研究原型. 本文件译文按字面分开处理.
+
+
+--- 行279 [确认] ---
+> 不是同一个. PDF 里第 1 页和第 14 页的 「Join waitlist」 都指向表单 `1FAIpQLScCrF...`, 第 11 页这个指向另一个表单 `1FAIpQLSdjJX...`. 前者招 Astra 原型的一般测试者, 后者是面向盲人和低视力用户的 Trusted Tester 计划. MinerU 把第 11 页的按钮抽成了没有链接的纯文字, 只看 md 会以为全页只有一个等待名单.
+
+
+--- 行282 [问] ---
+> 页面没点名. 上一段刚说 Aira 的口述员参与了原型调整, 读者容易把两句连起来, 认为监督者是 Aira 的口述员, 但原文没有这样写. 另外这张卡片只有正文, 没有标题; PDF 版面右边缘还露出下一张卡片的一条边, 轮播里后面几张没有打印进 PDF.
+
+
+--- 行305 [回看] ---
+> 不在. 第 7 页列的是 「Search, Gmail, Calendar Maps, and interface control」, 这里多出一个 Lens, Maps 两处都有. 第 7 页用的是 「like」, 本来就不是完整清单, 所以两处不算矛盾, 只是说明页面没有给出完整的工具列表.
+
+
+--- 行308 [对一下] ---
+> 文件名取自图下方那句 「Dorsey’s using Project Astra to adapt to this change in his life」, 位置上是这张图的说明. 画面是演出场所门口两人和面包车, 和 「音乐人」 的身份能对上, 但画面里看不出手机, 也看不出 Project Astra 在做什么. 算半对: 图注对, 画面只交代了人物背景.
+
+
+--- 行325 [停一下] ---
+> 文件名又是页眉文字, 和手机图标无关; 图标属于下面的 「Mobile」 卡片. 上一页说 Astra 能在 「Android phones and prototype glasses」 上运行, 可这一页只有 Mobile 一张卡片, 版面右边缘露出下一张卡片的一条边. 按版面看, 轮播后面还有卡片没打印进 PDF, 它讲什么页面没留下文字, 这里不猜.
+
+
+--- 行352 [再看] ---
+> 没有具体措施. 只有一句原则表述, 「Learn more」 在 PDF 里链到 https://ai.google/principles/, 是 Google 的 AI 原则总页, 不是 Astra 专门的安全说明. 第 5 页 「taking actions on their behalf」, 第 7 页 「learns and retains user preferences」 这类涉及代为操作和记住个人信息的能力, 页面都没有对应的约束说明.
+
+
+--- 行387 [核对] ---
+> 这一页页眉链接矩形压住的是名单第二行, PDF 链接区域里的文字是 「ntonia Paterson, Anu Sinha, A ... achra, Aveek Purohit」. MinerU 把这块里的 「Aveek Purohit, B」 整段丢了, 于是 「Bakary」 只剩 「akary」, 名单少了一人. 用 PDF 全文逐名比对, 除这一处和上面两处切词外, 两边的人名序列一致, PDF 这份名单共 359 个名字 (含重复的 Haoting Wang).
+
+
+--- 行414 [对一下] ---
+> 前三张文件名是 `p15-image`, `p15-image-2`, `p15-image-3`, 不带信息, 谈不上对错. 第四张文件名 `p15-sign-up-for-updates-on-our-latest-innovations-i-accept` 取自图标下方订阅框的文字, 画面却是 GitHub 标志, 对不上. 数目也少一个: PDF 版面上 「Follow us」 后面有五个图标, 链接依次是 X, Instagram, YouTube, LinkedIn, GitHub, MinerU 漏了 LinkedIn.
+
+
+--- 行519 [看表] ---
+> 这是 deepmind.google 全站的页脚导航, 每个页面都一样, 和 Astra 没有直接关系; Project Astra 本身不在这份列表里. 页面全文没有发布日期或更新日期, 导航里出现的产品名只能说明抓取时站点的栏目状态, 不能反推 Astra 各项能力是什么时候写上去的.
+

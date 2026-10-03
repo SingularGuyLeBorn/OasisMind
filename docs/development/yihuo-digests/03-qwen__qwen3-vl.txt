@@ -1,0 +1,85 @@
+# 03-qwen/qwen3-vl  文件: content/model-library/03-模型家族\03-qwen/qwen3-vl\qwen3-vl-bi.md  共 21 块
+
+--- 行49 [想] ---
+> 引言把两件事分开写: interleaved MRoPE 针对 t/h/w 切块导致的频谱失衡; 绝对时间对齐的废除写在第 3 点 Explicit video timestamps, 改用文本时间戳. §2.1 与 §2.3 分别展开, 不要并成一刀.
+
+
+--- 行85 [问] ---
+> 不会. 引言与图 1 写明 multilayer fusion 「without introducing extra context length」; §2.2 写多级特征投影后 「added directly to the corresponding hidden states of the first three LLM layers」, 是残差注入隐状态, 不是把三倍视觉 token 拼进序列.
+
+
+--- 行93 [核对] ---
+> §2.1 只写重新分配频率以均衡频谱, 未改写 「文本三维 ID 相同」 的旧规则. 文本仍应走统一 position ID 的等价 1D 行为; 本文强调的增量是视觉/视频轴的频率铺法, 不是宣布废除文本等价 1D.
+
+
+--- 行106 [拆开] ---
+> §2.2 写 three distinct levels → dedicated mergers → first three LLM layers, 按层面对应残差相加. 本文未给出跳层或注入更深层的消融; 表 12 只对比有无 DeepStack, 不拆层级配对.
+
+
+--- 行117 [停一下] ---
+> 不是. §2.3 把它写成训练/表示替换: 用文本串携带时刻, 替代绝对时间位置 ID. 它会略增上下文长度, 但不是 thinking budget 那种推理时算力旋钮; 后者属于后训练 thinking 变体叙事.
+
+
+--- 行137 [看表] ---
+> 是. §3.1 Stage 0 写 「only the parameters of the MLP merger are trained ... vision encoder and the LLM backbone remain frozen」. 表 1 Training 列也只标 Merger.
+
+
+--- 行157 [确认] ---
+> 摘要/引言写 native 256K; 表 1 S3 写 262,144. 两者同属超长适应阶段的操作上限口径, 横比时以表 1 训练序列长与正文评测设定为准, 不要口算成另一个数.
+
+
+--- 行243 [回看] ---
+> 不用. §3.2.4 末段明确 「Different from Qwen2.5-VL, we adopt a normalized coordinate system scaled to the range [0, 1000]」. 横比定位分数时先核对坐标协议.
+
+
+--- 行281 [再看] ---
+> 不矛盾. §2.3 批评的是绝对时间位置 ID 方案下为学好时间而被迫在多种 fps 上均匀铺数据的高成本; §3.2.7 的自适应采样是按序列长约束调 fps/最大帧, 服务 token 预算与信息保留. 时间语义改由文本时间戳携带后, 采样策略不必再为位置 ID 几何买单.
+
+
+--- 行333 [对一下] ---
+> §4.1 原句: distillation using text-only data to fine-tune the LLM backbone, 且 「yielding significant improvements in reasoning abilities across both text-centric and multimodal tasks」. 机制解释落在语言推理底座被抬高后迁移到多模态, 本文未另给多模态蒸馏损失式.
+
+
+--- 行395 [想] ---
+> 会偏向杀掉. §4.2.2 原句对视觉数学题: 无视觉输入仍能被 Qwen3-30B-nothink 答对的样本一律 discard. 目标是强制 multimodal necessity, 代价是文本捷径可解的题被排除, 即使图文本可互补.
+
+
+--- 行431 [问] ---
+> 不是. §4.4.1 明确 「We employ SAPO (Gao et al., 2025)」. GRPO 出现在同队纯文本 Qwen3 叙事; 本报告推理 RL 算法名是 SAPO, 不要混挂.
+
+
+--- 行489 [核对] ---
+> 第一阶段 SFT/RL 明确落在 Qwen2.5-VL-32B 上; 第二阶段才把蒸馏出的 ~120k 轨迹用于 Qwen3-VL 后训练. 不是 「冻 ViT 的 Qwen3-VL 自评自训」 这一句能概括的.
+
+
+--- 行524 [看表] ---
+> 视任务: MMStar 上 Thinking 78.7 更高; MMBench/RealWorldQA 上 Instruct 取最高. §5.1 自己并列两套模式, 不要默认开 thinking 必全面更强.
+
+
+--- 行588 [拆开] ---
+> §5.4 原句: Instruct 在 OCR 解析向 marginally outperforming thinking counterpart; CharXiv 推理子集则 Thinking 更强. 解析/检索偏短答时 thinking 不一定加分.
+
+
+--- 行603 [确认] ---
+> §5.5 原句设定 confidence scores to 1.0, 并把全部类别同时放进 prompt, 目的是与开放集检测专模可比. 这是评测协议, 不是训练时废除置信度.
+
+
+--- 行616 [对一下] ---
+> 表 4 多行可见该趋势, 例如 8B OCRBench Instruct 896 vs Thinking 819. 与 §5.4 旗舰 OCR 解析向 Instruct 略强的叙述一致.
+
+
+--- 行632 [回看] ---
+> 不是. §5.6 写 integrating external tools / tool-integrated agentic learning, 对应 §4.5 工具回路, 不是 thinking budget 那种纯加长 CoT 的推理时算力旋钮.
+
+
+--- 行655 [停一下] ---
+> §5.9: 每视频最多 2,048 帧且视频 token 不超过 224K; 产品/训练叙事是交错 256K. 横比用 §5.9 口径, 不要把 256K 直接当成视频 token 预算.
+
+
+--- 行749 [拆开] ---
+> §2 与 §3.1: 从官方 SigLIP-2 检查点初始化并 continue training with dynamic resolutions. 表 11 比的是续训后的 Qwen3-ViT 相对原始 SigLIP-2.
+
+
+--- 行783 [再看] ---
+> 不是. §5.12.3 写 via YaRN-based positional extension; 表 1 S3 序列长是 262,144. YaRN 是评测期位置外推.
+

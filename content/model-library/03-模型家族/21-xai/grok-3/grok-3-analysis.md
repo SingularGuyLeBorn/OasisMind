@@ -10,11 +10,11 @@
 
 正文的顺序是: 日期, 标题「Grok 3 Beta — The Age of Reasoning Agents」, 一句导语,「Next-Generation Intelligence from xAI」一段总述,「Thinking Harder」两段讲推理模型和成绩, 四张推理基准图, 一张 MMMU 图, Think 按钮说明和一个用 pygame 做游戏的示例,「Pretraining on a Massive Scale」讲非推理模式, 一张非推理对比表, 1M 上下文与 LOFT, Chatbot Arena, 最后是 API 和下一步计划. 第 7 页中段以后是页脚.
 
-抓取损失不小. 示例代码只剩「import pygame」一行, 演示视频是黑屏. 第 6 页的图上能看到一整节正文的残句, 比如「Grok 3 models learn to」「conduct in-depth scientific」「comprehensive report」, md 里这一节整段缺失, 所以后面「DeepSearch will also be released」出现得没头没尾. 第 7 页还夹着一句被截断的「diately gain access to Think and users will have higher limits and」. 页脚的「SPACEX」和「@SpaceXAI」说明这是后来抓的快照, 同家族 [xAI 新闻页](../xai/xai.md) 记录了 2026 年 2 月 2 日 SpaceX 收购 xAI. 正文反映 2025 年 2 月的发布, 页脚反映抓取时的网站, 读的时候要分开.
+抓取损失不小. 示例代码只剩「import pygame」一行, 演示视频是黑屏. 第 6 页的图上能看到一整节正文的残句, 比如「Grok 3 models learn to」「conduct in-depth scientific」「comprehensive report」, md 里这一节整段缺失, 所以后面「DeepSearch will also be released」出现得没头没尾. 第 7 页还夹着一句被截断的「diately gain access to Think and users will have higher limits and」. 页脚的「SPACEX」和「@SpaceXAI」说明这是后来抓的快照, 同家族 [xAI 新闻页](../xai/xai-bi.md) 记录了 2026 年 2 月 2 日 SpaceX 收购 xAI. 正文反映 2025 年 2 月的发布, 页脚反映抓取时的网站, 读的时候要分开.
 
 ## 2. 训练: 10 倍算力和大规模 RL, 都只有定性描述
 
-讲训练的原文只有三处. 第一处是「Trained on our Colossus supercluster with 10x the compute of previous state-of-the-art models」. 10 倍的参照系不明确, 可以是 xAI 的上一代 [Grok-2](../grok-2/grok-2.md), 也可以是业界此前最强的模型. 页面没给训练 FLOPs, GPU 型号和数量, 训练时长, 所以这个倍数换算不成绝对量. 第 5 页的「200,000 GPU cluster」跟在「preparing to train even larger models」后面, 属于下一步计划, 不能当成 Grok 3 的训练规模.
+讲训练的原文只有三处. 第一处是「Trained on our Colossus supercluster with 10x the compute of previous state-of-the-art models」. 10 倍的参照系不明确, 可以是 xAI 的上一代 [Grok-2](../grok-2/grok-2-bi.md), 也可以是业界此前最强的模型. 页面没给训练 FLOPs, GPU 型号和数量, 训练时长, 所以这个倍数换算不成绝对量. 第 5 页的「200,000 GPU cluster」跟在「preparing to train even larger models」后面, 属于下一步计划, 不能当成 Grok 3 的训练规模.
 
 第二处是推理模型「trained using reinforcement learning (RL) at an unprecedented scale to refine its chain-of-thought process」. 公告描述了 RL 之后模型的行为: 回溯纠错, 简化步骤, 调用预训练知识, 比较多种思路, 验证自己的解答. 这些是对输出的观察, 不是配方. 奖励来自规则校验还是奖励模型, 用的是 PPO 还是 GRPO 一类算法, 题目从哪来, 训练了多少步, 页面都没写. 推理模型 RL 的一般做法可以看 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md) 和 [基于奖励模型的 RL](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/4.4.1-基于奖励模型的RL-RLHF-PPO.md), 那是背景, 不是 Grok 3 的做法.
 
@@ -51,7 +51,7 @@ AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题
 
 ## 6. 1M 上下文和 LOFT (128k)
 
-原文是「a context window of 1 million tokens — 8 times larger than our previous models」. 同家族 [xAI 新闻页](../xai/xai.md) 记着 Grok-1.5 的上下文是 128,000 token, 1,000,000 除以 128,000 约 7.8; 两边都按 2 的幂算 (1,048,576 和 131,072) 则正好 8 倍. 「previous models」指哪一代, 页面没说. 窗口怎么扩到 1M, 位置编码怎么处理, 训练时用了多长的序列, 都没有. 长上下文扩展的常见路线可以看 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
+原文是「a context window of 1 million tokens — 8 times larger than our previous models」. 同家族 [xAI 新闻页](../xai/xai-bi.md) 记着 Grok-1.5 的上下文是 128,000 token, 1,000,000 除以 128,000 约 7.8; 两边都按 2 的幂算 (1,048,576 和 131,072) 则正好 8 倍. 「previous models」指哪一代, 页面没说. 窗口怎么扩到 1M, 位置编码怎么处理, 训练时用了多长的序列, 都没有. 长上下文扩展的常见路线可以看 [长上下文与外推技术](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/2.5-长上下文与外推技术.md).
 
 能支撑长上下文能力的证据只有 LOFT 一句:「On the LOFT (128k) benchmark ... Grok 3 achieved state-of-the-art accuracy (averaged across 12 diverse tasks)」. 这句有三个缺口. 一是测的是 128k 长度, 只覆盖 1M 窗口的八分之一左右. 二是没有分数, 也没说和谁比. 三是 12 个任务是哪些, 页面没列. 1M 长度上的检索或 [大海捞针测试](../../../../llm-guide/3-预训练/3.4-预训练评估/3.4.3-大海捞针测试/3.4.3-大海捞针测试.md) 一类结果都没有. LOFT 面向「long-context RAG use cases」, 长上下文直接读和检索增强的取舍可以对照 [RAG](../../../../llm-guide/7-LLM应用开发/7.2-RAG/7.2-RAG.md). 1M 窗口是否在 API 里开放, 页面也没说.
 
@@ -59,7 +59,7 @@ AIME 还有题量的问题. AIME 每场 15 题, 93.3% 正好是 15 题对 14 题
 
 第 1 页写「Grok 3 ... achieving an Elo score of 1402 in the Chatbot Arena」, 第 5 页却说登顶的是「an early version of Grok 3」, 代号 chocolate. Elo 图的横轴标签是「chocolate (Early Grok-3)」, 点位略高于 1400 虚线, 误差棒约 1396 到 1409; 第二名 gemini-2.0-flash-thinking-exp-01-21 在 1385 附近, 两者误差棒不重叠. 所以 1402 是早期版本的成绩, 第 1 页把它记在了发布版名下. 早期版本和发布版是不是同一份权重, chocolate 开没开推理, 页面都没说.
 
-第 5 页还说 chocolate「outperforming all competitors in Elo scores across all categories」, 图里只有总榜一个维度, 分类榜没给, 截图日期和投票数也没有. Chatbot Arena 反映的是用户两两投票的偏好, 回答格式, 长度, 语气都会影响投票, 它和 AIME 这类有标准答案的测试不是一回事. 这种先匿名上榜再公布身份的做法, 同家族的 [Grok-2](../grok-2/grok-2.md) 也用过, 当时代号是「sus-column-r」.
+第 5 页还说 chocolate「outperforming all competitors in Elo scores across all categories」, 图里只有总榜一个维度, 分类榜没给, 截图日期和投票数也没有. Chatbot Arena 反映的是用户两两投票的偏好, 回答格式, 长度, 语气都会影响投票, 它和 AIME 这类有标准答案的测试不是一回事. 这种先匿名上榜再公布身份的做法, 同家族的 [Grok-2](../grok-2/grok-2-bi.md) 也用过, 当时代号是「sus-column-r」.
 
 ## 8. 产品与安全: Think 按钮, API, RMF
 

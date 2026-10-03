@@ -8,6 +8,8 @@
 
 We introduce Claude 3, a new family of large multimodal models – **Claude 3 Opus**, our most capable offering, **Claude 3 Sonnet**, which provides a combination of skills and speed, and **Claude 3 Haiku**, our fastest and least expensive model. All new models have vision capabilities that enable them to process and analyze image data. The Claude 3 family demonstrates strong performance across benchmark evaluations and sets a new standard on measures of reasoning, math, and coding. Claude 3 Opus achieves state-of-the-art results on evaluations like GPQA [1], MMLU [2], MMMU [3] and many more. Claude 3 Haiku performs as well or better than Claude 2 [4] on most pure-text tasks, while Sonnet and Opus significantly outperform it. Additionally, these models exhibit improved fluency in non-English languages, making them more versatile for a global audience. In this report, we provide an in-depth analysis of our evaluations, focusing on core capabilities, safety, societal impacts, and the catastrophic risk assessments we committed to in our Responsible Scaling Policy [5].
 
+我们推出 Claude 3, 这是一族新的大型多模态模型: Claude 3 Opus 是我们能力最强的型号, Claude 3 Sonnet 兼顾能力与速度, Claude 3 Haiku 则是最快, 花费最低的型号. 所有新模型都具备视觉能力, 可以处理和分析图像数据. Claude 3 家族在基准评测中表现强劲, 在推理, 数学和编程指标上树立了新标准. Claude 3 Opus 在 GPQA [1], MMLU [2], MMMU [3] 等多项评测上取得 state-of-the-art 成绩. Claude 3 Haiku 在大多数纯文本任务上表现不亚于 Claude 2 [4], Sonnet 和 Opus 则显著强于它. 此外, 这些模型在非英语语言上的流利度也有提升, 面向全球受众的通用性更强. 本报告深入分析我们的评测, 聚焦核心能力, 安全, 社会影响, 以及我们在 Responsible Scaling Policy [5] 中承诺开展的灾难性风险评估.
+
 > **想:** 摘要把 Sonnet 的定位写成 「a combination of skills and speed」, 这份报告里有没有给出 Sonnet 的参数量, 价格或延迟数字来支撑 「speed」?
 > 没有. 全文只用 Opus, Sonnet, Haiku 三个档位名区分, 从头到尾没给参数量, 训练 token 数, 价格或延迟的具体数值. 摘要里能落到数字上的只有 Haiku 那句 「performs as well or better than Claude 2 on most pure-text tasks」 和 Opus 的几个 state-of-the-art 评测名. 所以 「speed」 在本文里是定位描述, 不是测出来的量. 想比较三档的速度或成本, 只能去看发布时的产品页, 这份模型卡不提供.
 
@@ -15,13 +17,23 @@ We introduce Claude 3, a new family of large multimodal models – **Claude 3 Op
 
 This model card introduces the Claude 3 family of models, which set new industry benchmarks across reasoning, math, coding, multi-lingual understanding, and vision quality.
 
+本模型卡介绍 Claude 3 家族模型, 它们在推理, 数学, 编程, 多语言理解和视觉质量上都刷新了行业基准.
+
 Like its predecessors, Claude 3 models employ various training methods, such as unsupervised learning and Constitutional AI [6]. These models were trained using hardware from Amazon Web Services (AWS) and Google Cloud Platform (GCP), with core frameworks including PyTorch [7], JAX [8], and Triton [9].
+
+与前几代一样, Claude 3 模型采用了多种训练方法, 如无监督学习和 Constitutional AI [6]. 这些模型使用 Amazon Web Services (AWS) 和 Google Cloud Platform (GCP) 的硬件训练, 核心框架包括 PyTorch [7], JAX [8] 和 Triton [9].
 
 A key enhancement in the Claude 3 family is multimodal input capabilities with text output, allowing users to upload images (e.g., tables, graphs, photos) along with text prompts for richer context and expanded use cases as shown in Figure 1 and Appendix B.<sup>1</sup> The model family also excels at tool use, also known as function calling, allowing seamless integration of Claude’s intelligence into specialized applications and custom workflows.
 
+Claude 3 家族的一项关键升级是多模态输入加文本输出: 用户可以随文本提示一起上传图片 (如表格, 曲线图, 照片), 获得更丰富的上下文, 拓展使用场景, 见 Figure 1 和附录 B.<sup>1</sup> 该家族模型还擅长工具使用 (也叫 function calling), 可以把 Claude 的智能无缝集成到专用应用和自定义工作流中.
+
 Claude 3 Opus, our most intelligent model, sets a new standard on measures of reasoning, math, and coding. Both Opus and Sonnet demonstrate increased proficiency in nuanced content creation, analysis, forecasting, accurate summarization, and handling scientific queries. These models are designed to empower enterprises to automate tasks, generate revenue through user-facing applications, conduct complex financial forecasts, and expedite research and development across various sectors. Claude 3 Haiku is the fastest and most affordable option on the market for its intelligence category, while also including vision capabilities. The entire Claude 3 family improves significantly on previous generations for coding tasks and fluency in non-English languages like Spanish and Japanese, enabling use cases like translation services and broader global utility.
 
+Claude 3 Opus 是我们最智能的模型, 在推理, 数学和编程指标上树立了新标准. Opus 和 Sonnet 在精细的内容创作, 分析, 预测, 准确的摘要以及科学问题处理上都有更强能力. 这些模型旨在帮助企业实现任务自动化, 通过面向用户的应用创造收入, 开展复杂的财务预测, 并加快各行业领域的研发进程. Claude 3 Haiku 是同智能档位中市场上最快, 最实惠的选择, 且同样具备视觉能力. 整个 Claude 3 家族在编程任务以及西班牙语, 日语等非英语语言的流利度上相比前代都有显著提升, 可以支撑翻译服务等更广泛的全球用途.
+
 Developed by Anthropic and announced in March 2024, the Claude 3 model family will be available in our consumer offerings (Claude.ai, Claude Pro) as well as enterprise solutions like the Anthropic API, Amazon Bedrock, and Google Vertex AI. The knowledge cutoff for the Claude 3 models is August 2023.
+
+Claude 3 模型家族由 Anthropic 开发, 于 2024 年 3 月发布, 将在我们的消费级产品 (Claude.ai, Claude Pro) 以及 Anthropic API, Amazon Bedrock 和 Google Vertex AI 等企业级方案中提供. Claude 3 模型的知识截止时间是 2023 年 8 月.
 
 This model card is not intended to encompass all of our research. For comprehensive insights into our training and evaluation methodologies, we invite you to explore our research papers (e.g., Challenges in Evaluating
 
@@ -30,6 +42,8 @@ This model card is not intended to encompass all of our research. For comprehens
 <!-- page 2 of 42 -->
 
 AI Systems [10], Red Teaming Language Models to Reduce Harms [11], Capacity for Moral Self-Correction in Large Language Models [12], Towards Measuring the Representation of Subjective Global Opinions in Language Models [13], Frontier Threats Red Teaming for AI Safety [14], and our Responsible Scaling Policy [5] to address catastrophic risks). In addition to our public research, we are also committed to sharing findings and best practices across industry, government, and civil society and regularly engage with these stakeholders to share insights and best practices. We expect to release new findings as we continue our research and evaluations of frontier models.
+
+本模型卡并不打算涵盖我们的全部研究. 若想全面了解我们的训练与评测方法, 欢迎阅读我们的研究论文 (如 Challenges in Evaluating AI Systems [10], Red Teaming Language Models to Reduce Harms [11], Capacity for Moral Self-Correction in Large Language Models [12], Towards Measuring the Representation of Subjective Global Opinions in Language Models [13], Frontier Threats Red Teaming for AI Safety [14], 以及我们应对灾难性风险的 Responsible Scaling Policy [5]). 除了公开研究, 我们也致力于跨行业, 政府和民间社会分享发现和最佳实践, 并定期与这些利益相关方交流见解和经验. 随着对前沿模型研究和评测的推进, 我们预计会不断发布新的成果.
 
 ## 2 Model Details
 
@@ -1205,11 +1219,19 @@ Our team has worked hard to release an improved and well-tested model, and we ar
 
 share directly), they only answer questions using data from before August 2023, and they refuse to identify people in images. Claude models possess multilingual reasoning capabilities, but their performance is less robust when it comes to low-resource languages.
 
+我们的团队努力发布了一个经过改进且充分测试的模型, 我们对结果感到自豪. 我们会持续迭代和改进, 也欢迎对模型, 产品和工作方式提出反馈. 与目前所有 LLM 一样, Claude 可能产生虚构内容, 表现出偏见, 出现事实错误, 也可能被越狱. Claude 模型目前不会联网搜索 (不过你可以让它们处理你直接提供的文档), 只用 2023 年 8 月之前的数据回答问题, 并且不会识别图片中的人. Claude 模型具备多语言推理能力, 但在低资源语言上的表现不够稳健.
+
 While Claude 3 models excel in new multimodal capabilities, the model can at times generate inaccurate information and descriptions about images, and therefore should not be used for consequential use cases that require high precision and accuracy without human validation. We also note that performance is sometimes lower for small or low resolution images. We are actively working on improving Claude’s performance in these areas.
+
+Claude 3 模型在多模态新能力上表现出色的同时, 有时也会对图片生成不准确的信息和描述, 因此不应在未经过人工核验的情况下, 用于对精度和准确性要求高的重大场景. 我们还注意到, 在小尺寸或低分辨率图片上表现有时会下降. 我们正在积极改进 Claude 在这些方面的表现.
 
 New capabilities can sometimes have unexpected tradeoffs, and some of Claude 3 models’ new and improved capabilities have had some subtle costs in other areas. For example, over time, the data and influences that determine Claude’s “personality” and capabilities continue to be quite complex. Balancing these factors, tracking them in a simple, automatable way, and generally reducing the complexity of training Claude continue to be key research problems for us. These challenges, and other emerging risks from models are both important and urgent. We expect that further progress in AI will be rapid, and that the dangers from misuse and misalignment from near-future AI systems will be very significant, presenting an enormous challenge for AI developers.
 
+新能力有时会带来意想不到的权衡, Claude 3 模型的一些新增和改进的能力, 在其他方面造成了某些隐性代价. 例如, 决定 Claude "个性" 和能力的数据与影响因素, 随着时间推移依然相当复杂. 平衡这些因素, 用简单, 可自动化的方式追踪它们, 乃至总体降低训练 Claude 的复杂度, 仍然是我们面临的关键研究问题. 这些挑战以及模型带来的其他新风险, 既重要又紧迫. 我们预计 AI 的后续进步会非常快, 而近期 AI 系统被滥用和失准带来的危害将非常显著, 这对 AI 开发者构成巨大挑战.
+
 While there is much more work to be done, we are grateful to all our teams for their continued efforts and to those teams working on AI safety at other organizations.
+
+尽管还有很多工作要做, 我们感谢所有团队持续不懈的努力, 也感谢其他机构中致力于 AI 安全的团队.
 
 ## 9 Appendix
 
@@ -1291,6 +1313,8 @@ Figure 28 For ensuring replication of our results, this is a high-resolution ver
 
 In our evaluation framework, particularly for multiple-choice questions, we present the respondents with a series of options. Each option is accompanied by a brief description of the task in natural language. This description is consistent across examples, including those formatted for k-shot learning. To distinctly separate the options for ease of analysis by Claude, we encapsulate them within XML tags. The log probability for each option is calculated, and the one with the highest probability is highlighted as the most plausible response. An example prompt for HellaSwag is provided below for reference:
 
+在我们的评测框架中, 尤其是选择题, 会给模型呈现一系列选项, 每个选项附带一段自然语言的任务简介. 这段简介在所有样本中保持一致, 包括格式化为 k-shot 学习的样本. 为了让 Claude 便于分析, 我们把各选项明确分隔开, 包在 XML 标签里. 我们计算每个选项的 log probability, 取概率最高者作为最可能的回答. 下面给出 HellaSwag 的示例提示词供参考:
+
 ```txt
 [k-shot examples, formatted similarly]
 Human: This evaluation is centered around commonsense reasoning. Please select the completion that logically follows.
@@ -1304,6 +1328,8 @@ Assistant: The most logical completion is <mc>
 ```
 
 This format ensures clarity in presentation and consistency in evaluating the logic and reasoning capabilities of the model.
+
+这种格式保证了呈现的清晰性, 也保证了模型逻辑与推理能力评测的一致性.
 
 <!-- page 37 of 42 -->
 

@@ -1,0 +1,45 @@
+# 05-mimo/mimo  文件: content/model-library/03-模型家族\05-mimo/mimo\mimo-bi.md  共 11 块
+
+--- 行31 [想] ---
+> 源文用两个独立产品标题并列: 前者挂 V2.6, 后者挂 V2.5-TTS. 材料没有写 「V2.6 覆盖 TTS」, 也没有写两条线共享同一权重. 能核对的只有: 页上展示的是两条 Series 卡, 口号各自成句.
+
+
+--- 行53 [问] ---
+> 源文把 Gallery 绑在 MiMo-V2.6 上, 与同页 01 Web / 02 API 的泛称 「MiMo 大模型」 措辞不同. 材料没有列出 Gallery 支持的其它版本号. 能指回的只有: Gallery 文案点名 V2.6.
+
+
+--- 行69 [核对] ---
+> 没有. 本页只给出英文题名与日期 2026年6月29日, 外加箭头入口. 机制细节不在这份产品页里; 题名本身把场景收在 LLM Post-Training, 并把 Multi-Teacher 与 On-Policy Distillation 写进同一条标题.
+
+
+--- 行72 [拆开] ---
+> 源文用 and 并列两项: Oracle Token Selection and KV Cache Sharing. 产品页没有定义 Oracle, 也没有写共享发生在层间还是头间. 能核对的只有: 标题把二者写成 Hybrid Sparse Attention Architecture 的两个并列构件名.
+
+
+--- 行88 [确认] ---
+> 源文只给出题名: Stabilizing MoE Reinforcement Learning by Aligning Training and Inference Routers, 日期 2025年10月21日. 没有摘要, 没有实验表, 也没有写 「shared weights」 或 「KL 约束」 等实现. 能指回的只有: 稳定对象是 MoE Reinforcement Learning, 手段名是对齐训练与推理两侧的 Routers.
+
+
+--- 行91 [回看] ---
+> 08 的题名是 MiMo: Unlocking the Reasoning Potential of Language Model-From Pretraining to Posttraining, 日期 2025年5月12日. 它覆盖从 Pretraining 到 Posttraining 的推理潜力, 但仍只是题名级信息; 本产品页没有展开数据配方或评测表.
+
+
+--- 行109 [看表] ---
+> 源文把它放在 「自动完成计算模拟的『干实验』」 里, 前置环节是文献调研与分子设计, 目标是捕捉 PFAS 的新材料. 材料没有写移液, 反应釜或机器人实验台. 能核对的只有: 「干实验」 绑在计算模拟自动化上.
+
+
+--- 行112 [停一下] ---
+> 源文写明三个主题, 并说明用途是 「介绍长程编程 Agent 的核心设计」. 没有第四标签, 也没有展开各主题的算法名. 能指回的只有: 主题数是三, 场景是长程编程 Agent.
+
+
+--- 行130 [再看] ---
+> 没有. 04 标题写 「将 1T 参数模型的生成速度推向 1000 TPS」; 续段写 「通过模型与系统极致 Codesign 突破 1000 tps」. 同页 05 另谈 Hybrid SWA, 但源文没有写 UltraSpeed = Hybrid SWA. 三项数字与 Codesign 主张应分开抄, 不要自行合并因果.
+
+
+--- 行133 [对一下] ---
+> 没有. 源文只写 「将 Hybrid SWA 效率推向极致」, 挂在 「MiMo-V2.5 系列推理全链路优化」 下. 未解释 SWA 展开式, 未给窗口宽, 也未给相对基线的倍率表.
+
+
+--- 行168 [想] ---
+> 否. 源文只有岗位名: 算法研究员-预训练, 算法研究员-后训练, 外加 AI Infra, 音频&语音, 多模态. 没有 token 量, 没有阶段表. 岗位切分不能读成已公开的训练配方.
+

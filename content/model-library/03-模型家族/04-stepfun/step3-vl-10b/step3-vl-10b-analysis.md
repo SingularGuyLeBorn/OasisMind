@@ -16,7 +16,7 @@
 
 ### 1.1. 谱系: 阶跃用外部底座做的第一个开源 VLM
 
-阶跃之前的多模态模型都挂在自家语言模型上. [Step-3](../step3/step3.md) 的 321B 里有一个 5B 视觉编码器, 但那篇报告只谈 decode 成本, 把视觉部分整个略过. Step3-VL-10B 走了另一条路: 视觉塔用 Meta 开源的 Perception Encoder, 语言侧直接用 Qwen3-8B, 自家贡献集中在数据、训练日程、奖励设计和推理方式上. GUI 数据沿用同厂 Step-GUI 的构建方法, RL 算法跟随 Open-Reasoner-Zero 和 Open-Vision-Reasoner, 推理时的并行综合来自 PaCoRe, 这个方法后来也出现在 [Step 3.5 Flash](../step3-5-flash/step3-5-flash.md) 的评测里. 所以这篇报告在家族里的位置很清楚: **它不是新架构, 而是一次「小底座能被训练日程推多远」的实验.**
+阶跃之前的多模态模型都挂在自家语言模型上. [Step-3](../step3/step3-bi.md) 的 321B 里有一个 5B 视觉编码器, 但那篇报告只谈 decode 成本, 把视觉部分整个略过. Step3-VL-10B 走了另一条路: 视觉塔用 Meta 开源的 Perception Encoder, 语言侧直接用 Qwen3-8B, 自家贡献集中在数据、训练日程、奖励设计和推理方式上. GUI 数据沿用同厂 Step-GUI 的构建方法, RL 算法跟随 Open-Reasoner-Zero 和 Open-Vision-Reasoner, 推理时的并行综合来自 PaCoRe, 这个方法后来也出现在 [Step 3.5 Flash](../step3-5-flash/step3-5-flash-bi.md) 的评测里. 所以这篇报告在家族里的位置很清楚: **它不是新架构, 而是一次「小底座能被训练日程推多远」的实验.**
 
 引言把成功归结为两条. 第一条是在 1.2T 多模态 token 上单阶段、全解冻地联合训练视觉塔和 decoder, 同时照顾推理 (通识、教育) 和感知 (grounding、计数、OCR、GUI) 两类能力. 第二条是放大后的 RL 加并行推理: 两阶段 SFT 之后跑超过一千轮 RL, 再用 PaCoRe 把推理时的算力花在「并行看多遍、再综合」上. 对标对象是 10–20 倍大的开源模型, GLM-4.6V (106B-A12B) 和 Qwen3-VL-Thinking (235B-A22B), 以及 Gemini-2.5-Pro、Seed-1.5-VL 这样的闭源模型. 文首的亮点分数是 MMBench 92.2%, MMMU 80.11%, AIME2025 94.43%, MathVision 75.95%; 后三项都出自 PaCoRe 模式, 这一点读表时要一直带着.
 

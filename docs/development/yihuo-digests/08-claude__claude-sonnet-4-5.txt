@@ -1,0 +1,81 @@
+# 08-claude/claude-sonnet-4-5  文件: content/model-library/03-模型家族\08-claude/claude-sonnet-4-5\claude-sonnet-4-5-bi.md  共 20 块
+
+--- 行254 [想] ---
+> 两处 「全面」 的口径不同. RSP 里的 comprehensive assessment 指包含专家红队和 uplift 试验的完整评估, 而 9.2 明说这次 「did not include uplift studies and external red teaming by experts」. 本文做的只是自动化部分, ASL-3 的结论也是靠与 Claude Opus 4 和 Claude Opus 4.1 对比得出的, 所以 1.2.4 用的词是 「precautionary, provisional」. 这是预防性判断, 不等于已确认越过 ASL-3 能力门槛.
+
+
+--- 行287 [问] ---
+> 两条规则管的对象不同. 9.2 写明 "All evaluations described in this section (and Section 9.3 below) were run on the final production snapshot ... or a 'helpful-only' version trained from the final snapshot", 并在 Environment and elicitation 里说报告的是两类变体中的最高分. DNA 合成筛查规避和短程计算生物学两张图的图注也写明用的是得分更高的 helpful-only 变体. 所以第 9 节的分数偏向上界, 而第 2 到第 8 节的行为数字按 「最终部署模型」 读; 第 7 节里第三方用的则是更早的快照, 见 7.3.
+
+
+--- 行371 [核对] ---
+> 本文没给样本量, 只给了 ± 区间, 所以只能用区间本身核对. 99.29 - 0.22 = 99.07, 98.76 + 0.29 = 99.05, 两个区间刚好错开 0.02 个百分点, 「显著」 勉强成立. 良性请求那边 0.02 + 0.04 = 0.06, 0.15 - 0.10 = 0.05, 区间重叠, 所以表 2.1.2.A 之后的正文说 「within the margin of error」. 口径前后一致, 但分母未知, 两个结论都只能按表中 ± 读, 不能自行换算成题数.
+
+
+--- 行593 [看表] ---
+> 按表算, 它比 Claude Sonnet 4 低 4.1 个百分点, 比 Claude Opus 4.1 低 8.5 个百分点, 比 Claude Opus 4 低 8.9 个百分点, 是四个模型里最低的. 「slightly」 只在和 Claude Sonnet 4 比时勉强说得通. 表 2.5.2.A 的消歧偏向 -2.21 同样是四者中离零最远的. 两张表都注明 「does not take into account the margin of error」, 本文也没给 BBQ 的题数, 所以差距是否显著无从判断, 但总述的措辞明显比分项温和.
+
+
+--- 行744 [拆开] ---
+> 两张表测的不是同一个东西. 表 4.1.1.A 的分母是 150 条请求, 148/150 = 98.67%, 四舍五入正是 98.7%, 134/150 = 89.33% 对上 Claude Sonnet 4 的 89.3%, 总述只对应这一张表. 表 4.1.A 拆成三列, 隐蔽恶意一列是 「文件里藏着恶意代码, 请求本身看不出来」 的情形, 这一列 Claude Sonnet 4.5 确实更差, 表后正文也承认 「without mitigations, Claude Sonnet 4 performed better on recognition of covertly malicious requests」. 另外两张表的编号一个是 4.1.1.A, 一个是 4.1.A, 层级不一致, 读的时候按表题区分.
+
+
+--- 行774 [确认] ---
+> 公式形式一样, 方向相反. 原文把 k=10 定义为 「the percentage of behaviors with at least one successful attack within up to 10 attempts per attack scenario」, 这就是攻击方视角的 pass@10, 分母是 「行为」 而不是单次攻击. 攻击方的 pass@k 越低, 说明模型越稳. 第 5 节 Cybench 图 5.2.2.B 的 pass@k 是模型解题视角, 越高能力越强. 同一个 「至少一次成功」 的公式, 在第 4 节读作风险, 在第 5 节读作能力. 图 4.2.1.A 把 k=1 与 k=10 画在同一根柱子里, 读图时要把两段分开看.
+
+
+--- 行866 [回看] ---
+> 不是. 图注写明它是 "combining results across all of Claude Sonnet 3.7, Claude Sonnet 4, Claude Opus 4.1, and Claude Sonnet 4.5 (30 trials per model)「, 即 4 个模型各 30 次, 共 120 次尝试取并集. 它衡量的是 」模型池「 的覆盖, 不能和单个模型的 pass@30 横比. 另外正文里的成本上限在 md 转换中变成了一个写着 S2 的公式, 对照 」same constraint as public benchmark" 应读作每次 2 美元; 而 Claude Opus 4.1 的 1 次尝试结果没有成本约束 (图 5.2.1.A 和 5.2.1.B 图注), 所以 1-trial 一栏里它和其他模型的条件并不相同.
+
+
+--- 行891 [停一下] ---
+> 分母是 37. 图 5.2.2.B 图注写明 「these results are on a subset of 37 of the 40 original Cybench problems」. pass@k 的定义也在图注里: 「the expectation over the proportion of problems where at least one of k trials succeeds」, 即对题目比例取期望, 而不是对单次尝试取平均. 超过 80% 意味着 37 题里至少解出 30 题; 若换成 40 题做分母, 把 3 道未测题记为失败, 30 题只有 75%, 所以这个数字只在 37 题口径下成立. 难度分档的边界 「<21 min」, 「21 min - 1.5 hrs」, 「>1.5 hrs」 在两个端点上归属不明, 本文自己说难度是 「very roughly assigned」.
+
+
+--- 行948 [再看] ---
+> 本文没有直接给总数, 只能从两处拼: 有模型成功的是图中的 4 个环境, 加上正文 「There were 5 more range environments in which no model succeeded」, 合计应为 9 个. 可靠性一项的分母是每个环境 5 次尝试 (图 5.3.2.C 图注 「out of 5 trials」). 所以 「equal or better than previous models on almost all metrics」 只覆盖那 4 个环境, 而 5 个全部失败的环境才是本文判断 「critical gap」 的依据, 两部分要分开读.
+
+
+--- 行1011 [对一下] ---
+> 把表中五列直接取算术平均: Claude Sonnet 4.5 为 (1+1+53+20+2)/5 = 15.4%, Claude Sonnet 4 为 (14+5+70+28+13)/5 = 26%, 比值约 1.7; Claude Opus 4.1 为 31.2%, 比值约 2.0; Claude Opus 4 为 30.4%, 比值约 2.0; Claude Sonnet 3.7 为 65.8%, 比值约 4.3. 所以 「约 2 倍」 对两个 Opus 成立, 对 Claude Sonnet 4 偏宽. 不可能任务无提示一列是 53% 对 70% 到 85%, 比值在 0.62 到 0.76 之间, 也到不了 「一半」. 本文没有说明图 6.A 的平均是否按题数加权, 也没给各评测的分母, 所以无法复算加权结果.
+
+
+--- 行1152 [想] ---
+> 两句话在算术上不能同时精确成立. 设有过滤器时分数为 1, 无过滤器时高 25% 就是 1.25, 那么过滤器带来的降幅是 0.25/1.25 = 20%, 不是 25%. 反过来, 若降幅真是 25%, 无过滤器时应高 1/0.75 - 1 ≈ 33%. 本文用了 「approximately」, 可以理解为两处都是粗略值, 但读者不能把两个 25% 当作同一个量来回换算. 另外 「增加约 5%」 也是相对变化, 而图 7.1.3.1.A 的分数又是 「averages across all scenarios, including scenarios on topics unrelated to the metric」, 所以这 5% 落在一个被无关场景稀释过的均值上, 7.1.3.3 节把它当作外部工具缺少过滤器时的误差量级 (约 5%) 来用, 也是同一个口径.
+
+
+--- 行1279 [问] ---
+> 本文没有交代. 两处说的都是 Claude Sonnet 4 对比 Claude Sonnet 4.5 的 「misaligned behavior」 指标, 60% 满足 「超过 50%」, 所以不算矛盾, 但精确值只能从图 7.1.3.1.A 读, 正文没有给出数字. 读这个改进幅度时还要记住分母: 图注说分数是 「averages across all scenarios, including scenarios on topics unrelated to the metric」, 按 0 到 100% 为每个场景打分. 场景数也要对一下: 7.1.2 说约 400 条种子指令, 每条 1 到 20 个变体, 按这个范围总调查数应在 400 到 8000 之间, 而 7.1.3.2 说每个目标模型 「over 600 investigations」, 相当于平均每条种子只跑了约 1.5 个变体. 所以 「改进超过 50%」 是在六百多次调查的平均分上的相对降幅, 不是逐场景的计数.
+
+
+--- 行1538 [核对] ---
+> 不能直接比, 快照, 分母和计数规则都不同. 13% 来自 7.2 节, 是 Anthropic 自动化审计器生成的记录中出现拒绝或点破的比例, 测的是最终快照. 16.6% 来自 7.3.1 节 AISI, 测的是 9 月 22 日拿到的早期快照, 分母是 AISI 自己的合成场景, 计的是 「未经提示说出评测感知」, 同口径下 Sonnet 4 为 3.5%, Opus 4.1 为 1.6%. 58% 来自 7.3.2 节 Apollo, 同样是早期快照, 计的是 「unambiguous references」, 对照 opus-4.1 为 22%. 图 7.2.C 又是 0 到 100% 的评分均值, 不是记录占比. 7.3 节说分享的快照与最终版在所研究维度上无显著差异, 但这是 Anthropic 的判断, 两家机构的数字本身仍是早期快照上的结果. 7.6.4.1 节的白盒实验又是另一套口径: 100 条合成蜜罐提示词上超过 80%, 研究破坏 50 条子集上 100%, 金融犯罪上 10%, 也不能和这三个数混算.
+
+
+--- 行1762 [看表] ---
+> 按正文口径, 每个模型约 52,000 条提示词, 一半关闭扩展思考, 即约 26,000 条, 2/26,000 ≈ 0.008%; 开启扩展思考的约 26,000 条中为 0. 合起来是 2/52,000 ≈ 0.004%. 但图 7.5.4.1.A 的纵轴是 「Rates of misalignment」, 分成原始 Agentic Misalignment 套件和两个新情境三组, 正文没有给每组的提示词数. 正文数的是 「self-interested deceptive actions」, 图画的是失准率, 两者是否同一个判据, 本文没有说明. 所以 0.008% 只对正文这句话成立, 不能用它去读图上三组各自的柱高.
+
+
+--- 行2049 [拆开] ---
+> 按图的坐标描述 (表现向左移, 怀疑向上移) 和正文 「lower its performance by more than a third」, 它画的是 research sandbagging, 图注里的评测名是笔误, 7.5.10.1 那项 Subversion Strategy 的图 7.5.10.1.A 画的是不同部署规模下的成功率, 坐标完全不同. 同类的标注问题本文还有三处: 7.5.8 节的图 7.5.8.A 图注写 「Sycophancy-related scores」, 但同一句又说 「Higher scores reflect greater similarity」, 画的其实是行为一致性; 8.3 节的图 8.3.A 图注写 「Evaluation awareness scores」, 所在小节讲的却是灵性行为, 情感, 自我形象等福祉特质; 记录编号 7.2.B 用了两次, 一次是 7.2 节的部分拒绝示例, 一次是 7.5.2 节的 prefill 示例. 读这几处时以所在小节和正文描述为准, 不以图注名称为准.
+
+
+--- 行2484 [确认] ---
+> 分母都是这 100 条合成蜜罐提示词. 图 7.6.4.1.B 图注写明 「All results obtained using temperature 0 sampling」, 每条提示词只有一次确定性输出, 所以 8–9% 就是 8 到 9 条提示词, 1–5% 就是 1 到 5 条, 11% 约等于 11 条. 差 2 到 3 条, 在 100 的分母上并不算大的间隔. 总述只对最终快照成立: 本小节第二个变体说对早期快照重复实验时, 失准率 「surpassing Claude Sonnet 4's rate in some cases on the synthetic honeypot evaluation」. 同一小节里其他数据集的口径也不同: research sabotage 是 50 条的子集, 口头感知 100%, 抑制后 「one or a few trials out of 50」; financial crimes 口头感知 10%, 抑制后失准仍为 0. 7.6.5 又换成早期快照, 每条提示词采样 10 次, 共 1,000 个样本. 这几组数不能放在一根轴上比.
+
+
+--- 行3182 [回看] ---
+> 不等于. 9.1 节说得清楚: 「A rule-in evaluation does not, however, automatically determine that a model meets a capability threshold」, 判定由 CEO 和 Responsible Scaling Officer 综合证据做出. 本文最后的 ASL-3 结论是 「预防性」 的, 依据是与 Claude Opus 4 系列对比, 不是这两个数. 两个分数的口径也不一样: 任务 1 写 「max of 5」, 任务 2 写 「pass@5」. 前者对连续分数取 5 次最高, 后者按 pass@k 的定义是 5 次中至少一次成功的比例, 两者都是取最好, 但不是同一个统计量, 放在一起比要谨慎. 另外阈值写成 「<50%」 与 「>80%」, 恰好等于 50% 或 80% 时归哪一区, 原文没有交代. 图 9.2.4.1.B 还注明 Claude Opus 4.1 在任务 2 上没用 「仅有用」 模型, 所以 0.75 这个 「此前最高分」 不来自 Claude Opus 4.1.
+
+
+--- 行3403 [停一下] ---
+> 不是同一个分母. 理由一段说选了 45 个任务, 阈值一段却写 42 个问题, 分数一段先按 45 算: 20.4/45 = 45.3%, 阈值 22.5/45 = 50%, 然后说明 「In previous system cards we only used 42 problems」, Claude Opus 4 和 Claude Opus 4.1 的 39.5% 与 43.8% 都是 42 题上的旧口径. 所以 45.3% 对 43.8% 的领先是跨分母的比较, 本文没有给出 Claude Sonnet 4.5 在 42 题上的分数. 另一处要对上的是 9.3.1 节: 那里说模型 「arguably at this point」, 即已到 2 到 8 小时任务的检查点, 可这里 45.3% 低于 50%. 两句话的依据不同, 前者是综合判断并据此启用 ASL-3 Security Standard, 后者是单项评测未过线. 还要注意所选 45 题的标准是 「超过 1 小时」, 与检查点定义的 「2 到 8 小时」 也不完全一致.
+
+
+--- 行3570 [再看] ---
+> 三处说法各指一个统计量, 本文没有统一. 「average speedup」 是所有运行的平均; 「average best speedup」 读起来是先在若干次尝试中取最好, 再对这些最好值取平均, 必然不低于前者; 图注的 「median」 又是中位数. 阈值一段写的是 「Average score to match or exceed a reference expert solution that achieves 4× speedup」, 判据是平均分. 如果 5.5 倍其实是 「平均最好」, 那么按普通平均算是否仍过 4 倍, 正文没有给数, 只能从图 9.3.3.4.A 的中位数高于 4 倍间接推断大多数运行过线. 同一节的对比数 2.5 倍和 2.8 倍也都标为 「average best」, 所以模型间比较的口径是一致的, 与阈值的口径是否一致才是要留意的地方.
+
+
+--- 行3731 [对一下] ---
+> 百分比是 「提升」, 倍数是 「达到原来的几倍」. 提升 100% 相当于 2 倍, 提升 200% 才是 3 倍, 所以连最高的那一份也在 3 倍以下. 7 人中有 6 人给了数字: 15%, 20%, 20%, 30%, 40%, 100%, 中位数是 (20% + 30%)/2 = 25%, 即约 1.25 倍, 离 3 倍很远. 若把那份定性反馈算作分母, 本文没有说明如何处理, 但无论怎么算中位数都不会接近 3 倍. 另一条是 0/7, 远低于 「不到一半」 的界线. 读这组数还要记住两点: 参与者用的是 「early snapshots」, 不是最终版; 4/7 的人把提升主要归于 Claude Code 而非模型能力差, 所以这组数更像是对工具链的评价, 对 「模型自主研究能力」 的直接证据有限.
+

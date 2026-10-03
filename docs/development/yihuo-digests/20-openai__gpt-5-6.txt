@@ -1,0 +1,145 @@
+# 20-openai/gpt-5-6  文件: content/model-library/03-模型家族\20-openai/gpt-5-6\gpt-5-6-bi.md  共 36 块
+
+--- 行29 [想] ---
+> 对不上, 因为这是后来加的横幅. 第 19 页推荐阅读里有 「Introducing GPT-6 Sol and Luna」, 日期 Sep 22, 2026, 另一张卡片是 Sep 23, 2026. 抓页时间至少晚到 9 月 23 日, 比发布晚了 76 天 (7 月剩 22 天, 8 月 31 天, 9 月 23 天). 所以第 2 页那两条 「Update on」 也是发布之后补上去的.
+
+
+--- 行92 [问] ---
+> 正文写 53.6, 第 14 页总表写 52.7%, 差 0.9. 用 「13.1 points」 反推 Fable 5 是 53.6−13.1=40.5, 恰好等于总表里 Fable 5 的 40.5%; 用总表的 52.7 算只高 12.2 分. 所以正文的 53.6 和 13.1 是一组口径, 总表的 52.7 是另一组, 页面没说两者推理强度或次数有什么不同. medium 档按 「11.4 points」 推算是 40.5+11.4=51.9, 总表的 52.7 正好落在 51.9 和 53.6 之间, 像是另一个推理档, 表里没标.
+
+
+--- 行95 [核对] ---
+> Artificial Analysis Intelligence Index v4.1: Sol 58.9, Fable 5 59.9, 差正好 1.0 分, 而且是 Fable 5 在前. 「within one point」 是贴着边的说法, 这一项 Sol 并没有赢. 同表 Opus 4.8 是 55.7, Terra 55, GPT-5.5 54.8, Luna 51.2.
+
+
+--- 行98 [看表] ---
+> 分数能对上: 总表 Agents’ Last Exam 上 Terra 50.4%, Luna 50.3%, Fable 5 40.5%. 成本对不上: 全文没有 Fable 5 的单价, 只有第 14 页 GPT-5.6 自己的价格, Terra 是 Sol 的一半, Luna 是 Sol 的五分之一. 「one-sixteenth」 和 「one-quarter」 都来自脚注 4 的离线模拟, 按 token 数乘单价估出来, 不是账单.
+
+
+--- 行139 [确认] ---
+> 能对上的有四处: 深棕单点约 40.5% 对 Fable 5 的 40.5%, 绿色菱形约 32% 对 Gemini 的 32.1%, 紫红线顶点约 47% 对 GPT-5.5 的 46.9%, 两条浅一些的蓝线顶点约 50.3% 和 50.4% 对 Luna 50.3%, Terra 50.4%. 对不上的是 Sol: 深蓝线顶端被裁掉了, 看不出落在 52.7 还是 53.6. 橙线 (Opus 4.8) 在截图右边界还没到头, 总表是 45.2%.
+
+
+--- 行156 [拆开] ---
+> 反推 Fable 5 是 77.2. 编程表里 Terra 77.4, 比 77.2 高 0.2, 和 「just above」 吻合; Luna 74.6, GPT-5.5 76.4. 但编程表的对照列换成了 Claude Mythos 5 和 Claude Mythos Preview, 两列这一行都是 「—」, 表里根本没有 Fable 5 和 Opus 4.8. 所以 「77.2」 和 「Luna outperforms Opus 4.8」 都没法在本页核实.
+
+
+--- 行159 [回看] ---
+> 编程表: Terminal-Bench 2.1 上 Sol 88.8%, Claude Mythos 5 88%, 只领先 0.8; Sol Ultra 是 91.9%. DeepSWE v1.1 上 Sol 72.7%, 两个 Claude 列都是 「—」, 没有对手分数可比. 同表 SWE-Bench Pro 上 Sol 64.6%, Mythos 5 80.3%, Mythos Preview 77.8%, Sol 落后 15.7 分, 这一行正文没有提.
+
+
+--- 行186 [停一下] ---
+> 脚注 6 给了口径: 多 agent 的延迟只按根 agent 算, 输出 token 和 API 成本则把所有 agent 的 token 加总. 所以图里横轴的时间变短, 不代表总算力变少, 四个 agent 的 token 全算进了成本. 至于 16 agent 配置到底花了多少 token, 这三张图没有被抓成图片, MinerU 稿里只剩标签, 读不出数.
+
+
+--- 行351 [对一下] ---
+> 不是默认 Sol 的. 第 16 页的表里 BrowseComp 一行: Sol 90.4%, Sol Ultra 92.2%, Terra 87.5%, Luna 83.3%, GPT-5.5 84.4%, Mythos 5 88%, Mythos Preview 87.9%. 92.2% 是四 agent 的 Ultra, 正文把它记在 「GPT‑5.6 Sol」 名下. 不开 Ultra 时 Sol 的 90.4% 也仍然高于表里两个 Claude 列, 「state of the art」 这个结论不受影响, 数字归属不对.
+
+
+--- 行354 [想] ---
+> 找不到. 第 15 页 Computer use 表的对照列是 Claude Mythos 5 和 Claude Mythos Preview, OSWorld 2.0 一行两列都是 「-」. Opus 4.8 的 OSWorld 分数和 token 数都只存在于没抓到的图里, 85% 这个比例本页无法核对.
+
+
+--- 行357 [问] ---
+> 句子没点名. 同段只提了 BrowseComp 和 OSWorld 2.0: BrowseComp 上 Luna 83.3% 对 GPT-5.5 84.4%, 差 1.1; OSWorld 上 45.6% 对 47.5%, 差 1.9. Terra 两项是 87.5% 和 50.2%, 确实都超过 GPT-5.5. 表里每个模型只有一个分数, 看不出 「peak」 是不是 GPT-5.5 的最高推理档.
+
+
+--- 行402 [核对] ---
+> 撑不住. 2014 年两类合计 34+19=53, 2024 年 67+36=103, 是 1.94 倍; 单看 Established 是 67/34=1.97 倍, Growth 是 36/19=1.89 倍, 三种算法都没到两倍. 页脚写明是合成数据, 不影响模型评测, 但作为 「更忠实」 的示范, 标题和数据本身就不一致.
+
+
+--- 行421 [看表] ---
+> 按内容判断, 带页脚, 年份 2014 到 2024 的那张是参考文件; 没有数字标签也没有页脚的 p08-chart 缺了母版元素, 对应正文说的 GPT-5.5 输出; 带数字的 2015 到 2025 那张是 GPT-5.6 输出. 可文件名正好错开: 参考文件被命名成 「p08-gpt-5-6-output」, GPT-5.6 输出被命名成下一段正文的开头. 另外 GPT-5.6 版 2015 年是 31 和 14, 参考文件 2015 年是 35 和 19, 数字确实按新数据换过; 2015 合计 45, 2025 合计 119, 是 2.64 倍, 这一版 「翻了一倍多」 成立.
+
+
+--- 行472 [拆开] ---
+> 「the prior model」 没有点名, 可能是 GPT-5.5, 也可能是 Lovable 之前用的别家模型. 「35–48%」 是一个区间, 没说区间两端对应什么场景. 「reducing stuck runs by 15%」 看不出是相对降 15% 还是降 15 个百分点, 两种读法差别很大: 如果原来卡住率是 20%, 前者变成 17%, 后者变成 5%. 「improving project success」 没给数.
+
+
+--- 行501 [回看] ---
+> 24.9/15.1=1.65 倍, 离两倍还差 0.35 倍. 要到两倍得是 30.2%, 只有六小时的 33.7% 才过线, 而 33.7/15.1=2.23 倍. 第 16 页的表里 ExploitGym 一行写的是 Sol 33.7%, GPT-5.5 15.1%, 用的是六小时的 Sol 去比 GPT-5.5 的 「peak」, 两边时限不一定相同. 脚注 3 还说, 延迟按公开 API 速度重新折算后, 有些估算延迟超过了两小时和六小时上限.
+
+
+--- 行504 [停一下] ---
+> 第 16 页 ExploitBench 一行: Sol 73.5%, Claude Mythos 5 78%, Claude Mythos Preview 74.2%, 两个 Claude 列都高于 Sol, 差 4.5 和 0.7. 「strongest」 限定的是 OpenAI 自家模型, 「frontier」 在这一项上是追平前沿, 不是领先. 其余三项网络安全评测两个 Claude 列都是 「-」, 无从比较. 脚注 1 还说网络安全能力是在削弱防护的条件下评测的.
+
+
+--- 行521 [确认] ---
+> 句子没写年份. 发布日是 July 9, 2026, 离它最近的 9 月 1 日在 2026 年, 中间只有 54 天 (7 月剩 22 天, 8 月 31 天, 再加 1 天). 抓页时间已经过了这一天, 页面仍保留 「by September 1」, 没改成已生效的说法.
+
+
+--- 行548 [再看] ---
+> 只对 Sol 成立. 第 15 页科学表: MedChemBench (Internal) 上 Sol 48.3%, Terra 35%, Luna 30.4%, GPT-5.5 35.5%, Terra 和 Luna 都低于 GPT-5.5; GeneBench Pro 上 Luna 10.8% 也低于 GPT-5.5 的 12%. 这句主语写的是 「GPT‑5.6 Sol」, 后半句换成了 「GPT‑5.6」, 读的时候要落回 Sol.
+
+
+--- 行585 [对一下] ---
+> 份额的上限是 100%, 增长 100 倍意味着六个月前这个份额不超过 1%. 页面没给起点和终点, 如果起点是 0.5%, 现在是 50%; 如果起点是 0.1%, 现在是 10%, 两种情况含义差很远. 22 倍说的是 token 用量的绝对值, 和 100 倍的份额不是同一种量, 不能直接比. 「more than twice the highest level observed for GPT‑5.5」 也没给绝对 token 数.
+
+
+--- 行628 [想] ---
+> 总分对得上: 57.9−41.7=16.2. 分项里有反常: NanoGPT 上 Terra 14.5% 高于 Sol 9.69%, PostTrainBench Lite 上 Terra 51.5% 高于 Sol 50.3%; 第 11 页的图表标签只列了 RSI Index, Internal Research Debugging Eval, KernelGen 1P, NanoGPT 四个, 表里却多出 PostTrainBench Lite. RSI Index 上 Terra 56.3%, 离 Sol 只差 1.6, 小一档的模型在 「改进另一个模型」 这类任务上几乎追平旗舰, 页面没解释.
+
+
+--- 行665 [问] ---
+> 句子没说. 如果是拦截次数多了十倍, 可能只是因为请求量本身涨了; 如果是拦截率多了十倍, 就要知道原来的拦截率. 页面也没给误拦率, 只说 「can create friction for benign use」, 并给了一个降级重试的出口. 十倍和 「friction」 放在一起, 能推断误拦有明显增加, 但增加多少本页没有数.
+
+
+--- 行672 [核对] ---
+> 700,000/24=29,167 GPU 天, 约 80 GPU 年. 换成 1,000 张卡连跑, 约 29 天; 10,000 张卡约 2.9 天. 页面写的是 「A100-equivalent」, 实际用的卡型和折算系数没给, 这个数是折算后的, 不是账面卡时.
+
+
+--- 行715 [拆开] ---
+> 是 7 月 9 日的发布价. 按第 2 页两次更新推算: Luna 降 80% 后是输入 $0.20, 输出 $1.20; Terra 降 20% 后是输入 $2, 输出 $12; Sol 在 8 月 21 日起的 3 个月里降 「over 20%」, 至少到输入 $4, 输出 $24 以下. 正文没改, 读者按这段算成本会高估 Luna 五倍. 缓存按发布价算: Sol 写入 $6.25, 读取 $0.50; Terra 写入 $3.125, 读取 $0.25; Luna 写入 $1.25, 读取 $0.10.
+
+
+--- 行726 [再看] ---
+> PDF 文字层有四行, MinerU 只抓到三行, 中间的 GDPval-AA v2 整行丢了. PDF 里这一行是: Sol 1,747.8 Elo, Terra 1,593 Elo, Luna 1,591.8 Elo, GPT-5.5 1,493.7 Elo, Fable 5 1,759.6 Elo, Opus 4.8 1,600.1 Elo, Gemini 962.3. 这一行 Fable 5 比 Sol 高 11.8 Elo, 是专业工作组里唯一一项 Sol 没赢的. 第 7 页 GDPval-AA v2 作为图表标签出现过, 正文没报它的分数.
+
+
+--- 行761 [停一下] ---
+> 页面没解释. 编程表的两列 Claude 是 Mythos 5 和 Mythos Preview, 正文第 3 页比较的却是 Fable 5 和 Opus 4.8. 结果就是正文里 「2.8 points above Fable 5」, 「Luna outperforms Opus 4.8」 在表里找不到, 表里 Mythos 5 在 SWE-Bench Pro 上领先 Sol 15.7 分, 正文也没提. 两张表的对照对象不同, 不能把 「state of the art」 一句同时套在两张表上.
+
+
+--- 行775 [回看] ---
+> 分数上 Fable 5 比 Sol 高 0.4. 但 HealthBench 的脚注 (正文第 18 页编号 7, 表里上标写成 6) 说, 分数按 HealthBench Professional 论文的官方打分方式计算, 与 Anthropic system card 里报的结果不可比. 如果 Fable 5 的 60.9% 是 OpenAI 自己按官方方式重跑的, 可比; 如果抄自 Anthropic 的 system card, 就正好落在脚注说的 「不可比」 里. 页面没说是哪一种.
+
+
+--- 行810 [确认] ---
+> 不带工具时是: Luna 63.1%, Terra 62.3%, 高 0.8. 带 Python 工具后顺序又回来了: Terra 78.2%, Luna 73.9%. 同一个评测换个条件, 两个小模型的排序就翻过来, 差距都在 1 到 5 分之间, 表里没有次数和方差, 看不出是不是噪声.
+
+
+--- 行840 [看表] ---
+> KernelGen 1P 上 Luna 22.4%, GPT-5.5 29.3%; NanoGPT 上 1.66% 对 2.65%; PostTrainBench Lite 上 29.6% 对 38.8%; 只有 Internal Research Debugging Evaluation 上 Luna 50.8% 小胜 50%. 四个分项三输一赢, RSI Index 却是 Luna 41.9% 对 GPT-5.5 41.7%, 高 0.2. 四项简单平均 Luna 是 (50.8+22.4+1.66+29.6)/4=26.1, GPT-5.5 是 (50+29.3+2.65+38.8)/4=30.2, 方向相反. 所以 RSI Index 不是这四项的平均, 可能还包含别的子项或另有权重, 页面没给构成.
+
+
+--- 行884 [想] ---
+> PDF 文字层就写着 「gdp.pdf」, 不是抽取错字, 页面没说这是哪个评测, 看上去是一个以 PDF 文档为输入的多模态任务. 它挂在多模态表下面, 按那张表的列序, 30.7% 是 Sol, 29.8% 是 Fable 5, 22.5% 是 Opus 4.8, 16.7% 是 Gemini. Sol 只比 Fable 5 高 0.9. 同一张表的 MMMU Pro 两行里 Fable 5 和 Opus 4.8 都是 「-」, 只有这一行有.
+
+
+--- 行887 [问] ---
+> 最后一列表头在截图里只剩 「Claud」, 看不出是 Opus 4.8 还是 Fable 5. 不管是谁, 87.8% 比 Sol 的 83% 高 4.8 分; Tier 1-3 上这一列 87% 也比 Sol 的 89% 只低 2. Tier 4 上 Sol 比 GPT-5.5 高 10.5 分, Terra 68.3%, Luna 58.5%, 小模型掉得比 Tier 1-3 厉害得多. GPQA Diamond 上 Sol 94.6% 与 Mythos Preview 持平.
+
+
+--- 行901 [核对] ---
+> 排在三个 Claude 列之后: Mythos 5 61.7%, Mythos Preview 61.1%, 最后一列 61.x%, Sol 58%, 落后 3.1 到 3.7 分. Sol 还只比 GPT-5.5 的 55.6% 高 2.4, Luna 53.4% 反而比 Terra 53.1% 高. AutomationBench 上 Sol 18.1% 对最后一列 17.4%, 只领先 0.7. 第 7 页把 AutomationBench 列为知识工作的图表标签, 正文没有报分.
+
+
+--- 行921 [拆开] ---
+> 两行一字不差, PDF 文字层也是两个 41.3%, 不是抽取重复. 其他模型从 256K-512K 到 512K-1M 都在掉: Sol 91.5% 到 73.8%, Terra 89.6% 到 72.5%, GPT-5.5 81.5% 到 74%. 只有 Luna 纹丝不动, 要么是 Luna 的上下文窗口够不到 512K 以上而被按同一个值填了, 要么是录入错误, 页面没交代 Luna 的上下文长度. 另外 512K-1M 上 Sol 73.8% 比 GPT-5.5 的 74% 还低 0.2.
+
+
+--- 行924 [确认] ---
+> MinerU 稿写 78.9%, PDF 文字层是 76.9%, 差 2 分, 以 PDF 为准. 这一行 Terra 76.9% 低于 Luna 81.3%, 又是小模型倒挂. 同一行 Sol 90.7% 低于 Mythos 5 的 91.1%; 1mil 那行 Sol 77.1% 也低于 Mythos 5 的 79.4%, 长上下文这一组 Sol 没有一项是全场第一.
+
+
+--- 行940 [回看] ---
+> 绝对差 6.98 分, 比值却是 7.78/0.8=9.7 倍, 而 Terra 只比 GPT-5.5 的 0.43% 高 0.37 分. 总表其他百分比行里 Sol 与 Terra 之比最大是 ExploitGym 的 33.7/23.2=1.45 倍, RSI Index 只有 57.9/56.3=1.03 倍, 这一项的断层很突兀. Opus 4.8 的 1.5% 按脚注是 high 推理跑的, 不是 max, Sol 是否开了 max 表里没写.
+
+
+--- 行987 [停一下] ---
+> 对不上, 整体差一位. 表里 HealthBench Professional 的上标是 6, 可 HealthBench 的说明在脚注 7, 脚注 6 讲的是多 agent; ARC-AGI-3 的上标是 7, 说明却在脚注 8. 第 14 页表头旁的 「7, 8」 和这里的脚注 7, 8 是一致的, 说明错的是表格内的上标. 脚注 1 的编号 MinerU 没抓到, PDF 里有 「1」.
+
+
+--- 行1022 [再看] ---
+> 三张卡片和下面三个链接按顺序对应: 第一张对 「ChatGPT Ads expands to Southeast Asia and Taiwan」 (Sep 23, 2026), 第二张对 「Better prompt caching for GPT-6」 (Sep 22, 2026), 第三张对 「Introducing GPT-6 Sol and Luna」 (Sep 22, 2026). 太阳和月亮正合 Sol 和 Luna 的名字, 所以第三张是 GPT-6 那篇的封面, 文件名取的是第一个链接的文字, 和图对不上.
+

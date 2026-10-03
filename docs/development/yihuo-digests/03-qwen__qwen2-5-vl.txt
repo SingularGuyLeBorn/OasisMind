@@ -1,0 +1,77 @@
+# 03-qwen/qwen2-5-vl  文件: content/model-library/03-模型家族\03-qwen/qwen2-5-vl\qwen2-5-vl-bi.md  共 19 块
+
+--- 行47 [想] ---
+> 是. 四点贡献里 window attention 写在 visual encoder; LLM 仍是 Qwen2.5 的解码器注意力, 表 1 也只给 ViT 写了 Window Size 与 Full Attention Block Indexes.
+
+
+--- 行72 [问] ---
+> 训练侧就动态采样 FPS, 让训练集里帧率分布更匀; 时间维再靠绝对时间对齐的 MRoPE, 让不同 FPS 仍能对齐事件节奏.
+
+
+--- 行91 [看表] ---
+> 14 的两倍是 28, 方便 2x2 合并进 Merger; 112=8x14, 正好是最大窗口对应 8x8 patch. 表 1 三项一起读.
+
+
+--- 行102 [拆开] ---
+> 2.1.1 写视频把 consecutive frames 成组以降送进 LLM 的 token; 2.1.3 写时间分量对齐 absolute time, 靠 temporal ID 的间隔学事件节奏, 不再绑输入帧数. 成组管的是视觉 token 预算, 绝对时间网格管的是墙钟几何, 二者正交: FPS 与成组改变采样密度, MRoPE 仍按绝对时间对齐.
+
+
+--- 行110 [确认] ---
+> 原文只写 「both with the Vision Transformer (ViT) parameters frozen」, 未宣布冻 Vision-Language Merger. 表 1 把 ViT 与 Merger 分成两块配置. 按字面: ViT 停梯度; LLM 必训; Merger 未列入冻结句, 仍可作为可训练投影, 除非实现另做未写入报告的冻结.
+
+
+--- 行121 [核对] ---
+> 2.1.1 写多数层 windowed attention 使代价近似随 patch 数线性增长, 「only four layers employ full self-attention」. 窗口内看不到窗外 patch; 文档远距版面或跨区 GUI 要靠这四层全局混合. 表 1 Full Attention Block Indexes 三档相同, 是精度与算力的折中, 不是可删的装饰.
+
+
+--- 行127 [回看] ---
+> 两帧成组是 3D patch 降 token; 动态 FPS 决定抽哪些帧. 先按 FPS 抽样, 再两两成组进 ViT.
+
+
+--- 行148 [停一下] ---
+> 报告强调用实际输入图尺寸表示框与点, 让模型学尺度; resize 是进 ViT 前的对齐约束, 标注坐标按训练时的实际输入尺寸来写, 不是归一化到 [0,1].
+
+
+--- 行175 [再看] ---
+> 文档 omni-parsing 段要求 HTML 标签嵌 data-bbox 并按阅读顺序带模块坐标; grounding 段写 「coordinate values based on the actual dimensions of the input images」. 两条管线都拒绝相对/归一化框, 都服务原生分辨率, 但是文档解析与开放词表检测/指点两套数据, 报告没有写共用同一个标注导出器.
+
+
+--- 行216 [问] ---
+> HTML 标签能嵌 data-bbox, 把版面框, 表格, 公式, 乐谱, 化学式与阅读顺序收进同一结构, 方便一个通模吃完整文档.
+
+
+--- 行274 [看表] ---
+> 2.2.2 写 phase 1 「only the Vision Transformer (ViT) is trained to improve its alignment with the language model」, 数据是 caption / visual knowledge / OCR; phase 2 才 unfreeze all, 加入交错, VQA, agent, 视频与纯文本. 先把从零训的 ViT 接到已有 Qwen2.5 表示空间, 再联合改 LLM, 避免一上来全域更新冲掉语言芯.
+
+
+--- 行315 [拆开] ---
+> 条数 50/50, 但多模态因视觉与时间信息吃更多 token 与算力, 报告明确说不算力均分.
+
+
+--- 行355 [回看] ---
+> 先按最终答案与 ground truth 匹配保留; 另用规则与模型过滤, 检查中间步是否真正用上视觉信息, 并丢掉语码混用, 过长, 重复.
+
+
+--- 行379 [核对] ---
+> SFT 与 DPO 阶段 ViT 冻结, 适配落在 LLM 与已对齐表征上; 视觉塔能力主要靠预训练三阶段灌入.
+
+
+--- 行396 [看表] ---
+> 表 3 里 72B 为 70.2, 前开源 SoTA 与 InternVL2.5 同为 70.1, 属于微幅领先/持平档, 正文也写 college-level 上达到可比.
+
+
+--- 行496 [看表] ---
+> 正文把时间敏感视频理解 (时间戳引用, temporal grounding, 稠密描述等) 与提出的 synchronized MRoPE 联系起来; Charades-STA 是事件时间定位榜, 72B 拿到 50.9 mIoU.
+
+
+--- 行504 [停一下] ---
+> 评估时每视频最多 768 帧, 视频 token 总数不超过 24576. 两帧成组会再压缩视觉 token; 具体每帧 token 还受分辨率与 Merger 影响.
+
+
+--- 行536 [对一下] ---
+> 报告把 ScreenSpot/Pro 与后续 offline/online agent 增益写成 grounding 变强后的连锁结果; 相对 Qwen2-VL-72B 的 1.6%, 本代 43.6% 是数量级跳变, 并强调线上评测可不用 SoM.
+
+
+--- 行541 [再看] ---
+> 报告对比里部分基线因 grounding 弱才加 SoM; Qwen2.5-VL-72B 在 AndroidWorld 与 MobileMiniWob++ 上不用辅助标记仍能超过或打平, 说明 GUI grounding 可直接支撑 agent.
+

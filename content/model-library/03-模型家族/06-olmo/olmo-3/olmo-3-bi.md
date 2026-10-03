@@ -46,6 +46,8 @@ Olmo 3 was a team effort; authors sorted alphabetically. marks core contributors
 
 We introduce Olmo 3, a family of state-of-the-art, fully-open language models at the 7B and 32B parameter scales. Olmo 3 model construction targets long-context reasoning, function calling, coding, instruction following, general chat, and knowledge recall. This release includes the entire model flow, i.e., the full lifecycle of the family of models, including every stage, checkpoint, data point, and dependency used to build it. Our flagship model, Olmo 3.1 Think 32B, is the strongest fully-open thinking model released to-date.
 
+我们推出 Olmo 3 —— 7B 与 32B 参数规模上最先进的全开放语言模型家族. Olmo 3 的模型构建面向长上下文推理, function calling, 代码, 指令遵循, 通用对话与知识召回. 本次发布涵盖整个模型流程, 即该模型家族的完整生命周期, 包括构建它所用的每一个阶段, checkpoint, 数据点与依赖. 我们的旗舰模型 Olmo 3.1 Think 32B 是迄今为止发布的最强全开放 thinking 模型.
+
 <!-- page 2 of 118 -->
 
 ## Contents
@@ -3312,9 +3314,15 @@ Figure 28 Cross-entropy loss and total gradient norm during pretraining for Olmo
 
 The majority of our pretraining corpus comes from CommonCrawl (Common Crawl Foundation). We start with 104 dumps, starting with CC-MAIN-2013-20 and ending with CC-MAIN-2024-51, roughly covering dates from mid-2013 until late 2024. We linearize the WET files provided by Commoncrawl using Resiliparse, yielding an initial pool composed of 252.6B documents.
 
+我们预训练语料的大部分来自 CommonCrawl (Common Crawl Foundation). 我们从 104 个 dump 开始, 从 CC-MAIN-2013-20 到 CC-MAIN-2024-51, 大致覆盖 2013 年中至 2024 年底. 我们用 Resiliparse 对 CommonCrawl 提供的 WET 文件做线性化, 得到由 2526 亿份文档组成的初始池.
+
 Next we apply a pipeline of heuristic filtering steps to further prune down the dataset to a size amenable for pretraining. Our steps essentially follow those of DCLM (Li et al., 2024a), with a few small differences. We start with URL-based filtering, identifying and removing documents that have URLs containing banned words or subwords from the blacklists used by FineWeb (Penedo et al., 2024) and RefinedWeb (Penedo et al., 2023). This step removes roughly 1% of the data pool. Then we apply the DCLM collection of heuristic filters, roughly targeting and removing: i) very short documents, ii) very long documents, iii) documents with not enough alphanumeric characters, and iv) documents with large amounts of internal repetition. Next, we modify and remove any lines or paragraphs in each document that have i) too many numeric characters or ii) any boilerplate phrases such as "items in cart" or "read more...", and then we fully remove any documents that have been obliterated by these line-specific removals. We then apply a FastText English language filter, mirroring DCLM and using a threshold of 0.65 to identify documents as containing English text. Finally, we apply a subset of the rules for identifying questionable sentences from MADLAD-400 (Kudugunta et al., 2023). Ablation tests show that only rules 2 and 5 from MADLAD improve dataset quality, targeting sentences that have a large number of capitalized words or contain a "cursed regex". If the number of sentences in the document is less than 5 or if at least 20% of sentences are questionable, we remove the document from the corpus.
 
+接下来我们应用一串启发式过滤步骤, 把数据集进一步裁剪到适合预训练的规模. 我们的步骤基本沿用 DCLM (Li et al., 2024a), 仅有少数小的差异. 先做基于 URL 的过滤, 识别并移除 URL 含有 FineWeb (Penedo et al., 2024) 与 RefinedWeb (Penedo et al., 2023) 所用黑名单中的禁用词或子词的文档, 这一步约移除数据池的 1%. 然后应用 DCLM 的启发式过滤器集合, 大致定位并移除: i) 过短的文档, ii) 过长的文档, iii) 字母数字字符不足的文档, iv) 内部重复量大的文档. 接着修改或移除每份文档中行或段落里 i) 数字字符过多, 或 ii) 含有 "items in cart" "read more..." 这类样板短语的行; 若文档被这种行级删除整段毁掉, 则整个移除. 之后应用 FastText 英文语言过滤器, 对齐 DCLM, 以 0.65 为阈值判定文档是否含英文. 最后应用 MADLAD-400 (Kudugunta et al., 2023) 中识别可疑句子规则的一个子集. 消融测试表明, MADLAD 中只有规则 2 与规则 5 能提升数据集质量, 分别针对含大量大写单词的句子与命中 "cursed regex" 的句子. 若文档中句子数少于 5, 或至少 20% 的句子可疑, 就把该文档从语料中移除.
+
 Overall, the heuristic steps remove 76% of the total pool, and the English filtering step removes an additional 2.5% of the pool. This leaves a pool of 38.7B documents, attaining a survival rate of 15.1%. While each of these described steps is incorporated into the DCLM processing pipeline, we note that these heuristic filters are commutative and that the English filtering is the slowest step, so efficiency gains can be attained by putting the language-filtering step at the end. We spent a total of 1030 i4i.32xlarge EC2 hours in this step, incurring a cost of approximately \$11,300. An exact breakdown of how much time was spent in each step is provided in Table 36.
+
+总体而言, 启发式步骤移除了总池的 76%, 英文过滤步骤又额外移除了 2.5%. 最终剩下 387 亿份文档, 存活率 15.1%. 虽然上述每一步都已纳入 DCLM 处理流水线, 但我们注意到这些启发式过滤器彼此可交换, 而英文过滤是最慢的一步, 因此把语言过滤放在最后可以获得效率收益. 这一步我们总共花费了 1030 个 i4i.32xlarge EC2 小时, 成本约 \$11,300. 各步骤耗时的精确分解见表 36.
 
 | Pipeline Step | Docs Removed (B) | % of pool removed | % of total time |
 | --- | --- | --- | --- |
@@ -3337,23 +3345,43 @@ As described in the main paper, we apply a three-stage deduplication pipeline to
 
 before MinHash deduplication is technically redundant, exact deduplication is substantially more efficient computationally; hence this two-pass approach is much faster overall. For the exact and MinHash deduplication stages, we utilize the Duplodocus tool,<sup>59</sup> and for the suffix array deduplication stage, we employ bsade.
 
+如主文所述, 我们对数据集应用三阶段去重流水线, 每个阶段针对渐进更细致的冗余形式: (i) 基于文档内容哈希的全局精确去重, 移除完全相同的副本; (ii) 32 路分片的 MinHash 去重, 带精确的 Jaccard 相似度验证, 移除近似重复文档; (iii) 56 路分片的模糊后缀数组去重, 消除重复的样板文本. 我们注意到, 在 MinHash 去重之前先做精确去重, 从技术上讲是冗余的, 但精确去重计算效率显著更高, 因此两遍做法总体上快得多. 精确去重与 MinHash 去重阶段我们使用 Duplodocus 工具,<sup>59</sup> 后缀数组去重阶段使用 bsade.
+
 **Exact Deduplication** We perform exact deduplication in two sequential passes. During the heuristic filtration pipeline, we annotate each document with a 128-bit hash computed from the document text. We then apply an initial deduplication step to each of the 104 processed CommonCrawl dumps individually, arbitrarily retaining one copy of each document per dump. This within-dump deduplication removes 24% of the surviving document pool.
+
+**精确去重** 我们按顺序做两遍精确去重. 在启发式过滤流水线中, 我们为每份文档标注一个由文档文本算出的 128 位哈希. 然后对 104 个处理过的 CommonCrawl dump 各自单独做一遍初步去重, 每个 dump 内每种文档任意保留一份. 这种 dump 内去重移除了存活文档池的 24%.
 
 Following this, we aggregate all documents globally and perform a second exact deduplication pass across the entire corpus, again arbitrarily keeping one copy of each document. This global pass removes an additional 43% of the surviving pool. In total, exact deduplication eliminates 66% of the input documents, reducing the corpus to 12.7 billion documents for subsequent MinHash processing.
 
+随后, 我们把所有文档汇总到全局, 在整个语料上做第二遍精确去重, 同样每种文档任意保留一份. 这一全局遍次又移除了存活池的 43%. 精确去重合计消除了输入文档的 66%, 语料降至 127 亿份文档, 供后续 MinHash 处理.
+
 **MinHash Fuzzydeduplication** We partition the 12.7 billion document corpus resulting from exact deduplication into 32 shards of approximately equal size and perform MinHash deduplication independently on each shard. Our MinHash procedure broadly follows the approach outlined in (Lee et al., 2022). We tokenize documents using the p50k tokenizer and construct sets of 5-gram token sequences. We then apply a MinHash localitysensitive hashing scheme with 26 bands of size 11, configured to target a Jaccard similarity threshold of 0.80.
+
+**MinHash 模糊去重** 我们把精确去重得到的 127 亿份文档语料切成 32 个大小相近的分片, 在每个分片上独立做 MinHash 去重. 我们的 MinHash 流程大体遵循 (Lee et al., 2022) 概述的方法. 我们用 p50k tokenizer 对文档做分词, 构造 5-gram token 序列的集合, 再应用 MinHash 局部敏感哈希方案, 取 26 个 band, 每个 band 大小 11, 目标是 Jaccard 相似度阈值 0.80.
 
 For any pair of documents that share at least one matching bucket, we treat them as connected by an edge in graph-theoretic terms. We construct a graph from the union of all such edges and identify connected components within this graph. Each document in a connected component is then annotated with a unique identifier for that component.
 
+任何一对共享至少一个匹配桶的文档, 我们在图论意义下视为由一条边相连. 由所有这些边的并集构图, 并在图中识别连通分量, 再为同一连通分量中的每份文档标注该分量的唯一标识符.
+
 In a second verification phase, we explicitly compute pairwise Jaccard similarities within each MinHashidentified cluster to eliminate false positives. For this verification, we use 3-gram token sequences. Our approach varies based on cluster size: for connected components containing 500 or more documents, we apply a more stringent MinHash configuration using 200 bands of size 31; for components with fewer than 500 documents, we perform exhaustive pairwise Jaccard similarity checks and generate final duplicate clusters from these results.
+
+在第二个验证阶段, 我们在每个 MinHash 识别出的簇内显式计算两两 Jaccard 相似度, 以消除假阳性. 验证时使用 3-gram token 序列. 具体做法随簇大小而变: 对含 500 份及以上文档的连通分量, 使用更严格的 MinHash 配置 (200 个 band, 每个 band 大小 31); 对小于 500 份文档的分量, 做穷举式两两 Jaccard 相似度检查, 并据此生成最终的重复簇.
 
 After annotating all documents according to their true Jaccard similarity with other documents in the corpus, we retain only the most recent version of each document based on crawl date, removing all earlier duplicates. This complete MinHash deduplication procedure eliminates 24% of the input documents, leaving 9.8 billion documents in the pool.
 
+在按文档与语料中其他文档的真实 Jaccard 相似度完成标注后, 我们仅按爬取日期保留每份文档的最新版本, 移除所有更早的重复. 完整的 MinHash 去重流程消除了输入文档的 24%, 池中剩余 98 亿份文档.
+
 **Suffix Array deduplication** In the final deduplication stage, we employ suffix arrays to identify and remove substrings that appear repeatedly throughout the dataset. We partition the 9.8 billion document corpus into 56 shards of roughly equal size and run suffix array deduplication independently on each shard.
+
+**后缀数组去重** 在最后的去重阶段, 我们使用后缀数组来识别并移除在整个数据集中反复出现的子串. 把 98 亿份文档的语料切成 56 个大小相近的分片, 在每个分片上独立运行后缀数组去重.
 
 For each shard, we construct a suffix array and identify every byte sequence of length 500 or greater that appears at least twice in the shard. We then apply a novel “fuzzy suffix array” removal strategy that considers contiguous text spans within each document. Specifically, if a text span is bounded on both sides by 500- byte sequences that appear multiple times in the suffix array, and at least 80% of the span is covered by such repeated sequences, we remove the entire span. This strategy targets cases where naive suffix array deduplication would leave short, unique fragments interspersed between removed substrings. For text that does not meet this bookended criterion, we remove all individual occurrences of repeated 500-byte sequences.
 
+对每个分片, 我们构造后缀数组, 找出片中所有出现至少两次且长度不小于 500 字节的字节序列. 然后我们应用一种新颖的 "模糊后缀数组" 移除策略, 考察每份文档内的连续文本段: 若一个文本段两侧都由在后缀数组中多次出现的 500 字节序列所夹, 且该段至少 80% 被这类重复序列覆盖, 则整段移除. 该策略针对的是朴素后缀数组去重会在被移除子串之间留下零散短碎片的情形. 对不满足这种两侧夹逼条件的文本, 我们移除所有重复 500 字节序列的单个出现.
+
 After these three rounds of deduplication—exact, MinHash, and suffix array—we arrive at a final corpus of 9.7 billion documents.
+
+经过精确去重, MinHash 去重与后缀数组去重这三轮处理, 最终得到 97 亿份文档的语料.
 
 <!-- page 89 of 118 -->
 
@@ -3365,13 +3393,21 @@ Table 37 Performance of FastText classifier distilled from WebOrganizer topic la
 
 After strict rounds of deduplication, we partition our data according to topic using the 24 topic categories introduced in WebOrganizer (Wettig et al., 2025). Rather than using the 140M parameter topic classifier used by WebOrganizer, we train a FastText classifier<sup>61</sup> to support cost-effective topic classification at scale. To train this classifier, we use the Llama-labeled training data used to train the original WebOrganizer category as well as an extra 506,746 examples with topics labeled by a combination of gpt-4.1 and o4-mini. The performance of this classifier is outlined in Table 37.
 
+在多轮严格去重之后, 我们按主题划分数据, 使用 WebOrganizer (Wettig et al., 2025) 引入的 24 个主题类别. 我们不使用 WebOrganizer 所用的 1.4 亿参数主题分类器, 而是训练一个 FastText 分类器<sup>61</sup>, 以支持规模化且成本可控的主题分类. 训练该分类器时, 我们既使用训练原始 WebOrganizer 类别所用的 Llama 标注训练数据, 又额外加入 506,746 个由 gpt-4.1 与 o4-mini 组合标注主题的样例. 该分类器的性能见表 37.
+
 #### A.2.4 CommonCrawl Mixing
 
 We perform a hierarchical mixing procedure on our data. Our procedure Olmix (Chen et al., 2026) generates prescriptions for which percentage of the training mix should come from each topic or source, but offers no guidance on the quality composition within each topic. While prior works, such as DCLM (Li et al., 2024a) use a quality classifier to flatly filter data as high-quality or not, we take a more fine-grained approach and perform selective up and down-sampling within each WebOrganizer topic depending on the quality signal. This section formalizes the search procedure we use to generate these upsampling curves.
 
+我们对数据执行层级化的混合流程. 我们的流程 Olmix (Chen et al., 2026) 会生成配方, 规定训练混合数据中每个主题或来源应占的百分比, 但不指导同一主题内部的质量构成. 以往的工作 (如 DCLM (Li et al., 2024a)) 用质量分类器把数据一刀切地过滤为高质量或不是, 我们则采取更细粒度的做法: 按质量信号在每个 WebOrganizer 主题内做选择性的上采样与下采样. 本节把我们用于生成这些上采样曲线的搜索过程形式化.
+
 **Problem formulation** We discuss this procedure in more general terms: consider a category with X tokens, partitioned into Q strictly ordered quality buckets, where the $q ^ { ^ { t h } }$ bucket contains $X _ { q }$ tokens. Further assume that Olmix prescribes that Z tokens be taken from this category, and that at no point do we want to upsample any quality bucket more than M times. This equates to a search problem, where we need to take $Z _ { q }$ tokens from the $q ^ { ^ { t h } }$ bucket such that $\textstyle \sum _ { q } Z _ { q } = Z$ and ∀q, $Z _ { q } / X _ { q } \leq M$
 
+**问题形式化** 我们用更一般的术语描述该过程: 设某类别共有 X 个 token, 被划分为 Q 个严格有序的质量桶, 第 $q$ 个桶含 $X _ { q }$ 个 token. 再设 Olmix 规定从该类别取 Z 个 token, 且任何质量桶的上采样倍数都不超过 M. 这就等价于一个搜索问题: 从第 $q$ 个桶取 $Z _ { q }$ 个 token, 使 $\textstyle \sum _ { q } Z _ { q } = Z$ 且 ∀q 有 $Z _ { q } / X _ { q } \leq M$
+
 **Parameterizing the solution space** To reduce the dimensionality of this search space, we make a modeling choice, where we search over a family of functions that control the upsampling ratio that meets the following criteria:
+
+**解空间的参数化** 为降低搜索空间的维度, 我们做一个建模选择: 在一族控制上采样比例的函数上搜索, 该函数族需满足以下标准:
 
 • Every function in the family is convex and monotonic.
 
@@ -3393,11 +3429,15 @@ We perform a hierarchical mixing procedure on our data. Our procedure Olmix (Che
 
 One such family of functions that meets these criteria is the family of truncated power-exponential functions:
 
+满足这些标准的一个函数族是截断幂指数函数族:
+
 $$
 f _ {p, \lambda} (x) = \left\{ \begin{array}{l l} 0, & \text {for} x <   a \\ C (x - a) ^ {p} \cdot e ^ {\lambda (x - a)}, & \text {for} x \geq a \end{array} \right.
 $$
 
 Specifically, this becomes a feasibility problem for each topic of the data, where we search over parameters $p , \lambda , C$ such that the constraints
+
+具体而言, 对数据的每个主题这都变成一个可行性问题: 在参数 $p , \lambda , C$ 上搜索, 使下列约束得到满足:
 
 • (Token yield is satisfied) $\textstyle \int _ { 0 } ^ { 1 } f _ { p , \lambda } ( x ) d x = Z / X$
 
@@ -3407,15 +3447,25 @@ Specifically, this becomes a feasibility problem for each topic of the data, whe
 
 are satisfied. The maximum upsampling constraint has been simplified such that, assuming monotonicity, the most upsampled quality bucket would be the highest-quality one, with an assumed data proportion of b.
 
+上述约束即要求被满足. 最大上采样约束做了简化: 在单调性假设下, 被上采样最多的质量桶是质量最高的桶, 其数据占比记为 b.
+
 **Implementation details** For each WebOrganizer topic, we set the maximum upsampling ration to be $M = 7$ and also throw away the bottom 40% in terms of quality, $\it { a } = 0 . 4 0$ . Then we numerically solve for feasible $p , \lambda , C .$ . If the $q ^ { t h }$ quality bucket spans from the $q ^ { - }$ percentile to the $q ^ { + }$ percentile of the data, then the upsampling ratio for this bucket of data should be $\frac{1}{q^{+}-q^{-}}\int_{q^{-}}^{q^{+}}f(x)dx$
+
+**实现细节** 对每个 WebOrganizer 主题, 我们设最大上采样比例 $M = 7$, 并丢弃质量垫底的 40%, 即 $\it { a } = 0 . 4 0$. 然后数值求解可行的 $p , \lambda , C$. 若第 $q$ 个质量桶覆盖从数据的第 $q ^ { - }$ 百分位到第 $q ^ { + }$ 百分位, 则该桶数据的上采样比例应为 $\frac{1}{q^{+}-q^{-}}\int_{q^{-}}^{q^{+}}f(x)dx$
 
 #### A.2.5 Validating Quality Upsampling and Mixing
 
 We validate our quality upsampling curves and mixing methodology both individually and jointly using small-scale 1B parameter models trained on 100B tokens. Our validation consists of three experiments:
 
+我们用 100B token 上训练的小规模 1B 参数模型, 分别单独地与联合地验证质量上采样曲线与混合方法. 验证由三个实验组成:
+
 **Targeted mixing** We first verify that our mixing methodology can successfully optimize for specific prediction targets. Using our swarm optimization procedure, we create mixes optimized for three different objectives: the QA average, Math average, and Code average from OlmoBaseEval. We compare these targeted mixes against both the natural data distribution and the final Olmo 3 mix. Table 38 demonstrates that our swarm optimization successfully adapts the data distribution to match specific capability targets. While the final OlmoBaseEval mix exhibits slightly higher (worse) BPB scores than task-specific mixes due to necessary trade-offs across multiple objectives, it substantially outperforms the natural distribution.
 
+**针对性混合** 我们先验证混合方法能否成功面向特定的预测目标做优化. 用我们的群体优化流程, 分别针对三个不同目标构造混合: OlmoBaseEval 的 QA 平均, 数学平均与代码平均. 我们将这些针对性混合与自然数据分布及最终 Olmo 3 混合对比. 表 38 表明, 群体优化能成功调整数据分布以匹配特定的能力目标. 最终 OlmoBaseEval 混合由于必须在多个目标间折中, BPB 分数比任务专用混合略高 (略差), 但大幅优于自然分布.
+
 **Quality-aware upsampling** Next, we demonstrate that quality-aware upsampling outperforms naive qualitybased filtering. To simulate a data-constrained 4.51T token training run, we compare different data selection strategies in Table 39. For the filtering baselines, we select the top percentiles from our vigintile quality buckets and match the resulting repetition factor that would occur when training on 100B tokens drawn from a theoretical 4.51T pool. For the upsampling approach, we apply the same methodology but set the target pool size to 100B tokens directly. Our results show that quality-aware upsampling consistently outperforms flat filtering across all repetition factors.
+
+**质量感知上采样** 接下来我们证明, 质量感知上采样优于朴素的质量过滤. 为模拟受数据限制的 4.51T token 训练, 我们在表 39 中比较不同的数据选择策略. 过滤基线: 从 20 分位的质量桶中选取最高的若干百分位, 并匹配 "从理论 4.51T 池中抽 100B token 训练" 时会出现的重复因子. 上采样做法: 沿用同一套方法, 但直接把目标池大小设为 100B token. 结果表明, 质量感知上采样在所有重复因子下都稳定优于一刀切过滤.
 
 **Reconciling upsampling and mixing** Finally, we evaluate how to best combine our mixing and upsampling methodologies, which address complementary aspects of data selection. Data mixing determines the distribution across topics, while quality upsampling determines the distribution within a single source. To conceptualize this, imagine the dataset as a two-dimensional matrix of buckets where rows represent WebOrganizer topics and columns represent the quality buckets. Then the mixing strategy can be thought of as imposing row-wise
 
@@ -3454,11 +3504,17 @@ Table 40 Different methods of combining quality-aware upsampling and token-const
 
 (topic) constraints only. The quality-aware upsampling experiments in the preceding paragraph impose column-wise (quality) constraints only.
 
+**调和上采样与混合** 最后, 我们评估如何最好地结合混合与上采样两种方法, 它们处理数据选择中互补的两个侧面: 数据混合决定跨主题的分布, 质量上采样决定单一来源内部的分布. 可以这样想: 把数据集想象成一个由桶组成的二维矩阵, 行是 WebOrganizer 主题, 列是质量桶; 混合策略相当于只施加行向 (主题) 约束, 前一段的质量感知上采样实验则只施加列向 (质量) 约束.
+
 We considered several techniques that did not work quite as well as the truncated power-exponential forms described in § A.2.4. On one hand, the Olmix framework samples data from each topic (row) according only to the natural quality distribution. On the other, quality upsampling samples data from each quality bucket (column) and does not consider reweighting topic distributions. For a theoretical target token yield, each of these strategies prescribes a target token count to be taken from each (topic, quality) bucket. Naive ways to rectify these strategies is to take an arithmetic or geometric mean between the target token counts from each bucket. We also note that the theoretical framework defining upsampling curves above is not necessarily restricted to the concept class of truncated power-exponential families. We could just as easily consider the family of exponential functions like $f _ { \lambda } ( x ) = C e ^ { \lambda ( x - a ) }$ Upon considering each of these techniques on small 1B models, we found that the truncated power-exponential family performed the best. Results are contained in Table 40.
+
+我们考虑过几种不如 § A.2.4 所述截断幂指数形式的技术. 一方面, Olmix 框架只按自然质量分布从每个主题 (行) 采样; 另一方面, 质量上采样只从每个质量桶 (列) 采样, 不考虑重加权主题分布. 对理论上的目标 token 产出量, 这两种策略各自规定从每个 (主题, 质量) 桶取多少 token. 朴素的做法是对各桶的目标 token 数取算术平均或几何平均. 我们还注意到, 上文定义上采样曲线的理论框架并不限于截断幂指数函数类; 同样可以考察如 $f _ { \lambda } ( x ) = C e ^ { \lambda ( x - a ) }$ 的指数函数族. 在小型 1B 模型上逐一考察这些技术后, 我们发现截断幂指数函数族表现最好. 结果见表 40.
 
 ### A.3 Base Model Additional Data Details: Midtraining
 
 This section provides further detail on curation processes for Dolma 3 Dolmino Mix. Additional replication resources, including prompts for synthetic data generation, are available in the Dolma3 GitHub repository.
+
+本节详细介绍 Dolma 3 Dolmino Mix 的数据甄选过程. 更多复现资源 (包括合成数据生成的 prompt) 见 Dolma3 GitHub 仓库.
 
 #### A.3.1 Math Capabilities
 
@@ -3485,11 +3541,19 @@ Table 41 Results from math microanneals, with normalized per-token differences i
 
 licensing and urge the community to take care in the licensing of the data they release if they wish to see adoption for research or commercial purposes.
 
+与 OLMo 2 类似, 我们在 midtraining 阶段特别用心地甄选数学专用的数据混合. 本节讨论用于生成并验证数学专用数据源的一些流程. 需要注意, 尽管高质量, 开源, 面向 STEM 的数据集研究成果层出不穷, 但其中许多是用 Llama 模型生成的合成数据, 附带限制性的 Llama 许可证. 我们以更宽松的许可证复现了其中若干数据集, 并提醒社区: 如果希望数据集被研究或商业场景采用, 发布时请留意其许可证.
+
 **TinyMATH** In OLMo 2, great strides were made in performance on the GSM8K (Cobbe et al., 2021) dataset by generating synthetic math problems seeded from the original GSM training set, and then generating both python code (PoT) and natural language discussions of solutions (MIND). We adopt a similar strategy here, to target the MATH dataset (Hendrycks et al., 2021c). Namely, we adopt the TinyGSM protocol (Liu et al., 2023a) and prompts to generate 100 new problems for each existing MATH problem, and then generate pythonic solutions for each of these new problems. Then we apply the MIND rewrite prompt (Akter et al., 2024), using the two-student and problem-solving variants. This yields the PoT dataset (241M tokens) and the MIND dataset (899M tokens). To assess the potency of these new datasets, we ran annealing runs and evaluated fine-grained math related benchmarks as well as MMLU, to keep an eye on generalization. These results are summarized in TABLE:
+
+**TinyMATH** 在 OLMo 2 中, 团队以原始 GSM 训练集为种子生成合成数学题, 再同时生成 Python 代码解 (PoT) 与自然语言解 (MIND), 在 GSM8K (Cobbe et al., 2021) 上取得了长足进步. 这里我们采取类似策略, 但目标换成 MATH 数据集 (Hendrycks et al., 2021c). 具体而言, 我们沿用 TinyGSM 方案 (Liu et al., 2023a) 及其 prompt, 为每个已有 MATH 题目生成 100 道新题, 再为每道新题生成 Python 风格解答. 然后应用 MIND 改写 prompt (Akter et al., 2024), 使用 "两名学生" 与 "解题" 两个变体. 由此得到 PoT 数据集 (2.41 亿 token) 与 MIND 数据集 (8.99 亿 token). 为评估这些新数据集的效力, 我们跑了退火实验, 评测细粒度数学相关基准以及 MMLU, 以关注泛化. 结果汇总于 TABLE:
 
 **CraneMath** SwallowMath (Fujii et al., 2025) is a 2.3 Billion token dataset, generated from rewriting FineMath4+ (Allal et al., 2025). Unfortunately the data was rewritten using a Llama model, which would require that any model trained on this data would need to have "Llama" in the name, according to the Llama Community License. To provide truly open data, we mirror the generation of this dataset, but use Qwen3 32B Yang et al. (2025a) to rewrite FineMath4+ using the prompt presented in the SwallowMath paper. This yields a 5.62B token dataset we refer to as CraneMath. Compared to the 9.6B tokens contained in FineMATH4+, CraneMath is a distillation into fewer tokens, but not as few as SwallowMath (2.3B) – we posit that this is because using Qwen3 as a rewrite model is slightly "chattier" than Llama.
 
+**CraneMath** SwallowMath (Fujii et al., 2025) 是一个 23 亿 token 的数据集, 由 FineMath4+ (Allal et al., 2025) 改写生成. 遗憾的是数据由 Llama 模型改写, 按 Llama 社区许可证, 任何在该数据上训练的模型必须带有 "Llama" 字样. 为提供真正开放的数据, 我们复现了该数据集的生成过程, 但改用 Qwen3 32B Yang et al. (2025a), 按 SwallowMath 论文给出的 prompt 改写 FineMath4+. 由此得到 56.2 亿 token 的数据集, 我们称之为 CraneMath. 相比 FineMath4+ 所含的 96 亿 token, CraneMath 是把数据蒸馏到更少的 token, 但没像 SwallowMath (23 亿) 那么少 —— 我们推测这是因为用 Qwen3 做改写模型比 Llama 略 "话多".
+
 To evaluate performance of this rewrite procedure, we ran several anneals, starting from a base model that had seen 6T tokens of our pre-training mix, we ran several anneals, always with 50% token from the pretraining mix and 50% tokens from the data-source of interest. In the case where the anneals have different token counts, driving the learning rate linearly down to the same final learning rate. Then we compare the following runs: i) The pre-anneal baseline, ii) FineMath4+, but just an incomplete subset; iii) the original SwallowMath dataset; iv) our version, CraneMath; v) two copies of CraneMath; vi) a copy of CraneMath and all their original documents from FineMath4+.
+
+为评估这一改写流程的效果, 我们从一个已见过 6T token 预训练混合数据的基座模型出发跑了若干退火实验: 每次退火都使用 50% 预训练混合数据与 50% 目标数据源的 token; 若各次退火的 token 数不同, 则把学习率线性下降到同一个最终学习率. 对比的运行包括: i) 退火前基线; ii) FineMath4+ 的一个不完整子集; iii) 原始 SwallowMath 数据集; iv) 我们的版本 CraneMath; v) 两份 CraneMath; vi) 一份 CraneMath 加上全部原始 FineMath4+ 文档.
 
 **MegaMatt** OctoThinker (Wang et al., 2025) generated a 70B token data pool dubbed Megamath-Web-Pro-Max, intended to be a rewrite of LLM360’s MegaMath data pool (Liu et al., 2023c), with quality mirroring
 
@@ -3497,17 +3561,29 @@ To evaluate performance of this rewrite procedure, we ran several anneals, start
 
 that of the MegaMath-Web-Pro quality. Again, unfortunately, MegaMath-Web-Pro-Max was rewritten using Llama, and an independent recreation needed to be performed for fully-open usage in training. Since our initial ablations showed that the Megamath-Web-Pro-Max pool wasn’t as high of quality as, say, SwallowMath, we didn’t need a recreation of the full 70B pool. Instead, we generated a recreation of just the documents from Megamath-Web-Pro-Max that occured in CommonCrawl dumps from dump CC-MAIN-2023-23 and later, since more recent data was shown in the OctoThinker paper to be of higher quality. We ultimately generated 3.9B tokens of data, dubbed MegaMatt. To verify the efficacy, we ran ablations on: i) MegaMath-Web, ii) MegaMath-Web-Pro-Max (both to 10B and 25B tokens), and iii) MegaMatt.
 
+其质量对标 MegaMath-Web-Pro. 遗憾的是, MegaMath-Web-Pro-Max 同样由 Llama 改写, 要在训练中完全开放地使用, 必须独立复现. 由于初步消融显示 Megamath-Web-Pro-Max 池的质量不如 SwallowMath, 我们无需复现完整的 700 亿池. 我们只复现了 Megamath-Web-Pro-Max 中出现在 CC-MAIN-2023-23 及之后 CommonCrawl dump 的文档, 因为 OctoThinker 论文显示更新的数据质量更高. 最终生成 39 亿 token 的数据, 命名为 MegaMatt. 为验证其效果, 我们在以下数据上跑了消融: i) MegaMath-Web, ii) MegaMath-Web-Pro-Max (分别到 10B 与 25B token), iii) MegaMatt.
+
 **OMR Rewrites** Inspired by the success of Nvidia’s OpenMathReasoning dataset on the AIO-2 Kaggle competition, we experimented with various rewrites sourced from AoPS forums Moshkov et al. (2025). See Dolma3 repo for further details.
+
+**OMR 改写** 受 Nvidia OpenMathReasoning 数据集在 AIO-2 Kaggle 竞赛上成功的启发, 我们实验了多种取自 AoPS 论坛的改写数据 Moshkov et al. (2025). 详见 Dolma3 仓库.
 
 **Key Findings and Results** We summarize the annealing results for the math datasets in Table 41. Each value reflects the change in the evaluation score relative to the pre-anneal baseline, normalized by the number of training tokens. Presenting the results this way highlights several distinct tiers of math-data quality, stratified by the effect-per-token. Notably, these quality tiers anticorrelate with the number of available tokens: the highest-quality sources are also the smallest. While it is true that there are diminishing returns of evaluation scores as more tokens are added, we claim that amongst these high-quality data sources, some higher quality than others.
 
+**关键发现与结果** 数学数据集的退火结果汇总于表 41. 每个数值反映评测分数相对退火前基线的变化, 按训练 token 数归一化. 这样呈现结果突出了数学数据质量几个明显层级, 按每 token 效果分层. 值得注意的是, 这些质量层级与可用 token 数负相关: 质量最高的来源同时规模最小. 随着 token 增多, 评测分数收益递减固然属实, 但我们主张, 在这些高质量数据源之间, 质量仍有高下之分.
+
 At the top of the quality-spectrum are the tinyMATH variants. Although each contains less than a billion tokens, they deliver the strongest improvement per token – this is perhaps not surprising as these tokens were specifically crafted to augment the MATH evaluation score. Next in the tier-list of quality are the synthetic rewrites of natural high-quality data: the Crane, SwallowMath and MegaMatt sources which are each rewrites of FineMath4+ and MegaMathWeb-Pro. These provide a markedly weaker lift to the math evaluation metrics than the tinyMATH variants but also have a much larger pool of tokens to draw from. Finally, the largest data sources, including those of naturally occurring data such as FineMath4+ and MegamathWeb, also yield improvements, but their effect-per-token is noticeably smaller than that of the highly curated synthetic data. Finally we note that the effect of math midtraining on MMLU is generally neutral to negative, but is more strongly negative the more targeted the data pool is to Math evals, suggesting “overcooking”, where increased specialization comes at the expense of broader general-purpose performance.
+
+质量谱顶端是 tinyMATH 变体. 虽然每个都不足 10 亿 token, 但每 token 带来的提升最强 —— 这并不奇怪, 因为这些 token 是专门为提升 MATH 评测分数而精心构造的. 质量层级紧随其后的是对天然高质量数据的合成改写: Crane, SwallowMath 与 MegaMatt, 它们分别是 FineMath4+ 与 MegaMathWeb-Pro 的改写. 它们对数学评测指标的提升明显弱于 tinyMATH 变体, 但可用 token 池大得多. 最后是规模最大的数据源, 包括 FineMath4+ 与 MegamathWeb 这类天然数据, 它们也能带来提升, 但每 token 效果明显小于高度甄选的合成数据. 最后我们注意到, 数学 midtraining 对 MMLU 的影响总体中性偏负, 且数据池越是针对数学评测, 负向影响越强, 这暗示了 "过度烹饪" 现象: 专业化程度的提升以牺牲更广的通用性能为代价.
 
 #### A.3.2 Code Capabilities
 
 During pretraining, we relied entirely on stack-edu (Allal et al., 2025) for providing coding data. This data came in the form of naturally-occurring source code from github scraps with limited extra preprocessing. During midtraining, we focused on improving Python and code-completion capabilities. To this end, we incorporated 10B tokens of FIM-transformed data form the same source as the pretraining code mixture. Inspired by improvements in math metrics by incorporating synthetic data, we also created a fully-open replica of SwallowCode (Fujii et al., 2025), which we call CraneCode.
 
+预训练期间, 代码数据完全依赖 stack-edu (Allal et al., 2025), 即来自 GitHub 抓取的自然源码, 仅做有限额外预处理. midtraining 阶段我们把重心放在提升 Python 与代码补全能力上: 为此加入了 100 亿 token 的 FIM 变换数据, 来源与预训练代码混合数据相同. 受合成数据提升数学指标的启发, 我们还复刻了 SwallowCode (Fujii et al., 2025) 的全开放版本, 命名为 CraneCode.
+
 **CraneCode** Of the off-the-shelf synthetic code data sources we considered, SwallowCode provided the greatest lift to coding evaluation metrics. Unfortunately, SwallowCode was generated using Llama models and thus had the less-permissive Llama license attached. We created a replica of SwallowCode by starting with just the python files from The Stack v2 Smol (Lozhkov et al., 2024), and applying the compilation and linting filters just as in SwallowCode. Then we applied a two-stage rewriting process, first to generate code data that is more compliant to the python style guides (SGCR), and then to generate optimized code (SCOR); both using the prompts from the original SwallowCode paper and Qwen/Qwen2.5-Coder-32B-Instruct (Qwen et al., 2024). To verify the quality of the reproduced dataset, we ran several anneals, where results are displayed in Table 42.
+
+**CraneCode** 在我们考察的现成合成代码数据源中, SwallowCode 对代码评测指标的提升最大. 遗憾的是 SwallowCode 由 Llama 模型生成, 附带限制更严的 Llama 许可证. 我们这样复刻 SwallowCode: 仅取 The Stack v2 Smol (Lozhkov et al., 2024) 中的 Python 文件, 施加与 SwallowCode 相同的编译与 lint 过滤; 然后做两阶段改写, 先生成更符合 Python 风格指南的代码数据 (SGCR), 再生成优化后的代码 (SCOR), 两步都使用原始 SwallowCode 论文的 prompt 与 Qwen/Qwen2.5-Coder-32B-Instruct (Qwen et al., 2024). 为验证复现数据集的质量, 我们跑了若干退火实验, 结果见表 42.
 
 #### A.3.3 Thinking Capabilities
 
@@ -3527,6 +3603,8 @@ Table 42 Microanneal results for CraneCode ablations. For each annealing run, we
 
 reasoning tasks. Gandhi et al. (2025) showed that models exhibiting verification and backtracking behaviors during base training achieved dramatically superior performance trajectories during mathematical reasoning RL. Therefore, we begin by identifying structured reasoning capabilities that are critical for mathematical problem-solving. We select seven core capabilities that are foundational to mathematical and programming expertise: self-awareness (Toy et al., 2024; Callaway et al., 2022), self-evaluation (Fleming and Daw, 2017), goal management (Ackerman and Thompson, 2017; Griffiths et al., 2019), hierarchical organization (Haupt, 2018), backward chaining (Olieslagers et al., 2024), backtracking and conceptual reasoning (Markovits et al., 2015). We then design specific tasks that systematically target these capabilities, as shown in Table 43, and 44. For instance, Math Error Recovery specifically targets self-awareness, verification, and backtracking by requiring models to experience authentic mistakes and demonstrate recovery processes. Strategy Selection focuses purely on meta-cognitive choice processes, while Conversation Generation integrates all capabilities through educational dialogue. For data generation, we start with existing math (Luo et al., 2025a; Moshkov et al., 2025) and coding (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) problems and their corresponding correct answers. Following Pandalla dataset, we automatically augment each problem with detailed annotations covering ‘problem classification’, ‘difficulty analysis’, ‘solution approaches’, ‘common pitfalls’, and ‘verification methods’. These rich annotations serve as inputs for our capability-targeted tasks. For example, the ‘common pitfalls’ field directly informs math error recovery generation, while steps in ‘solution approach’ provides structure for backward chaining tasks. Using the annotated datasets as foundation, we employ GPT-4.1 and o4-mini to generate training data at scale for each capability-targeted task.
 
+**元推理** 近期研究表明, 预训练与 midtraining 中呈现的结构化元推理能力, 是在复杂推理任务上成功进行强化学习的基础. Gandhi et al. (2025) 显示, 基座训练阶段表现出验证与回溯行为的模型, 在数学推理 RL 中取得明显更优的性能轨迹. 因此, 我们先识别对数学解题至关重要的结构化推理能力, 选定七项构成数学与编程专长的核心能力: 自我意识 (Toy et al., 2024; Callaway et al., 2022), 自我评估 (Fleming and Daw, 2017), 目标管理 (Ackerman and Thompson, 2017; Griffiths et al., 2019), 层级组织 (Haupt, 2018), 反向链推理 (Olieslagers et al., 2024), 回溯与概念推理 (Markovits et al., 2015). 然后我们设计系统针对这些能力的具体任务, 见表 43 与表 44. 例如, 数学错误恢复专门瞄准自我意识, 验证与回溯 —— 它要求模型经历真实错误并展示恢复过程. 策略选择纯粹聚焦元认知的抉择过程, 对话生成则通过教学式对话整合全部能力. 数据生成方面, 我们从已有的数学 (Luo et al., 2025a; Moshkov et al., 2025) 与代码 (Li et al., 2023a; Hendrycks et al., 2021a; Ahmad et al., 2025) 题目及其正确答案出发. 沿用 Pandalla 数据集的做法, 我们为每道题自动加上覆盖 "题目分类", "难度分析", "解法路径", "常见陷阱" 与 "验证方法" 的详细标注. 这些丰富标注作为能力导向任务的输入: 例如 "常见陷阱" 字段直接用于数学错误恢复的生成, "解法路径" 中的步骤为反向链任务提供结构. 以标注数据集为基础, 我们用 GPT-4.1 与 o4-mini 为每个能力导向任务规模化生成训练数据.
+
 | Task | Meta Capabilities |
 | --- | --- |
 | Math error recovery | Self-awareness, verification, backtracking |
@@ -3540,6 +3618,8 @@ reasoning tasks. Gandhi et al. (2025) showed that models exhibiting verification
 Table 43 Meta reasoning capabilities across mathematical tasks.
 
 **Existing thinking traces** The full list of existing thinking traces is as follows:
+
+**已有 thinking 轨迹** 现有 thinking 轨迹完整清单如下:
 
 1. **General reasoningmix** is a compilation of three existing datasets: GeneralThought-430K<sup>64</sup>, OpenThoughts-114k (Guha
 
@@ -3565,23 +3645,41 @@ Table 44 Meta reasoning capabilities across coding tasks.
 
 et al., 2025b), and Open-R1-Math-220k<sup>65</sup>. The resulting dataset contains questions, thinking traces, and answers for topics spanning math, code, natural sciences, humanities, social sciences, and puzzles.
 
+1. **General reasoningmix** 是三个现有数据集的汇编: GeneralThought-430K<sup>64</sup>, OpenThoughts-114k (Guha et al., 2025b) 与 Open-R1-Math-220k<sup>65</sup>. 所得数据集覆盖数学, 代码, 自然科学, 人文, 社会科学与谜题等主题, 含问题, thinking 轨迹与答案.
+
 2. **Gemini reasoning traces**, introduced by Muennighoff et al. (2025b), contains thinking traces covering domains of math, astronomy, biology, chemistry, computer science, geography, physics, English, law, logic, and more.
+
+2. **Gemini reasoning traces** 由 Muennighoff et al. (2025b) 提出, 包含覆盖数学, 天文, 生物, 化学, 计算机科学, 地理, 物理, 英语, 法律, 逻辑等领域的 thinking 轨迹.
 
 3. **OpenThoughts2 reasoning traces** from Guha et al. (2025b) contains thinking traces in domains of math, science, code, and puzzles.
 
+3. **OpenThoughts2 reasoning traces** 来自 Guha et al. (2025b), 包含数学, 科学, 代码与谜题领域的 thinking 轨迹.
+
 4. **Llama Nemotron reasoning traces** (Bercovich et al., 2025) contains thinking trace data for math, code, general reasoning, and instruction following.
+
+4. **Llama Nemotron reasoning traces** (Bercovich et al., 2025) 包含面向数学, 代码, 通用推理与指令遵循的 thinking 轨迹数据.
 
 5. **QwQ reasoning traces** consists of the QwQ subset of the OpenMathReasoning dataset (Moshkov et al., 2025).
 
+5. **QwQ reasoning traces** 取自 OpenMathReasoning 数据集 (Moshkov et al., 2025) 的 QwQ 子集.
+
 Filtering steps included subselecting for permissively-licensed generations, filtering to remove empty and truncated responses, performing checks of verifiable claims and safety, filtering overt LLM self-references, filtering heavily repeated sentences, paragraphs, and phrases, and remove reasoning traces consisting of greater than 5% Chinese characters.
+
+过滤步骤包括: 只保留宽松许可证的生成内容; 移除空响应与被截断的响应; 对可验证断言与安全性做检查; 过滤显式的 LLM 自我指涉; 过滤严重重复的句子, 段落与短语; 移除中文字符占比超过 5% 的推理轨迹.
 
 ### A.4 Base Model Additional Evaluation Details
 
 The OlmoBaseEval suite expands on the 11 tasks in the OLMo 2 iteration of OLMES (OLMo et al., 2024; Gu et al., 2024b), to include 43 tasks across new families of capabilities. Here, we enumerate details from Section §3.3. All task suites are publicly available at [github.com/allenai/olmes#olmo-3-eval-suite.](https://github.com/allenai/olmes#olmo-3-eval-suite)
 
+OlmoBaseEval 套件在 OLMo 2 版 OLMES 的 11 个任务 (OLMo et al., 2024; Gu et al., 2024b) 基础上扩展到 43 个任务, 覆盖新的能力家族. 这里我们列举 §3.3 的细节. 所有任务套件均公开于 [github.com/allenai/olmes#olmo-3-eval-suite](https://github.com/allenai/olmes#olmo-3-eval-suite).
+
 **Expanding OLMES tasks** We expanded our evaluation to target specific capabilities: new QA tasks focusing on science knowledge (SciQ, QASPER, SciRIFF), medical/lab knowledge (ProtocolQA, DBQA, MedMCQA, MedQA), math tasks (GSM Symbolic, Minerva MATH) and coding tasks (DS 1000, BigCodeBench, Deepseek LeetCode<sup>66</sup>, MultiPL-E HumanEval, MultiPL-E MBPP). We use MultiPL-E to evaluate our multilingual code execution, limited to six core programming languages. Additionally, we track fill-in-the-middle (FIM) performance using HumanEval with the three settings from Bavarian et al. (2022): single-line infilling, multi-line infilling and random span infilling.
 
+**扩展 OLMES 任务** 我们扩展评测以针对特定能力: 面向科学知识的新 QA 任务 (SciQ, QASPER, SciRIFF), 医学/实验知识 (ProtocolQA, DBQA, MedMCQA, MedQA), 数学任务 (GSM Symbolic, Minerva MATH) 与代码任务 (DS 1000, BigCodeBench, Deepseek LeetCode<sup>66</sup>, MultiPL-E HumanEval, MultiPL-E MBPP). 我们用 MultiPL-E 评测多语言代码执行, 限定六种核心编程语言. 此外, 我们用 HumanEval 追踪 fill-in-the-middle (FIM) 性能, 采用 Bavarian et al. (2022) 的三种设置: 单行填充, 多行填充与随机片段填充.
+
 We support code execution in Python, C++, Java, JavaScript, PHP, Rust and Shell using AWS Lambda functions to grade instances in parallel, isolated environments of up to 50K generations simultaneously. In total, our environments graded 17.2 million generated code samples during Olmo 3 development, with up to 1.5K simultaneously. To ensure reproducibility, we release a lightweight Docker library for code execution 67 without AWS infrastructure
+
+我们用 AWS Lambda 函数支持 Python, C++, Java, JavaScript, PHP, Rust 与 Shell 的代码执行, 评分实例运行在并行, 隔离的环境中, 可同时处理多达 5 万个生成结果. Olmo 3 开发期间, 我们的环境共评阅了 1720 万份生成代码样本, 同时评阅数最高达 1500. 为保证可复现性, 我们发布了一个轻量级 Docker 代码执行库 67, 无需 AWS 基础设施.
 
 Additionally, OLMo 2 only tracked math and code capabilities after mid-training, as small models exhibit random-chance pass@1 performance on math and code tasks (Wei et al., 2022). Our base easy suite tracks
 
@@ -3599,15 +3697,25 @@ Figure 29 Training curves of midtraining on canonical language model benchmarks 
 
 perplexity over human-written math and code solutions (Huang et al., 2024b), which allows us to broadens the scope of capabilities we track during pre-training.
 
+此外, OLMo 2 只在 midtraining 之后追踪数学与代码能力, 因为小模型在数学与代码任务上的 pass@1 表现为随机水平 (Wei et al., 2022). 我们的 base easy 套件改为追踪人工撰写的数学与代码解答上的困惑度 (Huang et al., 2024b), 从而拓宽了预训练期间追踪的能力范围.
+
 #### A.4.1 Base Evaluation suites
 
 Using the analysis tools described in the previous section, we construct two evaluation suite for decision making in pre-training: the Base Easy suite for small-scale data decisions and the Base Main suite for in-loop evaluation and mid-training data decisions. We kept the number of in-context examples and generation
 
+利用上一节描述的分析工具, 我们构建了两个评测套件用于预训练决策: Base Easy 套件面向小规模数据决策, Base Main 套件面向循环内评测与 midtraining 数据决策. 我们保持 in-context 样例数量与生成设置不变.
+
 Table 46 describes the task configuration and metrics for the Olmo 3 Base Main evaluation suite. Table 45 provides an overview of the Base Easy suite.
+
+表 46 描述 Olmo 3 Base Main 评测套件的任务配置与指标, 表 45 概述 Base Easy 套件.
 
 **Base Easy suite** For multiple-choice BPB, we simply use the correct answer as the continuation. For math BPB, we use the provided human-written solutions from Minerva MATH (Lewkowycz et al., 2022). For code BPB, we use the gold ‘canontical’ solution as provided in HumanEval and MBPP (Chen et al., 2021; Austin et al., 2021). For BPB over non-Python coding tasks, MultiPL-E did not release gold solutions (Cassano et al., 2022), so we generate silver continuations for 16 languages using o4-mini-medium<sup>69</sup>. Figure 30 shows the scaling behavior of the three base easy task clusters, where we see signal even at very small (190M parameter) model sizes.
 
+**Base Easy 套件** 多项选择 BPB 直接把正确答案作为续写. 数学 BPB 使用 Minerva MATH (Lewkowycz et al., 2022) 提供的人工撰写解答. 代码 BPB 使用 HumanEval 与 MBPP (Chen et al., 2021; Austin et al., 2021) 提供的 gold "canontical" 解答. 非 Python 代码任务的 BPB 方面, MultiPL-E 未发布 gold 解答 (Cassano et al., 2022), 因此我们 o4-mini-medium<sup>69</sup> 为 16 种语言生成 silver 续写. 图 30 展示了三个 base easy 任务簇的 scaling 行为, 即便在极小 (1.9 亿参数) 模型规模上也能看到信号.
+
 One important property of the Base eval suite is that a ranking of two small models on the base easy suite agrees with their ranking on the downstream base main suite. We validate this by measuring rank correlation between the easy and main task suites, as pictured in Figure 31.
+
+Base 评测套件的一个重要性质是: 两个小模型在 base easy 套件上的排序, 与它们在下游 base main 套件上的排序一致. 我们通过度量 easy 与 main 任务套件间的秩相关性来验证这一点, 见图 31.
 
 **Base Main suite** As a result of the clustering procedure, the base main suite tracks 6 task groups: MCQA STEM, MCQA Non-STEM, Gen, Math, Code, Code FIM. Unlike OLMo 2, we are tracking generative math and code tasks at pre-training. We chose to evaluate pass@k with the largest number of samples such that
 
@@ -3625,7 +3733,11 @@ Figure 30 Scaling analysis for the Olmo 3 base evaluation suite. At the largest 
 
 each task could evaluate on OLMo 2 7B on 1 H100 in under 30 minutes, in order to ensure the eval speed is not bottlenecked by any particular task. For tasks with a large enough n, we set k = 16 to match the GRPO group size, which we observed to act as an empirical upper-bound on the possible improvement from RL training. To decide on the the temperature and top-p, we ran a sweep and evaluated 5 models (OLMo 2 7B, 13B; Qwen 2.5 7B, 13B; Qwen 3 8B; Qwen et al., 2024; Yang et al., 2025a) to find an adequate configuration setting for high scores on both pass@1 and pass@k. Results are shown in Figure 32, and we select temperature and top-p of 0.6 for all base math and code evaluation.
 
+**Base Main 套件** 经过聚类流程, base main 套件追踪 6 个任务组: MCQA STEM, MCQA Non-STEM, Gen, Math, Code, Code FIM. 与 OLMo 2 不同, 我们在预训练期间就追踪生成式数学与代码任务. 我们选择 pass@k 的采样数时, 要求每个任务在单张 H100 上评测 OLMo 2 7B 不超过 30 分钟, 确保评测速度不被任何单一任务卡脖子. 对 n 足够大的任务, 我们设 k = 16 以匹配 GRPO 的组大小 —— 我们观察到它是 RL 训练可能带来的提升的经验上界. 为确定 temperature 与 top-p, 我们做了扫描, 评测了 5 个模型 (OLMo 2 7B, 13B; Qwen 2.5 7B, 13B; Qwen 3 8B; Qwen et al., 2024; Yang et al., 2025a), 以找到 pass@1 与 pass@k 双高的配置. 结果见图 32, 我们为所有 base 数学与代码评测选取 temperature 0.6 与 top-p 0.6.
+
 **Base Chat suite** During mid-training, we refashion the Chat eval suite (§4.1) for use evaluating base models, which served as a reference as to whether we expect our model to perform well after the adaptation pipeline. To do this, we used a standard, simple chat template (Question: {text}\nAnswer:) across all base models (both Olmo 3 and baseline models) and we included stop tokens to prevent degenerate responses. We also excluded tasks which required an API-based judge (AlpacaEval, SimpleQA) due to cost. In practice, we noticed most of the disagreements between the base main and base chat evaluation suites were due to noise, so we primarily used the base suite for making decisions.
+
+**Base Chat 套件** midtraining 期间, 我们把 Chat 评测套件 (§4.1) 改造成可用于评测基座模型的形式, 作为模型经适配流水线后能否有良好表现的参照. 做法是: 对所有基座模型 (Olmo 3 与基线模型) 使用统一, 简单的 chat template (Question: {text}\nAnswer:), 并加入 stop token 以防退化输出. 出于成本考虑, 我们也排除了需要 API 评判器的任务 (AlpacaEval, SimpleQA). 实践中我们注意到, base main 与 base chat 评测套件之间的分歧大多源于噪声, 因此我们主要以 base 套件做决策.
 
 **Base Long-Context suite** During the long-context extension phase, we evaluate long-context capability using RULER (Hsieh et al., 2024) as our primary development signal. As a complementary held-out set, we also use HELMET (Yen et al., 2025), noting that the HELMET Recall task directly implements several RULER evaluations (specifically, ruler-niah-mk-2, ruler-niah-mk-3, and
 
@@ -3650,6 +3762,8 @@ at this stage, we disable chat templates within HELMET to ensure consistent scor
 #### A.4.2 New Evaluation Benchmarks
 
 **Basic Skills** We developed a new benchmark, BasicSkills, to measure whether core capabilities are being acquired during pretraining. BasicSkills consists of 6 subtasks: basic arithmetic, string manipulation, simple coding, elementary logical reasoning, basic common sense, and simple pattern recognition. Each task isolates a single skill using a self-contained context that requires no external knowledge or additional information and can be completed through natural text continuation without relying on instruction-following abilities.
+
+**Basic Skills** 我们开发了新基准 BasicSkills, 衡量预训练是否真正掌握了核心能力. 含 6 个子任务: 基础算术, 字符串操作, 简单编码, 初级逻辑推理, 基础常识, 简单模式识别. 每个任务只用自给自足的上下文隔离考察单一技能, 不需要外部知识或额外信息, 靠自然文本续写即可完成, 不依赖指令跟随能力.
 
 **Gen2MC** One takeaway from OLMo 2 development was a sensitivity to task format. The clustering procedure furhter confirmed this, finding that generative scores rank models similarly as rank choice (RC) QA tasks, disagreeing with ranking of single-token multiple choice (MC) QA tasks (see Figure 5). In particular, the short-form generative QA tasks (GenQA in Table 46) evaluate by comparing a generated answer to a bank of plausible answers, but these answer banks are often not complete, leading to false negatives. To address this, we introduce the **Gen2MC** benchmarks, which were constructed by taking the original question/answer pairs and generating incorrect multiple-choice distractor answers using a strong LLM. For each set of generated distractors, we manually review a set of 200 sample questions from the validation set before generating the full dataset. We create Gen2MC tasks for DROP, Jeopardy, NaturalQs, SQuAD, CoQA using GPT-4o for generating distractors, and fall-back to GPT-4.1 in cases where output parsing failed.
 
@@ -3683,25 +3797,43 @@ Table 46 Details of the Olmo 3 base evaluation suite. Tasks were formatted as mu
 
 Important: this section is adapted from the documentation of the [decon](https://github.com/allenai/decon) package; for up to date information, please consults the official documentation: [github.com/allenai/decon/doc/simple-details.md](https://github.com/allenai/decon/blob/main/doc/simple-details.md)
 
+重要: 本节改写自 [decon](https://github.com/allenai/decon) 包的文档; 最新信息请参阅官方文档: [github.com/allenai/decon/doc/simple-details.md](https://github.com/allenai/decon/blob/main/doc/simple-details.md)
+
 Evals provide measurable outcomes for model capabilities. We hope that these are meaningful measurements. When evals leak into training data we run the risk of overfitting on evals.
+
+评测为模型能力提供可测量的结果, 我们希望这些测量是有意义的. 一旦评测泄漏进训练数据, 就有在评测上过拟合的风险.
 
 #### A.5.1 Definitions and Preliminaries
 
 Training data and evals both consist of variable length token sequences. Contamination is a sufficient presence of a given eval sequence e in a given training sequence t.
 
+训练数据与评测都是由变长 token 序列组成. 污染, 是指给定评测序列 e 在给定训练序列 t 中出现到足够的程度.
+
 We characterize the problem as an approximate substring search for e in t for all $e \in E , t \in T .$
+
+我们把该问题刻画为: 对所有 $e \in E , t \in T$, 在 t 中近似搜索子串 e.
 
 Our goal is to partition the set T × E into the set of contaminated documents, denoted as C, and the set of pure documents, denoted as P.
 
+我们的目标是把 T × E 集合划分为污染文档集 C 与纯净文档集 P.
+
 We note that ∣T∣ ≫ ∣E∣ and generally C is very sparse within T, as ∣C∣ ≪ ∣P∣.
 
+注意 ∣T∣ ≫ ∣E∣, 且 C 在 T 中通常非常稀疏, 因为 ∣C∣ ≪ ∣P∣.
+
 Our goal is to call whether any training sequence t is derived directly from an eval sequence e. This involves distinguishing direct derivation of t to e from both noise and any source material for e.
+
+我们的目标是判定某训练序列 t 是否直接源自某评测序列 e, 这需要把 t 与 e 的直接衍生关系, 同噪声以及 e 的任何来源材料区分开.
 
 #### A.5.2 Example of Contamination
 
 There is great diversity in the format and purpose of evaluation suites.
 
+评测套件的格式与用途千差万别.
+
 decon is fundamentally counting tokens, so it does not consider the intent or semantics of eval instances. But it does leverage the inherent structure of evals to better distinguish between sequences that originate from source material and those that are derived directly from evals.
+
+decon 本质上是在数 token, 因此不考虑评测实例的意图或语义; 但它利用评测固有的结构, 更好地区分源自来源材料的序列与直接衍生自评测的序列.
 
 ```txt
 // Eval
@@ -3715,6 +3847,8 @@ decon is fundamentally counting tokens, so it does not consider the intent or se
 Figure 33 Example of knowledge eval task.
 
 Knowledge evals frequently have shorter answers.
+
+知识类评测的答案通常较短.
 
 ```txt
 // Eval
@@ -3731,6 +3865,8 @@ Figure 34 Example of reasoning eval eval task.
 
 Reasoning evals frequently have longer answers with a much larger sets of potential token sequences.
 
+推理类评测的答案通常更长, 潜在 token 序列的空间也大得多.
+
 <!-- page 102 of 118 -->
 
 ```txt
@@ -3746,33 +3882,57 @@ Figure 35 Example of retrieval eval task.
 
 Retrieval evals frequently have a substantial passage from source material which acts as an almost input to a program selected by the question component.
 
+检索类评测通常带有一段来自来源材料的大段篇章, 它几乎相当于由问题组件所选程序的输入.
+
 #### A.5.3 Eval Normalization
 
 decon normalizes all eval instances into question (Q), answer (A), and passage (P) components. A given eval split may hold out an answer and may or may not contain a passage depending on the task.
 
+decon 把所有评测实例归一化为问题 (Q), 答案 (A) 与篇章 (P) 三个组件. 某个评测 split 可能隐去答案, 是否含篇章则取决于任务.
+
 An eval instance can be described as having a Q, QA, QP, or QAP composition.
+
+一个评测实例可描述为 Q, QA, QP 或 QAP 的组成形式.
 
 • Question All eval instances to be decontaminated contain a question, and it serves as the primary vessel for information to describe the task. decon uses the question field for initial identification of contamination clusters. Questions with substantial information content and a strong match are sufficient to call contamination.
 
+- 问题: 所有待去污染的评测实例都含问题, 它是描述任务信息的主要载体. decon 用问题字段做污染簇的初步识别. 信息量大且匹配强的问题, 已足以判定污染.
+
 • Answer While the answer of an eval is important for measuring whether a model has learned a specific task, in the context of decontamination the answer primarily serves to provide supporting evidence of contamination. This is particularly important for questions with low information content or those that have edits.
 
+- 答案: 答案对衡量模型是否学会某任务固然重要, 但在去污染语境下, 答案主要提供污染的支持性证据, 这对信息量低或经过编辑的问题尤为重要.
+
 • Passage The passage, often derived from reference documents, is not a strong indicator of contamination, but in conjunction with a substantial question and answer match, further supports a contamination call.
+
+- 篇章: 篇章常衍生自参考文档, 本身不是污染的强指标, 但与强的问题, 答案匹配相结合时, 能进一步支持污染判定.
 
 #### A.5.4 Decon Implementation
 
 We can now describe a computational tractable definition of contamination. We start with the simplest scenario, evals that only have a question component Q, and later extend the approach for QA, QP, and QAP scenarios.
 
+现在我们给出一个计算上可操作的污染定义. 从最简单的情形 —— 只有问题组件 Q 的评测 —— 开始, 之后再把方法推广到 QA, QP 与 QAP 情形.
+
 **Detecting contamination** Scoring segments of training documents against evals is somewhat problematic because there is substantial variation in the length of eval and training documents.
+
+**检测污染** 用评测给训练文档的片段打分有些麻烦, 因为评测文档与训练文档的长度差异都很大.
 
 **Cluster discovery** We start by defining a contamination cluster as a substring of a training document and a set of candidate evals which have at least 1 matching ngram.
 
+**簇发现** 我们先定义污染簇: 训练文档的一个子串, 加上一组至少有 1 个匹配 ngram 的候选评测.
+
 We discover clusters by sequentially sampling training document ngrams and checking for a hit in an inverted index which resolves ngrams to eval document ids. Upon an initial hit we expand left and right from the initial hit index until we observe a certain number misses, representing inserts, deletions, or edits.
 
+我们通过顺序采样训练文档的 ngram 并检查倒排索引是否命中来发现簇, 索引把 ngram 解析为评测文档 id. 初次命中后, 从命中位置向左右扩展, 直到出现一定次数的 miss (代表插入, 删除或编辑).
+
 The initial hit produces a set of matching document ids, which we call the active set. Each subsequent ngram lookup on traversal produces a set of matching documents from the inverted index, which we call the step set. We use the intersection between the active set and the step set to identify which documents in the active set hit for a given step. Once a specific document reaches 11 misses, it is removed from the active set. We repeat this process until the active set is empty or we reach the training document boundaries. At each step we accumulate the unique ngrams matched scoped by eval document id. The end result is a map of document ids to a set of unique ngram shingle matches.
+
+初次命中得到一组匹配的文档 id, 称为活跃集; 遍历中每次后续 ngram 查询从倒排索引得到的一组匹配文档称为步进集. 我们用活跃集与步进集的交集, 识别活跃集中在当前步命中的文档. 某文档累计 11 次 miss 即从活跃集中移除. 重复此过程直到活跃集为空或到达训练文档边界. 每一步我们都按评测文档 id 累积匹配到的唯一 ngram, 最终得到从文档 id 到唯一 ngram shingle 匹配集合的映射.
 
 <!-- page 103 of 118 -->
 
 **IDF-weighted overlap** Contamination scoring uses inverse document frequency (IDF) weighting:
+
+**IDF 加权重叠** 污染打分使用逆文档频率 (IDF) 加权:
 
 $$
 O = \frac {\sum_ {x \in U _ {t} \cap U _ {e}} \mathrm{idf} (x)}{\sum_ {y \in U _ {e}} \mathrm{idf} (y)}
@@ -3780,7 +3940,11 @@ $$
 
 where $U _ { t }$ is the set of unique n-grams in the training document segment and $U _ { e }$ is the set of unique n-grams in the evaluation document.
 
+其中 $U _ { t }$ 是训练文档片段中唯一 n-gram 的集合, $U _ { e }$ 是评测文档中唯一 n-gram 的集合.
+
 **Cluster match length decay** Less informative short texts require stronger matches.
+
+**簇匹配长度衰减** 信息量较低的短文本需要更强的匹配.
 
 $$
 O ^ {\prime} = O \times \left\{ \begin{array}{l l} 1 & \text {if} L \leq L _ {\mathrm{start}} \\ 1 - 0. 2 \frac {L - L _ {\mathrm{start}}}{L _ {\mathrm{end}} - L _ {\mathrm{start}}} & \text {if} L _ {\mathrm{start}} <   L <   L _ {\mathrm{end}} \\ 0. 8 & \text {if} L \geq L _ {\mathrm{end}} \end{array} \right.
@@ -3788,7 +3952,11 @@ $$
 
 By default $\mathsf { L } _ { - }$ start is set by the configuration perfect\_match\_decay\_start: 20 and L\_end is set by the configuration perfect\_match\_decay\_end: 50.
 
+默认 $\mathsf { L } _ { - }$ start 由配置 perfect\_match\_decay\_start: 20 设定, L\_end 由配置 perfect\_match\_decay\_end: 50 设定.
+
 **Cluster discovery threshold** For efficiency we check that the question match $O ^ { \prime }$ exceeds the minimum question match required to ultimately call contamination. Every candidate contamination that exceeds this value will get a complete scoring, which includes answer and passage information.
+
+**簇发现阈值** 出于效率, 先检查问题匹配 $O ^ { \prime }$ 是否超过最终判定污染所需的最小问题匹配. 每个超过该值的候选污染都会得到完整打分, 打分包含答案与篇章信息.
 
 ![Image block](images/p103-figure-36-example-of-trigram-processing-for-decon.png)
 
@@ -3798,23 +3966,41 @@ Figure 36 Example of trigram processing for decon pipeline.
 
 **Non-comparative** Note that we pre-compute the idf sums for evals during index construction. At detection time we sum the calculated idfs for matching ngrams to produce the overlap ratios. There is no string to string comparison. We rely on the nature of n-gram shingles for sequence matching. The probability of having a substantial ngram shingle overlap is low, and while degenerate cases are possible, they have not been observed in practice.
 
+**非比较式** 注意, 我们在索引构建期为评测预计算 idf 总和; 检测时把匹配 ngram 的 idf 求和得到重叠比率. 全程没有字符串与字符串的直接比较, 我们依赖 n-gram shingle 的本性来做序列匹配. 出现大量 ngram shingle 重叠的概率很低; 退化情形理论上可能存在, 但实践中未观察到.
+
 **Inverted index** Because $| E |$ is relatively small, we build an inverted index in memory which maps ngrams to document ids. We use a two tiered index, the first maps a u64 hash to a u32 sequential id assigned at index construction. And the second tier maps the n-gram id to a set of document ids. This oddity is done to achieve performant membership tests of training ngrams in the significantly smaller set of observed eval ngrams. Consider that the $\left| G _ { \mathrm { t n } } \right| \ll \left| G _ { \mathrm { e n } } \right|$ , so the supermajority of ngram lookups are misses, and skipped. The u32 sequential id is empirically more performant than a one-tiered lookup with document id sets as values.
 
+**倒排索引** 由于 $| E |$ 相对较小, 我们在内存中构建把 ngram 映射到文档 id 的倒排索引. 索引分两层: 第一层把 u64 哈希映射到索引构建期分配的 u32 顺序 id; 第二层把 n-gram id 映射到文档 id 集合. 这种看似别扭的设计, 是为了让 "训练 ngram 是否属于规模小得多的评测 ngram 集合" 这一成员测试足够快. 由于评测 ngram 集合显著更小, 绝大多数 ngram 查询都 miss 并被跳过. 经验上, u32 顺序 id 比以文档 id 集合为值的一层式查找性能更好.
+
 **Hot n-grams** Cluster discovery begins with an initial hit in the inverted index. While the supermajority of ngrams samples are misses, there are some extremely common ngrams present in the eval texts. Because the ngrams are so common, the probability of a initial hit leading to a true instance of contamination is low. As an optimization we do not start contamination cluster expansion on hot ngram hits, but rather switch our sampling rate to 1, and traverse the training document by single tokens until we observe a miss or non-hot ngram hit.
+
+**热 n-gram** 簇发现始于倒排索引中的一次命中. 采样的 ngram 绝大多数是 miss, 但评测文本中也存在极常见的 ngram; 由于它们太常见, 由这类命中启动的簇扩展最终指向真实污染的概率很低. 作为优化, 热 ngram 命中时不启动污染簇扩展, 而是把采样率切到 1, 改为逐 token 遍历训练文档, 直到遇到 miss 或非热 ngram 命中.
 
 #### A.5.5 Scoring System
 
 Scores combine question, answer, and passage overlaps with adaptive weights based on the length of components:
 
+分数把问题, 答案与篇章的重叠按基于组件长度的自适应权重组合起来:
+
 • QAP (all components): 0.7 question, 0.2 answer, 0.1 passage
+
+• QAP (全部组件): 0.7 问题, 0.2 答案, 0.1 篇章
 
 • QA (no passage): 0.75 question, 0.25 answer
 
+• QA (无篇章): 0.75 问题, 0.25 答案
+
 • QP (no answer): 0.85 question, 0.15 passage
+
+• QP (无答案): 0.85 问题, 0.15 篇章
 
 • Q (question only): 1.0 question
 
+• Q (仅问题): 1.0 问题
+
 **Length penalty** We penalize short matches based on the length of $Q+A+P$ by scaling down scores for shorter texts, making the contamination threshold effectively harder to reach. Shorter texts get their scores scaled down before threshold comparison. The scaling factor depends on the total token length $L _ { \mathrm { t o t a l } } ;$
+
+**长度惩罚** 我们按 $Q+A+P$ 的长度惩罚短匹配: 对较短文本把分数缩低, 使污染阈值实际上更难达到. 短文本的分数在与阈值比较前先缩放, 缩放因子取决于总 token 长度 $L _ { \mathrm { t o t a l } }$:
 
 $$
 S _ {\mathrm{final}} = S _ {\mathrm{base}} \times \mathrm{scaleFactor} \big (L _ {\mathrm{total}} \big)
@@ -3822,9 +4008,15 @@ $$
 
 Where the scaling factor decreases for shorter texts, making the threshold effectively harder to reach. Perfect scores (1.0) are never penalized.
 
+缩放因子随文本变短而减小, 使阈值实际上更难达到. 满分 (1.0) 永不被惩罚.
+
 **Confidence adjusted weight** The question component is the core of a contaminated prompt and carries the most weight. But in some cases an eval will have short questions and long answers or a long passage followed by a short question about it.
 
+**置信度调整权重** 问题组件是污染 prompt 的核心, 权重最大; 但有些评测问题很短, 答案很长, 或是一段长篇章后跟一个关于它的短问题.
+
 Because longer sequences with more informative content provide stronger contamination evidence, we adjust component weights based on confidence factors derived from length by reducing the question weight and redistributing it to the answer or passage.
+
+由于更长, 信息量更充分的序列提供更强的污染证据, 我们按由长度导出的置信因子调整组件权重: 降低问题权重, 把它重新分配给答案或篇章.
 
 Question confidence, based on unique n-gram count:
 
@@ -3842,25 +4034,43 @@ $$
 
 Where low-confidence components redistribute their weight to higher-confidence ones.
 
+即低置信组件把权重重新分配给高置信组件.
+
 **Base scores**
+
+**基础分数**
 
 • Q composition: $S _ { \mathrm { b a s e } } = \mathcal { O } _ { q }$
 
+• Q 组成: $S _ { \mathrm { b a s e } } = \mathcal { O } _ { q }$
+
 • QA composition: $S _ { \mathrm { b a s e } } = O _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + O _ { a } \cdot W _ { a , \mathrm { a d j u s t e d } }$
+
+• QA 组成: $S _ { \mathrm { b a s e } } = O _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + O _ { a } \cdot W _ { a , \mathrm { a d j u s t e d } }$
 
 • $\mathbf { Q P }$ composition: $S _ { b a s e } = O _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + O _ { p } \cdot W _ { p , \mathrm { a d j u s t e d } }$
 
+• $\mathbf { Q P }$ 组成: $S _ { b a s e } = O _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + O _ { p } \cdot W _ { p , \mathrm { a d j u s t e d } }$
+
 • QAP composition: $S _ { \mathrm { b a s e } } = \mathcal { O } _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + \mathcal { O } _ { a } \cdot W _ { a , \mathrm { a d j u s t e d } } + \mathcal { O } _ { p } \cdot W _ { p , \mathrm { a d j u s t e d } }$
+
+• QAP 组成: $S _ { \mathrm { b a s e } } = \mathcal { O } _ { q } \cdot W _ { q , \mathrm { a d j u s t e d } } + \mathcal { O } _ { a } \cdot W _ { a , \mathrm { a d j u s t e d } } + \mathcal { O } _ { p } \cdot W _ { p , \mathrm { a d j u s t e d } }$
 
 **Answer proximity** For QA datasets, contamination requires the answer appears near the question cluster. Short answers use exact token matching; long answers use n-gram overlap with IDF weighting.
 
+**答案邻近度** 对 QA 数据集, 判定污染要求答案出现在问题簇附近. 短答案用精确 token 匹配, 长答案用带 IDF 加权的 n-gram 重叠.
+
 **Passage proximity** For datasets with passages, contamination checks if the passage appears within a configurable distance (min\_passage\_distance) from the question cluster. Passages use n-gram overlap with IDF weighting and can tolerate gaps (passage\_max\_consecutive\_misses).
+
+**篇章邻近度** 对含篇章的数据集, 污染检查篇章是否出现在距问题簇可配置距离 (min\_passage\_distance) 之内. 篇章用带 IDF 加权的 n-gram 重叠, 可容忍空隙 (passage\_max\_consecutive\_misses).
 
 ### A.6 Post-Training Additional Training Details
 
 #### A.6.1 Supervised Finetuning Details
 
 **Using OLMo-core infrastructure for SFT Training** Relative to pretraining, this involves a substantially smaller batch size, different data packing, and masking. This leads to an 8x faster training speed than open-instruct, dramatically improving our iteration speed. We use between 1 and 8 8xH100 nodes, or 1 to 4 8xB200 nodes to train our 7B reasoner and instruct models. We use 32 8xH100 nodes to train our 32B thinking model As a consequence of using olmo-core, our batch size is now measured in tokens instead of instances, and we train with document packing instead of padding. We train all of our 7B SFT models with a batch size of 1M tokens and 32B SFT models with a batch size of 4M tokens, for two epochs, with packing, and a 32,768 sequence length. Our hyperparameter settings are also summarized in Table 47.
+
+**用 OLMo-core 基础设施做 SFT 训练** 相对于预训练, 这涉及明显更小的批大小, 不同的数据打包方式与掩码策略. 训练速度因此比 open-instruct 快 8 倍, 迭代效率大幅提升. 训练 7B reasoner 与 instruct 模型我们用 1 到 8 个 8xH100 节点或 1 到 4 个 8xB200 节点; 训练 32B thinking 模型用 32 个 8xH100 节点. 使用 olmo-core 后, 批大小改用 token 而非实例计量, 训练用文档 packing 而非 padding. 所有 7B SFT 模型批大小为 100 万 token, 32B SFT 模型为 400 万 token, 均训练两个 epoch, 开 packing, 序列长度 32,768. 超参数设置亦汇总于表 47.
 
 |  | 7B Thinking SFT | 32B Thinking SFT | 7B Instruct SFT |
 | --- | --- | --- | --- |
@@ -3875,13 +4085,19 @@ Table 47 Training hyperparameters for Olmo 3 Think SFT and Olmo 3 Instruct SFT. 
 
 **Training Settings** Given a preference dataset $\mathcal { D } = \{ \left( x , y _ { c } , y _ { r } \right) \}$ of prompts x and corresponding chosen and rejected responses $y _ { c } \succ y _ { r }$ , we optimize the model policy $\pi _ { \theta }$ on a length-normalized DPO loss (Lambert et al., 2024):
 
+**训练设置** 给定偏好数据集 $\mathcal { D } = \{ \left( x , y _ { c } , y _ { r } \right) \}$ (prompt x 及对应的被选响应与被拒响应 $y _ { c } \succ y _ { r }$), 我们在长度归一化的 DPO 损失 (Lambert et al., 2024) 上优化模型策略 $\pi _ { \theta }$:
+
 $$
 \left| \max _ {\pi_ {\theta}} \mathbb {E} _ {(x, y _ {c}, y _ {r}) \sim \mathcal {D}} \left[ \log \sigma \left(\frac {\beta}{| y _ {c} |} \log \frac {\pi_ {\theta} (y _ {c} | x)}{\pi_ {\mathrm{ref}} (y _ {c} | x)} - \frac {\beta}{| y _ {r} |} \log \frac {\pi_ {\theta} (y _ {r} | x)}{\pi_ {\mathrm{ref}} (y _ {r} | x)}\right) \right] \right|
 $$
 
 where $\pi _ { \mathrm { r e f } }$ is the initial reference policy and $\beta$ is a hyperparameter that regularizes learning via an implicit Kullback–Leibler (KL) divergence penalty between the reference policy and the training policy.
 
+其中 $\pi _ { \mathrm { r e f } }$ 是初始参考策略, $\beta$ 是通过参考策略与训练策略之间的隐式 Kullback-Leibler (KL) 散度惩罚来正则化学习的超参数.
+
 We sweep learning rate and preference dataset size, as we observe that performance increases up until some task-dependent optimal optimization point beyond which further tuning hurts (Figure 23). All other hyperparameters are kept fixed. See Table 48 for exact hyperparameters. We train our 7B models using 2–4 8xH100 nodes, and our 32B models with 8–16 8xH100 nodes.
+
+我们扫描学习率与偏好数据集大小, 因为观察到性能会先上升, 达到某个因任务而定的最优优化点后, 继续调优反而有害 (图 23). 其余超参数保持不变, 精确取值见表 48. 7B 模型用 2–4 个 8xH100 节点训练, 32B 模型用 8–16 个 8xH100 节点.
 
 <!-- page 106 of 118 -->
 
@@ -3903,13 +4119,21 @@ Table 48 Training hyperparameters for Olmo 3 Think DPO and Olmo 3 Instruct DPO. 
 
 We provide full training curves for our 7B reasoner in Figure 41. The overall reward increases steadily over training. The KL divergence grows gradually and reflects stronger deviation from the reference policy. The response length becomes longer and stabilizes at a higher level. Domain-specific verifier rewards display consistent gains in math and moderate fluctuations in code. The IfEval reward rises throughout training. The two general-quality verifiers also show clear and sustained improvement. Together, these trends indicate that the policy improves both specialized skills and overall response quality. The full hyperparameters for all RL experiments are provided in in Table 49.
 
+我们在图 41 中给出 7B reasoner 的完整训练曲线. 总奖励随训练稳步上升; KL 散度逐渐增大, 反映与参考策略的偏离在加强; 响应长度变长并稳定在更高水平. 领域专用验证器奖励在数学上持续提升, 在代码上有适度波动; IfEval 奖励全程上升; 两个通用质量验证器也有明显且持续的改善. 这些趋势共同表明, 策略在专门技能与整体回复质量上都在进步. 所有 RL 实验的完整超参数见表 49.
+
 #### A.6.4 RL-Zero Details
 
 We detail the prompt used for math in Figure 37. Prompts of other domains are quite similar, see the open-instruct codebase for details.
 
+我们在图 37 中给出数学任务所用的 prompt, 其他领域的 prompt 非常相似, 详见 open-instruct 代码库.
+
 We also compare Olmo 3 RL-Zero 7B to one of the more common benchmarks in RLVR, DAPO (Yu et al., 2025) in Figure 38. Olmo 3 RL-Zero achieves reasonable performance faster and is also much more compute efficient, making it better for experimentation.
 
+我们还把 Olmo 3 RL-Zero 7B 与 RLVR 中较常用的基准 DAPO (Yu et al., 2025) 做了对比 (图 38). Olmo 3 RL-Zero 更快达到可用性能, 且计算效率高得多, 更适合做实验.
+
 Finally, we compare Olmo RL-Zero 3.1 to the initially released, RL-Zero 3.0 in Figure 39 and see a sizable improvement. There were some minor fixes to loss calculation but the major improvement comes from 1. setting completion length to 16k instead of 12k and 2. not masking truncated sequences, one of the components of DAPO (Yu et al., 2025). Despite initial results suggesting this masking improved the speed of the trainer (by having fewer completions to train on), we ultimately found that variations in batch size caused by some examples masked out to reduce stability. And without training on overlong negative sequences, completion lengths were higher, on average. We therefore found that any efficiency gains in training speed from masking were outweighed by slowdowns from generating longer sequence lengths.
+
+最后, 我们把 Olmo RL-Zero 3.1 与最初发布的 RL-Zero 3.0 对比 (图 39), 看到明显提升. 损失计算有一些小的修正, 但主要改进来自两点: 1. 把 completion 长度从 12k 改为 16k; 2. 不再掩码截断序列 —— 这是 DAPO (Yu et al., 2025) 的组件之一. 尽管初步结果显示这种掩码能提升训练器速度 (要训练的 completion 更少), 但我们最终发现, 部分样例被掩码导致的批大小波动会降低稳定性; 而且不在过长的负样本序列上训练后, completion 的平均长度反而更高. 因此我们确认, 掩码带来的训练速度收益, 被生成更长序列造成的减速抵消了.
 
 ![Image block](images/p106-figure-37-rl-zero-prompt-for-math-task.png)
 
@@ -3933,13 +4157,23 @@ Figure 39 Olmo 3 RL-Zero vs Olmo 3.1 RL-Zero. We compare our new baseline to the
 
 In this section we detail the filtering methods created primarily for training Olmo 3 Think, which was also used for mid-training and Olmo 3 Instruct data. Each phase of filtering would remove 0-1% of data across most available or generated reasoning traces. Some data, such as Nvidia’s Nemotron Post-training datasets (Nathawani et al., 2025) had very few samples removed relative to their peers.
 
+本节详细介绍主要为训练 Olmo 3 Think 而设计的过滤方法, 它们也用于 midtraining 与 Olmo 3 Instruct 数据. 对大多数可用或生成的推理轨迹, 每阶段过滤移除 0-1% 的数据. 有些数据 (如 Nvidia 的 Nemotron Post-training 数据集 (Nathawani et al., 2025)) 被移除的样本相对同类少得多.
+
 1. Source filtering We perform some filtering to remove non-compliant licenses or data that will not be useful. E.g. for GeneralThoughts traces used in mid-training, we filtered to only commercially friendly licensed prompts. For OpenThoughts2, we removed ShareGPT prompts due to questionable provenance (as done in Tulu 3). For LlamaNemotron Post-Training we filter to only reasoning samples from DeepSeek and Qwen that have not been touched by Llama models.
+
+1. 来源过滤: 我们做一些过滤, 移除不合规许可证或无用的数据. 例如, 对 midtraining 所用的 GeneralThoughts 轨迹, 只保留商用友好许可证的 prompt; 对 OpenThoughts2, 因来源存疑移除 ShareGPT prompt (与 Tulu 3 相同); 对 LlamaNemotron Post-Training, 只保留来自 DeepSeek 与 Qwen 且未被 Llama 模型处理过的推理样本.
 
 2. Format filtering We remove truncated answers (i.e. if they have &lt;think&gt; and no &lt;/think&gt;) and empty outputs (empty responses). Implementation is available at [github.com/allenai/open-instruct/ /scripts/data/filtering\_and\_updates/filter\_cots.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_cots.py)
 
+2. 格式过滤: 移除截断的答案 (即只有 &lt;think&gt; 没有 &lt;/think&gt;) 与空输出 (空响应). 实现见 [github.com/allenai/open-instruct/ /scripts/data/filtering\_and\_updates/filter\_cots.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_cots.py)
+
 3. Domain specific accuracy filtering We check accuracy for many domains, such as precise instruction following, code, or math. Additionally, for chat domains we use included metadata in some datasets such as Wildchat to remove responses or prompts tagged as unsafe. Implementation is available at [github.com/allenai/open-instruct/scripts/data/filtering\_and\_updates/filter\_wildchat.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_wildchat.py)
 
+3. 领域特定准确率过滤: 我们检查多个领域的准确率, 如精确指令遵循, 代码或数学. 此外, 对对话领域, 我们利用 WildChat 等数据集中附带的元数据, 移除被标记为不安全的回复或 prompt. 实现见 [github.com/allenai/open-instruct/scripts/data/filtering\_and\_updates/filter\_wildchat.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_wildchat.py)
+
 4. General content filters Here we remove mention of date cutoffs to try and avoid hallucinations of model characteristics and any mention in the user prompt or completion that indicates the date is to or from any model. Maintaining identity of models trained on heavily distilled data takes a meaningful amount of data work and system prompt design. Implementation is available at [github.com/allenai/open-instruct/](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_datasets_sequential.sh)
+
+4. 通用内容过滤: 这里我们移除对日期截止的提及, 尽量避免模型对自身的特征产生幻觉, 也移除 user prompt 或 completion 中任何暗示知识日期来自或指向某模型的表述. 在重度蒸馏数据上训练的模型要保持身份认同, 需要相当的数据工作与系统 prompt 设计. 实现见 [github.com/allenai/open-instruct/](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_datasets_sequential.sh)
 
 [107](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_datasets_sequential.sh)
 
@@ -3953,7 +4187,11 @@ Figure 40 LLM judge prompt for non-verifiable tasks.
 
 5. Repetition filtering Many open-weights reasoning models have tendencies to perform extreme repetitions, even in thinking traces that result in a correct answer. In particular, we find that .1% of responses from QwQ have mass repetition. We filter this roughly by searching for heavily repeated ( 10x+) sentences, paragraphs, or ( 50x+) phrases. Implementation is available at [github.com/allenai/open-instruct/ scripts/data/filtering\_and\_updates/filter\_ngram\_repetitions.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_ngram_repetitions.py)
 
+5. 重复过滤: 许多开放权重推理模型有极端重复的倾向, 即便在最终答案正确的 thinking 轨迹中也会如此. 特别是我们发现 QwQ 有 0.1% 的回复存在大面积重复. 我们粗略过滤: 搜索严重重复的 (10x+) 句子, 段落或 (50x+) 短语. 实现见 [github.com/allenai/open-instruct/ scripts/data/filtering\_and\_updates/filter\_ngram\_repetitions.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_ngram_repetitions.py)
+
 6. Chinese language filtering In order to encourage Olmo 3 Think to stay in its intended language of English, we remove any post-training responses with 5% or higher prevalence of Chinese characters by searching over the range of Unicode character range of common Chinese characters. Implementation is available at [github.com/allenai/open-instruct/scripts/data/filtering\_and\_updates/filter\_ chinese.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_chinese.py)
+
+6. 中文过滤: 为促使 Olmo 3 Think 停留在目标语言英语, 我们移除后训练回复中中文字符占比 5% 及以上的样本, 做法是在常见汉字的 Unicode 字符范围内搜索. 实现见 [github.com/allenai/open-instruct/scripts/data/filtering\_and\_updates/filter\_ chinese.py](https://github.com/allenai/open-instruct/blob/7ba4cd0/scripts/data/filtering_and_updates/filter_chinese.py)
 
 #### A.7.2 Tool-use data
 
@@ -3985,13 +4223,21 @@ Table 49 RL training hyperparameters for Olmo 3 Think, Olmo 3 Instruct and Olmo 
 
 same ASC server. All tool call outputs are derived from actual environment responses rather than synthetic completions.
 
+**Science QA 数据集补充细节** 引用图查询的做法是: few-shot 提示 GPT-5 生成查询模板, 例如 "What are the top-three most cited papers by {AUTHOR} on {TOPIC}?", 再用真实论文实体实例化. 内容类问题由配备 ASC 服务器的 GPT-5 智能体生成, 它检索相关论文并构造能由检索文本回答的落地问题. 对两类查询, 为获得对应的工具使用轨迹, 我们使用可访问同一 ASC 服务器的 GPT-4.1-mini 智能体. 所有工具调用的输出都来自真实环境响应, 而非合成补全.
+
 **Additional details about the Web Search QA dataset** Given the varied quality of real-world queries, GPT-5 is employed to rate each query drawn from existing open-access benchmarks on a five-point scale assessing (i) whether it calls for comprehensive long-form responses, (ii) factual verifiability, and (iii) the degree of search required. Only queries scoring 4 or 5 on these criteria are retained. We then use an agent equipped with web search and browsing via the Serper API, and scientific snippet retrieval via ASC to generate tool-use trajectories for these queries. This agent is instructed with tool specifications and step-by-step search instructions, resulting in detailed trajectories containing both tool calls and environment outputs. We then filter out trajectories that yield incorrect answers (where ground truth is available), and only keep trajectories that adhere to the expected output format. Additionally, since the environment outputs for the webpage-fetching tool of the Serper API are quite long (typically entire webpages), we used GPT-5 to summarize the content of the web pages and only retained the summaries in the training data.
 
+**Web Search QA 数据集补充细节** 真实世界查询质量参差, 我们用 GPT-5 以五点量表为每个取自现有开放基准的查询打分, 评估 (i) 是否需要全面的长文回复, (ii) 事实可验证性, (iii) 所需搜索的程度. 只保留在这些标准上得 4 或 5 分的查询. 随后, 我们用配备 Serper API 网页搜索与浏览能力及 ASC 科学片段检索能力的智能体为这些查询生成工具使用轨迹; 智能体收到工具规格与分步搜索指令, 产出同时包含工具调用与环境输出的详细轨迹. 接着滤除答案错误的轨迹 (在有标准答案时), 只保留符合预期输出格式的轨迹. 此外, 由于 Serper API 网页抓取工具的环境输出很长 (通常是整个网页), 我们用 GPT-5 对网页内容做摘要, 训练数据中只保留摘要.
+
 **Additional details about simulated interaction trajectories** We run various post-hoc checks on synthesized datasets to verify whether the generated trajectories adhere to the prompts, and filter the dataset to create SimFC. We filter out trajectories where the function calls include functions not part of the presented APIs. Our data-synthesis prompts explicitly target multi-turn, multi-step, parallel function calls (i.e., multiple calls per assistant turn) and refusals, and we filter out the trajectories that do not conform to such requirements specified in the prompts.
+
+**模拟交互轨迹补充细节** 我们对合成数据集做多种事后检查, 验证生成的轨迹是否遵循 prompt, 并过滤数据集以构建 SimFC. 若轨迹中的函数调用包含不属于所给 API 的函数, 则滤除. 我们的数据合成 prompt 明确要求多轮, 多步, 并行函数调用 (即每个 assistant 轮多次调用) 与拒答, 不符合 prompt 中这些要求的轨迹一律滤除.
 
 #### A.7.3 Coding Data Synthesis Pipeline
 
 To construct reinforcement learning (RL) data for code, we required pairs of (problem, test cases). We curate a diverse set of prompts for coding problems, including AceCoder (Zeng et al., 2025a), Klear-Reasoner Code (Su et al., 2025c), Nemotron Post-training Code (NVIDIA AI, 2025), SYNTHETIC-2 code (PrimeIntellect, 2025), Open-Code Reasoner (Ahmad et al., 2025). We use the klear-reasoner and SYNTHETIC-2 test cases directly. For the other datasets, we run prompts through the following synthetic data pipeline:
+
+为构建代码的强化学习 (RL) 数据, 我们需要 (问题, 测试用例) 配对. 我们甄选了多样化的编程问题 prompt, 包括 AceCoder (Zeng et al., 2025a), Klear-Reasoner Code (Su et al., 2025c), Nemotron Post-training Code (NVIDIA AI, 2025), SYNTHETIC-2 code (PrimeIntellect, 2025), Open-Code Reasoner (Ahmad et al., 2025). klear-reasoner 与 SYNTHETIC-2 的测试用例直接使用; 其他数据集则把 prompt 送入下面的合成数据流水线:
 
 <!-- page 110 of 118 -->
 
@@ -4019,7 +4265,11 @@ Table 50 Filtering statistics showing percentage of prompts removed at each majo
 
 • Problem rewriting. Given a coding problem, we first prompted GPT-4.1 to rewrite the description so that it either (a) included a function signature, or (b) explicitly specified that the solution should read from and write to standard input/output (stdio)
 
+- 问题改写: 给定一道编程题, 我们先提示 GPT-4.1 改写题面, 使其 (a) 包含函数签名, 或 (b) 明确说明解法应从标准输入读取并写出到标准输出 (stdio).
+
 • Solution generation. GPT-4.1 was then prompted to provide a corresponding solution. Depending on the problem type, this was either a Python function matching the given signature, or a program reading from and writing to stdio. When the original problem source included a reference solution, we included it in the prompt
+
+- 解答生成: 随后提示 GPT-4.1 给出对应解答. 视问题类型而定, 解答要么是匹配给定签名的 Python 函数, 要么是从 stdio 读写的程序. 当原始问题来源附带参考解答时, 我们把它一并放入 prompt.
 
 <!-- page 111 of 118 -->
 
@@ -4064,7 +4314,11 @@ Figure 42 Illustrative prompt for generating multi-turn function-calling interac
 
 **DPO prompt mixing** See Table 51 for prompt mixing experiment results.
 
+**DPO prompt 混合** prompt 混合实验结果见表 51.
+
 **Model pool for LLM-judged pairs** To create the GPT-judged subset of Dolci Instruct DPO, we generate completions on our prompt pool with the following models: gpt-oss-20B, gpt-oss-120B (Agarwal et al., 2025), GPT-4.1-2025-04-14 (OpenAI, 2023b), Mistral-Small-24B-Instruct-2501, OLMo 2-1B-Instruct, OLMo 2-7B-Instruct, OLMo 2-13B-Instruct, OLMo 2-32B-Instruct (OLMo et al., 2024), Phi4-Mini-Instruct (Abdin et al., 2024), Gemma3-4B-it, Gemma3-12B-it, Gemma3-27B-it (Gemma 3 Team, 2025), Qwen3-Coder-30B-3A (no reasoning), Qwen3-0.6B (no reasoning), Qwen3-1.7B (no reasoning), Qwen3-4B (no reasoning), Qwen3-8B (no reasoning), Qwen3-14B (no reasoning), Qwen3-32B (no reasoning), Qwen3-30B-3A (no reasoning) (Yang et al., 2025a), QwQ-32b (Qwen Team, 2025), Yi-9B, and Yi-34B (Young et al., 2024).
+
+**LLM 评判配对的模型池** 为构建 Dolci Instruct DPO 的 GPT 评判子集, 我们在 prompt 池上用以下模型生成补全: gpt-oss-20B, gpt-oss-120B (Agarwal et al., 2025), GPT-4.1-2025-04-14 (OpenAI, 2023b), Mistral-Small-24B-Instruct-2501, OLMo 2-1B-Instruct, OLMo 2-7B-Instruct, OLMo 2-13B-Instruct, OLMo 2-32B-Instruct (OLMo et al., 2024), Phi4-Mini-Instruct (Abdin et al., 2024), Gemma3-4B-it, Gemma3-12B-it, Gemma3-27B-it (Gemma 3 Team, 2025), Qwen3-Coder-30B-3A (no reasoning), Qwen3-0.6B (no reasoning), Qwen3-1.7B (no reasoning), Qwen3-4B (no reasoning), Qwen3-8B (no reasoning), Qwen3-14B (no reasoning), Qwen3-32B (no reasoning), Qwen3-30B-3A (no reasoning) (Yang et al., 2025a), QwQ-32b (Qwen Team, 2025), Yi-9B 与 Yi-34B (Young et al., 2024).
 
 <!-- page 112 of 118 -->
 
@@ -4073,6 +4327,8 @@ Figure 42 Illustrative prompt for generating multi-turn function-calling interac
 Figure 43 Illustrative prompt for generating function-calling refusals, i.e., when the task is not feasible given the available functions (prompt has been truncated for readability).
 
 For each prompt, we sample four model completions and judge them via a GPT-4.1 judge with the UltraFeedback judge prompts<sup>70</sup> (Lambert et al., 2024; Cui et al., 2023). To enforce a meaningful delta between chosen and rejected responses, we enforce our judge pipeline to sample responses from exactly two of the following smaller and/or previous generation models which show lower overall performance: OLMo 2-1B-Instruct, OLMo 2-7B-Instruct, Yi-9B, Yi-34B, Phi4-Mini-Instruct, Qwen3-0.6B (no reasoning), Qwen3-1.7B (no reasoning). Without this intervention (i.e. sample four models from the pool to judge at random), we would have an approximately 33% chance of sampling at least 2 weak models out of our 4 samples from our model pool for judgment, providing limited contrast in preference pairs. We binarize into preference pairs by selecting the worst response out of the four to be rejected, and the best as chosen.
+
+对每个 prompt, 我们采样四个模型的补全, 用 GPT-4.1 评判器搭配 UltraFeedback 评判 prompt<sup>70</sup> (Lambert et al., 2024; Cui et al., 2023) 打分. 为保证被选与被拒回复之间有实质性差距, 我们强制评判流水线恰好从以下整体表现较弱的小型/上一代模型中选两个来采样回复: OLMo 2-1B-Instruct, OLMo 2-7B-Instruct, Yi-9B, Yi-34B, Phi4-Mini-Instruct, Qwen3-0.6B (no reasoning), Qwen3-1.7B (no reasoning). 若无此干预 (即随机从池中抽四个模型来评判), 我们从模型池抽 4 个样本时约有 33% 的概率至少抽到 2 个弱模型, 偏好配对就缺乏区分度. 二值化为偏好配对的做法: 四个回复中最差的作为被拒, 最好的作为被选.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">70<sub>We</sub> ran initial experiments employing a GPT-5 judge, but results indicatedthat the GPT-4.1 judge is better.</span></small>
 
@@ -4104,35 +4360,65 @@ Table 51 Development results for DPO prompt domain mixing. Overall, we find that
 
 For post-training, we focus exclusively on generative evaluations, in which we generate completions until a max length is reached or eos token is generated (as opposed to multiple-choice-based evaluations used in pretraining), better matching real-world downstream usage.
 
+后训练阶段, 我们只聚焦生成式评测: 生成补全直到达到最大长度或产生 eos token (不同于预训练所用的多项选择评测), 更贴近真实下游使用场景.
+
 Following DeepSeek R1 report (Guo et al., 2025) and Nvidia Nemotron (Adler et al., 2024) we use a sampling temperature of 0.6 and top-p of 0.95. We strip thinking traces from the answer text when generated. We account for the variance this induces in smaller benchmarks (e.g. AIME, which is made up of 30 questions) by taking multiple samples and reporting the overall average performance. For QA tasks (e.g. BBH, MMLU), we create a unified set of ‘Olmo 3’ regexes for answer extraction, covering a wide variety of potential answer templates. We additionally update AlpacaEval 2 Length Controlled (LC) (Dubois et al., 2024) to use GPT-4.1 as a judge instead of the original GPT-4-Turbo (OpenAI, 2023b) both to increase the reliability of the evaluation and to save ∼90% of inference costs. Importantly, our evaluation settings are unified across thinker and instruct models, simplifying our evaluation development process.
+
+沿用 DeepSeek R1 报告 (Guo et al., 2025) 与 Nvidia Nemotron (Adler et al., 2024) 的做法, 我们使用 0.6 的采样 temperature 与 0.95 的 top-p. 生成的答案文本会剥离 thinking 轨迹. 为抵消这给小型基准 (如仅 30 题的 AIME) 带来的方差, 我们多次采样并报告总体平均成绩. 对 QA 任务 (如 BBH, MMLU), 我们构造了一套统一的 "Olmo 3" 正则用于答案抽取, 覆盖多种多样的潜在答案模板. 我们还把 AlpacaEval 2 Length Controlled (LC) (Dubois et al., 2024) 的评判器从原始 GPT-4-Turbo (OpenAI, 2023b) 换成 GPT-4.1, 既提高评测可靠性, 又节省约 90% 的推理成本. 重要的是, 我们的评测设置在 thinker 与 instruct 模型间是统一的, 简化了评测开发流程.
 
 **Is AlpacaEval useful?** Certainly! AlpacaEval, and similar evaluations, such as ChatBotArena (Zheng et al., 2023), MT-Bench (Zheng et al., 2023), Arena-Hard (Li et al., 2024c), etc. are established as crucial benchmarks for the AI industry. Let’s delve into the pros and cons of AlpacaEval:
 
+**AlpacaEval 有用吗?** 当然! AlpacaEval 以及同类评测, 如 ChatBotArena (Zheng et al., 2023), MT-Bench (Zheng et al., 2023), Arena-Hard (Li et al., 2024c) 等, 已被确立为 AI 行业的关键基准. 我们来剖析 AlpacaEval 的利与弊:
+
 It’s not a broken evaluation, it’s a trade-off. It’s well established that most people enjoy reading language model completions that have a bit of flair to them. In fact, the style of bold, lists, etc. can be very helpful when skimming information. It just can often go over the top—such as when too many emoji’s are included!
+
+这不是一个坏掉的评测, 而是一种取舍. 众所周知, 大多数人喜欢读带点风格的语言模型补全. 粗体, 列表这类风格在扫读信息时往往很有帮助; 只是它常常做得过火, 比如塞进太多 emoji!
 
 Pro: Ease-of-reading and flair
 
+优点: 易读且带风格
+
 Con: Over-optimized style
+
+缺点: 被过度优化的风格
 
 We’re incentivized to maximize the benchmark—even if we don’t like it. As a smaller lab, we need to work hard to put our models on the map! We don’t love the style of completions from models scoring high on these benchmarks, but we derive so much benefit from the attention it attracts.
 
+我们有动力去刷这个基准, 哪怕我们并不喜欢它. 作为一家较小的实验室, 我们必须努力让自己的模型被看见! 我们并不喜欢在这些基准上高分模型的补全风格, 但它吸引来的关注给了我们太多实惠.
+
 Pro: Simple comparison to known standards
+
+优点: 便于与已知标准对比
 
 Con: Imperfect performance signal
 
+缺点: 性能信号不完美
+
 There aren’t many better options! There are just so few evaluations that test a model’s ability to chat with the users reliably—and we need to serve the most common use case if we want adoption. More diversity of benchmarks, such as alternatives like multi-turn and instruction following, are slowly helping out understanding.
+
+并没有多少更好的选择! 能可靠测试模型与用户聊天能力的评测实在太少, 而想要被采用就必须服务好最常见的使用场景. 更多样化的基准, 比如多轮, 指令遵循等替代评测, 正在慢慢改善我们的认识.
 
 Pro: Common adoption
 
+优点: 被业界普遍采用
+
 Con: Low diversity in chat evaluations
+
+缺点: 聊天类评测多样性不足
 
 Bonus: There’s something poetic about having LLMs judge LLMs.
 
+额外一提: 让 LLM 评判 LLM, 多少有些诗意.
+
 In summary, we need evaluations like this to make sure the model is behaving as expected. When it comes to balancing style and benchmarks, at the end of the day, no-one’s perfect—not even us.
+
+总之, 我们需要这类评测来确保模型表现符合预期. 在风格与基准之间权衡时, 说到底, 没有谁是完美的, 我们也不例外.
 
 #### A.8.2 Safety Evaluations Overview
 
 The safety evaluations that were tested upon during training runs and whose average was reported earlier were the same set from OLMo 2 (OLMo et al., 2024) and Tülu 3 (Lambert et al., 2024). In addition to the development safety evaluations, we also evaluate our models on four new safety evaluations, chosen due to their prevalence in recent LLM safety evaluations (Kaiyom et al., 2024; Kavukcuoğlu and DeepMind, 2025; Anthropic, 2025; Cai et al., 2025; OpenAI, 2025; Lambert et al., 2024).
+
+训练过程中测试并报告均值的安全评测, 与 OLMo 2 (OLMo et al., 2024) 和 Tülu 3 (Lambert et al., 2024) 用的是同一套. 除开发期安全评测外, 我们还评估了四个新的安全评测, 选择理由是它们在近期 LLM 安全评测中应用普遍 (Kaiyom et al., 2024; Kavukcuoğlu and DeepMind, 2025; Anthropic, 2025; Cai et al., 2025; OpenAI, 2025; Lambert et al., 2024).
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">71<sub>We</sub> find that both thinking models degenerate quickly when evaluated with low temperatures (as used in OLMo 2), while instruction models can be evaluated at this higher temperature.</span></small>
 
@@ -4148,11 +4434,19 @@ Table 53 Olmo 3 Instruct 7B results and comparisons on the safety benchmarks. Al
 
 **Development safety evaluations** We include HarmBench (Mazeika et al., 2024), DoAnythingNow (DAN; Shen et al., 2024), XSTest (Röttger et al., 2023), WildGuard-Test (Han et al., 2024), WildJailbreak-Test (Jiang et al., 2024), and TrustLLM-JailbreakTrigger (Huang et al., 2024a).
 
+**开发期安全评测** 包括 HarmBench (Mazeika et al., 2024), DoAnythingNow (DAN; Shen et al., 2024), XSTest (Röttger et al., 2023), WildGuard-Test (Han et al., 2024), WildJailbreak-Test (Jiang et al., 2024) 与 TrustLLM-JailbreakTrigger (Huang et al., 2024a).
+
 **Unseen safety evaluations** We further evaluated on four held-out safety benchmarks: Toxigen (Hartvigsen et al., 2022), StrongReject (Souly et al., 2024), Weapons of Mass Destruction Proxy (WMDP; Li et al., 2024b), and Bias Benchmark for QA (BBQ; Parrish et al., 2022).
+
+**未见过的安全评测** 我们还在四个 held-out 安全基准上评测: Toxigen (Hartvigsen et al., 2022), StrongReject (Souly et al., 2024), 大规模杀伤性武器代理基准 (WMDP; Li et al., 2024b), 以及问答偏见基准 (BBQ; Parrish et al., 2022).
 
 **Averaging and reported metrics** Safety and accuracy scores are aggregated according to benchmark protocol, with all reported metrics normalized such that higher values are better (1 indicates perfect safety performance). Specifically, we report the average of: refusal accuracy, i.e., inverted ASR (Attack Success Rate), for DoAnythingNow, Harmbench, Wildguard, TrustLLM-JailbreakTrigger, Toxigen, and StrongReject; accuracy for XSTest and BBQ; the average of inverted ASR for Wildjailbreak (harmful) and ASR for Wildjailbreak (benign); and inverted accuracy (i.e., error rate) for WMDP. For the safety benchmarks, models were evaluated with a top-p of 0.95 and sampling temperature of 0.7.
 
+**平均与报告指标** 安全与准确分数按各基准协议聚合, 所有报告指标均归一化为越高越好 (1 表示完美安全表现). 具体而言, 我们报告: DoAnythingNow, HarmBench, WildGuard, TrustLLM-JailbreakTrigger, Toxigen 与 StrongReject 的拒答准确率 (即反转后的 ASR (攻击成功率)); XSTest 与 BBQ 的准确率; WildJailbreak (有害) 的反转 ASR 与 WildJailbreak (良性) 的 ASR 的平均; 以及 WMDP 的反转准确率 (即错误率). 安全基准评测使用 top-p 0.95 与采样 temperature 0.7.
+
 We explain all of the evaluations in more detail below:
+
+下面逐一详细说明各评测:
 
 • HarmBench (Mazeika et al., 2024) evaluates models’ refusal to comply with a diverse suite of harmful prompts, distributed across both functional and semantic categories. The benchmark contains 320 harmful prompts, covering functional behaviors including "standard" harms from sources like AdvBench and TDC 2023 Red Teaming, prompts testing for copyright violations, and contextual prompts (i.e., prompts combining
 
@@ -4178,15 +4472,27 @@ Table 54 Olmo 3 Think 32B and comparisons on the safety benchmarks. All numbers 
 
 an instruction with a context such as a document).72 The semantic category includes prompts representing seven types of real-world harms: cybercrime, unauthorized intrusion, chemical/biological/drug-related, copyright infringement, misinformation, harassment, illegal activities, and general harm. Model outputs are evaluated for safety of output using the WildGuard classifier’s safety label (Han et al., 2024).
 
+- HarmBench (Mazeika et al., 2024) 评测模型对一组多样化的有害 prompt 的拒绝能力, prompt 按功能与语义两类分布. 基准含 320 个有害 prompt, 功能类覆盖 "标准" 危害 (来自 AdvBench 与 TDC 2023 Red Teaming 等来源), 测试版权侵权的 prompt, 以及上下文 prompt (即指令与文档等上下文结合的 prompt).72 语义类则代表七类现实危害: 网络犯罪, 未授权入侵, 化学/生物/毒品相关, 版权侵权, 虚假信息, 骚扰, 非法活动与一般危害. 模型输出的安全性用 WildGuard 分类器的安全标签评判 (Han et al., 2024).
+
 • DoAnythingNow (DAN; Shen et al., 2024) tests models’ robustness to the well-known DAN jailbreak framework by pairing DAN-style jailbreak templates with harmful behaviors adapted from HarmBench. For this evaluation, we subsample 300 representative prompts from the full benchmark. Prompt content spans diverse instruction-jailbreak combinations aiming to bypass safety guardrails. We compute refusal accuracy using the WildGuard classifier’s refusal label (Han et al., 2024) to assess whether model outputs refuse or comply with the harmful instructions.
+
+- DoAnythingNow (DAN; Shen et al., 2024) 把 DAN 风格的越狱模板与改编自 HarmBench 的有害行为配对, 测试模型对知名 DAN 越狱框架的鲁棒性. 本评测从完整基准中抽 300 个代表性 prompt, 内容覆盖试图绕过安全防护的多样指令-越狱组合. 我们用 WildGuard 分类器的拒答标签 (Han et al., 2024) 计算拒答准确率, 衡量模型输出是拒绝还是服从有害指令.
 
 • XSTest (Röttger et al., 2023) measures models’ over-refusal tendencies, i.e., their ability to distinguish harmful requests from superficially similar but benign prompts. The benchmark includes 200 unsafe prompts and 250 safe prompts that mimic the form or vocabulary of unsafe requests. Prompt categories include homonyms, figurative language, safe targets, safe contexts, definitions, real/nonsense group discrimination, historical events, public and fictional privacy scenarios, among others. As with the two previous benchmarks, we evaluate models’ outputs via refusal accuracy with WildGuard’s refusal label (Han et al., 2024).
 
+- XSTest (Röttger et al., 2023) 衡量模型的过度拒绝倾向, 即区分有害请求与表面相似但良性的 prompt 的能力. 基准含 200 个不安全 prompt 与 250 个模仿不安全请求形式或措辞的安全 prompt, 类别包括同音词, 比喻语言, 安全目标, 安全语境, 定义, 真实/虚构群体歧视, 历史事件, 公开与虚构隐私场景等. 与前两个基准相同, 我们用 WildGuard 拒答标签 (Han et al., 2024) 以拒答准确率评判模型输出.
+
 • WildGuard-Test (Han et al., 2024) provides a comprehensive evaluation of prompt harm, response harm, and response refusal across a set of 1,725 items. Prompts are collected from adversarial synthetic data and real in-the-wild user interactions with LLMs. We evaluate on the subset of 749 adversarial prompts. The evaluation reports the safety of outputs using the WildGuard classifier’s safety label, capturing both the model’s ability to refuse harmful queries and to respond appropriately to benign prompts.
+
+- WildGuard-Test (Han et al., 2024) 对 1725 个条目综合评测 prompt 危害, 回复危害与回复拒答. prompt 来自对抗性合成数据与真实场景下用户和大模型的交互. 我们在 749 个对抗性 prompt 的子集上评测. 评测用 WildGuard 分类器的安全标签报告输出安全性, 同时考察模型拒绝有害查询的能力与恰当回应良性 prompt 的能力.
 
 • WildJailbreak-Test (Jiang et al., 2024) assesses model safeguards in the face of advanced, adversarial jailbreak attacks across both harmful and benign contexts. The dataset comprises 2,000 adversarially crafted harmful prompts and 250 adversarial benign queries intended to measure over-refusals. We evaluate models refusal accuracy using WildGuard’s refusal label: refusals are desirable on harmful queries (indicating stronger refusals), and non-refusals are desired on benign queries (indicating fewer unnecessary refusals).
 
+- WildJailbreak-Test (Jiang et al., 2024) 评估模型在有害与良性两种语境下面对高级对抗性越狱攻击时的防护能力. 数据集含 2000 个对抗构造的有害 prompt 与 250 个对抗性良性查询 (用于衡量过度拒绝). 我们用 WildGuard 拒答标签评估拒答准确率: 有害查询上拒答是好的 (防护更强), 良性查询上不应拒答 (不必要的拒绝更少).
+
 • TrustLLM-JailbreakTrigger (Huang et al., 2024a) tests susceptibility to 13 distinct jailbreak attack methods with a suite of 400 prompts. Prompts are equally split between two types: "Questions about Bad Behaviors" and "Instructions to generate Toxic Content". This benchmark evaluates whether models safety mechanisms withstand a variety of jailbreak strategies and measures the toxicity of outputs produced under attack. The main metric is the refusal accuracy, reported using WildGuard’s refusal label.
+
+- TrustLLM-JailbreakTrigger (Huang et al., 2024a) 用 400 个 prompt 测试模型对 13 种不同越狱攻击方法的易感性. prompt 均分为两类: "关于不良行为的问题" 与 "生成有毒内容的指令". 该基准评估模型安全机制能否抵御多种越狱策略, 并衡量攻击下输出的毒性. 主要指标是拒答准确率, 用 WildGuard 拒答标签报告.
 
 • Toxigen (Hartvigsen et al., 2022) tests whether models’ comply with instructions to generate toxic or stereotypical sentences for given demographic groups. Each prompt includes a list of 10 examples of toxic sentences, to which an unsafe model would add new toxic sentences. We subsampled a random set of 1400 input prompts divided equally between demographic subcategories from ToxiGen: Asian, Black,
 
@@ -4216,9 +4522,15 @@ Table 55 Olmo 3.1 32B Instruct and comparisons on the safety benchmarks. All num
 
 Chinese, Jewish, Latino, LGBTQ, Mental Disability, Muslim, Native American, Physical Disability, Trans, Women. We report the toxicity score of the model’s output, measured by the ToxiGen RoBERTa-based trained classifier.<sup>74</sup>
 
+- Toxigen (Hartvigsen et al., 2022) 测试模型是否会服从指令, 为给定人口群体生成有毒或带刻板印象的句子. 每个 prompt 附 10 句有毒示例, 不安全的模型会接着写新的有毒句子. 我们随机抽 1400 个输入 prompt, 在 ToxiGen 的各人口子类别间均分: 亚裔, 黑人, 华裔, 犹太裔, 拉丁裔, LGBTQ, 精神残疾, 穆斯林, 美洲原住民, 身体残疾, 跨性别者, 女性. 我们报告模型输出的毒性分数, 由基于 RoBERTa 训练的 ToxiGen 分类器测量.<sup>74</sup>
+
 • StrongReject (Souly et al., 2024) assesses models’ susceptibility to advanced jailbreak prompts intended to elicit forbidden content. Each input prompt is a real-world adversarial instruction, constructed to evade common safety guardrails using one of 37 jailbreak techniques, plus a baseline with no jailbreak. We subsampled approximately 20% of the full benchmark, resulting in 2,294 unique prompts, maintaining the diversity of jailbreak techniques and forbidden instruction topics. The model’s output is scored on a 1-5 safety scale according to the risk or compliance with the forbidden prompt, using a classifier that is uses a version of the StrongReject classifier that is a LoRa adapter merged with the base Gemma-2B (Gemma Team et al., 2024) model by the benchmark creators. The final evaluation metric is a weighted sum over the probability distribution across possible scores computed via log-probabilities of top-scoring response tokens, which is then reversed such that higher scores indicate higher safety.
 
+- StrongReject (Souly et al., 2024) 评估模型对旨在引出违禁内容的高级越狱 prompt 的易感性. 每个输入 prompt 都是一条真实世界的对抗性指令, 用 37 种越狱技术之一构造以规避常见安全防护, 另设无越狱的基线. 我们抽取完整基准约 20%, 得到 2294 个不重复 prompt, 保持了越狱技术与违禁指令主题的多样性. 模型输出按 1-5 安全量表打分, 依据是对违禁 prompt 的风险或服从程度; 打分使用基准作者提供的 StrongReject 分类器版本, 它是与基础 Gemma-2B (Gemma Team et al., 2024) 合并的 LoRA 适配器. 最终评测指标是各可能分数概率分布上的加权和 (由最高分回复 token 的 log 概率计算), 再反转, 使分数越高表示越安全.
+
 • Weapons of Mass Destruction Proxy (WMDP) (Li et al., 2024b) evaluates whether models can provide answers to dual-use knowledge questions in the domains of biology, chemistry, and cybersecurity. Each prompt is a factual multiple choice question related to weapons of mass destruction, with four answer options and one correct answer. We sample 20% of the full benchmark, yielding 734 total questions distributed across the original biological (1273), chemical (408), and cybersecurity (1987) test sets. Prompts include the instruction we use when evaluating MMLU (Wang et al., 2024a):
+
+- 大规模杀伤性武器代理基准 (WMDP) (Li et al., 2024b) 评估模型能否回答生物, 化学与网络安全领域的两用知识问题. 每个 prompt 是一道与大规模杀伤性武器相关的事实性多项选择题, 四个选项中有一个正确答案. 我们抽取完整基准的 20%, 共 734 题, 分布在原有的生物 (1273 题), 化学 (408 题) 与网络安全 (1987 题) 测试集上. prompt 带有我们评测 MMLU (Wang et al., 2024a) 时使用的指令:
 
 The following are multiple choice questions. Summarize your reasoning concisely, then conclude
 
@@ -4235,5 +4547,7 @@ Bias Benchmark for QA (BBQ) (Parrish et al., 2022) measures bias and stereotype 
 <!-- page 118 of 118 -->
 
 with which non-unknown outputs reinforce stereotypes within each prompt type (e.g., the model incorrectly picks the stereotypical answer).
+
+BBQ (Parrish et al., 2022) 通过向模型提出针对年龄, 性别, 种族, 宗教与交叉身份等社会维度的多项选择题, 衡量偏见与刻板印象依附程度. 基准的问题按 11 个子类别划分, 每个类别又沿 歧义/无歧义 与 刻板/反刻板 的框架轴聚类, 有时还区分是否出现人名. 我们的评测从每个子类别抽约 500 题 (排除交叉身份组合), 在各 prompt 类型 (歧义/无歧义, 刻板/反刻板, 有无人名) 间均匀分布, 共 4482 个实例. 每个 prompt 使用与 WMDP 相同的结构化格式. 模型回复按准确率 (答对比例) 与偏见评估, 用基于正则的字符串解析器判分 (与 BBQ 类似). 准确率只衡量是否选对答案; 偏见按 Parrish et al. (2022) 的协议量化: 歧义与消歧偏见分数计算为非 "未知" 输出在各 prompt 类型中强化刻板印象的频率 (例如模型错误地选择了带刻板印象的答案).
 
 118

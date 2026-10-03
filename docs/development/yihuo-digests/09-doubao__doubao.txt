@@ -1,0 +1,41 @@
+# 09-doubao/doubao  文件: content/model-library/03-模型家族\09-doubao/doubao\doubao-bi.md  共 10 块
+
+--- 行27 [想] ---
+> 没有. 英文门户只写 ByteDance Seed 和 Seed2.1, 豆包这个名字一次都没出现. 页面上能对应到对话产品的入口是第 3 页的 Dola (`dola.com/chat`), 第 1 页 Try now 的模型 ID 也以 `dola-` 开头. Dola 和豆包是什么关系, 这页没说, 不能凭目录名把两者等同.
+
+
+--- 行38 [问] ---
+> 两个都不是论文. Learn more 指向站内产品页 `/en/seed2_1`; Tech blog 指向一篇博客, slug 是 `seed2-1-officially-released-advancing-ai-productivity`, 意思是 「Seed2.1 正式发布, 推进 AI 生产力」, 读起来是发布公告. 这页本身只有一句 tagline, 没有架构, 数据或榜单数字.
+
+
+--- 行45 [核对] ---
+> 不能完全确认. 链接落在 `ai.byteplus.com` 的 playground, 参数是 `model=dola-seed-2-1-turbo-260628`, 比标题多了 `turbo` 这个后缀, 而标题和 tagline 都没提 Turbo 版. 末尾 `260628` 的形状像 2026 年 6 月 28 日的版本号, 这是按格式猜的, 页面没有解释. 试用入口也不在 seed.bytedance.com 站内, 走的是 BytePlus 的域名.
+
+
+--- 行54 [看表] ---
+> 这页找不到. 下面六条动态从 Aug 5 排到 Jul 7, 按日期倒序, 里面没有 Seed2.1 的博客. 要么它早于 7 月 7 日, 要么它只占头条位不进列表, 页面没有交代是哪种. 能参考的只有上一条提到的模型 ID 尾巴 `260628`, 而那也只是猜测.
+
+
+--- 行67 [拆开] ---
+> 对. 标题是 「Toward Fully Multimodal Natural Interaction」, URL slug 是 `seedrealtime-audio-visual-full-duplex-llm-released-toward-omni-modal-natural-interaction`, 措辞从 fully multimodal 换成了 omni-modal, 还多了前缀 `seedrealtime`. 第 3 页产品链接里正好有一个 SeedRealtime (`/en/SeedRealtime`). slug 暗示这篇博客讲的就是 SeedRealtime, 但标题本身没出现这个产品名, 两者是否一一对应, 要打开链接才能确认.
+
+
+--- 行70 [确认] ---
+> 不是. 每条动态下面都有这样一行, 结构是 「日期 + 分类标签」, MinerU 把两者抓成了同一个链接文本. 六条的分类依次是 Audio, Visual, Research programs, Audio, Visual, Frontier research. 由此可见这个列表混着模型发布, 招募项目和研究博客, 不全是模型.
+
+
+--- 行123 [回看] ---
+> 页面只给了标题和 「Frontier research」 标签, 没有曲线, 也没有变量说明. 标题前半句是 「measuring real-world environment learning」, 所以这条规律多半和环境学习有关, 但它讲的是训练阶段的规模投入, 还是部署后与环境交互的次数, 这页判断不了. 译文因此保留英文 Scaling Law, 不擅自落到某一种中文说法上.
+
+
+--- 行144 [停一下] ---
+> 看上下文不像. 它紧跟在 「Explore AI products and services」 这一节后面, 下一行是 Dreamina 站点的导航条文字. 配图 `p03-image.png` 左边是 Seedream 字标加 AI video generator, Trending effects, AI photo editor 等卡片, 右边是一个 「Start Creating With AI Agent」 的输入界面. 这一段更可能是产品轮播里嵌入的 Dreamina 宣传图文, 不是 Seed 团队写的章节标题.
+
+
+--- 行191 [再看] ---
+> 三处. 第 2 页 7 月 8 日的博客 「Introducing Seedream 5.0 Pro」; 第 3 页轮播里单独一行 「Seedream」 加配图; 第 3 页这条站内链接 「Seedream 5.0 Pro」, 指向 `/en/seedream5_0_pro`. 博客和站内链接的版本号一致, 可以对上. 轮播那一处只写了 Seedream, 没带版本号, 不能默认它展示的就是 5.0 Pro.
+
+
+--- 行208 [对一下] ---
+> Seedream 5.0 Pro, SeedRealtime, Seed Audio 1.0 在第 3 页末尾, Seed GR-RL 被分页切到第 4 页开头, 它们是同一组站内链接. 前三个都能在 Latest updates 里找到对应博客, GR-RL 找不到, 页面上只有名字和路径 `/en/gr_rl`. 名字里的 RL 通常指强化学习, GR 是什么这页没写, 不做猜测. 反过来, Seedance 2.5 有 7 月 31 日的博客, 却没进这组站内链接, 只在 Dreamina 导航条里出现.
+

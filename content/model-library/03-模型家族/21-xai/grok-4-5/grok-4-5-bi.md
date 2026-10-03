@@ -118,7 +118,7 @@ Grok 4.5 is served at fast-model speeds of 80 TPS. Combined with twice greater t
 Grok 4.5 以 fast 模型的速度提供服务, 达到 80 TPS. 再加上在同等任务上比最新领先模型高出一倍的 token 效率, 模型能更快地把聪明的结果交给你, 成本还低得多.
 
 > **对一下:** 小标题说「Faster than flash models」, flash 模型指哪一档, 一个旗舰模型凭什么跑到 80 TPS?
-> 「flash」在这类语境里通常指各家的小杯低延迟档 (如 Gemini Flash 或 Grok 自家的 fast 档), 标题的隐含主张是「旗舰的智能 + flash 的延迟」. 机制上旗舰模型达到 80 TPS 的路径有几种: 走低推理档位 (低 reasoning effort, 少生成思考 token), 投机解码 (小模型起草, 大模型验证), 或 serving 层的 batch/调度优化; 页面没说走了哪条, 80 TPS 对应哪个推理档也没说 (p3). 值得注意的是这和第 2 页 RL 的「efficient reasoning」, 第 4 页 token 效率图是同一根线: 如果高效主要来自「想得更短」, 那 faster 有一部分是用思考深度换的, 速度与智能之间存在取舍, 页面把两边都当纯收益陈述. 可验证路径是对照 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 的分档推理命名, 定位 80 TPS 落在哪一档, 再测换档后的分数变化.
+> 「flash」在这类语境里通常指各家的小杯低延迟档 (如 Gemini Flash 或 Grok 自家的 fast 档), 标题的隐含主张是「旗舰的智能 + flash 的延迟」. 机制上旗舰模型达到 80 TPS 的路径有几种: 走低推理档位 (低 reasoning effort, 少生成思考 token), 投机解码 (小模型起草, 大模型验证), 或 serving 层的 batch/调度优化; 页面没说走了哪条, 80 TPS 对应哪个推理档也没说 (p3). 值得注意的是这和第 2 页 RL 的「efficient reasoning」, 第 4 页 token 效率图是同一根线: 如果高效主要来自「想得更短」, 那 faster 有一部分是用思考深度换的, 速度与智能之间存在取舍, 页面把两边都当纯收益陈述. 可验证路径是对照 [Grok 4.20 规格页](../grok-4-20/grok-4-20-bi.md) 的分档推理命名, 定位 80 TPS 落在哪一档, 再测换档后的分数变化.
 
 Token efficiency
 
@@ -181,7 +181,7 @@ Grok 4.5 is delivered at an incredibly competitive cost compared to other leadin
 Grok 4.5 的报价比其他领先模型低得多. 定价是每百万输入 token \$2, 每百万输出 token \$6. 模型的 token 效率大约是可比领先模型的 2 倍, 解题步数不到一半. 总的来说, Grok 4.5 在单位时间和单位成本上给出最高的智能.
 
 > **停一下:** 定价这段把「2 倍 token 效率」「不到一半的步数」「最高智能/时间/成本」三个说法放在一起, 每个都能核实吗?
-> 一个都核不实, 而且两个量还混着用. token 效率指完成同一任务平均输出的 token 数 (第 4 页图的纵轴), step 是 agent 的决策步数, 两者不是一回事: 每步可以很短也可以很长, 「步数减半」推不出「token 减半」, 页面却用它们互相佐证同一个 2 倍. 价格本身可以对: 输出是输入的 3 倍; 但和 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 的 \$1.25 / \$2.50 相比, Grok 4.5 的单价反而更高, 「far lower costs」要成立, 完全押在 2 倍 token 效率上, 而这个效率只有对手 Opus 4.8 (max) 一张图, 数值还丢了. 「highest intelligence per unit of time and cost」没有给任何联合指标, 属宣传语.
+> 一个都核不实, 而且两个量还混着用. token 效率指完成同一任务平均输出的 token 数 (第 4 页图的纵轴), step 是 agent 的决策步数, 两者不是一回事: 每步可以很短也可以很长, 「步数减半」推不出「token 减半」, 页面却用它们互相佐证同一个 2 倍. 价格本身可以对: 输出是输入的 3 倍; 但和 [Grok 4.20 规格页](../grok-4-20/grok-4-20-bi.md) 的 \$1.25 / \$2.50 相比, Grok 4.5 的单价反而更高, 「far lower costs」要成立, 完全押在 2 倍 token 效率上, 而这个效率只有对手 Opus 4.8 (max) 一张图, 数值还丢了. 「highest intelligence per unit of time and cost」没有给任何联合指标, 属宣传语.
 
 ## Getting started (上手)
 
@@ -218,7 +218,7 @@ curl -s https://api.x.ai/v1/responses \
 [docs.x.ai: 阅读文档](https://docs.x.ai/)
 
 > **拆开:** 示例代码里这个 median 函数, bug 到底在哪, Grok 4.5 应该怎么答?
-> 这段 input 本身就是一道小题: `function median(a){a.sort();return a[a.length/2]}` 至少有四个问题. 一, `sort()` 默认按字符串字典序排, `[10, 2, 30]` 会排成 `[10, 2, 30]`, 中位数全错, 该传比较函数. 二, 偶数长度时 `a[a.length/2]` 取的是上中位元素, 中位数定义应为中间两数平均. 三, 下标 `a.length/2` 在偶数长度时恰好越界半格: length 为 4 时下标 2 其实是第 3 个元素 (0 起). 四, 原数组被原地修改, 有副作用. 另外注意请求走的是 `/v1/responses` 这个新端点,  body 里用 `input` 字段而不是 chat completions 的 `messages`, 模型名 `grok-4.5` 与 [Grok 4.20 规格页](../grok-4-20/grok-4-20.md) 里带日期码和 reasoning 后缀的命名不一样, 本页没解释命名规则.
+> 这段 input 本身就是一道小题: `function median(a){a.sort();return a[a.length/2]}` 至少有四个问题. 一, `sort()` 默认按字符串字典序排, `[10, 2, 30]` 会排成 `[10, 2, 30]`, 中位数全错, 该传比较函数. 二, 偶数长度时 `a[a.length/2]` 取的是上中位元素, 中位数定义应为中间两数平均. 三, 下标 `a.length/2` 在偶数长度时恰好越界半格: length 为 4 时下标 2 其实是第 3 个元素 (0 起). 四, 原数组被原地修改, 有副作用. 另外注意请求走的是 `/v1/responses` 这个新端点,  body 里用 `input` 字段而不是 chat completions 的 `messages`, 模型名 `grok-4.5` 与 [Grok 4.20 规格页](../grok-4-20/grok-4-20-bi.md) 里带日期码和 reasoning 后缀的命名不一样, 本页没解释命名规则.
 
 ## Try it in Grok Build for free (在 Grok Build 免费试)
 

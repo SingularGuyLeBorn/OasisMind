@@ -1,0 +1,69 @@
+# 14-hunyuan/large  文件: content/model-library/03-模型家族\14-hunyuan/large\large-bi.md  共 17 块
+
+--- 行25 [核对] ---
+> 不一致. md 抽出的链接文字写 github.com/Tencent/Tencent-Hunyuan-Large, 括号里的地址是 github.com/Tencent/Hunyuan-Large, 少了 「Tencent-」 前缀. 下一行 Models 的链接文字和地址一致, 都是 huggingface.co/tencent/Tencent-Hunyuan-Large. 本文别处没有再给代码地址, 哪一个写法是当时的正式仓库名, 本文没有交代, 引用时两种写法都照原样记下.
+
+
+--- 行142 [问] ---
+> 进的是预训练. 2.1.1 放在第 2 节 Pre-Training 之下, Step 4 最后一句写的是 「ensuring the utilization of high-quality text in pre-training」. 第 2 页的要点也说 7T 预训练 token 里有近 1.5T 是合成数据. SFT 的数据在 3.1.2 另有一套流程, 是指令抽取, 指令泛化, 指令均衡和质量控制, 和这里的四步不是同一套. 按 1.5T/7T 估算, 合成数据约占预训练语料的 21%.
+
+
+--- 行153 [对一下] ---
+> 不是同一个比较. 100K 加 28K 讲词表的来源: tiktoken 的 100K, 再加专为中文补的 28K. 2.78 到 3.13 是和 LLama3.1 分词器比, 单位是每个 token 平均对应的字符数. 估算下来每个 token 多装约 12.6% 的字符 (3.13/2.78 约 1.126). 本文没有说压缩率在什么语料上量的, 中英文比例也没给, 所以 12.6% 只能当作本文所用语料上的数字.
+
+
+--- 行202 [看表] ---
+> 说的是同一件事, 但不是同一句话, 前后出现了三处. 表 1 标题是 「There are 1 shared expert and 1 specialized expert activated for each token.」 2.2.3 正文是 「Hunyuan-Large sets 1 expert as the shared expert ... activating the top-1 scoring specialized expert for each token」, 多交代了选法: 按路由打分取 top-1. 第 6 页 2.2.4 又写了一次 「we activate 1 in 16 specialized experts and thus n = 16」, 把这个 1/16 拿去算学习率. 三处数字一致: 16 个专项专家里每个 token 只走 1 个. 表 1 和正文都没写的是: 16 个专项专家是按每层计还是全模型计, 64 层是否每层都是 MoE 层.
+
+
+--- 行239 [核对] ---
+> 能. 表 2 里 MHA 是 $4n_hd_hl$, GQA+CLA 是 $2n_gd_hl$, 相除得 $n_g/(2n_h)$. 表 1 给了注意力头 80, KV 头 8, 2.2.2 正文也说 GQA 设 8 组, 所以 $n_h=80$, $n_g=8$, 比值 8/160 = 5%, 省下 95%. $d_h$ 和 $l$ 相除时约掉, 不影响比例. 表中系数 4 是 K, V 两份乘以 bf16 每个数 2 字节, 表 2 的量是每个 token 的占用. 这个 95% 是按公式算的比例, 本文没有给实测显存.
+
+
+--- 行274 [停一下] ---
+> 不冲突, 说的是两个时间点. 脚注 1 的 「training starts from November, 2023」 是闭源模型的开训时间; 第 1 页引言的 「since February 2024」 是元宝用上 MoE 旗舰模型的时间. 先训练后上线, 次序是顺的. 脚注说这一策略和 Deepseek v2 是 「concurrently」, 本文没有说谁先谁后, 也没有给闭源模型的结构细节.
+
+
+--- 行295 [再看] ---
+> 不是. 图 2 标题写的是 Token D 原本分给已满的 Expert 1, 被 「reassigned」 到随机选中的 Expert 4. 图 2(b) 里 Token D 只落在 Expert 4 的框里, Expert 1 框里仍只有 Token C 和 Token A. 2.2.3 正文也说这是对 「tokens originally routed to overloaded experts」 做一次额外随机分配, 去向是未满容量的其它专项专家. 改派替代的是丢弃, 每个 token 仍只落到 1 个专项专家, 和表 1 的 1 一致. 被改派的 token 是否计入负载均衡损失, 本文没有写.
+
+
+--- 行302 [拆开] ---
+> 能反推一个范围, 但方向有一处和正文说法对不上. 公式 (1) 里比值 $\epsilon_{opt}(B)/\epsilon_{opt}(B/16)$ 只取决于 $x=B/\mathcal{B}_{noise}$. 估算: $x=16$ 时比值约 0.47, $x=64$ 时约 0.31, $x$ 很大时趋近 0.25; 比值等于 0.31 时 $x$ 约 61.5, 即 B 约为 $\mathcal{B}_{noise}$ 的 60 倍. 但在这个区间 $\epsilon_{opt}(B/16)$ 比 $\epsilon_{opt}(B)$ 大约 3.2 倍, 按公式专项专家的最优学习率反而更高, 而 2.2.4 写的是专项专家 「scale down」. 若把比值读反, 即 $\epsilon_{opt}(B/16)/\epsilon_{opt}(B)=0.31$, 估算 $x$ 约 0.26, 这时 「调低专项专家」 和公式方向一致. 本文没有给 B 和 $\mathcal{B}_{noise}$ 的数值, 两种读法本文内无法判定. 能确定的是执行层面: 共享专家用 $\epsilon_{opt}(B)$, 专项专家约为它的 0.31 倍.
+
+
+--- 行355 [确认] ---
+> 不是同一个数. 2.3.1 先写拟合结果 $N_c=5.9\times10^{-3}$, $\alpha=0.5305$, 推出最优激活参数约 58.1B, 图 3 的绿色标注也是 58.1B. 下一句才说 「due to the smoothness of the quadratic curve around the optimal value, we ultimately select 52B」. 估算: 52/58.1 约 0.895, 52B 比拟合最优值小约 10.5%. 本文给的理由只有 「曲线在最优值附近平」, 没有给 52B 相对 58.1B 损失高多少. 训练数据是同样的处理: 拟合出 5.6T, 最终用约 7T. 这一节开头写明是 「before pre-training」 做的规模估计, 用途是定 52B 和 7T 两个设计值.
+
+
+--- 行362 [对一下] ---
+> 按两条拟合式反推, 是同一个预算. 估算: 由 $58.1\text{B}=5.9\times10^{-3}\times C_{min}^{0.5305}$ 解出 $C_{min}$ 约 $3.1\times10^{24}$; 代入 $D_{opt}=3.2\times C_{min}^{0.50}$, 得约 5.64T, 与本文的 5.6T 对上. 图 3 和图 4 的绿色竖线都落在 $10^{24}$ 与 $10^{25}$ 之间偏 $10^{24}$ 一侧, 与 $3.1\times10^{24}$ 相符. 用公式 (2) 再验一遍: $9.59\times58.1\text{B}\times5.6\text{T}$ 约 $3.1\times10^{24}$, 第二项 $2.3\times10^8D$ 约 $1.3\times10^{21}$, 可以忽略. 最终的 52B 和 7T 代入公式 (2), 估算约 $3.5\times10^{24}$, 比拟合点高约 12%. 这些都是估算: 公式 (2) 给的是 C, 拟合用的是 $C_{min}$, 两者差一个 $1+B/B_{crit}(L)$ 因子, 本文没有给正式训练的 B, 这里把两者当同一量级比较.
+
+
+--- 行411 [问] ---
+> 是上下文窗口. 摘要写 「capable of handling up to 256K tokens」, 表 3 把 256k 放在 Context Length 一行, 第 14 页结论写 「being able to support up to 256K context length」. 2.3.3 交代了它的来历: 退火之后做长上下文预训练, 序列长度分两段从 32K 加到 256K, 256K 阶段 RoPE 基频调到 10 亿, 每段约 10B token, 长文本来自书和代码, 占约 25%. 全文没有 「多步推理累计长度」 这类说法. 4.3.1 里 RULER 的任务类别有 multi-hop reasoning, 那是在一段长上下文里跨几处取信息, 与 256K 这个窗口值不是一回事. 另外, 4.3 的三组长上下文评测最长只到 128K, 256K 这一档本文没有分数.
+
+
+--- 行460 [回看] ---
+> 训练用的是 100 万这个量级. 1000 万出现在 Instruction Balancing 一段, 是指令抽取和泛化之后累积的候选池, 后面还要打标签做均衡, 再经规则过滤, 模型过滤, 人工过滤三道质量控制. 3.1.3 写的是 「we fine-tune the pre-trained model based on the high-quality data (more than 1 million) for a total of 3 epochs」. 两个数都是 「超过」, 都是下限, 留存比例本文算不出来, 只能说两者差约一个数量级 (估算).
+
+
+--- 行501 [想] ---
+> 没有. 3.2 只写了 DPO. 「离线加在线」 指的是偏好数据的来源: 离线部分是事先整理好的偏好数据集, 在线部分是当前策略模型对每个提示生成多条回答, 由奖励模型挑出最好和最差的一条组成偏好对. 奖励模型在这里的作用是挑样本. 稳定训练的两个手段也写在这一节: 在被选中的回答上加 SFT 损失, 以及用指数滑动平均缓解 reward hacking. 奖励模型本身的结构和训练数据, 本文没有交代.
+
+
+--- 行566 [看表] ---
+> 前缀不是分数的一部分. PDF 文字层里 English, Chinese, Math, Code 是四个分组标签, 各占一行, 分别在 MMLU, CMMLU, GSM8K, HumanEval 之前; MinerU 把它们和 LLama3.1-70B 列的数字粘在了一起. 实际值是 MMLU 79.3, CMMLU 为 「-」, GSM8K 83.7, HumanEval 58.5. 分组也由此还原: 英文 11 行, 中文 3 行, 数学 3 行, 代码 2 行, 合计 19 行.
+
+
+--- 行581 [再看] ---
+> 是分差. 表 3 的 MMLU 行, Hunyuan-Large 88.4, LLama3.1-405B 85.2, 相减正好 3.2. 按相对提升算约 3.8% (估算: 88.4/85.2 约 1.038). 4.2.2 的 2.6% 和 3.6% 也是这个口径: 表 4 里 MMLU 89.9 减 87.3 是 2.6, MATH 77.4 减 73.8 是 3.6. 表 3 也不是每行领先: MMLU-Pro 60.2 低于 405B 的 61.6, ARC-C 95.0 低于 405B 的 96.1, HellaSwag 86.8 低于 Mixtral 的 88.7, MBPP 72.6 低于 405B 的 73.4. 正文对代码用的是 「first-tier」, 和 MBPP 这一格相符.
+
+
+--- 行632 [核对] ---
+> 有三格不是最高. GPQA_diamond 42.4, 低于 LLama3.1-405B-Instruct 的 51.1 和 70B 的 46.7, 在报了分数的三家里最低; ARC-C 94.6, 低于 405B 的 96.9 和 70B 的 94.8; IFEval strict-prompt 85.0, 低于 405B 的 86.0. 正文点名最高的是 MMLU 和 MATH; 第 13 页又说在 AlignBench, MT-Bench, IFEval, Arena-Hard, AlpacaEval-2.0 这五项上 「shows the best overall performance」, 五项里 IFEval 恰好不是第一, 所以这里的 「overall」 是五项合起来看. 表 4 的 「-」 很多, CMMLU 和 C-Eval 只和 Mixtral 比过, 读这类格子时要按有数的列来比.
+
+
+--- 行709 [停一下] ---
+> 不是. RULER 前三档 Hunyuan-Large-Instruct 都略低: 0-8K 94.39 对 95.89, 8K-32K 94.94 对 95.39, 32K-64K 93.02 对 94.72. 只有 64K-128K 反超, 89.53 对 86.48. 正文的说法是 「maintains consistently high performance」, 再加上 64K 到 128K 「significantly outperforms」, 两句都和表对得上, 但不能读成每档都赢. LV-Eval 三档和表 6 的四项加总分则全部高于 LLama3.1-70B-Instruct. 三组长上下文评测的最长一档都是 128K, 表 5 和表 6 都没有 256K 的分数.
+

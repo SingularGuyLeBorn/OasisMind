@@ -1,0 +1,57 @@
+# 16-llama/llama3-3  文件: content/model-library/03-模型家族\16-llama/llama3-3\llama3-3-bi.md  共 14 块
+
+--- 行43 [拆开] ---
+> 三样: 自回归, 「optimized transformer architecture」, GQA. 表里 GQA 一格写 Yes, 下面一句又说 「All model versions」 都用 GQA. 可这张卡只有一行模型, 规模只有 70B, 「所有版本」 指哪几个, 卡上没列. 层数, 隐藏维度, 注意力头数一个都没印, 我不补.
+
+
+--- 行46 [核对] ---
+> 一部分能. 门户表写 70B, 128K, TikToken-based. 70B 卡上有. 128K 卡上印的是小写 128k, 同一个数. 分词器卡上一个字都没提, TikToken-based 这一格在这 5 页里找不到出处. 反过来, 卡上的 15T+ 和 December 2023 门户表也没有.
+
+
+--- 行57 [看表] ---
+> 第 1 页三处: 开头一句 「in 70B」, 表里 Params 一格 70B, 发布日期 「70B Instruct」. 第 2 页能耗表还有一行 「Llama 3.3 70B」, 第 2 页基准表有一列 「Llama-3.3 70B Instruct」. 没有第二个规模. 开头说它是 「pretrained and instruction tuned」, 用途一节也提到 pretrained models 可以改作别的生成任务, 但发布日期只列了 70B Instruct 一行. 预训练版有没有单独发布, 哪天发布, 卡上没写.
+
+
+--- 行60 [对一下] ---
+> 不一样. 门户表 Llama 3.3 一行的 Launch date 是 12/04/2024, 按那张表别的行 (7/18/2023, 4/18/2024) 读成月/日/年, 是 2024 年 12 月 4 日. 这张卡写 December 6, 2024. 差两天. 两边都没有解释, 卡上也没提 12 月 4 日. 我只记两个日期各自的出处, 不替任何一边改.
+
+
+--- 行75 [问] ---
+> 一条也没写. 只有名字, 性质和链接: 名字是 Llama 3.3 Community License Agreement, 性质是 「custom commercial license」. 条款正文不在这 5 页里. 门户表 License 一格也只剩链接文字 License. 两边都读不出任何使用门槛. 第 2 页能耗表里的 700 是单卡功率的瓦数, 对应正文 「TDP of 700W」, 和许可证无关. 另外反馈用的 README 链接指向 meta-llama/llama3 仓库, 不是 llama3_3 自己的目录.
+
+
+--- 行120 [停一下] ---
+> 按字面应该是. 正文说 「per the table below」, 表头也是 GPU hours, 表里却只有一行 Llama 3.3 70B, 7.0M. 39.3 是 7.0 的五倍多, 表里没有第二行能把差额补上. 卡上没说 39.3M 算没算别的模型或别的阶段. 我只记: 正文 39.3M, 表 7.0M, 两处矛盾.
+
+
+--- 行127 [再看] ---
+> 有. 正文写基于地点的排放 11,390 吨 CO2eq, 表里同一列是 12.9 公吨 CO2eq. 11,390 除以 12.9 约为 883, 不是吨和公吨能解释的差别. 基于市场的一列两边都是 0, 这一格对得上. 700 一格是瓦, 和正文 「TDP of 700W」 一致. 这一段还用了复数 「these models」, 可表里只有一个模型.
+
+
+--- 行142 [确认] ---
+> 量级一样, 修饰不一样. 第 1 页表格写 15T+, 加号是 「超过」. 这里写 ~15 trillion, 波浪号是 「大约」. 两处都只指预训练数据, 和第 1 页 「Token counts refer to pretraining data only」 对得上. 25M 合成样本属于微调数据, 不算进 15T. 截止日期两处都是 2023 年 12 月.
+
+
+--- 行175 [回看] ---
+> 撑不住. 表里四列全是 Meta 自己的模型: Llama 3.1 8B, 70B, 405B 和 Llama-3.3 70B. 没有一列闭源模型, 也没有别家的开源模型. 小节开头也只说 「relative to our previous models」. IFEval 一行的 Shots 和 Metric 两格是空的, 92.1 用的什么设定, 卡上没印. 列名里只有 3.3 这一列写成 「Llama-3.3」, 带连字符, 其余三列没有.
+
+
+--- 行194 [想] ---
+> 不是. MATH (CoT) 77.0 对 68.0, 还高过 405B 的 73.8. MGSM 91.1 对 86.9. BFCL v2 却是 77.3 对 77.5, 比 3.1 70B 低 0.2. 回到第 2 页, MMLU (CoT) 两者都是 86.0, 持平. 另外小节标题是 「Benchmarks - English Text」, MGSM 这一行的类别却写 Multilingual, 标题和内容不完全一致.
+
+
+--- 行245 [问] ---
+> 卡上没分清. 细节让读者去看 「Llama 3 paper」, 拒答一段开头是 「Building on the work we started with Llama 3」. 这几段没有一个 3.3 自己的安全数字. 句中 「reduce the develoderationsper workload」 是原文的乱码, 按上下文应是 developer workload, PDF 和 md 里都这样印, 中文按 developer 译.
+
+
+--- 行278 [核对] ---
+> 一样. 第 1 页列 8 种: English, German, French, Italian, Portuguese, Hindi, Spanish, Thai. 这里写 「7 languages in addition to English」, 列 French, German, Hindi, Italian, Portuguese, Spanish, Thai, 加上英语正好是同样 8 种, 只是顺序换了. 第 1 页把支持语言之外的使用列为超出范围, 第 2 页的注又允许在遵守许可证的前提下微调到其他语言, 这里说不做微调和系统控制就别用. 三处合起来读: 不微调就别用, 微调了责任在开发者.
+
+
+--- 行325 [确认] ---
+> 字面上是 Llama 3. CBRNE 一段写 「the Llama 3 family of models」, 儿童安全一段写 「through Llama 3 model development」 和 「For Llama 3」. 第 5 页网络攻击一段也写 「the Llama 3 family of LLMs」. 卡上没说这些评估在 3.3 上重做过, 也没有给任何结果数字.
+
+
+--- 行370 [对一下] ---
+> 第 1 页表格和第 2 页都写截止 2023 年 12 月, 发布日期是 2024 年 12 月 6 日, 隔了一年. 状态一栏说这是在离线数据集上训练的静态模型, 这一节又说到目前为止的测试没有覆盖所有场景. 卡上没说这一年里数据有没有补过, 只说微调模型的后续版本会随安全改进发布.
+

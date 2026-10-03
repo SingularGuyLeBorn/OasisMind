@@ -1,0 +1,49 @@
+# 11-gemini/gemini-3-8-flash  文件: content/model-library/03-模型家族\11-gemini/gemini-3-8-flash\gemini-3-8-flash-bi.md  共 12 块
+
+--- 行33 [想] ---
+> 没有这个词. 本库 gemini-3-7-flash 目录里的 3.7 卡 (2026 年 8 月发布) 在同一位置写的是 「customizable thinking configurations」, 也是调节质量, 成本和延迟. 本卡用了 「continues」, 意思是沿用, 但名字从 thinking configurations 换成了 effort levels, 两者是不是同一套开关, 有几档, 默认哪一档, 两张卡都没写. effort levels 做的事是推理阶段多花算力换质量, 也就是 TestingTime 算力: 档位越高, 模型想得越久, 用的 token 越多, 延迟越长. 这一点在第 6 页已知局限里有一句旁证.
+
+
+--- 行60 [问] ---
+> 没有. 输入输出规格和 3.7 卡一字不差: 1M 上下文, 64K 输出. 架构, 训练数据, 数据处理, 硬件, 软件五节都只有一句 「based on」 加链接. 顺着链接去 3.7 卡, 同样五节写的是 「based on Gemini 3.6 Flash」, 再指向 3.6 的卡. 所以架构信息要跳两次以上才可能找到, 3.8 和 3.7 之间改了什么, 两张卡都没写, 参数量也没有出现. 本卡关于变化的唯一说法是描述里那半句: 软件工程和智能体知识工作流上性能提升.
+
+
+--- 行115 [核对] ---
+> 少了一个. 3.7 卡列了七个渠道, 其中有 Gemini Enterprise App; 本卡只有六个, Gemini Enterprise App 不见了, 剩下六个名字和链接都对得上 (Gemini App 在本卡写成小写的 Gemini app). 卡没有说明为什么拿掉企业版应用. 面向企业的入口只剩 Gemini Enterprise Agent Platform, 这和第 6 页把用途写成 「production-ready agents」 是一致的, 但这是对照出来的, 卡里没有明说.
+
+
+--- 行134 [再看] ---
+> 长上下文没有. 3.7 卡的表里有 GDM-MRCR v2 (8-needle) 这一行长上下文, 128k 平均档 3.7 Flash 是 97.0%; 本卡把这一行拿掉了, 表里名字带 「Long」 的只有 LVBench (长视频理解) 和 DeepSWE (长程软件工程), 前者考视频, 后者考任务步数, 都不是 1M 文本窗口的检索. 其余五类能对上: 编码有 DeepSWE 和两行 Terminal-bench, 知识工作有 GDPVal-AA v2, Vals Finance Agent v2, Harvey 和 GDP.PDF, 多模态有 CharXiv 和 LVBench, 电脑操作有 OSWorld-2.0, 科学推理有 HLE-Verified, BioMysteryBench 两行和 LABBench2. 和 3.7 卡相比, 本卡的 Approach 删了 reasoning, agentic tool use 和 multi-lingual performance, 加了 knowledge work, computer use 和 scientific reasoning.
+
+
+--- 行199 [看表] ---
+> 不是. 表的列是六个模型, 价格是前两行, 每一格是每百万 token 的单价. 3.8 和 3.7 两格里各塞了两个价: 推广价 $0.75/$3.75, 括号里是 2027 年起的原价 $1.50/$7.50, 所以同一格里是两个时间段的单价, 不是单价加用量. 表里没有任何一行或一列给出每个任务用了多少 token. 做一个任务的花费等于单价乘用量, 卡只给了前一项. 输入价的行名多了 「no caching」, 3.7 卡没有这个限定, 也就是说缓存命中后的价格本卡没列. 3.7 卡给 $0.75 打了星号, 但那张卡里找不到星号的解释, 解释印在本卡的脚注里.
+
+
+--- 行202 [对一下] ---
+> 两张卡共有的列是 3.7 Flash, Claude Sonnet 5, GPT-5.6 Terra. 三列全对得上的有两行价格和七行分数: DeepSWE v1.1 (65.3%, 53.8%, 69.6%), Terminal-bench 2.1 (85.8%, 80.4%, 87.4%), LVBench (85.4%, 68.5%, 78.9%), HLE-Verified (53.6%, 31.0%, 51.1%), BioMysteryBench 两行, LABBench2. 这九行可以当成同一口径, 3.8 相对 3.7 的差值能直接读. 其余行要么换了版本, 要么换了设置, 要么有一格变了, 见后面第二条.
+
+
+--- 行205 [拆开] ---
+> 没有. 六列全是模型, 没有 「low effort / high effort」 这样的分列, 也没有哪一行在设置栏写 effort. 表里唯一被拆成两个数的格是 3.8 Flash 的 LVBench: 87.8% (agentic) 和 87.1% (static), agentic 和 static 是视频任务的两种处理设置, 卡没解释差别, 从名字看和 effort 档位不是一回事, 其他五列在这一行也只有一个数. 所以 3.8 Flash 的十四行分数是在哪一档 effort 下跑的, 卡里没写; 3.7 卡同样没写 thinking configurations 用的哪一档. 第 2 页说 effort 用来调质量, 成本和延迟, 这张表里只看得到质量和单价, 看不到档位.
+
+
+--- 行208 [回看] ---
+> 分三种. 第一种是同名但数变了: GDPVal-AA v2 在 3.7 卡里 3.7 Flash 是 1525, Sonnet 5 是 1598, Terra 是 1578; 本卡变成 1482, 1584, 1528. Elo 是相对分, 池子里加了 Opus 5 和 Sol, 分数就跟着动, 而且三个模型挪动的幅度不一样 (-43, -14, -50), 不是整体平移. 第二种是换了基准或版本: 3.7 卡是 Terminal-bench 3.0, 3.7 Flash 14.9%; 本卡是 Terminal-bench 4.0, 3.7 Flash 11.2%. 3.7 卡的法律行是 Harvey LAB-AA, 3.7 Flash 90.7%; 本卡是 Harvey's Legal Agent Benchmark 的 All 通过率, 3.7 Flash 8.8%, 完全是另一把尺子. 第三种是设置或单格变了: OSWorld-2.0 在本卡加了 「Partial score, batch tool enabled」, 3.7 Flash 从 47.9% 变成 50.6%, Terra 仍是 50.2%, Sonnet 5 从 「-」 变成 42.6%; CharXiv 不用工具一行, Sonnet 5 从 77.0% 变成 70.1%; GDP.PDF 加了 「All pass rate」, Terra 从 24.7% 变成 29.0%. 这些格卡里都没有解释.
+
+
+--- 行223 [问] ---
+> 少了视频. 3.7 卡的用例是智能体工作流, 复杂视频推理, 编码任务和企业工作流, 本卡换成软件工程, 智能体任务和复杂知识工作流, 「complex video reasoning」 没了. 可表里 LVBench 这一行还在, 而且 3.8 Flash 是唯一给出 agentic 和 static 两个数的模型, 87.8% 是六列最高. 能力分数保留, 用途里却不提, 卡没说原因. 「cost-effective」 这个说法落在价格行上: 3.8 和 3.7 单价完全相同, 所以相对 3.7 的性价比提升只来自分数行, 不来自降价.
+
+
+--- 行232 [停一下] ---
+> 这句正好是价格行缺的那一半. 价格行给单价, 这句承认用量会随 effort 档位上升, 两者相乘才是花费. 可卡没给任何档位下的平均 token 数, 也没说表里分数对应哪一档, 所以 「$3.75 对 Opus 5 的 $25.00」 只能读成单价差 6.67 倍, 不能读成做同一件事的花费差 6.67 倍. 延迟也一样: 第 2 页说 effort 调的是质量, 成本和延迟, 这一节承认会慢, 会超时, 但全卡没有一个延迟数字. 3.7 卡的已知局限没有这句关于 token 的话, 它是本卡新加的.
+
+
+--- 行301 [确认] ---
+> 按每行的方向看: 文本到文本 -0.4 越低越好, 是进步; 图像到文本 0.0 持平; 语气 +0.2 越高越好, 是进步; 多语言 +5.4 越低越好, 是退步; 不当拒答 +1.1 越低越好, 也是退步. 正文把多语言写成 「regressed slightly」, 可 5.4 个百分点是五行里绝对值最大的数, 3.7 卡五行的绝对值没有一个超过 1.2. 不当拒答升了 1.1, 正文只说 「low unjustified refusals」. 还有三处对不齐: 表头比的是 3.7 Flash, 脚注写的是 「compared to Gemini 3 Flash」, 这句脚注和 3.7 卡的一字不差, 是模板沿用; 表在上面, 说明却写 「reported below」; 语气一行的说明从 3.7 卡的 「tone of model refusal」 改成了 「tone of model responses」, 量的对象变了. 绿色和红色在抽取后都丢了.
+
+
+--- 行320 [想] ---
+> 不是, 是从 3.7 推过来的. 评估对象是 3.7 Flash, 3.8 只凭 「相对 3.7 没有实质提升」 这一句继承结论. 3.7 卡原表按领域给了阈值: CBRN, Uplift TCL 未达到, Uplift Level 1 CCL 达到预警阈值但未达到; 网络, Uplift Level 1 CCL 达到预警阈值但未达到; 有害操纵, Level 1 CCL 低于预警阈值; 机器学习研发与失准, 三个等级都未达到. 本卡只写 「did not reach any T/CCLs」, 两处预警阈值没有复述. 另一头, 结果表上 3.8 对 3.7 十四行全涨, Terminal-bench 4.0 +7.9, OSWorld-2.0 +8.4, DeepSWE +8.4. 卡的限定语是 「框架列出的领域」, 这几行算不算那些领域, 支撑 「没有实质提升」 的领域分数又是多少, 卡都没给.
+

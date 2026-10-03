@@ -31,7 +31,7 @@ Last Updated: May 2026
 最后更新: 2026 年 5 月.
 
 > **核对:** 发布是 2025 年 11 月, 最后更新是 2026 年 5 月, 中间隔了半年. 第 5 页那张能力表是哪个时间点的数?
-> 第 5 页写的是 「Results as of November, 2025」, 也就是发布时的数, 表里的对手也停在 Claude Sonnet 4.5 和 GPT-5.1. 卡里能看出后来改动的是本页的家族清单: 它列出了 Gemini 3.1 Pro, 3.1 Flash-Lite, 3.1 Flash Live 和 Gemini 3.5 Flash, 而同一段把这些模型叫作 「Each subsequent model in the Gemini 3 Pro family」, 也就是晚于 3 Pro 的模型. 卡没有写 2026 年 5 月改了哪几处, 开头只说模型卡会 「from time-to-time」 更新, 例如补上新评测. 所以读这张卡要把日期分开: 能力数字是 2025 年 11 月的, 家族清单至少有一部分是后来补的.
+> 第 5 页写的是 「Results as of November, 2025」, 也就是发布时的数, 表里的对手也停在 Claude Sonnet 4.5 和 GPT-5.1. 卡里能看出后来改动的是报告的家族清单: 它列出了 Gemini 3.1 Pro, 3.1 Flash-Lite, 3.1 Flash Live 和 Gemini 3.5 Flash, 而同一段把这些模型叫作 「Each subsequent model in the Gemini 3 Pro family」, 也就是晚于 3 Pro 的模型. 卡没有写 2026 年 5 月改了哪几处, 开头只说模型卡会 「from time-to-time」 更新, 例如补上新评测. 所以读这张卡要把日期分开: 能力数字是 2025 年 11 月的, 家族清单至少有一部分是后来补的.
 
 ## Model Information
 

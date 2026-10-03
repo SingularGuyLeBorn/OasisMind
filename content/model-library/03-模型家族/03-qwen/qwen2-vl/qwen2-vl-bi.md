@@ -17,9 +17,13 @@ Peng Wang\* Shuai Bai\* Sinan Tan\* Shijie Wang\* Zhihao Fan\* Jinze Bai\*† Ke
 
 We present the Qwen2-VL Series, an advanced upgrade of the previous Qwen-VL models that redefines the conventional predetermined-resolution approach in visual processing. Qwen2-VL introduces the Naive Dynamic Resolution mechanism, which enables the model to dynamically process images of varying resolutions into different numbers of visual tokens. This approach allows the model to generate more efficient and accurate visual representations, closely aligning with human perceptual processes. The model also integrates Multimodal Rotary Position Embedding (M-RoPE), facilitating the effective fusion of positional information across text, images, and videos. We employ a unified paradigm for processing both images and videos, enhancing the model’s visual perception capabilities. To explore the potential of large multimodal models, Qwen2-VL investigates the scaling laws for large vision-language models (LVLMs). By scaling both the model size-with versions at 2B, 8B, and 72B parameters-and the amount of training data, the Qwen2-VL Series achieves highly competitive performance. Notably, the Qwen2-VL-72B model achieves results comparable to leading models such as GPT-4o and Claude3.5- Sonnet across various multimodal benchmarks, outperforming other generalist models. Code is available at [https://github.com/QwenLM/Qwen2-VL](https://github.com/QwenLM/Qwen2-VL).
 
+本文推出 Qwen2-VL 系列, 是前代 Qwen-VL 的重大升级, 重新定义了视觉处理中预设分辨率的常规做法. Qwen2-VL 引入 Naive Dynamic Resolution 机制, 将不同分辨率的图像动态处理成不同数量的视觉 token, 生成更高效, 更准确的视觉表示, 更贴近人类感知过程. 模型还集成 M-RoPE, 有效融合文本, 图像与视频的位置信息; 图像与视频统一处理范式进一步增强视觉感知. 为探索大型多模态模型的潜力, Qwen2-VL 研究了 LVLM 的 scaling laws: 同步放大模型规模 (2B, 8B, 72B 三档) 与训练数据量, 取得极具竞争力的性能. 其中 Qwen2-VL-72B 在多个多模态基准上可比肩 GPT-4o, Claude3.5-Sonnet 等领先模型, 超过其他通用模型. 代码已开源.
+
 ## 1 Introduction
 
 In the realm of artificial intelligence, Large Vision-Language Models (LVLMs) represent a significant leap forward, building upon the strong textual processing capabilities of traditional large language models. These advanced models now encompass the ability to interpret and analyze a broader spectrum of data, including images, audio, and video. This expansion of capabilities has transformed LVLMs into indispensable tools for tackling a variety of real-world challenges. Recognized for their unique capacity to condense extensive and intricate knowledge into functional representations, LVLMs are paving the way for more comprehensive cognitive systems. By integrating diverse data forms, LVLMs aim to more closely mimic the nuanced ways in which humans perceive and interact with their environment. This allows these models to provide a more accurate representation of how we engage with and perceive our environment
+
+在人工智能领域, LVLM 在传统大语言模型强文本能力之上迈出重要一步: 把可解读, 可分析的数据扩展到图像, 音频, 视频等更广谱的形态, 成为应对众多真实世界任务的必备工具. LVLM 擅长把庞大繁复的知识凝练成可用的表示, 正在铺路更全面的认知系统: 融合多种数据形态, 更贴近人类感知与交互环境的方式, 从而更准确地刻画人与环境的互动.
 
 Recent advancements in large vision-language models (LVLMs) (Li et al., 2023c; Liu et al., 2023b; Dai et al., 2023; Zhu et al., 2023; Huang et al., 2023a; Bai et al., 2023b; Liu et al., 2023a; Wang et al., 2023b; OpenAI., 2023; Team et al., 2023) have led to significant improvements in a short span. These models (OpenAI, 2023; Touvron et al., 2023a,b; Chiang et al., 2023; Bai et al., 2023a) generally follow a common approach of visual encoder→cross-modal connector→LLM. This setup, combined with next-token prediction as the primary training method and the availability of high-quality datasets (Liu et al., 2023a; Zhang et al., 2023; Chen et al., 2023b;
 
@@ -33,9 +37,15 @@ Figure 1: Qwen2-VL capabilities: Multilingual image text understanding, code/mat
 
 Li et al., 2023b), has driven much of the progress. Additional factors like larger model architectures (Alayrac et al., 2022), higher-resolution images (Li et al., 2023a,d), and advanced techniques such as mixture-of-expert models (MoE) (Wang et al., 2023b; Ye et al., 2023b), model ensembles (Lin et al., 2023), and more sophisticated connectors (Ye et al., 2023a) between visual and textual modalities have also played a key role in enhancing LVLMs’ ability to process complex visual and textual information more effectively.
 
+近期 LVLM 进展迅速, 普遍采用 视觉编码器 → 跨模态连接器 → LLM 的架构, 以 next-token prediction 为主要训练方式, 再配合高质量数据集, 构成进步主线. 更大的模型架构, 更高分辨率图像, 以及 MoE, 模型集成, 更精细的跨模态连接器等进阶技术, 也在提升 LVLM 处理复杂视觉与文本信息的能力上发挥关键作用.
+
 However, current large vision-language models (LVLMs) are typically constrained by a fixed image input size. Standard LVLMs encode input images to a fixed resolution (e.g., 224×224), often by either downsampling or upsampling the images (Zhu et al., 2023; Huang et al., 2023a), or by employing a scale-then-padding approach (Liu et al., 2023b,a). While this one-size-fits-all strategy enables processing of images at consistent resolutions, it also limits the model’s ability to capture information at different scales, particularly leading to a significant loss of detailed information in high-resolution images. Consequently, such models fall short of perceiving visual information with the same sensitivity to scale and detail as human vision.
 
+但现有 LVLM 通常受限于固定的图像输入尺寸: 标准做法把输入图像编码到固定分辨率 (如 224×224), 靠降采样或上采样, 或先缩放再 padding. 这种一刀切策略虽保证了分辨率一致, 却削弱了模型捕捉不同尺度信息的能力, 高分辨率图像的细节损失尤其严重, 达不到人眼对尺度与细节的敏感度.
+
 Additionally, most LVLMs rely on a static, frozen CLIP-style (Radford et al., 2021) vision encoder, raising concerns about whether the visual representations produced by such pre-trained models are adequate, particularly for complex reasoning tasks and processing intricate details within images. Recent works (Bai et al., 2023b; Ye et al., 2023a) have attempted to address these limitations by fine-tuning the vision transformer (ViT) during the LVLM training process, which has shown to yield improved results. To further enhance the model’s adaptability to varying resolutions, we introduce dynamic resolution training in the LVLM training process. Specifically, we employ a 2D Rotary Position Embedding (RoPE) in the ViT, thus allowing the model to better capture information across different spatial scales.
+
+此外, 多数 LVLM 依赖静态冻结的 CLIP 式视觉编码器, 这类预训练模型产出的视觉表示是否够用存疑, 复杂推理任务与图像精细细节处理更是如此. 近期工作尝试在 LVLM 训练过程中微调 ViT, 已有收益. 为进一步提升对不同分辨率的适应力, 我们在 LVLM 训练中引入动态分辨率训练: 具体做法是在 ViT 中使用 2D RoPE, 让模型更好捕捉不同空间尺度的信息.
 
 When it comes to video content, which is essentially a sequence of frames, many existing models continue to treat it as an independent modality. However, understanding the dynamic nature of reality, as manifested in videos, is crucial for models aiming to grasp the complexities of the real world. Unlike text, which is inherently one-dimensional, the real-world environment exists in three dimensions. The use of one-dimensional position embeddings in current models significantly limits their ability to model three-dimensional space and temporal dynamics effectively. To bridge this gap, we have developed Multimodal Rotary Position Embedding (M-
 
@@ -51,17 +61,31 @@ Table 1: Model descriptions of Qwen2-VL.
 
 RoPE), which employs separate components to represent temporal and spatial information. This enables the model to naturally comprehend dynamic content, such as videos or streaming data, improving its ability to understand and interact with the world.
 
+视频本质上是帧序列, 但许多现有模型仍把它当作独立模态对待. 然而要理解真实世界的复杂性, 把握视频所呈现的现实动态至关重要. 文本天然是一维的, 真实环境却是三维的; 现有模型用一维位置嵌入, 严重限制了其对三维空间与时间动态的建模. 为弥合这一鸿沟, 我们提出 M-RoPE: 用分离的分量表示时间与空间信息, 让模型自然理解视频, 流式数据等动态内容, 提升其理解与交互世界的能力.
+
 Furthermore, compared to the scaling of large language models (LLMs), current LVLMs are still in the early stages of exploring the impact of scaling in terms of training data and model parameters. The exploration of scaling laws for LVLMs—how increases in model and data size affect performance—remains an open and promising area of research.
+
+再者, 与大语言模型的 scaling 相比, 当前 LVLM 在训练数据量与模型参数量两个维度上的 scaling 影响探索仍处早期; LVLM 的 scaling laws (模型与数据规模如何影响性能) 仍是一个开放而有前景的方向.
 
 In this work, we introduce the newest addition to the large vision-language models of the Qwen family: Qwen2-VL series, which comprises three open-weight models with total parameter counts of 2 billion, 8 billion, and 72 billion. As shown in Figure 1, the key advances in Qwen2-VL include:
 
+本文推出 Qwen 家族大型视觉语言模型的最新成员 Qwen2-VL 系列, 含 2B, 8B, 72B 三个开源权重模型. 如图 1, 关键进展包括:
+
 • **State-of-the-art understanding across various resolutions and aspect ratios:** Qwen2-VL achieves leading performance on visual benchmarks, including DocVQA, InfoVQA, RealWorldQA, MTVQA, MathVista, and others.
+
+各分辨率与宽高比下的 SOTA 理解: 在 DocVQA, InfoVQA, RealWorldQA, MTVQA, MathVista 等视觉基准上领先.
 
 • **Comprehension of extended-duration videos (20 min+):** Qwen2-VL is capable of understanding videos over 20 minutes in length, enhancing its ability to perform high-quality video-based question answering, dialogue, content creation, and more.
 
+长视频理解 (20 分钟以上): 可理解超过 20 分钟的视频, 支撑高质量视频问答, 对话, 内容创作等.
+
 • **Robust agent capabilities for device operation:** With advanced reasoning and decision-making abilities, Qwen2-VL can be integrated with devices such as mobile phones, robots, etc., enabling autonomous operation based on visual inputs and text instructions.
 
+强健的设备操作 Agent 能力: 具备进阶推理与决策能力, 可接入手机, 机器人等设备, 按视觉输入与文本指令自主操作.
+
 • **Multilingual support:** To serve a global audience, beyond English and Chinese, Qwen2-VL now supports multilingual context understanding within images, including most European languages, Japanese, Korean, Arabic, Vietnamese, and others.
+
+多语言支持: 除中英文外, 还能理解图像中的多语言文本, 覆盖绝大多数欧洲语言及日语, 韩语, 阿拉伯语, 越南语等.
 
 ## 2 Approach 方法
 
@@ -484,6 +508,8 @@ Figure 4: Qwen2-VL-7B with different min\_pixels. Small images are upscaled to s
 
 In this section, we present ablation studies on image dynamic resolution, M-RoPE, and model scale. These experiments aim to provide insights into the impact of these key components on our model’s performance.
 
+本节给出动态分辨率, M-RoPE 与模型规模三方面的消融实验, 以观察这些关键组件对性能的影响.
+
 #### 3.3.1 Dynamic Resolution 动态分辨率
 
 As shown in Table 7, we compare the performance between dynamic resolution and fixed resolution. For fixed resolution, we resize the images to ensure a constant number of image tokens being input to the model, rather than resizing to a specific height and width, as this would distort the original aspect ratio. For dynamic resolution, we only set min\_pixels= 100 × 28 × 28 and max\_pixels= 16384 × 28 × 28, allowing the number of image tokens depend primarily on the image’s native resolution. It can be observed that adjusting image sizes only results in small perturbations in performance, demonstrating the model robustness to varying image sizes. Moreover, dynamic resolution approach is more efficient. We can observe that no single fixed resolution achieves optimal performance across all benchmarks. In contrast, the dynamic resolution approach consistently achieves top-tier performance while consuming fewer tokens on average.
@@ -569,7 +595,11 @@ As shown in Figure 6(b), we visualize the relationship between model performance
 
 We have presented the Qwen2-VL series, the versatile large vision-language models, including three open-weight models with total parameter counts of 2, 8, and 72 billion. Qwen2-VL matches the performance of top-tier models like GPT-4o and Claude3.5-Sonnet in a range of multimodal scenarios, surpassing all other open-weight LVLM models. Qwen2-VL series introduces naive dynamic resolution and multimodal rotary position embedding (M-RoPE) to fuse information across modals effectively and be capable of understanding videos over 20 minutes in length. With advanced reasoning and decision-making abilities, Qwen2-VL can be integrated with devices such as mobile phones, robots, etc. Furthermore, Qwen2-VL now supports understanding multilingual texts within images, including most European languages, Japanese, Korean, Arabic, Vietnamese, and others.
 
+本文介绍了 Qwen2-VL 系列通用大型视觉语言模型, 含 2B, 8B, 72B 三个开源权重模型. Qwen2-VL 在一系列多模态场景下可比肩 GPT-4o, Claude3.5-Sonnet 等顶尖模型, 并超过其他所有开源 LVLM. 系列引入 naive dynamic resolution 与 M-RoPE, 有效融合跨模态信息, 可理解 20 分钟以上的长视频; 凭借进阶推理与决策能力, 可接入手机, 机器人等设备; 并支持理解图像中的多语言文本, 覆盖绝大多数欧洲语言及日语, 韩语, 阿拉伯语, 越南语等.
+
 We have made the Qwen2-VL model weights openly accessible, which enables researchers and developers to harness the full potential in a variety of applications and research projects. We aim to advance AI technologies and enhance their beneficial effects on society by dedicating ourselves to these endeavors.
+
+我们已开放 Qwen2-VL 的模型权重, 研究者和开发者可将其用于各类应用与研究项目; 希望以此推进 AI 技术, 放大其对社会的正面价值.
 
 <!-- page 17 of 52 -->
 
@@ -845,6 +875,8 @@ In this section, we present some practical examples of our Qwen2-VL.
 
 The Qwen2-VL models are now more adept at accurately describing and identifying complex information within images, as well as providing detailed background and answering related questions. Besides, the text processing capabilities of the Qwen2-VL models have seen significant improvements, particularly concerning the recognition of Chinese and English text within images.
 
+Qwen2-VL 现在能更准确地描述与识别图像中的复杂信息, 给出详细背景并回答相关问题; 文本处理能力也显著增强, 尤其是图像中英文文本的识别.
+
 ![Image block](images/p25-figure-7-when-presented-with-an-image-of-cubes-of.png)
 
 Figure 7: When presented with an image of cubes of different colors, the models identify their layout and the color of each cube.
@@ -890,6 +922,8 @@ Figure 13: The model displays an adeptness in recognizing multilingual texts in 
 ### A.2 Information extraction and Visual Reasoning
 
 A notable advancement in the Qwen2-VL models is their enhanced visual reasoning capability. This advancement allows the models to interpret and comprehend complex representations such as flowcharts, diagrams, and other symbolic systems.
+
+Qwen2-VL 的一项显著进步是视觉推理能力增强: 能解读流程图, 图示及其他符号系统等复杂表示.
 
 ![Image block](images/p32-figure-14-the-model-displays-an-adeptness-in-solving.png)
 
@@ -1208,6 +1242,8 @@ Function Result
 #### Model Response
 
 The average Pass@1 scores on code generation benchmarks for each model have been calculated and are displayed in the table above. The bar chart shows the average scores for each model, providing a visual comparison of their performance across the different benchmarks.
+
+各模型在代码生成基准上的平均 Pass@1 分数已计算完成, 如表所示; 柱状图给出各模型的平均分, 直观对比它们在各项基准上的表现.
 
 Figure 28: The model analyzed the table, and wrote the code to calculate the mean of each row in the table and to plot the results as a bar chart, which was successfully executed and visualized by the code interpreter. Image source: (Dubey et al., 2024)
 

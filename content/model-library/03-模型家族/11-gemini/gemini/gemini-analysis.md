@@ -16,7 +16,7 @@ MinerU 把第一张头图的大标题 「Gemini 3.1 Deep Think」 当成了文�
 
 这份清单有两处要留意. 第一, 各档版本号不同步: Flash 到了 3.8, Flash-Lite 在 3.5, Pro 还是 3.1, 下一代 Pro 标 3.5. 页面没解释为什么这样排, 也没说 3.1 Pro 和 3.8 Flash 谁更强, 第 9 页的表里没有 Pro 这一列. 第二, 页标题上的 Deep Think 不在清单里. 「Discover the right model for what you need」 这一栏让读者挑的是上面四个名字, 第 11 页 Shopify 案例用的 3.5 Flash 同样不在其中.
 
-因此 Deep Think 和其余 Gemini 的关系, 这页给不出答案. 它和 3.1 Pro 共用 3.1 这个版本号, 这是唯一的线索, 但页上没有一句话把两者连起来. 它是 3.1 Pro 多给 TestingTime 的一种用法, 还是另一套单独训练的权重, 读者要去 /models/gemini/deep-think/ 那一页或别的官方材料找, 不能从本页推出来.
+因此 Deep Think 和其余 Gemini 的关系, 这页给不出答案. 它和 3.1 Pro 共用 3.1 这个版本号, 这是唯一的线索, 但页上没有一句话把两者连起来. 它是 3.1 Pro 多给 TestingTime 的一种用法, 还是另一套单独训练的权重, 读者要去 /models/gemini/deep-think/ 那一页或别的官方材料找, 不能从报告推出来.
 
 ## 3. 链接落点: 版本号大多只在字面上
 
