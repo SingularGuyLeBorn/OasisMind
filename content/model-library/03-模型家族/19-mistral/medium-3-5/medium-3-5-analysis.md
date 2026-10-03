@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Hugging Face 上 Mistral Medium 3.5 128B 的模型卡, 13 页, 10 张图, 其中 3 张柱状图, 其余是图标. 下面只用这页印出来的数, 不从 Medium 3, Pixtral Large 或同家族其他模型卡搬参数. 自己算出来的数都标了估算.
+这是 Hugging Face 上 Mistral Medium 3.5 128B 的模型卡, 13 页, 10 张图, 其中 3 张柱状图, 其余是图标.
 
 | 项目 | 本页印出的值 |
 |---|---|

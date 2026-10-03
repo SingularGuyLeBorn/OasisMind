@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Devstral 2 发布页, 标题 「Introducing: Devstral 2 and Mistral Vibe CLI.」, 10 页, 10 张图, 不是论文. 下面只用这页印出来的数, 不从 Medium 3.5, Large 3 或同家族其他页面搬分数和参数. 柱状图和人评图的数都印在 PDF 嵌入的原图上; 散点图没印数, 从位置读出的尺寸和分数, 以及所有自己算的比例, 差值, 都标了估算.
+这是 Mistral AI 官网的 Devstral 2 发布页, 标题 「Introducing: Devstral 2 and Mistral Vibe CLI.」, 10 页, 10 张图, 不是论文. 柱状图和人评图的数都印在 PDF 嵌入的原图上; 散点图没印数.
 
 - 发布: **December 9, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.
 - 型号: Devstral 2 (123B), Devstral Small 2 (24B).

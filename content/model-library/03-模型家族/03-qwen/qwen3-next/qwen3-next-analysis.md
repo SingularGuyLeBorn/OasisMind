@@ -1,6 +1,6 @@
 # Qwen3-Next-80B-A3B-Instruct: 3:1 混合注意力与 512 专家的首发模型卡
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 Hugging Face 上 `Qwen/Qwen3-Next-80B-A3B-Instruct` 的模型卡 (12 页), 有四条架构亮点, 一张规格表, 一张 24 行对照表, 一张 RULER 表和部署说明. 没有 Gated DeltaNet 的更新公式, 没有路由与负载均衡细节, 没有 15T 预训练数据的配比, 也没有后训练配方. 下文不补编这些面.
+> 公开材料是 Hugging Face 上 `Qwen/Qwen3-Next-80B-A3B-Instruct` 的模型卡 (12 页), 有四条架构亮点, 一张规格表, 一张 24 行对照表, 一张 RULER 表和部署说明. 没有 Gated DeltaNet 的更新公式, 没有路由与负载均衡细节, 没有 15T 预训练数据的配比, 也没有后训练配方.
 
 来源: `qwen3-next.md` (Hugging Face 模型卡的 MinerU 转写). 表内数字以源文 qwen3-next.md 为准.
 

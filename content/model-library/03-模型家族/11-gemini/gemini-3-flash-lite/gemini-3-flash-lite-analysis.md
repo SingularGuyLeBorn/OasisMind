@@ -1,5 +1,3 @@
-[OM-FREEPLAY] 材料不够 5000, 禁止编造架构.
-
 # Gemini 3.1 Flash-Lite 模型卡解读
 
 ## 1. 这张卡交代了什么

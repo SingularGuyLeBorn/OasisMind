@@ -1,5 +1,3 @@
-[OM-FREEPLAY] 材料不够 5000, 禁止编造架构.
-
 源文是 deepmind.google 上 Gemini 3.5 Flash 模型卡的网页抓取, 6 页, 6 张图, 发布日期 2026 年 5 月 19 日, 页上附 PDF 版链接 Gemini-3-5-Flash-Model-Card.pdf. 卡上没有结构, 参数规模和训练数据的描述, 这几项都转给了 Gemini 3 Flash 的卡. 下文只按页面上的字, 表格和链接写, 不从外部补, 也不和 3.6 Flash, 2.5 Flash 的材料混用.
 
 # Gemini 3.5 Flash 模型卡: 分析

@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Hugging Face 上 Mistral-Large-3-675B-Instruct-2512 的模型卡, 9 页, 9 张图, 其中 4 张是数据图, 其余是页面图标. 下面只用这页印出来的数, 不从 Large 2407, Pixtral 或同家族其他模型搬参数.
+这是 Hugging Face 上 Mistral-Large-3-675B-Instruct-2512 的模型卡, 9 页, 9 张图, 其中 4 张是数据图, 其余是页面图标.
 
 - 仓库: `mistralai/Mistral-Large-3-675B-Instruct-2512`, 许可证 Apache 2.0.
 - 规模 (整体): 总参数 675B, 激活参数 41B.

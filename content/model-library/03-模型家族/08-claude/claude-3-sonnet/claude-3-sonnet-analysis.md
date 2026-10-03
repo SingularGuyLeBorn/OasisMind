@@ -2,7 +2,7 @@
 
 来源: 同目录 `claude-3-sonnet.md` 与 `claude-3-sonnet.pdf`, 即 Anthropic 2024 年 3 月的模型卡 「The Claude 3 Model Family: Opus, Sonnet, Haiku」, 共 42 页, 1 个公式, 8 张表, 43 张图 (均在 `images/`). 同一份报告也收在同级目录 `claude-3-opus` 下, 那一篇侧重 Opus 这个新顶档, 本篇只看 Sonnet: 它从哪一档接过来, 被什么数据和训练方法塑造, 又被哪些评测证明. 对照译稿和逐段疑惑见 `claude-3-sonnet-bi.md`. 数字以源 md 为准, 从图上读出的数注明 「读图估算」.
 
-> **[OM-FREEPLAY] 架构缺口.** 模型卡没有 Sonnet 的参数量, 层数, 注意力结构, 训练 token 和算力, 也没有上下文扩展方法. 下文遇到这些只写 「本页没有」, 不补数字; 标 「(公开资料)」 的是报告外能对上号的 Anthropic 论文或博客, 标 「(推测)」 的是笔者判断.
+> 模型卡没有 Sonnet 的参数量, 层数, 注意力结构, 训练 token 和算力, 也没有上下文扩展方法. 标 「(公开资料)」 的是报告外能对上号的 Anthropic 论文或博客, 标 「(推测)」 的是笔者判断.
 
 ## 1. 材料与训练
 

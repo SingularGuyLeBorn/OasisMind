@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Hugging Face 上 tencent/Hy3 的模型卡抓取, 不是技术报告. 下面只核对卡上印出来的规格和分数. 启动命令不转写, 也不把 A13B 论文里的 80B / 13B 挪到这篇.
+这是 Hugging Face 上 tencent/Hy3 的模型卡抓取, 不是技术报告.
 
 ## 1. 这一页同时是站点壳和 README
 

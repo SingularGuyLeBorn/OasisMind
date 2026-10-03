@@ -1,6 +1,6 @@
 # Claude computer use 公告: 把屏幕当接口
 
-> **[OM-FREEPLAY] 材料不够 5000.** 源材料是 Anthropic 官网 2024 年 10 月 22 日的产品公告, 不是论文: 没有公式, 没有架构图, 没有训练细节, 可核对的只有一张基准表和正文里几组百分比. 下文围绕 computer use 与升级版 3.5 Sonnet, 把 OSWorld, SWE-bench Verified, TAU-bench 三个评测的机制, 公告的安全表态, 以及 Anthropic 同日另文 「developing computer use」 里公开过的训练思路放在一起读; 对不上的写 「本页没有」. 双语对照与逐段疑问见 [claude-computer-use-bi.md](claude-computer-use-bi.md).
+> 源材料是 Anthropic 官网 2024 年 10 月 22 日的产品公告, 不是论文: 没有公式, 没有架构图, 没有训练细节, 可核对的只有一张基准表和正文里几组百分比. 对不上的写 「本页没有」. 双语对照与逐段疑问见 [claude-computer-use-bi.md](claude-computer-use-bi.md).
 
 来源: 同目录 `claude-computer-use.md` 与 PDF. 同族目录 `claude-3-5-haiku` 用的是同一份抓取, 那一篇以 Haiku 为主, 本篇以 **computer use** 和新 Sonnet 为主.
 

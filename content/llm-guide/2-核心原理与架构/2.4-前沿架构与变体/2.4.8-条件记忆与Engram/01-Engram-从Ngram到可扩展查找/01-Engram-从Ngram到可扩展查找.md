@@ -343,7 +343,7 @@ Qwen3.8-Flash-Next(权重 2026-08-26)把主干写成 **125B 总 / 6B 每 token �
 | RETRO / REALM | Borgeaud et al. 2022 等 | 块级检索 | 外部可编辑文本 | 非参数,可换库;Engram 行是训练出来的参数 |
 | OverEncoding / 输入层 $n$-gram | Huang et al. 2025 等 | 同样可哈希 | 加在 Layer 0 | Engram 强调插进深层才能重叠通信;论文写 OverEncoding 在 MoE 骨干上没有公平设定下的收益 |
 
-未找到其它公开权重型号把 Engram 模块写成出厂架构.`[OM-FREEPLAY]` 若 2026-08 之后有第二家卡,补进本节.
+截至 2026-08,还没有其它公开权重型号把 Engram 模块写成出厂架构.
 
 ---
 

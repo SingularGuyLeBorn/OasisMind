@@ -2,7 +2,7 @@
 
 来源: 同目录 `claude-opus-4.md` (System Card: Claude Opus 4 & Claude Sonnet 4, 123 页, 41 张图) 与 PDF. 同一份系统卡也收在同级目录 `claude-sonnet-4` 下, 那一篇侧重 Sonnet 4 为什么留在 ASL-2 和它更稳的对齐指标, 本篇侧重 Opus 4. 对照译稿见 `claude-opus-4-bi.md`. 数字以源 md 为准, 读图得到的注明 「读图估算」; 卡外能对上号的 Anthropic 论文或博客标 「(公开资料)」, 笔者判断标 「(推测)」.
 
-> **[OM-FREEPLAY] 架构缺口.** 系统卡没有参数量, 层数, 注意力结构, 上下文实现, 训练 token 与算力. 下文凡涉及这些只写 「本页没有」, 不补数字.
+> 系统卡没有参数量, 层数, 注意力结构, 上下文实现, 训练 token 与算力.
 
 ## 1. 材料与训练
 

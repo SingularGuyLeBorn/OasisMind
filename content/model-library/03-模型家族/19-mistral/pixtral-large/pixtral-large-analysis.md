@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral 文档站的 Pixtral Large 模型卡, 1 页, 6 张图, 大半是导航和 cookie 横幅. 下面只用这页印出来的数, 不补架构, 不从 Pixtral 12B 或同家族其他模型搬参数.
+这是 Mistral 文档站的 Pixtral Large 模型卡, 1 页, 6 张图, 大半是导航和 cookie 横幅.
 
 - 名称: **Pixtral Large**, 模型 ID `pixtral-large-2411`, 另有 1 个别名未显示 (「+1」).
 - 日期: **November 18, 2024**, 标签 **v24.11**.

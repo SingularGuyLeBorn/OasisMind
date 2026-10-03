@@ -271,7 +271,7 @@ Table 9(step 80,3 seed;同一底座):GRPO $41.2\pm0.8$,GSPO $40.1\pm2.3$,CISPO $
 
 **B. 科学推理 + 工具(无环境 rich 文本,只用同组成功解)**
 
-Table 3:avg@16;墙钟 1h / 5h(4×GH200,含 init/val 约 6h);GRPO 每代做 4 次 off-policy mini-batch,SDPO 与 on-policy GRPO 是一代一步.摘要 70.2% / 66.6% 未单列成表.[OM-FREEPLAY] 下面 SDPO **70.0**,GRPO **66.8** 是 Table 3 十格 5h(Qwen3-8B + Olmo3-7B-Instruct × 五任务)的算术平均,不是论文另印的第三套;与摘要四舍五入可对上.摘两格说明「分母」:
+Table 3:avg@16;墙钟 1h / 5h(4×GH200,含 init/val 约 6h);GRPO 每代做 4 次 off-policy mini-batch,SDPO 与 on-policy GRPO 是一代一步.摘要 70.2% / 66.6% 未单列成表.下面 SDPO **70.0**,GRPO **66.8** 是 Table 3 十格 5h(Qwen3-8B + Olmo3-7B-Instruct × 五任务)的算术平均,不是论文另印的第三套;与摘要四舍五入可对上.摘两格说明「分母」:
 
 | 模型 | 任务 | 方法 | 1h | 5h |
 | --- | --- | --- | ---: | ---: |

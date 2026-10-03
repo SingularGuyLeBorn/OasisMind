@@ -1,6 +1,6 @@
 # Moonshot / Kimi(moonshot-v1): 平台文档解析
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 Wayback Machine 抓取的 Moonshot 平台「文档 / 使用手册」快照(源文约 12.5KB, 8 页), 不是模型技术报告. 页面没有训练数据, 架构, 预训练, 后训练和评测的任何数字, 本稿不补写这些面, 只把手册里能核对的服务口径放回 Kimi 家族的时间线里读.
+> 公开材料是 Wayback Machine 抓取的 Moonshot 平台「文档 / 使用手册」快照(源文约 12.5KB, 8 页), 不是模型技术报告. 页面没有训练数据, 架构, 预训练, 后训练和评测的任何数字.
 
 来源: 同目录 `kimi.md`(页标记 `page 1 of 8` 到 `page 8 of 8`). 对照译稿见 `kimi-bi.md`. 快照 URL 指向 `platform.moonshot.cn` 文档页, 归档时间约 2024-03-27, 文末写 Last updated on March 26, 2024. 源文无配图. 数字与型号名以源 md 为准.
 

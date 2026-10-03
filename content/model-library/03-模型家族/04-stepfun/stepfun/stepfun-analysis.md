@@ -1,6 +1,6 @@
 # StepFun 开放平台文档中心: 当前在售的文本、语音和图像模型一览
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 StepFun 开放平台文档中心落地页抓取 `stepfun.md` (约 7 页, 1 图, 源文体积很小), 不是架构论文或评测报告. 正文是快捷入口, 模型能力分类条, 以及 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 2603 / StepAudio 系列 / Step TTS Mini / Step Image Edit 2 的产品卡. 几乎没有层宽, 训练配方或榜单分表; 唯一带参数量与架构专名的句子在 StepAudio 2.5 ASR 的 4B MTP. 下文只写页面里能找到原句的产品事实; 架构细节页面没有写, 这里也不补.
+> 公开材料是 StepFun 开放平台文档中心落地页抓取 `stepfun.md` (约 7 页, 1 图, 源文体积很小), 不是架构论文或评测报告. 正文是快捷入口, 模型能力分类条, 以及 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 2603 / StepAudio 系列 / Step TTS Mini / Step Image Edit 2 的产品卡. 几乎没有层宽, 训练配方或榜单分表; 唯一带参数量与架构专名的句子在 StepAudio 2.5 ASR 的 4B MTP. 架构细节页面没有写.
 
 来源: 同目录 `stepfun.md` (页标记 `page 1 of 7`–`page 7 of 7`). 对照译稿见 `stepfun-bi.md`. 配图一张: `images/p01-03-https-platform-stepfun-com-docs-zh-api-reference.png`. 数字与型号名回源 md; 抓取断句 (如 Step 3.7 Flash 段末 「支持」) 不臆补.
 

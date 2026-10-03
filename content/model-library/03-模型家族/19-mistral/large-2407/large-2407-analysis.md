@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Mistral Large 2 发布页, 标题 「Large Enough」, 11 页, 9 张图, 不是论文. 下面只用这页印出来的数和图, 不补结构, 不从同家族其他模型搬参数. 图表都没有数据标签, 凡是读柱高, 读散点得来的数和自己算的数, 都标了估算.
+这是 Mistral AI 官网的 Mistral Large 2 发布页, 标题 「Large Enough」, 11 页, 9 张图, 不是论文. 图表都没有数据标签.
 
 - 发布: **July 24, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.
 - 名字: Mistral Large 2, la Plateforme 和 API 名 mistral-large-2407, 版本 24.07 (YY.MM 版本号); MultiPL-E 表里写作 「Mistral Large 2 (2407)」.

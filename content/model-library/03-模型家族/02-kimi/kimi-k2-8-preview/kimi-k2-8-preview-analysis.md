@@ -1,6 +1,6 @@
 # Kimi K2.8 Preview: 更新日志里的一次原地换模型
 
-[OM-FREEPLAY] 材料不够 5000. 源文是 Kimi Code 文档的 What's New 更新日志, 32 页里写 K2.8 Preview 的只有第 4 至 5 页的一小段: 上线日期, Model ID, thinking 档位, 上下文长度和几句定性比较. 没有架构, 数据, 训练过程和基准分数. 下文不补写这些, 用到的外部文档都标了出处.
+源文是 Kimi Code 文档的 What's New 更新日志, 32 页里写 K2.8 Preview 的只有第 4 至 5 页的一小段: 上线日期, Model ID, thinking 档位, 上下文长度和几句定性比较. 没有架构, 数据, 训练过程和基准分数.
 
 来源: 同目录 `kimi-k2-8-preview.md`(页标记 `page 1 of 32` 到 `page 32 of 32`), 取自 Kimi Code Docs 的 What's New 页. 对照译稿见 `kimi-k2-8-preview-bi.md`. 源文没有配图.
 

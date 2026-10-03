@@ -7,7 +7,7 @@ tags: ["NSA", "Sparse Attention", "DeepSeek"]
 
 NSA(Native Sparse Attention,[arXiv:2502.11089](https://arxiv.org/abs/2502.11089))是 DeepSeek 的 **可训练** 块级稀疏注意力.64K 上注意力可占延迟 70%–80%;FlashAttention 只降 HBM 往返,不降 FLOPs.后处理稀疏(H2O 一类驱逐,Quest 一类 **不驱逐只选页**)解决不了训练成本.本篇只写三分支:**压缩 / 选择 / 滑动窗口**.块均值 top-$k$ 路由见 [01 MoBA](../01-MoBA架构深度解析/01-MoBA架构深度解析.md).
 
-口述 **MSA**:ViT 文献里的 MSA = Multi-head Self-Attention,就是 [01-MHA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的同一算子,本篇不开夹,也不要把 MoBA 改名成 MSA.另检索到 MiniMax Sparse Attention([arXiv:2606.13392](https://arxiv.org/abs/2606.13392),官方也缩写 MSA)与 Memory Sparse Attention([arXiv:2603.23516](https://arxiv.org/abs/2603.23516))两篇独立稀疏一手论文--机制不是 NSA 三分支,本切片不建单独成篇夹.[OM-FREEPLAY]
+**MSA** 有歧义:ViT 文献里的 MSA = Multi-head Self-Attention,就是 [01-MHA](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的同一算子,也不要把 MoBA 改名成 MSA.另有 MiniMax Sparse Attention([arXiv:2606.13392](https://arxiv.org/abs/2606.13392),官方也缩写 MSA)与 Memory Sparse Attention([arXiv:2603.23516](https://arxiv.org/abs/2603.23516))两篇独立的稀疏注意力论文,机制不是 NSA 的三分支.
 
 ## 1. 现有稀疏方法差在哪
 

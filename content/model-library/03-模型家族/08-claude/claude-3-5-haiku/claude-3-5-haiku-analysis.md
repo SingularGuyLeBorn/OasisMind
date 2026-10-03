@@ -1,6 +1,6 @@
 # Claude 3.5 Haiku: 小档模型在 agent 编程上的反超
 
-> **[OM-FREEPLAY] 材料不够 5000.** 本目录的源材料是 Anthropic 2024 年 10 月 22 日的发布公告 「Introducing computer use, a new Claude 3.5 Sonnet, and Claude 3.5 Haiku」 的抓取 `claude-3-5-haiku.md` (9 页, 2 图), 属于产品博客, 不是技术报告. 全文没有架构和训练细节, 能核对的只有第 2 页一张八行评测表和正文里几个百分数. 下文只盯 Haiku 这一列, 把表上的分数形状, SWE-bench Verified 与 TAU-bench 两个 agent 评测的机制, 以及价格更新放在一起读; 训练手段本页和公开资料都没写的, 标 「本页没有」.
+> 本目录的源材料是 Anthropic 2024 年 10 月 22 日的发布公告 「Introducing computer use, a new Claude 3.5 Sonnet, and Claude 3.5 Haiku」 的抓取 `claude-3-5-haiku.md` (9 页, 2 图), 属于产品博客, 不是技术报告. 全文没有架构和训练细节, 能核对的只有第 2 页一张八行评测表和正文里几个百分数. 训练手段本页和公开资料都没写的, 标 「本页没有」.
 
 来源: 同目录 `claude-3-5-haiku.md` (页标记 `page 1 of 9` 到 `page 9 of 9`) 与 `claude-3-5-haiku.pdf`. 逐段对照译文和逐条疑问在 `claude-3-5-haiku-bi.md`. 同族目录 `claude-computer-use` 用的是同一份抓取, 那一篇以 **computer use** 和新 Sonnet 为主, 本篇以 Haiku 为主.
 

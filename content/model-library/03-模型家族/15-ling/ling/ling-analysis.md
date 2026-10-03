@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 GitHub 上 inclusionAI 的组织页抓取, 4 页, 不是 Ling 的技术报告. 下面只核对这一页印出来的名字, 计数和链接. 不把别的目录里的参数搬过来.
+这是 GitHub 上 inclusionAI 的组织页抓取, 4 页, 不是 Ling 的技术报告.
 
 ## 1. 这一页是组织壳
 

@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Devstral 发布页, 7 页, 3 张图, 不是论文. 下面只用这页印出来的数, 不补结构, 不从 Devstral 2, Codestral 或同家族其他模型搬参数. 散点图上的点没有印数值, 凡是从图上读的坐标, 以及自己算的比例, 差值, 题数, 都标了估算.
+这是 Mistral AI 官网的 Devstral 发布页, 7 页, 3 张图, 不是论文. 散点图上的点没有印数值.
 
 - 发布: **May 21, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.
 - 合作方: All Hands AI (OpenHands 的提供方).

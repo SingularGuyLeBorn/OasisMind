@@ -1,6 +1,6 @@
 # DeepSeek-V3.1: 一个检查点, 两种思考模式
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 2025-08-21 的官方动态, 共 7 页, 不是技术报告. 页上有: 混合推理开关, 编程与搜索 Agent 两张表, CoT 压缩后的长度对比图, Base 追加 840B token, UE8M0 FP8 比例因子, 分词器与 chat template 变更, API 与定价. 页上没有层数, 专家数, 数据配比, 后训练算法和消融. 下文不补这些.
+> 公开材料是 2025-08-21 的官方动态, 共 7 页, 不是技术报告. 页上有: 混合推理开关, 编程与搜索 Agent 两张表, CoT 压缩后的长度对比图, Base 追加 840B token, UE8M0 FP8 比例因子, 分词器与 chat template 变更, API 与定价. 页上没有层数, 专家数, 数据配比, 后训练算法和消融.
 
 来源: [DeepSeek-V3.1 Release](https://api-docs.deepseek.com/news/news250821/) (2025-08-21 官方发布页; V3.1 无 arXiv 论文) 与 [Hugging Face 模型页](https://huggingface.co/deepseek-ai/DeepSeek-V3.1).
 

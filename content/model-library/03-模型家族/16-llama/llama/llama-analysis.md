@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 源文是 GitHub 上 meta-llama/llama-models 仓库首页的抓取, 5 页, 1 张图, 不是 Llama 的技术报告. 下面只整理这 5 页印出来的名字, 数字和命令, 不把别处的架构和参数量搬进来.
+源文是 GitHub 上 meta-llama/llama-models 仓库首页的抓取, 5 页, 1 张图, 不是 Llama 的技术报告.
 
 ## 1. 这 5 页是什么
 

@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 源材料是 Hugging Face 上 tencent/Hy4-preview 模型卡的网页打印件, 共 13 页, 不是技术报告. 下文只整理页面印出的规格, 能力描述, 一张柱状图, 一张评测大表和部署命令, 不补结构, 不引用 DeepSeek-V3.2 或 IndexCache 论文里的配置, 也不用同家族 hy3 目录的任何内容.
+源材料是 Hugging Face 上 tencent/Hy4-preview 模型卡的网页打印件, 共 13 页, 不是技术报告.
 
 # Hy4 preview 模型卡: 一张规格表, 一张 46 行的评测表
 

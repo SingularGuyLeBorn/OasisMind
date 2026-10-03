@@ -1,6 +1,6 @@
 # ByteDance Seed 英文门户: 从一张首页看家族到了哪一代
 
-> **[OM-FREEPLAY] 材料不够 5000.** 源文 `doubao.md` 是 ByteDance Seed 英文门户首页的 MinerU 抓取 (4 页, 13 张图), 标题位是 Seed2.1, 后面是六条近期博客, 一组产品入口和页脚. 它不是论文, 也不是模型卡, 没有层数, 训练数据, 评测表或任何参数. 下文只写能指回原句的事实, 禁止编架构, 也不为凑字数把门户页写成论文.
+> 源文 `doubao.md` 是 ByteDance Seed 英文门户首页的 MinerU 抓取 (4 页, 13 张图), 标题位是 Seed2.1, 后面是六条近期博客, 一组产品入口和页脚. 它不是论文.
 
 来源: 同目录 `doubao.md` (页标记 `page 1 of 4` 到 `page 4 of 4`). 对照译稿见 `doubao-bi.md`. 13 张图里 11 张是小图标或卡片缩略图, 1 张 (`p01-seed2-1.png`) 抓成了纯黑块, 1 张 (`p03-image.png`) 是 Dreamina 的轮播截图.
 

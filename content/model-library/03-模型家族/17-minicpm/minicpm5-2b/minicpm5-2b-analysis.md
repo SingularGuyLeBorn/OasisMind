@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000: 源文是 openbmb/MiniCPM5-2B 的 Hugging Face 模型页, 不是技术报告, 下文只就页面印出来的规格, 流程图, 评测表和部署说明做分析, 篇幅按材料收短.
+源文是 openbmb/MiniCPM5-2B 的 Hugging Face 模型页, 不是技术报告.
 
 # MiniCPM5-2B 模型卡分析: 2.52B 稠密模型的一页说明书
 

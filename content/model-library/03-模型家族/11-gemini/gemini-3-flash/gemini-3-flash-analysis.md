@@ -1,5 +1,3 @@
-[OM-FREEPLAY] 材料不够 5000, 禁止编造架构.
-
 源文是 Google DeepMind 发布的 Gemini 3 Flash 模型卡 PDF, 共 6 页, MinerU 转出的 Markdown 里没有图片引用. PDF 里嵌了 3 张图: 封面的细色条和 Google 字标, 以及第 4 页整张成绩表 (表是图片, 文本层没有字). 卡上没有 Flash 自己的结构, 参数规模和训练数据描述, 这几项都转给了 Gemini 3 Pro 的卡. 下文只按卡上的字和表写, 对照材料只用同目录族里 gemini-3 目录的 3 Pro 卡, 不和 3.5 Flash, 3.6 Flash, 3.1 Flash-Lite 的材料混用.
 
 # Gemini 3 Flash 模型卡: 分析

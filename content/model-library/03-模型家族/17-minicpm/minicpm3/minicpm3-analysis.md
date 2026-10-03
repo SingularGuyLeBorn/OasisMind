@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Hugging Face 上 MiniCPM3-4B 的模型卡, 5 页, 没有图. 推理代码不转写.
+这是 Hugging Face 上 MiniCPM3-4B 的模型卡, 5 页, 没有图.
 
 ## 1. 名字里的 4B 和 Phi 的 3.8B
 

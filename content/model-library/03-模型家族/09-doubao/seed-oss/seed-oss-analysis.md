@@ -1,6 +1,6 @@
 # Seed-OSS-36B: MoE 家族里的一个稠密开源分支
 
-[OM-FREEPLAY] 材料不够 5000: 源文是 Hugging Face 上 ByteDance-Seed/Seed-OSS-36B-Instruct 模型页的抓取, 13 页里夹着大量站点导航, 正文只有一张结构表, 两张评测表, 一段思考预算说明和几组部署命令, 技术报告标着 「Coming Soon」. 下文只写卡上印出的内容和由这些数字直接算出的量, 禁止编架构, 卡上没有的面就说明没有.
+源文是 Hugging Face 上 ByteDance-Seed/Seed-OSS-36B-Instruct 模型页的抓取, 13 页里夹着大量站点导航, 正文只有一张结构表, 两张评测表, 一段思考预算说明和几组部署命令, 技术报告标着 「Coming Soon」.
 
 来源: [ByteDance-Seed/Seed-OSS-36B-Instruct](https://huggingface.co/ByteDance-Seed/Seed-OSS-36B-Instruct) 模型页 (发布日期 2025/08/20). 逐段对照稿见同目录 `seed-oss-bi.md`, 页码指抓取稿 `seed-oss.md` 的 13 页, 数字以源文为准. 由表上数字推出来的量都标了 「估算」.
 

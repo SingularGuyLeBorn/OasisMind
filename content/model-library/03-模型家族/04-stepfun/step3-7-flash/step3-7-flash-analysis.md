@@ -1,6 +1,6 @@
 # Step 3.7 Flash: 在 3.5 Flash 上加视觉输入, 主打 agent 效率的产品通告
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是 StepFun 产品页 / 通告抓取 `step3-7-flash.md` (页标记 `page 1 of 16`–`page 16 of 16`, 18 张图), 不是架构论文. 正文是卖点条, harness 分表, Advisor Mode 成本叙事, 企业 / 搜索 / 视觉工具 / GUI 案例, 以及一张截断的 Flash / PRO 对照总表. 没有层宽, 路由, 预训练 token 课表, 后训练算法名或消融. 下文只写通告里能找到原句的产品与评测事实; 架构细节通告没有写, 这里也不补.
+> 公开材料是 StepFun 产品页 / 通告抓取 `step3-7-flash.md` (页标记 `page 1 of 16`–`page 16 of 16`, 18 张图), 不是架构论文. 正文是卖点条, harness 分表, Advisor Mode 成本叙事, 企业 / 搜索 / 视觉工具 / GUI 案例, 以及一张截断的 Flash / PRO 对照总表. 没有层宽, 路由, 预训练 token 课表, 后训练算法名或消融. 架构细节通告没有写.
 
 来源: 同目录 `step3-7-flash.md`. 对照译稿见 `step3-7-flash-bi.md`. 配图路径一律 `images/p03-…` 至 `images/p14-…`. 数字与型号名回源 md 与图内标签; PDF 抓取断行 (如 conflict-of-interest) 不臆补.
 

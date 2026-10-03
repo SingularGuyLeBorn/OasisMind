@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Mistral Large 发布页 「Au Large」, 9 页, 8 张图, 不是论文. 下面只用这页印出来的数, 不补结构, 不从同家族其他模型或后续版本搬参数.
+这是 Mistral AI 官网的 Mistral Large 发布页 「Au Large」, 9 页, 8 张图, 不是论文.
 
 - 发布: **February 26, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.
 - 定位: Mistral 「latest and most advanced language model」, 新旗舰, 文本生成.

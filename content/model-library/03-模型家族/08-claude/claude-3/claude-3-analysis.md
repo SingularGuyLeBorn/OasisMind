@@ -1,6 +1,6 @@
 # Claude 3 (2024): 三档家族, 视觉入场和拒答率的回调
 
-> **[OM-FREEPLAY] 材料不够 5000.** 源文是 Anthropic 在 2024 年 3 月 4 日发布的产品公告 「Introducing the next generation of Claude」, 属于博客式发布页, 不是技术报告. 页面有两张评测表, 四张图表和三档价格, 但没有参数量, 层数, 训练数据, 训练方法或架构描述. 下文把评测表, 拒答与准确率两张图, 大海捞针热力图和安全分级放在一起读, 再对到同日发布的 Claude 3 模型卡和 Anthropic 公开的 character training 说明; 公告和模型卡都没写的环节, 标 「本页没有」.
+> 源文是 Anthropic 在 2024 年 3 月 4 日发布的产品公告 「Introducing the next generation of Claude」, 属于博客式发布页, 不是技术报告. 页面有两张评测表, 四张图表和三档价格, 但没有参数量, 层数, 训练数据, 训练方法或架构描述. 公告和模型卡都没写的环节, 标 「本页没有」.
 
 来源: 同目录 `claude-3.md` 与 `claude-3.pdf`, 共 15 页, 配图 10 张 (均在 `images/`). 对照译稿和逐段疑问见 `claude-3-bi.md`. 引用的原文数字和链接以源 md 为准. 同一代的模型卡正文在同级目录 `claude-3-opus` 与 `claude-3-sonnet` 两篇, 本文只借用其中与公告对得上的几句.
 

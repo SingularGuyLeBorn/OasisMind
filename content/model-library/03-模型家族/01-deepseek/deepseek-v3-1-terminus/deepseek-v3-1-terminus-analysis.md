@@ -1,6 +1,6 @@
 # DeepSeek-V3.1-Terminus: 同一权重线上的修订版
 
-> **[OM-FREEPLAY] 材料不够 5000 汉字.** 公开材料是两页英文发布说明, 只有三条改进要点, 一张 V3.1 对 Terminus 的 12 行对照表, 以及 App / Web / API 与 Hugging Face 权重地址. 没有架构, 数据, 训练日程, 后训练算法, 评测协议. 下文不补这些.
+> 公开材料是两页英文发布说明, 只有三条改进要点, 一张 V3.1 对 Terminus 的 12 行对照表, 以及 App / Web / API 与 Hugging Face 权重地址. 没有架构, 数据, 训练日程, 后训练算法, 评测协议.
 
 来源: 同目录 `deepseek-v3-1-terminus.md`(`page 1 of 2`–`page 2 of 2`). 对照译稿: `deepseek-v3-1-terminus-bi.md`. 表内数字回源文 `deepseek-v3-1-terminus.md`.
 

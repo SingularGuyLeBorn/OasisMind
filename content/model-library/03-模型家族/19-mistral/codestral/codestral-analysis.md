@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Codestral 发布页, 9 页, 4 张图, 不是论文. 下面只用这页印出来的数, 不补结构, 不从同家族其他模型搬参数.
+这是 Mistral AI 官网的 Codestral 发布页, 9 页, 4 张图, 不是论文.
 
 - 发布: **May 29, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.
 - 定位: Mistral 的 「first-ever code model」, 开放权重, 专做代码生成.

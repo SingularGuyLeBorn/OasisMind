@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 源文是 Hugging Face 上 inclusionAI/Ling-plus 的模型卡页面抓取, 5 页, 4 张图, 不是技术报告. 下面只整理这 5 页自己印出来的数字, 名字和链接, 结构和评测分数页面没给, 这里也不补.
+源文是 Hugging Face 上 inclusionAI/Ling-plus 的模型卡页面抓取, 5 页, 4 张图, 不是技术报告.
 
 ## 1. 这 5 页是什么
 

@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Hugging Face 上 Ling-3.0-flash 的模型卡, 不是技术报告. 下面只核对卡上印出来的规格和分数. 部署命令不转写.
+这是 Hugging Face 上 Ling-3.0-flash 的模型卡, 不是技术报告.
 
 ## 1. 127B 和 124B 不是一格
 

@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Mistral Small 4 发布页, 标题 「Introducing Mistral Small 4」, 10 页, 6 张图, 不是论文. 下面只用这页印出来的数, 不从 Small 3, Small 3.1, Small 3.2 或同家族其他模型的页面搬参数. 两张柱状图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高; 第 6 页那张 「Score vs. Output Length」 图没有抓到, 只能用正文里的数. 凡是自己算的比例, 平均, 差值, 都标了估算.
+这是 Mistral AI 官网的 Mistral Small 4 发布页, 标题 「Introducing Mistral Small 4」, 10 页, 6 张图, 不是论文. 两张柱状图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高; 第 6 页那张 「Score vs. Output Length」 图没有抓到, 只能用正文里的数.
 
 - 发布: **March 16, 2026**, 署名 Mistral AI, 官网 RESEARCH 栏.
 - 定位: Small 系列下一个大版本, 把 Magistral (推理), Pixtral (多模态), Devstral (agentic 编码) 的能力合进一个模型.

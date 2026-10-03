@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 GitHub 上 OpenBMB/MiniCPM 的仓库页, 当前正文写的是 MiniCPM5-2B, 不是一份独立的技术报告. 启动命令不转写.
+这是 GitHub 上 OpenBMB/MiniCPM 的仓库页, 当前正文写的是 MiniCPM5-2B, 不是一份独立的技术报告.
 
 ## 1. 目录名和页面上的模型
 

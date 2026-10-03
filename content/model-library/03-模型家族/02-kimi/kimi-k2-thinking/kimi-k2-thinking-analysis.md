@@ -1,6 +1,6 @@
 # Kimi K2 Thinking: 边想边调工具, 思考长度和工具步数一起加
 
-[OM-FREEPLAY] 本页是发布博客, 不是技术报告. 能讲的机制只有交错工具调用的评测设定和 INT4 QAT 两件, 数据, 结构, 预训练和 RL 细节都没有公开; 正文已过 5000 字, 其余篇幅是评测协议和分数解读, 不为拉长去补写训练细节.
+本页是发布博客, 不是技术报告. 能讲的机制只有交错工具调用的评测设定和 INT4 QAT 两件, 数据, 结构, 预训练和 RL 细节都没有公开.
 
 来源: 同目录 `kimi-k2-thinking.md`(页标记 `page 1 of 9` 到 `page 9 of 9`, Moonshot 官方发布博客). 对照译稿见 `kimi-k2-thinking-bi.md`. 配图八张, 其中 `images/p01-humanity-s-last-exam-text-only-w-tools-3-b.png` 是 HLE 柱状图, `images/p04-*` 三张是搜索演示, `images/p05-*` 两张是写作样例, `images/p08-system.png` 是站点页脚. 表内分数, 脚注编号以源 md 为准; 页 6 推理表有三列数字被 OCR 粘成一串, 下文按列切分, 均标为读表.
 

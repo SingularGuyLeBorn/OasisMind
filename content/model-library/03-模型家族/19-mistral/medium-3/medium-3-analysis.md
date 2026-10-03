@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 这是 Mistral AI 官网的 Mistral Medium 3 发布页, 标题 「Medium is the new large.」, 8 页, 10 张图, 不是论文. 下面只用这页印出来的数, 不补结构, 不从 Medium 3.5, Large 3 或同家族其他模型搬参数. 评测表和人评图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高; 凡是自己算的比例, 平均, 差值, 都标了估算.
+这是 Mistral AI 官网的 Mistral Medium 3 发布页, 标题 「Medium is the new large.」, 8 页, 10 张图, 不是论文. 评测表和人评图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高.
 
 - 发布: **May 7, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.
 - 名字: Mistral Medium 3. 页面没有给 API 模型名, 也没有版本号.

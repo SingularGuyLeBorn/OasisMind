@@ -1,4 +1,4 @@
-[OM-FREEPLAY] 材料不够 5000. 源文是 Hugging Face 上 openbmb/MiniCPM-S-1B-sft 的模型卡, 11 页, 1 张图, 不是技术报告. 下面只按卡上印出来的内容写, 卡没给的结构参数不补.
+源文是 Hugging Face 上 openbmb/MiniCPM-S-1B-sft 的模型卡, 11 页, 1 张图, 不是技术报告.
 
 - 这是什么: MiniCPM-1B-sft-bf16 用 ProSparse 方法改出来的激活稀疏版本, 论文里叫 ProSparse-1B.
 - 卡给了什么: 训练步数和正则系数日程, 一张分数表, 一张加速表, 使用上的几条注意事项.
