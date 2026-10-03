@@ -943,7 +943,7 @@ output_audio_path='result_voice_cloning.wav',
 
 For audio-to-text tasks, you can use the following prompts:
 
-ASR with ZH(same as AST en2zh)：**请仔细听这段音频片段，并将其内容逐字记录。**
+ASR with ZH(same as AST en2zh): **请仔细听这段音频片段，并将其内容逐字记录。**
 
 ASR with EN(same as AST zh2en): **Please listen to the audio snippet carefully and transcribe the content.**
 

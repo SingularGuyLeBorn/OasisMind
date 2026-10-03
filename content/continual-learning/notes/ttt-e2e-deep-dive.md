@@ -11,13 +11,13 @@ tags: ["TTT", "TTT-E2E", "Test-Time Training", "长上下文", "meta-learning", 
 
 ## 一句话概括
 
-**长上下文语言建模的本质问题不是架构，而是「压缩」**。TTT-E2E 用标准架构（sliding-window attention Transformer）+ 测试时持续学习：模型把读到的 context 压缩进自己的权重，推理时用 next-token prediction 持续更新——训练时则用 meta-learning 教会模型「怎么学」。
+**长上下文语言建模的本质问题不是架构，而是"压缩"**。TTT-E2E 用标准架构（sliding-window attention Transformer）+ 测试时持续学习：模型把读到的 context 压缩进自己的权重，推理时用 next-token prediction 持续更新——训练时则用 meta-learning 教会模型"怎么学"。
 
-## 核心思想：把 LLM 从「静态数据库」变成「灵活学习者」
+## 核心思想：把 LLM 从"静态数据库"变成"灵活学习者"
 
-- 传统部署：预训练后权重冻结。若部署期硬学，性能差——因为模型从没被训练成「会自我更新」。
-- TTT-E2E 解法：从「教模型事实」（pre-training）转向「教模型如何学习」（meta-learning）。
-- **训练时**：模型把文本当流，边预测 next token 边做小的临时更新——模拟推理时的自适应；用 meta-learning 优化这个「更新机制」的初始化。
+- 传统部署：预训练后权重冻结。若部署期硬学，性能差——因为模型从没被训练成"会自我更新"。
+- TTT-E2E 解法：从"教模型事实"（pre-training）转向"教模型如何学习"（meta-learning）。
+- **训练时**：模型把文本当流，边预测 next token 边做小的临时更新——模拟推理时的自适应；用 meta-learning 优化这个"更新机制"的初始化。
 - **测试时**：同样用 next-token prediction 在给定 context 上继续学习，把 context 压缩进权重。
 
 ## 双循环（inner/outer loop）机制
@@ -29,7 +29,7 @@ tags: ["TTT", "TTT-E2E", "Test-Time Training", "长上下文", "meta-learning", 
 
 - **3B 模型、164B tokens 训练**：TTT-E2E 的扩展特性与**全注意力 Transformer 相同**——context 越长性能越好；而 Mamba 2、Gated DeltaNet 等现代 RNN 做不到。
 - **推理延迟恒定**：和 RNN 一样，不管 context 多长，每 token 推理成本不变；**128K context 下比全注意力快 2.7 倍**。
-- 即：**全注意力的长上下文准确率 + RNN 级别的效率**——解决了「准确性 vs 效率」的经典两难。
+- 即：**全注意力的长上下文准确率 + RNN 级别的效率**——解决了"准确性 vs 效率"的经典两难。
 
 ## 与 TTT-Linear 的区别
 
@@ -42,11 +42,11 @@ tags: ["TTT", "TTT-E2E", "Test-Time Training", "长上下文", "meta-learning", 
 
 ## 与 SSI 的关联
 
-SSI 爆料的技术参考论文正是 TTT-E2E——它把 TTT 从「层内微调」推进到「整个模型持续学习」，是最接近「边思考边更新自己权重」路线的公开工作。详见 [SSI 与 TTT 路线](ssi-ttt-ilya-bet)。
+SSI 爆料的技术参考论文正是 TTT-E2E——它把 TTT 从"层内微调"推进到"整个模型持续学习"，是最接近"边思考边更新自己权重"路线的公开工作。详见 [SSI 与 TTT 路线](ssi-ttt-ilya-bet)。
 
 ## 工业意义（VentureBeat 视角）
 
-- 企业 Agent 要消化长文档/ticket/日志：TTT-E2E = 「长记忆」不付随 context 增长的时间成本。
+- 企业 Agent 要消化长文档/ticket/日志：TTT-E2E = "长记忆"不付随 context 增长的时间成本。
 - 对部署方：模型上线后仍能持续学习（服务期间自适应），而不是永远冻结。
 
 ## 资源

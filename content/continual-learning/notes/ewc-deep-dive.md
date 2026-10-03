@@ -19,7 +19,7 @@ tags: ["持续学习", "EWC", "正则化", "灾难性遗忘", "Fisher"]
 
 - 训练完任务 A 后，用 **Fisher 信息矩阵** $F$ 近似参数对旧任务的重要性（对角近似）：$F_i \approx \mathbb{E}[(\frac{\partial \log p(y|x)}{\partial \theta_i})^2]$。
 - 训练任务 B 时，在损失上加入正则项：$\mathcal{L}_B(\theta) + \frac{\lambda}{2} \sum_i F_i (\theta_i - \theta^*_A,i)^2$。
-- 效果：重要参数被「锚定」在旧值附近（弹性），次要参数自由移动（可塑性）——类似突触巩固（synaptic consolidation）的生物机制。
+- 效果：重要参数被"锚定"在旧值附近（弹性），次要参数自由移动（可塑性）——类似突触巩固（synaptic consolidation）的生物机制。
 
 ## 关键公式
 
@@ -32,7 +32,7 @@ $$L(\theta) = L_B(\theta) + \sum_i \frac{\lambda}{2} F_i (\theta_i - \theta^*_{A
 **优点**
 - 无需存储旧数据（内存友好）
 - 理论干净：贝叶斯视角（参数后验近似）
-- 开创了「重要性加权正则化」整个流派
+- 开创了"重要性加权正则化"整个流派
 
 **局限**
 - Fisher 对角近似可能不准确（忽略参数间相关性）
@@ -56,4 +56,4 @@ $$L(\theta) = L_B(\theta) + \sum_i \frac{\lambda}{2} F_i (\theta_i - \theta^*_{A
 
 ## 与 TTT 的关联
 
-TTT 在推理时更新权重也面临「更新哪些权重、会不会破坏已学知识」的问题——EWC 式的 Fisher 重要性加权正则已被用于约束 TTT 的更新步，防止在测试时灾难性遗忘。见 [TTT 专题](ttt-index)。
+TTT 在推理时更新权重也面临"更新哪些权重、会不会破坏已学知识"的问题——EWC 式的 Fisher 重要性加权正则已被用于约束 TTT 的更新步，防止在测试时灾难性遗忘。见 [TTT 专题](ttt-index)。

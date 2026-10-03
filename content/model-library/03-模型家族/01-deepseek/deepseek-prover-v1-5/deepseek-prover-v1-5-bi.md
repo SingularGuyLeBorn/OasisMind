@@ -11,7 +11,7 @@ arXiv: 2408.08152v1 [cs. CL] 15 Aug 2024
 
 Qdeepseek
 
-# DeepSeek-Prover-V1.5: Harnessing Proof Assistant Feedback for Reinforcement Learning and Monte-Carlo Tree Search / DeepSeek-Prover-V1.5：用证明助手反馈做强化学习与蒙特卡洛树搜索
+# DeepSeek-Prover-V1.5: Harnessing Proof Assistant Feedback for Reinforcement Learning and Monte-Carlo Tree Search / DeepSeek-Prover-V1.5: 用证明助手反馈做强化学习与蒙特卡洛树搜索
 
 Huajian Xin\*, Z. Z. Ren\*, Junxiao Song\*, Zhihong Shao\*, Wanjia Zhao, Haocheng Wang, Bo Liu, Liyue Zhang Xuan Lu, Qiushi Du, Wenjun Gao, Qihao Zhu, Dejian Yang, Zhibin Gou, Z. F. Wu, Fuli Luo, Chong Ruan
 
@@ -19,7 +19,7 @@ DeepSeek-AI
 
 
 
-DeepSeek-AI；标星作者为共同核心贡献者。仓库：https://github. com/deepseek-ai/DeepSeek-Prover-V1.5
+DeepSeek-AI; 标星作者为共同核心贡献者. 仓库: https://github. com/deepseek-ai/DeepSeek-Prover-V1.5
 
 [**https://github. com/deepseek-ai/DeepSeek-Prover-V1.5**](https://github. com/deepseek-ai/DeepSeek-Prover-V1.5)
 
@@ -29,9 +29,9 @@ We introduce DeepSeek-Prover-V1.5, an open-source language model designed for th
 
 
 
-推出 DeepSeek-Prover-V1.5：面向 Lean 4 定理证明的开源语言模型，在 DeepSeek-Prover-V1 上同时优化训练与推理。基座来自 DeepSeekMath-Base，并针对形式化数学语言做了专项续训；再在 V1 增强后的形式证明数据集上做监督微调，接着用**证明助手反馈强化学习**(RLPAF)精炼。相对 V1 的「一遍写出整段证明」，本文提出 **RMaxTS**：一种蒙特卡洛树搜索变体，用内在奖励驱动探索，以生成更多样的证明路径。相对 V1，V1.5 显著提升：高中级 miniF2F 测试集 63.5%，本科级 ProofNet 25.3%，均为当时新 SOTA。
+推出 DeepSeek-Prover-V1.5: 面向 Lean 4 定理证明的开源语言模型, 在 DeepSeek-Prover-V1 上同时优化训练与推理. 基座来自 DeepSeekMath-Base, 并针对形式化数学语言做了专项续训; 再在 V1 增强后的形式证明数据集上做监督微调, 接着用**证明助手反馈强化学习**(RLPAF)精炼. 相对 V1 的「一遍写出整段证明」, 本文提出 **RMaxTS**: 一种蒙特卡洛树搜索变体, 用内在奖励驱动探索, 以生成更多样的证明路径. 相对 V1, V1.5 显著提升: 高中级 miniF2F 测试集 63.5%, 本科级 ProofNet 25.3%, 均为当时新 SOTA.
 
-解释：Lean 4 是带严格类型检查的交互式定理证明器；模型写出的每一步 tactic（策略）都要过编译器验证。「一遍整证」省通信，但看不到中间 tactic 状态，长证明容易复利式出错。RMaxTS 把整证生成嵌进树搜索：错了就截断，从成功前缀续写，并用「是否发现新状态」当好奇心奖励，逼模型多试不同路径。
+解释: Lean 4 是带严格类型检查的交互式定理证明器; 模型写出的每一步 tactic(策略)都要过编译器验证.「一遍整证」省通信, 但看不到中间 tactic 状态, 长证明容易复利式出错. RMaxTS 把整证生成嵌进树搜索: 错了就截断, 从成功前缀续写, 并用「是否发现新状态」当好奇心奖励, 逼模型多试不同路径.
 
 ![Chart block](images/p01-figure-1-pass-rates-of-models-on-formal-theorem-proving.png)
 
@@ -39,7 +39,7 @@ Figure 1 | Pass rates of models on formal theorem proving benchmarks in Lean 4: 
 
 
 
-图 1｜Lean 4 形式定理证明基准上的通过率：高中级 miniF2F-test(Zheng et al., 2022)与本科级 ProofNet(Azerbayev et al., 2023)。对比 DeepSeek-Prover-V1.5 预训练与微调各档，以及强基线。
+图 1｜Lean 4 形式定理证明基准上的通过率: 高中级 miniF2F-test(Zheng et al., 2022)与本科级 ProofNet(Azerbayev et al., 2023). 对比 DeepSeek-Prover-V1.5 预训练与微调各档, 以及强基线.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280">\*Core contributors</span></small>
 
@@ -51,23 +51,23 @@ Recent advancements in large language models have significantly influenced mathe
 
 
 
-大模型明显推高了自然语言侧的数学推理与定理证明能力，但形式定理证明仍很难：Lean，Isabelle 等要求每一步推导都满足验证系统的形式规约。即便 GPT-4 也常卡在复杂形式证明上-- 既是写代码，也是写数学。形式证明模型既要吃透 Lean 一类系统的语法与语义，又要把抽象数学推理对齐到精确的形式表示。
+大模型明显推高了自然语言侧的数学推理与定理证明能力, 但形式定理证明仍很难: Lean, Isabelle 等要求每一步推导都满足验证系统的形式规约. 即便 GPT-4 也常卡在复杂形式证明上-- 既是写代码, 也是写数学. 形式证明模型既要吃透 Lean 一类系统的语法与语义, 又要把抽象数学推理对齐到精确的形式表示.
 
 Language models in formal theorem proving typically employ two strategies: proof-step generation (Polu and Sutskever, 2020; Jiang et al., 2022; Lample et al., 2022; Yang et al., 2023; Wu et al., 2024) and whole-proof generation (Jiang et al., 2022; Zhao et al., 2023; Wang et al., 2023). Proof-step generation predicts each subsequent tactic and verifies it using the formal verifier to obtain updated information about the current tactic state, often utilizing tree search techniques to construct valid proofs. In contrast, whole-proof generation is computationally efficient, which produces an entire proof code based on the theorem statement, requiring less communication budget to coordinate between the prover model and the formal theorem verifier. While DeepSeek-Prover-V1 (Xin et al., 2024) has achieved state-of-the-art results in Lean 4 with whole-proof generation, this paradigm presents its unique challenges. It requires long-horizon sequence prediction without access to intermediate tactic states, and future tactics depend on these hidden results. In Lean’s tactic mode, proofs are constructed through a sequence of tactics that transform the proof state. This sequential nature introduces the risk of compounding errors (Ross et al., 2011), where a single misinterpretation can lead to significant deviations from a valid proof path. More specifically, the auto-regressive model may have incorrect believes on intermediate tactic states when generating long proofs.
 
 
 
-形式证明里语言模型常见两条路：**逐步生成**(proof-step)与**整证生成**(whole-proof)。逐步生成每次预测下一条 tactic，用形式验证器核对并拿回最新 tactic 状态，常配树搜索拼出合法证明。整证生成更省算力与通信：根据定理陈述一次写出整段证明代码，模型和验证器来回少。DeepSeek-Prover-V1 靠整证生成在 Lean 4 上做到过 SOTA，但这条路有硬伤：长程序列预测看不到中间 tactic 状态，而后面的 tactic 又依赖这些隐藏结果。Lean 的 tactic 模式里，证明是一串变换证明状态的策略；序列一旦错读，就会复利式偏离合法路径（compounding errors）。自回归模型在长证明里，常常对中间状态持有错误信念。
+形式证明里语言模型常见两条路: **逐步生成**(proof-step)与**整证生成**(whole-proof). 逐步生成每次预测下一条 tactic, 用形式验证器核对并拿回最新 tactic 状态, 常配树搜索拼出合法证明. 整证生成更省算力与通信: 根据定理陈述一次写出整段证明代码, 模型和验证器来回少. DeepSeek-Prover-V1 靠整证生成在 Lean 4 上做到过 SOTA, 但这条路有硬伤: 长程序列预测看不到中间 tactic 状态, 而后面的 tactic 又依赖这些隐藏结果. Lean 的 tactic 模式里, 证明是一串变换证明状态的策略; 序列一旦错读, 就会复利式偏离合法路径(compounding errors). 自回归模型在长证明里, 常常对中间状态持有错误信念.
 
-解释：tactic state（策略状态）是证明器当前「还剩哪些子目标，上下文里有哪些假设」的快照。逐步法每步都能看见它；整证法在生成过程中看不见，只能靠模型「脑补」，长了就容易跑偏。
+解释: tactic state(策略状态)是证明器当前「还剩哪些子目标, 上下文里有哪些假设」的快照. 逐步法每步都能看见它; 整证法在生成过程中看不见, 只能靠模型「脑补」, 长了就容易跑偏.
 
 To seamlessly integrate intermediate tactic states in proof-step generation while maintaining the simplicity and computational efficiency of whole-proof generation, we have developed a unified approach in DeepSeek-Prover-V1.5. This method combines the strengths of both proof-step and whole-proof generation techniques through a truncate-and-resume mechanism. The process begins with standard whole-proof generation, where the language model completes the proof code following the theorem statement prefix. The Lean prover then verifies this code. If the proof is correct and complete, the procedure terminates. If an error is detected, the code is truncated at the first error message, and any subsequent code is discarded. The successfully generated proof code is then used as a prompt for the generation of next proof segment. To enhance the accuracy of the model’s new completions, we append the latest state from the Lean 4 prover as a comment at the end of the prompt. Notably, our method is not restricted to resuming from the last successfully applied tactic. We integrate the truncate-and-resume mechanism into Monte-Carlo tree search (MCTS; Coulom, 2006) in which the truncation points are scheduled by the tree search policy. In addition, we propose a novel reward-free exploration algorithm for MCTS to address the reward sparsity issue of proof search. We assign the tree search agent intrinsic motivation, a. k. a. curiosity (Schmidhuber, 2010), to extensively explore the tactic state space. These algorithmic modules extend the functionality of our whole-proof generation model to become a flexible tool for interactive theorem proving, which can effectively utilize the proof assistant feedback and generate diverse solution candidates.
 
 
 
-为了把逐步法里的中间 tactic 状态接进来，同时保住整证生成的简洁与算力效率，V1.5 用统一的 **truncate-and-resume（截断-续写）** 机制把两者拼起来。流程先按标准整证生成：语言模型在定理前缀后补全证明代码，Lean 验证。全对则停；一旦报错，在第一条错误处截断，后面全丢，成功前缀当作下一轮提示；并在提示末尾把 Lean 4 最新状态写成注释，抬高续写准确度。续写点不限定只能从「最后一条成功 tactic」起-- 截断-续写嵌进 **蒙特卡洛树搜索**(MCTS; Coulom, 2006)，截断位置由树策略调度。另提一种面向证明搜索奖励稀疏的，近乎无外在奖励的 MCTS 探索算法：给搜索代理内在动机（好奇心，Schmidhuber, 2010），逼它广探 tactic 状态空间。这套模块把整证模型扩成能吃证明助手反馈，能吐多样候选的交互式证明工具。
+为了把逐步法里的中间 tactic 状态接进来, 同时保住整证生成的简洁与算力效率, V1.5 用统一的 **truncate-and-resume(截断-续写)** 机制把两者拼起来. 流程先按标准整证生成: 语言模型在定理前缀后补全证明代码, Lean 验证. 全对则停; 一旦报错, 在第一条错误处截断, 后面全丢, 成功前缀当作下一轮提示; 并在提示末尾把 Lean 4 最新状态写成注释, 抬高续写准确度. 续写点不限定只能从「最后一条成功 tactic」起-- 截断-续写嵌进 **蒙特卡洛树搜索**(MCTS; Coulom, 2006), 截断位置由树策略调度. 另提一种面向证明搜索奖励稀疏的, 近乎无外在奖励的 MCTS 探索算法: 给搜索代理内在动机(好奇心, Schmidhuber, 2010), 逼它广探 tactic 状态空间. 这套模块把整证模型扩成能吃证明助手反馈, 能吐多样候选的交互式证明工具.
 
-解释：蒙特卡洛树搜索在棋类里很常见：用「选点-扩展-模拟-回传」迭代，在探索与利用之间折中。放到证明里，每个树节点对应一段已成功的证明前缀（或等价 tactic 状态）；扩展时让模型从该前缀整段续写，错了再截断挂回树上。
+解释: 蒙特卡洛树搜索在棋类里很常见: 用「选点-扩展-模拟-回传」迭代, 在探索与利用之间折中. 放到证明里, 每个树节点对应一段已成功的证明前缀(或等价 tactic 状态); 扩展时让模型从该前缀整段续写, 错了再截断挂回树上.
 
 <!-- page 3 of 28 -->
 
@@ -77,7 +77,7 @@ Figure 2 | Overall Framework. DeepSeek-Prover-V1.5 is trained through pre-traini
 
 
 
-图 2｜总框架。V1.5 经预训练 → 监督微调 → 强化学习。SFT 时，预训练模型收到以 tactic state 注释关键字结尾的不完整证明，要同时预测该状态内容（辅助目标）并补完后续证明（主目标）。RL 阶段：给定不完整证明与 Lean 给出的真值 tactic 状态，对微调模型 rollout 多条候选，Lean 验证后用二值（0-1）奖励继续优化，使其更贴验证系统的形式规约。推理提供两种：单遍采样，或蒙特卡洛树搜索。
+图 2｜总框架. V1.5 经预训练 → 监督微调 → 强化学习. SFT 时, 预训练模型收到以 tactic state 注释关键字结尾的不完整证明, 要同时预测该状态内容(辅助目标)并补完后续证明(主目标). RL 阶段: 给定不完整证明与 Lean 给出的真值 tactic 状态, 对微调模型 rollout 多条候选, Lean 验证后用二值(0-1)奖励继续优化, 使其更贴验证系统的形式规约. 推理提供两种: 单遍采样, 或蒙特卡洛树搜索.
 
 ### 1.1. Contributions 贡献
 
@@ -85,13 +85,13 @@ We present a comprehensive framework for developing a language model-based forma
 
 
 
-给出一套语言模型形式数学证明器的完整框架，串起：大规模数学预训练，形式语料构建与增强，来自证明助手反馈的在线强化学习，以及用于长程规划的树搜索。预训练 / SFT / RL 模型与 MCTS 代码均公开。
+给出一套语言模型形式数学证明器的完整框架, 串起: 大规模数学预训练, 形式语料构建与增强, 来自证明助手反馈的在线强化学习, 以及用于长程规划的树搜索. 预训练 / SFT / RL 模型与 MCTS 代码均公开.
 
 • **Pre-Training**: We enhance our base model’s capabilities in formal theorem proving and mathematical reasoning by further pre-training on high-quality mathematics and code data, with a focus on formal languages such as Lean, Isabelle, and Metamath.
 
 
 
-• **预训练**：在高质量数学与代码数据上继续预训练，侧重 Lean，Isabelle，Metamath 等形式语言，抬高形式证明与数学推理能力。
+• **预训练**: 在高质量数学与代码数据上继续预训练, 侧重 Lean, Isabelle, Metamath 等形式语言, 抬高形式证明与数学推理能力.
 
 • **Supervised Fine-Tuning**: We improve the Lean 4 code completion dataset by implementing two data augmentation techniques. First, we use DeepSeek-Coder V2 236B (Zhu et al.,
 
@@ -101,19 +101,19 @@ We present a comprehensive framework for developing a language model-based forma
 
 
 
-• **监督微调**：用两种增强改进 Lean 4 代码补全数据。一是用 DeepSeek-Coder V2 236B 在 Lean 4 旁标注自然语言 CoT 注释，让形式证明对齐自然语言推理；二是在证明代码里插入中间 tactic 状态，方便吃编译器反馈。用所得数据微调预训练模型。
+• **监督微调**: 用两种增强改进 Lean 4 代码补全数据. 一是用 DeepSeek-Coder V2 236B 在 Lean 4 旁标注自然语言 CoT 注释, 让形式证明对齐自然语言推理; 二是在证明代码里插入中间 tactic 状态, 方便吃编译器反馈. 用所得数据微调预训练模型.
 
 • **Reinforcement Learning**: We employ the GRPO algorithm (Shao et al., 2024) to perform reinforcement learning from proof assistant feedback (RLPAF) on the supervised finetuned model. Verification results from the Lean prover serve as reward supervision, enhancing the model’s alignment with the formal specifications of the verification system.
 
 
 
-• **强化学习**：对 SFT 模型用 GRPO(Shao et al., 2024)做 RLPAF；Lean 验证结果当奖励监督，加强与验证规约对齐。
+• **强化学习**: 对 SFT 模型用 GRPO(Shao et al., 2024)做 RLPAF; Lean 验证结果当奖励监督, 加强与验证规约对齐.
 
 • **Monte-Carlo Tree Search**: We advance the tree search method in formal theorem proving by introducing a novel abstraction and a corresponding search algorithm. Our truncateand-resume mechanism acts as a state-action abstraction, seamlessly integrating the tree search process into the whole-proof generation framework. We present RMaxTS, an innovative Monte-Carlo tree search algorithm that leverages the RMax (Brafman and Tennenholtz, 2002) strategy to tackle exploration challenges in sparse-reward proof search problems. By assigning intrinsic rewards, this algorithm encourages the prover agent to generate diverse planning paths, thereby fostering extensive exploration of the proof space.
 
 
 
-• **蒙特卡洛树搜索**：为形式证明树搜索引入新抽象与对应算法。截断-续写充当状态-动作抽象，把树搜索无缝嵌进整证生成。提出 **RMaxTS**：借鉴 RMax(Brafman and Tennenholtz, 2002)处理稀疏奖励证明搜索的探索难题；靠内在奖励鼓励证明代理走多样规划路径，广探证明空间。
+• **蒙特卡洛树搜索**: 为形式证明树搜索引入新抽象与对应算法. 截断-续写充当状态-动作抽象, 把树搜索无缝嵌进整证生成. 提出 **RMaxTS**: 借鉴 RMax(Brafman and Tennenholtz, 2002)处理稀疏奖励证明搜索的探索难题; 靠内在奖励鼓励证明代理走多样规划路径, 广探证明空间.
 
 ### 1.2. Summary of Evaluations and Metrics 评测与指标摘要
 
@@ -121,13 +121,13 @@ We present a comprehensive framework for developing a language model-based forma
 
 
 
-• **miniF2F**：单遍整证生成下，测试集通过率 60.2%，相对 V1 的 50.0% 绝对提升 10.2 个百分点；加上树搜索升到新 SOTA 63.5%。
+• **miniF2F**: 单遍整证生成下, 测试集通过率 60.2%, 相对 V1 的 50.0% 绝对提升 10.2 个百分点; 加上树搜索升到新 SOTA 63.5%.
 
 • **ProofNet**: DeepSeek-Prover-V1.5 also demonstrated strong performance in the single-pass whole-proof generation setting for ProofNet, with pass rates of 21.6% on the validation set and 23.7% on the test set. The integration of tree search techniques further enhanced these results, achieving new state-of-the-art pass rates of 25.4% on the validation set and 25.3% on the test set.
 
 
 
-• **ProofNet**：单遍整证下验证集 21.6%，测试集 23.7%；加树搜索后验证集 25.4%，测试集 25.3%，均为新 SOTA。
+• **ProofNet**: 单遍整证下验证集 21.6%, 测试集 23.7%; 加树搜索后验证集 25.4%, 测试集 25.3%, 均为新 SOTA.
 
 ## 2. Model Training 模型训练
 
@@ -137,7 +137,7 @@ To enhance our language model’s proficiency in generating formal proofs and re
 
 
 
-为抬高形式证明生成与数学语言推理能力，在基座（Shao et al.，2024，即 DeepSeekMath-Base）上继续预训练：高质量代码 + 自然语言数学，并侧重 Lean, Isabelle, Metamath。得到 DeepSeek-Prover-V1.5-Base。
+为抬高形式证明生成与数学语言推理能力, 在基座(Shao et al., 2024, 即 DeepSeekMath-Base)上继续预训练: 高质量代码 + 自然语言数学, 并侧重 Lean, Isabelle, Metamath. 得到 DeepSeek-Prover-V1.5-Base.
 
 ### 2.2. Supervised Fine-tuning 监督微调
 
@@ -149,27 +149,27 @@ information as an auxiliary prediction task to support the truncate-and-resume m
 
 
 
-本节讲 V1.5 的监督微调。在 V1 证明数据上加详细解释注释，拉近自然语言与 Lean 4 的对齐，服务形式数学推理；并把中间 tactic 状态做成辅助预测任务，支撑 MCTS 里的截断-续写。所得模型称 DeepSeek-Prover-V1.5-SFT。
+本节讲 V1.5 的监督微调. 在 V1 证明数据上加详细解释注释, 拉近自然语言与 Lean 4 的对齐, 服务形式数学推理; 并把中间 tactic 状态做成辅助预测任务, 支撑 MCTS 里的截断-续写. 所得模型称 DeepSeek-Prover-V1.5-SFT.
 
 **Data Curation.** We develop a comprehensive Lean 4 code completion dataset for the supervised fine-tuning. This dataset includes synthetic proof code derived from a wide range of formal theorems. These theorems are sourced from various projects, such as the standard Lean 4 math library Mathlib4 (Mathlib Community, 2020), synthetic theorems from DeepSeek-Prover-V1 (Xin et al., 2024) and Lean Workbook (Ying et al., 2024), and validation sets from the miniF2F (Zheng et al., 2022) and ProofNet (Azerbayev et al., 2023) benchmarks. To augment the formal proof data, we employed an expert iteration process (Polu and Sutskever, 2020). This involves generating proofs using the language model, verifying the generated proof data, retraining the model with the verified data, and then using the optimized model to generate additional proof data. Between each iteration, we use DeepSeek-Coder V2 236B (Zhu et al., 2024) to annotate the thought process before the proof code as comments. Finally, we tailor these data for the truncate-and-resume mechanism for Monte-Carlo Tree Search (details in Section 3.1). The resulting proof dataset consists of 9, 645k sequences.
 
 
 
-**数据整理。** 为 SFT 建一套较全的 Lean 4 代码补全数据，含多来源形式定理上的合成证明代码：Mathlib4，V1 与 Lean Workbook 的合成定理，以及 miniF2F，ProofNet 的验证集。增强走 **expert iteration**(Polu and Sutskever, 2020)：模型生成 → 验证 → 用通过数据再训 → 再生成。每轮之间用 DeepSeek-Coder V2 236B 把思考过程标成证明代码前的注释。最后按截断-续写 / MCTS 需求裁剪（§3.1）。最终证明数据集：9, 645k 条序列。
+**数据整理.** 为 SFT 建一套较全的 Lean 4 代码补全数据, 含多来源形式定理上的合成证明代码: Mathlib4, V1 与 Lean Workbook 的合成定理, 以及 miniF2F, ProofNet 的验证集. 增强走 **expert iteration**(Polu and Sutskever, 2020): 模型生成 → 验证 → 用通过数据再训 → 再生成. 每轮之间用 DeepSeek-Coder V2 236B 把思考过程标成证明代码前的注释. 最后按截断-续写 / MCTS 需求裁剪(§3.1). 最终证明数据集:9, 645k 条序列.
 
-解释：expert iteration（专家迭代）不是一次训完：用当前模型造证明，过编译器筛对的，再训一版更强的模型，循环扩大「已会证」的题库-- 形式证明里很常用的数据滚雪球办法。
+解释: expert iteration(专家迭代)不是一次训完: 用当前模型造证明, 过编译器筛对的, 再训一版更强的模型, 循环扩大「已会证」的题库-- 形式证明里很常用的数据滚雪球办法.
 
 **Thought-augmented Proof Generation.** In DeepSeek-Prover-V1, we identified a significant gap between problem-solving strategies in natural language and theorem proving in Lean. In natural language, models generate detailed deduction steps to construct proofs, whereas in Lean, they often rely on a sequence of high-level tactic calls to brute-force solutions. These high-level tactics, while effective, obscure their internal workings and outcomes, hindering the model’s ability to resolve complex proof goals with structured mathematical reasoning. To address this issue, we develop an approach that incorporates natural language reasoning before generating theorem proof code. Similar to Lean-STaR (Lin et al., 2024), which performs isolated chain-of-thought reasoning (Wei et al., 2022; Feng et al., 2023) before each proof step, our method integrates this reasoning directly as comments within the proof code. We use the DeepSeek-Coder V2 236B (Zhu et al., 2024) to enhance existing data in DeepSeek-Prover-V1 in two ways: first, by inserting a complete natural language solution at the beginning of the proof block, and second, by alternately inserting specific natural language steps for corresponding Lean tactics. Training the model with this data format enforces it to propose complete mathematical reasoning at the beginning of the proof block and detailed step planning before each tactic. This approach successfully develops new behaviors, employing delicate mathematical thinking to guide the generation of tactics. In the training data, two distinct guiding prompts are used to differentiate between the CoT (Chain of Thought) mode and the non-CoT mode for proof code completion. Examples of input and output in both modes can be found in Appendix A.
 
 
 
-**思维增强的证明生成。** V1 里已看到自然语言解题与 Lean 证明之间的落差：自然语言会写细推理，Lean 侧常靠一串高层 tactic 硬砸。高层 tactic 有效，却把内部机制与结果藏起来，妨碍用结构化数学推理拆复杂目标。做法是在写证明代码前嵌入自然语言推理。类似 Lean-STaR（每步前单独做 CoT），这里把推理直接写成证明代码里的注释。用 DeepSeek-Coder V2 236B 增强 V1 数据：一是在证明块开头插入完整自然语言解法；二是在对应 Lean tactic 前交替插入具体自然语言步骤。这种格式迫使模型在证明开头给出完整数学推理，并在每条 tactic 前做细规划，从而养成「用细致数学思考引导 tactic」的新行为。训练数据用两套引导提示区分 **CoT** 与 **non-CoT** 补全模式；样例见附录 A。
+**思维增强的证明生成.** V1 里已看到自然语言解题与 Lean 证明之间的落差: 自然语言会写细推理, Lean 侧常靠一串高层 tactic 硬砸. 高层 tactic 有效, 却把内部机制与结果藏起来, 妨碍用结构化数学推理拆复杂目标. 做法是在写证明代码前嵌入自然语言推理. 类似 Lean-STaR(每步前单独做 CoT), 这里把推理直接写成证明代码里的注释. 用 DeepSeek-Coder V2 236B 增强 V1 数据: 一是在证明块开头插入完整自然语言解法; 二是在对应 Lean tactic 前交替插入具体自然语言步骤. 这种格式迫使模型在证明开头给出完整数学推理, 并在每条 tactic 前做细规划, 从而养成「用细致数学思考引导 tactic」的新行为. 训练数据用两套引导提示区分 **CoT** 与 **non-CoT** 补全模式; 样例见附录 A.
 
 **Prompt Augmentation with Tactic State Information.** To implement the truncate-and-resume mechanism for Monte-Carlo Tree Search, we needed to extract tactic information from the code generated by the model. We enhanced the Lean REPL (Read-Eval-Print Loop; Leanprover Community, 2023) with data extraction tools from the LeanDojo (Yang et al., 2023) project. This allowed us to extract tactic information in triples, which include the position of each tactic, as well as the tactic states before and after its application. This information helps us identify the specific tactic code that triggers verification errors (used in the expansion step for tree search, see Section 3.2). For each tactic in a generated valid formal proof, we insert the tactic state returned by the verifier as a comment $^ { \prime \prime }$ tactic state: $\cdots - / ^ { m }$ . During training, we use all tokens following $\dot { \gamma } _ { 1 }$ - tactic state: " as responses to calculate the supervised fine-tuning loss, while the tokens before this comment is used as prompts and do not contribute to the training loss calculation.
 
 
 
-**用 tactic 状态做提示增强。** 为实现 MCTS 的截断-续写，要从模型生成的代码里抽出 tactic 信息。在 Lean REPL(Leanprover Community, 2023)上叠 LeanDojo(Yang et al., 2023)的抽取工具，得到三元组：tactic 位置，应用前状态，应用后状态-- 用来定位触发验证错误的那段 tactic 代码（树扩展见 §3.2）。对生成且验证通过的形式证明中每条 tactic，把验证器返回的状态插成注释 `tactic state: . `。训练时，该注释之后的 token 全部当 response 算 SFT loss；注释之前当 prompt，不算 loss。
+**用 tactic 状态做提示增强.** 为实现 MCTS 的截断-续写, 要从模型生成的代码里抽出 tactic 信息. 在 Lean REPL(Leanprover Community, 2023)上叠 LeanDojo(Yang et al., 2023)的抽取工具, 得到三元组: tactic 位置, 应用前状态, 应用后状态-- 用来定位触发验证错误的那段 tactic 代码(树扩展见 §3.2). 对生成且验证通过的形式证明中每条 tactic, 把验证器返回的状态插成注释 `tactic state: . `. 训练时, 该注释之后的 token 全部当 response 算 SFT loss; 注释之前当 prompt, 不算 loss.
 
 <!-- page 6 of 28 -->
 
@@ -177,7 +177,7 @@ information as an auxiliary prediction task to support the truncate-and-resume m
 
 
 
-**训练设定。** 在预训练模型上做 SFT，共 9B token；batch size 2, 048，恒定学习率 1e-4; 100 步 warm-up。样本随机拼接成序列，最大上下文 4, 096 token。
+**训练设定.** 在预训练模型上做 SFT, 共 9B token; batch size 2, 048, 恒定学习率 1e-4; 100 步 warm-up. 样本随机拼接成序列, 最大上下文 4, 096 token.
 
 ### 2.3. Reinforcement Learning from Proof Assistant Feedback 来自证明助手反馈的强化学习
 
@@ -185,33 +185,33 @@ Reinforcement learning (RL) has been proven effective in enhancing the mathemati
 
 
 
-RL 已被证明能抬高 SFT 语言模型的数学推理（Shao et al., 2024）。在 V1.5-SFT 上再接 RL，得到 DeepSeek-Prover-V1.5-RL，用 Lean 4 验证反馈继续抬分。细节如下。
+RL 已被证明能抬高 SFT 语言模型的数学推理(Shao et al., 2024). 在 V1.5-SFT 上再接 RL, 得到 DeepSeek-Prover-V1.5-RL, 用 Lean 4 验证反馈继续抬分. 细节如下.
 
 **Prompts.** In the reinforcement learning stage, we use a subset of theorem statements from the supervised fine-tuning dataset as training prompts. We select theorems for which DeepSeek-Prover-V1.5-SFT has a moderate success rate in generating correct proofs upon multiple attempts. This ensures that the model has room for improvement while still being able to receive positive feedback. After filtering, we retain approximately 4.5k unique theorem statements. Each theorem is prefixed with both CoT and non-CoT guiding prompts to enhance the model’s proof generation capabilities in both modes.
 
 
 
-**提示。** RL 阶段从 SFT 数据里抽一部分定理陈述作训练提示：选那些 V1.5-SFT 多试几次成功率「中等」的题-- 既有提升空间，又能收到正反馈。过滤后约 4.5k 条唯一定理；每条都配 CoT 与 non-CoT 两套引导前缀。
+**提示.** RL 阶段从 SFT 数据里抽一部分定理陈述作训练提示: 选那些 V1.5-SFT 多试几次成功率「中等」的题-- 既有提升空间, 又能收到正反馈. 过滤后约 4.5k 条唯一定理; 每条都配 CoT 与 non-CoT 两套引导前缀.
 
 **Rewards.** When training LLMs via RL, a trained reward model typically provides feedback signals. In contrast, formal theorem proving benefits from the rigorous verification of generated proofs by proof assistants, offering a significant advantage. Specifically, each generated proof receives a reward of 1 if verified as correct, and 0 otherwise. While this binary reward signal is accurate, it is also sparse, especially for theorems that are challenging for the supervised fine-tuned model. To mitigate this sparsity, we select training prompts that are challenging yet achievable for the supervised fine-tuned model, as described above.
 
 
 
-**奖励。** 一般 LLM 的 RL 靠训练好的奖励模型给分；形式证明可以直接用证明助手严格验证-- 对就 1，否则 0。二值奖励准，但稀疏，尤其对 SFT 也难的题。缓解办法就是上一段：选「难但可及」的提示。
+**奖励.** 一般 LLM 的 RL 靠训练好的奖励模型给分; 形式证明可以直接用证明助手严格验证-- 对就 1, 否则 0. 二值奖励准, 但稀疏, 尤其对 SFT 也难的题. 缓解办法就是上一段: 选「难但可及」的提示.
 
 **Reinforcement Learning Algorithm.** We employ the Group Relative Policy Optimization (GRPO; Shao et al., 2024) as our RL algorithm, which has demonstrated superior effectiveness and efficiency compared to PPO (Schulman et al., 2017), primarily because it eliminates the necessity of training an additional critic model. Specifically, GRPO samples a group of candidate proofs for each theorem prompt and optimizes the model based on the relative rewards of the outputs within the group. Our prompt selection strategy is designed to likely include both correct and incorrect proofs among the candidates, aligning well with the group-relative nature of GRPO and thereby enhancing the training process.
 
 
 
-**RL 算法。** 用 **GRPO**(Shao et al., 2024)：相对 PPO 更省，因为不必再训 critic。对每个定理提示采样一组候选证明，按组内相对奖励优化。提示筛选刻意让候选里常同时出现对与错，正好契合 GRPO 的组内相对比较。
+**RL 算法.** 用 **GRPO**(Shao et al., 2024): 相对 PPO 更省, 因为不必再训 critic. 对每个定理提示采样一组候选证明, 按组内相对奖励优化. 提示筛选刻意让候选里常同时出现对与错, 正好契合 GRPO 的组内相对比较.
 
-解释：GRPO(Group Relative Policy Optimization)把同一题下多条回答放进一组，用组内相对好坏当优势估计，省掉价值网络；DeepSeekMath 里先系统用过，这里把「组内相对」接到 Lean 的 0/1 验证上。
+解释: GRPO(Group Relative Policy Optimization)把同一题下多条回答放进一组, 用组内相对好坏当优势估计, 省掉价值网络; DeepSeekMath 里先系统用过, 这里把「组内相对」接到 Lean 的 0/1 验证上.
 
 **Training Setting.** We conduct RL training based on the SFT model, which serves as both the initial model and the reference model for imposing the Kullback-Leibler (KL) divergence penalty. We use a constant learning rate of 5e-6, and the KL penalty coefficient is set to 0.02. For each theorem, we sample a group of 32 candidate proofs, with maximum length set to 2, 048. The training batch size is configured to 512.
 
 
 
-**训练设定。** 以 SFT 为初始策略，同时当 KL 惩罚的参考模型；学习率恒定 5e-6，KL 系数 0.02。每题采样 32 条候选，最大长度 2, 048；训练 batch size 512。
+**训练设定.** 以 SFT 为初始策略, 同时当 KL 惩罚的参考模型; 学习率恒定 5e-6, KL 系数 0.02. 每题采样 32 条候选, 最大长度 2, 048; 训练 batch size 512.
 
 <!-- page 7 of 28 -->
 
@@ -229,7 +229,7 @@ Figure 3 | Comparison of model capabilities at different training stages. "CoT" 
 
 
 
-图 3｜各训练阶段能力对比。「CoT / non-CoT」对应两套引导提示；阴影为均值附近标准差区间；$\mu \pm \sigma$ 为平均准确率与标准差。
+图 3｜各训练阶段能力对比.「CoT / non-CoT」对应两套引导提示; 阴影为均值附近标准差区间; $\mu \pm \sigma$ 为平均准确率与标准差.
 
 ### 2.4. Evaluation 评测
 
@@ -237,31 +237,31 @@ Figure 3 | Comparison of model capabilities at different training stages. "CoT" 
 
 
 
-**基准。** 用下列基准比较各训练阶段：
+**基准.** 用下列基准比较各训练阶段:
 
 • **MiniF2F** (Zheng et al., 2022) focuses on formal problem-solving skills for high-school level exercises and competitions, such as AMC, AIME, and IMO, with an emphasis on algebra and number theory. The benchmark includes 244 validation and 244 test problems, originally in Lean 3 and manually converted to Lean 4.9.0, based on the version provided by Yang (2023).
 
 
 
-• **MiniF2F**(Zheng et al., 2022)：高中习题与竞赛（AMC / AIME / IMO），偏代数与数论；验证 / 测试各 244 题；原 Lean 3，按 Yang (2023) 版本手工转到 Lean 4.9.0。
+• **MiniF2F**(Zheng et al., 2022): 高中习题与竞赛(AMC / AIME / IMO), 偏代数与数论; 验证 / 测试各 244 题; 原 Lean 3, 按 Yang (2023) 版本手工转到 Lean 4.9.0.
 
 • **ProofNet** (Azerbayev et al., 2023) evaluates formal theorem-proving capabilities at the undergraduate level in mathematics. It comprises 185 validation and 186 test problems from widely-used undergraduate textbooks, covering real and complex analysis, linear algebra, abstract algebra, and topology. These problems were initially in Lean 3 and manually converted to Lean 4.9.0.
 
 
 
-• **ProofNet**(Azerbayev et al., 2023)：本科级形式证明；验证 185，测试 186；来自常用本科教材，覆盖实复分析，线代，抽代，拓扑；同样由 Lean 3 手工转 Lean 4.9.0。
+• **ProofNet**(Azerbayev et al., 2023): 本科级形式证明; 验证 185, 测试 186; 来自常用本科教材, 覆盖实复分析, 线代, 抽代, 拓扑; 同样由 Lean 3 手工转 Lean 4.9.0.
 
 **Prompting Configurations.** For each proof attempt of DeepSeek-Prover-V1.5-Base, we independently sample three proof demonstrations from the validation set to construct the few-shot prompts. For the miniF2F benchmark, we use human-written proofs from Yang (2023), while for the ProofNet benchmark, we use correct proofs generated by DeepSeek-Prover-V1.5-RL as few-shot demonstrations. For DeepSeek-Prover-V1.5-SFT and DeepSeek-Prover-V1.5-RL, we employ two types of guiding prompts: one that encourages chain-of-thought (CoT) reasoning before each proof step, and one that does not (non-CoT). Detailed examples are provided in Appendix A.
 
 
 
-**提示配置。** Base 每次独立从验证集抽 3 条证明示范做 few-shot: miniF2F 用人写证明（Yang, 2023），ProofNet 用 V1.5-RL 生成的正确证明。SFT / RL 用两套引导：鼓励每步前 CoT，或不鼓励（non-CoT）。样例见附录 A。
+**提示配置.** Base 每次独立从验证集抽 3 条证明示范做 few-shot: miniF2F 用人写证明(Yang, 2023), ProofNet 用 V1.5-RL 生成的正确证明. SFT / RL 用两套引导: 鼓励每步前 CoT, 或不鼓励(non-CoT). 样例见附录 A.
 
 **Metric.** We evaluate theorem-proving performance using the pass@𝐾 accuracy metric, which measures the model’s success in generating a correct proof within 𝐾 attempts. Each model is deployed on a single A100-40G GPU, utilizing the vLLM framework (Kwon et al., 2023) for sample generation. The sampling parameters are set with a temperature of 1, a top-p value of 0.95, and a maximum token limit of 2, 048. The generated proofs are then verified using the Lean 4 theorem prover. For this verification, we import Mathlib4 (Mathlib Community, 2020) and Aesop (Limperg and From, 2023) to access predefined premises and tactics. The verification process is subject to a time limit of 300 seconds.
 
 
 
-**指标。** 用 pass@𝐾: 𝐾 次尝试内能否写出正确证明。每模型单卡 A100-40G，vLLM 采样；温度 1，top-p 0.95，最长 2, 048 token. Lean 4 验证，导入 Mathlib4 与 Aesop；单题验证时限 300 秒。
+**指标.** 用 pass@𝐾: 𝐾 次尝试内能否写出正确证明. 每模型单卡 A100-40G, vLLM 采样; 温度 1, top-p 0.95, 最长 2, 048 token. Lean 4 验证, 导入 Mathlib4 与 Aesop; 单题验证时限 300 秒.
 
 <!-- page 8 of 28 -->
 
@@ -269,13 +269,13 @@ Figure 3 | Comparison of model capabilities at different training stages. "CoT" 
 
 
 
-**各训练阶段对比。** 图 3: Base 在 miniF2F 测试集 3-shot 已解出近三分之一。SFT 明显强于 Base: Pass@128 在 miniF2F 大约抬高三分之二量级，ProofNet 接近翻倍。随后 RL 在各 𝐾 上继续抬 Pass@𝐾。与 DeepSeekMath 里「RL 主要把正确回答从 TopK 里抬出来」不同，这里看到形式证明上的**基础能力**真在变强：小采样预算已见效，加大预算仍稳住-- 后面更大预算的 MCTS 实验（§4.2）也支持这一点。
+**各训练阶段对比.** 图 3: Base 在 miniF2F 测试集 3-shot 已解出近三分之一. SFT 明显强于 Base: Pass@128 在 miniF2F 大约抬高三分之二量级, ProofNet 接近翻倍. 随后 RL 在各 𝐾 上继续抬 Pass@𝐾. 与 DeepSeekMath 里「RL 主要把正确回答从 TopK 里抬出来」不同, 这里看到形式证明上的**基础能力**真在变强: 小采样预算已见效, 加大预算仍稳住-- 后面更大预算的 MCTS 实验(§4.2)也支持这一点.
 
 **Comparison between CoT and non-CoT.** We compare the performance of non-CoT and CoT generation modes for both DeepSeek-Prover-V1.5-SFT and DeepSeek-Prover-V1.5-RL. The results in Figure 3 demonstrate that the CoT mode consistently outperforms the non-CoT mode across most settings. Specifically, DeepSeek-Prover-V1.5-RL, leveraging these enhanced theorem-proving patterns, achieves superior performance on both benchmarks, with an average accuracy of 51.6% on miniF2F and 18.2% on ProofNet. The integration of natural language reasoning in CoT mode significantly enhances the planning and execution of formal proof writing. For a detailed comparison of proof strategies with and without the use of natural language chain-of-thought, refer to the examples provided in Appendix A.
 
 
 
-**CoT vs non-CoT.** 图 3 显示多数设定下 CoT 更好。V1.5-RL 在两基准上更强：miniF2F 平均 51.6%, ProofNet 18.2%. CoT 把自然语言推理嵌进形式证明的规划与执行。带 / 不带自然语言 CoT 的策略对比见附录 A。
+**CoT vs non-CoT.** 图 3 显示多数设定下 CoT 更好. V1.5-RL 在两基准上更强: miniF2F 平均 51.6%, ProofNet 18.2%. CoT 把自然语言推理嵌进形式证明的规划与执行. 带 / 不带自然语言 CoT 的策略对比见附录 A.
 
 ## 3. Exploration-oriented Monte-Carlo Tree Search 面向探索的蒙特卡洛树搜索
 
@@ -285,13 +285,13 @@ To implement the tree search method in the whole-proof generation setting, we in
 
 
 
-为在整证生成设定下做树搜索，引入证明树抽象，用截断-续写定义状态与动作空间。大致沿 Yao et al. (2023) 的范式：先把不完整证明拆成对应各证明步的树节点序列，再用节点上存的部分内容继续生成。图 4 画出如何从整证生成构造证明搜索树。
+为在整证生成设定下做树搜索, 引入证明树抽象, 用截断-续写定义状态与动作空间. 大致沿 Yao et al. (2023) 的范式: 先把不完整证明拆成对应各证明步的树节点序列, 再用节点上存的部分内容继续生成. 图 4 画出如何从整证生成构造证明搜索树.
 
 **Truncate: Proof Decomposition into Tree Nodes.** We construct the proof search tree at the tactic level, where each tree edge represents a single transition step of the tactic state. Initially, we submit the entire proof the model generated to the Lean prover to parse it into tactics. We then truncate the proof at the earliest verification error, ensuring that all subsequent tactic codes can be successfully applied to advance the proof towards the desired theorem. The tactic codes are segmented into several code fractions, each containing a valid tactic code and its associated chain-of-thought comments, corresponding to a single tree edge that represents a tactic state transition. Through this abstraction, each tactic code is converted into a series of tree nodes, forming a path from the root to a specific node.
 
 
 
-**截断：把证明拆成树节点。** 搜索树建在 tactic 级，每条边是一次 tactic 状态转移。先把模型整段证明交给 Lean 解析成 tactics，在最早验证错误处截断，保证保留下来的 tactic 都能推进证明。代码切成若干片段，每段含合法 tactic 及其 CoT 注释，对应一条表示状态转移的树边。于是每段 tactic 代码变成一串节点，形成从根到某节点的路径。
+**截断: 把证明拆成树节点.** 搜索树建在 tactic 级, 每条边是一次 tactic 状态转移. 先把模型整段证明交给 Lean 解析成 tactics, 在最早验证错误处截断, 保证保留下来的 tactic 都能推进证明. 代码切成若干片段, 每段含合法 tactic 及其 CoT 注释, 对应一条表示状态转移的树边. 于是每段 tactic 代码变成一串节点, 形成从根到某节点的路径.
 
 <!-- page 9 of 28 -->
 
@@ -301,13 +301,13 @@ Figure 4 | Truncate-and-Resume Mechanism in the Expansion Step of MCTS. (a) Afte
 
 
 
-图 4｜MCTS 扩展步中的截断-续写。（a）选中节点后，回溯其不完整证明前缀：文件头，初始陈述，祖先节点上已成功应用的 tactics. (b) 语言模型在此前缀 + 当前 tactic 状态注释块上续写。（c）前缀与新代码合并后交 Lean 4 验证；无错则结束搜索；有错则在第一条错误处截断新代码，丢弃后续，把成功部分解析成 tactics. (d) 每条 tactic 作为新节点挂到选中节点下，延伸一条后代链。（e）树更新完后，下一轮扩展可选别的候选节点，**不限于叶子**。重复直到找到正确证明或采样预算耗尽。
+图 4｜MCTS 扩展步中的截断-续写. (a) 选中节点后, 回溯其不完整证明前缀: 文件头, 初始陈述, 祖先节点上已成功应用的 tactics. (b) 语言模型在此前缀 + 当前 tactic 状态注释块上续写. (c) 前缀与新代码合并后交 Lean 4 验证; 无错则结束搜索; 有错则在第一条错误处截断新代码, 丢弃后续, 把成功部分解析成 tactics. (d) 每条 tactic 作为新节点挂到选中节点下, 延伸一条后代链. (e) 树更新完后, 下一轮扩展可选别的候选节点, **不限于叶子**. 重复直到找到正确证明或采样预算耗尽.
 
 **Resume: Proof Generation from a Tree Node.** In Lean 4, different tactics can lead to the same tactic state, meaning each node in our proof tree can correspond to various tactic codes that achieve the same outcome. To handle this, we store a set of these equivalent tactic codes at each node. When the tree search agent expands a node, it randomly selects one tactic to use as a prompt for the language model. This prompt includes the incomplete proof code ending with the chosen tactic and the tactic state information from the Lean prover as a comment block. The fine-tuned model (see Section 2.2) has been trained to recognize and utilize this format, using the incomplete code augmented with tactic state comments to guide subsequent proof generation.
 
 
 
-**续写：从树节点生成证明。** Lean 4 里不同 tactic 可以到达同一 tactic 状态，故每个节点可存多套「等价」tactic 代码。扩展时随机抽一条作提示：不完整证明以该 tactic 结尾，并附 Lean 状态注释块。微调模型（§2.2）已学会吃这种格式，用不完整代码 + 状态注释引导后续生成。
+**续写: 从树节点生成证明.** Lean 4 里不同 tactic 可以到达同一 tactic 状态, 故每个节点可存多套「等价」tactic 代码. 扩展时随机抽一条作提示: 不完整证明以该 tactic 结尾, 并附 Lean 状态注释块. 微调模型(§2.2)已学会吃这种格式, 用不完整代码 + 状态注释引导后续生成.
 
 <!-- page 10 of 28 -->
 
@@ -317,13 +317,13 @@ Our proof search tree is developed using the standard Monte-Carlo Tree Search (M
 
 
 
-证明搜索树走标准 MCTS 四步：选择，扩展，模拟，回传。因整证模型从扩展节点起本身就是一次 rollout，把「模拟」并进「扩展」。流程如下。
+证明搜索树走标准 MCTS 四步: 选择, 扩展, 模拟, 回传. 因整证模型从扩展节点起本身就是一次 rollout, 把「模拟」并进「扩展」. 流程如下.
 
 **Selection.** The selection step, a. k. a. the tree policy, starts from the root node and traverses downward to identify a promising node for expansion. The objective of this algorithmic step is to trade off between exploration and exploitation (Kocsis and Szepesvári, 2006). The tree policy at a tree node 𝑠 is computed by selecting the action that maximizes the value from the set of valid operations:
 
 
 
-**选择。** 树策略从根向下走，挑一个值得扩展的节点，在探索与利用之间折中（Kocsis and Szepesvári, 2006）。在节点 $s$ 上，从合法动作里选使价值最大者：
+**选择.** 树策略从根向下走, 挑一个值得扩展的节点, 在探索与利用之间折中(Kocsis and Szepesvári, 2006). 在节点 $s$ 上, 从合法动作里选使价值最大者:
 
 $$
 \text {TreePolicy} (s) = \underset {a \in \text {Children} (s) \cup \{\varnothing \}} {\arg \max} Q _ {U C B} (s, a), \tag{1}
@@ -333,7 +333,7 @@ where the action 𝑎 can be either moving to a child node, denoted by $a \in C 
 
 
 
-其中动作 $a$ 可以是走向子节点 $a \in \mathrm{Children}(s)$，或扩展当前节点 $s$（特殊记号 $a=\varnothing$）。这用到 **virtual node**(Wang et al., 2023)：给每个节点一个虚子节点，表示「就在这里扩展」。因动作空间由生成模型支撑，输出范围无法靠有限试次定死，搜索代理可以持续扩展非叶节点。$Q_{UCB}(s, a)$ 由两项组成：
+其中动作 $a$ 可以是走向子节点 $a \in \mathrm{Children}(s)$, 或扩展当前节点 $s$(特殊记号 $a=\varnothing$). 这用到 **virtual node**(Wang et al., 2023): 给每个节点一个虚子节点, 表示「就在这里扩展」. 因动作空间由生成模型支撑, 输出范围无法靠有限试次定死, 搜索代理可以持续扩展非叶节点. $Q_{UCB}(s, a)$ 由两项组成:
 
 $$
 \forall a \in \text {Children}(s) \cup \{\varnothing \}, \quad Q _ {U C B} (s, a) = \underbrace {Q (s , a)} _ {\text {Exploitation}} + \underbrace {U C B (s , a)} _ {\text {Exploration}}, \tag{2}
@@ -343,13 +343,13 @@ where $Q ( s , a )$ denotes a sample-based estimation of action values derived f
 
 
 
-$Q(s, a)$ 是由选择历史估计的动作价值（利用项），从既往试验里捞高价值候选；$UCB(s, a)$ 是上置信界探索奖励，随 $(s, a)$ 被反复执行而衰减。$Q_{UCB}$ 是对 $Q$ 的乐观估计，高概率可当上界。节点价值与 UCB 细节放到 §3.3。
+$Q(s, a)$ 是由选择历史估计的动作价值(利用项), 从既往试验里捞高价值候选; $UCB(s, a)$ 是上置信界探索奖励, 随 $(s, a)$ 被反复执行而衰减. $Q_{UCB}$ 是对 $Q$ 的乐观估计, 高概率可当上界. 节点价值与 UCB 细节放到 §3.3.
 
 **Expansion.** The next step is invoking the proof generation model to expand the node nominated by the selection phase. Resuming the incomplete proof codes stored on the node designated for expansion, we perform whole-proof generation to propose a series of subsequent tactics and submit the generated proof to Lean prover for verification. Such a trial of proof completion is equivalent to conducting a single rollout of simulation within the standard MCTS framework. When the verification result indicates the proof is complete, the search procedure is ready to be terminated, having found a new proof of the desired theorem. Otherwise, we parse the verification feedback and truncate the generated proof to the assertion of the earliest verification error. The remaining tactics are transformed into a path of nodes to be merged into the search tree (see Figure 4). It is important to note that, because we use the whole-proof generation setting-where the output is an entire proof consisting of a sequence of tactics, rather than just the next tactic-our expansion procedure may insert a path of tree nodes into the search tree during each iteration. This differs from the conventional MCTS designed for competitive games, which typically expands only one layer of children nodes per iteration (Silver et al., 2016, 2018; Schrittwieser et al., 2020).
 
 
 
-**扩展。** 对选择阶段提名的节点，用不完整证明前缀做整证生成，提出后续一串 tactics，交 Lean 验证。这一次补全就相当于标准 MCTS 里的一次模拟 rollout。若验证表明证明已完成，搜索可停。否则解析反馈，截到最早错误，把剩余成功 tactics 变成一条节点路径并入搜索树（图 4）。要点：输出是整段多 tactic 证明而非「下一条」，故每次扩展可能插入**一整条路径**，不同于棋类 MCTS 通常每轮只扩一层子节点。
+**扩展.** 对选择阶段提名的节点, 用不完整证明前缀做整证生成, 提出后续一串 tactics, 交 Lean 验证. 这一次补全就相当于标准 MCTS 里的一次模拟 rollout. 若验证表明证明已完成, 搜索可停. 否则解析反馈, 截到最早错误, 把剩余成功 tactics 变成一条节点路径并入搜索树(图 4). 要点: 输出是整段多 tactic 证明而非「下一条」, 故每次扩展可能插入**一整条路径**, 不同于棋类 MCTS 通常每轮只扩一层子节点.
 
 <!-- page 11 of 28 -->
 
@@ -357,7 +357,7 @@ $Q(s, a)$ 是由选择历史估计的动作价值（利用项），从既往试�
 
 
 
-**回传。** 沿从根到扩展节点的选择轨迹更新与式（1）相关的价值统计。记第 $t$ 轮选择轨迹为 $\tau$，末端扩展节点为 $s_t$。对所有 $(s, a)\in\tau$，用最新轨迹奖励 $R(\tau)$ 更新 $Q_{UCB}$（细节见式（7））。外在奖励来自编译器：证完 $R_{\mathrm{extrinsic}}(\tau)=1$，未解 $0$. §3.3 再引入内在奖励，加强探索动机。
+**回传.** 沿从根到扩展节点的选择轨迹更新与式 (1) 相关的价值统计. 记第 $t$ 轮选择轨迹为 $\tau$, 末端扩展节点为 $s_t$. 对所有 $(s, a)\in\tau$, 用最新轨迹奖励 $R(\tau)$ 更新 $Q_{UCB}$(细节见式 (7)). 外在奖励来自编译器: 证完 $R_{\mathrm{extrinsic}}(\tau)=1$, 未解 $0$. §3.3 再引入内在奖励, 加强探索动机.
 
 ### 3.3. Intrinsic Rewards for Monte-Carlo Tree Search 蒙特卡洛树搜索的内在奖励
 
@@ -365,13 +365,13 @@ In the search problem of formal theorem proving, the extrinsic rewards are extre
 
 
 
-形式证明搜索里外在奖励极稀：只有整题证完才非零；搜索树只有窄带叶子给分，正是统计 RL 里经典的难探索情形（Krishnamurthy et al., 2016）。稀疏奖励序贯决策里，经典做法是造**内在奖励**(Schmidhuber, 2010)，让代理在追外在分之外，也学交互环境的信息（Bellemare，Houthooft，Pathak，Burda 等）。本节给出内在奖励驱动的探索算法：**RMax applied to Tree Search(RMaxTS)**，把近乎无奖励探索接到证明搜索上。
+形式证明搜索里外在奖励极稀: 只有整题证完才非零; 搜索树只有窄带叶子给分, 正是统计 RL 里经典的难探索情形(Krishnamurthy et al., 2016). 稀疏奖励序贯决策里, 经典做法是造**内在奖励**(Schmidhuber, 2010), 让代理在追外在分之外, 也学交互环境的信息(Bellemare, Houthooft, Pathak, Burda 等). 本节给出内在奖励驱动的探索算法:**RMax applied to Tree Search(RMaxTS)**, 把近乎无奖励探索接到证明搜索上.
 
 **RMax applied to MCTS.** We adopt RMax (Brafman and Tennenholtz, 2002), a classical exploration mechanism, to construct intrinsic rewards for Monte-Carlo tree search. The core idea of RMax is to explore a broad coverage of the state space. The agent awards itself a maximal amount of reward upon reaching an unseen state. In the context of proof search, where no extrinsic rewards are provided until the proof is completed, our algorithmic procedure resembles ZeroRMax (Jin et al., 2020), in which the agent’s exploration is driven solely by intrinsic rewards, $i . e ., $ setting $R ( \tau ) = R _ { \mathrm { i n t r i n s i c } } ( \tau )$ . The intrinsic reward of a tree expansion step is determined by whether a new node is added to the search tree,
 
 
 
-**把 RMax 接到 MCTS.** RMax(Brafman and Tennenholtz, 2002)的核心是广覆盖状态空间：到达未见状态就给自己最大奖励。证明搜索在证完前几乎没有外在分，流程接近 ZeroRMax(Jin et al., 2020)：探索几乎只靠内在奖励，$R(\tau)=R_{\mathrm{intrinsic}}(\tau)$。一次扩展的内在奖励由「是否向搜索树加入新节点」决定：
+**把 RMax 接到 MCTS.** RMax(Brafman and Tennenholtz, 2002)的核心是广覆盖状态空间: 到达未见状态就给自己最大奖励. 证明搜索在证完前几乎没有外在分, 流程接近 ZeroRMax(Jin et al., 2020): 探索几乎只靠内在奖励, $R(\tau)=R_{\mathrm{intrinsic}}(\tau)$. 一次扩展的内在奖励由「是否向搜索树加入新节点」决定:
 
 $$
 R _ {\text {intrinsic}} (\tau) = \mathbb {I} [ \text {at least one new node is added to the search tree} ], \tag{3}
@@ -381,9 +381,9 @@ where $\tau$ denotes the most recent selection trajectory that requires a reward
 
 
 
-$\tau$ 是需要回传赋奖的最近选择轨迹。该策略优先扩展那些能通向多样 tactic 状态的节点；因多段 Lean 代码可对应同一中间状态转移，这一启发式有望减冗余生成，抬采样效率。
+$\tau$ 是需要回传赋奖的最近选择轨迹. 该策略优先扩展那些能通向多样 tactic 状态的节点; 因多段 Lean 代码可对应同一中间状态转移, 这一启发式有望减冗余生成, 抬采样效率.
 
-解释：RMax 原意是「未知状态按最大可能回报估」。这里落地成：扩展若带来**新树节点**（新 tactic 状态），就给内在奖励 1，否则 0-- 等于用「好奇心」代替「是否证完」来指路，直到某次碰巧把证明走完。
+解释: RMax 原意是「未知状态按最大可能回报估」. 这里落地成: 扩展若带来**新树节点**(新 tactic 状态), 就给内在奖励 1, 否则 0-- 等于用「好奇心」代替「是否证完」来指路, 直到某次碰巧把证明走完.
 
 **UCB for Non-stationary Rewards.** The common setting of UCB exploration bonus for Monte-Carlo tree search is using UCB1 (Auer et al., 2002):
 
@@ -409,7 +409,7 @@ where $\Gamma ( s , a ) = \{ \tau \mid ( s , a ) \in \tau \}$ denotes the list o
 
 
 
-$\Gamma(s, a)=\{\tau\mid(s, a)\in\tau\}$ 是含该状态-动作对的树策略轨迹列表；下标越大表示越新。式（3）的内在奖励是**非平稳**的：树越长，发现带未见 tactic 状态的新节点越难，期望奖励随探索推进衰减。为此改用 **折扣上置信界**(DUCB; Garivier and Moulines, 2011)，用 $\gamma\in(0, 1)$ 平滑丢掉过时反馈：
+$\Gamma(s, a)=\{\tau\mid(s, a)\in\tau\}$ 是含该状态-动作对的树策略轨迹列表; 下标越大表示越新. 式 (3) 的内在奖励是**非平稳**的: 树越长, 发现带未见 tactic 状态的新节点越难, 期望奖励随探索推进衰减. 为此改用 **折扣上置信界**(DUCB; Garivier and Moulines, 2011), 用 $\gamma\in(0, 1)$ 平滑丢掉过时反馈:
 
 $$
 Q _ {D U C B} (s, a) = \frac {W _ {\gamma} (s , a)}{N _ {\gamma} (s , a)} + \sqrt {\frac {2 \ln \sum_ {a ^ {\prime}} N _ {\gamma} (s , a ^ {\prime})}{N _ {\gamma} (s , a)}}, \tag{7}
@@ -427,7 +427,7 @@ where newly received feedback would be assigned a larger weight in the value est
 
 
 
-新反馈在价值估计里权重更大；实践取 $\gamma=0.99$。注意：这里的 $\gamma$ 折扣的是**树搜索迭代轮次**，不是单条轨迹里动作步的时间域折扣（与无限时域 MDP 价值迭代里的 $\gamma$ 角色不同）。
+新反馈在价值估计里权重更大; 实践取 $\gamma=0.99$. 注意: 这里的 $\gamma$ 折扣的是**树搜索迭代轮次**, 不是单条轨迹里动作步的时间域折扣(与无限时域 MDP 价值迭代里的 $\gamma$ 角色不同).
 
 ### 3.4. Parallelization of Monte-Carlo Tree Search 蒙特卡洛树搜索的并行化
 
@@ -435,25 +435,25 @@ To enhance the efficiency of Monte-Carlo Tree Search (MCTS), we implement severa
 
 
 
-为抬 MCTS 效率，采用 Chaslot et al. (2008) 所述若干成熟并行化手法。
+为抬 MCTS 效率, 采用 Chaslot et al. (2008) 所述若干成熟并行化手法.
 
 • **Root Parallelization:** We deploy 256 MCTS runners per node, with one language model per GPU and a batch size of 512 for proof generation. The Lean prover is invoked through REPL and executed on a cluster with thousands of CPU cores, where each proof verification task is handled by an individual process, created and terminated in a sandbox. Both proof generation by language models and verification by Lean provers are handled asynchronously. This setup allows MCTS runners to perform concurrent tree search operations, significantly accelerating the process.
 
 
 
-• **根并行**：每节点部署 256 个 MCTS runner；每 GPU 一张语言模型，证明生成 batch 512. Lean 经 REPL 调起，跑在数千核 CPU 集群上，每条验证任务独立进程，沙箱内创建销毁。模型生成与 Lean 验证皆异步，多 runner 并发搜树。
+• **根并行**: 每节点部署 256 个 MCTS runner; 每 GPU 一张语言模型, 证明生成 batch 512. Lean 经 REPL 调起, 跑在数千核 CPU 集群上, 每条验证任务独立进程, 沙箱内创建销毁. 模型生成与 Lean 验证皆异步, 多 runner 并发搜树.
 
 • **Tree Parallelization:** We manage each search tree with 32 thread workers to parallelize the tree iteration steps. This method effectively schedules and balances the tasks of proof generation and Lean verification. Each thread worker iteratively performs the tree search loop by selecting a candidate node for expansion, invoking the language model to generate the proof, verifying the generated proof with the Lean prover, and performing backpropagation.
 
 
 
-• **树并行**：每棵搜索树用 32 个线程 worker 并行迭代：选点 → 调模型生成 → Lean 验证 → 回传，调度并平衡生成与验证负载。
+• **树并行**: 每棵搜索树用 32 个线程 worker 并行迭代: 选点 → 调模型生成 → Lean 验证 → 回传, 调度并平衡生成与验证负载.
 
 • **Virtual Loss:** To encourage diverse node selection among concurrent thread workers, we assign a virtual reward $R ( \tau ) = 0$ for ongoing iterations. This involves backpropagating a reward of 0 temporarily and updating it to the true reward upon completion. This strategy promotes exploration of different nodes for expansion, thereby enhancing the overall search efficiency.
 
 
 
-• **虚拟损失**：并发 worker 间为鼓励选不同节点，对进行中的迭代先赋虚拟奖励 $R(\tau)=0$ 并临时回传，完成后再改成真奖励-- 减少大家扎堆同一节点。
+• **虚拟损失**: 并发 worker 间为鼓励选不同节点, 对进行中的迭代先赋虚拟奖励 $R(\tau)=0$ 并临时回传, 完成后再改成真奖励-- 减少大家扎堆同一节点.
 
 ### 3.5. Comparison with Existing Methods 与既有方法对比
 
@@ -465,25 +465,25 @@ methods for using language models in formal mathematics proof search generally f
 
 
 
-本节对比「整证生成 + 截断-续写」的证明树搜索与既有路线。当前用语言模型做形式数学证明搜索，大体两类：
+本节对比「整证生成 + 截断-续写」的证明树搜索与既有路线. 当前用语言模型做形式数学证明搜索, 大体两类:
 
 • **Multi-pass proof-step generation**: This strategy breaks down the proving process into multiple episodes of tactic generation and verification, typically following a **tree search** pattern. It involves generating and verifying one tactic at a time, repeating the process for the next tactic until no proof goals remain. Notable examples include GPT-f (Polu and Sutskever, 2020; Polu et al., 2022), Thor (Jiang et al., 2022), ReProver (Yang et al., 2023), Hypertree Proof Search (Lample et al., 2022), and InternLM2-StepProver (Wu et al., 2024).
 
 
 
-• **多遍逐步生成**：把证明拆成多轮「生成一条 tactic → 验证」，常走树搜索；一次一条，直到无目标。代表：GPT-f, Thor, ReProver, Hypertree Proof Search, InternLM2-StepProver。
+• **多遍逐步生成**: 把证明拆成多轮「生成一条 tactic → 验证」, 常走树搜索; 一次一条, 直到无目标. 代表: GPT-f, Thor, ReProver, Hypertree Proof Search, InternLM2-StepProver.
 
 • **Single-pass whole-proof generation**: This approach generates and verify an entire proof in one attempt. If the proof is incorrect, the model generates a new proof in the next attempt. Methods in this category include DSP (Jiang et al., 2022), Subgoal-Prover Zhao et al. (2023), LEGO-Prover (Wang et al., 2023), Lyra (Zheng et al., 2023), and miniCTX (Hu et al., 2024).
 
 
 
-• **单遍整证生成**：一次生成并验证整段证明；错了下一轮重来。代表：DSP, Subgoal-Prover, LEGO-Prover, Lyra, miniCTX。
+• **单遍整证生成**: 一次生成并验证整段证明; 错了下一轮重来. 代表: DSP, Subgoal-Prover, LEGO-Prover, Lyra, miniCTX.
 
 Our proof tree search method uniquely bridges these two strategies, offering a novel hybrid approach. It starts with whole-proof generation, similar to the single-pass approach, but extends this by implementing a sophisticated truncate-and-resume mechanism. This process involves truncating the generated proof to its successful initial segment, parsing this segment into individual tactics, and resuming the tree search from this point. This iterative process effectively implements a Monte-Carlo Tree Search, seamlessly integrating single-pass whole-proof generation with multi-pass proof-step generation. Consequently, we can train a single model with nearly identical objectives to support both strategies simultaneously. Our experimental results demonstrate that this unified approach achieves superior performance in both settings. By combining the strengths of existing methods and introducing innovative techniques, our method offers a more versatile and effective solution for formal mathematics proof search, potentially paving the way for future advancements in this field.
 
 
 
-本文方法桥接两类：起步像单遍整证，再靠截断-续写把成功前缀拆成 tactics，从该点续搜，迭代起来就是 MCTS，把单遍整证与多遍逐步缝在一起。于是可用几乎同一套目标训一个模型，同时撑住两种策略；实验显示在两种设定下都更强。
+本文方法桥接两类: 起步像单遍整证, 再靠截断-续写把成功前缀拆成 tactics, 从该点续搜, 迭代起来就是 MCTS, 把单遍整证与多遍逐步缝在一起. 于是可用几乎同一套目标训一个模型, 同时撑住两种策略; 实验显示在两种设定下都更强.
 
 ## 4. Experimental Results 实验结果
 
@@ -491,7 +491,7 @@ In this section, we evaluate the theorem-proving capabilities of DeepSeek-Prover
 
 
 
-用 miniF2F（高中 / 竞赛）与 ProofNet（本科定理）评 V1.5；报告整证生成与 MCTS 两套，模型与推理配置与 §2.4 一致。
+用 miniF2F(高中 / 竞赛)与 ProofNet(本科定理)评 V1.5; 报告整证生成与 MCTS 两套, 模型与推理配置与 §2.4 一致.
 
 ### 4.1. Main Results 主结果
 
@@ -499,7 +499,7 @@ We present a comparative analysis of DeepSeek-Prover-V1.5 against previous state
 
 
 
-与先前 SOTA 语言模型对照，突出成绩与推进。
+与先前 SOTA 语言模型对照, 突出成绩与推进.
 
 • **General-purpose Models: GPT-3.5** and **GPT-4** (OpenAI, 2023) are advanced generative AI models developed by OpenAI, known for their effectiveness across diverse tasks, including code generation. Despite not being specifically designed for theorem proving, their extensive parameter scales provide significant capabilities. The evaluation of these models in formal theorem proving is facilitated by **COPRA** (Thakur et al., 2023), an in-context learning agent that leverages these large language models to propose tactic applications. Additionally, we examine **Llemma** (Azerbayev et al., 2024), a series of
 
@@ -509,49 +509,49 @@ language models trained on extensive general mathematical corpora, commonly used
 
 
 
-• **通用模型**：GPT-3.5 / GPT-4 非专为证明，但参数规模大；形式证明侧常经 **COPRA** 等 in-context agent 提议 tactic。另看 **Llemma**：在通用数学语料上训的系列模型，常作形式证明基座。
+• **通用模型**: GPT-3.5 / GPT-4 非专为证明, 但参数规模大; 形式证明侧常经 **COPRA** 等 in-context agent 提议 tactic. 另看 **Llemma**: 在通用数学语料上训的系列模型, 常作形式证明基座.
 
 • **Specialized Models for Formal Mathematics: GPT-f** (Polu and Sutskever, 2020; Polu et al., 2022) represents an initial effort to apply Transformers (Vaswani et al., 2017) to proof-step generation for theorem proving tasks, utilizing a best-first search module to construct complete proofs. Subsequent advancements include **ReProver** (Yang et al., 2023), **LLMStep** (Welleck and Saha, 2023), and **Lean-STaR** (Lin et al., 2024).**Hypertree Proof Search** (Lample et al., 2022) explores the use of Monte Carlo tree search in formal theorem proving using Lean. Concurrent works, **InternLM2-Math** (Ying et al., 2024) and **InternLM2-StepProver** (Wu et al., 2024), also demonstrate outstanding performance.
 
 
 
-• **形式数学专用模型**：GPT-f 较早把 Transformer 用到逐步生成，配 best-first 搜完整证明；后续有 ReProver，LLMStep，Lean-STaR；Hypertree Proof Search 在 Lean 上探 MCTS；同期 InternLM2-Math，InternLM2-StepProver 也表现突出。
+• **形式数学专用模型**: GPT-f 较早把 Transformer 用到逐步生成, 配 best-first 搜完整证明; 后续有 ReProver, LLMStep, Lean-STaR; Hypertree Proof Search 在 Lean 上探 MCTS; 同期 InternLM2-Math, InternLM2-StepProver 也表现突出.
 
 **Metric.** We compare the performance of DeepSeek-Prover-V1.5 with state-of-the-art models using the pass@𝐾 accuracy metric, which evaluates the model’s ability to generate a correct proof within 𝐾 attempts. We display the sample budget 𝐾 according to the the following rules to align the computation budget across different generation schemes.
 
 
 
-**指标。** 仍用 pass@𝐾；按下述规则展示采样预算 $K$，好对齐不同生成方案的算力：
+**指标.** 仍用 pass@𝐾; 按下述规则展示采样预算 $K$, 好对齐不同生成方案的算力:
 
 • For single-pass sampling methods, we define the sample budget 𝐾 as the total number of proofs generated, with large values of 𝐾 factorized for the ease of comparison to tree search methods.
 
 
 
-• 单遍采样：$K$ = 生成证明总数；大 $K$ 写成因式，方便和树搜索比。
+• 单遍采样: $K$ = 生成证明总数; 大 $K$ 写成因式, 方便和树搜索比.
 
 • For best-first-search methods, following the notation of Azerbayev et al. (2024), we present 𝐾 = 𝑁 × 𝑆 × 𝑇 where 𝑁 denotes the number of best-first-search attempts, 𝑆 denotes the number of tactics generated for each expansion, and 𝑇 denotes the number of expansion iterations.
 
 
 
-• best-first: $K=N\times S\times T$（尝试次数 × 每次扩展采样 tactic 数 × 扩展轮数）。
+• best-first: $K=N\times S\times T$(尝试次数 × 每次扩展采样 tactic 数 × 扩展轮数).
 
 • For tree search methods, e. g., RMaxTS and HTPS (Lample et al., 2022), we present 𝐾 = 𝑁 × 𝑇 where 𝑁 denotes the number of tree search attempts, and 𝑇 denotes the number of model generations invoked in tree expansions.
 
 
 
-• 树搜索（RMaxTS, HTPS）：$K=N\times T$（树搜索尝试次数 × 扩展时模型生成次数）。
+• 树搜索(RMaxTS, HTPS): $K=N\times T$(树搜索尝试次数 × 扩展时模型生成次数).
 
 **Results on miniF2F.** Table 1 provides a comparative analysis of various theorem-proving methods on the miniF2F-test dataset. In the single-pass whole-proof generation setting, DeepSeek-Prover-V1.5-RL achieved the highest pass rate at 60.2%, marking a significant improvement of 10.2 percentage points over DeepSeek-Prover-V1’s 50.0%. With a sampling budget limited to 128 attempts, DeepSeek-Prover-V1.5-RL proved 51.6% of the problems, significantly outperforming other whole-proof generation methods and is comparable to the leading tree search methods. In the Tree Search Methods category, DeepSeek-Prover-V1.5-RL + RMaxTS leads with a pass rate of 62.7%, establishing a new state-of-the-art and creating a substantial gap with existing methods. Notably, DeepSeek-Prover-V1.5-RL requires only 3200 whole-proof generation samplings to achieve a pass rate of 54.9%, surpassing the previous state-of-the-art result of InternLM2-StepProver, which performs 64 × 3200 tree searches to achieve 54.5%.
 
 
 
-**miniF2F 结果。** 表 1：单遍整证下 V1.5-RL 通过率 60.2%，相对 V1 的 50.0% 绝对 +10.2 点；预算仅 128 次时也有 51.6%，明显强于其他整证法，并可比肩领先的树搜索法。树搜索类别里，V1.5-RL + RMaxTS 达 62.7%（表中大预算 / 混合提示可到 63.5%），拉开与既有方法的差距。另：仅 3200 次整证采样就到 54.9%，超过 InternLM2-StepProver 用 $64\times3200$ 树搜索得到的 54.5%。
+**miniF2F 结果.** 表 1: 单遍整证下 V1.5-RL 通过率 60.2%, 相对 V1 的 50.0% 绝对 +10.2 点; 预算仅 128 次时也有 51.6%, 明显强于其他整证法, 并可比肩领先的树搜索法. 树搜索类别里, V1.5-RL + RMaxTS 达 62.7%(表中大预算 / 混合提示可到 63.5%), 拉开与既有方法的差距. 另: 仅 3200 次整证采样就到 54.9%, 超过 InternLM2-StepProver 用 $64\times3200$ 树搜索得到的 54.5%.
 
 **Results on ProofNet.** Table 2 presents a comparative analysis of various theorem-proving methods on the ProofNet dataset. DeepSeek-Prover-V1.5-RL achieved pass rates of 22.6% and 25.3% for the overall ProofNet dataset in the single-pass whole-proof generation setting and with the enhancement of RMaxTS, respectively. These results surpass the existing stateof-the-art methods, ReProver (13.8%) and InternLM2-StepProver (18.1%). When the number of whole-proof generation attempts is restricted to 3200, DeepSeek-Prover-V1.5 also proved 21.7% of the theorems, demonstrating a 3.6% improvement over the previous state-of-the-art, InternLM2-StepProver.
 
 
 
-**ProofNet 结果。** 表 2: V1.5-RL 在整体 ProofNet 上，单遍整证 22.6%，加 RMaxTS 25.3%，超过 ReProver(13.8%)与 InternLM2-StepProver(18.1%)。整证尝试限到 3200 时仍有 21.7%，相对先前 SOTA 绝对 +3.6 点。
+**ProofNet 结果.** 表 2: V1.5-RL 在整体 ProofNet 上, 单遍整证 22.6%, 加 RMaxTS 25.3%, 超过 ReProver(13.8%)与 InternLM2-StepProver(18.1%). 整证尝试限到 3200 时仍有 21.7%, 相对先前 SOTA 绝对 +3.6 点.
 
 <!-- page 15 of 28 -->
 
@@ -584,7 +584,7 @@ Table 1 | Comparison with state-of-the-art methods on the miniF2F-test dataset. 
 
 
 
-表 1｜miniF2F-test 上与 SOTA 对照。$\mu\pm\sigma$ 为平均准确率与标准差。除非另说明，Base 为 3-shot；SFT / RL 为 CoT. † 表示两套引导提示的混合策略（见 §4.2）。
+表 1｜miniF2F-test 上与 SOTA 对照. $\mu\pm\sigma$ 为平均准确率与标准差. 除非另说明, Base 为 3-shot; SFT / RL 为 CoT. † 表示两套引导提示的混合策略(见 §4.2).
 
 <!-- page 16 of 28 -->
 
@@ -594,7 +594,7 @@ Table 2 | Comparing with state-of-the-arts on the ProofNet dataset. ‡ Note tha
 
 
 
-表 2｜ProofNet 与 SOTA 对照。‡ 注意：ProofNet 验证集在 SFT 的 expert iteration 里用过。
+表 2｜ProofNet 与 SOTA 对照. ‡ 注意: ProofNet 验证集在 SFT 的 expert iteration 里用过.
 
 ### 4.2. Re-Examining the Effectiveness of Training Strategies on Large-scale Sampling 大采样预算下再看训练策略是否还管用
 
@@ -602,13 +602,13 @@ We revisit the effects of several training modules in n a large-scale sampling s
 
 
 
-在大采样预算下重审若干训练模块（单遍整证与 MCTS）。结果表明 §2.4 的观察可推广到大样本场景。
+在大采样预算下重审若干训练模块(单遍整证与 MCTS). 结果表明 §2.4 的观察可推广到大样本场景.
 
 **General Enhancement of Reinforcement Learning.** To support the claim that online reinforcement learning from verification feedback generally enhances the model capabilities, we compare our final model to the SFT-only version using a large sample budget. The comparison results are presented as two columns in Table 3. DeepSeek-Prover-V1.5-RL consistently outperforms the SFT model across all generation settings, regardless of whether the chain-of-thought strategy is applied. The results also indicate that the improvements gained from conducting online RL is orthogonal to those achieved through RMaxTS, which can be further combined to boost the performance. By integrating both CoT prompting and RMaxTS, DeepSeek-Prover-V1.5-RL achieves a pass rate of 62.7% on miniF2F-test. This performance shows a notable 3.7% improvement over the SFT model, highlighting the critical role of reinforcement learning in enhancing the overall effectiveness of the proof completion model.
 
 
 
-**强化学习的整体增益。** 表 3 两列：大预算下 RL 在所有生成设定（含 / 不含 CoT）都压过纯 SFT；在线 RL 的增益与 RMaxTS **正交**，可叠加。CoT + RMaxTS 下 RL 在 miniF2F-test 达 62.7%，相对 SFT 约 +3.7 点，说明 RL 对证明补全整体有效性很关键。
+**强化学习的整体增益.** 表 3 两列: 大预算下 RL 在所有生成设定(含 / 不含 CoT)都压过纯 SFT; 在线 RL 的增益与 RMaxTS **正交**, 可叠加. CoT + RMaxTS 下 RL 在 miniF2F-test 达 62.7%, 相对 SFT 约 +3.7 点, 说明 RL 对证明补全整体有效性很关键.
 
 **CoT, non-CoT, and Mixture Strategy.** We compare the performance of two generation modes, i. e., non-CoT and CoT, on miniF2F-test dataset. The results, shown in Table 3, indicate that the advantage of CoT over the non-CoT mode is amplified as the sample budget increases. This suggests that the incorporation of natural language chain-of-thought can diversify the planning pathways of theorem proving, potentially leading to a broader range of reasoning strategies and more innovative solutions. Results also show that these two modes have complementary
 
@@ -620,13 +620,13 @@ Table 3 | A large-scale ablation study to investigate the effectiveness of sever
 
 
 
-表 3｜大预算消融：若干算法设计对训练有效性的影响（miniF2F-test）。
+表 3｜大预算消融: 若干算法设计对训练有效性的影响(miniF2F-test).
 
 advantages across different problems. The model’s theorem proving strategy in the CoT mode is more systematic and proactive in mathematical thinking, while in the non-CoT mode, the model can efficiently use Lean high-level tactics to solve computational problems that can be addressed within Lean’s automation mechanisms. To leverage these advantages, we consider a mixture strategy, denoted by non-CoT & CoT in Table 3, allocates half of sample budget to the CoT mode and the remains to the non-CoT mode. This simple combination of two guiding prompts shows great promise in further bootstrapping the performance of our proof completion model, achieving a pass rate of 63.5% on miniF2F-test. In Appendix B, we present example problems that illustrate the different advantages of the two generation modes.
 
 
 
-两模式在不同题上**互补**：CoT 更系统，更主动地用数学思维规划；non-CoT 更能高效调用 Lean 高层 tactic，啃可用自动化机制解决的计算题。混合策略把预算对半给两模式，表 3 记为 non-CoT & CoT；简单拼提示就把 miniF2F-test 推到 63.5%。附录 B 给出两模式各擅胜场的例题。
+两模式在不同题上**互补**: CoT 更系统, 更主动地用数学思维规划; non-CoT 更能高效调用 Lean 高层 tactic, 啃可用自动化机制解决的计算题. 混合策略把预算对半给两模式, 表 3 记为 non-CoT & CoT; 简单拼提示就把 miniF2F-test 推到 63.5%. 附录 B 给出两模式各擅胜场的例题.
 
 ### 4.3. Ablation Studies on RMaxTS RMaxTS 消融
 
@@ -634,7 +634,7 @@ advantages across different problems. The model’s theorem proving strategy in 
 
 
 
-**内在奖励与折扣 UCB.** 查 RMaxTS 两块核心：式（3）内在奖励与式（7）折扣 UCB。基线是无内在奖励的标准 UCT：探索只靠 UCB；因始终无非零奖励，各种 UCB 公式等价，选点只由访问次数决定。图 5：去掉内在奖励后，UCT 退化到与非搜索方法相当。把 DUCB 换成 UCB1(RMaxTS (DUCB → UCB1))也不强，接近无内在奖励的 UCT--UCB1 假定样本量够大，靠穷尽探索保证渐近；折扣 UCB 则能加快非平稳内在奖励的价值传播，避免 $R_{\mathrm{intrinsic}}$ 被访问次数主导。说明折扣 UCB 是内在奖励探索的关键配套。
+**内在奖励与折扣 UCB.** 查 RMaxTS 两块核心: 式 (3) 内在奖励与式 (7) 折扣 UCB. 基线是无内在奖励的标准 UCT: 探索只靠 UCB; 因始终无非零奖励, 各种 UCB 公式等价, 选点只由访问次数决定. 图 5: 去掉内在奖励后, UCT 退化到与非搜索方法相当. 把 DUCB 换成 UCB1(RMaxTS (DUCB → UCB1))也不强, 接近无内在奖励的 UCT--UCB1 假定样本量够大, 靠穷尽探索保证渐近; 折扣 UCB 则能加快非平稳内在奖励的价值传播, 避免 $R_{\mathrm{intrinsic}}$ 被访问次数主导. 说明折扣 UCB 是内在奖励探索的关键配套.
 
 <!-- page 18 of 28 -->
 
@@ -655,21 +655,21 @@ Figure 5 | A modular ablation study examining the algorithmic design of RMaxTS. 
 
 
 
-图 5｜RMaxTS 算法设计的模块消融。实验：miniF2F-test, V1.5-RL, CoT。左：6400 次生成内的 Pass@K 曲线；右：更大样本量结果。
+图 5｜RMaxTS 算法设计的模块消融. 实验: miniF2F-test, V1.5-RL, CoT. 左: 6400 次生成内的 Pass@K 曲线; 右: 更大样本量结果.
 
 **Guidance of Tactic State Information.** When expanding a tree node, we concatenate the intermediate tactic state information as a comment block to the incomplete code to guide the proof completion. With the provided auxiliary information, the proof completion model can enhance its internal representation of the tactic state, offering intermediate guidance for longhorizon planning. To demonstrate this advantage, we present experiments on RMaxTS that performs code completion directly from the raw incomplete code without accessing tactic state information, denoted by RMaxTS (without tactic state) in Figure 5. The results indicate that the performance gain from applying tree search becomes moderate in the absence of tactic state information, especially when tackling hard problems that require a large amount of samples. This highlights that the integration of compiler information is an essential component of the tree search algorithm, enhancing its overall effectiveness and sample efficiency.
 
 
 
-**tactic 状态信息的引导。** 扩展节点时，把中间 tactic 状态拼成注释块接到不完整代码上。有了这份辅助信息，补全模型能加强内部状态表示，为长程规划提供中间路标。图 5 的 RMaxTS (without tactic state) 直接从不完整代码续写，不读状态：树搜索收益变温和，尤其在需要大采样的难题上。说明编译器信息是树搜索的必要组件，抬有效性与采样效率。
+**tactic 状态信息的引导.** 扩展节点时, 把中间 tactic 状态拼成注释块接到不完整代码上. 有了这份辅助信息, 补全模型能加强内部状态表示, 为长程规划提供中间路标. 图 5 的 RMaxTS (without tactic state) 直接从不完整代码续写, 不读状态: 树搜索收益变温和, 尤其在需要大采样的难题上. 说明编译器信息是树搜索的必要组件, 抬有效性与采样效率.
 
-## 5. Conclusion，Limitation，and Future Work 结论，局限与未来工作
+## 5. Conclusion, Limitation, and Future Work 结论, 局限与未来工作
 
 We present DeepSeek-Prover-V1.5, a language model with 7 billion parameters that outperforms all open-source models in formal theorem proving in Lean 4. DeepSeek-Prover-V1.5 is initialized with DeepSeek-Prover-V1.5-Base, which extends the pre-training of DeepSeekMath-Base 7B using a specialized corpus for formal mathematical reasoning. Supervised fine-tuning is conducted on a comprehensive Lean 4 code completion dataset, encompassing a wide range of formal theorems from various mathematical domains. Subsequently, we employ GRPO to enhance whole-proof generation through online reinforcement learning. Upon developing the DeepSeek-Prover-V1.5 model, we introduce RMaxTS, a variant of Monte-Carlo tree search, to improve problem-solving capabilities via large-scale search with extensive exploration. These components form a comprehensive pipeline for training an LLM-based proof assistant, enabling DeepSeek-Prover-V1.5 to achieve significant improvements over DeepSeek-Prover-V1.
 
 
 
-DeepSeek-Prover-V1.5 为 7B 参数语言模型，在 Lean 4 形式定理证明上超过文中对比的所有开源模型。由 DeepSeekMath-Base 7B 经形式数学专项语料续训得到 Base，再在覆盖多数学域的 Lean 4 补全数据上 SFT，继而用 GRPO 做在线 RL 抬整证生成；之上再接 RMaxTS，用大预算探索搜题。整条流水线把 LLM 证明助手训完整，相对 V1 显著提升。
+DeepSeek-Prover-V1.5 为 7B 参数语言模型, 在 Lean 4 形式定理证明上超过文中对比的所有开源模型. 由 DeepSeekMath-Base 7B 经形式数学专项语料续训得到 Base, 再在覆盖多数学域的 Lean 4 补全数据上 SFT, 继而用 GRPO 做在线 RL 抬整证生成; 之上再接 RMaxTS, 用大预算探索搜题. 整条流水线把 LLM 证明助手训完整, 相对 V1 显著提升.
 
 The framework of DeepSeek-Prover-V1.5 is designed to establish an AlphaZero-like pipeline for formal theorem proving. The use of expert iteration and synthetic data mirrors the core trial-and-error loop of reinforcement learning, with the compiler oracle serving as the world model to provide environmental supervision. Within the RL paradigm, the integrated tree search module has proven to be highly effective in advancing superhuman performance across various domains (Silver et al., 2016; Fawzi et al., 2022; Lutz et al., 2023). In developing DeepSeek-
 
@@ -679,13 +679,13 @@ Prover-V1.5, we focus on the exploration aspect of RL, introducing RMaxTS to div
 
 
 
-框架意图是搭一套形式证明上的 AlphaZero 式流水线：expert iteration 与合成数据对应 RL 的试错环，编译器神谕当世界模型给环境监督。RL 范式里，树搜索模块在多领域已助推超人类表现。V1.5 侧重 RL 的**探索**侧，用 RMaxTS 让证明步更多样；**利用**侧-- 如何更聪明地搜证明-- 尚未展开。有希望的方向是训 critic 评估不完整证明，剪枝；部分证明 critic 可隐式做时间信用分配，把证明级反馈拆成逐步价值差。为长规划路径打分并给引导奖励，仍是关键且难的问题，值得继续做。
+框架意图是搭一套形式证明上的 AlphaZero 式流水线: expert iteration 与合成数据对应 RL 的试错环, 编译器神谕当世界模型给环境监督. RL 范式里, 树搜索模块在多领域已助推超人类表现. V1.5 侧重 RL 的**探索**侧, 用 RMaxTS 让证明步更多样; **利用**侧-- 如何更聪明地搜证明-- 尚未展开. 有希望的方向是训 critic 评估不完整证明, 剪枝; 部分证明 critic 可隐式做时间信用分配, 把证明级反馈拆成逐步价值差. 为长规划路径打分并给引导奖励, 仍是关键且难的问题, 值得继续做.
 
 Finally, recent work has progressed beyond proving individual theorems to addressing real-world theory proving within complex, multi-theorem Lean files (Hu et al., 2024). This shift is a natural extension of our whole-proof generation approach. Our observations indicate that the current model already possesses some understanding of file-level context. Moving forward, we will focus on enhancing this aspect to support cutting-edge Lean mathematical formalization developers with our language model advancements.
 
 
 
-近期工作已从单定理走向复杂多定理 Lean 文件里的真实理论形式化（Hu et al., 2024），正是整证生成路线的自然延伸。观察显示当前模型已有一定文件级上下文理解；后续会加强这一面，服务前沿 Lean 形式化开发者。
+近期工作已从单定理走向复杂多定理 Lean 文件里的真实理论形式化(Hu et al., 2024), 正是整证生成路线的自然延伸. 观察显示当前模型已有一定文件级上下文理解; 后续会加强这一面, 服务前沿 Lean 形式化开发者.
 
 ## References
 
@@ -829,9 +829,9 @@ In this section, we present examples of non-CoT and CoT prompting and the genera
 
 
 
-本节给出 miniF2F 题 aime_1983_p9 上 non-CoT / CoT 提示与生成证明样例。为清晰，正文用行内 LaTeX。先看 non-CoT 整证生成：
+本节给出 miniF2F 题 aime_1983_p9 上 non-CoT / CoT 提示与生成证明样例. 为清晰, 正文用行内 LaTeX. 先看 non-CoT 整证生成:
 
-（输入 / 输出代码块保持原文，含 Lean 4 语句与公式，不改数字与符号。）
+(输入 / 输出代码块保持原文, 含 Lean 4 语句与公式, 不改数字与符号.)
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family: monospace;">
 Input:
@@ -861,9 +861,9 @@ Next, here is an example of whole-proof generation in CoT prompting mode. This p
 
 
 
-下面是 CoT 模式整证生成样例。该证明由带截断-续写的蒙特卡洛树搜索找到（细节见 §3）。模型收到「进行中的证明代码」提示，末尾是 Lean 4 中间 tactic 状态注释块；后续代码在此标注前缀引导下生成。
+下面是 CoT 模式整证生成样例. 该证明由带截断-续写的蒙特卡洛树搜索找到(细节见 §3). 模型收到「进行中的证明代码」提示, 末尾是 Lean 4 中间 tactic 状态注释块; 后续代码在此标注前缀引导下生成.
 
-解释：附录把同一道不等式题摆成两种写法。non-CoT 几乎直接甩高层自动化 tactic(`rw` + `nlinarith`)；CoT 路径会先写自然语言目标变形，再在 `tactic state: ` 注释里看见当前子目标，最后才落到同样的平方非负论证-- 这正是截断-续写把「编译器状态」喂回模型的样子。
+解释: 附录把同一道不等式题摆成两种写法. non-CoT 几乎直接甩高层自动化 tactic(`rw` + `nlinarith`); CoT 路径会先写自然语言目标变形, 再在 `tactic state: ` 注释里看见当前子目标, 最后才落到同样的平方非负论证-- 这正是截断-续写把「编译器状态」喂回模型的样子.
 
 Input:
 
@@ -916,7 +916,7 @@ In this case, the proof completion model first extracts the goal expression from
 
 
 
-此例中，补全模型先从 tactic 状态注释末行抽出目标不等式 $12(x\sin x)\leqslant 9(x^2\sin^2 x)+4$，在 CoT 里改写成 $9x^2\sin^2 x-12x\sin x+4\geqslant 0$，再把左边写成平方项建立非负，从而收证。
+此例中, 补全模型先从 tactic 状态注释末行抽出目标不等式 $12(x\sin x)\leqslant 9(x^2\sin^2 x)+4$, 在 CoT 里改写成 $9x^2\sin^2 x-12x\sin x+4\geqslant 0$, 再把左边写成平方项建立非负, 从而收证.
 
 ## B. Example Solutions to MiniF2F-test Problems 附录 miniF2F-test 例题解法
 
@@ -924,11 +924,11 @@ To illustrate the different advantages and complementary of non-CoT mode and CoT
 
 
 
-为说明 non-CoT 与 CoT 的不同优势与互补，给出 non-CoT 成功而 CoT 失败，以及反过来的例子。
+为说明 non-CoT 与 CoT 的不同优势与互补, 给出 non-CoT 成功而 CoT 失败, 以及反过来的例子.
 
 ### B. 1. Problems that non-CoT outperforms CoT non-CoT 优于 CoT 的题
 
-（以下 Lean 证明代码保持原文不动；大意是：归纳 / 不等式类题上，non-CoT 更爱直接调用 `norm_num`，`nlinarith`，`field_simp` 等自动化 tactic 硬算通过。）
+(以下 Lean 证明代码保持原文不动; 大意是: 归纳 / 不等式类题上, non-CoT 更爱直接调用 `norm_num`, `nlinarith`, `field_simp` 等自动化 tactic 硬算通过.)
 
 ```txt
 theorem induction_pord1p1on2powklt5on2 (n : N) (h0 : 0 < n) :
@@ -974,7 +974,7 @@ constructor <; > nlinarith [sq_sqrt (show 0 ≤ 1 + 2 * x by linarith)]
 
 ### B. 2. Problems that CoT outperforms non-CoT CoT 优于 non-CoT 的题
 
-（以下代码保持原文。大意：代数方程组，模算术否定存在性，枚举不等式最值等题上，CoT 先用自然语言把推理写清，再落到 `linarith` / `omega` / `interval_cases` 等 tactic，规划更完整。）
+(以下代码保持原文. 大意: 代数方程组, 模算术否定存在性, 枚举不等式最值等题上, CoT 先用自然语言把推理写清, 再落到 `linarith` / `omega` / `interval_cases` 等 tactic, 规划更完整.)
 
 ```txt
 theorem mathd_algebra_459 (a b c d : Q) (h0 : 3 * a = b + c + d) (h1 : 4 * b = a + c + d)

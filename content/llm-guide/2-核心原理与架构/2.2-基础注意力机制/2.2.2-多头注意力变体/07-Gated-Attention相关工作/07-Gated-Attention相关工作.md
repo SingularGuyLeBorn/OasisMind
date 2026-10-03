@@ -94,7 +94,7 @@ $$
 | 想解决的病 | Transformer 没有数据依赖的遗忘 | $W_VW_O$ 低秩、query 相关稀疏、sink |
 | 位置编码 | 默认可以不要 RoPE | 06 实验仍用 RoPE；产品插槽见 06 §5.4 一句 |
 
-FoX 还有第二套门。论文 Figure 1 右的 **Pro** 块额外加了 output gate 与 output RMSNorm（GLA / Mamba-2 同款），并且用减 MLP 宽度保总参。那一套才更接近「注意力输出后再乘 $\sigma$」。Table 3（360M、约 7.5B token、验证上下文 16384）把两套门拆开：完整 FoX (Pro) PPL **6.62**；去掉 output gate 升到 **6.86**；去掉 forget gate 但留 RoPE（即 Transformer (Pro)）是 **6.82**；两套位置编码/遗忘都没有则 **7.40**。所以：**遗忘门 $\neq$ 输出门**；Qiu 那句 Related Work 把 Pro 的输出门和遗忘门糊在一起了。本篇以 FoT HTML 式（11）–(13) 为准。
+FoX 还有第二套门。论文 Figure 1 右的 **Pro** 块额外加了 output gate 与 output RMSNorm（GLA / Mamba-2 同款），并且用减 MLP 宽度保总参。那一套才更接近「注意力输出后再乘 $\sigma$」。Table 3（360M、约 7.5B token、验证上下文 16384）把两套门拆开：完整 FoX (Pro) PPL **6.62**；去掉 output gate 升到 **6.86**；去掉 forget gate 但留 RoPE（即 Transformer (Pro)）是 **6.82**；两套位置编码/遗忘都没有则 **7.40**。所以：**遗忘门 $\neq$ 输出门**；Qiu 那句 Related Work 把 Pro 的输出门和遗忘门糊在一起了。本篇以 FoT HTML 式 (11)–(13) 为准。
 
 主实验：760M 非嵌入参数、约 **48B** token、训练长度 16384、验证到 65536。Table 1 短上下文：FoX (Pro) Wiki PPL **23.04**、平均 **50.88**；同骨架 Transformer (Pro) 是 **24.12** / **50.39**。长上下文 LongBench 上 FoX 与 Transformer **打平**、明显好于 Mamba-2 / HGRN2 / DeltaNet。Needle 在训练长度内近乎满分；纯循环模型在 5k–10k 处 per-token loss 就平台化。这些数字说明遗忘门有用，**不能**说明它等于 $G_1$。
 
@@ -177,7 +177,7 @@ Table 3 是 **10k step** 的短训诊断，不是 52B 主实验：同一窗口�
 
 ## 7. Sigmoid self-attention：用 sigmoid 换 softmax，不是算完再乘门
 
-Ramapuram 等人（Apple）的 [Theory，Analysis，and Best Practices for Sigmoid Self-Attention](https://arxiv.org/abs/2409.04431) 把行 softmax **整段换成**逐元素 sigmoid：
+Ramapuram 等人（Apple）的 [Theory, Analysis, and Best Practices for Sigmoid Self-Attention](https://arxiv.org/abs/2409.04431) 把行 softmax **整段换成**逐元素 sigmoid：
 
 $$
 \mathrm{SigmoidAttn}(X)=\sigma\bigl(QK^\top/\sqrt{d_{qk}}+b\bigr)V,\qquad \sigma(u)=(1+e^{-(u+b)})^{-1}.
@@ -292,12 +292,12 @@ Qwen3-Next 把 $G_1$ 插在 3:1 日程里那一层全注意力上——产品捆
 ## 参考文献
 
 1. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., et al. (2025). [Gated Attention for Large Language Models](https://arxiv.org/abs/2505.06708). *NeurIPS 2025* Oral. HTML：[arxiv.org/html/2505.06708](https://arxiv.org/html/2505.06708)。本篇只采用 §5 Related Works 的邻居名单与「most closely related = Bondarenko」判定；**不**重抄 Table 1/4 的 30 变体。
-2. Lin, Z., Nikishin, E., He, X. O., & Courville, A. (2025). [Forgetting Transformer: Softmax Attention with a Forget Gate](https://arxiv.org/abs/2503.02130). HTML：[arxiv.org/html/2503.02130](https://arxiv.org/html/2503.02130)。式（11）–(13)、Table 1 / 3。
-3. Bondarenko, Y., Nagel, M., & Blankevoort, T. (2023). [Quantizable Transformers](https://arxiv.org/abs/2306.12929). *NeurIPS 2023*. HTML：[arxiv.org/html/2306.12929v1](https://arxiv.org/html/2306.12929v1)。式（4）（5）、Table 1 / 2。
-4. Ye, T., Dong, L., Xia, Y., Sun, Y., Zhu, Y., Huang, G., & Wei, F. (2024). [Differential Transformer](https://arxiv.org/abs/2410.05258). HTML：[arxiv.org/html/2410.05258](https://arxiv.org/html/2410.05258)。式（1）、Table 1–3。
-5. Zuhri, Z. M. K., Fuadi, E. H., & Aji, A. F. (2025). [Softpick](https://arxiv.org/abs/2504.20966). HTML：[arxiv.org/html/2504.20966](https://arxiv.org/html/2504.20966)。式（1）、Table 1–3。
-6. Ramapuram, J., et al. (2024). [Theory, Analysis, and Best Practices for Sigmoid Self-Attention](https://arxiv.org/abs/2409.04431). HTML：[arxiv.org/html/2409.04431](https://arxiv.org/html/2409.04431)。式（3）、FlashSigmoid 核加速、1B 评测。
-7. Csordás, R., Piękos, P., Irie, K., & Schmidhuber, J. (2024). [SwitchHead](https://arxiv.org/abs/2312.07987). *NeurIPS 2024*. HTML：[arxiv.org/html/2312.07987v2](https://arxiv.org/html/2312.07987v2)。式（4）–(10)、Table 1。
+2. Lin, Z., Nikishin, E., He, X. O., & Courville, A. (2025). [Forgetting Transformer: Softmax Attention with a Forget Gate](https://arxiv.org/abs/2503.02130). HTML：[arxiv.org/html/2503.02130](https://arxiv.org/html/2503.02130)。式 (11)–(13)、Table 1 / 3。
+3. Bondarenko, Y., Nagel, M., & Blankevoort, T. (2023). [Quantizable Transformers](https://arxiv.org/abs/2306.12929). *NeurIPS 2023*. HTML：[arxiv.org/html/2306.12929v1](https://arxiv.org/html/2306.12929v1)。式 (4)(5)、Table 1 / 2。
+4. Ye, T., Dong, L., Xia, Y., Sun, Y., Zhu, Y., Huang, G., & Wei, F. (2024). [Differential Transformer](https://arxiv.org/abs/2410.05258). HTML：[arxiv.org/html/2410.05258](https://arxiv.org/html/2410.05258)。式 (1)、Table 1–3。
+5. Zuhri, Z. M. K., Fuadi, E. H., & Aji, A. F. (2025). [Softpick](https://arxiv.org/abs/2504.20966). HTML：[arxiv.org/html/2504.20966](https://arxiv.org/html/2504.20966)。式 (1)、Table 1–3。
+6. Ramapuram, J., et al. (2024). [Theory, Analysis, and Best Practices for Sigmoid Self-Attention](https://arxiv.org/abs/2409.04431). HTML：[arxiv.org/html/2409.04431](https://arxiv.org/html/2409.04431)。式 (3)、FlashSigmoid 核加速、1B 评测。
+7. Csordás, R., Piękos, P., Irie, K., & Schmidhuber, J. (2024). [SwitchHead](https://arxiv.org/abs/2312.07987). *NeurIPS 2024*. HTML：[arxiv.org/html/2312.07987v2](https://arxiv.org/html/2312.07987v2)。式 (4)–(10)、Table 1。
 8. Xiao, G., et al. (2023). [Efficient Streaming Language Models with Attention Sinks](https://arxiv.org/abs/2309.17453)。本库 [10 文](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 9. Gu, X., et al. (2024). [When Attention Sink Emerges in Language Models](https://arxiv.org/abs/2410.10781). HTML：[arxiv.org/html/2410.10781](https://arxiv.org/html/2410.10781)。
 10. Sun, M., Chen, X., Kolter, J. Z., & Liu, Z. (2024). [Massive Activations in Large Language Models](https://arxiv.org/abs/2402.17762). *COLM 2024*. HTML：[arxiv.org/html/2402.17762](https://arxiv.org/html/2402.17762)。Table 1。

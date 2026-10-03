@@ -8,7 +8,7 @@ tags: ["long-horizon", "orchard", "agentic-modeling", "kubernetes", "RL", "harne
 # Orchard：开源 Agentic Modeling 框架与 Env 基座
 
 > 论文：Orchard: An Open-Source Agentic Modeling Framework
-> 作者：Baolin Peng, Wenlin Yao, Qianhui Wu, Hao Cheng, Xiao Yu, Rui Yang, Tao Ge, Alessandro Sordoni，Xingdi Yuan，Yelong Shen，Pengcheng He，Tong Zhang，Zhou Yu，Jianfeng Gao 等（Microsoft Research 等）
+> 作者：Baolin Peng, Wenlin Yao, Qianhui Wu, Hao Cheng, Xiao Yu, Rui Yang, Tao Ge, Alessandro Sordoni, Xingdi Yuan, Yelong Shen, Pengcheng He, Tong Zhang, Zhou Yu, Jianfeng Gao 等（Microsoft Research 等）
 > arXiv：[2605.15040](https://arxiv.org/abs/2605.15040)（2026-05）
 > GitHub：[microsoft/Orchard](https://github.com/microsoft/Orchard)
 > Dataset：[microsoft/Orchard](https://huggingface.co/datasets/microsoft/Orchard)（swe 107K + gui 3K 轨迹）
@@ -134,7 +134,7 @@ with SandboxClient() as client:
 
 Env **不假设**上层是 trainer、inference backend 还是 task domain——同一 API 可用于 distillation rollout、on-policy RL、evaluation 三阶段。
 
-**Recipe 共性模式**：（1）在 Env 内跑 teacher/student rollout 收集轨迹 → (2) 数据策展（含失败轨迹）→ (3) SFT 初始化 → (4) 稀疏/延迟 reward 的 on-policy RL → (5) 跨 harness / 跨语言 / 跨 benchmark 泛化评测。
+**Recipe 共性模式**：(1) 在 Env 内跑 teacher/student rollout 收集轨迹 → (2) 数据策展（含失败轨迹）→ (3) SFT 初始化 → (4) 稀疏/延迟 reward 的 on-policy RL → (5) 跨 harness / 跨语言 / 跨 benchmark 泛化评测。
 
 ### 关键不变量
 

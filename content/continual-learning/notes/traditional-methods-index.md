@@ -54,4 +54,4 @@ tags: ["持续学习", "Continual Learning", "EWC", "Replay", "灾难性遗忘",
 
 ## 与 TTT 的关系
 
-传统持续学习关注「跨任务不遗忘」；Test-Time Training（TTT）则是「推理时用当前输入自适应更新模型」——二者共享「动态更新模型」的思想，但目标（跨任务记忆 vs 单样本自适应）与更新时机（训练阶段 vs 测试阶段）不同。见子库 [Test-Time Training（TTT）](ttt-index)。
+传统持续学习关注「跨任务不遗忘」；Test-Time Training（TTT）则是「推理时用当前输入自适应更新模型」——二者共享"动态更新模型"的思想，但目标（跨任务记忆 vs 单样本自适应）与更新时机（训练阶段 vs 测试阶段）不同。见子库 [Test-Time Training（TTT）](ttt-index)。

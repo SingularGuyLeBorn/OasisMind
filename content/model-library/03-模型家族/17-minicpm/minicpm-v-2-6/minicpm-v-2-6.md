@@ -414,27 +414,27 @@ But, he buys bottled water and pours it inside.
 
 ![Image block](images/p08-2008-2017-8-24-4.png)
 
-## 由于存在闭幕后奖牌被取消的情况，下面的2008年北京奥运会奖牌榜实为截至2017年8月24日的奖牌榜。以下根据题标列举数目：[4]
+## 由于存在闭幕后奖牌被取消的情况，下面的2008年北京奥运会奖牌榜实为截至2017年8月24日的奖牌榜。以下根据题标列举数目:[4]
 
 奖牌榜
 
 | 名次 | 国家/地区 | 金牌 | 领牌 | 铜牌 | 奖牌总数 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 中国（CHN） | 48 | 22 | 30 | 100 |
-| 2 | 美国（USA） | 36 | 39 | 37 | 112 |
-| 3 | 俄罗斯（RUS） | 24 | 13 | 23 | 60 |
-| 4 | 英国（GBR） | 19 | 13 | 19 | 51 |
-| 5 | 德国（GER） | 16 | 11 | 14 | 41 |
-| 6 | 澳大利亚（AUS） | 14 | 15 | 17 | 46 |
-| 7 | 韩国（KOR） | 13 | 11 | 8 | 32 |
-| 8 | 日本（JPN） | 9 | 8 | 8 | 25 |
-| 9 | 意大利（ITA） | 8 | 9 | 10 | 27 |
-| 10 | 法国（FRA） | 7 | 16 | 20 | 43 |
-| 11 | 荷兰（NED） | 7 | 5 | 4 | 16 |
-| 12 | 乌克兰（UKR） | 7 | 4 | 11 | 22 |
-| 13 | 肯尼亚（KEN） | 6 | 4 | 6 | 16 |
-| 14 | 西班牙（ESP） | 5 | 11 | 3 | 19 |
-| 15 | 牙买加（JAM） | 5 | 4 | 2 | 11 |
+| 1 | 中国 (CHN) | 48 | 22 | 30 | 100 |
+| 2 | 美国 (USA) | 36 | 39 | 37 | 112 |
+| 3 | 俄罗斯 (RUS) | 24 | 13 | 23 | 60 |
+| 4 | 英国 (GBR) | 19 | 13 | 19 | 51 |
+| 5 | 德国 (GER) | 16 | 11 | 14 | 41 |
+| 6 | 澳大利亚 (AUS) | 14 | 15 | 17 | 46 |
+| 7 | 韩国 (KOR) | 13 | 11 | 8 | 32 |
+| 8 | 日本 (JPN) | 9 | 8 | 8 | 25 |
+| 9 | 意大利 (ITA) | 8 | 9 | 10 | 27 |
+| 10 | 法国 (FRA) | 7 | 16 | 20 | 43 |
+| 11 | 荷兰 (NED) | 7 | 5 | 4 | 16 |
+| 12 | 乌克兰 (UKR) | 7 | 4 | 11 | 22 |
+| 13 | 肯尼亚 (KEN) | 6 | 4 | 6 | 16 |
+| 14 | 西班牙 (ESP) | 5 | 11 | 3 | 19 |
+| 15 | 牙买加 (JAM) | 5 | 4 | 2 | 11 |
 
 ## 2008年奥运会获得金牌数最多的3个国家一共获得了多少枚金牌？请逐步分析
 
@@ -446,17 +446,17 @@ How many gold medals did the top three countries with the most gold medals at th
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">MiniCPM-V 2.6</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">根据图像中的奖牌榜信息，2008年奥运会获得金牌数最多的3个国家分别是：</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">根据图像中的奖牌榜信息，2008年奥运会获得金牌数最多的3个国家分别是:</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">1。中国（CHN）：48枚金牌</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">1.中国（CHN）:48枚金牌</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">2。美国(USA）：36枚金牌</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">2. 美国(USA）:36枚金牌</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">3。俄罗斯（RUS）：24枚金牌</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">3.俄罗斯(RUS):24枚金牌</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">要计算这3个国家一共获得了多少枚金牌，我们需要将它们的金牌数相加：</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">要计算这3个国家一共获得了多少枚金牌，我们需要将它们的金牌数相加:</span></small>
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">48（中国）+ 36（美国）+ 24（俄罗斯）= 108</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">48(中国) + 36(美国) + 24(俄罗斯) = 108</span></small>
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">因此，2008年奥运会获得金牌数最多的3个国家一共获得了108枚金牌。</span></small>
 

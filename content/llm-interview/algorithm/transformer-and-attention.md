@@ -40,9 +40,9 @@ $$
 
 | 方式 | 原理 | 外推能力 | 代表模型 |
 |---|---|---|---|
-| Sinusoidal（绝对） | 正弦/余弦固定 | 有限 | Transformer 原始 |
-| 可学习（BERT） | 训练学到 | ❌ | BERT |
-| **RoPE**（旋转） | 在 QK 上做旋转变换 | ✅ 优秀 | LLaMA, Qwen, DeepSeek |
+| Sinusoidal (绝对) | 正弦/余弦固定 | 有限 | Transformer 原始 |
+| 可学习 (BERT) | 训练学到 | ❌ | BERT |
+| **RoPE** (旋转) | 在 QK 上做旋转变换 | ✅ 优秀 | LLaMA, Qwen, DeepSeek |
 | ALiBi | 注意力分数加线性偏置 | ✅ 简单 | MPT, Bloom |
 
 **RoPE 核心**：在高维空间旋转 $Q$/$K$，使内积仅与相对位置差有关：

@@ -10,7 +10,7 @@ excerpt: "DeepSeek-V4 公开材料的逐段中英对照译稿，附读报告时�
 Qdeepseek
 
 
-# DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence / DeepSeek-V4：迈向高效率的百万 Token 上下文智能
+# DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence / DeepSeek-V4: 迈向高效率的百万 Token 上下文智能
 
 DeepSeek-AI **research@deepseek. com**
 
@@ -24,7 +24,7 @@ We present a preview version of DeepSeek-V4 series, including two strong Mixture
 
 
 
-给出 DeepSeek-V4 系列预览版：两个强 MoE 语言模型--DeepSeek-V4-Pro 总参 1.6T（激活 49B），DeepSeek-V4-Flash 总参 284B（激活 13B），均支持百万 token 上下文。架构与优化上有几处关键升级：（1）混合注意力，把 Compressed Sparse Attention（CSA，压缩稀疏注意力）与 Heavily Compressed Attention（HCA，重度压缩注意力）拼起来，抬长上下文效率；（2）Manifold-Constrained Hyper-Connections（mHC，流形约束超连接），加固常规残差；（3）Muon 优化器，加快收敛，稳住训练。两者都在超过 32T 多样高质量 token 上预训练，再接完整后训练流水。DeepSeek-V4-Pro-Max（Pro 的最大推理投入模式）在开源侧重新划线，核心任务超过前代。长上下文场景也很省：百万 token 设定下，Pro 相对 DeepSeek-V3.2 只要约 27% 的单 token 推理 FLOPs 与约 10% 的 KV cache，百万上下文可以当常规能力用，长程任务与进一步 test-time scaling 才更站得住。权重见上述 Hugging Face 链接。
+给出 DeepSeek-V4 系列预览版: 两个强 MoE 语言模型--DeepSeek-V4-Pro 总参 1.6T(激活 49B), DeepSeek-V4-Flash 总参 284B(激活 13B), 均支持百万 token 上下文. 架构与优化上有几处关键升级: (1)混合注意力, 把 Compressed Sparse Attention(CSA, 压缩稀疏注意力)与 Heavily Compressed Attention(HCA, 重度压缩注意力)拼起来, 抬长上下文效率; (2)Manifold-Constrained Hyper-Connections(mHC, 流形约束超连接), 加固常规残差; (3)Muon 优化器, 加快收敛, 稳住训练. 两者都在超过 32T 多样高质量 token 上预训练, 再接完整后训练流水. DeepSeek-V4-Pro-Max(Pro 的最大推理投入模式)在开源侧重新划线, 核心任务超过前代. 长上下文场景也很省: 百万 token 设定下, Pro 相对 DeepSeek-V3.2 只要约 27% 的单 token 推理 FLOPs 与约 10% 的 KV cache, 百万上下文可以当常规能力用, 长程任务与进一步 test-time scaling 才更站得住. 权重见上述 Hugging Face 链接.
 
 ![Chart block](images/p01-chart.png)
 
@@ -36,7 +36,7 @@ Figure 1 | Left: benchmark performance of DeepSeek-V4-Pro-Max and its counterpar
 
 
 
-图 1｜左：DeepSeek-V4-Pro-Max 与对照模型的基准表现。右：DeepSeek-V4 系列与 DeepSeek-V3.2 的推理 FLOPs 与 KV cache 体积。
+图 1｜左: DeepSeek-V4-Pro-Max 与对照模型的基准表现. 右: DeepSeek-V4 系列与 DeepSeek-V3.2 的推理 FLOPs 与 KV cache 体积.
 
 <!-- page 2 of 58 -->
 
@@ -94,7 +94,7 @@ Figure 1 | Left: benchmark performance of DeepSeek-V4-Pro-Max and its counterpar
   - 3.4 FP4 量化感知训练 19
   - 3.5 训练框架 20
     - 3.5.1 Muon 的高效实现 20
-    - 3.5.2 mHC 的省成本，省显存实现 21
+    - 3.5.2 mHC 的省成本, 省显存实现 21
     - 3.5.3 长上下文注意力的上下文并行 21
     - 3.5.4 扩展自动微分以支持灵活激活重计算 21
   - 3.6 推理框架 22
@@ -145,7 +145,7 @@ Figure 1 | Left: benchmark performance of DeepSeek-V4-Pro-Max and its counterpar
   - 5.2 RL 与 OPD 基础设施 34
     - 5.2.1 FP4 量化接入 34
     - 5.2.2 全词表 OPD 的高效教师调度 34
-    - 5.2.3 可抢占，容错的 Rollout 服务 34
+    - 5.2.3 可抢占, 容错的 Rollout 服务 34
     - 5.2.4 面向百万 Token 上下文的 RL 框架扩展 35
     - 5.2.5 Agent AI 的沙箱基础设施 35
   - 5.3 标准基准评测 36
@@ -156,7 +156,7 @@ Figure 1 | Left: benchmark performance of DeepSeek-V4-Pro-Max and its counterpar
     - 5.4.2 搜索 42
     - 5.4.3 白领任务 42
     - 5.4.4 代码 Agent 44
-- 6 结论，局限与未来方向 44
+- 6 结论, 局限与未来方向 44
 - A 作者名单与致谢 54
   - A.1 作者名单 54
   - A.2 致谢 55
@@ -170,25 +170,25 @@ The emergence of reasoning models (DeepSeek-AI, 2025; OpenAI, 2024c) has establi
 
 
 
-推理模型把 test-time scaling 做成新范式，大模型分数被明显抬高。但这套缩放仍卡在标准注意力的二次复杂度上：超长上下文与超长推理过程都会撞上算力墙。与此同时，复杂 agent 工作流，海量跨文档分析等长程场景，也把「超长上下文要跑得起」推成下一步关键。开源侧通用能力在涨，处理超长序列的架构低效仍是拦路石-- 既限制 test-time scaling，也卡住长程任务探索。
+推理模型把 test-time scaling 做成新范式, 大模型分数被明显抬高. 但这套缩放仍卡在标准注意力的二次复杂度上: 超长上下文与超长推理过程都会撞上算力墙. 与此同时, 复杂 agent 工作流, 海量跨文档分析等长程场景, 也把「超长上下文要跑得起」推成下一步关键. 开源侧通用能力在涨, 处理超长序列的架构低效仍是拦路石-- 既限制 test-time scaling, 也卡住长程任务探索.
 
 In order to break the efficiency barrier in ultra-long contexts, we develop the DeepSeek-V4 series, including the preview versions of DeepSeek-V4-Pro with 1.6T parameters (49B activated) and DeepSeek-V4-Flash with 284B parameters (13B activated). Through architectural innovations, DeepSeek-V4 series achieve a dramatic leap in computational efficiency for processing ultra-long sequences. This breakthrough enables efficient support for a context length of one million tokens, ushering in a new era of million-length contexts for next-generation LLMs. We believe our capability to efficiently handle ultra-long sequences unlocks the next frontier of test-time scaling, paves the way for deeper research into long-horizon tasks, and establishes a necessary foundation for exploring future paradigms like online learning.
 
 
 
-为打破超长上下文的效率墙，做出 DeepSeek-V4 系列预览：Pro 总参 1.6T（激活 49B），Flash 总参 284B（激活 13B）。靠架构创新，超长序列算力效率大幅跃升，百万 token 上下文可以高效撑住，下一代模型的「百万长度」时代由此铺开。作者认为：超长序列跑得起，才打开下一档 test-time scaling，才谈得上更深长程任务，也为在线学习一类未来范式打底。
+为打破超长上下文的效率墙, 做出 DeepSeek-V4 系列预览: Pro 总参 1.6T(激活 49B), Flash 总参 284B(激活 13B). 靠架构创新, 超长序列算力效率大幅跃升, 百万 token 上下文可以高效撑住, 下一代模型的「百万长度」时代由此铺开. 作者认为: 超长序列跑得起, 才打开下一档 test-time scaling, 才谈得上更深长程任务, 也为在线学习一类未来范式打底.
 
 Compared with the DeepSeek-V3 architecture (DeepSeek-AI, 2024), DeepSeek-V4 series retain the DeepSeekMoE framework (Dai et al., 2024) and Multi-Token Prediction (MTP) strategy, while introducing several key innovations in architecture and optimization. To enhance longcontext efficiency, we design a hybrid attention mechanism combining Compressed Sparse Attention (CSA) and Heavily Compressed Attention (HCA). CSA compresses the KV caches along the sequence dimension and then performs DeepSeek Sparse Attention (DSA) (DeepSeek-AI, 2025), whereas HCA applies more aggressive compression to the KV caches but keeps dense attention. To strengthen modeling capability, we incorporate Manifold-Constrained Hyper-Connections (mHC) (Xie et al., 2026) that upgrade conventional residual connections. Additionally, we introduce the Muon (Jordan et al., 2024; Liu et al., 2025) optimizer to the training of DeepSeek-V4 series, leading to faster convergence and improved training stability.
 
 
 
-相对 DeepSeek-V3，V4 仍保留 DeepSeekMoE 与 MTP，同时在架构与优化上加几件新东西。长上下文效率靠 CSA + HCA 混注：CSA 先沿序列维压缩 KV，再做 DeepSeek Sparse Attention(DSA)；HCA 压缩更狠，但保持稠密注意力。建模能力侧引入 mHC，升级常规残差。训练侧换上 Muon，收敛更快，也更稳。
+相对 DeepSeek-V3, V4 仍保留 DeepSeekMoE 与 MTP, 同时在架构与优化上加几件新东西. 长上下文效率靠 CSA + HCA 混注: CSA 先沿序列维压缩 KV, 再做 DeepSeek Sparse Attention(DSA); HCA 压缩更狠, 但保持稠密注意力. 建模能力侧引入 mHC, 升级常规残差. 训练侧换上 Muon, 收敛更快, 也更稳.
 
 To enable efficient training and inference for DeepSeek-V4 series as well as productive development, we introduce several infrastructure optimizations. First, we design and implement a single fused kernel for MoE modules that fully overlaps computation, communication, and memory access. Second, we employ TileLang (Wang et al.), a Domain-Specific Language (DSL) to balance development productivity and runtime efficiency. Third, we provide efficient batchinvariant and deterministic kernel libraries to ensure bitwise reproducibility across training and inference. Fourth, we incorporate FP4 quantization-aware training for MoE expert weights and the indexer QK path to reduce memory and computation. Fifth, for the training framework, we extend the autograd framework with tensor-level checkpointing for fine-grained recomputation control; and we enhance training efficiency with a hybrid ZeRO strategy for the Muon optimizer, cost-effective mHC implementations via recomputation and fused kernels, and two-stage contextual parallelism to manage compressed attention. Finally, for the inference framework, we design a heterogeneous KV cache structure with on-disk storage strategies to enable efficient shared-prefix reuse.
 
 
 
-为让训练，推理与日常开发都跟得上，基础设施也动了几刀。其一，MoE 用单融合内核，把计算，通信与访存完全重叠。其二，用 DSL TileLang 兼顾开发效率与运行时性能。其三，提供批不变，确定性内核库，训练与推理可按位复现。其四，对 MoE 专家权重与 indexer 的 QK 路径做 FP4 量化感知训练，省显存与算力。其五，训练框架：自动微分扩展到张量级 checkpoint；Muon 配混合 ZeRO；mHC 靠重计算与融合核控成本；压缩注意力用两阶段上下文并行。推理侧则设计异构 KV cache，并配磁盘策略，方便共享前缀复用。
+为让训练, 推理与日常开发都跟得上, 基础设施也动了几刀. 其一, MoE 用单融合内核, 把计算, 通信与访存完全重叠. 其二, 用 DSL TileLang 兼顾开发效率与运行时性能. 其三, 提供批不变, 确定性内核库, 训练与推理可按位复现. 其四, 对 MoE 专家权重与 indexer 的 QK 路径做 FP4 量化感知训练, 省显存与算力. 其五, 训练框架: 自动微分扩展到张量级 checkpoint; Muon 配混合 ZeRO; mHC 靠重计算与融合核控成本; 压缩注意力用两阶段上下文并行. 推理侧则设计异构 KV cache, 并配磁盘策略, 方便共享前缀复用.
 
 <!-- page 5 of 58 -->
 
@@ -196,19 +196,19 @@ By employing hybrid CSA and HCA, along with precision optimizations on computati
 
 
 
-靠 CSA/HCA 混注，再加上计算与存储侧精度优化，V4 相对 V3.2 的推理 FLOPs 与 KV cache 都明显更低，长上下文尤甚。图 1 右侧给出单 token 推理 FLOPs 与累计 KV 体积的估计。1M 上下文下，即便激活参更大的 Pro，相对 V3.2 也只要约 27% 单 token FLOPs（按等效 FP8 FLOPs 计）与约 10% KV；激活更小的 Flash 再压到约 10% FLOPs 与 7% KV。路由专家权重用 FP4：现有硬件上 FP4×FP8 峰值吞吐与 FP8×FP8 相同，但未来硬件理论上还可再省约 1/3。
+靠 CSA/HCA 混注, 再加上计算与存储侧精度优化, V4 相对 V3.2 的推理 FLOPs 与 KV cache 都明显更低, 长上下文尤甚. 图 1 右侧给出单 token 推理 FLOPs 与累计 KV 体积的估计. 1M 上下文下, 即便激活参更大的 Pro, 相对 V3.2 也只要约 27% 单 token FLOPs(按等效 FP8 FLOPs 计)与约 10% KV; 激活更小的 Flash 再压到约 10% FLOPs 与 7% KV. 路由专家权重用 FP4: 现有硬件上 FP4×FP8 峰值吞吐与 FP8×FP8 相同, 但未来硬件理论上还可再省约 1/3.
 
 During pre-training, we train DeepSeek-V4-Flash on 32T tokens and DeepSeek-V4-Pro on 33T tokens, respectively. After pre-training, these two models can natively and efficiently support 1M-length contexts. In our internal evaluations, DeepSeek-V4-Flash-Base already surpasses DeepSeek-V3.2-Base across a majority of benchmarks with its more parameter-efficient design. DeepSeek-V4-Pro-Base further extends this advantage to set a new performance standard among DeepSeek foundation models, achieving comprehensive superiority across reasoning, coding, long-context, and world knowledge tasks.
 
 
 
-预训练：Flash 32T, Pro 33T token。训完即可原生，高效支撑 1M 上下文。内部评测里，Flash-Base 以更省参的设计已在多数基准超过 V3.2-Base；Pro-Base 再把优势拉开，在推理，代码，长上下文与世界知识上全面抬高 DeepSeek 基座标准。
+预训练: Flash 32T, Pro 33T token. 训完即可原生, 高效支撑 1M 上下文. 内部评测里, Flash-Base 以更省参的设计已在多数基准超过 V3.2-Base; Pro-Base 再把优势拉开, 在推理, 代码, 长上下文与世界知识上全面抬高 DeepSeek 基座标准.
 
 The post-training pipeline of DeepSeek-V4 series features a two-stage paradigm: the independent cultivation of domain-specific experts, followed by unified model consolidation via on-policy distillation (Lu and Lab, 2025). Initially, for each target domain - such as mathematics, coding, agent, and instruction following - a separate expert model is trained independently. The base model first undergoes Supervised Fine-Tuning (SFT) on high-quality, domain-specific data to establish foundational capabilities. Subsequently, Reinforcement Learning (RL) is applied using Group Relative Policy Optimization (GRPO) (DeepSeek-AI, 2025), which further optimizes the model for domain-aligned behaviors guided by reward models tailored to specific success criteria. This phase yields a diverse set of specialized experts, each excelling in its respective field. Finally, to integrate these distinct proficiencies, a single unified model is trained through on-policy distillation, wherein the unified model acts as the student learning to optimize the reverse KL loss with teacher models.
 
 
 
-后训练两段式：先分域独立养专家，再用同策略蒸馏（OPD）合成统一模型。数学，代码，agent，指令跟随等各训一个专家：基座先在高质量分域数据上 SFT，再用 GRPO 做 RL，按域内成功标准配奖励。这一阶段得到一批各有所长的专家。最后用 OPD 把能力合进单一学生-- 学生对教师做反向 KL。
+后训练两段式: 先分域独立养专家, 再用同策略蒸馏(OPD)合成统一模型. 数学, 代码, agent, 指令跟随等各训一个专家: 基座先在高质量分域数据上 SFT, 再用 GRPO 做 RL, 按域内成功标准配奖励. 这一阶段得到一批各有所长的专家. 最后用 OPD 把能力合进单一学生-- 学生对教师做反向 KL.
 
 ### Summary of Core Evaluation Results 核心评测结果摘要
 
@@ -216,13 +216,13 @@ The post-training pipeline of DeepSeek-V4 series features a two-stage paradigm: 
 
 
 
-• **知识**：世界知识上，Pro-Max 在 SimpleQA 与 Chinese-SimpleQA 显著超过领先开源模型。教育向知识（MMLU-Pro, HLE, GPQA）相对开源略领先。对闭源头部 Gemini-3.1-Pro 的差距已明显收窄，但仍落后。
+• **知识**: 世界知识上, Pro-Max 在 SimpleQA 与 Chinese-SimpleQA 显著超过领先开源模型. 教育向知识(MMLU-Pro, HLE, GPQA)相对开源略领先. 对闭源头部 Gemini-3.1-Pro 的差距已明显收窄, 但仍落后.
 
 • **Reasoning**: Through the expansion of reasoning tokens, DeepSeek-V4-Pro-Max demonstrates superior performance relative to GPT-5.2 and Gemini-3.0-Pro on standard reasoning benchmarks. Nevertheless, its performance falls marginally short of GPT-5.4 and Gemini-3.1-Pro, suggesting a developmental trajectory that trails state-of-the-art frontier models by approximately 3 to 6 months. Furthermore, DeepSeek-V4-Flash-Max achieves comparable
 
 
 
-• **推理**：靠加长推理 token，Pro-Max 在标准推理基准上优于 GPT-5.2 与 Gemini-3.0-Pro；相对 GPT-5.4 与 Gemini-3.1-Pro 仍略逊，大约落后前沿闭源 3 到 6 个月。Flash-Max 则达到与
+• **推理**: 靠加长推理 token, Pro-Max 在标准推理基准上优于 GPT-5.2 与 Gemini-3.0-Pro; 相对 GPT-5.4 与 Gemini-3.1-Pro 仍略逊, 大约落后前沿闭源 3 到 6 个月. Flash-Max 则达到与
 
 <!-- page 6 of 58 -->
 
@@ -232,31 +232,31 @@ Figure 2 | Overall architecture of DeepSeek-V4 series. We use hybrid CSA (Compre
 
 
 
-图 2｜DeepSeek-V4 系列总体架构：注意力层混用 CSA 与 HCA，前馈用 DeepSeekMoE，常规残差用 mHC 加固。
+图 2｜DeepSeek-V4 系列总体架构: 注意力层混用 CSA 与 HCA, 前馈用 DeepSeekMoE, 常规残差用 mHC 加固.
 
 performance to GPT-5.2 and Gemini-3.0-Pro, establishing itself as a highly cost-effective architecture for complex reasoning tasks.
 
 
 
-（接上页）GPT-5.2，Gemini-3.0-Pro 相当的表现，复杂推理上很划算。
+(接上页)GPT-5.2, Gemini-3.0-Pro 相当的表现, 复杂推理上很划算.
 
 • **Agent**: On public benchmarks, DeepSeek-V4-Pro-Max is on par with leading open-source models, such as Kimi-K2.6 and GLM-5.1, but slightly worse than frontier closed models. In our internal evaluation, DeepSeek-V4-Pro-Max outperforms Claude Sonnet 4.5 and approaches the level of Opus 4.5.
 
 
 
-• **Agent**：公开基准上与 Kimi-K2.6，GLM-5.1 等开源头部持平，略逊前沿闭源；内部评测超过 Claude Sonnet 4.5，接近 Opus 4.5。
+• **Agent**: 公开基准上与 Kimi-K2.6, GLM-5.1 等开源头部持平, 略逊前沿闭源; 内部评测超过 Claude Sonnet 4.5, 接近 Opus 4.5.
 
 • **Long-Context**: DeepSeek-V4-Pro-Max delivers strong results on synthetic and real use cases with a 1-million-token context window, surpassing even Gemini-3.1-Pro on academic benchmarks.
 
 
 
-• **长上下文**：百万窗口在合成与真实用例上都强，学术基准上甚至超过 Gemini-3.1-Pro。
+• **长上下文**: 百万窗口在合成与真实用例上都强, 学术基准上甚至超过 Gemini-3.1-Pro.
 
 **DeepSeek-V4-Pro v. s. DeepSeek-V4-Flash**: DeepSeek-V4-Flash-Max exhibits lower performance in knowledge evaluations due to its smaller parameter scale. However, it achieves comparable results on reasoning tasks when allocated a larger thinking budget. In agent evaluations, while DeepSeek-V4-Flash-Max matches the performance of DeepSeek-V4-Pro-Max on several benchmarks, it still trails its larger counterpart on more complex, high-difficulty tasks.
 
 
 
-**Pro 对比 Flash**: Flash-Max 因规模更小，知识评测更弱；给更大思考预算时，推理可追平。Agent 上若干基准能打平 Pro-Max，更难任务仍落后。
+**Pro 对比 Flash**: Flash-Max 因规模更小, 知识评测更弱; 给更大思考预算时, 推理可追平. Agent 上若干基准能打平 Pro-Max, 更难任务仍落后.
 
 ## 2. Architecture 架构
 
@@ -264,7 +264,7 @@ Overall, DeepSeek-V4 series retain the Transformer (Vaswani et al., 2017) archit
 
 
 
-总体仍是 Transformer + MTP，相对 V3 的关键升级：（1）引入 mHC 加固常规残差；
+总体仍是 Transformer + MTP, 相对 V3 的关键升级: (1)引入 mHC 加固常规残差;
 
 <!-- page 7 of 58 -->
 
@@ -272,7 +272,7 @@ Overall, DeepSeek-V4 series retain the Transformer (Vaswani et al., 2017) archit
 
 
 
-(2)用 CSA + HCA 混合注意力大幅抬长上下文效率；（3）优化器换 Muon. MoE 仍走 DeepSeekMoE，相对 V3 只有小改；MTP 配置与 V3 相同；其余未写明处跟 V3。图 2 是总览，细节如下。
+(2)用 CSA + HCA 混合注意力大幅抬长上下文效率; (3)优化器换 Muon. MoE 仍走 DeepSeekMoE, 相对 V3 只有小改; MTP 配置与 V3 相同; 其余未写明处跟 V3. 图 2 是总览, 细节如下.
 
 ### 2.1. Designs Inherited from DeepSeek-V3 从 DeepSeek-V3 继承的设计
 
@@ -280,13 +280,13 @@ Overall, DeepSeek-V4 series retain the Transformer (Vaswani et al., 2017) archit
 
 
 
-**MoE.** 与既往 DeepSeek 系列一样，V4 的 FFN 走 DeepSeekMoE：细粒度路由专家 + 共享专家。相对 V3，亲和度从 Sigmoid 改成 $\sqrt{\mathrm{Softplus}(\cdot)}$。负载均衡仍用无辅助损失策略，再加极小的序列级平衡损失，防止单序列极端不均。V4 去掉路由目标节点数约束，并重设并行策略保训练效率。另外，前若干 Transformer 块的稠密 FFN 换成 Hash routing 的 MoE：按输入 token ID 的预定义哈希决定专家。
+**MoE.** 与既往 DeepSeek 系列一样, V4 的 FFN 走 DeepSeekMoE: 细粒度路由专家 + 共享专家. 相对 V3, 亲和度从 Sigmoid 改成 $\sqrt{\mathrm{Softplus}(\cdot)}$. 负载均衡仍用无辅助损失策略, 再加极小的序列级平衡损失, 防止单序列极端不均. V4 去掉路由目标节点数约束, 并重设并行策略保训练效率. 另外, 前若干 Transformer 块的稠密 FFN 换成 Hash routing 的 MoE: 按输入 token ID 的预定义哈希决定专家.
 
 **Multi-Token Prediction.** As DeepSeek-V3, DeepSeek-V4 series also set MTP modules and objectives. Given that the MTP strategy has been validated in DeepSeek-V3, we adopt the same strategy for DeepSeek-V4 series without modification.
 
 
 
-**MTP.** 与 V3 一样设置 MTP 模块与目标；既已在 V3 验证，V4 原样沿用。
+**MTP.** 与 V3 一样设置 MTP 模块与目标; 既已在 V3 验证, V4 原样沿用.
 
 ### 2.2. Manifold-Constrained Hyper-Connections 流形约束超连接
 
@@ -294,7 +294,7 @@ As shown in Figure 2, DeepSeek-V4 series incorporate Manifold-Constrained Hyper-
 
 
 
-如图 2，V4 用 mHC 加固相邻 Transformer 块之间的常规残差。相对朴素 Hyper-Connections(HC)，mHC 的核心是把残差映射约束到特定流形上：跨层信号传播更稳，表达力仍在。下面先简述标准 HC，再写为稳住训练如何设计 mHC。
+如图 2, V4 用 mHC 加固相邻 Transformer 块之间的常规残差. 相对朴素 Hyper-Connections(HC), mHC 的核心是把残差映射约束到特定流形上: 跨层信号传播更稳, 表达力仍在. 下面先简述标准 HC, 再写为稳住训练如何设计 mHC.
 
 **Standard Hyper-Connections.** The standard HC expands the width of the residual stream by a factor of $n _ { \mathrm { h c } } . $ Specifically, the shape of the residual stream is expanded from $\mathbb { R } ^ { d }$ to $\mathbb { R } ^ { n _ { \mathrm { h c } } \times d } , $ where 𝑑 is the hidden size of the actual layer input. Let $X _ { l } = [ \mathbf { x } _ { l , 1 } ; \dot { \cdots } ; \mathbf { x } _ { l , n _ { \mathrm { h c } } } ] ^ { T } \in \mathbb { R } ^ { n _ { \mathrm { h c } } \times d }$ be the residual state before the 𝑙-th layer. HC introduces three linear mappings: an input mapping $A _ { l } \in \mathbb { R } ^ { 1 \times n _ { \mathrm { h c } } }$ , a residual transformation $B _ { l } \in \mathbb { R } ^ { n _ { \mathrm { h c } } \times n _ { \mathrm { h c } } }$ , and an output mapping $\boldsymbol { C _ { l } } \overset { \circ } { \in } \mathbb { R } ^ { n _ { \mathrm { h c } } \times \bar { 1 } }$ The update of the residual state is then formulated as:
 
@@ -306,7 +306,7 @@ where $\mathcal { F } _ { l }$ denotes the 𝑙-th layer $( \mathbf { e . g . } 
 
 
 
-**标准超连接。** 标准 HC 把残差流宽度扩 $n_{\mathrm{hc}}$ 倍：从 $\mathbb{R}^{d}$ 扩到 $\mathbb{R}^{n_{\mathrm{hc}}\times d}$，$d$ 是真实层输入隐宽。第 $l$ 层前残差态为 $X_l$. HC 引入三个线性映射：输入映射 $A_l$，残差变换 $B_l$，输出映射 $C_l$，更新如式（1）。$\mathcal{F}_l$ 是第 $l$ 层（如 MoE），输入输出都是 $\mathbb{R}^{d}$。真实层输入 $A_l X_l$ 仍是 $d$ 维，因此加宽后的残差
+**标准超连接.** 标准 HC 把残差流宽度扩 $n_{\mathrm{hc}}$ 倍: 从 $\mathbb{R}^{d}$ 扩到 $\mathbb{R}^{n_{\mathrm{hc}}\times d}$, $d$ 是真实层输入隐宽. 第 $l$ 层前残差态为 $X_l$. HC 引入三个线性映射: 输入映射 $A_l$, 残差变换 $B_l$, 输出映射 $C_l$, 更新如式 (1). $\mathcal{F}_l$ 是第 $l$ 层(如 MoE), 输入输出都是 $\mathbb{R}^{d}$. 真实层输入 $A_l X_l$ 仍是 $d$ 维, 因此加宽后的残差
 
 <!-- page 8 of 58 -->
 
@@ -314,7 +314,7 @@ width does not influence the design of the inner layers. HC decouples the residu
 
 
 
-宽度并不改动内层设计。HC 把残差宽度与真实隐宽解耦，多了一条几乎不费算力的缩放轴（$n_{\mathrm{hc}}$ 通常远小于 $d$）。问题是：多层堆叠时训练经常数值不稳，HC 很难继续放大。
+宽度并不改动内层设计. HC 把残差宽度与真实隐宽解耦, 多了一条几乎不费算力的缩放轴($n_{\mathrm{hc}}$ 通常远小于 $d$). 问题是: 多层堆叠时训练经常数值不稳, HC 很难继续放大.
 
 **Manifold-Constrained Residual Mapping.** The core innovation of mHC is to constrain the residual mapping matrix $B _ { l }$ to the manifold of doubly stochastic matrices (the Birkhoff polytope) M, and thus enhance the stability of signal propagation across layers:
 
@@ -326,7 +326,7 @@ This constraint ensures that the spectral norm of the mapping matrix $\| B _ { l
 
 
 
-**流形约束残差映射。** mHC 的核心是把 $B_l$ 约束到双随机矩阵流形（Birkhoff 多面体）$\mathcal{M}$，如式（2）。于是谱范数 $\|B_l\|_2\leqslant 1$，残差变换非扩张，前向与反向都更稳；$\mathcal{M}$ 对乘法封闭，深堆 mHC 仍稳。$A_l$，$C_l$ 再用 Sigmoid 压成非负有界，避免信号相消。
+**流形约束残差映射.** mHC 的核心是把 $B_l$ 约束到双随机矩阵流形(Birkhoff 多面体)$\mathcal{M}$, 如式 (2). 于是谱范数 $\|B_l\|_2\leqslant 1$, 残差变换非扩张, 前向与反向都更稳; $\mathcal{M}$ 对乘法封闭, 深堆 mHC 仍稳. $A_l$, $C_l$ 再用 Sigmoid 压成非负有界, 避免信号相消.
 
 **Dynamic Parameterization.** The parameters of three linear mappings are dynamically generated, which are decomposed into a dynamic (input-dependent) component and a static (input-independent) component. Given the input $\bar { X _ { l } } \in \mathbb { R } ^ { n _ { \mathrm { h c } } \times d }$ , it is first flattened and normalized: $\hat{X}_{l} = \hat{ RMSNorm }(\hat{vec(X_{l})}) \in \mathbb{R}^{1 \times n_{hc}d}$ . Then, we follow the conventional HC to generate the unconstrained raw parameters $\tilde { A } _ { l } \in \mathbb { R } ^ { 1 \times n _ { \mathrm { h c } } } , \tilde { B } _ { l } \in \mathbb { R } ^ { n _ { \mathrm { h c } } \times n _ { \mathrm { h c } } }$ , and $\tilde { C } _ { l } \in \mathbb { R } ^ { n _ { \mathrm { h c } } \times 1 }$
 
@@ -346,7 +346,7 @@ where $W _ { l } ^ { \mathrm { p r e } } , W _ { l } ^ { \mathrm { p o s t } } \
 
 
 
-**动态参数化。** 三个线性映射由「输入相关动态项 + 输入无关静态项」生成。先把 $X_l$ 展平并 RMSNorm，再按式（3）–(5) 生成无约束原始参数 $\tilde A_l, \tilde B_l, \tilde C_l$. $W$ 学动态分量，$S$ 是静态偏置，$\alpha$ 是小初值的可学习门控；$\mathrm{Mat}(\cdot)$ 把 $1\times n_{\mathrm{hc}}^2$ 向量收成 $n_{\mathrm{hc}}\times n_{\mathrm{hc}}$ 矩阵。
+**动态参数化.** 三个线性映射由「输入相关动态项 + 输入无关静态项」生成. 先把 $X_l$ 展平并 RMSNorm, 再按式 (3)–(5) 生成无约束原始参数 $\tilde A_l, \tilde B_l, \tilde C_l$. $W$ 学动态分量, $S$ 是静态偏置, $\alpha$ 是小初值的可学习门控; $\mathrm{Mat}(\cdot)$ 把 $1\times n_{\mathrm{hc}}^2$ 向量收成 $n_{\mathrm{hc}}\times n_{\mathrm{hc}}$ 矩阵.
 
 **Applying Parameter Constraints.** After obtaining the unconstrained raw parameters $\tilde { A } _ { l } , \tilde { B } _ { l } , \tilde { C } _ { l } , $ we then apply constraints described earlier to them to enhance the numerical stability. To be specific, for the input and output mappings, we employ a Sigmoid function $\sigma ( \cdot )$ to ensure their non-negativity and boundedness:
 
@@ -368,7 +368,7 @@ where $\mathcal { T }$ and $\mathcal { T } _ { c }$ denote row and column normal
 
 
 
-**施加参数约束。** 得到原始参数后，输入/输出映射用 Sigmoid：式（6）–(7)。残差映射 $\tilde B_l$ 用 Sinkhorn-Knopp 投到双随机流形：先 $\exp$ 保正，再交替行列归一化（式（8）），迭代到 $t_{\max}=20$。
+**施加参数约束.** 得到原始参数后, 输入/输出映射用 Sigmoid: 式 (6)–(7). 残差映射 $\tilde B_l$ 用 Sinkhorn-Knopp 投到双随机流形: 先 $\exp$ 保正, 再交替行列归一化(式 (8)), 迭代到 $t_{\max}=20$.
 
 <!-- page 9 of 58 -->
 
@@ -378,7 +378,7 @@ Figure 3 | Core architectures of CSA. It compresses the number of KV entries to 
 
 
 
-图 3｜CSA 核心结构：先把 KV 条目数压到 $1/m$，再做 DSA 加速；另加少量滑动窗口 KV，与选中的压缩 KV 一起补局部细粒度依赖。
+图 3｜CSA 核心结构: 先把 KV 条目数压到 $1/m$, 再做 DSA 加速; 另加少量滑动窗口 KV, 与选中的压缩 KV 一起补局部细粒度依赖.
 
 ### 2.3. Hybrid Attention with CSA and HCA CSA 与 HCA 混合注意力
 
@@ -386,7 +386,7 @@ As the context length reaches extreme scales, the attention mechanism emerges as
 
 
 
-上下文拉到极端尺度后，注意力会变成主导瓶颈。V4 设计 CSA 与 HCA 两种高效注意力，并交错混用，显著压低长文本注意力成本。CSA 同时用压缩与稀疏：每 $m$ 个 token 的 KV 压成一条，再做 DSA-- 每个 query 只看 $k$ 条压缩 KV. HCA 追求更狠压缩：每 $m'\gg m$ 个 token 合成一条。两者混排大幅抬长上下文效率，百万 token 才真正可落地。细节见下文；开源实现<sup>1</sup>可消歧。
+上下文拉到极端尺度后, 注意力会变成主导瓶颈. V4 设计 CSA 与 HCA 两种高效注意力, 并交错混用, 显著压低长文本注意力成本. CSA 同时用压缩与稀疏: 每 $m$ 个 token 的 KV 压成一条, 再做 DSA-- 每个 query 只看 $k$ 条压缩 KV. HCA 追求更狠压缩: 每 $m'\gg m$ 个 token 合成一条. 两者混排大幅抬长上下文效率, 百万 token 才真正可落地. 细节见下文; 开源实现<sup>1</sup>可消歧.
 
 #### 2.3.1. Compressed Sparse Attention 压缩稀疏注意力
 
@@ -396,7 +396,7 @@ The core architecture of CSA is illustrated in Figure 3, which first compresses 
 
 
 
-图 3 给出 CSA：先每 $m$ 条 KV 压成一条，再上 DSA。**压缩 KV 条目。** 输入隐态 $H\in\mathbb{R}^{n\times d}$。先算两路 KV 条目 $C^a, C^b$ 与压缩权重 $Z^a, Z^b$，头维为 $c$。
+图 3 给出 CSA: 先每 $m$ 条 KV 压成一条, 再上 DSA. **压缩 KV 条目.** 输入隐态 $H\in\mathbb{R}^{n\times d}$. 先算两路 KV 条目 $C^a, C^b$ 与压缩权重 $Z^a, Z^b$, 头维为 $c$.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>1</sup>[https://huggingface. co/deepseek-ai/DeepSeek-V4-Pro/tree/main/inference](https://huggingface. co/deepseek-ai/DeepSeek-V4-Pro/tree/main/inference)</span></small>
 
@@ -426,7 +426,7 @@ where $\odot$ denotes the Hadamard product; $\mathrm{Softmax}_{\mathrm{row}}(\cd
 
 
 
-头维 $c$。式（9）–(10) 给出两路 KV 与压缩权重。再按压缩权重与可学习位置偏置 $B^a, B^b$，把每 $m$ 条压成一条，得 $C^{\mathrm{Comp}}$，如式（11）–(12). $\odot$ 是 Hadamard 积；行 Softmax 在 $Z^a$ 与 $Z^b$ 合计 $2m$ 个元素上归一。$i=0$ 时 $C^b$ 支路用 $-\infty$ / 零填充。每条压缩条目看似来自 $2m$ 条，但相邻块在 $C^a/C^b$ 索引上重叠，因此序列长度实际压到 $1/m$。
+头维 $c$. 式 (9)–(10) 给出两路 KV 与压缩权重. 再按压缩权重与可学习位置偏置 $B^a, B^b$, 把每 $m$ 条压成一条, 得 $C^{\mathrm{Comp}}$, 如式 (11)–(12). $\odot$ 是 Hadamard 积; 行 Softmax 在 $Z^a$ 与 $Z^b$ 合计 $2m$ 个元素上归一. $i=0$ 时 $C^b$ 支路用 $-\infty$ / 零填充. 每条压缩条目看似来自 $2m$ 条, 但相邻块在 $C^a/C^b$ 索引上重叠, 因此序列长度实际压到 $1/m$.
 
 **Lightning Indexer for Sparse Selection.** After obtaining the compressed KV entries $C ^ { \mathrm { C o m p } } . $ CSA applies the DSA strategy to select top-k compressed KV entries for core attention. First, CSA performs the same compression operation used for $C ^ { \mathrm { C o m p } }$ to get compressed indexer keys $\widetilde { K ^ { \mathrm { I C o m p } } \in \mathbb { R } ^ { \frac { n } { m } \times c ^ { I } } }$ , where $c ^ { I }$ is the indexer head dimension. Then, for a query token 𝑡, we produce the indexer queries $\{ \mathbf { q } _ { t , 1 } ^ { I } ; \mathbf { q } _ { t , 2 } ^ { I } ; . . . ; \mathbf { q } _ { t , n _ { h } ^ { I } } ^ { I } \}$ in a low-rank manner:
 
@@ -456,7 +456,7 @@ $$
 
 
 
-**Lightning Indexer 做稀疏选择。** 得到 $C^{\mathrm{Comp}}$ 后，用 DSA 选 top-k 压缩块做核心注意力。先同样压缩得到 indexer keys；query 侧低秩产出 indexer queries，式（13）–(14)。索引分数 $I_{t, s}$ 见式（15）–(16)；再按 top-k 留下 $C_t^{\mathrm{SprsComp}}$，式（17）。
+**Lightning Indexer 做稀疏选择.** 得到 $C^{\mathrm{Comp}}$ 后, 用 DSA 选 top-k 压缩块做核心注意力. 先同样压缩得到 indexer keys; query 侧低秩产出 indexer queries, 式 (13)–(14). 索引分数 $I_{t, s}$ 见式 (15)–(16); 再按 top-k 留下 $C_t^{\mathrm{SprsComp}}$, 式 (17).
 
 <!-- page 11 of 58 -->
 
@@ -466,7 +466,7 @@ Figure 4 | Core architectures of HCA. It performs heavier compression, where the
 
 
 
-图 4｜HCA 核心结构：压缩更狠，把 $m'\gg m$ 个 token 的 KV 合成一条；同样加少量滑动窗口 KV 补局部依赖。
+图 4｜HCA 核心结构: 压缩更狠, 把 $m'\gg m$ 个 token 的 KV 合成一条; 同样加少量滑动窗口 KV 补局部依赖.
 
 **Shared Key-Value MQA.** After selecting the sparse KV entries, CSA then performs core attention in a Multi-Query Attention (MQA) (Shazeer, 2019) manner, where each compressed KV entry in $C _ { t } ^ { \mathrm { S p r s C o m p } }$ serves as both attention key and value. To be specific, for a query token $t , $ we first produce attention queries $\{ \pmb { \mathbf { q } } _ { t , 1 } ; \pmb { \mathbf { q } } _ { t , 2 } ; . . . ; \pmb { \mathbf { q } } _ { t , n _ { h } } \}$ from the compressed latent vector $\mathbf { c } _ { t } ^ { Q } ; $
 
@@ -484,13 +484,13 @@ where $\mathbf { o } _ { t , i } \in \mathbb { R } ^ { c }$ is the core attentio
 
 
 
-**共享 KV 的 MQA.** 选出稀疏 KV 后，核心注意力走 MQA：压缩条目同时当 key 与 value. query 由共享潜变量 $\mathbf{c}_t^Q$ 上投影得到，式（18）–(19). $\mathbf{c}_t^Q$ 与 indexer 共用。
+**共享 KV 的 MQA.** 选出稀疏 KV 后, 核心注意力走 MQA: 压缩条目同时当 key 与 value. query 由共享潜变量 $\mathbf{c}_t^Q$ 上投影得到, 式 (18)–(19). $\mathbf{c}_t^Q$ 与 indexer 共用.
 
 **Grouped Output Projection.** In the configuration of DeepSeek-V4, $c n _ { h }$ is quite large. Therefore, directly projecting the outputs of the core attention operation $[ \mathbf { o } _ { t , 1 } ; \mathbf { o } _ { t , 2 } ; . . . ; \mathbf { o } _ { t , n _ { h } } ] = \mathbf { o } _ { t } \in \mathbb { R } ^ { c n _ { h } }$ to a 𝑑-dimensional hidden state will impose a substantial computational burden. To mitigate this cost, we design a grouped output projection strategy. To be specific, we first split $n _ { h }$ outputs into 𝑔 groups, and then for each group of output $\mathbf { o } _ { t , i } ^ { G } \in \mathbb { R } ^ { c \frac { n _ { h } } { g } }$ , we project it to a $d _ { g 1 }$ -dimensional intermediate output $\mathbf { o } _ { t , i } ^ { G ^ { \prime } } \in \mathbb { R } ^ { d _ { g } }$ , where $\begin{array} { r } { d _ { g } \; < \; c \frac { n _ { h } } { g } } \end{array}$ . Finally, we project the intermediate output $[ \mathbf { o } _ { t , 1 } ^ { G ^ { \prime } } ; \mathbf { o } _ { t , 2 } ^ { G ^ { \prime } } ; . . . ; \mathbf { o } _ { t , g } ^ { G ^ { \prime } } ] \in \mathbb { R } ^ { d _ { g } g }$ to the final attention output $\hat { \mathbf { o } } _ { t } \in \mathbb { R } ^ { d }$
 
 
 
-**分组输出投影。** V4 配置下 $c n_h$ 很大，直接投回 $d$ 维太贵。于是把 $n_h$ 路输出拆成 $g$ 组，每组先压到 $d_g$ 维中间结果（$d_g < c n_h/g$），再投到最终 $\hat{\mathbf{o}}_t\in\mathbb{R}^d$。
+**分组输出投影.** V4 配置下 $c n_h$ 很大, 直接投回 $d$ 维太贵. 于是把 $n_h$ 路输出拆成 $g$ 组, 每组先压到 $d_g$ 维中间结果($d_g < c n_h/g$), 再投到最终 $\hat{\mathbf{o}}_t\in\mathbb{R}^d$.
 
 #### 2.3.2. Heavily Compressed Attention 重度压缩注意力
 
@@ -500,7 +500,7 @@ The core architecture of HCA is illustrated in Figure 4, which compresses the KV
 
 
 
-图 4 给出 HCA：压缩更狠，但不做稀疏注意力。**压缩 KV.** 大体类似 CSA，但压缩率 $m'\gg m$，且不做重叠
+图 4 给出 HCA: 压缩更狠, 但不做稀疏注意力. **压缩 KV.** 大体类似 CSA, 但压缩率 $m'\gg m$, 且不做重叠
 
 <!-- page 12 of 58 -->
 
@@ -528,7 +528,7 @@ Through this compression operation, HCA compresses the sequence length to $\frac
 
 
 
-压缩。式（20）–(23)：单路 KV + 权重，每 $m'$ 条压成一条，序列长变为 $1/m'$。
+压缩. 式 (20)–(23): 单路 KV + 权重, 每 $m'$ 条压成一条, 序列长变为 $1/m'$.
 
 **Shared Key-Value MQA and Grouped Output Projection.** HCA also employs the shared KV MQA and grouped output projection strategies as CSA does. After the KV compression, for a query token 𝑡, HCA first produces attention queries $\{ \pmb { \mathbf { q } } _ { t , 1 } ; \pmb { \mathbf { q } } _ { t , 2 } ; . . . ; \pmb { \mathbf { q } } _ { t , n _ { h } } \}$ in a low-rank manner:
 
@@ -550,7 +550,7 @@ where $\mathbf { o } _ { t , i } \in \mathbb { R } ^ { c }$ is the core attentio
 
 
 
-**共享 KV MQA 与分组输出投影。** 与 CSA 相同套路：低秩出 query(式（24）–(25))，对全部 $C^{\mathrm{Comp}}$ 做稠密 MQA（式（26）），再分组投影到 $d$ 维。
+**共享 KV MQA 与分组输出投影.** 与 CSA 相同套路: 低秩出 query(式 (24)–(25)), 对全部 $C^{\mathrm{Comp}}$ 做稠密 MQA(式 (26)), 再分组投影到 $d$ 维.
 
 #### 2.3.3. Other Details 其他细节
 
@@ -560,7 +560,7 @@ In addition to the core architectures of CSA and HCA described above, our hybrid
 
 
 
-除核心结构外，混注还有若干技巧；上文为清爽略过，这里只讲要点，细枝末节以开源实现为准。**Query 与压缩 KV 归一化。** 核心注意力前，对每个 query 头与唯一压缩 KV 头再做 RMSNorm，避免 logits 爆炸，也利于稳住训练。
+除核心结构外, 混注还有若干技巧; 上文为清爽略过, 这里只讲要点, 细枝末节以开源实现为准. **Query 与压缩 KV 归一化.** 核心注意力前, 对每个 query 头与唯一压缩 KV 头再做 RMSNorm, 避免 logits 爆炸, 也利于稳住训练.
 
 <!-- page 13 of 58 -->
 
@@ -578,7 +578,7 @@ where $s _ { h , i , j } , z _ { h , i , j } \in \mathbb { R }$ denote the atten
 
 
 
-**部分 RoPE.** query，KV 与核心注意力输出都只对末 64 维上 RoPE. KV 兼作 key/value 时，朴素输出会带绝对位置；于是对每个 $\mathbf{o}_{t, i}$ 末 64 维再施位置 $-i$ 的 RoPE，把贡献收成相对位置。**滑动窗口支路。** 严格因果下，query 看不到本压缩块内其他 token，而近邻通常更相关-- 于是另产最近 $n_{\mathrm{win}}$ 条未压缩 KV，与压缩 KV 一并进核心注意力。**Attention Sink.** 可学习 sink logits 加进分母，式（27），让总注意力质量不必等于 1，甚至可接近 0。
+**部分 RoPE.** query, KV 与核心注意力输出都只对末 64 维上 RoPE. KV 兼作 key/value 时, 朴素输出会带绝对位置; 于是对每个 $\mathbf{o}_{t, i}$ 末 64 维再施位置 $-i$ 的 RoPE, 把贡献收成相对位置. **滑动窗口支路.** 严格因果下, query 看不到本压缩块内其他 token, 而近邻通常更相关-- 于是另产最近 $n_{\mathrm{win}}$ 条未压缩 KV, 与压缩 KV 一并进核心注意力. **Attention Sink.** 可学习 sink logits 加进分母, 式 (27), 让总注意力质量不必等于 1, 甚至可接近 0.
 
 #### 2.3.4. Efficiency Discussion 效率讨论
 
@@ -588,7 +588,7 @@ Taking BF16 GQA8 (Ainslie et al., 2023) with a head dimension of 128 as the base
 
 
 
-靠 CSA/HCA 混注与低精度存算，注意力 FLOPs 与 KV 体积在长上下文上都很省。其一，KV 混存：RoPE 维 BF16，其余 FP8，相对纯 BF16 近乎腰斩。其二，Lightning Indexer 内注意力算 FP4，极端长上下文更快。其三，相对 V3.2 选用更小 attention top-k，短中文更省。最重要的是压缩与混注本身大幅砍 KV 与 FLOPs。以 BF16 GQA8，头维 128 为基线，1M 设定下 V4 系列 KV 可压到约 2%。
+靠 CSA/HCA 混注与低精度存算, 注意力 FLOPs 与 KV 体积在长上下文上都很省. 其一, KV 混存: RoPE 维 BF16, 其余 FP8, 相对纯 BF16 近乎腰斩. 其二, Lightning Indexer 内注意力算 FP4, 极端长上下文更快. 其三, 相对 V3.2 选用更小 attention top-k, 短中文更省. 最重要的是压缩与混注本身大幅砍 KV 与 FLOPs. 以 BF16 GQA8, 头维 128 为基线, 1M 设定下 V4 系列 KV 可压到约 2%.
 
 <!-- page 14 of 58 -->
 
@@ -608,13 +608,13 @@ end for
 
 
 
-算法 1｜DeepSeek-V4 的 Muon 优化器（步骤含义见行内注释）。
+算法 1｜DeepSeek-V4 的 Muon 优化器(步骤含义见行内注释).
 
 Moreover, even when compared with DeepSeek-V3.2 (DeepSeek-AI, 2025) - already an efficient baseline - DeepSeek-V4 series still exhibits substantial advantages in efficiency. A comparison of their inference FLOPs and KV cache size is provided in the right part of Figure 1.
 
 
 
-即便对照已经很省的 V3.2，V4 效率优势仍大；推理 FLOPs 与 KV 体积对比见图 1 右。
+即便对照已经很省的 V3.2, V4 效率优势仍大; 推理 FLOPs 与 KV 体积对比见图 1 右.
 
 ### 2.4. Muon Optimizer Muon 优化器
 
@@ -634,7 +634,7 @@ Our hybrid Newton-Schulz performs 10 iterations over two distinct stages. During
 
 
 
-多数模块用 Muon，因收敛更快，训练更稳；完整流程见算法 1。**基本配置。** Embedding，预测头，mHC 静态偏置与门控，全部 RMSNorm 仍留 AdamW；其余走 Muon. Muon 侧同样 weight decay，Nesterov，并把更新矩阵 RMS 缩放以便复用 AdamW 超参；正交化改用混合 Newton-Schulz。**混合 Newton-Schulz.** 目标近似正交化到 $UV^T$，先 Frobenius 归一，再迭代式（28）。共 10 步：前 8 步系数 $(3.4445,-4.7750, 2.0315)$ 快收敛，后 2 步 $(2,-1.5, 0.5)$ 把奇异值钉到 1。**避免注意力 logits 爆炸。** V4 已能对 query/KV 直接 RMSNorm，故 Muon 不用 QK-Clip。
+多数模块用 Muon, 因收敛更快, 训练更稳; 完整流程见算法 1. **基本配置.** Embedding, 预测头, mHC 静态偏置与门控, 全部 RMSNorm 仍留 AdamW; 其余走 Muon. Muon 侧同样 weight decay, Nesterov, 并把更新矩阵 RMS 缩放以便复用 AdamW 超参; 正交化改用混合 Newton-Schulz. **混合 Newton-Schulz.** 目标近似正交化到 $UV^T$, 先 Frobenius 归一, 再迭代式 (28). 共 10 步: 前 8 步系数 $(3.4445,-4.7750, 2.0315)$ 快收敛, 后 2 步 $(2,-1.5, 0.5)$ 把奇异值钉到 1. **避免注意力 logits 爆炸.** V4 已能对 query/KV 直接 RMSNorm, 故 Muon 不用 QK-Clip.
 
 <!-- page 15 of 58 -->
 
@@ -646,13 +646,13 @@ Mixture-of-Experts (MoE) can be accelerated via Expert Parallelism (EP). However
 
 
 
-MoE 可用专家并行（EP）加速，但跨节点通信复杂，对互联带宽与延迟要求高。为缓解通信瓶颈，在更低带宽下仍抬端到端性能，提出细粒度 EP：把通信与计算融进单条流水内核。
+MoE 可用专家并行(EP)加速, 但跨节点通信复杂, 对互联带宽与延迟要求高. 为缓解通信瓶颈, 在更低带宽下仍抬端到端性能, 提出细粒度 EP: 把通信与计算融进单条流水内核.
 
 **Communication Latency Can Be Hidden.** The key insight of our EP scheme is that the communication latency can be effectively hidden beneath computation in MoE layers. As shown in Figure 5, in DeepSeek-V4 series, each MoE layer can be decomposed mainly into four stages: two communication-bound stages, <u>Dispatch</u> and <u>Combine</u>, and two computation-bound stages, <u>Linear-1</u> and <u>Linear-2</u>. Our profiling reveals that within a single MoE layer, the total time of communication is less than that of the computation. Therefore, after fusing communication and computation into a unified pipeline, computation remains the dominant bottleneck, implying that the system can tolerate lower interconnect bandwidth without degrading end-to-end performance.
 
 
 
-**通信延迟可被隐藏。** 关键在于：通信延迟可藏进 MoE 层计算底下。如图 5，每层大致四段-- 通信主导的 Dispatch / Combine，计算主导的 Linear-1 / Linear-2。单层通信总时间小于计算；融成统一流水后瓶颈仍在计算，因而可容忍更低互联带宽。
+**通信延迟可被隐藏.** 关键在于: 通信延迟可藏进 MoE 层计算底下. 如图 5, 每层大致四段-- 通信主导的 Dispatch / Combine, 计算主导的 Linear-1 / Linear-2. 单层通信总时间小于计算; 融成统一流水后瓶颈仍在计算, 因而可容忍更低互联带宽.
 
 ![Image block](images/p15-figure-5-illustration-of-our-ep-scheme-with-related.png)
 
@@ -660,13 +660,13 @@ Figure 5 | Illustration of our EP scheme with related works. Comet (Zhang et al.
 
 
 
-图 5｜本 EP 方案与相关工作对照。Comet 分别重叠 Dispatch–Linear-1 与 Linear-2–Combine；本方案把专家切成 wave 调度，重叠更细。理论加速按 DeepSeek-V4-Flash 配置估算。
+图 5｜本 EP 方案与相关工作对照. Comet 分别重叠 Dispatch–Linear-1 与 Linear-2–Combine; 本方案把专家切成 wave 调度, 重叠更细. 理论加速按 DeepSeek-V4-Flash 配置估算.
 
 **Fine-Grained EP Scheme.** To further lower the interconnect bandwidth requirement and amplify the benefits of overlapping, we introduce a finer-grained expert partitioning scheme. Inspired by many related works (Aimuyo et al., 2025; Zhang et al., 2025b), we split and schedule the experts into <u>waves</u>. Each wave consists of a small portion of experts. As soon as all experts within the wave have completed their communication, computation can commence immediately without waiting for other experts. In steady state, computation of current wave, token transfer for the next wave, and result sending of completed experts all proceed concurrently, as demonstrated in Figure 5. This forms a fine-grained pipeline among experts, keeping both computation and communication continuous throughout the wave. The wave-based scheduling speeds up the
 
 
 
-**细粒度 EP.** 为再降带宽门槛，放大重叠收益，把专家切成 wave 调度：一波内通信齐了立刻开算，不必等其他专家。稳态下，当前波计算，下一波传 token，已完成专家回送结果三者并行（图 5），形成专家间细流水。wave 调度还能加速
+**细粒度 EP.** 为再降带宽门槛, 放大重叠收益, 把专家切成 wave 调度: 一波内通信齐了立刻开算, 不必等其他专家. 稳态下, 当前波计算, 下一波传 token, 已完成专家回送结果三者并行(图 5), 形成专家间细流水. wave 调度还能加速
 
 <!-- page 16 of 58 -->
 
@@ -674,7 +674,7 @@ performance on extreme cases such as Reinforcement Learning (RL) rollout, which 
 
 
 
-（接上页）RL rollout 这类长尾小 batch 的极端情形。
+(接上页)RL rollout 这类长尾小 batch 的极端情形.
 
 **Performance and Open-Sourced Mega-Kernel.** We validated the fine-grained EP scheme on both NVIDIA GPUs and HUAWEI Ascend NPUs platforms. Compared against strong non-fused baselines, it achieves 1.50 ∼ 1.73× speedup for general inference workloads, and up to 1.96× for latency-sensitive scenarios such as RL rollouts and high-speed agent serving. We have open-sourced the CUDA-based mega-kernel implementation named $\tilde { \mathbf { M e g a M o E } } ^ { 2 }$ as a component of DeepGEMM.
 
@@ -696,7 +696,7 @@ That is, each GBps of interconnect bandwidth suffices to hide the communication 
 
 
 
-**性能与开源 mega-kernel.** 在 NVIDIA GPU 与华为昇腾 NPU 上验证：相对强非融合基线，通用推理约 1.50~1.73×，RL rollout / 高速 agent 等延迟敏感场景最高约 1.96×. CUDA mega-kernel $\tilde{\mathbf{MegaMoE}}^2$ 已作为 DeepGEMM 组件开源。**观察与建议。** • **算通比**：能否完全重叠取决于算通比，而不只是带宽；对 Pro 可简化为 $C/B\leqslant 2d=6144$ FLOPs/Byte，即每 GBps 带宽约可藏住 6.1 TFLOP/s 计算-- 达标后继续堆带宽收益递减。• **功耗预算**：极端融合让算，存，网同时高负载，功耗限流会成瓶颈。• **通信原语**：现用 pull，避免细粒度 push 的通知延迟；未来若跨 GPU 信令更低延迟，push 才更自然。• **激活**：建议换无无指数，无除法的廉价逐元激活；同参预算下去掉 gate 投影还能放大中间维 $d$，再放松带宽门槛。
+**性能与开源 mega-kernel.** 在 NVIDIA GPU 与华为昇腾 NPU 上验证: 相对强非融合基线, 通用推理约 1.50~1.73×, RL rollout / 高速 agent 等延迟敏感场景最高约 1.96×. CUDA mega-kernel $\tilde{\mathbf{MegaMoE}}^2$ 已作为 DeepGEMM 组件开源. **观察与建议.** • **算通比**: 能否完全重叠取决于算通比, 而不只是带宽; 对 Pro 可简化为 $C/B\leqslant 2d=6144$ FLOPs/Byte, 即每 GBps 带宽约可藏住 6.1 TFLOP/s 计算-- 达标后继续堆带宽收益递减. • **功耗预算**: 极端融合让算, 存, 网同时高负载, 功耗限流会成瓶颈. • **通信原语**: 现用 pull, 避免细粒度 push 的通知延迟; 未来若跨 GPU 信令更低延迟, push 才更自然. • **激活**: 建议换无无指数, 无除法的廉价逐元激活; 同参预算下去掉 gate 投影还能放大中间维 $d$, 再放松带宽门槛.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>2</sup>[https://github. com/deepseek-ai/DeepGEMM/pull/304](https://github. com/deepseek-ai/DeepGEMM/pull/304)</span></small>
 
@@ -716,7 +716,7 @@ To this end, we integrate the Z3 SMT solver (De Moura and Bjørner, 2008) into T
 
 
 
-精细架构本会拆成数百个细粒度 ATen 算子；用 TileLang 写融合核替换绝大多数，省事又够快，验证期也能快速原型注意力变体。这些核对架构研发，大规模训练与线上推理都关键。作为 DSL，TileLang 在开发效率与运行时性能之间取平衡，同一代码库可深挖迭代；并与社区紧密协作。**Host Codegen 降调用开销。** 加速器越快，CPU 编排越显眼；小而精的核容易被 Python 侧契约检查拖死。Host Codegen 把主路径宿主逻辑沉到生成代码：IR 级共生成 device kernel 与轻量 launcher，再落到基于 TVM-FFI 的宿主源，零拷贝互操作；运行时校验移出 Python 路径，单次调用从数十/数百微秒降到不到 1 微秒。**SMT 辅助形式化整数分析。** 布局推断，冒险检测，边界分析需要强整数推理；接入 Z3，把表达式映到 QF_NIA，线性和非线性索引都能处理，编译额外开销约数秒，向量化，barrier，简化等多遍受益。
+精细架构本会拆成数百个细粒度 ATen 算子; 用 TileLang 写融合核替换绝大多数, 省事又够快, 验证期也能快速原型注意力变体. 这些核对架构研发, 大规模训练与线上推理都关键. 作为 DSL, TileLang 在开发效率与运行时性能之间取平衡, 同一代码库可深挖迭代; 并与社区紧密协作. **Host Codegen 降调用开销.** 加速器越快, CPU 编排越显眼; 小而精的核容易被 Python 侧契约检查拖死. Host Codegen 把主路径宿主逻辑沉到生成代码: IR 级共生成 device kernel 与轻量 launcher, 再落到基于 TVM-FFI 的宿主源, 零拷贝互操作; 运行时校验移出 Python 路径, 单次调用从数十/数百微秒降到不到 1 微秒. **SMT 辅助形式化整数分析.** 布局推断, 冒险检测, 边界分析需要强整数推理; 接入 Z3, 把表达式映到 QF_NIA, 线性和非线性索引都能处理, 编译额外开销约数秒, 向量化, barrier, 简化等多遍受益.
 
 <!-- page 18 of 58 -->
 
@@ -728,7 +728,7 @@ Our evaluation shows that these accuracy- and reproducibility-oriented design ch
 
 
 
-**数值精度与按位复现。** 生产里正确性与复现不亚于吞吐。默认关 fast-math；影响精度的近似只作显式 opt-in；要严格 IEEE-754 时用带舍入模式的 ieee_* 内建。对齐 NVCC 一类工具链的化简/下降规则，并用布局注解固定求值和累加顺序，以便与手写 CUDA 按位一致。评测显示保守默认下性能仍有竞争力，亦可按需放松数值约束换速度。
+**数值精度与按位复现.** 生产里正确性与复现不亚于吞吐. 默认关 fast-math; 影响精度的近似只作显式 opt-in; 要严格 IEEE-754 时用带舍入模式的 ieee_* 内建. 对齐 NVCC 一类工具链的化简/下降规则, 并用布局注解固定求值和累加顺序, 以便与手写 CUDA 按位一致. 评测显示保守默认下性能仍有竞争力, 亦可按需放松数值约束换速度.
 
 ### 3.3. High-Performance Batch-Invariant and Deterministic Kernel Libraries 高性能批不变与确定性内核库
 
@@ -742,7 +742,7 @@ To enable efficient training and inference, we develop a comprehensive set of hi
 
 
 
-为高效训练与推理，做了一整套高性能核；除功能与利用率外，还要预训练，后训练，推理按位对齐。于是实现端到端，按位批不变且确定的核，开销尽量小，便于调试，稳性分析与后训练行为一致。**批不变。** 任意 token 的输出不因其在 batch 内位置而变。挑战包括：• **注意力**：不能用 split-KV（会破批不变），但弃用又会严重 wave-quantization<sup>3</sup>。对策是双核解码：满波用单 SM 整序列核；末波用多 SM 核降延迟，并精心对齐累加顺序，再用 thread-block cluster 的分布式共享内存<sup>4</sup>跨 SM 交换-- 批不变开销可忽略。• **矩阵乘**：cuBLAS 做不到批不变，端到端换 DeepGEMM；小 batch 常用的 split-k 也不能保批不变，而这对 V4 很关键。
+为高效训练与推理, 做了一整套高性能核; 除功能与利用率外, 还要预训练, 后训练, 推理按位对齐. 于是实现端到端, 按位批不变且确定的核, 开销尽量小, 便于调试, 稳性分析与后训练行为一致. **批不变.** 任意 token 的输出不因其在 batch 内位置而变. 挑战包括: • **注意力**: 不能用 split-KV(会破批不变), 但弃用又会严重 wave-quantization<sup>3</sup>. 对策是双核解码: 满波用单 SM 整序列核; 末波用多 SM 核降延迟, 并精心对齐累加顺序, 再用 thread-block cluster 的分布式共享内存<sup>4</sup>跨 SM 交换-- 批不变开销可忽略. • **矩阵乘**: cuBLAS 做不到批不变, 端到端换 DeepGEMM; 小 batch 常用的 split-k 也不能保批不变, 而这对 V4 很关键.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>3</sup>[https://docs. nvidia. com/deeplearning/performance/dl-performance-matrix-multiplicat ion/index. html#wave-quant](https://docs. nvidia. com/deeplearning/performance/dl-performance-matrix-multiplication/index. html#wave-quant)</span></small>
 
@@ -762,7 +762,7 @@ Therefore, we abandon split-k in most scenarios, which, however, may cause perfo
 
 
 
-因此多数场景弃用 split-k，但可能掉速；再加一组优化，使矩阵乘在主要场景追平甚至超过标准 split-k. **确定性。** 便于排查软硬件问题，也便于在 loss 尖峰时定位数值原因。非确定性多来自原子加导致的累加顺序不定，主要出在反向：• **注意力反向**：不用 atomicAdd 攒 KV 梯度，改为每 SM 独立缓冲再全局确定性归约。• **MoE 反向**：单 rank 内预处理 token 序 + 多 rank 缓冲隔离，保证 EP 发送结果与反向累加序确定。• **mHC 矩阵乘**：输出维仅 24，小 batch 被迫 split-k；各 split 先分开写出，再在后续核里确定性归约。
+因此多数场景弃用 split-k, 但可能掉速; 再加一组优化, 使矩阵乘在主要场景追平甚至超过标准 split-k. **确定性.** 便于排查软硬件问题, 也便于在 loss 尖峰时定位数值原因. 非确定性多来自原子加导致的累加顺序不定, 主要出在反向: • **注意力反向**: 不用 atomicAdd 攒 KV 梯度, 改为每 SM 独立缓冲再全局确定性归约. • **MoE 反向**: 单 rank 内预处理 token 序 + 多 rank 缓冲隔离, 保证 EP 发送结果与反向累加序确定. • **mHC 矩阵乘**: 输出维仅 24, 小 batch 被迫 split-k; 各 split 先分开写出, 再在后续核里确定性归约.
 
 ### 3.4. FP4 Quantization-Aware Training FP4 量化感知训练
 
@@ -772,7 +772,7 @@ For MoE expert weights, following the common practice of QAT, the FP32 master we
 
 
 
-后训练引入 QAT，让模型适应量化带来的精度损失，服务侧加速并省显存。FP4(MXFP4)打在：（1）MoE 专家权重（显存大户）；（2）CSA indexer 的 QK 路径-- 缓存，加载，乘法全程 FP4，加速长上下文分数计算。索引分数 $I_{:,: }$ 再从 FP32 压到 BF16，top-k 选择器约 2×，KV 召回约 99.7%。专家权重：优化器维护的 FP32 主权重先量化到 FP4，再反量化回 FP8 计算；FP4→FP8 反量化无损失--E4M3 比 E2M1 多 2 位指数，动态范围更大，只要每个 FP8 量化块（128×128）内 FP4 子块（1×32）最大/最小 scale 比不超过阈值，细粒度 scale 就能被 FP8 吃掉。经验上当前权重满足该条件，因而整条 QAT 可直接复用既有 FP8 训练框架，
+后训练引入 QAT, 让模型适应量化带来的精度损失, 服务侧加速并省显存. FP4(MXFP4)打在: (1)MoE 专家权重(显存大户); (2)CSA indexer 的 QK 路径-- 缓存, 加载, 乘法全程 FP4, 加速长上下文分数计算. 索引分数 $I_{:,: }$ 再从 FP32 压到 BF16, top-k 选择器约 2×, KV 召回约 99.7%. 专家权重: 优化器维护的 FP32 主权重先量化到 FP4, 再反量化回 FP8 计算; FP4→FP8 反量化无损失--E4M3 比 E2M1 多 2 位指数, 动态范围更大, 只要每个 FP8 量化块(128×128)内 FP4 子块(1×32)最大/最小 scale 比不超过阈值, 细粒度 scale 就能被 FP8 吃掉. 经验上当前权重满足该条件, 因而整条 QAT 可直接复用既有 FP8 训练框架,
 
 <!-- page 20 of 58 -->
 
@@ -782,13 +782,13 @@ During the inference and rollout phases of RL training, which do not involve bac
 
 
 
-（接上页）无需改动。反向对前向同一套 FP8 权重求梯度并直接回传到 FP32 主权重，等价于量化路径上的 STE，也免去转置权重再量化。RL 的推理与 rollout 无反向，直接用真 FP4 权重而非仿真量化，使采样行为与线上一致，并真正减载，降显存；CSA indexer 的 QK 路径同理。
+(接上页)无需改动. 反向对前向同一套 FP8 权重求梯度并直接回传到 FP32 主权重, 等价于量化路径上的 STE, 也免去转置权重再量化. RL 的推理与 rollout 无反向, 直接用真 FP4 权重而非仿真量化, 使采样行为与线上一致, 并真正减载, 降显存; CSA indexer 的 QK 路径同理.
 
 ### 3.5. Training Framework 训练框架
 
 Our training framework is built upon the scalable and efficient infrastructure developed for DeepSeek-V3 (DeepSeek-AI, 2024). In training DeepSeek-V4, we inherit this robust foundation while introducing several key innovations to accommodate its novel architectural components - specifically the Muon optimizer, mHC, and the hybrid attention mechanism - while maintaining high training efficiency and stability.
 
-训练框架建立在为 DeepSeek-V3 开发的可扩展高效基础设施之上（DeepSeek-AI, 2024）。训练 V4 时沿用这套成熟底座，同时为其新结构组件（Muon 优化器，mHC，混合注意力机制）做了几处关键创新，且保持训练的高效与稳定。
+训练框架建立在为 DeepSeek-V3 开发的可扩展高效基础设施之上 (DeepSeek-AI, 2024). 训练 V4 时沿用这套成熟底座, 同时为其新结构组件 (Muon 优化器, mHC, 混合注意力机制) 做了几处关键创新, 且保持训练的高效与稳定.
 
 #### 3.5.1. Efficient Implementation of Muon Muon 的高效实现
 
@@ -802,11 +802,11 @@ Additionally, on each rank, consecutive parameters of identical shape will be au
 
 
 
-训练框架站在 V3 可扩展底座上，为 Muon，mHC，混注加创新，同时保效率与稳定。Muon 需要完整梯度矩阵，与面向逐元优化器的传统 ZeRO 冲突，于是做混合 bucket 分配：稠密参数限制 ZeRO 并行宽度，用背包把矩阵分到各 rank，bucket 对齐最大桶以便 reduce-scatter，填充开销通常 <10%；DP 超过 ZeRO 上限时，多余 DP 组冗余算 Muon 更新以换更小总 bucket. MoE 按专家独立更新：先展平各层各专家 SwiGLU 的 down，再 up，再 gate，填充使可均分且不切开逻辑独立矩阵；专家多，MoE 侧不限 ZeRO 宽度，填充可忽略。同形连续参数自动合并以批跑 Newton-Schulz；Newton-Schulz 用 BF16 GEMM 仍稳，于是跨 DP 同步的 MoE 梯度随机舍入到 BF16，通信量减半；为避免低精度加法累加误差，用 all-to-all 换本地梯度后再在各 rank 上 FP32 求和，替代树/环 reduce-scatter。
+训练框架站在 V3 可扩展底座上, 为 Muon, mHC, 混注加创新, 同时保效率与稳定. Muon 需要完整梯度矩阵, 与面向逐元优化器的传统 ZeRO 冲突, 于是做混合 bucket 分配: 稠密参数限制 ZeRO 并行宽度, 用背包把矩阵分到各 rank, bucket 对齐最大桶以便 reduce-scatter, 填充开销通常 <10%; DP 超过 ZeRO 上限时, 多余 DP 组冗余算 Muon 更新以换更小总 bucket. MoE 按专家独立更新: 先展平各层各专家 SwiGLU 的 down, 再 up, 再 gate, 填充使可均分且不切开逻辑独立矩阵; 专家多, MoE 侧不限 ZeRO 宽度, 填充可忽略. 同形连续参数自动合并以批跑 Newton-Schulz; Newton-Schulz 用 BF16 GEMM 仍稳, 于是跨 DP 同步的 MoE 梯度随机舍入到 BF16, 通信量减半; 为避免低精度加法累加误差, 用 all-to-all 换本地梯度后再在各 rank 上 FP32 求和, 替代树/环 reduce-scatter.
 
 <!-- page 21 of 58 -->
 
-#### 3.5.2. Cost-Effective and Memory-Efficient Implementation of mHC mHC 的省成本，省显存实现
+#### 3.5.2. Cost-Effective and Memory-Efficient Implementation of mHC mHC 的省成本, 省显存实现
 
 The introduction of mHC increases both activation memory consumption and communication volume between pipeline stages, compared with conventional residual connections. To mitigate these costs, we implement several optimization strategies.
 
@@ -814,7 +814,7 @@ Firstly, we carefully design and implement fused kernels of mHC for both trainin
 
 Collectively, these optimizations constrain the wall-time overhead of mHC to only 6.7% of the overlapped 1F1B pipeline stage. More details of the engineering optimization can be found in the dedicated mHC paper (Xie et al., 2026).
 
-mHC 相对传统残差连接会抬高激活显存与流水段间通信。对策三条：为训练与推理都写 mHC 融合 kernel；选择性重计算-- 重算层间大部分隐状态与全部归一化层输入，绕开算力密集操作，在省显存与算力开销间折中；改造 DualPipe 1F1B 重叠方案以消化新增流水通信，并让 mHC 部分操作并发执行。合计把 mHC 的 wall-time 开销压到重叠后 1F1B 流水段的 6.7%；工程细节见 mHC 专文（Xie et al., 2026）。
+mHC 相对传统残差连接会抬高激活显存与流水段间通信. 对策三条: 为训练与推理都写 mHC 融合 kernel; 选择性重计算-- 重算层间大部分隐状态与全部归一化层输入, 绕开算力密集操作, 在省显存与算力开销间折中; 改造 DualPipe 1F1B 重叠方案以消化新增流水通信, 并让 mHC 部分操作并发执行. 合计把 mHC 的 wall-time 开销压到重叠后 1F1B 流水段的 6.7%; 工程细节见 mHC 专文 (Xie et al., 2026).
 
 #### 3.5.3. Contextual Parallelism for Long-Context Attention 长上下文注意力的上下文并行
 
@@ -830,11 +830,11 @@ To achieve fine-grained control without sacrificing programming efficiency, we i
 
 
 
-相对常规残差，mHC 抬高激活显存与流水线级通信量。对策：训练/推理融合核；选择性重计算（多数层间隐态与全部归一化层输入重算，避开重算密集算子）；调整 DualPipe 1F1B 重叠以容纳更多流水通信并并行部分 mHC 算子。合计把 mHC 墙钟开销压到重叠 1F1B 段的约 6.7%；工程细节见 mHC 单独成篇。
+相对常规残差, mHC 抬高激活显存与流水线级通信量. 对策: 训练/推理融合核; 选择性重计算(多数层间隐态与全部归一化层输入重算, 避开重算密集算子); 调整 DualPipe 1F1B 重叠以容纳更多流水通信并并行部分 mHC 算子. 合计把 mHC 墙钟开销压到重叠 1F1B 段的约 6.7%; 工程细节见 mHC 单独成篇.
 
-常规 CP 按序列切 contiguous $s$ token，给 CSA/HCA 带来两难：多样本 packing 后各序列独立压缩，压缩 KV 长常不到 $s/m$ 且跨 rank 不一；压缩又要 $m$ 条连续 KV，可能跨 rank 边界。两阶段通信：rank $i$ 先把末 $m$ 条未压缩 KV 送给 $i+1$，对方与本地 $s$ 条一起压出定长 $s/m+1$（含 padding）；再 all-gather，用融合 select-and-pad 收成总长 $\mathrm{cp\_size}\cdot s/m$，padding 置尾。HCA 与 CSA indexer 的可见范围可按规则预计算；CSA 稀疏注意力则由 top-k 显式给出可见索引。
+常规 CP 按序列切 contiguous $s$ token, 给 CSA/HCA 带来两难: 多样本 packing 后各序列独立压缩, 压缩 KV 长常不到 $s/m$ 且跨 rank 不一; 压缩又要 $m$ 条连续 KV, 可能跨 rank 边界. 两阶段通信: rank $i$ 先把末 $m$ 条未压缩 KV 送给 $i+1$, 对方与本地 $s$ 条一起压出定长 $s/m+1$(含 padding); 再 all-gather, 用融合 select-and-pad 收成总长 $\mathrm{cp\_size}\cdot s/m$, padding 置尾. HCA 与 CSA indexer 的可见范围可按规则预计算; CSA 稀疏注意力则由 top-k 显式给出可见索引.
 
-常规激活 checkpoint 以整模块为粒度，重算成本与激活显存往往折得不好；手写整层前后向虽细，却丢掉自动微分便利。于是做张量级 checkpoint + 自动微分：开发者只需写前向并选择性标注
+常规激活 checkpoint 以整模块为粒度, 重算成本与激活显存往往折得不好; 手写整层前后向虽细, 却丢掉自动微分便利. 于是做张量级 checkpoint + 自动微分: 开发者只需写前向并选择性标注
 
 <!-- page 22 of 58 -->
 
@@ -860,9 +860,9 @@ To efficiently manage the heterogeneous KV caches arising from the hybrid attent
 
 
 
-（接上页）个别张量即可。框架用 TorchFX 追踪全图，对标注张量反向找最小重算子图，插在对应梯度计算前。相对手写无额外训练开销：重算时直接释放标注张量显存并复用重算结果指针，无 GPU 拷贝；因具体执行追踪，还能对共享底层存储的张量（如 reshape 输入输出）自动去重重算。
+(接上页)个别张量即可. 框架用 TorchFX 追踪全图, 对标注张量反向找最小重算子图, 插在对应梯度计算前. 相对手写无额外训练开销: 重算时直接释放标注张量显存并复用重算结果指针, 无 GPU 拷贝; 因具体执行追踪, 还能对共享底层存储的张量(如 reshape 输入输出)自动去重重算.
 
-推理框架大体继承 V3，差异主要在 KV Cache 管理。为管混注带来的异构 KV，定制布局（图 6）。**异构 KV 条目。** Lightning Indexer 额外维与主注意力嵌入尺寸不同；CSA/HCA 分别把序列压到 $1/m$，$1/m'$，层间 KV 体积不一；SWA 另有尺寸与命中/淘汰策略；压缩支路每 $m$ 个 token 才产一条，尾巴不够压时要把待压 token 与隐态放进缓冲，也纳入 KV 框架。**管理挑战。** 混注打破 PagedAttention 基本假设；纵有 Jenga，Hymba 等，仍有两大障碍妨碍把各层 KV 收进统一分页框架：多样缓存策略（如 SWA）；高性能注意力核对齐约束。
+推理框架大体继承 V3, 差异主要在 KV Cache 管理. 为管混注带来的异构 KV, 定制布局(图 6). **异构 KV 条目.** Lightning Indexer 额外维与主注意力嵌入尺寸不同; CSA/HCA 分别把序列压到 $1/m$, $1/m'$, 层间 KV 体积不一; SWA 另有尺寸与命中/淘汰策略; 压缩支路每 $m$ 个 token 才产一条, 尾巴不够压时要把待压 token 与隐态放进缓冲, 也纳入 KV 框架. **管理挑战.** 混注打破 PagedAttention 基本假设; 纵有 Jenga, Hymba 等, 仍有两大障碍妨碍把各层 KV 收进统一分页框架: 多样缓存策略(如 SWA); 高性能注意力核对齐约束.
 
 <!-- page 23 of 58 -->
 
@@ -872,7 +872,7 @@ Figure 6 | Illustration of the KV cache Layout for DeepSeek-V4. The KV cache is 
 
 
 
-图 6｜DeepSeek-V4 的 KV cache 布局：经典 KV(CSA/HCA)+ 状态缓存（SWA 与未压完尾巴）。状态缓存每请求固定块：SWA 段存最近 $n_{\mathrm{win}}$ 条，CSA/HCA 段存尚未可压的未压缩尾巴。经典 KV 每请求多块，每块覆盖 $\mathrm{lcm}(m, m')$ 个原始 token，产出 $k_1=\mathrm{lcm}(m, m')/m$ 条 CSA 压缩与 $k_2=\mathrm{lcm}(m, m')/m'$ 条 HCA 压缩。
+图 6｜DeepSeek-V4 的 KV cache 布局: 经典 KV(CSA/HCA)+ 状态缓存(SWA 与未压完尾巴). 状态缓存每请求固定块: SWA 段存最近 $n_{\mathrm{win}}$ 条, CSA/HCA 段存尚未可压的未压缩尾巴. 经典 KV 每请求多块, 每块覆盖 $\mathrm{lcm}(m, m')$ 个原始 token, 产出 $k_1=\mathrm{lcm}(m, m')/m$ 条 CSA 压缩与 $k_2=\mathrm{lcm}(m, m')/m'$ 条 HCA 压缩.
 
 For efficient KV cache management of DeepSeek-V4, we design corresponding strategies to overcome these two challenges.
 
@@ -886,7 +886,7 @@ When serving DeepSeek-V4, we leverage an on-disk KV cache storage mechanism to e
 
 
 
-为克服上述两障碍：把 SWA 与未压完尾巴当成状态空间模型，预分配固定有限的状态缓存池并动态分给各序列；稀疏注意力核与布局共设计，使每块原始 token 数可为 $\mathrm{lcm}(m, m')$ 的任意倍数。服务侧用磁盘 KV 消掉共享前缀的重复 prefilling；CSA/HCA 压缩条目与 SWA 未压缩条目分开管。
+为克服上述两障碍: 把 SWA 与未压完尾巴当成状态空间模型, 预分配固定有限的状态缓存池并动态分给各序列; 稀疏注意力核与布局共设计, 使每块原始 token 数可为 $\mathrm{lcm}(m, m')$ 的任意倍数. 服务侧用磁盘 KV 消掉共享前缀的重复 prefilling; CSA/HCA 压缩条目与 SWA 未压缩条目分开管.
 
 <!-- page 24 of 58 -->
 
@@ -912,9 +912,9 @@ For pre-training data, we largely follow the same pre-processing strategies of D
 
 
 
-CSA/HCA：磁盘存全部压缩 KV；命中前缀时复用至最后一个完整压缩块，尾巴不完整块仍需重算未压缩 KV（未存盘）。SWA 未压缩且层层都有，体积约是压缩 CSA/HCA 的 8 倍，故给三档磁盘策略：• **Full SWA Caching**：存全量，计算零冗余，但 SSD 上写多读少，不划算。• **Periodic Checkpointing**：每 $p$ 个 token 存一次最近 $n_{\mathrm{win}}$，命中后加载最近检查点再重算尾巴，$p$ 可调。• **Zero SWA Caching**：不存 SWA；借助已缓存 CSA/HCA，重算末 $n_{\mathrm{win}}\cdot L$ 个 token 即可恢复 $L$ 层模型末窗 SWA。按部署场景选档。
+CSA/HCA: 磁盘存全部压缩 KV; 命中前缀时复用至最后一个完整压缩块, 尾巴不完整块仍需重算未压缩 KV(未存盘). SWA 未压缩且层层都有, 体积约是压缩 CSA/HCA 的 8 倍, 故给三档磁盘策略: • **Full SWA Caching**: 存全量, 计算零冗余, 但 SSD 上写多读少, 不划算. • **Periodic Checkpointing**: 每 $p$ 个 token 存一次最近 $n_{\mathrm{win}}$, 命中后加载最近检查点再重算尾巴, $p$ 可调. • **Zero SWA Caching**: 不存 SWA; 借助已缓存 CSA/HCA, 重算末 $n_{\mathrm{win}}\cdot L$ 个 token 即可恢复 $L$ 层模型末窗 SWA. 按部署场景选档.
 
-在 V3 语料上追求更多样，更高质，有效上下文更长：网页侧滤掉批量模板以防崩塌；数学与代码仍是核心，中训阶段再加 agentic 数据；多语料扩大以抓跨文化长尾；特别强调长文档（论文，技术报告等）。合计超过 32T token。预处理大体沿用 DeepSeek-
+在 V3 语料上追求更多样, 更高质, 有效上下文更长: 网页侧滤掉批量模板以防崩塌; 数学与代码仍是核心, 中训阶段再加 agentic 数据; 多语料扩大以抓跨文化长尾; 特别强调长文档(论文, 技术报告等). 合计超过 32T token. 预处理大体沿用 DeepSeek-
 
 <!-- page 25 of 58 -->
 
@@ -930,11 +930,11 @@ V3. For tokenization, on top of the DeepSeek-V3 tokenizer, we introduce a few sp
 
 
 
-V3。分词在 V3 词表上加少量上下文特殊 token，词表仍 128K；继承 token-splitting 与 FIM；按 Ding 等把多源文档 pack 进合适序列以少截断；相对 V3，预训练改用样本级注意力掩码。
+V3. 分词在 V3 词表上加少量上下文特殊 token, 词表仍 128K; 继承 token-splitting 与 FIM; 按 Ding 等把多源文档 pack 进合适序列以少截断; 相对 V3, 预训练改用样本级注意力掩码.
 
-**Flash:** 43 层，隐宽 4096；前两层纯滑动窗口，其后 CSA/HCA 交错。CSA: $m=4$，indexer 头 64，indexer 维 128，稀疏 top-k=512. HCA: $m'=128$。两者共同：query 头 64，头维 $c=512$，$d_c=1024$，输出组 $g=8$，$d_g=1024$，窗口 $n_{\mathrm{win}}=128$。全部块走 MoE，前 3 层 Hash routing；1 共享 + 256 路由，专家中间维 2048，每 token 激活 6 个路由；MTP 深度 1；mHC 的 $n_{\mathrm{hc}}=4$, $t_{\max}=20$。总参 284B，激活 13B。
+**Flash:** 43 层, 隐宽 4096; 前两层纯滑动窗口, 其后 CSA/HCA 交错. CSA: $m=4$, indexer 头 64, indexer 维 128, 稀疏 top-k=512. HCA: $m'=128$. 两者共同: query 头 64, 头维 $c=512$, $d_c=1024$, 输出组 $g=8$, $d_g=1024$, 窗口 $n_{\mathrm{win}}=128$. 全部块走 MoE, 前 3 层 Hash routing; 1 共享 + 256 路由, 专家中间维 2048, 每 token 激活 6 个路由; MTP 深度 1; mHC 的 $n_{\mathrm{hc}}=4$, $t_{\max}=20$. 总参 284B, 激活 13B.
 
-**Pro:** 61 层，隐宽 7168；前两层 HCA，其后交错。CSA top-k=1024；query 头 128，$d_c=1536$，$g=16$；1 共享 + 384 路由，专家中间维 3072，激活仍 6；其余压缩率等同档。源文此处写「DeepSeek-V4-Flash comprises 1.6T. 49B」-- 数字对应 Pro 配置（总参 1.6T / 激活 49B），译稿按原文保留该句，读表时以 Table 1 与上文「DeepSeek-V4-Pro」为准。
+**Pro:** 61 层, 隐宽 7168; 前两层 HCA, 其后交错. CSA top-k=1024; query 头 128, $d_c=1536$, $g=16$; 1 共享 + 384 路由, 专家中间维 3072, 激活仍 6; 其余压缩率等同档. 源文此处写「DeepSeek-V4-Flash comprises 1.6T. 49B」-- 数字对应 Pro 配置(总参 1.6T / 激活 49B), 译稿按原文保留该句, 读表时以 Table 1 与上文「DeepSeek-V4-Pro」为准.
 
 #### 4.2.2. Training Setups 训练设定
 
@@ -948,9 +948,9 @@ embedding module, the prediction head module, and the weights of all RMSNorm mod
 
 
 
-**Flash:** 多数参数 Muon，Embedding / 预测头 / RMSNorm 用 AdamW($\beta_1=0.9$, $\beta_2=0.95$, $\varepsilon=10^{-20}$, weight_decay=0.1). Muon momentum 0.95，weight decay 0.1，更新 RMS 缩到 0.18。训 32T；batch 从小学到 75.5M 并长期保持；LR 热身 2000 step，主峰 $2.7\times10^{-4}$，末段余弦到 $2.7\times10^{-5}$。序列 4K→16K→64K→1M. 稀疏：前 1T 稠密热身，64K 起引入稀疏并先短热身 Lightning Indexer。均衡偏置速度 0.001，序列平衡损失权重 0.0001；MTP 损失多数阶段 0.3，LR 衰减起改 0.1。
+**Flash:** 多数参数 Muon, Embedding / 预测头 / RMSNorm 用 AdamW($\beta_1=0.9$, $\beta_2=0.95$, $\varepsilon=10^{-20}$, weight_decay=0.1). Muon momentum 0.95, weight decay 0.1, 更新 RMS 缩到 0.18. 训 32T; batch 从小学到 75.5M 并长期保持; LR 热身 2000 step, 主峰 $2.7\times10^{-4}$, 末段余弦到 $2.7\times10^{-5}$. 序列 4K→16K→64K→1M. 稀疏: 前 1T 稠密热身, 64K 起引入稀疏并先短热身 Lightning Indexer. 均衡偏置速度 0.001, 序列平衡损失权重 0.0001; MTP 损失多数阶段 0.3, LR 衰减起改 0.1.
 
-**Pro:** 设定大体同 Flash；训 33T，最大 batch 94.4M；峰值 LR $2.0\times10^{-4}$，末 $2.0\times10^{-5}$；稠密热身更长，稀疏引入仍两阶段。均衡与 MTP 权重同 Flash。
+**Pro:** 设定大体同 Flash; 训 33T, 最大 batch 94.4M; 峰值 LR $2.0\times10^{-4}$, 末 $2.0\times10^{-5}$; 稠密热身更长, 稀疏引入仍两阶段. 均衡与 MTP 权重同 Flash.
 
 #### 4.2.3. Mitigating Training Instability 缓解训练不稳
 
@@ -958,7 +958,7 @@ Training trillion-parameter MoE models presents significant stability challenges
 
 
 
-万亿 MoE 训练不稳，V4 也不例外。简单回滚只能暂时恢复，挡不住尖峰再来。经验上尖峰与 MoE 层 outlier 绑定，路由还会放大。于是从「打断路由诱发的恶性循环」与「直接压制异常值」两边下手，找到两记实用补丁；机理尚未完全讲清，公开分享以促社区继续挖。
+万亿 MoE 训练不稳, V4 也不例外. 简单回滚只能暂时恢复, 挡不住尖峰再来. 经验上尖峰与 MoE 层 outlier 绑定, 路由还会放大. 于是从「打断路由诱发的恶性循环」与「直接压制异常值」两边下手, 找到两记实用补丁; 机理尚未完全讲清, 公开分享以促社区继续挖.
 
 <!-- page 27 of 58 -->
 
@@ -982,9 +982,9 @@ For the evaluation of the base models, we consider benchmarks spanning four key 
 
 
 
-**Anticipatory Routing（预期路由）。** 骨干与路由不同步更新可显著稳训：第 $t$ 步特征用 $\theta_t$，路由索引用 $\theta_{t-\Delta t}$。为免加载两遍参数，在 $t-\Delta t$ 就预取第 $t$ 步数据并提前算好路由缓存。基建上：预计算只要一次前向，流水与 EP 通信重叠把额外墙钟压到约 20%；并在尖峰时自动短回滚，临时开启，过后恢复标准训练-- 整体额外开销可忽略且不伤效果。**SwiGLU Clamping.** 线性支路夹到 $[-10, 10]$，门控上界 10；经验上能消 outlier，稳住训练且不伤效果。
+**Anticipatory Routing(预期路由).** 骨干与路由不同步更新可显著稳训: 第 $t$ 步特征用 $\theta_t$, 路由索引用 $\theta_{t-\Delta t}$. 为免加载两遍参数, 在 $t-\Delta t$ 就预取第 $t$ 步数据并提前算好路由缓存. 基建上: 预计算只要一次前向, 流水与 EP 通信重叠把额外墙钟压到约 20%; 并在尖峰时自动短回滚, 临时开启, 过后恢复标准训练-- 整体额外开销可忽略且不伤效果. **SwiGLU Clamping.** 线性支路夹到 $[-10, 10]$, 门控上界 10; 经验上能消 outlier, 稳住训练且不伤效果.
 
-基座评测覆盖世界知识，语言理解与推理，代码与数学，长上下文四轴；各基准名单见英文原文（AGIEval，MMLU 族，BBH，HumanEval，MATH，LongBench-V2 等）。
+基座评测覆盖世界知识, 语言理解与推理, 代码与数学, 长上下文四轴; 各基准名单见英文原文(AGIEval, MMLU 族, BBH, HumanEval, MATH, LongBench-V2 等).
 
 <!-- page 28 of 58 -->
 
@@ -1024,7 +1024,7 @@ Table 1 | Comparison among DeepSeek-V3.2-Base, DeepSeek-V4-Flash-Base, and DeepS
 
 
 
-表 1｜DeepSeek-V3.2-Base，V4-Flash-Base，V4-Pro-Base 对照（同一内部框架与设定；分差 ≤0.3 视为同档；行内最高加粗，次高下划线）。数字原样保留。
+表 1｜DeepSeek-V3.2-Base, V4-Flash-Base, V4-Pro-Base 对照(同一内部框架与设定; 分差 ≤0.3 视为同档; 行内最高加粗, 次高下划线). 数字原样保留.
 
 #### 4.3.2. Evaluation Results 评测结果
 
@@ -1036,13 +1036,13 @@ Furthermore, DeepSeek-V4-Pro-Base demonstrates a further, decisive leap in capab
 
 
 
-Table 1 统一设定对照三款 Base. Flash-Base 激活与总参都小得多，却在多数基准超过 V3.2-Base，世界知识与难长上下文尤明显-- 说明架构，数据与训练优化能在更紧参数预算下打赢更大前代。Pro-Base 再决定性抬升，对两者近乎全面压过，
+Table 1 统一设定对照三款 Base. Flash-Base 激活与总参都小得多, 却在多数基准超过 V3.2-Base, 世界知识与难长上下文尤明显-- 说明架构, 数据与训练优化能在更紧参数预算下打赢更大前代. Pro-Base 再决定性抬升, 对两者近乎全面压过,
 
 <!-- page 29 of 58 -->
 
 performance highs among DeepSeek base models on the most demanding benchmarks. On knowledge-intensive evaluations, it delivers dramatic gains, while also substantially advancing long-context understanding. On most reasoning and code benchmarks, DeepSeek-V4-Pro-Base also exceeds both previous models. This comprehensive uplift confirms DeepSeek-V4-Pro-Base as the strongest foundation model in the DeepSeek series, outperforming its predecessors across the spectrum of knowledge, reasoning, coding, and long-context capabilities.
 
-在最难基准上达 DeepSeek Base 系列新高：知识密集评测大幅抬升，长上下文理解显著进步；多数推理与代码基准也超过另两者。全面抬升确认 Pro-Base 是 DeepSeek 系列最强底座，在知识，推理，代码与长上下文全谱系压过前代。
+在最难基准上达 DeepSeek Base 系列新高: 知识密集评测大幅抬升, 长上下文理解显著进步; 多数推理与代码基准也超过另两者. 全面抬升确认 Pro-Base 是 DeepSeek 系列最强底座, 在知识, 推理, 代码与长上下文全谱系压过前代.
 
 ## 5. Post-Training 后训练
 
@@ -1050,7 +1050,7 @@ performance highs among DeepSeek base models on the most demanding benchmarks. O
 
 Following pre-training, we conducted a post-training phase to yield the final models of DeepSeek-V4 series. Although the training pipeline largely mirrored that of DeepSeek-V3.2, a critical methodological substitution was made: the mixed Reinforcement Learning (RL) stage was entirely replaced by On-Policy Distillation (OPD).
 
-预训练之后做后训练，产出 V4 系列最终模型。流水大体沿用 V3.2，关键替换一处：混合 RL 阶段整体换成 On-Policy Distillation (OPD).
+预训练之后做后训练, 产出 V4 系列最终模型. 流水大体沿用 V3.2, 关键替换一处: 混合 RL 阶段整体换成 On-Policy Distillation (OPD).
 
 #### 5.1.1. Specialist Training 专家训练
 
@@ -1062,9 +1062,9 @@ The development of domain specialists was conducted by adapting the DeepSeek-V3.
 
 
 
-在最难基准上刷新 DeepSeek 基座高点：知识密集项大幅跃升，长上下文明显前进，多数推理与代码也超过前两代-- 确认 Pro-Base 为系列最强基座。
+在最难基准上刷新 DeepSeek 基座高点: 知识密集项大幅跃升, 长上下文明显前进, 多数推理与代码也超过前两代-- 确认 Pro-Base 为系列最强基座.
 
-后训练大体对齐 V3.2，但关键替换：混合 RL 整段换成 OPD。专家训练仍是分域 SFT + RL；RL 用 GRPO，超参贴近既往研究。**推理投入。** 推理表现受算力投入支配，故按不同 RL 配置训出 Table 2 三档（Non-think / Think High / Think Max），长度惩罚与上下文窗口不同；用 &lt；think&gt；标签区分格式，Max 另注入 Table 3 系统提示。**生成式奖励模型。** 易验证任务用规则/测例；难验证不再训标量奖励模型，而用 rubric 引导的 RL 数据 + GRM 评轨迹，并对 GRM 本身做 RL--actor 即 GRM，评判与生成共优化，少量多样人工标注即可泛化。
+后训练大体对齐 V3.2, 但关键替换: 混合 RL 整段换成 OPD. 专家训练仍是分域 SFT + RL; RL 用 GRPO, 超参贴近既往研究. **推理投入.** 推理表现受算力投入支配, 故按不同 RL 配置训出 Table 2 三档(Non-think / Think High / Think Max), 长度惩罚与上下文窗口不同; 用 &lt; think&gt; 标签区分格式, Max 另注入 Table 3 系统提示. **生成式奖励模型.** 易验证任务用规则/测例; 难验证不再训标量奖励模型, 而用 rubric 引导的 RL 数据 + GRM 评轨迹, 并对 GRM 本身做 RL--actor 即 GRM, 评判与生成共优化, 少量多样人工标注即可泛化.
 
 <!-- page 30 of 58 -->
 
@@ -1084,7 +1084,7 @@ Reasoning Effort: Absolute maximum with no shortcuts permitted.
 
 
 
-表 2｜三档推理模式对照。表 3｜Think Max 注入系统提示的指令：「Reasoning Effort: Absolute maximum with no shortcuts permitted.」
+表 2｜三档推理模式对照. 表 3｜Think Max 注入系统提示的指令:「Reasoning Effort: Absolute maximum with no shortcuts permitted.」
 
 model leverages its own logic to generalize across complex tasks.
 
@@ -1094,7 +1094,7 @@ model leverages its own logic to generalize across complex tasks.
 
 
 
-模型靠自身逻辑在复杂任务上泛化。**工具调用 schema.** 仍用 &lt；think&gt；标思维路径；新 schema 用 `|DSML|` 特殊token + XML 调工具（Table 4），实验显示可减转义失败与工具错误。**交错思考。** V3.2 在工具结果轮保留思维，新用户消息到达则丢弃；复杂 agent 流里每轮用户一来就清空，被迫从头重建状态。有了 1M 上下文，
+模型靠自身逻辑在复杂任务上泛化. **工具调用 schema.** 仍用 &lt; think&gt; 标思维路径; 新 schema 用 `|DSML|` 特殊token + XML 调工具(Table 4), 实验显示可减转义失败与工具错误. **交错思考.** V3.2 在工具结果轮保留思维, 新用户消息到达则丢弃; 复杂 agent 流里每轮用户一来就清空, 被迫从头重建状态. 有了 1M 上下文,
 
 <!-- page 31 of 58 -->
 
@@ -1139,7 +1139,7 @@ As with DeepSeek-V3.2, agent frameworks that simulate tool interactions via user
 
 
 
-表 4｜V4 系列工具调用 schema（英文模板原样保留）。在 1M 窗口上进一步细化交错思考：• **工具调用场景**（图 7a）：整段对话保留全部思维痕迹，跨用户轮次也不丢，便于长程 agent 累积 CoT. • **普通对话**（图 7b）：仍在新用户消息到达时丢弃旧思维，保持上下文精简。与 V3.2 一样，用用户消息模拟工具交互的框架（如 Terminus）可能走不到工具路径，仍建议用 non-think 模型。
+表 4｜V4 系列工具调用 schema(英文模板原样保留). 在 1M 窗口上进一步细化交错思考: • **工具调用场景**(图 7a): 整段对话保留全部思维痕迹, 跨用户轮次也不丢, 便于长程 agent 累积 CoT. • **普通对话**(图 7b): 仍在新用户消息到达时丢弃旧思维, 保持上下文精简. 与 V3.2 一样, 用用户消息模拟工具交互的框架(如 Terminus)可能走不到工具路径, 仍建议用 non-think 模型.
 
 <!-- page 32 of 58 -->
 
@@ -1163,7 +1163,7 @@ Figure 7 | Thinking management of DeepSeek-V4 series.
 
 
 
-图 7｜DeepSeek-V4 系列的思考管理。
+图 7｜DeepSeek-V4 系列的思考管理.
 
 **Quick Instruction.** In chatbot scenarios, a number of auxiliary tasks (e. g., determining whether to trigger a web search, intent recognition, etc.) must be executed before generating the response. Conventionally, these tasks are handled by a separate small model, requiring redundant prefilling since it cannot reuse the existing KV cache. To overcome this limitation, we introduce Quick Instruction. We append a set of dedicated special tokens directly to the input sequence, where each token corresponds to a specific auxiliary task. By directly reusing the already-computed KV cache, this mechanism completely avoids redundant prefilling and allows certain tasks, such as generating search queries and determining authority and domain, to be executed in parallel. Consequently, this approach significantly reduces the user-perceived time-to-first-token (TTFT) and eliminates the engineering overhead of maintaining and iterating an extra small model. The supported Quick Instruction tokens are summarized in Table 5.
 
@@ -1173,9 +1173,9 @@ After training multiple domain-specific experts via specialized fine-tuning and 
 
 
 
-**Quick Instruction.** 聊天场景里搜不搜，意图识别等辅助任务常由另外部署小模型做，无法复用已有 KV，造成重复 prefilling. Quick Instruction 把专用特殊 token 直接接到输入序列，复用已算好的 KV，彻底免二次 prefilling，并可并行生成检索词，判定权威性与领域等，显著降 TTFT，也省掉维护小模型的工程税。token见 Table 5。
+**Quick Instruction.** 聊天场景里搜不搜, 意图识别等辅助任务常由另外部署小模型做, 无法复用已有 KV, 造成重复 prefilling. Quick Instruction 把专用特殊 token 直接接到输入序列, 复用已算好的 KV, 彻底免二次 prefilling, 并可并行生成检索词, 判定权威性与领域等, 显著降 TTFT, 也省掉维护小模型的工程税. token见 Table 5.
 
-分域专家训完后，用多教师 OPD 合成统一模型：学生在自己轨迹上对齐教师输出分布。形式化地，给定 $N$ 个专家模型
+分域专家训完后, 用多教师 OPD 合成统一模型: 学生在自己轨迹上对齐教师输出分布. 形式化地, 给定 $N$ 个专家模型
 
 <!-- page 33 of 58 -->
 
@@ -1202,7 +1202,7 @@ In handling the above OPD objective, prior works usually simplify the full-vocab
 
 
 
-表 5｜辅助任务的 Quick Instruction 特殊token（源表 Special Token 列在抽取中为空，格式列原样保留）。OPD 目标见式（29）：$w_i$ 为专家权重；反向 KL 需从学生采样以保持 on-policy；统一策略按任务上下文选择性对齐对应专家（数学对齐数学专家，代码对齐代码专家），在 logits 层把物理分离的专家权重合成统一参数空间，避开传统权重合并/混合 RL 常见掉点。本阶段用十多个分域教师蒸一个学生。先前工作常把全词表 KL 简化成逐 token KL 估计并塞进 RL 优势项，省资源但方差大，易不稳；本工作采用全词表 logit 蒸馏，反向 KL 保留完整分布，梯度更稳，蒸馏更忠实。下一小节写规模化工程。
+表 5｜辅助任务的 Quick Instruction 特殊token(源表 Special Token 列在抽取中为空, 格式列原样保留). OPD 目标见式 (29): $w_i$ 为专家权重; 反向 KL 需从学生采样以保持 on-policy; 统一策略按任务上下文选择性对齐对应专家(数学对齐数学专家, 代码对齐代码专家), 在 logits 层把物理分离的专家权重合成统一参数空间, 避开传统权重合并/混合 RL 常见掉点. 本阶段用十多个分域教师蒸一个学生. 先前工作常把全词表 KL 简化成逐 token KL 估计并塞进 RL 优势项, 省资源但方差大, 易不稳; 本工作采用全词表 logit 蒸馏, 反向 KL 保留完整分布, 梯度更稳, 蒸馏更忠实. 下一小节写规模化工程.
 
 <!-- page 34 of 58 -->
 
@@ -1218,7 +1218,7 @@ We apply FP4 (MXFP4) quantization to accelerate both rollouts and all inference-
 
 Our framework supports full-vocabulary On-Policy Distillation (OPD) with an effectively unbounded number of teachers, each potentially comprising trillions of parameters. To enable this, all teacher weights are offloaded to a centralized distributed storage and are loaded on demand during the teacher forward pass with ZeRO-like parameter sharding to alleviate both I/O and DRAM pressure. Furthermore, naively materializing logits for a vocabulary size |𝑉| > 100k across all teachers is prohibitive, even when spooled to disk. We address this by caching only the last-layer teacher hidden states in a centralized buffer during the forward pass. At training time, these cached states are retrieved and passed through the corresponding prediction head module to reconstruct the full logits on the fly. This design incurs negligible recomputation overhead while completely circumventing the memory burden associated with explicit logits materialization. To mitigate the GPU memory footprint of the teacher prediction head, we order training samples by teacher index during data dispatching. This arrangement ensures that each distinct teacher head is loaded only once per mini-batch and that at most one teacher head resides in device memory at any given time. All parameters and hidden state loading/offloading operations proceed asynchronously in the background, without blocking computation on the critical path. Finally, the exact KL divergences between teacher and student logits are computed using a specialized TileLang kernel, which accelerates the computation and curtails dynamic memory allocation.
 
-#### 5.2.3. Preemptible and Fault-Tolerant Rollout Service 可抢占，容错的 Rollout 服务
+#### 5.2.3. Preemptible and Fault-Tolerant Rollout Service 可抢占, 容错的 Rollout 服务
 
 To maximize GPU resource utilization while enabling rapid hardware provisioning for highpriority tasks, our GPU cluster employs a cluster-wide preemptive task scheduler, where any running task may be preempted at any time. Also, hardware failures are prevalent in large-scale GPU clusters. To this end, we implement a preemptible and fault-tolerant LLM generation service for RL/OPD rollout.
 
@@ -1226,13 +1226,13 @@ Specifically, we implement a token-granular Write-Ahead Log (WAL) for each gener
 
 
 
-后训练基建站在 V3.2 可扩展框架上，接入 §3.5 分布式训练栈与前述 rollout 引擎，并加下列增强，以高效跑超长上下文 RL 与十多个教师的 OPD 合并，缩短发版迭代。
+后训练基建站在 V3.2 可扩展框架上, 接入 §3.5 分布式训练栈与前述 rollout 引擎, 并加下列增强, 以高效跑超长上下文 RL 与十多个教师的 OPD 合并, 缩短发版迭代.
 
-**FP4 接入。** rollout 与一切仅推理前向（含教师/参考）用 FP4 降访存与采样延迟；训练步用无损 FP4→FP8 仿真，复用 FP8 混精 + FP32 主权重，反向管道不用改。
+**FP4 接入.** rollout 与一切仅推理前向(含教师/参考)用 FP4 降访存与采样延迟; 训练步用无损 FP4→FP8 仿真, 复用 FP8 混精 + FP32 主权重, 反向管道不用改.
 
-**全词表 OPD 教师调度。** 教师数实际上不设上限，各可达万亿参：权重卸到集中分布式存储，教师前向按需加载并 ZeRO 式分片。为避免 $|V|>100k$ 时物化全体教师 logits，只缓存教师末层隐状态，训练时再过对应预测头现场重建；按教师下标排样本，保证同 mini-batch 每个教师头至多加载一次，设备上至多驻留一个头；加载/卸载异步不挡关键路径；师生 KL 用专用 TileLang 核加速并限制动态分配。
+**全词表 OPD 教师调度.** 教师数实际上不设上限, 各可达万亿参: 权重卸到集中分布式存储, 教师前向按需加载并 ZeRO 式分片. 为避免 $|V|>100k$ 时物化全体教师 logits, 只缓存教师末层隐状态, 训练时再过对应预测头现场重建; 按教师下标排样本, 保证同 mini-batch 每个教师头至多加载一次, 设备上至多驻留一个头; 加载/卸载异步不挡关键路径; 师生 KL 用专用 TileLang 核加速并限制动态分配.
 
-**可抢占容错 Rollout.** 集群级抢占调度 + 硬件故障常态下，为 RL/OPD 做可抢占容错生成服务：每请求 token 级 WAL，新 token 立即追加；抢占时暂停推理引擎并保存未完成请求的
+**可抢占容错 Rollout.** 集群级抢占调度 + 硬件故障常态下, 为 RL/OPD 做可抢占容错生成服务: 每请求 token 级 WAL, 新 token 立即追加; 抢占时暂停推理引擎并保存未完成请求的
 
 <!-- page 35 of 58 -->
 
@@ -1254,11 +1254,11 @@ The design of DSec is motivated by four observations: (1) agentic workloads are 
 
 
 
-KV；恢复时用 WAL + 已存 KV 续解码；致命硬件错误也可用 WAL 中持久 token 重跑 prefill 重建 KV。从头重生成未完成请求在数学上不正确-- 会引入长度偏置：短回答更易在中断中存活，重开采样会偏向更短序列。即便批不变+确定，用固定采样种子重解码也多付一遍解码成本，远不如 token 级 WAL。
+KV; 恢复时用 WAL + 已存 KV 续解码; 致命硬件错误也可用 WAL 中持久 token 重跑 prefill 重建 KV. 从头重生成未完成请求在数学上不正确-- 会引入长度偏置: 短回答更易在中断中存活, 重开采样会偏向更短序列. 即便批不变+确定, 用固定采样种子重解码也多付一遍解码成本, 远不如 token 级 WAL.
 
-百万序列 RL/OPD: rollout 用 §5.2.3 可抢占服务；推理/训练把 rollout 数据拆成轻量元数据与重型逐 token 字段-- 派发时先用元数据做全局 shuffle/pack，重字段经共享内存加载并在 mini-batch 消费后立即释放；设备上 mini-batch 数按负载动态定，在吞吐与 I/O 重叠间折中。
+百万序列 RL/OPD: rollout 用 §5.2.3 可抢占服务; 推理/训练把 rollout 数据拆成轻量元数据与重型逐 token 字段-- 派发时先用元数据做全局 shuffle/pack, 重字段经共享内存加载并在 mini-batch 消费后立即释放; 设备上 mini-batch 数按负载动态定, 在吞吐与 I/O 重叠间折中.
 
-**DSec** 沙箱：Apiserver / Edge / Watcher 三件 Rust 组件 + 定制 RPC，站在 3FS 上水平扩展，生产单集群可管数十万并发实例。动机四条：工作负载异构，镜像又多又大但要快加载，高密度要抠 CPU/内存，生命周期要与 GPU 训练抢占/检查点对齐。**统一接口下四类执行基底。** libdsec 抽象：Function Call（预热容器池，无冷启动），Container（Docker 兼容 + EROFS 按需装镜像），microVM（Firecracker，安全敏感高密度），fullVM（QEMU，任意客户机 OS）。四者共用命令执行，
+**DSec** 沙箱: Apiserver / Edge / Watcher 三件 Rust 组件 + 定制 RPC, 站在 3FS 上水平扩展, 生产单集群可管数十万并发实例. 动机四条: 工作负载异构, 镜像又多又大但要快加载, 高密度要抠 CPU/内存, 生命周期要与 GPU 训练抢占/检查点对齐.**统一接口下四类执行基底. ** libdsec 抽象: Function Call(预热容器池, 无冷启动), Container(Docker 兼容 + EROFS 按需装镜像), microVM(Firecracker, 安全敏感高密度), fullVM(QEMU, 任意客户机 OS). 四者共用命令执行,
 
 <!-- page 36 of 58 -->
 
@@ -1280,9 +1280,9 @@ For code, we evaluate DeepSeek-V4 series on LiveCodeBench-v6 and an internal Cod
 
 
 
-文件传输与 TTY，切换只改参数。**分层存储快加载。** 容器：3FS 上只读 EROFS 层直接挂 overlay lowerdir，元数据本地，数据块按需拉。microVM: overlaybd，只读基层在 3FS 共享，写走本地 COW，快照可链式，毫秒级恢复。**海量并发密度。** 减虚拟化重复页缓存 + 内存回收以安全超卖；缓解容器运行时自旋锁争用，抬单机装箱密度。**轨迹日志与抢占安全恢复。** 每沙箱全局有序轨迹：客户端快进（抢占后保留沙箱，恢复时回放已完成命令缓存，避免非幂等重跑），细粒度溯源，确定性重放。
+文件传输与 TTY, 切换只改参数. **分层存储快加载.** 容器: 3FS 上只读 EROFS 层直接挂 overlay lowerdir, 元数据本地, 数据块按需拉. microVM: overlaybd, 只读基层在 3FS 共享, 写走本地 COW, 快照可链式, 毫秒级恢复. **海量并发密度.** 减虚拟化重复页缓存 + 内存回收以安全超卖; 缓解容器运行时自旋锁争用, 抬单机装箱密度. **轨迹日志与抢占安全恢复.** 每沙箱全局有序轨迹: 客户端快进(抢占后保留沙箱, 恢复时回放已完成命令缓存, 避免非幂等重跑), 细粒度溯源, 确定性重放.
 
-知识与推理数据集名单见英文。代码用 LiveCodeBench-v6 与内部 Codeforces: 14 场 Div. 1, 114 题（2025-05 至 2025-11）。Elo：每题生成 32 候选，无放回抽 10 个随机排序提交；测例由专家构建；得分跟 OpenAI (2025) 罚时：取「同题，同先前失败次数」人类中位分。得到场次分→排名→标准 Codeforces 评分；场级期望评分定义为
+知识与推理数据集名单见英文. 代码用 LiveCodeBench-v6 与内部 Codeforces: 14 场 Div. 1, 114 题(2025-05 至 2025-11). Elo: 每题生成 32 候选, 无放回抽 10 个随机排序提交; 测例由专家构建; 得分跟 OpenAI (2025) 罚时: 取「同题, 同先前失败次数」人类中位分. 得到场次分→排名→标准 Codeforces 评分; 场级期望评分定义为
 
 <!-- page 37 of 58 -->
 
@@ -1304,7 +1304,7 @@ For search agent tasks (BrowseComp, HLE w/ tool), we also use an in-house harnes
 
 
 
-对每题 10 次提交的所有随机抽取与排序取期望；总评分是 14 场场级期望的平均。推理/知识：温度 1.0；Non-think / High / Max 上下文分别为 8K / 128K / 384K. 数学题模板见英文；Pro-Max 另用更强证明导向模板。形式化数学：Lean v4.28.0-rc1 agent，最多 500 次工具调用，最大推理投入；另有更重算力流水-- 先自然语言候选 + 自验证过滤，再指导形式化 agent；两设定均须严格 Comparator 通过。K2.6 / GLM-5.1 部分格子因 API 过忙留空。**1M 上下文：** MRCR 与 CorpusQA；重测 Opus 4.6 与 Gemini 3.1 Pro 以统一配置；GPT-5.4 因大量无响应未测。**Agent:** 名单见英文。代码 agent 内部 harness: bash + 文件编辑，最多 500 步，上下文 512K；Terminal-Bench 2.0 知环境问题仍报原集；Verified 子集上 Pro 约 72.0。搜索 agent: websearch + Python，同样 500 步 / 512K；BrowseComp 用与 V3.2 相同的 discard-all 上下文管理。
+对每题 10 次提交的所有随机抽取与排序取期望; 总评分是 14 场场级期望的平均. 推理/知识: 温度 1.0; Non-think / High / Max 上下文分别为 8K / 128K / 384K. 数学题模板见英文; Pro-Max 另用更强证明导向模板. 形式化数学: Lean v4.28.0-rc1 agent, 最多 500 次工具调用, 最大推理投入; 另有更重算力流水-- 先自然语言候选 + 自验证过滤, 再指导形式化 agent; 两设定均须严格 Comparator 通过. K2.6 / GLM-5.1 部分格子因 API 过忙留空. **1M 上下文:** MRCR 与 CorpusQA; 重测 Opus 4.6 与 Gemini 3.1 Pro 以统一配置; GPT-5.4 因大量无响应未测.**Agent:** 名单见英文. 代码 agent 内部 harness: bash + 文件编辑, 最多 500 步, 上下文 512K; Terminal-Bench 2.0 知环境问题仍报原集; Verified 子集上 Pro 约 72.0. 搜索 agent: websearch + Python, 同样 500 步 / 512K; BrowseComp 用与 V3.2 相同的 discard-all 上下文管理.
 
 <!-- page 38 of 58 -->
 
@@ -1350,7 +1350,7 @@ In addition, a significant performance gap exists between DeepSeek-V4-Flash and 
 
 
 
-表 6｜Pro-Max 与闭源/开源对照（Max / xHigh / High 表示推理投入；最优加粗，次优下划线）。数字原样。另见表 7 的 Flash/Pro 各模式。**知识：** Pro-Max 在开源世界知识上新高，SimpleQA-Verified 相对开源基线高出约 20 个百分点，仍落后 Gemini-3.1-Pro；教育向知识相对 Kimi/GLM 略领先，仍逊头部闭源。Flash 与 Pro 知识差距显著-- 符合「更大参更易存知识」；提高推理投入后两者知识分都会抬。
+表 6｜Pro-Max 与闭源/开源对照(Max / xHigh / High 表示推理投入; 最优加粗, 次优下划线). 数字原样. 另见表 7 的 Flash/Pro 各模式. **知识:** Pro-Max 在开源世界知识上新高, SimpleQA-Verified 相对开源基线高出约 20 个百分点, 仍落后 Gemini-3.1-Pro; 教育向知识相对 Kimi/GLM 略领先, 仍逊头部闭源. Flash 与 Pro 知识差距显著-- 符合「更大参更易存知识」; 提高推理投入后两者知识分都会抬.
 
 <!-- page 39 of 58 -->
 
@@ -1358,7 +1358,7 @@ Table 7 | Comparison among different sizes and modes of DeepSeek-V4 series. "Non
 
 
 
-表 7｜DeepSeek-V4 系列不同规模与模式对照。「Non-Think」「High」「Max」表示推理投入。数字原样保留。
+表 7｜DeepSeek-V4 系列不同规模与模式对照.「Non-Think」「High」「Max」表示推理投入. 数字原样保留.
 
 <table><tr><td rowspan="2"></td><td rowspan="2">Benchmark (Metric)</td><td colspan="3">DeepSeek-V4-Flash</td><td colspan="3">DeepSeek-V4-Pro</td></tr><tr><td>Non-Think</td><td>High</td><td>Max</td><td>Non-Think</td><td>High</td><td>Max</td></tr><tr><td rowspan="11">Knowledge &amp; Reasoning</td><td>MMLU-Pro (EM)</td><td>83.0</td><td>86.4</td><td>86.2</td><td>82.9</td><td>87.1</td><td>87.5</td></tr><tr><td>SimpleQA-Verified (Pass@1)</td><td>23.1</td><td>28.9</td><td>34.1</td><td>45.0</td><td>46.2</td><td>57.9</td></tr><tr><td>Chinese-SimpleQA (Pass@1)</td><td>71.5</td><td>73.2</td><td>78.9</td><td>75.8</td><td>77.7</td><td>84.4</td></tr><tr><td>GPQA Diamond (Pass@1)</td><td>71.2</td><td>87.4</td><td>88.1</td><td>72.9</td><td>89.1</td><td>90.1</td></tr><tr><td>HLE (Pass@1)</td><td>8.1</td><td>29.4</td><td>34.8</td><td>7.7</td><td>34.5</td><td>37.7</td></tr><tr><td>LiveCodeBench (Pass@1-COT)</td><td>55.2</td><td>88.4</td><td>91.6</td><td>56.8</td><td>89.8</td><td>93.5</td></tr><tr><td>Codeforces (Rating)</td><td>-</td><td>2816</td><td>3052</td><td>-</td><td>2919</td><td>3206</td></tr><tr><td>HMMT 2026 Feb (Pass@1)</td><td>40.8</td><td>91.9</td><td>94.8</td><td>31.7</td><td>94.0</td><td>95.2</td></tr><tr><td>IMOAnswerBench (Pass@1)</td><td>41.9</td><td>85.1</td><td>88.4</td><td>35.3</td><td>88.0</td><td>89.8</td></tr><tr><td>Apex (Pass@1)</td><td>1.0</td><td>19.1</td><td>33.0</td><td>0.4</td><td>27.4</td><td>38.3</td></tr><tr><td>Apex Shortlist (Pass@1)</td><td>9.3</td><td>72.1</td><td>85.7</td><td>9.2</td><td>85.5</td><td>90.2</td></tr><tr><td rowspan="2">Long</td><td>MRCR 1M(MMR)</td><td>37.5</td><td>76.9</td><td>78.7</td><td>44.7</td><td>83.3</td><td>83.5</td></tr><tr><td>CorpusQA 1M(ACC)</td><td>15.5</td><td>59.3</td><td>60.5</td><td>35.6</td><td>56.5</td><td>62.0</td></tr><tr><td rowspan="9">Agentic</td><td>Terminal Bench 2.0 (Acc)</td><td>49.1</td><td>56.6</td><td>56.9</td><td>59.1</td><td>63.3</td><td>67.9</td></tr><tr><td>SWE Verified (Resolved)</td><td>73.7</td><td>78.6</td><td>79.0</td><td>73.6</td><td>79.4</td><td>80.6</td></tr><tr><td>SWE Pro (Resolved)</td><td>49.1</td><td>52.3</td><td>52.6</td><td>52.1</td><td>54.4</td><td>55.4</td></tr><tr><td>SWE Multilingual (Resolved)</td><td>69.7</td><td>70.2</td><td>73.3</td><td>69.8</td><td>74.1</td><td>76.2</td></tr><tr><td>BrowseComp (Pass@1)</td><td>-</td><td>53.5</td><td>73.2</td><td>-</td><td>80.4</td><td>83.4</td></tr><tr><td>HLE w/ tools (Pass@1)</td><td>-</td><td>40.3</td><td>45.1</td><td>-</td><td>44.7</td><td>48.2</td></tr><tr><td>MCPAtlas Public (Pass@1)</td><td>64.0</td><td>67.4</td><td>69.0</td><td>69.4</td><td>74.2</td><td>73.6</td></tr><tr><td>GDPval-AA (Elo)</td><td>-</td><td>-</td><td>1395</td><td>-</td><td>-</td><td>1554</td></tr><tr><td>Toolathlon (Pass@1)</td><td>40.7</td><td>43.5</td><td>47.8</td><td>46.3</td><td>49.0</td><td>51.8</td></tr></table>
 
@@ -1368,9 +1368,9 @@ Table 7 | Comparison among different sizes and modes of DeepSeek-V4 series. "Non
 
 
 
-**推理。** Pro-Max 在推理基准上超过既往全部开源，多项对齐前沿闭源；更小的 Flash-Max 在代码与数学推理上也超过先前最强开源 K2.6-Thinking. Pro 与 Flash 在编程竞赛上表现出色，评测认为可比 GPT-5.4-- 开源首次在此任务追平闭源。Codeforces 榜上 Pro-Max 约排人类选手第 23。形式化数学在 agent 与更重算力两设定都强：轻量 agent 设定 SOTA（图 8），更重流水线超过 Aristotle 等并追平该设定已知最好结果（含 Putnam-2025 的 120/120，见下页图注）。
+**推理.** Pro-Max 在推理基准上超过既往全部开源, 多项对齐前沿闭源; 更小的 Flash-Max 在代码与数学推理上也超过先前最强开源 K2.6-Thinking. Pro 与 Flash 在编程竞赛上表现出色, 评测认为可比 GPT-5.4-- 开源首次在此任务追平闭源. Codeforces 榜上 Pro-Max 约排人类选手第 23. 形式化数学在 agent 与更重算力两设定都强: 轻量 agent 设定 SOTA(图 8), 更重流水线超过 Aristotle 等并追平该设定已知最好结果(含 Putnam-2025 的 120/120, 见下页图注).
 
-**Agent.** 系列 agent 表现强：代码 agent 上 Pro 与 K2.6，GLM-5.1 相当，开源整体仍逊闭源；Flash 在 Terminal Bench 2.0 等明显弱于 Pro。同类趋势也出现在其他 agent 评测。Pro 在 MCPAtlas，Toolathlon 等广工具/MCP 评测上也好，说明泛化不只吃内部框架。
+**Agent.** 系列 agent 表现强: 代码 agent 上 Pro 与 K2.6, GLM-5.1 相当, 开源整体仍逊闭源; Flash 在 Terminal Bench 2.0 等明显弱于 Pro. 同类趋势也出现在其他 agent 评测. Pro 在 MCPAtlas, Toolathlon 等广工具/MCP 评测上也好, 说明泛化不只吃内部框架.
 
 <!-- page 40 of 58 -->
 
@@ -1380,7 +1380,7 @@ Figure 8 | Formal reasoning under practical and frontier regimes. Left: Putnam-2
 
 
 
-图 8｜实用与前沿两档形式化推理。左：Putnam-200 Pass@8，按 Seed-Prover 设定在同一题集上测，专有搜索换成开源 LeanExplore。右：Putnam-2025 混合非形式/形式设定；DeepSeek-V4 达到 120/120。
+图 8｜实用与前沿两档形式化推理. 左: Putnam-200 Pass@8, 按 Seed-Prover 设定在同一题集上测, 专有搜索换成开源 LeanExplore. 右: Putnam-2025 混合非形式/形式设定; DeepSeek-V4 达到 120/120.
 
 ![Chart block](images/p40-figure-9-deepseek-v4-series-performance-on-the-mrcr-task.png)
 
@@ -1388,7 +1388,7 @@ Figure 9 | DeepSeek-V4 series performance on the MRCR task.
 
 
 
-图 9｜DeepSeek-V4 系列在 MRCR 任务上的表现。
+图 9｜DeepSeek-V4 系列在 MRCR 任务上的表现.
 
 **1M-Token Context.** DeepSeek-V4-Pro outperforms Gemini-3.1-Pro on the MRCR task, which measures in-context retrieval, but remains behind Claude Opus 4.6. As illustrated in Figure 9, retrieval performance remains highly stable within a 128K context window. While a performance degradation becomes visible beyond the 128K mark, the model’s retrieval capabilities at 1M tokens remain remarkably strong compared to both proprietary and open-source counterparts. Unlike MRCR, CorpusQA is similar to real scenarios. The evaluation results also indicate that DeepSeek-V4-Pro is better than Gemini-3.1-Pro.
 
@@ -1396,9 +1396,9 @@ Figure 9 | DeepSeek-V4 series performance on the MRCR task.
 
 
 
-**1M 上下文。** Pro 在 MRCR 上超过 Gemini-3.1-Pro，仍落后 Opus 4.6。图 9: 128K 内很稳，过 128K 有降，但 1M 仍强于多数对照。更贴近真实的 CorpusQA 上 Pro 也优于 Gemini-3.1-Pro。
+**1M 上下文.** Pro 在 MRCR 上超过 Gemini-3.1-Pro, 仍落后 Opus 4.6. 图 9: 128K 内很稳, 过 128K 有降, 但 1M 仍强于多数对照. 更贴近真实的 CorpusQA 上 Pro 也优于 Gemini-3.1-Pro.
 
-**推理投入。** Table 7: Max（更长上下文，更弱长度惩罚）在最难任务上优于 High。图 10 对照 Pro / Flash / V3.2 的表现与成本；放大 test-time compute 相对前代提升明显。HLE 上 Pro 的 token 效率高于
+**推理投入.** Table 7: Max(更长上下文, 更弱长度惩罚)在最难任务上优于 High. 图 10 对照 Pro / Flash / V3.2 的表现与成本; 放大 test-time compute 相对前代提升明显. HLE 上 Pro 的 token 效率高于
 
 <!-- page 41 of 58 -->
 
@@ -1406,17 +1406,17 @@ Figure 9 | DeepSeek-V4 series performance on the MRCR task.
 
 ![Chart block](images/p41-figure-10-hle-and-terminal-bench-2-0-performance-by.png)
 
-Figure 10 | HLE and Terminal Bench 2.0 performance by reasoning effort。“None” indicates Non-think mode, and “Speciale” indicates DeepSeek-V3.2-Speciale model.
+Figure 10 | HLE and Terminal Bench 2.0 performance by reasoning effort. “None” indicates Non-think mode, and “Speciale” indicates DeepSeek-V3.2-Speciale model.
 
 
 
-图 10｜按推理投入看 HLE 与 Terminal Bench 2.0.「None」表示 Non-think，「Speciale」表示 DeepSeek-V3.2-Speciale。
+图 10｜按推理投入看 HLE 与 Terminal Bench 2.0.「None」表示 Non-think,「Speciale」表示 DeepSeek-V3.2-Speciale.
 
 DeepSeek-V3.2.
 
 
 
-（接上页）DeepSeek-V3.2.
+(接上页)DeepSeek-V3.2.
 
 ### 5.4. Performance on Real-World Tasks 真实场景表现
 
@@ -1430,9 +1430,9 @@ Table 13 presents the creative writing comparison, which is evaluated along two 
 
 
 
-标准基准往往抓不住多样真实任务的复杂度，测试分与用户体验有缝。于是做偏真实用法的内部指标，对准 DeepSeek API 与 Chatbot 主场景，让优化落到可感知收益。
+标准基准往往抓不住多样真实任务的复杂度, 测试分与用户体验有缝. 于是做偏真实用法的内部指标, 对准 DeepSeek API 与 Chatbot 主场景, 让优化落到可感知收益.
 
-中文写作是主场景之一。功能写作：Table 12 对 Gemini-3.1-Pro（内部中文写作外部最强基线），Pro 总胜率 62.7% vs 34.1%--Gemini 有时让自身文风压过用户明确要求。创意写作：Table 13 沿指令遵循与写作质量两轴，Pro 胜率分别为 60.0% 与 77.5%。但高难约束或多轮上 Opus 4.5 仍以 52.0% vs 45.9% 占优（Table 14）。
+中文写作是主场景之一. 功能写作: Table 12 对 Gemini-3.1-Pro(内部中文写作外部最强基线), Pro 总胜率 62.7% vs 34.1%--Gemini 有时让自身文风压过用户明确要求. 创意写作: Table 13 沿指令遵循与写作质量两轴, Pro 胜率分别为 60.0% 与 77.5%. 但高难约束或多轮上 Opus 4.5 仍以 52.0% vs 45.9% 占优(Table 14).
 
 <!-- page 42 of 58 -->
 
@@ -1462,13 +1462,13 @@ As illustrated in Figure 11, DeepSeek-V4-Pro-Max outperforms Opus-4.6-Max on div
 
 
 
-搜索增强问答是 chatbot 核心能力。网页/App 上 non-think 走 RAG，thinking 走 agentic search。
+搜索增强问答是 chatbot 核心能力. 网页/App 上 non-think 走 RAG, thinking 走 agentic search.
 
-**RAG.** Table 11: Pro 对 V3.2 在客观/主观问答上大幅领先，单值检索与攻略计划增益最大；对比与推荐上 V3.2 仍有竞争力，说明多视角权衡仍有空间。
+**RAG.** Table 11: Pro 对 V3.2 在客观/主观问答上大幅领先, 单值检索与攻略计划增益最大; 对比与推荐上 V3.2 仍有竞争力, 说明多视角权衡仍有空间.
 
-**Agentic Search.** 可迭代调搜索/抓取。thinking 模式在既定「思考预算」内最大化准确率。Table 9：相对 RAG 持续占优，复杂题尤甚；成本仅略高（Table 10）。
+**Agentic Search.** 可迭代调搜索/抓取. thinking 模式在既定「思考预算」内最大化准确率. Table 9: 相对 RAG 持续占优, 复杂题尤甚; 成本仅略高(Table 10).
 
-白领任务：30 道高阶中文专业题，覆盖深度分析，完整文书生成与细致编辑，横跨金融，教育，法律，科技等 13 个行业；内部 harness 含 Bash 与网页搜索。开放题用人工盲评四维：任务完成，指令遵循，内容质量，格式美学。图 11: Pro-Max 对 Opus-4.6-Max 非负率约 63%，分析/生成/编辑均有优势。图 12 显示主强项在任务完成与
+白领任务: 30 道高阶中文专业题, 覆盖深度分析, 完整文书生成与细致编辑, 横跨金融, 教育, 法律, 科技等 13 个行业; 内部 harness 含 Bash 与网页搜索. 开放题用人工盲评四维: 任务完成, 指令遵循, 内容质量, 格式美学. 图 11: Pro-Max 对 Opus-4.6-Max 非负率约 63%, 分析/生成/编辑均有优势. 图 12 显示主强项在任务完成与
 
 <!-- page 43 of 58 -->
 
@@ -1480,7 +1480,7 @@ Figure 11 | Win-rate comparison across analysis, generation, editing tasks, and 
 
 
 
-图 11｜分析，生成，编辑与总体胜率对照。
+图 11｜分析, 生成, 编辑与总体胜率对照.
 
 ![Chart block](images/p43-figure-12-detailed-dimension-scores-including-task.png)
 
@@ -1488,7 +1488,7 @@ Figure 12 | Detailed dimension scores including Task Completion, Content Quality
 
 
 
-图 12｜任务完成，内容质量，格式美学，指令遵循等维度分。
+图 12｜任务完成, 内容质量, 格式美学, 指令遵循等维度分.
 
 ![Image block](images/p43-figure-13-example-output-of-a-task-which-requires.png)
 
@@ -1496,11 +1496,11 @@ Figure 13 | Example output of a task which requires drafting a joint marketing p
 
 
 
-图 13｜样例：为某奶茶品牌与北京地铁起草联合营销方案（过长仅示部分页）。
+图 13｜样例: 为某奶茶品牌与北京地铁起草联合营销方案(过长仅示部分页).
 
 
 
-（接上页）内容质量：常主动补隐含意图与自检，长文深写而非简单条目，正式中文层级编号规范。指令遵循偶漏格式约束略逊 Opus；压缩长文与幻灯片视觉排版仍弱。图 13–15 为样例。
+(接上页)内容质量: 常主动补隐含意图与自检, 长文深写而非简单条目, 正式中文层级编号规范. 指令遵循偶漏格式约束略逊 Opus; 压缩长文与幻灯片视觉排版仍弱. 图 13–15 为样例.
 
 <!-- page 44 of 58 -->
 
@@ -1516,13 +1516,13 @@ Table 8 | Comparison on R&D Coding Benchmark (external models included strictly 
 
 
 
-表 8｜内部研发代码基准对照（外部模型仅作评测参照）。Pro-Max Pass Rate 67%.
+表 8｜内部研发代码基准对照(外部模型仅作评测参照). Pro-Max Pass Rate 67%.
 
 In a survey asking DeepSeek developers and researchers (𝑁 = 85) - all with experience of using DeepSeek-V4-Pro for agentic coding in their daily work - whether DeepSeek-V4-Pro is ready to serve as their default and primary coding model compared to other frontier models, 52% said yes, 39% leaned toward yes, and fewer than 9% said no. Respondents find DeepSeek-V4-Pro to deliver satisfactory results across most tasks, but note trivial mistakes, misinterpretation of vague prompts, and occasional over-thinking.
 
-内部调研（N = 85，均为日常用 V4-Pro 做 Agent 编码的开发者与研究者）：52% 认为 V4-Pro 已可当默认主力编码模型，39% 倾向可以，不到 9% 说不。反馈是多数任务结果令人满意，但仍有低级错误，模糊提示理解偏差与偶尔过度思考。
+内部调研 (N = 85, 均为日常用 V4-Pro 做 Agent 编码的开发者与研究者): 52% 认为 V4-Pro 已可当默认主力编码模型, 39% 倾向可以, 不到 9% 说不. 反馈是多数任务结果令人满意, 但仍有低级错误, 模糊提示理解偏差与偶尔过度思考.
 
-## 6. Conclusion，Limitations，and Future Directions 结论，局限与未来方向
+## 6. Conclusion, Limitations, and Future Directions 结论, 局限与未来方向
 
 In this work, we present a preview version of DeepSeek-V4 series, aiming at next-generation large language models that break the efficiency barrier of ultra-long-context processing. By combining a hybrid attention architecture that integrates CSA and HCA, DeepSeek-V4 series achieve a dramatic leap in long-sequence efficiency. The architectural innovations, together with extensive infrastructure optimization, enable efficient native support for million-token contexts and establish a necessary foundation for future test-time scaling, long-horizon tasks, and emerging paradigms such as online learning. Evaluation results demonstrate that DeepSeek-V4-Pro-Max, the maximum reasoning effort mode of DeepSeek-V4-Pro, redefines the state-of-the-art for open models. It substantially outperforms prior open-source models on knowledge benchmarks, achieves superior reasoning performance close to the frontier proprietary models, and delivers competitive agent capabilities. Meanwhile, DeepSeek-V4-Flash-Max attains comparable reasoning performance to leading closed models while maintaining a highly cost-efficient architecture. We believe DeepSeek-V4 series usher in a new era of million-length contexts for open models and pave the way toward better efficiency, scale, and intelligence.
 
@@ -1530,11 +1530,11 @@ In pursuit of extreme long-context efficiency, DeepSeek-V4 series adopted a bold
 
 
 
-代码 agent：从 50+ 内部工程师收集约 200 道难任务（功能，修 bug，重构，诊断；PyTorch/CUDA/Rust/C++ 等），各带原仓库，执行环境与人工 rubric，严筛后留 30 题。Table 8: Pro 显著超过 Sonnet 4.5，接近 Opus 4.5。对 𝑁=85 名日常用 Pro 做 agent 编程的 DeepSeek 研发问卷：52% 愿当默认主模型，39% 倾向愿意，不足 9% 否定；多数任务满意，但有琐碎错，模糊提示误解与偶尔 over-thinking。
+代码 agent: 从 50+ 内部工程师收集约 200 道难任务(功能, 修 bug, 重构, 诊断; PyTorch/CUDA/Rust/C++ 等), 各带原仓库, 执行环境与人工 rubric, 严筛后留 30 题. Table 8: Pro 显著超过 Sonnet 4.5, 接近 Opus 4.5. 对 𝑁=85 名日常用 Pro 做 agent 编程的 DeepSeek 研发问卷: 52% 愿当默认主模型, 39% 倾向愿意, 不足 9% 否定; 多数任务满意, 但有琐碎错, 模糊提示误解与偶尔 over-thinking.
 
-本工作给出 V4 系列预览，目标是打破超长上下文效率墙。CSA/HCA 混注带来长序列效率跃升；架构创新叠加基建优化，使百万上下文可原生高效支撑，并为 test-time scaling，长程任务与在线学习等未来范式打底。评测显示 Pro-Max 重划开源 SOTA：知识大幅超过先前开源，推理逼近前沿闭源，agent 有竞争力；Flash-Max 推理可比领先闭源且架构更省。作者认为 V4 开启开源百万长度上下文新时代。
+本工作给出 V4 系列预览, 目标是打破超长上下文效率墙. CSA/HCA 混注带来长序列效率跃升; 架构创新叠加基建优化, 使百万上下文可原生高效支撑, 并为 test-time scaling, 长程任务与在线学习等未来范式打底. 评测显示 Pro-Max 重划开源 SOTA: 知识大幅超过先前开源, 推理逼近前沿闭源, agent 有竞争力; Flash-Max 推理可比领先闭源且架构更省. 作者认为 V4 开启开源百万长度上下文新时代.
 
-为冲极端长上下文效率，架构偏大胆；为控风险保留许多已初步验证的组件与技巧，因而相对复杂。后续会更系统，更有原则地蒸馏到本质设计，在不伤效果下更干净。Anticipatory Routing 与 SwiGLU Clamping 虽有效，机理仍未透；将继续研究训练稳定性基础问题并加强内部指标监控，走向更可预测的大规模稳训。
+为冲极端长上下文效率, 架构偏大胆; 为控风险保留许多已初步验证的组件与技巧, 因而相对复杂. 后续会更系统, 更有原则地蒸馏到本质设计, 在不伤效果下更干净. Anticipatory Routing 与 SwiGLU Clamping 虽有效, 机理仍未透; 将继续研究训练稳定性基础问题并加强内部指标监控, 走向更可预测的大规模稳训.
 
 <!-- page 45 of 58 -->
 
@@ -1544,7 +1544,7 @@ In addition, beyond the MoE and sparse attention architecture, we will also proa
 
 
 
-此外，在 MoE 与稀疏注意力之外，还将探索新稀疏轴（如更稀疏 Embedding），在不伤能力下再抬计算与显存效率；持续研究低延迟架构与系统，让长上下文部署与交互更跟手；重视长程多轮 agent 并继续迭代；也在推进多模态；并承诺更好的数据策展与合成，持续抬智能，稳健与实用面。
+此外, 在 MoE 与稀疏注意力之外, 还将探索新稀疏轴(如更稀疏 Embedding), 在不伤能力下再抬计算与显存效率; 持续研究低延迟架构与系统, 让长上下文部署与交互更跟手; 重视长程多轮 agent 并继续迭代; 也在推进多模态; 并承诺更好的数据策展与合成, 持续抬智能, 稳健与实用面.
 
 
 ## References
@@ -1936,7 +1936,7 @@ Table 9 | Agentic Search vs. Retrieval Augmented Search for DeepSeek-V4-Pro.
 表 9｜Agentic Search vs. Retrieval Augmented Search for DeepSeek-V4-Pro.
 
 
-<table><tr><td>Difficulty</td><td>Category</td><td>#</td><td>Agent Win</td><td>RAG Win</td><td>Tie</td><td>Agent%</td><td>RAG%</td><td>Tie%</td></tr><tr><td rowspan="2">Easy</td><td>Objective Q&amp; A（客观问答）</td><td>196</td><td>110</td><td>43</td><td>43</td><td>56.1</td><td>21.9</td><td>21.9</td></tr><tr><td>Subjective Q&amp; A（主观问答）</td><td>321</td><td>198</td><td>56</td><td>67</td><td>61.7</td><td>17.4</td><td>20.9</td></tr><tr><td rowspan="2">Hard</td><td>Objective Q&amp; A（客观问答）</td><td>168</td><td>102</td><td>33</td><td>33</td><td>60.7</td><td>19.6</td><td>19.6</td></tr><tr><td>Subjective Q&amp; A（主观问答）</td><td>184</td><td>126</td><td>27</td><td>31</td><td>68.5</td><td>14.7</td><td>16.8</td></tr><tr><td></td><td>Total（总计）</td><td>869</td><td>536</td><td>159</td><td>174</td><td>61.7</td><td>18.3</td><td>20.0</td></tr></table>
+<table><tr><td>Difficulty</td><td>Category</td><td>#</td><td>Agent Win</td><td>RAG Win</td><td>Tie</td><td>Agent%</td><td>RAG%</td><td>Tie%</td></tr><tr><td rowspan=「2」>Easy</td><td>Objective Q&amp; A (客观问答)</td><td>196</td><td>110</td><td>43</td><td>43</td><td>56.1</td><td>21.9</td><td>21.9</td></tr><tr><td>Subjective Q&amp; A (主观问答)</td><td>321</td><td>198</td><td>56</td><td>67</td><td>61.7</td><td>17.4</td><td>20.9</td></tr><tr><td rowspan=「2」>Hard</td><td>Objective Q&amp; A (客观问答)</td><td>168</td><td>102</td><td>33</td><td>33</td><td>60.7</td><td>19.6</td><td>19.6</td></tr><tr><td>Subjective Q&amp; A (主观问答)</td><td>184</td><td>126</td><td>27</td><td>31</td><td>68.5</td><td>14.7</td><td>16.8</td></tr><tr><td></td><td>Total (总计)</td><td>869</td><td>536</td><td>159</td><td>174</td><td>61.7</td><td>18.3</td><td>20.0</td></tr></table>
 
 
 Table 10 | Cost Comparison: Agentic Search vs. Retrieval Augmented Search (Mean) for DeepSeek-V4-Pro. Most of the tool calls are parallel for Agentic Search.
@@ -1959,7 +1959,7 @@ Table 11 | Comparative Evaluation of DeepSeek-V4-Pro and DeepSeek-V3.2 on Search
 表 11｜Comparative Evaluation of DeepSeek-V4-Pro and DeepSeek-V3.2 on Search Q&A Tasks.
 
 
-<table><tr><td rowspan="2">Category</td><td rowspan="2">Subcategory</td><td rowspan="2">#</td><td colspan="6">Internal Evaluation（内部综合评估）</td></tr><tr><td>V4 win</td><td>V3.2 win</td><td>tie</td><td>V4%</td><td>V3.2%</td><td>tie%</td></tr><tr><td rowspan="4">Objective Q&amp; A（客观问答）</td><td>Single-value Search（单值信息查找）</td><td>95</td><td>36</td><td>10</td><td>49</td><td>37.9</td><td>10.5</td><td>51.6</td></tr><tr><td>Entity Search（实体信息查找）</td><td>99</td><td>24</td><td>7</td><td>68</td><td>24.2</td><td>7.1</td><td>68.7</td></tr><tr><td>Enumerative Search（枚举型信息查找）</td><td>95</td><td>19</td><td>8</td><td>68</td><td>20.0</td><td>8.4</td><td>71.6</td></tr><tr><td>Subtotal（小计）</td><td>289</td><td>79</td><td>25</td><td>185</td><td>27.3</td><td>8.7</td><td>64.0</td></tr><tr><td rowspan="8">Subjective Q&amp; A（主观问答）</td><td>Causal Analysis（原因分析）</td><td>100</td><td>28</td><td>5</td><td>67</td><td>28.0</td><td>5.0</td><td>67.0</td></tr><tr><td>Comparison（对比）</td><td>96</td><td>28</td><td>20</td><td>48</td><td>29.2</td><td>20.8</td><td>50.0</td></tr><tr><td>Advice Seeking（寻求建议）</td><td>92</td><td>23</td><td>8</td><td>61</td><td>25.0</td><td>8.7</td><td>66.3</td></tr><tr><td>Recommendation（推荐）</td><td>95</td><td>26</td><td>19</td><td>50</td><td>27.4</td><td>20.0</td><td>52.6</td></tr><tr><td>Planning &amp; Strategy（攻略计划）</td><td>92</td><td>32</td><td>11</td><td>49</td><td>34.8</td><td>12.0</td><td>53.3</td></tr><tr><td>Opinion &amp; Evaluation（评价看法）</td><td>96</td><td>30</td><td>8</td><td>58</td><td>31.2</td><td>8.3</td><td>60.4</td></tr><tr><td>Trend Analysis（趋势分析）</td><td>96</td><td>23</td><td>3</td><td>70</td><td>24.0</td><td>3.1</td><td>72.9</td></tr><tr><td>Subtotal（小计）</td><td>667</td><td>190</td><td>74</td><td>403</td><td>28.5</td><td>11.1</td><td>60.4</td></tr><tr><td></td><td>TOTAL（总计）</td><td>956</td><td>269</td><td>99</td><td>588</td><td>28.1</td><td>10.4</td><td>61.5</td></tr></table>
+<table><tr><td rowspan=「2」>Category</td><td rowspan=「2」>Subcategory</td><td rowspan=「2」>#</td><td colspan=「6」>Internal Evaluation (内部综合评估)</td></tr><tr><td>V4 win</td><td>V3.2 win</td><td>tie</td><td>V4%</td><td>V3.2%</td><td>tie%</td></tr><tr><td rowspan=「4」>Objective Q&amp; A (客观问答)</td><td>Single-value Search (单值信息查找)</td><td>95</td><td>36</td><td>10</td><td>49</td><td>37.9</td><td>10.5</td><td>51.6</td></tr><tr><td>Entity Search (实体信息查找)</td><td>99</td><td>24</td><td>7</td><td>68</td><td>24.2</td><td>7.1</td><td>68.7</td></tr><tr><td>Enumerative Search (枚举型信息查找)</td><td>95</td><td>19</td><td>8</td><td>68</td><td>20.0</td><td>8.4</td><td>71.6</td></tr><tr><td>Subtotal (小计)</td><td>289</td><td>79</td><td>25</td><td>185</td><td>27.3</td><td>8.7</td><td>64.0</td></tr><tr><td rowspan=「8」>Subjective Q&amp; A (主观问答)</td><td>Causal Analysis (原因分析)</td><td>100</td><td>28</td><td>5</td><td>67</td><td>28.0</td><td>5.0</td><td>67.0</td></tr><tr><td>Comparison (对比)</td><td>96</td><td>28</td><td>20</td><td>48</td><td>29.2</td><td>20.8</td><td>50.0</td></tr><tr><td>Advice Seeking (寻求建议)</td><td>92</td><td>23</td><td>8</td><td>61</td><td>25.0</td><td>8.7</td><td>66.3</td></tr><tr><td>Recommendation (推荐)</td><td>95</td><td>26</td><td>19</td><td>50</td><td>27.4</td><td>20.0</td><td>52.6</td></tr><tr><td>Planning &amp; Strategy (攻略计划)</td><td>92</td><td>32</td><td>11</td><td>49</td><td>34.8</td><td>12.0</td><td>53.3</td></tr><tr><td>Opinion &amp; Evaluation (评价看法)</td><td>96</td><td>30</td><td>8</td><td>58</td><td>31.2</td><td>8.3</td><td>60.4</td></tr><tr><td>Trend Analysis (趋势分析)</td><td>96</td><td>23</td><td>3</td><td>70</td><td>24.0</td><td>3.1</td><td>72.9</td></tr><tr><td>Subtotal (小计)</td><td>667</td><td>190</td><td>74</td><td>403</td><td>28.5</td><td>11.1</td><td>60.4</td></tr><tr><td></td><td>TOTAL (总计)</td><td>956</td><td>269</td><td>99</td><td>588</td><td>28.1</td><td>10.4</td><td>61.5</td></tr></table>
 
 
 <!-- page 56 of 58 -->
@@ -2006,7 +2006,7 @@ Table 12 | Comparative Analysis of DeepSeek-V4-Pro and Gemini-3.1-Pro in Chinese
 表 12｜Comparative Analysis of DeepSeek-V4-Pro and Gemini-3.1-Pro in Chinese Functional Writing.
 
 
-<table><tr><td rowspan="2">Category</td><td rowspan="2">Subcategory</td><td rowspan="2">#</td><td colspan="6">Internal Evaluation（内部综合评估）</td></tr><tr><td>DS win</td><td>Gem win</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td></tr><tr><td rowspan="10">Business Writing（办公文本）</td><td>Report（报告）</td><td>527</td><td>350</td><td>162</td><td>15</td><td>66.41</td><td>30.74</td><td>2.85</td></tr><tr><td>Proposal（方案策划）</td><td>291</td><td>181</td><td>103</td><td>7</td><td>62.20</td><td>35.40</td><td>2.41</td></tr><tr><td>Education（教育培训）</td><td>159</td><td>100</td><td>56</td><td>3</td><td>62.89</td><td>35.22</td><td>1.89</td></tr><tr><td>Email &amp; Letter（邮件书信）</td><td>146</td><td>107</td><td>37</td><td>2</td><td>73.29</td><td>25.34</td><td>1.37</td></tr><tr><td>Notice（通知公告）</td><td>72</td><td>43</td><td>24</td><td>5</td><td>59.72</td><td>33.33</td><td>6.94</td></tr><tr><td>Professional（专业文本）</td><td>63</td><td>34</td><td>27</td><td>2</td><td>53.97</td><td>42.86</td><td>3.17</td></tr><tr><td>Recruitment（招聘求职）</td><td>42</td><td>27</td><td>15</td><td>0</td><td>64.29</td><td>35.71</td><td>0.00</td></tr><tr><td>Technical（技术文本）</td><td>29</td><td>22</td><td>7</td><td>0</td><td>75.86</td><td>24.14</td><td>0.00</td></tr><tr><td>Review（介绍评价）</td><td>20</td><td>15</td><td>5</td><td>0</td><td>75.00</td><td>25.00</td><td>0.00</td></tr><tr><td>Subtotal（小计）</td><td>1349</td><td>879</td><td>436</td><td>34</td><td>65.16</td><td>32.32</td><td>2.52</td></tr><tr><td rowspan="9">Media Writing（媒体文本）</td><td>Social Media（社交媒体文案）</td><td>267</td><td>156</td><td>101</td><td>10</td><td>58.43</td><td>37.83</td><td>3.75</td></tr><tr><td>Ad Copy（广告商品文案）</td><td>214</td><td>109</td><td>98</td><td>7</td><td>50.93</td><td>45.79</td><td>3.27</td></tr><tr><td>Long-form Content（内容平台长文）</td><td>99</td><td>71</td><td>25</td><td>3</td><td>71.72</td><td>25.25</td><td>3.03</td></tr><tr><td>News Report（新闻报道）</td><td>51</td><td>27</td><td>22</td><td>2</td><td>52.94</td><td>43.14</td><td>3.92</td></tr><tr><td>Advertorial（营销软文）</td><td>17</td><td>12</td><td>4</td><td>1</td><td>70.59</td><td>23.53</td><td>5.88</td></tr><tr><td>Headline（标题）</td><td>11</td><td>7</td><td>4</td><td>0</td><td>63.64</td><td>36.36</td><td>0.00</td></tr><tr><td>Narration Script（口播文案）</td><td>4</td><td>2</td><td>1</td><td>1</td><td>50.00</td><td>25.00</td><td>25.00</td></tr><tr><td>Comment（评论）</td><td>3</td><td>2</td><td>1</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>Subtotal（小计）</td><td>666</td><td>386</td><td>256</td><td>24</td><td>57.96</td><td>38.44</td><td>3.60</td></tr><tr><td rowspan="6">Everyday Writing（生活文本）</td><td>Congratulatory（祝贺文本）</td><td>101</td><td>54</td><td>41</td><td>6</td><td>53.47</td><td>40.59</td><td>5.94</td></tr><tr><td>Communication（沟通回复）</td><td>100</td><td>71</td><td>26</td><td>3</td><td>71.00</td><td>26.00</td><td>3.00</td></tr><tr><td>Reflection（心得感想）</td><td>90</td><td>68</td><td>17</td><td>5</td><td>75.56</td><td>18.89</td><td>5.56</td></tr><tr><td>Review（介绍评价）</td><td>55</td><td>44</td><td>9</td><td>2</td><td>80.00</td><td>16.36</td><td>3.64</td></tr><tr><td>Comment（评论）</td><td>44</td><td>34</td><td>8</td><td>2</td><td>77.27</td><td>18.18</td><td>4.55</td></tr><tr><td>Subtotal（小计）</td><td>390</td><td>271</td><td>101</td><td>18</td><td>69.49</td><td>25.90</td><td>4.62</td></tr><tr><td rowspan="6">Oral Writing（口头文本）</td><td>Speech（发言稿）</td><td>226</td><td>135</td><td>85</td><td>6</td><td>59.73</td><td>37.61</td><td>2.65</td></tr><tr><td>Narration Script（口播文案）</td><td>51</td><td>25</td><td>23</td><td>3</td><td>49.02</td><td>45.10</td><td>5.88</td></tr><tr><td>Sales Script（话术）</td><td>31</td><td>22</td><td>6</td><td>3</td><td>70.97</td><td>19.35</td><td>9.68</td></tr><tr><td>Dialogue（对话文本）</td><td>10</td><td>4</td><td>6</td><td>0</td><td>40.00</td><td>60.00</td><td>0.00</td></tr><tr><td>Congratulatory（祝贺文本）</td><td>1</td><td>1</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>Subtotal（小计）</td><td>319</td><td>187</td><td>120</td><td>12</td><td>58.62</td><td>37.62</td><td>3.76</td></tr><tr><td rowspan="6">Official Document（公文文本）</td><td>Administrative Doc（事务文书）</td><td>117</td><td>60</td><td>53</td><td>4</td><td>51.28</td><td>45.30</td><td>3.42</td></tr><tr><td>Personal Doc（个人文书）</td><td>73</td><td>45</td><td>27</td><td>1</td><td>61.64</td><td>36.99</td><td>1.37</td></tr><tr><td>Government Doc（行政公文）</td><td>34</td><td>19</td><td>14</td><td>1</td><td>55.88</td><td>41.18</td><td>2.94</td></tr><tr><td>Speech（发言稿）</td><td>3</td><td>1</td><td>2</td><td>0</td><td>33.33</td><td>66.67</td><td>0.00</td></tr><tr><td>Essay Writing（申论写作）</td><td>3</td><td>1</td><td>1</td><td>1</td><td>33.33</td><td>33.33</td><td>33.33</td></tr><tr><td>Subtotal（小计）</td><td>230</td><td>126</td><td>97</td><td>7</td><td>54.78</td><td>42.17</td><td>3.04</td></tr><tr><td rowspan="5">Academic Writing（学术文本）</td><td>Research Paper（学术论文）</td><td>104</td><td>67</td><td>32</td><td>5</td><td>64.42</td><td>30.77</td><td>4.81</td></tr><tr><td>Coursework（课程作业）</td><td>90</td><td>53</td><td>35</td><td>2</td><td>58.89</td><td>38.89</td><td>2.22</td></tr><tr><td>Academic Support（学术辅助）</td><td>15</td><td>11</td><td>3</td><td>1</td><td>73.33</td><td>20.00</td><td>6.67</td></tr><tr><td>Science Outreach（专业科普）</td><td>7</td><td>6</td><td>1</td><td>0</td><td>85.71</td><td>14.29</td><td>0.00</td></tr><tr><td>Subtotal（小计）</td><td>216</td><td>137</td><td>71</td><td>8</td><td>63.43</td><td>32.87</td><td>3.70</td></tr><tr><td>Total（总计）</td><td></td><td>3170</td><td>1986</td><td>1081</td><td>103</td><td>62.65</td><td>34.10</td><td>3.25</td></tr></table>
+<table><tr><td rowspan=「2」>Category</td><td rowspan=「2」>Subcategory</td><td rowspan=「2」>#</td><td colspan=「6」>Internal Evaluation (内部综合评估)</td></tr><tr><td>DS win</td><td>Gem win</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td></tr><tr><td rowspan=「10」>Business Writing(办公文本)</td><td>Report (报告)</td><td>527</td><td>350</td><td>162</td><td>15</td><td>66.41</td><td>30.74</td><td>2.85</td></tr><tr><td>Proposal (方案策划)</td><td>291</td><td>181</td><td>103</td><td>7</td><td>62.20</td><td>35.40</td><td>2.41</td></tr><tr><td>Education (教育培训)</td><td>159</td><td>100</td><td>56</td><td>3</td><td>62.89</td><td>35.22</td><td>1.89</td></tr><tr><td>Email &amp; Letter (邮件书信)</td><td>146</td><td>107</td><td>37</td><td>2</td><td>73.29</td><td>25.34</td><td>1.37</td></tr><tr><td>Notice (通知公告)</td><td>72</td><td>43</td><td>24</td><td>5</td><td>59.72</td><td>33.33</td><td>6.94</td></tr><tr><td>Professional (专业文本)</td><td>63</td><td>34</td><td>27</td><td>2</td><td>53.97</td><td>42.86</td><td>3.17</td></tr><tr><td>Recruitment (招聘求职)</td><td>42</td><td>27</td><td>15</td><td>0</td><td>64.29</td><td>35.71</td><td>0.00</td></tr><tr><td>Technical (技术文本)</td><td>29</td><td>22</td><td>7</td><td>0</td><td>75.86</td><td>24.14</td><td>0.00</td></tr><tr><td>Review (介绍评价)</td><td>20</td><td>15</td><td>5</td><td>0</td><td>75.00</td><td>25.00</td><td>0.00</td></tr><tr><td>Subtotal (小计)</td><td>1349</td><td>879</td><td>436</td><td>34</td><td>65.16</td><td>32.32</td><td>2.52</td></tr><tr><td rowspan=「9」>Media Writing(媒体文本)</td><td>Social Media (社交媒体文案)</td><td>267</td><td>156</td><td>101</td><td>10</td><td>58.43</td><td>37.83</td><td>3.75</td></tr><tr><td>Ad Copy (广告商品文案)</td><td>214</td><td>109</td><td>98</td><td>7</td><td>50.93</td><td>45.79</td><td>3.27</td></tr><tr><td>Long-form Content (内容平台长文)</td><td>99</td><td>71</td><td>25</td><td>3</td><td>71.72</td><td>25.25</td><td>3.03</td></tr><tr><td>News Report (新闻报道)</td><td>51</td><td>27</td><td>22</td><td>2</td><td>52.94</td><td>43.14</td><td>3.92</td></tr><tr><td>Advertorial (营销软文)</td><td>17</td><td>12</td><td>4</td><td>1</td><td>70.59</td><td>23.53</td><td>5.88</td></tr><tr><td>Headline (标题)</td><td>11</td><td>7</td><td>4</td><td>0</td><td>63.64</td><td>36.36</td><td>0.00</td></tr><tr><td>Narration Script (口播文案)</td><td>4</td><td>2</td><td>1</td><td>1</td><td>50.00</td><td>25.00</td><td>25.00</td></tr><tr><td>Comment (评论)</td><td>3</td><td>2</td><td>1</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>Subtotal (小计)</td><td>666</td><td>386</td><td>256</td><td>24</td><td>57.96</td><td>38.44</td><td>3.60</td></tr><tr><td rowspan=「6」>Everyday Writing(生活文本)</td><td>Congratulatory (祝贺文本)</td><td>101</td><td>54</td><td>41</td><td>6</td><td>53.47</td><td>40.59</td><td>5.94</td></tr><tr><td>Communication (沟通回复)</td><td>100</td><td>71</td><td>26</td><td>3</td><td>71.00</td><td>26.00</td><td>3.00</td></tr><tr><td>Reflection (心得感想)</td><td>90</td><td>68</td><td>17</td><td>5</td><td>75.56</td><td>18.89</td><td>5.56</td></tr><tr><td>Review (介绍评价)</td><td>55</td><td>44</td><td>9</td><td>2</td><td>80.00</td><td>16.36</td><td>3.64</td></tr><tr><td>Comment (评论)</td><td>44</td><td>34</td><td>8</td><td>2</td><td>77.27</td><td>18.18</td><td>4.55</td></tr><tr><td>Subtotal (小计)</td><td>390</td><td>271</td><td>101</td><td>18</td><td>69.49</td><td>25.90</td><td>4.62</td></tr><tr><td rowspan=「6」>Oral Writing(口头文本)</td><td>Speech (发言稿)</td><td>226</td><td>135</td><td>85</td><td>6</td><td>59.73</td><td>37.61</td><td>2.65</td></tr><tr><td>Narration Script (口播文案)</td><td>51</td><td>25</td><td>23</td><td>3</td><td>49.02</td><td>45.10</td><td>5.88</td></tr><tr><td>Sales Script (话术)</td><td>31</td><td>22</td><td>6</td><td>3</td><td>70.97</td><td>19.35</td><td>9.68</td></tr><tr><td>Dialogue (对话文本)</td><td>10</td><td>4</td><td>6</td><td>0</td><td>40.00</td><td>60.00</td><td>0.00</td></tr><tr><td>Congratulatory (祝贺文本)</td><td>1</td><td>1</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>Subtotal (小计)</td><td>319</td><td>187</td><td>120</td><td>12</td><td>58.62</td><td>37.62</td><td>3.76</td></tr><tr><td rowspan=「6」>Official Document(公文文本)</td><td>Administrative Doc (事务文书)</td><td>117</td><td>60</td><td>53</td><td>4</td><td>51.28</td><td>45.30</td><td>3.42</td></tr><tr><td>Personal Doc (个人文书)</td><td>73</td><td>45</td><td>27</td><td>1</td><td>61.64</td><td>36.99</td><td>1.37</td></tr><tr><td>Government Doc (行政公文)</td><td>34</td><td>19</td><td>14</td><td>1</td><td>55.88</td><td>41.18</td><td>2.94</td></tr><tr><td>Speech (发言稿)</td><td>3</td><td>1</td><td>2</td><td>0</td><td>33.33</td><td>66.67</td><td>0.00</td></tr><tr><td>Essay Writing (申论写作)</td><td>3</td><td>1</td><td>1</td><td>1</td><td>33.33</td><td>33.33</td><td>33.33</td></tr><tr><td>Subtotal (小计)</td><td>230</td><td>126</td><td>97</td><td>7</td><td>54.78</td><td>42.17</td><td>3.04</td></tr><tr><td rowspan=「5」>Academic Writing(学术文本)</td><td>Research Paper (学术论文)</td><td>104</td><td>67</td><td>32</td><td>5</td><td>64.42</td><td>30.77</td><td>4.81</td></tr><tr><td>Coursework (课程作业)</td><td>90</td><td>53</td><td>35</td><td>2</td><td>58.89</td><td>38.89</td><td>2.22</td></tr><tr><td>Academic Support (学术辅助)</td><td>15</td><td>11</td><td>3</td><td>1</td><td>73.33</td><td>20.00</td><td>6.67</td></tr><tr><td>Science Outreach (专业科普)</td><td>7</td><td>6</td><td>1</td><td>0</td><td>85.71</td><td>14.29</td><td>0.00</td></tr><tr><td>Subtotal (小计)</td><td>216</td><td>137</td><td>71</td><td>8</td><td>63.43</td><td>32.87</td><td>3.70</td></tr><tr><td>Total (总计)</td><td></td><td>3170</td><td>1986</td><td>1081</td><td>103</td><td>62.65</td><td>34.10</td><td>3.25</td></tr></table>
 
 
 <!-- page 58 of 58 -->
@@ -2020,7 +2020,7 @@ Table 13 | Comparative Analysis of DeepSeek-V4-Pro and Gemini-3.1-Pro in Chinese
 表 13｜Comparative Analysis of DeepSeek-V4-Pro and Gemini-3.1-Pro in Chinese Creative Writing.
 
 
-<table><tr><td rowspan="2">Subcategory（文体）</td><td rowspan="2">#</td><td colspan="6">Instruction Following（指令遵循）</td><td colspan="6">Writing Quality（写作质量）</td></tr><tr><td>DS</td><td>Gem</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td><td>DS</td><td>Gem</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td></tr><tr><td>Fiction（小说故事）</td><td>836</td><td>504</td><td>323</td><td>5</td><td>60.58</td><td>38.82</td><td>0.60</td><td>672</td><td>157</td><td>3</td><td>80.77</td><td>18.87</td><td>0.36</td></tr><tr><td>General Fiction（泛小说故事）</td><td>662</td><td>368</td><td>290</td><td>3</td><td>55.67</td><td>43.87</td><td>0.45</td><td>467</td><td>194</td><td>0</td><td>70.65</td><td>29.35</td><td>0.00</td></tr><tr><td>Fan Fiction（同人文）</td><td>410</td><td>253</td><td>150</td><td>3</td><td>62.32</td><td>36.95</td><td>0.74</td><td>338</td><td>67</td><td>1</td><td>83.25</td><td>16.50</td><td>0.25</td></tr><tr><td>General Fan Fic.（泛同人文）</td><td>202</td><td>111</td><td>90</td><td>1</td><td>54.95</td><td>44.55</td><td>0.50</td><td>161</td><td>40</td><td>1</td><td>79.70</td><td>19.80</td><td>0.50</td></tr><tr><td>Narrative（记叙文）</td><td>171</td><td>115</td><td>54</td><td>2</td><td>67.25</td><td>31.58</td><td>1.17</td><td>141</td><td>30</td><td>0</td><td>82.46</td><td>17.54</td><td>0.00</td></tr><tr><td>General Prose（泛散文）</td><td>124</td><td>83</td><td>40</td><td>1</td><td>66.94</td><td>32.26</td><td>0.81</td><td>88</td><td>36</td><td>0</td><td>70.97</td><td>29.03</td><td>0.00</td></tr><tr><td>Prose（散文）</td><td>112</td><td>74</td><td>38</td><td>0</td><td>66.07</td><td>33.93</td><td>0.00</td><td>92</td><td>20</td><td>0</td><td>82.14</td><td>17.86</td><td>0.00</td></tr><tr><td>Writing Style（文笔）</td><td>112</td><td>81</td><td>31</td><td>0</td><td>72.32</td><td>27.68</td><td>0.00</td><td>86</td><td>26</td><td>0</td><td>76.79</td><td>23.21</td><td>0.00</td></tr><tr><td>Classical Poetry（古诗文）</td><td>48</td><td>24</td><td>24</td><td>0</td><td>50.00</td><td>50.00</td><td>0.00</td><td>39</td><td>9</td><td>0</td><td>81.25</td><td>18.75</td><td>0.00</td></tr><tr><td>Modern Poetry（现代诗）</td><td>43</td><td>23</td><td>20</td><td>0</td><td>53.49</td><td>46.51</td><td>0.00</td><td>32</td><td>11</td><td>0</td><td>74.42</td><td>25.58</td><td>0.00</td></tr><tr><td>Lyrics（歌词）</td><td>30</td><td>8</td><td>22</td><td>0</td><td>26.67</td><td>73.33</td><td>0.00</td><td>16</td><td>14</td><td>0</td><td>53.33</td><td>46.67</td><td>0.00</td></tr><tr><td>Literary Appreciation（赏析）</td><td>27</td><td>20</td><td>7</td><td>0</td><td>74.07</td><td>25.93</td><td>0.00</td><td>18</td><td>9</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>General Argument.（泛议论文）</td><td>24</td><td>15</td><td>9</td><td>0</td><td>62.50</td><td>37.50</td><td>0.00</td><td>17</td><td>7</td><td>0</td><td>70.83</td><td>29.17</td><td>0.00</td></tr><tr><td>General Narrative（泛记叙文）</td><td>23</td><td>11</td><td>12</td><td>0</td><td>47.83</td><td>52.17</td><td>0.00</td><td>15</td><td>8</td><td>0</td><td>65.22</td><td>34.78</td><td>0.00</td></tr><tr><td>General Classical（泛古文诗歌）</td><td>9</td><td>5</td><td>4</td><td>0</td><td>55.56</td><td>44.44</td><td>0.00</td><td>5</td><td>4</td><td>0</td><td>55.56</td><td>44.44</td><td>0.00</td></tr><tr><td>Creative Writing（创意写作）</td><td>6</td><td>2</td><td>4</td><td>0</td><td>33.33</td><td>66.67</td><td>0.00</td><td>4</td><td>2</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>Argumentative（议论文）</td><td>5</td><td>5</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td><td>5</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>General Mod. Poetry（泛现代诗）</td><td>2</td><td>1</td><td>1</td><td>0</td><td>50.00</td><td>50.00</td><td>0.00</td><td>2</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>Total（总计）</td><td>2837</td><td>1703</td><td>1119</td><td>15</td><td>60.03</td><td>39.44</td><td>0.53</td><td>2198</td><td>634</td><td>5</td><td>77.48</td><td>22.35</td><td>0.18</td></tr></table>
+<table><tr><td rowspan=「2」>Subcategory (文体)</td><td rowspan=「2」>#</td><td colspan=「6」>Instruction Following(指令遵循)</td><td colspan=「6」>Writing Quality (写作质量)</td></tr><tr><td>DS</td><td>Gem</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td><td>DS</td><td>Gem</td><td>Tie</td><td>DS%</td><td>Gem%</td><td>Tie%</td></tr><tr><td>Fiction (小说故事)</td><td>836</td><td>504</td><td>323</td><td>5</td><td>60.58</td><td>38.82</td><td>0.60</td><td>672</td><td>157</td><td>3</td><td>80.77</td><td>18.87</td><td>0.36</td></tr><tr><td>General Fiction (泛小说故事)</td><td>662</td><td>368</td><td>290</td><td>3</td><td>55.67</td><td>43.87</td><td>0.45</td><td>467</td><td>194</td><td>0</td><td>70.65</td><td>29.35</td><td>0.00</td></tr><tr><td>Fan Fiction (同人文)</td><td>410</td><td>253</td><td>150</td><td>3</td><td>62.32</td><td>36.95</td><td>0.74</td><td>338</td><td>67</td><td>1</td><td>83.25</td><td>16.50</td><td>0.25</td></tr><tr><td>General Fan Fic. (泛同人文)</td><td>202</td><td>111</td><td>90</td><td>1</td><td>54.95</td><td>44.55</td><td>0.50</td><td>161</td><td>40</td><td>1</td><td>79.70</td><td>19.80</td><td>0.50</td></tr><tr><td>Narrative (记叙文)</td><td>171</td><td>115</td><td>54</td><td>2</td><td>67.25</td><td>31.58</td><td>1.17</td><td>141</td><td>30</td><td>0</td><td>82.46</td><td>17.54</td><td>0.00</td></tr><tr><td>General Prose (泛散文)</td><td>124</td><td>83</td><td>40</td><td>1</td><td>66.94</td><td>32.26</td><td>0.81</td><td>88</td><td>36</td><td>0</td><td>70.97</td><td>29.03</td><td>0.00</td></tr><tr><td>Prose (散文)</td><td>112</td><td>74</td><td>38</td><td>0</td><td>66.07</td><td>33.93</td><td>0.00</td><td>92</td><td>20</td><td>0</td><td>82.14</td><td>17.86</td><td>0.00</td></tr><tr><td>Writing Style (文笔)</td><td>112</td><td>81</td><td>31</td><td>0</td><td>72.32</td><td>27.68</td><td>0.00</td><td>86</td><td>26</td><td>0</td><td>76.79</td><td>23.21</td><td>0.00</td></tr><tr><td>Classical Poetry (古诗文)</td><td>48</td><td>24</td><td>24</td><td>0</td><td>50.00</td><td>50.00</td><td>0.00</td><td>39</td><td>9</td><td>0</td><td>81.25</td><td>18.75</td><td>0.00</td></tr><tr><td>Modern Poetry (现代诗)</td><td>43</td><td>23</td><td>20</td><td>0</td><td>53.49</td><td>46.51</td><td>0.00</td><td>32</td><td>11</td><td>0</td><td>74.42</td><td>25.58</td><td>0.00</td></tr><tr><td>Lyrics (歌词)</td><td>30</td><td>8</td><td>22</td><td>0</td><td>26.67</td><td>73.33</td><td>0.00</td><td>16</td><td>14</td><td>0</td><td>53.33</td><td>46.67</td><td>0.00</td></tr><tr><td>Literary Appreciation (赏析)</td><td>27</td><td>20</td><td>7</td><td>0</td><td>74.07</td><td>25.93</td><td>0.00</td><td>18</td><td>9</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>General Argument. (泛议论文)</td><td>24</td><td>15</td><td>9</td><td>0</td><td>62.50</td><td>37.50</td><td>0.00</td><td>17</td><td>7</td><td>0</td><td>70.83</td><td>29.17</td><td>0.00</td></tr><tr><td>General Narrative (泛记叙文)</td><td>23</td><td>11</td><td>12</td><td>0</td><td>47.83</td><td>52.17</td><td>0.00</td><td>15</td><td>8</td><td>0</td><td>65.22</td><td>34.78</td><td>0.00</td></tr><tr><td>General Classical (泛古文诗歌)</td><td>9</td><td>5</td><td>4</td><td>0</td><td>55.56</td><td>44.44</td><td>0.00</td><td>5</td><td>4</td><td>0</td><td>55.56</td><td>44.44</td><td>0.00</td></tr><tr><td>Creative Writing (创意写作)</td><td>6</td><td>2</td><td>4</td><td>0</td><td>33.33</td><td>66.67</td><td>0.00</td><td>4</td><td>2</td><td>0</td><td>66.67</td><td>33.33</td><td>0.00</td></tr><tr><td>Argumentative (议论文)</td><td>5</td><td>5</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td><td>5</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>General Mod. Poetry (泛现代诗)</td><td>2</td><td>1</td><td>1</td><td>0</td><td>50.00</td><td>50.00</td><td>0.00</td><td>2</td><td>0</td><td>0</td><td>100.00</td><td>0.00</td><td>0.00</td></tr><tr><td>Total (总计)</td><td>2837</td><td>1703</td><td>1119</td><td>15</td><td>60.03</td><td>39.44</td><td>0.53</td><td>2198</td><td>634</td><td>5</td><td>77.48</td><td>22.35</td><td>0.18</td></tr></table>
 
 
 Table 14 | DeepSeek-V4-Pro vs. Claude-Opus-4.5 on Complex Instruction Following and Multi-Turn Writing.
@@ -2030,7 +2030,7 @@ Table 14 | DeepSeek-V4-Pro vs. Claude-Opus-4.5 on Complex Instruction Following 
 表 14｜DeepSeek-V4-Pro vs. Claude-Opus-4.5 on Complex Instruction Following and Multi-Turn Writing.
 
 
-<table><tbody><tr><td rowspan="2">Category</td><td rowspan="2">#</td><td colspan="5">Internal Evaluation（内部综合评估）</td></tr><tr><td>DS</td><td>Opus</td><td>Tie DS%</td><td>Opus%</td><td>Tie%</td></tr><tr><td>Complex Inst. Following（复杂指令跟随）</td><td>49</td><td>23</td><td>26</td><td>0 46.9%</td><td>53.1%</td><td>0.0%</td></tr><tr><td>Multi-Turn Writing（多轮写作）</td><td>147</td><td>67</td><td>76</td><td>4 45.6%</td><td>51.7%</td><td>2.7%</td></tr><tr><td>Total（总计）</td><td>196</td><td>90</td><td>102</td><td>4 45.9%</td><td>52.0%</td><td>2.0%</td></tr></tbody></table>
+<table><tbody><tr><td rowspan=「2」>Category</td><td rowspan=「2」>#</td><td colspan=「5」>Internal Evaluation (内部综合评估)</td></tr><tr><td>DS</td><td>Opus</td><td>Tie DS%</td><td>Opus%</td><td>Tie%</td></tr><tr><td>Complex Inst. Following (复杂指令跟随)</td><td>49</td><td>23</td><td>26</td><td>0 46.9%</td><td>53.1%</td><td>0.0%</td></tr><tr><td>Multi-Turn Writing (多轮写作)</td><td>147</td><td>67</td><td>76</td><td>4 45.6%</td><td>51.7%</td><td>2.7%</td></tr><tr><td>Total (总计)</td><td>196</td><td>90</td><td>102</td><td>4 45.9%</td><td>52.0%</td><td>2.0%</td></tr></tbody></table>
 
 
 58

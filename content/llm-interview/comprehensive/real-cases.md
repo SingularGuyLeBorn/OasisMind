@@ -6,7 +6,7 @@ published: true
 
 > ⚠️ **注意事项**：
 > - 这些是真实面试案例，题目在不同公司、不同时间会被重复问，但出题风格和追问方向差异很大
-> - 每题标注 `{company, position, year, topic, difficulty}` 方便你做「针对某公司」的准备
+> - 每题标注 `{company, position, year, topic, difficulty}` 方便你做"针对某公司"的准备
 > - 来源：AgentGuide GitHub + 牛客面经
 
 ---

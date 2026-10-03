@@ -1,7 +1,7 @@
 ---
 title: "05 · MLA 矩阵吸收与非吸收双版本"
 published: true
-excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}，c^Q，k^R 与解耦 RoPE）。本篇不重推 latent，只回答 工程落地：同一套 checkpoint，Prefill 与 Decode 为何走两条计算图？"
+excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}, c^Q, k^R 与解耦 RoPE）。本篇不重推 latent，只回答 工程落地：同一套 checkpoint，Prefill 与 Decode 为何走两条计算图？"
 ---
 # MLA 矩阵吸收与非吸收双版本
 
@@ -81,7 +81,7 @@ excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}，c^Q，k^R 与�
 
 ## 2. 附录 C 完整公式（DeepSeek-V2）
 
-与 04 篇式（4）–(12) 对齐，此处用论文编号 $h_t$：
+与 04 篇式 (4)–(12) 对齐，此处用论文编号 $h_t$：
 
 $$
 c_t^{Q} = h_t W^{DQ},\quad
@@ -105,7 +105,7 @@ o_{t,i} = \sum_{j=1}^{t} \mathrm{Softmax}_j\!\left(\frac{q_{t,i}^\top k_{j,i}}{\
 u_t = W^{O} [o_{t,1};\ldots;o_{t,n_h}] \tag{4}
 $$
 
-**训练**：始终按式（1）–(4) 前向（非吸收语义）。**推理**：按阶段选非吸收或吸收实现，权重 tensor **相同**。
+**训练**：始终按式 (1)–(4) 前向（非吸收语义）。**推理**：按阶段选非吸收或吸收实现，权重 tensor **相同**。
 
 ---
 
@@ -141,7 +141,7 @@ k_{j,i,u}^{C} = \sum_{r} c_{j,r}^{KV} (W^{UK})_{r,(i-1)d_{h,C}+u},\quad
 v_{j,i,u}^{C} = \sum_{r} c_{j,r}^{KV} (W^{UV})_{r,(i-1)d_{h,C}+u} \tag{6}
 $$
 
-对 **cache 中全部** $j \in [1, x+y]$ 执行（6）的上投影 → Prefill 代价 $\propto n_h (x+y) d_c d_{h,C}$，但可与 FlashAttention 大 GEMM 融合。
+对 **cache 中全部** $j \in [1, x+y]$ 执行 (6) 的上投影 → Prefill 代价 $\propto n_h (x+y) d_c d_{h,C}$，但可与 FlashAttention 大 GEMM 融合。
 
 ### 4.2 内容分数双线性型
 
@@ -183,7 +183,7 @@ $$
 o_{t,i,u}^{C} = \sum_j \alpha_{t,j,i} \sum_r c_{j,r}^{KV} (W^{UV})_{r,u}^{(i)} \tag{11}
 $$
 
-拼接 $o_t = [o_{t,1}; \ldots; o_{t,n_h}]$，$u_t = o_t W^O$。将（11）代入：
+拼接 $o_t = [o_{t,1}; \ldots; o_{t,n_h}]$，$u_t = o_t W^O$。将 (11) 代入：
 
 $$
 u_{t,p} = \sum_i \sum_u \sum_j \alpha_{t,j,i} \sum_r c_{j,r}^{KV} (W^{UV})_{r,u}^{(i)} (W^O)_{\mathrm{idx}(i,u), p} \tag{12}
@@ -199,8 +199,8 @@ Attention 输出直接是 **latent 维** 上的 $\bar{c}^V$，再经 $W^{O'}$ �
 
 ### 5.3 等价性三条件
 
-1. 内容分只用（9）（10），RoPE 分只用（8）相加；
-2. $W^{O'}$ 与（13）浮点结合顺序与训练图一致；
+1. 内容分只用 (9)(10)，RoPE 分只用 (8) 相加；
+2. $W^{O'}$ 与 (13) 浮点结合顺序与训练图一致；
 3. softmax 归一化域相同（同一 $S_{t,j,i}$）。
 
 ---
@@ -219,9 +219,9 @@ $d_c=d_c'=2,\ d_{h,C}=2,\ n_h=1$。$c_1^{KV}=[1,0]^\top,\ c_2^{KV}=[0,1]^\top$�
 
 ## 7. 数值走查：含 RoPE 一项
 
-设 $d_h^R=2$，$q_2^R=k_j^R$ 为二维单位向量经 $R_j$ 旋转。即使 $S^C$ 同 §6，加上 $S^R$ 后 $\alpha$ 改变，**两路径仍一致**——只要（8）在非吸收与吸收中 **同一式** 计算，且 Value 仍只聚合 $v^C$（RoPE 不进 Value）。
+设 $d_h^R=2$，$q_2^R=k_j^R$ 为二维单位向量经 $R_j$ 旋转。即使 $S^C$ 同 §6，加上 $S^R$ 后 $\alpha$ 改变，**两路径仍一致**——只要 (8) 在非吸收与吸收中 **同一式** 计算，且 Value 仍只聚合 $v^C$（RoPE 不进 Value）。
 
-Walkthrough：$S_{2,j}=S_{2,j}^C + (R_2 q_0)^\top (R_j k_0)$ → softmax → 式（11）（13）分别算 $u_2$，应 bitwise 匹配（忽略浮点误差）。
+Walkthrough：$S_{2,j}=S_{2,j}^C + (R_2 q_0)^\top (R_j k_0)$ → softmax → 式 (11)(13) 分别算 $u_2$，应 bitwise 匹配（忽略浮点误差）。
 
 ---
 
@@ -329,7 +329,7 @@ $$
 
 **图 8 解析**
 
-三维曲面：横轴 **seq_len** $x$，纵轴 **cache_len** $y$，竖轴 **FLOPs 差分 $z$**。DeepSeek-V3 参数下本地复现（公式（15））。
+三维曲面：横轴 **seq_len** $x$，纵轴 **cache_len** $y$，竖轴 **FLOPs 差分 $z$**。DeepSeek-V3 参数下本地复现（公式 (15)）。
 
 - **$z>0$ 区域**（曲面在 0 平面之上）：非吸收更费 → 倾向 **吸收 / MQA mode**。
 - **$z<0$ 区域**（曲面之下）：非吸收更省 → 倾向 **MHA mode**。
@@ -380,7 +380,7 @@ Notebook：[InfraTech/MLA_diff_mode_mfu_calculation.ipynb](https://github.com/Ca
 | KV 下采样 | $c^{KV}=h W^{DKV}$ | ✓ cache | ✓ cache |
 | k_pe | $k^R=\mathrm{RoPE}(hW^{KR})$ | ✓ cache | ✓ cache |
 | KV 上采样 | $W^{UK}, W^{UV}$ | ✓ 对 cache 全长 | ✗ 进 Q/O |
-| Attention | 式（4） | head 维 MHA | latent 维 MQA |
+| Attention | 式 (4) | head 维 MHA | latent 维 MQA |
 | O 投影 | $W^O$ / $W^{O'}$ | $W^O$ | $W^{O'}$ |
 
 ---
@@ -472,7 +472,7 @@ vLLM / SGLang / DeepSeek 推理栈在 **scheduler** 层根据 batch 是 prefill 
 | FLOPs | $z<0$（$y=0$，大 $x$） | $z>0$（$x=1$，大 $y$） |
 | 图 | 图 3 | 图 4 |
 
-**一句话**：[04 篇](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md) 定义 **cache 是什么**；本篇定义 **同一权重下乘法顺序如何排** 才在 Prefill/Decode 各段最省。式（9）–(13) 是吸收代数；式（15）是选型地图；图 3–8 是工程与实验对照。
+**一句话**：[04 篇](../04-MLA-低秩潜变量与解耦式注意力/04-MLA-低秩潜变量与解耦式注意力.md) 定义 **cache 是什么**；本篇定义 **同一权重下乘法顺序如何排** 才在 Prefill/Decode 各段最省。式 (9)–(13) 是吸收代数；式 (15) 是选型地图；图 3–8 是工程与实验对照。
 
 ---
 

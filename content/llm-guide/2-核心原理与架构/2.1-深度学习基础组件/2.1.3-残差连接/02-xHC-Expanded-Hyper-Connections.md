@@ -22,7 +22,7 @@ $$
 h_{l+1}=h_l+F_l(h_l).
 $$
 
-HC 把状态写成 $N$ 条流 $X_l=(x_{l,1},\dots,x_{l,N})^\top\in\mathbb{R}^{N\times C}$，一层更新是（论文式（1））
+HC 把状态写成 $N$ 条流 $X_l=(x_{l,1},\dots,x_{l,N})^\top\in\mathbb{R}^{N\times C}$，一层更新是（论文式 (1)）
 
 $$
 X_{l+1}=\mathcal{H}_l^{\mathrm{res}} X_l+\mathcal{H}_l^{\mathrm{post}}\,\mathcal{F}\!\bigl(\mathcal{H}_l^{\mathrm{pre}} X_l,\,\mathcal{W}_l\bigr).
@@ -36,7 +36,7 @@ $$
 | $\mathcal{H}^{\mathrm{post}}$ | $N\times 1$（mHC） | 把子层输出写回各条流 |
 | $\mathcal{H}^{\mathrm{res}}$ | $N\times N$ | 流与流之间混合 |
 
-mHC 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵（Birkhoff 多面体）上，用 Sinkhorn–Knopp 强制行列和为 1（论文式（2））。这样深度上的连乘 $\prod_l \mathcal{H}_l^{\mathrm{res}}$ 不会无界放大或衰减，恒等映射才还在。这一步的动机和公式边界见 [01 §7–9](./01-Hyper-Connections与mHC.md)，这里不重推。**不是** Tay 等人把注意力块排序的 Sparse Sinkhorn Attention（[2002.11296](https://ar5iv.labs.arxiv.org/html/2002.11296)，见 [2.3.4 §4.3.2](../../2.3-高效与稀疏注意力/2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md)）：两边都用 Sinkhorn–Knopp，作用对象一个是残差混合矩阵，一个是块置换。
+mHC 把 $\mathcal{H}^{\mathrm{res}}$ 投到双随机矩阵（Birkhoff 多面体）上，用 Sinkhorn–Knopp 强制行列和为 1（论文式 (2)）。这样深度上的连乘 $\prod_l \mathcal{H}_l^{\mathrm{res}}$ 不会无界放大或衰减，恒等映射才还在。这一步的动机和公式边界见 [01 §7–9](./01-Hyper-Connections与mHC.md)，这里不重推。**不是** Tay 等人把注意力块排序的 Sparse Sinkhorn Attention（[2002.11296](https://ar5iv.labs.arxiv.org/html/2002.11296)，见 [2.3.4 §4.3.2](../../2.3-高效与稀疏注意力/2.3.4-高效注意力全景综述/2.3.4-高效注意力全景综述.md)）：两边都用 Sinkhorn–Knopp，作用对象一个是残差混合矩阵，一个是块置换。
 
 xHC 论文要解释的实验事实是：mHC 从 $N=1$ 扩到 $N=4$ 很值；再扩到 $N=16$，在他们 2.5B MoE 配方上 **loss 只再降约 0.006，训练 FLOPs 却多 32%**。残差记忆这条轴看起来「有」，但 ROI 崩了。
 
@@ -44,7 +44,7 @@ xHC 论文要解释的实验事实是：mHC 从 $N=1$ 扩到 $N=4$ 很值；再�
 
 ### 2.1 信息供给
 
-第 $l$ 层写回第 $i$ 条流时，mHC 的形式是（论文式（3））
+第 $l$ 层写回第 $i$ 条流时，mHC 的形式是（论文式 (3)）
 
 $$
 \Delta x_{l,i}=h_{l,i}^{\mathrm{post}}\cdot \mathrm{out},
@@ -66,7 +66,7 @@ $h_{l,i}^{\mathrm{post}}$ 可以随输入、随流变，但 **新注入的向量
 
 ### 3.1 时间维增强写回（只加在 MLP 后）
 
-直接给每条流各算一个 $\mathrm{out}$ 太贵。xHC 改从 **因果邻域** 借信息：对子层输出做 $r$ 组深度可分离 1D 因果卷积，核长 $\{\kappa_1,\dots,\kappa_r\}$，再和原输出拼在一起（论文式（4））：
+直接给每条流各算一个 $\mathrm{out}$ 太贵。xHC 改从 **因果邻域** 借信息：对子层输出做 $r$ 组深度可分离 1D 因果卷积，核长 $\{\kappa_1,\dots,\kappa_r\}$，再和原输出拼在一起（论文式 (4)）：
 
 $$
 \mathrm{out}_{\mathrm{aug}}=\bigl[\mathrm{out};\;\mathrm{DWConv}_{\kappa_1}(\mathrm{out});\;\dots;\;\mathrm{DWConv}_{\kappa_r}(\mathrm{out})\bigr].
@@ -74,15 +74,15 @@ $$
 
 主设定 $r=3$，核长 $\{4,8,12\}$，于是写回基底有 $K_r=4$ 个分量。卷积按通道、因果，参数量大约是每层 $C\sum_j \kappa_j$（论文写 MLP 子层额外 $24C$ 个参数）。
 
-这些卷积输出和 $\mathrm{out}$ 高度相关。若直接交给 $\mathcal{H}^{\mathrm{post}}$，大 $N$ 时会把原方向无控制地放大。论文对 $K_r$ 个分量做 **修正 Gram–Schmidt**（式（5））：先令 $v_1=\mathrm{out}$，再把后续卷积支路里与已有 $v_i$ 平行的部分减掉。正交化按 token、在 $C$ 维上做，不是序列维上的大矩阵分解。
+这些卷积输出和 $\mathrm{out}$ 高度相关。若直接交给 $\mathcal{H}^{\mathrm{post}}$，大 $N$ 时会把原方向无控制地放大。论文对 $K_r$ 个分量做 **修正 Gram–Schmidt**（式 (5)）：先令 $v_1=\mathrm{out}$，再把后续卷积支路里与已有 $v_i$ 平行的部分减掉。正交化按 token、在 $C$ 维上做，不是序列维上的大矩阵分解。
 
 **只加在 MLP（含 MoE FFN）后面。** 注意力已经在位置之间混过一次；论文写明：注意力后再做这套时间增强会把训练弄不稳。所以 $K_r$ 在 Attn 子层退回 1，post 映射也退回 $k\times 1$。
 
 ### 3.2 稀更新、密读取
 
-路由：把铺平后的 $N$ 流状态做 LayerNorm，再投影出 $N$ 个 sigmoid 分数（式（6））。用 sigmoid 而不是 softmax，是为了减轻赢家通吃。实现上是 **固定 $m$ 条永远激活（权重 1）+ TopK 再选 $k-m$ 条**（式（7））。
+路由：把铺平后的 $N$ 流状态做 LayerNorm，再投影出 $N$ 个 sigmoid 分数（式 (6)）。用 sigmoid 而不是 softmax，是为了减轻赢家通吃。实现上是 **固定 $m$ 条永远激活（权重 1）+ TopK 再选 $k-m$ 条**（式 (7)）。
 
-读取必须密（式（8））：
+读取必须密（式 (8)）：
 
 $$
 \mathrm{input}_l=\sum_{i=1}^{N} h_{l,i}^{\mathrm{pre}}\, x_{l,i}.
@@ -90,7 +90,7 @@ $$
 
 若读也稀，上一层写过的流下一层可能根本读不到，跨层通路会被剪断。消融在论文 §4.5，本篇不抄表。
 
-混合和写回只在激活的 $k$ 条上做。$\mathcal{H}^{\mathrm{res}}$ 变成 $k\times k$ 的 Sinkhorn 矩阵，$\mathcal{H}^{\mathrm{post}}$ 变成 $k\times K_r$，于是主导代价从 $O(N^3 C)$ 降到 $O(k^3 C)$。写回还乘路由权重 $p_j$，但 $p_j$ **只乘新写入，不乘残差混合**（式（11）–(12)）。未选中的流原样带到下一层，供以后密读。
+混合和写回只在激活的 $k$ 条上做。$\mathcal{H}^{\mathrm{res}}$ 变成 $k\times k$ 的 Sinkhorn 矩阵，$\mathcal{H}^{\mathrm{post}}$ 变成 $k\times K_r$，于是主导代价从 $O(N^3 C)$ 降到 $O(k^3 C)$。写回还乘路由权重 $p_j$，但 $p_j$ **只乘新写入，不乘残差混合**（式 (11)–(12)）。未选中的流原样带到下一层，供以后密读。
 
 ```text
 一层 xHC 子层（论文 Algorithm 1 的人话）

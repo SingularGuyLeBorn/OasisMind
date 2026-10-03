@@ -17,31 +17,31 @@ Aug 13, 2024
 
 2024 年 8 月 13 日
 
-# Grok-2 Beta Release（Grok-2 Beta 发布）
+# Grok-2 Beta Release (Grok-2 Beta 发布)
 
 We announce our new Grok-2 and Grok-2 mini models.
 
-我们发布新的 Grok-2 和 Grok-2 mini 模型。
+我们发布新的 Grok-2 和 Grok-2 mini 模型.
 
 We are excited to release an early preview of Grok-2, a significant step forward from our previous model Grok-1.5, featuring frontier capabilities in chat, coding, and reasoning. At the same time, we are introducing Grok-2 mini, a small but capable sibling of Grok-2. An early version of Grok-2 has been tested on the LMSYS leaderboard under the name "sus-columnr." At the time of this blog post, it is outperforming both Claude 3.5 Sonnet and GPT-4-Turbo.
 
-我们很高兴发布 Grok-2 的早期预览版。相比上一代模型 Grok-1.5，它是一次显著的进步，在对话，编程和推理上具备前沿能力。与此同时，我们推出 Grok-2 mini，它是 Grok-2 体量小但能力不弱的兄弟模型。Grok-2 的一个早期版本曾以「sus-columnr」的名字在 LMSYS 排行榜上接受测试。截至这篇博文发布时，它的表现超过了 Claude 3.5 Sonnet 和 GPT-4-Turbo。
+我们很高兴发布 Grok-2 的早期预览版. 相比上一代模型 Grok-1.5, 它是一次显著的进步, 在对话, 编程和推理上具备前沿能力. 与此同时, 我们推出 Grok-2 mini, 它是 Grok-2 体量小但能力不弱的兄弟模型. Grok-2 的一个早期版本曾以「sus-columnr」的名字在 LMSYS 排行榜上接受测试. 截至这篇博文发布时, 它的表现超过了 Claude 3.5 Sonnet 和 GPT-4-Turbo.
 
-> **想：** 这里写的是「sus-columnr」，下一节和第 2 页的图里写的是「sus-column-r」，哪个对？
-> 以图为准。第 2 页图的横轴标签是「sus-column-r (Early Grok-2)」，下一节正文也写「sus-column-r」，只有这一处少了连字符，应是网页原文的笔误或抽取时丢了字符，译文照原样保留两种写法。这句比较的是 Claude 3.5 Sonnet 和 GPT-4-Turbo 两个具体型号，还加了「At the time of this blog post」的时间限定。Arena 分数会随投票累积和新模型上榜而变，这个名次只对 2024 年 8 月 13 日前后成立。
+> **想:** 这里写的是「sus-columnr」, 下一节和第 2 页的图里写的是「sus-column-r」, 哪个对?
+> 以图为准. 第 2 页图的横轴标签是「sus-column-r (Early Grok-2)」, 下一节正文也写「sus-column-r」, 只有这一处少了连字符, 应是网页原文的笔误或抽取时丢了字符, 译文照原样保留两种写法. 这句比较的是 Claude 3.5 Sonnet 和 GPT-4-Turbo 两个具体型号, 还加了「At the time of this blog post」的时间限定. Arena 分数会随投票累积和新模型上榜而变, 这个名次只对 2024 年 8 月 13 日前后成立.
 
 Grok-2 and Grok-2 mini are currently in beta on 𝕏 , and we are also making both models available through our enterprise API later this month.
 
-Grok-2 和 Grok-2 mini 目前在 𝕏 上以 beta 形式提供，本月晚些时候我们也会通过企业 API 开放这两个模型。
+Grok-2 和 Grok-2 mini 目前在 𝕏 上以 beta 形式提供, 本月晚些时候我们也会通过企业 API 开放这两个模型.
 
-## Grok-2 language model and chat capabilities（Grok-2 语言模型与对话能力）
+## Grok-2 language model and chat capabilities (Grok-2 语言模型与对话能力)
 
 We introduced an early version of Grok-2 under the name "sus-column-r" into the [LMArena.ai](https://lmarena.ai/) Chatbot Arena, a popular competitive language model benchmark. It outperforms both Claude and GPT-4 on the LMSYS leaderboard in terms of its overall Elo score.
 
-我们以「sus-column-r」的名字，把 Grok-2 的一个早期版本放进了 [LMArena.ai](https://lmarena.ai/) 的 Chatbot Arena，这是一个很受欢迎的竞技式语言模型基准。按总体 Elo 分数，它在 LMSYS 排行榜上超过了 Claude 和 GPT-4。
+我们以「sus-column-r」的名字, 把 Grok-2 的一个早期版本放进了 [LMArena.ai](https://lmarena.ai/) 的 Chatbot Arena, 这是一个很受欢迎的竞技式语言模型基准. 按总体 Elo 分数, 它在 LMSYS 排行榜上超过了 Claude 和 GPT-4.
 
-> **问：** 上一段点名的是 Claude 3.5 Sonnet 和 GPT-4-Turbo，这里换成「Claude and GPT-4」，说的是同一件事吗？
-> 口径变宽了。「Claude」和「GPT-4」都是家族名。按第 2 页的图，排在 sus-column-r 前面的三个条目里有 GPT-4o-2024-05-13 和 ChatGPT-4o-latest-2024-08-08，它们也属于 GPT-4 系列。所以这句只对 GPT-4-Turbo，GPT-4-1106-preview 这类老版本成立，对 GPT-4o 不成立。至于名字，LMSYS 是运营团队，Chatbot Arena 是榜名，lmarena.ai 是链接域名，三种叫法指的是同一个榜。
+> **问:** 上一段点名的是 Claude 3.5 Sonnet 和 GPT-4-Turbo, 这里换成「Claude and GPT-4」, 说的是同一件事吗?
+> 口径变宽了.「Claude」和「GPT-4」都是家族名. 按第 2 页的图, 排在 sus-column-r 前面的三个条目里有 GPT-4o-2024-05-13 和 ChatGPT-4o-latest-2024-08-08, 它们也属于 GPT-4 系列. 所以这句只对 GPT-4-Turbo, GPT-4-1106-preview 这类老版本成立, 对 GPT-4o 不成立. 至于名字, LMSYS 是运营团队, Chatbot Arena 是榜名, lmarena.ai 是链接域名, 三种叫法指的是同一个榜.
 
 <!-- page 2 of 7 -->
 
@@ -51,24 +51,24 @@ Overall ELO scores on Chatbot Arena
 
 Chatbot Arena 上的总体 ELO 分数
 
-> **核对：** 这张图上 sus-column-r 排第几，分数大概多少？
-> 横轴共 25 个条目，sus-column-r 排第 4，用白色点标出。纵轴每格 10 分，目测它在 1281 左右，误差棒大约从 1275 到 1286。排在前面的是 ChatGPT-4o-latest-2024-08-08（约 1314），Gemini-1.5-Pro-Exp-0801（约 1297）和 GPT-4o-2024-05-13（约 1286），最后这个的误差棒和它重叠。紧跟其后的是 GPT-4o-mini-2024-07-18（约 1274）和 Claude 3.5 Sonnet（约 1271），GPT-4-Turbo-2024-04-09 在约 1257。这些都是按像素读的近似值，页面没给 Elo 整数，也没说误差棒对应多大的置信区间。图顶部 1290 以上盖着一层灰色半透明浮层，是网页截图时的遮挡，不是数据。
+> **核对:** 这张图上 sus-column-r 排第几, 分数大概多少?
+> 横轴共 25 个条目, sus-column-r 排第 4, 用白色点标出. 纵轴每格 10 分, 目测它在 1281 左右, 误差棒大约从 1275 到 1286. 排在前面的是 ChatGPT-4o-latest-2024-08-08 (约 1314), Gemini-1.5-Pro-Exp-0801 (约 1297) 和 GPT-4o-2024-05-13 (约 1286), 最后这个的误差棒和它重叠. 紧跟其后的是 GPT-4o-mini-2024-07-18 (约 1274) 和 Claude 3.5 Sonnet (约 1271), GPT-4-Turbo-2024-04-09 在约 1257. 这些都是按像素读的近似值, 页面没给 Elo 整数, 也没说误差棒对应多大的置信区间. 图顶部 1290 以上盖着一层灰色半透明浮层, 是网页截图时的遮挡, 不是数据.
 
 Win Rate of Gr
 
 Gr... 的胜率
 
-> **看表：** 图下这行「Win Rate of Gr」是什么？
-> 是第二张图的标题，在「Gr」处截断了。images/ 目录里只有上面这张 Elo 图，没有胜率图，全文能看到的 4 张图里也没有它。按下一段的描述，缺失的这张图应该画的是 AI Tutors 内部对比的胜率，但比的是哪两个版本，胜率多少，正文一个数字都没给。
+> **看表:** 图下这行「Win Rate of Gr」是什么?
+> 是第二张图的标题, 在「Gr」处截断了. images/ 目录里只有上面这张 Elo 图, 没有胜率图, 全文能看到的 4 张图里也没有它. 按下一段的描述, 缺失的这张图应该画的是 AI Tutors 内部对比的胜率, 但比的是哪两个版本, 胜率多少, 正文一个数字都没给.
 
 Internally, we employ a comparable process to evaluate our models. Our AI Tutors engage with our models across a variety of tasks that reflect real-world interactions with Grok. During each interaction, the AI Tutors are presented with two responses generated by Grok. They select the superior response based on specific criteria outlined in our guidelines. We focused on evaluating model capabilities in two key areas: following instructions and providing accurate, factual information. Grok-2 has shown significant improvements in reasoning with retrieved content and in its tool use capabilities, such as correctly identifying missing information, reasoning through sequences of events, and discarding irrelevant posts.
 
-在内部，我们用一套类似的流程评测自己的模型。我们的 AI Tutors 会在多种任务上与模型交互，这些任务反映了用户与 Grok 在真实世界里的互动。每次交互时，AI Tutors 会看到 Grok 生成的两条回答，并按我们准则里列明的具体标准选出更好的一条。我们重点评估模型在两个关键方面的能力：遵循指令，以及提供准确的事实信息。Grok-2 在基于检索内容的推理和工具使用（tool use）能力上都有显著提升，例如正确识别缺失的信息，理清事件的先后顺序，以及丢弃无关的帖子。
+在内部, 我们用一套类似的流程评测自己的模型. 我们的 AI Tutors 会在多种任务上与模型交互, 这些任务反映了用户与 Grok 在真实世界里的互动. 每次交互时, AI Tutors 会看到 Grok 生成的两条回答, 并按我们准则里列明的具体标准选出更好的一条. 我们重点评估模型在两个关键方面的能力: 遵循指令, 以及提供准确的事实信息. Grok-2 在基于检索内容的推理和工具使用 (tool use) 能力上都有显著提升, 例如正确识别缺失的信息, 理清事件的先后顺序, 以及丢弃无关的帖子.
 
-> **拆开：** AI Tutors 的流程说是和 Chatbot Arena「comparable」，差在哪？
-> 至少三处不同。一是回答来源：这里「presented with two responses generated by Grok」，两条回答都来自 Grok，比的是 Grok 自己的不同版本或不同采样，不是和别家模型对比；Arena 放的是两个匿名的不同模型。二是评判人：Arena 靠公众投票，这里是 xAI 自己的 AI Tutors 按内部准则打分。三是评判维度：这里只看「following instructions」和「accurate, factual information」两项。最后一句说检索内容推理和 tool use 有「significant improvements」，举了三种表现，但没有比例，样本数或任务分布。
+> **拆开:** AI Tutors 的流程说是和 Chatbot Arena「comparable」, 差在哪?
+> 至少三处不同. 一是回答来源: 这里「presented with two responses generated by Grok」, 两条回答都来自 Grok, 比的是 Grok 自己的不同版本或不同采样, 不是和别家模型对比; Arena 放的是两个匿名的不同模型. 二是评判人: Arena 靠公众投票, 这里是 xAI 自己的 AI Tutors 按内部准则打分. 三是评判维度: 这里只看「following instructions」和「accurate, factual information」两项. 最后一句说检索内容推理和 tool use 有「significant improvements」, 举了三种表现, 但没有比例, 样本数或任务分布.
 
-## Benchmarks（基准测试）
+## Benchmarks (基准测试)
 
 We evaluated the Grok-2 models across a series of academic benchmarks that included reasoning, reading comprehension, math, science, and coding. Both Grok-2 and Grok-2 mini demonstrate significant improvements over our previous Grok-1.5 model. They achieve performance levels competitive to other frontier models in areas such as graduate-level science knowledge (GPQA), general knowledge (MMLU, MMLU-Pro), and math competition problems (MATH). Additionally, Grok-2 excels in vision-based tasks, delivering state-of-
 
@@ -76,10 +76,10 @@ We evaluated the Grok-2 models across a series of academic benchmarks that inclu
 
 the-art performance in visual math reasoning (MathVista) and in document-based question [answering (DocVQA).](https://x.ai/)
 
-我们在一系列学术基准上评测了 Grok-2 系列模型，覆盖推理，阅读理解，数学，科学和编程。Grok-2 和 Grok-2 mini 相比上一代 Grok-1.5 都有显著提升。在研究生水平的科学知识（GPQA），通用知识（MMLU, MMLU-Pro）和数学竞赛题（MATH）等方面，它们达到了可与其他前沿模型相竞争的水平。此外，Grok-2 在视觉任务上表现出色，在视觉数学推理（MathVista）和基于文档的问答 [(DocVQA)](https://x.ai/) 上达到业界最佳水平。
+我们在一系列学术基准上评测了 Grok-2 系列模型, 覆盖推理, 阅读理解, 数学, 科学和编程. Grok-2 和 Grok-2 mini 相比上一代 Grok-1.5 都有显著提升. 在研究生水平的科学知识 (GPQA), 通用知识 (MMLU, MMLU-Pro) 和数学竞赛题 (MATH) 等方面, 它们达到了可与其他前沿模型相竞争的水平. 此外, Grok-2 在视觉任务上表现出色, 在视觉数学推理 (MathVista) 和基于文档的问答 [(DocVQA)](https://x.ai/) 上达到业界最佳水平.
 
-> **确认：** 正文说 Grok-2 在 MathVista 和 DocVQA 上都是「state-of-the-art」，下表对得上吗？
-> 只对得上一半。MathVista 一行 Grok-2 是 69.0%，高于 Grok-2 mini 的 68.1% 和 Claude 3.5 Sonnet 的 67.7%，是全表最高，成立。DocVQA 一行 Grok-2 是 93.6%，同表 Claude 3.5 Sonnet 是 95.2%，高 1.6 个点，按这张表「state-of-the-art」不成立，Grok-2 只排第 2。这是正文和自家表格之间的矛盾，不需要外部数据就能看出来。
+> **确认:** 正文说 Grok-2 在 MathVista 和 DocVQA 上都是「state-of-the-art」, 下表对得上吗?
+> 只对得上一半. MathVista 一行 Grok-2 是 69.0%, 高于 Grok-2 mini 的 68.1% 和 Claude 3.5 Sonnet 的 67.7%, 是全表最高, 成立. DocVQA 一行 Grok-2 是 93.6%, 同表 Claude 3.5 Sonnet 是 95.2%, 高 1.6 个点, 按这张表「state-of-the-art」不成立, Grok-2 只排第 2. 这是正文和自家表格之间的矛盾, 不需要外部数据就能看出来.
 
 | Benchmark |  | Grok-1.5 | Grok-2 mini‡ | Grok-2‡ | GPT-4 Turbo* | Claude 3 Opus† | Gemini Pro 1.5 | Llama 3 405B | GPT-4o* | Claude 3.5 Sonnet† |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -103,15 +103,15 @@ the-art performance in visual math reasoning (MathVista) and in document-based q
 | MathVista |  | 52.8% | 68.1% | 69.0% | 58.1% | 50.5% | 63.9% | - | 63.8% | 67.7% |
 | DocVQA |  | 85.6% | 93.2% | 93.6% | 87.2% | 89.3% | 93.1% | 92.2% | 92.8% | 95.2% |
 
-> **回看：** Grok-1.5 一列的 MMMU 53.6%，MathVista 52.8%，DocVQA 85.6%，在哪见过？
-> 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v-bi.md) 表里 Grok-1.5V 的三个数字一模一样。按同家族新闻页，Grok-1.5 是 3 月 28 日发布的文本模型，这三格实际填的是 4 月 12 日 Grok-1.5V 的分数，表头没有说明。评测设置也不一样：Grok-1.5V 那篇写的是「zero-shot setting without chain-of-thought prompting」，本表 ‡ 注明 Grok-2 的 MMMU 和 MathVista 用 0-shot CoT。所以 MMMU 上 12.5 个点，MathVista 上 16.2 个点的提升里，有一部分可能来自加了 CoT，本页拆不开。
+> **回看:** Grok-1.5 一列的 MMMU 53.6%, MathVista 52.8%, DocVQA 85.6%, 在哪见过?
+> 和 [Grok-1.5V 公告](../grok-1-5v/grok-1-5v-bi.md) 表里 Grok-1.5V 的三个数字一模一样. 按同家族新闻页, Grok-1.5 是 3 月 28 日发布的文本模型, 这三格实际填的是 4 月 12 日 Grok-1.5V 的分数, 表头没有说明. 评测设置也不一样: Grok-1.5V 那篇写的是「zero-shot setting without chain-of-thought prompting」, 本表 ‡ 注明 Grok-2 的 MMMU 和 MathVista 用 0-shot CoT. 所以 MMMU 上 12.5 个点, MathVista 上 16.2 个点的提升里, 有一部分可能来自加了 CoT, 本页拆不开.
 
-> **停一下：** 去掉 Grok-1.5 和 mini，Grok-2 在 8 行里各排第几？
-> 和另外 6 家比（MathVista 行 Llama 3 405B 是「-」，只剩 5 家）：第 1 只有 MathVista。第 2 有 4 行：GPQA 落后 Claude 3.5 Sonnet 3.6 个点，MMLU-Pro 落后它 0.6，MATH 落后 GPT-4o 0.5，DocVQA 落后 Claude 3.5 Sonnet 1.6. MMMU 第 3，落后 GPT-4o 3.0. MMLU 和 HumanEval 都是第 4，分别落后最高分 1.2 和 3.6。正文用的词是「competitive」，和这个分布相符。
+> **停一下:** 去掉 Grok-1.5 和 mini, Grok-2 在 8 行里各排第几?
+> 和另外 6 家比 (MathVista 行 Llama 3 405B 是「-」, 只剩 5 家): 第 1 只有 MathVista. 第 2 有 4 行: GPQA 落后 Claude 3.5 Sonnet 3.6 个点, MMLU-Pro 落后它 0.6, MATH 落后 GPT-4o 0.5, DocVQA 落后 Claude 3.5 Sonnet 1.6. MMMU 第 3, 落后 GPT-4o 3.0. MMLU 和 HumanEval 都是第 4, 分别落后最高分 1.2 和 3.6. 正文用的词是「competitive」, 和这个分布相符.
 
 \* GPT-4-Turbo and GPT-4o scores are from the May 2024 release.
 
-\* GPT-4-Turbo 和 GPT-4o 的分数取自 2024 年 5 月的发布。
+\* GPT-4-Turbo 和 GPT-4o 的分数取自 2024 年 5 月的发布.
 
 Claude 3 Opus and Claude 3.5 Sonnet scores are from the June 2024 release.†
 
@@ -119,7 +119,7 @@ Claude 3 Opus 和 Claude 3.5 Sonnet 的分数取自 2024 年 6 月的发布.†
 
 Grok-2 MMLU, MMLU-Pro, MMMU and MathVista were evaluated using 0-shot CoT.‡
 
-Grok-2 的 MMLU，MMLU-Pro，MMMU 和 MathVista 使用 0-shot CoT 评测.‡
+Grok-2 的 MMLU, MMLU-Pro, MMMU 和 MathVista 使用 0-shot CoT 评测.‡
 
 For MATH, we present maj@1 results.§
 
@@ -129,16 +129,16 @@ For HumanEval, we report pass@1 benchmark scores.¶
 
 HumanEval 报告的是 pass@1 分数.¶
 
-> **再看：** 这几条脚注覆盖了哪些列，哪些行？
-> 列上，* 和 † 只交代了 GPT-4 Turbo，GPT-4o，Claude 3 Opus，Claude 3.5 Sonnet 四列的来源时间，Gemini Pro 1.5 和 Llama 3 405B 两列没有来源。Gemini Pro 1.5 这里的 MMMU 62.2%，MathVista 63.9%，DocVQA 93.1%，和 Grok-1.5V 公告里同名模型的 58.5%，52.1%，86.5% 差得很远，两张表用的不是同一版 Gemini，本页没写是哪一版。行上，‡ 只覆盖 Grok-2 的四项，GPQA 和 DocVQA 用什么设置没写。maj@1 是只采 1 个样本做多数投票，等于单次采样准确率；pass@1 同样是单次，两者都没写温度和 shot 数。Claude 3 Opus 是 2024 年 3 月的模型，脚注说「from the June 2024 release」，指的应是 6 月那次发布所附的对比表，页面没解释。
+> **再看:** 这几条脚注覆盖了哪些列, 哪些行?
+> 列上, * 和 † 只交代了 GPT-4 Turbo, GPT-4o, Claude 3 Opus, Claude 3.5 Sonnet 四列的来源时间, Gemini Pro 1.5 和 Llama 3 405B 两列没有来源. Gemini Pro 1.5 这里的 MMMU 62.2%, MathVista 63.9%, DocVQA 93.1%, 和 Grok-1.5V 公告里同名模型的 58.5%, 52.1%, 86.5% 差得很远, 两张表用的不是同一版 Gemini, 本页没写是哪一版. 行上, ‡ 只覆盖 Grok-2 的四项, GPQA 和 DocVQA 用什么设置没写. maj@1 是只采 1 个样本做多数投票, 等于单次采样准确率; pass@1 同样是单次, 两者都没写温度和 shot 数. Claude 3 Opus 是 2024 年 3 月的模型, 脚注说「from the June 2024 release」, 指的应是 6 月那次发布所附的对比表, 页面没解释.
 
-## Experience Grok with real-time information on 𝕏（在 𝕏 上体验带实时信息的 Grok）
+## Experience Grok with real-time information on 𝕏 (在 𝕏 上体验带实时信息的 Grok)
 
 <!-- page 4 of 7 -->
 
 Over the past few months, we've been continuously improving Grok on the 𝕏 platform. Today, [we're introducing the ne](https://x.ai/)xt evolution of the Grok experience, featuring a redesigned interface and new features.
 
-过去几个月，我们一直在持续改进 𝕏 平台上的 Grok。今天，[我们推出](https://x.ai/) Grok 体验的下一次演进，带来重新设计的界面和新功能。
+过去几个月, 我们一直在持续改进 𝕏 平台上的 Grok. 今天, [我们推出](https://x.ai/) Grok 体验的下一次演进, 带来重新设计的界面和新功能.
 
 ![Image block](images/p04-x-app-grok-page-with-grok-mini.png)
 
@@ -146,8 +146,8 @@ X App Grok page with Grok mini
 
 X App 里使用 Grok mini 的 Grok 页面
 
-> **对一下：** 这张截图和正文描述对得上吗？
-> 大体对得上。顶部模型选择器写的是「Grok 2 mini (beta)」，不带连字符；输入框下有四个示例提示（写求职信，今日头条，用 Python 解 Two Sum，推荐奇幻 RPG）；下面两张示例图配文「A robot in a flower field」和「A flying cat」，并注明「Images are generated with FLUX.1 by Black Forest Labs」，对应正文和 Black Forest Labs 的合作。有一处时间对不上：底部新闻卡片写着「ChatGPT Unveils GPT-4o Model · 2 hours ago」，而表格脚注说 GPT-4o 的分数来自「May 2024 release」，离本文的 8 月 13 日隔了三个月。这张截图可能是 5 月拍的界面，也可能是摆好的演示数据，页面没说。
+> **对一下:** 这张截图和正文描述对得上吗?
+> 大体对得上. 顶部模型选择器写的是「Grok 2 mini (beta)」, 不带连字符; 输入框下有四个示例提示 (写求职信, 今日头条, 用 Python 解 Two Sum, 推荐奇幻 RPG); 下面两张示例图配文「A robot in a flower field」和「A flying cat」, 并注明「Images are generated with FLUX.1 by Black Forest Labs」, 对应正文和 Black Forest Labs 的合作. 有一处时间对不上: 底部新闻卡片写着「ChatGPT Unveils GPT-4o Model · 2 hours ago」, 而表格脚注说 GPT-4o 的分数来自「May 2024 release」, 离本文的 8 月 13 日隔了三个月. 这张截图可能是 5 月拍的界面, 也可能是摆好的演示数据, 页面没说.
 
 ![Image block](images/p04-photo-of-a-meme-and-grok-s-expla.png)
 
@@ -155,19 +155,19 @@ Photo of a meme and Grok's expla
 
 一张梗图的照片和 Grok 的解
 
-> **想：** 梗图这张截图里，Grok 解释出了什么？
-> 截图标题是「Explain this meme」。图是一张黑白插画：博物馆里一个大机器人指着玻璃柜里的人脑，对小机器人说「And that is the original processor!」。下方 Answer 的文字右半边被裁掉，能读出的片段有「This meme humorously depicts a futuristic sc」，「parent, is explaining to a smaller robot」，「is a human brain on display in a museum」，「might be seen as an antiquated or primitive fo」，大意是在未来机器的视角里，人脑成了古董处理器。这是视觉理解的演示，只有一个样本。图片说明「Photo of a meme and Grok's expla」同样在中途截断，译文照截断处保留。
+> **想:** 梗图这张截图里, Grok 解释出了什么?
+> 截图标题是「Explain this meme」. 图是一张黑白插画: 博物馆里一个大机器人指着玻璃柜里的人脑, 对小机器人说「And that is the original processor!」. 下方 Answer 的文字右半边被裁掉, 能读出的片段有「This meme humorously depicts a futuristic sc」,「parent, is explaining to a smaller robot」,「is a human brain on display in a museum」,「might be seen as an antiquated or primitive fo」, 大意是在未来机器的视角里, 人脑成了古董处理器. 这是视觉理解的演示, 只有一个样本. 图片说明「Photo of a meme and Grok's expla」同样在中途截断, 译文照截断处保留.
 
 𝕏 Premium and Premium+ users will have access to two new models: Grok-2 and Grok-2 mini. Grok-2 is our state-of-the-art AI assistant with advanced capabilities in both text and vision understanding, integrating real-time information from the 𝕏 platform, accessible through the Grok tab in the 𝕏 app. Grok-2 mini is our small but capable model that offers a balance between speed and answer quality. Compared to its predecessor, Grok-2 is more intuitive, steerable, and versatile across a wide range of tasks, whether you're seeking answers, collaborating on writing, or solving coding tasks. In collaboration with [Black Forest Labs](https://blackforestlabs.ai/), we are experimenting with their [FLUX.1](https://blackforestlabs.ai/#get-flux) model to expand Grok’s capabilities on 𝕏 . If you are a Premium or Premium+ subscriber, make sure to update to the latest version of the 𝕏 app in order to beta test Grok-2.
 
-𝕏 Premium 和 Premium+ 用户将可以使用两个新模型：Grok-2 和 Grok-2 mini. Grok-2 是我们最先进的 AI 助手，在文本和视觉理解上都有先进能力，能整合来自 𝕏 平台的实时信息，可以通过 𝕏 App 里的 Grok 标签页使用。Grok-2 mini 是我们体量小但能力不弱的模型，在速度和回答质量之间取得平衡。与前代相比，Grok-2 更直观，更容易引导，也更通用，无论你是找答案，合作写作还是解决编程任务都能胜任。我们正与 [Black Forest Labs](https://blackforestlabs.ai/) 合作，试用他们的 [FLUX.1](https://blackforestlabs.ai/#get-flux) 模型来扩展 Grok 在 𝕏 上的能力。如果你是 Premium 或 Premium+ 订阅用户，请把 𝕏 App 更新到最新版本，以便参与 Grok-2 的 beta 测试。
+𝕏 Premium 和 Premium+ 用户将可以使用两个新模型: Grok-2 和 Grok-2 mini. Grok-2 是我们最先进的 AI 助手, 在文本和视觉理解上都有先进能力, 能整合来自 𝕏 平台的实时信息, 可以通过 𝕏 App 里的 Grok 标签页使用. Grok-2 mini 是我们体量小但能力不弱的模型, 在速度和回答质量之间取得平衡. 与前代相比, Grok-2 更直观, 更容易引导, 也更通用, 无论你是找答案, 合作写作还是解决编程任务都能胜任. 我们正与 [Black Forest Labs](https://blackforestlabs.ai/) 合作, 试用他们的 [FLUX.1](https://blackforestlabs.ai/#get-flux) 模型来扩展 Grok 在 𝕏 上的能力. 如果你是 Premium 或 Premium+ 订阅用户, 请把 𝕏 App 更新到最新版本, 以便参与 Grok-2 的 beta 测试.
 
-> **问：** 和 FLUX.1 的合作，是说 Grok-2 自己能画图吗？
-> 不是。原文是「experimenting with their FLUX.1 model to expand Grok’s capabilities」，画图的是 Black Forest Labs 的 FLUX.1，Grok-2 负责文本和视觉理解，两者在 𝕏 的产品里拼在一起。下方文件名为 p04-build-with-grok-using-the-enterprise-api.png 的图，内容其实是 Black Forest Labs 的白色三角形 logo 和「black forest labs.」字样，文件名取自紧随其后的小标题，和图的内容无关。xAI 自己的图像生成模型要到 2024 年 12 月 9 日才发布，见 [xAI 新闻页](../xai/xai-bi.md)。
+> **问:** 和 FLUX.1 的合作, 是说 Grok-2 自己能画图吗?
+> 不是. 原文是「experimenting with their FLUX.1 model to expand Grok’s capabilities」, 画图的是 Black Forest Labs 的 FLUX.1, Grok-2 负责文本和视觉理解, 两者在 𝕏 的产品里拼在一起. 下方文件名为 p04-build-with-grok-using-the-enterprise-api.png 的图, 内容其实是 Black Forest Labs 的白色三角形 logo 和「black forest labs.」字样, 文件名取自紧随其后的小标题, 和图的内容无关. xAI 自己的图像生成模型要到 2024 年 12 月 9 日才发布, 见 [xAI 新闻页](../xai/xai-bi.md).
 
 ![Image block](images/p04-build-with-grok-using-the-enterprise-api.png)
 
-## Build with Grok using the Enterprise API（用企业 API 基于 Grok 构建）
+## Build with Grok using the Enterprise API (用企业 API 基于 Grok 构建)
 
 <!-- page 5 of 7 -->
 
@@ -175,30 +175,30 @@ We are also releasing Grok-2 and Grok-2 mini to developers through our new enter
 
 enhanced security features such as mandatory multi-factor authentication (e.g. using a Yubikey, Apple TouchID, or TOTP), rich traffic statistics, and advanced billing analytics (incl. detailed data exports). We further offer a management API that allows you to integrate team, user, and billing management into your existing in-house tools and services. [Join our newsletter](https://x.ai/api) to get notified when we launch later this month.
 
-本月晚些时候，我们也会通过新的企业 API [平台](https://x.ai/)向开发者开放 Grok-2 和 Grok-2 mini。即将推出的 API 构建在一套全新的定制技术栈上，支持多区域推理部署，让全球各地都能低延迟访问。我们提供增强的安全功能，例如强制多因素认证（比如使用 Yubikey，Apple TouchID 或 TOTP），丰富的流量统计，以及高级账单分析（包括详细的数据导出）。我们还提供管理 API，让你把团队，用户和账单管理集成到现有的内部工具和服务里。[订阅我们的通讯](https://x.ai/api)，本月晚些时候上线时会通知你。
+本月晚些时候, 我们也会通过新的企业 API [平台](https://x.ai/)向开发者开放 Grok-2 和 Grok-2 mini. 即将推出的 API 构建在一套全新的定制技术栈上, 支持多区域推理部署, 让全球各地都能低延迟访问. 我们提供增强的安全功能, 例如强制多因素认证 (比如使用 Yubikey, Apple TouchID 或 TOTP), 丰富的流量统计, 以及高级账单分析 (包括详细的数据导出). 我们还提供管理 API, 让你把团队, 用户和账单管理集成到现有的内部工具和服务里. [订阅我们的通讯](https://x.ai/api), 本月晚些时候上线时会通知你.
 
-> **核对：** 企业 API 说「later this month」，实际什么时候上线？
-> 本页只说 2024 年 8 月晚些时候。同家族 [xAI 新闻页](../xai/xai-bi.md) 里，8 月 13 日这条之后，下一条 API 新闻是 2024 年 11 月 4 日的「API Public Beta」，中间隔了近三个月。企业 API 有没有在 8 月底先小范围开放，新闻列表里查不到，两边只能记为对不上。这一段列的多区域推理部署，强制多因素认证，流量统计，账单分析和管理 API 都是产品功能，没有延迟，区域数量，限流或价格数字。
+> **核对:** 企业 API 说「later this month」, 实际什么时候上线?
+> 本页只说 2024 年 8 月晚些时候. 同家族 [xAI 新闻页](../xai/xai-bi.md) 里, 8 月 13 日这条之后, 下一条 API 新闻是 2024 年 11 月 4 日的「API Public Beta」, 中间隔了近三个月. 企业 API 有没有在 8 月底先小范围开放, 新闻列表里查不到, 两边只能记为对不上. 这一段列的多区域推理部署, 强制多因素认证, 流量统计, 账单分析和管理 API 都是产品功能, 没有延迟, 区域数量, 限流或价格数字.
 
-## What is next?（下一步是什么？）
+## What is next? (下一步是什么?)
 
 Grok-2 and Grok-2 mini are being rolled out on 𝕏 . We are very excited about their applications to a range of AI-driven features, such as enhanced search capabilities, gaining deeper insights on 𝕏 posts, and improved reply functions, all powered by Grok. Soon, we will release a preview of multimodal understanding as a core part of the Grok experience on 𝕏 and API.
 
-Grok-2 和 Grok-2 mini 正在 𝕏 上逐步推出。我们很期待它们在一系列 AI 驱动功能里的应用，比如更强的搜索，对 𝕏 帖子更深入的洞察，以及改进的回复功能，这些都由 Grok 提供支持。很快，我们会发布多模态理解的预览，作为 𝕏 和 API 上 Grok 体验的核心部分。
+Grok-2 和 Grok-2 mini 正在 𝕏 上逐步推出. 我们很期待它们在一系列 AI 驱动功能里的应用, 比如更强的搜索, 对 𝕏 帖子更深入的洞察, 以及改进的回复功能, 这些都由 Grok 提供支持. 很快, 我们会发布多模态理解的预览, 作为 𝕏 和 API 上 Grok 体验的核心部分.
 
-> **看表：**「Soon, we will release a preview of multimodal understanding」，前面不是已经有视觉能力了吗？
-> 前后确实有出入。第 3 页的表里 Grok-2 有 MMMU，MathVista，DocVQA 三项视觉分数，第 4 页说 Grok-2 有「advanced capabilities in both text and vision understanding」，还放了解释梗图的截图；这里又说多模态理解「soon」才预览。较合理的读法是模型已有视觉能力，但在 𝕏 和 API 上作为正式功能开放还要等，页面没把这两件事分开写。
+> **看表:**「Soon, we will release a preview of multimodal understanding」, 前面不是已经有视觉能力了吗?
+> 前后确实有出入. 第 3 页的表里 Grok-2 有 MMMU, MathVista, DocVQA 三项视觉分数, 第 4 页说 Grok-2 有「advanced capabilities in both text and vision understanding」, 还放了解释梗图的截图; 这里又说多模态理解「soon」才预览. 较合理的读法是模型已有视觉能力, 但在 𝕏 和 API 上作为正式功能开放还要等, 页面没把这两件事分开写.
 
 Since announcing Grok-1 in November 2023, xAI has been moving at an extraordinary pace, driven by a small team with the highest talent density. We have introduced Grok-2, positioning us at the forefront of AI development. Our focus is on advancing core reasoning capabilities with our new compute cluster. We will have many more developments to share in the coming months. We are looking for individuals to join our small, focused team dedicated to building the most impactful innovations for the future of humanity. [Apply to our positions here](https://x.ai/careers).
 
-自 2023 年 11 月宣布 Grok-1 以来，xAI 一直以非凡的速度前进，背后是一支人才密度最高的小团队。我们推出了 Grok-2，这让我们站到了 AI 发展的前沿。我们的重点是用新的计算集群推进核心推理能力。未来几个月我们还会有很多进展要分享。我们在寻找愿意加入这支小而专注的团队的人，一起打造对人类未来最有影响力的创新。[在这里申请职位](https://x.ai/careers)。
+自 2023 年 11 月宣布 Grok-1 以来, xAI 一直以非凡的速度前进, 背后是一支人才密度最高的小团队. 我们推出了 Grok-2, 这让我们站到了 AI 发展的前沿. 我们的重点是用新的计算集群推进核心推理能力. 未来几个月我们还会有很多进展要分享. 我们在寻找愿意加入这支小而专注的团队的人, 一起打造对人类未来最有影响力的创新. [在这里申请职位](https://x.ai/careers).
 
 © 2026 SpaceXAI LLC
 
 © 2026 SpaceXAI LLC
 
-> **拆开：** 页脚的「© 2026 SpaceXAI LLC」，以及第 1 页顶上孤零零的「A」，各是什么？
-> 发布时间以正文的 2024 年 8 月 13 日为准。版权行是抓取当时的网站模板：[xAI 新闻页](../xai/xai-bi.md) 记录 2026 年 2 月 2 日 SpaceX 收购 xAI，旧文章也就挂上了新的版权行。本页和第 6 页页脚里的 Build，Bot，Imagine，Grokipedia，Colossus 等入口同样是 2026 年的站点结构，上一段的「new compute cluster」没有名字，不能拿页脚的 Colossus 去对号。第 1 页顶上的「A」是网页顶栏图标的替代文字被抽成了正文，没有含义，译稿照抄。
+> **拆开:** 页脚的「© 2026 SpaceXAI LLC」, 以及第 1 页顶上孤零零的「A」, 各是什么?
+> 发布时间以正文的 2024 年 8 月 13 日为准. 版权行是抓取当时的网站模板: [xAI 新闻页](../xai/xai-bi.md) 记录 2026 年 2 月 2 日 SpaceX 收购 xAI, 旧文章也就挂上了新的版权行. 本页和第 6 页页脚里的 Build, Bot, Imagine, Grokipedia, Colossus 等入口同样是 2026 年的站点结构, 上一段的「new compute cluster」没有名字, 不能拿页脚的 Colossus 去对号. 第 1 页顶上的「A」是网页顶栏图标的替代文字被抽成了正文, 没有含义, 译稿照抄.
 
 Products
 
@@ -293,13 +293,13 @@ Solutions
 | 联系销售 隐私门户 |  |
 | 常见问题 子处理方 |  |
 | BAA 帮助中心 |  |
-| DPA（数据处理附录） |  |
+| DPA (数据处理附录) |  |
 | 法律 |  |
 | 条款 |  |
 | 企业条款 |  |
 | 隐私 |  |
 | Cookies |  |
-| AUP（可接受使用政策） |  |
+| AUP (可接受使用政策) |  |
 | 品牌 |  |
 | 隐私选项 |  |
 | 社交 |  |

@@ -22,7 +22,7 @@ GLU 用 sigmoid 去乘一条线性；SwiGLU 把门换成 $\mathrm{Swish}(x)=x\si
 | SwiGLU | $x\cdot\sigma(x)$ | $x$ |
 | SiTU-GLU | $\beta_1\tanh(x/\beta_1)\cdot\sigma(x)$ | $\beta_2\tanh(x/\beta_2)$ |
 
-K3 的向量形式（报告式（12），$W_g$ 在门上用了两次：一次进 tanh，一次进 sigmoid）
+K3 的向量形式（报告式 (12)，$W_g$ 在门上用了两次：一次进 tanh，一次进 sigmoid）
 
 $$
 \operatorname{SiTU\text{-}GLU}(\bm{x})
@@ -48,7 +48,7 @@ $$
 \bigl\|\operatorname{SiTU\text{-}GLU}(\bm{x})\bigr\|_\infty \le \beta_1\beta_2 = 100
 $$
 
-（附录 B 式（19），$\beta_1=4,\beta_2=25$）。这是 **坐标 $\ell_\infty$ 界**，不是 loss 界，也不是「激活永远等于 100」。
+（附录 B 式 (19)，$\beta_1=4,\beta_2=25$）。这是 **坐标 $\ell_\infty$ 界**，不是 loss 界，也不是「激活永远等于 100」。
 
 K3 把 SiTU-GLU 用在 LatentMoE 的专家 FFN 上，和聚合后的 RMSNorm、Quantile Balancing 一起，对付路由支路的爆炸。不要把这个激活塞进「所有 dense FFN 都该换」——报告只在这个规模、这条病态乘链上论证。
 
@@ -56,10 +56,10 @@ K3 把 SiTU-GLU 用在 LatentMoE 的专家 FFN 上，和聚合后的 RMSNorm、Q
 
 - 把 SiTU 写成 SwiGLU 的别名，或写成 GeGLU。
 - 把 100 说成「平均激活」或「梯度裁剪阈值」。
-- 没读式（12）就改 $W_g$ 出现几次。
+- 没读式 (12) 就改 $W_g$ 出现几次。
 - 给 Qwen / DeepSeek 的 SwiGLU 层擅自换上 $\beta_1,\beta_2$。
 
 ## 本篇来源
 
-- Kimi K3 技术报告 §2.3.2 式（12）、Fig. 4；附录 B 式（18）–(19)。https://arxiv.org/html/2607.24653
+- Kimi K3 技术报告 §2.3.2 式 (12)、Fig. 4；附录 B 式 (18)–(19)。https://arxiv.org/html/2607.24653
 - SwiGLU：Shazeer, *GLU Variants Improve Transformer*, arXiv:2002.05202（本篇未重读全文，只作对照名）

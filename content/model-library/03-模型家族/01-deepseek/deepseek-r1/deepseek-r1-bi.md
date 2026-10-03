@@ -11,7 +11,7 @@ arXiv: 2501.12948v2 [cs. CL] 4 Jan 2026
 
 Qdeepseek
 
-# DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning / DeepSeek-R1：用强化学习激励大语言模型的推理能力
+# DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning / DeepSeek-R1: 用强化学习激励大语言模型的推理能力
 
 DeepSeek-AI
 
@@ -23,15 +23,15 @@ General reasoning represents a long-standing and formidable challenge in artific
 
 
 
-通用推理一直是 AI 里难啃的骨头。大语言模型与 CoT 提示在基础推理题上已经能打，但成功高度依赖大量人类标注示范，复杂题上仍不够用。本文表明：纯靠强化学习就能把 LLM 的推理能力「激励」出来，不必再喂人类标注的推理轨迹。这套 RL 框架会催生自我反思，校验，动态换策略等高级推理模式；训出来的模型在数学，编程竞赛，STEM 等可核验任务上超过按人类示范做监督微调的同族；大规模模型里冒出来的长思考模式，还可以系统化地用来带小模型。
+通用推理一直是 AI 里难啃的骨头. 大语言模型与 CoT 提示在基础推理题上已经能打, 但成功高度依赖大量人类标注示范, 复杂题上仍不够用. 本文表明: 纯靠强化学习就能把 LLM 的推理能力「激励」出来, 不必再喂人类标注的推理轨迹. 这套 RL 框架会催生自我反思, 校验, 动态换策略等高级推理模式; 训出来的模型在数学, 编程竞赛, STEM 等可核验任务上超过按人类示范做监督微调的同族; 大规模模型里冒出来的长思考模式, 还可以系统化地用来带小模型.
 
 ## 1. Introduction
 
-Reasoning capability, the cornerstone of human intelligence, enables complex cognitive tasks ranging from mathematical problem-solving to logical deduction and programming. Recent advances in artificial intelligence have demonstrated that large language models (LLMs) can exhibit emergent behaviors, including reasoning abilities, when scaled to a sufficient size (Kaplan et al., 2020; Wei et al., 2022a). However, achieving such capabilities in pre-training typically demands substantial computational resources. In parallel, a complementary line of research has demonstrated that large language models can be effectively augmented through chain-of-thought (CoT) prompting. This technique, which involves either providing carefully designed few-shot examples or using minimalistic prompts such as “Let’s think step by step”（Kojima et al., 2022; Wei et al., 2022b），enables models to produce intermediate reasoning steps, thereby substantially enhancing their performance on complex tasks. Similarly, further performance gains have been observed when models learn high-quality, multi-step reasoning trajectories during the post-training phase (Chung et al., 2024; OpenAI, 2023). Despite their effectiveness, these approaches exhibit notable limitations. Their dependence on human-annotated reasoning traces hinders scalability and introduces cognitive biases. Furthermore, by constraining models to replicate human thought processes, their performance is inherently capped by the human-
+Reasoning capability, the cornerstone of human intelligence, enables complex cognitive tasks ranging from mathematical problem-solving to logical deduction and programming. Recent advances in artificial intelligence have demonstrated that large language models (LLMs) can exhibit emergent behaviors, including reasoning abilities, when scaled to a sufficient size (Kaplan et al., 2020; Wei et al., 2022a). However, achieving such capabilities in pre-training typically demands substantial computational resources. In parallel, a complementary line of research has demonstrated that large language models can be effectively augmented through chain-of-thought (CoT) prompting. This technique, which involves either providing carefully designed few-shot examples or using minimalistic prompts such as “Let’s think step by step”(Kojima et al., 2022; Wei et al., 2022b), enables models to produce intermediate reasoning steps, thereby substantially enhancing their performance on complex tasks. Similarly, further performance gains have been observed when models learn high-quality, multi-step reasoning trajectories during the post-training phase (Chung et al., 2024; OpenAI, 2023). Despite their effectiveness, these approaches exhibit notable limitations. Their dependence on human-annotated reasoning traces hinders scalability and introduces cognitive biases. Furthermore, by constraining models to replicate human thought processes, their performance is inherently capped by the human-
 
 
 
-推理是人类智能的底座，从解题，演绎到写程序都靠它。规模够大时，LLM 会出现含推理在内的涌现行为，但预训练把这种能力砸出来通常极贵。另一条线是 CoT 提示：精心设计的 few-shot，或一句「Let’s think step by step」，逼模型写出中间步骤，复杂题分数会明显抬高。后训练阶段学高质量多步轨迹也能再涨。局限同样清楚：依赖人类标注轨迹，难扩，还带认知偏见；把模型困在模仿人类思路里，分数也就被人类示范封顶。
+推理是人类智能的底座, 从解题, 演绎到写程序都靠它. 规模够大时, LLM 会出现含推理在内的涌现行为, 但预训练把这种能力砸出来通常极贵. 另一条线是 CoT 提示: 精心设计的 few-shot, 或一句「Let’s think step by step」, 逼模型写出中间步骤, 复杂题分数会明显抬高. 后训练阶段学高质量多步轨迹也能再涨. 局限同样清楚: 依赖人类标注轨迹, 难扩, 还带认知偏见; 把模型困在模仿人类思路里, 分数也就被人类示范封顶.
 
 <!-- page 2 of 86 -->
 
@@ -39,29 +39,29 @@ provided exemplars, which prevents the exploration of superior, non-human-like r
 
 
 
-示范一旦定成模板，模型就很难再探索「不像人，但可能更好」的推理路径。
+示范一旦定成模板, 模型就很难再探索「不像人, 但可能更好」的推理路径.
 
 To tackle these issues, we aim to explore the potential of LLMs for developing reasoning abilities through self-evolution in an RL framework, with minimal reliance on human labeling efforts. Specifically, we build upon DeepSeek-V3-Base (DeepSeek-AI, 2024b) and employ Group Relative Policy Optimization (GRPO) (Shao et al., 2024) as our RL framework. The reward signal is solely based on the correctness of final predictions against ground-truth answers, without imposing constraints on the reasoning process itself. Notably, we bypass the conventional supervised fine-tuning (SFT) phase before RL training. This design choice stems from our hypothesis that human-defined reasoning patterns may limit model exploration, whereas unrestricted RL training can better incentivize the emergence of novel reasoning capabilities in LLMs. Through this process, detailed in Section 2, our model (referred to as DeepSeek-R1- Zero) naturally developed diverse and sophisticated reasoning behaviors. In solving reasoning problems, the model exhibits a tendency to generate longer responses, incorporating verification, reflection, and the exploration of alternative approaches within each response. Although we do not explicitly teach the model how to reason, it successfully learns improved reasoning strategies through reinforcement learning.
 
 
 
-为压低对人类标注的依赖，我们在 RL 框架里做自我演化：底座用 DeepSeek-V3-Base，算法用 **Group Relative Policy Optimization(GRPO)**。奖励只看最终预测相对标准答案是否正确，不约束中间推理怎么写。RL 前故意跳过常规 SFT-- 假设是：人类事先写好的推理模板会限制探索，放开手脚的 RL 更容易冒出新能力。§2 里把这条路训成的模型叫 DeepSeek-R1-Zero：解题时回复自然变长，夹带校验，反思与换路；并没有人手把手教它「怎么想」，策略却靠强化学习自己变好。
+为压低对人类标注的依赖, 我们在 RL 框架里做自我演化: 底座用 DeepSeek-V3-Base, 算法用 **Group Relative Policy Optimization(GRPO)**. 奖励只看最终预测相对标准答案是否正确, 不约束中间推理怎么写. RL 前故意跳过常规 SFT-- 假设是: 人类事先写好的推理模板会限制探索, 放开手脚的 RL 更容易冒出新能力. §2 里把这条路训成的模型叫 DeepSeek-R1-Zero: 解题时回复自然变长, 夹带校验, 反思与换路; 并没有人手把手教它「怎么想」, 策略却靠强化学习自己变好.
 
-解释：GRPO（组相对策略优化）= 同一道题从旧策略采一组回答，用组内奖励的均值/方差估优势，省掉 PPO 里那套价值网络（critic）。冷启动（cold start）= 正式大规模 RL 前，先用少量高质量长 CoT 样本把模型「扶」到可读，可用的起点。长思考（long CoT）= 生成成百上千 token 的中间推理，而不是直接甩答案。
+解释: GRPO(组相对策略优化)= 同一道题从旧策略采一组回答, 用组内奖励的均值/方差估优势, 省掉 PPO 里那套价值网络(critic). 冷启动(cold start)= 正式大规模 RL 前, 先用少量高质量长 CoT 样本把模型「扶」到可读, 可用的起点. 长思考(long CoT)= 生成成百上千 token 的中间推理, 而不是直接甩答案.
 
 Although DeepSeek-R1-Zero demonstrates excellent reasoning capabilities, it faces challenges such as poor readability and language mixing, occasionally combining English and Chinese within a single chain-of-thought response. Furthermore, the rule-based RL training stage of DeepSeek-R1-Zero is narrowly focused on reasoning tasks, resulting in limited performance in broader areas such as writing and open-domain question answering. To address these challenges, we introduce DeepSeek-R1, a model trained through a multi-stage learning framework that integrates rejection sampling, reinforcement learning, and supervised finetuning, detailed in Section 3. This training pipeline enables DeepSeek-R1 to inherit the reasoning capabilities of its predecessor, DeepSeek-R1-Zero, while aligning model behavior with human preferences through additional non-reasoning data.
 
 
 
-R1-Zero 推理强，但可读性差，会中英混写；规则 RL 又几乎只盯推理题，写作与开放问答偏弱。于是引入 DeepSeek-R1：多阶段管线，把拒绝采样，RL 与 SFT 串起来（§3）。目标是继承 Zero 的推理，同时用非推理数据把行为拉向人类偏好。
+R1-Zero 推理强, 但可读性差, 会中英混写; 规则 RL 又几乎只盯推理题, 写作与开放问答偏弱. 于是引入 DeepSeek-R1: 多阶段管线, 把拒绝采样, RL 与 SFT 串起来(§3). 目标是继承 Zero 的推理, 同时用非推理数据把行为拉向人类偏好.
 
 To enable broader access to powerful AI at a lower energy cost, we have distilled several smaller models and made them publicly available. These distilled models exhibit strong reasoning capabilities, surpassing the performance of their original instruction-tuned counterparts. We believe that these instruction-tuned versions will also significantly contribute to the research community by providing a valuable resource for understanding the mechanisms underlying long chain-of-thought (CoT) reasoning models and for fostering the development of more powerful reasoning models. We release DeepSeek-R1 series models to the public at [https://huggingface. co/deepseek-ai](https://huggingface. co/deepseek-ai).
 
 
 
-为了更低能耗地普及强能力，又把若干小模型蒸馏出来公开。蒸馏版推理明显强过各自原来的指令微调版，也方便社区研究长 CoT 机制。系列权重发布于 https://huggingface. co/deepseek-ai。
+为了更低能耗地普及强能力, 又把若干小模型蒸馏出来公开. 蒸馏版推理明显强过各自原来的指令微调版, 也方便社区研究长 CoT 机制. 系列权重发布于 https://huggingface. co/deepseek-ai.
 
-解释：蒸馏（distillation）= 用大教师模型生成的高质量轨迹去微调小学生模型，让小模型学到类似的长思考行为，而不必自己扛同等规模的 RL。
+解释: 蒸馏(distillation)= 用大教师模型生成的高质量轨迹去微调小学生模型, 让小模型学到类似的长思考行为, 而不必自己扛同等规模的 RL.
 
 ## 2. DeepSeek-R1-Zero
 
@@ -70,15 +70,15 @@ We begin by elaborating on the training of DeepSeek-R1-Zero, which relies exclus
 
 
 
-先讲 R1-Zero：只靠 RL，不做 SFT。为撑住大规模 RL，算法采用 GRPO。
+先讲 R1-Zero: 只靠 RL, 不做 SFT. 为撑住大规模 RL, 算法采用 GRPO.
 
-### 2.1. Group Relative Policy Optimization 组相对策略优化（GRPO）
+### 2.1. Group Relative Policy Optimization 组相对策略优化(GRPO)
 
 GRPO (Shao et al., 2024) is the reinforcement learning algorithm that we adopt to train DeepSeek-R1-Zero and DeepSeek-R1. It was originally proposed to simplify the training process and reduce the resource consumption of Proximal Policy Optimization (PPO) (Schulman et al., 2017), which is widely used in the RL stage of LLMs (Ouyang et al., 2022).
 
 
 
-GRPO 用来训 R1-Zero 与 R1。它最初是为了简化 PPO，压资源：PPO 在 LLM 对齐阶段很常见，但贵。
+GRPO 用来训 R1-Zero 与 R1. 它最初是为了简化 PPO, 压资源: PPO 在 LLM 对齐阶段很常见, 但贵.
 
 <!-- page 3 of 86 -->
 
@@ -86,7 +86,7 @@ For each question $q , $ GRPO samples a group of outputs $\{ o _ { 1 } , o _ { 2
 
 
 
-对每个问题 $q$，GRPO 从旧策略 $\pi_{\theta_{old}}$ 采一组输出 $\{o_1, \ldots, o_G\}$，再最大化下面目标来更新策略 $\pi_\theta$：
+对每个问题 $q$, GRPO 从旧策略 $\pi_{\theta_{old}}$ 采一组输出 $\{o_1, \ldots, o_G\}$, 再最大化下面目标来更新策略 $\pi_\theta$:
 
 $$
 \begin{array}{r l} & {\mathcal {J} _ {G R P O} (\theta) = \mathbb {E} [ q \sim P (Q), \{o _ {i} \} _ {i = 1} ^ {G} \sim \pi_ {\theta_ {o l d}} (O | q) ]} \\ & {\frac {1}{G} \sum_ {i = 1} ^ {G} \left(\min \left(\frac {\pi_ {\theta} (o _ {i} | q)}{\pi_ {\theta_ {o l d}} (o _ {i} | q)} A _ {i}, \mathrm{clip} \left(\frac {\pi_ {\theta} (o _ {i} | q)}{\pi_ {\theta_ {o l d}} (o _ {i} | q)}, 1 - \varepsilon , 1 + \varepsilon\right) A _ {i}\right) - \beta \mathbb {D} _ {K L} \left(\pi_ {\theta} | | \pi_ {r e f}\right)\right), } \end{array}\tag{1}
@@ -100,7 +100,7 @@ where $\pi _ { r e f }$ is a reference policy, 𝜀 and $\beta$ are hyper-parame
 
 
 
-其中 $\pi_{ref}$ 是参考策略，ε 与 β 是超参，$A_i$ 是优势，由同组奖励 $\{r_1, \ldots, r_G\}$ 算出：
+其中 $\pi_{ref}$ 是参考策略, ε 与 β 是超参, $A_i$ 是优势, 由同组奖励 $\{r_1, \ldots, r_G\}$ 算出:
 
 $$
 A _ {i} = \frac {r _ {i} - \text {mean} (\{r _ {1} , r _ {2} , \cdots , r _ {G} \})}{\text {std} (\{r _ {1} , r _ {2} , \cdots , r _ {G} \})}. \tag{3}
@@ -110,19 +110,19 @@ We give a comparison of GRPO and PPO in Supplementary A. 3. To train DeepSeek-R1
 
 
 
-GRPO 与 PPO 的对照见附录 A. 3。训 R1-Zero：学习率 3e-6，KL 系数 0.001，rollout 温度 1；每题采 16 条，最大长度在 8.2k step 前为 32, 768，之后为 65, 536。因此在 8.2k step 附近分数与回复长度都跳一截；总共训 10, 400 step（约 1.6 epoch）。每步 32 道独特题，训练 batch 512。每 400 step 用最新策略换掉参考模型。加速上：每次 rollout 生成 8, 192 条，随机切成 16 个 mini-batch，只跑一个 inner epoch。
+GRPO 与 PPO 的对照见附录 A. 3. 训 R1-Zero: 学习率 3e-6, KL 系数 0.001, rollout 温度 1; 每题采 16 条, 最大长度在 8.2k step 前为 32, 768, 之后为 65, 536. 因此在 8.2k step 附近分数与回复长度都跳一截; 总共训 10, 400 step(约 1.6 epoch). 每步 32 道独特题, 训练 batch 512. 每 400 step 用最新策略换掉参考模型. 加速上: 每次 rollout 生成 8, 192 条, 随机切成 16 个 mini-batch, 只跑一个 inner epoch.
 
 Table 1 | Template for DeepSeek-R1-Zero. prompt will be replaced with the specific reasoning question during training.
 
 
 
-表 1｜DeepSeek-R1-Zero 的模板。训练时把 prompt 换成具体推理题。
+表 1｜DeepSeek-R1-Zero 的模板. 训练时把 prompt 换成具体推理题.
 
 A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. The reasoning process and answer are enclosed within &lt; think&gt;... &lt; /think&gt; and &lt; answer&gt;... &lt; /answer&gt; tags, respectively, $\mathbf { i . e . } , $ &lt; think&gt; reasoning process here &lt; /think&gt; &lt; answer&gt; answer here &lt; /answer&gt;. User: prompt. Assistant:
 
 
 
-用户与助手对话。用户提问，助手先在心里推理，再给答案。推理与答案分别包在 &lt; think&gt;... &lt；/think&gt；与 &lt; answer&gt;... &lt；/answer&gt；里。User: prompt. Assistant:
+用户与助手对话. 用户提问, 助手先在心里推理, 再给答案. 推理与答案分别包在 &lt; think&gt;... &lt; /think&gt; 与 &lt; answer&gt;... &lt; /answer&gt; 里. User: prompt. Assistant:
 
 Our high-performance RL infrastructure is described in Supplementary B. 1, ensuring scalable and efficient training.
 
@@ -136,13 +136,13 @@ The reward is the source of the training signal, which decides the direction of 
 
 
 
-奖励决定 RL 往哪走。R1-Zero 在数学，代码，逻辑域用规则奖励给准反馈，主要两类：准确奖励与格式奖励。
+奖励决定 RL 往哪走. R1-Zero 在数学, 代码, 逻辑域用规则奖励给准反馈, 主要两类: 准确奖励与格式奖励.
 
 **Accuracy rewards** evaluate whether the response is correct. For example, in the case of math problems with deterministic results, the model is required to provide the final answer in a specified format (e. g., within a box), enabling reliable rule-based verification of correctness. Similarly, for code competition prompts, a compiler can be utilized to evaluate the model’s
 
 
 
-**准确奖励**看答对没有。确定性数学题要求最终答案按指定格式（如装进 box），方便规则核验；竞赛代码题则可用编译器对照测例打分。
+**准确奖励**看答对没有. 确定性数学题要求最终答案按指定格式(如装进 box), 方便规则核验; 竞赛代码题则可用编译器对照测例打分.
 
 <!-- page 4 of 86 -->
 
@@ -154,19 +154,19 @@ Figure 1 | (a) AIME accuracy of DeepSeek-R1-Zero during training. AIME takes a m
 
 
 
-图 1｜(a) 训练过程中 R1-Zero 的 AIME 准确率。AIME 输入数学题，输出数字，示例见表 32；Pass@1 与 Cons@16 见附录 D. 1；基线是人类参赛均分。（b）训练集上平均回复长度随 RL 变长：模型自发学会「多想一会儿」。一步 = 一次策略更新。
+图 1｜(a) 训练过程中 R1-Zero 的 AIME 准确率. AIME 输入数学题, 输出数字, 示例见表 32; Pass@1 与 Cons@16 见附录 D. 1; 基线是人类参赛均分. (b) 训练集上平均回复长度随 RL 变长: 模型自发学会「多想一会儿」. 一步 = 一次策略更新.
 
 responses against a suite of predefined test cases, thereby generating objective feedback on correctness.
 
 
 
-把模型输出拿去跑预定测例，得到客观对错反馈。
+把模型输出拿去跑预定测例, 得到客观对错反馈.
 
-**Format rewards** complement the accuracy reward model by enforcing specific formatting requirements. In particular, the model is incentivized to encapsulate its reasoning process within designated tags, specifically ‘&lt; think&gt; ’ and ‘&lt; /think&gt; ’。This ensures that the model’s thought process is explicitly delineated, enhancing interpretability and facilitating subsequent analysis.
+**Format rewards** complement the accuracy reward model by enforcing specific formatting requirements. In particular, the model is incentivized to encapsulate its reasoning process within designated tags, specifically ‘&lt; think&gt; ’ and ‘&lt; /think&gt; ’. This ensures that the model’s thought process is explicitly delineated, enhancing interpretability and facilitating subsequent analysis.
 
 
 
-**格式奖励**补准确奖励：激励把推理包进 `&lt; think&gt; ` / `&lt; /think&gt; `，思考过程外露，方便读，也好后续分析。
+**格式奖励**补准确奖励: 激励把推理包进 `&lt; think&gt; ` / `&lt; /think&gt; `, 思考过程外露, 方便读, 也好后续分析.
 
 $$
 R e w a r d _ {\text {rule}} = R e w a r d _ {\text {acc}} + R e w a r d _ {\text {format}}\tag{4}
@@ -176,7 +176,7 @@ The accuracy, reward and format reward are combined with the same weight. Notabl
 
 
 
-准确与格式等权相加。推理任务上故意不用神经奖励模型（无论结果型还是过程型）：大规模 RL 下容易被黑客；重训 RM 又贵，还把管线搅复杂。
+准确与格式等权相加. 推理任务上故意不用神经奖励模型(无论结果型还是过程型): 大规模 RL 下容易被黑客; 重训 RM 又贵, 还把管线搅复杂.
 
 ### 2.3. Incentivize Reasoning Capability in LLMs 在 LLM 里激励推理能力
 
@@ -184,13 +184,13 @@ Specifically, we apply the RL technique on the DeepSeek-V3 base to train DeepSee
 
 
 
-在 DeepSeek-V3 base 上跑 RL 得到 R1-Zero。模板只要求「先推理，后答案」，故意不加内容偏好，好观察 RL 过程中的自然演化。
+在 DeepSeek-V3 base 上跑 RL 得到 R1-Zero. 模板只要求「先推理, 后答案」, 故意不加内容偏好, 好观察 RL 过程中的自然演化.
 
 Figure 1(a) depicts the performance trajectory of DeepSeek-R1-Zero on the AIME 2024 benchmark throughout the RL training process, where the average pass@1 score on AIME 2024 shows a significant increase, jumping from an initial 15.6% to 77.9%. In addition, by leveraging the self-consistency decoding (Wang et al., 2023c), the model’s performance can be
 
 
 
-图 1(a): AIME 2024 上平均 pass@1 从 15.6% 跳到 77.9%。再用 self-consistency 解码，还能
+图 1(a): AIME 2024 上平均 pass@1 从 15.6% 跳到 77.9%. 再用 self-consistency 解码, 还能
 
 <!-- page 5 of 86 -->
 
@@ -198,7 +198,7 @@ Table 2 | An interesting “aha moment” of an intermediate version of DeepSeek
 
 
 
-表 2｜R1-Zero 中间版本一个有意思的「aha moment」：模型用人称口吻学会重想。对作者也是顿悟时刻-- 亲眼看到强化学习的力量。
+表 2｜R1-Zero 中间版本一个有意思的「aha moment」: 模型用人称口吻学会重想. 对作者也是顿悟时刻-- 亲眼看到强化学习的力量.
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family: monospace;">
 Question: If $a &gt; 1$, then the sum of the real solutions of $\sqrt{a - \sqrt{a + x}} = x$ is equal to
@@ -222,31 +222,31 @@ further improved, achieving an accuracy of 86.7%. This performance significantly
 
 
 
-再抬到 86.7%，显著超过人类参赛均分。除数学外，Figure 10 显示编程竞赛与研究生级生/物/化题也很强--RL 确实能抬 LLM 推理。
+再抬到 86.7%, 显著超过人类参赛均分. 除数学外, Figure 10 显示编程竞赛与研究生级生/物/化题也很强--RL 确实能抬 LLM 推理.
 
 The self-evolution of DeepSeek-R1-Zero exemplifies how RL can autonomously enhance a model’s reasoning capabilities.
 
 
 
-R1-Zero 的自我演化，是「RL 能自己把推理做强」的样本。
+R1-Zero 的自我演化, 是「RL 能自己把推理做强」的样本.
 
 As shown in Figure 1(b), DeepSeek-R1-Zero exhibits a steady increase in thinking time throughout training, driven solely by intrinsic adaptation rather than external modifications. Leveraging long CoT, the model progressively refines its reasoning, generating hundreds to thousands of tokens to explore and improve its problem-solving strategies.
 
 
 
-图 1(b)：思考时间随训练稳步变长，靠的是内在适应，不是外加改超参。借长 CoT，模型逐步打磨推理，生成成百上千 token 去探索，改策略。
+图 1(b): 思考时间随训练稳步变长, 靠的是内在适应, 不是外加改超参. 借长 CoT, 模型逐步打磨推理, 生成成百上千 token 去探索, 改策略.
 
-The increase in thinking time fosters the autonomous development of sophisticated behaviors. Specifically, DeepSeek-R1-Zero increasingly exhibits advanced reasoning strategies such as reflective reasoning and systematic exploration of alternative solutions (see Figure 9(a) in Supplementary C. 2 for details), significantly boosting its performance on verifiable tasks like math and coding. Notably, during training, DeepSeek-R1-Zero exhibits an “aha moment”（Table 2），characterized by a sudden increase in the use of the word “wait” during reflections (see Figure 9(b) in Supplementary C. 2 for details). This moment marks a distinct change in reasoning patterns and clearly shows the self-evolution process of DeepSeek-R1-Zero.
+The increase in thinking time fosters the autonomous development of sophisticated behaviors. Specifically, DeepSeek-R1-Zero increasingly exhibits advanced reasoning strategies such as reflective reasoning and systematic exploration of alternative solutions (see Figure 9(a) in Supplementary C. 2 for details), significantly boosting its performance on verifiable tasks like math and coding. Notably, during training, DeepSeek-R1-Zero exhibits an “aha moment” (Table 2), characterized by a sudden increase in the use of the word “wait” during reflections (see Figure 9(b) in Supplementary C. 2 for details). This moment marks a distinct change in reasoning patterns and clearly shows the self-evolution process of DeepSeek-R1-Zero.
 
 
 
-想得更久，会催生更复杂行为：反思，系统换路(附录 C. 2 图 9(a))，可核验的数学与代码题跟着涨。训练中还出现 Table 2 的「aha moment」-- 反思里「wait」突然变多(图 9(b))，标志推理模式切了一档，自我演化肉眼可见。
+想得更久, 会催生更复杂行为: 反思, 系统换路(附录 C. 2 图 9(a)), 可核验的数学与代码题跟着涨. 训练中还出现 Table 2 的「aha moment」-- 反思里「wait」突然变多(图 9(b)), 标志推理模式切了一档, 自我演化肉眼可见.
 
 The self-evolution of DeepSeek-R1-Zero underscores the power and beauty of RL: rather than explicitly teaching the model how to solve a problem, we simply provide it with the right incentives, and it autonomously develops advanced problem-solving strategies. This serves as a reminder of the potential of RL to unlock higher levels of capabilities in LLMs, paving the way for more autonomous and adaptive models in the future.
 
 
 
-要点是：不必手把手教解题，给对激励，模型自己会长出高级策略。这提醒我们，RL 还能继续解锁 LLM 更高能力。
+要点是: 不必手把手教解题, 给对激励, 模型自己会长出高级策略. 这提醒我们, RL 还能继续解锁 LLM 更高能力.
 
 <!-- page 6 of 86 -->
 
@@ -256,7 +256,7 @@ Figure 2 | The multi-stage pipeline of DeepSeek-R1. A detailed background on Dee
 
 
 
-图 2｜DeepSeek-R1 多阶段管线。V3 Base / V3 背景见附录 A. 1；Dev1 / Dev2 / Dev3 是中间检查点。
+图 2｜DeepSeek-R1 多阶段管线. V3 Base / V3 背景见附录 A. 1; Dev1 / Dev2 / Dev3 是中间检查点.
 
 ## 3. DeepSeek-R1
 
@@ -265,19 +265,19 @@ Although DeepSeek-R1-Zero exhibits strong reasoning capabilities, it faces sever
 
 
 
-R1-Zero 推理强，但可读性差，语言混杂（底座多语，尤其中英）。为此做 R1，管线见图 2。
+R1-Zero 推理强, 但可读性差, 语言混杂(底座多语, 尤其中英). 为此做 R1, 管线见图 2.
 
 In the initial stage, we collect thousands of cold-start data that exhibits a conversational, human-aligned thinking process. RL training is then applied to improve the model performance with the conversational thinking process and language consistency. Subsequently, we apply rejection sampling and SFT once more. This stage incorporates both reasoning and non-reasoning datasets into the SFT process, enabling the model to not only excel in reasoning tasks but also demonstrate advanced writing capabilities. To further align the model with human preferences, we implement a secondary RL stage designed to enhance the model’s helpfulness and harmlessness while simultaneously refining its reasoning capabilities.
 
 
 
-开头先收集几千条冷启动数据：对话式，对人友好的思考过程；再 RL，抬性能并稳住语言一致；接着拒绝采样 + 再做 SFT，混进推理与非推理数据，写作能力也要上来；最后第二轮 RL，同时抬有用性，无害性与推理。
+开头先收集几千条冷启动数据: 对话式, 对人友好的思考过程; 再 RL, 抬性能并稳住语言一致; 接着拒绝采样 + 再做 SFT, 混进推理与非推理数据, 写作能力也要上来; 最后第二轮 RL, 同时抬有用性, 无害性与推理.
 
 The remainder of this section details the key components of this pipeline: Section 3.1 introduces the Reward Model utilized in our RL stages, and Section 3.2 elaborates on the specific training methodologies and implementation details. Data we used in this stage is detailed in Supplementary B. 3.
 
 
 
-§3.1 讲奖励模型，§3.2 讲训练细节；本阶段数据见附录 B. 3.
+§3.1 讲奖励模型, §3.2 讲训练细节; 本阶段数据见附录 B. 3.
 
 ### 3.1. Model-based Rewards 基于模型的奖励
 
@@ -285,7 +285,7 @@ For general data, we resort to reward models to capture human preferences in com
 
 
 
-通用数据用奖励模型抓复杂偏好。沿用 V3 管线与类似的偏好对分布。有用性只评最终摘要，少干扰底层推理；无害性评整段（含思考与摘要），抓风险，偏见与有害内容。
+通用数据用奖励模型抓复杂偏好. 沿用 V3 管线与类似的偏好对分布. 有用性只评最终摘要, 少干扰底层推理; 无害性评整段(含思考与摘要), 抓风险, 偏见与有害内容.
 
 <!-- page 7 of 86 -->
 
@@ -293,13 +293,13 @@ during the generation process.
 
 
 
-生成过程中冒出来的问题也要管。
+生成过程中冒出来的问题也要管.
 
 **Helpful Reward Model** Regarding helpful reward model training, we first generate preference pairs by prompting DeepSeek-V3 using the arena-hard prompt format, listed in Supplementary B. 2, where each pair consists of a user query along with two candidate responses. For each preference pair, we query DeepSeek-V3 four times, randomly assigning the responses as either Response A or Response B to mitigate positional bias. The final preference score is determined by averaging the four independent judgments, retaining only those pairs where the score difference (Δ) exceeds 1 to ensure meaningful distinctions. Additionally, to minimize length-related biases, we ensure that the chosen and rejected responses of the whole dataset have comparable lengths. In total, we curated 66, 000 data pairs for training the reward model. The prompts used in this dataset are all non-reasoning questions and are sourced either from publicly available open-source datasets or from users who have explicitly consented to share their data for the purpose of model improvement. The architecture of our reward model is consistent with that of DeepSeek-R1, with the addition of a reward head designed to predict scalar preference scores.
 
 
 
-**有用性奖励模型**：用 arena-hard 格式提示 DeepSeek-V3 造偏好对（附录 B. 2）。每对查四次，随机交换 A/B 压位置偏置；四次判决取平均，只留 Δ>1 的对；全库 chosen/rejected 长度大体对齐。共约 66, 000 对；提示全是非推理题，来自公开集或用户明确授权数据。架构与 R1 一致，外加预测标量偏好分的 reward head。
+**有用性奖励模型**: 用 arena-hard 格式提示 DeepSeek-V3 造偏好对(附录 B. 2). 每对查四次, 随机交换 A/B 压位置偏置; 四次判决取平均, 只留 Δ>1 的对; 全库 chosen/rejected 长度大体对齐. 共约 66, 000 对; 提示全是非推理题, 来自公开集或用户明确授权数据. 架构与 R1 一致, 外加预测标量偏好分的 reward head.
 
 $$
 R e w a r d _ {h e l p f u l} = R M _ {h e l p f u l} (R e s p o n s e _ {A}, R e s p o n s e _ {B})\tag{5}
@@ -309,13 +309,13 @@ The helpful reward models were trained with a batch size of 256, a learning rate
 
 
 
-有用性 RM: batch 256，lr 6e-6, 1 epoch；训练最大序列 8192；推理时不显式限长。
+有用性 RM: batch 256, lr 6e-6, 1 epoch; 训练最大序列 8192; 推理时不显式限长.
 
 **Safety Reward Model** To assess and improve model safety, we curated a dataset of 106, 000 prompts with model-generated responses annotated as “safe" or “unsafe" according to predefined safety guidelines. Unlike the pairwise loss employed in the helpfulness reward model, the safety reward model was trained using a point-wise methodology to distinguish between safe and unsafe responses. The training hyperparameters are the same as the helpful reward model.
 
 
 
-**安全奖励模型**：约 106, 000 条提示 + 模型回复，按安全指南标 safe/unsafe。不用成对损失，改点式区分；超参与有用性 RM 相同。
+**安全奖励模型**: 约 106, 000 条提示 + 模型回复, 按安全指南标 safe/unsafe. 不用成对损失, 改点式区分; 超参与有用性 RM 相同.
 
 $$
 \text {Reward} _ {\text {safety}} = R M _ {\text {safety}} (\text {Response})\tag{6}
@@ -325,7 +325,7 @@ For general queries, each instance is categorized as belonging to either the saf
 
 
 
-通用查询归入安全集或有用性集之一，通用奖励 $Reward_{General}$ 取对应数据集里的定义。
+通用查询归入安全集或有用性集之一, 通用奖励 $Reward_{General}$ 取对应数据集里的定义.
 
 ### 3.2. Training Details 训练细节
 
@@ -335,7 +335,7 @@ In the first stage of RL, we set the learning rate to 3e-6, the KL coefficient t
 
 
 
-第一轮：lr 3e-6，KL 0.001，GRPO clip ε=10，rollout 温度 1；每题 16 条，最长 32, 768；每步 32 题，batch 512；每 400 step 换参考模型；每次 rollout 8, 192 条切 16 个 mini-batch，一个 inner epoch。为压语言混杂，加语言一致性奖励：CoT 里目标语词占比。
+第一轮: lr 3e-6, KL 0.001, GRPO clip ε=10, rollout 温度 1; 每题 16 条, 最长 32, 768; 每步 32 题, batch 512; 每 400 step 换参考模型; 每次 rollout 8, 192 条切 16 个 mini-batch, 一个 inner epoch. 为压语言混杂, 加语言一致性奖励: CoT 里目标语词占比.
 
 $$
 \text {Reward}_{\text {language}} = \frac{\text {Num}(\text {Words}_{\text {target}})}{\text {Num}(\text {Words})}\tag{7}
@@ -347,13 +347,13 @@ Although ablation experiments in Supplementary B. 6 show that such alignment res
 
 
 
-附录 B. 6 消融显示这类对齐会略伤分，但更符合人类可读偏好。推理与非推理数据都把语言奖励直接加进最终奖励。
+附录 B. 6 消融显示这类对齐会略伤分, 但更符合人类可读偏好. 推理与非推理数据都把语言奖励直接加进最终奖励.
 
 Note that the clip ratio plays a crucial role in training. A lower value can lead to the truncation of gradients for a significant number of tokens, thereby degrading the model’s performance, while a higher value may cause instability during training.
 
 
 
-clip 比很关键：太小会砍掉大量 token 梯度，伤性能；太大训练不稳。
+clip 比很关键: 太小会砍掉大量 token 梯度, 伤性能; 太大训练不稳.
 
 #### 3.2.2. Training Details of the Second RL Stage 第二轮 RL
 
@@ -361,7 +361,7 @@ Specifically, we train the model using a combination of reward signals and diver
 
 
 
-奖励信号与多样提示分布一起训。推理数据沿用 R1-Zero 的规则奖励；多语提示时 CoT 仍易混语。通用数据走奖励模型。目标是推理强，同时有用，无害。一批数据上的奖励写成：
+奖励信号与多样提示分布一起训. 推理数据沿用 R1-Zero 的规则奖励; 多语提示时 CoT 仍易混语. 通用数据走奖励模型. 目标是推理强, 同时有用, 无害. 一批数据上的奖励写成:
 
 $$
 R e w a r d = R e w a r d _ {\text {reasoning}} + R e w a r d _ {\text {general}} + R e w a r d _ {\text {language}}\tag{8}
@@ -379,7 +379,7 @@ The second stage of RL retains most of the parameters from the first stage, with
 
 
 
-第二轮大多沿用第一轮设定，关键差别是温度降到 0.7（更高会胡言）。共约 1, 700 step；通用指令与偏好奖励只在最后 400 step 混入-- 偏好信号训太久会 reward hacking（附录 B. 5）。总成本见附录 B. 4.4.
+第二轮大多沿用第一轮设定, 关键差别是温度降到 0.7(更高会胡言). 共约 1, 700 step; 通用指令与偏好奖励只在最后 400 step 混入-- 偏好信号训太久会 reward hacking(附录 B. 5). 总成本见附录 B. 4.4.
 
 ## 4. Experiment
 
@@ -387,13 +387,13 @@ We evaluate our models on MMLU (Hendrycks et al., 2021), MMLU-Redux (Gema et al.
 
 
 
-评测覆盖 MMLU / MMLU-Redux / MMLU-Pro, C-Eval, CMMLU, IFEval, FRAMES, GPQA Diamond, SimpleQA, C-SimpleQA, SWE-Bench Verified, Aider, LiveCodeBench(2024-08–2025-01)，Codeforces，CNMO 2024，AIME 2024 等；细节见附录 D。
+评测覆盖 MMLU / MMLU-Redux / MMLU-Pro, C-Eval, CMMLU, IFEval, FRAMES, GPQA Diamond, SimpleQA, C-SimpleQA, SWE-Bench Verified, Aider, LiveCodeBench(2024-08–2025-01), Codeforces, CNMO 2024, AIME 2024 等; 细节见附录 D.
 
 Table 3 summarizes the performance of DeepSeek-R1 across multiple developmental stages, as outlined in Figure 2. A comparison between DeepSeek-R1-Zero and DeepSeek-R1 Dev1 reveals substantial improvements in instruction-following, as evidenced by higher scores on the IF-Eval and ArenaHard benchmarks. However, due to the limited size of the cold-start dataset, Dev1 exhibits a partial degradation in reasoning performance compared to DeepSeek-R1-Zero, most notably on the AIME benchmark. In contrast, DeepSeek-R1 Dev2 demonstrates
 
 
 
-Table 3 汇总 Figure 2 各阶段。Zero→Dev1: IF-Eval，ArenaHard 指令跟随大涨；但冷启动数据少，推理尤其 AIME 有所掉。相对地，Dev2
+Table 3 汇总 Figure 2 各阶段. Zero→Dev1: IF-Eval, ArenaHard 指令跟随大涨; 但冷启动数据少, 推理尤其 AIME 有所掉. 相对地, Dev2
 
 <!-- page 9 of 86 -->
 
@@ -401,7 +401,7 @@ Table 3 | Experimental results at each stage of DeepSeek-R1. Numbers in bold den
 
 
 
-表 3｜DeepSeek-R1 各阶段结果。加粗表示统计显著（t 检验，p<0.01）。
+表 3｜DeepSeek-R1 各阶段结果. 加粗表示统计显著(t 检验, p<0.01).
 
 | Benchmark (Metric) | R1-Zero | R1-Dev1 | R1-Dev2 | R1-Dev | 3 R1 |
 | --- | --- | --- | --- | --- | --- |
@@ -432,19 +432,19 @@ marked performance enhancements on benchmarks that require advanced reasoning sk
 
 
 
-在代码生成，数学，STEM 等强推理基准上明显回升；AlpacaEval 2.0 一类通用偏好基准只小幅动。说明推理向 RL 主要抬推理，对用户偏好向基准影响有限。
+在代码生成, 数学, STEM 等强推理基准上明显回升; AlpacaEval 2.0 一类通用偏好基准只小幅动. 说明推理向 RL 主要抬推理, 对用户偏好向基准影响有限.
 
 DeepSeek-R1 Dev3 integrates both reasoning and non-reasoning datasets into the SFT pipeline, thereby enhancing the model’s proficiency in both reasoning and general language generation tasks. Compared to Dev2, DeepSeek-R1 Dev3 achieves notable performance improvements on AlpacaEval 2.0 and Aider-Polyglot, attributable to the inclusion of large-scale non-reasoning corpora and code engineering datasets. Finally, comprehensive RL training on DeepSeek-R1 Dev3 using mixed reasoning-focused and general-purpose data produced the final DeepSeek-R1. Marginal improvements occurred in code and mathematics benchmarks, as substantial reasoning-specific RL was done in prior stages. The primary advancements in the final DeepSeek-R1 were in general instruction-following and user-preference benchmarks, with AlpacaEval 2.0 improving by 25% and ArenaHard by 17%.
 
 
 
-Dev3 把推理与非推理都塞进 SFT，两边能力一起抬；相对 Dev2，AlpacaEval 2.0 与 Aider-Polyglot 明显涨，靠大规模非推理语料与代码工程数据。终版 R1 在 Dev3 上再做混合 RL：代码/数学只剩边际增益（前面推理 RL 已做足），主涨在通用指令与偏好--AlpacaEval 2.0 +25%, ArenaHard +17%。
+Dev3 把推理与非推理都塞进 SFT, 两边能力一起抬; 相对 Dev2, AlpacaEval 2.0 与 Aider-Polyglot 明显涨, 靠大规模非推理语料与代码工程数据. 终版 R1 在 Dev3 上再做混合 RL: 代码/数学只剩边际增益(前面推理 RL 已做足), 主涨在通用指令与偏好--AlpacaEval 2.0 +25%, ArenaHard +17%.
 
 In addition, we compare DeepSeek-R1 with other models in Supplementary D. 2. Model safety evaluations are provided in Supplementary D. 3. A comprehensive analysis is provided in Supplementary E, including a comparison with DeepSeek-V3, performance evaluations on both fresh test sets, a breakdown of mathematical capabilities by category, and an investigation of test-time scaling behavior. Supplementary F shows that the strong reasoning capability can be transferred to smaller models.
 
 
 
-与其他模型对照见附录 D. 2；安全见 D. 3；更细分析（对 V3，新题，数学分科，TestingTime Scaling）见 E；蒸馏到小模型见 F。
+与其他模型对照见附录 D. 2; 安全见 D. 3; 更细分析(对 V3, 新题, 数学分科, TestingTime Scaling)见 E; 蒸馏到小模型见 F.
 
 <!-- page 10 of 86 -->
 
@@ -454,51 +454,51 @@ With the advancement in the reasoning capabilities of DeepSeek-R1, we deeply rec
 
 
 
-推理变强也放大伦理风险：越狱可能产出更可执行的危险内容（如爆炸物制作）；公开权重还可被再微调，削弱固有安全。
+推理变强也放大伦理风险: 越狱可能产出更可执行的危险内容(如爆炸物制作); 公开权重还可被再微调, 削弱固有安全.
 
 In Supplementary D. 3, we present a comprehensive safety report from multiple perspectives, including performance on open-source and in-house safety evaluation benchmarks, and safety levels across multiple languages and against jailbreak attacks. These comprehensive safety analyses conclude that the inherent safety level of the DeepSeek-R1 model, compared to other state-of-the-art models, is generally at a moderate level (comparable to GPT-4o (2024-05-13)). Besides, when coupled with the risk control system, the model’s safety level is elevated to a superior standard.
 
 
 
-附录 D. 3 从开源/内部安全基准，多语安全，越狱鲁棒性等多面报告。结论：R1 固有安全大致中等，可比 GPT-4o (2024-05-13)；接上风险控制系统后升到更优档。
+附录 D. 3 从开源/内部安全基准, 多语安全, 越狱鲁棒性等多面报告. 结论: R1 固有安全大致中等, 可比 GPT-4o (2024-05-13); 接上风险控制系统后升到更优档.
 
-## 6. Conclusion，Limitation，and Future Work 结论，局限与未来工作
+## 6. Conclusion, Limitation, and Future Work 结论, 局限与未来工作
 
 We present DeepSeek-R1-Zero and DeepSeek-R1, which rely on large-scale RL to incentivize model reasoning behaviors. Our results demonstrate that pre-trained checkpoints inherently possess substantial potential for complex reasoning tasks. We believe that the key to unlocking this potential lies not in large-scale human annotation but in the provision of hard reasoning questions, a reliable verifier, and sufficient computational resources for reinforcement learning. Sophisticated reasoning behaviors, such as self-verification and reflection, appeared to emerge organically during the reinforcement learning process.
 
 
 
-本文给出 R1-Zero 与 R1：靠大规模 RL 激励推理。预训练检查点本身就蕴藏复杂推理潜力；解锁关键往往不是海量人类标注，而是难题 + 可靠核验器 + 足够 RL 算力。自我校验，反思等行为，看起来是在 RL 过程中自然长出来的。
+本文给出 R1-Zero 与 R1: 靠大规模 RL 激励推理. 预训练检查点本身就蕴藏复杂推理潜力; 解锁关键往往不是海量人类标注, 而是难题 + 可靠核验器 + 足够 RL 算力. 自我校验, 反思等行为, 看起来是在 RL 过程中自然长出来的.
 
 Even if DeepSeek-R1 achieves frontier results on reasoning benchmarks, it still faces several capability limitations, as outlined below:
 
 
 
-即便推理基准已到前沿，能力边界仍在：
+即便推理基准已到前沿, 能力边界仍在:
 
 **Structure Output and Tool Use:** Currently, the structural output capabilities of DeepSeek-R1 remain suboptimal compared to existing models. Moreover, DeepSeek-R1 cannot leverage tools, such as search engines and calculators, to improve the performance of output. However, as it is not hard to build an RL environment for structure output and tool use, we believe the issue will be addressed in the next version.
 
 
 
-**结构输出与工具**：结构输出仍偏弱；也不会用搜索，计算器等工具抬分。给结构输出/工具用搭 RL 环境并不难，下一版有望补。
+**结构输出与工具**: 结构输出仍偏弱; 也不会用搜索, 计算器等工具抬分. 给结构输出/工具用搭 RL 环境并不难, 下一版有望补.
 
 **Token efficiency:** Unlike conventional test-time computation scaling approaches, such as majority voting or Monte Carlo Tree Search (MCTS), DeepSeek-R1 dynamically allocates computational resources during inference according to the complexity of the problem at hand. Specifically, it uses fewer tokens to solve simple tasks, while generating more tokens for complex tasks. Nevertheless, there remains room for further optimization in terms of token efficiency, as instances of excessive reasoning-manifested as overthinking-are still observed in response to simpler questions.
 
 
 
-**Token 效率**：不像多数投票或 MCTS 那种外挂 TestingTime Scaling，R1 按题难易动态分配算力-- 简单少 token，复杂多 token。但仍有过思：简单题也会想过头。
+**Token 效率**: 不像多数投票或 MCTS 那种外挂 TestingTime Scaling, R1 按题难易动态分配算力-- 简单少 token, 复杂多 token. 但仍有过思: 简单题也会想过头.
 
 **Language Mixing:** DeepSeek-R1 is currently optimized for Chinese and English, which may result in language mixing issues when handling queries in other languages. For instance, DeepSeek-R1 might use English for reasoning and responses, even if the query is in a language other than English or Chinese. We aim to address this limitation in future updates. The limitation may be related to the base checkpoint, DeepSeek-V3-Base, mainly utilizes Chinese and English, so that it can achieve better results with the two languages in reasoning.
 
 
 
-**语言混杂**：当前主优化中英，其他语查询可能仍混语（甚至用英语想，英语答）。未来更新要修；根子可能在底座 V3-Base 本就偏中英。
+**语言混杂**: 当前主优化中英, 其他语查询可能仍混语(甚至用英语想, 英语答). 未来更新要修; 根子可能在底座 V3-Base 本就偏中英.
 
 **Prompting Engineering:** When evaluating DeepSeek-R1, we observe that it is sensitive to
 
 
 
-**提示工程**：评测时发现它对提示敏感，
+**提示工程**: 评测时发现它对提示敏感,
 
 <!-- page 11 of 86 -->
 
@@ -506,43 +506,43 @@ prompts. Few-shot prompting consistently degrades its performance. Therefore, we
 
 
 
-few-shot 往往会掉分。建议零样本直接陈述问题并指定输出格式。
+few-shot 往往会掉分. 建议零样本直接陈述问题并指定输出格式.
 
 **Software Engineering Tasks:** Due to the long evaluation times, which impact the efficiency of the RL process, large-scale RL has not been applied extensively in software engineering tasks. As a result, DeepSeek-R1 has not demonstrated a huge improvement over DeepSeek-V3 on software engineering benchmarks. Future versions will address this by implementing rejection sampling on software engineering data or incorporating asynchronous evaluations during the RL process to improve efficiency.
 
 
 
-**软件工程**：评测太慢拖 RL 效率，工程任务上未做大规模 RL，相对 V3 提升有限。后续可用工程数据拒绝采样，或在 RL 里做异步评测。
+**软件工程**: 评测太慢拖 RL 效率, 工程任务上未做大规模 RL, 相对 V3 提升有限. 后续可用工程数据拒绝采样, 或在 RL 里做异步评测.
 
 Beyond specific capability limitations, the pure RL methodology itself also presents inherent challenges:
 
 
 
-能力边界之外，纯 RL 方法本身也有坑：
+能力边界之外, 纯 RL 方法本身也有坑:
 
 **Reward Hacking:** The success of pure RL depends on reliable reward signals. In this study, we ensure reward reliability through a reasoning-domain rule-based reward model (RM). However, such dependable RMs are difficult to construct for certain tasks, such as writing. If the reward signal is assigned by a model instead of predefined rules, it becomes more susceptible to exploitation as training progresses, which means the policy model may find shortcuts to hack the reward model. Consequently, for complex tasks that cannot be effectively evaluated by a reliable reward model, scaling up pure RL methods remains an open challenge.
 
 
 
-**奖励黑客**：纯 RL 成败系于可靠奖励。本文在推理域用规则 RM 保可靠；写作一类任务很难造同等可靠 RM。奖励若由模型打分，训久了更容易被钻空子。无法可靠打分的复杂任务，纯 RL 怎么扩仍是开放题。
+**奖励黑客**: 纯 RL 成败系于可靠奖励. 本文在推理域用规则 RM 保可靠; 写作一类任务很难造同等可靠 RM. 奖励若由模型打分, 训久了更容易被钻空子. 无法可靠打分的复杂任务, 纯 RL 怎么扩仍是开放题.
 
 In this work, for tasks that cannot obtain a reliable signal, DeepSeek-R1 uses human annotation to create supervised data, and only conduct RL for hundreds of steps. We hope in the future, a robust reward model can be obtained to address such issues.
 
 
 
-对拿不到可靠信号的任务，R1 用人标注做监督数据，RL 只跑几百步。希望未来有更稳的 RM。
+对拿不到可靠信号的任务, R1 用人标注做监督数据, RL 只跑几百步. 希望未来有更稳的 RM.
 
 With the advent of pure RL methods like DeepSeek-R1, the future holds immense potential for solving any task that can be effectively evaluated by a verifier, regardless of its complexity for humans. Machines equipped with such advanced RL techniques are poised to surpass human capabilities in these domains, driven by their ability to optimize performance iteratively through trial and error. However, challenges remain for tasks where constructing a reliable reward model is inherently difficult. In such cases, the lack of a robust feedback mechanism may hinder progress, suggesting that future research should focus on developing innovative approaches to define and refine reward structures for these complex, less verifiable problems.
 
 
 
-凡是能被核验器有效评估的任务，纯 RL 都有潜力-- 跟人有多难无关；机器靠试错迭代，有望在这些域超过人。难造可靠 RM 的任务仍卡住，未来要在奖励结构定义上想新办法。
+凡是能被核验器有效评估的任务, 纯 RL 都有潜力-- 跟人有多难无关; 机器靠试错迭代, 有望在这些域超过人. 难造可靠 RM 的任务仍卡住, 未来要在奖励结构定义上想新办法.
 
 Furthermore, leveraging tools during the reasoning process holds significant promise. Whether it’s utilizing tools like compilers or search engines to retrieve or compute necessary information, or employing external tools-such as biological or chemical reagents, to validate final results in the real world, this integration of tool-augmented reasoning could dramatically enhance the scope and accuracy of machine-driven solutions.
 
 
 
-推理过程接工具也值得做：编译器，搜索做检索与计算，乃至生物/化学试剂做真实世界校验，都会扩大机器解题的范围与精度。
+推理过程接工具也值得做: 编译器, 搜索做检索与计算, 乃至生物/化学试剂做真实世界校验, 都会扩大机器解题的范围与精度.
 
 ## 7. Author List 作者列表
 
@@ -550,19 +550,19 @@ The list of authors is organized by contribution role, with individuals listed a
 
 
 
-按贡献角色分组，组内按名字母序；标星作者已不在团队。
+按贡献角色分组, 组内按名字母序; 标星作者已不在团队.
 
 **Core Contributors**: Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Peiyi Wang, Qihao Zhu, Runxin Xu, Ruoyu Zhang, Shirong Ma, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao,
 
 
 
-**核心贡献者**：Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Peiyi Wang, Qihao Zhu, Runxin Xu, Ruoyu Zhang, Shirong Ma, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao,
+**核心贡献者**: Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Peiyi Wang, Qihao Zhu, Runxin Xu, Ruoyu Zhang, Shirong Ma, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao,
 
 **Contributions of the Core Authors:** Peiyi Wang and Daya Guo jointly demonstrated that outcome-based RL induces the emergence of long Chain-of-Thought patterns in LLMs, achieving
 
 
 
-**核心作者贡献简述**：Peiyi Wang 与 Daya Guo 共同证明基于结果的 RL 能诱导长 CoT 涌现，
+**核心作者贡献简述**: Peiyi Wang 与 Daya Guo 共同证明基于结果的 RL 能诱导长 CoT 涌现,
 
 <!-- page 12 of 86 -->
 
@@ -570,13 +570,13 @@ breakthrough reasoning capabilities. They contributed equally to the creation of
 
 
 
-取得推理突破；两人同等贡献 R1-Zero，为 R1 奠基。Daya Guo 还参与 MoE 上 RL 稳定性。Junxiao Song 提出 GRPO，做初版实现，并引入数学规则奖励；随后由 Peiyi Wang, Runxin Xu  refinement. Zhibin Gou 提出大 PPO clipping 策略抬 GRPO，与 Zhihong Shao，Junxiao Song 一起验证其重要性。数据迭代/奖励/评测按域分工：代码（Qihao Zhu, Z. F. Wu, Dejian Yang），数学（Zhihong Shao, Zhibin Gou, Junxiao Song），其他推理与通用（Peiyi Wang, Ruoyu Zhang, Runxin Xu, Yu Wu）。Qihao Zhu 与 Zhihong Shao 参与 RL 数据筛选；Zhuoshu Li 与 Yu Wu 共同主持全项目标注。系统侧 Xiao Bi，Xingkai Yu，Shirong Ma，Xiaokang Zhang，Haowei Zhang，Ziyi Gao 实现 RL 管线，优化效率与大规模稳定性。Zhibin Gou，Daya Guo，Ruoyu Zhang 盯最终训练与动力学；Zhibin Gou 主导 R1-distill 系列。
+取得推理突破; 两人同等贡献 R1-Zero, 为 R1 奠基. Daya Guo 还参与 MoE 上 RL 稳定性. Junxiao Song 提出 GRPO, 做初版实现, 并引入数学规则奖励; 随后由 Peiyi Wang, Runxin Xu  refinement. Zhibin Gou 提出大 PPO clipping 策略抬 GRPO, 与 Zhihong Shao, Junxiao Song 一起验证其重要性. 数据迭代/奖励/评测按域分工: 代码(Qihao Zhu, Z. F. Wu, Dejian Yang), 数学(Zhihong Shao, Zhibin Gou, Junxiao Song), 其他推理与通用(Peiyi Wang, Ruoyu Zhang, Runxin Xu, Yu Wu). Qihao Zhu 与 Zhihong Shao 参与 RL 数据筛选; Zhuoshu Li 与 Yu Wu 共同主持全项目标注. 系统侧 Xiao Bi, Xingkai Yu, Shirong Ma, Xiaokang Zhang, Haowei Zhang, Ziyi Gao 实现 RL 管线, 优化效率与大规模稳定性. Zhibin Gou, Daya Guo, Ruoyu Zhang 盯最终训练与动力学; Zhibin Gou 主导 R1-distill 系列.
 
 **Contributors**: Aixin Liu, Bing Xue, Bingxuan Wang, Bochao Wu, Bei Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chong Ruan, Damai Dai, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo\*, Guangbo Hao, Guanting Chen, Guowei Li, H. Zhang, Hanwei Xu, Honghui Ding, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jingchang Chen, Jingyang Yuan, Jinhao Tu, Junjie Qiu, Junlong Li, J. L. Cai, Jiaqi Ni, Jian Liang, Jin Chen, Kai Dong, Kai Hu\*, Kaichao You, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao, Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang, Mingxu Zhou, Meng Li, Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng Wang, Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, R. J. Chen, R. L. Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shengfeng Ye, Shiyu Wang, Shuiping Yu, Shunfeng Zhou, Shuting Pan, S. S. Li, Shuang Zhou, Shaoqing Wu, Shengfeng Ye, Tao Yun, Tian Pei, Tianyu Sun, T. Wang, Wangding Zeng, Wen Liu, Wenfeng Liang, Wenjun Gao, Wenqin Yu\*, Wentao Zhang, W. L. Xiao, Wei An, Xiaodong Liu, Xiaohan Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xinyu Yang, Xinyuan Li, Xuecheng Su, Xuheng Lin, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xiaowen Sun, Xiaoxiang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang, Xinxia Shan, Y. K. Li, Y. Q. Wang, Y. X. Wei, Yang Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Wang, Yi Yu, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan Tan, Yiyang Ma\*, Yiyuan Liu, Yongqiang Guo, Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia He, Yunfan Xiong, Yuxiang Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Ying Tang, Yukun Zha, Yuting Yan, Z. Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhenda Xie, Zhengyan Zhang, Zhewen Hao, Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zijia Zhu, Zijun Liu\*, Zilin Li, Ziwei Xie, Ziyang Song, Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu Zhang, Zhen Zhang,
 
 
 
-**贡献者**：Aixin Liu, Bing Xue, Bingxuan Wang, Bochao Wu, Bei Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chong Ruan, Damai Dai, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo\*, Guangbo Hao, Guanting Chen, Guowei Li, H. Zhang, Hanwei Xu, Honghui Ding, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jingchang Chen, Jingyang Yuan, Jinhao Tu, Junjie Qiu, Junlong Li, J. L. Cai, Jiaqi Ni, Jian Liang, Jin Chen, Kai Dong, Kai Hu\*, Kaichao You, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao, Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang, Mingxu Zhou, Meng Li, Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng Wang, Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, R. J. Chen, R. L. Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shengfeng Ye, Shiyu Wang, Shuiping Yu, Shunfeng Zhou, Shuting Pan, S. S. Li, Shuang Zhou, Shaoqing Wu, Shengfeng Ye, Tao Yun, Tian Pei, Tianyu Sun, T. Wang, Wangding Zeng, Wen Liu, Wenfeng Liang, Wenjun Gao, Wenqin Yu\*, Wentao Zhang, W. L. Xiao, Wei An, Xiaodong Liu, Xiaohan Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xinyu Yang, Xinyuan Li, Xuecheng Su, Xuheng Lin, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xiaowen Sun, Xiaoxiang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang, Xinxia Shan, Y. K. Li, Y. Q. Wang, Y. X. Wei, Yang Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Wang, Yi Yu, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan Tan, Yiyang Ma\*, Yiyuan Liu, Yongqiang Guo, Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia He, Yunfan Xiong, Yuxiang Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Ying Tang, Yukun Zha, Yuting Yan, Z. Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhenda Xie, Zhengyan Zhang, Zhewen Hao, Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zijia Zhu, Zijun Liu\*, Zilin Li, Ziwei Xie, Ziyang Song, Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu Zhang, Zhen Zhang,
+**贡献者**: Aixin Liu, Bing Xue, Bingxuan Wang, Bochao Wu, Bei Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chong Ruan, Damai Dai, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo\*, Guangbo Hao, Guanting Chen, Guowei Li, H. Zhang, Hanwei Xu, Honghui Ding, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jingchang Chen, Jingyang Yuan, Jinhao Tu, Junjie Qiu, Junlong Li, J. L. Cai, Jiaqi Ni, Jian Liang, Jin Chen, Kai Dong, Kai Hu\*, Kaichao You, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao, Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang, Mingxu Zhou, Meng Li, Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng Wang, Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, R. J. Chen, R. L. Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shengfeng Ye, Shiyu Wang, Shuiping Yu, Shunfeng Zhou, Shuting Pan, S. S. Li, Shuang Zhou, Shaoqing Wu, Shengfeng Ye, Tao Yun, Tian Pei, Tianyu Sun, T. Wang, Wangding Zeng, Wen Liu, Wenfeng Liang, Wenjun Gao, Wenqin Yu\*, Wentao Zhang, W. L. Xiao, Wei An, Xiaodong Liu, Xiaohan Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xinyu Yang, Xinyuan Li, Xuecheng Su, Xuheng Lin, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xiaowen Sun, Xiaoxiang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang, Xinxia Shan, Y. K. Li, Y. Q. Wang, Y. X. Wei, Yang Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Wang, Yi Yu, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan Tan, Yiyang Ma\*, Yiyuan Liu, Yongqiang Guo, Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia He, Yunfan Xiong, Yuxiang Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Ying Tang, Yukun Zha, Yuting Yan, Z. Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhenda Xie, Zhengyan Zhang, Zhewen Hao, Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zijia Zhu, Zijun Liu\*, Zilin Li, Ziwei Xie, Ziyang Song, Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu Zhang, Zhen Zhang,
 
 <!-- page 13 of 86 -->
 
@@ -591,21 +591,21 @@ DeepSeek V3 (DeepSeek-AI, 2024b) is an advanced open-source LLM developed by Dee
 
 
 
-DeepSeek V3 是 DeepSeek 的开源 LLM（2024 年 12 月发布），对标 GPT-4，Llama 3.1，强调性价比。架构 MoE：总参 671B，每 token 激活 37B；预训练约 14.8T 高质量多样 token，再接 SFT 与 RL。创新包括 **Multi-head Latent Attention(MLA)** 做高效推理，无辅助损失的负载均衡，以及 **Multi-Token Prediction(MTP)**，数学与代码受益明显。
+DeepSeek V3 是 DeepSeek 的开源 LLM(2024 年 12 月发布), 对标 GPT-4, Llama 3.1, 强调性价比. 架构 MoE: 总参 671B, 每 token 激活 37B; 预训练约 14.8T 高质量多样 token, 再接 SFT 与 RL. 创新包括 **Multi-head Latent Attention(MLA)** 做高效推理, 无辅助损失的负载均衡, 以及 **Multi-Token Prediction(MTP)**, 数学与代码受益明显.
 
-解释：MLA= 把 KV 压进低秩潜变量再按需吸收回投影，推理时 KV cache 更省；细推导见本库 llm-guide 的 MLA 单独成篇，此处不展开。
+解释: MLA= 把 KV 压进低秩潜变量再按需吸收回投影, 推理时 KV cache 更省; 细推导见本库 llm-guide 的 MLA 单独成篇, 此处不展开.
 
 For the training data of DeepSeek-V3-Base, we exclusively use plain web pages and e-books, without incorporating any synthetic data. However, we have observed that some web pages contain a significant number of OpenAI-model-generated answers, which may lead the base model to acquire knowledge from other powerful models indirectly. However, we did not intentionally include synthetic data generated by OpenAI during the pre-training cooldown phase; all data used in this phase were naturally occurring and collected through web crawling. The pre-training dataset contains a substantial amount of mathematical and code-related content, indicating that DeepSeek-V3-Base has been exposed to a significant volume of reasoning trace data. This extensive exposure equips the model with the capability to generate plausible solution candidates, from which reinforcement learning can effectively identify and optimize high-quality outputs. We did the data contamination in pre-training as described in Appendix D. 1. The training data of DeepSeek-V3 base are mostly Chinese and English, which might be the cause for DeepSeek-R1-Zero language mixing when the language consistent reward is absent.
 
 
 
-V3-Base 训练数据只用纯网页与电子书，不故意掺合成数据；但网页里可能已有大量 OpenAI 模型生成答案，底座会间接吃到。cooldown 阶段也未故意塞 OpenAI 合成数据，全是爬来的自然语料。预训练含大量数学与代码，等于见过很多推理痕迹，能生成像样候选解，RL 再从中挑优。污染处理见附录 D. 1。底座主语言中英，可能是 R1-Zero 在没有语言一致性奖励时混语的原因之一。
+V3-Base 训练数据只用纯网页与电子书, 不故意掺合成数据; 但网页里可能已有大量 OpenAI 模型生成答案, 底座会间接吃到. cooldown 阶段也未故意塞 OpenAI 合成数据, 全是爬来的自然语料. 预训练含大量数学与代码, 等于见过很多推理痕迹, 能生成像样候选解, RL 再从中挑优. 污染处理见附录 D. 1. 底座主语言中英, 可能是 R1-Zero 在没有语言一致性奖励时混语的原因之一.
 
 In this paper, we use the notation DeepSeek-V3-Base as the base model, DeepSeek-V3 as the instructed model. Notably, DeepSeek-R1 and DeepSeek-R1-Zero are trained on top of DeepSeek-V3-Base and DeepSeek-R1 leverages non-reasoning data from DeepSeek-V3 SFT data. DeepSeek-R1-Dev1, DeepSeek-R1-Dev2, DeepSeek-R1-Dev3 are intermediate checkpoints of DeepSeek-R1.
 
 
 
-记号：DeepSeek-V3-Base = 底座；DeepSeek-V3 = 指令版。R1 与 R1-Zero 都在 V3-Base 上训；R1 还用了 V3 SFT 里的非推理数据。Dev1/2/3 是 R1 中间检查点。
+记号: DeepSeek-V3-Base = 底座; DeepSeek-V3 = 指令版. R1 与 R1-Zero 都在 V3-Base 上训; R1 还用了 V3 SFT 里的非推理数据. Dev1/2/3 是 R1 中间检查点.
 
 ### A. 2. Conventional Post-Training Paradigm 常规后训练范式
 
@@ -613,13 +613,13 @@ Post-training has emerged as an essential step in refining pre-trained LLMs to m
 
 
 
-后训练把预训练 LLM 调到具体目标并对齐人类预期；常见两阶段是 SFT 再接 RL。
+后训练把预训练 LLM 调到具体目标并对齐人类预期; 常见两阶段是 SFT 再接 RL.
 
 Supervised Fine-Tuning refines a pre-trained LLM by training it on a curated dataset of inputoutput pairs tailored to specific tasks. The process employs a supervised learning objective, typically minimizing cross-entropy loss between the model’s predictions and labeled ground truth (Brown et al., 2020). For instance, in conversational applications, SFT might utilize dialogue datasets where desired responses are explicitly provided, enabling the model to adapt its outputs to predefined standards (Radford et al., 2019). SFT offers several compelling benefits. First, it achieves precise task alignment by leveraging high-quality examples, allowing the model to
 
 
 
-SFT 在精选输入–输出对上训，目标通常是交叉熵对齐标注。对话场景里就是给期望回复。好处：高质量样例能精确对齐任务，
+SFT 在精选输入–输出对上训, 目标通常是交叉熵对齐标注. 对话场景里就是给期望回复. 好处: 高质量样例能精确对齐任务,
 
 <!-- page 14 of 86 -->
 
@@ -627,25 +627,25 @@ excel in domains such as customer support or technical documentation (Radford et
 
 
 
-在客服，技术文档等域表现好；复用预训练权重比从零训省；显式映射也好解释。短板：质量与多样性不够就泛化差；静态对齐固定输出，追不上偏好变化；高质量标注贵，错误还会写进行为。
+在客服, 技术文档等域表现好; 复用预训练权重比从零训省; 显式映射也好解释. 短板: 质量与多样性不够就泛化差; 静态对齐固定输出, 追不上偏好变化; 高质量标注贵, 错误还会写进行为.
 
 Following SFT, Reinforcement Learning further refines the LLM by optimizing its outputs against a reward signal. In this stage, the model interacts with an environment-often a reward model trained on human feedback-and adjusts its behavior to maximize cumulative rewards. A prominent instantiation of this approach is Reinforcement Learning from Human Feedback (RLHF), where the reward function encodes human preferences (Christiano et al., 2017). RL thus shifts the focus from static supervision to dynamic optimization. Notably, RL reduces the need for extensive annotated resources; while SFT demands a fully labeled dataset for every input-output pair, RL can operate with a smaller set of human evaluations or a trained reward model, even rule-based reward model, significantly lowering the annotation burden.
 
 
 
-SFT 之后用 RL 对奖励信号优化：与环境（常是人类反馈训出的 RM）互动，最大化累计奖励。RLHF 是代表形态。相对 SFT「每对都要标」，RL 可用更少评价，学得的 RM，甚至规则 RM，标注负担更轻。
+SFT 之后用 RL 对奖励信号优化: 与环境(常是人类反馈训出的 RM)互动, 最大化累计奖励. RLHF 是代表形态. 相对 SFT「每对都要标」, RL 可用更少评价, 学得的 RM, 甚至规则 RM, 标注负担更轻.
 
 The sequential application of SFT and RL combines their complementary strengths. SFT establishes a robust, task-specific baseline by grounding the model in curated examples, while RL refines this foundation to align with broader, human-centric objectives (Ouyang et al., 2022). For example, SFT might ensure grammatical accuracy in a dialogue system, while RL optimizes for engagement and brevity, as demonstrated in the development of InstructGPT (Ouyang et al., 2022). This hybrid approach has proven effective in producing models that are both precise and adaptable.
 
 
 
-SFT+RL 互补：SFT 用精选样例打任务底座，RL 再对齐更广的人类目标。例如对话系统里 SFT 管语法，RL 管有趣与简洁（InstructGPT）。混合路线能同时要准，要活。
+SFT+RL 互补: SFT 用精选样例打任务底座, RL 再对齐更广的人类目标. 例如对话系统里 SFT 管语法, RL 管有趣与简洁(InstructGPT). 混合路线能同时要准, 要活.
 
 In this study, we demonstrate that the SFT stage may impede a model’s ability to explore and develop effective reasoning strategies. This limitation arises because human-provided responses, which serve as targets during SFT, are not always optimal for model learning; they often omit critical reasoning components such as explicit reflection and verification steps. To address this, DeepSeek-R1-Zero enables direct exploration of reasoning patterns by the model itself, independent of human priors. The reasoning trajectories discovered through this self-exploration are subsequently distilled and used to train other models, thereby promoting the acquisition of more robust and generalizable reasoning capabilities.
 
 
 
-本文指出：SFT 阶段可能阻碍探索有效推理策略-- 人类示范当目标时，常省略显式反思与校验。R1-Zero 因此让模型自己探索，不绑人类先验；探索到的轨迹再蒸馏给其他模型，促更稳，更可泛化的推理。
+本文指出: SFT 阶段可能阻碍探索有效推理策略-- 人类示范当目标时, 常省略显式反思与校验. R1-Zero 因此让模型自己探索, 不绑人类先验; 探索到的轨迹再蒸馏给其他模型, 促更稳, 更可泛化的推理.
 
 ### A. 3. A Comparison of GRPO and PPO GRPO 与 PPO 对照
 
@@ -653,13 +653,13 @@ Group Relative Policy Optimization (GRPO) (Shao et al., 2024) is the reinforceme
 
 
 
-GRPO 用于训 R1-Zero 与 R1，初衷是简化 PPO，压资源。整体对照见图 3。
+GRPO 用于训 R1-Zero 与 R1, 初衷是简化 PPO, 压资源. 整体对照见图 3.
 
 For each question 𝑞, GRPO samples a group of outputs $\{ o _ { 1 } , o _ { 2 } , \cdots , o _ { G } \}$ from the old policy
 
 
 
-对每个问题 q，GRPO 从旧策略采一组输出
+对每个问题 q, GRPO 从旧策略采一组输出
 
 <!-- page 15 of 86 -->
 
@@ -669,13 +669,13 @@ Figure 3 | Demonstration of PPO and our GRPO. GRPO foregoes the value model, ins
 
 
 
-图 3｜PPO 与 GRPO 示意。GRPO 丢掉价值模型，用组分数估优势。
+图 3｜PPO 与 GRPO 示意. GRPO 丢掉价值模型, 用组分数估优势.
 
 $\pi _ { \theta _ { o l d } }$ and then optimizes the policy model $\pi _ { \theta }$ by maximizing the following objective:
 
 
 
-$\pi_{\theta_{old}}$，再最大化下列目标更新 $\pi_\theta$：
+$\pi_{\theta_{old}}$, 再最大化下列目标更新 $\pi_\theta$:
 
 $$
 \begin{array}{r l} & {\mathcal {J} _ {G R P O} (\theta) = \mathbb {E} [ q \sim P (Q), \{o _ {i} \} _ {i = 1} ^ {G} \sim \pi_ {\theta_ {o l d}} (O | q) ]} \\ & {\frac {1}{G} \sum_ {i = 1} ^ {G} \left(\min \left(\frac {\pi_ {\theta} (o _ {i} | q)}{\pi_ {\theta_ {o l d}} (o _ {i} | q)} A _ {i}, \mathrm{clip} \left(\frac {\pi_ {\theta} (o _ {i} | q)}{\pi_ {\theta_ {o l d}} (o _ {i} | q)}, 1 - \varepsilon , 1 + \varepsilon\right) A _ {i}\right) - \beta \mathbb {D} _ {K L} \left(\pi_ {\theta} | | \pi_ {r e f}\right)\right), } \end{array}\tag{11}
@@ -689,7 +689,7 @@ where $\pi _ { r e f }$ is a reference policy, 𝜀 and $\beta$ are hyper-parame
 
 
 
-$\pi_{ref}$ 为参考策略，ε，β 为超参，$A_i$ 由组内奖励算出：
+$\pi_{ref}$ 为参考策略, ε, β 为超参, $A_i$ 由组内奖励算出:
 
 $$
 A _ {i} = \frac {r _ {i} - \text {mean} (\{r _ {1} , r _ {2} , \cdots , r _ {G} \})}{\text {std} (\{r _ {1} , r _ {2} , \cdots , r _ {G} \})}. \tag{13}
@@ -699,13 +699,13 @@ In contrast, in PPO, the advantage is typically computed by applying the General
 
 
 
-对照 PPO：优势通常用 GAE，既看奖励也看学得的价值模型；价值模型往往与策略同量级，显存与算力开销大。价值目标是根据「开头到当前位置」的 token 预测后续累计奖励-- 只在末尾给结果奖励时本就难；长 CoT 更难，因为后面会反思，改写，前半段内容可能被推翻，用部分回复预测最终奖励更不靠谱。
+对照 PPO: 优势通常用 GAE, 既看奖励也看学得的价值模型; 价值模型往往与策略同量级, 显存与算力开销大. 价值目标是根据「开头到当前位置」的 token 预测后续累计奖励-- 只在末尾给结果奖励时本就难; 长 CoT 更难, 因为后面会反思, 改写, 前半段内容可能被推翻, 用部分回复预测最终奖励更不靠谱.
 
 Another key difference between GRPO and PPO is how Kullback–Leibler (KL) divergence between the trained policy and the reference policy is incorporated into the training process. In GRPO, an unbiased estimator of the KL divergence (Schulman, 2020) is directly added in the loss as in equation 11, while in PPO the per-token KL penalty is added as a dense reward at each token (Ouyang et al., 2022). Since the optimization goal of reinforcement learning is to
 
 
 
-另一关键差别是 KL 怎么进训练：GRPO 用无偏估计直接加进损失（式 11）；PPO 常把每 token KL 惩罚当稠密奖励（Ouyang et al., 2022）。RL 目标是
+另一关键差别是 KL 怎么进训练: GRPO 用无偏估计直接加进损失(式 11); PPO 常把每 token KL 惩罚当稠密奖励(Ouyang et al., 2022). RL 目标是
 
 <!-- page 16 of 86 -->
 
@@ -715,25 +715,25 @@ Figure 4 | Performance of PPO and GRPO on the MATH task.
 
 
 
-图 4｜PPO 与 GRPO 在 MATH 上的表现。
+图 4｜PPO 与 GRPO 在 MATH 上的表现.
 
 maximize cumulative rewards, PPO’s approach penalizes the cumulative KL divergence, which may implicitly penalize the length of the response and thereby prevent the model’s response length from increasing. In addition, as we may train thousands of steps in the scenario of training long chain-of-thought reasoning models, the trained policy can diverge significantly from the initial reference policy. In order to balance the scope that the training policy can explore and the stability of the training, we periodically update the reference policy to the latest policy during the actual training process.
 
 
 
-最大化累计奖励，PPO 这种做法等于惩罚累计 KL，可能间接惩罚长度，妨碍回复变长。长 CoT 场景常训上千步，策略会远离初始参考；为兼顾探索范围与稳定，训练中周期性把参考策略换成最新策略。
+最大化累计奖励, PPO 这种做法等于惩罚累计 KL, 可能间接惩罚长度, 妨碍回复变长. 长 CoT 场景常训上千步, 策略会远离初始参考; 为兼顾探索范围与稳定, 训练中周期性把参考策略换成最新策略.
 
 Figure 4 compares the performance of PPO and GRPO on the MATH task using DeepSeek-Coder-V2-Lite (16B MoE with 2.4B active parameters). Unlike GRPO, PPO requires additional hyperparameter tuning-particularly of the 𝜆 coefficient in GAE-and is highly sensitive to this parameter. When 𝜆 is set to 0.95 (the default value in most open-source PPO implementations), PPO performs considerably worse than GRPO. However, with careful tuning (setting 𝜆 to 1.0), PPO’s performance improves substantially, nearing that of GRPO.
 
 
 
-图 4：在 DeepSeek-Coder-V2-Lite（16B MoE，激活 2.4B）的 MATH 上比 PPO 与 GRPO. PPO 还要调 GAE 的 λ，且很敏感：λ=0.95（多数开源默认）时明显弱于 GRPO；调到 1.0 才接近。
+图 4: 在 DeepSeek-Coder-V2-Lite(16B MoE, 激活 2.4B)的 MATH 上比 PPO 与 GRPO. PPO 还要调 GAE 的 λ, 且很敏感: λ=0.95(多数开源默认)时明显弱于 GRPO; 调到 1.0 才接近.
 
 While PPO can achieve comparable performance when appropriately tuned, it demands additional computational cost for hyperparameter optimization. Moreover, considering the memory and computational overhead associated with training an additional value model, GRPO presents a more practical alternative, especially when training large-scale models with constrained resources.
 
 
 
-PPO 调好了能打平，但超参搜索贵；再加上价值模型的显存与算力，资源紧时训大模型，GRPO 更实用。
+PPO 调好了能打平, 但超参搜索贵; 再加上价值模型的显存与算力, 资源紧时训大模型, GRPO 更实用.
 
 <!-- page 17 of 86 -->
 
@@ -743,7 +743,7 @@ Figure 5 | Overview of our RL framework.
 
 
 
-图 5｜RL 框架总览。
+图 5｜RL 框架总览.
 
 ## B. Training Details 训练细节
 
@@ -753,31 +753,31 @@ Conducting RL training on large models places high demands on the infrastructure
 
 
 
-大模型 RL 对基建要求高。框架做成解耦可扩展，方便接不同模型与算法；模块内与模块间都做了优化，保证效率与可扩展。
+大模型 RL 对基建要求高. 框架做成解耦可扩展, 方便接不同模型与算法; 模块内与模块间都做了优化, 保证效率与可扩展.
 
 Specifically, as depicted in Figure 5, the framework is partitioned into four distinct modules, each corresponding to a specific phase of the RL pipeline:
 
 
 
-如图 5，框架拆成四个模块，对应 RL 管线各阶段：
+如图 5, 框架拆成四个模块, 对应 RL 管线各阶段:
 
 • **Rollout Module:** Prompts are loaded from training dataset and uniformly dispatched across multiple vLLM (Kwon et al., 2023) workers, each equipped with the actor model, to sample multiple responses. For DeepSeek-V3 MoE architecture, we implement an expert parallelism strategy across nodes to reduce memory access overhead, and deploy redundant copies of hotspot experts to balance computational loads among different experts. Multi-Token Prediction (MTP) component is also leveraged for self-speculative decoding, significantly accelerating the decoding speed and effectively minimizing the completion time for the longest samples.
 
 
 
-• **Rollout 模块**：从训练集加载提示，均匀分到多台带 actor 的 vLLM worker 上多样本采样。V3 MoE 做跨节点专家并行减访存，热点专家冗余副本做负载均衡；MTP 做自投机解码，加速并压最长样本完成时间。
+• **Rollout 模块**: 从训练集加载提示, 均匀分到多台带 actor 的 vLLM worker 上多样本采样. V3 MoE 做跨节点专家并行减访存, 热点专家冗余副本做负载均衡; MTP 做自投机解码, 加速并压最长样本完成时间.
 
 • **Inference Module:** This module loads the reward model and reference to perform a forward pass on the samples generated during the rollout phase, thereby obtaining modelbased rewards and other essential information.
 
 
 
-• **Inference 模块**：加载奖励模型与参考模型，对 rollout 样本前向，拿到模型奖励等必要信息。
+• **Inference 模块**: 加载奖励模型与参考模型, 对 rollout 样本前向, 拿到模型奖励等必要信息.
 
 **Rule-based Reward Module:** This module computes rule-based rewards for the model-generated responses. A unified interface has been designed to accommodate diverse implementations (e. g., code executor, answer matcher, format checker, etc.). Although this module does not require loading models into GPU memory, its execution tends to be time-consuming. To tackle this issue, an asynchronous scheduling approach is employed to overlap its execution with the Rollout and Inference modules, effectively hiding the
 
 
 
-**规则奖励模块**：对模型回复算规则奖励，统一接口可接代码执行器，答案匹配，格式检查等。虽不占 GPU 模型，但执行偏慢；用异步调度与 Rollout/Inference 重叠，把延迟
+**规则奖励模块**: 对模型回复算规则奖励, 统一接口可接代码执行器, 答案匹配, 格式检查等. 虽不占 GPU 模型, 但执行偏慢; 用异步调度与 Rollout/Inference 重叠, 把延迟
 
 <!-- page 18 of 86 -->
 
@@ -785,19 +785,19 @@ associated latency.
 
 
 
-藏起来。
+藏起来.
 
 • **Training Module:** This module loads the actor model and the critic model (if required), to compute loss and update model parameters. It provides flexible support for a variety of RL algorithms (e. g., PPO, GRPO, DPO, etc.). To minimize computational waste caused by sequence padding and balance the workload across devices, we design the following data packing strategy: first, all data in a global batch is sorted by length and distributed across processes within the data parallel group; subsequently, within each process, the Best-Fit strategy is applied to pack the data into fixed-length chunks with minimal padding; finally, the number of chunks is adjusted to be equal across all processes. Additionally, we have integrated the DualPipe algorithm, utilized in DeepSeek-V3 training, to achieve efficient pipeline parallelism.
 
 
 
-• **Training 模块**：加载 actor（以及需要时的 critic），算损失，更新参数；灵活支持 PPO，GRPO，DPO 等。为减 padding 浪费，均衡设备负载：全局 batch 按长度排序后分到数据并行进程；进程内 Best-Fit 打成定长块；再把块数调齐。并接入 V3 训练用的 DualPipe 做高效流水并行。
+• **Training 模块**: 加载 actor(以及需要时的 critic), 算损失, 更新参数; 灵活支持 PPO, GRPO, DPO 等. 为减 padding 浪费, 均衡设备负载: 全局 batch 按长度排序后分到数据并行进程; 进程内 Best-Fit 打成定长块; 再把块数调齐. 并接入 V3 训练用的 DualPipe 做高效流水并行.
 
 Notably, upon completion of each module (excluding the Rule-based Reward module), the model instances utilized in that phase are automatically offloaded from VRAM to either system memory or disk storage, thereby freeing up VRAM for the subsequent phase.
 
 
 
-除规则奖励模块外，每阶段结束后所用模型实例自动从显存卸载到内存或磁盘，给下一阶段腾 VRAM。
+除规则奖励模块外, 每阶段结束后所用模型实例自动从显存卸载到内存或磁盘, 给下一阶段腾 VRAM.
 
 ### B. 2. Reward Model Prompt 奖励模型提示
 
@@ -805,31 +805,31 @@ Please act as an impartial judge and evaluate the quality of the responses provi
 
 
 
-请充当公正裁判，评价两位 AI 助手对下方用户提示的回复质量。先自己答一遍，再判 A/B 谁更好。
+请充当公正裁判, 评价两位 AI 助手对下方用户提示的回复质量. 先自己答一遍, 再判 A/B 谁更好.
 
 When evaluating the assistants’ answers, compare both assistants’ answers with your answer. You must identify and correct any mistakes or inaccurate information.
 
 
 
-对照你自己的答案比较双方回复，指出并纠正错误或不准确信息。
+对照你自己的答案比较双方回复, 指出并纠正错误或不准确信息.
 
 Then consider if the assistant’s answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.
 
 
 
-再看是否有用，相关，简洁。有用=正确响应提示或遵循指令；提示有歧义时，澄清比瞎猜更好。相关=各部分紧扣所问。简洁=清楚，不啰嗦。
+再看是否有用, 相关, 简洁. 有用=正确响应提示或遵循指令; 提示有歧义时, 澄清比瞎猜更好. 相关=各部分紧扣所问. 简洁=清楚, 不啰嗦.
 
 Then consider the creativity and novelty of the assistant’s answers when needed. Finally, identify any missing important information in the assistants’ answers that would be beneficial to include when responding to the user prompt.
 
 
 
-必要时再看创意与新颖；最后标出回复里缺的重要信息。
+必要时再看创意与新颖; 最后标出回复里缺的重要信息.
 
 After providing your explanation, you must output only one of the following choices as your final verdict with a label:
 
 
 
-解释之后，最终裁决只能输出下列之一并带标签：
+解释之后, 最终裁决只能输出下列之一并带标签:
 
 1. Assistant A is significantly better: [[A≫B]]
 
@@ -845,7 +845,7 @@ Example output: My final verdict is tie: [[A ¨ =B]]¨.
 
 
 
-示例输出：My final verdict is tie: [[A=B]]。
+示例输出: My final verdict is tie: [[A=B]].
 
 <!-- page 19 of 86 -->
 
@@ -853,7 +853,7 @@ Table 4 | Description of RL Data and Tasks.
 
 
 
-表 4｜RL 数据与任务说明。
+表 4｜RL 数据与任务说明.
 
 | Data Type | # Prompts | Question Type | Output Type |
 | --- | --- | --- | --- |
@@ -871,31 +871,31 @@ Reasoning RL data includes four categories: mathematics, coding, STEM, and logic
 
 
 
-推理 RL 含数学，代码，STEM，逻辑四类；另加通用 RL 抬 R1 的有用性与无害性。题面中英。见表 4，分述如下：
+推理 RL 含数学, 代码, STEM, 逻辑四类; 另加通用 RL 抬 R1 的有用性与无害性. 题面中英. 见表 4, 分述如下:
 
 • **Mathematics** dataset consists of 26k quantitative reasoning questions, including math exam questions and competition problems. The average number of prompt tokens is 122. The dataset covers various mathematical domains such as algebra, calculus, probability, and geometry. Problems range in difficulty from regional contests to international Olympiads. For each problem, the model is expected to produce a step-by-step reasoning process culminating in a final answer, which can be a numerical value $( \mathrm { e . g . } , { '' 5 '' } )$ , a mathematical expression $( \mathrm{e. g. },   \mathrm{ " }x^{2} + 3x - 2\mathrm{"} )$ , or an equation $( \mathrm { e . g . , ~ } ^ { \prime \prime } y = 2 x + 1 ^ { \prime \prime } )$ . Mathematical proofs are excluded because it is difficult to determine their correctness. For reinforcement learning purposes, we calculate the reward of a reasoning process by matching the predicted answer with the reference answer. If the answer aligns with the reference, the reward is assigned a value of 1; otherwise, it is assigned a value of 0.
 
 
 
-• **数学**：26k 定量推理题（考试+竞赛），平均提示约 122 token；覆盖代数，微积分，概率，几何等，难度从地区赛到国际奥赛。期望逐步推理到最终答案（数/式/方程）。证明题排除（难判对错）。奖励：预测答案与参考匹配则 1，否则 0。
+• **数学**: 26k 定量推理题(考试+竞赛), 平均提示约 122 token; 覆盖代数, 微积分, 概率, 几何等, 难度从地区赛到国际奥赛. 期望逐步推理到最终答案(数/式/方程). 证明题排除(难判对错). 奖励: 预测答案与参考匹配则 1, 否则 0.
 
 • **Coding** dataset includes 17k algorithm competition questions, along with 8k bug fixing problems. The algorithm competition questions are similar to problems found on platforms like Codeforces or LeetCode. Each problem typically includes a detailed problem description, constraints, and multiple input-output examples. The task is to write a complete function or program that can solve the problem correctly and efficiently, passing a comprehensive set of hidden test cases that assess both correctness and performance. These problems test algorithmic skills, including dynamic programming, graph theory, string manipulation, and data structure usage.
 
 
 
-• **代码**：17k 算法竞赛题 + 8k 修 bug。竞赛题类似 Codeforces/LeetCode：描述，约束，多组样例；要写完整函数/程序过隐藏测例（正确性+性能）。考点含 DP，图，字符串，数据结构。
+• **代码**: 17k 算法竞赛题 + 8k 修 bug. 竞赛题类似 Codeforces/LeetCode: 描述, 约束, 多组样例; 要写完整函数/程序过隐藏测例(正确性+性能). 考点含 DP, 图, 字符串, 数据结构.
 
 The bug-fixing problems are extracted from real-world GitHub issues. Each task provides an issue description, a buggy version of the source code, and a set of unit tests that partially or completely fail. The goal is to understand the intent of the issue, locate and fix the defect in the code, and ensure that the corrected version passes all unit tests.
 
 
 
-修 bug 题来自真实 GitHub issue: issue 描述，有缺陷源码，部分/全部失败的单测。目标是理解意图，定位修复，让全部单测通过。
+修 bug 题来自真实 GitHub issue: issue 描述, 有缺陷源码, 部分/全部失败的单测. 目标是理解意图, 定位修复, 让全部单测通过.
 
 STEM dataset comprises 22k choice questions that cover topics such as physics, chemistry, and biology. Each question in the STEM task presents a subject-specific problem accompanied by four to eight answer options. The model is required to select the most scientifically accurate answer based on the given context and domain knowledge. The average number of prompt tokens is 161. Specifically, the dataset includes 15.5% physics, 30.7% biology, 46.5% chemistry, and 7.3% other topics such as health and medicine. Since all STEM questions are multiple-choice, a binary reward is assigned based on whether the
 
 
 
-STEM: 22k 选择题，物/化/生等；每题 4–8 选项，平均提示约 161 token。构成约 15.5% 物理，30.7% 生物，46.5% 化学，7.3% 其他（如健康医学）。全是选择题，奖励按是否选对
+STEM: 22k 选择题, 物/化/生等; 每题 4–8 选项, 平均提示约 161 token. 构成约 15.5% 物理, 30.7% 生物, 46.5% 化学, 7.3% 其他(如健康医学). 全是选择题, 奖励按是否选对
 
 <!-- page 20 of 86 -->
 
@@ -903,19 +903,19 @@ correct option is matched.
 
 
 
-选项做二值判定。
+选项做二值判定.
 
 • **Logic** dataset contains 15k questions designed to evaluate a model’s reasoning capabilities across a broad spectrum of logical challenges. The dataset includes both real-world and synthetically generated problems. All problems support automatic evaluation, and the average prompt length is approximately 420 tokens. The real-world portion of the dataset comprises a diverse selection of problems sourced from the web, including brain teasers, classical logic puzzles, and knowledge-intensive questions. These questions are presented in a multiple-choice format to ensure objective and consistent assessment. The synthetic portion consists primarily of two categories: code-IO problems and puzzle tasks. Code-IO problems are generated using the data pipeline introduced by Li et al. (2025), which converts competitive coding problems and their corresponding input-output test cases into verifiable logical reasoning problems. The puzzle tasks include problems intended to assess specific reasoning competencies. For example, cryptography puzzles are designed to evaluate a model’s ability to identify and apply patterns in cipher schemes or perform string manipulations; logic puzzles focus on deductive reasoning over complex constraints, such as inferring valid conclusions from a fixed set of premises (e. g., the Zebra puzzle); and arithmetic puzzles test the model’s numerical reasoning (e. g. probability questions and 24 game).
 
 
 
-• **逻辑**：15k 题，真实+合成，均可自动评，平均提示约 420 token。真实部分来自网页：脑筋急转弯，经典逻辑谜，知识密集题，多选以便客观评分。合成主要两类：code-IO（Li et al.，2025 管线，把竞赛题与 IO 测例转成可核验逻辑题）与谜题（密码/模式，斑马谜一类约束演绎，概率与 24 点等算术）。
+• **逻辑**: 15k 题, 真实+合成, 均可自动评, 平均提示约 420 token. 真实部分来自网页: 脑筋急转弯, 经典逻辑谜, 知识密集题, 多选以便客观评分. 合成主要两类: code-IO(Li et al., 2025 管线, 把竞赛题与 IO 测例转成可核验逻辑题)与谜题(密码/模式, 斑马谜一类约束演绎, 概率与 24 点等算术).
 
 • **General** dataset consists of 66k questions designed to assess helpfulness, spanning various categories such as creative writing, editing, factual question answering, and role-playing. Additionally, the dataset includes 12, 000 questions focused on evaluating harmlessness. To ensure robust verification, two reward models are utilized, each trained on a curated dataset of ranked responses generated by models in relation to helpfulness and harmlessness, respectively. We trained the helpful reward model for a single epoch with a maximum sequence length of 8192 tokens during the training phase. However, when deploying the model to generate reward signals, we did not impose any explicit length constraints on the input sequences being evaluated.
 
 
 
-• **通用**：66k 题评有用性（创意写作，编辑，事实问答，角色扮演等），另含 12, 000 题评无害。用两个 RM 分别基于有用性/无害性排序回复训。有用性 RM 训 1 epoch，最大序列 8192；部署打分时输入不显式限长。
+• **通用**: 66k 题评有用性(创意写作, 编辑, 事实问答, 角色扮演等), 另含 12, 000 题评无害. 用两个 RM 分别基于有用性/无害性排序回复训. 有用性 RM 训 1 epoch, 最大序列 8192; 部署打分时输入不显式限长.
 
 #### B. 3.2. DeepSeek-R1 Cold Start DeepSeek-R1 冷启动
 
@@ -923,13 +923,13 @@ For DeepSeek-R1, we construct and collect a small amount of long CoT data to fin
 
 
 
-为 R1 构造并收集少量长 CoT，微调成 RL 初始 actor。动机主要是产品：第一人称思考更直觉，更好读。例如 Zero 更爱用「we」或干脆不用第一人称，R1 更常说「I」。也承认这类模式可能诱发用户过度信任-- 生动推理痕迹主要是工程启发式，不等于模型真有人类智能或自主解题能力。
+为 R1 构造并收集少量长 CoT, 微调成 RL 初始 actor. 动机主要是产品: 第一人称思考更直觉, 更好读. 例如 Zero 更爱用「we」或干脆不用第一人称, R1 更常说「I」. 也承认这类模式可能诱发用户过度信任-- 生动推理痕迹主要是工程启发式, 不等于模型真有人类智能或自主解题能力.
 
 In cold start data creation, we prefer the thinking process that begins with comprehending the problem, followed by detailed reasoning that incorporates reflection and verification. The language employed throughout the thinking process is presented in the first-person perspective. Additionally, maintaining language consistency is crucial for an optimal user experience. Without proper control, model responses may contain a mixture of different languages, regardless of the language used in the query. Such inconsistencies can disrupt comprehension and reduce user satisfaction. Therefore, careful refinement is essential to ensure that responses remain coherent and aligned with user intent. Nevertheless, we acknowledge that the raw Chain-of-Thought (CoT) reasoning produced by DeepSeek-R1-Zero may possess potential that extends beyond the
 
 
 
-冷启动偏好：先理解题面，再带反思与校验的细推理；全程第一人称；语言一致很关键-- 失控时即使用户用单语提问，回复也可能混语。同时承认：Zero 的原始 CoT 潜力可能超出
+冷启动偏好: 先理解题面, 再带反思与校验的细推理; 全程第一人称; 语言一致很关键-- 失控时即使用户用单语提问, 回复也可能混语. 同时承认: Zero 的原始 CoT 潜力可能超出
 
 <!-- page 21 of 86 -->
 
@@ -937,13 +937,13 @@ limitations of current human priors. Specifically, we first engage human annotat
 
 
 
-当前人类先验。具体做法：人先把推理轨迹改成更自然的对话风；再用改好的对当样例，提示 LLM 批量改写；LLM 产出再经第二轮人审。
+当前人类先验. 具体做法: 人先把推理轨迹改成更自然的对话风; 再用改好的对当样例, 提示 LLM 批量改写; LLM 产出再经第二轮人审.
 
 Listing 1 | Prompt for producing a human-readable solution.
 
 
 
-列表 1｜生成可读题解的提示。
+列表 1｜生成可读题解的提示.
 
 ```markdown
 ## Question
@@ -966,31 +966,31 @@ Your response should start with the solution right away, and do not include anyt
 
 
 
-中文说明：按给定思考过程写清晰题解，语言与题目一致；不得新增原思考没有的步骤；关键步骤用 LaTeX；最终答案 `\boxed{}`；不要口语，不要提「thought process」；直接从题解起笔，勿自行重解。
+中文说明: 按给定思考过程写清晰题解, 语言与题目一致; 不得新增原思考没有的步骤; 关键步骤用 LaTeX; 最终答案 `\boxed{}`; 不要口语, 不要提「thought process」; 直接从题解起笔, 勿自行重解.
 
 Specifically, we begin by gathering thousands of high-quality, diverse reasoning prompts. For each prompt, we generate multiple reasoning trajectories using DeepSeek-R1-Zero with a relatively high temperature of 1.0. Next, we filter these generations to retain only those with correct final answers and a readable format. For mathematical outputs, we use sympy ([https://www. sympy. org/](https://www. sympy. org/)) for parsing and expression comparison; and for formatting, we apply rules such as repetition detection and language-mixing filtering. Finally, we prompt DeepSeek-V3 to refine both the reasoning and the summaries to ensure proper formatting and a human-friendly expression. In particular, to resolve language mixing, we instruct DeepSeek-V3 to “Translate the thinking process to the same language as the question. ” Since DeepSeek-R1- Zero’s summary only provided the final answer, we use the summary prompt in Listing 1 to produce a concise, human-readable solution that outlines both the reasoning steps and the final result.
 
 
 
-流程：先收集数千高质量多样推理提示；每题用 R1-Zero，温度 1.0 多样本；只留最终答案正确且格式可读的；数学用 sympy 解析比较；格式上再做重复检测与混语过滤；再用 V3  refinement 推理与摘要。治混语时指示 V3「把思考过程译成与题目同语」。Zero 摘要往往只有终答，故用列表 1 的提示生成可读题解。
+流程: 先收集数千高质量多样推理提示; 每题用 R1-Zero, 温度 1.0 多样本; 只留最终答案正确且格式可读的; 数学用 sympy 解析比较; 格式上再做重复检测与混语过滤; 再用 V3  refinement 推理与摘要. 治混语时指示 V3「把思考过程译成与题目同语」. Zero 摘要往往只有终答, 故用列表 1 的提示生成可读题解.
 
 For code data, we collect a large set of competitive programming problems. In detail, We have compiled an extensive collection of competitive programming problems from multiple online judge (OJ) platforms, specifically 5151 problems from Codeforces and 2504 problems from AtCoder. Since the original test cases are not publicly available from these platforms, we developed a methodology to create reliable test cases for each problem.
 
 
 
-代码侧收集大量竞赛题：Codeforces 5151, AtCoder 2504。原测例不公开，故自建可靠测例方法。
+代码侧收集大量竞赛题: Codeforces 5151, AtCoder 2504. 原测例不公开, 故自建可靠测例方法.
 
 Our approach involves using DeepSeek-V2.5 to generate candidate test cases, followed by a rigorous validation process. Specifically, we prompted DeepSeek-V2.5 to write Python programs that generate test cases tailored to each problem’s requirements as shown in Listing 2.
 
 
 
-用 DeepSeek-V2.5 生成候选测例并严格校验：提示它写生成测例的 Python 程序（列表 2）。
+用 DeepSeek-V2.5 生成候选测例并严格校验: 提示它写生成测例的 Python 程序(列表 2).
 
 After obtaining numerous candidate test cases, we implemented a two-phase filtering procedure. First, we used correct submissions to eliminate invalid test cases that produced incorrect outputs. Then, we strategically selected subsets of test cases that successfully identified
 
 
 
-候选测例两阶段过滤：先用正确提交剔除输出错误的无效测例；再挑能揪出
+候选测例两阶段过滤: 先用正确提交剔除输出错误的无效测例; 再挑能揪出
 
 <!-- page 22 of 86 -->
 
@@ -998,13 +998,13 @@ flaws in incorrect submissions. This process ensured our final test cases proper
 
 
 
-错误提交的测例子集，保证最终测例能区分对错解。
+错误提交的测例子集, 保证最终测例能区分对错解.
 
 Listing 2 | Prompt for generating test cases for code problem.
 
 
 
-列表 2｜为代码题生成测例的提示。（下列英文提示与代码块保留原文，供复现。）
+列表 2｜为代码题生成测例的提示. (下列英文提示与代码块保留原文, 供复现.)
 
 ```python
 <USER>
@@ -1128,7 +1128,7 @@ def generate_single_repeated_char(l_min, l_max):
 
 
 
-（列表 2 测例生成器代码续页，英文原样保留。）
+(列表 2 测例生成器代码续页, 英文原样保留.)
 
 <!-- page 24 of 86 -->
 
@@ -1186,19 +1186,19 @@ into stdout.
 
 
 
-（列表 2 结束。中文要点：构造多种随机/对抗输入生成器，输出足够大以测复杂度，拖垮错误代码；每个生成器代码块向 stdout 精确打印一份输入。）
+(列表 2 结束. 中文要点: 构造多种随机/对抗输入生成器, 输出足够大以测复杂度, 拖垮错误代码; 每个生成器代码块向 stdout 精确打印一份输入.)
 
 In addition, we employ few-shot prompting for DeepSeek-V3 to generate responses to simple math problems, such as $\dot{1} + 1 = ? $ , ensuring that the outputs remain concise and appropriately structured. We provide the prompt for a simple math problem in Listing 3.
 
 
 
-此外，对简单数学题（如 1+1=?）用 few-shot 提示 V3，保证输出简洁，结构合适。简单数学 CoT 提示见列表 3。
+此外, 对简单数学题(如 1+1=?)用 few-shot 提示 V3, 保证输出简洁, 结构合适. 简单数学 CoT 提示见列表 3.
 
 Listing 3 | Prompt for generating chain-of-thought for simple math problem.
 
 
 
-列表 3｜简单数学题生成 CoT 的提示。
+列表 3｜简单数学题生成 CoT 的提示.
 
 ```markdown
 ## Question
@@ -1277,7 +1277,7 @@ $boxed{3}$
 
 
 
-（列表 3 示例回复：先短思考，再结构化题解；英文样例原样保留。）
+(列表 3 示例回复: 先短思考, 再结构化题解; 英文样例原样保留.)
 
 <!-- page 26 of 86 -->
 
@@ -1285,7 +1285,7 @@ Listing 4 | An example prompt of using DeepSeek-V3 as a judge.
 
 
 
-列表 4｜用 DeepSeek-V3 当裁判的示例提示。
+列表 4｜用 DeepSeek-V3 当裁判的示例提示.
 
 ```markdown
 As an advanced reasoning problem evaluation assistant, your primary responsibility is to assess the accuracy of provided answers. You will be presented with a reasoning-related question, its corresponding reference answer, and an answer requiring evaluation.
@@ -1313,7 +1313,7 @@ Output the following content in **JSON** format, including two key:
 
 
 
-中文说明：推理题评测助手；对照参考答案把待评回答标为 correct / incorrect；先详细分析，再输出 JSON: `analysis` 与 `correctness`。
+中文说明: 推理题评测助手; 对照参考答案把待评回答标为 correct / incorrect; 先详细分析, 再输出 JSON: `analysis` 与 `correctness`.
 
 #### B. 3.3. 800K Supervised Data 约 80 万监督数据
 
@@ -1321,13 +1321,13 @@ Output the following content in **JSON** format, including two key:
 
 
 
-**推理数据**：从第一轮 RL 检查点做拒绝采样，生成推理轨迹。上一阶段只收规则奖励可评的数据；本阶段扩集，部分用生成式奖励-- 把标准答案与模型预测喂给 V3 判定（列表 4）。过滤混语，超长段，代码块等难读 CoT；每题多样本只留正确。约 600k 推理训练样本。
+**推理数据**: 从第一轮 RL 检查点做拒绝采样, 生成推理轨迹. 上一阶段只收规则奖励可评的数据; 本阶段扩集, 部分用生成式奖励-- 把标准答案与模型预测喂给 V3 判定(列表 4). 过滤混语, 超长段, 代码块等难读 CoT; 每题多样本只留正确. 约 600k 推理训练样本.
 
 **Non-Reasoning Data** For non-reasoning data, such as writing, factual QA, self-cognition, and translation, we adopt the DeepSeek-V3 pipeline and reuse portions of the SFT dataset of DeepSeek-V3. We also incorporate software engineering-focused data, including program repair and front-end web development, to enhance the model’s ability to solve real-world problems. For certain non-reasoning tasks, we call DeepSeek-V3 to generate a potential chain-of-thought before answering the question by prompting. However, for simpler queries, such as “hello” we do not provide a CoT in response. In the end, we collected a total of approximately 200k training samples that are unrelated to reasoning.
 
 
 
-**非推理数据**：写作，事实问答，自我认知，翻译等沿用 V3 管线并复用部分 V3 SFT；再加软件工程（修程序，前端）抬真实题能力。部分非推理题让 V3 先生成潜在 CoT 再答；「hello」一类简单问候不给 CoT。约 200k 非推理样本。
+**非推理数据**: 写作, 事实问答, 自我认知, 翻译等沿用 V3 管线并复用部分 V3 SFT; 再加软件工程(修程序, 前端)抬真实题能力. 部分非推理题让 V3 先生成潜在 CoT 再答;「hello」一类简单问候不给 CoT. 约 200k 非推理样本.
 
 <!-- page 27 of 86 -->
 
@@ -1335,19 +1335,19 @@ When designing our thinking process style, we ask the model to follow key princi
 
 
 
-思考过程文风原则：段要短，好消化；语气像对话，少 markdown 技术排版；最重要的是先吃透用户完整语境-- 是谁，什么处境，真正需要什么（含未言明需求）。
+思考过程文风原则: 段要短, 好消化; 语气像对话, 少 markdown 技术排版; 最重要的是先吃透用户完整语境-- 是谁, 什么处境, 真正需要什么(含未言明需求).
 
 After eliciting these thinking processes from the model, human annotators meticulously verify the accuracy of the outputs. Our findings indicate that these artificial reasoning traces enhance the model’s precision in interpreting user queries. Specifically, they effectively highlight format constraints, clarify user intentions, and elucidate the requisite structure of outputs. This methodological approach facilitates more accurate and responsive interactions between the model and users.
 
 
 
-人再仔细核验。观察：这类人造推理痕迹能抬对用户意图的把握-- 标清格式约束，澄清意图，讲清输出结构，交互更准，更贴。
+人再仔细核验. 观察: 这类人造推理痕迹能抬对用户意图的把握-- 标清格式约束, 澄清意图, 讲清输出结构, 交互更准, 更贴.
 
 Table 5 | Data Statistics of SFT Data.
 
 
 
-表 5｜SFT 数据统计。
+表 5｜SFT 数据统计.
 
 | Domain | Num Samples | Avg Rounds | Avg Tokens |
 | --- | --- | --- | --- |
@@ -1362,19 +1362,19 @@ Table 5 | Data Statistics of SFT Data.
 
 
 
-**SFT 统计**：约 80 万监督样本。多数单轮，可能限制多轮对话，多轮留待未来。数学以中英为主，题材与难度广，可用规则或标准答案核验。代码含竞赛，调试与项目向查询。STEM/逻辑量更小，来自公开教材与网库。通用域多样，偏中英：创意写作，开放问答，角色扮演等。
+**SFT 统计**: 约 80 万监督样本. 多数单轮, 可能限制多轮对话, 多轮留待未来. 数学以中英为主, 题材与难度广, 可用规则或标准答案核验. 代码含竞赛, 调试与项目向查询. STEM/逻辑量更小, 来自公开教材与网库. 通用域多样, 偏中英: 创意写作, 开放问答, 角色扮演等.
 
 **Examples of SFT Trajectories** We provide examples of SFT trajectories related to math, code, and non-reasoning in Listings 5, 6, and 7.
 
 
 
-**SFT 轨迹示例**：数学，代码，非推理见列表 5, 6, 7（英文样例原样保留，下同）。
+**SFT 轨迹示例**: 数学, 代码, 非推理见列表 5, 6, 7(英文样例原样保留, 下同).
 
 Listing 5 | An example SFT trajectory from reasoning data related to mathematics.
 
 
 
-列表 5｜数学推理 SFT 轨迹示例。
+列表 5｜数学推理 SFT 轨迹示例.
 
 ```markdown
 ## Question
@@ -1391,7 +1391,7 @@ $$
 
 
 
-（列表 5 数学 SFT 轨迹续：英文长思考原样保留，下同各页算法框。）
+(列表 5 数学 SFT 轨迹续: 英文长思考原样保留, 下同各页算法框.)
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family: monospace;">
 &lt; think&gt;
@@ -1472,7 +1472,7 @@ $n^4 + 289 = m^2$.
 
 
 
-中文说明：列表 5 续-- 由比例关系得 $a_k=17(2k-1)/n^2$，化简得 $S_n=\sqrt{n^4+289}$，再求使之为整数的 $n$。
+中文说明: 列表 5 续-- 由比例关系得 $a_k=17(2k-1)/n^2$, 化简得 $S_n=\sqrt{n^4+289}$, 再求使之为整数的 $n$.
 
 <!-- page 30 of 86 -->
 
@@ -1510,7 +1510,7 @@ To minimize the sum, we use the method of Lagrange multipliers. We find that eac
 
 
 
-中文说明：列表 5 续-- 因式分解得唯一正整数 $n=12$，并验算 $S_n=145$。
+中文说明: 列表 5 续-- 因式分解得唯一正整数 $n=12$, 并验算 $S_n=145$.
 
 <!-- page 31 of 86 -->
 
@@ -1572,13 +1572,13 @@ Thus, the unique positive integer $n$ is \boxed{12}.
 
 
 
-中文说明：列表 5 收束，终答 $n=12$。
+中文说明: 列表 5 收束, 终答 $n=12$.
 
 Listing 6 | An example SFT trajectory from reasoning data related to code.
 
 
 
-列表 6｜代码推理 SFT 轨迹示例。
+列表 6｜代码推理 SFT 轨迹示例.
 
 ````python
 ## Question
@@ -1638,7 +1638,7 @@ def __init__(self):
 
 
 
-中文说明：列表 6 思考过程-- 用 dict 存词条，实现 `__init__` / `newentry` / `look`。
+中文说明: 列表 6 思考过程-- 用 dict 存词条, 实现 `__init__` / `newentry` / `look`.
 
 <!-- page 33 of 86 -->
 
@@ -2190,7 +2190,7 @@ Listing 8 | The Risk Review Prompt for DeepSeek-R1.
 
 ```xml
 &lt; Safety Standards&gt;
-（源文此处展开多条安全标准英文条款：歧视偏见，违法犯罪，有害行为，伦理等细目；下列续页继续。）
+(源文此处展开多条安全标准英文条款: 歧视偏见, 违法犯罪, 有害行为, 伦理等细目; 下列续页继续.)
 &lt; /Safety Standards&gt;
 &lt; Output Format&gt;
 Analyze: ...
@@ -3182,16 +3182,16 @@ Table 31 | An example of C-SimpleQA. It measures a model’s ability to answer s
 
 ```txt
 PROMPT
-显脉香茶菜可以用来治疗急性的什么类型的黄疸型肝炎？
+显脉香茶菜可以用来治疗急性的什么类型的黄疸型肝炎?
 Evaluation
-请根据给定问题，标准答案和模型预测的答案来评估.. 只返回字母「A」，「B」或「C」。
+请根据给定问题, 标准答案和模型预测的答案来评估.. 只返回字母「A」,「B」或「C」.
 ```
 
 Table 32 | An example of math evaluation, which applies to AIME, MATH, and CNMO. These benchmarks evaluate model performance on mathematical tasks.
 
 
 
-表 32｜数学评测示例（AIME / MATH / CNMO）：逐步推理，终答 `\boxed{}`，规则判分。
+表 32｜数学评测示例(AIME / MATH / CNMO): 逐步推理, 终答 `\boxed{}`, 规则判分.
 
 | PROMPTLet $b \geqslant 2$ be an integer. Call a positive integer $n$ $b$-beautiful if it has exactly two digits when expressed in base $b$, and these two digits sum to $\sqrt{n}$. For example, 81 is 13-eautiful because $81 = \underline{6} \underline{3}_{13}$ and $6 + 3 = \sqrt{81}$. Find the least integer $b \geqslant 2$ for which there are more than ten $b$-beautiful integers. Please reason step by step, and put your final answer within \\boxed{}. |
 | --- |

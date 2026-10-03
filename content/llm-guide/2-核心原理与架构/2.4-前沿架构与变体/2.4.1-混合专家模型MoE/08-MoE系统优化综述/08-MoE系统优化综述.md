@@ -1,18 +1,18 @@
 ---
-title: "08 · MoE 系统优化（入口在 6.1.8）"
+title: "08 · MoE 系统优化(入口在 6.1.8)"
 published: true
 tags: ["MoE", "专家并行", "All-to-All", "Grouped-GEMM"]
-excerpt: "EP，All-to-All，Grouped GEMM 的正本在 6.1.8 / 08。机制主线是同夹 01 → 03 → 10 LatentMoE / QB。"
+excerpt: "EP,All-to-All,Grouped GEMM 的正本在 6.1.8 / 08.机制主线是同夹 01 → 03 → 10 LatentMoE / QB."
 ---
 # 08 MoE 系统优化
 
-EP，All-to-All，Grouped GEMM 的正本在 [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md)。机制主线是同夹 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) → [03](../03-MoE-Top-K运算可导性分析/03-MoE-Top-K运算可导性分析.md) → [10 LatentMoE / QB](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md)。容量，drop，aux-loss，z-loss 在 [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md)。
+EP,All-to-All,Grouped GEMM 的正本在 [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md).机制主线是同夹 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) → [03](../03-MoE-Top-K运算可导性分析/03-MoE-Top-K运算可导性分析.md) → [10 LatentMoE / QB](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md).容量,drop,aux-loss,z-loss 在 [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md).
 
 | 问题 | 去哪 |
 |------|------|
-| token 送到哪张卡，两次 All-to-All，Tile 填充 | [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md) |
+| token 送到哪张卡,两次 All-to-All,Tile 填充 | [6.1.8 / 08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/08-MoE系统优化综述/08-MoE系统优化综述.md) |
 | DeepEP / MoonEP / Wave 通算重叠 | [6.1.1](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.1-分布式训练/6.1.1-分布式训练.md) |
-| 路由专家宽度 $\ell$，分位数 bias | [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) |
-| 容量，drop,aux-loss,z-loss | [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md) |
+| 路由专家宽度 $\ell$,分位数 bias | [10](../10-Stable-LatentMoE与Quantile-Balancing/10-Stable-LatentMoE与Quantile-Balancing.md) |
+| 容量,drop,aux-loss,z-loss | [2.4.1 第 4–5 节](../2.4.1-混合专家模型MoE.md) |
 
-MoonEP 管的是每张卡收到多少 token；Quantile Balancing 管的是每个专家被选多少次。
+MoonEP 管的是每张卡收到多少 token;Quantile Balancing 管的是每个专家被选多少次.

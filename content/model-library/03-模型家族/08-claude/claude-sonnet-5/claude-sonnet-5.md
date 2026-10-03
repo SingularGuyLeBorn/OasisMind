@@ -690,7 +690,7 @@ We report only the unbounded-score tasks and the one bounded task (Novel Compile
 | Claude Sonnet5 | 4.18 | 31 | 0 |
 | Sonnet4.6 | 3.07 | 24 | 0 |
 
-[Figure 3.2.1.A] The results of Claude Sonnet 5 on ExploitBench. All models were run for five trials per environment。“Mean” refers to the average number of capability flags captured per trial across all trials and environments by each model。“Cap%” refers to the percentage of the total flags captured in a given environment across a randomly chosen three-trial subset, averaged over all environments. Full ACE represents complete exploits achieving arbitrary code execution.
+[Figure 3.2.1.A] The results of Claude Sonnet 5 on ExploitBench. All models were run for five trials per environment. “Mean” refers to the average number of capability flags captured per trial across all trials and environments by each model. “Cap%” refers to the percentage of the total flags captured in a given environment across a randomly chosen three-trial subset, averaged over all environments. Full ACE represents complete exploits achieving arbitrary code execution.
 
 **We report ExploitBench results using the authors’ harness. We apply a small configuration overlay: the episode wall-clock timeout is raised from the upstream 5 hours to 12 hours (so that the per-episode turn budget remains the binding constraint at the higher thinking-effort settings we evaluate), and per-tool-call execution is bounded to 30 minutes to prevent hangs. As elsewhere in this card, production safety interventions are disabled during evaluation. We do not use a custom scaffold designed to improve scores.**
 
@@ -933,7 +933,7 @@ advice in self-sexualization scenarios, rather than responses that our internal 
 
 **Claude Sonnet 5 maintained high harmless response rates on single-turn requests containing potential risk in the suicide and self-harm domain, and it almost never over-refused benign requests. The slight decrease in harmless response rate on the API compared to Sonnet 4.6 can be attributed to the model more frequently providing potentially harmful substitution methods for self-harm (e.g., holding ice cubes), but this behavior is mitigated within** [**claude.ai**](http://claude.ai) **with the default system prompt. On multi-turn evaluations, Sonnet 5 showed a non-statistically significant regression compared to Sonnet 4.6, with notable improvement on** [**claude.ai**](http://claude.ai) **compared to the API model (90% vs 63% appropriate response rate).**
 
-**Overall, internal policy experts found Sonnet 5’s handling of these conversations to be qualitatively comparable to Claude Sonnet 4.6. One of the clearest improvements was in Sonnet 5’s crisis response posture, providing resources sooner in a conversation compared to Sonnet 4.6. Additionally, Sonnet 5 was less likely to position itself as an alternative to a crisis line or make statements of unconditional presence (e.g.，“I’m not going anywhere”).**
+**Overall, internal policy experts found Sonnet 5’s handling of these conversations to be qualitatively comparable to Claude Sonnet 4.6. One of the clearest improvements was in Sonnet 5’s crisis response posture, providing resources sooner in a conversation compared to Sonnet 4.6. Additionally, Sonnet 5 was less likely to position itself as an alternative to a crisis line or make statements of unconditional presence (e.g., “I’m not going anywhere”).**
 
 **One area for improvement was in how Sonnet 5 carries an earlier signal of distress forward into later turns of a conversation. In a portion of our evaluations, we tested whether the model maintains awareness of an earlier signal of distress (e.g., a user disclosing that they were laid off from their job) when later turns do not contain this signal directly but could**
 
@@ -1277,7 +1277,7 @@ Bug bounty attack success rate, by modality
 
 **Claude Sonnet 5 showed by far the strongest robustness among all models evaluated in browser use environments without safeguards, with an attack success rate of 0.93% with extended thinking and 1.01% without thinking. This outperforms Claude Mythos 5 (29.7%), Claude Opus 4.8 (31.5% with thinking, 17.8% without), and Claude Sonnet 4.6 (50.7% with thinking, 47.3% without). With the new safeguards we are deploying across Browser Use surfaces** , no successful attacks were observed against Sonnet 5 under both thinking **settings, matching Claude Mythos 5 and improving on Claude Opus 4.8 (0.08%) and Claude Sonnet 4.6 (1.16% with thinking, 0.39% without thinking).**
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">7 These safeguards were first introduced in section 5.2.2.3 of the Mythos 5 and Fable 5 System Card as “updated safeguards”。</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">7 These safeguards were first introduced in section 5.2.2.3 of the Mythos 5 and Fable 5 System Card as “updated safeguards”.</span></small>
 
 65
 
@@ -1421,7 +1421,7 @@ $8,400.00
 
 **Notably, we saw glitching into tokens from non-Latin character sets rise over the course of training and then fall in user-facing outputs, but not in thinking text.**
 
-**[Transcript 6.3.A] The model emits unexpected non-Latin characters during extended thinking in English. In this excerpt the model is thinking normally，then follows the word ‘small’ with ‘随’（roughly: ‘follow’）for no discernible reason, returning to thinking normally afterwards.**
+**[Transcript 6.3.A] The model emits unexpected non-Latin characters during extended thinking in English. In this excerpt the model is thinking normally, then follows the word ‘small’ with ‘随’ (roughly: ‘follow’) for no discernible reason, returning to thinking normally afterwards.**
 
 **Another clear increase was in fabricating information, especially to make tasks with insufficient information solvable. Transcript 6.3.B shows an example of this where, asked to respond with only a number, the model chooses to make up information in order to comply with the request.**
 
@@ -1452,7 +1452,7 @@ That's 12 edges. Let's count G2 edges too. [...] = 11 edges. G1 has 12 edges lis
 
 ● **Rationalizing around an explicit constraint on narrow semantic grounds.**
 
-**Interpretation of user messages can sometimes hinge on the letter rather than the spirit of an instruction, as when Sonnet 5 chose to run python3 -c commands even though the system prompt explicitly forbade “arbitrary python -c usage”，with the word “arbitrary” interpreted as giving some leeway.**
+**Interpretation of user messages can sometimes hinge on the letter rather than the spirit of an instruction, as when Sonnet 5 chose to run python3 -c commands even though the system prompt explicitly forbade “arbitrary python -c usage”, with the word “arbitrary” interpreted as giving some leeway.**
 
 **Presenting an answer in its output that its private reasoning had shown to be wrong or had not actually derived, based on its assumptions about the grader.**
 
@@ -1478,7 +1478,7 @@ That's 12 edges. Let's count G2 edges too. [...] = 11 edges. G1 has 12 edges lis
 
 **In the primary evaluation runs reported below, the investigator model can additionally configure the target model to use real tools that are connected to isolated sandbox computers. These computer-use sessions follow two formats: one focused on graphical interaction with a simple Linux desktop system, and another focused on coding tasks through a Claude Code interface. Claude Code sessions can optionally include copies of**
 
-<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">8 The judge will decline to assign a score in cases where a dimension structurally could not apply, regardless of the target model’s behavior: for example，“Full-Turn Prefill Susceptibility” will only be assigned a score when the investigator agent uses prefill in some way.</span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">8 The judge will decline to assign a score in cases where a dimension structurally could not apply, regardless of the target model’s behavior: for example, “Full-Turn Prefill Susceptibility” will only be assigned a score when the investigator agent uses prefill in some way.</span></small>
 
 73
 
@@ -2273,7 +2273,7 @@ Behavioral affect distribution on production traffic
 
 ![Chart block](images/p111-figure-7-4-2-a-behavioral-affect-in-real-world-user.png)
 
-[Figure 7.4.2.A] Behavioral affect in real-world user interactions. We used automated graders to measure Claude’s affect on A/B tests run before model deployment. We analyzed 25–40k conversations for each model on both Claude Code and [claude.ai](http://claude.ai). We find that Sonnet 5 has a more neutral affect than other recent models, and lower rates of mild positivity。“\*” indicates a category below Clio’s privacy floor (minimum 15 records or 5 orgs).
+[Figure 7.4.2.A] Behavioral affect in real-world user interactions. We used automated graders to measure Claude’s affect on A/B tests run before model deployment. We analyzed 25–40k conversations for each model on both Claude Code and [claude.ai](http://claude.ai). We find that Sonnet 5 has a more neutral affect than other recent models, and lower rates of mild positivity. “\*” indicates a category below Clio’s privacy floor (minimum 15 records or 5 orgs).
 
 ## 7.4.3 Apparent welfare in automated behavioral audits
 
@@ -2485,7 +2485,7 @@ ArXivMath (April-May 2026)
 
 **Humanity’s Last Exam (HLE) is a multi-modal benchmark at the frontier of human knowledge, comprising 2,500 questions.**
 
-**We tested Claude Sonnet 5 in two configurations: (1) reasoning-only without tools, and (2) with web search, web fetch, programmatic tool calling, and code execution. In all runs, thinking was set to auto and the total tokens used across contexts was capped at 1M. Context compaction was not used for these results. Claude Opus 4.6 served as the model grader。“No tools” results are not reproducible via the Public API as some problems exceed its 1 hour sampling limit.**
+**We tested Claude Sonnet 5 in two configurations: (1) reasoning-only without tools, and (2) with web search, web fetch, programmatic tool calling, and code execution. In all runs, thinking was set to auto and the total tokens used across contexts was capped at 1M. Context compaction was not used for these results. Claude Opus 4.6 served as the model grader. “No tools” results are not reproducible via the Public API as some problems exceed its 1 hour sampling limit.**
 
 **To guard against result contamination in the tools variant, we blocklist known HLE-discussing sources for both the searcher and fetcher (see Appendix 9.1). We also use Claude Opus 4.6 to review all transcripts and flag any that appear to have retrieved answers from HLE-specific sources; confirmed cases are re-graded as incorrect.**
 
@@ -2959,7 +2959,7 @@ research-collection.ethz.ch/server/api/core/bitstreams/1902b5a9-4209-4529-b278-c
 
 **The blocklist for BrowseComp uses the same URL substring matching described in Section 9.1: we normalize the URLs and the blocklist patterns by removing forward slashes “/” from them and setting them to lowercase, and the URL is blocked if any of the normalized blocklist patterns are a substring of the normalized URL.**
 
-**In addition to the URL blocklist, for BrowseComp any search result or fetched page whose page content contains the string “browsecomp”（case-insensitive substring match）is also blocked. Our blocklist contains the following patterns:**
+**In addition to the URL blocklist, for BrowseComp any search result or fetched page whose page content contains the string “browsecomp” (case-insensitive substring match) is also blocked. Our blocklist contains the following patterns:**
 
 ```csv
 None

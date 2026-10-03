@@ -75,7 +75,7 @@ Trainer (veRL, GPU)  ←── trajectories ──  Proxy (intercept & collect)
 | 模型 | ReACT* | ZeroClaw | OpenClaw | Codex |
 |---|---:|---:|---:|---:|
 | Qwen3-30B-A3B 基线 | 26.1 | 32.5 | 11.4 | 12.2 |
-| OpenForge-Claw（SFT+RL，三 harness 训练） | 45.1 | 48.5 | 20.9 | **32.5** |
+| OpenForge-Claw (SFT+RL, 三 harness 训练) | 45.1 | 48.5 | 20.9 | **32.5** |
 
 单 harness 训练已泛化到未见 harness（ZeroClaw-only → OpenClaw +3.3、Codex +4.6）；**三 harness 联合训练全面最优**，复杂 harness（OpenClaw、Codex）增益最大。
 
@@ -126,7 +126,7 @@ OpenForge RL 在 Orchard 三层栈中位于 **Recipe 层**，依赖 **Orchard En
 
 1. Orchestrator 按任务 spec 启动 sandbox Pod（2 CPU / 2–6 GiB，任务 Dockerfile + harness 预装）。
 2. Harness 在 sandbox 内驱动多轮 agent↔environment 交互；每次 LLM 调用经 Proxy 转发到 trainer 的 inference server。
-3. Proxy 记录（prompt, response, metadata）；episode 结束信号触发 trajectory reconstruction。
+3. Proxy 记录 (prompt, response, metadata)；episode 结束信号触发 trajectory reconstruction。
 4. Trainer 消费轨迹做 PPO/GRPO 等更新；新 policy 权重同步回 inference server，进入下一批 rollout。
 
 **与 Orchard 原有三 Recipe 关系**：Orchard-SWE/GUI/Claw 是「Env + 简化/固定 harness」路线；OpenForge RL 是后续工作，**把 harness 本身换成部署态真实栈**（ZeroClaw、OpenClaw、Codex），专门消除 mismatch。

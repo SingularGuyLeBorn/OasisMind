@@ -27,7 +27,7 @@ We introduce **Step 3.5 Flash**, a sparse Mixture-of-Experts (MoE) model that br
 
 Figure 1: Step 3.5 Flash achieves frontier-level intelligence with only 11B active parameters (196B MoE), comparable to leading closed and open-source models.
 
-图 1: Step 3.5 Flash 仅用 11B 激活参数（196B MoE）达到前沿级智能，可与头部闭源与开源模型对照。
+图 1: Step 3.5 Flash 仅用 11B 激活参数 (196B MoE) 达到前沿级智能, 可与头部闭源与开源模型对照.
 
 <!-- page 2 of 67 -->
 
@@ -97,23 +97,23 @@ Figure 1: Step 3.5 Flash achieves frontier-level intelligence with only 11B acti
 
 While open-source large language models (LLMs) [1–6] have rapidly narrowed the performance gap with closed-source frontier systems [7–9] across verifiable tasks [10–12], new challenges emerge as agentic systems gain prominence. In particular, open-source models still trail closed-source frontiers in complex reasoning. Furthermore, critical efficiency bottlenecks hinder their application in long-context agentic tasks [13–21], let alone deployment in edge or resource-constrained settings.
 
-尽管开源大型语言模型（LLMs）[1-6] 在可验证任务 [10-12] 上已迅速缩小与闭源前沿系统 [7-9] 的差距，但随着 Agent 系统日益普及，新挑战也随之浮现。尤其在复杂推理上，开源模型仍落后于闭源前沿。此外，关键的效率瓶颈阻碍了它们在长上下文 Agent 任务 [13-21] 上的应用，更不用说部署到边缘或资源受限环境。
+尽管开源大型语言模型 (LLMs) [1-6] 在可验证任务 [10-12] 上已迅速缩小与闭源前沿系统 [7-9] 的差距, 但随着 Agent 系统日益普及, 新挑战也随之浮现. 尤其在复杂推理上, 开源模型仍落后于闭源前沿. 此外, 关键的效率瓶颈阻碍了它们在长上下文 Agent 任务 [13-21] 上的应用, 更不用说部署到边缘或资源受限环境.
 
 In designing the architecture of Step 3.5 Flash, we focus on two core aspects: efficiency and capacity. We adopt a sparse Mixture-of-Experts (MoE) [22–26] architecture with 196B total parameters and only 11B activated per token, together with a 3:1 ratio of sliding-window attention (SWA) [27] to full attention and multi-token prediction (MTP-3) [3, 28–30] to reduce long-context latency. To improve capacity under hybrid attention with minimal overhead, we increase the number of query heads in sliding-window attention (SWA) layers from 64 to 96 and use head-wise gated attention [31]. This design enables large-scale online deployment, sustaining ∼170 tokens/s on Hopper GPUs during the first week on OpenRouter <sup>1</sup>.
 
-在设计 Step 3.5 Flash 的架构时，我们聚焦两个核心：效率与容量。我们采用稀疏 MoE [22-26] 架构，总参数 196B，每 token 仅激活 11B；滑动窗口注意力（SWA）[27] 与全注意力按 3:1 配比，并配合多 token 预测（MTP-3）[3, 28-30] 降低长上下文延迟。为了在混合注意力下以极小开销提升容量，我们把 SWA 层的 query head 数从 64 增加到 96，并采用 head-wise 门控注意力 [31]。这一设计支撑了大规模在线部署，上线 OpenRouter 的第一周就在 Hopper GPU 上稳定达到约 170 tokens/s。
+在设计 Step 3.5 Flash 的架构时, 我们聚焦两个核心: 效率与容量. 我们采用稀疏 MoE [22-26] 架构, 总参数 196B, 每 token 仅激活 11B; 滑动窗口注意力 (SWA) [27] 与全注意力按 3:1 配比, 并配合多 token 预测 (MTP-3) [3, 28-30] 降低长上下文延迟. 为了在混合注意力下以极小开销提升容量, 我们把 SWA 层的 query head 数从 64 增加到 96, 并采用 head-wise 门控注意力 [31]. 这一设计支撑了大规模在线部署, 上线 OpenRouter 的第一周就在 Hopper GPU 上稳定达到约 170 tokens/s.
 
 On the pretraining side, we treat stability as a first-class requirement and build a comprehensive observability and diagnostic stack via a lightweight asynchronous metrics server with micro-batchlevel continuous logging. This infrastructure enables systematic identification and mitigation of large-scale MoE failure modes (e.g., Muon-related precision sensitivity, expert collapse [32], and activation blow-ups [5, 33]). Combined with an improved Muon optimizer [34] that offers more accurate and stable updates, we achieve stable training over 17.2T high-quality and diverse tokens with only a single transient loss spike. With this stable training regime, Step 3.5 Flash Base achieves competitive performance against larger counterparts, such as DeepSeek-V3.2-Exp Base [1] and Kimi-K2-Base [5], on math, coding and knowledge benchmarks. Notably, on SimpleQA [35], it scores 31.6%, surpassing DeepSeek-V3.2-Exp Base despite using only one-third of the parameters.
 
-在预训练侧，我们把稳定性当作一等需求，通过轻量级异步指标服务器与 micro-batch 级连续日志，构建了一套全面的可观测性与诊断栈。这套设施能系统性地识别并缓解大规模 MoE 的故障模式（如 Muon 相关的精度敏感，expert collapse [32] 与 activation blow-up [5, 33]）。配合改进版 Muon 优化器 [34] 带来的更精确稳定的更新，我们在 17.2T 高质量多样化 token 上完成稳定训练，全程仅出现一次瞬时 loss 尖峰。在这一稳定训练 regime 下，Step 3.5 Flash Base 在数学，代码与知识评测上可与更大的对手竞争，例如 DeepSeek-V3.2-Exp Base [1] 与 Kimi-K2-Base [5]。特别地，它在 SimpleQA [35] 上得 31.6%，参数只有对手三分之一却超过了 DeepSeek-V3.2-Exp Base。
+在预训练侧, 我们把稳定性当作一等需求, 通过轻量级异步指标服务器与 micro-batch 级连续日志, 构建了一套全面的可观测性与诊断栈. 这套设施能系统性地识别并缓解大规模 MoE 的故障模式 (如 Muon 相关的精度敏感, expert collapse [32] 与 activation blow-up [5, 33]). 配合改进版 Muon 优化器 [34] 带来的更精确稳定的更新, 我们在 17.2T 高质量多样化 token 上完成稳定训练, 全程仅出现一次瞬时 loss 尖峰. 在这一稳定训练 regime 下, Step 3.5 Flash Base 在数学, 代码与知识评测上可与更大的对手竞争, 例如 DeepSeek-V3.2-Exp Base [1] 与 Kimi-K2-Base [5]. 特别地, 它在 SimpleQA [35] 上得 31.6%, 参数只有对手三分之一却超过了 DeepSeek-V3.2-Exp Base.
 
 Toward frontier-level intelligence, current post-training systems face two tightly coupled challenges: inefficient iteration of domain-specific experts for self-distillation [1–4] and limited scalability of Reinforcement Learning (RL) to long-horizon reasoning for MoE models. Training a single generalist to directly cover diverse domains often sacrifices domain-specific expertise, whereas maintaining separate expert models leads to fragmentation and an unsustainable cost of continual multi-model iteration. At the same time, as models are extended to deeper reasoning trajectories, even small token-level discrepancies in off-policy rollouts can accumulate into high-variance gradients. This effect is particularly severe in MoE models, where expert-level routing induces larger distributional shifts and destabilizes optimization in the frontier performance regime [1, 36–38].
 
-迈向前沿智能，当前后训练系统面临两个紧耦合的挑战：用于自蒸馏 [1-4] 的领域专家迭代低效，以及 RL 对 MoE 模型长程推理的可扩展性受限。训练单一通才直接覆盖多领域，往往会牺牲领域专精；维护各自独立的专家模型又导致体系碎片化，多模型持续迭代的成本不可持续。同时，把模型扩展到更深的推理轨迹时，off-policy rollout 中微小的 token 级偏差也会累积成高方差梯度。这在 MoE 模型中尤为严重：专家级路由带来更大的分布偏移，会在前沿性能区间破坏优化稳定性 [1, 36-38]。
+迈向前沿智能, 当前后训练系统面临两个紧耦合的挑战: 用于自蒸馏 [1-4] 的领域专家迭代低效, 以及 RL 对 MoE 模型长程推理的可扩展性受限. 训练单一通才直接覆盖多领域, 往往会牺牲领域专精; 维护各自独立的专家模型又导致体系碎片化, 多模型持续迭代的成本不可持续. 同时, 把模型扩展到更深的推理轨迹时, off-policy rollout 中微小的 token 级偏差也会累积成高方差梯度. 这在 MoE 模型中尤为严重: 专家级路由带来更大的分布偏移, 会在前沿性能区间破坏优化稳定性 [1, 36-38].
 
 To address these challenges, we propose a unified post-training recipe for large-scale RL built on a shared SFT foundation. The framework alternates between domain-specific specialization and global synthesis, enabling efficient expert iteration while maintaining a single, high-performing generalist. A dedicated mid-training phase scales the context window to 128k and strengthens core agentic and reasoning capabilities via synthetic data, providing a strong initialization for downstream post-training. To support stable and scalable RL within this unified framework, we introduce Metropolis Independence Sampling-Filtered Policy Optimization (MIS-PO) [39, 40], replacing continuous importance weighting with discrete, distributional filtering at both token and trajectory levels. By restricting optimization to samples within a stable trust region, MIS-PO substantially reduces gradient variance while preserving effective learning signals, enabling RL to scale reliably to long-horizon reasoning and agentic behaviors.
 
-为应对这些挑战，我们提出一套建立在共享 SFT 底座上的大规模 RL 统一后训练配方。该框架在领域特化与全局综合之间交替，既能高效迭代专家，又始终维持一个高性能通才。一个专门的 mid-training 阶段把上下文窗口扩到 128k，并通过合成数据强化核心 Agent 与推理能力，为下游后训练提供强初始化。为在该统一框架内支撑稳定且可扩展的 RL，我们提出 Metropolis Independence Sampling-Filtered Policy Optimization (MIS-PO) [39, 40]，在 token 与轨迹两层用离散分布过滤替代连续重要性加权。通过把优化限制在稳定信任域内的样本上，MIS-PO 大幅降低梯度方差，同时保留有效学习信号，使 RL 能可靠扩展到长程推理与 Agent 行为。
+为应对这些挑战, 我们提出一套建立在共享 SFT 底座上的大规模 RL 统一后训练配方. 该框架在领域特化与全局综合之间交替, 既能高效迭代专家, 又始终维持一个高性能通才. 一个专门的 mid-training 阶段把上下文窗口扩到 128k, 并通过合成数据强化核心 Agent 与推理能力, 为下游后训练提供强初始化. 为在该统一框架内支撑稳定且可扩展的 RL, 我们提出 Metropolis Independence Sampling-Filtered Policy Optimization (MIS-PO) [39, 40], 在 token 与轨迹两层用离散分布过滤替代连续重要性加权. 通过把优化限制在稳定信任域内的样本上, MIS-PO 大幅降低梯度方差, 同时保留有效学习信号, 使 RL 能可靠扩展到长程推理与 Agent 行为.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>https://openrouter.ai</span></small>
 
@@ -121,7 +121,7 @@ To address these challenges, we propose a unified post-training recipe for large
 
 Step 3.5 Flash achieves competitive performance with leading frontier models and systems across a broad range of reasoning and agentic benchmarks, despite 11B active parameters. It delivers strong results under standard inference on reasoning tasks, including 85.4% on IMO-AnswerBench [41] and 86.4% on LiveCodeBench-v6 (2024.08–2025.05) [12], while also demonstrating robust long-horizon, tool-augmented capabilities with 88.2% on $\tau ^ { 2 } .$ -Bench [15], 69.0% on BrowseComp (with context management) [17], and 51.0% on Terminal-Bench 2.0 [16]. With PaCoRe [42] deep think inference, Step 3.5 Flash further improves performance on reasoning-intensive benchmarks requiring extended deliberation and multi-round synthesis. Taken together, these results indicate that Step 3.5 Flash substantially narrows the gap between advanced open models and frontier proprietary systems in both reasoning and agentic settings.
 
-Step 3.5 Flash 在推理与 Agent 基准上可与领先的前沿模型和系统竞争，尽管只有 11B 激活参数。标准推理下它在推理任务上表现出色：IMO-AnswerBench [41] 85.4%, LiveCodeBench-v6 (2024.08-2025.05) [12] 86.4%；长程工具增强能力同样稳健：$\tau ^ { 2 } .$ -Bench [15] 88.2%, BrowseComp（带上下文管理）[17] 69.0%, Terminal-Bench 2.0 [16] 51.0%。结合 PaCoRe [42] deep think 推理，Step 3.5 Flash 在需要长时间思考与多轮综合的推理密集基准上还能进一步提升。这些结果共同表明，Step 3.5 Flash 大幅缩小了先进开源模型与前沿专有系统在推理与 Agent 场景上的差距。
+Step 3.5 Flash 在推理与 Agent 基准上可与领先的前沿模型和系统竞争, 尽管只有 11B 激活参数. 标准推理下它在推理任务上表现出色: IMO-AnswerBench [41] 85.4%, LiveCodeBench-v6 (2024.08-2025.05) [12] 86.4%; 长程工具增强能力同样稳健: $\tau ^ { 2 } .$ -Bench [15] 88.2%, BrowseComp (带上下文管理) [17] 69.0%, Terminal-Bench 2.0 [16] 51.0%. 结合 PaCoRe [42] deep think 推理, Step 3.5 Flash 在需要长时间思考与多轮综合的推理密集基准上还能进一步提升. 这些结果共同表明, Step 3.5 Flash 大幅缩小了先进开源模型与前沿专有系统在推理与 Agent 场景上的差距.
 
 ## 2. Architecture 架构
 
@@ -131,37 +131,37 @@ The architecture of Step 3.5 Flash reflects a paradigm shift in model–system c
 
 
 
-Step 3.5 Flash 的架构反映模型–系统共设计的范式转移。在传统的智能与成本目标之外，自治 agent 时代抬高第三约束：**推理延迟**。在交互式 agent 工作流 [43, 44] 里，压低延迟直接缩短任务壁钟时间；反过来，也可在固定时间预算内通过 TestingTime (test-time scaling) [42, 45–47] 换取更高智能。
+Step 3.5 Flash 的架构反映模型–系统共设计的范式转移. 在传统的智能与成本目标之外, 自治 agent 时代抬高第三约束: **推理延迟**. 在交互式 agent 工作流 [43, 44] 里, 压低延迟直接缩短任务壁钟时间; 反过来, 也可在固定时间预算内通过 TestingTime (test-time scaling) [42, 45–47] 换取更高智能.
 
 Agentic workloads typically exhibit a distinct profile: extensive context prefilling followed by prolonged, multi-turn interactive decoding. Accordingly, we co-design Step 3.5 Flash for low wall-clock latency along three coupled axes: attention (to accelerate long-context processing and have good affinity with MTP), sparse MoE (to prevent stragglers in distributed deployments that reduce throughput), and multi-token prediction (MTP; to facilitate fast generation through speculative decoding).
 
 
 
-Agent 负载通常呈清晰画像：大段上下文 prefill，再接长时间多轮交互 decode。于是我们沿三轴共设计低壁钟延迟：注意力（加速长上下文并与 MTP 亲和），sparse MoE（避免分布式部署里的 straggler 拖吞吐），以及 multi-token prediction（MTP；借投机解码加快生成）。
+Agent 负载通常呈清晰画像: 大段上下文 prefill, 再接长时间多轮交互 decode. 于是我们沿三轴共设计低壁钟延迟: 注意力 (加速长上下文并与 MTP 亲和), sparse MoE (避免分布式部署里的 straggler 拖吞吐), 以及 multi-token prediction (MTP; 借投机解码加快生成).
 
 **Attention.** To accelerate prefilling, we employ a hybrid attention mechanism [33, 48, 49] to mitigate the quadratic complexity of long-context processing. For decoding, we prioritize architectural compatibility with speculative decoding [50], since verification efficiency is the dominant lever on bandwidth-bound hardware. These considerations motivate two attention design decisions:
 
 
 
-**注意力。** 为加速 prefill，采用混合注意力 [33, 48, 49] 缓解长上下文二次复杂度。Decode 侧优先与投机解码 [50] 的架构兼容，因为在带宽受限硬件上验证效率是主导杠杆。由此引出两条注意力决策：
+**注意力.** 为加速 prefill, 采用混合注意力 [33, 48, 49] 缓解长上下文二次复杂度. Decode 侧优先与投机解码 [50] 的架构兼容, 因为在带宽受限硬件上验证效率是主导杠杆. 由此引出两条注意力决策:
 
 **Sliding-Window Attention (SWA).** We select SWA [27] over linear attention [10, 51] to maximize decoding efficiency. Although both have linear complexity, the state-update mechanism of linear attention complicates efficient draft tree generation and parallel tree verification needed for speculative decoding [52–54]. In contrast, SWA preserves standard attention semantics and remains inherently amenable to parallel verification via 𝐾𝑉 masking. Moreover, in the absence of robust empirical evidence that linear attention yields superior long-context modeling for agentic tasks, we find that SWA with window size 𝑊=512 strikes a favorable balance between kernel efficiency and capturing local dependencies.
 
 
 
-**Sliding-Window Attention (SWA).** 相对线性注意力 [10, 51] 选 SWA [27]，以最大化 decode 效率。二者虽都是线性复杂度，但线性注意力的状态更新机制会妨碍投机解码所需的高效 draft tree 生成与并行树验证 [52–54]。相反，SWA 保住标准注意力语义，天然可用 KV masking 做并行验证。另在缺少稳健证据表明线性注意力更擅 agent 长上下文建模的前提下，我们取 𝑊=512 的 SWA，在 kernel 效率与局部依赖之间取得平衡。
+**Sliding-Window Attention (SWA).** 相对线性注意力 [10, 51] 选 SWA [27], 以最大化 decode 效率. 二者虽都是线性复杂度, 但线性注意力的状态更新机制会妨碍投机解码所需的高效 draft tree 生成与并行树验证 [52–54]. 相反, SWA 保住标准注意力语义, 天然可用 KV masking 做并行验证. 另在缺少稳健证据表明线性注意力更擅 agent 长上下文建模的前提下, 我们取 𝑊=512 的 SWA, 在 kernel 效率与局部依赖之间取得平衡.
 
 • **Hardware-Aligned Grouped-Query Attention (GQA-8).** Targeting deployment on standard 8-GPU server nodes, we configure the model with eight 𝐾𝑉 heads (GQA-8) [55]. This aligns 𝐾𝑉- cache sharding with 8-way tensor parallelism and improves memory access patterns. Crucially, while GQA-8 makes attention more memory-bandwidth bound, it also creates computational slack that can absorb speculative drafting and verification overhead, enabling aggressive multi-token speculation without a proportional latency penalty.
 
 
 
-• **Hardware-Aligned Grouped-Query Attention (GQA-8).** 面向标准 8-GPU 服务器节点，配置 8 个 KV 头（GQA-8）[55]。这使 KV cache 分片与 8-way tensor parallelism 对齐，并改善访存。关键的是：GQA-8 让注意力更偏内存带宽 bound，同时腾出算力余量吞掉投机草稿与验证开销，从而能激进多 token 投机而不成比例抬延迟。
+• **Hardware-Aligned Grouped-Query Attention (GQA-8).** 面向标准 8-GPU 服务器节点, 配置 8 个 KV 头 (GQA-8) [55]. 这使 KV cache 分片与 8-way tensor parallelism 对齐, 并改善访存. 关键的是: GQA-8 让注意力更偏内存带宽 bound, 同时腾出算力余量吞掉投机草稿与验证开销, 从而能激进多 token 投机而不成比例抬延迟.
 
 **Sparse MoE.** On the feed-forward side, we employ fine-grained MoE [22–26] to reduce the average FFN compute while maintaining capacity. Expert parallelism (EP) [25] is utilized to enable scalable
 
 
 
-**Sparse MoE.** Feed-forward 侧用细粒度 MoE [22–26] 压低平均 FFN 算力并保持容量。用 expert parallelism (EP) [25] 支撑可扩展
+**Sparse MoE.** Feed-forward 侧用细粒度 MoE [22–26] 压低平均 FFN 算力并保持容量. 用 expert parallelism (EP) [25] 支撑可扩展
 
 <!-- page 6 of 67 -->
 
@@ -169,25 +169,25 @@ Agent 负载通常呈清晰画像：大段上下文 prefill，再接长时间多
 
 Figure 2: Illustration of Step 3.5 Flash. The model uses head-wise gated attention [31] with a leading Full Attention layer followed by 𝐿 = 11 Hybrid Blocks, each interleaving 3 Sliding Window Attention (SWA) layers with one Full Attention layer (for visual clarity, the first layer is omitted in the figure). We apply zero-centered RMSNorm [57] throughout. The first three blocks use dense FFNs; later blocks employ sparse MoE FFNs. MTP modules use SWA and dense FFNs. To limit overhead, only MTP module 1 is trained during main training; MTP modules 2–3 are cloned from it and jointly fine-tuned in a lightweight final phase.
 
-图 2: Step 3.5 Flash 示意。模型用 head-wise gated attention [31]: 先导 Full Attention，再接 𝐿=11 个 Hybrid Block，每块交织 3 层 SWA 与 1 层 Full Attention（图中为清晰省略首层）。全程零中心 RMSNorm [57]。前三块用 dense FFN；后续块用 sparse MoE FFN. MTP 模块用 SWA + dense FFN。为控制开销，主训只训 MTP-1；MTP 2–3 从其克隆，在轻量末段联合微调。
+图 2: Step 3.5 Flash 示意. 模型用 head-wise gated attention [31]: 先导 Full Attention, 再接 𝐿=11 个 Hybrid Block, 每块交织 3 层 SWA 与 1 层 Full Attention (图中为清晰省略首层). 全程零中心 RMSNorm [57]. 前三块用 dense FFN; 后续块用 sparse MoE FFN. MTP 模块用 SWA + dense FFN. 为控制开销, 主训只训 MTP-1; MTP 2–3 从其克隆, 在轻量末段联合微调.
 
 deployment. However, under EP, end-to-end latency can be dominated by stragglers induced by routing imbalance: token assignment skew concentrates workload on a small subset of experts and their hosting GPUs, throttling throughput at synchronization points. We therefore introduce an EP-Group Balanced MoE Routing strategy.
 
 
 
-部署。但在 EP 下，端到端延迟可被路由不均引起的 straggler 主导：token 分配倾斜把负载集中到少数专家及其宿主 GPU，在同步点掐吞吐。因此引入 EP-Group Balanced MoE Routing。
+部署. 但在 EP 下, 端到端延迟可被路由不均引起的 straggler 主导: token 分配倾斜把负载集中到少数专家及其宿主 GPU, 在同步点掐吞吐. 因此引入 EP-Group Balanced MoE Routing.
 
 **Multi-Token Prediction (MTP).** To further reduce autoregressive latency, we incorporate Multi-Token Prediction (MTP) [29, 56] as a complementary lever to speculative decoding [50]. To keep speculation lightweight, we streamline the MTP heads by leveraging SWA and dense FFNs [3].
 
 
 
-**Multi-Token Prediction (MTP).** 为进一步压自回归延迟，引入 MTP [29, 56] 作为投机解码 [50] 的互补杠杆。为保持投机轻量，MTP 头走 SWA + dense FFN [3]。
+**Multi-Token Prediction (MTP).** 为进一步压自回归延迟, 引入 MTP [29, 56] 作为投机解码 [50] 的互补杠杆. 为保持投机轻量, MTP 头走 SWA + dense FFN [3].
 
 We further constrain the model size to under 200B parameters, enabling high-performance inference within the 128GB memory budget of high-end workstations.
 
 
 
-我们进一步把模型规模压在 200B 参数以下，以便在高端工作站 128GB 显存预算内做高性能推理。
+我们进一步把模型规模压在 200B 参数以下, 以便在高端工作站 128GB 显存预算内做高性能推理.
 
 ### 2.2. Sparse MoE Backbone with Hybrid Attention 稀疏 MoE 骨干与混合注意力
 
@@ -195,7 +195,7 @@ As illustrated in Figure 2, Step 3.5 Flash adopts a 45-layer sparse-MoE Transfor
 
 
 
-如图 2，Step 3.5 Flash 采用 45 层 sparse-MoE Transformer 骨干（3 dense + 42 MoE），配专门的混合注意力层布局。每层 MoE 含 288 个 routed 专家加 1 个共享专家，top-𝑘 路由每 token 激活 𝑘=8。该配置保持广阔知识容量（总参 196B），同时每 token 激活仅 11B，使推理延迟低到足以支撑高
+如图 2, Step 3.5 Flash 采用 45 层 sparse-MoE Transformer 骨干 (3 dense + 42 MoE), 配专门的混合注意力层布局. 每层 MoE 含 288 个 routed 专家加 1 个共享专家, top-𝑘 路由每 token 激活 𝑘=8. 该配置保持广阔知识容量 (总参 196B), 同时每 token 激活仅 11B, 使推理延迟低到足以支撑高
 
 <!-- page 7 of 67 -->
 
@@ -203,53 +203,53 @@ responsive agent interaction. Table 6 summarizes key architecture hyperparameter
 
 
 
-响应的 agent 交互。Tab. 6 汇总 Step 3.5 Flash 的关键架构超参。
+响应的 agent 交互. Tab. 6 汇总 Step 3.5 Flash 的关键架构超参.
 
 **Hybrid Attention Layer Layout.** To balance long-context efficiency with robust long-range connectivity, Step 3.5 Flash leverages an interleaved attention layout at a 3 : 1 ratio (SWA : Full) inspired by [33, 49, 58], denoted as 𝑆3𝐹1. This configuration repeats a four-layer motif consisting of three SWA layers (𝑊=512) followed by a single full GQA-8 layer. However, in our initial experiments, a naive interleaving strategy consistently underperforms a dense attention baseline across various benchmarks (Table 10). To bridge this performance gap without adding practical overheads, we leverage two complementary enhancements: (i) an increased SWA query-head count, and (ii) adopting head-wise gated attention [31].
 
 
 
-**混合注意力层布局。** 为在长上下文效率与稳健长程连通之间平衡，Step 3.5 Flash 采用受 [33, 49, 58] 启发的 3:1 (SWA:Full) 交织布局，记为 𝑆3𝐹1。该配置重复四层母题：三层 SWA (𝑊=512) 后接一层 full GQA-8。但初期实验里，naive 交织在多项基准上持续弱于稠密注意力基线（Tab. 10）。为在不加实用开销下补缺口，用两条互补增强：（i）提高 SWA query 头数；（ii）采用 head-wise gated attention [31]。
+**混合注意力层布局.** 为在长上下文效率与稳健长程连通之间平衡, Step 3.5 Flash 采用受 [33, 49, 58] 启发的 3:1 (SWA:Full) 交织布局, 记为 𝑆3𝐹1. 该配置重复四层母题: 三层 SWA (𝑊=512) 后接一层 full GQA-8. 但初期实验里, naive 交织在多项基准上持续弱于稠密注意力基线 (Tab. 10). 为在不加实用开销下补缺口, 用两条互补增强: (i) 提高 SWA query 头数; (ii) 采用 head-wise gated attention [31].
 
-**Augmented Query Heads in SWA.** Using a higher query-head number (from 64 to 96) effectively mitigates performance drop typically observed when transitioning from a uniform full-attention architecture to the 𝑆3𝐹1 layout (Table 10). We consider this to be nearly a “free lunch”。Because in long-text scenarios, the overhead of naive SWA is very small, even though our solution scales up significantly.
+**Augmented Query Heads in SWA.** Using a higher query-head number (from 64 to 96) effectively mitigates performance drop typically observed when transitioning from a uniform full-attention architecture to the 𝑆3𝐹1 layout (Table 10). We consider this to be nearly a “free lunch”. Because in long-text scenarios, the overhead of naive SWA is very small, even though our solution scales up significantly.
 
 
 
-**SWA 加 query 头。** 把 query 头从 64 提到 96，有效缓解从均匀全注意力迁到 𝑆3𝐹1 时常见的掉点（Tab. 10）。我们视此为近乎 「免费午餐」：长文本场景下 naive SWA 开销本就很小，即便我们大幅加头。
+**SWA 加 query 头.** 把 query 头从 64 提到 96, 有效缓解从均匀全注意力迁到 𝑆3𝐹1 时常见的掉点 (Tab. 10). 我们视此为近乎 「免费午餐」: 长文本场景下 naive SWA 开销本就很小, 即便我们大幅加头.
 
 **Head-wise Gated Attention.** A limitation of naive SWA is its inability to effectively absorb unused attention weights when there is no useful information in the input window [31, 59–61]. Previous work [3, 33] introduce learnable, data-independent sink tokens into the window to address this issue. Instead, we opt for a different approach by integrating a parameter-efficient head-wise gating mechanism [31,62,63], which can be viewed as integrating data-dependent sink tokens. Please refer to Appendix A.1 for implementation details and further discussion. Head-wise gating is also negligible to both theoretical FLOPs and practical latency. We report more performance analysis and benchmarks for gating and augmenting the number of SWA heads in Appendix A.2.
 
 
 
-**Head-wise Gated Attention.** Naive SWA 的局限是：当输入窗内没有有用信息时，难以有效吸收未用注意力权重 [31, 59–61]。先前工作 [3, 33] 在窗内引入可学习，数据无关的 sink token。我们改走参数高效的 head-wise gating [31,62,63]，可看成接入数据依赖的 sink token。实现细节见附录 A.1. Head-wise gating 对理论 FLOPs 与实际延迟也可忽略。更多门控与加头分析见附录 A.2。
+**Head-wise Gated Attention.** Naive SWA 的局限是: 当输入窗内没有有用信息时, 难以有效吸收未用注意力权重 [31, 59–61]. 先前工作 [3, 33] 在窗内引入可学习, 数据无关的 sink token. 我们改走参数高效的 head-wise gating [31,62,63], 可看成接入数据依赖的 sink token. 实现细节见附录 A.1. Head-wise gating 对理论 FLOPs 与实际延迟也可忽略. 更多门控与加头分析见附录 A.2.
 
 **MoE Expert-parallel Load Balancing.** We use loss-free load-balancing [29, 64] to encourage global token balance across experts. However, this approach does not guarantee balanced loads across EP ranks at the micro-batch level, potentially leading to stragglers and reduced throughput. We therefore introduce an EP-level balancing loss that explicitly promotes uniform rank-level utilization [26].
 
 
 
-**MoE 专家并行负载均衡。** 用 loss-free load-balancing [29, 64] 鼓励跨专家的全局 token 均衡。但这不保证 micro-batch 级各 EP rank 负载均衡，仍可能出 straggler，降吞吐。因此引入 EP 级均衡损失，显式推动 rank 级利用均匀 [26]。
+**MoE 专家并行负载均衡.** 用 loss-free load-balancing [29, 64] 鼓励跨专家的全局 token 均衡. 但这不保证 micro-batch 级各 EP rank 负载均衡, 仍可能出 straggler, 降吞吐. 因此引入 EP 级均衡损失, 显式推动 rank 级利用均匀 [26].
 
 EP partitions experts E into 𝐺 disjoint groups $\{ \mathcal { E } _ { g } \} _ { g = 1 } ^ { G }$ across ranks. For token $t ,$ let $S _ { t }$ denote the top-𝐾 experts (mask $s _ { t , e } = \mathbf { 1 } [ e \in S _ { t } ] )$ and $p _ { t , }$ · the routing probabilities. Then, the EP load balancing loss $\mathcal { L } _ { E P }$ is:
 
 
 
-EP 把专家集 E 划成跨 rank 的 𝐺 个不相交组 $\{ \mathcal { E } _ { g } \} _ { g = 1 } ^ { G }$。对 token $t$，令 $S_t$ 为 top-𝐾 专家（掩码 $s_{t, e}=\mathbf{1}[e\in S_t]$），$p_{t,\cdot}$ 为路由概率。则 EP 负载均衡损失 $\mathcal{L}_{EP}$ 为：
+EP 把专家集 E 划成跨 rank 的 𝐺 个不相交组 $\{ \mathcal { E } _ { g } \} _ { g = 1 } ^ { G }$. 对 token $t$, 令 $S_t$ 为 top-𝐾 专家 (掩码 $s_{t, e}=\mathbf{1}[e\in S_t]$), $p_{t,\cdot}$ 为路由概率. 则 EP 负载均衡损失 $\mathcal{L}_{EP}$ 为:
 
 $$
 p _ {e} = \frac {1}{T} \sum_ {t = 1} ^ {T} p _ {t, e}, \quad f _ {e} = \frac {1}{T K} \sum_ {t = 1} ^ {T} s _ {t, e}, \quad p _ {g} = \sum_ {e \in \mathcal {E} _ {g}} p _ {e}, \quad f _ {g} = \sum_ {e \in \mathcal {E} _ {g}} f _ {e}, \quad \mathcal {L} _ {\mathrm{EP}} = G \sum_ {g = 1} ^ {G} f _ {g} p _ {g}.\tag{1}
 $$
 
-> **对一下：** §2.2 式（1）定义 EP 均衡损失 $\mathcal{L}_{\mathrm{EP}}=G\sum_g f_g p_g$。文内有没有给出组数 $G$ 的具体整数？
-> 没有。式（1）只引入符号 $G$ 与分组 $\{\mathcal{E}_g\}$. §3.2 写 8-way EP，但未声明式（1）的 $G$ 是否等于 8。不能把并行度直接填进公式。
+> **对一下:** §2.2 式 (1) 定义 EP 均衡损失 $\mathcal{L}_{\mathrm{EP}}=G\sum_g f_g p_g$. 文内有没有给出组数 $G$ 的具体整数?
+> 没有. 式 (1) 只引入符号 $G$ 与分组 $\{\mathcal{E}_g\}$. §3.2 写 8-way EP, 但未声明式 (1) 的 $G$ 是否等于 8. 不能把并行度直接填进公式.
 
 **Multi-token Prediction (MTP).** To speedup speculative decoding on long-context agentic workloads, we attach three lightweight multi-token prediction (MTP) heads. Each MTP head consists of a SWA and a dense FFN, adding only 0.81B parameters (∼0.41%). We index these heads by their additional prediction offset beyond the standard LM head: for $h   \in   \{ 1 , 2 , 3 \}$ , MTP-ℎ predicts the token $x _ { t + 1 + h }$ conditioned on the backbone hidden states at position 𝑡. To control training overhead, we activate and optimize only MTP-1 in most training stages. Once the backbone is well-trained, we initialize MTP-2 and MTP-3 from MTP-1 and jointly train all MTP heads in a lightweight post-training phase. Inspired by Fast-MTP [65], we adopt position-dependent loss reweighting across prediction offsets in MTP heads to prevent over-optimizing for distant-token predictions.
 
 
 
-**Multi-token Prediction (MTP).** 为加速长上下文 agent 负载上的投机解码，挂三个轻量 MTP 头。每个头含 SWA + dense FFN，仅加 0.81B 参数（约 0.41%）。按相对标准 LM head 的额外预测偏移编号：对 $h\in\{1,2,3\}$，MTP-ℎ 在位置 𝑡 的骨干隐状态条件下预测 $x_{t+1+h}$。为控制训练开销，多数阶段只激活并优化 MTP-1；骨干训好后，用 MTP-1 初始化 MTP-2/3，在轻量后训练阶段联合训全部 MTP 头。受 Fast-MTP [65] 启发，对 MTP 各偏移做位置依赖损失重加权，避免过度优化远距离 token 预测。
+**Multi-token Prediction (MTP).** 为加速长上下文 agent 负载上的投机解码, 挂三个轻量 MTP 头. 每个头含 SWA + dense FFN, 仅加 0.81B 参数 (约 0.41%). 按相对标准 LM head 的额外预测偏移编号: 对 $h\in\{1,2,3\}$, MTP-ℎ 在位置 𝑡 的骨干隐状态条件下预测 $x_{t+1+h}$. 为控制训练开销, 多数阶段只激活并优化 MTP-1; 骨干训好后, 用 MTP-1 初始化 MTP-2/3, 在轻量后训练阶段联合训全部 MTP 头. 受 Fast-MTP [65] 启发, 对 MTP 各偏移做位置依赖损失重加权, 避免过度优化远距离 token 预测.
 
-> **停一下：** §2.2 写三个 MTP 头 「adding only 0.81B」；附录 Tab. 6 又分行列出 backbone 196B/11B 与 with MTP3 198B/13B. 文内有没有说明 0.81B 与表内 +2B 如何同指？
-> 没有换算说明。§2.2 给头参数增量 0.81B (∼0.41%); Tab. 6 给 MTP3 计入后的 198B/13B. 精读只能分列引用，不能把 0.81B 改写成表内 +2B 的已核验等价。
+> **停一下:** §2.2 写三个 MTP 头 「adding only 0.81B」; 附录 Tab. 6 又分行列出 backbone 196B/11B 与 with MTP3 198B/13B. 文内有没有说明 0.81B 与表内 +2B 如何同指?
+> 没有换算说明. §2.2 给头参数增量 0.81B (∼0.41%); Tab. 6 给 MTP3 计入后的 198B/13B. 精读只能分列引用, 不能把 0.81B 改写成表内 +2B 的已核验等价.
 
 <!-- page 8 of 67 -->
 
@@ -257,7 +257,7 @@ $$
 
 Table 1: Downstream results on 30B-A3B. 𝐹 denotes full attention and 𝑆 denotes SWA. 𝑆3𝐹1 indicates three 𝑆 layers followed by one 𝐹 layer in the hybrid layout. Rel. FLOPs are normalized to the 𝑆3𝐹1 configuration and averaged over 64k/256k contexts (Table 8). Pre-train Avg. aggregates results across general, math, and code benchmarks (Table 16).
 
-表 1: **30B-A3B** 下游结果。𝐹 为全注意力，𝑆 为 SWA. 𝑆3𝐹1 表示混合布局中三层 𝑆 后接一层 𝐹. Rel. FLOPs 相对 𝑆3𝐹1 归一，并在 64k/256k 上下文上平均（Tab. 8）。Pre-train Avg。聚合通用 / 数学 / 代码基准（Tab. 16）。
+表 1: **30B-A3B** 下游结果. 𝐹 为全注意力, 𝑆 为 SWA. 𝑆3𝐹1 表示混合布局中三层 𝑆 后接一层 𝐹. Rel. FLOPs 相对 𝑆3𝐹1 归一, 并在 64k/256k 上下文上平均 (Tab. 8). Pre-train Avg. 聚合通用 / 数学 / 代码基准 (Tab. 16).
 
 ### 2.3. Architecture Ablations and Results 架构消融与结果
 
@@ -265,43 +265,43 @@ We conduct extensive experiments to validate key design choices in Step 3.5 Flas
 
 
 
-我们做大量实验验证 Step 3.5 Flash 的关键设计，焦点是（i）注意力布局（含 SWA 与加头），（ii）head-wise gated attention 对照 sink token。为确认效率优化不伤效果，采用两套互补消融：一套覆盖预训练 → 32k 长上下文扩展 → 64k SFT 的端到端流水；另一套放大到 100B 参数看规模行为。各表架构与评测设定见附录 A.4。大规模实验要点如下。
+我们做大量实验验证 Step 3.5 Flash 的关键设计, 焦点是 (i) 注意力布局 (含 SWA 与加头), (ii) head-wise gated attention 对照 sink token. 为确认效率优化不伤效果, 采用两套互补消融: 一套覆盖预训练 → 32k 长上下文扩展 → 64k SFT 的端到端流水; 另一套放大到 100B 参数看规模行为. 各表架构与评测设定见附录 A.4. 大规模实验要点如下.
 
 **SWA w.r.t. Long Context.** We train a 30B-A3B model through the full pipeline (1.4T-token pretraining followed by SFT) to evaluate the end-to-end impact of hybrid attention on reasoning and long-context performance. We ablate four attention layouts: all-full attention (𝐹𝐹𝐹𝐹), alternating SWA/full (𝑆1𝐹1), a 3:1 SWA-to-full layout (𝑆3𝐹1), and an 𝑆3𝐹1 variant with increased SWA query heads (𝑆3𝐹1+Head). To isolate attention-structure effects, we fix the SWA window size to 𝑊=512 and disable MTP (see Appendix, Table 9 and Table 10).
 
 
 
-**SWA 与长上下文。** 用 **30B-A3B** 走完全流水（1.4T token 预训练 + SFT），评估混合注意力对推理与长上下文的端到端影响。消融四种布局：全全注意力（𝐹𝐹𝐹𝐹），交替 SWA/full (𝑆1𝐹1), 3:1 SWA-to-full (𝑆3𝐹1)，以及加 SWA query 头的 𝑆3𝐹1+Head。为隔离注意力结构效应，固定 𝑊=512 并关闭 MTP（见附录 Tab. 9, Tab. 10）。
+**SWA 与长上下文.** 用 **30B-A3B** 走完全流水 (1.4T token 预训练 + SFT), 评估混合注意力对推理与长上下文的端到端影响. 消融四种布局: 全全注意力 (𝐹𝐹𝐹𝐹), 交替 SWA/full (𝑆1𝐹1), 3:1 SWA-to-full (𝑆3𝐹1), 以及加 SWA query 头的 𝑆3𝐹1+Head. 为隔离注意力结构效应, 固定 𝑊=512 并关闭 MTP (见附录 Tab. 9, Tab. 10).
 
-> **再看：** §2.3 为隔离注意力结构在 **30B-A3B** 消融中 「disable MTP」（Tab. 9/10）；Fig. 2 / Tab. 6 正式模型却开 MTP-3。能否把 Tab. 1 下游均分直接当作发货 MTP 开着时的成绩？
-> 不能。§2.3 原句明确关 MTP 以隔离注意力效应。Tab. 1 只服务布局对照；正式 MTP 日程在 Fig. 2 与 Tab. 6，二者不可混抄。
+> **再看:** §2.3 为隔离注意力结构在 **30B-A3B** 消融中 「disable MTP」 (Tab. 9/10); Fig. 2 / Tab. 6 正式模型却开 MTP-3. 能否把 Tab. 1 下游均分直接当作发货 MTP 开着时的成绩?
+> 不能. §2.3 原句明确关 MTP 以隔离注意力效应. Tab. 1 只服务布局对照; 正式 MTP 日程在 Fig. 2 与 Tab. 6, 二者不可混抄.
 
 Table 1 shows a clear cost–quality trade-off across layouts. 𝑆3𝐹1 achieves the lowest normalized attention-side FLOPs (normalized to 1.00 for prefill and 1.00 for decode separately), whereas 𝐹𝐹𝐹𝐹 is ∼2.68×/2.90× as expensive as 𝑆3𝐹1; however, 𝑆3𝐹1 exhibits a consistent quality degradation (e.g., LongCtx drops from 28.8 to 27.5).
 
 
 
-Tab. 1 显示清晰的成本–质量权衡。𝑆3𝐹1 取得最低归一化注意力侧 FLOPs（prefill/decode 分别归一为 1.00），而 𝐹𝐹𝐹𝐹 约为 𝑆3𝐹1 的 ∼2.68×/2.90×；但 𝑆3𝐹1 质量持续下降（如 LongCtx 28.8→27.5）。
+Tab. 1 显示清晰的成本–质量权衡. 𝑆3𝐹1 取得最低归一化注意力侧 FLOPs (prefill/decode 分别归一为 1.00), 而 𝐹𝐹𝐹𝐹 约为 𝑆3𝐹1 的 ∼2.68×/2.90×; 但 𝑆3𝐹1 质量持续下降 (如 LongCtx 28.8→27.5).
 
 Increasing the number of SWA query heads largely compensates for this loss. Notably, 𝑆3𝐹1+Head already surpasses 𝐹𝐹𝐹𝐹 during pretraining (55.7 vs. 54.1), and remains competitive after post-training: LongCtx improves from 27.5 to 28.2 and Sci from 42.4 to 44.0, closing most of the gap to the 𝐹𝐹𝐹𝐹 baseline with negligible additional attention cost. The remaining downside is limited and localized (e.g., a modest drop on Code to 18.3), while overall quality trends favor 𝑆3𝐹1+Head.
 
 
 
-提高 SWA query 头数大体补回该损失。值得注意，𝑆3𝐹1+Head 在预训练已超 𝐹𝐹𝐹𝐹 (55.7 vs 54.1)，后训练后仍有竞争力：LongCtx 27.5→28.2，Sci 42.4→44.0，以可忽略的额外注意力成本补回相对 𝐹𝐹𝐹𝐹 的大部分缺口。剩余劣势有限且局部（如 Code 略降至 18.3），整体质量趋势偏向 𝑆3𝐹1+Head。
+提高 SWA query 头数大体补回该损失. 值得注意, 𝑆3𝐹1+Head 在预训练已超 𝐹𝐹𝐹𝐹 (55.7 vs 54.1), 后训练后仍有竞争力: LongCtx 27.5→28.2, Sci 42.4→44.0, 以可忽略的额外注意力成本补回相对 𝐹𝐹𝐹𝐹 的大部分缺口. 剩余劣势有限且局部 (如 Code 略降至 18.3), 整体质量趋势偏向 𝑆3𝐹1+Head.
 
 Interestingly, the alternating 𝑆1𝐹1 layout delivers the best overall SFT quality and the strongest LongCtx score (29.6), but requires substantially higher attention-side prefill/decode FLOPs (∼1.58/1.65), about a 60% cost increase relative to 𝑆3𝐹1+Head. We therefore adopt 𝑆3𝐹1+Head as the default configuration for long-context agentic workloads, prioritizing its much lower prefill/decode cost with strong and stable long-context performance.
 
 
 
-有趣的是，交替 𝑆1𝐹1 给出最佳整体 SFT 质量与最强 LongCtx (29.6)，但注意力侧 prefill/decode FLOPs 明显更高（∼1.58/1.65），相对 𝑆3𝐹1+Head 约贵 60%。因此对长上下文 agent 负载默认 𝑆3𝐹1+Head，优先其低得多的 prefill/decode 成本与稳健长上下文表现。
+有趣的是, 交替 𝑆1𝐹1 给出最佳整体 SFT 质量与最强 LongCtx (29.6), 但注意力侧 prefill/decode FLOPs 明显更高 (∼1.58/1.65), 相对 𝑆3𝐹1+Head 约贵 60%. 因此对长上下文 agent 负载默认 𝑆3𝐹1+Head, 优先其低得多的 prefill/decode 成本与稳健长上下文表现.
 
-> **确认：** §2.3 / Tab. 1 写 𝑆1𝐹1 LongCtx 29.6 最好，但相对 𝑆3𝐹1+Head 约贵 60%，故默认 𝑆3𝐹1+Head。文内有没有在正式 196B 上重跑 𝑆1𝐹1 的对照表？
-> 没有。默认句落在 **30B-A3B** 全流水权衡。正文未附同规模正式模型上的 𝑆1𝐹1 复表。
+> **确认:** §2.3 / Tab. 1 写 𝑆1𝐹1 LongCtx 29.6 最好, 但相对 𝑆3𝐹1+Head 约贵 60%, 故默认 𝑆3𝐹1+Head. 文内有没有在正式 196B 上重跑 𝑆1𝐹1 的对照表?
+> 没有. 默认句落在 **30B-A3B** 全流水权衡. 正文未附同规模正式模型上的 𝑆1𝐹1 复表.
 
 **Head-wise Gated Attention vs. Sink Tokens.** We conduct scaled, controlled pretraining experiments on a 100B-A10B MoE to study attention-side mechanisms under realistic scaling conditions.
 
 
 
-**Head-wise Gated Attention vs. Sink Tokens.** 在 **100B-A10B** MoE 上做受控规模化预训练，在现实规模条件下研究注意力侧机制。
+**Head-wise Gated Attention vs. Sink Tokens.** 在 **100B-A10B** MoE 上做受控规模化预训练, 在现实规模条件下研究注意力侧机制.
 
 <!-- page 9 of 67 -->
 
@@ -312,19 +312,19 @@ Interestingly, the alternating 𝑆1𝐹1 layout delivers the best overall SFT q
 
 Table 2: Pretraining-only evaluation on a 100B-A10B model under the 𝑆3𝐹1 layout. Head-wise gating consistently outperforms a fixed sink token across benchmarks, including the overall average.
 
-表 2: **100B-A10B**，𝑆3𝐹1 布局下仅预训练评测。Head-wise gating 在各基准与总均分上持续优于固定 sink token。
+表 2: **100B-A10B**,𝑆3𝐹1 布局下仅预训练评测. Head-wise gating 在各基准与总均分上持续优于固定 sink token.
 
 Specifically, we compare sink tokens and head-wise gated attention while holding the attention layout fixed to the same 𝑆3𝐹1 configuration with window size 𝑊=512. As shown in Table 2, head-wise gating consistently improves quality, raising the average performance from 62.46 to 64.43 (+1.97). We therefore adopt head-wise gated attention as the default mechanism in subsequent studies.
 
 
 
-具体地，固定同一 𝑆3𝐹1，𝑊=512，比较 sink token 与 head-wise gated attention。如 Tab. 2，head-wise gating 持续抬质量，均分 62.46→64.43 (+1.97)。后续研究默认采用 head-wise gated attention。
+具体地, 固定同一 𝑆3𝐹1,𝑊=512, 比较 sink token 与 head-wise gated attention. 如 Tab. 2, head-wise gating 持续抬质量, 均分 62.46→64.43 (+1.97). 后续研究默认采用 head-wise gated attention.
 
-> **想：** 页 7–9 把正式模型 SWA query 头写成 64→96, Tab. 1 消融行却是 32→48。文内有没有把两套头数写成同一绝对规格，还是刻意保留 「消融规模 / 正式规模」 两套规格？
-> 两套规格。Tab. 1 / Tab. 10 落在 **30B-A3B** 消融（SWA heads 32/48）；§2.2 与附录 Tab. 6 写正式 Step 3.5 Flash 为 full/SWA query 64/96。不能把 Tab. 1 的 48 抄成发货模型的 SWA 头数。
+> **想:** 页 7–9 把正式模型 SWA query 头写成 64→96, Tab. 1 消融行却是 32→48. 文内有没有把两套头数写成同一绝对规格, 还是刻意保留 「消融规模 / 正式规模」 两套规格?
+> 两套规格. Tab. 1 / Tab. 10 落在 **30B-A3B** 消融 (SWA heads 32/48); §2.2 与附录 Tab. 6 写正式 Step 3.5 Flash 为 full/SWA query 64/96. 不能把 Tab. 1 的 48 抄成发货模型的 SWA 头数.
 
-> **问：** Tab. 2 / §2.3 在 **100B-A10B**，固定 𝑆3𝐹1 与 𝑊=512 下对照 sink token 与 head-wise gate。本文默认结论落在哪一数？
-> 落在均分 62.46→64.43 (+1.97)，并写随后默认采用 head-wise gated attention。附录 A.1 式（5）–(6) 把门写成输入依赖 sink mass，是机制解释，不改写 Tab. 2 的默认选型句。
+> **问:** Tab. 2 / §2.3 在 **100B-A10B**, 固定 𝑆3𝐹1 与 𝑊=512 下对照 sink token 与 head-wise gate. 本文默认结论落在哪一数?
+> 落在均分 62.46→64.43 (+1.97), 并写随后默认采用 head-wise gated attention. 附录 A.1 式 (5)–(6) 把门写成输入依赖 sink mass, 是机制解释, 不改写 Tab. 2 的默认选型句.
 
 ## 3. Infrastructure 基础设施
 
@@ -334,7 +334,7 @@ Step 3.5 Flash is trained on a large-scale cluster with 4,096 NVIDIA H800 GPUs. 
 
 
 
-Step 3.5 Flash 在 4,096 张 NVIDIA H800 的大规模集群上训练。每节点 8 GPU，经 NVLink 与 NVSwitch 做高带宽节点内互联。节点间依赖 8×200 Gbps RoCE，以在规模下维持高效同步与数据交换。
+Step 3.5 Flash 在 4,096 张 NVIDIA H800 的大规模集群上训练. 每节点 8 GPU, 经 NVLink 与 NVSwitch 做高带宽节点内互联. 节点间依赖 8×200 Gbps RoCE, 以在规模下维持高效同步与数据交换.
 
 ### 3.2. Training Framework 训练框架
 
@@ -342,25 +342,25 @@ The training of Step 3.5 Flash is powered by our internal Steptron framework, a 
 
 
 
-训练由内部 Steptron 驱动：基于 PyTorch [66] 与 Megatron-LM [67] 的轻量高性能系统。Steptron 统一完整模型开发流水，在同一工程栈下支撑大规模预训练，后训练与 RL。
+训练由内部 Steptron 驱动: 基于 PyTorch [66] 与 Megatron-LM [67] 的轻量高性能系统. Steptron 统一完整模型开发流水, 在同一工程栈下支撑大规模预训练, 后训练与 RL.
 
 Step 3.5 Flash employs a hybrid parallelization strategy, including 8-way pipeline parallelism (PP) [68] with virtual pipeline stages (VPP), and 8-way expert parallelism (EP) [25], and ZeRO-1 Data Parallelism (DP) [69]. In order to facilitate efficient training of Step 3.5 Flash, we employ the following engineering techniques.
 
 
 
-并行策略含 8-way PP [68]（含 VPP），8-way EP [25]，以及 ZeRO-1 DP [69]。为高效训练，采用下列工程技术。
+并行策略含 8-way PP [68] (含 VPP), 8-way EP [25], 以及 ZeRO-1 DP [69]. 为高效训练, 采用下列工程技术.
 
 **Decoupled Parallelism.** Following Megatron-Core [70], we implement a decoupled parallelization scheme that allows the attention and MoE modules to use different parallelization strategies. We assign them independent parallel groups and perform gradient reduction and scaling within each module’s corresponding data-parallel group.
 
 
 
-**解耦并行。** 循 Megatron-Core [70]，实现解耦并行，允许注意力与 MoE 用不同并行策略。为二者分配独立并行组，并在各自对应的数据并行组内做梯度归约与缩放。
+**解耦并行.** 循 Megatron-Core [70], 实现解耦并行, 允许注意力与 MoE 用不同并行策略. 为二者分配独立并行组, 并在各自对应的数据并行组内做梯度归约与缩放.
 
 **Communication Optimization.** Concurrent DP communication streams for decoupled attention and MoE can saturate RoCE links, incurring considerable increases in DP overheads due to congestion. To address this, we propose two complementary communication optimizations that jointly reduce iteration time by up to 5%. First, fabric-aware communication scheduling partitions DP traffic into intra-node NVLink and inter-node RoCE phases, and pipelines them to fully utilize both fabrics. Second, communication-aware rank placement uses job-level communication profiles to place ranks across switches, reducing hop counts and steering heavy traffic away from inter-switch hotspots.
 
 
 
-**通信优化。** 解耦后注意力与 MoE 的并发 DP 通信流可能打满 RoCE，因拥塞显著抬高 DP 开销。于是提出两条互补优化，合计最多降 iteration 时间约 5%。其一，fabric-aware 调度把 DP 流量切成节点内 NVLink 与节点间 RoCE 阶段并流水，吃满两套 fabric。其二，通信感知 rank 放置按作业级通信画像跨交换机摆 rank，减跳数并让重流量避开跨交换机热点。
+**通信优化.** 解耦后注意力与 MoE 的并发 DP 通信流可能打满 RoCE, 因拥塞显著抬高 DP 开销. 于是提出两条互补优化, 合计最多降 iteration 时间约 5%. 其一, fabric-aware 调度把 DP 流量切成节点内 NVLink 与节点间 RoCE 阶段并流水, 吃满两套 fabric. 其二, 通信感知 rank 放置按作业级通信画像跨交换机摆 rank, 减跳数并让重流量避开跨交换机热点.
 
 <!-- page 10 of 67 -->
 
@@ -368,19 +368,19 @@ Step 3.5 Flash employs a hybrid parallelization strategy, including 8-way pipeli
 
 
 
-**Muon ZeRO-1 Resharding.** Muon [34] 的 Newton–Schulz 正交化需要完整（未切分）每参梯度，与 ZeRO-1 [69] 把单参梯度 reduce-scatter 到各 DP rank 冲突。Megatron-LM 现实现用 naive FP32 all-reduce 在 Muon 更新前拼回全梯度，通信近翻倍。我们改为把整参划给 DP rank，并把梯度缓冲重排成 rank-major，使一次 reduce-scatter 就把完整梯度送到所有者。因向最胖 rank 填充的开销随 DP 规模增长，该法只用于专家参数，非专家仍走 DP all-reduce。相对 naive all-reduce 基线，该混合策略端到端 iteration 约 -5%，额外显存 <4GB。
+**Muon ZeRO-1 Resharding.** Muon [34] 的 Newton–Schulz 正交化需要完整 (未切分) 每参梯度, 与 ZeRO-1 [69] 把单参梯度 reduce-scatter 到各 DP rank 冲突. Megatron-LM 现实现用 naive FP32 all-reduce 在 Muon 更新前拼回全梯度, 通信近翻倍. 我们改为把整参划给 DP rank, 并把梯度缓冲重排成 rank-major, 使一次 reduce-scatter 就把完整梯度送到所有者. 因向最胖 rank 填充的开销随 DP 规模增长, 该法只用于专家参数, 非专家仍走 DP all-reduce. 相对 naive all-reduce 基线, 该混合策略端到端 iteration 约 -5%, 额外显存 <4GB.
 
 **GPU Kernels Optimization.** We also apply kernel-level optimizations to improve training efficiency. In attention, we fuse QK normalization with RoPE. In MoE, we fuse multiple small operators to reduce kernel-launch overhead and memory traffic, and implement a fused MoE gather/scatter with grouped GEMM, similar to SonicMoE [71].
 
 
 
-**GPU Kernel 优化。** 注意力侧融合 QK normalization 与 RoPE. MoE 侧融合多个小算子以降 launch 与访存，并实现融合 MoE gather/scatter + grouped GEMM，类似 SonicMoE [71]。
+**GPU Kernel 优化.** 注意力侧融合 QK normalization 与 RoPE. MoE 侧融合多个小算子以降 launch 与访存, 并实现融合 MoE gather/scatter + grouped GEMM, 类似 SonicMoE [71].
 
 **Fine-grained Selective Checkpointing.** Our training framework supports fine-grained activation recomputation with per-layer, submodule-level toggles (e.g., attention, FFN, normalization, SiLU, and MoE permutation), enabling selective recomputation of only the most memory-intensive components to reduce peak memory with minimal overhead.
 
 
 
-**细粒度 Selective Checkpointing.** 框架支持按层，子模块开关的细粒度激活重算（如 attention, FFN, normalization, SiLU, MoE permutation），只重算最吃显存的部件，以最小开销压峰值显存。
+**细粒度 Selective Checkpointing.** 框架支持按层, 子模块开关的细粒度激活重算 (如 attention, FFN, normalization, SiLU, MoE permutation), 只重算最吃显存的部件, 以最小开销压峰值显存.
 
 ### 3.3. High-Throughput Lightweight Monitoring 高吞吐轻量监控
 
@@ -388,13 +388,13 @@ We collect a comprehensive suite of metrics (e.g., expert distribution within ea
 
 
 
-我们采集全面指标（如每 micro-batch 专家分布与梯度范数）做细粒度监控。但遥测规模巨大：4,096-GPU 负载每 iteration 近 600 万条消息。若在主循环内同步全局归约，会多出数秒开销，近乎加倍 iteration，高性能训练不可忍。于是做 Lightweight Metrics Server，把遥测从训练路径解耦。各 rank 用内部异步通信框架 StepRPC 把本地指标异步卸载到远端服务器，遥测开销压到约 100 ms/iteration。
+我们采集全面指标 (如每 micro-batch 专家分布与梯度范数) 做细粒度监控. 但遥测规模巨大: 4,096-GPU 负载每 iteration 近 600 万条消息. 若在主循环内同步全局归约, 会多出数秒开销, 近乎加倍 iteration, 高性能训练不可忍. 于是做 Lightweight Metrics Server, 把遥测从训练路径解耦. 各 rank 用内部异步通信框架 StepRPC 把本地指标异步卸载到远端服务器, 遥测开销压到约 100 ms/iteration.
 
 The Metrics Server buffers incoming metrics and triggers reduction and database persistence only after receiving end-of-iteration signals from all participating ranks, eliminating synchronization in the main loop. To ingest and process millions of messages with low latency, the server is implemented as a highconcurrency multi-process system with two decoupled modules: (i) a Message Receiver optimized for high-throughput ingestion, and (ii) a Reduction Processor responsible for aggregation and persistence. By exploiting multi-core parallelism within and across these modules, the server keeps pace with the telemetry stream and ensures that metrics management never lags behind training.
 
 
 
-Metrics Server 缓冲入站指标，仅在收齐所有参与 rank 的 end-of-iteration 信号后才触发归约与落库，主循环无同步。为低延迟吞下百万级消息，服务器做成高并发多进程系统，两模块解耦：（i）高吞吐摄入的 Message Receiver; (ii) 负责聚合与持久化的 Reduction Processor。靠模块内与跨模块多核并行，服务器跟上遥测流，保证指标管理不落后于训练。
+Metrics Server 缓冲入站指标, 仅在收齐所有参与 rank 的 end-of-iteration 信号后才触发归约与落库, 主循环无同步. 为低延迟吞下百万级消息, 服务器做成高并发多进程系统, 两模块解耦: (i) 高吞吐摄入的 Message Receiver; (ii) 负责聚合与持久化的 Reduction Processor. 靠模块内与跨模块多核并行, 服务器跟上遥测流, 保证指标管理不落后于训练.
 
 ## 4. Pre-Training and Mid-Training 预训练与 Mid-Training
 
@@ -402,7 +402,7 @@ Metrics Server 缓冲入站指标，仅在收齐所有参与 rank 的 end-of-ite
 
 
 
-**概述。** 本节概括预训练与 mid-training，重点是大规模 sparse MoE 的实用稳定约束。先写稳定诊断与缓解（§4.1），再写课表：数据配比，日程与关键超参（§4.2）。
+**概述.** 本节概括预训练与 mid-training, 重点是大规模 sparse MoE 的实用稳定约束. 先写稳定诊断与缓解 (§4.1), 再写课表: 数据配比, 日程与关键超参 (§4.2).
 
 <!-- page 11 of 67 -->
 
@@ -410,7 +410,7 @@ Metrics Server 缓冲入站指标，仅在收齐所有参与 rank 的 end-of-ite
 
 Figure 3: Per-step training loss of Step 3.5 Flash, plotted without smoothing or sub-sampling. We observe merely one isolated loss spike across the full training duration. The initial training steps are omitted for clarity. Markers ①–③ indicate batch size increases to 8,192, 12,288, and 16,384, respectively. Marker ④ denotes the activation of the loss mask on meta tokens (see Appendix A.3 for details).
 
-图 3: Step 3.5 Flash 逐步训练 loss，无平滑，无下采样。全程仅见一次孤立 loss spike。为清晰省略最前若干 step。标记 ①–③ 对应 batch 增至 8,192, 12,288, 16,384；标记 ④ 表示对 meta token 启用 loss mask（细节见附录 A.3）。
+图 3: Step 3.5 Flash 逐步训练 loss, 无平滑, 无下采样. 全程仅见一次孤立 loss spike. 为清晰省略最前若干 step. 标记 ①–③ 对应 batch 增至 8,192, 12,288, 16,384; 标记 ④ 表示对 meta token 启用 loss mask (细节见附录 A.3).
 
 ### 4.1. Training Stability 训练稳定性
 
@@ -418,19 +418,19 @@ Training stability is a **first-class** requirement for large-scale sparse MoE p
 
 
 
-大规模 sparse MoE 预训练把训练稳定性当作**一等**需求。为使稳定可行动，基于轻量异步指标服务器与 micro-batch 级连续日志搭建全面可观测与诊断栈（§3.3）。该基建给出优化器级与专家级细粒度可见性，便于系统缓解大规模 MoE 训练中反复出现的失败模式。
+大规模 sparse MoE 预训练把训练稳定性当作**一等**需求. 为使稳定可行动, 基于轻量异步指标服务器与 micro-batch 级连续日志搭建全面可观测与诊断栈 (§3.3). 该基建给出优化器级与专家级细粒度可见性, 便于系统缓解大规模 MoE 训练中反复出现的失败模式.
 
 In practice, we find three dominant instabilities that the metrics stack helps surface early and localize precisely: (i) transient loss spikes and occasional stochastic numerical blow-ups caused by Muon’s [34] numerically sensitive polar-factor iteration under reduced precision, (ii) expert-side collapse ("dead experts") that can occur even when router dispatch statistics remain apparently healthy, and (iii) localized activation blow-ups confined to a small subset of experts.
 
 
 
-实践中，指标栈帮助提早暴露并精确定位三类主导不稳：（i）降精度下 Muon [34] 数值敏感的 polar-factor 迭代引起的短暂 loss spike 与偶发随机数值炸点；（ii）即便 router dispatch 统计看似健康仍可能出现的专家侧坍缩（「死专家」）；（iii）局限于少数专家的局部激活炸点。
+实践中, 指标栈帮助提早暴露并精确定位三类主导不稳: (i) 降精度下 Muon [34] 数值敏感的 polar-factor 迭代引起的短暂 loss spike 与偶发随机数值炸点; (ii) 即便 router dispatch 统计看似健康仍可能出现的专家侧坍缩 (「死专家」); (iii) 局限于少数专家的局部激活炸点.
 
 With the mitigations guided by these diagnostics, the pre-training loss remains smooth throughout the run, exhibiting only a single loss spike. Figure 3 shows the full curve prior to learning-rate cooldown.
 
 
 
-在诊断引导的缓解下，预训练 loss 全程平滑，仅一次 loss spike. Fig. 3 给出学习率 cooldown 前的完整曲线。
+在诊断引导的缓解下, 预训练 loss 全程平滑, 仅一次 loss spike. Fig. 3 给出学习率 cooldown 前的完整曲线.
 
 #### 4.1.1. Numerical Sensitivity of Muon Muon 的数值敏感性
 
@@ -438,13 +438,13 @@ Muon approximates a semi-orthogonal update direction via a Newton–Schulz (NS) 
 
 
 
-Muon 经 Newton–Schulz (NS) 迭代 [72] 近似半正交更新方向。早期实验发现，用更快收敛的正交化近似可温和，稳定地降 loss。因此采用 Polar Express [73]，固定 𝑇=6 步，在优化质量与吞吐间折中。
+Muon 经 Newton–Schulz (NS) 迭代 [72] 近似半正交更新方向. 早期实验发现, 用更快收敛的正交化近似可温和, 稳定地降 loss. 因此采用 Polar Express [73], 固定 𝑇=6 步, 在优化质量与吞吐间折中.
 
 However, we occasionally observe sharp, unrecoverable loss spikes despite using the recommended safety scaling [73]. The spikes are non-deterministic (often avoided by resuming from a nearby checkpoint), suggesting a numerical pathology. Simulations indicate that bfloat16 Polar Express can rarely yield extreme intermediate outliers under certain update statistics due to cumulative error in addition. We therefore cast **only** the Polar Express iteration (state and intermediates) to float16
 
 
 
-但即便使用推荐的安全缩放 [73]，仍偶见尖锐，不可恢复的 loss spike. Spike 非确定性（常可从邻近 checkpoint 恢复规避），提示数值病理。模拟表明，bfloat16 Polar Express 在某些更新统计下会因累加误差极少产生极端中间 outlier。因此**仅**把 Polar Express 迭代（状态与中间量）改成 float16
+但即便使用推荐的安全缩放 [73], 仍偶见尖锐, 不可恢复的 loss spike. Spike 非确定性 (常可从邻近 checkpoint 恢复规避), 提示数值病理. 模拟表明, bfloat16 Polar Express 在某些更新统计下会因累加误差极少产生极端中间 outlier. 因此**仅**把 Polar Express 迭代 (状态与中间量) 改成 float16
 
 <!-- page 12 of 67 -->
 
@@ -452,10 +452,10 @@ while keeping the rest of the training mixed-precision. After this change, the s
 
 
 
-其余训练仍混合精度。改后 spike 不再复发。
+其余训练仍混合精度. 改后 spike 不再复发.
 
-> **回看：** §4.1.1 采用 Polar Express 且固定 𝑇=6，并把 Polar Express 状态与中间量改 float16 后写 「spikes do not recur」。文内有没有给改精度前后的 spike 次数表，或扫过别的 𝑇?
-> 没有次数表，也没有 𝑇 消融表。可核对的只有 𝑇=6，「only the Polar Express iteration ... to float16」，以及改后不再复发的定性句。
+> **回看:** §4.1.1 采用 Polar Express 且固定 𝑇=6, 并把 Polar Express 状态与中间量改 float16 后写 「spikes do not recur」. 文内有没有给改精度前后的 spike 次数表, 或扫过别的 𝑇?
+> 没有次数表, 也没有 𝑇 消融表. 可核对的只有 𝑇=6, 「only the Polar Express iteration ... to float16」, 以及改后不再复发的定性句.
 
 #### 4.1.2. Expert Collapse Beyond Routing Collapse 超越路由坍缩的专家坍缩
 
@@ -463,19 +463,19 @@ Step-3 [32], our prior work, reports that MoE training may exhibit "dead experts
 
 
 
-先前工作 Step-3 [32] 报告 MoE 训练可能出现 「死专家」，常描述为专家长期几乎收不到 token dispatch，因而几乎没有有效梯度。我们进一步发现：即便 router dispatch 仍稳定，专家坍缩也可表现为专家侧病理，即专家激活趋零，参数范数停滞或衰减。
+先前工作 Step-3 [32] 报告 MoE 训练可能出现 「死专家」, 常描述为专家长期几乎收不到 token dispatch, 因而几乎没有有效梯度. 我们进一步发现: 即便 router dispatch 仍稳定, 专家坍缩也可表现为专家侧病理, 即专家激活趋零, 参数范数停滞或衰减.
 
 We observe that two factors are particularly influential: (i) Routed-expert aggregation requires explicit scaling. When incorporating a shared expert, it is important to introduce an explicit scaling factor to calibrate the relative contribution of the shared expert and the routed experts. While smaller models may implicitly learn such a balance, larger models are less reliable at self-calibration. A mismatch can suppress the effective contribution of routed experts even if routing frequencies appear healthy. (ii) Micro-batch balancing can be overly restrictive under fine-grained sparsity. For sparse, fine-grained MoE designs, micro-batch-level load-balancing constraints (as commonly implemented in Switch-style routing [22]) can become overly stringent. As analyzed in [74], micro-batch LBL may induce excessive cross-expert competition and hinder effective specialization.
 
 
 
-两个因素尤其关键：（i）Routed 专家聚合需要显式缩放。引入共享专家时，应用显式缩放因子校准共享专家与 routed 专家的相对贡献。小模型或可隐式学会该平衡，大模型自校准更不可靠。失配会在路由频率看似健康时仍压制 routed 专家的有效贡献。（ii）细粒度稀疏下 micro-batch 均衡可能过严。对 sparse 细粒度 MoE，micro-batch 级负载均衡约束（常见于 Switch 式路由 [22]）会过紧。如 [74] 所析，micro-batch LBL 可能诱发过度跨专家竞争，妨碍有效特化。
+两个因素尤其关键: (i) Routed 专家聚合需要显式缩放. 引入共享专家时, 应用显式缩放因子校准共享专家与 routed 专家的相对贡献. 小模型或可隐式学会该平衡, 大模型自校准更不可靠. 失配会在路由频率看似健康时仍压制 routed 专家的有效贡献. (ii) 细粒度稀疏下 micro-batch 均衡可能过严. 对 sparse 细粒度 MoE, micro-batch 级负载均衡约束 (常见于 Switch 式路由 [22]) 会过紧. 如 [74] 所析, micro-batch LBL 可能诱发过度跨专家竞争, 妨碍有效特化.
 
-We therefore prefer broader-scope balancing (e.g., global-batch statistics) [74, 75] or loss-free bias adjustment based on observed load [29, 64]. In practice, router dispatch statistics are typically stable and are not sensitive indicators of expert collapse. We recommend monitoring expert-side signals, including per-expert activation norms (e.g., RMS/mean norm at the MoE FFN intermediate) and parameter norms (e.g., Frobenius norms of expert projection matrices). When a subset of experts drifts toward near-zero activations/updates while the median remains stable (e.g., decreasing min-to-median ratios), it provides an early warning of expert “death”。
+We therefore prefer broader-scope balancing (e.g., global-batch statistics) [74, 75] or loss-free bias adjustment based on observed load [29, 64]. In practice, router dispatch statistics are typically stable and are not sensitive indicators of expert collapse. We recommend monitoring expert-side signals, including per-expert activation norms (e.g., RMS/mean norm at the MoE FFN intermediate) and parameter norms (e.g., Frobenius norms of expert projection matrices). When a subset of experts drifts toward near-zero activations/updates while the median remains stable (e.g., decreasing min-to-median ratios), it provides an early warning of expert “death”.
 
 
 
-因此更偏更广范围均衡（如 global-batch 统计）[74, 75]，或基于观测负载的 loss-free bias 调整 [29, 64]。实践中 router dispatch 统计通常稳定，不是专家坍缩的敏感指标。建议监控专家侧信号：per-expert 激活范数（如 MoE FFN 中间 RMS/均值范数）与参数范数（如专家投影矩阵 Frobenius）。当一部分专家滑向近零激活/更新而中位数仍稳（如 min-to-median 下降）时，即是专家 「死亡」 的早期预警。
+因此更偏更广范围均衡 (如 global-batch 统计) [74, 75], 或基于观测负载的 loss-free bias 调整 [29, 64]. 实践中 router dispatch 统计通常稳定, 不是专家坍缩的敏感指标. 建议监控专家侧信号: per-expert 激活范数 (如 MoE FFN 中间 RMS/均值范数) 与参数范数 (如专家投影矩阵 Frobenius). 当一部分专家滑向近零激活/更新而中位数仍稳 (如 min-to-median 下降) 时, 即是专家 「死亡」 的早期预警.
 
 #### 4.1.3. Localized Activation Blow-up in MoE Layers MoE 层局部激活炸点
 
@@ -483,25 +483,25 @@ As expert specialization matures during the main training phase, we observe a lo
 
 
 
-主训阶段专家特化成熟后，我们在更深 MoE 层观察到局部稳定病理。具体地，少数专家（每层常仅一两个）的激活**范数**快速增大，同层多数专家仍表现良好。差异造成重尾激活分布：中位专家激活范数仍稳，最大激活范数爆炸，显著抬高数值溢出与下游不稳风险。
+主训阶段专家特化成熟后, 我们在更深 MoE 层观察到局部稳定病理. 具体地, 少数专家 (每层常仅一两个) 的激活**范数**快速增大, 同层多数专家仍表现良好. 差异造成重尾激活分布: 中位专家激活范数仍稳, 最大激活范数爆炸, 显著抬高数值溢出与下游不稳风险.
 
 Figure 4 illustrates this failure mode. **Remarkably, this internal instability is entirely masked by the training loss**, which shows negligible variation despite the underlying explosion in norms shown in Panel (a). We track this phenomenon by monitoring the dispersion of per-expert FFN output norms. As observed in Panels (b) and (c), while the middle layers (e.g., Layer 38) retain stable distributions, the final layers (i.e., Layer 45) exhibit a rapidly widening gap between the maximum (solid lines) and the median (dashed lines). This indicates that activation energy is concentrating dangerously in a few "rogue" experts in the deeper network. To mitigate this, we evaluate two distinct interventions:
 
 
 
-Fig. 4 展示该失败模式。**值得注意，这种内部不稳完全被 training loss 掩盖**：尽管 Panel (a) 显示底层范数爆炸，loss 几乎无变。我们通过监控 per-expert FFN 输出范数离散度跟踪该现象。如 Panel (b)(c)，中间层（如 Layer 38）分布仍稳，而末层（即 Layer 45）最大值（实线）与中位数（虚线）的差距迅速拉大。这表明激活能量危险地集中到深层少数 「rogue」 专家。缓解上评估两种干预：
+Fig. 4 展示该失败模式. **值得注意, 这种内部不稳完全被 training loss 掩盖**: 尽管 Panel (a) 显示底层范数爆炸, loss 几乎无变. 我们通过监控 per-expert FFN 输出范数离散度跟踪该现象. 如 Panel (b)(c), 中间层 (如 Layer 38) 分布仍稳, 而末层 (即 Layer 45) 最大值 (实线) 与中位数 (虚线) 的差距迅速拉大. 这表明激活能量危险地集中到深层少数 「rogue」 专家. 缓解上评估两种干预:
 
 • Weight clipping on expert projections: We constrain the norm of the MoE FFN expert projection matrices. For each expert projection matrix 𝑊, if its maximum activation norm max<sub>𝑥</sub> ∥𝑊𝑥∥ exceeds a threshold 𝜏, we rescale it via $\begin{array} { r } { W   \leftarrow   \overline { { W } } \cdot \frac { \tau } { \operatorname* { m a x } _ { x } \| W x \| } } \end{array}$ . This is similar to MuonClip in attention [5], but we perform clipping offline on the checkpoint rather than on-the-fly.
 
 
 
-• 专家投影权重裁剪：约束 MoE FFN 专家投影矩阵范数。对每个专家投影 𝑊，若最大激活范数 max<sub>𝑥</sub> ∥𝑊𝑥∥ 超过阈值 𝜏，则按 $\begin{array}{r}{W\leftarrow\overline{W}\cdot\frac{\tau}{\max_x\|Wx\|}}\end{array}$ 重缩放。类似注意力里的 MuonClip [5]，但我们在 checkpoint 上离线裁剪，而非在线。
+• 专家投影权重裁剪: 约束 MoE FFN 专家投影矩阵范数. 对每个专家投影 𝑊, 若最大激活范数 max<sub>𝑥</sub> ∥𝑊𝑥∥ 超过阈值 𝜏, 则按 $\begin{array}{r}{W\leftarrow\overline{W}\cdot\frac{\tau}{\max_x\|Wx\|}}\end{array}$ 重缩放. 类似注意力里的 MuonClip [5], 但我们在 checkpoint 上离线裁剪, 而非在线.
 
 • Activation clipping inside experts: We apply element-wise clipping directly to the MoE FFN intermediate activations prior to the output projection, as in [33].
 
 
 
-• 专家内激活裁剪：在输出投影前对 MoE FFN 中间激活做逐元素裁剪，如 [33]。
+• 专家内激活裁剪: 在输出投影前对 MoE FFN 中间激活做逐元素裁剪, 如 [33].
 
 <!-- page 13 of 67 -->
 
@@ -519,25 +519,25 @@ Fig. 4 展示该失败模式。**值得注意，这种内部不稳完全被 trai
 
 Figure 4: Analysis of expert activation stability and mitigation strategies. In Panels (b)–(c), solid lines represent the maximum expert output norm, while dashed lines represent the median. (1) Depth-Dependent Instability: While training loss appears identical across methods (Panel a) and middle layers remain stable $( e . g .$ , Layer 38 in Panel b), the final layers $( i . e . ,$ Layer 45 in Panel c) suffer from catastrophic norm explosion in the No clipping baseline. (2) Mitigation: Weight clipping merely delays this explosion. In contrast, Activation clipping effectively bounds maximum norms, ensuring stability across all layers.
 
-图 4：专家激活稳定性与缓解策略分析。Panel (b)–(c) 实线为最大专家输出范数，虚线为中位数。（1）深度依赖不稳：各方法 training loss 看似相同（Panel a），中间层仍稳（如 Panel b 的 Layer 38），但无裁剪基线的末层（即 Panel c 的 Layer 45）发生灾难性范数爆炸。（2）缓解：权重裁剪仅推迟爆炸；激活裁剪能有效箍住最大范数，保证各层稳定。
+图 4: 专家激活稳定性与缓解策略分析. Panel (b)–(c) 实线为最大专家输出范数, 虚线为中位数. (1) 深度依赖不稳: 各方法 training loss 看似相同 (Panel a), 中间层仍稳 (如 Panel b 的 Layer 38), 但无裁剪基线的末层 (即 Panel c 的 Layer 45) 发生灾难性范数爆炸. (2) 缓解: 权重裁剪仅推迟爆炸; 激活裁剪能有效箍住最大范数, 保证各层稳定.
 
 Although the training loss appears indistinguishable across different mitigation strategies in Figure 4 (a), the max-to-median ratio reliably unmasks underlying instability. As evidenced in Panels (b) and (c), activation clipping ensures a stable trajectory for internal norms, whereas weight clipping alone fails to prevent the recurrence of outlier experts. Consequently, we establish the max-to-median ratio of per-expert activation norms as a robust and necessary metric for monitoring training stability.
 
 
 
-尽管 Fig. 4 (a) 里各缓解策略的 training loss 难以区分，max-to-median 比能可靠揭开底层不稳。如 Panel (b)(c)，激活裁剪保证内部范数轨迹稳定，而仅权重裁剪无法阻止 outlier 专家复发。因此把 per-expert 激活范数的 max-to-median 比立成监控训练稳定性的稳健且必要指标。
+尽管 Fig. 4 (a) 里各缓解策略的 training loss 难以区分, max-to-median 比能可靠揭开底层不稳. 如 Panel (b)(c), 激活裁剪保证内部范数轨迹稳定, 而仅权重裁剪无法阻止 outlier 专家复发. 因此把 per-expert 激活范数的 max-to-median 比立成监控训练稳定性的稳健且必要指标.
 
 The activation blow-up is driven by several factors. We observe that high-frequency bi-grams can trigger expert specialization. When using pre-norm [76, 77], a single expert can amplify its output boundlessly and dominate the final output norm, leading to near-deterministic prediction behavior. This risk is exacerbated by SwiGLU [78], where strong alignment between the gate and up-projection branches produces sparse activations with extreme magnitudes. Muon further accelerates this collapse by amplifying persistent low-rank updates. A detailed analysis is provided in Appendix B.
 
 
 
-激活炸点由多因素驱动。我们观察到高频 bigram 可触发专家特化。在 pre-norm [76, 77] 下，单个专家可无界放大输出并主导最终输出范数，导致近乎确定性的预测行为。SwiGLU [78] 加剧该风险：gate 与 up 投影支路强对齐会产生极端幅度的稀疏激活。Muon 通过放大持续低秩更新进一步加速该坍缩。详细分析见附录 B。
+激活炸点由多因素驱动. 我们观察到高频 bigram 可触发专家特化. 在 pre-norm [76, 77] 下, 单个专家可无界放大输出并主导最终输出范数, 导致近乎确定性的预测行为. SwiGLU [78] 加剧该风险: gate 与 up 投影支路强对齐会产生极端幅度的稀疏激活. Muon 通过放大持续低秩更新进一步加速该坍缩. 详细分析见附录 B.
 
-> **问：** 页 12–13 写 training loss 几乎不变却内部范数爆炸；作者最终采用的是激活裁剪，权重裁剪，还是二者并用？正文有没有给出裁剪阈值 𝜏 的数值？
-> 正文结论句偏向激活裁剪：「Activation clipping effectively bounds... Weight clipping merely delays」。未写二者默认并用，也未给出 𝜏 的具体数。可核对的是监控指标 max-to-median，以及 Fig. 4 三面板对照；阈值留在实现细节外。
+> **问:** 页 12–13 写 training loss 几乎不变却内部范数爆炸; 作者最终采用的是激活裁剪, 权重裁剪, 还是二者并用? 正文有没有给出裁剪阈值 𝜏 的数值?
+> 正文结论句偏向激活裁剪: 「Activation clipping effectively bounds... Weight clipping merely delays」. 未写二者默认并用, 也未给出 𝜏 的具体数. 可核对的是监控指标 max-to-median, 以及 Fig. 4 三面板对照; 阈值留在实现细节外.
 
-> **拆开：** §4.1.2 写引入共享专家时要加 「explicit scaling factor」 校准与 routed 专家的相对贡献。正文或 Tab. 6 有没有给出该因子的数值？
-> 没有。§4.1.2 只强调需要显式系数；Tab. 6 列 Experts **288 + 1 shared** 与 top-𝑘=8，不列缩放系数。不能从 top-𝑘 口算出该因子。
+> **拆开:** §4.1.2 写引入共享专家时要加 「explicit scaling factor」 校准与 routed 专家的相对贡献. 正文或 Tab. 6 有没有给出该因子的数值?
+> 没有. §4.1.2 只强调需要显式系数; Tab. 6 列 Experts **288 + 1 shared** 与 top-𝑘=8, 不列缩放系数. 不能从 top-𝑘 口算出该因子.
 
 ### 4.2. Training Curriculum 训练课表
 
@@ -545,10 +545,10 @@ The training proceeds from broad open-domain coverage to increasingly agentic an
 
 
 
-训练从广域开域覆盖走向越来越强的 agent / 长上下文特化。先在 4k 上下文，广域开域配比上预训练以建立通用能力；再把配比退火到更高质量知识与更多软件开发数据（code, PR, issue, commit），同时把上下文扩到 32k. 随后专门 mid-training 把窗口从 32k 扩到 128k，强化长程推理并为下游后训练与 agent 负载提供更好初始化。合计预训练约 17.6T tokens, mid-training 750B tokens。
+训练从广域开域覆盖走向越来越强的 agent / 长上下文特化. 先在 4k 上下文, 广域开域配比上预训练以建立通用能力; 再把配比退火到更高质量知识与更多软件开发数据 (code, PR, issue, commit), 同时把上下文扩到 32k. 随后专门 mid-training 把窗口从 32k 扩到 128k, 强化长程推理并为下游后训练与 agent 负载提供更好初始化. 合计预训练约 17.6T tokens, mid-training 750B tokens.
 
-> **核对：** Introduction 写稳定训完 17.2T 高质量多样 token；§4.2 写预训练约 17.6T + mid-training 750B. 文内有没有把两处收成同一总和或解释差额？
-> 没有。两处并存且口径不同：Intro 的 17.2T 与 §4.2 的 17.6T / 750B 分列。引用须标节号，勿私自合并或改写成单一官方总量。
+> **核对:** Introduction 写稳定训完 17.2T 高质量多样 token; §4.2 写预训练约 17.6T + mid-training 750B. 文内有没有把两处收成同一总和或解释差额?
+> 没有. 两处并存且口径不同: Intro 的 17.2T 与 §4.2 的 17.6T / 750B 分列. 引用须标节号, 勿私自合并或改写成单一官方总量.
 
 #### 4.2.1. Data Mixture 数据配比
 
@@ -556,7 +556,7 @@ Our corpus combines general open-domain data with agentic-oriented data. We summ
 
 
 
-语料组合通用开域与面向 agent 的数据。关键来源如下，更多细节见附录 C。
+语料组合通用开域与面向 agent 的数据. 关键来源如下, 更多细节见附录 C.
 
 <!-- page 14 of 67 -->
 
@@ -564,25 +564,25 @@ Our corpus combines general open-domain data with agentic-oriented data. We summ
 
 
 
-**通用知识数据。** 为支撑广域世界知识，建设 **StepCrawl**（附录 C.1.1）：超越标准 Common Crawl [79] 的内部爬取与整理基建，从网页（HTML）与书/文档类来源（ePub/PDF）规模化收获万亿级高质量 token。全部内容经多阶段质量过滤，站点/类目标注，去重与清洗。
+**通用知识数据.** 为支撑广域世界知识, 建设 **StepCrawl** (附录 C.1.1): 超越标准 Common Crawl [79] 的内部爬取与整理基建, 从网页 (HTML) 与书/文档类来源 (ePub/PDF) 规模化收获万亿级高质量 token. 全部内容经多阶段质量过滤, 站点/类目标注, 去重与清洗.
 
 **Code Data.** Strong code capacity is foundational for agentic models. Our code corpus is curated and refined using a modified OpenCoder [80] pipeline. We relax filtering from a zero-tolerance policy to allowing 0–6 heuristic violations (Appendix C.2.1) per document, balancing quality and diversity, and upsample code-centric data during annealing and mid-training to strengthen agent-related programming.
 
 
 
-**代码数据。** 强代码能力是 agent 模型的基础。代码语料用改造版 OpenCoder [80] 流水整理。过滤从零容忍放宽到每文档允许 0–6 条启发式违规（附录 C.2.1），以平衡质量与多样性；退火与 mid-training 阶段上采代码中心数据，强化 agent 相关编程。
+**代码数据.** 强代码能力是 agent 模型的基础. 代码语料用改造版 OpenCoder [80] 流水整理. 过滤从零容忍放宽到每文档允许 0–6 条启发式违规 (附录 C.2.1), 以平衡质量与多样性; 退火与 mid-training 阶段上采代码中心数据, 强化 agent 相关编程.
 
 **PR/Issue/Commit Data.** To better match real software-engineering workflows, we curate a comprehensive PR/Issue/Commit dataset(Appendix C.2.2) from GitHub repositories with 10+ stars. This includes (1) Base Data validated against git diff (deduplicated against benchmarks [14, 81]); (2) PR-Dialogue Data derived from PR threads and commits using Agentless-style templates [82] for file localization and code repair; and (3) derivative software-engineering corpora used in mid-training and post-training.
 
 
 
-**PR/Issue/Commit 数据。** 为更好贴合真实软件工程工作流，从 10+ star 的 GitHub 仓库整理综合 PR/Issue/Commit 数据集（附录 C.2.2）。包括（1）相对 git diff 校验的 Base Data（相对基准 [14, 81] 去重）；（2）用 Agentless 风格模板 [82] 从 PR 线程与 commit 派生的 PR-Dialogue（文件定位与代码修复）；（3）mid-training 与后训练使用的衍生软件工程语料。
+**PR/Issue/Commit 数据.** 为更好贴合真实软件工程工作流, 从 10+ star 的 GitHub 仓库整理综合 PR/Issue/Commit 数据集 (附录 C.2.2). 包括 (1) 相对 git diff 校验的 Base Data (相对基准 [14, 81] 去重); (2) 用 Agentless 风格模板 [82] 从 PR 线程与 commit 派生的 PR-Dialogue (文件定位与代码修复); (3) mid-training 与后训练使用的衍生软件工程语料.
 
 **Tool-Use and Reasoning Data.** To improve tool-use robustness and multi-step reasoning, we add synthetic and semi-synthetic data spanning math/code/science/general knowledge, and domainspecific samples targeting search agent, SWE agent, and tool execution. During mid-training, we further introduce long-context samples (natural long documents and long-form synthetic tasks) to reinforce planning and reasoning over extended contexts.
 
 
 
-**工具使用与推理数据。** 为提高工具稳健性与多步推理，加入覆盖数学/代码/科学/通用知识的合成与半合成数据，以及面向 search agent，SWE agent 与工具执行的域样本。Mid-training 进一步引入长上下文样本（自然长文档与长形式合成任务），强化扩展上下文上的规划与推理。
+**工具使用与推理数据.** 为提高工具稳健性与多步推理, 加入覆盖数学/代码/科学/通用知识的合成与半合成数据, 以及面向 search agent, SWE agent 与工具执行的域样本. Mid-training 进一步引入长上下文样本 (自然长文档与长形式合成任务), 强化扩展上下文上的规划与推理.
 
 #### 4.2.2. Schedule 日程
 
@@ -590,37 +590,37 @@ Our corpus combines general open-domain data with agentic-oriented data. We summ
 
 
 
-**预训练日程。** 预训练分两阶段：
+**预训练日程.** 预训练分两阶段:
 
 1. **Pre-training Stage 1: Open-domain pre-training** (14.6T tokens, 4k context). Broad open-domain training to maximize coverage and foundational capability.
 
 
 
-1. **预训练 Stage 1：开域预训练**（14.6T tokens，4k 上下文）。广域开域训练以最大化覆盖与基础能力。
+1. **预训练 Stage 1: 开域预训练** (14.6T tokens, 4k 上下文). 广域开域训练以最大化覆盖与基础能力.
 
 2. **Pre-training Stage 2: Annealing + long-context initialization** (3T tokens, 4k to 32k context). We anneal the data mixture toward code and PR/Issue/Commit-centric sources, while increasing the share of higher-quality knowledge and reasoning-dense samples. This stage starts with 2T tokens at 4k context, then transitions to 1T tokens at 32k context under the same annealed mixture to initialize long-context training.
 
 
 
-2. **预训练 Stage 2：退火 + 长上下文初始化** (3T tokens, 4k→32k)。配比向代码与 PR/Issue/Commit 中心来源退火，同时提高更高质量知识与推理密集样本占比。本阶段先 2T@4k，再在同一退火配比下转 1T@32k，以初始化长上下文训练。
+2. **预训练 Stage 2: 退火 + 长上下文初始化** (3T tokens, 4k→32k). 配比向代码与 PR/Issue/Commit 中心来源退火, 同时提高更高质量知识与推理密集样本占比. 本阶段先 2T@4k, 再在同一退火配比下转 1T@32k, 以初始化长上下文训练.
 
 **Mid-training schedule.** Mid-training also consists of two stages:
 
 
 
-**Mid-training 日程。** 同样两阶段：
+**Mid-training 日程.** 同样两阶段:
 
 1. **Mid-training Stage 1: Specialization at 32k** (386B tokens, 32k context). We replay 81B tokens (21%) from pre-training to mitigate distribution shift and stabilize specialization, while emphasizing software-engineer and tool-use-centric mixtures.
 
 
 
-1. **Mid-training Stage 1: 32k 特化** (386B tokens, 32k)。回放预训练 81B tokens (21%) 以缓解分布漂移并稳住特化，同时强调软件工程与工具使用中心配比。
+1. **Mid-training Stage 1: 32k 特化** (386B tokens, 32k). 回放预训练 81B tokens (21%) 以缓解分布漂移并稳住特化, 同时强调软件工程与工具使用中心配比.
 
 2. **Mid-training Stage 2: Long-context specialization** (364B tokens, 128k context). We retain 10.5B replay tokens, and further specialize long-context capability with a mixture of synthetic longhorizon reasoning and natural long documents (selected from pre-training data with length > 32k), plus domain-specific data for code agent, search agent, and tool-use.
 
 
 
-2. **Mid-training Stage 2：长上下文特化** (364B tokens, 128k)。保留 10.5B 回放 tokens，再用合成长程推理与自然长文档（从预训练中选长度 >32k）加 code/search/tool-use 域数据进一步特化长上下文能力。
+2. **Mid-training Stage 2: 长上下文特化** (364B tokens, 128k). 保留 10.5B 回放 tokens, 再用合成长程推理与自然长文档 (从预训练中选长度 >32k) 加 code/search/tool-use 域数据进一步特化长上下文能力.
 
 <!-- page 15 of 67 -->
 
@@ -630,16 +630,16 @@ Our corpus combines general open-domain data with agentic-oriented data. We summ
 
 
 
-**预训练超参。** 全程 Muon [34], weight decay 0.1, gradient clip 1.0。学习率前 2,000 step 从 0 线性 warmup 到 $2.5\times10^{-4}$，再在 Stage 1 余弦衰减到 $5\times10^{-5}$. Stage 2 在 4k 段（2T tokens）二次余弦从 $5\times10^{-5}$ 到 $2\times10^{-5}$，32k 段（1T）固定 $2\times10^{-5}$。全局 batch 前 400B tokens 从 4096 渐增到 16384，其后保持 16384，退火 32k 段设为 2k. MTP 损失权重 Stage 1 0.3, Stage 2 0.1 [29]. Loss-free 负载均衡：前 14.6T bias 更新率 0.001，退火期衰减到 0.0；EP-group balance 损失系数 0.001 贯穿预训练。RoPE [83]: 4k 训练 Full 与 SWA 均 $\theta=10{,}000$；退火 32k 段仅 Full 设 $\theta_{\mathrm{Full}}=1{,}000{,}000$，SWA 保持 $\theta_{\mathrm{SWA}}=10{,}000$。
+**预训练超参.** 全程 Muon [34], weight decay 0.1, gradient clip 1.0. 学习率前 2,000 step 从 0 线性 warmup 到 $2.5\times10^{-4}$, 再在 Stage 1 余弦衰减到 $5\times10^{-5}$. Stage 2 在 4k 段 (2T tokens) 二次余弦从 $5\times10^{-5}$ 到 $2\times10^{-5}$, 32k 段 (1T) 固定 $2\times10^{-5}$. 全局 batch 前 400B tokens 从 4096 渐增到 16384, 其后保持 16384, 退火 32k 段设为 2k. MTP 损失权重 Stage 1 0.3, Stage 2 0.1 [29]. Loss-free 负载均衡: 前 14.6T bias 更新率 0.001, 退火期衰减到 0.0; EP-group balance 损失系数 0.001 贯穿预训练. RoPE [83]: 4k 训练 Full 与 SWA 均 $\theta=10{,}000$; 退火 32k 段仅 Full 设 $\theta_{\mathrm{Full}}=1{,}000{,}000$, SWA 保持 $\theta_{\mathrm{SWA}}=10{,}000$.
 
 **Mid-training hyper-parameters.** We continue to use Muon [34] during mid-training. We freeze the MoE router weights and disable the EP-group balance loss and fix the MTP loss weight to 0.1 for both mid-training stages. The learning rate is warmed up from 0 to $2 \times 1 0 ^ { - 5 }$ over the first 3% of iterations, kept constant in Mid-training Stage 1, and decayed to $7 . 3 \times 1 0 ^ { - 6 }$ in Mid-training Stage 2. For RoPE selective scaling, we set $\theta _ { \mathrm { F u l l } } = 1 { , } 0 0 0 { , } 0 0 0$ at 32k (Mid-training Stage 1) and increase to $\theta _ { \mathrm { F u l l } } = 5 { , } 0 0 0 { , } 0 0 0$ at 128k (Mid-training Stage 2), while keeping $\theta _ { \mathrm { S W A } } = 1 0 { , } 0 0 0$ throughout mid-training [84].
 
 
 
-**Mid-training 超参。** 继续 Muon [34]。冻结 MoE router 权重，关闭 EP-group balance 损失，两阶段 MTP 损失权重固定 0.1。学习率前 3% iteration 从 0 warmup 到 $2\times10^{-5}$，Stage 1 恒定，Stage 2 衰减到 $7.3\times10^{-6}$. RoPE 选择性缩放：32k (Stage 1) $\theta_{\mathrm{Full}}=1{,}000{,}000$, 128k (Stage 2) 提到 $\theta_{\mathrm{Full}}=5{,}000{,}000$，mid 全程 $\theta_{\mathrm{SWA}}=10{,}000$ [84]。
+**Mid-training 超参.** 继续 Muon [34]. 冻结 MoE router 权重, 关闭 EP-group balance 损失, 两阶段 MTP 损失权重固定 0.1. 学习率前 3% iteration 从 0 warmup 到 $2\times10^{-5}$, Stage 1 恒定, Stage 2 衰减到 $7.3\times10^{-6}$. RoPE 选择性缩放: 32k (Stage 1) $\theta_{\mathrm{Full}}=1{,}000{,}000$, 128k (Stage 2) 提到 $\theta_{\mathrm{Full}}=5{,}000{,}000$, mid 全程 $\theta_{\mathrm{SWA}}=10{,}000$ [84].
 
-> **想：** §4.2.3 mid-training 把 $\theta_{\mathrm{Full}}$ 从 32k 的 1,000,000 提到 128k 的 5,000,000；§6.2 评测又对 Full 层加 YaRN 因子 2.0 扩到 256k. 这两处是同一训练阶段的同条件设定吗？
-> 不是。§4.2.3 是 mid-training 里对 RoPE 的 θ 调整；§6.2 是后训练评测解码协议。YaRN 句写明加在 「original 128k positional embeddings」 之上且 「restricting it to full-attention layers only」，属于评测外推，不是改写 mid 的 $\theta_{\mathrm{Full}}$。
+> **想:** §4.2.3 mid-training 把 $\theta_{\mathrm{Full}}$ 从 32k 的 1,000,000 提到 128k 的 5,000,000; §6.2 评测又对 Full 层加 YaRN 因子 2.0 扩到 256k. 这两处是同一训练阶段的同条件设定吗?
+> 不是. §4.2.3 是 mid-training 里对 RoPE 的 θ 调整; §6.2 是后训练评测解码协议. YaRN 句写明加在 「original 128k positional embeddings」 之上且 「restricting it to full-attention layers only」, 属于评测外推, 不是改写 mid 的 $\theta_{\mathrm{Full}}$.
 
 ## 5. Post-Training 后训练
 
@@ -647,7 +647,7 @@ In this section, we introduce a unified post-training recipe for large-scale Rei
 
 
 
-本节给出面向大规模 RL 的统一后训练配方，从统一 SFT 模型起步。框架把可验证奖励与人类偏好反馈结合，推动一致自改进，并在 MoE 的大规模 off-policy 训练中保持稳定。流程类似先前工作 [2, 85] 的两阶段：先在统一 SFT 基线上对 Math, Code，STEM，Tool-use，Long Context Understanding，Human Preference，Agentic Reasoning 做域 RL，建成 **Expert Models**；再用 **Self-Distillation** 与 **Scalable RL** 蒸馏回 generalist，使最终模型在多样任务上仍可比专项基线。通过系统交替定向特化与广域综合，在不牺牲专家级表现的前提下获得稳健泛化。
+本节给出面向大规模 RL 的统一后训练配方, 从统一 SFT 模型起步. 框架把可验证奖励与人类偏好反馈结合, 推动一致自改进, 并在 MoE 的大规模 off-policy 训练中保持稳定. 流程类似先前工作 [2, 85] 的两阶段: 先在统一 SFT 基线上对 Math, Code, STEM, Tool-use, Long Context Understanding, Human Preference, Agentic Reasoning 做域 RL, 建成 **Expert Models**; 再用 **Self-Distillation** 与 **Scalable RL** 蒸馏回 generalist, 使最终模型在多样任务上仍可比专项基线. 通过系统交替定向特化与广域综合, 在不牺牲专家级表现的前提下获得稳健泛化.
 
 ### 5.1. Expert Model Construction and Self-Distillation 专家模型构建与自蒸馏
 
@@ -655,13 +655,13 @@ We employ a two-stage SFT pipeline to build a robust foundation for subsequent R
 
 
 
-采用两阶段 SFT 为后续 RL 打底座。第一阶段做大规模多域 SFT，覆盖 Math, Code, STEM, Logic，General QA，Code Agent，Tool-use，Search Agent，Long Context Understanding；用难度感知过滤与策略性配平培养广域 agent 行为。第二阶段显式最大化推理密度，注入 OOD 信号 [46, 86]: 约 30k 专家级化学轨迹与合成算术任务。对鲜明推理模式的定向暴露仅约 3 个 epoch 就解锁潜在能力，为后续域 RL 提供必要的结构复杂度。
+采用两阶段 SFT 为后续 RL 打底座. 第一阶段做大规模多域 SFT, 覆盖 Math, Code, STEM, Logic, General QA, Code Agent, Tool-use, Search Agent, Long Context Understanding; 用难度感知过滤与策略性配平培养广域 agent 行为. 第二阶段显式最大化推理密度, 注入 OOD 信号 [46, 86]: 约 30k 专家级化学轨迹与合成算术任务. 对鲜明推理模式的定向暴露仅约 3 个 epoch 就解锁潜在能力, 为后续域 RL 提供必要的结构复杂度.
 
 Following domain-specific RL, we consolidate the divergent expert capabilities into a unified student model, initialized from the mid-train checkpoint. In this phase, the expert models generate high-
 
 
 
-域 RL 之后，把发散的专家能力并入统一学生模型（从 mid-train checkpoint 初始化）。本阶段专家模型生成高
+域 RL 之后, 把发散的专家能力并入统一学生模型 (从 mid-train checkpoint 初始化). 本阶段专家模型生成高
 
 <!-- page 16 of 67 -->
 
@@ -673,19 +673,19 @@ Following domain-specific RL, we consolidate the divergent expert capabilities i
 
 Figure 5: Scalability comparison between MIS-PO and PPO on our internal model. (1) Efficiency: MIS-PO demonstrates superior sample efficiency, achieving higher reward plateaus with an accelerated convergence trend. (2) Stability: MIS-PO significantly stabilizes training dynamics by suppressing gradient noise and eliminating the large spikes in the policy gradient norm. (3) Exploration Persistence: MIS-PO exhibits slower entropy decay, enabling a better exploration–exploitation balance.
 
-图 5：内模上 MIS-PO 与 PPO 的可扩展性对照。（1）效率：MIS-PO 样本效率更高，奖励平台更高，收敛更快。（2）稳定：MIS-PO 明显压住梯度噪声并消除策略梯度范数大尖峰。（3）探索持续性：MIS-PO 熵衰减更慢，探索–利用更均衡。
+图 5: 内模上 MIS-PO 与 PPO 的可扩展性对照. (1) 效率: MIS-PO 样本效率更高, 奖励平台更高, 收敛更快. (2) 稳定: MIS-PO 明显压住梯度噪声并消除策略梯度范数大尖峰. (3) 探索持续性: MIS-PO 熵衰减更慢, 探索–利用更均衡.
 
 quality trajectories using a prompt distribution shared with the first-stage SFT corpus, offering a more stable and efficient alternative to direct RL integration. This approach employs rejection sampling to eliminate undesirable patterns such as language mixing or overthinking, centralizing expert knowledge into a single student model. By establishing this high-quality foundation, self-distillation significantly reduces the optimization burden on subsequent RL stages.
 
 
 
-质量轨迹，prompt 分布与第一阶段 SFT 语料共享，相对直接并入 RL 更稳，更高效。用拒绝采样剔除混语或过度思考等不良模式，把专家知识收束到单一学生。自蒸馏打下高质量底座后，显著减轻后续 RL 的优化负担。
+质量轨迹, prompt 分布与第一阶段 SFT 语料共享, 相对直接并入 RL 更稳, 更高效. 用拒绝采样剔除混语或过度思考等不良模式, 把专家知识收束到单一学生. 自蒸馏打下高质量底座后, 显著减轻后续 RL 的优化负担.
 
 **Hyper-Parameters.** The Muon optimizer [34] is employed with a 3% warmup and a cosine decay from $1 . 0 \times 1 0 ^ { - 5 }$ to $5 . 0 \times 1 0 ^ { - 6 }$ . We freeze the MoE router weights and disable the EP-group balance loss similar to mid-training. The SFT training is executed with an MTP loss weight of 0.1, a global batch size of 32, and a global sequence length of 128k. Regarding Rotary Position Embeddings (RoPE) [83], we maintain $\theta _ { S W A } = 1 0$ , 000 and adjust $\theta _ { F u l l } = 5 ,$ , 000, 000 to accommodate the 128k context length [84].
 
 
 
-**超参。** Muon [34]，3% warmup，余弦从 $1.0\times10^{-5}$ 到 $5.0\times10^{-6}$。与 mid-training 一样冻结 MoE router 并关闭 EP-group balance 损失。SFT: MTP 损失权重 0.1，全局 batch 32，全局序列长 128k. RoPE [83]: 保持 $\theta_{SWA}=10{,}000$，调整 $\theta_{Full}=5{,}000{,}000$ 以适配 128k [84]。
+**超参.** Muon [34], 3% warmup, 余弦从 $1.0\times10^{-5}$ 到 $5.0\times10^{-6}$. 与 mid-training 一样冻结 MoE router 并关闭 EP-group balance 损失. SFT: MTP 损失权重 0.1, 全局 batch 32, 全局序列长 128k. RoPE [83]: 保持 $\theta_{SWA}=10{,}000$, 调整 $\theta_{Full}=5{,}000{,}000$ 以适配 128k [84].
 
 ### 5.2. Scalable RL 可扩展 RL
 
@@ -693,7 +693,7 @@ In RL for LLMs, we optimize a policy $\pi _ { \theta }$ to maximize terminal rew
 
 
 
-LLM 的 RL 优化策略 $\pi_\theta$，在轨迹 $\tau=(s_0, a_0,\cdots, s_T)$ 上最大化终端奖励，其中 $a_t$ 是状态 $s_t$ 生成的 token。但对推理任务，高梯度方差带来严重不稳，并被极长视野与模型规模放大 (Fig. 5 (2))。方差主要来自高吞吐推理引擎与训练框架之间的**基建分歧**，以及迭代更新固有的 **off-policy 错位**。此设定下 importance sampling 天生不稳：微小的 token 级概率偏移会复合为嘈杂梯度，阻碍收敛。
+LLM 的 RL 优化策略 $\pi_\theta$, 在轨迹 $\tau=(s_0, a_0,\cdots, s_T)$ 上最大化终端奖励, 其中 $a_t$ 是状态 $s_t$ 生成的 token. 但对推理任务, 高梯度方差带来严重不稳, 并被极长视野与模型规模放大 (Fig. 5 (2)). 方差主要来自高吞吐推理引擎与训练框架之间的**基建分歧**, 以及迭代更新固有的 **off-policy 错位**. 此设定下 importance sampling 天生不稳: 微小的 token 级概率偏移会复合为嘈杂梯度, 阻碍收敛.
 
 #### 5.2.1. MIS-Filtered Policy Optimization (MIS-PO) MIS 过滤策略优化
 
@@ -701,10 +701,10 @@ To address these stability challenges, we propose MIS-PO, a method inspired by M
 
 
 
-为应对稳定挑战，提出受 Metropolis Independence Sampling (MIS) [39, 40] 启发的 MIS-PO。把推理策略当 proposal，训练策略当 target，只更新仍足够接近 target 分布的样本。与用有界比值缩放梯度，常遭高方差的 importance sampling 不同，MIS-PO 用二值掩码过滤离分布样本，并把保留轨迹当作有效 on-policy，从而显著降梯度方差并稳住优化。
+为应对稳定挑战, 提出受 Metropolis Independence Sampling (MIS) [39, 40] 启发的 MIS-PO. 把推理策略当 proposal, 训练策略当 target, 只更新仍足够接近 target 分布的样本. 与用有界比值缩放梯度, 常遭高方差的 importance sampling 不同, MIS-PO 用二值掩码过滤离分布样本, 并把保留轨迹当作有效 on-policy, 从而显著降梯度方差并稳住优化.
 
-> **停一下：** §5.2.1 / 式（2）相对 continuous importance weighting，MIS-PO 换成什么？Fig. 5 与附录 Fig. 7 分别对照谁？
-> 换成 token 级与轨迹级二值指示 $\mathbb{I}$，式（2）不再乘连续重要性权重。Fig. 5 对 PPO（样本效率 / 梯度范数尖峰 / 熵）；附录 Fig. 7 与式（16）对 GSPO（几何均值比 + clip）。本文写的是离散过滤替换连续加权。
+> **停一下:** §5.2.1 / 式 (2) 相对 continuous importance weighting, MIS-PO 换成什么? Fig. 5 与附录 Fig. 7 分别对照谁?
+> 换成 token 级与轨迹级二值指示 $\mathbb{I}$, 式 (2) 不再乘连续重要性权重. Fig. 5 对 PPO (样本效率 / 梯度范数尖峰 / 熵); 附录 Fig. 7 与式 (16) 对 GSPO (几何均值比 + clip). 本文写的是离散过滤替换连续加权.
 
 <!-- page 17 of 67 -->
 
@@ -712,7 +712,7 @@ Formally, we define a binary indicator function $\mathbb { I } ( x ) = \mathbb {
 
 
 
-形式化地，定义二值指示 $\mathbb{I}(x)=\mathbb{I}[\rho_{\min}\le x\le\rho_{\max}]$，并在两粒度应用。**Token 级**过滤概率比 $x_t=\pi_{\theta_{\mathrm{old}}}(a_t|s_t)/\pi_{\theta_{\mathrm{vllm}}}(a_t|s_t)$，压制训练与推理策略的局部错配 [37].**轨迹级**把同一指示用到几何均值比 $\bar{\rho}(\tau)=(\prod_t x_t)^{1/T}$，有效丢弃已显著漂离 target 的整条轨迹。重写后的 actor 损失用双层离散掩码替换连续 importance 权重：
+形式化地, 定义二值指示 $\mathbb{I}(x)=\mathbb{I}[\rho_{\min}\le x\le\rho_{\max}]$, 并在两粒度应用. **Token 级**过滤概率比 $x_t=\pi_{\theta_{\mathrm{old}}}(a_t|s_t)/\pi_{\theta_{\mathrm{vllm}}}(a_t|s_t)$, 压制训练与推理策略的局部错配 [37].**轨迹级**把同一指示用到几何均值比 $\bar{\rho}(\tau)=(\prod_t x_t)^{1/T}$, 有效丢弃已显著漂离 target 的整条轨迹. 重写后的 actor 损失用双层离散掩码替换连续 importance 权重:
 
 $$
 \mathcal {L} _ {a c t o r} = - \mathbb {E} _ {\tau \sim \pi_ {\theta_ {\mathrm{vllm}}}} \left[ \mathbb {I} (x _ {t}) \cdot \mathbb {I} (\bar {\rho} (\tau)) \cdot \log \pi_ {\theta} (a _ {t} | s _ {t}) \cdot \hat {A} _ {t} \right].\tag{2}
@@ -722,19 +722,19 @@ By treating valid samples as effectively on-policy, this objective substantially
 
 
 
-把有效样本当作有效 on-policy 后，该目标在 trust-region 约束下显著降低长程推理任务的梯度方差。Fig. 5 给出约 5,000 训练 step 的消融：MIS-PO 的 actor 梯度范数噪声明显低于 PPO，显示更好可扩展性。更多消融见附录 D.2.3。
+把有效样本当作有效 on-policy 后, 该目标在 trust-region 约束下显著降低长程推理任务的梯度方差. Fig. 5 给出约 5,000 训练 step 的消融: MIS-PO 的 actor 梯度范数噪声明显低于 PPO, 显示更好可扩展性. 更多消融见附录 D.2.3.
 
 To further stabilize training dynamics, we employ several techniques: **Truncation-Aware Value Bootstrapping** [87] to correct the ambitious reward bias introduced by context-length truncation and **Routing Confidence** monitoring to predict instability specific to MoE architectures.
 
 
 
-为进一步稳住训练动态，另用若干技术：**Truncation-Aware Value Bootstrapping** [87] 纠正上下文截断引入的激进奖励偏差；**Routing Confidence** 监控以预测 MoE 特有不稳。
+为进一步稳住训练动态, 另用若干技术: **Truncation-Aware Value Bootstrapping** [87] 纠正上下文截断引入的激进奖励偏差; **Routing Confidence** 监控以预测 MoE 特有不稳.
 
 **Truncation-Aware Value Bootstrapping.** Assigning zero rewards to context-truncated trajectories conflates truncation with task failure. This ambiguity penalizes long-chain reasoning by failing to distinguish between incomplete and incorrect outcomes. To address this, we replace the zero reward with a bootstrapped value estimate of the final state, effectively treating truncation as a horizon interruption rather than a terminal failure. The modified reward for trajectory $\tau _ { i }$ is defined as:
 
 
 
-**Truncation-Aware Value Bootstrapping.** 给上下文截断轨迹赋零奖励会把截断与任务失败混为一谈。该歧义惩罚长链推理，因无法区分未完成与错误。为此用最终状态的 bootstrapped 价值估计替换零奖励，把截断当作视野中断而非终端失败。轨迹 $\tau_i$ 的修正奖励定义为：
+**Truncation-Aware Value Bootstrapping.** 给上下文截断轨迹赋零奖励会把截断与任务失败混为一谈. 该歧义惩罚长链推理, 因无法区分未完成与错误. 为此用最终状态的 bootstrapped 价值估计替换零奖励, 把截断当作视野中断而非终端失败. 轨迹 $\tau_i$ 的修正奖励定义为:
 
 $$
 \hat {R} _ {i} = \left\{ \begin{array}{l l} V _ {\phi} (s _ {T}) & \text {if the response is truncated,} \\ R _ {i} & \text {otherwise.} \end{array} \right.\tag{3}
@@ -744,25 +744,25 @@ Empirically, this truncation-aware value bootstrapping stabilizes training even 
 
 
 
-经验上，该截断感知价值 bootstrap 即使在截断率高达 20% 时仍稳住训练，避免不完整轨迹常触发的奖励退化 [88, 89]。消融确认它对竞赛级基准尤其有益：长程推理使截断效应最普遍。
+经验上, 该截断感知价值 bootstrap 即使在截断率高达 20% 时仍稳住训练, 避免不完整轨迹常触发的奖励退化 [88, 89]. 消融确认它对竞赛级基准尤其有益: 长程推理使截断效应最普遍.
 
-> **对一下：** 式（3）Truncation-Aware Value Bootstrapping 在截断时用 $V_\phi(s_T)$ 替换零奖励。文内给出的可核对截断率上限是多少？
-> 文内可核对的上限是 20%. §5.2.1 原句是 「even at truncation rates as high as 20%」。未另给 $V_\phi$ 的结构表或更高截断率的扫参。
+> **对一下:** 式 (3) Truncation-Aware Value Bootstrapping 在截断时用 $V_\phi(s_T)$ 替换零奖励. 文内给出的可核对截断率上限是多少?
+> 文内可核对的上限是 20%. §5.2.1 原句是 「even at truncation rates as high as 20%」. 未另给 $V_\phi$ 的结构表或更高截断率的扫参.
 
 **Routing Confidence as a Stability Proxy.** Recent studies [36, 38] bridge RL stability with MoE routing consistency. Building on this, we propose the **Routing Confidence** (Σ<sub>𝑘</sub>) as a proxy for stability, which is the average probability mass of activated experts. Low $\Sigma _ { k }$ implies high routing uncertainty, which amplifies the training-inference mismatch. Through preliminary experiments, we identify a distinct stability phase transition: models with low routing confidence are brittle and require extreme stabilization $( e . g .$ , Router Replay [1, 36, 38], strict on-policy updates [90]). In contrast, models with high routing confidence maintain robustness, enabling off-policy training without complex interventions.
 
 
 
-**Routing Confidence 作稳定代理。** 近期研究 [36, 38] 把 RL 稳定与 MoE 路由一致性相连。据此提出 **Routing Confidence** (Σ<sub>𝑘</sub>) 作稳定代理：激活专家的平均概率质量。低 $\Sigma_k$ 意味高路由不确定性，放大训练–推理错配。初步实验识别清晰稳定相变：低 routing confidence 模型脆弱，需极端稳定手段（如 Router Replay [1, 36, 38]，严格 on-policy 更新 [90]）；高 routing confidence 模型保持稳健，可不靠复杂干预做 off-policy 训练。
+**Routing Confidence 作稳定代理.** 近期研究 [36, 38] 把 RL 稳定与 MoE 路由一致性相连. 据此提出 **Routing Confidence** (Σ<sub>𝑘</sub>) 作稳定代理: 激活专家的平均概率质量. 低 $\Sigma_k$ 意味高路由不确定性, 放大训练–推理错配. 初步实验识别清晰稳定相变: 低 routing confidence 模型脆弱, 需极端稳定手段 (如 Router Replay [1, 36, 38], 严格 on-policy 更新 [90]); 高 routing confidence 模型保持稳健, 可不靠复杂干预做 off-policy 训练.
 
-> **看表：** §5.2.1 把 Routing Confidence $\Sigma_k$ 写成激活专家的平均概率质量，并描述低/高置信相变。文内有没有给出 $\Sigma_k$ 的数值阈值或相变点分数？
-> 没有。只有定性分界（低置信 → Router Replay / 严 on-policy；高置信 → 可 off-policy）。无阈值表，也不能从 Fig. 5/6 反推 $\Sigma_k$ 临界值。
+> **看表:** §5.2.1 把 Routing Confidence $\Sigma_k$ 写成激活专家的平均概率质量, 并描述低/高置信相变. 文内有没有给出 $\Sigma_k$ 的数值阈值或相变点分数?
+> 没有. 只有定性分界 (低置信 → Router Replay / 严 on-policy; 高置信 → 可 off-policy). 无阈值表, 也不能从 Fig. 5/6 反推 $\Sigma_k$ 临界值.
 
 **RL Training Dynamics.** To provide a holistic view of our method, we illustrate the RL with verifiable rewards (RLVR) training dynamics and downstream evaluation improvements of Step 3.5 Flash in Figure 6. The steady rise in training rewards suggests a stable and effective learning process. Furthermore, Step 3.5 Flash achieves consistent performance gains across diverse evaluation benchmarks. Specifically, we observe substantial improvements of +3.2% on IMO-AnswerBench [91], +6.1% on CF-Div2-Stepfun-cpp (Appendix E.2.1: our custom CodeForces<sup>2</sup> Div.2 Benchmark), +10.6% on ARC-AGI-1 [92], and +3.4% on $\mathrm { H L E } _ { \mathrm { t e x t } } \left[ 9 3 \right]$
 
 
 
-**RL 训练动态。** Fig. 6 给出 Step 3.5 Flash 的 RLVR 训练动态与下游评测改进。训练奖励稳步上升提示学习过程稳定有效。跨多样评测基准亦见一致增益：IMO-AnswerBench +3.2% [91], CF-Div2-Stepfun-cpp +6.1%（附录 E.2.1：自建 CodeForces<sup>2</sup> Div.2 基准），ARC-AGI-1 +10.6% [92], $\mathrm{HLE}_{\mathrm{text}}$ +3.4% [93].
+**RL 训练动态.** Fig. 6 给出 Step 3.5 Flash 的 RLVR 训练动态与下游评测改进. 训练奖励稳步上升提示学习过程稳定有效. 跨多样评测基准亦见一致增益: IMO-AnswerBench +3.2% [91], CF-Div2-Stepfun-cpp +6.1% (附录 E.2.1: 自建 CodeForces<sup>2</sup> Div.2 基准), ARC-AGI-1 +10.6% [92], $\mathrm{HLE}_{\mathrm{text}}$ +3.4% [93].
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>2</sup>https://codeforces.com/</span></small>
 
@@ -774,10 +774,10 @@ Empirically, this truncation-aware value bootstrapping stabilizes training even 
 
 Figure 6: RL training dynamics and cross-domain improvements of Step 3.5 Flash. RL drives steady reward growth (left) and delivers consistent accuracy boosts across multiple benchmarks (right).
 
-图 6: Step 3.5 Flash 的 RL 训练动态与跨域改进。左：奖励稳态增长；右：多项基准准确率一致抬升。
+图 6: Step 3.5 Flash 的 RL 训练动态与跨域改进. 左: 奖励稳态增长; 右: 多项基准准确率一致抬升.
 
-> **核对：** 页 17 轨迹级掩码超参写在 §5.2.3 为 [0.996, 1.001]，token 级为 [0.5, 2]。正文有没有解释为何轨迹界如此收窄，或给出保留率 / 拒绝率曲线？
-> 没有推导表。§5.2.3 只给出界；Fig. 5/附录 Fig. 7–8 展示相对 PPO/GSPO 的效率与稳定，不报掩码保留率。几何均值收到约 0.4% 带宽时，文内只给了界，没有灵敏度扫表。
+> **核对:** 页 17 轨迹级掩码超参写在 §5.2.3 为 [0.996, 1.001], token 级为 [0.5, 2]. 正文有没有解释为何轨迹界如此收窄, 或给出保留率 / 拒绝率曲线?
+> 没有推导表. §5.2.3 只给出界; Fig. 5/附录 Fig. 7–8 展示相对 PPO/GSPO 的效率与稳定, 不报掩码保留率. 几何均值收到约 0.4% 带宽时, 文内只给了界, 没有灵敏度扫表.
 
 #### 5.2.2. Reward System 奖励系统
 
@@ -785,31 +785,31 @@ We decouple the RL framework into RL with verifiable rewards (RLVR [94]) and RL 
 
 
 
-把 RL 框架拆成可验证奖励 RL (RLVR [94]) 与非可验证奖励 RL（如 RLHF [95]），各自配适合其监督特性的奖励。
+把 RL 框架拆成可验证奖励 RL (RLVR [94]) 与非可验证奖励 RL (如 RLHF [95]), 各自配适合其监督特性的奖励.
 
 **Verifiable Rewards.** For RLVR, each prompt is paired with a task-specific verifier that outputs a reward. The rule-based checkers are used for logic, instruction following, and code, while model-based verifiers are employed for STEM tasks. In ablation studies over 450 RL training steps on our internal model, using model-based verifiers for STEM tasks outperforms direct vanilla math-verify by an average of 2.0%; additional details are provided in Appendix D.2.2.
 
 
 
-**可验证奖励。** RLVR 下每个 prompt 配任务专用 verifier 出奖励。逻辑 / 指令跟随 / 代码用规则 checker；STEM 用模型 verifier。内模约 450 RL step 消融：STEM 用模型 verifier 相对直接 vanilla math-verify 均高约 2.0%；细节见附录 D.2.2。
+**可验证奖励.** RLVR 下每个 prompt 配任务专用 verifier 出奖励. 逻辑 / 指令跟随 / 代码用规则 checker; STEM 用模型 verifier. 内模约 450 RL step 消融: STEM 用模型 verifier 相对直接 vanilla math-verify 均高约 2.0%; 细节见附录 D.2.2.
 
 **Non-Verifiable Reward.** We address non-verifiable tasks using a pairwise generative reward model (GenRM [96]) that benchmarks responses against a fixed reference. GenRM is a reasoning model that outputs a confidence score indicating the likelihood of a response winning. This score is subsequently converted into a Bradley–Terry win rate [97] to serve as the reward signal. Length control is modeled within GenRM as a confidence score penalty and propagated to the win-rate reward, effectively suppressing excessive length growth during RL training. We further ensure robustness by assigning zero reward to responses with fabricated citations, overconfident claims, or language inconsistencies.
 
 
 
-**非可验证奖励。** 用 pairwise generative reward model (GenRM [96]) 相对固定参考评测回答。GenRM 是推理模型，输出表示获胜概率的置信分，再转成 Bradley–Terry 胜率 [97] 作奖励。长度控制在 GenRM 内建模为置信惩罚并传到胜率奖励，有效抑制 RL 中过长生长。另对伪造引用，过度自信声称或语言不一致的回答赋零奖励以保证稳健。
+**非可验证奖励.** 用 pairwise generative reward model (GenRM [96]) 相对固定参考评测回答. GenRM 是推理模型, 输出表示获胜概率的置信分, 再转成 Bradley–Terry 胜率 [97] 作奖励. 长度控制在 GenRM 内建模为置信惩罚并传到胜率奖励, 有效抑制 RL 中过长生长. 另对伪造引用, 过度自信声称或语言不一致的回答赋零奖励以保证稳健.
 
 **Agent Reward.** Search tasks are evaluated using an LLM based on entity-matching scores. For report generation, a rubric-based LLM judge evaluates the research query, rubric specifications, and candidate reports, producing ternary judgments (satisfied, partially satisfied, unsatisfied) [98]. As the intermediate category often misaligns with expert preferences, we map the outputs to asymmetric binary rewards, yielding clearer learning signals and faster convergence toward expert-aligned behaviors.
 
 
 
-**Agent 奖励。** 搜索任务用基于实体匹配分的 LLM 评估。报告生成用量表式 LLM judge 评研究查询，量表规格与候选报告，产出三元判断（满足 / 部分满足 / 不满足）[98]。因中间类常与专家偏好错位，把输出映射为非对称二值奖励，以得到更清晰学习信号并更快收敛到专家对齐行为。
+**Agent 奖励.** 搜索任务用基于实体匹配分的 LLM 评估. 报告生成用量表式 LLM judge 评研究查询, 量表规格与候选报告, 产出三元判断 (满足 / 部分满足 / 不满足) [98]. 因中间类常与专家偏好错位, 把输出映射为非对称二值奖励, 以得到更清晰学习信号并更快收敛到专家对齐行为.
 
 **GenRM Training and MetaRM.** We initialize the GenRM by fine-tuning our SFT model with RM-specific prompts. For RL training, we use curated pairwise preference data with a logsigmoid loss similar to the scalar reward model formulation. To improve the robustness of GenRM, we penalize responses exhibiting spurious reasoning (i.e., correct preference derived from flawed logic) by integrating MetaRM, an additional verifier that reduces the training reward when such patterns
 
 
 
-**GenRM 训练与 MetaRM.** 用 RM 专用 prompt 微调 SFT 模型初始化 GenRM. RL 训练用整理后的 pairwise 偏好数据与类似标量奖励模型的 logsigmoid 损失。为提高 GenRM 稳健性，用 MetaRM（额外 verifier）惩罚虚假推理（即从错误逻辑推出正确偏好）：检出此类模式时降低训练奖励
+**GenRM 训练与 MetaRM.** 用 RM 专用 prompt 微调 SFT 模型初始化 GenRM. RL 训练用整理后的 pairwise 偏好数据与类似标量奖励模型的 logsigmoid 损失. 为提高 GenRM 稳健性, 用 MetaRM (额外 verifier) 惩罚虚假推理 (即从错误逻辑推出正确偏好): 检出此类模式时降低训练奖励
 
 <!-- page 19 of 67 -->
 
@@ -828,13 +828,13 @@ We decouple the RL framework into RL with verifiable rewards (RLVR [94]) and RL 
 
 Table 3: Data Statistics of first-stage SFT.
 
-表 3：第一阶段 SFT 数据统计。
+表 3: 第一阶段 SFT 数据统计.
 
 are detected. In ablation studies spanning 200 RL training steps on our internal model, MetaRMaugmented GenRM outperforms vanilla GenRM by 0.5% - 3% on every benchmark.
 
 
 
-。内模约 200 RL step 消融：MetaRM 增强 GenRM 在每项基准上高于 vanilla GenRM 0.5%–3%。
+. 内模约 200 RL step 消融: MetaRM 增强 GenRM 在每项基准上高于 vanilla GenRM 0.5%–3%.
 
 #### 5.2.3. Hyper-Parameters 超参
 
@@ -842,7 +842,7 @@ For rollout, we set both the sampling temperature and top-𝑝 to 1.0 with a max
 
 
 
-Rollout: temperature 与 top-𝑝 均为 1.0，最大序列长 128k. 每代：推理任务 256 个唯一 prompt × 16 回答；人类偏好 512 × 8；工具使用 128 × 8. Rollout 后把完成样本切成 mini-batch，单 epoch 训练：actor 4 个 mini-batch，critic 12 个。Muon, weight decay 0.1. Actor lr $2\times10^{-6}$, warmup 20 step; critic lr $5\times10^{-6}$, warmup 50 step。循 ORZ [90]，𝛾 与 𝜆 均设 1。末段用无偏 KL 损失 [85]，系数 0.001。式（2）的 token 级 / 轨迹级掩码界分别为 [0.5, 2] 与 [0.996, 1.001]。
+Rollout: temperature 与 top-𝑝 均为 1.0, 最大序列长 128k. 每代: 推理任务 256 个唯一 prompt × 16 回答; 人类偏好 512 × 8; 工具使用 128 × 8. Rollout 后把完成样本切成 mini-batch, 单 epoch 训练: actor 4 个 mini-batch, critic 12 个. Muon, weight decay 0.1. Actor lr $2\times10^{-6}$, warmup 20 step; critic lr $5\times10^{-6}$, warmup 50 step. 循 ORZ [90], 𝛾 与 𝜆 均设 1. 末段用无偏 KL 损失 [85], 系数 0.001. 式 (2) 的 token 级 / 轨迹级掩码界分别为 [0.5, 2] 与 [0.996, 1.001].
 
 ### 5.3. Data Synthesis & Curation 数据合成与整理
 
@@ -850,7 +850,7 @@ We construct a diverse and difficulty-balanced prompt pool by aggregating open-s
 
 
 
-聚合开源数据，合成生成与用户轨迹，建成多样且难度平衡的 prompt 池。统一合成整理流水把严格全局过滤与域精修结合，以最大化推理密度。质量由规则启发式与模型保真检查混合保证。结果数据集含 871k 样本（7.23B tokens），统计见 Tab. 3.
+聚合开源数据, 合成生成与用户轨迹, 建成多样且难度平衡的 prompt 池. 统一合成整理流水把严格全局过滤与域精修结合, 以最大化推理密度. 质量由规则启发式与模型保真检查混合保证. 结果数据集含 871k 样本 (7.23B tokens), 统计见 Tab. 3.
 
 #### 5.3.1. General and Reasoning 通用与推理
 
@@ -858,7 +858,7 @@ Our training corpus aggregates community prompts, expert responses, and syntheti
 
 
 
-训练语料聚合社区 prompt，专家回答与多样开源合成，含 **Mathematics** [90, 99–110], **Coding** [111–113], **Science and Open-ended QA** [114–117]。为最大化推理密度，用统一流水耦合严格全局过滤与域精修，以规则启发式 + 模型保真检查强制质量。数学侧用专家引导拒绝采样与合成大数算术保证数值稳定。编程侧优先可离线执行的严谨算法题，并严格清洗 RAG 相关幻觉。尤其缓解模型虚假宣称可访问
+训练语料聚合社区 prompt, 专家回答与多样开源合成, 含 **Mathematics** [90, 99–110], **Coding** [111–113], **Science and Open-ended QA** [114–117]. 为最大化推理密度, 用统一流水耦合严格全局过滤与域精修, 以规则启发式 + 模型保真检查强制质量. 数学侧用专家引导拒绝采样与合成大数算术保证数值稳定. 编程侧优先可离线执行的严谨算法题, 并严格清洗 RAG 相关幻觉. 尤其缓解模型虚假宣称可访问
 
 <!-- page 20 of 67 -->
 
@@ -866,13 +866,13 @@ external search engines or pretend to retrieve online solutions. Furthermore, we
 
 
 
-外部搜索引擎或假装检索在线解答的倾向。另把科学数据限制为有唯一可判定解的无歧义问题。
+外部搜索引擎或假装检索在线解答的倾向. 另把科学数据限制为有唯一可判定解的无歧义问题.
 
 To enable generalization across practical scenarios, we expand open-source checkers<sup>3</sup> and augment samples with several real-world constraints. In parallel, we collect general prompts from open-source, synthetic, and user trajectories to form a diverse, difficulty-balanced pool. This process yields a high-fidelity dataset comprising millions of samples at the billion-token scale.
 
 
 
-为使能力泛化到实用场景，扩展开源 checker<sup>3</sup> 并用若干真实约束增强样本。并行从开源 / 合成 / 用户轨迹收集通用 prompt，形成多样，难度平衡的池。该过程得到百万样本，十亿 token 量级的高保真数据集。
+为使能力泛化到实用场景, 扩展开源 checker<sup>3</sup> 并用若干真实约束增强样本. 并行从开源 / 合成 / 用户轨迹收集通用 prompt, 形成多样, 难度平衡的池. 该过程得到百万样本, 十亿 token 量级的高保真数据集.
 
 #### 5.3.2. Generalized Tool Learning 通用工具学习
 
@@ -880,7 +880,7 @@ We propose an execution-driven data generation framework for learning reliable t
 
 
 
-提出执行驱动的数据生成框架，学习智能体可靠工具行为，针对现有合成流水的数据不一致，不可验证与模型幻觉等关键局限。不依赖随机探索 [118, 119] 或模型仿真 [5, 120]，而把工具行为拆成原子意图，用有限状态机（FSM）建模，显式分离抽象工具调用逻辑与参数化执行约束。数据经 sample–execute–verify 循环与拒绝采样生成：候选轨迹均在真实环境执行并由确定性反馈校验，保证保真并消除幻觉行为。通过组合原子意图，框架可规模化生成复杂，可控的工具场景。据此构建 >100K 高质量轨迹，合计数十亿 tokens，为基于工具的规划 / 推理 / 执行提供精确监督。
+提出执行驱动的数据生成框架, 学习智能体可靠工具行为, 针对现有合成流水的数据不一致, 不可验证与模型幻觉等关键局限. 不依赖随机探索 [118, 119] 或模型仿真 [5, 120], 而把工具行为拆成原子意图, 用有限状态机 (FSM) 建模, 显式分离抽象工具调用逻辑与参数化执行约束. 数据经 sample–execute–verify 循环与拒绝采样生成: 候选轨迹均在真实环境执行并由确定性反馈校验, 保证保真并消除幻觉行为. 通过组合原子意图, 框架可规模化生成复杂, 可控的工具场景. 据此构建 >100K 高质量轨迹, 合计数十亿 tokens, 为基于工具的规划 / 推理 / 执行提供精确监督.
 
 #### 5.3.3. Code Agents 代码 Agent
 
@@ -888,7 +888,7 @@ Code agents can self-improve through a closed-loop intervention between verifiab
 
 
 
-代码 agent 可在可验证的**环境构建**与**解生成**之间闭环自改进，可执行反馈持续精炼两侧能力。我们把环境构建当作与修 bug / 实现特性并列的一等能力，在可验证奖励下合成。为此开发从 SWE-factory [121] 演化的专用 agent 流水，含跨任务记忆池（检索历史构建成功作 few-shot）与环路检测以防冗余探索。该流水环境构建成功率约 40%，借构建轨迹（含 shell 与错误恢复）的稠密监督形成模型自演化正反馈。为进一步提高信号质量，对环境构建轨迹做归一：抽象并掩蔽对最终解决无贡献的瞬时失败与冗余执行模式。Bootstrapped 环境作动态试验床，用执行反馈与单元测试生成高质量合成数据与奖励以持续对齐。经验上观察到双向迁移：构建专长加速编码表现，在这些环境里编码又进一步提高构建准确率（见 DockSmith [122]）。借此演化流水整理 50k 验证环境，跨 15k+ GitHub 仓库与 20+ 编程语言，覆盖广谱真实场景，为通才代码 agent 提供稳健底座。另纳入若干知名开源环境：SWE-smith [123], SWE-Gym [124], R2E-Gym [125], SWE-rebench [126], SETA [127]。
+代码 agent 可在可验证的**环境构建**与**解生成**之间闭环自改进, 可执行反馈持续精炼两侧能力. 我们把环境构建当作与修 bug / 实现特性并列的一等能力, 在可验证奖励下合成. 为此开发从 SWE-factory [121] 演化的专用 agent 流水, 含跨任务记忆池 (检索历史构建成功作 few-shot) 与环路检测以防冗余探索. 该流水环境构建成功率约 40%, 借构建轨迹 (含 shell 与错误恢复) 的稠密监督形成模型自演化正反馈. 为进一步提高信号质量, 对环境构建轨迹做归一: 抽象并掩蔽对最终解决无贡献的瞬时失败与冗余执行模式. Bootstrapped 环境作动态试验床, 用执行反馈与单元测试生成高质量合成数据与奖励以持续对齐. 经验上观察到双向迁移: 构建专长加速编码表现, 在这些环境里编码又进一步提高构建准确率 (见 DockSmith [122]). 借此演化流水整理 50k 验证环境, 跨 15k+ GitHub 仓库与 20+ 编程语言, 覆盖广谱真实场景, 为通才代码 agent 提供稳健底座. 另纳入若干知名开源环境: SWE-smith [123], SWE-Gym [124], R2E-Gym [125], SWE-rebench [126], SETA [127].
 
 #### 5.3.4. Search and Research Agents 搜索与研究 Agent
 
@@ -896,7 +896,7 @@ To facilitate advanced information-seeking, our pipeline integrates graph-based 
 
 
 
-为促进高级信息寻求，流水整合基于图与多文档合成以强制多跳推理。通过对知识图做拓扑扩展
+为促进高级信息寻求, 流水整合基于图与多文档合成以强制多跳推理. 通过对知识图做拓扑扩展
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>3</sup>https://github.com/allenai/open-instruct/tree/main/open\_instruct/IFEvalG</span></small>
 
@@ -906,7 +906,7 @@ To facilitate advanced information-seeking, our pipeline integrates graph-based 
 
 
 
-（如 Wikidata5m [128]）并模拟跨站浏览轨迹，生成反映真实研究复杂度的数据。关键地，为保证外部检索必要性，用 DeepSeek-R1 [129] 校验生成查询，系统排除该强推理模型无需工具即可解的实例。结果轨迹经结构化报告生成流水 [98] 精修，强制严格指令遵循与结构完整。具体强制紧贴预设研究计划，丢弃偏离结构的轨迹。随后有效输出经模型 judge 与启发式规则迭代清洗，处理非正式写法，时间幻觉与混语伪迹等细粒度问题。该端到端方法在 RESEARCHRUBRICS [21] 上达到业界领先表现。
+(如 Wikidata5m [128]) 并模拟跨站浏览轨迹, 生成反映真实研究复杂度的数据. 关键地, 为保证外部检索必要性, 用 DeepSeek-R1 [129] 校验生成查询, 系统排除该强推理模型无需工具即可解的实例. 结果轨迹经结构化报告生成流水 [98] 精修, 强制严格指令遵循与结构完整. 具体强制紧贴预设研究计划, 丢弃偏离结构的轨迹. 随后有效输出经模型 judge 与启发式规则迭代清洗, 处理非正式写法, 时间幻觉与混语伪迹等细粒度问题. 该端到端方法在 RESEARCHRUBRICS [21] 上达到业界领先表现.
 
 ### 5.4. Agent Infrastructure Agent 基础设施
 
@@ -914,13 +914,13 @@ To facilitate advanced information-seeking, our pipeline integrates graph-based 
 
 
 
-**推理与工具模板设计。** 要把推理与 agent 能力有效并入同一底座，需确定思考过程与工具使用的合适模板。推理模板上评估三种管理策略。每轮丢弃推理历史 [129] 虽激励独立生成，但在长程任务（如超过 100 轮的编码会话）会导致失败。反之保留完整推理历史会带来难以承受的上下文消耗，迅速饱和容量并挡住后续工具调用。为此采用选择性保留：只保留由最近用户指令触发的工具轨迹上的推理痕迹。该设计在推理连贯与上下文效率间折中最优，并与近期前沿模型实践对齐 [85, 130]。工具模板上比较常见 JSON 与 XML. JSON 刚性语法（含转义与分隔符）常在小模型 / 训练不足模型上诱发解析错误；XML 可用平坦字符串输出，语法开销显著更低。因此选 XML，以保证复杂真实 agent 编码场景的稳健性。
+**推理与工具模板设计.** 要把推理与 agent 能力有效并入同一底座, 需确定思考过程与工具使用的合适模板. 推理模板上评估三种管理策略. 每轮丢弃推理历史 [129] 虽激励独立生成, 但在长程任务 (如超过 100 轮的编码会话) 会导致失败. 反之保留完整推理历史会带来难以承受的上下文消耗, 迅速饱和容量并挡住后续工具调用. 为此采用选择性保留: 只保留由最近用户指令触发的工具轨迹上的推理痕迹. 该设计在推理连贯与上下文效率间折中最优, 并与近期前沿模型实践对齐 [85, 130]. 工具模板上比较常见 JSON 与 XML. JSON 刚性语法 (含转义与分隔符) 常在小模型 / 训练不足模型上诱发解析错误; XML 可用平坦字符串输出, 语法开销显著更低. 因此选 XML, 以保证复杂真实 agent 编码场景的稳健性.
 
 **Scalable Code Agent Infrastructure.** Our integrated architecture focuses on scalable session management and cross-framework generalization to facilitate high-throughput agentic coding. Central to this is a proprietary Session-Router that orchestrates container lifecycles via Kubernetes and ensures interaction consistency through Tmux. This architecture supports thousands of concurrent environments with seamless state persistence, eliminating the need for manual, scaffold-specific Docker configurations. To ensure high generalization across diverse agentic workflows, we trained the model to adapt to a wide spectrum of interaction frameworks, ranging from academic standards (e.g., Open-Hands [131], SWE-agent [132], and Terminus-2 [16]) to enterprise grade protocols (e.g., Kilocode [133], Roocode [134], and ClaudeCode [135]). By exposing the model to these varied interaction paradigms during training, we effectively prevent it from overfitting to specific pipeline patterns, ensuring it remains robust regardless of the underlying execution environment.
 
 
 
-**可扩展代码 Agent 基建。** 集成架构聚焦可扩展会话管理与跨框架泛化，以支撑高吞吐 agent 编码。核心是专有 Session-Router：经 Kubernetes 编排容器生命周期，经 Tmux 保证交互一致性。该架构支持数千并发环境与无缝状态持久化，无需手工，脚手架专用 Docker 配置。为在多样 agent 工作流上高泛化，训练模型适配广谱交互框架：从学术标准（如 Open-Hands [131], SWE-agent [132], Terminus-2 [16]）到企业级协议（如 Kilocode [133], Roocode [134], ClaudeCode [135]）。训练期暴露这些多样交互范式，有效防止过拟合特定流水模式，无论底层执行环境如何都保持稳健。
+**可扩展代码 Agent 基建.** 集成架构聚焦可扩展会话管理与跨框架泛化, 以支撑高吞吐 agent 编码. 核心是专有 Session-Router: 经 Kubernetes 编排容器生命周期, 经 Tmux 保证交互一致性. 该架构支持数千并发环境与无缝状态持久化, 无需手工, 脚手架专用 Docker 配置. 为在多样 agent 工作流上高泛化, 训练模型适配广谱交互框架: 从学术标准 (如 Open-Hands [131], SWE-agent [132], Terminus-2 [16]) 到企业级协议 (如 Kilocode [133], Roocode [134], ClaudeCode [135]). 训练期暴露这些多样交互范式, 有效防止过拟合特定流水模式, 无论底层执行环境如何都保持稳健.
 
 ## 6. Evaluations 评测
 
@@ -930,7 +930,7 @@ To facilitate advanced information-seeking, our pipeline integrates graph-based 
 
 
 
-**评测设定。** 在系列基准上评测 Step 3.5 Flash，覆盖：（1）通用语言理解与推理：BBH [136], MMLU [137], MMLU-Redux [138], MMLU-Pro [139], HellaSwag [140], WinoGrande [141], GPQA [142], SuperGPQA [143], SimpleQA [144]. (2) 数学推理：GSM8K [145], MATH [146]。
+**评测设定.** 在系列基准上评测 Step 3.5 Flash, 覆盖: (1) 通用语言理解与推理: BBH [136], MMLU [137], MMLU-Redux [138], MMLU-Pro [139], HellaSwag [140], WinoGrande [141], GPQA [142], SuperGPQA [143], SimpleQA [144]. (2) 数学推理: GSM8K [145], MATH [146].
 
 <!-- page 22 of 67 -->
 
@@ -965,22 +965,22 @@ To facilitate advanced information-seeking, our pipeline integrates graph-based 
 
 Table 4: Pre-training evaluation results. \* denotes cases where the original score was unavailable; we report results evaluated under the same test conditions as Step 3.5 Flash for fair comparison. † indicates Deepseek scores quoted from the MiMo-V2-Flash report [30].
 
-表 4：预训练评测结果。\* 表示原分不可得，我们在与 Step 3.5 Flash 相同测试条件下复评以公平对照。† 表示 DeepSeek 分数引自 MiMo-V2-Flash 报告 [30]。
+表 4: 预训练评测结果. \* 表示原分不可得, 我们在与 Step 3.5 Flash 相同测试条件下复评以公平对照. † 表示 DeepSeek 分数引自 MiMo-V2-Flash 报告 [30].
 
 (3) Coding, including HumanEval [147], MBPP [148], HumanEval+, MBPP+ [149] and MultiPL-E [150]. (4) Chinese understanding, including C-EVAL [151], CMMLU [152], and C-SimpleQA [153].
 
 
 
-(3) 编码：HumanEval [147], MBPP [148], HumanEval+, MBPP+ [149], MultiPL-E [150]. (4) 中文理解：C-EVAL [151], CMMLU [152], C-SimpleQA [153]。
+(3) 编码: HumanEval [147], MBPP [148], HumanEval+, MBPP+ [149], MultiPL-E [150]. (4) 中文理解: C-EVAL [151], CMMLU [152], C-SimpleQA [153].
 
 **Evaluation Results.** Table 4 summarizes the pre-training evaluation of Step 3.5 Flash across general reasoning, mathematics, code, and Chinese benchmarks. Despite activating only 11B parameters (196B total), Step 3.5 Flash remains broadly competitive with substantially larger sparse baselines (15–37B activated; 309–1043B total), demonstrating a strong accuracy–efficiency trade-off. On core general benchmarks, Step 3.5 Flash achieves 88.2 on BBH (within 0.5 of the best) and 85.8 on MMLU. Notably, Step 3.5 Flash reaches 31.6 on SimpleQA, outperforming DeepSeek-V3.2-Exp Base (27.0) while using only 196B total parameters versus 671B (i.e., ∼3.4× total parameters), highlighting stronger capability density per parameter budget. Step 3.5 Flash further demonstrates strong coding capabilities, including 81.1 on HumanEval, 67.7 on MultiPL-E HumanEval and 58.0 on MultiPL-E MBPP. Overall, these results show that Step 3.5 Flash delivers high strong performance per activated compute, providing a solid foundation for downstream reasoning and agentic post-training.
 
 
 
-**评测结果。** Tab. 4 汇总 Step 3.5 Flash 在通用推理，数学，代码与中文基准上的预训练评测。尽管仅激活 11B（总参 196B），仍与明显更大的稀疏基线（15–37B 激活；309–1043B 总参）大体可比，展现强准确率–效率权衡。核心通用基准上 BBH 88.2（距最优 0.5 内），MMLU 85.8。尤其 SimpleQA 31.6，高于 DeepSeek-V3.2-Exp Base (27.0)，而总参仅 196B 对 671B（约 ∼3.4×），突出每参数预算的能力密度。编码侧亦强：HumanEval 81.1, MultiPL-E HumanEval 67.7, MultiPL-E MBPP 58.0。总体表明 Step 3.5 Flash 在每激活算力上交付强表现，为下游推理与 agent 后训练提供扎实底座。
+**评测结果.** Tab. 4 汇总 Step 3.5 Flash 在通用推理, 数学, 代码与中文基准上的预训练评测. 尽管仅激活 11B (总参 196B), 仍与明显更大的稀疏基线 (15–37B 激活; 309–1043B 总参) 大体可比, 展现强准确率–效率权衡. 核心通用基准上 BBH 88.2 (距最优 0.5 内), MMLU 85.8. 尤其 SimpleQA 31.6, 高于 DeepSeek-V3.2-Exp Base (27.0), 而总参仅 196B 对 671B (约 ∼3.4×), 突出每参数预算的能力密度. 编码侧亦强: HumanEval 81.1, MultiPL-E HumanEval 67.7, MultiPL-E MBPP 58.0. 总体表明 Step 3.5 Flash 在每激活算力上交付强表现, 为下游推理与 agent 后训练提供扎实底座.
 
-> **看表：** 页 22 Tab. 4 把 SimpleQA 31.6 写成相对 DeepSeek-V3.2-Exp Base 27.0 的胜场，并强调总参约 1/3.4。同表对 Kimi-K2 Base 的 SimpleQA 35.3 与 MMLU-Pro 69.2（本稿 62.3）是否仍落在 「 broadly competitive」 口径内？
-> 是。正文用 「broadly competitive」 与 「strong accuracy–efficiency trade-off」，不是逐格全胜。Kimi-K2 Base 总参 1043B / 激活 32B，若干知识格更高属同表可见落差；引用时应保留激活 / 总参分列，不要改写成对所有更大模型全面领先。
+> **看表:** 页 22 Tab. 4 把 SimpleQA 31.6 写成相对 DeepSeek-V3.2-Exp Base 27.0 的胜场, 并强调总参约 1/3.4. 同表对 Kimi-K2 Base 的 SimpleQA 35.3 与 MMLU-Pro 69.2 (本稿 62.3) 是否仍落在 「 broadly competitive」 口径内?
+> 是. 正文用 「broadly competitive」 与 「strong accuracy–efficiency trade-off」, 不是逐格全胜. Kimi-K2 Base 总参 1043B / 激活 32B, 若干知识格更高属同表可见落差; 引用时应保留激活 / 总参分列, 不要改写成对所有更大模型全面领先.
 
 <!-- page 23 of 67 -->
 
@@ -990,28 +990,28 @@ We evaluate Step 3.5 Flash on representative benchmarks, including the reasoning
 
 
 
-在代表性基准上评测 Step 3.5 Flash，含推理向 HLE（文本子集）[154], MMLU-Pro [139]，GPQA-Diamond [142]，AIME2025 [10]，HMMT [11]，IMO-AnswerBench [91]；编码相关 LiveCodeBench-v6 (2024.08–2025.05) [12], CF-Div2-Stepfun<sup>4</sup>，SWE-Bench Verified [13]，SWE-Bench Multilingual [14]；agent 系列 τ²-Bench [15], Terminal-Bench 2.0 [16], GAIA [19], BrowseComp [17]，xbench-DeepSearch [20]，BrowseComp-zh [18]，RESEARCHRUBRICS [21]；通用 ArenaHard v2 [155]，IFBench [156]，MultiChallenge [157]；以及长上下文 LongBench v2 [158], MRCR [159]<sup>5</sup>, FRAMES [160], RepoQA [161].
+在代表性基准上评测 Step 3.5 Flash, 含推理向 HLE (文本子集) [154], MMLU-Pro [139], GPQA-Diamond [142], AIME2025 [10], HMMT [11], IMO-AnswerBench [91]; 编码相关 LiveCodeBench-v6 (2024.08–2025.05) [12], CF-Div2-Stepfun<sup>4</sup>, SWE-Bench Verified [13], SWE-Bench Multilingual [14]; agent 系列 τ²-Bench [15], Terminal-Bench 2.0 [16], GAIA [19], BrowseComp [17], xbench-DeepSearch [20], BrowseComp-zh [18], RESEARCHRUBRICS [21]; 通用 ArenaHard v2 [155], IFBench [156], MultiChallenge [157]; 以及长上下文 LongBench v2 [158], MRCR [159]<sup>5</sup>, FRAMES [160], RepoQA [161].
 
 We further investigate the test-time scaling properties of Step 3.5 Flash on reasoning, general, and long-context benchmarks by adopting the **Parallel Coordinated Reasoning (PaCoRe)** paradigm [42]. Leveraging Step 3.5 Flash’s extreme inference efficiency, this approach decouples reasoning capacity from context limitations by launching parallel reasoning trajectories and synthesizing their insights into higher-fidelity solutions via multi round coordination. Specifically, we employ a multi-round PaCoRe trajectory configuration as $\vec { K } = [ 4 , 4 , 4 , 4 ] _ { \circ }$ , yielding significant gains across benchmarks.
 
 
 
-我们进一步用 **Parallel Coordinated Reasoning (PaCoRe)** [42] 考察 Step 3.5 Flash 在推理 / 通用 / 长上下文上的 TestingTime (test-time scaling) 性质。借其极端推理效率，该方法通过并行推理轨迹与多轮协调合成，把推理能力与上下文限制解耦。具体采用多轮配置 $\vec{K}=[4,4,4,4]$，在多项基准上带来显著增益。
+我们进一步用 **Parallel Coordinated Reasoning (PaCoRe)** [42] 考察 Step 3.5 Flash 在推理 / 通用 / 长上下文上的 TestingTime (test-time scaling) 性质. 借其极端推理效率, 该方法通过并行推理轨迹与多轮协调合成, 把推理能力与上下文限制解耦. 具体采用多轮配置 $\vec{K}=[4,4,4,4]$, 在多项基准上带来显著增益.
 
 We maintain a maximum sequence length of 256k, using the default decoding configuration with decoding temperature and top-p of 1.0. And we apply YaRN [162] with a scaling factor of 2.0 on top of the original 128k positional embeddings, restricting it to full-attention layers only. We report pass@1 accuracy for all approaches based on average performance of multiple independent generations per problem: 64 for AIME 2025, HMMT 2025 Feb., and HMMT 2025 Nov.; 8 for IMO-AnswerBench, LiveCodeBench, GPQA-Diamond, and MultiChallenge; 1 for HLE and 4 runs for all other benchmarks. More details are provided in Appendix E.2.
 
 
 
-最大序列长 256k，默认解码 temperature / top-p 均为 1.0。在原 128k 位置编码上对 Full 注意力层施加 YaRN [162] 缩放因子 2.0。所有方法报 pass@1，按每题多次独立生成平均：AIME 2025 / HMMT 2025 Feb. / HMMT 2025 Nov。为 64 次；IMO-AnswerBench / LiveCodeBench / GPQA-Diamond / MultiChallenge 为 8 次；HLE 为 1 次；其余基准 4 次。更多细节见附录 E.2。
+最大序列长 256k, 默认解码 temperature / top-p 均为 1.0. 在原 128k 位置编码上对 Full 注意力层施加 YaRN [162] 缩放因子 2.0. 所有方法报 pass@1, 按每题多次独立生成平均: AIME 2025 / HMMT 2025 Feb. / HMMT 2025 Nov. 为 64 次; IMO-AnswerBench / LiveCodeBench / GPQA-Diamond / MultiChallenge 为 8 次; HLE 为 1 次; 其余基准 4 次. 更多细节见附录 E.2.
 
-> **再看：** §6.2 的 PaCoRe（$\vec{K}=[4,4,4,4]$，YaRN 2.0，最长 256k）是评测期 TestingTime；§5.2.3 轨迹掩码界 [0.996, 1.001] 是 RL 训练超参。二者是同一阶段的同一套过滤吗？
-> 不是。§5.2.3 约束 rollout / actor 更新时哪些轨迹可进梯度；§6.2 描述推理侧并行协调与位置外推。正文没有把 PaCoRe 写成 MIS-PO 掩码的延续或同一超参表的下一列。
+> **再看:** §6.2 的 PaCoRe ($\vec{K}=[4,4,4,4]$, YaRN 2.0, 最长 256k) 是评测期 TestingTime; §5.2.3 轨迹掩码界 [0.996, 1.001] 是 RL 训练超参. 二者是同一阶段的同一套过滤吗?
+> 不是. §5.2.3 约束 rollout / actor 更新时哪些轨迹可进梯度; §6.2 描述推理侧并行协调与位置外推. 正文没有把 PaCoRe 写成 MIS-PO 掩码的延续或同一超参表的下一列.
 
 **Evaluation Results.** Table 5 presents a comprehensive comparison of Step 3.5 Flash against a broad set of strong baselines across reasoning, code agents, general agents, long-context understanding, and general capability benchmarks. Despite activating only 11B parameters (196B total), Step 3.5 Flash demonstrates strong performance across a wide range of tasks, particularly excelling on reasoningintensive benchmarks such as AIME 2025, HMMT 2025 Feb., HMMT 2025 Nov., IMO-AnswerBench, and LiveCodeBench-v6. It consistently outperforms open-source models with larger parameter counts and achieves performance on par with frontier models such as GPT-5.2 xHigh and Gemini 3.0 Pro. Notably, Step 3.5 Flash achieves strong results on agentic evaluations, including SWE-Bench Verified, Terminal-Bench 2.0, BrowseComp (with Context Manager), GAIA, and $\tau ^ { 2 } .$ -Bench, highlighting robust tool-use and long-horizon decision-making capabilities.
 
 
 
-**评测结果。** Tab. 5 给出 Step 3.5 Flash 相对广谱强基线在推理，代码 agent，通用 agent，长上下文与通用能力上的综合对照。尽管仅激活 11B（总参 196B），在大范围任务上表现强劲，尤其在 AIME 2025，HMMT 2025 Feb./Nov.，IMO-AnswerBench，LiveCodeBench-v6 等推理密集基准上突出。稳定优于更大参数量的开源模型，并与 GPT-5.2 xHigh / Gemini 3.0 Pro 等前沿模型同档。Agent 评测上（SWE-Bench Verified, Terminal-Bench 2.0, BrowseComp with Context Manager, GAIA, τ²-Bench）亦强，突出稳健工具使用与长程决策能力。
+**评测结果.** Tab. 5 给出 Step 3.5 Flash 相对广谱强基线在推理, 代码 agent, 通用 agent, 长上下文与通用能力上的综合对照. 尽管仅激活 11B (总参 196B), 在大范围任务上表现强劲, 尤其在 AIME 2025, HMMT 2025 Feb./Nov., IMO-AnswerBench, LiveCodeBench-v6 等推理密集基准上突出. 稳定优于更大参数量的开源模型, 并与 GPT-5.2 xHigh / Gemini 3.0 Pro 等前沿模型同档. Agent 评测上 (SWE-Bench Verified, Terminal-Bench 2.0, BrowseComp with Context Manager, GAIA, τ²-Bench) 亦强, 突出稳健工具使用与长程决策能力.
 
 ## 7. Limitations 局限
 
@@ -1019,13 +1019,13 @@ We maintain a maximum sequence length of 256k, using the default decoding config
 
 
 
-**Token 效率。** Step 3.5 Flash 达到前沿级智能，但目前仍需比 Gemini 3.0 Pro 更长的生成轨迹才能达到可比质量。下一步将剪枝压缩思考过程以提效，同时保持同等竞争力。
+**Token 效率.** Step 3.5 Flash 达到前沿级智能, 但目前仍需比 Gemini 3.0 Pro 更长的生成轨迹才能达到可比质量. 下一步将剪枝压缩思考过程以提效, 同时保持同等竞争力.
 
 **Efficient Universal Mastery.** We aim to unify generalist versatility with deep domain expertise. To achieve this efficiently, we are advancing variants of on-policy distillation, allowing the model to internalize expert behaviors with higher sample efficiency.
 
 
 
-**高效通才精通。** 目标是统一通才广度与深域专长。为高效达成，正推进 on-policy distillation 变体，使模型以更高样本效率内化专家行为。
+**高效通才精通.** 目标是统一通才广度与深域专长. 为高效达成, 正推进 on-policy distillation 变体, 使模型以更高样本效率内化专家行为.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>4</sup>https://huggingface.co/datasets/stepfun-ai/CF-Div2-Stepfun</span></small>
 
@@ -1071,25 +1071,25 @@ We maintain a maximum sequence length of 256k, using the default decoding config
 
 Table 5: Comparison between Step 3.5 Flash and closed/open models. \* denotes cases where the original score was unavailable or inferior to our reproduced result; we therefore report results evaluated under the same test conditions as Step 3.5 Flash for fair comparison. † indicates scores quoted from non-official sources, including technical reports, or independent evaluation platforms. Our evaluation on HLE focuses on the text-only subset. BrowseComp (w. Ctx Manage) denotes the evaluation of BrowseComp with a Context Management enabled.
 
-表 5: Step 3.5 Flash 与闭源 / 开源模型对照。\* 表示原分不可得或弱于我们复现，故在与 Step 3.5 Flash 相同条件下复评。† 表示引自非官方来源（技术报告或独立评测平台）。HLE 评测聚焦纯文本子集。BrowseComp (w. Ctx Manage) 表示启用 Context Management 的 BrowseComp 评测。
+表 5: Step 3.5 Flash 与闭源 / 开源模型对照. \* 表示原分不可得或弱于我们复现, 故在与 Step 3.5 Flash 相同条件下复评. † 表示引自非官方来源 (技术报告或独立评测平台). HLE 评测聚焦纯文本子集. BrowseComp (w. Ctx Manage) 表示启用 Context Management 的 BrowseComp 评测.
 
 **RL for Open-World Agentic Tasks.** While Step 3.5 Flash demonstrates competitive performance on academic agentic benchmarks, the next frontier of agentic AI necessitates the application of RL to intricate, expert-level tasks found in professional work, advanced engineering, and scientific research. Solving these challenges is a prerequisite for deploying agents capable of genuine autonomy.
 
 
 
-**面向开放世界 Agent 任务的 RL.** Step 3.5 Flash 在学术 agent 基准上已具竞争力，但 agent AI 的下一前沿要求把 RL 用到专业工作，高阶工程与科研中的复杂专家级任务。解决这些挑战是部署真正自治 agent 的前提。
+**面向开放世界 Agent 任务的 RL.** Step 3.5 Flash 在学术 agent 基准上已具竞争力, 但 agent AI 的下一前沿要求把 RL 用到专业工作, 高阶工程与科研中的复杂专家级任务. 解决这些挑战是部署真正自治 agent 的前提.
 
 **Operational Scope and Constraints.** Step 3.5 Flash is tailored for coding and work-centric tasks, but may experience reduced stability during distribution shifts. This typically occurs in highly specialized domains or long-horizon, multi-turn dialogues, where the model may exhibit repetitive reasoning, mixed-language outputs, or inconsistencies in time and identity awareness.
 
 
 
-**运行范围与约束。** Step 3.5 Flash 面向编码与工作中心任务，但在分布漂移时可能稳定性下降。这常见于高度专项域或长程多轮对话：模型可能出现重复推理，混语输出，或时间 / 身份意识不一致。
+**运行范围与约束.** Step 3.5 Flash 面向编码与工作中心任务, 但在分布漂移时可能稳定性下降. 这常见于高度专项域或长程多轮对话: 模型可能出现重复推理, 混语输出, 或时间 / 身份意识不一致.
 
-> **拆开：** 页 24 表头 OCR 把激活/总参写成 「1119 / B6B」。同页正文与 Tab. 4 规格行能否把该格还原成 11B / 196B?
-> 能。§6.2 与 Abstract 反复写激活 11B / 总参 196B; Tab. 4 规格行同值。「1119 B6B」 是抓取表头乱码，不是第二套官方规格。精读与引用必须以正文规格为准。
+> **拆开:** 页 24 表头 OCR 把激活/总参写成 「1119 / B6B」. 同页正文与 Tab. 4 规格行能否把该格还原成 11B / 196B?
+> 能. §6.2 与 Abstract 反复写激活 11B / 总参 196B; Tab. 4 规格行同值. 「1119 B6B」 是抓取表头乱码, 不是第二套官方规格. 精读与引用必须以正文规格为准.
 
-> **确认：** 同表 IFBench Vanilla 67.4 / PaCoRe 56.8 下跌。正文有没有把 PaCoRe 写成对所有基准单调增益？
-> 没有。§6.2 写 PaCoRe 「yielding significant gains across benchmarks」，但 Tab. 5 同表可见 IFBench 与 MRCR-8needle (28.8→26.3) 下跌。TestingTime 档应分列引用，不能改写成全面抬分。
+> **确认:** 同表 IFBench Vanilla 67.4 / PaCoRe 56.8 下跌. 正文有没有把 PaCoRe 写成对所有基准单调增益?
+> 没有. §6.2 写 PaCoRe 「yielding significant gains across benchmarks」, 但 Tab. 5 同表可见 IFBench 与 MRCR-8needle (28.8→26.3) 下跌. TestingTime 档应分列引用, 不能改写成全面抬分.
 
 <!-- page 25 of 67 -->
 
@@ -1157,8 +1157,8 @@ Zhiheng Hu Zidong Yang Zili Wang Ziqi Ren Zixin Zhang Zixuan Wang
 
 26
 
-> **回看：** Introduction 写 OpenRouter 首周约 170 tokens/s (Hopper)。后文评测或局限有没有补充并发，批次或可持续窗口，还是只保留这一句部署口碑？
-> 只保留这一句。§6–§7 不再给 OpenRouter 吞吐复测。引用时应标成 Introduction 的在线部署观察，不要外推成 Tab. 5 协议下的官方服务 SLA。
+> **回看:** Introduction 写 OpenRouter 首周约 170 tokens/s (Hopper). 后文评测或局限有没有补充并发, 批次或可持续窗口, 还是只保留这一句部署口碑?
+> 只保留这一句. §6–§7 不再给 OpenRouter 吞吐复测. 引用时应标成 Introduction 的在线部署观察, 不要外推成 Tab. 5 协议下的官方服务 SLA.
 
 <!-- page 27 of 67 -->
 
@@ -1194,17 +1194,17 @@ Table 6 summarizes key architecture hyper-parameters of Step 3.5 Flash.
 | Total params (with MTP3) | 198B |
 | Activated params / token (with MTP3) | 13B |
 
-Table 6: Key architecture hyper-parameters of Step 3.5 Flash。“Activated params” are reported per token and exclude embedding/output matrices.
+Table 6: Key architecture hyper-parameters of Step 3.5 Flash. “Activated params” are reported per token and exclude embedding/output matrices.
 
 ### A.1. Head-wise Gated Attention
 
 Each attention head is assigned a lightweight, input-dependent scalar gate, allowing the model to dynamically modulate information flow across the hybrid layout with negligible computational overhead.
 
-我们为每个注意力头配一个轻量的，依赖输入的标量门，让模型能以可忽略的额外计算，在混合布局中动态调节信息流。
+我们为每个注意力头配一个轻量的, 依赖输入的标量门, 让模型能以可忽略的额外计算, 在混合布局中动态调节信息流.
 
 Formally, for a (single) head of dimension 𝑑, let $\boldsymbol { q } _ { i } , \boldsymbol { k } _ { j } , \boldsymbol { \upsilon } _ { j } \in \mathbb { R } ^ { d }$ denote the query vector at position 𝑖 and the key and value vectors at position $j ,$ the scaled dot-product scores $s ,$ the corresponding attention weights 𝛼 and the outputs 𝒚 are computed as follows:
 
-形式化地，对维度为 𝑑 的（单个）头，记位置 𝑖 的 query 向量与位置 $j$ 的 key，value 向量分别为 $\boldsymbol { q } _ { i } , \boldsymbol { k } _ { j } , \boldsymbol { \upsilon } _ { j } \in \mathbb { R } ^ { d }$，缩放点积分数 $s$，对应的注意力权重 𝛼 与输出 𝒚 计算如下：
+形式化地, 对维度为 𝑑 的 (单个) 头, 记位置 𝑖 的 query 向量与位置 $j$ 的 key, value 向量分别为 $\boldsymbol { q } _ { i } , \boldsymbol { k } _ { j } , \boldsymbol { \upsilon } _ { j } \in \mathbb { R } ^ { d }$, 缩放点积分数 $s$, 对应的注意力权重 𝛼 与输出 𝒚 计算如下:
 
 $$
 s _ {i, j} = \left\langle \boldsymbol {q} _ {i}, \boldsymbol {k} _ {j} \right\rangle / \sqrt {d}, \quad Z _ {i} = \sum_ {j ^ {\prime}} \exp \left(s _ {i, j ^ {\prime}}\right), \quad \alpha_ {i, j} = \exp \left(s _ {i, j}\right) / Z _ {i}, \quad \boldsymbol {y} _ {i} = \sum_ {j} \alpha_ {i, j} \boldsymbol {v} _ {j}.\tag{4}
@@ -1214,7 +1214,7 @@ $$
 
 Given the input representation $x _ { i }$ at position $i ,$ we compute a head-wise gate $g _ { i }$ to modulate the head output:
 
-给定位置 $i$ 的输入表示 $x _ { i }$，我们计算一个 head-wise 门 $g _ { i }$ 来调节该头的输出：
+给定位置 $i$ 的输入表示 $x _ { i }$, 我们计算一个 head-wise 门 $g _ { i }$ 来调节该头的输出:
 
 $$
 g _ {i} = \sigma (\boldsymbol {w} _ {g a t e} ^ {\top} \boldsymbol {x} _ {i}), \qquad o _ {i} ^ {\text {gate}} = g _ {i} \boldsymbol {y} _ {i},\tag{5}
@@ -1222,11 +1222,11 @@ $$
 
 where 𝜎(·) is the sigmoid function and $w _ { g a t e }$ is a learnable vector.
 
-其中 𝜎(·) 是 sigmoid 函数，$w _ { g a t e }$ 是可学习向量。
+其中 𝜎(·) 是 sigmoid 函数, $w _ { g a t e }$ 是可学习向量.
 
 Head-wise gated attention can be viewed as introducing an input-dependent sink token [33] into the attention mechanism. Substituting $\begin{array} { r } { \sigma ( g ) = \frac { 1 } { 1 + \exp ( - g ) } } \end{array}$ into Equation 5, we have
 
-Head-wise 门控注意力可以看作向注意力机制引入了一个依赖输入的 sink token [33]。将 $\begin{array} { r } { \sigma ( g ) = \frac { 1 } { 1 + \exp ( - g ) } } \end{array}$ 代入式 5，可得
+Head-wise 门控注意力可以看作向注意力机制引入了一个依赖输入的 sink token [33]. 将 $\begin{array} { r } { \sigma ( g ) = \frac { 1 } { 1 + \exp ( - g ) } } \end{array}$ 代入式 5, 可得
 
 $$
 \left| \boldsymbol {o} _ {i} ^ {\text {gate}} = \sum_ {j} \frac {\exp (s _ {i , j})}{Z _ {i} + e ^ {- g _ {i}} Z _ {i}} \boldsymbol {v} _ {j}, \right.\tag{6}
@@ -1234,13 +1234,13 @@ $$
 
 where exp $( - g _ { i } ) Z _ { i }$ acts as an input-dependent sink mass in the softmax normalizer. As shown in Section 2.3, this adaptive formulation consistently outperforms fixed (input-independent) sink tokens.
 
-其中 exp $( - g _ { i } ) Z _ { i }$ 在 softmax 归一化项中扮演依赖输入的 sink mass。如 §2.3 所示，这种自适应形式稳定优于固定的（与输入无关的）sink token.
+其中 exp $( - g _ { i } ) Z _ { i }$ 在 softmax 归一化项中扮演依赖输入的 sink mass. 如 §2.3 所示, 这种自适应形式稳定优于固定的 (与输入无关的) sink token.
 
 ### A.2. Speed Benchmark of Attention Enhancements
 
 We conduct simulations with MTP-3 to evaluate the latency overheads of the two enhancements under an ideal workload. Table 7 presents the relative increment of theoretical FLOPs and latency. Increasing the number of query heads in SWA slightly raises the FLOPs but has less impact on latency. This is due to a query-to-𝑘𝑣 ratio of 12, which keeps SWA in the IO-bound region, even when considering MTP-3. For head-wise gating, neither FLOPs nor latency has noticeable difference because of its lightweight.
 
-我们用 MTP-3 做仿真，评估这两项增强在理想负载下的延迟开销。Table 7 给出理论 FLOPs 与延迟的相对增量。增加 SWA 的 query head 数会略微抬高 FLOPs，但对延迟影响很小：query 对 𝑘𝑣 的比例为 12，即使计入 MTP-3，SWA 仍处在 IO-bound 区间。head-wise 门控则因足够轻量，FLOPs 与延迟都几乎无变化。
+我们用 MTP-3 做仿真, 评估这两项增强在理想负载下的延迟开销. Table 7 给出理论 FLOPs 与延迟的相对增量. 增加 SWA 的 query head 数会略微抬高 FLOPs, 但对延迟影响很小: query 对 𝑘𝑣 的比例为 12, 即使计入 MTP-3, SWA 仍处在 IO-bound 区间. head-wise 门控则因足够轻量, FLOPs 与延迟都几乎无变化.
 
 <table><tr><td rowspan="2">Backbone</td><td rowspan="2">SWA Heads</td><td rowspan="2">Setting</td><td colspan="2">Decode (FLOPs / Lat.)</td><td colspan="2">Prefill (FLOPs / Lat.)</td></tr><tr><td>64k</td><td>256k</td><td>64k</td><td>256k</td></tr><tr><td rowspan="4">Step 3.5 Flash (S3F1 layout)</td><td>64</td><td>no gate</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td></tr><tr><td>96</td><td>no gate</td><td>1.02 / 1.01</td><td>1.01 / 1.00</td><td>1.08 / 1.06</td><td>1.04 / 1.03</td></tr><tr><td>64</td><td>head-wise</td><td>1.00 / 1.00</td><td>1.00 / 1.00</td><td>1.00 / 1.02</td><td>1.00 / 1.01</td></tr><tr><td>96</td><td>head-wise</td><td>1.02 / 1.02</td><td>1.01 / 1.00</td><td>1.08 / 1.08</td><td>1.04 / 1.05</td></tr></table>
 
@@ -1256,11 +1256,11 @@ Table 8: Relative FLOPs cost across different backbones and attention patterns. 
 
 Recent literature [163–165] has shown both theoretically and empirically that pre-pending structured metadata to pre-training sequences can improve data efficiency and accelerate convergence: by exposing high-level attributes $( e . g .$ , modality, language, domain), metadata provides global cues that reduce uncertainty about the upcoming content and thus makes next-token prediction easier.
 
-近期文献 [163-165] 从理论与实验两方面表明，在预训练序列前部拼接结构化元数据能提升数据效率并加速收敛：元数据暴露模态，语言，领域等高层属性，提供全局线索，降低对后续内容的不确定性，从而让 next-token prediction 更容易。
+近期文献 [163-165] 从理论与实验两方面表明, 在预训练序列前部拼接结构化元数据能提升数据效率并加速收敛: 元数据暴露模态, 语言, 领域等高层属性, 提供全局线索, 降低对后续内容的不确定性, 从而让 next-token prediction 更容易.
 
 Motivated by this paradigm, we associate each training example with a metadata string M in a human-readable format, including content type (e.g., Code, Book, Paper, Web), language $( e . g . , \mathrm { E N } , Z \mathrm { H } )$ domain, and source. We then prepend M to the original token sequence x, forming a single training sequence $\mathbf { s } = [ \mathbf { M } ; \mathbf { x } ]$ . During pre-training, the model is trained to maximize the likelihood of s:
 
-受这一范式启发，我们为每个训练样本关联一段人类可读格式的元数据字符串 M，内容包括内容类型（如 Code, Book, Paper, Web），语言 $( e . g . , \mathrm { E N } , Z \mathrm { H } )$，领域与来源。然后把 M 拼到原始 token 序列 x 之前，构成单一训练序列 $\mathbf { s } = [ \mathbf { M } ; \mathbf { x } ]$。预训练期间，模型最大化 s 的似然：
+受这一范式启发, 我们为每个训练样本关联一段人类可读格式的元数据字符串 M, 内容包括内容类型 (如 Code, Book, Paper, Web), 语言 $( e . g . , \mathrm { E N } , Z \mathrm { H } )$, 领域与来源. 然后把 M 拼到原始 token 序列 x 之前, 构成单一训练序列 $\mathbf { s } = [ \mathbf { M } ; \mathbf { x } ]$. 预训练期间, 模型最大化 s 的似然:
 
 $$
 \mathcal {L} _ {\text {full}} (\theta) = - \sum_ {t = 1} ^ {| \mathbf {s} |} \log P _ {\theta} (s _ {t} \mid \mathbf {s} _ {<   t}).\tag{7}
@@ -1268,7 +1268,7 @@ $$
 
 After an initial phase of approximately 3.8T tokens, we keep M in the context but mask out its positions from the loss while continuing to predict the payload tokens:
 
-在约 3.8T token 的初始阶段之后，我们把 M 保留在上下文中，但把它的位置从 loss 中掩掉，同时继续预测正文 token:
+在约 3.8T token 的初始阶段之后, 我们把 M 保留在上下文中, 但把它的位置从 loss 中掩掉, 同时继续预测正文 token:
 
 $$
 \mathcal {L} _ {\mathrm{mask}} (\theta) = - \sum_ {t = | \mathbf {M} | + 1} ^ {| \mathbf {s} |} \log P _ {\theta} (s _ {t} \mid \mathbf {s} _ {<   t}) = - \sum_ {t = 1} ^ {| \mathbf {x} |} \log P _ {\theta} (x _ {t} \mid \mathbf {M}, \mathbf {x} _ {<   t}).\tag{8}
@@ -1276,41 +1276,41 @@ $$
 
 We hypothesize that by this stage the model has already learned to effectively use metadata as a conditioning signal. Masking the metadata loss therefore allocates optimization pressure entirely to the payload tokens, while still benefiting from the explicit conditioning on data characteristics.
 
-我们推测，到这一阶段模型已经学会把元数据用作条件信号。因此把元数据的 loss 掩掉，能把优化压力完全分配给正文 token，同时仍享受对数据特征的显式条件化带来的收益。
+我们推测, 到这一阶段模型已经学会把元数据用作条件信号. 因此把元数据的 loss 掩掉, 能把优化压力完全分配给正文 token, 同时仍享受对数据特征的显式条件化带来的收益.
 
 ### A.4. Pre-training Ablations Details
 
 We conduct controlled pre-training ablations to isolate the effects of (i) different hybrid attention layout and (ii) sink tokens versus head-wise gated attention.
 
-我们做了可控的预训练消融，分离出（i）不同混合注意力布局与（ii）sink token 对比 head-wise 门控这两项因素的影响。
+我们做了可控的预训练消融, 分离出 (i) 不同混合注意力布局与 (ii) sink token 对比 head-wise 门控这两项因素的影响.
 
 **Hybrid attention layout.** We adopt a **30B-A3B MoE** architecture to evaluate the downstream impact of different hybrid attention layout under a fixed token budget. The training follows a strict, multi-stage pipeline: a 30B-token warmup phase, followed by 1T tokens of main pre-training, a 300Btoken cooldown phase, and an additional 100B-token long-context specialization stage—totaling approximately 1.4T tokens. Supervised fine-tuning (SFT) is then performed on a 0.1× downsampled dataset. Full training details are provided in Table 9.
 
-**混合注意力布局。** 我们采用 **30B-A3B MoE** 架构，在固定 token 预算下评估不同混合注意力布局对下游的影响。训练遵循严格的多阶段流水线：30B token 的 warmup，接着 1T token 的主预训练，300B token 的 cooldown，以及额外的 100B token 长上下文专门化阶段，合计约 1.4T token。然后在 0.1× 下采样数据集上执行 SFT。完整训练细节见 Table 9。
+**混合注意力布局.** 我们采用 **30B-A3B MoE** 架构, 在固定 token 预算下评估不同混合注意力布局对下游的影响. 训练遵循严格的多阶段流水线: 30B token 的 warmup, 接着 1T token 的主预训练, 300B token 的 cooldown, 以及额外的 100B token 长上下文专门化阶段, 合计约 1.4T token. 然后在 0.1× 下采样数据集上执行 SFT. 完整训练细节见 Table 9.
 
 **Gate vs. sink (scaled setting).** We pre-train a **100B-A10B MoE** model for ∼250B tokens to compare sink tokens and head-wise gating under a larger-scale regime.
 
-**Gate vs. sink（放大设置）。** 我们预训练一个 **100B-A10B MoE** 模型约 250B token，在更大规模 regime 下对比 sink token 与 head-wise 门控。
+**Gate vs. sink (放大设置).** 我们预训练一个 **100B-A10B MoE** 模型约 250B token, 在更大规模 regime 下对比 sink token 与 head-wise 门控.
 
 Pre-training results of the architectural ablations are presented in Tables 2 and 10. We employ the evaluation protocols detailed in Section 6.1. Specifically, GPQA [142] is evaluated using 5-shot prompting, while HumanEval [166] and MBPP [167] utilize 3-shot prompting.
 
-架构消融的预训练结果见 Table 2 与 Table 10。评测采用 §6.1 所述协议：GPQA [142] 用 5-shot prompting，HumanEval [166] 与 MBPP [167] 用 3-shot prompting。
+架构消融的预训练结果见 Table 2 与 Table 10. 评测采用 §6.1 所述协议: GPQA [142] 用 5-shot prompting, HumanEval [166] 与 MBPP [167] 用 3-shot prompting.
 
 The post-training results in Table 1 are aggregated as follows:
 
-Table 1 中的后训练结果按如下方式聚合：
+Table 1 中的后训练结果按如下方式聚合:
 
 • **Reasoning:** The average of MMLU-Pro [139], GPQA-Diamond [142], LiveCodeBench v6 [12], and LiveBench [168].
 
-• **推理：** MMLU-Pro [139]，GPQA-Diamond [142]，LiveCodeBench v6 [12] 与 LiveBench [168] 的均值。
+• **推理:** MMLU-Pro [139], GPQA-Diamond [142], LiveCodeBench v6 [12] 与 LiveBench [168] 的均值.
 
 • **Math:** The average of AIME 2024 [169], AIME 2025 [170], HMMT 2025 Feb. [171], and CNMO 2024<sup>6</sup>.
 
-• **数学：** AIME 2024 [169], AIME 2025 [170], HMMT 2025 Feb. [171] 与 CNMO 2024 的均值。
+• **数学:** AIME 2024 [169], AIME 2025 [170], HMMT 2025 Feb. [171] 与 CNMO 2024 的均值.
 
 • **Code:** The average of CF-Div2-Stepfun and LiveCodeBench v6 [12].
 
-• **代码：** CF-Div2-Stepfun 与 LiveCodeBench v6 [12] 的均值。
+• **代码:** CF-Div2-Stepfun 与 LiveCodeBench v6 [12] 的均值.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>6</sup>https://www.cms.org.cn/Home/comp/comp/cid/12.html</span></small>
 
@@ -1324,15 +1324,15 @@ Table 9: Training configuration for the 100B-A10B and the 30B-A3B architecture a
 
 • **General:** The average of IFEval [172], IFBench [156], WildBench [173], Arena-Hard [155], and MultiChallenge [157].
 
-• **通用：** IFEval [172]，IFBench [156]，WildBench [173]，Arena-Hard [155] 与 MultiChallenge [157] 的均值。
+• **通用:** IFEval [172], IFBench [156], WildBench [173], Arena-Hard [155] 与 MultiChallenge [157] 的均值.
 
 • **LongCtx:** The average of six benchmark-level averages: (i) the average score across context lengths 8k-128k on RULER [174], (ii) the average score over the Short and Medium subsets of Long-Bench v2 [158], (iii) the average score across context lengths 8k-128k on HELMET [175], (iv) GSM-Infinite [176], (v) the overall score on FRAMES [160], and (vi) the overall score on RepoQA [161].
 
-• **长上下文：** 六项基准级均值的平均：（i）RULER [174] 上 8k-128k 各上下文长度得分的均值；（ii）Long-Bench v2 [158] 的 Short 与 Medium 子集得分的均值；（iii）HELMET [175] 上 8k-128k 各上下文长度得分的均值；（iv）GSM-Infinite [176]; (v) FRAMES [160] 的总分；（vi）RepoQA [161] 的总分。
+• **长上下文:** 六项基准级均值的平均: (i) RULER [174] 上 8k-128k 各上下文长度得分的均值; (ii) Long-Bench v2 [158] 的 Short 与 Medium 子集得分的均值; (iii) HELMET [175] 上 8k-128k 各上下文长度得分的均值; (iv) GSM-Infinite [176]; (v) FRAMES [160] 的总分; (vi) RepoQA [161] 的总分.
 
 Tables 1 and 10 show that the vanilla 𝑆3𝐹1 layout underperforms the full-attention baseline on general pre-training benchmarks and consistently degrades SFT quality (e.g., BBH: −4.3; SFT Avg: −0.7). Increasing the number of SWA query heads substantially closes this gap (e.g., MMLU-Pro: +3.7; SFT Reasoning: +0.4), with only a minor regression on SFT Code (−0.6), while matching or exceeding the full-attention baseline on several metrics. Table 2 further demonstrates that head-wise gated attention yields an average improvement from 62.5 to 64.4 (+1.9) on the sink token metric.
 
-Table 1 与 Table 10 显示，原始 𝑆3𝐹1 布局在通用预训练基准上不如全注意力基线，并持续拉低 SFT 质量（如 BBH: −4.3; SFT Avg: −0.7）。增加 SWA query head 数能大幅弥合这一差距（如 MMLU-Pro: +3.7; SFT Reasoning: +0.4），仅在 SFT Code 上有轻微回退（−0.6），同时在若干指标上追平甚至超过全注意力基线。Table 2 进一步表明，head-wise 门控注意力在 sink token 指标上把平均分从 62.5 提升到 64.4 (+1.9).
+Table 1 与 Table 10 显示, 原始 𝑆3𝐹1 布局在通用预训练基准上不如全注意力基线, 并持续拉低 SFT 质量 (如 BBH: −4.3; SFT Avg: −0.7). 增加 SWA query head 数能大幅弥合这一差距 (如 MMLU-Pro: +3.7; SFT Reasoning: +0.4), 仅在 SFT Code 上有轻微回退 (−0.6), 同时在若干指标上追平甚至超过全注意力基线. Table 2 进一步表明, head-wise 门控注意力在 sink token 指标上把平均分从 62.5 提升到 64.4 (+1.9).
 
 ## B. Detail Analysis of Localized Activation Blow-up
 
@@ -1346,7 +1346,7 @@ Table 10: Pre-training evaluation results for hybrid attention layout ablations 
 
 modeling [60, 177]. Another pattern is that (2) some high-frequency bi-grams trigger extremely large activations on the first token, which represents the failure mode we are investigating. The pattern is triggered by several factors: The frequency of a bi-gram’s occurrence is sufficiently high, and the MoE FFN is fine-grained enough, allowing an expert to specialize in that bi-gram without being regulated by the load balancing mechanism. This specialization serves as a shortcut: once the expert is activated, the output becomes deterministic, and other networks no longer influence the prediction. While finding shortcuts is a reasonable approach to minimizing loss, in a MoE model with a pre-norm architecture [76, 77], there is a straightforward, pathological solution for achieving such deterministic predictions, as outlined next. The model’s final representation is the sum of the outputs from all layers, followed by a RMSNorm. This can be expressed as a combination of the outputs from the experts and the attention layers:
 
-为探究局部 activation blow-up 的根因，我们分析了在所有层中触发最大专家激活的 token，识别出两种不同的大激活模式：（1）特定词法项目，如特殊 token 与标点，通常引发较大但不剧烈的激活，在较浅层尤为常见。我们不把这一模式视为故障：它没有快速增长，而且可能是语义建模 [60, 177] 的内部机制。（2）另一种模式是某些高频二元组（bi-gram）在第一个 token 上触发极大的激活，这正是我们要研究的故障模式。该模式由几个因素共同触发：二元组出现频率足够高，MoE FFN 粒度又足够细，使得某个专家可以专门处理该二元组而不受负载均衡机制约束。这种专门化构成一条捷径：一旦该专家被激活，输出就变成确定性的，其他网络不再影响预测。找捷径本身是降低 loss 的合理途径，但在 pre-norm 架构 [76, 77] 的 MoE 模型中，存在一个直接的病态方案可以实现这种确定性预测，如下所述。模型的最终表示是所有层输出之和再经 RMSNorm，可写成专家输出与注意力层输出的组合：
+为探究局部 activation blow-up 的根因, 我们分析了在所有层中触发最大专家激活的 token, 识别出两种不同的大激活模式: (1) 特定词法项目, 如特殊 token 与标点, 通常引发较大但不剧烈的激活, 在较浅层尤为常见. 我们不把这一模式视为故障: 它没有快速增长, 而且可能是语义建模 [60, 177] 的内部机制. (2) 另一种模式是某些高频二元组 (bi-gram) 在第一个 token 上触发极大的激活, 这正是我们要研究的故障模式. 该模式由几个因素共同触发: 二元组出现频率足够高, MoE FFN 粒度又足够细, 使得某个专家可以专门处理该二元组而不受负载均衡机制约束. 这种专门化构成一条捷径: 一旦该专家被激活, 输出就变成确定性的, 其他网络不再影响预测. 找捷径本身是降低 loss 的合理途径, 但在 pre-norm 架构 [76, 77] 的 MoE 模型中, 存在一个直接的病态方案可以实现这种确定性预测, 如下所述. 模型的最终表示是所有层输出之和再经 RMSNorm, 可写成专家输出与注意力层输出的组合:
 
 $$
 \boldsymbol {h} _ {\text {final}} = \operatorname{RMSNorm} (\underbrace {\text {expert} _ {\text {outlier}}} _ {\boldsymbol {h} _ {\text {outlier}}} + \underbrace {\sum_ {l = 1} ^ {L} \operatorname{attn} _ {l} + \sum_ {\substack {(l , e) \text {is not a outlier}\\ }} \text {expert} _ {l , e}} _ {\boldsymbol {h} _ {\text {others}}}),\tag{9}
@@ -1354,7 +1354,7 @@ $$
 
 where attn, MoE, expert represent the output hidden states of their respective modules, while 𝐿 and 𝐸 denote the number of layers and experts, respectively. The straightforward solution is to boundlessly enlarge $\mathbf { e x p e r t } _ { \mathrm { o u t l i e r } } ,$ then
 
-其中 attn，MoE，expert 分别表示各模块的输出隐状态，𝐿 与 𝐸 表示层数与专家数。那个直接的方案就是把 $\mathbf { e x p e r t } _ { \mathrm { o u t l i e r } }$ 无约束地放大，于是
+其中 attn, MoE, expert 分别表示各模块的输出隐状态, 𝐿 与 𝐸 表示层数与专家数. 那个直接的方案就是把 $\mathbf { e x p e r t } _ { \mathrm { o u t l i e r } }$ 无约束地放大, 于是
 
 $$
 \text {RMSNorm} (\boldsymbol {h} _ {\text {final}}) = \lim _ {c \to \infty} \text {RMSNorm} (c \cdot \hat {\boldsymbol {h}} _ {\text {outlier}} + \boldsymbol {h} _ {\text {others}}) = \text {RMSNorm} (\boldsymbol {h} _ {\text {outlier}}),\tag{10}
@@ -1362,11 +1362,11 @@ $$
 
 where we decouple $h _ { \mathrm { o u t l i e r } }$ to the magnitude 𝑐 and the unit vector $\hat { h } _ { \mathrm { o u t l i e r } }$ denoting the direction.
 
-其中我们把 $h _ { \mathrm { o u t l i e r } }$ 分解为幅度 𝑐 与表示方向的单位向量 $\hat { h } _ { \mathrm { o u t l i e r } }$。
+其中我们把 $h _ { \mathrm { o u t l i e r } }$ 分解为幅度 𝑐 与表示方向的单位向量 $\hat { h } _ { \mathrm { o u t l i e r } }$.
 
 SwiGLU [78], the expert architecture in Step 3.5 Flash, provides a way to generate large outputs, even when the weight decay effectively suppresses the weight norms. SwiGLU is defined as follows:
 
-Step 3.5 Flash 的专家结构 SwiGLU [78] 提供了一条产生大输出的途径，即使 weight decay 已有效抑制权重范数。SwiGLU 定义如下：
+Step 3.5 Flash 的专家结构 SwiGLU [78] 提供了一条产生大输出的途径, 即使 weight decay 已有效抑制权重范数. SwiGLU 定义如下:
 
 $$
 \mathrm{SwiGLU} (\boldsymbol {x}) = \boldsymbol {W} _ {\mathrm{down}} \left(\mathrm{SiLU} (\boldsymbol {W} _ {\mathrm{gate}} \boldsymbol {x}) \cdot \boldsymbol {W} _ {\mathrm{up}} \boldsymbol {x}\right).\tag{11}
@@ -1380,13 +1380,13 @@ $$
 
 in outlier experts. It can be achieved only if $\mathrm { S i L U } ( \boldsymbol { W } _ { \mathrm { g a t e } } \boldsymbol { x } )$ and $W _ { \mathtt { u p } } { \pmb x }$ are highly aligned and concentrate on a very limited number of dimensions. Consequently, only a limited number of rows from $W _ { \mathtt { u p } }$ are utilized due to the sparse input. This observation leads us to prefer activation clipping over weight clipping, as activation’s numerical property directly contribute to the blow-up and the sparsity, and activation clipping can promptly address these issues. Besides, activation clipping has negligible negative effects, as well-behaved activations rarely exceed the threshold.
 
-我们分析了 $W _ { \mathrm { g a t e } } { \pmb x }$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 的激活范数，发现离群专家与正常专家之间没有显著差异。但逐元素相乘产生了异常输出，在离群专家中满足上式的近似等号。这只有当 $\mathrm { S i L U } ( \boldsymbol { W } _ { \mathrm { g a t e } } \boldsymbol { x } )$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 高度对齐且集中在极少维度上时才可能发生。其结果是，由于输入稀疏，$W _ { \mathtt { u p } }$ 只有少量行被用到。这一观察让我们倾向于 activation clipping 而非 weight clipping：激活的数值特性直接促成 blow-up 与稀疏，activation clipping 能立刻处理这两个问题。何况 activation clipping 的负面作用可以忽略，因为行为正常的激活很少超过阈值。
+我们分析了 $W _ { \mathrm { g a t e } } { \pmb x }$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 的激活范数, 发现离群专家与正常专家之间没有显著差异. 但逐元素相乘产生了异常输出, 在离群专家中满足上式的近似等号. 这只有当 $\mathrm { S i L U } ( \boldsymbol { W } _ { \mathrm { g a t e } } \boldsymbol { x } )$ 与 $W _ { \mathtt { u p } } { \pmb x }$ 高度对齐且集中在极少维度上时才可能发生. 其结果是, 由于输入稀疏, $W _ { \mathtt { u p } }$ 只有少量行被用到. 这一观察让我们倾向于 activation clipping 而非 weight clipping: 激活的数值特性直接促成 blow-up 与稀疏, activation clipping 能立刻处理这两个问题. 何况 activation clipping 的负面作用可以忽略, 因为行为正常的激活很少超过阈值.
 
 <!-- page 32 of 67 -->
 
 When using the Muon optimizer, gated linear units, such as SwiGLU, are susceptible to logit explosion. This vulnerability arises from similar mechanisms that cause explosion in attention, as reported in [5]. For an outlier expert specialized to some specific bi-gram, hidden states routed to it are expected to be closely aligned to its router embedding. We validate this by inputting the router embedding into a outlier expert and directly predicting outputs based on this expert’s output. The predicted distribution aligns with that of the real data and the entire network’s performance. Combined with the overly single training target (to predict the second token in the bi-gram), we argue that gradients w.r.t. the outlier expert’s parameters, $W _ { \mathrm { g a t e } } , W _ { \mathrm { u p } }$ and $W _ { \mathrm { d o w n } } ,$ are not only abnormally low rank (denoted as 𝑟), but also consistently point in a direction that emphasizes the magnitude as analyzed in the first factor, without rotation. Let the update matrices of a parameter matrix $\overleftarrow { W } \in \mathbb { R } ^ { N \times N }$ to be
 
-使用 Muon 优化器时，门控线性单元（如 SwiGLU）容易发生 logit 爆炸。这一脆弱性源于与 [5] 所报注意力爆炸相似的机制。对专门处理某二元组的离群专家而言，路由给它的隐状态预计与其 router embedding 高度对齐。我们验证了这一点：把 router embedding 输入离群专家，直接基于该专家的输出做预测，所得分布与真实数据以及整个网络的表现一致。再叠加过于单一的训练目标（预测二元组第二个 token），我们认为对离群专家参数 $W _ { \mathrm { g a t e } } , W _ { \mathrm { u p } }$，$W _ { \mathrm { d o w n } }$ 的梯度不仅秩异常低（记为 𝑟），而且如第一个因素所分析的，始终指向强调幅度的方向，不发生旋转。令参数矩阵 $\overleftarrow { W } \in \mathbb { R } ^ { N \times N }$ 的更新矩阵为
+使用 Muon 优化器时, 门控线性单元 (如 SwiGLU) 容易发生 logit 爆炸. 这一脆弱性源于与 [5] 所报注意力爆炸相似的机制. 对专门处理某二元组的离群专家而言, 路由给它的隐状态预计与其 router embedding 高度对齐. 我们验证了这一点: 把 router embedding 输入离群专家, 直接基于该专家的输出做预测, 所得分布与真实数据以及整个网络的表现一致. 再叠加过于单一的训练目标 (预测二元组第二个 token), 我们认为对离群专家参数 $W _ { \mathrm { g a t e } } , W _ { \mathrm { u p } }$, $W _ { \mathrm { d o w n } }$ 的梯度不仅秩异常低 (记为 𝑟), 而且如第一个因素所分析的, 始终指向强调幅度的方向, 不发生旋转. 令参数矩阵 $\overleftarrow { W } \in \mathbb { R } ^ { N \times N }$ 的更新矩阵为
 
 $$
 \Delta \boldsymbol {W} = \sum_ {i} \sigma_ {i} \boldsymbol {u} _ {i} \boldsymbol {v} _ {i} ^ {\top} = \underbrace {\sum_ {i = 1} ^ {r} \sigma_ {i} \boldsymbol {u} _ {i} \boldsymbol {v} _ {i} ^ {\top}} _ {\text {low rank signal}} + \underbrace {\sum_ {j = r + 1} ^ {N} \sigma_ {j} \boldsymbol {u} _ {j} \boldsymbol {v} _ {j} ^ {\top}} _ {\text {noise}}\tag{13}
@@ -1394,7 +1394,7 @@ $$
 
 Accumulating updates over optimization steps will rapidly increase the singular value of the low-rank signals, resulting in an explosion of the weight parameter. In the GLU structure, $\| \mathrm{SiLU}(\boldsymbol{W}_{\mathrm{gate}} \boldsymbol{x}) \cdot \boldsymbol{W}_{\mathrm{up}} \boldsymbol{x} \|$ squares the spectral norm in our strong alignment case, making the progress more sharp. Additionally, Muon completely eliminates the influence of gradient magnitudes. During the blow-up process, RMSNorm reduces the gradients of large inputs. When using the Adam optimizer, its 𝜖 acts as a threshold to filter out small gradients during the learning rate adaptation, which can hinder the progress. In contrast, Muon consistently and effectively orthogonalizes the gradients, resulting in more aggressive updates.
 
-在优化步上累积更新会迅速抬高低秩信号的奇异值，导致权重参数爆炸。在 GLU 结构中，我们的强对齐情形把 $\| \mathrm{SiLU}(\boldsymbol{W}_{\mathrm{gate}} \boldsymbol{x}) \cdot \boldsymbol{W}_{\mathrm{up}} \boldsymbol{x} \|$ 的谱范数平方，使这一进程更加陡峭。此外，Muon 完全抹除了梯度幅度的影响。blow-up 过程中，RMSNorm 会减小大输入对应的梯度。用 Adam 时，其 𝜖 在学习率自适应中充当过滤小梯度的阈值，反而能阻碍这一进程；Muon 则会持续有效地正交化梯度，更新因此更加激进。
+在优化步上累积更新会迅速抬高低秩信号的奇异值, 导致权重参数爆炸. 在 GLU 结构中, 我们的强对齐情形把 $\| \mathrm{SiLU}(\boldsymbol{W}_{\mathrm{gate}} \boldsymbol{x}) \cdot \boldsymbol{W}_{\mathrm{up}} \boldsymbol{x} \|$ 的谱范数平方, 使这一进程更加陡峭. 此外, Muon 完全抹除了梯度幅度的影响. blow-up 过程中, RMSNorm 会减小大输入对应的梯度. 用 Adam 时, 其 𝜖 在学习率自适应中充当过滤小梯度的阈值, 反而能阻碍这一进程; Muon 则会持续有效地正交化梯度, 更新因此更加激进.
 
 ## C. Step Pre-training Data Foundation
 
@@ -1404,15 +1404,15 @@ Accumulating updates over optimization steps will rapidly increase the singular 
 
 Beyond standard web-scale datasets (e.g., CommonCrawl), we develop **StepCrawl**, an in-house crawling and curation system designed to acquire high-quality and diverse tokens at scale. StepCrawl serves as a primary data source for both high-signal web pages and document-like content (notably PDFs), which frequently contain long-form, high-information-density material.
 
-除了常见的网页级数据集（如 CommonCrawl），我们自研了 **StepCrawl** — 一套站内爬取与筛选系统，目标是规模化获取高质量，多样化的 token. StepCrawl 同时是两类内容的主要来源：高信号网页与文档类内容（尤其是 PDF），后者常含长篇，高信息密度材料。
+除了常见的网页级数据集 (如 CommonCrawl), 我们自研了 **StepCrawl** — 一套站内爬取与筛选系统, 目标是规模化获取高质量, 多样化的 token. StepCrawl 同时是两类内容的主要来源: 高信号网页与文档类内容 (尤其是 PDF), 后者常含长篇, 高信息密度材料.
 
 A key component of StepCrawl is a site and URL selection layer powered by a WebOrganizer-style model [178]. We adapt the capabilities introduced in WebOrganizer and further fine-tune a version tailored to our pipeline. During crawling, each fetched web page is analyzed by this model, forming a lightweight LM-in-the-loop feedback cycle that (i) filters SEO-driven and other low-utility pages, and (ii) guides crawl-budget allocation by balancing site categories (e.g., preventing disproportionate crawling of tool and e-commerce sites) to preserve corpus diversity and reduce topical skew. In practice, StepCrawl processes on the order of ∼1B pages per day under this quality- and diversity aware scheduling policy.
 
-StepCrawl 的一个关键组件是受 WebOrganizer [178] 启发的站点与 URL 选择层。我们复用了 WebOrganizer 引入的能力，并针对自己的流水线微调了一个专属版本。爬取时，每个抓到的网页都由该模型分析，构成一个轻量的 LM-in-the-loop 反馈回路：（i）过滤 SEO 驱动及其他低价值页面；（ii）通过平衡站点类别（如避免对工具类，电商类站点过度爬取）指导爬取预算分配，保持语料多样性，减少主题倾斜。实践中，在这一质量与多样性感知的调度策略下，StepCrawl 每天处理约 10 亿个页面。
+StepCrawl 的一个关键组件是受 WebOrganizer [178] 启发的站点与 URL 选择层. 我们复用了 WebOrganizer 引入的能力, 并针对自己的流水线微调了一个专属版本. 爬取时, 每个抓到的网页都由该模型分析, 构成一个轻量的 LM-in-the-loop 反馈回路: (i) 过滤 SEO 驱动及其他低价值页面; (ii) 通过平衡站点类别 (如避免对工具类, 电商类站点过度爬取) 指导爬取预算分配, 保持语料多样性, 减少主题倾斜. 实践中, 在这一质量与多样性感知的调度策略下, StepCrawl 每天处理约 10 亿个页面.
 
 All crawling activities strictly adhere to robots.txt and site-specific access policies. The collected content is subsequently passed through a multi-stage filtering process (quality scoring, deduplication, and sanitization), ensuring that only high-utility and policy-compliant data are retained for training.
 
-所有爬取活动严格遵守 robots.txt 与站点访问策略。收集的内容随后经过多阶段过滤（质量打分，去重，清洗），只有高价值且合规的数据才被保留用于训练。
+所有爬取活动严格遵守 robots.txt 与站点访问策略. 收集的内容随后经过多阶段过滤 (质量打分, 去重, 清洗), 只有高价值且合规的数据才被保留用于训练.
 
 <!-- page 33 of 67 -->
 
@@ -1420,15 +1420,15 @@ All crawling activities strictly adhere to robots.txt and site-specific access p
 
 **Quality stratification.** Inspired by Nemotron-CC [179]-style quality bucketing, we divide the internal web data into quality tiers and sample preferentially from higher tiers. We label each document using an ensemble of six lightweight scorers/classifiers and ensemble the tier assignments across scorers. In the final recipe, we keep High/Medium-High/Medium and discard Medium-Low/Low, which substantially improves token efficiency in ablations. For book and paper corpora, we apply the same stratification but restrict retention to High/Medium-High tiers exclusively during the annealing stage to maximize diversity. In addition to the shared six-scorer ensemble, we integrate additional domainspecific filters targeting STEM and knowledge-dense content, and down-sample overrepresented domains to ensure balanced representation.
 
-**质量分层。** 受 Nemotron-CC [179] 式质量分桶启发，我们把内部网页数据划分为质量层级，并优先从高层级采样。我们用六个轻量打分器/分类器组成的集成为每篇文档标注层级，并对各打分器的层级判定做集成。最终配方保留 High/Medium-High/Medium 层，丢弃 Medium-Low/Low 层，这在消融中显著提升了 token 效率。对书籍与论文语料应用同样的分层，但在 annealing 阶段只保留 High/Medium-High 层，以最大化多样性。除共享的六打分器集成外，我们还加入了面向 STEM 与知识密集内容的领域专用过滤器，并对占比过高的领域降采样，保证表示均衡。
+**质量分层.** 受 Nemotron-CC [179] 式质量分桶启发, 我们把内部网页数据划分为质量层级, 并优先从高层级采样. 我们用六个轻量打分器/分类器组成的集成为每篇文档标注层级, 并对各打分器的层级判定做集成. 最终配方保留 High/Medium-High/Medium 层, 丢弃 Medium-Low/Low 层, 这在消融中显著提升了 token 效率. 对书籍与论文语料应用同样的分层, 但在 annealing 阶段只保留 High/Medium-High 层, 以最大化多样性. 除共享的六打分器集成外, 我们还加入了面向 STEM 与知识密集内容的领域专用过滤器, 并对占比过高的领域降采样, 保证表示均衡.
 
 **Embedding-based cluster rebalancing.** We leverage embedding-based corpus balancing as a principled way to further reduce redundancy and mitigate distribution skew. Specifically, we embed large-scale Chinese/English web data, run k-means clustering (100k+ clusters), and down-sample clusters with disproportionate mass. In ablations, this cluster-level rebalancing in the cooldown stage improves a broad set of benchmarks.
 
-**基于 embedding 的聚类再平衡。** 我们把基于 embedding 的语料平衡作为进一步降低冗余，缓解分布倾斜的原则性方法。具体地，对大规模中英文网页数据做 embedding，跑 k-means 聚类（10 万以上簇），对质量占比失衡的簇做降采样。消融显示，cooldown 阶段做这种簇级再平衡能提升一大批基准的表现。
+**基于 embedding 的聚类再平衡.** 我们把基于 embedding 的语料平衡作为进一步降低冗余, 缓解分布倾斜的原则性方法. 具体地, 对大规模中英文网页数据做 embedding, 跑 k-means 聚类 (10 万以上簇), 对质量占比失衡的簇做降采样. 消融显示, cooldown 阶段做这种簇级再平衡能提升一大批基准的表现.
 
 **Knowledge-Intensive Mining and Augmentation.** We construct a dedicated knowledge subset using a lightweight two-stage pipeline built on the shared embedding representation described above. First, a curated inventory of high-value entities, concepts, and relations is used to retrieve knowledge-dense documents and passages from the full corpus in embedding space; these candidates are ranked by a knowledge-density model and simple coverage heuristics. Second, for a portion of the retrieved content, we apply targeted transformations such as controlled rephrasing and QA synthesis to improve learnability. The resulting samples are mixed back into the training mixture to increase effective knowledge signal density. We observe consistent gains from this pipeline in ablations, while a detailed causal analysis of its benefits is left for future work.
 
-**知识密集挖掘与增强。** 我们用一条轻量的两阶段流水线构建专门的知识子集，基于上述共享 embedding 表示。第一阶段，用一份精选的高价值实体，概念，关系清单，在全语料的 embedding 空间中检索知识密集的文档与段落；这些候选再由知识密度模型与简单的覆盖启发式排序。第二阶段，对检索到的部分内容做有针对性的变换，如受控改写与 QA 合成，以提升可学习性。所得样本被混回训练配方，提高有效知识信号密度。消融中这一流水线带来稳定收益，其益处的详细因果分析留待 future work。
+**知识密集挖掘与增强.** 我们用一条轻量的两阶段流水线构建专门的知识子集, 基于上述共享 embedding 表示. 第一阶段, 用一份精选的高价值实体, 概念, 关系清单, 在全语料的 embedding 空间中检索知识密集的文档与段落; 这些候选再由知识密度模型与简单的覆盖启发式排序. 第二阶段, 对检索到的部分内容做有针对性的变换, 如受控改写与 QA 合成, 以提升可学习性. 所得样本被混回训练配方, 提高有效知识信号密度. 消融中这一流水线带来稳定收益, 其益处的详细因果分析留待 future work.
 
 ### C.2. Code Data
 
@@ -1436,45 +1436,45 @@ All crawling activities strictly adhere to robots.txt and site-specific access p
 
 We refine our internal programming dataset using a modified version of the OpenCoder filtering rules [80], introducing a calibrated relaxation to balance data quality and diversity. In our pipeline, applying OpenCoder filters generates a set of “hits” for each document, where each hit represents a violation of a heuristic rule (signaling potential noise). We categorize the corpus by these hit counts: hit0 for clean documents (zero violations), hit1 for one violation, and so on.
 
-我们用修改版 OpenCoder 过滤规则 [80] 精炼内部编程数据集，并引入一处校准过的放松，以平衡数据质量与多样性。在我们的流水线中，应用 OpenCoder 过滤器会为每篇文档产生一组 “hits”，每个 hit 代表违反一条启发式规则（意味着潜在噪声）。我们按 hit 数给语料分类：hit0 是干净文档（零违规），hit1 是一次违规，以此类推。
+我们用修改版 OpenCoder 过滤规则 [80] 精炼内部编程数据集, 并引入一处校准过的放松, 以平衡数据质量与多样性. 在我们的流水线中, 应用 OpenCoder 过滤器会为每篇文档产生一组 “hits”, 每个 hit 代表违反一条启发式规则 (意味着潜在噪声). 我们按 hit 数给语料分类: hit0 是干净文档 (零违规), hit1 是一次违规, 以此类推.
 
 Our internal ablations reveal a clear quality-diversity trade-off: strict filtering (e.g., hit0-only) overprunes the corpus, while no filtering introduces excessive noise. We find that the hit0–6 configuration (accepting documents with up to 6 violations) yields the best overall benchmark performance, retaining a wider variety of high-signal code compared to the original strict constraints.
 
-内部消融揭示出明显的质量-多样性权衡：过滤过严（如只留 hit0）会过度修剪语料，不过滤又引入过多噪声。我们发现 hit0-6 配置（接受最多 6 次违规的文档）的整体基准表现最好，相比原始的严格约束保留了更多样的高信号代码。
+内部消融揭示出明显的质量-多样性权衡: 过滤过严 (如只留 hit0) 会过度修剪语料, 不过滤又引入过多噪声. 我们发现 hit0-6 配置 (接受最多 6 次违规的文档) 的整体基准表现最好, 相比原始的严格约束保留了更多样的高信号代码.
 
 #### C.2.2. PR/Issue/Commit Data
 
 To enhance software engineering capabilities, we construct a comprehensive dataset from GitHub repositories with over 10 stars, comprising PRs, issues, and commits. We apply strict filtering on repository popularity and content quality, and use LLMs to generate missing issue descriptions, resulting in a 5-million-sample foundation. From this, we derive four training subsets:
 
-为增强软件工程能力，我们从 star 数超过 10 的 GitHub 仓库构建一个综合数据集，包含 PR，issue 与 commit。我们对仓库热度与内容质量做严格过滤，并用 LLM 补全缺失的 issue 描述，得到一个 500 万样本的基础集，再从中派生四个训练子集：
+为增强软件工程能力, 我们从 star 数超过 10 的 GitHub 仓库构建一个综合数据集, 包含 PR, issue 与 commit. 我们对仓库热度与内容质量做严格过滤, 并用 LLM 补全缺失的 issue 描述, 得到一个 500 万样本的基础集, 再从中派生四个训练子集:
 
 <!-- page 34 of 67 -->
 
 **(1) Base PR/Issue/Commit Data:** We crawl data via GHArchive and GitHub API, including full commit histories. We extract changes and validate a small portion of samples against git diff ground truth, then filter to 20+ mainstream languages (e.g., Python, Java, C++). We strictly deduplicate against SWE-Bench Verified [13] and SWE-Bench Multilingual [14] to prevent leakage.
 
-**(1) 基础 PR/Issue/Commit 数据：** 我们通过 GHArchive 与 GitHub API 爬取数据，包含完整 commit 历史。我们提取变更，并拿一小部分样本对照 git diff 真值做校验，然后过滤到 20 余种主流语言（如 Python, Java, C++）。我们针对 SWE-Bench Verified [13] 与 SWE-Bench Multilingual [14] 做严格去重，防止泄漏。
+**(1) 基础 PR/Issue/Commit 数据:** 我们通过 GHArchive 与 GitHub API 爬取数据, 包含完整 commit 历史. 我们提取变更, 并拿一小部分样本对照 git diff 真值做校验, 然后过滤到 20 余种主流语言 (如 Python, Java, C++). 我们针对 SWE-Bench Verified [13] 与 SWE-Bench Multilingual [14] 做严格去重, 防止泄漏.
 
 **(2) Concatenated PR-Dialogue Data (90B tokens):** We generate 90B tokens of code-editing training data by applying two Agentless-inspired templates [82]: (1) File localization: Given a problem description and repository structure, identify target file paths; (2) Code repair: Given a problem description and file content, generate precise modifications via SEARCH/REPLACE blocks.
 
-**(2) 拼接式 PR 对话数据（90B tokens）：** 我们应用两个受 Agentless 启发的模板 [82] 生成 90B token 的代码编辑训练数据：（1）文件定位：给定问题描述与仓库结构，找出目标文件路径；（2）代码修复：给定问题描述与文件内容，通过 SEARCH/REPLACE 块生成精确修改。
+**(2) 拼接式 PR 对话数据 (90B tokens):** 我们应用两个受 Agentless 启发的模板 [82] 生成 90B token 的代码编辑训练数据: (1) 文件定位: 给定问题描述与仓库结构, 找出目标文件路径; (2) 代码修复: 给定问题描述与文件内容, 通过 SEARCH/REPLACE 块生成精确修改.
 
 We integrate this 90B code-editing data into two training phases with phase-specific masking strategies. In the annealing stage of pre-training, only template scaffolding is masked; in mid-training, the data is converted to chat dialogs with user prompts masked. Internal ablations show consistent gains over SWE-Bench Verified and SWE-Bench Multilingual in the cooldown stage and mid-training.
 
-我们把这 90B 代码编辑数据融入两个训练阶段，并采用阶段特定的掩码策略：预训练 annealing 阶段只掩掉模板脚手架；mid-training 阶段把数据转成对话形式，掩掉用户 prompt。内部消融显示，在 cooldown 阶段与 mid-training 加入后，SWE-Bench Verified 与 SWE-Bench Multilingual 均有稳定提升。
+我们把这 90B 代码编辑数据融入两个训练阶段, 并采用阶段特定的掩码策略: 预训练 annealing 阶段只掩掉模板脚手架; mid-training 阶段把数据转成对话形式, 掩掉用户 prompt. 内部消融显示, 在 cooldown 阶段与 mid-training 加入后, SWE-Bench Verified 与 SWE-Bench Multilingual 均有稳定提升.
 
 **(3) Rewritten Reasoning-Oriented Data (12B tokens):** From the Python subset of our base dataset, we derive bug-fix samples via LLM change-type annotation. We apply two concise rewriting strategies: (1) Reasoning reconstruction: an LLM reconstructs the PR author’s problem-solving process (problem analysis, root cause identification, solution design, and code implementation), injected into PR-Dialogue format. Hallucinated/inconsistent traces are filtered via rule-based and LLM verification. (2) Active Reading notebooks: PR/issue/commit data is converted into structured learning outlines (motivation, root causes, design decisions, insights), then synthesized into coherent technical notes. These rewritten datasets (∼12B tokens) are incorporated during mid-training, yielding further gains on SWE-Bench Verified.
 
-**(3) 改写为推理导向的数据（12B tokens）：** 从基础数据集的 Python 子集出发，我们通过 LLM 变更类型标注派生 bug-fix 样本，并应用两种简洁的改写策略：（1）推理重构：由 LLM 重构 PR 作者解决问题的过程（问题分析，根因定位，方案设计，代码实现），注入 PR 对话格式；幻觉或与事实不一致的轨迹由规则与 LLM 双重校验过滤。（2）主动阅读笔记：把 PR/issue/commit 数据转成结构化学习大纲（动机，根因，设计决策，洞见），再综合成连贯的技术笔记。这批改写数据集（约 12B tokens）在 mid-training 混入，在 SWE-Bench Verified 上带来进一步提升。
+**(3) 改写为推理导向的数据 (12B tokens):** 从基础数据集的 Python 子集出发, 我们通过 LLM 变更类型标注派生 bug-fix 样本, 并应用两种简洁的改写策略: (1) 推理重构: 由 LLM 重构 PR 作者解决问题的过程 (问题分析, 根因定位, 方案设计, 代码实现), 注入 PR 对话格式; 幻觉或与事实不一致的轨迹由规则与 LLM 双重校验过滤. (2) 主动阅读笔记: 把 PR/issue/commit 数据转成结构化学习大纲 (动机, 根因, 设计决策, 洞见), 再综合成连贯的技术笔记. 这批改写数据集 (约 12B tokens) 在 mid-training 混入, 在 SWE-Bench Verified 上带来进一步提升.
 
 **(4) Environment-based Seed Data.** We curate executable environments derived from raw PR, issue, and commit records using the environment building pipeline described in Appendix E.2.2. Candidate samples are rigorously filtered to ensure test-patch inclusion and validated via strict rule-based criteria to guarantee environmental reproducibility. Furthermore, selected issues undergo targeted rewriting to augment data quality and coverage. The resulting dataset comprises hundreds of thousands of seed samples, including problem descriptions, code changes, and test functions, and serves as the foundational bedrock for enhancing agentic coding capabilities, driving significant performance gains in downstream agent tasks.
 
-**(4) 基于环境的种子数据。** 我们用附录 E.2.2 的环境构建流水线，从原始 PR，issue，commit 记录整理出可执行环境。候选样本经严格过滤以确保包含 test patch，并靠严格的规则标准验证，保证环境可复现。此外，精选的 issue 会经过有针对性的改写，提升数据质量与覆盖面。所得数据集包含数十万种子样本，涵盖问题描述，代码变更与测试函数，是增强 Agent 编码能力的基石，显著推高了下游 Agent 任务的表现。
+**(4) 基于环境的种子数据.** 我们用附录 E.2.2 的环境构建流水线, 从原始 PR, issue, commit 记录整理出可执行环境. 候选样本经严格过滤以确保包含 test patch, 并靠严格的规则标准验证, 保证环境可复现. 此外, 精选的 issue 会经过有针对性的改写, 提升数据质量与覆盖面. 所得数据集包含数十万种子样本, 涵盖问题描述, 代码变更与测试函数, 是增强 Agent 编码能力的基石, 显著推高了下游 Agent 任务的表现.
 
 ### C.3. Mathematics & STEM Data
 
 To enhance reasoning capabilities and elicit intelligence from knowledge, we curate a large-scale mathematics and STEM dataset. Beyond the standard Common Crawl data used in prior works [180, 181], we leverage our in-house StepCrawl system to harvest a massive scale of additional mathematics related data. Specifically, we implement a filtering pipeline inspired by MegaMath [181], utilizing an ensemble of internal classifiers alongside FineMath [182]. This allows us to retain hundreds of billions of mathematics-related tokens distinct from Common Crawl. We further collect a diverse 100Msample educational dataset encompassing exercises, quizzes, and instructional content. This collection bridges the gap between academic theory and professional application, covering domains from K-12 mathematics/physics/chemistry and humanities to adult vocational exams (CPA, Legal). Early-stage experiments confirm that this problem-solving data is crucial for optimizing token efficiency during pre-training.
 
-为增强推理能力并从知识中激发智能，我们整理了一个大规模数学与 STEM 数据集。除了沿用前人工作 [180, 181] 的标准 Common Crawl 数据，我们还用自研 StepCrawl 系统采集额外的大规模数学相关数据。具体地，我们实现了受 MegaMath [181] 启发的过滤流水线，使用内部分类器集成并配合 FineMath [182]，由此保留下数千亿条不同于 Common Crawl 的数学相关 token。我们还收集了多样的 1 亿样本级教育数据集，涵盖习题，测验与教学内容。这批数据弥合了学术理论与职业应用之间的鸿沟，覆盖领域从 K-12 数学/物理/化学与人文学科，到成人职业考试（CPA，法律）。早期实验证实，这类解题数据对优化预训练 token 效率至关重要。
+为增强推理能力并从知识中激发智能, 我们整理了一个大规模数学与 STEM 数据集. 除了沿用前人工作 [180, 181] 的标准 Common Crawl 数据, 我们还用自研 StepCrawl 系统采集额外的大规模数学相关数据. 具体地, 我们实现了受 MegaMath [181] 启发的过滤流水线, 使用内部分类器集成并配合 FineMath [182], 由此保留下数千亿条不同于 Common Crawl 的数学相关 token. 我们还收集了多样的 1 亿样本级教育数据集, 涵盖习题, 测验与教学内容. 这批数据弥合了学术理论与职业应用之间的鸿沟, 覆盖领域从 K-12 数学/物理/化学与人文学科, 到成人职业考试 (CPA, 法律). 早期实验证实, 这类解题数据对优化预训练 token 效率至关重要.
 
 <!-- page 35 of 67 -->
 
@@ -1482,23 +1482,23 @@ To enhance reasoning capabilities and elicit intelligence from knowledge, we cur
 
 Our data construction and curation pipeline runs on a high-throughput in-house data infrastructure system designed for large-scale deduplication, mining, and model-inference filtering. We operate hybrid CPU/GPU clusters with distributed frameworks such as Spark and Ray to execute both large-volume processing (e.g., minhash-based deduplication) and model-driven curation workloads (e.g., embedding generation and classifier/LM inference), backed by a storage layer spanning object storage (OSS), HDFS, and JuiceFS for efficient reads/writes of raw corpora and intermediate artifacts.
 
-我们的数据构建与筛选流水线跑在自研的高吞吐数据基础设施上，它为大规模去重，挖掘与模型推理过滤而设计。我们使用混合 CPU/GPU 集群与 Spark，Ray 等分布式框架，既执行大批量处理（如基于 minhash 的去重），也执行模型驱动的筛选负载（如 embedding 生成与分类器/LM 推理）；存储层横跨对象存储（OSS），HDFS 与 JuiceFS，高效读写原始语料与中间产物。
+我们的数据构建与筛选流水线跑在自研的高吞吐数据基础设施上, 它为大规模去重, 挖掘与模型推理过滤而设计. 我们使用混合 CPU/GPU 集群与 Spark, Ray 等分布式框架, 既执行大批量处理 (如基于 minhash 的去重), 也执行模型驱动的筛选负载 (如 embedding 生成与分类器/LM 推理); 存储层横跨对象存储 (OSS), HDFS 与 JuiceFS, 高效读写原始语料与中间产物.
 
 ### C.5. Data Ablations Setting
 
 To rigorously assess data quality and the impact of curation strategies, we conduct an extensive ablation suite using the 30B-A3B MoE architecture trained with the Muon optimizer, consistent with the mainline settings (Table 9). Adhering to a strict token efficiency protocol, we set a fixed training budget for all experiments. Models are evaluated on the comprehensive benchmarks listed in Section 6.1, alongside a series of carefully designed held-out compression (perplexity) test sets. We observe that compression metrics often provide a more direct measure of knowledge capacity, offering signals complementary to mainstream benchmarks.
 
-为严格评估数据质量与筛选策略的影响，我们用 30B-A3B MoE 架构（Muon 优化器训练，与主线设置一致，见 Table 9）做了一套大规模消融。遵循严格的 token 效率协议，所有实验使用固定训练预算。模型在 §6.1 列出的综合基准上评测，同时配有一系列精心设计的留出压缩（perplexity）测试集。我们观察到，压缩指标往往更直接地度量知识容量，提供与主流基准互补的信号。
+为严格评估数据质量与筛选策略的影响, 我们用 30B-A3B MoE 架构 (Muon 优化器训练, 与主线设置一致, 见 Table 9) 做了一套大规模消融. 遵循严格的 token 效率协议, 所有实验使用固定训练预算. 模型在 §6.1 列出的综合基准上评测, 同时配有一系列精心设计的留出压缩 (perplexity) 测试集. 我们观察到, 压缩指标往往更直接地度量知识容量, 提供与主流基准互补的信号.
 
 Internal experiments on the 30B-A3B MoE model demonstrate its superior performance and stability compared to smaller proxies. While smaller models are computationally cheaper, they often fail to capture the nuances of complex reasoning and lack the capacity to memorize long-tail patterns, leading to an artificial bias towards data repetition. Empirically, the 30B-A3B size offers stronger stability and better fidelity to full-scale trends.
 
-30B-A3B MoE 模型的内部实验表明，它比更小的代理模型性能更稳，表现更优。小模型算起来便宜，但往往抓不住复杂推理的细微之处，也没有容量记住长尾模式，从而人为偏向数据重复。经验上，30B-A3B 的规模稳定性更强，对全尺度趋势的保真度更好。
+30B-A3B MoE 模型的内部实验表明, 它比更小的代理模型性能更稳, 表现更优. 小模型算起来便宜, 但往往抓不住复杂推理的细微之处, 也没有容量记住长尾模式, 从而人为偏向数据重复. 经验上, 30B-A3B 的规模稳定性更强, 对全尺度趋势的保真度更好.
 
 ## D. Post Training Details
 
 This section describes the post-training process that refines the base model into a high-performance agentic system, covering SFT with rigorous data processing and quality control, followed by large-scale RL to further improve reasoning, tool use, and generalization.
 
-本节介绍后训练流程：如何把基座模型精炼成高性能 Agent 系统，包括经过严格数据处理与质量控制的 SFT，以及进一步提升推理，工具使用与泛化能力的大规模 RL。
+本节介绍后训练流程: 如何把基座模型精炼成高性能 Agent 系统, 包括经过严格数据处理与质量控制的 SFT, 以及进一步提升推理, 工具使用与泛化能力的大规模 RL.
 
 ### D.1. SFT Details
 
@@ -1506,23 +1506,23 @@ This section describes the post-training process that refines the base model int
 
 Across all domains, we apply a unified data processing pipeline that emphasizes answer verifiability, reasoning quality, and execution realism. To ensure overall data integrity, the aggregated dataset undergoes a strict two-stage filtration process:
 
-跨所有领域，我们应用统一的数据处理流水线，强调答案可验证性，推理质量与执行真实性。为保证整体数据完整性，聚合后的数据集要经过严格的两阶段过滤：
+跨所有领域, 我们应用统一的数据处理流水线, 强调答案可验证性, 推理质量与执行真实性. 为保证整体数据完整性, 聚合后的数据集要经过严格的两阶段过滤:
 
 1. **Rule-based Filtering:** We eliminate low-quality data exhibiting degenerate patterns, such as infinite repetition, harmful content, and personally identifiable information.
 
-1. **基于规则的过滤：** 我们清除表现出退化模式的低质量数据，如无限重复，有害内容与个人可识别信息。
+1. **基于规则的过滤:** 我们清除表现出退化模式的低质量数据, 如无限重复, 有害内容与个人可识别信息.
 
 2. **Model-based Filtering:** We utilize specialized models to detect and filter out linguistically inconsistent data. By identifying and removing samples with unnatural language mixing, we significantly refine the dataset’s linguistic purity and overall quality.
 
-2. **基于模型的过滤：** 我们用专用模型检测并过滤语言上不一致的数据。通过识别并移除语言混杂不自然的样本，显著提升数据集的语言纯度与整体质量。
+2. **基于模型的过滤:** 我们用专用模型检测并过滤语言上不一致的数据. 通过识别并移除语言混杂不自然的样本, 显著提升数据集的语言纯度与整体质量.
 
 3. **Decontamination:** We conduct comprehensive benchmark decontamination to prevent test set leakage. This involves both exact matching (with digit masking to catch numerical modifications) and 𝑁-gram matching.
 
-3. **去污染：** 我们做全面的基准去污染，防止测试集泄漏。手段包括精确匹配（带数字掩码，以捕捉数值改动）与 𝑁-gram 匹配。
+3. **去污染:** 我们做全面的基准去污染, 防止测试集泄漏. 手段包括精确匹配 (带数字掩码, 以捕捉数值改动) 与 𝑁-gram 匹配.
 
 This process yields a final refined dataset of 871k samples, totaling 7.23B tokens.The detailed distribution of the SFT data is presented in Table 3.
 
-这一流程产出 87.1 万样本，共 7.23B token 的最终精炼数据集。SFT 数据的详细分布见 Table 3。
+这一流程产出 87.1 万样本, 共 7.23B token 的最终精炼数据集. SFT 数据的详细分布见 Table 3.
 
 <!-- page 36 of 67 -->
 
@@ -1530,23 +1530,23 @@ This process yields a final refined dataset of 871k samples, totaling 7.23B toke
 
 This section details the large-scale RL post-training, covering data curation, asynchronous search-agent training, and ablations on dense and MoE models.
 
-本节详述大规模 RL 后训练，覆盖数据筛选，异步搜索 Agent 训练，以及在 dense 与 MoE 模型上的消融。
+本节详述大规模 RL 后训练, 覆盖数据筛选, 异步搜索 Agent 训练, 以及在 dense 与 MoE 模型上的消融.
 
 #### D.2.1. Data Curation
 
 We curate the RL training dataset by aggregating problems from open-source collections and competition archives spanning competitive coding, STEM, and synthetic data for general RLVR training. To prevent data contamination, we strictly exclude problems from competitions held during 2024–2026. The dataset is further augmented with: (i) synthetic arithmetic problems involving 11–13 digit integers; (ii) a generator–validator pipeline that synthesizes additional test cases for coding tasks; and (iii) synthetic environments for general reasoning tasks, such as puzzle and instruction following.
 
-我们通过聚合开源题库与竞赛档案中的问题整理 RL 训练数据集，涵盖竞赛编程，STEM 与一般 RLVR 训练用合成数据。为防止数据污染，我们严格排除 2024-2026 年间举办的竞赛题目。数据集还做了如下扩充：（i）涉及 11-13 位整数的合成算术题；（ii）生成器-验证器流水线，为编程任务合成更多测试用例；（iii）面向一般推理任务的合成环境，如谜题与指令跟随。
+我们通过聚合开源题库与竞赛档案中的问题整理 RL 训练数据集, 涵盖竞赛编程, STEM 与一般 RLVR 训练用合成数据. 为防止数据污染, 我们严格排除 2024-2026 年间举办的竞赛题目. 数据集还做了如下扩充: (i) 涉及 11-13 位整数的合成算术题; (ii) 生成器-验证器流水线, 为编程任务合成更多测试用例; (iii) 面向一般推理任务的合成环境, 如谜题与指令跟随.
 
 We apply a two-stage filtering process. First, deterministic rule-based pruning removes prompts containing images, external links, or open-ended requirements without a unique final answer. Second, an accuracy-based filter excludes trivial or degenerate problems. During training, each batch is constructed by sampling from different domains according to predefined sampling probabilities.
 
-我们应用两阶段过滤。第一阶段，确定性的规则剪枝移除含图片，外部链接，或无唯一最终答案的开放式要求的 prompt。第二阶段，基于准确率的过滤器排除平凡或退化的问题。训练时，每个 batch 按预定义的采样概率从不同领域采样构成。
+我们应用两阶段过滤. 第一阶段, 确定性的规则剪枝移除含图片, 外部链接, 或无唯一最终答案的开放式要求的 prompt. 第二阶段, 基于准确率的过滤器排除平凡或退化的问题. 训练时, 每个 batch 按预定义的采样概率从不同领域采样构成.
 
 #### D.2.2. Reward System
 
 **Verifiable Rewards.** For STEM tasks, we employ gpt-oss-120b [33] as the verifier model, using the following structured prompt (originally in Chinese) to rigorously assess final-answer correctness. For coding tasks, we utilize sandboxes to validate code execution against test cases with soft reward.
 
-**可验证奖励。** 对 STEM 任务，我们用 gpt-oss-120b [33] 作为验证模型，用下面这个结构化 prompt（原为中文）严格评估最终答案的正确性。对编程任务，我们用沙箱对照测试用例验证代码执行，给予 soft reward。
+**可验证奖励.** 对 STEM 任务, 我们用 gpt-oss-120b [33] 作为验证模型, 用下面这个结构化 prompt (原为中文) 严格评估最终答案的正确性. 对编程任务, 我们用沙箱对照测试用例验证代码执行, 给予 soft reward.
 
 ```txt
 You are a strict grader. Below you are given the problem, the student's answer, and the reference answer. Please determine whether the student's answer is correct according to the rules below.
@@ -1602,7 +1602,7 @@ Figure 7: **Performance comparison between MIS-PO and GSPO.** The top figure (a)
 
 **MIS-PO vs. GSPO.** To rigorously validate the effectiveness of our method, we benchmark MIS-PO against GSPO [36] on both Dense and MoE architectures. We select GSPO as the primary baseline because it represents a competitive strategy for reducing the gradient variance inherent in importance sampling. In our implementation, we extend the original GSPO estimator to the actor-critic setting by integrating its Generalized Importance Sampling mechanism into the actor loss. Specifically, we replace the standard token-level importance sampling ratio with the geometric mean of trajectory-level ratios. The resulting actor loss is formulated as follows $( \gamma = \lambda = 1 )$
 
-**MIS-PO vs. GSPO.** 为严格验证我们方法的有效性，我们在 Dense 与 MoE 两种架构上把 MIS-PO 与 GSPO [36] 做了对比。选 GSPO 作为主基线，因为它代表了降低重要性采样固有梯度方差的一种有竞争力的策略。实现上，我们把原始 GSPO 估计器扩展到 actor-critic 设定，把其广义重要性采样机制集成进 actor loss：用轨迹级比率的几何均值替代标准的 token 级重要性采样比率。所得 actor loss 公式如下 $( \gamma = \lambda = 1 )$
+**MIS-PO vs. GSPO.** 为严格验证我们方法的有效性, 我们在 Dense 与 MoE 两种架构上把 MIS-PO 与 GSPO [36] 做了对比. 选 GSPO 作为主基线, 因为它代表了降低重要性采样固有梯度方差的一种有竞争力的策略. 实现上, 我们把原始 GSPO 估计器扩展到 actor-critic 设定, 把其广义重要性采样机制集成进 actor loss: 用轨迹级比率的几何均值替代标准的 token 级重要性采样比率. 所得 actor loss 公式如下 $( \gamma = \lambda = 1 )$
 
 $$
 r _ {\tau} (\theta) = \left(\prod_ {t = 0} ^ {T - 1} \frac {\pi_ {\theta} (a _ {t} | s _ {t})}{\pi_ {\theta_ {\mathrm{old}}} (a _ {t} | s _ {t})}\right) ^ {\frac {1}{T}}\tag{14}
@@ -1620,15 +1620,15 @@ $$
 
 To ensure a fair comparison, we apply the same token- and sample-level masking strategies used in MIS-PO to exclude data with significant training–inference mismatches. Regarding the clip ratio 𝜖, we conduct a grid search over $\{ 1 , \dot { 2 } , 3 , 4 \} \times 1 0 ^ { - 4 }$ . We adopt $\epsilon = 1 0 ^ { - 4 }$ for all experiments primarily because it achieves the best benchmark performance after 200 RL training steps. Additionally, we observe that this setting yields a clip fraction of approximately 15%, consistent with the original GSPO [36].
 
-为保证公平比较，我们对 GSPO 也应用与 MIS-PO 相同的 token 级与样本级掩码策略，排除训练-推理失配严重的数据。关于 clip ratio 𝜖，我们在 $\{ 1 , \dot { 2 } , 3 , 4 \} \times 1 0 ^ { - 4 }$ 上网格搜索。所有实验采用 $\epsilon = 1 0 ^ { - 4 }$，主要因为它是 200 步 RL 训练后基准表现最好的设置；此外我们观察到该设置的 clip fraction 约为 15%，与原始 GSPO [36] 一致。
+为保证公平比较, 我们对 GSPO 也应用与 MIS-PO 相同的 token 级与样本级掩码策略, 排除训练-推理失配严重的数据. 关于 clip ratio 𝜖, 我们在 $\{ 1 , \dot { 2 } , 3 , 4 \} \times 1 0 ^ { - 4 }$ 上网格搜索. 所有实验采用 $\epsilon = 1 0 ^ { - 4 }$, 主要因为它是 200 步 RL 训练后基准表现最好的设置; 此外我们观察到该设置的 clip fraction 约为 15%, 与原始 GSPO [36] 一致.
 
 Figure 7 presents the comparative results. Empirically, MIS-PO demonstrates superior sample efficiency and scalability compared to GSPO. Crucially, MIS-PO effectively constrains the traininginference mismatch within a stable range. This stability proves particularly critical for the large-scale RL training of MoE models, where the baseline GSPO fails to maintain consistent convergence.
 
-Figure 7 给出了对比结果。经验上，MIS-PO 的样本效率与可扩展性都优于 GSPO。关键是，MIS-PO 能把训练-推理失配约束在稳定范围内。这一稳定性对 MoE 模型的大规模 RL 训练尤为重要，因为基线 GSPO 无法保持稳定收敛。
+Figure 7 给出了对比结果. 经验上, MIS-PO 的样本效率与可扩展性都优于 GSPO. 关键是, MIS-PO 能把训练-推理失配约束在稳定范围内. 这一稳定性对 MoE 模型的大规模 RL 训练尤为重要, 因为基线 GSPO 无法保持稳定收敛.
 
 **Extended Training Dynamics on MoE.** To further validate the scalability of our method, we conduct an extended training run of MIS-PO on the MoE model using a challenging dataset. As illustrated in Figure 8, the model maintains a continuous upward trend in rewards, stable actor gradient norms, and well-controlled entropy levels. These results empirically confirm that MIS-PO is reliability for large-scale MoE off-policy RL training.
 
-**MoE 上的扩展训练动态。** 为进一步验证方法的可扩展性，我们在 MoE 模型上用一份有难度的数据集对 MIS-PO 做了延长训练。如 Figure 8 所示，模型奖励持续上升，actor 梯度范数稳定，熵水平控制良好。这些结果实证地确认，MIS-PO 能可靠地用于大规模 MoE off-policy RL 训练。
+**MoE 上的扩展训练动态.** 为进一步验证方法的可扩展性, 我们在 MoE 模型上用一份有难度的数据集对 MIS-PO 做了延长训练. 如 Figure 8 所示, 模型奖励持续上升, actor 梯度范数稳定, 熵水平控制良好. 这些结果实证地确认, MIS-PO 能可靠地用于大规模 MoE off-policy RL 训练.
 
 ![Chart block](images/p38-chart.png)
 
@@ -1642,11 +1642,11 @@ Figure 8: Extended training dynamics of MIS-PO on the MoE model. The metrics inc
 
 Regarding the training architecture, the early client–server one-step off-policy framework is severely bottlenecked by long-tail latency: approximately 5% of samples accounted for roughly 80% of the generation cost. However, our observations indicate that the policy exhibits strong robustness to staleness, maintaining stable performance even with a latency of approximately 20 steps. Consequently, we adopt the FullyAsync paradigm, decoupling generation and updates into a completely asynchronous process. Furthermore, to minimize inference overhead during multi-turn interactions, we implement sticky scheduling, where the same session is consistently dispatched to the same node to maximize KV-cache reuse. Overall, this configuration achieves an approximate 10× efficiency gain while maintaining training stability.
 
-关于训练架构，早期的 client-server 一步式 off-policy 框架被长尾延迟严重卡住：约 5% 的样本占了约 80% 的生成成本。但我们观察到，策略对陈旧性（staleness）有很强的鲁棒性，即便延迟约 20 步仍能保持稳定性能。因此我们采用 FullyAsync 范式，把生成与更新完全解耦成异步过程。此外，为降低多轮交互中的推理开销，我们实现了 sticky scheduling：同一会话始终调度到同一节点，最大化 KV cache 复用。总体看，这套配置在保持训练稳定的同时取得了约 10 倍的效率提升。
+关于训练架构, 早期的 client-server 一步式 off-policy 框架被长尾延迟严重卡住: 约 5% 的样本占了约 80% 的生成成本. 但我们观察到, 策略对陈旧性 (staleness) 有很强的鲁棒性, 即便延迟约 20 步仍能保持稳定性能. 因此我们采用 FullyAsync 范式, 把生成与更新完全解耦成异步过程. 此外, 为降低多轮交互中的推理开销, 我们实现了 sticky scheduling: 同一会话始终调度到同一节点, 最大化 KV cache 复用. 总体看, 这套配置在保持训练稳定的同时取得了约 10 倍的效率提升.
 
 Throughout the training process, the FullyAsync paradigm demonstrates robust stability, evidenced by a sustained increase in rewards and a Truncated Importance Sampling (TIS) truncation rate maintained within a controllable range, thereby indicating limited policy drift induced by asynchrony. Notably, we observe that distinct from the limited scalability of “RL from zero” regarding training budgets, injecting task-relevant knowledge and tool-use priors during the mid-training phase elicited significantly higher performance gains and a more stable emergence of capabilities during the RL.
 
-整个训练过程中，FullyAsync 范式表现出稳健的稳定性：奖励持续上升，Truncated Importance Sampling (TIS) 截断率维持在可控范围内，说明异步带来的策略漂移有限。特别值得注意的是，与 “RL from zero” 在训练预算上扩展性受限不同，在 mid-training 阶段注入任务相关知识与工具使用先验，能在 RL 中带来显著更高的性能收益，且能力涌现更稳定。
+整个训练过程中, FullyAsync 范式表现出稳健的稳定性: 奖励持续上升, Truncated Importance Sampling (TIS) 截断率维持在可控范围内, 说明异步带来的策略漂移有限. 特别值得注意的是, 与 “RL from zero” 在训练预算上扩展性受限不同, 在 mid-training 阶段注入任务相关知识与工具使用先验, 能在 RL 中带来显著更高的性能收益, 且能力涌现更稳定.
 
 <!-- page 39 of 67 -->
 
@@ -1656,7 +1656,7 @@ Table 11: Impact of Tool Usage on Agent Performance. Each cell displays the Base
 
 **Discussion.** To rigorously evaluate agentic competence isolated from parametric memorization, we focus on the tool-usage gain, defined as:
 
-**讨论。** 为严格评估剥离参数记忆后的 Agent 能力，我们聚焦工具使用增益，定义为：
+**讨论.** 为严格评估剥离参数记忆后的 Agent 能力, 我们聚焦工具使用增益, 定义为:
 
 $$
 \Delta_ {\text {tool}} = \text {Score} _ {\text {with tools}} - \text {Score} _ {\text {no tools}}
@@ -1664,27 +1664,27 @@ $$
 
 This metric decouples the model’s inherent knowledge from its ability to dynamically leverage external tools. As detailed in Table 11, **Step 3.5 Flash** demonstrates the most robust capability to leverage external information, achieving the highest average gain (52.0) and leading significantly on complex benchmarks such as GAIA and xbench-DeepSearch.
 
-该指标把模型内化的知识与它动态利用外部工具的能力解耦。如 Table 11 所示，**Step 3.5 Flash** 利用外部信息的能力最稳健，平均增益最高（52.0），并在 GAIA 与 xbench-DeepSearch 等复杂基准上显著领先。
+该指标把模型内化的知识与它动态利用外部工具的能力解耦. 如 Table 11 所示, **Step 3.5 Flash** 利用外部信息的能力最稳健, 平均增益最高 (52.0), 并在 GAIA 与 xbench-DeepSearch 等复杂基准上显著领先.
 
 This distinction is critical because high absolute scores on benchmarks like BrowseComp can sometimes stem from strong internalized knowledge rather than effective search strategies. A smaller $\Delta _ { \mathrm { t o o l } }$ in a high-performing model may ambiguously indicate either high efficiency (the model already “knows” the answer) or a failure to effectively utilize tools to improve results. Conversely, a large $\Delta _ { \mathrm { t o o l } }$ explicitly signals the model’s proficiency in bridging knowledge gaps through retrieval. Therefore, we argue that future optimization should not merely chase higher absolute scores (“benchmark grinding”), but should aim to maximize this $\Delta _ { \mathrm { t o o l } }$ in long-context, evidence-critical scenarios. This ensures the agent is truly mastering the process of information retrieval and reasoning, rather than overfitting to static knowledge or benchmark artifacts.
 
-这一区分至关重要：像 BrowseComp 这类基准上的高绝对分，有时可能来自强大的内化知识，而非有效的搜索策略。高性能模型的 $\Delta _ { \mathrm { t o o l } }$ 较小，可能含糊地意味着高效（模型本来就知道答案），也可能意味着没能有效利用工具改进结果。反过来，较大的 $\Delta _ { \mathrm { t o o l } }$ 明确说明模型擅长通过检索弥合知识缺口。因此，我们认为未来的优化不应只追逐更高的绝对分（「刷榜」），而应在长上下文，证据关键的场景中最大化 $\Delta _ { \mathrm { t o o l } }$。这才能保证 Agent 真正掌握信息检索与推理的过程，而不是过拟合静态知识或基准的人造痕迹。
+这一区分至关重要: 像 BrowseComp 这类基准上的高绝对分, 有时可能来自强大的内化知识, 而非有效的搜索策略. 高性能模型的 $\Delta _ { \mathrm { t o o l } }$ 较小, 可能含糊地意味着高效 (模型本来就知道答案), 也可能意味着没能有效利用工具改进结果. 反过来, 较大的 $\Delta _ { \mathrm { t o o l } }$ 明确说明模型擅长通过检索弥合知识缺口. 因此, 我们认为未来的优化不应只追逐更高的绝对分 (“刷榜”), 而应在长上下文, 证据关键的场景中最大化 $\Delta _ { \mathrm { t o o l } }$. 这才能保证 Agent 真正掌握信息检索与推理的过程, 而不是过拟合静态知识或基准的人造痕迹.
 
 ### D.3. Tool-integrated Reasoning and Parallel Reasoning
 
 In this section, we introduce two primary methodologies for test-time scaling in Step 3.5 Flash: tool-integrated reasoning and parallel reasoning.
 
-本节介绍 Step 3.5 Flash 中两种主要的 test-time scaling 方法：工具集成推理与并行推理。
+本节介绍 Step 3.5 Flash 中两种主要的 test-time scaling 方法: 工具集成推理与并行推理.
 
 **Tool-integrated Reasoning** For complex reasoning tasks, we integrate the model with a Python interpreter to facilitate tool-assisted reasoning. In this framework, the model operates within a sandbox to iteratively think and execute code for computational, simulation, and visualization purposes. In our experiments, we evaluate on AIME 2025, HMMT 2025, IMO-AnswerBench, GPQA, HLE<sub>text</sub>, and ARC-AGI-1 with a 100-turn limit. As shown in Table 12, tool-integrated reasoning significantly
 
-**工具集成推理。** 对复杂推理任务，我们把模型与 Python 解释器集成，支持工具辅助推理。在该框架中，模型在沙箱内迭代思考并执行代码，用于计算，模拟与可视化。实验中，我们在 AIME 2025, HMMT 2025, IMO-AnswerBench, GPQA, HLE<sub>text</sub> 与 ARC-AGI-1 上评测，轮次上限 100。如 Table 12 所示，工具集成推理显著
+**工具集成推理.** 对复杂推理任务, 我们把模型与 Python 解释器集成, 支持工具辅助推理. 在该框架中, 模型在沙箱内迭代思考并执行代码, 用于计算, 模拟与可视化. 实验中, 我们在 AIME 2025, HMMT 2025, IMO-AnswerBench, GPQA, HLE<sub>text</sub> 与 ARC-AGI-1 上评测, 轮次上限 100. 如 Table 12 所示, 工具集成推理显著
 
 <!-- page 40 of 67 -->
 
 enhances performance across challenging mathematics, STEM, and puzzle benchmarks, highlighting the advanced agentic reasoning capabilities of Step 3.5 Flash.
 
-提升了有难度的数学，STEM 与谜题基准上的表现，凸显了 Step 3.5 Flash 的高级 Agent 推理能力。
+提升了有难度的数学, STEM 与谜题基准上的表现, 凸显了 Step 3.5 Flash 的高级 Agent 推理能力.
 
 | Benchmark | Step 3.5 Flash | Step 3.5 Flash w. Python |
 | --- | --- | --- |
@@ -1700,11 +1700,11 @@ Table 12: Comparison of Step 3.5 Flash and Step 3.5 Flash w. Python.
 
 **Tool-integrated Parallel Reasoning** We present a preliminary exploration of extending PaCoRe to a multi-turn interactive environment. By design, PaCoRe preserves the standard LLM message interface. This compatibility allows for seamless integration into existing agentic frameworks that utilize multi-turn tool interaction. To adapt PaCoRe to this setting, we implement a state-aware input serialization protocol as shown in Table 14.
 
-**工具集成并行推理。** 我们初步探索了把 PaCoRe 扩展到多轮交互环境。PaCoRe 在设计上保留了标准 LLM 消息接口，因此可以无缝集成进使用多轮工具交互的现有 Agent 框架。为适配这一场景，我们实现了一个状态感知的输入序列化协议，如 Table 14 所示。
+**工具集成并行推理.** 我们初步探索了把 PaCoRe 扩展到多轮交互环境. PaCoRe 在设计上保留了标准 LLM 消息接口, 因此可以无缝集成进使用多轮工具交互的现有 Agent 框架. 为适配这一场景, 我们实现了一个状态感知的输入序列化协议, 如 Table 14 所示.
 
 We evaluate this approach on the GPQA and $\mathrm { H L E } _ { \mathrm { t e x t } }$ benchmarks using Step 3.5 Flash equipped with a Python interpreter. As shown in Table 13, extending parallel reasoning to these agentic loops yields significant performance improvements over the standard reasoning baseline. These findings demonstrate that PaCoRe effectively generalizes to environments requiring interactive feedback, highlighting a promising avenue for agentic test-time scaling.
 
-我们在 GPQA 与 $\mathrm { H L E } _ { \mathrm { t e x t } }$ 基准上评测了这一方法，使用配备 Python 解释器的 Step 3.5 Flash。如 Table 13 所示，把并行推理扩展到这些 Agent 循环中，相比标准推理基线有显著提升。这些发现表明，PaCoRe 能有效泛化到需要交互反馈的环境，为 Agent 场景的 test-time scaling 指明了一条有前景的路线。
+我们在 GPQA 与 $\mathrm { H L E } _ { \mathrm { t e x t } }$ 基准上评测了这一方法, 使用配备 Python 解释器的 Step 3.5 Flash. 如 Table 13 所示, 把并行推理扩展到这些 Agent 循环中, 相比标准推理基线有显著提升. 这些发现表明, PaCoRe 能有效泛化到需要交互反馈的环境, 为 Agent 场景的 test-time scaling 指明了一条有前景的路线.
 
 | Benchmark w. Python | Step 3.5 Flash | Step 3.5 Flash + PaCoRe |
 | --- | --- | --- |
@@ -1717,7 +1717,7 @@ Table 13: Comparison of Step 3.5 Flash w. Python and the same model with PaCoRe 
 
 This section provides the implementation details for our evaluation suite. We outline the specific prompt templates, few-shot configurations, and the judge models employed across different benchmarks. For complex metrics, such as those used in long-context or reasoning tasks, we also detail the underlying calculation logic and scoring criteria to ensure reproducibility. In the templates provided below, {question} denotes the placeholder for the textual problem description, while other placeholders (e.g., {test}, {context}) represent task-specific information.
 
-本节给出评测套件的实现细节。我们列出各基准使用的具体 prompt 模板，few-shot 配置与评判模型。对长上下文或推理任务中的复杂指标，我们也详细说明其底层计算逻辑与评分标准，保证可复现。在下面模板中，{question} 表示文本问题描述的占位符，其他占位符（如 {test}, {context}）表示任务特定信息。
+本节给出评测套件的实现细节. 我们列出各基准使用的具体 prompt 模板, few-shot 配置与评判模型. 对长上下文或推理任务中的复杂指标, 我们也详细说明其底层计算逻辑与评分标准, 保证可复现. 在下面模板中, {question} 表示文本问题描述的占位符, 其他占位符 (如 {test}, {context}) 表示任务特定信息.
 
 ### E.1. Evaluation Details of Pre-trained Models
 
@@ -1725,7 +1725,7 @@ This section provides the implementation details for our evaluation suite. We ou
 
 **BBH.** We use the official CoT-prompts <sup>7</sup> of BBH [136], with only "Q:" and $\text{" } \mathbf{A} \text{: }  \text{" }$ replaced by "Problem:" and "Solution:" as follows:
 
-**BBH.** 我们使用 BBH [136] 官方 CoT prompt，只把 "Q:" 与 $\text{" } \mathbf{A} \text{: }  \text{" }$ 替换为 "Problem:" 与 "Solution:"，如下：
+**BBH.** 我们使用 BBH [136] 官方 CoT prompt, 只把 "Q:" 与 $\text{" } \mathbf{A} \text{: }  \text{" }$ 替换为 "Problem:" 与 "Solution:", 如下:
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>7</sup>https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/cot-prompts</span></small>
 
@@ -1770,13 +1770,13 @@ Table 14: Input serialization templates for Tool-integrated PaCoRe. We introduce
 
 MMLU. We use the official evaluation metric of MMLU [137] with 5-shot. We employ the following task-specific system prompt:
 
-MMLU。我们使用 MMLU [137] 官方评测指标，5-shot，并使用如下任务特定的 system prompt:
+MMLU. 我们使用 MMLU [137] 官方评测指标, 5-shot, 并使用如下任务特定的 system prompt:
 
 <!-- page 42 of 67 -->
 
 **MMLU-Pro.** We follow the official evaluation metric of MMLU-Pro [139] with 5-shot. All evaluations use the following system prompt:
 
-**MMLU-Pro.** 我们沿用 MMLU-Pro [139] 官方评测指标，5-shot。所有评测使用如下 system prompt:
+**MMLU-Pro.** 我们沿用 MMLU-Pro [139] 官方评测指标, 5-shot. 所有评测使用如下 system prompt:
 
 ```txt
 The following are multiple choice questions (with answers) about {category}. Think step by step and then output the answer in the format of "The answer is (X)" at the end.
@@ -1784,7 +1784,7 @@ The following are multiple choice questions (with answers) about {category}. Thi
 
 The question prompt is structured as follows, with a deliberate trailing space after the final period:
 
-问题 prompt 结构如下，句末刻意保留一个尾随空格：
+问题 prompt 结构如下, 句末刻意保留一个尾随空格:
 
 ```txt
 Question: {question}
@@ -1793,11 +1793,11 @@ Answer: Let's think step by step.
 
 Notably, we observe that a subset of the original MMLU-Pro dataset (470 out of 12,102 questions) contained an inconsistent leading space before the ground-truth options. We explicitly remove these spaces to mitigate potential formatting bias and ensure evaluation consistency.
 
-值得注意的是，我们发现原始 MMLU-Pro 数据集中有一部分（12,102 题中的 470 题）在真值选项前有一个不一致的前导空格。我们显式移除这些空格，以缓解潜在的格式偏差，保证评测一致性。
+值得注意的是, 我们发现原始 MMLU-Pro 数据集中有一部分 (12,102 题中的 470 题) 在真值选项前有一个不一致的前导空格. 我们显式移除这些空格, 以缓解潜在的格式偏差, 保证评测一致性.
 
 **HellaSwag.** We use the official evaluation metric of HellaSwag [140] with 10-shot. We employ the following question prompt:
 
-**HellaSwag.** 我们使用 HellaSwag [140] 官方评测指标，10-shot，并使用如下问题 prompt:
+**HellaSwag.** 我们使用 HellaSwag [140] 官方评测指标, 10-shot, 并使用如下问题 prompt:
 
 ```txt
 Question: {question}
@@ -1810,7 +1810,7 @@ Answer:
 
 **WinoGrande.** We use the official evaluation metric of WinoGrande [141] with 5-shot. The question prompt is structured to present the binary choices clearly:
 
-**WinoGrande.** 我们使用 WinoGrande [141] 官方评测指标，5-shot。问题 prompt 被设计为清晰呈现二元选项：
+**WinoGrande.** 我们使用 WinoGrande [141] 官方评测指标, 5-shot. 问题 prompt 被设计为清晰呈现二元选项:
 
 ```txt
 Question: {question}
@@ -1823,7 +1823,7 @@ Answer:
 
 **GPQA.** We use the official evaluation metric of GPQA [142] with 5-shot. The question prompt is structured to present the choices clearly:
 
-**GPQA.** 我们使用 GPQA [142] 官方评测指标，5-shot。问题 prompt 被设计为清晰呈现各选项：
+**GPQA.** 我们使用 GPQA [142] 官方评测指标, 5-shot. 问题 prompt 被设计为清晰呈现各选项:
 
 ```txt
 Question: {question}
@@ -1842,7 +1842,7 @@ Answer: Let's think step by step.
 
 **SuperGPQA.** We use the official evaluation metric of SuperGPQA [143] with 5-shot. The question prompt follows a Chain-of-Thought (CoT) structure, where each few-shot example includes a step-by-step derivation leading to the final answer:
 
-**SuperGPQA.** 我们使用 SuperGPQA [143] 官方评测指标，5-shot。问题 prompt 采用 CoT 结构，每个 few-shot 示例都给出逐步推导直到最终答案：
+**SuperGPQA.** 我们使用 SuperGPQA [143] 官方评测指标, 5-shot. 问题 prompt 采用 CoT 结构, 每个 few-shot 示例都给出逐步推导直到最终答案:
 
 ```txt
 Question:
@@ -1853,7 +1853,7 @@ Answer: Let's think step by step.
 
 **SimpleQA.** We use the official evaluation metric of SimpleQA [144] with 5-shot. As SimpleQA requires open-ended short answers, we employ an LLM-based judgement for evaluation, specifically using gpt-oss-120b [33] as the judge model. The question prompt is formatted as a concise query:
 
-**SimpleQA.** 我们使用 SimpleQA [144] 官方评测指标，5-shot。由于 SimpleQA 是开放式短答案，我们用 LLM 评判做评测，具体以 gpt-oss-120b [33] 作为评判模型。问题 prompt 被格式化为简洁查询：
+**SimpleQA.** 我们使用 SimpleQA [144] 官方评测指标, 5-shot. 由于 SimpleQA 是开放式短答案, 我们用 LLM 评判做评测, 具体以 gpt-oss-120b [33] 作为评判模型. 问题 prompt 被格式化为简洁查询:
 
 ```txt
 Question: {question} Answer:
@@ -1863,7 +1863,7 @@ Question: {question} Answer:
 
 **GSM8K.** We use the official evaluation metric of GSM8K [145] with 8-shot. The question prompt is designed to elicit CoT reasoning by using the following template:
 
-**GSM8K.** 我们使用 GSM8K [145] 官方评测指标，8-shot。问题 prompt 用如下模板引导 CoT 推理：
+**GSM8K.** 我们使用 GSM8K [145] 官方评测指标, 8-shot. 问题 prompt 用如下模板引导 CoT 推理:
 
 ```txt
 Q: {question}
@@ -1883,7 +1883,7 @@ Solution:
 
 **HumanEval.** We use the official evaluation metric of HumanEval [147] with 3-shot. The question prompt is structured with three ground-truth examples to provide contextual guidance for code generation:
 
-**HumanEval.** 我们使用 HumanEval [147] 官方评测指标，3-shot。问题 prompt 附三个真值示例，为代码生成提供上下文引导：
+**HumanEval.** 我们使用 HumanEval [147] 官方评测指标, 3-shot. 问题 prompt 附三个真值示例, 为代码生成提供上下文引导:
 
 ```python
 # Below are the ground-truth solutions:
@@ -1924,15 +1924,15 @@ def fast_reverse_list(some_list: list) -> list:
 
 **MBPP.** We follow the official evaluation metric of MBPP [148] with 3-shot.
 
-**MBPP.** 我们沿用 MBPP [148] 官方评测指标，3-shot。
+**MBPP.** 我们沿用 MBPP [148] 官方评测指标, 3-shot.
 
 **HumanEval+.** We follow the official evaluation metric of HumanEval+ [149] with 3-shot.
 
-**HumanEval+.** 我们沿用 HumanEval+ [149] 官方评测指标，3-shot。
+**HumanEval+.** 我们沿用 HumanEval+ [149] 官方评测指标, 3-shot.
 
 **MBPP+.** We use the official evaluation metric of MBPP+ [149] with zero-shot. We employ a structured instruction prompt that specifies the task requirements and includes a sample test case for alignment:
 
-**MBPP+.** 我们使用 MBPP+ [149] 官方评测指标，zero-shot，并使用结构化指令 prompt，明确任务要求并附一个样例测试用例对齐：
+**MBPP+.** 我们使用 MBPP+ [149] 官方评测指标, zero-shot, 并使用结构化指令 prompt, 明确任务要求并附一个样例测试用例对齐:
 
 ````txt
 You are an expert Python programmer, and here is your task:
@@ -1954,7 +1954,7 @@ Here is the corresponding code:
 **C-Eval.** 我们使用 C-Eval [151] 官方评测指标, 并加上 5-shot 设置. 使用如下 system prompt:
 
 ```txt
-你是一个中文人工智能助手，以下是中国关于{category}考试的单项选择题，请选出其中的正确答案。
+你是一个中文人工智能助手, 以下是中国关于{category}考试的单项选择题, 请选出其中的正确答案.
 ```
 
 **CMMLU.** We use the official evaluation metric of CMMLU [152] and add a 5-shot setting. We employ the following system prompt:
@@ -1971,7 +1971,7 @@ The corresponding question prompt is structured as follows:
 
 ```txt
 {question}
-答案：
+答案:
 ```
 
 **C-SimpleQA.** We use the official evaluation metric and LLM-based judgement protocols of Chinese SimpleQA [153]. We add a 5-shot setting and use gpt-oss-120b [33] as the judge model. We employ the following question prompt:
@@ -2106,7 +2106,7 @@ Answer the question and place the option (A/B/C/D...) inside \boxed{}. {question
 
 GPQA-Diamond. We use the official evaluation method of GPQA-Diamond [142]. We employ the following question prompt:
 
-GPQA-Diamond。我们使用 GPQA-Diamond [142] 官方评测方法，并使用如下问题 prompt:
+GPQA-Diamond. 我们使用 GPQA-Diamond [142] 官方评测方法, 并使用如下问题 prompt:
 
 | Answer the question and place the option (A/B/C/D...) inside \\boxed{}. |
 | --- |

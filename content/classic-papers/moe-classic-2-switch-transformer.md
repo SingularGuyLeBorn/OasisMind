@@ -22,13 +22,13 @@ Shazeer 2017 证明了稀疏 MoE 可行，但**没有被大规模采用**，卡�
 ## 二、方法：Switch 路由（Top-1 稀疏门控）
 
 ### 核心简化
-Shazeer 2017 是「每个 token 选 top-k 个专家」（k 通常 2），Switch 改成**每个 token 只路由到 1 个专家（top-1）**：
+Shazeer 2017 是"每个 token 选 top-k 个专家"（k 通常 2），Switch 改成**每个 token 只路由到 1 个专家（top-1）**：
 
 $$y = \sum_{i=1}^{N} p_i(x) \cdot E_i(x), \quad p(x) = \mathrm{softmax}(x \cdot W_g), \quad \text{路由到 } \arg\max_i p_i(x)$$
 
 - 相比 top-2：门控矩阵乘法计算量**减半以上**（少一次专家前向 + 少一路 softmax）
 - 专家负载更天然均衡、显存更高效（每个 token 只有一份专家激活）
-- 代码实现大幅简化——MoE 第一次「不别扭」
+- 代码实现大幅简化——MoE 第一次"不别扭"
 
 ### 辅助负载均衡损失（aux loss）
 单纯 top-1 仍会塌缩到少数专家，论文沿用并形式化了辅助损失（论文式 2）：
@@ -38,7 +38,7 @@ $$L_{\mathrm{aux}} = \alpha \cdot N \sum_{i=1}^{N} f_i \cdot P_i$$
 - $f_i$：该 batch 中被路由到专家 i 的 token 比例（load）
 - $P_i$：门控给专家 i 的平均路由概率
 - $N$ 为专家数，$\alpha$ 为系数（通常取 0.01）
-- 乘积形式让「被选得多」和「概率给得高」互相惩罚，鼓励均匀
+- 乘积形式让"被选得多"和"概率给得高"互相惩罚，鼓励均匀
 
 ### 其他工程细节
 - **expert capacity**：每个专家每个 batch 处理的 token 上限，超出部分走残差连接（近似 dropout 效果），防止单个专家过载
@@ -59,8 +59,8 @@ $$L_{\mathrm{aux}} = \alpha \cdot N \sum_{i=1}^{N} f_i \cdot P_i$$
 ## 四、为什么是经典
 
 1. **把 MoE 变成预训练主流标准组件**：top-1 路由 + aux loss 的配方，后来被几乎所有稀疏 LLM（Mixtral、DeepSeek-MoE、GPT-4 推测架构）沿用
-2. **确立稀疏激活扩展范式**：参数可以远超训练 FLOPs——「假装小、其实大」的公开先例
-3. **与 Scaling Laws 互补**：Kaplan 2020 说「参数和计算一起涨」，Switch 说「参数可以单独涨、计算保持」——共同定义 2020s 的算力经济学
+2. **确立稀疏激活扩展范式**：参数可以远超训练 FLOPs——"假装小、其实大"的公开先例
+3. **与 Scaling Laws 互补**：Kaplan 2020 说"参数和计算一起涨"，Switch 说"参数可以单独涨、计算保持"——共同定义 2020s 的算力经济学
 4. **工程遗产**：bfloat16 稀疏训练、expert capacity、分布式实现（mesh-tensorflow）都是后续稀疏 LLM 的参考实现
 
 ## 五、局限

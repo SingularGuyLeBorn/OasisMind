@@ -14,7 +14,7 @@ Top-$k$ 变大、专家池变大，本意是让专家更专。常规 MoE 里每�
 
 DeepSeekMoE 的共享 / 路由分工还在。共享专家 $E^{\mathrm{shared}}:\mathbb{R}^d\to\mathbb{R}^d$ 处理所有 token；路由侧先 $\bm{z}=\mathbf{W}^{\downarrow}\bm{x}\in\mathbb{R}^\ell$，专家在 $\ell$ 维里算，再升回去。K3 的 $\ell=3584=d/2$，$N_s=2$。
 
-报告式（11）：
+报告式 (11)：
 
 $$
 \bm{u}=\sum_{i\in\mathcal{T}_k(\bm{x})} p_i\, E_i^{\mathrm{routed}}(\mathbf{W}^{\downarrow}\bm{x}),
@@ -77,6 +77,6 @@ MoonEP（K3 §5.2.1）解决的是 **EP 上每张卡算同样多 token**，用�
 
 ## 本篇来源
 
-- Kimi K3 §2.3、式（11）–(14)、Fig. 5、附录 C 开头。https://arxiv.org/html/2607.24653
+- Kimi K3 §2.3、式 (11)–(14)、Fig. 5、附录 C 开头。https://arxiv.org/html/2607.24653
 - Elango et al. *LatentMoE*. https://arxiv.org/abs/2601.18089 （本会话读了摘要与 §1–2 开头：$\ell$ 控制通信，$d/\ell$ 用来加 $N$ 和 $k$；未通读硬件模型全文）
 - aux-loss-free bias：DeepSeek-V3 报告（K3 引 [27]）；$\gamma\mathrm{sign}$ 规则的表述以 K3 §2.3.3 为准

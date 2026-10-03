@@ -1,36 +1,36 @@
 ---
-title: "LIVE · 当前目标（每次开工先读）"
+title: "LIVE · 当前目标(每次开工先读)"
 category: "LLM 指南"
 published: false
-excerpt: "对抗上下文压缩的活目标。用户重复投喂 prompt 时，代理第一件事是读本文件。只改状态行，不要把 brief 全文抄进来。"
+excerpt: "对抗上下文压缩的活目标.用户重复投喂 prompt 时,代理第一件事是读本文件.只改状态行,不要把 brief 全文抄进来."
 tags: ["ops", "live", "llm-guide"]
 ---
 # LIVE · 当前目标
 
-> 本文件是工作记忆，不是 brief。完整规则在 `../goal-maximize-value-extreme.md`。
-> **每轮对话开始，每写完一篇，感觉自己在编而不在读时：重读本文件。**
+> 本文件是工作记忆,不是 brief.完整规则在 `../goal-maximize-value-extreme.md`.
+> **每轮对话开始,每写完一篇,感觉自己在编而不在读时:重读本文件.**
 
-## 不变的成功标准（六条必须同时成立）
+## 不变的成功标准(六条必须同时成立)
 
-1. 补写作者已铺的提纲/空壳。
-2. 配图自绘，无水印。
-3. 接到 2026-08：改成**一篇完整正文**，读者只读一版。禁止把「修订（不删上文）」当成品。禁止 Delete 文件。
-4. 知识体系完整（含 GPU/Infra）：主题树打勾。
-5. **以技术报告为轴拆技术**：积木 / 架构 / 数据 / 优化器 / infra / 训练框架 / 稳定性 / 训推。含口述缩写 **Muon,mHC,XHC,ResidualAttention**（细则 0.7，搜不到也留条）。
-6. **2026 重要发布必须进库**：按 `goal-maximize-value-extreme.md` 0.6 节自己判断 S/A/B.S/A 精读报告并拆进体系。现在差很远。B 档不要开空文件夹。
+1. 补写作者已铺的提纲/空壳.
+2. 配图自绘,无水印.
+3. 接到 2026-08:改成**一篇完整正文**,读者只读一版.禁止把「修订(不删上文)」当成品.禁止 Delete 文件.
+4. 知识体系完整(含 GPU/Infra):主题树打勾.
+5. **以技术报告为轴拆技术**:积木 / 架构 / 数据 / 优化器 / infra / 训练框架 / 稳定性 / 训推.含口述缩写 **Muon,mHC,XHC,ResidualAttention**(细则 0.7,搜不到也留条).
+6. **2026 重要发布必须进库**:按 `goal-maximize-value-extreme.md` 0.6 节自己判断 S/A/B.S/A 精读报告并拆进体系.现在差很远.B 档不要开空文件夹.
 
-不是商品。不删任何既有文件。一篇可验收切片做完就 commit(`content(llm-guide): ...`)，不要堆工作区。不要 push，除非用户说推远程。
+不是商品.不删任何既有文件.一篇可验收切片做完就 commit(`content(llm-guide): ...`),不要堆工作区.不要 push,除非用户说推远程.
 
-**清单勾完不是停。** 之后只有一个方向：尽可能涵盖大模型领域的知识点，但每篇必须讲透，结构完整，图文并茂；行文仿科学空间。禁止标题下只有一句话。细则 0.8 节。
+**清单勾完不是停.** 之后只有一个方向:尽可能涵盖大模型领域的知识点,但每篇必须讲透,结构完整,图文并茂;行文仿科学空间.禁止标题下只有一句话.细则 0.8 节.
 
-## 本轮焦点（代理更新这一段）
+## 本轮焦点(代理更新这一段)
 
-- 状态：用户 Goal 续跑.4.4 单独成篇与节地图已收；章首页已折成地图。下一波：PRO / CPO / ReMax / Constitutional AI。
-- 当前波次：**缺的对齐算法单独成篇**.wave-2 四张仍在跑；`fig-moe-router-top2` 不重画。不要抢 `4.6.2`。
-- 配图规范：`.cursor/skills/academic-diagrams/SKILL.md`。好对照：`fig-qsa-hybrid-slot.png`。覆盖原 `fig-*.png`，禁止 Delete。
-- 人味规范：`.cursor/skills/humanwrite/` + `humanizer-zh/` + `scy.md`。读者页禁止 Agent 元句。
-- 本轮明确不做：一轮画完约 300 张 fig；把 51B n-gram 算进 6B；4.6 根加 `11`；大搬迁 / Delete / `move_agent_to_root`。
+- 状态:用户 Goal 续跑.4.4 单独成篇与节地图已收;章首页已折成地图.下一波:PRO / CPO / ReMax / Constitutional AI.
+- 当前波次:**缺的对齐算法单独成篇**.wave-2 四张仍在跑;`fig-moe-router-top2` 不重画.不要抢 `4.6.2`.
+- 配图规范:`.cursor/skills/academic-diagrams/SKILL.md`.好对照:`fig-qsa-hybrid-slot.png`.覆盖原 `fig-*.png`,禁止 Delete.
+- 人味规范:`.cursor/skills/humanwrite/` + `humanizer-zh/` + `scy.md`.读者页禁止 Agent 元句.
+- 本轮明确不做:一轮画完约 300 张 fig;把 51B n-gram 算进 6B;4.6 根加 `11`;大搬迁 / Delete / `move_agent_to_root`.
 
 ## 防漂移口令
 
-若你发现自己在写「众所周知 MLA 是...」却拿不出 arxiv / 官方博客链接 → 停笔，去读源。若「## 标题」下面只有一句话 → 不合格，写成完整节或并进上一节。清单勾完继续补知识点（0.8）。
+若你发现自己在写「众所周知 MLA 是...」却拿不出 arxiv / 官方博客链接 → 停笔,去读源.若「## 标题」下面只有一句话 → 不合格,写成完整节或并进上一节.清单勾完继续补知识点(0.8).

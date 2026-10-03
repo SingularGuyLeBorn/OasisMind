@@ -31,17 +31,17 @@ excerpt: "分域 RL 能把数学、代码、agent 各自推到峰值，交付却
 
 ---
 
-## 2. DeepSeek-V4：名字仍是 OPD，式（29）是全词表 reverse KL
+## 2. DeepSeek-V4：名字仍是 OPD，式 (29) 是全词表 reverse KL
 
 一手：库内 [V4 mineru-en §5.1.2](../../../../model-library/03-模型家族/01-deepseek/deepseek/deepseek-bi.md)。后训练骨架沿 V3.2，但 **mixed RL 合并阶段整段换成 OPD**（引 MiniLLM；Thinking Machines Lab 的 on-policy distillation）。专家先分域 SFT + GRPO，再蒸进一个学生。这一阶段用了 **十余个**覆盖多域的教师。
 
-给定专家集合 $\{\pi_{E_1},\ldots,\pi_{E_N}\}$，报告式（29）：
+给定专家集合 $\{\pi_{E_1},\ldots,\pi_{E_N}\}$，报告式 (29)：
 
 $$
 \mathcal{L}_{\mathrm{OPD}}(\boldsymbol{\theta})=\sum_{i=1}^{N} w_i\cdot\mathrm{D}_{\mathrm{KL}}\bigl(\pi_{\boldsymbol{\theta}}\parallel\pi_{E_i}\bigr). \tag{1}
 $$
 
-$w_i$ 是各专家权重，报告只写「通常按相对重要性」。reverse KL 的期望要在学生 $\pi_\theta$ 自己的轨迹上算，才保持 on-policy。同一段还写：统一策略会按**当前任务语境**对齐相应专家（数学题对数学专家、代码题对代码专家）。式（1）在纸面上是对 $i$ 求和；实现上 $w_i$ 在无关域可以是 0。报告**没有**再给一套路由公式，本篇不补。
+$w_i$ 是各专家权重，报告只写「通常按相对重要性」。reverse KL 的期望要在学生 $\pi_\theta$ 自己的轨迹上算，才保持 on-policy。同一段还写：统一策略会按**当前任务语境**对齐相应专家（数学题对数学专家、代码题对代码专家）。式 (1) 在纸面上是对 $i$ 求和；实现上 $w_i$ 在无关域可以是 0。报告**没有**再给一套路由公式，本篇不补。
 
 ### 2.1 他们批评的先前做法：token 级 advantage
 
@@ -53,7 +53,7 @@ $$
 
 当作逐 token advantage（$\mathrm{sg}$ 是 stop-gradient）。报告承认这样省资源，但 **梯度方差高、训练不稳**。V4 因此改用 **full-vocabulary logit distillation**：每个位置保留完整 logit，再算 reverse KL。
 
-注意：式（2）的形状和下一节 K3 式（15）、MiMo 的 $\hat A_{\mathrm{MOPD},t}$ 看起来像一家人。V4 的立场是——**这正是他们拒绝当主损失的那条路**。不要把 K3 / MiMo 的 clip 版本回填进 V4，当成「V4 其实也是这么算、只是没写 clip」。
+注意：式 (2) 的形状和下一节 K3 式 (15)、MiMo 的 $\hat A_{\mathrm{MOPD},t}$ 看起来像一家人。V4 的立场是——**这正是他们拒绝当主损失的那条路**。不要把 K3 / MiMo 的 clip 版本回填进 V4，当成「V4 其实也是这么算、只是没写 clip」。
 
 ### 2.2 工程：缓存教师 hidden，按教师索引排 batch
 
@@ -76,7 +76,7 @@ V4 §5.1.2 **没有**给出「蒸馏前学生 / 教师 / 蒸馏后学生」对�
 
 ---
 
-## 3. Kimi K3：九个 RL 专家，式（15）是 clip 过的对数比
+## 3. Kimi K3：九个 RL 专家，式 (15) 是 clip 过的对数比
 
 一手：K3 报告 HTML §4.1.3（公式以 HTML 为准）；库内 [架构精译 §8](../../../../model-library/03-模型家族/02-kimi/kimi/kimi-bi.md) 只作导航。流水线三阶段：SFT 冷启动 → 分域分 effort 的 RL → **MOPD** 合成一份权重。
 
@@ -88,7 +88,7 @@ V4 §5.1.2 **没有**给出「蒸馏前学生 / 教师 / 蒸馏后学生」对�
 | 通用 agent | 长程助手、深度研究、段落级写作 |
 | coding agent | SWE、编码体验、kernel、Web 开发 |
 
-训练时给定域 $d$ 和采样到的 effort $e$，只用对应的那一个教师 $\pi_{\mathrm{teacher}}^{(d,e)}$。报告式（15）：
+训练时给定域 $d$ 和采样到的 effort $e$，只用对应的那一个教师 $\pi_{\mathrm{teacher}}^{(d,e)}$。报告式 (15)：
 
 $$
 r^{d}_{\mathrm{opd}}(y_t\mid e,x,y_{<t})=\mathrm{clip}\Biggl(\mathrm{sg}\Biggl(\log\frac{\pi_{\mathrm{teacher}}^{(d,e)}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid e,x,y_{<t})}\Biggr),-R_{\max},R_{\max}\Biggr). \tag{3}
@@ -96,7 +96,7 @@ $$
 
 $\mathrm{sg}$ 仍是 stop-gradient。$R_{\max}>0$ 用来夹住极端 advantage，稳定 RL。分母里学生带了条件 $e$——effort 不只是选哪位教师，也进了 $\pi_\theta$ 的条件。这条奖励是**稠密、逐 token** 的，报告写它可以直接塞进现有 RL 框架，于是长程任务上的 **partial rollout**（一批 $NK$ 条轨迹，完成比例 $\lambda$ 就开优化，暂停的下轮优先续）对蒸馏同样适用。
 
-> 图 3：K3 九专家与式（15）。2026-08 自绘。
+> 图 3：K3 九专家与式 (15)。2026-08 自绘。
 
 **图 3 解析**
 
@@ -112,15 +112,15 @@ K3 报告 **没有** 一张与 MiMo Table 7 同构的「MOPD 前 / 教师 / MOPD
 
 一手：库内 [MiMo-V2-Flash mineru-en §4.1 与 §4.4](../../../../model-library/03-模型家族/05-mimo/mimo/mimo-bi.md)。**不要**用上一节的 $\mathrm{clip}(\cdot,-R_{\max},R_{\max})$ 去填 Flash 公式里没写的空。
 
-§4.1 把后训练写成三阶段（报告 Figure 3）：（1）通用 SFT；（2）分域 RL / SFT 得到教师——agentic（搜索、代码、通用工具）与 non-agentic（数学、通用推理、安全）；（3）MOPD：学生从自己正在演化的分布采样，用教师 logits 的 KL 奖励做 token 级监督，并可与可验证的结果奖励并用。教师可以是 RL 专家、另一个 SFT、甚至学生自己。
+§4.1 把后训练写成三阶段（报告 Figure 3）：(1) 通用 SFT；(2) 分域 RL / SFT 得到教师——agentic（搜索、代码、通用工具）与 non-agentic（数学、通用推理、安全）；(3) MOPD：学生从自己正在演化的分布采样，用教师 logits 的 KL 奖励做 token 级监督，并可与可验证的结果奖励并用。教师可以是 RL 专家、另一个 SFT、甚至学生自己。
 
-§4.4 把蒸馏写成 on-policy RL。$\pi_\theta$ 是训练引擎里要更新的学生，$\mu_\theta$ 是推理引擎里的采样学生，$\pi_{\mathrm{domain}_x}$ 是 prompt $x$ 所属域的教师。报告式（5）：
+§4.4 把蒸馏写成 on-policy RL。$\pi_\theta$ 是训练引擎里要更新的学生，$\mu_\theta$ 是推理引擎里的采样学生，$\pi_{\mathrm{domain}_x}$ 是 prompt $x$ 所属域的教师。报告式 (5)：
 
 $$
 \mathcal{L}_{\mathrm{reverse\text{-}KL}}(\theta)=-\mathbb{E}_{x\sim\mathcal{D},\,y_t\sim\pi_{\theta}(\cdot\mid x,y_{<t})}\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}. \tag{4}
 $$
 
-梯度（报告式（6））把对数比乘在 $\nabla_\theta\log\pi_\theta$ 前面，形状就是 REINFORCE，对数比充当 advantage。真正拿去优化的是 surrogate（报告式（7）（8））：轨迹改从 $\mu_\theta$ 采样，并跟 Zhao et al. (2025) 做训练–推理重要性采样，**差异过大的 token 丢掉**：
+梯度（报告式 (6)）把对数比乘在 $\nabla_\theta\log\pi_\theta$ 前面，形状就是 REINFORCE，对数比充当 advantage。真正拿去优化的是 surrogate（报告式 (7)(8)）：轨迹改从 $\mu_\theta$ 采样，并跟 Zhao et al. (2025) 做训练–推理重要性采样，**差异过大的 token 丢掉**：
 
 $$
 \mathcal{L}_{\mathrm{MOPD}}(\theta)=-\mathbb{E}_{x\sim\mathcal{D},\,y\sim\mu_{\theta}(\cdot\mid x)}\Biggl[\frac{1}{|y|}\sum_{t=1}^{|y|} w_t\,\hat A_{\mathrm{MOPD},t}\,\log\pi_{\theta}(y_t\mid x,y_{<t})\Biggr], \tag{5}
@@ -135,7 +135,7 @@ w_t(\theta)=\begin{cases}
 \hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Biggl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}\Biggr]. \tag{6}
 $$
 
-默认再把 ORM（含 GRPO）的结果优势加进去（报告式（9））：
+默认再把 ORM（含 GRPO）的结果优势加进去（报告式 (9)）：
 
 $$
 \hat A_{\mathrm{MOPD},t}=\mathrm{sg}\Biggl[\log\frac{\pi_{\mathrm{domain}_x}(y_t\mid x,y_{<t})}{\pi_{\theta}(y_t\mid x,y_{<t})}\Biggr]+\alpha\,\hat A_{\mathrm{ORM}}. \tag{7}
@@ -143,12 +143,12 @@ $$
 
 $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数值。本篇不编。训推两套引擎为什么不是同一个分布，见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md)。
 
-> 图 4：Flash §4.4 数据流。对应报告式（5）–(9)。2026-08 自绘。
+> 图 4：Flash §4.4 数据流。对应报告式 (5)–(9)。2026-08 自绘。
 
 **图 4 解析**
 
 - **一名 prompt 一名教师。** $\pi_{\mathrm{domain}_x}$ 按下标就是「这个 $x$ 的域」。多教师是在混合域 batch 上分别打分、梯度累到同一份 $\theta$，不是 V4 纸面那种 $\sum_i w_i D_{\mathrm{KL}}$ 写进单条样本。
-- **$w_t$ 的 clip 在重要性比。** 超出 $[\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}}]$ 的 token 权重为 0。这和 K3 夹 $r_{\mathrm{opd}}$ 不是同一道闸。图上若写成 $\pi_{\mathrm{domain}}/\mu$，以式（6）的 $\pi_\theta/\mu_\theta$ 为准。
+- **$w_t$ 的 clip 在重要性比。** 超出 $[\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}}]$ 的 token 权重为 0。这和 K3 夹 $r_{\mathrm{opd}}$ 不是同一道闸。图上若写成 $\pi_{\mathrm{domain}}/\mu$，以式 (6) 的 $\pi_\theta/\mu_\theta$ 为准。
 - **$\hat A_{\mathrm{MOPD},t}$ 本身没有 $R_{\max}$。** Flash 正文没写对 advantage 再做一次对称 clip。
 
 ### 4.1 报告有数字的表：Table 7
@@ -176,8 +176,8 @@ $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数�
 
 Xiaomi 另文《MOPD》（inbox 记链接）把范式写成因式论文，主实验在 **Qwen3-30B-A3B**，并声称同一范式用在 Flash。那里的公式分叉必须单列：
 
-- **PG 实现**（该文式（4））对 $\hat A_{\mathrm{MOPD},t}$ 做对称 clip $[-A_{\max},+A_{\max}]$。形状像 K3 式（15），**不是** Flash §4.4 写出的那一版；不要把 $A_{\max}$ 和 $R_{\max}$ 合成一个超参。
-- **Top-$k$ 实现**（该文式（5））在教师 top-$k$ 集合上算带偏置修正的 reverse KL；他们取 $k=64$，归一化分 **0.909 vs PG 的 0.937**，认为同起源教师下两者差不多。这和 K3「top-$k$ 没有明显好处」是两条独立消融，不要并成一句行业结论。
+- **PG 实现**（该文式 (4)）对 $\hat A_{\mathrm{MOPD},t}$ 做对称 clip $[-A_{\max},+A_{\max}]$。形状像 K3 式 (15)，**不是** Flash §4.4 写出的那一版；不要把 $A_{\max}$ 和 $R_{\max}$ 合成一个超参。
+- **Top-$k$ 实现**（该文式 (5)）在教师 top-$k$ 集合上算带偏置修正的 reverse KL；他们取 $k=64$，归一化分 **0.909 vs PG 的 0.937**，认为同起源教师下两者差不多。这和 K3「top-$k$ 没有明显好处」是两条独立消融，不要并成一句行业结论。
 - 同起源教师：把数学教师换成更强但分布更远的 Qwen3-235B-A22B，初始逐 token KL 大约 **0.19 vs 0.04**，PG 会掉点、top-$k$ 在他们的图上大约第 18 步发散。Flash 正文没写这组替换实验。
 - Qwen3-30B-A3B 能力合并（该文 Table 2，归一化分定义见该文 §4.1）：
 
@@ -226,10 +226,10 @@ V4 / K3 / MiMo 引用的共同祖先仍是 MiniLLM 与 Thinking Machines 的 on-
 
 ## 本篇来源
 
-1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告。§5.1.2 式（29）、§5.2.2 教师调度。库内：[03-DeepSeek-V4-mineru-en.md](../../../../model-library/03-模型家族/01-deepseek/deepseek/deepseek-bi.md)。
-2. Moonshot AI. (2026). Kimi K3 技术报告。§4.1.3 式（15）。公式以 HTML 为准。导航：[01-Kimi-K3-架构精译.md](../../../../model-library/03-模型家族/02-kimi/kimi/kimi-bi.md)。
-3. Xiaomi LLM-Core. (2026). MiMo-V2-Flash 技术报告。§4.1、§4.4 式（5）–(9)、Table 7。库内：[03-MiMo-V2-Flash-mineru-en.md](../../../../model-library/03-模型家族/05-mimo/mimo/mimo-bi.md)。
-4. Ma et al. (2026)。《MOPD》因式论文。Qwen3-30B-A3B Table 2；与 Flash 正文公式分列，不合并超参。链接只在 inbox。
+1. DeepSeek-AI. (2026). DeepSeek-V4 技术报告。§5.1.2 式 (29)、§5.2.2 教师调度。库内：[03-DeepSeek-V4-mineru-en.md](../../../../model-library/03-模型家族/01-deepseek/deepseek/deepseek-bi.md)。
+2. Moonshot AI. (2026). Kimi K3 技术报告。§4.1.3 式 (15)。公式以 HTML 为准。导航：[01-Kimi-K3-架构精译.md](../../../../model-library/03-模型家族/02-kimi/kimi/kimi-bi.md)。
+3. Xiaomi LLM-Core. (2026). MiMo-V2-Flash 技术报告。§4.1、§4.4 式 (5)–(9)、Table 7。库内：[03-MiMo-V2-Flash-mineru-en.md](../../../../model-library/03-模型家族/05-mimo/mimo/mimo-bi.md)。
+4. Ma et al. (2026). 《MOPD》因式论文。Qwen3-30B-A3B Table 2；与 Flash 正文公式分列，不合并超参。链接只在 inbox。
 5. MiniLLM；Agarwal et al. on-policy distillation / GKD；Lu and Thinking Machines Lab (2025) On-Policy Distillation——三家报告共同引用的单教师祖先，细节在 [01](../01-OPD基础原理/01-OPD基础原理.md)。
 
 知乎只学讲法（「一个 prompt 派一名域教师，梯度在 batch 上合成」），数字与公式不以专栏为准。
