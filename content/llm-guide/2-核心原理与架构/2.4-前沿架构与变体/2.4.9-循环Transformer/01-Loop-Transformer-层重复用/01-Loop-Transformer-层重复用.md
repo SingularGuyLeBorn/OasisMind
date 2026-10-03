@@ -129,12 +129,39 @@ Theorem 5.4: 对固定输入长 $n$, CoT 步数 $m$ 的 $L$ 层不循环 Transfo
 
 CoT 每生成一步只往上下文写 1 个 token; 循环在一次迭代里可以修改一整段潜状态. 这是存在性结果, 不说明 Huginn 或 Ouro 在潜空间里执行了 CoT. 两条轴可以叠加: CoT 消耗上下文长度, 循环消耗深度.
 
+### 5.4 循环启发的正则: 不共享参数, 只让相邻块相近
+
+第 5.2 节的循环模型推理分高、困惑度差. Saunshi 第 4 节试图两头都要: 保留 $L$ 层各自的参数, 只在训练里把相邻的 $k$ 层块往一起拉. 把 $L$ 层模型写成 $f_0\circ f_1\circ\cdots\circ f_{L/k-1}$, 每个 $f_i$ 含 $k$ 层. 对每个参数组 $G$ (如 Attn-Q、FFN-W2), 正则项是相邻块对应层权重的余弦相似度均值:
+
+$$
+\mathcal{R}_G(k)=\frac{1}{L-k}\sum_{i=0}^{L/k-2}\sum_{j=0}^{k-1}\mathrm{Cosine}\bigl(\theta_G^{(ik+j)},\,\theta_G^{((i+1)k+j)}\bigr) \tag{5}
+$$
+
+总损失按原文式 (4) 写成
+
+$$
+\mathcal{L}=\mathcal{L}_{\mathrm{xent}}+\lambda_{\mathrm{reg}}\,|\mathcal{G}|^{-1}\sum_{G\in\mathcal{G}}\mathcal{R}_G(k) \tag{6}
+$$
+
+求和项共 $(L/k-1)\cdot k=L-k$ 个余弦, 所以前面除以 $L-k$. 原文的目标是提高相邻块的相似度, 照此在实现中应当最大化式 (5), 式 (6) 里这一项按文字含义取负号. $\lambda_{\mathrm{reg}}=0$ 退回普通训练, $\lambda_{\mathrm{reg}}\to\infty$ 收敛到完全循环. 作者试过 $\ell_2$ 距离, 余弦更稳. 训练结束时 $k=4$, $\lambda_{\mathrm{reg}}=10$ 的各参数组块间余弦都在 0.98 左右或更高, 不加正则的基线余弦很低.
+
+Table 4 (24 层 1B, 与第 5.2 节同一设定):
+
+| 设定 | 困惑度 | 闭卷 QA | 开卷 QA | 数学应用题 | 推理原语 |
+|------|--------|---------|---------|------------|----------|
+| 基线 | 7.40 | 11.2 | 33.9 | 29.3 | 47.5 |
+| $k=4$, $\lambda_{\mathrm{reg}}=1$ | 7.41 | 11.2 | 34.8 | 31.6 | 42.5 |
+| $k=4$, $\lambda_{\mathrm{reg}}=10$ | 7.38 | 12.5 | 36.2 | 36.4 | 57.2 |
+| $k=12$, $\lambda_{\mathrm{reg}}=10$ | 7.51 | 10.1 | 34.1 | 32.3 | 50.7 |
+
+$k=4$, $\lambda_{\mathrm{reg}}=10$ 对应 $(4\otimes 6)$: 困惑度 7.38 与基线持平, 数学应用题从 29.3 到 36.4, 推理原语从 47.5 到 57.2, 比真正循环的 $(4\otimes 6)$ (困惑度 8.79, 推理原语 56.9) 困惑度好得多. 正则太弱 ($\lambda_{\mathrm{reg}}=1$) 时推理原语反而降到 42.5.
+
 ## 6. Huginn: sandwich, 以及推理阶段加循环
 
 Geiping et al. (NeurIPS 2025, [arXiv: 2502.05171](https://arxiv.org/abs/2502.05171)) 把循环做成可预训练的 decoder-only 语言模型 Huginn. 主模型 3.5B 参数, 800B token. 形状写成三元组 $(l_P,l_R,l_C)=(2,4,2)$, 隐宽 $h=5280$, 存储的层共 8 个. 循环核转 $r$ 次时, 展开深度是
 
 $$
-2+4r+2. \tag{5}
+2+4r+2. \tag{7}
 $$
 
 $r=32$ 时是 132 层. 参数切分: prelude 和头大约 1.5B, 循环核 1.5B, 绑定的输入嵌入 0.5B.
@@ -149,7 +176,7 @@ e&=P(x),\\
 s_0&\sim\mathcal{N}(0,\sigma^2 I),\\
 s_i&=R(e,s_{i-1}),\qquad i=1,\ldots,r,\\
 p&=C(s_r).
-\end{aligned} \tag{6}
+\end{aligned} \tag{8}
 $$
 
 $e$ **每一步都重新注入**. 如果只在第一步喂一次 $e$, 迭代算子对数据不再单调, 路径会停在初值附近. 适配器 $A:\mathbb{R}^{2h}\to\mathbb{R}^{h}$ 把 $[s;e]$ 拼起来再送进 4 层核; 小模型上相加也行, 这个尺度上拼接更好.
@@ -160,7 +187,7 @@ $$
 \begin{aligned}
 \hat x_l&=n_2\bigl(x_{l-1}+\mathrm{Attn}(n_1(x_{l-1}))\bigr),\\
 x_l&=n_4\bigl(\hat x_l+\mathrm{MLP}(n_3(\hat x_l))\bigr).
-\end{aligned} \tag{7}
+\end{aligned} \tag{9}
 $$
 
 RoPE base $50000$, MLP 用 gated SiLU, RMSNorm. 作者说 $n_3$ 技术上多余, 主模型仍保留. 第一次大规模训练如果改回普通 Pre-LN, 又把学习率开到 $4\times 10^{-4}$, 会出现 token 表示之间的相关系数升到 1, 或模型学会忽略 $s$, 加 $r$ 也不降困惑度. 主运行把学习率降到 $4\times 10^{-5}$, 并保留 sandwich.
@@ -207,13 +234,13 @@ Prelude / coda 是独立层, 按常规各写各的 KV.
 Fully Looped Architecture 改接线. 普通 LT 上一圈的输出只进下一圈的**第一层**. 后面的层要经过一长串变换才看得到循环状态. FLA 让上一圈输出 $h_L^{(t-1)}$ 对当前圈**每一层**可见:
 
 $$
-h_l^{(t)}=f_\theta^{(l)}\bigl(h_{l-1}^{(t)},\,h_L^{(t-1)}\bigr). \tag{8}
+h_l^{(t)}=f_\theta^{(l)}\bigl(h_{l-1}^{(t)},\,h_L^{(t-1)}\bigr). \tag{10}
 $$
 
 Attention Injection 规定怎么融合. 第一圈 $t=1$ 仍是普通自注意力. $t>1$ 改成交叉注意力: 上一圈末态当 Query, 当前层前级输出 $z_l^{(t)}$ 当 Key / Value, 投影矩阵还是那套 $W_Q,W_K,W_V$:
 
 $$
-a_l^{(t)}=\mathrm{Attention}\bigl(W_Q h_L^{(t-1)},\,W_K z_l^{(t)},\,W_V z_l^{(t)}\bigr). \tag{9}
+a_l^{(t)}=\mathrm{Attention}\bigl(W_Q h_L^{(t-1)},\,W_K z_l^{(t)},\,W_V z_l^{(t)}\bigr). \tag{11}
 $$
 
 Softmax 之后, 注入量由当前 Value 流决定, 上一圈的范数不能直接加进残差. 第一层的 $z$ 直接用输入嵌入 $x$, 作用接近先前工作里的 Input Injection, 但走注意力, 不做相加. 上一圈状态放在 $Q$ 上, 不放在 $K/V$ 上, 是为了让 KV 缓存仍按标准注意力写. 只做 FLA、把上一圈直接加进残差的 FLTres, 在消融里同样训练失败.
@@ -225,7 +252,7 @@ Softmax 之后, 注入量由当前 Value 流决定, 上一圈的范数不能直�
 DeepLoop ([arXiv: 2607.13491](https://arxiv.org/abs/2607.13491)) 沿用 Post-LN DeepNorm 骨架, 只改缩放. DeepNorm 对不共享权重的 $N$ 层, $M=2N$ 次子层访问, 取
 
 $$
-\alpha=(2N)^{1/4},\qquad \beta=(8N)^{-1/4}. \tag{10}
+\alpha=(2N)^{1/4},\qquad \beta=(8N)^{-1/4}. \tag{12}
 $$
 
 $\beta$ 是残差分支矩阵的**初始化增益**, 不是前向再乘一次的运行时系数. 一阶稳定条件写成 $M(\beta/\alpha)^2=O(1)$.
@@ -233,7 +260,7 @@ $\beta$ 是残差分支矩阵的**初始化增益**, 不是前向再乘一次的
 循环打破了「每次访问各有一份独立更新」. 同一 $\phi_j$ 被访问 $R$ 次, 梯度先按访问求和, 再被这 $R$ 次前向读回去. visit-alignment $\kappa_R$ 衡量各轮梯度是否同向, $0\le\kappa_R\le R$. 访问近乎正交时 $\kappa_R=O(1)$, 回到 DeepNorm 的 $p=1/4$. 访问对齐, 且 $K$ 固定 $R$ 在增长时, $\kappa_R=\Theta(R)$, 指数要从 $1/4$ 提到 $1/2$:
 
 $$
-\alpha=(2N)^{1/2},\qquad \beta=(8N)^{-1/2}. \tag{11}
+\alpha=(2N)^{1/2},\qquad \beta=(8N)^{-1/2}. \tag{13}
 $$
 
 此时 $\beta/\alpha=1/(4N)$. 稳定条件改成 $M\kappa_R(\beta/\alpha)^2=O(1)$. 代入 $M=2N$, $\kappa_R=R$: $2N\cdot R\cdot\frac{1}{16N^2}=\frac{R}{8N}=\frac{1}{8K}$, 与 $R$ 无关, 所以 $R$ 增大时条件仍满足. $R=1$ 时没有重复访问, 不存在对齐惩罚.
@@ -251,6 +278,8 @@ Bae et al. (NeurIPS 2025, [arXiv: 2507.10524](https://arxiv.org/abs/2507.10524))
 共享顺序有 Cycle 和 Sequence, 以及保留首尾层、只共享中间层的 Middle 变体. $L=9$, $N_r=3$ 时, Cycle 展开成 $[(0,1,2),(0,1,2),(0,1,2)]$, Sequence 成 $[(0,0,0),(1,1,1),(2,2,2)]$. 展开层数相同, 访问顺序不同.
 
 路由有两种. Expert-Choice: 每一深度当一个「专家」, Top-$k$ 留下还要继续转的 token, 并且只允许上一轮留下的 token 进入下一轮. Token-Choice: 一开始就为每个 token 选定总轮数. 为了对齐两种路由的算力, $N_r=3$ 且负载均匀时, 三轮处理的 token 比例为 $3/3,2/3,1/3$, Expert-Choice 的 $k$ 按这个比例递降. KV 也有两种: recursion-wise 只缓存本轮仍活跃的 token; recursive sharing 在第一轮缓存全部, 后面轮次复用. 这和 Huginn 的 $i\bmod k$ 是不同的实现.
+
+结果 (Table 3, FineWeb-Edu). 训练预算固定为 $16.5\times10^{18}$ FLOPs 时, Expert-Choice、$N_r=2$ 的 MoR 参数量约为普通 Transformer 的一半, few-shot 平均 43.1% 对 42.3%, 验证损失也更低; 原因是每 token 算得更少, 同样 FLOPs 能多训 token. 训练 token 固定为 20B 时, $N_r=2$ 的 MoR 训练 FLOPs 少 25%, 训练时间少 19%, 峰值显存少 25%. 推理侧, 共享参数允许连续深度批处理 (不同深度的 token 拼进同一批), 360M 档 MoR-4 在最大批量下吞吐最高达普通模型的 2.06 倍, 代价是似然略降.
 
 MoR 借用了 MoE 的术语, 路由对象是「这个 token 再进几轮循环核」. 专家矩阵的稀疏见 2.4.1.
 
