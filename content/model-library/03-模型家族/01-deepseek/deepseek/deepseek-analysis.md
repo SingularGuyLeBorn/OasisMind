@@ -17,7 +17,7 @@ excerpt: "微观结构基本是 LLaMA 的配方: Pre-Norm 加 RMSNorm, FFN 用 S
 
 ### 1.1. 起点: 一个照着 LLaMA 搭的 Dense 底座
 
-微观结构基本是 LLaMA 的配方: Pre-Norm 加 **RMSNorm**, FFN 用 **SwiGLU**, 中间宽度 $\frac{8}{3}d_{\mathrm{model}}$, 位置编码用 **RoPE**. 唯一的注意力改动是 67B 换成 **GQA**, $n_{\mathrm{kv\_heads}}=8$, 目的写得很直接: 省推理成本. 7B 仍用满头 MHA. 这说明当时 DeepSeek 并没有把「推理时 KV cache 太大」当成主要矛盾, 只在大尺寸上顺手压了一下, 真正动注意力结构要等到 V2 的 MLA. GQA 在性能与缓存之间怎么取舍, 见 [03-GQA-在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md).
+微观结构基本是 LLaMA 的配方: Pre-Norm 加 **RMSNorm**, FFN 用 **SwiGLU**, 中间宽度 $\frac{8}{3}d_{\mathrm{model}}$, 位置编码用 **RoPE**. 唯一的注意力改动是 67B 换成 **GQA**, $n_{\mathrm{kv\_heads}}=8$, 目的写得很直接: 省推理成本. 7B 仍用满头 MHA. 这说明当时 DeepSeek 并没有把「推理时 KV cache 太大」当成主要矛盾, 只在大尺寸上顺手压了一下, 真正动注意力结构要等到 V2 的 MLA. GQA 在性能与缓存之间怎么取舍, 见 [03-GQA-在性能与缓存之间折中](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 宏观上有两处和 LLaMA 不同. 第一, 层数选成 30 和 95, 报告说这样方便 pipeline 切分. 第二, 67B 用 GQA 省下的参数预算没有照惯例加到 FFN 宽度上, 而是加到深度上, 所以 95 层配 $d_{\mathrm{model}}=8192$. 报告只说「为了更好性能」, 没有给深宽对比的消融, 这一点报告没有证据. 按 Table 2 的规格粗算: 每层注意力约 $2.25d^2$(Q, O 满头, K, V 只有 1/8), FFN 约 $8d^2$, 95 层合计约 65B, 加上词表约 1.7B, 正好落在 67B 附近. 训练框架是自研的 **HAI-LLM**: 数据, 张量, 序列并行加 1F1B 流水, FlashAttention, ZeRO-1 切优化器状态, bf16 前向, fp32 累梯度, cross-entropy 在 kernel 内就地把 bf16 logits 转成 fp32 再覆写成梯度. 权重和优化器状态每 5 分钟异步落盘, 最坏只丢 5 分钟训练. 这些细节后来在 V2 和 V3 里一路沿用.
 

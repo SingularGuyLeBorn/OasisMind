@@ -37,7 +37,7 @@ Stage 3 的长上下文也有一张单独的核验表. Fig. 4 用 RULER 测 Base
 
 ### 1.3. 骨架保持普通, 改动落在训练日程和 MTP
 
-§2.2 给出的结构完全是主流配置: 36 层, hidden 4,096, FFN intermediate 11,008, 注意力头 32, KV group 8 的 GQA, pre-RMSNorm, SwiGLU, RoPE. 报告自己也写 「similar to Llama and Qwen」. GQA 在性能与 KV 缓存之间的折中见 [GQA 单独成篇](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md). 7B 这一档没有换注意力形态, 小米的架构改动要到 Flash 才出现, 这一篇把可调的旋钮都放在训练日程上.
+§2.2 给出的结构完全是主流配置: 36 层, hidden 4,096, FFN intermediate 11,008, 注意力头 32, KV group 8 的 GQA, pre-RMSNorm, SwiGLU, RoPE. 报告自己也写 「similar to Llama and Qwen」. GQA 在性能与 KV 缓存之间的折中见 [GQA 单独成篇](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md). 7B 这一档没有换注意力形态, 小米的架构改动要到 Flash 才出现, 这一篇把可调的旋钮都放在训练日程上.
 
 日程数字要连着 token 断点抄. AdamW ($\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1), grad clip 1.0. 学习率在前 84B token 从 0 线性暖到 $1.07\times10^{-4}$, 常数相 10.2T, 再余弦降到 $3\times10^{-5}$ (7.5T); 这个值贯穿 Stage 2 (4T) 与 Stage 3 前 1.5T, 最后 500B 余弦降到 $1\times10^{-5}$. batch 在前 168B token 线性暖到 2,560, 保持到 Stage 2 结束; Stage 3 固定为 640, 同时序列从 8,192 拉到 32,768. 两组数相乘可以看出安排的用意 (按数推算): $2560\times8192$ 与 $640\times32768$ 都约为 2,100 万 token, 每步吃进的 token 数没变, 只是把同样的量换成更少, 更长的样本, 学习率与梯度噪声的量级因此不必重新调. 正文没有另给这组设置的消融. RoPE base 从 10,000 提到 640,000, 配合 32K 上下文. 三段学习率的 token 数加起来 (按数推算): Stage 1 是 $0.084+10.2+7.5\approx17.8$T, Stage 2 是 4T, Stage 3 是 $1.5+0.5=2$T, 合计约 23.8T, 比摘要的 「约 25T」 少 1T 出头, 报告没有解释差额. batch 暖机的 168B 正好是学习率暖机 84B 的两倍. MTP 按 $\mathcal{L}=\mathcal{L}_{\mathrm{NTP}}+\lambda\,\mathcal{L}_{\mathrm{MTP}}$ 加权 (报告只给了权重 $\lambda$, 没写成加法式), $\lambda$ 前 10.3T 为 0.3, 之后 0.1. 由于 $0.084+10.2=10.284$T, **$\lambda$ 的切换点正好落在常数学习率结束, 余弦衰减开始的位置**, 后半程更信任主目标 next-token prediction.
 

@@ -26,7 +26,7 @@ Mistral 7B 是 Mistral AI 的第一份技术报告, 篇幅很短: 架构一页�
 
 再加上嵌入. 词表 32000 乘 4096 约 1.31 亿, 输入和输出矩阵如果不共享, 总共约 2.62 亿, 模型总参数约 72.4 亿; 共享的话约 71.1 亿. 两种算法都落在 「7-billion-parameter」 的说法之内, 但论文既没说共享与否, 也没有印出精确参数量, 所以 「7B」 这个名字只能理解成量级. 层归一化的参数量级在 26 万左右, 对总数没有影响.
 
-规格表还决定了缓存成本. 按 fp16 存储, 每个 token 每层要存 key 和 value 各 8 × 128 个数, 32 层合计 2 × 32 × 8 × 128 × 2 字节 = 128 KiB. 如果 KV 头和查询头一样是 32 个, 这个数会变成 512 KiB. 引言里说 GQA 「reduces the memory requirement during decoding, allowing for higher batch sizes」, 这个 4 倍就是它在本模型上的具体含义. 论文没有给 GQA 的消融, 所以 「significantly accelerates the inference speed」 这句话没有对应的数字支撑. GQA 本身的机制见本库 [GQA](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/03-GQA-在性能与缓存之间折中/03-GQA-在性能与缓存之间折中.md).
+规格表还决定了缓存成本. 按 fp16 存储, 每个 token 每层要存 key 和 value 各 8 × 128 个数, 32 层合计 2 × 32 × 8 × 128 × 2 字节 = 128 KiB. 如果 KV 头和查询头一样是 32 个, 这个数会变成 512 KiB. 引言里说 GQA 「reduces the memory requirement during decoding, allowing for higher batch sizes」, 这个 4 倍就是它在本模型上的具体含义. 论文没有给 GQA 的消融, 所以 「significantly accelerates the inference speed」 这句话没有对应的数字支撑. GQA 本身的机制见本库 [GQA](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/02-MQA与GQA-共享KeyValue头/02-MQA与GQA-共享KeyValue头.md).
 
 ## 3. 滑动窗口: 131K 是上限, 不是实测长度
 
