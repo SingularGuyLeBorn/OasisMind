@@ -32,7 +32,7 @@ Multimodal Large Language Models (MLLMs) are undergoing rapid progress and repre
 > 撑不住. 表 1 的 Video-MME 两行, MiniCPM-V 4.5 是 67.9 (无字幕) 和 73.5 (有字幕), 同在 30B 以下的 GLM-4.1V 9B 是 68.2 和 73.6, 两行都略高; 第 11 页表 2 (b) 也是 GLM-4.1V 73.6 对 73.5. 这句话要读成 「分数接近, 时间和显存省得多」.
 
 > **核对:** 46.7% 的显存和 8.7% 的推理时间, 跟谁比, 出自哪张表?
-> 出自第 11 页表 2 (b), 对比对象是 Qwen2.5-VL-7B: 显存 28G / 60G 约 46.7%, 时间 0.26h / 3.00h 约 8.7% (估算), 和摘要一致. 分数是 73.5 对 71.6, 与表 1 有字幕那一行相同, 推断表 2 (b) 用的是有字幕设置; 硬件是 8 张 A100.
+> 出自第 11 页表 2 (b), 对比对象是 Qwen2.5-VL-7B: 显存 28G / 60G 约 46.7%, 时间 0.26h / 3.00h 约 8.7%, 和摘要一致. 分数是 73.5 对 71.6, 与表 1 有字幕那一行相同, 推断表 2 (b) 用的是有字幕设置; 硬件是 8 张 A100.
 
 ## 1 Introduction
 
@@ -62,14 +62,14 @@ To address the challenges, MiniCPM-V 4.5 introduces three key improvements in mo
 针对这些问题, MiniCPM-V 4.5 在模型架构, 数据策略和训练方法上做了三项关键改进: (1) **统一 3D-Resampler, 紧凑编码图像和视频.** 之前的 MiniCPM-V 系列模型 [6] 借助 2D-Resampler [5, 13], 对高分辨率图像已有很高的压缩率 (例如比多数 MLLM 高 4 倍). 为了进一步解决视频处理在架构上的低效, 我们把 2D-Resampler 扩展成 3D-Resampler, 对视频的时空信息做联合压缩. 这个模块能把一段 6 秒, 2 fps, 448×448 分辨率的视频编码成只有 128 个视觉 token, 相比代表性 MLLM [7, 9] 的 token 开销降低 12 到 24 倍, 从而高效支持高帧率和长视频理解, 同时统一了图像的编码. (2) **文档知识与 OCR 的统一学习范式.** 我们提出一种学习范式, 让模型直接从文档图像中准确获取知识, 不再需要脆弱的外部解析器. 做法是以不同噪声强度动态破坏文档里的文字区域, 再让模型重建文字, 模型由此学会在两种行为间自适应地切换: 文字大致可见时做精确的文字识别, 文字被严重破坏时做基于多模态上下文的知识推理. (3) **后训练的混合策略.** 以往模型只针对单一的长推理模式优化 [2, 1], 我们则设计了混合的 RL 后训练策略, 同时支持高效使用的短推理模式和面向复杂任务的长推理模式. RL 训练时, rollout 过程在两种模式间随机交替, 联合优化. 这种做法既能灵活控制长短两种推理模式, 又让两者的性能互相促进. 实验中, 两种模式都能用更少的训练样本得到更好的推理性能.
 
 > **拆开:** 128 个 token 和 12×-24× 是怎么算出来的?
-> 6 秒, 2 fps 就是 12 帧. 对照组是 Qwen2.5-VL 的 1,536 个和 InternVL3 的 3,072 个, 1,536 / 128 = 12, 3,072 / 128 = 24. 128 本身也能拆: 第 4 页说 6 帧 448×448 压成 64 个 token, 12 帧正好是两个 package, 2 × 64 = 128 (估算, 假设 package 取 6 帧).
+> 6 秒, 2 fps 就是 12 帧. 对照组是 Qwen2.5-VL 的 1,536 个和 InternVL3 的 3,072 个, 1,536 / 128 = 12, 3,072 / 128 = 24. 128 本身也能拆: 第 4 页说 6 帧 448×448 压成 64 个 token, 12 帧正好是两个 package, 2 × 64 = 128 (假设 package 取 6 帧).
 
 Comprehensive experimental results in OpenCompass evaluation show that MiniCPM-V 4.5 outperforms widely used proprietary models such as GPT-4o-latest [4], and significantly larger open-source models such as Qwen2.5-VL 72B [7]. Notably, the strong performance is achieved with remarkable efficiency. For example, powered by the efficient unified 3D-Resampler, MiniCPM-V 4.5 achieves equivalent performance on VideoMME [14] using only 9.9% of the inference time of prior state-of-the-art MLLMs [1]. Based on the hybrid post-training strategy, MiniCPM-V 4.5 excels in both short and long reasoning modes, outperforming concurrent thinking models [3, 1] on OpenCompass evaluation while using only 42.9%-68.2% inference time.
 
 OpenCompass 评测的综合实验结果表明, MiniCPM-V 4.5 超过了 GPT-4o-latest [4] 等广泛使用的闭源模型, 也超过了 Qwen2.5-VL 72B [7] 这样大得多的开源模型. 值得一提的是, 这样的性能是以很高的效率换来的. 例如借助高效的统一 3D-Resampler, MiniCPM-V 4.5 在 VideoMME [14] 上取得相当的性能, 推理时间只有此前 state-of-the-art MLLM [1] 的 9.9%. 基于混合后训练策略, MiniCPM-V 4.5 在短推理和长推理两种模式下都表现出色, 在 OpenCompass 评测上超过同期的思考模型 [3, 1], 推理时间只用它们的 42.9% 到 68.2%.
 
 > **对一下:** 9.9% 和 42.9%-68.2% 各对应表 2 的哪几格?
-> 9.9% 是表 2 (b) 的 0.26h / 2.63h (对 GLM-4.1V-9B-thinking), 约 9.9%; 42.9% 是表 2 (a) 的 7.5h / 17.5h (对 GLM-4.1V), 68.2% 是 7.5h / 11.0h (对 MiMo-VL-7B-RL), 都能复算 (估算). 「相当的性能」 在表 2 (b) 上实际是 73.5 对 73.6, 低 0.1.
+> 9.9% 是表 2 (b) 的 0.26h / 2.63h (对 GLM-4.1V-9B-thinking), 约 9.9%; 42.9% 是表 2 (a) 的 7.5h / 17.5h (对 GLM-4.1V), 68.2% 是 7.5h / 11.0h (对 MiMo-VL-7B-RL), 都能复算. 「相当的性能」 在表 2 (b) 上实际是 73.5 对 73.6, 低 0.1.
 
 In summary, our contributions are as follows:
 
@@ -96,7 +96,7 @@ Figure 1: An overview of the MiniCPM-V 4.5 architecture. The model processes div
 图 1: MiniCPM-V 4.5 的架构总览. 模型处理多种视觉输入, 比如高分辨率图像和高帧率视频. 这些输入经过图像切片和视频打包后, 先由视觉编码器编码, 再送进统一 3D-Resampler. 这个模块把图像和视频特征高效地压成紧凑的 token 序列 (图像最高 16 倍压缩, 视频再额外压 6 倍), 然后交给 LLM 解码器处理. 解码器能以两种风格生成回答: 简洁的短推理模式, 或逐步展开的长推理模式.
 
 > **想:** 图 1 说图像最高 16 倍压缩, 视频再额外 6 倍, 16 从哪来, 和第 4 页的 96 倍是什么关系?
-> 16 × 6 = 96, 正是第 4 页 「视频 token 96 倍压缩」. 16 倍的分母页面没直接印: 第 3 页只说一片 448×448 编成 64 个 token, 常见做法要 256 个; 若视觉编码器 patch 为 14, 一片有 32 × 32 = 1,024 个 patch, 1,024 / 64 = 16 (估算). 本页没有给视觉编码器的名字和 patch 大小, 这一步是按常见配置反推的.
+> 16 × 6 = 96, 正是第 4 页 「视频 token 96 倍压缩」. 16 倍的分母页面没直接印: 第 3 页只说一片 448×448 编成 64 个 token, 常见做法要 256 个; 若视觉编码器 patch 为 14, 一片有 32 × 32 = 1,024 个 patch, 1,024 / 64 = 16. 本页没有给视觉编码器的名字和 patch 大小, 这一步是按常见配置反推的.
 
 ## 2 Approach (方法)
 
@@ -131,14 +131,14 @@ Intuitively, the video frames within the same package typically share highly red
 直观地看, 同一 package 里的帧通常共享高度冗余的视觉信息, 联合建模时可以把冗余识别出来并压掉. 为此, 我们在每个 package 内通过交叉注意力, 把视觉编码器输出的帧特征重采样成一条定长特征序列. 可学习查询同时加上 2D 空间位置嵌入 (与图像编码相同) 和时间位置嵌入. 最终的视频表示由所有 package 的 token 序列拼接而成. 每段视频最多采样 1080 帧, 最高帧率为 10. 训练时对 package 大小和帧率做随机增强, 以提高稳健性. 这个设计也给推理带来灵活性, 可以调整这些超参数来适应不同场景和设备的需求.
 
 > **停一下:** 每段视频最多 1,080 帧, 最高 10 fps, 送进 LLM 的视觉 token 有多少?
-> 按主模型 6 帧 64 个 token 算, 1,080 帧是 180 个 package, 约 11,520 个视觉 token (估算); 10 fps 下 1,080 帧只覆盖 108 秒, 更长的视频得降帧率. 本页没给 LLM 的上下文长度, 也没说推理时 package 大小的默认值, 长视频能放多少帧只能按这个上限估.
+> 按主模型 6 帧 64 个 token 算, 1,080 帧是 180 个 package, 约 11,520 个视觉 token; 10 fps 下 1,080 帧只覆盖 108 秒, 更长的视频得降帧率. 本页没给 LLM 的上下文长度, 也没说推理时 package 大小的默认值, 长视频能放多少帧只能按这个上限估.
 
 Based on the 3D-Resampler, MiniCPM-V 4.5 can achieve 96× compression rate for video tokens, where 6,448×448 video frames can be jointly compressed into 64 video tokens (normally 1,536-3,072 tokens for most MLLMs). This means that the model can perceive significantly more video frames without increasing the LLM inference cost, which brings strong high-frame-rate video understanding and long video understanding capabilities.
 
 基于 3D-Resampler, MiniCPM-V 4.5 对视频 token 能达到 96 倍压缩率, 6 帧 448×448 的视频帧可以联合压成 64 个视频 token (多数 MLLM 通常要 1,536-3,072 个 token). 这意味着模型能在不增加 LLM 推理成本的前提下看到多得多的视频帧, 由此获得很强的高帧率视频理解和长视频理解能力.
 
 > **回看:** 这里说 6 帧压成 64 个 token, 括号里 「多数 MLLM 通常要 1,536-3,072 个」, 回看引言, 这个区间对应几帧?
-> 对应 12 帧. 第 2 页的 1,536 和 3,072 是 6 秒, 2 fps 的视频, 共 12 帧; 换成 6 帧, 按同一比例只有 768-1,536 个 (估算). 括号里的区间和 64 不是同一段视频, 直接相除会得到 24×-48×, 而不是引言的 12×-24×. 另外 MinerU 把 「6 448×448」 转成了 「6,448×448」, 看着像六千多, 原意是 6 帧.
+> 对应 12 帧. 第 2 页的 1,536 和 3,072 是 6 秒, 2 fps 的视频, 共 12 帧; 换成 6 帧, 按同一比例只有 768-1,536 个. 括号里的区间和 64 不是同一段视频, 直接相除会得到 24×-48×, 而不是引言的 12×-24×. 另外 MinerU 把 「6 448×448」 转成了 「6,448×448」, 看着像六千多, 原意是 6 帧.
 
 **Training Efficiency.** Thanks to the flexibility of the resampler mechanism (agnostic to input shape), we can use the same 3D-Resampler for unified visual encoding over images and videos. This means that image and visual encoding share the same architecture and weights, and therefore, we can achieve the extension from 2D-Resampler to 3D-Resampler efficiently via a lightweight SFT stage. Moreover, this also facilitates efficient knowledge transfer from images to videos. For example, we observe reasonable video OCR capability in MiniCPM-V 4.5, although we did not specifically collect such training data.
 
@@ -399,7 +399,7 @@ Here, $\tilde{R}_{\mathrm{rm}}$ is the standardized preference reward score comp
 这里 $\tilde{R}_{\mathrm{rm}}$ 是标准化后的偏好奖励分数, 按 $\frac{R_{\mathrm{rm}} - \bar{R}_{\mathrm{rm}}}{\sigma(R_{\mathrm{rm}})}$ 计算, 其中 $\bar{R}_{\mathrm{rm}}$ 和 $\sigma(R_{\mathrm{rm}})$ 是同一 prompt 采样出的多条回复的原始奖励分数的均值和标准差.
 
 > **想:** 正文说最终奖励是四项的 「加权组合」, 式 (1) 里的权重各是多少?
-> 按式 (1), $R_{\mathrm{acc}}$, $R_{\mathrm{format}}$, $R_{\mathrm{rep}}$ 的权重都是 1, 只有标准化后的偏好分乘 1/2. 偏好分先按同一 prompt 的多条回复做了均值方差标准化, GRPO 又会在组内对总奖励再标准化一次, 两次叠加后 1/2 的实际分量会随其他三项的组内方差变化 (推断). 各项的取值范围, $R_{\mathrm{rep}}$ 取负值还是 0/1, 本页都没给.
+> 按式 (1), $R_{\mathrm{acc}}$, $R_{\mathrm{format}}$, $R_{\mathrm{rep}}$ 的权重都是 1, 只有标准化后的偏好分乘 1/2. 偏好分先按同一 prompt 的多条回复做了均值方差标准化, GRPO 又会在组内对总奖励再标准化一次, 两次叠加后 1/2 的实际分量会随其他三项的组内方差变化. 各项的取值范围, $R_{\mathrm{rep}}$ 取负值还是 0/1, 本页都没给.
 
 <!-- page 9 of 25 -->
 
@@ -551,7 +551,7 @@ We evaluated the inference efficiency of MiniCPM-V 4.5 in a standard configurati
 我们在 8 张 A100 GPU 的标准配置下, 评估了 MiniCPM-V 4.5 在图像理解和视频理解任务上的推理效率. 如表 2 所示, 与其他领先模型相比, 我们的模型性能相当或更好, 推理时间和显存占用却明显更少. 在 OpenCompass 上, MiniCPM-V 4.5 不仅在 30B 以下模型中平均分最高, 跑完评测的时间也只有 GLM-4.1V 的 42.9%. 这份效率来自模型灵活的短推理和长推理模式. 在 VideoMME 上效率提升更明显. 它以 73.6 的强劲表现, 把推理时间缩短近 10 倍 (从 2.63h 到 0.26h), 显存也最少, 为 28G. 这一提升主要归功于高效的 3D-Resampler, 它同时考虑空间和时间两个维度来压缩视频.
 
 > **核对:** 3.3 节说 VideoMME 上 「以 73.6 的强劲表现」 把时间从 2.63h 降到 0.26h, 73.6 是谁的分?
-> 表 2 (b) 里 73.6 是 GLM-4.1V-9B-thinking 的分, MiniCPM-V 4.5 是 73.5; 表 1 有字幕一行也是 73.5 对 73.6, 正文把两格看串了. 2.63 / 0.26 约 10.1 倍 (估算), 「近 10 倍」 成立; 28G 也确实是三者里最低.
+> 表 2 (b) 里 73.6 是 GLM-4.1V-9B-thinking 的分, MiniCPM-V 4.5 是 73.5; 表 1 有字幕一行也是 73.5 对 73.6, 正文把两格看串了. 2.63 / 0.26 约 10.1 倍, 「近 10 倍」 成立; 28G 也确实是三者里最低.
 
 ### 3.4 Ablations (消融)
 
@@ -578,7 +578,7 @@ Moreover, the hybrid strategy consumes only 70.5% of the training token costs of
 此外, 混合策略只花了纯长推理设置 70.5% 的训练 token, 性能却更好. 我们推测这是因为两种模式共享基础的感知和认知技能. 长推理培养出的分析深度似乎能增强短推理, 而短推理学到的效率和直接性又能打磨长推理过程.
 
 > **回看:** 表 3 里混合策略 OpenCompass 77.1, 回看表 1, 最终模型为什么是 77.0?
-> 表 3 是消融, 最终模型在 RL 之后还有 RLAIF-V 阶段 (第 9 页), 页面没说 77.1 取自哪个 checkpoint, 也没给它的波动范围; 表 1 的 77.0 带 †, 是三次平均. 3.1B / 4.4B 约 70.5% (估算), 与正文一致, 但 3.1B 是总 token, 其中长推理占多少没有拆开.
+> 表 3 是消融, 最终模型在 RL 之后还有 RLAIF-V 阶段 (第 9 页), 页面没说 77.1 取自哪个 checkpoint, 也没给它的波动范围; 表 1 的 77.0 带 †, 是三次平均. 3.1B / 4.4B 约 70.5%, 与正文一致, 但 3.1B 是总 token, 其中长推理占多少没有拆开.
 
 **Probability-based reward complements rule-verification reward.** In addition to rule-based reward for easy-to-verify responses, MiniCPM-V 4.5 further incorporates the probability-based reward from RLPR [29] for general domain response verification. As shown in Figure 3, combining both rule-based and probability-based signals (VR + PR) consistently and substantially outperforms the rule-only approach, while also yielding stable training patterns with respect to response length and entropy.
 
@@ -613,7 +613,7 @@ Table 4: Ablation of unified learning paradigm for document knowledge and text r
 表 4: 文档知识与文字识别统一学习范式的消融. 报告在知识密集, 文档理解和文字识别三类基准上的结果.
 
 > **看表:** 表 4 的 OCRBench 是 576 和 617, 表 1 是 89.0, 能直接比吗?
-> 不能. 表 4 看来是 1,000 分制的原始分, 表 1 是百分制; 表 4 的模型只用 1M 样本跑完三阶段预训练再走同样的 SFT, 不是最终模型, MMMU 51.4 也远低于表 1 的 67.7. 这组消融只说明 「统一学习好过外部解析器」; 1M 里 20% 是知识密集文档, 约 20 万条 (估算).
+> 不能. 表 4 看来是 1,000 分制的原始分, 表 1 是百分制; 表 4 的模型只用 1M 样本跑完三阶段预训练再走同样的 SFT, 不是最终模型, MMMU 51.4 也远低于表 1 的 67.7. 这组消融只说明 「统一学习好过外部解析器」; 1M 里 20% 是知识密集文档, 约 20 万条.
 
 | Method | w/ sub | w/o sub | tokens/frame |
 | --- | --- | --- | --- |
@@ -625,10 +625,10 @@ Table 5: Ablation of the 3D-Resampler. We report scores on VideoMME. w/ sub: usi
 表 5: 3D-Resampler 的消融. 报告 VideoMME 分数. w/ sub: 评测时使用字幕; w/o sub: 评测时去掉字幕.
 
 > **停一下:** 表 5 的 w/ sub 一列是 65.5 和 67.3, w/o sub 一列是 71.5 和 72.5, 加了字幕反而更低?
-> 和表 1 的方向相反: 表 1 里 MiniCPM-V 4.5 无字幕 67.9, 有字幕 73.5, 字幕是加分的. 表 5 两列的表头很可能写反了 (推断); 按表 1 的方向读, 3D-Resampler 在无字幕上 +1.8, 有字幕上 +1.0.
+> 和表 1 的方向相反: 表 1 里 MiniCPM-V 4.5 无字幕 67.9, 有字幕 73.5, 字幕是加分的. 表 5 两列的表头很可能写反了; 按表 1 的方向读, 3D-Resampler 在无字幕上 +1.8, 有字幕上 +1.0.
 
 > **拆开:** 表 5 里 3D-Resampler 每帧 21.3 个 token, 和主模型 「6 帧 64 个 token」 对得上吗?
-> 对不上. 64 / 3 约 21.3, 说明这个消融里一个 package 只放 3 帧 (估算); 按主模型 6 帧一包, 每帧约 10.7 个 token (估算). 正文说 「只用 2D 基线三分之一的 token」, 对应的正是 3 帧打包. 本页没说消融为什么用 3 帧, 也没说 300 步微调用了多少视频数据.
+> 对不上. 64 / 3 约 21.3, 说明这个消融里一个 package 只放 3 帧; 按主模型 6 帧一包, 每帧约 10.7 个 token. 正文说 「只用 2D 基线三分之一的 token」, 对应的正是 3 帧打包. 本页没说消融为什么用 3 帧, 也没说 300 步微调用了多少视频数据.
 
 **Unified learning of document knowledge and text recognition improves both capabilities.** We run an ablation experiment for the proposed unified learning paradigm. Following the three stages pre-training process in § 2.2, we train the model on 1M high-quality samples, 20% of which are knowledge-intensive documents. Then we conduct a comparison against the baseline method after the same SFT pipeline. As shown in Table 4, the unified approach outperforms the baseline on both knowledge-intensive evaluations and text-recognition tasks. These gains indicate that learning directly from document images mitigates the noise introduced by fragile external parsers.
 
@@ -825,7 +825,7 @@ For the RL stage, we adopt GRPO [76] without entropy loss or KL penalty. Each ba
 RL 阶段采用 GRPO [76], 不用熵损失, 也不加 KL 惩罚. 每个 batch 有 128 个 prompt, 每个 prompt 8 条回复, 最大回复长度 8192 token, 以支持详细推理. rollout 温度为 1.0, 50% 的 prompt 分给长推理模式. RL 全程用固定学习率 $1 \times 10^{-6}$. RLAIF-V [28] 阶段的全局 batch 大小为 256, 学习率 $1 \times 10^{-6}$, $\beta = 0.1$, 训练 400 步.
 
 > **对一下:** 每批 128 个 prompt, 每个 8 条回复, 50% 走长推理, 和引言的 33.3% 对一下.
-> 每批 1,024 条回复, 其中约 64 个 prompt, 512 条回复走长推理 (估算). 附录的 50% 与第 11 页 「一半的长推理样本」 一致, 与第 2 页的 33.3% 不一致. RL 的总步数正文没写, 图 3 横轴只画到约 720 步, 表 3 给的 1.6B, 4.4B, 3.1B 是消融设置的训练 token, 不一定等于最终模型的 RL 规模.
+> 每批 1,024 条回复, 其中约 64 个 prompt, 512 条回复走长推理. 附录的 50% 与第 11 页 「一半的长推理样本」 一致, 与第 2 页的 33.3% 不一致. RL 的总步数正文没写, 图 3 横轴只画到约 720 步, 表 3 给的 1.6B, 4.4B, 3.1B 是消融设置的训练 token, 不一定等于最终模型的 RL 规模.
 
 > **确认:** GRPO 在正文引 [44], 附录引 [76], 是两篇文献吗?
 > 是同一篇. [44] 和 [76] 都是 DeepSeekMath 那篇, 作者顺序相同, [76] 多了 arXiv 号 abs/2402.03300. 正文第 8 页和附录都说去掉了 KL 和熵损失, 两处说法一致.
@@ -921,4 +921,4 @@ Figure 13: A case of multi-image statistical problem solving.
 图 13: 多图统计题解题的案例.
 
 > **核对:** 图 13 的方差分析题, 模型答的 16, 159.89, 12.05, 9.9931, 1.206 能复算吗?
-> 能. 误差自由度 19 - 3 = 16; 误差平方和 196.04 - 36.15 = 159.89; 因子均方 36.15 / 3 = 12.05; 误差均方 159.89 / 16 约 9.9931; F = 12.05 / 9.9931 约 1.206 (均为估算). 五问全对.
+> 能. 误差自由度 19 - 3 = 16; 误差平方和 196.04 - 36.15 = 159.89; 因子均方 36.15 / 3 = 12.05; 误差均方 159.89 / 16 约 9.9931; F = 12.05 / 9.9931 约 1.206. 五问全对.

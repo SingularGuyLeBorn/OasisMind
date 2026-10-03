@@ -5,7 +5,7 @@
 - 源文: GitHub 上 MiniMax-AI 组织主页的浏览器打印件, 4 页, 23 张图, 由 MinerU 转成 Markdown. 21 张图是界面小图标, 2 张是仓库列表截图.
 - 性质: 组织门户页, 不是论文, 也不是模型卡. 页面上出现的模型名只有两处: 置顶仓库 MiniMax-M2.7, 和 MiniMax-Provider-Verifier 简介里的 「Minimax M2」.
 - 组织数字: 关注者 7.8k, 仓库 35 个, 没有公开成员.
-- 露出的仓库: 置顶 5 个, 列表 10 个, cli 两边重复, 去重 14 个 (估算).
+- 露出的仓库: 置顶 5 个, 列表 10 个, cli 两边重复, 去重 14 个.
 - 最常用语言 (PDF 文字层): Python, TypeScript, JavaScript, HTML, C#.
 - 主题标签: large-language-models, llm, minimax, mcp, mcp-server.
 - 快照日期: 页面上只有相对时间和不带年份的 8 月 20 日, 8 月 21 日, 年份查不到.
@@ -32,17 +32,17 @@ MinerU 的转写有几处要先交代. 链接图标被识别成 $\hat{G}$ 和 $\
 | OpenRoom | TypeScript | 1.3k | 166 | 浏览器里的 Agent 桌面 |
 | MiniMax-M2.7 | 未印 | 363 | 63 | 未印 |
 
-关注度的落差很大. skills 一个仓库的星标, 约是 MiniMax-M2.7 的 37 倍 (估算: 13600 / 363 ≈ 37.5), 也超过另外四个置顶仓库之和 (估算: 3000 + 2200 + 1300 + 363 = 6863). 页面没有解释这个落差. 一种可能是模型权重和文档主要放在 Hugging Face (侧栏给了 huggingface.co/MiniMaxAI 链接), GitHub 上的模型仓库只是入口. 但这只是推断, 本页没有任何文字支持或否定它.
+关注度的落差很大. skills 一个仓库的星标, 约是 MiniMax-M2.7 的 37 倍 (13600 / 363 ≈ 37.5), 也超过另外四个置顶仓库之和 (3000 + 2200 + 1300 + 363 = 6863). 页面没有解释这个落差. 一种可能是模型权重和文档主要放在 Hugging Face (侧栏给了 huggingface.co/MiniMaxAI 链接), GitHub 上的模型仓库只是入口. 但这只是推断, 本页没有任何文字支持或否定它.
 
-另一个看点是星标和分叉的比例. skills 约 11.3 (估算: 13.6k / 1.2k), cli 约 11.9 (估算: 2.2k / 185), Mini-Agent 约 6.7, OpenRoom 约 7.8, MiniMax-M2.7 约 5.8 (都是估算). 比例越低, 说明关注的人里动手 fork 的越多. Mini-Agent 本身是示范项目, 定位就是给人拿去改, 分叉比例偏高和它的定位对得上. MiniMax-M2.7 比例最低, 但基数只有 363, 波动空间大, 不宜多读.
+另一个看点是星标和分叉的比例. skills 约 11.3 (13.6k / 1.2k), cli 约 11.9 (2.2k / 185), Mini-Agent 约 6.7, OpenRoom 约 7.8, MiniMax-M2.7 约 5.8. 比例越低, 说明关注的人里动手 fork 的越多. Mini-Agent 本身是示范项目, 定位就是给人拿去改, 分叉比例偏高和它的定位对得上. MiniMax-M2.7 比例最低, 但基数只有 363, 波动空间大, 不宜多读.
 
 ## 3 仓库列表: 三条产品线
 
 列表第一屏的 10 个仓库, 按页面上的简介可以分成三类, 有一个仓库横跨两类.
 
-第一类是编程 Agent. minimax-code 是 「一个在终端里使用的开源编程 Agent」, MiniMax-Code-Plugins 是 「MiniMax Code 插件的社区登记处和贡献工具包」, MiniMax-Code-MiniApps 从名字看属于同一产品 (页面没印简介). MiniMax-Coding-Plan-MCP 是 「专为 coding-plan 用户设计的 MCP 服务端」, 提供搜索和视觉分析 API. 四个仓库的星标合计 1,955 (估算: 1825 + 18 + 10 + 102), 其中 minimax-code 一个就占 1,825.
+第一类是编程 Agent. minimax-code 是 「一个在终端里使用的开源编程 Agent」, MiniMax-Code-Plugins 是 「MiniMax Code 插件的社区登记处和贡献工具包」, MiniMax-Code-MiniApps 从名字看属于同一产品 (页面没印简介). MiniMax-Coding-Plan-MCP 是 「专为 coding-plan 用户设计的 MCP 服务端」, 提供搜索和视觉分析 API. 四个仓库的星标合计 1,955 (1825 + 18 + 10 + 102), 其中 minimax-code 一个就占 1,825.
 
-第二类是 MCP 接入. MiniMax-MCP 是官方 Python 版 MCP 服务端, 对接文本转语音, 图像生成, 视频生成 API. MiniMax-MCP-JS 是官方 JavaScript 版, 能力列表多一项声音克隆. MiniMax-Coding-Plan-MCP 也属于这一类. 三者星标合计 1,817 (估算: 1585 + 130 + 102). 主题标签里 mcp 和 mcp-server 两个标签, 也说明 MCP 是这个组织在 GitHub 上的主要话题之一.
+第二类是 MCP 接入. MiniMax-MCP 是官方 Python 版 MCP 服务端, 对接文本转语音, 图像生成, 视频生成 API. MiniMax-MCP-JS 是官方 JavaScript 版, 能力列表多一项声音克隆. MiniMax-Coding-Plan-MCP 也属于这一类. 三者星标合计 1,817 (1585 + 130 + 102). 主题标签里 mcp 和 mcp-server 两个标签, 也说明 MCP 是这个组织在 GitHub 上的主要话题之一.
 
 第三类是和模型直接相关的仓库. MiniMax-Provider-Verifier 用来验证 「第三方部署的 Minimax M2 模型是否正确, 可靠」, 强调方法 「不绑定特定厂商」. MSA 只有名字, Python, 424 星标和 MIT 许可证. cli 和 awesome-minimax-h3-integration 不好归类: cli 是多模态生成的命令行工具, 更接近产品入口; h3 那个仓库名里有 awesome 和 integration, 通常指集成案例清单, 但页面没印简介, 这里只按名字记一笔, 不下结论.
 
@@ -50,7 +50,7 @@ Provider-Verifier 这条值得多想一步. 它要解决的问题是 「别人�
 
 ## 4 活跃度: issue, PR 和更新时间
 
-列表里 10 个仓库的统计行合起来, 未关闭 issue 共 172 个, 未合并 PR 共 72 个 (都是估算的合计). issue 高度集中: minimax-code 一个仓库有 111 个, 约占 65% (估算: 111 / 172). 按星标折算, minimax-code 每 100 个星标约 6.1 个 issue (估算: 111 / 1825), MiniMax-MCP 约 1.3 个, cli 约 0.6 个. minimax-code 的 issue 密度远高于其他仓库, 说明这个终端编程 Agent 当时处在用户多, 反馈多的阶段.
+列表里 10 个仓库的统计行合起来, 未关闭 issue 共 172 个, 未合并 PR 共 72 个 (都是估算的合计). issue 高度集中: minimax-code 一个仓库有 111 个, 约占 65% (111 / 172). 按星标折算, minimax-code 每 100 个星标约 6.1 个 issue (111 / 1825), MiniMax-MCP 约 1.3 个, cli 约 0.6 个. minimax-code 的 issue 密度远高于其他仓库, 说明这个终端编程 Agent 当时处在用户多, 反馈多的阶段.
 
 PR 的分布是另一种样子. MiniMax-Code-Plugins 只有 18 个星标, 却有 12 个未合并 PR, PR 数和星标数几乎一样多. 它的简介是 「社区登记处和贡献工具包」, 插件登记本来就靠提交 PR 完成, PR 多是这个仓库的正常用法, 不代表积压. cli 有 17 个 PR, MiniMax-MCP 有 18 个, 这两个是外部贡献比较集中的通用工具.
 
@@ -79,7 +79,7 @@ PR 的分布是另一种样子. MiniMax-Code-Plugins 只有 18 个星标, 却有
 1. skills 的语言: md 只有紫色色点, PDF 文字层写 C#. 按 PDF 补.
 2. Top languages: md 标题下为空, PDF 文字层列了 5 种语言. 按 PDF 补.
 3. HTML 在最常用语言里排第四, 露出的 14 个仓库没有一个标 HTML.
-4. 仓库总数 35, 本页露出 14 个 (估算), 21 个没露面.
+4. 仓库总数 35, 本页露出 14 个, 21 个没露面.
 5. cli 星标: 置顶区 2.2k, 列表 2,172, 四舍五入一致, 不算冲突. cli 在列表里没印许可证.
 6. 模型名: Provider-Verifier 写 「Minimax M2」, 置顶区是 「MiniMax-M2.7」, 型号和大小写都不同, 页面没说两者关系.
 7. 图标错位: p01-185 文件名指向 cli 分叉数, 画面是星标; p01-minimax 文件名像 logo, 画面也是星标.

@@ -253,7 +253,7 @@ M2.5 是第一个让用户不必操心成本的前沿模型, 兑现了 「智能
 > 两个: Multi-SWE-Bench 51.3 和 BFCL 多轮 76.8, 而且这两张图都没有 GPT-5.2 的柱子. 其余 6 张它都不是最高: SWE-Bench Verified 80.2 低于 Opus 4.5 的 80.9 和 Opus 4.6 的 80.8; SWE-Bench Pro 55.4 低于 Opus 4.5 的 56.9 和 GPT-5.2 的 55.6, 和 Opus 4.6 持平; VIBE-Pro 54.2 低于两个 Opus; BrowseComp 76.3 低于 Opus 4.6 的 84; MEWC 74.4 排第四; GDPval-MM 59 低于 Opus 4.6 的 73.5 和 Opus 4.5 的 61.1.
 
 > **拆开:** 每秒 100 token 跑一小时 1 美元, 每秒 50 token 降到 0.30 美元, 这两个价按第 8 页的单价算得出来吗?
-> 算不严. 一小时 3,600 秒, 每秒 100 token 就是 36 万 token, 按第 8 页 Lightning 版输出价每百万 2.4 美元算是 0.864 美元 (估算), 1 美元像是向上取整或另算了输入. 每秒 50 token 的 M2.5 单价减半, 18 万 token 乘每百万 1.2 美元是 0.216 美元 (估算); 就算直接拿 1 美元按速度减半, 价格减半, 也是 0.25 美元 (估算). 页面写的 0.30 比这几个算法都高, 没有给出算法.
+> 算不严. 一小时 3,600 秒, 每秒 100 token 就是 36 万 token, 按第 8 页 Lightning 版输出价每百万 2.4 美元算是 0.864 美元, 1 美元像是向上取整或另算了输入. 每秒 50 token 的 M2.5 单价减半, 18 万 token 乘每百万 1.2 美元是 0.216 美元; 就算直接拿 1 美元按速度减半, 价格减半, 也是 0.25 美元. 页面写的 0.30 比这几个算法都高, 没有给出算法.
 
 <!-- page 4 of 15 -->
 
@@ -289,7 +289,7 @@ M2.5 在超过 10 种编程语言 (包括 Go, C, C++, TypeScript, Rust, Kotlin, 
 > 13 种: Go, C, C++, TypeScript, Rust, Kotlin, Python, Java, JavaScript, PHP, Lua, Dart, Ruby. 「超过 10 种」 没说错, 只是保守. 同一段的 「20 万个以上真实环境」 是编程环境的数, 和第 3 页, 第 9 页说的 RL 用 「几十万个环境」 不一定是同一批, 页面没有把两者对上.
 
 > **回看:** 本页开头说 M2.5 在多语言任务上 「尤其突出」, 图里的 SWE-Bench Multilingual 支持这句话吗?
-> 不太支持. SWE-Bench Multilingual 上 M2.5 是 74.1, 低于 Opus 4.5 的 77.5 和 Opus 4.6 的 77.8; 比 M2.1 的 71.9 只多 2.2 分 (估算), 反而小于 SWE-Bench Verified 上 6.2 分 (80.2 减 74) 的涨幅. 能撑住这句话的只有 Multi-SWE-Bench 的 51.3, 而那张图没有 GPT-5.2.
+> 不太支持. SWE-Bench Multilingual 上 M2.5 是 74.1, 低于 Opus 4.5 的 77.5 和 Opus 4.6 的 77.8; 比 M2.1 的 71.9 只多 2.2 分, 反而小于 SWE-Bench Verified 上 6.2 分 (80.2 减 74) 的涨幅. 能撑住这句话的只有 Multi-SWE-Bench 的 51.3, 而那张图没有 GPT-5.2.
 
 <!-- page 5 of 15 -->
 
@@ -302,7 +302,7 @@ To evaluate these capabilities, we also upgraded the VIBE benchmark to a more co
 这张图把 VIBE-Pro 拆成四个子集, 每组五根柱子, 顺序是 M2.5, M2.1, Opus 4.5, Opus 4.6, Gemini 3 Pro, 没有 GPT-5.2. Web 子集: 36.9, 31.9, 37.8, 40.7, 28.5. Simulation 子集: 81.4, 73.1, 78.8, 81.2, 67.7. Android 子集: 50.6, 36, 58.4, 54.9, 33.1. iOS 子集: 47.9, 28.8, 45.7, 45.7, 18.1. M2.5 在 Simulation 和 iOS 两个子集排第一, 在 Android 子集落后 Opus 4.5 7.8 分.
 
 > **停一下:** VIBE-Pro (AVG) 的 54.2 是四个子集怎么平均出来的?
-> 按简单平均能对上. M2.5: (36.9 + 81.4 + 50.6 + 47.9) / 4 = 54.2 (估算); Opus 4.5 算出 55.175, Opus 4.6 算出 55.625, Gemini 3 Pro 算出 36.85, 四舍五入后都和图上的 55.2, 55.6, 36.9 一致. M2.1 算出 42.45, 图上印 42.4, 差在进位方式. 所以 AVG 是四个子集等权平均, 页面没有给各子集的题数.
+> 按简单平均能对上. M2.5: (36.9 + 81.4 + 50.6 + 47.9) / 4 = 54.2; Opus 4.5 算出 55.175, Opus 4.6 算出 55.625, Gemini 3 Pro 算出 36.85, 四舍五入后都和图上的 55.2, 55.6, 36.9 一致. M2.1 算出 42.45, 图上印 42.4, 差在进位方式. 所以 AVG 是四个子集等权平均, 页面没有给各子集的题数.
 
 We focused on the model's ability to generalize across out-of-distribution harnesses. We tested performance on the SWE-Bench Verified evaluation set using different coding agent harnesses.
 
@@ -387,7 +387,7 @@ For example, when running SWE-Bench Verified, M2.5 consumed an average of 3.52 m
 例如跑 SWE-Bench Verified 时, M2.5 平均每个任务消耗 352 万 token, M2.1 是 372 万. 同时, 得益于并行工具调用等能力的提升, 端到端运行时间从平均 31.3 分钟降到 22.8 分钟, 速度提升 37%. 这个耗时和 Claude Opus 4.6 的 22.9 分钟相当, 而每个任务的总成本只有 Claude Opus 4.6 的 10%.
 
 > **核对:** 31.3 分钟降到 22.8 分钟, 是省了 37% 的时间吗?
-> 不是. 时间省了 (31.3 − 22.8) / 31.3 ≈ 27.2% (估算); 37% 是速度比, 31.3 / 22.8 ≈ 1.373 (估算). 同期 token 只少了 (3.72 − 3.52) / 3.72 ≈ 5.4% (估算), 所以大部分提速不是靠少用 token. 还可以粗算一下: 352 万 token 摊到 22.8 分钟 (1,368 秒) 上, 约每秒 2,570 个 (估算), 是每秒 100 token 输出速度的二十多倍. 这个 「每任务 token 数」 显然把多轮反复喂进去的上下文也算上了, 不是生成量.
+> 不是. 时间省了 (31.3 − 22.8) / 31.3 ≈ 27.2%; 37% 是速度比, 31.3 / 22.8 ≈ 1.373. 同期 token 只少了 (3.72 − 3.52) / 3.72 ≈ 5.4%, 所以大部分提速不是靠少用 token. 还可以粗算一下: 352 万 token 摊到 22.8 分钟 (1,368 秒) 上, 约每秒 2,570 个, 是每秒 100 token 输出速度的二十多倍. 这个 「每任务 token 数」 显然把多轮反复喂进去的上下文也算上了, 不是生成量.
 
 ## Cost (成本)
 
@@ -405,7 +405,7 @@ At a rate of 100 output tokens per second, running M2.5 continuously for an hour
 > 按 Cost 小节的定义, 100 TPS 是 M2.5-Lightning, 50 TPS 是 M2.5. Efficiency 小节和第 3 页 「每秒 100 token 一小时 1 美元」 里的 「M2.5」 指的其实是 Lightning 版. 两处对 「其他前沿模型」 的倍数也不一样, 一处写 「接近两倍」, 一处写 「两倍」. 第 7 页 22.8 分钟的运行时间是在哪个版本上测的, 页面没说.
 
 > **拆开:** 1 万美元让四个实例跑满一年, 用的是 1 美元还是 0.3 美元的时价?
-> 用的是 0.3 美元. 一年 8,760 小时, 四个实例按 1 美元每小时是 35,040 美元 (估算); 按 0.3 美元每小时是 10,512 美元 (估算), 这才和 「1 万美元」 对得上. 所以这句话说的是每秒 50 token 的 M2.5, 不是 Lightning. 另外, 「Opus, Gemini 3 Pro, GPT-5 的十分之一到二十分之一」 里写的是 GPT-5, 不是图里对比的 GPT-5.2, 本页也没有印出这三家的单价.
+> 用的是 0.3 美元. 一年 8,760 小时, 四个实例按 1 美元每小时是 35,040 美元; 按 0.3 美元每小时是 10,512 美元, 这才和 「1 万美元」 对得上. 所以这句话说的是每秒 50 token 的 M2.5, 不是 Lightning. 另外, 「Opus, Gemini 3 Pro, GPT-5 的十分之一到二十分之一」 里写的是 GPT-5, 不是图里对比的 GPT-5.2, 本页也没有印出这三家的单价.
 
 ## Improvement Rate (进步速度)
 
@@ -418,7 +418,7 @@ Over the three and a half months from late October to now, we have successively 
 图标题: SWE-bench Verified 分数演进, Anthropic vs OpenAI vs Google vs MiniMax. 纵轴是 SWE-bench Verified 分数 (%), 范围约 50% 到 85%. 各点标注如下. Anthropic (橙线): Sonnet 3.7 62.3%, Sonnet 4 / Opus 4 72.7%, Opus 4.1 74.5%, Sonnet 4.5 77.2%, Opus 4.5 80.9%, Opus 4.6 80.8%. OpenAI (黑线): o3 69.1%, GPT-5 72.8%, GPT-5.1 76.3%, GPT-5.2 80.0%. Google (蓝线): Gemini 2.5 Pro 63.8%, Gemini 3.0 Pro 76.2%. MiniMax (粉线): M1 56.0% (约 2025 年 6 月), M2 69.4% (约 10 月下旬), M2.1 74.0% (约 12 月), M2.5 80.2% (约 2026 年 2 月). 图底注: 「分数来自各公司官方公告, 测试脚手架可能不同.」 这张图的文件名叫 rl-scaling, 是因为它在 PDF 里排在下一页 RL Scaling 标题前面, 内容属于本节.
 
 > **确认:** 这张折线图里 Gemini 3.0 Pro 是 76.2%, 和前面柱状图里 Gemini 3 Pro 的数对得上吗?
-> 对不上. 第 3 页和第 4 页的 SWE-Bench Verified 柱状图里 Gemini 3 Pro 是 78, 差 1.8 分. 图底注说分数来自各家官方公告, 脚手架可能不同, 可见柱状图和折线图用的不是同一套来源. 其余几家对得上: Opus 4.5 80.9, Opus 4.6 80.8, GPT-5.2 80.0, M2.1 74.0, M2.5 80.2. 按图估, M2 到 M2.5 三个半月涨了 10.8 分, 约每月 3.1 分 (估算).
+> 对不上. 第 3 页和第 4 页的 SWE-Bench Verified 柱状图里 Gemini 3 Pro 是 78, 差 1.8 分. 图底注说分数来自各家官方公告, 脚手架可能不同, 可见柱状图和折线图用的不是同一套来源. 其余几家对得上: Opus 4.5 80.9, Opus 4.6 80.8, GPT-5.2 80.0, M2.1 74.0, M2.5 80.2. 按图估, M2 到 M2.5 三个半月涨了 10.8 分, 约每月 3.1 分.
 
 <!-- page 9 of 15 -->
 
@@ -618,7 +618,7 @@ M2.5 的更多基准结果:
 表中六项分别是: AIME25 (2025 年 AIME 数学竞赛), GPQA-D (GPQA Diamond), HLE w/o tools (不带工具的 HLE, 表头把空格吞了), SciCode, IFBench (指令遵循), AA-LCR (Artificial Analysis 的长上下文推理). 这张表多了一列 Claude Sonnet 4.5, 前面的柱状图里都没有它; GPT-5.2 标注为 thinking 模式.
 
 > **再看:** 附录表里有没有 M2.5 比 M2.1 退步的项?
-> 有一项: HLE w/o tools, M2.5 是 19.4, M2.1 是 22.2, 退了 2.8 分 (估算), 正文没提. IFBench 两代都是 70.0, 持平. 这六项里 M2.5 没有一项是全表最高, AIME25 的 86.3 是除 M2.1 外最低的. 表下说明还写着, 这六项是 MiniMax 按 Artificial Analysis 的公开评测集和方法内部测出来的, 不是 Artificial Analysis 官方榜单上的数.
+> 有一项: HLE w/o tools, M2.5 是 19.4, M2.1 是 22.2, 退了 2.8 分, 正文没提. IFBench 两代都是 70.0, 持平. 这六项里 M2.5 没有一项是全表最高, AIME25 的 86.3 是除 M2.1 外最低的. 表下说明还写着, 这六项是 MiniMax 按 Artificial Analysis 的公开评测集和方法内部测出来的, 不是 Artificial Analysis 官方榜单上的数.
 
 Evaluation methods:
 

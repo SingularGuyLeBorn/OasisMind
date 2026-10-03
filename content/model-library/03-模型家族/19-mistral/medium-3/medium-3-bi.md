@@ -66,10 +66,10 @@ Mistral Medium 3 delivers frontier performance while being an order of magnitude
 Mistral Medium 3 做到前沿性能, 价格却低一个数量级. 比如, 它在各项基准上都达到 Claude Sonnet 3.7 的 90% 或以上, 成本低得多 (输入每百万 token $0.4, 输出每百万 token $2).
 
 > **看表:** 「at or above 90% of Claude Sonnet 3.7 ... across the board」 在第 4 页的表里全都成立吗?
-> 14 行里 12 行成立. LiveCodeBench 30.3% 对 36.0%, 约 84.2%; GPQA Diamond 57.1% 对 69.7%, 约 81.9% (都是估算), 这两行低于 90%.
+> 14 行里 12 行成立. LiveCodeBench 30.3% 对 36.0%, 约 84.2%; GPQA Diamond 57.1% 对 69.7%, 约 81.9%, 这两行低于 90%.
 
 > **拆开:** 两个单价合成一个数大概多少?
-> 页面只给了输入 $0.4, 输出 $2 两个单价, 输出是输入的 5 倍. 假设输入输出 token 按 3:1 混合, 约 $0.8 每百万 token (估算); 3:1 是我假设的比例, 页面没有.
+> 页面只给了输入 $0.4, 输出 $2 两个单价, 输出是输入的 5 倍. 假设输入输出 token 按 3:1 混合, 约 $0.8 每百万 token; 3:1 是我假设的比例, 页面没有.
 
 On performance, Mistral Medium 3 also surpasses leading open models such as Llama 4 Maverick and enterprise models such as Cohere Command A. On pricing, the model beats cost leaders such as DeepSeek v3, both in API and self-deployed systems.
 
@@ -184,7 +184,7 @@ The first chart is titled "Mistral Wins vs Competitor Wins for Coding". It is a 
 > 对 Claude Sonnet 3.7 (40.00) 和 DeepSeek 3.1 (37.50) 都不到一半, 对 GPT-4o 50.00 打平. 正文 「much better ... than some of its much larger competitors」 里的 「some」, 按这张图只能是 Command-A 和 Llama 4 Maverick.
 
 > **拆开:** 81.82 / 18.18 背后大概多少道题?
-> 页面没写. 两位小数能对上的最小分母: 81.82 是 9/11, 69.23 是 9/13, 37.50 是 3/8, 40.00 是 2/5 (估算, 实际题数可以是这些分母的倍数). 如果真是最小分母, 样本只有十来道.
+> 页面没写. 两位小数能对上的最小分母: 81.82 是 9/11, 69.23 是 9/13, 37.50 是 3/8, 40.00 是 2/5 (实际题数可以是这些分母的倍数). 如果真是最小分母, 样本只有十来道.
 
 The second chart is titled "Mistral Wins Vs Llama 4 Maverick". It is a horizontal stacked bar chart with domain on the y-axis and "Mistral Win Rate" (0 to 100) on the x-axis. On the page, the banner covers its left half, including the domain names and the orange segments. The values below are read from the embedded image.
 

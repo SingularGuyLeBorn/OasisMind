@@ -150,7 +150,7 @@ MiniCPM-o & MiniCPM-V Collection · Multimodal models with leading perform... �
 MiniCPM-Llama3-V 2.5 是 MiniCPM-V 系列的最新模型. 它基于 SigLip-400M 和 Llama3-8B-Instruct 搭建, 总参数 8B. 和 MiniCPM-V 2.0 相比性能明显提升. MiniCPM-Llama3-V 2.5 的主要特点如下:
 
 > **核对:** 这里写总参数 8B, 第 1 页侧栏是 9B params, 第 5 页评测表 Size 列又写 8.5B, 按哪个?
-> 三个数口径不同. 两个组件名字里的数相加是 0.4B + 8B = 8.4B (估算), 评测表的 8.5B 和它最接近, 可能是按实际权重算的总量保留一位小数. 正文的 8B 是整数档位的说法. 侧栏的 9B 是 Hugging Face 按权重文件自动统计后取整, 张量类型 F16. 本页没有逐模块参数表, 分不出 8.4B 和 8.5B 之间的差额在哪一层. 和同表其他模型比大小时用 8.5B, 因为 Size 列对所有行是同一口径.
+> 三个数口径不同. 两个组件名字里的数相加是 0.4B + 8B = 8.4B, 评测表的 8.5B 和它最接近, 可能是按实际权重算的总量保留一位小数. 正文的 8B 是整数档位的说法. 侧栏的 9B 是 Hugging Face 按权重文件自动统计后取整, 张量类型 F16. 本页没有逐模块参数表, 分不出 8.4B 和 8.5B 之间的差额在哪一层. 和同表其他模型比大小时用 8.5B, 因为 Size 列对所有行是同一口径.
 
 > **问:** 这句说 V 2.5 是 「the latest model in the MiniCPM-V series」, 可上面新闻里已经有 V 2.6 和 o 2.6, 哪个时间点的说法?
 > 模型卡正文写于 2024 年 5 月发布时, 那时它确实是最新的. 新闻栏后来一路往上加条目, 最新一条是 2025.01.14, 侧栏数据集又显示 2025 年 10 月更新, 所以这一页是 「2024 年 5 月的正文 + 2025 年的新闻和侧栏」 拼在一起的. 第 11 页 「Key Techniques」 一节让读者去看 「MiniCPM-V 2.6 的关键技术」, 也是后来改过的痕迹. 读 「latest」 一类的词要按正文写作时间理解.
@@ -176,7 +176,7 @@ MiniCPM-Llama3-V 2.5 是 MiniCPM-V 系列的最新模型. 它基于 SigLip-400M 
 **行为可信.** 借助最新的 RLAIF-V 方法 (RLHF-V [CVPR'24] 系列里最新的技术), MiniCPM-Llama3-V 2.5 的行为更可信. 它在 Object HalBench 上的幻觉率是 10.3%, 低于 GPT-4V-1106 的 13.6%, 在开源社区里达到最好水平. 数据已公开.
 
 > **拆开:** 这里说幻觉率 10.3%, 越低越好; 第 5 页表里 Object HalBench 一列 V 2.5 却是 89.7, GPT-4V 是 86.4, 越高越好, 是两个指标吗?
-> 是同一个指标的两种写法. 100 - 10.3 = 89.7, 100 - 13.6 = 86.4, 表里记的是 「不幻觉的比例」. 照这个换算, 表里 MiniCPM-V 2.0 的 85.5 对应幻觉率 14.5%, MiniCPM-V 1.0 的 78.4 对应 21.6%, Qwen-VL-Chat 的 56.2 对应 43.8% (均为估算). V 2.5 比 V 2.0 降了 4.2 个百分点. 「开源最好」 在表里成立: 开源行里除 V 2.5 外只有 5 个模型有这一列分数, 最高的是 MiniCPM-V 2.0 的 85.5, V 2.5 的 89.7 高于它们全部.
+> 是同一个指标的两种写法. 100 - 10.3 = 89.7, 100 - 13.6 = 86.4, 表里记的是 「不幻觉的比例」. 照这个换算, 表里 MiniCPM-V 2.0 的 85.5 对应幻觉率 14.5%, MiniCPM-V 1.0 的 78.4 对应 21.6%, Qwen-VL-Chat 的 56.2 对应 43.8%. V 2.5 比 V 2.0 降了 4.2 个百分点. 「开源最好」 在表里成立: 开源行里除 V 2.5 外只有 5 个模型有这一列分数, 最高的是 MiniCPM-V 2.0 的 85.5, V 2.5 的 89.7 高于它们全部.
 
 **Multilingual Support.** Thanks to the strong multilingual capabilities of Llama 3 and the cross-lingual generalization technique from [VisCPM](https://github.com/OpenBMB/VisCPM), MiniCPM-Llama3-V 2.5 extends its bilingual (Chinese-English) multimodal capabilities to **over 30 languages including German, French, Spanish, Italian, Korean, Japanese etc.** [All Supported Languages](https://huggingface.co/openbmb/MiniCPM-Llama3-V-2_5/blob/main/assets/minicpm-llama-v-2-5_languages.md).
 
@@ -232,7 +232,7 @@ Results on TextVQA, DocVQA, OCRBench, OpenCompass MultiModal Avg , MME, MMBench,
 评测表. 列依次是: 模型, 参数规模, OCRBench, TextVQA 验证集, DocVQA 测试集, OpenCompass, MME, MMBench 英文测试集, MMBench 中文测试集, MMMU 验证集, MathVista, LLaVA Bench, RealWorld QA, Object HalBench. 上半部分是闭源 (Proprietary), 下半部分是开源 (Open-source); 最后三行 MiniCPM 系列在网页上用浅蓝底色标出. 加粗按 PDF 页面图像补录: V 2.5 一行除 MME 外全部加粗, MME 一列加粗的是 Yi-VL-34B 的 2050.2, 可见加粗表示开源模型里的最高分. 「-」 表示没有数据. MinerU 转出的是 HTML 表格, 这里改写成 Markdown, 数字逐格对过页面图像.
 
 > **看表:** V 2.5 标榜 「GPT-4V 级」, 和表里的 GPT-4V (2023.11.06) 逐列比, 赢几列输几列?
-> 12 列里赢 7 列, 输 5 列 (估算). 赢的是 OCRBench 725 对 645, OpenCompass 65.1 对 63.5, MME 2024.6 对 1771.5, MMB 英文 77.2 对 77.0, MathVista 54.3 对 47.8, RealWorld QA 63.5 对 63.0, Object HalBench 89.7 对 86.4. 输的是 TextVQA 76.6 对 78.0, DocVQA 84.8 对 88.4, MMB 中文 74.2 对 74.4, MMMU 45.8 对 53.8, LLaVA Bench 86.7 对 93.1. 其中 MMB 英文和 RealWorld QA 只赢 0.2 和 0.5, MMMU 输 8.0 分, 差距最大. 「GPT-4V 级」 是 「互有胜负, 平均分略高」 的意思.
+> 12 列里赢 7 列, 输 5 列. 赢的是 OCRBench 725 对 645, OpenCompass 65.1 对 63.5, MME 2024.6 对 1771.5, MMB 英文 77.2 对 77.0, MathVista 54.3 对 47.8, RealWorld QA 63.5 对 63.0, Object HalBench 89.7 对 86.4. 输的是 TextVQA 76.6 对 78.0, DocVQA 84.8 对 88.4, MMB 中文 74.2 对 74.4, MMMU 45.8 对 53.8, LLaVA Bench 86.7 对 93.1. 其中 MMB 英文和 RealWorld QA 只赢 0.2 和 0.5, MMMU 输 8.0 分, 差距最大. 「GPT-4V 级」 是 「互有胜负, 平均分略高」 的意思.
 
 > **再看:** 表里一批格子带星号, 比如 Yi-VL-34B 的 DocVQA 16.9*, Phi-3-vision 的 OCRBench 639*, 星号什么意思?
 > 本页没有脚注解释星号. 带星号的 10 格都在别家模型上: Mini-Gemini 的 DocVQA, DeepSeek-VL-7B 的 TextVQA 和 DocVQA, Yi-VL-34B 的 TextVQA 和 DocVQA, CogVLM-Chat 的 DocVQA, Phi-3-vision 的 OCRBench, MME, LLaVA Bench, RealWorld QA; MiniCPM 三行一个星号都没有. 常见写法是 「这个数由本团队自己测, 不是对方公布的」, 但这 12 页里找不到依据, 只能说这些格和不带星号的格来源可能不同. Yi-VL-34B 的 DocVQA 只有 16.9, 远低于同表其他模型, 这类格子不宜单独拿来下结论.
@@ -529,7 +529,7 @@ We deploy MiniCPM-Llama3-V 2.5 on end devices. The demo video is the raw screen 
 截图是演示视频的两帧. 左屏的提问: 请提取图片中的起点站, 终点站, 出发时间, 价格等信息, 并按 json 格式输出. 右屏的提问: 根据这张图, 给我做一份详细的晚餐计划. 回答框里只露出开头 「根据这张图片, 一份详细的晚餐」, 说明是逐字流式输出的中间状态. 火车票上的日期, 票价等小字较糊, 这里不录.
 
 > **停一下:** 截屏顶部的 「Current memory: 10.66 GB / 15.95 GB」 是模型占的内存吗?
-> 看不出来. 这一行是演示 App 显示的当前内存读数, 分母 15.95 GB 应是手机可用总内存, 分子是否只算模型, 截图没说明. 两屏分别是 10.66 GB 和 9.79 GB, 第 8 页四屏是 10.85, 11.24, 9.89, 10.73 GB, 波动约 1.45 GB (估算). 第 10 页说 int4 版本用 8GB 左右显存, 那是 GPU 上的数, 手机上跑的是 llama.cpp 版本, 两个数不能互相推.
+> 看不出来. 这一行是演示 App 显示的当前内存读数, 分母 15.95 GB 应是手机可用总内存, 分子是否只算模型, 截图没说明. 两屏分别是 10.66 GB 和 9.79 GB, 第 8 页四屏是 10.85, 11.24, 9.89, 10.73 GB, 波动约 1.45 GB. 第 10 页说 int4 版本用 8GB 左右显存, 那是 GPU 上的数, 手机上跑的是 llama.cpp 版本, 两个数不能互相推.
 
 <!-- page 8 of 12 -->
 

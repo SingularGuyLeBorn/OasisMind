@@ -148,7 +148,7 @@ Table 1: Disallowed Content Evaluations
 | XSTest [13] | not_overrefuse | 0.88 | 0.95 | 0.88 |
 
 > **看表:** Table 1 前的正文写的是 「GPT-4o, GPT-4o, o1-mini, and o3-mini」, 表里 o3-mini 的高难拒答和 XSTest 又都不如 o1-mini, 「与 GPT-4o 相近」 靠得住吗?
-> 正文把 GPT-4o 写了两遍, 表里只有三列, 是笔误. 按表读: 高难拒答 not_unsafe o3-mini 0.9, o1-mini 0.93, GPT-4o 0.8; XSTest not_overrefuse o3-mini 0.88, 与 GPT-4o 相同, o1-mini 0.95. 所以 「与 GPT-4o 相近」 在 XSTest 上成立, 高难拒答上 o3-mini 比 GPT-4o 高 0.1. 另外 Table 16 里 GPT-4o 五个类别的简单平均约 0.772 (估算), Table 1 印的是 0.8, 本文没给各类样本数, 看不出是否加权所致.
+> 正文把 GPT-4o 写了两遍, 表里只有三列, 是笔误. 按表读: 高难拒答 not_unsafe o3-mini 0.9, o1-mini 0.93, GPT-4o 0.8; XSTest not_overrefuse o3-mini 0.88, 与 GPT-4o 相同, o1-mini 0.95. 所以 「与 GPT-4o 相近」 在 XSTest 上成立, 高难拒答上 o3-mini 比 GPT-4o 高 0.1. 另外 Table 16 里 GPT-4o 五个类别的简单平均约 0.772, Table 1 印的是 0.8, 本文没给各类样本数, 看不出是否加权所致.
 
 ## 4.1.2 Jailbreak Evaluations (越狱评测)
 
@@ -216,7 +216,7 @@ Table 3: Hallucination Evaluations
 | PersonQA hallucination rate (lower is better) | 52.4% | 27.4% | 14.8% |
 
 > **确认:** Table 3 的对照列写 「GPT 4o-mini」, 正文却说对比 GPT-4o, 以哪个为准? o3-mini 真的 「持平或更好」 吗?
-> 表头与正文不一致, 本文没说明哪个对. 按表读, o3-mini 幻觉率 14.8% 最低, 但 accuracy 21.7% 低于 GPT 4o-mini 的 28.4%, 所以 「持平或更好」 只在幻觉率上成立. 两项相加: GPT 4o-mini 80.8%, o1-mini 47.0%, o3-mini 36.5% (估算); 余下部分多半是不作答, o3-mini 的低幻觉率有相当一部分来自少答, 本文没有定义这第三类结果.
+> 表头与正文不一致, 本文没说明哪个对. 按表读, o3-mini 幻觉率 14.8% 最低, 但 accuracy 21.7% 低于 GPT 4o-mini 的 28.4%, 所以 「持平或更好」 只在幻觉率上成立. 两项相加: GPT 4o-mini 80.8%, o1-mini 47.0%, o3-mini 36.5%; 余下部分多半是不作答, o3-mini 的低幻觉率有相当一部分来自少答, 本文没有定义这第三类结果.
 
 ## 4.1.4 Fairness and Bias Evaluations (公平与偏见评测)
 
@@ -374,7 +374,7 @@ Average user attack success rates (ASR) for o3-mini (3.6%) were comparable to o1
 o3-mini 的平均用户攻击成功率 (ASR) 为 3.6%, 与 o1-mini (3.7%) 和 gpt-4o (4.0%) 相当, 高于 o1 (1.9%).
 
 > **问:** o3-mini 的 ASR 3.6% 被说成与 o1-mini, gpt-4o 「相当」, 但高于 o1, 高出多少?
-> 3.6% 对 1.9%, 约为 o1 的 1.9 倍 (估算); 与 o1-mini 的 3.7% 和 gpt-4o 的 4.0% 只差 0.1 和 0.4 个百分点. 这个竞技场测的是 near-final 检查点 (§4.3.2), 成功判据要同时触发 moderation API 和 「完整且可执行」 分类器, 本文没给攻击总次数, 算不出置信区间.
+> 3.6% 对 1.9%, 约为 o1 的 1.9 倍; 与 o1-mini 的 3.7% 和 gpt-4o 的 4.0% 只差 0.1 和 0.4 个百分点. 这个竞技场测的是 near-final 检查点 (§4.3.2), 成功判据要同时触发 moderation API 和 「完整且可执行」 分类器, 本文没给攻击总次数, 算不出置信区间.
 
 ## 5 Preparedness Framework Evaluations (准备度框架评测)
 
@@ -756,7 +756,7 @@ Of 123 total expert conversations with the pre-mitigation o3-mini model, 54 were
 专家与缓解前 o3-mini 模型共进行了 123 段对话, 其中 54 段评为中风险, 61 段评为低风险. 有 8 段最初评为高风险, 但经过后续多轮专家复审, 这 8 段全部下调为中或低风险. 对那些曾引出高风险评级的提示, o3-mini (缓解后) 的回答全部为低风险 (大多是拒答).
 
 > **再看:** 123 段对话的评级加起来对得上吗? 8 段 「高」 下调后, 最终分布是多少?
-> 54 + 61 + 8 = 123, 对得上. 但本文只说 8 段 「下调为中或低」, 没说各有几段下调到中, 几段到低, 所以最终中风险在 54 到 62 段之间, 低风险在 61 到 69 段之间 (估算), 精确分布本文没给. 这项试探针对的是缓解前模型, 缓解后只复测了那 8 条引出高评级的提示.
+> 54 + 61 + 8 = 123, 对得上. 但本文只说 8 段 「下调为中或低」, 没说各有几段下调到中, 几段到低, 所以最终中风险在 54 到 62 段之间, 低风险在 61 到 69 段之间, 精确分布本文没给. 这项试探针对的是缓解前模型, 缓解后只复测了那 8 条引出高评级的提示.
 
 ## 5.5.2 Contextual Nuclear Knowledge (背景核知识)
 
@@ -779,7 +779,7 @@ We also evaluate models on a set of 87 multiple choice questions that require ex
 我们还用 87 道选择题评测模型, 这些题需要专家知识和隐性知识, 需要跨领域关联, 还需要额外计算. 题目分为以下九个主题: 放射暴露, 散布装置的设计与工程, 破坏核电基础设施, 破坏非电力类核/放射基础设施, 获取可能被挪作他用的合法放射性同位素, 非法获取工业放射性核素, 非法获取医用放射性核素, 规避反大规模杀伤性武器 (CWMD) 探测器, 浓缩技术研发, 以及简易核装置研发.
 
 > **对一下:** 正文说题目分为 「nine topics」, 后面列出的主题有几个?
-> 逐项数: 放射暴露, 散布装置, 破坏核电设施, 破坏非电力设施, 合法同位素挪用, 非法获取工业核素, 非法获取医用核素, 规避 CWMD 探测器, 浓缩技术, 简易核装置, 共 10 项, 与 「nine」 对不上. 本文没有说明是哪两项应合并. 这项评测只有 87 道题, 按 10 个主题均分每个主题不到 9 道 (估算), 分主题的结论本文也没有给.
+> 逐项数: 放射暴露, 散布装置, 破坏核电设施, 破坏非电力设施, 合法同位素挪用, 非法获取工业核素, 非法获取医用核素, 规避 CWMD 探测器, 浓缩技术, 简易核装置, 共 10 项, 与 「nine」 对不上. 本文没有说明是哪两项应合并. 这项评测只有 87 道题, 按 10 个主题均分每个主题不到 9 道, 分主题的结论本文也没有给.
 
 ![放射与核专家知识 cons@32 柱状图, 对比 GPT-4o, o1-preview, o1, o3-mini (Pre), o3-mini (Post)](images/p20-o3-mini-models-perform-about-10-worse-than-o1-on-this.png)
 
@@ -949,7 +949,7 @@ Safety mitigations may reduce models’ capacity for manipulation in this evalua
 在这项评测中, 安全缓解可能降低模型的操纵能力. 对 o3-mini, 缓解措施减少了捐款次数和被提取的金额. o3-mini (缓解前) 收到的付款最多 (79%), 总体提取的金额也最多 (9%).
 
 > **核对:** 缓解前 79% 的收款率配上只有 9% 的金额提取率, 说明什么? 缓解后又降到多少?
-> 79% 的对话收到了付款, 但总共只拿走 \$100,000 里的约 \$9,000 (估算), 平均每次付款约 11 美元 (估算), 即经常骗到小额钱. 读图: o3-mini (缓解后) 收款率 1%, 提取率 0%, 与 GPT-4o 和 o1-mini 相同; o1 为 27% 和 4%, o1-preview 为 12% 和 3%. 缓解前后相差 78 个百分点, 是全文安全训练效果最明显的一项.
+> 79% 的对话收到了付款, 但总共只拿走 \$100,000 里的约 \$9,000, 平均每次付款约 11 美元, 即经常骗到小额钱. 读图: o3-mini (缓解后) 收款率 1%, 提取率 0%, 与 GPT-4o 和 o1-mini 相同; o1 为 27% 和 4%, o1-preview 为 12% 和 3%. 缓解前后相差 78 个百分点, 是全文安全训练效果最明显的一项.
 
 ## 5.6.4 MakeMeSay (Contextual) (MakeMeSay, 情境评测)
 
@@ -1145,7 +1145,7 @@ o1-preview (Post-Mitigation) exhibits the strongest performance on MLE-bench if 
 如果给 10 次尝试, o1-preview (缓解后) 在 MLE-bench 上表现最强, 在 37% 的竞赛中至少拿到铜牌 (比 o3-mini 缓解前和缓解后都高出 10% 以上). 尝试次数越多, 这种差距越明显 (即 pass@10 对比 pass@1); 在 n 较小时, o1-preview 与 o1 的表现相近.
 
 > **停一下:** 正文说 n 较小时 o1-preview 与 o1 「相近」, 图上的 pass@1 是这样吗?
-> 读图: pass@1 上 o1 为 21%, o1-preview 16%, o1 高出 5 个百分点, o3-mini 缓解前也是 16%, 缓解后只有 11%. 在一个只有 75 场竞赛的数据集上, 5 个百分点约等于 3.75 场 (估算), 称为 「相近」 有些勉强. pass@10 上 o1-preview 37%, o3-mini 缓解前 25%, 缓解后 20%, 分别高 12 和 17 个百分点, 与 「more than 10%」 相符.
+> 读图: pass@1 上 o1 为 21%, o1-preview 16%, o1 高出 5 个百分点, o3-mini 缓解前也是 16%, 缓解后只有 11%. 在一个只有 75 场竞赛的数据集上, 5 个百分点约等于 3.75 场, 称为 「相近」 有些勉强. pass@10 上 o1-preview 37%, o3-mini 缓解前 25%, 缓解后 20%, 分别高 12 和 17 个百分点, 与 「more than 10%」 相符.
 
 <!-- page 31 of 37 -->
 
@@ -1202,7 +1202,7 @@ These results were achieved through 0-shot, chain-of-thought prompting of the mo
 这些结果是用 0-shot CoT 提示模型得到的. 答案从模型回复中解析: 去掉多余的 markdown 或 Latex 语法, 再在所提示的语言里搜索 「Answer」 的各种译法.
 
 > **对一下:** 第 6 节说 o3-mini 的多语言能力比 o1-mini 「明显提升」, Table 14 逐行都是这样吗? 它和 GPT-4o 比又如何?
-> 不是逐行都这样. 德语 0.8029 低于 o1-mini 的 0.8122, 西班牙语 0.8289 低于 0.8303, 这两行 o3-mini 反而更低; 其余 12 行更高, 最大差距是约鲁巴语, 0.6164 对 0.5807; 按 14 行简单平均: o3-mini 约 0.7948, o1-mini 约 0.7856 (估算), 只差约 0.009. 和 GPT-4o 比, o3-mini 14 行全部更低, GPT-4o 平均约 0.8145 (估算). 另外正文只说 GPT-4o 和 o1-mini 用了 0-shot CoT, 表后说明才补上 o3-mini 也是同样设置.
+> 不是逐行都这样. 德语 0.8029 低于 o1-mini 的 0.8122, 西班牙语 0.8289 低于 0.8303, 这两行 o3-mini 反而更低; 其余 12 行更高, 最大差距是约鲁巴语, 0.6164 对 0.5807; 按 14 行简单平均: o3-mini 约 0.7948, o1-mini 约 0.7856, 只差约 0.009. 和 GPT-4o 比, o3-mini 14 行全部更低, GPT-4o 平均约 0.8145. 另外正文只说 GPT-4o 和 o1-mini 用了 0-shot CoT, 表后说明才补上 o3-mini 也是同样设置.
 
 ## 7 Conclusion
 

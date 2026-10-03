@@ -79,7 +79,7 @@ Base model: [**mistralai/Mistral-Large-3-675B-Base-2512**](https://huggingface.c
 评测结果只有一条: 数据集 Idavidrein/gpqa 的 Diamond 子集, 得分 67.17, 分数后面带一个星号. 旁边是 source 和 leaderboard 两个链接, source 指向一个第三方数据仓库里的 JSON 文件.
 
 > **核对:** 67.17 后面的星号是什么意思?
-> 页面上找不到对应的脚注. 第 5 页 Base 模型对比图里 GPQA-Diamond 是 43.9, 设置写着 5-shot, no CoT; 这里的 67.17 挂在 Instruct 仓库上, 没写设置. 两个数相差 23.27 (估算), 但测的不是同一个模型版本, 设置也不明, 不能直接比.
+> 页面上找不到对应的脚注. 第 5 页 Base 模型对比图里 GPQA-Diamond 是 43.9, 设置写着 5-shot, no CoT; 这里的 67.17 挂在 Instruct 仓库上, 没写设置. 两个数相差 23.27, 但测的不是同一个模型版本, 设置也不明, 不能直接比.
 
 ## Mistral Large 3 675B Instruct 2512
 
@@ -119,7 +119,7 @@ We provide a [BF16](https://huggingface.co/mistralai/Mistral-Large-3-675B-Instru
 如有需要, 我们也提供 [BF16](https://huggingface.co/mistralai/Mistral-Large-3-675B-Instruct-2512-BF16) 版本.
 
 > **拆开:** 一个节点几张卡, 权重有多大?
-> 这里没说卡数, 第 7 页才写明 FP8 用 「one 8xH200 node」. 按每参数字节数估算纯权重: FP8 约 675 GB, BF16 约 1350 GB, NVFP4 约 338 GB 再加缩放因子 (均为估算). 单卡显存页面没印, 能不能装下, 本页算不了.
+> 这里没说卡数, 第 7 页才写明 FP8 用 「one 8xH200 node」. 按每参数字节数估算纯权重: FP8 约 675 GB, BF16 约 1350 GB, NVFP4 约 338 GB 再加缩放因子. 单卡显存页面没印, 能不能装下, 本页算不了.
 
 ## Key Features
 
@@ -136,7 +136,7 @@ Mistral Large 3 由两个主要结构组件构成:
 **一个 2.5B 的视觉编码器**
 
 > **确认:** 673B + 2.5B 能不能凑出 675B, 39B + 2.5B 能不能凑出 41B?
-> 673 + 2.5 = 675.5, 39 + 2.5 = 41.5 (均为估算). 如果顶部的 675B 和 41B 是向下取整, 两组都说得通; 但页面没写取整规则, 也没说视觉编码器是否每个 token 都参与计算. 还有 0.5B 左右的差额可能来自投影层之类的连接部件, 这页没列.
+> 673 + 2.5 = 675.5, 39 + 2.5 = 41.5. 如果顶部的 675B 和 41B 是向下取整, 两组都说得通; 但页面没写取整规则, 也没说视觉编码器是否每个 token 都参与计算. 还有 0.5B 左右的差额可能来自投影层之类的连接部件, 这页没列.
 
 <!-- page 3 of 9 -->
 
@@ -263,10 +263,10 @@ Base 模型基准对比
 图中五组基准的数值 (Mistral Large 3 / Deepseek-3.1 / Kimi-K2): MMMLU (8-lang average) 85.5 / 84.2 / 83.5; GPQA-Diamond (5-shot, no CoT) 43.9 / 41.9 / 35.6; SimpleQA (Exact match) 23.8 / 19.7 / 26.0; AMC 52.0 / 46.4 / 54.4; LiveCodeBench (no CoT) 34.4 / 35.6 / 40.2.
 
 > **再看:** 五组里 Mistral Large 3 排第一的有几组?
-> 两组: MMMLU 和 GPQA-Diamond. SimpleQA 和 AMC 输给 Kimi-K2, LiveCodeBench 输给另外两家. 五项简单平均: Mistral Large 3 约 47.92, Kimi-K2 约 47.94, Deepseek-3.1 约 45.56 (均为估算), 前两者几乎持平.
+> 两组: MMMLU 和 GPQA-Diamond. SimpleQA 和 AMC 输给 Kimi-K2, LiveCodeBench 输给另外两家. 五项简单平均: Mistral Large 3 约 47.92, Kimi-K2 约 47.94, Deepseek-3.1 约 45.56, 前两者几乎持平.
 
 > **对一下:** Kimi-K2 标的 1.2T 算 「similar sized」 吗?
-> 1.2T 约是 675B 的 1.78 倍 (估算). Deepseek-3.1 标 670B, 和 675B 接近; Kimi-K2 就差得比较远了. 图里括号内的数是总参数还是别的口径, 页面没说, 也没给这两个对手的激活参数.
+> 1.2T 约是 675B 的 1.78 倍. Deepseek-3.1 标 670B, 和 675B 接近; Kimi-K2 就差得比较远了. 图里括号内的数是总参数还是别的口径, 页面没说, 也没给这两个对手的激活参数.
 
 Model Performance Comparison (Instruct) · Win · Lose
 
@@ -300,7 +300,7 @@ LMArena ELO Score: Mistral Large 3 1418 +/- 11 · Qwen3-VL (non-thinking) 1394 +
 LMArena ELO 分数: Mistral Large 3 为 1418 ± 11; Qwen3-VL (非思考模式) 1394 ± 4; Qwen3 2507 (非思考模式) 1421 ± 4; Kimi-2 0905 (非思考模式) 1418 ± 7; DeepSeek v3.2 (非思考模式) 1423 ± 7.
 
 > **问:** 1418 ± 11 算不算排在中间?
-> 按 ± 范围算, Mistral Large 3 是 1407 到 1429, DeepSeek v3.2 是 1416 到 1430, Qwen3 2507 是 1417 到 1425, 三者区间重叠; 只有 Qwen3-VL 的 1390 到 1398 落在下方 (均为估算). 它的误差棒 ±11 是五个里最宽的, ± 是置信区间还是别的统计量, 页面没说.
+> 按 ± 范围算, Mistral Large 3 是 1407 到 1429, DeepSeek v3.2 是 1416 到 1430, Qwen3 2507 是 1417 到 1425, 三者区间重叠; 只有 Qwen3-VL 的 1390 到 1398 落在下方. 它的误差棒 ±11 是五个里最宽的, ± 是置信区间还是别的统计量, 页面没说.
 
 > **核对:** 这张图的对手和第 5 页是同一批吗?
 > 不是. 第 5 页比的是 Deepseek-3.1 和 Kimi-K2 (1.2T), 这里换成 DeepSeek v3.2 和 Kimi-2 0905, 又加了两个 Qwen3 模型, 而且都标 non-thinking. 两张图的对手版本不同, 结论不能串起来读.
@@ -362,7 +362,7 @@ The Mistral Large 3 Instruct FP8 format can be used on one 8xH200 node. We recom
 Mistral Large 3 Instruct 的 FP8 格式可以在一台 8xH200 节点上运行. 如果打算微调, 我们推荐用这个格式, 因为某些情况下它比 NVFP4 更精确.
 
 > **看表:** 「one 8xH200 node」 和第 2 页的 「single node of B200s or H200s」 对得上吗?
-> 对得上, 这里补出了节点的卡数是 8. 按 FP8 约 675 GB 纯权重分到 8 张卡, 每卡约 84 GB (估算), 还没算 KV cache 和激活. B200 节点和 NVFP4 用的 H100, A100 节点各几张卡, 页面没写.
+> 对得上, 这里补出了节点的卡数是 8. 按 FP8 约 675 GB 纯权重分到 8 张卡, 每卡约 84 GB, 还没算 KV cache 和激活. B200 节点和 NVFP4 用的 H100, A100 节点各几张卡, 页面没写.
 
 ## Simple
 
@@ -403,7 +403,7 @@ You can set **--max-model-len** to preserve memory. By default it is set to 2621
 可以调小 **--max-model-len** 来省显存. 默认值是 262144, 这个值很大, 大多数场景用不到.
 
 > **确认:** 262144 和第 3 页的 「256k」 是同一个数吗?
-> 是. 256 × 1024 = 262,144 (估算), 这里的 k 取 1024. 不过示例命令把 262144 显式写了出来, 正文又说它 「not necessary for most scenarios」, 等于一边给满长度的命令, 一边建议调小.
+> 是. 256 × 1024 = 262,144, 这里的 k 取 1024. 不过示例命令把 262144 显式写了出来, 正文又说它 「not necessary for most scenarios」, 等于一边给满长度的命令, 一边建议调小.
 
 You can set **--max-num-batched-tokens** to balance throughput and latency, higher means higher throughput but higher latency.
 
@@ -439,7 +439,7 @@ vllm serve mistralai/Mistral-Large-3-675B-Instruct-2512 \
 这条命令同样是 8 路张量并行, 加载格式, 分词器模式, 配置格式都用 mistral, 开启工具调用; 每个提示最多 10 张图; 投机解码配置: 草稿模型是 Mistral-Large-3-675B-Instruct-2512-Eagle, 每步投机 3 个 token, 方法 eagle, 草稿模型的最大长度 「16384」.
 
 > **回看:** 草稿模型的 max_model_len 16384 和主模型的 262144 差多少?
-> 262144 / 16384 = 16 (估算), 草稿模型的长度上限只有主模型默认值的十六分之一. 这条命令也没设主模型的 --max-model-len. 超过 16384 之后投机解码是否还生效, 页面没说. 另外 16384 写成了带引号的字符串, 其余数字参数都没加引号.
+> 262144 / 16384 = 16, 草稿模型的长度上限只有主模型默认值的十六分之一. 这条命令也没设主模型的 --max-model-len. 超过 16384 之后投机解码是否还生效, 页面没说. 另外 16384 写成了带引号的字符串, 其余数字参数都没加引号.
 
 For more information on the draft model, please have a look at [Mistral-Large-3-675B-Instruct-2512-Eagle](https://huggingface.co/mistralai/Mistral-Large-3-675B-Instruct-2512-Eagle).
 

@@ -138,7 +138,7 @@ ForSWE-bench Verified, a model is given a code repository and issue description,
 在 SWE-bench Verified 里, 模型拿到一个代码仓库和一段 issue 描述, 要生成补丁解决这个 issue. 成绩很依赖所用的提示和工具. 为了方便复现和理解结果, 我们说明了 GPT-4.1 在自家基础设施上的设置 (链接, 抓页在链接处漏掉了一句); 如果保守地把 「这些」 题记 0 分, 54.6% 会变成 52.1%.
 
 > **确认:** 「these」 指多少道题? 页面在这里被截断了.
-> 可以从两个分数反推. SWE-bench Verified 共 500 题, 52.1 / 54.6 ≈ 0.954, 500 × 0.954 ≈ 477, 也就是 54.6% 是在约 477 道能跑的题上算的, 约 23 题被排除 (估算). 验算: 477 × 54.6% ≈ 260 题通过, 260 / 500 = 52.0%, 与 52.1% 在四舍五入内一致. 被排除的题号列在第 17 页的脚注里.
+> 可以从两个分数反推. SWE-bench Verified 共 500 题, 52.1 / 54.6 ≈ 0.954, 500 × 0.954 ≈ 477, 也就是 54.6% 是在约 477 道能跑的题上算的, 约 23 题被排除. 验算: 477 × 54.6% ≈ 260 题通过, 260 / 500 = 52.0%, 与 52.1% 在四舍五入内一致. 被排除的题号列在第 17 页的脚注里.
 
 For API developers looking to edit large files, GPT‑4.1 is much more reliable at code diffs across a range of formats. GPT‑4.1 more than doubles GPT‑4o’s score on [Aider’s polyglot diff benchmark(opens in a new window)](https://aider.chat/docs/leaderboards/), and even beats GPT‑4.5 by $8\%_{\mathsf{abs}}$. This evaluation is both a measure of coding capabilities across various programming languages and a measure of model ability to produce changes in whole and diff formats. We’ve specifically trained GPT‑4.1 to follow diff formats more reliably, which allows developers to
 
@@ -154,7 +154,7 @@ save both cost and latency by only having the model output changed lines, rather
 只让模型输出改动的行, 不必重写整个文件, 从而同时省下成本和延迟. 想要最好的 diff 效果, 请参考我们的提示指南. 对偏好整文件重写的开发者, 我们把 GPT-4.1 的输出 token 上限提到 32,768 (GPT-4o 是 16,384). 我们也建议用 Predicted Outputs 来降低整文件重写的延迟.
 
 > **停一下:** 输入能到 1 million token, 输出上限只有 32,768, 整文件重写能覆盖多大的文件?
-> 输出上限只有输入窗口的约 1/30 (1,000,000 / 32,768 ≈ 30.5, 估算). 所以大于约 32K token 的文件根本没法一次整份重写, 只能走 diff. 这也是本节把 diff 格式训练和输出上限放在一起讲的原因: 上限翻倍 (16,384 到 32,768) 扩大了 whole 格式能处理的文件, 真正的大文件还得靠 diff.
+> 输出上限只有输入窗口的约 1/30 (1, 000, 000 / 32, 768 ≈ 30.5). 所以大于约 32K token 的文件根本没法一次整份重写, 只能走 diff. 这也是本节把 diff 格式训练和输出上限放在一起讲的原因: 上限翻倍 (16,384 到 32,768) 扩大了 whole 格式能处理的文件, 真正的大文件还得靠 diff.
 
 In Aider's polyglot benchmark, models solve coding exercises from Exercism(opens in a new [window)](https://exercism.org/) by editing source files, with one retry allowed. The ‘whole’ format requires the model to rewrite the entire file, which can be slow and costly. The diff' format requires the model to (opens in a new window)
 
@@ -196,7 +196,7 @@ with GPT‑4.1.
 GPT-4.1 的 2%.
 
 > **对一下:** 9% 到 2% 和下面 Windsurf 说的 「about 50% less likely to repeat unnecessary edits」 是同一个指标吗?
-> 不是. 9% 到 2% 是 OpenAI 内部评测里多余修改的比例, 相对降了约 78% (估算). Windsurf 的 50% 是他们用户的反馈, 对象是 「重复不必要的修改, 或以过窄的增量步骤读代码」, 是另一套口径. 两个数不能互相验证.
+> 不是. 9% 到 2% 是 OpenAI 内部评测里多余修改的比例, 相对降了约 78%. Windsurf 的 50% 是他们用户的反馈, 对象是 「重复不必要的修改, 或以过窄的增量步骤读代码」, 是另一套口径. 两个数不能互相验证.
 
 ## Real world examples (真实案例)
 
@@ -209,7 +209,7 @@ Windsurf: 在 Windsurf 的内部编程基准上, GPT-4.1 比 GPT-4o 高 60%, 这
 Qodo: Qodo 参照他们的微调基准设计方法, 让 GPT-4.1 与其他领先模型一对一比拼, 为 GitHub pull request 生成高质量代码审查. 在 200 个有代表性的真实 pull request 上, 用相同提示和条件, 他们发现 GPT-4.1 在 55% 的情况下给出更好的建议. 值得一提的是, GPT-4.1 在精确性 (知道什么时候不该提建议) 和全面性 (该深入时分析透彻) 上都很好, 同时能抓住真正关键的问题.
 
 > **想:** 200 个 pull request 里赢 55%, 这个优势有多大?
-> 55% 是 110 对 90. 把每个 pull request 当独立的二选一, 标准误约 sqrt(0.5 × 0.5 / 200) ≈ 3.5 个百分点, 55% 离 50% 约 1.4 个标准误 (估算), 不到常用的 2 倍. 另外 「other leading models」 没说是哪几个, 所以这个数只能读成 「略占上风」.
+> 55% 是 110 对 90. 把每个 pull request 当独立的二选一, 标准误约 sqrt(0.5 × 0.5 / 200) ≈ 3.5 个百分点, 55% 离 50% 约 1.4 个标准误, 不到常用的 2 倍. 另外 「other leading models」 没说是哪几个, 所以这个数只能读成 「略占上风」.
 
 ## Instruction following (指令遵循)
 
@@ -312,7 +312,7 @@ GPT‑4.1, GPT‑4.1 mini, and GPT‑4.1 nano can process up to 1 million tokens
 GPT-4.1, GPT-4.1 mini 和 GPT-4.1 nano 最多能处理 1 million token 的上下文, 之前的 GPT-4o 模型是 128,000. 1 million token 比整个 React 代码库的 8 份还多, 所以长上下文很适合处理大型代码库或大量长文档.
 
 > **确认:** 「1 million」 到底是 1,000,000 还是 1,048,576?
-> 页面两张图口径不一. 大海捞针图横轴标到 1,000 (千 token), MRCR 图横轴最后一格标 1,024 (千 token), 1,024K 正好是 2^20 = 1,048,576. 附录只写 「1M」. 「8 份 React 还多」 则说明整个 React 代码库不到约 125K token (1,000,000 / 8, 估算), 接近 GPT-4o 的 128,000 窗口.
+> 页面两张图口径不一. 大海捞针图横轴标到 1,000 (千 token), MRCR 图横轴最后一格标 1,024 (千 token), 1,024K 正好是 2^20 = 1,048,576. 附录只写 「1M」. 「8 份 React 还多」 则说明整个 React 代码库不到约 125K token (1, 000, 000 / 8), 接近 GPT-4o 的 128,000 窗口.
 
 We trained GPT‑4.1 to reliably attend to information across the full 1 million context length. We’ve also trained it to be far more reliable than GPT‑4o at noticing relevant text, and ignoring distractors across long and short context lengths. Long-context understanding is a critical capability for applications across legal, coding, customer support, and many other domains.
 
@@ -378,7 +378,7 @@ But the task remains hard—even for advanced reasoning models. We’re sharing 
 > 读图估算, 蓝线在 128K 处约 60%, 在 64K 处约 62%, 表里 「2 needle 128k」 是 57.2%, 差约 3 个点. 其他线在 128K 处: 橙色 mini 约 47% (表 47.2%), 青色 GPT-4.5 约 38% (表 38.5%), 绿色 GPT-4o 约 34% (表 31.9%), 紫色 o1 约 24% (表 22.1%), 黄色 GPT-4o mini 约 26% (表 24.5%). 多数线在 1 到 2 个点内, 蓝线偏得最多. 页面没说表格的 128k 是单点还是区间平均.
 
 > **对一下:** 图例有 7 个名字, 图上有几条线?
-> 有 8 条. 多出来一条浅粉色线, 从 8K 约 43% 降到 128K 约 16% (读图估算), 图例里没有它. 第 18 页表里有而图例里没有的只有 o3-mini (high), 它的 128k 是 18.7%, 和粉线末端差约 3 个点. 这条线大概率是 o3-mini, 但页面没标, 只能算推断.
+> 有 8 条. 多出来一条浅粉色线, 从 8K 约 43% 降到 128K 约 16% (读图), 图例里没有它. 第 18 页表里有而图例里没有的只有 o3-mini (high), 它的 128k 是 18.7%, 和粉线末端差约 3 个点. 这条线大概率是 o3-mini, 但页面没标, 只能算推断.
 
 > **想:** 图上 nano 的红线在 128K 和 256K 之间发生了什么?
 > 读图估算, 红线在 128K 约 37%, 256K 掉到约 13%, 512K 约 15%, 1,024K 约 13%; 表里 nano 的 2 needle 1M 是 12.0%. 也就是 nano 超过 128K 后几乎只剩一成多. 正文说三个模型都能处理 1 million token, 大海捞针也全对, 但到了多针消歧, nano 的有效长度远小于窗口长度. mini 的橙线在 256K 到 512K 之间反而从约 44% 升到约 47%, 页面没有解释.
@@ -425,7 +425,7 @@ In addition to model performance and accuracy, developers also need models that 
 除了模型表现和准确率, 开发者还需要响应快的模型, 才能跟上并满足用户需求. 我们改进了推理栈, 缩短首 token 时间; 配合 prompt caching, 还能进一步降低延迟, 同时省钱. 初步测试中, GPT-4.1 在 128,000 token 上下文下首 token 延迟大约十五秒, 在一百万 token 上下文下约一分钟. GPT-4.1 mini 和 nano 更快, 比如 128,000 输入 token 的查询, GPT-4.1 nano 多数情况下不到五秒就返回首 token.
 
 > **核对:** 128K 要 15 秒, 1M 要 60 秒, 这个比例说明什么?
-> 折成吞吐 (估算): 128,000 / 15 ≈ 8.5K token/s, 1,000,000 / 60 ≈ 16.7K token/s, 长的反而快一倍. token 数涨约 7.8 倍, 时间只涨 4 倍. 如果 prefill 由注意力的二次项主导, 时间应当涨得比 7.8 倍还多. 所以要么 15 秒里有很大的固定开销 (排队, 调度), 要么 1M 请求被分到更多并行硬件上. 页面只写了 「approximately」 和 「initial testing」, 没给硬件和并发条件.
+> 折成吞吐: 128,000 / 15 ≈ 8.5K token/s, 1,000,000 / 60 ≈ 16.7K token/s, 长的反而快一倍. token 数涨约 7.8 倍, 时间只涨 4 倍. 如果 prefill 由注意力的二次项主导, 时间应当涨得比 7.8 倍还多. 所以要么 15 秒里有很大的固定开销 (排队, 调度), 要么 1M 请求被分到更多并行硬件上. 页面只写了 「approximately」 和 「initial testing」, 没给硬件和并发条件.
 
 ## Vision (视觉)
 
@@ -485,7 +485,7 @@ Through efficiency improvements to our inference systems, we’ve been able to o
 \*按典型的输入/输出比例和缓存比例计算.
 
 > **回看:** GPT-4.1 的综合价格 $1.84 比输入单价 $2.00 还低, 意味着什么?
-> 意味着典型用量里缓存输入占了大头. 设输出占 10%, 其余是输入和缓存输入 (估算): 2x + 0.5y + 8 × 0.1 = 1.84, x + y = 0.9, 解得 x ≈ 0.39, y ≈ 0.51, 一半多的 token 走缓存价. 另外 「26% less expensive than GPT-4o for median queries」 在本页验不了, GPT-4o 的价格没印.
+> 意味着典型用量里缓存输入占了大头. 设输出占 10%, 其余是输入和缓存输入: 2x + 0.5y + 8 × 0.1 = 1.84, x + y = 0.9, 解得 x ≈ 0.39, y ≈ 0.51, 一半多的 token 走缓存价. 另外 「26% less expensive than GPT-4o for median queries」 在本页验不了, GPT-4o 的价格没印.
 
 These models are available for use in our [Batch API(opens in a new window)](https://platform.openai.com/docs/guides/batch) at an additional 50% pricing discount.
 
@@ -523,10 +523,10 @@ Academic knowledge
 [1] 我们的 GPQA 实现用模型而不是正则表达式来抽取答案. 对 GPT-4.1, 两者差距 <1% (统计上不显著), 但对 GPT-4o, 用模型抽取会明显提高分数 (\~46% -> 54%).
 
 > **停一下:** 脚注说 「我们的实现用模型抽取」, 对 GPT-4o 能到约 54%, 可表里 GPT-4o 是 46.0%, 表用的是哪种?
-> 表里的 46.0% 对应脚注里的正则那一档 (\~46%), 不是自家实现的模型抽取 (\~54%). 按脚注的说法重算, GPT-4.1 对 GPT-4o 的 GPQA 差距从 20.3 个点缩到约 12 个点 (66.3 - 54, 估算). 页面没说明表格为什么对 GPT-4o 用了另一套抽取.
+> 表里的 46.0% 对应脚注里的正则那一档 (\~46%), 不是自家实现的模型抽取 (\~54%). 按脚注的说法重算, GPT-4.1 对 GPT-4o 的 GPQA 差距从 20.3 个点缩到约 12 个点 (66.3 - 54). 页面没说明表格为什么对 GPT-4o 用了另一套抽取.
 
 > **再看:** AIME '24 上 mini 比 GPT-4.1 高, nano 比 GPT-4o 高一倍多, 这正常吗?
-> 表里就是这样: mini 49.6% 对 GPT-4.1 48.1%, nano 29.4% 对 GPT-4o 13.1%. 同表 MMLU 上 GPT-4.1 仍高于 mini (90.2% 对 87.5%). AIME 每年只有 30 题, 1.5 个点不到半道题 (30 × 1.5% ≈ 0.45 题, 估算), mini 和 GPT-4.1 在这项上可以当作持平. 推理模型 o3-mini (high) 87.3% 则远在上面.
+> 表里就是这样: mini 49.6% 对 GPT-4.1 48.1%, nano 29.4% 对 GPT-4o 13.1%. 同表 MMLU 上 GPT-4.1 仍高于 mini (90.2% 对 87.5%). AIME 每年只有 30 题, 1.5 个点不到半道题 (30 × 1.5% ≈ 0.45 题), mini 和 GPT-4.1 在这项上可以当作持平. 推理模型 o3-mini (high) 87.3% 则远在上面.
 
 Coding evals
 
@@ -543,7 +543,7 @@ Coding evals
 SWE-Lancer 一格里前面是挣到的美元, 括号里是占比. 「-」 表示没有该项结果.
 
 > **对一下:** SWE-Lancer 的美元和百分比能反推出总额吗? 每一格都一致吗?
-> 能. 全集: 176 / 0.351 ≈ 501, 186 / 0.373 ≈ 499, 77 / 0.153 ≈ 503, 总额约 $500K. IC-Diamond 子集: 34 / 0.144 ≈ 236, 41 / 0.174 ≈ 236, 29 / 0.124 ≈ 234, 总额约 $236K (均为估算). 唯独 o1 (high) 那格 $29K (9.7%) 反推出约 $299K, 和同列其他格对不上; 按 $236K 算, $29K 应是约 12.3%, 9.7% 应是约 $23K. 这一格的美元或百分比至少有一个印错了.
+> 能. 全集: 176 / 0.351 ≈ 501, 186 / 0.373 ≈ 499, 77 / 0.153 ≈ 503, 总额约 $500K. IC-Diamond 子集: 34 / 0.144 ≈ 236, 41 / 0.174 ≈ 236, 29 / 0.124 ≈ 234, 总额约 $236K. 唯独 o1 (high) 那格 $29K (9.7%) 反推出约 $299K, 和同列其他格对不上; 按 $236K 算, $29K 应是约 12.3%, 9.7% 应是约 $23K. 这一格的美元或百分比至少有一个印错了.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">'django\_\_django-7530', 'matplotlib\_\_matplotlib-20488', 'matplotlib\_\_matplotlib-20676',</span></small>
 

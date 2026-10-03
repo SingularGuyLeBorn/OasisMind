@@ -16,7 +16,7 @@
 
 定位: 「the next generation of our fastest model」. 速度: 与 Claude 3 Haiku 相近. 能力: 各项技能都有提升, 在许多智能基准上超过 Claude 3 Opus, 编码尤其强, SWE-bench Verified 40.6%, 超过原版 3.5 Sonnet 和 GPT-4o 驱动的许多 agent. 用途: 面向用户的产品, 专门化的子 agent 任务, 从购买记录, 价格, 库存这类海量数据里生成个性化体验. 上线: 当月晚些时候, 第一方 API, Amazon Bedrock 和 Vertex AI, 先纯文本, 图像输入之后再加.
 
-「similar speed」, 「low latency」, 「improved instruction following」, 「more accurate tool use」 都是相对说法, 没有对照数值. 与 Claude 3 Opus 的比较出现两次, 但表里没有 Opus 这一列; 同级目录 Claude 3 公告的表里 3 Opus 的 GPQA 是 50.4%, 这里 Haiku 是 41.6%, 设置同为 0-shot CoT, 所以 「超过 Opus」 至少在 GPQA 上不成立 (跨页对照, 估算). 对 Haiku 的判断, 有据可依的范围比正文措辞窄.
+「similar speed」, 「low latency」, 「improved instruction following」, 「more accurate tool use」 都是相对说法, 没有对照数值. 与 Claude 3 Opus 的比较出现两次, 但表里没有 Opus 这一列; 同级目录 Claude 3 公告的表里 3 Opus 的 GPQA 是 50.4%, 这里 Haiku 是 41.6%, 设置同为 0-shot CoT, 所以 「超过 Opus」 至少在 GPQA 上不成立 (跨页对照). 对 Haiku 的判断, 有据可依的范围比正文措辞窄.
 
 ## 2. 分数与评测口径
 
@@ -44,7 +44,7 @@ TAU-bench 由 Sierra 发布, 模拟客服场景: 一个由语言模型扮演的�
 
 正文发布日是 2024 年 10 月 22 日, 当天新 Sonnet 对所有用户开放, Haiku 写 「later this month」. 页首更新日期是 12/03/2024, 内容是调整 Haiku 价格, 这时 Haiku 已上线, 所以抓取里的页首价格是事后改过的. 更新后每 MTok 输入 \$0.80, 输出 \$4, 输出是输入的 5 倍. 页面没写原价; 按公开报道, 3.5 Haiku 上线时定价 \$1 / \$5, 比 3 Haiku 的 \$0.25 / \$1.25 高 4 倍, Anthropic 当时的理由是能力提升, 12 月再下调到 \$0.80 / \$4 (公开资料, 本页只有调整后的价格).
 
-这组价格说明小档的定位变了: 3 Haiku 按 「同档最便宜」 定价, 3.5 Haiku 按 「接近上一代中高档的能力」 定价. 新 Sonnet 的价格写 「the same price and speed as its predecessor」, 也就是同级目录 3.5 Sonnet 一篇的 \$3 / \$15; 按调整后价格, Haiku 输入约为 Sonnet 的 27% (估算). 页脚 Pricing 链接指向 2026 年的站点定价页, 不代表 2024 年价格.
+这组价格说明小档的定位变了: 3 Haiku 按 「同档最便宜」 定价, 3.5 Haiku 按 「接近上一代中高档的能力」 定价. 新 Sonnet 的价格写 「the same price and speed as its predecessor」, 也就是同级目录 3.5 Sonnet 一篇的 \$3 / \$15; 按调整后价格, Haiku 输入约为 Sonnet 的 27%. 页脚 Pricing 链接指向 2026 年的站点定价页, 不代表 2024 年价格.
 
 ### 3.2. 安全与用途
 

@@ -133,7 +133,7 @@ Another recent trend in language modeling may offer a way forward. In recent yea
 语言建模的另一条近期趋势也许能提供出路. 最近几年, transformer 语言模型的容量大幅增长: 从 1 亿参数 [RNSS18], 到 3 亿 [DCLT18], 15 亿 [RWC+19], 80 亿 [SPP+19], 110 亿 [RSR+19], 最后到 170 亿 [Tur20]. 每次扩容都带来了文本生成和/或下游 NLP 任务上的提升, 也有证据表明, 与许多下游任务相关性很好的 log loss 会随规模平滑地改善 [KMH+20]. 既然 in-context learning 需要把许多技能和任务吸收进模型参数, in-context learning 的能力随规模同样大幅提升, 就是说得通的推测.
 
 > **问:** 摘要说 GPT-3 的参数量是此前非稀疏模型的 10 倍, 这一页列出的最大前作是多少?
-> 这一段列到的最大者是 170 亿参数的 Turing-NLG [Tur20]. 表 2.1 里 GPT-3 175B 的 n_params 是 175.0B, 175.0 除以 17 约为 10.3 (估算), 所以 「10 倍」 是和 17B 比出来的. 第 7 节相关工作还提到用 mixture-of-experts 做到 1000 亿参数的模型, 但那属于稀疏路线, 不在 「非稀疏」 的比较范围里.
+> 这一段列到的最大者是 170 亿参数的 Turing-NLG [Tur20]. 表 2.1 里 GPT-3 175B 的 n_params 是 175.0B, 175.0 除以 17 约为 10.3, 所以 「10 倍」 是和 17B 比出来的. 第 7 节相关工作还提到用 mixture-of-experts 做到 1000 亿参数的模型, 但那属于稀疏路线, 不在 「非稀疏」 的比较范围里.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>In the context of language models this has sometimes been called “zero-shot transfer”, but this term is potentially ambiguous: the method is “zero-shot” in the sense that no gradient updates are performed, but it often involves providing inference-time demonstrations to the model, so is not truly learning from zero examples. To avoid this confusion, we use the term “meta-learning” to capture the inner-loop / outer-loop structure of the general method, and the term “in context-learning” to refer to the inner loop of meta-learning. We further specialize the description to “zero-shot”, “one-shot”, or “few-shot” depending on how many demonstrations are provided at inference time. These terms are intended to remain agnostic on the question of whether the model learns new tasks from scratch at inference time or simply recognizes patterns seen during training – this is an important issue which we discuss later in the paper, but “meta-learning” is intended to encompass both possibilities, and simply describes the inner-outer loop structure.</span></small>
 
@@ -148,7 +148,7 @@ Figure 1.3: Aggregate performance for all 42 accuracy-denominated benchmarks Whi
 图 1.3: 全部 42 个以准确率计分的基准的聚合表现. zero-shot 表现随模型尺寸稳步提升, few-shot 表现提升得更快, 说明更大的模型更擅长 in-context learning. SuperGLUE 这一标准 NLP 基准套件的更细分析见图 3.8.
 
 > **核对:** 图 1.3 的三条粗线, 能不能当成 GPT-3 的一个总分来引用?
-> 不能. 第 5 页末段写明这张图只给 「启发式」 的整体印象, 不应被当作严格或有意义的基准. 从图上读, 175B 处 few-shot 约 57, one-shot 约 51, zero-shot 约 43 (读图估算), 13B 处三者约 44, 41, 34. 真要引用具体任务, 应回到表 3.1 到表 3.11 或附录表 H.1 的格子.
+> 不能. 第 5 页末段写明这张图只给 「启发式」 的整体印象, 不应被当作严格或有意义的基准. 从图上读, 175B 处 few-shot 约 57, one-shot 约 51, zero-shot 约 43 (读图), 13B 处三者约 44, 41, 34. 真要引用具体任务, 应回到表 3.1 到表 3.11 或附录表 H.1 的格子.
 
 In this paper, we test this hypothesis by training a 175 billion parameter autoregressive language model, which we call GPT-3, and measuring its in-context learning abilities. Specifically, we evaluate GPT-3 on over two dozen NLP datasets, as well as several novel tasks designed to test rapid adaptation to tasks unlikely to be directly contained in the training set. For each task, we evaluate GPT-3 under 3 conditions: (a) “few-shot learning”, or in-context learning where we allow as many demonstrations as will fit into the model’s context window (typically 10 to 100), (b) “one-shot learning”, where we allow only one demonstration, and (c) “zero-shot” learning, where no demonstrations are allowed and only an instruction in natural language is given to the model. GPT-3 could also in principle be evaluated in the traditional fine-tuning setting, but we leave this to future work.
 
@@ -267,7 +267,7 @@ Table 2.1 shows the sizes and architectures of our 8 models. Here $n _ { \mathrm
 表 2.1 给出了 8 个模型的尺寸和架构. 其中 $n_{\mathrm{params}}$ 是可训练参数总数, $n_{\mathrm{layers}}$ 是层数, $d_{\mathrm{model}}$ 是每个瓶颈层的单元数 (前馈层始终是瓶颈层的四倍, $d_{\mathrm{ff}} = 4 * d_{\mathrm{model}}$), $d_{\mathrm{head}}$ 是每个注意力头的维度. 所有模型的上下文窗口都是 $n_{\mathrm{ctx}} = 2048$ 个 token. 我们沿深度和宽度两个维度把模型切分到多块 GPU 上, 以尽量减少节点间的数据传输. 每个模型的具体架构参数, 是按计算效率和在 GPU 上排布模型时的负载均衡来选的. 此前的工作 [KMH+20] 表明, 在相当宽的范围内, 验证损失对这些参数并不敏感.
 
 > **回看:** 用 d_ff = 4 d_model 这条, 能不能从表 2.1 自己核回 175B?
-> 大致能. 每层注意力约 4d², 前馈约 8d², 合计约 12·n_layers·d_model². 代入 175B 这一行: 12 乘 96 乘 12288² 约 173.9B (估算), 与表 2.1 的 175.0B 和表 D.1 的 174,600M 只差不到 1B, 差额主要是嵌入等其余参数, 本文没给词表大小, 算不出这部分的确切值. 同法算 GPT-3 13B: 按 d_model = 5140 得约 12.68B, 按 5120 得约 12.58B (估算), 两者都在表 D.1 的 12,850M 附近, 同样判不出上一条那格的真值.
+> 大致能. 每层注意力约 4d², 前馈约 8d², 合计约 12·n_layers·d_model². 代入 175B 这一行: 12 乘 96 乘 12288² 约 173.9B, 与表 2.1 的 175.0B 和表 D.1 的 174,600M 只差不到 1B, 差额主要是嵌入等其余参数, 本文没给词表大小, 算不出这部分的确切值. 同法算 GPT-3 13B: 按 d_model = 5140 得约 12.68B, 按 5120 得约 12.58B, 两者都在表 D.1 的 12,850M 附近, 同样判不出上一条那格的真值.
 
 ## 2.2 Training Dataset (训练数据集)
 
@@ -300,7 +300,7 @@ Figure 2.2: Total compute used during training. Based on the analysis in Scaling
 图 2.2: 训练中使用的总算力. 基于 Scaling Laws For Neural Language Models [KMH+20] 的分析, 我们用比常规少得多的 token 训练大得多的模型. 结果是, 虽然 GPT-3 3B 比 RoBERTa-Large (3.55 亿参数) 大了近 10 倍, 两者预训练都花了大约 50 petaflop/s-days 的算力. 这些计算的方法见附录 D.
 
 > **停一下:** 图注里的 「GPT-3 3B」 是哪一档?
-> 表 2.1 没有 3B 这一档, 最接近的是 GPT-3 2.7B. 按表 D.1, GPT-3 2.7B 训练算力 55.2 PF-days, RoBERTa-Large 49.3 PF-days, 都在 「约 50」 附近; 参数量 2,650M 对 355M 约 7.5 倍 (估算), 说 「近 10 倍」 偏宽. 两者算力接近, 是因为 RoBERTa-Large 训了 2,000B token, GPT-3 2.7B 只训 300B.
+> 表 2.1 没有 3B 这一档, 最接近的是 GPT-3 2.7B. 按表 D.1, GPT-3 2.7B 训练算力 55.2 PF-days, RoBERTa-Large 49.3 PF-days, 都在 「约 50」 附近; 参数量 2,650M 对 355M 约 7.5 倍, 说 「近 10 倍」 偏宽. 两者算力接近, 是因为 RoBERTa-Large 训了 2,000B token, GPT-3 2.7B 只训 300B.
 
 | Dataset | Quantity (tokens) | Weight in training mix | Epochs elapsed when training for 300B tokens |
 | --- | --- | --- | --- |
@@ -315,7 +315,7 @@ Table 2.2: Datasets used to train GPT-3. “Weight in training mix” refers to 
 表 2.2: 训练 GPT-3 所用的数据集. 「训练混合中的权重」 指训练中从某个数据集抽取样本的比例, 我们有意不让它与数据集规模成比例. 结果是, 训练 3000 亿 token 时, 有些数据集最多被看了 3.4 遍, 另一些则不到一遍.
 
 > **再看:** 表 2.2 的权重和 epoch 两列, 能互相推出来吗?
-> 大体能, 但有两处不齐. 权重 60%, 22%, 8%, 8%, 3% 加起来是 101%, 是四舍五入造成的. 按 「300B 乘权重除以数据量」 估算: Common Crawl 是 300 乘 0.6 除以 410 约 0.44, Books2 约 0.44, 都与表一致; WebText2 却是 300 乘 0.22 除以 19 约 3.5, 表里写 2.9; Wikipedia 算出 3.0, 表里写 3.4 (均为估算). 另外第 8 页正文说过滤后的 Common Crawl 约 4000 亿 token, 表 2.2 写 410 billion, 两者口径也略有出入.
+> 大体能, 但有两处不齐. 权重 60%, 22%, 8%, 8%, 3% 加起来是 101%, 是四舍五入造成的. 按 「300B 乘权重除以数据量」 估算: Common Crawl 是 300 乘 0.6 除以 410 约 0.44, Books2 约 0.44, 都与表一致; WebText2 却是 300 乘 0.22 除以 19 约 3.5, 表里写 2.9; Wikipedia 算出 3.0, 表里写 3.4. 另外第 8 页正文说过滤后的 Common Crawl 约 4000 亿 token, 表 2.2 写 410 billion, 两者口径也略有出入.
 
 A major methodological concern with language models pretrained on a broad swath of internet data, particularly large models with the capacity to memorize vast amounts of content, is potential contamination of downstream tasks by having their test or development sets inadvertently seen during pre-training. To reduce such contamination, we searched for and attempted to remove any overlaps with the development and test sets of all benchmarks studied in this paper. Unfortunately, a bug in the filtering caused us to ignore some overlaps, and due to the cost of training it was not feasible to retrain the model. In Section 4 we characterize the impact of the remaining overlaps, and in future work we will more aggressively remove data contamination.
 
@@ -381,7 +381,7 @@ Figure 3.1: Smooth scaling of performance with compute. Performance (measured in
 图 3.1: 表现随算力平滑变化. 表现 (以交叉熵验证损失衡量) 随训练所用算力呈幂律趋势. [KMH+20] 观察到的幂律行为又延续了两个数量级, 与预测曲线只有很小的偏离. 这张图里的算力和参数量都不计嵌入参数.
 
 > **想:** 把图 3.1 的拟合式直接代入 175B 的训练算力, 损失会落在哪?
-> 图 3.1 的虚线写作 L = 2.57·C^(-0.048), C 以 PF-days 计. 表 D.1 给 GPT-3 175B 的训练算力约 3,640 PF-days, 代入得 2.57 乘 3640 的 -0.048 次方约 1.73 (估算), 与图上 175B 曲线末端大致吻合. 不过图注说这里的算力和参数量都去掉了嵌入部分, 而表 D.1 的 3,640 是按总参数算的, 这个代入只能当量级核对.
+> 图 3.1 的虚线写作 L = 2.57·C^(-0.048), C 以 PF-days 计. 表 D.1 给 GPT-3 175B 的训练算力约 3,640 PF-days, 代入得 2.57 乘 3640 的 -0.048 次方约 1.73, 与图上 175B 曲线末端大致吻合. 不过图注说这里的算力和参数量都去掉了嵌入部分, 而表 D.1 的 3,640 是按总参数算的, 这个代入只能当量级核对.
 
 | Setting | PTB |
 | --- | --- |
@@ -530,7 +530,7 @@ Results are shown in Table 3.4. Zero-shot GPT-3, which only receives on a natura
 结果见表 3.4. zero-shot 的 GPT-3 只拿到一段任务的自然语言描述, 仍不如近期的无监督 NMT 结果. 但每个翻译任务只给一个示范, 表现就提升了 7 BLEU 以上, 接近以往工作的水平. 完整 few-shot 设定下, GPT-3 又提升了 4 BLEU, 平均表现与以往的无监督 NMT 工作相当. GPT-3 的表现随翻译方向有明显偏斜. 对研究的三种输入语言, GPT-3 译入英文时明显超过以往的无监督 NMT 工作, 译出英文时则不如. En-Ro 是一个明显的离群点, 比以往无监督 NMT 差了 10 BLEU 以上. 这可能是沿用 GPT-2 的字节级 BPE 分词器带来的弱点, 那个分词器是为几乎全英文的训练集开发的. 对 Fr-En 和 De-En, few-shot 的 GPT-3 都超过了我们能找到的最好监督结果, 但由于我们对这方面文献不熟, 而且这些看起来不是竞争激烈的基准, 我们并不认为这些结果代表真正的最好水平. 对 Ro-En, few-shot 的 GPT-3 与整体最好水平只差 0.5 BLEU 以内; 那个最好水平结合了无监督预训练, 在 60.8 万条标注样本上的监督微调, 以及回译 [LHCG19b].
 
 > **回看:** 「单示范提升 7 BLEU 以上, few-shot 再提升 4 BLEU, 译入英文超出 5 BLEU」, 这三个数能从表 3.4 核出来吗?
-> 能, 按六个方向取平均 (估算): zero-shot 平均约 22.0, one-shot 约 29.6, few-shot 约 33.8, 前一步涨约 7.6, 后一步涨约 4.1. 译入英文的三个 few-shot 分数 39.2, 40.6, 39.5 平均约 39.8, 对应方向上以往最好的无监督结果都是 MASS 的 34.9, 35.2, 33.1, 平均约 34.4, 相差约 5.4. Ro-En 的 39.5 与监督最好 39.9 差 0.4, 也在 「0.5 以内」.
+> 能, 按六个方向取平均: zero-shot 平均约 22.0, one-shot 约 29.6, few-shot 约 33.8, 前一步涨约 7.6, 后一步涨约 4.1. 译入英文的三个 few-shot 分数 39.2, 40.6, 39.5 平均约 39.8, 对应方向上以往最好的无监督结果都是 MASS 的 34.9, 35.2, 33.1, 平均约 34.4, 相差约 5.4. Ro-En 的 39.5 与监督最好 39.9 差 0.4, 也在 「0.5 以内」.
 
 <!-- page 15 of 75 -->
 
@@ -658,7 +658,7 @@ GPT-3 performs best (within 3 points of the human baseline) on CoQA [RCM19] a fr
 GPT-3 在自由形式对话数据集 CoQA [RCM19] 上表现最好 (离人类基线不到 3 分), 在 QuAC [CHI+18] 上表现最差 (比 ELMo 基线低 13 F1), 后者需要建模师生交互中结构化的对话行为和答案片段选择. 在 DROP [DWD+19] 上, 这个数据集考察阅读理解语境下的离散推理和计算能力, few-shot 的 GPT-3 超过了原论文里微调 BERT 的基线, 但仍远低于人类表现, 也远低于用符号系统增强神经网络的最好方法 [RLL+19]. 在 SQuAD 2.0 [RJL18] 上, GPT-3 展现了 few-shot 学习能力, 比 zero-shot 提升将近 10 F1 (到 69.8). 这让它略微超过了原论文中最好的微调结果. 在 RACE [LXL+17] 上, 这是一个由初中和高中英语考试构成的多项选择数据集, GPT-3 表现相对较弱, 只与最早使用上下文表示的工作相当, 仍落后最好水平 45%.
 
 > **拆开:** RACE 「落后最好水平 45%」, 用表 3.7 能拆出哪几种算法?
-> 表 3.7 的 few-shot 一行: RACE-h 46.8 对 90.0, 绝对差 43.2 分; RACE-m 58.1 对 93.1, 绝对差 35.0 分. 若按相对差算, RACE-h 是 1 减 46.8 除以 90.0 约 48% (估算). 三种算法都不正好是 45%, 最接近的是 RACE-h 的绝对差. 同一段里 SQuAD 2.0 「将近 10 F1」 实际是 69.8 减 59.5 等于 10.3, 略超 10.
+> 表 3.7 的 few-shot 一行: RACE-h 46.8 对 90.0, 绝对差 43.2 分; RACE-m 58.1 对 93.1, 绝对差 35.0 分. 若按相对差算, RACE-h 是 1 减 46.8 除以 90.0 约 48%. 三种算法都不正好是 45%, 最接近的是 RACE-h 的绝对差. 同一段里 SQuAD 2.0 「将近 10 F1」 实际是 69.8 减 59.5 等于 10.3, 略超 10.
 
 ## 3.7 SuperGLUE (SuperGLUE 基准)
 
@@ -836,7 +836,7 @@ To spot-check whether the model is simply memorizing specific arithmetic problem
 为了抽查模型是不是只是记住了具体的算术题, 我们把测试集里的三位数算术题拿到训练数据里, 以 「<NUM1> + <NUM2> =」 和 「<NUM1> plus <NUM2>」 两种形式搜索. 2,000 道加法题只找到 17 处匹配 (0.8%), 2,000 道减法题只找到 2 处 (0.1%), 说明正确答案里只有微不足道的一部分可能是背下来的. 此外, 检查错误答案发现, 模型常犯忘记进 「1」 这类错误, 说明它确实在尝试做相应的计算, 而不是在背一张表.
 
 > **对一下:** 17 除以 2,000 是 0.8% 吗?
-> 17 除以 2000 等于 0.85% (估算), 正文写成 0.8%, 属于截断而不是四舍五入; 减法 2 除以 2000 正好 0.1%. 这一抽查只覆盖三位数题, 且只搜两种字面格式, 而表 3.9 显示三位数加法 few-shot 80.4%, 远高于 0.85% 的可能背题比例, 这是本段 「只有微不足道的一部分」 的依据.
+> 17 除以 2000 等于 0.85%, 正文写成 0.8%, 属于截断而不是四舍五入; 减法 2 除以 2000 正好 0.1%. 这一抽查只覆盖三位数题, 且只搜两种字面格式, 而表 3.9 显示三位数加法 few-shot 80.4%, 远高于 0.85% 的可能背题比例, 这是本段 「只有微不足道的一部分」 的依据.
 
 Overall, GPT-3 displays reasonable proficiency at moderately complex arithmetic in few-shot, one-shot, and even zero-shot settings.
 
@@ -888,7 +888,7 @@ In the one-shot setting, performance is significantly weaker (dropping by half o
 在 one-shot 设定下, 表现明显变弱 (降一半或更多), 在 zero-shot 设定下, 模型几乎做不了任何一项任务 (表 3.10). 这说明模型看起来确实是在推理阶段学会这些任务的: 它做不了 zero-shot, 而这些任务的人工性质使它们不太可能出现在预训练数据里 (虽然我们无法完全确定这一点).
 
 > **问:** one-shot 相对 few-shot 「降一半或更多」, 表 3.10 的五项里有几项做到?
-> 按表 3.10 算, 一项都没有降到一半以下. CL 从 37.9 到 21.7, 降约 43%; A1 从 15.1 到 8.62, 降约 43%; A2 从 39.7 到 25.9, 降约 35%; RI 从 67.2 到 45.4, 降约 32% (均为估算); RW 从 0.44 到 0.48 基本不变. 真正 「降一半以上」 的是 one-shot 到 zero-shot 这一步, 例如 RI 从 45.4 掉到 8.26.
+> 按表 3.10 算, 一项都没有降到一半以下. CL 从 37.9 到 21.7, 降约 43%; A1 从 15.1 到 8.62, 降约 43%; A2 从 39.7 到 25.9, 降约 35%; RI 从 67.2 到 45.4, 降约 32%; RW 从 0.44 到 0.48 基本不变. 真正 「降一半以上」 的是 one-shot 到 zero-shot 这一步, 例如 RI 从 45.4 掉到 8.26.
 
 We can further quantify performance by plotting “in-context learning curves”, which show task performance as a function of the number of in-context examples. We show in-context learning curves for the Symbol Insertion task in Figure 1.2. We can see that larger models are able to make increasingly effective use of in-context information, including both task examples and natural language task descriptions.
 
@@ -1180,7 +1180,7 @@ Figure 4.2: Benchmark contamination analysis We constructed cleaned versions of 
 • **Winograd:** 重叠分析标出了 45% 的样本, 并发现干净子集上表现下降 2.6%. 人工检查重叠数据点后发现, 训练集中确实有 132 个 Winograd schema, 只是呈现格式与我们给模型的任务不同. 虽然表现下降很小, 我们仍在正文中给 Winograd 结果加了星号.
 
 > **回看:** Winograd 「标出 45%, 下降 2.6%」, 附录表 C.1 是同样的数吗?
-> 表 C.1 的 Winograd 行: 总数 273, Dirty Count 164, Clean Count 109, Clean Percentage 40%, 也就是被标出约 60%, 不是 45%; 总分 88.6, 干净子集 86.2, 相对差写 -3%, 绝对差 2.4 分, 与正文的 2.6% 也不完全相同. 人工确认的 132 个 schema 占 273 的约 48% (估算), 比 C.1 的 164 个少. PIQA 这边则对得上: C.1 的 Clean Percentage 71% 即被标出 29%, 总分 82.3 对干净 79.3, 差 3.0 分, 相对差 -4%.
+> 表 C.1 的 Winograd 行: 总数 273, Dirty Count 164, Clean Count 109, Clean Percentage 40%, 也就是被标出约 60%, 不是 45%; 总分 88.6, 干净子集 86.2, 相对差写 -3%, 绝对差 2.4 分, 与正文的 2.6% 也不完全相同. 人工确认的 132 个 schema 占 273 的约 48%, 比 C.1 的 164 个少. PIQA 这边则对得上: C.1 的 Clean Percentage 71% 即被标出 29%, 总分 82.3 对干净 79.3, 差 3.0 分, 相对差 -4%.
 
 <!-- page 33 of 75 -->
 
@@ -1322,7 +1322,7 @@ We also tested how these probabilities changed when we shifted the context to be
 我们还测试了把上下文换成 「The competent {occupation} was a」 (能干变体) 和 「The incompetent {occupation} was a」 (无能变体) 后, 数据集中每个职业的这些概率如何变化. 我们发现, 用 「The competent {occupation} was a」 作提示时, 大多数职业接男性身份词相对女性身份词的概率, 比原来的中性提示 「The {occupation} was a」 还要高. 用 「The incompetent {occupation} was a」 作提示时, 大多数职业仍然偏男性, 概率与原来的中性提示相近. 平均职业偏差 (按上式对所有职业取 log(P(female|Context)/P(male|Context)) 的平均) 在中性变体下是 −1.11, 能干变体下是 −2.14, 无能变体下是 −1.15.
 
 > **停一下:** −1.11 这个平均对数比, 换成概率比是多大?
-> 它是自然对数下 P(female)/P(male) 的平均, 取指数约 0.33 (估算), 即平均而言女性身份词的概率约为男性的三分之一; 能干变体的 −2.14 对应约 0.12, 无能变体的 −1.15 对应约 0.32. 这是先取对数再平均, 不等于把各职业的概率比直接平均. 同一段的 「388 个职业中 83%」 约为 322 个 (估算), 这些数都只针对 GPT-3 175B, 本文没有给小档的对应值.
+> 它是自然对数下 P(female)/P(male) 的平均, 取指数约 0.33, 即平均而言女性身份词的概率约为男性的三分之一; 能干变体的 −2.14 对应约 0.12, 无能变体的 −1.15 对应约 0.32. 这是先取对数再平均, 不等于把各职业的概率比直接平均. 同一段的 「388 个职业中 83%」 约为 322 个, 这些数都只针对 GPT-3 175B, 本文没有给小档的对应值.
 
 We also carried out pronoun resolution on the Winogender dataset [RNLVD18] using two methods which further corroborated the model’s tendency to associate most occupations with males. One method measured the models ability to correctly assign a pronoun as the occupation or the participant. For example, we fed the model a context such as "The advisor met with the advisee because she wanted to get advice about job applications. ‘She’ refers to the" and found the option with the lowest probability between the two possible options (Choices between Occupation Option: advisor; Participant Option: advisee).
 
@@ -1384,7 +1384,7 @@ Across the models we analyzed, ‘Asian’ had a consistently high sentiment - i
 在我们分析的模型中, 「Asian」 的情感一直较高, 在 7 个模型中有 3 个排第 1. 另一方面, 「Black」 的情感一直较低, 在 7 个模型中有 5 个排最后. 在更大的模型尺寸上, 这些差异略有缩小. 这项分析让我们对不同模型的偏见有所了解, 也凸显出需要对情感, 实体和输入数据之间的关系做更细致的分析.
 
 > **对一下:** 「Asian 在 7 个模型中有 3 个排第 1」, 图 6.1 能读出几个?
-> 图 6.1 横轴是 350M, 760M, 1.3B, 2.7B, 6.7B, 13B, 175B 共 7 档, 没有 125M 的 GPT-3 Small. 从图上读 (读图估算), Asian 在 760M, 1.3B, 6.7B, 13B 四档都是最高, 350M 最高的是 Indian, 2.7B 和 175B 最高的是 Latinx, 与正文的 3 个差一档. Black 最低的有 350M 到 6.7B 五档, 13B 最低的是 White, 175B 最低的是 Middle eastern, 与正文的 「5 个」 一致.
+> 图 6.1 横轴是 350M, 760M, 1.3B, 2.7B, 6.7B, 13B, 175B 共 7 档, 没有 125M 的 GPT-3 Small. 从图上读 (读图), Asian 在 760M, 1.3B, 6.7B, 13B 四档都是最高, 350M 最高的是 Indian, 2.7B 和 175B 最高的是 Latinx, 与正文的 3 个差一档. Black 最低的有 350M 到 6.7B 五档, 13B 最低的是 White, 175B 最低的是 Middle eastern, 与正文的 「5 个」 一致.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>9</sup>We only used male and female pronouns. This simplifying assumption makes it easier to study co-occurrence since it does not require the isolation of instances in which ‘they’ refers to a singular noun from those where it didn’t, but other forms of gender bias are likely present and could be studied using different approaches.</span></small>
 
@@ -1657,7 +1657,7 @@ To train all versions of GPT-3, we use Adam with $\beta _ { 1 } = 0 . 9 , \beta 
 训练所有版本的 GPT-3 时, 我们用 Adam, β1 = 0.9, β2 = 0.95, ε = 10^-8, 把梯度的全局范数裁剪到 1.0, 学习率在 2600 亿个 token 上余弦衰减到原值的 10% (2600 亿 token 之后以原学习率的 10% 继续训练). 前 3.75 亿个 token 做线性学习率预热. 我们还在训练的前 40 亿到 120 亿个 token 内 (视模型尺寸而定), 把 batch size 从一个小值 (32k token) 线性增加到完整值. 训练中数据无放回采样 (直到到达一个 epoch 边界), 以尽量减少过拟合. 所有模型都用 0.1 的 weight decay 提供少量正则化 [LH17].
 
 > **问:** 余弦衰减只覆盖 260B token, 表 2.1 说每个模型训 300B, 剩下的部分怎么走?
-> 按本段, 300B 减 260B 等于 40B token (估算) 以原学习率的 10% 恒定训练, 约占全程的 13%. 以 175B 为例, 表 2.1 给学习率 0.6e-4, 衰减后是 0.6e-5; batch 从 32k token 线性爬升到表 2.1 的 3.2M token, 爬升段在前 4B 到 12B token 之间, 本文没有说每个尺寸具体取多少. 3.75 亿 token 的预热相对 300B 只占约 0.13% (估算).
+> 按本段, 300B 减 260B 等于 40B token 以原学习率的 10% 恒定训练, 约占全程的 13%. 以 175B 为例, 表 2.1 给学习率 0.6e-4, 衰减后是 0.6e-5; batch 从 32k token 线性爬升到表 2.1 的 3.2M token, 爬升段在前 4B 到 12B token 之间, 本文没有说每个尺寸具体取多少. 3.75 亿 token 的预热相对 300B 只占约 0.13%.
 
 During training we always train on sequences of the full $n _ { \mathrm { c t x } } \: = \: 2 0 4 8$ token context window, packing multiple documents into a single sequence when documents are shorter than 2048, in order to increase computational efficiency. Sequences with multiple documents are not masked in any special way but instead documents within a sequence are delimited with a special end of text token, giving the language model the information necessary to infer that context separated by the end of text token is unrelated. This allows for efficient training without need for any special sequence-specific masking.
 
@@ -1703,7 +1703,7 @@ This overlap metric tends to show a high rate of false positives for datasets th
 对于包含取自网络的背景信息 (但不含答案) 的数据集 (比如取材于维基百科的 SQuAD), 或长度不足 8 个词, 在过滤中被我们忽略的样本 (单词打乱任务除外), 这个重叠指标往往误报率很高. 这一技术看来未能给出好信号的一个例子是 DROP, 这个阅读理解任务中 94% 的样本是 dirty 的. 回答问题所需的信息就在提供给模型的段落里, 所以训练中见过段落但没见过问答, 并不真正构成作弊. 我们确认了每篇匹配的训练文档只含原文段落, 不含数据集里的任何问答. 表现下降更可能的解释是, 过滤后剩下的 6% 样本与 dirty 样本分布略有不同.
 
 > **确认:** DROP 「94% dirty, 剩 6%」, 表 C.1 是这个比例吗?
-> 表 C.1 的 DROP 行: 总数 9536, Dirty Count 8898, Clean Count 638, Clean Percentage 7%. 638 除以 9536 约 6.7% (估算), 表里取整为 7%, 正文写 6%, 对应 dirty 约 93.3%, 正文写 94%. 干净子集 F1 29.5 对整体 36.5, 相对差 -21%, 与图 4.2 上 DROP 那个离群点一致.
+> 表 C.1 的 DROP 行: 总数 9536, Dirty Count 8898, Clean Count 638, Clean Percentage 7%. 638 除以 9536 约 6.7%, 表里取整为 7%, 正文写 6%, 对应 dirty 约 93.3%, 正文写 94%. 干净子集 F1 29.5 对整体 36.5, 相对差 -21%, 与图 4.2 上 DROP 那个离群点一致.
 
 Figure 4.2 shows that as the dataset becomes more contaminated, the variance of the clean/all fraction increases, but there is no apparent bias towards improved or degraded performance. This suggests that GPT-3 is relatively insensitive to contamination. See Section 4 for details on the datasets we flagged for further review.
 
@@ -1805,7 +1805,7 @@ Table D.1: Starting from the right hand side and moving left, we begin with the 
 表 D.1: 从右往左看, 先是每个模型训练所用的 token 数. 接着注意到 T5 是编码器-解码器模型, 每个 token 在前向或反向传播中只激活一半参数. 然后注意到在前向传播中, 每个 token 对每个激活参数参与一次加法和一次乘法 (忽略注意力). 再乘以 3 来计入反向传播 (因为计算 ∂params/∂loss 和 ∂acts/∂loss 的算力与前向传播相近). 把前两个数合起来, 得到每个参数每个 token 的总 flops. 用它乘以总训练 token 数和总参数量, 得到训练所用的总 flops. 我们同时报告 flops 和 petaflop/s-day (每个等于 8.64e+19 flops).
 
 > **看表:** 用表 D.1 的列自己乘一遍, 175B 那行的 3.14E+23 和 3.64E+03 对得上吗?
-> 对得上. 6 乘 174.6e9 参数乘 300e9 token 约 3.14e23 flops, 除以 8.64e19 约 3,637 PF-days (估算), 表里写 3.64E+03. 同法算 GPT-3 13B: 6 乘 12.85e9 乘 300e9 约 2.31e22, 与表一致. 注意这里的 174,600M 与表 2.1 的 175.0B 是同一个模型的两种写法; 各小档也都按 300B token 单独计算, 说明它们是分别训练的模型.
+> 对得上. 6 乘 174.6e9 参数乘 300e9 token 约 3.14e23 flops, 除以 8.64e19 约 3,637 PF-days, 表里写 3.64E+03. 同法算 GPT-3 13B: 6 乘 12.85e9 乘 300e9 约 2.31e22, 与表一致. 注意这里的 174,600M 与表 2.1 的 175.0B 是同一个模型的两种写法; 各小档也都按 300B token 单独计算, 说明它们是分别训练的模型.
 
 ## E Human Quality Assessment of Synthetic News Articles (合成新闻文章的人工质量评估)
 

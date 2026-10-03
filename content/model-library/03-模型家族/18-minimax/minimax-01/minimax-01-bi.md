@@ -15,7 +15,7 @@ MINIMAX
 本文推出 MiniMax-01 系列, 包括 MiniMax-Text-01 和 MiniMax-VL-01. 两者与一线模型水平相当, 处理长上下文的能力更强. 核心是 lightning attention 以及它的高效放大. 为了把算力用足, 作者把它和 MoE 结合, 做出 32 个专家的模型: 总参数 4560 亿, 每个 token 激活 459 亿. 作者为 MoE 和 lightning attention 设计了优化过的并行策略和高效的计算-通信重叠技术, 能在数千亿参数, 数百万 token 的上下文上高效训练和推理. MiniMax-Text-01 训练时上下文窗口可达 100 万 token, 推理时可外推到 400 万 token, 成本可以接受. 视觉语言模型 MiniMax-VL-01 在此基础上用 5120 亿视觉语言 token 继续训练得到. 标准基准和内部基准上的实验显示, 两个模型与 GPT-4o, Claude-3.5-Sonnet 等最强模型相当, 上下文窗口却长 20 到 32 倍. MiniMax-01 已在 https://github.com/MiniMax-AI 公开.
 
 > **拆开:** 32 个专家里每个 token 只走 top-2, 也就是 2/32 = 6.25% 的专家, 为什么激活比例 45.9/456 却接近 10%?
-> 按第 2 节规格和图 3 估算: 若每个专家是三矩阵门控 FFN, 单个约 3 × 6144 × 9216 ≈ 1.7 亿, 80 层 32 个专家约 4349 亿; 70 层 lightning attention 的 Q, K, V, G, O 五个投影和 10 层 GQA softmax attention 合计约 187 亿, 20 万词表的输入输出嵌入约 25 亿, 加起来约 4561 亿, 与 456B 吻合. 注意力和嵌入对每个 token 都生效, 所以激活部分约为 2 个专家的 272 亿加上这约 210 亿, 在 470 亿上下 (估算, 比印出的 45.9B 多 1B 左右), 比例因此高于 6.25%.
+> 按第 2 节规格和图 3 估算: 若每个专家是三矩阵门控 FFN, 单个约 3 × 6144 × 9216 ≈ 1.7 亿, 80 层 32 个专家约 4349 亿; 70 层 lightning attention 的 Q, K, V, G, O 五个投影和 10 层 GQA softmax attention 合计约 187 亿, 20 万词表的输入输出嵌入约 25 亿, 加起来约 4561 亿, 与 456B 吻合. 注意力和嵌入对每个 token 都生效, 所以激活部分约为 2 个专家的 272 亿加上这约 210 亿, 在 470 亿上下 (比印出的 45.9B 多 1B 左右), 比例因此高于 6.25%.
 
 ![图 1(a) 核心文本基准柱状图: MiniMax-Text-01 在 MMLU 88.5, MMLU-Pro 75.7, C-SimpleQA 67.4, IFEval 89.0, GPQA 54.4, MATH 77.4, HumanEval 86.9, 与六个对比模型并排](images/p01-chart.png)
 
@@ -152,7 +152,7 @@ Figure 4 | Isoflop Comparison: MoE vs. Dense on various benchmarks. Both models 
 图 4 | 等 FLOPs 比较: MoE 与 dense 在多个基准上的表现. 两个模型都训练 1 万亿 token. 灰色虚线表示两者达到同样性能时所需计算量的差距.
 
 > **核对:** 图 4 横轴的 ZFlops 是怎么算的? 7B dense 训 1 万亿 token, 按 6ND 应在 42 ZFlops 左右, 图里曲线却在 13 附近结束.
-> 图 4 两条曲线的终点约为 dense 13.5, MoE 4, 比值约 3.4, 与激活参数比 7/2 = 3.5 相符. 绝对值更接近 2ND: 2 × 7e9 × 1e12 = 14 ZFlops, 2 × 2e9 × 1e12 = 4 ZFlops (估算). 看来横轴按前向计算量计, 没有乘上反向的 3 倍; 比较两条曲线的相对差距不受影响.
+> 图 4 两条曲线的终点约为 dense 13.5, MoE 4, 比值约 3.4, 与激活参数比 7/2 = 3.5 相符. 绝对值更接近 2ND: 2 × 7e9 × 1e12 = 14 ZFlops, 2 × 2e9 × 1e12 = 4 ZFlops. 看来横轴按前向计算量计, 没有乘上反向的 3 倍; 比较两条曲线的相对差距不受影响.
 
 $$
 \mathbf {h} _ {t} = \sum_ {i = 1} ^ {E} \operatorname{Softmax} _ {i} \left(\operatorname{TopK} (\mathbf {x} _ {t} \cdot \mathbf {W} _ {g})\right) \cdot \operatorname{FFN} _ {i} (\mathbf {x} _ {t}),\tag{1}
@@ -385,7 +385,7 @@ We fit the scaling curves based on our experiments over the above mentioned sett
 作者在上述设置下拟合 Scaling 曲线: 对不同计算预算 (C) 改变模型规模 (N) 和数据量 (D), 观察相应的训练 loss (L), 用它估计测试 loss. 先按 Chinchilla 的方法建立 L 与 C 的幂律关系, 再从拟合曲线推出最优模型规模 $N_{opt} \propto C^a$ 和最优数据量 $D_{opt} \propto C^b$ 的系数. 最初的 Scaling Laws 用 $L(X) = (X_0/X)^{\alpha_X}$, 后续研究为拟合更好改用 $L(X) = \epsilon + (X_0/X)^{\alpha_X}$, ε 为不可约损失. 为简单起见, 作者统一写成 $L(X) = \beta_X X^{\alpha_X}$, 便于直接按 $\alpha_X$ 和 $\beta_X$ 比较 Scaling 能力. 汇总见表 2 和图 6. 直观地说, 同样计算预算下, 带 lightning attention 的模型倾向于用更多参数和 token, loss 却比纯 softmax attention 模型低.
 
 > **想:** 「同样预算下混合模型用更多参数」 在任何预算下都成立吗?
-> 按表 2 估算: 混合模型 $N_{opt}$ 系数 2.57e8 大于 softmax 的 1.82e8, 但指数 0.6670 小于 0.7118, 两条线在 C = (2.57/1.82)^{1/0.0448} ≈ 2.2e3 PFLOP/s-days 处相交, 超过这个预算后 softmax 的最优参数量反而更大. loss 一栏两条线相交要到约 8e7 PFLOP/s-days (估算), 远在图 6 的横轴范围之外, 所以 「loss 更低」 在图 6 的范围内都成立.
+> 按表 2 估算: 混合模型 $N_{opt}$ 系数 2.57e8 大于 softmax 的 1.82e8, 但指数 0.6670 小于 0.7118, 两条线在 C = (2.57/1.82)^{1/0.0448} ≈ 2.2e3 PFLOP/s-days 处相交, 超过这个预算后 softmax 的最优参数量反而更大. loss 一栏两条线相交要到约 8e7 PFLOP/s-days, 远在图 6 的横轴范围之外, 所以 「loss 更低」 在图 6 的范围内都成立.
 
 <!-- page 10 of 68 -->
 
@@ -901,7 +901,7 @@ The learning rate schedule begins with a linear warm-up over 500 iterations to a
 学习率先在 500 个迭代内线性预热到峰值 $2 \times 10^{-4}$, 然后以恒定学习率训练 7.2T token. 训练后期出现异常的梯度范数, 原因是学习率过高, 于是在剩余的 3.2T token 上把学习率调到 $1.3 \times 10^{-4}$. 快速衰减阶段训练 1T token, 学习率指数衰减到 $3 \times 10^{-5}$. MoE 辅助损失系数设为 0.01.
 
 > **核对:** 预训练一共用了多少 token? 7.2T, 3.2T, 1T 这三个数该相加还是有重叠?
-> 两种读法都说得通: 若 3.2T 是 7.2T 恒定阶段的后段, 总量约 8.2T; 若 3.2T 接在 7.2T 之后, 总量约 11.4T (估算). 本文没有直接印出预训练总 token 数. 能对上的只有 batch size 在 4.7T 处翻到 128M (图 13 标出的 loss 1.58 一档), 说明主训练至少远超 4.7T; 长上下文扩展另加表 6 的 300B + 32B + 26B = 358B.
+> 两种读法都说得通: 若 3.2T 是 7.2T 恒定阶段的后段, 总量约 8.2T; 若 3.2T 接在 7.2T 之后, 总量约 11.4T. 本文没有直接印出预训练总 token 数. 能对上的只有 batch size 在 4.7T 处翻到 128M (图 13 标出的 loss 1.58 一档), 说明主训练至少远超 4.7T; 长上下文扩展另加表 6 的 300B + 32B + 26B = 358B.
 
 **Long-Context Extension.** We incrementally expand the model’s training context length to 1M tokens. Due to our architecture’s effective length extrapolation capabilities, the model successfully demonstrates its ability to process sequences up to 4M tokens in the vanilla Needle-In-A-Haystack retrieval task (NIAH) test <sup>2</sup>, despite only being trained on contexts up to 1M tokens, as illustrated in Figure 14.
 
@@ -1099,7 +1099,7 @@ Table 7 | Training Recipe for Post-training Alignment.
 | LR Decay | Cosine | Constant | Cosine | Constant | Cosine |
 
 > **拆开:** 表 7 里长上下文阶段的序列长度是 1,032,192, 为什么不是 2^20 = 1,048,576?
-> 1,032,192 = 1008 × 1024 = 4032 × 256, 是第 3.2.2 节块大小 256 的整数倍, 比 2^20 少 16,384 (估算). 本文没有解释这个差额; 从数字看, 它满足按 256 分块的要求, 也给 1M 左右的上下文留出一小段余量. 按表 7 的 batch size 80, 阶段 II 每步约处理 80 × 1,032,192 ≈ 8260 万 token.
+> 1,032,192 = 1008 × 1024 = 4032 × 256, 是第 3.2.2 节块大小 256 的整数倍, 比 2^20 少 16,384. 本文没有解释这个差额; 从数字看, 它满足按 256 分块的要求, 也给 1M 左右的上下文留出一小段余量. 按表 7 的 batch size 80, 阶段 II 每步约处理 80 × 1,032,192 ≈ 8260 万 token.
 
 ### 5.7. Academic Benchmarks (学术基准)
 
@@ -1341,7 +1341,7 @@ We implement a dynamic resolution strategy by resizing the input image according
 作者实现了动态分辨率策略: 按预定义的网格配置列表调整输入图像大小, 范围从 336×336 到 2016×2016, 同时保留一张 336 × 336 分辨率的标准缩略图. 调整后的图像切成互不重叠的 patch, 每个 336 × 336. 各 patch 和缩略图分别编码, 编码特征拼接起来, 构成完整的图像特征表示.
 
 > **想:** 不做池化的话, 一张 2016×2016 的图会变成多少视觉 token?
-> 按第 6.2.1 节估算: 2016/336 = 6, 最多 6 × 6 = 36 个 patch, 再加 1 张缩略图共 37 块; ViT-L/14 在 336 分辨率下每块是 24 × 24 = 576 个 patch 特征, 不池化就全部送进 LLM, 约 21,312 个视觉 token (估算, 假设两层 MLP 投影器不改变 token 数). 这正是下一段说 「利用长序列处理能力直接使用原始高维特征」 的代价, 第 6.4 节的 MMLongBench-Doc 一次喂多页图时, 序列会迅速到十万量级.
+> 按第 6.2.1 节估算: 2016/336 = 6, 最多 6 × 6 = 36 个 patch, 再加 1 张缩略图共 37 块; ViT-L/14 在 336 分辨率下每块是 24 × 24 = 576 个 patch 特征, 不池化就全部送进 LLM, 约 21,312 个视觉 token (假设两层 MLP 投影器不改变 token 数). 这正是下一段说 「利用长序列处理能力直接使用原始高维特征」 的代价, 第 6.4 节的 MMLongBench-Doc 一次喂多页图时, 序列会迅速到十万量级.
 
 In contrast to traditional approaches that rely on pooling or other downsampling techniques to compress feature representations, our model leverages its powerful capacity for processing long sequences, allowing for the direct utilization of raw high-dimensional features during training. This strategy mitigates potential information loss and substantially improves the model’s adaptability to multi-scale inputs. Moreover, by projecting both image patches and thumbnails into a unified feature space, our method significantly enhances the model’s robustness and representational expressiveness when handling diverse and complex visual inputs.
 
@@ -1382,7 +1382,7 @@ We employ a four-stage training strategy to enable the model to progressively de
 **阶段 III: 增强用户体验.** 这一阶段进一步提升模型在真实场景中和面对高难用户输入时的能力. 作者用来自人们常用应用的图像整理出精细的多模态数据. 对话经过仔细标注, 模拟真实用户输入, 保证在多轮对话中提供准确, 有用, 多样的回复. 这一阶段的数据构建由一个独立的人工标注测试集引导, 它不仅看准确率, 也看用户体验层面的整体质量. 最终数据集包含 448 亿多模态 token, 训练一个 epoch.
 
 > **核对:** 摘要和引言说 MiniMax-VL-01 用 5120 亿视觉语言 token 继续训练, 第 6.3 节各阶段的 token 数加起来是多少?
-> 阶段 I 800 亿, 阶段 II 4200 亿, 阶段 III 448 亿, 合计 5448 亿; 阶段 IV 只给出 40,000 个图文对. 5448 亿与 512B 差了约 330 亿 (估算). 可能的解释是阶段 II 里按 20:1 混入的 MiniMax-Text-01 后训练文本 (约 200 亿) 不算 「视觉语言 token」, 但即使扣掉也还差一百多亿; 本文没有给出 512B 的构成, 两处数字无法对齐.
+> 阶段 I 800 亿, 阶段 II 4200 亿, 阶段 III 448 亿, 合计 5448 亿; 阶段 IV 只给出 40,000 个图文对. 5448 亿与 512B 差了约 330 亿. 可能的解释是阶段 II 里按 20:1 混入的 MiniMax-Text-01 后训练文本 (约 200 亿) 不算 「视觉语言 token」, 但即使扣掉也还差一百多亿; 本文没有给出 512B 的构成, 两处数字无法对齐.
 
 **Stage IV: Enhancement of Preference.** In the final stage, we utilize Direct Preference Optimization (DPO) to further enhance model performance and user experience. We construct a training dataset consisting of 40,000 image-text pairs through the following process:
 

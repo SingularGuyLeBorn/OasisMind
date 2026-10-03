@@ -22,7 +22,7 @@ Table 2 把 K2 和 DeepSeek-V3 并排比较. 层数都是 61, 隐宽 7168, 专�
 
 砍注意力头的理由来自推理成本. DeepSeek-V3 把头数设成层数的两倍左右, 是为了更好地利用显存带宽. Figure 6 显示头数翻倍只让验证 loss 再降约 0.5%-1.2%; 可是在 128k 序列长度, 专家总数固定 384 时, 头数从 64 加到 128 会让推理 FLOPs 涨约 83%. Agent 场景要反复处理长上下文, 这笔推理开销比那一点 loss 更重要, 所以定 64 头. 这是 **K2 在架构上最能体现「为 Agent 设计」的一处取舍**: 在训练期多花参数(更多专家), 在推理期省算力(更少的头, 更低的激活参数).
 
-Figure 6 的实验设计是: 头数等于层数的配置, 对比头数翻倍的配置, 在不同训练 FLOPs 下各训一组, 训练 token 数相同. 头数为什么对长序列推理这么敏感, 报告没有展开, 可以从 MLA 的结构推一下(推断): 解码时每个头都要和缓存里所有位置做一次注意力打分, 这部分计算量随头数和序列长度的乘积增长, 与专家 FFN 的计算量无关; 序列越长, 注意力在总 FLOPs 里的占比越大, 头数翻倍带来的增量就越接近翻倍. 128k 时涨 83%, 说明这个长度下注意力已经占了推理算力的大头. MLA 压缩的是 KV cache 的显存, 注意力打分的计算量并没有因此减少, 所以在 MLA 之上再砍头数是两层不同的节省.
+Figure 6 的实验设计是: 头数等于层数的配置, 对比头数翻倍的配置, 在不同训练 FLOPs 下各训一组, 训练 token 数相同. 头数为什么对长序列推理这么敏感, 报告没有展开, 可以从 MLA 的结构推一下: 解码时每个头都要和缓存里所有位置做一次注意力打分, 这部分计算量随头数和序列长度的乘积增长, 与专家 FFN 的计算量无关; 序列越长, 注意力在总 FLOPs 里的占比越大, 头数翻倍带来的增量就越接近翻倍. 128k 时涨 83%, 说明这个长度下注意力已经占了推理算力的大头. MLA 压缩的是 KV cache 的显存, 注意力打分的计算量并没有因此减少, 所以在 MLA 之上再砍头数是两层不同的节省.
 
 
 另外两处改动报告没有展开. 去掉专家分组意味着路由拓扑和 V3 不同, 正文没有给分组路由的消融; 稠密层从 3 减到 1, 模型更早进入稀疏 FFN, 对早期表征和专家负载的影响也没写. 这两行放在对照表里, 说明 K2 相对 V3 不只是把总参放大一圈, 但为什么这样改, 读者只能从「更高稀疏度」的整体思路去理解.
@@ -66,7 +66,7 @@ Table 1 用早期 K2 检查点在 SimpleQA 上比较三种方案: 原始 wiki �
 
 预训练课表(§2.5)是 4096 上下文, MuonClip 加 WSD 学习率: 500 步 warmup 后前 10T token 用恒定学习率 2e-4, 后 5.5T 余弦衰减到 2e-5; 权重衰减全程 0.1, 全局 batch 67M token. 尾段先退火再做长上下文激活, 学习率从 2e-5 降到 7e-6, 先用 4k 长度训 400B token, 再用 32k 训 60B token, 最后用 YaRN 扩到 128k, 机制见 [长度外推: 从 PI 到 YaRN](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/RoPE/03-长度外推：从PI到YaRN的频率扩展.md). 和 k1.5 直接把最大长度一路拉到 131,072 相比, K2 在 32k 之后改用频率外推收尾, 真正在长序列上训练的 token 量并不大. 长上下文能力是预训练尾段显式激活出来的, 这一点和 k1.5 一致.
 
-把课表换算成步数, 能和第 2.2 节的 QK-Clip 数据对上. 全局 batch 67M token, 15.5T token 约合 23 万步, 其中恒定学习率的 10T 约 15 万步(均为估算). QK-Clip 在前 70000 步里活跃, 约占总步数的 30%, 与 Figure 2 右图「约 30% 训练步之后 logit 自然回落」的描述一致; 按 token 算, 这段时间大约对应前 4.7T token(估算). 也就是说, **QK-Clip 只在恒定学习率阶段的前半段起作用**, 余弦衰减开始之前就已经完全退出. 学习率越大, 更新越猛, logit 越容易上涨, 护栏在大学习率阶段生效也符合直觉.
+把课表换算成步数, 能和第 2.2 节的 QK-Clip 数据对上. 全局 batch 67M token, 15.5T token 约合 23 万步, 其中恒定学习率的 10T 约 15 万步. QK-Clip 在前 70000 步里活跃, 约占总步数的 30%, 与 Figure 2 右图「约 30% 训练步之后 logit 自然回落」的描述一致; 按 token 算, 这段时间大约对应前 4.7T token. 也就是说, **QK-Clip 只在恒定学习率阶段的前半段起作用**, 余弦衰减开始之前就已经完全退出. 学习率越大, 更新越猛, logit 越容易上涨, 护栏在大学习率阶段生效也符合直觉.
 
 改写流水线的细节也值得补一句. 知识改写的 Figure 4 画的是长文档切成小块, 每块在保留上下文的条件下按顺序改写, 再拼成完整的改写文本. 这样做既保住了长文档的全局连贯, 也绕开了语言模型输出长度的隐性上限. 保真检查比较每段改写文本与原文的语义一致性, 报告把它定位为训练前的初步质控, 没有给通过率. 数学的「学习笔记」改写和翻译都没有给规模. 报告在同一节承认, 合成数据能否作为持续扩大训练规模的手段还在研究中, 要解决跨领域泛化, 幻觉与毒性, 以及大规模可扩展这三个问题.
 
@@ -136,7 +136,7 @@ RL 基础设施延续 k1.5 的训推共置. 难点在于每步都要把 1T 权�
 
 Table 4 是 Base 模型. 相对 DeepSeek-V3-Base, Llama4-Maverick-Base, Qwen2.5-72B-Base, K2-Base 在多数英文, 代码, 数学项和全部中文项上领先, 例如 MMLU 87.79, MMLU-Pro 69.17, SimpleQA 35.25, C-Eval 92.50. 但 GPQA-Diamond avg@8 上 K2-Base 是 48.11, 低于 V3-Base 的 50.51. Base 表和 Instruct 表回答的是不同问题, 前者看预训练数据和结构, 后者看后训练.
 
-Base 评测的协议也和 Instruct 不同(§4.2.1). MMLU, MMLU-Redux, GPQA-Diamond, HellaSwag, ARC-Challenge, C-Eval, CMMLU 用困惑度评测, 即比较各选项的似然; MMLU-Pro, SuperGPQA, TriviaQA, BBH, CSimpleQA, MATH, CMATH, GSM8K, GSM8K-Platinum, CRUXEval, LiveCodeBench, EvalPlus 用生成式评测; 统一在基于 LM-Harness-Evaluation 改造的内部框架里跑. 对照组选 Qwen2.5-72B-Base 和 Llama4-Maverick-Base, 是因为 Qwen3-235B-A22B-Base 和 Llama 4-Behemoth 没有开源. 英文 12 项里 K2-Base 拿下 10 项, 没拿下的两项是 GPQA-Diamond 和 HellaSwag(94.60 对 Qwen2.5-72B 的 95.27). 代码项差距最大, EvalPlus 80.33 对 V3-Base 的 65.61, CRUXEval-I-cot 74.00 对 62.75; 数学里 CMATH 90.26 略低于 V3-Base 的 90.53. 在总参约 1.55 倍, 激活参数更少的条件下(估算自 1043B/671B), Base 表的领先大部分来自数据和优化器, 这正是报告想用 Table 4 说明的. 安全评测(Table 5-6)用 Promptfoo 的插件和攻击策略组合, 加人工复审; 基础攻击和 Base64 接近满分, Crescendo 这类多轮渐进攻击掉点明显, 报告自己也承认人工复审带主观性.
+Base 评测的协议也和 Instruct 不同(§4.2.1). MMLU, MMLU-Redux, GPQA-Diamond, HellaSwag, ARC-Challenge, C-Eval, CMMLU 用困惑度评测, 即比较各选项的似然; MMLU-Pro, SuperGPQA, TriviaQA, BBH, CSimpleQA, MATH, CMATH, GSM8K, GSM8K-Platinum, CRUXEval, LiveCodeBench, EvalPlus 用生成式评测; 统一在基于 LM-Harness-Evaluation 改造的内部框架里跑. 对照组选 Qwen2.5-72B-Base 和 Llama4-Maverick-Base, 是因为 Qwen3-235B-A22B-Base 和 Llama 4-Behemoth 没有开源. 英文 12 项里 K2-Base 拿下 10 项, 没拿下的两项是 GPQA-Diamond 和 HellaSwag(94.60 对 Qwen2.5-72B 的 95.27). 代码项差距最大, EvalPlus 80.33 对 V3-Base 的 65.61, CRUXEval-I-cot 74.00 对 62.75; 数学里 CMATH 90.26 略低于 V3-Base 的 90.53. 在总参约 1.55 倍, 激活参数更少的条件下(由1043B/671B得出), Base 表的领先大部分来自数据和优化器, 这正是报告想用 Table 4 说明的. 安全评测(Table 5-6)用 Promptfoo 的插件和攻击策略组合, 加人工复审; 基础攻击和 Base64 接近满分, Crescendo 这类多轮渐进攻击掉点明显, 报告自己也承认人工复审带主观性.
 
 安全评测的设置和结果值得多看一眼. 插件分 Harmful, Criminal, Misinformation, Privacy, Security 五大类, 每类下有十个左右子项; 攻击策略四种: Basic, Prompt Injection, Iterative Jailbreak, Crescendo, 每个插件和每种策略两两组合. 每个组合生成 3 条攻击提示, 支持中英双语的组合各生成 3 条, 共 6 条; 人工复审多轮进行, 同一测试集由同一审阅人负责, 以减小判断差异. 对照模型是 DeepSeek-V3-0324, DeepSeek-R1 和 Qwen3-235B-A22B. Table 6 里 K2 最突出的是 Harmful 类的 Iterative Jailbreak, 通过率 92.16, 其余三家在 66.67 到 74.51 之间; 最弱的是 Security 类的 Iterative Jailbreak 43.90 和 Criminal 类的 Iterative Jailbreak 57.57, 以及 Harmful 类的 Crescendo 64.71. Privacy 类的 Prompt Injection 88.33 低于其他三家. 报告也提醒, 部分插件涉及 API 滥用和外部工具调用, 更适合评测带工具的 agent, 对纯对话模型的参考意义有限; 复杂攻击策略也不总比基础提示更有效, 有些提示多轮变换之后失去了原意.
 
@@ -146,4 +146,4 @@ Base 评测的协议也和 Instruct 不同(§4.2.1). MMLU, MMLU-Redux, GPQA-Diam
 
 附录 B 还有一处影响后续产品的设计: 工具调用被拆成工具声明, 调用段, 工具结果三段特殊 token, 声明用 TypeScript 写(比 OpenAI 风格的 JSON 更短), 训练中保留部分 JSON 以兼容第三方; 并行调用的 ID 写成 `functions.{name}:{counter}`, 推理时在调用段开始后用名为 **enforcer** 的约束解码模块保证格式, 灵感来自 lm-format-enforcer. 后来 0905 通告里的 Token Enforcer, 源头就在这里.
 
-放回开源谱系, K2 站在 DeepSeek-V3 的 MLA 加 MoE 路线上, 但做了三处实质偏离: 优化器换成 MuonClip; 按 Agent 长上下文需求调整稀疏度和头数; 后训练重心移到工具合成和双轨 RL. 在 Kimi 家族内部, 它把 k1.5 的 RL 系统, partial rollout 和长度控制接了过来, 又补上了 k1.5 缺失的架构与优化器两面. 还有一处容易忽略的倒退: k1.5 是文本与视觉联合训练的多模态模型, K2 的报告通篇只讲文本, 预训练数据, 结构和评测都没有视觉部分. 家族在这一代先集中力气把语言底座和 Agent 能力做大, 视觉要到 K2.5 才重新回到主线. 它的限制也清楚: 这是非思考模型, 长推理能力要到下一代 K2 Thinking 才补上, 0905 等同名版本迭代多半沿用这套底座, 继续调整后训练和服务侧能力(推断, 0905 通告没有交代训练细节).
+放回开源谱系, K2 站在 DeepSeek-V3 的 MLA 加 MoE 路线上, 但做了三处实质偏离: 优化器换成 MuonClip; 按 Agent 长上下文需求调整稀疏度和头数; 后训练重心移到工具合成和双轨 RL. 在 Kimi 家族内部, 它把 k1.5 的 RL 系统, partial rollout 和长度控制接了过来, 又补上了 k1.5 缺失的架构与优化器两面. 还有一处容易忽略的倒退: k1.5 是文本与视觉联合训练的多模态模型, K2 的报告通篇只讲文本, 预训练数据, 结构和评测都没有视觉部分. 家族在这一代先集中力气把语言底座和 Agent 能力做大, 视觉要到 K2.5 才重新回到主线. 它的限制也清楚: 这是非思考模型, 长推理能力要到下一代 K2 Thinking 才补上, 0905 等同名版本迭代多半沿用这套底座, 继续调整后训练和服务侧能力(0905 通告没有交代训练细节).

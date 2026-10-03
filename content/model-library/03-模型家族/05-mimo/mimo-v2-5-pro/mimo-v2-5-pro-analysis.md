@@ -10,7 +10,7 @@
 
 页 1 的身份声明: 发布并开源, 是小米迄今最强的模型, 相对前代 MiMo-V2-Pro 在通用 Agent, 复杂软件工程与长程任务上明显提升; 1.02T 参数 MoE, 激活 42B, hybrid attention, 1M 上下文. 页 9 规格表两行: Base 与正式版都是 1.02T / 42B, 精度 FP8 (E4M3) Mixed, 上下文分别为 256K 与 1M. 前代 MiMo-V2-Pro 在对照表里标的也是 1.02T/42B, 所以 V2.5-Pro 相对前代没有换规模, 提升来自训练.
 
-放到家族里, V2.5-Pro 是 Flash 配方的放大版, 又是 V2.6-Pro 的前身. 页 9 写明继承 Flash 的 hybrid attention 与 MTP, 预训练 27T tokens, 与 Flash 报告的 27T 相同; 后训练沿用 Flash 的三阶段范式. 往后看, V2.6 报告的 Pro 档是 1.02T / 42B, 预训练 30T tokens, 其中文本阶段 27T, omni 阶段 3T, 规模与文本数据量都和 V2.5-Pro 对得上, V2.6-Pro 很可能是在 V2.5-Pro 的文本预训练基础上接入视听再继续训练 (推断, 两份材料都没明说). 这与 V2.5 和 V2.6-Flash 之间的关系是同一个模式.
+放到家族里, V2.5-Pro 是 Flash 配方的放大版, 又是 V2.6-Pro 的前身. 页 9 写明继承 Flash 的 hybrid attention 与 MTP, 预训练 27T tokens, 与 Flash 报告的 27T 相同; 后训练沿用 Flash 的三阶段范式. 往后看, V2.6 报告的 Pro 档是 1.02T / 42B, 预训练 30T tokens, 其中文本阶段 27T, omni 阶段 3T, 规模与文本数据量都和 V2.5-Pro 对得上, V2.6-Pro 很可能是在 V2.5-Pro 的文本预训练基础上接入视听再继续训练 (两份材料都没明说). 这与 V2.5 和 V2.6-Flash 之间的关系是同一个模式.
 
 ### 1.2. 混合注意力从 5:1 改到 6:1
 

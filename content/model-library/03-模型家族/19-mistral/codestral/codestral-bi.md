@@ -99,7 +99,7 @@ The page opens with the body of a second table. Its header row is not on this pa
 | Llama 3 70B | 76.2% | 67.7% | 39.2% | 60.8% | 66.5% | 74.2% | 46.2% | 61.2% |
 
 > **回看:** Average 是不是这七列的平均?
-> 对不上. Codestral 七列平均约 61.9 (估算), 表上印 61.5; CodeLlama 约 52.3 对 51.9; DeepSeek 约 58.0 对 57.6; Llama 3 约 61.5 对 61.2. 四行都低 0.34 到 0.39 个点, 只算后六列又都明显偏低. 表头不在本页, 这页定不了它平均的是哪几列.
+> 对不上. Codestral 七列平均约 61.9, 表上印 61.5; CodeLlama 约 52.3 对 51.9; DeepSeek 约 58.0 对 57.6; Llama 3 约 61.5 对 61.2. 四行都低 0.34 到 0.39 个点, 只算后六列又都明显偏低. 表头不在本页, 这页定不了它平均的是哪几列.
 
 **Additional languages.** Additionally, we evaluated Codestral's performance in multiple HumanEval pass@1 across six different languages in addition to Python: C++, bash, Java, PHP, Typescript, and C#, and calculated the average of these evaluations.
 
@@ -119,7 +119,7 @@ FIM 表有四列: HumanEvalFIM Python, HumanEvalFIM JavaScript, HumanEvalFIM Jav
 **FIM benchmarks.** Codestral 的 fill-in-the-middle 能力用 Python, JavaScript, Java 三种语言的 HumanEval pass@1 来评, 对比对象是 DeepSeek Coder 33B, 因为它的 fill-in-the-middle 能力拿来就能用.
 
 > **再看:** 91.6% 这个平均能不能复算?
-> 能. (89.4 + 95.1 + 90.3) / 3 = 91.6, 和表上的 Average, Figure 1 的 HumanEvalFIM average 都一致. DeepSeek 的 Python, JavaScript 两格被挡住, 只能由 78.2 x 3 - 86.6 反推两格之和约 148.0 (估算).
+> 能. (89.4 + 95.1 + 90.3) / 3 = 91.6, 和表上的 Average, Figure 1 的 HumanEvalFIM average 都一致. DeepSeek 的 Python, JavaScript 两格被挡住, 只能由 78.2 x 3 - 86.6 反推两格之和约 148.0.
 
 ## Get started with Codestral
 
@@ -151,7 +151,7 @@ With this release, comes the addition of a new endpoint: **codestral.mistral.ai*
 这次发布还新增了一个 endpoint: **codestral.mistral.ai**. 在 IDE 里用我们 Instruct 或 Fill-In-the-Middle 路由的用户, 应优先用它. 这个 endpoint 的 API Key 按个人管理, 不受通常的组织级限流约束. beta 期 8 周内可以免费使用, 为了保证服务质量, 要先排 waitlist. 开发 IDE 插件, 或者做那种由客户自带 API key 的应用, 也应优先用这个 endpoint.
 
 > **想:** 8 周免费 beta 从哪天算到哪天?
-> 页面没写起止日. 若从发布日 May 29, 2024 起算, 8 周后约是 2024 年 7 月 24 日 (估算). 这只是按日期推的.
+> 页面没写起止日. 若从发布日 May 29, 2024 起算, 8 周后约是 2024 年 7 月 24 日. 这只是按日期推的.
 
 ## Build with Codestral on la Plateforme
 

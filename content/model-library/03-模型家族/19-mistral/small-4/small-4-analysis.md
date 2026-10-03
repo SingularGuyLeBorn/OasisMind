@@ -20,13 +20,13 @@
 
 ## 2. 结构: 119B 里每次只用 6B
 
-结构列表是这页信息量最大的一段. 128 个专家选 4 个, 专家激活比例是 4/128, 约 3.1%; 参数激活比例是 6/119, 约 5.0%; 算上 embedding 层和输出层, 8/119, 约 6.7% (都是估算). 三个比例依次变大, 说明除了被路由的专家, 每个 token 还要走一段固定的公共计算. 页面单独把 embedding 层和输出层的 2B 拎出来, 这 2B 占总参数约 1.7% (估算), 但它们和词表大小, 隐藏维度相乘有关, 页面两个都没给, 反推不出词表多大.
+结构列表是这页信息量最大的一段. 128 个专家选 4 个, 专家激活比例是 4/128, 约 3.1%; 参数激活比例是 6/119, 约 5.0%; 算上 embedding 层和输出层, 8/119, 约 6.7%. 三个比例依次变大, 说明除了被路由的专家, 每个 token 还要走一段固定的公共计算. 页面单独把 embedding 层和输出层的 2B 拎出来, 这 2B 占总参数约 1.7%, 但它们和词表大小, 隐藏维度相乘有关, 页面两个都没给, 反推不出词表多大.
 
 页面没交代的地方更多. 没说有没有共享专家, 没说每层是否都是 MoE, 没说路由怎么做负载均衡, 也没说视觉输入经过什么编码器接进来. 「enabling efficient scaling and specialization」 这句是宣传语, 不是结构说明. 从 128 选 4 这个比例能读出的只有一点: 这是一个专家很多, 每次用得很少的稀疏设计, 计算量按 6B 到 8B 算, 权重却要按 119B 存. 后面讲部署和 「LIGHTWEIGHT」 标签时, 这个落差会反复出现.
 
 ## 3. 一个模型, 两种模式
 
-第 3 页的图把 Small 4 的每根柱子分成两段: 实心段是 Instruct 分数, 斜线段顶上是 Reasoning 分数. 开推理带来的提升, 五项分别是 GPQA Diamond +12.1, MMLU Pro +4.5, IFBench +12.3, Arena Hard +2.5, MMMU-Pro +13.7 (估算). 提升大的是推理题, 指令约束题和视觉题, 提升小的是知识题和 Arena Hard. 五项平均从约 54.1 升到约 63.1 (估算).
+第 3 页的图把 Small 4 的每根柱子分成两段: 实心段是 Instruct 分数, 斜线段顶上是 Reasoning 分数. 开推理带来的提升, 五项分别是 GPQA Diamond +12.1, MMLU Pro +4.5, IFBench +12.3, Arena Hard +2.5, MMMU-Pro +13.7. 提升大的是推理题, 指令约束题和视觉题, 提升小的是知识题和 Arena Hard. 五项平均从约 54.1 升到约 63.1.
 
 这组数也暴露出 instruct 模式本身不算强. 五项里 instruct 一个第一都没拿, MMMU-Pro 46.3 还低于上一代 Small 3.2 的 49.1. 页面第 2 页说 「Native multimodality」, 第 4 页说 「none」 模式和 Small 3.2 的对话风格一样, 可在视觉基准上, 不开推理的 Small 4 反而比 Small 3.2 低 2.8 个点. 要在 MMMU-Pro 上拿第一, 得开推理, 这时是 60.
 
@@ -34,21 +34,21 @@
 
 ## 4. 和自家旧旗舰比: Medium 3.1, Large 3
 
-第 3 页的对手全是 Mistral 自家模型, 标题也写明 「across internal models」. 开推理后, Small 4 在 GPQA Diamond (71.2), IFBench (48), MMMU-Pro (60) 三项第一, 分别领先第二名 5.5, 7.2, 6.0 个点 (估算). 输掉的两项是 MMLU Pro, 78 对 Large 3 的 80.9, 以及 Arena Hard, 58.3 对 Medium 3.1 的 67.3, 差 9.0 个点, 是五项里差距最大的一处.
+第 3 页的对手全是 Mistral 自家模型, 标题也写明 「across internal models」. 开推理后, Small 4 在 GPQA Diamond (71.2), IFBench (48), MMMU-Pro (60) 三项第一, 分别领先第二名 5.5, 7.2, 6.0 个点. 输掉的两项是 MMLU Pro, 78 对 Large 3 的 80.9, 以及 Arena Hard, 58.3 对 Medium 3.1 的 67.3, 差 9.0 个点, 是五项里差距最大的一处.
 
-五项等权平均, Small 4 reasoning 约 63.1, Large 3 约 60.7, Medium 3.1 约 58.9, Small 4 instruct 约 54.1, Small 3.2 约 49.0 (都是估算). 开推理的 Small 4 平均排第一, 不开推理则排在 Medium 3.1 和 Large 3 后面. 页面没印 Medium 3.1 和 Large 3 的参数量, 所以 「小模型打大模型」 这个读法这页撑不起来, 能说的只是名字上的档位.
+五项等权平均, Small 4 reasoning 约 63.1, Large 3 约 60.7, Medium 3.1 约 58.9, Small 4 instruct 约 54.1, Small 3.2 约 49.0. 开推理的 Small 4 平均排第一, 不开推理则排在 Medium 3.1 和 Large 3 后面. 页面没印 Medium 3.1 和 Large 3 的参数量, 所以 「小模型打大模型」 这个读法这页撑不起来, 能说的只是名字上的档位.
 
-纵轴从 20 起, 这一点会放大视觉差距. IFBench 上 48 对 34, 柱高是 28 对 14, 看着差一倍, 实际分数比约 1.41 (估算). 第 5 页的图纵轴从 0 起, 两张图放在一篇里, 视觉尺度不统一.
+纵轴从 20 起, 这一点会放大视觉差距. IFBench 上 48 对 34, 柱高是 28 对 14, 看着差一倍, 实际分数比约 1.41. 第 5 页的图纵轴从 0 起, 两张图放在一篇里, 视觉尺度不统一.
 
 ## 5. 和 Magistral 1.2 比: 推理这条线
 
-第 5 页的图只比推理模型: Small 4 - High 对 Magistral Medium 1.2 和 Magistral Small 1.2. 对 Magistral Medium 1.2, 四项只赢 Collie (62.9 对 61.3), 输 LCR 1.8 个点, AIME25 0.6 个点, LiveCodeBench 2.5 个点; 四项平均约 70.4 对 71.2 (估算). 对 Magistral Small 1.2 四项全赢, LCR 上 71.2 对 27, 差 44.2 个点, 其余三项差 2.6 到 3.6 个点 (估算).
+第 5 页的图只比推理模型: Small 4 - High 对 Magistral Medium 1.2 和 Magistral Small 1.2. 对 Magistral Medium 1.2, 四项只赢 Collie (62.9 对 61.3), 输 LCR 1.8 个点, AIME25 0.6 个点, LiveCodeBench 2.5 个点; 四项平均约 70.4 对 71.2. 对 Magistral Small 1.2 四项全赢, LCR 上 71.2 对 27, 差 44.2 个点, 其余三项差 2.6 到 3.6 个点.
 
-这张图放在 「Reasoning on demand」 一节后面, 读起来是在证明 「high」 档能顶替 Magistral. 数字支持的说法是: high 档大致追平 Magistral Medium 1.2, 明显好过 Magistral Small 1.2, 而对 Magistral Small 1.2 的优势主要集中在 LCR 一项. 去掉 LCR, 三项平均 Small 4 约 70.1, Magistral Medium 1.2 约 70.6, Magistral Small 1.2 约 67.1 (估算), 差距一下子收窄. 页面没给 Magistral 两款的参数量, 「追平」 背后的代价比不出来.
+这张图放在 「Reasoning on demand」 一节后面, 读起来是在证明 「high」 档能顶替 Magistral. 数字支持的说法是: high 档大致追平 Magistral Medium 1.2, 明显好过 Magistral Small 1.2, 而对 Magistral Small 1.2 的优势主要集中在 LCR 一项. 去掉 LCR, 三项平均 Small 4 约 70.1, Magistral Medium 1.2 约 70.6, Magistral Small 1.2 约 67.1, 差距一下子收窄. 页面没给 Magistral 两款的参数量, 「追平」 背后的代价比不出来.
 
 ## 6. 输出长度: 第 6 页的效率论证
 
-第 6 页的主张是 「分数相当, 输出更短」. 正文给出的数: AA LCR 上 Small 4 拿 0.72, 输出 1.6K 字符; Qwen 模型输出 5.8 到 6.1K, 是 Small 4 的 3.5 到 4 倍. 按 1.6K 算, 实际倍数约 3.6 到 3.8 (估算), 落在区间内, 但区间写宽了. LiveCodeBench 上 Small 4 超过 GPT-OSS 120B, 输出少 20%, 可两边的分数和长度都没印, 「20%」 以谁为基数也没说.
+第 6 页的主张是 「分数相当, 输出更短」. 正文给出的数: AA LCR 上 Small 4 拿 0.72, 输出 1.6K 字符; Qwen 模型输出 5.8 到 6.1K, 是 Small 4 的 3.5 到 4 倍. 按 1.6K 算, 实际倍数约 3.6 到 3.8, 落在区间内, 但区间写宽了. LiveCodeBench 上 Small 4 超过 GPT-OSS 120B, 输出少 20%, 可两边的分数和长度都没印, 「20%」 以谁为基数也没说.
 
 这一节最大的问题是图没抓到, 而且正文本身就不完整. 「three benchmarks」 只点名了两个, GPT-OSS 120B 一个数都没有, Qwen 没写是哪几个型号. 另外 0.72 和第 5 页 LCR 的 71.2 对不上: 换成同一尺度, 一个是 72, 一个是 71.2. 可能是不同轮次, 不同推理档位, 或者 「AA LCR」 和 「LCR」 本来就不是同一套设置, 页面没交代. 用字符数而不是 token 数衡量输出长度, 也让它和价格 (按 token 计) 没法直接换算.
 
@@ -56,13 +56,13 @@
 
 速度只有两个相对数: 端到端完成时间减少 40% (延迟优化配置), 每秒请求数 3 倍 (吞吐优化配置), 比较对象是 Small 3. 两条都没给硬件, 并发, 序列长度, 也没说 Small 4 此时是不是 「none」 档. 值得注意的是, 分数对比用的是 Small 3.2, 速度对比用的是 Small 3, 两条基线不是同一个版本.
 
-部署配置有一处明显不整齐: 最低配置和推荐配置里 H100 都是 「4x NVIDIA HGX H100」, H200 和 B200 都从最低到推荐翻了一倍. 权重按每参数 2 字节约 238 GB, 按 1 字节约 119 GB (估算), 页面没写精度, 也没说 「4x HGX」 的 4x 数的是卡还是机器, 这组配置和模型大小对不上号. 推理框架写了 vLLM, llama.cpp, SGLang, Transformers, 并说和 NVIDIA 一起为 vLLM 和 SGLang 做了优化, 首日上 NVIDIA NIM, 可以用 NeMo 微调.
+部署配置有一处明显不整齐: 最低配置和推荐配置里 H100 都是 「4x NVIDIA HGX H100」, H200 和 B200 都从最低到推荐翻了一倍. 权重按每参数 2 字节约 238 GB, 按 1 字节约 119 GB, 页面没写精度, 也没说 「4x HGX」 的 4x 数的是卡还是机器, 这组配置和模型大小对不上号. 推理框架写了 vLLM, llama.cpp, SGLang, Transformers, 并说和 NVIDIA 一起为 vLLM 和 SGLang 做了优化, 首日上 NVIDIA NIM, 可以用 NeMo 微调.
 
 ## 8. 开放与价格
 
 许可是 Apache 2.0, 页面从第 2 页到第 8 页反复强调开源, 第 5 页还写了 「fully open source」. 权重放在 Hugging Face 的 mistralai/mistral-small-4 合集, 同时在 Mistral API, AI Studio 和 build.nvidia.com 上可用. 第 2 页顺带宣布 Mistral 以创始成员身份加入 NVIDIA Nemotron Coalition, 这是这页里唯一的组织层面新闻.
 
-价格只在第 8 页的模型卡片上: 输入每百万 token $0.15, 输出 $0.6, 输出是输入的 4 倍. 按 3:1 混合约 $0.26, 按 1:1 混合约 $0.38 每百万 token (估算, 混合比例是我假设的). 正文没有拿价格和任何对手比. 卡片上的四个标签里, LIGHTWEIGHT 和 119B 的权重规模放在一起有些别扭; 按本页的数, 轻的是每 token 的计算量, 存储和部署并不轻.
+价格只在第 8 页的模型卡片上: 输入每百万 token $0.15, 输出 $0.6, 输出是输入的 4 倍. 按 3:1 混合约 $0.26, 按 1:1 混合约 $0.38 每百万 token (混合比例为假设值). 正文没有拿价格和任何对手比. 卡片上的四个标签里, LIGHTWEIGHT 和 119B 的权重规模放在一起有些别扭; 按本页的数, 轻的是每 token 的计算量, 存储和部署并不轻.
 
 ## 9. 谱系: 三条线并成一条
 
@@ -72,6 +72,6 @@
 
 ## 10. 本页对不上的数字
 
-跨图和跨段: 第 6 页 「AA LCR ... 0.72」, 第 5 页 LCR 上 Small 4 - High 是 71.2, 同一尺度差 0.8; 「Qwen models need 3.5-4x more output (5.8-6.1K)」, 按 1.6K 算是 3.6 到 3.8 倍 (估算), 区间写宽; 部署配置里 H100 的最低配置和推荐配置都是 「4x NVIDIA HGX H100」, 另两种卡都翻倍; 速度对比的基线是 Small 3, 分数对比和 「none」 档对标的是 Small 3.2; 第 1 页合并的三条线是 Magistral, Pixtral, Devstral, 第 4 页变成 Magistral, Devstral, Mistral Small.
+跨图和跨段: 第 6 页 「AA LCR ... 0.72」, 第 5 页 LCR 上 Small 4 - High 是 71.2, 同一尺度差 0.8; 「Qwen models need 3.5-4x more output (5.8-6.1K)」, 按 1.6K 算是 3.6 到 3.8 倍, 区间写宽; 部署配置里 H100 的最低配置和推荐配置都是 「4x NVIDIA HGX H100」, 另两种卡都翻倍; 速度对比的基线是 Small 3, 分数对比和 「none」 档对标的是 Small 3.2; 第 1 页合并的三条线是 Magistral, Pixtral, Devstral, 第 4 页变成 Magistral, Devstral, Mistral Small.
 
 宣传句和数字之间: 「matching or surpassing GPT-OSS 120B on all three benchmarks」 没有一个 GPT-OSS 的数可核, 三个基准只点名两个; 「Native multimodality」 下, instruct 模式的 MMMU-Pro 46.3 低于 Small 3.2 的 49.1; 卡片标 LIGHTWEIGHT, 总参数 119B. 转换稿和 PDF 之间: 转出的 Markdown 丢了 「Performance highlights」 标题, 结构列表和部署配置只剩碎片, 两张图没有转出任何数字. 两张嵌入原图内部的数字没有自相矛盾的地方.

@@ -35,7 +35,7 @@ Fast 模式是另一块服务侧数字: Codex 里 token 生成快 1.5x, 费用 2
 
 ## 4. 价格和 token 效率
 
-API 价格是每 1M 输入 token $5, 输出 $30, 输出是输入的 6 倍, 窗口 1M; Batch 和 Flex 五折. 后面接着 「Priority processing is」, 翻页后直接是 「and $180 per 1M output tokens」. $180 是 $30 的 6 倍, 按输出对输入 6:1 推, 对应输入 $30 (估算), 更像 gpt-5.5-pro 那一行, Priority 自己的价格随那半句丢了. 页面说 GPT-5.5 比 GPT-5.4 贵, GPT-5.4 的价格本页没印, 贵多少算不出.
+API 价格是每 1M 输入 token $5, 输出 $30, 输出是输入的 6 倍, 窗口 1M; Batch 和 Flex 五折. 后面接着 「Priority processing is」, 翻页后直接是 「and $180 per 1M output tokens」. $180 是 $30 的 6 倍, 按输出对输入 6:1 推, 对应输入 $30, 更像 gpt-5.5-pro 那一行, Priority 自己的价格随那半句丢了. 页面说 GPT-5.5 比 GPT-5.4 贵, GPT-5.4 的价格本页没印, 贵多少算不出.
 
 页面的辩护是 token 效率: 每 token 更贵, 但同样的 Codex 任务用的 token 更少. 「Across all three evals, GPT-5.5 improves on GPT-5.4's scores while using fewer tokens」 这句, 三项评测一个 token 数都没印. 推理模型的 token 用量主要来自 TestingTime 的思考过程, 原理见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md). 同样的推理强度下 GPT-5.5 想得更短, 还是跑评测的时候本来就开了更低的档, 本页分不清: 第 19 页那条评测脚注只剩 「different output from production ChatGPT in some cases」, 前面讲推理强度的部分丢了. 附录每个分数用的是哪一档, GPT-5.5 和 GPT-5.4 是否同档, Pro 多花了多少 TestingTime 算力, 都不可知.
 
@@ -57,7 +57,7 @@ OSWorld-Verified 78.7% 比 GPT-5.4 高 3.7 个点, 比 Claude Opus 4.7 的 78.0%
 
 第 8 页 「state-of-the-art across multiple benchmarks」 后面列的几项, 按附录核对并不都领先. FinanceAgent v1.1 的 60.0% 排第三, Claude Opus 4.7 是 64.4%, GPT-5.4 Pro 是 61.5%. 投行建模 88.5% 被 GPT-5.5 Pro 的 88.6% 超过 0.1 个点. OfficeQA Pro 的 54.1% 领先明显, Claude 43.6%, Gemini 只有 18.1%. 工具使用组里 MCP Atlas 的 75.3% 排第三, BrowseComp 的 84.4% 排第四, Toolathlon 对 GPT-5.4 只多 1.0 个点.
 
-员工用例给了几个具体数: 公司超过 85% 的人每周用 Codex; 财务团队审阅 24,771 份 K-1 税表, 共 71,637 页, 平均每份约 2.9 页 (估算), 比上一年提前两周; 一位员工把周报自动化, 每周省 5-10 小时. 这些是内部自述, 没有对照组, 也没说人工复核花了多少时间.
+员工用例给了几个具体数: 公司超过 85% 的人每周用 Codex; 财务团队审阅 24,771 份 K-1 税表, 共 71,637 页, 平均每份约 2.9 页, 比上一年提前两周; 一位员工把周报自动化, 每周省 5-10 小时. 这些是内部自述, 没有对照组, 也没说人工复核花了多少时间.
 
 ## 7. 长上下文: 128K 以上才拉开差距
 
@@ -71,7 +71,7 @@ Graphwalks 给出的是另一种图景. 256k 两行 Claude Opus 4.7 都比 GPT-5
 
 GeneBench 是 OpenAI 新出的遗传学和定量生物学数据分析评测, GPT-5.5 从 19.0% 到 25.0%, GPT-5.5 Pro 到 33.2%, 只有 OpenAI 四列. BixBench 80.5% 对 74.0%, 正文说 「在公布了分数的模型里领先」, 表里没有任何别家的数. 两项考的是统计分析和数据处理, 题目要应对隐藏混杂因素, 质控失败, 不是湿实验能力. Derya Unutmaz 的例子也是数据分析: 62 个样本, 近 28,000 个基因的表达数据, 产出一份研究报告.
 
-数学上 GPT-5.5 领先明显. FrontierMath Tier 1-3 51.7%, Tier 4 35.4%, 比 GPT-5.4 分别高 4.1 和 8.3 个点, Tier 4 比 Claude Opus 4.7 的 22.9% 高 12.5 个点; Pro 在 Tier 4 上到 39.6%. 第 10 页的 Ramsey 数例子是一个配了定制 harness 的内部版本, 给非对角 Ramsey 数一个由来已久的渐近结论找到了新证明, 后来在 Lean 里验证. 用的不是发布版, harness 什么样也没说. Naskręcki 的代数几何应用截图可以核对: Weierstrass 系数 -0.001642 和 0.01637 正好是四次式不变量 I, J 各乘 -27, j 不变量 -0.004228 也对得上; 但右栏标 Δ 的 -3.675e-7 是 4I³ - J², 不是这条曲线的判别式 (约 -0.1158, 估算), 两者差 314,928 倍.
+数学上 GPT-5.5 领先明显. FrontierMath Tier 1-3 51.7%, Tier 4 35.4%, 比 GPT-5.4 分别高 4.1 和 8.3 个点, Tier 4 比 Claude Opus 4.7 的 22.9% 高 12.5 个点; Pro 在 Tier 4 上到 39.6%. 第 10 页的 Ramsey 数例子是一个配了定制 harness 的内部版本, 给非对角 Ramsey 数一个由来已久的渐近结论找到了新证明, 后来在 Lean 里验证. 用的不是发布版, harness 什么样也没说. Naskręcki 的代数几何应用截图可以核对: Weierstrass 系数 -0.001642 和 0.01637 正好是四次式不变量 I, J 各乘 -27, j 不变量 -0.004228 也对得上; 但右栏标 Δ 的 -3.675e-7 是 4I³ - J², 不是这条曲线的判别式 (约 -0.1158), 两者差 314,928 倍.
 
 其余学术项 GPT-5.5 不领先. Humanity's Last Exam 不用工具 41.4%, 低于 Claude 的 46.9% 和 Gemini 的 44.4%; 带工具 52.2% 对 GPT-5.4 的 52.1% 只多 0.1 个点, GPT-5.5 Pro 的 57.2% 还低于 GPT-5.4 Pro 的 58.7%. GPQA Diamond 的 93.6% 在有分数的五列里排倒数第二. ARC-AGI-2 85.0% 比 GPT-5.4 高 11.7 个点, 排第一; ARC-AGI-1 的 95.0% 被 Gemini 3.1 Pro 的 98.0% 超过. 推理强度不可知这一条, 在这组里影响最大, 见第 4 节.
 

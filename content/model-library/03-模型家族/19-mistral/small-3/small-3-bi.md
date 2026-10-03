@@ -47,14 +47,14 @@ Page 2 opens with a scatter chart titled "Performance / MMLU-Pro". The x-axis is
 | Qwen-2.5 32B | 15.1 | 68.3 |
 
 > **问:** 横轴是 「每 token 毫秒数」, 和正文的 「150 tokens/s」 对得上吗?
-> 对不上. 10.9 ms/token 折合约 92 tokens/s (估算), 150 tokens/s 要约 6.7 ms/token (估算), 比图上最左的点还靠左. 图用的是 batch size 16, 如果 150 指别的测法 (比如单条请求), 页面没交代.
+> 对不上. 10.9 ms/token 折合约 92 tokens/s, 150 tokens/s 要约 6.7 ms/token, 比图上最左的点还靠左. 图用的是 batch size 16, 如果 150 指别的测法 (比如单条请求), 页面没交代.
 
 Mistral Small 3 is competitive with larger models such as Llama 3.3 70B or Qwen 32B, and is an excellent open replacement for opaque proprietary models like GPT4o-mini. Mistral Small 3 is on par with Llama 3.3 70B instruct, while being more than 3x faster on the same hardware.
 
 Mistral Small 3 能和 Llama 3.3 70B, Qwen 32B 这类更大的模型较量, 也可以开放地替换 GPT4o-mini 这类不透明的闭源模型. Mistral Small 3 和 Llama 3.3 70B instruct 水平相当, 在同样硬件上快 3 倍以上.
 
 > **核对:** 「more than 3x faster」 在散点图里能核吗?
-> 不能. 散点图只有 Small 3, GPT-4o Mini, Gemma-2 27B, Qwen-2.5 32B 四个点, 没有 Llama 3.3 70B. 图上最接近的对比是 Qwen-2.5 32B, 15.1 对 10.9 ms/token, 约 1.4 倍 (估算).
+> 不能. 散点图只有 Small 3, GPT-4o Mini, Gemma-2 27B, Qwen-2.5 32B 四个点, 没有 Llama 3.3 70B. 图上最接近的对比是 Qwen-2.5 32B, 15.1 对 10.9 ms/token, 约 1.4 倍.
 
 Mistral Small 3 is a pre-trained and instructed model catered to the '80%' of generative AI tasks—those that require robust language and instruction following performance, with very low latency.
 
@@ -119,7 +119,7 @@ We conducted side by side evaluations with an external third-party vendor, on a 
 我们请一家外部第三方供应商做了并排对比评测, 用的是 1000 多条内部的代码和通用 prompt. 评审从匿名的两份回答里选出更喜欢的一份, 一份来自 Mistral Small 3, 一份来自另一个模型. 我们知道, 有些情况下基于人类判断的结果和公开的
 
 > **停一下:** 「over 1k」 分到五根柱上, 每根多少条?
-> 页面没写. 四组 generalist 的每个数都是 0.4 的整数倍, 能对上的最小样本是每组 250 条; 代码组的数都是 1.0 的整数倍, 却不是 0.4 的整数倍, 最小是 100 条 (都是估算, 实际可以是这些数的倍数). 4 × 250 + 100 = 1100, 和 「over 1k」 不冲突.
+> 页面没写. 四组 generalist 的每个数都是 0.4 的整数倍, 能对上的最小样本是每组 250 条; 代码组的数都是 1.0 的整数倍, 却不是 0.4 的整数倍, 最小是 100 条 (实际可以是这些数的倍数). 4 × 250 + 100 = 1100, 和 「over 1k」 不冲突.
 
 <!-- page 4 of 11 -->
 
@@ -134,7 +134,7 @@ Our instruction tuned model performs competitively with open weight models three
 我们的指令调优模型在代码, 数学, 通用知识, 指令遵循几类基准上, 能和三倍大小的开放权重模型, 以及闭源的 GPT4o-mini 较量.
 
 > **再看:** 「three times its size」 指谁?
-> 图里的对手是 Gemma-2-27b-it, Qwen2.5-32B-Instruct, Llama-3.3-70B-Instruct 和 gpt-4o-mini. 只有 Llama 3.3 70B 接近三倍, 70 / 24 约 2.9 倍; Qwen 32B 约 1.3 倍, Gemma 27B 约 1.1 倍 (都是估算).
+> 图里的对手是 Gemma-2-27b-it, Qwen2.5-32B-Instruct, Llama-3.3-70B-Instruct 和 gpt-4o-mini. 只有 Llama 3.3 70B 接近三倍, 70 / 24 约 2.9 倍; Qwen 32B 约 1.3 倍, Gemma 27B 约 1.1 倍.
 
 The first instruct chart shows MMLU Pro (5-shot) and GPQA main, with "Accuracy (%)" on the y-axis (0.2 to 0.8). The five bars in each group follow the legend: Mistral-Small-24B-Instruct-2501 (orange), Gemma-2-27b-it (green), Qwen2.5-32B-Instruct (teal), Llama-3.3-70B-Instruct (blue), gpt-4o-mini-2024-07-18 (purple). The Mistral bars carry a small Mistral logo. On the page, the banner covers the lower left of the chart.
 
@@ -226,7 +226,7 @@ Page 7 opens with a second pretraining chart in the same colours: MMLU in seven 
 | Japanese MMLU | 74.3 | 69.2 | 79.5 | 73.6 |
 
 > **拆开:** 七种语言里 Small 3 base 和 Qwen 2.5 32B 差在哪?
-> French 持平, 其余六种都是 Qwen 高, 差得最多的是 Chinese MMLU, 88.8 对 70.1, 约 18.7 个点 (估算). 对 LLama 3.1 70B, Small 3 base 六种高一点, Spanish 持平. 七种语言里 Korean 是四个模型都最低的一项.
+> French 持平, 其余六种都是 Qwen 高, 差得最多的是 Chinese MMLU, 88.8 对 70.1, 约 18.7 个点. 对 LLama 3.1 70B, Small 3 base 六种高一点, Spanish 持平. 七种语言里 Korean 是四个模型都最低的一项.
 
 Mistral Small 3, a 24B model, offers the best performance for its size class and rivals with models three times larger such as Llama 3.3 70B.
 
@@ -261,7 +261,7 @@ diagnostics, and technical support, where domain-specific knowledge is essential
 **本地推理.** 对爱好者, 以及处理敏感或专有信息的机构特别有用. 量化后, Mistral Small 3 能在一张 RTX 4090 或一台 32GB 内存的 Macbook 上私有运行.
 
 > **确认:** 「When quantized」 量化到几比特?
-> 没写. 24B 参数按 4 bit 算, 权重约 12 GB; 按 8 bit 算约 24 GB (都是估算, 不含 KV cache 和激活). 页面没印 RTX 4090 的显存, 也没给量化后的分数.
+> 没写. 24B 参数按 4 bit 算, 权重约 12 GB; 按 8 bit 算约 24 GB (不含 KV cache 和激活). 页面没印 RTX 4090 的显存, 也没给量化后的分数.
 
 Our customers are evaluating Mistral Small 3 across multiple industries, including:
 

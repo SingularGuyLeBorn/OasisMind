@@ -20,33 +20,33 @@
 
 ## 2. 46.8% 和 SWE-Bench Verified
 
-SWE-Bench Verified 是这页唯一的基准. 页面对它的描述是 500 个真实 GitHub issue, 每个都人工筛过 「correctness」. 46.8% 折成题数约 234 道 (估算). 页面没说跑了几次, 没说取平均还是取最好, 没给置信区间, 也没说每道题允许多少步, 多少 token 预算. 对 agent 基准来说, 这些设置会直接影响分数, 页面一个都没交代.
+SWE-Bench Verified 是这页唯一的基准. 页面对它的描述是 500 个真实 GitHub issue, 每个都人工筛过 「correctness」. 46.8% 折成题数约 234 道. 页面没说跑了几次, 没说取平均还是取最好, 没给置信区间, 也没说每道题允许多少步, 多少 token 预算. 对 agent 基准来说, 这些设置会直接影响分数, 页面一个都没交代.
 
 第 2 页还强调了脚手架的作用: 脚手架 「define the interface between the model and the test cases」. 这句话说明分数是 「模型加脚手架」 的组合成绩, 不是模型单独的能力. 页面提了两个脚手架, OpenHands 和 SWE-Agent, 但 46.8% 只和 OpenHands 挂钩, 第 3 页明确写的是 「same test scaffold (OpenHands ...)」. Devstral 在 SWE-Agent 上多少分, 页面没有.
 
 ## 3. 散点图逐点读
 
-散点图横轴是参数量 (十亿), 纵轴是分数, 没有轴标题, 各点没印数值. 按像素位置读: Devstral 约 (23, 46.8), Gemma-3 27B 约 (27, 10.1), Qwen3 235B-A22B 约 (236, 34.3), Deepseek-V3-0324 约 (671, 38.8), Deepseek-R1 约 (671, 34.1), Deepseek-V3 约 (671, 32.4) (都是估算, 读图). Devstral 的纵坐标和正文的 46.8% 对得上, 说明纵轴就是 SWE-Bench Verified 分数; Gemma-3 27B 的横坐标落在 27 附近, 说明横轴刻度读法没错.
+散点图横轴是参数量 (十亿), 纵轴是分数, 没有轴标题, 各点没印数值. 按像素位置读: Devstral 约 (23, 46.8), Gemma-3 27B 约 (27, 10.1), Qwen3 235B-A22B 约 (236, 34.3), Deepseek-V3-0324 约 (671, 38.8), Deepseek-R1 约 (671, 34.1), Deepseek-V3 约 (671, 32.4) (读图). Devstral 的纵坐标和正文的 46.8% 对得上, 说明纵轴就是 SWE-Bench Verified 分数; Gemma-3 27B 的横坐标落在 27 附近, 说明横轴刻度读法没错.
 
-图的构图有明显的指向. 左上角画了一块粉色楔形, 只把 Devstral 框在里面, 意思是 「小而强」. 图注写 「All models benchmarked officially by AllHands using the OpenHands scaffold with no customisation」, 五个对手都是开放权重模型, 没有闭源模型. 三个 Deepseek 模型挤在右侧同一横坐标上, 分数在约 32.4 到 38.8 之间; 其中 Deepseek-R1 是推理模型, 在这张图上并不比 Deepseek-V3-0324 高, 约 34.1 对 38.8 (估算, 读图), 页面没有解释. Gemma-3 27B 和 Devstral 尺寸相近, 分数约 10.1, 差约 36.7 个点 (估算), 是图上差距最大的一组.
+图的构图有明显的指向. 左上角画了一块粉色楔形, 只把 Devstral 框在里面, 意思是 「小而强」. 图注写 「All models benchmarked officially by AllHands using the OpenHands scaffold with no customisation」, 五个对手都是开放权重模型, 没有闭源模型. 三个 Deepseek 模型挤在右侧同一横坐标上, 分数在约 32.4 到 38.8 之间; 其中 Deepseek-R1 是推理模型, 在这张图上并不比 Deepseek-V3-0324 高, 约 34.1 对 38.8 (读图), 页面没有解释. Gemma-3 27B 和 Devstral 尺寸相近, 分数约 10.1, 差约 36.7 个点, 是图上差距最大的一组.
 
 ## 4. 「6 个点」 和 「large margin」
 
-第 1 页说 「outperforms all open-source models on SWE-Bench Verified by a large margin」, 第 3 页把幅度落到 「more than 6% points」, 对象是 「prior open-source SoTA models」. 按散点图, 开源最高的是 Deepseek-V3-0324, 约 38.8, 差约 8.0 个点 (估算, 读图), 满足 「超过 6 个点」. 如果 「prior open-source SoTA」 就是这个点, 页面完全可以写 「超过 8 个点」, 却写了 6.
+第 1 页说 「outperforms all open-source models on SWE-Bench Verified by a large margin」, 第 3 页把幅度落到 「more than 6% points」, 对象是 「prior open-source SoTA models」. 按散点图, 开源最高的是 Deepseek-V3-0324, 约 38.8, 差约 8.0 个点 (读图), 满足 「超过 6 个点」. 如果 「prior open-source SoTA」 就是这个点, 页面完全可以写 「超过 8 个点」, 却写了 6.
 
-这说明两句话的比较范围很可能不同. 第 3 页第一句没有限定脚手架, 此前的开源 SoTA 可能来自某个定制脚手架, 分数更高. 按 「超过 6 个点」 反推, 那个 SoTA 低于 40.8%; 按散点图, 它不低于 38.8% (都是估算). 页面没点名这个模型, 没给分数, 也没说它用的什么脚手架. 「all open-source models」 也是一个全称说法, 图上只有五个开源对手, 能直接核实的只有这五个.
+这说明两句话的比较范围很可能不同. 第 3 页第一句没有限定脚手架, 此前的开源 SoTA 可能来自某个定制脚手架, 分数更高. 按 「超过 6 个点」 反推, 那个 SoTA 低于 40.8%; 按散点图, 它不低于 38.8%. 页面没点名这个模型, 没给分数, 也没说它用的什么脚手架. 「all open-source models」 也是一个全称说法, 图上只有五个开源对手, 能直接核实的只有这五个.
 
 ## 5. 消失的表格与 GPT-4.1-mini
 
 第 3 页第二段说, 下面的表把 Devstral 和 「any scaffold (including ones custom for the model)」 下评测的开源, 闭源模型放在一起比, 结论是 Devstral 「substantially better」 于 「a number of closed-source alternatives」, 例子是 GPT-4.1-mini, 超过 「over 20%」. 这张表没抓到, 所以 「a number of」 是几家, 各自多少分, 都不知道.
 
-「over 20%」 本身也有歧义. 按百分点读, GPT-4.1-mini 低于 26.8%; 按相对值读, 低于 46.8 / 1.2 约 39.0% (都是估算). 两种读法差了 12 个点以上. 同一页前一句写的是 「6% points」, 带了 「points」, 这一句没带, 字面上更像相对值, 但页面没讲清. 还有一个口径问题: 表里允许 「custom for the model」 的脚手架, 那么 Devstral 在表里的分数是不是还是 OpenHands 下的 46.8%, 闭源模型用的又是哪家脚手架, 表没抓到, 这些都无从核对.
+「over 20%」 本身也有歧义. 按百分点读, GPT-4.1-mini 低于 26.8%; 按相对值读, 低于 46.8 / 1.2 约 39.0%. 两种读法差了 12 个点以上. 同一页前一句写的是 「6% points」, 带了 「points」, 这一句没带, 字面上更像相对值, 但页面没讲清. 还有一个口径问题: 表里允许 「custom for the model」 的脚手架, 那么 Devstral 在表里的分数是不是还是 OpenHands 下的 46.8%, 闭源模型用的又是哪家脚手架, 表没抓到, 这些都无从核对.
 
 ## 6. 模型大小: 页面没说的参数
 
-全页没有一个字写参数量. 正文只有定性说法: 「light enough」, 「far larger models」. 唯一的量化线索是散点图横轴: Devstral 的点在 Gemma-3 27B 左边一点, 读图约 23 (估算, 读图). 读图精度有限, 在这个刻度下一个像素约 0.8 (估算), 只能说它在 20 出头到 27 之间, 比 Gemma-3 27B 小.
+全页没有一个字写参数量. 正文只有定性说法: 「light enough」, 「far larger models」. 唯一的量化线索是散点图横轴: Devstral 的点在 Gemma-3 27B 左边一点, 读图约 23 (读图). 读图精度有限, 在这个刻度下一个像素约 0.8, 只能说它在 20 出头到 27 之间, 比 Gemma-3 27B 小.
 
-拿这个读数去对比, 正文 「far larger」 的倍数大致是: Deepseek-V3-0324 约 29 倍 (671 / 23, 估算), Qwen3 235B-A22B 约 10 倍 (235 / 23, 估算). 图上 Qwen3 的横坐标落在 235 附近, 名字里的 A22B 在图上没有体现, 页面对它也没有任何说明. 结构方面, Devstral 是不是 MoE, 层数, 注意力方式, RoPE 设置, 页面一概没写, 这里也不补.
+拿这个读数去对比, 正文 「far larger」 的倍数大致是: Deepseek-V3-0324 约 29 倍 (671 / 23), Qwen3 235B-A22B 约 10 倍 (235 / 23). 图上 Qwen3 的横坐标落在 235 附近, 名字里的 A22B 在图上没有体现, 页面对它也没有任何说明. 结构方面, Devstral 是不是 MoE, 层数, 注意力方式, RoPE 设置, 页面一概没写, 这里也不补.
 
 ## 7. 本地部署: RTX 4090 和 32GB Mac
 
@@ -62,7 +62,7 @@ SWE-Bench Verified 是这页唯一的基准. 页面对它的描述是 500 个真
 
 ## 9. 价格与名字
 
-API 价格是输入 $0.1/M token, 输出 $0.3/M token, 输出是输入的 3 倍, 页面说和 Mistral Small 3.1 同价. 假设输入输出按 3:1 混合, 约 $0.15/M token; 按 1:1 约 $0.2/M token (都是估算, 混合比例是我假设的). agent 任务的特点是上下文反复喂回去, 输入 token 远多于输出, 所以实际混合比例可能比 3:1 更偏输入, 这一点页面没讨论. 页面没有印任何对手的价格, 也没给每道 SWE-Bench 题平均花多少 token.
+API 价格是输入 $0.1/M token, 输出 $0.3/M token, 输出是输入的 3 倍, 页面说和 Mistral Small 3.1 同价. 假设输入输出按 3:1 混合, 约 $0.15/M token; 按 1:1 约 $0.2/M token (混合比例为假设值). agent 任务的特点是上下文反复喂回去, 输入 token 远多于输出, 所以实际混合比例可能比 3:1 更偏输入, 这一点页面没讨论. 页面没有印任何对手的价格, 也没给每道 SWE-Bench 题平均花多少 token.
 
 API 名字 devstral-small-2505 带了两个页面没解释的信息. 「2505」 和发布日期 May 21, 2025 的年月对得上, 按年两位加月两位读是合理的. 「small」 在正文里从没出现过, 正文只叫 「Devstral」; model card 和各下载链接指向 Devstral-Small-2505. 和 Mistral Small 3.1 同价, 名字里又带 small, 两者放在一起, 读者很容易把它理解成 Small 这一档的代码 agent 版本, 但页面没有写它基于哪个基座.
 
@@ -74,6 +74,6 @@ API 名字 devstral-small-2505 带了两个页面没解释的信息. 「2505」 
 
 ## 11. 本页对不上的数字
 
-正文和图之间: 第 3 页写 「Qwen3 232B-A22B」, 散点图标 「Qwen3 235B-A22B」, 点的横坐标读图约 236 (估算), 和 235 对得上, 正文的 232 像是笔误. 「outperforming prior open-source SoTA models by more than 6% points」 和散点图上约 8.0 个点的差距 (估算, 读图) 不一致, 可以用 「比较范围不同」 解释, 但页面没说明. 第 1 页 「all open-source models」 是全称, 图上只有五个开源对手.
+正文和图之间: 第 3 页写 「Qwen3 232B-A22B」, 散点图标 「Qwen3 235B-A22B」, 点的横坐标读图约 236, 和 235 对得上, 正文的 232 像是笔误. 「outperforming prior open-source SoTA models by more than 6% points」 和散点图上约 8.0 个点的差距 (读图) 不一致, 可以用 「比较范围不同」 解释, 但页面没说明. 第 1 页 「all open-source models」 是全称, 图上只有五个开源对手.
 
-页面自身: 第 3 页引用的 「table below」 在抓页里是一块空白, 「a number of closed-source alternatives」 和 GPT-4.1-mini 的分数都无法核对; 「over 20%」 没写是百分点还是相对值, 两种读法对应 26.8% 和约 39.0% 两个上限 (估算). 页脚 「Mistral AI © 2026」 和正文日期 May 21, 2025 差一年多, 页脚是抓页时的外壳. 转换稿和 PDF 之间: 转出的 Markdown 丢了第 3 页开头的 46.8% 那句和第 4 页开头一句, 以 PDF 文本层为准. 散点图本身的点位和正文 46.8%, 671B 没有冲突.
+页面自身: 第 3 页引用的 「table below」 在抓页里是一块空白, 「a number of closed-source alternatives」 和 GPT-4.1-mini 的分数都无法核对; 「over 20%」 没写是百分点还是相对值, 两种读法对应 26.8% 和约 39.0% 两个上限. 页脚 「Mistral AI © 2026」 和正文日期 May 21, 2025 差一年多, 页脚是抓页时的外壳. 转换稿和 PDF 之间: 转出的 Markdown 丢了第 3 页开头的 46.8% 那句和第 4 页开头一句, 以 PDF 文本层为准. 散点图本身的点位和正文 46.8%, 671B 没有冲突.

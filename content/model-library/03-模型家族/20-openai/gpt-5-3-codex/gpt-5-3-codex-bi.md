@@ -67,7 +67,7 @@ GPT‑5.3‑Codex achieves state-of-the-art performance on SWE-Bench Pro, a rigo
 GPT-5.3-Codex 在 SWE-Bench Pro 上达到最好水平, 这是一个严格的真实软件工程评测. SWE-bench Verified 只测 Python, SWE-Bench Pro 覆盖四种语言, 更抗数据污染, 也更难, 更多样, 和工业实践更相关. 它在 Terminal-Bench 2.0 上也远超此前的最好成绩, 这个基准衡量 Codex 这类编程 Agent 需要的终端操作能力. 值得一提的是, GPT-5.3-Codex 做到这些用的 token 比以往任何模型都少, 让用户能做更多东西. (PDF 里这段前面还有小标题 「Coding」, 抓页时丢了.)
 
 > **核对:** SWE-Bench Pro 上的 「state-of-the-art」 领先多少?
-> 附录是 56.8% 对 GPT-5.2-Codex 的 56.4%, 只高 0.4 个点, 比 GPT-5.2 的 55.6% 高 1.2 个点. 页外背景: SWE-Bench Pro 公开集约 731 题, 0.4 个点约合 3 道题 (估算). 本页没印任何非 OpenAI 模型的分数, 「industry high」 在本页无法核对, 也没给多次运行的方差.
+> 附录是 56.8% 对 GPT-5.2-Codex 的 56.4%, 只高 0.4 个点, 比 GPT-5.2 的 55.6% 高 1.2 个点. 页外背景: SWE-Bench Pro 公开集约 731 题, 0.4 个点约合 3 道题. 本页没印任何非 OpenAI 模型的分数, 「industry high」 在本页无法核对, 也没给多次运行的方差.
 
 ## SWE-Bench Pro (Public) (SWE-Bench Pro 公开集)
 

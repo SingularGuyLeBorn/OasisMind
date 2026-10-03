@@ -26,7 +26,7 @@
 
 ## 2. 三段拼装: SigLip-400M, perceiver resampler, MiniCPM-2.4B
 
-第 3 页的简介只有一句话讲结构: 模型以 SigLip-400M 和 MiniCPM-2.4B 为基础, 用 perceiver resampler 连接, 也就是 「视觉编码器 + 连接层 + 语言模型」 三段式. 两个名字里的数相加是 0.4B + 2.4B = 2.8B (估算), 与正文 「MiniCPM-V 2.8B」 和评测表 Size 列一致. 侧栏的 3B 是 safetensors 统计后取整的结果; perceiver resampler 本身多大, 卡片没有给.
+第 3 页的简介只有一句话讲结构: 模型以 SigLip-400M 和 MiniCPM-2.4B 为基础, 用 perceiver resampler 连接, 也就是 「视觉编码器 + 连接层 + 语言模型」 三段式. 两个名字里的数相加是 0.4B + 2.4B = 2.8B, 与正文 「MiniCPM-V 2.8B」 和评测表 Size 列一致. 侧栏的 3B 是 safetensors 统计后取整的结果; perceiver resampler 本身多大, 卡片没有给.
 
 连接层的选择和端侧目标直接相关. perceiver resampler 的作用在第 4 页 High Efficiency 一段写得清楚: 把图像表示压缩成少得多的 token, 这样处理高分辨率图像时显存和速度仍然可以接受. 对一个 2.4B 的语言模型来说, 视觉 token 的数量直接决定预填充的长度和手机上的等待时间, 所以压缩在这里是硬需求. 不过卡片没有给出压缩后的 token 数, 也没有给出压缩前 SigLip 输出多少个特征, 压缩比无从计算.
 
@@ -34,7 +34,7 @@
 
 ## 3. 高分辨率: LLaVA-UHD 那一支
 
-第 4 页第三条特性说 MiniCPM-V 2.0 能接收任意长宽比, 最多 180 万像素的图像, 例子是 1344x1344, 做法来自 LLaVA-UHD. 1344 × 1344 = 1,806,336 像素 (估算), 和 「1.8 million」 对得上. LLaVA-UHD 的论文标题是 「an LMM Perceiving Any Aspect Ratio and High-Resolution Images」, 第 2 页的关联论文里有它, 发布时间是 2024 年 3 月 18 日, 比 MiniCPM-V 2.0 开源早 25 天 (估算); 作者名单里 Yao, Yuan 同时出现在 RLHF-V, VisCPM, LLaVA-UHD 和 MiniCPM-V 四条引用里.
+第 4 页第三条特性说 MiniCPM-V 2.0 能接收任意长宽比, 最多 180 万像素的图像, 例子是 1344x1344, 做法来自 LLaVA-UHD. 1344 × 1344 = 1,806,336 像素, 和 「1.8 million」 对得上. LLaVA-UHD 的论文标题是 「an LMM Perceiving Any Aspect Ratio and High-Resolution Images」, 第 2 页的关联论文里有它, 发布时间是 2024 年 3 月 18 日, 比 MiniCPM-V 2.0 开源早 25 天; 作者名单里 Yao, Yuan 同时出现在 RLHF-V, VisCPM, LLaVA-UHD 和 MiniCPM-V 四条引用里.
 
 这一条技术的效果在表里最容易看到. 同为 2.8B, 上一代到 2.0 的 DocVQA 从 38.2 升到 71.9, TextVQA 从 60.6 升到 74.1, OCRBench 从 366 升到 605. 这三列都是文字密集的图像, 小字能不能看清直接决定分数, 这和 「更好地感知小物体和印刷文字」 的说法吻合. 相比之下 MMMU val 从 38.3 变成 38.2, 这类学科知识题更依赖语言模型本身, 分辨率帮不上忙.
 
@@ -44,7 +44,7 @@
 
 第 4 页第二条特性说 MiniCPM-V 2.0 是第一个用多模态 RLHF 对齐可信行为的端侧多模态大模型, 用的是 RLHF-V 系列技术, 在 Object HalBench 上防幻觉与 GPT-4V 持平. RLHF-V 论文标题里的关键词是 「behavior alignment from fine-grained correctional human feedback」 (页面上截断在 「Correct…」), 发布于 2023 年 12 月 1 日. 第 1 页训练数据集里的 openbmb/RLHF-V-Dataset 和这一条对应, 页面显示 5.73k 条数据, 2024 年 5 月 28 日更新.
 
-表里 Object HalBench 一列每格两个数. MiniCPM-V 2.0 是 85.5 / 92.2, GPT-4V 是 86.4 / 92.7, 上一代 MiniCPM-V 是 78.4 / 88.5, CogVLM-Chat 是 73.6 / 87.4, Qwen-VL-Chat 是 56.2 / 80.0. 斜杠前后各是什么指标, 页面没有解释. 从雷达图把 92.2 画在最外圈看, 这一列按越高越好处理. 和 GPT-4V 比, 两个数分别低 0.9 和 0.5 (估算), 所以 「match」 是约数说法. 和上一代比, 两个数分别升了 7.1 和 3.7 (估算).
+表里 Object HalBench 一列每格两个数. MiniCPM-V 2.0 是 85.5 / 92.2, GPT-4V 是 86.4 / 92.7, 上一代 MiniCPM-V 是 78.4 / 88.5, CogVLM-Chat 是 73.6 / 87.4, Qwen-VL-Chat 是 56.2 / 80.0. 斜杠前后各是什么指标, 页面没有解释. 从雷达图把 92.2 画在最外圈看, 这一列按越高越好处理. 和 GPT-4V 比, 两个数分别低 0.9 和 0.5, 所以 「match」 是约数说法. 和上一代比, 两个数分别升了 7.1 和 3.7.
 
 这一列的覆盖面也要注意: 13 个模型里只有 5 个有 Object HalBench 分数, Gemini Pro Vision, 两个 Yi-VL, DeepSeek-VL 系列, TextMonkey 和 1B 到 3B 组的其他模型都是 「-」. 「第一个端侧 RLHF 对齐」 是一个时间上的说法, 表里没法验证; 能验证的只有和 GPT-4V, CogVLM-Chat, Qwen-VL-Chat 的直接对比.
 
@@ -52,7 +52,7 @@
 
 第 4 到 5 页的第五条特性说 MiniCPM-V 2.0 的中英双语多模态能力来自 VisCPM 的做法, 即把多模态能力跨语言泛化. VisCPM 的论文标题是 「Large Multilingual Models Pivot Zero-Shot Multimodal Learning across Languages」, 发布于 2023 年 8 月 23 日, 是四篇关联论文里最早的一篇. 标题里的 「pivot」 和 「zero-shot」 说明思路是借多语言语言模型做支点, 把在一种语言上学到的多模态能力迁移到另一种语言.
 
-表里能看双语的只有 MMBench 的 dev(en) 和 dev(zh) 两列. MiniCPM-V 2.0 是 69.6 和 68.1, 差 1.5; 上一代是 67.9 和 65.3, 差 2.6; Qwen-VL-Chat 是 60.6 和 56.7, 差 3.9; CogVLM-Chat 是 63.7 和 53.8, 差 9.9 (均为估算). 中英差距小, 和 「双语能力强」 的说法相符. 但 Yi-VL-6B 的中文列 68.3 比 MiniCPM-V 2.0 的 68.1 略高, Yi-VL-34B 两列都更高 (71.1, 71.4).
+表里能看双语的只有 MMBench 的 dev(en) 和 dev(zh) 两列. MiniCPM-V 2.0 是 69.6 和 68.1, 差 1.5; 上一代是 67.9 和 65.3, 差 2.6; Qwen-VL-Chat 是 60.6 和 56.7, 差 3.9; CogVLM-Chat 是 63.7 和 53.8, 差 9.9. 中英差距小, 和 「双语能力强」 的说法相符. 但 Yi-VL-6B 的中文列 68.3 比 MiniCPM-V 2.0 的 68.1 略高, Yi-VL-34B 两列都更高 (71.1, 71.4).
 
 第 7 页第一组演示是一个中文提示词 「描述画面内容」, 模型用中文回答, 三处店名都认对了, 包括把繁体招牌 「誠忠不動產」 写成简体. 这是双语能力在卡片上唯一的直接样例, 只有一张图, 当作展示看.
 
@@ -60,7 +60,7 @@
 
 第 4 页的主张可以拆成四句, 每句在表里都能找到对应. 第一句 「7B 以下模型中多个基准领先 (OCRBench, TextVQA, MME, MMB, MathVista 等)」: OCRBench 605, TextVQA 74.1, MathVista 38.7 在 7B 以下确实最高; MME 不成立, Yi-VL-6B (6.7B) 是 1915.1, 高于 1808.6; MMB 看英文列成立, 看中文列 Yi-VL-6B 高 0.2.
 
-第二句 「OpenCompass 超过 Qwen-VL-Chat 9.6B, CogVLM-Chat 17.4B, Yi-VL 34B」: 55.0 对 52.1, 52.5, 52.6, 成立. 但同表 DeepSeek-VL-7B (7.3B) 是 55.6, 正文没点名. 第三句 「场景文字理解与 Gemini Pro 相当」: 只在 TextVQA 上成立, 74.1 对 74.6; OCRBench 差 75, DocVQA 差 16.2 (估算). 第四句 「OCRBench 在开源模型中领先」: 605 高于 CogVLM-Chat 的 590, 成立, 限定词 「开源」 是必要的, 两个闭源模型是 680 和 645.
+第二句 「OpenCompass 超过 Qwen-VL-Chat 9.6B, CogVLM-Chat 17.4B, Yi-VL 34B」: 55.0 对 52.1, 52.5, 52.6, 成立. 但同表 DeepSeek-VL-7B (7.3B) 是 55.6, 正文没点名. 第三句 「场景文字理解与 Gemini Pro 相当」: 只在 TextVQA 上成立, 74.1 对 74.6; OCRBench 差 75, DocVQA 差 16.2. 第四句 「OCRBench 在开源模型中领先」: 605 高于 CogVLM-Chat 的 590, 成立, 限定词 「开源」 是必要的, 两个闭源模型是 680 和 645.
 
 表本身也有口径问题. 星号表示团队自己用官方权重测的, 集中在 TextVQA 和 DocVQA 两列, 其他格的来源没说. MobileVLM V2 的 MME 写作 1440.5(P), (P) 没有解释. 第 5 页雷达图的图注列了 10 个基准, 图上只有 8 根轴, MMBench 和 LLaVA Bench 不在图上; 图里也没有两个闭源模型和两个 Yi-VL, 所以雷达图上 MiniCPM-V 2.0 「几乎处处最外圈」 的观感, 部分来自对手的选择.
 
@@ -80,7 +80,7 @@
 
 按页面上的时间, 这条线是这样排的. 2023 年 8 月 VisCPM 做跨语言多模态迁移; 2023 年 12 月 RLHF-V 做细粒度人类反馈对齐; 2024 年 3 月 LLaVA-UHD 做任意长宽比高分辨率; 2024 年 4 月 12 日 MiniCPM-V 2.0 把三者接到一个 2.8B 的端侧模型上开源. 之后新闻栏依次记了 2024.05.20 的 MiniCPM-Llama3-V 2.5, 2024.08.06 的 MiniCPM-V 2.6, 2025.01.14 的 MiniCPM-o 2.6. 这几条只是公告, 它们 「超过 GPT-4V」 之类的说法都针对后续型号, 不属于 2.0.
 
-从这张时间表能看出 MiniCPM-V 2.0 的定位: 它不是一个新架构, 而是把团队此前半年里三篇论文的成果合到同一个小模型上. 表里上一代与 2.0 同为 2.8B, 分数的涨幅集中在文字密集的几列和 Object HalBench, 恰好对应高分辨率与 RLHF-V 两条来源. 2024 年 8 月的 MiniCPM-V 论文是整个系列的总结, 发表时 2.0 已经开源将近四个月 (估算, 4 月 12 日到 8 月 3 日).
+从这张时间表能看出 MiniCPM-V 2.0 的定位: 它不是一个新架构, 而是把团队此前半年里三篇论文的成果合到同一个小模型上. 表里上一代与 2.0 同为 2.8B, 分数的涨幅集中在文字密集的几列和 Object HalBench, 恰好对应高分辨率与 RLHF-V 两条来源. 2024 年 8 月的 MiniCPM-V 论文是整个系列的总结, 发表时 2.0 已经开源将近四个月 (4 月 12 日到 8 月 3 日).
 
 ## 10. 训练数据栏与许可证
 
@@ -102,4 +102,4 @@
 
 这些对不上的地方, 多数出在口径不同或限定词被省略上, 真正的错误只有演示回答里的月份和 MinerU 的代码识别. 读这份卡片时, 凡是 「领先」 「相当」 「持平」 一类的词, 最好都回第 6 页的表逐列核对一遍.
 
-还有几处页面自身一致, 可以放心用: Space 数 17 等于列出的 5 个加折叠的 12 个 (估算); 1344 × 1344 约等于 180 万像素; 评测表里 MiniCPM-V 2.0 一行没有星号, 是团队给出的分数, 与第 5 页雷达图上的 74.1, 71.9, 605.0, 38.7, 92.2 等刻度一致.
+还有几处页面自身一致, 可以放心用: Space 数 17 等于列出的 5 个加折叠的 12 个; 1344 × 1344 约等于 180 万像素; 评测表里 MiniCPM-V 2.0 一行没有星号, 是团队给出的分数, 与第 5 页雷达图上的 74.1, 71.9, 605.0, 38.7, 92.2 等刻度一致.

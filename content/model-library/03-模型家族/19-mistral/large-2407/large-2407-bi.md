@@ -41,7 +41,7 @@ Mistral Large 2 is designed for single-node inference with long-context applicat
 Mistral Large 2 按单节点推理设计, 面向长上下文应用. 它有 1230 亿参数, 这个规模能让它在单个节点上跑出高吞吐. 我们以 Mistral Research License 发布 Mistral Large 2, 允许为研究和非商业用途使用和修改. 需要自部署的商业用途, 得联系我们购买 Mistral Commercial License.
 
 > **核对:** 123B 放进 「single node」 要多少显存?
-> 页面没写精度, 也没写节点配置. 按每参数 2 字节算, 光权重就约 246 GB (估算), 一张 80 GB 的卡放不下. 所以这里的 「single node」 只能读作单台多卡机器, 不是单卡.
+> 页面没写精度, 也没写节点配置. 按每参数 2 字节算, 光权重就约 246 GB, 一张 80 GB 的卡放不下. 所以这里的 「single node」 只能读作单台多卡机器, 不是单卡.
 
 ## General performance
 
@@ -68,7 +68,7 @@ The bottom of page 2 holds two scatter plots, "Code generation performance" and 
 按 PDF 里嵌的原图读: 代码图里 Mistral Large 2 在横轴约 123 处, 纵轴约 82%, Llama 3.1 70B 约 78%, Llama 3.1 405B 在横轴约 405 处, 约 81%. 数学图里三者依次约 70%, 64%, 67%. 以上都是估算.
 
 > **确认:** 代码散点图的纵轴是哪个基准?
-> 图上没写. 把第 3 页四组代码柱子等权平均, Mistral Large 2 约 81.9, Llama 3.1 405B 约 81.5, Llama 3.1 70B 约 77.5 (估算), 和散点位置对得上; 数学图的三个点也和第 4 页 Math Instruct 那组柱子一致. 这是读图对位, 页面没交代. 同样按这个平均, Claude 3.5 Sonnet 约 83.9, GPT 4o 约 83.8 (估算), 都比 Mistral Large 2 高, 但散点图里只画了 Llama.
+> 图上没写. 把第 3 页四组代码柱子等权平均, Mistral Large 2 约 81.9, Llama 3.1 405B 约 81.5, Llama 3.1 70B 约 77.5, 和散点位置对得上; 数学图的三个点也和第 4 页 Math Instruct 那组柱子一致. 这是读图对位, 页面没交代. 同样按这个平均, Claude 3.5 Sonnet 约 83.9, GPT 4o 约 83.8, 都比 Mistral Large 2 高, 但散点图里只画了 Llama.
 
 <!-- page 3 of 11 -->
 
@@ -97,7 +97,7 @@ Performance accuracy on code generation benchmarks (all models were benchmarked 
 代码生成基准上的准确率 (所有模型都走同一套评测流程).
 
 > **再看:** Mistral Large 2 在四组里排第几?
-> 读柱高: Human Eval 约 92, 仅次于 GPT 4o 的约 93; Human Eval Plus 约 86.5, 也是第二; MBPP Base 约 80, MBPP Plus 约 69, 两组都只排第 6 (都是估算). 「on par」 在 HumanEval 这两组站得住, 在 MBPP 两组站不住.
+> 读柱高: Human Eval 约 92, 仅次于 GPT 4o 的约 93; Human Eval Plus 约 86.5, 也是第二; MBPP Base 约 80, MBPP Plus 约 69, 两组都只排第 6. 「on par」 在 HumanEval 这两组站得住, 在 MBPP 两组站不住.
 
 The rest of page 3 is covered by the banner.
 
@@ -142,7 +142,7 @@ Performance accuracy on GSM8K (8-shot) and MATH (0-shot, no CoT) generation benc
 GSM8K (8-shot) 和 MATH (0-shot, 不用 CoT) 上的准确率 (所有模型都走同一套评测流程).
 
 > **核对:** 数学上 Mistral Large 2 领先了吗?
-> 没有. GSM8K 约 93, 低于 Claude 3.5 Sonnet 约 95, Llama 3.1 70B 约 94, Llama 3.1 405B 约 96; Math Instruct 约 70, 低于 GPT 4o 约 76 (都是估算). 能站住的是对上一代的提升: Mistral Large 在 Math Instruct 上约 49.5 (估算). 另外图注写 「MATH」, 图里写 「Math Instruct」, 图注结尾的 「generation benchmarks」 像是从代码图注抄来的.
+> 没有. GSM8K 约 93, 低于 Claude 3.5 Sonnet 约 95, Llama 3.1 70B 约 94, Llama 3.1 405B 约 96; Math Instruct 约 70, 低于 GPT 4o 约 76. 能站住的是对上一代的提升: Mistral Large 在 Math Instruct 上约 49.5. 另外图注写 「MATH」, 图里写 「Math Instruct」, 图注结尾的 「generation benchmarks」 像是从代码图注抄来的.
 
 The rest of page 4 is covered by the banner.
 
@@ -167,7 +167,7 @@ Performance on general alignment benchmarks (all models were benchmarked through
 通用对齐基准上的表现 (所有模型都走同一套评测流程). 原文 「evalutation」 拼错了.
 
 > **看表:** 对齐这两组 Mistral Large 2 排第几?
-> Wild Bench 约 56, 排第二, 只低于 GPT 4o 约 59; Arena Hard 约 73, 排第三, 低于 Claude 3.5 Sonnet 和 GPT 4o 的约 79 (都是估算). 对上一代的跳幅很大, Mistral Large 在 Arena Hard 上约 37.5 (估算).
+> Wild Bench 约 56, 排第二, 只低于 GPT 4o 约 59; Arena Hard 约 73, 排第三, 低于 Claude 3.5 Sonnet 和 GPT 4o 的约 79. 对上一代的跳幅很大, Mistral Large 在 Arena Hard 上约 37.5.
 
 On some benchmarks, generating lengthy responses tends to improve the scores. However, in many business applications, conciseness is paramount – short model generations facilitate quicker interactions and are more cost-effective for inference. This is why we spent a lot of effort to ensure that generations remain succinct and to the point whenever possible. The graph below reports the average length of generations of different models on questions from the MT Bench benchmark:
 
@@ -182,7 +182,7 @@ The left chart is "MT Bench (dev) - GPT-4o judge", with Score from 6 to 9. The b
 左图是 「MT Bench (dev) - GPT-4o judge」, 纵轴 Score 从 6 到 9. 柱子顺序和对齐图相同.
 
 > **拆开:** GPT-4o 当裁判, 给 GPT-4o 自己打分, 公平吗?
-> 页面没讨论这一点. 读柱高, GPT 4o 约 8.69 最高, Claude 3.5 Sonnet 约 8.66, Mistral Large 2 约 8.63 排第三 (都是估算). 前三名相差不到 0.1, 纵轴又从 6 起, 视觉上的差距被放大了.
+> 页面没讨论这一点. 读柱高, GPT 4o 约 8.69 最高, Claude 3.5 Sonnet 约 8.66, Mistral Large 2 约 8.63 排第三. 前三名相差不到 0.1, 纵轴又从 6 起, 视觉上的差距被放大了.
 
 ![MT Bench (dev) 平均生成长度横向柱状图, 从短到长排列](images/p06-cuments-while-the-majorityhere-are-our-cookies.png)
 
@@ -191,7 +191,7 @@ The right chart is "MT Bench (dev) - Average Generation Length", with the axis t
 右图是 「MT Bench (dev) - Average Generation Length」, 横轴刻度 0, 450, 900, 1350, 1800. 从短到长依次是 Mistral Large, Mistral Large 2, Claude 3 Opus, Claude 3.5 Sonnet, Command R+, GPT 4o, Llama 3.1 405B, Llama 3.1 70B.
 
 > **确认:** 长度的单位是什么, Mistral Large 2 算不算最短?
-> 单位没印, 字符还是 token 看不出来. Mistral Large 2 约 1470, 比其余六家都短, 但比上一代 Mistral Large 约 1300 长了约 13% (估算). 所以 「succinct」 是和对手比, 不是和自家上一代比.
+> 单位没印, 字符还是 token 看不出来. Mistral Large 2 约 1470, 比其余六家都短, 但比上一代 Mistral Large 约 1300 长了约 13%. 所以 「succinct」 是和对手比, 不是和自家上一代比.
 
 ## Language diversity
 
@@ -223,7 +223,7 @@ Performance on Multilingual MMLU (measured on the base pretrained model)
 > 只有 9 种. 英语, 韩语, 阿拉伯语, 印地语都不在图里. 第 2 页那份语言清单又没有荷兰语, 两处清单也不一致.
 
 > **停一下:** 九种语言里 Mistral Large 2 赢过 Llama 3.1 405B 吗?
-> 一种也没有. 每种语言都比 Llama 3.1 405B 低约 0.3 到 1.6 个点, 九种平均约 80.5 对 81.4 (都是估算). 它的卖点在散点图那块三角里: 参数约是 405B 的 0.30 倍 (估算), 分数只差不到 1 个点.
+> 一种也没有. 每种语言都比 Llama 3.1 405B 低约 0.3 到 1.6 个点, 九种平均约 80.5 对 81.4. 它的卖点在散点图那块三角里: 参数约是 405B 的 0.30 倍, 分数只差不到 1 个点.
 
 <!-- page 8 of 11 -->
 
@@ -240,7 +240,7 @@ The chart is titled "Function Calling", with Accuracy (%) from 0 to 60 and five 
 图的标题是 「Function Calling」, 纵轴 Accuracy (%) 从 0 到 60, 五根柱子: Mistral Large, Claude 3.5 Sonnet, Claude 3 Opus, GPT 4o, Mistral Large 2.
 
 > **再看:** 这是哪个函数调用基准?
-> 没写. 图上只有 「Function Calling」 和 Accuracy (%), 没有基准名, 没有图注, 也没有 Llama. 读柱高, Mistral Large 约 21, Claude 3.5 Sonnet 约 44, Claude 3 Opus 约 43.5, GPT 4o 约 47, Mistral Large 2 约 48 最高 (都是估算).
+> 没写. 图上只有 「Function Calling」 和 Accuracy (%), 没有基准名, 没有图注, 也没有 Llama. 读柱高, Mistral Large 约 21, Claude 3.5 Sonnet 约 44, Claude 3 Opus 约 43.5, GPT 4o 约 47, Mistral Large 2 约 48 最高.
 
 ## Try Mistral Large 2 on la Plateforme
 

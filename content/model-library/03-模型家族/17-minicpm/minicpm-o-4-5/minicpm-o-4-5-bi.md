@@ -111,14 +111,14 @@ Figure 4: End-to-end omni-modal architecture of MiniCPM-o 4.5. Modality encoders
 **文本解码.** LLM 主干 (Qwen3-8B [10]) 生成文本输出, 以及供语音生成用的隐状态. 由于主干只生成文本域的 token, 实时全双工交互时每秒只需 3 到 4 步解码 (也就是人说话的语速). 如果像近期一些工作 [11, 12] 那样让主干直接生成语音 token (通常每秒约 25 个), 效率会明显受拖累, 核心语言能力也容易退化 [13, 14]. 我们的设计把语音 token 的生成交给下面介绍的轻量语音解码器, 避开了这个问题.
 
 > **回看:** 图 4 每秒只画了 3 个 V, 2 个 A, 和正文的 「每片 64 个视觉 token, 每秒 10 个音频 token」 对得上吗?
-> 对不上, 图 4 是示意. 回看图 4 的输出一行更有信息: 第 0 到 1 秒只输出一个 sl (静默 token), 之后每秒是一个 sp (说话 token) 加两个文本 token, 正好 3 步, 和这里 「每秒 3 到 4 步解码」 一致. 输入侧页面只给了音频的每秒 10 个 token; 全双工模式每秒取几帧画面, 本页没有写. 若按每秒 1 帧 448×448, 每秒输入约 64 + 10 = 74 个 token (估算).
+> 对不上, 图 4 是示意. 回看图 4 的输出一行更有信息: 第 0 到 1 秒只输出一个 sl (静默 token), 之后每秒是一个 sp (说话 token) 加两个文本 token, 正好 3 步, 和这里 「每秒 3 到 4 步解码」 一致. 输入侧页面只给了音频的每秒 10 个 token; 全双工模式每秒取几帧画面, 本页没有写. 若按每秒 1 帧 448×448, 每秒输入约 64 + 10 = 74 个 token.
 
 **Speech Token Generation**. Speech generation demands not only correct pronunciation but also prosody and style shaped by context and instructions. We address this by leveraging the contextual understanding capability of the LLM backbone. For each text token passed to the lightweight Llama speech token decoder (∼0.3B), we sum its LLM backbone hidden states (reshaped by an MLP layer) and its speech decoder for further S3 [15] token generation. With prosodic decisions pre-encoded by the LLM backbone, the small speech decoder can devote its capacity to speech modeling. Moreover, input text tokens and output speech tokens are interleaved in a time-aligned manner to ensure output speech tightly couples with the concurrent environment context as detailed in Section 3.4.
 
 **语音 token 生成.** 语音生成不只要求发音正确, 还要求韵律和风格符合上下文与指令. 我们借助 LLM 主干的上下文理解能力来解决. 每个传给轻量 Llama 语音 token 解码器 (约 0.3B) 的文本 token, 都把它在 LLM 主干里的隐状态 (经一层 MLP 变换形状) 与它在语音解码器里的表示相加, 再用来生成 S3 [15] token. 韵律上的决定已经由 LLM 主干预先编码好, 小语音解码器可以把容量集中在语音建模上. 此外, 输入的文本 token 和输出的语音 token 按时间对齐交错排列, 保证输出语音和同一时刻的环境上下文紧密耦合, 细节见 3.4 节.
 
 > **问:** 「sum its LLM backbone hidden states and its speech decoder」 这半句缺了宾语, 和隐状态相加的到底是什么?
-> PDF 原文就是这样写的, 不是转写丢字. 能补上宾语的是第 22 页表 13: 语音 token 解码器单列了一个 「Text embedding layer 116.8M」, 文本词表 152,064, 152,064 × 768 = 116.8M (估算), 所以相加的应是该文本 token 在语音解码器里的嵌入. 同一张表里 LLM 主干的词表是 151,748, 两个词表差 316 项, 本页没解释为什么语音解码器用另一套词表大小. 另外 「reshaped by an MLP layer」 在表 13 里对应 「Backbone-to-Decoder Projector」, 是两层 MLP, 不是一层.
+> PDF 原文就是这样写的, 不是转写丢字. 能补上宾语的是第 22 页表 13: 语音 token 解码器单列了一个 「Text embedding layer 116.8M」, 文本词表 152,064, 152,064 × 768 = 116.8M, 所以相加的应是该文本 token 在语音解码器里的嵌入. 同一张表里 LLM 主干的词表是 151,748, 两个词表差 316 项, 本页没解释为什么语音解码器用另一套词表大小. 另外 「reshaped by an MLP layer」 在表 13 里对应 「Backbone-to-Decoder Projector」, 是两层 MLP, 不是一层.
 
 **Waveform Synthesis**. A streaming flow-matching decoder [16, 12] converts generated S3 speech tokens into audio waveforms, based on the reference audio in the multimodal system prompt.
 
@@ -307,7 +307,7 @@ The joint supervised fine-tuning stage activates omni-modal capabilities and str
 联合 SFT 阶段激活全模态能力, 加强指令遵循. 它分两步: 先做大规模指令微调, 适配广泛的能力; 再用高质量人工标注数据微调, 精细修整行为. 为了让推理时能灵活权衡质量和效率, 我们用不同分辨率和帧率增广全模态数据: 最大帧分辨率随机取 0.2 到 0.4 百万像素, 帧率在 1 到 5 FPS 之间均匀采样.
 
 > **确认:** 这里训练帧分辨率最高到 0.4 百万像素, 第 3 页却说全双工流式模式最大 448×448, 两处能同时成立吗?
-> 448 × 448 = 200,704 像素, 约 0.2 百万像素, 正好是这里区间的下限; 0.4 百万像素约合 632 × 632 (估算), 已超过第 3 页全双工模式的上限. 两处说的对象也不完全一样: 第 3 页讲推理时的全双工模式, 这里讲 SFT 阶段所有全模态数据的增广. 本页没说全双工推理时取区间里的哪个值, 也没说帧率默认取几 FPS, 能确认的只是训练覆盖了 0.2 到 0.4 百万像素和 1 到 5 FPS, 推理时的具体取值要以代码仓库为准.
+> 448 × 448 = 200,704 像素, 约 0.2 百万像素, 正好是这里区间的下限; 0.4 百万像素约合 632 × 632, 已超过第 3 页全双工模式的上限. 两处说的对象也不完全一样: 第 3 页讲推理时的全双工模式, 这里讲 SFT 阶段所有全模态数据的增广. 本页没说全双工推理时取区间里的哪个值, 也没说帧率默认取几 FPS, 能确认的只是训练覆盖了 0.2 到 0.4 百万像素和 1 到 5 FPS, 推理时的具体取值要以代码仓库为准.
 
 <!-- page 9 of 22 -->
 
@@ -472,7 +472,7 @@ As shown in Table 6, MiniCPM-o 4.5 outperforms its backbone LLM in most text-onl
 如表 6 所示, MiniCPM-o 4.5 在多数纯文本任务上超过它的主干 LLM, 具体是复杂推理, 数学, 代码和指令遵循. 这说明合理平衡文本和多模态数据, 可以让模型在获得强多模态能力的同时保住文本能力.
 
 > **拆开:** 「多数任务超过主干, 包括数学和代码」, 把表 6 八项拆开看是几胜几负?
-> 第 12 页表 6: 高于 Qwen3-8B-Instruct 的是 IFEval-PLS (84.7 对 83.0), BBH (81.1 对 69.4), CMMLU (79.6 对 78.7), MBPP (76.7 对 75.9), GSM8K (94.5 对 93.4), 共 5 项; HumanEval 都是 86.6, 持平; 落后的是 MMLU (77.0 对 81.7) 和 Math500 (77.0 对 84.0). 数学两项一胜一负, Math500 还落后 7.0, 「数学」 这个词不宜笼统地放进领先项. 8 项简单平均, 主干 81.5875, MiniCPM-o 4.5 是 82.15 (估算), 表里分别写 81.6 和 82.1, 后者四舍五入应是 82.2, 可能是用未取整的分数算的. 主干的名字在本页有三种写法: 第 4 页 「Qwen3-8B」, 这里 「Qwen3-Instruct-8B」, 表 6 「Qwen3-8B-Instruct」; 而且第 8 页说初始化来自 MiniCPM-V 4.5 的 checkpoint, 不是直接从 Qwen3-8B-Instruct 起步.
+> 第 12 页表 6: 高于 Qwen3-8B-Instruct 的是 IFEval-PLS (84.7 对 83.0), BBH (81.1 对 69.4), CMMLU (79.6 对 78.7), MBPP (76.7 对 75.9), GSM8K (94.5 对 93.4), 共 5 项; HumanEval 都是 86.6, 持平; 落后的是 MMLU (77.0 对 81.7) 和 Math500 (77.0 对 84.0). 数学两项一胜一负, Math500 还落后 7.0, 「数学」 这个词不宜笼统地放进领先项. 8 项简单平均, 主干 81.5875, MiniCPM-o 4.5 是 82.15, 表里分别写 81.6 和 82.1, 后者四舍五入应是 82.2, 可能是用未取整的分数算的. 主干的名字在本页有三种写法: 第 4 页 「Qwen3-8B」, 这里 「Qwen3-Instruct-8B」, 表 6 「Qwen3-8B-Instruct」; 而且第 8 页说初始化来自 MiniCPM-V 4.5 的 checkpoint, 不是直接从 Qwen3-8B-Instruct 起步.
 
 <!-- page 12 of 22 -->
 
@@ -560,7 +560,7 @@ Table 8: Vision-only full-duplex benchmark results.
 **长度奖励消融.** 我们对长度奖励的设计做消融, 考察回答效率和任务性能之间的取舍. 做了一次轻量的 RL 训练实验, 报告 MMBench, MathVista, MMMU, AI2D, OCRBench, HallusionBench, MMStar 上的平均结果. 对比对象是 Kimi K1.5 风格的长度奖励 [30] 和我们提出的平滑长度奖励. 如表 9 所示, K1.5 风格的奖励在思考模式下把回答长度猛砍 50.7%, 但基准平均分也从 73.5 降到 73.0. 我们的方法在思考任务上长度减少 35.3%, 幅度更温和, 基准平均分反而升到 74.3. instruct 模式下两种方法都把长度减少约 20%, 我们的方法保持了最好的平均分. 图 6 的训练曲线进一步解释了两种设计的差别: K1.5 风格的奖励在后期训练准确率明显放缓, 甚至略有下降, 说明过于激进的长度奖励会和正确率奖励冲突, 压制进一步的优化. 我们的方法靠更平滑的奖励塑形避开了这种不稳定, 训练轨迹更接近不加长度奖励的基线, 同时长度仍大幅减少. 这些结果说明, 我们的长度奖励在效率和性能之间取得了更好的平衡: 去掉了不必要的冗长推理, 又不过度惩罚有用的中间推理步骤.
 
 > **拆开:** 表 9 的 「基准平均」 把 OCRBench 也平均进去了, OCRBench 是千分制, 这个平均怎么算?
-> 本页没说换算方式. 拆开看量级: 表 2 表 3 里 MiniCPM-o 4.5 的 OCRBench 是 876 和 879, 如果按原始分数和其他六项百分制分数直接平均, 均值会被拉到 150 以上 (估算), 而表 9 的平均是 73.0 到 74.3, 所以 OCRBench 一定先除以 10 之类换成了百分制. 另外 instruct 一列 「我们的方法保持最好」 其实是 70.9 与不加长度奖励的 70.9 持平. 这是轻量实验的平均, 数值不能和表 2 表 3 的正式成绩对照.
+> 本页没说换算方式. 拆开看量级: 表 2 表 3 里 MiniCPM-o 4.5 的 OCRBench 是 876 和 879, 如果按原始分数和其他六项百分制分数直接平均, 均值会被拉到 150 以上, 而表 9 的平均是 73.0 到 74.3, 所以 OCRBench 一定先除以 10 之类换成了百分制. 另外 instruct 一列 「我们的方法保持最好」 其实是 70.9 与不加长度奖励的 70.9 持平. 这是轻量实验的平均, 数值不能和表 2 表 3 的正式成绩对照.
 
 **Comparison of Speech Generation Modes.** Table 10 compares three speech generation modes: non-interleaved generation, our fixedtext interleaving, and our dynamic-text interleaving strategy TAIL. Fixed-text interleaving achieves the best CER/WER, suggesting that chunked streaming generation can improve pronunciation accuracy over synthesizing speech after the full text is generated. TAIL is designed for the more challenging full-duplex setting, where text and speech must stay temporally aligned. Although it slightly sacrifices recognition accuracy, especially on English WER, it maintains reasonable overall speech quality, hitting a practical trade-off between streaming interaction and speech generation quality.
 
@@ -602,7 +602,7 @@ We first evaluate the inference efficiency of MiniCPM-o 4.5 under the standard v
 我们先在标准 vLLM [88] 设定下评估 MiniCPM-o 4.5 的推理效率. 如表 11 所示, 在单张 NVIDIA RTX 4090 上, MiniCPM-o 4.5 相比 Qwen3-Omni-30B-A3B 在吞吐和显存上都有明显优势. BF16 下 Qwen3-Omni-30B-A3B 显存不足, MiniCPM-o 4.5 则以 19 GB 显存跑到 154.3 tokens/s. INT4 下 MiniCPM-o 4.5 进一步达到 212.3 tokens/s, 首 token 延迟更低, 显存约为 Qwen3-Omni-30B-A3B 的一半.
 
 > **问:** Qwen3-Omni 名字里的 A3B 表示每个 token 只激活约 3B 参数, 比 MiniCPM-o 4.5 的 8B 稠密主干还少, 「计算效率明显更高」 凭的是什么?
-> 本页的证据全在表 11 和表 12, 都是实测的吞吐, 延迟, 显存, 没有每 token 算力的对比. INT4 下吞吐 212.3 对 147.8 tokens/s, 约 1.44 倍 (估算); 首 token 延迟 0.58 对 0.98 s; 显存 11 对 20 GB, 约 55%, 正文说 「接近一半」. BF16 下 Qwen3-Omni 在单卡 4090 上放不下, 这是总参数 30B 决定的, 和激活量无关. 所以摘要里的 「计算效率」 实际指单卡上的吞吐和显存, 表 11 的吞吐又是在纯文本任务上测的. 表 12 的 RTF 没写测的是哪种输入 (纯语音, 音视频还是全双工), 只能说 llama.cpp-omni INT4 的 0.21 和 0.20 都远小于 1, 能跟上实时.
+> 本页的证据全在表 11 和表 12, 都是实测的吞吐, 延迟, 显存, 没有每 token 算力的对比. INT4 下吞吐 212.3 对 147.8 tokens/s, 约 1.44 倍; 首 token 延迟 0.58 对 0.98 s; 显存 11 对 20 GB, 约 55%, 正文说 「接近一半」. BF16 下 Qwen3-Omni 在单卡 4090 上放不下, 这是总参数 30B 决定的, 和激活量无关. 所以摘要里的 「计算效率」 实际指单卡上的吞吐和显存, 表 11 的吞吐又是在纯文本任务上测的. 表 12 的 RTF 没写测的是哪种输入 (纯语音, 音视频还是全双工), 只能说 llama.cpp-omni INT4 的 0.21 和 0.20 都远小于 1, 能跟上实时.
 
 To further improve deployment efficiency for the full-duplex streaming mode, we develop an efficient inference framework based on llama.cpp [89], termed llama.cpp-omni. The framework is tailored to the streaming interaction paradigm of MiniCPM-o 4.5 and enables smooth execution across multiple hardware platforms. Beyond runtime efficiency, we also validate its compatibility across different operating systems, including macOS, Windows, and Linux. We further provide a lightweight demo system, allowing users to quickly deploy MiniCPM-o 4.5 on their own hardware and experience its real-time speech, vision-language, and full-duplex omni-modal interaction capabilities. Table 12 compares the real-time factor (RTF) and memory usage of different inference frameworks across hardware configurations. Compared with the PyTorch implementation, llama.cpp-omni substantially reduces RTF on both RTX 4090 and DGX Spark while maintaining a lower memory footprint under INT4 quantization, demonstrating its effectiveness for efficient real-time deployment.
 
@@ -837,4 +837,4 @@ Table 13: Architectural hyperparameters of MiniCPM-o 4.5.
 表 13 按部件列出: 视觉编码器 SigLIP ViT (417.8M), 视觉 Resampler (88.9M), 音频编码器 Whisper Medium 编码器 (307.2M), 音频投影器 (21.0M), LLM 主干 Qwen3-8B (8,189.2M), 主干到解码器投影器 (10.5M), 语音 token 解码器 (文本嵌入层 116.8M, Transformer 188.8M). LLM 主干用 GQA, 32 个注意力头配 8 个 KV 头, 最大上下文 40,960, RoPE θ 为 10^6, 输入输出嵌入不共享. 语音 token 解码器是 20 层, 宽 768 的 Transformer, 单码本, 码本大小 6,562, 每秒 25 个语音 token.
 
 > **核对:** 表 13 各部件的参数量, 能用同表的超参数复算出来吗?
-> 大多能. 八项相加是 9,340.2M, 与第 21 页的 9.34B 一致. 音频投影器 1024×4096 + 4096×4096 = 20.97M, 对上 21.0M; 语音解码器文本嵌入 152,064×768 = 116.8M; 语音解码器 Transformer 按每层 4×768² + 3×768×3,072 算, 20 层约 188.7M, 对上 188.8M; LLM 主干按 36 层注意力加门控 FFN, 再加两份不共享的 151,748×4,096 嵌入, 约 8,189.2M, 与表一致 (以上均为估算). 对不上的是主干到解码器投影器: 4096×768 + 768×768 = 3.74M (估算), 表里却写 10.5M, 差了近 7M, 按列出的维度怎么算都到不了 10.5M. 另外语音码本 6,562 个码的嵌入和输出层没有单列, 流式 flow-matching 解码器也不在表中.
+> 大多能. 八项相加是 9,340.2M, 与第 21 页的 9.34B 一致. 音频投影器 1024×4096 + 4096×4096 = 20.97M, 对上 21.0M; 语音解码器文本嵌入 152,064×768 = 116.8M; 语音解码器 Transformer 按每层 4×768² + 3×768×3,072 算, 20 层约 188.7M, 对上 188.8M; LLM 主干按 36 层注意力加门控 FFN, 再加两份不共享的 151,748×4,096 嵌入, 约 8,189.2M, 与表一致. 对不上的是主干到解码器投影器: 4096×768 + 768×768 = 3.74M, 表里却写 10.5M, 差了近 7M, 按列出的维度怎么算都到不了 10.5M. 另外语音码本 6,562 个码的嵌入和输出层没有单列, 流式 flow-matching 解码器也不在表中.

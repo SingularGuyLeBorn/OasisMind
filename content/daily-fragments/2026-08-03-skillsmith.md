@@ -7,9 +7,8 @@ tags: ["Google", "SkillSmith", "权重合成", "模型架构", "前沿研究"]
 ---
 # 2026-08-03 碎片:SkillSmith--让模型像读文本一样读权重
 
-> 来源:轻舟 AI 论文解读(QQ 截图,原出处待补,疑似知乎)
+> 来源:轻舟 AI 论文解读(QQ 截图)
 > 论文:SkillSmith: Learning to Compose Parametric Skills and Textual Knowledge(Google)
-> 状态:已初步整理,待后续决定是否归入正式知识库
 
 ## 一句话核心
 

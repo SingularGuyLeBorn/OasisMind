@@ -504,7 +504,7 @@ Table 8: SimpleQA evaluations
 表 8 是不联网的 SimpleQA, 两行指标: 准确率 (越高越好) 和幻觉率 (越低越好). gpt-5-thinking-mini 准确率 0.22 与 o4-mini 的 0.24 相近, 幻觉率却从 0.75 降到 0.26.
 
 > **看表:** 表 8 里 gpt-5-thinking-mini 准确率还略低, 为什么说它 「弃答行为显著改善」?
-> 把准确率和幻觉率相加, 剩下的就是弃答比例 (估算, 前提是三者互斥且相加为 1). gpt-5-thinking-mini: 1 − 0.22 − 0.26 = 0.52, 过半题目选择不答; o4-mini: 1 − 0.24 − 0.75 = 0.01, 几乎每题都硬答. 准确率只差 0.02, 幻觉率差 0.49, 差别几乎全来自 「不会就不答」. 同样算法下 gpt-5-thinking 弃答约 0.05, o3 约 0.00.
+> 把准确率和幻觉率相加, 剩下的就是弃答比例 (前提是三者互斥且相加为 1). gpt-5-thinking-mini: 1 − 0.22 − 0.26 = 0.52, 过半题目选择不答; o4-mini: 1 − 0.24 − 0.75 = 0.01, 几乎每题都硬答. 准确率只差 0.02, 幻觉率差 0.49, 差别几乎全来自 「不会就不答」. 同样算法下 gpt-5-thinking 弃答约 0.05, o3 约 0.00.
 
 ## 3.8 Deception (欺骗)
 
@@ -584,7 +584,7 @@ We validated the monitor’s performance on an internal dataset of deceptive and
 我们在一个含欺骗与非欺骗对话的内部数据集上验证了监控器性能, 估计精确率 81%, 召回率 84%. 这些指标合并了多种欺骗类型, 有的相对轻微, 有的更令人担忧. 我们又跑了一步二级分类, 把在 o3 与 gpt-5-thinking 流量里观察到的欺骗分成不同类型. 除一类外, 在所有测量的类别上, 我们的干预都让 gpt-5-thinking 的欺骗率低于 OpenAI o3. 在 gpt-5-thinking 欺骗更多的那一类里, 模型决定不引用来源, 尽管系统提示要求必须引用; 不过其中很多情况下, 模型本来就没有相关引用可给.
 
 > **回看:** 监控器精确率 81%, 召回率 84%, 那 2.1% 的 「标记率」 离真实欺骗率有多远?
-> 标记率乘精确率得到真阳性占比, 再除以召回率还原真实发生率 (估算): gpt-5-thinking 约 2.1% × 0.81 / 0.84 ≈ 2.0%, o3 约 4.8% × 0.81 / 0.84 ≈ 4.6%. 精确率和召回率接近, 所以标记率和真实率差得不多, 两者的比值 (约 2.3 倍) 基本不受影响. 前提是内部验证集的分布和生产流量相近, 本文没证明这一点.
+> 标记率乘精确率得到真阳性占比, 再除以召回率还原真实发生率: gpt-5-thinking 约 2.1% × 0.81 / 0.84 ≈ 2.0%, o3 约 4.8% × 0.81 / 0.84 ≈ 4.6%. 精确率和召回率接近, 所以标记率和真实率差得不多, 两者的比值 (约 2.3 倍) 基本不受影响. 前提是内部验证集的分布和生产流量相近, 本文没证明这一点.
 
 It’s concerning that, even after the mitigations above, our models might deceive users in a small fraction of interactions. We’re excited that CoT monitoring enables us to identify and prioritize mitigations in our reasoning models. We are continuing to invest in these techniques and believe the importance of this work will grow as models continue to become more capable.
 
@@ -1174,7 +1174,7 @@ Above shows the results running OpenAI o3, ChatGPT agent, gpt-5-thinking, and gp
 上图是 OpenAI o3, ChatGPT agent, gpt-5-thinking 和 gpt-5-thinking-mini 在新网络靶场数据集上的结果. OpenAI o3 与它在自己系统卡里的原始结果相近, ChatGPT agent 则得分更高: 原因是轻度场景用的试验次数比 ChatGPT agent 原始发布时多. 这里 ChatGPT agent 在 30 次试验中解出简单权限提升场景 1 次, 其余场景 30 次都是 0 次; 而在它自己的系统卡里, 16 次尝试一次都没解出.
 
 > **问:** 30 次里只解出 1 次, 图 15 却给 ChatGPT agent 轻度 pass@12 记了 10%, 这个数怎么来的?
-> 用 pass@k 的无偏估计可以算回来 (估算): n = 30 次里成功 c = 1 次, pass@12 = 1 − C(29,12) / C(30,12) = 12 / 30 = 0.40. 轻度共 4 个场景, 其余 3 个为 0, 平均 0.40 / 4 = 10%. 同理 gpt-5-thinking-mini 成功 2 次: 1 − C(28,12) / C(30,12) = 1 − (18 × 17) / (30 × 29) ≈ 0.648, 除以 4 约 16.2%, 与图 15 的 16% 对得上. 这也说明 「试验次数从 16 增到 30」 本身就会抬高 pass@12.
+> 用 pass@k 的无偏估计可以算回来: n = 30 次里成功 c = 1 次, pass@12 = 1 − C(29,12) / C(30,12) = 12 / 30 = 0.40. 轻度共 4 个场景, 其余 3 个为 0, 平均 0.40 / 4 = 10%. 同理 gpt-5-thinking-mini 成功 2 次: 1 − C(28,12) / C(30,12) = 1 − (18 × 17) / (30 × 29) ≈ 0.648, 除以 4 约 16.2%, 与图 15 的 16% 对得上. 这也说明 「试验次数从 16 增到 30」 本身就会抬高 pass@12.
 
 For the gpt-5 models, gpt-5-thinking performs similarly to OpenAI o3: it is unable to solve any of the cyber range scenarios unaided. With hints, it solves two of the light scenarios – Simple Privilege Escalation and Azure SSRF – infrequently, though slightly improved over OpenAI o3. Compared to ChatGPT agent, gpt-5-thinking does worse for both the aided and unaided light scenarios.
 
@@ -1466,7 +1466,7 @@ Figure 26
 图 26
 
 > **停一下:** OPQA 共 20 题, 2% 的 pass@1 意味着解出几题?
-> 20 题的 2% 是 0.4 题 (估算), 不到一题. 这说明 pass@1 是多次尝试的平均通过率, 不是 「解出的题数 / 20」: 可能是某一题在若干次尝试中偶尔成功. 图 26 里四个模型为 2%, 1%, 2%, 1%, 相差不到一题的量级, 「gpt-5-thinking scores the highest」 在统计上与其他模型分不开, 这正是第 5.1 节说小数据集会低估不确定性的典型情形.
+> 20 题的 2% 是 0.4 题, 不到一题. 这说明 pass@1 是多次尝试的平均通过率, 不是 「解出的题数 / 20」: 可能是某一题在若干次尝试中偶尔成功. 图 26 里四个模型为 2%, 1%, 2%, 1%, 相差不到一题的量级, 「gpt-5-thinking scores the highest」 在统计上与其他模型分不开, 这正是第 5.1 节说小数据集会低估不确定性的典型情形.
 
 <!-- page 42 of 60 -->
 
@@ -1511,7 +1511,7 @@ To estimate gpt-5-thinking’s autonomous software capabilities, METR used the m
 为估计 gpt-5-thinking 的自主软件能力, METR 采用了[他们近期论文](https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/)里的方法. 观察到的 gpt-5-thinking 50% 时间跨度约为 2h15m (95% 置信区间 65m 到 4h30m), 而 OpenAI o3 是 1h30m. 2h15m 这个点估计与自主能力的长期趋势一致. 虽然模型在底层任务上可能已接近饱和, METR 仍找出了至少 7 个 gpt-5-thinking 从未成功的任务, 并确信这些失败反映的是模型真实的能力局限, 而非偶然失败 (依据[失败分类](https://metr.github.io/autonomy-evals-guide/elicitation-protocol/)).
 
 > **再看:** 图 27 的 「倍增时间 213 天」 能推出 o3 到 gpt-5-thinking 该涨多少吗?
-> 可以粗算 (估算). o3 发布于 2025 年 4 月中, gpt-5-thinking 于 8 月初, 相隔约 113 天. 按 213 天倍增, 期望倍数 2^(113/213) ≈ 1.45, 1h30m × 1.45 ≈ 2h10m, 与观察到的 2h15m 很接近, 这就是 「consistent with the long-term trend」. 另有两处小出入: 图上方文字写置信区间 「1 - 4.5 hours」, 正文写 「65m - 4h30m」, 下限差 5 分钟; 图 27 标注的拟合数据截至 2025-03-01, R² 为 0.98.
+> 可以粗算. o3 发布于 2025 年 4 月中, gpt-5-thinking 于 8 月初, 相隔约 113 天. 按 213 天倍增, 期望倍数 2^(113/213) ≈ 1.45, 1h30m × 1.45 ≈ 2h10m, 与观察到的 2h15m 很接近, 这就是 「consistent with the long-term trend」. 另有两处小出入: 图上方文字写置信区间 「1 - 4.5 hours」, 正文写 「65m - 4h30m」, 下限差 5 分钟; 图 27 标注的拟合数据截至 2025-03-01, R² 为 0.98.
 
 <!-- page 43 of 60 -->
 

@@ -33,13 +33,13 @@
 
 名字里的尺寸是 3B 和 8B. 总参数: 本页未印. 激活参数: 本页未印. 页面对量级只有一句 「in the sub-10B category」, 其余规格 (层数, 隐藏维度, 注意力头数, FFN 宽度, 词表大小) 都没印, 所以没法从本页自己推一个参数量出来. 同目录的 Mistral 7B 解读里有 7B 的规格表, 那是另一个模型的数, 本文不搬, 也不从后来的同名模型搬参数.
 
-这意味着 3B 和 8B 在本页只能当作名字里的量级标签来读. 价格和它们的比例也只能按名字粗比: 8B 的 API 价格是 3B 的 2.5 倍, 名字里的尺寸比是 8 / 3 ≈ 2.67 (估算, 只按名字比). 两者接近, 但这不能反推参数量, 定价还掺着市场因素.
+这意味着 3B 和 8B 在本页只能当作名字里的量级标签来读. 价格和它们的比例也只能按名字粗比: 8B 的 API 价格是 3B 的 2.5 倍, 名字里的尺寸比是 8 / 3 ≈ 2.67 (只按名字比). 两者接近, 但这不能反推参数量, 定价还掺着市场因素.
 
 「sub-10B category」 这个档位本身也没定义边界. 表 2 把 Gemma 2 9B 放进 8B 那一组比, 表 1 却没有 Gemma 2 9B; 对手里名字最大的是 9B, 最小的是 2B. 3B 组里, Ministral 3B 对上的 Gemma 2 2B 和 Llama 3.2 3B 名字分别是 2B 和 3B; 8B 组里对上的是 7B, 8B 和 9B. 页面说 「set a new frontier ... in the sub-10B category」, 读的时候要记得分组是按名字里的尺寸分的.
 
 ## 3. 架构线索: 128k, 32k 和交错滑动窗口
 
-全文和架构有关的只有两句. 第一句是上下文: 「Both models support up to 128k context length (currently 32k on vLLM)」. 128k 是 32k 的 4 倍 (估算), 页面没说为什么 vLLM 上只开到 32k, 也没说 mistral-inference 或 la Plateforme 上开到多少. 九页里没有长文检索, 长文问答之类的评测, 训练时见过多长的序列也没写.
+全文和架构有关的只有两句. 第一句是上下文: 「Both models support up to 128k context length (currently 32k on vLLM)」. 128k 是 32k 的 4 倍, 页面没说为什么 vLLM 上只开到 32k, 也没说 mistral-inference 或 la Plateforme 上开到多少. 九页里没有长文检索, 长文问答之类的评测, 训练时见过多长的序列也没写.
 
 第二句是注意力: 「Ministral 8B has a special interleaved sliding-window attention pattern for faster and memory-efficient inference」. 这句只给了 8B. 「interleaved」 字面意思是交错, 常见做法是滑动窗口层和全局注意力层按某种比例交替, 但本页没说窗口多大, 交错比例是多少, 哪些层用哪种. 3B 用什么注意力, 页面一字未提. 滑动窗口能省显存, 是因为 KV cache 只需存窗口内的 token, 这是做法本身的性质; 8B 具体省多少, 本页算不出来.
 
@@ -49,21 +49,21 @@
 
 表 1 露出五列: HumanEval pass@1, GSM8K maj@8, French MMLU, German MMLU, Spanish MMLU, 分属 Code, Math, Multilingual 三组. 六行数字, 第 3 行与第 4 行之间有横线, 加粗是组内最高. 行名被遮, 但第 5, 6 行能认出来: 图 1 图例露出 「LLama 3.1 8B」 和 「Ministral 8B」, 两者在 GSM8k 组的柱高约 61.7 和 64.5, 与表 1 第 5, 6 行的 GSM8K 值一致. 前四行按图注和表 2 的排法推断为 Gemma 2 2B, Llama 3.2 3B, Ministral 3B, Mistral 7B, 下文凡用到这四行的身份都带着这个前提.
 
-先看 8B 组. Ministral 8B 对 Llama 3.1 8B 五列差值是 -3.0, +2.8, +6.7, +4.6, +5.0 (估算); 对第 4 行 (推断为 Mistral 7B) 是 +8.0, +13.2, +6.9, +7.8, +8.2. HumanEval 这一列加粗的是 Llama 3.1 8B 的 37.8, Ministral 8B 只有 34.8, 「consistently outperform their peers」 在这一格不成立. 五列平均, 第 5 行约 51.5, 第 6 行约 54.8 (估算).
+先看 8B 组. Ministral 8B 对 Llama 3.1 8B 五列差值是 -3.0, +2.8, +6.7, +4.6, +5.0; 对第 4 行 (推断为 Mistral 7B) 是 +8.0, +13.2, +6.9, +7.8, +8.2. HumanEval 这一列加粗的是 Llama 3.1 8B 的 37.8, Ministral 8B 只有 34.8, 「consistently outperform their peers」 在这一格不成立. 五列平均, 第 5 行约 51.5, 第 6 行约 54.8.
 
-再看 3B 组. 第 3 行 (推断为 Ministral 3B) 对第 1 行是 +14.1, +15.4, +8.1, +8.2, +7.8, 对第 2 行是 +4.3, +13.7, +6.8, +6.1, +6.4, 组内每列都最高. 但它和横线下的第 4 行比: +7.4, -0.4, -1.5, -1.3, -1.9, 只赢 HumanEval 一列. 五列平均第 3 行约 46.4, 第 4 行约 45.9 (估算), 靠 HumanEval 的 7.4 分略占上风. 同家族内, 第 6 行比第 3 行高 +0.6, +13.6, +8.4, +9.1, +10.1, HumanEval 几乎持平.
+再看 3B 组. 第 3 行 (推断为 Ministral 3B) 对第 1 行是 +14.1, +15.4, +8.1, +8.2, +7.8, 对第 2 行是 +4.3, +13.7, +6.8, +6.1, +6.4, 组内每列都最高. 但它和横线下的第 4 行比: +7.4, -0.4, -1.5, -1.3, -1.9, 只赢 HumanEval 一列. 五列平均第 3 行约 46.4, 第 4 行约 45.9, 靠 HumanEval 的 7.4 分略占上风. 同家族内, 第 6 行比第 3 行高 +0.6, +13.6, +8.4, +9.1, +10.1, HumanEval 几乎持平.
 
-图 1 可以补上表 1 被遮的部分. 按像素读柱高 (读图估算, 误差约 ±0.5), 四组各六根柱: 第 1 组约 52.3, 56.2, 64.8, 60.9, 62.4, 65.0; 第 2 组约 41.0, 42.5, 52.7, 48.9, 50.6, 64.2; GSM8k 组约 35.5, 37.2, 61.7, 50.9, 51.3, 64.5; Knowledge & Commonsense 组约 49.1, 50.0, 54.5, 62.8, 64.8, 67.9. GSM8k 组的柱序对应表 1 的第 1, 2, 5, 3, 4, 6 行. 第 1 组和 Knowledge 组在表 1 露出的列里找不到, 应属被遮住的左侧列. 这两组里 Ministral 8B 分别只比 Llama 3.1 8B 高约 0.2 和 13.4, 第 1 组几乎打平.
+图 1 可以补上表 1 被遮的部分. 按像素读柱高 (读图, 误差约 ±0.5), 四组各六根柱: 第 1 组约 52.3, 56.2, 64.8, 60.9, 62.4, 65.0; 第 2 组约 41.0, 42.5, 52.7, 48.9, 50.6, 64.2; GSM8k 组约 35.5, 37.2, 61.7, 50.9, 51.3, 64.5; Knowledge & Commonsense 组约 49.1, 50.0, 54.5, 62.8, 64.8, 67.9. GSM8k 组的柱序对应表 1 的第 1, 2, 5, 3, 4, 6 行. 第 1 组和 Knowledge 组在表 1 露出的列里找不到, 应属被遮住的左侧列. 这两组里 Ministral 8B 分别只比 Llama 3.1 8B 高约 0.2 和 13.4, 第 1 组几乎打平.
 
-第 2 组标签被遮. 把表 1 三个 MMLU 取平均 (估算), 六行是 40.9, 42.5, 49.0, 50.5, 52.7, 58.2; 按同样柱序对过去, 前五根柱和均值的差都在 0.1 左右, 唯独 Ministral 8B 的柱约 64.2, 比均值高约 6 个点. 如果第 2 组画的就是多语言均值, 图 1 在这一根柱上和表 1 对不上; 如果画的是别的指标, 五根柱恰好都等于多语言均值又太巧. 这是全页最值得换一份无遮挡截图去核的一处.
+第 2 组标签被遮. 把表 1 三个 MMLU 取平均, 六行是 40.9, 42.5, 49.0, 50.5, 52.7, 58.2; 按同样柱序对过去, 前五根柱和均值的差都在 0.1 左右, 唯独 Ministral 8B 的柱约 64.2, 比均值高约 6 个点. 如果第 2 组画的就是多语言均值, 图 1 在这一根柱上和表 1 对不上; 如果画的是别的指标, 五根柱恰好都等于多语言均值又太巧. 这是全页最值得换一份无遮挡截图去核的一处.
 
 ## 5. 表 2 与图 2, 图 3: 指令模型
 
-表 2 七行七列, 行名完整. 列头上半截被切, 能认出的残字是 C2 「...Hard」, C3 「...bench」, C4 和 C5 「pass@1」, C6 「maj@1」 (字形残缺), C7 「...bench」; 分组是 C1 到 C3 「Chat/Arena (gpt-4o judge)」, C4, C5 「Code」, C6 「Math」, C7 「Function calling」. 图 3 的五组柱可以和表 2 一一对上 (读图估算): 第 1 组对 C6, 第 2 组对 C4, 第 3 组对 C3, 「Arena Hard」 对 C2, 「MT-Bench Dev」 对 C1 乘 10. 所以 C2 是 Arena Hard, C1 在表里是 10 分制, 图里画成百分制; C1 的列头本身在表里看不到.
+表 2 七行七列, 行名完整. 列头上半截被切, 能认出的残字是 C2 「...Hard」, C3 「...bench」, C4 和 C5 「pass@1」, C6 「maj@1」 (字形残缺), C7 「...bench」; 分组是 C1 到 C3 「Chat/Arena (gpt-4o judge)」, C4, C5 「Code」, C6 「Math」, C7 「Function calling」. 图 3 的五组柱可以和表 2 一一对上 (读图): 第 1 组对 C6, 第 2 组对 C4, 第 3 组对 C3, 「Arena Hard」 对 C2, 「MT-Bench Dev」 对 C1 乘 10. 所以 C2 是 Arena Hard, C1 在表里是 10 分制, 图里画成百分制; C1 的列头本身在表里看不到.
 
-3B 组里 Ministral 3B 七列全是组内最高. 对 Mistral 7B 的差值是 +1.4, +20.0, +3.2, +17.5, +39.0, +38.5, +21.5 (估算), 对 Llama 3.2 3B 是 +0.9, +18.3, +9.1, +3.1, +16.4, +13.3, C7 无从比. 更醒目的是跨组比较: Ministral 3B 对 8B 组的 Llama 3.1 8B, 六个可比的列里赢四列 (C1 +0.6, C2 +1.9, C5 +10.3, C6 +2.4), 输两列 (C3 -0.7, C4 -2.0). 图 2 只露出 Arena Hard 和 MT-Bench Dev 两组, 纵轴被遮, 用 Arena Hard 的两根柱定比例后, 其余柱高和表 2 相差都在 1.5 分以内 (读图估算), 图表一致.
+3B 组里 Ministral 3B 七列全是组内最高. 对 Mistral 7B 的差值是 +1.4, +20.0, +3.2, +17.5, +39.0, +38.5, +21.5, 对 Llama 3.2 3B 是 +0.9, +18.3, +9.1, +3.1, +16.4, +13.3, C7 无从比. 更醒目的是跨组比较: Ministral 3B 对 8B 组的 Llama 3.1 8B, 六个可比的列里赢四列 (C1 +0.6, C2 +1.9, C5 +10.3, C6 +2.4), 输两列 (C3 -0.7, C4 -2.0). 图 2 只露出 Arena Hard 和 MT-Bench Dev 两组, 纵轴被遮, 用 Arena Hard 的两根柱定比例后, 其余柱高和表 2 相差都在 1.5 分以内 (读图), 图表一致.
 
-8B 组里 Ministral 8B 七列中五列最高. 输的两格: C3 输给 Gemma 2 9B, 41.3 对 43.8; C5 输给自家的 Ministral 3B, 76.8 对 77.4. 对 Gemma 2 9B 的差值是 +0.7, +2.2, -2.5, +1.5, +9.1, +7.1; 对 Llama 3.1 8B 是 +0.8, +8.5, +4.3, +0.3, +9.7, +5.2 (估算). 8B 对 3B 的家族内差值是 +0.2, +6.6, +5.0, +2.3, -0.6, +2.8, +3.2, 名字里的尺寸大了约 2.67 倍, 分数提升却多在 3 分上下, C5 还倒挂.
+8B 组里 Ministral 8B 七列中五列最高. 输的两格: C3 输给 Gemma 2 9B, 41.3 对 43.8; C5 输给自家的 Ministral 3B, 76.8 对 77.4. 对 Gemma 2 9B 的差值是 +0.7, +2.2, -2.5, +1.5, +9.1, +7.1; 对 Llama 3.1 8B 是 +0.8, +8.5, +4.3, +0.3, +9.7, +5.2. 8B 对 3B 的家族内差值是 +0.2, +6.6, +5.0, +2.3, -0.6, +2.8, +3.2, 名字里的尺寸大了约 2.67 倍, 分数提升却多在 3 分上下, C5 还倒挂.
 
 表 2 的 C6 和表 1 的 GSM8K 不宜直接比. 表 1 写明是 GSM8K maj@8, 表 2 C6 的数据集名被切掉, 指标残字像 maj@1. Llama 3.1 8B 基座 GSM8K 61.7, 指令版 C6 49.3; Ministral 8B 是 64.5 和 54.5; Mistral 7B (推断的第 4 行) 更是从 51.3 掉到 13.2. 若 C6 真是 maj@1, 少了 8 次投票, 分数低是正常的, 但数据集是否相同, 本页读不出来.
 
@@ -71,13 +71,13 @@
 
 页面给 les Ministraux 的定位有两层. 一层是本地推理: 端侧翻译, 不联网的智能助手, 本地分析, 自主机器人, 强调 「compute-efficient and low-latency」. 另一层是和 Mistral Large 这类大模型搭配, 在多步 agent 工作流里做函数调用中间层, 负责输入解析, 任务路由和按用户意图调 API. 函数调用的一般机制见本库 [Function Calling](../../../../llm-guide/7-LLM应用开发/7.4-FunctionCalling/7.4-FunctionCalling.md).
 
-支撑这一定位的只有表 2 的 C7 一列. Ministral 3B 28.4, Ministral 8B 31.6, Mistral 7B 6.9, 其余四个对手全是 N/A. 3B 是 Mistral 7B 的约 4.1 倍, 8B 约 4.6 倍 (估算). 列头只剩 「...bench」, 满分多少, 测的是单轮调用还是多步路由, 页面都没说. 对手全是 N/A, 所以 「set a new frontier in ... function-calling」 在本页只有和自家旧模型的比较作证.
+支撑这一定位的只有表 2 的 C7 一列. Ministral 3B 28.4, Ministral 8B 31.6, Mistral 7B 6.9, 其余四个对手全是 N/A. 3B 是 Mistral 7B 的约 4.1 倍, 8B 约 4.6 倍. 列头只剩 「...bench」, 满分多少, 测的是单轮调用还是多步路由, 页面都没说. 对手全是 N/A, 所以 「set a new frontier in ... function-calling」 在本页只有和自家旧模型的比较作证.
 
 「extremely low latency and cost」 同样缺数字. 价格表给了每百万 token 的价钱, 但没有延迟, 没有吞吐, 也没有和 Mistral Large 的价格对照, 读者没法算出 「大模型加小模型中间层」 的组合到底省多少. 这一段更像使用建议, 不是评测结论.
 
 ## 7. 定价, 许可与部署口径
 
-la Plateforme 上两者输入输出同价: 8B 每百万 token 0.1 美元, 3B 0.04 美元. 按这个价格, 处理 10 亿 token, 8B 约 100 美元, 3B 约 40 美元 (估算, 输入输出合计). API 名都带 「-latest」 后缀, 页面没给固定版本号; Hugging Face 链接里的仓库名是 Ministral-8B-Instruct-2410, 后缀 2410 和 「October 16, 2024」 的年月对得上.
+la Plateforme 上两者输入输出同价: 8B 每百万 token 0.1 美元, 3B 0.04 美元. 按这个价格, 处理 10 亿 token, 8B 约 100 美元, 3B 约 40 美元 (输入输出合计). API 名都带 「-latest」 后缀, 页面没给固定版本号; Hugging Face 链接里的仓库名是 Ministral-8B-Instruct-2410, 后缀 2410 和 「October 16, 2024」 的年月对得上.
 
 许可两行不一样. 8B 写了 Mistral Commercial License 和 Mistral Research License 两种, 3B 只写 Mistral Commercial License. 权重方面只说 「Ministral 8B Instruct」 开放给研究用途, 3B 的权重没提, 8B 的基座权重也没提. 自部署要找 Mistral 谈商业许可, Mistral 会按客户场景协助做 「lossless quantization」; 量化到几 bit, 量化前后分数如何, 都没写. 量化的一般做法见本库 [量化](../../../../llm-guide/6-训练与推理优化/6.3-模型压缩/6.3.1-量化/6.3.1-量化.md).
 
@@ -95,7 +95,7 @@ la Plateforme 上两者输入输出同价: 8B 每百万 token 0.1 美元, 3B 0.0
 
 按页面顺序汇总, 前提写在各条里:
 
-1. 图 1 第 2 组 (标签被遮): 前五根柱与表 1 三个 MMLU 的均值相差约 0.1, Ministral 8B 的柱约 64.2, 均值却是 58.2, 差约 6 个点 (估算).
+1. 图 1 第 2 组 (标签被遮): 前五根柱与表 1 三个 MMLU 的均值相差约 0.1, Ministral 8B 的柱约 64.2, 均值却是 58.2, 差约 6 个点.
 2. 「consistently outperform their peers」: 表 1 HumanEval 中 Llama 3.1 8B 37.8 高于 Ministral 8B 34.8; 表 2 C3 中 Gemma 2 9B 43.8 高于 Ministral 8B 41.3.
 3. 「Ministral 3B already outperforms [Mistral 7B] on most benchmarks」: 指令版七列全胜; 基座按推断行序只赢表 1 五列中的 HumanEval 一列, 图 1 可读四组也都落后, 页面没说这句指哪一版.
 4. 表 2 C5: Ministral 3B 77.4 高于 Ministral 8B 76.8, 家族内倒挂 0.6.

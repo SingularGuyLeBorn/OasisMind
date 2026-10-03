@@ -175,7 +175,7 @@ MiniMax-M2.7, 公开仓库. 页面上没有印它的简介和语言.
 分叉 63.
 
 > **看表:** 五个置顶仓库里, 唯一用模型型号命名的 MiniMax-M2.7 星标最少, 这个落差有多大?
-> skills 13.6k, Mini-Agent 3k, cli 2.2k, OpenRoom 1.3k, MiniMax-M2.7 363. skills 约是 MiniMax-M2.7 的 37 倍 (估算: 13600 / 363 ≈ 37.5). 这页只给数字, 没有解释原因, 这里不推测.
+> skills 13.6k, Mini-Agent 3k, cli 2.2k, OpenRoom 1.3k, MiniMax-M2.7 363. skills 约是 MiniMax-M2.7 的 37 倍 (13600 / 363 ≈ 37.5). 这页只给数字, 没有解释原因, 这里不推测.
 
 ## Repositories (仓库列表)
 
@@ -294,14 +294,14 @@ Python [1,585](https://github.com/MiniMax-AI/MiniMax-MCP/stargazers) MIT [284](h
 主语言 Python, 星标 1,585, MIT 许可证, 分叉 284, 未关闭 issue 20 个, 未合并 PR 18 个, 8 月 20 日更新. 这是 md 正文里唯一转出统计行的仓库.
 
 > **想:** 同是官方 MCP 实现, Python 版和 JavaScript 版的关注度差多少?
-> MiniMax-MCP 星标 1,585, MiniMax-MCP-JS 是 130, 前者约为后者的 12 倍 (估算: 1585 / 130 ≈ 12.2). 分叉 284 对 43, 约 6.6 倍 (估算). 两者的能力描述几乎相同, JS 版多列了一项声音克隆.
+> MiniMax-MCP 星标 1,585, MiniMax-MCP-JS 是 130, 前者约为后者的 12 倍 (1585 / 130 ≈ 12.2). 分叉 284 对 43, 约 6.6 倍. 两者的能力描述几乎相同, JS 版多列了一项声音克隆.
 
 [**View all repositories**](https://github.com/orgs/MiniMax-AI/repositories?type=all)
 
 查看全部仓库.
 
 > **核对:** 组织标了 35 个仓库, 这页一共露出了几个?
-> 置顶 5 个, 列表 10 个, 其中 cli 两边都有, 去重后是 14 个 (估算: 5 + 10 - 1). 剩下 21 个仓库本页没有露面, 它们的名字和数字都查不到.
+> 置顶 5 个, 列表 10 个, 其中 cli 两边都有, 去重后是 14 个 (5 + 10 - 1). 剩下 21 个仓库本页没有露面, 它们的名字和数字都查不到.
 
 ## [People](https://github.com/orgs/MiniMax-AI/people) (成员)
 

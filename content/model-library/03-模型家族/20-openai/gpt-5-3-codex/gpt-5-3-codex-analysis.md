@@ -36,9 +36,9 @@
 
 ## 4. 编程: 0.4 个点和 13.3 个点
 
-页外背景: SWE-Bench Pro 是 Scale AI 在 2025 年 9 月推出的软件工程评测, 意在替代被刷到饱和, 只有 Python 题的 SWE-bench Verified. 题目来自真实仓库, 覆盖多种语言, 公开集约 731 题, 另有私有题防污染. 本页用的是公开集. GPT-5.3-Codex 56.8%, GPT-5.2-Codex 56.4%, GPT-5.2 55.6%. 正文把 0.4 个点的领先称作 「state-of-the-art」, 按 731 题算约合 3 道题 (估算), 本页也没给多次运行的方差. 从 GPT-5.2 到 GPT-5.3-Codex, 两代模型在这把尺子上只差 1.2 个点, 基本是平的. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
+页外背景: SWE-Bench Pro 是 Scale AI 在 2025 年 9 月推出的软件工程评测, 意在替代被刷到饱和, 只有 Python 题的 SWE-bench Verified. 题目来自真实仓库, 覆盖多种语言, 公开集约 731 题, 另有私有题防污染. 本页用的是公开集. GPT-5.3-Codex 56.8%, GPT-5.2-Codex 56.4%, GPT-5.2 55.6%. 正文把 0.4 个点的领先称作 「state-of-the-art」, 按 731 题算约合 3 道题, 本页也没给多次运行的方差. 从 GPT-5.2 到 GPT-5.3-Codex, 两代模型在这把尺子上只差 1.2 个点, 基本是平的. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
 
-Terminal-Bench 2.0 完全是另一幅图景. 页外背景: Terminal-Bench 由 Stanford 和 Laude Institute 维护, 2.0 版在 2025 年 11 月发布, 约 89 个任务, 每个任务在容器化的终端里给一个目标 (编译, 配环境, 排查服务, 处理数据等), 按最终状态判分. GPT-5.3-Codex 77.3%, GPT-5.2-Codex 64.0%, GPT-5.2 62.2%. 高出 13.3 个点, 失败率从 36.0% 降到 22.7%, 相对降约 37% (估算). 按 89 题算, 13.3 个点约合 12 道题.
+Terminal-Bench 2.0 完全是另一幅图景. 页外背景: Terminal-Bench 由 Stanford 和 Laude Institute 维护, 2.0 版在 2025 年 11 月发布, 约 89 个任务, 每个任务在容器化的终端里给一个目标 (编译, 配环境, 排查服务, 处理数据等), 按最终状态判分. GPT-5.3-Codex 77.3%, GPT-5.2-Codex 64.0%, GPT-5.2 62.2%. 高出 13.3 个点, 失败率从 36.0% 降到 22.7%, 相对降约 37%. 按 89 题算, 13.3 个点约合 12 道题.
 
 两把尺子的增幅差了一个数量级, 这是本页最值得想的地方. SWE-Bench Pro 考的是 「给一个 issue, 写出能过测试的补丁」, 核心是读代码和改代码; Terminal-Bench 考的是 「在一个陌生环境里多步操作到目标状态」, 核心是执行, 观察输出, 调整下一步. 如果 GPT-5.3-Codex 的提升主要来自长程工具使用和环境交互, 而不是写补丁本身, 两者的差距就说得通, 第 6 节的 OSWorld 大涨也指向同一个方向. 这是按分数形状做的推测, 页面没有按任务类型拆分的数据. Agent 评测的设计差异见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
 

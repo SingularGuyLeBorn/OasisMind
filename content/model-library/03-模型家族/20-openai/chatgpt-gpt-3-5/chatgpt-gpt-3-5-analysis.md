@@ -33,15 +33,15 @@
 
 图分三栏. 第 1 步是 SFT: 从提示数据集取一条提示, 标注员示范期望输出, 用这些数据对 GPT-3.5 做监督微调. 第 2 步是奖励模型: 同一条提示采样几个输出, 标注员从好到差排序, 用排序训练 RM. 第 3 步是 PPO: PPO 模型从第 1 步的监督策略初始化, 策略生成输出, RM 打出奖励 r_k, 奖励经 PPO 回头更新策略.
 
-图里的示例提示是 「Explain reinforcement learning to a 6 year old.」, 四个候选 A, B, C, D, 标注员给出 D > C > A > B. 一个 4 项的全排序能拆出 6 个两两比较 (估算, 4 选 2). 公告没说 RM 是按两两比较训练还是直接吃排序, 这个 6 只是从图上的排序数出来的. 正文对比较数据的下限是 「two or more」, 所以 4 是示意数, 不是固定配置.
+图里的示例提示是 「Explain reinforcement learning to a 6 year old.」, 四个候选 A, B, C, D, 标注员给出 D > C > A > B. 一个 4 项的全排序能拆出 6 个两两比较 (4 选 2). 公告没说 RM 是按两两比较训练还是直接吃排序, 这个 6 只是从图上的排序数出来的. 正文对比较数据的下限是 「two or more」, 所以 4 是示意数, 不是固定配置.
 
 第 3 步的示例提示换成了 「Write a story about otters.」, 策略写出 「Once upon a time...」. 图上 r_k 的下标 k 没有定义. 流程图配合正文的 「several iterations」 和复数的 「these reward models」 一起看, 比较像每轮重新收比较数据, 重训 RM, 再跑 PPO. 这只是读法, 轮数这页没有印.
 
 ## 4. 时间线: 从 early 2022 到 November 30, 2022
 
-基座 「finished training in early 2022」. early 没有月份, 按 1 到 3 月算, 到 11 月 30 日发布隔了大约 8 到 11 个月 (估算). 这段时间里做了什么, 公告只交代了三步流程和多轮迭代, 没有分阶段的时间.
+基座 「finished training in early 2022」. early 没有月份, 按 1 到 3 月算, 到 11 月 30 日发布隔了大约 8 到 11 个月. 这段时间里做了什么, 公告只交代了三步流程和多轮迭代, 没有分阶段的时间.
 
-参考文献给了另一条时间线. 文献 1 是 Stiennon 等人 2020 年的 「Learning to summarize with human feedback」, 刊在 NeurIPS 33, 页码 3008-3021, 共 14 页 (估算). 文献 2 是 Gao, Schulman, Hilton 的 「Scaling Laws for Reward Model Overoptimization」, 编号 arXiv:2210.10760. 按 arXiv 编号的年月规则, 2210 对应 2022 年 10 月, 离发布大约 1 个月 (估算). 公告在解释啰嗦问题时引了这两篇, 说明过度优化在发布时是刚被写成论文的问题.
+参考文献给了另一条时间线. 文献 1 是 Stiennon 等人 2020 年的 「Learning to summarize with human feedback」, 刊在 NeurIPS 33, 页码 3008-3021, 共 14 页. 文献 2 是 Gao, Schulman, Hilton 的 「Scaling Laws for Reward Model Overoptimization」, 编号 arXiv:2210.10760. 按 arXiv 编号的年月规则, 2210 对应 2022 年 10 月, 离发布大约 1 个月. 公告在解释啰嗦问题时引了这两篇, 说明过度优化在发布时是刚被写成论文的问题.
 
 页面本身还有抓页时间的痕迹. 相关文章是 2024 年 3 月 8 日和 13 日的公司新闻, 页脚写 © 2015–2026, 导航列到 GPT-6. 文首那行粗体也说 ChatGPT 此后变化很大. 读这页要把 2022 年的正文和 2026 年前后的站点外壳分开.
 
@@ -57,7 +57,7 @@ Limitations 列了五条, 每条都能落到流程的某一段. 第一条是一�
 
 Fix code 示例本身就踩中了第一条局限. 用户代码第二行已经是 defer close(resultWorkerErr), ChatGPT 却说这个 channel 从来没关, 还建议在发送后再 close 一次. 在 Go 里重复关闭 channel 会 panic. 建议那一行写成 close(resultworkerErr), 小写 w 和原变量名不一致, 照抄会报未定义. 公告没有评论这两处, 把它当正面示例放了出来.
 
-Columbus 示例是全页唯一的 ChatGPT 和 InstructGPT 并排对比. ChatGPT 指出哥伦布 1506 年已去世, 再顺着假设往下写; InstructGPT 直接接受 「2015 年来美国」 的前提. 数字自洽: 2015 减 1492 是 523, 对上 「over 500 years ago」; 2015 减 1506 是 509 (均为估算). 这个对比对应开头说的 「challenge incorrect premises」.
+Columbus 示例是全页唯一的 ChatGPT 和 InstructGPT 并排对比. ChatGPT 指出哥伦布 1506 年已去世, 再顺着假设往下写; InstructGPT 直接接受 「2015 年来美国」 的前提. 数字自洽: 2015 减 1492 是 523, 对上 「over 500 years ago」; 2015 减 1506 是 509. 这个对比对应开头说的 「challenge incorrect premises」.
 
 两个示例都是定性的. 示例区还有 Home security, Fermat's Little Theorem, Neighbor introduction, Violent story, Bully John Doe 五个标签, 这页没展开. 整篇没有一张分数表, 「substantial reductions in harmful and untruthful outputs」 也没有百分比.
 

@@ -412,7 +412,7 @@ OpenAI
 图片: 应用截图 「Surface Intersection Lab」 (标题上方小字 QUADRIC PENCIL). 画面中间一青一黄两个半透明二次曲面相交, 红线是交线. 右栏 「EFFECTIVE RR MODEL / Weierstrass」, 标签 smooth, 方程 y² = x³ − 0.001642x + 0.01637, Field 为 Q, I = 6.08e-5, J = -6.062e-4, Δ = -3.675e-7, j = -0.004228. 右下角是 det(λQ1 + Q2) = − 0.15λ⁴ − 0.653λ³ − 1.01λ² − 0.665λ − 0.157.
 
 > **对一下:** 截图右栏的 Δ = -3.675e-7 是这条 Weierstrass 曲线的判别式吗?
-> 不是. 对 y² = x³ + ax + b, 判别式是 -16(4a³ + 27b²), 代入 a = -0.001642, b = 0.01637 约为 -0.1158 (估算). 截图的数其实是四次式 det(λQ1 + Q2) 的不变量组合 4I³ - J²: 4 × (6.08e-5)³ - (6.062e-4)² ≈ -3.675e-7. 曲线系数也由 I, J 给出: -27I ≈ -0.001642, -27J ≈ 0.01637, 两者对得上; 两种 Δ 相差 16 × 3⁹ = 314,928 倍. j 不变量 1728 × 4a³ / (4a³ + 27b²) ≈ -0.004229, 和截图 -0.004228 只差末位舍入. 用截图里只留两三位的四次式系数重算 I, 结果接近 0, 正负都不稳, 这一步验证不了.
+> 不是. 对 y² = x³ + ax + b, 判别式是 -16(4a³ + 27b²), 代入 a = -0.001642, b = 0.01637 约为 -0.1158. 截图的数其实是四次式 det(λQ1 + Q2) 的不变量组合 4I³ - J²: 4 × (6.08e-5)³ - (6.062e-4)² ≈ -3.675e-7. 曲线系数也由 I, J 给出: -27I ≈ -0.001642, -27J ≈ 0.01637, 两者对得上; 两种 Δ 相差 16 × 3⁹ = 314,928 倍. j 不变量 1728 × 4a³ / (4a³ + 27b²) ≈ -0.004229, 和截图 -0.004228 只差末位舍入. 用截图里只留两三位的四次式系数重算 I, 结果接近 0, 正负都不稳, 这一步验证不了.
 
 [Credit: Bartosz Naskręcki](https://bnaskrecki.faculty.wmi.amu.edu.pl/quadr/) Prompt: # Algebraic geometry surface intersection… Show more
 
@@ -560,7 +560,7 @@ and \$180 per 1M output tokens. See the for full details.<u>pricing page</u>
 ...以及每 1M 输出 token $180. 完整信息见定价页.
 
 > **看表:** 这个 「$180 per 1M output tokens」 是 Priority 的价格吗?
-> 多半不是. 翻页处丢了一截, 残句从 「Priority processing is」 直接跳到 「and $180」. $180 是标准输出价 $30 的 6 倍; 按标准价输出对输入 6:1 的比例推, 对应输入价是 $30 (估算), 这更像 gpt-5.5-pro 的价格行, Priority 自己的价格和中间那句话都丢了. 本页能确定的只有 gpt-5.5 的 $5 / $30 和 Batch, Flex 打五折. 下一段又说 GPT-5.5 比 GPT-5.4 贵, 可 GPT-5.4 的价格本页没印.
+> 多半不是. 翻页处丢了一截, 残句从 「Priority processing is」 直接跳到 「and $180」. $180 是标准输出价 $30 的 6 倍; 按标准价输出对输入 6:1 的比例推, 对应输入价是 $30, 这更像 gpt-5.5-pro 的价格行, Priority 自己的价格和中间那句话都丢了. 本页能确定的只有 gpt-5.5 的 $5 / $30 和 Batch, Flex 打五折. 下一段又说 GPT-5.5 比 GPT-5.4 贵, 可 GPT-5.4 的价格本页没印.
 
 While GPT‑5.5 is priced higher than GPT‑5.4, it is both more intelligent and much more token efficient. In Codex, we have carefully tuned the experience so GPT‑5.5 delivers better results with fewer tokens than GPT‑5.4 for most users, whi[le continuing](https://openai.com/api/pricing/) to offer generous usage across subscription levels.
 

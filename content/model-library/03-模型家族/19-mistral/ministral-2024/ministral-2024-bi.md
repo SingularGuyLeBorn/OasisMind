@@ -100,10 +100,10 @@ Figure 1: Ministral 3B and 8B base models compared to Gemma 2 2B, Llama 3.2 3B, 
 图 1: Ministral 3B 和 8B 基座模型与 Gemma 2 2B, Llama 3.2 3B, Llama 3.1 8B, Mistral 7B 的对比.
 
 > **回看:** 图 1 四组柱子各是多少, 和表 1 对得上吗?
-> 按像素读柱高 (读图估算, 误差约 ±0.5), 六根柱从左到右: 第 1 组约 52.3, 56.2, 64.8, 60.9, 62.4, 65.0; 第 2 组约 41.0, 42.5, 52.7, 48.9, 50.6, 64.2; GSM8k 组约 35.5, 37.2, 61.7, 50.9, 51.3, 64.5; Knowledge & Commonsense 组约 49.1, 50.0, 54.5, 62.8, 64.8, 67.9. GSM8k 组六个数和表 1 的 GSM8K 列一一对上 (顺序是表 1 的第 1, 2, 5, 3, 4, 6 行), 第 1 组和 Knowledge 组在表 1 露出的列里找不到, 应在被遮住的左半部分.
+> 按像素读柱高 (读图, 误差约 ±0.5), 六根柱从左到右: 第 1 组约 52.3, 56.2, 64.8, 60.9, 62.4, 65.0; 第 2 组约 41.0, 42.5, 52.7, 48.9, 50.6, 64.2; GSM8k 组约 35.5, 37.2, 61.7, 50.9, 51.3, 64.5; Knowledge & Commonsense 组约 49.1, 50.0, 54.5, 62.8, 64.8, 67.9. GSM8k 组六个数和表 1 的 GSM8K 列一一对上 (顺序是表 1 的第 1, 2, 5, 3, 4, 6 行), 第 1 组和 Knowledge 组在表 1 露出的列里找不到, 应在被遮住的左半部分.
 
 > **停一下:** 第 2 组的标签被遮, 它画的是什么?
-> 把表 1 三个 MMLU 取平均 (估算): 第 1 行 40.9, 第 2 行 42.5, 第 3 行 49.0, 第 4 行 50.5, 第 5 行 52.7, 第 6 行 58.2. 按同样的柱序, 前五根柱和这五个均值相差都在 0.1 左右, 只有 Ministral 8B 那根约 64.2, 比均值 58.2 高出约 6 个点. 如果这一组是多语言均值, 图和表在 Ministral 8B 上对不上.
+> 把表 1 三个 MMLU 取平均: 第 1 行 40.9, 第 2 行 42.5, 第 3 行 49.0, 第 4 行 50.5, 第 5 行 52.7, 第 6 行 58.2. 按同样的柱序, 前五根柱和这五个均值相差都在 0.1 左右, 只有 Ministral 8B 那根约 64.2, 比均值 58.2 高出约 6 个点. 如果这一组是多语言均值, 图和表在 Ministral 8B 上对不上.
 
 ## Instruct Models (指令模型)
 
@@ -144,7 +144,7 @@ Ministral 3B over the much larger Mistral 7B.
 Ministral 3B 相对大得多的 Mistral 7B 的提升.
 
 > **想:** 图 2 纵轴被遮, 柱高还能和表 2 对上吗?
-> 只能对相对高低. 用 Arena Hard 组的 Gemma 2 2B (51.7) 和 Ministral 3B (64.3) 两根柱定比例, 推出 Llama 3.2 3B 和 Mistral 7B 的位置, 与表 2 的 46.0, 44.3 相差不到 1 个像素; MT-Bench Dev 组按 C1 乘 10 放上去, 偏差约 1 到 1.5 分 (读图估算). 图注前半句只列了三个模型, 图例却有四项, 第四项 Mistral 7B 在图注后半句才出现.
+> 只能对相对高低. 用 Arena Hard 组的 Gemma 2 2B (51.7) 和 Ministral 3B (64.3) 两根柱定比例, 推出 Llama 3.2 3B 和 Mistral 7B 的位置, 与表 2 的 46.0, 44.3 相差不到 1 个像素; MT-Bench Dev 组按 C1 乘 10 放上去, 偏差约 1 到 1.5 分 (读图). 图注前半句只列了三个模型, 图例却有四项, 第四项 Mistral 7B 在图注后半句才出现.
 
 ![图 3 截图 (含下方文字): 8B 指令模型柱状图, 图例 Gemma 2 9B Instruct, LLama 3.1 8B Instruct, Mistral 7B Instruct v0.3, Ministral 8B Instruct, 下方被 cookie 弹窗遮住图注和价格表左半, 只露出 License 列 Mistral Commercial License, Mistral Research License](images/p05-image.png)
 
@@ -155,7 +155,7 @@ Figure 3: A comparison of the 8B family of Instruct models - Gemma 2 9B, Llama 3
 图 3: 8B 档指令模型的对比, 包括 Gemma 2 9B, Llama 3.1 8B, Mistral 7B 和 Ministral 8B.
 
 > **问:** 图 3 五组柱对应表 2 哪几列?
-> 按柱高读 (读图估算): 第 1 组约 47.4, 49.3, 无, 54.5, 对 C6 数学; 第 2 组约 68.5, 69.7, 50.2, 70.0, 对 C4; 第 3 组约 43.8, 37.0, 33.1, 41.3, 对 C3; Arena Hard 对 C2; MT-Bench Dev 对 C1 乘 10. 表里的 C5 和 C7 没进图. 第 1 组 Mistral 7B 的 13.2 离横轴太近, 被弹窗上沿挡住, 看不到.
+> 按柱高读 (读图): 第 1 组约 47.4, 49.3, 无, 54.5, 对 C6 数学; 第 2 组约 68.5, 69.7, 50.2, 70.0, 对 C4; 第 3 组约 43.8, 37.0, 33.1, 41.3, 对 C3; Arena Hard 对 C2; MT-Bench Dev 对 C1 乘 10. 表里的 C5 和 C7 没进图. 第 1 组 Mistral 7B 的 13.2 离横轴太近, 被弹窗上沿挡住, 看不到.
 
 ## Availability and pricing (上线与定价)
 
@@ -182,7 +182,7 @@ Both models are available starting today.
 | Ministral 3B | ministral-3b-latest | 每百万 token 0.04 美元 (输入输出同价) | Mistral 商业许可 |
 
 > **核对:** 两个模型的许可为什么不一样?
-> 8B 一行写了商业和研究两种许可, 3B 一行只写商业许可. 下文说 「Ministral 8B Instruct」 的权重开放给研究用途, 和 8B 的研究许可对得上; 3B 的权重页面没提. 价格上 8B 是 3B 的 2.5 倍 (估算: 0.1 / 0.04).
+> 8B 一行写了商业和研究两种许可, 3B 一行只写商业许可. 下文说 「Ministral 8B Instruct」 的权重开放给研究用途, 和 8B 的研究许可对得上; 3B 的权重页面没提. 价格上 8B 是 3B 的 2.5 倍 (0.1 / 0.04).
 
 For self-deployed use, [please reach out to us](https://mistral.ai/contact/) for commercial licenses. We will also assist you in lossless quantization of the models for your specific use-cases to derive maximum performance.
 

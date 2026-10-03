@@ -56,7 +56,7 @@ We evaluate our approach on four types of language understanding tasks – natur
 我们在四类语言理解任务上评估: 自然语言推理, 问答, 语义相似度, 文本分类. 这个与任务无关的通用模型胜过为每个任务专门设计架构的判别式模型, 12 个任务中有 9 个显著刷新 state of the art. 例如常识推理 (Stories Cloze Test) [40] 绝对提升 8.9%, 问答 (RACE) [30] 5.7%, 文本蕴含 (MultiNLI) [66] 1.5%, 新推出的 GLUE 多任务基准 [64] 5.5%. 我们还在四种设定下分析了预训练模型的 zero-shot 行为, 说明它学到了对下游任务有用的语言知识.
 
 > **问:** GLUE 的 5.5% 和第 6 页正文, 第 7 页表 4 对得上吗?
-> 对不上. 第 6 页正文和表 4 都印 72.8 对此前最好的 68.9 (Multi-task BiLSTM + ELMo + Attn), 差 3.9 个点 (估算); 按相对涨幅算约 5.7% (估算), 也不是 5.5. 表 4 的 GLUE 列里没有哪两个数相差 5.5.
+> 对不上. 第 6 页正文和表 4 都印 72.8 对此前最好的 68.9 (Multi-task BiLSTM + ELMo + Attn), 差 3.9 个点; 按相对涨幅算约 5.7%, 也不是 5.5. 表 4 的 GLUE 列里没有哪两个数相差 5.5.
 
 ## 2 Related Work (相关工作)
 
@@ -103,7 +103,7 @@ where k is the size of the context window, and the conditional probability $P$ i
 其中 k 是上下文窗口大小, 条件概率 $P$ 由参数为 Θ 的神经网络建模. 这些参数用随机梯度下降 [51] 训练.
 
 > **核对:** 式 (1) 的窗口 k 取多少?
-> 本文没有单独印 k. 第 5 页 4.1 节只说预训练用 「contiguous sequences of 512 tokens」, 所以一条序列里最靠后的 token 最多以前 511 个 token 为条件 (估算); 式 (2) 下面的 $U = (u_{-k}, \ldots, u_{-1})$ 也没给 k 的数值.
+> 本文没有单独印 k. 第 5 页 4.1 节只说预训练用 「contiguous sequences of 512 tokens」, 所以一条序列里最靠后的 token 最多以前 511 个 token 为条件; 式 (2) 下面的 $U = (u_{-k}, \ldots, u_{-1})$ 也没给 k 的数值.
 
 In our experiments, we use a multi-layer Transformer decoder [34] for the language model, which is a variant of the transformer [62]. This model applies a multi-headed self-attention operation over the input context tokens followed by position-wise feedforward layers to produce an output distribution over target tokens:
 
@@ -220,17 +220,17 @@ Table 1: A list of the different tasks and datasets used in our experiments.
 **模型规格.** 模型大体沿用原始 Transformer 工作 [62]. 我们训练了一个 12 层的 decoder-only Transformer, 自注意力头带掩码 (状态维度 768, 12 个注意力头). 逐位置前馈网络的内层维度为 3072. 优化器用 Adam [27], 最大学习率 2.5e-4; 学习率在前 2000 次更新里从 0 线性升高, 之后按余弦曲线退火到 0. 每个 minibatch 是 64 条随机采样的连续 512 token 序列, 训练 100 个 epoch. 由于模型里大量使用 layernorm [2], 简单的 N(0, 0.02) 权重初始化就够用. 词表用 40,000 次合并的字节对编码 (BPE) [53]; 正则化方面, 残差, 嵌入和注意力都加 0.1 的 dropout. 我们还用了 [37] 提出的改版 L2 正则, 对所有非 bias, 非 gain 的权重取 w = 0.01. 激活函数用高斯误差线性单元 (GELU) [18]. 位置嵌入是学出来的, 不用原论文的正弦版本. 我们用 ftfy 库<sup>2</sup> 清洗 BooksCorpus 原文, 统一部分标点和空白, 再用 spaCy 分词器<sup>3</sup> 切分.
 
 > **想:** 这一段给了层数, 宽度, 头数, FFN 维度, 却没印参数量. 能从这些数推出来吗?
-> 只能粗估. 每层注意力 $4 \cdot 768^2$ 加 FFN $2 \cdot 768 \cdot 3072$, 合 $12 \cdot 768^2 \approx 7.1$M, 12 层约 85M; token 嵌入按 40,000 行算约 30.7M, 位置嵌入 $512 \cdot 768 \approx 0.4$M, 合计约 116M (估算, 未计 bias, LayerNorm 以及合并之外的基础符号). 本文正文和表 1 到表 5 都没有参数量这一栏.
+> 只能粗估. 每层注意力 $4 \cdot 768^2$ 加 FFN $2 \cdot 768 \cdot 3072$, 合 $12 \cdot 768^2 \approx 7.1$M, 12 层约 85M; token 嵌入按 40,000 行算约 30.7M, 位置嵌入 $512 \cdot 768 \approx 0.4$M, 合计约 116M (未计 bias, LayerNorm 以及合并之外的基础符号). 本文正文和表 1 到表 5 都没有参数量这一栏.
 
 > **问:** 预训练一共看了多少 token?
-> 一个 minibatch 是 64 × 512 = 32,768 个 token (估算). 本文只给了 100 个 epoch, 没给总更新步数, 也没给 BooksCorpus 的 token 数. 第 7 页图 2 右栏横轴画到 $10^6$ 次更新, 若训练恰好到 $10^6$ 步, 总量约 $3.3 \times 10^{10}$ token, 每个 epoch 约 $3.3 \times 10^8$ token (都是估算). 这和 「与 1B Word Benchmark 规模相近」 差了几倍, 仅凭本文印的数判断不了是图 2 横轴没画到训练结束, 还是规模的说法很粗.
+> 一个 minibatch 是 64 × 512 = 32,768 个 token. 本文只给了 100 个 epoch, 没给总更新步数, 也没给 BooksCorpus 的 token 数. 第 7 页图 2 右栏横轴画到 $10^6$ 次更新, 若训练恰好到 $10^6$ 步, 总量约 $3.3 \times 10^{10}$ token, 每个 epoch 约 $3.3 \times 10^8$ token. 这和 「与 1B Word Benchmark 规模相近」 差了几倍, 仅凭本文印的数判断不了是图 2 横轴没画到训练结束, 还是规模的说法很粗.
 
 **Fine-tuning details.** Unless specified, we reuse the hyperparameter settings from unsupervised pre-training. We add dropout to the classifier with a rate of 0.1. For most tasks, we use a learning rate of 6.25e-5 and a batchsize of 32. Our model finetunes quickly and 3 epochs of training was sufficient for most cases. We use a linear learning rate decay schedule with warmup over 0.2% of training. λ was set to 0.5.
 
 **微调细节.** 除非另有说明, 微调沿用无监督预训练的超参. 分类器加 0.1 的 dropout. 多数任务的学习率为 6.25e-5, batch size 为 32. 模型微调很快, 多数情况下训 3 个 epoch 就够. 学习率线性衰减, 前 0.2% 的训练做 warmup. λ 设为 0.5.
 
 > **核对:** 「warmup over 0.2% of training」 落到步数是多少?
-> 取决于数据集大小, 本文没给. 拿第 7 页提到的两端算: STS-B 约 5.7k 训练样本, batch 32, 3 个 epoch 约 530 步, 0.2% 只有约 1 步; SNLI 约 550k 样本约 51,600 步, warmup 约 100 步 (都是估算). 小数据集上这个 warmup 几乎等于没有.
+> 取决于数据集大小, 本文没给. 拿第 7 页提到的两端算: STS-B 约 5.7k 训练样本, batch 32, 3 个 epoch 约 530 步, 0.2% 只有约 1 步; SNLI 约 550k 样本约 51,600 步, warmup 约 100 步. 小数据集上这个 warmup 几乎等于没有.
 
 ## 4.2 Supervised fine-tuning (监督微调)
 
@@ -272,7 +272,7 @@ Table 2: Experimental results on natural language inference tasks, comparing our
 | Finetuned Transformer LM (ours) | 82.1 | 81.4 | 89.9 | 88.3 | 88.1 | 56.0 |
 
 > **拆开:** 摘要里 MultiNLI 的 1.5% 是和谁比的?
-> 和表 2 的 Stochastic Answer Network (3x) 比: MNLI-m 82.1 对 80.6. 这是 3 个模型的集成; 和单模型 CAFE 的 78.7 比, 差 3.4 个点 (估算). MNLI-mm 上 81.4 对 80.1, 只高 1.3 个点 (估算).
+> 和表 2 的 Stochastic Answer Network (3x) 比: MNLI-m 82.1 对 80.6. 这是 3 个模型的集成; 和单模型 CAFE 的 78.7 比, 差 3.4 个点. MNLI-mm 上 81.4 对 80.1, 只高 1.3 个点.
 
 > **确认:** RTE 上本文 56.0, 输给 GenSen 的 59.2 和多任务 BiLSTM 的 61.7. 这算在 「9 out of 12」 没赢的那一边吗?
 > 算. 12 个数据集就是表 1 列的 12 个; 逐个对表 2 到表 4, 没赢的是 RTE, SST-2 (表 4: 91.3 对 93.2) 和 MRPC (表 4: 82.3 对 86.0), 其余 9 个都是本文最高.
@@ -290,14 +290,14 @@ Table 3: Results on question answering and commonsense reasoning, comparing our 
 | Finetuned Transformer LM (ours) | 86.5 | 62.9 | 57.4 | 59.0 |
 
 > **回看:** RACE 总分 59.0 夹在 RACE-m 62.9 和 RACE-h 57.4 之间, 更靠近 RACE-h. 能反推两部分的题量比吗?
-> 若总分按题数加权, 本文一行算出 RACE-h 占比约 (62.9 − 59.0) / (62.9 − 57.4) ≈ 71%; 表 3 的 Dynamic Fusion Net 一行约 71%, BiAttention MRU 一行约 70% (都是估算). 三行大体一致, 说明 RACE 总分主要由高中题决定; 表 3 本身没印题数.
+> 若总分按题数加权, 本文一行算出 RACE-h 占比约 (62.9 − 59.0) / (62.9 − 57.4) ≈ 71%; 表 3 的 Dynamic Fusion Net 一行约 71%, BiAttention MRU 一行约 70%. 三行大体一致, 说明 RACE 总分主要由高中题决定; 表 3 本身没印题数.
 
 **Question answering and commonsense reasoning.** Another task that requires aspects of single and multi-sentence reasoning is question answering. We use the recently released RACE dataset [30], consisting of English passages with associated questions from middle and high school exams. This corpus has been shown to contain more reasoning type questions that other datasets like CNN [19] or SQuaD [47], providing the perfect evaluation for our model which is trained to handle long-range contexts. In addition, we evaluate on the Story Cloze Test [40], which involves selecting the correct ending to multi-sentence stories from two options. On these tasks, our model again outperforms the previous best results by significant margins - up to 8.9% on Story Cloze, and 5.7% overall on RACE. This demonstrates the ability of our model to handle long-range contexts effectively.
 
 **问答与常识推理.** 另一类需要单句和多句推理的任务是问答. 我们用新发布的 RACE 数据集 [30], 它由英文文章和配套问题组成, 题目来自初中和高中考试. 已有研究表明, 这个语料比 CNN [19] 或 SQuaD [47] 等数据集含有更多推理型问题, 正好用来评估我们这个为处理长程上下文而训练的模型. 此外我们还评估 Story Cloze Test [40]: 给一个多句故事, 从两个选项里选出正确的结尾. 在这些任务上, 模型再次大幅超过此前最好结果: Story Cloze 最多高 8.9%, RACE 总分高 5.7%. 这说明模型能有效处理长程上下文.
 
 > **停一下:** Story Cloze 的 8.9% 和 RACE 的 5.7% 各对哪一行?
-> 表 3: Story Cloze 86.5 对 Hidden Coherence Model 的 77.6, 差 8.9; RACE 59.0 对 BiAttention MRU (9x) 的 53.3, 差 5.7. 两个都是百分点. 分开看, RACE-h 上 57.4 对 50.3 差 7.1, RACE-m 上 62.9 对 60.2 只差 2.7 (都是估算).
+> 表 3: Story Cloze 86.5 对 Hidden Coherence Model 的 77.6, 差 8.9; RACE 59.0 对 BiAttention MRU (9x) 的 53.3, 差 5.7. 两个都是百分点. 分开看, RACE-h 上 57.4 对 50.3 差 7.1, RACE-m 上 62.9 对 60.2 只差 2.7.
 
 **Semantic Similarity.** Semantic similarity (or paraphrase detection) tasks involve predicting whether two sentences are semantically equivalent or not. The challenges lie in recognizing rephrasing of concepts, understanding negation, and handling syntactic ambiguity. We use three datasets for this task – the Microsoft Paraphrase corpus (MRPC) [14] (collected from news sources), the Quora Question Pairs (QQP) dataset [9], and the Semantic Textual Similarity benchmark (STS-B) [6]. We obtain state-of-the-art results on two of the three semantic similarity tasks (Table 4) with a 1 point absolute gain on STS-B. The performance delta on QQP is significant, with a 4.2% absolute improvement over Single-task BiLSTM + ELMo + Attn.
 
@@ -316,13 +316,13 @@ Table 4: Semantic similarity and classification results, comparing our model wit
 <table><tr><td rowspan="2">Method</td><td colspan="2">Classification</td><td colspan="3">Semantic Similarity</td><td rowspan="2">GLUE</td></tr><tr><td>CoLA (mc)</td><td>SST2 (acc)</td><td>MRPC (F1)</td><td>STSB (pc)</td><td>QQP (F1)</td></tr><tr><td>Sparse byte mLSTM [16]</td><td>-</td><td>93.2</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TF-KLD [23]</td><td>-</td><td>-</td><td>86.0</td><td>-</td><td>-</td><td>-</td></tr><tr><td>ECNU (mixed ensemble) [60]</td><td>-</td><td>-</td><td>-</td><td>81.0</td><td>-</td><td>-</td></tr><tr><td>Single-task BiLSTM + ELMo + Attn [64]</td><td>35.0</td><td>90.2</td><td>80.2</td><td>55.5</td><td>66.1</td><td>64.8</td></tr><tr><td>Multi-task BiLSTM + ELMo + Attn [64]</td><td>18.9</td><td>91.6</td><td>83.5</td><td>72.8</td><td>63.3</td><td>68.9</td></tr><tr><td>Finetuned Transformer LM (ours)</td><td>45.4</td><td>91.3</td><td>82.3</td><td>82.0</td><td>70.3</td><td>72.8</td></tr></table>
 
 > **再看:** QQP 的 4.2% 为什么拿 Single-task 比, 不拿 Multi-task?
-> 因为 QQP 上此前最好的就是 Single-task 那一行: 表 4 里 66.1 高于 Multi-task 的 63.3. 70.3 − 66.1 = 4.2; 若对 Multi-task, 差距是 7.0 (估算).
+> 因为 QQP 上此前最好的就是 Single-task 那一行: 表 4 里 66.1 高于 Multi-task 的 63.3. 70.3 − 66.1 = 4.2; 若对 Multi-task, 差距是 7.0.
 
 > **对一下:** STS-B 的 「1 point absolute gain」 是对哪一行?
-> 对表 4 的 ECNU (mixed ensemble): 82.0 对 81.0. 那是混合集成模型, 本文是单模型. 对 GLUE 基线里 STS-B 最好的 Multi-task BiLSTM + ELMo + Attn (72.8), 差距是 9.2 (估算).
+> 对表 4 的 ECNU (mixed ensemble): 82.0 对 81.0. 那是混合集成模型, 本文是单模型. 对 GLUE 基线里 STS-B 最好的 Multi-task BiLSTM + ELMo + Attn (72.8), 差距是 9.2.
 
 > **想:** SST-2 说 「competitive with the state-of-the-art」, 实际差多少?
-> 表 4: Sparse byte mLSTM 93.2, 本文 91.3, 低 1.9 个点; 比 Multi-task BiLSTM + ELMo + Attn 的 91.6 也低 0.3 (都是估算). SST-2 和 MRPC (82.3 对 TF-KLD 的 86.0) 一起, 算在 12 个数据集里没赢的 3 个当中.
+> 表 4: Sparse byte mLSTM 93.2, 本文 91.3, 低 1.9 个点; 比 Multi-task BiLSTM + ELMo + Attn 的 91.6 也低 0.3. SST-2 和 MRPC (82.3 对 TF-KLD 的 86.0) 一起, 算在 12 个数据集里没赢的 3 个当中.
 
 Overall, our approach achieves new state-of-the-art results in 9 out of the 12 datasets we evaluate on, outperforming ensembles in many cases. Our results also indicate that our approach works well across datasets of different sizes, from smaller datasets such as STS-B (≈5.7k training examples) – to the largest one – SNLI (≈550k training examples).
 
@@ -361,17 +361,17 @@ Table 5: Analysis of various model ablations on different tasks. Avg. score is a
 <table><tbody><tr><td rowspan="2">Method</td><td rowspan="2">Avg. Score</td><td rowspan="2">CoLA (mc)</td><td rowspan="2">SST2(acc)</td><td rowspan="2">MRPC(F1)</td><td rowspan="2">STSB (pc)</td><td rowspan="2">QQP(F1)</td><td rowspan="2">MNLI (acc)</td><td rowspan="2">QNLI (acc)</td><td rowspan="2">RTE (acc)</td></tr><tr></tr><tr><td>Transformer w/ aux LM (full)</td><td>74.7</td><td>45.4</td><td>91.3</td><td>82.3</td><td>82.0</td><td>70.3</td><td>81.8</td><td>88.1</td><td>56.0</td></tr><tr><td>Transformer w/o pre-training</td><td>59.9</td><td>18.9</td><td>84.0</td><td>79.4</td><td>30.9</td><td>65.5</td><td>75.7</td><td>71.2</td><td>53.8</td></tr><tr><td>Transformer w/o aux LM</td><td>75.0</td><td>47.9</td><td>92.0</td><td>84.9</td><td>83.2</td><td>69.8</td><td>81.1</td><td>86.9</td><td>54.4</td></tr><tr><td>LSTM w/ aux LM</td><td>69.1</td><td>30.3</td><td>90.5</td><td>83.2</td><td>71.8</td><td>68.1</td><td>73.7</td><td>81.1</td><td>54.6</td></tr></tbody></table>
 
 > **看表:** 表 5 的 MNLI 写 81.8, 表 2 的 MNLI-m 和 MNLI-mm 是 82.1 和 81.4. 81.8 从哪来?
-> 表 5 没说明. 82.1 和 81.4 的平均是 81.75 (估算), 四舍五入正好 81.8, 很可能取的是 matched 与 mismatched 的平均. full 一行其余七列 (CoLA 45.4, SST2 91.3, MRPC 82.3, STSB 82.0, QQP 70.3, QNLI 88.1, RTE 56.0) 和表 2, 表 4 完全一致.
+> 表 5 没说明. 82.1 和 81.4 的平均是 81.75, 四舍五入正好 81.8, 很可能取的是 matched 与 mismatched 的平均. full 一行其余七列 (CoLA 45.4, SST2 91.3, MRPC 82.3, STSB 82.0, QQP 70.3, QNLI 88.1, RTE 56.0) 和表 2, 表 4 完全一致.
 
 > **拆开:** Avg. Score 能从各列复算出来吗?
-> 大体能. 按表 5 的 8 列不加权平均复算: full 74.65, w/o pre-training 59.93, w/o aux LM 75.03, LSTM 69.16 (都是估算). 前三行四舍五入后和表 5 的 74.7, 59.9, 75.0 一致; LSTM 一行复算得 69.2, 表 5 印 69.1, 差 0.1.
+> 大体能. 按表 5 的 8 列不加权平均复算: full 74.65, w/o pre-training 59.93, w/o aux LM 75.03, LSTM 69.16. 前三行四舍五入后和表 5 的 74.7, 59.9, 75.0 一致; LSTM 一行复算得 69.2, 表 5 印 69.1, 差 0.1.
 
 For CoLA (linguistic acceptability), examples are scored as the average token log-probability the generative model assigns and predictions are made by thresholding. For SST-2 (sentiment analysis), we append the token very to each example and restrict the language model’s output distribution to only the words positive and negative and guess the token it assigns higher probability to as the prediction. For RACE (question answering), we pick the answer the generative model assigns the highest average token log-probability when conditioned on the document and question. For DPRD [46] (winograd schemas), we replace the definite pronoun with the two possible referrents and predict the resolution that the generative model assigns higher average token log-probability to the rest of the sequence after the substitution.
 
 CoLA (语言可接受性): 用生成式模型给样本的平均 token 对数概率打分, 再按阈值判定. SST-2 (情感分析): 在每个样本后接上 token 「very」, 把语言模型的输出分布限制在 positive 和 negative 两个词上, 取概率更高的那个作为结果. RACE (问答): 以文档和问题为条件, 选生成式模型给出平均 token 对数概率最高的答案. DPRD [46] (Winograd schema): 把句中的定指代词分别换成两个可能的指代对象, 看替换后生成式模型给剩余序列的平均 token 对数概率哪个更高, 就选哪个作为指代结果.
 
 > **确认:** 图 2 右栏纵轴是 「Relative Task Performance」, 情感分析的 0.68 换成准确率是多少?
-> 换不回去. 图 2 图注只说每个任务归一化到随机猜测 (0) 和当时单模型 state-of-the-art (1) 之间, 本文既没印各任务 zero-shot 的原始分数, 也没说作上限的 SOTA 是哪个数. 只能说情感分析的 zero-shot 走完了随机到 SOTA 之间约三分之二的距离 (目测估算).
+> 换不回去. 图 2 图注只说每个任务归一化到随机猜测 (0) 和当时单模型 state-of-the-art (1) 之间, 本文既没印各任务 zero-shot 的原始分数, 也没说作上限的 SOTA 是哪个数. 只能说情感分析的 zero-shot 走完了随机到 SOTA 之间约三分之二的距离 (读图).
 
 **Ablation studies.** We perform three different ablation studies (Table 5). First, we examine the performance of our method without the auxiliary LM objective during fine-tuning. We observe that the auxiliary objective helps on the NLI tasks and QQP. Overall, the trend suggests that larger datasets benefit from the auxiliary objective but smaller datasets do not. Second, we analyze the effect of the Transformer by comparing it with a single layer 2048 unit LSTM using the same framework. We observe a 5.6 average score drop when using the LSTM instead of the Transformer. The LSTM only outperforms the Transformer on one dataset – MRPC. Finally, we also compare with our transformer architecture directly trained on supervised target tasks, without pre-training. We observe that the lack of pre-training hurts performance across all the tasks, resulting in a 14.8% decrease compared to our full model.
 
@@ -381,10 +381,10 @@ CoLA (语言可接受性): 用生成式模型给样本的平均 token 对数概�
 > 只看平均分, 不加更好: 去掉辅助目标后 CoLA, SST2, MRPC, STSB 四项上升, MNLI, QNLI, RTE, QQP 四项下降. 「大数据集受益, 小数据集不受益」 也有例外: RTE 只有 2490 个样本 (第 5 页), 去掉辅助目标却从 56.0 掉到 54.4. 表 2 到表 4 的主结果用的是带辅助目标的 full 版本.
 
 > **停一下:** 「resulting in a 14.8% decrease」 是百分点还是相对降幅?
-> 表 5 平均分 74.7 − 59.9 = 14.8, 是百分点; 相对降幅约 19.8% (估算). 单项里 STSB 从 82.0 掉到 30.9, 掉得最多; RTE 从 56.0 到 53.8, 掉得最少.
+> 表 5 平均分 74.7 − 59.9 = 14.8, 是百分点; 相对降幅约 19.8%. 单项里 STSB 从 82.0 掉到 30.9, 掉得最多; RTE 从 56.0 到 53.8, 掉得最少.
 
 > **再看:** LSTM 基线是单层 2048 单元, 它和 12 层 Transformer 规模接近吗?
-> 本文没给 LSTM 的参数量和输入维度, 表 5 只列了名字. 若输入按 768 维粗算, 单层 LSTM 的门控权重约 4 × 2048 × (768 + 2048) ≈ 23M (估算), 远小于前面估的 Transformer 主干约 85M (估算). 所以表 5 里 5.6 的平均分差距, 混着架构和规模两种因素.
+> 本文没给 LSTM 的参数量和输入维度, 表 5 只列了名字. 若输入按 768 维粗算, 单层 LSTM 的门控权重约 4 × 2048 × (768 + 2048) ≈ 23M, 远小于前面估的 Transformer 主干约 85M. 所以表 5 里 5.6 的平均分差距, 混着架构和规模两种因素.
 
 ## 6 Conclusion
 

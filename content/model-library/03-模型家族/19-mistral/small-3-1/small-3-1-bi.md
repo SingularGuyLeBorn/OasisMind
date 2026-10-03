@@ -132,7 +132,7 @@ Mistral Small 3.1 是一个多面手, 面向各类生成式 AI 任务, 包括指
 - **Lightweight.** Mistral Small 3.1 can run on a single RTX 4090 or a Mac with 32GB RAM. This makes it a great fit for on-device use cases.
 - **轻量.** Mistral Small 3.1 能在单张 RTX 4090 上运行, 也能在 32GB 内存的 Mac 上运行, 很适合端侧场景.
 
-> **停一下:** 24B 参数按 bf16 存, 权重约 48GB (估算: 24 x 2 字节).
+> **停一下:** 24B 参数按 bf16 存, 权重约 48GB (24 x 2 字节).
 > 32GB 的 Mac 放不下未量化权重, 这句话默认了量化部署, 但页面没说用几 bit.
 
 - **Fast-response conversational assistance.** Ideal for virtual assistants and other applications where quick, accurate responses are essential.

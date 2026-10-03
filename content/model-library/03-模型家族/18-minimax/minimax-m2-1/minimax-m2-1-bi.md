@@ -126,7 +126,7 @@ Hugging Face 评测挂件里的分数: GPQA Diamond 80.81 (带星号), SWE-bench
 > 两个都印在这页, 口径不同. 挂件的 source 指向 tbench.ai 官方榜; 第 8 页说表里的 47.9 是在内部框架上用 Claude Code 测的, 修过环境问题, 去掉了超时限制, 取 4 次平均. 星号代表什么, 页面没解释.
 
 > **看表:** GPQA Diamond 挂件印 80.81*, 第 7 页表里 GPQA-D 是 83.0, 这也对不上?
-> 对不上, 差 2.19 (估算). 挂件的 source 是 evaleval 的 EEE_datastore 数据文件, 表里的 83.0 按第 9 页说明来自参照 Artificial Analysis 方法的内部测试. 对得上的只有 MMLU-Pro (88 对 88.0), SWE-bench Verified (74 对 74.0) 和下一页的 HLE (22.2 对 22.2); SWE-bench Pro 36.81 只出现在挂件里, 正文各表没有这一项.
+> 对不上, 差 2.19. 挂件的 source 是 evaleval 的 EEE_datastore 数据文件, 表里的 83.0 按第 9 页说明来自参照 Artificial Analysis 方法的内部测试. 对得上的只有 MMLU-Pro (88 对 88.0), SWE-bench Verified (74 对 74.0) 和下一页的 HLE (22.2 对 22.2); SWE-bench Pro 36.81 只出现在挂件里, 正文各表没有这一项.
 
 <!-- page 3 of 11 -->
 
@@ -212,7 +212,7 @@ MiniMax-M2.1 delivers a significant leap over M2 on core software engineering le
 (主表续: SWE-bench Multilingual 和 Terminal-bench 2.0 两行.)
 
 > **再看:** 开头那句说多语言场景 「closely approaches Claude Opus 4.5」, 两行多语言分数离 Opus 各差多少?
-> Multi-SWE-bench 是 49.4 对 50.0, 差 0.6; SWE-bench Multilingual 是 72.5 对 77.5, 差 5.0 (都是估算). 前一行算得上逼近, 后一行差距和它领先 Sonnet 的 4.5 分差不多大.
+> Multi-SWE-bench 是 49.4 对 50.0, 差 0.6; SWE-bench Multilingual 是 72.5 对 77.5, 差 5.0. 前一行算得上逼近, 后一行差距和它领先 Sonnet 的 4.5 分差不多大.
 
 We also evaluated MiniMax-M2.1 on SWE-bench Verified across a variety of coding agent frameworks. The results highlight the model's exceptional framework generalization and robust stability.
 
@@ -233,10 +233,10 @@ Furthermore, across specific benchmarks—including test case generation, code p
 (跨框架与专项表. 前两行是换脚手架后的 SWE-bench Verified: Droid 和 mini-swe-agent; 后三行分别对应测试用例生成, 代码性能优化, 代码审查. 表在下一页还有一行.)
 
 > **拆开:** 说跨框架泛化 「exceptional」, 三种脚手架下 M2.1 的分数摆开是什么样?
-> Claude Code 74.0, Droid 71.3, mini-swe-agent 67.0, 最高最低差 7.0 (估算). 同样三列, Sonnet 差 6.6, Opus 差 6.5, M2 差 8.4, DeepSeek V3.2 差 13.1. M2.1 比 M2 和 DeepSeek 稳, 和两个 Claude 差不多, 三种脚手架下都低于 Sonnet.
+> Claude Code 74.0, Droid 71.3, mini-swe-agent 67.0, 最高最低差 7.0. 同样三列, Sonnet 差 6.6, Opus 差 6.5, M2 差 8.4, DeepSeek V3.2 差 13.1. M2.1 比 M2 和 DeepSeek 稳, 和两个 Claude 差不多, 三种脚手架下都低于 Sonnet.
 
 > **确认:** 「consistently matches or exceeds」 Sonnet 4.5, 专项几行都做到了吗?
-> 没有全做到. SWE-Perf 3.1 对 3.0, 第 6 页 OctoCodingbench 26.1 对 22.8, 这两行领先; SWT-bench 69.3 对 69.5 基本持平; SWE-Review 8.9 对 10.5, 落后 1.6 (估算). 「始终持平或更好」 这句要去掉 SWE-Review 才成立.
+> 没有全做到. SWE-Perf 3.1 对 3.0, 第 6 页 OctoCodingbench 26.1 对 22.8, 这两行领先; SWT-bench 69.3 对 69.5 基本持平; SWE-Review 8.9 对 10.5, 落后 1.6. 「始终持平或更好」 这句要去掉 SWE-Review 才成立.
 
 > **问:** SWE-Perf 一栏最高只有 6.5, M2.1 是 3.1, 这个数的单位是什么?
 > 这页没说. 第 8 页的评测说明只交代 SWE-Perf 用 Claude Code 作脚手架, 取 4 次平均, 没写指标是加速百分比, 通过率还是别的量. 所以只能在同一行里比大小, 不宜和其它行的分数放一起读.
@@ -298,7 +298,7 @@ MiniMax-M2.1 also demonstrates steady improvements over M2 in both long-horizon 
 (工具使用与综合智能表. 前三行是长程工具与浏览, 后九行是综合智能指标; HLE w/o tools 指不用工具的 HLE, LCB 即 LiveCodeBench.)
 
 > **停一下:** 说相对 M2 「steady improvements」, 十二行里 M2.1 全都比 M2 高吗?
-> 不是. 九行上升; LCB 从 83.0 降到 81.0, IFBench 从 72.0 降到 70.0, 各降 2.0; τ²-Bench Telecom 两者都是 87.0. 升幅最大的是 Toolathlon, 16.7 到 43.5, 涨 26.8 (估算).
+> 不是. 九行上升; LCB 从 83.0 降到 81.0, IFBench 从 72.0 降到 70.0, 各降 2.0; τ²-Bench Telecom 两者都是 87.0. 升幅最大的是 Toolathlon, 16.7 到 43.5, 涨 26.8.
 
 **Evaluation Methodology Notes.**
 

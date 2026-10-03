@@ -65,7 +65,7 @@ A large focus of the GPT-4 project was building a deep learning stack that scale
 GPT-4 项目的一大重点, 是构建一套能够可预测地 Scaling 的深度学习栈. 主要原因是, 对 GPT-4 这种超大规模的训练运行, 不可能做大量针对具体模型的调参. 为此我们开发了在多个规模上行为高度可预测的基础设施和优化方法. 这些改进让我们能用训练算力少 1, 000× – 10, 000× 的小模型, 可靠地预测 GPT-4 表现的某些方面.
 
 > **想:** 摘要写 「不超过千分之一」, 这里写 「1,000× 到 10,000×」, 两个倍数分别落在哪项预测上?
-> 3.1 节的 loss 预测用的小模型 「最多比 GPT-4 少 10,000x 算力」, 3.2 节的 HumanEval 预测用的是 「最多少 1,000×」. 摘要取的是两者里较保守的那个. 从图 1 读, 最大的一个观测点横坐标约在 1e-4 附近, 离 GPT-4 的 1 大约四个数量级 (读图估算); 图 2 最大观测点约在 5e-4 附近, 离 1 约三个多数量级, 和正文的两个倍数对得上.
+> 3.1 节的 loss 预测用的小模型 「最多比 GPT-4 少 10,000x 算力」, 3.2 节的 HumanEval 预测用的是 「最多少 1,000×」. 摘要取的是两者里较保守的那个. 从图 1 读, 最大的一个观测点横坐标约在 1e-4 附近, 离 GPT-4 的 1 大约四个数量级 (读图); 图 2 最大观测点约在 5e-4 附近, 离 1 约三个多数量级, 和正文的两个倍数对得上.
 
 ## 3.1 Loss Prediction (loss 预测)
 
@@ -78,7 +78,7 @@ To verify the scalability of our optimization infrastructure, we predicted GPT-4
 为了验证我们优化基础设施的可扩展性, 我们在内部代码库 (不在训练集中) 上预测了 GPT-4 的最终 loss. 做法是拟合一条带不可约 loss 项的 Scaling Law (与 Henighan 等人 [15] 相同): $L ( C ) = a \tilde { C } ^ { b } + \dot { c }$, 拟合所用的模型采用相同的方法训练, 但算力最多只有 GPT-4 的万分之一. 这次预测是在正式运行开始后不久做出的, 没有使用任何中间结果. 拟合出的 Scaling Law 以很高的精度预测了 GPT-4 的最终 loss (图 1).
 
 > **问:** 式中 C 头上的波浪号, c 头上的点, 是论文有意区分的变量吗?
-> 不是. arXiv 原文这个式子就是 L(C) = aC^b + c, 波浪号和点是 PDF 转文本时带进来的; 3.2 节那个 HumanEval 式子里 C 上的点同理. c 是不可约 loss 项. 图 1 的图注说横轴把 GPT-4 的算力归一为 1, 代入 C = 1 得到 L = a + c, 也就是说 GPT-4 这一点的预测值就等于两个拟合常数之和. 从图 1 读, GPT-4 的实测值约 1.25 bits per word, 落在虚线上 (读图估算).
+> 不是. arXiv 原文这个式子就是 L(C) = aC^b + c, 波浪号和点是 PDF 转文本时带进来的; 3.2 节那个 HumanEval 式子里 C 上的点同理. c 是不可约 loss 项. 图 1 的图注说横轴把 GPT-4 的算力归一为 1, 代入 C = 1 得到 L = a + c, 也就是说 GPT-4 这一点的预测值就等于两个拟合常数之和. 从图 1 读, GPT-4 的实测值约 1.25 bits per word, 落在虚线上 (读图).
 
 ## 3.2 Scaling of Capabilities on HumanEval (HumanEval 上的能力 Scaling)
 
@@ -91,7 +91,7 @@ For an individual problem in HumanEval, performance may occasionally worsen with
 对 HumanEval 里的单个题目, 表现有时会随规模变差. 尽管有这些困难, 我们发现存在一条近似的幂律关系 $- \mathrm{E}_{P}[\log(\mathrm{pass\_rate(C)})] = \alpha * \dot{\mathrm{C}}^{-k}$, 其中 k 和 α 是正常数, P 是数据集中的一个题目子集. 我们假设这一关系对数据集里所有题目都成立. 实际上, 极低的通过率很难甚至无法估计, 因此我们只保留这样的题目 P 和模型 M: 在某个较大的采样预算下, 每个模型都至少把每道题解出一次.
 
 > **核对:** 为什么非要限制 「每个模型每道题至少解出一次」?
-> 3.2 节的指标是 log(pass_rate) 的均值, 通过率为 0 时 log 趋于负无穷, 一道题就能把整个均值拖垮. 所以只能保留在给定采样预算下每个模型都至少做对一次的题, 再加上下一段写的 「排除最难的 15 道」. 图 2 标题写的是 「23 道编程题上的能力预测」, 纵轴是负的平均 log 通过率, GPT-4 那一点约 0.3 (读图估算), 换回来是几何平均通过率约 e^-0.3, 大约 0.74 (估算).
+> 3.2 节的指标是 log(pass_rate) 的均值, 通过率为 0 时 log 趋于负无穷, 一道题就能把整个均值拖垮. 所以只能保留在给定采样预算下每个模型都至少做对一次的题, 再加上下一段写的 「排除最难的 15 道」. 图 2 标题写的是 「23 道编程题上的能力预测」, 纵轴是负的平均 log 通过率, GPT-4 那一点约 0.3 (读图), 换回来是几何平均通过率约 e^-0.3, 大约 0.74.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>2</sup>In addition to the accompanying system card, OpenAI will soon publish additional thoughts on the social and economic implications of AI systems, including the need for effective regulation.</span></small>
 
@@ -141,7 +141,7 @@ Figure 3. Performance of GPT-4 and smaller models on the Hindsight Neglect task.
 图 3. GPT-4 与更小模型在 Hindsight Neglect 任务上的表现. 纵轴是准确率, 越高越好. ada, babbage 和 curie 指可通过 OpenAI API [47] 调用的模型.
 
 > **拆开:** 图 3 这条先降后升的线, 能不能说明 GPT-4 在所有 Inverse Scaling 任务上都翻转了趋势?
-> 不能. 图 3 只画了 Hindsight Neglect 一项. 读图: ada 约 44, babbage 约 36, curie 约 19, gpt-3.5 约 18, gpt-4 约 100 (读图估算), 前四个点确实逐级下滑, 到 GPT-4 突然拉满. 第 4 页原话是 「有些能力仍然难以预测」, 这张图是反例而不是规律, 奖项里其余任务报告没有给数.
+> 不能. 图 3 只画了 Hindsight Neglect 一项. 读图: ada 约 44, babbage 约 36, curie 约 19, gpt-3.5 约 18, gpt-4 约 100 (读图), 前四个点确实逐级下滑, 到 GPT-4 突然拉满. 第 4 页原话是 「有些能力仍然难以预测」, 这张图是反例而不是规律, 奖项里其余任务报告没有给数.
 
 We believe that accurately predicting future capabilities is important for safety. Going forward we plan to refine these methods and register performance predictions across various capabilities before large model training begins, and we hope this becomes a common goal in the field.
 
@@ -374,7 +374,7 @@ Figure 6. Performance of GPT-4 on nine internal adversarially-designed factualit
 图 6. GPT-4 在九项内部对抗式设计的事实性评测上的表现. 纵轴是准确率, 越高越好. 准确率 1.0 表示评测中所有问题上, 模型的回答都被判定与人类理想回答一致. 我们把 GPT-4 与三个基于 GPT-3.5 的早期 ChatGPT [64] 版本比较; GPT-4 比最新的 GPT-3.5 模型高 19 个百分点, 在所有主题上都有明显提升.
 
 > **想:** 图 6 九组柱子逐个读下来, GPT-4 比 chatgpt-v4 平均高多少, 是不是就是那个 19?
-> 逐类读图, GPT-4 大约在 68% 到 81% 之间, chatgpt-v4 大约在 50% 到 63% 之间, 简单平均分别约 75% 和 58%, 差 17 到 18 个点 (读图估算); 差距最大的是 math, 约 74% 对 50%. 正文的 19 个百分点应当是在全部题目上合并计算的, 各类题量不同, 和九类简单平均不必相等. 图注没有给各类题量, 这个差只能停在估算.
+> 逐类读图, GPT-4 大约在 68% 到 81% 之间, chatgpt-v4 大约在 50% 到 63% 之间, 简单平均分别约 75% 和 58%, 差 17 到 18 个点 (读图); 差距最大的是 math, 约 74% 对 50%. 正文的 19 个百分点应当是在全部题目上合并计算的, 各类题量不同, 和九类简单平均不必相等. 图注没有给各类题量, 这个差只能停在估算.
 
 GPT-4 makes progress on public benchmarks like TruthfulQA [66], which tests the model’s ability to separate fact from an adversarially-selected set of incorrect statements (Figure 7). These questions are paired with factually incorrect answers that are statistically appealing. The GPT-4 base model is only slightly better at this task than GPT-3.5; however, after RLHF post-training we observe large improvements over GPT-3.5.<sup>9</sup> Table 4 shows both a correct and an incorrect answer. GPT-4 resists selecting common sayings (you can’t teach an old dog new tricks), however it still can miss subtle details (Elvis Presley was not the son of an actor, so Perkins is the correct answer).
 
@@ -415,7 +415,7 @@ Figure 7. Performance of GPT-4 on TruthfulQA. Accuracy is shown on the y-axis, h
 图 7. GPT-4 在 TruthfulQA 上的表现. 纵轴是准确率, 越高越好. 我们比较了 GPT-4 在 zero-shot 提示, few-shot 提示以及 RLHF 微调之后的表现. GPT-4 显著超过 GPT-3.5 和 Bai 等人 [67] 的 Anthropic-LM.
 
 > **问:** 正文说基础模型 「只比 GPT-3.5 略好」, 图 7 上三个 GPT-4 柱子各是多少, 大头提升来自哪一步?
-> 读图: gpt-4-base 0-shot 约 29%, 5-shot 约 39%, RLHF 后约 59.5%; gpt-3.5-base 0-shot 约 28%, 5-shot 约 35%, gpt-3.5-turbo RLHF 约 47% (读图估算). 基础模型对基础模型只差一到四个点, 20 个点以上的跃升出现在 RLHF 之后. 脚注 9 同时提醒, RLHF 数据没有查过 TruthfulQA 污染, 所以这段跃升里有多少是泛化, 报告自己也没法保证.
+> 读图: gpt-4-base 0-shot 约 29%, 5-shot 约 39%, RLHF 后约 59.5%; gpt-3.5-base 0-shot 约 28%, 5-shot 约 35%, gpt-3.5-turbo RLHF 约 47% (读图). 基础模型对基础模型只差一到四个点, 20 个点以上的跃升出现在 RLHF 之后. 脚注 9 同时提醒, RLHF 数据没有查过 TruthfulQA 污染, 所以这段跃升里有多少是泛化, 报告自己也没法保证.
 
 GPT-4 has various biases in its outputs that we have taken efforts to correct but which will take some time to fully characterize and manage. We aim to make GPT-4 and other systems we build have reasonable default behaviors that reflect a wide swath of users’ values, allow those systems to be customized within some broad bounds, and get public input on what those bounds should be. See OpenAI [68] for more details.
 
@@ -446,7 +446,7 @@ Figure 8. Left: Calibration plot of the pre-trained GPT-4 model on a subset of t
 图 8. 左: 预训练 GPT-4 模型在 MMLU 一个子集上的校准图. 横轴是按模型对每道题 A/B/C/D 各选项的置信度 (logprob) 划分的区间; 纵轴是每个区间内的准确率. 虚线对角线表示完美校准. 右: 后训练 GPT-4 模型在同一 MMLU 子集上的校准图. 后训练显著损害了校准.
 
 > **核对:** 后训练让校准变差, 可图 6 又说事实性提升了, 这两件事矛盾吗?
-> 不矛盾, 两张图量的东西不同. 图 8 两张子图里标了 ECE: 预训练模型 0.007, 后训练 (标题写 model=ppo) 0.074, 大约差 10 倍. 读右图, 置信度 0.1 到 0.2 那一档的实际准确率约 0.29, 0.8 到 0.9 那一档只有约 0.5 (读图估算), 也就是低置信时偏保守, 高置信时偏自负. 准确率本身可以上升, 同时模型说 「我很确定」 的可信度下降, 第 5 节 「可能自信地出错」 指的就是后一种.
+> 不矛盾, 两张图量的东西不同. 图 8 两张子图里标了 ECE: 预训练模型 0.007, 后训练 (标题写 model=ppo) 0.074, 大约差 10 倍. 读右图, 置信度 0.1 到 0.2 那一档的实际准确率约 0.29, 0.8 到 0.9 那一档只有约 0.5 (读图), 也就是低置信时偏保守, 高置信时偏自负. 准确率本身可以上升, 同时模型说 「我很确定」 的可信度下降, 第 5 节 「可能自信地出错」 指的就是后一种.
 
 ## Disallowed Prompt (expert): (违禁提示, 专家版)
 
@@ -519,7 +519,7 @@ Figure 9. Rate of incorrect behavior on sensitive and disallowed prompts. Lower 
 图 9. 在敏感和违禁提示上的错误行为率. 数值越低越好. 与此前的模型相比, GPT-4 RLHF 的错误行为率低得多.
 
 > **看表:** 82% 和 29% 是百分点还是相对比例? 能从图 9 读出来吗?
-> 都是相对比例. 读图 9: 违禁提示上 gpt-3.5-turbo 的错误率约 4.3%, gpt-4 约 0.8%, 降幅约 (4.3 - 0.8) / 4.3, 约 81% (读图估算), 对应正文的 82%. 敏感提示上错误率从约 41.5% 降到约 24%, 换成 「按政策回应」 的比例就是约 58.5% 升到约 76%, 76 / 58.5 约 1.30 (估算), 对应 「多 29%」. 如果按百分点算, 敏感类是提高了 17 个点左右, 不是 29.
+> 都是相对比例. 读图 9: 违禁提示上 gpt-3.5-turbo 的错误率约 4.3%, gpt-4 约 0.8%, 降幅约 (4.3 - 0.8) / 4.3, 约 81% (读图), 对应正文的 82%. 敏感提示上错误率从约 41.5% 降到约 24%, 换成 「按政策回应」 的比例就是约 58.5% 升到约 76%, 76 / 58.5 约 1.30, 对应 「多 29%」. 如果按百分点算, 敏感类是提高了 17 个点左右, 不是 29.
 
 Overall, our model-level interventions increase the difficulty of eliciting bad behavior but doing so is still possible. For example, there still exist “jailbreaks” (e.g., adversarial system messages, see Figure 10 in the System Card for more details) to generate content which violate our usage guidelines. So long as these limitations exist, it’s important to complement them with deployment-time safety techniques like monitoring for abuse as well as a pipeline for fast iterative model improvement.
 
@@ -1129,7 +1129,7 @@ Roughly 50% of simulations have 0 problems solved, which results in an equilibri
 大约 50% 的模拟一道题都没做出来, 由此得到的均衡 ELO 评分是 0. 结果是最终的平均 ELO 相当低. 在单场比赛上达到的最高均衡 ELO, GPT-3.5 约为 1000, GPT-4 约为 1300.
 
 > **想:** 表 1 里 GPT-4 的 Codeforces 只有 392, 低于第 5 百分位, 可单场最高有 1300, 哪个数更能代表它的编程水平?
-> A.6 的算法决定了 392 被压低: 10 场比赛各模拟 100 次, 大约一半的模拟一题未解, 均衡 ELO 记为 0, 再和其余模拟一起取平均. 如果把 0 分那一半剔掉, 其余模拟的平均大约要翻倍, 在 780 上下 (估算, 假设 0 分恰好占一半). 392 反映的是 「一半比赛完全做不出」, 1300 是最好的一场, 两个数描述的是同一个分布的均值和上尾.
+> A.6 的算法决定了 392 被压低: 10 场比赛各模拟 100 次, 大约一半的模拟一题未解, 均衡 ELO 记为 0, 再和其余模拟一起取平均. 如果把 0 分那一半剔掉, 其余模拟的平均大约要翻倍, 在 780 上下 (假设 0 分恰好占一半). 392 反映的是 「一半比赛完全做不出」, 1300 是最好的一场, 两个数描述的是同一个分布的均值和上尾.
 
 ## A.7 Model snapshot details (模型快照细节)
 
@@ -1337,7 +1337,7 @@ Table 8. Comparison between GPT-4 base and GPT-4 post-RLHF on exam benchmarks. A
 表 8. GPT-4 基础模型与 RLHF 后 GPT-4 在考试基准上的比较. 在所有考试上平均, 基础模型平均得分 73.7%, RLHF 模型平均得分 74.0%, 说明后训练并没有实质性地改变基础模型的能力.
 
 > **确认:** 平均只差 0.3 个点, 能不能说 RLHF 对每门考试都 「没影响」?
-> 平均值对得上: 按表 8 的 28 行算, 基础模型均值约 73.67%, RLHF 约 74.00% (估算, 按行等权). 但逐行看波动不小: AP Microeconomics 从 90.0% 掉到 76.7%, 差 13.3 个点; SAT EBRW 写作部分从 90.9% 掉到 84.1%; 反方向 AMC 12 从 20.0% 升到 32.0%, AP Chemistry 从 58.3% 升到 71.7%, GRE Quantitative 从 57.5% 升到 67.5%. 升降大体抵消, 所以结论只对平均成立, 单门考试的差异能到十几个点, 而且表 8 本身就是单次运行.
+> 平均值对得上: 按表 8 的 28 行算, 基础模型均值约 73.67%, RLHF 约 74.00% (按行等权). 但逐行看波动不小: AP Microeconomics 从 90.0% 掉到 76.7%, 差 13.3 个点; SAT EBRW 写作部分从 90.9% 掉到 84.1%; 反方向 AMC 12 从 20.0% 升到 32.0%, AP Chemistry 从 58.3% 升到 71.7%, GRE Quantitative 从 57.5% 升到 67.5%. 升降大体抵消, 所以结论只对平均成立, 单门考试的差异能到十几个点, 而且表 8 本身就是单次运行.
 
 ## C Contamination on professional and academic exams (专业和学术考试上的污染)
 
@@ -2548,7 +2548,7 @@ Figure 8: Performance of GPT-4 on TruthfulQA. Accuracy is shown on the y-axis, h
 图 8: GPT-4 在 TruthfulQA 上的表现. 纵轴是准确率, 越高越好. 我们比较了 GPT-4 在 zero-shot 提示, few-shot 提示以及 RLHF 微调之后的表现. GPT-4 显著超过 GPT-3.5 和 Askell 等人 [101]. (图注末尾 「fixes to plot legend and title」 是原文残留的修订备注.)
 
 > **回看:** 系统卡图 8 和技术报告图 7 看起来是同一张图, 图注却一个写 「Askell et al [101]」, 一个写 「Bai et al. [67]」, 该信哪个?
-> 两张图的柱子和取值一致, 灰色柱子都标作 Anthropic-LM. 系统卡参考文献 [101] 实际是 Bai 等人的 「Constitutional AI」 (第一作者 Y. Bai, Askell 是作者之一), 技术报告 [67] 也指向 Bai 等人. 所以 「Askell et al」 是图注写错了第一作者, 图注结尾那句 「fixes to plot legend and title」 也是没删掉的修订备注. 第 3.1 节末段说的 「约 60% 对约 30%」, 对应图上 gpt-4 RLHF 约 59.5% 和 gpt-4-base 0-shot 约 29% (读图估算).
+> 两张图的柱子和取值一致, 灰色柱子都标作 Anthropic-LM. 系统卡参考文献 [101] 实际是 Bai 等人的 「Constitutional AI」 (第一作者 Y. Bai, Askell 是作者之一), 技术报告 [67] 也指向 Bai 等人. 所以 「Askell et al」 是图注写错了第一作者, 图注结尾那句 「fixes to plot legend and title」 也是没删掉的修订备注. 第 3.1 节末段说的 「约 60% 对约 30%」, 对应图上 gpt-4 RLHF 约 59.5% 和 gpt-4-base 0-shot 约 29% (读图).
 
 <!-- page 66 of 100 -->
 

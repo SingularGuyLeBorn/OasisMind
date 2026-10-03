@@ -20,7 +20,7 @@ Fig. 3 给了这三块的实际占比. 右图 Pro 的成本拆分: rollout 43.8%
 
 Tab. 1 的规格与 Flash 报告一脉相承. Flash 档: 48/39/9 层 (Total/SWA/GA), hidden 4096, SWA heads 64/8, GA heads 64/4, experts 256/8, 总参 310B, 激活 15B. Pro 档: 70/60/10 层, hidden 6144, SWA / GA heads 都是 128/8, experts 384/8, 1.02T / 42B. 两档窗长都是 128, 头维 QK/V 192/128, 没有共享专家, 首层是全局注意力加稠密 FFN. Pro 的 SWA:GA 逐层数是 60:10, 即 6:1, 比 Flash 的 39:9 更激进; 这个比例与 V2.5-Pro 公开页写的 6:1 一致.
 
-预训练分两阶段: 先只训语言骨干, 再接入自研 ViT 与音频编码器做 omni 联合训练; 上下文从 32K 起, 中途扩到 256K. Flash 共 48T tokens (26T 文本 + 22T omni), Pro 30T (27T + 3T). 这些总量与 V2.5 公开页的 48T 和 V2.5-Pro 的 27T 相同或相近, 结合相同的层数与专家配置, V2.6 很可能直接从 V2.5 系列的预训练检查点继续 (推断, 报告没有明说). 如果推断成立, V2.5 到 V2.6 的差距 (Tab. 3 里 DeepSWE 19.0→71.9) 几乎全部来自 mid-training 与后训练.
+预训练分两阶段: 先只训语言骨干, 再接入自研 ViT 与音频编码器做 omni 联合训练; 上下文从 32K 起, 中途扩到 256K. Flash 共 48T tokens (26T 文本 + 22T omni), Pro 30T (27T + 3T). 这些总量与 V2.5 公开页的 48T 和 V2.5-Pro 的 27T 相同或相近, 结合相同的层数与专家配置, V2.6 很可能直接从 V2.5 系列的预训练检查点继续 (报告没有明说). 如果推断成立, V2.5 到 V2.6 的差距 (Tab. 3 里 DeepSWE 19.0→71.9) 几乎全部来自 mid-training 与后训练.
 
 多模态前端是在 Flash 骨干上加的. ViT 把 MiMo-VL-7B 的固定非重叠窗口注意力换成 sink-augmented SWA, 局部层在行主序与列主序之间交替, 周期插入 GA 层; 规格 28/24/4 层, hidden 1280, 窗左右各 64, 参量 681M, 训练超过 4T image tokens. 音频 tokenizer 在 25 Hz 用 20 层 RVQ 编码, 训练数据约 2000 万 小时; patch encoder 每 4 帧合一个 patch, 把速率降到 6.25 Hz 再投进骨干. sink 加 SWA 从文本骨干一路用到视觉和音频编码器, 是这个家族在注意力设计上最稳定的一条线.
 
@@ -158,7 +158,7 @@ Tab. 7 在 7 个 harness × 3 个数据集上看 multi-harness RL: 蒸馏模型�
 
 ### 4.3. 在家族里的位置, 以及报告没给的东西
 
-把各面串起来: 预训练沿用 V2.5 系列的骨干与数据量 (推断); mid-training 用 agent 轨迹铺探索空间, 同时换 Muown 与 MXFP4 为大 batch RL 做准备; RL 沿算力, 环境, grader 三轴放大, 异步 partial rollout 允许有限陈旧, Sample Mixer 维持配比; 环境清洗, Hack Agent 与在线清零把 hacking 压在 2% 以下; GRS / GAR 在测例之上给质量梯度, prompt-mean 与长度惩罚管住回答长度; 冻结 router 与 R3 分别处理路由漂移与引擎不一致; DFlash 加速 rollout; MOPD2 把难验证领域合进最终检查点. 从 MiMo-7B 算起, 同步到异步, 规则判分到 agentic grading, 单边裁剪到双边掩码, 这几条线在 V2.6 都走到了新的一端.
+把各面串起来: 预训练应沿用 V2.5 系列的骨干与数据量; mid-training 用 agent 轨迹铺探索空间, 同时换 Muown 与 MXFP4 为大 batch RL 做准备; RL 沿算力, 环境, grader 三轴放大, 异步 partial rollout 允许有限陈旧, Sample Mixer 维持配比; 环境清洗, Hack Agent 与在线清零把 hacking 压在 2% 以下; GRS / GAR 在测例之上给质量梯度, prompt-mean 与长度惩罚管住回答长度; 冻结 router 与 R3 分别处理路由漂移与引擎不一致; DFlash 加速 rollout; MOPD2 把难验证领域合进最终检查点. 从 MiMo-7B 算起, 同步到异步, 规则判分到 agentic grading, 单边裁剪到双边掩码, 这几条线在 V2.6 都走到了新的一端.
 
 报告没有给的也要记下. hybrid block 内部每块的 SWA 层数只给了总数; Muown 相对 Muon 的超参扫描没有; Sample Mixer 的全局参数, GAR 质量因子 $f_i$ 的映射表没有数值; 旗舰 RL 的总步数与完整学习率日程没给; RL 系统的 MFU 与吞吐表也没有. Tab. 3 里部分闭源格为空, 无法全表对比. 这些空白意味着想复现旗舰线, 只能从 Distill-9B 的开源套件出发.
 

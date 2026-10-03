@@ -50,7 +50,7 @@ Figure 1: GPT-4, Mistral Large (预训练版), Claude 2, Gemini Pro 1.0, GPT 3.5
 > 页面没说. 图注和第 3 页的 「performance of the pretrained models」 都指预训练版, 第 1 页 「second-ranked model generally available through an API」 说的却是 API 上的产品. 两者是不是同一份权重, 这页没交代.
 
 > **看表:** 柱子高低看上去差很多, 实际差多少?
-> 纵轴从 40% 起画. GPT-4 和 Large 的真实比值是 86.4 / 81.2, 约 1.06; 按柱子露在 40% 以上的部分算是 46.4 / 41.2, 约 1.13 (估算). 图上的高度差大约是真实差距的两倍.
+> 纵轴从 40% 起画. GPT-4 和 Large 的真实比值是 86.4 / 81.2, 约 1.06; 按柱子露在 40% 以上的部分算是 46.4 / 41.2, 约 1.13. 图上的高度差大约是真实差距的两倍.
 
 Mistral Large comes with new capabilities and strengths:
 
@@ -132,7 +132,7 @@ The page opens with the body of Figure 2. Its header row is not visible on any p
 > Mistral Large 是 94.2% 对 94.0%, LLaMA 2 70B 是 86.0% 对 85.1%, GPT 3.5 两列都是 85.2%. 示例多了分数反而持平或略降, 页面没解释. 还要注意 Mistral Large 在 5-shot 列加粗, 是因为 GPT 4 那格是 「-」; 到了 25-shot 列, GPT 4 的 96.3% 比它高.
 
 > **再看:** 和 Claude 2 比, Mistral Large 算赢还是输?
-> 两者都有分数的列只有 MMLU, Arc Challenge 5-shot, TriviaQA 三列. Mistral Large 赢两列 (81.2 对 78.5, 94.2 对 91.0), 输 TriviaQA (82.7 对 87.5). 三列平均约 86.0 对 85.7 (估算), 差距只有 0.4 个点左右.
+> 两者都有分数的列只有 MMLU, Arc Challenge 5-shot, TriviaQA 三列. Mistral Large 赢两列 (81.2 对 78.5, 94.2 对 91.0), 输 TriviaQA (82.7 对 87.5). 三列平均约 86.0 对 85.7, 差距只有 0.4 个点左右.
 
 Figure 2: Performance on widespread common sense, reasoning and knowledge benchmarks of the top-leading LLM models on the market: MMLU (Measuring massive multitask language in understanding), HellaSwag (10-shot), Wino Grande (5-shot), Arc Challenge (5-shot), Arc Challenge (25-shot), TriviaQA (5-shot) and TruthfulQA.
 
@@ -158,7 +158,7 @@ Figure 3 被 cookie 横幅挡住一半. 能读的只有西班牙语和意大利�
 > 图注的顺序是 Mistral Large, Mixtral 8x7B, LLaMA 2 70B, 和露出的首字母 M, M, L 对得上, 第一行全加粗也符合 Mistral Large 领先的说法. 所以按 Mistral Large, Mixtral 8x7B, LLaMA 2 70B 读. 这是按顺序和首字母推的, 行名本身看不到.
 
 > **想:** 意大利语 Arc-C 只有 60.3%, 英语 Arc Challenge 却是 94.2%, 差了三十多个点?
-> 差 33.9 个点 (估算), LLaMA 2 70B 一侧是 49.4% 对 86.0%. 同一基准的 HellaSwag 和 MMLU, 换成西语意语只降几个到十几个点, 唯独 Arc-C 断崖. Figure 3 没写 shot 数, 也没说用的是哪个版本的 Arc 数据, 这页定不了是语言差距还是设定不同.
+> 差 33.9 个点, LLaMA 2 70B 一侧是 49.4% 对 86.0%. 同一基准的 HellaSwag 和 MMLU, 换成西语意语只降几个到十几个点, 唯独 Arc-C 断崖. Figure 3 没写 shot 数, 也没说用的是哪个版本的 Arc 数据, 这页定不了是语言差距还是设定不同.
 
 Figure 3: Comparison of Mistral Large, Mixtral 8x7B and LLaMA 2 70B on HellaSwag, Arc Challenge and MMLU in French, German, Spanish and Italian.
 
@@ -194,7 +194,7 @@ The table groups HumanEval and MBPP under Coding, and Math maj@4, GSM8K maj@8 (8
 > 全表其他格都是一位小数, 只有这一格两位. 页面没解释, 照抄. 拿它和其他格比时按 91.2 看就行.
 
 > **看表:** maj@8 比 maj@1 高 10 个点, 这 10 个点全是投票带来的吗?
-> 不能这么算. Mistral Large 是 91.21% 对 81.0%, 差 10.21 个点; LLaMA 2 70B 是 69.6% 对 53.6%, 差 16.0 个点 (估算). 但两列的 shot 数也不同, 一个 8-shot, 一个 5-shot, 投票和示例数的影响在这张表里拆不开.
+> 不能这么算. Mistral Large 是 91.21% 对 81.0%, 差 10.21 个点; LLaMA 2 70B 是 69.6% 对 53.6%, 差 16.0 个点. 但两列的 shot 数也不同, 一个 8-shot, 一个 5-shot, 投票和示例数的影响在这张表里拆不开.
 
 Figure 4: Performance on popular coding and math benchmarks of the leading LLM models on the market: HumanEval pass@1, MBPP pass@1, Math maj@4, GSM8K maj@8 (8-shot) and GSM8K maj@1 (5 shot).
 

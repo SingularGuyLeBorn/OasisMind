@@ -35,7 +35,7 @@ Mixtral 8x22B 有这几项长处:
 - 上下文窗口 64K token, 能从长文档里准确找回信息
 
 > **核对:** 64K 具体是多少 token?
-> 原文只印了 64K tokens. 按 1K = 1,024 算是 65,536, 按 1K = 1,000 算是 64,000 (估算), 页面没说用哪种. function calling 和受约束输出也只有一句描述, 没有任何评测数.
+> 原文只印了 64K tokens. 按 1K = 1,024 算是 65,536, 按 1K = 1,000 算是 64,000, 页面没说用哪种. function calling 和受约束输出也只有一句描述, 没有任何评测数.
 
 ## Truly open (真正开放)
 
@@ -64,7 +64,7 @@ Mixtral 8x22B is a natural continuation of our open model family. Its sparse act
 Mixtral 8x22B 是我们开放模型家族的自然延续. 稀疏激活让它比任何 70B 稠密模型都快, 同时比其它任何开放权重模型都强 (不论许可证宽松还是严格). 基座模型也一并放出, 适合拿来做微调.
 
 > **拆开:** 「faster than any dense 70B model」 在页面上有速度数据吗?
-> 没有吞吐或延迟数字. 能拿来比的只有激活参数: 39B 对 70B, 约为 0.56 倍 (估算). 这只说明每个 token 参与计算的参数更少, 实际快多少要看部署方式, 这页没测.
+> 没有吞吐或延迟数字. 能拿来比的只有激活参数: 39B 对 70B, 约为 0.56 倍. 这只说明每个 token 参与计算的参数更少, 实际快多少要看部署方式, 这页没测.
 
 > **确认:** 「more capable than any other open-weight model」 和第 4 页的表对得上吗?
 > 不完全对得上. 括号里明确把严格许可证的模型也算进来, 而 CC-BY-NC 的 Command R+ 在 HellaSwag 上是 88.6%, 高于 Mixtral 8x22B 的 88.5%; Wino Grande 上是 85.4%, 高于 84.7%. 这两格在表里还是加粗的.
@@ -82,7 +82,7 @@ The plot uses "Performance (MMLU)" from 40% to 80% on the y-axis and "Active par
 图的纵轴是 「Performance (MMLU)」, 从 40% 到 80%; 横轴是 「Active parameters / cost」, 从 0 到 110. 左上角的橙色三角标着 「Best performance/cost ratio」, 里面是 Mistral 7B, Mixtral 8x7B, Mixtral 8x22B 三个点. 三角外面是 LLaMA 2 7B, LLaMA 2 13B, LLaMA 1 33B, LLaMA 2 70B, 以及标注 CC-BY-NC license 的 Command R 和 Command R+.
 
 > **回看:** LLaMA 2 7B, LLaMA 2 13B, LLaMA 1 33B 的 MMLU 是多少?
-> 这三点只在图里出现, 三张表都没有它们. 目测大约是 44.5%, 55.7%, 56.8% (估算, 读图误差约 ±0.5), 只能当位置参考, 不能当印出来的分数引用.
+> 这三点只在图里出现, 三张表都没有它们. 目测大约是 44.5%, 55.7%, 56.8% (读图误差约 ±0.5), 只能当位置参考, 不能当印出来的分数引用.
 
 ## Unmatched open performance (开放模型里无可匹敌的性能)
 
@@ -119,7 +119,7 @@ Figure 2: Performance on widespread common sense, reasoning and knowledge benchm
 > 同一列里其它模型都在 78% 到 91% 之间, LLaMA 2 70B 的 MMLU 69.9% 和 Command R 的 68.2% 很接近, Arc C (25) 却是 85.1% 对 66.5%. 表里没注这两格的来源, Command R 和 Command R+ 的 Arc C (5) 也是空的.
 
 > **停一下:** 同一个 Arc Challenge, 25-shot 为什么没比 5-shot 高?
-> LLaMA 2 70B 是 86.0% 对 85.1%, 25-shot 反而低 0.9; Mixtral 8x22B 两列都是 91.3%; Mistral 7B 和 Mixtral 8x7B 各高 0.9 和 0.1 (估算). 多给示例不一定加分, 页面也没解释两列的评测设置差在哪.
+> LLaMA 2 70B 是 86.0% 对 85.1%, 25-shot 反而低 0.9; Mixtral 8x22B 两列都是 91.3%; Mistral 7B 和 Mixtral 8x7B 各高 0.9 和 0.1. 多给示例不一定加分, 页面也没解释两列的评测设置差在哪.
 
 ### Multilingual capabilities (多语言能力)
 
@@ -143,7 +143,7 @@ Figure 3: Comparison of Mistral open source models and LLaMA 2 70B on HellaSwag,
 图 3: Mistral 开源模型与 LLaMA 2 70B 在法语, 德语, 西班牙语, 意大利语的 HellaSwag, Arc Challenge, MMLU 上的对比.
 
 > **再看:** 图 3 的 Arc-C 只有 55% 到 59%, 图 2 的英文 Arc C 却是 91.3%, 差这么多正常吗?
-> 两张表测的不是同一种设置. 图 3 没写 shot 数, 也没写题目是翻译版还是原生版. MMLU 在四种语言里是 74.1% 到 75.8%, 比英文 77.75% 只低 2 到 3.7 分 (估算), 差距主要落在 Arc-C 上.
+> 两张表测的不是同一种设置. 图 3 没写 shot 数, 也没写题目是翻译版还是原生版. MMLU 在四种语言里是 74.1% 到 75.8%, 比英文 77.75% 只低 2 到 3.7 分, 差距主要落在 Arc-C 上.
 
 ### Maths & Coding (数学与代码)
 
@@ -176,14 +176,14 @@ Figure 4: Performance on popular coding and maths benchmarks of the leading open
 图 4: 主流开放模型在常用代码和数学基准上的表现: HumanEval pass@1, MBPP pass@1, GSM8K maj@1 (5 shot), GSM8K maj@8 (8-shot), Math maj@4.
 
 > **想:** GSM8K 从 maj@1 的 78.6% 到 maj@8 的 88.4%, 这 9.8 分都是投票带来的吗?
-> 拆不开. 两列同时变了投票数 (1 到 8) 和示例数 (5-shot 到 8-shot), 页面没给固定其中一项的对照. 这 9.8 分 (估算) 只能算两个因素合在一起的效果.
+> 拆不开. 两列同时变了投票数 (1 到 8) 和示例数 (5-shot 到 8-shot), 页面没给固定其中一项的对照. 这 9.8 分 只能算两个因素合在一起的效果.
 
 The instructed version of the Mixtral 8x22B released today shows even better math performance, with a score of 90.8% on GSM8K maj@8 and a Math maj@4 score of 44.6%.
 
 今天一同发布的 Mixtral 8x22B 指令版数学更好: GSM8K maj@8 是 90.8%, Math maj@4 是 44.6%.
 
 > **问:** 指令版只报了两个数, 其它基准呢?
-> 这页只给了这两项, 比基座版的 88.4% 和 41.8% 各高 2.4 和 2.8 分 (估算). 指令版的代码, 推理, 多语言分数都没印, 其它模型的指令版也没列, 所以没法横向比.
+> 这页只给了这两项, 比基座版的 88.4% 和 41.8% 各高 2.4 和 2.8 分. 指令版的代码, 推理, 多语言分数都没印, 其它模型的指令版也没列, 所以没法横向比.
 
 Explore Mixtral 8x22B now on la Plateforme and join the Mistral community of developers as we define the AI frontier together.
 

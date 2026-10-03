@@ -21,7 +21,7 @@ We introduce Mistral 7B, a 7-billion-parameter language model engineered for sup
 本文推出 Mistral 7B, 一个 70 亿参数的语言模型, 设计目标是性能和效率兼顾. 在所有评测过的基准上, Mistral 7B 都超过当时最好的开放 13B 模型 (Llama 2); 在推理, 数学和代码生成上, 它还超过已发布的最好的 34B 模型 (Llama 1). 模型用 grouped-query attention (GQA) 加快推理, 再配合 sliding window attention (SWA), 以更低的推理成本处理任意长度的序列. 作者还给出一个按指令微调的版本 Mistral 7B - Instruct, 它在人工评测和自动评测上都超过 Llama 2 13B - Chat. 模型以 Apache 2.0 许可发布.
 
 > **想:** 摘要说在推理, 数学, 代码三项上超过 Llama 1 34B, 引言却只剩数学和代码, 推理这一项站得住吗?
-> 按图 4 读柱高 (读图估算), Reasoning 一类 Mistral 7B 约 69.2, LLaMA 1 34B 约 69.5, 后者略高; 摘要的 「reasoning」 与图对不上, 引言删掉它反而和图一致.
+> 按图 4 读柱高 (读图), Reasoning 一类 Mistral 7B 约 69.2, LLaMA 1 34B 约 69.5, 后者略高; 摘要的 「reasoning」 与图对不上, 引言删掉它反而和图一致.
 
 **Code:** [https://github.com/mistralai/mistral-src](https://github.com/mistralai/mistral-src)
 
@@ -204,7 +204,7 @@ Figure 4: Performance of Mistral 7B and different Llama models on a wide range o
 图 4: Mistral 7B 与几个 Llama 模型在多类基准上的表现. 为了准确比较, 所有模型的所有指标都用作者的评测流水线重新评过. Mistral 7B 在所有基准上都明显超过 Llama 2 7B 和 Llama 2 13B. 在数学, 代码生成和推理基准上, 它也远超 Llama 1 34B.
 
 > **看表:** 图 4 的分类柱子是表 2 哪几列的平均?
-> 能对上的有三类: Code = (30.5 + 47.5) / 2 = 39.0, Math = (52.2 + 13.1) / 2 = 32.65, Knowledge = (28.8 + 69.9) / 2 = 49.35, 与柱高一致. Reasoning 用表 2 的 5 列算是 75.0, 柱高约 69.2 (读图), 说明还混进了表里没印的 SIQA, OpenbookQA, CommonsenseQA; 反推这三项均值约 59.5 (估算).
+> 能对上的有三类: Code = (30.5 + 47.5) / 2 = 39.0, Math = (52.2 + 13.1) / 2 = 32.65, Knowledge = (28.8 + 69.9) / 2 = 49.35, 与柱高一致. Reasoning 用表 2 的 5 列算是 75.0, 柱高约 69.2 (读图), 说明还混进了表里没印的 SIQA, OpenbookQA, CommonsenseQA; 反推这三项均值约 59.5.
 
 > **拆开:** 图注说 「significantly outperforms Llama 2 13B on all benchmarks」, 八类柱子逐个看呢?
 > 读图估算, Knowledge 两者都在 49.3 左右, BBH 约 37.9 对 37.6, 基本持平; 明显拉开的是 MMLU (60.1 对 55.6), AGI Eval, Math 和 Code. 「all」 和 「significantly」 在两类上不成立.

@@ -70,7 +70,7 @@ CERTIFIED BY axeptio. Here are our cookies! Light and completely harmless. On th
     - 可以在 La Plateforme 或 Le Chat 上试用.
 
 > **问:** 名字里的 12B, 总参数, 激活参数, 视觉编码器参数, 页面各印了什么?
-> 本页概要里 12B 写的是 「12B parameter multimodal decoder」, 指多模态解码器; 视觉编码器单列, 是 400M. 总参数: 本页未印, 两者相加约 12.4B (估算). 激活参数: 本页未印, 22 页里也没写层数, 隐藏维度, 头数, 词表大小.
+> 本页概要里 12B 写的是 「12B parameter multimodal decoder」, 指多模态解码器; 视觉编码器单列, 是 400M. 总参数: 本页未印, 两者相加约 12.4B. 激活参数: 本页未印, 22 页里也没写层数, 隐藏维度, 头数, 词表大小.
 
 Pixtral is trained to understand both natural images and documents, achieving 52.5% on the MMMU reasoning benchmark, surpassing a number of larger models. The model shows strong abilities in tasks such as chart and figure understanding, document question answering, multimodal reasoning and instruction following. Pixtral is able to ingest images at their natural resolution and aspect ratio, giving the user flexibility on the number of tokens used to process an image. Pixtral is also able to process any number of images in its long context window of 128K tokens. Unlike previous open-source models, Pixtral does not compromise on text benchmark performance to excel in multimodal tasks.
 
@@ -145,7 +145,7 @@ Pixtral particularly excels at both multimodal and text-only instruction followi
 和其他开源多模态模型相比, Pixtral 在多模态和纯文本两类指令遵循上都特别突出. 它在指令遵循上明显强过 Qwen2-VL 7B, LLaVa-OneVision 7B 和 Phi-3.5 Vision, 文本 IF-Eval 和 MT-Bench 比最接近的开源模型相对提升 20%. 为了进一步评估多模态场景下的这项能力, 我们做了这两个基准的多模态版本: MM-IF-Eval 和 MM-MT-Bench.
 
 > **停一下:** 「20% relative improvement in text IF-Eval and MT-Bench」, 拿第 5 页表算得出来吗?
-> 只算得出一半. 第 5 页表 Text IF-Eval 61.3 对最接近的 LLaVA-OV 7B 51.4, 相对提升约 19.3% (估算); Text MT-bench 7.68 对 LLaVA-OV 7B 6.94, 只有约 10.7% (估算). 换成 MM MT-Bench, 6.05 对 Qwen2-VL 7B 5.45 也只有约 11.0% (估算).
+> 只算得出一半. 第 5 页表 Text IF-Eval 61.3 对最接近的 LLaVA-OV 7B 51.4, 相对提升约 19.3%; Text MT-bench 7.68 对 LLaVA-OV 7B 6.94, 只有约 10.7%. 换成 MM MT-Bench, 6.05 对 Qwen2-VL 7B 5.45 也只有约 11.0%.
 
 <!-- page 5 of 22 -->
 
@@ -170,7 +170,7 @@ Performance of Pixtral compared to open multimodal models. All models were bench
 Pixtral 和开源多模态模型的对比. 所有模型都在同一套评测框架里, 用同一个 prompt 测.
 
 > **再看:** 多模态指令遵循两列是 Mistral 自建的基准, Pixtral 领先多少?
-> 本页表 MM IF-Eval 52.7 对次高的 LLaVA-OV 7B 42.5, 相对高约 24.0% (估算); MM MT-Bench 6.05 对次高的 Qwen2-VL 7B 5.45, 高约 11.0% (估算). 这两个基准都是本页新造的, MM-MT-Bench 写的是 「will open-source」, MM-IF-Eval 连开源承诺都没有.
+> 本页表 MM IF-Eval 52.7 对次高的 LLaVA-OV 7B 42.5, 相对高约 24.0%; MM MT-Bench 6.05 对次高的 Qwen2-VL 7B 5.45, 高约 11.0%. 这两个基准都是本页新造的, MM-MT-Bench 写的是 「will open-source」, MM-IF-Eval 连开源承诺都没有.
 
 > **对一下:** Qwen2-VL 7B 的 ChartQA 只有 38.6, Phi-3 Vision 的 VQAv2 只有 42.4, 这两格正常吗?
 > 本页表没有注释. Qwen2-VL 7B 的 DocVQA 是全表最高的 94.5, ChartQA 却比 Phi-3 Vision (72.0) 还低 33.4 个点; Phi-3 Vision 的 VQAv2 比 Phi-3.5 Vision (56.1) 低 13.7 个点. 页面只说统一用能复现 GPT-4o 和 Claude-3.5-Sonnet 的 prompt, 没讨论小模型会不会因此吃亏.
@@ -194,7 +194,7 @@ In this way, Pixtral can be used to accurately understand complex diagrams, char
 这样一来, Pixtral 既能在高分辨率下准确读懂复杂的示意图, 图表和文档, 在图标, 剪贴画, 公式这类小图上又能推理得很快.
 
 > **想:** 按 16x16 一个 token, 一张 1024x1024 的图要占多少上下文?
-> 本页没给例子, 按正文规则算: 64 行乘 64 列是 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160 (估算). 128k 若按 128,000 算, 不放文字也只装得下约 30 张 (估算). 页面没写分辨率上限, 也没说大图会不会先缩小.
+> 本页没给例子, 按正文规则算: 64 行乘 64 列是 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160. 128k 若按 128,000 算, 不放文字也只装得下约 30 张. 页面没写分辨率上限, 也没说大图会不会先缩小.
 
 <!-- page 6 of 22 -->
 
@@ -329,7 +329,7 @@ To determine when things started to go wrong for the dark-dragon-50 model, we ne
 ![cookie 弹窗盖住回答左半的截图, 右侧露出 "...on?", "...hows the training loss over steps", "...y-sunset-49, different-haze-34," 等半截句子](images/p10-esponse-on-this-website-we-use-cookies-to-measure-our.png)
 
 > **确认:** 回答说 10k 步左右出问题, 本页曲线图上是这样吗?
-> 第一次尖峰对得上: 红实线在约 9.5k 步冲到 1 附近 (读图估算). 但回答漏了更大的一次: 约 19.5k 步红实线冲到接近 1e+4 的量级, 比第一次高约四个数量级 (读图估算), 之后曲线在约 21.5k 步中止. 回答只说 「continues to spike and fluctuate」, 没点出 20k 附近这次.
+> 第一次尖峰对得上: 红实线在约 9.5k 步冲到 1 附近 (读图). 但回答漏了更大的一次: 约 19.5k 步红实线冲到接近 1e+4 的量级, 比第一次高约四个数量级 (读图), 之后曲线在约 21.5k 步中止. 回答只说 「continues to spike and fluctuate」, 没点出 20k 附近这次.
 
 <!-- page 11 of 22 -->
 
@@ -686,7 +686,7 @@ print(outputs[0].outputs[0].text)
 > 跑不通. 本页代码先写 `llm = LLM(model=model_name, tokenizer_mode="mistral")`, 最后调用的却是 `vllm_model.model.chat(...)`, 前面从没定义 `vllm_model`, 照抄会报名字未定义. 本页正文也没提这个出入.
 
 > **问:** 本页示例图 200x300, 按第 5 页的 16x16 规则要占多少 token?
-> 页面没说边长不是 16 的倍数时怎么处理. 若向上补齐, 宽 200 是 13 列, 高 300 是 19 行, 共 247 个图像 token, 加 18 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 合计 266 (估算); 若向下截断, 是 12 列 18 行, 共 216 加 18, 合计 234 (估算).
+> 页面没说边长不是 16 的倍数时怎么处理. 若向上补齐, 宽 200 是 13 列, 高 300 是 19 行, 共 247 个图像 token, 加 18 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 合计 266; 若向下截断, 是 12 列 18 行, 共 216 加 18, 合计 234.
 
 Products
 

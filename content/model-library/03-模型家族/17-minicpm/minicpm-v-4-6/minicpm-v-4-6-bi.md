@@ -20,7 +20,7 @@ Visual encoding constitutes a major computational bottleneck in Multimodal Large
 在多模态大模型 (MLLM) 里, 视觉编码是主要的算力瓶颈之一, 高分辨率图像输入时尤其明显. 通行做法是先做全局编码, 再在 ViT 之后压缩. 全局编码会产生极长的 token 序列, 而 ViT 之后的压缩要等 ViT 把完整的二次方注意力算完才开始减 token. 这篇工作从两个维度重新审视这套惯例: 编码策略和视觉 token 压缩. 第一, 对照实验表明, 切片编码在各个基准上都优于全局编码, 说明对细粒度感知来说, 用切片视图保住局部细节可能比做全局注意力更有用. 第二, 我们提出 ViT 内早压缩, 在 ViT 的浅层就减少 token, 大幅降低视觉编码 FLOPs, 同时保住下游表现. 把 ViT 内压缩接进切片编码框架, 就得到 LLaVA-UHD v4: 一套面向高分辨率输入, 高效且算力可控的视觉编码方案. 在覆盖文档理解, OCR 和通用 VQA 的一组基准上, LLaVA-UHD v4 把视觉编码 FLOPs 降低 55.8%, 表现与基线持平甚至更好. 这些结果说明, 视觉编码的效率可以大幅提升而不牺牲下游表现, 为高效的高分辨率 MLLM 提供了一个实用的设计方向. 全部模型权重和代码都将公开, 供后续研究使用<sup>1</sup>.
 
 > **问:** 摘要写 FLOPs 降低 55.8%, 第 2 页贡献和结论写 55.75%, 还管它叫 「acceleration」, 是同一件事吗?
-> 数是同一个. 第 7 页给的两端是 3555G 和 1573G, 表 4 写成 3555.1 和 1573.1, (3555.1 − 1573.1) / 3555.1 = 55.75% (估算), 摘要四舍五入成 55.8%. 但 「acceleration」 这个词要打折扣: 全文只报了单个切片过 ViT 的 FLOPs, 没有任何一处报实际推理延迟或吞吐. FLOPs 比例是 1573.1 / 3555.1 ≈ 44.2%, 相当于少算约 2.26 倍 (估算), 实际快多少本页没有测.
+> 数是同一个. 第 7 页给的两端是 3555G 和 1573G, 表 4 写成 3555.1 和 1573.1, (3555.1 − 1573.1) / 3555.1 = 55.75%, 摘要四舍五入成 55.8%. 但 「acceleration」 这个词要打折扣: 全文只报了单个切片过 ViT 的 FLOPs, 没有任何一处报实际推理延迟或吞吐. FLOPs 比例是 1573.1 / 3555.1 ≈ 44.2%, 相当于少算约 2.26 倍, 实际快多少本页没有测.
 
 ## 1 Introduction
 
@@ -55,7 +55,7 @@ To address the challenges above, we introduce a parameter-reuse early compressor
 针对上述难点, 我们提出一个参数复用的早压缩器: 一个窗口注意力块加一个降采样 MLP, 两者都插在 ViT 浅层, 并用相邻 ViT 层的预训练权重初始化. 这种热启动让新模块从训练第一步起就非常贴近原 ViT 的表示流形, 从而不扰乱已学到的视觉表示. 该模块在编码器很早的阶段把 ViT 的 token 压缩 4 倍, 让后续绝大多数 ViT 层只处理原 token 预算的一小部分.
 
 > **核对:** 「后续绝大多数 ViT 层」 到底是多少层? 能从本页算出 SigLIP 2 有几层吗?
-> 插入点在第 7 页写明是 k = 6, 但全文没有给 SigLIP 2 的总层数 L, 也没写用的是哪个尺寸的 SigLIP 2. 能算的只有斜率: 表 5 里 k 从 3 到 6, 6 到 9 各多 328.0G, 9 到 15 多 655.9G, 每推后一层约多 109.3G (估算), 这是 「一层在全分辨率跑」 和 「一层在四分之一 token 上跑」 的差价. 如果粗暴假设四分之一 token 的层正好花四分之一的算力, 全分辨率一层约 145.8G, 3555.1G 对应约 24 层 (估算); 注意力是二次方, 实际比例低于四分之一, 推出的层数会更多. 层数本页没给, 这个区间只能当量级参考.
+> 插入点在第 7 页写明是 k = 6, 但全文没有给 SigLIP 2 的总层数 L, 也没写用的是哪个尺寸的 SigLIP 2. 能算的只有斜率: 表 5 里 k 从 3 到 6, 6 到 9 各多 328.0G, 9 到 15 多 655.9G, 每推后一层约多 109.3G, 这是 「一层在全分辨率跑」 和 「一层在四分之一 token 上跑」 的差价. 如果粗暴假设四分之一 token 的层正好花四分之一的算力, 全分辨率一层约 145.8G, 3555.1G 对应约 24 层; 注意力是二次方, 实际比例低于四分之一, 推出的层数会更多. 层数本页没给, 这个区间只能当量级参考.
 
 Combining slice-based encoding with the proposed intra-ViT early compression, we obtain LLaVA-UHD v4, an efficient and compute-controllable visual encoding architecture for high-resolution MLLMs. Across eight standard benchmarks, LLaVA-UHD v4 matches or surpasses a post-ViT baseline at the same 16× compression ratio in overall downstream accuracy.
 
@@ -110,7 +110,7 @@ Table 2: Robustness of slice-based encoding. Average accuracy under (i) an alter
 <table><tr><td>Setting</td><td>Scale</td><td>GE</td><td>SE</td></tr><tr><td rowspan="2">MoonViT</td><td>8M</td><td>70.3</td><td>71.6</td></tr><tr><td>16M</td><td>72.2</td><td>73.6</td></tr><tr><td>Higher-Res</td><td>8M</td><td>68.8</td><td>71.0</td></tr></table>
 
 > **确认:** MoonViT 那两行真的是 「约 +1.5」 吗?
-> 按表 2 算是 71.6 − 70.3 = 1.3, 73.6 − 72.2 = 1.4, 两者平均约 1.35 (估算). 用表 A1 未四舍五入的八项平均算, 是 71.562 − 70.250 = 1.31 和 73.550 − 72.225 = 1.33 (估算). 两种算法都不到 1.5, 「approximately +1.5」 偏宽松. 高分辨率切片那一行 71.0 − 68.8 = 2.2, 「more than +2」 成立. 另外高分辨率这组只有 8M 一个规模, 「no evidence of saturation」 是从一个点推出来的.
+> 按表 2 算是 71.6 − 70.3 = 1.3, 73.6 − 72.2 = 1.4, 两者平均约 1.35. 用表 A1 未四舍五入的八项平均算, 是 71.562 − 70.250 = 1.31 和 73.550 − 72.225 = 1.33. 两种算法都不到 1.5, 「approximately +1.5」 偏宽松. 高分辨率切片那一行 71.0 − 68.8 = 2.2, 「more than +2」 成立. 另外高分辨率这组只有 8M 一个规模, 「no evidence of saturation」 是从一个点推出来的.
 
 **Finding 1.** Slice-based encoding consistently matches or outperforms global encoding across different compression rates, vision encoder backbones, and image resolutions.
 
@@ -143,7 +143,7 @@ Table 3: Connector comparison.
 **MLP 优于 resampler.** 表 3 给出对比结果. MLP 连接器在所有配置下都高于 resampler, 压缩率较低时差距最大, 4× 下领先 +3.3 到 +6.7 分. 我们还观察到, 压缩率收紧, 训练数据增加时差距缩小, 16× 压缩配 16M 训练数据时降到 +0.4 分, 不过每一格 MLP 都保持领先.
 
 > **回看:** 按表 3 算, 4× 下 MLP 领先 69.10 − 65.51 = 3.59 和 71.73 − 64.80 = 6.93, 正文却写 +3.3 到 +6.7, 哪个对?
-> 正文的数来自第 16 页表 A4, 不是表 3. 表 A4 的平均分是 67.3 对 70.6, 66.6 对 73.3, 差 3.3 和 6.7. 两张表本该是同一批实验, 数却不一样: 表 3 的十个平均分全部比表 A4 低 1.51 到 1.80 (估算), 比如 4×/4M 的 MLP, 表 3 是 69.10, 表 A4 是 70.6, 而表 1 同一设置的 SE 也是 70.6. 我用表 A4 的八列逐个组合试过, 没有哪个基准子集能同时凑出表 3 的十个数. 表 A4, 表 1 和表 A2 互相对得上, 表 3 这套平均分的口径本页没交代. 只有 16×/16M 的 +0.4 在两张表里一致 (70.81 − 70.39 = 0.42, 72.5 − 72.1 = 0.4).
+> 正文的数来自第 16 页表 A4, 不是表 3. 表 A4 的平均分是 67.3 对 70.6, 66.6 对 73.3, 差 3.3 和 6.7. 两张表本该是同一批实验, 数却不一样: 表 3 的十个平均分全部比表 A4 低 1.51 到 1.80, 比如 4×/4M 的 MLP, 表 3 是 69.10, 表 A4 是 70.6, 而表 1 同一设置的 SE 也是 70.6. 我用表 A4 的八列逐个组合试过, 没有哪个基准子集能同时凑出表 3 的十个数. 表 A4, 表 1 和表 A2 互相对得上, 表 3 这套平均分的口径本页没交代. 只有 16×/16M 的 +0.4 在两张表里一致 (70.81 − 70.39 = 0.42, 72.5 − 72.1 = 0.4).
 
 **Finding 2.** Pixel-unshuffle-based MLP downsampling provides a stronger post-ViT compression baseline than query-based resampler.
 
@@ -324,7 +324,7 @@ We empirically validate the design of LLaVA-UHD v4 through controlled comparison
 **ViT 内早压缩在准确率上与 ViT 后基线持平, 同时大幅降低视觉编码开销.** 如图 2 和图 3 所示, 我们在完全相同的训练设置和共同的端到端 16× 压缩率下, 把 LLaVA-UHD v4 和最强的 ViT 后基线对比. 把一级 4× 压缩挪进 ViT 之后, 后续所有层只处理原 token 的 25%. 这从结构上把视觉编码 FLOPs 从 3555G 降到 1573G, 降幅达 55.75%. 尽管早压缩很激进, LLaVA-UHD v4 在全部五个训练规模上都与基线相差不超过 ±0.8 分, 平均偏差只有 −0.29 分, 可以忽略. 这说明我们的 ViT 内设计在不损害下游准确率的前提下省下了大量计算.
 
 > **看表:** 平均偏差 −0.29 能从表 A2 复算出来吗? 「±0.8」 又是哪一格?
-> 用表 A2 印出的一位小数平均分, 五个规模的差分别是 −0.8 (4M), +0.1 (8M), +0.6 (16M), −0.7 (32M), −0.6 (64M), 平均 −0.28 (估算), 比正文少 0.01, 可能正文是用未四舍五入的平均分算的. 「±0.8」 实际只碰到负的一侧, 就是 4M 那一格的 −0.8; 正向最大只有 +0.6. 五个规模里三个落后, 两个领先, 所以 「matches or surpasses」 更准确的读法是 「差距在 1 分以内, 略偏落后」.
+> 用表 A2 印出的一位小数平均分, 五个规模的差分别是 −0.8 (4M), +0.1 (8M), +0.6 (16M), −0.7 (32M), −0.6 (64M), 平均 −0.28, 比正文少 0.01, 可能正文是用未四舍五入的平均分算的. 「±0.8」 实际只碰到负的一侧, 就是 4M 那一格的 −0.8; 正向最大只有 +0.6. 五个规模里三个落后, 两个领先, 所以 「matches or surpasses」 更准确的读法是 「差距在 1 分以内, 略偏落后」.
 
 <!-- page 8 of 18 -->
 
@@ -349,7 +349,7 @@ Figure 3: Benchmark trends across training data scales. We compare Post-ViT and 
 图 3: 各基准随训练数据规模的变化趋势. 在八个基准上, 按不同训练数据规模比较 Post-ViT 和我们的方法. 八个子图依次是 (a) AI2D, (b) MMBench<sub>EN</sub>, (c) MMBench<sub>CN</sub>, (d) MathVista, (e) MMStar, (f) OCRBench, (g) HallBench, (h) MMMU.
 
 > **拆开:** 平均分只差 0.29, 拆到八个基准上, 哪一项掉得最多?
-> OCRBench. 按表 A2 逐格相减, 五个规模的差是 −2.2, −2.4, +0.3, −2.1, −0.8, 平均 −1.44 (估算), 是八项里最大的落后; MMB<sub>EN</sub> 五个规模全部落后 0.3 到 0.8, 平均 −0.70 (估算). 平均分能拉平, 主要靠 MMMU 在小规模领先 (+2.4, +1.0, +2.1) 和 HallBench 在 16M 的 +3.2. 这和第 2.1 节的叙事有张力: 切片编码的卖点是 OCRBench 领先 3.6 到 5.5, 而 ViT 内早压缩在同一项上最多吐回 2.4 分. 结论里 「matching or surpassing the fine-grained downstream performance」 放到 OCRBench 上并不成立.
+> OCRBench. 按表 A2 逐格相减, 五个规模的差是 −2.2, −2.4, +0.3, −2.1, −0.8, 平均 −1.44, 是八项里最大的落后; MMB<sub>EN</sub> 五个规模全部落后 0.3 到 0.8, 平均 −0.70. 平均分能拉平, 主要靠 MMMU 在小规模领先 (+2.4, +1.0, +2.1) 和 HallBench 在 16M 的 +3.2. 这和第 2.1 节的叙事有张力: 切片编码的卖点是 OCRBench 领先 3.6 到 5.5, 而 ViT 内早压缩在同一项上最多吐回 2.4 分. 结论里 「matching or surpassing the fine-grained downstream performance」 放到 OCRBench 上并不成立.
 
 **The proposed early-compression design preserves average scaling behavior within the tested range.** As training data increases from 4M to 64M samples, both systems improve substantially. The post-ViT baseline rises from 68.2 to 76.2 average points, while LLaVA-UHD v4 rises from 67.4 to 75.6. The average gap stays within ±0.8 points and does not widen monotonically, suggesting that intra-ViT compression does not introduce an observable average-level scaling ceiling. Individual benchmarks still show scale-dependent variation, for example, MMMU favors LLaVA-UHD v4 at smaller scales but the post-ViT baseline at larger scales, but this reversal does not indicate a systematic compression failure, since the aggregate trend remains stable across the tested range.
 
@@ -391,7 +391,7 @@ Table 4(c) Reused MLP and window attention
 | Win w/ Reused | 1573.1 | 70.7 |
 
 > **确认:** 表 4(c) 的 FLOPs 里, 窗口注意力和复用 MLP 各自花了多少, 能叠加吗?
-> 能, 而且正好线性叠加. 以 Pix-Unshuffle 的 1401.2 为底, 加窗口注意力多 1484.1 − 1401.2 = 82.9G, 换复用 MLP 多 1490.2 − 1401.2 = 89.0G, 两者都加是 1573.1 − 1401.2 = 171.9G = 82.9 + 89.0 (估算). 复用 MLP 更贵, 是因为块对角的 $\mathbf{W}_1$ 相当于把 FFN 隐藏层扩成四份. 再往下比: 完整的 D 相对无参数的 Avg Pool (1368.7) 多 204.4G, 占最终 1573.1G 的约 13.0% (估算). 另外正文说 ViT 内变体都是 1401.2G, 实际 Avg Pool 是 1368.7G, Cross-Attn 是 1402.0G.
+> 能, 而且正好线性叠加. 以 Pix-Unshuffle 的 1401.2 为底, 加窗口注意力多 1484.1 − 1401.2 = 82.9G, 换复用 MLP 多 1490.2 − 1401.2 = 89.0G, 两者都加是 1573.1 − 1401.2 = 171.9G = 82.9 + 89.0. 复用 MLP 更贵, 是因为块对角的 $\mathbf{W}_1$ 相当于把 FFN 隐藏层扩成四份. 再往下比: 完整的 D 相对无参数的 Avg Pool (1368.7) 多 204.4G, 占最终 1573.1G 的约 13.0%. 另外正文说 ViT 内变体都是 1401.2G, 实际 Avg Pool 是 1368.7G, Cross-Attn 是 1402.0G.
 
 **Naive in-ViT compression is efficient but not sufficient.** Table 4(a) first evaluates simple in-ViT merging strategies. Moving compression into the ViT substantially reduces computation, from 3555.1G FLOPs for the post-ViT baseline to 1401.2G FLOPs for in-ViT variants. However, this efficiency gain does not automatically recover baseline-level accuracy. Average pooling is the cheapest design, but drops the average score from 70.6 to 69.6. A learnable pixel-unshuffle MLP improves the score to 69.8, but still remains below the post-ViT baseline. These results suggest that early token reduction creates a nontrivial interface problem within the pretrained ViT, requiring the compressor to reduce sequence length while maintaining compatibility with the representational distribution expected by the remaining encoder layers.
 
@@ -408,7 +408,7 @@ Table 4(c) Reused MLP and window attention
 **直接交叉注意力合并不如 「局部窗口注意力 + 复用初始化 MLP」.** 表 4(b) 和一个更直接的替代方案比较: 用局部交叉注意力把每个 2 × 2 窗口直接收成一个 token. 用左上角 token 作查询时这个方案有竞争力, 平均准确率 70.5, 和 ViT 后基线以及我们的最终设计都接近. 但把查询换成窗口均值, 同样的 FLOPs 下分数降到 69.8, 说明一步到位的直接聚合对代表性查询怎么构造很敏感. 相比之下, 先用局部窗口注意力更新所有 token, 再用复用初始化的 MLP 融合这些上下文化后的 token, 达到 70.7, 是所有消融过的 ViT 内压缩器里最好的. 如表 A6 所示, 这种查询敏感性在 16M 下依然存在, 表现更好的查询甚至翻转成了窗口均值, 而 Win-Attn 加复用 MLP 在两个规模下都最强. 这说明是结构问题, 不是调参的偶然结果: 没有哪个单一查询能稳定地概括一个 2 × 2 窗口应该被总结成什么, 而先更新所有 token 再融合, 就完全绕开了这个问题.
 
 > **回看:** 正文说换成均值查询后分数 「降到 69.8」, 可上一页表 4(b) 的 Cross (mean) 是 69.9, 哪个是印错?
-> 两张表各站一边. 表 4(b) 和第 16 页表 A3 写 69.9, 第 17 页表 A6 的 8M 行和这里的正文写 69.8. 三张表的八个分项完全相同 (61.0, 66.0, 82.2, 81.5, 61.5, 47.5, 80.6, 78.5), 算下来平均正好是 69.850 (估算), 恰在四舍五入的分界上, 所以两种写法都可能出现. 这 0.1 不改变结论, 但同一实验在同一篇里有两个平均分. PDF 文字层与 md 一致, 不是转写错误.
+> 两张表各站一边. 表 4(b) 和第 16 页表 A3 写 69.9, 第 17 页表 A6 的 8M 行和这里的正文写 69.8. 三张表的八个分项完全相同 (61.0, 66.0, 82.2, 81.5, 61.5, 47.5, 80.6, 78.5), 算下来平均正好是 69.850, 恰在四舍五入的分界上, 所以两种写法都可能出现. 这 0.1 不改变结论, 但同一实验在同一篇里有两个平均分. PDF 文字层与 md 一致, 不是转写错误.
 
 Table 5: Effect of insertion depth k on accuracy and compute. Evaluation for D inserted after different ViT layers, reporting average score and visual-encoding FLOPs.
 
@@ -429,7 +429,7 @@ Table 5: Effect of insertion depth k on accuracy and compute. Evaluation for D i
 **有效的 ViT 内压缩需要中间的插入深度.** 如表 5 所示, D 插得太早破坏性很大: k = 3 的 FLOPs 最低, 平均分却跌到 38.76. 这说明最浅的几层 ViT 还没形成可以安全合并的表示. 相比之下, 插在 k = 6 保住了准确率, 又保留了大部分计算节省. 把压缩推迟到 k = 9 或 k = 15 没有准确率上的好处, 分数略低, FLOPs 分别涨到 1901G 和 2557G. 所以在扫描中没有塌陷的设置里, k = 6 是帕累托占优的: 比更深的插入位置既更准又更省. 这说明有效的 ViT 内压缩需要一个中间深度, 那里的 token 已不再是纯粹的低层视觉特征, 而是积累了足够的语义结构, 可以安全合并.
 
 > **再看:** k = 6 比 k = 9, k = 15 「更准」, 差距有多大, 够不够说明问题?
-> 70.7 对 70.3 和 70.4, 只差 0.4 和 0.3. 本页没报种子数, 方差或置信区间, 而同一篇里 「换个查询」 就能差 0.6 (表 4(b)), 同一实验的平均分还有 69.8 和 69.9 两种写法. 所以 k = 6 在准确率上 「占优」 的证据很薄, 站得住的是 FLOPs: 每推后一层约多 109.3G (估算), k = 9 比 k = 6 多 328.0G, k = 15 多 983.9G. 更稳的说法是 「k = 6 以后准确率基本持平, 越晚越贵」.
+> 70.7 对 70.3 和 70.4, 只差 0.4 和 0.3. 本页没报种子数, 方差或置信区间, 而同一篇里 「换个查询」 就能差 0.6 (表 4(b)), 同一实验的平均分还有 69.8 和 69.9 两种写法. 所以 k = 6 在准确率上 「占优」 的证据很薄, 站得住的是 FLOPs: 每推后一层约多 109.3G, k = 9 比 k = 6 多 328.0G, k = 15 多 983.9G. 更稳的说法是 「k = 6 以后准确率基本持平, 越晚越贵」.
 
 ## 5 Conclusion
 
@@ -667,7 +667,7 @@ Table A6: Comparison of different ViT internal downsampling strategies across tr
 <table><tr><td>Data Scale</td><td>Method</td><td>MMMU</td><td>MathVista</td><td> $MMB_{EN}$ </td><td> $MMB_{CN}$ </td><td>MMStar</td><td>HallBench</td><td>AI2D</td><td>OCRBench</td><td>Avg.</td></tr><tr><td rowspan="3">8M</td><td>Win-Attn w/ Reused MLP</td><td>59.6</td><td>68.6</td><td>83.4</td><td>81.6</td><td>62.9</td><td>52.0</td><td>80.6</td><td>76.7</td><td>70.7</td></tr><tr><td>Cross-Attn (top-left)</td><td>59.9</td><td>68.6</td><td>83.6</td><td>81.5</td><td>61.1</td><td>50.8</td><td>80.1</td><td>78.2</td><td>70.5</td></tr><tr><td>Cross-Attn (mean)</td><td>61.0</td><td>66.0</td><td>82.2</td><td>81.5</td><td>61.5</td><td>47.5</td><td>80.6</td><td>78.5</td><td>69.8</td></tr><tr><td rowspan="3">16M</td><td>Win-Attn w/ Reused MLP</td><td>61.2</td><td>71.1</td><td>84.1</td><td>83.7</td><td>65.3</td><td>54.7</td><td>81.8</td><td>83.5</td><td>73.1</td></tr><tr><td>Cross-Attn (top-left)</td><td>61.2</td><td>69.2</td><td>85.2</td><td>83.7</td><td>63.5</td><td>52.6</td><td>82.3</td><td>81.0</td><td>72.3</td></tr><tr><td>Cross-Attn (mean)</td><td>61.0</td><td>69.3</td><td>84.6</td><td>83.1</td><td>64.4</td><td>55.3</td><td>81.4</td><td>83.2</td><td>72.8</td></tr></table>
 
 > **问:** 表 A6 的 16M Win-Attn 行应该就是主结果里 16M 的 「Ours」, 两处对得上吗?
-> 差一格. 表 A2 的 16M Ours 是 61.2, 71.1, 84.1, 83.3, 65.3, 54.7, 81.8, 83.5, 平均 73.1; 表 A6 除了 MMB<sub>CN</sub> 写成 83.7, 其余七格相同. 用 83.7 算八项平均是 73.175 (估算), 应印作 73.2, 表里却是 73.1; 用 83.3 算是 73.125, 正好印 73.1. 图 3(c) 在 16M 处的数据标签也是 83.3. 所以表 A6 这一格的 83.7 应是笔误, 很可能是抄了下一行 Cross-Attn (top-left) 同列的 83.7.
+> 差一格. 表 A2 的 16M Ours 是 61.2, 71.1, 84.1, 83.3, 65.3, 54.7, 81.8, 83.5, 平均 73.1; 表 A6 除了 MMB<sub>CN</sub> 写成 83.7, 其余七格相同. 用 83.7 算八项平均是 73.175, 应印作 73.2, 表里却是 73.1; 用 83.3 算是 73.125, 正好印 73.1. 图 3(c) 在 16M 处的数据标签也是 83.3. 所以表 A6 这一格的 83.7 应是笔误, 很可能是抄了下一行 Cross-Attn (top-left) 同列的 83.7.
 
 ### B.3 Additional Ablations on the Open-Source LLaVA-OneVision Setting (开源 LLaVA-OneVision 设置下的补充消融)
 

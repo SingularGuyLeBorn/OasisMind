@@ -458,7 +458,7 @@ SFT 数据收集和处理的关键技术主要有: 指令抽取, 指令泛化, �
 **指令均衡.** 经过指令抽取和泛化, 我们累积了超过 1000 万条指令. 指令均衡对提升模型在各种场景下的表现很关键. 但很多生成的指令语义非常相近, 指令类型的分布天然不均衡. 为了在提高指令复杂度的同时保持分布均衡, 我们给每条指令打标签, 标签涵盖多个维度. 细致打标后, 能更准确地理解和分析指令集的特点. 在 SFT 过程中保证各类指令数量充足, 分布均衡, 可以有效缓解在特定指令类型上的过拟合或欠拟合, 从而提升模型的泛化能力和对不同应用场景的适应性.
 
 > **回看:** 3.1.2 说累积了超过 1000 万条指令, 3.1.1 又说 SFT 数据总量超过 100 万. 真正用来训练的是哪一个?
-> 训练用的是 100 万这个量级. 1000 万出现在 Instruction Balancing 一段, 是指令抽取和泛化之后累积的候选池, 后面还要打标签做均衡, 再经规则过滤, 模型过滤, 人工过滤三道质量控制. 3.1.3 写的是 「we fine-tune the pre-trained model based on the high-quality data (more than 1 million) for a total of 3 epochs」. 两个数都是 「超过」, 都是下限, 留存比例本文算不出来, 只能说两者差约一个数量级 (估算).
+> 训练用的是 100 万这个量级. 1000 万出现在 Instruction Balancing 一段, 是指令抽取和泛化之后累积的候选池, 后面还要打标签做均衡, 再经规则过滤, 模型过滤, 人工过滤三道质量控制. 3.1.3 写的是 「we fine-tune the pre-trained model based on the high-quality data (more than 1 million) for a total of 3 epochs」. 两个数都是 「超过」, 都是下限, 留存比例本文算不出来, 只能说两者差约一个数量级.
 
 **Data Quality Controlling**. The quality of SFT data is the foundation of superior performance. We mainly conduct the following three methods to ensure the high quality of our SFT data.
 
@@ -579,7 +579,7 @@ Table 3 illustrates the performance of Hunyuan-Large and other competitive pre-t
 表 3 给出了 Hunyuan-Large 和其它预训练模型的表现. 总体上, 与激活参数规模相近的稠密和 MoE 对手相比, Hunyuan-Large 整体表现最好. 在 MMLU 这类综合基准上, Hunyuan-Large 不仅超过 LLama3.1-405B, 而且激活参数少得多, 提升 3.2%. Hunyuan-Large 在常识理解与推理, 以及问答和阅读理解等经典 NLP 任务上也表现更好 (如 CommonsenseQA, PIQA, TriviaQA). 数学方面, Hunyuan-Large 在 GSM8K 和 MATH 上超过所有基线, 在中文的 CMATH 上也是最好. 在 HumanEval 和 MBPP 等代码数据集上达到第一梯队. 我们还看到, Hunyuan-Large 在所有中文任务上 (如 CMMLU, C-Eval) 整体表现最好. 贯穿 Hunyuan-Large 开发过程的深入分析表明, 这种全面提升主要来自: (a) 借助合成技术的高质量预训练数据, 这是获取能力的基本燃料; (b) 更好的模型结构, 包括回收路由和对共享/专项专家按专家缩放学习率; (c) 受多项开创性探索启发, 更有效, 更高效的 MoE 预训练日程, 让训练更聪明, 更稳定. 此外, 得益于长上下文预训练, Hunyuan-Large 能处理最长 256K token 的序列.
 
 > **再看:** MMLU 上比 LLama3.1-405B 高 3.2%, 这是相对提升还是分差?
-> 是分差. 表 3 的 MMLU 行, Hunyuan-Large 88.4, LLama3.1-405B 85.2, 相减正好 3.2. 按相对提升算约 3.8% (估算: 88.4/85.2 约 1.038). 4.2.2 的 2.6% 和 3.6% 也是这个口径: 表 4 里 MMLU 89.9 减 87.3 是 2.6, MATH 77.4 减 73.8 是 3.6. 表 3 也不是每行领先: MMLU-Pro 60.2 低于 405B 的 61.6, ARC-C 95.0 低于 405B 的 96.1, HellaSwag 86.8 低于 Mixtral 的 88.7, MBPP 72.6 低于 405B 的 73.4. 正文对代码用的是 「first-tier」, 和 MBPP 这一格相符.
+> 是分差. 表 3 的 MMLU 行, Hunyuan-Large 88.4, LLama3.1-405B 85.2, 相减正好 3.2. 按相对提升算约 3.8% (88.4/85.2 约 1.038). 4.2.2 的 2.6% 和 3.6% 也是这个口径: 表 4 里 MMLU 89.9 减 87.3 是 2.6, MATH 77.4 减 73.8 是 3.6. 表 3 也不是每行领先: MMLU-Pro 60.2 低于 405B 的 61.6, ARC-C 95.0 低于 405B 的 96.1, HellaSwag 86.8 低于 Mixtral 的 88.7, MBPP 72.6 低于 405B 的 73.4. 正文对代码用的是 「first-tier」, 和 MBPP 这一格相符.
 
 <!-- page 12 of 18 -->
 

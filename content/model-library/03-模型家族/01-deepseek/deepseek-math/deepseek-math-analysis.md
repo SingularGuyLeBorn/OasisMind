@@ -30,7 +30,7 @@ DeepSeekMath 常被记成「GRPO 的出处」, 但按投入和收益看, 这篇�
 
 两个细节比最终分数更有说服力. 一是 Figure 3 的学习曲线: 训到约 50B token, 也就是 Proof-Pile-2 刚好过一轮时, DeepSeekMath Corpus 的曲线已经在上方, 说明优势来自平均质量, 不全是规模(读图). 规模也有作用: 小语料很快多轮重复, 曲线走平, 120B 级语料的曲线更陡, 涨得更久. 二是中文: 已有数学语料以英文为主, 在中文基准上提升有限甚至倒退; DeepSeekMath Corpus 中英都有, 两边一起涨. 这和 DeepSeek LLM 的双语路线一脉相承, 也解释了后面 CMATH, 高考题上的大幅领先. 需要注意, 1.3B 实验只用来比较语料排序, 绝对分数不能外推到 7B.
 
-Table 1 还有一行容易被忽略的基线: 不做数学训练的 1.3B, GSM8K 2.9%, CMATH 12.3%, 高考选择 17.9%. MathPile 训完, CMATH 掉到 1.2%, 高考选择掉到 2.8%, 比不训还差, 这就是正文说的「已有语料可能伤害中文数学」. 这组对照还混着一个变量: 每份语料都训 150B token, MathPile 8.9B 要重复约 17 轮, OpenWebMath 约 11 轮, Proof-Pile-2 约 3 轮, DeepSeekMath Corpus 约 1.25 轮(估算). 小语料的分数一部分输在反复重复上, 报告用 Figure 3 在 50B token 处的对比部分回应了这一点, 那时 Proof-Pile-2 刚好一轮, 但 MathPile 和 OpenWebMath 已经重复多轮, 严格的等轮次对照本页没有.
+Table 1 还有一行容易被忽略的基线: 不做数学训练的 1.3B, GSM8K 2.9%, CMATH 12.3%, 高考选择 17.9%. MathPile 训完, CMATH 掉到 1.2%, 高考选择掉到 2.8%, 比不训还差, 这就是正文说的「已有语料可能伤害中文数学」. 这组对照还混着一个变量: 每份语料都训 150B token, MathPile 8.9B 要重复约 17 轮, OpenWebMath 约 11 轮, Proof-Pile-2 约 3 轮, DeepSeekMath Corpus 约 1.25 轮. 小语料的分数一部分输在反复重复上, 报告用 Figure 3 在 50B token 处的对比部分回应了这一点, 那时 Proof-Pile-2 刚好一轮, 但 MathPile 和 OpenWebMath 已经重复多轮, 严格的等轮次对照本页没有.
 
 ### 1.4. 为什么从代码模型出发, 以及 arXiv 为什么不灵
 
@@ -50,13 +50,13 @@ arXiv 的消融方向相反(Table 8, Table 9). MathPile 和 ArXiv-RedPajama 分�
 
 和 Minerva 的对比要看清口径. Table 2 里 Minerva 的数字引自原论文, 不是 DeepSeek 自己跑的: Minerva 540B 的 GSM8K 58.8%, MATH 33.6%, OCW 17.6%, MMLU-STEM 63.9%. DeepSeekMath-Base 在 GSM8K 和 MATH 上更高, OCW 和 MMLU-STEM 上仍低于 540B. 所以「7B 超过 540B」成立的范围是竞赛级和小学应用题这两项, 在大学课程题和多学科选择题上还没追上. 评测全部用 few-shot CoT, 八个基准覆盖从小学应用题到大学水平, 既有自由作答(GSM8K, MATH, CMATH)也有选择题(MMLU-STEM, 高考 MathQA). 形式证明那一项则是给定非形式陈述, 形式陈述和非形式证明, 让模型写 Isabelle 证明草稿, 缺的细节交给 Sledgehammer, 考的是「把人写的证明翻成机器能查的证明」.
 
-Table 3 的两组对照各有口径. 工具解题用 few-shot program-of-thought: 模型写一段能调用 `math` 和 `sympy` 的 Python 程序, 以执行结果作答. DeepSeekMath-Base 7B 的 66.9% 和 31.4% 高于 Llemma 34B(64.6%, 26.3%)和 CodeLlama 34B(52.7%, 23.5%), 同尺寸的 CodeLlama 7B 只有 27.1% 和 17.2%, 说明光有代码能力不够, 还得有数学语料. 形式证明那一栏各模型差距很小, 最好的 Llemma 只有 21% 到 22%, DeepSeekMath 多了 3 到 4 个点; Sledgehammer 补细节这一步对所有模型一视同仁, 把差距压扁了. 训练预算可以粗算: 500B token, batch 10M token, 约 5 万步(估算); 报告没给 GPU 小时, 这一面本页没有.
+Table 3 的两组对照各有口径. 工具解题用 few-shot program-of-thought: 模型写一段能调用 `math` 和 `sympy` 的 Python 程序, 以执行结果作答. DeepSeekMath-Base 7B 的 66.9% 和 31.4% 高于 Llemma 34B(64.6%, 26.3%)和 CodeLlama 34B(52.7%, 23.5%), 同尺寸的 CodeLlama 7B 只有 27.1% 和 17.2%, 说明光有代码能力不够, 还得有数学语料. 形式证明那一栏各模型差距很小, 最好的 Llemma 只有 21% 到 22%, DeepSeekMath 多了 3 到 4 个点; Sledgehammer 补细节这一步对所有模型一视同仁, 把差距压扁了. 训练预算可以粗算: 500B token, batch 10M token, 约 5 万步; 报告没给 GPU 小时, 这一面本页没有.
 
 通用能力是否被数学续训挤掉, 看 Table 4. 比较的基准是用来初始化的那个衰减前 checkpoint(MMLU 42.9%, BBH 42.9%, HumanEval 40.2%, MBPP 52.6%). Math-Base 的 MMLU 和 BBH 升到 54.9% 和 59.5%, HumanEval 40.9%, MBPP 52.6%, 代码能力基本保住; 但和训完整的 Coder-Base-v1.5(HumanEval 43.2%, MBPP 60.4%)比还是低一些, MMLU 也仍低于 Mistral 7B 的 62.4%. 这组对照把「专用模型必然偏科」这个担心压了下去, 数学训练甚至抬高了语言理解和推理, 至少在 7B 规模和这套配比上成立. 更重要的是它说明了一件事: 在当时的设定下, 数学能力的上限主要由预训练数据决定, 参数量排在后面. 这个判断后来在 Prover 系列上继续使用, Prover 和 Prover-V1.5 都以 DeepSeekMath-Base 为起点.
 
 ### 2.2. SFT: 同一道题给三种写法
 
-指令数据 776K 条. 英文部分给 GSM8K 和 MATH 标注工具集成解法, 并收入 MathInstruct 子集和 Lila-OOD 训练集中用 CoT 或 PoT 解的题, 覆盖代数, 概率, 数论, 微积分, 几何. 中文部分是 K-12 数学, 横跨 76 个子主题, 同一道题同时标 CoT 和工具集成两种格式. 训练设定很朴素: 样本拼接到 4K token, 500 step, batch 256, 学习率恒定 5e-5. 这里没有新方法, 价值在于同一道题允许走多条解题通道: 写步骤, 写程序, 或者在自然语言和工具之间切换. SFT 的总量不大: 500 步 × 256 条 × 4K token, 约 5.2 亿 token(估算); 776K 条样本如果都过一遍, 平均每条约 670 token(估算), 报告没给 epoch 数. 和 500B 的续训相比, SFT 只占千分之一, 却贡献了 10 个点的 MATH, 这和 DeepSeek LLM 里「SFT 教格式和解法通道, 知识在预训练里」的判断一致.
+指令数据 776K 条. 英文部分给 GSM8K 和 MATH 标注工具集成解法, 并收入 MathInstruct 子集和 Lila-OOD 训练集中用 CoT 或 PoT 解的题, 覆盖代数, 概率, 数论, 微积分, 几何. 中文部分是 K-12 数学, 横跨 76 个子主题, 同一道题同时标 CoT 和工具集成两种格式. 训练设定很朴素: 样本拼接到 4K token, 500 step, batch 256, 学习率恒定 5e-5. 这里没有新方法, 价值在于同一道题允许走多条解题通道: 写步骤, 写程序, 或者在自然语言和工具之间切换. SFT 的总量不大: 500 步 × 256 条 × 4K token, 约 5.2 亿 token; 776K 条样本如果都过一遍, 平均每条约 670 token, 报告没给 epoch 数. 和 500B 的续训相比, SFT 只占千分之一, 却贡献了 10 个点的 MATH, 这和 DeepSeek LLM 里「SFT 教格式和解法通道, 知识在预训练里」的判断一致.
 
 Table 5 要分两栏读, 灰格是 32 候选多数票, 其余是 Top1. 不用工具时, DeepSeekMath-Instruct 7B 在 GSM8K 82.9%, MATH 46.8%, MGSM-zh 73.2%, CMATH 84.6%, 高于 Qwen 72B, MetaMath 70B, DeepSeek-LLM-Chat 67B, 以及做过过程监督 PPO 的 Math-Shepherd-Mistral 7B(MATH 33.0%). MATH 仍低于 GPT-4 的 52.9% 和 Gemini Ultra 的 53.2%. 允许用工具时 Instruct 的 MATH 到 57.4%, 超过所有开源对照, 离 GPT-4 Code Interpreter 的 69.7% 还有距离. 从 Base 的 36.2% 到 Instruct 的 46.8%, SFT 一步就涨了 10 个点, 比后面 RL 的增量大一倍.
 
@@ -82,7 +82,7 @@ $$
 
 即 token $t$ 的优势等于它之后(含所在步)所有步的归一化奖励之和. 落到同一条答错的输出上看两者的差别: 结果监督下, 前面推对的步骤和后面推错的步骤里, 每个 token 拿到同一个负优势; 过程监督下, 推对的步骤奖励高于组均值, 贡献正值, 推错的步骤贡献负值, 同一条输出里不同位置的 token 优势不再相同. 出错步之前的 token 既累加自己那几步的正值, 也累加出错那步的负值; 出错步之后的 token 只累加之后各步. 所以前半段推对的 token 受罚更轻, 甚至可能为正. 迭代版(算法 1)处理的是「策略变强后, 旧奖励模型不够用」: 用策略采样的新结果给奖励模型造训练集, 混 10% 历史数据回放继续训奖励模型, 再把参考模型换成当前策略. 需要强调, 这里的奖励来自神经网络奖励模型, 训练集按 Math-Shepherd 的方法构造, 初始奖励模型从 DeepSeekMath-Base 7B 训出, 学习率 2e-5. 这和一年后 R1-Zero 改用规则奖励, 明确拒绝神经奖励模型, 是两条不同的路.
 
-附录 A.1.6 把 GRPO 的梯度系数写了出来(式 21): $\hat A_{i,t}+\beta\left(\frac{\pi_{ref}}{\pi_\theta}-1\right)$. 第二项就是 KL 约束的作用方式: 某个 token 在当前策略下的概率高于参考模型时, 这一项为负, 把它往回拉; 低于参考模型时为正, 往上推. 和 PPO 把 KL 扣进每个 token 的奖励(式 2)再经 GAE 传播相比, 这种写法让 KL 只作用于当前 token, 不会混进优势估计. 过程监督的优势则有一个副作用: token 的优势等于其后所有步骤归一化奖励之和, 而归一化是在整组所有步骤上做的, 步骤越多的回答, 靠前 token 的优势绝对值越大(推断). 报告没有讨论这一点, 因为 1024 token 上限下步骤数差别有限. 算法 1 里每批样本还可以做 $\mu$ 次 GRPO 内循环更新, 主实验取的是 1 次.
+附录 A.1.6 把 GRPO 的梯度系数写了出来(式 21): $\hat A_{i,t}+\beta\left(\frac{\pi_{ref}}{\pi_\theta}-1\right)$. 第二项就是 KL 约束的作用方式: 某个 token 在当前策略下的概率高于参考模型时, 这一项为负, 把它往回拉; 低于参考模型时为正, 往上推. 和 PPO 把 KL 扣进每个 token 的奖励(式 2)再经 GAE 传播相比, 这种写法让 KL 只作用于当前 token, 不会混进优势估计. 过程监督的优势则有一个副作用: token 的优势等于其后所有步骤归一化奖励之和, 而归一化是在整组所有步骤上做的, 步骤越多的回答, 靠前 token 的优势绝对值越大. 报告没有讨论这一点, 因为 1024 token 上限下步骤数差别有限. 算法 1 里每批样本还可以做 $\mu$ 次 GRPO 内循环更新, 主实验取的是 1 次.
 
 主实验的超参: 策略学习率 1e-6, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索后策略只更新一次. 每轮只更新一次意味着新旧策略几乎相同, clip 基本不起作用, 目标函数退化成带组内基线的策略梯度. 社区后来对 GRPO 的两个归一化提过批评. 一是每条输出按 $1/|o_i|$ 做长度平均, 错误的长回答每个 token 受到的惩罚被摊薄, 被认为和 R1 类训练里回答越来越长有关; 二是除以组内标准差, 会让全对或全错附近的题, 也就是很简单和很难的题, 获得更大权重. Dr. GRPO 把两项都去掉, 后续又有工作指出去掉长度归一化会带来另一种长度偏差, 两者无法同时兼顾. 这些讨论见 [03-DrGRPO-去标准差](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md). DeepSeekMath 原文的回答很短, 1024 token 上限下长度偏差不明显, 这些问题要到长 CoT 时代才暴露.
 

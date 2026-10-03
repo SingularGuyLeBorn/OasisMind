@@ -20,7 +20,7 @@ K2.7 Code 是 Moonshot 开源的编程向 agent 模型, 副标题写「为长程
 
 编程三项, K2.6 / K2.7 Code / GPT-5.5 / Claude Opus 4.8: Kimi Code Bench v2 为 50.9 / 62.0 / 69.0 / 67.4, Program Bench 为 48.3 / 53.6 / 69.1 / 63.8, MLS Bench Lite 为 26.7 / 35.1 / 35.5 / 42.8. 正文给的相对涨幅 +21.8%, +11.0%, +31.5% 和表上分数相除一致. 相对两家闭源模型, 三项全低; 最接近的是 MLS Bench Lite, 比 GPT-5.5 只差 0.4.
 
-Agent 三项: Kimi Claw 24/7 Bench 为 42.9 / 46.9 / 52.8 / 50.4, MCP Atlas 为 69.4 / 76.0 / 79.4 / 81.3, MCP Mark Verified 为 72.8 / 81.1 / 92.9 / 76.4. 正文说相对 K2.6 约涨 10%, 逐行算是约 9.3%, 9.5%, 11.4%(估算). 六行里唯一超过某个闭源对照的是 MCP Mark Verified 上高于 Opus 4.8.
+Agent 三项: Kimi Claw 24/7 Bench 为 42.9 / 46.9 / 52.8 / 50.4, MCP Atlas 为 69.4 / 76.0 / 79.4 / 81.3, MCP Mark Verified 为 72.8 / 81.1 / 92.9 / 76.4. 正文说相对 K2.6 约涨 10%, 逐行算是约 9.3%, 9.5%, 11.4%. 六行里唯一超过某个闭源对照的是 MCP Mark Verified 上高于 Opus 4.8.
 
 几个基准的内容本页没写, 下面取自 Hugging Face 模型卡. Kimi Code Bench v2 是内部基准, 覆盖 10 多种主流语言和生产环境的真实工程任务. Program Bench 只给 agent 一个编译好的二进制和文档, 不给源码, 不许反编译, 不许联网, 要求它自选语言从零重写程序, 用大量模糊测试生成的行为用例比对输出; 任务从小型命令行工具到 FFmpeg, SQLite 这样的大系统. MLS Bench Lite 是 MLS-Bench 的 30 题官方子集, 让 agent 为预训练, 后训练, 强化学习, ML 系统等方向提出可推广的方法改进, 每题有 5 小时探索时间. 这三项的共同点是任务长, 要自己规划, 和「长程软件工程」的定位对得上; 而 MLS Bench Lite 涨幅最大, 分数却最低, 说明研究型任务仍然是短板.
 

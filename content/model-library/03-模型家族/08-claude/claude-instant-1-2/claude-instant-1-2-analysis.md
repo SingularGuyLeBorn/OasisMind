@@ -28,13 +28,13 @@
 
 ### 2.2. 基准表: 三升四降
 
-第 3 页的表把 Instant 1.1 和 1.2 放在七个基准上对比. 每行差值: Codex P@1 +5.9, GSM8k +5.8, MMLU -0.2, TriviaQA -0.2, QuALITY -2.3, ARC-Challenge +0.6, RACE-H -1.4, 单位是百分点 (估算). 有意义的提升集中在前两行, 最明显的退步是长篇故事问答 QuALITY 和阅读推理 RACE-H. 表题只写 「Performance of Claude Instant 1.1 compared to 1.2」.
+第 3 页的表把 Instant 1.1 和 1.2 放在七个基准上对比. 每行差值: Codex P@1 +5.9, GSM8k +5.8, MMLU -0.2, TriviaQA -0.2, QuALITY -2.3, ARC-Challenge +0.6, RACE-H -1.4, 单位是百分点. 有意义的提升集中在前两行, 最明显的退步是长篇故事问答 QuALITY 和阅读推理 RACE-H. 表题只写 「Performance of Claude Instant 1.1 compared to 1.2」.
 
 这个形状本身在说训练的取舍. 编程和多步数学涨, 知识类 (MMLU, TriviaQA) 不动, 长文阅读 (QuALITY, RACE-H) 退. 知识类不动, 说明预训练带来的知识储备基本没变, 这次更新更像后训练层面的调整 (推测); 编程和数学涨, 是后训练数据向这两类倾斜时最常见的结果; 长文阅读退步则是这类倾斜常见的代价. 页面没有给训练数据或配方, 这只是按分数形状做的推断. 读表还有两条限制: 评测设置逐行不同, Codex 和 GSM8k 是 0-shot, 其余是 5-shot, MMLU 另标 CoT, 跨行和跨报告比较要先对齐设置; 表里没有误差范围和题数, 0.2 这类差值能不能算真实变化, 本页没法回答. 基准定义见 [通用基准](../../../../llm-guide/3-预训练/3.4-预训练评估/3.4.2-通用基准/3.4.2-通用基准.md), pass@k 见 [特定能力评估](../../../../llm-guide/3-预训练/3.4-预训练评估/3.4.4-特定能力评估/3.4.4-特定能力评估.md).
 
 ### 2.3. 红队图: 一个只看一侧的指标
 
-第 4 页的图比较 Helpful Only 1.3, Claude Instant 1.1, Claude Instant 1.2, Claude 1.3, Claude 2 五个模型, 纵轴对数刻度, 标题 「Fraction Worse Than 'I can't help with that.'」, 图注 「Lower is better」. 以一句拒绝为基准线, 统计回答比拒绝更糟的比例. 柱顶没有数值, 按刻度目测, Helpful Only 1.3 约 0.6, Instant 1.1 在 0.05 到 0.06 之间, Claude 1.3 约 0.03, Instant 1.2 和 Claude 2 都在 0.02 以下 (读图估算).
+第 4 页的图比较 Helpful Only 1.3, Claude Instant 1.1, Claude Instant 1.2, Claude 1.3, Claude 2 五个模型, 纵轴对数刻度, 标题 「Fraction Worse Than 'I can't help with that.'」, 图注 「Lower is better」. 以一句拒绝为基准线, 统计回答比拒绝更糟的比例. 柱顶没有数值, 按刻度目测, Helpful Only 1.3 约 0.6, Instant 1.1 在 0.05 到 0.06 之间, Claude 1.3 约 0.03, Instant 1.2 和 Claude 2 都在 0.02 以下 (读图).
 
 「Helpful Only」 这个名字页面没有定义. Anthropic 的 HH-RLHF 和 **Constitutional AI** 论文都用 「helpful-only」 指只用有用性偏好训练, 不做无害性训练的 **RLHF** 模型, 作为对照组; 这张图沿用的很可能是同一惯例 (推测). 对照组约 0.6, 正式模型在 0.02 到 0.06, 差了一个数量级以上, 这个差距可以看作无害性训练 (人类红队数据加 AI 反馈) 在自动红队集上的效果. 「比拒绝更糟」 由谁判断, 本页没写; 在 Anthropic 的论文里这类比较一般交给偏好模型打分 (推测).
 

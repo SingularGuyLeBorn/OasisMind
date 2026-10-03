@@ -17,15 +17,15 @@
 
 ## 2. 价格, 「8X」 和 「一个数量级」
 
-价格是这页唯一给全的商业数字: 输入每百万 token $0.4, 输出 $2, 输出是输入的 5 倍. 如果按输入输出 3:1 混合, 约 $0.8 每百万 token; 按 1:1 混合约 $1.2 (都是估算, 混合比例是我假设的). 页面没有给 Claude Sonnet 3.7, DeepSeek v3 或任何对手的价格, 读者没有第二个数可以对照.
+价格是这页唯一给全的商业数字: 输入每百万 token $0.4, 输出 $2, 输出是输入的 5 倍. 如果按输入输出 3:1 混合, 约 $0.8 每百万 token; 按 1:1 混合约 $1.2 (混合比例为假设值). 页面没有给 Claude Sonnet 3.7, DeepSeek v3 或任何对手的价格, 读者没有第二个数可以对照.
 
 三处说法的倍数也不一致. Highlights 写 「8X lower cost」, 下一段写 「an order of magnitude less expensive」, 8 倍不到一个数量级. 两处都没有写比较对象, 只能按上下文猜是 Claude Sonnet 3.7. 「beats cost leaders such as DeepSeek v3, both in API and self-deployed systems」 更难核: 自部署成本取决于卡型, 利用率, 并发, 页面一个都没给.
 
 ## 3. 「90% of Claude Sonnet 3.7」 逐行核对
 
-正文原话是 「performs at or above 90% of Claude Sonnet 3.7 on benchmarks across the board」. 把表里 14 行逐行拿 Medium 3 除以 Claude Sonnet 3.7, 12 行在 90% 以上, 两行不到: LiveCodeBench 约 84.2%, GPQA Diamond 约 81.9% (估算). 这两行恰好一个是代码, 一个是 STEM, 正是正文说它 「stands out」 的两类.
+正文原话是 「performs at or above 90% of Claude Sonnet 3.7 on benchmarks across the board」. 把表里 14 行逐行拿 Medium 3 除以 Claude Sonnet 3.7, 12 行在 90% 以上, 两行不到: LiveCodeBench 约 84.2%, GPQA Diamond 约 81.9%. 这两行恰好一个是代码, 一个是 STEM, 正是正文说它 「stands out」 的两类.
 
-反过来看, 有 6 行 Medium 3 比 Claude Sonnet 3.7 高: ArenaHard, Math500, RULER 32K, DocVQA, AI2D, ChartQA; HumanEval 同分 92.1%. 10 行文本基准等权平均, Medium 3 约 80.2, Claude Sonnet 3.7 约 81.9, 比值约 97.9%; 加上 4 行多模态一起平均, Medium 3 约 81.4, 反超 Claude 约 80.7 (都是估算). 所以 「平均接近 Claude」 成立, 「每一项都到 90%」 不成立, 正文用的是后一种说法.
+反过来看, 有 6 行 Medium 3 比 Claude Sonnet 3.7 高: ArenaHard, Math500, RULER 32K, DocVQA, AI2D, ChartQA; HumanEval 同分 92.1%. 10 行文本基准等权平均, Medium 3 约 80.2, Claude Sonnet 3.7 约 81.9, 比值约 97.9%; 加上 4 行多模态一起平均, Medium 3 约 81.4, 反超 Claude 约 80.7. 所以 「平均接近 Claude」 成立, 「每一项都到 90%」 不成立, 正文用的是后一种说法.
 
 ## 4. 代码和 STEM: 「comes close to」
 
@@ -35,25 +35,25 @@ STEM 这边, Math500 91.0% 排第 2, 离 DeepSeek 3.1 的 93.8% 差 2.8 个点, 
 
 ## 5. 对手逐个看
 
-对 Llama 4 Maverick, 14 行赢 10 行, 输的是 GPQA Diamond, MMLU Pro, MMMU, ChartQA, 最大差距在 ChartQA, 7.8 个点. 文本 10 行平均约 80.2 对 78.4 (估算). 正文说 「surpasses」, 整体上成立, 知识类两行和多模态两行不成立. 对 Command-A, 10 行赢 8 行, 输 IfEval (89.4% 对 89.7%) 和 RULER 128K (90.2% 对 91.2%), 平均约 80.2 对 75.1 (估算), 差距是几个对手里最大的.
+对 Llama 4 Maverick, 14 行赢 10 行, 输的是 GPQA Diamond, MMLU Pro, MMMU, ChartQA, 最大差距在 ChartQA, 7.8 个点. 文本 10 行平均约 80.2 对 78.4. 正文说 「surpasses」, 整体上成立, 知识类两行和多模态两行不成立. 对 Command-A, 10 行赢 8 行, 输 IfEval (89.4% 对 89.7%) 和 RULER 128K (90.2% 对 91.2%), 平均约 80.2 对 75.1, 差距是几个对手里最大的.
 
-对 GPT-4o, 14 行赢 10 行, 输 LiveCodeBench, MMMU, ChartQA, RULER 32K 同分. 对 DeepSeek 3.1, 10 行只赢 IfEval 和 RULER 32K 两行, 平均约 80.2 对 83.1 (估算), DeepSeek 3.1 是表里文本平均最高的一列. 正文提 DeepSeek 只提价格, 不提性能, 这个取舍和表里的数是吻合的: 性能上它比不过, 所以比价格.
+对 GPT-4o, 14 行赢 10 行, 输 LiveCodeBench, MMMU, ChartQA, RULER 32K 同分. 对 DeepSeek 3.1, 10 行只赢 IfEval 和 RULER 32K 两行, 平均约 80.2 对 83.1, DeepSeek 3.1 是表里文本平均最高的一列. 正文提 DeepSeek 只提价格, 不提性能, 这个取舍和表里的数是吻合的: 性能上它比不过, 所以比价格.
 
 ## 6. 长上下文: 32K 和 128K
 
 RULER 32K 上六家挤在 94.8% 到 96.0% 之间, Medium 3 和 GPT-4o 并列 96.0% 第一, 差距都在 1.2 个点以内, 区分度不大. 到 128K 拉开了: Claude Sonnet 3.7 93.8%, DeepSeek 3.1 91.9%, Command-A 91.2%, Medium 3 90.2%, GPT-4o 88.9%, Llama 4 Maverick 86.7%. Medium 3 从第一掉到第 4.
 
-从 32K 到 128K 的跌幅, Medium 3 5.8 个点, 在六家里是第三大; Claude Sonnet 3.7 只跌 1.9, DeepSeek 3.1 跌 3.9, Llama 4 Maverick 跌 8.1 最多. 页面没有写 Medium 3 的上下文窗口有多长, 能报 RULER 128K, 只能说明它至少能吃下 128K 的输入 (估算, 页面没说单位是 token). 正文也没有一句提长上下文, 这一块只在表里出现.
+从 32K 到 128K 的跌幅, Medium 3 5.8 个点, 在六家里是第三大; Claude Sonnet 3.7 只跌 1.9, DeepSeek 3.1 跌 3.9, Llama 4 Maverick 跌 8.1 最多. 页面没有写 Medium 3 的上下文窗口有多长, 能报 RULER 128K, 只能说明它至少能吃下 128K 的输入 (页面没说单位是 token). 正文也没有一句提长上下文, 这一块只在表里出现.
 
 ## 7. 多模态四行
 
-多模态只比了四家, Command-A 和 DeepSeek 3.1 两列合并成 「No multimodal support」. Medium 3 在 DocVQA (95.3%) 和 AI2D (93.7%) 排第一, 在 ChartQA (82.6%) 排第 3, 在 MMMU (66.1%) 垫底. 四行平均约 84.4, Llama 4 Maverick 约 85.2, GPT-4o 约 83.5, Claude Sonnet 3.7 约 77.7 (估算), Medium 3 排第二.
+多模态只比了四家, Command-A 和 DeepSeek 3.1 两列合并成 「No multimodal support」. Medium 3 在 DocVQA (95.3%) 和 AI2D (93.7%) 排第一, 在 ChartQA (82.6%) 排第 3, 在 MMMU (66.1%) 垫底. 四行平均约 84.4, Llama 4 Maverick 约 85.2, GPT-4o 约 83.5, Claude Sonnet 3.7 约 77.7, Medium 3 排第二.
 
 DocVQA 和 AI2D 偏文档, 图示理解, MMMU 偏大学学科题, ChartQA 偏图表读数. Medium 3 强在前两类, 弱在后两类, 和 Highlights 里 「leads in ... multimodal understanding」 的全称说法有出入. 人评图里 Multimodal 一行对 Llama 4 Maverick 53.85 比 46.15, 是七个领域里最接近平手的一行, 和表里多模态平均略低于 Llama 4 Maverick 的结果方向一致.
 
 ## 8. 人评: 胜率背后的样本量
 
-两张人评图都只给胜率, 不给题数. 用两位小数反推能对上的最小分母: 81.82 是 9/11, 69.23 是 9/13, 37.50 是 3/8, 40.00 是 2/5, 53.85 是 7/13, 64.71 是 11/17, 73.33 是 11/15 (都是估算, 实际题数可以是这些分母的倍数). 如果真是最小分母, 每个对比只有几道到十几道题, 一道题翻转就能让胜率变动约 6 到 20 个点 (估算).
+两张人评图都只给胜率, 不给题数. 用两位小数反推能对上的最小分母: 81.82 是 9/11, 69.23 是 9/13, 37.50 是 3/8, 40.00 是 2/5, 53.85 是 7/13, 64.71 是 11/17, 73.33 是 11/15 (实际题数可以是这些分母的倍数). 如果真是最小分母, 每个对比只有几道到十几道题, 一道题翻转就能让胜率变动约 6 到 20 个点.
 
 图的构成也值得看. 代码图五个对手里, Medium 3 对 Claude Sonnet 3.7 和 DeepSeek 3.1 输, 对 GPT-4o 平, 只对 Command-A 和 Llama 4 Maverick 赢. 分领域图只放了 Llama 4 Maverick 一个对手, 这正是它在代码图里赢得最多的那家. 正文用 「some of its much larger competitors」 收窄了范围, 措辞是准确的, 但图的挑选本身就偏向有利的对比. 另外每根柱两段加起来都是 100, 平局去了哪里, 页面没说.
 
@@ -77,6 +77,6 @@ DocVQA 和 AI2D 偏文档, 图示理解, MMMU 偏大学学科题, ChartQA 偏图
 
 ## 12. 本页对不上的数字
 
-正文和表格之间: 「at or above 90% of Claude Sonnet 3.7 ... across the board」 有两行不成立, LiveCodeBench 约 84.2%, GPQA Diamond 约 81.9% (估算); 「8X lower cost」 和 「an order of magnitude less expensive」 倍数不同, 都没有比较对象; 「leads in ... coding」 对应的三行代码没有一行第一; 「surpasses ... Llama 4 Maverick」 有 4 行不成立; 正文比价格写 「DeepSeek v3」, 表和人评图写 「DeepSeek 3.1」, 页面没解释.
+正文和表格之间: 「at or above 90% of Claude Sonnet 3.7 ... across the board」 有两行不成立, LiveCodeBench 约 84.2%, GPQA Diamond 约 81.9%; 「8X lower cost」 和 「an order of magnitude less expensive」 倍数不同, 都没有比较对象; 「leads in ... coding」 对应的三行代码没有一行第一; 「surpasses ... Llama 4 Maverick」 有 4 行不成立; 正文比价格写 「DeepSeek v3」, 表和人评图写 「DeepSeek 3.1」, 页面没解释.
 
 页面自身: Highlights 编号是 1, 3, 4, 没有第 2 条; 第 3 页两句评测口径互相矛盾; 页脚 「Mistral AI © 2026」 和正文日期 May 7, 2025 差一年多, 页脚是抓页时的外壳. 转换稿和 PDF 之间: 转出的 Markdown 把 「RULER 128K」 写成 「RULER 428K」, 三个数写成 99.2%, 96.7%, 98.0%, 原图是 90.2%, 86.7%, 88.9%; 多模态一块丢了行名和大部分数字. 表格原图本身的数字没有自相矛盾的地方.

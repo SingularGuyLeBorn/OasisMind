@@ -19,7 +19,7 @@ We introduce the Ministral 3 series, a family of parameter-efficient dense langu
 本文介绍 Ministral 3 系列. 这是一组参数效率高的稠密语言模型, 面向算力和内存都受限的应用, 有 3B, 8B, 14B 三个尺寸. 每个尺寸发布三个变体: 通用的预训练基座模型, 指令微调模型, 以及用来解复杂问题的推理模型. 我们还给出得到 Ministral 3 的配方: Cascade Distillation (级联蒸馏), 一种迭代地剪枝, 再用蒸馏继续训练的技术. 每个模型都能理解图像, 全部采用 Apache 2.0 许可.
 
 > **想:** 摘要说有 3B, 8B, 14B 三个尺寸, 每个尺寸页面到底印了哪些规格, 410M 的视觉编码器算不算在名字里?
-> 规格只在第 2 页表 1: 14B 是 40 层, 潜变量维度 5120, FFN 16384; 8B 是 34 层, 4096, 14336; 3B 是 26 层, 3072, 9216; 三档都是 32/8 头, 词表 131K. 名字里的数含不含视觉编码器, 页面没说; 只算语言部分约 14.0B, 8.5B, 3.2B (估算, 假设每头维度 = 潜变量维度 / 32), 视觉编码器三档各 410M 另算. 激活参数: 三档本页都未印.
+> 规格只在第 2 页表 1: 14B 是 40 层, 潜变量维度 5120, FFN 16384; 8B 是 34 层, 4096, 14336; 3B 是 26 层, 3072, 9216; 三档都是 32/8 头, 词表 131K. 名字里的数含不含视觉编码器, 页面没说; 只算语言部分约 14.0B, 8.5B, 3.2B (假设每头维度 = 潜变量维度 / 32), 视觉编码器三档各 410M 另算. 激活参数: 三档本页都未印.
 
 **Webpage:** [https://mistral.ai/news/mistral-3](https://mistral.ai/news/mistral-3)
 
@@ -45,7 +45,7 @@ A key component of Ministral 3 is our Cascade Distillation training strategy, an
 Ministral 3 的关键是级联蒸馏这套训练策略. 它迭代地剪枝和蒸馏, 把预训练知识从大父模型一步步传给一组紧凑的子模型. 用这套配方, 我们的模型能和训练预算大得多的模型相比. 例如 Ministral 3 14B Base 与 Mistral Small 3.1 Base 相当接近, 体积却小了 40% 以上, 训练周期也短得多.
 
 > **核对:** 14B Base 比 Mistral Small 3.1 「more than 40% smaller」, 对得上吗?
-> 按名字算, 14/24 约 58.3%, 小约 41.7% (估算), 对得上. 用表 1 估出的约 14.0B 算, 小约 41.5% (估算). 24B 父模型含不含视觉编码器, 页面同样没说, 所以这个比例只是名字对名字.
+> 按名字算, 14/24 约 58.3%, 小约 41.7%, 对得上. 用表 1 估出的约 14.0B 算, 小约 41.5%. 24B 父模型含不含视觉编码器, 页面同样没说, 所以这个比例只是名字对名字.
 
 After post-training, we achieve competitive results with similarly sized open weight models such as Gemma 3 [Kamath et al., 2025], Qwen 3 [Yang et al., 2025, Bai et al., 2025], and Mistral Small 3.2 2506.
 
@@ -96,7 +96,7 @@ Table 1: Architectural specifications and hyperparameters for the Ministral 3 fa
 表头依次是: 层数, 潜变量维度, Q/KV 头数, FFN 维度, 输入输出嵌入是否共享, 上下文长度.
 
 > **确认:** 表 1 三档都是 32 个 query 头, 8 个 KV 头, 每个头多宽?
-> 本页未印每头维度. 如果等于潜变量维度除以 32, 三档分别是 160, 128, 96 (估算). 但第 4 页的剪枝只有层剪枝, 隐藏维度剪枝, FFN 剪枝三种, 没有剪注意力头或头宽, 头数三档也完全一样, 注意力内部宽度也可能是从父模型原样继承的. 两种情况下参数估算会差出几亿, 本页给不出答案.
+> 本页未印每头维度. 如果等于潜变量维度除以 32, 三档分别是 160, 128, 96. 但第 4 页的剪枝只有层剪枝, 隐藏维度剪枝, FFN 剪枝三种, 没有剪注意力头或头宽, 头数三档也完全一样, 注意力内部宽度也可能是从父模型原样继承的. 两种情况下参数估算会差出几亿, 本页给不出答案.
 
 The Ministral 3 family is based on the decoder-only transformer architecture [Vaswani et al., 2017]. All models share a common architectural foundation with size-specific scaling. As shown in Table 1, the family consists of three sizes: 3B, 8B, and 14B parameters, with 26, 34, and 40 layers respectively.
 
@@ -112,7 +112,7 @@ Other architectural choices include Grouped Query Attention [Ainslie et al., 202
 > 不一致. 第 1 页引言写 「up to 256k tokens (128k for reasoning models)」, 第 11 页结论又写 「All models ... handle contexts up to 256K tokens」. 表 1 只分尺寸, 不分 base, instruct, reasoning, 推理版到底是 128k 还是 256k, 本页前后两说.
 
 > **停一下:** 3B 共享输入输出嵌入, 理由是 「avoid embedding parameters dominating」, 嵌入到底占多少?
-> 按 131K 取 131,072 算: 3B 的嵌入矩阵 131,072 × 3072 约 0.40B, 占约 3.2B 的 12.5% 左右; 如果不共享, 两份约 0.81B, 占比会到 22% 左右. 14B 不共享, 两份 131,072 × 5120 约 1.34B, 约占 9.6%; 8B 两份约 1.07B, 约占 12.6% (都是估算). 「dominating」 说得重了些, 但 3B 共享确实省掉约 0.4B.
+> 按 131K 取 131,072 算: 3B 的嵌入矩阵 131,072 × 3072 约 0.40B, 占约 3.2B 的 12.5% 左右; 如果不共享, 两份约 0.81B, 占比会到 22% 左右. 14B 不共享, 两份 131,072 × 5120 约 1.34B, 约占 9.6%; 8B 两份约 1.07B, 约占 12.6%. 「dominating」 说得重了些, 但 3B 共享确实省掉约 0.4B.
 
 **Vision encoder.** All Ministral 3 models use a 410M parameter ViT as a vision encoder for image understanding that is copied from Mistral Small 3.1 Base and kept frozen, with the same architecture described in Pixtral [Agrawal et al., 2024]. We discard the pretrained projection layer from the ViT to language model's space and train a new projection for every model.
 
@@ -255,7 +255,7 @@ def prune(model, target_size):
 > 有两处对不上. `layers_to_keep` 被传给 `remove_layers`, 变量名和函数名意思相反; PCA 用的是 `n_components=n_dims`, 而 `n_dims` 在函数里没有定义, 第一行取出的是 `target_dim`. 这是伪代码, 意思看得懂, 不能照抄.
 
 > **看表:** 每剪一次, 各维度剪掉多少?
-> 14B 到 8B: 层数 40 到 34 (保留 85%), 潜变量维度 5120 到 4096 (80%), FFN 16384 到 14336 (87.5%). 8B 到 3B: 34 到 26 (约 76.5%), 4096 到 3072 (75%), 14336 到 9216 (约 64.3%) (都是估算). 第二刀明显更狠. 24B 父模型到 14B 这一刀, 父模型规格本页未印, 算不出.
+> 14B 到 8B: 层数 40 到 34 (保留 85%), 潜变量维度 5120 到 4096 (80%), FFN 16384 到 14336 (87.5%). 8B 到 3B: 34 到 26 (约 76.5%), 4096 到 3072 (75%), 14336 到 9216 (约 64.3%). 第二刀明显更狠. 24B 父模型到 14B 这一刀, 父模型规格本页未印, 算不出.
 
 **Distillation.** After weight initialization, each child model is trained on a mixture of text-only and interleaved text with image data with logit distillation from a teacher model. We find that training with just the forward KL distillation objective outperforms tuning the coefficients of an objective that weights the distillation objective and the next token prediction objective differently. For all stages and model sizes, we use the parent model as the teacher model (more details in §5.1).
 
@@ -417,7 +417,7 @@ Table 2: Comparing Ministral 3 Base models against the Gemma 3 base models and t
 | Ministral 3 3B | 73.5 | 59.2 | 60.1 | 51.1 | 65.2 |
 
 > **核对:** 表 2 的 Multilingual MMLU 和表 3 的四项语言分数怎么对上?
-> 表 3 的欧洲均值是 5 种语言的平均. 把它算 5 份, 中文, 日文, 韩文各 1 份, 共 8 种语言平均: 14B 约 74.3, 8B 约 70.7, 3B 约 65.1 (估算), 表 2 印的是 74.2, 70.6, 65.2, 差 0.1 以内, 可能就是 8 种语言的均值加取整误差. 页面没写表 2 这一列怎么算.
+> 表 3 的欧洲均值是 5 种语言的平均. 把它算 5 份, 中文, 日文, 韩文各 1 份, 共 8 种语言平均: 14B 约 74.3, 8B 约 70.7, 3B 约 65.1, 表 2 印的是 74.2, 70.6, 65.2, 差 0.1 以内, 可能就是 8 种语言的均值加取整误差. 页面没写表 2 这一列怎么算.
 
 > **看表:** 表 2 里 3B 和谁比?
 > 和 Gemma 3 4B, Qwen 3 4B 比, 对手都是 4B. 3B 对 Qwen 3 4B 两胜三负: TriviaQA 高 6.2, MATH 高 19.6; MMLU-Redux 低 2.4, AGIEval 低 5.9, 多语言 MMLU 低 2.5. 3B 对 Gemma 3 4B 四胜一负, TriviaQA 低 4.8. 下文 「gaps become more pronounced」 没说谁领先.
@@ -564,7 +564,7 @@ Figure 5: Verbosity (in terms of number of output tokens) v.s. accuracy on GPQA 
 图 5: Ministral 3 指令版和推理版在 GPQA Diamond 上的啰嗦程度 (按输出 token 数计) 与准确率.
 
 > **核对:** 图 5 画的是哪些模型, 各用了多少 token?
-> 图注说 「instruction-following and reasoning」, 图上只有 Instruct 模型. 读图: Ministral3 14B Instruct 约 55.5 分, 约 1,000 token; Qwen3-VL 8B Instruct 约 51 分, 约 16,500 token. 14B 比后者高约 4.5 分, token 只有约 1/16 (估算). GPQA Diamond 全文出现三次: 表 3 的 base 14B 是 39.9, 图 5 的指令版 14B 约 55 (读图), 表 5 的推理版 14B 是 71.2.
+> 图注说 「instruction-following and reasoning」, 图上只有 Instruct 模型. 读图: Ministral3 14B Instruct 约 55.5 分, 约 1,000 token; Qwen3-VL 8B Instruct 约 51 分, 约 16,500 token. 14B 比后者高约 4.5 分, token 只有约 1/16. GPQA Diamond 全文出现三次: 表 3 的 base 14B 是 39.9, 图 5 的指令版 14B 约 55 (读图), 表 5 的推理版 14B 是 71.2.
 
 Our post-training of Ministral 3 Instruct differs from Qwen 3 in that it does not do "Reasoning RL" before the "General RL" stage (see Fig. 1 of Yang et al. [2025]) this likely results in different model verbosity between the two models as illustrated in Figure 5.
 

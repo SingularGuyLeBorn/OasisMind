@@ -21,7 +21,7 @@ We introduce Mixtral 8x7B, a Sparse Mixture of Experts (SMoE) language model. Mi
 本文介绍 Mixtral 8x7B, 一个稀疏 MoE (SMoE) 语言模型. Mixtral 的架构与 Mistral 7B 相同, 区别只在于每一层由 8 个前馈块 (也就是专家) 组成. 对每个 token, 每一层的 router 网络选出两个专家处理当前状态, 再把两者的输出组合起来. 每个 token 虽然只经过两个专家, 但每个时间步选中的专家可以不同. 这样每个 token 能用到的参数有 47B, 推理时实际激活的只有 13B. Mixtral 用 32k token 的上下文训练, 在所有评测过的基准上都超过或持平 Llama 2 70B 和 GPT-3.5, 在数学, 代码生成和多语言基准上大幅领先 Llama 2 70B. 作者还提供了一个按指令微调的版本 Mixtral 8x7B – Instruct, 在人工评测基准上超过 GPT-3.5 Turbo, Claude-2.1, Gemini Pro 和 Llama 2 70B – chat. 基座模型和指令模型都以 Apache 2.0 许可发布.
 
 > **想:** 名字 「8x7B」 按字面乘是 56B, 摘要印的总参数却是 47B, 激活参数是 13B, 这四个数各指什么?
-> 名字里的 8 是表 1 的 num_experts (每层 8 个专家), 7B 是基座 Mistral 7B 的规模标签; 页面上的 47B 是总参数 (第 3 页称 sparse 参数量), 13B 是每个 token 的激活参数. 按表 1 估算: 每个专家 3 × 4096 × 14336 ≈ 1.76 亿, 32 层 8 个专家约 45.1B; 注意力, 路由器和嵌入只有一份, 约 1.6B; 合计约 46.7B. 只有 FFN 换成了 8 份, 注意力和嵌入不跟着乘 8, 所以到不了 56B. 激活部分是 1.6B 加 2 个专家的 11.3B, 约 12.9B (都是估算).
+> 名字里的 8 是表 1 的 num_experts (每层 8 个专家), 7B 是基座 Mistral 7B 的规模标签; 页面上的 47B 是总参数 (第 3 页称 sparse 参数量), 13B 是每个 token 的激活参数. 按表 1 估算: 每个专家 3 × 4096 × 14336 ≈ 1.76 亿, 32 层 8 个专家约 45.1B; 注意力, 路由器和嵌入只有一份, 约 1.6B; 合计约 46.7B. 只有 FFN 换成了 8 份, 注意力和嵌入不跟着乘 8, 所以到不了 56B. 激活部分是 1.6B 加 2 个专家的 11.3B, 约 12.9B.
 
 **Code:** [https://github.com/mistralai/mistral-src](https://github.com/mistralai/mistral-src)
 
@@ -99,10 +99,10 @@ Table 1: Model architecture.
 表 1: 模型架构. 各行依次是隐藏维度, 层数, 每头维度, FFN 中间维度, 查询头数, KV 头数, 上下文长度, 词表大小, 专家数, 每个 token 选用的专家数.
 
 > **看表:** 表 1 的 n_heads 32 和 n_kv_heads 8 放在一起, 32k 上下文的 KV cache 有多大?
-> 表 1 给了 head_dim 128, 32 × 128 = 4096 正好等于 dim; KV 头是查询头的 1/4. 每个 token 每层存 K 和 V 各 8 × 128 个数, 32 层共 65,536 个数, 按 2 字节存约 128 KiB; context_len 32768 个 token 满载约 4 GiB. 若 KV 头也是 32 个, 会是约 16 GiB (估算, 未计批大小).
+> 表 1 给了 head_dim 128, 32 × 128 = 4096 正好等于 dim; KV 头是查询头的 1/4. 每个 token 每层存 K 和 V 各 8 × 128 个数, 32 层共 65,536 个数, 按 2 字节存约 128 KiB; context_len 32768 个 token 满载约 4 GiB. 若 KV 头也是 32 个, 会是约 16 GiB (未计批大小).
 
 > **拆开:** 表 1 的 hidden_dim 14336 是每个专家的中间维, 还是 8 个专家加起来?
-> 是每个专家的. 按第 3 页 「SwiGLU 作为专家函数」 计, 单个专家三块矩阵 3 × 4096 × 14336 ≈ 1.76 亿参数, 用这个数才能把总参数拼到约 46.7B, 与摘要的 47B 对上 (估算). 如果 14336 是 8 个专家的总和, 每个专家只剩 1792 维, 总参数会掉到 7B 上下, 和页面的 47B 对不上.
+> 是每个专家的. 按第 3 页 「SwiGLU 作为专家函数」 计, 单个专家三块矩阵 3 × 4096 × 14336 ≈ 1.76 亿参数, 用这个数才能把总参数拼到约 46.7B, 与摘要的 47B 对上. 如果 14336 是 8 个专家的总和, 每个专家只剩 1792 维, 总参数会掉到 7B 上下, 和页面的 47B 对不上.
 
 > **确认:** 第 2 节说和 [18] 不同之处是 「fully dense context length of 32k」, 表 1 里哪一行体现这一点?
 > 表 1 只有 context_len 32768, 没有滑动窗口一类的行. [18] 是 Mistral 7B, 用的是 SWA; 这里说 「fully dense」, 意思是 32768 个位置之间都做完整注意力, 不再按窗口截断. 第 5 页图 4 左的 passkey 测试一直做到约 32K, 与这一行对应.
@@ -140,7 +140,7 @@ This motivates a distinction between the model’s total parameter count (common
 由此要区分两个量: 模型的总参数量 (通常称为 **sparse** 参数量), 随 n 增长; 处理单个 token 所用的参数量 (称为 **active** 参数量), 随 K 增长, 最多到 n 为止.
 
 > **再看:** 「grows with K up to n」 落到 Mixtral 上, K 从 2 调到 8 时激活参数会变成多少?
-> 用表 1 估算: 非专家部分 (注意力, 路由器, 嵌入) 约 1.6B, 每多选一个专家, 32 层共多约 5.64B. K = 2 时约 12.9B, 与页面的 13B 对上; K = 8 时约 46.7B, 就等于总参数 (估算). 这说明页面上的 13B 和 47B 是同一张表 1 在 K = 2 和 K = n 两端的读数.
+> 用表 1 估算: 非专家部分 (注意力, 路由器, 嵌入) 约 1.6B, 每多选一个专家, 32 层共多约 5.64B. K = 2 时约 12.9B, 与页面的 13B 对上; K = 8 时约 46.7B, 就等于总参数. 这说明页面上的 13B 和 47B 是同一张表 1 在 K = 2 和 K = n 两端的读数.
 
 MoE layers can be run efficiently on single GPUs with high performance specialized kernels. For example, Megablocks [13] casts the feed-forward network (FFN) operations of the MoE layer as large sparse matrix multiplications, significantly enhancing the execution speed and naturally handling cases where different experts get a variable number of tokens assigned to them. Moreover, the MoE layer can be distributed to multiple GPUs through standard Model Parallelism techniques, and through a particular kind of partitioning strategy called Expert Parallelism (EP) [28]. During the MoE layer’s execution, tokens meant to be processed by a specific expert are routed to the corresponding GPU for processing, and the expert’s output is returned to the original token location. Note that EP introduces challenges in load balancing, as it is essential to distribute the workload evenly across the GPUs to prevent overloading individual GPUs or hitting computational bottlenecks.
 
@@ -250,7 +250,7 @@ Note that this analysis focuses on the active parameter count (see Section 2.1),
 注意, 这个分析看的是激活参数量 (见第 2.1 节), 它与推理计算成本成正比, 但没有考虑显存成本和硬件利用率. 部署 Mixtral 的显存成本与稀疏参数量 47B 成正比, 仍小于 Llama 2 70B. 设备利用率方面, SMoE 层有额外开销, 一是路由机制本身, 二是一张卡上跑多个专家时内存读取增加. 这类层更适合批量负载, 那时算术强度能达到较好的水平.
 
 > **回看:** 算力按 13B 计, 显存按 47B 计, 换成权重显存大约是多少?
-> 按 2 字节一个参数估算: 表 1 拼出的约 46.7B 参数需要约 93 GB, Llama 2 70B 约 140 GB, 比值约 0.67. 激活参数的比值是 13/70 ≈ 0.19. 所以同一张表 2, 按计算看便宜 5 倍, 按显存看只省三分之一 (估算, 不含 KV cache 和激活值).
+> 按 2 字节一个参数估算: 表 1 拼出的约 46.7B 参数需要约 93 GB, Llama 2 70B 约 140 GB, 比值约 0.67. 激活参数的比值是 13/70 ≈ 0.19. 所以同一张表 2, 按计算看便宜 5 倍, 按显存看只省三分之一 (不含 KV cache 和激活值).
 
 **Comparison with Llama 2 70B and GPT-3.5.** In Table 3, we report the performance of Mixtral 8x7B compared to Llama 2 70B and GPT-3.5. We observe that Mixtral performs similarly or above the two other models. On MMLU, Mixtral obtains a better performance, despite its significantly smaller capacity (47B tokens compared to 70B). For MT Bench, we report the performance of the latest GPT-3.5-Turbo model available, gpt-3.5-turbo-1106.
 
@@ -306,7 +306,7 @@ Table 4: Comparison of Mixtral with Llama on Multilingual Benchmarks. On ARC Cha
 表 4: Mixtral 与 Llama 在多语言基准上的比较. 在 ARC Challenge, Hellaswag 和 MMLU 上, Mixtral 在法语, 德语, 西班牙语, 意大利语四种语言都超过 Llama 2 70B.
 
 > **想:** 表 4 的 12 格里 Mixtral 全赢, 领先幅度和英文比起来怎样?
-> 12 格全部高于 Llama 2 70B, 最小的是意大利语 Arc-c (+3.4), 最大的是法语 Arc-c (+8.3), 平均约 +5.5 (估算). 四种语言的 MMLU 领先 +5.8 到 +7.3, 而表 2 英文 MMLU 只领先 0.7. 多语言上的差距比英文大得多, 与上文 「多语言数据上采样」 的说法方向一致.
+> 12 格全部高于 Llama 2 70B, 最小的是意大利语 Arc-c (+3.4), 最大的是法语 Arc-c (+8.3), 平均约 +5.5. 四种语言的 MMLU 领先 +5.8 到 +7.3, 而表 2 英文 MMLU 只领先 0.7. 多语言上的差距比英文大得多, 与上文 「多语言数据上采样」 的说法方向一致.
 
 ## 3.2 Long range performance (长距离表现)
 

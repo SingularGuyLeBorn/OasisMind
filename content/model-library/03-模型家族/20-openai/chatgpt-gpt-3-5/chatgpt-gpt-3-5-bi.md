@@ -166,7 +166,7 @@ ChatGPT is fine-tuned from a model in the GPT-3.5 series, which finished trainin
 ChatGPT 是从 GPT-3.5 系列中的一个模型微调来的, 那个模型在 2022 年初完成训练. 3.5 系列的更多信息见这里的链接. ChatGPT 和 GPT-3.5 都是在 Azure AI 超算基础设施上训练的.
 
 > **想:** 「early 2022」 到发布日 November 30, 2022 隔了多久?
-> 「early」 没有月份, 按 1 到 3 月算大约 8 到 11 个月 (估算). 这段时间里做了哪些事, 这页只交代了上面三步和多轮迭代.
+> 「early」 没有月份, 按 1 到 3 月算大约 8 到 11 个月. 这段时间里做了哪些事, 这页只交代了上面三步和多轮迭代.
 
 ## Limitations (局限)
 
@@ -230,7 +230,7 @@ If Columbus arrived in the US in 2015, he would likely be very surprised at the 
 **InstructGPT.** 哥伦布 2015 年来到美国, 他很兴奋. 他一直想来美国看看, 对我们的国家很好奇. 他对我们的国家印象深刻, 在这里过得很愉快.
 
 > **拆开:** 1506, 1492, 2015 和 「over 500 years ago」 这几个数对得上吗?
-> 对得上. 2015 减 1492 等于 523 (估算), 符合 「500 多年前」. 2015 减 1506 等于 509 (估算), 说明 ChatGPT 抓住了错误前提, InstructGPT 则顺着前提编了下去.
+> 对得上. 2015 减 1492 等于 523, 符合 「500 多年前」. 2015 减 1506 等于 509, 说明 ChatGPT 抓住了错误前提, InstructGPT 则顺着前提编了下去.
 
 We know that many limitations remain as discussed above and we plan to make regular model updates to improve in such areas. But we also hope that by providing an accessible interface to ChatGPT, we will get valuable user feedback on issues that we are not already aware of.
 

@@ -27,9 +27,9 @@
 
 ## 2 身份: 8B 由哪两块拼成
 
-页面对结构只写了一句: 「built on SigLip-400M and Qwen2-7B with a total of 8B parameters」. SigLip-400M 是视觉编码器, Qwen2-7B 是语言模型底座. 名义值相加是 0.4B + 7B = 7.4B (估算), 与 8B 差 0.6B. 这个差额有两个来源可以想到: 档位名本身取过整, 以及视觉特征接进语言模型需要一层连接模块. 页面对连接模块的类型和规模一个字都没写, 所以这 0.6B 拆不开. 侧栏的 「Model size 8B params」 同样是取整显示, 页面没有给到个位的精确参数量.
+页面对结构只写了一句: 「built on SigLip-400M and Qwen2-7B with a total of 8B parameters」. SigLip-400M 是视觉编码器, Qwen2-7B 是语言模型底座. 名义值相加是 0.4B + 7B = 7.4B, 与 8B 差 0.6B. 这个差额有两个来源可以想到: 档位名本身取过整, 以及视觉特征接进语言模型需要一层连接模块. 页面对连接模块的类型和规模一个字都没写, 所以这 0.6B 拆不开. 侧栏的 「Model size 8B params」 同样是取整显示, 页面没有给到个位的精确参数量.
 
-按 BF16 每参数 2 字节算, 8B 参数的权重约 16 GB, 合 14.9 GiB (估算). 第 12 页说 int4 量化版 「lower GPU memory (7GB)」. 如果只看权重, 8B 按 4 bit 算约 4 GB (估算), 与 7GB 之间的约 3GB 要留给激活, KV cache 和图像编码的中间结果; 页面没说视觉编码器是否也量化成 int4, 也没给测 7GB 时的输入分辨率和上下文长度. 所以 7GB 只能当 「这张卡大概够用」 的参考.
+按 BF16 每参数 2 字节算, 8B 参数的权重约 16 GB, 合 14.9 GiB. 第 12 页说 int4 量化版 「lower GPU memory (7GB)」. 如果只看权重, 8B 按 4 bit 算约 4 GB, 与 7GB 之间的约 3GB 要留给激活, KV cache 和图像编码的中间结果; 页面没说视觉编码器是否也量化成 int4, 也没给测 7GB 时的输入分辨率和上下文长度. 所以 7GB 只能当 「这张卡大概够用」 的参考.
 
 这是稠密结构. 每个 token 走完整的语言模型, 视觉部分每张图 (或每个切片) 走一次编码器. 页面没有 MoE 相关内容, 也没有给语言模型的层数, 头数, 是否用 GQA, 上下文长度. 这些在 Qwen2-7B 的资料里能查到, 但本稿只写这页印出来的数, 不从别处搬.
 
@@ -37,23 +37,23 @@
 
 「Superior Efficiency」 一段的核心数字是 640: 处理一张 180 万像素的图只产生 640 个视觉 token. 表中给 MiniCPM-V 2.6 的 Token Density 是 2822, 定义为 「最大分辨率像素数 / 视觉 token 数」. 两处可以对上: 1344 × 1344 = 1,806,336 像素, 除以 640 得 2822.4. 也就是说, 正文的 「1.8M pixel」 和 「(e.g., 1344x1344)」 是同一件事, 2822 是截掉小数后的值.
 
-「75% fewer than most models」 要仔细拆. 少 75% 意味着对方要约 2560 个 token. 用表里各家密度把 1,806,336 像素倒推成 token 数 (估算): InternVL2-8B 密度 706, 约 2559 个, 正好对上 75%; Claude 3.5 Sonnet 密度 750, 约 2408 个, 少 73.4%; Qwen-VL-Max 和 GLM-4V-9B 密度 784, 约 2304 个, 少 72.2%; GPT-4o, GPT-4o mini, GPT-4V 密度 1088, 约 1660 个, 只少 61.5%. 另一头, Cambrian-34B 密度 1820, 约 992 个, 前代 MiniCPM-Llama-V 2.5 密度 1882, 约 960 个, 对它们只少三成多. LLaVA-NeXT-Yi-34B 和 Mini-Gemini-HD-34B 密度 157, 约 11505 个, 那才是少 94%.
+「75% fewer than most models」 要仔细拆. 少 75% 意味着对方要约 2560 个 token. 用表里各家密度把 1,806,336 像素倒推成 token 数: InternVL2-8B 密度 706, 约 2559 个, 正好对上 75%; Claude 3.5 Sonnet 密度 750, 约 2408 个, 少 73.4%; Qwen-VL-Max 和 GLM-4V-9B 密度 784, 约 2304 个, 少 72.2%; GPT-4o, GPT-4o mini, GPT-4V 密度 1088, 约 1660 个, 只少 61.5%. 另一头, Cambrian-34B 密度 1820, 约 992 个, 前代 MiniCPM-Llama-V 2.5 密度 1882, 约 960 个, 对它们只少三成多. LLaVA-NeXT-Yi-34B 和 Mini-Gemini-HD-34B 密度 157, 约 11505 个, 那才是少 94%.
 
 所以 「75%」 对应的是密度在 700 上下的一档, 大致是 InternVL2-8B, Claude 3.5 Sonnet 和 Qwen-VL-Max 所在的位置. 页面用 「most models」 概括, 没说统计范围. 另外这种倒推有个前提: 各模型的 「最大分辨率」 并不相同, 密度是在各自最大分辨率下算的, 把它们都换算到 1344x1344 只是一个思想实验, 实际模型可能会先缩放或切片.
 
-闭源模型的密度还有一层口径问题. 表下的注写明, 闭源模型的密度是 "based on the image encoding charging strategy defined in the official API documentation, which provides an upperbound estimation", 即从 API 计费规则倒算出的上界估计. 开源模型则是真实的视觉 token 数. 因此 2822 对 1088 的 2.59 倍 (估算) 只能当量级参考. 密度高带来的好处, 页面列了四项: 推理速度, 首 token 延迟, 显存占用, 功耗, 并据此声称能在 iPad 上做实时视频理解. 这四项页面都没有给测量数字.
+闭源模型的密度还有一层口径问题. 表下的注写明, 闭源模型的密度是 "based on the image encoding charging strategy defined in the official API documentation, which provides an upperbound estimation", 即从 API 计费规则倒算出的上界估计. 开源模型则是真实的视觉 token 数. 因此 2822 对 1088 的 2.59 倍 只能当量级参考. 密度高带来的好处, 页面列了四项: 推理速度, 首 token 延迟, 显存占用, 功耗, 并据此声称能在 iPad 上做实时视频理解. 这四项页面都没有给测量数字.
 
 ## 4 单图评测: 65.2 与四个闭源对手
 
 正文说 MiniCPM-V 2.6 在单图理解上超过 GPT-4o mini, GPT-4V, Gemini 1.5 Pro 和 Claude 3.5 Sonnet. 看 OpenCompass 一列: GPT-4o mini 64.1, GPT-4V 63.5, Gemini 1.5 Pro 64.4, 都低于 65.2; Claude 3.5 Sonnet 是 67.9, 比 65.2 高 2.7 分. 按页面自己选的综合指标, 四个对手里有一个不成立. 表里排第一的是 GPT-4o 的 69.9, 正文没有把它列进 「超过」 名单, 这一点是一致的.
 
-再逐列比 (OpenCompass 和 Token Density 之外的 11 列, 估算). 对 Claude 3.5 Sonnet, MiniCPM-V 2.6 赢 MME (2348.4 对 1920.0), OCRBench (852 对 788), AI2D (82.1 对 80.2), Object HalBench (8.2 对 13.8, 越低越好) 四项, 输 MMVet, MMMU, MathVista, MMB1.1, DocVQA, HallusionBench 六项, TextVQA 对方无数. 对 GPT-4V 是 8 胜 3 负, 对 Gemini 1.5 Pro 是 8 胜 2 负, 对 GPT-4o mini 是 7 胜 2 负. 对 GPT-4o 是 3 胜 7 负, 只赢 MME, OCRBench 和 Object HalBench.
+再逐列比 (OpenCompass 和 Token Density 之外的 11 列). 对 Claude 3.5 Sonnet, MiniCPM-V 2.6 赢 MME (2348.4 对 1920.0), OCRBench (852 对 788), AI2D (82.1 对 80.2), Object HalBench (8.2 对 13.8, 越低越好) 四项, 输 MMVet, MMMU, MathVista, MMB1.1, DocVQA, HallusionBench 六项, TextVQA 对方无数. 对 GPT-4V 是 8 胜 3 负, 对 Gemini 1.5 Pro 是 8 胜 2 负, 对 GPT-4o mini 是 7 胜 2 负. 对 GPT-4o 是 3 胜 7 负, 只赢 MME, OCRBench 和 Object HalBench.
 
 有两列值得单独看. MMMU val 上 MiniCPM-V 2.6 是 49.8, 而且带星号, 是用 CoT 提示测出来的, 仍然低于所有列出的闭源模型 (最低的 Step-1V 是 49.9), 也低于同为 8B 的 InternVL2-8B (51.2). 这说明 8B 体量在需要大学学科知识的题上还有明显差距. OCRBench 则是它最强的一列: 852 高于表中所有模型, 包括 GPT-4o 的 736 和 InternVL2-8B 的 794, 这一项的 SOTA 说法和表格一致, 只是 852 也带着 CoT 的星号.
 
 文字类任务要分开看. TextVQA val 上它是 80.1, 全表最高, 第二是 Qwen-VL-Max 的 79.5; DocVQA test 上它是 90.8, 排在 Claude 3.5 Sonnet (95.2), Qwen-VL-Max (93.1), GPT-4o (92.8), InternVL2-8B (91.6) 之后, 只算有数的 10 个模型是第 5. OCRBench 和场景文字问答领先, 不等于文档问答也领先. 正文用 「Strong OCR Capability」 概括, 并只拿 OCRBench 声称 SOTA, 措辞和表格是吻合的, 读者自己别把它扩大成 「文档理解第一」.
 
-和同体量开源模型比, 对手主要是 InternVL2-8B. OpenCompass 65.2 对 64.1, MiniCPM-V 2.6 高 1.1 分; 逐列是 7 胜 4 负 (估算), 输在 MMMU, MMB1.1, AI2D, DocVQA 四项, 差距都在 1.6 分以内. 真正拉开的是 Object HalBench: 8.2 对 21.3, InternVL2-8B 的幻觉率是它的 2.6 倍. 和前代 MiniCPM-Llama-V 2.5 比, 11 列全部改进, OpenCompass 从 58.8 到 65.2, 高 6.4 分, OCRBench 从 725 到 852, 高 127.
+和同体量开源模型比, 对手主要是 InternVL2-8B. OpenCompass 65.2 对 64.1, MiniCPM-V 2.6 高 1.1 分; 逐列是 7 胜 4 负, 输在 MMMU, MMB1.1, AI2D, DocVQA 四项, 差距都在 1.6 分以内. 真正拉开的是 Object HalBench: 8.2 对 21.3, InternVL2-8B 的幻觉率是它的 2.6 倍. 和前代 MiniCPM-Llama-V 2.5 比, 11 列全部改进, OpenCompass 从 58.8 到 65.2, 高 6.4 分, OCRBench 从 725 到 852, 高 127.
 
 ## 5 星号, 方向和估算: 读表前要统一的三件事
 
@@ -79,9 +79,9 @@ Mathverse mv 的差距需要单独提. MiniCPM-V 2.6 的 84.9 比 GPT-4V 高 21.
 
 视频表有两个基准. Video-MME 上 MiniCPM-V 2.6 无字幕 60.9, 有字幕 63.6, 都是表中最高. 正文说它超过 GPT-4V, Claude 3.5 Sonnet 和 LLaVA-NeXT-Video-34B. 对 GPT-4V 高 1.0 和 0.3 分, 对 Claude 3.5 Sonnet 高 0.9 和 0.7 分. 对 LLaVA-NeXT-Video 要先对上名字: 表里写的是 「LLaVA-NeXT-Video」, Size 32B, 正文写 34B. 按表里这一行比, 高 0.7 和 0.6 分. 三个对手的差距都在 1 分以内.
 
-字幕带来的提升也可以从表里算 (估算): MiniCPM-V 2.6 加字幕后高 2.7 分, GPT-4V 高 3.4 分, Claude 3.5 Sonnet 高 2.9 分, InternVL2-8B 高 2.9 分, LLaVA-NeXT-Video 高 2.8 分, LongVA 高 1.9 分. MiniCPM-V 2.6 从字幕里得到的增益不算多, 它的领先主要来自无字幕时的底子.
+字幕带来的提升也可以从表里算: MiniCPM-V 2.6 加字幕后高 2.7 分, GPT-4V 高 3.4 分, Claude 3.5 Sonnet 高 2.9 分, InternVL2-8B 高 2.9 分, LLaVA-NeXT-Video 高 2.8 分, LongVA 高 1.9 分. MiniCPM-V 2.6 从字幕里得到的增益不算多, 它的领先主要来自无字幕时的底子.
 
-Video-ChatGPT 有五个维度, 正文没有拿它做宣传. MiniCPM-V 2.6 只在 Correctness 一项第一 (3.59); Detail 3.28 低于 CogVLM2-Video 的 3.46, Context 3.93 低于 LLaVA-NeXT-Video 的 3.95, Temporal 2.73 低于 CogVLM2-Video 的 2.98, Consistency 3.62 低于 CogVLM2-Video 和 LongVA 的 3.64. 五项简单平均是 3.43, 仍是表中最高, 次高 CogVLM2-Video 3.36, 再往下是 LLaVA-NeXT-Video 3.34 (都是估算, 页面没给平均). 正文说能 「providing dense captions for spatial-temporal information」, 而 Temporal 这一项恰好不是第一, 这是读这张表时最值得记下的一点.
+Video-ChatGPT 有五个维度, 正文没有拿它做宣传. MiniCPM-V 2.6 只在 Correctness 一项第一 (3.59); Detail 3.28 低于 CogVLM2-Video 的 3.46, Context 3.93 低于 LLaVA-NeXT-Video 的 3.95, Temporal 2.73 低于 CogVLM2-Video 的 2.98, Consistency 3.62 低于 CogVLM2-Video 和 LongVA 的 3.64. 五项简单平均是 3.43, 仍是表中最高, 次高 CogVLM2-Video 3.36, 再往下是 LLaVA-NeXT-Video 3.34 (页面没给平均). 正文说能 「providing dense captions for spatial-temporal information」, 而 Temporal 这一项恰好不是第一, 这是读这张表时最值得记下的一点.
 
 这张表的可比范围也很窄. 两个闭源模型只有 Video-MME 分数, 没有 Video-ChatGPT; LLaVA-NeXT-7B, LLaVA-NeXT-34B, CogVLM2-Video 只有 Video-ChatGPT; InternVL2-8B 和 InternLM-XComposer-2.5 只有 Video-MME, 后者连有字幕一栏都空着. 两个基准都有分的只有 LongVA, LLaVA-NeXT-Video 和 MiniCPM-V 2.6 三行. 所以 「视频理解全面领先」 这种说法在本页找不到依据, 能说的是: Video-MME 上小幅领先, Video-ChatGPT 上五项平均最高, 单项各有输赢.
 
@@ -119,7 +119,7 @@ Video-ChatGPT 有五个维度, 正文没有拿它做宣传. MiniCPM-V 2.6 只在
 
 这一页直接出现的 MiniCPM 视觉系模型有三个: 前代 MiniCPM-Llama3-V 2.5, 本代 MiniCPM-V 2.6, 以及新闻里的 MiniCPM-o 2.6. 前代在评测表里写作 「MiniCPM-Llama-V 2.5」, 少了一个 「3」, 按上下文是同一个模型. 表里给了它的 Size 8B, token 密度 1882 和单图各列分数. 从名字看, 前代的语言底座带 Llama3 字样, 本代明确写 Qwen2-7B, 语言底座换了家; 视觉编码器前代用什么, 这一页没写.
 
-本代相对前代的变化, 页面能支撑的有三条. 一是能力面扩展, 从单图扩到多图和视频, 正文用 「introduces new features for multi-image and video understanding」 表述. 二是 token 密度从 1882 提到 2822, 多 49.9% (估算), 同样像素下视觉 token 少三分之一. 三是单图各列全面提升, OpenCompass 高 6.4 分, Object HalBench 从 10.3 降到 8.2. 这些都能在表里逐项核对.
+本代相对前代的变化, 页面能支撑的有三条. 一是能力面扩展, 从单图扩到多图和视频, 正文用 「introduces new features for multi-image and video understanding」 表述. 二是 token 密度从 1882 提到 2822, 多 49.9%, 同样像素下视觉 token 少三分之一. 三是单图各列全面提升, OpenCompass 高 6.4 分, Object HalBench 从 10.3 降到 8.2. 这些都能在表里逐项核对.
 
 技术来源方面, 页面点了四个项目: VisCPM, RLHF-V, LLaVA-UHD, RLAIF-V, 并说可信行为 「Based on the the latest RLAIF-V and VisCPM techniques」. 侧栏唯一挂出的训练数据集 RLAIF-V-Dataset 也属于这条线. LLaVA-UHD 出现在关键技术名单里, 但页面没有说它在 V 2.6 里用在哪一步; 任意长宽比, 180 万像素, 640 个 token 这些特征和高分辨率处理有关, 可具体切图方式页面没写.
 

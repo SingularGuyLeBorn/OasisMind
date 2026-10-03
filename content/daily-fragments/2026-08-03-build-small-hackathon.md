@@ -8,7 +8,6 @@ tags: ["小模型", "hackathon", "MiniCPM", "创意项目", "AR", "语音"]
 # 2026-08-03 碎片:Build Small Hackathon 四个获奖项目
 
 > 来源:[小模型,大作品:OpenBMB × Hugging Face Build Small Hackathon 获奖项目揭晓](https://mp.weixin.qq.com/s/uPQpQvMa0uAoeCG9ZmRt8w)(OpenBMB 开源社区)
-> 状态:已初步整理,待后续决定是否归入正式知识库
 
 **赛事背景**:Hugging Face × Gradio 发起,OpenBMB 赞助的 Build Small Hackathon,限定只能使用总参数 ≤32B 的小模型,构建 Gradio App 部署到 HF Spaces.共 946 个可运行应用,817 位开发者,263 个项目用了 MiniCPM(第二大热门模型家族),74 支团队自行微调发布了定制模型.
 

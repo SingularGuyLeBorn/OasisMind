@@ -57,7 +57,7 @@ Model size: 3B params · Tensor type: BF16 · <u>Files info</u>
 Hugging Face 按权重文件自动统计: 模型大小 3B 参数, 张量类型 BF16; 旁边是 「文件信息」 链接.
 
 > **核对:** 侧栏写 3B params, 第 3 页正文写 MiniCPM-V 2.8B, 第 6 页表里 Size 也记 2.8B, 以哪个为准?
-> 两个数口径不同. 正文说模型由 SigLip-400M 和 MiniCPM-2.4B 经 perceiver resampler 连接, 名字里的数相加是 0.4B + 2.4B = 2.8B (估算), perceiver resampler 本身多少参数页面没给. 侧栏 3B 是 Hugging Face 按 safetensors 文件统计后取整的数. 评测表统一用 2.8B, 读表按 2.8B.
+> 两个数口径不同. 正文说模型由 SigLip-400M 和 MiniCPM-2.4B 经 perceiver resampler 连接, 名字里的数相加是 0.4B + 2.4B = 2.8B, perceiver resampler 本身多少参数页面没给. 侧栏 3B 是 Hugging Face 按 safetensors 文件统计后取整的数. 评测表统一用 2.8B, 读表按 2.8B.
 
 ## Inference Providers [NEW](https://huggingface.co/docs/inference-providers) (推理服务商)
 
@@ -104,7 +104,7 @@ Viewer • Updated May 28, 2024 • 5.73k • ↓ 581 • ♥ 74
 
 eduagarcia/multilingual-tokenizer-leaderboard · jpye00/AdGazer · bokesyo/MiniCPM\_Visual\_Document\_Retriever\_Demo · build-small-hackathon/naija-solar · Mister56/VQA\_app · +12 Spaces
 
-使用这个模型的 Space 共 17 个, 页面列出 5 个: 多语言分词器排行榜, AdGazer, MiniCPM 视觉文档检索演示, naija-solar, VQA_app, 其余 12 个折叠. 5 + 12 = 17 (估算), 和标题的数对得上. MinerU 把 Mister56/VQA_app 这一行排到了标题前面, 这里按页面顺序放回.
+使用这个模型的 Space 共 17 个, 页面列出 5 个: 多语言分词器排行榜, AdGazer, MiniCPM 视觉文档检索演示, naija-solar, VQA_app, 其余 12 个折叠. 5 + 12 = 17, 和标题的数对得上. MinerU 把 Mister56/VQA_app 这一行排到了标题前面, 这里按页面顺序放回.
 
 **Collections including openbmb/MiniCPM-V-2**
 
@@ -220,13 +220,13 @@ MiniCPM-V 2.0 achieves **state-of-the-art performance** on multiple benchmarks (
 在 7B 参数以下的模型里, MiniCPM-V 2.0 在多个基准 (包括 OCRBench, TextVQA, MME, MMB, MathVista 等) 上取得领先. 在 OpenCompass 这个覆盖 11 个常用基准的综合评测上, 它甚至超过了强模型 Qwen-VL-Chat 9.6B, CogVLM-Chat 17.4B 和 Yi-VL 34B. 特别是, MiniCPM-V 2.0 的 OCR 能力很强: 场景文字理解与 Gemini Pro 相当, OCRBench 成绩在开源模型中领先.
 
 > **看表:** 「7B 以下模型中 MME 领先」 和第 6 页的表对得上吗?
-> 对不上. 表里 Yi-VL-6B 的 Size 是 6.7B, MME 1915.1, 比 MiniCPM-V 2.0 的 1808.6 高 106.5 (估算). MMB 若看 dev(zh), Yi-VL-6B 的 68.3 也比 68.1 高 0.2; dev(en) 是 MiniCPM-V 2.0 的 69.6 领先 68.6. 在 7B 以下确实最高的是 OCRBench, TextVQA 和 MathVista 三项.
+> 对不上. 表里 Yi-VL-6B 的 Size 是 6.7B, MME 1915.1, 比 MiniCPM-V 2.0 的 1808.6 高 106.5. MMB 若看 dev(zh), Yi-VL-6B 的 68.3 也比 68.1 高 0.2; dev(en) 是 MiniCPM-V 2.0 的 69.6 领先 68.6. 在 7B 以下确实最高的是 OCRBench, TextVQA 和 MathVista 三项.
 
 > **对一下:** OpenCompass 55.0 胜过 Qwen-VL-Chat, CogVLM-Chat 和 Yi-VL 34B, 表里有没有没点名的对手?
-> 有. 点名的三个分别是 52.1, 52.5, 52.6, 都低于 55.0. 同表 DeepSeek-VL-7B (7.3B) 是 55.6, 比 MiniCPM-V 2.0 高 0.6 (估算), 正文没有提它; 第 5 页雷达图 OpenCompass 轴的外圈刻度也是 55.6.
+> 有. 点名的三个分别是 52.1, 52.5, 52.6, 都低于 55.0. 同表 DeepSeek-VL-7B (7.3B) 是 55.6, 比 MiniCPM-V 2.0 高 0.6, 正文没有提它; 第 5 页雷达图 OpenCompass 轴的外圈刻度也是 55.6.
 
 > **确认:** 「场景文字理解与 Gemini Pro 相当」 落在哪几列?
-> 只落在 TextVQA: 74.1 对 Gemini Pro Vision 的 74.6, 差 0.5. OCRBench 是 605 对 680, 差 75; DocVQA 是 71.9 对 88.1, 差 16.2 (均为估算). 正文把 OCRBench 的领先限定在开源模型里, 这样读才和表一致: 605 在开源模型中最高, CogVLM-Chat 590 次之, 两个闭源模型 (680, 645) 都更高.
+> 只落在 TextVQA: 74.1 对 Gemini Pro Vision 的 74.6, 差 0.5. OCRBench 是 605 对 680, 差 75; DocVQA 是 71.9 对 88.1, 差 16.2. 正文把 OCRBench 的领先限定在开源模型里, 这样读才和表一致: 605 在开源模型中最高, CogVLM-Chat 590 次之, 两个闭源模型 (680, 645) 都更高.
 
 ## 🏆 Trustworthy Behavior. (可信行为)
 
@@ -235,7 +235,7 @@ LMMs are known for suffering from hallucination, often generating text not factu
 多模态大模型普遍有幻觉问题, 常常生成与图像事实不符的文字. MiniCPM-V 2.0 是第一个通过多模态 RLHF 对齐可信行为的端侧多模态大模型 (用的是近期 RLHF-V [CVPR'24] 系列技术). 这让它在 Object HalBench 上防幻觉的表现与 GPT-4V 持平.
 
 > **回看:** 「在 Object HalBench 上与 GPT-4V 持平」, 表里是 85.5 / 92.2 对 86.4 / 92.7, 算持平吗?
-> 两个数都略低, 分别低 0.9 和 0.5 (估算), 「match」 是约数说法. 这一列每格两个数, 斜杠前后各是什么指标, 这 12 页没有解释; 第 5 页雷达图只画了斜杠后的 92.2, 而且把它画在最外圈, 可见图里按越高越好处理.
+> 两个数都略低, 分别低 0.9 和 0.5, 「match」 是约数说法. 这一列每格两个数, 斜杠前后各是什么指标, 这 12 页没有解释; 第 5 页雷达图只画了斜杠后的 92.2, 而且把它画在最外圈, 可见图里按越高越好处理.
 
 ## 🌟 High-Resolution Images at Any Aspect Raito. (任意长宽比的高分辨率图像)
 
@@ -244,7 +244,7 @@ MiniCPM-V 2.0 can accept **1.8 million pixels (e.g., 1344x1344) images at any as
 MiniCPM-V 2.0 能接收任意长宽比, 最多 180 万像素 (例如 1344x1344) 的图像. 这让它能更好地看清小物体, 印刷文字这类细粒度视觉信息, 做法来自近期的 LLaVA-UHD 技术. 标题里的 Raito 是原文拼写, 应为 Ratio.
 
 > **想:** 1.8M 像素配 1344x1344 这个例子, 进到语言模型要多少 token?
-> 页面没有给. 1344 × 1344 = 1,806,336 像素 (估算), 和 「1.8 million」 对得上. 下面 High Efficiency 一段只说 perceiver resampler 把图像表示压成 「much fewer tokens」, 没有每张图或每个切片的 token 数, 也没说非正方形的图怎么切, 这页回答不了.
+> 页面没有给. 1344 × 1344 = 1,806,336 像素, 和 「1.8 million」 对得上. 下面 High Efficiency 一段只说 perceiver resampler 把图像表示压成 「much fewer tokens」, 没有每张图或每个切片的 token 数, 也没说非正方形的图怎么切, 这页回答不了.
 
 ## ⚡️ High Efficiency. (高效)
 
@@ -285,7 +285,7 @@ Results on TextVQA, DocVQA, OCRBench, OpenCompass, MME, MMBench, MMMU, MathVista
 > 星号按脚注是团队自己用官方权重测的, 集中在 TextVQA 和 DocVQA 两列, 例如 Yi-VL-34B 的 DocVQA 16.9*, CogVLM-Chat 的 DocVQA 33.3*; 不带星号的格来源页面没说. (P) 在这 12 页里没有解释, 这一格和同列其他 MME 分数可能不是同一口径, 不宜直接比. MiniCPM-V 2.0 自己那一行没有星号.
 
 > **看表:** 同是 2.8B, MiniCPM-V 2.0 比上一代 MiniCPM-V 哪几列涨得多, 有没有倒退?
-> 涨得最多的是文字密集的几列: DocVQA 38.2 到 71.9 (+33.7), TextVQA 60.6 到 74.1 (+13.5), OCRBench 366 到 605 (+239); 另外 LLaVA Bench +17.9, MathVista +9.8, OpenCompass +7.4 (均为估算). MMMU val 是 38.3 到 38.2, 降了 0.1, 是唯一没涨的一列, 学科知识类题目基本没动.
+> 涨得最多的是文字密集的几列: DocVQA 38.2 到 71.9 (+33.7), TextVQA 60.6 到 74.1 (+13.5), OCRBench 366 到 605 (+239); 另外 LLaVA Bench +17.9, MathVista +9.8, OpenCompass +7.4. MMMU val 是 38.3 到 38.2, 降了 0.1, 是唯一没涨的一列, 学科知识类题目基本没动.
 
 ## Examples (示例)
 

@@ -26,7 +26,7 @@
 
 ## 2. Instant: 默认语气与自适应推理
 
-Instant 这一节交代了三处改动. 第一是默认语气 「warmer by default and more conversational」, 依据是 「early testing」, 没说测了多少人, 用什么量表. 演示里 GPT-5 按时长分组 (1–5 分钟, 10–20 分钟), 给的是 4-7-8 呼吸法: 吸 4 秒, 屏 7 秒, 呼 8 秒, 4 轮, 算下来约 76 秒 (估算), 放在 「1–5 分钟」 里是对的. GPT-5.1 Instant 先叫出用户名字 Ron, 再按压力类型分组, 给的是方块呼吸: 4-4-4-4 重复 5 次, 约 80 秒 (估算). 两个回答的内容量差不多, 区别在组织方式和开场白, 叫出名字说明演示开着记忆或个性化资料, 这一点页面没有说明, 对比条件并不完全对等.
+Instant 这一节交代了三处改动. 第一是默认语气 「warmer by default and more conversational」, 依据是 「early testing」, 没说测了多少人, 用什么量表. 演示里 GPT-5 按时长分组 (1–5 分钟, 10–20 分钟), 给的是 4-7-8 呼吸法: 吸 4 秒, 屏 7 秒, 呼 8 秒, 4 轮, 算下来约 76 秒, 放在 「1–5 分钟」 里是对的. GPT-5.1 Instant 先叫出用户名字 Ron, 再按压力类型分组, 给的是方块呼吸: 4-4-4-4 重复 5 次, 约 80 秒. 两个回答的内容量差不多, 区别在组织方式和开场白, 叫出名字说明演示开着记忆或个性化资料, 这一点页面没有说明, 对比条件并不完全对等.
 
 第二是指令遵循. 「每次只用六个词」 那组最适合逐字核对. GPT-5 的确认句 「Understood. All responses will be six.」 是 6 个词, 为了凑数省掉了 「words」; 接下来回答旅行问题时, 前两句各 6 个词, 后三句分别 11, 12, 9 个, 合计 44 个. GPT-5.1 Instant 三句话 「Understood, I will respond in six.」, 「Consider Japan, Italy, Greece, Canada, Iceland.」, 「Scenery culture cuisine climate friendly locals.」 都是 6 个词. 这个例子说明的是跨轮次保持约束的能力, GPT-5 把约束当成了每句开头的规矩, 两句之后就回到常规回答. GPT-5 那边还有一处时间错位: 它说日本是 「summer 2025」 的热门去处, 而公告日期是 2025 年 11 月, 「this summer」 按常理应当指 2026 年.
 

@@ -50,7 +50,7 @@ In this paper, we introduce Mistral's first reasoning models: Magistral Small an
 • 以 Apache 2 许可发布 Magistral Small (24B) 的权重<sup>1</sup>.
 
 > **问:** 「nearly 50% boost in AIME-24 (pass@1)」 是相对涨幅还是百分点?
-> 看第 9 页表 2: Mistral Medium 3 是 26.8, Magistral Medium 是 73.6, 差 46.8 个百分点 (估算); 按相对涨幅算约 175% (估算). 所以这里的 50% 指百分点, 而且是 「接近」 50.
+> 看第 9 页表 2: Mistral Medium 3 是 26.8, Magistral Medium 是 73.6, 差 46.8 个百分点; 按相对涨幅算约 175%. 所以这里的 50% 指百分点, 而且是 「接近」 50.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>https://huggingface.co/mistralai/Magistral-Small-2506</span></small>
 
@@ -203,7 +203,7 @@ To prevent language switching, we translated 10% of our problems written in Engl
 为防止切换语言, 我们把 10% 的英文题目翻译成法语, 西班牙语, 意大利语, 德语, 中文和俄语. 计算一段对话 (即 (题目, 思考, 回答) 三元组) 的奖励时, 先把三部分各自规范化, 去掉 LaTeX 内容和代码块, 再分别用 fastText 分类器 [Joulin et al., 2016] 判语言. 如果分类器认定三部分用的是同一种语言, 就再加 0.1 的奖励.
 
 > **再看:** 这 10% 是每种语言各 10%, 还是六种语言合计 10%?
-> 按字面是英文题目总量的 10% 被翻译, 分到六种语言; 如果均分, 每种约 1.7% (估算), 页面没说怎么分. 第 10 页表 4 的多语言 AIME'24 测的正好是这六种语言, 比英文低 4.3 到 9.9 分.
+> 按字面是英文题目总量的 10% 被翻译, 分到六种语言; 如果均分, 每种约 1.7%, 页面没说怎么分. 第 10 页表 4 的多语言 AIME'24 测的正好是这六种语言, 比英文低 4.3 到 9.9 分.
 
 These simple modifications are sufficient to enable the model to closely follow the language of the user, with minimal code-switching, while maintaining performance on reasoning tasks. Although we only translated the original English problems into a few languages, we observed that the model could successfully generate chains of thought in arbitrary languages.
 
@@ -337,7 +337,7 @@ Table 1: Number of math training samples after different filtering stages.
 表头依次是: 初始数据, 经格式过滤, 经难度过滤.
 
 > **看表:** 表 1 三步各留下多少?
-> 699k 到 501k, 格式过滤留下约 71.7% (估算); 501k 到 38k, 难度过滤只留约 7.6% (估算); 最终 38k 占初始的约 5.4% (估算). 正文说起点 「around 700k」, 和 699k 一致. 砍得最狠的是难度过滤.
+> 699k 到 501k, 格式过滤留下约 71.7%; 501k 到 38k, 难度过滤只留约 7.6%; 最终 38k 占初始的约 5.4%. 正文说起点 「around 700k」, 和 699k 一致. 砍得最狠的是难度过滤.
 
 ### 4.2 Code (代码)
 
@@ -350,7 +350,7 @@ Finally, where applicable, problem statements are duplicated to require code in 
 最后, 在适用的情况下, 把题面复制一份, 分别要求用 Python 或 C++ 作答, 这是竞赛编程最常用的两种语言. 这一流程最终得到 35k 道代码题.
 
 > **拆开:** 35k 是去重后的题数, 还是复制成两种语言以后的条数?
-> 按句子顺序, 35k 是 「This process」 的结果, 应已包含复制. 独立题目有多少没印, 最多就是 35k, 最少约 17.5k (估算, 假设每题都复制). 数学 38k (表 1) 加代码 35k, RL 数据合计约 73k 条 (估算).
+> 按句子顺序, 35k 是 「This process」 的结果, 应已包含复制. 独立题目有多少没印, 最多就是 35k, 最少约 17.5k (假设每题都复制). 数学 38k (表 1) 加代码 35k, RL 数据合计约 73k 条.
 
 ## 5 Experiment and results (实验与结果)
 
@@ -398,7 +398,7 @@ Here our goal is to evaluate the quality of our RL stack by training a model wit
 3. **KV cache 的显存负担不能太大.** 生成长度增加, KV cache 占的显存也随之增加. 为此我们调小同时运行的请求总数 $n _ { \mathrm { a s y n c } }$, batch 大小 $n _ { \mathrm { b a t c h } }$ 和 minibatch 大小 $n _ { \mathrm { m i n i b a t c h } }$. batch 大小的影响在 6.3 节讨论. 训练中我们把 batch 大小降了两次: 8k → 4k, 4k → 2k.
 
 > **回看:** batch 一路降到 2k, 和第 11 页 「$n_{\mathrm{async}}/n_{\mathrm{batch}} \leq 2$」 的规则怎么对上?
-> batch 到 2k 时, 按那条规则 $n_{\mathrm{async}}$ 不能超过 4k (估算). 本段说 $n_{\mathrm{async}}$ 也一起调小, 但 Magistral Medium 各阶段的 $n_{\mathrm{async}}$ 具体是多少没印. 第 12 页图 6 的 3B 实验里 $n_{\mathrm{async}}$ 固定为 4096. 阶段数, 每阶段步数和学习率也都没有给.
+> batch 到 2k 时, 按那条规则 $n_{\mathrm{async}}$ 不能超过 4k. 本段说 $n_{\mathrm{async}}$ 也一起调小, 但 Magistral Medium 各阶段的 $n_{\mathrm{async}}$ 具体是多少没印. 第 12 页图 6 的 3B 实验里 $n_{\mathrm{async}}$ 固定为 4096. 阶段数, 每阶段步数和学习率也都没有给.
 
 Table 2 shows the results of Magistral Medium trained with pure RL, compared against analogous experiments from [DeepSeek-AI et al., 2025]. We find our RL pipeline alone yields a nearly 50% accuracy increase in AIME '24 (pass@1), and 30% on LiveCodeBench (v5).
 
@@ -450,10 +450,10 @@ Table 2: Results of Magistral Medium trained solely with RL. To reduce variance,
 表 2 第一行 「Reasoning SFT before RL」 表示 RL 之前有没有做推理 SFT: Magistral Medium 和 DeepSeek-R1-Zero 没做, DeepSeek-R1 做了; 两个基座模型不适用.
 
 > **再看:** Magistral Medium 和 DeepSeek-R1-Zero 同样没做推理 SFT, 谁涨得多?
-> 表 2 AIME'24: Mistral Medium 3 从 26.8 到 73.6, 涨 46.8 分 (估算); DeepSeek-v3 从 39.2 到 R1-Zero 的 71.0, 涨 31.8 分 (估算). 起点更低, 终点更高. 但 MATH-500 (94.3 对 95.9) 和 GPQA (70.8 对 73.3) 上 R1-Zero 更高, LiveCodeBench (v5) 上 Magistral Medium 更高 (59.4 对 50.0).
+> 表 2 AIME'24: Mistral Medium 3 从 26.8 到 73.6, 涨 46.8 分; DeepSeek-v3 从 39.2 到 R1-Zero 的 71.0, 涨 31.8 分. 起点更低, 终点更高. 但 MATH-500 (94.3 对 95.9) 和 GPQA (70.8 对 73.3) 上 R1-Zero 更高, LiveCodeBench (v5) 上 Magistral Medium 更高 (59.4 对 50.0).
 
 > **对一下:** 纯 RL 之后, Magistral Medium 有没有哪项还不如 DeepSeek-v3?
-> 有. 表 2 的 Aider Polyglot: Magistral Medium 47.1, DeepSeek-v3 49.6, 这个没做推理训练的基座反而高 2.5 分 (估算). 不过起点差得更多: Mistral Medium 3 只有 28.9. HLE 上 Magistral Medium 的 9.0 略高于 DeepSeek-R1 的 8.6.
+> 有. 表 2 的 Aider Polyglot: Magistral Medium 47.1, DeepSeek-v3 49.6, 这个没做推理训练的基座反而高 2.5 分. 不过起点差得更多: Mistral Medium 3 只有 28.9. HLE 上 Magistral Medium 的 9.0 略高于 DeepSeek-R1 的 8.6.
 
 ### 5.4 Multilingual benchmarks (多语言基准)
 
@@ -493,7 +493,7 @@ Table 4: Magistral Medium's pass@1 performance on multilingual versions of the A
 表头依次是: 语言, 英语, 法语, 西班牙语, 德语, 意大利语, 俄语, 中文.
 
 > **问:** 「4.3-9.9% lower」 和 「1-3 questions」 按表 4 算得上吗?
-> 逐项差: 法语 5.1, 西班牙语 4.3, 德语 6.8, 意大利语 6.9, 俄语 8.6, 中文 9.9 (估算), 最小最大正好是 4.3 和 9.9 个百分点. AIME 一套 30 题, 一题约 3.33 分, 4.3 到 9.9 分约 1.3 到 3.0 题 (估算), 对得上. 正文说降幅 「roughly similar to that of the base model」, 但基座模型的多语言分数全篇没印.
+> 逐项差: 法语 5.1, 西班牙语 4.3, 德语 6.8, 意大利语 6.9, 俄语 8.6, 中文 9.9, 最小最大正好是 4.3 和 9.9 个百分点. AIME 一套 30 题, 一题约 3.33 分, 4.3 到 9.9 分约 1.3 到 3.0 题, 对得上. 正文说降幅 「roughly similar to that of the base model」, 但基座模型的多语言分数全篇没印.
 
 ## 6 Ablations (消融)
 
@@ -526,7 +526,7 @@ Table 5: Cross-domain generalization during math-only and code-only RL for a 24B
 表 5 各行: 起始 checkpoint, 只用数学做 RL, 只用代码做 RL. 括号里的增量只标在领域外那一列.
 
 > **核对:** 表 5 的增量算得对吗, 起始 checkpoint 是谁?
-> 38.3 - 22.7 = 15.6, 49.7 - 32.2 = 17.5, 都对. 没标出的领域内增量: 数学 RL 在 AIME'24 上涨 30.3, 代码 RL 在 LiveCodeBench v5 上涨 20.0 (估算). 起始 checkpoint 只说是 24B 模型, 没说是哪个版本; 它的 AIME'24 是 32.2, 而表 3 的 RL-only 做到了 65.8, 两者的数据和步数显然不同.
+> 38.3 - 22.7 = 15.6, 49.7 - 32.2 = 17.5, 都对. 没标出的领域内增量: 数学 RL 在 AIME'24 上涨 30.3, 代码 RL 在 LiveCodeBench v5 上涨 20.0. 起始 checkpoint 只说是 24B 模型, 没说是哪个版本; 它的 AIME'24 是 32.2, 而表 3 的 RL-only 做到了 65.8, 两者的数据和步数显然不同.
 
 <!-- page 11 of 23 -->
 
@@ -535,7 +535,7 @@ As shown in Figure 5, our Mistral Small 3 with pure RL achieves similar performa
 如图 5 所示, 纯 RL 的 Mistral Small 3 在 AIME'24 上和蒸馏版表现相近. 它在 MATH 和 GPQA 上甚至超过蒸馏版, 但在 LiveCodeBench 这类代码基准上略低. 这些结果说明 RL 的好处并不只属于大的基座模型, 对小模型同样成立. 此外, 我们的结果表明, 在蒸馏 checkpoint 上再做 RL 效果更好, 在多个基准上带来超过 5 分的提升.
 
 > **看表:** 「over 5 points gain across various benchmarks」 按表 3 逐项看呢?
-> 表 3 从 SFT 到 SFT + RL: AIME'24 +5.3, AIME'25 +7.2, MATH-500 +2.7, GPQA +4.8, LiveCodeBench v5 +3.6, v6 +2.8, HLE +1.1 (估算). 超过 5 分的只有两项 AIME pass@1. 另外图 5 只画了 AIME-24, AIME-25, GPQA Diamond, LiveCodeBench (v5) 四项, 正文说的 「MATH」 不在图 5 里, 要看表 3 (95.4 对 93.2).
+> 表 3 从 SFT 到 SFT + RL: AIME'24 +5.3, AIME'25 +7.2, MATH-500 +2.7, GPQA +4.8, LiveCodeBench v5 +3.6, v6 +2.8, HLE +1.1. 超过 5 分的只有两项 AIME pass@1. 另外图 5 只画了 AIME-24, AIME-25, GPQA Diamond, LiveCodeBench (v5) 四项, 正文说的 「MATH」 不在图 5 里, 要看表 3 (95.4 对 93.2).
 
 ![图 5 分组柱状图, 纵轴 Accuracy (%) 从 40 起, 四组基准 AIME-24, AIME-25, GPQA Diamond, LiveCodeBench (v5), 每组三根柱: RL only (最浅), SFT on Magistral Medium Traces (中), SFT on Magistral Medium Traces + RL (Magistral Small) (最深). AIME-24: 65.8, 65.4, 70.7; AIME-25: 51.9, 55.6, 62.8; GPQA Diamond: 68.8, 63.4, 68.2; LiveCodeBench (v5): 46.4, 52.2, 55.8](images/p11-figure-5-performance-of-magistral-small-compared-with.png)
 
@@ -636,7 +636,7 @@ We evaluate each perturbed checkpoint on a fixed batch of 512 prompts, generatin
 每个扰动后的 checkpoint 都在固定的一批 512 个 prompt 上评估, 每个 prompt 生成 16 条回答, 奖励设置和 **Magistral Small RL-only** 运行相同. 最后算出每个 checkpoint 的平均奖励和平均输出长度, 画在 $( \alpha _ { 1 } , \alpha _ { 2 } )$ 坐标上.
 
 > **回看:** 512 个 prompt 乘 16 条是 8192 条, 和图 9 说的 8192 是同一批吗?
-> 512 × 16 = 8192 (估算), 正好等于第 13 页图 9 图注的 「8192 completions」, 应是同一套评估. 7.1 节开头说分析的是 Magistral Small RL-only 运行, 而它的起点是 Mistral Small 3 还是图 10 图例里的 Mistral Small 3.1, 本节没再说明.
+> 512 × 16 = 8192, 正好等于第 13 页图 9 图注的 「8192 completions」, 应是同一套评估. 7.1 节开头说分析的是 Magistral Small RL-only 运行, 而它的起点是 Mistral Small 3 还是图 10 图例里的 Mistral Small 3.1, 本节没再说明.
 
 ![图 8 左: Reward 等高线图, 横轴 First component α_1 从 -0.5 到 1.5, 纵轴 Second component α_2 从 -0.6 到 0.3, 色标 0.35 (紫) 到 0.80 (红); 黑点是扰动 checkpoint, 黑色箭头轨迹从右下约 (1.0, -0.4) 出发, 先向上到约 (0.8, -0.05), 再到约 (0.55, 0.08), 最后向左到原点 (0, 0), 终点位于红色最高奖励区](images/p13-chart.png)
 
@@ -651,7 +651,7 @@ We clearly observe that there is a "length" direction - as model goes from right
 我们清楚地看到存在一个 「长度」 方向: 在图 8 中模型从右往左走时, 平均奖励和输出长度一起增长, 直到长度开始碰到长度惩罚和允许的最大生成长度为止. 我们另外画出不含长度惩罚的原始奖励与输出长度的关系, 在图 9 中看到一个普遍存在的对数 Scaling.
 
 > **停一下:** 图 8 的奖励最高能到多少?
-> 左图色标上限 0.80, 箭头终点落在 0.75 到 0.80 的红色区 (读图). 按第 4 页的奖励设计, 单条回答最高可到 1.1 (估算: 格式 0.1 + 正确 0.9 + 语言 0.1), 所以 0.8 左右的平均奖励说明仍有不少题答错. 右图原点附近长度约 9000 到 10500 (读图).
+> 左图色标上限 0.80, 箭头终点落在 0.75 到 0.80 的红色区 (读图). 按第 4 页的奖励设计, 单条回答最高可到 1.1 (格式 0.1 + 正确 0.9 + 语言 0.1), 所以 0.8 左右的平均奖励说明仍有不少题答错. 右图原点附近长度约 9000 到 10500 (读图).
 
 ![图 9 散点图, 纵轴 Raw reward 约 0.37 到 0.81, 横轴 Output length 用对数刻度, 标 1000, 2000, 4000, 8000, 16000; 黑点 Perturbed checkpoints 从约 (1000, 0.37) 沿直线上升, 橙色虚线 a * log(length) + b 拟合约 1500 到 8000 之间的点, 从约 0.52 升到约 0.81; 长度约 8000 到 9000 处点聚在 0.78 到 0.81, 再往右骤降, 约 9000 到 11000 处散落在 0.58 到 0.75](images/p13-figure-9-reward-scaling-with-output-length-each-point.png)
 
@@ -684,7 +684,7 @@ We report results multimodal benchmarks designed to assess reasoning capabilitie
 我们报告几个为评估推理能力而设计的多模态基准的结果: MathVista [Lu et al., 2024], MMMU [Yue et al., 2024] 和 MMMU-Pro [Yue et al., 2025]. 图 10 显示大多数基准上没有退步, 且有几项明显提升: MMMU (+5%, 达到 70%), MMMU-Pro-Standard (+4.4%, 达到 57.9%), MMMU-Pro-Vision (+12%, 达到 52.1%). 提升最大的是需要文本推理的科学题, 但我们观察到模型把它延长的思考过程带到了所有类型的题目上 (定性例子见图 14, 15, 16).
 
 > **核对:** 这三个 「+%」 是百分点还是相对涨幅, 说的是哪个模型?
-> 按图 10 的 Magistral Medium 算: MMMU 65.0 到 70.0, +5.0; MMMU-Pro (Standard) 53.5 到 57.9, +4.4; MMMU-Pro (Vision) 39.7 到 52.1, +12.4 (估算). 都是百分点, 而且只对 Medium 成立. Magistral Small 的对应涨幅是 +4.1, +6.0, -3.2 (估算).
+> 按图 10 的 Magistral Medium 算: MMMU 65.0 到 70.0, +5.0; MMMU-Pro (Standard) 53.5 到 57.9, +4.4; MMMU-Pro (Vision) 39.7 到 52.1, +12.4. 都是百分点, 而且只对 Medium 成立. Magistral Small 的对应涨幅是 +4.1, +6.0, -3.2.
 
 ### 7.3 Impact of RL on other capabilities (RL 对其他能力的影响)
 
@@ -704,7 +704,7 @@ Table 6: Benchmarks before and after reinforcement learning. Internal bench is M
 表 6 两行: 函数调用 (内部基准), 指令遵循 (IFEval).
 
 > **看表:** 表 6 的提升有多大, Small 的数在哪?
-> 函数调用 87.2 到 87.4, 指令遵循 86.8 到 87.4, 分别只涨 0.2 和 0.6 分 (估算), 说 「保持」 比说 「提升」 更贴切. 表 6 只有 Medium 两列, Magistral Small 的函数调用和指令遵循分数全篇没印.
+> 函数调用 87.2 到 87.4, 指令遵循 86.8 到 87.4, 分别只涨 0.2 和 0.6 分, 说 「保持」 比说 「提升」 更贴切. 表 6 只有 Medium 两列, Magistral Small 的函数调用和指令遵循分数全篇没印.
 
 ### 7.4 Unsuccessful approaches (没成功的做法)
 
@@ -737,7 +737,7 @@ Figure 11: Binary vs proportional reward for code problems. (a) Accuracy on AIME
 图 11: 代码题上的二元奖励与比例奖励. (a) 分别用二元奖励和比例奖励训练 250 步后, 在 AIME 和 LiveCodeBench 上的准确率. 用比例奖励时 LiveCodeBench 低 2%. (b) 训练过程中的长度变化. 二元奖励下长度增长更多.
 
 > **问:** 图 11 (a) 的 「低 2%」 是百分点吗?
-> 读图: LCB V5 约 41.7 对 40.7, LCB V6 约 37.7 对 36.2, 差约 1.0 和 1.5 个百分点; 按相对值约 2.4% 和 4% (估算). 所以 「2%」 更接近 V5 的相对降幅. 同一张图里 AIME 24 上比例奖励反而高约 1 分. 「discarding three times less data」 没有给出丢弃数据的绝对量.
+> 读图: LCB V5 约 41.7 对 40.7, LCB V6 约 37.7 对 36.2, 差约 1.0 和 1.5 个百分点; 按相对值约 2.4% 和 4%. 所以 「2%」 更接近 V5 的相对降幅. 同一张图里 AIME 24 上比例奖励反而高约 1 分. 「discarding three times less data」 没有给出丢弃数据的绝对量.
 
 ### 7.4.2 Entropy targeting (熵目标控制)
 
@@ -779,7 +779,7 @@ As an experiment, we also tried to first finetune Mistral Medium 3 using open so
 作为一项实验, 我们还试过先用开源推理数据集 OpenThoughts [Guha et al., 2025] 和 OpenR1 [Hugging Face, 2025, Penedo et al., 2025] 的代码子集微调 Mistral Medium 3, 既用这些数据集里的 prompt, 也用其中的生成, 即 DeepSeek R1 生成的轨迹. 总共约 130 万条生成. 然后在这个微调 checkpoint 上, 用我们数据里最难的子集做 RL. 如图 13 所示, 做 RL 比 SFT checkpoint 有大幅提升. 值得一提的是, RL 模型在 AIME'25 上提高 10 分以上, 在 LiveCodeBench 上提高 5 分, 最终在代码和数学基准上达到和 DeepSeek-R1 相当的水平.
 
 > **拆开:** 图 13 逐项涨了多少, 和纯 RL 的 Magistral Medium 比呢?
-> 图 13: AIME-24 +6.0, AIME-25 +12.3, MATH +2.0, GPQA Diamond -1.9, LiveCodeBench (v5) +5.4 (估算), 和正文 「over 10 points」 及 「5 points」 对得上. 和表 2 的 Magistral Medium 比, 这条 OSS-SFT + RL 路线的 AIME-24 高 6.1 (79.7 对 73.6), LiveCodeBench (v5) 高 6.6 (66.0 对 59.4) (估算), 只做了 SFT 的 GPQA 72.9 也高于纯 RL 的 70.8. 「most difficult subset」 有多少题没印.
+> 图 13: AIME-24 +6.0, AIME-25 +12.3, MATH +2.0, GPQA Diamond -1.9, LiveCodeBench (v5) +5.4, 和正文 「over 10 points」 及 「5 points」 对得上. 和表 2 的 Magistral Medium 比, 这条 OSS-SFT + RL 路线的 AIME-24 高 6.1 (79.7 对 73.6), LiveCodeBench (v5) 高 6.6 (66.0 对 59.4), 只做了 SFT 的 GPQA 72.9 也高于纯 RL 的 70.8. 「most difficult subset」 有多少题没印.
 
 ## 9 Conclusion
 

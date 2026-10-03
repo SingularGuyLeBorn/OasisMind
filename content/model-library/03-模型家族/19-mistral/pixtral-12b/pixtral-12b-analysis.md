@@ -14,7 +14,7 @@
 | --- | --- |
 | 名字里的 12B | 「12B parameter multimodal decoder」, 指解码器 |
 | 视觉编码器参数 | 400M, 「trained from scratch」 |
-| 总参数 | 本页未印; 12B 加 400M 约 12.4B (估算) |
+| 总参数 | 本页未印; 12B 加 400M 约 12.4B |
 | 激活参数 | 本页未印 |
 | 层数, 隐藏维度, 头数, 词表大小 | 本页未印 |
 | 上下文 | 128k / 128K token |
@@ -33,7 +33,7 @@
 
 名字里的 12B 在概要里有明确出处: 「12B parameter multimodal decoder based on Mistral Nemo」. 所以 12B 说的是多模态解码器, 不包括视觉编码器. 视觉编码器单列一行: 「New 400M parameter vision encoder trained from scratch」. 第 3 页又说 Pixtral 是 「a drop-in replacement for Mistral Nemo 12B」, 解码器规模和被替换的对象写的是同一个数.
 
-总参数: 本页未印. 把两个部件相加是 12B 加 0.4B, 约 12.4B (估算); 视觉编码器约占 3.2% (估算). 这个加法有个前提: 页面只说了 「two components」, 没说编码器和解码器之间有没有投影层或别的连接模块, 如果有, 参数也不在这两个数里. 激活参数: 本页未印. 页面没说是稠密结构还是 MoE, 也没有给出每个 token 走多少参数, 所以这一栏只能空着.
+总参数: 本页未印. 把两个部件相加是 12B 加 0.4B, 约 12.4B; 视觉编码器约占 3.2%. 这个加法有个前提: 页面只说了 「two components」, 没说编码器和解码器之间有没有投影层或别的连接模块, 如果有, 参数也不在这两个数里. 激活参数: 本页未印. 页面没说是稠密结构还是 MoE, 也没有给出每个 token 走多少参数, 所以这一栏只能空着.
 
 规格层面全是空白. 解码器 「based on Mistral Nemo」, 但层数, 隐藏维度, 注意力头数, 词表大小都没写. 第 19 页代码里 tokenizer 从 `tekken.json` 加载, 这只说明 tokenizer 文件名叫 tekken, 词表多大本页没说. 同家族的 [Mistral Nemo 解读](../nemo-12b/nemo-12b-analysis.md) 记的是另一页的内容, 这里不搬数. tokenizer 的一般背景见 [分词器与 Tokenizer](../../../../llm-guide/3-预训练/3.3-分词器与Tokenizer/3.3-分词器与Tokenizer.md).
 
@@ -41,7 +41,7 @@
 
 读图规则在第 5 页写得很具体: 图像按原分辨率和宽高比直接进视觉编码器, 每个 16x16 的 patch 变成一个图像 token; token 按行展平, 行与行之间插 `[IMG BREAK]`, 整张图末尾放 `[IMG END]`. 第 6 页的示意图和规则一致: 横幅猫图切成 3 行 4 列, 展平后是 12 个图像 token, 中间 2 个 [b], 末尾 1 个 [e]; 竖幅狗图切成 5 行 3 列, 中段用省略号略去. 正文说 `[IMG BREAK]` 的作用是区分 「token 数相同但宽高比不同」 的图, 例如 3x4 和 4x3 都是 12 个图像 token, 靠换行符的位置才分得开.
 
-按这个规则可以算成本. 一张 1024x1024 的图是 64x64 = 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160 (估算). 128k 如果按 128,000 算, 不放文字也只能装下约 30 张这样的图 (估算); 按 131,072 算约 31 张 (估算). 第 20 页 vLLM 示例用的是 200x300 的图, 向上补齐是 13 列 19 行, 共 266 个 token (估算), 向下截断是 234 (估算). 页面没说边长不是 16 的倍数怎么办, 也没说有没有分辨率上限, 大图会不会先缩小. 「giving the user flexibility on the number of tokens」 这句话, 实际上把控制成本的责任交给了用户.
+按这个规则可以算成本. 一张 1024x1024 的图是 64x64 = 4096 个图像 token, 加 63 个 `[IMG BREAK]` 和 1 个 `[IMG END]`, 共 4160. 128k 如果按 128,000 算, 不放文字也只能装下约 30 张这样的图; 按 131,072 算约 31 张. 第 20 页 vLLM 示例用的是 200x300 的图, 向上补齐是 13 列 19 行, 共 266 个 token, 向下截断是 234. 页面没说边长不是 16 的倍数怎么办, 也没说有没有分辨率上限, 大图会不会先缩小. 「giving the user flexibility on the number of tokens」 这句话, 实际上把控制成本的责任交给了用户.
 
 这种 「原分辨率切 patch」 的做法和固定分辨率编码器 (先把图缩放到统一尺寸) 是两条路, 一般性的对比见 [CLIP 与视觉编码器](../../../../llm-guide/8-多模态/8.2-CLIP与视觉编码器/8.2-CLIP与视觉编码器.md) 和 [LLaVA 架构深度解析](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.1-LLaVA架构深度解析.md). 可变宽高比下二维位置怎么编码, 本页一个字没提; 一般做法见 [RoPE 的视觉与多模态扩展](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/RoPE/04-视觉与多模态扩展.md), 但 Pixtral 用没用其中哪一种, 本页给不出答案. 另一条路是压缩视觉 token, 见 [QFormer 与视觉 Token 压缩](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2.2-QFormer与视觉Token压缩.md); Pixtral 走的是不压缩, 一个 patch 一个 token.
 
@@ -69,7 +69,7 @@
 
 ## 7. 指令遵循: 20% 是怎么来的
 
-第 4 页说 Pixtral 「with a 20% relative improvement in text IF-Eval and MT-Bench over the nearest OSS model」. 拿第 5 页表算: Text IF-Eval 61.3 对最接近的 LLaVA-OV 7B 51.4, 相对高约 19.3% (估算), 四舍五入算 20% 说得过去; Text MT-bench 7.68 对 LLaVA-OV 7B 6.94, 相对高约 10.7% (估算), 离 20% 差得远. 换成多模态版本, MM IF-Eval 52.7 对 42.5 高约 24.0% (估算), MM MT-Bench 6.05 对 5.45 高约 11.0% (估算). 四个数里只有 IF-Eval 类的两个到了 20% 左右.
+第 4 页说 Pixtral 「with a 20% relative improvement in text IF-Eval and MT-Bench over the nearest OSS model」. 拿第 5 页表算: Text IF-Eval 61.3 对最接近的 LLaVA-OV 7B 51.4, 相对高约 19.3%, 四舍五入算 20% 说得过去; Text MT-bench 7.68 对 LLaVA-OV 7B 6.94, 相对高约 10.7%, 离 20% 差得远. 换成多模态版本, MM IF-Eval 52.7 对 42.5 高约 24.0%, MM MT-Bench 6.05 对 5.45 高约 11.0%. 四个数里只有 IF-Eval 类的两个到了 20% 左右.
 
 多模态的两个基准是 Mistral 在这篇博文里新造的: 「we create multimodal versions of these benchmarks: MM-IF-Eval and MM-MT-Bench」. MM-MT-Bench 写了 「We will open-source」, MM-IF-Eval 连这句承诺都没有. 自己造基准, 自己挑 prompt, 自己测, 结论可能没错, 但读者没有办法独立复核. 第 3 页那张 「Instruction Following (Multimodal & Text)」 图又整块被弹窗盖住, 连图上画了哪些模型都看不到.
 
@@ -77,7 +77,7 @@
 
 五个示例里, 有三个能拿页面上的图核对. 第 8 页的 GDP 图, 回答列出的德国 3.99, 英国 2.82, 法国 2.78, 意大利 2.07, 西班牙 1.43 (万亿美元) 和占比都和图一致. 值得一提的是俄罗斯: 图上 Russia 1.66 万亿美元, 比西班牙高, 但被涂成蓝色归在亚洲, 模型按绿色挑欧洲, 于是没收它. 这说明模型读的是图的配色, 不是地理常识; 就这道题而言, 按图回答是对的. 回答的序号是 1, 3, 5, 7, 9, 是网页渲染列表的问题, 不是模型的错.
 
-第 10 页的 loss 曲线示例问题更大. 回答说 dark-dragon-50 在 「around the 10k step mark」 开始出问题, 图上红实线确实在约 9.5k 步有一次尖峰, 冲到 1 附近 (读图估算). 但约 19.5k 步还有一次更大的尖峰, 冲到接近 1e+4 的量级, 之后曲线在约 21.5k 步中止 (读图估算); 回答只用 「continues to spike and fluctuate」 一笔带过. 回答把原因归为 「likely overfitting」 也不对: 图标题是 train/loss, 只有训练 loss, 训练 loss 自己冲高说明训练不稳定, 过拟合要看验证 loss. 这段回答被当作正面示例登出, 页面没有更正.
+第 10 页的 loss 曲线示例问题更大. 回答说 dark-dragon-50 在 「around the 10k step mark」 开始出问题, 图上红实线确实在约 9.5k 步有一次尖峰, 冲到 1 附近 (读图). 但约 19.5k 步还有一次更大的尖峰, 冲到接近 1e+4 的量级, 之后曲线在约 21.5k 步中止 (读图); 回答只用 「continues to spike and fluctuate」 一笔带过. 回答把原因归为 「likely overfitting」 也不对: 图标题是 train/loss, 只有训练 loss, 训练 loss 自己冲高说明训练不稳定, 过拟合要看验证 loss. 这段回答被当作正面示例登出, 页面没有更正.
 
 另外两个示例是开放式的. 第 13 页手绘草图只写了 「Flavor」 下拉框和 「Next」 按钮, 生成的 HTML 自己补了五种口味, 页脚把草图底部的 「MistralAI」 写成 「© copyright MistralAI」, 结构还原得不错. 第 17 页比萨斜塔照片, 回答认出了错位摆拍造成的视错觉, 但最后一句说拍照目的是 「demonstrate the impressive height and size of the tower」, 这是模型加的解读, 照片里看不出来.
 
@@ -91,12 +91,12 @@
 
 往前, 这页给了两条线索. 概要说解码器 「based on Mistral Nemo」, 第 3 页说 Pixtral 是 Mistral Nemo 12B 的 「drop-in replacement」. 两句合起来, 可以读成: Pixtral 12B 在 Nemo 12B 的解码器上接了一个新训的视觉编码器, 做成图文模型, 接口上还能替 Nemo 的位置. 至于解码器是直接从 Nemo 的权重继续训, 还是只借用同样的结构从头训, 页面没说. tokenizer 文件叫 `tekken.json`, 页面没讲它和 Nemo 的 tokenizer 是什么关系.
 
-往后, 页首横幅说 Pixtral 12B 「has been replaced by our latest, more powerful vision and multimodal models」, 没有点名. 本库同目录还有 [Pixtral Large 解读](../pixtral-large/pixtral-large-analysis.md), 名字相近, 但本页一次都没提到 Pixtral Large, 两者的关系本页给不出. 单看这一页, 谱系是一条短线: 2024 年 9 月从 Nemo 12B 派生出来, 12B 解码器加 400M 视觉编码器, 128k 上下文, Apache 2.0, 到 2026 年 9 月打印时已被未具名的新模型接替, 中间约 738 天 (估算, 从发布日到打印日, 不是弃用日期).
+往后, 页首横幅说 Pixtral 12B 「has been replaced by our latest, more powerful vision and multimodal models」, 没有点名. 本库同目录还有 [Pixtral Large 解读](../pixtral-large/pixtral-large-analysis.md), 名字相近, 但本页一次都没提到 Pixtral Large, 两者的关系本页给不出. 单看这一页, 谱系是一条短线: 2024 年 9 月从 Nemo 12B 派生出来, 12B 解码器加 400M 视觉编码器, 128k 上下文, Apache 2.0, 到 2026 年 9 月打印时已被未具名的新模型接替, 中间约 738 天 (从发布日到打印日, 不是弃用日期).
 
 视觉编码器 「trained from scratch」 这一点在谱系上也有意义. 常见做法是复用现成的 CLIP 类编码器 (一般背景见 [视觉语言模型](../../../../llm-guide/8-多模态/8.2-视觉语言模型/8.2-视觉语言模型.md)), Pixtral 自己训了一个支持可变尺寸的编码器, 这是它和 Nemo 之间唯一的新增部件. 这个编码器用什么数据, 训多久, 页面都没写.
 
 ## 11. 本页对不上的数字
 
-先说页面自身的出入. 第 4 页 「20% relative improvement in text IF-Eval and MT-Bench」: IF-Eval 约 19.3%, MT-Bench 只有约 10.7% (均为估算). 第 4 页 「outperforms or matches ... LLaVa OneVision 72B」: 六列三胜三负, VQAv2 差 5.2. 第 4 页 「substantially outperforms all open models around its scale」: DocVQA 输 Qwen2-VL 7B 3.8 个点. 第 7 页架构图里的缩略表, Pixtral 一行 DocVQA 放大后像是 92.3, 第 4, 第 5, 第 11, 第 12 页都是 90.7; 缩略图太糊, 以正式表为准. 第 3 页图写 MATH (maj@1), 第 5 页表写 Math (Pass@1). 第 10 页 loss 示例回答说 10k 步, 图上更大的尖峰在约 19.5k 步. 第 20 页 vLLM 代码 `llm` 和 `vllm_model` 对不上. 上下文长度在第 2 页概要写 128k, 同页正文和第 6 页写 128K.
+先说页面自身的出入. 第 4 页 「20% relative improvement in text IF-Eval and MT-Bench」: IF-Eval 约 19.3%, MT-Bench 只有约 10.7%. 第 4 页 「outperforms or matches ... LLaVa OneVision 72B」: 六列三胜三负, VQAv2 差 5.2. 第 4 页 「substantially outperforms all open models around its scale」: DocVQA 输 Qwen2-VL 7B 3.8 个点. 第 7 页架构图里的缩略表, Pixtral 一行 DocVQA 放大后像是 92.3, 第 4, 第 5, 第 11, 第 12 页都是 90.7; 缩略图太糊, 以正式表为准. 第 3 页图写 MATH (maj@1), 第 5 页表写 Math (Pass@1). 第 10 页 loss 示例回答说 10k 步, 图上更大的尖峰在约 19.5k 步. 第 20 页 vLLM 代码 `llm` 和 `vllm_model` 对不上. 上下文长度在第 2 页概要写 128k, 同页正文和第 6 页写 128K.
 
 再说转出的 Markdown 和 PDF 文字层的出入, 这些是 OCR 的错, 不是原文的错. 模型 ID 被识别成 「pixtral-12h-2409」, 文字层是 「pixtral-12b-2409」. 架构图缩略表被 OCR 出一整张假表: 「Picral 12B」, 「ChatQA (ESU)」, 「DocVQA (ANUS)」, 「VQA Mean」, 「Gemini-1.5 BB」, 以及 Claude-3 Haiku 的 DocVQA 78.3, GPT-4o 的 84.7, Claude-3.5 Sonnet 的 83.8, 都和正式表 (74.6, 88.9, 90.3) 不同, 缩略图根本读不出这么细的数. 第 11 页 「LLcVA QV 7B」 应为 LLaVA-OV 7B, 「Italy」 前的 「7 .」 多了空格. 第 7 页还单独冒出一句 「This table combines the data from both tables...」, 和第 12 页回答的末句一字不差, 是网页打印时叠进来的重复片段.

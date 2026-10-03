@@ -47,7 +47,7 @@ We introduce MiniMax-M1, the world’s first open-weight, large-scale hybrid-att
 我们推出 MiniMax-M1, 全球第一个开放权重的大规模混合注意力推理模型. MiniMax-M1 采用混合 MoE 架构, 配合 lightning attention 机制. 它在我们此前的 MiniMax-Text-01 模型 (MiniMax et al., 2025) 基础上开发, 总参数 456B (4560 亿), 每个 token 激活 45.9B (459 亿). M1 原生支持 100 万 token 的上下文, 是 DeepSeek R1 上下文长度的 8 倍. lightning attention 还让推理时额外算力可以高效 Scaling: 例如生成长度为 10 万 token 时, M1 消耗的 FLOPs 只有 DeepSeek R1 的 25%. 这些特性让 M1 特别适合需要处理长输入, 做大量思考的复杂任务. MiniMax-M1 用大规模强化学习 (RL) 训练, 题目从传统数学推理一直到基于沙箱的真实软件工程环境. 除了 lightning attention 天然带给 RL 训练的效率优势, 我们还提出新的 RL 算法 CISPO, 进一步提高 RL 效率. CISPO 裁剪的是重要性采样权重, 不裁 token 更新, 表现优于其他有竞争力的 RL 变体. 混合注意力加上 CISPO, MiniMax-M1 的完整 RL 训练在 512 张 H800 GPU 上只用三周就完成, 租用成本仅 534,700 美元. 我们发布两个版本的 MiniMax-M1, 思考预算分别是 40K 和 80K, 其中 40K 模型是 80K 训练的一个中间阶段. 标准基准上的实验表明, 我们的模型与原版 DeepSeek-R1, Qwen3-235B 等强开放权重模型相当或更好, 在复杂软件工程, 工具使用和长上下文任务上尤其突出. 借助推理时额外算力的高效 Scaling, MiniMax-M1 可以作为下一代语言模型智能体的坚实基础, 用来推理并应对真实世界的挑战. MiniMax-M1 公开发布在 https://github.com/MiniMax-AI/MiniMax-M1.
 
 > **想:** 摘要说生成长度 100K 时 M1 的 FLOPs 只有 DeepSeek R1 的 25%, 图 1 右能读出这个比例吗?
-> 大致能, 但 100K 处偏高一点. 图 1 右没有 100K 刻度, 相邻两个数据点约在 96K 和 104K, R1 读数约 4.2 和 4.85 (×10^16), M1 约 1.22 和 1.35, 比例在 28% 到 29% 之间 (估算, 目测读图); 到 128K 端是 1.7 / 7.0, 约 24%, 25% 更贴近曲线末端.
+> 大致能, 但 100K 处偏高一点. 图 1 右没有 100K 刻度, 相邻两个数据点约在 96K 和 104K, R1 读数约 4.2 和 4.85 (×10^16), M1 约 1.22 和 1.35, 比例在 28% 到 29% 之间 (读图); 到 128K 端是 1.7 / 7.0, 约 24%, 25% 更贴近曲线末端.
 
 ![图 1 左: 五个基准上闭源模型与开放权重模型的准确率柱状图, MiniMax-M1 在 AIME 2024, LiveCodeBench, SWE-bench Verified, TAU-bench, MRCR (4-needle) 上分别为 86.0, 65.0, 56.0, 62.8, 73.4](images/p01-chart.png)
 
@@ -58,7 +58,7 @@ Figure 1 | Left: Benchmark performance comparison of leading commercial and open
 图 1 | 左: 领先的商用模型和开放权重模型在竞赛级数学, 编程, 软件工程, 智能体工具使用和长上下文理解任务上的基准表现对比, 这里的 MiniMax-M1 用的是 MiniMax-M1-80k. 右: 理论推理 FLOPs 随生成长度 (token 数) 的变化. 第二张图的文件名写着 「figure-1-left」, 是转写工具按题注开头命名的, 图的内容是右半幅.
 
 > **核对:** 图 1 左 TAU-bench 一栏 M1 标的是 62.8, 表 2 里没有这个数, 从哪来?
-> 是表 2 两个子集的平均: M1-80k 的 airline 62.0 和 retail 63.5, 平均 62.75, 取一位小数得 62.8 (估算); o3 的 52.0 和 73.9 平均约 63.0, 和图上 o3 的柱高吻合; 图 1 左的 MRCR (4-needle) 73.4 则对应表 2 的 OpenAI-MRCR (128k) 一行.
+> 是表 2 两个子集的平均: M1-80k 的 airline 62.0 和 retail 63.5, 平均 62.75, 取一位小数得 62.8; o3 的 52.0 和 73.9 平均约 63.0, 和图上 o3 的柱高吻合; 图 1 左的 MRCR (4-needle) 73.4 则对应表 2 的 OpenAI-MRCR (128k) 一行.
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>Please send correspondence to model@minimax.io.</span></small>
 
@@ -85,10 +85,10 @@ We introduce MiniMax-M1, a reasoning model with a hybrid Mixture-of-Experts (MoE
 我们推出 MiniMax-M1, 一个采用混合 MoE 架构和 Lightning Attention (Qin et al., 2024b) 的推理模型. Lightning Attention 是一种线性注意力变体 (Qin et al., 2022a) 的 I/O 感知实现. MiniMax-M1 在我们此前的 MiniMax-Text-01 基础上开发, 总参数 456B, 激活参数 45.9B, 共 32 个专家. 注意力设计上, 每 7 个使用 lightning attention 的 transnormer block (Qin et al., 2022a) 之后跟 1 个使用 softmax 注意力的 transformer block. 如图 1 (右) 所示, 这种设计在理论上能把推理长度高效地 Scaling 到几十万 token. 例如与 DeepSeek R1 相比, 生成长度 64K 时 M1 的 FLOPs 不到对方的 50%, 100K 时约为 25%. 计算成本大幅下降, 让 M1 在推理和大规模 RL 训练中都明显更高效. 此外, 得益于 lightning attention, 也和 MiniMax-Text-01 保持一致, M1 原生支持最长 100 万 token 的上下文, 是 DeepSeek R1 的 8 倍, 比迄今所有开放权重 LRM 大一个数量级. 这些特性让 M1 特别适合处理需要长输入和长思考的复杂真实任务. 表 1 对比了 M1 与其他领先模型的最大输入和输出长度.
 
 > **看表:** 引言说 1M 上下文 「比迄今所有开放权重 LRM 大一个数量级」, 表 1 撑得住吗?
-> 只撑得住 「8 倍」: 表 1 里另外两个开放权重模型 DS-R1 和 Qwen3-235B 的最大输入都是 128K, 1M / 128K 约 7.8 倍, 按 1M = 1024K 算正好 8 倍 (估算), 和前一句 「8 倍于 DeepSeek R1」 一致, 离 10 倍还差一截.
+> 只撑得住 「8 倍」: 表 1 里另外两个开放权重模型 DS-R1 和 Qwen3-235B 的最大输入都是 128K, 1M / 128K 约 7.8 倍, 按 1M = 1024K 算正好 8 倍, 和前一句 「8 倍于 DeepSeek R1」 一致, 离 10 倍还差一截.
 
 > **拆开:** 「每 7 个 lightning attention block 后面跟 1 个 softmax block」, softmax 层占多少, 和图 1 右那条近乎直线的曲线有什么关系?
-> softmax 层占 1 / (7 + 1) = 12.5% (估算), 本文没给总层数, 算不出具体几层; 其余 7/8 的层对序列长度是线性的, 只有 1/8 的层保留二次项, 所以图 1 右 M1 的曲线在 128K 以内接近直线, DeepSeek R1 的曲线则明显上翘.
+> softmax 层占 1 / (7 + 1) = 12.5%, 本文没给总层数, 算不出具体几层; 其余 7/8 的层对序列长度是线性的, 只有 1/8 的层保留二次项, 所以图 1 右 M1 的曲线在 128K 以内接近直线, DeepSeek R1 的曲线则明显上翘.
 
 To develop our M1 model, we first continue pretraining MiniMax-Text-01 on 7.5T tokens from a carefully curated, reasoning-intensive corpus. Subsequently, we perform supervised fine-tuning (SFT) to inject certain chain-of-thought (CoT) (Wei et al., 2022) patterns, establishing a strong foundation for reinforcement learning, the core stage of M1 development.
 
@@ -272,7 +272,7 @@ This unified loss formulation can flexibly represent different clipping strategi
 **CISPO 的实验验证.** 为了验证 CISPO 的效果, 我们在 zero-RL 训练设置下把它和 DAPO, GRPO 做实验对比. 具体来说, 我们用不同 RL 算法在 Yu et al. (2025) 的数学推理数据集上训练 Qwen2.5-32B-base 模型, 报告它在 AIME 2024 基准上的表现. 如图 2 所示, 相同训练步数下 CISPO 显著优于 DAPO 和 GRPO. CISPO 的训练效率也高于其他方法, 例如只用 50% 的训练步数就追平了 DAPO 的表现.
 
 > **对一下:** 引言的 「CISPO 比 DAPO 提速 2 倍」 和这里的 「50% 训练步数追平 DAPO」, 在图 2 上怎么对?
-> 图 2 的双箭头左端约在第 450 步, CISPO 已到约 34 分, 右端约在第 960 步, DAPO 才到 34 分左右, 960 / 450 约 2.1 (估算, 目测读图), 就是 「2x speedup」; 这里比的是训练步数, 不是墙钟时间, 对象也是 Qwen2.5-32B-base, 不是 M1 本身.
+> 图 2 的双箭头左端约在第 450 步, CISPO 已到约 34 分, 右端约在第 960 步, DAPO 才到 34 分左右, 960 / 450 约 2.1 (读图), 就是 「2x speedup」; 这里比的是训练步数, 不是墙钟时间, 对象也是 Qwen2.5-32B-base, 不是 M1 本身.
 
 ### 3.2. Efficient RL Scaling with Lightning Attention – Challenges and Recipes (用 Lightning Attention 高效 Scaling RL: 难点与对策)
 
@@ -285,7 +285,7 @@ As shown in Figure 1 (Right), we emphasize that our hybrid attention inherently 
 **生成与训练的计算精度失配.** RL 训练对计算精度高度敏感. 训练中我们观察到, rollout 出来的 token 在训练模式和推理模式下的概率差异明显, 如图 3 (左) 所示. 差异来自训练内核和推理内核之间的精度失配. 这个问题危害很大, 在我们的实验里让奖励涨不上去. 有意思的是, 更小的, 使用 softmax 注意力的稠密模型没有出现这个问题. 经过逐层分析, 我们确认输出层 LM head 里的高幅值激活是误差的主要来源. 为此我们把 LM 输出头的精度提到 FP32, 让两个理论上相同的概率重新对齐, 如图 3 (右) 所示. 这一调整把训练概率和推理概率之间的相关性从约 0.9x 提高到 0.99x.
 
 > **问:** 正文说相关性从 「约 0.9x」 提到 「0.99x」, 图 3 上印的是多少?
-> 图 3 左是 0.987319, 右是 0.997135, 所以 「0.9x」 指 0.98 这一档, 不是 0.90; 换成 1 减相关系数看, 从约 0.0127 降到约 0.0029, 差距缩小约 4.4 倍 (估算), 只读 「0.9x 到 0.99x」 会把修复前的问题想得比图 3 更严重.
+> 图 3 左是 0.987319, 右是 0.997135, 所以 「0.9x」 指 0.98 这一档, 不是 0.90; 换成 1 减相关系数看, 从约 0.0127 降到约 0.0029, 差距缩小约 4.4 倍, 只读 「0.9x 到 0.99x」 会把修复前的问题想得比图 3 更严重.
 
 <!-- page 8 of 22 -->
 
@@ -310,7 +310,7 @@ Notably, this correlation metric remained stable throughout training, enabling s
 **用重复检测提前截断.** RL 训练中我们发现, 复杂的 prompt 可能诱发病态的超长重复回答, 它们的大梯度威胁模型稳定. 我们的目标是提前终止这类生成循环, 不去事后惩罚已经重复的文本. 简单的字符串匹配对付不了多变的重复模式, 所以我们开发了基于 token 概率的启发式方法. 我们观察到, 模型一旦进入重复循环, 每个 token 的概率都会飙升. 于是我们实现了一条提前截断规则: 连续 3,000 个 token 的概率都高于 0.99 时停止生成. 这个方法成功防止了模型失稳, 并通过消除这些病态的长尾样例提高了生成吞吐.
 
 > **想:** 连续 3,000 个 token 概率都高于 0.99 才截断, 这个门槛放进图 4 的回答长度里有多长?
-> 图 4 三个基准训练末期的平均生成长度在 21,000 到 27,000 token 左右, 3,000 token 约占 11% 到 14% (估算); 3,000 个概率都高于 0.99 的 token 连在一起, 联合概率下界是 0.99^3000, 约 8e-14 (估算), 正常推理里很难连续这么确定, 规则的误伤面应该很小.
+> 图 4 三个基准训练末期的平均生成长度在 21,000 到 27,000 token 左右, 3,000 token 约占 11% 到 14%; 3,000 个概率都高于 0.99 的 token 连在一起, 联合概率下界是 0.99^3000, 约 8e-14, 正常推理里很难连续这么确定, 规则的误伤面应该很小.
 
 ## 4. Scaling Reinforcement Learning with Diverse Data (用多样数据 Scaling 强化学习)
 
@@ -403,7 +403,7 @@ Our first RL training is performed with an output length limit of 40K tokens. Gi
 **长度 Scaling 策略.** 为了逐步增加输出长度, 我们采用分阶段扩窗的 RL 策略. 从 40K 输出长度开始, 依次扩到 48K, 56K, 64K, 72K, 最终到 80K. 分阶段的做法保证每一步训练都稳定. 何时进入下一个长度由一组经验指标决定, 包括生成序列上的困惑度是否收敛, 以及输出长度的第 99 百分位是否逼近当前上下文窗口的上限. 这些信号能很好地反映模型是否准备好继续 Scaling, 让我们在整个过程中保持稳健训练.
 
 > **核对:** 40K 到 80K 分五次扩窗, 每次 8K, 按图 1 右, 窗口越长 M1 的相对优势是不是越大?
-> 是: 图 1 右 64K 处 R1 约 2.05, M1 约 0.78, 比例约 38%; 80K 处 R1 约 3.0, M1 约 1.0, 约 33%; 128K 处约 24% (都是估算, 目测读图), 每往上扩一档, 同样长度的 rollout 里 M1 省下的比例都更大, 这也是作者把 RL 推到 80K 的依据.
+> 是: 图 1 右 64K 处 R1 约 2.05, M1 约 0.78, 比例约 38%; 80K 处 R1 约 3.0, M1 约 1.0, 约 33%; 128K 处约 24% (读图), 每往上扩一档, 同样长度的 rollout 里 M1 省下的比例都更大, 这也是作者把 RL 推到 80K 的依据.
 
 **Addressing Training Instability During Scaling.** During the scaling process, we encountered a critical issue in the later stages of training at each length window. Specifically, the model exhibited susceptibility to pattern collapse, where the latter portions of generated sequences degraded into incoherent or garbled text. This phenomenon consistently coincided with increased perplexity, indicating compromised generation quality and stability. We identify the root cause: during output length extension, negative samples increase in length substantially faster than positive samples, frequently reaching the context window limit earlier. Consequently, disproportionately large negative gradients accumulate in the latter segments of generation sequences. This imbalance originates from the inherently unequal nature of GRPO’s advantage normalization and the token-level loss we adopt. To address this, we implement three key solutions: (1) Detecting repetitive patterns (consecutive high-probability tokens) with early stopping to prevent excessive context window consumption by repetitive responses; (2) Adopting combined sample-level loss and token-level normalization to alleviate negative-positive sample imbalance and mitigate adverse effects; (3) Decreasing both the gradient clipping threshold and $\epsilon _ { h i g h } ^ { I S }$ to further stabilize generation.
 

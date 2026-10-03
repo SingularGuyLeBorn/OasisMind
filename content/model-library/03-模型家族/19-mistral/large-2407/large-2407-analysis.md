@@ -19,9 +19,9 @@
 
 ## 2. 123B 和 「单节点」
 
-页面给 123B 配的说法是 「allows it to run at large throughput on a single node」. 页面没写精度, 按每参数 2 字节算, 权重约 246 GB (估算), 单张 80 GB 的卡放不下. 所以 「single node」 只能读作一台多卡机器, 页面没说这台机器几张卡, 也没给吞吐数字.
+页面给 123B 配的说法是 「allows it to run at large throughput on a single node」. 页面没写精度, 按每参数 2 字节算, 权重约 246 GB, 单张 80 GB 的卡放不下. 所以 「single node」 只能读作一台多卡机器, 页面没说这台机器几张卡, 也没给吞吐数字.
 
-三张散点图把这个规模摆到了 Llama 3.1 70B 和 405B 中间. 横轴是 「# of Parameters」, 没印单位, Mistral Large 2 画在约 123 处, 和正文的 123B 对得上. 按名字里的规模算, 405B 约是 123B 的 3.3 倍, 70B 约是它的 0.57 倍 (估算). 左上角那块 「Best performance/size ratio」 三角是作者自己画的区域, 边界怎么定没交代, Mistral Large 2 恰好落在里面, 405B 在外面.
+三张散点图把这个规模摆到了 Llama 3.1 70B 和 405B 中间. 横轴是 「# of Parameters」, 没印单位, Mistral Large 2 画在约 123 处, 和正文的 123B 对得上. 按名字里的规模算, 405B 约是 123B 的 3.3 倍, 70B 约是它的 0.57 倍. 左上角那块 「Best performance/size ratio」 三角是作者自己画的区域, 边界怎么定没交代, Mistral Large 2 恰好落在里面, 405B 在外面.
 
 ## 3. 代码: 一张表和四组柱子
 
@@ -29,7 +29,7 @@ MultiPL-E 表的 Average 列可以完整复算. 六行各自把七种语言求�
 
 这张表里 Mistral Large 2 不是第一. 平均分 GPT-4o 77.9%, Mistral Large 2 76.9%. 七种语言里它只在 Java (84.2%) 拿了最高, C# 比 GPT-4o 高 1.3 个点, 其余五种比 GPT-4o 低 1.2 到 2.5 个点. 对上一代的提升很整齐, Python 高 22.0 个点, 其余六种高 13.9 到 17.4 个点. 对自测的 Llama 3.1 405B, 平均高 2.0 个点, 但 Bash 低 6.3 个点.
 
-| 模型 (读图估算) | Human Eval | Human Eval Plus | MBPP Base | MBPP Plus | 四组平均 |
+| 模型 (读图) | Human Eval | Human Eval Plus | MBPP Base | MBPP Plus | 四组平均 |
 |---|---|---|---|---|---|
 | Mistral Large 2 | 92 | 86.5 | 80 | 69 | 81.9 |
 | GPT 4o | 93 | 88.5 | 84 | 69.5 | 83.8 |
@@ -38,9 +38,9 @@ MultiPL-E 表的 Average 列可以完整复算. 六行各自把七种语言求�
 | Llama 3.1 70B | 79 | 77 | 83 | 71 | 77.5 |
 | Mistral Large | 70 | 64.5 | 67.5 | 57 | 64.8 |
 
-四组柱子里, Mistral Large 2 在 HumanEval 两组都是第二, 只输给 GPT 4o; 在 MBPP 两组只排第 6, Claude 3.5 Sonnet, Llama 3.1 405B, Claude 3 Opus, Llama 3.1 70B, GPT 4o 都在它上面, MBPP Plus 上 GPT 4o 只高一点. 按四组等权平均, 它约 81.9, 低于 Claude 3.5 Sonnet 约 83.9 和 GPT 4o 约 83.8 (估算). 第 2 页那张代码散点图的三个点, 正好和这个平均对得上, 但散点图里只画了 Llama, 没画这两家更高的闭源模型.
+四组柱子里, Mistral Large 2 在 HumanEval 两组都是第二, 只输给 GPT 4o; 在 MBPP 两组只排第 6, Claude 3.5 Sonnet, Llama 3.1 405B, Claude 3 Opus, Llama 3.1 70B, GPT 4o 都在它上面, MBPP Plus 上 GPT 4o 只高一点. 按四组等权平均, 它约 81.9, 低于 Claude 3.5 Sonnet 约 83.9 和 GPT 4o 约 83.8. 第 2 页那张代码散点图的三个点, 正好和这个平均对得上, 但散点图里只画了 Llama, 没画这两家更高的闭源模型.
 
-还有一处对位: Human Eval 柱高和 MultiPL-E 的 Python 列几乎相同. Mistral Large 2 约 92 对 92.1%, GPT 4o 约 93 对 93.3%, Llama 3.1 405B 约 84 对 84.1%, Llama 3.1 70B 约 79 对 78.7% (估算). 页面没说两者是同一组测量, 但读数看起来是一回事.
+还有一处对位: Human Eval 柱高和 MultiPL-E 的 Python 列几乎相同. Mistral Large 2 约 92 对 92.1%, GPT 4o 约 93 对 93.3%, Llama 3.1 405B 约 84 对 84.1%, Llama 3.1 70B 约 79 对 78.7%. 页面没说两者是同一组测量, 但读数看起来是一回事.
 
 ## 4. 测量值和论文值
 
@@ -52,23 +52,23 @@ MultiPL-E 表把 Llama 3.1 405B 列了两行, 一行自测 (measured), 一行抄
 
 第 3 页正文讲数学, 结尾一个冒号, 后面接的却是代码图, 图注也写的是 code generation. 数学图要到第 4 页, 排在 MultiPL-E 表后面. 数学图的图注写 「MATH (0-shot, no CoT)」, 图里的组名写 「Math Instruct (0-shot no CoT)」, 图注末尾还有 「generation benchmarks」 这个多出来的词, 像是从代码图注复制过来没删干净.
 
-读柱高, Mistral Large 2 在 GSM8K (8-shot) 约 93, 低于 Claude 3.5 Sonnet 约 95, Llama 3.1 70B 约 94, Llama 3.1 405B 约 96; 在 Math Instruct 约 70, 低于 GPT 4o 约 76, 高于 Llama 3.1 405B 约 67 (都是估算). 正文说的是 「improved model performance」, 这个说法对上一代成立: Mistral Large 在 Math Instruct 上约 49.5, 提升约 20 个点 (估算). 拿去和对手比, 它在两组里都不是第一.
+读柱高, Mistral Large 2 在 GSM8K (8-shot) 约 93, 低于 Claude 3.5 Sonnet 约 95, Llama 3.1 70B 约 94, Llama 3.1 405B 约 96; 在 Math Instruct 约 70, 低于 GPT 4o 约 76, 高于 Llama 3.1 405B 约 67. 正文说的是 「improved model performance」, 这个说法对上一代成立: Mistral Large 在 Math Instruct 上约 49.5, 提升约 20 个点. 拿去和对手比, 它在两组里都不是第一.
 
 ## 6. 对齐和生成长度
 
-对齐三项里, Mistral Large 2 在 Wild Bench 约 56 排第二, 在 Arena Hard 约 73 排第三, 在 MT Bench 约 8.63 排第三 (都是估算). 三项里压过它的总是 GPT 4o, Arena Hard 和 MT Bench 上还有 Claude 3.5 Sonnet. MT Bench 用 GPT-4o 当裁判, 等于 GPT-4o 给自己打分, 页面没提这个偏差. MT Bench 纵轴从 6 起, 前三名差距不到 0.1, 图上看着却有一截.
+对齐三项里, Mistral Large 2 在 Wild Bench 约 56 排第二, 在 Arena Hard 约 73 排第三, 在 MT Bench 约 8.63 排第三. 三项里压过它的总是 GPT 4o, Arena Hard 和 MT Bench 上还有 Claude 3.5 Sonnet. MT Bench 用 GPT-4o 当裁判, 等于 GPT-4o 给自己打分, 页面没提这个偏差. MT Bench 纵轴从 6 起, 前三名差距不到 0.1, 图上看着却有一截.
 
-生成长度那张图的用意是说明 Mistral Large 2 分数高不靠写得长. 它约 1470, 比六个对手都短, 但比上一代 Mistral Large 约 1300 长了约 13% (估算). 横轴没印单位, 字符还是 token 看不出来. 正文说 「generations remain succinct」, 这句和对手比成立, 和自家上一代比不成立.
+生成长度那张图的用意是说明 Mistral Large 2 分数高不靠写得长. 它约 1470, 比六个对手都短, 但比上一代 Mistral Large 约 1300 长了约 13%. 横轴没印单位, 字符还是 token 看不出来. 正文说 「generations remain succinct」, 这句和对手比成立, 和自家上一代比不成立.
 
 ## 7. 多语言: 13 种和 9 种
 
 第 6 页正文列了 13 种 「excels in」 的语言, 第 7 页的柱状图只有 9 种: FR, DE, ES, IT, NL, PT, RU, JA, ZH. 英语, 韩语, 阿拉伯语, 印地语都没测. 第 2 页那份支持语言清单有阿拉伯语和印地语, 却没有荷兰语; 第 7 页图里又有荷兰语. 三处语言集合各不相同.
 
-九种语言里, Mistral Large 2 每一种都低于 Llama 3.1 405B, 差距约 0.3 到 1.6 个点, 平均约 80.5 对 81.4 (估算). 对上一代的提升在中文和日语上最大, 中文约从 62.6 到 74.8, 日语约从 69.6 到 78.8 (估算). 页面给它的定位是散点图里那块三角: 参数约是 405B 的 0.30 倍, 分数只差不到 1 个点 (估算). 这个说法和图一致, 只是 「excels」 需要按这个前提理解.
+九种语言里, Mistral Large 2 每一种都低于 Llama 3.1 405B, 差距约 0.3 到 1.6 个点, 平均约 80.5 对 81.4. 对上一代的提升在中文和日语上最大, 中文约从 62.6 到 74.8, 日语约从 69.6 到 78.8. 页面给它的定位是散点图里那块三角: 参数约是 405B 的 0.30 倍, 分数只差不到 1 个点. 这个说法和图一致, 只是 「excels」 需要按这个前提理解.
 
 ## 8. Function Calling 和其他没有名字的图
 
-Function Calling 那张图只有标题和 Accuracy (%) 纵轴, 没写是哪个基准, 没有图注, 对比对象也换了: 没有 Llama, 没有 Command R+, 只有 Mistral Large, 两个 Claude 和 GPT 4o. Mistral Large 2 约 48 最高, GPT 4o 约 47, 上一代约 21 (估算). 这是本页唯一一张 Mistral Large 2 排第一的柱状图, 恰好也是信息最少的一张.
+Function Calling 那张图只有标题和 Accuracy (%) 纵轴, 没写是哪个基准, 没有图注, 对比对象也换了: 没有 Llama, 没有 Command R+, 只有 Mistral Large, 两个 Claude 和 GPT 4o. Mistral Large 2 约 48 最高, GPT 4o 约 47, 上一代约 21. 这是本页唯一一张 Mistral Large 2 排第一的柱状图, 恰好也是信息最少的一张.
 
 正文说它能 「proficiently execute both parallel and sequential function calls」, 图里并没有区分并行和串行. 检索能力 (「retrieval skills」) 也只在这句话里出现, 没有对应的图. 同样, 第 3 页讲的幻觉控制和 「承认不知道」 两件事, 本页没有一个专门的指标.
 
@@ -88,4 +88,4 @@ Function Calling 那张图只有标题和 Accuracy (%) 纵轴, 没写是哪个�
 
 最硬的几处: 正文说和 「Llama 3 405B」 打平, 图表里只有 Llama 3.1 405B; 第 3 页数学段落的冒号后接的是代码图; 数学图的图注写 MATH, 图里写 Math Instruct, 图注还多了 「generation benchmarks」; 正文列 13 种擅长语言, 图里只测 9 种, 第 2 页清单又少了荷兰语; MMLU 84.0% 说的是 「performance/cost Pareto front」, 可本页的 Pareto 图横轴都是参数量, 也没有一张画 84.0%.
 
-小地方: 对齐图的图注把 evaluation 拼成 「evalutation」; Wild Bench/Arena Hard 图把 Llama 3.1 405B 标成 「LLama 3.1 405」, 少了 B; 不同图的柱子顺序不一样, Llama 两根在代码图里夹在 Claude 中间, 在数学图里排到 GPT 4o 后面, 颜色又相近, 容易读错. 自称 「succinct」 的 Mistral Large 2 比上一代长约 13% (估算). MultiPL-E 表的数字本身没有对不上的, Average 列六行都能复算.
+小地方: 对齐图的图注把 evaluation 拼成 「evalutation」; Wild Bench/Arena Hard 图把 Llama 3.1 405B 标成 「LLama 3.1 405」, 少了 B; 不同图的柱子顺序不一样, Llama 两根在代码图里夹在 Claude 中间, 在数学图里排到 GPT 4o 后面, 颜色又相近, 容易读错. 自称 「succinct」 的 Mistral Large 2 比上一代长约 13%. MultiPL-E 表的数字本身没有对不上的, Average 列六行都能复算.

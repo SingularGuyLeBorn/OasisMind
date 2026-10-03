@@ -16,7 +16,7 @@
 
 定位: 「our first release in the forthcoming Claude 3.5 model family」, 3.5 家族的第一款, Haiku 和 Opus 要到 「later this year」. 渠道: Claude.ai 与 iOS 应用免费可用, Pro 和 Team 订阅有更高的速率限制; 开发者可经 Anthropic API, Amazon Bedrock, Google Cloud Vertex AI 调用. 价格: 每百万输入 token \$3, 输出 \$15. 上下文 200K token.
 
-速度和成本只有相对说法: 导语说它有 「the speed and cost of our mid-tier model, Claude 3 Sonnet」, 第 2 页说 「twice the speed of Claude 3 Opus」. 同级目录的 Claude 3 公告印过 3 Sonnet 的价格, 正是 \$3 / \$15, 与这里一致; Opus 是 \$15 / \$75, 所以按表价, 3.5 Sonnet 的单价是 3 Opus 的 五分之一 (估算). 第 2 页示意图横轴是价格, 纵轴是 benchmark 分数, 两轴都没有刻度; 3.5 Sonnet 从 3 Sonnet 的位置竖直上移, 高过 Opus. 结合第 1.1 节那句 「没有用更大模型」, 这张图想说的是: 同一档位里, 新一轮预训练和后训练就能越过上一代旗舰, 不必等更大的模型. 这个判断属于产品叙事, 本页没给计算量对比.
+速度和成本只有相对说法: 导语说它有 「the speed and cost of our mid-tier model, Claude 3 Sonnet」, 第 2 页说 「twice the speed of Claude 3 Opus」. 同级目录的 Claude 3 公告印过 3 Sonnet 的价格, 正是 \$3 / \$15, 与这里一致; Opus 是 \$15 / \$75, 所以按表价, 3.5 Sonnet 的单价是 3 Opus 的 五分之一. 第 2 页示意图横轴是价格, 纵轴是 benchmark 分数, 两轴都没有刻度; 3.5 Sonnet 从 3 Sonnet 的位置竖直上移, 高过 Opus. 结合第 1.1 节那句 「没有用更大模型」, 这张图想说的是: 同一档位里, 新一轮预训练和后训练就能越过上一代旗舰, 不必等更大的模型. 这个判断属于产品叙事, 本页没给计算量对比.
 
 ## 2. 评测表与脚注
 
@@ -36,7 +36,7 @@
 
 表外还有一组编码数字: 在一项内部 agentic 编码评测里, 3.5 Sonnet 解决 64% 的问题, 3 Opus 解决 38%. 任务是按自然语言需求在开源代码库里修 bug 或加功能, 模型可以借助工具写代码, 改代码, 运行代码. 这是全页唯一一项 agent 形态的评测, 也是和 HumanEval 差别最大的一项: HumanEval 上两者差 7.1 个点, 这里差 26 个点. 单函数补全已经接近饱和, 多步调试才拉开差距, 这指向后训练在工具调用和长轨迹上下了功夫 (推测). 题量, 轮数上限, 判定标准和其他模型对照都没给. 四个月后的升级版 3.5 Sonnet 改用公开的 SWE-bench Verified 报分, 见同级目录 3.5 Haiku 与 **computer use** 两篇. 评测形态见 [Benchmark与Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md) 与 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
 
-文本表的两条脚注值得单独看. GPQA 在 「5-shot CoT ... with maj@32」 下是 67.2%, 表中 0-shot CoT 是 59.4%; MMLU 在 5-shot CoT 下是 90.4%, 表中是 88.7% 和 88.3%. maj@32 是同一题采样 32 次后多数投票, 属于 **TestingTime** 投入, 和部署前把模型做大的 Scaling 是两回事. GPQA 上多采样换来 7.8 个点, 而 MMLU 只换来不到 2 个点, 说明越难的题, 推理阶段多花算力的回报越大 (估算). 页面把这两个数放脚注不进表, 是在分开两种口径. 背景见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
+文本表的两条脚注值得单独看. GPQA 在 「5-shot CoT ... with maj@32」 下是 67.2%, 表中 0-shot CoT 是 59.4%; MMLU 在 5-shot CoT 下是 90.4%, 表中是 88.7% 和 88.3%. maj@32 是同一题采样 32 次后多数投票, 属于 **TestingTime** 投入, 和部署前把模型做大的 Scaling 是两回事. GPQA 上多采样换来 7.8 个点, 而 MMLU 只换来不到 2 个点, 说明越难的题, 推理阶段多花算力的回报越大. 页面把这两个数放脚注不进表, 是在分开两种口径. 背景见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md).
 
 ## 3. 产品, 安全与边界
 

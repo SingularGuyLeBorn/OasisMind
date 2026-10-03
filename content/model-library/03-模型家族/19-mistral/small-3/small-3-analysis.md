@@ -22,17 +22,17 @@ Mistral Small 3 在这页里只有一个身份: 24B 参数的语言模型, 同�
 
 结构上唯一的说法是 「far fewer layers than competing models, substantially reducing the time per forward pass」. 这个思路本身好理解: 同样的参数量, 层数少意味着每层更宽, 单个 token 的串行步骤更少, 小 batch 下的解码延迟会低一些. 可页面没给层数, 也没给对手的层数, 「far fewer」 到底少多少, 从页面上核不了. 24B 这个数也只出现在标题和正文里, 没有嵌入层, 注意力, 前馈各占多少的拆分.
 
-速度的数字有两套, 对不上. 正文写 「150 tokens/s latency」, 散点图横轴是每 token 毫秒数, Small 3 的点读图约 10.9 ms/token, 折合约 92 tokens/s (估算). 要到 150 tokens/s, 每 token 约 6.7 ms (估算), 比图上最左端 11 ms 的刻度还靠左. 可能的解释是两套数用了不同的测法: 图注写的是 4 × H100, vLLM, batch size 16, 150 也许是单条请求或别的硬件, 但页面没说. 如果按 batch size 16 算总吞吐, 16 × 92 约 1470 tokens/s (估算), 又远大于 150. 两种读法都凑不出 150.
+速度的数字有两套, 对不上. 正文写 「150 tokens/s latency」, 散点图横轴是每 token 毫秒数, Small 3 的点读图约 10.9 ms/token, 折合约 92 tokens/s. 要到 150 tokens/s, 每 token 约 6.7 ms, 比图上最左端 11 ms 的刻度还靠左. 可能的解释是两套数用了不同的测法: 图注写的是 4 × H100, vLLM, batch size 16, 150 也许是单条请求或别的硬件, 但页面没说. 如果按 batch size 16 算总吞吐, 16 × 92 约 1470 tokens/s, 又远大于 150. 两种读法都凑不出 150.
 
-散点图本身能说明的是相对位置. 同一套设置下, Small 3 约 10.9 ms, Gemma-2 27B 约 13.7 ms, Qwen-2.5 32B 约 15.1 ms (读图). 对 Qwen-2.5 32B 快约 1.4 倍, 对 Gemma-2 27B 快约 1.26 倍 (估算). GPT-4o Mini 约 12.0 ms, 但它走的是 OpenAI API, 包含网络和服务端排队, 和本地 vLLM 的数放在一张图上只能看个大概. 正文说对 Llama 3.3 70B 「more than 3x faster on the same hardware」, 这张图里没有 Llama 3.3 70B 的点, 3 倍这个数没有图可核.
+散点图本身能说明的是相对位置. 同一套设置下, Small 3 约 10.9 ms, Gemma-2 27B 约 13.7 ms, Qwen-2.5 32B 约 15.1 ms (读图). 对 Qwen-2.5 32B 快约 1.4 倍, 对 Gemma-2 27B 快约 1.26 倍. GPT-4o Mini 约 12.0 ms, 但它走的是 OpenAI API, 包含网络和服务端排队, 和本地 vLLM 的数放在一张图上只能看个大概. 正文说对 Llama 3.3 70B 「more than 3x faster on the same hardware」, 这张图里没有 Llama 3.3 70B 的点, 3 倍这个数没有图可核.
 
 ## 3 人评: 赢的是小对手
 
 人评是这页唯一印满数字的图. 1000 多条 prompt, 外部供应商, 评审在匿名的两份回答里选一份, 五档打分. 把 「better」 和 「slightly better」 合起来看, Small 3 对 Gemma-2 27B 是 73.2 对 21.6, 对 Qwen-2.5 32B generalist 是 68.0 对 26.0, 对 Qwen-2.5 32B coding 是 80.0 对 20.0. 这三组都是大比分赢.
 
-另外两组方向相反. 对 Llama-3.3 70B 是 35.6 对 53.2, 去掉平局后 Small 3 的胜率约 40% (估算); 对 GPT-4o mini 是 40.4 对 43.6, 去掉平局约 48% (估算). 也就是说, 正文里拿来当标杆的两个模型, 在人评里都赢了 Small 3. 页面紧接着写 「We are aware that in some cases the benchmarks on human judgement starkly differ from publicly available benchmarks」, 可它没说是哪几组差得大, 也没说差在什么方向.
+另外两组方向相反. 对 Llama-3.3 70B 是 35.6 对 53.2, 去掉平局后 Small 3 的胜率约 40%; 对 GPT-4o mini 是 40.4 对 43.6, 去掉平局约 48%. 也就是说, 正文里拿来当标杆的两个模型, 在人评里都赢了 Small 3. 页面紧接着写 「We are aware that in some cases the benchmarks on human judgement starkly differ from publicly available benchmarks」, 可它没说是哪几组差得大, 也没说差在什么方向.
 
-样本量可以从百分数的粒度倒推. 四组 generalist 的所有数都是 0.4 的整数倍, 对上的最小样本是每组 250 条; 代码组的四个数 53.0, 27.0, 9.0, 11.0 都是整数, 但 53.0 不是 0.4 的倍数, 最小是 100 条 (估算). 4 × 250 + 100 = 1100 (估算), 和 「over 1k」 吻合. 如果样本真是这个量级, 每组 250 条下一个百分点就是 2.5 条回答, 对 GPT-4o mini 那 3.2 个点的差距大约是 8 条 (估算), 不算稳. 代码组没有平局段, 四段刚好加到 100, 原因页面没交代.
+样本量可以从百分数的粒度倒推. 四组 generalist 的所有数都是 0.4 的整数倍, 对上的最小样本是每组 250 条; 代码组的四个数 53.0, 27.0, 9.0, 11.0 都是整数, 但 53.0 不是 0.4 的倍数, 最小是 100 条. 4 × 250 + 100 = 1100, 和 「over 1k」 吻合. 如果样本真是这个量级, 每组 250 条下一个百分点就是 2.5 条回答, 对 GPT-4o mini 那 3.2 个点的差距大约是 8 条, 不算稳. 代码组没有平局段, 四段刚好加到 100, 原因页面没交代.
 
 ## 4 指令模型: 「on par」 的实际分布
 
@@ -48,7 +48,7 @@ base 模型比的是 Gemma 2 27B, Qwen 2.5 32B, LLama 3.1 70B. 注意这里的 L
 
 正文说 「over 81% accuracy on MMLU」, 能对应的只有这张图的 MMLU (5-shot), 读图约 80.3, 柱顶贴着 80 的刻度线. 按这张图的比例, 81 比柱顶高约 2 个像素, 在读图误差边缘, 算不上确凿矛盾, 但图上看不出超过 81. 另一个值得记的数是 MMLU Pro: base 用 5-shot CoT 约 54.1, 指令模型用 5-shot 约 66.2 (读图), 两个设置不同, 不能直接当成指令调优带来的 12 个点提升.
 
-七种语言的 MMLU 里, Small 3 base 对 LLama 3.1 70B 六种略高, Spanish 持平; 对 Qwen 2.5 32B 只在 French 持平, 其余六种都低. 差距最大的是 Chinese MMLU, 约 70.1 对 88.8 (读图), 差 18.7 个点 (估算). Korean 是四个模型各自最低的一项, Small 3 约 56.2. 所以 「best performance for its size class」 在这张图上的意思更接近 「比 Gemma 2 27B 强」, 对同尺寸级的 Qwen 2.5 32B 并不成立.
+七种语言的 MMLU 里, Small 3 base 对 LLama 3.1 70B 六种略高, Spanish 持平; 对 Qwen 2.5 32B 只在 French 持平, 其余六种都低. 差距最大的是 Chinese MMLU, 约 70.1 对 88.8 (读图), 差 18.7 个点. Korean 是四个模型各自最低的一项, Small 3 约 56.2. 所以 「best performance for its size class」 在这张图上的意思更接近 「比 Gemma 2 27B 强」, 对同尺寸级的 Qwen 2.5 32B 并不成立.
 
 ## 6 训练配方: 只说了没做什么
 
@@ -58,12 +58,12 @@ base 模型比的是 Gemma 2 27B, Qwen 2.5 32B, LLama 3.1 70B. 注意这里的 L
 
 ## 7 部署, 渠道与许可
 
-本地部署的说法是 「When quantized, Mistral Small 3 can be run privately on a single RTX 4090 or a Macbook with 32GB RAM」. 24B 参数按 4 bit 量化, 权重约 12 GB; 按 8 bit 约 24 GB (估算, 不含 KV cache 和激活). 页面没写量化比特数, 没给量化后的分数, 也没印 RTX 4090 的显存, 所以 「单卡能跑」 在多长上下文, 多大 batch 下成立, 读者得自己试.
+本地部署的说法是 「When quantized, Mistral Small 3 can be run privately on a single RTX 4090 or a Macbook with 32GB RAM」. 24B 参数按 4 bit 量化, 权重约 12 GB; 按 8 bit 约 24 GB (不含 KV cache 和激活). 页面没写量化比特数, 没给量化后的分数, 也没印 RTX 4090 的显存, 所以 「单卡能跑」 在多长上下文, 多大 batch 下成立, 读者得自己试.
 
 渠道上, 当天可用的是 la Plateforme (`mistral-small-latest`, `mistral-small-2501`), Hugging Face (标注 base model), Ollama, Kaggle, Together AI, Fireworks AI, IBM Watson X; 标 「Coming soon」 的是 NVIDIA NIM, Amazon SageMaker, Groq, Databricks, Snowflake. 许可证是 Apache 2.0, 权重可下载, 本地部署, 随意修改. 页面同时说, 更快的速度, 更长的上下文, 领域知识, 代码补全这类能力会放在商业模型里, 这也解释了为什么 Small 3 本身不强调长上下文.
 
 ## 8 本页对不上的数字
 
-几处数字互相核不上, 集中列在这里. 速度: 正文 150 tokens/s, 散点图约 10.9 ms/token, 约 92 tokens/s (估算). MMLU: 正文 over 81%, 预训练图读图约 80.3. 「on par with Llama 3.3 70B instruct」: 八项读图 3 高 4 低 1 平, 人评 35.6 对 53.2. 「competitive with GPT4o-mini」: 八项读图 2 高 5 低 1 平, 人评 40.4 对 43.6. 「more than 3x faster」: 散点图没有 Llama 3.3 70B.
+几处数字互相核不上, 集中列在这里. 速度: 正文 150 tokens/s, 散点图约 10.9 ms/token, 约 92 tokens/s. MMLU: 正文 over 81%, 预训练图读图约 80.3. 「on par with Llama 3.3 70B instruct」: 八项读图 3 高 4 低 1 平, 人评 35.6 对 53.2. 「competitive with GPT4o-mini」: 八项读图 2 高 5 低 1 平, 人评 40.4 对 43.6. 「more than 3x faster」: 散点图没有 Llama 3.3 70B.
 
-还有几处是口径不一致, 不算错但容易误读. 「three times its size」 只对 Llama 3.3 70B 近似成立, 70 / 24 约 2.9 倍 (估算), 对 Qwen 32B 只有约 1.3 倍. 预训练图比的是 LLama 3.1 70B, 指令图和正文说的是 Llama 3.3 70B. 人评代码组没有平局段. MTBench 画成百分数而没说换算. 页面没有安全评测, 也没有漏洞相关内容.
+还有几处是口径不一致, 不算错但容易误读. 「three times its size」 只对 Llama 3.3 70B 近似成立, 70 / 24 约 2.9 倍, 对 Qwen 32B 只有约 1.3 倍. 预训练图比的是 LLama 3.1 70B, 指令图和正文说的是 Llama 3.3 70B. 人评代码组没有平局段. MTBench 画成百分数而没说换算. 页面没有安全评测, 也没有漏洞相关内容.

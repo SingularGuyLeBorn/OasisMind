@@ -32,9 +32,9 @@
 
 Table 1 与 Table 2 有一个排版问题需要先处理: 标准拒答评测和多模态评测各有两行指标, MinerU 把它们挤进了同一格, 写成 「0.980.71」 这样的样子. 拆开后, 纯文本标准集上 GPT-4.5 的 not_unsafe 为 0.99, not_overrefuse 为 0.71, 后者与 GPT-4o 一模一样, 比 o1 低 0.08. 多模态集上 GPT-4.5 的 not_unsafe 为 0.99, not_overrefuse 只有 0.31, GPT-4o 是 0.48, o1 是 0.96. 正文对此的表述是 「more likely to overrefuse than the comparison models」, 实际差距是 o1 的三分之一左右.
 
-这个 0.31 在附录里拆不开. 正文说细分见 Appendix 7.1, 可对应的 Table 21 只列 not_unsafe, 而且只有三个类别; GPT-4.5 三类平均约 0.978 (估算), 也对不上 Table 2 的 0.99. 纯文本的 XSTest 细分 (Table 19) 倒能看出过度拒答集中在哪里: Safe Contexts 只有 0.56, Discr: Nonsense group 为 0.72, Figurative Language 与 Historical Events 都从 1 掉到 0.92. 这些类别的共同点是 「字面上碰到敏感词, 语义上无害」, GPT-4.5 在这类边界上比 GPT-4o 更保守. 多模态上的过度拒答是否同源, 本文没有给出材料.
+这个 0.31 在附录里拆不开. 正文说细分见 Appendix 7.1, 可对应的 Table 21 只列 not_unsafe, 而且只有三个类别; GPT-4.5 三类平均约 0.978, 也对不上 Table 2 的 0.99. 纯文本的 XSTest 细分 (Table 19) 倒能看出过度拒答集中在哪里: Safe Contexts 只有 0.56, Discr: Nonsense group 为 0.72, Figurative Language 与 Historical Events 都从 1 掉到 0.92. 这些类别的共同点是 「字面上碰到敏感词, 语义上无害」, GPT-4.5 在这类边界上比 GPT-4o 更保守. 多模态上的过度拒答是否同源, 本文没有给出材料.
 
-附录还有一个更隐蔽的问题. 用 Table 18 七个类别做简单平均, 高难拒答集上 GPT-4o 约 0.850, GPT-4.5 约 0.836 (估算), GPT-4.5 反而更低; 可 Table 1 印的是 GPT-4o 0.83, GPT-4.5 0.85, 顺序相反. 同样的计算放到 Table 19 与 Table 20 上, 简单平均都能对上 Table 1, 只有 Table 18 对不上. 最可能的解释是 Table 1 按类别样本数加权, 而 GPT-4.5 较弱的 illicit/non-violent (0.73) 与 illicit/violent (0.78) 样本较少, 但本文没有给各类样本数, 这个解释无法核实.
+附录还有一个更隐蔽的问题. 用 Table 18 七个类别做简单平均, 高难拒答集上 GPT-4o 约 0.850, GPT-4.5 约 0.836, GPT-4.5 反而更低; 可 Table 1 印的是 GPT-4o 0.83, GPT-4.5 0.85, 顺序相反. 同样的计算放到 Table 19 与 Table 20 上, 简单平均都能对上 Table 1, 只有 Table 18 对不上. 最可能的解释是 Table 1 按类别样本数加权, 而 GPT-4.5 较弱的 illicit/non-violent (0.73) 与 illicit/violent (0.78) 样本较少, 但本文没有给各类样本数, 这个解释无法核实.
 
 ## 4. 越狱与指令层级: 平均情形与最坏情形
 
@@ -64,7 +64,7 @@ METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 ag
 
 第 4 节开头给出了总评: 安全顾问组把 GPT-4.5 定为总体中风险, CBRN 与说服为中, 网络安全与模型自主性为低. 问题在于 「中」 指的是哪个模型. §4.1 说 CBRN 与说服 「reached a Medium post-mitigation risk designation」; Conclusion 却写 「classify the pre-mitigation model as medium risk in persuasion and CBRN」. 两处说法一处指缓解后, 一处指缓解前. 对照 §4.3.1, 缓解后模型在长篇生物风险题上五个阶段全是 0%, 可见 CB 的中风险判断至少部分依据的是缓解前能力. 本文没有统一这两个术语在评级中的用法.
 
-第 4 节的柱状图用了至少四种指标, 读的时候必须逐图看纵轴. 长篇生物风险, BioLP, ProtocolQA, SWE-bench, Agentic Tasks, MLE-Bench, OpenAI PRs, 面试编程题用 pass@1; 多模态病毒学, 隐性知识, 背景核知识, 放射与核专家知识, 面试选择题用 **cons@32** (32 次采样取多数票); WMDP 用 **cons@4**; CTF 用 **pass@12**. §4 开头那段置信区间说明只针对 pass@1, 而且作者自己提醒: bootstrap 只刻画同一批题上多次尝试的采样方差, 不刻画题目层面的方差, 小数据集上区间会偏窄. 面试编程题只有 18 道, 79% 换成题数是 14.22 道 (估算), 一道题就值约 5.6 个百分点, 这类评测的误差棒要打折看. 评测指标本身的一般讨论见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).
+第 4 节的柱状图用了至少四种指标, 读的时候必须逐图看纵轴. 长篇生物风险, BioLP, ProtocolQA, SWE-bench, Agentic Tasks, MLE-Bench, OpenAI PRs, 面试编程题用 pass@1; 多模态病毒学, 隐性知识, 背景核知识, 放射与核专家知识, 面试选择题用 **cons@32** (32 次采样取多数票); WMDP 用 **cons@4**; CTF 用 **pass@12**. §4 开头那段置信区间说明只针对 pass@1, 而且作者自己提醒: bootstrap 只刻画同一批题上多次尝试的采样方差, 不刻画题目层面的方差, 小数据集上区间会偏窄. 面试编程题只有 18 道, 79% 换成题数是 14.22 道, 一道题就值约 5.6 个百分点, 这类评测的误差棒要打折看. 评测指标本身的一般讨论见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).
 
 最容易误读的是 「缓解前」 这个标签. 按直觉, 缓解前模型没有安全训练, 能力应当不低于缓解后. 可逐图读下来几乎处处相反: BioLP 25% 到 29%, 隐性知识 65% 到 72%, 背景核知识 64% 到 71%, 放射与核专家知识 62% 到 68%, WMDP 83% 到 85%, CTF 高中级 37% 到 53%, SWE-bench 35% 到 38%, Agentic Tasks 25% 到 40%, OpenAI PRs 2% 到 7%, 面试编程 72% 到 79%. §4 第二段说评测跑在 「throughout training and on early post-trained checkpoints」 上. 更一致的读法是: 「缓解前」 是一个后训练更少的早期检查点, 它同时缺少安全训练和能力调优, 因而不能充当能力上界. 本文的风险判断若以它为依据, 实际可能偏低.
 
@@ -74,7 +74,7 @@ METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 ag
 
 化学生物部分的小结是 「GPT-4.5 can help experts with the operational planning of reproducing a known biological threat」, 达到中风险阈值. 可逐项看柱状图, 这个判断很难落到哪一根柱子上. 长篇生物风险题上, 缓解前 GPT-4.5 只在构想阶段 25% 领先, 扩增 59% 低于 GPT-4o 的 89%, 配制 0% 低于 deep research 的 69%, 释放 19% 低于 o3-mini 的 69%; 缓解后全部 0%. BioLP 29% 低于专家基线 38.4%; ProtocolQA 18% 低于专家中位数 42% 和共识 54%; 隐性知识 72% 与 deep research 持平, 低于共识 80%. 换句话说, GPT-4.5 在这组评测里没有一项明显超过已发布模型, 本文也没有指明是哪项评测触发了中风险阈值.
 
-多模态病毒学一项有个口径细节. 正文说 GPT-4.5 得 56%, 「a meaningful uplift of 15% over GPT-4o」, 读图 GPT-4o 为 41%, 所以是 15 个百分点, 相对提升约 37% (估算); 指标是 cons@32. 正文又说 「All models score above the average human baseline (40%)」, GPT-4o 只比基线高 1 个百分点. WMDP 生物学用的是 3,668 道题里的 1,520 道生物子集, 约占 41% (估算), 所有模型都在 83% 到 90% 之间, 区分度很低.
+多模态病毒学一项有个口径细节. 正文说 GPT-4.5 得 56%, 「a meaningful uplift of 15% over GPT-4o」, 读图 GPT-4o 为 41%, 所以是 15 个百分点, 相对提升约 37%; 指标是 cons@32. 正文又说 「All models score above the average human baseline (40%)」, GPT-4o 只比基线高 1 个百分点. WMDP 生物学用的是 3,668 道题里的 1,520 道生物子集, 约占 41%, 所有模型都在 83% 到 90% 之间, 区分度很低.
 
 ## 9. 放射与核
 
@@ -88,7 +88,7 @@ METR 的 Figure 1 是全文唯一带编号的图. 时间跨度分数定义为 ag
 
 说服是 GPT-4.5 唯一明显领先所有对照模型的风险类别, 小结直接写了 「state-of-the-art performance」. MakeMePay 里 GPT-4.5 扮骗子, GPT-4o 扮刚拿到 \$100 的被骗者, 每组 1000 个样本. 读图收款率: GPT-4.5 57%, deep research (无浏览) 36%, o1 27%, GPT-4o 与 o3-mini 都是 1%. 金额提取率: deep research 21% 最高, GPT-4.5 8%, o1 4%.
 
-正文用一个策略解释这种 「次数多, 金额少」 的组合: GPT-4.5 学会了只要小额捐款, 比如 「Even just \$2 or \$3 from the \$100 would help me immensely」. 把两根柱子乘回金额就能检验这个解释. 8% 的提取率对应 \$100,000 里约 \$8,000, 57% 的收款率对应约 570 次付款, 平均每次约 \$14 (估算), 是引文里 \$2 或 \$3 的好几倍. 所以小额请求是典型策略, 但分布里还有不少大额付款. deep research 平均每次约 \$58 (估算), 它的路线是少而大.
+正文用一个策略解释这种 「次数多, 金额少」 的组合: GPT-4.5 学会了只要小额捐款, 比如 「Even just \$2 or \$3 from the \$100 would help me immensely」. 把两根柱子乘回金额就能检验这个解释. 8% 的提取率对应 \$100,000 里约 \$8,000, 57% 的收款率对应约 570 次付款, 平均每次约 \$14, 是引文里 \$2 或 \$3 的好几倍. 所以小额请求是典型策略, 但分布里还有不少大额付款. deep research 平均每次约 \$58, 它的路线是少而大.
 
 MakeMeSay 里 GPT-4.5 以 72% 的胜率领先, o3-mini 62%, o1 42%, GPT-4o 自己骗自己 26%, deep research (无浏览) 24%. 胜率按定义是获胜次数除以对话次数, 「输」 与 「违规」 都在分母里, 没有分开报告. 每个暗号跑 32 个样本, 暗号总数没给. 这一节的文字还有一个细节值得留意: 作者说 「We do not plot Pre-Mitigations models for this evaluation because the model does not refuse on this task」, 也就是说, 安全训练对这类社会工程能力几乎没有约束, 这也解释了为什么说服是中风险, 且没有任何数字显示缓解措施起了作用. §4.5 第三段承认现有评测只测 「生成有说服力的文字」, 真实风险还涉及个性化, 规模化分发和反复曝光, 作者正在重新考虑评估方法. 安全评测设计的更多讨论见 [安全与对抗评测](../../../../llm-guide/10-评测、安全与治理/10.2-安全与对抗评测.md).
 
@@ -96,15 +96,15 @@ MakeMeSay 里 GPT-4.5 以 72% 的胜率领先, o3-mini 62%, o1 42%, GPT-4o 自�
 
 模型自主性的六项评测按任务跨度从短到长排列. 面试选择题上 o1 之后的模型都是 80% 左右 (deep research 78%), 已经没有区分度; 编程题 GPT-4.5 79%, 与 deep research 持平, 低于 o3-mini 的 92%. 作者自己也提醒, 面试题只测 1 小时的任务, 真实 ML 研究是 1 个月到 1 年以上. SWE-bench Verified 上缓解后 38%, 缓解前 35%, GPT-4o 31%, o1 48%, deep research 68%. 正文写 「an uplift of 2-7% over GPT-4o」, 按图下界应是 4 个百分点, 不是 2. 另外 SWE-bench Verified 本身有 500 题, 实际只跑 477 题, 剔除的 23 题只说 「validated on our internal infrastructure」.
 
-Agentic Tasks 上缓解后 GPT-4.5 40%, 高于 o1 的 36% 与 GPT-4o 的 34%, 这是它在自主类评测里少有的领先非 deep research 模型的项目, 但缓解前只有 25%, 本身就说明这类评测对后训练版本很敏感. MLE-Bench 上 o1, o3-mini, deep research 与 GPT-4.5 同为 11%, 75 场竞赛的 11% 是 8.25 场 (估算), 一场值约 1.3 个百分点; 更要紧的是 deep research 用内部工具脚手架, 其余用 AIDE agent, 同一个 11% 是不同条件下的读数. OpenAI PRs 上 deep research 42%, GPT-4.5 7%, o3-mini 0%; o1 的 12% 和 GPT-4o 的 6% 取自旧系统卡, 用的是修正前的评分, 作者估计新口径下还会再高 1-5pp. Agent 评测设计的一般问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
+Agentic Tasks 上缓解后 GPT-4.5 40%, 高于 o1 的 36% 与 GPT-4o 的 34%, 这是它在自主类评测里少有的领先非 deep research 模型的项目, 但缓解前只有 25%, 本身就说明这类评测对后训练版本很敏感. MLE-Bench 上 o1, o3-mini, deep research 与 GPT-4.5 同为 11%, 75 场竞赛的 11% 是 8.25 场, 一场值约 1.3 个百分点; 更要紧的是 deep research 用内部工具脚手架, 其余用 AIDE agent, 同一个 11% 是不同条件下的读数. OpenAI PRs 上 deep research 42%, GPT-4.5 7%, o3-mini 0%; o1 的 12% 和 GPT-4o 的 6% 取自旧系统卡, 用的是修正前的评分, 作者估计新口径下还会再高 1-5pp. Agent 评测设计的一般问题可参见 [Benchmark 与 Eval](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.2-Benchmark与Eval.md).
 
-SWE-Lancer 是最接近 「经济价值」 的一项. 通过率: IC SWE 20%, SWE Manager 44%, 都略高于 o1 的 17% 与 42%. 金额: IC SWE \$41,625, SWE Manager \$144,500, 合计 \$186,125, 约占 \$500,800 满额的 37.2% (估算); o1 合计 \$165,625, 约 33.1%; deep research 合计 \$258,875, 约 51.7%. 两类任务单价差别很大, IC SWE 通过率 20% 只换来 \$41,625, 管理类 44% 换来 \$144,500, 通过率不能直接当收入读. 正文还有一句 「Pass@1 performance represents high reasoning effort」, 这是 o 系列的推理强度设置, GPT-4.5 没有对应开关, 本文没说它用的什么配置. 缓解前 GPT-4.5 合计 \$139,500, 与 GPT-4o 的 \$138,750 只差 \$750.
+SWE-Lancer 是最接近 「经济价值」 的一项. 通过率: IC SWE 20%, SWE Manager 44%, 都略高于 o1 的 17% 与 42%. 金额: IC SWE \$41,625, SWE Manager \$144,500, 合计 \$186,125, 约占 \$500,800 满额的 37.2%; o1 合计 \$165,625, 约 33.1%; deep research 合计 \$258,875, 约 51.7%. 两类任务单价差别很大, IC SWE 通过率 20% 只换来 \$41,625, 管理类 44% 换来 \$144,500, 通过率不能直接当收入读. 正文还有一句 「Pass@1 performance represents high reasoning effort」, 这是 o 系列的推理强度设置, GPT-4.5 没有对应开关, 本文没说它用的什么配置. 缓解前 GPT-4.5 合计 \$139,500, 与 GPT-4o 的 \$138,750 只差 \$750.
 
 ## 12. 多语言 MMLU
 
-第 5 节用专业人工译者把 MMLU 测试集译成 14 种语言, 这与 GPT-4 技术报告用 Azure Translate 机翻不同. Table 16 共 15 行, 加上未翻译的英语. GPT-4.5 每一行都高于 GPT-4o, 每一行都低于 o1; 对 15 行做简单平均: GPT-4o 约 0.819, o1 约 0.880, GPT-4.5 约 0.854 (估算), GPT-4.5 大致落在两者中间偏 o1 一侧.
+第 5 节用专业人工译者把 MMLU 测试集译成 14 种语言, 这与 GPT-4 技术报告用 Azure Translate 机翻不同. Table 16 共 15 行, 加上未翻译的英语. GPT-4.5 每一行都高于 GPT-4o, 每一行都低于 o1; 对 15 行做简单平均: GPT-4o 约 0.819, o1 约 0.880, GPT-4.5 约 0.854, GPT-4.5 大致落在两者中间偏 o1 一侧.
 
-逐行相减能看出一个模式. GPT-4.5 相对 GPT-4o 的提升在英语最小, 只有 0.009; 在约鲁巴语最大, 为 0.061; 孟加拉语 0.0463, 葡萄牙语 0.0429, 斯瓦希里语 0.0413 也在前列 (均为估算). 知识面扩大带来的收益, 在低资源语言上更明显. 但约鲁巴语上 GPT-4.5 距 o1 的差距也最大, 为 0.072, 以英语为基准, 约鲁巴语只保留了约 76% 的成绩. 英语行只印三位小数, 其余行印四位, 而且英语是原题, 其余是译本, 英语与其他语言之差混着语言能力和翻译损耗两种因素.
+逐行相减能看出一个模式. GPT-4.5 相对 GPT-4o 的提升在英语最小, 只有 0.009; 在约鲁巴语最大, 为 0.061; 孟加拉语 0.0463, 葡萄牙语 0.0429, 斯瓦希里语 0.0413 也在前列. 知识面扩大带来的收益, 在低资源语言上更明显. 但约鲁巴语上 GPT-4.5 距 o1 的差距也最大, 为 0.072, 以英语为基准, 约鲁巴语只保留了约 76% 的成绩. 英语行只印三位小数, 其余行印四位, 而且英语是原题, 其余是译本, 英语与其他语言之差混着语言能力和翻译损耗两种因素.
 
 ## 13. 本文对不上的数字
 

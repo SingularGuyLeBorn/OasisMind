@@ -10,7 +10,7 @@
 
 页 1 的发布句有三件事: 原生视觉与音频理解, 智能体表现超过 MiMo-V2-Pro, 上下文最长 1M tokens. 规格句紧接着: Sparse MoE, 总参 310B, 激活 15B, 训练 48T tokens, 语言骨干继承 [MiMo-V2-Flash](https://github.com/XiaomiMiMo/MiMo-V2-Flash) 的 hybrid sliding window attention, 视觉与音频编码器都是自研预训练, 经轻量 projector 接入. 把这几句和同族报告对起来看, V2.5 处在 Flash 与 V2.6 之间: 往前, Flash 报告是 309B / 15B, 27T tokens, 纯文本, 窗 128, 5:1; 往后, V2.6 报告的 Flash 档是 310B / 15B, 48T tokens (26T 文本 + 22T omni), 并给出了完整的视听编码器规格.
 
-V2.5 的总参, 激活与数据量和 V2.6-Flash 完全一致, 多模态接入方式 (编码器 + projector 接进 Hybrid-SWA 骨干) 也相同, 所以 V2.6-Flash 很可能是在 V2.5 的预训练基础上继续做 mid-training 与后训练 (推断, 两份材料都没明说). 如果这个推断成立, V2.6 报告里 「先文本, 再接 ViT 与音频做 omni 联合训练」 的描述, 也就是 V2.5 前三个训练阶段的展开版本. 从 Flash 到 V2.5, 总参多了约 1B, 数据量从 27T 增到 48T, 新增的主要是视听编码器与多模态语料; 本页没有给出参数的具体分配.
+V2.5 的总参, 激活与数据量和 V2.6-Flash 完全一致, 多模态接入方式 (编码器 + projector 接进 Hybrid-SWA 骨干) 也相同, 所以 V2.6-Flash 很可能是在 V2.5 的预训练基础上继续做 mid-training 与后训练 (两份材料都没明说). 如果这个推断成立, V2.6 报告里 「先文本, 再接 ViT 与音频做 omni 联合训练」 的描述, 也就是 V2.5 前三个训练阶段的展开版本. 从 Flash 到 V2.5, 总参多了约 1B, 数据量从 27T 增到 48T, 新增的主要是视听编码器与多模态语料; 本页没有给出参数的具体分配.
 
 ### 1.2. 架构图: 三路 token 汇进同一条骨干
 

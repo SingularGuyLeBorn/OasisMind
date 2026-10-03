@@ -163,7 +163,7 @@ GitHub 仓库 | 在线演示.
 **MiniCPM-V 2.6** 是 MiniCPM-V 系列里最新, 能力最强的模型. 它基于 SigLip-400M 和 Qwen2-7B 搭建, 总参数 8B. 相比 MiniCPM-Llama3-V 2.5 性能明显提升, 并新增多图理解和视频理解. 它的主要特点如下:
 
 > **核对:** SigLip-400M 加 Qwen2-7B, 页面说 「a total of 8B parameters」, 名义值相加对得上吗?
-> 0.4B + 7B = 7.4B (估算), 与 8B 差 0.6B. 400M 和 7B 都是档位名, 本身取过整; 视觉特征接进语言模型还要一层连接模块, 页面没写它的规模. 侧栏 「Model size 8B params」 也是取整显示, 页面没给精确参数量, 这 0.6B 拆不开.
+> 0.4B + 7B = 7.4B, 与 8B 差 0.6B. 400M 和 7B 都是档位名, 本身取过整; 视觉特征接进语言模型还要一层连接模块, 页面没写它的规模. 侧栏 「Model size 8B params」 也是取整显示, 页面没给精确参数量, 这 0.6B 拆不开.
 
 🔥 **Leading Performance.** MiniCPM-V 2.6 achieves an average score of 65.2 on the latest version of OpenCompass, a comprehensive evaluation over 8 popular benchmarks. **With only 8B parameters, it surpasses widely used proprietary models like GPT-4o mini, GPT-4V, Gemini 1.5 Pro, and Claude 3.5 Sonnet** for single image understanding.
 
@@ -191,7 +191,7 @@ GitHub 仓库 | 在线演示.
 **高效率.** 除了体量友好, MiniCPM-V 2.6 还有 **SOTA 的 token 密度** (即每个视觉 token 编码的像素数). **处理一张 180 万像素的图像只产生 640 个 token, 比多数模型少 75%**. 这直接改善推理速度, 首 token 延迟, 显存占用和功耗. 因此 MiniCPM-V 2.6 能在 iPad 这类端侧设备上高效支持**实时视频理解**.
 
 > **拆开:** 「640 tokens when processing a 1.8M pixel image」 和表里的 Token Density 2822 是同一回事吗? 「75% fewer」 又是跟谁比?
-> 1344 × 1344 = 1,806,336 像素, 除以 640 得 2822.4, 正是表里的 2822, 所以 「1.8M」 指的就是 1344x1344. 少 75% 意味着对方约要 2560 个 token; 按表中密度倒推同样像素 (估算), InternVL2-8B (706) 约 2559 个, Claude 3.5 Sonnet (750) 约 2408 个, GPT-4o 与 GPT-4V (1088) 约 1660 个, MiniCPM-Llama-V 2.5 (1882) 约 960 个, 只有 706 这一档正好是 75%, 「most models」 指哪些模型页面没说.
+> 1344 × 1344 = 1,806,336 像素, 除以 640 得 2822.4, 正是表里的 2822, 所以 「1.8M」 指的就是 1344x1344. 少 75% 意味着对方约要 2560 个 token; 按表中密度倒推同样像素, InternVL2-8B (706) 约 2559 个, Claude 3.5 Sonnet (750) 约 2408 个, GPT-4o 与 GPT-4V (1088) 约 1660 个, MiniCPM-Llama-V 2.5 (1882) 约 960 个, 只有 706 这一档正好是 75%, 「most models」 指哪些模型页面没说.
 
 💫 **Easy Usage.** MiniCPM-V 2.6 can be easily used in various ways: (1) [llama.cpp](https://github.com/OpenBMB/llama.cpp/blob/minicpmv-main/examples/llava/README-minicpmv2.6.md) and [ollama](https://github.com/OpenBMB/ollama/tree/minicpm-v2.6) support for efficient CPU inference on local devices, (2) [int4](https://huggingface.co/openbmb/MiniCPM-V-2_6-int4) and [GGUF](https://huggingface.co/openbmb/MiniCPM-V-2_6-gguf) format quantized models in 16 sizes, (3) [vLLM](https://github.com/OpenBMB/MiniCPM-V/tree/main?tab=readme-ov-file#inference-with-vllm) support for high-throughput and memory-efficient inference, (4) fine-tuning on new domains and tasks, (5) quick local WebUI demo setup with [Gradio](https://github.com/OpenBMB/MiniCPM-V/tree/main?tab=readme-ov-file#chat-with-our-demo-on-gradio) and (6) online web [demo](http://120.92.209.146:8887/).
 
@@ -252,13 +252,13 @@ Note: For proprietary models, we calculate token density based on the image enco
 注: 闭源模型的 token 密度按官方 API 文档里的图像编码计费规则计算, 给出的是上界估计.
 
 > **再看:** Token Density 一列 MiniCPM-V 2.6 是 2822, GPT-4o 是 1088, 能说它的密度是 GPT-4o 的 2.6 倍吗?
-> 口径不同. 注里说闭源模型的密度是按 API 计费规则倒算的 「upperbound estimation」, 开源模型是按最大分辨率除以实际视觉 token 数. 2822 / 1088 ≈ 2.59 (估算) 只能当量级参考; 各模型的最大分辨率也不一样, 密度高不等于同一张图看得更清楚.
+> 口径不同. 注里说闭源模型的密度是按 API 计费规则倒算的 「upperbound estimation」, 开源模型是按最大分辨率除以实际视觉 token 数. 2822 / 1088 ≈ 2.59 只能当量级参考; 各模型的最大分辨率也不一样, 密度高不等于同一张图看得更清楚.
 
 > **对一下:** HallusionBench 一列 MiniCPM-V 2.6 是 48.1, Object HalBench 一列是 8.2, 一高一低, 它在幻觉上到底算好还是差?
 > 两列方向相反. 正文把 Object HalBench 叫 「hallucination rates」, 越低越好, 8.2 是全表最低; 雷达图把它翻成 100 - 8.2, 却没翻 HallusionBench, 说明作者把 HallusionBench 当越高越好: 48.1 低于 GPT-4o 的 55.0 和 Claude 3.5 Sonnet 的 49.9, 高于 GPT-4V 的 43.9. 表头本身没标方向.
 
 > **想:** 正文写 MiniCPM-Llama3-V 2.5, 表里写 MiniCPM-Llama-V 2.5, 是两个模型吗?
-> 按上下文是同一个前代, 表里少了 「3」. 表中它的 Token Density 1882, OpenCompass 58.8; V 2.6 分别是 2822 和 65.2, 密度多 49.9%, OpenCompass 高 6.4 分 (估算). 这是本页唯一给出前代分数的地方, 前代的规模这页只印了 Size 8B.
+> 按上下文是同一个前代, 表里少了 「3」. 表中它的 Token Density 1882, OpenCompass 58.8; V 2.6 分别是 2822 和 65.2, 密度多 49.9%, OpenCompass 高 6.4 分. 这是本页唯一给出前代分数的地方, 前代的规模这页只印了 Size 8B.
 
 Multi-image results on Mantis Eval, BLINK Val, Mathverse mv, Sciverse mv, MIRB:
 
@@ -320,7 +320,7 @@ We evaluate the officially released checkpoint by ourselves.
 > 表里只有 「LLaVA-NeXT-Video」, Size 写 32B, 和 34B 对不上. 按这一行比, 无字幕 60.9 对 60.2, 高 0.7; 有字幕 63.6 对 63.0, 高 0.6. 对 GPT-4V 分别高 1.0 和 0.3, 对 Claude 3.5 Sonnet 分别高 0.9 和 0.7, 都在 1 分以内.
 
 > **确认:** Video-ChatGPT 的五个维度里, MiniCPM-V 2.6 哪几项是第一?
-> 只有 Correctness 一项 (3.59). Detail 3.28 低于 CogVLM2-Video 的 3.46, Context 3.93 低于 LLaVA-NeXT-Video 的 3.95, Temporal 2.73 低于 CogVLM2-Video 的 2.98, Consistency 3.62 低于 CogVLM2-Video 和 LongVA 的 3.64. 五项平均 3.43, 是表里最高 (估算, 页面没给平均), 次高是 CogVLM2-Video 的 3.36.
+> 只有 Correctness 一项 (3.59). Detail 3.28 低于 CogVLM2-Video 的 3.46, Context 3.93 低于 LLaVA-NeXT-Video 的 3.95, Temporal 2.73 低于 CogVLM2-Video 的 2.98, Consistency 3.62 低于 CogVLM2-Video 和 LongVA 的 3.64. 五项平均 3.43, 是表里最高 (页面没给平均), 次高是 CogVLM2-Video 的 3.36.
 
 Click to view few-shot results on TextVQA, VizWiz, VQAv2, OK-VQA.
 
@@ -863,7 +863,7 @@ Download the int4 quantized version for lower GPU memory (7GB) usage: [MiniCPM-V
 下载 int4 量化版可以降低显存占用 (7GB): MiniCPM-V-2\_6-int4.
 
 > **核对:** int4 版本写 「lower GPU memory (7GB)」, 8B 参数按 4 bit 算不是只要 4 GB 吗?
-> 8B × 0.5 字节 ≈ 4 GB 只是权重 (估算), 7GB 说的是运行时显存, 还要算激活, KV cache 和图像编码的中间结果; 页面没说视觉部分是否也量化成 int4, 也没给测量条件. 对照 BF16 权重约 16 GB (估算), int4 版的显存降到一半以下.
+> 8B × 0.5 字节 ≈ 4 GB 只是权重, 7GB 说的是运行时显存, 还要算激活, KV cache 和图像编码的中间结果; 页面没说视觉部分是否也量化成 int4, 也没给测量条件. 对照 BF16 权重约 16 GB, int4 版的显存降到一半以下.
 
 **License**
 

@@ -30,7 +30,7 @@
 
 对照对象也换过. 首表 GDPval 一行表头是 GPT-5.1 Thinking, 格子里写的是 「38.8% (GPT 5)」, 附录 GPT-5.1 这一列在三行 GDPval 上全空. 图说又说 GPT-5.2 Thinking 在 ChatGPT 里有 GPT-5 Thinking 没有的新工具, 附录脚注说专业类评测里它用的是 ChatGPT Pro 的 heavy 档. 从 38.8% 到 70.9% 的 32.1 个点里, 模型换了两代, 工具多了, 推理强度也不同, 本页拆不开.
 
-内部投行建模评测是另一块证据. GPT-5.1 Thinking 59.1%, GPT-5.2 Thinking 68.4%, Pro 71.7%. 正文写 「9.3% higher」, 实际是 9.3 个百分点, 相对提升约 15.7% (估算). 这项评测用的也是 heavy 档. 「>11x the speed and <1% the cost」 按 「historical metrics」 估算, 没有专家耗时, 时薪, 模型 token 数任何一项底数.
+内部投行建模评测是另一块证据. GPT-5.1 Thinking 59.1%, GPT-5.2 Thinking 68.4%, Pro 71.7%. 正文写 「9.3% higher」, 实际是 9.3 个百分点, 相对提升约 15.7%. 这项评测用的也是 heavy 档. 「>11x the speed and <1% the cost」 按 「historical metrics」 估算, 没有专家耗时, 时薪, 模型 token 数任何一项底数.
 
 ## 4. 编程: 三把尺子, 三种分母
 
@@ -38,11 +38,11 @@
 
 GPT-5.2 Thinking 在 SWE-Bench Pro public 上 55.6%, 比 GPT-5.1 Thinking 的 50.8% 高 4.8 个点; SWE-bench Verified 80.0% 对 76.3%, 高 3.7 个点. 两项增幅接近, 换成更难的题并没有拉开更大差距. 页面把 Verified 标成 「not plotted」, 图的主角换成 Pro, 本身说明 Verified 已经接近饱和. Agent 式编程的一般形态见 [IDE与Coding-Agent](../../../../llm-guide/13-Agent/13.5-Agent应用与治理/13.5.1-IDE与Coding-Agent.md).
 
-SWE-Lancer IC Diamond 的 74.6% 有分母问题. 脚注说 237 题里 40 题在 OpenAI 的基础设施上跑不起来, 被略去, 实际分母 197 题, 约为全集的 83%. 若把这 40 题记 0 分, 分数约 62% (估算). 页面没说 GPT-5.1 Thinking 的 69.7% 是否在同一批 197 题上算的. 这种 「排除不可复现题」 的做法在 OpenAI 的公告里不是第一次, 它让自家分数和别家在完整题集上的分数不能直接比.
+SWE-Lancer IC Diamond 的 74.6% 有分母问题. 脚注说 237 题里 40 题在 OpenAI 的基础设施上跑不起来, 被略去, 实际分母 197 题, 约为全集的 83%. 若把这 40 题记 0 分, 分数约 62%. 页面没说 GPT-5.1 Thinking 的 69.7% 是否在同一批 197 题上算的. 这种 「排除不可复现题」 的做法在 OpenAI 的公告里不是第一次, 它让自家分数和别家在完整题集上的分数不能直接比.
 
 ## 5. 幻觉下降只在开搜索时成立
 
-正文说 GPT-5.2 Thinking 含错误的回答 「30%rel less common」, 附录可以复算: 开搜索时无错误回答从 91.2% 到 93.9%, 错误率从 8.8% 降到 6.1%, 相对降约 30.7%, 对得上. 不开搜索时从 87.3% 到 88.0%, 错误率从 12.7% 降到 12.0%, 相对只降约 5.5% (估算). 30% 这个数只在开了搜索, 推理强度拉满的条件下成立, 这个条件写在图注里, 没写进正文那句 「hallucinates less」.
+正文说 GPT-5.2 Thinking 含错误的回答 「30%rel less common」, 附录可以复算: 开搜索时无错误回答从 91.2% 到 93.9%, 错误率从 8.8% 降到 6.1%, 相对降约 30.7%, 对得上. 不开搜索时从 87.3% 到 88.0%, 错误率从 12.7% 降到 12.0%, 相对只降约 5.5%. 30% 这个数只在开了搜索, 推理强度拉满的条件下成立, 这个条件写在图注里, 没写进正文那句 「hallucinates less」.
 
 判错的方式也要看. 图注说错误 「were detected by other models, which may make errors themselves」, 即用模型当裁判. 用模型给模型挑错, 裁判自身的漏检率和误报率会直接进入分数, 页面没给裁判的准确率. 另外这是回答级的统计, 一条回答里有一处错就算错, 图注说论断级错误率 「far lower」. LLM 当裁判的一般风险见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).
 
@@ -60,7 +60,7 @@ OpenAI-MRCR v2 把多个一模一样的请求埋进由相似请求和回复组�
 
 页外背景: CharXiv 是 2024 年普林斯顿提出的图表理解评测, 题目来自 arXiv 论文里的真实图表, reasoning 子集要求跨多个图元做推理. ScreenSpot-Pro 是 2025 年的 GUI 定位评测, 截图来自专业软件, 分辨率高, 目标控件往往只占画面很小一块.
 
-正文说 「cutting error rates roughly in half」. 按附录算: CharXiv reasoning 带 Python 错误率从 19.7% 到 11.3%, 降约 43%; 不带工具从 33.0% 到 17.9%, 降约 46%; ScreenSpot-Pro 带 Python 从 35.8% 到 13.7%, 降约 62% (均为估算). 图表推理不到一半, 界面理解超过一半. ScreenSpot-Pro 只印了带 Python 的分数, 图注说不开工具 「scores are much lower」 并建议开启, 可见高分辨率截图上模型要靠写代码裁图, 放大来找控件. 这类 「视觉加工具」 的做法和多模态模型本身的视觉编码能力要分开看, 相关背景见 [多模态](../../../../llm-guide/8-多模态/8-多模态.md).
+正文说 「cutting error rates roughly in half」. 按附录算: CharXiv reasoning 带 Python 错误率从 19.7% 到 11.3%, 降约 43%; 不带工具从 33.0% 到 17.9%, 降约 46%; ScreenSpot-Pro 带 Python 从 35.8% 到 13.7%, 降约 62%. 图表推理不到一半, 界面理解超过一半. ScreenSpot-Pro 只印了带 Python 的分数, 图注说不开工具 「scores are much lower」 并建议开启, 可见高分辨率截图上模型要靠写代码裁图, 放大来找控件. 这类 「视觉加工具」 的做法和多模态模型本身的视觉编码能力要分开看, 相关背景见 [多模态](../../../../llm-guide/8-多模态/8-多模态.md).
 
 其余视觉项增幅不大: MMMU Pro 带 Python 80.4% 对 79.0%, Video MMMU 85.9% 对 82.9%. 主板标注的例子页面自己承认 「Both models make clear mistakes」, GPT-5.2 的框只是 「sometimes match」. 视觉编码器的结构, 输入分辨率, 图像 token 数, 本页都没有.
 
@@ -80,13 +80,13 @@ Triple Whale 的评价讲了一种架构变化: 把 「fragile, multi-agent syst
 
 数学和科学几项已经顶到天花板. AIME 2025 两个 GPT-5.2 版本都是 100.0%, HMMT Feb 2025 是 99.4% 和 100.0%. 页外背景: AIME 2025 共 30 题, GPT-5.1 的 94.0% 乘 30 是 28.2, 不是整数, 说明这类分数是多次采样取平均. 还有区分度的是 FrontierMath 和 HLE: FrontierMath Tier 1-3 40.3% 对 31.0%, Tier 4 14.6% 对 12.5%; HLE 不用工具 34.5% 对 25.7%, 带搜索和 Python 时 Pro 到 50.0%. ARC-AGI-2 从 17.6% 到 52.9%, 涨了 35.3 个点, 是附录里相对增幅最大的一项 (约 3 倍). 页外背景: 2024 年 12 月 o3 预览版在 ARC-AGI-1 上用高算力拿到 87.5%, 本页链接的正是那篇文章; 一年后 Pro 在 ARC-AGI-1 上是 90.5%.
 
-GPQA Diamond 上 Pro 93.2%, Thinking 92.4%, 差 0.8 个点. 页外背景: Diamond 子集 198 题, 0.8 个点约合 1.6 道题 (估算). 「world's best models for assisting and accelerating scientists」 在 GPQA 上主要靠对 GPT-5.1 的 4.3 个点, Pro 和 Thinking 之间看不出差别.
+GPQA Diamond 上 Pro 93.2%, Thinking 92.4%, 差 0.8 个点. 页外背景: Diamond 子集 198 题, 0.8 个点约合 1.6 道题. 「world's best models for assisting and accelerating scientists」 在 GPQA 上主要靠对 GPT-5.1 的 4.3 个点, Pro 和 Thinking 之间看不出差别.
 
 ## 10. 价格涨 40% 与 token 效率
 
 价格表整齐得少见: gpt-5.2 输入 $1.75, 输出 $14, 是 gpt-5.1 ($1.25, $10) 的 1.4 倍; gpt-5.2-pro 输入 $21, 输出 $168, 是 gpt-5-pro ($15, $120) 的 1.4 倍. 四个型号的输出价都是输入价的 8 倍. Pro 是标准版的 12 倍. 缓存输入 1 折不是新政策, gpt-5.1 的 $0.125 也是 1 折; 按正文推, gpt-5.2 的缓存价是 $0.175, 可惜表里这一行在翻页处丢了. Pro 不提供缓存价.
 
-正文的辩护是 token 效率: 每 token 更贵, 但达到同等质量用的 token 更少, 总价更低. 要抵消 40% 的涨价, 同等质量下 token 用量至少要少 1 - 1/1.4 ≈ 28.6% (估算). 页面只说 「on multiple agentic evals」 做到了, 没点名评测, 也没给 token 数. 这个说法和第 9 节的推理强度连在一起看才完整: 同样开 xhigh, GPT-5.2 想得多还是想得少, 本页没有数据.
+正文的辩护是 token 效率: 每 token 更贵, 但达到同等质量用的 token 更少, 总价更低. 要抵消 40% 的涨价, 同等质量下 token 用量至少要少 1 - 1/1.4 ≈ 28.6%. 页面只说 「on multiple agentic evals」 做到了, 没点名评测, 也没给 token 数. 这个说法和第 9 节的推理强度连在一起看才完整: 同样开 xhigh, GPT-5.2 想得多还是想得少, 本页没有数据.
 
 部署节奏也写在这一节. ChatGPT 付费用户先推, GPT-5.1 在 ChatGPT 里作为旧版保留三个月后下线; API 里 GPT-5.1, GPT-5, GPT-4.1 暂不弃用. 给 Codex 专门优化的 GPT-5.2 版本 「in the coming weeks」 发布, 说明这次发布的 gpt-5.2 在 Codex 里只是通用版本.
 

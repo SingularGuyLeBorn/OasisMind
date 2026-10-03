@@ -34,7 +34,7 @@ abab6.5s uses the same training techniques and data as abab6.5 but is more effic
 abab6.5s 和 abab6.5 用的训练方法和数据相同, 但效率更高. 它同样支持 200k token 的上下文长度, 一秒内能处理将近 30,000 个词.
 
 > **拆开:** 200k token 和 30,000 words 能直接对比吗?
-> 不能直接比. 一个单位是 token, 一个是 words, 页面没给两者换算. 若假定 1 word 约等于 1 token, 读满 200k 约需 6.7 秒 (估算), 这只是示意.
+> 不能直接比. 一个单位是 token, 一个是 words, 页面没给两者换算. 若假定 1 word 约等于 1 token, 读满 200k 约需 6.7 秒, 这只是示意.
 
 > **确认:** 「same training techniques and data」 能推出 6.5s 的结构吗?
 > 推不出. 原文只说两款训练方法和数据相同, 6.5s 更 efficient. 效率从哪里来, 页面一个字也没写.

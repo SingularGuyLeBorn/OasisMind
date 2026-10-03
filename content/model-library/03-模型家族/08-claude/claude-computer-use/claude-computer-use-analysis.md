@@ -22,7 +22,7 @@ computer use 一节只有一个 OSWorld 成绩, 其余是用途, 局限和安全
 
 ### 2.1. 新旧 Sonnet: 增幅集中在 agentic 任务
 
-把表中新旧两列 Sonnet 逐行相减, 绝对增幅 (百分点): GPQA Diamond +5.6, MMLU-Pro +2.9, HumanEval +1.7, MATH +7.2, AIME 2024 +6.4, MMMU +2.1, SWE-bench Verified +15.6, TAU-bench retail +6.6, airline +10.0 (估算). 九项全部为正, 与 「across-the-board improvements」 吻合. SWE-bench Verified 从 33.4% 到 49.0%, 相对提升约 46.7% (估算); TAU-bench airline 从 36.0% 到 46.0%. 页面说价格和速度不变.
+把表中新旧两列 Sonnet 逐行相减, 绝对增幅 (百分点): GPQA Diamond +5.6, MMLU-Pro +2.9, HumanEval +1.7, MATH +7.2, AIME 2024 +6.4, MMMU +2.1, SWE-bench Verified +15.6, TAU-bench retail +6.6, airline +10.0. 九项全部为正, 与 「across-the-board improvements」 吻合. SWE-bench Verified 从 33.4% 到 49.0%, 相对提升约 46.7%; TAU-bench airline 从 36.0% 到 46.0%. 页面说价格和速度不变.
 
 增幅最大的两项正是标为 「Agentic coding」 和 「Agentic tool use」 的两行. HumanEval 旧版已到 92.0%, 余量小; SWE-bench Verified 要在真实代码库里多步定位和修改. 同名同价的升级, 知识类只涨两三个点, agent 类涨十几个点, 这更像是在同一个基座上加强了面向多步交互的后训练, 而不是换了更大的预训练 (推测, 本页没写). 当天推出 computer use 与此方向一致: 两者要的是同一种能力, 在环境反馈下连续决策. Agent RL 的一般做法见 [AgenticRL训练](../../../../llm-guide/13-Agent/13.4-Agent训练与进化/13.4.1-AgenticRL训练.md).
 

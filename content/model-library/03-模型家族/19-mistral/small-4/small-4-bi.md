@@ -59,7 +59,7 @@ Mistral Small 4 是一个混合模型, 针对日常对话, 编码, agentic 任�
 - 原生多模态: 接受文本和图像输入, 能做从文档解析到视觉分析的事.
 
 > **拆开:** 128 选 4 和 119B 选 6B, 两个比例对得上吗?
-> 专家激活比例是 4/128, 约 3.1%; 参数激活比例是 6/119, 约 5.0%, 算上 embedding 层和输出层是 8/119, 约 6.7% (都是估算). 后两个比前一个高, 说明专家之外还有每个 token 都要走的公共部分, 但页面没给层数, 隐藏维度, 单个专家大小, 也没说有没有共享专家, 公共部分多大拆不出来.
+> 专家激活比例是 4/128, 约 3.1%; 参数激活比例是 6/119, 约 5.0%, 算上 embedding 层和输出层是 8/119, 约 6.7%. 后两个比前一个高, 说明专家之外还有每个 token 都要走的公共部分, 但页面没给层数, 隐藏维度, 单个专家大小, 也没说有没有共享专家, 公共部分多大拆不出来.
 
 > **核对:** 「256k」 是 token 吗, 有长上下文分数吗?
 > 页面只写 「256k context window」, 没写单位. 第 5, 6 页出现了 LCR / AA LCR, 但页面没展开这个缩写, 也没标这项评测喂了多长的输入, 256k 这一条没有任何分数直接支撑.
@@ -99,13 +99,13 @@ Below the list is a grouped bar chart titled "Performance comparison across inte
 > 三个: GPQA Diamond 71.2, IFBench 48, MMMU-Pro 60. MMLU Pro 78 低于 Large 3 的 80.9; Arena Hard 58.3 低于 Medium 3.1 的 67.3 和 Large 3 的 66.7, 分别差 9.0 和 8.4 个点.
 
 > **再看:** 不开推理呢?
-> Instruct 分数一个第一都没有. MMMU-Pro 46.3 还低于 Small 3.2 的 49.1, IFBench 35.7 低于 Medium 3.1 和 Large 3. 五项等权平均, instruct 约 54.1, reasoning 约 63.1, Small 3.2 约 49.0, Medium 3.1 约 58.9, Large 3 约 60.7 (都是估算). 只看 instruct, Small 4 的平均排在 Medium 3.1 和 Large 3 后面.
+> Instruct 分数一个第一都没有. MMMU-Pro 46.3 还低于 Small 3.2 的 49.1, IFBench 35.7 低于 Medium 3.1 和 Large 3. 五项等权平均, instruct 约 54.1, reasoning 约 63.1, Small 3.2 约 49.0, Medium 3.1 约 58.9, Large 3 约 60.7. 只看 instruct, Small 4 的平均排在 Medium 3.1 和 Large 3 后面.
 
 > **确认:** 灰色柱子是那三个模型开了推理, 还是没开?
 > 图例只给 Small 4 分了 Instruct 和 Reasoning, 另外三个模型的柱子没标模式, 页面也没说 Small 3.2, Medium 3.1, Large 3 是不是推理模型. 所以斜线顶上的数, 可能是拿 Small 4 的推理分去比别人的非推理分.
 
 > **对一下:** 纵轴从哪里起?
-> 从 20 起, 不是 0. IFBench 上 48 对 34, 图上柱高约是 28 对 14, 看起来差一倍, 实际分数比约 1.41 (估算). 第 5 页那张图的纵轴从 0 起.
+> 从 20 起, 不是 0. IFBench 上 48 对 34, 图上柱高约是 28 对 14, 看起来差一倍, 实际分数比约 1.41. 第 5 页那张图的纵轴从 0 起.
 
 ## Why Mistral Small 4?
 
@@ -164,7 +164,7 @@ Page 5 opens with a second bar chart, also titled "Performance comparison across
 | LiveCodeBench | 63.6 | 66.1 | 60.7 |
 
 > **看表:** 对 Magistral Medium 1.2, Small 4 赢几项?
-> 四项赢一项, 只有 Collie 62.9 对 61.3. LCR 低 1.8, AIME25 低 0.6, LiveCodeBench 低 2.5 个点, 四项平均约 70.4 对 71.2 (估算). 对 Magistral Small 1.2 四项全赢, LCR 上 71.2 对 27 差得最多.
+> 四项赢一项, 只有 Collie 62.9 对 61.3. LCR 低 1.8, AIME25 低 0.6, LiveCodeBench 低 2.5 个点, 四项平均约 70.4 对 71.2. 对 Magistral Small 1.2 四项全赢, LCR 上 71.2 对 27 差得最多.
 
 ## Enterprise-grade efficiency
 
@@ -180,7 +180,7 @@ Page 5 opens with a second bar chart, also titled "Performance comparison across
 > 两行都写 「4x NVIDIA HGX H100」. H200 从 2 到 4, B200 从 1 到 2, 都翻了一倍, 唯独 H100 没变. 可能 H100 的最低配就已经是推荐配, 也可能是笔误, 页面没解释.
 
 > **拆开:** 119B 的权重大概占多少显存?
-> 按每参数 2 字节 (BF16) 约 238 GB, 按 1 字节 (FP8) 约 119 GB, 还没算 KV cache (估算). 页面没写部署精度, 也没说 「4x HGX H100」 的 4x 是四张卡还是四台 HGX 机器, 这组配置没法和权重大小对上.
+> 按每参数 2 字节 (BF16) 约 238 GB, 按 1 字节 (FP8) 约 119 GB, 还没算 KV cache. 页面没写部署精度, 也没说 「4x HGX H100」 的 4x 是四张卡还是四台 HGX 机器, 这组配置没法和权重大小对上.
 
 <!-- page 6 of 10 -->
 
@@ -204,7 +204,7 @@ Mistral Small 4 with reasoning achieves competitive scores, matching or surpassi
 > 对不上. 0.72 换成百分制是 72, 第 5 页 Small 4 - High 在 LCR 上印的是 71.2, 差 0.8; 71.2 四舍五入到两位小数是 0.71. 可能两处不是同一次跑分或同一档推理强度, 页面没说明, 本页的图又没抓到, 没法再核.
 
 > **核对:** 「3.5-4x more output (5.8-6.1K)」 按 1.6K 算是多少?
-> 5.8/1.6 约 3.6, 6.1/1.6 约 3.8 (估算), 落在 3.5 到 4 之间, 写成 「3.5-4x」 把区间放宽了. 「Qwen models」 是哪几个 Qwen, 各拿多少分, 正文没写.
+> 5.8/1.6 约 3.6, 6.1/1.6 约 3.8, 落在 3.5 到 4 之间, 写成 「3.5-4x」 把区间放宽了. 「Qwen models」 是哪几个 Qwen, 各拿多少分, 正文没写.
 
 > **停一下:** 「matching or surpassing GPT-OSS 120B on all three benchmarks」 能核吗?
 > 核不了. 三个基准里正文只点名了 AA LCR 和 LiveCodeBench, 第三个没提; GPT-OSS 120B 的分数和输出长度一个都没印. 「20% less output」 也没说是以谁的输出为基数.
@@ -270,7 +270,7 @@ Below this closing paragraph is a model card. It reads "Mistral Small 4" with an
 结尾段下面是一张模型卡片. 卡片上写 「Mistral Small 4」, 带 **OPEN** 标记, 一行 「Multimodal. Multilingual. Apache 2.0.」, 四个标签 TEXT-TO-TEXT, AGENTIC, MULTIMODAL, LIGHTWEIGHT, 两个价格: 输入每百万 token $0.15, 输出每百万 token $0.6. 「Read more」 按钮链接到 Mistral 文档里的模型卡页面 mistral-small-4-0-26-03. cookie 横幅盖住了卡片左半.
 
 > **确认:** 两个单价合起来大概多少?
-> 输出是输入的 4 倍. 按输入输出 3:1 混合约 $0.26 每百万 token, 按 1:1 混合约 $0.38 (都是估算, 混合比例是我假设的). 正文从头到尾没提价格, 只有这张卡片印了.
+> 输出是输入的 4 倍. 按输入输出 3:1 混合约 $0.26 每百万 token, 按 1:1 混合约 $0.38 (混合比例为假设值). 正文从头到尾没提价格, 只有这张卡片印了.
 
 > **再看:** 119B 总参数还叫 Small, 卡片还标 LIGHTWEIGHT, 依据在哪?
 > 页面没给理由. 按本页的数, 轻的是每个 token 的计算 (激活 6B), 不是权重 (119B); 第 5 页的最低配置也是多卡起步. 页面没印 Small 3 或 Small 3.2 的参数量, 这一代比上一代大多少, 从本页算不出来.

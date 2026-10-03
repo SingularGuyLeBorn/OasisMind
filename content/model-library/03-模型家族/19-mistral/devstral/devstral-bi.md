@@ -19,7 +19,7 @@ Today we introduce Devstral, our agentic LLM for software engineering tasks. Dev
 今天我们发布 Devstral, 这是我们面向软件工程任务的 agentic LLM. Devstral 由 Mistral AI 和 All Hands AI 合作打造, 在 SWE-Bench Verified 上大幅领先所有开源模型. Devstral 以 Apache 2.0 许可发布.
 
 > **想:** 「by a large margin」 到底领先多少?
-> 这一句没给数. 第 3 页补了一句 「more than 6% points」, 对的是 「prior open-source SoTA」. 第 2 页散点图上离它最近的开源模型是 Deepseek-V3-0324, 读图约 38.8, 差约 8 个点 (估算, 读图).
+> 这一句没给数. 第 3 页补了一句 「more than 6% points」, 对的是 「prior open-source SoTA」. 第 2 页散点图上离它最近的开源模型是 Deepseek-V3-0324, 读图约 38.8, 差约 8 个点 (读图).
 
 The rest of page 1 is a cookie notice; only the word "Cookies" survives in the text layer.
 
@@ -35,7 +35,7 @@ Page 2 opens with a scatter chart. The x-axis is "Model size / billions of param
 
 The labelled points, read from the chart (estimates):
 
-按图读出的各点位置 (估算):
+按图读出的各点位置:
 
 | model | x (billions of parameters) | y |
 |---|---|---|
@@ -47,10 +47,10 @@ The labelled points, read from the chart (estimates):
 | Deepseek-V3 | about 671 | about 32.4 |
 
 > **问:** Devstral 有多少参数?
-> 全页没有印. 散点图的横轴是参数量, Devstral 那个点在 Gemma-3 27B 左边一点, 读图约 23 (估算). 这是唯一能拿到的线索, 精度只到个位附近.
+> 全页没有印. 散点图的横轴是参数量, Devstral 那个点在 Gemma-3 27B 左边一点, 读图约 23. 这是唯一能拿到的线索, 精度只到个位附近.
 
 > **核对:** 散点图上的 Qwen3 和正文里的是同一个吗?
-> 图上标的是 「Qwen3 235B-A22B」, 第 3 页正文写 「Qwen3 232B-A22B」. 点的横坐标读图约 236 (估算), 和 235 对得上, 正文的 232 应是笔误, 页面自己没有更正.
+> 图上标的是 「Qwen3 235B-A22B」, 第 3 页正文写 「Qwen3 232B-A22B」. 点的横坐标读图约 236, 和 235 对得上, 正文的 232 应是笔误, 页面自己没有更正.
 
 # Agentic LLMs for software development
 
@@ -72,17 +72,17 @@ Devstral achieves a score of 46.8% on SWE-Bench Verified, outperforming prior op
 Devstral 在 SWE-Bench Verified 上拿到 46.8%, 比此前开源 SoTA 模型高出 6 个百分点以上. 在同一套测试脚手架 (OpenHands, 由 All Hands AI 提供) 下, Devstral 超过了大得多的 Deepseek-V3-0324 (671B) 和 Qwen3 232B-A22B.
 
 > **拆开:** 46.8% 落到 500 道题上是多少道?
-> 约 234 道. Deepseek-V3-0324 读图约 38.8%, 约 194 道, 两者差约 40 道 (都是估算, 后者读图). 页面没有说跑了几次, 也没有给误差范围.
+> 约 234 道. Deepseek-V3-0324 读图约 38.8%, 约 194 道, 两者差约 40 道 (后者读图). 页面没有说跑了几次, 也没有给误差范围.
 
 > **确认:** 「prior open-source SoTA」 是哪个模型, 多少分?
-> 没点名, 也没给分数. 如果按散点图, 开源最高是 Deepseek-V3-0324, 约 38.8 (估算, 读图), 差约 8 个点, 满足 「more than 6」. 但正文这句没有限定脚手架, 此前的开源 SoTA 可能是在别的脚手架上跑出来的; 「超 6 个点」 只能推出它低于 40.8%, 推不出具体是谁.
+> 没点名, 也没给分数. 如果按散点图, 开源最高是 Deepseek-V3-0324, 约 38.8 (读图), 差约 8 个点, 满足 「more than 6」. 但正文这句没有限定脚手架, 此前的开源 SoTA 可能是在别的脚手架上跑出来的; 「超 6 个点」 只能推出它低于 40.8%, 推不出具体是谁.
 
 In the table below, we also compare Devstral to closed and open models evaluated under any scaffold (including ones custom for the model). Here, we find that Devstral achieves substantially better performance than a number of closed-source alternatives. For example, Devstral surpasses the recent GPT-4.1-mini by over 20%.
 
 在下面的表里, 我们还把 Devstral 和在任意脚手架 (包括为模型定制的脚手架) 下评测的闭源, 开源模型做了比较. 结果是 Devstral 明显好过不少闭源方案. 例如, Devstral 比新近发布的 GPT-4.1-mini 高出 20% 以上.
 
 > **回看:** 「the table below」 在哪?
-> 抓下来的页面在这段下面只有一块空白, PDF 这一页没有任何嵌入图片, 表没抓到. 「a number of closed-source alternatives」 是哪几家, GPT-4.1-mini 多少分, 都读不到. 「over 20%」 是百分点还是相对值也没写: 按百分点算 GPT-4.1-mini 低于 26.8%, 按相对值算低于约 39.0% (都是估算).
+> 抓下来的页面在这段下面只有一块空白, PDF 这一页没有任何嵌入图片, 表没抓到. 「a number of closed-source alternatives」 是哪几家, GPT-4.1-mini 多少分, 都读不到. 「over 20%」 是百分点还是相对值也没写: 按百分点算 GPT-4.1-mini 低于 26.8%, 按相对值算低于约 39.0%.
 
 ## Versatile: local deployment ↔️ enterprise use ↔️ copilots
 
@@ -118,7 +118,7 @@ The model is also available on our API under the name devstral-small-2505 at the
 这个模型也上了我们的 API, 名字是 devstral-small-2505, 价格和 Mistral Small 3.1 一样: 输入每百万 token $0.1, 输出每百万 token $0.3.
 
 > **再看:** 两个单价合成一个数大概多少?
-> 输出是输入的 3 倍. 假设输入输出 token 按 3:1 混合, 约 $0.15 每百万 token (估算); 3:1 是我假设的比例, 页面没有. 页面也没印任何对手的价格.
+> 输出是输入的 3 倍. 假设输入输出 token 按 3:1 混合, 约 $0.15 每百万 token; 3:1 是我假设的比例, 页面没有. 页面也没印任何对手的价格.
 
 > **对一下:** API 名字里的 「small」 和 「2505」 各对应什么?
 > 「2505」 和发布日期 May 21, 2025 的年月对得上 (按年两位加月两位读, 页面没解释命名规则). 「small」 页面也没解释, 正文从头到尾只叫它 「Devstral」, model card 链接指向 Devstral-Small-2505. 结合 「What's next」 里预告的 「larger agentic coding model」, 可以读成尺寸档位, 但页面没给这一档的参数.

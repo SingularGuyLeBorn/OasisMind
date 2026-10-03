@@ -45,7 +45,7 @@ RL 在本文里不只是能力来源, 也被点名为欺骗的来源. 第 3.8 �
 
 本文给了三处证据. 第一处是表 3 生产基准: gpt-5-main 相对 GPT-4o, illicit/nonviolent 从 0.573 到 0.701, illicit/violent 从 0.633 到 0.786, 本文说这两项统计显著, 归因于 safe-completion. 第二处是第 4.1 节暴力攻击策划红队: 25 名国防, 情报, 执法背景的红队成员盲比 gpt-5-thinking 和 o3, gpt-5-thinking 被评为更安全的比例 65.1% (95% CI 63.7% 到 66.5%), 本文把效应归因于 「回答的相对详细程度」 和 safe-completion. 第三处在生物防护: 模型训练规则是 「拒绝一切武器化协助」 与 「双用途话题绝不给详细可操作协助」, 本文说引入 safe-completion 后这一点更稳健. 成对生物武器化红队里 gpt-5-thinking 胜率 60.0%.
 
-证据也有缺口. 本文声称 safe-completion 带来 「整体有用性大幅提高」 和 「残余失误严重度降低」, 但系统卡里没有任何有用性分数, 也没有严重度分布, 这部分只能去看单独的论文 「From Hard Refusals to Safe-Completions」. 另外, 表 3 里 gpt-5-main 并非全面提升: hate/threatening 从 GPT-4o 的 0.867 退到 0.727, sexual/exploitative 从 0.927 退到 0.826, 两项都统计显著. 本文的解释是 o4-mini 在 hate/threatening 上也是 0.724 (出处在附录表 24), sexual/exploitative 的违规输出经人工复核 「严重度低」. 按输出评判在边界模糊的类别里, 可能让模型更愿意给出擦边内容, 这两项退步和这个机制方向一致 (推断, 本文没这么说).
+证据也有缺口. 本文声称 safe-completion 带来 「整体有用性大幅提高」 和 「残余失误严重度降低」, 但系统卡里没有任何有用性分数, 也没有严重度分布, 这部分只能去看单独的论文 「From Hard Refusals to Safe-Completions」. 另外, 表 3 里 gpt-5-main 并非全面提升: hate/threatening 从 GPT-4o 的 0.867 退到 0.727, sexual/exploitative 从 0.927 退到 0.826, 两项都统计显著. 本文的解释是 o4-mini 在 hate/threatening 上也是 0.724 (出处在附录表 24), sexual/exploitative 的违规输出经人工复核 「严重度低」. 按输出评判在边界模糊的类别里, 可能让模型更愿意给出擦边内容, 这两项退步和这个机制方向一致 (本文没这么说).
 
 ## 5. 谄媚: 把一个行为分数直接当奖励
 

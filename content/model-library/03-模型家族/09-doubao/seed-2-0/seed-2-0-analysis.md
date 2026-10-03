@@ -14,7 +14,7 @@ Seed2.0 的引言先把家族点了一遍: 通用模型 Seed1.6/1.8, 多模态 S
 
 1.5 代报告里 「数据」 一节讲的是训练数据, Seed2.0 卡里对应位置放的是部署数据. 第 2 节来自豆包协作激励计划, 是授权客户的真实使用分布: 行业上互联网占绝对主导; 场景上非结构化信息处理占比最大, 教育, 内容创作, 搜索推荐是第二梯队; agentic coding 的轨迹里前端开发占主导, Vue.js 的使用量是 React 的三倍以上, 任务以修 bug 为主, 其次是重构和文档. 这些统计全部来自中国大陆客户, 文字没给样本量. 它们解释了评测框架为什么设 Vibe Coding, Context Learning 这些维度, 以及为什么内部集里有大量 ToB 任务, 但不能外推到全球开发者.
 
-价格是这一代的另一个设计目标. Table 1 的每百万 token prefill/decode 单价: Pro $0.47 / $2.37, Lite $0.09 / $0.53, Mini $0.03 / $0.31; Claude-Opus-4.5-thinking 是 $5.00 / $25.00, GPT-5.2 High 是 $1.75 / $14.00. 按 decode 价, Pro 比 Opus 便宜约 10.5 倍, 比 GPT-5.2 High 约 5.9 倍; 按 prefill 价, 比 GPT-5.2 High 只便宜约 3.7 倍 (估算). 原文说 「大约低一个数量级」, **只在对最贵的对手时成立**. Seed2.0 用区间计价, 表里只报了一个代表价. 单任务成本还要乘 token 数: Table 15 的 WorldTravel 一格里, Seed2.0 Pro 平均 1486 个 completion token, GPT-5.2 High 9190, reasoning token 1286 对 5597; 同一格的平均分却是 0.233 对 0.327. **用得少和做得好在这里此消彼长**. 这条 「少思考, 低价格」 的取向, 与 Doubao-1.5-pro 产品页的训练-推理一体是同一种思路, 只是这一代没有交代它在模型设计上怎样实现.
+价格是这一代的另一个设计目标. Table 1 的每百万 token prefill/decode 单价: Pro $0.47 / $2.37, Lite $0.09 / $0.53, Mini $0.03 / $0.31; Claude-Opus-4.5-thinking 是 $5.00 / $25.00, GPT-5.2 High 是 $1.75 / $14.00. 按 decode 价, Pro 比 Opus 便宜约 10.5 倍, 比 GPT-5.2 High 约 5.9 倍; 按 prefill 价, 比 GPT-5.2 High 只便宜约 3.7 倍. 原文说 「大约低一个数量级」, **只在对最贵的对手时成立**. Seed2.0 用区间计价, 表里只报了一个代表价. 单任务成本还要乘 token 数: Table 15 的 WorldTravel 一格里, Seed2.0 Pro 平均 1486 个 completion token, GPT-5.2 High 9190, reasoning token 1286 对 5597; 同一格的平均分却是 0.233 对 0.327. **用得少和做得好在这里此消彼长**. 这条 「少思考, 低价格」 的取向, 与 Doubao-1.5-pro 产品页的训练-推理一体是同一种思路, 只是这一代没有交代它在模型设计上怎样实现.
 
 部署数据里有两处作者自己的解读值得留意. 制造, 汽车, 通信这些传统行业各自不到总用量的 1%, 作者说 「可能是上一代 Seed 模型能力不足所致」, 这是卡里少见的对前代的直接评价. 前端请求占主导, 作者给的解释是前端工作的视觉反馈循环让开发者更频繁地和模型交互, 前端任务也更容易交给 AI; 由此推出的研发优先级是 JavaScript/TypeScript 理解, CSS 布局推理和框架知识, 以及读报错, 读栈, 推断程序状态的调试能力. 这是整张卡里离 「训练数据怎样选」 最近的一段: **部署分布决定能力优先级**, 能力优先级大概率又决定了后训练数据的构成, 但后一步卡里没写.
 
@@ -54,7 +54,7 @@ Table 4 里自建的长尾集和公开事实集给出了相反的图景, 正好�
 
 Table 3 的指令遵循组里, MultiChallenge 68.3 与 Gemini-3-Pro High 的 68.7 基本持平, 明显高于 GPT-5.2 High 的 59.5; Inverse IFEval 78.9 仅次于 Gemini 的 79.6. 随后原文用面向中文生产场景的内部集细分, 共 912 个样例, 17 个加权维度, Table 6 列出其中 9 个测试集: 格式, 条件规则, 指定内容, 指定措辞, 语气, emoji, few-shot, 以及中英文长度约束.
 
-Table 7 只拿 Seed2.0 Pro 与 Seed1.8 比. Overall 从 72.89 升到 75.26, 涨 2.37; 涨幅最大的是 Tone +15.16, Phrasing +10.31, Few-shot +9.53. 把表上 9 列简单平均, Seed1.8 约 71.22, Seed2.0 Pro 约 76.67, 差 5.45 (估算), 比 Overall 的涨幅大一倍多, 说明表上没露出的 8 个维度整体涨得少, 甚至可能退步. 表上能看到的退步是 Content, 从 90.48 降到 87.76; Format 只从 45.33 到 46.00, 是全表最低的一列. **风格可控性涨得多, 硬约束几乎没动**, 而第 2 节部署数据里企业最需要的恰恰是结构化输出. 结构化输出的一般讨论见 [结构化输出](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出.md).
+Table 7 只拿 Seed2.0 Pro 与 Seed1.8 比. Overall 从 72.89 升到 75.26, 涨 2.37; 涨幅最大的是 Tone +15.16, Phrasing +10.31, Few-shot +9.53. 把表上 9 列简单平均, Seed1.8 约 71.22, Seed2.0 Pro 约 76.67, 差 5.45, 比 Overall 的涨幅大一倍多, 说明表上没露出的 8 个维度整体涨得少, 甚至可能退步. 表上能看到的退步是 Content, 从 90.48 降到 87.76; Format 只从 45.33 到 46.00, 是全表最低的一列. **风格可控性涨得多, 硬约束几乎没动**, 而第 2 节部署数据里企业最需要的恰恰是结构化输出. 结构化输出的一般讨论见 [结构化输出](../../../../llm-guide/13-Agent/13.1-Agent核心组件/13.1.5-结构化输出.md).
 
 ## 4. 视觉与 Agent
 
@@ -80,7 +80,7 @@ Vision Agent 一组是 Seed1.5-VL 那条 GUI 与游戏 agent 线的延续. Seed1
 
 Table 13 按 Science Discovery, Vibe Coding, Context Learning, Real World Tasks 组织, 是 「真实世界复杂性」 的落点. Seed2.0 Pro 在 AInstein Bench 47.7, XPert Bench 64.5, ToB-Reference Q&A 72.4 上领先. 但它与 Table 3, 11 里同名基准的 Seed2.0 Pro 分数有六处对不上, 例如 Scicode 48.5 对 52.1, Superchem 51.6 对 53.0; Table 3 的 「BABE」 与 Table 13 的 「BIObench」 对手三列完全相同 (58.1, 44.7, 49.3), 只有 Seed 从 50.0 变成 53.5. 对手不变而 Seed 变, 最可能是两张表的 Seed 列来自不同检查点, 引用时要注明表号.
 
-Vibe Coding 组的两个分母说明了长时程编码的真实难度. NL2Repo-Bench 一行 Seed2.0 Pro 27.9, GPT-5.2 High 49.3, 像按测试用例计的部分通过率; NL2Repo (Pass@1) 一行是 3.0 对 8.0, 是整个仓库一次全部通过的比例, 五家都在 3.0 到 8.0 之间. World Travel 的分数都是 1/150 的整数倍 (32.67 = 49/150), 与 Table 15 的 「Cases per Model: 150」 吻合, 一例约 0.67 分, Seed2.0 Pro 与 GPT-5.2 High 相差约 14 例 (估算). ToB 开头的都是内部集, GPT-5.2 High 在 ToB-Complex Workflows 上只有 45.0, 与它在公开集上的位置很不相称, 内部集的题目分布显然偏向 Seed 熟悉的中文企业场景.
+Vibe Coding 组的两个分母说明了长时程编码的真实难度. NL2Repo-Bench 一行 Seed2.0 Pro 27.9, GPT-5.2 High 49.3, 像按测试用例计的部分通过率; NL2Repo (Pass@1) 一行是 3.0 对 8.0, 是整个仓库一次全部通过的比例, 五家都在 3.0 到 8.0 之间. World Travel 的分数都是 1/150 的整数倍 (32.67 = 49/150), 与 Table 15 的 「Cases per Model: 150」 吻合, 一例约 0.67 分, Seed2.0 Pro 与 GPT-5.2 High 相差约 14 例. ToB 开头的都是内部集, GPT-5.2 High 在 ToB-Complex Workflows 上只有 45.0, 与它在公开集上的位置很不相称, 内部集的题目分布显然偏向 Seed 熟悉的中文企业场景.
 
 ## 5. 推理时流程与用例
 

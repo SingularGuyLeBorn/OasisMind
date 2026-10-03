@@ -21,13 +21,13 @@
 
 第 1 页说 Mistral Large 是 「the world's second-ranked model generally available through an API (next to GPT-4)」. 能直接支撑这个名次的是 Figure 1: MMLU 上 GPT-4 86.4%, Mistral Large 81.2%, Claude 2 78.5%, Gemini Pro 71.8%, GPT-3.5 70.0%, LLaMA 2 70B 69.9%. 按这一列排, 它确实第二, 比第一低 5.2 个点, 比第三高 2.7 个点.
 
-这个名次有两处要打折. 一是 Figure 1 图注写的是 「Mistral Large (pre-trained)」, 第 3 页也说报的是 「pretrained models」 的成绩, 而 「generally available through an API」 说的是上架产品, 两者是否同一份权重, 页面没交代. 二是柱状图纵轴从 40% 起画. GPT-4 和 Large 真实比值约 1.06, 按露在 40% 以上的柱高算约 1.13 (估算), 图上的落差大约放大了一倍. 换到别的列, 名次就不稳了, 下面两节会看到.
+这个名次有两处要打折. 一是 Figure 1 图注写的是 「Mistral Large (pre-trained)」, 第 3 页也说报的是 「pretrained models」 的成绩, 而 「generally available through an API」 说的是上架产品, 两者是否同一份权重, 页面没交代. 二是柱状图纵轴从 40% 起画. GPT-4 和 Large 真实比值约 1.06, 按露在 40% 以上的柱高算约 1.13, 图上的落差大约放大了一倍. 换到别的列, 名次就不稳了, 下面两节会看到.
 
 ## 3. Figure 2: 七列常识推理, 和谁比都要先对齐列
 
 Figure 2 的表头在哪一页都看不到, 列名只能按图注顺序对位: MMLU, HellaSwag (10-shot), WinoGrande (5-shot), Arc Challenge (5-shot), Arc Challenge (25-shot), TriviaQA (5-shot), TruthfulQA. 第一列六个值和 Figure 1 完全一致, 说明对位至少第一列没错. 加粗也逐列核过: 每列的粗体都是该列可见最大值, 没有自相矛盾.
 
-这张表空格很多, 不同模型能比的列不一样, 直接看 「赢了几列」 容易误读. 按共同列做简单平均 (估算): 和 LLaMA 2 70B 七列全有, 82.6 对 76.2, 高 6.4; 和 GPT 3.5 共五列, 89.1 对 81.5, 高 7.6; 和 GPT 4 共四列 (MMLU, HellaSwag, WinoGrande, Arc 25-shot), 87.8 对 91.4, 低 3.6; 和 Claude 2 共三列 (MMLU, Arc 5-shot, TriviaQA), 86.0 对 85.7, 只高 0.4 左右; 和 Gemini Pro 1.0 共两列, 85.2 对 78.3. 和 Claude 2 基本打平, TriviaQA 还输了 4.8 个点 (82.7 对 87.5).
+这张表空格很多, 不同模型能比的列不一样, 直接看 「赢了几列」 容易误读. 按共同列做简单平均: 和 LLaMA 2 70B 七列全有, 82.6 对 76.2, 高 6.4; 和 GPT 3.5 共五列, 89.1 对 81.5, 高 7.6; 和 GPT 4 共四列 (MMLU, HellaSwag, WinoGrande, Arc 25-shot), 87.8 对 91.4, 低 3.6; 和 Claude 2 共三列 (MMLU, Arc 5-shot, TriviaQA), 86.0 对 85.7, 只高 0.4 左右; 和 Gemini Pro 1.0 共两列, 85.2 对 78.3. 和 Claude 2 基本打平, TriviaQA 还输了 4.8 个点 (82.7 对 87.5).
 
 还有一处读着别扭. Arc Challenge 的 5-shot 分数不比 25-shot 低: Mistral Large 94.2 对 94.0, LLaMA 2 70B 86.0 对 85.1, GPT 3.5 两列都是 85.2. 示例多了分数反而持平或略降, 页面没解释. Mistral Large 在 5-shot 列拿到粗体, 是因为 GPT 4 那格是 「-」; 25-shot 列 GPT 4 有 96.3, 比它高 2.3.
 
@@ -35,17 +35,17 @@ Figure 2 的表头在哪一页都看不到, 列名只能按图注顺序对位: M
 
 正文说 Mistral Large 在法语, 德语, 西班牙语, 意大利语的 HellaSwag, Arc Challenge, MMLU 上 「strongly outperforms LLaMA 2 70B」. Figure 3 被横幅挡住一半, 能读的只有西语的 HellaSwag, MMLU 和意语三列, 西语 Arc-C 只露出 「%」 号. 行名也被挡, 只露出首字母 M, M, L, 按图注顺序读作 Mistral Large, Mixtral 8x7B, LLaMA 2 70B. 这是推断, 不是页面上看到的行名.
 
-按可见五格算 (估算): Mistral Large 平均 75.7, Mixtral 8x7B 66.7, LLaMA 2 70B 65.2. Mistral Large 比 LLaMA 2 70B 高 6.9 到 13.8 个点, 说 「strongly」 站得住. Mixtral 8x7B 比 LLaMA 2 70B 每格都高, 但只高 0.8 到 2.0 个点. 西语 MMLU 差 13.7, 意语 MMLU 差 13.8, 都比英语 MMLU 的 11.3 大, 说明在这组数里换了语言后差距是拉大的.
+按可见五格算: Mistral Large 平均 75.7, Mixtral 8x7B 66.7, LLaMA 2 70B 65.2. Mistral Large 比 LLaMA 2 70B 高 6.9 到 13.8 个点, 说 「strongly」 站得住. Mixtral 8x7B 比 LLaMA 2 70B 每格都高, 但只高 0.8 到 2.0 个点. 西语 MMLU 差 13.7, 意语 MMLU 差 13.8, 都比英语 MMLU 的 11.3 大, 说明在这组数里换了语言后差距是拉大的.
 
-拿英语 Figure 2 对照, 能看出每项降多少 (估算, Figure 3 没写 shot 数, 设定未必相同). Mistral Large 的 MMLU 从 81.2 到西语 79.7, 意语 78.9, 只降 1.5 和 2.3; HellaSwag 从 89.2 到 81.9 和 77.8, 降 7.3 和 11.4. LLaMA 2 70B 降得更多: MMLU 降 3.9 和 4.8, HellaSwag 降 12.6 和 16.2. 最扎眼的是 Arc-C, 意语 Mistral Large 只有 60.3, 比英语 5-shot 的 94.2 低 33.9; LLaMA 2 70B 是 49.4 对 86.0. 其余两项只降几个点, Arc 却断崖, 更像是设定或数据版本不同, 这页定不了.
+拿英语 Figure 2 对照, 能看出每项降多少 (Figure 3 没写 shot 数, 设定未必相同). Mistral Large 的 MMLU 从 81.2 到西语 79.7, 意语 78.9, 只降 1.5 和 2.3; HellaSwag 从 89.2 到 81.9 和 77.8, 降 7.3 和 11.4. LLaMA 2 70B 降得更多: MMLU 降 3.9 和 4.8, HellaSwag 降 12.6 和 16.2. 最扎眼的是 Arc-C, 意语 Mistral Large 只有 60.3, 比英语 5-shot 的 94.2 低 33.9; LLaMA 2 70B 是 49.4 对 86.0. 其余两项只降几个点, Arc 却断崖, 更像是设定或数据版本不同, 这页定不了.
 
 ## 5. Figure 4: 代码和数学, 最高分藏在被挡住的行里
 
-Figure 4 前三行完整. Mistral Large 在 MBPP (73.1%), Math maj@4 (45.0%), GSM8K maj@8 (91.21%) 三列加粗; 对 LLaMA 2 70B 五列全赢, 差距 15.8 到 31.2 个点, Math maj@4 约是它的 3.3 倍 (估算). 对 GPT 3.5, Math 高 10.9, GSM8K maj@1 高 23.9, 但 HumanEval 低 3.0 (45.1 对 48.1).
+Figure 4 前三行完整. Mistral Large 在 MBPP (73.1%), Math maj@4 (45.0%), GSM8K maj@8 (91.21%) 三列加粗; 对 LLaMA 2 70B 五列全赢, 差距 15.8 到 31.2 个点, Math maj@4 约是它的 3.3 倍. 对 GPT 3.5, Math 高 10.9, GSM8K maj@1 高 23.9, 但 HumanEval 低 3.0 (45.1 对 48.1).
 
 后三行的行名和前两列被横幅挡住. 从加粗能反推一些东西: HumanEval 列 45.1 和 48.1 都没加粗, 所以最高分在被挡的三行里, 且高于 48.1; GSM8K maj@1 的粗体是第 4 行的 92.0%, 比 Mistral Large 的 81.0 高 11.0; 第 6 行露出 GSM8K maj@8 86.5% 和 Math maj@4 「?2.6%」, 既然 45.0 加粗, 那格应低于 45.0. 行名是谁, 页面上看不到. 所以正文 「top performance in coding and math tasks」 在代码一半并不成立: HumanEval 至少有两个对手比它高.
 
-GSM8K 两列的差也要小心读. Mistral Large maj@8 比 maj@1 高 10.21 个点, LLaMA 2 70B 高 16.0 个点 (估算), 但两列一个 8-shot 一个 5-shot, 投票和示例数混在一起, 拆不开. 91.21% 是全表唯一的两位小数, 页面没解释, 比较时按 91.2 看.
+GSM8K 两列的差也要小心读. Mistral Large maj@8 比 maj@1 高 10.21 个点, LLaMA 2 70B 高 16.0 个点, 但两列一个 8-shot 一个 5-shot, 投票和示例数混在一起, 拆不开. 91.21% 是全表唯一的两位小数, 页面没解释, 比较时按 91.2 看.
 
 ## 6. 能力清单: 描述多, 可核对的数少
 
@@ -71,6 +71,6 @@ Mistral Small 的定位写得清楚: 介于开放权重产品和旗舰之间, �
 
 最硬的一处是 Arc Challenge. Figure 2 里 5-shot 不低于 25-shot (Mistral Large 94.2 对 94.0, LLaMA 2 70B 86.0 对 85.1); Figure 3 意语 Arc-C 又只有 60.3 和 49.4, 比英语低三十多个点, 而同表 HellaSwag, MMLU 只降几个点. 页面没写 Figure 3 的 shot 数和数据版本, 这几组 Arc 数放不到同一把尺子上.
 
-第二处是 「second-ranked」 和 「top performance in coding and math」 这两句定性话. MMLU 上它第二; 和 Claude 2 在共同三列上约 86.0 对 85.7 (估算), 基本打平, TriviaQA 还输 4.8 个点; HumanEval 上 GPT 3.5 的 48.1 比它的 45.1 高, 被挡住的行里还有更高的; GSM8K maj@1 也输给第 4 行的 92.0. 再加上 Figure 1, 2 报的是预训练版, 和 API 产品未必是同一份权重.
+第二处是 「second-ranked」 和 「top performance in coding and math」 这两句定性话. MMLU 上它第二; 和 Claude 2 在共同三列上约 86.0 对 85.7, 基本打平, TriviaQA 还输 4.8 个点; HumanEval 上 GPT 3.5 的 48.1 比它的 45.1 高, 被挡住的行里还有更高的; GSM8K maj@1 也输给第 4 行的 92.0. 再加上 Figure 1, 2 报的是预训练版, 和 API 产品未必是同一份权重.
 
-小地方还有几处. Figure 1 图注写 「Gemini Pro 1.0」, 柱子下标的是 「Gemini Pro」; Figure 2 图注把 MMLU 写成 「Measuring massive multitask language in understanding」, 多了一个 「in」; GSM8K maj@8 印成两位小数 91.21%; 纵轴从 40% 起, 视觉差距约放大一倍 (估算). 源 Markdown 把第 1 页第二句的主语 「Mistral Large」 丢了, 表格被横幅切碎; PDF 文本层是完整的. 最后是时间: 页头 February 26, 2024, 页眉打印时间 2026/9/25, 页脚 © 2026, 页脚里的 Vibe, Studio, Forge 等产品不要当成和 Mistral Large 同时发布.
+小地方还有几处. Figure 1 图注写 「Gemini Pro 1.0」, 柱子下标的是 「Gemini Pro」; Figure 2 图注把 MMLU 写成 「Measuring massive multitask language in understanding」, 多了一个 「in」; GSM8K maj@8 印成两位小数 91.21%; 纵轴从 40% 起, 视觉差距约放大一倍. 源 Markdown 把第 1 页第二句的主语 「Mistral Large」 丢了, 表格被横幅切碎; PDF 文本层是完整的. 最后是时间: 页头 February 26, 2024, 页眉打印时间 2026/9/25, 页脚 © 2026, 页脚里的 Vibe, Studio, Forge 等产品不要当成和 Mistral Large 同时发布.

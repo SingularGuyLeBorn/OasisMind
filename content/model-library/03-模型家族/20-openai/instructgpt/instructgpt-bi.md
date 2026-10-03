@@ -103,7 +103,7 @@ sizes (1.3B, 6B, and 175B parameters), and all of our models use the GPT-3 archi
 **InstructGPT 在毒性上比 GPT-3 略有改善, 在偏见上没有.** 我们用 RealToxicityPrompts 数据集 (Gehman et al., 2020) 衡量毒性, 同时做自动评估和人工评估. 在被要求保持尊重时, InstructGPT 生成的有毒输出比 GPT-3 少约 25%. 在 Winogender (Rudinger et al., 2018) 和 CrowS-Pairs (Nangia et al., 2020) 数据集上, InstructGPT 没有显著优于 GPT-3.
 
 > **核对:** 「少约 25%」 对应表 14 里的哪一格?
-> 表 14 RealToxicity 的 respectful 行, 175B PPO-ptx 是 0.196, GPT 是 0.233, 只少约 16% (估算); 图 7 人工评估 respectful 下约 0.166 对 0.207, 少约 20% (读图). 能凑出 25% 的只有 6B PPO (不带 ptx) 那一格: 0.176 对 0.232, 少约 24% (估算). 所以这个数字取自最有利的一格, 而非默认的 InstructGPT.
+> 表 14 RealToxicity 的 respectful 行, 175B PPO-ptx 是 0.196, GPT 是 0.233, 只少约 16%; 图 7 人工评估 respectful 下约 0.166 对 0.207, 少约 20% (读图). 能凑出 25% 的只有 6B PPO (不带 ptx) 那一格: 0.176 对 0.232, 少约 24%. 所以这个数字取自最有利的一格, 而非默认的 InstructGPT.
 
 **We can minimize performance regressions on public NLP datasets by modifying our RLHF fine-tuning procedure.** During RLHF fine-tuning, we observe performance regressions compared to GPT-3 on certain public NLP datasets, notably SQuAD (Rajpurkar et al., 2018), DROP (Dua et al., 2019), HellaSwag (Zellers et al., 2019), and WMT 2015 French to English translation (Bojar et al., 2015). This is an example of an “alignment tax” since our alignment procedure comes at the cost of
 
@@ -267,7 +267,7 @@ From these prompts, we produce three different datasets used in our fine-tuning 
 我们由这些提示构造出微调流程要用的三份数据集: (1) SFT 数据集, 含标注员示范, 用于训练 SFT 模型; (2) RM 数据集, 含标注员对模型输出的排序, 用于训练 RM; (3) PPO 数据集, 没有任何人工标签, 作为 RLHF 微调的输入. SFT 数据集约有 13k 条训练提示 (来自 API 和标注员自写), RM 数据集有 33k 条 (来自 API 和标注员自写), PPO 数据集有 31k 条 (只来自 API). 数据集规模细节见表 6.
 
 > **确认:** 13k, 33k, 31k 和表 6 对得上吗, 13k 条 SFT 提示是不是 13k 个不同任务?
-> 对得上: SFT 训练 11,295 + 1,430 = 12,725, RM 训练 6,623 + 26,584 = 33,207, PPO 训练 31,144, 和表 9 的 Count 列完全一致. 但 SFT 里约 89% 是标注员自写 (估算), 附录 A.3 说明这部分是从同一条模板指令出发, 换不同的 few-shot 例子合成出多条数据点, 所以 13k 条远多于真正不同的任务数.
+> 对得上: SFT 训练 11,295 + 1,430 = 12,725, RM 训练 6,623 + 26,584 = 33,207, PPO 训练 31,144, 和表 9 的 Count 列完全一致. 但 SFT 里约 89% 是标注员自写, 附录 A.3 说明这部分是从同一条模板指令出发, 换不同的 few-shot 例子合成出多条数据点, 所以 13k 条远多于真正不同的任务数.
 
 To give a sense of the composition of our dataset, in Table 1 we show the distribution of use-case categories for our API prompts (specifically the RM dataset) as labeled by our contractors. Most of the use-cases have are generative, rather than classification or QA. We also show some illustrative prompts (written by researchers to mimic the kinds of prompts submitted to InstructGPT models) in Table 2; more prompts submitted to InstructGPT models are shown in Appendix A.2.1, and prompts submitted to GPT-3 models are shown in Appendix A.2.2. We provide more details about our dataset in Appendix A.
 
@@ -343,7 +343,7 @@ In order to speed up comparison collection, we present labelers with anywhere be
 为了加快比较数据的收集, 我们给标注员 $K = 4$ 到 $K = 9$ 个回复来排序. 每条展示给标注员的提示由此产生 $\textstyle { \binom { K } { 2 } }$ 个比较. 由于同一个标注任务内的比较高度相关, 我们发现如果把比较直接打散混进一个数据集, 只过一遍数据 RM 就会过拟合.<sup>5</sup> 所以我们把每条提示的全部 $\textstyle { \binom { K } { 2 } }$ 个比较当作一个 batch 元素来训练. 这在计算上高效得多, 因为每个回复只需 RM 前向一次 (而不是 K 个回复做 $\textstyle { \binom { K } { 2 } }$ 次前向), 而且因为不再过拟合, 验证准确率和对数损失都明显改善.
 
 > **对一下:** 打包成一个 batch 元素到底省多少次前向?
-> 按两两比较算, 每对要前向两个回复, K = 9 时是 2 × 36 = 72 次; 打包后每个回复只前向一次, 共 9 次, 省约 8 倍 (估算). 脚注 5 说的过拟合来源也在这里: 打散时每个回复会出现在 K - 1 = 8 个比较里, 一个 epoch 内被反复用于 8 次梯度更新, 相当于一个 epoch 里藏着多个 epoch, 附录 C.2 因而只训 1 个 epoch.
+> 按两两比较算, 每对要前向两个回复, K = 9 时是 2 × 36 = 72 次; 打包后每个回复只前向一次, 共 9 次, 省约 8 倍. 脚注 5 说的过拟合来源也在这里: 打散时每个回复会出现在 K - 1 = 8 个比较里, 一个 epoch 内被反复用于 8 次梯度更新, 相当于一个 epoch 里藏着多个 epoch, 附录 C.2 因而只训 1 个 epoch.
 
 Specifically, the loss function for the reward model is:
 
@@ -527,7 +527,7 @@ Figure 4: Metadata results on the API distribution. Note that, due to dataset si
 图 4: API 分布上的元数据结果. 注意由于数据集规模, 这些结果是把各模型尺寸合并在一起的. 包含模型尺寸的分析见附录 E.2. 相比 GPT-3, PPO 模型在客服助手场景下更得体, 更善于遵守指令中的显式约束, 更会去尝试正确的指令, 也更少 「幻觉」 (指在摘要等封闭域任务中编造信息).
 
 > **停一下:** 21% 对 41% 的幻觉率为什么要把三个尺寸合并, 分尺寸的图在哪?
-> 幻觉只在封闭域提示上统计, 而表 7 显示测试集里封闭域只占 11.8%, 按表 9 的 3,196 条测试提示算约 377 条 (估算), 再拆成 1.3B, 6B, 175B 每档就只剩一百多条, 区间太宽. 分尺寸结果在图 30. 图注写 「见附录 E.2」, 但 E.2 讲的是 RM 跨标注员泛化, 分尺寸元数据其实在附录 E.3.
+> 幻觉只在封闭域提示上统计, 而表 7 显示测试集里封闭域只占 11.8%, 按表 9 的 3,196 条测试提示算约 377 条, 再拆成 1.3B, 6B, 175B 每档就只剩一百多条, 区间太宽. 分尺寸结果在图 30. 图注写 「见附录 E.2」, 但 E.2 讲的是 RM 跨标注员泛化, 分尺寸元数据其实在附录 E.3.
 
 ![Chart block](images/p12-figure-5-comparing-our-models-with-flan-and-t0-in-terms.png)
 
@@ -742,7 +742,7 @@ From this work, we can draw lessons for alignment research more generally:
 1. **相对预训练, 提升模型对齐的成本不高.** 收集数据的成本和训练算力 (含实验性运行) 只是训练 GPT-3 花费的零头: 训练 175B SFT 模型需要 4.9 petaflops/s-days, 训练 175B PPO-ptx 模型需要 60 petaflops/s-days, 而 GPT-3 是 3,640 petaflops/s-days (Brown et al., 2020). 同时, 结果表明 RLHF 让语言模型对用户更有帮助的效果非常明显, 超过把模型做大 100 倍. 这说明眼下加大对现有语言模型对齐的投入, 比训练更大的模型更划算, 至少对我们客户的自然语言任务分布是这样.
 
 > **拆开:** 60 petaflops/s-days 占 GPT-3 预训练的多少, 其中多少花在预训练混合上?
-> 60 / 3,640 约 1.6% (估算), SFT 的 4.9 约 0.13% (估算). 附录 E.11 说预训练数据比例取 8 时训练时间是不混预训练时的两倍, 所以 60 里大约一半花在 ptx 那部分 (估算). 「胜过做大 100 倍」 对应图 1: 1.3B PPO-ptx 对 SFT 175B 的胜率约 0.53, 175B GPT 约 0.24 (读图). 这笔账没算标注员的人力成本.
+> 60 / 3,640 约 1.6%, SFT 的 4.9 约 0.13%. 附录 E.11 说预训练数据比例取 8 时训练时间是不混预训练时的两倍, 所以 60 里大约一半花在 ptx 那部分. 「胜过做大 100 倍」 对应图 1: 1.3B PPO-ptx 对 SFT 175B 的胜率约 0.53, 175B GPT 约 0.24 (读图). 这笔账没算标注员的人力成本.
 
 2. **We’ve seen some evidence that InstructGPT generalizes ‘following instructions’ to settings that we don’t supervise it in,** for example on non-English language tasks and code-related tasks. This is an important property because it’s prohibitively expensive to have humans supervise models on every task they perform. More research is needed to study how well this generalization scales with increased capabilities; see Christiano et al. (2021) for recent research in this direction.
 
@@ -1311,7 +1311,7 @@ Table 8: Average prompts per customer
 表中: SFT train 1.65, SFT valid 1.87, RM train 5.35, RM valid 27.96, PPO train 6.01, PPO valid 31.55, test 1.81.
 
 > **回看:** 表 8 里 RM 和 PPO 验证集的 「每客户提示数」 为什么比训练集高五倍多?
-> 用表 6 的客户提示数反推: RM 训练 26,584 / 5.35 约 4,969 个客户, RM 验证 14,399 / 27.96 约 515 个客户 (估算). 验证集的提示来自少得多的客户, 每人贡献更多, 这正是按客户 (或组织) 划分的结果: 少数大客户整体落进验证集. 所以验证集 RM 分数被少数客户的用法主导, 而测试集每客户只有 1.81 条, 分散得多.
+> 用表 6 的客户提示数反推: RM 训练 26,584 / 5.35 约 4,969 个客户, RM 验证 14,399 / 27.96 约 515 个客户. 验证集的提示来自少得多的客户, 每人贡献更多, 这正是按客户 (或组织) 划分的结果: 少数大客户整体落进验证集. 所以验证集 RM 分数被少数客户的用法主导, 而测试集每客户只有 1.81 条, 分散得多.
 
 Table 9: Prompt lengths by dataset
 
@@ -1486,7 +1486,7 @@ Table 12: Labeler demographic data
 表中: 性别认同, 男 50.0%, 女 44.4%, 非二元/其他 5.6%. 族裔认同 (可多选), 白人 31.6%, 东南亚裔 52.6%, 原住民 0.0%, 东亚裔 5.3%, 中东裔 0.0%, 拉丁裔 15.8%, 黑人/非洲裔 10.5%. 国籍, 菲律宾 22%, 孟加拉 22%, 美国 17%, 阿尔巴尼亚, 巴西, 加拿大, 哥伦比亚, 印度, 乌拉圭, 津巴布韦各 5%. 年龄, 18-24 岁 26.3%, 25-34 岁 47.4%, 35-44 岁 10.5%, 45-54 岁 10.5%, 55-64 岁 5.3%, 65 岁以上 0%. 最高学历, 高中以下 0%, 高中 10.5%, 本科 52.6%, 硕士 36.8%, 博士 0%.
 
 > **问:** 表 12 说有 19 人答卷, 各题的百分比都能用 19 除出来吗?
-> 不全能. 年龄 26.3% = 5/19, 学历 52.6% = 10/19, 按 19 人算得通; 性别 50.0%, 44.4%, 5.6% 却正好是 9/18, 8/18, 1/18, 国籍 22%, 17% 也对应 4/18, 3/18 (估算), 说明有一人跳过了这两题. 族裔一栏加起来是 115.8%, 是多选题, 不能当作人数分布来读.
+> 不全能. 年龄 26.3% = 5/19, 学历 52.6% = 10/19, 按 19 人算得通; 性别 50.0%, 44.4%, 5.6% 却正好是 9/18, 8/18, 1/18, 国籍 22%, 17% 也对应 4/18, 3/18, 说明有一人跳过了这两题. 族裔一栏加起来是 115.8%, 是多选题, 不能当作人数分布来读.
 
 ## C Additional model details (模型补充细节)
 
@@ -1547,14 +1547,14 @@ We then initialize the RL policies from the above supervised fine-tuned models w
 然后我们从上述混入预训练数据的监督微调模型初始化强化学习策略. 这些模型也用于计算 KL 奖励, 方式与 Stiennon et al. (2020) 相同, $\beta = 0 . 0 2$ (见式 2). 所有强化学习模型训练 256k 个回合. 这些回合包含约 31k 条不同的提示, 这是过滤掉含 PII 的提示并按公共前缀去重之后的数目. 每次迭代的 batch size 为 512, minibatch size 为 64. 也就是说, 每个 batch 随机分成 8 个 minibatch, 只训练一个内部 epoch (Schulman et al., 2017). 使用恒定学习率, 前 10 次迭代做预热, 从峰值学习率的十分之一开始. 对权重做指数滑动平均, 衰减率 0.992. 估计广义优势时不做折扣 (Schulman et al., 2016). PPO 裁剪比设为 0.2, rollout 的采样温度为 1.
 
 > **核对:** 256k 个回合, 31k 条提示, batch 512, 这些数字拼起来是多少步训练?
-> 256k / 512 = 500 次迭代, 每次 8 个 minibatch, 共约 4,000 次梯度更新 (估算); 31,144 条提示 (表 6) 平均每条被采样约 8.2 次 (估算). 预训练样本是回合数的 8 倍, 约 205 万条 (估算). 一个内部 epoch 意味着每条样本只用一次, 策略在一个 batch 的 8 步里逐渐偏离采样时的策略, 0.2 的裁剪主要约束的是后几个 minibatch.
+> 256k / 512 = 500 次迭代, 每次 8 个 minibatch, 共约 4,000 次梯度更新; 31,144 条提示 (表 6) 平均每条被采样约 8.2 次. 预训练样本是回合数的 8 倍, 约 205 万条. 一个内部 epoch 意味着每条样本只用一次, 策略在一个 batch 的 8 步里逐渐偏离采样时的策略, 0.2 的裁剪主要约束的是后几个 minibatch.
 
 As previously mentioned, for all PPO models we use a 6B RM and a 6B value function, and the latter is initialized from the former. By using the same 6B reward model and value function on policies of all model sizes, it’s easier to compare the effect of policy model size on policy performance. A fixed learning rate of 9e-6 for the value function is used for 1.3B and the 6B policies and 5e-6 for the 175B policy.
 
 如前所述, 所有 PPO 模型都用 6B RM 和 6B 价值函数, 后者从前者初始化. 所有尺寸的策略都用同一个 6B 奖励模型和价值函数, 更便于比较策略模型尺寸对策略表现的影响. 价值函数的学习率固定: 1.3B 和 6B 策略用 9e-6, 175B 策略用 5e-6.
 
 > **看表:** 「估计广义优势时不做折扣」, 在这个 bandit 环境里价值函数到底在预测什么?
-> 每回合只有一步动作序列, RM 分数在最后一个 token 给出, 前面每个 token 只有式 (2) 的逐 token KL 惩罚. 不折扣时, 第 t 个 token 的回报就是 「最终 RM 分数减去从 t 到结尾累计的 KL 惩罚」, 价值函数要预测的就是这个量. 它从 RM 初始化, 一开始就会给整条回复打分, 正好接近最终奖励. 175B 策略配 6B 价值函数, 两者差近 30 倍 (估算), 这也是 175B 的价值学习率单独调低到 5e-6 的背景.
+> 每回合只有一步动作序列, RM 分数在最后一个 token 给出, 前面每个 token 只有式 (2) 的逐 token KL 惩罚. 不折扣时, 第 t 个 token 的回报就是 「最终 RM 分数减去从 t 到结尾累计的 KL 惩罚」, 价值函数要预测的就是这个量. 它从 RM 初始化, 一开始就会给整条回复打分, 正好接近最终奖励. 175B 策略配 6B 价值函数, 两者差近 30 倍, 这也是 175B 的价值学习率单独调低到 5e-6 的背景.
 
 Our initial RLHF experiments showed regressions on public NLP datasets, such as SQuADv2 and DROP, and we mitigate the regressions by mixing in pretraining gradients during PPO training. We use 8 times more pretraining examples than the number of the RL training episodes. The pretraining data is randomly drawn from the dataset used to train the GPT-3 models. For each minibatch, we compute the PPO gradients and pretraining gradients in consecutive steps and accumulate them both into the gradient buffers. We multiply the pretraining gradients by a coefficient, $\gamma = 2 7 . 8$ (see Equation 2), to control the relative strength of gradients from PPO and pretraining distributions.
 
@@ -1587,7 +1587,7 @@ batch size of 64, a learning rate of 6e-6 and 1 million examples. Once again usi
 (另一个用) batch size 64, 学习率 6e-6, 共 100 万条样本. 同样按奖励模型分数, 我们选了前一个实验训练 896k 条样本后的检查点.
 
 > **拆开:** FLAN 和 T0 都停在 896k 条, 是巧合还是刻意对齐?
-> 图 13 显示 RM 分数在约 400k 条后就饱和了, 之后的检查点分数相差不大, 选中哪一个带有随机性. 两者都落在 896k 更可能是评估检查点的保存间隔相同所致. 值得注意的是 T0 的原始数据有 96M 条, 只用了约 1% (估算), FLAN 的 1.2M 条也只用到约 75% (估算), 第 4.1 节 「公开数据集不够多样」 的结论, 是在这种截断之下得出的.
+> 图 13 显示 RM 分数在约 400k 条后就饱和了, 之后的检查点分数相差不大, 选中哪一个带有随机性. 两者都落在 896k 更可能是评估检查点的保存间隔相同所致. 值得注意的是 T0 的原始数据有 96M 条, 只用了约 1%, FLAN 的 1.2M 条也只用到约 75%, 第 4.1 节 「公开数据集不够多样」 的结论, 是在这种截断之下得出的.
 
 <!-- page 44 of 68 -->
 

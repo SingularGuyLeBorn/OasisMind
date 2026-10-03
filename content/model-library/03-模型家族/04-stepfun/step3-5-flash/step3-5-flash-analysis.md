@@ -37,7 +37,7 @@ $$
 p_e = \frac{1}{T}\sum_{t=1}^{T} p_{t,e},\quad f_e = \frac{1}{TK}\sum_{t=1}^{T} s_{t,e},\quad p_g = \sum_{e\in\mathcal{E}_g} p_e,\quad f_g = \sum_{e\in\mathcal{E}_g} f_e,\quad \mathcal{L}_{\text{EP}} = G\sum_{g=1}^{G} f_g\,p_g
 $$
 
-$f_e$ 是专家 $e$ 实际拿到的 token 份额 (不可导), $p_e$ 是它的平均路由概率 (可导), 梯度只经 $p_g$ 回传, 把命中多的组的概率往下压. 和 Switch 式 loss $N\sum_e f_e p_e$ 比, 差别在求积之前先按组求和: 同一 rank 上一个专家过载、另一个闲着, 在 $f_g$ 里会相互抵消, 组级 loss 不管, 因为它们反正在同一张卡上算完; 只有整张卡的份额偏离, loss 才上升. 按 8 路 EP, 每组约 36 个专家 (估算: 288 / 8). 细粒度 MoE 的一般讨论见 [MoE 总览](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md) 与 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md).
+$f_e$ 是专家 $e$ 实际拿到的 token 份额 (不可导), $p_e$ 是它的平均路由概率 (可导), 梯度只经 $p_g$ 回传, 把命中多的组的概率往下压. 和 Switch 式 loss $N\sum_e f_e p_e$ 比, 差别在求积之前先按组求和: 同一 rank 上一个专家过载、另一个闲着, 在 $f_g$ 里会相互抵消, 组级 loss 不管, 因为它们反正在同一张卡上算完; 只有整张卡的份额偏离, loss 才上升. 按 8 路 EP, 每组约 36 个专家 (288 / 8). 细粒度 MoE 的一般讨论见 [MoE 总览](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/2.4.1-混合专家模型MoE.md) 与 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md).
 
 同一个目标还延伸到了 agent 模板. 附录说工具调用格式选 XML 而不选 JSON, 因为小模型在 JSON 的转义和分隔符上更容易解析失败. 多轮编码会话里, 每轮都丢掉推理历史会让超过 100 轮的会话失败, 全部保留又会撑爆上下文, 折中办法是只保留由最近一次用户指令触发的那段工具轨迹里的推理. 这些看起来是后训练细节, 其实和 11B 激活的定位分不开: 激活小, 就得在格式和上下文管理上替模型省力.
 
@@ -87,7 +87,7 @@ Fig. 3 的预训练 loss 曲线没有平滑, 全程只有 1 次孤立尖峰; 图
 
 位置编码的处理和混合注意力绑在一起. 4k 阶段 full 与 SWA 层的 RoPE θ 都是 10,000; 上下文拉长后只抬 full 层, 32k 时 1,000,000, 128k 时 5,000,000, SWA 层始终是 10,000. SWA 只看 512 个位置, 用不着外推, 要适应更长距离的只有负责长程检索的 full 层.
 
-Base 模型的结果可以当作这套课表的中间检验. Tab. 4 里 Step 3.5 Flash Base 以 11B 激活、196B 总参, SimpleQA 得 31.6, 高于 DeepSeek-V3.2-Exp Base 的 27.0, 后者总参约是前者的 3.4 倍 (估算: 671 / 196); HumanEval 81.1. 这组对比说明的是单位激活的能力密度, 并不代表每一格都赢更大的模型.
+Base 模型的结果可以当作这套课表的中间检验. Tab. 4 里 Step 3.5 Flash Base 以 11B 激活、196B 总参, SimpleQA 得 31.6, 高于 DeepSeek-V3.2-Exp Base 的 27.0, 后者总参约是前者的 3.4 倍 (671 / 196); HumanEval 81.1. 这组对比说明的是单位激活的能力密度, 并不代表每一格都赢更大的模型.
 
 ### 2.3. 后训练: 先分科练专家, 再蒸回一个模型, 最后用 MIS-PO 做大规模 RL
 
@@ -101,7 +101,7 @@ $$
 \mathcal{L}_{\text{actor}} = -\,\mathbb{E}_{\tau\sim\pi_{\theta_{\text{vllm}}}}\Big[\mathbb{I}(x_t)\cdot\mathbb{I}\big(\bar\rho(\tau)\big)\cdot\log\pi_\theta(a_t|s_t)\cdot\hat A_t\Big]
 $$
 
-区间取 token 级 $[0.5, 2]$, 轨迹级 $[0.996, 1.001]$. 轨迹级窄得多, 大概是因为几何平均把逐 token 的偏差摊平了, 平均漂移到千分之几就已经算大 (这是推断, 报告没解释区间怎么定). 优势按 $\gamma=\lambda=1$ 的 GAE 算, 此时退化为 $\hat A_t=\hat R-V_\phi(s_t)$ (附录式 15). 附录拿来对照的 GSPO 版本用同一套双层掩码, 只把 $\log\pi_\theta\cdot\hat A_t$ 换成 $\min\big(r_\tau\hat A_t,\ \text{clip}(r_\tau,1-\epsilon,1+\epsilon)\hat A_t\big)$, 其中 $r_\tau=\big(\prod_t\pi_\theta/\pi_{\theta_{\text{old}}}\big)^{1/T}$, $\epsilon$ 在 $\{1,2,3,4\}\times10^{-4}$ 上网格搜索后取 $10^{-4}$, 裁剪比例约 15%. 两者在同一步上的差别是: 通过掩码的 token, GSPO 的梯度还要乘一个随 $\theta$ 变化并被裁剪的比值, MIS-PO 直接按 on-policy 的 $\nabla\log\pi_\theta\cdot\hat A_t$ 更新, 权重只有 0 或 1. 和 PPO 的连续裁剪比, **这是一种二值过滤.** Fig. 5 在内部模型上跑约 5,000 步, MIS-PO 奖励上升更快, 策略梯度范数没有大尖峰, 熵衰减更慢 (读图). 附录 Fig. 7 的 GSPO 对照里, MoE 模型上 GSPO 约第 200 轮就进入平台, 训练-推理比值 $\pi_{\theta_{\text{old}}}/\pi_{\theta_{\text{vllm}}}$ 越拉越开, MIS-PO 则一直把它压在稳定区间内. 背景见 [04-PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 与 [4.4-GRPO变体与改进-GSPO与DCPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4-GRPO变体与改进-GSPO与DCPO.md).
+区间取 token 级 $[0.5, 2]$, 轨迹级 $[0.996, 1.001]$. 轨迹级窄得多, 大概是因为几何平均把逐 token 的偏差摊平了, 平均漂移到千分之几就已经算大 (报告没解释区间怎么定). 优势按 $\gamma=\lambda=1$ 的 GAE 算, 此时退化为 $\hat A_t=\hat R-V_\phi(s_t)$ (附录式 15). 附录拿来对照的 GSPO 版本用同一套双层掩码, 只把 $\log\pi_\theta\cdot\hat A_t$ 换成 $\min\big(r_\tau\hat A_t,\ \text{clip}(r_\tau,1-\epsilon,1+\epsilon)\hat A_t\big)$, 其中 $r_\tau=\big(\prod_t\pi_\theta/\pi_{\theta_{\text{old}}}\big)^{1/T}$, $\epsilon$ 在 $\{1,2,3,4\}\times10^{-4}$ 上网格搜索后取 $10^{-4}$, 裁剪比例约 15%. 两者在同一步上的差别是: 通过掩码的 token, GSPO 的梯度还要乘一个随 $\theta$ 变化并被裁剪的比值, MIS-PO 直接按 on-policy 的 $\nabla\log\pi_\theta\cdot\hat A_t$ 更新, 权重只有 0 或 1. 和 PPO 的连续裁剪比, **这是一种二值过滤.** Fig. 5 在内部模型上跑约 5,000 步, MIS-PO 奖励上升更快, 策略梯度范数没有大尖峰, 熵衰减更慢 (读图). 附录 Fig. 7 的 GSPO 对照里, MoE 模型上 GSPO 约第 200 轮就进入平台, 训练-推理比值 $\pi_{\theta_{\text{old}}}/\pi_{\theta_{\text{vllm}}}$ 越拉越开, MIS-PO 则一直把它压在稳定区间内. 背景见 [04-PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 与 [4.4-GRPO变体与改进-GSPO与DCPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4-GRPO变体与改进-GSPO与DCPO.md).
 
 另外两项配套处理都针对长轨迹和 MoE. **截断感知的价值自举**把「超长被截断」和「答错」分开 (式 3): 轨迹 $\tau_i$ 被截断时 $\hat R_i=V_\phi(s_T)$, 否则 $\hat R_i=R_i$. 代进上面的优势, 截断轨迹上每个 token 的 $\hat A_t=V_\phi(s_T)-V_\phi(s_t)$, 只反映 critic 认为这段推理把局面推进了多少, 不再是一律为负的 $0-V_\phi(s_t)$. 截断率高到 20% 时训练仍然稳定, 对竞赛级长推理帮助最大. **Routing Confidence** $\Sigma_k$ 是被激活专家的平均概率质量, 即每个 token 的 top-$k$ 路由概率之和再对 token 取平均, 被当作稳定性的代理指标: $\Sigma_k$ 低说明路由犹豫, 同一个 token 在推理引擎和训练框架里更容易落到不同专家, 这类模型需要 Router Replay 或严格 on-policy; $\Sigma_k$ 高的模型可以直接做 off-policy. 两者之间的分界值报告没有给. RL 超参方面, rollout 的 temperature 与 top-p 都是 1.0, 推理题每步 256 个 prompt × 16 条回答, 偏好题 512 × 8, 工具题 128 × 8, 最长 128k; 采完的样本只过一个 epoch, actor 切 4 个 mini-batch、critic 切 12 个. 同样用 Muon (weight decay 0.1), actor 学习率 2e-6 预热 20 步, critic 5e-6 预热 50 步, 最后阶段加系数 0.001 的无偏 KL.
 

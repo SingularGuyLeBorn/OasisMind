@@ -66,7 +66,7 @@ Devstral Small 2 scores 68.0% on SWE-bench Verified, and places firmly among mod
 Devstral Small 2 在 SWE-bench Verified 上得 68.0%, 稳稳站进体量最多是它五倍的那一档模型里, 而且能在消费级硬件上本地运行.
 
 > **看表:** 「up to five times its size」 按 24B 算是多大, 图里有谁落在这一档?
-> 五倍是 120B (估算). 柱状图里名字带尺寸的只有 GPT-OSS-120B, 62.4, 比 Small 2 低 5.6 个点; Devstral 2 是 123B, 略超五倍, 高 4.2 个点. GLM 4.6 和 Small 2 同为 68.0, 但散点图里它在 450B 附近 (估算), 远不止五倍.
+> 五倍是 120B. 柱状图里名字带尺寸的只有 GPT-OSS-120B, 62.4, 比 Small 2 低 5.6 个点; Devstral 2 是 123B, 略超五倍, 高 4.2 个点. GLM 4.6 和 Small 2 同为 68.0, 但散点图里它在 450B 附近, 远不止五倍.
 
 <!-- page 3 of 10 -->
 
@@ -107,7 +107,7 @@ Devstral 2 (123B) and Devstral Small 2 (24B) are 5x and 28x smaller than DeepSee
 Devstral 2 (123B) 和 Devstral Small 2 (24B) 比 DeepSeek V3.2 小 5 倍和 28 倍, 比 Kimi K2 小 8 倍和 41 倍. 这说明紧凑的模型也能追平甚至超过大得多的对手. 体量小了, 在有限的硬件上部署就变得可行, 开发者, 小公司和业余爱好者的门槛都降低了.
 
 > **确认:** 四个倍数反推出来的 DeepSeek V3.2 和 Kimi K2 有多大?
-> 123 x 5 = 615, 24 x 28 = 672; 123 x 8 = 984, 24 x 41 = 984 (估算). Kimi K2 两个倍数对得上, 都指向约 1000B; DeepSeek V3.2 两个倍数差了 57B, 说明 5 倍是往下取整. 本页正文没印这两个模型的参数量, 只有下一页散点图的位置.
+> 123 x 5 = 615, 24 x 28 = 672; 123 x 8 = 984, 24 x 41 = 984. Kimi K2 两个倍数对得上, 都指向约 1000B; DeepSeek V3.2 两个倍数差了 57B, 说明 5 倍是往下取整. 本页正文没印这两个模型的参数量, 只有下一页散点图的位置.
 
 > **回看:** 句尾 「hobbyists.hardware.」 多出来的 hardware 是什么?
 > PDF 文本层就是这样, 截屏里这一行的行尾也露出 「hardware.」. 像是页面上叠了两版文字, 这个词不属于这句话, 译文没有译它.
@@ -124,7 +124,7 @@ The points, read from their positions in the embedded image (all estimates):
 
 按嵌入原图里的位置读出的点 (全部是估算):
 
-| Model | Size (B, 估算) | Score (%, 估算) |
+| Model | Size (B) | Score (%) |
 |---|---|---|
 | Devstral Small 2 | ~20 | ~68 |
 | Devstral 2 | ~120 | ~72 |
@@ -137,7 +137,7 @@ The points, read from their positions in the embedded image (all estimates):
 | Kimi K2 thinking | ~1000 | ~71.5 |
 
 > **停一下:** 散点图和柱状图的点对得上吗?
-> 大部分对得上, 有两处不对. CWM 在柱状图里是 53.9, 散点图里落在约 52 (估算), 反倒是 Qwen 3 coder flash 落在约 54; Qwen 3 coder flash 只出现在散点图里, 柱状图没有它. DeepSWE, GPT-OSS-120B 和四个闭源模型不在散点图里.
+> 大部分对得上, 有两处不对. CWM 在柱状图里是 53.9, 散点图里落在约 52, 反倒是 Qwen 3 coder flash 落在约 54; Qwen 3 coder flash 只出现在散点图里, 柱状图没有它. DeepSWE, GPT-OSS-120B 和四个闭源模型不在散点图里.
 
 > **再看:** 纵轴的 「Regular Performance」 是什么口径, 绿色三角形又代表什么?
 > 本页都没解释. 「Regular」 像是和某种加强设置相对, 但页面没提别的设置. 三角形的斜边从左下到右上, 读起来是 「同样的分数, 参数更少」 的区域, 图上没有图注.
@@ -179,10 +179,10 @@ Page 5 opens with a horizontal stacked bar chart titled "Model Performance Compa
 | Devstral 2 vs Sonnet 4.5 | 21.4% | 25.5% | 53.1% |
 
 > **想:** 对 Sonnet 4.5 的 「significantly preferred」 有多明显?
-> 负 53.1%, 胜 21.4%, 负是胜的约 2.5 倍 (估算), 平 25.5%. 对 DeepSeek V3.2 那一行胜 42.8% 负 28.6%, 胜是负的约 1.5 倍 (估算). 两行三段加起来都是 100.0.
+> 负 53.1%, 胜 21.4%, 负是胜的约 2.5 倍, 平 25.5%. 对 DeepSeek V3.2 那一行胜 42.8% 负 28.6%, 胜是负的约 1.5 倍. 两行三段加起来都是 100.0.
 
 > **问:** 这些百分数背后大概多少道题?
-> 页面没写. Sonnet 4.5 一行能对上的最小分母是 98, 即 21 胜 25 平 52 负; DeepSeek V3.2 一行按四舍五入最小是 269, 如果 42.8 是截断出来的, 7 就够 (3 胜 2 平 2 负) (都是估算).
+> 页面没写. Sonnet 4.5 一行能对上的最小分母是 98, 即 21 胜 25 平 52 负; DeepSeek V3.2 一行按四舍五入最小是 269, 如果 42.8 是截断出来的, 7 就够 (3 胜 2 平 2 负).
 
 "Devstral 2 is at the frontier of open-source coding models. In Cline, it delivers a tool-calling success rate on par with the best closed models; it's a remarkably smooth driver. This is a massive contribution to the open-source ecosystem." — Cline.
 
@@ -193,7 +193,7 @@ Page 5 opens with a horizontal stacked bar chart titled "Model Performance Compa
 「Devstral 2 是我们迄今最成功的匿名上线之一, 头 24 小时就跑过了 17B token. Mistral AI 正以 Kilo 的速度前进, 拿出了一个真能大规模用, 成本又低的模型.」 (Kilo Code)
 
 > **核对:** 17B token 摊到 24 小时是多少?
-> 平均约 19.7 万 token 每秒 (估算). 页面没说这是输入加输出的总数, 也没说 「stealth launch」 期间模型叫什么名字. Cline 那句 「on par with the best closed models」 没给成功率数字.
+> 平均约 19.7 万 token 每秒. 页面没说这是输入加输出的总数, 也没说 「stealth launch」 期间模型叫什么名字. Cline 那句 「on par with the best closed models」 没给成功率数字.
 
 Devstral Small 2, a 24B-parameter model with the same 256K context window and released under Apache 2.0, brings these capabilities to a compact, locally deployable form. Its size enables fast inference, tight feedback loops, and easy customization—with fully private, on-device runtime. It also supports image inputs, and can power multimodal agents.
 
@@ -252,7 +252,7 @@ Devstral 2 is currently offered free via our API. After the free period, the API
 Devstral 2 目前通过我们的 API 免费提供. 免费期结束后, API 价格为: Devstral 2 每百万 token 输入 \$0.40, 输出 \$2.00; Devstral Small 2 输入 \$0.10, 输出 \$0.30.
 
 > **确认:** 两个型号差多少钱?
-> 输入差 4 倍, 输出差约 6.7 倍 (估算). Devstral 2 输出是输入的 5 倍, Small 2 输出是输入的 3 倍. 免费期到哪天结束, 页面没写.
+> 输入差 4 倍, 输出差约 6.7 倍. Devstral 2 输出是输入的 5 倍, Small 2 输出是输入的 3 倍. 免费期到哪天结束, 页面没写.
 
 We've partnered with leading, open agent tools Kilo Code and Cline to bring Devstral 2 to where you already build.
 
@@ -269,14 +269,14 @@ Devstral 2 is optimized for data center GPUs and requires a minimum of 4 H100-cl
 Devstral 2 针对数据中心 GPU 优化, 部署至少要 4 张 H100 级别的 GPU. 今天就能在 build.nvidia.com 上试用. Devstral Small 2 为单卡运行设计, 能在各种 NVIDIA 系统上跑, 包括 DGX Spark 和 GeForce RTX. NVIDIA NIM 的支持很快会上线.
 
 > **回看:** 4 张 H100 级 GPU 装得下 123B dense 吗?
-> 按 BF16 算, 权重约 246 GB, 4 张 80 GB 卡是 320 GB, 剩约 74 GB 给 KV cache 和激活 (都是估算). 页面没写精度, 显存规格, 也没说 256K 满长上下文时要几张卡.
+> 按 BF16 算, 权重约 246 GB, 4 张 80 GB 卡是 320 GB, 剩约 74 GB 给 KV cache 和激活. 页面没写精度, 显存规格, 也没说 256K 满长上下文时要几张卡.
 
 Devstral Small runs on consumer-grade GPUs as well as CPU-only configurations with no dedicated GPU required.
 
 Devstral Small 能在消费级 GPU 上跑, 也能只用 CPU, 不需要独立显卡.
 
 > **停一下:** 24B 放进一张消费级显卡, 要不要量化?
-> 按 BF16 算权重约 48 GB (估算), 超过常见消费级显卡的显存, 大概率要量化. 页面没说用什么精度或量化格式, 也没给纯 CPU 下的速度. 这里写的是 「Devstral Small」, 少了 「2」.
+> 按 BF16 算权重约 48 GB, 超过常见消费级显卡的显存, 大概率要量化. 页面没说用什么精度或量化格式, 也没给纯 CPU 下的速度. 这里写的是 「Devstral Small」, 少了 「2」.
 
 For optimal performance, we recommend a temperature of 0.2 and following the best practices defined for Mistral Vibe CLI.
 

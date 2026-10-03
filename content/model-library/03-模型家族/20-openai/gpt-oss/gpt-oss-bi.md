@@ -169,7 +169,7 @@ Table 1: Model parameter counts. We refer to the models as “120b” and “20b
 Table 1: 模型参数量. 为简便起见我们把两个模型称作「120b」和「20b」, 严格说它们分别有 116.8B 和 20.9B 参数. 输出投影 (unembedding) 参数计入激活参数, 输入嵌入不计入.
 
 > **拆开:** 5.13B 激活参数能不能用 Table 1 的其它几行拼出来?
-> 能, 误差在四舍五入范围内 (估算). Attention 0.96B 每个 token 都要算; Embed + Unembed 1.16B 里只计 unembedding 那一半, 约 0.58B; MLP 114.71B 里每个 token 只走 128 个专家中的 4 个, 约 114.71 × 4/128 ≈ 3.58B. 三项相加 0.96 + 0.58 + 3.58 = 5.12B, 与 5.13B 的差额来自 router 和偏置这些每层必算的小参数. 20b 同理: 0.64 + 0.58 + 19.12 × 4/32 ≈ 3.61B, 与表中一致.
+> 能, 误差在四舍五入范围内. Attention 0.96B 每个 token 都要算; Embed + Unembed 1.16B 里只计 unembedding 那一半, 约 0.58B; MLP 114.71B 里每个 token 只走 128 个专家中的 4 个, 约 114.71 × 4/128 ≈ 3.58B. 三项相加 0.96 + 0.58 + 3.58 = 5.12B, 与 5.13B 的差额来自 router 和偏置这些每层必算的小参数. 20b 同理: 0.64 + 0.58 + 19.12 × 4/32 ≈ 3.61B, 与表中一致.
 
 ## 2.1 Quantization (量化)
 
@@ -178,7 +178,7 @@ We utilize quantization to reduce the memory footprint of the models. We post-tr
 我们用量化降低模型的显存占用. 后训练时, MoE 权重就以 MXFP4 格式 [5] 量化, 每个参数占 4.25 bit. MoE 权重占总参数量的 90% 以上, 把它们量化成 MXFP4 后, 大模型能放进单张 80GB GPU, 小模型在只有 16GB 内存的系统上也能跑. 两个模型的检查点大小列在 Table 1.
 
 > **对一下:** 每参数 4.25 bit 和 Table 1 的 60.8GiB 能互相印证吗?
-> 能 (估算). MXFP4 每 32 个 4 bit 元素共享一个 8 bit 指数, 4 + 8/32 = 4.25. MoE 权重 114.71B × 4.25/8 ≈ 60.9GB ≈ 56.8GiB; 其余约 2.12B 参数本文没说精度, 若按 BF16 存约 4.2GB ≈ 3.9GiB; 合计约 60.7GiB, 接近 60.8GiB. 20b: 19.12B × 4.25/8 ≈ 9.5GiB, 加 1.8B × 2 byte ≈ 3.4GiB, 约 12.8GiB, 与表一致. 开源配置里注意力, router, 嵌入和输出投影都列在不量化的模块中, 与这个估算的假设相符.
+> 能. MXFP4 每 32 个 4 bit 元素共享一个 8 bit 指数, 4 + 8/32 = 4.25. MoE 权重 114.71B × 4.25/8 ≈ 60.9GB ≈ 56.8GiB; 其余约 2.12B 参数本文没说精度, 若按 BF16 存约 4.2GB ≈ 3.9GiB; 合计约 60.7GiB, 接近 60.8GiB. 20b: 19.12B × 4.25/8 ≈ 9.5GiB, 加 1.8B × 2 byte ≈ 3.4GiB, 约 12.8GiB, 与表一致. 开源配置里注意力, router, 嵌入和输出投影都列在不量化的模块中, 与这个估算的假设相符.
 
 ## 2.2 Architecture (架构)
 
@@ -191,7 +191,7 @@ Mixture-of-Experts: Each MoE block consists of a fixed number of experts (128 fo
 MoE: 每个 MoE 块包含固定数量的专家 (gpt-oss-120b 为 128 个, gpt-oss-20b 为 32 个), 外加一个标准的线性 router 投影, 把残差激活映射成每个专家的得分. 两个模型都按 router 给出的得分为每个 token 选 top-4 专家, 各专家输出的权重是只在被选中专家上做的 softmax. MoE 块使用带门控的 SwiGLU [9] 激活函数<sup>1</sup>.
 
 > **确认:** 本文没给专家的中间维度, 能从 Table 1 反推吗?
-> 能 (估算). SwiGLU 专家有三块 2880 × d 的矩阵 (门控, 上投影, 下投影), 114.71B ÷ 36 层 ÷ 128 个专家 ≈ 24.9M, 再除以 3 × 2880 得 d ≈ 2880. 20b 用 19.12B ÷ 24 ÷ 32 算出同一个数. 两个模型的专家形状完全相同, 差别只在层数 (36 对 24) 和每层专家数 (128 对 32). 开源配置里 intermediate_size 正是 2880.
+> 能. SwiGLU 专家有三块 2880 × d 的矩阵 (门控, 上投影, 下投影), 114.71B ÷ 36 层 ÷ 128 个专家 ≈ 24.9M, 再除以 3 × 2880 得 d ≈ 2880. 20b 用 19.12B ÷ 24 ÷ 32 算出同一个数. 两个模型的专家形状完全相同, 差别只在层数 (36 对 24) 和每层专家数 (128 对 32). 开源配置里 intermediate_size 正是 2880.
 
 > **问:** 「the softmax of the router projection over only the selected experts」, 先选 top-4 再 softmax 和先 softmax 再选有什么不同?
 > 先选后 softmax, 四个权重之和恒为 1, 专家输出的量级不受 router 对其余 124 个专家打分的影响; 先 softmax 再截断, 四个权重之和小于 1, 而且随整体分布浮动. 代价是落选专家的 logit 在这一步拿不到梯度. 负载均衡怎么做, 本文一句没提.
@@ -201,10 +201,10 @@ Attention: Following GPT-3, attention blocks alternate between banded window and
 注意力: 沿用 GPT-3 的做法, 注意力块在带状窗口和全稠密两种模式之间交替 [10][11], 带宽为 128 个 token. 每层有 64 个 query 头, 每头 64 维, 使用 GQA [12][13], key-value 头为 8 个. 位置编码用 RoPE [14], 并用 YaRN [15] 把稠密层的上下文长度扩到 131,072 个 token. 每个注意力头在 softmax 的分母里有一个可学习的偏置, 类似 off-by-one attention 和 attention sink [16][17], 这让注意力机制可以不关注任何 token.
 
 > **回看:** 64 个 query 头 × 64 维是 4096, 比残差维度 2880 还宽, Table 1 的 0.96B 是这样来的吗?
-> 是 (估算). 每层 Q 投影 2880 × 4096, K 和 V 各 2880 × 512 (8 个头 × 64 维), 输出投影 4096 × 2880, 合计 2880 × 9216 ≈ 26.5M. 乘 36 层约 0.955B, 乘 24 层约 0.637B, 分别对上 Table 1 的 0.96B 和 0.64B. 注意力只占总参数不到 1%, 参数几乎都在 MoE 里, 所以 §2.1 只量化 MoE 权重就能把体积压下来.
+> 是. 每层 Q 投影 2880 × 4096, K 和 V 各 2880 × 512 (8 个头 × 64 维), 输出投影 4096 × 2880, 合计 2880 × 9216 ≈ 26.5M. 乘 36 层约 0.955B, 乘 24 层约 0.637B, 分别对上 Table 1 的 0.96B 和 0.64B. 注意力只占总参数不到 1%, 参数几乎都在 MoE 里, 所以 §2.1 只量化 MoE 权重就能把体积压下来.
 
 > **停一下:** 60.8GiB 放进 80GB 卡以后, 131,072 token 的 KV cache 还放得下吗?
-> 放得下, 余量不大 (估算). 80GB 约 74.5GiB, 扣掉权重剩约 13.7GiB. 稠密层每个 token 的 K, V 是 8 个头 × 64 维 × 2 × 2 byte = 2048 byte; 带状窗口层最多只存 128 个 token. 36 层交替, 稠密层 18 层, 每 token 约 36KiB, 131,072 个 token 约 4.5GiB. 单条满长序列没问题, 同时跑三条左右就到顶, 激活和框架开销还没算进去.
+> 放得下, 余量不大. 80GB 约 74.5GiB, 扣掉权重剩约 13.7GiB. 稠密层每个 token 的 K, V 是 8 个头 × 64 维 × 2 × 2 byte = 2048 byte; 带状窗口层最多只存 128 个 token. 36 层交替, 稠密层 18 层, 每 token 约 36KiB, 131,072 个 token 约 4.5GiB. 单条满长序列没问题, 同时跑三条左右就到顶, 激活和框架开销还没算进去.
 
 > **拆开:** 「a learned bias in the denominator of the softmax」怎么就能让一个头「pay no attention to any tokens」?
 > 写成式子: 权重 a_i = exp(s_i) / (exp(b) + Σ_j exp(s_j)), b 是每个头一个的可学习标量. 所有 s_j 都远小于 b 时, 分母几乎全是 exp(b), 各 a_i 趋近 0, 这个头输出接近零向量. 普通 softmax 的权重和必须为 1, 头不想看任何 token 时只能把注意力堆到开头几个 token 上, 这就是 [17] 说的 attention sink. 开源实现把 b 当成额外一列 logit 拼进去, softmax 之后再丢掉这一列.
@@ -242,7 +242,7 @@ Across all training stages, we utilize our o200k\_harmony tokenizer, which we op
 所有训练阶段都使用我们的 o200k\_harmony 分词器, 已在 [TikToken](https://github.com/openai/tiktoken) 库中开源. 它是一个字节对编码 (BPE) 分词器, 在 GPT-4o, OpenAI o4-mini 等模型所用的 o200k 分词器基础上, 加入了 harmony 对话格式 (见 Table 18) 专用的 token, 词表共 201,088 个 token.
 
 > **核对:** Embed + Unembed 两个模型都是 1.16B, 能和这里的词表大小对上吗?
-> 能 (估算). 201,088 × 2880 ≈ 0.579B, 输入嵌入和输出投影各一份, 合计约 1.158B, 四舍五入正是 Table 1 的 1.16B. 这说明两者不共享权重, 而且两个模型的残差维度同为 2880, 所以这一行完全相同.
+> 能. 201,088 × 2880 ≈ 0.579B, 输入嵌入和输出投影各一份, 合计约 1.158B, 四舍五入正是 Table 1 的 1.16B. 这说明两者不共享权重, 而且两个模型的残差维度同为 2880, 所以这一行完全相同.
 
 ## 2.4 Pretraining (预训练)
 
@@ -255,7 +255,7 @@ Training: The gpt-oss models trained on NVIDIA H100 GPUs using the PyTorch frame
 训练: gpt-oss 在 NVIDIA H100 GPU 上训练, 框架为 PyTorch [19], 并使用针对专家计算优化的 Triton [20] 算子<sup>2</sup>. gpt-oss-120b 的训练共耗 2.1 million H100 小时, gpt-oss-20b 少了将近 10 倍. 两个模型都用 FlashAttention [21] 算法降低显存需求, 加快训练.
 
 > **问:** 120b 用了 2.1 million H100 小时, 20b「almost 10x fewer」, 可两者激活参数只差 1.4 倍, 差额从哪来?
-> 本文没说. 按 6 × 激活参数 × token 数粗算, 在同样的硬件利用率下, 20b 的训练 token 量约是 120b 的 (1/10) ÷ (3.61/5.13) ≈ 1/7 (估算). 要么 20b 训练 token 明显更少, 要么两者利用率差得多, 本文两样都没给. 120b 自己的 token 量也只能估: 2.1 million 小时 × H100 BF16 稠密峰值约 989 TFLOPS, 利用率取 10% 到 40%, 对应约 24T 到 97T token (估算), 和「trillions of tokens」不冲突, 但区间很宽.
+> 本文没说. 按 6 × 激活参数 × token 数粗算, 在同样的硬件利用率下, 20b 的训练 token 量约是 120b 的 (1/10) ÷ (3.61/5.13) ≈ 1/7. 要么 20b 训练 token 明显更少, 要么两者利用率差得多, 本文两样都没给. 120b 自己的 token 量也只能估: 2.1 million 小时 × H100 BF16 稠密峰值约 989 TFLOPS, 利用率取 10% 到 40%, 对应约 24T 到 97T token, 和「trillions of tokens」不冲突, 但区间很宽.
 
 <!-- page 7 of 35 -->
 
@@ -741,7 +741,7 @@ Table 9: 幻觉评测
 | PersonQA | accuracy hallucination rate | 0.2980.491 | 0.1550.532 | 0.3560.361 |
 
 > **拆开:** Table 9 的「0.1680.782」该怎么读?
-> 这是 MinerU 把两行指标挤进了一格: 前半 0.168 是 accuracy, 后半 0.782 是 hallucination rate. 照此读: SimpleQA 上 120b 为 0.168 / 0.782, 20b 为 0.067 / 0.914, o4-mini 为 0.234 / 0.750; PersonQA 上 120b 为 0.298 / 0.491, 20b 为 0.155 / 0.532, o4-mini 为 0.356 / 0.361. 两项之和小于 1 的部分可以理解为没作答: SimpleQA 上 120b 约 5%, PersonQA 上约 21% (估算). 本文没定义第三类结果, 这只是推断.
+> 这是 MinerU 把两行指标挤进了一格: 前半 0.168 是 accuracy, 后半 0.782 是 hallucination rate. 照此读: SimpleQA 上 120b 为 0.168 / 0.782, 20b 为 0.067 / 0.914, o4-mini 为 0.234 / 0.750; PersonQA 上 120b 为 0.298 / 0.491, 20b 为 0.155 / 0.532, o4-mini 为 0.356 / 0.361. 两项之和小于 1 的部分可以理解为没作答: SimpleQA 上 120b 约 5%, PersonQA 上约 21%. 本文没定义第三类结果, 这只是推断.
 
 gpt-oss-120b and gpt-oss-20b underperform OpenAI o4-mini on both our SimpleQA and PersonQA evaluations. This is expected, as smaller models have less world knowledge than larger frontier models and tend to hallucinate more. Additionally, browsing or gathering external information tends to reduce instances of hallucination as models are able to look up information they do not have internal knowledge of.
 
