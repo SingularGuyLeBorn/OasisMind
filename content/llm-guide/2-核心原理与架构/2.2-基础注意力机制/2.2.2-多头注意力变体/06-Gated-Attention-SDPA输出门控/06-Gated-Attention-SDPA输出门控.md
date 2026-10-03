@@ -394,7 +394,7 @@ AttnRes 也在深度维上做加权, 但用的是 softmax 注意力: 每一层�
 
 ### 6.8 attention sink 的其他处理
 
-StreamingLLM 利用 sink 做长序列推理: 保留前几个 token 的 KV 和最近一段窗口, 中间的丢掉, 模型仍能正常生成. 它接受 sink 的存在并加以利用, 和 $G_1$ 的方向相反. 加了 $G_1$ 的模型首 token 占比只有 4.8%, 只保留首 token 的策略对它的意义也会变小. StreamingLLM 的细节见 [StreamingLLM 与 Attention Sink](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
+StreamingLLM 利用 sink 做长序列推理: 保留前几个 token 的 KV 和最近一段窗口, 中间的丢掉, 模型仍能正常生成. 它接受 sink 的存在并加以利用, 和 $G_1$ 的方向相反. 加了 $G_1$ 的模型首 token 占比只有 4.8%, 只保留首 token 的策略对它的意义也会变小. StreamingLLM 的细节见 [StreamingLLM 与 Attention Sink](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-StreamingLLM与Attention-Sink/07-StreamingLLM与Attention-Sink.md).
 
 还有一类做法给 softmax 加一个可学的「空」位置 (如在 key 里加一个 bias token), 让头把多余的质量分给它. Gu 等人的实验显示, 这类 key bias 能把 sink 从首 token 移到这个额外位置上, 但 sink 本身仍存在. 只有去掉归一化 (sigmoid 注意力) 时 sink 才在他们测试的规模内消失. $G_1$ 保留归一化, 用输出门让头可以不贡献, 达到了接近的效果.
 

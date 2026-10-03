@@ -87,7 +87,7 @@ $$
 
 当所有打分都远小于 $z_h$ 时, 分母几乎全是 $\exp(z_h)$, 各 $\alpha_{ij}$ 都趋近 0, 这个头的输出接近零向量. Miller 的 off-by-one 相当于 $z_h$ 固定为 0 (分母加 1), gpt-oss 让每个头自己学. 参考实现的写法是把 $z_h$ 当成额外一列 logit 拼到打分矩阵上, softmax 之后再丢掉这一列, 与式 (4) 等价.
 
-这一设计和窗口注意力关系很紧. StreamingLLM [17] 发现, 普通 softmax 的权重和必须为 1, 头在「没什么可看」的时候会把注意力堆到序列开头的几个 token 上, 开头 token 一旦被挤出 KV cache, 质量就崩. gpt-oss 的窗口层只看最近 128 个 token, 序列开头很快就不在窗口里了, 普通注意力找不到固定的「垃圾桶」; **分母里的可学习偏置正好补上这个位置** (这是推测, 模型卡没把两者联系起来). 详细机制可参见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md); 另一条让头输出接近零的路线是在注意力输出上加门控, 见 [Gated Attention](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md).
+这一设计和窗口注意力关系很紧. StreamingLLM [17] 发现, 普通 softmax 的权重和必须为 1, 头在「没什么可看」的时候会把注意力堆到序列开头的几个 token 上, 开头 token 一旦被挤出 KV cache, 质量就崩. gpt-oss 的窗口层只看最近 128 个 token, 序列开头很快就不在窗口里了, 普通注意力找不到固定的「垃圾桶」; **分母里的可学习偏置正好补上这个位置** (这是推测, 模型卡没把两者联系起来). 详细机制可参见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-StreamingLLM与Attention-Sink/07-StreamingLLM与Attention-Sink.md); 另一条让头输出接近零的路线是在注意力输出上加门控, 见 [Gated Attention](../../../../llm-guide/2-核心原理与架构/2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md).
 
 ## 7. RoPE 与 YaRN: 从 4096 拉到 131,072
 

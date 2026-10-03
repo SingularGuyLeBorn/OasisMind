@@ -60,7 +60,7 @@ S, C
 
 默认（用户点名「还凑合」）：
 
-`content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/08-QSA-Qwen稀疏注意力/images/fig-qsa-hybrid-slot.png`
+`content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/images/fig-qsa-hybrid-slot.png`
 
 按拓扑换参考，不要按论文题目：
 

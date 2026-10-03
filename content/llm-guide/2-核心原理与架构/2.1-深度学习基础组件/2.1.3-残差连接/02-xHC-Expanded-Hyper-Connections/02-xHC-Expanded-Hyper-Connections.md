@@ -6,7 +6,7 @@ excerpt: "mHC 把残差流从 4 条加到 16 条时收益很小, 成本却按 N 
 ---
 # xHC: 残差流从 4 条扩到 16 条
 
-> 相关阅读: [01 Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md)
+> 相关阅读: [01 Hyper-Connections 与 mHC](../01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md) · [03 Gated Residual](../03-Gated-Residual/03-Gated-Residual.md) · [2.1.3 残差连接](../2.1.3-残差连接.md) · [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) · [CSA/HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md)
 
 ## 太长不看版
 

@@ -279,7 +279,7 @@ GR 本身含门, 只有带 GN 一列. Full AttnRes 是该家族最强的设定, 
 | [Gated Attention](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/06-Gated-Attention-SDPA输出门控/06-Gated-Attention-SDPA输出门控.md) ($G_1$) | 注意力子层内, SDPA 输出上的逐头 sigmoid | 残差仍是普通的 $x+F(x)$; Qwen3.8 同时保留注意力输出门和 GR |
 | [SiTU](../../2.1.1-激活函数/01-SiTU-GLU/01-SiTU-GLU.md) / SwiGLU | FFN 激活 | 不涉及残差拓扑 |
 | [AttnRes](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/08-AttnRes-深度维注意力聚合/08-AttnRes-深度维注意力聚合.md) | 对历史层输出做注意力 | 不维护固定条数的分支, 见第 8 节 |
-| [CSA / HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md) | 压缩注意力 | 缩写里的 HC 与 Hyper-Connections 无关 |
+| [CSA / HCA](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md) | 压缩注意力 | 缩写里的 HC 与 Hyper-Connections 无关 |
 
 ## 参考文献
 

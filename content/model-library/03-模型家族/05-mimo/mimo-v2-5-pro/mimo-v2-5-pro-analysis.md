@@ -23,7 +23,7 @@ excerpt: "页 1 的身份声明: 发布并开源, 是小米迄今最强的模型
 
 页 9 的架构句: SWA 与 GA 按 6:1 交织, 窗口 128 token, 长上下文 KV 缓存存储降近 7×, 用可学习的 attention-sink bias 保住性能. Flash 报告是每个 block 5 个 SWA 接 1 个 GA, 首层是 GA, 逐层数为 39 SWA 与 9 GA. V2.6 报告 Tab. 1 给出 Pro 档 70/60/10 层 (总层 / SWA / GA), 即 6:1; Hugging Face 模型卡 (外部材料) 写 V2.5-Pro 70 层, 1 层稠密加 69 层 MoE, GA 10 层, SWA 60 层, 与 V2.6-Pro 一致. 窗口两代都是 128.
 
-「近 7×」 可以用层数比例核对一下 (推算). SWA 层只存最近 128 个位置, 序列很长时其 KV 缓存可以忽略, 长上下文的 KV 基本全来自 GA 层. 全局层占比 $10/70=1/7$, 相对全部层都用全局注意力, KV 约为 1/7, 与页面的 「nearly 7×」 一致. 同样的算法用在 Flash 上是 $9/48\approx0.19$, 约 5.3×; Flash 报告的 「nearly 6×」 是按 5:1 的 block 模板说的, 没有扣首层. 从 5:1 到 6:1, 小米在更大的模型上把全局层比例又压低了一些, 这和 Flash 报告 §2.2 的消融方向一致 (窗口 128 加 sink 不输全局注意力), 但那组消融只做到 5:1, 6:1 是否在 1T 规模上重新验证过, 本页没有写. sink 的机制背景见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
+「近 7×」 可以用层数比例核对一下 (推算). SWA 层只存最近 128 个位置, 序列很长时其 KV 缓存可以忽略, 长上下文的 KV 基本全来自 GA 层. 全局层占比 $10/70=1/7$, 相对全部层都用全局注意力, KV 约为 1/7, 与页面的 「nearly 7×」 一致. 同样的算法用在 Flash 上是 $9/48\approx0.19$, 约 5.3×; Flash 报告的 「nearly 6×」 是按 5:1 的 block 模板说的, 没有扣首层. 从 5:1 到 6:1, 小米在更大的模型上把全局层比例又压低了一些, 这和 Flash 报告 §2.2 的消融方向一致 (窗口 128 加 sink 不输全局注意力), 但那组消融只做到 5:1, 6:1 是否在 1T 规模上重新验证过, 本页没有写. sink 的机制背景见 [StreamingLLM 与 Attention Sink](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/07-StreamingLLM与Attention-Sink/07-StreamingLLM与Attention-Sink.md).
 
 ### 1.3. MTP, 预训练与后训练
 
