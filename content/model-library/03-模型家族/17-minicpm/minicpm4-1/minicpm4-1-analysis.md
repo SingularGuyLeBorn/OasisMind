@@ -1,9 +1,9 @@
 ---
-title: "MiniCPM4.1 目录分析：一篇论文，两个入口"
+title: "MiniCPM4.1 目录分析:一篇论文,两个入口"
 category: "模型库"
 tags: ["MiniCPM", "技术解析"]
 published: true
-excerpt: "minicpm4-1/minicpm4-1.md 和 minicpm4/minicpm4.md 的 SHA256 都是 858549b9d6d152cc03917f64ef83117ffbc4781ed7e44e684c7049845be02398，大小都是 194900 字节。"
+excerpt: "minicpm4-1/minicpm4-1.md 和 minicpm4/minicpm4.md 的 SHA256 都是 858549b9d6d152cc03917f64ef83117ffbc4781ed7e44e684c7049845be02398,大小都是 194900 字节."
 ---
 # MiniCPM4.1 目录分析：一篇论文，两个入口
 

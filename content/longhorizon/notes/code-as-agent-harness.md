@@ -8,7 +8,7 @@ tags: ["Agent Harness", "代码 Agent", "综述", "多 Agent", "可验证执行"
 # Code as Agent Harness：代码作为 Agent 基础设施的三层综述
 
 > **论文**：*Code as Agent Harness: Toward Executable, Verifiable, and Stateful Agent Systems*（arXiv:2605.18747，2026-05）
-> **PDF**：[arXiv:2605.18747](https://arxiv.org/pdf/2605.18747)
+> **PDF**:[arXiv:2605.18747](https://arxiv.org/pdf/2605.18747)
 
 ## 原文精读
 

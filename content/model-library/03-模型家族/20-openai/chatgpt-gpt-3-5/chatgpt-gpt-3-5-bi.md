@@ -3,7 +3,7 @@ title: "ChatGPT (GPT-3.5) · 对照译稿"
 category: "模型库"
 tags: ["OpenAI", "对照译稿"]
 published: true
-excerpt: "ChatGPT (GPT-3.5) 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "ChatGPT (GPT-3.5) 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 <!-- page 1 of 9 -->
 

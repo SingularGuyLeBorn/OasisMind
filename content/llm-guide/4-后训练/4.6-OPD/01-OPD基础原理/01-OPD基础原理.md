@@ -2,7 +2,7 @@
 title: "01 · OPD 基础原理：Reverse KL、On-Policy 与后训练革命"
 published: true
 tags: ["OPD", "On-Policy Distillation", "Reverse KL", "MiniLLM", "GKD", "知识蒸馏", "后训练"]
-excerpt: "本库 OPD 的全称是 On-Policy Distillation：学生按当前策略自己采样轨迹，教师只在这些学生前缀上给逐 token 的密集监督。"
+excerpt: "本库 OPD 的全称是 On-Policy Distillation:学生按当前策略自己采样轨迹,教师只在这些学生前缀上给逐 token 的密集监督."
 ---
 # 01 · OPD 基础原理：Reverse KL、On-Policy 与后训练革命
 

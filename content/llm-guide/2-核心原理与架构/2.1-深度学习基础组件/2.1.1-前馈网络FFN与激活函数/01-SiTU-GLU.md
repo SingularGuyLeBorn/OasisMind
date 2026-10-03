@@ -2,7 +2,7 @@
 title: "01 · SiTU-GLU：给 SwiGLU 的两条支路都加上光滑上界"
 published: true
 tags: ["SiTU-GLU", "SwiGLU", "激活函数", "FFN", "Kimi-K3"]
-excerpt: "GLU 用 sigmoid 去乘一条线性；SwiGLU 把门换成 \\mathrm{Swish}(x)=x\\sigma(x)，正半轴近似线性、效果好，所以 Llama / Qwen / DeepSeek / K2 都用它当 FFN。"
+excerpt: "GLU 用 sigmoid 去乘一条线性;SwiGLU 把门换成 \\mathrm{Swish}(x)=x\\sigma(x),正半轴近似线性、效果好,所以 Llama / Qwen / DeepSeek / K2 都用它当 FFN."
 ---
 # SiTU-GLU：SwiGLU 在低精度里会爆，就把两条乘子都 cap 住
 

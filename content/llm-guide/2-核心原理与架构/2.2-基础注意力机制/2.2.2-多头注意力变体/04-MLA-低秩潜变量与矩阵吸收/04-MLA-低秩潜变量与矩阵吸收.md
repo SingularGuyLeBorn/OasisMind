@@ -1,7 +1,7 @@
 ---
 title: "04 · MLA:低秩潜变量与矩阵吸收"
 published: true
-excerpt: "Multi-head Latent Attention（MLA）由 DeepSeek-V2（Dai et al."
+excerpt: "Multi-head Latent Attention(MLA)由 DeepSeek-V2(Dai et al."
 ---
 # 04 · MLA:低秩潜变量与矩阵吸收
 

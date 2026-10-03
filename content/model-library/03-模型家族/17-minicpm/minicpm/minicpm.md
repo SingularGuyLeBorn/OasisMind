@@ -3,7 +3,7 @@ title: "MiniCPM · 源文"
 category: "模型库"
 tags: ["MiniCPM", "源文"]
 published: true
-excerpt: "MiniCPM 公开材料的 MinerU 抓取原文。"
+excerpt: "MiniCPM 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 10 -->
 

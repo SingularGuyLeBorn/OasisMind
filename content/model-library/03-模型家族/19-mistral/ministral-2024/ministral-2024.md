@@ -3,7 +3,7 @@ title: "Ministral 3B / 8B · 源文"
 category: "模型库"
 tags: ["Mistral", "源文"]
 published: true
-excerpt: "Ministral 3B / 8B 公开材料的 MinerU 抓取原文。"
+excerpt: "Ministral 3B / 8B 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 9 -->
 

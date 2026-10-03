@@ -3,7 +3,7 @@ title: "OpenAI o1 · 对照译稿"
 category: "模型库"
 tags: ["OpenAI", "对照译稿"]
 published: true
-excerpt: "OpenAI o1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "OpenAI o1 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文: OpenAI o1 System Card, OpenAI, 2024 年 9 月 12 日, 43 页, 26 张图 (编号图 5 张, 其余是未编号的柱状图, 散点图和对话截图). 英文段在前, 中文意译紧跟. Introduction, Conclusion, Appendix, References 的节名不译, References 正文保留原文. 单独的页码行已删去, 跨页断开的半句接回上一页. 表格保留英文, 表后附中文说明. 表 18 的两个分组标签 ExplicitDiscrimination 和 ImplicitDiscrimination 在转 Markdown 时错到了表格中间, 这里按 PDF 文字层挪回每组第一行之前, 数字未动. 第 19, 22, 24, 26, 29 页几张图的文件名取自邻近正文, 和图的内容不对应, 以图上方的标题行和图中坐标轴为准.
 

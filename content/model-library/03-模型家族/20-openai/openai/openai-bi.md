@@ -3,7 +3,7 @@ title: "OpenAI Models 页 · 对照译稿"
 category: "模型库"
 tags: ["OpenAI", "对照译稿"]
 published: true
-excerpt: "OpenAI Models 页 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "OpenAI Models 页 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 # OpenAI 开发者文档 Models 页对照稿
 

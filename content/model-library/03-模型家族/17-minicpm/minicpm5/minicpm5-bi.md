@@ -3,7 +3,7 @@ title: "MiniCPM5-1B · 对照译稿"
 category: "模型库"
 tags: ["MiniCPM", "对照译稿"]
 published: true
-excerpt: "MiniCPM5-1B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "MiniCPM5-1B 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 # MiniCPM5-1B Model Card 中英对照
 

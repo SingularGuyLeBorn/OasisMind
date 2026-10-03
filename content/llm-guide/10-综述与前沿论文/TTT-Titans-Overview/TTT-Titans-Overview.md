@@ -1,7 +1,7 @@
 ---
 title: "10 · TTT(Test-Time Training)与 Titans: 2025-2026 年最受关注的新架构"
 published: true
-excerpt: "2024 年 7 月，斯坦福、UCSD、UC Berkeley 和 Meta 的研究人员提出了 TTT 层. 核心想法非常直接:"
+excerpt: "2024 年 7 月,斯坦福、UCSD、UC Berkeley 和 Meta 的研究人员提出了 TTT 层. 核心想法非常直接:"
 ---
 # TTT(Test-Time Training)与 Titans: 2025-2026 年最受关注的新架构
 

@@ -2,7 +2,7 @@
 title: "08 · MoE 系统优化综述"
 published: true
 tags: ["MoE", "专家并行", "All-to-All", "SonicMoE", "Grouped-GEMM"]
-excerpt: "MoE 把 FLOPs 做成稀疏，参数却仍要驻留。系统层卡住的不是「再写一遍 Top-k」，而是 token 怎么送到拥有专家的那张卡、激活怎么不随粒度线性涨、Grouped GEMM 的 Tile 怎么不被填充吃掉。"
+excerpt: "MoE 把 FLOPs 做成稀疏,参数却仍要驻留.系统层卡住的不是「再写一遍 Top-k」,而是 token 怎么送到拥有专家的那张卡、激活怎么不随粒度线性涨、Grouped GEMM 的 Tile 怎么不被填充吃掉."
 ---
 # MoE 系统优化：稀疏激活碰到硬件的并行胃口
 

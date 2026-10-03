@@ -3,7 +3,7 @@ title: "Mistral Small 4 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral Small 4 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral Small 4 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Mistral AI 官网的 Mistral Small 4 发布页, 标题 「Introducing Mistral Small 4」, 共 10 页, 6 张图. 正文在第 1 到第 8 页, 第 9, 10 页是站点页脚. 每一页都叠着 axeptio 的 cookie 横幅, 转出的 Markdown 丢了大半正文, 下面的英文按 PDF 文本层补全. 第 3 页和第 5 页两张柱状图被横幅挡住一部分, 数字按 PDF 里嵌着的原图读, 每根柱上都印了数, 不需要读柱高. 第 6 页正文提到的 「Score vs. Output Length」 图, PDF 里只剩一段空白和图注, 没有抓到图, images 目录里也没有.
 

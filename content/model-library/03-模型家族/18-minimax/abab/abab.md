@@ -3,7 +3,7 @@ title: "abab6.5 · 源文"
 category: "模型库"
 tags: ["MiniMax", "源文"]
 published: true
-excerpt: "abab6.5 公开材料的 MinerU 抓取原文。"
+excerpt: "abab6.5 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 3 -->
 

@@ -3,7 +3,7 @@ title: "03 · 原文：Post-Training is About States, Not Tokens"
 category: "LLM 指南"
 published: true
 tags: ["OPD", "SFT", "RL", "状态分布", "原文"]
-excerpt: "正文为 arXiv HTML 誊录。PDF 第 1 页页眉为 1st Conference 2026。"
+excerpt: "正文为 arXiv HTML 誊录.PDF 第 1 页页眉为 1st Conference 2026."
 ---
 # Post-Training is About States, Not Tokens: A State Distribution View of SFT, RL, and On-Policy Distillation
 

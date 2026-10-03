@@ -3,7 +3,7 @@ title: "Pixtral 12B · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Pixtral 12B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Pixtral 12B 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文: Mistral AI 官网博文 「Announcing Pixtral 12B」, 2024 年 9 月 17 日发布, 2026/9/25 打印, 共 22 页, 30 张图. 英文段在前, 中文意译紧跟. 转出的 Markdown 被 cookie 弹窗打乱了很多句子, 英文一律按 PDF 文字层校正 (例如 Markdown 里的 「pixtral-12h-2409」, 文字层是 「pixtral-12b-2409」). 每页的页眉 「2026/9/25 13:49 [Deprecated] Pixtral 12B | Mistral AI」, 页脚网址和页码, 顶栏 「Get in touch」, 以及左下角同一个 axeptio cookie 弹窗, 只在第 1 页录一次. 第 4 页的对比表, 第 7 页的架构图, 第 11 页的两张输入表, 第 13 页的手绘草图在 images 目录里没有单独的图文件, 按渲染出来的页面抄录露出的部分.
 

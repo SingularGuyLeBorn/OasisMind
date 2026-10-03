@@ -3,7 +3,7 @@ title: "MiniMax-M1 · 对照译稿"
 category: "模型库"
 tags: ["MiniMax", "对照译稿"]
 published: true
-excerpt: "MiniMax-M1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "MiniMax-M1 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文是 arXiv 2506.13585v1, MiniMax 的 MiniMax-M1 技术报告, 22 页, 8 张图 (分属图 1 到图 4), 由转写工具转成 Markdown. 每页页眉的论文标题和页脚的单独页码删去; 跨页断开的半句接回上一页的段落. 英文段在前, 中文意译紧跟; 公式和表格保留原样, 后面用中文说明.
 

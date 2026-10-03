@@ -3,7 +3,7 @@ title: "Mistral Large · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral Large 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral Large 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Mistral AI 官网 Mistral Large 发布页 「Au Large」 的打印件, 共 9 页, 8 张图. 正文在第 1 到第 7 页, 第 7 页后半到第 9 页是站点页脚. 每页都有一块 cookie 横幅盖住正文, 转出的 Markdown 因此丢了很多字. 下面的英文按 PDF 文本层补全; 表格数字按页面上的表格图抄录, 被横幅挡住的格子留空, 不补. 本稿只用这页印出来的数, 不从 Mistral Large 后续版本搬参数.
 

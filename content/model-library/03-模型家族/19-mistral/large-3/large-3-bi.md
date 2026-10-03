@@ -3,7 +3,7 @@ title: "Mistral Large 3 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral Large 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral Large 3 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Hugging Face 上 Mistral-Large-3-675B-Instruct-2512 的模型卡页, 9 页, 9 张图. 转出的 Markdown 丢了几个数: Community 标签的角标 14, Model tree 里的 Finetuned (13) 和 Quantizations 7 models, 下面按页面渲染补上. 第 5 页的图例, 分组标签和脚注在 PDF 里是图片, 同样按渲染抄录. 页面上 Vision Reasoning, Function Calling, Text-Only Request 三段是折叠状态, 内容没印出来.
 

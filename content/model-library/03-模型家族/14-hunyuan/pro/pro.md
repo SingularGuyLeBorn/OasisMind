@@ -3,7 +3,7 @@ title: "腾讯混元大模型产品动态 · 源文"
 category: "模型库"
 tags: ["Hunyuan", "源文"]
 published: true
-excerpt: "腾讯混元大模型产品动态 公开材料的 MinerU 抓取原文。"
+excerpt: "腾讯混元大模型产品动态 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 56 -->
 

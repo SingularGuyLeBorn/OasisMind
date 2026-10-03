@@ -2,7 +2,7 @@
 title: "06 · SCOPE 选择性反馈: 工程防崩与置信度门控"
 published: true
 tags: ["OPD", "SCOPE", "Selective Feedback", "Confidence Gating", "后训练", "工程化"]
-excerpt: "在OPD算法家族的演进谱系中，我们已经历了从基础OPD(Reverse KL驱动的在线策略蒸馏)到OPSD(自蒸馏，消解外部教师依赖)、SDFT(自蒸馏持续学习)、SDPO(自蒸馏策略优化)，再到G-OPD(广义OPD，f-散度统一框架与λ坐标系)的完整理论跃迁. G-OPD用一把λ旋钮，将知识蒸馏…"
+excerpt: "在OPD算法家族的演进谱系中,我们已经历了从基础OPD(Reverse KL驱动的在线策略蒸馏)到OPSD(自蒸馏,消解外部教师依赖)、SDFT(自蒸馏持续学习)、SDPO(自蒸馏策略优化),再到G-OPD(广义OPD,f-散度统一框架与λ坐标系)的完整理论跃迁. G-OPD用一把λ旋钮,将知识蒸馏…"
 ---
 # 06 · SCOPE 选择性反馈: 工程防崩与置信度门控
 

@@ -2,7 +2,7 @@
 title: "10 · 下一代 Transformer 架构预测: 从纯注意力到混合架构"
 published: true
 tags: ["Transformer", "下一代架构", "SSM", "Mamba", "MoE", "稀疏化", "混合架构", "预测"]
-excerpt: "它将从纯粹的注意力机制堆叠，演变成巨大的、稀疏的、混合了循环状态空间模型(SSM)特性的\"缝合怪\"."
+excerpt: "它将从纯粹的注意力机制堆叠,演变成巨大的、稀疏的、混合了循环状态空间模型(SSM)特性的\"缝合怪\"."
 ---
 # 下一代 Transformer 架构预测
 

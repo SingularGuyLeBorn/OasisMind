@@ -2,7 +2,7 @@
 title: "05 · G-OPD 广义OPD：f-散度统一框架与λ坐标系"
 published: true
 tags: ["OPD", "G-OPD", "f-Divergence", "Reverse KL", "广义散度", "后训练"]
-excerpt: "在OPD算法家族的演进谱系中，我们已经系统性地走过了基础OPD(Reverse KL驱动的在线策略蒸馏)、OPSD(在线自蒸馏，用同一模型的不同上下文消解外部教师依赖)、SDFT(自蒸馏持续学习，解决灾难性遗忘)以及SDPO(自蒸馏策略优化，将OPD与DPO在数学上统一). 这些算法各自解决了基础O…"
+excerpt: "在OPD算法家族的演进谱系中,我们已经系统性地走过了基础OPD(Reverse KL驱动的在线策略蒸馏)、OPSD(在线自蒸馏,用同一模型的不同上下文消解外部教师依赖)、SDFT(自蒸馏持续学习,解决灾难性遗忘)以及SDPO(自蒸馏策略优化,将OPD与DPO在数学上统一). 这些算法各自解决了基础O…"
 ---
 # 05 · G-OPD 广义OPD：f-散度统一框架与λ坐标系
 

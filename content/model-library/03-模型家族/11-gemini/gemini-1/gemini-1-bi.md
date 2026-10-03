@@ -3,7 +3,7 @@ title: "Gemini 1.0 · 对照译稿"
 category: "模型库"
 tags: ["Gemini", "对照译稿"]
 published: true
-excerpt: "Gemini 1.0 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Gemini 1.0 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 <!-- page 1 of 90 -->
 

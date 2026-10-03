@@ -3,7 +3,7 @@ title: "09 · MOPD：多教师在线蒸馏"
 category: "LLM 指南"
 published: true
 tags: ["MOPD", "OPD", "多教师", "On-Policy Distillation", "DeepSeek-V4", "Kimi K3", "MiMo-V2-Flash"]
-excerpt: "分域 RL 能把数学、代码、agent 各自推到峰值，交付却只要一份权重。多教师在线蒸馏做的事很窄：学生 \\pi_\\theta 自己采样，按题目找对应教师，用教师分布给学生稠密监督，把多份专家并进一个学生。"
+excerpt: "分域 RL 能把数学、代码、agent 各自推到峰值,交付却只要一份权重.多教师在线蒸馏做的事很窄:学生 \\pi_\\theta 自己采样,按题目找对应教师,用教师分布给学生稠密监督,把多份专家并进一个学生."
 ---
 # 09 MOPD：多教师在线蒸馏
 

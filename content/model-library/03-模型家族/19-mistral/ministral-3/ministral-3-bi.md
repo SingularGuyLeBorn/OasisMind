@@ -3,7 +3,7 @@ title: "Ministral 3 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Ministral 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Ministral 3 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文: arXiv:2601.08584v1, Ministral 3, Mistral AI, 2026 年 1 月 13 日, 14 页, 6 张图. 英文段在前, 中文意译紧跟. Abstract, Introduction, Conclusion, References 的节名不译, References (第 12 至 14 页) 正文不译. 单独的页码行已删去, 第 2 页到第 3 页断开的半句已接回. 页首的 「MistralAl」 是转 Markdown 时把标志字样识别错了, PDF 文字层没有这一行, 这里按标志记作 Mistral AI. 算法 1 的标题 「Algorithm 1 Cascade Distillation.」 在 Markdown 里丢了, 按 PDF 文字层补回. 公式 $W_2(\mathrm{SiLU}(W_1 x) * W_3 x)$ 按 PDF 文字层校正.
 

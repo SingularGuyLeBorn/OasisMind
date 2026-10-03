@@ -3,7 +3,7 @@ title: "OpenAI o1 · 源文"
 category: "模型库"
 tags: ["OpenAI", "源文"]
 published: true
-excerpt: "OpenAI o1 公开材料的 MinerU 抓取原文。"
+excerpt: "OpenAI o1 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 43 -->
 

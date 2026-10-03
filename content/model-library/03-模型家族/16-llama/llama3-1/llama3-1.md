@@ -3,7 +3,7 @@ title: "Llama 3.1 · 源文"
 category: "模型库"
 tags: ["Llama", "源文"]
 published: true
-excerpt: "Llama 3.1 公开材料的 MinerU 抓取原文。"
+excerpt: "Llama 3.1 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 92 -->
 

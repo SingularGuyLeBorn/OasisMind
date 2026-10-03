@@ -2,7 +2,7 @@
 title: "10 · Allen AI OLMo: 全开源大模型生态"
 published: true
 tags: ["OLMo", "Allen AI", "开源", "预训练", "数据", "全链路"]
-excerpt: "大多数\"开源\"模型(如 Llama、Mistral)仅提供模型权重和部分代码，而 OLMo 开放了整个\"模型流水线\":"
+excerpt: "大多数\"开源\"模型(如 Llama、Mistral)仅提供模型权重和部分代码,而 OLMo 开放了整个\"模型流水线\":"
 ---
 # Allen AI OLMo: 全开源大模型生态
 

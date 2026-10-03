@@ -2,7 +2,7 @@
 title: "01 · Kimi Delta Attention：通道级遗忘的 delta 规则"
 published: true
 tags: ["KDA", "Gated-DeltaNet", "linear-attention", "Kimi-Linear", "GLM-5.3-Flash"]
-excerpt: "线性注意力把历史收进固定大小的矩阵状态 \\mathbf{S}_t，解码不再读整段 KV，但状态容量有限，旧联想会互相覆盖。"
+excerpt: "线性注意力把历史收进固定大小的矩阵状态 \\mathbf{S}_t,解码不再读整段 KV,但状态容量有限,旧联想会互相覆盖."
 ---
 # Kimi Delta Attention：头级遗忘太粗之后，让每个通道自己过期
 

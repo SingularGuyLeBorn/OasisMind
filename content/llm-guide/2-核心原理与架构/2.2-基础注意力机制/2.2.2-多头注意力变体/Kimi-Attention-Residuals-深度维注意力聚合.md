@@ -1,7 +1,7 @@
 ---
 title: "2.2.2 · Kimi Attention Residuals：深度维注意力聚合"
 published: true
-excerpt: "Kimi 团队提出的 Attention Residuals(AttnRes) 看起来像是在改残差连接, 但如果从机制上看, 它真正改写的是一件更底层的事：深度维上的历史层表示到底应该怎样被当前层聚合."
+excerpt: "Kimi 团队提出的 Attention Residuals(AttnRes) 看起来像是在改残差连接, 但如果从机制上看, 它真正改写的是一件更底层的事:深度维上的历史层表示到底应该怎样被当前层聚合."
 ---
 # Kimi Attention Residuals：当层间残差混合变成深度维注意力
 

@@ -3,7 +3,7 @@ title: "Claude Fable 5.1 与 Mythos 5.1 · 源文"
 category: "模型库"
 tags: ["Claude", "源文"]
 published: true
-excerpt: "Claude Fable 5.1 与 Mythos 5.1 公开材料的 MinerU 抓取原文。"
+excerpt: "Claude Fable 5.1 与 Mythos 5.1 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 212 -->
 

@@ -3,7 +3,7 @@ title: "MiniCPM4.1 · 对照译稿"
 category: "模型库"
 tags: ["MiniCPM", "对照译稿"]
 published: true
-excerpt: "MiniCPM4.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "MiniCPM4.1 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 # MiniCPM4.1 目录对照稿：与 minicpm4 同源
 

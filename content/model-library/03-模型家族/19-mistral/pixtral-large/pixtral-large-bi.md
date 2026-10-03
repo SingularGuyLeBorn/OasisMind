@@ -3,7 +3,7 @@ title: "Pixtral Large · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Pixtral Large 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Pixtral Large 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Mistral 文档站 (docs.mistral.ai) 的 Pixtral Large 模型卡页, 只有 1 页, 6 张图. 页面下半部分被 cookie 横幅盖住. 转出的 Markdown 丢了弃用日期一栏, 下面的英文按 PDF 文本层补全; MODALITIES 和 CONTEXT 两块在 PDF 里是嵌入图, 文字按页面渲染抄录.
 

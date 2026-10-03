@@ -1,7 +1,7 @@
 ---
 title: "03 · GQA:在性能与 KV Cache 之间折中"
 published: true
-excerpt: "Grouped-Query Attention（GQA）由 Ainslie et al."
+excerpt: "Grouped-Query Attention(GQA)由 Ainslie et al."
 ---
 # GQA:在性能与 KV Cache 之间折中
 

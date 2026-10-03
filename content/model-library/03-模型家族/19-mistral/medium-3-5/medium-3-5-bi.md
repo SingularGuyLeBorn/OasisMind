@@ -3,7 +3,7 @@ title: "Mistral Medium 3.5 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral Medium 3.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral Medium 3.5 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Hugging Face 上 mistralai/Mistral-Medium-3.5-128B 的模型卡页面, 打印成 13 页, 10 张图. 不是论文, 没有 Abstract 和 References. 3 张柱状图是整页主要的数字来源, 图中读数按图片逐项抄出, 列在对应图下. 部分标题前 OCR 出了一个链接图标的公式残字, 这里删掉. 截断的命令行按原样保留.
 

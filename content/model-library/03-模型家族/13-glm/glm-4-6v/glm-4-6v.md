@@ -3,7 +3,7 @@ title: "GLM-4.6V · 源文"
 category: "模型库"
 tags: ["GLM", "源文"]
 published: true
-excerpt: "GLM-4.6V 公开材料的 MinerU 抓取原文。"
+excerpt: "GLM-4.6V 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 10 -->
 

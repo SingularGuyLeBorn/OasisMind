@@ -3,7 +3,7 @@ title: "Claude Opus 4 · 对照译稿"
 category: "模型库"
 tags: ["Claude", "对照译稿"]
 published: true
-excerpt: "Claude Opus 4 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Claude Opus 4 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 <!-- page 1 of 123 -->
 

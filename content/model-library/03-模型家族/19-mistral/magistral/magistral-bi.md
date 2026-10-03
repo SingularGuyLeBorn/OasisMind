@@ -3,7 +3,7 @@ title: "Magistral · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Magistral 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Magistral 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文: arXiv:2506.10910v1, Magistral, Mistral AI, 2025 年 6 月 12 日, 23 页, 23 张图 (16 个图号, 其中图 6, 7, 8, 11, 12 由多张子图拼成). 英文段在前, 中文意译紧跟. Abstract, Introduction, Conclusion, References 的节名不译, 正文都附中文. 单独的页码行已删去, 跨页断开的半句已接回上一页. 转 Markdown 时把 5.1 节标题识别成 「f5.1」, 把图 4 图注里的 「Mistral Medium 3」 粘成 「aMistral Medium 3」, 把 7.2 节的 「Mistral Medium 3,」 识别成上标, 把 $\varepsilon_{\mathrm{high}}$ 识别成 「<sup>ε</sup>high」, 这里都按 PDF 文字层改回. 图 2 的系统提示词按图片原文照录, 保留原标点.
 

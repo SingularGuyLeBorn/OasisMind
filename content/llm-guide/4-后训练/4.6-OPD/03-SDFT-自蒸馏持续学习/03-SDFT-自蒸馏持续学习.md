@@ -2,7 +2,7 @@
 title: "03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局"
 published: true
 tags: ["SDFT", "Self-Distillation", "Continual Learning", "OPD", "知识蒸馏", "后训练", "IRL"]
-excerpt: "家谱定位: 本算法是 OPD(在线策略蒸馏)与 OPSD(在线自蒸馏)的自然延伸，它致力于将自蒸馏思想引入到一个极其恶劣且常见的真实工业场景——持续学习(Continual Learning)."
+excerpt: "家谱定位: 本算法是 OPD(在线策略蒸馏)与 OPSD(在线自蒸馏)的自然延伸,它致力于将自蒸馏思想引入到一个极其恶劣且常见的真实工业场景——持续学习(Continual Learning)."
 ---
 # 03 · SDFT: 自蒸馏持续学习 — 逆向强化学习视角的破局
 

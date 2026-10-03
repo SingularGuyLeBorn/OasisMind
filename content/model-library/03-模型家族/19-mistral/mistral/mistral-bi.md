@@ -3,7 +3,7 @@ title: "Mistral 官网新闻列表页 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral 官网新闻列表页 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral 官网新闻列表页 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 # Mistral 官网新闻列表页对照稿
 

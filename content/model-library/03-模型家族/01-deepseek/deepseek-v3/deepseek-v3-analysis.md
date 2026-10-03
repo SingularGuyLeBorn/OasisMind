@@ -3,7 +3,7 @@ title: "DeepSeek-V3: 671B 总参, 37B 激活, 14.8T token"
 category: "模型库"
 tags: ["DeepSeek", "技术解析"]
 published: true
-excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看。"
+excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看."
 ---
 # DeepSeek-V3: 671B 总参, 37B 激活, 14.8T token
 

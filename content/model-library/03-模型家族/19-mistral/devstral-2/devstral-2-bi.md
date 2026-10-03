@@ -3,7 +3,7 @@ title: "Devstral 2 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Devstral 2 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Devstral 2 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Mistral AI 官网的 Devstral 2 发布页, 标题 「Introducing: Devstral 2 and Mistral Vibe CLI.」, 共 10 页, 10 张图, 不是论文. 正文在第 1 到第 8 页, 第 9, 10 页是站点页脚. 每一页都叠着一个 cookie 横幅, 转出的 Markdown 丢了大半正文, 下面的英文按 PDF 文本层补全. 第 3, 4, 5 页的三张图被横幅或站点顶栏挡住一部分, 标题, 坐标轴和图例按 PDF 里嵌着的原图读; 柱状图和人评图的每个数都印在图上, 散点图只有位置没有数.
 

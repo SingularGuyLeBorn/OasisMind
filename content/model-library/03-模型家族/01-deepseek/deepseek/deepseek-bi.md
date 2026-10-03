@@ -3,7 +3,7 @@ title: "DeepSeek LLM · 对照译稿"
 category: "模型库"
 tags: ["DeepSeek", "对照译稿"]
 published: true
-excerpt: "DeepSeek LLM 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "DeepSeek LLM 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 # DeepSeek LLM Scaling Open-Source Language Models with Longtermism / DeepSeek LLM: 用长期主义缩放开源语言模型
 

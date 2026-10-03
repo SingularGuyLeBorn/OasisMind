@@ -2,7 +2,7 @@
 title: "03 · MoE Top-K：离散选择与 straight-through"
 published: true
 tags: ["MoE", "Top-K", "可导性", "STE"]
-excerpt: "稀疏 MoE 的路由要先 选出 K 个专家，再让这 K 路 FFN 参与前向。Top-K 是排序 + 硬掩码：分数刚好比过线的专家，梯度该不该流回去？"
+excerpt: "稀疏 MoE 的路由要先 选出 K 个专家,再让这 K 路 FFN 参与前向.Top-K 是排序 + 硬掩码:分数刚好比过线的专家,梯度该不该流回去?"
 ---
 # 03 MoE Top-K：离散选择与 straight-through
 

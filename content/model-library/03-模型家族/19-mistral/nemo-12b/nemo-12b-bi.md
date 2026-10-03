@@ -3,7 +3,7 @@ title: "Mistral NeMo · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral NeMo 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral NeMo 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 源文: Mistral AI 官网博文 Mistral NeMo, 2024 年 7 月 18 日, 网页打印 6 页, 6 张图. 英文段在前, 中文意译紧跟. 正文英文按 PDF 文字层校正; 每页都叠着同一个 axeptio cookie 弹窗和顶栏 「Get in touch」, 弹窗文字只在第 1 页录一次. 表 1 和表 2 的左侧列, 图 1 的左中两格都被弹窗遮住, 表里只录露出来的格子.
 

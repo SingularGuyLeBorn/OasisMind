@@ -2,7 +2,7 @@
 title: "10 · Credal Transformer: 从 Softmax 的确定性暴政到证据理论的不确定性建模"
 published: true
 tags: ["Credal Transformer", "幻觉", "不确定性", "证据理论", "狄利克雷分布", "Softmax", "架构创新"]
-excerpt: "现有 Transformer 架构的激活函数 Softmax，其数学本质是一个从 \\mathbb{R}^L 到概率单纯形 \\Delta^{L-1} 的映射:"
+excerpt: "现有 Transformer 架构的激活函数 Softmax,其数学本质是一个从 \\mathbb{R}^L 到概率单纯形 \\Delta^{L-1} 的映射:"
 ---
 # Credal Transformer: 从 Softmax 的确定性暴政到证据理论的不确定性建模
 

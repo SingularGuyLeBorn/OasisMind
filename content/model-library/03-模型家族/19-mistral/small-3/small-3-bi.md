@@ -3,7 +3,7 @@ title: "Mistral Small 3 · 对照译稿"
 category: "模型库"
 tags: ["Mistral", "对照译稿"]
 published: true
-excerpt: "Mistral Small 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+excerpt: "Mistral Small 3 公开材料的逐段中英对照译稿,附读报告时的疑问块."
 ---
 这是 Mistral AI 官网的 Mistral Small 3 发布页, 共 11 页, images 目录里 12 张图. 正文在第 1 到第 9 页, 第 10, 11 页是站点页脚. 每一页都叠着一个 cookie 横幅, 转出的 Markdown 丢了大半正文, 下面的英文按 PDF 文本层补全. 页面上的五张图表被横幅或站点顶栏挡住一部分, 数字按 PDF 里嵌着的原图读. 人评图上每个数都印了出来, 照抄; 延迟散点图, 指令模型和预训练模型的柱状图没印数字, 表里的数是按像素量点位和柱高估读的, 误差大约 ±0.5 个点, 统一标 「读图」.
 

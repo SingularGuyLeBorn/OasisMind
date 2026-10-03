@@ -2,7 +2,7 @@
 title: "06 · MoE 硬件加速：FPGA 到近存计算"
 published: true
 tags: ["MoE", "硬件加速", "FPGA", "NDP", "PIM"]
-excerpt: "04 讲「动态路由让静态流水线失效」；本篇把加速器 个案 排成一张表：FPGA 上的 UbiMoE / FLAME、边缘 Edge-MoE、以及 GPU+NDP / PIM。"
+excerpt: "04 讲「动态路由让静态流水线失效」;本篇把加速器 个案 排成一张表:FPGA 上的 UbiMoE / FLAME、边缘 Edge-MoE、以及 GPU+NDP / PIM."
 ---
 # 06 MoE 硬件加速：FPGA 到近存计算
 

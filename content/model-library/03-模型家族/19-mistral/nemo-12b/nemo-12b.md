@@ -3,7 +3,7 @@ title: "Mistral NeMo · 源文"
 category: "模型库"
 tags: ["Mistral", "源文"]
 published: true
-excerpt: "Mistral NeMo 公开材料的 MinerU 抓取原文。"
+excerpt: "Mistral NeMo 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 6 -->
 

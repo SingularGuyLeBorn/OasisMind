@@ -2,7 +2,7 @@
 title: "03 · MoE Top-K:离散选择如何反传"
 published: true
 tags: ["MoE", "Top-K", "STE", "ReMoE", "Soft-MoE"]
-excerpt: "稀疏 MoE 的前向先选出 K 个专家，再让这 K 路 FFN 进入加权和。"
+excerpt: "稀疏 MoE 的前向先选出 K 个专家,再让这 K 路 FFN 进入加权和."
 ---
 # 03 MoE Top-K:离散选择如何反传
 

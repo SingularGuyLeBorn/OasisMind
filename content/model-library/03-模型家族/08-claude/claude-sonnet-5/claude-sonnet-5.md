@@ -3,7 +3,7 @@ title: "Claude Sonnet 5 · 源文"
 category: "模型库"
 tags: ["Claude", "源文"]
 published: true
-excerpt: "Claude Sonnet 5 公开材料的 MinerU 抓取原文。"
+excerpt: "Claude Sonnet 5 公开材料的 MinerU 抓取原文."
 ---
 <!-- page 1 of 145 -->
 
