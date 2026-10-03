@@ -1,3 +1,10 @@
+---
+title: "GLM-130B · 对照译稿"
+category: "模型库"
+tags: ["GLM", "对照译稿"]
+published: true
+excerpt: "GLM-130B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 56 -->
 
 arXiv:2210.02414v2 [cs.CL] 25 Oct 2023

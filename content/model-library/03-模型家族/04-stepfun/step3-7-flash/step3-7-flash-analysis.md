@@ -1,3 +1,10 @@
+---
+title: "Step 3.7 Flash: 在 3.5 Flash 上加视觉输入, 主打 agent 效率的产品通告"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "这篇材料要回答的问题很窄: Step 3.7 Flash 相对 Step 3.5 Flash 在哪些 Agent / Coding / 多模态面上报了涨分;"
+---
 # Step 3.7 Flash: 在 3.5 Flash 上加视觉输入, 主打 agent 效率的产品通告
 
 > 公开材料是 StepFun 产品页 / 通告抓取 `step3-7-flash.md` (页标记 `page 1 of 16`–`page 16 of 16`, 18 张图), 不是架构论文. 正文是卖点条, harness 分表, Advisor Mode 成本叙事, 企业 / 搜索 / 视觉工具 / GUI 案例, 以及一张截断的 Flash / PRO 对照总表. 没有层宽, 路由, 预训练 token 课表, 后训练算法名或消融. 架构细节通告没有写.

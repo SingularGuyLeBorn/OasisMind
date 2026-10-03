@@ -1,3 +1,10 @@
+---
+title: "GLM 发布列表: 17 个日期, 17 个名字, md 在分页处丢了三个条目头"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "页面标题是 「New Released」, 副标题 「Follow along with updates across Z.AI’s models」, 标题旁边有一个 「Copy page」 按钮, 下面只有一个分类 「Models」."
+---
 > 源文 `glm.md` 是 Z.AI 文档站 「New Released」 页面的 MinerU 抓取, 6 页, 1 张图. 它是一张模型发布列表, 每一条只有日期, 名字, 两三句介绍和一个文档链接, 不是技术报告, 没有结构图, 训练配方和评测表.
 
 # GLM 发布列表: 17 个日期, 17 个名字, md 在分页处丢了三个条目头

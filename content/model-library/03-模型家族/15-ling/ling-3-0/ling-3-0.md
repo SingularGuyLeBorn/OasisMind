@@ -1,3 +1,10 @@
+---
+title: "Ling 3.0 · 源文"
+category: "模型库"
+tags: ["Ling", "源文"]
+published: true
+excerpt: "Ling 3.0 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 13 -->
 
 ![Image block](images/p01-image.png)

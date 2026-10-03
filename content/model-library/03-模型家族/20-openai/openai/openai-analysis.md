@@ -1,3 +1,10 @@
+---
+title: "OpenAI Models 页分析: 三档 GPT-6 和一张没印完的卡片"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "这一页是 OpenAI 开发者文档里 Models 栏目的首屏."
+---
 源文是 1 页的 OpenAI 开发者站 Models 页打印件, 没有参数, 价格, 上下文长度和评测.
 
 # OpenAI Models 页分析: 三档 GPT-6 和一张没印完的卡片

@@ -1,3 +1,10 @@
+---
+title: "Moonshot / Kimi(moonshot-v1): 平台文档解析"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "Kimi 家族在本目录里的时间线从这份手册起步."
+---
 # Moonshot / Kimi(moonshot-v1): 平台文档解析
 
 > 公开材料是 Wayback Machine 抓取的 Moonshot 平台「文档 / 使用手册」快照(源文约 12.5KB, 8 页), 不是模型技术报告. 页面没有训练数据, 架构, 预训练, 后训练和评测的任何数字.

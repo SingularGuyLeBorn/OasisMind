@@ -1,3 +1,10 @@
+---
+title: "Kimi K3:2.8T 开源前沿, 把序列, 深度与宽度一起拉长"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "Kimi K3 把开源侧长期偏「TestingTime 推理」的重心, 重新接到「预训练底座也要上 3T 级」这件事上."
+---
 # Kimi K3:2.8T 开源前沿, 把序列, 深度与宽度一起拉长
 
 来源:[Kimi K3 Technical Report](https://arxiv.org/abs/2607.24653)(arXiv:2607.24653v2,2026 年 8 月 7 日). 权重:[Hugging Face moonshotai/Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3). 对照译稿见同目录 `kimi-k3-bi.md`, 页标记从 `page 1 of 47` 到 `page 47 of 47`. 表内数字, 公式编号与基准分数以源文 `kimi-k3.md` 为准.

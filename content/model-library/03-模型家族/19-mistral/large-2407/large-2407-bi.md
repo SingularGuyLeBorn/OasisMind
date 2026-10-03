@@ -1,3 +1,10 @@
+---
+title: "Mistral Large 2 · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mistral Large 2 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 这是 Mistral AI 官网的 Mistral Large 2 发布页, 标题 「Large Enough」, 共 11 页, 9 张图. 正文在第 1 到第 9 页上半, 第 9 页下半到第 11 页是站点页脚. 转出的 Markdown 被 cookie 横幅盖掉大半, 下面的英文按 PDF 文本层补全. 页面上的柱状图和散点图都没有数据标签, 文中写 「约」 的数值是对着坐标轴读出来的, 一律是估算; 被横幅挡住的图按 PDF 里嵌着的原图读.
 
 <!-- page 1 of 11 -->

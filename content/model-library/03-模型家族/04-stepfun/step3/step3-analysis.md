@@ -1,3 +1,10 @@
+---
+title: "Step-3: 从 decode 成本倒推模型结构, MFA、MoE 稀疏度和 AFD 一起定"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "引言交代了两条前史: 阶跃从 2023 年末开始做 MoE, 产物是 Step-2; 2024 年末发布了一种新注意力 MFA (Multi-Matrix Factorization Attention)."
+---
 # Step-3: 从 decode 成本倒推模型结构, MFA、MoE 稀疏度和 AFD 一起定
 
 来源: [Step-3 is Large yet Affordable: Model-system Co-design for Cost-effective Decoding](https://arxiv.org/abs/2507.19427) (arXiv:2507.19427v1, 2025-07-25, StepFun Inc., 18 页). 对照译稿见同目录 `step3-bi.md`, 表内数字与公式以源文 `step3.md` 为准.

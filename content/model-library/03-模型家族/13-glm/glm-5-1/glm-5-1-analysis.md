@@ -1,3 +1,10 @@
+---
+title: "GLM-5.1 模型卡: 一张 Hugging Face 页面能说明什么"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "六页的分布是这样的. 第 1 页是 Hugging Face 页面的头部: 仓库名 zai-org/GLM-5.1, 点赞和关注数, 八个标签, arXiv 编号, 许可证, 下载量, Safetensors 信息栏和在线试用框."
+---
 > 源文 `glm-5-1.md` 是 Hugging Face 上 `zai-org/GLM-5.1` 模型页的 MinerU 抓取, 6 页, 7 张图. 作者写的卡片正文只有两段简介, 一张柱状图, 一张 18 行的基准表, 一个部署框架列表和一条引用; 其余是页面自带的标签, 计数和按钮. 全篇没有结构说明, 训练方法和数据.
 
 # GLM-5.1 模型卡: 一张 Hugging Face 页面能说明什么

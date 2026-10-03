@@ -1,3 +1,10 @@
+---
+title: "Qwen2-VL: 原生分辨率, M-RoPE 和图视频统一入口"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2-VL 的能力来自几件事同时改动. 视觉编码器去掉绝对位置编码, 换成 2D-RoPE, 让任意尺寸的图直接进 ViT;"
+---
 # Qwen2-VL: 原生分辨率, M-RoPE 和图视频统一入口
 
 来源: [Qwen2-VL Technical Report](https://arxiv.org/abs/2409.12191) (arXiv:2409.12191v2, 2024-10-03). 仓库 https://github.com/QwenLM/Qwen2-VL. 对照译稿见同目录 `qwen2-vl-bi.md`, 表内数字以源文 `qwen2-vl.md` 为准.

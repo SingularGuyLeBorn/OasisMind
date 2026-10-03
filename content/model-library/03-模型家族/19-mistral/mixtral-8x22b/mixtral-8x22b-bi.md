@@ -1,3 +1,10 @@
+---
+title: "Mixtral 8x22B · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mixtral 8x22B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文是 Mistral AI 官网 Mixtral 8x22B 发布页的打印件, 共 7 页, 正文只有发布词, 三张评测表和一张散点图, 其余是 cookie 横幅和站点导航. 本稿只对照这页印出来的内容, 不从 Mixtral 8x7B 或别的 Mistral 模型搬参数.
 
 <!-- page 1 of 7 -->

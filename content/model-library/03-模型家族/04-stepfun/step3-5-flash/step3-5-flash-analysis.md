@@ -1,3 +1,10 @@
+---
+title: "Step 3.5 Flash: 为 agent 延迟设计的 196B MoE, 和让它训得稳的那套办法"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "阶跃上一篇有完整技术细节的报告是 Step-3."
+---
 # Step 3.5 Flash: 为 agent 延迟设计的 196B MoE, 和让它训得稳的那套办法
 
 来源: 同目录 `step3-5-flash.md` (arXiv:2602.10604v2, 67 页). 对照译稿见 `step3-5-flash-bi.md`. 下表数字取自正文 Tab. 1, Tab. 5, Tab. 6 与 §2–§5.

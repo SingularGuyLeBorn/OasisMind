@@ -1,3 +1,10 @@
+---
+title: "Devstral 2 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "这页能用的材料分三块: 正文十来段, 三张图 (SWE-bench Verified 柱状图, 尺寸对分数的散点图, 人评胜负图), 一张产品卡片."
+---
 这是 Mistral AI 官网的 Devstral 2 发布页, 标题 「Introducing: Devstral 2 and Mistral Vibe CLI.」, 10 页, 10 张图, 不是论文. 柱状图和人评图的数都印在 PDF 嵌入的原图上; 散点图没印数.
 
 - 发布: **December 9, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.

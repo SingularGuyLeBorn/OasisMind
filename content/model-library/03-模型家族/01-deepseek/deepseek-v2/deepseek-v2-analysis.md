@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V2: 用 MLA 压推理显存, 用 MoE 压训练算力"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "DeepSeek-V2 总参 236B, 每个 token 激活 21B, 上下文 128K, 在 8.1T token 上预训练, 再经 1.5M 条 SFT 和两阶段 GRPO 得到 Chat 版."
+---
 # DeepSeek-V2: 用 MLA 压推理显存, 用 MoE 压训练算力
 
 来源: [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434) (arXiv: 2405.04434v5, 2024-06-19). 仓库: https://github.com/deepseek-ai/DeepSeek-V2

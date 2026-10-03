@@ -1,3 +1,10 @@
+---
+title: "Qwen 初代 · 对照译稿"
+category: "模型库"
+tags: ["Qwen", "对照译稿"]
+published: true
+excerpt: "Qwen 初代 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 59 -->
 
 arXiv:2309.16609v1 [cs.CL] 28 Sep 2023

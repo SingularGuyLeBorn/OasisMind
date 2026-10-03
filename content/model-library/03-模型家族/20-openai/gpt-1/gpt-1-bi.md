@@ -1,3 +1,10 @@
+---
+title: "GPT-1 · 对照译稿"
+category: "模型库"
+tags: ["OpenAI", "对照译稿"]
+published: true
+excerpt: "GPT-1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文: Improving Language Understanding by Generative Pre-Training, Alec Radford, Karthik Narasimhan, Tim Salimans, Ilya Sutskever, OpenAI, 12 页, 3 张图 (图 1 一张, 图 2 左右两栏各一张). 源文没有印日期和 arXiv 编号, 首页只标 「Preprint. Work in progress.」. 英文段在前, 中文意译紧跟. Abstract, Introduction, Conclusion, References 的节名不译, 正文都附中文. 单独的页码行已删去, 跨页断开的半句已接回上一页. 转 Markdown 时把起止 token 识别成 「(hsi, hei)」, 把 3.3 节多选题拼接式里的分隔符 \$ 识别成 δ, 这里按 PDF 文字层改回 ⟨s⟩, ⟨e⟩ 和 \$. 图 2 两栏的图片文件名和内容是反的: p07-chart.png 是左栏 (迁移层数), p07-figure-2-left-... 是右栏 (zero-shot 曲线).
 
 <!-- page 1 of 12 -->

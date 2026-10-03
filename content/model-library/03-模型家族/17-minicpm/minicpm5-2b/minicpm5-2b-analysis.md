@@ -1,3 +1,10 @@
+---
+title: "MiniCPM5-2B 模型卡分析: 2.52B 稠密模型的一页说明书"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "页面同时是产品介绍, 下载目录和部署手册. 它给出的数字足够核对平均分, 重建增益图, 估算权重体积, 但给不出隐藏维度, 词表大小, 头维度, 预训练总 token 数这类结构细节."
+---
 源文是 openbmb/MiniCPM5-2B 的 Hugging Face 模型页, 不是技术报告.
 
 # MiniCPM5-2B 模型卡分析: 2.52B 稠密模型的一页说明书

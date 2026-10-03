@@ -1,3 +1,10 @@
+---
+title: "Step 5 Preview · 对照译稿"
+category: "模型库"
+tags: ["StepFun", "对照译稿"]
+published: true
+excerpt: "Step 5 Preview 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 20 -->
 
 # Step 5 Preview: One Step Forward — A New Pareto Frontier for Intelligence Efficiency

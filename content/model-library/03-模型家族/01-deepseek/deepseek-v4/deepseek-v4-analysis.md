@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V4: 压缩注意力撑起 1M 上下文"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看。"
+---
 # DeepSeek-V4: 压缩注意力撑起 1M 上下文
 
 来源: [DeepSeek-V4 Technical Report](https://arxiv.org/abs/2606.19348) (arXiv: 2606.19348, 2026-04-26).

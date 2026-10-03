@@ -1,6 +1,13 @@
+---
+title: "Baichuan-M1: 从零训 20T token 的医学底座, 和它为推理成本改的注意力"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "医学大模型的常见做法有两种: 在现成底座上继续预训练, 或者直接在通用底座上做后训练. HuatuoGPT, HuatuoGPT-o1, Singhal 等人的工作都建在已有底座上."
+---
 # Baichuan-M1: 从零训 20T token 的医学底座, 和它为推理成本改的注意力
 
-来源: 同目录 `m1-14b.md` (arXiv:2502.12671v2, 33 页, 12 图), 对照译稿见 `m1-14b-bi.md`. 表内数字回 Table 1–4, Figure 1–12, 式 (1)–(3) 与 Algorithm 1. 发布版的层配置取自 Hugging Face 上 [Baichuan-M1-14B-Instruct 的 config.json](https://huggingface.co/baichuan-inc/Baichuan-M1-14B-Instruct), 论文正文没有这些字段时会注明. 标 「估算」 的是推算, 标 「读图」 的是从图上读出.
+来源: 同目录 `m1-14b.md` (arXiv:2502.12671v2, 33 页, 12 图), 对照译稿见 `m1-14b-bi.md`. 表内数字回 Table 1–4, Figure 1–12, 式 (1)–(3) 与 Algorithm 1. 发布版的层配置取自 Hugging Face 上 [Baichuan-M1-14B-Instruct 的 config.json](https://huggingface.co/baichuan-inc/Baichuan-M1-14B-Instruct), 论文正文没有这些字段时会注明. 标 「读图」 的是从图上读出.
 
 | 项目 | 数值 | 出处 |
 |---|---|---|

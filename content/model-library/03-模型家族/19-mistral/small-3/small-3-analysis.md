@@ -1,3 +1,10 @@
+---
+title: "Mistral Small 3 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "Mistral Small 3 在这页里只有一个身份: 24B 参数的语言模型, 同时放出预训练和指令调优两个 checkpoint."
+---
 源文是 2025-01-30 的官网发布页, 正文不到 9 页, 没有论文, 没有模型卡. 图上没印数的柱高是按像素估读的, 标 「读图」.
 
 | 项 | 本页写法 |

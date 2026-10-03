@@ -1,3 +1,10 @@
+---
+title: "GLM-5V-Turbo 技术报告分析"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "材料: arXiv:2604.26752v3, 2026 年 5 月 12 日, 30 页, 35 张图片文件."
+---
 # GLM-5V-Turbo 技术报告分析
 
 材料: arXiv:2604.26752v3, 2026 年 5 月 12 日, 30 页, 35 张图片文件. 标题 GLM-5V-Turbo: Toward a Native Foundation Model for Multimodal Agents. 对照稿见同目录 `glm-5v-turbo-bi.md`, 下文的页码都指原文页码.

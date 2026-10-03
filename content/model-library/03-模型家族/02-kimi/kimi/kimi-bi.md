@@ -1,3 +1,10 @@
+---
+title: "Moonshot / Kimi(moonshot-v1) · 对照译稿"
+category: "模型库"
+tags: ["Kimi", "对照译稿"]
+published: true
+excerpt: "Moonshot / Kimi(moonshot-v1) 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 8 -->
 
 The Wayback Machine - https://web. archive. org/web/20240327151243/https://platform. moons.

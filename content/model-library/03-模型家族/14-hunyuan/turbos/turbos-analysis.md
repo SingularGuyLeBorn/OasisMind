@@ -1,3 +1,10 @@
+---
+title: "Hunyuan-TurboS 技术解析"
+category: "模型库"
+tags: ["Hunyuan", "技术解析"]
+published: true
+excerpt: "Hunyuan-TurboS 是腾讯混元 2025 年 5 月挂到 arXiv 的技术报告, 编号 2505.15431, md 抓的是 7 月 4 日的 v3."
+---
 ## 1. 这份报告讲了什么
 
 Hunyuan-TurboS 是腾讯混元 2025 年 5 月挂到 arXiv 的技术报告, 编号 2505.15431, md 抓的是 7 月 4 日的 v3. 正文 18 页, 后面是作者名单, 参考文献和一页附录, 一共 26 页. 模型是 Transformer, Mamba2, FFN 三类层混排的 MoE 模型, 激活参数 56B, 总参数 560B, 128 层, 16T token 预训练, 上下文 256K. 报告自称是业界第一个落地部署的大规模 Mamba 模型. 对外能比的成绩有两组: LMSYS Chatbot Arena 1356 分, 排名列是 7; 23 个自动化基准平均 77.9%.

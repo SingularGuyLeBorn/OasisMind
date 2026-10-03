@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4 (2025): 第一个按 ASL-3 发布的 Claude, 和它在对齐审计里露出的样子"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "卡的主体按风险类型排: 第 1 节训练与发布决策, 第 2 节常规防护 (违规请求, 过度拒绝, 偏见, 越狱), 第 3 节 agentic 安全 (computer use, 提示注入, 恶意编码), 第 4 节对齐评估, 第 5 节模型福利, 第 6 节 reward hacking, 第 7…"
+---
 # Claude Opus 4 (2025): 第一个按 ASL-3 发布的 Claude, 和它在对齐审计里露出的样子
 
 来源: 同目录 `claude-opus-4.md` (System Card: Claude Opus 4 & Claude Sonnet 4, 123 页, 41 张图) 与 PDF. 同一份系统卡也收在同级目录 `claude-sonnet-4` 下, 那一篇侧重 Sonnet 4 为什么留在 ASL-2 和它更稳的对齐指标, 本篇侧重 Opus 4. 对照译稿见 `claude-opus-4-bi.md`. 数字以源 md 为准, 读图得到的注明 「读图估算」; 卡外能对上号的 Anthropic 论文或博客标 「(公开资料)」, 笔者判断标 「(推测)」.

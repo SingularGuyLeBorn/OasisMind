@@ -1,3 +1,10 @@
+---
+title: "MiniMax-M2.1 · 对照译稿"
+category: "模型库"
+tags: ["MiniMax", "对照译稿"]
+published: true
+excerpt: "MiniMax-M2.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 11 -->
 
 ![Hugging Face 站点图标](images/p01-s.png)

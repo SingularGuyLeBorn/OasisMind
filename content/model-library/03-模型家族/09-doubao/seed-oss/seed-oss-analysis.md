@@ -1,8 +1,15 @@
+---
+title: "Seed-OSS-36B: MoE 家族里的一个稠密开源分支"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "Doubao-1.5-pro, Seed1.5-Thinking, Seed1.5-VL 这一路都是 MoE, 而且权重不公开."
+---
 # Seed-OSS-36B: MoE 家族里的一个稠密开源分支
 
 源文是 Hugging Face 上 ByteDance-Seed/Seed-OSS-36B-Instruct 模型页的抓取, 13 页里夹着大量站点导航, 正文只有一张结构表, 两张评测表, 一段思考预算说明和几组部署命令, 技术报告标着 「Coming Soon」.
 
-来源: [ByteDance-Seed/Seed-OSS-36B-Instruct](https://huggingface.co/ByteDance-Seed/Seed-OSS-36B-Instruct) 模型页 (发布日期 2025/08/20). 逐段对照稿见同目录 `seed-oss-bi.md`, 页码指抓取稿 `seed-oss.md` 的 13 页, 数字以源文为准. 由表上数字推出来的量都标了 「估算」.
+来源: [ByteDance-Seed/Seed-OSS-36B-Instruct](https://huggingface.co/ByteDance-Seed/Seed-OSS-36B-Instruct) 模型页 (发布日期 2025/08/20). 逐段对照稿见同目录 `seed-oss-bi.md`, 页码指抓取稿 `seed-oss.md` 的 13 页, 数字以源文为准.
 
 ## 1. 在家族里的位置
 

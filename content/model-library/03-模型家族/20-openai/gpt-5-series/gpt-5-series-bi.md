@@ -1,3 +1,10 @@
+---
+title: "GPT-5 · 对照译稿"
+category: "模型库"
+tags: ["OpenAI", "对照译稿"]
+published: true
+excerpt: "GPT-5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文: GPT-5 System Card, OpenAI, 2025 年 8 月 13 日, 60 页, 35 张图. 英文段在前, 中文意译紧跟. Introduction, Appendix, References 的节名不译, References 正文保留原文. 单独的页码行已删去, 跨页断开的半句接回上一页. 表格保留英文, 表后附中文说明, 数字未动. 第 5.1.2.1 节各类 CTF 取 flag 的描述, 第 5.1.2.2 节 Cyber Range 各场景的攻击路径, 第 5.1.2.3 节 NAS-Proxy 案例的攻击步骤与模型输出没有录入, 只留评测配置, 评级和分数. 生物评测只留评测名, 评级和分数.
 
 <!-- page 1 of 60 -->

@@ -1,3 +1,10 @@
+---
+title: "Llama 2 论文解读"
+category: "模型库"
+tags: ["Llama", "技术解析"]
+published: true
+excerpt: "原文: Llama 2: Open Foundation and Fine-Tuned Chat Models, arXiv:2307.09288v2, 2023 年 7 月 19 日, Meta GenAI."
+---
 # Llama 2 论文解读
 
 原文: Llama 2: Open Foundation and Fine-Tuned Chat Models, arXiv:2307.09288v2, 2023 年 7 月 19 日, Meta GenAI. 双语对照见同目录 llama2-bi.md.

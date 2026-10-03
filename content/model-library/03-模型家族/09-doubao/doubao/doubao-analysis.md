@@ -1,3 +1,10 @@
+---
+title: "ByteDance Seed 英文门户: 从一张首页看家族到了哪一代"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "目录名叫 doubao, 但整页没有出现 「Doubao」 或 「豆包」."
+---
 # ByteDance Seed 英文门户: 从一张首页看家族到了哪一代
 
 > 源文 `doubao.md` 是 ByteDance Seed 英文门户首页的 MinerU 抓取 (4 页, 13 张图), 标题位是 Seed2.1, 后面是六条近期博客, 一组产品入口和页脚. 它不是论文.

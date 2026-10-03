@@ -1,3 +1,10 @@
+---
+title: "MiniMax-M2 · 对照译稿"
+category: "模型库"
+tags: ["MiniMax", "对照译稿"]
+published: true
+excerpt: "MiniMax-M2 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 35 -->
 
 ![图 1 MiniMax-M2.7 与闭源前沿模型在八项基准上的柱状对比](images/p01-arxiv-2605-26494v2-cs-ai-30-jul-2026.png)

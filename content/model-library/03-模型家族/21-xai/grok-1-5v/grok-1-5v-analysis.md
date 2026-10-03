@@ -1,3 +1,10 @@
+---
+title: "Grok-1.5V: xAI 第一个多模态模型的公告怎么读"
+category: "模型库"
+tags: ["xAI", "技术解析"]
+published: true
+excerpt: "这篇公告能回答三件事: Grok-1.5V 在 7 个视觉基准上和 GPT-4V, Claude 3 Sonnet, Claude 3 Opus, Gemini Pro 1.5 相比落在什么位置;"
+---
 公开材料是 x.ai 在 2024 年 4 月 12 日发的一篇产品公告, 不是技术报告. 全文只有一张 7 行基准表, 一个流程图转代码的示例, 四道 RealWorldQA 示例题和数据集发布说明. 视觉编码器, 参数量, 图像分辨率, 训练数据和对齐方法页面都没有.
 
 # Grok-1.5V: xAI 第一个多模态模型的公告怎么读

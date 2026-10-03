@@ -1,3 +1,10 @@
+---
+title: "Claude 3.5 Haiku: 小档模型在 agent 编程上的反超"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这篇公告同时发布三样东西: 升级版 Claude 3.5 Sonnet, 新模型 Claude 3.5 Haiku, 以及公开 beta 的 computer use."
+---
 # Claude 3.5 Haiku: 小档模型在 agent 编程上的反超
 
 > 本目录的源材料是 Anthropic 2024 年 10 月 22 日的发布公告 「Introducing computer use, a new Claude 3.5 Sonnet, and Claude 3.5 Haiku」 的抓取 `claude-3-5-haiku.md` (9 页, 2 图), 属于产品博客, 不是技术报告. 全文没有架构和训练细节, 能核对的只有第 2 页一张八行评测表和正文里几个百分数. 训练手段本页和公开资料都没写的, 标 「本页没有」.

@@ -1,3 +1,10 @@
+---
+title: "GLM-4.5 技术报告解读: 355B 总参数, 32B 激活, 摘要三个分数来自三张表"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "报告的标题把三项能力放在一起: Agentic, Reasoning, Coding, 简称 ARC."
+---
 # GLM-4.5 技术报告解读: 355B 总参数, 32B 激活, 摘要三个分数来自三张表
 
 来源: 同目录 `glm-4-5.md` (MinerU 抓取, 页标记 `page 1 of 26` 到 `page 26 of 26`, 18 张图), 对照同目录 `glm-4-5.pdf`. 逐段中英对照和 19 条疑点见 `glm-4-5-bi.md`. 下文的页码, 表号, 图号都指这篇报告本身; 凡是 md 和 PDF 不一致的地方, 以 PDF 为准并注明.

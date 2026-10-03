@@ -1,3 +1,10 @@
+---
+title: "Hunyuan3D 2.0 · 对照译稿"
+category: "模型库"
+tags: ["Hunyuan", "对照译稿"]
+published: true
+excerpt: "Hunyuan3D 2.0 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 28 -->
 
 arXiv:2501.12202v5 [cs.CV] 14 May 2026

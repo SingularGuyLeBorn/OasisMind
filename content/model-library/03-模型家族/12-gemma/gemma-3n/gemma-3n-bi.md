@@ -1,3 +1,10 @@
+---
+title: "Gemma 3n · 对照译稿"
+category: "模型库"
+tags: ["Gemma", "对照译稿"]
+published: true
+excerpt: "Gemma 3n 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 12 -->
 
 ![Image block](images/p01-gemma-4-released-with-text-audio-and-image-input-and.png)

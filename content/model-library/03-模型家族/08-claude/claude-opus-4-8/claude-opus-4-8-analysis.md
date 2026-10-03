@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4.8 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Opus 4.8 的系统卡日期是 2026 年 5 月 28 日, 6 月 3 日有一条更正."
+---
 # Claude Opus 4.8 系统卡: 分析
 
 ## 1. 定位与风险判定

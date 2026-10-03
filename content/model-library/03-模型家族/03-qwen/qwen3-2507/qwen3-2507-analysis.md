@@ -1,3 +1,10 @@
+---
+title: "Qwen3-235B-A22B-Instruct-2507: 只做 non-thinking 的旗舰刷新"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "这张卡交付的是 Qwen3 旗舰 MoE 的一个新版本, 只保留 non-thinking 模式."
+---
 # Qwen3-235B-A22B-Instruct-2507: 只做 non-thinking 的旗舰刷新
 
 > 公开材料是 Hugging Face 上 `Qwen/Qwen3-235B-A22B-Instruct-2507` 的模型卡抓取 (17 页, 前两页和末页多是 Hub 页面元素). 卡里有规格, 对照表, 1M 上下文的部署步骤和 RULER 表, 没有预训练数据, 后训练配方, 路由细节或消融.

@@ -1,3 +1,10 @@
+---
+title: "Ling 技术解析"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "页头写蚂蚁集团的开源组织, 方向是 AGI. 能读到的计数是关注者 1.5k, 仓库 68, 成员 People 1."
+---
 这是 GitHub 上 inclusionAI 的组织页抓取, 4 页, 不是 Ling 的技术报告.
 
 ## 1. 这一页是组织壳

@@ -1,3 +1,10 @@
+---
+title: "Doubao-1.5-pro: 稀疏 MoE, 训练-推理一体, 和 1.5 代所有分支的起点"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "Doubao-1.5-pro 是一份产品页, 不是论文, 但它交代的技术面比很多技术报告还宽: MoE 结构与稀疏度 Scaling Law, 参数动态调整, 四象限推理系统, 不用其他模型数据的后训练, 自研 Doubao ViT, Speech2Speech 语音框架, 以及一张深度思考模式的 AIME 小图."
+---
 # Doubao-1.5-pro: 稀疏 MoE, 训练-推理一体, 和 1.5 代所有分支的起点
 
 来源: 同目录 `pro.md` (MinerU 抽取, 12 页, 8 张图), 字节跳动 Seed 团队 2025.01.22 发布的中文产品页. 中英对照稿见 `pro-bi.md`. 数字回到源 md 与图片核对; 从柱状图, 曲线图上目测读出的数值标 「约」 或 「读图」.

@@ -1,3 +1,10 @@
+---
+title: "Llama 3.3 技术解析"
+category: "模型库"
+tags: ["Llama", "技术解析"]
+published: true
+excerpt: "标题是 Meta Llama 3.3 Official Model Card, 来源是 meta-llama/llama-models 仓库里 llama3_3 目录下的 MODEL_CARD.md."
+---
 源文是 5 页的官方模型卡, 没有图, 没有方法章节.
 
 ## 1. 这是一张模型卡

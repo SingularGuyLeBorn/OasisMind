@@ -1,3 +1,10 @@
+---
+title: "Claude Sonnet 5 系统卡解读"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Sonnet 5 是 Sonnet 4.6 的直接后继, 卡里的原话是 「our most capable Sonnet-class model, but it does not advance our capability frontier」."
+---
 # Claude Sonnet 5 系统卡解读
 
 > 源文件: `claude-sonnet-5.md`, System Card: Claude Sonnet 5, 2026 年 6 月 30 日, 145 页. 对照稿见 `claude-sonnet-5-bi.md`. 生物, 化学, 网络与儿童安全部分只谈评测名, 分数, 阈值与部署判断.

@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-SALA 解读: 9B 稀疏-线性混合模型怎样在单卡上跑到 1M 上下文"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "MiniCPM-SALA 是 OpenBMB 在 2026 年 2 月发布的 9B 模型. 报告编号 arXiv 2602.11761v2, 共 14 页, 正文 9 页, 其余是参考文献."
+---
 # MiniCPM-SALA 解读: 9B 稀疏-线性混合模型怎样在单卡上跑到 1M 上下文
 
 ## 1. 定位: 一份以长上下文推理为目标的短报告

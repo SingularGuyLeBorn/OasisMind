@@ -1,3 +1,10 @@
+---
+title: "Claude Fable 5.1 与 Mythos 5.1 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡日期是 2026 年 9 月 1 日. Fable 5.1 和 Mythos 5.1 是最新模型的两种配置, 不是两套独立训练."
+---
 # Claude Fable 5.1 与 Mythos 5.1 系统卡: 分析
 
 本目录的源 md 与 claude-fable-5-1 字节相同, 是同一份系统卡. 下面按 Mythos 5.1 这一档来读: 防护更松, 直接访问只给审核过的人和机构, 一般访问仍是 Fable 5.1. Claude Security 把更松那档的能力接到全部 Enterprise 客户, 这条产品通道不等于放开直接访问.

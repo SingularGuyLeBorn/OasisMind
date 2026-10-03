@@ -1,3 +1,10 @@
+---
+title: "GLM-5.3-Flash: 一篇发布博客里能读出的参数, 结构和对照"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "总参数 320B 全文只出现一次, 在第 1 页导语: 「With 320B total parameters and only 18B active parameters」."
+---
 > 源文 `glm-5-3-flash.md` 是 AutoClaw 博客一篇发布文章的 MinerU 抓取, 7 页, 5 张图, 正文约五分钟读完. 能用的是一段架构说明, 一张架构图, 两张效率折线图, 一张 8 行和一张 6 行的基准表, 其余是能力描述和产品推广.
 
 # GLM-5.3-Flash: 一篇发布博客里能读出的参数, 结构和对照

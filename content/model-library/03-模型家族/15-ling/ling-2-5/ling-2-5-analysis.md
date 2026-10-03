@@ -1,3 +1,10 @@
+---
+title: "Ling 2.5 技术解析"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "这份 md 是 MinerU 从 Hugging Face 上 inclusionAI/Ling-2.5-1T 的页面抓下来的, 共 12 页, 10 张图."
+---
 ## 1. 这 12 页是什么
 
 这份 md 是 MinerU 从 Hugging Face 上 inclusionAI/Ling-2.5-1T 的页面抓下来的, 共 12 页, 10 张图. 第 1 页是 Hugging Face 的页面外壳: 任务标签, 许可证, 部署按钮, 张量类型, 使用这个模型的 Spaces, 以及一个 「Collection including」 小框. 第 2 页起是模型卡片正文, 依次是发布说明, 评测表, 下载表, 架构说明, 吞吐图, 长上下文图, 部署命令, 局限与计划, 许可证. 第 12 页是一段训练内容文档的说明, 最后一行 「System theme」 是页脚.

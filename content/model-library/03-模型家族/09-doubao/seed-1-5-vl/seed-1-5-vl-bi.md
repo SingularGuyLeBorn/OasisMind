@@ -1,3 +1,10 @@
+---
+title: "Seed1.5-VL · 对照译稿"
+category: "模型库"
+tags: ["Doubao", "对照译稿"]
+published: true
+excerpt: "Seed1.5-VL 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 77 -->
 
 arXiv:2505.07062v1 [cs.CV] 11 May 2025

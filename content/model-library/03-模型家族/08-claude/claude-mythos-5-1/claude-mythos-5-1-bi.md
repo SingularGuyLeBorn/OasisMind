@@ -1,3 +1,10 @@
+---
+title: "Claude Fable 5.1 与 Mythos 5.1 · 对照译稿"
+category: "模型库"
+tags: ["Claude", "对照译稿"]
+published: true
+excerpt: "Claude Fable 5.1 与 Mythos 5.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 212 -->
 
 本目录的源 md 与 claude-fable-5-1 字节相同, SHA256 前缀 ffca0d5ed04a1a99. 是同一份系统卡 Claude Fable 5.1 与 Claude Mythos 5.1. 下面按 Mythos 5.1 这一档来读: 同一套权重, 生物和网络安全的防护更松, 直接访问只给审核过的人和机构. 一般访问仍是 Fable 5.1. Claude Security 面向全部 Enterprise 客户, 调用的是更松那档的能力, 不是把直接访问名单放开.

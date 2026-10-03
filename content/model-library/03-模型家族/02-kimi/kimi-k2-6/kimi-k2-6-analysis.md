@@ -1,3 +1,10 @@
+---
+title: "Kimi K2.6: 长程编程和更大的 Swarm, 一篇没有训练细节的发布博客"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "K2.6 接在 K2.5 之后, 权重开源, 同时通过 Kimi.ai, Kimi App, API 和 Kimi Code 四个入口上线."
+---
 # Kimi K2.6: 长程编程和更大的 Swarm, 一篇没有训练细节的发布博客
 
 源文是产品发布博客, 没有技术报告; 结构, 训练数据, 预训练和后训练一个数字都没给, 能讲的只有公开表, 几段演示和评测脚注.

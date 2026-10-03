@@ -1,3 +1,10 @@
+---
+title: "Ring-1T · 对照译稿"
+category: "模型库"
+tags: ["Ling", "对照译稿"]
+published: true
+excerpt: "Ring-1T 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 31 -->
 
 **Date:** Oct 22, 2025.**Code:** [https://github.com/inclusionAI/Ring-V2](https://github.com/inclusionAI/Ring-V2).**Model:** [https://huggingface.co/inclusionAI/Ring-1T](https://huggingface.co/inclusionAI/Ring-1T).

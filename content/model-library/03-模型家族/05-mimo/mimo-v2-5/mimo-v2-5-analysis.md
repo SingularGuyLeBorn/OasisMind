@@ -1,3 +1,10 @@
+---
+title: "MiMo-V2.5: 在 Flash 骨干上接视听, 把窗口拉到 1M"
+category: "模型库"
+tags: ["MiMo", "技术解析"]
+published: true
+excerpt: "页 1 的发布句有三件事: 原生视觉与音频理解, 智能体表现超过 MiMo-V2-Pro, 上下文最长 1M tokens."
+---
 # MiMo-V2.5: 在 Flash 骨干上接视听, 把窗口拉到 1M
 
 > 源文 `mimo-v2-5.md` 是 2026-04-22 的产品发布页 (6 页标记, 11 图, 约 4900 英文字符). 页内给出规格口号 (310B 总参 / 15B 激活 / 48T tokens), 骨干继承 Flash 的 hybrid sliding window attention, 自研视听编码器加轻量 projector, 五阶段训练顺序, 一张架构图, 两组柱图, 开源表与 Token Plan. 没有专家数, 窗长, 层表, 评测协议, 也没有 MOPD 的公式. 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处.

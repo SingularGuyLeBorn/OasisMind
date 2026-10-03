@@ -1,3 +1,10 @@
+---
+title: "Gemini 2.5: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "标题叫 Gemini 2.5, 摘要第一句却说介绍的是 Gemini 2.X 家族: 2.5 Pro, 2.5 Flash, 以及更早的 2.0 Flash 和 2.0 Flash-Lite."
+---
 # Gemini 2.5: 分析
 
 ## 1. 一份报告装了四个模型

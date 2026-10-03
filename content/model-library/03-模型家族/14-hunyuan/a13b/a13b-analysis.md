@@ -1,3 +1,10 @@
+---
+title: "Hunyuan-A13B 技术报告解读: 80B 总参数, 13B 激活, fast 与 slow 分两张表评测"
+category: "模型库"
+tags: ["Hunyuan", "技术解析"]
+published: true
+excerpt: "报告的结构很紧凑: 第 1 节引言; 第 2 节预训练, 讲数据, 结构和三个训练阶段; 第 3 节后训练, 讲推理向微调, 全场景微调和双模式 CoT;"
+---
 # Hunyuan-A13B 技术报告解读: 80B 总参数, 13B 激活, fast 与 slow 分两张表评测
 
 来源: 同目录 `a13b.md` (MinerU 抓取, 页标记 `page 1 of 14` 到 `page 14 of 14`, 1 张图), 对照同目录 `a13b.pdf`. 逐段中英对照和 17 条疑点见 `a13b-bi.md`. 下文的页码, 表号, 图号都指这篇报告本身; md 和 PDF 不一致的地方, 以 PDF 为准并注明.

@@ -1,3 +1,10 @@
+---
+title: "Mistral Large 2 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "和模型本身有关的数只有几个: 123B, 128k, 80+, 24.07 这个版本号, 以及发布日期."
+---
 这是 Mistral AI 官网的 Mistral Large 2 发布页, 标题 「Large Enough」, 11 页, 9 张图, 不是论文. 图表都没有数据标签.
 
 - 发布: **July 24, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.

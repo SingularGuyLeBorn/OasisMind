@@ -1,3 +1,10 @@
+---
+title: "Claude 3.7 Sonnet (2025): 用 RL 训出来的思考, 和它带来的三个新问题"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这张卡的主角不是能力榜."
+---
 # Claude 3.7 Sonnet (2025): 用 RL 训出来的思考, 和它带来的三个新问题
 
 来源: 同目录 `claude-3-7-sonnet.md` (Claude 3.7 Sonnet System Card, 43 页, 34 张图) 与 PDF. 对照译稿见 `claude-3-7-sonnet-bi.md`. 数字以源 md 为准, 从图上读出的数注明 「读图估算」; 报告外能对上号的 Anthropic 论文或博客标 「(公开资料)」, 笔者判断标 「(推测)」.

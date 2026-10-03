@@ -1,3 +1,10 @@
+---
+title: "Pixtral 12B 发布页解读"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "每页左下角都叠着 axeptio 的 cookie 弹窗, 正文文字能从 PDF 文字层找回来, 表和图找不回."
+---
 原文是一篇发布博文, 打印成 22 页, 正文英文不到 900 词, 其余是示例回答, 代码和页脚, 每页还叠着同一个 cookie 弹窗.
 
 # Pixtral 12B 发布页解读
@@ -8,7 +15,7 @@
 - 读图: 按原分辨率和宽高比输入, 每 16x16 像素一个图像 token, 行间插 `[IMG BREAK]`, 图末加 `[IMG END]`.
 - 上下文: 128k token (页面有 128k 和 128K 两种写法), 可放任意多张图.
 - 许可和入口: Apache 2.0; Le Chat, La Plateforme (`pixtral-12b-2409`), mistral-inference, vLLM, HuggingFace 仓库 `mistralai/Pixtral-12B-2409`.
-- 双语对照见同目录 pixtral-12b-bi.md. 下文凡标 「估算」 的数, 都是用本页印出的数自己算的, 原文没有.
+- 双语对照见同目录 pixtral-12b-bi.md.
 
 | 项 | 本页怎么写 |
 | --- | --- |

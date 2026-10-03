@@ -1,3 +1,10 @@
+---
+title: "Gemma 4: 分析"
+category: "模型库"
+tags: ["Gemma", "技术解析"]
+published: true
+excerpt: "Gemma 4 是 Google DeepMind 的第四代 Gemma 开放权重模型, 原生多模态, 一共五个尺寸: dense 的 E2B, E4B, 12B, 31B, 加上一个 MoE 模型 26B-A4B."
+---
 # Gemma 4: 分析
 
 > 源文: Gemma 4 Technical Report (Gemma Team, Google DeepMind), arXiv:2607.02770v2. 报告落款日期 2026-06-19, v2 版本日期 2026-07-24. 全文 17 页, 正文约 9 页, 其后是参考文献, 作者名单和附录, 共 3 张图. 对照原文和逐条疑惑见 [gemma-4-bi.md](./gemma-4-bi.md).

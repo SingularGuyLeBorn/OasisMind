@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-SALA · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM-SALA 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 14 -->
 
 arXiv:2602.11761v2 [cs.CL] 28 Feb 2026

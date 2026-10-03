@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-V 4.5 · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM-V 4.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 25 -->
 
 arXiv:2509.18154v1 [cs.LG] 16 Sep 2025

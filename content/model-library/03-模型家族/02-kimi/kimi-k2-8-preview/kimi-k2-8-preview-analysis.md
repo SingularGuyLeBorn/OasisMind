@@ -1,3 +1,10 @@
+---
+title: "Kimi K2.8 Preview: 更新日志里的一次原地换模型"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "9 月 11 日, K2.8 Preview 在 Kimi Code 全量上线. Model ID 没变, 仍是 kimi-for-coding, 客户端和第三方工具不用改配置."
+---
 # Kimi K2.8 Preview: 更新日志里的一次原地换模型
 
 源文是 Kimi Code 文档的 What's New 更新日志, 32 页里写 K2.8 Preview 的只有第 4 至 5 页的一小段: 上线日期, Model ID, thinking 档位, 上下文长度和几句定性比较. 没有架构, 数据, 训练过程和基准分数.

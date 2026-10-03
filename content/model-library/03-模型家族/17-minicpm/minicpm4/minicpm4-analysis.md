@@ -1,3 +1,10 @@
+---
+title: "MiniCPM4 技术报告解读: 8B 端侧模型怎样把长上下文做快"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "MiniCPM4 是 OpenBMB 在 2025 年发布的端侧大语言模型, 有 0.5B 和 8B 两个稠密版本, 之后又在 8B 上做出混合推理模型 MiniCPM4.1."
+---
 # MiniCPM4 技术报告解读: 8B 端侧模型怎样把长上下文做快
 
 ## 1. 定位: 一份以端侧速度为目标的全栈报告

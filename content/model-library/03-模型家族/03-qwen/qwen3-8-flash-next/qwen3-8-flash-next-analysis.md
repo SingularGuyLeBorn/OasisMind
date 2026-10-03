@@ -1,3 +1,10 @@
+---
+title: "Qwen3.8-Flash-Next: 6B 激活追 397B 旗舰的架构与稳定性设计"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "这份报告的目标很明确: 用 125B 总参, 6B 激活的 MoE, 另加放在加速器外的 51B n-gram embedding 表, 追平上一代 397B-A17B 旗舰."
+---
 # Qwen3.8-Flash-Next: 6B 激活追 397B 旗舰的架构与稳定性设计
 
 来源: Qwen Team 技术报告 「On the Design of Qwen3.8-Next Architecture: Evaluation, Efficiency, and Training Stability」 (2026-08-26, 28 页). 表内数字以源文 qwen3-8-flash-next.md 为准.

@@ -1,3 +1,10 @@
+---
+title: "ERNIE 英文博客门户: 5.1 发布与一串 LMArena 成绩卡"
+category: "模型库"
+tags: ["ERNIE", "技术解析"]
+published: true
+excerpt: "页面顶部是 ERNIE 字标和四个导航项: Publication, About, ERNIE Bot (指向站外 wenxin.baidu.com), 以及切到中文站的 「中」."
+---
 # ERNIE 英文博客门户: 5.1 发布与一串 LMArena 成绩卡
 
 > 源文 `ernie.md` 是 ERNIE Blog 英文首页的 MinerU 抓取 (4 页, 7 张图), 内容是十条博客卡片, 一组轮播图和页脚. 它不是论文.

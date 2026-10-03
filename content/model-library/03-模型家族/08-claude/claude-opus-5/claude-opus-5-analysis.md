@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 5 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡日期是 2026 年 7 月 24 日. Claude Opus 5 是对 Claude Opus 4.8 的升级, 智能体编码, 计算机使用和长程知识工作有增益, 数学和科学推理也有改进."
+---
 # Claude Opus 5 系统卡: 分析
 
 ## 1. 定位与风险判定

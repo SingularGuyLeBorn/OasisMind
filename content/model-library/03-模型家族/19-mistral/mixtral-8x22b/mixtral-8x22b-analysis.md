@@ -1,8 +1,15 @@
+---
+title: "Mixtral 8x22B: 发布页精读"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "所以这页能回答的问题很集中: Mixtral 8x22B 总共多大, 每次动用多少参数, 用什么许可证, 在哪些基准上比同期开放模型高多少."
+---
 > 源文是 Mistral AI 官网 Mixtral 8x22B 发布页的打印件, 共 7 页, 正文只有一段发布词, 四条长处, 三张评测表和一张散点图, 没有结构, 训练数据和训练方法.
 
 # Mixtral 8x22B: 发布页精读
 
-来源: 同目录 `mixtral-8x22b.md` 与 `mixtral-8x22b.pdf` (页标 `page 1 of 7` 到 `page 7 of 7`), 对照译稿见 `mixtral-8x22b-bi.md`. 三张评测表在 PDF 里是嵌入图片, 屏幕上被页顶或 cookie 横幅遮了一部分, 本稿按完整嵌入图录数. 文中凡自己算出的差值, 比值, 存储量都标了 「估算」.
+来源: 同目录 `mixtral-8x22b.md` 与 `mixtral-8x22b.pdf` (页标 `page 1 of 7` 到 `page 7 of 7`), 对照译稿见 `mixtral-8x22b-bi.md`. 三张评测表在 PDF 里是嵌入图片, 屏幕上被页顶或 cookie 横幅遮了一部分, 本稿按完整嵌入图录数.
 
 | 项 | 本页印的内容 | 页 |
 | --- | --- | --- |

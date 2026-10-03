@@ -1,3 +1,10 @@
+---
+title: "Grok Code Fast 1: 一篇速度公告里能读出什么"
+category: "模型库"
+tags: ["xAI", "技术解析"]
+published: true
+excerpt: "这篇公告能回答三件事: grok-code-fast-1 的 API 定价是多少, 官方测的 TPS 是多少, SWE-Bench-Verified 自测分数是多少."
+---
 公开材料是 x.ai 在 2025 年 8 月 28 日发布的一篇产品公告, 共 8 页, 不是技术报告, 也没有附技术附录. 正文讲了定位, 速度, 价格, 一个基准分数和发布计划; 参数量, 网络结构, 上下文窗口, 训练数据配比, 评测对照组页面一个都没有.
 
 # Grok Code Fast 1: 一篇速度公告里能读出什么

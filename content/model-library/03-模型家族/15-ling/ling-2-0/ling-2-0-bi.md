@@ -1,3 +1,10 @@
+---
+title: "Ling 2.0 · 对照译稿"
+category: "模型库"
+tags: ["Ling", "对照译稿"]
+published: true
+excerpt: "Ling 2.0 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 58 -->
 
 arXiv:2510.22115v2 [cs.CL] 7 Nov 2025

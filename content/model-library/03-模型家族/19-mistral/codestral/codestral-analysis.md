@@ -1,3 +1,10 @@
+---
+title: "Codestral 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "和模型本身有关的数不多: 发布日期, 22B, 32k 上下文, 80+ 种语言, 8 周 beta."
+---
 这是 Mistral AI 官网的 Codestral 发布页, 9 页, 4 张图, 不是论文.
 
 - 发布: **May 29, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.

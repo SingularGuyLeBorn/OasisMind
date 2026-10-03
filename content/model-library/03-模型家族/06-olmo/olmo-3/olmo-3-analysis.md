@@ -1,3 +1,10 @@
+---
+title: "Olmo 3: 为长推理重排的全开放模型流"
+category: "模型库"
+tags: ["OLMo", "技术解析"]
+published: true
+excerpt: "OLMo 2 解决的是全开放 dense 模型能不能稳定训完, 以及退火和 RLVR 能不能把它推到开权重的竞争带."
+---
 # Olmo 3: 为长推理重排的全开放模型流
 
 来源: 同目录 `olmo-3.md` (arXiv:2512.13961v2, *Olmo 3*, 118 页), 对照译稿 `olmo-3-bi.md`. 下文数字以源文 Table 1–55, Figure 1–43 与正文各节为准; 标了 「心算」 或 「读图」 的是估算.

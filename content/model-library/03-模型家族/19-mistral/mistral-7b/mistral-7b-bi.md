@@ -1,3 +1,10 @@
+---
+title: "Mistral 7B · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mistral 7B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文: arXiv:2310.06825v1, Mistral 7B, 9 页, 13 张图. 英文段在前, 中文意译紧跟. 参考文献不译; 单独的页码行已删去, OCR 打乱的表格和公式按原图重排.
 
 <!-- page 1 of 9 -->

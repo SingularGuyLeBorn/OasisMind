@@ -1,3 +1,10 @@
+---
+title: "Janus: 看图和画图各用一套视觉编码"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "Janus 是一个 1.3B 的统一多模态模型: 同一个自回归 Transformer 既回答关于图片的问题, 也按文字生成图片."
+---
 # Janus: 看图和画图各用一套视觉编码
 
 来源: [Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation](https://arxiv.org/abs/2410.13848) (arXiv: 2410.13848v1, 2024-10-17). 仓库: https://github.com/deepseek-ai/Janus

@@ -1,3 +1,10 @@
+---
+title: "Magistral 论文分析: 纯 RL 的 Medium, 蒸馏加 RL 的 Small"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "缺的东西也很集中. 第一是规模信息: Magistral Medium 的参数量全篇没印, Small 印了 24B, 两者的激活参数都没印, 层数, 词表, 上下文长度也都没有."
+---
 # Magistral 论文分析: 纯 RL 的 Medium, 蒸馏加 RL 的 Small
 
 - 源文: Magistral, arXiv:2506.10910v1, 2025 年 6 月 12 日, 署名 Mistral AI. 23 页, 23 张图 (16 个图号, 图 6, 7, 8, 11, 12 由多张子图拼成), 6 张表, 2 个编号公式, 另有两段 GRPO 目标式. 第 1 到 16 页是正文, 第 17 页是贡献者, 第 18 到 20 页是参考文献, 第 21 到 23 页是三道多模态例题.
@@ -5,7 +12,7 @@
 - 两个模型: Magistral Medium 在 Mistral Medium 3 上只做 RL; Magistral Small 先用 Magistral Medium 的轨迹对 Mistral Small 3 做 SFT, 再做 RL.
 - 数据: 数学题从 699k 滤到 38k, 代码题 35k, 都是可验证答案的题.
 - 算法: GRPO 加五处改动, 奖励分格式, 正确性, 长度, 语言四项.
-- 逐段对照和 38 条疑惑在同目录的 magistral-bi.md, 这里不重复翻译. 自己算的数标 「估算」, 从图上目测的数标 「读图」.
+- 逐段对照和 38 条疑惑在同目录的 magistral-bi.md, 这里不重复翻译. 从图上目测的数标 「读图」.
 - 安全和漏洞评测: 本页未印.
 
 | 项 | Magistral Medium | Magistral Small |

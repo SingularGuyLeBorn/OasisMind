@@ -1,3 +1,10 @@
+---
+title: "Grok 4 Fast: 把 reasoning 成本砍下来的公告怎么读"
+category: "模型库"
+tags: ["xAI", "技术解析"]
+published: true
+excerpt: "这篇公告能回答四件事: 同样分数下 thinking token 省了多少, 总价格便宜了多少, 搜索能力排第几, 以及多少钱能用上."
+---
 公开材料是 x.ai 在 2025 年 9 月 19 日发布 Grok 4 Fast 的产品公告, 共 12 页, 不是技术报告. 正文讲了成本效率 (40% / 98% / 47x 三个数), agentic 搜索的六张基准表, LMArena 两个榜, 统一推理架构和 API 定价; 参数量, 网络结构, 训练数据配比, 奖励设计页面都没有.
 
 # Grok 4 Fast: 把 reasoning 成本砍下来的公告怎么读

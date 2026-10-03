@@ -1,3 +1,10 @@
+---
+title: "grok-4-7 · 源文"
+category: "模型库"
+tags: ["xAI", "源文"]
+published: true
+excerpt: "grok-4-7 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 6 -->
 
 A

@@ -1,3 +1,10 @@
+---
+title: "Qwen3: 一套权重里的思考与不思考"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen3 是 6 档 Dense (0.6B 到 32B) 加 2 档 MoE (30B-A3B, 235B-A22B) 的一组开源权重, 旗舰 235B 总参, 每 token 激活 22B."
+---
 # Qwen3: 一套权重里的思考与不思考
 
 来源: [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) (arXiv:2505.09388v1, 2025-05-14). 仓库: https://github.com/QwenLM/Qwen3. 表内数字以源文 `qwen3.md` 为准, 英文原句对照开同目录 `qwen3-bi.md`.

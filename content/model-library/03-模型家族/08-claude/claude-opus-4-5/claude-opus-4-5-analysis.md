@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4.5 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Opus 4.5 的系统卡日期是 2025 年 11 月, 后来有 11 月 24 日, 11 月 25 日和 12 月 5 日的更正."
+---
 # Claude Opus 4.5 系统卡: 分析
 
 ## 1. 发布与快照

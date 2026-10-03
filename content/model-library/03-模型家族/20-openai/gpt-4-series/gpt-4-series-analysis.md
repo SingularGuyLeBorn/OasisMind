@@ -1,3 +1,10 @@
+---
+title: "GPT-4 技术谱系分析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "GPT-3 论文的主体是架构表, 数据配比和训练算力, 见 GPT-3 技术谱系分析."
+---
 # GPT-4 技术谱系分析
 
 来源: OpenAI, *GPT-4 Technical Report*, arXiv 2303.08774v6, 附 *GPT-4 System Card*, 合计 100 页, 29 张图. 对照译稿见 [gpt-4-series-bi.md](gpt-4-series-bi.md).

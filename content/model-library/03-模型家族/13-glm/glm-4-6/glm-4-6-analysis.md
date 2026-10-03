@@ -1,3 +1,10 @@
+---
+title: "GLM-4.6 博客: 200K 窗口, 八项基准和一组人工对比"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "第 1 页是日期 「2025-09-30 · Research」, 标题 「GLM-4.6: Advanced Agentic, Reasoning and Coding Capabilities」, 四个链接 (Z.ai 试用, API 文档, HuggingFace 模型页, Tech Repo…"
+---
 > 源文 `glm-4-6.md` 是 Z.ai 在 2025-09-30 发布 GLM-4.6 的博客, MinerU 抓取, 4 页, 13 张图. 正文是五条改进, 一张八项基准图, 一组 CC-Bench 人工对比和一张 token 用量图, 其余是接入和部署说明. 全篇没有结构, 参数量和训练细节.
 
 # GLM-4.6 博客: 200K 窗口, 八项基准和一组人工对比

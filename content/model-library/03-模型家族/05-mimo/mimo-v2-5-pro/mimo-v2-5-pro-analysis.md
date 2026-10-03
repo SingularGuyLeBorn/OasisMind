@@ -1,3 +1,10 @@
+---
+title: "MiMo-V2.5-Pro: 把 Flash 的配方放大到 1T, 滑窗比例改成 6:1"
+category: "模型库"
+tags: ["MiMo", "技术解析"]
+published: true
+excerpt: "页 1 的身份声明: 发布并开源, 是小米迄今最强的模型, 相对前代 MiMo-V2-Pro 在通用 Agent, 复杂软件工程与长程任务上明显提升;"
+---
 # MiMo-V2.5-Pro: 把 Flash 的配方放大到 1T, 滑窗比例改成 6:1
 
 > 源文 `mimo-v2-5-pro.md` 是 2026-04-27 的发布页 (10 页标记, 9 图): 发布口号, 三个长程案例, Token 效率散点, Token Plan 更新, 规格表, 一段架构与训练说明, 一张对照总表. 没有层表, 专家数, 路由, 消融或损失函数. 用到 Flash 报告, V2.6 报告或 Hugging Face 模型卡的数字时逐处标明出处.

@@ -1,3 +1,10 @@
+---
+title: "MiniCPM4.1 · 源文"
+category: "模型库"
+tags: ["MiniCPM", "源文"]
+published: true
+excerpt: "MiniCPM4.1 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 44 -->
 
 arXiv:2506.07900v2 [cs.CL] 4 Sep 2025

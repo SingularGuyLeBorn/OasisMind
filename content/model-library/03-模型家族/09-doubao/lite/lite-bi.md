@@ -1,3 +1,10 @@
+---
+title: "Doubao-1.5-lite · 对照译稿"
+category: "模型库"
+tags: ["Doubao", "对照译稿"]
+published: true
+excerpt: "Doubao-1.5-lite 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 8 -->
 
 Volcano Engine Agent Developer Community | Docs | ICP Filing | Console | Log in (site navigation bar)

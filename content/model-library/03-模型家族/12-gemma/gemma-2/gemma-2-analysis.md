@@ -1,3 +1,10 @@
+---
+title: "Gemma 2: 分析"
+category: "模型库"
+tags: ["Gemma", "技术解析"]
+published: true
+excerpt: "Gemma 2 是 Google DeepMind 在 2024 年发布的第二代 Gemma 开放模型, 给了三个尺寸: 2B, 9B, 27B."
+---
 # Gemma 2: 分析
 
 > 源文: Gemma 2: Improving Open Language Models at a Practical Size (Gemma Team, Google DeepMind), arXiv:2408.00118v3. 封面日期 2024-06-27, v3 版本日期 2024-10-02. 全文 21 页, 正文约 14 页, 其后是作者名单和参考文献. 对照原文和逐条疑惑见 [gemma-2-bi.md](./gemma-2-bi.md).

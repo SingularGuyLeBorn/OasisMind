@@ -1,3 +1,10 @@
+---
+title: "Kimi K2 Thinking: 边想边调工具, 思考长度和工具步数一起加"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "K2 是非思考模型, 报告把所有评测都放在 non-thinking 设定下, 长推理这一面是空的."
+---
 # Kimi K2 Thinking: 边想边调工具, 思考长度和工具步数一起加
 
 本页是发布博客, 不是技术报告. 能讲的机制只有交错工具调用的评测设定和 INT4 QAT 两件, 数据, 结构, 预训练和 RL 细节都没有公开.

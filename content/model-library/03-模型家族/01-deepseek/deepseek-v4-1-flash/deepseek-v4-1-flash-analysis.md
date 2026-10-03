@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看。"
+---
 # DeepSeek-V4.1-Flash: 每 token 890 字节的 global KV
 
 来源: [DeepSeek-V4.1-Flash: Pushing the Limits of KV Cache Compression](https://arxiv.org/abs/2609.19969) (arXiv: 2609.19969, 2026-09-17).

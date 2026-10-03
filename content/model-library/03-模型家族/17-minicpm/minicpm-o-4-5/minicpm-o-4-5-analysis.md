@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-o 4.5 分析: 9B 全双工全模态模型的来路与拼法"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "页面自己交代的谱系很短. 第 3 页说 MiniCPM-o 4.5 能在全双工模式和 「传统用法」 之间切换, 传统用法 「类似 MiniCPM-o 2.6 和 MiniCPM-V 4.5, 性能有提升」."
+---
 # MiniCPM-o 4.5 分析: 9B 全双工全模态模型的来路与拼法
 
 - 源文: arXiv 2604.27393v1, 2026 年 4 月 30 日, 22 页, 6 张图, 13 张表, 由 MinerU 转成 Markdown; 同目录有 PDF.
@@ -7,7 +14,7 @@
 - 本页链到的 MiniCPM 语言模型文献只有一篇: [25] MiniCPM4, arXiv 2506.07900, 正文把它写作 「MiniCPM 4.1」.
 - 逐条疑问共 25 条, 写在同目录 minicpm-o-4-5-bi.md 里, 贴在对应段落旁边.
 
-下文只用这 22 页的内容, 页码指 PDF 页码, 标 「估算」 的数是按页面数字自己算的.
+下文只用这 22 页的内容, 页码指 PDF 页码.
 
 ## 1. 在 MiniCPM 家族里的位置
 

@@ -1,6 +1,13 @@
+---
+title: "Seed1.5-VL: 给一个现成的 20B 激活 MoE 装上眼睛"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "1.5 代的视觉能力最早出现在 2025 年 1 月的 Doubao-1.5-pro 产品页: 自研 2.4B 的 Doubao ViT, 原生动态分辨率, 混入纯文本保语言能力, 后训练偏重 RL."
+---
 # Seed1.5-VL: 给一个现成的 20B 激活 MoE 装上眼睛
 
-来源: [Seed1.5-VL Technical Report](https://arxiv.org/abs/2505.07062) (arXiv:2505.07062v1, 2025-05-11; 文首日期 June 13, 2025; 模型 ID doubao-1-5-thinking-vision-pro-250428). 逐段对照译稿见同目录 `seed-1-5-vl-bi.md`. 表号, 图号, 式号都指原报告编号, 数字以源文 `seed-1-5-vl.md` 为准. 由表上数字推出的量标 「估算」.
+来源: [Seed1.5-VL Technical Report](https://arxiv.org/abs/2505.07062) (arXiv:2505.07062v1, 2025-05-11; 文首日期 June 13, 2025; 模型 ID doubao-1-5-thinking-vision-pro-250428). 逐段对照译稿见同目录 `seed-1-5-vl-bi.md`. 表号, 图号, 式号都指原报告编号, 数字以源文 `seed-1-5-vl.md` 为准.
 
 ## 1. 在家族里的位置: 视觉线和推理线在这里汇合
 

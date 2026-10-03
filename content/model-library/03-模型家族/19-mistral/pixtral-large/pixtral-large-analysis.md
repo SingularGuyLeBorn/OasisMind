@@ -1,3 +1,10 @@
+---
+title: "Pixtral Large 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "和模型直接相关的数只有五组: 发布日期 November 18, 2024, 版本号 v24.11 (ID 里写成 2411), 上下文 128k, 别名计数 +1, 弃用日期 2/27/2026."
+---
 这是 Mistral 文档站的 Pixtral Large 模型卡, 1 页, 6 张图, 大半是导航和 cookie 横幅.
 
 - 名称: **Pixtral Large**, 模型 ID `pixtral-large-2411`, 另有 1 个别名未显示 (「+1」).

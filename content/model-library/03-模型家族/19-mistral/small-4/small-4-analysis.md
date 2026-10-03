@@ -1,3 +1,10 @@
+---
+title: "Mistral Small 4 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "这页能用的材料分四块: 正文七八段, 一张结构参数列表, 两张自家模型对比柱状图, 以及第 6 页一段关于输出长度的文字."
+---
 这是 Mistral AI 官网的 Mistral Small 4 发布页, 标题 「Introducing Mistral Small 4」, 10 页, 6 张图, 不是论文. 两张柱状图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高; 第 6 页那张 「Score vs. Output Length」 图没有抓到, 只能用正文里的数.
 
 - 发布: **March 16, 2026**, 署名 Mistral AI, 官网 RESEARCH 栏.

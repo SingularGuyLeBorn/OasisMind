@@ -1,6 +1,13 @@
+---
+title: "Seed2.0: 不再公开配方的一代, 谱系只能从评测和工具里读"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "Seed2.0 的引言先把家族点了一遍: 通用模型 Seed1.6/1.8, 多模态 Seed1.5-VL, 开源的 Seed-OSS, 代码专用的 Seed-Coder, 扩散语言模型 Seed Diffusion, 形式化证明的 Seed-Prover, 以及生成式媒体系统, 这些模型支撑着日活数亿的产品."
+---
 # Seed2.0: 不再公开配方的一代, 谱系只能从评测和工具里读
 
-来源: Seed2.0 Model Card (字节跳动 Seed, 2026 年 2 月, 共 78 页). 逐段对照译稿见同目录 `seed-2-0-bi.md`, 数字以源文 `seed-2-0.md` 为准. 表号, 图号都指原文编号; 由表上数字推出的量标 「估算」.
+来源: Seed2.0 Model Card (字节跳动 Seed, 2026 年 2 月, 共 78 页). 逐段对照译稿见同目录 `seed-2-0-bi.md`, 数字以源文 `seed-2-0.md` 为准. 表号, 图号都指原文编号.
 
 ## 1. 家族走到这一步: 从技术报告变成模型卡
 

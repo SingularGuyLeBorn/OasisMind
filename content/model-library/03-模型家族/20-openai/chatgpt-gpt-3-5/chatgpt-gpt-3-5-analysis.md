@@ -1,3 +1,10 @@
+---
+title: "ChatGPT (GPT-3.5) 技术解析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "这页给 ChatGPT 挂了三种不同的关系. 基座是 「a model in the GPT-3.5 series」, 这是参数继承的边, ChatGPT 从它微调而来."
+---
 源文是 OpenAI 2022 年的 ChatGPT 发布公告, 9 页里正文不到 6 页, 没有表, 没有评测分数.
 
 | 条目 | 这页印的内容 |

@@ -1,3 +1,10 @@
+---
+title: "Janus-Pro: 架构不动, 改训练日程, 数据和规模"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "Janus-Pro 是 Janus 的升级版, 架构完全沿用: 理解走 SigLIP, 生成走 VQ tokenizer, 两条视觉通路接同一个自回归 Transformer."
+---
 # Janus-Pro: 架构不动, 改训练日程, 数据和规模
 
 来源: [Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling](https://arxiv.org/abs/2501.17811) (arXiv: 2501.17811v1, 2025-01-29). 仓库: https://github.com/deepseek-ai/Janus

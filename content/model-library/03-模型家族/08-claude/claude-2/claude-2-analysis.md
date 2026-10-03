@@ -1,3 +1,10 @@
+---
+title: "Claude 2 (2023): 四组分数, 100K 上下文和三篇安全研究"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份 PDF 分成两块. 第 1 页到第 4 页开头是 2023 年 7 月 11 日的公告正文, 截止在 「business who would like to start working with Claude」 那句;"
+---
 # Claude 2 (2023): 四组分数, 100K 上下文和三篇安全研究
 
 > 源文是 Anthropic 在 2023 年 7 月 11 日发布的产品公告 「Claude 2」, 属于博客式发布页, 不是技术报告. 全文没有公式, 没有表格, 没有参数量, 架构, 训练数据规模或训练流程. 页面给了几组评测分数, 上下文长度, 一项内部红队结果和三个研究链接, 但没有评测设置.

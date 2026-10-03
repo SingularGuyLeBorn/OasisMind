@@ -1,3 +1,10 @@
+---
+title: "Mixtral 8x7B · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mixtral 8x7B 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文: arXiv:2401.04088v1, Mixtral of Experts, 13 页, 16 张图. 英文段在前, 中文意译紧跟. 参考文献 (第 9 至 11 页) 不译; 单独的页码行已删去, 跨页断开的半句已接回; 表 3, 表 4, 表 5 的表头按 PDF 原版重排.
 
 <!-- page 1 of 13 -->

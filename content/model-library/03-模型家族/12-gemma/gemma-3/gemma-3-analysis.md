@@ -1,3 +1,10 @@
+---
+title: "Gemma 3: 分析"
+category: "模型库"
+tags: ["Gemma", "技术解析"]
+published: true
+excerpt: "Gemma 3 是 Google DeepMind 的第三代 Gemma 开放模型, 发布四个尺寸: 1B, 4B, 12B, 27B."
+---
 # Gemma 3: 分析
 
 > 源文: Gemma 3 Technical Report (Gemma Team, Google DeepMind), arXiv:2503.19786v1, 上传日期 2025-03-25, 页眉日期 2025-03-12. 全文 25 页, 正文约 10 页半, 第 11 到 16 页是参考文献, 第 17 到 19 页是作者名单, 第 20 到 25 页是附录表. 对照原文和逐条疑惑见 [gemma-3-bi.md](./gemma-3-bi.md).

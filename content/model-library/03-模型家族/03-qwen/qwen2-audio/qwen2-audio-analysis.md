@@ -1,3 +1,10 @@
+---
+title: "Qwen2-Audio: 自然语言 prompt 换掉分层标签, 分析与语音聊天合进一套权重"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2-Audio 是一个 8.2B 的音频语言模型, 输入音频和文本, 输出文本."
+---
 # Qwen2-Audio: 自然语言 prompt 换掉分层标签, 分析与语音聊天合进一套权重
 
 来源: [Qwen2-Audio Technical Report](https://arxiv.org/abs/2407.10759) (arXiv:2407.10759v1, 2024-07-15). 仓库: https://github.com/QwenLM/Qwen2-Audio. 对照译稿见同目录 `qwen2-audio-bi.md`, 表内数字以源文 `qwen2-audio.md` 为准.

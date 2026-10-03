@@ -1,3 +1,10 @@
+---
+title: "Mistral 官网新闻列表页 · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mistral 官网新闻列表页 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # Mistral 官网新闻列表页对照稿
 
 源文是 Mistral 官网博客列表页 (mistral.ai/news) 的浏览器打印件, 7 页, 12 张图, 由 MinerU 转成 Markdown. PDF 标题是 「Latest news | Mistral」. 每一页左下都压着同一个 axeptio Cookie 弹窗, 挡住了大半正文, MinerU 又把弹窗文字和下面的文章卡片搅在一起, 所以 md 里的标题多半只剩半截, 大部分日期也丢了. 本稿以同目录 PDF 的文字层和截图为准, 把能找回的标题, 摘要, 日期和作者补回, 改动处在该段中文里说明. 页面上没有任何模型结构, 参数或评测分数. 顶栏 Mistral 像素 logo 被 MinerU 认成的 「HL」, 以及 「as ra se €」, 「由」, 「只心」 这类识别碎片, 本稿删去.

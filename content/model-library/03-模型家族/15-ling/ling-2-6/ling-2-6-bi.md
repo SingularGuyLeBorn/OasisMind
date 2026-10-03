@@ -1,3 +1,10 @@
+---
+title: "Ling / Ring 2.6 · 对照译稿"
+category: "模型库"
+tags: ["Ling", "对照译稿"]
+published: true
+excerpt: "Ling / Ring 2.6 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 43 -->
 
 arXiv:2606.15079v1 [cs.CL] 13 Jun 2026

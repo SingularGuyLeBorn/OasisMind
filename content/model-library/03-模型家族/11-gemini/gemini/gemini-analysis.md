@@ -1,3 +1,10 @@
+---
+title: "Gemini 3.1 Deep Think 产品页: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "MinerU 把第一张头图的大标题 「Gemini 3.1 Deep Think」 当成了文档标题."
+---
 源文是 deepmind.google 上 Gemini 模型页的抓取, 16 页, 18 张图, 没有正文段落意义上的技术内容: 没有模型结构, 训练数据, 参数规模, 也没有作者和日期. 下文只按页面上的字, 表格和链接写, 不从外部补.
 
 # Gemini 3.1 Deep Think 产品页: 分析

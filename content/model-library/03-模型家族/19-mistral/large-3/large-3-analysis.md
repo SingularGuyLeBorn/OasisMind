@@ -1,3 +1,10 @@
+---
+title: "Mistral Large 3 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "页面给了两套参数口径. 第一套在模型介绍段: 总参数 675B, 激活参数 41B, 说的是整个多模态模型."
+---
 这是 Hugging Face 上 Mistral-Large-3-675B-Instruct-2512 的模型卡, 9 页, 9 张图, 其中 4 张是数据图, 其余是页面图标.
 
 - 仓库: `mistralai/Mistral-Large-3-675B-Instruct-2512`, 许可证 Apache 2.0.

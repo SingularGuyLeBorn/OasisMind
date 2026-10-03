@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-o 2.6 模型卡分析: 8B 全模态模型的实时流设计"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "MinerU 的转写有几处硬伤: 第 15 页一行代码被重复几百遍, 把后面的代码全冲掉了; 多处 msgs=msgs 被识别成 msgs=news;"
+---
 源文是模型卡, 架构只有三段文字和一张图, 没有训练细节.
 
 # MiniCPM-o 2.6 模型卡分析: 8B 全模态模型的实时流设计

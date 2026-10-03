@@ -1,3 +1,10 @@
+---
+title: "GLM-130B 解读: 一个开放的中英双语千亿模型"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "原文: Aohan Zeng, Xiao Liu, Zhengxiao Du 等, 「GLM-130B: An Open Bilingual Pre-trained Model」, ICLR 2023, arXiv:2210.02414v2."
+---
 # GLM-130B 解读: 一个开放的中英双语千亿模型
 
 原文: Aohan Zeng, Xiao Liu, Zhengxiao Du 等, 「GLM-130B: An Open Bilingual Pre-trained Model」, ICLR 2023, arXiv:2210.02414v2. 对照全文见同目录的 glm-130b-bi.md, 下文提到的页码都是 PDF 页码.

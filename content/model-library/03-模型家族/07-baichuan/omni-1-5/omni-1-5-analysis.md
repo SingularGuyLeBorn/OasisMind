@@ -1,6 +1,13 @@
+---
+title: "Baichuan-Omni-1.5: 在 Qwen2.5-7B 上分四段接入视觉和语音, 一套音频码同时管听和说"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "Baichuan-Omni-1.5 是百川在 2025 年初放出的全模态模型: 输入端接收文本, 图像, 视频和音频, 输出端给文本和语音, 语音由模型端到端生成, 不经过外挂的 TTS."
+---
 # Baichuan-Omni-1.5: 在 Qwen2.5-7B 上分四段接入视觉和语音, 一套音频码同时管听和说
 
-来源: 同目录 `omni-1-5.md` ([arXiv:2501.15368v1](https://arxiv.org/abs/2501.15368), 27 页, 正文 17 页), 对照译稿见 `omni-1-5-bi.md`. 仓库: [baichuan-inc/Baichuan-Omni-1.5](https://github.com/baichuan-inc/Baichuan-Omni-1.5). 表内数字回 Table 1–13. 标 「外部」 的信息来自 GitHub README, 不在论文正文里; 标 「估算」 的是按公开数字推算的结果.
+来源: 同目录 `omni-1-5.md` ([arXiv:2501.15368v1](https://arxiv.org/abs/2501.15368), 27 页, 正文 17 页), 对照译稿见 `omni-1-5-bi.md`. 仓库: [baichuan-inc/Baichuan-Omni-1.5](https://github.com/baichuan-inc/Baichuan-Omni-1.5). 表内数字回 Table 1–13. 标 「外部」 的信息来自 GitHub README, 不在论文正文里.
 
 | 面 | 本页给了什么 | 关键数字 |
 |---|---|---|

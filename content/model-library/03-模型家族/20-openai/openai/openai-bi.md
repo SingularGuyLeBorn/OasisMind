@@ -1,3 +1,10 @@
+---
+title: "OpenAI Models 页 · 对照译稿"
+category: "模型库"
+tags: ["OpenAI", "对照译稿"]
+published: true
+excerpt: "OpenAI Models 页 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # OpenAI 开发者文档 Models 页对照稿
 
 源文是 OpenAI 开发者站 Models 页的浏览器打印件, 1 页, 1 张图, 由 MinerU 转成 Markdown. 这是模型选购入口页, 没有参数, 价格, 上下文长度和评测分数, 本稿只对照页面上印出来的文字. 页面上的数字只有型号里的 「6」. MinerU 漏掉或顺序不同的地方按同目录 PDF 的文字层核对, 改动处在该段中文里说明.

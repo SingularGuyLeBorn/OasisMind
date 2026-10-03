@@ -1,3 +1,10 @@
+---
+title: "gpt-oss · 对照译稿"
+category: "模型库"
+tags: ["OpenAI", "对照译稿"]
+published: true
+excerpt: "gpt-oss 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 35 -->
 
 arXiv:2508.10925v1 [cs.CL] 8 Aug 2025

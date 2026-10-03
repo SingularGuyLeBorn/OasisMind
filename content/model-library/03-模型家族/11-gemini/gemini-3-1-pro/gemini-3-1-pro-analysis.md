@@ -1,3 +1,10 @@
+---
+title: "Gemini 3.1 Pro 模型卡解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "Gemini 3.1 Pro 的模型卡是一份 7 页的网页, 页头标 2026 年 2 月 19 日发布."
+---
 # Gemini 3.1 Pro 模型卡解读
 
 ## 1. 这张卡自己交代了什么

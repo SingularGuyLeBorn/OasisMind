@@ -1,3 +1,10 @@
+---
+title: "Gemini Robotics: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "报告的标题只有一个 Gemini Robotics, 摘要里却是两个模型: 直接控制机器人的 VLA 叫 Gemini Robotics, 做具身推理的 VLM 叫 Gemini Robotics-ER."
+---
 # Gemini Robotics: 分析
 
 ## 1. 两个名字, 至少三份权重

@@ -1,3 +1,10 @@
+---
+title: "MiMo-V2-Flash · 对照译稿"
+category: "模型库"
+tags: ["MiMo", "对照译稿"]
+published: true
+excerpt: "MiMo-V2-Flash 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 31 -->
 
 arXiv:2601.02780v2 [cs.CL] 8 Jan 2026

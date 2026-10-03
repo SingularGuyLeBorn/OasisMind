@@ -1,6 +1,13 @@
+---
+title: "Baichuan-M3: 借 Qwen3 的 MoE 底座, 把问诊拆成四段写进 RL, 再用事实核查压住幻觉"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "先讲清口径. 本文里的 「做大」 只指部署前的事: 底座换成 235B 的 MoE, 后训练拆成三段, 教师从一个变成多个."
+---
 # Baichuan-M3: 借 Qwen3 的 MoE 底座, 把问诊拆成四段写进 RL, 再用事实核查压住幻觉
 
-来源: 同目录 `m3-235b.md` (arXiv:2602.06570v1, 40 页, 19 图), 对照译稿见 `m3-235b-bi.md`. 表内数字回 Table 1–6 与式 (1)–(15). 标 「读图」 的数字是从柱状图或曲线上读出的近似值, 标 「估算」 的是按公开数字推算的结果, 标 「外部」 的信息来自 Hugging Face 模型卡或 GitHub README, 不在论文正文里.
+来源: 同目录 `m3-235b.md` (arXiv:2602.06570v1, 40 页, 19 图), 对照译稿见 `m3-235b-bi.md`. 表内数字回 Table 1–6 与式 (1)–(15). 标 「读图」 的数字是从柱状图或曲线上读出的近似值, 标 「外部」 的信息来自 Hugging Face 模型卡或 GitHub README, 不在论文正文里.
 
 先讲清口径. 本文里的 「做大」 只指部署前的事: 底座换成 235B 的 MoE, 后训练拆成三段, 教师从一个变成多个. 报告里的 ScanBench 与 HealthBench 读数都是单次生成后交给裁判模型或 checklist 打分, 没有多次采样投票, 也没有加长推理预算这类 TestingTime 手段. 第 4.2 节的 Gated Eagle-3 与 INT4 量化属于推理加速和压缩, 目标是少花算力拿到同样的输出, 方向与 TestingTime 相反.
 

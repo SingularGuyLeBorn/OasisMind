@@ -1,3 +1,10 @@
+---
+title: "Mistral 官网新闻列表页 · 源文"
+category: "模型库"
+tags: ["Mistral", "源文"]
+published: true
+excerpt: "Mistral 官网新闻列表页 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 7 -->
 
 [Cookies](https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/)

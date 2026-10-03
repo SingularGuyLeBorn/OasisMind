@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 5.5 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "对照原文见 claude-opus-5-5-bi.md. 评测证据的通用读法见 10.1 评测科学与证据."
+---
 # Claude Opus 5.5 系统卡: 分析
 
 对照原文见 [claude-opus-5-5-bi.md](./claude-opus-5-5-bi.md). 评测证据的通用读法见 [10.1 评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).

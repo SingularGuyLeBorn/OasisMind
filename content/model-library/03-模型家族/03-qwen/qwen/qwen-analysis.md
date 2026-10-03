@@ -1,3 +1,10 @@
+---
+title: "Qwen 初代: 中档 Dense 底座上, 语料, 词表, 外推与 RLHF 怎样一起定型"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "2023 年 9 月的 Qwen 不是靠某一个新算子出名的模型."
+---
 # Qwen 初代: 中档 Dense 底座上, 语料, 词表, 外推与 RLHF 怎样一起定型
 
 来源: [QWEN TECHNICAL REPORT](https://arxiv.org/abs/2309.16609) (arXiv:2309.16609v1, 2023-09-28). 仓库: https://github.com/QwenLM/Qwen. 对照译稿见同目录 `qwen-bi.md` (page 1 of 59 至 page 59 of 59), 表内数字与超参以源文 `qwen.md` 为准.

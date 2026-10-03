@@ -1,3 +1,10 @@
+---
+title: "Qwen3-VL: 交错 MRoPE, DeepStack 与文本时间戳把长上下文多模态做实"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen3-VL 是 Qwen 视觉语言系列接到 Qwen3 语言模型底盘之后的旗舰多模态报告."
+---
 # Qwen3-VL: 交错 MRoPE, DeepStack 与文本时间戳把长上下文多模态做实
 
 来源: [Qwen3-VL Technical Report](https://arxiv.org/abs/2511.21631) (arXiv:2511.21631v2, 2025-11-27; 文首日期 December 1, 2025). 仓库: https://github.com/QwenLM/Qwen3-VL. 对照译稿见同目录 `qwen3-vl-bi.md`. 表内数字以源文 `qwen3-vl.md` 为准.

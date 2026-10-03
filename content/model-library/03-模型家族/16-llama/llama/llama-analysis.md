@@ -1,3 +1,10 @@
+---
+title: "Llama 技术解析"
+category: "模型库"
+tags: ["Llama", "技术解析"]
+published: true
+excerpt: "第 1 页是仓库根目录的文件清单, 17 个名字, 从 .github, docs, models 到 pyproject.toml, requirements.txt, uv.lock."
+---
 源文是 GitHub 上 meta-llama/llama-models 仓库首页的抓取, 5 页, 1 张图, 不是 Llama 的技术报告.
 
 ## 1. 这 5 页是什么

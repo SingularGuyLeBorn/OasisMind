@@ -1,3 +1,10 @@
+---
+title: "Grok 3 Beta 公告: 推理分数怎么读, 哪些没公开"
+category: "模型库"
+tags: ["xAI", "技术解析"]
+published: true
+excerpt: "这份材料能回答三件事: Grok 3 和 Grok 3 mini 的推理模式在四项基准上和 o1, o3 mini, DeepSeek-R1, Gemini 2.0 Flash Thinking 比落在什么位置;"
+---
 源文是 x.ai 2025 年 2 月 19 日的 Grok 3 Beta 发布公告, 正文七八段, 其余是图表, 示例残片和 2026 年网站快照的页脚. 页面给了五张推理模式条形图, 一张 Elo 图和一张被遮住大半的非推理对比表, 但没有参数量, 结构类型, 层数, 训练数据和 RL 配方.
 
 # Grok 3 Beta 公告: 推理分数怎么读, 哪些没公开

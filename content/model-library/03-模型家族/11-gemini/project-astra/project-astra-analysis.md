@@ -1,3 +1,10 @@
+---
+title: "Project Astra: 产品页解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "这份材料是 deepmind.google 上 Project Astra 的产品介绍页, 打印成 17 页 PDF."
+---
 源材料是 deepmind.google 上 Project Astra 的产品介绍页 (17 页 PDF, 11 张图), 讲 Astra 的正文只有前 14 页的十几段短句, 后面是贡献者名单和全站导航. 页面没有模型名, 没有指标, 没有日期, 也没有结构和训练方面的描述.
 
 # Project Astra: 产品页解读

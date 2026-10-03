@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-V 2.0 · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM-V 2.0 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 12 -->
 
 ![绿色地球图标, 页面上它是语言标签 English 和 Chinese 前面的小图标](images/p01-s.png)

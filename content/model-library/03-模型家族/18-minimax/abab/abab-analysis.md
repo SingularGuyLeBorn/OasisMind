@@ -1,3 +1,10 @@
+---
+title: "abab6.5 技术解析"
+category: "模型库"
+tags: ["MiniMax", "技术解析"]
+published: true
+excerpt: "模型相关的数只有四个: 日期 2024.04.17, abab6.5 的 trillion 参数, 两款共用的 200k token 上下文, abab6.5s 的将近 30,000 words 每秒."
+---
 这是 MiniMax 官网 abab6.5 系列的发布页, 3 页, 没有图. 正文只有一段.
 
 - 发布日期: 2024.04.17.

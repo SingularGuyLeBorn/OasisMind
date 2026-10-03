@@ -1,3 +1,10 @@
+---
+title: "Gemini 2.5 Flash-Lite 稳定版: 公告解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "文章发在 Google 的开发者博客 (developers.googleblog.com) 上, 分类是 Gemini, 标签包括 AI, Announcements, Explore 和 Gemini 2.5 Flash-Lite."
+---
 > 本目录的源材料是 Google for Developers 博客 2025 年 7 月 22 日的文章 「Gemini 2.5 Flash-Lite is now stable and generally available」 的抓取 `gemini-2-5-flash-lite.md` (4 页, 5 图), 是一篇正式开放公告, 不是技术报告. 全文没有模型结构, 参数量, 训练数据, 训练方法, 也没有任何基准分数; 能核对的只有第 2 页一张三列对比表, 正文里的几个价格, 比例和日期.
 
 # Gemini 2.5 Flash-Lite 稳定版: 公告解读

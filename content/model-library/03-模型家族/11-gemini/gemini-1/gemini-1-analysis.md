@@ -1,3 +1,10 @@
+---
+title: "Gemini 1.0: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "Gemini 1.0 报告的主体是评测."
+---
 # Gemini 1.0: 分析
 
 > 对象: Gemini: A Family of Highly Capable Multimodal Models (Gemini Team, Google). 全文 90 页, 正文约 40 页, 其余是参考文献, 贡献者名单和附录. 对照原文见 [gemini-1-bi.md](./gemini-1-bi.md). 评测方法的一般讨论见 [评测科学与证据](../../../../llm-guide/10-评测、安全与治理/10.1-评测科学与证据.md).

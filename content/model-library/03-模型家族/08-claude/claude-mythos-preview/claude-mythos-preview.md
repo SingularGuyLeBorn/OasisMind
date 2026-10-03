@@ -1,3 +1,10 @@
+---
+title: "Claude Mythos Preview · 源文"
+category: "模型库"
+tags: ["Claude", "源文"]
+published: true
+excerpt: "Claude Mythos Preview 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 245 -->
 
 ANTHROP\C

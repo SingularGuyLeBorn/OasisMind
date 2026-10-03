@@ -1,3 +1,10 @@
+---
+title: "InstructGPT 技术谱系分析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "GPT-3 证明了把模型和数据做大能换来 few-shot 能力, 但它的训练目标仍是预测网页上的下一个 token."
+---
 # InstructGPT 技术谱系分析
 
 来源: Long Ouyang 等, *Training language models to follow instructions with human feedback*, OpenAI, arXiv 2203.02155v1, 共 68 页. 对照译稿见 [instructgpt-bi.md](instructgpt-bi.md). 前作背景见 [GPT-3 技术谱系分析](../gpt-3/gpt-3-analysis.md), 后续产品线见 [ChatGPT 技术谱系分析](../chatgpt-gpt-3-5/chatgpt-gpt-3-5-analysis.md).

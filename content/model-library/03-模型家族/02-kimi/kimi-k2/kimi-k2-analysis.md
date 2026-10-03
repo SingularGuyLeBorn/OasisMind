@@ -1,3 +1,10 @@
+---
+title: "Kimi K2: 1.04T 总参, 32B 激活, 优化器与 Agent 后训练一起换代"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "k1.5 把 Kimi 的叙事重心放在 RL 上, 底座结构一个字没提."
+---
 # Kimi K2: 1.04T 总参, 32B 激活, 优化器与 Agent 后训练一起换代
 
 来源: [Kimi K2: Open Agentic Intelligence](https://arxiv.org/abs/2507.20534)(arXiv 2507.20534v2). 对照译稿见同目录 `kimi-k2-bi.md`, 表内数字, 公式与图号以源文 `kimi-k2.md` 为准(页标记 `page 1 of 32` 到 `page 32 of 32`).

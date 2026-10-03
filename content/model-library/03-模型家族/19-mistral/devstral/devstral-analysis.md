@@ -1,3 +1,10 @@
+---
+title: "Devstral 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "这页能用的材料很少: 正文四个小节, 一张散点图, 两张不含模型信息的图 (题图和页脚截图). 和模型直接有关的数只有 46.8%, 500, 6, 671B, 20%, RTX 4090, 32GB, 0.1, 0.3 这几个."
+---
 这是 Mistral AI 官网的 Devstral 发布页, 7 页, 3 张图, 不是论文. 散点图上的点没有印数值.
 
 - 发布: **May 21, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.

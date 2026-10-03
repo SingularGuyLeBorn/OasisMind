@@ -1,3 +1,10 @@
+---
+title: "Llama 3.1 目录说明: 与 llama3 同源"
+category: "模型库"
+tags: ["Llama", "技术解析"]
+published: true
+excerpt: "llama3-1/llama3-1.md 和 llama3/llama3.md 都是 384318 字节, SHA256 前缀都是 6db6ff9cd19703cb."
+---
 # Llama 3.1 目录说明: 与 llama3 同源
 
 ## 1. 两份源文是同一个文件

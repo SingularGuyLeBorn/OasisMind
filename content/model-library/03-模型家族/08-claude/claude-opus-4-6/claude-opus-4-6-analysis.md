@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4.6 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Opus 4.6 的系统卡在 2026 年 2 月, 部署标准与 Opus 4.5 相同, 都是 ASL-3."
+---
 # Claude Opus 4.6 系统卡: 分析
 
 ## 1. 部署与思考档位

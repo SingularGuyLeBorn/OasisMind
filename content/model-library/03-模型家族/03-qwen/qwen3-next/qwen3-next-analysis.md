@@ -1,3 +1,10 @@
+---
+title: "Qwen3-Next-80B-A3B-Instruct: 3:1 混合注意力与 512 专家的首发模型卡"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen3-Next 是 Qwen3 之后一条新的架构线, 首发型号 80B-A3B. 模型卡开头讲的动机是: 总参数和上下文长度都在变大, 要靠架构提高 scaling 效率."
+---
 # Qwen3-Next-80B-A3B-Instruct: 3:1 混合注意力与 512 专家的首发模型卡
 
 > 公开材料是 Hugging Face 上 `Qwen/Qwen3-Next-80B-A3B-Instruct` 的模型卡 (12 页), 有四条架构亮点, 一张规格表, 一张 24 行对照表, 一张 RULER 表和部署说明. 没有 Gated DeltaNet 的更新公式, 没有路由与负载均衡细节, 没有 15T 预训练数据的配比, 也没有后训练配方.

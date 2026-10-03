@@ -1,3 +1,10 @@
+---
+title: "Qwen2.5-VL: 窗口 ViT, 绝对时间 MRoPE 和绝对坐标"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2.5-VL 在 Qwen2-VL 的原生分辨率和 M-RoPE 上继续改, 几处改动互相配合."
+---
 # Qwen2.5-VL: 窗口 ViT, 绝对时间 MRoPE 和绝对坐标
 
 来源: [Qwen2.5-VL Technical Report](https://arxiv.org/abs/2502.13923) (arXiv:2502.13923v1, 2025-02-19). 仓库 https://github.com/QwenLM/Qwen2.5-VL. 对照译稿见同目录 `qwen2-5-vl-bi.md`, 表内数字以源文 `qwen2-5-vl.md` 为准.

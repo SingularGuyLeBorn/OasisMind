@@ -1,3 +1,10 @@
+---
+title: "Claude Haiku 4.5 · 对照译稿"
+category: "模型库"
+tags: ["Claude", "对照译稿"]
+published: true
+excerpt: "Claude Haiku 4.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 39 -->
 
 ANTHROPIC

@@ -1,3 +1,10 @@
+---
+title: "Baichuan-Omni-1.5 · 对照译稿"
+category: "模型库"
+tags: ["Baichuan", "对照译稿"]
+published: true
+excerpt: "Baichuan-Omni-1.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 27 -->
 
 arXiv:2501.15368v1 [cs.CL] 26 Jan 2025

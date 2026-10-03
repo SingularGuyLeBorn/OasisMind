@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-Prover: 用 Lean 核验器当过滤器, 合成 800 万条形式证明"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "DeepSeekMath 在结论里承认几何和定理证明是短板, 三个月后的 DeepSeek-Prover 就对准了其中一块: 用 Lean 4 写出能被机器核验的证明."
+---
 # DeepSeek-Prover: 用 Lean 核验器当过滤器, 合成 800 万条形式证明
 
 来源: [DeepSeek-Prover: Advancing Theorem Proving in LLMs through Large-Scale Synthetic Data](https://arxiv.org/abs/2405.14333) (arXiv: 2405.14333v1, 2024-05-23).

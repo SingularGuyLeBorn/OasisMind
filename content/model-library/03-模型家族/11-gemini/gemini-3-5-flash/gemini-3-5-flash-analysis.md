@@ -1,3 +1,10 @@
+---
+title: "Gemini 3.5 Flash 模型卡: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "这张卡的自有信息很少. 真正属于 3.5 Flash 自己的内容只有四块: 概述里的一句定位和思考档位, 输入输出的两个上限 (1M 上下文, 64K 输出), 第 2 到 3 页的成绩表, 第 4 页的安全评测增减表和红队结论."
+---
 源文是 deepmind.google 上 Gemini 3.5 Flash 模型卡的网页抓取, 6 页, 6 张图, 发布日期 2026 年 5 月 19 日, 页上附 PDF 版链接 Gemini-3-5-Flash-Model-Card.pdf. 卡上没有结构, 参数规模和训练数据的描述, 这几项都转给了 Gemini 3 Flash 的卡. 下文只按页面上的字, 表格和链接写, 不从外部补, 也不和 3.6 Flash, 2.5 Flash 的材料混用.
 
 # Gemini 3.5 Flash 模型卡: 分析

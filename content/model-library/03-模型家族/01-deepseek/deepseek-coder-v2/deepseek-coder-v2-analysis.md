@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-Coder-V2 技术报告详解"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "开源代码模型在 StarCoder, CodeLlama, DeepSeek-Coder, Codestral 这条线上已经把成绩往上推了不少, 但和当时的 GPT-4-Turbo, Claude 3 Opus, Gemini 1.5 Pro 比, 差距仍然看得见."
+---
 # DeepSeek-Coder-V2 技术报告详解
 
 来源: [arXiv: 2406.11931](https://arxiv. org/abs/2406.11931)(2024-06-17, v1), 仓库 [deepseek-ai/DeepSeek-Coder-V2](https://github. com/deepseek-ai/DeepSeek-Coder-V2). 数字以报告正文与表格为准.

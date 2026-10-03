@@ -1,3 +1,10 @@
+---
+title: "Ling-plus 技术解析"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "第 1 页是 Hugging Face 仓库页的外壳: 搜索框, 仓库名 inclusionAI/Ling-plus, 点赞 48, 组织关注数 3.07k, 一排标签, 上个月下载量 315, 右侧的 Safetensors 面板, 推理服务商栏, Model tree 和所属合集."
+---
 源文是 Hugging Face 上 inclusionAI/Ling-plus 的模型卡页面抓取, 5 页, 4 张图, 不是技术报告.
 
 ## 1. 这 5 页是什么

@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V3.2 · 对照译稿"
+category: "模型库"
+tags: ["DeepSeek", "对照译稿"]
+published: true
+excerpt: "DeepSeek-V3.2 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 23 -->
 
 arXiv: 2512.02556v1 [cs. CL] 2 Dec 2025

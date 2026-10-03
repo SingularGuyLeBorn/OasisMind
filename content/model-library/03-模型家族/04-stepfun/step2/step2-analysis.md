@@ -1,3 +1,10 @@
+---
+title: "Step-2: WAIC 2024 上的万亿 MoE 正式版, 连同 Step-1.5V 和 Step-1X 一起发布"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "这篇通稿要回答的产品问题很窄: WAIC 当天 Step 家族公开了哪三款; Step-2 相对 GPT-4-1106 / Claude 3 Opus / Llama3 70B Chat 表内高低如何;"
+---
 # Step-2: WAIC 2024 上的万亿 MoE 正式版, 连同 Step-1.5V 和 Step-1X 一起发布
 
 > 公开材料是阶跃星辰官方微信通稿抓取 `step2.md`(约 7 页, 6 图, WAIC 2024), 不是带式号的技术报告. 正文只写 Step-2 万亿 MoE 正式版, Step-1.5V 千亿多模态, Step-1X DiT 三档, 一张对照评测表, C 端产品与行业合作名单. 没有层宽, 专家池, 路由公式, 预训练 token 量, 后训练课表或消融. 架构细节通稿没有写.

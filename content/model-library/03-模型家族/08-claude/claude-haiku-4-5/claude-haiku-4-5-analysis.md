@@ -1,3 +1,10 @@
+---
+title: "Claude Haiku 4.5 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Haiku 4.5 是 Anthropic 在 2025 年 10 月发布的小而快的混合推理模型."
+---
 # Claude Haiku 4.5 系统卡: 分析
 
 ## 1. 定位与安全评测

@@ -1,3 +1,10 @@
+---
+title: "DeepSeekMath: 从网页里挖数学语料, 再用 GRPO 把答题分布拧稳"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "DeepSeekMath 常被记成「GRPO 的出处」, 但按投入和收益看, 这篇报告的主体是数据."
+---
 # DeepSeekMath: 从网页里挖数学语料, 再用 GRPO 把答题分布拧稳
 
 来源: [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) (arXiv: 2402.03300v3, 2024-04-27). 仓库: https://github.com/deepseek-ai/DeepSeek-Math

@@ -1,3 +1,10 @@
+---
+title: "Qwen2: GQA, 32K 预训练加 DCA, 一档 upcycle 的 MoE, 和 7T 高质量课表"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2 是 Qwen 与 Qwen1.5 之后的一次底座换代, 交出四档 Dense (0.5B, 1.5B, 7B, 72B) 和一档 MoE (57B-A14B, 每 token 激活 14B)."
+---
 # Qwen2: GQA, 32K 预训练加 DCA, 一档 upcycle 的 MoE, 和 7T 高质量课表
 
 来源: [Qwen2 Technical Report](https://arxiv.org/abs/2407.10671) (arXiv:2407.10671v4, 2024-09-10). 对照译稿见同目录 `qwen2-bi.md` (`page 1 of 26` 至 `page 26 of 26`), 表内数字, 公式与图号以源文 `qwen2.md` 为准. Hugging Face, ModelScope, GitHub 入口在摘要脚注.

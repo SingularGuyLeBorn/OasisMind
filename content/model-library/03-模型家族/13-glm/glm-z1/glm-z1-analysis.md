@@ -1,3 +1,10 @@
+---
+title: "GLM-Z1-32B-0414 模型卡: 四段介绍, 两张柱状图, 一份使用建议"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "页面上的控件都属于 Hugging Face 的仓库页: 页眉搜索框, Like 和 Follow 按钮, 任务和语言标签, Deploy 与 Use this model 按钮, Model card / Files / Community 三个标签页, Safetensors 信息栏, Infe…"
+---
 源材料是 Hugging Face 上 zai-org/GLM-Z1-32B-0414 的模型卡打印件, 共 7 页, 不是技术报告.
 
 # GLM-Z1-32B-0414 模型卡: 四段介绍, 两张柱状图, 一份使用建议

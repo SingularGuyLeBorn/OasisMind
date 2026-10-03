@@ -1,3 +1,10 @@
+---
+title: "腾讯混元官网研究栏目 · 对照译稿"
+category: "模型库"
+tags: ["Hunyuan", "对照译稿"]
+published: true
+excerpt: "腾讯混元官网研究栏目 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 1 -->
 
 腾讯混元 模型 研究 Co-design

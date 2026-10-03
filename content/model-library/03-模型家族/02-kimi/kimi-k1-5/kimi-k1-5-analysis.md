@@ -1,3 +1,10 @@
+---
+title: "Kimi k1.5: 长上下文 RL 成为新的增长轴"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "在 moonshot-v1 那一代, Kimi 对外的卖点是长上下文, 模型本体几乎不公开. k1.5 是这个家族第一份完整技术报告, 发布时间与 DeepSeek-R1 几乎同期(2025 年 1 月)."
+---
 # Kimi k1.5: 长上下文 RL 成为新的增长轴
 
 来源: 同目录 `kimi-k1-5.md`(页标记 `page 1 of 25` 到 `page 25 of 25`, Kimi Team 技术报告, arXiv 2501.12599). 对照译稿见 `kimi-k1-5-bi.md`. 表号, 图号, 节号均以源 md 为准. 策略梯度, DPO, RoPE 的推导在 llm-guide 单独成篇里, 本稿只讲它们怎样接进 k1.5 的训练流程.

@@ -1,3 +1,10 @@
+---
+title: "OpenAI o1 技术解析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "o1 家族用强化学习做训练, 让模型在回答前先写出一段 CoT. 部署前的投入决定它会不会这样想. 每次回答时把 CoT 拉长, 是 TestingTime 上多花的算力."
+---
 源文是 OpenAI o1 系统卡, 43 页. 对照稿保留了训练描述和安全评测的分数.
 
 | 条目 | 这页印的内容 |

@@ -1,3 +1,10 @@
+---
+title: "Qwen3.8-Max · 对照译稿"
+category: "模型库"
+tags: ["Qwen", "对照译稿"]
+published: true
+excerpt: "Qwen3.8-Max 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 33 -->
 
 [ Cart](https://cart.alibabacloud.com/) [Log In](https://account-intl.aliyun.com/login/login.htm?oauth_callback=https%3A%2F%2Fwww.alibabacloud.com%2Fblog%2Fqwen3-8-max-a-new-bar-for-coding-and-cowork_603421)  三

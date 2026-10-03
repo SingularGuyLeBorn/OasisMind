@@ -1,3 +1,10 @@
+---
+title: "MiniCPM3 技术解析"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "卡把 MiniCPM3-4B 写成第三代. 对照表给 Phi-3.5-mini-Instruct 标了 3.8B."
+---
 这是 Hugging Face 上 MiniCPM3-4B 的模型卡, 5 页, 没有图.
 
 ## 1. 名字里的 4B 和 Phi 的 3.8B

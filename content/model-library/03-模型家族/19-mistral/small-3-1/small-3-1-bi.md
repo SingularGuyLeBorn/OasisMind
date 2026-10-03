@@ -1,3 +1,10 @@
+---
+title: "Mistral Small 3.1 · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mistral Small 3.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文是 Mistral 官网发布页的 7 页打印稿, 英文正文约 500 词. 性能部分只有 GPQA-Diamond 一张散点图印出了数据, 其余基准小节在打印稿里是空白. 每页左下都压着同一个 cookie 弹窗. 文字以 PDF 文本层为准, 被弹窗盖住但文本层里还在的句子照录.
 
 # Mistral Small 3.1 对照稿

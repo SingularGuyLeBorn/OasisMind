@@ -1,3 +1,10 @@
+---
+title: "Mistral Medium 3 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "这页能用的材料分三块: 正文五段, 一张评测表, 两张人评图. 正文里和模型本身有关的数只有价格, 「四张 GPU 起」, 「8X」, 「90%」 这几个, 模型大小, 结构, 上下文长度一个都没写."
+---
 这是 Mistral AI 官网的 Mistral Medium 3 发布页, 标题 「Medium is the new large.」, 8 页, 10 张图, 不是论文. 评测表和人评图的每个数都印在 PDF 嵌入的原图上, 不需要读柱高.
 
 - 发布: **May 7, 2025**, 署名 Mistral AI, 官网 RESEARCH 栏.

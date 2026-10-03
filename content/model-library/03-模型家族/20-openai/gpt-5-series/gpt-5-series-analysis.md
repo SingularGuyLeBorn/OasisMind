@@ -1,6 +1,13 @@
+---
+title: "GPT-5 System Card: 一套路由系统, 三类后训练奖励, 分层生物防护"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "系统卡的主体是评测, 不是模型描述."
+---
 # GPT-5 System Card: 一套路由系统, 三类后训练奖励, 分层生物防护
 
-来源: 同目录 `gpt-5-series.md` (MinerU 抽取) 与 PDF, OpenAI 2025 年 8 月 13 日发布, 60 页, 35 张图, 26 张编号表加 1 张未编号表. 逐段对照见 `gpt-5-series-bi.md`. 下文凡标 「读图」 的数字取自柱状图标签或目测, 凡标 「估算」 的数字是按本文给出的数据自行推算, 本文没有直接印出.
+来源: 同目录 `gpt-5-series.md` (MinerU 抽取) 与 PDF, OpenAI 2025 年 8 月 13 日发布, 60 页, 35 张图, 26 张编号表加 1 张未编号表. 逐段对照见 `gpt-5-series-bi.md`.
 
 | 条目 | 本文给出的内容 |
 | --- | --- |

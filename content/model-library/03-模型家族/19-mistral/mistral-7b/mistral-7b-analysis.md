@@ -1,3 +1,10 @@
+---
+title: "Mistral 7B 论文解读"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "Mistral 7B 是 Mistral AI 的第一份技术报告, 篇幅很短: 架构一页半, 评测一页半, 指令微调和护栏各一页, 结论一段."
+---
 # Mistral 7B 论文解读
 
 - 原文: Mistral 7B, arXiv:2310.06825v1, 2023 年 10 月 10 日, 正文 7 页加参考文献 2 页, 共 9 页, 13 张图.
@@ -5,7 +12,7 @@
 - 模型: 稠密 decoder-only transformer, 32 层, 隐藏维度 4096, 32 个查询头配 8 个 KV 头 (GQA), 滑动窗口 4096, 上下文 8192, 词表 32000.
 - 版本: 基座 Mistral 7B 和指令版 Mistral 7B - Instruct, Apache 2.0 许可.
 - 本文印出的核心数字: MMLU 60.1%, GSM8K 52.2% (maj@8), HumanEval 30.5%, MT-Bench 6.84 ± 0.07, Chatbot Arena ELO 1031.
-- 双语对照见同目录 mistral-7b-bi.md. 下文凡标 「估算」 的数, 都是按本页印出的数自己算的, 原文没有.
+- 双语对照见同目录 mistral-7b-bi.md.
 
 ## 1. 这篇论文交代了什么
 

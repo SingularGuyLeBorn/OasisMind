@@ -1,3 +1,10 @@
+---
+title: "MiniMax-M2.5 · 对照译稿"
+category: "模型库"
+tags: ["MiniMax", "对照译稿"]
+published: true
+excerpt: "MiniMax-M2.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 15 -->
 
 ![Model card 标签页左侧的灰色立方体小图标, 没有文字和数据](images/p01-image.png)

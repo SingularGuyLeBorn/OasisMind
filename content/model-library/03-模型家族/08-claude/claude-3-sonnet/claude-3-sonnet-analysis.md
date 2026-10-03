@@ -1,3 +1,10 @@
+---
+title: "Claude 3 Sonnet (2024): 接替 Claude 2 的中间一档"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份材料的对象是整个 Claude 3 家族, Sonnet 没有单独的报告. 它的信息散在各表的中间一列, 以及 5.5 节人类偏好, 7.1 节多模态红队这几处点名 Sonnet 的段落."
+---
 # Claude 3 Sonnet (2024): 接替 Claude 2 的中间一档
 
 来源: 同目录 `claude-3-sonnet.md` 与 `claude-3-sonnet.pdf`, 即 Anthropic 2024 年 3 月的模型卡 「The Claude 3 Model Family: Opus, Sonnet, Haiku」, 共 42 页, 1 个公式, 8 张表, 43 张图 (均在 `images/`). 同一份报告也收在同级目录 `claude-3-opus` 下, 那一篇侧重 Opus 这个新顶档, 本篇只看 Sonnet: 它从哪一档接过来, 被什么数据和训练方法塑造, 又被哪些评测证明. 对照译稿和逐段疑惑见 `claude-3-sonnet-bi.md`. 数字以源 md 为准, 从图上读出的数注明 「读图估算」.

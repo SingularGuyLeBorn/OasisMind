@@ -1,8 +1,15 @@
+---
+title: "Baichuan-7B: 一份 README 里的第一代百川底座"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "一个模型是数据, 分词, 结构, 预训练系统, 后训练和评测一起做出来的."
+---
 # Baichuan-7B: 一份 README 里的第一代百川底座
 
 源文是 GitHub 仓库 baichuan-inc/Baichuan-7B 的中文 README 打印成的 8 页 PDF, 不是技术报告. 页面有四张评测表, 一张分词器对比表, 一段三行的结构说明和一组训练吞吐数字, 没有公式, 没有学习率, batch size, 并行策略, 也没有任何后训练.
 
-来源: 同目录 `baichuan-7b.md` (页标记 `page 1 of 8` 到 `page 8 of 8`), 对照译稿和逐段疑惑在 `baichuan-7b-bi.md`. 有信息量的图是 MMLU 两张柱状图, 数据流程图, PPL 外推曲线和训练 loss 曲线. 数字回源 md 核对; 标 「估算」 的是按页面数字自行推算, 标 「读图」 的是从曲线上读出的近似值.
+来源: 同目录 `baichuan-7b.md` (页标记 `page 1 of 8` 到 `page 8 of 8`), 对照译稿和逐段疑惑在 `baichuan-7b-bi.md`. 有信息量的图是 MMLU 两张柱状图, 数据流程图, PPL 外推曲线和训练 loss 曲线. 数字回源 md 核对; 标 「读图」 的是从曲线上读出的近似值.
 
 ## 1. 材料范围与分词器
 

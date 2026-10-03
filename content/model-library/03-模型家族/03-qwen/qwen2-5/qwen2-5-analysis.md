@@ -1,3 +1,10 @@
+---
+title: "Qwen2.5: 18T 数据, 百万级 SFT, 离线 DPO 接在线 GRPO"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2.5 的骨架和 Qwen2 几乎一样, 分数却整体上了一个台阶."
+---
 # Qwen2.5: 18T 数据, 百万级 SFT, 离线 DPO 接在线 GRPO
 
 来源: [Qwen2.5 Technical Report](https://arxiv.org/abs/2412.15115) (arXiv:2412.15115v2, 2025-01-03). 仓库: https://github.com/QwenLM/Qwen2.5. 对照译稿见同目录 `qwen2-5-bi.md` (page 1 of 26 至 page 26 of 26), 表内数字以源文 `qwen2-5.md` 为准.

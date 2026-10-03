@@ -1,3 +1,10 @@
+---
+title: "OLMo 2: 先把全开放 dense 线训稳, 再用退火与 RLVR 追上开权重"
+category: "模型库"
+tags: ["OLMo", "技术解析"]
+published: true
+excerpt: "一句话身份: OLMo 2 是 Ai2 在 7B / 13B / 32B 三档 Dense decoder-only 上的第二代全开放模型, 训练总量约 4.05T / 5.6T / 6.6T token."
+---
 # OLMo 2: 先把全开放 dense 线训稳, 再用退火与 RLVR 追上开权重
 
 来源: 同目录 `olmo-2.md` (arXiv:2501.00656, 标题 *2 OLMo 2 Furious*, 58 页), 对照译稿见 `olmo-2-bi.md`. 数字以 Abstract, Fig. 1–25, Tab. 1–27 与 §2–§6, 附录为准. 家族前后: [OLMo](../olmo-1/olmo-1-analysis.md), [Olmo 3](../olmo-3/olmo-3-analysis.md), [Olmo Hybrid](../olmo-hybrid/olmo-hybrid-analysis.md).

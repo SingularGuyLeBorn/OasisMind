@@ -1,3 +1,10 @@
+---
+title: "Claude 3.5 Sonnet: 中档模型越过旗舰"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份材料是 Anthropic 官网 Announcements 栏目下的发布稿, 正文只占前 5 页: 第 1 页标题, 日期, 题图和导语, 第 2 到 3 页讲文本能力与编码, 第 3 到 4 页讲视觉, 第 4 页介绍 Artifacts, 第 4 到 5 页讲安全, 隐私和后续规划."
+---
 # Claude 3.5 Sonnet: 中档模型越过旗舰
 
 > 本目录的源材料是 Anthropic 2024 年 6 月 21 日发布的公告 「Claude 3.5 Sonnet」 的抓取 `claude-3-5-sonnet.md` (10 页, 6 图), 属于产品博客, 不是技术报告. 全文没有架构描述和训练细节; 能核对的只有第 3, 4 页两张评测表, 两条脚注, 正文里几个百分数和价格. 对不上的写 「本页没有」.

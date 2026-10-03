@@ -1,3 +1,10 @@
+---
+title: "Claude Sonnet 4.6 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡日期是 2026 年 2 月 17 日, 3 月 6 日改了 BrowseComp. 部署标准是 ASL-3, 与 Sonnet 4.5 和 Opus 4.6 相同."
+---
 # Claude Sonnet 4.6 系统卡: 分析
 
 ## 1. 部署与改分

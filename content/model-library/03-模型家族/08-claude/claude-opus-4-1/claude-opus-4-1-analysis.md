@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4.1: 一份只回答 「和 Opus 4 差多少」 的系统卡增补"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份文档没有架构, 参数量, 训练数据或能力榜单. 它的全部任务是把 Claude Opus 4.1 放在 Claude Opus 4 旁边, 逐项说明 「风险画像没有变」."
+---
 # Claude Opus 4.1: 一份只回答 「和 Opus 4 差多少」 的系统卡增补
 
 来源: 同目录 `claude-opus-4-1.md` (System Card Addendum: Claude Opus 4.1, 23 页, 7 张图, 2025年8月发布, 2025年9月15日更新第 6.3 节致谢). 对照译稿见 `claude-opus-4-1-bi.md`, 逐段疑惑都放在译稿里. 本稿按章节梳理这份增补说了什么, 用什么量来说, 以及哪些问题它没有回答. 生物, 化学, 网络与儿童安全部分只记评测名称, 阈值和总分.

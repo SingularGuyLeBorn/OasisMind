@@ -1,6 +1,13 @@
+---
+title: "o3 与 o4-mini 系统卡: 工具进了 CoT 之后的评测读法"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "全卡 33 页里, 讲模型本身的只有第 1, 2 节不到一页半. 能读到的训练信息是: o 系列在 CoT 上做大规模强化学习, 工具调用发生在 CoT 内部, 安全上用 deliberative alignment."
+---
 # o3 与 o4-mini 系统卡: 工具进了 CoT 之后的评测读法
 
-来源: OpenAI o3 and o4-mini System Card (OpenAI, 2025 年 4 月 16 日; SWE-Lancer 一节在 2025 年 7 月 28 日更新). 同目录源文 `o3-o4-mini.md`, 33 页, 23 张图, 16 张编号表, 附录另有 3 张编号为 Figure 24 到 26 的表. 逐段对照见 `o3-o4-mini-bi.md`. 下文数字只取本文印出的值, 从柱状图上读出的数标 「读图」, 自己算出的数标 「估算」. 网络攻防与生物部分只谈评级和分数.
+来源: OpenAI o3 and o4-mini System Card (OpenAI, 2025 年 4 月 16 日; SWE-Lancer 一节在 2025 年 7 月 28 日更新). 同目录源文 `o3-o4-mini.md`, 33 页, 23 张图, 16 张编号表, 附录另有 3 张编号为 Figure 24 到 26 的表. 逐段对照见 `o3-o4-mini-bi.md`. 下文数字只取本文印出的值, 从柱状图上读出的数标 「读图」. 网络攻防与生物部分只谈评级和分数.
 
 | 项目 | 本文印出的值 |
 | --- | --- |

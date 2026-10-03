@@ -1,3 +1,10 @@
+---
+title: "Codestral · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Codestral 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 这是 Mistral AI 官网的 Codestral 发布页, 共 9 页, 4 张图. 正文在第 1 到第 7 页, 第 8, 9 页是站点页脚. 转出的 Markdown 被 cookie 横幅盖掉了不少字, 下面的英文按 PDF 文本层补全, 表格数字按 PDF 页面上的表格图抄录.
 
 <!-- page 1 of 9 -->

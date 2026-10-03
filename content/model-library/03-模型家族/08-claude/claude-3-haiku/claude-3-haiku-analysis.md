@@ -1,3 +1,10 @@
+---
+title: "Claude 3 Haiku: 小档模型的读入速度与定价结构"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "正文只有前 3 页: 一段导语, 一张对比表, 速度, 价格, 安全, 上线渠道各一段, 外加三条脚注."
+---
 # Claude 3 Haiku: 小档模型的读入速度与定价结构
 
 > 本目录的源材料是 Anthropic 2024 年 3 月 13 日的发布公告 「Claude 3 Haiku: our fastest model yet」 的抓取 `claude-3-haiku.md` (8 页, 5 图), 属于产品博客, 不是技术报告. 全文没有架构, 没有训练细节, 能核对的只有第 2 页一张十二行的对比表, 正文里的速度与价格数字和三条脚注; 5 张图里只有题图有内容. 都没写的环节标 「本页没有」.

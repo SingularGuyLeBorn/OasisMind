@@ -1,3 +1,10 @@
+---
+title: "Gemini Diffusion: 实验性文本扩散模型介绍页解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "这份材料是 Google DeepMind 官网上 Gemini Diffusion 的介绍页, 抓成 PDF 后共 9 页."
+---
 > 本目录的源材料是 Google DeepMind 官网 Gemini Diffusion 介绍页的抓取 `gemini-diffusion.md` (9 页, 5 图), 是一张实验性文本扩散模型的产品介绍页, 不是模型卡. 全文正文不到三百个英文词, 没有参数量, 训练数据, 训练方法, 去噪步数和块长度; 能核对的只有十行基准分数和两行速度数字.
 
 # Gemini Diffusion: 实验性文本扩散模型介绍页解读

@@ -1,3 +1,10 @@
+---
+title: "MiniCPM 技术解析"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "仓库标题是面壁小钢炮 MiniCPM. 第 2 页写当前发布是 MiniCPM5-2B 和 MiniCPM5-1B."
+---
 这是 GitHub 上 OpenBMB/MiniCPM 的仓库页, 当前正文写的是 MiniCPM5-2B, 不是一份独立的技术报告.
 
 ## 1. 目录名和页面上的模型

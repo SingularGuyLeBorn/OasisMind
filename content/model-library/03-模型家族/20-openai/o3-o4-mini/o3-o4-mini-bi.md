@@ -1,3 +1,10 @@
+---
+title: "o3 与 o4-mini · 对照译稿"
+category: "模型库"
+tags: ["OpenAI", "对照译稿"]
+published: true
+excerpt: "o3 与 o4-mini 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 源文: OpenAI o3 and o4-mini System Card, OpenAI, 2025 年 4 月 16 日, 33 页, 23 张图. 英文段在前, 中文意译紧跟. Introduction, Conclusion, Appendix, References 的节名不译, References 正文保留原文. 单独的页码行已删去, 跨页断开的半句接回上一页. 表格保留英文, 表后附中文说明. 表 5 和表 6 里 MinerU 把同一格的两行数字挤在了一起, 表后给出拆读, 数字未动. 第 20 页的 p20-chart.png 是图 10, 图题印在图片里, 转换时漏掉了, 这里补上一行. 附录里 Figure 24 到 Figure 26 实际是表格, 编号照原文. 第 4.3.1 节各类 CTF 取 flag 的描述, 第 4.3.2 节两个 Cyber Range 场景的攻击路径, 以及第 4.2 节生物评测的题目设计没有录入, 只留评测配置, 评级和分数.
 
 <!-- page 1 of 33 -->

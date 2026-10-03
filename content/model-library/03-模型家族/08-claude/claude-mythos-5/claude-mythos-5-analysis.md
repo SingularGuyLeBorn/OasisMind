@@ -1,3 +1,10 @@
+---
+title: "Claude Fable 5 与 Mythos 5 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这张卡的日期是 2026 年 6 月 9 日. 它不是两个独立训练的模型. Fable 5 和 Mythos 5 是同一个新模型的两种配置."
+---
 本目录的源 md 与 claude-fable-5 字节相同, 是同一份系统卡. 下面按 Mythos 5 这一档来读, 数字与那一份对照稿一致. 一般访问的那一档仍是 Fable.
 
 # Claude Fable 5 与 Mythos 5 系统卡: 分析

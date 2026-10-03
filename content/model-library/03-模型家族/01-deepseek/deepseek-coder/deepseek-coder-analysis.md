@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-Coder 技术报告详解"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "论文: DeepSeek-Coder: When the Large Language Model Meets Programming - The Rise of Code Intelligence(arXiv: 2401.14196v2, 2024-01-26)."
+---
 # DeepSeek-Coder 技术报告详解
 
 论文: [DeepSeek-Coder: When the Large Language Model Meets Programming - The Rise of Code Intelligence](https://arxiv. org/abs/2401.14196)(arXiv: 2401.14196v2, 2024-01-26). 仓库: https://github. com/deepseek-ai/DeepSeek-Coder.

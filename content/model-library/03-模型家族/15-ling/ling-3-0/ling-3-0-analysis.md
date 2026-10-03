@@ -1,3 +1,10 @@
+---
+title: "Ling 3.0 技术解析"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "侧栏模型大小是 127B, 张量类型 F32 · BF16, 下载量 16,399. 导语和规格表写总参数 124B, 激活参数 5.1B."
+---
 这是 Hugging Face 上 Ling-3.0-flash 的模型卡, 不是技术报告.
 
 ## 1. 127B 和 124B 不是一格

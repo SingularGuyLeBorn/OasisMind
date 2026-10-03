@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-V 4.0 · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM-V 4.0 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # MiniCPM-V 4.0 模型卡对照稿
 
 源文是 Hugging Face 上 openbmb/MiniCPM-V-4 模型页的浏览器打印件, 9 页, 12 张图, 由 MinerU 转成 Markdown. 每页页眉的打印时间 2026/9/25 13:32 和页面标题 「openbmb/MiniCPM-V-4 · Hugging Face」, 页脚的网址和 「k/9」 页码, 都是打印时浏览器加上的, 本稿删去. MinerU 识别错的地方按同目录 PDF 的文字层改回, 改动处在该段中文里说明. 正文三条特点和几处标题前的装饰性表情符号一律省去.

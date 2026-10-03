@@ -1,8 +1,15 @@
+---
+title: "MiniMax-M2.1: 模型卡精读"
+category: "模型库"
+tags: ["MiniMax", "技术解析"]
+published: true
+excerpt: "所以这页能回答的问题很集中: M2.1 在哪些基准上比 M2 高多少, 和几个闭源模型差多少, 这些分数是怎么测的, 拿到权重以后怎么跑."
+---
 > 源文是 MiniMax-M2.1 的 Hugging Face 模型卡快照, 共 11 页, 大半是站点界面, 正文只有一段发布词, 五张评测表, 一组评测说明和部署参数, 没有架构, 训练数据和训练方法.
 
 # MiniMax-M2.1: 模型卡精读
 
-来源: 同目录 `minimax-m2-1.md` 与 `minimax-m2-1.pdf` (页标 `page 1 of 11` 到 `page 11 of 11`), 对照译稿见 `minimax-m2-1-bi.md`. 文中凡自己算出的差值, 均值, 存储量都标了 「估算」.
+来源: 同目录 `minimax-m2-1.md` 与 `minimax-m2-1.pdf` (页标 `page 1 of 11` 到 `page 11 of 11`), 对照译稿见 `minimax-m2-1-bi.md`.
 
 | 项 | 本页印的内容 | 页 |
 | --- | --- | --- |

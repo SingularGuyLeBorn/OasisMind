@@ -1,3 +1,10 @@
+---
+title: "Llama 3.1 · 对照译稿"
+category: "模型库"
+tags: ["Llama", "对照译稿"]
+published: true
+excerpt: "Llama 3.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # Llama 3.1 对照稿(读法见 llama3 目录)
 
 > 本目录的 `llama3-1.md` 和同级目录 `../llama3/llama3.md` 字节完全相同: 两份都是 384318 字节, SHA256 前缀都是 6db6ff9cd19703cb. 两份 PDF 也相同(SHA256 前缀 481f1599468f95a0), 两边 `images/` 各 39 张图, 文件名和内容逐一相同.

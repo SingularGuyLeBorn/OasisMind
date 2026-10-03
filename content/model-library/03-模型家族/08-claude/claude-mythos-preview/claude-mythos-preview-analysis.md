@@ -1,3 +1,10 @@
+---
+title: "Claude Mythos Preview 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡日期是 2026 年 4 月 7 日. Claude Mythos Preview 被写成截至当时最强的前沿模型, 相对 Claude Opus 4.6 在许多评测上跳了一大步."
+---
 # Claude Mythos Preview 系统卡: 分析
 
 ## 1. 发布决定与 RSP

@@ -1,3 +1,10 @@
+---
+title: "Mistral Large 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "和模型本身有关的数只有三个: 发布日期, 32K 上下文, 5 种语言. 名字 mistral-large-2402 里的 2402 也算半个数, 页面没解释它, 按发布日推是 2024 年 2 月."
+---
 这是 Mistral AI 官网的 Mistral Large 发布页 「Au Large」, 9 页, 8 张图, 不是论文.
 
 - 发布: **February 26, 2024**, 署名 Mistral AI team, 官网 RESEARCH 栏.

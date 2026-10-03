@@ -1,4 +1,11 @@
-这是 Mistral AI 官网的 Mistral Medium 3 发布页, 标题 「Medium is the new large.」, 共 8 页, 10 张图. 正文在第 1 到第 6 页, 第 7, 8 页是站点页脚. 每一页都叠着一个 cookie 横幅, 转出的 Markdown 丢了大半正文, 下面的英文按 PDF 文本层补全. 第 4 页的评测表和第 5 页的两张人评图被横幅挡住一部分, 数字按 PDF 里嵌着的原图读; 原图上每个数都印了出来, 不需要读柱高. 转出的 Markdown 把 「RULER 128K」 一行错认成 「RULER 428K」, 数字也错成 99.2%, 96.7%, 98.0%, 以原图为准. 文中自己算的数都标了估算.
+---
+title: "Mistral Medium 3 · 对照译稿"
+category: "模型库"
+tags: ["Mistral", "对照译稿"]
+published: true
+excerpt: "Mistral Medium 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
+这是 Mistral AI 官网的 Mistral Medium 3 发布页, 标题 「Medium is the new large.」, 共 8 页, 10 张图. 正文在第 1 到第 6 页, 第 7, 8 页是站点页脚. 每一页都叠着一个 cookie 横幅, 转出的 Markdown 丢了大半正文, 下面的英文按 PDF 文本层补全. 第 4 页的评测表和第 5 页的两张人评图被横幅挡住一部分, 数字按 PDF 里嵌着的原图读; 原图上每个数都印了出来, 不需要读柱高. 转出的 Markdown 把 「RULER 128K」 一行错认成 「RULER 428K」, 数字也错成 99.2%, 96.7%, 98.0%, 以原图为准.
 
 <!-- page 1 of 8 -->
 

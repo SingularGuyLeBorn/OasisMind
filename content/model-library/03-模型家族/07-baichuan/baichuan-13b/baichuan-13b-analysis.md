@@ -1,8 +1,15 @@
+---
+title: "Baichuan-13B: 同一套配方做大, 换 ALiBi, 第一次交付 Chat 和量化版"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "页 1 是仓库外壳: 文件只有 media, LICENSE, 中英 README, cli_demo.py, requirements.txt, web_demo.py, Python 100%, 5 位贡献者, 没有 release."
+---
 # Baichuan-13B: 同一套配方做大, 换 ALiBi, 第一次交付 Chat 和量化版
 
 公开材料是 GitHub 仓库 `baichuan-inc/Baichuan-13B` 的中文 README 抓取 `baichuan-13b.md` (页标记 `page 1 of 8` 到 `page 8 of 8`, 4 图), 不是技术报告. 页内能核对的是三张 5-shot 榜 (C-Eval, MMLU, CMMLU), 一张两行的模型细节表, 一张 tokens/s 表, 一张显存表, 一张量化前后分数表和两份微调脚本. 数据构成, 优化器, 学习率日程, Chat 的对齐方法都没有写.
 
-来源: 同目录 `baichuan-13b.md` 与 `baichuan-13b.pdf`, 对照译稿见 `baichuan-13b-bi.md`. 入口含 [GitHub baichuan-inc/Baichuan-13B](https://github.com/baichuan-inc/Baichuan-13B), [Hugging Face Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Baichuan-13B-Base), [Hugging Face Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat). 标 「估算」 的是按页面数字推算.
+来源: 同目录 `baichuan-13b.md` 与 `baichuan-13b.pdf`, 对照译稿见 `baichuan-13b-bi.md`. 入口含 [GitHub baichuan-inc/Baichuan-13B](https://github.com/baichuan-inc/Baichuan-13B), [Hugging Face Baichuan-13B-Base](https://huggingface.co/baichuan-inc/Baichuan-13B-Base), [Hugging Face Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat).
 
 ## 1. 材料范围与模型规格
 

@@ -1,3 +1,10 @@
+---
+title: "Claude computer use 公告: 把屏幕当接口"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份 PDF 共 9 页, 属于公告的只有前 5 页, 标题 「Introducing computer use, a new Claude 3.5 Sonnet, and Claude 3.5 Haiku」, 日期 2024 年 10 月 22 日, 页首另有一条 2024 年 12 月 3 日补…"
+---
 # Claude computer use 公告: 把屏幕当接口
 
 > 源材料是 Anthropic 官网 2024 年 10 月 22 日的产品公告, 不是论文: 没有公式, 没有架构图, 没有训练细节, 可核对的只有一张基准表和正文里几组百分比. 对不上的写 「本页没有」. 双语对照与逐段疑问见 [claude-computer-use-bi.md](claude-computer-use-bi.md).

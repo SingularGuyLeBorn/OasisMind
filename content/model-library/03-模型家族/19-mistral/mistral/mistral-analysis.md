@@ -1,3 +1,10 @@
+---
+title: "Mistral 官网新闻列表页分析: 87 篇里露出的 8 篇"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "7 页的分布是这样的. 第 1 页是博客页头: 栏目名 BLOG, 标题 「Latest updates from Mistral.」, 分类筛选, 文章总数 87, 搜索框, 以及头条卡片的标题."
+---
 源文是 7 页的 Mistral 官网新闻列表页打印件, 没有模型结构, 训练, 评测和价格.
 
 # Mistral 官网新闻列表页分析: 87 篇里露出的 8 篇

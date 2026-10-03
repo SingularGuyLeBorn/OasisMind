@@ -1,3 +1,10 @@
+---
+title: "MiniCPM3 · 源文"
+category: "模型库"
+tags: ["MiniCPM", "源文"]
+published: true
+excerpt: "MiniCPM3 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 5 -->
 
 # openbmb/MiniCPM3-4B — Hugging Face Model Card

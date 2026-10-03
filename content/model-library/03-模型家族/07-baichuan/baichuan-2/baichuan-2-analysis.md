@@ -1,6 +1,13 @@
+---
+title: "Baichuan 2: 2.6 万亿 token, 一张大词表和输出层上的两道约束"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "2023 年秋天的中文开源基座, 骨架大多直接跟 LLaMA: decoder-only, pre-norm, SwiGLU, RoPE."
+---
 # Baichuan 2: 2.6 万亿 token, 一张大词表和输出层上的两道约束
 
-来源: [Baichuan 2: Open Large-scale Language Models](https://arxiv.org/abs/2309.10305) (arXiv:2309.10305v4, 2025-04-17 修订版, 初版 2023 年 9 月). 仓库: [https://github.com/baichuan-inc/Baichuan2](https://github.com/baichuan-inc/Baichuan2). 逐段中英对照见同目录 `baichuan-2-bi.md`, 表内数字与超参以源文 `baichuan-2.md` 为准. 标 「估算」 的是按报告数字推算, 标 「读图」 的是从图上读出.
+来源: [Baichuan 2: Open Large-scale Language Models](https://arxiv.org/abs/2309.10305) (arXiv:2309.10305v4, 2025-04-17 修订版, 初版 2023 年 9 月). 仓库: [https://github.com/baichuan-inc/Baichuan2](https://github.com/baichuan-inc/Baichuan2). 逐段中英对照见同目录 `baichuan-2-bi.md`, 表内数字与超参以源文 `baichuan-2.md` 为准. 标 「读图」 的是从图上读出.
 
 | 项目 | Baichuan 2-7B | Baichuan 2-13B |
 |---|---|---|

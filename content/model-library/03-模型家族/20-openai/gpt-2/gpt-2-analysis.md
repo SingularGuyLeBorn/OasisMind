@@ -1,6 +1,13 @@
+---
+title: "GPT-2: 用网页文本检验 zero-shot 多任务"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "本文的出发点是对 「单任务, 单领域数据集」 这套做法的怀疑. 引言里作者说, 现有系统更像窄领域专家, 数据分布或任务说明稍有变化就会出错;"
+---
 # GPT-2: 用网页文本检验 zero-shot 多任务
 
-来源: Language Models are Unsupervised Multitask Learners (Radford, Wu, Child, Luan, Amodei, Sutskever, OpenAI). 同目录源文 `gpt-2.md`, 24 页, 7 张图 (Figure 1-5, 以及以图片收录的 Table 13 与 Table 17). 逐段对照见 `gpt-2-bi.md`. 下文数字只取本文印出的值, 自己算出来的数一律标 「估算」, 从图上读出的数标 「读图」.
+来源: Language Models are Unsupervised Multitask Learners (Radford, Wu, Child, Luan, Amodei, Sutskever, OpenAI). 同目录源文 `gpt-2.md`, 24 页, 7 张图 (Figure 1-5, 以及以图片收录的 Table 13 与 Table 17). 逐段对照见 `gpt-2-bi.md`. 下文数字只取本文印出的值, 从图上读出的数标 「读图」.
 
 | 项目 | 本文印出的值 |
 | --- | --- |

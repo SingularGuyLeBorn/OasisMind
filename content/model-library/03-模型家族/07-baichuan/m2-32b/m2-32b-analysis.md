@@ -1,6 +1,13 @@
+---
+title: "Baichuan-M2: 借 Qwen2.5-32B 的底座, 把投入放进患者模拟器和 rubric 验证器"
+category: "模型库"
+tags: ["Baichuan", "技术解析"]
+published: true
+excerpt: "百川医学线的第一代 Baichuan-M1 在 20T token 上从零训了一个 14B 底座, 自己设计注意力结构, 对齐用 ELO, TDPO, PPO 三段."
+---
 # Baichuan-M2: 借 Qwen2.5-32B 的底座, 把投入放进患者模拟器和 rubric 验证器
 
-来源: 同目录 `m2-32b.md` (arXiv:2509.02208v1, 26 页, 18 张图), 对照译稿见 `m2-32b-bi.md`. 数字回式 (1)–(3), Table 1–2 与 Figure 1–13. 模型卡信息取自 [Hugging Face Baichuan-M2-32B](https://huggingface.co/baichuan-inc/Baichuan-M2-32B), 论文正文没有的会注明. 标 「估算」 的是推算, 标 「读图」 的是从图上读出.
+来源: 同目录 `m2-32b.md` (arXiv:2509.02208v1, 26 页, 18 张图), 对照译稿见 `m2-32b-bi.md`. 数字回式 (1)–(3), Table 1–2 与 Figure 1–13. 模型卡信息取自 [Hugging Face Baichuan-M2-32B](https://huggingface.co/baichuan-inc/Baichuan-M2-32B), 论文正文没有的会注明. 标 「读图」 的是从图上读出.
 
 | 项目 | 内容 | 出处 |
 |---|---|---|

@@ -1,3 +1,10 @@
+---
+title: "Claude Fable 5.1 与 Mythos 5.1 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡日期是 2026 年 9 月 1 日. Fable 5.1 和 Mythos 5.1 是最新模型的两种配置, 不是两套独立训练."
+---
 # Claude Fable 5.1 与 Mythos 5.1 系统卡: 分析
 
 ## 1. 部署与风险判定

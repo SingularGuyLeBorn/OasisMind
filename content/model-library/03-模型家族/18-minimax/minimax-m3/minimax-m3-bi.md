@@ -1,3 +1,10 @@
+---
+title: "MiniMax-M3 · 对照译稿"
+category: "模型库"
+tags: ["MiniMax", "对照译稿"]
+published: true
+excerpt: "MiniMax-M3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # MiniMax-M3 模型卡对照稿
 
 源文是 Hugging Face 上 MiniMaxAI/MiniMax-M3 模型卡页面的浏览器打印件, 8 页, 5 张图, 由 MinerU 转成 Markdown. 这是模型卡, 不是论文, 页面上只有规格一句话, 三条亮点, 一张 32 行的评测表, 评测方法说明, MSA 三张曲线图和部署说明. 本稿只对照页面上印出来的文字和数字, 不从 M2, M2.7 或 MiniMax-01 的目录搬参数. 第 4 页和第 5 页在 PDF 里是整页图片, 没有文字层, md 里评测方法有几条被截断或整条漏掉, 本稿按 PDF 页面图像补回, 改动处在该段中文里说明. 5 张图里 2 张是网站界面的小图标, 3 张是 MSA 与 GQA 的对比曲线.

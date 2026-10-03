@@ -1,6 +1,13 @@
+---
+title: "Seed2.1: 把 harness 算进分数, 让模型参与自己的研发"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "引言把 Seed2.1 称为家族的转折点: 日常生活, 专业生产和前沿探索里的复杂需求, 第一次被放到研发优先级的中心, 排在流量驱动的通用使用之前."
+---
 # Seed2.1: 把 harness 算进分数, 让模型参与自己的研发
 
-来源: Seed2.1 Model Card: Agentic Intelligence for Productivity (字节跳动 Seed, 共 73 页). 逐段对照译稿见同目录 `seed-2-1-bi.md`, 数字以源文 `seed-2-1.md` 为准. 表号, 图号都指原文编号; 由表上数字推出的量标 「估算」.
+来源: Seed2.1 Model Card: Agentic Intelligence for Productivity (字节跳动 Seed, 共 73 页). 逐段对照译稿见同目录 `seed-2-1-bi.md`, 数字以源文 `seed-2-1.md` 为准. 表号, 图号都指原文编号.
 
 ## 1. 家族走到这一步: 复杂需求第一次排在流量前面
 

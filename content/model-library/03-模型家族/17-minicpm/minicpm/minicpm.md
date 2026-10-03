@@ -1,3 +1,10 @@
+---
+title: "MiniCPM · 源文"
+category: "模型库"
+tags: ["MiniCPM", "源文"]
+published: true
+excerpt: "MiniCPM 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 10 -->
 
 ![Image block](images/p01-2026-9-25-13-41.png)

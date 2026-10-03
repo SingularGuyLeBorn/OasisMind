@@ -1,3 +1,10 @@
+---
+title: "Ling-Lite 技术报告解读"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "论文: Every FLOP Counts: Scaling a 300B Mixture-of-Experts LING LLM without Premium GPUs."
+---
 # Ling-Lite 技术报告解读
 
 论文: Every FLOP Counts: Scaling a 300B Mixture-of-Experts LING LLM without Premium GPUs. arXiv: [2503.05139](https://arxiv.org/abs/2503.05139), 作者为蚂蚁集团 Ling 团队, 权重在 [huggingface.co/inclusionAI](https://huggingface.co/inclusionAI). 逐页中英对照见同目录 `ling-lite-bi.md`, 下文的页码, 节号, 表号, 图号都以原论文为准.

@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V3.1-Terminus: 同一权重线上的修订版"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "Terminus 发布于 V3.1 之后一个月左右, 标题写的是 DeepSeek-V3.1 → DeepSeek-V3.1-Terminus, 开头一句说它「建立在 V3.1 的长处上, 同时处理用户反馈的关键问题」."
+---
 # DeepSeek-V3.1-Terminus: 同一权重线上的修订版
 
 > 公开材料是两页英文发布说明, 只有三条改进要点, 一张 V3.1 对 Terminus 的 12 行对照表, 以及 App / Web / API 与 Hugging Face 权重地址. 没有架构, 数据, 训练日程, 后训练算法, 评测协议.

@@ -1,3 +1,10 @@
+---
+title: "Ling 2.0 技术报告解读"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "论文: Ling 2.0 Technical Report, 副标题 Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation."
+---
 # Ling 2.0 技术报告解读
 
 论文: Ling 2.0 Technical Report, 副标题 Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation. arXiv: [2510.22115](https://arxiv.org/abs/2510.22115). 代码与权重: [inclusionAI/Ling-V2](https://github.com/inclusionAI/Ling-V2). 逐页中英对照见同目录 `ling-2-0-bi.md`, 下文提到的页码, 节号, 表号, 图号都以原论文为准.

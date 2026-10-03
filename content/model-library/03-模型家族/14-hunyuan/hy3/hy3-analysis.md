@@ -1,3 +1,10 @@
+---
+title: "Hy3 技术解析"
+category: "模型库"
+tags: ["Hunyuan", "技术解析"]
+published: true
+excerpt: "抓取把 Hugging Face 的页头, 模型树, 评测组件和 README 正文叠在同一份 md 里."
+---
 这是 Hugging Face 上 tencent/Hy3 的模型卡抓取, 不是技术报告.
 
 ## 1. 这一页同时是站点壳和 README

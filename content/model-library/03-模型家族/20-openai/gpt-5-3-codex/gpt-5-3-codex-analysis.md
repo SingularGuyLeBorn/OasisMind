@@ -1,3 +1,10 @@
+---
+title: "GPT-5.3-Codex 技术解析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "这页的主语是 Codex 这个产品, 模型只是 Codex 变强的原因."
+---
 源文是 OpenAI 在 February 5, 2026 发的 GPT-5.3-Codex 产品公告, 14 页抓页里正文约 11 页, 附录评测表 1 页, 最后两页是推荐栏和页脚, 几乎每页都夹着一段 Cookie 横幅. 全文没有参数量, 层数, 训练 token, 注意力结构, 训练流程, 架构信息一条都没有. 标 「页外背景」 的是公开资料, 不是本页内容. Markdown 抓页丢了几段正文, 能从同目录 PDF 文字层补回来的.
 
 | 条目 | 这页印的内容 |

@@ -1,3 +1,10 @@
+---
+title: "Seed1.5-Thinking: 在 Doubao-1.5-pro 的数据上长出一条推理 RL 管线"
+category: "模型库"
+tags: ["Doubao", "技术解析"]
+published: true
+excerpt: "2025 年 1 月的 Doubao-1.5-pro 产品页, 最后放了一张 「深度思考模式」 的 AIME 小图, 型号叫 Doubao-1.5-pro-AS1-Preview, 只说靠 RL 算法和工程优化做了 RL Scaling, 没有任何配方."
+---
 # Seed1.5-Thinking: 在 Doubao-1.5-pro 的数据上长出一条推理 RL 管线
 
 来源: 同目录 `seed-1-5-thinking.md` (页标记 `page 1 of 19` 起, arXiv:2504.13914v3, 文首日期 2025 年 4 月 10 日; v1, v2 用的名字是 Seed-Thinking-v1.5). 对照译稿见 `seed-1-5-thinking-bi.md`. 表号, 式号, 节号都按源 md. VAPO, DAPO 两篇前作的超参数来自它们各自的论文, 文中会单独标出, 不算报告数字.

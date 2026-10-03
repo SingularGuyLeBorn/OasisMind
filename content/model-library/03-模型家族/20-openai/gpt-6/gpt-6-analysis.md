@@ -1,3 +1,10 @@
+---
+title: "GPT-6 Astra: 一张分数表撑起的新一代发布"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "发布日期也要先弄清. 页面只写「rolling out today」, 没印日期."
+---
 源文是 OpenAI 的产品发布页「GPT-6 Astra: A new generation of intelligence」, 21 页抓页. 正文在第 3 到第 15 页, 第 16 到第 18 页是评测总表, 第 18 到第 20 页是 17 条脚注, 第 1, 2 页和第 20, 21 页是站点导航与页脚. 全文没有参数量, 层数, 注意力形式, 上下文窗口, 训练数据, 训练方法和训练算力. 唯一的外部对照是同一模型库里 GPT-5.6 发布页的原文.
 
 # GPT-6 Astra: 一张分数表撑起的新一代发布

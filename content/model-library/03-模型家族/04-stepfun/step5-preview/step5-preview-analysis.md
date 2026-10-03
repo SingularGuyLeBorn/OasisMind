@@ -1,3 +1,10 @@
+---
+title: "Step 5 Preview: 600B / 27B 稀疏旗舰的 Preview 产品页"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "这篇通告要回答的产品问题很窄: Step 5 Preview 公开了哪几条旗舰规格; Coding 与长程案例讲了哪些可抄数字;"
+---
 # Step 5 Preview: 600B / 27B 稀疏旗舰的 Preview 产品页
 
 > 公开材料是阶跃星辰官网落地页抓取 `step5-preview.md` (约 20 页, 28 图, 抓取戳 2026/9/25 11:43), 不是带式号的技术报告. 正文给出稀疏 MoE 口号 (600B 总参 / 每 Token 激活 27B / 1M 上下文 / 视觉输入), Coding / 长程 / 专业工作 / 金融案例, Artificial Analysis Intelligence Index 44 与 Pareto 成本主张, 以及末页对照表. 没有层宽, 专家池, 路由公式, 预训练 token 构成, 后训练课表或视觉编码器名. 架构细节页面没有写.

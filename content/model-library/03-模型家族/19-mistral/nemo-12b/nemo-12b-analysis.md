@@ -1,3 +1,10 @@
+---
+title: "Mistral NeMo 发布页解读"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "打印时页面左下角一直叠着 axeptio 的 cookie 弹窗, 每页都在同一位置."
+---
 原文是一篇正文不到 450 个英文词的发布博文, 表和图又被 cookie 弹窗遮去一半.
 
 # Mistral NeMo 发布页解读
@@ -8,7 +15,7 @@
 - 上下文: 「up to 128k tokens」.
 - tokenizer: Tekken, 基于 Tiktoken, 在 100 多种语言上训练, 取代此前 Mistral 模型用的 SentencePiece.
 - 部署: 量化感知训练, 称 FP8 推理无损; la Plateforme 名 open-mistral-nemo-2407; 另有 NVIDIA NIM 容器.
-- 双语对照见同目录 nemo-12b-bi.md. 下文凡标 「估算」 的数, 都是按本页印出的数自己算的, 原文没有.
+- 双语对照见同目录 nemo-12b-bi.md.
 
 | 项 | 本页怎么写 |
 | --- | --- |

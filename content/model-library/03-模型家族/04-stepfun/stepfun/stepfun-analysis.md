@@ -1,3 +1,10 @@
+---
+title: "StepFun 开放平台文档中心: 当前在售的文本、语音和图像模型一览"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "这篇材料要回答的问题很窄: 开放平台首页把用户往哪几类入口送; 当前推荐卡各自的上下文上限, 模态与场景口号是什么;"
+---
 # StepFun 开放平台文档中心: 当前在售的文本、语音和图像模型一览
 
 > 公开材料是 StepFun 开放平台文档中心落地页抓取 `stepfun.md` (约 7 页, 1 图, 源文体积很小), 不是架构论文或评测报告. 正文是快捷入口, 模型能力分类条, 以及 Step 5 Preview / Step 3.7 Flash / Step 3.5 Flash 2603 / StepAudio 系列 / Step TTS Mini / Step Image Edit 2 的产品卡. 几乎没有层宽, 训练配方或榜单分表; 唯一带参数量与架构专名的句子在 StepAudio 2.5 ASR 的 4B MTP. 架构细节页面没有写.

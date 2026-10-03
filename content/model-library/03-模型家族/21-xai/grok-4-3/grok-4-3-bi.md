@@ -1,3 +1,10 @@
+---
+title: "Grok 4.3 · 对照译稿"
+category: "模型库"
+tags: ["xAI", "对照译稿"]
+published: true
+excerpt: "Grok 4.3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 4 -->
 
 ![Image block](images/p01-2026-9-25-15-42.png)

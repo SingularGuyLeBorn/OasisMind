@@ -1,3 +1,10 @@
+---
+title: "Qwen2.5-Coder: 通用底座续训, 70/20/10 配比, 文件级到仓库级 FIM"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2.5-Coder 是六档代码模型 (0.5B, 1.5B, 3B, 7B, 14B, 32B), 每档都有 Base 和 Instruct."
+---
 # Qwen2.5-Coder: 通用底座续训, 70/20/10 配比, 文件级到仓库级 FIM
 
 来源: [Qwen2.5-Coder Technical Report](https://arxiv.org/abs/2409.12186) (arXiv:2409.12186v3, 2024-11-12). 仓库: https://github.com/QwenLM/Qwen2.5-Coder. 对照译稿见同目录 `qwen2-5-coder-bi.md` (page 1 of 32 至 page 32 of 32), 表内数字以源文 `qwen2-5-coder.md` 为准.

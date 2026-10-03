@@ -1,3 +1,10 @@
+---
+title: "Step3-VL-10B: 感知上界靠 1.2T 预训练堆出来, 推理上界靠 1,400 轮 RL 和 PaCoRe 打开"
+category: "模型库"
+tags: ["StepFun", "技术解析"]
+published: true
+excerpt: "阶跃之前的多模态模型都挂在自家语言模型上. Step-3 的 321B 里有一个 5B 视觉编码器, 但那篇报告只谈 decode 成本, 把视觉部分整个略过."
+---
 # Step3-VL-10B: 感知上界靠 1.2T 预训练堆出来, 推理上界靠 1,400 轮 RL 和 PaCoRe 打开
 
 来源: [STEP3-VL-10B Technical Report](https://arxiv.org/abs/2601.09668) (arXiv:2601.09668v2, 2026-01-15, 50 页). 主页 https://stepfun-ai.github.io/Step3-VL-10B. 对照译稿见同目录 `step3-vl-10b-bi.md`, 表内分数与超参以源文 `step3-vl-10b.md` 为准.

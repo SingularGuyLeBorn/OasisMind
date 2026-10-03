@@ -1,3 +1,10 @@
+---
+title: "Olmo Hybrid · 对照译稿"
+category: "模型库"
+tags: ["OLMo", "对照译稿"]
+published: true
+excerpt: "Olmo Hybrid 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 70 -->
 
 arXiv:2604.03444v4 [cs.LG] 15 Jun 2026

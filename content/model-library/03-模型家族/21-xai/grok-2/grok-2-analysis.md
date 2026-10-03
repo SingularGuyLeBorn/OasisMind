@@ -1,3 +1,10 @@
+---
+title: "Grok-2: 一篇 Beta 公告里的榜单, 分数和缺口"
+category: "模型库"
+tags: ["xAI", "技术解析"]
+published: true
+excerpt: "这篇公告能回答三件事: 早期 Grok-2 在 Chatbot Arena 上排在什么位置; Grok-2 和 Grok-2 mini 在 8 个学术基准上相对 Grok-1.5 和同期 6 家前沿模型落在哪里;"
+---
 公开材料是 x.ai 在 2024 年 8 月 13 日发的 Grok-2 Beta 产品公告, 不是技术报告. 全文有一张 Chatbot Arena 的 Elo 图, 一张 8 行学术基准表, 两张产品截图和一段 API 介绍. Grok-2 和 Grok-2 mini 的参数量, 结构, 上下文长度, 训练数据和对齐方法页面都没有.
 
 # Grok-2: 一篇 Beta 公告里的榜单, 分数和缺口

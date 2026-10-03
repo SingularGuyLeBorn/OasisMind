@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V3.1-Terminus · 源文"
+category: "模型库"
+tags: ["DeepSeek", "源文"]
+published: true
+excerpt: "DeepSeek-V3.1-Terminus 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 2 -->
 
 ## DeepSeek-V3.1-Terminus

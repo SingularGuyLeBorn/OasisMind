@@ -1,3 +1,10 @@
+---
+title: "Gemma 3n 模型卡: 分析"
+category: "模型库"
+tags: ["Gemma", "技术解析"]
+published: true
+excerpt: "抓取件第 1 页最上面是一行 「Gemma 4 released with text, audio and image input and long up to 256K context window!」, 后面跟一个指向 /gemma/docs/core 的 「Learn more」."
+---
 源文是一张 12 页的模型卡, 结构信息很少.
 
 源文是 ai.google.dev 上 Gemma 3n 模型卡的英文抓取, 12 页, 1 张图, 页尾标 「Last updated 2025-06-17 UTC」. 卡上有输入输出规格, 训练数据概况, 训练软硬件, 29 行基准分数和一段定性的安全结论, 没有层数, 维度, 总参数量这类结构信息. 下文只按卡上的字和表写, 结构细节不从外部补.

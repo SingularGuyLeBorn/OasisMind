@@ -1,3 +1,10 @@
+---
+title: "Baichuan-M1 · 对照译稿"
+category: "模型库"
+tags: ["Baichuan", "对照译稿"]
+published: true
+excerpt: "Baichuan-M1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 33 -->
 
 arXiv:2502.12671v2 [cs.CL] 5 Mar 2025

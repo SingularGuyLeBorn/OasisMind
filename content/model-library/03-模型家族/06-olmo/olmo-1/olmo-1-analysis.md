@@ -1,3 +1,10 @@
+---
+title: "OLMo: 全栈公开的 7B Dense 起点"
+category: "模型库"
+tags: ["OLMo", "技术解析"]
+published: true
+excerpt: "一句话身份: OLMo 是 Allen AI 在 1B 与 7B 两档 Dense decoder-only 上做的第一次 「全栈公开」, 7B 主 checkpoint 训到 2.46T token, 预训练语料是同队的 Dolma, 对齐借 TÜLU 2 的 SFT → DPO 配方."
+---
 # OLMo: 全栈公开的 7B Dense 起点
 
 来源: [OLMo: Accelerating the Science of Language Models](https://arxiv.org/abs/2402.00838) (arXiv:2402.00838v4, 2024-06-07), 21 页. 数字以同目录 `olmo-1.md` 的表图为准, 对照译稿见 `olmo-1-bi.md`. 后续几代的解析: [OLMo 2](../olmo-2/olmo-2-analysis.md), [Olmo 3](../olmo-3/olmo-3-analysis.md), [Olmo Hybrid](../olmo-hybrid/olmo-hybrid-analysis.md).

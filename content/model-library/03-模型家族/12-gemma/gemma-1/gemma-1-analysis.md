@@ -1,3 +1,10 @@
+---
+title: "Gemma 1: 分析"
+category: "模型库"
+tags: ["Gemma", "技术解析"]
+published: true
+excerpt: "读 Gemma 1 报告先要分清版本. 首页右上印的日期是 2024-02-21, 与权重公开同一天;"
+---
 # Gemma 1: 分析
 
 > 对象: Gemma: Open Models Based on Gemini Research and Technology (Gemma Team, Google DeepMind), arXiv:2403.08295v4. 全文 17 页, 正文约 10 页, 其余是作者名单, 参考文献和一页附录. 对照原文见 [gemma-1-bi.md](./gemma-1-bi.md).

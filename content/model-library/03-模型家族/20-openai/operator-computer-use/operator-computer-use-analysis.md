@@ -1,6 +1,13 @@
+---
+title: "Operator 系统卡: 看屏幕点鼠标的 Agent, 安全论证靠什么撑"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "判断材料性质要看它把篇幅花在哪里. 产品页会讲能做什么, 怎么订阅, 支持哪些网站;"
+---
 # Operator 系统卡: 看屏幕点鼠标的 Agent, 安全论证靠什么撑
 
-来源: Operator System Card (OpenAI, 2025 年 1 月 23 日, 2025 年 3 月 11 日补充 API 一节). 同目录源文 `operator-computer-use.md`, 17 页, 5 张图 (2 张确认截图, 1 张观察模式弹窗, 1 张注入邮件截图, 1 张监控器弹窗), 5 张表. 逐段对照见 `operator-computer-use-bi.md`. 下文数字只取本文印出的值, 自己算出的数标 「估算」. 生物风险一节只引评级和分数.
+来源: Operator System Card (OpenAI, 2025 年 1 月 23 日, 2025 年 3 月 11 日补充 API 一节). 同目录源文 `operator-computer-use.md`, 17 页, 5 张图 (2 张确认截图, 1 张观察模式弹窗, 1 张注入邮件截图, 1 张监控器弹窗), 5 张表. 逐段对照见 `operator-computer-use-bi.md`. 下文数字只取本文印出的值. 生物风险一节只引评级和分数.
 
 | 项目 | 本文印出的值 |
 | --- | --- |

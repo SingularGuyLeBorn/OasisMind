@@ -1,3 +1,10 @@
+---
+title: "Kimi K2.7 Code: 编程专用变体, 规格沿用 K2, 训练过程没有公开"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "K2.7 Code 是 Moonshot 开源的编程向 agent 模型, 副标题写「为长程软件工程而建」."
+---
 # Kimi K2.7 Code: 编程专用变体, 规格沿用 K2, 训练过程没有公开
 
 源文是官网 Resources 栏的 7 页产品说明, 不是技术报告. 规格表, 两张基准表, 评测设定, thinking 约束和价目可以核对; 数据, 预训练, 后训练, RL 奖励一概没有.

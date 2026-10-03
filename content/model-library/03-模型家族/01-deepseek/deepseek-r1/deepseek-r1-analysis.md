@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-R1: 用规则奖励的 RL 训出长推理"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看。"
+---
 # DeepSeek-R1: 用规则奖励的 RL 训出长推理
 
 来源: [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) (本库收录的是带补充材料的 86 页版本, **基于 v1**, 2025-01-22; v2 于 2026-01-04 发布有更新, 本文未覆盖). 权重: https://huggingface.co/deepseek-ai

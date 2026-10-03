@@ -1,6 +1,13 @@
+---
+title: "gpt-oss 模型卡: 两个开放权重 MoE 推理模型的结构, 训练与风险评估"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "OpenAI 过去几份系统卡 (o1, o3-mini, o3 / o4-mini) 几乎不谈结构, 参数量, 层数, 注意力形式都空着."
+---
 # gpt-oss 模型卡: 两个开放权重 MoE 推理模型的结构, 训练与风险评估
 
-来源: gpt-oss-120b & gpt-oss-20b Model Card (OpenAI, 2025 年 8 月 5 日, arXiv:2508.10925v1). 同目录源文 `gpt-oss.md`, 35 页, 23 张图 (编号为 Figure 1 到 Figure 16, 其中 22 张是评测柱状图或折线图, 1 张是 SWE-bench 任务流程示意), 13 张表, 附录另有两段 harmony 格式示例 (Figure 17, Figure 18). 逐段对照见 `gpt-oss-bi.md`. 下文数字优先取本文印出的值; 从图上读出的数标「读图」, 自己算出的数标「估算」; 本文没写, 取自官方开源仓库配置和参考实现 (github.com/openai/gpt-oss, Hugging Face 上的 config.json) 的, 标「开源配置」. 涉及生物实验与网络攻击的小节, 这里只谈评级和分数.
+来源: gpt-oss-120b & gpt-oss-20b Model Card (OpenAI, 2025 年 8 月 5 日, arXiv:2508.10925v1). 同目录源文 `gpt-oss.md`, 35 页, 23 张图 (编号为 Figure 1 到 Figure 16, 其中 22 张是评测柱状图或折线图, 1 张是 SWE-bench 任务流程示意), 13 张表, 附录另有两段 harmony 格式示例 (Figure 17, Figure 18). 逐段对照见 `gpt-oss-bi.md`. 下文数字优先取本文印出的值; 本文没写, 取自官方开源仓库配置和参考实现 (github.com/openai/gpt-oss, Hugging Face 上的 config.json) 的, 标「开源配置」. 涉及生物实验与网络攻击的小节, 这里只谈评级和分数.
 
 | 项目 | 数值 |
 | --- | --- |

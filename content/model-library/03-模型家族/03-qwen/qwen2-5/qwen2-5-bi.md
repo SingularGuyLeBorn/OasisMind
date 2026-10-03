@@ -1,3 +1,10 @@
+---
+title: "Qwen2.5 · 对照译稿"
+category: "模型库"
+tags: ["Qwen", "对照译稿"]
+published: true
+excerpt: "Qwen2.5 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 26 -->
 
 To handle diverse and varied use cases effectively, we present Qwen2.5 LLM series in rich configurations. The open-weight offerings include base models and instruction-tuned models in sizes of 0.5B, 1.5B, 3B, 7B, 14B, 32B, and 72B parameters. Quantized versions of the instruction-tuned models are also provided. Over 100 models can be accessed from Hugging Face Hub, ModelScope, and Kaggle. In addition, for hosted solutions, the proprietary models currently include two mixture-of-experts (MoE) variants: Qwen2.5- Turbo and Qwen2.5-Plus, both available from [Alibaba Cloud Model Studio](https://www.alibabacloud.com/en/product/modelstudio).

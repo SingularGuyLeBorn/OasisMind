@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-V 2.6 模型卡分析: 8B 参数, 640 个视觉 token 的一页说明书"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "这一页同时是产品介绍, 评测报告和部署手册. 它给出的数字足够核对 token 密度, 逐列比较各家分数, 估算权重体积, 但给不出语言模型层数, 隐藏维度, 视觉编码器和语言模型之间的连接结构, 也没有训练数据配比."
+---
 # MiniCPM-V 2.6 模型卡分析: 8B 参数, 640 个视觉 token 的一页说明书
 
 - 源文: 同目录 `minicpm-v-2-6.md`, 14 页, 28 张图, 抓自 Hugging Face 上的 openbmb/MiniCPM-V-2\_6 模型页.

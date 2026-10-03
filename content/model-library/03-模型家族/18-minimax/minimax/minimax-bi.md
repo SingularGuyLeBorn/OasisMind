@@ -1,3 +1,10 @@
+---
+title: "MiniMax GitHub 组织主页 · 对照译稿"
+category: "模型库"
+tags: ["MiniMax", "对照译稿"]
+published: true
+excerpt: "MiniMax GitHub 组织主页 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # MiniMax GitHub 组织主页对照稿
 
 源文是 GitHub 上 MiniMax-AI 组织主页的浏览器打印件, 4 页, 23 张图, 由 MinerU 转成 Markdown. 这是组织门户页, 没有模型结构, 训练和评测内容, 本稿只对照页面上印出来的文字和数字. 23 张图里 21 张是 GitHub 界面的小图标 (星标, 分叉, 语言色点, 社交账号字标), 2 张是仓库列表截图. MinerU 把链接图标误识别成的 $\hat{G}$, $\mathcal{Q}$ 和仓库图标误识别成的 「日」 字, 本稿删去. MinerU 漏掉或识别错的内容按同目录 PDF 的文字层补回, 改动处在该段中文里说明.

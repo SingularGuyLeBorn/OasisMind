@@ -1,3 +1,10 @@
+---
+title: "Ring-1T 技术解析"
+category: "模型库"
+tags: ["Ling", "技术解析"]
+published: true
+excerpt: "页眉日期是 Oct 22, 2025. 代码仓库写 Ring-V2, 模型页写 Ring-1T. 引言说它建在 Ling 2.0 上, 从 Ling-1T-base 接着训练."
+---
 这篇是 Ring-1T 的技术报告.
 
 ## 1. 日期, 底座, 两个参数

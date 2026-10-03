@@ -1,3 +1,10 @@
+---
+title: "Kimi-K2-0905: 产品通告解析"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "通告发表于 2025 年 9 月 5 日, 标签是 product 与 announcement. 口号行并列四项: Coding 能力再升级, 上下文窗口 256k, 最高 60-100 Token/s, 支持 Claude Code."
+---
 # Kimi-K2-0905: 产品通告解析
 
 > 公开材料是 Moonshot 平台博客的三页中文产品通告(源文约 3KB), 不是技术报告. 通告没有写 0905 的训练数据, 后训练方法和结构改动; 基准分数只来自 p2 配图, 按读图标出.

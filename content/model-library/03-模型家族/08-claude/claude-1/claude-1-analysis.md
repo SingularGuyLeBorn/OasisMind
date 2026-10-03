@@ -1,3 +1,10 @@
+---
+title: "Claude (2023): 一份发布公告和它背后的 HHH 路线"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "这份 PDF 分成两块. 第 1 页到第 5 页是 2023 年 3 月 14 日的公告正文: 宣布结束封闭 alpha, 介绍 Claude 和 Claude Instant 两个版本, 再用六家伙伴的引语说明用途."
+---
 # Claude (2023): 一份发布公告和它背后的 HHH 路线
 
 > 源文是 Anthropic 在 2023 年 3 月 14 日发布的产品公告 「Introducing Claude」, 属于博客式发布页, 不是技术报告. 全文没有公式, 没有表格, 没有参数量, 训练数据, 训练方法, 上下文长度, 价格或评测分数. 公告没说用了哪种方法的地方, 一律写 「本页没有」.

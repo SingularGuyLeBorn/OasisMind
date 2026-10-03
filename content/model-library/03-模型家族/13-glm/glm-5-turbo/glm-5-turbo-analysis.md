@@ -1,3 +1,10 @@
+---
+title: "GLM-5-Turbo 模型页: 一张规格栏和一张没有刻度的雷达图"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "页面上能看到的控件都属于文档站: 顶部的 「Copy page」 按钮, 末尾的 「Was this page helpful? Yes No」, 页眉页脚各有一个站点标志 Z 和一个搜索框残片 「Q :」."
+---
 源材料是 Z.ai 文档站的一张模型页, 共 7 页, 不是技术报告.
 
 # GLM-5-Turbo 模型页: 一张规格栏和一张没有刻度的雷达图

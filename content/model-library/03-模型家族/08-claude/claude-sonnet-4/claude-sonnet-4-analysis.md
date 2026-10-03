@@ -1,3 +1,10 @@
+---
+title: "Claude Sonnet 4 (2025): 同一张卡里留在 ASL-2 的那一款"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "系统卡分七章: 常规防护, agentic 安全, 对齐评估, Opus 4 福利评估, reward hacking, RSP 评测, 以及导言里的发布决策."
+---
 # Claude Sonnet 4 (2025): 同一张卡里留在 ASL-2 的那一款
 
 来源: 同目录 `claude-sonnet-4.md`, 即 Anthropic 2025 年 5 月的 System Card: Claude Opus 4 & Claude Sonnet 4, 共 123 页, 与同级目录 `claude-opus-4` 下的源文件完全相同. 那一篇侧重 Opus 4 的 ASL-3 与对齐审计, 本篇只从 Sonnet 4 读: 哪些数字属于它, 哪些只属于 Opus 4, 哪些并排其实口径不同, 以及它为什么能留在 ASL-2. 对照译文见 `claude-sonnet-4-bi.md`. 数字以源 md 为准, 读图得到的注明 「读图估算」; 卡外能对上号的公开资料标 「(公开资料)」, 笔者判断标 「(推测)」.

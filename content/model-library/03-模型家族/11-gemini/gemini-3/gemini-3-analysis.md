@@ -1,3 +1,10 @@
+---
+title: "Gemini 3 Pro 模型卡: 分析"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "第 2 页并排写着 「Model Release: November 2025」 和 「Last Updated: May 2026」."
+---
 # Gemini 3 Pro 模型卡: 分析
 
 ## 1. 两个日期, 三层内容

@@ -1,3 +1,10 @@
+---
+title: "OLMo 2 · 对照译稿"
+category: "模型库"
+tags: ["OLMo", "对照译稿"]
+published: true
+excerpt: "OLMo 2 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 58 -->
 
 arXiv:2501.00656v3 [cs.CL] 8 Oct 2025

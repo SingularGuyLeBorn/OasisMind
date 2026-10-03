@@ -1,3 +1,10 @@
+---
+title: "Llama 3 · 对照译稿"
+category: "模型库"
+tags: ["Llama", "对照译稿"]
+published: true
+excerpt: "Llama 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 92 -->
 
 arXiv:2407.21783v3 [cs.AI] 23 Nov 2024

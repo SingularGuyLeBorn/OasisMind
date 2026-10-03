@@ -1,3 +1,10 @@
+---
+title: "MiMo-V2-Flash: 309B MoE 怎样同时为长上下文和 Agent RL 省算力"
+category: "模型库"
+tags: ["MiMo", "技术解析"]
+published: true
+excerpt: "Flash 是 MiMo 线从 7B 稠密模型跨到大规模 MoE 的一篇. 规模是总参 309B, 每 token 激活 15B, 预训练 27T tokens, 原生 32K 再扩到 256K."
+---
 # MiMo-V2-Flash: 309B MoE 怎样同时为长上下文和 Agent RL 省算力
 
 来源: [MiMo-V2-Flash Technical Report](https://arxiv.org/abs/2601.02780) (arXiv:2601.02780v2, 2026-01-08, 31 页). 开源: https://github.com/XiaomiMiMo/MiMo-V2-Flash. 对照译稿见同目录 `mimo-v2-flash-bi.md`. 表内数字, 式号与图号回源文 `mimo-v2-flash.md`.

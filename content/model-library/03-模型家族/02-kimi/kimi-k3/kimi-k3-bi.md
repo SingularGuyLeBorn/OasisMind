@@ -1,3 +1,10 @@
+---
+title: "Kimi K3 · 对照译稿"
+category: "模型库"
+tags: ["Kimi", "对照译稿"]
+published: true
+excerpt: "Kimi K3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 47 -->
 
 arXiv: 2607.24653v2 [cs. CL] 7 Aug 2026

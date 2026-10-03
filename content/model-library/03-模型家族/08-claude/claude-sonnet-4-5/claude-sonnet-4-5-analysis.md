@@ -1,3 +1,10 @@
+---
+title: "Claude Sonnet 4.5 System Card 解读"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Sonnet 4.5 的 system card 共 149 页, 结构和 Claude 4 那一份基本一致: 先交代训练数据和部署决定, 再依次讲防护评测, agentic 安全, 网络能力, reward hacking, 对齐评估, 模型福祉, 最后是 RSP 评测."
+---
 # Claude Sonnet 4.5 System Card 解读
 
 ## 1. 问题与 ASL 判定

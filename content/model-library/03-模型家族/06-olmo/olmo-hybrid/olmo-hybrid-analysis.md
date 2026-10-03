@@ -1,3 +1,10 @@
+---
+title: "Olmo Hybrid: 把 SWA 换成 GDN, 从表达力一路推到 token 效率"
+category: "模型库"
+tags: ["OLMo", "技术解析"]
+published: true
+excerpt: "Olmo 3 7B 本身已经是一种混合注意力: 3/4 的层是窗口 4096 的 SWA, 1/4 是全局注意力."
+---
 # Olmo Hybrid: 把 SWA 换成 GDN, 从表达力一路推到 token 效率
 
 来源: 同目录 `olmo-hybrid.md` (arXiv:2604.03444v4, *Olmo Hybrid: From Theory to Practice and Back*, 70 页), 对照译稿 `olmo-hybrid-bi.md`. 下文数字以源文 Tab. 1–22, Fig. 1–21 与正文各节为准, 正文与表格不一致处以表格为准并注明; 标了 「心算」 或 「解读」 的是估算或推断. 直接前作见 [Olmo 3 解读](../olmo-3/olmo-3-analysis.md).

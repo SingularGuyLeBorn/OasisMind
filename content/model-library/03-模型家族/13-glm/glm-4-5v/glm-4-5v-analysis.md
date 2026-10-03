@@ -1,3 +1,10 @@
+---
+title: "GLM-4.5V 与 GLM-4.1V-Thinking: 一个视觉编码器, 两种底座, 一套课程采样强化学习"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "报告标题只有 GLM-4.5V 和 GLM-4.1V-Thinking, 正文却覆盖三代五个名字. GLM-4.1V-9B-Thinking 是 9B 稠密模型, 语言部分用 GLM-4-9B-0414, 定位是纯思考模型;"
+---
 # GLM-4.5V 与 GLM-4.1V-Thinking: 一个视觉编码器, 两种底座, 一套课程采样强化学习
 
 来源: 同目录 `glm-4-5v.md` (arXiv:2507.01006v6, 2026-01-01, 页标记 `page 1 of 42` 到 `page 42 of 42`). 逐段对照译文和 20 条疑点见 `glm-4-5v-bi.md`. 下文的页码都指这份源文; 凡是只在同目录 `glm-4-5v.pdf` 里出现, md 没有抓到的内容, 都注明 「PDF 里」. 文中带 「我算」 字样的数字是按原文数字推出来的, 原文没有直接写.

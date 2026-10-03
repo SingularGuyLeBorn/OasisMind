@@ -1,3 +1,10 @@
+---
+title: "Claude 3 Opus (2024): 新顶档是怎样被数据, 宪法和评测一起做出来的"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "报告自称 model card. 第 1 到 4 节讲用途, 训练数据, 训练过程, 安全和社会责任;"
+---
 # Claude 3 Opus (2024): 新顶档是怎样被数据, 宪法和评测一起做出来的
 
 来源: 同目录 `claude-3-opus.md` 与 `claude-3-opus.pdf`, 即 「The Claude 3 Model Family: Opus, Sonnet, Haiku」, 共 42 页, 配图 43 张 (均在 `images/`), 表 1 至表 8 和一个公式 (5.1). 同一份报告也收在同级目录 `claude-3-sonnet` 下, 那一篇侧重 Sonnet 作为 Claude 2 继任者的位置, 本篇侧重 Opus 这个新加的顶档. 对照译稿和逐段疑惑见 `claude-3-opus-bi.md`. 数字以源 md 为准, 从图上读出的数注明 「读图估算」.

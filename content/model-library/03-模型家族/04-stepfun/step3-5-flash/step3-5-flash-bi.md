@@ -1,3 +1,10 @@
+---
+title: "Step 3.5 Flash · 对照译稿"
+category: "模型库"
+tags: ["StepFun", "对照译稿"]
+published: true
+excerpt: "Step 3.5 Flash 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 67 -->
 
 arXiv:2602.10604v2 [cs.CL] 23 Feb 2026

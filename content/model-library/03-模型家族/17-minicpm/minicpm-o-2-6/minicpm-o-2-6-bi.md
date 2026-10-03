@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-o 2.6 · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM-o 2.6 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 27 -->
 
 ![Hugging Face 页头左上角的举手表情图标](images/p01-image.png)

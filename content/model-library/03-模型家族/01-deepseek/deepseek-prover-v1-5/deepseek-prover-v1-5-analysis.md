@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-Prover-V1.5: 证明助手反馈, 截断续写和好奇心搜索"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "V1 用 800 万条合成语句把 7B 模型在 Lean 4 miniF2F-test 上推到 50.0%, 靠的是一遍写完整段证明."
+---
 # DeepSeek-Prover-V1.5: 证明助手反馈, 截断续写和好奇心搜索
 
 来源: [DeepSeek-Prover-V1.5: Harnessing Proof Assistant Feedback for Reinforcement Learning and Monte-Carlo Tree Search](https://arxiv.org/abs/2408.08152)(arXiv: 2408.08152v1, 2024-08-15, 后收入 ICLR 2025). 仓库: https://github.com/deepseek-ai/DeepSeek-Prover-V1.5.

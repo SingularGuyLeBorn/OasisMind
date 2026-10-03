@@ -1,3 +1,10 @@
+---
+title: "Claude 4: 混合推理, 三档推理预算和一句 ASL-3"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "正文占第 1 到 8 页: 导语, 配套发布清单和价格, 两款模型的定位和客户证言, 柱状图, 评测表和脚注, 「Model improvements」, Claude Code, 「Getting started」."
+---
 # Claude 4: 混合推理, 三档推理预算和一句 ASL-3
 
 > 本目录的源材料是 Anthropic 2025 年 5 月 22 日发布的公告 「Introducing Claude 4」 的抓取 `claude-4.md` (13 页, 5 图), 属于产品博客, 不是技术报告. 全文没有架构描述, 训练数据和训练方法; 能核对的只有第 4, 5 页一张评测表, 五条脚注, 第 8, 9 页的附录方法说明, 以及正文里几个百分数和价格. 两份材料都没写的, 标 「本页没有」.

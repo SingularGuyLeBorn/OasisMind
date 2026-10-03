@@ -1,3 +1,10 @@
+---
+title: "Gemini 3.1 Flash-Lite 模型卡解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "这份材料是 Gemini 3.1 Flash-Lite 的模型卡, 共 7 页, 没有插图. 第 1 页是封面, 只有 Google 字样和标题;"
+---
 # Gemini 3.1 Flash-Lite 模型卡解读
 
 ## 1. 这张卡交代了什么

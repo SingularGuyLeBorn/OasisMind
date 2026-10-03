@@ -1,3 +1,10 @@
+---
+title: "Hy4 preview 模型卡: 一张规格表, 一张 46 行的评测表"
+category: "模型库"
+tags: ["Hunyuan", "技术解析"]
+published: true
+excerpt: "2026 年 9 月 25 日 13:12 是抓取时间, 不是发布日. 13 页的页眉时间完全相同, 精确到分钟, 这是打印时刻的特征."
+---
 源材料是 Hugging Face 上 tencent/Hy4-preview 模型卡的网页打印件, 共 13 页, 不是技术报告.
 
 # Hy4 preview 模型卡: 一张规格表, 一张 46 行的评测表

@@ -1,3 +1,10 @@
+---
+title: "MiMo-V2.6: 把 RL 算力当主轴放大, 底座和稳定性怎样跟上"
+category: "模型库"
+tags: ["MiMo", "技术解析"]
+published: true
+excerpt: "V2.6 是 MiMo 线第一篇把 「RL 花了多少钱」 写进正文的报告. 两档旗舰: Pro 总参 1.02T / 激活 42B, Flash 310B / 15B;"
+---
 # MiMo-V2.6: 把 RL 算力当主轴放大, 底座和稳定性怎样跟上
 
 来源: 同目录 `mimo-v2-6.md` (*MiMo-V2.6: Scaling Reinforcement Learning Towards Self-Improvement*, 44 页, 31 图). 对照译稿见 `mimo-v2-6-bi.md`. 数字回 Abstract, Fig. 1–17, Tab. 1–7 与 §2–§7. RL 运行日志公开在 https://mimo.xiaomi.com/rl/mimo-v26.

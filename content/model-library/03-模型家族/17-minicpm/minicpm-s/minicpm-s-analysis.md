@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-S 技术解析"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "规模信息只有侧栏的 1B params 和 BF16. 结构上能确定的只有两点: FFN 是 gated FFN, 激活函数先换成 ReLU, 最后换成 FATReLU."
+---
 源文是 Hugging Face 上 openbmb/MiniCPM-S-1B-sft 的模型卡, 11 页, 1 张图, 不是技术报告.
 
 - 这是什么: MiniCPM-1B-sft-bf16 用 ProSparse 方法改出来的激活稀疏版本, 论文里叫 ProSparse-1B.

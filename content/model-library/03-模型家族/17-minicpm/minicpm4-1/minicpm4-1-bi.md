@@ -1,3 +1,10 @@
+---
+title: "MiniCPM4.1 · 对照译稿"
+category: "模型库"
+tags: ["MiniCPM", "对照译稿"]
+published: true
+excerpt: "MiniCPM4.1 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 # MiniCPM4.1 目录对照稿：与 minicpm4 同源
 
 这个目录的源文 `minicpm4-1.md` 和同级目录 `minicpm4/minicpm4.md` 字节完全相同：两份都是 194900 字节，SHA256 都是 `858549b9d6d152cc03917f64ef83117ffbc4781ed7e44e684c7049845be02398`，都是 44 页、11 张图。两边的 PDF 也相同（2590544 字节，SHA256 前缀 `2d20e01f1323050f`），`images/` 下 11 张图逐个比对哈希也一致。

@@ -1,3 +1,10 @@
+---
+title: "Claude Opus 4.7 系统卡: 分析"
+category: "模型库"
+tags: ["Claude", "技术解析"]
+published: true
+excerpt: "Claude Opus 4.7 的系统卡日期是 2026 年 4 月 16 日, 共 232 页. 它不是一份架构论文."
+---
 # Claude Opus 4.7 系统卡: 分析
 
 ## 1. 定位与风险判定

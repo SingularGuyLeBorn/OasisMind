@@ -1,3 +1,10 @@
+---
+title: "ChatGLM 家族报告 (arXiv:2406.12793v2): 分析"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "标题写的是 「从 GLM-130B 到 GLM-4 All Tools」, 摘要第二句又把重心收窄到 「GLM-4 语言系列」, 包括 GLM-4, GLM-4-Air 和 GLM-4-9B."
+---
 # ChatGLM 家族报告 (arXiv:2406.12793v2): 分析
 
 源文是 Team GLM (智谱 AI 与清华大学) 的 「ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4 All Tools」, arXiv 编号 2406.12793, 第 2 版, 日期 2024 年 7 月 30 日. 全文 19 页: 第 1 到 12 页是正文, 第 13 页是结论和致谢, 62 条参考文献从第 13 页排到第 19 页; 4 张图, 10 张表. 下文只用这份报告里的文字, 图和表, 不从 GLM-130B 论文或 ChatGLM-6B 仓库的 README 里补数字. 页码指 PDF 页码.

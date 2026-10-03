@@ -1,3 +1,10 @@
+---
+title: "GPT-3 技术谱系分析"
+category: "模型库"
+tags: ["OpenAI", "技术解析"]
+published: true
+excerpt: "GPT-3 之前的主流路线是先预训练, 再针对每个任务做微调. 架构可以做到任务无关, 但每个任务仍然要几千到几十万条标注样本, 还要单独训练一份权重."
+---
 # GPT-3 技术谱系分析
 
 来源: Tom B. Brown 等, *Language Models are Few-Shot Learners*, OpenAI, arXiv 2005.14165v4, 共 75 页. 对照译稿见 [gpt-3-bi.md](gpt-3-bi.md).

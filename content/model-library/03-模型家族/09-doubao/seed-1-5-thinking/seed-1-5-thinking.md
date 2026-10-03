@@ -1,3 +1,10 @@
+---
+title: "Seed1.5-Thinking · 源文"
+category: "模型库"
+tags: ["Doubao", "源文"]
+published: true
+excerpt: "Seed1.5-Thinking 公开材料的 MinerU 抓取原文。"
+---
 <!-- page 1 of 19 -->
 
 arXiv:2504.13914v3 [cs.CL] 29 Apr 2025

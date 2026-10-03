@@ -1,3 +1,10 @@
+---
+title: "Mistral Medium 3.5 技术解析"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "没印的: 层数, 隐藏维度, 注意力头数, 词表大小, 位置编码方案, 训练数据量, 训练 token 数, SFT 或 RL 细节, 视觉编码器的参数量."
+---
 这是 Hugging Face 上 Mistral Medium 3.5 128B 的模型卡, 13 页, 10 张图, 其中 3 张柱状图, 其余是图标.
 
 | 项目 | 本页印出的值 |

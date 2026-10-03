@@ -1,3 +1,10 @@
+---
+title: "Ministral 3B / 8B 发布页解读"
+category: "模型库"
+tags: ["Mistral", "技术解析"]
+published: true
+excerpt: "打印时每页左下角都叠着 axeptio 的 cookie 弹窗. 正文文字可以从 PDF 文字层找回来, 但图表找不回: 表 1 的模型名列和左侧若干列被盖住, 只露出 HumanEval, GSM8K 和三个 MMLU 共五列;"
+---
 原文是一篇正文约 500 个英文词的发布博文, 9 页里后 3 页是梗图和页脚, 表和图又被 cookie 弹窗遮去一块.
 
 # Ministral 3B / 8B 发布页解读
@@ -7,7 +14,7 @@
 - 上下文: 「up to 128k context length (currently 32k on vLLM)」.
 - 架构: 只有一句, Ministral 8B 用 「interleaved sliding-window attention pattern」.
 - 上线: la Plateforme API 名 ministral-8b-latest 和 ministral-3b-latest; Ministral 8B Instruct 权重开放给研究用途.
-- 双语对照见同目录 ministral-2024-bi.md. 下文凡标 「估算」 的数, 都是按本页印出的数自己算的, 原文没有.
+- 双语对照见同目录 ministral-2024-bi.md.
 
 | 项 | Ministral 3B | Ministral 8B |
 | --- | --- | --- |

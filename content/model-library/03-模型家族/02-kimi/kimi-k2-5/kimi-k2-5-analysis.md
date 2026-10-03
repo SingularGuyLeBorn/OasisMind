@@ -1,3 +1,10 @@
+---
+title: "Kimi K2.5: 在 K2 底座上接视觉, 再把并行编排训成策略"
+category: "模型库"
+tags: ["Kimi", "技术解析"]
+published: true
+excerpt: "K2 和 K2 Thinking 都只处理文本. 视觉那条线在 Moonshot 内部是单独的 Kimi-VL, 结构和训练与 K2 主线分开."
+---
 # Kimi K2.5: 在 K2 底座上接视觉, 再把并行编排训成策略
 
 来源: 同目录 `kimi-k2-5.md`, 即 Kimi K2.5 Technical Report(arXiv 2602.02276v2, 页标记 `page 1 of 31` 到 `page 31 of 31`). 对照译稿见 `kimi-k2-5-bi.md`. 权重入口是 Hugging Face `moonshotai/Kimi-K2.5`, 开放的是后训练 checkpoint. 表 1 到表 6, 式 (1) (2), 附录 B 到 E 的数字以源 md 为准; 图 2, 图 4, 图 7, 图 8 的曲线在源 md 里只有图注, 下文凡是引用曲线形状的地方都按图注转述, 不读柱高.

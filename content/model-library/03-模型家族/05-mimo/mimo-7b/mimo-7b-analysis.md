@@ -1,3 +1,10 @@
+---
+title: "MiMo-7B: 一个 7B 推理模型怎样从语料一路做到 RL"
+category: "模型库"
+tags: ["MiMo", "技术解析"]
+published: true
+excerpt: "MiMo-7B 是小米 MiMo 线的第一篇技术报告 (产品站论文墙上日期 2025年5月12日)."
+---
 # MiMo-7B: 一个 7B 推理模型怎样从语料一路做到 RL
 
 来源: 同目录 `mimo-7b.md` (arXiv:2505.07608v2, 28 页, 9 图). 对照译稿见 `mimo-7b-bi.md`. 数字回 Abstract, Fig. 1–8, Tab. 1–6 与 §2–§3.6. 开源入口 https://github.com/xiaomimimo/MiMo.

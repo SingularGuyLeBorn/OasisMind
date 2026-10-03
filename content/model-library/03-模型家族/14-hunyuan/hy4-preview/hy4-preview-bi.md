@@ -1,3 +1,10 @@
+---
+title: "Hy4 preview · 对照译稿"
+category: "模型库"
+tags: ["Hunyuan", "对照译稿"]
+published: true
+excerpt: "Hy4 preview 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 13 -->
 
 ![Image block](images/p01-2026-9-25-13-12.png)

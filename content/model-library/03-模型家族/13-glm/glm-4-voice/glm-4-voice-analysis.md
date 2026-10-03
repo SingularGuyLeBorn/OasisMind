@@ -1,3 +1,10 @@
+---
+title: "GLM-4-Voice (arXiv:2412.02612v1): 分析"
+category: "模型库"
+tags: ["GLM", "技术解析"]
+published: true
+excerpt: "读这篇报告之前要先分清哪些内容是它自己的. 第 3 页写明 「我们使用与 Zeng 等人 [45] 相同的语音 tokenizer 和语音解码器」, 第 3 页又说 12.5Hz 变体 「described in Zeng et al."
+---
 # GLM-4-Voice (arXiv:2412.02612v1): 分析
 
 源文是智谱 AI 与清华大学的 「GLM-4-Voice: Towards Intelligent and Human-Like End-to-End Spoken Chatbot」, arXiv 编号 2412.02612, 第 1 版, 日期 2024 年 12 月 3 日. 全文 14 页: 第 1 到 9 页是正文, 第 10 到 13 页是 49 条参考文献, 第 14 页是附录里的两段评测提示; 2 张图, 6 张表. 下文只用这 14 页里的文字, 图和表, 页码指 PDF 页码. 对照稿里的逐段疑问见同目录 glm-4-voice-bi.md.

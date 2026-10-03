@@ -1,3 +1,10 @@
+---
+title: "DeepSeek-V3.2: 稀疏注意力, 放大 RL 与合成 Agent 环境"
+category: "模型库"
+tags: ["DeepSeek", "技术解析"]
+published: true
+excerpt: "本文大量引用技术报告的表格, 图片与公式, 建议对照原报告观看."
+---
 # DeepSeek-V3.2: 稀疏注意力, 放大 RL 与合成 Agent 环境
 
 来源: [DeepSeek-V3.2 Technical Report](https://arxiv.org/abs/2512.02556)(arXiv: 2512.02556v1, 2025-12-02). 对照译稿: `deepseek-v3-2-bi.md`.

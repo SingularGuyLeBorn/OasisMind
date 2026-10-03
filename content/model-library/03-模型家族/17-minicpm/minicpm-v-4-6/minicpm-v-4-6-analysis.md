@@ -1,4 +1,11 @@
-来源: 同目录 minicpm-v-4-6.md (MinerU 转写) 与 minicpm-v-4-6.pdf, arXiv:2605.08985v1 [cs.CV], 2026 年 5 月 9 日, 18 页, 11 张图. 下文只用这 18 页印出来的数字, 自己算的数标 「估算」.
+---
+title: "MiniCPM-V 4.6 技术解析"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "目录名是 minicpm-v-4-6, 但文件内容是一篇完整的 arXiv 论文, 标题 LLaVA-UHD v4."
+---
+来源: 同目录 minicpm-v-4-6.md (MinerU 转写) 与 minicpm-v-4-6.pdf, arXiv:2605.08985v1 [cs.CV], 2026 年 5 月 9 日, 18 页, 11 张图. 下文只用这 18 页印出来的数字.
 
 | 项目 | 本页写的 |
 | --- | --- |

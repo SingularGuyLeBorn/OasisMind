@@ -1,3 +1,10 @@
+---
+title: "Gemini 2.0: 发布博客解读"
+category: "模型库"
+tags: ["Gemini", "技术解析"]
+published: true
+excerpt: "这份材料是 Google 官方博客 (blog.google) 上的一篇发布稿, 标注 「12 min read」."
+---
 > 本目录的源材料是 Google 2024 年 12 月 11 日发布的博客 「Introducing Gemini 2.0: our new AI model for the agentic era」 的抓取 `gemini-2.md` (9 页, 9 图), 属于产品发布博客, 不是技术报告. 全文没有公式, 没有模型结构描述, 没有训练数据和训练方法; 能核对的只有第 3 页一张 13 行的评测表, 以及正文里的几个数字和开放范围.
 
 # Gemini 2.0: 发布博客解读

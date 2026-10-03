@@ -1,3 +1,10 @@
+---
+title: "Gemma 3 · 对照译稿"
+category: "模型库"
+tags: ["Gemma", "对照译稿"]
+published: true
+excerpt: "Gemma 3 公开材料的逐段中英对照译稿，附读报告时的疑问块。"
+---
 <!-- page 1 of 25 -->
 
 arXiv:2503.19786v1 [cs.CL] 25 Mar 2025

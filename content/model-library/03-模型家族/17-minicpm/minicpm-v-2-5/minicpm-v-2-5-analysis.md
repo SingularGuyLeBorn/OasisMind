@@ -1,3 +1,10 @@
+---
+title: "MiniCPM-Llama3-V 2.5 模型卡分析: 端侧 GPT-4V 级的口径与代价"
+category: "模型库"
+tags: ["MiniCPM", "技术解析"]
+published: true
+excerpt: "这 12 页可以分成四块. 第 1 到 2 页是 Hugging Face 侧栏: 标签, 下载量, 参数统计, 衍生模型, 数据集, Space, 合集."
+---
 源文是模型卡, 结构只有一句话, 没有训练细节.
 
 # MiniCPM-Llama3-V 2.5 模型卡分析: 端侧 GPT-4V 级的口径与代价

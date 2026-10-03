@@ -1,3 +1,10 @@
+---
+title: "Qwen2.5-Math: 上一代当教师与裁判, 数据, 奖励模型和 GRPO 连成一圈"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen2.5-Math 没有新架构, 没有 MoE, 没有 MTP, 骨架就是 Qwen2.5 的 decoder-only."
+---
 # Qwen2.5-Math: 上一代当教师与裁判, 数据, 奖励模型和 GRPO 连成一圈
 
 来源: [Qwen2.5-Math Technical Report: Toward Mathematical Expert Model via Self-Improvement](https://arxiv.org/abs/2409.12122) (arXiv:2409.12122v1, 2024-09-18). 权重与评测脚本见源文脚注的 Hugging Face, ModelScope, GitHub. 对照译稿见同目录 `qwen2-5-math-bi.md`, 表内数字与公式编号以源文 `qwen2-5-math.md` 为准.

@@ -1,6 +1,13 @@
+---
+title: "Hunyuan-Large: 389B 总参数, 52B 激活, 256K 上下文的 MoE 技术报告"
+category: "模型库"
+tags: ["Hunyuan", "技术解析"]
+published: true
+excerpt: "这份材料是腾讯混元团队的技术报告, 标题直接写了 「52 Billion Activated Parameters」."
+---
 # Hunyuan-Large: 389B 总参数, 52B 激活, 256K 上下文的 MoE 技术报告
 
-来源是同目录 `large.md`, 由 MinerU 从 `large.pdf` 抽出, arXiv 2411.02265 第 3 版, 2024 年 11 月 6 日, 共 18 页, 引用 6 张图. 正文到第 14 页结束, 第 15 页到第 18 页是参考文献. 逐段对照和疑惑在 `large-bi.md`. md 里粘连或漏字的地方按 PDF 文字层核对过, 源文件没有改动. 下文凡标 「估算」 的数, 都是用本文给出的数字推出来的, 本文自己没有印.
+来源是同目录 `large.md`, 由 MinerU 从 `large.pdf` 抽出, arXiv 2411.02265 第 3 版, 2024 年 11 月 6 日, 共 18 页, 引用 6 张图. 正文到第 14 页结束, 第 15 页到第 18 页是参考文献. 逐段对照和疑惑在 `large-bi.md`. md 里粘连或漏字的地方按 PDF 文字层核对过, 源文件没有改动.
 
 ## 1. 材料和三个规格数
 

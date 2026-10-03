@@ -1,3 +1,10 @@
+---
+title: "Qwen3.7-Max: 一张 41 行对照表和三段长程案例"
+category: "模型库"
+tags: ["Qwen", "技术解析"]
+published: true
+excerpt: "Qwen3.7-Max 只在 Alibaba Cloud Model Studio 通过 API 提供, 没有开源权重."
+---
 # Qwen3.7-Max: 一张 41 行对照表和三段长程案例
 
 > 公开材料是官方模型卡 README (4 页, 无图), 由产品定位, 一张 41 行对照表和几段短叙述组成. 没有层数, 总参与激活, 注意力类型, 预训练数据量和后训练配方.
