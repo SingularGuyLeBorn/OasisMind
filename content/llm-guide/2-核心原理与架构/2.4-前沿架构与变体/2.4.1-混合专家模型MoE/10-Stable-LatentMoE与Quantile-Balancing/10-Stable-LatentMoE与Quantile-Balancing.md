@@ -26,14 +26,6 @@ K2 已经是 384 路由 / Top-8 / 1 共享.K3 要把路由池扩到 896,把 $k$ 
 
 LatentMoE 的拆法:共享专家保留满宽路径,处理所有 token 都要用的变换;路由专家改在宽度 $\ell$ 的潜空间里算.通信和路由专家参数按 $d/\ell$ 变便宜.K3 取 $\ell=d/2=3584$,省一半路由侧流量,把预算花在 896 和 Top-16 上.共享专家仍是 $\mathbb{R}^{d}\to\mathbb{R}^{d}$,所以「稀疏度 56」**不是**「只有 1/56 的参数在动」--两路共享专家每层,每个 token 都在.
 
-![Stable LatentMoE 主计算图：Router 读取 $x$，路由专家处理 $z$，共享专家并行处理 $x$，两条分支在输出端相加](./images/redrawn-fig-latentmoe-shared-vs-routed-ell-v2.png)
-
-> 图 1a：Stable LatentMoE 主计算图。Router 始终读取满宽 $x$；$\mathbf W^{\downarrow}$ 只压缩路由专家的数据载荷；两个共享专家并行处理 $x$；共享输出 $s$ 与路由输出 $r$ 最后相加。
-
-![Stable LatentMoE 路由专家内部计算：$z$ 与 indices $S$ 进入 Dispatch，门控权重 $p_i$ 直接参与逐专家加权，Combine 得到 $u$](./images/redrawn-fig-latentmoe-routed-internals-v2.png)
-
-> 图 1b：路由专家内部计算。Dispatch 只根据 $S$ 复制并分发 $z$；$p_i$ 不参与 Dispatch，而是在各专家输出上完成加权；Combine 汇总 $q_i=p_i\,\mathrm{Expert}_i(z)$。
-
 **图 1 解析**
 
 - Router 用 $x\in\mathbb R^d$ 计算 $s=\operatorname{Sigmoid}(W_rx)$；$s+b$ 只决定集合 $S$，归一化门控 $p_i$ 仍由未加 bias 的 $s_i$ 得到。
@@ -74,10 +66,6 @@ K3 的隐藏维 $d=7168$ 与 K2 相同.K2 没有 Latent MoE Dimension 这一行;
 4. 这一对模块的输出写入当前 block 的 partial sum，成为后续 Block AttnRes 的候选表示。
 
 Gated MLA 那一层同样跟 MoE,并不因为「这一层已经有 $c^{KV}$」就改用稠密 FFN.$c^{KV}$ 只影响该层注意力怎么存 KV;FFN 槽仍按 $\ell$ 走路由专家.
-
-![Kimi K3 的 93 层配对：23 个 3×KDA + 1×Gated MLA block，再加最终 Gated MLA；每个 Attention 后接 Stable LatentMoE](./images/redrawn-fig-latentmoe-layer-slot-v2.png)
-
-> 图 2：23 个完整 Hybrid Attention blocks 产生 92 层，额外的 Final Gated MLA 构成第 93 层；93 个 Attention 都各自配对一个 Stable LatentMoE。单层框同时标出 Block AttnRes 输入、Router 输入和两个潜变量的作用位置。
 
 **图 2 解析**
 
@@ -198,14 +186,6 @@ $$
 - **因果**:本 batch 算出的 $\bm{b}^{(t+1)}$ 只用于下一步.禁止用自己的路由定义自己的负载再回头路由同一 batch.
 - **推理**:bias **冻结**.部署时就是带固定 $\bm{b}$ 的 Top-$k$,不再算分位数.
 
-![Quantile Balancing 的跨步因果关系：batch $t$ 同时执行当前路由并产生 margin，QB 只生成下一步使用的 bias](./images/redrawn-fig-quantile-balancing-qb-v2.png)
-
-> 图 3a：QB 的训练时间线。Batch $t$ 用 $b^{(t)}$ 完成当前路由，同时从 $s^{(t)}$ 与 $\alpha^{(t)}$ 生成 $M^{(t)}$；只有 $M^{(t)}$ 进入 QB update，得到并存储供 batch $t+1$ 使用的 $b^{(t+1)}$。
-
-![Quantile Balancing 数值核对：第 $q+1$ 大 margin 决定 raw bias，centering 后 bias 之和为零](./images/redrawn-fig-quantile-balancing-numeric-v2.png)
-
-> 图 3b：$m=8,n=4,k=1,q=2$ 的数值核对。Expert 1 的第 3 大 margin 为 $0.85$，所以 $\widehat b_1=-0.85$；严格不等式恰好留下 2 个 token。四个 raw bias 减去均值 $-0.085$ 后得到零和 bias。
-
 **图 3 解析**
 
 - 当前 batch 的 expert computation 与 QB update 是并列输出：前者消费 $S_i^{(t)}$ 与由 raw $s_i^{(t)}$ 归一化得到的 $p_{i,j}$；后者只消费 margin 矩阵 $M^{(t)}$。
@@ -274,6 +254,3 @@ MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token,使计算形状静�
 1. Moonshot AI. *Kimi K3 Technical Report*. §2.3,式 (11)–(14),Fig. 2 / Fig. 5,Table 1,附录 C–D.[arXiv:2607.24653](https://arxiv.org/abs/2607.24653)(HTML:[2607.24653](https://arxiv.org/html/2607.24653))
 2. Elango et al. *LatentMoE*. [arXiv:2601.18089](https://arxiv.org/abs/2601.18089)($\ell$ 控制通信,$d/\ell$ 用来加 $N$ 和 $k$;本篇不把硬件模型全文重推)
 3. aux-loss-free bias:DeepSeek-V3 报告(K3 引 [27]);$\gamma\mathrm{sign}$ 规则的表述以 K3 §2.3.3 为准
-
-
-

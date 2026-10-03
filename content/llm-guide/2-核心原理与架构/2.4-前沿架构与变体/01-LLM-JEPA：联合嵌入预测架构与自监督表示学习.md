@@ -10,10 +10,6 @@ MTP([2.4.6](./2.4.6-多Token预测MTP深度解析.md))仍在词表上做交叉�
 
 典型视图:自然语言描述 vs 正则 / SQL / 代码 diff--同一件知识的两种写法,不是「把句子遮掉 30% 再回归隐状态」.
 
-![左:Text 经 Enc 再 Pred;右:Code 经 Enc.余弦对齐表示.叉掉词表 softmax:那不是 MTP](./images/redrawn-fig-jepa-predict-repr.png)
-
-> 图 1:论文式 (2) 的示意.生成能力仍靠 $\mathcal{L}_{\mathrm{LLM}}$;JEPA 项在嵌入空间.
-
 **图 1 解析**
 
 - 两个视图各自编码;预测器把 $Enc(\mathrm{Text})$ 映射到 $Enc(\mathrm{Code})$ 所在空间.
@@ -63,4 +59,3 @@ I-JEPA(Assran et al., CVPR 2023)是视觉里预测被遮块的表示,带 EMA 目
 1. Huang, LeCun, Balestriero (2025). *LLM-JEPA*. https://arxiv.org/abs/2509.14252 (式 (1)(2),Table 2–3,Figure 3–4;代码 https://github.com/rbalestr-lab/llm-jepa )
 2. Assran et al. (2023). I-JEPA. CVPR. 概念对照,不是本篇实现
 3. MTP:[2.4.6](./2.4.6-多Token预测MTP深度解析.md)
-

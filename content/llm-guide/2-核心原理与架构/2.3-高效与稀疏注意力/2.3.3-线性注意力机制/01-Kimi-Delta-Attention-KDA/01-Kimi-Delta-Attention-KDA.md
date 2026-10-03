@@ -43,10 +43,6 @@ $$
 
 每个特征维自己的衰减,接近 Gated Linear Attention 的细粒度门,但仍绑在 delta 的 rank-1 擦写上.论文把转移矩阵做成一种受限的 Diagonal-Plus-Low-Rank,好做分块并行;完整 WY / UT 展开是式 (2)–(9),训练核在 [FLA kda](https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda).本篇不把分块逆三角阵再抄一遍--已经会线性注意力的人去论文 §3.1,不会的人先记住:**遗忘在通道上,擦写仍是对当前 key 的 rank-1.**
 
-![头级标量 α_t 整头同一遗忘;KDA 用对角 Diag(α_t) 让每个通道自己过期](./images/redrawn-fig-kda-channel-diag.png)
-
-> 图 1:遗忘门粒度.左:Gated DeltaNet 一头一个 $\alpha_t$,整份 $S_{t-1}$ 同一速度过期.右:KDA 的 $\mathrm{Diag}(\boldsymbol{\alpha}_t)$,一行一个 $\alpha_i$.两边的 rank-1 擦写仍是 $\mathbf{k}_t\mathbf{k}_t^\top$.K3 的 $g_{\min}=-5$ **不在这张图上**(见 §5).
-
 **图 1 解析**
 
 - **左**:一个桃盒 $\alpha_t$ 乘进整张网格.Qwen3-Next / 3.8 的 GDN 层走这条头级门.
@@ -121,4 +117,3 @@ Gated MLA 用同一只满秩门,但 **不对 MLA 输出做 RMSNorm**(K3 式 (7))
 - Gated DeltaNet:arXiv:2412.06464
 - 核:https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda
 - 权重:https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct
-

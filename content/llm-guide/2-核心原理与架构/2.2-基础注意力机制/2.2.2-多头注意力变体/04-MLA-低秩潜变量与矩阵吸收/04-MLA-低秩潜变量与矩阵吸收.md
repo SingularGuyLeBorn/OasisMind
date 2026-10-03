@@ -26,35 +26,19 @@ MLA 节省 KV cache 的根本原因是**缓存表示变了**。常见解释“�
 
 DeepSeek-V2 论文 Table 9:同规模 MoE 下,MLA 相对 MHA **KV cache 仅 4%–14%**,且 hard benchmark **不低于 MHA**.Figure 1(b) 报告相对稠密 67B:KV cache **−93.3%**,最大吞吐 **×5.76**(与 MoE 等共同贡献).
 
-![MHA、GQA、MQA、MLA 的 KV cache 持久化对象](./images/redrawn-fig-attention-cache-family-v2.png)
-
-> 图 1：四种注意力都保留多头 Query；MHA、GQA、MQA 减少或共享 K/V heads，MLA 则持久化联合 latent $c_j^{KV}$ 与共享位置键 $k_j^R$。
-
 **图 1 解析**
 
 图 1 只比较每个历史 token 的持久化对象，不把“存储关系”画成“计算关系”。MHA 保存 $n_h$ 组 K/V；GQA 保存 $G$ 组；MQA 保存一组；MLA 保存 $c_j^{KV}$ 与 $k_j^R$。MLA 仍然是多头注意力：多头差异体现在 Query、内容打分以及每头的 Value 聚合，而不是 cache 中复制 $n_h$ 份 latent。
 
 第一次读图易混淆「MLA 是否还算多头」--**算**:多头体现在 $W^{UQ}$ 与 per-head attention;变的是 **cache 里存什么**.
 
-![MLA 投影支路与持久化状态](./images/redrawn-fig-mla-projection-cache-v2.png)
-
-> 图 2：一个输入 $h_t$ 分成 Query、联合 KV 内容、解耦位置键三条独立支路；只有 $c_t^{KV}$ 与 $k_t^R$ 写入 cache。
-
 **图 2 解析**
 
 图 2 把来源关系拆开：$q^C$ 与 $q^R$ 都来自 $c^Q$；$k^C$ 与 $v^C$ 都来自同一个 $c^{KV}$，但两条上投影并行；$k^R$ 直接来自 $h_tW^{KR}$ 后的 RoPE。这里最容易接错的是把 $k^R$ 画成 $c^{KV}$ 的下游，或者把 $K$ 与 $V$ 画成串行计算。
 
-![MLA 每头打分、聚合与多头输出](./images/redrawn-fig-mla-attention-assembly-v2.png)
-
-> 图 3：每头先分别拼接内容与位置分量，再由 Q/K 产生分数；softmax 权重与 $v^C$ 在 Value 聚合处汇合，最后拼接各头输出并经过 $W^O$。
-
 **图 3 解析**
 
 图 3 对应训练或 Non-absorbed Prefill 的完整计算语义。Score 节点只有 Q/K 两个输入；Value 聚合节点只有注意力权重与 $v^C$ 两个输入；causal mask 作用于历史位置 $j$，不作用于 latent 坐标。
-
-![DeepSeek-V2 训练成本与推理效率](./images/redrawn-fig-deepseek-v2-metrics-v2.png)
-
-> 图 4：DeepSeek-V2 论文 Figure 1(b) 的相对指标。表格避免用不同比例尺的柱长制造错误比较。
 
 DeepSeek-V2 论文 **Figure 1(b)** 对比 **DeepSeek 67B Dense** 与 **DeepSeek-V2 MoE + MLA**：
 
@@ -324,19 +308,11 @@ $$
 
 Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块.训练始终用式 (4)–(12) **完整路径**;推理 Prefill 常用非吸收,Decode 常用吸收([04.1 MLA工程实现](./04.1-MLA工程实现/04.1-MLA工程实现.md)).
 
-![MLA Decode 单步中吸收后的 content score 与共享 RoPE score 从当前 Query 和两类历史 cache 汇合为注意力权重](./images/redrawn-fig-mla-decode-score-v3.png)
-
-> 图 5：Decode 对每个 head $i$ 分别计算吸收后的 content score 与解耦 RoPE score；两项在同一历史位置 $j$ 上相加、缩放并施加 causal mask，再沿 $j$ 做 Softmax 得到 $\alpha_{t,j,i}$。
-
 **图 5 解析**
 
 - 当前 $h_t$ 与 $W^{DQ}$ 共同进入 Query 下投影，得到 $c_t^Q$。Content 分支用预合并矩阵 $W_{\mathrm{abs},i}=W_i^{UQ}(W_i^{UK})^\top$ 得到 $\tilde q_{t,i}^C$，并直接与历史 cache 中的 $c_j^{KV}$ 点积；Decode 不需要重建历史 $K_j^C$。
 - RoPE 分支把 $c_t^QW_i^{QR}$ 在当前位置 $t$ 旋转成 $q_{t,i}^R$，再与全头共享的历史 $k_j^R$ 点积。$c_j^{KV}$ 与 $k_j^R$ 是两条独立 cache read，二者不会串联。
 - $S_{t,j,i}^C$ 与 $S_{t,j,i}^R$ 是 Add 的两个输入；总分乘 $1/\sqrt{d_{h,C}+d_{h,R}}$ 后，causal mask 只筛 token 位置 $j\le t$，Softmax 也只沿 $j$ 归一化。
-
-![MLA Decode 输出侧先在 latent 空间按每头 attention weights 聚合历史，再通过显式二输入 MatMul 与预合并矩阵映到模型维并跨头求和](./images/redrawn-fig-mla-decode-value-v3.png)
-
-> 图 6：Decode 输出侧先计算每头的 latent 加权聚合 $\bar c_{t,i}$，再把它与预合并参数 $B_i=W_i^{UV}W_i^O$ 一起送入 MatMul，最后对全部 head contribution 求和得到 $u_t$。
 
 **图 6 解析**
 
@@ -358,10 +334,6 @@ Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块.训练始终用式 (4)–(12) **
 | MLA | $c_j^{KV}, k_j^R$ | $d_c + d_h^R$ |
 
 MQA/GQA 改的是 KV **份数**(见 [01-MHA 图 4](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md));MLA 改的是 **存什么维度**.下面这张浅色图只对比 cache 内容,**不**画 Prefill 上采样 vs Decode 吸收(那是 [04.1 MLA工程实现](./04.1-MLA工程实现/04.1-MLA工程实现.md) 的流图).
-
-![MHA 与 MLA 每个历史 token、每层的持久化 KV Cache 对象](./images/redrawn-fig-mla-latent-kv-vs-mha-v3.png)
-
-> 图 7：MHA 持久化每头完整 K/V；MLA 仍做多头 attention，但只持久化联合 latent $c_j^{KV}$ 与共享解耦 RoPE key $k_j^R$，每头 $K^C/V^C$ 从 latent 恢复后直接参与计算，不写入 cache。
 
 **图 7 解析**
 
@@ -406,10 +378,6 @@ MLA **更小 cache,更高分**(同论文设置);不是「压 cache 必然掉点�
 | Decode | 每步 1 token,cache 长 | **吸收**:$c^Q W_{\mathrm{abs}} (c^{KV})^\top$ | HBM 读 $c^{KV}$ |
 
 Prefill 时输入长度 $L$ 大,但 cache 为空,显式上投影 $W^{UK},W^{UV}$ 把 $c^{KV}$ 展开成 $K^C,V^C$ 并不增加内存移动(反正要算整个序列).Decode 时 $L$ 变成已生成的 token 数,每步只新增一个 $c_t^{KV},k_t^R$,吸收避免了对每个历史 $j$ 重做上投影,把带宽从 "读 $2n_h d_{h,C}$ 每 token" 压到 "读 $d_c+d_h^R$ 每 token".切换逻辑见 [04.1 MLA工程实现 §6–§8](./04.1-MLA工程实现/04.1-MLA工程实现.md).
-
-![Cache-native MLA 与 generic MHA fallback 的持久化 tensor、独立 cache write/read 路径和每 token 每层元素量](./images/redrawn-fig-mla-cache-fallback-v3.png)
-
-> 图 8：MLA 是否真正节省显存取决于持久化 cache 的表示。Cache-native 路径保存 $B\times L\times1\times512$ 的 $c^{KV}$ 与 $B\times L\times1\times64$ 的共享 $k^R$；generic MHA fallback 则可能展开并保存 $B\times L\times128\times192$ 的 K 与 $B\times L\times128\times128$ 的 V。
 
 **图 8 解析**
 
@@ -486,7 +454,3 @@ MLA 四步:**(1)** 式 (4)(5) KV 联合低秩;**(2)** 式 (7) Q 低秩(训练激
 2. DeepSeek-AI. (2024). *DeepSeek-V3 Technical Report.* arXiv:2412.19437.
 3. Ainslie, J. et al. (2023). *GQA.* arXiv:2305.13245.
 4. Su, J. et al. (2024). *RoFormer: Enhanced Transformer with Rotary Position Embedding.*
-
-
-
-

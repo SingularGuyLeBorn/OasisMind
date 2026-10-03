@@ -56,10 +56,6 @@ Related Work 原句把本文的位置钉死:不是再研究「某一种」驱逐
 
 §3.3 把假设写死:一个头的注意力结构在生成过程中 **稳定**,所以 **只靠 encoded prompt 选一次策略就够**.他们引 H2O / ScissorHands 作理论旁证,自己的实证是 §4.2 / 论文 Figure 4:Llama 1 65B,GSM8k 随机样本,同一头在 prompt encoding 第 1 步以及 decode 第 10 / 20 / 30 步的累积注意力图案相对稳定.Layer 33 Head 0,Layer 23 Head 2 几乎只看 special token;Layer 23 Head 0 吃 locality 与 punctuation;Layer 23 Head 3 有超过 **10%** 的分数落在 others,适合 $C_{\mathrm{full}}$.
 
-![Prompt encoding 上按注意力图为每个头选定策略,生成期按该策略持续驱逐](./images/redrawn-fig-fastgen-two-phase.png)
-
-> 图 1:双阶段.对应 Algorithm 1–2 与 §3.2.色块只区分「留下 / 丢掉」,不是论文里的注意力热力图.
-
 **图 1 解析**
 
 - **左 Algorithm 1**:先对 **完整 prompt** 算 $A^{i}$(prefill 仍是稠密注意力),再按式 (1) 把头派进某个 $C^{i}$,最后 $f$ 把 prompt KV 压成初始 $\hat K,\hat V$.官方仓库 README 把这一步写成 prefilling **末尾** 对注意力矩阵做 profiling.
@@ -82,10 +78,6 @@ Related Work 原句把本文的位置钉死:不是再研究「某一种」驱逐
 第五种是 **Full KV** $C_{\mathrm{full}}$:该头对全体 token 都看,标准 cache,一条不丢.
 
 列稀疏对应的是 $C_{\mathrm{frequent}}$:注意力图沿列很空,低频列可以踢.局部头对应 $C_{\mathrm{local}}$.special / punct 是两类「几乎只盯某一种表面形式」的头,§3.4 拆开写,引言「tokens/punctuations」那句不要读成一种.
-
-![五种 KV 策略:局部窗,特殊 token,标点,列稀疏高频,全量](./images/redrawn-fig-fastgen-five-structures.png)
-
-> 图 2:五种结构与对应 cache.对应 §3.4 与论文 Figure 1 左.格子数是示意图.
 
 **图 2 解析**
 
@@ -129,19 +121,11 @@ Appendix A.1 把式 (1) 在这条链上的搜法写成:固定 $T$,从最省的 $
 
 主实验只改 $T$ 来控制剪枝比例,$r_{l}=r_{f}=0.3$ 不动.生成用 nucleus,$T=0.6$,$p=0.9$(这里的 $T$ 是采样温度,不要和恢复比 $T$ 混).质量实验在 8×A100 80GB.
 
-![贪心嵌套:special → 加标点 → 加高频 → 加局部 → 全量,按恢复比 T 停](./images/redrawn-fig-fastgen-greedy-hybrids.png)
-
-> 图 3:式 (2) 的嵌套可行集.对应 §3.4 与 Appendix A.1.图上的格子是示意图.
-
 **图 3 解析**
 
 - **从左到右覆盖变大**:$C_{\mathrm{special}}\subset C_{\mathrm{special+punct.}}\subset\cdots\subset C_{\mathrm{full}}$.左边最省,右边最保真.
 - **顶上的 $T$**:式 (1) 的恢复比,**不是**剪枝百分比.$T=0.98$ 比 $T=0.91$ 更难满足,cache 更大.
 - **选最左边仍满足约束的盒子**:就是 $\arg\min$ 内存.Appendix Table 5:顺序改成 special → frequent → local → punct 会多剪一点(36.40% vs 36.04%),win rate 从 **49.75%** 掉到 **47.64%**.默认顺序以式 (2) 为准.
-
-![同一层:非自适应对照所有头同一套规则;FastGen 每个头自己的 C_i](./images/redrawn-fig-fastgen-per-head.png)
-
-> 图 4:为什么要按头自适应.左栏对应论文非自适应基线;右栏对应论文 Figure 1 右「同一层三个头」.
 
 **图 4 解析**
 
@@ -269,7 +253,3 @@ FastGen 的 $C_{\mathrm{frequent}}$ **可以**看起来像 H2O 的 Heavy Hitter,
 3. 微软研究页:[Model Tells You What to Discard](https://www.microsoft.com/en-us/research/publication/model-tells-you-what-to-discard-adaptive-kv-cache-compression-for-llms/)(ICLR 2024 Oral, May 2024).
 
 数字以打开的表和 §5.2 的 45% 线为准.摘要「negligible」与 §5.1「65B 45% win / 44.9% pruned」让给 Table 1 同行.图 1–4 的格子数是示意图.
-
-
-
-

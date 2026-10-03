@@ -62,10 +62,6 @@ HC 原文用 $(n+1)\times(n+1)$ 的超连接矩阵把三者捆在一起: $\mathb
 
 写回不是「每条流各算一份完整 $\mathcal{F}$」.式 (3) 里 $\mathcal{F}$ 只吃 $\mathcal{H}^{\mathrm{pre}}$ 合成的那一份 $C$ 维向量.若给每条流各跑一遍 Attn/FFN, FLOPs 会乘 $n$, 那就不是「几乎不加计算」了.$n$ 通常远小于 $C$(主设定 $n=4$), 三份映射的矩阵乘相对 $C$ 维主干可以忽略.HC 论文 OLMo-7B 前向每 token FLOPs: 基线 13.36G, DHC $\times 4$ 13.38G, 参数同为 6.9B.多流加的是拓扑, 不是另一套注意力.
 
-![mHC 单层数据流: 读,单次子层计算,残差混合与逐流写回](./images/redrawn-fig-mhc-layer-slot-v3.png)
-
-> 图 1: 四条流经 $\mathcal{H}^{\mathrm{pre}}$ 收成一份输入,$\mathcal{F}$ 只计算一次;$\mathcal{H}^{\mathrm{post}}$ 生成四条更新,$\mathcal{H}^{\mathrm{res}}$ 并行生成四条残差向量,最后逐流相加.
-
 **图 1 解析**
 
 - $X_l\in\mathbb{R}^{4\times C}$ 保存四条残差流;$\mathcal{H}^{\mathrm{pre}}\in\mathbb{R}^{1\times4}$ 把它们读成一份 $u\in\mathbb{R}^{1\times C}$.
@@ -166,10 +162,6 @@ $$
 
 $\mathcal{T}_{r}$,$\mathcal{T}_{c}$ 分别把行和,列和除成 1.$t_{\max}\to\infty$ 时收敛到双随机.主设定 $t_{\max}=20$(附录 Table 5).二十次是近似: 单层的反向增益已经会略偏离 1; 复合增益不再精确等于 1.论文 Figure 7(b) 写明 27B 上最大值大约 1.6.相对 HC 的 ~3000, 低三个数量级, 够用, 但不要在口播里说「Sinkhorn 二十步 = 精确双随机 = 复合增益精确为 1」.
 
-![mHC Sinkhorn-Knopp：先 exp，再按 column normalization、row normalization 完成一个 cycle，重复 20 次](./images/redrawn-fig-mhc-sinkhorn-v3.png)
-
-> 图 2：每个 cycle 先执行 $C^{(t)}=T_c(M^{(t-1)})$，再执行 $M^{(t)}=T_r(C^{(t)})$。示例矩阵迭代 20 次后，最后一步保证 row sums 为 1，column sums 已收敛到 1 附近。
-
 **图 2 解析**
 
 - $M^{(0)}=\exp(\tilde H_{\mathrm{res}})$ 逐元素取指数，只负责把矩阵送入正数域。
@@ -177,10 +169,6 @@ $\mathcal{T}_{r}$,$\mathcal{T}_{c}$ 分别把行和,列和除成 1.$t_{\max}\to\
 - $T_r$ 再把每行除以 row sum，得到 row sums 为 1 的 $M^{(t)}$；该操作会让 column sums 出现小偏差。
 - 依次执行 $T_c\to T_r$ 共 20 个 cycles。有限步只得到 approximately doubly stochastic matrix；论文 27B 实验的 composite gain 仍可到约 1.6。
 - 图中小数用于逐项核对 normalization；它们是示例计算，不代表论文训练测量。
-
-![Single stream、HC 与 mHC 的 residual operator：输入张量、混合矩阵、row/column gain 与输出](./images/redrawn-fig-mhc-stream-mix-v2.png)
-
-> 图 3：三条独立 residual operator 管道。Single stream 使用 $[1]$；HC 直接学习 full $H_{\mathrm{res}}$；mHC 先用 20 个 Sinkhorn cycles 投影，再与 $X_l$ 做矩阵乘。全图用矩阵与 gain 取代交叉连线。
 
 **图 3 解析**
 
@@ -275,7 +263,3 @@ mHC 的取舍是: 用双随机约束把混合矩阵关进一个几何上安全�
 4. Sinkhorn, R., & Knopp, P. (1967). Concerning nonnegative matrices and doubly stochastic matrices. *Pacific J. Math.* 21(2), 343-348.(交替归一的名字来源.)
 5. He, K., Zhang, X., Ren, S., & Sun, J. (2016). Identity mappings in deep residual networks. *ECCV*.(式 (2) 所依赖的恒等映射论述; mHC 文引 He et al., 2016b.)
 6. 讲法参考(不当事实源): [骑虎南下 · 知乎](https://zhuanlan.zhihu.com/p/2001330628306703799); [slowlyC · 知乎](https://zhuanlan.zhihu.com/p/2059777578253267850).
-
-
-
-

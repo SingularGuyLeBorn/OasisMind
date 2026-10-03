@@ -66,10 +66,6 @@ $\mathbf{o}^*_t = \sum_{c \in \mathcal{C}} g_t^c \cdot \text{Attn}(\mathbf{q}_t,
 
 其中,$\mathcal{C} = \{cmp, slc, win\}$ 代表三种注意力方法. $g_t^c \in$ 是对应策略 $c$ 的门控得分,由输入特征 $x_t$ 经过一个多层感知器(MLP)和Sigmoid激活函数计算得出. 
 
-![NSA 三分支:压缩 / 选择 / 滑动窗口,再门控融合](./images/redrawn-fig-nsa-three-branch.png)
-
-> 图 1:NSA 三分支--窗管局部,压缩管全局粗扫,选择管细检索,门控 $g_t^c$ 加权融合.
-
 **图 1 解析**
 
 - **顶行**:输入 KV 按连续块排开;$q_t$ 同时送进三路 Attention,不是三套互不相关的 query.
@@ -80,10 +76,6 @@ $\mathbf{o}^*_t = \sum_{c \in \mathcal{C}} g_t^c \cdot \text{Attn}(\mathbf{q}_t,
 - **不是**:不是 [01 MoBA](../01-MoBA架构深度解析/01-MoBA架构深度解析.md) 的块均值路由;不是 [13 Quest](../13-Quest-查询感知稀疏/13-Quest-查询感知稀疏.md) 的页级不驱逐选页;也不是下文 DSA 的 MLA indexer 插件.64K 相对 Full 的加速倍数见下文图 2 / 图 4(论文 Figure 1,6 的 11.6× / 9× / 6×),不要从图 1 读倍数.
 
 ### 3.2 性能与效率总览(论文 Figure 1)
-
-![NSA 相对 Full Attention 的性能与效率(论文 Figure 1)](./images/redrawn-fig-nsa-01-performance-efficiency.png)
-
-> 图 2: NSA 相对 Full 的基准分数与 64K 三阶段加速(论文 Figure 1).
 
 **图 2 解析**
 
@@ -168,10 +160,6 @@ ${\mathbf{p}_t^{\text{slc}}}' = \sum_{h=1}^{H} \mathbf{p}_{t}^{\text{slc}, (h)}$
 
 优秀的算法设计如果不考虑底层硬件特性,在实际执行中仍可能表现不佳. NSA不仅仅是算法创新,更在于其深度硬件对齐的内核设计,主要通过Triton(一种基于Python的DSL,用于编写高性能GPU内核)实现. 
 
-![NSA Triton 内核设计(论文 Figure 3)](./images/redrawn-fig-nsa-03-kernel-design.png)
-
-> 图 3: Triton 内核--按 GQA 组加载 query,按稀疏块取 KV(论文 Figure 3).
-
 **图 3 解析**
 
 - **Grid Loop(外循环)**:按 **GQA 组** 加载同一 query 位置的所有 head — 因同组 head 共享稀疏 KV 块索引 $\mathcal{I}_t$,避免 per-head 重复选块.
@@ -216,10 +204,6 @@ NSA的算法创新与硬件优化结合,使其在实际应用中取得了显著�
 
 ### 4.1 计算效率表现
 
-![NSA vs FlashAttention-2 内核延迟(论文 Figure 6)](./images/redrawn-fig-nsa-06-triton-speedup.png)
-
-> 图 4: NSA vs FlashAttention-2 内核延迟随序列长度变化(论文 Figure 6).
-
 **图 4 解析**
 
 - **横轴**:序列长度;纵轴:单算子延迟 — 同用 Triton 后端,排除 cuDNN/CUDA 实现差异.
@@ -238,10 +222,6 @@ NSA的算法创新与硬件优化结合,使其在实际应用中取得了显著�
 
 仅仅追求速度而牺牲模型能力是不可接受的. NSA通过实验证明了其在实现性能与效率双重优化的同时,保持甚至超越了全注意力模型的性能: 
 
-![NSA 预训练损失曲线(论文 Figure 4)](./images/redrawn-fig-nsa-04-pretrain-loss.png)
-
-> 图 5: 27B 预训练 loss--NSA 平滑且略优于 Full(论文 Figure 4).
-
 **图 5 解析**
 
 - **曲线形态**:两条 loss 均平滑下降 — 原生稀疏 **无训练不稳定**.Quest 是推理期页级上界估计,**不驱逐**,也不是靠 auxiliary loss 训稀疏;不要把 Quest 写成 NSA 的训练对照.
@@ -253,10 +233,6 @@ NSA的算法创新与硬件优化结合,使其在实际应用中取得了显著�
 - **通用语言评估**: 在涵盖通用知识(如MMLU),推理能力和编程任务的综合基准测试中,NSA训练的模型达到或超越了全注意力基线的表现水平. 在9个指标中的7个上优于包括Full Attention在内的所有基线.
 
 - **长文本评估**: 在LongBench基准测试中,NSA显著优于其他稀疏方法和全注意力基线. 特别值得关注的是,NSA在64k上下文长度的"大海捞针"(Needle-in-a-Haystack)测试中达到了完美的准确率,证明了其在保持细粒度信息方面的卓越能力.
-
-![NSA 64K Needle-in-a-Haystack(论文 Figure 5)](./images/redrawn-fig-nsa-05-niah-results.png)
-
-> 图 6: 64K NIAH 全深度高召回热力图(论文 Figure 5).
 
 **图 6 解析**
 
@@ -335,10 +311,6 @@ Input Hidden States
         ├─→ 用 topk_indices 筛选 KV
         └─→ 稀疏 Attention 输出
 ```
-
-![DSA:Lightning indexer 打分 → Top-K → MLA 主注意力只打选中 token](./images/redrawn-fig-dsa-indexer-topk.png)
-
-> 图 7:DSA 挂在 MLA 上--Lightning indexer 打分 → Top-K(默认 $k=2048$)→ 主注意力只算选中 token.全量 MLA KV 仍驻留. [DeepSeek-V3.2-Exp](https://github.com/deepseek-ai/DeepSeek-V3.2-Exp).
 
 **图 7 解析**
 
@@ -749,9 +721,3 @@ $$
 
 1. DeepSeek-AI. (2025). DeepSeek-V3.2-Exp Technical Report. https://github.com/deepseek-ai/DeepSeek-V3.2-Exp
 2. Yuan, J., et al. (2025). Native Sparse Attention. arXiv:2502.11089 — 见上文 §6
-
-
-
-
-
-

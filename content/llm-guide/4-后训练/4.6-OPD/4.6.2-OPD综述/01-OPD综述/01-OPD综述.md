@@ -19,10 +19,6 @@ excerpt: "本库 OPD 的全称是 On-Policy Distillation：学生按当前策略
 
 文献却散在三个社区：知识蒸馏谈 KL 方向，RLHF 谈奖励与 KL 约束，模仿学习谈 DAgger。既有 LLM 蒸馏综述常把 on-policy / off-policy 当成可互换变体。Song & Zheng 的贡献因此很窄、也很硬：给一个共同的 $f$-散度写法，再按**设计轴**而不是按公司名分类。本库已经用另一套拆法写完了地基与变体——[01](../../01-OPD基础原理/01-OPD基础原理.md) 钉名字与两条梯度，[02](../../02-OPSD-自蒸馏/02-OPSD-自蒸馏.md) 钉 $y^\star$，[04](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 钉环境 rich feedback，[07](../../07-诊断三篇-OPD失败模式/07-诊断三篇-OPD失败模式.md) 钉失败模式，[09](../../09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md) / [10](../../10-OPD-报告落地对照/10-OPD-报告落地对照.md) 钉厂商捆法。本篇问的是：综述的坐标系怎么接到这些单独成篇上，以及和 GxPO 综述的边界在哪。数字、消融表、报告超参在原单独成篇。
 
-![Off-policy KD trains on teacher prefixes; OPD trains on student prefixes with teacher logits](./images/fig-opd-survey-off-vs-on.png)
-
-> 图 1：采样从哪来。左：off-policy KD，学生只在教师（或数据集）前缀上匹配。右：OPD，学生自己采样，教师在学生前缀上给密集 logits / KL。红标 **NOT**：不是 DPO，不是 Online Preference。底栏：DAgger 把复合从 $O(\epsilon T^{2})$ 收到 $O(\epsilon T)$ 的资格条件见 §2。
-
 **图 1 解析**
 
 - **左，青格**：token 由教师写出。学生在这些前缀上做 NLL 或 $D_{\mathrm{KL}}(p_T \Vert p_\theta)$。推理一旦自己写偏，就离开训练状态。
@@ -84,10 +80,6 @@ GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$，那
 ## 3. 三轴：优化什么、信号从哪来、怎么稳定
 
 综述 §3 把方法按流水线里的三个连续决策分类，一篇论文只进一个主轴（核心贡献在哪）。三轴互相约束：精确的 token 级 forward KL 需要教师全词表，API-only 就走不通；RL 增强目标天然和验证器 / 奖励模型绑在一起。早期（2023–2024）挤在轴 1 的 KL 方向；2025 中起挤轴 2 的自蒸馏；2025 末–2026 挤轴 3 的 on-policy 不稳。工业系统（Qwen3、V4）是三轴一起拧，不是单轴最优。
-
-![Three design axes of OPD: objective, signal source, dynamics](./images/fig-opd-survey-three-axes.png)
-
-> 图 2：综述三轴地图。轴 1 优化什么（固定 $f$ / 逐 token 自适应 / RL 增强）。轴 2 信号从哪来（白盒 logits / 黑盒 API / 无外教师）。轴 3 怎么稳定（$\pi_{\mathrm{mix}}$ 与 off-policy 热身、log 比裁剪、全词表 vs 采样 token）。格子里的 01 / 02 / 04 是本库单独成篇，不是综述原文编号。
 
 **图 2 解析**
 

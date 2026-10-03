@@ -43,10 +43,6 @@ $$
 
 **跨 Warpgroup 的 pingpong.** 两个消费者 Warpgroup 交替推进.一个 Warpgroup 进行 softmax 时,另一个优先发起 $QK^\top$ 或 $PV$ 的 WGMMA;下一阶段交换角色.`bar.sync` 控制两组指令的先后,使 softmax 尽量落在另一组的 Tensor Core 工作区间内.
 
-![FlashAttention-3 的双 Warpgroup pingpong 调度](./images/redrawn-fig-fa-v3-mech-pingpong.png)
-
-> 图 1:两个消费者 Warpgroup 交替发起 WGMMA 与处理 softmax,生产者同时用 TMA 准备后续 Key/Value 分块.
-
 **单个 Warpgroup 内的跨迭代流水.** 对第 $j$ 块做 softmax 时,异步发起第 $j+1$ 块的 $QK^\top$;对第 $j$ 块执行 $PV$ 时,继续准备后续分数块.两阶段方案需要同时保存当前与下一块的累加器.论文还实验了三阶段方案,希望同时重叠第 $j$ 块的 $PV$,第 $j+1$ 块的 softmax 和第 $j+2$ 块的 $QK^\top$,实际却慢于两阶段:编译器没有把第二次 WGMMA 与 softmax 重叠,额外中间量又迫使实现缩小 tile.流水更深只有在指令调度和寄存器容量都允许时才可能受益.
 
 论文在固定的非因果 FP16 形状上做消融:完整流水达到 661 TFLOPs/s;移除 GEMM–softmax 流水后为 582 TFLOPs/s,移除 Warp 专门化后为 570 TFLOPs/s.这说明两种重叠都在贡献收益.
@@ -102,4 +98,3 @@ FlashAttention-3 让 Hopper 的搬运,矩阵乘与 softmax 更充分地并行.�
 - Jay Shah et al. [FlashAttention-3 论文 HTML](https://arxiv.org/html/2407.08608), 2024.
 - NVIDIA. [Hopper Tuning Guide](https://docs.nvidia.com/cuda/hopper-tuning-guide/), CUDA Documentation.
 - NVIDIA. [Parallel Thread Execution ISA:WGMMA](https://docs.nvidia.com/cuda/parallel-thread-execution/#asynchronous-warpgroup-level-matrix-instructions), PTX ISA.
-

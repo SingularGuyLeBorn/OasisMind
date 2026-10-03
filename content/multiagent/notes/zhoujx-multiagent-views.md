@@ -119,4 +119,3 @@ LangGraph 的 Deep Agent 提出四种方法，四大支柱由**上下文工程**
 ## 相关
 
 - [LongHorizon-Harness：把长任务执行重构成任务状态管理](../../longhorizon/notes/longhorizon-harness)（longhorizon 库）— supervisor 模式的学术化实现：manager 维护状态 + 子执行器 + 审计者
-- [周星星《自进化（Self-evolving／RSI），一篇就够了》精读笔记](../../rsi/notes/zhouxx-self-evolving)（rsi 库）— 同一作者的 RSI 三层框架（Artifacts/Harness/Model），Harness 层即本库视角的工程实践

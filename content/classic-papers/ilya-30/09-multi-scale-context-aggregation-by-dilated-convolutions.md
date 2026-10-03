@@ -73,7 +73,6 @@ $$
 
 这个算子不是新发明. 论文专门交代了它的谱系: 空洞卷积在小波分析里叫「带膨胀滤波器的卷积」, 是 à trous 算法 (algorithme à trous, 法语「带孔的」) 的核心组件, 至少可以追溯到 Holschneider 等人 1987 年的工作, Shensa 1992 年把它和 Mallat 算法统一起来. 作者特意用「dilated convolution」而不是「convolution with a dilated filter」这个叫法, 理由是实现上根本没有构造任何膨胀后的滤波器, 只是卷积算子用不同的方式去取滤波器参数. 他们还顺带纠正了一个文献里的常见错误: 有些工作把空洞卷积算子本身叫成 à trous 算法, 这是不对的. à trous 是在多个尺度上施加滤波器做信号分解的完整算法, 它用到空洞卷积, 但不等于空洞卷积. 在深度学习内部, FCN 分析过滤波器膨胀但最终没用, DeepLab 用膨胀简化了架构, 而 Yu 和 Koltun 是第一个围绕空洞卷积系统设计多尺度上下文聚合架构的.
 
-![空洞卷积采样模式](images/03_dilated_kernel.png)
 三个 3x3 卷积核, 膨胀因子从左到右为 1, 2, 4. 实心点是实际采样位置, 空心圈是被跳过的像素. 采样点数恒为 9, 覆盖区域从 3x3 扩到 5x5 再到 9x9.
 
 ## 4. 指数感受野: 参数量线性, 视野指数
@@ -138,7 +137,6 @@ $$
 
 测试集提交到 VOC 2012 评测服务器的结果同样整齐. 当时的强系统: DeepLab++ (DeepLab-CRF-COCO-LargeFOV) 72.7, DeepLab-MSc++ 73.9, CRF-RNN 74.7. 本文: 裸前端 71.3, 前端加 context 模块 (无结构化预测) 73.5, 已经超过了挂 CRF 的 DeepLab++; context 加 dense CRF 74.7, 追平 CRF-RNN; context 加 CRF-RNN 75.3, 全场最高. 一个不到 3 万参数 (Basic) 到几十万参数 (Large) 的即插即用模块, 在没有 CRF 的情况下打败了带 CRF 的同期最强系统, 挂上 CRF-RNN 后又刷新了它.
 
-![VOC 2012 实验结果](images/09_voc_results.png)
 三组柱状图对应三种架构: 裸前端, 前端加 CRF, 前端加 CRF-RNN. 每组三根柱子依次是 front end, 加 Basic, 加 Large, 高度严格递增. 横线标注测试集上的 Context+CRF-RNN 75.3, 压过 CRF-RNN 的 74.7.
 
 ## 9. 街景三数据集: Dilation8, Dilation7, Dilation10

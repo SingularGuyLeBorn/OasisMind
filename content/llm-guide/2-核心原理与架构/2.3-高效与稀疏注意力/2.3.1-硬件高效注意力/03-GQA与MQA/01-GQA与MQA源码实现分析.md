@@ -27,10 +27,6 @@ Llama-3-70B 一类配置常见 $H_q=64$,$H_{kv}=8$($g=8$).缓存体积相对 MHA
 
 ## 2. `repeat_kv`:unsqueeze → expand → reshape
 
-![GQA 组映射与 SDPA 形状广播](./images/redrawn-fig-gqa-repeat-kv-group-map.png)
-
-> 图 1:左 $H_q=8$,$H_{kv}=2$,$g=4$,Q0–Q3 共享 KV0,Q4–Q7 共享 KV1.右:`[B, H_kv, S, D]` 经 `unsqueeze(2)` 得到 `[B, H_kv, 1, S, D]`,`expand` 到 `[B, H_kv, g, S, D]`,再 `reshape` 成 `[B, H_q, S, D]`.
-
 **图 1 解析**
 
 - **左栏**:组是静态的,不是路由网络.组内 Query 仍各有 $W_Q$,只是 $K,V$ 投影变窄.
@@ -96,4 +92,3 @@ return sdp_math_cpu(query_acc, k_expanded, v_expanded, scale, is_causal);
 - Ainslie, J., et al. (2023). "GQA: Training Generalized Grouped-Query Attention for Distributed Large Language Models." arXiv:2305.13245.公式与实验以本库 2.2.2/03 为准.
 - Shazeer, N. (2019). "Fast Transformer Decoding: One Write-Head is All You Need." arXiv:1911.02150.
 - PyTorch `torch.nn.functional.scaled_dot_product_attention`(`enable_gqa` / 头数不等时的后端派发).
-

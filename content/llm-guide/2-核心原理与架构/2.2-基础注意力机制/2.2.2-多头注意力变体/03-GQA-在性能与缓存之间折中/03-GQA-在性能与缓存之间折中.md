@@ -13,19 +13,11 @@ Grouped-Query Attention（GQA）由 Ainslie et al.（2023）系统化：将 $H$ 
 
 ## 1. 结构直觉:$G$ 在 MHA 与 MQA 之间插值
 
-![GQA 的分组映射与单头计算路径](./images/gqa-group-dataflow-v2.png)
-
-> 图 1：$H=8,G=4$ 时的分组映射，以及 $h=1$ 的完整 attention 数据流。
-
 **图 1 解析**
 
 上半部分用容器表示组成员关系，不用箭头冒充 tensor 流。组 $g$ 内的 Query heads 共享同一对 $K_g,V_g$。下半部分展开 $h=1$：$Q_1$ 与 $K_0^\top$ 同时进入第一个 MatMul，Attention weights 再与 $V_0$ 同时进入第二个 MatMul。Key 与 Value 是两个并列输入，不存在 $K\to V$ 的计算边。
 
 与 MHA（$G=H$）和 MQA（$G=1$）相比，GQA 在 cache 体积 $2Gd_h$ 与 KV 子空间数量 $G$ 之间折中。
-
-![GQA 论文 Table 1 的速度与质量数据](./images/gqa-paper-tradeoff-v2.png)
-
-> 图 2：论文 Table 1 的原始数值。GQA-8-XXL 接近 MHA-XXL 质量，速度接近 MQA-XXL。
 
 **图 2 解析**
 
@@ -186,10 +178,6 @@ $$
 
 $W^V_g$ 同理.$W^Q_h, W^O$ 继承 MHA.
 
-![MHA checkpoint 转换为 GQA 并继续预训练](./images/gqa-uptraining-v2.png)
-
-> 图 3：每个 KV group 只汇聚对应组内的 K 或 V projections；转换后的完整 GQA checkpoint 再进入 uptraining。
-
 **图 3 解析**
 
 - $W^Q_0,\ldots,W^Q_7$ 与 $W^O$ 直接继承，绕过 Mean Pool。
@@ -209,10 +197,6 @@ $W^V_g$ 同理.$W^Q_h, W^O$ 继承 MHA.
 | MQA | $2 d_h$ | $1/H$ |
 
 相对倍数就是表里的 $G/H$ 或 $1/H$,不要另编.
-
-![GQA Decode 阶段的 KV Cache 写入读取与字节数](./images/gqa-decode-cache-v2.png)
-
-> 图 4：$H=32,G=8,d_h=128$ 时，单步 decode 的 Q/K/V 数据流、KV Cache 读写与完整字节计算。
 
 **图 4 解析**
 
@@ -297,7 +281,3 @@ GQA 用式 (1) 的 $g(h)$ 把 MHA/MQA 连成一条轴:$G=H$  MHA,$G=1$  MQA.式 
 2. Dai, D. et al. (2024). *DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model.* arXiv:2405.04434.
 3. Shazeer, N. (2019). *Fast Transformer Decoding: One Write-Head is All You Need.* arXiv:1911.02150.
 4. Vaswani, A. et al. (2017). *Attention Is All You Need.* NeurIPS.
-
-
-
-

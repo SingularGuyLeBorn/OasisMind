@@ -75,20 +75,12 @@ $$
 
 Hit rate $H$(论文 (4)–(8))是事后度量,**不是** 运行时算法;完整定义与「不是算法」边界见 §3.1.
 
-![观测窗在 prompt 末尾投票,选出的 prefix 簇与整段观测窗拼成压缩 cache](./images/redrawn-fig-snapkv-obs-window.png)
-
-> 图 1:生成前压缩.对应论文 Figure 1:橙块是 **每个 head** 选出的成簇重要位置,青绿是观测窗;二者拼接后才拿去生成.
-
 **图 1 解析**
 
 - **上条 PREFIX + OBSERVATION WINDOW**:整段仍是 prefill 刚算完的 prompt KV.灰格稍后会被丢掉.
 - **vote**:观测窗里的 $q$ 对 prefix 的 $k$ 打分.箭头只是示意「末尾在选前面」;真实是式 (2) 的求和,不是三根线.
 - **下条 compressed KV**:只剩橙簇 + 整段青绿窗.生成期 prompt 侧条数钉死,所以论文说 decoding latency 不再随输入长度线性涨.
 - **不要**把橙簇读成 H2O 的 Heavy Hitter:那些分数是 decode 逐步累加的;这里的分数在生成 **开始前** 一次性算完.
-
-![从观测窗 query 到 per-head Top-k 再与观测窗拼接](./images/redrawn-fig-snapkv-vote-pool.png)
-
-> 图 2:Listing 1 的数据流.
 
 **图 2 解析**
 
@@ -128,10 +120,6 @@ $$
 
 论文把式 (7)(8) 合写成 $\mathcal{H}(\mathbf{M}_{\mathrm{threshold\_cur}},\mathbf{M}_{\mathrm{vote\_obs}})$.§4.2 比较不同问答对时,第二个自变量会换成另一份投票掩码 $\mathbf{M}_{\mathrm{vote\_B}}$:那是「两次投票重叠多少」,不是「相对生成高峰的命中率」.两种用法共用字母 $H$,读 Figure 4 与 Figure 5 时不要混.
 
-![事后度量 H:A_cur 过阈值得到真重要掩码,与观测窗投票掩码做与](./images/redrawn-fig-snapkv-hit-rate.png)
-
-> 图 5:式 (4)–(8).$\mathbf{A}_{\mathrm{cur}}$ 是生成期当前 query 对 prefix 的分数;橙格是阈值掩码,青绿格是投票掩码;$H=\sum\mathbf{O}/\sum\mathbf{M}_{\mathrm{threshold\_cur}}$.对应论文 (4)–(8).格子是示意,不是某一层的真实 $\mathbf{A}_{\mathrm{cur}}$,也不是可读取的坐标曲线.
-
 **图 5 解析**
 
 - **第一行 $\mathbf{A}_{\mathrm{cur}}$**:decode 某一步才有;prefill 投票时还不存在.形状 $N\times L_{\mathrm{prefix}}$,按 head 各看各的.
@@ -145,10 +133,6 @@ $$
 
 只保留注意力最高的那些孤点,会破坏 induction head 靠「抄邻居」补全细节的机制(论文引 Olsson et al.).所以 vote 之后先做一维池化,让高峰旁边的位置也被抬起来,Top-$k$ 更倾向留下 **一段簇**,而不是散落的尖峰.
 
-![naive Top-k 留下孤峰;1D pooling 后高峰的邻居一起留下](./images/redrawn-fig-snapkv-pooling-cluster.png)
-
-> 图 3:pooling 在选谁.对应 §4.3 与 Figure 8 的消融动机.格子数是示意图,不是 LongEval 表.
-
 **图 3 解析**
 
 - **上排 naive Top-k**:三个橙格可以隔得很远.论文说这样可能只抄到电话号码的国家码.
@@ -160,10 +144,6 @@ NeurIPS 相机就绪 §5.4 在 **Mistral-7B-Instruct-v0.2**,LongBench,prompt KV 
 ---
 
 ## 5. 「不是」:H2O / StreamingLLM / Quest / 观察头
-
-![StreamingLLM 固定前 4+窗;H2O decode 逐步驱逐;SnapKV 生成前按观测窗选簇](./images/redrawn-fig-snapkv-not-neighbors.png)
-
-> 图 4:三条推理期 KV 策略.不要互换名字.
 
 **图 4 解析**
 
@@ -205,10 +185,6 @@ Figure 5 caption:*The layer-wise average hit rate of important positions used by
 | Total Samples | 177 | 69 | 144 |
 
 正文:三套数据上 hit rate **都高**,与问题在长文前还是后无关.机制在窗的定义,不在「模型能读任意位置」:$L_{\mathrm{obs}}$ 永远是 prompt **最后** $L_{\mathrm{obs}}$ 个 token.问题贴在文末时,窗里往往就含问句,投票带着当前问句去扫文档;问题贴在文首时,问句 KV 落在 prefix 里,窗是文档尾巴--§3 的观察正是「输入最后一窗已经和生成用的位置高重叠」.两种排版观测窗都在末尾,所以 Figure 5 不是在说「窗可以挪到中间」.
-
-![观测窗永远在 prompt 末尾:问题在文前则落在 prefix,问题在文末则落入窗内](./images/redrawn-fig-snapkv-instr-pos.png)
-
-> 图 6:观测窗位置.对应论文 Figure 5 的两种排版.黄块是问题 Q,青绿是 $L_{\mathrm{obs}}$,橙簇是投票选出的 prefix.不是 Figure 4/5 的层间曲线.
 
 **图 6 解析**
 
@@ -299,10 +275,6 @@ Decode 侧 prompt KV 条数钉在 `max_capacity_prompt`(容量 256,窗 16 则 pr
 
 FlashAttention 把注意力分数留在 SRAM,不落 HBM.投票要的是观测窗那 $L_{\mathrm{obs}}$ 行 softmax 权重.官方路径是 HuggingFace monkeypatch(README:`transformers>=4.36`,测过 `4.37.0`,`flash-attn==2.4.0`;Llama / Mistral / Mixtral),用上面那次显式 matmul 另开 $\mathbf{W}_{\mathrm{obs}}$.生产若走纯 FA 且拿不到分数,必须给观测窗单独留一条算分路径--部署约束,不是 2404.14469 的定理.H2O 单独成篇引过同一类约束;本篇把插槽写在这里,不再用「详见型号页」打发.
 
-![Prefill 仍全量注意力才能投票;decode 的 prompt KV 条数钉死](./images/redrawn-fig-snapkv-prefill-decode.png)
-
-> 图 7:整机插槽.左 prefill 仍全量(及 FA 时另开 $\mathbf{W}_{\mathrm{obs}}$);右 decode 条数钉死,生成 KV 往后追加.图上若把观测窗标成 $W_{\mathrm{obs}}$ tokens,那是记号混用:窗长是 $L_{\mathrm{obs}}$,$\mathbf{W}_{\mathrm{obs}}$ 是注意力张量.
-
 **图 7 解析**
 
 - **左**:TTFT 含完整 prefill;SnapKV 至多在 prefill 末多算窗内注意力,减不掉 $O(L_{\mathrm{prompt}}^2)$ 主项.
@@ -343,10 +315,3 @@ FlashAttention 把注意力分数留在 SRAM,不落 HBM.投票要的是观测窗
 2. 官方代码:[FasterDecoding/SnapKV](https://github.com/FasterDecoding/SnapKV),算法在 [`snapkv/monkeypatch/snapkv_utils.py`](https://github.com/FasterDecoding/SnapKV/blob/main/snapkv/monkeypatch/snapkv_utils.py)(`topk(max_capacity_prompt - window_size)`;`init_snapkv` 默认窗 32 / 容量 2048 / kernel 5 / `avgpool`).
 
 数字以打开的表和 §5.1 同行为准.摘要「16K 上 3.6× / 8.2×」拆回 16k·bs=2 的 ms/token 与 16k→131k;380K 是 NIAH 单卡上限,基线 OOM 在 33k.图 1–7 的格子数是示意图.as_of: 2026-08-30.
-
-
-
-
-
-
-

@@ -81,10 +81,6 @@ YaRN 论文的标准长上下文结果使用少量长序列微调;无需微调�
 | YaRN | NTK-by-parts + attention scaling | 分频段保留局部与远程结构 | 标准结果通常配合少量微调 |
 | 渐进式训练 | 逐阶段扩上下文 | 质量最好 | 训练最贵 |
 
-![RoPE 长上下文扩展：直接外推、PI、NTK-aware 与 YaRN 分别改变位置、频谱或 attention logits 尺度](./images/redrawn-fig-rope-ntk-yarn-v3.png)
-
-> 图 1: 四种长上下文策略改变的是位置索引,频率谱或 attention logits 尺度.图中只画变换关系,不包含性能排名或实测曲线.
-
 **图 1 解析**
 
 - 原始 RoPE 保持 $m,\theta_d$ 不变,长位置可能进入训练未覆盖的相位区间.
@@ -236,4 +232,3 @@ RoPE 的设计在空间效率与相对距离表达及外推能力之间存在持
 2. [Peng, B., et al. (2023). YaRN:高效扩展大语言模型上下文窗口(YaRN: Efficient Context Window Extension of Large Language Models).](https://arxiv.org/abs/2309.00071) *arXiv*.
 3. [Qwen Team. (2024). Qwen2-VL:在任意分辨率下增强视觉语言模型的世界感知(Qwen2-VL: Enhancing Vision-Language Model's Perception of the World at Any Resolution).](https://arxiv.org/abs/2409.12191) *arXiv*.
 4. [Dai, D., et al. (2024). DeepSeek-V2:强大,经济且高效的 MoE 语言模型(DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model).](https://arxiv.org/abs/2405.04434) *arXiv*.
-

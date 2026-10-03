@@ -72,10 +72,6 @@ values.sum().backward()
 
 `indices` 是整数记录，没有 `.grad`。框架保存它们以便在反向定位梯度，但不会学习排序。Shazeer 的噪声门控把可学习噪声加在排序之前：$h'_e=h_e+\varepsilon_e\operatorname{softplus}((W_{\mathrm{noise}}x)_e)$。噪声改变前向的候选集合并促进探索，不改变 indices 的离散性质。
 
-![HardTopK返回values与indices、固定选集下的scatter梯度及并列边界](./images/redrawn-fig-moe-topk-values-indices-v2.png)
-
-> 图 1：$x=[1,3,2,4],K=2,\texttt{sorted=True}$。`torch.topk` 直接返回 $v=[4,3]$ 和零基 indices $I=[3,1]$；$[0,3,0,4]$ 是随后按 $I$ scatter 回原坐标的表示。values 的上游梯度通过 $I$ scatter 回 $x$，整数 indices 不参与反向。
-
 **图 1 解析**
 
 - **两个直接输出**：$v_0=x_3=4,v_1=x_1=3$；$I=[3,1]$ 只记录来源坐标。scatter 操作同时接收 $v$ 与 $I$，重建原坐标顺序的稀疏向量。
@@ -117,10 +113,6 @@ $$
 
 真实 MoE 会将 Router logits 变成 gate，再乘专家输出。图 1 处理的是 `topk.values` 本身；本节固定同一个离散集合 $S$，比较 gate 的三种构造。它们共享硬选择边界，但在选集不变的邻域内，Router 梯度是否落到未选 logits 上并不相同。
 
-![同一Top2选集下全局Softmax子集Softmax与独立Sigmoid的准确Router梯度](./images/redrawn-fig-moe-gate-gradients-v2.png)
-
-> 图 2：$h=[1.2,0.3,0.1,-0.4]$，$S=\{1,2\}$，损失固定为 $L=2g_1-g_2$。三列使用同一 active set，只改变 gate 的构造和归一化范围；表中所有梯度均由对应公式和有限差分核对。
-
 **图 2 解析**
 
 - **全专家 Softmax 后截断**：$p=[0.515109,0.209428,0.171465,0.103999]$，保留前两项后 $\sum g=0.724536$。损失只直接读取 $g_1,g_2$，但全局 Softmax 分母仍含 $h_3,h_4$，因此两项未选 logits 的梯度分别为 $-0.140737,-0.085361$。
@@ -155,10 +147,6 @@ $$
 不同专家不出现在彼此的 Sigmoid 导数中。随后无论是否在选中集合内归一化，未选坐标都不参与这条 gate 数值路径。离散 Top-K 边界依然存在；变化的是固定选集下的门控数值和局部 Jacobian。
 
 接下来的图 3 单独比较“先截断再归一化”和“全局归一化再截断”的前向 gate 数值，避免把本节的反向耦合结论埋在流程图里。
-
-![同一组8维logits先Top3再子集Softmax与全局Softmax后截断的精确数值及二次归一化等价关系](./images/redrawn-fig-moe-gate-order-v2.png)
-
-> 图 3：同一组 $h=[2.1,1.3,-0.2,3.0,0.7,-1.1,1.8,-0.5]$，$K=3$。无并列时，Softmax 的单调性使两种顺序都选出 $S=\{4,1,7\}$；差别在于 Softmax 的归一化集合和截断后的 gate 总质量。
 
 **图 3 解析**
 
@@ -252,18 +240,6 @@ $$
 
 Soft-MoE 的专家处理 slot，不直接处理原始 token。计算量由 slot 总数 $np$ 决定；文中可令 $p=O(m/n)$，使专家 FFN 调用量与“一个专家处理全部 token”同阶。
 
-![HardTopK中原始向量与整数选集分路、两个专家计算及固定选集梯度边界](./images/redrawn-fig-moe-hard-topk-mechanism-v2.png)
-
-> 图 4A：Hard Top-K。原始 $x$ 与 $(S,g)$ 分别进入 Dispatch；只有 Expert 2、4 执行，gate 绕过 FFN 进入输出乘法。固定 $S$ 时沿 values／gate 使用分段 Jacobian，整数 indices 用于派遣与 scatter。
-
-![ReMoE中原始向量派发、ReLUgate加权和自适应L1稀疏控制的独立路径](./images/redrawn-fig-moe-remoe-mechanism-v2.png)
-
-> 图 4B：ReMoE。$r=[-0.2,0.5,-0.1,0.3]$ 经 ReLU 得 $g=[0,0.5,0,0.3]$；原始 $x$ 只派给正 gate 专家，gate 单独进入乘法。训练控制使用批次／层上的 gate 集合计算 $L_{\mathrm{reg}}$ 和当前稀疏度 $S_i$，当前 $\lambda_i$ 同时参与本步正则与下一步系数更新。
-
-![SoftMoE的X与Phi打分、D列归一化、C行归一化、slot专家计算和CV重构](./images/redrawn-fig-moe-softmoe-mechanism-v2.png)
-
-> 图 4C：Soft-MoE 的 $T=3,d=2,M=4$ 数值例子。$X$ 与 $\Phi$ 共同产生 $L$；$D$ 的每列和为 1，$C$ 的每行和为 1。$U=D^\top X$ 形成四个 slot，两个专家各处理两个 slot，按原顺序堆叠为 $V$，最后 $Y=CV$。
-
 **图 4A–C 解析**
 
 - **Hard Top-K**：每 token 准确调用 $K$ 个专家；稀疏计算与离散 active set 同时出现。`topk.values` 的默认反向按图 1 处理，自定义 STE 需要实现者显式增加 surrogate。
@@ -324,10 +300,6 @@ $$
 
 改变反向路径；Top-$K$ 版本逐次采样并将已选 $z_D$ 置为 $-\infty$，最后求和。这个训练 assignment 与常规确定性 Top-K 不同，不能只画成同一个前向 mask 再更换一个“ODE 反向框”。
 
-![常规TopKgateproxy、SparseMixer中点估计与SparseMixer-v2无放回采样Heun估计的完整稀疏前向](./images/redrawn-fig-moe-sparsemixer-comparison-v2.png)
-
-> 图 5：三列都只运行当前选中或采样专家。常规 Top-K 使用确定性 mask，计算 $\nabla_1$ 并令 $\nabla_0=0$；SparseMixer v1 的简化 Top-1 用中点二阶估计；SparseMixer-v2 用 MaskedSoftmax 无放回采样和 Heun 三阶修改反向。
-
 **图 5 解析**
 
 - **常规 Top-K**：$x$ 分别进入 Router 与 Dispatch；$m=\operatorname{TopK}(z)$ 同时决定派遣，$g=m\odot\pi$ 提供乘到专家输出上的 gate。未选专家无执行边。
@@ -368,8 +340,3 @@ $$
 8. Liu, Gao, Chen. (2023). [Sparse Backpropagation for MoE Training](https://arxiv.org/abs/2310.00811). 中点法;Switch 上收敛最多约 2×.
 9. Liu et al. (2024). [GRIN: GRadient-INformed MoE](https://arxiv.org/abs/2409.12136). SparseMixer-v2;16×3.8B,激活 6.6B;MMLU 79.4 / HumanEval 74.4 / MATH 58.9.
 10. Jang, Gu, Poole. (2016). [Categorical Reparameterization with Gumbel-Softmax](https://arxiv.org/abs/1611.01144). 温度松弛;不是稀疏 MoE 默认路由器.
-
-
-
-
-

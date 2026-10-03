@@ -79,10 +79,6 @@ $$
 
 式 (6) 是核心. 它说明: Pre-LN 残差不是简单地把输入传给下一层, 而是把 embedding 与之前所有子层输出做**等权求和**后, 再喂给下一层. 每个 \(h_i\) 的权重都是 1, 不随当前层变化, 也不随输入变化.
 
-![Pre-LN 固定深度累积与 Full AttnRes 可学习深度读取：source、pseudo-query、key、softmax 权重和当前层输入的完整关系](./images/redrawn-fig-attnres-fixed-vs-depth-v2.png)
-
-> 图 1：Pre-LN 将所有历史 sources 以权重 1 求和；Full AttnRes 用每层伪查询 $w_l$ 对 RMSNorm keys 打分，在 history source index $i$ 上做 softmax，再对原始 values $v_i$ 加权求和。
-
 ---
 
 ## 3. 深层网络中的 PreNorm dilution
@@ -314,10 +310,6 @@ $$
 
 这保证「已经看到的部分和」与「更早的 block 摘要」在同一套 \(\alpha\) 下竞争, 而不是先加再注意. 代数上与逐层 Full 计算等价.
 
-![Block AttnRes 的 completed blocks、current partial、depth softmax、partial update 与 block promotion](./images/redrawn-fig-attnres-block-partial-v2.png)
-
-> 图 2：Block entry 只读取 completed blocks；block 内后续层把 current partial 作为额外 source。当前层输出 $y_l$ 与旧 partial 相加，block boundary 才将完整和提升为新的 completed block。
-
 **图 2 解析**
 
 - 块内第一层的候选集是 $[b_0,\ldots,b_{n-1}]$；从第二层开始，候选集多出 $b_n^{i-1}=\sum_{j<i}y_j$。
@@ -363,10 +355,6 @@ K3([arXiv:2607.24653](https://arxiv.org/abs/2607.24653) §2.2)是另一种捆法
 ## 7. AttnRes、\(G_1\)、mHC、GR 与 xHC 的混合轴
 
 这五类机制都改变信息混合，但 source set、controller 与 normalized axis 各不相同。直接按张量路径对齐，比只看名称更容易判断它们插在网络的哪个位置。
-
-![AttnRes、G1、mHC、Gated Residual 与 xHC 的 source set、controller、mixing axis 和输出路径](./images/redrawn-fig-attnres-mechanism-axes-v2.png)
-
-> 图 3：五种机制按真实张量管道并列。AttnRes 沿历史深度做 softmax；$G_1$ 门控当前 SDPA head outputs；mHC、GR 与 xHC 都沿当前深度的 residual stream set 读写。
 
 **图 3 解析**
 

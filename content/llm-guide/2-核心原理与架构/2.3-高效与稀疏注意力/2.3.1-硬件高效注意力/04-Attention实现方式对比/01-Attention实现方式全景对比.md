@@ -12,10 +12,6 @@ $$
 \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{D}}\right)V \tag{1}
 $$
 
-![naive 物化 N×N 对比 SDPA/FA 融合核](./images/redrawn-fig-naive-vs-sdpa-fa-fused.png)
-
-> 图 1:左栏 eager 把 $S$,$A$ 两张 $N\times N$ 写回 HBM;右栏融合核只在 SRAM 上做 tile 级 online softmax,HBM 只进 $Q,K,V$,只出 $O$.底注:xFormers API 名 ≠ MEA 论文.
-
 **图 1 解析**
 
 - **左**:三次独立 kernel($QK^\top$,softmax,$AV$)对应三次 HBM 往返.显存按 $O(BN^2H)$ 涨.
@@ -413,4 +409,3 @@ def attention_xformers(q, k, v, causal=False):
 4. PyTorch Documentation: `torch.nn.functional.scaled_dot_product_attention`
 5. xFormers GitHub: https://github.com/facebookresearch/xformers
 6. Llama-1 训练说明:xFormers 因果 MHA inspired by Rabe & Staats (2021),backward from Dao et al. (2022).
-

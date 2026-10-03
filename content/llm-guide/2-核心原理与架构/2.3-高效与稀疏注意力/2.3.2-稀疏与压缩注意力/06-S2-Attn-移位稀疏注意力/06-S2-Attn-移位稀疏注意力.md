@@ -34,10 +34,6 @@ excerpt: "S²-Attn(Shifted Sparse Attention)来自 LongLoRA(2023)."
 **Step 2 — 半头移位(Shift)**  
 在 **一半 head** 上将序列 **平移 $g/2$**,再分组 attention.相邻组经移位头 **交换信息**,避免组间完全隔离 — 与 Swin Transformer 的 shifted window 同 spirit.
 
-![S²-Attn 分组与移位示意](./images/redrawn-fig-s2attn-shifted-sparse-pattern.png)
-
-> 图 1: S²-Attn 分组局部 attention + 半头移位形成跨组边(LongLoRA 论文).
-
 **图 1 解析**
 
 - **未移位头**:attention 只在同色块(组)内 — 等价于把长序列当成多个短序列并行训练,块间无连接.
@@ -69,10 +65,6 @@ out = flash_attn(x, causal=True)
 这是 S² 与多数「训练推理必须同一套稀疏掩码」方案的差.部署时不要把训练期分组图当成必须上线的 decode 内核;长上下文 SFT 省算力,上线仍可用 Full.组大小 $g$ 要与目标长度,预训练长度一起调;移位只连 **邻近组**,极长依赖仍靠 LoRA + 位置外推(PI,YaRN,见 [RoPE 扩展](../../../2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md)).
 
 若 S² 曲线在超长处掉队,优先检查 **$g$** 与 **是否推理阶段恢复全注意力**,不要另编加速倍数.8192 vs 2048 的 FLOPs 约 ×16 是二次注意力的直接推论,可留.
-
-![LongLoRA 上下文扩展与训练配置](./images/redrawn-fig-s2attn-longlora-overview.png)
-
-> 图 2: LongLoRA 将 4K 模型扩至 8K–100K 的训练/评测曲线(论文).
 
 **图 2 解析**
 
@@ -111,5 +103,3 @@ out = flash_attn(x, causal=True)
 
 1. Chen, Y., et al. (2023). [LongLoRA: Efficient Fine-tuning of Long-Context Large Language Models](https://arxiv.org/abs/2309.12307). *arXiv*.
 2. [LongLoRA GitHub](https://github.com/dvlab-research/LongLoRA).
-
-

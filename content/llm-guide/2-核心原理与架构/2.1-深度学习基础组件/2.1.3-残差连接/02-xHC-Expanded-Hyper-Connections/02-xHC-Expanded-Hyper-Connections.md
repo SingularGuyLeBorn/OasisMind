@@ -74,10 +74,6 @@ $h_{l,i}^{\mathrm{post}}$ 可以随输入, 随流变, 但 **新注入的向量�
 
 这一稀疏-密集的不对称是 xHC 的核心: 混合与写回只作用于被选中的 $k$ 条活跃流, 其余 $N-k$ 条原样前传, 既保留残差记忆的宽度, 又把计算复杂度从 $O(N^3 C)$ 降到 $O(k^3 C)$.
 
-![xHC Algorithm 1 的八阶段依赖：16 条流 dense read、单次子层计算、4 条 active streams 混合与写回、12 条 inactive streams 直通](./images/redrawn-fig-xhc-expanded-streams-v2.png)
-
-> 图 1：xHC Algorithm 1 的依赖表。示例 active set 为 $\mathcal I=\{1,2,7,13\}$：两条 fixed streams 加 Top-2 routed streams；所有 16 条流参与 dense read，只有 4 条进入 residual mix 与 write，其他 12 条直接进入下一层。
-
 **图 1 解析**
 
 - `Stream routing` 读取完整 $X_l$，产生 active indices $\mathcal I$ 与 weights $p$；fixed streams 的权重为 1，另外 $k-m$ 条由 sigmoid scores 的 TopK 选出。
@@ -109,10 +105,6 @@ $$
 **只加在 MLP (含 MoE FFN) 后面.** 注意力已经在位置之间混过一次; 论文写明: 注意力后再做这套时间增强会把训练弄得不稳定. Table 11: 注意力侧也叠加卷积, 验证 loss **1.985**, 略差于默认 **1.983**. 所以 $K_r$ 在 Attn 子层退回 1, post 映射也退回 $k\times 1$.
 
 附录 Table 12 把「多尺度有没有用」验证在密混合 mHC, $N=16$, 不加稀疏的对照上: 0 支卷积 1.998; 单尺度 1 支 **1.989**; 三尺度 **1.984**. 多核长并非附加项, 而是不同时间范围的写回分量. 论文 Figure 5 还把同一套时间增强单独加到密混合 mHC 的 $N\in\{4,8,16\}$ 上: 相对 mHC 的 loss 缺口随 $N$ 变大而更负. 写回分量不足, 是**大 $N$ 才显形**的问题; 这和「$N=4$ 时一份 $\mathrm{out}$ 就够」不冲突.
-
-![xHC write-back：MLP 用三种因果 DWConv 与原始 out 形成四个正交写回分量，Attention 使用单分量；两路都由 H_post 与 p 写到 k 条 active streams](./images/redrawn-fig-xhc-writeback-aug-v4.png)
-
-> 图 2：MLP lane 将 `out` 与 kernel sizes $\{4,8,12\}$ 的 causal DWConv 结果做 Modified Gram-Schmidt，形成 $K_r=4$ 的 write basis；Attention lane 取 $K_r=1$。两路都通过 $\mathcal H^{\mathrm{post}}$ 与 router weights $p$ 生成 $k=4$ 条更新。
 
 **图 2 解析**
 
@@ -230,10 +222,6 @@ $\alpha$ 是 token 标量, 来自已经算过的映射系数. 附录 E 强调: �
 
 四子层扩展 xHC-Flash-4sub: 两个块共用一次路由, 四套子层专用 pre. MLP 写回有 $K_r=4$, 不能再收成「一个向量乘一个标量」, 所以后期输入改用「非活跃基底 + 当前活跃流」拼起来, 避免另开 $[S,B,k,C]$ 增量缓冲. 混合只在该组最后的 MLP 做一次, 再 scatter 回全状态.
 
-![xHC-Flash Algorithm 2 的十四阶段依赖：共享 routing/pre-mappings、Attention 稀写、精确 alpha 修正、MLP residual mix 与最终 Scatter](./images/redrawn-fig-xhc-flash-block-v3.png)
-
-> 图 3：xHC-Flash Algorithm 2 的 dependency table。入口完整状态一次生成共享 router scores 与两套 sublayer-specific pre-mappings；Attention 与 MLP 复用同一个 $\mathcal I,p$，两份 dense read 都读取全部 $N$ 条流，最终 Scatter 只替换 $k$ 个 active slots。
-
 **图 3 解析**
 
 - Joint pre-forward 每个 block 只执行一次，输出 $s,\mathcal H^{\mathrm{pre,A}},\mathcal H^{\mathrm{pre,M}}$；routing 再由 $s$ 产生 $\mathcal I,p$，主设定为 $m=2,k=4$。
@@ -345,7 +333,3 @@ xHC 把残差记忆宽度扩到 $N=16$, 并不是无条件地越大越好. 它�
 5. Sparse Sinkhorn Attention (对照「不是」): Tay et al., [arXiv:2002.11296](https://arxiv.org/abs/2002.11296)
 6. Sinkhorn-Knopp: mHC / xHC 用来把 $\mathcal{H}^{\mathrm{res}}$ 拉到双随机; 迭代细节以 mHC 原文为准. xHC 主设定同样 20 步.
 7. 参考论述 (不当事实源): [从 DeepSeek mHC 到 xHC](https://zhuanlan.zhihu.com/p/2063300859472221420); [Cici学算法 · 时序特征增强 + 稀疏写回](https://zhuanlan.zhihu.com/p/2064367105248703530)
-
-
-
-

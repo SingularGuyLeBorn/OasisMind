@@ -116,7 +116,6 @@ E(\bm{z})
 \tag{4}
 $$
 
-
 ---
 
 ## 3. 为什么 SiTU-GLU 能控制异常值
@@ -239,10 +238,6 @@ $$
 
 注意, 这个 $\ell$ 是 LatentMoE 里专家之间的通信维度, 和 MLA 的 $c^{KV}$ 不是一回事, 也不会被写进 KV cache.
 
-![SiTU-GLU 专家内部双支路：同一门预激活分叉到 softcap 与 sigmoid，值支路 softcap 后与门因子逐元素相乘](./images/redrawn-fig-situ-glu-core-v2.png)
-
-> 图 2: SiTU-GLU 位于路由专家的 Gated FFN 内部。图只展开专家内部的门支路、值支路、softcap、sigmoid、逐元素乘积和输出投影；共享专家、路由聚合与 RMSNorm 见本节公式 (8)–(10)。
-
 K3 用三个机制处理不同问题:
 
 | 机制 | 负责的问题 | 不负责什么 |
@@ -268,10 +263,6 @@ K3 用三个机制处理不同问题:
 SiTU-GLU 与 PowLU 都试图缓解 SwiGLU 的大激活, 但策略不同: SiTU-GLU 给乘积设置水平上界, PowLU 只降低正半轴的增长阶. DeepSeek-V4 的硬 clamp 同样给激活设限, 但它使用分段截断, 而不是平滑的 tanh.
 
 Gated Attention 和 Gated Residual 虽然也带有 "Gated" 一词, 却不属于这一类 FFN 激活改造. 前者控制注意力输出, 后者控制残差流.
-
-![SiTU-GLU 与相近方法的机制与边界：作用对象、是否有界、作用位置和证据范围](./images/redrawn-fig-situ-glu-method-boundaries-v2.png)
-
-> 图 3: SwiGLU、SiTU-GLU、PowLU、硬截断与梯度裁剪分别作用于不同对象。表格只列公式与已知性质，不把整体模型指标归因于任何单一机制。
 
 **图 3 解析**
 
@@ -313,6 +304,3 @@ K3 技术报告给出了 SiTU-GLU 的公式,固定超参数和设计动机, 但�
 2. Shazeer, N. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). *arXiv:2002.05202*.
 3. Jiang, P., et al. (2026). [PowLU: An Activation Function for Stable Pre-training of LLMs](https://arxiv.org/abs/2605.25704). *arXiv:2605.25704*.
 4. Elango, V., et al. (2026). [LatentMoE](https://arxiv.org/abs/2601.18089). *arXiv:2601.18089*.
-
-
-

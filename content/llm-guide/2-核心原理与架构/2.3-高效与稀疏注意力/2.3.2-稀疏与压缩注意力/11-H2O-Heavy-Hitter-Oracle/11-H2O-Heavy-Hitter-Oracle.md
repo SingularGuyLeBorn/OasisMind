@@ -33,10 +33,6 @@ excerpt: "30B 模型,batch 128,序列 1024,论文把 KV cache 写成 180GB.decod
 
 Gisting 一类「学着压缩文档 KV」的方法,论文认为驱逐策略太贵,生成时不好部署.
 
-![Full 全留,Local 只留最近窗,H2O 最近窗加内容相关 H2](./images/redrawn-fig-h2o-three-policies.png)
-
-> 图 1:三种 KV 策略.对应论文 Figure 1 上排示意.(a) 全量;(b) 只留最近;(c) 最近窗 + 散落的 $\mathsf{H_2}$.
-
 **图 1 解析**
 
 - **(a)** 每条 KV 都在.显存随 $T$ 涨.
@@ -72,19 +68,11 @@ $$
 
 式 (2)(3) 就是 Definition 4.3 / Algorithm 1.$F_{\mathrm{score}}$ 实例化成集合上注意力质量的和.若 $o_s$ 是槽上的累积量,踢掉 $u$ 使剩余和最大 $\Leftrightarrow$ 丢掉当前累积分**最低**的那一条.每步最多踢 **1** 条(Definition 2.1).
 
-![当前 query 对 cache 打分,累积分最低的 key 被打叉](./images/redrawn-fig-h2o-accum-evict.png)
-
-> 图 2:单步驱逐.分数是示意图,不是论文表.对应 Algorithm 1 与 Figure 3 的「按累积分数踢」.
-
 **图 2 解析**
 
 - **左**:$q$ 只看见还在 cache 里的 key.被踢掉的位置再也不会出现(论文 Figure 3 的后继步).
 - **$k_4$ 的 0.05**:示意图里最低,被叉掉.真实实现是 $\arg\max$ 剩余 $F_{\mathrm{score}}$,不是另写一套堆公式.
 - **底注**:先加入当前 token,再在 $k+1$ 个候选里丢 1 个.新 token 也可能刚进来就被丢掉.
-
-![预算 k=3 时第四步踢掉 token 3,第五步 cache 仍是三条](./images/redrawn-fig-h2o-step-evict.png)
-
-> 图 3:论文 Figure 3.预算 $k=3$;第四步结束踢掉第 3 个 token 的 KV;后面再也读不到它.
 
 **图 3 解析**
 
@@ -100,10 +88,6 @@ $$
 > $\mathsf{H_2O}$ evenly assigns the caching budget to $\mathsf{H_2}$ and the most recent KV.
 
 所以实验里的 **20% KV cache budget** = 总 cache 相对全量大约 20%,其中一半给 $\mathsf{H_2}$,一半给最近 KV.不要读成「只留 20% 个 H2,不要最近窗」.Q4 / Table 9 把这一点做成消融:只留 $\mathsf{H_2}$ 或只留 local,相对满 cache 掉 **2.85%–22.75%**;两边都留才贴得住.论文还写:只留 $\mathsf{H_2}$ 往往比只留 local 好.
-
-![预算 k 对半分给 H2 和最近 token;总长约全量的 20%](./images/redrawn-fig-h2o-budget-split.png)
-
-> 图 4:预算切分.
 
 **图 4 解析**
 
@@ -180,10 +164,6 @@ Table 6,OPT-30B,4-bit 量化正交:Full COPA **85.00** / OpenBookQA **43.20** / 
 
 **可以叠 StreamingLLM 式无限流,但 H2O ≠ StreamingLLM.** Q1:他们把 H2O 接到「留起始若干 token + cache 内滚动位置」那条路上,PG-19 第一篇上 PPL 优于原 StreamLLM,最长写到 **four million** tokens(Figure 5).这是 **叠** sink 流式,不是说 H2O 单独等于 4+窗.
 
-![StreamingLLM 固定前 4 个 sink;H2O 的 H2 可出现在任意位置](./images/redrawn-fig-h2o-not-streamingllm.png)
-
-> 图 5:两条推理期 cache 策略.不要互换名字.
-
 **图 5 解析**
 
 - **左**:Xiao 默认 **4** 个起始 KV,与内容无关.单独成篇 [10](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
@@ -234,8 +214,3 @@ Table 6,OPT-30B,4-bit 量化正交:Full COPA **85.00** / OpenBookQA **43.20** / 
 3. 2026-08 部署约束(分数不落 HBM,page 驱不还显存):[NVIDIA Efficient AI · KV Cache Compression and Its Infra Problems](https://research.nvidia.com/labs/eai/blogs/kv-cache-compression-and-its-infra-problems/).
 
 数字以论文表为准.图 2 的 1.4 / 0.05 是示意图.摘要 "20% heavy hitters" 以 §5.1「总预算 20%,H2 与最近对半分」为准.
-
-
-
-
-

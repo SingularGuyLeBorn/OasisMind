@@ -60,10 +60,6 @@ MoBA首先将长度为 $N$ 的完整上下文序列划分为 $n$ 个连续的块
 
 $I_i = [(i-1) \times B + 1, i \times B]$
 
-![MoBA 块路由运行示例(论文 Figure 1a)](./images/redrawn-fig-moba-01-running-example.png)
-
-> 图 1: MoBA 运行示例--两个 query 经门控各自选中不同 KV 块(论文 Figure 1a).
-
 **图 1 解析**
 
 - **读图顺序**:从左到右看时间轴上的 KV 块 $I_1,\ldots,I_4$;上方两个 query token 各自连到不同块组合 — 这是 MoBA「**每 query 独立选块**」的核心,不是全序列共享同一稀疏模式.
@@ -130,10 +126,6 @@ MoBA的高性能实现结合了**FlashAttention**(一种优化注意力计算内
 
 算法1和图2形式化并可视化了MoBA的实现工作流程.
 
-![MoBA 与 FlashAttention 集成(论文 Figure 1b)](./images/redrawn-fig-moba-02-flash-integration.png)
-
-> 图 2: MoBA 与 FlashAttention 的五步集成流水线(论文 Figure 1b).
-
 **图 2 解析**
 
 - **五步流水线**(对应 Algorithm 1):(1) KV 分块 → (2) 算门控分数 $s_i$ → (3) top-$k$ 得稀疏映射 $G$ → (4) 按块重排 query 并算块级 attention → (5) 在线 softmax 合并多块输出.
@@ -195,10 +187,6 @@ MoBA在多个长上下文基准测试中展现出卓越的性能,证明了其在
 1. **LM损失的可扩展性**:
 实验比较了使用全注意力(Full Attention)和MoBA训练的语言模型在验证损失上的表现.基于Chinchilla缩放定律,训练了不同规模的模型,并提供充足的训练数据以达到最优状态.在8K序列长度下,MoBA模型配置块大小为512,每个查询选择top-3块(这意味着每个查询最多关注2个历史块和其当前块),形成高达81.25%的稀疏注意力模式.
 
-![MoBA 与全注意力缩放定律(论文 Figure 3)](./images/redrawn-fig-moba-05-scaling-law-lm-loss.png)
-
-> 图 3: MoBA 与全注意力在 8K/32K 上的 LM 损失缩放对比(论文 Figure 3).
-
 **图 3 解析**
 
 - **(a) 8K 全序列验证损失**:横轴为模型规模(参数量),纵轴为 validation LM loss;MoBA 与 Full 曲线几乎重合 — 81% 稀疏下差距稳定在 $10^{-3}$ 量级.
@@ -212,10 +200,6 @@ MoBA在多个长上下文基准测试中展现出卓越的性能,证明了其在
 
 2. **细粒度块分段消融研究**:
 研究通过对MoBA块粒度的一系列消融实验发现,块粒度对MoBA的性能影响显著.在保持注意力稀疏度一致的前提下,将32K上下文分别划分为8,16,32,64和128个块,并相应选择不同数量的块进行注意力计算.
-
-![MoBA 块粒度消融(论文 Figure 4)](./images/redrawn-fig-moba-06-block-granularity-ablation.png)
-
-> 图 4: 块粒度消融--细粒度分块显著降低验证损失(论文 Figure 4).
 
 **图 4 解析**
 
@@ -234,10 +218,6 @@ MoBA的灵活性使其能够与全注意力进行无缝切换和混合,这对于
 1. **MoBA/全注意力混合训练**:
 实验在30B token数据集上训练了三个1.5B参数规模的模型,使用32K token的上下文长度.MoBA配置中,块大小为2048,top-k参数设为3.
 
-![MoBA/全注意力混合训练(论文 Figure 5a)](./images/redrawn-fig-moba-07-hybrid-training-loss.png)
-
-> 图 5: MoBA/Full 混合训练的位置级损失(论文 Figure 5a).
-
 **图 5 解析**
 
 - **横轴**:序列内 token 位置(0K→32K);**纵轴**:position-wise LM loss — 比全局平均 loss 更能暴露 **长程尾部** 是否退化.
@@ -246,10 +226,6 @@ MoBA的灵活性使其能够与全注意力进行无缝切换和混合,这对于
 - **训练策略**:混合配方是 **省算力预训练 + 末尾 Full 精修** 的实用折中;纯 MoBA 适合快速迭代,上线前建议混合或分层 Full(图 6).
 - **与 SFT 关系**:SFT 常 mask prompt token,稀疏梯度更伤 MoBA — 图 6 的分层混合主要针对此问题.
 
-![MoBA 分层混合 SFT(论文 Figure 5b/c)](./images/redrawn-fig-moba-08-layerwise-hybrid-sft.png)
-
-> 图 6: 分层混合 SFT--末尾若干层切换全注意力(论文 Figure 5b/c).
-
 **图 6 解析**
 
 - **(b) SFT 全局 loss**:纯 MoBA SFT 劣于 Full;将 **最后 $L'$ 层** 换为 Full 后曲线逼近 Full — 深层更负责 **全局整合**,浅层 MoBA 仍省算力.
@@ -257,10 +233,6 @@ MoBA的灵活性使其能够与全注意力进行无缝切换和混合,这对于
 - **机制猜想**:SFT 的 loss mask 使 prompt 区无梯度,MoBA 路由在 prompt 段学不充分;深层 Full 强制全上下文反传.
 - **推荐配置**:论文实验「最后 4 层 Full + 其余 MoBA」为起点;实际需按模型深度与任务调 $L'$.
 - **部署注意**:训练末层 Full 不等于推理必须 Full — 1M 模型评测里 **prefill 用 MoBA,decode 用 Full**(见 §2.4.3).
-
-![持续预训练与 SFT 配方(论文 Figure 6)](./images/redrawn-fig-moba-09-continual-pretrain-sft.png)
-
-> 图 7: Llama-8B-1M 持续预训练与 SFT 阶段配方(论文 Figure 6).
 
 **图 7 解析**
 
@@ -285,10 +257,6 @@ MoBA的灵活特性启发了一种更深入的探索--MoBA和全注意力的**�
 
 对于百万级token的上下文处理能力,通过经典的**"大海捞针"(Needle-in-a-Haystack, NIAH)** 基准测试进行评估.
 
-![Llama-8B-1M-MoBA NIAH 热力图(论文 Figure 7)](./images/redrawn-fig-moba-10-niah-1m-context.png)
-
-> 图 8: 1M 上下文 NIAH 热力图,prefill 用 MoBA(论文 Figure 7).
-
 **图 8 解析**
 
 - **坐标轴**:纵轴为上下文长度(至 1M),横轴为 needle 插入深度(0–100%)— 颜色越亮表示检索成功率越高.
@@ -302,10 +270,6 @@ MoBA的灵活特性启发了一种更深入的探索--MoBA和全注意力的**�
 ### 2.5 效率和可扩展性分析
 
 除了性能,MoBA在计算效率和可扩展性方面也展现出显著优势.
-
-![MoBA vs FlashAttention 前向耗时(论文 Figure 2)](./images/redrawn-fig-moba-04-forward-speed-1m.png)
-
-> 图 9: MoBA 相对 FlashAttention 的前向耗时,亚二次复杂度(论文 Figure 2).
 
 **图 9 解析**
 
@@ -366,12 +330,3 @@ python run_demo.py
 ## 7. 参考文献
 
 - DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model. [https://arxiv.org/abs/2405.04434](https://arxiv.org/abs/2405.04434)- Fast Transformer Decoding: One Write-Head is All You Need. [https://arxiv.org/pdf/1911.02150](https://arxiv.org/pdf/1911.02150)- GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints. [https://arxiv.org/pdf/2305.13245](https://arxiv.org/pdf/2305.13245)- Mixture of Block Attention for Long-Context LLMs. [https://github.com/MoonshotAI/MoBA/blob/master/MoBA_Tech_Report.pdf](https://github.com/MoonshotAI/MoBA/blob/master/MoBA_Tech_Report.pdf)- Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention. [https://arxiv.org/abs/2502.11089](https://arxiv.org/abs/2502.11089)- Attention Is All You Need. [https://arxiv.org/pdf/1706.03762](https://arxiv.org/pdf/1706.03762)- Llama 2: Open Foundation and Fine-Tuned Chat Models. [https://arxiv.org/abs/2307.09288](https://arxiv.org/abs/2307.09288)
-
-
-
-
-
-
-
-
-

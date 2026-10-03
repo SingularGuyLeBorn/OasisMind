@@ -40,10 +40,6 @@ $$
 
 这意味着每两维被视为一个二维平面,位置 $m$ 使该平面中的向量旋转 $m\theta_i$. 高频维度旋转得快,负责短程差异; 低频维度旋转得慢,负责长程结构.
 
-![RoPE 最小单元：二维旋转、长度保持和 Query-Key 相对位移](./images/redrawn-fig-rope-2d-rotation-v3.png)
-
-> 图 1: RoPE 在每对相邻维度上按当前位置索引 $m$ 旋转 $m\theta_i$;相对位置不是 $m$ 本身,而是在 Query 与 Key 内积中由两个旋转角之差 $(n-m)\theta_i$ 产生.
-
 **图 1 解析**
 
 - 黑向量是旋转前的一对维度 $(x_1,x_2)$.
@@ -115,10 +111,6 @@ $$
 - 无需改写标准 attention 的主体结构.
 - 相对关系由旋转结构内在提供,而非通过补丁附加.
 
-![RoPE 中 Query-Key 点积的相对相位：各自旋转后的位置项只依赖 n−m](./images/redrawn-fig-rope-relative-phase-v3.png)
-
-> 图 2: Query 与 Key 分别按 $m\theta_i$,$n\theta_i$ 旋转后,位置旋转项合并为 $R((n-m)\theta_i)$.内容向量 $q_i,k_i$ 仍参与点积,因此这里说的“只剩相对位置”专指位置依赖项.
-
 **图 2 解析**
 
 - 左: Query 旋转 $m\theta_i$; 中: Key 旋转 $n\theta_i$.
@@ -156,10 +148,6 @@ $$
 $$
 
 式 (10) 说明,旋转后的 Query-Key 打分仅依赖相对距离 $n-m$,不再依赖绝对位置本身. 这一性质使 RoPE 适用于语言,代码,检索等相对关系比绝对坐标更重要的任务.
-
-![绝对位置编码随下标变化，RoPE 在 Query-Key 点积中以相对位移出现](./images/redrawn-fig-rope-vs-absolute-pe-v2.png)
-
-> 图 3: 绝对位置编码使用随下标变化的位置向量；RoPE 在 Query-Key 点积中把位置依赖合并为相对位移。
 
 **图 3 解析**
 
@@ -199,6 +187,3 @@ RoPE 的设计并非没有取舍. 它把位置信息耦合进 Query 与 Key 的�
 苏剑林 (2021) 的博文给出了 RoPE 的原始中文推导, Su et al. (2021) 的论文则提供了英文形式的正式表述与实验验证.
 
 1. [Su, J., et al. (2021). RoFormer: 带旋转位置嵌入的 Transformer (RoFormer: Enhanced Transformer with Rotary Position Embedding).](https://arxiv.org/abs/2104.09864) *arXiv*.
-
-
-

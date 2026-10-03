@@ -31,9 +31,6 @@ excerpt: "本库 OPD 的全称是 On-Policy Distillation:学生按当前策略�
 
 我们可以用"驾校学车"来类比三种不同的训练方式:
 
-![SFT、RL 与 OPD 在状态来源、奖励密度、教师分布和梯度消费者上的数据流差异](./images/opd_signal_paths-v3.png)
-*图：SFT 使用固定/教师前缀；RL 使用学生 rollout 但通常只有轨迹级标量；OPD 在学生自己的前缀上查询冻结教师的逐 token 分布，只更新学生。*
-
 - **SFT (Off-Policy)** :教练(Teacher)在副驾驶握着方向盘跑完一整圈,你坐在旁边看着记. 一上路,如果你不小心把车开偏了 10 厘米,因为你从来没有学习过"在偏离路线时如何修正",你大概率会直接把车开进沟里(暴露偏差). 
 
 - **RL (On-Policy)** :教练把你蒙上眼睛扔进车里,你自己瞎开(Rollout). 如果你撞树了,教练在结束时打你一顿(Score: -1); 如果你奇迹般地开到了终点,教练给你一块糖(Score: +1). 你要挨无数次打,才能慢慢试出哪条路是对的(奖励极度稀疏). 
@@ -214,10 +211,6 @@ $\mathcal{L}$ 可以是散度,奖励或混合;关键是外层期望在学生自�
 ### 10.2 采样从哪来:off-policy 抄教师前缀,on-policy 在自己的前缀上挨打
 
 Off-policy KD / SeqKD:轨迹来自数据集或教师,$y_{\lt t}$ 几乎总是「标准解前缀」.学生推理时前缀是自己刚写出的 token,一步偏了后面全是没练过的状态.GKD 把这叫 train–inference mismatch;MiniLLM 用 ExAccErr 量暴露偏差.On-policy distillation 换的是**状态从哪来**:先让 $\pi_\theta$ 自己生成,再让教师在这些前缀上给 dense 监督.
-
-![离策略蒸馏使用固定的教师或数据轨迹，OPD 则在学生实际访问的前缀上由冻结教师提供逐 token 全词表监督](./images/fig-on-policy-vs-off-policy-sampling-v2.png)
-
-> 图 1:训练状态从哪来.左:off-policy KD,学生在教师或数据集给出的固定前缀上匹配.右:OPD,学生自己采样,冻结教师在同一学生前缀上给密集 logits / KL,梯度只更新学生.
 
 **图 1 解析**
 

@@ -28,10 +28,6 @@ $$
 
 一个线程块负责一个 $Q_i$,在片上依次扫描全部 $K_j,V_j$.$O_i$ 与统计量在内循环期间保留在寄存器中,扫描结束后只写回一次.这样既减少了中间状态的 HBM 流量,也把 $Q$ 的行块加入并行网格:前向可同时调度约 $B\times H\times T_r$ 个线程块,长序列,小 batch 时更容易占满流式多处理器.
 
-![FlashAttention-1 与 FlashAttention-2 的循环和 Warp 划分](./images/redrawn-fig-fa-v2-mech-work-partition.png)
-
-> 图 1:FlashAttention-2 让一个线程块持有一个 Query 行块,扫描全部 Key/Value 列块后再写回输出;Warp 也改为按 Query 行分工.
-
 循环交换没有改变注意力的计算图.每个 $Q_i$ 仍会与所有允许访问的 $K_j,V_j$ 交互,因果掩码也仍按相同规则生效.
 
 ## 2. 在线 softmax 保留未归一化累加量
@@ -111,4 +107,3 @@ Hopper 增加了 TMA 与异步 WGMMA,矩阵乘和 softmax 的重叠方式随之�
 - Tri Dao. [FlashAttention-2 论文 HTML](https://arxiv.org/html/2307.08691), 2023.
 - Dao AI Lab. [flash-attention 官方仓库](https://github.com/Dao-AILab/flash-attention), GitHub.
 - NVIDIA. [NVIDIA Ampere GPU Architecture Tuning Guide](https://docs.nvidia.com/cuda/ampere-tuning-guide/), CUDA Documentation.
-

@@ -207,10 +207,6 @@ $\mathcal{L}$ 可以是散度、奖励或混合；关键是外层期望在学生
 
 Off-policy KD / SeqKD：轨迹来自数据集或教师，$y_{<t}$ 几乎总是「标准解前缀」。学生推理时前缀是自己刚写出的 token，一步偏了后面全是没练过的状态。GKD 把这叫 train–inference mismatch；MiniLLM 用 ExAccErr 量暴露偏差。On-policy distillation 换的是**状态从哪来**：先让 $\pi_\theta$ 自己生成，再让教师在这些前缀上给 dense 监督。
 
-![Off-policy KD trains on teacher prefixes; OPD trains on student prefixes with teacher logits](./images/fig-on-policy-vs-off-policy-sampling.png)
-
-> 图 1：采样从哪来。左：off-policy KD，学生只在教师（或数据集）前缀上匹配。右：OPD，学生自己采样，教师在学生前缀上给密集 logits / KL。红标 **NOT**：不是 DPO，不是 Online Preference。2026-08 自绘；示意，不是论文 Figure。
-
 **图 1 解析**
 
 - **左，青格**：token 由教师（或固定语料）写出。学生在这些前缀上做 NLL 或 $D_{\mathrm{KL}}(p_T\|p_S)$。推理时一旦自己写偏，就离开了训练状态。

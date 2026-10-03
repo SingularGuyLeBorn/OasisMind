@@ -21,10 +21,6 @@ excerpt: "报告里的 on-policy distillation 不是同一道工序。Qwen3 用�
 
 要回答的问题因此很窄：每家官方叫什么、教师从哪来、损失写到词表还是采样 token、数字的分母是什么、第 14 章从哪进。
 
-![三列教师来源：Qwen3 大号教师压 8B；V4/K3/MiMo 多专家合版；GLM-5 用前阶段 checkpoint](./images/fig-opd-teacher-source.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Three columns: Qwen3 strong-to-weak; V4/K3/MiMo expert merge; GLM-5 previous-stage checkpoints. -->
-
 > 图 1：教师从哪来。同一句 on-policy distillation，槽位不同。2026-08 自绘。
 
 **图 1 解析**
@@ -87,10 +83,6 @@ $$
 
 教师 logits 目前走推理引擎。这是 **跨阶段恢复**，不是领域专家合版。
 
-![左：每步对整张词表做 reverse KL；右：只在采样 token 上写 sg log 比](./images/fig-opd-loss-fork.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Left: full-vocab reverse KL. Right: token-level sg log ratio with clip. -->
-
 > 图 2：损失分叉。左是 V4 §5.1.2；右是 K3 式 (15) / MiMo 式 (8) / GLM-5 式 (2) 这一族。2026-08 自绘。
 
 **图 2 解析**
@@ -116,10 +108,6 @@ Qwen3 对轻量档走 Strong-to-Weak：先 off-policy 打底，再 on-policy 对
 括号是 pass@64。RL 把 AIME'24 从 55.0 拉到 67.6，**pass@64 仍停在 90.0**；on-policy distillation 到 74.4，pass@64 到 **93.3**。正文把 1,800 / 17,920 说成大约 1/10 GPU hours。这是 **8B、math+code、同一检查点** 的对照，不是旗舰四阶段 RL 的总账，也不是 V4。
 
 01 写「从一个经过基础训练的 Checkpoint」过宽：Table 21 的起点已经是 **off-policy 蒸馏后的 8B**，不是预训练基座。01 另写的「约 150 steps / 77K prompts」在 mineru Table 21 节里 **没有**，本篇不跟。
-
-![17920 与 1800 锁在 Qwen3 Table 21 框内；右侧 V4 框打叉](./images/fig-qwen3-table21-denominator.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Qwen3 Table 21 box vs do-not-attach-to-V4. -->
 
 > 图 3：分母。17,920 与 1,800 是 Qwen3 Table 21 的格子。2026-08 自绘。
 

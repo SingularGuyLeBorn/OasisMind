@@ -86,10 +86,6 @@ $$
 
 式 (5) 包含两条同宽的升维支路. 门支路对 $xW$ 应用 $\mathrm{Swish}_{1}$, 值支路 $xV$ 保持线性, 两者逐元素相乘后再由 $W_{2}$ 降维. $W$ 与 $V$ 的输出都属于 $\mathbb{R}^{d_{ff}'}$; 只有维度相同, Hadamard 积才有定义. 单路 $\mathrm{FFN}_{\mathrm{Swish}}$ 只有 $W_1$ 与 $W_2$, 因此与 SwiGLU 是两种结构.
 
-![两矩阵 FFN 与三矩阵 GLU：单路与双支路的真实数据流、逐元素乘法和保参宽度](./images/redrawn-fig-glu-family-two-vs-three-matrix-v2.png)
-
-> 图 1: 左侧是两矩阵单路 FFN；右侧是三矩阵 GLU。输入 $x$ 分别经 $W$ 和 $V$ 得到同宽门和值分支，门分支激活后与值分支逐元素相乘，再经 $W_2$ 降维。
-
 图 1 对比两矩阵 FFN 与三矩阵 GLU：后者增加一条并行的值支路，两条同宽支路逐元素相乘后再由 $W_2$ 降维。若目标是和两矩阵 FFN 对齐参数量，则取 $3d d_{ff}'=2d d_{ff}$，即 $d_{ff}'=2d_{ff}/3$；这是参数对齐选择，不是所有模型的固定比例。
 
 ---
@@ -185,4 +181,3 @@ SwiGLU 包含门和值两条升维支路; 将它简称为「SiLU-MLP」时, 应�
 5. Touvron, H., et al. (2023). [LLaMA: Open and Efficient Foundation Language Models](https://arxiv.org/abs/2302.13971). SwiGLU 换 ReLU; 宽 $\tfrac{2}{3}\times 4d$. HTML: [arxiv.org/html/2302.13971](https://arxiv.org/html/2302.13971).
 6. Yang, A., et al. (2025). [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388). dense FFN 使用 SwiGLU; 具体宽度见官方 [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B/blob/main/config.json) 与 [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/blob/main/config.json) 配置.
 7. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). MoE 中的 SwiGLU 算子. Coder 系列超参表 Hidden Activation = SwiGLU, 见 [DeepSeek-Coder](https://arxiv.org/abs/2401.14196).
-

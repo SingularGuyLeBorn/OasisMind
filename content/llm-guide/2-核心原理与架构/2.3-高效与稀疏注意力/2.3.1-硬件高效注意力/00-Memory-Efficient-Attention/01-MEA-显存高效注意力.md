@@ -64,10 +64,6 @@ $$
 
 Self-attention 只是对 query **依次**做上面这件事,再多数一个 query 下标,所以额外复杂度 $O(\log n)$.输出本身是 $O(n)$,**不计入**他们说的空间复杂度.
 
-![标准注意力物化 n×n;lazy softmax 只留 v* 与 s*](./images/redrawn-fig-mea-lazy-softmax-stream.png)
-
-> 图 1:左栏标准注意力物化 $S=QK^\top$ 再 softmax 再乘 $V$;右栏单 query 流式累加 $v^*,s^*$,最后相除.对应论文 §2 与式 (1).
-
 **图 1 解析**
 
 - **左栏**:$Q,K,V$ 都是 $n\times d$.中间两张 $n\times n$ 网格是 $S$ 和 $P=\mathrm{softmax}(S)$--这就是「二次显存」的物理来源.
@@ -97,10 +93,6 @@ m^*\leftarrow m_i. \tag{5}
 $$
 
 扫完仍输出 $v^*/s^*$.$e^{m^*-m_i}\le 1$,旧累加器只被缩小,不会爆.
-
-![running max 重标度 v* 与 s*](./images/redrawn-fig-mea-running-max-renorm.png)
-
-> 图 2:§3 的数值稳定更新.$v^*$ 是 $d$ 维加权和,$s^*$ 是配分函数标量,$m^*$ 是 running max.底部警告对应正文「分数 $\ge 89$」.
 
 **图 2 解析**
 
@@ -136,10 +128,6 @@ $$
 复杂度:若 KV 块长取 $\sqrt{n}$,就得到 $\sqrt{n}$ 份摘要,额外显存 $O(\sqrt{n})$.默认 1024 / 4096 是 **TPU 上 runtime 冲击小,仍能省显存** 的折中,不是复杂度证明里的最优块长.多级摘要可以收到 $O(\log n)$,作者没实现,因为会把代码变复杂.
 
 Query 先除 $\sqrt{d_k}$(代码第 9 行).精度默认 `jax.lax.Precision.HIGHEST`.
-
-![外层 scan query,内层 map KV,checkpoint 摘要](./images/redrawn-fig-mea-tpu-two-level-chunks.png)
-
-> 图 3:论文 Figure 1 的控制流.外层 `lax.scan` 写输出;内层 `lax.map` 得每块 $(V_j,w_j,m_j)$,再按全局 max 重标度.
 
 **图 3 解析**
 
@@ -210,10 +198,6 @@ Figure 5 右:把只切 query 的显存**限制成** MEA 默认块长对应的开
 
 ## 8. 变体与「不是」:不要和 FA / BPT / Ring 揉成一篇
 
-![MEA,FlashAttention,BPT 三列对照](./images/redrawn-fig-mea-vs-fa-vs-bpt.png)
-
-> 图 4:三篇不是一篇.左 MEA(JAX/TPU,块摘要最后合并,$K$ 份临时输出,checkpoint 反向);中 FA(CUDA 融合核,SRAM 上增量更新**一份** $O$,打的是 HBM 访问次数);右 BPT(query 块上接着做 FFN,一层 $2bsh$,划掉设备环).
-
 **图 4 解析**
 
 - **左列 MEA**:每个 KV 块留下临时输出 + softmax 统计,前向结束时再按统计合并.FA 附录 B.5 称之为「$K$ 块就有 $K$ 份输出」.墙钟与标准注意力大致相当或略慢.
@@ -229,10 +213,6 @@ Figure 5 右:把只切 query 的显存**限制成** MEA 默认块长对应的开
 | **Ring / SP / Ulysses** | 2310.01889 / 2205.05198 / 2309.14509 | 把序列维切到**多设备** | MEA 是单卡算法.没有 `ppermute`,没有 All-to-All 换头. |
 
 Rabe v2 Related Work 还写:他们在 TPU 上看不到 FA 那种加速,因为标准自注意力已经平衡了 TPU 的 FLOPs 与带宽.
-
-![不是只切 query,不是 Ring,不是 SP](./images/redrawn-fig-mea-not-query-chunk-only.png)
-
-> 图 5:三个「不是」.左:只切 query 且块 $\le 64$ 会慢(论文 Figure 5).中:Ring 在设备环上转 KV.右:序列并行按 rank 切序列.中间:MEA 在单设备上同时切 Q 和 K,不物化满 $n\times n$.
 
 **图 5 解析**
 
@@ -273,8 +253,3 @@ Rabe v2 Related Work 还写:他们在 TPU 上看不到 FA 那种加速,因为标
 4. Llama-1 训练段:xFormers 因果 MHA「inspired by Rabe and Staats (2021) and uses the backward from Dao et al. (2022)」.这是工程拼接(xFormers 前向灵感来自本篇 JAX/TPU 算法,反向用 Dao et al. 2022),不是把 2112.05682 搬进 PyTorch.API 名 `memory_efficient_attention` 也不能当论文身份;模型身份与已核证口径见 [LLaMA](../../../../../model-library/03-模型家族/16-llama/llama/llama-bi.md),对照见 [01-Attention实现方式全景对比](../04-Attention实现方式对比/01-Attention实现方式全景对比.md).
 5. Jang et al. (2019). MNNFast,ISCA.lazy softmax 的前作(论文 §6);本篇未打开 ISCA 全文,只按 Rabe 的转述写「未讨论显存复杂度」.
 6. Liu & Abbeel. [BPT](https://arxiv.org/html/2305.19370). 实验把 FA/MEA 打成 MemoryEfficient.一层 $8bsh$ vs $2bsh$ 见 6.1.1 §4.7.
-
-
-
-
-

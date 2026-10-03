@@ -10,10 +10,6 @@ excerpt: "HunyuanVideo / Wan2.1 上的画质对比,掩码带,复杂度曲线用�
 
 HunyuanVideo / Wan2.1 上的画质对比,掩码带,复杂度曲线用论文白底图(浅色则留).夜景视频帧是论文 teaser 的生成内容,不是深色幻灯片.
 
-![Radial Attention 在 HunyuanVideo 上的加速与画质(论文 Figure 1)](./images/redrawn-fig-radial-01-teaser-hunyuan-speedup.png)
-
-> 图 1: 默认长度 1.9× 推理加速,4× 外推长度下 4.4× 降训练成本与 3.7× 推理加速(论文 Figure 1).
-
 **图 1 解析**
 
 - **左/上**:Dense vs Radial 同 prompt 视频帧 — 视觉质量相当,延迟显著下降.
@@ -38,10 +34,6 @@ HunyuanVideo / Wan2.1 上的画质对比,掩码带,复杂度曲线用论文白�
 - **静态方法**(如 STA):预定义稀疏模式,表达能力有限
 - **动态方法**(如 SVG):按 head 在线 profiling 选空间/时间掩码,推理可加速但 **长视频训练易误分类,难外推**
 
-![SVG 动态 profiling vs Radial 静态统一掩码(论文 Figure 3)](./images/redrawn-fig-radial-03-svg-vs-radial-pipeline.png)
-
-> 图 2: SVG 每 head 二选一空间/时间稀疏;Radial 用单一静态 $O(n\log n)$ 掩码统一二者(论文 Figure 3).
-
 **图 2 解析**
 
 - **SVG (a)**:推理时 profiling → 空间 **或** 时间 attention,无法覆盖训练分布外的更长视频.
@@ -64,10 +56,6 @@ HunyuanVideo / Wan2.1 上的画质对比,掩码带,复杂度曲线用论文白�
 |:-----|:-----|:--------|
 | **空间注意力** | 主要关注同帧或相邻帧附近 token | 高时间衰减,低空间衰减 |
 | **时间注意力** | 主要关注跨帧同空间位置 | 低时间衰减,高空间衰减 |
-
-![HunyuanVideo 上空间/时间 attention map 与衰减曲线(论文 Figure 4)](./images/redrawn-fig-radial-04-spatiotemporal-energy-decay.png)
-
-> 图 3: 空间 head 随时间距离快速衰减;时间 head 随空间距离衰减更明显(论文 Figure 4).
 
 **图 3 解析**
 
@@ -104,10 +92,6 @@ $$
 
 4D 掩码 $\widetilde{M} \in \{-\infty, 0\}^{f \times f \times s \times s}$,展平为 $M_{is+k,\,js+l}=\widetilde{M}_{i,j,k,l}$.
 
-![径向带,掩码与 HunyuanVideo 实例(论文 Figure 5)](./images/redrawn-fig-radial-05-radial-mask-bands.png)
-
-> 图 4: 时间带密度减半 + 远帧空间对角线收窄;首帧 attention sink(论文 Figure 5).
-
 **图 4 解析**
 
 - **(a)**:$f=12$ 示意 — 主对角 band 0 全密度,外带宽度×2,密度÷2.
@@ -123,10 +107,6 @@ $$
 ---
 
 ## 4. 复杂度与误差
-
-![长视频 attention 计算量与加速(论文 Figure 2)](./images/redrawn-fig-radial-02-complexity-9x-speedup.png)
-
-> 图 5: 509 帧 720p HunyuanVideo 上 attention 计算约 **9×** 减少,3.7× 加速(论文 Figure 2).
 
 **图 5 解析**
 
@@ -155,29 +135,17 @@ $$
 | HunyuanVideo 端到端 | 1× | **~1.8×** |
 | Wan2.1 端到端 | 1× | **~1.9×** |
 
-![Wan2.1 默认长度生成对比(论文 Figure 6)](./images/redrawn-fig-radial-06-wan21-video-quality.png)
-
-> 图 6: Wan2.1-14B 上 Radial 与原版画质对齐(论文 Figure 6).
-
 **图 6 解析**
 
 - Training-free 设定:不改权重,只换稀疏掩码 + 系统优化(与 SVG 同栈).
 - 相似度指标上优于 STA;STA 虽更快但画质掉点明显.
 - PA 同为 $O(n\log n)$ 但忽略时空局部性 → 实践不如 Radial.
 
-![HunyuanVideo 4× 长度外推视觉对比(论文 Figure 7)](./images/redrawn-fig-radial-07-hunyuan-4x-extension.png)
-
-> 图 7: 509 帧外推 — Radial+LoRA Vision Reward **≥** Dense+LoRA(论文 Figure 7).
-
 **图 7 解析**
 
 - 4× 长度下 Dense 无微调明显退化;RIFLEx 外推有限.
 - Radial+LoRA:**0.134 vs 0.133**(Vision Reward),且 **3.7×** 推理,**4.4×** 训练成本下降.
 - 说明静态掩码 + 短 LoRA 即可 **外推长度** 而不毁分布.
-
-![LoRA 有效性 & 衰减曲线拟合(论文 Figure 8)](./images/redrawn-fig-radial-08-lora-effectiveness-decay-fit.png)
-
-> 图 8: 长序列上 Radial+LoRA 可匹配全微调;$\exp(-ax+b)$ 拟合衰减 $R^2>0.985$(论文 Figure 8).
 
 **图 8 解析**
 
@@ -212,11 +180,3 @@ Radial 将 **能量衰减** 转为 **计算密度衰减**,在质量与加速之�
 
 - Li, X., et al. (2025). Radial Attention: $\mathcal{O}(n\log n)$ Sparse Attention with Energy Decay for Long Video Generation. *arXiv:2506.19852*.
 - 代码:https://github.com/mit-han-lab/radial-attention
-
-
-
-
-
-
-
-

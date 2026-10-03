@@ -64,12 +64,6 @@ $h_{l,i}^{\mathrm{post}}$ 可以随输入、随流变，但 **新注入的向量
 
 主设定是 **$N=16$，$k=4$**：16 条流都在，但每层子层只 **更新** 其中 4 条。
 
-![xHC：密读全部流，稀写 k 条，MLP 后再做因果卷积增强写回](./images/fig-xhc-dense-read-sparse-write.png)
-
-> 图 1：左列单流残差；中列 mHC 对全部 $N=4$ 做密混合；右列 xHC 从 16 条密读进 $\mathcal{F}$，只把 $k=4$ 条写回去。蓝色/橙色对应论文图注里的固定激活流 / 路由激活流。
-
-<!-- GenerateImage prompt: Technical educational diagram of Expanded Hyper-Connections (xHC). Three columns: Residual N=1; mHC N=4 dense; xHC N=16 k=4 dense read sparse write plus causal DWConv. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
-
 ### 3.1 时间维增强写回（只加在 MLP 后）
 
 直接给每条流各算一个 $\mathrm{out}$ 太贵。xHC 改从 **因果邻域** 借信息：对子层输出做 $r$ 组深度可分离 1D 因果卷积，核长 $\{\kappa_1,\dots,\kappa_r\}$，再和原输出拼在一起（论文式 (4)）：

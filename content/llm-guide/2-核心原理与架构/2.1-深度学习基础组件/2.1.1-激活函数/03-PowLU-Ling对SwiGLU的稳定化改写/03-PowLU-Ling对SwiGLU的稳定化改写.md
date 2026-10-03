@@ -111,10 +111,6 @@ PowLU 的改动看起来只在正半轴加了一个输入相关指数, 但它同
 
 ## 3. 正半轴增长示意
 
-![SwiGLU 与 PowLU 的正半轴大输入渐近性质：标量对照下前者趋近二次，后者趋近线性但仍无界](./images/redrawn-fig-powlu-asymptotic-properties-v2.png)
-
-> 图 1: 在标量对照 $x_1=x_2=x$ 下，SwiGLU 的门因子趋近 $x$，乘积渐近 $x^2$；PowLU 的正半轴门函数趋近 1，乘积渐近 $x$。两者均无界。
-
 PowLU 改变大正输入下的增长阶，但不引入水平上界；硬截断与 SiTU-GLU 分别使用硬截断和光滑有界变换。该图只说明渐近性质，不表示训练曲线、激活分布或模型性能。
 
 ---
@@ -159,10 +155,6 @@ Ling-2.0 报告描述的产品层包含以下组件:
 
 报告从结构与实验两个角度讨论了 Partial RoPE, 但没有给未旋转维度预设固定的语义职责.
 
-![PowLU 在专家 FFN 内的计算位置：两条升维支路、PowLU 门函数、逐元素乘法与下投影](./images/redrawn-fig-powlu-expert-ffn-v3.png)
-
-> 图 2: 列向量约定下，输入 $x$ 经 $W_{\mathrm{up}}$ 与 $W_{\mathrm{gate}}$ 形成同宽值支路 $v$ 和门支路 $g$；PowLU 只替换门函数 $f(g)$，两支路逐元素相乘后由 $W_{\mathrm{down}}$ 降维。
-
 **图 2 解析**
 
 - $v$ 和 $p=f_{\mathrm{PowLU}}(g)$ 的形状均为 $[d'_{ff},1]$，这是逐元素乘 $h=v\odot p$ 的前提。
@@ -204,10 +196,6 @@ PowLU 论文 Fig. 2 与 Fig. 5 分别统计专家线性层和共享专家的动�
 
 **数值分布: 异常值被压缩.** 论文 Fig. 2 与 Fig. 5 分别给出路由专家和共享专家在相同训练步数后的激活分布. SwiGLU 的分布尾部明显延伸到更大的最大值, 红色长尾对应大异常值; PowLU 的分布则更集中, 极端值被压缩. 这与损失曲线的稳定表现一致: PowLU 不是完全消灭大值, 而是把动态范围压低一个量级, 使 FP8 等低精度格式能更有效地分配量化刻度.
 
-![专家激活动态范围的统计结构与比较条件：前向/反向分别记录 Min/Max、分位数范围与中位数](./images/redrawn-fig-powlu-activation-measurement-v3.png)
-
-> 图 3: 用统计结构表说明如何读取专家激活动态范围。前向激活与反向梯度分别记录 Min/Max、P1/P99、P25/P75 与 Median；SwiGLU 与 PowLU 的比较须对齐训练步、专家线性层、精度和采样条件。
-
 **图 3 解析**
 
 - 论文 Fig. 2/5 报告：在所示条件下，PowLU 分布尾部更集中。精确带宽、层间曲线和数值必须从原图或原始日志读取，不能由示意图补造。
@@ -236,6 +224,3 @@ PowLU 改变渐近增长阶, V4 与 SwiGLU-Clip 使用硬截断, SiTU 使用光�
 3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. Ling-2.0 的 GQA, QKNorm, Partial RoPE, 专家配置与 SwiGLU.
 4. Noam Shazeer. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv:2002.05202. SwiGLU 名称与门控 FFN 结构.
 5. 青稞 AI / Ling Team. (2026). [PowLU: 把 SwiGLU 的二次增长压回线性, 解决 FP8 训练 Loss Spike](https://mp.weixin.qq.com/s/LYmEQF-PcPPykYqFbKrsPw). 微信公众号博文. 设计动机,三个关键设计,Scaling Law,7.9B/124B 实验与数值分布可视化.
-
-
-

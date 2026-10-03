@@ -43,10 +43,6 @@ Table 2:模型跑到**自己的最大序列长度**,8×A100-80GB,无 offload,OOM
 
 Figure 1:C4 随机一句,OPT-6B,五个头.把大于 $1/t$ 的分数画成深绿($1/t$ 是「平均混合」).位置 **178 / 228 / 278** 都盯着 **27,63,98,121,152,177**.附录 Figure 6–9 换层仍然重复.随机初始化的 OPT 没有这图案(Figure 5)--所以这是**训出来的**,不是架构先验.
 
-![三个位置的注意力图在同一批 token 上出现深色格](./images/redrawn-fig-scissorhands-repetitive-attn.png)
-
-> 图 1:重复注意力图案.对应论文 Figure 1.格子数与着色是示意图,不是把 PDF 描下来.
-
 **图 1 解析**
 
 - **三块是三个 query 位置**,不是三层.行是头,列是已经出现的 token.
@@ -80,10 +76,6 @@ $$
 同时看 $\lvert S_{0\rightarrow t}\rvert/t$.若等于 1,每个 token 都至少重要过一次,假设退化成平凡.OPT,OpenBookQA / Wiki-Text:Figure 2 里 $\lvert S_{0\rightarrow t}\rvert$ 明显小于半句;多数层 persistence ratio **超过 95%**,后层往下掉(引言还写过「多数层 overlapping **超过 90%**」--以 Figure 2 的 95% 为主,90% 是引言概括).
 
 所以后半句真正要看的历史位置,几乎都已经在前半句暴露过.这给「生成时丢掉从未高分的 KV」开了口.
-
-![前半句的 pivotal 集合罩住后半句仍在看的那些 key](./images/redrawn-fig-scissorhands-persistence.png)
-
-> 图 2:式 (2) 在画什么.对应 Figure 2 的含义,不是 persistence 曲线的描图.
 
 **图 2 解析**
 
@@ -141,10 +133,6 @@ $$
 **不是每步都压.** 压缩步要额外算一段历史窗上的注意力;$m$ 越大,压缩越不勤.也可以在 Algorithm 1 里一直维护 $I$,用一点点内存换掉压缩步的重算.
 
 **跨头,跨层分预算.** 一层内 $H$ 个头均分.整模型按 Figure 2:后层 persistence 低,**后层多给**.不要读成「深层更稀疏所以更该砍」.
-
-![预算 B 满了之后按历史窗计数丢掉非 pivotal,最近 r 条始终留下](./images/redrawn-fig-scissorhands-budget-compress.png)
-
-> 图 3:Algorithm 1 / 2.$r=10$,$w=400$ 是论文实验默认;格子数是示意图.
 
 **图 3 解析**
 
@@ -212,10 +200,6 @@ Figure 4:OPT-13B,**3×**,C4,压缩前后注意力的相对变化 $(\alpha_s-\alp
 
 ## 6. 「不是」:H2O / SnapKV / FastGen / TOVA
 
-![StreamingLLM 固定前 4;H2O decode 累积分数;Scissorhands 历史窗上的非重要计数加最近窗](./images/redrawn-fig-scissorhands-not-neighbors.png)
-
-> 图 4:三条推理期 KV 策略.不要互换名字.
-
 **图 4 解析**
 
 - **左 StreamingLLM**:起始位与内容无关,默认 4 个 sink.单独成篇 [10](../10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md).
@@ -270,7 +254,3 @@ Figure 4:OPT-13B,**3×**,C4,压缩前后注意力的相对变化 $(\alpha_s-\alp
 2. 官方代码:[lzcemma/Scissorhands](https://github.com/lzcemma/Scissorhands),C4 路径 `Decentralized_FM_alpha/modules/hf_opt_dropkv.py` 与 `run_infer_opt_66b_sparse_c4.sh`.
 
 数字以打开的表和 §5 同行为准.图 1–4 的格子数是示意图.摘要 5× 拆回 OPT-66B 5-shot 的 KV 内存.
-
-
-
-

@@ -37,10 +37,6 @@ Qwen3.5 起的混合是 **3 GDN : 1 全注意力**.报告 Figure 1 把四层重�
 
 全局层为什么还留 RoPE.报告 §2.1.1:全注意力层试过 NoPE,预训练几乎看不出差别,后训练更容易无限生成,停不下来,所以不用 NoPE.QSA 继承这条全局槽,indexer 和核心注意力都走 **partial RoPE**(下一节),不是把位置编码从整层拿掉.
 
-![每四层三层 GDN,一层 QSA;GR 包住每个子层](./images/redrawn-fig-qsa-hybrid-slot.png)
-
-> 图 1:Qwen3.8-Next 的 token mixing 插槽.对应报告 Figure 1 的「三 GDN + 一 QSA」.GR 是残差读写,不是 mixer.$K_B=512$ 写在底栏,避免和专家数撞名.
-
 **图 1 解析**
 
 - **下三层薄荷绿 GDN**:每层一份固定大小的 $S_t$.历史进状态,不进本层 KV 预算.
@@ -106,10 +102,6 @@ $$
 
 选中块展开成原始 token 下标,再截到 $K$.最后一个不完整块里的 token **一律保留**.落地配置(报告 Implementation):$H=4$,$K=2048$,$r=4$,于是每条 query 最多 **512** 个完整块($K_B=\lceil 2048/4\rceil$),再加尾巴.512 是块数上限,不是 MoE 专家数.
 
-![QSA:微块平均池化 → Top-$K_B$ 块 → 展开 token](./images/redrawn-fig-qsa-microblock-topk.png)
-
-> 图 2:indexer key 按 $r=4$ 平均池化成 $\bar k_b$,块因果 Top-$K_B$,再展开回 token 并截到 $K=2048$.不是 IndexPool 加权池化.
-
 **图 2 解析**
 
 - **Stage 1**:连续 $r$ 个 $k$ 做 AvgPool 再 RMSNorm,得到 $\bar k_b$.发生在 RoPE 之前.
@@ -128,10 +120,6 @@ S_i=\mathrm{Expand}(B_i)\cup\Bigl\{r\Bigl\lfloor\frac{i+1}{r}\Bigr\rfloor,\ldots
 $$
 
 $\mathrm{Expand}$ 把块号映回该块内 $r$ 个 token 下标;并上的集合就是「最后一个不完整块」.GLM 的 IndexPool 配置里有 `index_kpool_always_select_tail=true`,语义同类,公式以 QSA 式 (19) 为准,加权池化的公式不在这里.
-
-![块因果:未完成块打不了分,所以尾巴一律进核心注意力](./images/redrawn-fig-qsa-block-causal-tail.png)
-
-> 图 3:query 在 $i=13$,$r=4$ 时只能给 Block 0–2 打分;token 12,13 不在 $I_{ib}$ 里,靠式 (19) 硬留.示意图.
 
 **图 3 解析**
 
@@ -169,10 +157,6 @@ $$
 主干和 indexer 联合 **8000** step,lr $2.5\times 10^{-5}$,每步 **96** 条 256K,大约 **200B** token.报告 Fig. 4:这一阶段和全注意力的 LM loss 差大约 $10^{-4}$(200-step 滑动平均;插图是逐步差).DSA 稀疏阶段是 15000 step,约 943.7B,lr $7.3\times 10^{-6}$,仍按 **token 集合** $S_t$ 做 KL--同一两阶段骨架,老师对齐的粒度不同,token 预算也对不齐.
 
 训练核:fused QSA kernel 一次算出稀疏注意力输出和 KL,不物化中间张量,显存才扛得住 256K 上「老师全注意力分布 + 学生块分数」这条蒸馏带.推理侧多步 MTP **复用** 同一套 top-k 下标(报告写跟 GLM 学),草稿模型少算一遍 indexer;Table 4 说明接受长度几乎不动,复用换的是草稿成本,不是另训一套路由.
-
-![阶段 1 全块 KL;阶段 2 只在选中块上重归一化再 KL](./images/redrawn-fig-qsa-two-stage-kl.png)
-
-> 图 4:式 (17)–(20).左:冻结主干,token 老师经 MaxPool+L1 对齐到块.右:Top-$K_B$ 之后老师在 $B_i$ 内重归一化.图上若把「重归一化」标成式 (19),以正文为准:式 (19) 是 Expand ∪ 尾巴,式 (20) 才是选中块 KL.
 
 **图 4 解析**
 
@@ -273,7 +257,3 @@ Quest,H2O,SnapKV 是推理期选页或驱逐,不改训练期注意力公式,见 
 4. DSA 对照(indexer 仍 $O(L^2)$,两阶段 KL,稀疏阶段 $k=2048$):DeepSeek-V3.2 报告 [arXiv:2512.02556](https://arxiv.org/html/2512.02556) §2.1.$H^I$ 以该报告为准.
 
 图 3 的 $i=13$ 和下标,图 4 的色块是示意图.知乎只学讲法(25% 全局层才换成 QSA;GDN 记,QSA 取),数字未采用专栏.
-
-
-
-

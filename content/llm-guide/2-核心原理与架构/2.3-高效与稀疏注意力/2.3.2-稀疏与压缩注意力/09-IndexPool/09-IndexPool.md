@@ -12,10 +12,6 @@ excerpt: "稀疏注意力用轻量 indexer 挑 token,核心注意力只算被选
 
 本篇只收官方已经写明的句子和 Hugging Face `config.json` 里的整数.加权怎么参数化,分数怎么归一化,**本篇未找到独立公式**--禁止用 QSA 的平均池化式 (13) 冒充 IndexPool.
 
-![四条 indexer key 加权池化成一条,再交给 Top-K=2048](./images/redrawn-fig-indexpool-k4.png)
-
-> 图:官方只保证「四键一池」.图里的方块是示意,不要当成报告插图.英文拼写以正文为准.
-
 ## 1. 它压缩的是 indexer,不是核心注意力
 
 官方文档([docs.z.ai GLM-5.3-Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash))把混合骨架拆成两句话:
@@ -67,4 +63,3 @@ QSA 有式 (12)–(20) 和两阶段蒸馏.IndexPool **没有**对应公开推导
 - Z.ai 文档 *GLM-5.3-Flash*「Architecture for Extreme Efficiency」段:https://docs.z.ai/guides/vlm/glm-5.3-flash
 - Hugging Face `config.json`:https://huggingface.co/zai-org/GLM-5.3-Flash/blob/main/config.json(本会话读了 `text_config` 注意力与 indexer 字段)
 - 对照,不是本篇公式源:Qwen *On the Design of Qwen3.8-Next Architecture* §2.1.2
-

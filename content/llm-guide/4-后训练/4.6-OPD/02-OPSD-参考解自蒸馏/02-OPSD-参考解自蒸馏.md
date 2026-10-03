@@ -29,9 +29,6 @@ excerpt: "家谱定位: 本算法属于 OPD(在线策略蒸馏)家族的核心�
 
 我们可以用**"开卷考 vs 闭卷考"**来完美类比 OPSD 的工作原理. 
 
-![OPSD 特权上下文自蒸馏：学生唯一采样，冻结教师在同一学生前缀上 prefill，Forward KL 只更新学生](./images/opsd_open_book-v3.png)
-*图：Student 只看问题并生成 on-policy rollout；冻结在 $\theta_{\mathrm{init}}$ 的 Teacher 额外读取参考解，但只在同一学生前缀上 prefill，Forward KL 的梯度仅回传 Student。*
-
 假设你(学生模型)和另外一个平行宇宙的你(教师模型),脑容量和智商完全一样(**共享完全相同的模型权重**). 
 现在要解一道极难的奥数题(Prompt). 
 
@@ -250,10 +247,6 @@ $$
 
 梯度**只走学生 logits**.§4.1 实验还把教师**钉在初始策略** $\theta_{\mathrm{init}}$,不跟当前正在更新的学生走,当作隐式正则,防止自蒸馏把分布拽飞.所以「同一套权重」指的是**开局同一份 $p_\theta$,靠上下文分饰两角**;跑起来之后教师冻结,学生 LoRA 更新,两套条件会分开.注意:有的实现把 `golden_answer` 直接 `cat` 进 `teacher_input`,但缺 Figure 2 那句引导,也没写冻结教师.
 
-![学生仅凭题目采样一次在线轨迹，冻结的初始教师在同一前缀上结合参考解做 prefill，前向 KL 的梯度只更新学生](./images/fig-opsd-open-closed-v2.png)
-
-> 图 1:开卷教师 vs 闭卷学生.对应论文 Figure 1.
-
 **图 1 解析**
 
 - **左(青)**:学生只吃 $x$,自回归写出 $\hat y$.这是 on-policy 的唯一采样源.
@@ -290,10 +283,6 @@ D_{\mathrm{clip}}^{(f)}(p_T\|p_S)
 $$
 
 Appendix B:他们**没有**扫 $\tau$.Figure 4:1.7B,AIME24,clip 能挡住崩溃.评测时 Thinking Mode 是开的(Table 8),和训练时学生 TM-off 不是同一档--训练省生成,评测按 Qwen3 博客建议拉满.
-
-![OPSD Algorithm 1：学生唯一采样、同一学生前缀双路前向、全词表 Forward KL 逐项裁剪后仅更新学生](./images/fig-opsd-algorithm-v2.png)
-
-> 图 2：在每个学生前缀位置，冻结 Teacher 与可训练 Student 产生整张词表分布；Teacher 加权的 Forward-KL 贡献先按 $(n,v)$ pointwise clip，再聚合并只更新 Student。
 
 **图 2 解析**
 

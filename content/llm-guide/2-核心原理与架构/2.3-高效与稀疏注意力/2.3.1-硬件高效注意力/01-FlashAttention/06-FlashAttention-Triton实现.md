@@ -26,10 +26,6 @@ $$
 
 其中 $m_i$ 是运行最大值,$\ell_i$ 是指数和,$\widetilde O_i$ 是未归一化输出.局部分数块 $S_{ij}=Q_iK_j^\top$ 在当前迭代内产生并消费,不写入 HBM.
 
-![Triton program 的 Query tile,Key/Value 内循环与在线 softmax 状态](./images/redrawn-fig-fa-triton-tile-online-softmax.png)
-
-> 图 1:一个 program 载入一次 Query 行块,在内循环中扫描 Key/Value 列块;在线 softmax 状态保留在片上,结束后写回一次输出.
-
 这种 Q 外层,KV 内循环的映射对应 [FlashAttention-2](./03-FlashAttention-v2.md) 的前向工作划分.[FlashAttention-1](./02-FlashAttention-v1.md) 论文 Algorithm 1 使用相反的 KV 外层,Q 内层顺序.
 
 ## 2. 因果前向的教学骨架
@@ -111,4 +107,3 @@ $$
 - Triton Project. [Fused Attention Tutorial](https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html), 核验于 2026-09-01.
 - Dao AI Lab. [flash-attention 官方仓库](https://github.com/Dao-AILab/flash-attention), GitHub.
 - Tri Dao. [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691), 2023.
-

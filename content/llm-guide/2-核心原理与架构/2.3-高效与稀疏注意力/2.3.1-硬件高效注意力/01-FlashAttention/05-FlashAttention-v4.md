@@ -26,10 +26,6 @@ $$
 
 Blackwell 还增加了每个 SM 256 KiB 的 Tensor Memory(TMEM).异步 MMA 可以把累加器直接写入 TMEM,不再要求所有大块累加器长期占用寄存器.单条 MMA 的典型输出 tile 也由 Hopper 的 $64\times128$ 扩大到 $128\times128$,为更宽的流水线提供了空间,同时增加了寄存器与片上数据布局的约束.
 
-![FlashAttention-4 在 Blackwell 上的前向数据流](./images/redrawn-fig-fa-v4-mech-asymmetric.png)
-
-> 图 1:矩阵乘结果进入 TMEM;softmax 的指数计算由 MUFU 与 FMA 多项式两条路径共同承担,再把概率块交给 $PV$ 矩阵乘.
-
 ## 2. 前向:两块输出的异步流水
 
 FlashAttention-4 的一个线程块同时推进两个 Query tile.两个 softmax Warpgroup 各负责一个 $128\times128$ 分数块,每个线程处理一整行,依次完成行最大值,指数,行和与精度转换.它们与负责 TMA/MMA 的 Warpgroup 交替工作:一个 tile 做 softmax 时,另一个 tile 的 $QK^\top$ 或 $PV$ 在 Tensor Core 上执行.
@@ -124,4 +120,3 @@ $dQ$ 沿 KV 方向规约,与 2-CTA 对输出 tile 的划分方向并不一致.�
 - Dao AI Lab. [FlashAttention-4](https://dao-lab.ai/blog/2026/flash4/), 2026.
 - Dao AI Lab. [flash-attention 官方仓库](https://github.com/Dao-AILab/flash-attention), GitHub.
 - NVIDIA. [CuTe DSL Documentation](https://docs.nvidia.com/cutlass/media/docs/pythonDSL/cute_dsl_general/dsl_introduction.html), CUTLASS Documentation.
-

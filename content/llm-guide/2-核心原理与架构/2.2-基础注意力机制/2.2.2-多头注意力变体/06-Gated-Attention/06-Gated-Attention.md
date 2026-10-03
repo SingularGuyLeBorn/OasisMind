@@ -114,10 +114,6 @@ Table 4 在测试语言模型数据上量门分数均值(越低越稀)和第一�
 
 名字里都有 Gate,打的不是同一根管子.
 
-![门控注意力作用于 SDPA 输出；门控残差以四分支读门、单次子层与逐分支写回实现](./images/redrawn-fig-gated-attn-not-gated-residual-v2.png)
-
-> 图 2:Gated Attention **不是** Gated Residual.左:Qiu et al. 的 $G_1$.右:[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的 $n_r=4$ 逐元素读门.
-
 **图 2 解析**
 
 - **左**:门乘的是 SDPA 输出 $Y$.残差仍是普通 $x+F(x)$.参数量相对 15A2B MoE 大约 201M(elementwise $G_1$)或 1.6M(headwise),墙钟延迟论文写 **不到 2%**.
@@ -201,5 +197,3 @@ Gated Attention 推荐配置就一句:**SDPA 之后,head-specific(elementwise �
 4. Massive activation:Sun, Chen, Kolter, Liu (2024). [Massive Activations in Large Language Models](https://arxiv.org/abs/2402.17762).
 5. 整机插槽:Qwen3-Next 3:1 = GDN + 带 $G_1$ 的全注意力(§5.4);产品发版表只链 [Qwen 模型家族](../../../../../model-library/03-模型家族/03-qwen/qwen/qwen-bi.md).
 6. **不是** 残差四分支门:[03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md).
-
-

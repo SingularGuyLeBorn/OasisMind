@@ -93,10 +93,6 @@ Engram-27B / 40B 取 $N=3$(只用 2-gram 与 3-gram),$K=8$,$d_{\mathrm{mem}}=128
 
 碰撞不可避免:不同 $n$-gram 可能落到同一行.多头是在用 $K$ 次独立探测换「单次哈希全错」的概率.这仍然是静态先验,下一节用门控处理多义和撞车.
 
-![当前时刻的 2-gram 与 3-gram 后缀经 tokenizer compression、多头哈希和 O(1) row lookup，拼接为 $e_t$](./images/redrawn-fig-engram-ngram-hash-v2.png)
-
-> 图 1：位置 $t$ 只形成一个 2-gram key 与一个 3-gram key；每个 key 经 $K$ 个独立 hash heads 得到 index，各自读取对应表的一行，最后拼接为 $e_t\in\mathbb R^{d_{\mathrm{mem}}}$。
-
 **图 1 解析**
 
 - 原始 token IDs 先经 $\mathcal P:V\to V'$ 得到规范 ID；该映射只改变 Engram key，不改主模型的 token embedding。
@@ -193,10 +189,6 @@ $$
 
 一层 $M=4$,两处插入,每个 token 会算出 8 个门.论文 Figure 7 只展示和语义模式最相关的那路:门在专名,套话结束处升高("Alexander the Great","四大发明","张仲景").不是每条分支都可解释.
 
-![Engram memory prior 与四路 mHC hidden states 计算 branch-specific gates，经局部卷积后逐分支注入 residual](./images/redrawn-fig-engram-gate-residual-v2.png)
-
-> 图 2：一次 Engram insertion 中，$e_t$ 生成跨分支共享的 $v_t$ 与四个 branch-specific $k_t^{(m)}$；每路 $h_t^{(m)}$ 产生自己的 $\alpha_t^{(m)}$，局部卷积后的 $Y^{(m)}$ 再逐分支加回 mHC streams。
-
 **图 2 解析**
 
 - Lookup 阶段只使用 token IDs；context-aware gate 阶段才读取 $h_t^{(m)}$。因此地址可提前确定，而每个分支仍能按当前上下文调整注入强度。
@@ -246,10 +238,6 @@ MoE 路由依赖 $h_t$,专家权重的访问模式要等到该层前向算完才
 | 8B-Dense | +100B Engram(CPU offload) | 6,140.02 | **2.8%** |
 
 正文口径:100B 表 offload 到 host memory,惩罚可忽略,8B 骨干上到顶 **2.8%**(引言写 $<3\%$).这是保守基线:所有访问都走 PCIe,没有把高频 $n$-gram 缓进 HBM.通信体积跟**激活槽数**成正比,跟表的总行数不成正比.$n$-gram 服从 Zipf,论文因此还画了多层缓存:热行可留 HBM/DRAM,长尾可以落到 NVMe;Table 4 本身没有测 SSD.
-
-![Engram 训练期 row-sharded table 的 forward 与 backward 单向通信，以及推理期 Host gather、异步 H2D 与 Layer 1 compute overlap](./images/redrawn-fig-engram-host-prefetch-v2.png)
-
-> 图 3：训练期将 requested indices、active rows 与 row gradients 分成三段单向通信；推理期地址在 Host 侧提前确定，active rows 经 PCIe 异步进入 GPU staging，并与 Layer 1 Attention + MoE 重叠。
 
 **图 3 解析**
 
@@ -373,8 +361,3 @@ Qwen3.8-Flash-Next(权重 2026-08-26)把主干写成 **125B 总 / 6B 每 token �
 3. DeepSeek-V4 mineru:Cheng et al. 2026 出现在未来路线,不是出厂模块.
 4. kNN-LM: https://arxiv.org/abs/1911.00172 ;Hash Layers: https://arxiv.org/abs/2106.04426 ;PEER: https://arxiv.org/abs/2407.04153 .
 5. 知乎只学讲法,数字仍以上述一手为准(URL 记在 inbox `engram-248.md`).
-
-
-
-
-

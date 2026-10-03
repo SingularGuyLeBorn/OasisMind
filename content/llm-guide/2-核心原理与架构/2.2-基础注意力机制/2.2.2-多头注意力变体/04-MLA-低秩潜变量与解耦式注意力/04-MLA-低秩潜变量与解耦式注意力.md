@@ -321,10 +321,6 @@ Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块。训练始终用式 (4)–(12) 
 
 MQA/GQA 改的是 KV **份数**（见 [01-MHA 图 4](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md)）；MLA 改的是 **存什么维度**。下面这张浅色图只对比 cache 内容，**不**画 Prefill 上采样 vs Decode 吸收（那是 [05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md) 已有的两张计算图）。
 
-![MHA 高维 KV vs MLA 低秩 latent](./images/fig-mla-latent-kv-vs-mha.png)
-
-> 图 4：左：MHA 存 $H$ 份 $d_h$ 维 K/V。右：只持久化 $c^{KV}$ 与解耦 RoPE $k^R$；多头 $K^C,V^C$ 算分时恢复、不写 cache。数字回 §14.2 与 Table 9，不另编压缩比。DeepSeek-V2 Figure 3 jpg 仍见图 1。
-
 **图 4 解析**
 
 - **左 MHA**：斜线 K/V 按头堆叠，每头 $d_h$ 维；Query 浅蓝行不进 cache。绿框用 §14.2 已有配置：$n_h=128$, $d_h=128$ → $2 n_h d_h=$ **32768** / token / layer。

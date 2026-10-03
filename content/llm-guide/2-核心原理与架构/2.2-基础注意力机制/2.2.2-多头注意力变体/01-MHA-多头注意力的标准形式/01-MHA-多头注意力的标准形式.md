@@ -36,10 +36,6 @@ $$
 
 其中 $q_i^{(s)}, k_i^{(s)}, v_i^{(s)}$ 分别是位置 $i$,头 $s$ 上的查询,键,值向量.
 
-![Scaled Dot-Product Attention 的完整单头数据流：H 到 Q/K/V、两次双输入 MatMul、causal mask、row softmax 与输出 shape](./images/redrawn-fig-scaled-dot-product-attention-v2.png)
-
-> 图 1：Scaled Dot-Product Attention 的完整单头数据流。Q 与 K 只在 Score MatMul 汇合；mask 在 Row Softmax 前加入 logits；概率矩阵 A 与 V 只在 Value MatMul 汇合，输出 $O\in\mathbb R^{T\times d_v}$。
-
 **图 1 解析**
 
 这张图把 projection、score、mask、probability 与 value aggregation 按真实依赖顺序展开。
@@ -169,10 +165,6 @@ $$
 $$
 
 于是 $\alpha_{t,j}^{(h)} = 0$($j > t$),且 $\sum_{j=1}^{t} \alpha_{t,j}^{(h)} = 1$.训练与推理必须使用**同一掩码语义**,否则分布偏移会在长序列生成中放大.
-
-![Multi-Head Attention 的完整结构：QKV projection bundle、共享 causal mask、parallel heads、Concat、W^O 与 residual add](./images/redrawn-fig-multi-head-attention-v2.png)
-
-> 图 2：Multi-Head Attention 的完整结构。同一个 $X$ 生成 $H$ 组 $Q_h,K_h,V_h$；所有 heads 共享同一可见性规则但独立计算 $S_h,A_h,O_h$；输出只在 Concat 汇合，再经 $W^O$ 与 residual $X$ 相加。
 
 **图 2 解析**
 
@@ -305,10 +297,6 @@ $$
 
 仅 KV 已占单卡显存显著比例;$B$ 或 $L$ 再翻倍,Cache 近似线性跟着翻倍--这是 MHA 在 serving 里最先触顶的原因.后文 MQA / GQA 不改 Query 头数 $H$,只改 **decode 要缓存几份 KV**;浅色积木把式 (18) 的 $H$ 因子画出来(论文 jpg 仍见图 1–3,不删).
 
-![Decode 单 Token 时 MHA、GQA、MQA 的 Query head 到持久化 KV group 映射，以及每 token、每层的 cache 宽度](./images/redrawn-fig-mha-gqa-mqa-kv-heads-v3.png)
-
-> 图 4：三种机制都保留 $H=6$ 个 Query heads；MHA、GQA、MQA 分别映射到 6、3、1 个持久化 KV groups，因此每个 token、每层的 cache 宽度依次为 $2Hd_h$、$2Gd_h$ 与 $2d_h$。
-
 **图 4 解析**
 
 蓝色 Query blocks 只表示当前 token 的查询头，不进入 cache；斜线橙色 Key 与金色 Value 表示持久化对象。每条蓝色虚线都是独立的 head-to-group 映射：MHA 为每个 Query head 保留独立 K/V，GQA 以两头一组共享 K/V，MQA 让全部 Query heads 共享一组 K/V。
@@ -391,10 +379,6 @@ class MultiHeadAttention(torch.nn.Module):
 
 工程实现里常把 $H$ 个头合并为一次大矩阵乘(`qkv_proj`)以吃满 Tensor Core;逻辑上与上式等价.
 
-![经典 Encoder–Decoder Transformer 中双栈、五条残差、Cross-Attention Q/K/V 来源、因果 mask 与词表概率的完整数据流](./images/redrawn-fig-transformer-architecture-v3.png)
-
-> 图 3：经典 Encoder–Decoder Transformer 数据流。Encoder 建立可双向访问的 source memory；Decoder 先执行因果 Self-Attention，再以 decoder state 为 Q、encoder top output 为 K/V 执行 Cross-Attention，最后经 Linear 与 Softmax 得到词表概率。
-
 **图 3 解析**
 
 经典 Encoder–Decoder 全貌（现代 LLM 多为 Decoder 栈的变体）：
@@ -444,7 +428,3 @@ MHA 的完整计算链可概括为:**隐藏坐标线性投影 → 双线性打�
 
 1. Vaswani, A., et al. (2017). [Attention Is All You Need](https://arxiv.org/abs/1706.03762). *NeurIPS*.
 2. Shazeer, N. (2019). [Fast Transformer Decoding: One Write-Head is All You Need](https://arxiv.org/abs/1911.02150). *arXiv*.
-
-
-
-

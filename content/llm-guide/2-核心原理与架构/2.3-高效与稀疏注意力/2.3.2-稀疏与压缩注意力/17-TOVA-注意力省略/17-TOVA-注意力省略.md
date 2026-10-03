@@ -64,10 +64,6 @@ $$
 
 这一层叙事不依赖 TOVA.Window,Window+$i$,H2O 在论文 §3.3 / §5.1 里都被写成「把 unbounded 变成 bounded 的压缩政策」.TOVA 只是其中一条政策,见 §3.
 
-![上排 KV 随 decode 无限增长;下排把状态数钉死为 2,每步丢掉一条](./images/redrawn-fig-tova-msrnn-unbounded.png)
-
-> 图 1:unbounded / bounded MSRNN.对应论文 Figure 1.青绿是还在的状态;下排红叉是这一步丢掉的那条.格子数是示意图.
-
 **图 1 解析**
 
 - **上排 Unbounded**:每来一个 $q_t$,cache 就 `concat` 一条新 KV.这就是式 (3).没有 $k$.
@@ -104,20 +100,12 @@ $t\le k$ 直接 return.官方 [`src/tova_cache.py`](https://github.com/schwartz-
 
 自定义 Llama 前向(`src/convert_models/llama_custom.py`)是先用 **当前这份** cache 做完 softmax 和加权,再 `past_key_value.reduce(...)`.被踢的那条还参加了 **这一步** 的注意力;下一步才消失.README 写 `transformers==4.36.2`,当时支持 LLaMA 与 Mistral.
 
-![当前 query 对 cache 打分,最低的那条被叉掉](./images/redrawn-fig-tova-drop-lowest.png)
-
-> 图 2:单步 TOVA.对应论文 Figure 2 与 Algorithm 1.分数是示意图,不是表.
-
 **图 2 解析**
 
 - **左 $q_t$**:只用 **最后一行** query.不是对过去所有 query 求和(那是 H2O 的累加器),也不是 prompt 末尾观测窗投票(那是 SnapKV).
 - **五个分数**:示意图.真实实现是 softmax 之后的质量,再对 head 做平均.
 - **红叉**:$\arg\min$.式 (5) 把 $j$ 两侧 concat 回去,cache 条数回到 $k$.
 - **底注**:满了才踢.未满只追加.
-
-![每头各踢各的较差;层内平均后再踢一条更好](./images/redrawn-fig-tova-layer-mean.png)
-
-> 图 3:head 与 layer.对应 Appendix A / Table 3.
 
 **图 3 解析**
 
@@ -208,10 +196,6 @@ Quest Table 1,token budget;前两层满 cache.材料段用 FlashAttention 做满
 
 加预算也救不回来:候选已经被删.Quest 的对照句是 `A is B. C is D. A is`--query 停在 "D" 时 "B" 分很低,最后一个 "is" 要补 `A is _` 时 "B" 才变成高峰.TOVA 用的就是 **当前这一行** 的分.读 haystack 的那些步里,passkey 看起来只是普通数字,平均注意力经常垫底,式 (5) 先把它叉掉;问句来了,槽已经空了.这不是「Top-$k$ 取得不够多」,是驱逐把未来的 criticality 提前结算了.Quest 每步重估,不删,打的是另一件事.
 
-![读 haystack 时当前 query 把 passkey 叉掉;问句到来后槽已空](./images/redrawn-fig-tova-evict-before-question.png)
-
-> 图 4:当前步注意力误杀.场景对齐 Quest 单独成篇 Figure 2 / Table 1 的驱逐叙事;格子和 0.02 是示意图.
-
 **图 4 解析**
 
 - **顶行时间线**:针在中段,问句在末尾.Quest 评测刻意把问题按 decode 喂,就是为了造出「答案先出现,问句后出现」.
@@ -278,7 +262,3 @@ Table 2(NLTK 词性;数字是平均存活步数;Avg. 是所有 tag 的均值):
 3. 驱逐对照(passkey 表):[13-Quest](../13-Quest-查询感知稀疏/13-Quest-查询感知稀疏.md) 所据 Tang et al., [arXiv:2406.10774](https://arxiv.org/abs/2406.10774) Table 1.项目页 [schwartz-lab-huji.github.io/publication/tova](https://schwartz-lab-huji.github.io/publication/tova/) 只作导航.
 
 数字以打开的表和 §6–§7 同行为准.摘要「1/8,4.8×」拆回 PG-19 / SQuALITY 的质量档,以及 Table 1 的 512 列,V100.图 2,图 4 的分数是示意图.
-
-
-
-

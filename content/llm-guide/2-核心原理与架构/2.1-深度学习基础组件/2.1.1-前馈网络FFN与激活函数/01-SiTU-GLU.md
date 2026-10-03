@@ -34,12 +34,6 @@ $$
 
 超参固定：**$\beta_1=4$（门）、$\beta_2=25$（up）**。不要改成「可学习温度」——报告没这么写。
 
-![SwiGLU 无界乘积 vs SiTU-GLU 有上界](./images/fig-situ-glu-vs-swiglu.png)
-
-> 图 1：左，SwiGLU 两支路都可以一直涨。右，每支路先 $\beta\tanh(x/\beta)$，乘积被压在 $\beta_1\beta_2$。图是示意，不是从论文描点。
-
-<!-- GenerateImage prompt: Schematic SwiGLU unbounded product vs SiTU-GLU tanh-capped branches approaching beta1*beta2. White academic background, no watermark, no logo, no copyright text, no stock-photo banner, no website URL. -->
-
 ## 2. 为什么原点附近还像 SwiGLU
 
 附录 B：$\beta\tanh(z/\beta)=z+O(z^3/\beta^2)$。所以在 0 附近 SiTU-GLU 和 SwiGLU **一阶相同**。$\beta_1,\beta_2\to\infty$ 时逐点回到 SwiGLU。负半轴仍靠 sigmoid 把门打没，tanh cap 主要管大正值。

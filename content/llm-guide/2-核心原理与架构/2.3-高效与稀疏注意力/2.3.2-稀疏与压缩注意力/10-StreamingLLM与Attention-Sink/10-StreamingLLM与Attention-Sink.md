@@ -33,10 +33,6 @@ excerpt: "只留最近一段 KV 的 window attention,一旦把序列开头踢出
 
 长度外推(NTK / YaRN)和上下文扩展(插值再微调)正交:它们改的是「一次前向能看多远」.StreamingLLM **不扩大**可注意的最近上下文,只保证滚动窗里那一段还能稳定算.
 
-![稠密,窗,重算窗,StreamingLLM 四种 KV 策略](./images/redrawn-fig-sllm-four-methods.png)
-
-> 图 1:论文 Figure 1 的四条路.(a) 稠密:cache 随 $T$ 涨;(b) 窗:踢掉起始 token;(c) 窗内重算;(d) 留下 sink + 滚动最近段.
-
 **图 1 解析**
 
 - **(a)** 图上 $O(T)$ 指 **KV 条数线性涨**.整段自注意力时间仍是 $O(T^2)$.超过预训练窗后质量也掉.
@@ -60,10 +56,6 @@ $$
 
 语义还是位置?Table 1 把前 4 个换成换行 `"\n"`:`4"\n"+1020` 的 PPL 是 **5.60**,对照原起始 token 的 `4+1020` **5.40**,纯窗 **5158.07**.语义几乎无所谓,**绝对位置**更要紧.
 
-![query 把质量倒进起始 sink;softmax 行和为 1](./images/redrawn-fig-sllm-softmax-dump.png)
-
-> 图 2:质量被迫加起来等于 1;对不上的部分停在起始若干 key 上.对应论文式 (1) 与 Figure 2.
-
 **图 2 解析**
 
 - **左**:$q$ 对 $k_1,\ldots,k_4$(琥珀,sink)箭头粗,对最近 key 箭头细.这是示意图,**不是**论文里某一头的精确比例.
@@ -82,10 +74,6 @@ StreamingLLM 把 KV 分成两截(论文 Figure 4):
 相对位置按 **cache 里的下标** 赋,不按原文下标.论文给的例子:cache 里是 $[0,1,2,3,6,7,8]$,正在解第 9 个 token,赋的位置是 $[0,1,2,3,4,5,6,7]$,**不是** $[0,1,2,3,6,7,8,9]$.
 
 RoPE:cache 里存的是 **旋转之前** 的 Key,每步 decode 再按 cache 下标转.ALiBi:加一段**连续**的线性偏置,不要按原文距离跳变.论文写这套赋位对相对位置编码(RoPE,ALiBi)都适用.
-
-![原文下标有洞;cache 内下标连续;RoPE 跟 cache](./images/redrawn-fig-sllm-rolling-kv.png)
-
-> 图 3:论文 Figure 4 的赋位.上排原文位置,下排 cache 槽.RoPE 跟下面那排.
 
 **图 3 解析**
 
@@ -106,10 +94,6 @@ RoPE:cache 里存的是 **旋转之前** 的 Key,每步 decode 再按 cache 下�
 | Llama-2-7B | 3359.95 | 11.88 | 10.51 | **9.59** | 9.54 |
 
 一个或两个起始位通常不够(Llama-2 尤其明显).四个大致够,再加边际很小.Falcon 在 1 个起始位上就已经回到 12.12.论文默认实验用 4 个 sink.Llama-2 实验 cache 设 2048,Falcon / Pythia / MPT 设 1024--都是各自预训练窗的一半,方便把曲线画清楚,不是「官方最优 cache」.
-
-![窗在 cache 边界炸;稠密在预训练窗后爬;StreamingLLM 持平](./images/redrawn-fig-sllm-ppl-collapse.png)
-
-> 图 4:对应论文 Figure 3 的定性形状,不是把表上的数字描成坐标.
 
 **图 4 解析**
 
@@ -162,10 +146,6 @@ s_{h,i,j}=\frac{\mathrm{Exp}(z_{h,i,j})}{\sum_{k}\mathrm{Exp}(z_{h,i,k})+\mathrm
 $$
 
 行和可以不等于 1,甚至接近 0.这是**训练期**给每头一个标量逃逸口,不是推理时把 Llama 的前 4 个 KV 钉死.积木落点见 [07-CSA-HCA](../07-CSA-HCA-混合压缩注意力/07-CSA-HCA-混合压缩注意力.md).
-
-![四条逃逸阀:真实起始 KV,SoftMax1,标量 z',H2O 堆](./images/redrawn-fig-sllm-four-escapes.png)
-
-> 图 5:四条「让注意力有地方去」的路.名字相近,实现不是同一个算子.
 
 **图 5 解析**
 
@@ -240,8 +220,3 @@ Xiao 给出的故事是 softmax 归一化 + 起始位全局可见.后来两篇�
 9. Han Lab 博文:[How Attention Sinks Keep Language Models Stable](https://hanlab.mit.edu/blog/streamingllm)(2025-08,对接 gpt-oss).
 
 数字以论文表为准.图 2 的箭头粗细,图 4 的曲线形状是示意图,不代替 Table 1–6.
-
-
-
-
-

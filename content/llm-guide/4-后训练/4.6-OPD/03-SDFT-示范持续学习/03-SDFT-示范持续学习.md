@@ -36,9 +36,6 @@ SDFT 证明了: 持续学习的解药,就藏在模型自身极其强大的上下
 
 我们可以用**"武林高手学新招"**来直观感受 SFT 与 SDFT 的天壤之别. 
 
-![SDFT 学生唯一采样、示范只进 EMA Teacher、逐 token 蒸馏、Student 更新与 EMA 参数回路](./images/sdft_continual_learning-v4.png)
-*图：Student 只看 $x$ 与自己的前缀；EMA Teacher 额外读取 demonstration $d$。$p_T$ stop-gradient，Student 更新后的 $\theta_{\mathrm{new}}$ 与 previous $\phi$ 共同产生下一步 Teacher $\phi_{\mathrm{next}}$；能力探针只评估。*
-
 - **SFT (填鸭式硬背)** : 高手看到一本新剑谱(Demonstration),他不管自己以前练了十年的内功心法,强行照猫画虎地模仿剑谱上的动作. 结果动作是学会了,但一上场,因为内力和招式冲突,走火入魔,连最基础的出拳都不会了(推理链崩塌,灾难性遗忘). 
 
 - **SDFT (自我融会贯通)** : 高手先给自己倒杯茶,**仔细阅读并理解这本剑谱(Demonstration-Conditioned Teacher)** . 在这个"领悟"状态下,高手脑子里推演出了这套剑法该怎么打. 接着,他让**没有拿剑谱的本体(Student)** 在演武场上挥剑(On-Policy 采样). 每挥一剑,那个"领悟状态的自我"就会用心法去纠正他: "这一步你原本的内功运行是对的,只需要在出招角度上偏向剑谱三分即可. " 这样,新招式被完美融入了旧有的神经回路. 
@@ -283,10 +280,6 @@ $$
 
 **实现分叉(必须写):** 理论钉 Reverse KL,正文却写 "we found in practice that Forward KL yields the best performance".式 (1) 只写 Reverse,方向跟理论,**不是**「论文主实验规定必须 Reverse」.§6 的 `F.kl_div(student_logprobs, teacher_probs)` 在 PyTorch 里其实是 $\mathrm{KL}(\text{teacher}\|\text{student})$,注释写 Reverse,代码更接近实践的 Forward--不要把那段代码当论文公式.
 
-![学生只看问题采样一次轨迹，同一前缀分别由学生和带示范上下文的 EMA 教师评分，蒸馏梯度只更新学生](./images/fig-sdft-student-teacher-v2.png)
-
-> 图 1:示范条件化教师 vs 闭卷学生.对应论文 Figure 2(左).
-
 **图 1 解析**
 
 - **左(青)**:学生只吃 $x$,采样 $y$.这是 on-policy 的唯一采样源.
@@ -317,10 +310,6 @@ $$
 $$
 
 注意:有的实现把 `alpha=0.99` 当衰减系数写,和式 (R7) 的 $\alpha=0.01$ 是同一档,符号不要混.TRL 文档把默认教师写成冻结 base「matching the paper」--跟论文正文不符,本篇跟 A.3.
-
-![SDFT 算法数据流：学生单次采样，同一前缀双路评分，逐 token 全词表蒸馏只更新学生，再用新学生参数更新 EMA 教师](./images/fig-sdft-algorithm-v2.png)
-
-> 图 2:Algorithm 1 数据流.Box 3 的 $D$ 左右以式 (R3) 的 $D(\pi_\theta\|\pi_T)$ 为准;实践可换成 Forward.
 
 **图 2 解析**
 

@@ -21,10 +21,6 @@ excerpt: "分域 RL 能把数学,代码,agent 各自推到峰值,交付却只要
 
 三家给出的合并手段,共同的只有半句:**轨迹从学生来(on-policy),监督从多个冻结教师来.** 损失怎么写,裁剪裁哪一项,一次前向看几个词表位置,必须分节读,不能共用一套超参.
 
-![多教师在线蒸馏的三种损失分叉：V4 全词表加权 Reverse KL、K3 逐 token clipped log-ratio、MiMo 训推重要性门与可选 ORM](./images/fig-mopd-three-forks-v2.png)
-
-> 图 1:三家损失分叉.
-
 **图 1 解析**
 
 - **左 · V4 仍叫 OPD.** 目标是加权 reverse KL,比较的是**整段词表**分布.报告批评把 KL 收成单个已采样 token 的 advantage.
@@ -66,10 +62,6 @@ $$
 - 数据分发时按**教师索引排序**样本:每个 distinct 教师头每个 mini-batch 只加载一次,设备上同一时刻最多驻留一个教师头.
 - 精确 KL 用 TileLang kernel,减少动态显存分配.
 
-![mini-batch 按教师索引分组后一次加载一个冻结教师，只缓存末层 hidden 并按需用当前 head 重建全词表 logits，精确 Reverse KL 仅更新学生](./images/fig-v4-teacher-hidden-cache-v2.png)
-
-> 图 2:V4 §5.2.2 全词表 OPD 的调度.格子数是示意.
-
 **图 2 解析**
 
 - **不存 logit 存 $h$.** 瓶颈是词表大小乘教师数,不是「再写一份学生 KV」.
@@ -99,10 +91,6 @@ r^{d}_{\mathrm{opd}}(y_t\mid e,x,y_{<t})=\mathrm{clip}\Biggl(\mathrm{sg}\Biggl(\
 $$
 
 $\mathrm{sg}$ 仍是 stop-gradient.$R_{\max}>0$ 用来夹住极端 advantage,稳定 RL.分母里学生带了条件 $e$--effort 不只是选哪位教师,也进了 $\pi_\theta$ 的条件.这条奖励是**稠密,逐 token** 的,报告写它可以直接塞进现有 RL 框架,于是长程任务上的 **partial rollout**(一批 $NK$ 条轨迹,完成比例 $\lambda$ 就开优化,暂停的下轮优先续)对蒸馏同样适用.
-
-![K3 先由 domain 与 effort 选定九宫格中的一名冻结教师，学生产生唯一在线轨迹，再把已采样 token 的停止梯度对数比裁剪为逐 token 奖励](./images/fig-k3-nine-experts-v2.png)
-
-> 图 3:K3 九专家与式 (15).
 
 **图 3 解析**
 
@@ -148,10 +136,6 @@ $$
 $$
 
 $\epsilon_{\mathrm{low}},\epsilon_{\mathrm{high}},\alpha$ 报告没有给出数值.本篇不编.训推两套引擎为什么不是同一个分布,见 [6.1.7](../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
-
-![MiMo MOPD 中 μθ 采样、πθ 重算同一轨迹，πθ/μθ 形成训推门控，域教师产生停止梯度 advantage，再与可选 ORM 汇入学生策略梯度](./images/fig-mimo-is-orm-v2.png)
-
-> 图 4:Flash §4.4 数据流.对应报告式 (5)–(9).
 
 **图 4 解析**
 

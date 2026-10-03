@@ -101,10 +101,6 @@ $$
 
 2B 消融(论文 Figure 3):在 GShard 上只隔离 $1$ 个共享专家,多数基准上升;再把专家从 $16$ 切到 $32$($1+31$)再到 $64$($1+63$),总体继续升.共享与细粒度不是互相替代的一刀.Table 2 把 MoE 容量上界做成「$16$ 个共享专家,每个与标准 FFN 同宽」的 Dense$\times 16$:Pile loss 同为 $1.808$,HellaSwag $54.8$ 对 $55.1$.在约 $2$B 参数,$100$B token 下,细粒度加共享已经贴近这个上界;同表里 GShard$\times 1.5$(专家参数与算力都乘 $1.5$)才刚追上 DeepSeekMoE.关掉共享专家,再多激活一个路由专家(算力不变),Pile loss 从 $1.808$ 升到 $2.414$:共享支路学到的不是路由专家能顶上的那份.固定总专家 $64$,激活总数不变时,$1/2/4$ 个共享的 Pile 分别为 $1.808/1.806/1.811$,放大时论文把共享与激活路由之比钉在 $1:3$(16B 的 $2:6$ 即此).
 
-![DeepSeekMoE共享专家、路由门控、加权求和与残差的完整前向数据流](./images/redrawn-fig-deepseek-moe-shared-routed-v2.png)
-
-> 图 1：单个 token 的 DeepSeekMoE 前向计算，示意配置为 $N_s=3,N_r=5,K_r=2$，省略 Norm。共享专家全部执行；路由侧选中专家 2、4。隐藏态、门控权重、各路输出和原始残差都保留明确的来源与汇合位置。实际模型配置见第 5 节。
-
 **图 1 解析**
 
 沿输入 $u_t$ 分出的数据路径阅读：共享支路执行全部专家，路由支路执行所选专家，残差支路直接进入最终加法。绿色与蓝色表示本次执行的计算；灰色列出未选中的专家。
@@ -129,10 +125,6 @@ $$
 ## 4. FFN 插槽与两次残差更新
 
 DeepSeek-V2 / V3 的一张整机图上同时出现 MLA 和 DeepSeekMoE.分工必须钉死:**MLA 改的是注意力怎么缓存 KV;MoE 改的是残差后的前馈怎么条件计算.** 二者串联,不是互相替换.
-
-![DeepSeekMoE的FFN替换范围、两次残差与Router控制信号](./images/redrawn-fig-deepseek-moe-ffn-slot-v2.png)
-
-> 图 2：固定同一注意力映射 $A$，比较 Dense FFN 与 DeepSeekMoE。红虚线框标记前馈映射 $F$ 的替换范围；每种结构都保留两次残差相加。$F_M(u^l)$ 汇合共享和加权路由输出，随后在框外与 $u^l$ 相加。
 
 **图 2 解析**
 
@@ -284,10 +276,6 @@ $$
 
 若 $b=(0,0,0,2.0)$，排序分数变成 $s+b\approx(0.8808,0.6225,0.7311,2.2689)$，Top-2 改为专家 $4$ 与 $1$。门控仍读取原始 Sigmoid 分数，以 $s_1+s_4\approx1.1497$ 为分母，得到 $g\approx(0.7661,0,0,0.2339)$。偏置改变选中集合，数值归一化的来源仍是原始 $s$。
 
-![DeepSeekMoE专家选择与门控值的独立来源路径及数值对应](./images/redrawn-fig-deepseek-moe-v1-v3-gating-v2.png)
-
-> 图 3：两种规则使用同一组四专家 logits。V1/V2 由全局 Softmax 产生 $p$，用 Top-K 的索引 $S$ 保留相应分量。V3 将原始 $s$ 与独立偏置 $b$ 相加来选择 $S$，再从旁路输入的原始 $s$ 计算门控。每条旁路都标明传递的变量。
-
 **图 3 解析**
 
 - **共同输入**：$\ell_i=u_t^{\top}e_i$，两种规则在同一组 logits 上进行对照。
@@ -350,6 +338,3 @@ DeepSeekMoE 的计算关系是：注意力残差得到 $u_t$；**共享支路与
 3. DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437)([HTML](https://arxiv.org/html/2412.19437)). §2.1.2 式 (12)–(20),§4.2 的 $671$B/$37$B,$N_s=1$,$N_r=256$,$K_r=8$,Table 5 消融.
 4. Lepikhin et al. (2021). [GShard](https://arxiv.org/abs/2006.16668). 对照用的宽专家 Top-2.
 5. Fedus, Zoph, Shazeer. (2021). [Switch Transformers](https://arxiv.org/abs/2101.03961). $f_i P_i$ 辅助损失同族.
-
-
-

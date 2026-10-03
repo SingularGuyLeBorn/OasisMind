@@ -14,10 +14,6 @@ DeepSeekMoE 要解决的不是「再堆几个和稠密 FFN 一样宽的专家」
 
 每个 token 过 **全部** 共享专家，再由路由器从路由专家里挑 Top-$K_r$。共享支路扛通用计算，路由支路扛细分知识。
 
-![共享专家 always-on，路由专家 Top-K](./01-DeepSeek-MoE-images/fig-deepseek-moe-shared-routed.png)
-
-> 图 1：下为 $u_t$，左绿共享专家实线全开，右蓝路由专家经 Router / Top-$K_r$ 虚线选中后再加权。输出 $h'_t$。
-
 **图 1 解析**
 
 - 绿盒 $N_s$ 个：没有 Top-K，每个 token 都进。

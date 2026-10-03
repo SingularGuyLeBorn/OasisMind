@@ -250,10 +250,6 @@ $$
 
 梯度**只走学生 logits**。§4.1 实验还把教师**钉在初始策略** $\theta_{\mathrm{init}}$，不跟当前正在更新的学生走，当作隐式正则，防止自蒸馏把分布拽飞。所以「同一套权重」指的是**开局同一份 $p_\theta$、靠上下文分饰两角**；跑起来之后教师冻结、学生 LoRA 更新，两套条件会分开。旧稿 §6 把 `golden_answer` 直接 `cat` 进 `teacher_input` 方向对，但缺 Figure 2 那句引导、也没写冻结教师。
 
-![同一套权重：闭卷学生只看题生成，开卷教师看参考解却只做 prefill，散度只沿学生轨迹回传](./images/fig-opsd-open-closed.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two-column OPSD: student p_S(x) closed-book generates y-hat; teacher p_T(x,y*) open-book prefill only; D(p_T || p_S); gradient only through student. -->
-
 > 图 1：开卷教师 vs 闭卷学生。对应论文 Figure 1。旧图 `opsd_open_book.png` 不删，本节改引这张。2026-08 自绘。
 
 **图 1 解析**
@@ -292,10 +288,6 @@ D_{\mathrm{clip}}^{(f)}(p_T\|p_S)
 $$
 
 Appendix B：他们**没有**扫 $\tau$。Figure 4：1.7B、AIME24，clip 能挡住崩溃。评测时 Thinking Mode 是开的（Table 8），和训练时学生 TM-off 不是同一档——训练省生成、评测按 Qwen3 博客建议拉满。
-
-![Algorithm 1：学生采样、双路前向、全词表散度、词表维 clip、只更新学生且教师冻在 theta init](./images/fig-opsd-algorithm.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Five-box Algorithm 1: sample y-hat; dual forward; full-vocab D; pointwise clip; update student, freeze teacher. -->
 
 > 图 2：Algorithm 1 数据流。Box 3 若把 $D$ 的左右写反，以式 (R3) 的 $D(p_T\|p_S)$ 为准。2026-08 自绘。
 

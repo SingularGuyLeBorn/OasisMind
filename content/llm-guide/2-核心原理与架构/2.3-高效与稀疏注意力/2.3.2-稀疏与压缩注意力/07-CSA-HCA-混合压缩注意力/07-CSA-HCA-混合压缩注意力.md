@@ -25,10 +25,6 @@ DeepSeek-V4 将上下文推至 **1M tokens**,核心不是替换 Transformer,而�
 
 **一句话**:与其改 Softmax 公式,不如 **改 attention 输入的有效序列长度**.
 
-![DeepSeek-V4 整体架构:CSA/HCA 与 MoE,mHC 的层间排布](./images/redrawn-fig-v4-hybrid-architecture.png)
-
-> 图 1: DeepSeek-V4 层间排布--CSA/HCA 与 MoE,mHC 交错(论文 Figure 2).
-
 **图 1 解析**
 
 - **纵轴**:Transformer 块堆叠;**横轴**:同一层内子模块分工.Attention 层不再全是「全长度 MLA」,而是 **CSA 层与 HCA 层交错**,形成「稀疏精检索 + 极压缩全局」的节拍.
@@ -36,10 +32,6 @@ DeepSeek-V4 将上下文推至 **1M tokens**,核心不是替换 Transformer,而�
 - **HCA 层**:用更大压缩率 $m' \gg m$(如 128)把序列压到数千级,再 **稠密** attention — 保证稀疏路由漏掉的信息仍有「兜底通道」.
 - **mHC**:流形约束超连接,稳定超深 MoE 的信号传播;与注意力正交,但决定 1M 训练能否收敛.
 - **DeepSeekMoE + MTP**:与 V3 同族,说明 V4 的效率增益主要来自 **注意力路径**,而非换掉 MoE 主干.
-
-![V4 与同期模型的任务分对照(报告图,不是 FLOPs 曲线)](./images/redrawn-fig-v4-benchmark-flops-kv.png)
-
-> 图 2: 下游任务对照.1M 上的效率数字 **不要**从这张任务分图读:V4 报告 Figure 1 **右侧**写明,1M 上下文下 V4-Pro 相对 V3.2 单 token FLOPs **≈ 27%**,KV Cache **≈ 10%**(等效 FP8 FLOPs);V4-Flash 约 **10% / 7%**.
 
 **图 2 解析**
 
@@ -50,10 +42,6 @@ DeepSeek-V4 将上下文推至 **1M tokens**,核心不是替换 Transformer,而�
 ---
 
 ## 2. CSA:压缩 + 稀疏 + 局部窗口
-
-![CSA 核心结构:块压缩,DSA 选块,滑动窗口与 MQA 核心注意力](./images/redrawn-fig-csa-core-architecture.png)
-
-> 图 3: CSA--块压缩,DSA top-k,滑动窗口与 MQA 核心 attention(论文 Figure 3).
 
 **图 3 解析**
 
@@ -94,10 +82,6 @@ $$
 ---
 
 ## 3. HCA:重度压缩 + 稠密全局
-
-![HCA 核心结构:更大压缩率 $m'$,无重叠,稠密 MQA](./images/redrawn-fig-hca-core-architecture.png)
-
-> 图 4: HCA--$m'=128$ 重度压缩后对全部压缩条目做稠密 attention(论文 Figure 4).
 
 **图 4 解析**
 
@@ -172,7 +156,3 @@ MHA → MQA → GQA → MLA(V2/V3)
 2. DeepSeek-AI. (2025). Native Sparse Attention. [arXiv:2502.11089](https://arxiv.org/abs/2502.11089).
 3. Moonshot AI. (2025). Mixture of Block Attention. [arXiv:2502.13189](https://arxiv.org/abs/2502.13189).
 4. DeepSeek-AI. (2024). DeepSeek-V2. [arXiv:2405.04434](https://arxiv.org/abs/2405.04434).
-
-
-
-

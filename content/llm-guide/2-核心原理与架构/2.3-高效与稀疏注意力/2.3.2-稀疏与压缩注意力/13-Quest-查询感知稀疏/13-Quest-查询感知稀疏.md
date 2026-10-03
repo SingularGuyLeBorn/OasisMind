@@ -44,19 +44,11 @@ Figure 4 把「会不会选到真正的高分 token」写成 Top-10 召回(LongC
 
 因此要回答的问题很窄:已经训好的 decoder,**不微调,不改注意力公式**,能不能在 decode 时少搬 KV,同时把「现在还不重要,问句来了才重要」的位置留下来?
 
-![稠密全载,驱逐丢槽,Quest 全量驻留只载 Top-K 页](./images/redrawn-fig-quest-not-eviction.png)
-
-> 图 1:三种 decode 读 KV 的方式.对应论文 Figure 1 的 Dense / Query-agnostic / Query-aware.(c) 的格子都还在 GPU 上,橙页只表示这一步载入注意力.
-
 **图 1 解析**
 
 - **(a)** 每一步 `Load all KV`.条数随 $T$ 涨,带宽也随 $T$ 涨.
 - **(b)** 灰格带叉:驱逐.图上连续叉掉后半段只是示意「丢了就没有」;H2O 实际是最近窗加 Heavy Hitter,不是「永远留前 4 个」,见 [11](../11-H2O-Heavy-Hitter-Oracle/11-H2O-Heavy-Hitter-Oracle.md).
 - **(c)** 12 个 token 分成 4 页,全部仍在.橙页是这一步的 Top-K;浅青页这一步不读,**下一步 query 变了还可以再被选中**.右边的框在示意图里写成了 Attention 出口,语义以底注为准:全量 KV 驻 GPU,省的是这一步的加载量.
-
-![同一条 B 在 query=D 时低分,在最后的 is 上变成高分](./images/redrawn-fig-quest-query-depends.png)
-
-> 图 2:criticality 随 query 变.对应论文 Figure 2 的 "A is B. C is D. A is".左栏 0.05 是示意图,不是论文表.
 
 **图 2 解析**
 
@@ -142,20 +134,12 @@ $$
 
 前两层按 Figure 3 几乎不能疏.论文默认 **Quest 与所有基线都不作用于前两层**(满 cache);是否跳过前两层与「怎么选页」正交.
 
-![Query 与每页 min/max 做通道上界,再按分数取 Top-K 页](./images/redrawn-fig-quest-page-minmax.png)
-
-> 图 3:单页估计.对应 Algorithm 1 与 Figure 5 左半.右侧 2.1 / 0.4 / 1.7 / 0.9 是示意图.
-
 **图 3 解析**
 
 - **左 $q$**:当前 decode 的一条 query,按通道排.
 - **中格**:一页里若干位置 × 若干通道.顶上两行是式 (2) 的 $m,M$,写入时就维护,估计时 **不必** 再把页内每条 $k$ 搬出来.
 - **公式框**:式 (3)(4).$U_i$ 永远取对当前 $q_i$ 更有利的那个端点.
 - **右列**:各页一个标量,Top-K=2 时只把 Page1,Page3 标成要加载.分数不是论文表.
-
-![两阶段:先扫元数据估分,再只把 Top-K 页送进注意力;全量 KV 仍驻 GPU](./images/redrawn-fig-quest-two-stage.png)
-
-> 图 4:论文 Figure 5 的两阶段,加上「驻留 ≠ 这一步加载」.
 
 **图 4 解析**
 
@@ -164,10 +148,6 @@ $$
 - **Stage 2**:被选中的 $K,V$ 页做普通注意力(实现接 FlashInfer 的 sparse page 加载).未选中的页这一步不进 SM.
 - **中条 Full KV resident**:主算法的显存占用仍是全量 cache.底箭写的是带宽:metadata + Top-K 页,不是整份历史.
 - **不要**把这张图读成「cache 被压缩到 $B$ 条」.$B$ 是 **这一步允许参加 softmax 的 token 数**.
-
-![新 token 写入时增量更新该页 min/max;盒子角点通常不是真实 Key](./images/redrawn-fig-quest-algo1-insert.png)
-
-> 图 5:Algorithm 1 上半.左:新 $k$ 写入只更新该页 $m,M$.右:轴对齐盒子的角点不是页内任一条 Key.对应式 (2a).
 
 **图 5 解析**
 
@@ -251,10 +231,6 @@ Figure 11 是 **同一无损精度约束** 下的定性比较:基线没有自己
 
 实现上「兼容 PageAttention」只表示:Top-K 得到页下标之后,可以用页表做稀疏加载,不必先 gather 成新的稠密 KV.vLLM 用页表回收碎片,Quest 用页做 bounding box,**页这个词撞了,问题没撞**.整机里 Quest 改的是 decode 自注意力这一跳的 **HBM→SM 搬运量**;权重,FFN,采样都不在主算法里砍.式 (1) 那 16GB 仍要能放下.
 
-![PagedAttention 页表管碎片;Quest 页是 min/max 盒子,省的是 HBM→SM 带宽](./images/redrawn-fig-quest-page-collision.png)
-
-> 图 6:同一个「页」字.左:页表把逻辑页映到物理块,管碎片.右:每页另存通道极值 $m,M$,这一步只把 Top-K 页搬进 SM;未选中的页仍在 HBM.
-
 **图 6 解析**
 
 - **左**:PagedAttention 的页表.逻辑页 0–3 指向散落的物理块.它不管「当前 $q$ 该看哪一段」.
@@ -299,9 +275,3 @@ Figure 11 是 **同一无损精度约束** 下的定性比较:基线没有自己
 3. 官方代码:[mit-han-lab/Quest](https://github.com/mit-han-lab/Quest).Llama-3.1 / Mistral-v0.3 是 2024-10 README,不是论文表.
 
 图 2 的 0.05,图 3 的页分数,图 5 右栏散点是示意图.式 (6) 的 8× 例子按 token budget 4K 理解.知乎只学讲法(每步用当前 $q$ 重选页;近似只发生在选页),数字未采用专栏读图.
-
-
-
-
-
-

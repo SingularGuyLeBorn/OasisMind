@@ -15,10 +15,6 @@ $$
 
 但不在 HBM 中保存完整的 $N\times N$ 分数矩阵或概率矩阵.它依靠三项配合完成这一点:适配片上存储容量的二维分块,可跨块合并的在线 Softmax,以及在反向传播时重算概率块.
 
-![FlashAttention 论文中的 A100 存储层次,Algorithm 1 循环顺序与 GPT-2 运行时间](./images/redrawn-fig-flashattention-gpu-memory-hierarchy-v1.png)
-
-> 图 1:FlashAttention v1 论文图 1.Algorithm 1 的外层循环遍历 $K_j,V_j$,内层循环遍历 $Q_i$;这个顺序决定了下文的 HBM 访问账本.
-
 ## 1. Algorithm 1 的数据流
 
 设 $Q,K,V\in\mathbb{R}^{N\times d}$ 位于 HBM,片上 SRAM 可容纳 $M$ 个标量元素.论文 Algorithm 1 取
@@ -133,10 +129,6 @@ $$
 
 前向持久状态是 $O\in\mathbb{R}^{N\times d}$ 与 $m,\ell\in\mathbb{R}^{N}$.若输出 $O$ 不计入额外空间,论文 Theorem 1 的结论是额外存储 $O(N)$;若把输出也列入驻留张量,则总状态为 $O(Nd+N)$.两种口径都没有 $O(N^2)$ 的分数或概率矩阵.
 
-![FlashAttention v1 论文中的 FLOP,HBM 读写,运行时间,块大小与稀疏度实验](./images/redrawn-fig-flashattention-v1-runtime-memory.png)
-
-> 图 2:论文图 2.左表对应 GPT-2 medium,$N=1024$,$d=64$,16 头,批量 64,A100 的前向与反向测量:标准实现为 66.6 GFLOPs,40.3 GB HBM 读写,41.7 ms,FlashAttention 为 75.2 GFLOPs,4.4 GB,7.3 ms.中图与右图分别改变块大小和块稀疏度;这些数值只适用于图注所列协议.
-
 ## 4. 反向传播为什么选择重计算
 
 标准反向传播若保存完整概率矩阵 $P$,需要 $O(N^2)$ 激活存储.FlashAttention v1 的前向保存 $O,m,\ell$;反向按同样的 tile 重新计算
@@ -180,7 +172,6 @@ $$
 ```python
 import numpy as np
 
-
 def reference_attention(q, k, v):
     """用于核对的标准注意力;会物化 N×N 分数矩阵."""
     d = q.shape[1]
@@ -189,7 +180,6 @@ def reference_attention(q, k, v):
     prob = np.exp(scores)
     prob /= prob.sum(axis=1, keepdims=True)
     return prob @ v
-
 
 def flash_v1_forward(q, k, v, block_q=3, block_kv=4):
     """Algorithm 1 的教学实现:KV 外层,Q 内层的逐块在线 Softmax."""
@@ -233,7 +223,6 @@ def flash_v1_forward(q, k, v, block_q=3, block_kv=4):
 
     return out, row_max, row_sum
 
-
 rng = np.random.default_rng(7)
 q = rng.normal(size=(11, 5))
 k = rng.normal(size=(11, 5))
@@ -256,5 +245,3 @@ v1 的标准 HBM 流量对照与 Roofline 算例见 [FlashAttention 家族概览
 - Tri Dao et al., [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135), NeurIPS 2022. Algorithm 1,Theorem 1–2,Proposition 3 与 Appendix B 是本文公式和复杂度结论的来源.
 - Dao-AILab, [FlashAttention 官方仓库](https://github.com/Dao-AILab/flash-attention).
 - Maxim Milakov and Natalia Gimelshein, [Online Normalizer Calculation for Softmax](https://arxiv.org/abs/1805.02867), 2018.
-
-

@@ -171,8 +171,6 @@ vLLM 对照的是 FasterTransformer 与三种 Orca 内存策略（Oracle / Pow2 
 
 分页不是免费午餐：动态 block 映射让注意力 kernel **更慢 20–26%**（相对 FasterTransformer 的高度优化核, Fig. 18(a)）, 端到端仍然更快是因为 batch 变大. 共享：并行采样时 prompt 段约占 KV 的 12%；beam search 最高约 55%（§6.3）.
 
-![逻辑 KV 块经 block table 映射到非连续等大物理块；连续预分配则留下预留与碎片](./images/fig-pagedattention-blocks.png)
-
 vLLM 的影响力还体现在它推动了整个 LLM 推理领域从"单卡优化"向"系统级优化"的范式转变. 在 PagedAttention 之前, 推理优化主要聚焦于算子融合(Kernel Fusion), 量化(Quantization), CUDA 核函数手写等"微观"技巧. 而 PagedAttention 证明, 在系统层面重新设计内存管理策略, 可以带来比所有这些微观优化加在一起还要大的收益. 
 
 ## 3. 直觉类比 (Intuition)
@@ -239,7 +237,6 @@ PagedAttention 将这一思想完整地移植到了 KV Cache 管理中:
 - **左侧**：每请求按 $L_{max}$ 连续预分配 → 大量 **reserved / internal fragmentation**，有效显存可低至 ~20%。
 - **右侧**：逻辑块经 **Block Table** 映射到物理块池 — 与 OS 分页同构，碎片仅出现在末块 partial fill。
 - 读图联系吞吐：碎片越少 → 同卡可并发请求越多 → decode 吞吐上升。
-
 
 ## 4. 数学推导与工程实现 (Mathematical Rigor)
 
@@ -476,7 +473,6 @@ $$
 >   * 当 Request 1 与 Request 2 共享相同的前缀(如 System Prompt)时, 它们的逻辑块均映射到同一个物理块, 该物理块的**引用计数(Ref Count)**设为 2. 
 >   * 如果 Request 1 在解码阶段需要写入共享块(如逻辑块 3), 系统会触发**写时复制(CoW)**：将该物理块复制一份到新的物理地址(如 `phy_41`, Ref Count 置为 1), 并将 Request 2 原物理块的 Ref Count 减 1. 这样既节省了前缀内存, 又保证了各个请求的独立写入. 
 
-
 #### 4.3.2 Copy-on-Write：解码阶段的共享与复制
 
 Copy-on-Write(CoW, 写时复制)是操作系统中的一项经典技术. 在 PagedAttention 的语境下, 它被用来处理**多请求共享前缀(Prefix Sharing)** 的场景. 
@@ -701,7 +697,6 @@ $$
 >   * **Swap In & Resume**：Swapped $\rightarrow$ Running. 当 GPU 显存重新充裕时, 将 CPU 中的 KV Cache 重新加载回 GPU, 恢复解码过程. 
 >   * **Finish**：Running $\rightarrow$ Finished. 生成结束(如遇到 `<｜endoftext｜>` 或达到最大长度), 释放其占用的所有物理块. 
 
-
 ## 5. 数值走查 (Numerical Example)
 
 为了让 PagedAttention 的机制完全透明, 我们构造一个具体的数值走查. 假设系统中同时处理 3 个请求, Block Size $K = 16$, 每个物理块可以存储 16 个 token 的 KV Cache. 
@@ -912,7 +907,6 @@ class BlockAllocator:
     def get_ref_count(self, block_id: int) -> int:
         return self.ref_count.get(block_id, 0)
 
-
 class BlockTable:
     """
     块表：维护单个请求的逻辑块 -> 物理块映射. 
@@ -981,7 +975,6 @@ class BlockTable:
         """
         allocated_capacity = len(self.mapping) * self.block_size
         return allocated_capacity - self.num_tokens
-
 
 # ========== 演示使用 ==========
 if __name__ == "__main__":

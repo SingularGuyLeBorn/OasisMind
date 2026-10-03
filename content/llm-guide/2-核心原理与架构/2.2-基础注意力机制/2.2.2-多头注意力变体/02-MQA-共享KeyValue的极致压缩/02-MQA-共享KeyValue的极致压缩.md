@@ -17,10 +17,6 @@ MHA 每个头独立缓存 $(k_j^{(h)}, v_j^{(h)})$,Decode 第 $t$ 步虽只算�
 
 MQA 的结构性改动只有一条:$W^K, W^V$ 去掉头下标 $h$,全头共享.Query 仍保留 $H$ 路,因此不同头仍可学不同**检索模式** $\alpha_{t,\cdot}^{(h)}$,只是它们检索的是**同一套** Key/Value 向量.
 
-![MHA、GQA、MQA 与 MLA 的 Query 组织、显式 KV group 和缓存表示对照](./images/redrawn-fig-attention-mechanism-family-v3.png)
-
-> 图 1：MHA / GQA / MQA 依次减少 explicit KV groups；MQA 保留 $H$ 个 Query heads，但只缓存一组 $K,V$。MLA 改变 cached representation，保存 joint latent $c^{KV}$ 与 decoupled RoPE key $k^R$。
-
 **图 1 解析**
 
 图中四列使用同一个 $H=8$ 示例，并把 Query heads、KV groups、cache shape 和元素数分开列出，避免把关联关系误画成 Q→K→V 的串行计算。
@@ -29,10 +25,6 @@ MQA 的结构性改动只有一条:$W^K, W^V$ 去掉头下标 $h$,全头共享.Q
 2. **GQA**：8 个 Query heads 共享 4 个 KV groups；示例中每两个 Query 映射到一组 $K_g,V_g$，缓存为 $2Gd_h$。
 3. **MQA**：8 个 Query heads 全部读取同一组 shared $K,V$，缓存 shape 为 $[L,d_h]$，元素数降到 $2d_h$。
 4. **MLA**：缓存 $c_t^{KV}\in\mathbb R^{d_c}$ 与 $k_t^R\in\mathbb R^{d_h^R}$，每 token 每层为 $d_c+d_h^R$；content K/V 由 latent reconstruction 或 matrix absorption 参与计算。
-
-![MHA checkpoint 转换为 MQA：Q/O passthrough、K/V 分别 mean-pool、组装 checkpoint 后 joint uptraining](./images/redrawn-fig-mha-to-mqa-weight-pool-v2.png)
-
-> 图 2：MHA checkpoint 的 $W_h^K,W_h^V$ 分别按同一 matrix coordinate 在 head 维求均值；$W_h^Q$ 与 $W^O$ 原样保留。四类权重组装成一个 MQA checkpoint 后，再统一 joint uptraining。
 
 **图 2 解析**
 
@@ -44,10 +36,6 @@ MQA 的结构性改动只有一条:$W^K, W^V$ 去掉头下标 $h$,全头共享.Q
 - Uptraining 对组装后的整个 MQA model 统一优化；GQA 论文报告的 recipe 约使用原预训练 tokens 的 5%。
 
 含义:不是随机初始化 MQA,而是 **尽量保留 MHA 里各头 KV 信息的「平均方向」**,再用少量 continued pretrain(uptrain)把 perplexity 拉回来.GQA 论文证明 mean pool 优于「只取第 1 头」或随机初始化.
-
-![MQA Decode 完整数据流：多 Query projections、单份 shared KV cache、每头独立 attention、Concat 与输出投影](./images/redrawn-fig-mqa-shared-kv-structure-v2.png)
-
-> 图 3：一个 MQA decode step。$x_t$ 产生 $H$ 个 $q_{t,h}$ 与一组 $k_t,v_t$；新 KV 只 append 到一份 shared cache。每个 head 用自己的 Query 读取同一 $K_{\le t},V_{\le t}$，最后经 Concat 与 $W^O$ 得到 $y_t$。
 
 **图 3 解析**
 
@@ -208,7 +196,6 @@ $$
 
 则 $k_t = [x_{t,1}, x_{t,2}]^\top$,$v_t = [x_{t,2}, x_{t,1}]^\top$:
 
-
 | $t$ |    $k_t$    |    $v_t$    |
 | :---: | :------------: | :------------: |
 |  1  | $[1,0]^\top$ | $[0,1]^\top$ |
@@ -286,17 +273,12 @@ $W^Q_h$ 与 $W^O$ 通常**原样保留**.Mean pool 比「只取第 1 头」或�
 
 ### 9.1 每 token 每层
 
-
 | 机制 | 缓存对象                    | 维度 / token / layer             |
 | ------ | ----------------------------- | ---------------------------------- |
 | MHA  | $H$ 组 $(k^{(h)}, v^{(h)})$ | $2 H d_h = 2 d_{\mathrm{model}}$ |
 | MQA  | **1 组** $(k, v)$           | $2 d_h$                          |
 
 压缩比 $1/H$(来自本表 $H$ 因子,不是从图上数条).
-
-![Decode KV cache 的通用字节公式、MHA/GQA/MQA tensor shapes、精确数值示例与长度缩放](./images/redrawn-fig-mha-gqa-mqa-kv-heads-v2.png)
-
-> 图 4：Decode KV cache 的字节账。通用公式通过 $N_{\mathrm{KV\_heads}}$ 统一 MHA、GQA、MQA；数值例使用 80 层、长度 4096、$H=64,G=8,d_h=128$、FP16，并给出长度扩展到 8192 与 32768 的线性增长。
 
 **图 4 解析**
 
@@ -326,7 +308,6 @@ $$
 ---
 
 ## 10. Prefill 与 Decoding
-
 
 | 阶段         | MHA                          | MQA                                      |
 | -------------- | ------------------------------ | ------------------------------------------ |
@@ -378,7 +359,6 @@ def mqa_forward(x, k_cache, v_cache, use_cache=False):
 
 ## 13. 训练与失效模式
 
-
 | 现象                  | 可能原因    | 说明                              |
 | ----------------------- | ------------- | ----------------------------------- |
 | MHA→MQA 直接推理掉点 | 未 uptrain  | 用式 (14) + 5% token 微调         |
@@ -388,7 +368,6 @@ def mqa_forward(x, k_cache, v_cache, use_cache=False):
 ---
 
 ## 14. 小结
-
 
 | 维度      | MHA                                    | MQA                                  |
 | ----------- | ---------------------------------------- | -------------------------------------- |
@@ -408,7 +387,3 @@ MQA 在公式上与 MHA 仅差「KV 是否带 $h$」;式 (9)–(11) 给出完整
 2. Ainslie, J. et al. (2023). *GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints.* arXiv:2305.13245.
 3. Dai, D. et al. (2024). *DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model.* arXiv:2405.04434.
 4. Vaswani, A. et al. (2017). *Attention Is All You Need.* NeurIPS.
-
-
-
-

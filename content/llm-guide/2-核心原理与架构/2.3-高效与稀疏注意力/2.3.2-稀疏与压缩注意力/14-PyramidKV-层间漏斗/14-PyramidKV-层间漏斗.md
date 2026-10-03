@@ -33,10 +33,6 @@ H2O 已经说明「满 cache 里真正有用的很少」;SnapKV 把压缩时刻�
 
 论文自己的诊断:固定条数会在深层稀疏注意力里留下一堆不重要 token,同时在浅层稠密注意力里漏掉还没汇聚完的位置.
 
-![四种 KV 策略:全量,StreamingLLM,各层同宽的 SnapKV/H2O,层间漏斗的 PyramidKV](./images/redrawn-fig-pyramidkv-vs-uniform.png)
-
-> 图 1:四种 KV 策略.对应论文 Figure 1.(a) 全量;(b) 起始位 + 最近窗;(c) 按分数选,**各层同宽**;(d) 浅层宽,深层窄.
-
 **图 1 解析**
 
 - **(a)** 每层每条都在.显存随 $n$ 涨.
@@ -55,10 +51,6 @@ H2O 已经说明「满 cache 里真正有用的很少」;SnapKV 把压缩时刻�
 3. **上层(约 24–30)** 出现 massive attention:质量堆在少数关键 token 上.论文把它和 massive activation(Sun et al. 2024)以及 attention sink(Xiao et al. 2023)对齐,但强调:**长上下文里这种「极高峰」主要出现在上层,不是每一层都有.**
 
 名字因此是 **Information Funneling**(信息漏斗),不是「每一层都做 Attention Sink」.浅层需要更多槽,因为信息还散着;深层可以少留,因为已经汇到少数位置.
-
-![浅层均匀,中层文档内三角,深层 sink 竖条的注意力示意](./images/redrawn-fig-pyramidkv-funneling.png)
-
-> 图 2:漏斗观察.对应论文 Figure 2 的分层趋势.格子是示意图,不是某一条 LongBench 样本的真实热图.
 
 **图 2 解析**
 
@@ -103,10 +95,6 @@ $$
 
 实现分叉要写在这里:把式 (1) 直接套在「含窗的 $k^{l}$」上,顶层 $k^{m-1}=k^{\mathrm{total}}/(\beta m)$ 在 $\beta=20$,平均 64 时大约是 **3**,小于实验 $\alpha=8$.仓库的做法是:**窗永远整段留着**,金字塔只切 prefix 配额.本篇算法步骤跟仓库;式 (1) 跟 v4 正文.
 
-![等差层预算加观测窗投票再 Top-k](./images/redrawn-fig-pyramidkv-budget-select.png)
-
-> 图 3:§4.2.1 预算 + §4.2.2 选人.公式以 v4 为准.
-
 **图 3 解析**
 
 - **上排台阶**:$\beta=20$ 时顶层大约是平均预算的 $1/20$(未计入「窗保底」).格子数是示意,不是 32 层 Llama 的逐层表.
@@ -142,10 +130,6 @@ Appendix H:驱逐之后 **RoPE 仍用原位置 id**,不把幸存者卷成连续�
 ---
 
 ## 6. 「不是」:H2O / SnapKV / StreamingLLM / Quest
-
-![StreamingLLM,H2O,SnapKV 各层同宽;PyramidKV 浅层宽深层窄](./images/redrawn-fig-pyramidkv-not-neighbors.png)
-
-> 图 4:四条推理期 KV 策略.第四列必须读成 **浅层(Layer 0,靠近输入)更宽**.
 
 **图 4 解析**
 
@@ -280,7 +264,3 @@ Appendix L Table 9:分配时间 $10^{-6}$ 秒量级,选人约 **0.013 s**,相对
 3. 项目页(讲法/链接,不当表):https://zefan-cai.github.io/PyramidKV.github.io/
 
 数字以打开的表和 v4 §5.2 为准.摘要 12% / 0.7% / +20.5 已拆分母.图 1–4 的格子数是示意图.
-
-
-
-

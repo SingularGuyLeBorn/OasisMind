@@ -283,10 +283,6 @@ $$
 
 **实现分叉（必须写）：** 理论钉 Reverse KL，正文却写 “we found in practice that Forward KL yields the best performance”。旧稿式 (1) 只写 Reverse，方向跟理论，**不是**「论文主实验规定必须 Reverse」。旧稿 §6 的 `F.kl_div(student_logprobs, teacher_probs)` 在 PyTorch 里其实是 $\mathrm{KL}(\text{teacher}\|\text{student})$，注释写 Reverse、代码更接近实践的 Forward——不要把那段代码当论文公式。
 
-![学生只看 x 采样，EMA 教师看 x 和示范 d 只做 prefill，散度只沿学生回传](./images/fig-sdft-student-teacher.png)
-
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Two-column SDFT: student p(y|x) samples y; EMA teacher pi(·|x,d) prefill only; reverse-KL on student prefix; gradient only through student. -->
-
 > 图 1：示范条件化教师 vs 闭卷学生。对应论文 Figure 2（左）。旧图 `sdft_continual_learning.png` 不删，本节改引这张。2026-08 自绘。
 
 **图 1 解析**
@@ -319,10 +315,6 @@ $$
 $$
 
 旧稿 `alpha=0.99` 是衰减系数写法，和式 (R7) 的 $\alpha=0.01$ 是同一档，符号不要混。TRL 文档把默认教师写成冻结 base「matching the paper」——跟论文正文不符，本篇跟 A.3。
-
-![Algorithm 1：学生采样、双路前向、词表 KL、只更新学生、EMA 教师](./images/fig-sdft-algorithm.png)
-
-<!-- GenerateImage Prompt: LIGHT THEME ONLY: solid white or off-white canvas, dark charcoal text and arrows, pastel filled boxes with dark outlines. NEVER dark mode, NEVER black/navy/charcoal background, NEVER white text on dark panels, NEVER inverted colors. white academic background, no watermark, no logo, no copyright text, no website URL. Five-box Algorithm 1: sample y from student; dual forward with EMA teacher on (x,d); analytic per-token KL; update student; EMA phi. -->
 
 > 图 2：Algorithm 1 数据流。Box 3 的 $D$ 左右以式 (R3) 的 $D(\pi_\theta\|\pi_T)$ 为准；实践可换成 Forward。2026-08 自绘。
 

@@ -87,10 +87,6 @@ $$
 - **不是**把式 (2) 的 ReLU 换成 SiLU。那是 $\mathrm{FFN}_{\mathrm{Swish}}$，仍然两矩阵；SwiGLU 的门才是 $\mathrm{Swish}_{1}$，值支路保持线性，再 $\otimes$。
 - **不是**「三套互不相关的 MLP」。$W$ 与 $V$ 的输出必须同宽，否则 Hadamard 积没有定义；$W_{2}$ 看到的是调制之后的 $d_{ff}'$ 维向量。
 
-![](./images/fig-glu-family-two-vs-three-matrix.png)
-
-> 图 1：两矩阵 FFN（左）与三矩阵 GLU（右）。示意，不是 Shazeer 论文插图。
-
 **图 1 解析**
 
 左右两栏都是单个 token 的隐藏向量自上而下走完一层 FFN，画布白底、色块浅填。

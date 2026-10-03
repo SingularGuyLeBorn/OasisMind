@@ -86,10 +86,6 @@ $$
 
 超参固定：**$\beta_1=4$（门）、$\beta_2=25$（up）**。不要改成「可学习温度」——报告没这么写。$\beta_1$ 比 $\beta_2$ 小，是因为门上已经有一份 $\sigma\in(0,1)$ 在压幅度，tanh 只要把 Swish 里那根无界的线性因子帽住；up 支路没有第二份饱和函数，帽要放宽，否则正半轴过早贴死。
 
-![SwiGLU 无界乘积 vs SiTU-GLU 有上界](./images/fig-situ-glu-vs-swiglu.png)
-
-> 图 1：左，SwiGLU 两支路都可以一直涨。右，每支路先 $\beta\tanh(x/\beta)$，乘积被压在 $\beta_1\beta_2$。图是示意，**不是**从报告 Fig. 4 描点（Fig. 4 另有 $x\in[-10,100]$ 的坐标轴与原点插图）。
-
 **图 1 解析**
 
 - 左列自上而下：Swish 门、线性 up、二者乘积。正半轴三条都还在涨，底下写 Unbounded product。$\sigma\to 1$ 时乘积 $\approx x^2$。
@@ -181,10 +177,6 @@ $N_s=2$，$\mathcal{T}_k$ 是 Top-16，$E_i^{\mathrm{routed}}:\mathbb{R}^{\ell}\
 
 相对「原版 LatentMoE 直接 $\mathbf{W}^{\uparrow}\bm{u}$」：K3 在升维前插入 RMSNorm。路由聚合的尺度随选中的专家集合和 $p_i$ 变，不归一化就会把共享支路打飞。报告写：这不只是稳住训练，验证 loss 和下游也一致变好——这句话的主语是 **RMSNorm**，不是 SiTU；SiTU 没有独立的下游表。
 
-![SiTU-GLU 插在 LatentMoE：先降到 ℓ，门控 FFN，再升回 d](./images/fig-situ-glu-latentmoe-slot.png)
-
-> 图 2：一条 K3 层的 FFN 槽：上支共享专家满宽；下支 $d\to\ell\to$ Top-16/896 $\to$ SiTU-GLU $\to$ 加权和 $\to$ RMSNorm $\to d$。红框：$\ell\neq c^{KV}$。不是论文插图。
-
 **图 2 解析**
 
 - **左栏 token $x\in\mathbb{R}^{d}$，$d=7168$。** 图上的 UP/DOWN 分叉指的是共享支路 vs 路由支路，**不是** $\mathbf{W}^{\uparrow}/\mathbf{W}^{\downarrow}$ 两个矩阵的名字。
@@ -207,10 +199,6 @@ $\ell=3584$ 和界 $100$ 不要读成同一个「压缩比」。$\ell$ 省的是
 ---
 
 ## 7. 和邻居的「不是」
-
-![SiTU 不是 PowLU、不是 V4 硬 clamp、不是 G1 / Gated Residual](./images/fig-situ-glu-not-neighbors.png)
-
-> 图 3：四张卡片只钉处方差，**没有假坐标曲线**。底栏：100 是坐标 $\ell_\infty$ 界，不是平均激活，不是梯度裁剪阈值。
 
 **图 3 解析**
 

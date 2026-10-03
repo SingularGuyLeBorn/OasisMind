@@ -39,9 +39,6 @@ SDPO 的作者发出了直击灵魂的追问:当我们调用 Python 编译器运
 
 我们可以用**"程序员修 Bug"**来完美类比 GRPO 和 SDPO 的天壤之别. 
 
-![SDPO 单次 rollout、环境 rich feedback、同权重双角色重算与只回学生的 token-level 分布指导](./images/sdpo_rich_feedback-v4.png)
-*图：模型只采样一次 $y$；环境返回 $f$ 后，同一 $y$ 分别由不看 $f$ 的 Student 与看见 $f$ 的 self-teacher 重算，$p_T$ stop-gradient，梯度只更新 Student。*
-
 - **GRPO (盲人摸象)** :你(学生模型)闭着眼睛瞎写了 8 份代码交上去. 测试引擎直接把这 8 份全打回,并在所有代码上盖了一个大红章:"不通过(-1)". 你看着这 8 个不通过,满头大汗,完全不知道该改哪里,只能继续瞎试. 
 
 - **SDPO (反思之镜)** :你交了一份代码,测试引擎报错了. 此时,我们把你拉进一个"时空精神时光屋",把**编译器抛出的详细报错日志(Rich Feedback,例如 `IndexError: list index out of range at line 14`)** 拍在你脸上. 你看了这个日志,瞬间恍然大悟(进入 Teacher 状态). 然后,这个"恍然大悟的你",坐回"刚开始写代码的你"(Student 状态)身边,看着他写每一个字母(Token-level),只要他企图写导致数组越界的代码,你就立刻重重拍他的手. 
@@ -194,10 +191,6 @@ $$
 
 同一条 rollout 里每个已生成 token 分到 **同一个** $A$;没生成到的词表位置优势是 0.上文 §4.3 写成 $(R-\mu)/\sigma$ 的,是原始 GRPO 带标准差的写法,**不是** 本实验基线.组内 $r$ 全相同则式 (5) 全是 0--这才是「白跑」.
 
-![RLVR 用环境标量奖励驱动策略梯度，SDPO 则复用学生轨迹与环境反馈，让冻结自教师给出逐 token 全词表分布并只更新学生](./images/fig-sdpo-rlvr-vs-rlrf-v2.png)
-
-> 图 6:RLVR 对 RLRF.对应论文 Figure 2 的信息瓶颈,加上 Figure 4 / 9 的逐位置同意–反对.
-
 **图 6 解析**
 
 - **左**:环境只吐 $r=0/1$.橙条铺满整段 $y$,就是式 (5) 的「整条一个数」.
@@ -237,10 +230,6 @@ $$
 | $y$ + 输出 + solution | $39.3\pm0.8$ | $44.5\pm1.8$ | $0.23$ |
 
 环境输出和同组成功解互补.把失败的 $y$ 自己再塞进教师 prompt,教师 Acc. 掉,熵掉,探索变差--论文写这会把教师 **偏回学生的原尝试**.
-
-![SDPO Algorithm 1：单次 rollout、环境反馈、同一上下文双前向和仅更新学生的数据流](./images/fig-sdpo-self-teacher-loop-v2.png)
-
-> 图 7：同一 $x/y$ 前缀分别进入 Student 与 feedback-conditioned self-teacher；环境只提供 $f$，Teacher 输出 stop-gradient，KL/JS 的梯度只更新 Student。第三步不重新采样。
 
 **图 7 解析**
 

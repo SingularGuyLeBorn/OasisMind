@@ -25,10 +25,6 @@ excerpt: "在 MHA → MQA → GQA → MLA 这条「压缩 KV」主线上,DCA(Dua
 
 DCA 的核心洞察:**保留预训练权重与短程 RoPE 习惯,把长序列拆成多个「训练长度内」的 chunk,用三种注意力分支重建全局因果图**.这是 training-free 外推,**不是**改 KV 结构,也不是 NSA/MoBA 那种选块路由.
 
-![DCA Intra / Successive / Inter 三段因果图](./images/redrawn-fig-dca-intra-succ-inter.png)
-
-> 图 1:四块序列上 Intra(块内因果),Succ(邻块过渡),Inter(更远块的重映射相对位置).KV 形状不变.
-
 **图 1 解析**
 
 - **Intra-Chunk(块内)**:同一 chunk 内标准因果 attention,相对位置落在 $0 \ldots C-1$ — 与预训练见过的分布一致,是 **保真局部语义** 的锚.
@@ -156,4 +152,3 @@ python run_demo.py
 
 1. An, C., et al. (2024). [Training-Free Long-Context Scaling of Large Language Models](https://arxiv.org/abs/2407.02490). *arXiv*.
 2. HKUNLP. [ChunkLlama](https://github.com/HKUNLP/ChunkLlama).
-

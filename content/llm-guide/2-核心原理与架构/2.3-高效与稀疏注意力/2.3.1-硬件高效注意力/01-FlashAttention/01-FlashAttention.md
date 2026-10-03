@@ -85,10 +85,6 @@ $$
 
 在这组峰值和理想流量假设下,分离实现位于 Roofline 的带宽侧.它不意味着任意形状,任意精度的注意力都必然受 HBM 带宽限制;短序列,小批量,低占用率以及不同硬件都可能改变实际瓶颈.
 
-![FlashAttention 论文中的 A100 存储层次,分块循环与 GPT-2 运行时间](./images/redrawn-fig-flashattention-gpu-memory-hierarchy.png)
-
-> 图 1:FlashAttention v1 论文图 1.图中的 A100 规格和 GPT-2 测量来自论文所用平台;算法部分显示外层遍历 $K,V$ 块,内层遍历 $Q$ 块.
-
 ## 3. FlashAttention 改变了什么
 
 FlashAttention 把 $Q,K,V$ 切成能够进入片上存储的块.一个分数块 $S_{ij}=Q_iK_j^\top$ 产生后,立即参与局部 Softmax 与输出更新,随后即可丢弃.跨 $K,V$ 块的行最大值,归一化分母和输出累加器通过在线 Softmax 递推,因此不需要在 HBM 中保存完整 $S$ 或 $P$.
@@ -132,4 +128,3 @@ FlashAttention 的主要收益是避免二次中间张量驻留 HBM,并降低数
 - Tri Dao, [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691), ICLR 2024.
 - Jay Shah et al., [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608), NeurIPS 2024.
 - Ted Zadouri et al., [FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling](https://arxiv.org/abs/2603.05451), 2026.
-

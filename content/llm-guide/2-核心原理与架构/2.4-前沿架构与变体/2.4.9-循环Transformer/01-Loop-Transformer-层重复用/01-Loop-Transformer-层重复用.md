@@ -41,10 +41,6 @@ $$
 
 $K=1$ 是「整网一套权重转 $R$ 圈」,Universal Transformer 的默认图像接近这条.$K>1$ 是「一小段栈当循环核」,Huginn 的 $(2,4,2)$ 把 $K=4$ 放在中间.两种都满足式 (3).
 
-![](./images/redrawn-fig-loop-untied-vs-looped.png)
-
-> 图 1:左栏四层四套权重;右栏两个物理块转两轮,展开深度 $N=4$,参数只存 $K=2$.
-
 **图 1 解析**
 
 - 两栏都从上往下走.
@@ -68,10 +64,6 @@ $K=1$ 是「整网一套权重转 $R$ 圈」,Universal Transformer 的默认图�
 **不是 MoE.** MoE 稀疏的是**这一 token 激活哪些专家矩阵**.循环稀疏的是**独立参数的份数**,计算并不按专家关掉,而是同一份权重被访问 $R$ 次.Mixture-of-Recursions 后文会借用 Expert-Choice / Token-Choice 这套词,路由的对象是「这个 token 再进几轮」,不是 2.4.1 里的 FFN 专家.
 
 还有第四条,属于写法纪律.共享方式,停机规则,残差缩放,三篇各写各的.
-
-![](./images/redrawn-fig-loop-not-three.png)
-
-> 图 2:左栏沿深度转同一套块;中栏沿 token 时间步进;右栏把思维写成新 token.三条轴共用「循环」这个词,对象不是同一个.
 
 **图 2 解析**
 
@@ -169,10 +161,6 @@ Theorem 5.4:对固定输入长 $n$,CoT 步数 $m$ 的 $L$ 层不循环 Transform
 
 直觉是:CoT 相当于每次循环只写出 1 个思维 token;循环可以在一次迭代里改一整段潜状态.这是存在性,不是 Huginn 或 Ouro 已经在发长思维链.
 
-![](./images/redrawn-fig-loop-latent-vs-cot.png)
-
-> 图 3:上栏 CoT 把 thought token 写入上下文;下栏同一段残差状态转 $R$ 圈,序列长度不变.
-
 **图 3 解析**
 
 - 上栏从左到右:三个输入 token,三个粉色 thought,最后 answer.上下文被写长.
@@ -220,10 +208,6 @@ $$
 RoPE base $50000$,MLP 用 gated SiLU,RMSNorm.$n_3$ 按作者自己的话说技术上多余,主模型仍留着.第一次大规模训练如果改回普通 Pre-LN,又把学习率开到 $4\times 10^{-4}$,会出现 token 相关冲到 1,或学会忽略 $s$,加 $r$ 也不降困惑度.主运行把学习率收到 $4\times 10^{-5}$,并保住 sandwich.
 
 训练时 $r$ 从对数正态 Poisson 抽样,均值 $\bar r=32$.反向只穿过最后 $k=8$ 次,内存不随 $r$ 涨,类似深度维上的截断 BPTT.Prelude 每步都注入 $e$,仍能收到梯度.
-
-![](./images/redrawn-fig-loop-huginn-sandwich.png)
-
-> 图 4:token 经 prelude 得 $e$,适配器拼接 $s$ 与 $e$,4 层核循环 $r$ 次,coda 出 logits.
 
 **图 4 解析**
 
@@ -306,10 +290,6 @@ $$
 
 此时 $\beta/\alpha=1/(4N)$.稳定条件改成 $M\kappa_R(\beta/\alpha)^2=O(1)$.$R=1$ 时没有重复访问,谈不上对齐惩罚.论文 Table 1:FineWeb-Edu 50B token,步数 100000.GPT-2 small 骨干上 $R=1$ 的 $\Delta$ 是 $+0.0004$ nats;$R=3/5/7$ 分别是 $-0.0160$,$-0.0231$,$-0.0186$.medium 骨干(隐宽 768→1024,层数 12→24)上 $R=1$ 是 $+0.0011$;$R=7$ 拉到 $-0.0278$.下游八任务平均在 $R=1$ 基本打平,medium 的 1-shot 在 $R=7$ 收到 55.20%.单次种子,论文自己写了还要多 seed 才能定量方差.
 
-![](./images/redrawn-fig-deeploop-residual-scale.png)
-
-> 图 5:$K=2$ 存一份,展开 $N=6$($R=3$),$M=12$ 次子层访问;右侧对照 DeepNorm 的 $p=1/4$ 与 DeepLoop 的 $p=1/2$.
-
 **图 5 解析**
 
 - 左栏两个物理块 $\phi_1,\phi_2$,标注 stored once.
@@ -368,8 +348,3 @@ MoR 借用了 MoE 的词,对象仍是「这个 token 再进几轮循环核」.�
 7. Zhu, R.-J., et al. (2025). [Scaling Latent Reasoning via Looped Language Models](https://arxiv.org/abs/2510.25741).
 8. [Simply Stabilizing the Loop via Fully Looped Transformer](https://arxiv.org/abs/2605.18797) (2026).
 9. Li, S., Zhang, Y., Guo, J., Gu, Q., & Wang, M. (2026). [DeepLoop: Depth Scaling for Looped Transformers](https://arxiv.org/abs/2607.13491).
-
-
-
-
-

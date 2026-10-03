@@ -59,10 +59,6 @@ $x_{2}>0$ 时 $f(x_{2})=x_{2}^{m/(\sqrt{x_{2}}+1)}\sigma(x_{2})$；$x_{2}\le 0$ 
 
 ## 3. 增长律示意（不是论文 Fig. 1）
 
-![SwiGLU 正半轴趋近二次 vs PowLU 趋近线性](./images/fig-powlu-vs-swiglu-growth.png)
-
-> 图 1：左：标量 SwiGLU 大正输入 $\approx x^{2}$。右：PowLU（$m=3$）趋近线性 $x$，曲线不压成水平帽。坐标无刻度，**不是**论文 Figure 1 的描点（论文 Fig. 1 还画了一阶导）。
-
 **图 1 解析**
 
 - **左桃卡片**：实线贴着虚线抛物线往上冲。$\sigma\to 1$ 且 $\mathrm{SiLU}(x)=x\sigma(x)$，乘积就是二次放大。黄条写的是后文实验要对付的链：outlier → FP8 / FP4。
@@ -83,10 +79,6 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 1. **注意力支路。** 预归一化 RMSNorm 之后做 **GQA**（分组共享 KV，压 decode 时的 KV 字节）。Q、K 再走 **QKNorm**：Ling-2.0 报告写明，早期在 `attention.linear_qkv` 的激活和梯度里看到随层放大的 outlier，低精度下会变成量化误差；QKNorm 是注意力侧的稳定锚。位置用 **Partial RoPE**：只旋转每个头的**前 64 维**，后面维不转——长度外推靠前 64 维带位置，后半截留给偏语义的通道。这一支路 **PowLU 论文一个符号都没改**。
 2. **MoE 支路。** 再一次 Pre-RMSNorm 之后进混合专家。2.0 产品配方是 **256 个路由专家、每 token Top-8，外加 1 个共享专家**（激活率约 3.5%）；前几层可以是 dense，减轻早期路由不均。每个被选中的专家（共享专家也一样）是三矩阵门控 FFN：两路升维 → 逐元素门控 → 降维，和 [03](../03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) 的 $\mathrm{FFN}_{\mathrm{SwiGLU}}$ 同构。
 3. **PowLU 的插槽。** 论文把 $f$ 放在「第一组线性」和「第二组线性」之间，实现 $\mathrm{PowLU}(x_1,x_2)=x_1\cdot f(x_2)$。共享专家与路由专家**同一把刀**：token 每层要过 1 个共享 + 8 个路由，激活函数会被乘进九份专家计算里。Fig. 2 画的分位数，明确是 **experts 的线性层**，不是注意力投影。
-
-![PowLU 插在 Ling 块的专家 FFN，不插在注意力](./images/fig-powlu-in-ling-block.png)
-
-> 图 2：一层 Ling 块里，GQA / QKNorm / Partial RoPE 走注意力残差；PowLU 只替换专家（含共享专家）升维与降维之间的非线性。不是论文插图。
 
 **图 2 解析**
 

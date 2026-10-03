@@ -69,10 +69,6 @@ HC 原文使用记号 $A_m$,$B$,$A_r$.三者均从残差状态预测, 静态项 
 
 GR 的关键论断来自报告原文: **一旦读和写足够具有表达力, 再加 $n_r\times n_r$ 混合算子没有显著收益**(*Once the read and the write are expressive enough, adding the $n_r\times n_r$ mixing operator brings no significant improvement.*).于是舍弃 $H_{\mathrm{res}}$.这不是遗漏, 而是消融结论.mHC 小消融里「只开 $H_{\mathrm{res}}$ 最有效」与本文结论并不矛盾: 那是在读/写仍为每分支标量,还需靠混合矩阵获取额外自由度时的结论; GR 将表达力投入逐元素读, 混合矩阵就不再带来收益.
 
-![mHC 与 Gated Residual 的 dependency tables：read、single F、write、residual base 与 stream communication](./images/redrawn-fig-gr-vs-mhc-hres-v3.png)
-
-> 图 1：mHC 与 GR 都只计算一次子层 $F$。mHC 将 $X$ 同时送入 read 与 $H_{\mathrm{res}}$ residual mix，最后合并 $R+U$；GR 从 $\tilde R$ 预测逐元素 read gates 与标量 write gates，并以原始 $R$ 为 residual base 写成 $R'=R+s y^T$。
-
 **图 1 解析**
 
 - mHC 的 dependency table 将 read、single $F$、residual mix、write、merge 分开；$R=H_{\mathrm{res}}X$ 与 $U=H_{\mathrm{post}}^Ty$ 是 merge 的两个输入。
@@ -162,10 +158,6 @@ $W_w\in\mathbb{R}^{n_r\times n_r d}$.系数 $2\sigma$ 把写标量卡在 $(0,2)$
 式 (31)(33) 对应 HC 的读/写(式 (26)(27)), $\phi=\sigma$, 读是逐元素 $H_{\mathrm{mix}}$, 写是每分支标量 $H_{\mathrm{combine}}$, $R$ 是全体支的 group-RMSNorm.因为式 (32) 已经归一并门控, GR **替换**块前的 Pre-Norm, 不再叠一层 Norm: 式 (24) 里的 $\mathrm{Norm}$ 拿掉, 加宽也不额外加归一化层.没有混合算子时, 分支只被块写入,只经式 (32) 读出, 彼此不交换, 信息流可以按支拆开看----这是下一节分解的前提.
 
 注意力子层和 MLP 子层**各用一套** GR.$\mathcal{F}$ 始终接收 $d$ 维输入 $x$,产生 $d$ 维输出 $y$; 加宽发生在残差状态上, 不是把 Attn/MLP 复制四份.
-
-![Gated Residual 完整数据流：原始四分支 residual bypass、per-branch RMSNorm、read/write gates、单次子层和三输入写回](./images/redrawn-fig-gated-residual-v3.png)
-
-> 图 2：完整 GR 数据流。原始 $R$ 一路 bypass 到最终 write，另一路经 per-branch RMSNorm 得到 $\tilde R$；read gates 生成 $G$，write gates 生成 $s$，唯一的 $y=F(x)$ 与 $R,s$ 在一个三输入写回节点汇合。
 
 **图 2 解析**
 
@@ -299,6 +291,3 @@ GR 的设计是在表达力,访存开销与训练稳定性之间取折中.将表
 6. 前作: HC [arXiv:2409.19606](https://arxiv.org/abs/2409.19606); mHC [arXiv:2512.24880](https://arxiv.org/abs/2512.24880)(Manifold-Constrained,$t_{\max}=20$,Table 4 MATH 26.0 vs 26.4), 细节见同目录 01 文.
 7. Gated Attention $G_1$: [arXiv:2505.06708](https://arxiv.org/abs/2505.06708), 见 06 文.
 8. 实现描述参考: [不归牛顿管的熊猫 · vLLM 如何适配 Qwen3.8-Flash-Next](https://zhuanlan.zhihu.com/p/2076361433357600465)(两族残差改法,decode 访存,子层接口仍是 $d$; 数字与「是不是 mHC」以报告为准).
-
-
-

@@ -194,10 +194,6 @@ $$
 
 同一条 rollout 里每个已生成 token 分到 **同一个** $A$；没生成到的词表位置优势是 0。上文 §4.3 写成 $(R-\mu)/\sigma$ 的，是原始 GRPO 带标准差的写法，**不是** 本实验基线。组内 $r$ 全相同则式 (5) 全是 0——这才是「白跑」。
 
-![RLVR 整条轨迹共用一个标量优势，SDPO 用自教师按 token 同意或反对](./images/fig-sdpo-rlvr-vs-rlrf.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Two columns: RLVR same A for all tokens vs RLRF self-teacher logit-level A. -->
-
 > 图 6：RLVR 对 RLRF。对应论文 Figure 2 的信息瓶颈，加上 Figure 4 / 9 的逐位置同意–反对。2026-08 自绘。旧图 `sdpo_rich_feedback.png` 保留不删。
 
 **图 6 解析**
@@ -239,10 +235,6 @@ $$
 | $y$ + 输出 + solution | $39.3\pm0.8$ | $44.5\pm1.8$ | $0.23$ |
 
 环境输出和同组成功解互补。把失败的 $y$ 自己再塞进教师 prompt，教师 Acc. 掉、熵掉、探索变差——论文写这会把教师 **偏回学生的原尝试**。
-
-![采样、环境反馈、同权重重算 log-prob、KL 蒸馏四步](./images/fig-sdpo-self-teacher-loop.png)
-
-<!-- GenerateImage Prompt: white academic background, no watermark, no logo, no copyright text, no website URL. Four-box Algorithm 1 pipeline. -->
 
 > 图 7：Algorithm 1。第三步不新采样。2026-08 自绘。
 

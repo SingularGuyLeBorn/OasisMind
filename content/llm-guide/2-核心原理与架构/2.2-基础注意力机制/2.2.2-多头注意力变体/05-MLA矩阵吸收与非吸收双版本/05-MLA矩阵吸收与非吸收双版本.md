@@ -15,10 +15,6 @@ excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}, c^Q, k^R 与解�
 
 ## 1. 两种模式：工程地图
 
-![DeepSeek-V3 层：MLA 替换 MHA，与 MoE 正交](./images/fig-mla-v3-block-placement.png)
-
-> 图 1：MLA 在每层替换标准 MHA；MoE FFN 与注意力压缩正交。
-
 **图 1 解析**
 
 **DeepSeek-V3 单层位置图**，只回答「MLA 在整机里占哪一块」。
@@ -47,10 +43,6 @@ excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}, c^Q, k^R 与解�
 | **非吸收** | MHA mode | Prefill | cache 后 **显式** $W^{UK}, W^{UV}$ |
 | **吸收** | MQA mode | Decode | $W^{UK}$ → Q 侧；$W^{UV}$ → $W^O$ |
 
-![非吸收流图（MHA mode / Prefill）](./images/fig-mla-nonabsorb-prefill.png)
-
-> 图 3：Attention 在 **完整 head 维** $d_{qk}$ 上算；KV cache 后接上采样。
-
 **图 3 解析**
 
 **MLA 非吸收（MHA mode）** 计算流（Prefill 常用）。按 **数据从左到右、cache 在中间** 读。
@@ -67,10 +59,6 @@ excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}, c^Q, k^R 与解�
 6. **$W^O$** 输出回 $d_{\mathrm{model}}$。
 
 **与图 4 的关键差异**：图 3 在 Attention **之前** 对 cache 全长做 KV 上采样；Prefill 时 $y=0$ 或 $y$ 较小，一次性大 GEMM 划算；Decode 若误用此路径，会对每个历史 token 重复上采样 → 极慢。
-
-![吸收流图（MQA mode / Decode）](./images/fig-mla-absorb-decode.png)
-
-> 图 4：Attention 在 **latent 维** $d_c$ 上算（head 维 broadcast）；上采样拆到 Q/O 两侧。
 
 **图 4 解析**
 
