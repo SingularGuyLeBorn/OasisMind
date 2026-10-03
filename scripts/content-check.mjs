@@ -1,0 +1,170 @@
+/**
+ * content/ 知识库体检：
+ * 1. files       只允许知识库文件类型（md / 图片 / pdf / 归档 html，及 uploads 素材、rl 教学附件）
+ * 2. links       正文里的相对链接与图片必须在磁盘上真实存在
+ * 3. frontmatter 入库的 md 必须有 frontmatter 且含 title（om-sync 缺 title 时会拿路径当标题）
+ * 4. markers     读者可见正文不得残留审稿批注
+ *
+ * 用法：node scripts/content-check.mjs [files|links|frontmatter|markers ...] [--list]
+ * 不带检查名 = 全部；--list 打印每条问题，否则只打印汇总与前 20 条。有问题时退出码 1。
+ */
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const CONTENT = path.join(ROOT, "content");
+
+const ALLOWED_EXT = new Set([".md", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".pdf", ".html"]);
+const RL_ATTACHMENTS = new Set(["implementation.py", "pipeline_skeleton.py", "experiment.ipynb"]);
+/** 不入库成文章的目录（与 om-sync ignore_dirs 一致）及无 _garden 的素材区 */
+const NON_POST_TOP = new Set(["uploads", "about"]);
+const NON_POST_DIRS = new Set(["images", "public", "assets", ".trash"]);
+const MARKERS = [
+  /[(（]估算[)）]/,
+  /[(（]推断[)）]/,
+  /纯猜/,
+  /为什么还估算/,
+  /重新写这一?段/,
+  /\bTODO[:：(]|\[TODO\]/,
+  /待补(?!全)/,
+  /\bFIXME\b/,
+];
+
+function walk(dir, out = []) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      if (ent.name === ".trash") continue;
+      walk(full, out);
+    } else if (ent.isFile()) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+const rel = (p) => path.relative(ROOT, p).replace(/\\/g, "/");
+
+const blank = (m) => m.replace(/[^\n]/g, " ");
+
+/** 去掉围栏代码块、行内代码与数学公式，保留行号 */
+function stripCode(text) {
+  return text
+    .replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, blank)
+    .replace(/`[^`\n]+`/g, blank)
+    .replace(/\$\$[\s\S]*?\$\$/g, blank)
+    .replace(/(?<![\\$])\$(?!\s)[^$\n]+?(?<!\s)\$/g, blank);
+}
+
+function lineOf(text, index) {
+  return text.slice(0, index).split("\n").length;
+}
+
+function checkFiles(files) {
+  const issues = [];
+  for (const f of files) {
+    const r = path.relative(CONTENT, f).replace(/\\/g, "/");
+    const name = path.basename(f);
+    const ext = path.extname(name).toLowerCase();
+    if (r.startsWith("uploads/") || name === ".gitkeep") continue;
+    if (r.startsWith("rl/") && RL_ATTACHMENTS.has(name)) continue;
+    if (!ALLOWED_EXT.has(ext)) issues.push(`${rel(f)}  不允许的文件类型`);
+  }
+  return issues;
+}
+
+const LINK_RE = /!?\[(?:[^\]\n]|\\\])*\]\(\s*<?([^)\s>]+)>?(?:\s+["'][^"']*["'])?\s*\)|<img\b[^>]*?\bsrc=["']([^"']+)["']/g;
+
+const SPACED_LINK_RE = /\]\((\.{1,2}\/[^)<>\n"']*? [^)<>\n"']*?\.(?:md|png|jpe?g|gif|webp|svg|pdf))\)/gi;
+
+function checkLinks(mdFiles) {
+  const issues = [];
+  for (const f of mdFiles) {
+    const raw = fs.readFileSync(f, "utf8");
+    const text = stripCode(raw);
+    for (const m of text.matchAll(LINK_RE)) {
+      const href = m[1] ?? m[2];
+      if (!href || /^([a-z][a-z0-9+.-]*:|\/\/|#|\/)/i.test(href)) continue;
+      // 「[^10](LwF)」「[118](不…)」这类脚注 / 引文后紧跟的括号注释不是路径
+      if (!/[/.]/.test(href) || /^\.+$/.test(href)) continue;
+      let target = href.split("#")[0].split("?")[0];
+      if (!target) continue;
+      try {
+        target = decodeURIComponent(target);
+      } catch {
+        /* 保留原样 */
+      }
+      const abs = path.resolve(path.dirname(f), target);
+      if (fs.existsSync(abs) || fs.existsSync(`${abs}.md`)) continue;
+      issues.push(`${rel(f)}:${lineOf(text, m.index)}  ${href}`);
+    }
+    // 路径里有裸空格时 Markdown 不认它是链接，LINK_RE 也匹配不到，单独报
+    for (const m of text.matchAll(SPACED_LINK_RE)) {
+      issues.push(`${rel(f)}:${lineOf(text, m.index)}  ${m[1]}  路径含未转义空格`);
+    }
+  }
+  return issues;
+}
+
+function isPostFile(f) {
+  const r = path.relative(CONTENT, f).replace(/\\/g, "/");
+  const parts = r.split("/");
+  if (NON_POST_TOP.has(parts[0])) return false;
+  if (parts.slice(0, -1).some((p) => p.startsWith("_") || p.startsWith(".") || NON_POST_DIRS.has(p))) return false;
+  return !path.basename(f).startsWith("_");
+}
+
+function checkFrontmatter(mdFiles) {
+  const issues = [];
+  for (const f of mdFiles) {
+    if (!isPostFile(f)) continue;
+    const head = fs.readFileSync(f, "utf8").replace(/^\uFEFF/, "");
+    const m = head.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!m) issues.push(`${rel(f)}  缺 frontmatter`);
+    else if (!/^title:\s*\S/m.test(m[1])) issues.push(`${rel(f)}  frontmatter 缺 title`);
+  }
+  return issues;
+}
+
+function checkMarkers(mdFiles) {
+  const issues = [];
+  for (const f of mdFiles) {
+    const text = stripCode(fs.readFileSync(f, "utf8"));
+    const lines = text.split("\n");
+    lines.forEach((line, i) => {
+      const hit = MARKERS.find((re) => re.test(line));
+      if (hit) issues.push(`${rel(f)}:${i + 1}  ${line.trim().slice(0, 80)}`);
+    });
+  }
+  return issues;
+}
+
+const CHECKS = { files: checkFiles, links: checkLinks, frontmatter: checkFrontmatter, markers: checkMarkers };
+
+function main() {
+  const args = process.argv.slice(2);
+  const listAll = args.includes("--list");
+  const selected = args.filter((a) => !a.startsWith("--"));
+  const names = selected.length ? selected : Object.keys(CHECKS);
+  for (const n of names) {
+    if (!CHECKS[n]) {
+      console.error(`未知检查项「${n}」，可选：${Object.keys(CHECKS).join(" / ")}`);
+      process.exit(2);
+    }
+  }
+
+  const files = walk(CONTENT);
+  const mdFiles = files.filter((f) => f.toLowerCase().endsWith(".md"));
+  let failed = false;
+  for (const n of names) {
+    const issues = CHECKS[n](n === "files" ? files : mdFiles);
+    console.log(`[${n}] ${issues.length ? `${issues.length} 处问题` : "通过"}`);
+    for (const line of listAll ? issues : issues.slice(0, 20)) console.log(`  ${line}`);
+    if (!listAll && issues.length > 20) console.log(`  ……其余 ${issues.length - 20} 处用 --list 查看`);
+    if (issues.length) failed = true;
+  }
+  process.exit(failed ? 1 : 0);
+}
+
+main();

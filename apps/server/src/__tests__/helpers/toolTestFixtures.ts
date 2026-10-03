@@ -51,7 +51,6 @@ export function createTestConfig(
     contentDir: path.join(projectRoot, "content"),
     contentPaths: {
       posts: path.join(projectRoot, "content", "posts"),
-      knowledge: path.join(projectRoot, "content", "knowledge"),
       resources: path.join(projectRoot, "content", "resources"),
       about: path.join(projectRoot, "content", "about"),
       uploads: path.join(projectRoot, "content", "uploads"),
