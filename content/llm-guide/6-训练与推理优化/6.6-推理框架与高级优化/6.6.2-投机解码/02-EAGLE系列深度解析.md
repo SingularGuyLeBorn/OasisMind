@@ -1,6 +1,7 @@
 ---
 title: "6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/02-EAGLE系列深度解析"
 published: true
+excerpt: "传统投机采样(Medusa、Lookahead)在Token层面进行草稿预测. EAGLE-1的核心创新是将预测目标从\"下一个Token\"转向\"下一个特征\"——具体而言, 是目标模型倒数第二层(second-to-top-layer)的隐藏状态."
 ---
 # EAGLE系列深度解析：从特征级自回归到动态草稿树
 

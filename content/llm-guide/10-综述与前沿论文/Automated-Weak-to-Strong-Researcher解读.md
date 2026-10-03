@@ -2,6 +2,7 @@
 title: "10 · Automated Weak-to-Strong Researcher 解读"
 published: true
 tags: ["Weak-to-Strong", "对齐", "可扩展监督", "Anthropic", "自动化研究", "AI安全"]
+excerpt: "未来 AI 会比人类更聪明. 届时，人类(弱监督者)给 AI(强模型)打标签、做监督，但人类的标签必然存在大量错误. 弱到强泛化(Weak-to-Strong Generalization) 研究的核心问题是: 强 AI 能否从弱标签中自动\"纠错\"，学到真正正确的知识？"
 ---
 # Automated Weak-to-Strong Researcher 解读
 

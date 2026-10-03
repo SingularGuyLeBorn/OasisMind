@@ -3,6 +3,7 @@ title: "02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明"
 category: "LLM 指南"
 published: true
 tags: ["OPSD", "Self-Distillation", "On-Policy", "OPD", "知识蒸馏", "后训练"]
+excerpt: "家谱定位: 本算法属于 OPD(在线策略蒸馏)家族的核心演进变体."
 ---
 # 02 · OPSD: 在线自蒸馏 — 当模型成为自己的神明
 

@@ -3,6 +3,7 @@ title: "14 · PyramidKV:层间漏斗"
 category: "LLM 指南"
 published: true
 tags: ["PyramidKV", "KV Cache", "Information Funneling", "Cai", "COLM 2025"]
+excerpt: "H2O,SnapKV,StreamingLLM 有一件没拆开的事:每一层 cache 条数相同."
 ---
 # 14 PyramidKV:层间漏斗
 

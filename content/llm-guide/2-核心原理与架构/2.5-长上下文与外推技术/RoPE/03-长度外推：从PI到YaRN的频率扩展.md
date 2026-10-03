@@ -1,6 +1,7 @@
 ---
 title: "2-核心原理与架构/2.5-长上下文与外推技术/RoPE/03-长度外推：从PI到YaRN的频率扩展"
 published: true
+excerpt: "外推:在短序列(长度 L_{\\text{train}})上训练的模型, 在长序列(长度 L_{\\text{test}})上推理."
 ---
 # 长度外推:从 PI 到 YaRN 的频率扩展
 

@@ -2,6 +2,7 @@
 title: "09 · IndexPool:把四条 indexer key 收成一条"
 published: true
 tags: ["IndexPool", "Sparse-Attention", "DSA", "QSA", "GLM-5.3-Flash"]
+excerpt: "稀疏注意力用轻量 indexer 挑 token,核心注意力只算被选中的那一段.序列拉到 1M 时,indexer 自己的 key 扫描会重新变成延迟和显存."
 ---
 # IndexPool:indexer 自己先变成 1M 上的瓶颈之后,先把 key 收成四合一
 

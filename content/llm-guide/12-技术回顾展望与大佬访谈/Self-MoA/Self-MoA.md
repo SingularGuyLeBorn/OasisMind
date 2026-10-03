@@ -1,6 +1,7 @@
 ---
 title: "12 · Self MoA"
 published: true
+excerpt: "原文: https://mp.weixin.qq.com/s/XwsHQ4dxJafeyTGgAM0M_g"
 ---
 **作者: 唐国梁tommy**
           

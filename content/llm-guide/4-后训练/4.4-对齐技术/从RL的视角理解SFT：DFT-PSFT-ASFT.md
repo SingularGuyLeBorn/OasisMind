@@ -2,6 +2,7 @@
 title: "4.4 · 从 RL 的视角理解 SFT: DFT,PSFT,ASFT"
 published: true
 tags: ["SFT", "RL", "Policy Gradient", "DFT", "PSFT", "ASFT", "梯度动态降权"]
+excerpt: "给定 prompt x,模型输出 y,expert 输出 y*,待微调模型 pi_theta:"
 ---
 # 从 RL 的视角理解 SFT: DFT,PSFT,ASFT
 

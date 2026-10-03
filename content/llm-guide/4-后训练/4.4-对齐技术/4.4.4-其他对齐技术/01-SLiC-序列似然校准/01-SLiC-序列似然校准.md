@@ -2,6 +2,7 @@
 title: "01 · SLiC:序列似然校准"
 published: true
 tags: ["SLiC", "SLiC-HF", "hinge", "序列似然", "RLHF", "TL;DR", "T5"]
+excerpt: "SLiC-HF 把「好回答该比差回答更像」收成一条 rank hinge,再加一条对 y_{\\mathrm{ref}} 的交叉熵."
 ---
 # 01 SLiC:序列似然校准
 

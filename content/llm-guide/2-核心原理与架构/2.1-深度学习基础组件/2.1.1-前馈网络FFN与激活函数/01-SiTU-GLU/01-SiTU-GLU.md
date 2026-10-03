@@ -2,6 +2,7 @@
 title: "01 · SiTU-GLU：给 SwiGLU 的两条支路都加上光滑上界"
 published: true
 tags: ["SiTU-GLU", "SwiGLU", "激活函数", "FFN", "Kimi-K3", "LatentMoE"]
+excerpt: "SiTU-GLU（Sigmoid Tanh Unit GLU）是 Kimi K3 给专家 FFN 换的激活：SwiGLU 的门支路和 up 支路都没有上界，低精度里两个大坐标一乘就出 activation outlier；"
 ---
 # 01 SiTU-GLU：SwiGLU 两条乘子都无界，就把它们光滑 cap 住
 

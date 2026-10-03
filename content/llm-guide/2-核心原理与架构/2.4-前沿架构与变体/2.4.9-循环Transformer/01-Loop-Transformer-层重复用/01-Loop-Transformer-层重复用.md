@@ -2,6 +2,7 @@
 title: "01 · Loop Transformer:层重复用"
 published: true
 tags: ["Loop Transformer", "Universal Transformer", "ALBERT", "Huginn", "DeepLoop", "latent thoughts"]
+excerpt: "普通 Transformer 把深度和参数绑死:一层一套 W_Q,W_K,W_V,W_O 和一套 FFN."
 ---
 # 01 · Loop Transformer:层重复用
 

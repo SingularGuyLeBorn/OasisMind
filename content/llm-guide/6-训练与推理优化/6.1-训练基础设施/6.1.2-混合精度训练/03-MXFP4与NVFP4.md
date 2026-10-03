@@ -2,6 +2,7 @@
 title: "03 · MXFP4 与 NVFP4:E2M1 元素,块缩放与 Blackwell 上的两种 4-bit"
 published: true
 tags: ["MXFP4", "NVFP4", "E2M1", "E8M0", "Blackwell", "混合精度"]
+excerpt: "4-bit 元素几乎没有尾数.单独一个 E2M1 只能表示大约 [-6,6] 上的十几个点.工业界能拿它做 GEMM,靠的不是「4-bit 忽然变准」,而是 一块元素共享一个更高比特的 scale."
 ---
 # MXFP4 与 NVFP4
 

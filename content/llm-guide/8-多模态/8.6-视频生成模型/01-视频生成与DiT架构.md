@@ -2,6 +2,7 @@
 title: "01 · 视频生成与 DiT 架构: 时空 Patch 压缩与扩散 Transformer"
 published: true
 tags: ["视频生成", "DiT", "扩散模型", "Sora", "时空注意力", "多模态"]
+excerpt: "2022 年到 2024 年,可以被毫不夸张地称为图像生成模型的黄金时代. 以 Stable Diffusion,DALL-E 3 和 Midjourney 为代表的文本到图像生成系统,已经在视觉质量,文本遵循能力和艺术表现力上达到了令人惊叹的高度. 用户只需要输入一段自然语言描述--比如\"一只戴着…"
 ---
 # 01 · 视频生成与 DiT 架构: 时空 Patch 压缩与扩散 Transformer
 

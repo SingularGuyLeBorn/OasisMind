@@ -1,6 +1,7 @@
 ---
 title: "05 · MLA 矩阵吸收与非吸收双版本"
 published: true
+excerpt: "04 篇 已经定义了 MLA 的 数学对象（c^{KV}, c^Q, k^R 与解耦 RoPE）。本篇不重推 latent，只回答 工程落地：同一套 checkpoint，Prefill 与 Decode 为何走两条计算图？"
 ---
 # MLA 矩阵吸收与非吸收双版本
 

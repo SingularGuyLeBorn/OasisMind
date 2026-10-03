@@ -2,6 +2,7 @@
 title: "01 · ReMax:贪婪解码当基线"
 published: true
 tags: ["ReMax", "REINFORCE", "PPO", "RLOO", "RLHF", "基线"]
+excerpt: "ReMax 把一条随机采样的回答,减去同一条 prompt 上贪心解码的奖励,当作策略梯度的权重.Critic 整份拿掉."
 ---
 # 01 ReMax:贪婪解码当基线
 

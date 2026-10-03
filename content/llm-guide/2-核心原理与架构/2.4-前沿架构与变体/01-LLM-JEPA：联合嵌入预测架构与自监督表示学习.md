@@ -2,6 +2,7 @@
 title: "01 · LLM-JEPA:联合嵌入预测,不是下一 token"
 published: true
 tags: ["JEPA", "LLM-JEPA", "表示学习", "联合嵌入"]
+excerpt: "MTP(2.4.6)仍在词表上做交叉熵.JEPA(Joint Embedding Predictive Architecture)在 嵌入空间 里让一个视图预测另一个视图."
 ---
 # LLM-JEPA:预测的是另一视图的表示,不是下一个 token
 

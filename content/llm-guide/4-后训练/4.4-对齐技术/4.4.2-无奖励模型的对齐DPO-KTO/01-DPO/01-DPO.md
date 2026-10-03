@@ -2,6 +2,7 @@
 title: "01 · DPO:隐式奖励直接优化"
 published: true
 tags: ["DPO", "RLHF", "Bradley-Terry", "隐式奖励", "偏好优化"]
+excerpt: "DPO(Direct Preference Optimization)从带 KL 约束的 RLHF 目标推出最优策略闭式,再反解隐式奖励,把成对偏好收成一条分类损失."
 ---
 # 01 DPO:隐式奖励直接优化
 

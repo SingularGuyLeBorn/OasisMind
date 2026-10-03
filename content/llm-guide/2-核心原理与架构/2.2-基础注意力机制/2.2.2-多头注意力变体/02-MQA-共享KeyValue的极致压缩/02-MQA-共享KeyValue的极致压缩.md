@@ -1,6 +1,7 @@
 ---
 title: "02 · MQA:共享 Key/Value 的极致压缩"
 published: true
+excerpt: "Multi-Query Attention(MQA)由 Shazeer 在 2019 提出:所有 Query 头共用同一组 Key,Value 投影,在保持多头 Query 表达能力的同时,把 KV Cache 从 O(H \\cdot d_h) 压到 O(d_h)."
 ---
 # MQA:共享 Key/Value 的极致压缩
 

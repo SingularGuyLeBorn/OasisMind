@@ -2,6 +2,7 @@
 title: "10 · Gated Attention 与混合注意力: 2025-2026 LLM架构最大突破"
 published: true
 tags: ["Gated Attention", "混合注意力", "Qwen3-Next", "Linear Attention", "Attention Sink", "NeurIPS 2025"]
+excerpt: "2023 年,Streaming LLM 研究首次揭示了 Attention Sink 现象: 在多层 Transformer 中,越深的层越倾向于关注第一个 token(通常是 BOS 或句首 token),这些 token 像\" sinks\"一样吸收了大量的注意力权重."
 ---
 # Gated Attention 与混合注意力: 2025-2026 LLM 架构最大突破
 

@@ -1,6 +1,7 @@
 ---
 title: "10 · 2024年终总结AI&Agents"
 published: true
+excerpt: "*原文: *https://zhuanlan.zhihu.com/p/15244174291"
 ---
 # 2024年终总结AI&Agents
 

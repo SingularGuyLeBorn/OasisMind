@@ -2,6 +2,7 @@
 title: "02 · xHC：Expanded Hyper-Connections"
 published: true
 tags: ["xHC", "mHC", "Hyper-Connections", "residual", "Sinkhorn"]
+excerpt: "HC / mHC 已经把残差从「一条加法高速公路」改成「N 条可学习混合的流」。单独成篇 01 讲的是：为什么要多流、为什么自由混合会毁掉恒等映射、mHC 用双随机约束把深度连乘关进笼子。"
 ---
 # xHC：把残差流从 $N=4$ 扩到 $N=16$
 

@@ -2,6 +2,7 @@
 title: "07 · Best-of-N:奖励模型过优化"
 published: true
 tags: ["Best-of-N", "BoN", "过优化", "Goodhart", "奖励模型", "RLHF", "PPO"]
+excerpt: "Best-of-n(BoN)对同一条 prompt 采 n 条回复,用代理奖励模型挑分数最高的那条."
 ---
 # 07 Best-of-N:奖励模型过优化
 

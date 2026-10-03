@@ -2,6 +2,7 @@
 title: "03 · FlashAttention-2:并行划分与工作量优化"
 published: true
 tags: ["FlashAttention-2", "Online Softmax", "Loop Interchange", "Work Partitioning", "CUDA"]
+excerpt: "FlashAttention-1 用分块与在线 softmax 避免物化 N\\times N 注意力矩阵,但第一版 CUDA 核仍有三类开销:输出块及 softmax 统计量会被反复读写,线程块数量受 batch 与注意力头数限制,Warp 之间还需要借助共享内存交换中间结果."
 ---
 # 03 · FlashAttention-2:并行划分与工作量优化
 

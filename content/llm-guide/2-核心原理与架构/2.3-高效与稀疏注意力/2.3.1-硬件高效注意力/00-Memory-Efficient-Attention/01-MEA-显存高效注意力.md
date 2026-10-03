@@ -3,6 +3,7 @@ title: "00 · MEA:显存高效注意力(Rabe & Staats)"
 category: "LLM 指南"
 published: true
 tags: ["MEA", "Memory Efficient Attention", "Online Softmax", "TPU", "JAX", "Rabe", "Staats"]
+excerpt: "Memory Efficient Attention(社区简称 MEA)是 Rabe & Staats 的一篇短预印本:Self-attention Does Not Need O(n^2) Memory(2021-12,Google Research)."
 ---
 # 00 MEA:显存高效注意力(Rabe & Staats)
 

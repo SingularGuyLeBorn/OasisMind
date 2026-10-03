@@ -1,6 +1,7 @@
 ---
 title: "1.1 · The Document is All You Need"
 published: true
+excerpt: "这是一篇 2023 前后的飞书长文快照(商科向入门,作者陈敏凯),不是本库 1.1 的前进线.学习路线,技能树,章映射以上一篇 1.1 学习路线与知识图谱 和 知识图谱-2026-08 为准."
 ---
 # The Document is All You Need
 

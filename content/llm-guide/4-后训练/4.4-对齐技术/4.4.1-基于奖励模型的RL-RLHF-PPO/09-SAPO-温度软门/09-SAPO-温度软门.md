@@ -2,6 +2,7 @@
 title: "09 · SAPO:温度软门"
 published: true
 tags: ["SAPO", "GSPO", "GRPO", "RLHF", "软门", "Qwen"]
+excerpt: "SAPO(Soft Adaptive Policy Optimization)把 GRPO / GSPO 的 hard clip 换成温度控制的 sigmoid 软门."
 ---
 # 09 SAPO:温度软门
 

@@ -2,6 +2,7 @@
 title: "10 · Prefix场景Attention优化"
 published: true
 tags: ["Attention", "KV Cache", "Prefix Caching", "RadixAttention", "RAG", "多轮对话", "GQA", "MQA"]
+excerpt: "在大模型推理的实践中,存在一个极为常见却被初学者忽视的效率瓶颈场景——Prefix场景. 所谓Prefix,指的是在生成新token之前,用户输入的、需要模型先进行完整编码的上下文片段. 最典型的Prefix场景包括两类:"
 ---
 # Prefix场景Attention优化
 

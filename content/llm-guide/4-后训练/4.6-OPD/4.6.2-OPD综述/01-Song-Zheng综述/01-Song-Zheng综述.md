@@ -3,6 +3,7 @@ title: "01 · Song & Zheng 综述"
 category: "LLM 指南"
 published: true
 tags: ["OPD", "On-Policy Distillation", "f-散度", "MiniLLM", "GKD", "综述"]
+excerpt: "本库 OPD 的全称是 On-Policy Distillation:学生按当前策略自己采样轨迹,教师只在这些学生前缀上给监督."
 ---
 # 01 · Song & Zheng 综述
 

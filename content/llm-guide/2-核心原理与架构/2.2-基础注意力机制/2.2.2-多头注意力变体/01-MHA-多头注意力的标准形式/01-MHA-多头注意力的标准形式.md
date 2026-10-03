@@ -2,6 +2,7 @@
 title: "01 · MHA:多头注意力的标准形式"
 published: true
 tags: ["MHA", "Multi-Head Attention", "KV-Cache", "Transformer", "RoPE"]
+excerpt: "MHA(Multi-Head Attention,多头注意力)是 Transformer 的核心算子:同一段序列表示被投影到 H 个并行子空间,每个子空间里独立做「Query 检索 Key,再对 Value 加权聚合」,最后拼接并映射回主干维度."
 ---
 # 01 MHA:多头注意力的标准形式
 

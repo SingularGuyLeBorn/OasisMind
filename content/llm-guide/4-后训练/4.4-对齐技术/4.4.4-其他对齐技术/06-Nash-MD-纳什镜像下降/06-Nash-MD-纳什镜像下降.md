@@ -2,6 +2,7 @@
 title: "06 · Nash-MD:纳什镜像下降"
 published: true
 tags: ["Nash-MD", "NLHF", "偏好模型", "纳什均衡", "几何混合", "镜像下降", "RLHF"]
+excerpt: "NLHF(Nash Learning from Human Feedback)不先学标量奖励再 PPO."
 ---
 # 06 Nash-MD:纳什镜像下降
 

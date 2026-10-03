@@ -2,6 +2,7 @@
 title: "02 · MoE 工程实践(容量与负载在 2.4.1)"
 published: true
 tags: ["MoE", "负载均衡", "专家容量"]
+excerpt: "容量 C,容量因子 \\gamma,token drop / dropless,aux-loss f_i P_i,router z-loss,已经写进 2.4.1 第 4–5 节."
 ---
 # 02 MoE 工程实践
 

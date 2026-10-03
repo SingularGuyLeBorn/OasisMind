@@ -2,6 +2,7 @@
 title: "01 · FlashAttention:从注意力物化到 I/O 感知"
 published: true
 tags: ["FlashAttention", "GPU", "SRAM", "HBM", "Roofline", "I/O Complexity"]
+excerpt: "的数学定义,改变的是计算顺序和数据在 GPU 存储层级之间的移动方式.核心做法是把分数矩阵分块,在片上存储中完成局部矩阵乘,在线 Softmax 和输出累加,不把完整的 N\\times N 分数矩阵与概率矩阵写入 HBM."
 ---
 # 01 · FlashAttention:从注意力物化到 I/O 感知
 

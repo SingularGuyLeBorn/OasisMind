@@ -2,6 +2,7 @@
 title: "03 · IPO:身份偏好优化"
 published: true
 tags: ["IPO", "ΨPO", "DPO", "身份映射", "偏好优化", "对齐"]
+excerpt: "IPO(Identity Preference Optimization)是 ΨPO 里把非线性映射 Ψ 取成恒等的那一支."
 ---
 # 03 IPO:身份偏好优化
 

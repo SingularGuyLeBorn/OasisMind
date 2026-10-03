@@ -3,6 +3,7 @@ title: "10 · StreamingLLM 与 Attention Sink"
 category: "LLM 指南"
 published: true
 tags: ["StreamingLLM", "Attention Sink", "KV Cache", "Softmax", "Xiao", "ICLR 2024"]
+excerpt: "只留最近一段 KV 的 window attention,一旦把序列开头踢出 cache,语言模型的 perplexity 会炸."
 ---
 # 10 StreamingLLM 与 Attention Sink
 

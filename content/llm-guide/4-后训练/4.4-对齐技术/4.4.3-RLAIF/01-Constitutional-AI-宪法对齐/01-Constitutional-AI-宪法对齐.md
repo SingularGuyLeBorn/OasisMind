@@ -2,6 +2,7 @@
 title: "01 · Constitutional AI:批评修订再原则 RL"
 published: true
 tags: ["Constitutional AI", "CAI", "RLAIF", "RLHF", "批评修订", "原则"]
+excerpt: "Constitutional AI(CAI)是 Bai,Kadavath,Kundu 等 *Constitutional AI: Harmlessness from AI Feedback*(arXiv:2212.08073)."
 ---
 # 01 Constitutional AI:批评修订再原则 RL
 

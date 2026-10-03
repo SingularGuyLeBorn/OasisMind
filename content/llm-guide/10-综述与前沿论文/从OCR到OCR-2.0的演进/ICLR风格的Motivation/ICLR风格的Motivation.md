@@ -1,6 +1,7 @@
 ---
 title: "10 · ICLR风格的Motivation"
 published: true
+excerpt: "当前的光学字符识别 (OCR) 研究, 在很大程度上被“字符级准确率” (Character-level Accuracy, CA) 这一指标所主导. 尽管现有模型在此指标上已接近饱和 (例如, 超过96%), 我们认为这掩盖了一个更深层次的表征学习问题. 现有模型学习到的文本表征, 本质上是一种局…"
 ---
 ### **1. Motivation: 超越离散符号, 探索语义保真度的文本识别新范式**
 

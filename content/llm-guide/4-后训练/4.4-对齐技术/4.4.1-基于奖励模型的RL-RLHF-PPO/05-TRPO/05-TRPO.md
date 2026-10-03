@@ -2,6 +2,7 @@
 title: "05 · TRPO:信任域策略优化"
 published: true
 tags: ["TRPO", "PPO", "RLHF", "信任域", "策略梯度"]
+excerpt: "TRPO(Trust Region Policy Optimization)把策略更新关进平均 KL 球:球内最大化替代目标 L,球外不保证真实回报 \\eta 跟着涨."
 ---
 # 05 TRPO:信任域策略优化
 

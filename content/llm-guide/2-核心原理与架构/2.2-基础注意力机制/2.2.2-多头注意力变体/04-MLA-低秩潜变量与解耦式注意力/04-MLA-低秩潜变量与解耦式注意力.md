@@ -1,6 +1,7 @@
 ---
 title: "04 · MLA：低秩潜变量与解耦式注意力"
 published: true
+excerpt: "Multi-head Latent Attention（MLA）由 DeepSeek-V2（Dai et al."
 ---
 # MLA：低秩潜变量与解耦式注意力
 

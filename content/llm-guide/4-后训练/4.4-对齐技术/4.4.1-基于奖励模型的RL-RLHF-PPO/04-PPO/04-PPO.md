@@ -2,6 +2,7 @@
 title: "04 · PPO:近端策略优化"
 published: true
 tags: ["PPO", "RLHF", "GAE", "Actor-Critic", "InstructGPT"]
+excerpt: "PPO(Proximal Policy Optimization)把策略更新锁在旧策略附近:用重要性比率乘优势,再把比率裁进 [1-\\varepsilon,1+\\varepsilon]."
 ---
 # 04 PPO:近端策略优化
 

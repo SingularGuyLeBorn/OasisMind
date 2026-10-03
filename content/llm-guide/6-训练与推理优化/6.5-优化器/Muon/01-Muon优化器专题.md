@@ -2,6 +2,7 @@
 title: "01 · Muon 优化器:Newton-Schulz 迭代,矩阵符号函数与分布式训练挑战"
 published: true
 tags: ["Muon", "优化器", "Newton-Schulz", "Matrix Sign Function", "分布式训练", "Shampoo"]
+excerpt: "在大语言模型预训练与后训练的漫长历史中, 优化器(Optimizer)始终是那个沉默却决定性的角色. 它不像注意力机制那样光彩夺目地出现在每一篇架构论文的标题中, 也不像 KV Cache 优化那样直接影响终端用户的推理延迟感知, 但如果没有一个高效的优化器, 再精妙的模型设计也只能在损失函数的崎岖…"
 ---
 # 01 · Muon 优化器:Newton-Schulz 迭代,矩阵符号函数与分布式训练挑战
 

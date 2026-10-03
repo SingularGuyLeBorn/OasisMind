@@ -2,6 +2,7 @@
 title: "08 · VLA-OPD:具身蒸馏"
 published: true
 tags: ["OPD", "VLA", "具身智能", "机器人", "连续动作", "跨模态蒸馏"]
+excerpt: "在前面的七篇文章中,我们系统性地构建了OPD(On-Policy Distillation,在线策略蒸馏)的完整理论大厦. 从01-OPD-学生前缀蒸馏中Reverse KL与Forward KL的本质分野,到02-OPSD中模型左脚踩右脚的自蒸馏魔法,再到05-G-OPD中SFT,RL与OPD在广…"
 ---
 # 08 · VLA-OPD:具身蒸馏
 

@@ -2,6 +2,7 @@
 title: "10 · LLM-JEPA: 从 Token 预测到嵌入预测的实现"
 published: true
 tags: ["JEPA", "LLM-JEPA", "嵌入预测", "自监督学习", "表示学习", "Joint Embedding Predictive Architecture"]
+excerpt: "传统语言模型(如 GPT)采用生成式目标: - 预测下一个 token - 自回归生成"
 ---
 # LLM-JEPA: 从 Token 预测到嵌入预测的实现
 

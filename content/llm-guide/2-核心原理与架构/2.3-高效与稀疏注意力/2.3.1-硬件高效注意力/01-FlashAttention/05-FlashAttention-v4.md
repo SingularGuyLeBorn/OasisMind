@@ -2,6 +2,7 @@
 title: "05 · FlashAttention-4:Blackwell 流水与指数函数优化"
 published: true
 tags: ["FlashAttention-4", "Blackwell", "TMEM", "2-CTA MMA", "Softmax", "CuTe-DSL"]
+excerpt: "FlashAttention-3 用 Warp 专门化与异步 WGMMA 把 Hopper 上的数据搬运,矩阵乘和 softmax 交叠起来."
 ---
 # 05 · FlashAttention-4:Blackwell 流水与指数函数优化
 

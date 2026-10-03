@@ -2,6 +2,7 @@
 title: "S²-Attn:移位稀疏注意力"
 published: true
 tags: ["S2-Attn", "LongLoRA", "长上下文微调", "稀疏注意力", "Shifted Sparse"]
+excerpt: "S²-Attn(Shifted Sparse Attention)来自 LongLoRA(2023)."
 ---
 # S²-Attn:移位稀疏注意力(Shifted Sparse Attention)
 

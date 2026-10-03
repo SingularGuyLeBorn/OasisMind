@@ -2,6 +2,7 @@
 title: "08 · AttnRes: 把深度维的等权求和换成 Softmax"
 published: true
 tags: ["AttnRes", "Attention-Residuals", "PreNorm-dilution", "Block-AttnRes", "Kimi"]
+excerpt: "Attention Residuals 改的是 Transformer 里最容易被忽略的一根轴: 深度维. 不是 token 维的 KV 压缩, 也不是残差流的加宽, 而是「当前层该以什么权重组合所有历史层的输出」."
 ---
 # AttnRes: 把深度维的等权求和换成 Softmax
 

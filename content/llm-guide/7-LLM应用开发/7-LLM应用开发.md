@@ -2,6 +2,7 @@
 title: "7 LLM应用开发"
 published: true
 tags: ["LLM应用", "Prompt工程", "RAG", "Agent", "Function Calling", "MCP", "上下文工程", "OpenClaw", "Hermes", "评估", "部署"]
+excerpt: "一个拥有 175B 参数的 GPT-3 模型, 如果仅仅通过一个简单的文本框与用户交互, 它的价值是极其有限的. 真正让大语言模型产生巨大商业和社会价值的, 是围绕它构建的应用层技术栈--Prompt 工程让模型的输出更加可控和精确, RAG 让模型能够基于私有知识进行回答, Agent 让模型能够…"
 ---
 # 7. LLM 应用开发
 

@@ -2,6 +2,7 @@
 title: "07 · Gated Attention 相关工作：门还可以打在别的管子上"
 published: true
 tags: ["Gated-Attention", "related-work", "FoT", "Quantizable-Transformers", "DiffTransformer", "Softpick", "Sigmoid-Attention"]
+excerpt: "06 已经把 Qiu et al. 2505.06708（NeurIPS 2025 Oral）的推荐配置钉死：SDPA 之后、逐头 sigmoid，Y'=Y\\odot\\sigma(XW_\\theta)，X 是 pre-norm 后隐状态。"
 ---
 # 07 Gated Attention 相关工作：门还可以打在别的管子上
 

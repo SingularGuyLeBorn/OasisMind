@@ -2,6 +2,7 @@
 title: "02 · JustRL:1.5B 数学 RL 的极简配方"
 published: true
 tags: ["JustRL", "GRPO", "DAPO", "RLVR", "clip-higher", "1.5B"]
+excerpt: "JustRL 没有提出新的策略梯度."
 ---
 # 02 JustRL:极简配方
 

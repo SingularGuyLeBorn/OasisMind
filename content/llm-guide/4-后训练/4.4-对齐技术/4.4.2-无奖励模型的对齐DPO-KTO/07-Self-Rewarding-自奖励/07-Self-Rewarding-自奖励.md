@@ -2,6 +2,7 @@
 title: "07 · Self-Rewarding:自奖励"
 published: true
 tags: ["Self-Rewarding", "Iterative DPO", "LLM-as-a-Judge", "Llama 2", "AlpacaEval"]
+excerpt: "Self-Rewarding 把奖励模型收进正在训的那份 LLM.同一组权重既按 prompt 写回答,又用 LLM-as-a-Judge 提示给这些回答打 0 到 5 分,再拿最高分对最低分做成偏好对,走 Iterative DPO."
 ---
 # 07 Self-Rewarding:自奖励
 

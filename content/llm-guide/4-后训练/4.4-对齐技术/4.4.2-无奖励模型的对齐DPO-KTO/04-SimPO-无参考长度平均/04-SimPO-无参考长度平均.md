@@ -2,6 +2,7 @@
 title: "04 · SimPO:无参考的长度平均"
 published: true
 tags: ["SimPO", "DPO", "偏好优化", "长度归一", "无参考模型"]
+excerpt: "SimPO(Simple Preference Optimization)把 DPO 的隐式奖励从「相对参考模型的对数比」换成「当前策略自己的长度平均对数概率」,再在 Bradley-Terry 里加一个目标间隔 \\gamma."
 ---
 # 04 SimPO:无参考的长度平均
 

@@ -2,6 +2,7 @@
 title: "02 · GLU 家族: 从 GLU 到 SwiGLU"
 published: true
 tags: ["GLU", "SwiGLU", "GEGLU", "ReGLU", "FFN", "Shazeer", "Dauphin"]
+excerpt: "GLU (Gated Linear Unit, 门控线性单元) 把逐位置 FFN 从「一条升维, 逐元素非线性, 再降维」改成「两条升维, 逐元素相乘, 再降维」: 一条当门, 一条当值. Dauphin 在卷积语言模型里写出 \\sigma(xW)\\otimes(xV); Shazeer 把它嵌进…"
 ---
 # 02 GLU 家族: 从 GLU 到 SwiGLU
 

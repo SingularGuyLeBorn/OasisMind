@@ -3,6 +3,7 @@ title: "15 · FastGen:按头自适应"
 category: "LLM 指南"
 published: true
 tags: ["FastGen", "KV Cache", "Adaptive Compression", "Ge", "ICLR 2024"]
+excerpt: "自回归 decode 要把历史 K,V 留下来.模型变大,生成变长,这份 cache 先把 GPU 撑满,再被赶到 CPU/NVMe,PCIe 又把延迟送上去."
 ---
 # 15 FastGen:按头自适应
 

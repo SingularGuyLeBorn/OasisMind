@@ -2,6 +2,7 @@
 title: "01 · SiTU-GLU: 用光滑上界控制 SwiGLU 的大激活"
 published: true
 tags: ["SiTU-GLU", "SwiGLU", "激活函数", "FFN", "Kimi-K3", "LatentMoE"]
+excerpt: "SwiGLU 把 FFN 的中间激活拆成两条支路, 再逐元素相乘. 两条支路都是从模型维 d 升到隐藏维 d_{ff}' 的线性投影, 工程上统称 up 投影; 其中一条过门控激活叫门支路, 另一条保持线性叫值支路 / up 支路. 当门支路和 up 支路在同一个坐标上都出现大值时, 乘积会被快速放…"
 ---
 # 01 SiTU-GLU: 用光滑上界控制 SwiGLU 的大激活
 

@@ -2,6 +2,7 @@
 title: "01 · PagedAttention 与 vLLM: 虚拟内存思想终结 KV Cache 碎片"
 published: true
 tags: ["PagedAttention", "vLLM", "KV Cache", "推理优化", "内存管理", "Continuous Batching"]
+excerpt: "Transformer 架构自 2017 年诞生以来, 其自注意力(Self-Attention)机制成为大语言模型(LLM)的核心. 在训练阶段, 我们可以通过一次前向传播并行计算整个序列的注意力权重, 因为所有 token 的 ground truth 都是已知的. 然而, 在推理阶段(Infe…"
 ---
 # 02 · PagedAttention 与 vLLM: 虚拟内存思想终结 KV Cache 碎片
 

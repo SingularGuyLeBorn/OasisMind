@@ -2,6 +2,7 @@
 title: "03 · Dr.GRPO:去长度与难度偏差"
 published: true
 tags: ["DrGRPO", "GRPO", "R1-Zero", "Aha", "Qwen2.5", "Oat-Zero"]
+excerpt: "Dr. GRPO 不是新的组相对算法."
 ---
 # 03 Dr.GRPO:去长度与难度偏差
 

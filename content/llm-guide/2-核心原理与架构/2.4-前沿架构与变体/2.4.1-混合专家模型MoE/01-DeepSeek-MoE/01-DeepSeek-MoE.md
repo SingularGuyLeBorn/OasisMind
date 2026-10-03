@@ -2,6 +2,7 @@
 title: "01 · DeepSeek MoE:共享专家与细粒度路由"
 published: true
 tags: ["MoE", "DeepSeekMoE", "共享专家", "细粒度路由", "aux-loss-free"]
+excerpt: "DeepSeekMoE 要解决的不是「再堆几个和稠密 FFN 一样宽的专家」,而是:专家切细之后,通用知识和专用知识怎么拆开,路由分数怎么变成真正稀疏的门控. 瓶颈是知识混杂(一个宽专家被迫装互不兼容的模式)和知识冗余(多个路由专家各自再学一遍通用变换)."
 ---
 # 01 DeepSeek MoE:共享专家与细粒度路由
 

@@ -2,6 +2,7 @@
 title: "01 · GxPO 结构扩展:轨迹侧与奖励侧"
 published: true
 tags: ["GxPO", "GRPO", "GSPO", "DAPO", "GMPO", "GHPO", "DrGRPO", "CISPO"]
+excerpt: "GxPO 不是一个算法,是 GRPO 及其结构扩展 的坐标系:大家都还在优化 J(\\theta)=\\mathbb{E}_{\\tau\\sim p_{\\theta}}[R(\\tau)],差别只在干预落在 轨迹侧 p_{\\theta}(\\tau) 还是 奖励侧 R(\\tau)."
 ---
 # 01 · GxPO 结构扩展:轨迹侧与奖励侧
 

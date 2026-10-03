@@ -2,6 +2,7 @@
 title: "01 · GMPO:几何平均策略优化"
 published: true
 tags: ["GMPO", "GRPO", "GSPO", "RLHF", "几何平均"]
+excerpt: "GMPO(Geometric-Mean Policy Optimization)是 GRPO 的稳定化改法:同一条回答里,把 token 级重要性加权奖励的算术平均换成几何平均."
 ---
 # 01 GMPO:几何平均策略优化
 

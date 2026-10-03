@@ -2,6 +2,7 @@
 title: "10 · Vision-R1: 多模态推理的 RL 进化"
 published: true
 tags: ["Vision-R1", "多模态推理", "RL", "视觉推理", "DeepSeek-R1", "模型解读"]
+excerpt: "优质的多模态模型需要同时兼顾两件难事: 跨模态对齐(cross-modal alignment)和推理(reasoning)."
 ---
 # Vision-R1: 多模态推理的 RL 进化
 

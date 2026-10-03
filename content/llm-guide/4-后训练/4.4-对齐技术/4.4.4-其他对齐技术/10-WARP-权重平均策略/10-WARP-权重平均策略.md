@@ -2,6 +2,7 @@
 title: "10 · WARP:权重平均策略"
 published: true
 tags: ["WARP", "WARM", "EMA", "SLERP", "LITI", "RLHF", "Gemma", "权重平均"]
+excerpt: "WARP 在权重空间做三次平均,优化的是 KL–reward Pareto.推理只保留一份合并后的策略,不再付 N 次采样."
 ---
 # 10 WARP:权重平均策略
 

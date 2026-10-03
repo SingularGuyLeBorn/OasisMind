@@ -2,6 +2,7 @@
 title: "06 · RLOO:留一法基线"
 published: true
 tags: ["RLOO", "REINFORCE", "RLHF", "PPO", "GRPO", "DPO", "RAFT"]
+excerpt: "RLOO(REINFORCE Leave-One-Out,留一法基线)把同一 prompt 上现采的 k 条回复互相当对照:第 i 条的 baseline 是其余 k-1 条奖励的均值,自己不进这道均值,也不除组内标准差."
 ---
 # 06 RLOO:留一法基线
 

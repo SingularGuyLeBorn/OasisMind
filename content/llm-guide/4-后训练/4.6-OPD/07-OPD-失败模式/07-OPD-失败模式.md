@@ -2,6 +2,7 @@
 title: "OPD 失败模式:证据,诊断与干预"
 published: true
 tags: ["OPD", "On-Policy Distillation", "Failure Analysis", "Diagnostics", "Stability"]
+excerpt: "在线策略蒸馏(On-Policy Distillation,OPD)让学生在自己采样的轨迹上接受教师监督."
 ---
 # OPD 失败模式:证据,诊断与干预
 

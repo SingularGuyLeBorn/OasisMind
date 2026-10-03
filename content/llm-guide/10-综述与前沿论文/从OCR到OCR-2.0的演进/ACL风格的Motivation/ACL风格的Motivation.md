@@ -1,6 +1,7 @@
 ---
 title: "10 · ACL风格的Motivation"
 published: true
+excerpt: "对于计算语言学 (Computational Linguistics) 领域而言, 文本远非无差别的字符序列. 文本拥有丰富的层次化结构, 包括词法、句法和语义单元, 而这些单元的重要性天差地别. 当前的 OCR 评估指标 (如 CA) 存在严重的“语言学盲视” (linguistic blindn…"
 ---
 ### **1. Motivation: 超越无差别的字符串, 建立语言学知情的 OCR 评估**
 

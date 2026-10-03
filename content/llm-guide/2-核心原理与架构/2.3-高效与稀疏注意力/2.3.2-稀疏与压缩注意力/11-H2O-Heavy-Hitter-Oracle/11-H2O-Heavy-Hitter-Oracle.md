@@ -3,6 +3,7 @@ title: "11 · H2O:Heavy-Hitter Oracle"
 category: "LLM 指南"
 published: true
 tags: ["H2O", "Heavy Hitter", "KV Cache", "Zhang", "NeurIPS 2023"]
+excerpt: "30B 模型,batch 128,序列 1024,论文把 KV cache 写成 180GB.decode 每步还要把这份历史读一遍."
 ---
 # 11 H2O:Heavy-Hitter Oracle
 

@@ -3,6 +3,7 @@ title: "16 · Scissorhands:重要性持久"
 category: "LLM 指南"
 published: true
 tags: ["Scissorhands", "SCISSORHANDS", "Persistence of Importance", "KV Cache", "Liu", "NeurIPS 2023"]
+excerpt: "OPT-175B 权重大约 325GB;batch 128,序列 2048,Table 1 把 KV cache 写成 1152GB--比权重大."
 ---
 # 16 Scissorhands:重要性持久
 

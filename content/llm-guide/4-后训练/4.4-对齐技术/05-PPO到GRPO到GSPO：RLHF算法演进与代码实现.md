@@ -1,6 +1,7 @@
 ---
 title: "4-后训练/4.4-对齐技术/05-PPO到GRPO到GSPO：RLHF算法演进与代码实现"
 published: true
+excerpt: "OpenAI 的 InstructGPT 论文确立了 RLHF 的标准范式:使用 PPO(Proximal Policy Optimization)进行强化学习对齐. 但在 LLM 场景下,PPO 需要维护四个模型:"
 ---
 # PPO 到 GRPO 到 GSPO:RLHF 算法演进与代码实现
 

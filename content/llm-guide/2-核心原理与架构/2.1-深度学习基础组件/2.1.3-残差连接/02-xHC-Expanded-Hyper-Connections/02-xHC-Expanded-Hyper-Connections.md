@@ -2,6 +2,7 @@
 title: "02 · xHC: Expanded Hyper-Connections"
 published: true
 tags: ["xHC", "mHC", "Hyper-Connections", "residual", "Sinkhorn"]
+excerpt: "HC / mHC 已经把残差从单一加法通道改成 N 条可学习混合的流. 01 讲的是: 为什么要多流, 为什么自由混合会破坏恒等映射, mHC 用双随机约束把深度连乘控制在有界范围内."
 ---
 # xHC: 残差流从 4 扩到 16
 

@@ -2,6 +2,7 @@
 title: "03 · Muon 优化器:从最速下降的本质出发"
 published: true
 tags: ["Muon", "最速下降", "范数", "谱范数", "优化器理论", "RMS norm", "尺度不变性"]
+excerpt: "SGD,Adam,Shampoo,Muon 等优化器(忽略动量时), 实际上相当于在特定范数(norm)下的最速下降."
 ---
 # Muon 优化器:从最速下降的本质出发
 

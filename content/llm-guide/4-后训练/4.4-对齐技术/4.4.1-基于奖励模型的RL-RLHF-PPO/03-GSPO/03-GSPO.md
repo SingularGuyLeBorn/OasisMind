@@ -2,6 +2,7 @@
 title: "03 · GSPO:序列级重要性采样"
 published: true
 tags: ["GSPO", "GRPO", "PPO", "RLHF", "序列级重要性采样", "Qwen"]
+excerpt: "GSPO(Group Sequence Policy Optimization)把重要性采样从 token 提到整条回答."
 ---
 # 03 GSPO:序列级重要性采样
 

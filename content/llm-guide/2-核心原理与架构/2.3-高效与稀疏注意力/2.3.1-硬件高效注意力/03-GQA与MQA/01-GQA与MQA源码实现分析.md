@@ -2,6 +2,7 @@
 title: "01 · GQA与MQA源码实现分析"
 published: true
 tags: ["GQA", "MQA", "MHA", "KV Cache", "SDPA", "PyTorch", "性能优化"]
+excerpt: "矩阵式,组映射 g(h),KV Cache 字节公式在 03-GQA 与 02-MQA."
 ---
 # 01 · GQA与MQA源码实现分析
 

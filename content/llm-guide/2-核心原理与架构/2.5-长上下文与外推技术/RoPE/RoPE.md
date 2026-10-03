@@ -1,6 +1,7 @@
 ---
 title: "2-核心原理与架构/2.5-长上下文与外推技术/RoPE/RoPE"
 published: true
+excerpt: "旋转角度: $ \\theta_i = \\text{base}^{-2i/d}, \\quad i \\in [0, d/2 - 1] $"
 ---
 # RoPE:旋转位置编码
 

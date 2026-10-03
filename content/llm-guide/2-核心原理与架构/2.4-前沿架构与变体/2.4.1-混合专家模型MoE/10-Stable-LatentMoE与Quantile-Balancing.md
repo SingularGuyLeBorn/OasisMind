@@ -2,6 +2,7 @@
 title: "10 · Stable LatentMoE 与 Quantile Balancing：瘦专家空间上的超稀疏路由"
 published: true
 tags: ["LatentMoE", "Quantile-Balancing", "SiTU-GLU", "MoE", "Kimi-K3"]
+excerpt: "Top-k 变大、专家池变大，本意是让专家更专。常规 MoE 里每个被选中的专家仍吃完整的 d 维 token，于是 通信和专家权重流量跟 k 一起涨。"
 ---
 # Stable LatentMoE：专家不必吃满宽，负载也不靠 $\gamma$ 去拧
 

@@ -2,6 +2,7 @@
 title: "07 · OPD 失败模式诊断: 高熵坍缩、捷径作弊与长链蒸发"
 published: true
 tags: ["OPD", "失败分析", "High-Entropy Collapse", "Shortcut Cheating", "Long-Chain Evaporation", "诊断"]
+excerpt: "高熵坍缩是 OPD 训练中最具欺骗性的失败模式. 它的欺骗性在于: 训练日志看起来一切正常，甚至堪称优秀——Loss 曲线平滑下降，KL 散度稳步收敛，梯度范数稳定——但当你把模型拿到验证集上测试时，会发现准确率早在几百个 step 之前就触顶了，此后无论如何延长训练，分数都纹丝不动."
 ---
 # 07 · OPD 失败模式诊断: 高熵坍缩、捷径作弊与长链蒸发
 

@@ -2,6 +2,7 @@
 title: "07 · RAFT:奖励排序微调"
 published: true
 tags: ["RAFT", "RLHF", "SFT", "PPO", "RLOO", "HH-RLHF"]
+excerpt: "RAFT(Reward rAnked FineTuning,奖励排序微调)对每条 prompt 采 K 条回复,按奖励排序,只对最高那条做 SFT,其余丢掉."
 ---
 # 07 RAFT:奖励排序微调
 

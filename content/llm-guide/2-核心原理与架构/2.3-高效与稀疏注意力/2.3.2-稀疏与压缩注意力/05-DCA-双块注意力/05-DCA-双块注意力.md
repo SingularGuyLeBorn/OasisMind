@@ -2,6 +2,7 @@
 title: "DCA:双块注意力"
 published: true
 tags: ["DCA", "Dual-Chunk-Attention", "长上下文", "训练无关", "RoPE", "ChunkLlama"]
+excerpt: "在 MHA → MQA → GQA → MLA 这条「压缩 KV」主线上,DCA(Dual Chunk Attention) 走另一条路:不改 KV 张量形状,只改写长序列上的相对位置与注意力分解,training-free 把 4K 预训练窗口推到 100K+(ChunkLlama / Llama-2-70B)."
 ---
 # DCA:双块注意力(Dual Chunk Attention)
 

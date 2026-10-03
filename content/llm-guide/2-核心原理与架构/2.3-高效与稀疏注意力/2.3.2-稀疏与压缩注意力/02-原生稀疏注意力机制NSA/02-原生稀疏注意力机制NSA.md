@@ -2,6 +2,7 @@
 title: "02 · NSA:原生稀疏注意力"
 published: true
 tags: ["NSA", "Sparse Attention", "DeepSeek"]
+excerpt: "NSA(Native Sparse Attention,arXiv:2502.11089)是 DeepSeek 的 可训练 块级稀疏注意力.64K 上注意力可占延迟 70%–80%;"
 ---
 # 02 NSA:原生稀疏注意力
 

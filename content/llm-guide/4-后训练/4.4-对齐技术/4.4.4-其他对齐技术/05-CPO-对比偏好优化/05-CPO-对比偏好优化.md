@@ -2,6 +2,7 @@
 title: "05 · CPO:对比偏好优化"
 published: true
 tags: ["CPO", "DPO", "ALMA", "机器翻译", "对比偏好", "均匀先验"]
+excerpt: "CPO(Contrastive Preference Optimization)在已经 SFT 饱和的翻译模型上再走一步偏好学习:抬更高分的译文,压「够用但不完美」的译文."
 ---
 # 05 CPO:对比偏好优化
 

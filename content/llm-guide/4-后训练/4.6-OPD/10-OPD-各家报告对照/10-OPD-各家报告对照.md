@@ -3,6 +3,7 @@ title: "OPD:各家报告对照"
 category: "LLM 指南"
 published: true
 tags: ["OPD", "MOPD", "On-Policy Distillation", "Qwen3", "DeepSeek-V4", "Kimi-K3", "GLM-5"]
+excerpt: "报告里的 on-policy distillation 不是同一道工序.Qwen3 用大号教师压小号学生;"
 ---
 # OPD:各家报告对照
 

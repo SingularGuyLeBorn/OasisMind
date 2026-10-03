@@ -2,6 +2,7 @@
 title: "04 · FlashAttention-3:Hopper 异步流水与 FP8 注意力"
 published: true
 tags: ["FlashAttention-3", "Hopper", "TMA", "WGMMA", "Warp Specialization", "FP8"]
+excerpt: "FlashAttention-2 通过 Query 外循环,序列维并行与更合理的 Warp 分工提高了 Ampere 上的利用率."
 ---
 # 04 · FlashAttention-3:Hopper 异步流水与 FP8 注意力
 

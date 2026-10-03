@@ -2,6 +2,7 @@
 title: "04 · SDPO：自蒸馏策略优化 — Rich Feedback 驱动的自我进化"
 published: true
 tags: ["SDPO", "Self-Distillation", "RLVR", "Rich Feedback", "OPD", "后训练", "强化学习"]
+excerpt: "家谱定位：SDPO(Self-Distillation Policy Optimization)是整个 OPD 家族中最具野心的一块拼图. 如果说基础 OPD 解决了 SFT 的暴露偏差(Exposure Bias)，OPSD 解决了对外部强教师的依赖，SDFT 解决了灾难性遗忘，那么 SDPO 则…"
 ---
 # 04 · SDPO：自蒸馏策略优化 — Rich Feedback 驱动的自我进化
 

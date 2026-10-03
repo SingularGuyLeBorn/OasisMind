@@ -2,6 +2,7 @@
 title: "01 · Attention 实现方式全景对比: 从手动实现到 FlashAttention"
 published: true
 tags: ["Attention", "SDPA", "FlashAttention", "xFormers", "性能优化", "CUDA", "GPU"]
+excerpt: "同样一条 \\mathrm{softmax}(QK^\\top/\\sqrt{D})V,eager 会把 N\\times N 的 S,A 写进 HBM,SDPA / FlashAttention 用融合核把工作集锁在 SRAM."
 ---
 # 04 Attention 实现方式全景对比: 从手动实现到 FlashAttention
 

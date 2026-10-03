@@ -2,6 +2,7 @@
 title: "02 · ORPO:无参考的几率比"
 published: true
 tags: ["ORPO", "DPO", "偏好优化", "几率比", "无参考模型"]
+excerpt: "ORPO(Odds Ratio Preference Optimization)把两件事捆进同一次更新:chosen 上的负对数似然(NLL / SFT),加上 \\lambda 倍的几率比偏好项."
 ---
 # 02 ORPO:无参考的几率比
 

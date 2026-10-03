@@ -2,6 +2,7 @@
 title: "01 · VLM 演进史:双Encoder 到融合架构, 投影层的数学本质"
 published: true
 tags: ["VLM", "LLaVA", "BLIP-2", "Qwen-VL", "视觉语言模型", "投影层", "多模态"]
+excerpt: "要理解视觉语言模型(Vision-Language Model, VLM)在整个人工智能演进谱系中的位置, 我们必须先回到 2021 年前后那个关键的转折节点. 彼时, 自然语言处理领域刚刚经历了 GPT-3 带来的震撼--一个拥有 1750 亿参数的纯文本模型, 竟然能够通过 few-shot p…"
 ---
 # 01 · VLM 演进史:双Encoder 到融合架构, 投影层的数学本质
 

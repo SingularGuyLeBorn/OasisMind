@@ -2,6 +2,7 @@
 title: "05 · SPIN:自对弈微调"
 published: true
 tags: ["SPIN", "自对弈", "DPO", "SFT", "无奖励模型"]
+excerpt: "SPIN(Self-Play fIne-tuNing)从已经 SFT 过的模型接着训,不再加人标.主玩家要分清人写的 y 和上一迭代模型写的 y';"
 ---
 # 05 SPIN:自对弈微调
 

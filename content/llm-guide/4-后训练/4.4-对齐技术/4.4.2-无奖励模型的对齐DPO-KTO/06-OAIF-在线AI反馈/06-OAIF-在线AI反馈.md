@@ -2,6 +2,7 @@
 title: "OAIF:在线 AI 反馈"
 published: true
 tags: ["OAIF", "DPO", "IPO", "SLiC", "在线偏好", "RLAIF", "PaLM 2"]
+excerpt: "OAIF(Online AI Feedback)不换损失.每步从当前策略 \\pi_{\\theta^{t}} 采两条 y^{1},y^{2},另找一份 LLM 当场判出 y^{+},y^{-},再套任意可微 DAP 损失."
 ---
 # OAIF:在线 AI 反馈
 

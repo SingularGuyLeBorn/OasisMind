@@ -1,6 +1,7 @@
 ---
 title: "10 · 2023年AI Agent调研"
 published: true
+excerpt: "原文: https://mp.weixin.qq.com/s/PWLBX1XnH_72OoyBi7JEww"
 ---
 **作者: 吃果冻不吐果冻皮**
           

@@ -2,6 +2,7 @@
 title: "04 · Radial Attention:视频 DiT 的 $O(n log n)$ 稀疏掩码"
 published: true
 tags: ["Radial Attention", "稀疏注意力", "视频生成", "DiT", "能量衰减"]
+excerpt: "HunyuanVideo / Wan2.1 上的画质对比,掩码带,复杂度曲线用论文白底图(浅色则留)."
 ---
 # Radial Attention:$O(n\log n)$ 的视频 DiT 稀疏注意力
 

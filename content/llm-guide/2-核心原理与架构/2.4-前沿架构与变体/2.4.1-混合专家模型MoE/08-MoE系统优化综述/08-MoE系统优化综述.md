@@ -2,6 +2,7 @@
 title: "08 · MoE 系统优化(入口在 6.1.8)"
 published: true
 tags: ["MoE", "专家并行", "All-to-All", "Grouped-GEMM"]
+excerpt: "EP,All-to-All,Grouped GEMM 的正本在 6.1.8 / 08.机制主线是同夹 01 → 03 → 10 LatentMoE / QB."
 ---
 # 08 MoE 系统优化
 

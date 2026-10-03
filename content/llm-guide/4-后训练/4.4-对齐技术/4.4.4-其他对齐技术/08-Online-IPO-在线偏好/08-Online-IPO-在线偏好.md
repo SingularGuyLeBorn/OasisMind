@@ -2,6 +2,7 @@
 title: "08 · Online IPO:在线偏好"
 published: true
 tags: ["Online IPO", "IPO-MD", "Nash-MD", "在线偏好", "自对弈", "几何混合"]
+excerpt: "Online IPO 不换 IPO 的平方损失.它换的是数据从哪来:两条回答都从当前策略采,用已经训好的偏好模型 p_\\phi 标成对,再优化那条平方."
 ---
 # 08 Online IPO:在线偏好
 

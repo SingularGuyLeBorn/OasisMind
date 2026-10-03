@@ -2,6 +2,7 @@
 title: "Self-Distillation:条件增强"
 published: true
 tags: ["Self-Distillation", "OPSD", "SDFT", "SDPO", "统一框架", "条件增强", "On-Policy", "持续学习"]
+excerpt: "给同一个模型额外增加训练时可见的信息 c,得到\"更有信息的老师\":"
 ---
 # Self-Distillation:条件增强
 

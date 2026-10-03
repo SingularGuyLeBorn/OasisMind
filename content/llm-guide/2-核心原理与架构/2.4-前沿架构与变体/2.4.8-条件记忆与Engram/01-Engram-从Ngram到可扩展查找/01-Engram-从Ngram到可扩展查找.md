@@ -2,6 +2,7 @@
 title: "Engram:从 n-gram 到可扩展查找"
 published: true
 tags: ["Engram", "条件记忆", "n-gram", "MoE", "Qwen3.8"]
+excerpt: "标准 Transformer 没有原生的知识查找算子."
 ---
 # Engram:从 n-gram 到可扩展查找
 

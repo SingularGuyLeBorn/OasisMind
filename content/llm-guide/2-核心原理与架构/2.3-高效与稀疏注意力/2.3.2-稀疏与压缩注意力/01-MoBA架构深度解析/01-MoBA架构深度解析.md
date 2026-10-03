@@ -2,6 +2,7 @@
 title: "01 · MoBA:混合块注意力"
 published: true
 tags: ["MoBA", "Block Attention", "Sparse Attention", "Kimi"]
+excerpt: "MoBA(Mixture of Block Attention)把 MoE 门控搬到注意力层:历史切成连续块,每个 query 用块均值 \\bar{K}_i 算亲和度,再 top-k 选块,块内仍走稠密 FlashAttention."
 ---
 # 01 MoBA:混合块注意力
 

@@ -3,6 +3,7 @@ title: "17 · TOVA:注意力省略"
 category: "LLM 指南"
 published: true
 tags: ["TOVA", "MSRNN", "KV Cache", "Oren", "EMNLP 2024"]
+excerpt: "Decoder-only 每生成一个 token,KV cache 就多一条."
 ---
 # 17 TOVA:注意力省略
 

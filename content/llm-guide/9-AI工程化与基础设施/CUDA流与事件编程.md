@@ -2,6 +2,7 @@
 title: "9 CUDA 流与事件编程"
 published: true
 tags: ["CUDA", "Stream", "Event", "异步", "GPU", "并行"]
+excerpt: "流(Stream) 是 GPU 上的独立任务队列. 同一流内的操作按顺序执行,不同流之间可以并行执行."
 ---
 # CUDA 流与事件编程
 

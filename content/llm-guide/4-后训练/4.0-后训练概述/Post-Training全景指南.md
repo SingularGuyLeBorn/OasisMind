@@ -2,6 +2,7 @@
 title: "4.1 · Post-Training 全景指南"
 published: true
 tags: ["Post-Training", "SFT", "RLHF", "DPO", "PPO", "对齐", "指令遵循"]
+excerpt: "预训练产出\"什么都知道一点,但什么都不太好用\"的基座模型. Post-Training 将其精装修成真正好用的产品:"
 ---
 # Post-Training 全景指南
 

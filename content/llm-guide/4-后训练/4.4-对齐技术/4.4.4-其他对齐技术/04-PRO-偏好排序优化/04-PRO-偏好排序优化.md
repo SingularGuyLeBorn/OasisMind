@@ -2,6 +2,7 @@
 title: "04 · PRO:偏好排序优化"
 published: true
 tags: ["PRO", "Plackett-Luce", "listwise", "DPO", "RRHF", "SLiC", "SFT", "RLHF"]
+excerpt: "PRO(Preference Ranking Optimization)把人类给的一条 n 长偏好序,收成当前策略上的 Plackett-Luce 似然,再对第一名加一条普通 SFT."
 ---
 # 04 PRO:偏好排序优化
 

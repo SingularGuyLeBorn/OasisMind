@@ -2,6 +2,7 @@
 title: "06 · Triton 分块实现:在线 softmax 与内核骨架"
 published: true
 tags: ["FlashAttention", "Triton", "Online Softmax", "Tiling", "GPU Kernel"]
+excerpt: "Triton 官方 fused-attention 教程给出了一种 FlashAttention-2 风格的程序映射:每个 program 持有一个 Query 行块,内循环依次扫描 Key/Value 列块,在线更新行最大值,归一化量与输出累加器."
 ---
 # 06 · Triton 分块实现:在线 softmax 与内核骨架
 

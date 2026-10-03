@@ -1,6 +1,7 @@
 ---
 title: "4-后训练/4.5-推理与思考能力/01-Agentic能力训练：从GLM-5看基座大模型的完整链路"
 published: true
+excerpt: "传统 LLM 训练常被简化为\"预训练 + SFT + RLHF\"三阶段. 但 GLM-5,MiniMax M2,Kimi K2.5 等前沿模型的实践表明,一个真正具备 Reasoning,Coding 和 Agent 能力的现代大模型,需要更细粒度的分阶段训练:"
 ---
 # Agentic 能力训练:从 GLM-5 看基座大模型的完整链路
 

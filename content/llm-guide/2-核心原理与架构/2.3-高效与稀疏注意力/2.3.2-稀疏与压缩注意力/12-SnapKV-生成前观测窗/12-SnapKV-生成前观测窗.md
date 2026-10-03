@@ -3,6 +3,7 @@ title: "12 · SnapKV:生成前观测窗"
 category: "LLM 指南"
 published: true
 tags: ["SnapKV", "KV Cache", "observation window", "Li", "NeurIPS 2024"]
+excerpt: "Chatbot 和 agent 的 prompt(多轮,长文,代码库)往往比生成的回复长得多.decode 每步还要把这份 prompt KV 再读一遍."
 ---
 # 12 SnapKV:生成前观测窗
 

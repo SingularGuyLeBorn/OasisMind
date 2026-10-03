@@ -2,6 +2,7 @@
 title: "10 · REINFORCE:序列级策略梯度"
 published: true
 tags: ["REINFORCE", "RLHF", "PPO", "RLOO", "RAFT", "Williams"]
+excerpt: "序列级 REINFORCE 把整段生成 y 当成一个动作.奖励模型通常只在写完之后给一个标量,策略梯度就用这个标量去乘整段 \\nabla\\log\\pi_\\theta(y\\mid x)."
 ---
 # 10 REINFORCE:序列级策略梯度
 

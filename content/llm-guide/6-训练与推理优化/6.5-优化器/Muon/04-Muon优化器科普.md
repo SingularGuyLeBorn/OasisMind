@@ -2,6 +2,7 @@
 title: "04 · Muon 优化器科普:从最速下降的本质出发"
 published: true
 tags: ["Muon", "优化器", "正交梯度", "RMSNorm", "尺度不变性", "最速下降"]
+excerpt: "Muon 不仅仅是一个\"将梯度正交化\"的技巧, 而是一个 principled optimizer(有理论基础的优化器). 其背后的核心洞察是:"
 ---
 # Muon 优化器科普:从最速下降的本质出发
 

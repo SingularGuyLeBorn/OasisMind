@@ -3,6 +3,7 @@ title: "13 · Quest:查询感知稀疏"
 category: "LLM 指南"
 published: true
 tags: ["Quest", "Query-Aware Sparsity", "KV Cache", "Tang", "ICML 2024"]
+excerpt: "Decode 每生成一个 token,都要把历史 K,V 从 HBM 再读一遍."
 ---
 # 13 Quest:查询感知稀疏
 

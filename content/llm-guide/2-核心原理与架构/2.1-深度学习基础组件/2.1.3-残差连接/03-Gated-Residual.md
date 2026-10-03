@@ -2,6 +2,7 @@
 title: "03 · Gated Residual：四分支残差上的逐元素读门"
 published: true
 tags: ["Gated-Residual", "Hyper-Connections", "mHC", "Qwen3.8"]
+excerpt: "Pre-Norm Transformer 里每一层都从同一条残差流读、再写回去。层一深，早期写进去的特征要和后面所有写入抢位置，信号被冲淡。"
 ---
 # Gated Residual：单流残差被冲淡之后，把容量花在「怎么读」上
 

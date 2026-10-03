@@ -2,6 +2,7 @@
 title: "02 · FlashAttention v1:分块,在线 Softmax 与反向重计算"
 published: true
 tags: ["FlashAttention", "Online Softmax", "Tiling", "Recomputation", "I/O Complexity"]
+excerpt: "但不在 HBM 中保存完整的 N\\times N 分数矩阵或概率矩阵.它依靠三项配合完成这一点:适配片上存储容量的二维分块,可跨块合并的在线 Softmax,以及在反向传播时重算概率块."
 ---
 # 02 · FlashAttention v1:分块,在线 Softmax 与反向重计算
 

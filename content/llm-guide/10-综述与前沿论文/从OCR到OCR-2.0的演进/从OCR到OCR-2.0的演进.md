@@ -1,6 +1,7 @@
 ---
 title: "10 · 从OCR到OCR 2.0的演进"
 published: true
+excerpt: "OCR(Optical Character Recognition)长期以来以“字符识别”或“文本识别”为核心, 其典型流程是先检测文字区域、再识别字符、最后做后处理. 随着文档种类、版式复杂性、长上下文需求(例如整本书、长表格、文献档案)急剧提升, 传统以token(子词、字符)为单位的OCR技术…"
 ---
 ### 1. 引言
 

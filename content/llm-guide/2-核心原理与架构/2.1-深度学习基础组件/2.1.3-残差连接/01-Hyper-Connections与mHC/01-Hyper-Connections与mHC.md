@@ -2,6 +2,7 @@
 title: "01 · Hyper-Connections and mHC"
 published: true
 tags: ["Hyper-Connections", "mHC", "residual", "Sinkhorn", "Birkhoff"]
+excerpt: "标准残差 x_{l+1}=x_l+\\mathcal{F}(x_l) 让网络能够加深, 但所有层共享同一条流."
 ---
 # 01 Hyper-Connections and mHC: 把恒等映射扩展到多流残差
 

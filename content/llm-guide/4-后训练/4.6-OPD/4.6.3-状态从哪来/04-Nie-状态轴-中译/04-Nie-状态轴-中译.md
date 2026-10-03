@@ -3,6 +3,7 @@ title: "04 · 中译:状态轴"
 category: "LLM 指南"
 published: true
 tags: ["OPD", "SFT", "RL", "状态分布", "精译"]
+excerpt: "大型语言模型的后训练方法,如监督微调(SFT),强化学习(RL)和蒸馏,通常通过损失函数来分析:最大似然,策略梯度,forward KL,reverse KL,或相关的目标级变体."
 ---
 # 后训练看的是状态,不是 token:SFT,RL 与 On-Policy Distillation 的状态分布视角
 

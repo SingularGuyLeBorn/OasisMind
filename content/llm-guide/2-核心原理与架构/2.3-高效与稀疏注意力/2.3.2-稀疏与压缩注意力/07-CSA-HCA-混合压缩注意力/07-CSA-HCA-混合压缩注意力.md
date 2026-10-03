@@ -2,6 +2,7 @@
 title: "CSA-HCA:DeepSeek-V4 混合压缩注意力"
 published: true
 tags: ["DeepSeek-V4", "CSA", "HCA", "长上下文", "稀疏注意力", "DSA"]
+excerpt: "DeepSeek-V4 将上下文推至 1M tokens,核心不是替换 Transformer,而是 混合压缩注意力:CSA(Compressed Sparse Attention) 负责「精准找相关」,HCA(Heavily Compressed Attention) 负责「全局不遗漏」."
 ---
 # CSA-HCA:DeepSeek-V4 混合压缩注意力
 

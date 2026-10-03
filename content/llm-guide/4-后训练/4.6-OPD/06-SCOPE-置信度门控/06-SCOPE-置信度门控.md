@@ -2,6 +2,7 @@
 title: "SCOPE:信号校准的双路径在线策略蒸馏"
 published: true
 tags: ["OPD", "SCOPE", "On-Policy Distillation", "Dual-Path Adaptive Weighting", "Reasoning"]
+excerpt: "SCOPE 的全称是 Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting."
 ---
 # SCOPE:信号校准的双路径在线策略蒸馏
 

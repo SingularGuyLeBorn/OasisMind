@@ -1,6 +1,7 @@
 ---
 title: "10-综述与前沿论文/Crosscoders-LLM特征涌现与两阶段学习"
 published: true
+excerpt: "LLM 通过海量文本预训练涌现出语法、语义甚至推理能力,但这一过程内部究竟发生了什么？模型如何从无到有地构建起对世界知识的表征？"
 ---
 # Crosscoders: 追踪 LLM 预训练中的特征涌现与两阶段学习
 

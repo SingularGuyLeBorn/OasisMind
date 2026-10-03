@@ -1,6 +1,7 @@
 ---
 title: "10 · 从Llama3报告出发"
 published: true
+excerpt: "The Llama 3 Herd of Models | Research - AI at Metaai."
 ---
 ## ![](https://www.yuque.com/attachments/yuque/0/2025/j/42982692/1754092511187-28e1ef2f-3319-4290-b019-621f6eef332d.j)0 开始之前
 

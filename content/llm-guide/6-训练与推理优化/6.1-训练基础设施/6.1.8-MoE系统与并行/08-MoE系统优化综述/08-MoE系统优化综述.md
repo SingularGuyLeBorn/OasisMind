@@ -2,6 +2,7 @@
 title: "08 · MoE 系统优化:EP,All2All,Grouped GEMM"
 published: true
 tags: ["MoE", "专家并行", "All-to-All", "SonicMoE", "Grouped-GEMM", "Tutel"]
+excerpt: "MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留."
 ---
 # MoE 系统优化:稀疏激活碰到硬件的并行胃口
 

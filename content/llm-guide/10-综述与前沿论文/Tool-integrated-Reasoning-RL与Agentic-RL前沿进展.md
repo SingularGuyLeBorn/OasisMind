@@ -2,6 +2,7 @@
 title: "10 · Tool-integrated Reasoning RL 与 Agentic RL 前沿进展"
 published: true
 tags: ["Agentic RL", "Tool-integrated Reasoning", "TIR", "Search-R1", "Multi-turn RL", "综述"]
+excerpt: "传统 RLHF/RLVR 训练的是单轮问答策略 \\pi_\\theta(y|x)——给定输入 x，模型生成回答 y，奖励函数根据 y 的质量打分. 然而，当模型需要与外部工具(搜索引擎、代码解释器、数据库)进行多轮交互时，策略的定义扩展为:"
 ---
 # Tool-integrated Reasoning RL 与 Agentic RL 前沿进展
 

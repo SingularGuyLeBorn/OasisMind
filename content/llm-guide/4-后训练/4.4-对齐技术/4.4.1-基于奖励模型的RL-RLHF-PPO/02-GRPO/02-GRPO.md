@@ -2,6 +2,7 @@
 title: "02 · GRPO:组内相对优势"
 published: true
 tags: ["GRPO", "PPO", "RLHF", "DeepSeekMath", "组相对策略优化"]
+excerpt: "GRPO(Group Relative Policy Optimization)是 PPO 的变体:同一道题采 G 条回答,用组内奖励的均值和标准差当基线,不再训一个和策略差不多大的价值网络."
 ---
 # 02 GRPO:组内相对优势
 

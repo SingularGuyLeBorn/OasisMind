@@ -2,6 +2,7 @@
 title: "09 · BOND:Best-of-N 蒸馏"
 published: true
 tags: ["BOND", "J-BOND", "Best-of-N", "Jeffreys", "RLHF", "蒸馏", "Gemma"]
+excerpt: "Best-of-N(BoN)解码很强:同一条 prompt 从参考策略采 N 条,奖励模型挑最高的那条."
 ---
 # 09 BOND:Best-of-N 蒸馏
 

@@ -2,6 +2,7 @@
 title: "01 · CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进"
 published: true
 tags: ["CLIP", "视觉Encoder", "对比学习", "InfoNCE", "SigLIP", "多模态"]
+excerpt: "在 2020 年以前, 计算机视觉领域的主流范式几乎完全被监督学习(Supervised Learning) 所统治. 如果你让一台机器理解图像, 标准操作是: 收集数万张甚至数百万张图片, 雇人用 bounding box 或类别标签逐一标注, 然后用这些数据训练一个深度卷积神经网络(CNN)…"
 ---
 # 01 · CLIP 与视觉Encoder : InfoNCE、对比学习与 SigLIP 改进
 

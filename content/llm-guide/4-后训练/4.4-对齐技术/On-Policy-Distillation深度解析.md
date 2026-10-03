@@ -2,6 +2,7 @@
 title: "4.4 · On-Policy Distillation (OPD) 深度解析"
 published: true
 tags: ["OPD", "On-Policy Distillation", "知识蒸馏", "RL", "Reverse KL", "MiniLLM", "GKD"]
+excerpt: "一句话定义:学生模型先用自己当前的策略生成回答,再让教师模型在这些学生自己生成的轨迹上提供监督信号,学生据此更新."
 ---
 # On-Policy Distillation (OPD) 深度解析
 

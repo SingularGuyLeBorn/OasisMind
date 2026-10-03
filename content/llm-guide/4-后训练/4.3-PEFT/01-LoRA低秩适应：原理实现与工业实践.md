@@ -1,6 +1,7 @@
 ---
 title: "4-后训练/4.3-PEFT/01-LoRA低秩适应：原理实现与工业实践"
 published: true
+excerpt: "对大型语言模型进行全量微调(Full Fine-tuning)时,需更新全部可训练参数. 以 Llama 2 7B 为例:"
 ---
 # LoRA 低秩适应:原理,实现与工业实践
 

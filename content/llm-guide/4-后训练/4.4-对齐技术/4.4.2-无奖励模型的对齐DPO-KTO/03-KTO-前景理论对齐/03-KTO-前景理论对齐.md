@@ -2,6 +2,7 @@
 title: "03 · KTO:前景理论对齐"
 published: true
 tags: ["KTO", "HALO", "前景理论", "二值反馈", "损失厌恶", "对齐"]
+excerpt: "KTO(Kahneman-Tversky Optimization)把对齐目标从「最大化偏好对的似然」换成「最大化生成相对参考点的效用」."
 ---
 # 03 KTO:前景理论对齐
 

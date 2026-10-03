@@ -2,6 +2,7 @@
 title: "02 · 增量式 Prefill 与 KV Cache 机制:动态检索增强推理的技术基石"
 published: true
 tags: ["Prefill", "KV Cache", "增量计算", "Search-R1", "动态RAG", "推理优化"]
+excerpt: "Search-R1 的核心工作流程:不是重新执行生成, 而是暂停当前生成,执行搜索,将搜索结果作为上下文追加, 然后继续生成."
 ---
 # 增量式 Prefill 与 KV Cache 机制:动态检索增强推理的技术基石
 

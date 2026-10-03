@@ -2,6 +2,7 @@
 title: "04 · PowLU：Ling 对 SwiGLU 的稳定化改写"
 published: true
 tags: ["PowLU", "SwiGLU", "激活函数", "FFN", "Ling", "FP8"]
+excerpt: "PowLU（Power Linear Unit）是 Ling Team（Ant Group）在 2026-05 提出的激活：把标量 SwiGLU 在大正输入上趋近 x^{2} 的增长律改成趋近线性 x，用来压专家 FFN 里的 outlier、稳住低精度预训练。"
 ---
 # 04 PowLU：Ling 对 SwiGLU 的稳定化改写
 

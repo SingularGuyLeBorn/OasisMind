@@ -1,6 +1,7 @@
 ---
 title: "10 · LLAMA实现方式"
 published: true
+excerpt: "*原文: https://zhuanlan.zhihu.com/p/5530180196*"
 ---
 ***作者: 凛冬将至***
           

@@ -2,6 +2,7 @@
 title: "02 · RRHF:排序响应对齐"
 published: true
 tags: ["RRHF", "hinge", "ranking", "SFT", "RLHF", "PPO", "RAFT", "DPO"]
+excerpt: "RRHF(Rank Responses to Align Language Models with Human Feedback)用当前策略的长度归一条件对数概率给每条回答打分,再用无 margin 的 hinge 把这些分数的序对齐到人类偏好,同时对奖励最高的那条做普通 SFT."
 ---
 # 02 RRHF:排序响应对齐
 

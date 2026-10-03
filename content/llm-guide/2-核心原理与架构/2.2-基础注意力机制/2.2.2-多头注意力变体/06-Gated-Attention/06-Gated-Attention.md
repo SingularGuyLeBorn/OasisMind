@@ -2,6 +2,7 @@
 title: "Gated Attention:SDPA 输出上的逐头 sigmoid 门"
 published: true
 tags: ["Gated-Attention", "SDPA", "sigmoid", "attention-sink", "Qiu", "NeurIPS-2025"]
+excerpt: "Gated Attention 是给标准 softmax 注意力加的一小段门:Scaled Dot-Product Attention(SDPA)算出每个头的输出 Y 之后,再用 head-specific sigmoid 做逐元素乘."
 ---
 # 06 · Gated Attention:SDPA 输出上的逐头 sigmoid 门
 

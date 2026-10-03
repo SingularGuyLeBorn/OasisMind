@@ -1,6 +1,7 @@
 ---
 title: "12 · AGI四层阶梯"
 published: true
+excerpt: "原文: https://zhuanlan.zhihu.com/p/1896382036689810197"
 ---
 **作者: 孙浩**
           

@@ -1,6 +1,7 @@
 ---
 title: "12 · 刘知远 DeepSeek解读"
 published: true
+excerpt: "原文: https://mp.weixin.qq.com/s/AdTUawqCe3vQhwJM50lvfQ"
 ---
 **作者: OpenBMB**
           

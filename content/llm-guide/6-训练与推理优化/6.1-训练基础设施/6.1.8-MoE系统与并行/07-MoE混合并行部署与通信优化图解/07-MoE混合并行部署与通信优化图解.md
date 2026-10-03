@@ -2,6 +2,7 @@
 title: "07 · MoE 混合并行:TP + EP 与 All2All"
 published: true
 tags: ["MoE", "混合并行", "TP", "EP", "All2All"]
+excerpt: "MoE 上多卡之后,注意力侧仍是 TP 的 AllReduce,专家侧多出来的是 EP 的 All2All(Dispatch 去,Combine 回)."
 ---
 # 07 MoE 混合并行:TP + EP 与 All2All
 

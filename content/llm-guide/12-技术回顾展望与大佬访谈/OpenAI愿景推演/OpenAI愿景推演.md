@@ -1,6 +1,7 @@
 ---
 title: "12 · OpenAI愿景推演"
 published: true
+excerpt: "原文: https://www.notion.so/OpenAI-b1ccaaeecd77433cbdf4f10855878146#d9be3637e59546229398c7af0acb6bb1"
 ---
 **作者: Kiwi Yeah**
           

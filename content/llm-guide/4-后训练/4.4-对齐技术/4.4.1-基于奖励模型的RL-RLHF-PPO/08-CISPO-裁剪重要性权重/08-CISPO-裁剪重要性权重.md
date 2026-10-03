@@ -2,6 +2,7 @@
 title: "08 · CISPO:裁剪重要性权重"
 published: true
 tags: ["CISPO", "GRPO", "DAPO", "PPO", "RLHF", "MiniMax-M1", "重要性采样"]
+excerpt: "CISPO(Clipped IS-weight Policy Optimization)clip 的是重要性权重 r_t=\\pi_\\theta/\\pi_{\\mathrm{old}},再 stop-gradient:目标形如 \\mathrm{sg}(\\hat r_{i,t}(\\theta))\\,\\ha…"
 ---
 # 08 CISPO:裁剪重要性权重
 

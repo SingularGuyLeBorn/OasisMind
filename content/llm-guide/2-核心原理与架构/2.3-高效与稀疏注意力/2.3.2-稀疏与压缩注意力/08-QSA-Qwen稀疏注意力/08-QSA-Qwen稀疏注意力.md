@@ -3,6 +3,7 @@ title: "08 · QSA:块级索引的 Qwen Sparse Attention"
 category: "LLM 指南"
 published: true
 tags: ["QSA", "Sparse-Attention", "DSA", "GDN", "Qwen3.8"]
+excerpt: "DSA(DeepSeek-V3.2)用轻量 indexer 做 token 级稀疏掩码.核心注意力从 O(L^2) 降到 O(Lk),indexer 自己仍是 O(L^2)."
 ---
 # QSA:先把 key 收成微块
 
