@@ -69,7 +69,7 @@ Table 6 的长上下文对照同样要看全行. GSM-Infinite Hard 从 16K 到 1
 
 ### 2.2. MTP: 同一个模块服务预训练, 解码和 RL rollout
 
-MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head, 损失权重 Stage 1 为 0.3, Stage 2/3 为 0.1, 与 DeepSeek-V3 后半程调低 MTP 权重的节奏同型. 后训练再复制成 $K=3$ 层, 每块 0.33B, 结构刻意轻: dense FFN 而非 MoE, SWA (64/8, 窗 128) 而非 GA, 每个头吃主模型 hidden 与 token embedding. 开源同时放出三层 MTP 权重, 草稿模块被当成可交付物. MTP 的一般机制见 [MTP 单独成篇](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP深度解析.md).
+MTP 的用法承自 MiMo-7B, 时间表也一样: 预训练只挂 1 个 MTP head, 损失权重 Stage 1 为 0.3, Stage 2/3 为 0.1, 与 DeepSeek-V3 后半程调低 MTP 权重的节奏同型. 后训练再复制成 $K=3$ 层, 每块 0.33B, 结构刻意轻: dense FFN 而非 MoE, SWA (64/8, 窗 128) 而非 GA, 每个头吃主模型 hidden 与 token embedding. 开源同时放出三层 MTP 权重, 草稿模块被当成可交付物. MTP 的一般机制见 [MTP 单独成篇](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md).
 
 §2.3 给了两条加速理由. 解码侧: 草稿多 token 让主模型一次并行校验, 抬高 FFN 与 attention 的算术强度, 又不按请求放大 KV I/O. RL 侧: 小 batch 的 on-policy 更新更稳, 但吃不满 GPU; 长尾序列到最后 batch 趋近 1, 空转最严重, MTP 用 token 级并行补回吞吐. 这与后面的 Data Scheduler 处理的是同一个痛点的两面: MTP 改单请求的算术强度, Data Scheduler 改序列什么时候回填.
 

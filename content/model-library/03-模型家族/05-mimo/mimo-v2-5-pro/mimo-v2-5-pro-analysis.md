@@ -27,7 +27,7 @@ excerpt: "页 1 的身份声明: 发布并开源, 是小米迄今最强的模型
 
 ### 1.3. MTP, 预训练与后训练
 
-MTP 一句: 轻量 MTP 模块用稠密 FFN, 原生用于训练与推理, 输出吞吐 「roughly tripling」, 并加速 RL rollout. Flash 报告的 MTP 是 3 层, 每层约 0.33B, 稠密 FFN 加 SWA, 接受长度最高约 3.6, 解码加速在 1.82×–2.70× 之间; 模型卡 (外部) 写 V2.5-Pro 也是 3 层 MTP. 「约三倍」 比 Flash 的实测表略高, 本页没有给测试条件, 只能当产品口径. MTP 在 RL 中的用处承自 Flash 的论证: on-policy 小 batch 吃不满 GPU, 长尾序列拖住整批, 多 token 草稿能补回算术强度. 到 V2.6, RL rollout 改用 DFlash 草稿模型, 报告称接受长度比 MTP 配置高 31.3%. MTP 的一般机制见 [MTP 单独成篇](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP深度解析.md).
+MTP 一句: 轻量 MTP 模块用稠密 FFN, 原生用于训练与推理, 输出吞吐 「roughly tripling」, 并加速 RL rollout. Flash 报告的 MTP 是 3 层, 每层约 0.33B, 稠密 FFN 加 SWA, 接受长度最高约 3.6, 解码加速在 1.82×–2.70× 之间; 模型卡 (外部) 写 V2.5-Pro 也是 3 层 MTP. 「约三倍」 比 Flash 的实测表略高, 本页没有给测试条件, 只能当产品口径. MTP 在 RL 中的用处承自 Flash 的论证: on-policy 小 batch 吃不满 GPU, 长尾序列拖住整批, 多 token 草稿能补回算术强度. 到 V2.6, RL rollout 改用 DFlash 草稿模型, 报告称接受长度比 MTP 配置高 31.3%. MTP 的一般机制见 [MTP 单独成篇](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md).
 
 训练一段: 预训练 27T tokens, FP8 混合精度, 原生序列 32K, 上下文扩到 1M; 后训练三阶段, (1) SFT 建立基础指令遵循, (2) 分域训练, 各领域教师分别做 RL (点名数学, 安全, agentic 工具调用等), (3) MOPD, 一个学生在自己的 rollout 上接受每位专科教师的 token 级指导, 合成统一模型. 这和 Flash 报告的 Figure 3 一一对应. Flash 报告给了 MOPD 的具体形式: reverse KL 取负作为 token 级优势, 叠加 ORM 优势, 训练-推理比率越界的 token 置零; 本页没有给教师数量, RL 算法或任何超参. Frontier Coding 一段写 「通过扩大后训练算力」 进一步提升了代码能力, 同样没有算力数字. MOPD 背景见 [MOPD 多教师在线蒸馏](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md).
 
