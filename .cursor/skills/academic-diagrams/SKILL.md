@@ -68,7 +68,7 @@ S, C
 |---|---|
 | 层间插槽 / 正交肘线 / 成对平行箭 | 上面 QSA 默认 |
 | 残差 / 门控读写 | `2.1.3-残差连接/03-Gated-Residual/images/fig-gr-elem-read-scalar-write.png` |
-| MoE 路由 / Top-K | `2.4.1-混合专家模型MoE/images/fig-moe-router-top2.png` |
+| MoE 路由 / Top-K | `2.4.1-混合专家模型MoE/02-MoE路由与Top-K可导性/images/fig-moe-topk-ste.png` |
 | EP / All2All | `6.1.8-MoE系统与并行/08-MoE系统优化综述/images/fig-moe-ep-alltoall.png` |
 
 ### Planner
