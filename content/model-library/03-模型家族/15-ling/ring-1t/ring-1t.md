@@ -810,7 +810,7 @@ Summary
 a. Verdict
 I have found a complete solution. The nonnegative integers $k$ satisfying the conditions are precisely $k = 0, k = 1$, and $k = 3$. All other values of $k$ (i.e., even integers $k \geq 2$, odd integers $k \geq 5$, and $k &gt; n$) are impossible.
 b. Method Sketch
-The problem requires covering all points $(a, b) \in \mathbb{Z}^{+} \times \mathbb{Z}^{+}$ with $a + b \leq n + 1$ using exactly $n$ distinct lines, where exactly $k$ are “sunny” (not parallel to the $x$-axis, $y$-axis, or $x + y = 0$).
+The problem requires covering all points $(a, b) \in \mathbb{Z}^{+} \times \mathbb{Z}^{+}$ with $a + b \leq n + 1$ using exactly $n$ distinct lines, where exactly $k$ are “sunny”（not parallel to the $x$-axis, $y$-axis, or $x + y = 0$）。
 • Key Observations:
     - The set of required points forms a triangular grid $P_{n}$ with $T(n) = \frac{n(n+1)}{2}$ points.
     - Non-sunny lines fall into three categories: horizontal ($y = c$), vertical ($x = d$), and diagonal ($x + y = e$).

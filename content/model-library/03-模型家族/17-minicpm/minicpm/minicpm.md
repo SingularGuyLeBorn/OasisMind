@@ -137,7 +137,7 @@ Older entries (2024 + InfLLM-V2 paper)
 
 ## 📦 Model Downloads
 
-**Current release: MiniCPM5-2B / MiniCPM5-1B**（BF16 / GGUF / MLX）:
+**Current release: MiniCPM5-2B / MiniCPM5-1B**（BF16 / GGUF / MLX）：
 
 MiniCPM5-2B
 
@@ -446,7 +446,7 @@ In addition to the deployment and fine-tuning frameworks listed above, MiniCPM5-
 
 To enable large-scale deployment across different AI chips, Beijing Zhiyuan Research Institute, together with numerous research institutions chip manufacturers, system vendors, and algorithm and software organizations both domestically and internationally, jointly initiated and established the FlagOS Open Source Community.
 
-The FlagOS community is dedicated to building a unified, open-source system software stack for various AI chips, encompassing core open-source projects such as a large-scale operator library, a unified AI compiler, parallel training and inference frameworks, and a unified communication library. It aims to create an open technology ecosystem connecting the “model-system-chip” layers. By enabling “develop once deploy across chips”, FlagOS unlocks the computational potential of hardware, breaks down the ecosystem silos between different chip software stacks, and effectively reduces migration costs for developers.The FlagOS community fosters an AI hardware and software ecosystem, overcomes single-vendor closed-source monopolies, promotes widespread deployment of AI hardware technologies, and is committed to rooted in China while embracing global collaboration.
+The FlagOS community is dedicated to building a unified, open-source system software stack for various AI chips, encompassing core open-source projects such as a large-scale operator library, a unified AI compiler, parallel training and inference frameworks, and a unified communication library. It aims to create an open technology ecosystem connecting the “model-system-chip” layers. By enabling “develop once deploy across chips”，FlagOS unlocks the computational potential of hardware, breaks down the ecosystem silos between different chip software stacks, and effectively reduces migration costs for developers.The FlagOS community fosters an AI hardware and software ecosystem, overcomes single-vendor closed-source monopolies, promotes widespread deployment of AI hardware technologies, and is committed to rooted in China while embracing global collaboration.
 
 Official website express: [https://flagos io](https://flagos.io/)
 

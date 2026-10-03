@@ -26,7 +26,7 @@ $$
 
 ---
 
-## 2. 式 (1)：有理幂把二次改成渐近线性
+## 2. 式（1）：有理幂把二次改成渐近线性
 
 实验取 **$m=3$**（理论允许 $0<m<10$）。标量定义为
 
@@ -160,7 +160,7 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 |------|------|------|
 | 写成 Ling-mini / flash / 1T 已经换 PowLU | 把 7.9B/124B 实验和 2.0 产品 SKU 叠在一起 | 2.0 出厂仍是 SwiGLU；本篇只覆盖 2026-05 激活论文 |
 | 把 PowLU 画成水平饱和 | 和 SiTU / clamp 搞混 | 正无穷仍 $\to+\infty$，只是 $\sim x$ 而不是 $\sim x^{2}$ |
-| 把 $m$ 写成可学习温度 | 式 (1) 里 $m$ 是超参 | 实验固定 $3$，消融只试了 $2,3,4$ |
+| 把 $m$ 写成可学习温度 | 式（1）里 $m$ 是超参 | 实验固定 $3$，消融只试了 $2,3,4$ |
 | 用 FP8 的 1.32 打 BF16 SwiGLU | 忽略换激活 recovery 与精度差 | 论文自己把蓝线解释成「精度更高 + 没换激活」 |
 | 凭 Table 2/3 说全面碾压 | 只看加粗项 | MMLU-Pro、WinoGrande、SuperGPQA 都有 PowLU 略低的格子 |
 
@@ -168,7 +168,7 @@ Ling 这一族的 Transformer 层是 Pre-Norm 残差三明治，注意力和 FFN
 
 ## 参考文献
 
-1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704. 式 (1)、§3.1 实现、$m=3$；Fig. 3 / Table 1–4；§4.3.1 FP8 spike。HTML：[arxiv.org/html/2605.25704](https://arxiv.org/html/2605.25704)。
-2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925. 仅核脚注「clamping and a residual connection」；未见官方 clamp limit。
+1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704。式（1）、§3.1 实现、$m=3$；Fig. 3 / Table 1–4；§4.3.1 FP8 spike。HTML：[arxiv.org/html/2605.25704](https://arxiv.org/html/2605.25704)。
+2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925。仅核脚注「clamping and a residual connection」；未见官方 clamp limit。
 3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. PowLU 文所称 Ling 架构；2.0 产品块（GQA、QKNorm、Partial RoPE 64、256 专家 8+1、SwiGLU）按报告 §2.1 / 表 1 写在本篇 §4，精读全文见 [Ling-2.0 mineru](../../../../../model-library/03-模型家族/15-ling/ling/ling-bi.md)。
 4. Noam Shazeer. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv:2002.05202. SwiGLU 名称与门控形态；标量 $x\cdot\mathrm{SiLU}(x)$ 是 PowLU 文的对照写法。

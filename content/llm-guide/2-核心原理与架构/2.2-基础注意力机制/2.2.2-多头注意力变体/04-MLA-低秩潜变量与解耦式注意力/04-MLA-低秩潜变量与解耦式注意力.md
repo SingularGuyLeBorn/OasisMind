@@ -104,7 +104,7 @@ $$
 
 ## 4. 低秩 KV 联合压缩（论文 §2.1.2）
 
-MLA 把式 (2) 中 $k_t, v_t$ 换成「先压 latent、再上分」：
+MLA 把式（2）中 $k_t, v_t$ 换成「先压 latent、再上分」：
 
 $$
 c_t^{KV} = h_t W^{DKV},\quad W^{DKV} \in \mathbb{R}^{d \times d_c} \tag{4}
@@ -119,7 +119,7 @@ $$
 
 ### 4.1 低秩分解视角
 
-若忽略解耦 RoPE，式 (5) 等价于 MHA 的 $W^K, W^V$ 做秩-$d_c$ 分解：
+若忽略解耦 RoPE，式（5）等价于 MHA 的 $W^K, W^V$ 做秩-$d_c$ 分解：
 
 $$
 W^K \approx W^{DKV} W^{UK},\quad W^V \approx W^{DKV} W^{UV} \tag{6}
@@ -135,7 +135,7 @@ Key 负责「匹配」，Value 负责「携带被聚合信息」；训练时两�
 
 ## 5. Query 低秩（训练侧，不减 KV cache）
 
-论文式 (12)–(13)：Q 也做 $c_t^Q = h_t W^{DQ}$，$q_t^C = c_t^Q W^{UQ}$。**目的**是训练时减小 **activation** 峰值（大 batch、长序列前向），**不**减少推理 KV cache（Q 本来就不 cache）。
+论文式（12）–(13)：Q 也做 $c_t^Q = h_t W^{DQ}$，$q_t^C = c_t^Q W^{UQ}$。**目的**是训练时减小 **activation** 峰值（大 batch、长序列前向），**不**减少推理 KV cache（Q 本来就不 cache）。
 
 $$
 c_t^Q = h_t W^{DQ} \in \mathbb{R}^{d_c'},\quad
@@ -182,7 +182,7 @@ $$
 
 ## 7. 隐藏维坐标展开
 
-**KV 压缩**（式 (4)）：
+**KV 压缩**（式（4））：
 
 $$
 c_{t,r}^{KV} = \sum_{m=1}^{d} h_{t,m}\, (W^{DKV})_{m,r},\quad r=1,\ldots,d_c \tag{13}
@@ -211,7 +211,7 @@ $$
 
 ## 8. 双求和：内容分数
 
-将 (13)–(16) 代入 $(q_{t,i}^C)^\top k_{j,i}^C$：
+将（13）–(16) 代入 $(q_{t,i}^C)^\top k_{j,i}^C$：
 
 $$
 S_{t,j,i}^{C} = \sum_{u=1}^{d_{h,C}} q_{t,i,u}^{C}\, k_{j,i,u}^{C}
@@ -219,7 +219,7 @@ S_{t,j,i}^{C} = \sum_{u=1}^{d_{h,C}} q_{t,i,u}^{C}\, k_{j,i,u}^{C}
 \underbrace{\left(\sum_u (W^{UQ})_{r',u'} (W^{UK})_{r,u'}\right)}_{M_{i,r',r}} \tag{17}
 $$
 
-交换求和：$S^C$ 是 $(c_t^Q, c_j^{KV})$ 的 **双线性型**，系数 $M_i$ 与 token 位置无关。这是 decode **矩阵吸收** 的代数根（[05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md) 式 (16)）。
+交换求和：$S^C$ 是 $(c_t^Q, c_j^{KV})$ 的 **双线性型**，系数 $M_i$ 与 token 位置无关。这是 decode **矩阵吸收** 的代数根（[05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md) 式（16））。
 
 ---
 
@@ -236,13 +236,13 @@ $$
 u_{t,p} = \sum_{i=1}^{n_h} \sum_{u=1}^{d_{h,C}} o_{t,i,u}^{C}\, (W^O)_{(i-1)d_{h,C}+u,\, p} \tag{19}
 $$
 
-式 (18) 括号内是 **latent 坐标 $r$ 上的历史凸组合**（再经 $W^{UV}$ 映回头维），与 MHA 式 (12)「先混合 $x_j$ 再 $W_V$」同构，只是混合发生在 $c^{KV}$ 空间。
+式（18）括号内是 **latent 坐标 $r$ 上的历史凸组合**（再经 $W^{UV}$ 映回头维），与 MHA 式（12）「先混合 $x_j$ 再 $W_V$」同构，只是混合发生在 $c^{KV}$ 空间。
 
 ---
 
 ## 10. 因果掩码
 
-Decoder-only 在式 (11) 分母只对 $j \le t$ 求和；$j>t$ 时令 $\tilde{S}_{t,j,i}=-\infty$。MLA 与 MHA **掩码语义相同**；每头独立 softmax。
+Decoder-only 在式（11）分母只对 $j \le t$ 求和；$j>t$ 时令 $\tilde{S}_{t,j,i}=-\infty$。MLA 与 MHA **掩码语义相同**；每头独立 softmax。
 
 ---
 
@@ -304,7 +304,7 @@ $$
 (q_{t,i}^C)^\top k_{j,i}^C = c_t^Q \underbrace{W^{UQ}_{(i)} (W^{UK}_{(i)})^\top}_{W_{\mathrm{abs},i}} (c_j^{KV})^\top \tag{20}
 $$
 
-Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块。训练始终用式 (4)–(12) **完整路径**；推理 Prefill 常用非吸收、Decode 常用吸收（[05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md)）。
+Value 侧 $W^{UV}_{(i)}$ 并进 $W^O$ 对应块。训练始终用式（4）–(12) **完整路径**；推理 Prefill 常用非吸收、Decode 常用吸收（[05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md)）。
 
 ---
 
@@ -324,7 +324,7 @@ MQA/GQA 改的是 KV **份数**（见 [01-MHA 图 4](../01-MHA-多头注意力�
 **图 4 解析**
 
 - **左 MHA**：斜线 K/V 按头堆叠，每头 $d_h$ 维；Query 浅蓝行不进 cache。绿框用 §14.2 已有配置：$n_h=128$, $d_h=128$ → $2 n_h d_h=$ **32768** / token / layer。
-- **右 MLA**：斜线块只有两块——$c^{KV}$（$d_c=512$）与 $k^R$（$d_h^R=64$）→ **576**。虚线框里的 $K^C,V^C$ 标「restore, not cached」：对应式 (5) 的 $W^{UK},W^{UV}$，不是 05 篇的吸收/非吸收分叉。
+- **右 MLA**：斜线块只有两块——$c^{KV}$（$d_c=512$）与 $k^R$（$d_h^R=64$）→ **576**。虚线框里的 $K^C,V^C$ 标「restore, not cached」：对应式（5）的 $W^{UK},W^{UV}$，不是 05 篇的吸收/非吸收分叉。
 - 绿框第二行是论文 **Table 9**（Large MoE：MHA 860.2K elem vs MLA 34.6K elem），与上一行「每层宽度 32768 vs 576」**不是同一口径**。不要把两行相除当成新的压缩比；Table 9 还给出 MMLU 59.0 vs 57.5，见 §14.4。
 - 文首「相对 MHA KV cache 仅 4%–14%」与 Figure 1(b) 的 **−93.3%** 仍以论文为准，本图不重标那些百分比。
 
@@ -423,13 +423,13 @@ Decode 吸收路径见 05 篇 §11。
 
 ## 19. 小结
 
-MLA 四步：**(1)** 式 (4)(5) KV 联合低秩；**(2)** 式 (7) Q 低秩（训练激活）；**(3)** 式 (8)(9) RoPE 解耦使吸收可行；**(4)** 式 (20) decode 吸收。§11–§12 数值链可手算；§14 量化 57× cache（V2：$d_c=512,\ d_h^R=64$ vs MHA $2 n_h d_h$）。工程双模式见 [05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md)；章索引入口见 [2.3.5](../../../2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。
+MLA 四步：**(1)** 式（4）（5）KV 联合低秩；**(2)** 式（7）Q 低秩（训练激活）；**(3)** 式（8）（9）RoPE 解耦使吸收可行；**(4)** 式（20）decode 吸收。§11–§12 数值链可手算；§14 量化 57× cache（V2：$d_c=512,\ d_h^R=64$ vs MHA $2 n_h d_h$）。工程双模式见 [05 篇](../05-MLA矩阵吸收与非吸收双版本/05-MLA矩阵吸收与非吸收双版本.md)；章索引入口见 [2.3.5](../../../2.3-高效与稀疏注意力/2.3.5-多头潜在注意力MLA/2.3.5-多头潜在注意力MLA.md)。
 
 ---
 
 ## 参考文献
 
-1. Dai, D. et al. (2024). *DeepSeek-V2.* arXiv:2405.04434.（§2.1, 附录 C, Table 9）
+1. Dai, D. et al. (2024). *DeepSeek-V2.* arXiv:2405.04434.（§2.1，附录 C, Table 9）
 2. DeepSeek-AI. (2024). *DeepSeek-V3 Technical Report.* arXiv:2412.19437.
 3. Ainslie, J. et al. (2023). *GQA.* arXiv:2305.13245.
 4. Su, J. et al. (2024). *RoFormer: Enhanced Transformer with Rotary Position Embedding.*

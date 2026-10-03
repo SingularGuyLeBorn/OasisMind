@@ -30,18 +30,18 @@ $$
 \mathbf{S}_t=\alpha_t(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\mathbf{S}_{t-1}+\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
 $$
 
-一个头里所有通道共用同一个遗忘速度。Qwen3-Next / 3.8 的 GDN 层走的是这条头级门（Qwen 报告里 $\alpha_t$ 的参数化见他们式 (10)）。
+一个头里所有通道共用同一个遗忘速度。Qwen3-Next / 3.8 的 GDN 层走的是这条头级门（Qwen 报告里 $\alpha_t$ 的参数化见他们式（10））。
 
 ## 2. KDA：对角遗忘
 
-KDA（论文式 (1)）把标量 $\alpha_t$ 换成对角：
+KDA（论文式（1））把标量 $\alpha_t$ 换成对角：
 
 $$
 \mathbf{S}_t=(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\,\mathrm{Diag}(\boldsymbol{\alpha}_t)\,\mathbf{S}_{t-1}+\beta_t\mathbf{k}_t\mathbf{v}_t^\top,\qquad
 \mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t.
 $$
 
-每个特征维自己的衰减，接近 Gated Linear Attention 的细粒度门，但仍绑在 delta 的 rank-1 擦写上。论文把转移矩阵做成一种受限的 Diagonal-Plus-Low-Rank，好做分块并行；完整 WY / UT 展开是式 (2)–(9)，训练核在 [FLA kda](https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda)。本篇不把分块逆三角阵再抄一遍——已经会线性注意力的人去论文 §3.1，不会的人先记住：**遗忘在通道上，擦写仍是对当前 key 的 rank-1。**
+每个特征维自己的衰减，接近 Gated Linear Attention 的细粒度门，但仍绑在 delta 的 rank-1 擦写上。论文把转移矩阵做成一种受限的 Diagonal-Plus-Low-Rank，好做分块并行；完整 WY / UT 展开是式（2）–(9)，训练核在 [FLA kda](https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda)。本篇不把分块逆三角阵再抄一遍——已经会线性注意力的人去论文 §3.1，不会的人先记住：**遗忘在通道上，擦写仍是对当前 key 的 rank-1。**
 
 相对通用 DPLR，他们把 $a,b$ 都绑到 $\mathbf{k}$ 上，减少半精度里的除法和二次分块 matmul；论文称算子效率大约比通用 DPLR 好一倍（§3.2）。那是 kernel 对照，不是端到端 API。
 
@@ -49,7 +49,7 @@ $$
 
 纯线性层的有限状态做不好长程精确检索。Kimi Linear 用 **3 层 KDA : 1 层 MLA**（全局 softmax）。公平对照：3B 激活 / 48B 总，同一套训练配方，相对满 MLA：**KV 最多少约 75%**，1M 上下文解码吞吐最多约 **6×**（摘要；Fig. 1b 给出 1M 上 TPOT 1.84 ms vs MLA 11.48 ms）。1.4T token 的 MMLU-Pro / RULER 点在 Fig. 1a，不要把图上的点估成未写出的第三项基准。
 
-Qwen 的 3:1 是 **GDN : 全注意力（后来变 QSA）**；Kimi 的 3:1 是 **KDA : MLA**。日程形状像，门的粒度和全局层不是同一个积木。
+Qwen 的 3:1 是 **GDN：全注意力（后来变 QSA）**；Kimi 的 3:1 是 **KDA : MLA**。日程形状像，门的粒度和全局层不是同一个积木。
 
 ```mermaid
 flowchart LR
@@ -88,11 +88,11 @@ $$
 \bm{y}_t=\mathbf{W}_o\bigl[\operatorname{Sigmoid}(\mathbf{W}_g\bm{x}_t)\odot\operatorname{RMSNorm}(\tilde{\bm{o}}_t)\bigr].
 $$
 
-Gated MLA 用同一只满秩门，但 **不对 MLA 输出做 RMSNorm**（K3 式 (7)）。混合比仍是 3:1，骨干末尾再垫一层全局 MLA。
+Gated MLA 用同一只满秩门，但 **不对 MLA 输出做 RMSNorm**（K3 式（7））。混合比仍是 3:1，骨干末尾再垫一层全局 MLA。
 
-来源：K3 HTML §2.1.1 式 (5)–(7)。完整捆法见 [K3 D2](../../../../model-library/03-模型家族/02-kimi/kimi/kimi-bi.md)。
+来源：K3 HTML §2.1.1 式（5）–(7)。完整捆法见 [K3 D2](../../../../model-library/03-模型家族/02-kimi/kimi/kimi-bi.md)。
 
-**GLM-5.3-Flash 用法（配置，不是新论文）。** vLLM / SGLang 把 Flash 的线性层点名为 KDA。Hugging Face `config.json`：`gate_lower_bound = -5.0`（与 K3 的 $g_{\min}$ 同一数值）、64 头、`head_dim=128`、`short_conv_kernel_size=4`。官方文档没有写出式 (5) 那套 Sigmoid 参数化——只记配置，不要倒灌成智谱推导。层日程 34 KDA + 11 稀疏 MLA，见 [Flash D2](../../../../model-library/03-模型家族/13-glm/glm/glm-bi.md)。
+**GLM-5.3-Flash 用法（配置，不是新论文）。** vLLM / SGLang 把 Flash 的线性层点名为 KDA。Hugging Face `config.json`：`gate_lower_bound = -5.0`（与 K3 的 $g_{\min}$ 同一数值）、64 头、`head_dim=128`、`short_conv_kernel_size=4`。官方文档没有写出式（5）那套 Sigmoid 参数化——只记配置，不要倒灌成智谱推导。层日程 34 KDA + 11 稀疏 MLA，见 [Flash D2](../../../../model-library/03-模型家族/13-glm/glm/glm-bi.md)。
 
 ## 6. 失效条件
 
@@ -101,12 +101,12 @@ Gated MLA 用同一只满秩门，但 **不对 MLA 输出做 RMSNorm**（K3 式 
 - 把 6× 写成任意长度、任意框架的 serving 数字。
 - 没打开 2510.26692 就写 DPLR 运算次数。
 - 用 unbounded Softplus 门描述 K3 的 KDA。
-- 把 Flash 的 `gate_lower_bound=-5.0` 写成已经公开了 K3 式 (5)。
+- 把 Flash 的 `gate_lower_bound=-5.0` 写成已经公开了 K3 式（5）。
 
 ## 本篇来源
 
-- Zhang et al. / Kimi Team, *Kimi Linear*, arXiv:2510.26692（本会话读了摘要、§1–3.2、式 (1)–(9) 的角色；未逐行核完 §6）
-- K3 对 decay / 输出门的改写：arXiv:2607.24653 §2.1.1 式 (5)–(7)
+- Zhang et al. / Kimi Team, *Kimi Linear*, arXiv:2510.26692（本会话读了摘要、§1–3.2、式（1）–(9) 的角色；未逐行核完 §6）
+- K3 对 decay / 输出门的改写：arXiv:2607.24653 §2.1.1 式（5）–(7)
 - Gated DeltaNet：arXiv:2412.06464
 - 核：https://github.com/fla-org/flash-linear-attention/tree/main/fla/ops/kda
 - 权重：https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct

@@ -9,12 +9,12 @@ tags: ["TTT", "LaCT", "TTT-Unleashed", "Test-Time Training", "长上下文", "�
 
 > TTT 专题精读之四。论文：Tianyuan Zhang 等（Stanford 团队），"Test-Time Training Done Right"（TTT-Unleashed / LaCT），arXiv:2505.23884（2025-05）。整理日：2026-08-12。
 
-## 问题：TTT 的"小而美"在 GPU 上跑不快
+## 问题：TTT 的「小而美」在 GPU 上跑不快
 
 现有 TTT 方法在小 online minibatch（每 16/64 tokens 更新一次 fast weights）上表现平庸，原因有二：
 
 1. **FLOPs 利用率极低**（常 <5%）：小 minibatch 导致块间因果依赖细碎，GPU 并行吃不满。
-2. **表达能力受限**：小 minibatch 隐含"1D 顺序"假设，不适合 set / N 维 grid（如图像、视频）类数据；非线性状态规模做不大，记忆容量不足。
+2. **表达能力受限**：小 minibatch 隐含「1D 顺序」假设，不适合 set / N 维 grid（如图像、视频）类数据；非线性状态规模做不大，记忆容量不足。
 
 ## LaCT 解法：反其道，用超大 chunk
 
@@ -35,14 +35,14 @@ tags: ["TTT", "LaCT", "TTT-Unleashed", "Test-Time Training", "长上下文", "�
 
 ## 与 TTT-Linear / TTT-E2E 的定位
 
-- **TTT-Linear**：证明"隐藏状态=模型"可行（小规模、线性复杂度）。
-- **LaCT（本篇）**：解决 TTT 的**工程/效率**瓶颈——把"测试时训练"推向大模型、长上下文、多模态，是 TTT 从论文到实用的关键一步。
+- **TTT-Linear**：证明「隐藏状态=模型」可行（小规模、线性复杂度）。
+- **LaCT（本篇）**：解决 TTT 的**工程/效率**瓶颈——把「测试时训练」推向大模型、长上下文、多模态，是 TTT 从论文到实用的关键一步。
 - **TTT-E2E**：走另一条路（标准架构 + 全模型持续学习），与 LaCT 并行互补。
 
 ## 意义：TTT 正在成为主流序列建模候选
 
-- 当"状态规模可到 40% 参数 + 1M context"时，TTT 不再是 RNN 的变体，而是与全注意力同台竞技的通用长上下文框架。
-- 与 SSI 爆料呼应：若 SSI 模型真围绕 TTT 构建，LaCT 这类规模化技术就是"小模型打大模型"的算力底气。
+- 当「状态规模可到 40% 参数 + 1M context」时，TTT 不再是 RNN 的变体，而是与全注意力同台竞技的通用长上下文框架。
+- 与 SSI 爆料呼应：若 SSI 模型真围绕 TTT 构建，LaCT 这类规模化技术就是「小模型打大模型」的算力底气。
 
 ## 资源
 

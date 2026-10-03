@@ -7,7 +7,7 @@ tags: ["Explorative Modeling", "预训练", "best-of-K", "UIUC", "Harvard"]
 ---
 # Explorative Modeling：预训练第三轴「探索次数 K」
 
-> **论文**：*Explorative Modeling: Unlocking a Third Pretraining Axis and End-to-End Generation*（Alexi Gladstone, Heng Ji, Yilun Du 等，**arXiv:2607.27372**，2026-07）
+> **论文**：*Explorative Modeling: Unlocking a Third Pretraining Axis and End-to-End Generation*（Alexi Gladstone，Heng Ji，Yilun Du 等，**arXiv:2607.27372**，2026-07）
 > **代码**：[alexiglad/XM](https://github.com/alexiglad/XM)（`--xm_best_of_k K`，K=1 为无探索 baseline）
 > **注**：用户素材曾未标注 arXiv ID；现已核实为 **2607.27372**
 

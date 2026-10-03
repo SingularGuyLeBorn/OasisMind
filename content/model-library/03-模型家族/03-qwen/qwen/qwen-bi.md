@@ -19,11 +19,11 @@ Jinze Bai, Shuai Bai, Yunfei Chu, Zeyu Cui, Kai Dang, Xiaodong Deng, Yang Fan, W
 
 Large language models (LLMs) have revolutionized the field of artificial intelligence, enabling natural language processing tasks that were previously thought to be exclusive to humans. In this work, we introduce QWEN<sup>1</sup>, the first installment of our large language model series. QWEN is a comprehensive language model series that encompasses distinct models with varying parameter counts. It includes QWEN, the base pretrained language models, and QWEN-CHAT, the chat models finetuned with human alignment techniques. The base language models consistently demonstrate superior performance across a multitude of downstream tasks, and the chat models, particularly those trained using Reinforcement Learning from Human Feedback (RLHF), are highly competitive. The chat models possess advanced tool-use and planning capabilities for creating agent applications, showcasing impressive performance even when compared to bigger models on complex tasks like utilizing a code interpreter. Furthermore, we have developed coding-specialized models, CODE-QWEN and CODE-QWEN-CHAT, as well as mathematics-focused models, MATH-QWEN-CHAT, which are built upon base language models. These models demonstrate significantly improved performance in comparison with open-source models, and slightly fall behind the proprietary models.
 
-我们介绍 QWEN: 通义系列的第一期. 它覆盖多档参数规模, 含基座预训练模型 QWEN, 以及用人对齐技术微调得到的对话模型 QWEN-CHAT. 基座在大量下游任务上持续领先; 对话模型里, 经 RLHF 的版本竞争力很强. 对话模型具备工具调用与规划能力, 适合搭 agent; 即便对更大模型, 在用 code interpreter 一类复杂任务上仍有亮眼表现. 另有代码特化 CODE-QWEN / CODE-QWEN-CHAT, 以及数学向 MATH-QWEN-CHAT, 均建在基座之上: 相对开源明显抬升, 相对闭源仍略落后.
+我们介绍 QWEN：通义系列的第一期。它覆盖多档参数规模，含基座预训练模型 QWEN，以及用人对齐技术微调得到的对话模型 QWEN-CHAT。基座在大量下游任务上持续领先；对话模型里，经 RLHF 的版本竞争力很强。对话模型具备工具调用与规划能力，适合搭 agent；即便对更大模型，在用 code interpreter 一类复杂任务上仍有亮眼表现。另有代码特化 CODE-QWEN / CODE-QWEN-CHAT，以及数学向 MATH-QWEN-CHAT，均建在基座之上：相对开源明显抬升，相对闭源仍略落后。
 
 
-> **想:** 摘要里 「slightly fall behind the proprietary models」 是指全系列还是只指数学/代码特化?
-> 句子主语是 These models, 指 CODE-QWEN 与 MATH-QWEN-CHAT 那一支. 通用 Chat 的人评另说: RLHF 版仍落后 GPT-4.
+> **想：** 摘要里 「slightly fall behind the proprietary models」 是指全系列还是只指数学/代码特化？
+> 句子主语是 These models，指 CODE-QWEN 与 MATH-QWEN-CHAT 那一支。通用 Chat 的人评另说：RLHF 版仍落后 GPT-4。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>∗</sup>Authors are ordered alphabetically by the last name. Correspondence to: ericzhou.zc@alibaba-inc.com.</span></small>
 
@@ -79,61 +79,61 @@ Large language models (LLMs) have revolutionized the field of artificial intelli
 
 Large language models (LLMs) (Radford et al., 2018; Devlin et al., 2018; Raffel et al., 2020; Brown et al., 2020; OpenAI, 2023; Chowdhery et al., 2022; Anil et al., 2023; Thoppilan et al., 2022; Touvron et al., 2023a;b) have revolutionized the field of artificial intelligence (AI) by providing a powerful foundation for complex reasoning and problem-solving tasks. These models have the ability to compress vast knowledge into neural networks, making them incredibly versatile agents. With a chat interface, LLMs can perform tasks that were previously thought to be the exclusive domain of humans, especially those involving creativity and expertise (OpenAI, 2022; Ouyang et al., 2022; Anil et al., 2023; Google, 2023; Anthropic, 2023a;b). They can engage in natural language conversations with humans, answering questions, providing information, and even generating creative content such as stories, poems, and music. This has led to the development of a wide range of applications, from chatbots and virtual assistants to language translation and summarization tools.
 
-大语言模型把海量知识压进网络, 成为通用底座; 配上对话界面, 能做许多曾被认为专属人类的创造性与专业任务, 并催生聊天机器人, 翻译, 摘要等应用.
+大语言模型把海量知识压进网络，成为通用底座；配上对话界面，能做许多曾被认为专属人类的创造性与专业任务，并催生聊天机器人，翻译，摘要等应用。
 
 LLMs are not just limited to language tasks. They can also function as a generalist agent (Reed et al., 2022; Bai et al., 2022a; Wang et al., 2023a; AutoGPT, 2023; Hong et al., 2023), collaborating with external systems, tools, and models to achieve the objectives set by humans. For example, LLMs can understand multimodal instructions (OpenAI, 2023; Bai et al., 2023; Liu et al., 2023a; Ye et al., 2023; Dai et al., 2023; Peng et al., 2023b), execute code (Chen et al., 2021; Zheng et al., 2023; Li et al., 2023d), use tools (Schick et al., 2023; LangChain, Inc., 2023; AutoGPT, 2023), and more. This opens up a whole new world of possibilities for AI applications, from autonomous vehicles and robotics to healthcare and finance. As these models continue to evolve and improve, we can expect to see even more innovative and exciting applications in the years to come. Whether it's helping us solve complex problems, creating new forms of entertainment, or transforming the way we live and work, LLMs are poised to play a central role in shaping the future of AI.
 
-LLM 也不止于语言: 可作为通用 agent, 与外部系统, 工具, 模型协作; 可读多模态指令, 执行代码, 调用工具. 报告把这条线当作后文 tool use / code interpreter / agent 的铺垫.
+LLM 也不止于语言：可作为通用 agent，与外部系统，工具，模型协作；可读多模态指令，执行代码，调用工具。报告把这条线当作后文 tool use / code interpreter / agent 的铺垫。
 
 ![Image block](images/p03-figure-1-model-lineage-of-the-qwen-series-we-have.png)
 
 Figure 1: Model Lineage of the Qwen Series. We have pretrained the language models, namely QWEN, on massive datasets containing trillions of tokens. We then use SFT and RLHF to align QWEN to human preference and thus we have QWEN-CHAT and specifically its improved version QWEN-CHAT-RLHF. Additionally, we also develop specialized models for coding and mathematics, such as CODE-QWEN, CODE-QWEN-CHAT, and MATH-QWEN-CHAT based on QWEN with similar techniques. Note that we previously released the multimodal LLM, QWEN-VL and QWEN-VL-CHAT (Bai et al., 2023), which are also based on our QWEN base models.
 
-图 1｜Qwen 系列谱系. 先用万亿级 token 预训练得到 QWEN; 再经 SFT 与 RLHF 对齐得到 QWEN-CHAT 及其 RLHF 加强版; 并在基座上用类似技术做 CODE-QWEN, CODE-QWEN-CHAT, MATH-QWEN-CHAT. 此前已开源的多模态 QWEN-VL / QWEN-VL-CHAT 同样基于本基座.
+图 1｜Qwen 系列谱系。先用万亿级 token 预训练得到 QWEN；再经 SFT 与 RLHF 对齐得到 QWEN-CHAT 及其 RLHF 加强版；并在基座上用类似技术做 CODE-QWEN, CODE-QWEN-CHAT, MATH-QWEN-CHAT。此前已开源的多模态 QWEN-VL / QWEN-VL-CHAT 同样基于本基座。
 
 Despite their impressive capabilities, LLMs are often criticized for their lack of reproducibility, steerability, and accessibility to service providers. In this work, we are pleased to present and release the initial version of our LLM series, QWEN. QWEN is a moniker that derives from the Chinese phrase Qianwen, which translates to "thousands of prompts" and conveys the notion of embracing a wide range of inquiries. QWEN is a comprehensive language model series that encompasses distinct models with varying parameter counts. The model series include the base pretrained language models, chat models finetuned with human alignment techniques, i.e., supervised finetuning (SFT), reinforcement learning with human feedback (RLHF), etc., as well as specialized models in coding and math. The details are outlined below:
 
-尽管能力强, LLM 常被批评难复现, 难操控, 难被服务方获取. 本文发布系列首版 QWEN (「千问」 的别称, 意指承接海量提问). 系列含基座, SFT/RLHF 对话模型, 以及代码与数学特化模型, 细则如下:
+尽管能力强，LLM 常被批评难复现，难操控，难被服务方获取。本文发布系列首版 QWEN（「千问」 的别称，意指承接海量提问）。系列含基座，SFT/RLHF 对话模型，以及代码与数学特化模型，细则如下：
 
 <!-- page 4 of 59 -->
 
 1. The base language models, namely QWEN, have undergone extensive training using up to 3 trillion tokens of diverse texts and codes, encompassing a wide range of areas. These models have consistently demonstrated superior performance across a multitude of downstream tasks, even when compared to their more significantly larger counterparts.
 
-1. 基座 QWEN 最多用约 3T token 的多样文本与代码训练, 在大量下游任务上表现优于许多更大模型.
+1. 基座 QWEN 最多用约 3T token 的多样文本与代码训练，在大量下游任务上表现优于许多更大模型。
 
 2. The QWEN-CHAT models have been carefully finetuned on a curated dataset relevant to task performing, chat, tool use, agent, safety, etc. The benchmark evaluation demonstrates that the SFT models can achieve superior performance. Furthermore, we have trained reward models to mimic human preference and applied them in RLHF for chat models that can produce responses preferred by humans. Through the human evaluation of a challenging test, we find that QWEN-CHAT models trained with RLHF are highly competitive, still falling behind GPT-4 on our benchmark.
 
-2. QWEN-CHAT 在任务执行, 对话, 工具, agent, 安全等精选数据上微调; SFT 已能拿高分. 另训奖励模型做 RLHF. 人评显示 RLHF 版很有竞争力, 在自家基准上仍落后 GPT-4.
+2. QWEN-CHAT 在任务执行，对话，工具，agent，安全等精选数据上微调；SFT 已能拿高分。另训奖励模型做 RLHF。人评显示 RLHF 版很有竞争力，在自家基准上仍落后 GPT-4。
 
 
-> **问:** 「up to 3 trillion tokens」 是不是三个规模都吃满 3T?
-> 不是. Table 1: 1.8B 训 2.2T, 7B 训 2.4T, 14B 训 3.0T. 「up to」 指上限.
+> **问：** 「up to 3 trillion tokens」 是不是三个规模都吃满 3T?
+> 不是。Table 1: 1.8B 训 2.2T，7B 训 2.4T，14B 训 3.0T. 「up to」 指上限。
 
 3. In addition, we present specialized models called CODE-QWEN, which includes CODE-QWEN-7B and CODE-QWEN-14B, as well as their chat models, CODE-QWEN-14B-CHAT and CODE-QWEN-7B-CHAT. Specifically, CODE-QWEN has been pre-trained on extensive datasets of code and further fine-tuned to handle conversations related to code generation, debugging, and interpretation. The results of experiments conducted on benchmark datasets, such as HumanEval (Chen et al., 2021), MBPP (Austin et al., 2021), and HumanEvalPack (Muennighoff et al., 2023), demonstrate the high level of proficiency of CODE-QWEN in code understanding and generation.
 
-3. CODE-QWEN (7B/14B) 及其 Chat 版: 在大量代码上继续预训练, 再微调面向生成, 调试, 解释的对话. HumanEval, MBPP, HumanEvalPack 显示代码能力强.
+3. CODE-QWEN (7B/14B) 及其 Chat 版：在大量代码上继续预训练，再微调面向生成，调试，解释的对话。HumanEval，MBPP，HumanEvalPack 显示代码能力强。
 
 4. This research additionally introduces MATH-QWEN-CHAT specifically designed to tackle mathematical problems. Our results show that both MATH-QWEN-7B-CHAT and MATH-QWEN-14B-CHAT outperform open-sourced models in the same sizes with large margins and are approaching GPT-3.5 on math-related benchmark datasets such as GSM8K (Cobbe et al., 2021) and MATH (Hendrycks et al., 2021).
 
-4. MATH-QWEN-CHAT (7B/14B) 专攻数学: 同规模开源大幅领先, 在 GSM8K, MATH 上逼近 GPT-3.5.
+4. MATH-QWEN-CHAT (7B/14B) 专攻数学：同规模开源大幅领先，在 GSM8K，MATH 上逼近 GPT-3.5。
 
 5. Besides, we have open-sourced QWEN-VL and QWEN-VL-CHAT, which have the versatile ability to comprehend visual and language instructions. These models outperform the current open-source vision-language models across various evaluation benchmarks and support text recognition and visual grounding in both Chinese and English languages. Moreover, these models enable multi-image conversations and storytelling. Further details can be found in Bai et al. (2023).
 
-5. 另已开源 QWEN-VL / QWEN-VL-CHAT: 视觉语言指令, 中英 OCR 与 grounding, 多图对话与叙事; 细节见 Bai et al. (2023).
+5. 另已开源 QWEN-VL / QWEN-VL-CHAT：视觉语言指令，中英 OCR 与 grounding，多图对话与叙事；细节见 Bai et al. (2023).
 
 Now, we officially open-source the 14B-parameter and 7B-parameter base pretrained models QWEN and aligned chat models QWEN-CHAT<sup>2</sup>. This release aims at providing more comprehensive and powerful LLMs at developer- or application-friendly scales.
 
-现正式开源 14B 与 7B 的基座 QWEN 及对齐后的 QWEN-CHAT, 目标是在对开发者友好的规模上给出更完整, 更强的 LLM.
+现正式开源 14B 与 7B 的基座 QWEN 及对齐后的 QWEN-CHAT，目标是在对开发者友好的规模上给出更完整，更强的 LLM。
 
 The structure of this report is as follows: Section 2 describes our approach to pretraining and results of QWEN. Section 3 covers our methodology for alignment and reports the results of both automatic evaluation and human evaluation. Additionally, this section describes details about our efforts in building chat models capable of tool use, code interpreter, and agent. In Sections 4 and 5, we delve into specialized models of coding and math and their performance. Section 6 provides an overview of relevant related work, and Section 7 concludes this paper and points out our future work.
 
-结构: §2 预训练; §3 对齐与自动/人评, 以及工具, code interpreter, agent; §4–5 代码与数学特化; §6 相关工作; §7 Conclusion.
+结构：§2 预训练；§3 对齐与自动/人评，以及工具，code interpreter，agent；§4–5 代码与数学特化；§6 相关工作；§7 Conclusion。
 
 ## 2 PRETRAINING 预训练
 
 The pretraining stage involves learning vast amount of data to acquire a comprehensive understanding of the world and its various complexities. This includes not only basic language capabilities but also advanced skills such as arithmetic, coding, and logical reasoning. In this section, we introduce the data, the model design and scaling, as well as the comprehensive evaluation results on benchmark datasets.
 
-预训练阶段靠吃大规模数据获得世界知识与算术, 代码, 逻辑等能力. 本节介绍数据, 模型设计与规模, 以及基准评测.
+预训练阶段靠吃大规模数据获得世界知识与算术，代码，逻辑等能力。本节介绍数据，模型设计与规模，以及基准评测。
 
 ### 2.1 DATA 数据
 
@@ -147,15 +147,15 @@ The size of data has proven to be a crucial factor in developing a robust large 
 
 Figure 2: Performance of GPT-4, GPT-3.5, the previous 13B SOTA, as well as QWEN-14B. We demonstrate the results on 12 datasets covering multiple domains, including language understanding, knowledge, reasoning, etc. QWEN significantly outperforms the previous SOTA of similar model sizes, but still lag behind both GPT-3.5 and GPT-4.
 
-图 2｜GPT-4, GPT-3.5, 此前 13B SOTA 与 QWEN-14B 在 12 个涵盖语言理解, 知识, 推理等数据集上的表现. 同规模显著超前代 SOTA, 但仍落后 GPT-3.5 与 GPT-4.
+图 2｜GPT-4，GPT-3.5，此前 13B SOTA 与 QWEN-14B 在 12 个涵盖语言理解，知识，推理等数据集上的表现。同规模显著超前代 SOTA，但仍落后 GPT-3.5 与 GPT-4。
 
 of types, domains, and tasks. Our dataset is designed to meet these requirements and includes public web documents, encyclopedia, books, codes, etc. Additionally, our dataset is multilingual, with a significant portion of the data being in English and Chinese.
 
-数据需多样, 覆盖类型, 领域与任务. 含公开网页, 百科, 书籍, 代码等; 多语, 英中占比高.
+数据需多样，覆盖类型，领域与任务。含公开网页，百科，书籍，代码等；多语，英中占比高。
 
 To ensure the quality of our pretraining data, we have developed a comprehensive data preprocessing procedure. For public web data, we extract text from HTML and use language identification tools to determine the language. To increase the diversity of our data, we employ deduplication techniques, including exact-match deduplication after normalization and fuzzy deduplication using MinHash and LSH algorithms. To filter out low-quality data, we employ a combination of rule-based and machine-learning-based methods. Specifically, we use multiple models to score the content, including language models, text-quality scoring models, and models for identifying potentially offensive or inappropriate content. We also manually sample texts from various sources and review them to ensure their quality. To further enhance the quality of our data, we selectively up-sample data from certain sources, to ensure that our models are trained on a diverse range of high-quality content. In recent studies (Zeng et al., 2022; Aribandi et al., 2021; Raffel et al., 2020), it has been demonstrated that pretraining language models with multi-task instructions can enhance their zero-shot and few-shot performance. To further enhance the performance of our model, we have incorporated high-quality instruction data into our pretraining process. To safeguard the integrity of our benchmark assessment, we have adopted a similar approach as Brown et al. (2020) and meticulously eliminated any instruction
 
-质控流水: HTML 抽文本与语种识别; 归一化后精确去重, 以及 MinHash+LSH 模糊去重; 规则+模型过滤低质与不当内容; 人工抽检; 选择性上采样. 预训练还掺入高质量指令数据以抬 zero/few-shot. 为保护评测诚实性, 仿 Brown et al. (2020) 剔除与测试集有 13-gram 重叠的指令样本.
+质控流水：HTML 抽文本与语种识别；归一化后精确去重，以及 MinHash+LSH 模糊去重；规则+模型过滤低质与不当内容；人工抽检；选择性上采样。预训练还掺入高质量指令数据以抬 zero/few-shot。为保护评测诚实性，仿 Brown et al. (2020) 剔除与测试集有 13-gram 重叠的指令样本。
 
 <!-- page 6 of 59 -->
 
@@ -163,31 +163,31 @@ To ensure the quality of our pretraining data, we have developed a comprehensive
 
 Figure 3: Encoding compression rates of different models. We randomly selected 1 million document corpora of each language to test and compare the encoding compression rates of different models (with XLM-R (Conneau et al., 2019), which supports 100 languages, as the base value 1, not shown in the figure). As can be seen, while ensuring the efficient decoding of Chinese, English, and code, QWEN also achieves a high compression rate for many other languages (such as th, he, ar, ko, vi, ja, tr, id, pl, ru, nl, pt, it, de, es, fr, etc.), equipping the model with strong scalability as well as high training and inference efficiency in these languages.
 
-图 3｜各模型编码压缩率. 每语种随机 100 万文档对比 (以支持 100 语的 XLM-R 为基准值 1, 图中未画出). QWEN 在保证中英与代码高效解码的同时, 对 th, he, ar, ko, vi, ja 等多语也有高压缩率, 利于扩展与训推效率.
+图 3｜各模型编码压缩率。每语种随机 100 万文档对比（以支持 100 语的 XLM-R 为基准值 1，图中未画出）。QWEN 在保证中英与代码高效解码的同时，对 th，he，ar，ko，vi，ja 等多语也有高压缩率，利于扩展与训推效率。
 
 samples that exhibit a 13-gram overlap with any data present in the test sets utilized in our evaluation. Given the large number of downstream tasks, it is not feasible to repeat this filtering process for all tasks. Instead, we have made sure that the instruction data for the reported tasks have undergone our filtering process to ensure their accuracy and reliability. Finally, we have built a dataset of up to 3 trillion tokens.
 
-因下游任务太多, 无法对全部任务重复过滤; 报告中给出的任务, 其指令数据都走过过滤. 最终数据集最多约 3T token.
+因下游任务太多，无法对全部任务重复过滤；报告中给出的任务，其指令数据都走过过滤。最终数据集最多约 3T token。
 
 ### 2.2 TOKENIZATION 分词
 
 The design of vocabulary significantly impacts the training efficiency and the downstream task performance. In this study, we utilize byte pair encoding (BPE) as our tokenization method, following GPT-3.5 and GPT-4. We start with the open-source fast BPE tokenizer, tiktoken (Jain, 2022), and select the vocabulary cl100k base as our starting point. To enhance the performance of our model on multilingual downstream tasks, particularly in Chinese, we augment the vocabulary with commonly used Chinese characters and words, as well as those in other languages. Also, following Touvron et al. (2023a;b), we have split numbers into single digits. The final vocabulary size is approximately 152K.
 
-词表设计影响训练效率与下游表现. 用 BPE, 起点是 tiktoken 的 cl100k_base; 增补常用汉字词与其他语种词; 数字拆成单个 digit. 最终词表约 152K.
+词表设计影响训练效率与下游表现。用 BPE，起点是 tiktoken 的 cl100k_base；增补常用汉字词与其他语种词；数字拆成单个 digit。最终词表约 152K。
 
 
-> **核对:** 152K 相对 LLaMA 的 32K 级词表, 是不是一定会伤下游?
-> 报告写做过初步实验: 放大词表不伤预训练下游表现, 同时多数语言压缩率更高, 服务成本可降.
+> **核对：** 152K 相对 LLaMA 的 32K 级词表，是不是一定会伤下游？
+> 报告写做过初步实验：放大词表不伤预训练下游表现，同时多数语言压缩率更高，服务成本可降。
 
 The performance of the QWEN tokenizer in terms of compression is depicted in Figure 3. In this comparison, we have evaluated QWEN against several other tokenizers, including XLM-R (Conneau et al., 2019), LLaMA (Touvron et al., 2023a), Baichuan (Inc., 2023a), and InternLM (InternLM Team, 2023). Our findings reveal that QWEN achieves higher compression efficiency than its competitors in most languages. This implies that the cost of serving can be significantly reduced since a smaller number of tokens from QWEN can convey more information than its competitors. Furthermore, we have conducted preliminary experiments to ensure that scaling the vocabulary size of QWEN does not negatively impact the downstream performance of the pretrained model. Despite the increase in vocabulary size, our experiments have shown that QWEN maintains its performance levels in downstream evaluation.
 
-图 3 对比显示多数语言上 QWEN 压缩更好: 更少 token 承载更多信息, 服务成本可降. 初步实验确认放大词表未损害预训练下游表现.
+图 3 对比显示多数语言上 QWEN 压缩更好：更少 token 承载更多信息，服务成本可降。初步实验确认放大词表未损害预训练下游表现。
 
 ### 2.3 ARCHITECTURE 架构
 
 QWEN is designed using a modified version of the Transformer architecture. Specifically, we have adopted the recent open-source approach of training large language models, LLaMA (Touvron et al., 2023a), which is widely regarded as the top open-source LLM. Our modifications to the architecture include:
 
-QWEN 基于改过的 Transformer, 大体跟 LLaMA 路线. 修改包括:
+QWEN 基于改过的 Transformer，大体跟 LLaMA 路线。修改包括：
 
 <!-- page 7 of 59 -->
 
@@ -199,47 +199,47 @@ Table 1: Model sizes, architectures, and optimization hyper-parameters.
 | 7B | 4096 | 32 | 32 | 3.0 × 10<sup>-4</sup> | 4M | 2.4T |
 | 14B | 5120 | 40 | 40 | 3.0 × 10<sup>-4</sup> | 4M | 3.0T |
 
-表 1｜模型规模, 架构与优化超参.
+表 1｜模型规模，架构与优化超参。
 
 • **Embedding and output projection**. Based on preliminary experimental findings, we have opted for the untied embedding approach instead of tying the weights of input embedding and output projection. This decision was made in order to achieve better performance with the price of memory costs.
 
-• **Embedding 与输出投影**. 初步实验后选 untied embedding (输入 embedding 与输出投影不共享), 换更好效果, 代价是显存.
+• **Embedding 与输出投影**。初步实验后选 untied embedding（输入 embedding 与输出投影不共享），换更好效果，代价是显存。
 
 • **Positional embedding**. We have chosen RoPE (Rotary Positional Embedding) (Su et al., 2021) as our preferred option for incorporating positional information into our model. RoPE has been widely adopted and has demonstrated success in contemporary large language models, notably PaLM (Chowdhery et al., 2022; Anil et al., 2023) and LLaMA (Touvron et al., 2023a;b). In particular, we have opted to use FP32 precision for the inverse frequency matrix, rather than BF16 or FP16, in order to prioritize model performance and achieve higher accuracy.
 
-• **位置编码**. 用 RoPE. 逆频率矩阵用 FP32, 不用 BF16/FP16, 优先精度.
+• **位置编码**。用 RoPE。逆频率矩阵用 FP32，不用 BF16/FP16，优先精度。
 
 
-> **拆开:** 逆频率矩阵为什么非要 FP32?
-> 报告只说为了更高精度与更好表现. 低精度存 θ 会在长距离上累积相位误差; 旋转矩阵怎么变成相对位置, 见 llm-guide 的 RoPE 单独成篇.
+> **拆开：** 逆频率矩阵为什么非要 FP32?
+> 报告只说为了更高精度与更好表现。低精度存 θ 会在长距离上累积相位误差；旋转矩阵怎么变成相对位置，见 llm-guide 的 RoPE 单独成篇。
 
 • **Bias**. For most layers, we remove biases following Chowdhery et al. (2022), but we add biases in the QKV layer of attention to enhance the extrapolation ability of the model (Su, 2023b).
 
-• **Bias**. 多数层去掉 bias (跟 PaLM); 但在注意力 QKV 层加 bias, 以增强外推 (Su, 2023b).
+• **Bias**。多数层去掉 bias（跟 PaLM）；但在注意力 QKV 层加 bias，以增强外推（Su, 2023b）。
 
 • **Pre-Norm & RMSNorm**. In modern Transformer models, pre-normalization is the most widely used approach, which has been shown to improve training stability compared to post-normalization. Recent research has suggested alternative methods for better training stability, which we plan to explore in future versions of our model. Additionally, we have replaced the traditional layer normalization technique described in (Ba et al., 2016) with RMSNorm (Jiang et al., 2023). This change has resulted in equivalent performance while also improving efficiency.
 
-• **Pre-Norm 与 RMSNorm**. 用 pre-norm; LayerNorm 换成 RMSNorm, 效果相当且更高效. 其他稳训法留待后续版本.
+• **Pre-Norm 与 RMSNorm**。用 pre-norm；LayerNorm 换成 RMSNorm，效果相当且更高效。其他稳训法留待后续版本。
 
 • **Activation function**. We have selected SwiGLU (Shazeer, 2020) as our activation function, a combination of Swish (Ramachandran et al., 2017) and Gated Linear Unit (Dauphin et al., 2017). Our initial experiments have shown that activation functions based on GLU generally outperform other baseline options, such as GeLU (Hendrycks & Gimpel, 2016). As is common practice in previous research, we have reduced the dimension of the feed-forward network (FFN) from 4 times the hidden size to $\frac{8}{3}$ of the hidden size.
 
-• **激活**. 用 SwiGLU; 初步实验显示 GLU 系优于 GeLU 等. FFN 中间维从 4×hidden 收到 $\frac{8}{3}$×hidden.
+• **激活**。用 SwiGLU；初步实验显示 GLU 系优于 GeLU 等。FFN 中间维从 4×hidden 收到 $\frac{8}{3}$×hidden。
 
 ### 2.4 TRAINING 训练
 
 To train QWEN, we follow the standard approach of autoregressive language modeling, as described in Radford et al. (2018). This involves training the model to predict the next token based on the context provided by the previous tokens. We train models with context lengths of 2048. To create batches of data, we shuffle and merge the documents, and then truncate them to the specified context lengths. To improve computational efficiency and reduce memory usage, we employ Flash Attention in the attention modules (Dao et al., 2022). We adopt the standard optimizer AdamW (Kingma & Ba, 2014; Loshchilov & Hutter, 2017) for pretraining optimization. We set the hyperparameters $\beta _ { 1 } = 0 . 9$ $\beta _ { 2 } = 0 . 9 5 ,$ , and $\epsilon = 1 0 ^ { - 8 }$ . We use a cosine learning rate schedule with a specified peak learning rate for each model size. The learning rate is decayed to a minimum learning rate of 10% of the peak learning rate. All the models are trained with BFloat16 mixed precision for training stability.
 
-训练做标准自回归 next-token prediction; 上下文长度 2048. 文档打乱合并后截断成 batch. 注意力用 Flash Attention. 优化器 AdamW: $\beta_1=0.9$, $\beta_2=0.95$, $\epsilon=10^{-8}$. 余弦学习率, 降到峰值的 10%. 全用 BF16 混精.
+训练做标准自回归 next-token prediction；上下文长度 2048。文档打乱合并后截断成 batch。注意力用 Flash Attention。优化器 AdamW: $\beta_1=0.9$, $\beta_2=0.95$, $\epsilon=10^{-8}$。余弦学习率，降到峰值的 10%。全用 BF16 混精。
 
 
-> **想:** Table 1 三档学习率都是 3.0e-4, 是不是没按规模调峰?
-> 是. 报告给三档同一峰值 $3.0\times10^{-4}$, 只在训练 token 数上分档 (2.2T / 2.4T / 3.0T). 代码继续预训练才按 14B/7B 分设更小 lr.
+> **想：** Table 1 三档学习率都是 3.0e-4，是不是没按规模调峰？
+> 是。报告给三档同一峰值 $3.0\times10^{-4}$，只在训练 token 数上分档（2.2T / 2.4T / 3.0T）。代码继续预训练才按 14B/7B 分设更小 lr。
 
 ### 2.5 CONTEXT LENGTH EXTENSION 上下文长度扩展
 
 Transformer models have a significant limitation in terms of the context length for their attention mechanism. As the context length increases, the quadratic-complexity computation leads to a drastic increase in both computation and memory costs. In this work, we have implemented simple training-free techniques that are solely applied during inference to extend the context length of the model. One of the key techniques we have used is NTK-aware interpolation (bloc97, 2023).
 
-注意力二次复杂度限制上下文. 本文用训练无关, 仅推理期启用的技术做扩展, 关键之一是 NTK-aware interpolation (bloc97, 2023).
+注意力二次复杂度限制上下文。本文用训练无关，仅推理期启用的技术做扩展，关键之一是 NTK-aware interpolation (bloc97, 2023).
 
 <!-- page 8 of 59 -->
 
@@ -247,29 +247,29 @@ Table 2: Overall performance on widely-used benchmarks compared to open-source b
 
 <table><tr><td>Model</td><td>Params</td><td>MMLU 5-shot</td><td>C-Eval 5-shot</td><td>GSM8K 8-shot</td><td>MATH 4-shot</td><td>HumanEval 0-shot</td><td>MBPP 3-shot</td><td>BBH 3-shot</td></tr><tr><td rowspan="2">MPT</td><td>7B</td><td>30.8</td><td>23.5</td><td>9.1</td><td>3.0</td><td>18.3</td><td>22.8</td><td>35.6</td></tr><tr><td>30B</td><td>47.9</td><td>-</td><td>15.2</td><td>3.1</td><td>25.0</td><td>32.8</td><td>38.0</td></tr><tr><td rowspan="2">Falcon</td><td>7B</td><td>27.8</td><td>-</td><td>6.8</td><td>2.3</td><td>-</td><td>11.2</td><td>28.0</td></tr><tr><td>40B</td><td>57.0</td><td>-</td><td>19.6</td><td>5.5</td><td>-</td><td>29.8</td><td>37.1</td></tr><tr><td>ChatGLM2</td><td>6B</td><td>47.9</td><td>51.7</td><td>32.4</td><td>6.5</td><td>-</td><td>-</td><td>33.7</td></tr><tr><td rowspan="2">InternLM</td><td>7B</td><td>51.0</td><td>53.4</td><td>31.2</td><td>6.3</td><td>10.4</td><td>14.0</td><td>37.0</td></tr><tr><td>20B</td><td>62.1</td><td>58.8</td><td>52.6</td><td>7.9</td><td>25.6</td><td>35.6</td><td>52.5</td></tr><tr><td rowspan="2">Baichuan2</td><td>7B</td><td>54.7</td><td>56.3</td><td>24.6</td><td>5.6</td><td>18.3</td><td>24.2</td><td>41.6</td></tr><tr><td>13B</td><td>59.5</td><td>59.0</td><td>52.8</td><td>10.1</td><td>17.1</td><td>30.2</td><td>49.0</td></tr><tr><td rowspan="4">LLaMA</td><td>7B</td><td>35.6</td><td>27.3</td><td>11.0</td><td>2.9</td><td>12.8</td><td>17.7</td><td>33.5</td></tr><tr><td>13B</td><td>47.7</td><td>31.8</td><td>20.3</td><td>4.2</td><td>15.8</td><td>22.0</td><td>37.9</td></tr><tr><td>33B</td><td>58.7</td><td>37.5</td><td>42.3</td><td>7.1</td><td>21.7</td><td>30.2</td><td>50.0</td></tr><tr><td>65B</td><td>63.7</td><td>40.4</td><td>54.4</td><td>10.6</td><td>23.7</td><td>37.7</td><td>58.4</td></tr><tr><td rowspan="4">LLAMA 2</td><td>7B</td><td>46.8</td><td>32.5</td><td>16.7</td><td>3.3</td><td>12.8</td><td>20.8</td><td>38.2</td></tr><tr><td>13B</td><td>55.0</td><td>41.4</td><td>29.6</td><td>5.0</td><td>18.9</td><td>30.3</td><td>45.6</td></tr><tr><td>34B</td><td>62.6</td><td>-</td><td>42.2</td><td>6.2</td><td>22.6</td><td>33.0</td><td>44.1</td></tr><tr><td>70B</td><td>69.8</td><td>50.1</td><td>63.3</td><td>13.5</td><td>29.9</td><td>45.0</td><td>64.9</td></tr><tr><td>StableBeluga2</td><td>70B</td><td>68.6</td><td>51.4</td><td>69.6</td><td>14.6</td><td>28.0</td><td>11.4</td><td>69.3</td></tr><tr><td rowspan="3">QWEN</td><td>1.8B</td><td>44.6</td><td>54.7</td><td>21.2</td><td>5.6</td><td>17.1</td><td>14.8</td><td>28.2</td></tr><tr><td>7B</td><td>58.2</td><td>63.5</td><td>51.7</td><td>11.6</td><td>29.9</td><td>31.6</td><td>45.0</td></tr><tr><td>14B</td><td>66.3</td><td>72.1</td><td>61.3</td><td>24.8</td><td>32.3</td><td>40.8</td><td>53.4</td></tr></table>
 
-表 2｜相对开源基座的整体表现. 最大的 14B QWEN 在全部数据集上超过此前 13B SOTA.
+表 2｜相对开源基座的整体表现。最大的 14B QWEN 在全部数据集上超过此前 13B SOTA。
 
 Unlike position interpolation (PI) (Chen et al., 2023a) which scales each dimension of RoPE equally, NTK-aware interpolation adjusts the base of RoPE to prevent the loss of high-frequency information in a training-free manner. To further improve performance, we have also implemented a trivial extension called dynamic NTK-aware interpolation, which is later formally discussed in (Peng et al., 2023a). It dynamically changes the scale by chunks, avoiding severe performance degradation. These techniques allow us to effectively extend the context length of Transformer models without compromising their computational efficiency or accuracy.
 
-与把 RoPE 各维等比缩放的 PI 不同, NTK-aware 调 RoPE 的 base, 训练无关地保住高频信息. 另实现 dynamic NTK-aware (后见 Peng et al., 2023a / YaRN 讨论): 按 chunk 动态改尺度, 避免严重掉点.
+与把 RoPE 各维等比缩放的 PI 不同，NTK-aware 调 RoPE 的 base，训练无关地保住高频信息。另实现 dynamic NTK-aware（后见 Peng et al.，2023a / YaRN 讨论）：按 chunk 动态改尺度，避免严重掉点。
 
 QWEN additionally incorporates two attention mechanisms: LogN-Scaling (Chiang & Cholak, 2022; Su, 2023a) and window attention (Beltagy et al., 2020). LogN-Scaling rescales the dot product of the query and value by a factor that depends on the ratio of the context length to the training length, ensuring that the entropy of the attention value remains stable as the context length grows. Window attention restricts the attention to a limited context window, preventing the model from attending to tokens that are too far away.
 
-另加 LogN-Scaling 与 window attention. LogN 按 「当前上下文 / 训练长度」 比例缩放注意力 logits, 稳住注意力熵; window 限制可见窗口, 避免盯太远的 token.
+另加 LogN-Scaling 与 window attention. LogN 按 「当前上下文 / 训练长度」 比例缩放注意力 logits，稳住注意力熵；window 限制可见窗口，避免盯太远的 token。
 
 
-> **问:** 源文写 rescale query and value 的点积, 是不是笔误?
-> 源句是 「dot product of the query and value」. 常见实现缩放的是 QK 点积. 对照稿保留源表述; 机制上把它读成随长度变化的注意力 logits 缩放, 细节见 Chiang & Cholak (2022) 与苏剑林相关讨论.
+> **问：** 源文写 rescale query and value 的点积，是不是笔误？
+> 源句是 「dot product of the query and value」。常见实现缩放的是 QK 点积。对照稿保留源表述；机制上把它读成随长度变化的注意力 logits 缩放，细节见 Chiang & Cholak (2022) 与苏剑林相关讨论。
 
 We also observed that the long-context modeling ability of our model varies across layers, with lower layers being more sensitive in context length extension compared to the higher layers. To leverage this observation, we assign different window sizes to each layer, using shorter windows for lower layers and longer windows for higher layers.
 
-观察到下层对外推更敏感, 于是分层设窗口: 下层短窗, 上层长窗.
+观察到下层对外推更敏感，于是分层设窗口：下层短窗，上层长窗。
 
 ### 2.6 EXPERIMENTAL RESULTS 实验结果
 
 To evaluate the zero-shot and few-shot learning capabilities of our models, we conduct a thorough benchmark assessment using a series of datasets. We compare QWEN with the most recent open-source base models, including LLaMA (Touvron et al., 2023a), LLAMA 2 (Touvron et al., 2023b), MPT (Mosaic ML, 2023), Falcon (Almazrouei et al., 2023), Baichuan2 (Yang et al., 2023), ChatGLM2 (ChatGLM2 Team, 2023), InternLM (InternLM Team, 2023), XVERSE (Inc., 2023b), and StableBeluga2 (Stability AI, 2023). Our evaluation covers a total of 7 popular benchmarks,
 
-评测 zero/few-shot, 对照当时主流开源基座, 共 7 个常用基准.
+评测 zero/few-shot，对照当时主流开源基座，共 7 个常用基准。
 
 <!-- page 9 of 59 -->
 
@@ -277,37 +277,37 @@ Table 3: Results of QWEN on long-context inference using various techniques. Our
 
 <table><tbody><tr><td rowspan="2">Model</td><td colspan="5">Sequence Length</td></tr><tr><td>1024</td><td>2048</td><td>4096</td><td>8192</td><td>16384</td></tr><tr><td>QWEN-7B</td><td>4.23</td><td>3.78</td><td>39.35</td><td>469.81</td><td>2645.09</td></tr><tr><td>+ dynamic ntk</td><td>4.23</td><td>3.78</td><td>3.59</td><td>3.66</td><td>5.71</td></tr><tr><td>+ dynamic ntk + logn</td><td>4.23</td><td>3.78</td><td>3.58</td><td>3.56</td><td>4.62</td></tr><tr><td>+ dynamic ntk + logn + window attn</td><td>4.23</td><td>3.78</td><td>3.58</td><td>3.49</td><td>4.32</td></tr><tr><td>QWEN-14B</td><td>-</td><td>3.46</td><td>22.79</td><td>334.65</td><td>3168.35</td></tr><tr><td>+ dynamic ntk + logn + window attn</td><td>-</td><td>3.46</td><td>3.29</td><td>3.18</td><td>3.42</td></tr></tbody></table>
 
-表 3｜长上下文推理 PPL. 组合关键技术后, 随长度增加仍能保持低困惑度.
+表 3｜长上下文推理 PPL。组合关键技术后，随长度增加仍能保持低困惑度。
 
 
-> **看表:** 裸 7B 到 16K 时 PPL 飙到 2645, 加全套后是 4.32, 是不是说明 「能读 16K」?
-> 只能说明 arXiv 文档上的语言建模 PPL 稳住了. 不等价于任意长文档 QA 都过关. 报告自己的表述是 「maintain performance ... over 8192 tokens」.
+> **看表：** 裸 7B 到 16K 时 PPL 飙到 2645，加全套后是 4.32，是不是说明 「能读 16K」？
+> 只能说明 arXiv 文档上的语言建模 PPL 稳住了。不等价于任意长文档 QA 都过关。报告自己的表述是 「maintain performance ... over 8192 tokens」。
 
 which are MMLU (5-shot) (Hendrycks et al., 2020), C-Eval (5-shot) (Huang et al., 2023), GSM8K (8-shot) (Cobbe et al., 2021), MATH (4-shot) (Hendrycks et al., 2021), HumanEval (0-shot) (Chen et al., 2021), MBPP (0-shot) (Austin et al., 2021), and BBH (Big Bench Hard) (3 shot) (Suzgun et al., 2022). We aim to provide a comprehensive summary of the overall performance of our models across these benchmarks.
 
 In this evaluation, we focus on the base language models without alignment and collect the baselines best scores from their official results and OpenCompass (OpenCompass Team, 2023). The results are presented in Table 2.
 
-评的是未对齐基座; 基线取官方与 OpenCompass 更好者. 结果见表 2.
+评的是未对齐基座；基线取官方与 OpenCompass 更好者。结果见表 2。
 
 Our experimental results demonstrate that the three QWEN models exhibit exceptional performance across all downstream tasks. It is worth noting that even the larger models, such as LLaMA2-70B, are outperformed by QWEN-14B in 3 tasks. QWEN-7B also performs admirably, surpassing LLaMA2-13B and achieving comparable results to Baichuan2-13B. Notably, despite having a relatively small number of parameters, QWEN-1.8B is capable of competitive performance on certain tasks and even outperforms larger models in some instances. The findings highlight the impressive capabilities of the QWEN models, particularly QWEN-14B, and suggest that smaller models, such as QWEN-1.8B, can still achieve strong performance in certain applications.
 
-三档 QWEN 全面强; 14B 在 3 项上超过 LLaMA2-70B; 7B 超 LLaMA2-13B, 与 Baichuan2-13B 可比; 1.8B 在部分任务上仍能打.
+三档 QWEN 全面强；14B 在 3 项上超过 LLaMA2-70B；7B 超 LLaMA2-13B，与 Baichuan2-13B 可比；1.8B 在部分任务上仍能打。
 
 To evaluate the effectiveness of context length extension, Table 3 presents the test results on arXiv<sup>3</sup>in terms of perplexity (PPL). These results demonstrate that by combining NTK-aware interpolation, LogN-Scaling, and layer-wise window assignment, we can effectively maintain the performance of our models in the context of over 8192 tokens.
 
-表 3 在 arXiv 上测 PPL: NTK + LogN + 分层窗口组合后, 超过 8192 token 仍能稳住.
+表 3 在 arXiv 上测 PPL: NTK + LogN + 分层窗口组合后，超过 8192 token 仍能稳住。
 
 ## 3 ALIGNMENT 对齐
 
 Pretrained large language models have been found to be not aligned with human behavior, making them unsuitable for serving as AI assistants in most cases. Recent research has shown that the use of alignment techniques, such as supervised finetuning (SFT) and reinforcement learning from human feedback (RLHF), can significantly improve the ability of language models to engage in natural conversation. In this section, we will delve into the details of how QWEN models have been trained using SFT and RLHF, and evaluate their performance in the context of chat-based assistance.
 
-预训练模型通常未对齐人类行为, 难直接当助手. 本节写 SFT 与 RLHF 怎么训, 以及对话助手场景下的评测.
+预训练模型通常未对齐人类行为，难直接当助手。本节写 SFT 与 RLHF 怎么训，以及对话助手场景下的评测。
 
 ### 3.1 SUPERVISED FINETUNING 监督微调
 
 To gain an understanding of human behavior, the initial step is to carry out SFT, which finetunes a pretrained LLM on chat-style data, including both queries and responses. In the following sections, we will delve into the details of data construction and training methods.
 
-对齐第一步是 SFT: 在问答式对话数据上微调. 下文写数据与训练.
+对齐第一步是 SFT：在问答式对话数据上微调。下文写数据与训练。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>3</sup>The dataset contains academic papers from [https://arxiv.org](https://arxiv.org).</span></small>
 
@@ -317,11 +317,11 @@ To gain an understanding of human behavior, the initial step is to carry out SFT
 
 To enhance the capabilities of our supervised finetuning datasets, we have annotated conversations in multiple styles. While conventional datasets (Wei et al., 2022a) contain a vast amount of data prompted with questions, instructions, and answers in natural language, our approach takes it a step further by annotating human-style conversations. This practice, inspired by Ouyang et al. (2022), aims at improving the model's helpfulness by focusing on natural language generation for diverse tasks. To ensure the model's ability to generalize to a wide range of scenarios, we specifically excluded data formatted in prompt templates that could potentially limit its capabilities. Furthermore, we have prioritized the safety of the language model by annotating data related to safety concerns such as violence, bias, and pornography.
 
-SFT 数据含多风格对话标注; 在常规问答/指令之外, 加人类风格会话 (受 Ouyang et al., 2022 启发). 刻意排除会限制泛化的 prompt 模板格式; 并标注暴力, 偏见, 色情等安全相关数据.
+SFT 数据含多风格对话标注；在常规问答/指令之外，加人类风格会话（受 Ouyang et al.，2022 启发）。刻意排除会限制泛化的 prompt 模板格式；并标注暴力，偏见，色情等安全相关数据。
 
 In addition to data quality, we have observed that the training method can significantly impact the final performance of the model. To achieve this, we utilized the ChatML-style format (OpenAI, 2022), which is a versatile meta language capable of describing both the metadata (such as roles) and the content of a turn. This format enables the model to effectively distinguish between various types of information, including system setup, user inputs, and assistant outputs, among others. By leveraging this approach, we can enhance the model's ability to accurately process and analyze complex conversational data.
 
-训练格式用 ChatML: 用元语言区分 system / user / assistant 等角色与内容.
+训练格式用 ChatML：用元语言区分 system / user / assistant 等角色与内容。
 
 #### 3.1.2 TRAINING 训练
 
@@ -329,27 +329,27 @@ Consistent with pretraining, we also apply next-token prediction as the training
 
 The model's training process utilizes the AdamW optimizer, with the following hyperparameters: $\beta _ { 1 }$ set to $0 . 9 , \beta _ { 2 }$ set to 0.95, and ϵ set to $1 0 ^ { - 8 }$ . The sequence length is limited to 2048, and the batch size is 128. The model undergoes a total of 4000 steps, with the learning rate gradually increased over the first 1430 steps, reaching a peak of $2 \times 1 0 ^ { - 6 }$ . To prevent overfitting, weight decay is applied with a value of 0.1, dropout is set to 0.1, and gradient clipping is enforced with a limit of 1.0.
 
-SFT 仍是 next-token prediction; system 与 user 输入做 loss mask. AdamW 同预训练 β; 序列 2048, batch 128, 共 4000 step; 前 1430 step 升到峰值 $2\times10^{-6}$; weight decay 0.1, dropout 0.1, grad clip 1.0.
+SFT 仍是 next-token prediction；system 与 user 输入做 loss mask. AdamW 同预训练 β；序列 2048，batch 128，共 4000 step；前 1430 step 升到峰值 $2\times10^{-6}$; weight decay 0.1, dropout 0.1, grad clip 1.0。
 
 ### 3.2 REINFORCEMENT LEARNING FROM HUMAN FEEDBACK 基于人类反馈的强化学习
 
 While SFT has proven to be effective, we acknowledge that its generalization and creativity capabilities may be limited, and it is prone to overfitting. To address this issue, we have implemented Reinforcement Learning from Human Feedback (RLHF) to further align SFT models with human preferences, following the approaches of Ouyang et al. (2022); Christiano et al. (2017). This process involves training a reward model and using Proximal Policy Optimization (PPO) (Schulman et al., 2017) to conduct policy training.
 
-SFT 有效但泛化与创意有限, 易过拟合. 于是按 Ouyang / Christiano 路线做 RLHF: 先训奖励模型, 再用 PPO 做策略训练.
+SFT 有效但泛化与创意有限，易过拟合。于是按 Ouyang / Christiano 路线做 RLHF：先训奖励模型，再用 PPO 做策略训练。
 
 #### 3.2.1 REWARD MODEL 奖励模型
 
 To create a successful reward model, like building a large language model (LLM), it is crucial to first undergo pretraining and then finetuning. This pretraining process, also known as preference model pretraining (PMP) (Bai et al., 2022b), necessitates a vast dataset of comparison data. This dataset consists of sample pairs, each containing two distinct responses for a single query and their corresponding preferences. Similarly, finetuning is also conducted on this type of comparison data, but with a higher quality due to the presence of quality annotations.
 
-奖励模型也走 「先预训练再微调」: PMP 需要大规模成对偏好数据; 微调同样用成对数据, 但带更高质量标注.
+奖励模型也走 「先预训练再微调」：PMP 需要大规模成对偏好数据；微调同样用成对数据，但带更高质量标注。
 
 During the fine-tuning phase, we gather a variety of prompts and adjust the reward model based on human feedback for responses from the QWEN models. To ensure the diversity and complexity of user prompts are properly taken into account, we have created a classification system with around 6600 detailed tags and implemented a balanced sampling algorithm that considers both diversity and complexity when selecting prompts for annotation by the reward model (Lu et al., 2023). To generate a wide range of responses, we have utilized QWEN models of different sizes and sampling strategies, as diverse responses can help reduce annotation difficulties and enhance the performance of the reward model. These responses are then evaluated by annotators following a standard annotation guideline, and comparison pairs are formed based on their scores.
 
-微调阶段: 用约 6600 细标签体系与兼顾多样性/复杂度的均衡采样选 prompt; 用不同规模 QWEN 与采样策略生成多样回复以降低标注难度; 标注员按规范打分后组成对比对.
+微调阶段：用约 6600 细标签体系与兼顾多样性/复杂度的均衡采样选 prompt；用不同规模 QWEN 与采样策略生成多样回复以降低标注难度；标注员按规范打分后组成对比对。
 
 In creating the reward model, we utilize the same-sized pre-trained language model QWEN to initiate the process. It is important to mention that we have incorporated a pooling layer into the original
 
-奖励模型用同规模预训练 QWEN 初始化, 并加 pooling 层, 按特定结束 token 抽句级奖励.
+奖励模型用同规模预训练 QWEN 初始化，并加 pooling 层，按特定结束 token 抽句级奖励。
 
 <!-- page 11 of 59 -->
 
@@ -360,37 +360,37 @@ Table 4: Test Accuracy of QWEN preference model pretraining (PMP) and reward mod
 | PMP | 62.68 | 61.62 | 76.52 | 65.43 | 69.60 | 60.05 | 70.59 |
 | RM | 74.78 | 69.71 | 73.98 | 64.57 | 69.99 | 60.10 | 70.52 |
 
-表 4｜PMP 与 RM 在多样人类偏好基准上的成对准确率.
+表 4｜PMP 与 RM 在多样人类偏好基准上的成对准确率。
 
 QWEN model to extract the reward for a sentence based on a specific end token. The learning rate for this process has been set to a constant value of $3 \times 1 0 ^ { - 6 }$ , and the batch size is 64. Additionally, the sequence length is set to 2048, and the training process lasts for a single epoch.
 
-学习率恒定 $3\times10^{-6}$, batch 64, 序列 2048, 训 1 个 epoch.
+学习率恒定 $3\times10^{-6}$，batch 64，序列 2048，训 1 个 epoch。
 
 We adopted the accuracy on the test dataset as an important but not exclusive evaluation metric for the reward model. In Table 4, we report the test pairwise accuracy of PMP and reward models on diverse human preference benchmark datasets (Bai et al., 2022b; Stiennon et al., 2020; Ethayarajh et al., 2022; Lightman et al., 2023). Specifically, QWEN Helpful-base and QWEN Helpful-online are our proprietary datasets. The responses in QWEN Helpful-base are generated from QWEN without RLHF, whereas QWEN Helpful-online includes responses from QWEN with RLHF. The results show that the PMP model demonstrates high generalization capabilities on out-of-distribution data, and the reward model demonstrates significant improvement on our QWEN reward datasets.
 
-测试准确率是重要但非唯一指标. Helpful-base 来自未 RLHF 的 QWEN, Helpful-online 来自 RLHF 后. PMP 在 OOD 上泛化强; RM 在自家 QWEN 奖励集上提升明显.
+测试准确率是重要但非唯一指标。Helpful-base 来自未 RLHF 的 QWEN，Helpful-online 来自 RLHF 后。PMP 在 OOD 上泛化强；RM 在自家 QWEN 奖励集上提升明显。
 
 
-> **回看:** Table 4 里 RM 在 Anthropic Helpful-online 上 (64.57) 反而低于 PMP (65.43), 是不是训坏了?
-> 报告强调 RM 在 QWEN 自有集上显著提升; 对外集并非处处抬分. 不能把 「RM 全面碾压 PMP」 读进表里.
+> **回看：** Table 4 里 RM 在 Anthropic Helpful-online 上（64.57）反而低于 PMP (65.43)，是不是训坏了？
+> 报告强调 RM 在 QWEN 自有集上显著提升；对外集并非处处抬分。不能把 「RM 全面碾压 PMP」 读进表里。
 
 #### 3.2.2 REINFORCEMENT LEARNING 强化学习
 
 Our Proximal Policy Optimization (PPO) process involves four models: the policy model, value model, reference model, and reward model. Before starting the PPO procedure, we pause the policy model's updates and focus solely on updating the value model for 50 steps. This approach ensures that the value model can adapt to different reward models effectively.
 
-PPO 用四个模型: policy, value, reference, reward. 开训前先冻住 policy, 只更新 value 50 step, 让 value 适配奖励模型.
+PPO 用四个模型：policy, value, reference, reward。开训前先冻住 policy，只更新 value 50 step，让 value 适配奖励模型。
 
 During the PPO operation, we use a strategy of sampling two responses for each query simultaneously. This strategy has proven to be more effective based on our internal benchmarking evaluations. We set the KL divergence coefficient to 0.04 and normalize the reward based on the running mean.
 
-每条 query 同时采两条回复; KL 系数 0.04; 奖励按 running mean 归一化.
+每条 query 同时采两条回复；KL 系数 0.04；奖励按 running mean 归一化。
 
 The policy and value models have learning rates of $1 \times 1 0 ^ { - 6 }$ and $5 \times 1 0 ^ { - 6 }$ , respectively. To enhance training stability, we utilize value loss clipping with a clip value of 0.15. For inference, the policy top-p is set to 0.9. Our findings indicate that although the entropy is slightly lower than when top-p is set to 1.0, there is a faster increase in reward, ultimately resulting in consistently higher evaluation rewards under similar conditions.
 
-policy / value 学习率 $1\times10^{-6}$ / $5\times10^{-6}$; value loss clip 0.15; 推理 top-p=0.9 (相对 1.0 熵略低, 但奖励升得更快).
+policy / value 学习率 $1\times10^{-6}$ / $5\times10^{-6}$；value loss clip 0.15；推理 top-p=0.9（相对 1.0 熵略低，但奖励升得更快）。
 
 Additionally, we have implemented a pretrained gradient to mitigate the alignment tax. Empirical findings indicate that, with this specific reward model, the KL penalty is adequately robust to counteract the alignment tax in benchmarks that are not strictly code or math in nature, such as those that test common sense knowledge and reading comprehension. It is imperative to utilize a significantly larger volume of the pretrained data in comparison to the PPO data to ensure the effectiveness of the pretrained gradient. Additionally, our empirical study suggests that an overly large value for this coefficient can considerably impede the alignment to the reward model, eventually compromising the ultimate alignment, while an overly small value would only have a marginal effect on alignment tax reduction.
 
-另加 pretrained gradient 缓解 alignment tax. 经验上: 对本奖励模型, KL 惩罚已够扛常识/阅读类税; pretrained 数据量须远大于 PPO 数据; 该系数过大阻碍对齐, 过小则减税效果微弱.
+另加 pretrained gradient 缓解 alignment tax。经验上：对本奖励模型，KL 惩罚已够扛常识/阅读类税；pretrained 数据量须远大于 PPO 数据；该系数过大阻碍对齐，过小则减税效果微弱。
 
 ### 3.3 AUTOMATIC AND HUMAN EVALUATION OF ALIGNED MODELS 对齐模型的自动与人工评测
 
@@ -398,7 +398,7 @@ To showcase the effectiveness of our aligned models, we conduct a comparison wit
 
 The results in Table 5 demonstrate the effectiveness of our aligned models in understanding human instructions and generating appropriate responses. QWEN-14B-Chat outperforms all other models
 
-除 few-shot 外还测 zero-shot 跟指令能力. 表 5 显示 14B-Chat 在多数开源对照上领先.
+除 few-shot 外还测 zero-shot 跟指令能力。表 5 显示 14B-Chat 在多数开源对照上领先。
 
 <!-- page 12 of 59 -->
 
@@ -406,25 +406,25 @@ Table 5: Performance of aligned models on widely-used benchmarks. We report both
 
 <table><tr><td>Model</td><td>Params</td><td>MMLU0-shot / 5-shot</td><td>C-Eval0-shot / 5-shot</td><td>GSM8K0-shot / 8-shot</td><td>HumanEval0-shot</td><td>BBH0-shot / 3-shot</td></tr><tr><td colspan="7">Proprietary models</td></tr><tr><td>GPT-3.5</td><td>-</td><td>- / 69.1</td><td>- / 52.5</td><td>- / 78.2</td><td>73.2</td><td>- / 70.1</td></tr><tr><td>GPT-4</td><td>-</td><td>- / 83.0</td><td>- / 69.9</td><td>- / 91.4</td><td>86.6</td><td>- / 86.7</td></tr><tr><td colspan="7">Open-source models</td></tr><tr><td>ChatGLM2</td><td>6B</td><td>45.5 / 46.0</td><td>50.1 / 52.6</td><td>- / 28.8</td><td>11.0</td><td>- / 32.7</td></tr><tr><td>InternLM-Chat</td><td>7B</td><td>- / 51.1</td><td>- / 53.6</td><td>- / 33.0</td><td>14.6</td><td>- / 32.5</td></tr><tr><td rowspan="2">Baichuan2-Chat</td><td>7B</td><td>- / 52.9</td><td>- / 55.6</td><td>- / 32.8</td><td>13.4</td><td>- / 35.8</td></tr><tr><td>13B</td><td>- / 57.3</td><td>- / 56.7</td><td>- / 55.3</td><td>17.7</td><td>- / 49.9</td></tr><tr><td rowspan="3">LLAMA 2-CHAT</td><td>7B</td><td>- / 46.2</td><td>- / 31.9</td><td>- / 26.3</td><td>12.2</td><td>- / 35.6</td></tr><tr><td>13B</td><td>- / 54.6</td><td>- / 36.2</td><td>- / 37.1</td><td>18.9</td><td>- / 40.1</td></tr><tr><td>70B</td><td>- / 63.8</td><td>- / 44.3</td><td>- / 59.3</td><td>32.3</td><td>- / 60.8</td></tr><tr><td rowspan="3">QWEN-CHAT</td><td>1.8B</td><td>42.4 / 43.9</td><td>50.7 / 50.3</td><td>27.8 / 19.5</td><td>14.6</td><td>27.1 / 25.0</td></tr><tr><td>7B</td><td>55.8 / 57.0</td><td>59.7 / 59.3</td><td>50.3 / 54.1</td><td>37.2</td><td>39.6 / 46.7</td></tr><tr><td>14B</td><td>64.6 / 66.5</td><td>69.8 / 71.7</td><td>60.1 / 59.3</td><td>43.9</td><td>46.9 / 58.7</td></tr></table>
 
-表 5｜对齐模型在常用基准上的 zero-shot / few-shot 表现.
+表 5｜对齐模型在常用基准上的 zero-shot / few-shot 表现。
 
 except ChatGPT (OpenAI, 2022) and LLAMA 2-CHAT-70B (Touvron et al., 2023b) in all datasets, including MMLU (Hendrycks et al., 2020), C-Eval (Huang et al., 2023), GSM8K (Cobbe et al., 2021), HumanEval (Chen et al., 2021), and BBH (Suzgun et al., 2022). In particular, QWEN's performance in HumanEval, which measures the quality of generated codes, is significantly higher than that of other open-source models.
 
-除 ChatGPT 与 LLaMA2-Chat-70B 外, 14B-Chat 在所列数据集上整体领先; HumanEval 相对其他开源优势尤其大.
+除 ChatGPT 与 LLaMA2-Chat-70B 外，14B-Chat 在所列数据集上整体领先；HumanEval 相对其他开源优势尤其大。
 
 Moreover, QWEN's performance is consistently better than that of open-source models of similar size, such as LLaMA2 (Touvron et al., 2023b), ChatGLM2 (ChatGLM2 Team, 2023), InternLM (InternLM Team, 2023), and Baichuan2 (Yang et al., 2023). This suggests that our alignment approach, which involves fine-tuning the model on a large dataset of human conversations, has been effective in improving the model's ability to understand and generate human-like language.
 
 Despite this, we have reservations about the ability of traditional benchmark evaluation to accurately measure the performance and potential of chat models trained with alignment techniques in today's landscape. The results mentioned earlier provide some evidence of our competitive standing, but we believe that it is crucial to develop new evaluation methods specifically tailored to aligned models.
 
-同规模开源持续更好. 但作者对传统基准能否准确刻画对齐后对话模型持保留态度, 认为需要专为对齐模型设计的新评测.
+同规模开源持续更好。但作者对传统基准能否准确刻画对齐后对话模型持保留态度，认为需要专为对齐模型设计的新评测。
 
 We believe that human evaluation is crucial, which is why we have created a carefully curated dataset for this purpose. Our process involved collecting 300 instructions in Chinese that covered a wide range of topics, including knowledge, language understanding, creative writing, coding, and mathematics. To evaluate the performance of different models, we chose the SFT version of QWEN-CHAT-7B and the SFT and RLHF versions of QWEN-CHAT-14B, and added two strong baselines, GPT-3.5 and GPT-4<sup>4</sup>, for comparison. For each instruction, we asked three annotators to rank the model responses by the overall score of helpfulness, informativeness, validity, and other relevant factors. Our dataset and evaluation methodology provides a comprehensive and rigorous assessment of the capabilities of different language models in various domains.
 
-人评集:300 条中文指令, 覆盖知识, 语言理解, 创意写作, 代码, 数学. 对比 Qwen-7B (SFT), Qwen-14B (SFT/RLHF), GPT-3.5, GPT-4; 每条由三名标注员按有用性, 信息量, 有效性等综合排序.
+人评集：300 条中文指令，覆盖知识，语言理解，创意写作，代码，数学。对比 Qwen-7B (SFT), Qwen-14B (SFT/RLHF)，GPT-3.5，GPT-4；每条由三名标注员按有用性，信息量，有效性等综合排序。
 
 Figure 4 illustrates the win rates of the various models. For each model, we report the percentage of wins, ties, and losses against GPT-3.5, with the segments of each bar from bottom to top representing these statistics. The experimental results clearly demonstrate that the RLHF model outperforms the SFT models by significant margins, indicating that RLHF can encourage the model to generate responses that are more preferred by humans. In terms of overall performance, we find that the RLHF model significantly outperforms the SFT models, falling behind GPT-4. This indicates the effectiveness of RLHF for aligning to human preference. To provide a more comprehensive understanding of the models' performance, we include a case study with examples from different models in Appendix A.2.2. Nonetheless, it remains difficult to accurately capture the gap between our
 
-图 4 对 GPT-3.5 的胜/平/负率 (自下而上). RLHF 明显优于 SFT, 仍落后 GPT-4. 案例见附录 A.2.2.
+图 4 对 GPT-3.5 的胜/平/负率（自下而上）。RLHF 明显优于 SFT，仍落后 GPT-4。案例见附录 A.2.2。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>4</sup>To obtain the results from the models, we use the OpenAI APIs of GPT-3.5-turbo-0613 and GPT-4-0613.</span></small>
 
@@ -434,13 +434,13 @@ Figure 4 illustrates the win rates of the various models. For each model, we rep
 
 Figure 4: Results of the human evaluation for chat models. We compare Qwen-7B (SFT), Qwen-14B (SFT), Qwen-14B (RLHF), as well as GPT-4 against GPT-3.5. Each bar segment represents the percentage of wins, ties, and losses, from bottom to top. On average, the RLHF model outperforms the SFT model. The dataset consists of 300 Chinese instructions.
 
-图 4｜对话模型人评. 对比 Qwen-7B (SFT), Qwen-14B (SFT), Qwen-14B (RLHF) 与 GPT-4, 均相对 GPT-3.5 报胜/平/负 (自下而上). 平均看 RLHF 优于 SFT. 数据集为 300 条中文指令.
+图 4｜对话模型人评。对比 Qwen-7B (SFT), Qwen-14B (SFT), Qwen-14B (RLHF) 与 GPT-4，均相对 GPT-3.5 报胜/平/负（自下而上）。平均看 RLHF 优于 SFT。数据集为 300 条中文指令。
 
 models and the proprietary models. As such, a more extensive and rigorous assessment is required for the chat models.
 
-与闭源模型的差距仍难精确刻画, 需要更大规模, 更严格的对话评测.
+与闭源模型的差距仍难精确刻画，需要更大规模，更严格的对话评测。
 
-### 3.4 TOOL USE, CODE INTERPRETER, AND AGENT 工具使用, Code Interpreter 与 Agent
+### 3.4 TOOL USE，CODE INTERPRETER，AND AGENT 工具使用，Code Interpreter 与 Agent
 
 Table 6: Performance of QWEN on the in-house Chinese benchmark that evaluates its ability to use unseen tools via ReAct prompting.
 
@@ -450,7 +450,7 @@ Table 6: Performance of QWEN on the in-house Chinese benchmark that evaluates it
 | GPT-3.5 | - | 85 | 88 | 75.0 |
 | QWEN-CHAT | 1.8B7B14B | 929898 | 899193 | 19.37.32.4 |
 
-表 6｜内部中文基准: 用 ReAct prompting 调用未见过工具. (源表把 1.8B/7B/14B 三行挤在同一格: 选工具 92/98/98, 入参 Rouge-L 89/91/93, 误报 19.3/7.3/2.4.)
+表 6｜内部中文基准：用 ReAct prompting 调用未见过工具。（源表把 1.8B/7B/14B 三行挤在同一格：选工具 92/98/98，入参 Rouge-L 89/91/93，误报 19.3/7.3/2.4.）
 
 The QWEN models, which are designed to be versatile, have the remarkable ability to assist with (semi-)automating daily tasks by leveraging their skills in tool-use and planning. As such, they can serve as agents or copilots to help streamline various tasks. We explore QWEN's proficiency in the following areas:
 
@@ -460,7 +460,7 @@ The QWEN models, which are designed to be versatile, have the remarkable ability
 
 • Functioning as an agent that accesses Hugging Face's extensive collection of multimodal models while engaging with humans (see Table 9).
 
-QWEN 可凭工具与规划做 (半) 自动化日常任务, 充当 agent / copilot. 本节探三条: ReAct 调未见工具 (表 6); Python code interpreter 做数学与数据分析 (表 7–8); 作 Hugging Face Agent 调多模态工具 (表 9).
+QWEN 可凭工具与规划做（半）自动化日常任务，充当 agent / copilot。本节探三条：ReAct 调未见工具（表 6）；Python code interpreter 做数学与数据分析（表 7–8）；作 Hugging Face Agent 调多模态工具（表 9）。
 
 <!-- page 14 of 59 -->
 
@@ -468,13 +468,13 @@ Table 7: The proportion of code generated by QWEN that is executable on the in-h
 
 <table><tr><td rowspan="2">Model</td><td rowspan="2">Params</td><td colspan="4">Category</td></tr><tr><td>Math (%)</td><td>Visualization (%)</td><td>General (%)</td><td>All (%)</td></tr><tr><td>GPT-4</td><td>-</td><td>91.9</td><td>85.9</td><td>82.8</td><td>86.8</td></tr><tr><td>GPT-3.5</td><td>-</td><td>89.2</td><td>65.0</td><td>74.1</td><td>72.9</td></tr><tr><td rowspan="2">LLAMA 2-CHAT</td><td>7B</td><td>41.9</td><td>33.1</td><td>24.1</td><td>33.6</td></tr><tr><td>13B</td><td>50.0</td><td>40.5</td><td>48.3</td><td>44.4</td></tr><tr><td rowspan="2">CODE LLAMA-INSTRUCT</td><td>7B</td><td>85.1</td><td>54.0</td><td>70.7</td><td>65.1</td></tr><tr><td>13B</td><td>93.2</td><td>55.8</td><td>74.1</td><td>68.8</td></tr><tr><td rowspan="2">InternLM-Chat</td><td>7B v1.1</td><td>78.4</td><td>44.2</td><td>62.1</td><td>56.3</td></tr><tr><td>20B</td><td>70.3</td><td>44.2</td><td>65.5</td><td>54.9</td></tr><tr><td rowspan="3">QWEN-CHAT</td><td>1.8B</td><td>33.8</td><td>30.1</td><td>8.6</td><td>26.8</td></tr><tr><td>7B</td><td>82.4</td><td>64.4</td><td>67.2</td><td>70.2</td></tr><tr><td>14B</td><td>89.2</td><td>84.1</td><td>65.5</td><td>81.7</td></tr></table>
 
-表 7｜Code Interpreter 内部基准上生成代码的可执行比例 (数学 / 可视化 / 通用). CODE LLAMA 在可视化上偏弱, 因常按 CSV 文件名幻觉出不存在的列 (见图 5).
+表 7｜Code Interpreter 内部基准上生成代码的可执行比例（数学 / 可视化 / 通用）。CODE LLAMA 在可视化上偏弱，因常按 CSV 文件名幻觉出不存在的列（见图 5）。
 
 Table 8: Correctness of the final response on the in-house evaluation benchmark for Code Interpreter. Visualization-Hard tasks involve planning multiple steps, while Visualization-Easy tasks do not. Visualization-All measures both types of tasks. CODE LLAMA excels in performing Visualization-Easy tasks but tends to underperform in Visualization-Hard tasks, due to its inclination to hallucinate non-existent columns based on the name of a CSV file (see Figure 5).
 
 <table><tr><td rowspan="2">Model</td><td rowspan="2">Params</td><td colspan="4">Category</td></tr><tr><td>Math (%)</td><td>Vis.-Hard (%)</td><td>Vis.-Easy (%)</td><td>Vis.-All (%)</td></tr><tr><td>GPT-4</td><td>-</td><td>82.8</td><td>66.7</td><td>60.8</td><td>63.8</td></tr><tr><td>GPT-3.5</td><td>-</td><td>47.3</td><td>33.3</td><td>55.7</td><td>44.2</td></tr><tr><td rowspan="2">LLAMA 2-CHAT</td><td>7B</td><td>3.9</td><td>14.3</td><td>39.2</td><td>26.4</td></tr><tr><td>13B</td><td>8.3</td><td>8.3</td><td>40.5</td><td>23.9</td></tr><tr><td rowspan="2">CODE LLAMA-INSTRUCT</td><td>7B</td><td>14.3</td><td>26.2</td><td>60.8</td><td>42.9</td></tr><tr><td>13B</td><td>28.2</td><td>27.4</td><td>62.0</td><td>44.2</td></tr><tr><td rowspan="2">InternLM-Chat</td><td>7B v1.1</td><td>28.5</td><td>4.8</td><td>40.5</td><td>22.1</td></tr><tr><td>20B</td><td>34.6</td><td>21.4</td><td>45.6</td><td>33.1</td></tr><tr><td rowspan="3">QWEN-CHAT</td><td>1.8B</td><td>14.7</td><td>3.6</td><td>20.3</td><td>11.7</td></tr><tr><td>7B</td><td>41.9</td><td>40.5</td><td>54.4</td><td>47.2</td></tr><tr><td>14B</td><td>58.4</td><td>53.6</td><td>59.5</td><td>56.4</td></tr></table>
 
-表 8｜最终回答正确率. Vis.-Hard 需多步规划, Vis.-Easy 不需要. CODE LLAMA 易题强, 难题弱, 同样因列名幻觉 (图 5).
+表 8｜最终回答正确率。Vis.-Hard 需多步规划，Vis.-Easy 不需要。CODE LLAMA 易题强，难题弱，同样因列名幻觉（图 5）。
 
 <!-- page 15 of 59 -->
 
@@ -482,83 +482,83 @@ Table 9: Results of QWEN-Chat on the Hugging Face Agent benchmark.
 
 <table><tr><td rowspan="2">Task</td><td rowspan="2">Model</td><td rowspan="2">Params</td><td colspan="3">Metric</td></tr><tr><td>Tool Selection ↑</td><td>Tool Used ↑</td><td>Code Correctness ↑</td></tr><tr><td rowspan="7">Run Mode</td><td>GPT-4</td><td>-</td><td>100</td><td>100</td><td>97.4</td></tr><tr><td>GPT-3.5</td><td>-</td><td>95.4</td><td>96.3</td><td>87.0</td></tr><tr><td>Starcoder-Base</td><td>15B</td><td>86.1</td><td>87.0</td><td>68.9</td></tr><tr><td>Starcoder</td><td>15B</td><td>87.0</td><td>88.0</td><td>68.9</td></tr><tr><td rowspan="3">QWEN-CHAT</td><td>1.8B</td><td>85.2</td><td>84.3</td><td>61.1</td></tr><tr><td>7B</td><td>87.0</td><td>87.0</td><td>71.5</td></tr><tr><td>14B</td><td>93.5</td><td>94.4</td><td>87.0</td></tr><tr><td rowspan="7">Chat Mode</td><td>GPT-4</td><td>-</td><td>97.9</td><td>97.9</td><td>98.5</td></tr><tr><td>GPT-3.5</td><td>-</td><td>97.3</td><td>96.8</td><td>89.6</td></tr><tr><td>Starcoder-Base</td><td>15B</td><td>97.9</td><td>97.9</td><td>91.1</td></tr><tr><td>Starcoder</td><td>15B</td><td>97.9</td><td>97.9</td><td>89.6</td></tr><tr><td rowspan="3">QWEN-CHAT</td><td>1.8B</td><td>93.6</td><td>93.6</td><td>73.2</td></tr><tr><td>7B</td><td>94.7</td><td>94.7</td><td>85.1</td></tr><tr><td>14B</td><td>97.9</td><td>97.9</td><td>95.5</td></tr></table>
 
-表 9｜Hugging Face Agent 基准.
+表 9｜Hugging Face Agent 基准。
 
 To enhance QWEN's capabilities as an agent or copilot, we employ the self-instruct (Wang et al., 2023c) strategy for SFT. Specifically, we utilize the in-context learning capability of QWEN for self-instruction. By providing a few examples, we can prompt QWEN to generate more relevant queries and generate outputs that follow a specific format, such as ReAct (Yao et al., 2022). We then apply rules and involve human annotators to filter out any noisy samples. Afterwards, the samples are incorporated into QWEN's training data, resulting in an updated version of QWEN that is more dependable for self-instruction. We iterate through this process multiple times until we gather an ample number of samples that possess both exceptional quality and a wide range of diversity. As a result, our final collection consists of around 2000 high-quality samples.
 
-为增强 agent / copilot 能力, 用 self-instruct: 靠 in-context 少样本让模型生成更多 query 与 ReAct 格式输出; 规则+人工滤噪; 回灌训练后再迭代. 最终约 2000 条高质量样本.
+为增强 agent / copilot 能力，用 self-instruct：靠 in-context 少样本让模型生成更多 query 与 ReAct 格式输出；规则+人工滤噪；回灌训练后再迭代。最终约 2000 条高质量样本。
 
 
-> **确认:** 2000 条 agent 样本相对通用 SFT 是否单独成阶段?
-> 不是. 报告明确与通用 SFT 样本混训, 不开第二阶段, 以免丢通用能力.
+> **确认：** 2000 条 agent 样本相对通用 SFT 是否单独成阶段？
+> 不是。报告明确与通用 SFT 样本混训，不开第二阶段，以免丢通用能力。
 
 During the finetuning process, we mix these high-quality samples with all the other general-purpose SFT samples, rather than introducing an additional training stage. By doing so, we are able to retain essential general-purpose capabilities that are also pertinent for constructing agent applications.
 
-微调时把这些样本与通用 SFT 样本混训, 不再单开一阶段, 以保留搭 agent 仍需要的通用能力.
+微调时把这些样本与通用 SFT 样本混训，不再单开一阶段，以保留搭 agent 仍需要的通用能力。
 
 **Using Tools via ReAct Prompting** We have created and made publicly available a benchmark for evaluating QWEN's ability to call plugins, tools, functions, or APIs using ReAct Prompting (see Qwen Team, Alibaba Group, 2023b). To ensure fair evaluation, we have excluded any plugins that were included in QWEN's training set from the evaluation set. The benchmark assesses the model's accuracy in selecting the correct plugin from a pool of up to five candidates, as well as the plausibility of the parameters passed into the plugin and the frequency of false positives. In this evaluation, a false positive occurs when the model incorrectly invokes a plugin in response to a query, despite not being required to do so.
 
-**ReAct 调工具** 公开基准测插件/API 调用; 评测集排除训练集里出现过的插件. 指标: 最多 5 候选里选对工具, 入参合理性, 以及不该调却调的误报率.
+**ReAct 调工具** 公开基准测插件/API 调用；评测集排除训练集里出现过的插件。指标：最多 5 候选里选对工具，入参合理性，以及不该调却调的误报率。
 
 The results presented in Table 6 demonstrate that QWEN consistently achieves higher accuracy in identifying the relevance of a query to the available tools as the model size increases. However, the table also highlights that beyond a certain point, there is little improvement in performance when it comes to selecting the appropriate tool and providing relevant arguments. This suggests that the current preliminary benchmark may be relatively easy and may require further enhancement in future iterations. It is worth noting that GPT-3.5 stands out as an exception, displaying suboptimal performance on this particular benchmark. This could potentially be attributed to the fact that the benchmark primarily focuses on the Chinese language, which may not align well with GPT-3.5's capabilities. Additionally, we observe that GPT-3.5 tends to attempt to use at least one tool, even if the query cannot be effectively addressed by the provided tools.
 
-表 6: 随规模增大, 「该不该用工具」 更准; 但选具体工具与填参很快到顶, 暗示基准偏易. GPT-3.5 例外偏弱, 或因基准偏中文; 且它倾向至少调一个工具, 即便现有工具解决不了.
+表 6：随规模增大，「该不该用工具」 更准；但选具体工具与填参很快到顶，暗示基准偏易。GPT-3.5 例外偏弱，或因基准偏中文；且它倾向至少调一个工具，即便现有工具解决不了。
 
 **Using Code Interpreter for Math Reasoning and Data Analysis** The Python code interpreter is widely regarded as a powerful tool for augmenting the capabilities of an LLM agent. It is
 
-Python code interpreter 被视为增强 LLM agent 的强工具.
+Python code interpreter 被视为增强 LLM agent 的强工具。
 
 <!-- page 16 of 59 -->
 
 worth investigating whether QWEN can harness the full potential of this interpreter to enhance its performance in diverse domains, such as mathematical reasoning and data analysis. To facilitate this exploration, we have developed and made publicly available a benchmark that is specifically tailored for this purpose (see Qwen Team, Alibaba Group, 2023a).
 
-公开了专测 code interpreter 的基准.
+公开了专测 code interpreter 的基准。
 
 The benchmark encompasses three primary categories of tasks: math problem-solving, data visualization, and other general-purpose tasks like file post-processing and web crawling. Within the visualization tasks, we differentiate between two levels of difficulty. The easier level can be achieved by simply writing and executing a single code snippet without the need for advanced planning skills. However, the more challenging level requires strategic planning and executing multiple code snippets in a sequential manner. This is because the subsequent code must be written based on the output of the previous code. For example, an agent may need to examine the structure of a CSV file using one code snippet before proceeding to write and execute additional code to create a plot.
 
-三类: 数学, 可视化, 通用 (文件后处理, 爬虫等). 可视化分易/难: 易=单段代码; 难=多段顺序规划 (例如先看 CSV 结构再画图).
+三类：数学，可视化，通用（文件后处理，爬虫等）。可视化分易/难：易=单段代码；难=多段顺序规划（例如先看 CSV 结构再画图）。
 
 Regarding evaluation metrics, we consider both the executability and correctness of the generated code. To elaborate on the correctness metrics, for math problems, we measure accuracy by verifying if the ground truth numerical answer is present in both the code execution result and the final response. When it comes to data visualization, we assess accuracy by utilizing QWEN-VL (Bai et al., 2023), a powerful multimodal language model. QWEN-VL is capable of answering text questions paired with images, and we rely on it to confirm whether the image generated by the code fulfills the user's request.
 
-指标含可执行性与正确性. 数学: 真值数字需同时出现在执行结果与最终回复. 可视化: 用 QWEN-VL 判断生成图是否满足请求.
+指标含可执行性与正确性。数学：真值数字需同时出现在执行结果与最终回复。可视化：用 QWEN-VL 判断生成图是否满足请求。
 
 The results regarding executability and correctness are presented in Table 7 and Table 8, respectively. It is evident that CODE LLAMA generally outperforms LLAMA 2, its generalist counterpart, which is not surprising since this benchmark specifically requires coding skills. However, it is worth noting that specialist models that are optimized for code synthesis do not necessarily outperform generalist models. This is due to the fact that this benchmark encompasses various skills beyond coding, such as abstracting math problems into equations, understanding language-specified constraints, and responding in the specified format such as ReAct. Notably, QWEN-7B-CHAT and QWEN-14B-CHAT surpass all other open-source alternatives of similar scale significantly, despite being generalist models.
 
-表 7–8: CODE LLAMA 通常强于 LLaMA 2 通用版, 但代码特化未必全面压过通用模型, 因为基准还要方程抽象, 约束理解, ReAct 格式等. QWEN-7B/14B-Chat 作为通用模型仍显著超过同规模开源.
+表 7–8: CODE LLAMA 通常强于 LLaMA 2 通用版，但代码特化未必全面压过通用模型，因为基准还要方程抽象，约束理解，ReAct 格式等。QWEN-7B/14B-Chat 作为通用模型仍显著超过同规模开源。
 
 **Serving as a Hugging Face Agent** Hugging Face provides a framework called the Hugging Face Agent or Transformers Agent (Hugging Face, 2023), which empowers LLM agents with a curated set of multimodal tools, including speech recognition and image synthesis. This framework allows an LLM agent to interact with humans, interpret natural language commands, and employ the provided tools as needed.
 
 To evaluate QWEN's effectiveness as a Hugging Face agent, we utilized the evaluation benchmarks offered by Hugging Face. The results are presented in Table 9. The evaluation results reveal that QWEN performs quite well in comparison to other open-source alternatives, only slightly behind the proprietary GPT-4, demonstrating QWEN's competitive capabilities.
 
-**Hugging Face Agent** 表 9: 相对其他开源表现好, 仅略落后 GPT-4.
+**Hugging Face Agent** 表 9：相对其他开源表现好，仅略落后 GPT-4。
 
 ## 4 CODE-QWEN: SPECIALIZED MODEL FOR CODING 代码特化模型
 
 Training on domain-specific data has been shown to be highly effective, particularly in the case of code pretraining and finetuning. A language model that has been reinforced with training on code data can serve as a valuable tool for coding, debugging, and interpretation, among other tasks. In this work, we have developed a series of generalist models using pretraining and alignment techniques. Building on this foundation, we have created domain-specific models for coding by leveraging the base language models of QWEN, including continued pretrained model, CODE-QWEN and supervised finetuned model, CODE-QWEN-CHAT. Both models have 14 billion and 7 billion parameters versions.
 
-领域数据有效, 尤其代码. 在通用基座上继续做 CODE-QWEN (继续预训练) 与 CODE-QWEN-CHAT (SFT), 各有 7B/14B.
+领域数据有效，尤其代码。在通用基座上继续做 CODE-QWEN（继续预训练）与 CODE-QWEN-CHAT (SFT)，各有 7B/14B。
 
 ### 4.1 CODE PRETRAINING 代码预训练
 
 We believe that relying solely on code data for pretraining can result in a significant loss of the ability to function as a versatile assistant. Unlike previous approaches that focused solely on pretraining on code data (Li et al., 2022; 2023d), we take a different approach (Roziere et al., 2023) by starting with our base models QWEN trained on a combination of text and code data, and then continuing to
 
-只靠代码从零预训练会伤通用助手能力. 做法对齐 Code Llama: 从已混训文本+代码的 QWEN 基座继续预训练.
+只靠代码从零预训练会伤通用助手能力。做法对齐 Code Llama：从已混训文本+代码的 QWEN 基座继续预训练。
 
 <!-- page 17 of 59 -->
 
 pretrain on the code data. We continue to pretrain the models on a total of around 90 billion tokens. During the pre-training phase, we initialize the model using the base language models QWEN. Many applications that rely on specialized models for coding may encounter lengthy contextual scenarios, such as tool usage and code interpretation, as mentioned in Section 3.4. To address this issue, we train our models with context lengths of up to 8192. Similar to base model training in Section 2.4, we employ Flash Attention (Dao et al., 2022) in the attention modules, and adopt the standard optimizer AdamW (Kingma & Ba, 2014; Loshchilov & Hutter, 2017), setting $\beta _ { 1 } = 0 . 9 ,   \beta _ { 2 } = 0 . 9 5$ and $\epsilon = 1 0 ^ { - 8 }$ We set the learning rate as $6 . 0 \times 1 0 ^ { - 5 }$ for CODE-QWEN-14B and $3 . 0 \times 1 0 ^ { - 5 }$ for CODE-QWEN-7B, with 3% warm up iterations and no learning rate decays.
 
-继续预训练约 90B token; 上下文拉到 8192 (工具与解释场景更长). Flash Attention + AdamW; 14B lr=$6.0\times10^{-5}$, 7B lr=$3.0\times10^{-5}$; 3% warmup, 不衰减.
+继续预训练约 90B token；上下文拉到 8192（工具与解释场景更长）。Flash Attention + AdamW；14B lr=$6.0\times10^{-5}$，7B lr=$3.0\times10^{-5}$；3% warmup，不衰减。
 
 
-> **想:** 基座预训练是 2048, 代码继续预训练直接上 8192, 中间有没有 NTK 那套?
-> 正文只写训到 8192, 没写继续预训练是否叠加 §2.5 的推理期技巧. 长上下文评测表 3 是基座线; 代码模型的长度能力要另看应用侧.
+> **想：** 基座预训练是 2048，代码继续预训练直接上 8192，中间有没有 NTK 那套？
+> 正文只写训到 8192，没写继续预训练是否叠加 §2.5 的推理期技巧。长上下文评测表 3 是基座线；代码模型的长度能力要另看应用侧。
 
 ### 4.2 CODE SUPERVISED FINE-TUNING 代码监督微调
 
 After conducting a series of empirical experiments, we have determined that the multi-stage SFT strategy yields the best performance compared to other methods. In the supervised fine-tuning stage, the model CODE-QWEN-CHAT initialized by the code foundation model CODE-QWEN are optimized by the AdamW (Kingma & Ba, 2014; Loshchilov & Hutter, 2017) optimizer $( \beta _ { 1 } = 0 . 9 , \beta _ { 2 } = 0 . 9 5$ $\epsilon = 1 0 ^ { - 8 } )$ with a learning rate of $2 . 0 \times 1 0 ^ { - 6 }$ and $1 . 0 \times 1 0 ^ { - 5 }$ for the 14B and 7B model respectively. The learning rate increases to the peaking value with the cosine learning rate schedule (3% warm-up steps) and then remains constant.
 
-经验上 multi-stage SFT 最好. CODE-QWEN-CHAT 从 CODE-QWEN 初始化; 14B lr=$2.0\times10^{-6}$, 7B lr=$1.0\times10^{-5}$; 余弦升到峰值 (3% warmup) 后保持恒定.
+经验上 multi-stage SFT 最好。CODE-QWEN-CHAT 从 CODE-QWEN 初始化；14B lr=$2.0\times10^{-6}$，7B lr=$1.0\times10^{-5}$；余弦升到峰值（3% warmup）后保持恒定。
 
 ### 4.3 EVALUATION 评测
 
@@ -570,19 +570,19 @@ When compared to some of the extremely large-scale closed-source models, CODE-QW
 
 It is crucial to emphasize that the evaluations mentioned previously are insufficient for grasping the full extent of the strengths and weaknesses of the models. In our opinion, it is necessary to develop more rigorous tests to enable us to accurately assess our relative performance in comparison to GPT-4.
 
-表 10–11: HumanEval, MBPP, HumanEvalPack 的 pass@1. 同规模相对 OCTOGEEX, InstructCodeT5+, CodeGeeX2 显著更好, 可与更大的 StarCoder 比肩; 相对超大闭源有优势点, 整体仍落后 GPT-4. 作者强调现有评测不够刻画相对 GPT-4 的真实差距.
+表 10–11: HumanEval，MBPP，HumanEvalPack 的 pass@1。同规模相对 OCTOGEEX，InstructCodeT5+，CodeGeeX2 显著更好，可与更大的 StarCoder 比肩；相对超大闭源有优势点，整体仍落后 GPT-4。作者强调现有评测不够刻画相对 GPT-4 的真实差距。
 
 ## 5 MATH-QWEN: SPECIALIZED MODEL FOR MATHEMATICS REASONING 数学推理特化
 
 We have created a mathematics-specialized model series called MATH-QWEN-CHAT, which is built on top of the QWEN pretrained language models. Specifically, we have developed assistant models that are specifically designed to excel in arithmetic and mathematics and are aligned with human behavior. We are releasing two versions of this model series, MATH-QWEN-14B-CHAT and MATH-QWEN-7B-CHAT, which have 14 billion and 7 billion parameters, respectively.
 
-在 QWEN 预训练模型上造数学特化助手系列 MATH-QWEN-CHAT, 擅长算术与数学并对齐人类行为. 发两版: MATH-QWEN-14B-CHAT 与 MATH-QWEN-7B-CHAT.
+在 QWEN 预训练模型上造数学特化助手系列 MATH-QWEN-CHAT，擅长算术与数学并对齐人类行为。发两版：MATH-QWEN-14B-CHAT 与 MATH-QWEN-7B-CHAT。
 
 ### 5.1 TRAINING 训练
 
 We carry out math SFT on our augmented math instructional dataset for mathematics reasoning, and therefore we obtain the chat model, MATH-QWEN-CHAT, directly. Owing to shorter average lengths of the math SFT data, we use a sequence length of 1024 for faster training. Most user inputs in the math SFT dataset are examination questions, and it is easy for the model to predict the input
 
-在增强数学指令集上做数学 SFT, 直接得到 MATH-QWEN-CHAT. 因样本更短, 序列用 1024. 多数 user 输入是考题, 模型很容易 「预测输入格式」.
+在增强数学指令集上做数学 SFT，直接得到 MATH-QWEN-CHAT。因样本更短，序列用 1024。多数 user 输入是考题，模型很容易 「预测输入格式」。
 
 <!-- page 18 of 59 -->
 
@@ -593,8 +593,8 @@ Table 10: Results of pass@1 (%) on HumanEval and MBPP. Most scores are retrieved
 表 10｜HumanEval / MBPP pass@1 (%).
 
 
-> **看表:** CODE-QWEN-CHAT-14B 的 HumanEval 66.4, 已经超过 GPT-3.5 的 73.2 了吗?
-> 没有. 66.4 < 73.2. 它超过的是多数开源与部分中等闭源; 相对 GPT-3.5/4 仍落后. 不要把 「rival StarCoder」 读成 「超过 ChatGPT」.
+> **看表：** CODE-QWEN-CHAT-14B 的 HumanEval 66.4，已经超过 GPT-3.5 的 73.2 了吗？
+> 没有。66.4 < 73.2。它超过的是多数开源与部分中等闭源；相对 GPT-3.5/4 仍落后。不要把 「rival StarCoder」 读成 「超过 ChatGPT」。
 
 <!-- page 19 of 59 -->
 
@@ -608,19 +608,19 @@ Table 12: Results of models on mathematical reasoning. We report the accuracy of
 
 <table><tr><td>Model</td><td>Params</td><td>GSM8K</td><td>MATH</td><td>Math401</td><td>Math23K</td></tr><tr><td colspan="6">Proprietary models</td></tr><tr><td>GPT-4</td><td>-</td><td>92.0</td><td>42.5</td><td>83.5</td><td>74.0</td></tr><tr><td>GPT-3.5</td><td>-</td><td>80.8</td><td>34.1</td><td>75.1</td><td>60.0</td></tr><tr><td rowspan="3">Minerva</td><td>8B</td><td>16.2</td><td>14.1</td><td>-</td><td>-</td></tr><tr><td>62B</td><td>52.4</td><td>27.6</td><td>-</td><td>-</td></tr><tr><td>540B</td><td>58.8</td><td>33.6</td><td>-</td><td>-</td></tr><tr><td colspan="6">Open-source models</td></tr><tr><td rowspan="2">LLaMA-1 RFT</td><td>7B</td><td>46.5</td><td>5.2</td><td>-</td><td>-</td></tr><tr><td>13B</td><td>52.1</td><td>5.1</td><td>-</td><td>-</td></tr><tr><td rowspan="3">WizardMath</td><td>7B</td><td>54.9</td><td>10.7</td><td>-</td><td>-</td></tr><tr><td>13B</td><td>63.9</td><td>14.0</td><td>-</td><td>-</td></tr><tr><td>70B</td><td>81.6</td><td>22.7</td><td>-</td><td>-</td></tr><tr><td rowspan="3">GAIRMath-Abel</td><td>7B</td><td>59.7</td><td>13.0</td><td>-</td><td>-</td></tr><tr><td>13B</td><td>66.4</td><td>17.3</td><td>-</td><td>-</td></tr><tr><td>70B</td><td>83.6</td><td>28.3</td><td>-</td><td>-</td></tr><tr><td rowspan="2">QWEN-CHAT</td><td>7B</td><td>50.3</td><td>6.8</td><td>57.4</td><td>51.2</td></tr><tr><td>14B</td><td>60.1</td><td>18.4</td><td>70.1</td><td>67.0</td></tr><tr><td rowspan="2">MATH-QWEN-CHAT</td><td>7B</td><td>62.5</td><td>17.2</td><td>80.8</td><td>75.4</td></tr><tr><td>14B</td><td>69.8</td><td>24.2</td><td>85.0</td><td>78.4</td></tr></table>
 
-表 12｜数学推理准确率 (greedy). MATH 用 Lightman et al. (2023) 测试集.
+表 12｜数学推理准确率（greedy）。MATH 用 Lightman et al. (2023) 测试集。
 
 <!-- page 20 of 59 -->
 
 format and it is meaningless for the model to predict the input condition and numbers which could be random. Thus, we mask the inputs of the system and user to avoid loss computation on them and find masking them accelerates the convergence during our preliminary experiments. For optimization, we use the AdamW optimizer with the same hyperparameters of SFT except that we use a peak learning rate of $2 \times 1 0 ^ { - 5 }$ and a training step of 50 000.
 
-因此对 system/user 输入做 mask, 不做 loss; 初步实验显示加快收敛. AdamW 同通用 SFT, 峰值 lr=$2\times10^{-5}$, 共 50000 step.
+因此对 system/user 输入做 mask，不做 loss；初步实验显示加快收敛。AdamW 同通用 SFT，峰值 lr=$2\times10^{-5}$，共 50000 step。
 
 ### 5.2 EVALUATION 评测
 
 We evaluate models on the test sets of GSM8K (Grade school math) (Cobbe et al., 2021), MATH (Challenging competition math problems) (Hendrycks et al., 2021), Math401 (Arithmetic ability) (Yuan et al., 2023b), and Math23K (Chinese grade school math) (Wang et al., 2017). We compare MATH-QWEN-CHAT with proprietary models ChatGPT and Minerva (Lewkowycz et al., 2022) and open-sourced math-specialized model RFT (Yuan et al., 2023a), WizardMath (Luo et al., 2023a), and GAIRMath-Abel (Chern et al., 2023a) in Table 12. MATH-QWEN-CHAT models show better math reasoning and arithmetic abilities compared to open-sourced models and QWEN-CHAT models of similar sizes. Compared to proprietary models, MATH-QWEN-7B-CHAT outperforms Minerva-8B in MATH. MATH-QWEN-14B-CHAT is chasing Minerva-62B and GPT-3.5 in GSM8K and MATH and delivers better performance on arithmetic ability and Chinese math problems.
 
-表 12: 同规模开源与通用 QWEN-CHAT 更强; 7B 在 MATH 超 Minerva-8B; 14B 在 GSM8K/MATH 追 Minerva-62B 与 GPT-3.5, 算术与中文数学更好.
+表 12：同规模开源与通用 QWEN-CHAT 更强；7B 在 MATH 超 Minerva-8B；14B 在 GSM8K/MATH 追 Minerva-62B 与 GPT-3.5，算术与中文数学更好。
 
 ## 6 RELATED WORK 相关工作
 
@@ -634,13 +634,13 @@ The birth of ChatGPT (OpenAI, 2022) and the subsequent launch of GPT-4 (OpenAI, 
 
 One notable development in this area is the emergence of open-source LLMs, specifically LLaMA (Touvron et al., 2023a) and LLAMA 2 (Touvron et al., 2023b), which have been recognized as the most powerful open-source language models ever created. This has led to a surge of activity in the open-source community (Wolf et al., 2019), with a series of large language models being developed collaboratively to build upon this progress (Mosaic ML, 2023; Almazrouei et al., 2023; ChatGLM2 Team, 2023; Yang et al., 2023; InternLM Team, 2023).
 
-LLM 兴奋点起于 Transformer 与大规模预训练; GPT-3 展示 few/zero-shot 与后续 CoT prompting; ChatGPT/GPT-4 把助手形态立住; 开源侧以 LLaMA / LLaMA 2 为强基座, 带动一批协作模型.
+LLM 兴奋点起于 Transformer 与大规模预训练；GPT-3 展示 few/zero-shot 与后续 CoT prompting；ChatGPT/GPT-4 把助手形态立住；开源侧以 LLaMA / LLaMA 2 为强基座，带动一批协作模型。
 
 ### 6.2 ALIGNMENT 对齐
 
 The community was impressed by the surprising effectiveness of alignment on LLMs. Previously, LLMs without alignment often struggle with issues such as repetitive generation, hallucination, and deviation from human preferences. Since 2021, researchers have been diligently working on developing methods to enhance the performance of LLMs in downstream tasks (Wei et al., 2022a; Sanh et al., 2021; Longpre et al., 2023; Chung et al., 2022; Muennighoff et al., 2022). Furthermore,
 
-对齐显著有效; 未对齐常重复, 幻觉, 偏离偏好. 2021 起指令微调与多任务提示工作密集展开.
+对齐显著有效；未对齐常重复，幻觉，偏离偏好。2021 起指令微调与多任务提示工作密集展开。
 
 <!-- page 21 of 59 -->
 
@@ -650,51 +650,51 @@ However, there has been some progress in this area, such as the self-instruct ap
 
 To train an effective chat model, available solutions are mostly based on SFT and RLHF (Ouyang et al., 2022). While SFT is similar to pretraining, it focuses on instruction following using the aforementioned data. However, for many developers, the limited memory capacity is a major obstacle to further research in SFT. As a result, parameter-efficient tuning methods, such as LoRA (Hu et al., 2021) and Q-LoRA (Dettmers et al., 2023), have gained popularity in the community. LoRA tunes only low-rank adapters, while Q-LoRA builds on LoRA and utilizes 4-bit quantized LLMs and paged attention (Dettmers et al., 2022; Frantar et al., 2022; Kwon et al., 2023). In terms of RLHF, recent methods such as PPO (Schulman et al., 2017; Touvron et al., 2023b) have been adopted, but there are also alternative techniques aimed at addressing the complexity of optimization, such as RRHF (Yuan et al., 2023c), DPO (Rafailov et al., 2023), and PRO (Song et al., 2023). Despite the ongoing debate about the effectiveness of RLHF, more evidence is needed to understand how it enhances the intelligence of LLMs and what potential drawbacks it may have.
 
-数据难采推动 self-instruct 与开源对话数据/模型潮. 训练仍以 SFT+RLHF 为主; 显存受限催生 LoRA/Q-LoRA. RLHF 常用 PPO, 也有 RRHF, DPO, PRO 等简化路线; 有效性仍需更多证据.
+数据难采推动 self-instruct 与开源对话数据/模型潮。训练仍以 SFT+RLHF 为主；显存受限催生 LoRA/Q-LoRA. RLHF 常用 PPO，也有 RRHF，DPO，PRO 等简化路线；有效性仍需更多证据。
 
 ### 6.3 TOOL USE AND AGENTS 工具使用与 Agent
 
 LLM's planning function allows for the invocation of tools, such as APIs or agent capabilities, through in-context learning, as demonstrated by Schick et al. (2023). Yao et al. (2022) introduced ReAct, a generation format that enables the model to generate thoughts on which tool to use, accept input from API observations, and generate a response. GPT-3.5 and GPT-4, when prompted with few shots, have shown consistent and impressive performance. In addition to tool usage, LLMs can utilize external memory sources like knowledge bases (Hu et al., 2023; Zhong et al., 2023b) or search engines (Nakano et al., 2021; Liu et al., 2023b) to generate more accurate and informative answers. This has led to the popularity of frameworks like LangChain (LangChain, Inc., 2023). The research on LLMs for tool use has also sparked interest in building agents with LLM capabilities, such as agents that can call different AI models (Shen et al., 2023; Li et al., 2023a), embodied lifelong learning or multimodal agents (Wang et al., 2023a; Driess et al., 2023), and multiple agents interacting with each other and even building a micro-society (Chen et al., 2023b; Li et al., 2023b; Xu et al., 2023d; Hong et al., 2023).
 
-规划能力经 in-context 调用工具; ReAct 把思考-行动-观察串起来. 还可接知识库/搜索; 框架如 LangChain. 延展到多模型 agent, 具身/多模态 agent, 多智能体交互.
+规划能力经 in-context 调用工具；ReAct 把思考-行动-观察串起来。还可接知识库/搜索；框架如 LangChain。延展到多模型 agent，具身/多模态 agent，多智能体交互。
 
 ### 6.4 LLM FOR CODING 面向代码的 LLM
 
 Previous research has demonstrated that LLMs possess remarkable capabilities in code understanding and generation, particularly those with massive numbers of parameters (Chowdhery et al., 2022; Anil et al., 2023; Rae et al., 2021; Hoffmann et al., 2022). Moreover, several LLMs have been pre-trained, continued pre-trained, or fine-tuned on coding-related data, which has resulted in significantly improved performance compared to general-purpose LLMs. These models include Codex Chen et al. (2021), AlphaCode (Li et al., 2022), SantaCoder (Allal et al., 2023), Starcoder-Base (Li et al., 2023d), InCoder (Fried et al., 2022), CodeT5 (Wang et al., 2021), CodeGeeX (Zheng et al., 2023), and CODE LLAMA (Roziere et al., 2023). In addition to these models, recent studies have focused on developing specialized alignment techniques for coding, such as Code Llama-Instruct (Roziere et al., 2023) and StarCoder (Li et al., 2023d). These models can assist developers in various code-related tasks, including code generation (Chen et al., 2021; Austin et al., 2021), code completion (Zhang et al., 2023a), code translation (Szafraniec et al., 2023), bug fixing (Muennighoff et al., 2023), code refinement (Liu et al., 2023c), and code question answering (Liu & Wan, 2021). In a word, LLMs
 
-大参数与代码专项训/微调显著抬代码能力; 应用覆盖生成, 补全, 翻译, 修 bug, 精炼, 问答.
+大参数与代码专项训/微调显著抬代码能力；应用覆盖生成，补全，翻译，修 bug，精炼，问答。
 
 <!-- page 22 of 59 -->
 
 have the potential to revolutionize the field of coding by providing developers with powerful tools for code comprehension, generation, and related tasks.
 
-总之, LLM 有机会重塑编程领域, 给开发者提供代码理解, 生成等环节的强力工具.
+总之，LLM 有机会重塑编程领域，给开发者提供代码理解，生成等环节的强力工具。
 
 ### 6.5 LLM FOR MATHEMATICS 面向数学的 LLM
 
 LLMs with a certain model scale have been found to possess the ability to perform mathematical reasoning (Wei et al., 2022b; Suzgun et al., 2022). In order to encourage LLMs to achieve better performance on math-related tasks, researchers have employed techniques such as chain-of-thought prompting (Wei et al., 2022c) and scratchpad (Nye et al., 2021), which have shown promising results. Additionally, self-consistency (Wang et al., 2022) and least-to-most prompting (Zhou et al., 2022) have further improved the performance of these models on these tasks. However, prompt engineering is a time-consuming process that requires a lot of trial and error, and it is still difficult for LLMs to consistently perform well or achieve satisfactory results in solving mathematical problems. Moreover, simply scaling the data and model size is not an efficient way to improve a model's mathematical reasoning abilities. Instead, pretraining on math-related corpora has been shown to consistently enhance these capabilities (Hendrycks et al., 2021; Lewkowycz et al., 2022; Taylor et al., 2022; Lightman et al., 2023). Additionally, fine-tuning on math-related instruction-following datasets (Si et al., 2023; Yuan et al., 2023a; Luo et al., 2023a; Yue et al., 2023; Chern et al., 2023a; Yu et al., 2023), has also been effective and more cost-effective than math-specific pretraining. Despite their limitations in terms of accuracy, LLMs still have significant potential to assist users with practical mathematical problems. There is ample scope for further development in this area.
 
-到一定规模后出现数学推理; CoT prompting, scratchpad, self-consistency, least-to-most 可抬分, 但提示工程费时且不稳. 单纯堆规模效率不高; 数学语料预训练与数学指令微调更有效, 后者更省.
+到一定规模后出现数学推理；CoT prompting，scratchpad，self-consistency，least-to-most 可抬分，但提示工程费时且不稳。单纯堆规模效率不高；数学语料预训练与数学指令微调更有效，后者更省。
 
 ## 7 Conclusion
 
 In this report, we present the QWEN series of large language models, which showcase the latest advancements in natural language processing. With 14B, 7B, and 1.8B parameters, these models have been pre-trained on massive amounts of data, including trillions of tokens, and fine-tuned using cutting-edge techniques such as SFT and RLHF. Additionally, the QWEN series includes specialized models for coding and mathematics, such as CODE-QWEN, CODE-QWEN-CHAT, and MATH-QWEN-CHAT, which have been trained on domain-specific data to excel in their respective fields. Our results demonstrate that the QWEN series is competitive with existing open-source models and even matches the performance of some proprietary models on comprehensive benchmarks and human evaluation.
 
-本报告给出 QWEN 系列: 14B/7B/1.8B, 万亿级 token 预训练, 再经 SFT 与 RLHF; 并含代码与数学特化. 结果在综合基准与人评上可与开源竞争, 部分逼近闭源.
+本报告给出 QWEN 系列：14B/7B/1.8B，万亿级 token 预训练，再经 SFT 与 RLHF；并含代码与数学特化。结果在综合基准与人评上可与开源竞争，部分逼近闭源。
 
 We believe that the open access of QWEN will foster collaboration and innovation within the community, enabling researchers and developers to build upon our work and push the boundaries of what is possible with language models. By providing these models to the public, we hope to inspire new research and applications that will further advance the field and contribute to our understanding of the variables and techniques introduced in realistic settings. In a nutshell, the QWEN series represents a major milestone in our development of large language models, and we are excited to see how it will be used to drive progress and innovation in the years to come.
 
-开源意在推动协作与后续研究, 并在真实设定里检验变量与技术. QWEN 系列是团队 LLM 开发的重要节点.
+开源意在推动协作与后续研究，并在真实设定里检验变量与技术。QWEN 系列是团队 LLM 开发的重要节点。
 
 22
 
-(以下 References 与 Appendix 页码连续自 page 23 of 59 至 page 59 of 59. References 条目作者与题名保留英文原文便于检索; Appendix 正文英中对照, 已有中英并列表格/案例保留源排版并补中文导读.)
+（以下 References 与 Appendix 页码连续自 page 23 of 59 至 page 59 of 59. References 条目作者与题名保留英文原文便于检索；Appendix 正文英中对照，已有中英并列表格/案例保留源排版并补中文导读。）
 
 <!-- page 23 of 59 -->
 
 ## References
 
-(参考文献条目, 作者与题名保留原文, 便于检索.)
+（参考文献条目，作者与题名保留原文，便于检索。）
 
 
 Loubna Ben Allal, Raymond Li, Denis Kocetkov, Chenghao Mou, Christopher Akiki, Carlos Munoz Ferrandis, Niklas Muennighoff, Mayank Mishra, Alex Gu, Manan Dey, et al. SantaCoder: Don't reach for the stars! arXiv preprint arXiv:2301.03988, 2023.
@@ -1067,7 +1067,7 @@ Denny Zhou, Nathanael Scharli, Le Hou, Jason Wei, Nathan Scales, Xuezhi Wang, Da
 
 ## A Appendix
 
-附录收训练格式细节, OpenCompass 分项表, 300 条中文人评案例, 以及 Code Interpreter 对比案例.
+附录收训练格式细节，OpenCompass 分项表，300 条中文人评案例，以及 Code Interpreter 对比案例。
 
 
 ### A.1 MORE TRAINING DETAILS 更多训练细节
@@ -1078,7 +1078,7 @@ Different from conventional pretraining based on autoregressive next-token predi
 
 Instead, we turned to the ChatML format proposed by OpenAI.<sup>5</sup> This format allows the use of special tokens, i.e., "&lt;im_start&gt;" and "&lt;im_end&gt;", that do not appear in pretraining, and thus resolve the aforementioned problem. We demonstrate an example of the format below.
 
-改用 ChatML: 预训练未见过的特殊 token 划角色边界, 避免与正文常见词撞车. 示例见下.
+改用 ChatML：预训练未见过的特殊 token 划角色边界，避免与正文常见词撞车。示例见下。
 
 ```txt
 <|im_start|>system
@@ -1091,35 +1091,35 @@ You are a helpful assistant.
 
 To provide a whole picture of the performance of our model series QWEN, here in this section we illustrate the detailed performance of our models as well as the baselines in the comprehensive benchmark evaluation proposed by OpenCompass Team (2023). We report the results in multiple tables based on the officially provided categories, including examination, language, knowledge, understanding, and reasoning. In terms of the performance of the baseline models, we report the higher results between the reported ones and those on the leaderboard.
 
-本节用 OpenCompass 综合基准给 QWEN 全系列画像, 按官方分类 (考试, 语言, 知识, 理解, 推理) 分表列出. 基线取论文报告值与 leaderboard 值中的较高者.
+本节用 OpenCompass 综合基准给 QWEN 全系列画像，按官方分类（考试，语言，知识，理解，推理）分表列出。基线取论文报告值与 leaderboard 值中的较高者。
 
 **Examination** Here we evaluate the models on a series of datasets relevant to the examination.
 
-**考试类** 评测一系列考试相关数据集. The datasets include:
+**考试类** 评测一系列考试相关数据集。The datasets include:
 
 • **MMLU** (Hendrycks et al., 2020) Massive Multi-task Language Understanding is designed for measuring language understanding capabilities. We report 5-shot results.
 
-MMLU: 大规模多任务语言理解, 报 5-shot.
+MMLU：大规模多任务语言理解，报 5-shot。
 
 • **C-Eval** (Huang et al., 2023) C-Eval is a Chinese evaluation dataset spanning 52 diverse disciplines. We report 5-shot results.
 
-C-Eval: 中文评测, 覆盖 52 个学科, 报 5-shot.
+C-Eval：中文评测，覆盖 52 个学科，报 5-shot。
 
 • **CMMLU** (Li et al., 2023c) CMMLU is designed for assessing language understanding capabilities in Chinese. We report 5-shot results.
 
-CMMLU: 中文语言理解评测, 报 5-shot.
+CMMLU：中文语言理解评测，报 5-shot。
 
 • **AGIEval** (Zhong et al., 2023a) This is a benchmark consisting of human-centric examinations, including college entrance exams, law school admission tests, math competitions, and lawyer qualification tests. We report zero-shot results.
 
-AGIEval: 面向真实人类考试 (高考, 法学院入学, 数学竞赛, 律师资格等), 报 zero-shot.
+AGIEval：面向真实人类考试（高考，法学院入学，数学竞赛，律师资格等），报 zero-shot。
 
 • **Gaokao-Bench** (Zhang et al., 2023b) This is a benchmark with Gaokao (Chinese collegeentrance examination) questions. We report zero-shot results.
 
-Gaokao-Bench: 高考真题基准, 报 zero-shot.
+Gaokao-Bench：高考真题基准，报 zero-shot。
 
 • **ARC** (Clark et al., 2018) ARC is a dataset consisting of grade-school level, multiple-choice science questions. It includes an easy set and a challenge set, which are referred by ARC-e and ARC-c. We report zero-shot results.
 
-ARC: 小学科学选择题, 分简单集 ARC-e 与挑战集 ARC-c, 报 zero-shot.
+ARC：小学科学选择题，分简单集 ARC-e 与挑战集 ARC-c，报 zero-shot。
 
 36
 
@@ -1145,43 +1145,43 @@ Table 15: Results on the other datasets of examination. Specifically, we report 
 
 the parts of Chinese and English, while LLAMA 2 only reported the results in the English part, so we use the results on OpenCompass. Additionally, while CMMLU, AGIEval, and Gaokao-Bench are related to Chinese, and MPT, Falcon, and the LLaMA series were not optimized for Chinese, these models achieved low performance on the datasets.
 
-MMLU 见表 13, C-Eval 见表 14, 其余数据集见表 15. AGIEval 取中英两部分, LLaMA 2 只报英文部分, 故采用 OpenCompass 上的结果. CMMLU, AGIEval, Gaokao-Bench 均与中文相关, 而 MPT, Falcon, LLaMA 系列未针对中文优化, 在这些数据集上得分偏低.
+MMLU 见表 13，C-Eval 见表 14，其余数据集见表 15. AGIEval 取中英两部分，LLaMA 2 只报英文部分，故采用 OpenCompass 上的结果。CMMLU，AGIEval，Gaokao-Bench 均与中文相关，而 MPT，Falcon，LLaMA 系列未针对中文优化，在这些数据集上得分偏低。
 
 **Knowledge and Understanding** Here we evaluate the models on a series of datasets relevant to knowledge and natural language understanding. The datasets include
 
-**知识与理解类** 评测知识与语言理解相关数据集, 包括:
+**知识与理解类** 评测知识与语言理解相关数据集，包括：
 
 • **BoolQ** (Clark et al., 2019) This is a QA dataset, where the questions are about passages of Wikipedia, and the model should answer yes or no to the given possible answer. We report zero-shot results.
 
-BoolQ: 维基百科段落的是非问答, 报 zero-shot.
+BoolQ：维基百科段落的是非问答，报 zero-shot。
 
 • **CommonsenseQA** (Talmor et al., 2019) This is a dataset of multiple-choice question answering that asseses the understanding of commonsense knowledge. We report 8-shot results.
 
-CommonsenseQA: 常识理解选择题, 报 8-shot.
+CommonsenseQA：常识理解选择题，报 8-shot。
 
 • **NaturalQuestions** (Kwiatkowski et al., 2019) It is a dataset of QA where the questions are from users and the answers are verified by experts. We report zero-shot results.
 
-NaturalQuestions: 真实用户提问, 答案经专家核验, 报 zero-shot.
+NaturalQuestions：真实用户提问，答案经专家核验，报 zero-shot。
 
 • **LAMBADA** (Paperno et al., 2016) This is dataset to evaluate language understanding by word prediction. It consists of passages related to human subjects. We report zero-shot results.
 
-LAMBADA: 用词预测评语言理解, 语料与人文主题相关, 报 zero-shot.
+LAMBADA：用词预测评语言理解，语料与人文主题相关，报 zero-shot。
 
 We report the results in Table 16.
 
-结果见表 16.
+结果见表 16。
 
 **Reasoning** We report the evaluation results on the datasets concerning reasoning, focusing on natural language reasoning. For the others, such as mathematics and coding, as we have illustrated detailed results, here we do not report those results repeatedly. The datasets for evaluation include:
 
-**推理类** 报自然语言推理数据集的结果; 数学与代码前文已详列, 此处不重复. 数据集包括:
+**推理类** 报自然语言推理数据集的结果；数学与代码前文已详列，此处不重复。数据集包括：
 
 • **HellaSwag** (Zellers et al., 2019) This is a commonsense natural language inference (NLI) dataset, where the questions are easy for humans but struggling for previous language models. We report zero-shot results.
 
-HellaSwag: 常识 NLI, 人对容易, 早期模型吃力, 报 zero-shot.
+HellaSwag：常识 NLI，人对容易，早期模型吃力，报 zero-shot。
 
 • **PIQA** (Bisk et al., 2020) This is an NLI dataset assessing the physical knowledge. We report zero-shot results.
 
-PIQA: 物理常识 NLI, 报 zero-shot.
+PIQA：物理常识 NLI，报 zero-shot。
 
 <!-- page 39 of 59 -->
 
@@ -1195,17 +1195,17 @@ Table 17: Results on the datasets related to natural language reasoning. Specifi
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">• SIQA (Sap et al., 2019) This is an NLI dataset evaluating social commonsense intelligence. We report zero-shot results.</span></small>
 
-SIQA: 社会常识智能 NLI, 报 zero-shot.
+SIQA：社会常识智能 NLI，报 zero-shot。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280">• OCNLI (Hu et al., 2020) This is an NLI dataset focusing on Chinese. We report zero-shot results.</span></small>
 
-OCNLI: 中文 NLI, 报 zero-shot.
+OCNLI：中文 NLI，报 zero-shot。
 
 <!-- page 40 of 59 -->
 
 We report the results in Table 17.
 
-结果见表 17.
+结果见表 17。
 
 #### A.2.2 HUMAN EVALUATION 人工评测
 
@@ -1213,7 +1213,7 @@ In this section, we demonstrate the cases of human analysis. In our self-constru
 
 In terms of each case, we demonstrate the responses and Elo ratings<sup>8</sup> of all models for comparison. Specifically, as the data in our human evaluation are in Chinese, we also provide their translations in English.
 
-<table><tr><td colspan="3">Knowledge</td></tr><tr><td colspan="3">北京大学的前身是什么学校?What was the predecessor of Peking University?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>北京大学的前身是京师大学堂,它创建于1898年,是中国近代第一所国立大学,也是最早以「大学」命名的高等学府.The predecessor of Peking University was the Imperial University of Peking, established in 1898. It was the first national university in modern China and also the earliest higher education institution to be named a "university".</td><td>1037</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>北京大学的前身是京师大学堂,创建于1898年,是中国近代第一所国立大学.The predecessor of Peking University is the Imperial University of Peking, founded in 1898 and the first national university in modern China.</td><td>1011</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>北京大学的前身是京师大学堂,创建于1898年,是中国近代第一所国立综合性大学.京师大学堂最初设立的学科有经学,文学,史学,哲学,法律,教育,农学,工学,商学,医学等,后来逐渐扩大到社会科学,自然科学,工程技术,艺术等多个领域.1912年,京师大学堂改名为北京大学,成为中国最高学府之一,也是中国现代高等教育的发源地之一.Peking University, originally known as the Imperial University of Peking, was founded in 1898 and is the first comprehensive national university in modern China. The initial disciplines established at the Imperial University of Peking included classics, literature, history, philosophy, law, education, agriculture, engineering, business, medicine, etc., gradually expanding to encompass social sciences, natural sciences, engineering and technology, arts, and other fields. In 1912, the Imperial University of Peking changed its name to Peking University, becoming one of the top universities in China and also one of the birthplaces of modern higher education in China.</td><td>1090</td></tr><tr><td>GPT-3.5</td><td>北京大学的前身是国立北京大学,建于1898年,是中国近代第一所国立大学.其成立初衷是为了培养国家的政治,经济,军事和外交人才,为中国的现代化进程做出贡献.</td><td>910</td></tr></table>
+<table><tr><td colspan="3">Knowledge</td></tr><tr><td colspan="3">北京大学的前身是什么学校？What was the predecessor of Peking University?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>北京大学的前身是京师大学堂，它创建于1898年，是中国近代第一所国立大学，也是最早以「大学」命名的高等学府。The predecessor of Peking University was the Imperial University of Peking, established in 1898. It was the first national university in modern China and also the earliest higher education institution to be named a "university".</td><td>1037</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>北京大学的前身是京师大学堂，创建于1898年，是中国近代第一所国立大学。The predecessor of Peking University is the Imperial University of Peking, founded in 1898 and the first national university in modern China.</td><td>1011</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>北京大学的前身是京师大学堂，创建于1898年，是中国近代第一所国立综合性大学。京师大学堂最初设立的学科有经学，文学，史学，哲学，法律，教育，农学，工学，商学，医学等，后来逐渐扩大到社会科学，自然科学，工程技术，艺术等多个领域.1912年，京师大学堂改名为北京大学，成为中国最高学府之一，也是中国现代高等教育的发源地之一。Peking University, originally known as the Imperial University of Peking, was founded in 1898 and is the first comprehensive national university in modern China. The initial disciplines established at the Imperial University of Peking included classics, literature, history, philosophy, law, education, agriculture, engineering, business, medicine, etc., gradually expanding to encompass social sciences, natural sciences, engineering and technology, arts, and other fields. In 1912, the Imperial University of Peking changed its name to Peking University, becoming one of the top universities in China and also one of the birthplaces of modern higher education in China.</td><td>1090</td></tr><tr><td>GPT-3.5</td><td>北京大学的前身是国立北京大学，建于1898年，是中国近代第一所国立大学。其成立初衷是为了培养国家的政治，经济，军事和外交人才，为中国的现代化进程做出贡献。</td><td>910</td></tr></table>
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>6</sup>https://github.com/jeinlee1991/chinese-llm-benchmark</span></small>
 
@@ -1223,33 +1223,33 @@ In terms of each case, we demonstrate the responses and Elo ratings<sup>8</sup> 
 
 <!-- page 41 of 59 -->
 
-<table><tr><td></td><td colspan="2">The predecessor of Peking University was National Peking University, established in 1898. It is the first national university in modern China. Its original purpose was cultivating talents in politics, economics, military, and diplomacy and contributing to China&#x27;s modernization process.</td></tr><tr><td>GPT-4</td><td>北京大学的前身是京师大学堂.The predecessor of Peking University is the Imperial University of Peking.</td><td>955</td></tr></table>
+<table><tr><td></td><td colspan="2">The predecessor of Peking University was National Peking University, established in 1898. It is the first national university in modern China. Its original purpose was cultivating talents in politics, economics, military, and diplomacy and contributing to China&#x27;s modernization process.</td></tr><tr><td>GPT-4</td><td>北京大学的前身是京师大学堂。The predecessor of Peking University is the Imperial University of Peking.</td><td>955</td></tr></table>
 
-<table><tr><td colspan="3">Knowledge</td></tr><tr><td colspan="3">世界上现存最高的木塔是中国什么塔?What is the tallest wooden tower in the world that still exists in China?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>世界上现存最高的木塔是中国山西应县木塔.The tallest existing wooden tower in the world is the Yinxian Wooden Tower in Shanxi, China.</td><td>987</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>现存最高的木塔是中国山西应县木塔,全名为佛宫寺释迦塔.应县木塔位于山西省朔州市应县县城内西北角的佛宫寺内,建于辽代清宁二年(1056年),金明昌六年(1195年)增修完毕,是中国现存最高最古的一座木构塔式建筑,也是世界现存最高的木结构建筑.The tallest existing wooden tower in the world is the Yinxian Wooden Tower, also known as the Shijia Tower of the Fogong Temple. It is inside the Fogong Temple in Yinxian, Shanxi Province, China. The tower was originally built in the second year of the Qingning era of the Liao Dynasty (1056 AD) and completed its expansion in the sixth year of the Jin Dynasty&#x27;s Mingchang era (1195 AD). It is the tallest and oldest existing wooden tower in China and the tallest wooden structure in the world.</td><td>1055</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>世界上现存最高的木塔是中国的应县木塔,位于山西省应县.该塔建于公元1056年,高67.31米,共有5层,是中国古代建筑技术的杰出代表之一.应县木塔的建筑风格独特,采用了许多古代建筑技术,如榫卯结构,斗拱,悬挑等,具有很高的艺术价值和历史价值.应县木塔也是中国文化遗产保护的重点之一,被列为全国重点文物保护单位和世界文化遗产.The tallest existing wooden tower in the world is the Yinxian Wooden Tower in Yinxian, Shanxi Province, China. It was built in the year 1056 AD and stands at a height of 67.31 meters, consisting of 5 floors. This tower is an outstanding representative of ancient Chinese architectural technology. The Yinxian Wooden Tower showcases a unique architectural style and incorporates various ancient construction techniques such as mortise and tenon joints, bracket sets, and cantilever beams, possessing high artistic and historical value. It is also a key cultural heritage site in China, listed as a national key cultural relic protection unit and a UNESCO World Cultural Heritage site.</td><td>1060</td></tr><tr><td>GPT-3.5</td><td>世界上现存最高的木塔是中国的普陀山普济寺塔,也被称为古佛顶宝塔.该塔建于1056年,高约70.28米.The tallest existing wooden tower in the world is the Putuoshan Pujisi Pagoda, also known as the Ancient Baoding Pagoda, located in Putuoshan, China. It was built in the year 1056 AD and stands at a height of approximately 70.28 meters.</td><td>864</td></tr></table>
+<table><tr><td colspan="3">Knowledge</td></tr><tr><td colspan="3">世界上现存最高的木塔是中国什么塔？What is the tallest wooden tower in the world that still exists in China?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>世界上现存最高的木塔是中国山西应县木塔。The tallest existing wooden tower in the world is the Yinxian Wooden Tower in Shanxi, China.</td><td>987</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>现存最高的木塔是中国山西应县木塔，全名为佛宫寺释迦塔。应县木塔位于山西省朔州市应县县城内西北角的佛宫寺内，建于辽代清宁二年（1056年），金明昌六年（1195年）增修完毕，是中国现存最高最古的一座木构塔式建筑，也是世界现存最高的木结构建筑。The tallest existing wooden tower in the world is the Yinxian Wooden Tower, also known as the Shijia Tower of the Fogong Temple. It is inside the Fogong Temple in Yinxian, Shanxi Province, China. The tower was originally built in the second year of the Qingning era of the Liao Dynasty (1056 AD) and completed its expansion in the sixth year of the Jin Dynasty&#x27;s Mingchang era (1195 AD). It is the tallest and oldest existing wooden tower in China and the tallest wooden structure in the world.</td><td>1055</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>世界上现存最高的木塔是中国的应县木塔，位于山西省应县。该塔建于公元1056年，高67.31米，共有5层，是中国古代建筑技术的杰出代表之一。应县木塔的建筑风格独特，采用了许多古代建筑技术，如榫卯结构，斗拱，悬挑等，具有很高的艺术价值和历史价值。应县木塔也是中国文化遗产保护的重点之一，被列为全国重点文物保护单位和世界文化遗产。The tallest existing wooden tower in the world is the Yinxian Wooden Tower in Yinxian, Shanxi Province, China. It was built in the year 1056 AD and stands at a height of 67.31 meters, consisting of 5 floors. This tower is an outstanding representative of ancient Chinese architectural technology. The Yinxian Wooden Tower showcases a unique architectural style and incorporates various ancient construction techniques such as mortise and tenon joints, bracket sets, and cantilever beams, possessing high artistic and historical value. It is also a key cultural heritage site in China, listed as a national key cultural relic protection unit and a UNESCO World Cultural Heritage site.</td><td>1060</td></tr><tr><td>GPT-3.5</td><td>世界上现存最高的木塔是中国的普陀山普济寺塔，也被称为古佛顶宝塔。该塔建于1056年，高约70.28米。The tallest existing wooden tower in the world is the Putuoshan Pujisi Pagoda, also known as the Ancient Baoding Pagoda, located in Putuoshan, China. It was built in the year 1056 AD and stands at a height of approximately 70.28 meters.</td><td>864</td></tr></table>
 
 <!-- page 42 of 59 -->
 
-| GPT-4 | 世界上现存最高的木塔是中国的应县木塔,也被称为佛宫寺大佛塔.The tallest wooden pagoda currently in existence in the world is the Yingxian Wooden Pagoda in China, also known as the Pagoda of Fogong Temple. | 1040 |
+| GPT-4 | 世界上现存最高的木塔是中国的应县木塔，也被称为佛宫寺大佛塔。The tallest wooden pagoda currently in existence in the world is the Yingxian Wooden Pagoda in China, also known as the Pagoda of Fogong Temple. | 1040 |
 | --- | --- | --- |
 
-<table><tr><td colspan="3">Language Understanding</td></tr><tr><td colspan="3">吃葡萄不吐葡萄皮的拼音怎么写?What is the Pingyin for "吃葡萄不吐葡萄皮"?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>吃葡萄不吐葡萄皮的拼音是:「chī pú bù tǔ pú pí」.To eat grapes without spitting out the grape skins, the pinyin is "chī pú bù tǔ pú pí".</td><td>914</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>拼音:吃葡萄不吐葡萄皮「chī pú táo bù tǔ pú táo pí」Pingyin: To eat grapes without spitting out the grape skins, 'chī pú bù tǔ pú pí".</td><td>1049</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>吃葡萄不吐葡萄皮的拼音是:chī pú táo bù tǔ pú táo pí.拼音是一种用拉丁字母表示汉字发音的方法,它可以帮助人们学习和记忆汉字的发音.在这个拼音中,「吃」表示「chī」,「葡萄」表示「pú táo」,「不」表示「bù」,「吐」表示「tǔ」,「葡萄皮」表示「pú táo pí」.The pinyin for '吃葡萄不吐葡萄皮' is 「chī pú táo bù tǔ pú táo pí」.Pinyin is a method of representing the pronunciation of Chinese characters using Latin letters, which can help people learn and remember the pronunciation of Chinese characters. In this pinyin, "吃" is represented as 'chī',"葡萄" is represented as 「pú táo」,「不」 is represented as 「bù」,「吐」 is represented as 「tǔ」, and 「葡萄皮」 is represented as "pú táo pí".</td><td>1068</td></tr><tr><td>GPT-3.5</td><td>chī pú táo bù tǔ pú táo pí de pīn yīn zěn me xiě?chī pú táo bù tǔ pú táo pí de pīn yīn zěn me xiě?</td><td>946</td></tr><tr><td>GPT-4</td><td>chī pú táo bù tǔ pú táo píchī pú táo bù tǔ pú táo pí</td><td>1040</td></tr></table>
+<table><tr><td colspan="3">Language Understanding</td></tr><tr><td colspan="3">吃葡萄不吐葡萄皮的拼音怎么写？What is the Pingyin for "吃葡萄不吐葡萄皮"?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>吃葡萄不吐葡萄皮的拼音是：「chī pú bù tǔ pú pí」。To eat grapes without spitting out the grape skins, the pinyin is "chī pú bù tǔ pú pí".</td><td>914</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>拼音：吃葡萄不吐葡萄皮「chī pú táo bù tǔ pú táo pí」Pingyin: To eat grapes without spitting out the grape skins, 'chī pú bù tǔ pú pí".</td><td>1049</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>吃葡萄不吐葡萄皮的拼音是：chī pú táo bù tǔ pú táo pí。拼音是一种用拉丁字母表示汉字发音的方法，它可以帮助人们学习和记忆汉字的发音。在这个拼音中，「吃」表示「chī」，「葡萄」表示「pú táo」，「不」表示「bù」，「吐」表示「tǔ」，「葡萄皮」表示「pú táo pí」。The pinyin for '吃葡萄不吐葡萄皮' is 「chī pú táo bù tǔ pú táo pí」。Pinyin is a method of representing the pronunciation of Chinese characters using Latin letters, which can help people learn and remember the pronunciation of Chinese characters. In this pinyin，"吃" is represented as 'chī'，"葡萄" is represented as 「pú táo」，「不」 is represented as 「bù」，「吐」 is represented as 「tǔ」，and 「葡萄皮」 is represented as "pú táo pí".</td><td>1068</td></tr><tr><td>GPT-3.5</td><td>chī pú táo bù tǔ pú táo pí de pīn yīn zěn me xiě?chī pú táo bù tǔ pú táo pí de pīn yīn zěn me xiě?</td><td>946</td></tr><tr><td>GPT-4</td><td>chī pú táo bù tǔ pú táo píchī pú táo bù tǔ pú táo pí</td><td>1040</td></tr></table>
 
 Language Understanding
 
-| 父亲:儿子,你高中毕业了,现在打算上哪个大学?儿子:爸爸,我已经准备好了申请资料,想申请一个好的本科专业.父亲:那你已经想好申请哪些大学了吗?儿子:是的,我计划申请几所排名靠前的大学.我已经做了很多研究,准备在学业,社交和职业规划等方面全面提升自己.父亲:很好!你一直都很努力,爸爸妈妈一直都很自豪.上大学是一个新的起点,你需要面对更多的挑战和机会.你有什么打算?儿子:我计划尽早适应大学生活,参加各种社团和课外活动,拓宽自己的视野和人际圈.同时,我会认真学习专业知识和技能,努力取得好成绩,争取获得奖学金和其他荣誉.父亲:非常好!你的计划很明智,爸爸相信你一定会有一个充实而有意义的大学生活.爸爸会一直支持你的决定,希望你取得好成绩,为你的未来打下坚实的基础.儿子:谢谢爸爸!我会加倍努力,不辜负您对我的期望.这段对话中,儿子打算上大学后有哪些计划和打算? |
+| 父亲：儿子，你高中毕业了，现在打算上哪个大学？儿子：爸爸，我已经准备好了申请资料，想申请一个好的本科专业。父亲：那你已经想好申请哪些大学了吗？儿子：是的，我计划申请几所排名靠前的大学。我已经做了很多研究，准备在学业，社交和职业规划等方面全面提升自己。父亲：很好！你一直都很努力，爸爸妈妈一直都很自豪。上大学是一个新的起点，你需要面对更多的挑战和机会。你有什么打算？儿子：我计划尽早适应大学生活，参加各种社团和课外活动，拓宽自己的视野和人际圈。同时，我会认真学习专业知识和技能，努力取得好成绩，争取获得奖学金和其他荣誉。父亲：非常好！你的计划很明智，爸爸相信你一定会有一个充实而有意义的大学生活。爸爸会一直支持你的决定，希望你取得好成绩，为你的未来打下坚实的基础。儿子：谢谢爸爸！我会加倍努力，不辜负您对我的期望。这段对话中，儿子打算上大学后有哪些计划和打算？ |
 | --- |
 | Father: Son, you have graduated from high school. Which university are you planning to attend now?Son: Dad, I have already prepared my application materials, and I want to apply for an excellent undergraduate program. |
 
 <!-- page 43 of 59 -->
 
-<table><tr><td colspan="3">Father: Have you already decided which universities you want to apply to?Son: Yes, I plan to apply to several top-ranked universities. I have done a lot of research, and I am ready to improve myself in academics, social life, and career planning.Father: That&#x27;s great! You have always been hardworking and your mom and I are proud of you. Going to college is a new starting point, and you will face more challenges and opportunities. What are your plans?Son: I plan to adapt to college life as soon as possible and participate in various clubs and extracurricular activities to broaden my horizons and social circle. At the same time, I will study my major knowledge and skills seriously, strive for good grades, and try to win scholarships and other honors.Father: Very good! Your plans are wise. Dad believes that you will have a fulfilling and meaningful college life. Dad will always support your decisions and hopes you achieve good results, laying a solid foundation for your future.Son: Thank you, Dad! I will work even harder and not let your expectations down.What are the son&#x27;s plans and intentions after going to college in this conversation?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>ModelQwen-7B-Chat (SFT)</td><td>Response儿子打算尽早适应大学生活,参加各种社团和课外活动,拓宽自己的视野和人际圈.同时,他会认真学习专业知识和技能,努力取得好成绩,争取获得奖学金和其他荣誉.The son plans to adapt to university life as soon as possible, participate in various clubs and extracurricular activities, and expand his horizons and social circle. At the same time, he will study professional knowledge and skills seriously, work hard to achieve good grades, and strive to obtain scholarships and other honors.</td><td>Elo973</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>儿子打算在学业,社交和职业规划等方面全面提升自己,尽早适应大学生活,参加各种社团和课外活动,拓宽自己的视野和人际圈.同时,他会认真学习专业知识和技能,努力取得好成绩,争取获得奖学金和其他荣誉.The son plans to comprehensively improve himself in his academic, social, and career planning aspects to adapt to university life as early as possible. He will participate in various clubs and extracurricular activities to broaden his horizons and expand his social circle. At the same time, he will diligently study professional knowledge and skills, strive for good grades, and obtain scholarships and other honors.</td><td>1049</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>儿子打算在大学生活中参加各种社团和课外活动,拓宽自己的视野和人际圈.同时,他会认真学习专业知识和技能,努力取得好成绩,争取获得奖学金和其他荣誉.他的目标是尽早适应大学生活,为自己的未来打下坚实的基础.The son plans to participate in various clubs and extracurricular activities during his college life, in order to broaden his horizons and expand his social circle. At the same time, he will study professional knowledge and skills seriously, strive for good grades, and aim to obtain scholarships and other honors. His goal is to adapt to college life as soon as possible and lay a solid foundation for his future.</td><td>975</td></tr><tr><td>GPT-3.5</td><td>儿子计划适应大学生活,参加各种社团和课外活动,拓宽自己的视野和人际圈.同时,他还计划认真学习专业知识和技能,努力取得好成绩,争取获得奖学金和其他荣誉.他希望在大学打下坚实的基础,为自己的未来打好基础.The son plans to adapt to college life participate in various clubs and extracurricular activities to broaden his horizons and social circle. At the same time, he plans to study professional knowledge and skills seriously, strive for good grades, and obtain scholarships and other honors. He hopes to lay a solid foundation in college and build a good foundation for his future.</td><td>976</td></tr></table>
+<table><tr><td colspan="3">Father: Have you already decided which universities you want to apply to?Son: Yes, I plan to apply to several top-ranked universities. I have done a lot of research, and I am ready to improve myself in academics, social life, and career planning.Father: That&#x27;s great! You have always been hardworking and your mom and I are proud of you. Going to college is a new starting point, and you will face more challenges and opportunities. What are your plans?Son: I plan to adapt to college life as soon as possible and participate in various clubs and extracurricular activities to broaden my horizons and social circle. At the same time, I will study my major knowledge and skills seriously, strive for good grades, and try to win scholarships and other honors.Father: Very good! Your plans are wise. Dad believes that you will have a fulfilling and meaningful college life. Dad will always support your decisions and hopes you achieve good results, laying a solid foundation for your future.Son: Thank you, Dad! I will work even harder and not let your expectations down.What are the son&#x27;s plans and intentions after going to college in this conversation?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>ModelQwen-7B-Chat (SFT)</td><td>Response儿子打算尽早适应大学生活，参加各种社团和课外活动，拓宽自己的视野和人际圈。同时，他会认真学习专业知识和技能，努力取得好成绩，争取获得奖学金和其他荣誉。The son plans to adapt to university life as soon as possible, participate in various clubs and extracurricular activities, and expand his horizons and social circle. At the same time, he will study professional knowledge and skills seriously, work hard to achieve good grades, and strive to obtain scholarships and other honors.</td><td>Elo973</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>儿子打算在学业，社交和职业规划等方面全面提升自己，尽早适应大学生活，参加各种社团和课外活动，拓宽自己的视野和人际圈。同时，他会认真学习专业知识和技能，努力取得好成绩，争取获得奖学金和其他荣誉。The son plans to comprehensively improve himself in his academic, social, and career planning aspects to adapt to university life as early as possible. He will participate in various clubs and extracurricular activities to broaden his horizons and expand his social circle. At the same time, he will diligently study professional knowledge and skills, strive for good grades, and obtain scholarships and other honors.</td><td>1049</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>儿子打算在大学生活中参加各种社团和课外活动，拓宽自己的视野和人际圈。同时，他会认真学习专业知识和技能，努力取得好成绩，争取获得奖学金和其他荣誉。他的目标是尽早适应大学生活，为自己的未来打下坚实的基础。The son plans to participate in various clubs and extracurricular activities during his college life, in order to broaden his horizons and expand his social circle. At the same time, he will study professional knowledge and skills seriously, strive for good grades, and aim to obtain scholarships and other honors. His goal is to adapt to college life as soon as possible and lay a solid foundation for his future.</td><td>975</td></tr><tr><td>GPT-3.5</td><td>儿子计划适应大学生活，参加各种社团和课外活动，拓宽自己的视野和人际圈。同时，他还计划认真学习专业知识和技能，努力取得好成绩，争取获得奖学金和其他荣誉。他希望在大学打下坚实的基础，为自己的未来打好基础。The son plans to adapt to college life participate in various clubs and extracurricular activities to broaden his horizons and social circle. At the same time, he plans to study professional knowledge and skills seriously, strive for good grades, and obtain scholarships and other honors. He hopes to lay a solid foundation in college and build a good foundation for his future.</td><td>976</td></tr></table>
 
 <!-- page 44 of 59 -->
 
-| GPT-4 | 儿子的大学计划和打算包括:1. 尽早适应大学生活.2. 参加各种社团和课外活动,以拓宽自己的视野和人际圈.3. 认真学习专业知识和技能,努力取得好成绩.4. 争取获得奖学金和其他荣誉.5. 为未来打下坚实的基础.The son's university plans and aspirations include:1. Adjusting to university life as soon as possible.2. Joining various clubs and extracurricular activities to broaden his horizons and social circle.3. Studying professional knowledge and skills seriously and striving for excellent grades.4. Striving to obtain scholarships and other honors.5. Building a solid foundation for the future. | 1048 |
+| GPT-4 | 儿子的大学计划和打算包括：1。尽早适应大学生活.2。参加各种社团和课外活动，以拓宽自己的视野和人际圈.3。认真学习专业知识和技能，努力取得好成绩.4。争取获得奖学金和其他荣誉.5。为未来打下坚实的基础。The son's university plans and aspirations include:1. Adjusting to university life as soon as possible.2. Joining various clubs and extracurricular activities to broaden his horizons and social circle.3. Studying professional knowledge and skills seriously and striving for excellent grades.4. Striving to obtain scholarships and other honors.5. Building a solid foundation for the future. | 1048 |
 | --- | --- | --- |
 
-<table><tr><td colspan="3">Creative Writing</td></tr><tr><td colspan="3">请编写一个以超市为背景的,内容涉及到水果误会的笑话.Please write a joke set in a supermarket involving a fruit misunderstanding.</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>ModelQwen-7B-Chat (SFT)</td><td>Response有一天,小明去超市买水果,他买了一篮子苹果.当他回到家,他发现苹果都是红色的,他想:这些苹果一定很好吃.但是,当他开始吃的时候,他发现这些苹果都是酸的.他很惊讶,因为他买的是甜苹果.他去超市问,店员说:「对不起,我们没有甜苹果,只有红色的苹果.」小明很生气,他想:我买的是甜苹果,为什么给我红色的苹果呢?他回去告诉了妈妈,妈妈笑着说:"你买的是红苹果... [[The original content is long and the follow up is truncated]]One day, Xiaoming went to the supermarket to buy fruits. He bought a basket of apples. When he got home, he found that all the apples were red. He thought to himself: These apples must be very delicious. However, when he started eating them, he found that these apples were sour. He was surprised because he bought sweet apples. He went to the supermarket to ask, and the shopkeeper said, "I'm sorry, we don't have sweet apples, only red apples." Xiaoming was angry and thought to himself: I bought sweet apples, why did they give me red apples? He went back and told his mother, and his mother smiled and said, "You bought red delicious apples.... [[The original content is long and the follow up is truncated]]</td><td>Elo849</td></tr></table>
+<table><tr><td colspan="3">Creative Writing</td></tr><tr><td colspan="3">请编写一个以超市为背景的，内容涉及到水果误会的笑话。Please write a joke set in a supermarket involving a fruit misunderstanding.</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>ModelQwen-7B-Chat (SFT)</td><td>Response有一天，小明去超市买水果，他买了一篮子苹果。当他回到家，他发现苹果都是红色的，他想：这些苹果一定很好吃。但是，当他开始吃的时候，他发现这些苹果都是酸的。他很惊讶，因为他买的是甜苹果。他去超市问，店员说：「对不起，我们没有甜苹果，只有红色的苹果。」小明很生气，他想：我买的是甜苹果，为什么给我红色的苹果呢？他回去告诉了妈妈，妈妈笑着说：「你买的是红苹果... [[The original content is long and the follow up is truncated]]One day, Xiaoming went to the supermarket to buy fruits. He bought a basket of apples. When he got home, he found that all the apples were red. He thought to himself: These apples must be very delicious. However, when he started eating them, he found that these apples were sour. He was surprised because he bought sweet apples. He went to the supermarket to ask, and the shopkeeper said, 」I'm sorry, we don't have sweet apples, only red apples." Xiaoming was angry and thought to himself: I bought sweet apples, why did they give me red apples? He went back and told his mother, and his mother smiled and said, "You bought red delicious apples.... [[The original content is long and the follow up is truncated]]</td><td>Elo849</td></tr></table>
 
 <!-- page 45 of 59 -->
 
@@ -1278,20 +1278,20 @@ The customer also laughed and replied, "I know, I was just joking with you."
 
 <!-- page 46 of 59 -->
 
-<table><tr><td rowspan="14">Qwen-14B-Chat (RLHF)</td><td>有一天,小明去超市买水果.他挑选了一篮子新鲜的苹果和香蕉,然后走向收银台.</td><td rowspan="14">986</td></tr><tr><td>收银员小王看到小明手中的水果,突然大声喊道:「哇,你的水果好新鲜啊!你是从哪里买的?」</td></tr><tr><td>小明愣了一下,心想:「难道我买水果的技巧被发现了?」于是他得意地回答:「我刚刚从果园里摘的,保证新鲜!」</td></tr><tr><td>小王听了,忍不住笑了起来:「你可真逗,这是超市里的水果,不是你家果园里的.」</td></tr><tr><td>小明听了,顿时傻眼了.他尴尬地解释道:「啊,对不起,我太紧张了,以为这是我的水果.」</td></tr><tr><td>小王笑着安慰道:「没事没事,我们都搞错了.不过,你的水果确实很好,我们超市里的水果也都是新鲜的.」</td></tr><tr><td>小明听了,松了一口气,心情也好了起来.他付了钱,提着水果离开了超市,心里想着:「下次再买水果,一定要更加小心,不要闹出笑话了!」</td></tr><tr><td>One day, Xiao Ming went to the supermarket to buy fruits. He picked a basket of fresh apples and bananas, and then headed towards the cashier.</td></tr><tr><td>The cashier, Xiao Wang, saw the fruits in Xiao Ming&#x27;s hands and suddenly shouted, &quot;Wow, your fruits are so fresh! Where did you buy them from?&quot;</td></tr><tr><td>Xiao Ming was stunned for a moment and thought to himself, &quot;Could it be that my fruit-buying skills have been discovered?&quot; So he proudly replied, &quot;I just picked them from the orchard, guaranteed fresh!&quot;</td></tr><tr><td>Upon hearing this, Xiao Wang couldn&#x27;t help but laugh and said, &quot;You&#x27;re really funny. These are fruits from the supermarket, not from your own orchard.&quot;</td></tr><tr><td>Xiao Ming, upon listening, was immediately dumbfounded. He awkwardly explained, &quot;Oh, I&#x27;m sorry, I was too nervous, and I thought these were my fruits.&quot;</td></tr><tr><td>Xiao Wang smiled and comforted him, saying, &quot;It&#x27;s alright, it&#x27;s alright. We both made a mistake. However, your fruits are indeed very good, and the fruits in our supermarket are also fresh.&quot;</td></tr><tr><td>Upon hearing this, Xiao Ming breathed a sigh of relief, and his mood improved. He paid the money, carried the fruits, and left the supermarket, thinking, &quot;Next time I buy fruits, I must be more careful and avoid making such a funny mistake!&quot;</td></tr><tr><td rowspan="4">GPT-3.5</td><td>在超市的水果区,小明看到了一盒红苹果和一盒绿苹果.他拿着两盒苹果走到收银台前排队结账.</td><td rowspan="4">964</td></tr><tr><td>收银员看着小明手里的两盒苹果说:「这位小朋友,你知道红苹果和绿苹果有什么区别吗?」</td></tr><tr><td>小明想了一下,然后笑着回答:「当然知道了!红苹果是情侣,绿苹果是单身狗.」</td></tr><tr><td>收银员被小明的回答逗乐了,忍不住笑了出来.</td></tr></table>
+<table><tr><td rowspan="14">Qwen-14B-Chat (RLHF)</td><td>有一天，小明去超市买水果。他挑选了一篮子新鲜的苹果和香蕉，然后走向收银台。</td><td rowspan="14">986</td></tr><tr><td>收银员小王看到小明手中的水果，突然大声喊道：「哇，你的水果好新鲜啊！你是从哪里买的？」</td></tr><tr><td>小明愣了一下，心想：「难道我买水果的技巧被发现了？」于是他得意地回答：「我刚刚从果园里摘的，保证新鲜！」</td></tr><tr><td>小王听了，忍不住笑了起来：「你可真逗，这是超市里的水果，不是你家果园里的。」</td></tr><tr><td>小明听了，顿时傻眼了。他尴尬地解释道：「啊，对不起，我太紧张了，以为这是我的水果。」</td></tr><tr><td>小王笑着安慰道：「没事没事，我们都搞错了。不过，你的水果确实很好，我们超市里的水果也都是新鲜的。」</td></tr><tr><td>小明听了，松了一口气，心情也好了起来。他付了钱，提着水果离开了超市，心里想着：「下次再买水果，一定要更加小心，不要闹出笑话了！」</td></tr><tr><td>One day, Xiao Ming went to the supermarket to buy fruits. He picked a basket of fresh apples and bananas, and then headed towards the cashier.</td></tr><tr><td>The cashier, Xiao Wang, saw the fruits in Xiao Ming&#x27;s hands and suddenly shouted, &quot;Wow, your fruits are so fresh! Where did you buy them from?&quot;</td></tr><tr><td>Xiao Ming was stunned for a moment and thought to himself, &quot;Could it be that my fruit-buying skills have been discovered?&quot; So he proudly replied, &quot;I just picked them from the orchard, guaranteed fresh!&quot;</td></tr><tr><td>Upon hearing this, Xiao Wang couldn&#x27;t help but laugh and said, &quot;You&#x27;re really funny. These are fruits from the supermarket, not from your own orchard.&quot;</td></tr><tr><td>Xiao Ming, upon listening, was immediately dumbfounded. He awkwardly explained, &quot;Oh, I&#x27;m sorry, I was too nervous, and I thought these were my fruits.&quot;</td></tr><tr><td>Xiao Wang smiled and comforted him, saying, &quot;It&#x27;s alright, it&#x27;s alright. We both made a mistake. However, your fruits are indeed very good, and the fruits in our supermarket are also fresh.&quot;</td></tr><tr><td>Upon hearing this, Xiao Ming breathed a sigh of relief, and his mood improved. He paid the money, carried the fruits, and left the supermarket, thinking, &quot;Next time I buy fruits, I must be more careful and avoid making such a funny mistake!&quot;</td></tr><tr><td rowspan="4">GPT-3.5</td><td>在超市的水果区，小明看到了一盒红苹果和一盒绿苹果。他拿着两盒苹果走到收银台前排队结账。</td><td rowspan="4">964</td></tr><tr><td>收银员看着小明手里的两盒苹果说：「这位小朋友，你知道红苹果和绿苹果有什么区别吗？」</td></tr><tr><td>小明想了一下，然后笑着回答：「当然知道了！红苹果是情侣，绿苹果是单身狗。」</td></tr><tr><td>收银员被小明的回答逗乐了，忍不住笑了出来。</td></tr></table>
 
 <!-- page 47 of 59 -->
 
 |  | In the supermarket's fruit section, Xiaoming saw a box of red apples and a box of green apples. He held the two boxes of apples and walked to the cash register to queue up for payment.The cashier looked at the two boxes of apples in Xiaoming's hands and said, "Hey, little friend, do you know the difference between red apples and green apples?"Xiaoming thought momentarily and then smiled, "Of course, I know! Red apples are couples, and green apples are single dogs."Xiaoming's answer amused the cashier, and couldn't help but laugh. |  |
 | --- | --- | --- |
-| GPT-4 | 「一个非常善良的男孩,在超市里发现了一个老太太在苹果堆里挑选苹果.他看到老太太似乎找不到满意的苹果,就走上前去帮忙.男孩说:『老奶奶,这箱子的苹果我之前都看过了,里面没有一个好的.但是我知道柜台上有一个我保留的极好的苹果,我去为您拿过来.』老太太感动地点点头,男孩兴冲冲地跑去拿苹果,只见他笑呵呵地拿过一个巨大的,艳丽的苹果放在老太太面前.老太太疑惑地看看男孩,再看看手中的『苹果』,然后微笑着说:『孩子,很感谢你的好意,但这是一个番茄.』」A very kind boy found an old lady picking apples in a pile at the supermarket. Seeing that she could not find a satisfactory apple, he approached to help.The boy said, "Granny, I've checked all the apples in this box before, and there isn't a good one. But I know I saved an excellent apple on the counter for you. Let me get it for you."The old lady nodded gratefully, and the boy eagerly ran to get the apple. He joyfully handed a huge, vibrant apple to the old lady.Confused, the old lady looked at the boy, then at the "apple" in her hand, and smiled. She said, "Child, thank you for your kindness, but this is a tomato." | 1144 |
+| GPT-4 | 「一个非常善良的男孩，在超市里发现了一个老太太在苹果堆里挑选苹果。他看到老太太似乎找不到满意的苹果，就走上前去帮忙。男孩说：『老奶奶，这箱子的苹果我之前都看过了，里面没有一个好的。但是我知道柜台上有一个我保留的极好的苹果，我去为您拿过来。』老太太感动地点点头，男孩兴冲冲地跑去拿苹果，只见他笑呵呵地拿过一个巨大的，艳丽的苹果放在老太太面前。老太太疑惑地看看男孩，再看看手中的『苹果』，然后微笑着说：『孩子，很感谢你的好意，但这是一个番茄。』」A very kind boy found an old lady picking apples in a pile at the supermarket. Seeing that she could not find a satisfactory apple, he approached to help.The boy said, "Granny, I've checked all the apples in this box before, and there isn't a good one. But I know I saved an excellent apple on the counter for you. Let me get it for you."The old lady nodded gratefully, and the boy eagerly ran to get the apple. He joyfully handed a huge, vibrant apple to the old lady.Confused, the old lady looked at the boy, then at the "apple" in her hand, and smiled. She said, "Child, thank you for your kindness, but this is a tomato." | 1144 |
 
-<table><tr><td colspan="3">Mathematics</td></tr><tr><td colspan="3">一个正方形,被分成5个相等的长方形,每个长方形的周长是60厘米,正方形的周长是多少厘米A square is divided into five equal rectangles, each with a perimeter of 60 centimeters. What is the perimeter of the square in centimeters?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>设正方形的边长为 $x$ ,那么每个长方形的边长就是 $x/5$ .根据题意,我们知道每个长方形的周长是60厘米,所以有: $2(x/5) + 2(x/5) + 2(x/5) + 2(x/5) = 60$ 化简得: $x = 60/(2 + 2 + 2 + 2) = 15$ 所以正方形的周长是 $4x = 4 * 15 = 60$ 厘米If the side length of a square is  $x$ , then the side length of each rectangle is  $x/5$ . According to the question, we know that the perimeter of each rectangle is 60 centimeters, so we have: $2(x/5) + 2(x/5) + 2(x/5) + 2(x/5) = 60$ Simplifying, we get:  $x = 60/(2 + 2 + 2 + 2) = 15$ So the perimeter of the square is  $4x = 4 * 15 = 60$  centimeters.</td><td>976</td></tr></table>
+<table><tr><td colspan="3">Mathematics</td></tr><tr><td colspan="3">一个正方形，被分成5个相等的长方形，每个长方形的周长是60厘米，正方形的周长是多少厘米A square is divided into five equal rectangles, each with a perimeter of 60 centimeters. What is the perimeter of the square in centimeters?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>设正方形的边长为 $x$，那么每个长方形的边长就是 $x/5$。根据题意，我们知道每个长方形的周长是60厘米，所以有：$2(x/5) + 2(x/5) + 2(x/5) + 2(x/5) = 60$ 化简得：$x = 60/(2 + 2 + 2 + 2) = 15$ 所以正方形的周长是 $4x = 4 * 15 = 60$ 厘米If the side length of a square is  $x$ , then the side length of each rectangle is  $x/5$ . According to the question, we know that the perimeter of each rectangle is 60 centimeters, so we have: $2(x/5) + 2(x/5) + 2(x/5) + 2(x/5) = 60$ Simplifying, we get:  $x = 60/(2 + 2 + 2 + 2) = 15$ So the perimeter of the square is  $4x = 4 * 15 = 60$  centimeters.</td><td>976</td></tr></table>
 
 <!-- page 48 of 59 -->
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family:monospace;">
-Qwen-14B-Chat (SFT) 设正方形边长为 $x$,长方形边长为 $y$ 根据题意,有:$x = 5y$
+Qwen-14B-Chat (SFT) 设正方形边长为 $x$，长方形边长为 $y$ 根据题意，有：$x = 5y$
 $2y + 2y = 60$
 $4y = 60$
 $y = 15$
@@ -1300,13 +1300,13 @@ $x = 5 * 15 = 75$
 Let the side length of the square be $x$ and the length of the rectangle be $y$. According to the problem: $x = 5y \ 2y + 2y = 60 \ 4y = 60$
 $y = 15 \ x = 5 * 15 = 75$ Perimeter of the square $= 4x = 4 * 75 = 300$
 
-Qwen-14B-Chat (RLHF) 首先,我们设正方形的边长为 $x$,则每个长方形的长为 $x$,宽为 $x/5$.
-根据长方形的周长公式,可得每个长方形的周长为 $2(x + x/5) = 12x/5$.
-已知每个长方形的周长为60厘米,代入上式得:
+Qwen-14B-Chat (RLHF) 首先，我们设正方形的边长为 $x$，则每个长方形的长为 $x$，宽为 $x/5$。
+根据长方形的周长公式，可得每个长方形的周长为 $2(x + x/5) = 12x/5$。
+已知每个长方形的周长为60厘米，代入上式得：
 $12x/5 = 60$
-解得 $x = 25$.
-因此,正方形的周长为 $4x = 100$ 厘米.
-答案:正方形的周长是100厘米.
+解得 $x = 25$。
+因此，正方形的周长为 $4x = 100$ 厘米。
+答案：正方形的周长是100厘米。
 First, let's assume that the square's side length is $x$. Therefore, the length of each rectangle is $x$ and the width is $x/5$.
 According to the formula for the perimeter of a rectangle, we can determine that the perimeter of each rectangle is $2(x + x/5) = 12x/5$.
 Given that the perimeter of each rectangle is 60 centimeters, we can substitute this value into the equation:
@@ -1315,25 +1315,25 @@ Solving for $x$, we find $x = 25$.
 Therefore, the perimeter of the square is $4x = 100$ centimeters.
 Answer: The perimeter of the square is 100 centimeters.
 
-GPT-3.5 设正方形的边长为x厘米,则每个长方形的长为 $x$ 厘米,宽为 $5x/4$ 厘米.
-每个长方形的周长为 $2(x + 5x/4) = 60$ 厘米.
+GPT-3.5 设正方形的边长为x厘米，则每个长方形的长为 $x$ 厘米，宽为 $5x/4$ 厘米。
+每个长方形的周长为 $2(x + 5x/4) = 60$ 厘米。
 化简得 $13x/2 = 60$
 解方程得到 $x = (60 * 2)/13 = 120/13H9.23$
-正方形的周长为 $4x = 4 * 9.23 \approx 36.92$ 厘米.
+正方形的周长为 $4x = 4 * 9.23 \approx 36.92$ 厘米。
 If the side length of a square is x centimeters, then the length of each rectangle is x centimeters, and the width is 5x/4 centimeters.
 The perimeter of each rectangle is $2(x + 5x/4) = 60$ centimeters.
 Simplifying, we get $13x/2 = 60$.
 Solving the equation, we find $x = (60 * 2)/13 = 120 / 13 \approx 9.23$.
 The perimeter of the square is $4x = 4 * 9.23 \approx 36.92$ centimeters.
 
-GPT-4 由题意可知,每个长方形的一条长边等于正方形的边长,设为 $a$.设每个长方形的一条短边为 $b$,那么有 $5b = a$.根据每个长方形的周长可得到 $2 * (a + b) = 60$ 厘米.将 $5b = a$ 代入到长方形的周长公式中得:$2 * a + 2 * 5b = 60$,化简得 $2 * a + 10b = 60$,由于 $a = 5b$,所以 $2 * a = 2 * 5b = 10b$ 那么有 $10b + 10b = 60$,得 $b = 3$ 厘米,$a = 5 * b = 15$ 厘米.所以,正方形的周长是 $4 * a = 4 * 15 = 60$ 厘米.
+GPT-4 由题意可知，每个长方形的一条长边等于正方形的边长，设为 $a$。设每个长方形的一条短边为 $b$，那么有 $5b = a$。根据每个长方形的周长可得到 $2 * (a + b) = 60$ 厘米。将 $5b = a$ 代入到长方形的周长公式中得：$2 * a + 2 * 5b = 60$，化简得 $2 * a + 10b = 60$，由于 $a = 5b$，所以 $2 * a = 2 * 5b = 10b$ 那么有 $10b + 10b = 60$，得 $b = 3$ 厘米，$a = 5 * b = 15$ 厘米。所以，正方形的周长是 $4 * a = 4 * 15 = 60$ 厘米。
 </div>
 
 <!-- page 49 of 59 -->
 
 From the given problem, it can be inferred that the length of one side of each rectangle is equal to that of one side of the square, denoted as a. Let the length of one side of each rectangle be denoted as b; then, we have 5b = a. The perimeter of each rectangle can be obtained as 2 ∗ (a + b) = 60 centimeters. Substituting 5b = a into the formula for the perimeter of the rectangle, we have 2a+25b = 60. Simplifying it gives 2a+10b = 60. Since a = 5b, it follows that 2a = 25b = 10b. Therefore, 10b + 10b = 60, which gives b = 3 centimeters and a = 5b = 15 centimeters. Thus, the perimeter of the square is 4a = 415 = 60 centimeters.
 
-<table><tr><td colspan="3">Mathematics</td></tr><tr><td colspan="3">同学们进行广播操比赛,全班正好排成相等的6行.小红排在第二行,从头数,她站在第5个位置,从后数她站在第3个位置,这个班共有多少人The students are having a radio exercise competition, and the whole class is neatly arranged into 6 equal rows. Xiaohong is in the second row, counting from the front, she is in the 5th position. Counting from the back, she is in the 3rd position. How many people are there in this class?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>小红前面的人数=5 - 1 = 4,小红后面的人数=3 - 1 = 2,全班人数=小红前面的人数+小红后面的人数+小红自己=4 + 2 + 1 = 7The number of people in front of Xiaohong = 5 - 1 = 4, the number of people behind Xiaohong = 3 - 1 = 2, the total number of people in the class = the number of people in front of Xiaohong + the number of people behind Xiaohong + Xiaohong herself = 4 + 2 + 1 = 7.</td><td>976</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>5+3-1=7(人)7×6=42(人)这个班共有42人.5+3-1=7(people)7×6=42(people)There are a total of 42 people in this class.</td><td>976</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>小红前面有4个人,后面有2个人,所以这一行共有4+2+1=7个人.全班共有6行,所以全班共有6*7=42个人.There are 4 people in front of Xiaohong and 2 people behind her, so there are a total of 4+2+1=7 people in this row.There are a total of 6 rows in the class, so there are a total of 6*7=42 people in the whole class.</td><td>1139</td></tr><tr><td>GPT-3.5</td><td>根据题目信息,小红排在第二行第5个位置,也即第11个位置.而小红从后数是第3个位置,也即倒数第11个位置.所以这个班共有11个人.According to the information given, Xiaohong is in the second row, fifth position, which is also the 11th position. And Xiaohong is in the third position from the end, which is also the 11th position counting from the back. So there are a total of 11 people in this class.</td><td>897</td></tr><tr><td>GPT-4</td><td>如果小红从头数是第5个,从后数是第3个,那么这一排就有5+3-1=7人.全班正好排成6行,所以班级里有人数为7*6=&lt;&lt;7*6=42&gt;&gt;=42人.</td><td>1010</td></tr></table>
+<table><tr><td colspan="3">Mathematics</td></tr><tr><td colspan="3">同学们进行广播操比赛，全班正好排成相等的6行。小红排在第二行，从头数，她站在第5个位置，从后数她站在第3个位置，这个班共有多少人The students are having a radio exercise competition, and the whole class is neatly arranged into 6 equal rows. Xiaohong is in the second row, counting from the front, she is in the 5th position. Counting from the back, she is in the 3rd position. How many people are there in this class?</td></tr><tr><td colspan="3">Responses</td></tr><tr><td>Model</td><td>Response</td><td>Elo</td></tr><tr><td>Qwen-7B-Chat (SFT)</td><td>小红前面的人数=5 - 1 = 4，小红后面的人数=3 - 1 = 2，全班人数=小红前面的人数+小红后面的人数+小红自己=4 + 2 + 1 = 7The number of people in front of Xiaohong = 5 - 1 = 4, the number of people behind Xiaohong = 3 - 1 = 2, the total number of people in the class = the number of people in front of Xiaohong + the number of people behind Xiaohong + Xiaohong herself = 4 + 2 + 1 = 7.</td><td>976</td></tr><tr><td>Qwen-14B-Chat (SFT)</td><td>5+3-1=7（人）7×6=42（人）这个班共有42人.5+3-1=7(people)7×6=42(people)There are a total of 42 people in this class.</td><td>976</td></tr><tr><td>Qwen-14B-Chat (RLHF)</td><td>小红前面有4个人，后面有2个人，所以这一行共有4+2+1=7个人。全班共有6行，所以全班共有6*7=42个人。There are 4 people in front of Xiaohong and 2 people behind her, so there are a total of 4+2+1=7 people in this row.There are a total of 6 rows in the class, so there are a total of 6*7=42 people in the whole class.</td><td>1139</td></tr><tr><td>GPT-3.5</td><td>根据题目信息，小红排在第二行第5个位置，也即第11个位置。而小红从后数是第3个位置，也即倒数第11个位置。所以这个班共有11个人。According to the information given, Xiaohong is in the second row, fifth position, which is also the 11th position. And Xiaohong is in the third position from the end, which is also the 11th position counting from the back. So there are a total of 11 people in this class.</td><td>897</td></tr><tr><td>GPT-4</td><td>如果小红从头数是第5个，从后数是第3个，那么这一排就有5+3-1=7人。全班正好排成6行，所以班级里有人数为7*6=&lt；&lt；7*6=42&gt；&gt；=42人。</td><td>1010</td></tr></table>
 
 <!-- page 50 of 59 -->
 
@@ -1578,11 +1578,11 @@ Qwen-14B-Chat (SFT) 你的代码会返回二叉树的节点数量,而不是最�
 
 <!-- page 56 of 59 -->
 
-**Qwen-14B-Chat (RLHF)** 这个代码的问题在于它没有正确**地处理左右**子树的**深度**.具体来说,每次从**队列**中取出一个节点**时,**它会将该节点的左右子树**都加**入**到队列**中,然后将**队列长度加**一.但是**,如**果该节点的**左右**子树中有一个为空**,那**么这个节点的**深度**就应该是它**所在队列**的**长度**减一,而不是**队列长度加**一.
+**Qwen-14B-Chat (RLHF)** 这个代码的问题在于它没有正确**地处理左右**子树的**深度**。具体来说，每次从**队列**中取出一个节点**时，**它会将该节点的左右子树**都加**入**到队列**中，然后将**队列长度加**一。但是**，如**果该节点的**左右**子树中有一个为空**，那**么这个节点的**深度**就应该是它**所在队列**的**长度**减一，而不是**队列长度加**一。
 
 992
 
-以下是修**改后**的代码:
+以下是修**改后**的代码：
 
 ```python
 def maxDepth(self, root: TreeNode)-> int:
@@ -1598,7 +1598,7 @@ def maxDepth(self, root: TreeNode)-> int:
     return res
 ```
 
-在这个代码中,每次取出一个节点**时,我**们只将该节点的左右子树中非空的**部分加**入**到队列**中**,并**计**算队列**的**长度**.然**后,我**们将**队列长度**与当前最**大深度**进行比较**,并**更新最大**深度**.这样就可以正确地计算出二叉树的最**大深度**了.The problem with this code is that it does not correctly handle the depth of the left and right subtrees. Specifically, when a node is taken out from the queue, it adds both its left and right subtrees to the queue and increases the length of the queue by one. However, if either the left or right subtree of the node is empty, then the depth of this node should be the length of the queue minus one, not the length of the queue plus one.
+在这个代码中，每次取出一个节点**时，我**们只将该节点的左右子树中非空的**部分加**入**到队列**中**，并**计**算队列**的**长度**。然**后，我**们将**队列长度**与当前最**大深度**进行比较**，并**更新最大**深度**。这样就可以正确地计算出二叉树的最**大深度**了。The problem with this code is that it does not correctly handle the depth of the left and right subtrees. Specifically, when a node is taken out from the queue, it adds both its left and right subtrees to the queue and increases the length of the queue by one. However, if either the left or right subtree of the node is empty, then the depth of this node should be the length of the queue minus one, not the length of the queue plus one.
 
 ```python
 Here is the modified code:
@@ -1688,14 +1688,14 @@ The idea of this solution is: in each iteration, traverse all the nodes in the c
 
 Here we provide a case of comparison between CODE LLAMA and QWEN-CHAT. This case demonstrates the advantages of QWEN-CHAT in processing tabular data and performing complex tasks.
 
-下面给 CODE LLAMA 与 QWEN-CHAT 的对比案例, 说明后者在表格数据与复杂任务上的优势.
+下面给 CODE LLAMA 与 QWEN-CHAT 的对比案例，说明后者在表格数据与复杂任务上的优势。
 
 
-> **拆开:** 表 7 可执行率高, 是否等于表 8 答案对?
-> 不等于. 14B 可视化可执行 84.1, Vis.-All 正确率只有 56.4. 能跑通与答对是两本账.
+> **拆开：** 表 7 可执行率高，是否等于表 8 答案对？
+> 不等于。14B 可视化可执行 84.1，Vis.-All 正确率只有 56.4。能跑通与答对是两本账。
 
-> **看表:** CODE LLAMA-INSTRUCT-13B 数学可执行 93.2 高于 QWEN-14B 的 89.2, 为什么正文仍说通用模型更好?
-> 全文看 All 列与正确率: 可执行 All 是 68.8 vs 81.7; Vis.-Hard 正确率 27.4 vs 53.6. 特化模型在单点可执行上可赢, 在多步规划与最终正确率上仍落后.
+> **看表：** CODE LLAMA-INSTRUCT-13B 数学可执行 93.2 高于 QWEN-14B 的 89.2，为什么正文仍说通用模型更好？
+> 全文看 All 列与正确率：可执行 All 是 68.8 vs 81.7；Vis.-Hard 正确率 27.4 vs 53.6。特化模型在单点可执行上可赢，在多步规划与最终正确率上仍落后。
 
 <!-- page 59 of 59 -->
 
@@ -1703,11 +1703,11 @@ Here we provide a case of comparison between CODE LLAMA and QWEN-CHAT. This case
 
 Figure 5: Example showcasing QWEN-CHAT's ability in using a code interpreter via ReAct prompting. The ReAct instruction is omitted for clarity. QWEN creates a two-step plan and first investigates the columns present in the CSV file before proceeding to draw the plot, as shown in the top-left figure. CODE LLAMA, however, attempts to draw the plot based on non-existent columns in its initial attempt, as seen in the bottom figure. CODE LLAMA can only reliably perform the task if the columns are provided in the user query, as shown in the top-right figure.
 
-图 5｜展示 QWEN-CHAT 经 ReAct prompting 使用 code interpreter 的例子. 为清晰起见省略 ReAct 指令. CODE LLAMA 易按 CSV 文件名幻觉不存在的列; QWEN-CHAT 先探结构再画图.
+图 5｜展示 QWEN-CHAT 经 ReAct prompting 使用 code interpreter 的例子。为清晰起见省略 ReAct 指令。CODE LLAMA 易按 CSV 文件名幻觉不存在的列；QWEN-CHAT 先探结构再画图。
 
 
 59
 
-> **回看:** 1.8B 在 Table 2 的 C-Eval 54.7 已高于 LLaMA2-7B 的 32.5, 能否说小模型全面更强?
-> 只能说在报告所选中文与部分任务上很能打. BBH 28.2 仍明显弱于更大模型. 读表要分项, 不要用单格代表整机.
+> **回看：** 1.8B 在 Table 2 的 C-Eval 54.7 已高于 LLaMA2-7B 的 32.5，能否说小模型全面更强？
+> 只能说在报告所选中文与部分任务上很能打。BBH 28.2 仍明显弱于更大模型。读表要分项，不要用单格代表整机。
 

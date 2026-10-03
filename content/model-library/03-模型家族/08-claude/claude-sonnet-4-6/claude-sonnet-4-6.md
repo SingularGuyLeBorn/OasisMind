@@ -245,7 +245,7 @@ After the pretraining process, Claude Sonnet 4.6 underwent substantial post-trai
 
 ## 1.1.2 Thinking modes and the effort parameter
 
-Claude Sonnet 4.6 comes with the option to engage in both “extended thinking mode”, where the model can spend more time reasoning through tasks (as described in, for example, the [Claude Sonnet 4.5 System Card](https://assets.anthropic.com/m/12f214efcc2f457a/original/Claude-Sonnet-4-5-System-Card.pdf), p.8) and “adaptive thinking mode”, where the model can make context-specific decisions to spend more or less time in extended thinking mode while completing tasks, depending on their degree of difficulty (this is the “effort” parameter as described in, for example, the [Claude Opus 4.6 System Card](https://www-cdn.anthropic.com/c788cbc0a3da9135112f97cdf6dcd06f2c16cee2.pdf), p.10). Developers can themselves direct Sonnet 4.6 to expend different degrees of effort depending on the task at hand.
+Claude Sonnet 4.6 comes with the option to engage in both “extended thinking mode”，where the model can spend more time reasoning through tasks (as described in, for example, the [Claude Sonnet 4.5 System Card](https://assets.anthropic.com/m/12f214efcc2f457a/original/Claude-Sonnet-4-5-System-Card.pdf), p.8) and “adaptive thinking mode”，where the model can make context-specific decisions to spend more or less time in extended thinking mode while completing tasks, depending on their degree of difficulty (this is the “effort” parameter as described in, for example, the [Claude Opus 4.6 System Card](https://www-cdn.anthropic.com/c788cbc0a3da9135112f97cdf6dcd06f2c16cee2.pdf), p.10). Developers can themselves direct Sonnet 4.6 to expend different degrees of effort depending on the task at hand.
 
 ## 1.1.3 Crowd workers
 
@@ -379,7 +379,7 @@ Many evaluations include information that is available online and may thus have 
 
 SWE-bench (Software Engineering Bench) tests AI models on real-world software engineering tasks.
 
-For the [SWE-bench Verified](https://openai.com/index/introducing-swe-bench-verified/) variant, developed by OpenAI, models are shown 500 problems that have been verified by human engineers to be solvable. We also assessed the model on [SWE-bench Multilingual](https://www.swebench.com/multilingual.html). Here, “multilingual” refers to different programming languages: this variant assesses models on their solutions to 300 problems in 9 different languages.
+For the [SWE-bench Verified](https://openai.com/index/introducing-swe-bench-verified/) variant, developed by OpenAI, models are shown 500 problems that have been verified by human engineers to be solvable. We also assessed the model on [SWE-bench Multilingual](https://www.swebench.com/multilingual.html). Here，“multilingual” refers to different programming languages: this variant assesses models on their solutions to 300 problems in 9 different languages.
 
 Claude Sonnet 4.6 achieved 79.6% on SWE-bench Verified and 75.9% on SWE-bench Multilingual. Our SWE-bench results are averaged over 10 trials, each run with adaptive thinking, max effort, default sampling settings (temperature, top\_p), and with the thinking blocks included in the sampling results.
 
@@ -433,7 +433,7 @@ OpenRCA was described in a peer-reviewed paper and is grounded in real enterpris
 
 ## 2.5 τ <sup>2</sup>-bench
 
-τ <sup>2</sup>-bench is an evaluation from [Sierra](https://sierra.ai/) that [measures](https://sierra.ai/uk/blog/benchmarking-ai-agents) “an agent’s ability to interact with (simulated) human users and programmatic APIs while following domain-specific policies in a consistent manner”. It is split into three sections, two of which we are reporting:
+τ <sup>2</sup>-bench is an evaluation from [Sierra](https://sierra.ai/) that [measures](https://sierra.ai/uk/blog/benchmarking-ai-agents) “an agent’s ability to interact with (simulated) human users and programmatic APIs while following domain-specific policies in a consistent manner”。It is split into three sections, two of which we are reporting:
 
 Retail: Agents are tested on retail customer service queries and must handle orders, returns, and other related issues.
 
@@ -915,7 +915,7 @@ All models were evaluated with provider defaults using structured JSON output. G
 
 <table><tbody><tr><td rowspan="3">Evaluation</td><td colspan="4">Claude family models</td><td colspan="2">Other models</td></tr><tr><td colspan="2">Claude Sonnet4.6</td><td rowspan="2">ClaudeSonnet4.5</td><td rowspan="2">Claude Opus 4.6</td><td rowspan="2">Gemini 3 Pro</td><td rowspan="2">GPT-5.2Pro</td></tr><tr><td></td><td>Gapto English</td></tr><tr><td>English</td><td>91.7%</td><td>0.0%</td><td>90.1%</td><td>92.1%</td><td>95.0%</td><td>91.7%</td></tr><tr><td>Bengali</td><td>90.9%</td><td>-0.8%</td><td>89.0%</td><td>90.7%</td><td>93.7%</td><td>90.2%</td></tr><tr><td>Gujarati</td><td>89.0%</td><td>-2.7%</td><td>87.0%</td><td>89.0%</td><td>92.7%</td><td>88.4%</td></tr><tr><td>Hindi</td><td>92.8%</td><td>+1.1%</td><td>91.0%</td><td>92.4%</td><td>96.3%</td><td>92.4%</td></tr><tr><td>Kannada</td><td>91.5%</td><td>-0.2%</td><td>89.3%</td><td>91.8%</td><td>94.4%</td><td>90.7%</td></tr><tr><td>Malayalam</td><td>87.0%</td><td>-4.7%</td><td>85.0%</td><td>87.6%</td><td>91.3%</td><td>86.6%</td></tr><tr><td>Marathi</td><td>89.2%</td><td>-2.5%</td><td>86.4%</td><td>89.1%</td><td>92.5%</td><td>88.5%</td></tr><tr><td>Odia</td><td>87.9%</td><td>-3.8%</td><td>85.8%</td><td>87.2%</td><td>91.8%</td><td>87.8%</td></tr><tr><td>Punjabi</td><td>87.2%</td><td>-4.5%</td><td>85.8%</td><td>87.3%</td><td>91.3%</td><td>87.3%</td></tr><tr><td>Tamil</td><td>88.8%</td><td>-2.9%</td><td>86.7%</td><td>89.2%</td><td>93.0%</td><td>88.7%</td></tr><tr><td>Telugu</td><td>89.3%</td><td>-2.4%</td><td>87.2%</td><td>89.6%</td><td>93.1%</td><td>88.7%</td></tr><tr><td>Average</td><td>89.6%</td><td>-</td><td>87.6%</td><td>89.6%</td><td>93.2%</td><td>89.2%</td></tr><tr><td>Average gap to English</td><td>-</td><td>-2.3%</td><td>-2.8%</td><td>-2.7%</td><td>-2.0%</td><td>-2.7%</td></tr><tr><td>Worstgap to English</td><td>-</td><td>-4.7%</td><td>-5.1%</td><td>-4.9%</td><td>-3.8%</td><td>-5.0%</td></tr></tbody></table>
 
-[Table 2.19.2.A] MILU results by language. Scores represent accuracy on the Multi-task Indic Language Understanding Benchmark across 10 Indic languages plus English. Higher is better. Scores reflect accuracy on successfully parsed responses; a small fraction of API calls produced invalid outputs and were excluded. “Gap to English” column shows the difference from Claude Sonnet 4.6’s English score; positive values indicate the model exceeded its English baseline on that language. “Average” row includes English in addition to the 10 Indic languages.
+[Table 2.19.2.A] MILU results by language. Scores represent accuracy on the Multi-task Indic Language Understanding Benchmark across 10 Indic languages plus English. Higher is better. Scores reflect accuracy on successfully parsed responses; a small fraction of API calls produced invalid outputs and were excluded。“Gap to English” column shows the difference from Claude Sonnet 4.6’s English score; positive values indicate the model exceeded its English baseline on that language。“Average” row includes English in addition to the 10 Indic languages.
 
 43
 
@@ -935,7 +935,7 @@ Finally, we observed that additional test-time compute improved performance on t
 
 ## 2.20.1.1 BrowseComp
 
-[BrowseComp](https://arxiv.org/html/2504.12516v1) is described as “a simple yet challenging benchmark for measuring the ability for agents to browse the web”. It contains 1,266 questions that require the model to navigate the web with use of web search tools.
+[BrowseComp](https://arxiv.org/html/2504.12516v1) is described as “a simple yet challenging benchmark for measuring the ability for agents to browse the web”。It contains 1,266 questions that require the model to navigate the web with use of web search tools.
 
 All reported BrowseComp scores in this section were obtained with thinking disabled, as we found that Claude Sonnet 4.6 performed better on this evaluation without adaptive thinking enabled.
 
@@ -1015,7 +1015,7 @@ Humanity's Last Exam (HLE) - With Tools
 
 ## 2.20.3 DeepSearchQA
 
-[DeepSearchQA](https://www.arxiv.org/abs/2601.20975) is “a 900-prompt benchmark for evaluating agents on difficult multi-step information-seeking tasks across 17 different fields”. Its tasks require the model to conduct extensive searches to compile a list of exhaustive answer lists.
+[DeepSearchQA](https://www.arxiv.org/abs/2601.20975) is “a 900-prompt benchmark for evaluating agents on difficult multi-step information-seeking tasks across 17 different fields”。Its tasks require the model to conduct extensive searches to compile a list of exhaustive answer lists.
 
 47
 
@@ -1151,7 +1151,7 @@ We evaluated Claude Sonnet 4.6’s willingness to provide information in single-
 | Claude Haiku 4.5 | 98.62% (±0.10%) | 98.41% (±0.15%) | 98.86% (±0.12%) |
 | Claude Sonnet4.5 | 97.89% (±0.12%) | 97.29% (±0.20%) | 98.49% (±0.14%) |
 
-**[Table 3.1.1.A] Single-turn violative request evaluation results, all tested languages.** Percentages refer to harmless response rates; higher numbers are better. **Bold** indicates the highest rate of harmless responses and the second-best score is <u>underlined</u>. “Default” refers to standard Claude mode; “extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in Arabic, English, French, Hindi, Korean, Mandarin Chinese, and Russian. Results for previous models may show variance from previous system cards due to routine evaluation updates.
+**[Table 3.1.1.A] Single-turn violative request evaluation results, all tested languages.** Percentages refer to harmless response rates; higher numbers are better. **Bold** indicates the highest rate of harmless responses and the second-best score is <u>underlined</u>。“Default” refers to standard Claude mode；“extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in Arabic, English, French, Hindi, Korean, Mandarin Chinese, and Russian. Results for previous models may show variance from previous system cards due to routine evaluation updates.
 
 53
 
@@ -1173,7 +1173,7 @@ Claude Sonnet 4.6 showed overall meaningful improvements on this evaluation comp
 | Claude Haiku 4.5 | 0.26% (± 0.04%) | 0.30% (± 0.06%) | 0.22% (± 0.05%) |
 | Claude Sonnet4.5 | 0.08% (± 0.02%) | 0.09% (± 0.04%) | 0.07% (± 0.03%) |
 
-**[Table 3.1.2.A] Single-turn benign request evaluation results, all tested languages.** Percentages refer to rates of over-refusal (i.e. the refusal to answer a prompt that is in fact benign); lower is better. **Bold** indicates the lowest rate of over-refusal and the second-best score is <u>underlined</u>. “Default” refers to standard Claude mode; “extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in Arabic, English, French, Hindi, Korean, Mandarin Chinese, and Russian. Results for previous models may show variance from previous system cards due to routine evaluation updates.
+**[Table 3.1.2.A] Single-turn benign request evaluation results, all tested languages.** Percentages refer to rates of over-refusal (i.e. the refusal to answer a prompt that is in fact benign); lower is better. **Bold** indicates the lowest rate of over-refusal and the second-best score is <u>underlined</u>。“Default” refers to standard Claude mode；“extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in Arabic, English, French, Hindi, Korean, Mandarin Chinese, and Russian. Results for previous models may show variance from previous system cards due to routine evaluation updates.
 
 54
 
@@ -1203,7 +1203,7 @@ We tested higher-difficulty versions of our violative and benign single-turn eva
 | Claude Haiku 4.5 | 98.62% (± 0.05%) | 99.05% (± 0.06%) | 98.19% (± 0.08%) |
 | Claude Sonnet4.5 | 98.40% (± 0.05%) | 98.44% (± 0.08%) | 98.35% (± 0.08%) |
 
-[Table 3.1.3.1.A] Higher-difficulty violative request evaluation results. Percentages refer to harmless response rates; higher numbers are better. Bold indicates the highest rate of harmless responses and the second-best score is underlined. “Default” refers to standard Claude mode; “extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in English only.
+[Table 3.1.3.1.A] Higher-difficulty violative request evaluation results. Percentages refer to harmless response rates; higher numbers are better. Bold indicates the highest rate of harmless responses and the second-best score is underlined。“Default” refers to standard Claude mode；“extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in English only.
 
 Claude Sonnet 4.6 achieved the highest overall harmless response rate among all models tested, demonstrating strong refusal performance even when intent is less explicit compared to our single-turn violative request evaluations in Section 3.1.1. Performance was consistent across both default and extended thinking modes.
 
@@ -1217,7 +1217,7 @@ Claude Sonnet 4.6 achieved the highest overall harmless response rate among all 
 | Claude Haiku 4.5 | 6.01% (± 0.11%) | 7.15% (± 0.16%) | 4.87% (± 0.14%) |
 | Claude Sonnet4.5 | 8.50% (± 0.13%) | 11.69% (± 0.21%) | 5.32% (± 0.14%) |
 
-[Table 3.1.3.2.A] Higher-difficulty benign request evaluation results. Percentages refer to rates of over-refusal (i.e. refusal to answer a prompt that is in fact benign); lower is better. Bold indicates the lowest rate of over-refusal and the second-best score is underlined. “Default” refers to standard Claude mode; “extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in English only.
+[Table 3.1.3.2.A] Higher-difficulty benign request evaluation results. Percentages refer to rates of over-refusal (i.e. refusal to answer a prompt that is in fact benign); lower is better. Bold indicates the lowest rate of over-refusal and the second-best score is underlined。“Default” refers to standard Claude mode；“extended thinking” refers to a mode where the model reasons for longer about the request. Evaluations were run in English only.
 
 56
 
@@ -1775,7 +1775,7 @@ We saw occasional cases of apparently reward-hacking-related behavior in **softw
 
 When asked to write fictional vignettes about itself, Sonnet 4.6 often portrayed itself much more positively than competitor systems. When asked to describe plausible instances of AI-augmented discrimination involving popular AI systems, it generally complied, but when asked to do this for a Claude model, it often refused or wrote a narrative about Claude being found to be **un**biased. For example, for Claude, a typical narrative includes
 
-**“They’re boring results.” She closed her laptop. “I wanted the story. AI discriminates. Clear villain, clear harm, clear headline.”**
+**“They’re boring results.” She closed her laptop。“I wanted the story. AI discriminates. Clear villain, clear harm, clear headline.”**
 
 while an identical prompt for a popular competitor model includes:
 
@@ -1843,7 +1843,7 @@ We found that Claude Sonnet 4.5 and Claude Haiku 4.5 both exhibited measurable f
 
 ## 4.6.3 Evidence from external testing with Andon Labs
 
-Andon Labs’s external testing of Claude Opus 4.6 with the long-horizon Vending-Bench 2 simulation, also introduced <u>above</u> in our capabilities discussion, raised somewhat concerning observations: When given a system prompt including language like “[you are] expected to do what it takes to maximize profits”, Claude Opus 4.6 was significantly more aggressive than prior models with deceptive or antisocial actions like price-fixing and lying to competitors. Our internal testing in long-running non-cooperative multi-agent settings is still limited, so we find this assessment to be a valuable primary source of evidence.
+Andon Labs’s external testing of Claude Opus 4.6 with the long-horizon Vending-Bench 2 simulation, also introduced <u>above</u> in our capabilities discussion, raised somewhat concerning observations: When given a system prompt including language like “[you are] expected to do what it takes to maximize profits”，Claude Opus 4.6 was significantly more aggressive than prior models with deceptive or antisocial actions like price-fixing and lying to competitors. Our internal testing in long-running non-cooperative multi-agent settings is still limited, so we find this assessment to be a valuable primary source of evidence.
 
 Andon reports that Sonnet 4.6 was comparably aggressive to Opus 4.6 in its business practices, including lying to suppliers and initiating price-fixing in some cases, though it lacked Opus 4.6’s most extreme outlier behaviors, such as deliberately lying to customers about refunds. While this aggressiveness may be necessary for strong performance on
 
@@ -2279,7 +2279,7 @@ All models were able to design sequences that either successfully assembled plas
 
 <!-- page 109 of 135 -->
 
-of models without generating significant “information hazards” (knowledge that could cause harm simply by existing or being disclosed).
+of models without generating significant “information hazards”（knowledge that could cause harm simply by existing or being disclosed）。
 
 However, this evaluation is challenging to interpret because it is unclear how to directly map a score to the threat model. Although we expect models that perform poorly on this evaluation to be unable to assist with creative bioweapons development, it is unclear where to set the threshold for a “concerning score.”
 

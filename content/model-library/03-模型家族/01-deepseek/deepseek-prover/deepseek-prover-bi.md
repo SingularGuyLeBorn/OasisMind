@@ -9,7 +9,7 @@ excerpt: "DeepSeek-Prover 公开材料的逐段中英对照译稿，附读报告
 
 arXiv: 2405.14333v1 [cs. AI] 23 May 2024
 
-# DeepSeek-Prover: Advancing Theorem Proving in LLMs through Large-Scale Synthetic Data / DeepSeek-Prover: 用大规模合成数据推进大语言模型中的定理证明
+# DeepSeek-Prover: Advancing Theorem Proving in LLMs through Large-Scale Synthetic Data / DeepSeek-Prover：用大规模合成数据推进大语言模型中的定理证明
 
 **Huajian Xin**<sup>1, 2</sup> **Daya Guo**<sup>1</sup> **Zhihong Shao**<sup>1</sup> **Z. Z. Ren**<sup>1</sup> **Qihao Zhu**<sup>1</sup> **Bo Liu**<sup>1</sup> **Chong Ruan**<sup>1</sup> **Wenda Li**<sup>3</sup> **Xiaodan Liang**<sup>2, 4∗</sup>
 
@@ -17,7 +17,7 @@ arXiv: 2405.14333v1 [cs. AI] 23 May 2024
 
 
 
-DeepSeek, 中山大学, 爱丁堡大学, MBZUAI; 标星作者为通讯作者. 联系邮箱见上.
+DeepSeek，中山大学，爱丁堡大学，MBZUAI；标星作者为通讯作者。联系邮箱见上。
 
 ## Abstract
 
@@ -25,7 +25,7 @@ Proof assistants like Lean have revolutionized mathematical proof verification, 
 
 
 
-像 Lean 这样的证明助手, 已经把数学证明的核验推到很高的准确度与可信度. **Lean** 是一类交互式定理证明器: 人把命题写成机器可读的形式化语句, 再逐步或整段给出证明; 内核按形式规则检查, 通过才算「证完」. 大语言模型在数学推理上已有苗头, 但形式化定理证明仍被训练数据短缺拖住.**形式化证明**指把命题与证明步骤都写成证明助手能机械核验的代码; 相对地, 自然语言里「看起来对」的推理, 机器无法直接保证无洞. 为此, 本文从高中与本科竞赛题出发, 大规模生成 Lean 4 证明数据: 自然语言题转成形式语句, 滤掉低质语句, 再生成证明, 得到合成数据. 在含 800 万条带证明形式语句的合成集上微调 DeepSeekMath 7B 后, Lean 4 miniF2F 测试上整证生成准确率达 46.3%(64 样本)与累计 52%, 超过 GPT-4 的 23.0%(64 样本)以及树搜索强化学习方法的 41.0%.**自动定理证明(ATP)** 泛指让机器自动找证明; 本文走的是「一次生成整段证明 + Lean 核验」, 而不是逐步与证明器来回交互的树搜索. 此外, 在 Lean 4 形式化 IMO(FIMO)148 题中证出 5 题, GPT-4 一题都没证出. 结果说明大规模合成数据能抬高 LLM 的定理证明能力. 合成数据与模型将公开, 方便后续研究.
+像 Lean 这样的证明助手，已经把数学证明的核验推到很高的准确度与可信度。**Lean** 是一类交互式定理证明器：人把命题写成机器可读的形式化语句，再逐步或整段给出证明；内核按形式规则检查，通过才算「证完」。大语言模型在数学推理上已有苗头，但形式化定理证明仍被训练数据短缺拖住。**形式化证明**指把命题与证明步骤都写成证明助手能机械核验的代码；相对地，自然语言里「看起来对」的推理，机器无法直接保证无洞。为此，本文从高中与本科竞赛题出发，大规模生成 Lean 4 证明数据：自然语言题转成形式语句，滤掉低质语句，再生成证明，得到合成数据。在含 800 万条带证明形式语句的合成集上微调 DeepSeekMath 7B 后，Lean 4 miniF2F 测试上整证生成准确率达 46.3%（64 样本）与累计 52%，超过 GPT-4 的 23.0%（64 样本）以及树搜索强化学习方法的 41.0%.**自动定理证明（ATP）** 泛指让机器自动找证明；本文走的是「一次生成整段证明 + Lean 核验」，而不是逐步与证明器来回交互的树搜索。此外，在 Lean 4 形式化 IMO(FIMO)148 题中证出 5 题，GPT-4 一题都没证出。结果说明大规模合成数据能抬高 LLM 的定理证明能力。合成数据与模型将公开，方便后续研究。
 
 ## 1 Introduction
 
@@ -33,13 +33,13 @@ In modern mathematics, the increasing complexity of proofs presents substantial 
 
 
 
-现代数学里, 证明越写越复杂, 同行评审很难跟上: 错证可能被接受, 关键漏洞往往很久以后才被发现. 为此发展出 Lean, Isabelle, Coq 等形式化数学语言, 让证明可以被计算机核验. **形式化语言**把符号, 推理规则和目标状态都定成可检查的规则; 写证明像写程序, 过不了类型检查就过不了关. 但手工写形式化证明极费功夫, 即便资深数学家也吃力, 所以自动定理证明的重要性在上升.
+现代数学里，证明越写越复杂，同行评审很难跟上：错证可能被接受，关键漏洞往往很久以后才被发现。为此发展出 Lean，Isabelle，Coq 等形式化数学语言，让证明可以被计算机核验。**形式化语言**把符号，推理规则和目标状态都定成可检查的规则；写证明像写程序，过不了类型检查就过不了关。但手工写形式化证明极费功夫，即便资深数学家也吃力，所以自动定理证明的重要性在上升。
 
 To reduce the effort involved in writing formal mathematical proofs, several approaches [Polu and Sutskever, 2020, Jiang et al., 2021, Han et al., 2021, Polu et al., 2022, Lample et al., 2022, Jiang et al., 2022a, Yang et al., 2024] have been developed, primarily focusing on search algorithms that explore potential solutions for proposed theorems. However, these methods often struggle with the vast search spaces required for complex theorems, rendering them ineffective for more intricate proofs [Loos et al., 2017]. Recently, advances in large language models (LLMs) have introduced a novel strategy,
 
 
 
-为减轻写形式化证明的负担, 已有一批工作主要靠搜索算法在候选证明空间里探索. 复杂定理的搜索空间极大, 这些方法往往吃不消. 近来大语言模型给出另一条路:
+为减轻写形式化证明的负担，已有一批工作主要靠搜索算法在候选证明空间里探索。复杂定理的搜索空间极大，这些方法往往吃不消。近来大语言模型给出另一条路：
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>∗</sup>Corresponding author. </span></small>
 
@@ -51,49 +51,49 @@ utilizing pre-trained models to guide the search process. Although these new met
 
 
 
-用预训练模型引导搜索. 这些方法有进步, 但仍难落地, 根因是平行语料太少: 形式化证明语言的使用者远少于 Python/Java, 现成数据稀薄. **自动形式化(autoformalization)** 指把自然语言数学叙述自动翻成 Lean 等语言里的形式语句; 近年已能合成更多对齐数据来训 LLM 证明器, 但规模仍不足以把大模型能力吃满.
+用预训练模型引导搜索。这些方法有进步，但仍难落地，根因是平行语料太少：形式化证明语言的使用者远少于 Python/Java，现成数据稀薄。**自动形式化（autoformalization）** 指把自然语言数学叙述自动翻成 Lean 等语言里的形式语句；近年已能合成更多对齐数据来训 LLM 证明器，但规模仍不足以把大模型能力吃满。
 
 To address this issue, we propose a method for generating extensive Lean 4 proof data from informal mathematical problems. Our approach translates high-school and undergraduate-level mathematical competition problems into formal statements. We then automate proof generation using a large language model (LLM) and verify the correctness of these proofs within the Lean 4 environment. The primary challenge of this method is to ensure both the scale and quality of the synthetic data.
 
 
 
-本文提出: 从非形式化数学题大规模生成 Lean 4 证明数据. 流程是: 高中与本科竞赛题 → 形式语句 → LLM 自动生成证明 → 在 Lean 4 环境里核验对错. 难点在同时保住合成数据的规模与质量.
+本文提出：从非形式化数学题大规模生成 Lean 4 证明数据。流程是：高中与本科竞赛题 → 形式语句 → LLM 自动生成证明 → 在 Lean 4 环境里核验对错。难点在同时保住合成数据的规模与质量。
 
 **Quality Assurance:** We enhance the quality of generated proofs through a multi-step process. First, we filter out simple statements using a quality scoring model and exclude invalid statements via a hypothesis rejection strategy. Our novel iterative framework then improves proof quality by initially generating synthetic statements from informal math problems using an under-trained LLM fine-tuned on limited data. These statements are used to generate corresponding proofs, which are validated for correctness using a Lean 4 verifier. The correct theorem-proof pairs are subsequently used to further train the initial model. Through several iterations, the model trained on large-scale synthetic data becomes significantly more powerful than the originally under-trained LLMs, resulting in higher-quality theorem-proof pairs.
 
 
 
-**质量保障:** 多步抬高生成证明质量. 先用质量打分模型滤掉过简语句, 再用假设否决策略剔除无效语句. 迭代框架: 用在有限数据上微调过的弱模型, 从自然语言题合成语句; 再为这些语句生成证明, 经 Lean 4 核验器验证; 正确的定理–证明对回头继续训模型. 若干轮后, 吃过大合成数据的模型远强于最初弱模型, 定理–证明对的质量也随之升高.
+**质量保障：** 多步抬高生成证明质量。先用质量打分模型滤掉过简语句，再用假设否决策略剔除无效语句。迭代框架：用在有限数据上微调过的弱模型，从自然语言题合成语句；再为这些语句生成证明，经 Lean 4 核验器验证；正确的定理–证明对回头继续训模型。若干轮后，吃过大合成数据的模型远强于最初弱模型，定理–证明对的质量也随之升高。
 
 **Scale Assurance:** To accelerate the proof generation process, our method addresses the challenge of the large search space for proofs. A significant cause of delays is the generation of unprovable statements that continue to be processed until they reach the time limit. To mitigate this, we propose proving negated statements in parallel. Once either the original statement or its negation is proved, the entire proving process is terminated.
 
 
 
-**规模保障:** 证明搜索空间大, 拖慢生成. 一大延误源是「不可证」语句一直跑到超时. 做法是并行去证原语句的否定式: 原命题或其否定任一被证出, 整条证明流程立即终止.
+**规模保障：** 证明搜索空间大，拖慢生成。一大延误源是「不可证」语句一直跑到超时。做法是并行去证原语句的否定式：原命题或其否定任一被证出，整条证明流程立即终止。
 
 We assess the effectiveness of our method on Lean 4 theorem proving using 488 problems from miniF2F [Zheng et al., 2021] and 148 problems from the FIMO benchmarks [Liu et al., 2023]. We utilize DeepSeekMath 7B [Shao et al., 2024], a state-of-the-art mathematical model, as our base. The results show that our iteratively trained model performs strongly, achieving 46.3% accuracy in wholeproof generation on the miniF2F-test benchmark with 64 samples, surpassing GPT-4 [Achiam et al., 2023] at 23.0% and a reinforcement learning method at 41.0%. Additionally, our approach solved 4 out of 148 problems in the FIMO benchmark with 100 samples, while GPT-4 solved none, and our approach solved 5 with 4096 samples. Ablation experiments indicate that the model progressively solves more problems in miniF2F with each iteration. In summary, our paper makes the following contributions:
 
 
 
-在 Lean 4 上用 miniF2F 的 488 题与 FIMO 的 148 题评估. 底座是 DeepSeekMath 7B. 迭代训出的模型整证生成在 miniF2F-test 上 64 样本达 46.3%, 超过 GPT-4 的 23.0% 与强化学习树搜索方法的 41.0%. FIMO: 100 样本解出 4/148, GPT-4 为 0; 4096 样本解出 5 题. 消融显示每轮迭代在 miniF2F 上能多解一些题. 贡献如下:
+在 Lean 4 上用 miniF2F 的 488 题与 FIMO 的 148 题评估。底座是 DeepSeekMath 7B. 迭代训出的模型整证生成在 miniF2F-test 上 64 样本达 46.3%，超过 GPT-4 的 23.0% 与强化学习树搜索方法的 41.0%. FIMO: 100 样本解出 4/148，GPT-4 为 0; 4096 样本解出 5 题。消融显示每轮迭代在 miniF2F 上能多解一些题。贡献如下：
 
 • We introduce an iterative method to synthesize 8 million formal statements, each accompanied by a formal proof, from informal math problems. Experimental results demonstrate that this method significantly enhances both the scalability and quality of synthetic data.
 
 
 
-• 提出迭代方法, 从自然语言数学题合成 800 万条带形式证明的形式语句; 实验表明规模与质量都明显抬高.
+• 提出迭代方法，从自然语言数学题合成 800 万条带形式证明的形式语句；实验表明规模与质量都明显抬高。
 
 Our model, trained on this synthetic dataset, achieves state-of-the-art performance on benchmarks, with whole-proof generation accuracies of 46.3% using 64 samples and 52% cumulatively on the Lean 4 miniF2F test. This surpasses the baseline GPT-4 at 23.0% with 64 samples and a tree search reinforcement learning method at 41.0%. Additionally, our model successfully proved 5 out of 148 problems in the Lean 4 Formalized International Mathematical Olympiad (FIMO) benchmark, while GPT-4 failed to prove any.
 
 
 
-在该合成集上训练的模型, Lean 4 miniF2F 测试上整证生成 46.3%(64 样本), 累计 52%, 超过 GPT-4(23.0%@64)与树搜索 RL(41.0%); FIMO 148 题证出 5 题, GPT-4 为零.
+在该合成集上训练的模型，Lean 4 miniF2F 测试上整证生成 46.3%（64 样本），累计 52%，超过 GPT-4(23.0%@64)与树搜索 RL(41.0%)；FIMO 148 题证出 5 题，GPT-4 为零。
 
 • We contribute to the mathematical and AI communities by creating and open-sourcing a large dataset of high-quality formal mathematical proofs, thereby fostering further research and development in automated theorem proving.
 
 
 
-• 开源大规模高质量形式化数学证明数据, 推动自动定理证明方向的后续研究.
+• 开源大规模高质量形式化数学证明数据，推动自动定理证明方向的后续研究。
 
 ## 2 Background and Related Works 背景与相关工作
 
@@ -101,7 +101,7 @@ Automated theorem proving has been a significant area of interest in artificial 
 
 
 
-自动定理证明从 AI 早期就是重要方向. 早期瞄准较简单的逻辑框架, 催生出 E, Vampire 等高效一阶定理证明器. 但面对现代证明助手里常见的复杂定理, 这些工具往往不够用:
+自动定理证明从 AI 早期就是重要方向。早期瞄准较简单的逻辑框架，催生出 E，Vampire 等高效一阶定理证明器。但面对现代证明助手里常见的复杂定理，这些工具往往不够用：
 
 <!-- page 3 of 17 -->
 
@@ -109,25 +109,25 @@ theorems commonly found in modern proof assistants such as Lean [De Moura et al.
 
 
 
-Lean, Isabelle, Coq 一类系统里的定理远比经典一阶场景难. 深度学习与模型引导搜索重新给这个领域加热, ATP 能力与可解问题范围都在扩大.
+Lean，Isabelle，Coq 一类系统里的定理远比经典一阶场景难。深度学习与模型引导搜索重新给这个领域加热，ATP 能力与可解问题范围都在扩大。
 
 **ATP with Neural Models.** With the development of deep learning, several approaches have been proposed to combine neural models with ATP [Loos et al., 2017]. A series of ATP approaches adopts tree search algorithms guided by neural models [Polu and Sutskever, 2020, Han et al., 2021, Polu et al., 2022, Jiang et al., 2022a, Yang et al., 2024]. These approaches primarily utilize reinforcement learning techniques to enhance the accuracy of the model [Kaliszyk et al., 2018, Crouse et al., 2021, Wu et al., 2021, Lample et al., 2022]. Since the search space is significantly large, the searching process consumes considerable time and computing resources.
 
 
 
-**神经模型上的 ATP.** 一类做法用神经模型引导树搜索, 并常用强化学习抬准度; 搜索空间大, 时间与算力都贵.
+**神经模型上的 ATP.** 一类做法用神经模型引导树搜索，并常用强化学习抬准度；搜索空间大，时间与算力都贵。
 
 Another series of ATP approaches harnesses the power of large language models. These approaches typically involve language models that are fine-tuned with open-source proof data and interact with verifiers via a state-action transition program [Polu and Sutskever, 2020, Jiang et al., 2021, Han et al., 2021, Polu et al., 2022, Lample et al., 2022, Jiang et al., 2022a, Yang et al., 2024]. This process iteratively generates proof steps and verifies their correctness with formal verifiers. It then generates the next proof steps based on the proof states returned by the formal verifiers. Although these approaches achieve high performance, they are computationally intensive. To enhance efficiency, recent researches leverage language models to generate complete formal proofs directly [First et al., 2023, Jiang et al., 2022b, Zhao et al., 2023, Xin et al., 2023], thus bypassing the iterative interaction during proof generation.
 
 
 
-另一类直接用大语言模型: 在开源证明数据上微调, 经状态–动作程序与核验器交互, 逐步生成证明步再核验. 效果好, 但算力重. 为提效, 近年研究让模型一次生成完整形式证明, 跳过生成期的逐步交互. 本文主线即整证生成.
+另一类直接用大语言模型：在开源证明数据上微调，经状态–动作程序与核验器交互，逐步生成证明步再核验。效果好，但算力重。为提效，近年研究让模型一次生成完整形式证明，跳过生成期的逐步交互。本文主线即整证生成。
 
 **Autoformalization for Formal Mathematics.** Due to the limited availability of formal corpora for training, the performance of current large language models (LLMs) is also constrained. Thus, some approaches propose autoformalization [Wu et al., 2022, Jiang et al., 2022b], which involves converting natural language descriptions into formal statements that can be verified by proof assistants. Several studies have generated synthetic datasets of formal proofs using rule-based transformations of existing theorems [Wu et al., 2020, Wang and Deng, 2020, Xiong et al., 2023]. While effective, these methods are constrained by their reliance on predefined rules and lack flexibility for broader applications. Recent methodologies adopt large language models to translating natural language problems into formal statements [Huang et al., 2024]. However, these datasets remain smaller than needed and are limited to small mathematical benchmarks, leading to only minor improvements in training outcomes for language models. In this paper, we aim to synthesise formal proofs via autoformalization at a much larger scale to boost the performance of a neural prover.
 
 
 
-**面向形式化数学的自动形式化.** 形式语料少, 限制了现有 LLM. 有人用自动形式化把自然语言转成可被证明助手核验的形式语句; 也有人用规则变换已有定理合成证明数据, 有效但绑死规则, 难泛化. 近作开始用 LLM 翻自然语言题, 但数据集仍偏小, 多限于小基准, 训练增益有限. 本文目标是把自动形式化推到大得多的规模, 抬高神经证明器表现.
+**面向形式化数学的自动形式化。** 形式语料少，限制了现有 LLM。有人用自动形式化把自然语言转成可被证明助手核验的形式语句；也有人用规则变换已有定理合成证明数据，有效但绑死规则，难泛化。近作开始用 LLM 翻自然语言题，但数据集仍偏小，多限于小基准，训练增益有限。本文目标是把自动形式化推到大得多的规模，抬高神经证明器表现。
 
 ## 3 Approach 方法
 
@@ -135,7 +135,7 @@ In this section, we introduce our approach, which consists of four key processes
 
 
 
-本节方法对应图 1 的四步: 先从大批自然语言题生成形式语句; 再经模型打分与假设否决筛高质量语句; 由 DeepSeek-Prover 尝试证明, Lean 4 核验器判定对错, 得到已验证的语句与证明, 用作微调合成数据; 模型变强后整条流水线再跑, 直到收益变小. 为提效, 原语句与其否定并行证明: 一旦否定被证出, 即可快速丢掉无效原语句.
+本节方法对应图 1 的四步：先从大批自然语言题生成形式语句；再经模型打分与假设否决筛高质量语句；由 DeepSeek-Prover 尝试证明，Lean 4 核验器判定对错，得到已验证的语句与证明，用作微调合成数据；模型变强后整条流水线再跑，直到收益变小。为提效，原语句与其否定并行证明：一旦否定被证出，即可快速丢掉无效原语句。
 
 ### 3.1 Autoformalization 自动形式化
 
@@ -143,7 +143,7 @@ The generation of formal proof data fundamentally relies on the availability of 
 
 
 
-形式证明数据的根基是大量形式语句, 手工堆很难. 好在网上有海量自然语言数学题:
+形式证明数据的根基是大量形式语句，手工堆很难。好在网上有海量自然语言数学题：
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>2</sup>leanprover/lean4 : v4.7.0 − rc2</span></small>
 
@@ -155,25 +155,25 @@ Figure 1: An overview of our approach.
 
 
 
-图 1｜方法总览: 自动形式化 → 质量过滤 → 证明(含否定并行)→ 迭代增强.
+图 1｜方法总览：自动形式化 → 质量过滤 → 证明（含否定并行）→ 迭代增强。
 
 natural language. By autoformalizing these informal mathematical problems, we can generate a vast repository of formal statements.
 
 
 
-把这些非形式化题自动形式化, 就能得到大量形式语句.
+把这些非形式化题自动形式化，就能得到大量形式语句。
 
 We have observed that problems with explicit conditions and well-defined goals are typically easier to formalize compared to advanced mathematical topics that necessitate intricate definitions and constructions. Consequently, this paper primarily examines high school and undergraduate-level competition problems, with a particular emphasis on algebra and number theory, and to a lesser extent, combinatorics, geometry, and statistics. Despite their apparent simplicity, these problems often involve complex solution techniques, making them excellent candidates for constructing proof data to improve theorem-proving capabilities in Large Language Models (LLMs). To compile our dataset, we employed web scraping and careful data cleaning techniques to extract problems from online resources featuring high school and undergraduate exercises, exams, and competitions, resulting in a dataset of 869, 659 high-quality natural language math problems.
 
 
 
-条件清楚, 目标明确的题, 比需要复杂定义与构造的高等主题更容易形式化. 因此本文主攻高中与本科竞赛题, 侧重代数与数论, 组合, 几何, 统计较少. 题面看似简单, 解法往往不浅, 适合拿来构造证明数据. 经爬取与清洗, 得到 869, 659 道高质量自然语言数学题.
+条件清楚，目标明确的题，比需要复杂定义与构造的高等主题更容易形式化。因此本文主攻高中与本科竞赛题，侧重代数与数论，组合，几何，统计较少。题面看似简单，解法往往不浅，适合拿来构造证明数据。经爬取与清洗，得到 869, 659 道高质量自然语言数学题。
 
 Specifically, we initialized the DeepSeek-Prover using the DeepSeekMath-Base 7B model [Shao et al., 2024]. Initially, the model struggled to convert informal math problems into formal statements. To address this, we fine-tuned the DeepSeek-Prover model using the MMA dataset [Jiang et al., 2023], which comprises formal statements from Lean 4’s mathlib<sup>3</sup>that were back-translated into natural language problem descriptions by GPT-4. We then instructed the model to translate these natural language problems into formal statements in Lean 4 using a structured approach.
 
 
 
-底座初始化为 DeepSeekMath-Base 7B. 起初几乎不会把自然语言题翻成形式语句. 于是用 MMA 数据集微调: 该集把 Lean 4 mathlib 里的形式语句经 GPT-4 回译成自然语言题面. 再按结构化提示, 让模型把自然语言题翻成 Lean 4 形式语句.
+底座初始化为 DeepSeekMath-Base 7B. 起初几乎不会把自然语言题翻成形式语句。于是用 MMA 数据集微调：该集把 Lean 4 mathlib 里的形式语句经 GPT-4 回译成自然语言题面。再按结构化提示，让模型把自然语言题翻成 Lean 4 形式语句。
 
 ```txt
 Prompt:
@@ -193,7 +193,7 @@ The quality of the autoformalized statements was found to be suboptimal due to t
 
 
 
-自动形式化语句质量不稳, 主要有两点. 一是大量语句过简. 为此设计打分标准, 并以 miniF2F-valid 为例做 few-shot, 引导 DeepSeek-Prover
+自动形式化语句质量不稳，主要有两点。一是大量语句过简。为此设计打分标准，并以 miniF2F-valid 为例做 few-shot，引导 DeepSeek-Prover
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>3</sup>The specific mathlib commit used is 64528268b3c2cf578639bc479828882a9ecd3a82. </span></small>
 
@@ -203,13 +203,13 @@ model in evaluating the content and quality of these statements using a chain-of
 
 
 
-用 CoT 评估内容与质量. 人工复核显示打分与人的直觉接近. 档位为「excellent / good / above average / fair / poor」;「fair」「poor」一律丢掉.
+用 CoT 评估内容与质量。人工复核显示打分与人的直觉接近。档位为「excellent / good / above average / fair / poor」；「fair」「poor」一律丢掉。
 
 The second issue pertains to formal statements that, although provable, are based on inconsistent hypotheses leading to vacuous conclusions, rendering the conclusions meaningless in mathematics. For example, consider the following model-generated statement:
 
 
 
-第二类问题: 语句「可证」, 但假设自相矛盾, 结论是空虚真(vacuous), 数学上无意义. 例如模型生成:
+第二类问题：语句「可证」，但假设自相矛盾，结论是空虚真（vacuous），数学上无意义。例如模型生成：
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family: monospace;">
 example ($\theta : \mathbb{R}$) (h$_0$ : $\forall$ z : $\mathbb{C}$, z $^2 = -1 \land$ z $^3 = -1 \land$ z $^6 = 1$) (h$_1$ :
@@ -220,7 +220,7 @@ Here, the hypothesis $z ^ { 2 } = - 1 \wedge z ^ { 3 } = - 1 \wedge z ^ { 6 } = 
 
 
 
-对所有复数都成立的 $z^{2}=-1 \wedge z^{3}=-1 \wedge z^{6}=1$ 显然假, 由此推出的任何结论都无意义. **假设否决(hypothesis rejection)**: 让模型尝试把结论改成 `False` 再证; 若能证出, 说明假设不一致, 该语句剔除. 示例如下:
+对所有复数都成立的 $z^{2}=-1 \wedge z^{3}=-1 \wedge z^{6}=1$ 显然假，由此推出的任何结论都无意义。**假设否决（hypothesis rejection）**：让模型尝试把结论改成 `False` 再证；若能证出，说明假设不一致，该语句剔除。示例如下：
 
 <div class="docvortex-algorithm" style="white-space: pre-wrap; font-family: monospace;">
 example ($\theta : \mathbb{R}$) ($h_0 : \forall z : \mathbb{C}$, $z \hat{} 2 = -1 \land z \hat{} 3 = -1 \land z \hat{} 6 = 1$) ($h_1 : Real. tan \theta = 2 * Real. sqrt 3$): False : = by
@@ -231,7 +231,7 @@ By applying this dual strategy of model scoring and hypothesis rejection, we cur
 
 
 
-打分与假设否决双管齐下后, 留下 712, 073 条高质量形式语句, 作为后续证明合成的底座.
+打分与假设否决双管齐下后，留下 712, 073 条高质量形式语句，作为后续证明合成的底座。
 
 ### 3.3 Statement Proving 语句证明
 
@@ -239,19 +239,19 @@ After creating a substantial corpus of high-quality formal statements, we employ
 
 
 
-有了高质量形式语句语料后, 用模型为它们找证明. 传统做法多是暴力重试到找到合法证明或耗尽算力; 在人工精选, 大体为真的语句上还说得过去. 自动形式化语句里很多本身就不对-- 可靠证明系统里证不出假命题. 大规模下更明显: 即便过了质量过滤, 至少约 20% 仍不正确; 硬暴力会浪费大量算力.
+有了高质量形式语句语料后，用模型为它们找证明。传统做法多是暴力重试到找到合法证明或耗尽算力；在人工精选，大体为真的语句上还说得过去。自动形式化语句里很多本身就不对-- 可靠证明系统里证不出假命题。大规模下更明显：即便过了质量过滤，至少约 20% 仍不正确；硬暴力会浪费大量算力。
 
 To minimize resource wastage on unprovable statements and improve the efficiency of the proof search process, we exploited the logical symmetry between a statement and its negation to accelerate proof synthesis. We implemented dual concurrent proof searches for each synthetic statement-one for the statement Γ ⊢ P and another for its negation Γ ⊢ ¬P. The search terminates as soon as a valid proof is found for either, conclusively demonstrating the unprovability of the other. Each proof search stream attempts up to k proofs unless a valid proof emerges sooner.
 
 
 
-为少在不可证语句上烧资源, 利用命题与其否定的对称性: 对每条合成语句并行搜 Γ ⊢ P 与 Γ ⊢ ¬P, 任一找到合法证明即停, 另一侧随之判定不可证. 每条搜索流最多尝试 k 次, 除非更早成功.
+为少在不可证语句上烧资源，利用命题与其否定的对称性：对每条合成语句并行搜 Γ ⊢ P 与 Γ ⊢ ¬P，任一找到合法证明即停，另一侧随之判定不可证。每条搜索流最多尝试 k 次，除非更早成功。
 
 All validated proofs, whether they justify the original theorems or their negations, are then aggregated to further train the DeepSeek-Prover. Thus, this dual approach serves as a form of data augmentation, enriching the dataset with both propositions and their negations-even if the original propositions were not correctly formalized by the model.
 
 
 
-凡核验通过的证明-- 无论证的是原定理还是否定-- 都汇总进训练. 双轨证明因此也是数据增强: 即便原形式化写错, 否定侧仍可贡献训练信号.
+凡核验通过的证明-- 无论证的是原定理还是否定-- 都汇总进训练。双轨证明因此也是数据增强：即便原形式化写错，否定侧仍可贡献训练信号。
 
 ### 3.4 Iterative Enhancement 迭代增强
 
@@ -259,7 +259,7 @@ Since the entire pipeline heavily relies on the DeepSeek-Prover, enhancing the m
 
 
 
-整条流水线高度依赖 DeepSeek-Prover, 每轮后都要用新数据继续微调, 再用更新后的模型做下一轮自动形式化. 关键观察: 每循环一轮, 模型更强, 产出的定理–证明对也更好. 迭代直到看不到增益为止.
+整条流水线高度依赖 DeepSeek-Prover，每轮后都要用新数据继续微调，再用更新后的模型做下一轮自动形式化。关键观察：每循环一轮，模型更强，产出的定理–证明对也更好。迭代直到看不到增益为止。
 
 <!-- page 6 of 17 -->
 
@@ -267,7 +267,7 @@ consistently enhances its performance, ultimately producing superior theorem-pro
 
 
 
-持续 refinement 最终抬高定理–证明对质量.
+持续 refinement 最终抬高定理–证明对质量。
 
 ## 4 Experiments
 
@@ -277,19 +277,19 @@ DeepSeek-Prover is built upon DeepSeekMath-Base 7B model [Shao et al., 2024], a 
 
 
 
-底座: DeepSeekMath-Base 7B, decoder-only Transformer, 约 1200 亿数学相关 token 预训练. 微调: 全局 batch 512, 恒定学习率 $1\times10^{-4}$, 6000 warmup, 合成数据. 对照基线如下:
+底座：DeepSeekMath-Base 7B，decoder-only Transformer，约 1200 亿数学相关 token 预训练。微调：全局 batch 512，恒定学习率 $1\times10^{-4}$，6000 warmup，合成数据。对照基线如下：
 
 • **GPT-3.5 and GPT-4** [Achiam et al., 2023], developed by OpenAI, are advanced generative AI models known for their effectiveness in diverse tasks, including code generation. Although not explicitly designed for theorem proving, their extensive scale and parameter count confer significant capabilities. In contrast, **DeepSeekMath** is a specialized model, explicitly pre-trained for mathematical content. We utilized both GPT-4 (specifically the GPT-4-turbo 0409 version) and DeepSeekMath to generate complete proofs for given theorems using a methodology similar to ours.
 
 
 
-• **GPT-3.5 / GPT-4**: 非专为定理证明设计, 但规模大.**DeepSeekMath** 则明确面向数学内容预训练. 本文用 GPT-4-turbo 0409 与 DeepSeekMath, 按与本文类似的方式做整证生成.
+• **GPT-3.5 / GPT-4**：非专为定理证明设计，但规模大。**DeepSeekMath** 则明确面向数学内容预训练。本文用 GPT-4-turbo 0409 与 DeepSeekMath，按与本文类似的方式做整证生成。
 
 • **GPT-f** [Polu and Sutskever, 2020], utilizing a GPT-2-inspired architecture [Radford et al., 2019], implements an iterative best-first search method to progressively generate and validate proof steps within a formal proof setting until a proof is either completed or resources are depleted. This methodology has been further advanced by **Proof Artifact Co-Training** [Han et al., 2021], **ReProver** [Yang et al., 2024], **Llemma** [Azerbayev et al., 2023], and **COPRA** [Thakur et al., 2023], which employ either specialized fine-tuned models or versatile general-purpose models such as GPT-3.5 and GPT-4 for the generation of proof steps.
 
 
 
-• **GPT-f** 及后续 **Proof Artifact Co-Training, ReProver, Llemma, COPRA**: 迭代最优优先搜证明步, 与核验器交互直至完成或耗尽资源; 证明步可由专用微调模型或 GPT-3.5/4 生成.
+• **GPT-f** 及后续 **Proof Artifact Co-Training，ReProver，Llemma，COPRA**：迭代最优优先搜证明步，与核验器交互直至完成或耗尽资源；证明步可由专用微调模型或 GPT-3.5/4 生成。
 
 ### 4.2 Main Results 主结果
 
@@ -297,25 +297,25 @@ This study addresses complex mathematical problems in algebra and number theory.
 
 
 
-主战场是代数与数论. 评测用 miniF2F 与 FIMO. **pass@k**: 模型生成的前 k 次尝试里, 至少有一次通过核验即算成功.
+主战场是代数与数论。评测用 miniF2F 与 FIMO. **pass@k**：模型生成的前 k 次尝试里，至少有一次通过核验即算成功。
 
 **Results on MiniF2F.** The miniF2F benchmark consists of 244 validation and 244 test problems, ranging from basic arithmetic to competition-level problems, e. g., problems from the American Invitational Mathematics Examination (AIME), the American Mathematics Competitions (AMC), and the International Mathematical Olympiad (IMO). We use the version of miniF2F in Lean 4, which was released by the LeanDojo project ([https://github. com/yangky11/miniF2F-lean4](https://github. com/yangky11/miniF2F-lean4)).
 
 
 
-**MiniF2F 结果.** 验证/测试各 244 题, 从基础算术到 AIME, AMC, IMO 级竞赛题. 使用 LeanDojo 发布的 Lean 4 版: https://github. com/yangky11/miniF2F-lean4.
+**MiniF2F 结果。** 验证/测试各 244 题，从基础算术到 AIME，AMC，IMO 级竞赛题。使用 LeanDojo 发布的 Lean 4 版：https://github. com/yangky11/miniF2F-lean4。
 
 Table 1 compares various state-of-the-art methods on the miniF2F dataset. DeepSeek-Prover outperforms all with cumulative scores of 60.2% on miniF2F-valid and 52.0% on miniF2F-test, significantly higher than other methods, including GPT-4 which scores 25.41% and 22.95%, respectively. Even the best tree search method, Hypertree Proof Search with a 600M model, achieves only up to 58.6% on miniF2F-valid and 41.0% on miniF2F-test. DeepSeek-Prover’s scalability is evident as its performance improves with increased computational resources, rising from 30.03% using a greedy approach to 50.0% at 65536 generation times, demonstrating its effectiveness in handling complex proof scenarios. Examples of proved theorems of MiniF2F can be found in Appendix A. 3.1.
 
 
 
-表 1: DeepSeek-Prover 累计得分在 miniF2F-valid / test 上分别为 60.2% / 52.0%, 高于含 GPT-4(25.41% / 22.95%)在内的对照; 最强树搜索 Hypertree Proof Search(600M)也只到 valid 58.6%, test 41.0%. 算力加大时分数跟着涨: 贪心约 30.03%, 65536 次生成到 50.0%. MiniF2F 证例见附录 A. 3.1.
+表 1: DeepSeek-Prover 累计得分在 miniF2F-valid / test 上分别为 60.2% / 52.0%，高于含 GPT-4(25.41% / 22.95%)在内的对照；最强树搜索 Hypertree Proof Search(600M)也只到 valid 58.6%, test 41.0%。算力加大时分数跟着涨：贪心约 30.03%，65536 次生成到 50.0%. MiniF2F 证例见附录 A. 3.1.
 
 **Results on FIMO.** The FIMO benchmark comprises 149 formal problems which are sourced from the IMO shortlist translated into Lean 4. Our method successfully proved 4 theorems with 100 attempts per theorem, whereas GPT-4 failed to prove any. By increasing the number of attempts per theorem to 4, 096, we successfully proved an additional theorem. Examples of proved theorems of FIMO can be found in Appendix A. 3.2.
 
 
 
-**FIMO 结果.** FIMO 含 149 道来自 IMO shortlist, 译成 Lean 4 的形式题. 每题 100 次尝试证出 4 题, GPT-4 为 0; 每题加到 4096 次再多证 1 题. 证例见附录 A. 3.2.
+**FIMO 结果。** FIMO 含 149 道来自 IMO shortlist，译成 Lean 4 的形式题。每题 100 次尝试证出 4 题，GPT-4 为 0；每题加到 4096 次再多证 1 题。证例见附录 A. 3.2.
 
 <!-- page 7 of 17 -->
 
@@ -323,7 +323,7 @@ Table 1: Comparing with state-of-the-arts on the miniF2F dataset.
 
 
 
-表 1｜miniF2F 上与现有方法对比.
+表 1｜miniF2F 上与现有方法对比。
 
 | Method | Model size | Generation times | miniF2F-valid | miniF2F-test |
 | --- | --- | --- | --- | --- |
@@ -349,13 +349,13 @@ To demonstrate the effectiveness of large-scale autoformalization, we conducted 
 
 
 
-表 2 对比自动形式化数据与常规数据上的 expert iteration(生成证明 → 用成功样本微调 → 再迭代). 结果显示: 用本文自动形式化数据训出的模型, 明显强于只吃 mathlib 数据的模型.
+表 2 对比自动形式化数据与常规数据上的 expert iteration（生成证明 → 用成功样本微调 → 再迭代）。结果显示：用本文自动形式化数据训出的模型，明显强于只吃 mathlib 数据的模型。
 
 Table 2: Improvement in pass rates for miniF2F at pass@128 in models trained on formal proofs, including those derived from human-authored theorems in Lean 4’s mathlib and automatically formalized theorems.
 
 
 
-表 2｜在 pass@128 下, 用 mathlib 人工定理证明 vs 自动形式化定理证明训练后的 miniF2F 通过率.
+表 2｜在 pass@128 下，用 mathlib 人工定理证明 vs 自动形式化定理证明训练后的 miniF2F 通过率。
 
 | Model | #Tokens | miniF2F-valid | miniF2F-test |
 | --- | --- | --- | --- |
@@ -369,7 +369,7 @@ To demonstrate the effectiveness of the model in filtering out low-quality state
 
 
 
-等量高分 vs 低分证明数据微调 DeepSeekMath-Base(表 3): 高分组在 miniF2F 上高出约 4.5 个点, 说明打分过滤低质语句有用.
+等量高分 vs 低分证明数据微调 DeepSeekMath-Base（表 3）：高分组在 miniF2F 上高出约 4.5 个点，说明打分过滤低质语句有用。
 
 <!-- page 8 of 17 -->
 
@@ -377,7 +377,7 @@ Table 3: Improvement in pass rates for miniF2F at pass@128 in models trained on 
 
 
 
-表 3｜不同打分档证明数据训练后的 miniF2F pass@128.
+表 3｜不同打分档证明数据训练后的 miniF2F pass@128。
 
 | Scored Class | miniF2F-valid | miniF2F-test |
 | --- | --- | --- |
@@ -390,13 +390,13 @@ Table 4 demonstrates a distinct correlation between the number of iterations in 
 
 
 
-表 4: 数据合成迭代次数与定理证明表现正相关. 迭代既抬高处理复杂证明的能力, 也抬高合成数据的质与量.
+表 4：数据合成迭代次数与定理证明表现正相关。迭代既抬高处理复杂证明的能力，也抬高合成数据的质与量。
 
 Table 4: Improvement in pass rates for miniF2F at pass@128 in models across successive training iterations, facilitated by the incremental integration of synthesized data via autoformalization.
 
 
 
-表 4｜ successive 迭代, 逐步并入自动形式化合成数据后的 miniF2F pass@128.
+表 4｜ successive 迭代，逐步并入自动形式化合成数据后的 miniF2F pass@128。
 
 | Model | miniF2F-valid | miniF2F-test |
 | --- | --- | --- |
@@ -412,13 +412,13 @@ Our investigation into synthetic theorem proving data reveals a clear correlatio
 
 
 
-表 5: 在 800 万条证明数据的子集上, miniF2F 表现随数据规模近似按指数级扩张而提升, 说明大规模数据对自动形式化与证明能力的关键性, 也说明系统化造数据值得做.
+表 5：在 800 万条证明数据的子集上，miniF2F 表现随数据规模近似按指数级扩张而提升，说明大规模数据对自动形式化与证明能力的关键性，也说明系统化造数据值得做。
 
 Table 5: Improvement in pass rates for miniF2F at pass@128 in models trained with a larger fraction of synthesized data via autoformalization.
 
 
 
-表 5｜用更大部分自动形式化合成数据训练后的 miniF2F pass@128.
+表 5｜用更大部分自动形式化合成数据训练后的 miniF2F pass@128。
 
 | Size | miniF2F-valid | miniF2F-test |
 | --- | --- | --- |
@@ -434,7 +434,7 @@ This section presents two case studies to demonstrate the application of our met
 
 
 
-两则案例: 成功自动形式化并证完, 以及假设否决阶段揪出不一致假设.
+两则案例：成功自动形式化并证完，以及假设否决阶段揪出不一致假设。
 
 <!-- page 9 of 17 -->
 
@@ -444,7 +444,7 @@ This section presents two case studies to demonstrate the application of our met
 
 
 
-**例 a.** 题: 证明下列矩阵行列式为零.
+**例 a.** 题：证明下列矩阵行列式为零。
 
 ```latex
 
@@ -458,7 +458,7 @@ Autoformalized Theorem in Lean:
 
 
 
-Lean 中的自动形式化定理:
+Lean 中的自动形式化定理：
 
 ```txt
 example (a b : R) :
@@ -469,7 +469,7 @@ This approach effectively translates the algebraic expression of the matrix and 
 
 
 
-这一写法把矩阵与行列式的代数表达准确落到 Lean: 定义依赖实数 a, b 的 3×3 矩阵, 断言行列式为 0; 用 `Matrix. det` 与 `![...]` 行列表记法表示矩阵行.
+这一写法把矩阵与行列式的代数表达准确落到 Lean：定义依赖实数 a，b 的 3×3 矩阵，断言行列式为 0；用 `Matrix. det` 与 `![...]` 行列表记法表示矩阵行。
 
 ### 5.2 Autoformalization of Theorem with Inconsistent Hypotheses 假设不一致的自动形式化
 
@@ -479,13 +479,13 @@ the determinant of the matrix $\begin{bmatrix} a & b & c \\ 1 & 4 & 9 \\ 3 & 1 &
 
 
 
-**例 b.** 给定实数 D, 以及「对非零实数 a, b, c, 矩阵行列式等于 D」的条件, 证明 D² = 154.
+**例 b.** 给定实数 D，以及「对非零实数 a，b，c，矩阵行列式等于 D」的条件，证明 D² = 154。
 
 Autoformalized Theorem in Lean:
 
 
 
-Lean 中的自动形式化:
+Lean 中的自动形式化：
 
 ```txt
 example (D : R) (h0 : ∀ a b c : R, a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 →
@@ -496,13 +496,13 @@ The initial autoformalization incorrectly assumes that the condition $D ^ { 2 } 
 
 
 
-初版错误地把条件理解成对所有非零 a, b, c 都成立, 从而逼出 D²=154; 原题并未声称这种全称适用. 更合理的形式化应找满足条件的具体 a, b, c, 或说明不存在.
+初版错误地把条件理解成对所有非零 a，b，c 都成立，从而逼出 D²=154；原题并未声称这种全称适用。更合理的形式化应找满足条件的具体 a，b，c，或说明不存在。
 
 The model successfully identifies this inconsistency and provides a counterexample to demonstrate the absurdity of the hypothesis:
 
 
 
-模型识别出不一致, 并给出反例说明假设荒谬:
+模型识别出不一致，并给出反例说明假设荒谬：
 
 ```txt
 example (D : ℝ) (h₀ : ∀ a b c : ℝ, a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0 →
@@ -517,7 +517,7 @@ A corrected version of the autoformalized theorem can be proposed as follows:
 
 
 
-修正版可写成:
+修正版可写成：
 
 ```txt
 example (a b c : R) (h0 : a ≠ 0 ∧ b ≠ 0 ∧ c ≠ 0) :
@@ -529,7 +529,7 @@ These examples illustrate the model’s capability to verify proofs and identify
 
 
 
-两例说明模型既能核验证明, 也能揪出假设不一致. 更多见附录 A. 2.
+两例说明模型既能核验证明，也能揪出假设不一致。更多见附录 A. 2.
 
 ## 6 Conclusion
 
@@ -537,7 +537,7 @@ In this paper, we presented a method to generate extensive synthetic proof data 
 
 
 
-本文从高中与本科竞赛题大规模合成证明数据: 自然语言 → 形式语句 → 滤低质 → 迭代证明生成, 得到 800 万条证明数据, 显著抬高 DeepSeekMath 7B 在 ATP 上的表现. 模型在
+本文从高中与本科竞赛题大规模合成证明数据：自然语言 → 形式语句 → 滤低质 → 迭代证明生成，得到 800 万条证明数据，显著抬高 DeepSeekMath 7B 在 ATP 上的表现。模型在
 
 <!-- page 10 of 17 -->
 
@@ -545,7 +545,7 @@ benchmarks like miniF2F and FIMO. By open-sourcing our dataset and model, we aim
 
 
 
-miniF2F, FIMO 等基准上超过 GPT-4 等对照. 开源数据与模型, 意在推进自动定理证明与 LLM 形式化数学推理. 当前主战场仍是中学到本科的代数与数论; 未来会扩题型多样性, 抬高方法在 ATP 上的通用性.
+miniF2F，FIMO 等基准上超过 GPT-4 等对照。开源数据与模型，意在推进自动定理证明与 LLM 形式化数学推理。当前主战场仍是中学到本科的代数与数论；未来会扩题型多样性，抬高方法在 ATP 上的通用性。
 
 ## Broader Impact 更广影响
 
@@ -553,7 +553,7 @@ The research presented in this paper has the potential to significantly advance 
 
 
 
-用从自然语言题合成的大规模证明数据推进 ATP, 可抬高 LLM 形式化定理证明能力, 服务于更可靠的证明核验与教学资源. 直接公开代码, 模型与数据, 意在负责任使用, 并兼顾数据隐私与知识产权规范.
+用从自然语言题合成的大规模证明数据推进 ATP，可抬高 LLM 形式化定理证明能力，服务于更可靠的证明核验与教学资源。直接公开代码，模型与数据，意在负责任使用，并兼顾数据隐私与知识产权规范。
 
 ## References
 
@@ -649,7 +649,7 @@ Specifically, we use the following format for scoring for the quality of the for
 
 
 
-形式化语句质量打分提示格式如下:
+形式化语句质量打分提示格式如下：
 
 ````txt
 To evaluate whether a formal Lean4 statement will be of interest to the community, consider the following criteria:
@@ -888,7 +888,7 @@ We verify the generated Lean 4 code with the following code as the prefix:
 
 
 
-生成的 Lean 4 代码前缀如下(导入与选项原样保留):
+生成的 Lean 4 代码前缀如下（导入与选项原样保留）：
 
 import Mathlib. Algebra. Algebra. Basic import Mathlib. Algebra. Order. Floor import Mathlib. Algebra. Associated import Mathlib. Algebra. BigOperators. Basic import Mathlib. Algebra. BigOperators. Order import Mathlib. Algebra. BigOperators. Pi import Mathlib. Algebra. GeomSum import Mathlib. Algebra. Group. Pi. Basic import Mathlib. Algebra. Group. Commute. Basic import Mathlib. Algebra. GroupPower. Basic import Mathlib. Algebra. GroupPower. Identities import Mathlib. Algebra. Order. Floor import Mathlib. Algebra. QuadraticDiscriminant import Mathlib. Algebra. Ring. Basic import Mathlib. Analysis. Asymptotics. AsymptoticEquivalent import Mathlib. Analysis. NormedSpace. Basic import Mathlib. Analysis. SpecialFunctions. Log. Basic import Mathlib. Analysis. SpecialFunctions. Log. Base import Mathlib. Combinatorics. SimpleGraph. Basic import Mathlib. Data. Complex. Basic import Mathlib. Data. Complex. Exponential import Mathlib. Data. Finset. Basic import Mathlib. Data. Fintype. Card import Mathlib. Data. Int. Basic import Mathlib. Data. Int. GCD import Mathlib. Data. Int. ModEq import Mathlib. Data. Int. Parity import Mathlib. Data. List. Intervals import Mathlib. Data. List. Palindrome import Mathlib. Data. Multiset. Basic import Mathlib. Data. Nat. Basic import Mathlib. Data. Nat. Choose. Basic import Mathlib. Data. Nat. Digits import Mathlib. Data. Nat. Factorial. Basic import Mathlib. Data. Nat. ModEq import Mathlib. Data. Nat. Multiplicity import Mathlib. Data. Nat. Parity import Mathlib. Data. Nat. Prime import Mathlib. Data. PNat. Basic import Mathlib. Data. PNat. Prime import Mathlib. Data. Polynomial. Basic
 

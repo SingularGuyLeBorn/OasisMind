@@ -13,7 +13,7 @@ Qdeepseek
 
 ![Image block](images/p01-janus-pro-unified-multimodal-understanding-and.png)
 
-# Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling / Janus-Pro: 用数据与模型缩放统一多模态理解与生成
+# Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling / Janus-Pro：用数据与模型缩放统一多模态理解与生成
 
 Xiaokang Chen, Zhiyu Wu, Xingchao Liu, Zizheng Pan, Wen Liu, Zhenda Xie, Xingkai Yu, Chong Ruan
 
@@ -27,7 +27,7 @@ In this work, we introduce **Janus-Pro**, an advanced version of the previous wo
 
 
 
-本文推出 **Janus-Pro**, 是前作 Janus 的加强版. 改动落在三处: (1)训练策略重排, (2)训练数据加量, (3)模型规模上探. 据此, 多模态理解与文生图指令跟随都明显抬升, 文生图稳定性也更好. 代码与模型已公开, 希望能推动同方向继续挖.
+本文推出 **Janus-Pro**，是前作 Janus 的加强版。改动落在三处：（1）训练策略重排，（2）训练数据加量，（3）模型规模上探。据此，多模态理解与文生图指令跟随都明显抬升，文生图稳定性也更好。代码与模型已公开，希望能推动同方向继续挖。
 
 ## 1. Introduction
 
@@ -41,9 +41,9 @@ Figure 1 | Multimodal understanding and visual generation results from our Janus
 
 
 
-(a) 四个多模态理解基准的平均表现. (b) 文生图指令跟随基准上的表现.
+(a) 四个多模态理解基准的平均表现。（b）文生图指令跟随基准上的表现。
 
-图 1｜Janus-Pro 的多模态理解与视觉生成结果. 理解侧把 POPE, MME-Perception, GQA, MMMU 的准确率取平均; MME-Perception 分数除以 20, 缩放到 [0, 100]. 生成侧评 GenEval 与 DPG-Bench. 整体上, Janus-Pro 超过此前领先的统一多模态模型, 也压过一部分专用模型. 建议在屏幕上查看.
+图 1｜Janus-Pro 的多模态理解与视觉生成结果。理解侧把 POPE，MME-Perception，GQA，MMMU 的准确率取平均；MME-Perception 分数除以 20，缩放到 [0, 100]。生成侧评 GenEval 与 DPG-Bench。整体上，Janus-Pro 超过此前领先的统一多模态模型，也压过一部分专用模型。建议在屏幕上查看。
 
 <!-- page 2 of 13 -->
 
@@ -51,7 +51,7 @@ A clear image of a blackboard with a clean, Capture a close-up shot of a vibrant
 
 
 
-黑板示例提示: 干净深绿黑板面, 正中用粗白粉笔清晰写「Hello」. 向日葵示例: 盛开的向日葵特写, 花瓣上停着蜜蜂, 翅缘透光. 橘子示例: 极简静物, 青蒂橙橘象征兴旺, 搁在春节红绸上.
+黑板示例提示：干净深绿黑板面，正中用粗白粉笔清晰写「Hello」。向日葵示例：盛开的向日葵特写，花瓣上停着蜜蜂，翅缘透光。橘子示例：极简静物，青蒂橙橘象征兴旺，搁在春节红绸上。
 
 ![Image block](images/p02-figure-2-comparison-of-text-to-image-generation-between.png)
 
@@ -59,37 +59,37 @@ Figure 2 | Comparison of text-to-image generation between Janus-Pro and its pred
 
 
 
-图 2｜Janus-Pro 与前作 Janus 的文生图对比. 短提示下 Janus-Pro 更稳, 画质与细节更好, 还能写出简单文字. 分辨率 384 × 384. 建议在屏幕上查看.
+图 2｜Janus-Pro 与前作 Janus 的文生图对比。短提示下 Janus-Pro 更稳，画质与细节更好，还能写出简单文字。分辨率 384 × 384。建议在屏幕上查看。
 
 Recent advancements in unified multimodal understanding and generation models have demonstrated significant progress [30, 40, 45, 46, 48, 50, 54, 55]. These approaches have been proven to enhance the instruction-following capabilities in visual generation tasks while reducing model redundancy. Most of these methods utilize the same visual encoder to process inputs for both multimodal understanding and generation tasks. Since the representations required for these two tasks differ, this often results in suboptimal performance in multimodal understanding. To address this issue, Janus [46] proposes decoupling visual encoding, which alleviates the conflict between multimodal understanding and generation tasks, achieving excellent performance in both tasks.
 
 
 
-统一「既能看懂又能画」的多模态模型近来进展很快. 这类做法常能抬高视觉生成侧的指令跟随, 也减少重复堆模型. 多数方法给理解任务和生成任务共用同一个视觉编码器; 两任务需要的表征并不一样, 理解侧往往吃亏. Janus 的对策是**把视觉编码拆开**: 理解一路, 生成一路, 缓解冲突, 两边都能做好.
+统一「既能看懂又能画」的多模态模型近来进展很快。这类做法常能抬高视觉生成侧的指令跟随，也减少重复堆模型。多数方法给理解任务和生成任务共用同一个视觉编码器；两任务需要的表征并不一样，理解侧往往吃亏。Janus 的对策是**把视觉编码拆开**：理解一路，生成一路，缓解冲突，两边都能做好。
 
-解释:「解耦视觉编码」不是把整网拆成两个无关模型, 而是输入图像时走两套编码器(理解用语义编码器, 生成用离散 tokenizer), 再在同一个自回归 LLM 里汇合; 共享的是语言骨干, 不是视觉前端.
+解释：「解耦视觉编码」不是把整网拆成两个无关模型，而是输入图像时走两套编码器（理解用语义编码器，生成用离散 tokenizer），再在同一个自回归 LLM 里汇合；共享的是语言骨干，不是视觉前端。
 
 As a pioneering model, Janus is validated at the 1B parameter scale. However, due to the limited amount of training data and the relatively small model capacity, it exhibites certain shortcomings, such as suboptimal performance on short prompts image generation and unstable text-to-image generation quality. In this paper, we introduce Janus-Pro, an enhanced version of Janus that incorporates improvements across three dimensions: training strategies, data, and model size. The Janus-Pro series includes two model sizes: 1B and 7B, demonstrating scalability of the visual encoding decoding method.
 
 
 
-Janus 作为先行验证, 主要落在约 1B 参数. 数据与容量都偏紧时, 短提示生图偏弱, 文生图质量也不稳. 本文的 Janus-Pro 从训练策略, 数据, 模型规模三处加码; 系列含 1B 与 7B 两档, 用来证明「视觉编码解耦」这条路能跟着规模一起涨.
+Janus 作为先行验证，主要落在约 1B 参数。数据与容量都偏紧时，短提示生图偏弱，文生图质量也不稳。本文的 Janus-Pro 从训练策略，数据，模型规模三处加码；系列含 1B 与 7B 两档，用来证明「视觉编码解耦」这条路能跟着规模一起涨。
 
 We evaluate Janus-Pro on multiple benchmarks, and the results reveal its superior multi-modal understanding capabilities and significantly improved text-to-image instruction-following performance. Specifically, Janus-Pro-7B achieved a score of 79.2 on the multimodal understanding benchmark MMBench [29], surpassing state-of-the-art unified multimodal models such as Janus [46] (69.4), TokenFlow [34] (68.9) and MetaMorph [42] (75.2). Additionally, in the text-to-image instruction-following leaderboard GenEval [14], Janus-Pro-7B scores 0.80, outperforming Janus [46] (0.61), DALL-E 3 (0.67), and Stable Diffusion 3 Medium [11] (0.74).
 
 
 
-多基准结果显示: 理解更强, 文生图指令跟随也明显抬升. 具体数字: Janus-Pro-7B 在 MMBench 得 79.2, 超过 Janus(69.4), TokenFlow(68.9), MetaMorph(75.2); 在 GenEval 得 0.80, 超过 Janus(0.61), DALL-E 3(0.67), Stable Diffusion 3 Medium(0.74).
+多基准结果显示：理解更强，文生图指令跟随也明显抬升。具体数字：Janus-Pro-7B 在 MMBench 得 79.2，超过 Janus(69.4), TokenFlow(68.9), MetaMorph(75.2)；在 GenEval 得 0.80，超过 Janus(0.61), DALL-E 3(0.67), Stable Diffusion 3 Medium(0.74).
 
 <!-- page 3 of 13 -->
 
 ![Image block](images/p03-figure-3-architecture-of-our-janus-pro-we-decouple.png)
 
-Figure 3 | Architecture of our Janus-Pro. We decouple visual encoding for multimodal understanding and visual generation. “Und. Encoder” and “Gen. Encoder” are abbreviations for “Understanding Encoder” and “Generation Encoder”, respectively. Best viewed on screen.
+Figure 3 | Architecture of our Janus-Pro. We decouple visual encoding for multimodal understanding and visual generation。“Und. Encoder” and “Gen. Encoder” are abbreviations for “Understanding Encoder” and “Generation Encoder”，respectively. Best viewed on screen.
 
 
 
-图 3｜Janus-Pro 架构. 多模态理解与视觉生成的视觉编码彼此拆开.「Und. Encoder」「Gen. Encoder」分别是理解编码器, 生成编码器. 建议在屏幕上查看.
+图 3｜Janus-Pro 架构。多模态理解与视觉生成的视觉编码彼此拆开。「Und. Encoder」「Gen. Encoder」分别是理解编码器，生成编码器。建议在屏幕上查看。
 
 ## 2. Method
 
@@ -99,9 +99,9 @@ The architecture of Janus-Pro is shown in Figure 3, which is the same as Janus [
 
 
 
-架构见图 3, 与 Janus 相同. 总原则仍是: 理解与生成的视觉编码分开. 原始输入各走独立编码, 再送进**同一个**自回归 Transformer. 理解侧用 SigLIP 抽高维语义特征, 把 2-D 网格展成 1-D, 经 understanding adaptor 映到 LLM 输入空间. 生成侧用文献 [38] 的 VQ tokenizer 把图像变成离散 ID; ID 展成 1-D 后, generation adaptor 把每个 ID 对应的 codebook 嵌入映进 LLM 输入空间. 各模态特征序列拼接后进 LLM. 除 LLM 自带预测头外, 生成任务另有一个随机初始化的图像预测头. 整网按自回归框架跑.
+架构见图 3，与 Janus 相同。总原则仍是：理解与生成的视觉编码分开。原始输入各走独立编码，再送进**同一个**自回归 Transformer。理解侧用 SigLIP 抽高维语义特征，把 2-D 网格展成 1-D，经 understanding adaptor 映到 LLM 输入空间。生成侧用文献 [38] 的 VQ tokenizer 把图像变成离散 ID；ID 展成 1-D 后，generation adaptor 把每个 ID 对应的 codebook 嵌入映进 LLM 输入空间。各模态特征序列拼接后进 LLM。除 LLM 自带预测头外，生成任务另有一个随机初始化的图像预测头。整网按自回归框架跑。
 
-解释: SigLIP 是一类图文对齐视觉编码器, 输出偏「语义稠密特征」, 适合问答, 描述; VQ tokenizer 则把连续像素压成有限码本上的离散编号, 适合当「下一视觉 token」来预测. Adaptor(适配器)通常是浅层 MLP, 只负责维度对齐, 不另造一套视觉语义.
+解释：SigLIP 是一类图文对齐视觉编码器，输出偏「语义稠密特征」，适合问答，描述；VQ tokenizer 则把连续像素压成有限码本上的离散编号，适合当「下一视觉 token」来预测。Adaptor（适配器）通常是浅层 MLP，只负责维度对齐，不另造一套视觉语义。
 
 ### 2.2. Optimized Training Strategy 优化后的训练策略
 
@@ -109,7 +109,7 @@ The previous version of Janus employs a three-stage training process. Stage I fo
 
 
 
-前作 Janus 分三阶段: Stage I 训 adaptor 与图像预测头; Stage II 做统一预训练, 除理解编码器, 生成编码器外其余参数更新; Stage III 在 Stage II 之上做监督微调, 并进一步解冻理解编码器. 问题出在 Stage II: 文生图能力按 PixArt 分成两段-- 先在 ImageNet 上用类别名当提示, 学像素依赖; 再用常规文生图数据. 实现里 Stage II 文生图步数的 66.67% 砸在第一段. 后续实验发现..
+前作 Janus 分三阶段：Stage I 训 adaptor 与图像预测头；Stage II 做统一预训练，除理解编码器，生成编码器外其余参数更新；Stage III 在 Stage II 之上做监督微调，并进一步解冻理解编码器。问题出在 Stage II：文生图能力按 PixArt 分成两段-- 先在 ImageNet 上用类别名当提示，学像素依赖；再用常规文生图数据。实现里 Stage II 文生图步数的 66.67% 砸在第一段。后续实验发现..
 
 <!-- page 4 of 13 -->
 
@@ -117,33 +117,33 @@ experimentation, we find that this strategy is suboptimal and lead to significan
 
 
 
-.. 这条策略并不优, 算力浪费明显.
+.. 这条策略并不优，算力浪费明显。
 
 To address this issue, we make two modifications.
 
 
 
-为此做了两处改动.
+为此做了两处改动。
 
 • **Longer Training in Stage I**: We increase the training steps in Stage I, allowing sufficient training on the ImageNet dataset. Our findings reveals that even with the LLM parameters fixed, the model could effectively model pixel dependence and generate reasonable images based on category names.
 
 
 
-• **Stage I 加长**: 拉长 Stage I 步数, 让 ImageNet 训够. 发现即便 LLM 参数固定, 模型也能学好像素依赖, 并按类别名生成像样的图.
+• **Stage I 加长**：拉长 Stage I 步数，让 ImageNet 训够。发现即便 LLM 参数固定，模型也能学好像素依赖，并按类别名生成像样的图。
 
 • **Focused Training in Stage II**: In Stage II, we drop ImageNet data and directly utilize normal text-to-image data to train the model to generate images based on dense descriptions. This redesigned approach enables Stage II to utilize the text-to-image data more efficiently, resulting in improved training efficiency and overall performance.
 
 
 
-• **Stage II 收束**: Stage II 不再用 ImageNet, 直接用常规文生图数据, 按稠密描述生图. 文生图数据用得更满, 训练效率与整体表现一起上来.
+• **Stage II 收束**：Stage II 不再用 ImageNet，直接用常规文生图数据，按稠密描述生图。文生图数据用得更满，训练效率与整体表现一起上来。
 
-解释: 前作把「学像素依赖」和「学按长提示画画」挤在同一阶段, 还把大半步数给类别名; Pro 把前者前移到 Stage I(LLM 冻结也能学), Stage II 专心吃稠密描述, 避免在统一预训练里反复刷短类别提示.
+解释：前作把「学像素依赖」和「学按长提示画画」挤在同一阶段，还把大半步数给类别名；Pro 把前者前移到 Stage I（LLM 冻结也能学），Stage II 专心吃稠密描述，避免在统一预训练里反复刷短类别提示。
 
 We also adjust the data ratio in Stage III supervised fine-tuning process across different types of datasets, changing the proportion of multimodal data, pure text data, and text-to-image data from 7: 3: 10 to 5: 1: 4. By slightly reducing the proportion of text-to-image data, we observe that this adjustment allows us to maintain strong visual generation capabilities while achieving improved multimodal understanding performance.
 
 
 
-Stage III 监督微调的数据配比也改了: 多模态 : 纯文本 : 文生图 从 7: 3: 10 调到 5: 1: 4. 文生图占比略降后, 生成能力仍强, 理解侧反而更好.
+Stage III 监督微调的数据配比也改了：多模态：纯文本：文生图 从 7: 3: 10 调到 5: 1: 4。文生图占比略降后，生成能力仍强，理解侧反而更好。
 
 ### 2.3. Data Scaling 数据缩放
 
@@ -151,21 +151,21 @@ We scale up the training data used for Janus in both multimodal understanding an
 
 
 
-相对 Janus, 理解与生成两侧的训练数据都加量.
+相对 Janus，理解与生成两侧的训练数据都加量。
 
 • **Multimodal Understanding**. For the Stage II pretraining data, we refer to DeepSeek-VL2 [49] and add approximately 90 million samples. These include image caption datasets (e. g., YFCC [31]), as well as data for table, chart, and document understanding (e. g., Docmatix [20]). For the Stage III supervised fine-tuning data, we also incorporate additional datasets from DeepSeek-VL2, such as MEME understanding, Chinese conversational data, and datasets aimed at enhancing dialogue experiences. These additions significantly expanded the model’s capabilities, enriching its ability to handle diverse tasks while improving the overall conversational experience.
 
 
 
-• **多模态理解**. Stage II 预训练参考 DeepSeek-VL2, 大约加 9000 万样本: 含图像描述(如 YFCC), 以及表格, 图表, 文档理解(如 Docmatix). Stage III 也从 DeepSeek-VL2 补入 MEME 理解, 中文对话, 以及抬高对话体验的数据. 任务面更宽, 对话体验更好.
+• **多模态理解**。Stage II 预训练参考 DeepSeek-VL2，大约加 9000 万样本：含图像描述（如 YFCC），以及表格，图表，文档理解（如 Docmatix）。Stage III 也从 DeepSeek-VL2 补入 MEME 理解，中文对话，以及抬高对话体验的数据。任务面更宽，对话体验更好。
 
 • **Visual Generation**. We observe that the real-world data used in the previous version of Janus lacks quality and contains significant noise, which often leads to instability in textto-image generation, resulting in aesthetically poor outputs. In Janus-Pro, we incorporate approximately 72 million samples of synthetic aesthetic data, bringing the ratio of real to synthetic data to 1: 1 during the unified pretraining stage. The prompts for these synthetic data samples are publicly available, such as those in [43]. Experiments demonstrat that the model converges faster when trained on synthetic data, and the resulting text-to-image outputs are not only more stable but also exhibit significantly improved aesthetic quality.
 
 
 
-• **视觉生成**. 前作 Janus 用的真实世界数据质量一般, 噪声大, 文生图不稳, 观感差. Janus-Pro 大约加入 7200 万合成美学数据, 统一预训练阶段真实: 合成 = 1: 1. 合成数据的提示词可公开获取(如 [43]). 实验表明: 合成数据上收敛更快, 文生图更稳, 美学质量也明显更好.
+• **视觉生成**。前作 Janus 用的真实世界数据质量一般，噪声大，文生图不稳，观感差。Janus-Pro 大约加入 7200 万合成美学数据，统一预训练阶段真实：合成 = 1: 1。合成数据的提示词可公开获取（如 [43]）。实验表明：合成数据上收敛更快，文生图更稳，美学质量也明显更好。
 
-解释:「合成美学数据」通常指用已有强文生图模型按公开提示词批量出图再当监督; 噪声更低, 风格更干净, 但分布会偏「生成器审美」, 和真实照片分布并不等同.
+解释：「合成美学数据」通常指用已有强文生图模型按公开提示词批量出图再当监督；噪声更低，风格更干净，但分布会偏「生成器审美」，和真实照片分布并不等同。
 
 ### 2.4. Model Scaling 模型缩放
 
@@ -173,7 +173,7 @@ The previous version of Janus validates the effectiveness of visual encoding dec
 
 
 
-前作用约 1.5B LLM 验证了解耦编码. Janus-Pro 扩到 7B; 1.5B 与 7B 的超参见表 1. 更大 LLM 时, 理解与生成两侧的 loss 收敛都明显快于小模型, 说明这条路线的可扩展性不错.
+前作用约 1.5B LLM 验证了解耦编码。Janus-Pro 扩到 7B；1.5B 与 7B 的超参见表 1。更大 LLM 时，理解与生成两侧的 loss 收敛都明显快于小模型，说明这条路线的可扩展性不错。
 
 <!-- page 5 of 13 -->
 
@@ -181,7 +181,7 @@ Table 1 | Architectural configuration for Janus-Pro. We list the hyperparameters
 
 
 
-表 1｜Janus-Pro 架构配置(超参一览).
+表 1｜Janus-Pro 架构配置（超参一览）。
 
 |  | Janus-Pro-1B | Janus-Pro-7B |
 | --- | --- | --- |
@@ -195,7 +195,7 @@ Table 2 | Detailed hyperparameters for training Janus-Pro. Data ratio refers to 
 
 
 
-表 2｜Janus-Pro 训练超参明细. Data ratio 指多模态理解 : 纯文本 : 视觉生成.
+表 2｜Janus-Pro 训练超参明细。Data ratio 指多模态理解：纯文本：视觉生成。
 
 |  | Janus-Pro-1B | Janus-Pro-7B |
 | --- | --- | --- |
@@ -210,9 +210,9 @@ In our experiments, we utilize DeepSeek-LLM (1.5B and 7B) [3] with a maximum sup
 
 
 
-底座语言型号为 DeepSeek-LLM(1.5B 与 7B), 最大序列长度 4096. 理解侧视觉编码器选 SigLIP-Large-Patch16-384. 生成编码器码本大小 16, 384, 图像下采样 16 倍. 理解 / 生成 adaptor 都是两层 MLP. 各阶段超见表 2. 注意 Stage II 用早停, 在 270K 步停下(表中规划为 360K). 图像一律到 384 × 384. 理解数据: 长边缩放, 短边用背景色 RGB (127, 127, 127) 填充到 384. 生成数据: 短边缩到 384, 长边裁到 384. 训练用 sequence packing 提效; 单步内按给定比例混所有数据类型. 训练与评测走 HAI-LLM(基于 PyTorch 的轻量分布式框架). 全程大约: 1.5B 用 16 节点约 9 天, 7B 用 32 节点约 14 天; 每节点 8 张 Nvidia A100(40GB).
+底座语言型号为 DeepSeek-LLM（1.5B 与 7B），最大序列长度 4096。理解侧视觉编码器选 SigLIP-Large-Patch16-384。生成编码器码本大小 16, 384，图像下采样 16 倍。理解 / 生成 adaptor 都是两层 MLP。各阶段超见表 2。注意 Stage II 用早停，在 270K 步停下（表中规划为 360K）。图像一律到 384 × 384。理解数据：长边缩放，短边用背景色 RGB (127, 127, 127) 填充到 384。生成数据：短边缩到 384，长边裁到 384。训练用 sequence packing 提效；单步内按给定比例混所有数据类型。训练与评测走 HAI-LLM（基于 PyTorch 的轻量分布式框架）。全程大约：1.5B 用 16 节点约 9 天，7B 用 32 节点约 14 天；每节点 8 张 Nvidia A100(40GB).
 
-解释: sequence packing 把多条短样本拼进同一条长序列, 减少 padding 空转; 理解侧「pad」保构图不裁, 生成侧「crop」保正方形监督更干净, 两种预处理故意不对称.
+解释：sequence packing 把多条短样本拼进同一条长序列，减少 padding 空转；理解侧「pad」保构图不裁，生成侧「crop」保正方形监督更干净，两种预处理故意不对称。
 
 ### 3.2. Evaluation Setup 评测设置
 
@@ -220,15 +220,15 @@ In our experiments, we utilize DeepSeek-LLM (1.5B and 7B) [3] with a maximum sup
 
 
 
-**多模态理解.** 在常见图像视觉–语言基准上评测, 包括 GQA..
+**多模态理解。** 在常见图像视觉–语言基准上评测，包括 GQA..
 
 <!-- page 6 of 13 -->
 
-Table 3 | Comparison with state-of-the-arts on multimodal understanding benchmarks. “Und. ” and “Gen. ” denote “understanding” and “generation”, respectively. Models using external pretrained diffusion model are marked with †.
+Table 3 | Comparison with state-of-the-arts on multimodal understanding benchmarks。“Und. ” and “Gen. ” denote “understanding” and “generation”，respectively. Models using external pretrained diffusion model are marked with †.
 
 
 
-表 3｜多模态理解基准上与既有方法对比.「Und.」「Gen.」分别表示理解, 生成. † 表示外挂了预训练扩散模型.
+表 3｜多模态理解基准上与既有方法对比。「Und.」「Gen.」分别表示理解，生成。† 表示外挂了预训练扩散模型。
 
 | Type Model # | LLM Param | s POPE↑ | MME-P↑ | MMB↑ | SEED↑ | GQA↑ | MMMU↑ | MM-Vet↑ |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -267,13 +267,13 @@ Table 3 | Comparison with state-of-the-arts on multimodal understanding benchmar
 
 
 
-.. 以及 GQA [17], POPE [23], MME [12], SEED [21], MMB [29], MM-Vet [51], MMMU [52].
+.. 以及 GQA [17], POPE [23], MME [12], SEED [21], MMB [29], MM-Vet [51], MMMU [52]。
 
 **Visual Generation.** For evaluating visual generation capabilities, we use GenEval [14] and DPG-Bench [16]. GenEval is a challenging benchmark for text-to-image generation, designed to reflect the comprehensive generative abilities of visual generation models by offering a detailed instance-level analysis of their compositional capabilities. DPG-Bench (Dense Prompt Graph Benchmark) is a comprehensive dataset consisting of 1065 lengthy, dense prompts, designed to assess the intricate semantic alignment capabilities of text-to-image models.
 
 
 
-**视觉生成.** 用 GenEval 与 DPG-Bench. GenEval 侧重文生图的组合能力, 做实例级细拆. DPG-Bench(Dense Prompt Graph Benchmark)含 1065 条长而密的提示, 测稠密语义对齐.
+**视觉生成。** 用 GenEval 与 DPG-Bench. GenEval 侧重文生图的组合能力，做实例级细拆。DPG-Bench(Dense Prompt Graph Benchmark)含 1065 条长而密的提示，测稠密语义对齐。
 
 ### 3.3. Comparison with State-of-the-arts 与既有先进方法对比
 
@@ -281,15 +281,15 @@ Table 3 | Comparison with state-of-the-arts on multimodal understanding benchmar
 
 
 
-**多模态理解表现.** 表 3 对照统一模型与纯理解模型. Janus-Pro 整体最好, 作者归因于理解/生成视觉编码解耦, 冲突减轻. 相对更大参数量的模型仍有竞争力: 例如 Janus-Pro-7B 除 GQA 外全面超过 TokenFlow-XL(13B).
+**多模态理解表现。** 表 3 对照统一模型与纯理解模型。Janus-Pro 整体最好，作者归因于理解/生成视觉编码解耦，冲突减轻。相对更大参数量的模型仍有竞争力：例如 Janus-Pro-7B 除 GQA 外全面超过 TokenFlow-XL(13B).
 
 <!-- page 7 of 13 -->
 
-Table 4 | Evaluation of text-to-image generation ability on GenEval benchmark. “Und. ” and “Gen. ” denote “understanding” and “generation”, respectively. Models using external pretrained diffusion model are marked with †.
+Table 4 | Evaluation of text-to-image generation ability on GenEval benchmark。“Und. ” and “Gen. ” denote “understanding” and “generation”，respectively. Models using external pretrained diffusion model are marked with †.
 
 
 
-表 4｜GenEval 上文生图能力.「Und.」「Gen.」同上. † 表示外挂预训练扩散模型.
+表 4｜GenEval 上文生图能力。「Und.」「Gen.」同上。† 表示外挂预训练扩散模型。
 
 | Type Method S | ingle Obj. | Two Obj. | Counting | Colors | Position | Color Attri. | Overall↑ |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -320,7 +320,7 @@ Table 5 | Performances on DPG-Bench. The methods in this table are all generatio
 
 
 
-表 5｜DPG-Bench 表现. 除 Janus / Janus-Pro 外, 表中均为生成专用模型.
+表 5｜DPG-Bench 表现。除 Janus / Janus-Pro 外，表中均为生成专用模型。
 
 | Method | Global | Entity | Attribute | Relation | Other | Overall↑ |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -342,7 +342,7 @@ Table 5 | Performances on DPG-Bench. The methods in this table are all generatio
 
 
 
-**视觉生成表现.** GenEval 上 Janus-Pro-7B 总准确率 80%, 超过表中全部统一或纯生成方法, 例如 Transfusion(63%), SD3-Medium(74%), DALL-E 3(67%), 说明指令跟随更强. DPG-Bench 上 Janus-Pro 得 84.19, 也超过其余方法, 稠密指令跟随表现突出.
+**视觉生成表现。** GenEval 上 Janus-Pro-7B 总准确率 80%，超过表中全部统一或纯生成方法，例如 Transfusion(63%), SD3-Medium(74%), DALL-E 3(67%)，说明指令跟随更强。DPG-Bench 上 Janus-Pro 得 84.19，也超过其余方法，稠密指令跟随表现突出。
 
 ### 3.4. Qualitative Results 定性结果
 
@@ -350,7 +350,7 @@ We present results on multimodal understanding in Figure 4. Janus-Pro exhibits i
 
 
 
-图 4 给了多模态理解样例: 跨场景输入时理解力扎实. 同图下半是文生图: Janus-Pro-7B 观感写实; 分辨率虽只有 $384 \times 384$, 细节仍多. 想象类场景也能抓住提示语义, 构图合理, 前后一致.
+图 4 给了多模态理解样例：跨场景输入时理解力扎实。同图下半是文生图：Janus-Pro-7B 观感写实；分辨率虽只有 $384 \times 384$，细节仍多。想象类场景也能抓住提示语义，构图合理，前后一致。
 
 <!-- page 8 of 13 -->
 
@@ -364,7 +364,7 @@ Describe this scene in detail.
 
 
 
-请详细描述这个场景.
+请详细描述这个场景。
 
 This image depicts a stunning coastal landscape featuring a series of tall, rugged rock formations emerging from the ocean. The rocks are layered with sedimentary rock, giving them a distinct stratified appearance. The largest formation is prominently positioned in the foreground, with smaller ones receding into the distance. The ocean waves crash against the base of these formations, creating white foam and a dynamic sense of movement.
 
@@ -374,15 +374,15 @@ The sky above is overcast, with thick clouds that suggest an impending storm or 
 
 
 
-画面是一片醒目的海岸: 几座高大嶙峋的岩柱从海中升起, 沉积岩层层分明. 最大一块在前景, 其余向远处退去. 浪拍岩脚, 溅起白沫, 动感清楚. 右侧有一条窄沙滩, 陡峭崖壁从岸边拔起, 崖上斑驳绿植给土色岩石添了点颜色. 天空阴沉厚云, 像要来雨或刚下过; 光线散射, 整景偏柔, 偏灰. 即便如此, 海岸仍显得安静, 自然.
+画面是一片醒目的海岸：几座高大嶙峋的岩柱从海中升起，沉积岩层层分明。最大一块在前景，其余向远处退去。浪拍岩脚，溅起白沫，动感清楚。右侧有一条窄沙滩，陡峭崖壁从岸边拔起，崖上斑驳绿植给土色岩石添了点颜色。天空阴沉厚云，像要来雨或刚下过；光线散射，整景偏柔，偏灰。即便如此，海岸仍显得安静，自然。
 
 Landmark Recognition 地标识别
 
-这张图⽚展示的是中国杭州的⻄湖, 特别是著名的三潭印⽉岛. 图⽚中的建筑是三潭印⽉的亭⼦, 周围是平静的湖⽔, 远处是连绵的⼭脉. ⻄湖是中国著名的旅游景点之⼀, 以其美丽的⾃然景观和丰富的历史⽂化⽽闻名.
+这张图⽚展示的是中国杭州的⻄湖，特别是著名的三潭印⽉岛。图⽚中的建筑是三潭印⽉的亭⼦，周围是平静的湖⽔，远处是连绵的⼭脉。⻄湖是中国著名的旅游景点之⼀，以其美丽的⾃然景观和丰富的历史⽂化⽽闻名。
 
 ![Image block](images/p08-image.png)
 
-猜猜这是哪里?
+猜猜这是哪里？
 
 Text Recognition
 
@@ -402,11 +402,11 @@ What‘s written on the large black board?
 
 
 
-能介绍一下这块蛋糕的背景故事吗?
+能介绍一下这块蛋糕的背景故事吗？
 
-黑板上写了什么?
+黑板上写了什么？
 
-Q This cake is themed around the classic cartoon character Tom and Jerry. The cake features the characters Tom (the cat) and Jerry (the mouse) in a playful setting, with a backdrop that includes the words "Tom & Jerry”. The cake itself is decorated with fondant shaped like cheese, which is a recurring theme in the cartoon series. The design also includes a small fondant house with a door, adding to the whimsical and playful theme of the cake.
+Q This cake is themed around the classic cartoon character Tom and Jerry. The cake features the characters Tom (the cat) and Jerry (the mouse) in a playful setting, with a backdrop that includes the words "Tom & Jerry”。The cake itself is decorated with fondant shaped like cheese, which is a recurring theme in the cartoon series. The design also includes a small fondant house with a door, adding to the whimsical and playful theme of the cake.
 
 Q The large black board has the following text:
 
@@ -416,9 +416,9 @@ Additionally, there are smaller sections with more detailed information, but the
 
 
 
-答: 蛋糕主题是经典卡通「猫和老鼠」. 上面有汤姆(猫)与杰瑞(鼠)的玩耍场景, 背景写着 「Tom & Jerry」. 蛋糕用奶酪造型翻糖装饰, 呼应动画里反复出现的奶酪母题; 还有一栋带门的小翻糖小屋, 整体偏俏皮.
+答：蛋糕主题是经典卡通「猫和老鼠」。上面有汤姆（猫）与杰瑞（鼠）的玩耍场景，背景写着 「Tom & Jerry」。蛋糕用奶酪造型翻糖装饰，呼应动画里反复出现的奶酪母题；还有一栋带门的小翻糖小屋，整体偏俏皮。
 
-答: 大黑板主标题是 「Serving Soul since Twenty Twelve」. 旁边还有更细的分区信息, 但主标题清晰可读.
+答：大黑板主标题是 「Serving Soul since Twenty Twelve」。旁边还有更细的分区信息，但主标题清晰可读。
 
 Text-To-Image Generation
 
@@ -432,7 +432,7 @@ A golden retriever lying peacefully on a wooden porch, with autumn leaves scatte
 
 
 
-一只金毛寻回犬安详趴在木廊上, 周围散落秋叶.
+一只金毛寻回犬安详趴在木廊上，周围散落秋叶。
 
 ![Image block](images/p08-a-young-woman-with-freckles-wearing-a-straw-hat.png)
 
@@ -440,7 +440,7 @@ A young woman with freckles wearing a straw hat, standing in a golden wheat fiel
 
 
 
-雀斑少女戴草帽, 站在金色麦田里.
+雀斑少女戴草帽，站在金色麦田里。
 
 ![Image block](images/p08-a-single-drop-of-water-clinging-to-a-green-leaf-with.png)
 
@@ -448,7 +448,7 @@ A single drop of water clinging to a green leaf, with sunlight creating a faint 
 
 
 
-一滴水挂在绿叶上, 阳光折射出淡淡彩虹.
+一滴水挂在绿叶上，阳光折射出淡淡彩虹。
 
 ![Image block](images/p08-an-ancient-stone-bridge-arching-over-a-crystal-clear.png)
 
@@ -456,7 +456,7 @@ An ancient stone bridge arching over a crystal-clear mountain stream, surrounded
 
 
 
-古石桥横跨清澈山溪, 四周绿意浓.
+古石桥横跨清澈山溪，四周绿意浓。
 
 ![Image block](images/p08-a-glowing-crystal-ball-floating-above-a-sandstone-table.png)
 
@@ -464,7 +464,7 @@ A glowing crystal ball floating above a sandstone table in the middle of a deser
 
 
 
-沙漠日落中, 发光水晶球浮在砂岩桌上.
+沙漠日落中，发光水晶球浮在砂岩桌上。
 
 ![Image block](images/p08-a-tiny-galaxy-contained-inside-a-glass-bottle-glowing.png)
 
@@ -472,7 +472,7 @@ A tiny galaxy contained inside a glass bottle, glowing brightly against a dark v
 
 
 
-玻璃瓶里装进小小星系, 在深色绒布上发亮.
+玻璃瓶里装进小小星系，在深色绒布上发亮。
 
 ![Image block](images/p08-a-giant-whale-flying-through-a-city-skyline-surrounded.png)
 
@@ -480,7 +480,7 @@ A giant whale flying through a city skyline, surrounded by floating glowing lant
 
 
 
-巨鲸飞过城市天际线, 四周漂浮发光灯笼.
+巨鲸飞过城市天际线，四周漂浮发光灯笼。
 
 ![Image block](images/p08-astronaut-in-a-jungle-cold-color-palette-muted-colors.png)
 
@@ -488,13 +488,13 @@ Astronaut in a jungle, cold color palette, muted colors, detailed, 8k
 
 
 
-丛林中的宇航员, 冷色调, 低饱和, 细节丰富, 8k.
+丛林中的宇航员，冷色调，低饱和，细节丰富，8k。
 
 Figure 4 | Qualitative results of multimodal understanding and visual generation capability. The model is Janus-Pro-7B and the image output resolution of visual generation is 384 × 384. Best viewed on screen. 8
 
 
 
-图 4｜多模态理解与视觉生成定性结果. 模型为 Janus-Pro-7B; 生成输出分辨率 384 × 384. 建议在屏幕上查看.
+图 4｜多模态理解与视觉生成定性结果。模型为 Janus-Pro-7B；生成输出分辨率 384 × 384。建议在屏幕上查看。
 
 <!-- page 9 of 13 -->
 
@@ -504,7 +504,7 @@ This paper introduces improvements to Janus from three aspects: training strateg
 
 
 
-本文从训练策略, 数据, 模型规模三处改进 Janus, 理解与文生图指令跟随都明显抬升. 局限仍在: 理解侧输入锁在 384 × 384, 细粒度任务(如 OCR)吃亏; 生成侧分辨率低, 再叠加视觉 tokenizer 的重建损失, 语义够, 细部仍虚-- 占画面很小的人脸尤其容易糊. 提高图像分辨率有望缓解.
+本文从训练策略，数据，模型规模三处改进 Janus，理解与文生图指令跟随都明显抬升。局限仍在：理解侧输入锁在 384 × 384，细粒度任务（如 OCR）吃亏；生成侧分辨率低，再叠加视觉 tokenizer 的重建损失，语义够，细部仍虚-- 占画面很小的人脸尤其容易糊。提高图像分辨率有望缓解。
 
 ## References
 
@@ -512,61 +512,61 @@ This paper introduces improvements to Janus from three aspects: training strateg
 
 
 
-「Qwen-VL: 多才多艺的前沿大型视觉语言模型」
+「Qwen-VL：多才多艺的前沿大型视觉语言模型」
 
 [2] J. Betker, G. Goh, L. Jing, T. Brooks, J. Wang, L. Li, L. Ouyang, J. Zhuang, J. Lee, Y. Guo, et al. Improving image generation with better captions. Computer Science. https://cdn. openai. com/papers/dall-e-3. pdf, 2(3): 8, 2023.
 
 
 
-「用更好的描述改进图像生成」(DALL-E 3 相关)
+「用更好的描述改进图像生成」（DALL-E 3 相关）
 
 [3] X. Bi, D. Chen, G. Chen, S. Chen, D. Dai, C. Deng, H. Ding, K. Dong, Q. Du, Z. Fu, et al. Deepseek llm: Scaling open-source language models with longtermism. arXiv preprint arXiv: 2401.02954, 2024.
 
 
 
-「DeepSeek LLM: 以长期主义缩放开源语言模型」
+「DeepSeek LLM：以长期主义缩放开源语言模型」
 
 [4] J. Chen, J. Yu, C. Ge, L. Yao, E. Xie, Y. Wu, Z. Wang, J. Kwok, P. Luo, H. Lu, et al. Pixart𝑎𝑙 𝑝ℎ𝑎: Fast training of diffusion transformer for photorealistic text-to-image synthesis. arXiv preprint arXiv: 2310.00426, 2023.
 
 
 
-「PixArt-α: 快速训练扩散 Transformer 做逼真文生图」
+「PixArt-α：快速训练扩散 Transformer 做逼真文生图」
 
 [5] J. Chen, C. Ge, E. Xie, Y. Wu, L. Yao, X. Ren, Z. Wang, P. Luo, H. Lu, and Z. Li. PixArt-Sigma: Weak-to-strong training of diffusion transformer for 4K text-to-image generation. arXiv preprint arXiv: 2403.04692, 2024.
 
 
 
-「PixArt-Σ: 弱到强训练扩散 Transformer, 面向 4K 文生图」
+「PixArt-Σ：弱到强训练扩散 Transformer，面向 4K 文生图」
 
 [6] X. Chu, L. Qiao, X. Lin, S. Xu, Y. Yang, Y. Hu, F. Wei, X. Zhang, B. Zhang, X. Wei, et al. Mobilevlm: A fast, reproducible and strong vision language assistant for mobile devices. arXiv preprint arXiv: 2312.16886, 2023.
 
 
 
-「MobileVLM: 面向移动端的快速, 可复现, 强力视觉语言助手」
+「MobileVLM：面向移动端的快速，可复现，强力视觉语言助手」
 
 [7] X. Chu, L. Qiao, X. Zhang, S. Xu, F. Wei, Y. Yang, X. Sun, Y. Hu, X. Lin, B. Zhang, et al. Mobilevlm v2: Faster and stronger baseline for vision language model. arXiv preprint arXiv: 2402.03766, 2024.
 
 
 
-「MobileVLM v2: 更快更强的视觉语言模型基线」
+「MobileVLM v2：更快更强的视觉语言模型基线」
 
 [8] W. Dai, J. Li, D. Li, A. M. H. Tiong, J. Zhao, W. Wang, B. Li, P. Fung, and S. Hoi. Instructblip: Towards general-purpose vision-language models with instruction tuning, 2023.
 
 
 
-「InstructBLIP: 指令微调通向通用视觉语言模型」
+「InstructBLIP：指令微调通向通用视觉语言模型」
 
 [9] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei. Imagenet: A large-scale hierarchical image database. In 2009 IEEE conference on computer vision and pattern recognition, pages 248–255. Ieee, 2009.
 
 
 
-「ImageNet: 大规模分层图像数据库」
+「ImageNet：大规模分层图像数据库」
 
 [10] R. Dong, C. Han, Y. Peng, Z. Qi, Z. Ge, J. Yang, L. Zhao, J. Sun, H. Zhou, H. Wei, et al. Dreamllm: Synergistic multimodal comprehension and creation. arXiv preprint arXiv: 2309.11499, 2023.
 
 
 
-「DreamLLM: 多模态理解与创造的协同」
+「DreamLLM：多模态理解与创造的协同」
 
 <!-- page 10 of 13 -->
 
@@ -574,91 +574,91 @@ This paper introduces improvements to Janus from three aspects: training strateg
 
 
 
-「缩放整流流 Transformer 做高分辨率图像合成」(SD3)
+「缩放整流流 Transformer 做高分辨率图像合成」（SD3）
 
 [12] C. Fu, P. Chen, Y. Shen, Y. Qin, M. Zhang, X. Lin, J. Yang, X. Zheng, K. Li, X. Sun, et al. Mme: A comprehensive evaluation benchmark for multimodal large language models. arXiv preprint arXiv: 2306.13394, 2023.
 
 
 
-「MME: 多模态大模型综合评测基准」
+「MME：多模态大模型综合评测基准」
 
 [13] Y. Ge, S. Zhao, J. Zhu, Y. Ge, K. Yi, L. Song, C. Li, X. Ding, and Y. Shan. Seed-x: Multimodal models with unified multi-granularity comprehension and generation. arXiv preprint arXiv: 2404.14396, 2024.
 
 
 
-「SEED-X: 统一多粒度理解与生成的多模态模型」
+「SEED-X：统一多粒度理解与生成的多模态模型」
 
 [14] D. Ghosh, H. Hajishirzi, and L. Schmidt. Geneval: An object-focused framework for evaluating text-to-image alignment. Advances in Neural Information Processing Systems, 36, 2024.
 
 
 
-「GenEval: 面向物体的文生图对齐评测框架」
+「GenEval：面向物体的文生图对齐评测框架」
 
 [15] High-flyer. Hai-llm: Efficient and lightweight training tool for large models, 2023. URL [https://www. high-flyer. cn/en/blog/hai-llm](https://www. high-flyer. cn/en/blog/hai-llm).
 
 
 
-「HAI-LLM: 高效轻量的大模型训练工具」
+「HAI-LLM：高效轻量的大模型训练工具」
 
 [16] X. Hu, R. Wang, Y. Fang, B. Fu, P. Cheng, and G. Yu. Ella: Equip diffusion models with llm for enhanced semantic alignment. arXiv preprint arXiv: 2403.05135, 2024.
 
 
 
-「ELLA: 给扩散模型配上 LLM 以增强语义对齐」(含 DPG-Bench)
+「ELLA：给扩散模型配上 LLM 以增强语义对齐」（含 DPG-Bench）
 
 [17] D. A. Hudson and C. D. Manning. Gqa: A new dataset for real-world visual reasoning and compositional question answering. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 6700–6709, 2019.
 
 
 
-「GQA: 真实场景视觉推理与组合问答数据集」
+「GQA：真实场景视觉推理与组合问答数据集」
 
 [18] Y. Jin, K. Xu, L. Chen, C. Liao, J. Tan, B. Chen, C. Lei, A. Liu, C. Song, X. Lei, et al. Unified language-vision pretraining with dynamic discrete visual tokenization. arXiv preprint arXiv: 2309.04669, 2023.
 
 
 
-「动态离散视觉分词的统一语言–视觉预训练」(LaVIT)
+「动态离散视觉分词的统一语言–视觉预训练」（LaVIT）
 
 [19] H. Laurençon, D. van Strien, S. Bekman, L. Tronchon, L. Saulnier, T. Wang, S. Karamcheti, A. Singh, G. Pistilli, Y. Jernite, and et al. Introducing idefics: An open reproduction of state-of-the-art visual language model, 2023. URL [https://huggingface. co/blog/idefics](https://huggingface. co/blog/idefics).
 
 
 
-「IDEFICS: 开源复现先进视觉语言模型」
+「IDEFICS：开源复现先进视觉语言模型」
 
 [20] H. Laurençon, A. Marafioti, V. Sanh, and L. Tronchon. Building and better understanding vision-language models: insights and future directions., 2024.
 
 
 
-「构建并更好理解视觉语言模型: 洞见与方向」(Docmatix 相关)
+「构建并更好理解视觉语言模型：洞见与方向」（Docmatix 相关）
 
 [21] B. Li, R. Wang, G. Wang, Y. Ge, Y. Ge, and Y. Shan. Seed-bench: Benchmarking multimodal llms with generative comprehension. arXiv preprint arXiv: 2307.16125, 2023.
 
 
 
-「SEED-Bench: 用生成式理解评测多模态 LLM」
+「SEED-Bench：用生成式理解评测多模态 LLM」
 
 [22] D. Li, A. Kamko, E. Akhgari, A. Sabet, L. Xu, and S. Doshi. Playground v2.5: Three insights towards enhancing aesthetic quality in text-to-image generation. arXiv preprint arXiv: 2402.17245, 2024.
 
 
 
-「Playground v2.5: 抬高文生图美学质量的三点洞见」
+「Playground v2.5：抬高文生图美学质量的三点洞见」
 
 [23] Y. Li, Y. Du, K. Zhou, J. Wang, W. X. Zhao, and J.-R. Wen. Evaluating object hallucination in large vision-language models. arXiv preprint arXiv: 2305.10355, 2023.
 
 
 
-「评测大型视觉语言模型中的物体幻觉」(POPE)
+「评测大型视觉语言模型中的物体幻觉」（POPE）
 
 [24] Z. Li, H. Li, Y. Shi, A. B. Farimani, Y. Kluger, L. Yang, and P. Wang. Dual diffusion for unified image generation and understanding. arXiv preprint arXiv: 2501.00289, 2024.
 
 
 
-「双扩散统一图像生成与理解」(D-DiT)
+「双扩散统一图像生成与理解」（D-DiT）
 
 [25] Z. Li, J. Zhang, Q. Lin, J. Xiong, Y. Long, X. Deng, Y. Zhang, X. Liu, M. Huang, Z. Xiao, et al. Hunyuan-DiT: A powerful multi-resolution diffusion transformer with fine-grained chinese understanding. arXiv preprint arXiv: 2405.08748, 2024.
 
 
 
-「Hunyuan-DiT: 多分辨率扩散 Transformer, 细粒度中文理解」
+「Hunyuan-DiT：多分辨率扩散 Transformer，细粒度中文理解」
 
 <!-- page 11 of 13 -->
 
@@ -666,31 +666,31 @@ This paper introduces improvements to Janus from three aspects: training strateg
 
 
 
-「视觉指令微调的改进基线」(LLaVA-v1.5)
+「视觉指令微调的改进基线」（LLaVA-v1.5）
 
 [27] H. Liu, C. Li, Q. Wu, and Y. J. Lee. Visual instruction tuning. Advances in neural information processing systems, 36, 2024.
 
 
 
-「视觉指令微调」(LLaVA)
+「视觉指令微调」（LLaVA）
 
 [28] H. Liu, W. Yan, M. Zaharia, and P. Abbeel. World model on million-length video and language with ringattention. arXiv preprint arXiv: 2402.08268, 2024.
 
 
 
-「百万长度视频与语言上的世界模型」(LWM / RingAttention)
+「百万长度视频与语言上的世界模型」（LWM / RingAttention）
 
 [29] Y. Liu, H. Duan, Y. Zhang, B. Li, S. Zhang, W. Zhao, Y. Yuan, J. Wang, C. He, Z. Liu, et al. Mmbench: Is your multi-modal model an all-around player? arXiv preprint arXiv: 2307.06281, 2023.
 
 
 
-「MMBench: 你的多模态模型是不是全能选手?」
+「MMBench：你的多模态模型是不是全能选手？」
 
 [30] Y. Ma, X. Liu, X. Chen, W. Liu, C. Wu, Z. Wu, Z. Pan, Z. Xie, H. Zhang, X. yu, L. Zhao, Y. Wang, J. Liu, and C. Ruan. Janusflow: Harmonizing autoregression and rectified flow for unified multimodal understanding and generation, 2024.
 
 
 
-「JanusFlow: 自回归与整流流协同的统一多模态理解与生成」
+「JanusFlow：自回归与整流流协同的统一多模态理解与生成」
 
 [31] mehdidc. Yfcc-huggingface. [https://huggingface. co/datasets/mehdidc/yfcc15m](https://huggingface. co/datasets/mehdidc/yfcc15m), 2024.
 
@@ -702,25 +702,25 @@ YFCC 数据在 Hugging Face 上的托管条目
 
 
 
-「SDXL: 改进潜空间扩散模型做高分辨率合成」
+「SDXL：改进潜空间扩散模型做高分辨率合成」
 
 [33] D. Podell, Z. English, K. Lacey, A. Blattmann, T. Dockhorn, J. Müller, J. Penna, and R. Rombach. SDXL: Improving latent diffusion models for high-resolution image synthesis. 2024.
 
 
 
-「SDXL」(同主题后续版本条目)
+「SDXL」（同主题后续版本条目）
 
 [34] L. Qu, H. Zhang, Y. Liu, X. Wang, Y. Jiang, Y. Gao, H. Ye, D. K. Du, Z. Yuan, and X. Wu. Tokenflow: Unified image tokenizer for multimodal understanding and generation. arXiv preprint arXiv: 2412.03069, 2024.
 
 
 
-「TokenFlow: 统一图像 tokenizer, 服务理解与生成」
+「TokenFlow：统一图像 tokenizer，服务理解与生成」
 
 [35] A. Ramesh, P. Dhariwal, A. Nichol, C. Chu, and M. Chen. Hierarchical text-conditional image generation with clip latents. arXiv preprint arXiv: 2204.06125, 1(2): 3, 2022.
 
 
 
-「基于 CLIP 潜变量的层次化文本条件图像生成」(DALL-E 2)
+「基于 CLIP 潜变量的层次化文本条件图像生成」（DALL-E 2）
 
 [36] R. Rombach, A. Blattmann, D. Lorenz, P. Esser, and B. Ommer. High-resolution image synthesis with latent diffusion models. 2022.
 
@@ -732,31 +732,31 @@ YFCC 数据在 Hugging Face 上的托管条目
 
 
 
-「潜空间扩散模型的高分辨率图像合成」(CVPR 版本)
+「潜空间扩散模型的高分辨率图像合成」（CVPR 版本）
 
 [38] P. Sun, Y. Jiang, S. Chen, S. Zhang, B. Peng, P. Luo, and Z. Yuan. Autoregressive model beats diffusion: Llama for scalable image generation. arXiv preprint arXiv: 2406.06525, 2024.
 
 
 
-「自回归胜过扩散: 可扩展图像生成的 Llama」(LlamaGen, 本文 VQ tokenizer 来源)
+「自回归胜过扩散：可扩展图像生成的 Llama」（LlamaGen，本文 VQ tokenizer 来源）
 
 [39] Q. Sun, Q. Yu, Y. Cui, F. Zhang, X. Zhang, Y. Wang, H. Gao, J. Liu, T. Huang, and X. Wang. Generative pretraining in multimodality. arXiv preprint arXiv: 2307.05222, 2023.
 
 
 
-「多模态生成式预训练」(Emu)
+「多模态生成式预训练」（Emu）
 
 [40] C. Team. Chameleon: Mixed-modal early-fusion foundation models. arXiv preprint arXiv: 2405.09818, 2024.
 
 
 
-「Chameleon: 混合模态早融合基础模型」
+「Chameleon：混合模态早融合基础模型」
 
 [41] G. Team, R. Anil, S. Borgeaud, Y. Wu, J.-B. Alayrac, J. Yu, R. Soricut, J. Schalkwyk, A. M. Dai, A. Hauth, et al. Gemini: a family of highly capable multimodal models. arXiv preprint arXiv: 2312.11805, 2023.
 
 
 
-「Gemini: 高能力多模态模型家族」
+「Gemini：高能力多模态模型家族」
 
 <!-- page 12 of 13 -->
 
@@ -764,7 +764,7 @@ YFCC 数据在 Hugging Face 上的托管条目
 
 
 
-「MetaMorph: 经指令微调的多模态理解与生成」
+「MetaMorph：经指令微调的多模态理解与生成」
 
 [43] Vivym. Midjourney prompts dataset. [https://huggingface. co/datasets/vivym/midjourney-prompts](https://huggingface. co/datasets/vivym/midjourney-prompts), 2023. Accessed: [Insert Date of Access, e. g., 2023-10-15].
 
@@ -776,79 +776,79 @@ Midjourney 提示词公开数据集
 
 
 
-「ILLUME: 让 LLM 能看, 能画, 还能自增强」
+「ILLUME：让 LLM 能看，能画，还能自增强」
 
 [45] X. Wang, X. Zhang, Z. Luo, Q. Sun, Y. Cui, J. Wang, F. Zhang, Y. Wang, Z. Li, Q. Yu, et al. Emu3: Next-token prediction is all you need. arXiv preprint arXiv: 2409.18869, 2024.
 
 
 
-「Emu3: 下一 token 预测就够了」
+「Emu3：下一 token 预测就够了」
 
 [46] C. Wu, X. Chen, Z. Wu, Y. Ma, X. Liu, Z. Pan, W. Liu, Z. Xie, X. Yu, C. Ruan, et al. Janus: Decoupling visual encoding for unified multimodal understanding and generation. arXiv preprint arXiv: 2410.13848, 2024.
 
 
 
-「Janus: 解耦视觉编码, 统一多模态理解与生成」
+「Janus：解耦视觉编码，统一多模态理解与生成」
 
 [47] S. Wu, H. Fei, L. Qu, W. Ji, and T.-S. Chua. Next-gpt: Any-to-any multimodal llm. arXiv preprint arXiv: 2309.05519, 2023.
 
 
 
-「NExT-GPT: 任意到任意的多模态 LLM」
+「NExT-GPT：任意到任意的多模态 LLM」
 
 [48] Y. Wu, Z. Zhang, J. Chen, H. Tang, D. Li, Y. Fang, L. Zhu, E. Xie, H. Yin, L. Yi, et al. Vila-u: a unified foundation model integrating visual understanding and generation. arXiv preprint arXiv: 2409.04429, 2024.
 
 
 
-「VILA-U: 整合视觉理解与生成的统一基础模型」
+「VILA-U：整合视觉理解与生成的统一基础模型」
 
 [49] Z. Wu, X. Chen, Z. Pan, X. Liu, W. Liu, D. Dai, H. Gao, Y. Ma, C. Wu, B. Wang, et al. Deepseek-vl2: Mixture-of-experts vision-language models for advanced multimodal understanding. arXiv preprint arXiv: 2412.10302, 2024.
 
 
 
-「DeepSeek-VL2: 面向高级多模态理解的 MoE 视觉语言模型」
+「DeepSeek-VL2：面向高级多模态理解的 MoE 视觉语言模型」
 
 [50] J. Xie, W. Mao, Z. Bai, D. J. Zhang, W. Wang, K. Q. Lin, Y. Gu, Z. Chen, Z. Yang, and M. Z. Shou. Show-o: One single transformer to unify multimodal understanding and generation. arXiv preprint arXiv: 2408.12528, 2024.
 
 
 
-「Show-o: 单个 Transformer 统一多模态理解与生成」
+「Show-o：单个 Transformer 统一多模态理解与生成」
 
 [51] W. Yu, Z. Yang, L. Li, J. Wang, K. Lin, Z. Liu, X. Wang, and L. Wang. Mm-vet: Evaluating large multimodal models for integrated capabilities. arXiv preprint arXiv: 2308.02490, 2023.
 
 
 
-「MM-Vet: 评测大型多模态模型的综合能力」
+「MM-Vet：评测大型多模态模型的综合能力」
 
 [52] X. Yue, Y. Ni, K. Zhang, T. Zheng, R. Liu, G. Zhang, S. Stevens, D. Jiang, W. Ren, Y. Sun, et al. Mmmu: A massive multi-discipline multimodal understanding and reasoning benchmark for expert agi. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 9556–9567, 2024.
 
 
 
-「MMMU: 面向专家级 AGI 的大规模多学科多模态理解与推理基准」
+「MMMU：面向专家级 AGI 的大规模多学科多模态理解与推理基准」
 
 [53] X. Zhai, B. Mustafa, A. Kolesnikov, and L. Beyer. Sigmoid loss for language image pre-training. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 11975–11986, 2023.
 
 
 
-「语言–图像预训练的 sigmoid 损失」(SigLIP)
+「语言–图像预训练的 sigmoid 损失」（SigLIP）
 
 [54] C. Zhao, Y. Song, W. Wang, H. Feng, E. Ding, Y. Sun, X. Xiao, and J. Wang. Monoformer: One transformer for both diffusion and autoregression. arXiv preprint arXiv: 2409.16280, 2024.
 
 
 
-「MonoFormer: 一个 Transformer 同时做扩散与自回归」
+「MonoFormer：一个 Transformer 同时做扩散与自回归」
 
 [55] C. Zhou, L. Yu, A. Babu, K. Tirumala, M. Yasunaga, L. Shamis, J. Kahn, X. Ma, L. Zettlemoyer, and O. Levy. Transfusion: Predict the next token and diffuse images with one multi-modal model. arXiv preprint arXiv: 2408.11039, 2024.
 
 
 
-「Transfusion: 一个多模态模型既预测下一 token 又扩散图像」
+「Transfusion：一个多模态模型既预测下一 token 又扩散图像」
 
 [56] Y. Zhu, M. Zhu, N. Liu, Z. Ou, X. Mou, and J. Tang. Llava-phi: Efficient multi-modal assistant with small language model. arXiv preprint arXiv: 2401.02330, 2024.
 
 
 
-「LLaVA-Phi: 小语言模型上的高效多模态助手」
+「LLaVA-Phi：小语言模型上的高效多模态助手」
 
 <!-- page 13 of 13 -->
 
@@ -856,6 +856,6 @@ Midjourney 提示词公开数据集
 
 
 
-「Lumina-Next: 用 Next-DiT 让 Lumina-T2X 更强更快」
+「Lumina-Next：用 Next-DiT 让 Lumina-T2X 更强更快」
 
 13

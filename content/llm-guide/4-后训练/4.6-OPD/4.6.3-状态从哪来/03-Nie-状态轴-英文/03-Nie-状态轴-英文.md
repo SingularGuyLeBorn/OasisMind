@@ -1,19 +1,19 @@
 ---
-title: "03 · 英文:状态轴"
+title: "03 · 英文：状态轴"
 category: "LLM 指南"
 published: true
 tags: ["OPD", "SFT", "RL", "状态分布", "原文"]
-excerpt: "正文为 arXiv HTML 誊录.PDF 第 1 页页眉为 1st Conference 2026."
+excerpt: "正文为 arXiv HTML 誊录。PDF 第 1 页页眉为 1st Conference 2026。"
 ---
 # Post-Training is About States, Not Tokens: A State Distribution View of SFT, RL, and On-Policy Distillation
 
-> 作者:Dong Nie(Independent Researcher, dongnie@cs.unc.edu)  
+> 作者：Dong Nie(Independent Researcher, dongnie@cs.unc.edu)  
 > arXiv:[2605.22731](https://arxiv.org/abs/2605.22731) v1,2026-05-21,cs.LG / cs.AI  
 > PDF:../pdfs/2605.22731.pdf;HTML:[../pdfs/2605.22731.html](../pdfs/2605.22731.html)  
-> 代码仓库论文写了 https://github.com/ginobilinie/unifyPostTraining ,2026-08-30 访问为 404.  
-> 直觉文:[01 nrehiew 博客](../01-分布视角-英文/01-分布视角-英文.md)
+> 代码仓库论文写了 https://github.com/ginobilinie/unifyPostTraining，2026-08-30 访问为 404.  
+> 直觉文：[01 nrehiew 博客](../01-分布视角-英文/01-分布视角-英文.md)
 
-正文为 arXiv HTML 誊录.PDF 第 1 页页眉为 1st Conference 2026.
+正文为 arXiv HTML 誊录。PDF 第 1 页页眉为 1st Conference 2026。
 
 Dong Nie Affiliation: Independent Researcher Email: dongnie@cs.unc.edu
 

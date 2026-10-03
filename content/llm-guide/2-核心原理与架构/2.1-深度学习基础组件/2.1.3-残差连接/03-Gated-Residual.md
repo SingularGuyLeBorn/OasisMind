@@ -24,7 +24,7 @@ $$
 
 ## 2. HC 的三个算子，GR 只留两个
 
-Hyper-Connections 把读/写/混合写成三个可预测算子（报告式 (23)–(28)）：$H_{\mathrm{mix}}$ 读、$H_{\mathrm{combine}}$ 写、$H_{\mathrm{res}}\in\mathbb{R}^{n_r\times n_r}$ 在分支之间交换。mHC 再把 $H_{\mathrm{res}}$ 卡在双随机流形上，细节见 [01 文](./01-Hyper-Connections与mHC.md)，这里不重推。
+Hyper-Connections 把读/写/混合写成三个可预测算子（报告式（23）–(28)）：$H_{\mathrm{mix}}$ 读、$H_{\mathrm{combine}}$ 写、$H_{\mathrm{res}}\in\mathbb{R}^{n_r\times n_r}$ 在分支之间交换。mHC 再把 $H_{\mathrm{res}}$ 卡在双随机流形上，细节见 [01 文](./01-Hyper-Connections与mHC.md)，这里不重推。
 
 25B-A3B、560B token、同一套评测（报告 Table 5，$n_r=4$）：
 
@@ -99,12 +99,12 @@ flowchart LR
 
 - 把 GR 写成「就是 mHC」。读的粒度不同，而且没有 $H_{\mathrm{res}}$。
 - 把四分支 GR 和 HCA（注意力压缩）混名。
-- 用记忆补 $W_d$ 的具体形状而不指回报告式 (31)。
+- 用记忆补 $W_d$ 的具体形状而不指回报告式（31）。
 - 把 Table 5 的 25B-A3B 消融数字当成 125B 旗舰的线上分。
 
 ## 本篇来源
 
-- Qwen Team, *On the Design of Qwen3.8-Next Architecture*（2026-08-26），本会话用 PyMuPDF 抽取 §2.2 式 (21)–(34)、Table 5–6
+- Qwen Team, *On the Design of Qwen3.8-Next Architecture*（2026-08-26），本会话用 PyMuPDF 抽取 §2.2 式（21）–(34)、Table 5–6
 - 官方博文镜像：https://www.alibabacloud.com/blog/qwen3-8-flash-next-a-new-architecture-towards-ultimate-cost-efficiency_603501
 - GitHub：https://github.com/QwenLM/Qwen3.8-Flash-Next
 - 前作：HC arXiv:2409.19606；mHC 见同目录 01 文

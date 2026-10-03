@@ -27,7 +27,7 @@ https://github.com/QwenLM/Qwen3
 
 In this work, we present Qwen3, the latest version of the Qwen model family. Qwen3 comprises a series of large language models (LLMs) designed to advance performance, efficiency, and multilingual capabilities. The Qwen3 series includes models of both dense and Mixture-of-Expert (MoE) architectures, with parameter scales ranging from 0.6 to 235 billion. A key innovation in Qwen3 is the integration of thinking mode (for complex, multi-step reasoning) and non-thinking mode (for rapid, context-driven responses) into a unified framework. This eliminates the need to switch between different models—such as chat-optimized models (e.g., GPT-4o) and dedicated reasoning models (e.g., QwQ-32B)—and enables dynamic mode switching based on user queries or chat templates. Meanwhile, Qwen3 introduces a thinking budget mechanism, allowing users to allocate computational resources adaptively during inference, thereby balancing latency and performance based on task complexity. Moreover, by leveraging the knowledge from the flagship models, we significantly reduce the computational resources required to build smaller-scale models, while ensuring their highly competitive performance. Empirical evaluations demonstrate that Qwen3 achieves state-of-the-art results across diverse benchmarks, including tasks in code generation, mathematical reasoning, agent tasks, etc., competitive against larger MoE models and proprietary models. Compared to its predecessor Qwen2.5, Qwen3 expands multilingual support from 29 to 119 languages and dialects, enhancing global accessibility through improved cross-lingual understanding and generation capabilities. To facilitate reproducibility and community-driven research and development, all Qwen3 models are publicly accessible under Apache 2.0.
 
-本文推出 Qwen 模型家族最新版 Qwen3: 一系列追求性能, 效率与多语言能力的大语言模型 (LLM), 同时提供 dense 与 MoE 两种架构, 参数规模从 0.6B 到 235B. 关键创新是把 thinking mode (复杂多步推理) 与 non-thinking mode (快速, 上下文驱动的响应) 整合进统一框架: 用户无需再于聊天优化模型 (如 GPT-4o) 与专用推理模型 (如 QwQ-32B) 之间切换, 可按用户查询或 chat template 动态切换模式. Qwen3 还引入 thinking budget 机制, 让用户在推理时自适应分配算力, 按任务复杂度平衡延迟与性能. 同时, 借助旗舰模型的知识蒸馏, 构建小模型的算力开销大幅降低, 性能仍具强竞争力. 实证评测显示, Qwen3 在代码生成, 数学推理, Agent 任务等多类基准上达到 SOTA, 可对标更大的 MoE 模型与闭源模型. 相比前代 Qwen2.5, 多语言支持从 29 种扩展到 119 种语言与方言, 跨语言理解与生成能力增强, 覆盖全球用户. 所有 Qwen3 模型以 Apache 2.0 协议公开, 便于复现与社区研发.
+本文推出 Qwen 模型家族最新版 Qwen3：一系列追求性能，效率与多语言能力的大语言模型（LLM），同时提供 dense 与 MoE 两种架构，参数规模从 0.6B 到 235B. 关键创新是把 thinking mode（复杂多步推理）与 non-thinking mode（快速，上下文驱动的响应）整合进统一框架：用户无需再于聊天优化模型（如 GPT-4o）与专用推理模型（如 QwQ-32B）之间切换，可按用户查询或 chat template 动态切换模式。Qwen3 还引入 thinking budget 机制，让用户在推理时自适应分配算力，按任务复杂度平衡延迟与性能。同时，借助旗舰模型的知识蒸馏，构建小模型的算力开销大幅降低，性能仍具强竞争力。实证评测显示，Qwen3 在代码生成，数学推理，Agent 任务等多类基准上达到 SOTA，可对标更大的 MoE 模型与闭源模型。相比前代 Qwen2.5，多语言支持从 29 种扩展到 119 种语言与方言，跨语言理解与生成能力增强，覆盖全球用户。所有 Qwen3 模型以 Apache 2.0 协议公开，便于复现与社区研发。
 
 <!-- page 2 of 35 -->
 
@@ -35,23 +35,23 @@ In this work, we present Qwen3, the latest version of the Qwen model family. Qwe
 
 The pursuit of artificial general intelligence (AGI) or artificial super intelligence (ASI) has long been a goal for humanity. Recent advancements in large foundation models, e.g., GPT-4o (OpenAI, 2024), Claude 3.7 (Anthropic, 2025), Gemini 2.5 (DeepMind, 2025), DeepSeek-V3 (Liu et al., 2024a), Llama-4 (Meta-AI, 2025), and Qwen2.5 (Yang et al., 2024b), have demonstrated significant progress toward this objective. These models are trained on vast datasets spanning trillions of tokens across diverse domains and tasks, effectively distilling human knowledge and capabilities into their parameters. Furthermore, recent developments in reasoning models, optimized through reinforcement learning, highlight the potential for foundation models to enhance inference-time scaling and achieve higher levels of intelligence, e.g., o3 (OpenAI, 2025), DeepSeek-R1 (Guo et al., 2025). While most state-of-the-art models remain proprietary, the rapid growth of open-source communities has substantially reduced the performance gap between open-weight and closed-source models. Notably, an increasing number of top-tier models (Meta-AI, 2025; Liu et al., 2024a; Guo et al., 2025; Yang et al., 2024b) are now being released as open-source, fostering broader research and innovation in artificial intelligence.
 
-追求 AGI 乃至 ASI 是人类长期目标. GPT-4o, Claude 3.7, Gemini 2.5, DeepSeek-V3, Llama-4, Qwen2.5 等大型基座模型的近期进展显著推进了这一目标: 它们在跨领域, 跨任务的数万亿 token 数据上训练, 把人类知识与能力蒸馏进参数. o3, DeepSeek-R1 等经强化学习优化的推理模型, 进一步展现了基座模型通过 inference-time scaling 提升智能的潜力. 尽管多数 SOTA 模型仍是闭源, 开源社区的快速壮大已大幅缩小开放权重与闭源模型的差距; 越来越多顶尖模型以开源形式发布, 推动更广泛的研究与创新.
+追求 AGI 乃至 ASI 是人类长期目标。GPT-4o，Claude 3.7，Gemini 2.5，DeepSeek-V3，Llama-4，Qwen2.5 等大型基座模型的近期进展显著推进了这一目标：它们在跨领域，跨任务的数万亿 token 数据上训练，把人类知识与能力蒸馏进参数。o3，DeepSeek-R1 等经强化学习优化的推理模型，进一步展现了基座模型通过 inference-time scaling 提升智能的潜力。尽管多数 SOTA 模型仍是闭源，开源社区的快速壮大已大幅缩小开放权重与闭源模型的差距；越来越多顶尖模型以开源形式发布，推动更广泛的研究与创新。
 
 In this work, we introduce Qwen3, the latest series in our foundation model family, Qwen3 is a collection of open-weight large language models (LLMs) that achieve state-of-the-art performance across a wide variety of tasks and domains. We release both dense and Mixture-of-Experts (MoE) models, with the number of parameters ranging from 0.6 billion to 235 billion, to meet the needs of different downstream applications. Notably, the flagship model, Qwen3-235B-A22B, is an MoE model with a total of 235 billion parameters and 22 billion activated ones per token. This design ensures both high performance and efficient inference.
 
-本文推出基座模型家族最新系列 Qwen3: 一组在各类任务与领域均达 SOTA 的开放权重 LLM. 我们同时发布 dense 与 MoE 模型, 参数规模 0.6B 到 235B, 匹配不同下游应用的需求. 旗舰 Qwen3-235B-A22B 为 MoE 架构, 总参数 235B, 每 token 激活 22B, 兼顾高性能与推理效率.
+本文推出基座模型家族最新系列 Qwen3：一组在各类任务与领域均达 SOTA 的开放权重 LLM。我们同时发布 dense 与 MoE 模型，参数规模 0.6B 到 235B，匹配不同下游应用的需求。旗舰 Qwen3-235B-A22B 为 MoE 架构，总参数 235B，每 token 激活 22B，兼顾高性能与推理效率。
 
 Qwen3 introduces several key advancements to enhance its functionality and usability. First, it integrates two distinct operating modes, thinking mode and non-thinking mode, into a single model. This allows users to switch between these modes without alternating between different models, e.g., switching from Qwen2.5 to QwQ (Qwen Team, 2024). This flexibility ensures that developers and users can adapt the model's behavior to suit specific tasks efficiently. Additionally, Qwen3 incorporates thinking budgets, providing users with fine-grained control over the level of reasoning effort applied by the model during task execution. This capability is crucial to the optimization of computational resources and performance, tailoring the model's thinking behavior to meet varying complexity in real-world applications. Furthermore, Qwen3 has been pre-trained on 36 trillion tokens covering up to 119 languages and dialects, effectively enhancing its multilingual capabilities. This broadened language support amplifies its potential for deployment in global use cases and international applications. These advancements together establish Qwen3 as a cutting-edge open-source large language model family, capable of effectively addressing complex tasks across various domains and languages.
 
-Qwen3 有几项关键升级: 第一, 把 thinking 与 non-thinking 两种模式整合进单一模型, 用户无需在 Qwen2.5 与 QwQ 等模型间来回切换, 可按任务灵活调整模型行为; 第二, 引入 thinking budget, 让用户细粒度控制模型在任务中的推理投入, 对算力与性能做优化, 适配真实场景中不同的任务复杂度; 第三, 预训练使用 36 万亿 token, 覆盖多达 119 种语言与方言, 多语言能力显著增强, 更契合全球化部署. 这些进步共同确立了 Qwen3 作为前沿开源 LLM 家族的地位, 能有效应对跨领域, 跨语言的复杂任务.
+Qwen3 有几项关键升级：第一，把 thinking 与 non-thinking 两种模式整合进单一模型，用户无需在 Qwen2.5 与 QwQ 等模型间来回切换，可按任务灵活调整模型行为；第二，引入 thinking budget，让用户细粒度控制模型在任务中的推理投入，对算力与性能做优化，适配真实场景中不同的任务复杂度；第三，预训练使用 36 万亿 token，覆盖多达 119 种语言与方言，多语言能力显著增强，更契合全球化部署。这些进步共同确立了 Qwen3 作为前沿开源 LLM 家族的地位，能有效应对跨领域，跨语言的复杂任务。
 
 The pre-training process for Qwen3 utilizes a large-scale dataset consisting of approximately 36 trillion tokens, curated to ensure linguistic and domain diversity. To efficiently expand the training data, we employ a multi-modal approach: Qwen2.5-VL (Bai et al., 2025) is finetuned to extract text from extensive PDF documents. We also generate synthetic data using domain-specific models: Qwen2.5-Math (Yang et al., 2024c) for mathematical content and Qwen2.5-Coder (Hui et al., 2024) for code-related data. The pre-training process follows a three-stage strategy. In the first stage, the model is trained on about 30 trillion tokens to build a strong foundation of general knowledge. In the second stage, it is further trained on knowledge-intensive data to enhance reasoning abilities in areas like science, technology, engineering, and mathematics (STEM) and coding. Finally, in the third stage, the model is trained on long-context data to increase its maximum context length from 4,096 to 32,768 tokens.
 
-Qwen3 预训练使用约 36 万亿 token 的大规模数据集, 并精心保证语言与领域多样性. 为高效扩充训练数据, 我们采用多模态手段: 微调 Qwen2.5-VL 从海量 PDF 文档中抽取文本; 用领域专用模型合成数据: Qwen2.5-Math 负责数学内容, Qwen2.5-Coder 负责代码数据. 预训练分三阶段: 第一阶段约 30 万亿 token, 打牢通用知识基础; 第二阶段用知识密集型数据强化 STEM 与编程等推理能力; 第三阶段用长上下文数据把最大上下文长度从 4,096 扩到 32,768 token.
+Qwen3 预训练使用约 36 万亿 token 的大规模数据集，并精心保证语言与领域多样性。为高效扩充训练数据，我们采用多模态手段：微调 Qwen2.5-VL 从海量 PDF 文档中抽取文本；用领域专用模型合成数据：Qwen2.5-Math 负责数学内容，Qwen2.5-Coder 负责代码数据。预训练分三阶段：第一阶段约 30 万亿 token，打牢通用知识基础；第二阶段用知识密集型数据强化 STEM 与编程等推理能力；第三阶段用长上下文数据把最大上下文长度从 4,096 扩到 32,768 token。
 
 To better align foundation models with human preferences and downstream applications, we employ a multi-stage post-training approach that empowers both thinking (reasoning) and non-thinking modes. In the first two stages, we focus on developing strong reasoning abilities through long chain-of-thought (CoT) cold-start finetuning and reinforcement learning focusing on mathematics and coding tasks. In the final two stages, we combine data with and without reasoning paths into a unified dataset for further fine-tuning, enabling the model to handle both types of input effectively, and we then apply general-domain reinforcement learning to improve performance across a wide range of downstream tasks. For smaller models, we use strong-to-weak distillation, leveraging both off-policy and on-policy knowledge transfer from larger models to enhance their capabilities. Distillation from advanced teacher models significantly outperforms reinforcement learning in performance and training efficiency.
 
-为让基座模型对齐人类偏好与下游应用, 我们采用多阶段 post-training, 同时增强 thinking (推理) 与 non-thinking 两种模式. 前两阶段通过长 CoT 冷启动微调与聚焦数学, 代码任务的强化学习锻造强推理能力; 后两阶段把带与不带推理路径的数据合并为统一数据集继续微调, 让模型两类输入都能处理, 最后施加通用领域强化学习, 提升广泛下游任务的表现. 小模型采用 strong-to-weak 蒸馏: 同时利用 off-policy 与 on-policy 知识迁移增强能力; 高级教师模型的蒸馏在性能与训练效率上均显著优于强化学习.
+为让基座模型对齐人类偏好与下游应用，我们采用多阶段 post-training，同时增强 thinking（推理）与 non-thinking 两种模式。前两阶段通过长 CoT 冷启动微调与聚焦数学，代码任务的强化学习锻造强推理能力；后两阶段把带与不带推理路径的数据合并为统一数据集继续微调，让模型两类输入都能处理，最后施加通用领域强化学习，提升广泛下游任务的表现。小模型采用 strong-to-weak 蒸馏：同时利用 off-policy 与 on-policy 知识迁移增强能力；高级教师模型的蒸馏在性能与训练效率上均显著优于强化学习。
 
 We evaluate both pre-trained and post-trained versions of our models across a comprehensive set of benchmarks spanning multiple tasks and domains. Experimental results show that our base pre-trained models achieve state-of-the-art performance. The post-trained models, whether in thinking or non-thinking mode, perform competitively against leading proprietary models and large mixture-of-experts (MoE) models such as o1, o3-mini, and DeepSeek-V3. Notably, our models excel in coding, mathematics, and agent-related tasks. For example, the flagship model Qwen3-235B-A22B achieves 85.7 on AIME'24
 
@@ -59,33 +59,33 @@ We evaluate both pre-trained and post-trained versions of our models across a co
 
 and 81.5 on AIME'25 (AIME, 2025), 70.7 on LiveCodeBench v5 (Jain et al., 2024), 2,056 on CodeForces, and 70.8 on BFCL v3 (Yan et al., 2024). In addition, other models in the Qwen3 series also show strong performance relative to their size. Furthermore, we observe that increasing the thinking budget for thinking tokens leads to a consistent improvement in the model's performance across various tasks.
 
-我们在覆盖多任务, 多领域的全套基准上评测了预训练与 post-training 版本. 实验显示: 基座预训练模型已达 SOTA; post-training 模型无论 thinking 还是 non-thinking 模式, 都可对标 o1, o3-mini, DeepSeek-V3 等领先闭源模型与大型 MoE 模型, 在代码, 数学与 Agent 任务上尤为突出. 旗舰 Qwen3-235B-A22B 在 AIME'24 得 85.7, AIME'25 得 81.5, LiveCodeBench v5 得 70.7, CodeForces 得 2,056, BFCL v3 得 70.8; 系列其他模型在同尺寸下也表现强劲. 我们还观察到: 增大 thinking token 的 thinking budget, 模型在各类任务上的表现持续提升.
+我们在覆盖多任务，多领域的全套基准上评测了预训练与 post-training 版本。实验显示：基座预训练模型已达 SOTA；post-training 模型无论 thinking 还是 non-thinking 模式，都可对标 o1，o3-mini，DeepSeek-V3 等领先闭源模型与大型 MoE 模型，在代码，数学与 Agent 任务上尤为突出。旗舰 Qwen3-235B-A22B 在 AIME'24 得 85.7，AIME'25 得 81.5，LiveCodeBench v5 得 70.7，CodeForces 得 2,056，BFCL v3 得 70.8；系列其他模型在同尺寸下也表现强劲。我们还观察到：增大 thinking token 的 thinking budget，模型在各类任务上的表现持续提升。
 
 In the following sections, we describe the design of the model architecture, provide details on its training procedures, present the experimental results of pre-trained and post-trained models, and finally, conclude this technical report by summarizing the key findings and outlining potential directions for future research.
 
-后续章节依次介绍模型架构设计, 训练流程细节, 预训练与 post-training 模型的实验结果, 最后总结要点并展望未来的研究方向.
+后续章节依次介绍模型架构设计，训练流程细节，预训练与 post-training 模型的实验结果，最后总结要点并展望未来的研究方向。
 
 ## 2 Architecture 架构
 
 The Qwen3 series includes 6 dense models, namely Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B, Qwen3-8B, Qwen3-14B, and Qwen3-32B, and 2 MoE models, Qwen3-30B-A3B and Qwen3-235B-A22B. The flagship model, Qwen3-235B-A22B, has a total of 235B parameters with 22B activated ones. Below, we elaborate on the architecture of the Qwen3 models.
 
-Qwen3 含 6 个 Dense: 0.6B, 1.7B, 4B, 8B, 14B, 32B; 以及 2 个 MoE: 30B-A3B 与 235B-A22B. 旗舰 235B-A22B 总参 235B, 每 token 激活 22B. 下面展开架构.
+Qwen3 含 6 个 Dense: 0.6B，1.7B，4B，8B，14B，32B；以及 2 个 MoE: 30B-A3B 与 235B-A22B. 旗舰 235B-A22B 总参 235B，每 token 激活 22B. 下面展开架构。
 
 The architecture of the Qwen3 dense models is similar to Qwen2.5 (Yang et al., 2024b), including using Grouped Query Attention (GQA, Ainslie et al., 2023), SwiGLU (Dauphin et al., 2017), Rotary Positional Embeddings (RoPE, Su et al., 2024), and RMSNorm (Jiang et al., 2023) with pre-normalization. Besides, we remove QKV-bias used in Qwen2 (Yang et al., 2024a) and introduce QK-Norm (Dehghani et al., 2023) to the attention mechanism to ensure stable training for Qwen3. Key information on model architecture is provided in Table 1.
 
-Dense 架构接近 Qwen2.5: GQA, SwiGLU, RoPE, 以及 pre-norm 的 RMSNorm. 另外去掉 Qwen2 的 QKV-bias, 引入 QK-Norm 以稳住 Qwen3 训练. 关键规格见表 1.
+Dense 架构接近 Qwen2.5: GQA，SwiGLU，RoPE，以及 pre-norm 的 RMSNorm。另外去掉 Qwen2 的 QKV-bias，引入 QK-Norm 以稳住 Qwen3 训练。关键规格见表 1。
 
 The Qwen3 MoE models share the same fundamental architecture as the Qwen3 dense models. Key information on model architecture is provided in Table 2. We follow Qwen2.5-MoE (Yang et al., 2024b) and implement fine-grained expert segmentation (Dai et al., 2024). The Qwen3 MoE models have 128 total experts with 8 activated experts per token. Unlike Qwen2.5-MoE, the Qwen3-MoE design excludes shared experts. Furthermore, we adopt the global-batch load balancing loss (Qiu et al., 2025) to encourage expert specialization. These architectural and training innovations have yielded substantial improvements in model performance across downstream tasks.
 
-MoE 与 Dense 共用基础骨架, 规格见表 2. 沿用 Qwen2.5-MoE 的细粒度专家切分. 共 128 个专家, 每 token 激活 8 个. 与 Qwen2.5-MoE 不同, Qwen3-MoE 去掉共享专家. 另用 global-batch load balancing loss 推动专家专业化. 下游任务上有实质抬升.
+MoE 与 Dense 共用基础骨架，规格见表 2。沿用 Qwen2.5-MoE 的细粒度专家切分。共 128 个专家，每 token 激活 8 个。与 Qwen2.5-MoE 不同，Qwen3-MoE 去掉共享专家。另用 global-batch load balancing loss 推动专家专业化。下游任务上有实质抬升。
 
 Qwen3 models utilize Qwen's tokenizer (Bai et al., 2023), which implements byte-level byte-pair encoding (BBPE, Brown et al., 2020; Wang et al., 2020; Sennrich et al., 2016) with a vocabulary size of 151,669.
 
-分词沿用 Qwen tokenizer, BBPE, 词表大小 151,669.
+分词沿用 Qwen tokenizer，BBPE，词表大小 151,669。
 
 Table 1: Model architecture of Qwen3 dense models.
 
-表 1: Model architecture of Qwen3 dense models.
+表 1: Model architecture of Qwen3 dense models。
 
 | Models | Layers | Heads (Q / KV) | Tie Embedding | Context Length |
 | --- | --- | --- | --- | --- |
@@ -98,7 +98,7 @@ Table 1: Model architecture of Qwen3 dense models.
 
 Table 2: Model architecture of Qwen3 MoE models.
 
-表 2: Model architecture of Qwen3 MoE models.
+表 2: Model architecture of Qwen3 MoE models。
 
 | Models | Layers | Heads (Q / KV) | # Experts (Total / Activated) | Context Length |
 | --- | --- | --- | --- | --- |
@@ -109,13 +109,13 @@ Table 2: Model architecture of Qwen3 MoE models.
 
 In this section, we describe the construction of our pretraining data, the details of our pretraining approach, and present experimental results from evaluating the base models on standard benchmarks.
 
-本节写预训练数据构造, 训练做法, 以及 Base 模型在标准基准上的结果.
+本节写预训练数据构造，训练做法，以及 Base 模型在标准基准上的结果。
 
 ### 3.1 Pre-training Data 预训练数据
 
 Compared with Qwen2.5 (Yang et al., 2024b), we have significantly expanded the scale and diversity of our training data. Specifically, we collected twice as many pre-training tokens—covering three times more languages. All Qwen3 models are trained on a large and diverse dataset consisting of 119 languages and dialects, with a total of 36 trillion tokens. This dataset includes high-quality content in various
 
-相对 Qwen2.5, 训练数据规模与多样性明显扩大: 预训练 token 约两倍, 语言约三倍. 全系在 119 种语言与方言, 共约 36 万亿 token 上训练. 语料覆盖编码, STEM, 推理, 书籍, 多语与合成等高质内容.
+相对 Qwen2.5，训练数据规模与多样性明显扩大：预训练 token 约两倍，语言约三倍。全系在 119 种语言与方言，共约 36 万亿 token 上训练。语料覆盖编码，STEM，推理，书籍，多语与合成等高质内容。
 
 <!-- page 4 of 35 -->
 
@@ -123,45 +123,45 @@ domains such as coding, STEM (Science, Technology, Engineering, and Mathematics)
 
 To further expand the pre-training data corpus, we first employ the Qwen2.5-VL model (Bai et al., 2025) to perform text recognition on a large volume of PDF-like documents. The recognized text is then refined using the Qwen2.5 model (Yang et al., 2024b), which helps improve its quality. Through this two-step process, we are able to obtain an additional set of high-quality text tokens, amounting to trillions in total. Besides, we employ Qwen2.5 (Yang et al., 2024b), Qwen2.5-Math (Yang et al., 2024c), and Qwen2.5-Coder (Hui et al., 2024) models to synthesize trillions of text tokens in different formats, including textbooks, question-answering, instructions, and code snippets, covering dozens of domains. Finally, we further expand the pre-training corpus by incorporating additional multilingual data and introducing more languages. Compared to the pre-training data used in Qwen2.5, the number of supported languages has been significantly increased from 29 to 119, enhancing the model's linguistic coverage and cross-lingual capabilities.
 
-扩语料先用 Qwen2.5-VL 对大量 PDF 类文档做文字识别, 再用 Qwen2.5 精炼, 额外拿到数万亿高质文本 token. 另用 Qwen2.5, Qwen2.5-Math, Qwen2.5-Coder 合成教科书, 问答, 指令与代码片段等, 覆盖数十领域. 再补多语数据, 支持语言从 29 扩到 119.
+扩语料先用 Qwen2.5-VL 对大量 PDF 类文档做文字识别，再用 Qwen2.5 精炼，额外拿到数万亿高质文本 token。另用 Qwen2.5，Qwen2.5-Math，Qwen2.5-Coder 合成教科书，问答，指令与代码片段等，覆盖数十领域。再补多语数据，支持语言从 29 扩到 119。
 
 We have developed a multilingual data annotation system designed to enhance both the quality and diversity of training data. This system has been applied to our large-scale pre-training datasets, annotating over 30 trillion tokens across multiple dimensions such as educational value, fields, domains, and safety. These detailed annotations support more effective data filtering and combination. Unlike previous studies (Xie et al., 2023; Fan et al., 2023; Liu et al., 2024b) that optimize the data mixture at the data source or domain level, our method optimizes the data mixture at the instance-level through extensive ablation experiments on small proxy models with the fine-grained data labels.
 
-多语言数据标注系统给超过 30 万亿 token 打教育价值, 学科, 领域, 安全等标签. 与先前在数据源或领域级优化配比不同, 我们用细粒度标签在小代理模型上消融, 把配比优化落到 instance-level.
+多语言数据标注系统给超过 30 万亿 token 打教育价值，学科，领域，安全等标签。与先前在数据源或领域级优化配比不同，我们用细粒度标签在小代理模型上消融，把配比优化落到 instance-level。
 
 ### 3.2 Pre-training Stage 预训练阶段
 
 The Qwen3 models are pre-trained through a three-stage process:
 
-Qwen3 预训练分三阶段:
+Qwen3 预训练分三阶段：
 
 (1) General Stage (S1): At the first pre-training stage, all Qwen3 models are trained on over 30 trillion tokens using a sequence length of 4,096 tokens. At this stage, the models have been fully pre-trained on language proficiency and general world knowledge, with training data covering 119 languages and dialects.
 
-(1) 通用阶段 (S1): 全体在超过 30 万亿 token 上以序列长 4,096 训练, 铺语言能力与通用世界知识, 数据覆盖 119 种语言与方言.
+(1) 通用阶段（S1）：全体在超过 30 万亿 token 上以序列长 4,096 训练，铺语言能力与通用世界知识，数据覆盖 119 种语言与方言。
 
 (2) Reasoning Stage (S2): To further improve the reasoning ability, we optimize the pre-training corpus of this stage by increasing the proportion of STEM, coding, reasoning, and synthetic data. The models are further pre-trained with about 5T higher-quality tokens at a sequence length of 4,096 tokens. We also accelerate the learning rate decay during this stage.
 
-(2) 推理阶段 (S2): 提高 STEM, 编码, 推理与合成数据比例, 再以约 5T 更高质 token, 序列长 4,096 继续训, 并加速学习率衰减.
+(2) 推理阶段（S2）：提高 STEM，编码，推理与合成数据比例，再以约 5T 更高质 token，序列长 4,096 继续训，并加速学习率衰减。
 
-> **确认:** S2 的 5T 是额外新数据, 还是从 36T 里切出来的一段课表?
-> 行文是三阶段课表: S1 超过 30T, S2 再约 5T 更高推理比例, 然后长文段. 总量叙事仍落在约 36T.
+> **确认：** S2 的 5T 是额外新数据，还是从 36T 里切出来的一段课表？
+> 行文是三阶段课表：S1 超过 30T，S2 再约 5T 更高推理比例，然后长文段。总量叙事仍落在约 36T。
 
 (3) Long Context Stage: In the final pre-training stage, we collect high-quality long context corpora to extend the context length of Qwen3 models. All models are pre-trained on hundreds of billions of tokens with a sequence length of 32,768 tokens. The long context corpus includes 75% of text between 16,384 to 32,768 tokens in length, and 25% of text between 4,096 to 16,384 in length. Following Qwen2.5 (Yang et al., 2024b), we increase the base frequency of RoPE from 10,000 to 1,000,000 using the ABF technique (Xiong et al., 2023). Meanwhile, we introduce YARN (Peng et al., 2023) and Dual Chunk Attention (DCA, An et al., 2024) to achieve a four-fold increase in sequence length capacity during inference.
 
-(3) 长上下文阶段: 在数百亿 token 上以序列长 32,768 训练. 语料 75% 落在 16,384–32,768, 25% 落在 4,096–16,384. 用 ABF 把 RoPE base 从 10,000 提到 1,000,000; 推理期再叠 YaRN 与 DCA, 序列能力约再乘四.
+(3) 长上下文阶段：在数百亿 token 上以序列长 32,768 训练。语料 75% 落在 16,384–32,768, 25% 落在 4,096–16,384。用 ABF 把 RoPE base 从 10,000 提到 1,000,000；推理期再叠 YaRN 与 DCA，序列能力约再乘四。
 
-> **对一下:** YaRN+DCA 写的 four-fold 序列能力, 是相对哪一段训练长度?
-> 相对长上下文阶段的训练顶长 32,768. §3.2 先把训练序列拉到 32,768, 再声明推理期用 YaRN 与 DCA 做约四倍外推.
+> **对一下：** YaRN+DCA 写的 four-fold 序列能力，是相对哪一段训练长度？
+> 相对长上下文阶段的训练顶长 32,768. §3.2 先把训练序列拉到 32,768，再声明推理期用 YaRN 与 DCA 做约四倍外推。
 
 Similar to Qwen2.5 (Yang et al., 2024b), we develop scaling laws for optimal hyper-parameters (e.g., learning rate scheduler, and batch size) predictions based on three pre-training stages mentioned above. Through extensive experiments, we systematically study the relationship between model architecture, training data, training stage, and optimal training hyper-parameters. Finally, we set the predicted optimal learning rate and batch size strategy for each dense or MoE model.
 
-与 Qwen2.5 类似, 基于上述三阶段做 Scaling Laws, 预测最优学习率调度与 batch size 等. 系统研究架构, 数据, 阶段与超参关系后, 为每个 Dense 或 MoE 设定预测最优学习率与 batch 策略.
+与 Qwen2.5 类似，基于上述三阶段做 Scaling Laws，预测最优学习率调度与 batch size 等。系统研究架构，数据，阶段与超参关系后，为每个 Dense 或 MoE 设定预测最优学习率与 batch 策略。
 
 ### 3.3 Pre-training Evaluation 预训练评测
 
 We conduct comprehensive evaluations of the base language models of the Qwen3 series. The evaluation of base models mainly focuses on their performance in general knowledge, reasoning, mathematics, scientific knowledge, coding, and multilingual capabilities. The evaluation datasets for pre-trained base models include 15 benchmarks:
 
-对 Qwen3 Base 做全面评测, 侧重通用知识, 推理, 数学, 科学, 编码与多语. Base 基准共 15 项:
+对 Qwen3 Base 做全面评测，侧重通用知识，推理，数学，科学，编码与多语。Base 基准共 15 项：
 
 \- General Tasks: MMLU (Hendrycks et al., 2021a) (5-shot), MMLU-Pro (Wang et al., 2024) (5-shot, CoT), MMLU-redux (Gema et al., 2024) (5-shot), BBH (Suzgun et al., 2023) (3-shot, CoT), SuperGPQA (Du et al., 2025)(5-shot, CoT).
 
@@ -175,51 +175,51 @@ We conduct comprehensive evaluations of the base language models of the Qwen3 se
 
 For the base model baselines, we compare the Qwen3 series base models with the Qwen2.5 base models (Yang et al., 2024b) and other leading open-source base models, including DeepSeek-V3 Base (Liu et al., 2024a), Gemma-3 (Team et al., 2025), Llama-3 (Dubey et al., 2024), and Llama-4 (Meta-AI, 2025) series base models, in terms of scale of parameters. All models are evaluated using the same evaluation pipeline and the widely-used evaluation settings to ensure fair comparison.
 
-Base 对照含 Qwen2.5 Base 与 DeepSeek-V3 Base, Gemma-3, Llama-3, Llama-4 等开源 Base, 按参数规模对齐. 统一评测流水与常用设置以保证公平.
+Base 对照含 Qwen2.5 Base 与 DeepSeek-V3 Base，Gemma-3，Llama-3，Llama-4 等开源 Base，按参数规模对齐。统一评测流水与常用设置以保证公平。
 
 Summary of Evaluation Results Based on the overall evaluation results, we highlight some key conclusions of Qwen3 base models.
 
-评测小结: 基于总体结果, 突出 Qwen3 Base 的若干关键结论.
+评测小结：基于总体结果，突出 Qwen3 Base 的若干关键结论。
 
 (1) Compared with the previously open-source SOTA dense and MoE base models (such as DeepSeek-V3 Base, Llama-4-Maverick Base, and Qwen2.5-72B-Base), Qwen3-235B-A22B-Base outperforms these models in most tasks with significantly fewer total parameters or activated parameters.
 
-(1) 相对此前开源 SOTA Dense/MoE Base (如 DeepSeek-V3 Base, Llama-4-Maverick Base, Qwen2.5-72B-Base), Qwen3-235B-A22B-Base 在多数任务上以明显更少总参或激活参取胜.
+(1) 相对此前开源 SOTA Dense/MoE Base（如 DeepSeek-V3 Base, Llama-4-Maverick Base, Qwen2.5-72B-Base），Qwen3-235B-A22B-Base 在多数任务上以明显更少总参或激活参取胜。
 
 (2) For the Qwen3 MoE base models, our experimental results indicate that: (a) Using the same pre-training data, Qwen3 MoE base models can achieve similar performance to Qwen3 dense base models with only 1/5 activated parameters. (b) Due to the improvements of the Qwen3 MoE architecture, the scale-up of the training tokens, and more advanced training strategies, the Qwen3 MoE base models can outperform the Qwen2.5 MoE base models with less than 1/2 activated parameters and fewer total parameters. (c) Even with 1/10 of the activated parameters of the Qwen2.5 dense base model, the Qwen3 MoE base model can achieve comparable performance, which brings us significant advantages in inference and training costs.
 
-(2) MoE Base: (a) 同数据下仅约 1/5 激活参可逼近同代 Dense; (b) 架构, 数据与策略改进后, 以不到 1/2 激活参与更少总参超过 Qwen2.5 MoE Base; (c) 即使激活参仅为 Qwen2.5 Dense 的约 1/10 也可比, 推理与训练成本优势明显.
+(2) MoE Base: (a) 同数据下仅约 1/5 激活参可逼近同代 Dense; (b) 架构，数据与策略改进后，以不到 1/2 激活参与更少总参超过 Qwen2.5 MoE Base; (c) 即使激活参仅为 Qwen2.5 Dense 的约 1/10 也可比，推理与训练成本优势明显。
 
 (3) The overall performance of the Qwen3 dense base models is comparable to the Qwen2.5 base models at higher parameter scales. For example, Qwen3-1.7B/4B/8B/14B/32B-Base achieve comparable performance to Qwen2.5-3B/7B/14B/32B/72B-Base, respectively. Especially in STEM, coding, and reasoning benchmarks, the performance of Qwen3 dense base models even surpasses Qwen2.5 base models at higher parameter scales.
 
-(3) Dense Base 整体可比更高参数档的 Qwen2.5 Base, 例如 1.7B/4B/8B/14B/32B 分别对上 3B/7B/14B/32B/72B. STEM, 编码与推理上甚至超过更高档 Qwen2.5.
+(3) Dense Base 整体可比更高参数档的 Qwen2.5 Base，例如 1.7B/4B/8B/14B/32B 分别对上 3B/7B/14B/32B/72B. STEM，编码与推理上甚至超过更高档 Qwen2.5。
 
 The detailed results are as follows.
 
-详细结果如下.
+详细结果如下。
 
 Qwen3-235B-A22B-Base We compare Qwen3-235B-A22B-Base to our previous similar-sized MoE Qwen2.5-Plus-Base (Yang et al., 2024b) and other leading open-source base models: Llama-4-Maverick (Meta-AI, 2025), Qwen2.5-72B-Base (Yang et al., 2024b), DeepSeek-V3 Base (Liu et al., 2024a). From the results in Table 3, the Qwen3-235B-A22B-Base model attains the highest performance scores across most of the evaluated benchmarks. We further compare Qwen3-235B-A22B-Base with other baselines separately for the detailed analysis.
 
-Qwen3-235B-A22B-Base 对照同规模 MoE Qwen2.5-Plus-Base 以及 Llama-4-Maverick, Qwen2.5-72B-Base, DeepSeek-V3 Base. 表 3 显示其在多数基准上最高. 下面分别细比.
+Qwen3-235B-A22B-Base 对照同规模 MoE Qwen2.5-Plus-Base 以及 Llama-4-Maverick, Qwen2.5-72B-Base, DeepSeek-V3 Base。表 3 显示其在多数基准上最高。下面分别细比。
 
 (1) Compared with the recently open-source model Llama-4-Maverick-Base, which has about twice the number of parameters, Qwen3-235B-A22B-Base still performs better on most benchmarks.
 
-(1) 相对参数约大一倍的 Llama-4-Maverick-Base, 仍在多数基准上更好.
+(1) 相对参数约大一倍的 Llama-4-Maverick-Base，仍在多数基准上更好。
 
 (2) Compared with the previously state-of-the-art open-source model DeepSeek-V3-Base, Qwen3-235B-A22B-Base outperforms DeepSeek-V3-Base on 14 out of 15 evaluation benchmarks with only about 1/3 the total number of parameters and 2/3 activated parameters, demonstrating the powerful and cost-effectiveness of our models.
 
-(2) 相对 DeepSeek-V3-Base, 以约 1/3 总参与 2/3 激活参在 15 项中赢 14 项, 显示强与省.
+(2) 相对 DeepSeek-V3-Base，以约 1/3 总参与 2/3 激活参在 15 项中赢 14 项，显示强与省。
 
 (3) Compared with our previous MoE Qwen2.5-Plus of similar size, Qwen3-235B-A22B-Base significantly outperforms it with fewer parameters and activated parameters, which shows the remarkable advantages of Qwen3 in pre-training data, training strategy, and model architecture.
 
-(3) 相对同规模上代 MoE Qwen2.5-Plus, 以更少总参与激活参显著超过, 体现数据, 策略与架构优势.
+(3) 相对同规模上代 MoE Qwen2.5-Plus，以更少总参与激活参显著超过，体现数据，策略与架构优势。
 
 (4) Compared with our previous flagship open-source dense model Qwen2.5-72B-Base, Qwen3-235B-A22B-Base surpasses the latter in all benchmarks and uses fewer than 1/3 of the activated parameters. Meanwhile, due to the advantage of the model architecture, the inference costs and training costs on each trillion tokens of Qwen3-235B-A22B-Base are much cheaper than those of Qwen2.5-72B-Base.
 
-(4) 相对上代旗舰 Dense Qwen2.5-72B-Base, 全基准超过且激活参不到 1/3; 架构优势下每万亿 token 的推理与训练成本也更低.
+(4) 相对上代旗舰 Dense Qwen2.5-72B-Base，全基准超过且激活参不到 1/3；架构优势下每万亿 token 的推理与训练成本也更低。
 
 Qwen3-32B-Base Qwen3-32B-Base is our largest dense model among the Qwen3 series. We compare it to the baselines of similar sizes, including Gemma-3-27B (Team et al., 2025) and Qwen2.5-32B (Yang et al., 2024b). In addition, we introduce two strong baselines: the recently open-source MoE model Llama-4-Scout, which has three times the parameters of Qwen3-32B-Base but half the activated parameters;
 
-Qwen3-32B-Base 是系列最大 Dense. 对照同规模 Gemma-3-27B 与 Qwen2.5-32B, 并引入更强对照: Llama-4-Scout (总参约三倍, 激活参约一半) 以及上代旗舰 Dense Qwen2.5-72B-Base.
+Qwen3-32B-Base 是系列最大 Dense。对照同规模 Gemma-3-27B 与 Qwen2.5-32B，并引入更强对照：Llama-4-Scout（总参约三倍，激活参约一半）以及上代旗舰 Dense Qwen2.5-72B-Base。
 
 <!-- page 6 of 35 -->
 
@@ -269,35 +269,35 @@ and our previous flagship open-source dense model Qwen2.5-72B-Base, which has mo
 
 (1) Compared with the similar-sized models, Qwen3-32B-Base outperforms Qwen2.5-32B-Base and Gemma-3-27B Base on most benchmarks. Notably, Qwen3-32B-Base achieves 65.54 on MMLU-Pro and 39.78 on SuperGPQA, significantly outperforming its predecessor Qwen2.5-32B-Base. In addition, Qwen3-32B-Base achieves significantly higher encoding benchmark scores than all baseline models.
 
-(1) 相对同规模, 多数基准超过 Qwen2.5-32B-Base 与 Gemma-3-27B Base. MMLU-Pro 65.54, SuperGPQA 39.78, 明显高于上代 32B; 编码基准也全面更高.
+(1) 相对同规模，多数基准超过 Qwen2.5-32B-Base 与 Gemma-3-27B Base. MMLU-Pro 65.54，SuperGPQA 39.78，明显高于上代 32B；编码基准也全面更高。
 
 (2) Surprisingly, we find that Qwen3-32B-Base achieves competitive results compared to Qwen2.5-72B-Base. Although Qwen3-32B-Base has less than half the number of parameters of Qwen2.5-72B-Base, it outperforms Qwen2.5-72B-Base in 10 of the 15 evaluation benchmarks. On coding, mathematics, and reasoning benchmarks, Qwen3-32B-Base has remarkable advantages.
 
-(2) 相对 Qwen2.5-72B-Base 仍有竞争力: 参数不到一半, 15 项中赢 10 项; 编码, 数学与推理优势明显.
+(2) 相对 Qwen2.5-72B-Base 仍有竞争力：参数不到一半，15 项中赢 10 项；编码，数学与推理优势明显。
 
 (3) Compared to Llama-4-Scout-Base, Qwen3-32B-Base significantly outperforms it on all 15 benchmarks, with only one-third of the number of parameters of Llama-4-Scout-Base, but twice the number of activated parameters.
 
-(3) 相对 Llama-4-Scout-Base, 15 项全胜; 总参约三分之一, 激活参约两倍.
+(3) 相对 Llama-4-Scout-Base，15 项全胜；总参约三分之一，激活参约两倍。
 
 Qwen3-14B-Base & Qwen3-30B-A3B-Base The evaluation of the Qwen3-14B-Base and Qwen3-30B-A3B-Base is compared against baselines of similar sizes, including Gemma-3-12B Base, Qwen2.5-14B Base. Similarly, we also introduce two strong baselines: (1) Qwen2.5-Turbo (Yang et al., 2024b), which has 42B parameters and 6B activated parameters. Note that its activated parameters are twice those of Qwen3-30B-A3B-Base. (2) Qwen2.5-32B-Base, which has 11 times the activated parameters of Qwen3-30B-A3B and more than twice that of Qwen3-14B. The results are shown in Table 5, where we can draw the following conclusions.
 
-14B-Base 与 30B-A3B-Base 对照同规模 Gemma-3-12B, Qwen2.5-14B, 以及更强对照 Qwen2.5-Turbo (42B/6B 激活, 激活约为 30B-A3B 两倍) 与 Qwen2.5-32B-Base (激活约为 30B-A3B 的 11 倍, 约为 14B 两倍以上). 见表 5.
+14B-Base 与 30B-A3B-Base 对照同规模 Gemma-3-12B，Qwen2.5-14B，以及更强对照 Qwen2.5-Turbo（42B/6B 激活，激活约为 30B-A3B 两倍）与 Qwen2.5-32B-Base（激活约为 30B-A3B 的 11 倍，约为 14B 两倍以上）。见表 5。
 
 (1) Compared with the similar-sized models, Qwen3-14B-Base significantly performs better than Qwen2.5-14B-Base and Gemma-3-12B-Base on all 15 benchmarks.
 
-(1) 14B-Base 在全部 15 项上明显超过 Qwen2.5-14B-Base 与 Gemma-3-12B-Base.
+(1) 14B-Base 在全部 15 项上明显超过 Qwen2.5-14B-Base 与 Gemma-3-12B-Base。
 
 (2) Similarly, Qwen3-14B-Base also achieves very competitive results compared to Qwen2.5-32B-Base with less than half of the parameters.
 
-(2) 14B-Base 以不到一半参数对上 Qwen2.5-32B-Base 仍很有竞争力.
+(2) 14B-Base 以不到一半参数对上 Qwen2.5-32B-Base 仍很有竞争力。
 
 (3) With only 1/5 activated non-embedding parameters, Qwen3-30B-A3B significantly outperforms Qwen2.5-14B-Base on all tasks, and achieves comparable performance to Qwen3-14B-Base and Qwen2.5-32B-Base, which brings us significant advantages in inference and training costs.
 
-(3) 30B-A3B 仅约 1/5 激活非嵌入参即在全部任务超过 Qwen2.5-14B-Base, 并与 14B-Base 及 Qwen2.5-32B-Base 可比, 推理与训练成本优势大.
+(3) 30B-A3B 仅约 1/5 激活非嵌入参即在全部任务超过 Qwen2.5-14B-Base，并与 14B-Base 及 Qwen2.5-32B-Base 可比，推理与训练成本优势大。
 
 Qwen3-8B / 4B / 1.7B / 0.6B-Base For edge-side models, we take similar-sized Qwen2.5, Llama-3, and Gemma-3 base models as the baselines. The results can be seen in Table 6, Table 7, and Table 8. All Qwen3 8B / 4B / 1.7B / 0.6B-Base models continue to maintain strong performance across nearly all benchmarks. Notably, Qwen3-8B / 4B / 1.7B-Base models even outperform larger size Qwen2.5-14B / 7B / 3B Base models on over half of the benchmarks, especially on STEM-related and coding benchmarks, reflecting the significant improvement of the Qwen3 models.
 
-边侧 8B/4B/1.7B/0.6B-Base 对照同规模 Qwen2.5, Llama-3, Gemma-3 (表 6–8). 几乎全基准保持强; 8B/4B/1.7B 甚至在一半以上项目超过更大档 Qwen2.5-14B/7B/3B, STEM 与编码尤明显.
+边侧 8B/4B/1.7B/0.6B-Base 对照同规模 Qwen2.5, Llama-3, Gemma-3（表 6–8）。几乎全基准保持强；8B/4B/1.7B 甚至在一半以上项目超过更大档 Qwen2.5-14B/7B/3B，STEM 与编码尤明显。
 
 ## 4 Post-training 后训练
 
@@ -305,62 +305,62 @@ Qwen3-8B / 4B / 1.7B / 0.6B-Base For edge-side models, we take similar-sized Qwe
 
 Figure 1: Post-training pipeline of the Qwen3 series models.
 
-图 1: Post-training pipeline of the Qwen3 series models.
+图 1: Post-training pipeline of the Qwen3 series models。
 
 <!-- page 10 of 35 -->
 
 The post-training pipeline of Qwen3 is strategically designed with two core objectives:
 
-后训练两个核心目标:
+后训练两个核心目标：
 
 (1) Thinking Control: This involves the integration of two distinct modes, namely the “non-thinking” and “thinking” modes, providing users with the flexibility to choose whether the model should engage in reasoning or not, and to control the depth of thinking by specifying a token budget for the thinking process.
 
-(1) Thinking Control: 整合 non-thinking 与 thinking, 用户可选择是否推理, 并用 token 预算控制思考深度.
+(1) Thinking Control：整合 non-thinking 与 thinking，用户可选择是否推理，并用 token 预算控制思考深度。
 
-> **停一下:** Thinking Control 和 Strong-to-Weak Distillation 是不是同一条流水?
-> 不是. 前者是旗舰四段后训练的产品目标; 后者是轻量档用教师 logits 走捷径, 报告称约 1/10 GPU hours.
+> **停一下：** Thinking Control 和 Strong-to-Weak Distillation 是不是同一条流水？
+> 不是。前者是旗舰四段后训练的产品目标；后者是轻量档用教师 logits 走捷径，报告称约 1/10 GPU hours。
 
 (2) Strong-to-Weak Distillation: This aims to streamline and optimize the post-training process for lightweight models. By leveraging the knowledge from large-scale models, we substantially reduce both the computational costs and the development efforts required for building smaller-scale models.
 
-(2) Strong-to-Weak Distillation: 优化轻量档后训练, 借大模型知识大幅降低小模型算力与开发成本.
+(2) Strong-to-Weak Distillation：优化轻量档后训练，借大模型知识大幅降低小模型算力与开发成本。
 
 As illustrated in Figure 1, the flagship models in the Qwen3 series follow a sophisticated four-stage training process. The first two stages focus on developing the models' “thinking” abilities. The next two stages aim to integrate strong “non-thinking” functionalities into the models.
 
-如图 1, 旗舰走四段: 前两段做 thinking, 后两段融入强 non-thinking.
+如图 1，旗舰走四段：前两段做 thinking，后两段融入强 non-thinking。
 
 Preliminary experiments suggest that directly distilling the output logits from teacher models into lightweight student models can effectively enhance their performance while maintaining fine-grained control over their reasoning processes. This approach eliminates the necessity of performing an exhaustive four-stage training process individually for every small-scale model. It leads to better immediate performance, as indicated by higher Pass@1 scores, and also improves the model's ability of exploration, as reflected in improved Pass@64 results. In addition, it achieves these gains with much greater training efficiency, requiring only 1/10 of the GPU hours compared to the four-stage training method.
 
-初步实验表明, 把教师 logits 蒸给学生可抬表现并保留细粒度推理控制, 不必为每个小模型重跑四段; Pass@1 与 Pass@64 更好, GPU hours 约只需四段的 1/10.
+初步实验表明，把教师 logits 蒸给学生可抬表现并保留细粒度推理控制，不必为每个小模型重跑四段；Pass@1 与 Pass@64 更好，GPU hours 约只需四段的 1/10。
 
-> **再看:** 蒸馏省算力, 会不会只抬 Pass@1, 伤探索?
-> 报告相反: 蒸馏同时抬 Pass@1 与 Pass@64, 而对照 RL 在表 21 上 Pass@64 不涨.
+> **再看：** 蒸馏省算力，会不会只抬 Pass@1，伤探索？
+> 报告相反：蒸馏同时抬 Pass@1 与 Pass@64，而对照 RL 在表 21 上 Pass@64 不涨。
 
 In the following sections, we present the four-stage training process and provide a detailed explanation of the Strong-to-Weak Distillation approach.
 
-下文展开四段训练, 并详述 Strong-to-Weak Distillation.
+下文展开四段训练，并详述 Strong-to-Weak Distillation。
 
 ### 4.1 Long-CoT Cold Start 长 CoT 冷启动
 
 We begin by curating a comprehensive dataset that spans a wide range of categories, including math, code, logical reasoning, and general STEM problems. Each problem in the dataset is paired with verified reference answers or code-based test cases. This dataset serves as the foundation for the “cold start” phase of long Chain-of-Thought (long-CoT) training.
 
-先整理覆盖数学, 代码, 逻辑与通用 STEM 的数据, 每题配已验证答案或代码测试, 作为 long-CoT 冷启动基础.
+先整理覆盖数学，代码，逻辑与通用 STEM 的数据，每题配已验证答案或代码测试，作为 long-CoT 冷启动基础。
 
 The dataset construction involves a rigorous two-phase filtering process: query filtering and response filtering. In the query filtering phase, we use Qwen2.5-72B-Instruct to identify and remove queries that are not easily verifiable. This includes queries containing multiple sub-questions or those asking for general text generation. Furthermore, we exclude queries that Qwen2.5-72B-Instruct can answer correctly without using CoT reasoning. This helps prevent the model from relying on superficial guessing and ensures that only complex problems requiring deeper reasoning are included. Additionally, we annotate each query's domain using Qwen2.5-72B-Instruct to maintain balanced domain representation across the dataset.
 
-数据构造两阶段过滤: 查询过滤与响应过滤. 查询侧用 Qwen2.5-72B-Instruct 去掉难验证, 多小题, 纯生成, 以及不用 CoT 也能答对的题, 并做领域标注以平衡.
+数据构造两阶段过滤：查询过滤与响应过滤。查询侧用 Qwen2.5-72B-Instruct 去掉难验证，多小题，纯生成，以及不用 CoT 也能答对的题，并做领域标注以平衡。
 
 After reserving a validation query set, we generate N candidate responses for each remaining query using QwQ-32B (Qwen Team, 2025). When QwQ-32B consistently fails to generate correct solutions, human annotators manually assess the accuracy of the responses. For queries with positive Pass@N, further stringent filtering criteria are applied to remove responses that (1) yield incorrect final answers, (2) contain substantial repetition, (3) clearly indicate guesswork without adequate reasoning, (4) exhibit inconsistencies between the thinking and summary contents, (5) involve inappropriate language mixing or stylistic shifts, or (6) are suspected of being overly similar to potential validation set items. Subsequently, a carefully selected subset of the refined dataset is used for the initial cold-start training of the reasoning patterns. The objective at this stage is to instill foundational reasoning patterns in the model without overly emphasizing immediate reasoning performance. This approach ensures that the model's potential is not limited, allowing for greater flexibility and improvement during the subsequent reinforcement learning (RL) phase. To achieve this objective effectively, it is preferable to minimize both the number of training samples and the training steps during this preparatory phase.
 
-留出验证查询后, 用 QwQ-32B 为每查询生成 N 条候选; 持续失败则人工审. Pass@N 为正时再严滤错答, 重复, 无推理乱猜, 思考与摘要不一致, 语码混杂, 以及疑似撞验证集. 再用精选集做冷启动, 目标是种推理模式而非刷满即时分数, 样本与步数宜少.
+留出验证查询后，用 QwQ-32B 为每查询生成 N 条候选；持续失败则人工审。Pass@N 为正时再严滤错答，重复，无推理乱猜，思考与摘要不一致，语码混杂，以及疑似撞验证集。再用精选集做冷启动，目标是种推理模式而非刷满即时分数，样本与步数宜少。
 
 ### 4.2 Reasoning RL 推理强化学习
 
 The query-verifier pairs used in the Reasoning RL stage must satisfy the following four criteria: (1) They were not used during the cold-start phase. (2) They are learnable for the cold-start model. (3) They are as challenging as possible. (4) They cover a broad range of sub-domains. We ultimately collect a total of 3,995 query-verifier pairs, and employed GRPO (Shao et al., 2024) to update the model parameters. We observe that using a large batch size and a high number of rollouts per query, along with off-policy training to improve sample efficiency, is beneficial to the training process. We have also addressed how to balance exploration and exploitation by controlling the model's entropy to increase steadily or remain
 
-Reasoning RL 的 query-verifier 须满足: 未进冷启动, 对冷启动模型可学, 尽量难, 子域广. 共 3,995 对, 用 GRPO 更新. 大批次, 高 rollout 与 off-policy 有益; 用熵控制探索. 单次 run 中奖励与验证分一致上升, 例如 235B-A22B 的 AIME'24 在约 170 步从 70.1 到 85.1.
+Reasoning RL 的 query-verifier 须满足：未进冷启动，对冷启动模型可学，尽量难，子域广。共 3,995 对，用 GRPO 更新。大批次，高 rollout 与 off-policy 有益；用熵控制探索。单次 run 中奖励与验证分一致上升，例如 235B-A22B 的 AIME'24 在约 170 步从 70.1 到 85.1。
 
-> **拆开:** Reasoning RL 里报告用来稳住探索-利用、从而单次 run 不用手拧超参的旋钮是哪些?
-> §4.2: 大批次, 每查询高 rollout, 再加 off-policy 提样本效率; 同时把熵控成稳步上升或持平. 70.1→85.1 的轨迹写在同段, 对外最终分见表 11.
+> **拆开：** Reasoning RL 里报告用来稳住探索-利用、从而单次 run 不用手拧超参的旋钮是哪些？
+> §4.2：大批次，每查询高 rollout，再加 off-policy 提样本效率；同时把熵控成稳步上升或持平。70.1→85.1 的轨迹写在同段，对外最终分见表 11。
 
 <!-- page 11 of 35 -->
 
@@ -379,22 +379,22 @@ stable, which is crucial for maintaining stable training. As a result, we achiev
 
 The goal of the Thinking Mode Fusion stage is to integrate the “non-thinking” capabilities into the previously developed “thinking” model. This approach allows developers to manage and control reasoning behaviors, while also reducing the cost and complexity of deploying separate models for thinking and non-thinking tasks. To achieve this, we conduct continual supervised fine-tuning (SFT) on the Reasoning RL model and design a chat template to fuse the two modes. Moreover, we find that models capable of handling both modes proficiently perform consistently well under different thinking budgets.
 
-Thinking Mode Fusion 要把 non-thinking 融进已具备 thinking 的模型, 降低双模型部署成本. 对 Reasoning RL 模型继续 SFT, 并设计 chat template; 双模式熟练的模型在不同 thinking budget 下也稳定.
+Thinking Mode Fusion 要把 non-thinking 融进已具备 thinking 的模型，降低双模型部署成本。对 Reasoning RL 模型继续 SFT，并设计 chat template；双模式熟练的模型在不同 thinking budget 下也稳定。
 
 Construction of SFT data. The SFT dataset combines both the “thinking” and “non-thinking” data. To ensure that the performance of the Stage 2 model is not compromised by the additional SFT, the “thinking” data is generated via rejection sampling on Stage 1 queries using the Stage 2 model itself. The “non-thinking” data, on the other hand, is carefully curated to cover a diverse range of tasks, including coding, mathematics, instruction-following, multilingual tasks, creative writing, question answering, and role-playing. Additionally, we employ automatically generated checklists for assessing the response quality of “non-thinking” data. To enhance the performance on tasks with low-resource languages, we particularly increase the proportion of translation tasks.
 
-SFT 数据混合 thinking 与 non-thinking. thinking 数据用 Stage 2 模型对 Stage 1 查询拒绝采样, 以免冲掉 Stage 2. non-thinking 覆盖代码, 数学, 指令, 多语, 创作, QA, 角色扮演等, 并用自动清单评估; 低资源语加强翻译比例.
+SFT 数据混合 thinking 与 non-thinking. thinking 数据用 Stage 2 模型对 Stage 1 查询拒绝采样，以免冲掉 Stage 2. non-thinking 覆盖代码，数学，指令，多语，创作，QA，角色扮演等，并用自动清单评估；低资源语加强翻译比例。
 
-> **核对:** Fusion 的 thinking 数据为何用 Stage 2 自身做拒绝采样, 而不是继续用冷启动时的 QwQ-32B?
-> §4.3 写明要避免额外 SFT 损害 Stage 2; 因此 thinking 轨迹由 Stage 2 模型对 Stage 1 查询拒绝采样生成, 让分布贴住刚训完的 Reasoning RL 策略, 而不是再灌一版外部教师风格.
+> **核对：** Fusion 的 thinking 数据为何用 Stage 2 自身做拒绝采样，而不是继续用冷启动时的 QwQ-32B?
+> §4.3 写明要避免额外 SFT 损害 Stage 2；因此 thinking 轨迹由 Stage 2 模型对 Stage 1 查询拒绝采样生成，让分布贴住刚训完的 Reasoning RL 策略，而不是再灌一版外部教师风格。
 
 Chat Template Design. To better integrate the two modes and enable users to dynamically switch the model's thinking process, we design chat templates for Qwen3, as shown in Table 9. Specifically, for samples in thinking mode and non-thinking mode, we introduce /think and /no\_think flags in the user query or system message, respectively. This allows the model to follow the user's input and select the appropriate thinking mode accordingly. For non-thinking mode samples, we retain an empty thinking block in the assistant's response. This design ensures internal format consistency within the model and allows developers to prevent the model from engaging in thinking behavior by concatenating an empty think block in the chat template. By default, the model operates in thinking mode; therefore, we add some thinking mode training samples where the user queries do not include /think flags. For more complex multi-turn dialogs, we randomly insert multiple /think and /no\_think flags into users' queries, with the model response adhering to the last flag encountered.
 
-chat template 在用户/系统侧引入 /think 与 /no_think. non-thinking 样本保留空 thinking 块以统一格式, 部署可拼空块禁想. 默认 thinking, 故部分 thinking 样本不含 /think. 多轮随机插入多个开关时, 以最后一次为准.
+chat template 在用户/系统侧引入 /think 与 /no_think. non-thinking 样本保留空 thinking 块以统一格式，部署可拼空块禁想。默认 thinking，故部分 thinking 样本不含 /think。多轮随机插入多个开关时，以最后一次为准。
 
 Thinking Budget. An additional advantage of Thinking Mode Fusion is that, once the model learns to respond in both non-thinking and thinking modes, it naturally develops the ability to handle intermediate cases—generating responses based on incomplete thinking. This capability lays the foundation for implementing budget control over the model's thinking process. Specifically, when the length of the model's thinking reaches a user-defined threshold, we manually halt the thinking process and insert the stop-thinking instruction: "Considering the limited time by the user, I have to give the solution based on the thinking directly now.\n&lt;/think&gt;.\n\n". After this instruction is inserted, the model proceeds to generate a final response based on its accumulated reasoning up to that point. It is worth noting that this ability is not explicitly trained but emerges naturally as a result of applying Thinking Mode Fusion.
 
-Fusion 后模型自然能处理不完整思考, 从而支持 budget: 思考长度触顶则插入停想指令并 </think>, 再基于已有思考作答. 该能力未显式单训, 由 Fusion 涌现.
+Fusion 后模型自然能处理不完整思考，从而支持 budget：思考长度触顶则插入停想指令并 </think>，再基于已有思考作答。该能力未显式单训，由 Fusion 涌现。
 
 <!-- page 12 of 35 -->
 
@@ -402,7 +402,7 @@ Fusion 后模型自然能处理不完整思考, 从而支持 budget: 思考长�
 
 The General RL stage aims to broadly enhance the models' capabilities and stability across diverse scenarios. To facilitate this, we have established a sophisticated reward system covering over 20 distinct tasks, each with customized scoring criteria. These tasks specifically target enhancements in the following core capabilities:
 
-General RL 广泛增强多样场景能力与稳定性, 建立覆盖 20+ 任务的奖励系统, 针对指令遵循, 格式遵循, 偏好对齐, Agent 真环境多轮, 以及 RAG 等专项.
+General RL 广泛增强多样场景能力与稳定性，建立覆盖 20+ 任务的奖励系统，针对指令遵循，格式遵循，偏好对齐，Agent 真环境多轮，以及 RAG 等专项。
 
 \- Instruction Following: This capability ensures that models accurately interpret and follow user instructions, including requirements related to content, format, length, and the use of structured output, delivering responses that align with user expectations.
 
@@ -416,42 +416,42 @@ General RL 广泛增强多样场景能力与稳定性, 建立覆盖 20+ 任务�
 
 To provide feedback for the aforementioned tasks, we utilized three distinct types of rewards:
 
-反馈用三类奖励: (1) 规则奖励, 高精度防 hacking; (2) 带参考答案的模型评分 (Qwen2.5-72B-Instruct); (3) 无参考的偏好奖励模型, 覆盖更广开放题.
+反馈用三类奖励：（1）规则奖励，高精度防 hacking; (2) 带参考答案的模型评分（Qwen2.5-72B-Instruct）；（3）无参考的偏好奖励模型，覆盖更广开放题。
 
 (1) Rule-based Reward: The rule-based reward has been widely used in the reasoning RL stage, and is also useful for general tasks such as instruction following (Lambert et al., 2024) and format adherence. Well-designed rule-based rewards can assess the correctness of model outputs with high precision, preventing issues like reward hacking.
 
-(1) 规则奖励: 已在 Reasoning RL 阶段广泛使用, 也适用于指令遵循与格式遵守等通用任务. 设计良好的规则奖励可高精度判断输出正误, 抑制 reward hacking.
+(1) 规则奖励：已在 Reasoning RL 阶段广泛使用，也适用于指令遵循与格式遵守等通用任务。设计良好的规则奖励可高精度判断输出正误，抑制 reward hacking。
 
 (2) Model-based Reward with Reference Answer: In this approach, we provide a reference answer for each query and prompt Qwen2.5-72B-Instruct to score the model's response based on this reference. This method allows for more flexible handling of diverse tasks without requiring strict formatting, avoiding false negatives that can occur with purely rule-based rewards.
 
-(2) 带参考答案的模型奖励: 为每查询提供参考, 让 Qwen2.5-72B-Instruct 据此打分. 更灵活覆盖多样任务, 不必严格式, 可减少纯规则奖励的假阴性.
+(2) 带参考答案的模型奖励：为每查询提供参考，让 Qwen2.5-72B-Instruct 据此打分。更灵活覆盖多样任务，不必严格式，可减少纯规则奖励的假阴性。
 
 (3) Model-based Reward without Reference Answer: Leveraging human preference data, we train a reward model to assign scalar scores to model responses. This approach, which does not depend on a reference answer, can handle a broader range of queries while effectively enhancing the model's engagement and helpfulness.
 
-(3) 无参考的模型奖励: 用人偏好数据训奖励模型给标量分. 不依赖参考答案, 可覆盖更广查询, 并提升参与度与有用性.
+(3) 无参考的模型奖励：用人偏好数据训奖励模型给标量分。不依赖参考答案，可覆盖更广查询，并提升参与度与有用性。
 
 ### 4.5 Strong-to-Weak Distillation 强到弱蒸馏
 
 The Strong-to-Weak Distillation pipeline is specifically designed to optimize lightweight models, encompassing 5 dense models (Qwen3-0.6B, 1.7B, 4B, 8B, and 14B) and one MoE model (Qwen3-30B-A3B). This approach enhances model performance while effectively imparting robust mode-switching capabilities. The distillation process is divided into two primary phases:
 
-Strong-to-Weak Distillation 面向 5 个 Dense (0.6B–14B) 与 30B-A3B: (1) Off-policy 混合教师 /think 与 /no_think 输出做响应蒸馏; (2) On-policy 由学生生成序列, 再对齐教师 (32B 或 235B-A22B) logits 以最小化 KL.
+Strong-to-Weak Distillation 面向 5 个 Dense (0.6B–14B) 与 30B-A3B: (1) Off-policy 混合教师 /think 与 /no_think 输出做响应蒸馏；（2）On-policy 由学生生成序列，再对齐教师（32B 或 235B-A22B）logits 以最小化 KL。
 
 (1) Off-policy Distillation: At this initial phase, we combine the outputs of teacher models generated with both /think and /no\_think modes for response distillation. This helps lightweight student models develop basic reasoning skills and the ability to switch between different modes of thinking, laying a solid foundation for the next on-policy training phase.
 
-(1) Off-policy 蒸馏: 先混合教师在 /think 与 /no_think 下的输出做响应蒸馏, 让轻量学生建立基本推理与模式切换能力, 为后续 on-policy 打底.
+(1) Off-policy 蒸馏：先混合教师在 /think 与 /no_think 下的输出做响应蒸馏，让轻量学生建立基本推理与模式切换能力，为后续 on-policy 打底。
 
 (2) On-policy Distillation: In this phase, the student model generates on-policy sequences for fine-tuning. Specifically, prompts are sampled, and the student model produces responses in either /think or /no\_think mode. The student model is then fine-tuned by aligning its logits with those of a teacher model (Qwen3-32B or Qwen3-235B-A22B) to minimize the KL divergence.
 
-(2) On-policy 蒸馏: 学生按采样提示自行以 /think 或 /no_think 生成序列, 再将其 logits 与教师 (Qwen3-32B 或 Qwen3-235B-A22B) 对齐以最小化 KL.
+(2) On-policy 蒸馏：学生按采样提示自行以 /think 或 /no_think 生成序列，再将其 logits 与教师（Qwen3-32B 或 Qwen3-235B-A22B）对齐以最小化 KL。
 
-> **对一下:** On-policy 蒸馏对齐的是教师答案文本, 还是 logits?
-> 对齐 logits, 最小化与教师 (32B 或 235B-A22B) 的 KL; 学生先自己按 /think 或 /no_think 生成序列.
+> **对一下：** On-policy 蒸馏对齐的是教师答案文本，还是 logits?
+> 对齐 logits，最小化与教师（32B 或 235B-A22B）的 KL；学生先自己按 /think 或 /no_think 生成序列。
 
 ### 4.6 Post-training Evaluation 后训练评测
 
 To comprehensively evaluate the quality of instruction-tuned models, we adopted automatic benchmarks to assess model performance under both thinking and non-thinking modes. These benchmarks are
 
-指令模型在 thinking 与 non-thinking 两套自动基准上评测, 维度见下.
+指令模型在 thinking 与 non-thinking 两套自动基准上评测，维度见下。
 
 <!-- page 13 of 35 -->
 
@@ -482,7 +482,7 @@ categorized into several dimensions:
 
 For all Qwen3 models in the thinking mode, we utilize a sampling temperature of 0.6, a top-p value of 0.95, and a top-k value of 20. Additionally, for Creative Writing v3 and WritingBench, we apply a presence penalty of 1.5 to encourage the generation of more diverse content. For Qwen3 models in the non-thinking mode, we configure the sampling hyperparameters with temperature = 0.7, top-p = 0.8, top-k = 20, and presence penalty = 1.5. For both the thinking and non-thinking modes, we set the max output length to 32,768 tokens, except AIME'24 and AIME'25 where we extend this length to 38,912 tokens to provide sufficient thinking space.
 
-thinking 采样: temperature 0.6, top-p 0.95, top-k 20; 写作类加 presence penalty 1.5. non-thinking: 0.7/0.8/20, presence penalty 1.5. 最大输出默认 32,768, AIME 到 38,912.
+thinking 采样：temperature 0.6，top-p 0.95，top-k 20；写作类加 presence penalty 1.5. non-thinking: 0.7/0.8/20, presence penalty 1.5。最大输出默认 32,768，AIME 到 38,912。
 
 <!-- page 14 of 35 -->
 
@@ -502,55 +502,55 @@ Table 12: Comparison among Qwen3-235B-A22B (Non-thinking) and other non-reasonin
 
 Summary of Evaluation Results From the evaluation results, we summarize several key conclusions of the finalized Qwen3 models as follows:
 
-后训练评测小结如下.
+后训练评测小结如下。
 
 (1) Our flagship model, Qwen3-235B-A22B, demonstrates the state-of-the-art overall performance among open-source models in both the thinking and non-thinking modes, surpassing strong baselines such as DeepSeek-R1 and DeepSeek-V3. Qwen3-235B-A22B is also highly competitive to closed-source leading models, such as OpenAI-o1, Gemini2.5-Pro, and GPT-4o, showcasing its profound reasoning capabilities and comprehensive general abilities.
 
-(1) 旗舰 235B-A22B 在 thinking 与 non-thinking 上均达开源总体最强档, 超过 DeepSeek-R1/V3 等, 并对闭源 o1, Gemini2.5-Pro, GPT-4o 有竞争力.
+(1) 旗舰 235B-A22B 在 thinking 与 non-thinking 上均达开源总体最强档，超过 DeepSeek-R1/V3 等，并对闭源 o1，Gemini2.5-Pro，GPT-4o 有竞争力。
 
 (2) Our flagship dense model, Qwen3-32B, outperforms our previous strongest reasoning model, QwQ-32B, in most of the benchmarks, and performs comparably to the closed-source OpenAI-o3-mini, indicating its compelling reasoning capabilities. Qwen3-32B is also remarkably performant in the non-thinking mode and surpasses our previous flagship non-reasoning dense model, Qwen2.5-72B-Instruct.
 
-(2) 旗舰 Dense 32B 在多数基准超过 QwQ-32B, 并与 o3-mini 可比; non-thinking 也超过上代 Qwen2.5-72B-Instruct.
+(2) 旗舰 Dense 32B 在多数基准超过 QwQ-32B，并与 o3-mini 可比；non-thinking 也超过上代 Qwen2.5-72B-Instruct。
 
 (3) Our lightweight models, including Qwen3-30B-A3B, Qwen3-14B, and other smaller dense ones, possess consistently superior performance to the open-source models with a close or larger amount of parameters, proving the success of our Strong-to-Weak Distillation approach.
 
-(3) 轻量档 (含 30B-A3B, 14B 与更小 Dense) 相对相近或更大开源持续更强, 证明 Strong-to-Weak Distillation.
+(3) 轻量档（含 30B-A3B，14B 与更小 Dense）相对相近或更大开源持续更强，证明 Strong-to-Weak Distillation。
 
 The detailed results are as follows.
 
-详细结果如下.
+详细结果如下。
 
 Qwen3-235B-A22B For our flagship model Qwen3-235B-A22B, we compare it with the leading reasoning and non-reasoning models. For the thinking mode, we take OpenAI-o1 (OpenAI, 2024), DeepSeek-R1 (Guo et al., 2025), Grok-3-Beta (Think) (xAI, 2025), and Gemini2.5-Pro (DeepMind, 2025) as the reasoning baselines. For the non-thinking mode, we take GPT-4o-2024-11-20 (OpenAI, 2024), DeepSeek-V3 (Liu et al., 2024a), Qwen2.5-72B-Instruct (Yang et al., 2024b), and LLaMA-4-Maverick (Meta-AI, 2025) as the non-reasoning baselines. We present the evaluation results in Table 11 and 12.
 
-旗舰 235B-A22B: thinking 对照 o1, R1, Grok-3-Beta (Think), Gemini2.5-Pro (表 11); non-thinking 对照 GPT-4o, V3, Qwen2.5-72B-Instruct, LLaMA-4-Maverick (表 12).
+旗舰 235B-A22B: thinking 对照 o1, R1, Grok-3-Beta (Think), Gemini2.5-Pro（表 11）；non-thinking 对照 GPT-4o, V3, Qwen2.5-72B-Instruct, LLaMA-4-Maverick（表 12）。
 
 (1) From Table 11, with only 60% activated and 35% total parameters, Qwen3-235B-A22B (Thinking) outperforms DeepSeek-R1 on 17/23 the benchmarks, particularly on the reasoning-demanded tasks (e.g., mathematics, agent, and coding), demonstrating the state-of-the-art reasoning capabilities of Qwen3-235B-A22B among open-source models. Moreover, Qwen3-235B-A22B (Thinking) is also highly competitive to the closed-source OpenAI-o1, Grok-3-Beta (Think), and Gemini2.5-Pro, substantially narrowing the gap in the reasoning capabilities between open-source and close-source models.
 
-(1) 表 11: 以约 60% 激活与 35% 总参, thinking 在 23 项中 17 项超过 R1, 数学/agent/编码尤强, 并对闭源推理模型有竞争力.
+(1) 表 11：以约 60% 激活与 35% 总参，thinking 在 23 项中 17 项超过 R1，数学/agent/编码尤强，并对闭源推理模型有竞争力。
 
 (2) From Table 12, Qwen3-235B-A22B (Non-thinking) exceeds the other leading open-source models, including DeepSeek-V3, LLaMA-4-Maverick, and our previous flagship model Qwen2.5-72B-Instruct, and also surpasses the closed-source GPT-4o-2024-11-20 in 18/23 the benchmarks, indicating its inherent strong capabilities even when not enhanced with the deliberate thinking process.
 
-(2) 表 12: non-thinking 超过 V3, Maverick 与上代 72B-Instruct, 并在 23 项中 18 项超过 GPT-4o-2024-11-20.
+(2) 表 12: non-thinking 超过 V3，Maverick 与上代 72B-Instruct，并在 23 项中 18 项超过 GPT-4o-2024-11-20。
 
 Qwen3-32B For our flagship dense model, Qwen3-32B, we take DeepSeek-R1-Distill-Llama-70B, OpenAI-o3-mini (medium), and our previous strongest reasoning model, QwQ-32B (Qwen Team, 2025), as the baselines in the thinking mode. We also take GPT-4o-mini-2024-07-18, LLaMA-4-Scout, and our previous flagship model, Qwen2.5-72B-Instruct, as the baselines in the non-thinking mode. We present the evaluation results in Table 13 and 14.
 
-32B: thinking 对照 R1-Distill-Llama-70B, QwQ-32B, o3-mini (medium) (表 13); non-thinking 对照 GPT-4o-mini, LLaMA-4-Scout, Qwen2.5-72B-Instruct (表 14).
+32B: thinking 对照 R1-Distill-Llama-70B, QwQ-32B, o3-mini (medium) （表 13）；non-thinking 对照 GPT-4o-mini, LLaMA-4-Scout, Qwen2.5-72B-Instruct（表 14）。
 
 (1) From Table 13, Qwen3-32B (Thinking) outperforms QwQ-32B on 17/23 the benchmarks, making it the new state-of-the-art reasoning model at the sweet size of 32B. Moreover, Qwen3-32B (Thinking) also competes with the closed-source OpenAI-o3-mini (medium) with better alignment and multilingual performance.
 
-(1) 表 13: thinking 在 23 项中 17 项超过 QwQ-32B, 成为 32B 甜区新 SOTA, 并对 o3-mini (medium) 在对齐与多语上有优势.
+(1) 表 13: thinking 在 23 项中 17 项超过 QwQ-32B，成为 32B 甜区新 SOTA，并对 o3-mini (medium) 在对齐与多语上有优势。
 
 (2) From Table 14, Qwen3-32B (Non-thinking) exhibits superior performance to all the baselines on almost all the benchmarks. Particularly, Qwen3-32B (Non-thinking) performs on par with Qwen2.5-72B-Instruct on the general tasks with significant advantages on the alignment, multilingual, and reasoning-related tasks, again proving the fundamental improvements of Qwen3 over our previous Qwen2.5 series models.
 
-(2) 表 14: non-thinking 几乎全面超过对照; 通用上与 Qwen2.5-72B-Instruct 相当, 对齐/多语/推理相关更强.
+(2) 表 14: non-thinking 几乎全面超过对照；通用上与 Qwen2.5-72B-Instruct 相当，对齐/多语/推理相关更强。
 
 Qwen3-30B-A3B & Qwen3-14B For Qwen3-30B-A3B and Qwen3-14B, we compare them with DeepSeek-R1-Distill-Qwen-32B and QwQ-32B in the thinking mode, and Phi-4 (Abdin et al., 2024), Gemma-3-27B-IT (Team et al., 2025), and Qwen2.5-32B-Instruct in the non-thinking mode, respectively. We present the evaluation results in Table 15 and 16.
 
-30B-A3B 与 14B: thinking 对照 R1-Distill-Qwen-32B 与 QwQ-32B (表 15); non-thinking 对照 Phi-4, Gemma-3-27B-IT, Qwen2.5-32B-Instruct (表 16).
+30B-A3B 与 14B: thinking 对照 R1-Distill-Qwen-32B 与 QwQ-32B（表 15）；non-thinking 对照 Phi-4, Gemma-3-27B-IT, Qwen2.5-32B-Instruct（表 16）。
 
 (1) From Table 15, Qwen3-30B-A3B and Qwen3-14B (Thinking) are both highly competitive to QwQ-32B, especially on the reasoning-related benchmarks. It is noteworthy that Qwen3-30B-A3B achieves comparable performance to QwQ-32B with a smaller model size and less than
 
-(1) 表 15: 两者 thinking 对 QwQ-32B 有竞争力; 30B-A3B 以更小体积与不到 1/10 激活参逼近 QwQ-32B, 体现蒸馏.
+(1) 表 15：两者 thinking 对 QwQ-32B 有竞争力；30B-A3B 以更小体积与不到 1/10 激活参逼近 QwQ-32B，体现蒸馏。
 
 <!-- page 16 of 35 -->
 
@@ -614,17 +614,17 @@ Table 20: Comparison among Qwen3-1.7B / Qwen3-0.6B (Non-thinking) and other non-
 
 (2) From Table 16, Qwen3-30B-A3B and Qwen3-14B (Non-thinking) surpass the non-reasoning baselines in most of the benchmarks. They exceed our previous Qwen2.5-32B-Instruct model with significantly fewer activated and total parameters, allowing for more efficient and cost-effective performance.
 
-(2) 表 16: non-thinking 多数超过对照, 并以更少激活/总参超过上代 Qwen2.5-32B-Instruct.
+(2) 表 16: non-thinking 多数超过对照，并以更少激活/总参超过上代 Qwen2.5-32B-Instruct。
 
 Qwen3-8B / 4B / 1.7B / 0.6B For Qwen3-8B and Qwen3-4B, we compare them with DeepSeek-R1-Distill-Qwen-14B and DeepSeek-R1-Distill-Qwen-32B in the thinking mode, and LLaMA-3.1-8B-Instruct (Dubey et al., 2024), Gemma-3-12B-IT (Team et al., 2025), Qwen2.5-7B-Instruct, and Qwen2.5-14B-Instruct in the non-thinking mode, respectively. For Qwen3-1.7B and Qwen3-0.6B, we compare them with DeepSeek-R1-Distill-Qwen-1.5B and DeepSeek-R1-Distill-Llama-8B in the thinking mode, and Gemma-3-1B-IT, Phi-4-mini, Qwen2.5-1.5B-Instruct, and Qwen2.5-3B-Instruct in the non-thinking mode, respectively. We present the evaluation results of Qwen3-8B and Qwen3-4B in Table 17 and 18 and those of Qwen3-1.7B and Qwen3-0.6B in Table 19 and 20, respectively. Overall, these edge-side models exhibit impressive performance and outperform baselines even with more parameters, including our previous Qwen2.5 models, in either the thinking or the non-thinking mode. These results, once again, demonstrate the efficacy of our Strong-to-Weak Distillation approach, making it possible for us to build the lightweight Qwen3 models with remarkably reduced costs and efforts.
 
-边侧 Qwen3-8B/4B/1.7B/0.6B-Base 对照同规模 Qwen2.5, Llama-3, Gemma-3, 详见表 6–8; 多数基准保持强, 且常在一半以上项目超过更大档 Qwen2.5.
+边侧 Qwen3-8B/4B/1.7B/0.6B-Base 对照同规模 Qwen2.5，Llama-3，Gemma-3，详见表 6–8；多数基准保持强，且常在一半以上项目超过更大档 Qwen2.5。
 
 ### 4.7 Discussion 讨论
 
 The Effectiveness of Thinking Budget To verify that Qwen3 can enhance its intelligence level by leveraging an increased thinking budget, we adjust the allocated thinking budget on four benchmarks across Mathematics, Coding, and STEM domains. The resulting scaling curves are presented in Figure 2, Qwen3 demonstrates scalable and smooth performance improvements correlated to the allocated thinking budget. Moreover, we observe that if we further extend the output length beyond 32K, the model's performance is expected to improve further in the future. We leave this exploration as future work.
 
-thinking budget 有效性: 在数学/代码/STEM 四条线上调预算, 图 2 显示随预算平滑上升; 预期输出超过 32K 仍有空间, 留作后续.
+thinking budget 有效性：在数学/代码/STEM 四条线上调预算，图 2 显示随预算平滑上升；预期输出超过 32K 仍有空间，留作后续。
 
 LiveCodeBench (v5)
 
@@ -642,11 +642,11 @@ AIME'25
 
 Figure 2: Performance of Qwen3-235B-A22B with respect to the thinking budget.
 
-图 2: Performance of Qwen3-235B-A22B with respect to the thinking budget.
+图 2: Performance of Qwen3-235B-A22B with respect to the thinking budget。
 
 The Effectiveness and Efficiency of On-Policy Distillation We evaluate the effectiveness and efficiency of on-policy distillation by comparing the performance and computational cost—measured in GPU hours—after undergoing distillation versus direct reinforcement learning, both starting from the same off-policy distilled 8B checkpoint. For simplicity, we focus solely on math and code-related queries in
 
-On-policy 蒸馏有效性与效率: 同从 off-policy 8B 检查点出发, 比直接 RL (表 21). 蒸馏更强且约 1/10 GPU hours; 且抬 pass@64, RL 则不抬.
+On-policy 蒸馏有效性与效率：同从 off-policy 8B 检查点出发，比直接 RL（表 21）。蒸馏更强且约 1/10 GPU hours；且抬 pass@64，RL 则不抬。
 
 <!-- page 21 of 35 -->
 
@@ -664,7 +664,7 @@ Table 21: Comparison of reinforcement learning and on-policy distillation on Qwe
 
 The Effects of Thinking Mode Fusion and General RL To evaluate the effectiveness of Thinking Mode Fusion and General Reinforcement Learning (RL) during the post-training, we conduct evaluations on various stages of the Qwen-32B model. In addition to the datasets mentioned earlier, we introduce several in-house benchmarks to monitor other capabilities. These benchmarks include:
 
-Fusion 与 General RL 效应: 在 Qwen3-32B 各阶段评测, 并加内部榜 CounterFactQA, LengthCtrl, ThinkFollow, ToolUse.
+Fusion 与 General RL 效应：在 Qwen3-32B 各阶段评测，并加内部榜 CounterFactQA, LengthCtrl, ThinkFollow, ToolUse。
 
 \- CounterFactQA: Contains counterfactual questions where the model needs to identify that the questions are not factual and avoid generating hallucinatory answers.
 
@@ -682,73 +682,73 @@ Table 22: Performance of Qwen3-32B after Reasoning RL (Stage 2), Thinking Mode F
 
 The results are shown in Table 22, where we can draw the following conclusions:
 
-表 22 结论:
+表 22 结论：
 
 (1) Stage 3 integrates the non-thinking mode into the model, which already possesses thinking capabilities after the first two stages of training. The ThinkFollow benchmark score of 88.7 indicates that the model has developed an initial ability to switch between modes, though it still occasionally makes errors. Stage 3 also enhances the model's general and instruction-following capabilities in thinking mode, with CounterFactQA improving by 10.9 points and LengthCtrl by 8.0 points.
 
-(1) Stage 3 融入 non-thinking; ThinkFollow 88.7 说明开关已初步可用. 同时抬 thinking 侧通用与指令, CounterFactQA +10.9, LengthCtrl +8.0.
+(1) Stage 3 融入 non-thinking；ThinkFollow 88.7 说明开关已初步可用。同时抬 thinking 侧通用与指令，CounterFactQA +10.9, LengthCtrl +8.0。
 
 <!-- page 22 of 35 -->
 
 (2) Stage 4 further strengthens the model's general, instruction-following, and agent capabilities in both thinking and non-thinking modes. Notably, the ThinkFollow score improves to 98.9, ensuring accurate mode switching.
 
-(2) Stage 4 继续加强两模式下的通用, 指令与 agent; ThinkFollow 到 98.9.
+(2) Stage 4 继续加强两模式下的通用，指令与 agent；ThinkFollow 到 98.9。
 
-> **看表:** 表 22 里 ThinkFollow 在 Stage 3 是 88.7, Stage 4 才到 98.9, 模式开关的可靠性主要补在哪一段?
-> 表 22: Stage 3 Fusion 已经让开关可用 (88.7), 但仍会偶发错误; Stage 4 General RL 再抬到 98.9. §4.7 (2) 把准确切换写在 Stage 4 的加强项里.
+> **看表：** 表 22 里 ThinkFollow 在 Stage 3 是 88.7，Stage 4 才到 98.9，模式开关的可靠性主要补在哪一段？
+> 表 22: Stage 3 Fusion 已经让开关可用（88.7），但仍会偶发错误；Stage 4 General RL 再抬到 98.9. §4.7 (2) 把准确切换写在 Stage 4 的加强项里。
 
 (3) For Knowledge, STEM, Math, and Coding tasks, Thinking Mode Fusion and General RL do not bring significant improvements. In contrast, for challenging tasks like AIME'24 and Live-CodeBench, the performance in thinking mode actually decreases after these two training stages. We conjecture this degradation is due to the model being trained on a broader range of general tasks, which may compromise its specialized capabilities in handling complex problems. During the development of Qwen3, we choose to accept this performance trade-off to enhance the model's overall versatility.
 
-(3) 知识/STEM/数学/编码上 Fusion 与 General RL 无显著增益; AIME'24 与 LiveCodeBench 思考侧甚至略降. 报告猜想因通用任务变广而牺牲专项, 并选择接受该折中以换整体通用性.
+(3) 知识/STEM/数学/编码上 Fusion 与 General RL 无显著增益；AIME'24 与 LiveCodeBench 思考侧甚至略降。报告猜想因通用任务变广而牺牲专项，并选择接受该折中以换整体通用性。
 
-> **想:** Fusion/General RL 伤了 AIME 还继续做, 不是矛盾吗?
-> 报告接受折中: 换来模式切换, 指令与 agent 通用性. 表 22 里 ThinkFollow 到 98.9, ToolUse 大涨, AIME 思考侧略降.
+> **想：** Fusion/General RL 伤了 AIME 还继续做，不是矛盾吗？
+> 报告接受折中：换来模式切换，指令与 agent 通用性。表 22 里 ThinkFollow 到 98.9，ToolUse 大涨，AIME 思考侧略降。
 
-> **核对:** global-batch load balancing 是不是还是旧的 token-level 辅助损失换皮?
-> 报告点名 Qiu et al., 2025 的 global-batch 写法, 并与去掉共享专家一起写. 具体公式见该文, 本稿只记配置选择.
+> **核对：** global-batch load balancing 是不是还是旧的 token-level 辅助损失换皮？
+> 报告点名 Qiu et al.，2025 的 global-batch 写法，并与去掉共享专家一起写。具体公式见该文，本稿只记配置选择。
 
-> **拆开:** instance-level 配比和 domain-level 配比差在哪一步?
-> 前者用细粒度标签在小代理模型上消融到样本级; 后者只在数据源或领域桶上调权重. 报告声称走前者.
+> **拆开：** instance-level 配比和 domain-level 配比差在哪一步？
+> 前者用细粒度标签在小代理模型上消融到样本级；后者只在数据源或领域桶上调权重。报告声称走前者。
 
-> **回看:** 训练顶长已经 32,768, 为何还要 YaRN+DCA?
-> 训练段到 32k; YaRN+DCA 用于推理期再约四倍外推. 两段职责不同.
+> **回看：** 训练顶长已经 32,768，为何还要 YaRN+DCA?
+> 训练段到 32k；YaRN+DCA 用于推理期再约四倍外推。两段职责不同。
 
-> **想:** 为何故意丢掉不用 CoT 也能答对的题?
-> 防止 cold start 靠猜或短答混过去; 只留需要更深推理的题, 把上限留给后面 RL.
+> **想：** 为何故意丢掉不用 CoT 也能答对的题？
+> 防止 cold start 靠猜或短答混过去；只留需要更深推理的题，把上限留给后面 RL。
 
-> **问:** 冷启动样本越少越好, 这不是和普通 SFT 相反吗?
-> 是刻意的. 阶段目标是种推理模式, 不是刷满 Pass@1; 样本与步数少, 以免锁死后续 RL 探索.
+> **问：** 冷启动样本越少越好，这不是和普通 SFT 相反吗？
+> 是刻意的。阶段目标是种推理模式，不是刷满 Pass@1；样本与步数少，以免锁死后续 RL 探索。
 
-> **看表:** 70.1 到 85.1 是最终对外分数吗?
-> 这是 Reasoning RL 段内的轨迹. 对外旗舰 thinking 表 11 写 AIME'24 为 85.7, 还经过后续 Fusion/General RL.
+> **看表：** 70.1 到 85.1 是最终对外分数吗？
+> 这是 Reasoning RL 段内的轨迹。对外旗舰 thinking 表 11 写 AIME'24 为 85.7，还经过后续 Fusion/General RL。
 
-> **拆开:** 空 thinking 块是训练花样, 还是部署接口?
-> 两者都是. 训练保格式一致; 部署可直接拼接空块, 强制走 non-thinking.
+> **拆开：** 空 thinking 块是训练花样，还是部署接口？
+> 两者都是。训练保格式一致；部署可直接拼接空块，强制走 non-thinking。
 
-> **确认:** thinking budget 触顶后的停想, 有没有单独训过?
-> 报告写明未显式训练, 是双模式融合后对不完整思考的涌现; 触顶时人工插入停想指令再续写答案.
+> **确认：** thinking budget 触顶后的停想，有没有单独训过？
+> 报告写明未显式训练，是双模式融合后对不完整思考的涌现；触顶时人工插入停想指令再续写答案。
 
-> **停一下:** budget 是硬截断思考 token, 还是另开一条搜索?
-> 硬截断: 到阈值插入停想指令与 </think>, 再基于已有思考生成最终答案. 不是另开搜索树.
+> **停一下：** budget 是硬截断思考 token，还是另开一条搜索？
+> 硬截断：到阈值插入停想指令与 </think>，再基于已有思考生成最终答案。不是另开搜索树。
 
-> **再看:** 为何 RL 反而不抬 pass@64?
-> 表 21: 同起点上, +RL 的 pass@64 仍 90.0/83.3; +On-policy Distillation 到 93.3/86.7. 报告把探索扩展归到教师 logits 蒸馏.
+> **再看：** 为何 RL 反而不抬 pass@64?
+> 表 21：同起点上，+RL 的 pass@64 仍 90.0/83.3；+On-policy Distillation 到 93.3/86.7。报告把探索扩展归到教师 logits 蒸馏。
 
-> **看表:** budget 加大是否总是单调变好?
-> 图 2 在数学/代码/STEM 线上呈平滑上升. 报告还预期输出超过 32K 仍有空间, 留作后续.
+> **看表：** budget 加大是否总是单调变好？
+> 图 2 在数学/代码/STEM 线上呈平滑上升。报告还预期输出超过 32K 仍有空间，留作后续。
 
-> **回看:** 长检 RULER 上为何 thinking 反而掉点?
-> 报告猜想检索不靠长推理, 思考内容可能干扰. 附录把 thinking budget 设到 8192 以抑制过长思考.
+> **回看：** 长检 RULER 上为何 thinking 反而掉点？
+> 报告猜想检索不靠长推理，思考内容可能干扰。附录把 thinking budget 设到 8192 以抑制过长思考。
 
 ## 5 Conclusion
 
 In this technical report, we introduce Qwen3, the latest version of the Qwen series. Qwen3 features both thinking mode and non-thinking mode, allowing users to dynamically manage the number of tokens used for complex thinking tasks. The model was pre-trained on an extensive dataset containing 36 trillion tokens, enabling it to understand and generate text in 119 languages and dialects. Through a series of comprehensive evaluations, Qwen3 has shown strong performance across a range of standard benchmarks for both pre-trained and post-trained models, including tasks related to code generation, mathematics, reasoning, and agents.
 
-本技术报告推出 Qwen 系列最新版 Qwen3: 同时支持 thinking 与 non-thinking 模式, 用户可按复杂思考任务动态分配 token 用量. 模型在 36 万亿 token 的超大规模数据集上预训练, 可理解与生成 119 种语言与方言的文本. 经全面评测, Qwen3 的预训练与 post-training 模型在代码生成, 数学, 推理, Agent 等标准基准上均有强劲表现.
+本技术报告推出 Qwen 系列最新版 Qwen3：同时支持 thinking 与 non-thinking 模式，用户可按复杂思考任务动态分配 token 用量。模型在 36 万亿 token 的超大规模数据集上预训练，可理解与生成 119 种语言与方言的文本。经全面评测，Qwen3 的预训练与 post-training 模型在代码生成，数学，推理，Agent 等标准基准上均有强劲表现。
 
 In the near future, our research will focus on several key areas. We will continue to scale up pretraining by using data that is both higher in quality and more diverse in content. At the same time, we will work on improving model architecture and training methods for the purposes of effective compression, scaling to extremely long contexts, etc. In addition, we plan to increase computational resources for reinforcement learning, with a particular emphasis on agent-based RL systems that learn from environmental feedback. This will allow us to build agents capable of tackling complex tasks that require inference time scaling.
 
-近期研究将聚焦几个方向: 继续用质量更高, 内容更多样的数据扩大预训练规模; 改进模型架构与训练方法, 实现有效压缩与超长上下文扩展; 加大强化学习的算力投入, 重点是能从环境反馈中学习的 Agent 式 RL 系统, 以构建能应对需要 inference time scaling 的复杂任务的 Agent.
+近期研究将聚焦几个方向：继续用质量更高，内容更多样的数据扩大预训练规模；改进模型架构与训练方法，实现有效压缩与超长上下文扩展；加大强化学习的算力投入，重点是能从环境反馈中学习的 Agent 式 RL 系统，以构建能应对需要 inference time scaling 的复杂任务的 Agent。
 
 ## 6 Authors
 
@@ -770,19 +770,19 @@ Table 23: Performance of Qwen3 Models on the RULER benchmark.
 
 For evaluating long-context processing capabilities, we report the results on the RULER benchmark (Hsieh et al., 2024) in Table 23. To enable length extrapolation, we utilize YARN (Peng et al., 2023) with a scaling\_factor=4. In thinking mode, we set the thinking budget to 8192 tokens to mitigate overly verbose reasoning on the extremely long inputs.
 
-长上下文处理能力报在表 23 的 RULER 基准上. 为支持长度外推, 我们使用 scaling_factor=4 的 YARN. thinking 模式下把 thinking budget 设为 8192 token, 以抑制超长输入上过长的推理.
+长上下文处理能力报在表 23 的 RULER 基准上。为支持长度外推，我们使用 scaling_factor=4 的 YARN. thinking 模式下把 thinking budget 设为 8192 token，以抑制超长输入上过长的推理。
 
 The results show that:
 
-结果表明:
+结果表明：
 
 1. In non-thinking mode, Qwen3 outperforms Qwen2.5 models of a similar size in long-context processing tasks.
 
-1. non-thinking 模式下, Qwen3 在长上下文任务上超过同尺寸 Qwen2.5.
+1. non-thinking 模式下，Qwen3 在长上下文任务上超过同尺寸 Qwen2.5。
 
 2. In thinking mode, the model's performance slightly degrades. We hypothesize that the thinking content does not provide significant benefits for these retrieval tasks, which do not rely on reasoning and may instead interfere with the retrieval process. We are committed to enhancing the long-context capability in the thinking mode in future versions.
 
-2. thinking 模式下成绩略有下降, 我们猜想检索类任务并不依赖推理, 思考内容收益有限, 反而可能干扰检索过程; 后续版本会继续增强 thinking 模式的长上下文能力.
+2. thinking 模式下成绩略有下降，我们猜想检索类任务并不依赖推理，思考内容收益有限，反而可能干扰检索过程；后续版本会继续增强 thinking 模式的长上下文能力。
 
 #### A.1.2 Multilingual Ability
 
@@ -790,7 +790,7 @@ Table 24-35 presents the detailed benchmark scores across various languages, inc
 
 To evaluate the performance of Qwen3 across a broader range of languages, we utilize Belebele (Bandarkar et al., 2023), a benchmark for natural language understanding. We conduct evaluations on 80 supported languages from the benchmark, excluding 42 unoptimized languages, as shown in Table 36 (organized by language family). The performance comparison between Qwen3 and other baseline models on the Belebele benchmark is presented in Table 37. The results show that Qwen3 achieves comparable performance to similarly-sized Gemma models while outperforming Qwen2.5 significantly.
 
-为评测更广语言范围的表现, 我们使用自然语言理解基准 Belebele, 在其支持的 80 种语言上评测 (剔除 42 种未优化的语言), 按语系整理在表 36; 与其他基线模型的对比见表 37. 结果显示: Qwen3 与同尺寸 Gemma 模型表现相当, 并显著优于 Qwen2.5.
+为评测更广语言范围的表现，我们使用自然语言理解基准 Belebele，在其支持的 80 种语言上评测（剔除 42 种未优化的语言），按语系整理在表 36；与其他基线模型的对比见表 37。结果显示：Qwen3 与同尺寸 Gemma 模型表现相当，并显著优于 Qwen2.5。
 
 <!-- page 24 of 35 -->
 

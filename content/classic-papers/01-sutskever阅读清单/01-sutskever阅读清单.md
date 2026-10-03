@@ -2,26 +2,26 @@
 title: "01 · Sutskever–Carmack 阅读书目"
 category: "索引"
 published: true
-excerpt: "区分未公开的私人原始清单,27 项社区重建版本与本站主题学习路线,并提供逐项一手资料入口."
+excerpt: "区分未公开的私人原始清单，27 项社区重建版本与本站主题学习路线，并提供逐项一手资料入口。"
 tags: ["Ilya Sutskever", "John Carmack", "阅读书目", "经典论文", "来源核验"]
 ---
-# Sutskever–Carmack 阅读书目:证据与社区重建版
+# Sutskever–Carmack 阅读书目：证据与社区重建版
 
-这页记录的是**证据状态和一个公开流传版本**,不是私人原始清单的复刻.
+这页记录的是**证据状态和一个公开流传版本**，不是私人原始清单的复刻。
 
 ## 目前能确认到哪一步
 
-John Carmack 在 2023 年公开采访中回忆:他曾向 Ilya Sutskever 索要阅读清单,得到"大约 40 篇研究论文",并被告知如果真正学懂,就会知道当时约 90% 的重要内容.Carmack 后来又公开表示,他原本期待 Ilya 发布一份 canonical list.
+John Carmack 在 2023 年公开采访中回忆：他曾向 Ilya Sutskever 索要阅读清单，得到「大约 40 篇研究论文」，并被告知如果真正学懂，就会知道当时约 90% 的重要内容。Carmack 后来又公开表示，他原本期待 Ilya 发布一份 canonical list。
 
-这两条材料能支持"私人清单及 90% 说法确有 Carmack 本人的公开转述",却不能还原私人原件.Ilya 没有公开确认下表的 27 项就是原清单,也没有公开确认其顺序.
+这两条材料能支持「私人清单及 90% 说法确有 Carmack 本人的公开转述」，却不能还原私人原件。Ilya 没有公开确认下表的 27 项就是原清单，也没有公开确认其顺序。
 
 | 层次 | 本库采用的表述 | 证据限制 |
 |---|---|---|
-| 私人原始清单 | Carmack 回忆收到过约 40 项材料 | 原件,完整条目和顺序未公开 |
-| 社区重建版本 | `dzyim/ilya-sutskever-recommended-reading` 当前列出 27 项 | 仓库 README 自身也使用 "It is said that";不能当作 Ilya 认证 |
-| 本站学习路线 | 将 27 项按六个主题重新排序并逐篇精读 | 编号是本站教学设计,不是 Ilya 的编排意图 |
+| 私人原始清单 | Carmack 回忆收到过约 40 项材料 | 原件，完整条目和顺序未公开 |
+| 社区重建版本 | `dzyim/ilya-sutskever-recommended-reading` 当前列出 27 项 | 仓库 README 自身也使用 "It is said that"；不能当作 Ilya 认证 |
+| 本站学习路线 | 将 27 项按六个主题重新排序并逐篇精读 | 编号是本站教学设计，不是 Ilya 的编排意图 |
 
-因此,下表中的"重建序号"只表示社区仓库的顺序;"本站路线"才对应本知识库的路径编号.其他网络版本多收或少收哪些材料,需要逐一说明来源,不能简单判作"自媒体加戏".
+因此，下表中的「重建序号」只表示社区仓库的顺序；「本站路线」才对应本知识库的路径编号。其他网络版本多收或少收哪些材料，需要逐一说明来源，不能简单判作「自媒体加戏」。
 
 ## 27 项社区重建版本与本站路线
 
@@ -57,21 +57,21 @@ John Carmack 在 2023 年公开采访中回忆:他曾向 Ilya Sutskever 索要�
 
 ## 为什么本站另做主题排序
 
-重建版本把博客,课程,论文和教材交错列出,适合作为书目记录,却不一定适合第一次学习.本站将它们整理成六段依赖链:
+重建版本把博客，课程，论文和教材交错列出，适合作为书目记录，却不一定适合第一次学习。本站将它们整理成六段依赖链：
 
-1. 复杂度,信息论与智能;
-2. CNN 与视觉基础;
-3. RNN 与序列建模;
+1. 复杂度，信息论与智能；
+2. CNN 与视觉基础；
+3. RNN 与序列建模；
 4. Attention 与 Transformer;
-5. 结构,记忆与推理;
-6. 训练,规模与生成.
+5. 结构，记忆与推理；
+6. 训练，规模与生成。
 
-这种重排是本站的教学判断.文章里出现的路线编号都应按这套坐标理解;如需核对社区版本位置,以本页"重建序号"列为准.
+这种重排是本站的教学判断。文章里出现的路线编号都应按这套坐标理解；如需核对社区版本位置，以本页「重建序号」列为准。
 
 ## 来源
 
-- [John Carmack 访谈:私人清单约 40 项及"90%"回忆](https://dallasinnovates.com/exclusive-qa-john-carmacks-different-path-to-artificial-general-intelligence/)
-- [John Carmack 公开帖:期待 Ilya 发布 canonical list](https://x.com/ID_AA_Carmack/status/1622673143469858816)
+- [John Carmack 访谈：私人清单约 40 项及"90%"回忆](https://dallasinnovates.com/exclusive-qa-john-carmacks-different-path-to-artificial-general-intelligence/)
+- [John Carmack 公开帖：期待 Ilya 发布 canonical list](https://x.com/ID_AA_Carmack/status/1622673143469858816)
 - [27 项社区重建仓库](https://github.com/dzyim/ilya-sutskever-recommended-reading)
 
-来源状态核对日期:2026-09-01.
+来源状态核对日期：2026-09-01。

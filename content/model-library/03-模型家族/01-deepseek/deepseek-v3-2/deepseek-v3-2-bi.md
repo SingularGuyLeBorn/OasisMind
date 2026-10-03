@@ -11,7 +11,7 @@ arXiv: 2512.02556v1 [cs. CL] 2 Dec 2025
 
 Qdeepseek
 
-# DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models / DeepSeek-V3.2: 把开源大模型的能力前沿再往前推一截
+# DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models / DeepSeek-V3.2：把开源大模型的能力前沿再往前推一截
 
 DeepSeek-AI
 
@@ -23,7 +23,7 @@ We introduce DeepSeek-V3.2, a model that harmonizes high computational efficienc
 
 
 
-推出 DeepSeek-V3.2: 要在算力效率, 推理能力与 Agent 表现之间对齐. 三条技术突破:**(1) DeepSeek Sparse Attention(DSA)**-- 稀疏注意力, 长上下文下大幅降复杂度, 尽量保住效果; **(2) 可扩展强化学习框架**-- 稳健 RL 协议 + 放大后训练算力, 主模型与 GPT-5 相当; 高算力变体 DeepSeek-V3.2-Speciale 超过 GPT-5, 推理逼近 Gemini-3.0-Pro, 并在 2025 年 IMO 与 IOI 达到金牌水准; **(3) 大规模 Agent 任务合成流水**-- 把推理嵌进工具调用, 系统生成海量训练数据, 抬高复杂交互场景里的泛化与跟指令稳定性.
+推出 DeepSeek-V3.2：要在算力效率，推理能力与 Agent 表现之间对齐。三条技术突破：**(1) DeepSeek Sparse Attention(DSA)**-- 稀疏注意力，长上下文下大幅降复杂度，尽量保住效果；**(2) 可扩展强化学习框架**-- 稳健 RL 协议 + 放大后训练算力，主模型与 GPT-5 相当；高算力变体 DeepSeek-V3.2-Speciale 超过 GPT-5，推理逼近 Gemini-3.0-Pro，并在 2025 年 IMO 与 IOI 达到金牌水准；**(3) 大规模 Agent 任务合成流水**-- 把推理嵌进工具调用，系统生成海量训练数据，抬高复杂交互场景里的泛化与跟指令稳定性。
 
 ![Chart block](images/p01-reasoning-capabilities.png)
 
@@ -35,7 +35,7 @@ Figure 1 | Benchmark of DeepSeek-V3.2 and its counterparts. For HMMT 2025, we re
 
 
 
-图 1｜DeepSeek-V3.2 与对照模型的基准表现. HMMT 2025 取二月场, 与基线一致; HLE 报纯文本子集.
+图 1｜DeepSeek-V3.2 与对照模型的基准表现。HMMT 2025 取二月场，与基线一致；HLE 报纯文本子集。
 
 <!-- page 2 of 23 -->
 
@@ -45,25 +45,25 @@ The release of reasoning models (DeepSeek-AI, 2025; OpenAI, 2024a) marked a pivo
 
 
 
-推理模型(DeepSeek-AI, 2025; OpenAI, 2024a)把可验证领域的整体能力往上抬了一大截. 之后开闭源都在快进, 但近几个月轨迹分叉: 开源仍在进步, 闭源加速更陡. 结果不是收敛, 而是差距在拉大-- 复杂任务上专有系统越来越压一头.
+推理模型（DeepSeek-AI, 2025; OpenAI, 2024a）把可验证领域的整体能力往上抬了一大截。之后开闭源都在快进，但近几个月轨迹分叉：开源仍在进步，闭源加速更陡。结果不是收敛，而是差距在拉大-- 复杂任务上专有系统越来越压一头。
 
 Through our analysis, we identify three critical deficiencies that limit the capability of open-source models in complex tasks. First, architecturally, the predominant reliance on vanilla attention (Vaswani et al., 2017) mechanisms severely constrains efficiency for long sequences. This inefficiency poses a substantial obstacle to both scalable deployment and effective post-training. Second, regarding resource allocation, open-source models suffer from insufficient computational investment during the post-training phase, limiting their performance on hard tasks. Finally, in the context of AI agents, open-source models demonstrate a marked lag in generalization and instruction-following capabilities compared to their proprietary counterparts (EvalSys, 2025; Li et al., 2025; Luo et al., 2025), hindering their effectiveness in real deployment.
 
 
 
-我们归纳开源在复杂任务上的三处短板. 架构上: 多数仍靠 vanilla attention(Vaswani et al., 2017), 长序列效率差, 既拖部署扩展, 也拖后训练. 资源上: 后训练算力投入不够, 难题吃不透. Agent 上: 泛化与跟指令明显落后闭源(EvalSys, 2025; Li et al., 2025; Luo et al., 2025), 真实部署吃亏.
+我们归纳开源在复杂任务上的三处短板。架构上：多数仍靠 vanilla attention(Vaswani et al., 2017)，长序列效率差，既拖部署扩展，也拖后训练。资源上：后训练算力投入不够，难题吃不透。Agent 上：泛化与跟指令明显落后闭源（EvalSys, 2025; Li et al., 2025; Luo et al., 2025），真实部署吃亏。
 
 To address these critical limitations, we first introduce DSA, a highly efficient attention mechanism designed to substantially reduce computational complexity. This architecture effectively addresses the efficiency bottleneck, preserving model performance even in longcontext scenarios. Second, we develop a stable and scalable RL protocol that allows for significant computational expansion during the post-training phase. Notably, this framework allocates a post-training computational budget exceeding 10% of the pre-training cost, unlocking advanced capabilities. Thirdly, we propose a novel pipeline to foster generalizable reasoning in tool-use scenarios. First, we implement a cold-start phase utilizing the DeepSeek-V3 (DeepSeek-AI, 2024) methodology to unify reasoning and tool-use within single trajectories. Subsequently, we advance to large-scale agentic task synthesis, where we generate over 1, 800 distinct environments and 85, 000 complex prompts. This extensive synthesized data drives the RL process, significantly enhancing the model’s generalization and instruction-following capability in the agent context.
 
 
 
-对策分三层. 先上 DSA, 把复杂度压下来, 长上下文尽量不掉点. 再做可扩展, 可稳住的 RL 协议, 后训练算力可显著放大-- 本框架后训练预算超过预训练成本的 10%, 用来解锁更强能力. 第三, 工具场景里做可泛化推理: 冷启动沿用 DeepSeek-V3(DeepSeek-AI, 2024)思路, 把推理与工具调用收进同一轨迹; 再大规模合成 Agent 任务, 生成超过 1, 800 个不同环境与 85, 000 条复杂提示, 用这些数据喂 RL, 抬 Agent 侧泛化与跟指令.
+对策分三层。先上 DSA，把复杂度压下来，长上下文尽量不掉点。再做可扩展，可稳住的 RL 协议，后训练算力可显著放大-- 本框架后训练预算超过预训练成本的 10%，用来解锁更强能力。第三，工具场景里做可泛化推理：冷启动沿用 DeepSeek-V3(DeepSeek-AI, 2024)思路，把推理与工具调用收进同一轨迹；再大规模合成 Agent 任务，生成超过 1, 800 个不同环境与 85, 000 条复杂提示，用这些数据喂 RL，抬 Agent 侧泛化与跟指令。
 
 DeepSeek-V3.2 achieves similar performance with Kimi-k2-thinking and GPT-5 across multiple reasoning benchmarks. Furthermore, DeepSeek-V3.2 significantly advances the agentic capabilities of open models, demonstrating exceptional proficiency on the long-tail agent tasks introduced in EvalSys (2025); Li et al. (2025); Luo et al. (2025). DeepSeek-V3.2 emerges as a highly cost-efficient alternative in agent scenarios, significantly narrowing the performance gap between open and frontier proprietary models while incurring substantially lower costs. Notably, with the aim of pushing the boundaries of open models in the reasoning domain, we relaxed the length constraints to develop DeepSeek-V3.2-Speciale. As a result, DeepSeek-V3.2- Speciale achieves performance parity with the leading closed-source system, Gemini-3.0-Pro (DeepMind, 2025b). It shows gold-medal performance in the IOI 2025, ICPC World Final 2025, IMO 2025, and CMO 2025.
 
 
 
-多条推理基准上, DeepSeek-V3.2 与 Kimi-k2-thinking, GPT-5 接近. Agent 能力相对开源明显抬升, 在 EvalSys (2025), Li et al. (2025), Luo et al. (2025) 的长尾 Agent 任务上表现突出; 成本更低, 却显著收窄与前沿闭源的差距. 为冲开源推理上限, 我们放松长度约束得到 DeepSeek-V3.2-Speciale, 与 Gemini-3.0-Pro(DeepMind, 2025b)持平, 并在 IOI 2025, ICPC World Final 2025, IMO 2025, CMO 2025 达到金牌水准.
+多条推理基准上，DeepSeek-V3.2 与 Kimi-k2-thinking，GPT-5 接近。Agent 能力相对开源明显抬升，在 EvalSys (2025), Li et al. (2025), Luo et al. (2025) 的长尾 Agent 任务上表现突出；成本更低，却显著收窄与前沿闭源的差距。为冲开源推理上限，我们放松长度约束得到 DeepSeek-V3.2-Speciale，与 Gemini-3.0-Pro(DeepMind, 2025b)持平，并在 IOI 2025，ICPC World Final 2025，IMO 2025，CMO 2025 达到金牌水准。
 
 <!-- page 3 of 23 -->
 
@@ -79,19 +79,19 @@ DeepSeek-V3.2 uses exactly the same architecture as DeepSeek-V3.2-Exp. Compared 
 
 
 
-架构与 DeepSeek-V3.2-Exp 完全一致. 相对 DeepSeek-V3.1 末版 Terminus, 唯一架构改动是经继续训练引入 DSA.
+架构与 DeepSeek-V3.2-Exp 完全一致。相对 DeepSeek-V3.1 末版 Terminus，唯一架构改动是经继续训练引入 DSA。
 
 **Prototype of DSA.** The prototype of DSA primarily consists of two components: a lightning indexer and a fine-grained token selection mechanism.
 
 
 
-**DSA 原型.** 两块: lightning indexer(闪电索引器), 以及细粒度 token 选择.
+**DSA 原型。** 两块：lightning indexer（闪电索引器），以及细粒度 token 选择。
 
 The **lightning indexer** computes the index score $I _ { t , s }$ between the query token h<sub>𝑡</sub> $\in \mathbb { R } ^ { d }$ and a preceding token $\mathbf { h } _ { s } \in \mathbb { R } ^ { d }$ , determining which tokens to be selected by the query token:
 
 
 
-**Lightning indexer** 算查询 token $\mathbf{h}_t \in \mathbb{R}^{d}$ 与前序 token $\mathbf{h}_s \in \mathbb{R}^{d}$ 之间的索引分 $I_{t, s}$, 决定该查询选哪些 token:
+**Lightning indexer** 算查询 token $\mathbf{h}_t \in \mathbb{R}^{d}$ 与前序 token $\mathbf{h}_s \in \mathbb{R}^{d}$ 之间的索引分 $I_{t, s}$，决定该查询选哪些 token:
 
 $$
 I _ {t, s} = \sum_ {j = 1} ^ {H ^ {I}} w _ {t, j} ^ {I} \cdot \operatorname{ReLU} \left(\mathbf {q} _ {t, j} ^ {I} \cdot \mathbf {k} _ {s} ^ {I}\right), \tag{1}
@@ -101,13 +101,13 @@ where $H ^ { I }$ denotes the number of indexer heads; $\mathbf { q } _ { t , j 
 
 
 
-$H^{I}$ 是索引头数; $\mathbf{q}_{t, j}^{I}$, $w_{t, j}^{I}$ 由查询 token 得到, $\mathbf{k}_{s}^{I}$ 由前序 token 得到. 激活用 ReLU, 主要为吞吐; 头数少且可走 FP8, 算起来很轻.
+$H^{I}$ 是索引头数；$\mathbf{q}_{t, j}^{I}$，$w_{t, j}^{I}$ 由查询 token 得到，$\mathbf{k}_{s}^{I}$ 由前序 token 得到。激活用 ReLU，主要为吞吐；头数少且可走 FP8，算起来很轻。
 
 Given the index scores $\{ I _ { t , s } \}$ for each query token $\mathbf { h } _ { t } , $ our **fine-grained token selection mechanism** retrieves only the key-value entries $\{ \mathbf { c } _ { s } \}$ corresponding to the top-k index scores. Then, the attention output $\mathbf { u } _ { t }$ is computed by applying the attention mechanism between the query token h<sub>𝑡</sub> and the sparsely selected key-value entries {c<sub>𝑠</sub>}:
 
 
 
-对每个查询, **细粒度选择**只取 top-k 索引分对应的 KV 条目 $\{\mathbf{c}_s\}$, 再在查询与这些稀疏 KV 上做注意力, 得到 $\mathbf{u}_t$:
+对每个查询，**细粒度选择**只取 top-k 索引分对应的 KV 条目 $\{\mathbf{c}_s\}$，再在查询与这些稀疏 KV 上做注意力，得到 $\mathbf{u}_t$：
 
 $$
 \mathbf {u} _ {t} = \operatorname{Attn} \big (\mathbf {h} _ {t}, \left\{\mathbf {c} _ {s} \mid I _ {t, s} \in \operatorname{Top-k} (I _ {t,: }) \right\} \big). \tag{2}
@@ -117,7 +117,7 @@ $$
 
 
 
-**在 MLA 下实例化 DSA.** 要从 V3.1-Terminus 继续训, DSA 挂在 MLA(DeepSeek-AI, 2024)上. 内核层要求同一 KV 条目被多个查询共享才划算(Yuan et al., 2025), 因此走 MLA 的 MQA 模式¹: 每个潜变量(MLA 的 KV 条目)在该查询 token 的所有 query 头之间共享. 架构见图 2; 开源实现²把细节写在代码里.
+**在 MLA 下实例化 DSA.** 要从 V3.1-Terminus 继续训，DSA 挂在 MLA(DeepSeek-AI, 2024)上。内核层要求同一 KV 条目被多个查询共享才划算（Yuan et al., 2025），因此走 MLA 的 MQA 模式¹：每个潜变量（MLA 的 KV 条目）在该查询 token 的所有 query 头之间共享。架构见图 2；开源实现²把细节写在代码里。
 
 #### 2.1.1. Continued Pre-Training 继续预训练
 
@@ -125,19 +125,19 @@ Starting from a base checkpoint of DeepSeek-V3.1-Terminus, whose context length 
 
 
 
-从已扩到 128K 的 V3.1-Terminus base 检查点出发, 先继续预训练, 再后训练, 得到 V3.2.
+从已扩到 128K 的 V3.1-Terminus base 检查点出发，先继续预训练，再后训练，得到 V3.2。
 
 The continued pre-training of DeepSeek-V3.2 consists of two training stages. For both stages, the distribution of training data is totally aligned with the 128K long context extension data used for DeepSeek-V3.1-Terminus.
 
 
 
-继续预训练分两阶段; 两阶段数据分布都与 V3.1-Terminus 的 128K 长上下文扩展数据完全对齐.
+继续预训练分两阶段；两阶段数据分布都与 V3.1-Terminus 的 128K 长上下文扩展数据完全对齐。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>1</sup>We illustrate the difference between the MQA and MHA modes of MLA in Appendix A. </span></small>
 
 
 
-<small><span class=「docvortex-page-footnote」 data-block-type=「page_footnote」 style=「color: #6b7280」><sup>1</sup>MLA 的 MQA / MHA 差异见附录 A. </span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>1</sup>MLA 的 MQA / MHA 差异见附录 A. </span></small>
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>2</sup>[https://huggingface. co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference](https://huggingface. co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference)</span></small>
 
@@ -149,13 +149,13 @@ Figure 2 | Attention architecture of DeepSeek-V3.2, where DSA is instantiated un
 
 
 
-图 2｜DeepSeek-V3.2 注意力架构: DSA 挂在 MLA 下. 绿色部分示意按 indexer 选 top-k KV.
+图 2｜DeepSeek-V3.2 注意力架构：DSA 挂在 MLA 下。绿色部分示意按 indexer 选 top-k KV。
 
 **Dense Warm-up Stage.** We first use a short warm-up stage to initialize the lightning indexer. In this stage, we keep dense attention and freeze all model parameters except for the lightning indexer. To align the indexer outputs with the main attention distribution, for the 𝑡-th query token, we first aggregate the main attention scores by summing across all attention heads. This sum is then L1-normalized along the sequence dimension to produce a target distribution $p _ { t , : } \in \mathbb { R } ^ { t }$ . Based on $p _ { t , : } , $ we set a KL-divergence loss as the training objective of the indexer:
 
 
 
-**稠密预热.** 短阶段只初始化 lightning indexer: 保持稠密注意力, 除 indexer 外全部冻结. 为对齐主注意力分布: 对第 $t$ 个查询, 先把各注意力头的分数求和, 再沿序列维做 L1 归一化, 得到目标分布 $p_{t,: }\in\mathbb{R}^{t}$; indexer 用 KL 散度对齐:
+**稠密预热。** 短阶段只初始化 lightning indexer：保持稠密注意力，除 indexer 外全部冻结。为对齐主注意力分布：对第 $t$ 个查询，先把各注意力头的分数求和，再沿序列维做 L1 归一化，得到目标分布 $p_{t,: }\in\mathbb{R}^{t}$；indexer 用 KL 散度对齐：
 
 $$
 \mathcal {L} ^ {I} = \sum_ {t} \mathbb {D} _ {\mathrm{KL}} \big (p _ {t,: } \big \| \operatorname{Softmax} \big (I _ {t,: } \big) \big). \tag{3}
@@ -165,13 +165,13 @@ For warm-up, we use a learning rate of $1 0 ^ { - 3 }$ . We train the indexer fo
 
 
 
-预热学习率 $10^{-3}$; 只训 1000 step, 每 step 16 条 × 128K token, 合计 2.1B token.
+预热学习率 $10^{-3}$；只训 1000 step，每 step 16 条 × 128K token，合计 2.1B token。
 
 **Sparse Training Stage.** Following indexer warm-up, we introduce the fine-grained token selection mechanism and optimize all model parameters to adapt the model to the sparse pattern of DSA. In this stage, we also keep aligning the indexer outputs to the main attention distribution, but considering only the selected token set $\mathcal { S } _ { t } = \left\{ s \mid I _ { t , s } \in \operatorname { T o p - k } \left( I _ { t , : } \right) \right\}$
 
 
 
-**稀疏训练.** 预热后打开细粒度选择, 放开全体参数去适应 DSA 稀疏模式. Indexer 仍对齐主注意力, 但只在已选集合 $\mathcal{S}_t=\{s\mid I_{t, s}\in\operatorname{Top-k}(I_{t,: })\}$ 上算:
+**稀疏训练。** 预热后打开细粒度选择，放开全体参数去适应 DSA 稀疏模式。Indexer 仍对齐主注意力，但只在已选集合 $\mathcal{S}_t=\{s\mid I_{t, s}\in\operatorname{Top-k}(I_{t,: })\}$ 上算：
 
 $$
 \mathcal {L} ^ {I} = \sum_ {t} \mathbb {D} _ {\mathrm{KL}} \big (p _ {t, \mathcal {S} _ {t}} \big \| \operatorname{Softmax} \big (I _ {t, \mathcal {S} _ {t}} \big) \big). \tag{4}
@@ -181,7 +181,7 @@ It is worth noting that we detach the indexer input from the computational graph
 
 
 
-注意: indexer 输入从计算图 detach, 分开优化--indexer 只吃 $\mathcal{L}^{I}$, 主模型只吃语言建模损失. 稀疏阶段学习率 $7.3\times10^{-6}$, 每个查询选 2048 个 KV token; 主模型与 indexer 共训 15000 step, 每 step 480 条 × 128K, 合计 943.7B token.
+注意：indexer 输入从计算图 detach，分开优化--indexer 只吃 $\mathcal{L}^{I}$，主模型只吃语言建模损失。稀疏阶段学习率 $7.3\times10^{-6}$，每个查询选 2048 个 KV token；主模型与 indexer 共训 15000 step，每 step 480 条 × 128K，合计 943.7B token。
 
 <!-- page 5 of 23 -->
 
@@ -191,19 +191,19 @@ It is worth noting that we detach the indexer input from the computational graph
 
 
 
-**标准基准.** 2025 年 9 月在多能力基准上评 DeepSeek-V3.2-Exp, 对照 V3.1-Terminus, 表现接近. 长序列算力效率明显改善, 短/长上下文任务未见实质掉点.
+**标准基准。** 2025 年 9 月在多能力基准上评 DeepSeek-V3.2-Exp，对照 V3.1-Terminus，表现接近。长序列算力效率明显改善，短/长上下文任务未见实质掉点。
 
 **Human Preference** Given that direct human preference assessments are inherently suscep tible to bias, we employ ChatbotArena as an indirect evaluation framework to approximate user preferences for the newly developed base models. Both DeepSeek-V3.1-Terminus and DeepSeek-V3.2-Exp share an identical post-training strategy, and their Elo scores, obtained from evaluations conducted on 10 November 2025, are closely matched. These results suggest that the new base model achieves performance on par with the previous iteration, despite incorporating a sparse attention mechanism.
 
 
 
-**人类偏好.** 直接偏好评估易偏, 故用 ChatbotArena 间接估用户偏好. 两边后训练策略相同; 2025-11-10 的 Elo 接近, 说明即使上了稀疏注意力, 新 base 仍与上一代持平.
+**人类偏好。** 直接偏好评估易偏，故用 ChatbotArena 间接估用户偏好。两边后训练策略相同；2025-11-10 的 Elo 接近，说明即使上了稀疏注意力，新 base 仍与上一代持平。
 
 **Long Context Eval** Following the release of DeepSeek-V3.2-Exp, several independent long-context evaluations were conducted using previously unseen test sets. A representative benchmark is AA-LCR<sup>3</sup>, in which DeepSeek-V3.2-Exp scores four points higher than DeepSeek-V3.1- Terminus in reasoning mode. In the Fiction. liveBench evaluation<sup>4</sup>, DeepSeek-V3.2-Exp consistently outperforms DeepSeek-V3.1-Terminus across multiple metrics. This evidence indicates the base checkpoint of DeepSeek-V3.2-Exp does not regress on long context tasks.
 
 
 
-**长上下文.** 发布后多方用未见过测试集做长上下文评测. 代表如 AA-LCR³: 推理模式下 V3.2-Exp 比 Terminus 高 4 分; Fiction. liveBench⁴ 上多项持续领先. 说明 base 检查点在长上下文上没有回退.
+**长上下文。** 发布后多方用未见过测试集做长上下文评测。代表如 AA-LCR³：推理模式下 V3.2-Exp 比 Terminus 高 4 分；Fiction. liveBench⁴ 上多项持续领先。说明 base 检查点在长上下文上没有回退。
 
 ### 2.3. Inference Costs 推理成本
 
@@ -211,7 +211,7 @@ DSA reduces the core attention complexity of the main model from $O ( L ^ { 2 } 
 
 
 
-DSA 把主模型核心注意力从 $O(L^{2})$ 降到 $O(Lk)$, $k\ll L$ 为选中 token 数. Lightning indexer 仍是 $O(L^{2})$, 但相对 V3.1-Terminus 的 MLA 轻很多; 再加实现优化, 长上下文端到端明显加速. 图 3 给出按序列位置变化的 token 成本, 来自 H800 实服务基准, 租价 2 USD / GPU. 小时. 短序列 prefilling 另实现 masked MHA 模拟 DSA, 短上下文更划算.
+DSA 把主模型核心注意力从 $O(L^{2})$ 降到 $O(Lk)$，$k\ll L$ 为选中 token 数。Lightning indexer 仍是 $O(L^{2})$，但相对 V3.1-Terminus 的 MLA 轻很多；再加实现优化，长上下文端到端明显加速。图 3 给出按序列位置变化的 token 成本，来自 H800 实服务基准，租价 2 USD / GPU。小时。短序列 prefilling 另实现 masked MHA 模拟 DSA，短上下文更划算。
 
 ## 3. Post-Training 后训练
 
@@ -219,13 +219,13 @@ After continued pre-training, we perform post-training to create the final DeepS
 
 
 
-继续预训练后做后训练得到最终 V3.2; 后训练同样用稀疏注意力, 流水与 V3.2-Exp 一致: 专家蒸馏 + 混合 RL.
+继续预训练后做后训练得到最终 V3.2；后训练同样用稀疏注意力，流水与 V3.2-Exp 一致：专家蒸馏 + 混合 RL。
 
 **Specialist Distillation** For each task, we initially develop a specialized model dedicated exclusively to that particular domain, with all specialist models being fine-tuned from the same
 
 
 
-**专家蒸馏.** 每类任务先训专域专家, 所有专家都从同一个
+**专家蒸馏。** 每类任务先训专域专家，所有专家都从同一个
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>3</sup>[https://artificialanalysis. ai/evaluations/artificial-analysis-long-context-reasoni ng](https://artificialanalysis. ai/evaluations/artificial-analysis-long-context-reasoning)</span></small>
 
@@ -245,31 +245,31 @@ Figure 3 | Inference costs of DeepSeek-V3.1-Terminus and DeepSeek-V3.2 on H800 c
 
 
 
-图 3｜V3.1-Terminus 与 V3.2 在 H800 集群上的推理成本. (a)Prefilling; (b)Decoding.
+图 3｜V3.1-Terminus 与 V3.2 在 H800 集群上的推理成本。（a）Prefilling; (b)Decoding.
 
 pre-trained DeepSeek-V3.2 base checkpoint. In addition to writing tasks and general questionanswering, our framework encompasses six specialized domains: mathematics, programming, general logical reasoning, general agentic tasks, agentic coding, and agentic search, with all the domains supporting both thinking and non-thinking modes. Each specialist is trained with largescale Reinforcement Learning (RL) computing. Furthermore, we employ different models to generate training data for long chain-of-thought reasoning (thinking mode) and direct response generation (non-thinking mode). Once the specialist models are prepared, they are used to produce the domain-specific data for the final checkpoint. Experimental results demonstrate that models trained on the distilled data achieve performance levels only marginally below those of domain-specific specialists, with the performance gap being effectively eliminated through subsequent RL training.
 
 
 
-预训练 V3.2 base 检查点出发. 除写作与通用问答外, 还有六域: 数学, 编程, 一般逻辑推理, 一般 Agent, Agent 编程, Agent 搜索; 各域都支持 thinking / non-thinking. 每个专家吃大规模 RL 算力; 长 CoT(thinking)与直答(non-thinking)用不同模型产数据. 专家就绪后产域数据喂最终检查点. 实验: 蒸馏数据训出的模型只略低于专域专家, 后续 RL 可把差距基本抹平.
+预训练 V3.2 base 检查点出发。除写作与通用问答外，还有六域：数学，编程，一般逻辑推理，一般 Agent，Agent 编程，Agent 搜索；各域都支持 thinking / non-thinking。每个专家吃大规模 RL 算力；长 CoT(thinking)与直答（non-thinking）用不同模型产数据。专家就绪后产域数据喂最终检查点。实验：蒸馏数据训出的模型只略低于专域专家，后续 RL 可把差距基本抹平。
 
 **Mixed RL Training** For DeepSeek-V3.2, we still adopt Group Relative Policy Optimization (GRPO) (DeepSeek-AI, 2025; Shao et al., 2024) as the RL training algorithm. As DeepSeek-V3.2-Exp, we merge reasoning, agent, and human alignment training into one RL stage. This approach effectively balances performance across diverse domains while circumventing the catastrophic forgetting issues commonly associated with multi-stage training paradigms. For reasoning and agent tasks, we employ rule-based outcome reward, length penalty, and language consistency reward. For general tasks, we employ a generative reward model where each prompt has its own rubrics for evaluation.
 
 
 
-**混合 RL.** 仍用 GRPO(DeepSeek-AI, 2025; Shao et al., 2024). 与 Exp 一样, 把推理, Agent, 人类对齐并进同一 RL 阶段, 多域平衡的同时避开多阶段常见的灾难性遗忘. 推理与 Agent: 规则结果奖励 + 长度惩罚 + 语言一致性奖励; 通用任务: 生成式奖励模型, 每条 prompt 自带评分 rubric.
+**混合 RL.** 仍用 GRPO(DeepSeek-AI, 2025; Shao et al., 2024)。与 Exp 一样，把推理，Agent，人类对齐并进同一 RL 阶段，多域平衡的同时避开多阶段常见的灾难性遗忘。推理与 Agent：规则结果奖励 + 长度惩罚 + 语言一致性奖励；通用任务：生成式奖励模型，每条 prompt 自带评分 rubric。
 
 **DeepSeek-V3.2 and DeepSeek-V3.2-Speciale** DeepSeek-V3.2 integrates reasoning, agent, and human alignment data distilled from specialists, undergoing thousands of steps of continued RL training to reach the final checkpoints. To investigate the potential of extended thinking, we also developed an experimental variant, DeepSeek-V3.2-Speciale. This model was trained exclusively on reasoning data with a reduced length penalty during RL. Additionally, we incorporated the dataset and reward method from DeepSeekMath-V2 (Shao et al., 2025) to enhance capabilities in mathematical proofs.
 
 
 
-**V3.2 与 Speciale.** 主模型揉进专家蒸馏的推理 / Agent / 对齐数据, 再经数千 step 继续 RL. 为探「更长思考」上限, 另做实验变体 Speciale: RL 只吃推理数据, 减轻长度惩罚, 并接入 DeepSeekMath-V2(Shao et al., 2025)的数据与奖励, 加强数学证明.
+**V3.2 与 Speciale.** 主模型揉进专家蒸馏的推理 / Agent / 对齐数据，再经数千 step 继续 RL。为探「更长思考」上限，另做实验变体 Speciale: RL 只吃推理数据，减轻长度惩罚，并接入 DeepSeekMath-V2(Shao et al., 2025)的数据与奖励，加强数学证明。
 
 We would like to highlight our efforts in how to create a stable recipe to scale up RL compute in Section 3.1, and how to integrate thinking into agentic tasks in Section 3.2
 
 
 
-下文重点: §3.1 如何把 RL 算力稳定放大; §3.2 如何把 thinking 嵌进 Agent 任务.
+下文重点：§3.1 如何把 RL 算力稳定放大；§3.2 如何把 thinking 嵌进 Agent 任务。
 
 <!-- page 7 of 23 -->
 
@@ -279,7 +279,7 @@ We first review the objective of GRPO. GRPO optimizes the policy model $\pi _ { 
 
 
 
-先回顾 GRPO 目标. 对问题 $q$, 从旧策略 $\pi_{\mathrm{old}}$ 采样一组回复 $\{o_1, \cdots, o_G\}$, 最大化:
+先回顾 GRPO 目标。对问题 $q$，从旧策略 $\pi_{\mathrm{old}}$ 采样一组回复 $\{o_1, \cdots, o_G\}$，最大化：
 
 $$
 \begin{array}{r l} \mathcal {J} _ {\mathrm{GRPO}} (\theta) = & \mathbb {E} _ {q \sim P (Q), \{o _ {i} \} _ {i = 1} ^ {G} \sim \pi_ {\mathrm{old}} (\cdot | q)} \left[ \frac {1}{G} \sum_ {i = 1} ^ {G} \frac {1}{| o _ {i} |} \sum_ {t = 1} ^ {| o _ {i} |} \right. \\ & \left. \min \left(r _ {i, t} (\theta) \hat {A} _ {i, t}, \mathrm{clip} \left(r _ {i, t} (\theta), 1 - \varepsilon , 1 + \varepsilon\right) \hat {A} _ {i, t}\right) - \beta \mathbb {D} _ {\mathrm{KL}} \big (\pi_ {\theta} (o _ {i, t}) \left\| \pi_ {\mathrm{ref}} (o _ {i, t})\right) \right], \end{array}\tag{5}
@@ -299,19 +299,19 @@ is the importance sampling ratio between the current and old policy. 𝜀 and $\
 
 
 
-$r_{i, t}$ 是当前与旧策略的重要性采样比; $\varepsilon$, $\beta$ 分别控裁剪与 KL 强度. $\hat{A}_{i, t}$ 由组内结果奖励归一化得到: 对组内各输出打分得 $\{R_1, \cdots, R_G\}$, 优势为 $\hat{A}_{i, t}=R_i-\mathrm{mean}(R)$.
+$r_{i, t}$ 是当前与旧策略的重要性采样比；$\varepsilon$，$\beta$ 分别控裁剪与 KL 强度。$\hat{A}_{i, t}$ 由组内结果奖励归一化得到：对组内各输出打分得 $\{R_1, \cdots, R_G\}$，优势为 $\hat{A}_{i, t}=R_i-\mathrm{mean}(R)$。
 
 In the following, we outline additional strategies that stabilize RL scaling, directly building on the GRPO algorithm.
 
 
 
-下面几条都是在 GRPO 上直接叠的稳定化手段, 用来把 RL 规模做大.
+下面几条都是在 GRPO 上直接叠的稳定化手段，用来把 RL 规模做大。
 
 **Unbiased KL Estimate** Given $o _ { i , t }$ is sampled from the old policy $\pi _ { \mathrm { o l d } } ( \cdot | q , o _ { i , < t } )$ , we correct the K3 estimator (Schulman, 2020) to obtain an unbiased KL estimate using the importance-sampling ratio between the current policy $\pi _ { \theta }$ and the old policy $\pi _ { \mathrm { o l d } }$
 
 
 
-**无偏 KL 估计.** 样本来自 $\pi_{\mathrm{old}}$, 对 K3 估计器(Schulman, 2020)用 $\pi_\theta/\pi_{\mathrm{old}}$ 重要性比修正, 得到无偏 KL:
+**无偏 KL 估计。** 样本来自 $\pi_{\mathrm{old}}$，对 K3 估计器（Schulman, 2020）用 $\pi_\theta/\pi_{\mathrm{old}}$ 重要性比修正，得到无偏 KL:
 
 $$
 \mathbb {D} _ {\mathrm{KL}} \big (\pi_ {\theta} (o _ {i, t}) \left\| \pi_ {\mathrm{ref}} (o _ {i, t})\right) = \frac {\pi_ {\theta} (o _ {i , t} | q , o _ {i , <   t})}{\pi_ {\mathrm{old}} (o _ {i , t} | q , o _ {i , <   t})} \left(\frac {\pi_ {\mathrm{ref}} (o _ {i , t} | q , o _ {i , <   t})}{\pi_ {\theta} (o _ {i , t} | q , o _ {i , <   t})} - \log \frac {\pi_ {\mathrm{ref}} (o _ {i , t} | q , o _ {i , <   t})}{\pi_ {\theta} (o _ {i , t} | q , o _ {i , <   t})} - 1\right). \tag{7}
@@ -321,13 +321,13 @@ As a direct result of this adjustment, the gradient of this KL estimator becomes
 
 
 
-修正后 KL 梯度无偏, 系统性误差少, 收敛更稳. 原 K3 在 $\pi_\theta\ll\pi_{\mathrm{ref}}$ 时会给这些 token 过大, 无界的似然最大化权重, 噪声梯度累积伤样本质量, 训练晃. 实践中各域适合的 KL 强度不同: 数学等域弱 KL 甚至不加, 反而更好.
+修正后 KL 梯度无偏，系统性误差少，收敛更稳。原 K3 在 $\pi_\theta\ll\pi_{\mathrm{ref}}$ 时会给这些 token 过大，无界的似然最大化权重，噪声梯度累积伤样本质量，训练晃。实践中各域适合的 KL 强度不同：数学等域弱 KL 甚至不加，反而更好。
 
 **Off-Policy Sequence Masking** To improve the efficiency of RL systems, we typically generate a large batch of rollout data, which is subsequently split into multiple mini-batches for several gradient update steps. This practice inherently introduces off-policy behavior. Additionally, inference frameworks used for efficient data generation are often highly optimized, which may differ in implementation details from training frameworks. Such training-inference inconsistency
 
 
 
-**Off-policy 序列掩码.** 为提效, 常大批量 rollout 再切成多个 mini-batch 多步更新, 天然 off-policy; 推理框架与训练框架实现细节也可能不一致, 训练–推理不一致
+**Off-policy 序列掩码。** 为提效，常大批量 rollout 再切成多个 mini-batch 多步更新，天然 off-policy；推理框架与训练框架实现细节也可能不一致，训练–推理不一致
 
 <!-- page 8 of 23 -->
 
@@ -335,7 +335,7 @@ further exacerbates the degree of off-policyness. To stabilize training and impr
 
 
 
-会加重 off-policy. 稳定做法: 用 $\pi_{\mathrm{old}}$ 与 $\pi_\theta$ 的 KL 衡量策略偏离, 对偏离大的负优势序列打掩码. 在 GRPO 损失里加二值掩码 $M$:
+会加重 off-policy。稳定做法：用 $\pi_{\mathrm{old}}$ 与 $\pi_\theta$ 的 KL 衡量策略偏离，对偏离大的负优势序列打掩码。在 GRPO 损失里加二值掩码 $M$：
 
 $$
 \begin{array}{r l} \mathcal {J} _ {\mathrm{GRPO}} (\theta) = & \mathbb {E} _ {q \sim P (Q), \{o _ {i} \} _ {i = 1} ^ {G} \sim \pi_ {\mathrm{old}} (\cdot | q)} \left[ \frac {1}{G} \sum_ {i = 1} ^ {G} \frac {1}{| o _ {i} |} \sum_ {t = 1} ^ {| o _ {i} |} \right. \\ & \left. \min \left(r _ {i, t} (\theta) \hat {A} _ {i, t}, \mathrm{clip} \left(r _ {i, t} (\theta), 1 - \varepsilon , 1 + \varepsilon\right) \hat {A} _ {i, t}\right) M _ {i, t} - \beta \mathbb {D} _ {\mathrm{KL}} \big (\pi_ {\theta} (o _ {i, t}) \left\| \pi_ {\mathrm{ref}} (o _ {i, t})\right) \right], \end{array}\tag{8}
@@ -355,25 +355,25 @@ and 𝛿 is a hyper-parameter that controls the threshold of policy divergence. 
 
 
 
-$\delta$ 是策略偏离阈值. 此处 $\pi_{\mathrm{old}}$ 取推理框架直接返回的采样概率, 因而同时覆盖上面两类 off-policy 来源. 只掩负优势序列.
+$\delta$ 是策略偏离阈值。此处 $\pi_{\mathrm{old}}$ 取推理框架直接返回的采样概率，因而同时覆盖上面两类 off-policy 来源。只掩负优势序列。
 
 Intuitively, the model benefits the most by learning from its own mistakes, whereas highly off-policy negative samples can be detrimental, potentially misleading or destabilizing the optimization process. We empirically observe that this Off-Policy Sequence Masking operation improves stability in certain training scenarios that would otherwise exhibit instability.
 
 
 
-直觉上: 从「自己的错」学最有用; 高度 off-policy 的负样本反而误导, 晃训练. 经验上, 这条掩码在若干本会不稳的场景里改善了稳定性.
+直觉上：从「自己的错」学最有用；高度 off-policy 的负样本反而误导，晃训练。经验上，这条掩码在若干本会不稳的场景里改善了稳定性。
 
 **Keep Routing** Mixture-of-Experts (MoE) models improve computational efficiency by activating only a subset of expert modules during inference. However, discrepancies between inference and training frameworks, compounded by policy updates, can result in inconsistent expert routing during inference and training even for identical inputs. Such inconsistency induces abrupt shifts in the active parameter subspace, which destabilizes optimization and exacerbates off-policy issues. To mitigate this, we preserve the expert routing paths used during sampling in the inference framework and enforce the same routing paths during training, ensuring that identical expert parameters are optimized. This Keep Routing operation was found crucial for RL training stability of MoE models, and has been adopted in our RL training pipeline since DeepSeek-V3-0324.
 
 
 
-**Keep Routing(保持路由).** MoE 推理只激活部分专家; 推理/训练框架差异再叠加策略更新, 同一输入也可能路由不一致, 活跃参数子空间突然跳变, 优化不稳, off-policy 加重. 做法: 采样时记下推理框架的专家路由, 训练强制同路, 保证优化同一批专家参数. 对 MoE 的 RL 稳定至关重要, 自 DeepSeek-V3-0324 起就写进流水.
+**Keep Routing（保持路由）。** MoE 推理只激活部分专家；推理/训练框架差异再叠加策略更新，同一输入也可能路由不一致，活跃参数子空间突然跳变，优化不稳，off-policy 加重。做法：采样时记下推理框架的专家路由，训练强制同路，保证优化同一批专家参数。对 MoE 的 RL 稳定至关重要，自 DeepSeek-V3-0324 起就写进流水。
 
 **Keep Sampling Mask** Top-p and top-k sampling are widely used sampling strategies to enhance the quality of responses generated by LLMs. Employing these strategies in RL training is also advantageous, as it avoids sampling extremely low-probability tokens that would be used as optimization targets. While such truncation preserves sample quality, it introduces a mismatch between the action spaces of $\pi _ { \mathrm { o l d } }$ and $\pi _ { \theta } , $ which violates the principles of importance sampling and destabilizes training. To address this, we preserve the truncation masks during sampling from $\pi _ { \mathrm { o l d } }$ and apply them to $\pi _ { \theta }$ during training, ensuring both policies share identical action subspaces. Empirically, we find that combining top-p sampling with the Keep Sampling Mask strategy effectively preserves language consistency during RL training.
 
 
 
-**Keep Sampling Mask(保持采样掩码).** Top-p / top-k 常用来抬回复质量; RL 里也能避免把极低概率 token 当优化目标. 截断保住质量, 却让 $\pi_{\mathrm{old}}$ 与 $\pi_\theta$ 动作空间不一致, 破坏重要性采样假设, 晃训练. 做法: 采样时保留截断掩码, 训练时套到 $\pi_\theta$, 两边动作子空间一致. 经验上: top-p + Keep Sampling Mask 能保住 RL 中的语言一致性.
+**Keep Sampling Mask（保持采样掩码）。** Top-p / top-k 常用来抬回复质量；RL 里也能避免把极低概率 token 当优化目标。截断保住质量，却让 $\pi_{\mathrm{old}}$ 与 $\pi_\theta$ 动作空间不一致，破坏重要性采样假设，晃训练。做法：采样时保留截断掩码，训练时套到 $\pi_\theta$，两边动作子空间一致。经验上：top-p + Keep Sampling Mask 能保住 RL 中的语言一致性。
 
 <!-- page 9 of 23 -->
 
@@ -385,31 +385,31 @@ DeepSeek-R1 has demonstrated that incorporating a thinking process can significa
 
 
 
-DeepSeek-R1 已表明: 加入 thinking 过程能显著抬复杂题求解能力. 沿此思路, 要把 thinking 嵌进工具调用场景.
+DeepSeek-R1 已表明：加入 thinking 过程能显著抬复杂题求解能力。沿此思路，要把 thinking 嵌进工具调用场景。
 
 We observed that replicating DeepSeek-R1’s strategy-discarding reasoning content upon the arrival of the second round of messages-results in significant token inefficiency. This approach forces the model to redundantly re-reason through the entire problem for each subsequent tool call. To mitigate this, we developed a context management strictly tailored for tool-calling scenarios as shown in Fig 4:
 
 
 
-若照搬 R1「第二轮消息一到就丢掉推理内容」, token 浪费很大: 每次后续工具调用都得整题重想. 为此做了专为工具调用定制的上下文管理(图 4):
+若照搬 R1「第二轮消息一到就丢掉推理内容」，token 浪费很大：每次后续工具调用都得整题重想。为此做了专为工具调用定制的上下文管理（图 4）：
 
 • Historical reasoning content is discarded only when a new **user message** is introduced to the conversation. If only tool-related messages (e. g., tool outputs) are appended, the reasoning content is **retained** throughout the interaction.
 
 
 
-• 只有新的**用户消息**进会话时才丢历史推理; 若只追加工具相关消息(如工具输出), 推理内容全程**保留**.
+• 只有新的**用户消息**进会话时才丢历史推理；若只追加工具相关消息（如工具输出），推理内容全程**保留**。
 
 • When reasoning traces are removed, the history of **tool calls and their results** remains preserved in the context.
 
 
 
-• 推理轨迹被清掉时, **工具调用及其结果**的历史仍留在上下文里.
+• 推理轨迹被清掉时，**工具调用及其结果**的历史仍留在上下文里。
 
 Notably, certain agent frameworks, such as Roo Code or Terminus, simulate tool interactions via user messages. These frameworks may not fully benefit from our enhanced reasoning persistence due to the context management rules outlined above. Therefore, we recommend utilizing non-thinking models for optimal performance with such architectures.
 
 
 
-注意: Roo Code, Terminus 等框架用用户消息模拟工具交互, 按上述规则吃不到「推理持久化」的红利; 这类架构建议用 non-thinking 模型以求最佳表现.
+注意：Roo Code，Terminus 等框架用用户消息模拟工具交互，按上述规则吃不到「推理持久化」的红利；这类架构建议用 non-thinking 模型以求最佳表现。
 
 ![Image block](images/p09-figure-4-thinking-retention-mechanism-in-tool-calling.png)
 
@@ -417,7 +417,7 @@ Figure 4 | Thinking retention mechanism in tool-calling scenarios.
 
 
 
-图 4｜工具调用场景下的 thinking 保留机制.
+图 4｜工具调用场景下的 thinking 保留机制。
 
 #### 3.2.2. Cold-Start 冷启动
 
@@ -425,7 +425,7 @@ Given the availability of reasoning data (non-agentic) and non-reasoning agentic
 
 
 
-手头已有非 Agent 推理数据与非推理 Agent 数据, 最直接的整合是精设计 prompt. 我们假设模型已能准确跟显式指令, 因而可把工具执行嵌进推理过程.
+手头已有非 Agent 推理数据与非推理 Agent 数据，最直接的整合是精设计 prompt。我们假设模型已能准确跟显式指令，因而可把工具执行嵌进推理过程。
 
 <!-- page 10 of 23 -->
 
@@ -433,13 +433,13 @@ To demonstrate the operation of the cold-start mechanism, we selectively sample 
 
 
 
-冷启动示意见附录表 6–8. 不同任务 prompt 配不同 system prompt. 表 6–8 以竞赛编程题为例: 表 6 是推理数据, system 要求先推理再给最终答案, 并用 &lt; think&gt; &lt; /think&gt; 标推理路径; 表 7 是非推理 Agent 数据, system 含 toolcall 指引; 表 8 是让模型在推理过程中多次调工具的 system prompt.
+冷启动示意见附录表 6–8。不同任务 prompt 配不同 system prompt。表 6–8 以竞赛编程题为例：表 6 是推理数据，system 要求先推理再给最终答案，并用 &lt；think&gt；&lt；/think&gt；标推理路径；表 7 是非推理 Agent 数据，system 含 toolcall 指引；表 8 是让模型在推理过程中多次调工具的 system prompt。
 
 In this manner, although the reasoning in tool-use patterns may lack robustness, the model is occasionally able to generate the desired trajectories, thereby providing a basis for subsequent reinforcement learning stages.
 
 
 
-这样得到的「推理中调工具」模式未必稳健, 但偶尔能产出目标轨迹, 给后续 RL 提供起点.
+这样得到的「推理中调工具」模式未必稳健，但偶尔能产出目标轨迹，给后续 RL 提供起点。
 
 #### 3.2.3. Large-Scale Agentic Tasks 大规模 Agent 任务
 
@@ -447,13 +447,13 @@ A diverse set of RL tasks is crucial for enhancing model robustness. For tasks s
 
 
 
-RL 任务要多样才稳. 搜索, 代码工程, 代码解释用真实工具(真实网页搜索 API, 编程工具, Jupyter). 环境真实, 但 prompt 来自互联网抽取或合成, 不是真实用户交互. 其余任务环境与 prompt 都合成. 所用 Agent 任务见表 1.
+RL 任务要多样才稳。搜索，代码工程，代码解释用真实工具（真实网页搜索 API，编程工具，Jupyter）。环境真实，但 prompt 来自互联网抽取或合成，不是真实用户交互。其余任务环境与 prompt 都合成。所用 Agent 任务见表 1。
 
 Table 1 | The description of different agent tasks, including the number of tasks, environment type (real or synthesized), and prompt source (extracted or synthesized).
 
 
 
-表 1｜各类 Agent 任务说明: 任务数, 环境类型(真实/合成), prompt 来源(抽取/合成).
+表 1｜各类 Agent 任务说明：任务数，环境类型（真实/合成），prompt 来源（抽取/合成）。
 
 |  | number of tasks | environment | prompt |
 | --- | --- | --- | --- |
@@ -466,7 +466,7 @@ Table 1 | The description of different agent tasks, including the number of task
 
 
 
-**搜索 Agent.** 用基于 V3.2 的多智能体流水产多样高质量数据. 先从大规模网页语料抽各域信息量大的长尾实体; 出题 Agent 用可配置深广度的搜索工具探索实体, 收成问答对; 多个异构配置的答疑 Agent(不同检查点, system prompt 等)为每对产多样候选; 带搜索的核查 Agent 多轮校验, 只留「金标正确且候选均可证伪」的样本. 数据跨语言, 域, 难度. 再混入已有 helpful RL 里「搜索工具有可测收益」的过滤样本, 贴近真实用法. 最后定多维质量 rubric, 用生成式奖励模型打分. 混合策略同时优化事实可靠性与实用帮助性.
+**搜索 Agent.** 用基于 V3.2 的多智能体流水产多样高质量数据。先从大规模网页语料抽各域信息量大的长尾实体；出题 Agent 用可配置深广度的搜索工具探索实体，收成问答对；多个异构配置的答疑 Agent（不同检查点，system prompt 等）为每对产多样候选；带搜索的核查 Agent 多轮校验，只留「金标正确且候选均可证伪」的样本。数据跨语言，域，难度。再混入已有 helpful RL 里「搜索工具有可测收益」的过滤样本，贴近真实用法。最后定多维质量 rubric，用生成式奖励模型打分。混合策略同时优化事实可靠性与实用帮助性。
 
 <!-- page 11 of 23 -->
 
@@ -474,53 +474,53 @@ Table 1 | The description of different agent tasks, including the number of task
 
 
 
-**代码 Agent.** 从 GitHub 挖数百万 issue–PR 对, 建大规模可执行「修 issue」环境. 启发式 + LLM 判断严筛: 每条要有合理 issue 描述, 对应金牌补丁, 用于验证的测试补丁. 用 V3.2 驱动的自动环境搭建 Agent 装包, 解依赖, 跑测; 测试结果走标准 JUnit 格式, 跨语言与测试框架解析一致. 成功标准: 打上金牌补丁后 F2P(false-to-positive, 失败变通过)非零且 P2F(pass-to-fail, 通过变失败)为零. 流水建成数万可复现环境, 覆盖 Python, Java, JavaScript, TypeScript, C, C++, Go, PHP 等.
+**代码 Agent.** 从 GitHub 挖数百万 issue–PR 对，建大规模可执行「修 issue」环境。启发式 + LLM 判断严筛：每条要有合理 issue 描述，对应金牌补丁，用于验证的测试补丁。用 V3.2 驱动的自动环境搭建 Agent 装包，解依赖，跑测；测试结果走标准 JUnit 格式，跨语言与测试框架解析一致。成功标准：打上金牌补丁后 F2P（false-to-positive，失败变通过）非零且 P2F（pass-to-fail，通过变失败）为零。流水建成数万可复现环境，覆盖 Python，Java，JavaScript，TypeScript，C，C++，Go，PHP 等。
 
 **Code Interpreter Agent** We utilize Jupyter Notebook as a code interpreter to address complex reasoning tasks. To facilitate this, we curate a diverse set of problems spanning mathematics, logic, and data science, each requiring the model to leverage code execution capabilities to arrive at a solution.
 
 
 
-**代码解释器 Agent.** 用 Jupyter Notebook 当解释器解复杂推理题; 精选数学, 逻辑, 数据科学等题, 每题都需要靠执行代码才能到解.
+**代码解释器 Agent.** 用 Jupyter Notebook 当解释器解复杂推理题；精选数学，逻辑，数据科学等题，每题都需要靠执行代码才能到解。
 
 **General Agent** To scale up agent environments and tasks in RL, we employ an automatic environment-synthesis agent that synthesizes 1, 827 task-oriented environments. These tasks are hard to solve but easy to verify. The synthesis workflow primarily consists of environment and toolset construction, task synthesis, and solution generation. Specifically, the workflow proceeds as follows.
 
 
 
-**通用 Agent.** 为放大 RL 里的环境与任务, 用自动环境合成 Agent 合成 1, 827 个面向任务的环境-- 难解, 易验. 流程含: 环境与工具集构造, 任务合成, 解生成, 步骤如下.
+**通用 Agent.** 为放大 RL 里的环境与任务，用自动环境合成 Agent 合成 1, 827 个面向任务的环境-- 难解，易验。流程含：环境与工具集构造，任务合成，解生成，步骤如下。
 
 1. Given a task category (e. g., planning a travel itinerary) and a sandbox equipped with a bash and a search tool, the agent first uses these tools to generate or retrieve relevant data from the Internet and store them in the sandbox database.
 
 
 
-1. 给定任务类别(如规划行程)与带 bash, 搜索工具的沙箱, Agent 先用这些工具生成或从网上取相关数据, 写入沙箱数据库.
+1. 给定任务类别（如规划行程）与带 bash，搜索工具的沙箱，Agent 先用这些工具生成或从网上取相关数据，写入沙箱数据库。
 
 2. The agent then synthesizes a set of task-specific tools, each implemented as a function.
 
 
 
-2. 再合成一组任务专用工具, 每个是一个函数.
+2. 再合成一组任务专用工具，每个是一个函数。
 
 3. To create tasks that are both challenging and automatically verifiable, the agent initially proposes a simple task based on the current database, along with its solution and verification functions implemented in Python. The solution function is restricted to invoking tool functions or performing logical computations, and cannot call other functions or directly access the database, ensuring the task can only be solved through the tool interface. Additionally, the results produced by the solution function must be validated by the verification function. If the solution is not validated, the agent will modify the solution or verification functions until the solution’s output passes the verification. The agent then iteratively increases the difficulty of the task and updates the corresponding solution and verification functions. During this iterative process, if the current toolset is not sufficient to solve the task, the agent will augment the toolset.
 
 
 
-3. 为做到「难且可自动验」: 先基于当前库提简单任务, 并写 Python 解函数与验函数. 解函数只能调工具函数或做逻辑运算, 不能调其他函数或直访数据库, 保证只能经工具接口求解; 解的输出必须过验函数, 不过就改解或验, 直到通过. 再迭代加难并更新解/验; 工具不够就扩充工具集.
+3. 为做到「难且可自动验」：先基于当前库提简单任务，并写 Python 解函数与验函数。解函数只能调工具函数或做逻辑运算，不能调其他函数或直访数据库，保证只能经工具接口求解；解的输出必须过验函数，不过就改解或验，直到通过。再迭代加难并更新解/验；工具不够就扩充工具集。
 
 Following this workflow, we obtain thousands of &lt; environment, tools, task, verifier&gt; tuples. We then perform RL on this dataset using DeepSeek-V3.2 and retain only instances with non-zero pass@100, resulting in 1, 827 environments and their corresponding tasks (4, 417 in total). A synthetic trip-planning example is illustrated below. This example highlights that, while searching the large combinatorial space for a trip plan that satisfies all constraints is challenging, checking whether a given candidate solution satisfies these constraints is relatively straightforward.
 
 
 
-按此得到数千组 &lt; 环境, 工具, 任务, 验证器&gt;. 用 V3.2 在其上做 RL, 只留 pass@100 非零的实例, 最终 1, 827 个环境, 对应任务共 4, 417. 下方是合成行程规划例: 在大组合空间里搜满足约束的行程很难, 但检查候选是否满足约束相对容易.
+按此得到数千组 &lt；环境，工具，任务，验证器&gt;。用 V3.2 在其上做 RL，只留 pass@100 非零的实例，最终 1, 827 个环境，对应任务共 4, 417。下方是合成行程规划例：在大组合空间里搜满足约束的行程很难，但检查候选是否满足约束相对容易。
 
 <!-- page 12 of 23 -->
 
-**An Example of Synthesized Task: Trip Planning 合成任务示例: 行程规划**
+**An Example of Synthesized Task: Trip Planning 合成任务示例：行程规划**
 
 I’m planning a three-day trip starting from Hangzhou, and I need help creating an itinerary from October 1st to October 3rd, 2025. A few important requirements: I don’t want to repeat any cities, hotels, attractions, or restaurants during the entire trip. Also, please make sure that every hotel, restaurant, and attraction you recommend is actually located in the city where I’ll be staying that day. One more thing about the second day - I’m trying to be smart about my budget. If I end up booking a luxury hotel that costs 800 CNY or more per night, then I need to be more careful with other expenses: my total spending on both restaurants (lunch and dinner) should stay under 350 CNY, both restaurants should be rated at least 4.0 stars, and the afternoon attraction ticket needs to be less than 120 CNY. If the hotel on day 2 is in the mid-to-high range (500-800 CNY), then I have a bit more flexibility - I just need to make sure at least one of my restaurant choices is rated 4.0 or higher, and the attraction ticket should be below 180 CNY. For more affordable hotels (200-500 CNY range), I only need to ensure that at least one restaurant has a rating of 3.2 or above. Can you help me put together this itinerary?
 
 
 
-计划从杭州出发的三天行程(2025-10-01 至 2025-10-03). 全程城市, 酒店, 景点, 餐厅不重复; 每天推荐的酒店/餐厅/景点必须落在当日所在城市. 第二天预算规则: 若豪华酒店 ≥800 CNY/晚, 则午晚两餐合计 &lt; 350 CNY, 两家餐厅评分均 ≥4.0, 下午景点票 &lt; 120 CNY; 若酒店 500–800 CNY, 则至少一家餐厅 ≥4.0, 景点票 &lt; 180 CNY; 若酒店 200–500 CNY, 则至少一家餐厅 ≥3.2. 请帮忙拼出行程.
+计划从杭州出发的三天行程（2025-10-01 至 2025-10-03）。全程城市，酒店，景点，餐厅不重复；每天推荐的酒店/餐厅/景点必须落在当日所在城市。第二天预算规则：若豪华酒店 ≥800 CNY/晚，则午晚两餐合计 &lt；350 CNY，两家餐厅评分均 ≥4.0，下午景点票 &lt；120 CNY；若酒店 500–800 CNY，则至少一家餐厅 ≥4.0，景点票 &lt；180 CNY；若酒店 200–500 CNY，则至少一家餐厅 ≥3.2。请帮忙拼出行程。
 
 **Submit Result Format 提交结果格式**
 
@@ -558,7 +558,7 @@ We evaluate models on MMLU-Pro (Wang et al., 2024), GPQA Diamond (Rein et al., 2
 
 
 
-评测覆盖 MMLU-Pro, GPQA Diamond, HLE 纯文本, LiveCodeBench(2024.08–2025.04), Code-
+评测覆盖 MMLU-Pro，GPQA Diamond，HLE 纯文本，LiveCodeBench(2024.08–2025.04), Code-
 
 <!-- page 13 of 23 -->
 
@@ -566,13 +566,13 @@ forces, Aider-Polyglot, AIME 2025, HMMT Feb 2025, HMMT Nov 2025 (Balunović et a
 
 
 
-forces, Aider-Polyglot, AIME 2025, HMMT Feb/Nov 2025, IMOAnswerBench, Terminal Bench 2.0, SWE-Verified, SWE Multilingual, BrowseComp, BrowseCompZh, 𝜏²-bench, MCP-Universe, MCP-Mark, Tool-Decathlon. 工具基准走标准 function call, 模型开 thinking. MCP-Universe / MCP-Mark 用内部环境(搜索与 playwright 可能与官方略有差别). 温度 1.0, 上下文 128K. 数学类(AIME, HMMT, IMOAnswerBench, HLE)模板:「{question}\nPlease reason step by step, and put your final answer within \boxed{}.」 HLE 另用官方模板测 Thinking, 得 23.9.
+forces, Aider-Polyglot, AIME 2025, HMMT Feb/Nov 2025, IMOAnswerBench, Terminal Bench 2.0, SWE-Verified, SWE Multilingual, BrowseComp, BrowseCompZh, 𝜏²-bench, MCP-Universe, MCP-Mark, Tool-Decathlon。工具基准走标准 function call，模型开 thinking. MCP-Universe / MCP-Mark 用内部环境（搜索与 playwright 可能与官方略有差别）。温度 1.0，上下文 128K. 数学类（AIME, HMMT, IMOAnswerBench, HLE）模板：「{question}\nPlease reason step by step, and put your final answer within \boxed{}.」 HLE 另用官方模板测 Thinking，得 23.9。
 
 Table 2 | Comparison between DeepSeek-V3.2 and closed/open models. For open models, we just compare with models supports thinking in tooluse. Numbers in bold represent the best scores within each model class (open-source and closed-source). The $\tau ^ { 2 } . $ Bench result is computed by the average of each category. Regarding BrowseComp, the performance with the context management technique is noted with \*.
 
 
 
-表 2｜V3.2 与开/闭源对照. 开源侧只比「工具调用支持 thinking」的模型. 粗体为各类内最优. 𝜏²-Bench 取各类平均; BrowseComp 带上下文管理的分数标 *.
+表 2｜V3.2 与开/闭源对照。开源侧只比「工具调用支持 thinking」的模型。粗体为各类内最优。𝜏²-Bench 取各类平均；BrowseComp 带上下文管理的分数标 *。
 
 | Benchmark (Metric) | Claude-4.5-Sonnet | GPT-5 G High | emini-3. Pro | 0 Kimi-K2 Thinking | MiniMaxM2 | DeepSeek-V3.2Thinking |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -603,7 +603,7 @@ DeepSeek-V3.2 achieves similar performance with GPT-5-high on reasoning tasks, b
 
 
 
-推理任务上与 GPT-5-high 接近, 略逊 Gemini-3.0-Pro. 相对 K2-Thinking, 分数相当但输出 token 明显更少(表 3). 增益归因于 RL 算力加大: 近数月表现随 RL 预算延长持续抬升, 预算已超过预训练成本的 10%; 我们猜测再加预算还能抬推理. 文中 V3.2 成绩受长度约束奖励模型限制; 去掉限制后还能再抬, 见
+推理任务上与 GPT-5-high 接近，略逊 Gemini-3.0-Pro。相对 K2-Thinking，分数相当但输出 token 明显更少（表 3）。增益归因于 RL 算力加大：近数月表现随 RL 预算延长持续抬升，预算已超过预训练成本的 10%；我们猜测再加预算还能抬推理。文中 V3.2 成绩受长度约束奖励模型限制；去掉限制后还能再抬，见
 
 <!-- page 14 of 23 -->
 
@@ -617,19 +617,19 @@ In code agent evaluations, DeepSeek-V3.2 significantly outperforms open-source L
 
 
 
-代码 Agent: SWE-bench Verified 与 Terminal Bench 2.0 上显著强于开源 LLM, 显示真实编码工作流潜力. Terminal Bench 2.0: thinking 上下文管理与 Terminus 不兼容, 故报分 46.4 来自 Claude Code 框架; Terminus + non-thinking 为 39.3. SWE Verified 主分来自内部框架; Claude Code, RooCode, non-thinking 等稳健性测试结果落在 72–74, 一致.
+代码 Agent: SWE-bench Verified 与 Terminal Bench 2.0 上显著强于开源 LLM，显示真实编码工作流潜力。Terminal Bench 2.0: thinking 上下文管理与 Terminus 不兼容，故报分 46.4 来自 Claude Code 框架；Terminus + non-thinking 为 39.3. SWE Verified 主分来自内部框架；Claude Code，RooCode，non-thinking 等稳健性测试结果落在 72–74，一致。
 
 For the search agent evaluation, we assess our models using a standard commercial search API. Since DeepSeek-V3.2 supports a maximum context length of only 128K, approximately 20%+ of the test cases exceed this limit. To address this, we employ a context management method to derive the final score. For reference, the score is 51.4 without context management. Further details are provided in Section 4.4.
 
 
 
-搜索 Agent: 用标准商业搜索 API. V3.2 最大上下文仅 128K, 约 20%+ 用例超限, 故用上下文管理得最终分; 无管理时为 51.4. 细节见 §4.4.
+搜索 Agent：用标准商业搜索 API. V3.2 最大上下文仅 128K，约 20%+ 用例超限，故用上下文管理得最终分；无管理时为 51.4。细节见 §4.4。
 
 On tool-use benchmarks, DeepSeek-V3.2 substantially narrows the performance gap between open-source and closed-source LLMs, though it remains below frontier models. For 𝜏<sup>2</sup>-bench, we employ the model itself as the user agent, achieving final category scores of 63.8 (Airline), 81.1 (Retail), and 96.2 (Telecom). For the MCP benchmarks, we employ the function calling format and place tool outputs within messages designated with the ’tool’ role, rather than the ’user’ role. During our testing, we observed that DeepSeek-V3.2 frequently engages in redundant self-verification, generating excessively long trajectories. This tendency often causes the context length to exceed the 128K limit, particularly in tasks such as MCP-Mark GitHub and Playwright evaluation. Consequently, this phenomenon hinders the final performance of DeepSeek-V3.2. However, integrating context management strategies can further enhance performance. We identify this as a direction for future work and a practical consideration for users. Even if DeepSeek-V3.2 suffers from the issue, it still significantly outperforms existing open models. Notably, since the environments and toolsets employed in these benchmarks were not encountered during RL training, the observed improvements demonstrate DeepSeek-V3.2’s capacity to generalize its reasoning strategies to out-of-domain agentic scenarios. The evaluation of non-thinking model in the agent scenario is shown in Appendix Table 9.
 
 
 
-工具基准: 显著收窄开闭源差距, 但仍低于前沿. 𝜏²-bench 用模型自身当 user agent, 分类分 63.8(Airline), 81.1(Retail), 96.2(Telecom). MCP 走 function calling, 工具输出放 `tool` 角色而非 `user`. 测试中常冗余自检, 轨迹过长, 易超 128K(尤其 MCP-Mark GitHub, Playwright), 拖最终分; 加上下文管理还能再抬, 留作未来与用户实操注意. 即便如此仍显著强于既有开源. 这些基准的环境与工具集 RL 时未见, 说明推理策略能泛化到域外 Agent 场景. non-thinking 的 Agent 评测见附录表 9.
+工具基准：显著收窄开闭源差距，但仍低于前沿。𝜏²-bench 用模型自身当 user agent，分类分 63.8(Airline), 81.1(Retail), 96.2(Telecom). MCP 走 function calling，工具输出放 `tool` 角色而非 `user`。测试中常冗余自检，轨迹过长，易超 128K（尤其 MCP-Mark GitHub, Playwright），拖最终分；加上下文管理还能再抬，留作未来与用户实操注意。即便如此仍显著强于既有开源。这些基准的环境与工具集 RL 时未见，说明推理策略能泛化到域外 Agent 场景。non-thinking 的 Agent 评测见附录表 9。
 
 ### 4.2. Results of DeepSeek-V3.2-Speciale DeepSeek-V3.2-Speciale 结果
 
@@ -637,19 +637,19 @@ Table 3 demonstrates that DeepSeek-V3.2-Speciale achieves superior performance b
 
 
 
-表 3: Speciale 靠更多推理 token 取得更优表现, 多基准超过 Gemini-3.0-Pro. 表 4: 通用模型, 无专项训练, 在 IOI 2025 与 ICPC WF 达金牌级; 接入 Shao et al. (2025) 后, 复杂证明达 IMO 2025, CMO 2025 金牌线⁵. 协议见附录 D.
+表 3: Speciale 靠更多推理 token 取得更优表现，多基准超过 Gemini-3.0-Pro。表 4：通用模型，无专项训练，在 IOI 2025 与 ICPC WF 达金牌级；接入 Shao et al. (2025) 后，复杂证明达 IMO 2025，CMO 2025 金牌线⁵。协议见附录 D。
 
 However, the token efficiency of DeepSeek-V3.2-Speciale remains significantly inferior to that of Gemini-3.0-Pro. To mitigate deployment costs and latency, we imposed stricter token constraints during the training of the official DeepSeek-V3.2, aiming to optimize the trade-off
 
 
 
-但 Speciale 的 token 效率仍明显逊于 Gemini-3.0-Pro. 为控部署成本与延迟, 正式版 V3.2 训练时加了更严的 token 约束, 优化性能–成本权衡.
+但 Speciale 的 token 效率仍明显逊于 Gemini-3.0-Pro。为控部署成本与延迟，正式版 V3.2 训练时加了更严的 token 约束，优化性能–成本权衡。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>5</sup>We evaluated the English version of CMO 2025. The IMO 2025 and CMO 2025 problems, together with the inference code, can be found at: [https://github. com/deepseek-ai/DeepSeek-Math-V2](https://github. com/deepseek-ai/DeepSeek-Math-V2). </span></small>
 
 
 
-<small><span class=「docvortex-page-footnote」 data-block-type=「page_footnote」 style=「color: #6b7280」><sup>5</sup>CMO 2025 评的是英文版. IMO / CMO 2025 题目与推理代码见: https://github. com/deepseek-ai/DeepSeek-Math-V2. </span></small>
+<small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>5</sup>CMO 2025 评的是英文版。IMO / CMO 2025 题目与推理代码见：https://github. com/deepseek-ai/DeepSeek-Math-V2. </span></small>
 
 <!-- page 15 of 23 -->
 
@@ -657,13 +657,13 @@ between performance and cost. We believe that token efficiency remains a critica
 
 
 
-我们认为 token 效率仍是未来关键课题.
+我们认为 token 效率仍是未来关键课题。
 
 Table 3 | Benchmark performance and efficiency of reasoning models. For each benchmark, cells show accuracy and output token count (in thousands). The highest accuracy per benchmark is in bold; the second-highest is underlined.
 
 
 
-表 3｜推理模型的表现与效率. 每格为准确率 + 输出 token 数(千). 各基准最高粗体, 次高下划线.
+表 3｜推理模型的表现与效率。每格为准确率 + 输出 token 数（千）。各基准最高粗体，次高下划线。
 
 | Benchmark | GPT-5 High | Gemini-3.0 Pro | Kimi-K2 Thinking | DeepSeek-V3.2 Thinking | DeepSeek-V3.2 Speciale |
 | --- | --- | --- | --- | --- | --- |
@@ -680,7 +680,7 @@ Table 4 | Performance of DeepSeek-V3.2-Speciale in top-tier mathematics and codi
 
 
 
-表 4｜Speciale 在顶级数学与编程竞赛表现. ICPC WF 2025 报各题成功提交次数. Speciale 在 ICPC WF 2025 排第 2, IOI 2025 排第 10.
+表 4｜Speciale 在顶级数学与编程竞赛表现。ICPC WF 2025 报各题成功提交次数。Speciale 在 ICPC WF 2025 排第 2，IOI 2025 排第 10。
 
 | Competition | P1 | P2 | P3 | P4 | P5 | P6 | Overall | Medal |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -698,19 +698,19 @@ In this section, we perform ablation experiments to study the effect of syntheti
 
 
 
-本节消融合成 Agent 任务. 两个问题: 合成任务是否够难, 值得 RL? 以及泛化如何-- 能否迁到其他下游或真实环境?
+本节消融合成 Agent 任务。两个问题：合成任务是否够难，值得 RL? 以及泛化如何-- 能否迁到其他下游或真实环境？
 
 To address the first question, we randomly sample 50 instances from the general synthesized agentic tasks and evaluate both the model used for synthesis and frontier closed-source LLMs. As shown in Table 5, DeepSeek-V3.2-Exp attains an accuracy of only 12%, while frontier closedsource models achieve at most 62%. These results indicate that the synthetic data include agentic tasks that are challenging for both DeepSeek-V3.2-Exp and frontier closed-source models.
 
 
 
-第一问: 从通用合成任务随机抽 50 例, 评合成用模型与前沿闭源. 表 5: V3.2-Exp 仅 12%, 闭源最高 62%. 说明合成数据里确有对双方都难的 Agent 题.
+第一问：从通用合成任务随机抽 50 例，评合成用模型与前沿闭源。表 5: V3.2-Exp 仅 12%，闭源最高 62%。说明合成数据里确有对双方都难的 Agent 题。
 
 To investigate whether RL on synthetic data can generalize to different tasks or real-world environments, we apply RL to the SFT checkpoint of DeepSeek-V3.2 (denoted DeepSeek-V3.2- SFT). To exclude the effects of long CoT and other RL data, we conduct RL only on synthetic agentic tasks in non-thinking mode. We then compare the model with DeepSeek-V3.2-SFT and DeepSeek-V3.2-Exp, where DeepSeek-V3.2-Exp is trained with RL only in search and code environments. As shown in Figure 5, large-scale RL on synthetic data yields substantial improve-
 
 
 
-第二问: 对 V3.2 的 SFT 检查点(记 DeepSeek-V3.2-SFT)做 RL; 为排除长 CoT 与其他 RL 数据, 只在合成 Agent 任务, non-thinking 上训. 对照: SFT 本身, 以及只在搜索与代码环境 RL 的 V3.2-Exp. 图 5: 大规模合成数据 RL 带来显著提升
+第二问：对 V3.2 的 SFT 检查点（记 DeepSeek-V3.2-SFT）做 RL；为排除长 CoT 与其他 RL 数据，只在合成 Agent 任务，non-thinking 上训。对照：SFT 本身，以及只在搜索与代码环境 RL 的 V3.2-Exp。图 5：大规模合成数据 RL 带来显著提升
 
 <!-- page 16 of 23 -->
 
@@ -718,7 +718,7 @@ Table 5 | Accuracy of general synthesized tasks on different models.
 
 
 
-表 5｜通用合成任务在不同模型上的准确率.
+表 5｜通用合成任务在不同模型上的准确率。
 
 | Pass@K | DeepSeek-v3.2-Exp | Sonnet-4.5 | Gemini-3.0 Pro | GPT-5-Thinking |
 | --- | --- | --- | --- | --- |
@@ -732,13 +732,13 @@ Figure 5 | RL training of DeepSeek-V3.2-SFT using exclusively synthetic general 
 
 
 
-图 5｜仅用合成通用 Agent 数据对 DeepSeek-V3.2-SFT 做 RL 训练.
+图 5｜仅用合成通用 Agent 数据对 DeepSeek-V3.2-SFT 做 RL 训练。
 
 ments over DeepSeek-V3.2-SFT on Tau2Bench, MCP-Mark, and MCP-Universe benchmarks. In contrast, restricting RL to code and search scenarios does not improve performance on these benchmarks, further highlighting the potential of synthetic data.
 
 
 
-相对 SFT, 在 Tau2Bench, MCP-Mark, MCP-Universe 上明显抬升; 若 RL 只限代码与搜索, 这些基准不涨, 更凸出合成数据的价值.
+相对 SFT，在 Tau2Bench，MCP-Mark，MCP-Universe 上明显抬升；若 RL 只限代码与搜索，这些基准不涨，更凸出合成数据的价值。
 
 ### 4.4. Context Management of Search Agent 搜索 Agent 的上下文管理
 
@@ -746,7 +746,7 @@ Even with extended context windows such as 128k, agentic workflows, particularly
 
 
 
-即便有 128k 级窗口, Agent 工作流(尤其搜索)仍常顶满长度, 推理被提前截断, TestingTime 算力潜力吃不满. 对策: token 用量超窗口 80% 时做上下文管理, 简单策略延展 TestingTime 预算: (1) **Summary**-- 摘要溢出轨迹后重新 rollout; (2) **Discard-75%**-- 丢掉轨迹前 75% 工具调用历史腾空间; (3) **Discard-all**-- 清空全部工具调用历史重置上下文(类似 Anthropic 2025a 的 new context 工具). 对照还有并行扩展基线 **Parallel-fewest-step**: 采样 N 条独立轨迹,
+即便有 128k 级窗口，Agent 工作流（尤其搜索）仍常顶满长度，推理被提前截断，TestingTime 算力潜力吃不满。对策：token 用量超窗口 80% 时做上下文管理，简单策略延展 TestingTime 预算：（1）**Summary**-- 摘要溢出轨迹后重新 rollout; (2) **Discard-75%**-- 丢掉轨迹前 75% 工具调用历史腾空间；（3）**Discard-all**-- 清空全部工具调用历史重置上下文（类似 Anthropic 2025a 的 new context 工具）。对照还有并行扩展基线 **Parallel-fewest-step**：采样 N 条独立轨迹，
 
 <!-- page 17 of 23 -->
 
@@ -756,39 +756,39 @@ Figure 6 | Accuracy of Browsecomp with different test-time compute expansion str
 
 
 
-图 6｜不同 TestingTime 算力扩展策略下 BrowseComp 准确率.
+图 6｜不同 TestingTime 算力扩展策略下 BrowseComp 准确率。
 
 selects the trajectory with the fewest steps.
 
 
 
-并选步数最少的那条.
+并选步数最少的那条。
 
 We evaluate these strategies on the BrowseComp benchmark (Wei et al., 2025). As illustrated in Figure 6, under varying compute budgets, context management leads to significant performance gains by allowing the model to scale up test-time compute, providing more space to perform additional execution steps. For example, Summary extends the average steps to 364, achieving a performance improvement of up to 60.2. However, its overall efficiency is relatively low. Despite its simplicity, Discard-all performs well in both efficiency and scalability, achieving a score of 67.6, comparable to parallel scaling while using significantly fewer steps.
 
 
 
-在 BrowseComp(Wei et al., 2025)上评这些策略. 图 6: 不同算力预算下, 上下文管理让模型能放大 TestingTime 算力, 多走执行步, 收益明显. 例: Summary 把平均步数拉到 364, 分数可到 60.2, 但整体效率偏低. Discard-all 虽简单, 效率与可扩展性都不错, 得 67.6, 与并行扩展相当但步数少得多.
+在 BrowseComp(Wei et al., 2025)上评这些策略。图 6：不同算力预算下，上下文管理让模型能放大 TestingTime 算力，多走执行步，收益明显。例：Summary 把平均步数拉到 364，分数可到 60.2，但整体效率偏低。Discard-all 虽简单，效率与可扩展性都不错，得 67.6，与并行扩展相当但步数少得多。
 
 In summary, test-time compute can be scaled either serially through context management or in parallel, both effectively extending the model’s problem-solving capacity. However, different strategies exhibit varying efficiency and scalability. Thus, it is crucial to account for actual compute costs when benchmarking model performance. Meanwhile, finding the optimal combination of serial and parallel scaling to maximize both efficiency and scalability remains a crucial direction for future work.
 
 
 
-小结: TestingTime 算力可串行(上下文管理)或并行扩展, 都能延展解题能力; 但策略效率与可扩展性不同, 基准对比必须计入真实算力成本. 串并行如何最优组合, 仍是未来重点.
+小结：TestingTime 算力可串行（上下文管理）或并行扩展，都能延展解题能力；但策略效率与可扩展性不同，基准对比必须计入真实算力成本。串并行如何最优组合，仍是未来重点。
 
-## 5. Conclusion, Limitation, and Future Work 结论, 局限与未来工作
+## 5. Conclusion，Limitation，and Future Work 结论，局限与未来工作
 
 In this work, we introduced DeepSeek-V3.2, a framework that effectively bridges the gap between computational efficiency and advanced reasoning capabilities. Using DSA, we addressed critical computation complexity without sacrificing long-context performance. By increasing computational budget, DeepSeek-V3.2 achieves comparable performance with GPT-5 on reasoning benchmarks. Finally, the integration of our large-scale agentic task synthesis pipeline significantly enhances tool-use proficiency, unlocking new possibilities for robust and generalizable AI agents with open LLM. Furthermore, our high-compute variant, DeepSeek-V3.2-Speciale, validated by gold-medal achievements in the IMO and IOI, sets a milestone for open LLMs.
 
 
 
-本文推出 DeepSeek-V3.2: 在算力效率与高阶推理之间搭桥. DSA 压住复杂度且长上下文不掉点; 加大算力预算后, 推理基准与 GPT-5 相当; 大规模 Agent 任务合成流水显著抬工具能力, 为开源 LLM 上的稳健, 可泛化 Agent 打开空间. 高算力变体 Speciale 以 IMO, IOI 金牌验证, 为开源 LLM 立下一座里程碑.
+本文推出 DeepSeek-V3.2：在算力效率与高阶推理之间搭桥。DSA 压住复杂度且长上下文不掉点；加大算力预算后，推理基准与 GPT-5 相当；大规模 Agent 任务合成流水显著抬工具能力，为开源 LLM 上的稳健，可泛化 Agent 打开空间。高算力变体 Speciale 以 IMO，IOI 金牌验证，为开源 LLM 立下一座里程碑。
 
 Despite these achievements, we acknowledge certain limitations when compared to frontier closed-source models such as Gemini-3.0-Pro. First, due to fewer total training FLOPs, the breadth of world knowledge in DeepSeek-V3.2 still lags behind that of leading proprietary
 
 
 
-相对 Gemini-3.0-Pro 等前沿闭源, 局限仍在. 其一: 总训练 FLOPs 更少, 世界知识广度仍落后于头部专有
+相对 Gemini-3.0-Pro 等前沿闭源，局限仍在。其一：总训练 FLOPs 更少，世界知识广度仍落后于头部专有
 
 <!-- page 18 of 23 -->
 
@@ -796,7 +796,7 @@ models. We plan to address this knowledge gap in future iterations by scaling up
 
 
 
-模型; 计划在后续迭代放大预训练算力补知识缺口. 其二: token 效率仍是挑战-- 要达到 Gemini-3.0-Pro 级输出质量, 通常需要更长生成轨迹; 未来要优化推理链的「智能密度」提效. 其三: 复杂任务求解仍逊于前沿, 需继续打磨底座与后训练配方.
+模型；计划在后续迭代放大预训练算力补知识缺口。其二：token 效率仍是挑战-- 要达到 Gemini-3.0-Pro 级输出质量，通常需要更长生成轨迹；未来要优化推理链的「智能密度」提效。其三：复杂任务求解仍逊于前沿，需继续打磨底座与后训练配方。
 
 ## References
 
@@ -878,13 +878,13 @@ Figure 7 | Illustration of the MHA and MQA modes of MLA. For DeepSeek-V3.1-Termi
 
 
 
-图 7｜MLA 的 MHA 与 MQA 模式示意. V3.1-Terminus: 训练与 prefilling 用 MHA, decoding 用 MQA.
+图 7｜MLA 的 MHA 与 MQA 模式示意。V3.1-Terminus：训练与 prefilling 用 MHA，decoding 用 MQA。
 
 Figure 7 illustrates two aspects of MLA – the MHA and MQA modes – as well as the transformation between them.
 
 
 
-图 7 展示 MLA 的两面--MHA 与 MQA-- 以及二者如何转换.
+图 7 展示 MLA 的两面--MHA 与 MQA-- 以及二者如何转换。
 
 ## B. Cold Start Template 冷启动模板
 
@@ -894,7 +894,7 @@ Table 6 | An example of the reasoning data system prompt. The system prompt requ
 
 
 
-表 6｜推理数据 system prompt 示例. 要求把推理过程写在 &lt; think&gt; &lt; /think&gt; 标签内.
+表 6｜推理数据 system prompt 示例。要求把推理过程写在 &lt；think&gt；&lt；/think&gt；标签内。
 
 <table><tr><td>Reasoning System Prompt</td><td>You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. Please first reason before giving the final answer. The reasoning process enclosed within&lt; think&gt; &lt; /think&gt;. The final answer is output after the&lt; /think&gt; tag. </td></tr><tr><td>Prompt</td><td>Given a linked list, swap every two adjacent nodes and return its head ... </td></tr><tr><td rowspan="3">Reasoning Response</td><td></td></tr><tr><td>... </td></tr><tr><td>[FINAL ANSWER]</td></tr></table>
 
@@ -902,7 +902,7 @@ Table 7 | {TOOL-DESCRIPTIONS} and {TOOLCALL-FORMAT} will be replaced with the sp
 
 
 
-表 7｜{TOOL-DESCRIPTIONS} 与 {TOOLCALL-FORMAT} 会替换成具体工具与自研 toolcall 格式.
+表 7｜{TOOL-DESCRIPTIONS} 与 {TOOLCALL-FORMAT} 会替换成具体工具与自研 toolcall 格式。
 
 | Agent System Prompt | Use Python interpreter tool to execute Python code. The code will not be shown to the user. This tool should be used for internal reasoning, but not for code that is intended to be visible to the user (e. g. when creating plots, tables, or files). When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. python will respond with the output of the execution or time out after 120.0 seconds. ## Tools You have access to the following tools: {TOOL-DESCRIPTIONS} Important: ALWAYS adhere to this exact format for tool use: {TOOLCALL-FORMAT} |
 | --- | --- |
@@ -913,7 +913,7 @@ Table 8 | The model executes tool calls in thinking process.
 
 
 
-表 8｜模型在 thinking 过程中执行工具调用.
+表 8｜模型在 thinking 过程中执行工具调用。
 
 | Reasoning | You are a helpful assistant with access to a Python interpreter. |
 | --- | --- |
@@ -935,7 +935,7 @@ Table 9 | Comparison between DeepSeek-V3.2 non-thinking and thinking modes. The 
 
 
 
-表 9｜non-thinking 与 thinking 对照. 表中 Terminal Bench 用 Claude Code 框架; Terminus + non-thinking 为 39.3.
+表 9｜non-thinking 与 thinking 对照。表中 Terminal Bench 用 Claude Code 框架；Terminus + non-thinking 为 39.3。
 
 | Benchmark (Metric) n | on-thinkin | g thinking |
 | --- | --- | --- |
@@ -952,33 +952,33 @@ The performance of non-thinking mode is slightly worse than the thinking mode, b
 
 
 
-non-thinking 略逊于 thinking, 但仍有竞争力.
+non-thinking 略逊于 thinking，但仍有竞争力。
 
-## D. Evaluation Method of IOI, ICPC World Final, IMO, and CMO IOI, ICPC 世锦赛, IMO, CMO 评测方法
+## D. Evaluation Method of IOI，ICPC World Final，IMO，and CMO IOI，ICPC 世锦赛，IMO，CMO 评测方法
 
 For all competitions, the model’s maximum generation length is set to 128k. No tools or internet access are used, and testing strictly adheres to the contest’s time and attempt limits.
 
 
 
-所有竞赛: 最大生成长度 128k; 无工具, 无联网; 严格遵守赛时与尝试次数限制.
+所有竞赛：最大生成长度 128k；无工具，无联网；严格遵守赛时与尝试次数限制。
 
 For the IOI evaluation, we designed our submission strategy in accordance with the official competition rules, which permit up to 50 submissions per problem and score each submission based on the maximum points achieved across all subtasks. Specifically, we first sampled 500 candidate solutions for each problem, then applied a multi-stage filtering pipeline. In the initial stage, we eliminated invalid submissions that failed to pass the provided sample test cases or exceeded the length constraints. Subsequently, we employed the DeepSeek-V32-Exp model to identify and remove samples in which the model explicitly indicated an inability or refusal to solve the problem. From the remaining valid candidates, we selected the 50 samples with the longest thinking traces for final submission.
 
 
 
-IOI: 按官方规则每题最多 50 次提交, 按各子任务最高分计分. 做法: 每题先采 500 候选, 再多级过滤-- 先去掉未过样例或超长的无效提交; 再用 V3.2-Exp 识别并剔除明确表示不会做/拒答的样本; 从剩余有效候选里取 thinking 轨迹最长的 50 条作最终提交.
+IOI：按官方规则每题最多 50 次提交，按各子任务最高分计分。做法：每题先采 500 候选，再多级过滤-- 先去掉未过样例或超长的无效提交；再用 V3.2-Exp 识别并剔除明确表示不会做/拒答的样本；从剩余有效候选里取 thinking 轨迹最长的 50 条作最终提交。
 
 For the ICPC evaluation, we adapted the same filtering methodology but with a smaller initial sample size. We generated 32 candidate solutions per problem and applied the identical filtering criteria to select submissions.
 
 
 
-ICPC: 同一套过滤, 初始采样更小-- 每题 32 候选, 再按相同标准筛选提交.
+ICPC：同一套过滤，初始采样更小-- 每题 32 候选，再按相同标准筛选提交。
 
 In the IMO and CMO tasks, we employ a generate-verify-refine loop. The model iteratively improves its solution until it achieves a perfect self-evaluation or hits the maximum revision cap, identical to the process in Shao et al. (2025).
 
 
 
-IMO / CMO: 走 generate–verify–refine 环, 迭代改到自评分满分或触顶修订上限, 流程同 Shao et al. (2025).
+IMO / CMO：走 generate–verify–refine 环，迭代改到自评分满分或触顶修订上限，流程同 Shao et al. (2025).
 
 <!-- page 23 of 23 -->
 
@@ -988,24 +988,24 @@ IMO / CMO: 走 generate–verify–refine 环, 迭代改到自评分满分或触
 
 
 
-**研究与工程**: 名单同上(按名首字母排序; 标 * 者已离队).
+**研究与工程**：名单同上（按名首字母排序；标 * 者已离队）。
 
 **Data Annotation:** Bei Feng, Hui Li, J. L. Cai, Jiaqi Ni, Lei Xu, Meng Li, Ning Tian, R. J. Chen, R. L. Jin, S. S. Li, Shuang Zhou, Tianyu Sun, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xinnan Song, Xinyi Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Zhen Huang, Zhipeng Xu, Zhongyu Zhang
 
 
 
-**数据标注**: Bei Feng, Hui Li, J. L. Cai, Jiaqi Ni, Lei Xu, Meng Li, Ning Tian, R. J. Chen, R. L. Jin, S. S. Li, Shuang Zhou, Tianyu Sun, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xinnan Song, Xinyi Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Zhen Huang, Zhipeng Xu, Zhongyu Zhang
+**数据标注**：Bei Feng, Hui Li, J. L. Cai, Jiaqi Ni, Lei Xu, Meng Li, Ning Tian, R. J. Chen, R. L. Jin, S. S. Li, Shuang Zhou, Tianyu Sun, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen, Xinnan Song, Xinyi Zhou, Y. X. Zhu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Zhen Huang, Zhipeng Xu, Zhongyu Zhang
 
 **Business & Compliance:** Dongjie Ji, Jian Liang, Jianzhong Guo, Jin Chen, Leyi Xia, Miaojun Wang, Mingming Li, Peng Zhang, Ruyi Chen, Shangmian Sun, Shaoqing Wu, Shengfeng Ye, T. Wang, W. L. Xiao, Wei An, Xianzu Wang, Xiaowen Sun, Xiaoxiang Wang, Ying Tang, Yukun Zha, Zekai Zhang, Zhe Ju, Zhen Zhang, Zihua Qu
 
 
 
-**商务与合规**: Dongjie Ji, Jian Liang, Jianzhong Guo, Jin Chen, Leyi Xia, Miaojun Wang, Mingming Li, Peng Zhang, Ruyi Chen, Shangmian Sun, Shaoqing Wu, Shengfeng Ye, T. Wang, W. L. Xiao, Wei An, Xianzu Wang, Xiaowen Sun, Xiaoxiang Wang, Ying Tang, Yukun Zha, Zekai Zhang, Zhe Ju, Zhen Zhang, Zihua Qu
+**商务与合规**：Dongjie Ji, Jian Liang, Jianzhong Guo, Jin Chen, Leyi Xia, Miaojun Wang, Mingming Li, Peng Zhang, Ruyi Chen, Shangmian Sun, Shaoqing Wu, Shengfeng Ye, T. Wang, W. L. Xiao, Wei An, Xianzu Wang, Xiaowen Sun, Xiaoxiang Wang, Ying Tang, Yukun Zha, Zekai Zhang, Zhe Ju, Zhen Zhang, Zihua Qu
 
 Authors are listed alphabetically by their first name. Names marked with \* denote individuals who have departed from our team.
 
 
 
-作者按名首字母排序; 标 * 表示已离队.
+作者按名首字母排序；标 * 表示已离队。
 
 23

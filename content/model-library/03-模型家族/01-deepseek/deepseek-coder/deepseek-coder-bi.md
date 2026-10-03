@@ -13,13 +13,13 @@ LeetCode Weekly Contest
 
 LeetCode 周赛
 
-# DeepSeek-Coder: When the Large Language Model Meets Programming - The Rise of Code Intelligence # DeepSeek-Coder: 当大语言模型遇上编程-- 代码智能的崛起
+# DeepSeek-Coder: When the Large Language Model Meets Programming - The Rise of Code Intelligence # DeepSeek-Coder：当大语言模型遇上编程-- 代码智能的崛起
 
 Daya Guo\*<sup>1</sup>, Qihao Zhu<sup>∗1, 2</sup>, Dejian Yang<sup>1</sup>, Zhenda Xie<sup>1</sup>, Kai Dong<sup>1</sup>, Wentao Zhang<sup>1</sup> Guanting Chen<sup>1</sup>, Xiao Bi <sup>1</sup>, Y. Wu<sup>1</sup>, Y. K. Li<sup>1</sup>, Fuli Luo<sup>1</sup>, Yingfei Xiong<sup>2</sup>, Wenfeng Liang<sup>1</sup>
 
 
 
-DeepSeek-AI 与北京大学高可信软件技术教育部重点实验室; 标星作者为共同一作. 联系: {zhuqh, guodaya}@deepseek. com; 仓库: https://github. com/deepseek-ai/DeepSeek-Coder
+DeepSeek-AI 与北京大学高可信软件技术教育部重点实验室；标星作者为共同一作。联系：{zhuqh, guodaya}@deepseek. com；仓库：https://github. com/deepseek-ai/DeepSeek-Coder
 
 <sup>1</sup>DeepSeek-AI <sup>2</sup>Key Lab of HCST (PKU), MOE; SCS, Peking University {zhuqh, guodaya}@deepseek. com https://github. com/deepseek-ai/DeepSeek-Coder
 
@@ -29,7 +29,7 @@ The rapid development of large language models has revolutionized code intellige
 
 
 
-大模型迅速改写了软件开发里的代码智能, 但闭源主导限制了广泛研究. 为此推出 DeepSeek-Coder 系列: 开源代码模型, 规模从 1.3B 到 33B, 从零训在 2 万亿 token 上. 预训练用高质量**仓库级**代码语料, 并配合填空式任务与 16K 窗口, 抬高生成与中间填补能力. 评测显示: 开源代码模型里多基准领先, 也超过 Codex, GPT-3.5 等既有闭源; 许可宽松, 研究与无限制商用均可.
+大模型迅速改写了软件开发里的代码智能，但闭源主导限制了广泛研究。为此推出 DeepSeek-Coder 系列：开源代码模型，规模从 1.3B 到 33B，从零训在 2 万亿 token 上。预训练用高质量**仓库级**代码语料，并配合填空式任务与 16K 窗口，抬高生成与中间填补能力。评测显示：开源代码模型里多基准领先，也超过 Codex，GPT-3.5 等既有闭源；许可宽松，研究与无限制商用均可。
 
 ![Chart block](images/p01-chart.png)
 
@@ -39,7 +39,7 @@ Figure 1 | The Performance of DeepSeek-Coder
 
 
 
-图 1｜DeepSeek-Coder 的表现(多语言雷达 + LeetCode 周赛).
+图 1｜DeepSeek-Coder 的表现（多语言雷达 + LeetCode 周赛）。
 
 arXiv: 2401.14196v2 [cs. SE] 26 Jan 2024
 
@@ -55,43 +55,43 @@ The field of software development has been significantly transformed by the swif
 
 
 
-大模型把软件开发推进到代码智能新阶段: 缺陷检测到代码生成都有自动化空间. 难点仍在开源与闭源之间的性能落差-- 巨型闭源虽强, 专有属性却把许多研究者挡在外面.
+大模型把软件开发推进到代码智能新阶段：缺陷检测到代码生成都有自动化空间。难点仍在开源与闭源之间的性能落差-- 巨型闭源虽强，专有属性却把许多研究者挡在外面。
 
 In response to this challenge, we present the DeepSeek-Coder series. This series comprises a range of open-source code models, varying in size from 1.3B to 33B, including the base version and instructed version for each size. Each model in the series has been trained from scratch on 2 trillion tokens sourced from 87 programming languages, ensuring a comprehensive understanding of coding languages and syntax. Besides, we attempt to organize the pre-training data at the repository level to enhance the pre-trained model’s understanding capability within the context of cross-files within a repository. In addition to employing the next token prediction loss during pre-training, we have also incorporated the Fill-In-Middle (FIM) approach (Bavarian et al., 2022; Li et al., 2023). This approach is designed to further bolster the model’s code completion capabilities. To meet the requirements of handling longer code inputs, we have extended the context length to 16K. This adjustment allows our models to handle more complex and extensive coding tasks, thereby increasing their versatility and applicability in various coding scenarios.
 
 
 
-DeepSeek-Coder 系列开源, 规模 1.3B–33B, 每档有 Base 与 Instruct. 从零训在来自 87 种语言的 2 万亿 token 上. 预训练数据按**仓库级**组织, 加强跨文件理解; 除 next-token prediction 外引入 **Fill-In-Middle(FIM)**, 强化补全; 上下文拉到 16K, 好扛更长代码输入.
+DeepSeek-Coder 系列开源，规模 1.3B–33B，每档有 Base 与 Instruct。从零训在来自 87 种语言的 2 万亿 token 上。预训练数据按**仓库级**组织，加强跨文件理解；除 next-token prediction 外引入 **Fill-In-Middle(FIM)**，强化补全；上下文拉到 16K，好扛更长代码输入。
 
 We have carried out comprehensive experiments using a variety of public code-related benchmarks. The findings reveal that among open-source models, DeepSeek-Coder-Base 33B consistently delivers superior performance across all benchmarks. Furthermore, DeepSeek-Coder-Instruct 33B surpasses OpenAI GPT-3.5 Turbo in the majority of the evaluation benchmarks, significantly narrowing the performance gap between OpenAI GPT-4 and open-source models. Remarkably, despite having fewer parameters, DeepSeek-Coder-Base 7B demonstrates competitive performance when compared to models that are five times larger, such as CodeLlama-33B (Roziere et al., 2023). To summarize, our main contributions are:
 
 
 
-公开代码基准上: DeepSeek-Coder-Base 33B 在开源里全面领先; Instruct 33B 多数评测超过 GPT-3.5 Turbo, 显著收窄与 GPT-4 的差距. 参数更少的 Base 7B 也能跟约五倍大的 CodeLlama-33B 打得有来有回. 主要贡献如下:
+公开代码基准上：DeepSeek-Coder-Base 33B 在开源里全面领先；Instruct 33B 多数评测超过 GPT-3.5 Turbo，显著收窄与 GPT-4 的差距。参数更少的 Base 7B 也能跟约五倍大的 CodeLlama-33B 打得有来有回。主要贡献如下：
 
 • We introduce DeepSeek-Coder-Base and DeepSeek-Coder-Instruct, our advanced codefocused large language models (LLMs). Developed through extensive training on an expansive code corpus, these models exhibit proficiency in understanding 87 programming languages. Additionally, they are available in various model scales to cater to a wide range of computational and application needs.
 
 
 
-• 推出 DeepSeek-Coder-Base 与 Instruct: 大规模代码语料训练, 覆盖 87 种语言, 多档规模适配不同算力与场景.
+• 推出 DeepSeek-Coder-Base 与 Instruct：大规模代码语料训练，覆盖 87 种语言，多档规模适配不同算力与场景。
 
 • We make the first attempt to incorporate repository-level data construction during the pre-training phase of our models. We find that it can significantly boost the capability of cross-file code generation.
 
 
 
-• 预训练阶段首次尝试仓库级数据构造, 跨文件代码生成明显变强.
+• 预训练阶段首次尝试仓库级数据构造，跨文件代码生成明显变强。
 
 • Our analysis rigorously examines the impact of FIM training strategies on the pretraining phase of code models. The outcomes of these comprehensive studies shed light on intriguing aspects of FIM configurations, offering valuable insights that significantly contribute to the enhancement and development of code pretrained models.
 
 
 
-• 系统分析 FIM 训练策略对代码预训练的影响, 给出配置层面的有用结论.
+• 系统分析 FIM 训练策略对代码预训练的影响，给出配置层面的有用结论。
 
 • We conduct extensive evaluations of our code LLMs against a wide array of benchmarks encompassing numerous code-related tasks. The findings demonstrate that DeepSeek-Coder-Base surpasses all existing open-source code LLMs across these benchmarks. Furthermore,
 
 
 
-• 在大量代码相关基准上评测: Base 全面超过既有开源代码 LLM;
+• 在大量代码相关基准上评测：Base 全面超过既有开源代码 LLM;
 
 <!-- page 3 of 23 -->
 
@@ -99,10 +99,10 @@ with meticulous fine-tuning using instructional data, DeepSeek-Coder-Instruct ac
 
 
 
-• 推出 DeepSeek-Coder-Base 与 Instruct: 大规模代码语料训练, 覆盖 87 种语言, 多档规模适配不同算力与场景.  
-• 预训练阶段首次尝试**仓库级数据构造**, 跨文件代码生成明显变强.  
-• 系统分析 FIM 训练策略对代码预训练的影响, 给出配置层面的有用结论.  
-• 在大量代码相关基准上评测: Base 全面超过既有开源代码 LLM; 指令微调后, Instruct 在代码相关任务上优于 GPT-3.5 Turbo.
+• 推出 DeepSeek-Coder-Base 与 Instruct：大规模代码语料训练，覆盖 87 种语言，多档规模适配不同算力与场景。  
+• 预训练阶段首次尝试**仓库级数据构造**，跨文件代码生成明显变强。  
+• 系统分析 FIM 训练策略对代码预训练的影响，给出配置层面的有用结论。  
+• 在大量代码相关基准上评测：Base 全面超过既有开源代码 LLM；指令微调后，Instruct 在代码相关任务上优于 GPT-3.5 Turbo。
 
 ## 2. Data Collection 数据收集
 
@@ -110,7 +110,7 @@ The training dataset of DeepSeek-Coder is composed of 87% source code, 10% Engli
 
 
 
-训练数据配比:**87% 源码, 10% 英文代码相关自然语言, 3% 与代码无关的中文自然语言**. 英文侧来自 GitHub Markdown 与 StackExchange, 补库用法, 修 bug 等概念; 中文侧为高质量文章, 抬中文理解. 代码数据构造含爬取, 规则过滤, 依赖解析, 仓库级去重, 质量筛查(图 2), 下文逐步说明.
+训练数据配比：**87% 源码，10% 英文代码相关自然语言，3% 与代码无关的中文自然语言**。英文侧来自 GitHub Markdown 与 StackExchange，补库用法，修 bug 等概念；中文侧为高质量文章，抬中文理解。代码数据构造含爬取，规则过滤，依赖解析，仓库级去重，质量筛查（图 2），下文逐步说明。
 
 ![Image block](images/p03-figure-2-the-procedure-of-dataset-creation.png)
 
@@ -118,7 +118,7 @@ Figure 2 | The Procedure of Dataset Creation
 
 
 
-图 2｜数据集创建流程.
+图 2｜数据集创建流程。
 
 ## 2.1. GitHub Data Crawling and Filtering GitHub 数据爬取与过滤
 
@@ -126,13 +126,13 @@ We collect public repositories created before February 2023 on GitHub and retain
 
 
 
-GitHub 上取创建时间不晚于 2023 年 2 月的公开仓库, 只留表 1 所列 87 种语言. 过滤规则对齐 StarCoder, 初步去掉低质量代码后体积缩到原来的 32.8%. 规则概要如下(便于本文自洽):
+GitHub 上取创建时间不晚于 2023 年 2 月的公开仓库，只留表 1 所列 87 种语言。过滤规则对齐 StarCoder，初步去掉低质量代码后体积缩到原来的 32.8%。规则概要如下（便于本文自洽）：
 
 Firstly, we filter out files with an average line length exceeding 100 characters or a maximum line length surpassing 1000 characters. Additionally, we remove files with fewer than 25% alphabetic characters. Except for the XSLT programming language, we further filter out files where the string "<? xml version=" appeared in the first 100 characters. For HTML files, we consider the ratio of visible text to HTML code. We retain files where the visible text constitutes at least 20% of the code and is no less than 100 characters. For JSON and YAML files, which typically contain more data, we only keep files that have a character count ranging from 50 to 5000 characters. This effectively removes most data-heavy files.
 
 
 
-平均行长 >100 或最大行长 >1000 的文件去掉; 字母字符占比 <25% 的去掉; 除 XSLT 外, 前 100 字符含 `<? xml version=` 的去掉; HTML 要求可见文本至少占代码 20% 且不少于 100 字符; JSON/YAML 只留 50–5000 字符, 以甩掉数据堆文件.
+平均行长 >100 或最大行长 >1000 的文件去掉；字母字符占比 <25% 的去掉；除 XSLT 外，前 100 字符含 `<? xml version=` 的去掉；HTML 要求可见文本至少占代码 20% 且不少于 100 字符；JSON/YAML 只留 50–5000 字符，以甩掉数据堆文件。
 
 ## 2.2. Dependency Parsing 依赖解析
 
@@ -140,7 +140,7 @@ In previous works (Chen et al., 2021; Li et al., 2023; Nijkamp et al., 2022; Roz
 
 
 
-以往代码大模型多在**文件级**源码上预训练, 忽略项目内跨文件依赖, 难扩展到整仓场景. 此处解析同仓文件依赖, 再按依赖排序: 被依赖的上下文排在依赖它的文件之前, 更贴近真实工程结构. 只考虑调用关系, 用正则抽取, 如 Python 的 `import`, C# 的 `using`, C 的 `include`.
+以往代码大模型多在**文件级**源码上预训练，忽略项目内跨文件依赖，难扩展到整仓场景。此处解析同仓文件依赖，再按依赖排序：被依赖的上下文排在依赖它的文件之前，更贴近真实工程结构。只考虑调用关系，用正则抽取，如 Python 的 `import`，C# 的 `using`，C 的 `include`。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>1</sup>https://stackexchange. com</span></small>
 
@@ -187,13 +187,13 @@ will consider how to leverage the dependencies between files within the same rep
 
 
 
-因此这一步要利用同仓文件依赖: 先解析依赖, 再按依赖排序, 使每个文件依赖的上下文排在该文件之前. 按依赖对齐后, 数据更贴近真实工程结构, 也有利于项目级代码场景. 只考虑调用关系, 用正则抽取, 如 Python 的 import, C# 的 using, C 的 include.
+因此这一步要利用同仓文件依赖：先解析依赖，再按依赖排序，使每个文件依赖的上下文排在该文件之前。按依赖对齐后，数据更贴近真实工程结构，也有利于项目级代码场景。只考虑调用关系，用正则抽取，如 Python 的 import，C# 的 using，C 的 include。
 
 The algorithm 1 describes a topological sort for dependency analysis on a list of files within the same project. Initially, it sets up two data structures: an empty adjacency list named "graphs" to represent dependencies between files and an empty dictionary called "inDegree" for storing the in-degrees of each file. The algorithm then iterates over each file pair to identify depen-
 
 
 
-算法 1 对同项目文件做依赖拓扑排序: 先建 `graphs` 邻接表与 `inDegree`; 两两检查依赖并更新; 再找不连通子图. 子图内不取入度为零的经典做法, 而取**最小入度**节点, 以便处理环; 入度递减直到排出全序. 各序列文件拼接成一条训练样本; 每个文件开头加路径注释, 把路径信息留进训练数据.
+算法 1 对同项目文件做依赖拓扑排序：先建 `graphs` 邻接表与 `inDegree`；两两检查依赖并更新；再找不连通子图。子图内不取入度为零的经典做法，而取**最小入度**节点，以便处理环；入度递减直到排出全序。各序列文件拼接成一条训练样本；每个文件开头加路径注释，把路径信息留进训练数据。
 
 <!-- page 5 of 23 -->
 
@@ -201,7 +201,7 @@ dencies, updating "graphs" and "inDegree" accordingly. Next, it identifies any d
 
 
 
-依赖并更新 graphs 与 inDegree; 再找不连通子图. 子图内不取入度为零的经典做法, 而取最小入度节点, 以便处理环; 入度递减直到排出全序. 各序列文件拼接成一条训练样本; 每个文件开头加路径注释, 把路径信息留进训练数据.
+依赖并更新 graphs 与 inDegree；再找不连通子图。子图内不取入度为零的经典做法，而取最小入度节点，以便处理环；入度递减直到排出全序。各序列文件拼接成一条训练样本；每个文件开头加路径注释，把路径信息留进训练数据。
 
 ## 2.3. Repo-Level Deduplication 仓库级去重
 
@@ -209,7 +209,7 @@ Recent studies have demonstrated the significant performance improvements that c
 
 
 
-去重能抬 LLM 表现: Lee et al. (2022) 指出语料常有近重复, 去掉长重复子串有益; Kocetkov et al. (2022) 在代码基准上也强调近重复去重. 此处同样做近重复去重, 但粒度是**仓库级**而非文件级-- 文件级可能删掉仓内部分文件, 破坏结构. 整仓拼接成单样本后再跑同一套近重复去重, 保住仓库完整性.
+去重能抬 LLM 表现：Lee et al. (2022) 指出语料常有近重复，去掉长重复子串有益；Kocetkov et al. (2022) 在代码基准上也强调近重复去重。此处同样做近重复去重，但粒度是**仓库级**而非文件级-- 文件级可能删掉仓内部分文件，破坏结构。整仓拼接成单样本后再跑同一套近重复去重，保住仓库完整性。
 
 ## 2.4. Quality Screening and Decontamination 质量筛查与去污染
 
@@ -217,7 +217,7 @@ In addition to applying the filtering rules mentioned in Section 2.1, we also em
 
 
 
-除 2.1 的规则外, 还用编译器, 质量模型加启发式, 再滤掉语法错, 可读性差, 模块化弱的代码. 表 1 汇总 87 种语言的磁盘体积, 文件数与占比, 合计约 **798 GB, 6.03 亿文件**. 为防测试集渗入 GitHub 污染训练, 做 n-gram 去污染: 去掉含 HumanEval, MBPP, GSM8K, MATH 等 docstring/题目/解答的文件; 与测试集相同的 10-gram 一律剔除; 测试串短于 10-gram 但不短于 3-gram 时用精确匹配过滤.
+除 2.1 的规则外，还用编译器，质量模型加启发式，再滤掉语法错，可读性差，模块化弱的代码。表 1 汇总 87 种语言的磁盘体积，文件数与占比，合计约 **798 GB，6.03 亿文件**。为防测试集渗入 GitHub 污染训练，做 n-gram 去污染：去掉含 HumanEval，MBPP，GSM8K，MATH 等 docstring/题目/解答的文件；与测试集相同的 10-gram 一律剔除；测试串短于 10-gram 但不短于 3-gram 时用精确匹配过滤。
 
 <!-- page 6 of 23 -->
 
@@ -272,7 +272,7 @@ Table 1 | A summary of the cleaned training data for the selected programming la
 
 
 
-表 1｜清洗后各语言训练数据汇总.
+表 1｜清洗后各语言训练数据汇总。
 
 ## 3. Training Policy 训练策略
 
@@ -284,17 +284,17 @@ The first training objective for our model is known as next token prediction. In
 
 
 
-第一项训练目标是**next-token prediction**: 多文件拼成定长样本, 按上下文预测下一个 token.
+第一项训练目标是**next-token prediction**：多文件拼成定长样本，按上下文预测下一个 token。
 
 <!-- page 7 of 23 -->
 
-## 3.1.2. Fill-in-the-Middle 中间填补(FIM)
+## 3.1.2. Fill-in-the-Middle 中间填补（FIM）
 
 The second training objective for our model is known as fill-in-the-middle. In the code pre-training scenario, it is often necessary to generate corresponding inserted content based on the given context and subsequent text. Due to specific dependencies in a programming language, relying solely on next token prediction is insufficient to learn this fill-in-the-middle capability. Therefore, several approaches (Bavarian et al., 2022; Li et al., 2023) propose the pretraining method of Fill-in-the-Midlle (FIM). This approach involves randomly dividing the text into three parts, then shuffling the order of these parts and connecting them with special characters. This method aims to incorporate a fill-in-the-blank pretraining task during the training process. Within the FIM methodology, two distinct modes are employed: PSM (Prefix-Suffix-Middle) and SPM (Suffix-Prefix-Middle). In the PSM mode, the training corpus is organized in the sequence of ��� � ��, �� � � ��, ������, aligning the text in a way that the middle segment is flanked by the prefix and suffix. Conversely, the SPM mode arranges the segments as ������, ������, ������, presenting a different structural challenge. These modes are instrumental in enhancing the model’s capability to handle various structural arrangements in code, providing a robust training framework for advanced code prediction tasks.
 
 
 
-第二项是中间填补. 代码预训练常要根据前后文生成插入段; 语言依赖使单靠 next-token prediction 学不好这一能力, 故引入 **FIM**: 文本随机切成三段, 打乱顺序并用特殊标记连接. 两种模式:**PSM(Prefix-Suffix-Middle)** 与 **SPM(Suffix-Prefix-Middle)**-- 前者按前缀→后缀→中间, 让缺失中段条件于两侧; 后者按后缀→前缀→中间, 结构挑战不同, 用来适应多种代码排布.
+第二项是中间填补。代码预训练常要根据前后文生成插入段；语言依赖使单靠 next-token prediction 学不好这一能力，故引入 **FIM**：文本随机切成三段，打乱顺序并用特殊标记连接。两种模式：**PSM(Prefix-Suffix-Middle)** 与 **SPM(Suffix-Prefix-Middle)**-- 前者按前缀→后缀→中间，让缺失中段条件于两侧；后者按后缀→前缀→中间，结构挑战不同，用来适应多种代码排布。
 
 ![Chart block](images/p07-chart.png)
 
@@ -306,25 +306,25 @@ Figure 3 | The effectiveness of using FIM objective.
 
 
 
-图 3｜FIM 目标的有效性.
+图 3｜FIM 目标的有效性。
 
 To determine the effectiveness of various hyperparameters within the FIM approach, we conducted a series of ablation experiments.
 
 
 
-为摸清 FIM 超参效果, 做了一系列消融.
+为摸清 FIM 超参效果，做了一系列消融。
 
 Experiment Settings: In this experiment, we employ DeepSeek-Coder-Base 1.3B as our model architecture. We focused on a Python subset from our training dataset to streamline the experimental process. Our primary objective was to assess the efficacy of the Fill-in-the-Middle (FIM) technique, utilizing the HumanEval-FIM benchmark (Fried et al., 2022). This benchmark specializes in a single-line FIM task for Python, in which one line of code from a HumanEval solution is randomly obscured, testing the model’s proficiency in predicting the missing line. We hypothesize that the PSM mode may exhibit subtle differences compared to the traditional next-token prediction objective. This is primarily because PSM involves rearranging the order of the original text, potentially impacting the learning dynamics of the model. Therefore, we implement the PSM mode for FIM across four distinct configurations: 0% FIM rate, 50% FIM rate, 100% FIM rate, and 50% MSP rate. The Masked Span Prediction (MSP) strategy, initially introduced in T5 (Raffel et al., 2023), conceals multiple text spans and trains the model to reconstruct these segments. According to CodeGen2.5 (Nijkamp et al., 2023), MSP may enhance FIM performance compared to PSM. Thus, we include this method in our comparative analysis.
 
 
 
-实验设定: 架构用 DeepSeek-Coder-Base 1.3B, 数据取训练语料的 Python 子集. 指标用 HumanEval-FIM(Fried et al., 2022)--Python 单行 FIM: 随机遮住 HumanEval 解答中一行, 测补行能力. 假设 PSM 因重排原文, 相对纯 next-token prediction 会有细微差异. 比较四种配置: FIM 率 0%, 50%, 100%, 以及 50% **MSP(Masked Span Prediction)** 率. MSP 源自 T5, 遮多个片段再重建; CodeGen2.5 认为 MSP 可能优于 PSM, 故一并对比.
+实验设定：架构用 DeepSeek-Coder-Base 1.3B，数据取训练语料的 Python 子集。指标用 HumanEval-FIM(Fried et al., 2022)--Python 单行 FIM：随机遮住 HumanEval 解答中一行，测补行能力。假设 PSM 因重排原文，相对纯 next-token prediction 会有细微差异。比较四种配置：FIM 率 0%，50%，100%，以及 50% **MSP(Masked Span Prediction)** 率。MSP 源自 T5，遮多个片段再重建；CodeGen2.5 认为 MSP 可能优于 PSM，故一并对比。
 
 Results: The outcomes of our experiment are illustrated in Figure 3. While the model demonstrates peak performance on the HumanEval-FIM with a 100% FIM rate, this configuration also results in the weakest code completion capability. This indicates a trade-off between FIM and
 
 
 
-结果见图 3: 100% FIM 在 HumanEval-FIM 上最好, 但代码补全最弱--FIM 与补全存在权衡. 50% PSM 优于 MSP. 为兼顾两边, 最终采用 **50% PSM**.
+结果见图 3: 100% FIM 在 HumanEval-FIM 上最好，但代码补全最弱--FIM 与补全存在权衡。50% PSM 优于 MSP。为兼顾两边，最终采用 **50% PSM**。
 
 <!-- page 8 of 23 -->
 
@@ -332,13 +332,13 @@ code completion abilities. Moreover, we observe that with a 50% PSM rate, the mo
 
 
 
-代码补全能力. 另外, 50% PSM 优于 MSP. 为在 FIM 与代码补全之间取得平衡, 最终采用 50% PSM 作为训练策略.
+代码补全能力。另外，50% PSM 优于 MSP。为在 FIM 与代码补全之间取得平衡，最终采用 50% PSM 作为训练策略。
 
 In our implementation, we have introduced three sentinel tokens specifically for this task. For each code file, we initially divide its content into three segments, denoted as$f _ { p r e } , f _ { m i d d l e } , $, and $f _ { s u f }$. Using the PSM mode, we construct the training example as follows:
 
 
 
-实现上为此任务引入三个哨兵 token. 每个代码文件先切成三段 $f_{pre}, f_{middle}, f_{suf}$, 再按 PSM 拼成训练样本:
+实现上为此任务引入三个哨兵 token。每个代码文件先切成三段 $f_{pre}, f_{middle}, f_{suf}$，再按 PSM 拼成训练样本：
 
 $$
 <   | \text { fim\_start } | > f _ {p r e} <   | \text { fim\_hole } | > f _ {s u f} <   | \text { fim\_end } | > f _ {m i d d l e} <   | \text { eos\_token } | >
@@ -348,7 +348,7 @@ We implement the Fill-in-the-Middle (FIM) method at the document level before th
 
 
 
-FIM 在打包前, 文档级施加(Bavarian et al., 2022), FIM 率 0.5, 走 PSM.
+FIM 在打包前，文档级施加（Bavarian et al., 2022），FIM 率 0.5，走 PSM。
 
 ## 3.2. Tokenizer 分词器
 
@@ -356,7 +356,7 @@ For the tokenization process, we employ the HuggingFace Tokenizer$\mathrm { l i 
 
 
 
-分词用 HuggingFace Tokenizer 库, 在训练语料子集上训 BPE(Sennrich et al., 2015), 词表大小最终为 32, 000.
+分词用 HuggingFace Tokenizer 库，在训练语料子集上训 BPE(Sennrich et al., 2015)，词表大小最终为 32, 000。
 
 ## 3.3. Model Architecture 模型架构
 
@@ -364,7 +364,7 @@ We develop a range of models with varying parameters to cater to diverse applica
 
 
 
-规模覆盖 1.3B, 6.7B, 33B, 框架对齐 DeepSeek LLM(DeepSeek-AI, 2024). 均为 decoder-only Transformer, 带 **RoPE**. 33B 用组大小为 $8$ 的 **GQA**, 训练与推理更省; 注意力侧用 FlashAttention v2. 架构细节见表 2.
+规模覆盖 1.3B，6.7B，33B，框架对齐 DeepSeek LLM(DeepSeek-AI, 2024)。均为 decoder-only Transformer，带 **RoPE**. 33B 用组大小为 $8$ 的 **GQA**，训练与推理更省；注意力侧用 FlashAttention v2。架构细节见表 2。
 
 ## 3.4. Optimization 优化
 
@@ -372,7 +372,7 @@ Following DeepSeek LLM (DeepSeek-AI, 2024), we use AdamW (Loshchilov and Hutter,
 
 
 
-优化器 AdamW, $\beta_1=0.9$, $\beta_2=0.95$; batch 与学习率按 DeepSeek LLM Scaling Laws. 学习率三阶段调度: 2000 步 warmup, 终值为主值的 10%; 每阶段相对前一阶段再缩到 $\sqrt{1/10}$.
+优化器 AdamW，$\beta_1=0.9$，$\beta_2=0.95$；batch 与学习率按 DeepSeek LLM Scaling Laws。学习率三阶段调度：2000 步 warmup，终值为主值的 10%；每阶段相对前一阶段再缩到 $\sqrt{1/10}$。
 
 ## 3.5. Environments 训练环境
 
@@ -380,7 +380,7 @@ Our experiments are conducted using the HAI-LLM (High-Flyer, 2023) framework, kn
 
 
 
-训练框架为 HAI-LLM: 张量并行, ZeRO 数据并行, PipeDream 流水线并行. 集群用 NVIDIA A100 与 H800; 每节点 8 卡, A100 侧 NVLink 两两桥接, H800 侧 NVLink + NVSwitch; 节点间 InfiniBand.
+训练框架为 HAI-LLM：张量并行，ZeRO 数据并行，PipeDream 流水线并行。集群用 NVIDIA A100 与 H800；每节点 8 卡，A100 侧 NVLink 两两桥接，H800 侧 NVLink + NVSwitch；节点间 InfiniBand。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>2</sup>https://github. com/huggingface/tokenizers</span></small>
 
@@ -401,13 +401,13 @@ Table 2 | Hyperparameters of DeepSeek-Coder.
 
 
 
-表 2｜DeepSeek-Coder 超参数.
+表 2｜DeepSeek-Coder 超参数。
 
 utilize clusters outfitted with NVIDIA A100 and H800 GPUs. In the A100 cluster, each node is configured with 8 GPUs, interconnected in pairs using NVLink bridges. The H800 cluster is similarly arranged, with each node containing 8 GPUs. These GPUs are interconnected using a combination of NVLink and NVSwitch technologies, ensuring efficient data transfer within nodes. To facilitate seamless communication between nodes in both A100 and H800 clusters, we employ InfiniBand interconnects, known for their high throughput and low latency. This setup provides a robust and efficient infrastructure for our computational experiments.
 
 
 
-实验跑在配备 NVIDIA A100 与 H800 的集群上. A100 节点每机 8 卡, 两两 NVLink 桥接; H800 节点同样 8 卡, 卡间用 NVLink 与 NVSwitch. 节点间用 InfiniBand, 高吞吐低延迟.
+实验跑在配备 NVIDIA A100 与 H800 的集群上。A100 节点每机 8 卡，两两 NVLink 桥接；H800 节点同样 8 卡，卡间用 NVLink 与 NVSwitch。节点间用 InfiniBand，高吞吐低延迟。
 
 ## 3.6. Long Context 长上下文
 
@@ -415,7 +415,7 @@ To enhance the capabilities of DeepSeek-Coder in handling extended contexts, par
 
 
 
-为服务仓库级等长上下文, 重配 RoPE: 线性缩放因子 1→4, 基频 10000→100000. 再训 1000 步, batch 512, 序列长 16K, 学习率沿用预训练末段. 理论上可到 64K, 实测最稳仍在 16K 附近.
+为服务仓库级等长上下文，重配 RoPE：线性缩放因子 1→4，基频 10000→100000。再训 1000 步，batch 512，序列长 16K，学习率沿用预训练末段。理论上可到 64K，实测最稳仍在 16K 附近。
 
 ## 3.7. Instruction Tuning 指令微调
 
@@ -423,13 +423,13 @@ We develop DeepSeek-Coder-Instruct by enhancing the DeepSeek-Coder-Base through 
 
 
 
-DeepSeek-Coder-Instruct 由 Base 做指令微调得到: 高质量, 公正的人类指令, 格式对齐 Alpaca; 轮次用 `<|EOT|>` 分隔. 训练: 余弦调度, 100 步 warmup, 初学习率 1e-5, batch 约 4M token, 合计约 2B token.
+DeepSeek-Coder-Instruct 由 Base 做指令微调得到：高质量，公正的人类指令，格式对齐 Alpaca；轮次用 `<|EOT|>` 分隔。训练：余弦调度，100 步 warmup，初学习率 1e-5，batch 约 4M token，合计约 2B token。
 
 An example of using DeepSeek-Coder-Instruct 34B is depicted in Figure 4. This example is a multi-turn dialogue scenario for building a snake game. Initially, we ask the model to write a game snake using pygame. The model successfully creates a basic snake game that can run without bugs. To improve the game, we further request adding a scoring system in the top left corner. The model then introduces a "score" variable and a "display\_score" function, along with an explanation of how to integrate these features. This example illustrates DeepSeek-Coder-Instruct’s ability to provide complete solutions in multi-turn dialogue settings. More cases can be found in the Appendix A.
 
 
 
-图 4 给出 Instruct(文中写 34B)多轮写贪吃蛇的例子: 先用 pygame 写出可跑的基础版, 再按要求在左上角加计分(`score` 与 `display_score`). 说明多轮对话里能给完整方案; 更多案例见附录 A.
+图 4 给出 Instruct（文中写 34B）多轮写贪吃蛇的例子：先用 pygame 写出可跑的基础版，再按要求在左上角加计分（`score` 与 `display_score`）。说明多轮对话里能给完整方案；更多案例见附录 A。
 
 <!-- page 10 of 23 -->
 
@@ -437,29 +437,29 @@ An example of using DeepSeek-Coder-Instruct 34B is depicted in Figure 4. This ex
 
 ![Image block](images/p10-q1-write-a-game-snake-using-pygame.png)
 
-## Q1: Write a game snake using pygame Q1: 用 pygame 写一个贪吃蛇游戏
+## Q1: Write a game snake using pygame Q1：用 pygame 写一个贪吃蛇游戏
 
 Sure, here is a simple implementation of the classic Snake game using Pygame. This code will create a window with a snake that can be controlled using the arrow keys. The snake will grow in length each time it eats the food. The game will end if the snake hits the edge of the window or its own tail.
 
 
 
-可以. 下面是用 Pygame 写的简易贪吃蛇: 方向键控制, 吃到食物变长, 撞墙或撞到自己则结束.
+可以。下面是用 Pygame 写的简易贪吃蛇：方向键控制，吃到食物变长，撞墙或撞到自己则结束。
 
 \`\`\`python import pygame import random running = True While running: # Draw everything screen. fill(BLACK) snake. draw() food. draw() pygame. display. flip() # Cap the frame rate clock. tick(SPEED) # Quit Pygame pygame. quit()
 
-## Q2: Add a scoring system in the top left corner Q2: 在左上角加计分系统
+## Q2: Add a scoring system in the top left corner Q2：在左上角加计分系统
 
 To add a scoring system to the top left corner of the game window, you can create a function to display the score and increment it each time the snake eats the food. Here's how you can modify the code to include a scoring system:
 
 
 
-要在窗口左上角加计分: 可写显示分数的函数, 并在蛇吃到食物时累加. 改法如下:
+要在窗口左上角加计分：可写显示分数的函数，并在蛇吃到食物时累加。改法如下：
 
 This code sets up a basic game loop where the snake moves in response to key presses, and the game ends if the snake hits the edge of the window or its own tail. The snake grows in length each time it eats the food. The game continues until the player closes the window.
 
 
 
-这段代码搭好基本循环: 按键移动蛇, 撞边或撞尾结束; 吃到食物变长; 关窗才停.
+这段代码搭好基本循环：按键移动蛇，撞边或撞尾结束；吃到食物变长；关窗才停。
 
 ![Image block](images/p10-in-this-updated-code-we-ve-added-a-score-variable-to.png)
 
@@ -467,13 +467,13 @@ In this updated code, we've added a \`score\` variable to keep track of the play
 
 
 
-更新后增加了 `score` 变量记录得分, 吃到食物时递增; `display_score` 负责渲染并画在左上角, 在蛇移动, 清屏之后, `pygame. display. flip()` 之前调用, 保证分数画在最上层.
+更新后增加了 `score` 变量记录得分，吃到食物时递增；`display_score` 负责渲染并画在左上角，在蛇移动，清屏之后，`pygame. display. flip()` 之前调用，保证分数画在最上层。
 
 Figure 4 | An example of responses from DeepSeek-Coder-Instruct 33B in a multi-turn setting.
 
 
 
-图 4｜DeepSeek-Coder-Instruct 33B 多轮对话示例.
+图 4｜DeepSeek-Coder-Instruct 33B 多轮对话示例。
 
 ## 4. Experimental Results 实验结果
 
@@ -481,37 +481,37 @@ In this section, we evaluate DeepSeek-Coder on four tasks, including code genera
 
 
 
-本节从四方面评测: 代码生成(§4.1), FIM 补全(§4.2), 跨文件补全(§4.3), 程序化数学推理(§4.4). 对比对象如下:
+本节从四方面评测：代码生成（§4.1），FIM 补全（§4.2），跨文件补全（§4.3），程序化数学推理（§4.4）。对比对象如下：
 
 • CodeGeeX2 (Zheng et al., 2023) represents the second generation of the multilingual code generation model CodeGeeX. It is developed using the ChatGLM2 (Du et al., 2022) architecture and is enhanced with an extensive dataset of coding examples.
 
 
 
-• CodeGeeX2(Zheng et al., 2023): 第二代多语言代码生成模型, 基于 ChatGLM2, 并用大量代码样例增强.
+• CodeGeeX2(Zheng et al., 2023)：第二代多语言代码生成模型，基于 ChatGLM2，并用大量代码样例增强。
 
 • StarCoder (Li et al., 2023) is a publicly accessible model with a substantial parameter count of 15 billion. It is specifically trained on a meticulously curated subset of the Stack dataset (Kocetkov et al., 2022), covering 86 programming languages, ensuring its proficiency across a wide range of coding tasks.
 
 
 
-• StarCoder(Li et al., 2023): 公开的 15B 模型, 在 Stack 精选子集上训, 覆盖 86 种语言.
+• StarCoder(Li et al., 2023)：公开的 15B 模型，在 Stack 精选子集上训，覆盖 86 种语言。
 
 • CodeLlama (Roziere et al., 2023) encompasses a series of code-centric Large Language Models (LLMs) that are derivatives of LLaMA2 (Touvron et al., 2023). Available in three sizes - 7B, 13B, and 34B - these models undergo continued training on a vast 500 billion token code corpus, building upon the foundational LLaMA2 architecture.
 
 
 
-• CodeLlama(Roziere et al., 2023): 由 LLaMA2 衍生的代码向 LLM, 有 7B/13B/34B, 在约 5000 亿 token 代码语料上继续训练.
+• CodeLlama(Roziere et al., 2023)：由 LLaMA2 衍生的代码向 LLM，有 7B/13B/34B，在约 5000 亿 token 代码语料上继续训练。
 
 • code-cushman-001 Chen et al. (2021) is a 12 billion parameter model developed by OpenAI and served as the initial model for Github Copilot.
 
 
 
-• code-cushman-001(Chen et al., 2021): OpenAI 的 12B 模型, 曾是 GitHub Copilot 的早期后端.
+• code-cushman-001(Chen et al., 2021): OpenAI 的 12B 模型，曾是 GitHub Copilot 的早期后端。
 
 • GPT-3.5 and GPT-4 (OpenAI, 2023) are advanced generative AI models developed by OpenAI. While they are not explicitly trained for code generation, they also demonstrate
 
 
 
-• GPT-3.5 与 GPT-4(OpenAI, 2023): 通用生成模型, 虽非专为代码训, 参数规模大, 代码任务上同样强.
+• GPT-3.5 与 GPT-4(OpenAI, 2023)：通用生成模型，虽非专为代码训，参数规模大，代码任务上同样强。
 
 <!-- page 11 of 23 -->
 
@@ -519,11 +519,11 @@ notable performance in this domain. Their effectiveness in handling code generat
 
 
 
-• **CodeGeeX2**: 多语言代码生成第二代, ChatGLM2 架构 + 大量代码样例.  
-• **StarCoder**: 约 15B 公开模型, 训在 Stack 精选子集, 覆盖 86 种语言.  
-• **CodeLlama**: LLaMA2 衍生, 7B/13B/34B, 在约 500B token 代码语料上继续训.  
-• **code-cushman-001**: OpenAI 约 12B, 早期 GitHub Copilot 所用.  
-• **GPT-3.5 / GPT-4**: 非专训代码, 但靠巨大参数量在代码生成上也表现突出.
+• **CodeGeeX2**：多语言代码生成第二代，ChatGLM2 架构 + 大量代码样例。  
+• **StarCoder**：约 15B 公开模型，训在 Stack 精选子集，覆盖 86 种语言。  
+• **CodeLlama**: LLaMA2 衍生，7B/13B/34B，在约 500B token 代码语料上继续训。  
+• **code-cushman-001**: OpenAI 约 12B，早期 GitHub Copilot 所用。  
+• **GPT-3.5 / GPT-4**：非专训代码，但靠巨大参数量在代码生成上也表现突出。
 
 ## 4.1. Code Generation 代码生成
 
@@ -531,7 +531,7 @@ HumanEval and MBPP Benchmarks The HumanEval (Chen et al., 2021) and MBPP (Austin
 
 
 
-**HumanEval / MBPP**: 前者 164 道手写 Python 题, 用例校验, 零样本; 后者 500 题, 少样本. 为测多语言, 把 HumanEval Python 题扩到 C++, Java, PHP, TypeScript, C#, Bash, JavaScript(Cassano et al., 2023). 两边都用贪心搜索, 基线用同一脚本与环境重跑, 保证公平.
+**HumanEval / MBPP**：前者 164 道手写 Python 题，用例校验，零样本；后者 500 题，少样本。为测多语言，把 HumanEval Python 题扩到 C++, Java, PHP, TypeScript, C#, Bash, JavaScript(Cassano et al., 2023)。两边都用贪心搜索，基线用同一脚本与环境重跑，保证公平。
 
 <table><tr><td>Model</td><td>Size</td><td>Python</td><td>C++</td><td>Java</td><td>PHP</td><td>TS</td><td>C#</td><td>Bash</td><td>JS</td><td>Avg</td><td>MBPP</td></tr><tr><td colspan="12">Multilingual Base Models</td></tr><tr><td>code-cushman-001</td><td>12B</td><td>33.5%</td><td>31.9%</td><td>30.6%</td><td>28.9%</td><td>31.3%</td><td>22.1%</td><td>11.7%</td><td>-</td><td>-</td><td>-</td></tr><tr><td>CodeGeeX2</td><td>6B</td><td>36.0%</td><td>29.2%</td><td>25.9%</td><td>23.6%</td><td>20.8%</td><td>29.7%</td><td>6.3%</td><td>24.8%</td><td>24.5%</td><td>36.2%</td></tr><tr><td>StarCoderBase</td><td>16B</td><td>31.7%</td><td>31.1%</td><td>28.5%</td><td>25.4%</td><td>34.0%</td><td>34.8%</td><td>8.9%</td><td>29.8%</td><td>28.0%</td><td>42.8%</td></tr><tr><td>CodeLlama</td><td>7B</td><td>31.7%</td><td>29.8%</td><td>34.2%</td><td>23.6%</td><td>36.5%</td><td>36.7%</td><td>12.0%</td><td>29.2%</td><td>29.2%</td><td>38.6%</td></tr><tr><td>CodeLlama</td><td>13B</td><td>36.0%</td><td>37.9%</td><td>38.0%</td><td>34.2%</td><td>45.2%</td><td>43.0%</td><td>16.5%</td><td>32.3%</td><td>35.4%</td><td>48.4%</td></tr><tr><td>CodeLlama</td><td>34B</td><td>48.2%</td><td>44.7%</td><td>44.9%</td><td>41.0%</td><td>42.1%</td><td>48.7%</td><td>15.8%</td><td>42.2%</td><td>41.0%</td><td>55.2%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>1.3B</td><td>34.8%</td><td>31.1%</td><td>32.3%</td><td>24.2%</td><td>28.9%</td><td>36.7%</td><td>10.1%</td><td>28.6%</td><td>28.3%</td><td>46.2%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>6.7B</td><td>49.4%</td><td>50.3%</td><td>43.0%</td><td>38.5%</td><td>49.7%</td><td>50.0%</td><td>28.5%</td><td>48.4%</td><td>44.7%</td><td>60.6%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>33B</td><td>56.1%</td><td>58.4%</td><td>51.9%</td><td>44.1%</td><td>52.8%</td><td>51.3%</td><td>32.3%</td><td>55.3%</td><td>50.3%</td><td>66.0%</td></tr><tr><td colspan="12">Instruction-Tuned Models</td></tr><tr><td>GPT-3.5-Turbo</td><td>-</td><td>76.2%</td><td>63.4%</td><td>69.2%</td><td>60.9%</td><td>69.1%</td><td>70.8%</td><td>42.4%</td><td>67.1%</td><td>64.9%</td><td>70.8%</td></tr><tr><td>GPT-4</td><td>-</td><td>84.1%</td><td>76.4%</td><td>81.6%</td><td>77.2%</td><td>77.4%</td><td>79.1%</td><td>58.2%</td><td>78.0%</td><td>76.5%</td><td>80.0%</td></tr><tr><td>DeepSeek-Coder-Instruct</td><td>1.3B</td><td>65.2%</td><td>45.3%</td><td>51.9%</td><td>45.3%</td><td>59.7%</td><td>55.1%</td><td>12.7%</td><td>52.2%</td><td>48.4%</td><td>49.4%</td></tr><tr><td>DeepSeek-Coder-Instruct</td><td>6.7B</td><td>78.6%</td><td>63.4%</td><td>68.4%</td><td>68.9%</td><td>67.2%</td><td>72.8%</td><td>36.7%</td><td>72.7%</td><td>66.1%</td><td>65.4%</td></tr><tr><td>DeepSeek-Coder-Instruct</td><td>33B</td><td>79.3%</td><td>68.9%</td><td>73.4%</td><td>72.7%</td><td>67.9%</td><td>74.1%</td><td>43.0%</td><td>73.9%</td><td>69.2%</td><td>70.0%</td></tr></table>
 
@@ -539,19 +539,19 @@ Table 3 | Performance of approaches on the Multilingual HumanEval and MBPP Bench
 
 
 
-表 3｜多语言 HumanEval 与 MBPP 上的表现.
+表 3｜多语言 HumanEval 与 MBPP 上的表现。
 
 The results are presented in Table 3. As we can see, DeepSeek-Coder-Base achieves stateof-the-art performance with an average accuracy of 50.3% on HumanEval and 66.0% on MBPP. In comparison to the similarly sized open-source model CodeLlama-Base 34B, our model has demonstrated a notable improvement of 9% and 11% in accuracy, respectively. It’s worth noting that even our smaller model, DeepSeek-Coder-Base 6.7B, surpasses the performance of CodeLlama-Base 34B. After instruction fine-tuning, our model surpasses the closed-source GPT-3.5-Turbo model in HumanEval benchmark, significantly reducing the performance gap between OpenAI GPT-4 and open-source models.
 
 
 
-表 3: Base 在 HumanEval 平均 50.3%, MBPP 66.0%, 相对同量级 CodeLlama-Base 34B 约 +9% / +11%; 更小的 Base 6.7B 已超过 CodeLlama-Base 34B. 指令微调后 HumanEval 超过 GPT-3.5-Turbo, 与 GPT-4 的差距明显收窄.
+表 3: Base 在 HumanEval 平均 50.3%，MBPP 66.0%，相对同量级 CodeLlama-Base 34B 约 +9% / +11%；更小的 Base 6.7B 已超过 CodeLlama-Base 34B. 指令微调后 HumanEval 超过 GPT-3.5-Turbo，与 GPT-4 的差距明显收窄。
 
 DS-1000 Benchmark HumanEval and MBPP have a significant drawback in that they rely heavily on straightforward programming tasks that may not accurately represent the kind of code most programmers typically write. In contrast, the DS-1000 benchmark, as introduced in the work by Lai et al. (2023), offers a comprehensive collection of 1, 000 practical and realistic data science workflows across seven different libraries. This benchmark evaluates code generation by executing it against specific test cases. What sets DS-1000 apart is its categorization of problems based on the libraries involved, which encompass Matplotlib, NumPy, Pandas, SciPy, Scikit
 
 
 
-DS-1000 基准: HumanEval/MBPP 多是简单题, 不太像程序员日常写的代码. DS-1000(Lai et al., 2023)收集 1000 条真实数据科学工作流, 覆盖七个库, 用测试用例执行评测.
+DS-1000 基准：HumanEval/MBPP 多是简单题，不太像程序员日常写的代码。DS-1000(Lai et al., 2023)收集 1000 条真实数据科学工作流，覆盖七个库，用测试用例执行评测。
 
 <!-- page 12 of 23 -->
 
@@ -559,13 +559,13 @@ Learn, PyTorch, and TensorFlow. The benchmark assesses the performance of base m
 
 
 
-**DS-1000**(Lai et al., 2023)面向更贴近日常的数据科学工作流: 七个库共 1000 题, 按 Matplotlib, NumPy, Pandas, SciPy, Scikit-Learn, PyTorch, TensorFlow 分类, 用用例执行判分. 评的是 Base 在代码补全设定下的 pass@1 与总分.
+**DS-1000**(Lai et al., 2023)面向更贴近日常的数据科学工作流：七个库共 1000 题，按 Matplotlib，NumPy，Pandas，SciPy，Scikit-Learn，PyTorch，TensorFlow 分类，用用例执行判分。评的是 Base 在代码补全设定下的 pass@1 与总分。
 
 The results of DS-1000 benchmark are shown in Table 4. As can be seen from the table, the DeepSeek-Coder model achieves relatively high accuracy in all libraries, demonstrating that our model is not only capable of generating good code but also of using libraries more accurately in real data science workflows.
 
 
 
-表 4 显示 DeepSeek-Coder 在各库上准确率都较高: 既能写代码, 也能在真实数据科学习惯里更准地用库.
+表 4 显示 DeepSeek-Coder 在各库上准确率都较高：既能写代码，也能在真实数据科学习惯里更准地用库。
 
 | Model | Size | Matplotlib | Numpy | Pandas | Pytorch | Scipy | Scikit-Learn | Tensorflow | Avg |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -582,25 +582,25 @@ Table 4 | Performance of different approaches on the DS-1000-Tasks.
 
 
 
-表 4｜DS-1000 上的表现.
+表 4｜DS-1000 上的表现。
 
 LeetCode Contest Benchmark To further validate the model’s capability in real-world programming problems, we construct the LeetCode Contest benchmark<sup>3</sup>. LeetCode<sup>4</sup> presents competition-level problems, offering significant challenges that test the model’s problem understanding and code generation skills. We collected the latest problems from LeetCode Contests to prevent the appearance of both the problems or their solutions in our pre-training data. A total of 180 problems were collected from July 2023 to January 2024. For each problem, we collected 100 test cases to ensure the test coverage. We use the template "{problem\_description}\nPlease complete the code below to solve the above problem: \n\`\`\`python\n{code\_template}\n\`\`\`" to build the instruction prompt.
 
 
 
-**LeetCode Contest**: 竞赛级题, 测题意理解与生成. 取 2023-07 至 2024-01 共 180 题, 降低预训练撞题风险; 每题约 100 个测试用例. 指令模板为题目描述 +「请补全下方代码」+ Python 代码框.
+**LeetCode Contest**：竞赛级题，测题意理解与生成。取 2023-07 至 2024-01 共 180 题，降低预训练撞题风险；每题约 100 个测试用例。指令模板为题目描述 +「请补全下方代码」+ Python 代码框。
 
 The evaluation results are shown in Table 5. In our evaluation, the DeepSeek-Coder models demonstrate remarkable performance over current open-source coding models. Specifically, the DeepSeek-Coder-Instruct 6.7B and 33B achieve Pass@1 scores of 19.4% and 27.8% respectively in this benchmark. This performance notably surpasses existing open-sourced models such as Code-Llama-33B. The DeepSeek-Coder-Instruct 33B is the only open-sourced model that outperforms OpenAI’s GPT-3.5-Turbo in this task. However, there remains a substantial performance gap when compared to the more advanced GPT-4-Turbo.
 
 
 
-表 5: Instruct 6.7B / 33B 的 Pass@1 为 19.4% / 27.8%, 超过 CodeLlama-33B 等开源; Instruct 33B 是该任务上唯一超过 GPT-3.5-Turbo 的开源模型, 相对 GPT-4-Turbo 仍有明显差距.
+表 5: Instruct 6.7B / 33B 的 Pass@1 为 19.4% / 27.8%，超过 CodeLlama-33B 等开源；Instruct 33B 是该任务上唯一超过 GPT-3.5-Turbo 的开源模型，相对 GPT-4-Turbo 仍有明显差距。
 
 Our analysis indicates that the implementation of Chain-of-Thought (CoT) prompting notably enhances the capabilities of DeepSeek-Coder-Instruct models. This improvement becomes particularly evident in the more challenging subsets of tasks. By adding the directive, "You need first to write a step-by-step outline and then write the code." following the initial prompt, we have observed enhancements in performance. This observation leads us to believe that the process of first crafting detailed code descriptions assists the model in more effectively understanding and addressing the intricacies of logic and dependencies in coding tasks, particularly those of higher complexity. Therefore, we strongly recommend employing CoT prompting strategies when utilizing DeepSeek-Coder-Instruct models for complex coding challenges. Such an approach promotes a more methodical and logical framework for problem-solving, potentially resulting in more precise and efficient outcomes in code generation tasks.
 
 
 
-**CoT(CoT)** 提示能明显抬 Instruct, 难子集上更明显. 在初始提示后加「先写逐步提纲再写代码」可见提升: 先写清描述有助于把握逻辑与依赖. 复杂题建议用 CoT.
+**CoT(CoT)** 提示能明显抬 Instruct，难子集上更明显。在初始提示后加「先写逐步提纲再写代码」可见提升：先写清描述有助于把握逻辑与依赖。复杂题建议用 CoT。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color: #6b7280"><sup>3</sup>We have published this benchmark in https://github. com/deepseek-ai/DeepSeek-Coder/tree/main/Evaluation/LeetCode. </span></small>
 
@@ -628,13 +628,13 @@ Table 5 | Performance of different models on the LeetCode Contest Benchmark.
 
 
 
-表 5｜LeetCode Contest 基准上的表现.
+表 5｜LeetCode Contest 基准上的表现。
 
 It is important to acknowledge that despite our diligent efforts to gather the most recent code questions for model testing, the possibility of data contamination cannot be entirely ruled out. We observed that the GPT-4-Turbo and DeepSeek-Coder models achieved higher scores in the LeetCode Contest held in July and August. We encourage the research community to consider the potential issue of data contamination when evaluating models in future studies using our released LeetCode data.
 
 
 
-尽管尽量取新题, 仍无法完全排除污染. GPT-4-Turbo 与 DeepSeek-Coder 在 7–8 月场次分数偏高; 后续用所发布 LeetCode 数据时需留意污染风险.
+尽管尽量取新题，仍无法完全排除污染。GPT-4-Turbo 与 DeepSeek-Coder 在 7–8 月场次分数偏高；后续用所发布 LeetCode 数据时需留意污染风险。
 
 ## 4.2. Fill-in-the-Middle Code Completion FIM 代码补全
 
@@ -642,7 +642,7 @@ DeepSeek-Coder models are trained with a 0.5 FIM (Fill-In-the-Middle) rate durin
 
 
 
-预训练 FIM 率为 0.5, 可据前后缀填中间-- 对补全工具很有用. 对比 SantaCoder, StarCoder, CodeLlama; 基准为 Allal et al. (2023) 的单行填补(三语言), 指标为行级 exact match.
+预训练 FIM 率为 0.5，可据前后缀填中间-- 对补全工具很有用。对比 SantaCoder，StarCoder，CodeLlama；基准为 Allal et al. (2023) 的单行填补（三语言），指标为行级 exact match。
 
 | Model | Size | python | java | javascript | Mean |
 | --- | --- | --- | --- | --- | --- |
@@ -658,13 +658,13 @@ Table 6 | Performance of different approaches on the FIM-Tasks.
 
 
 
-表 6｜FIM 任务上的表现.
+表 6｜FIM 任务上的表现。
 
 The evaluation results are shown in Table 6. Despite being the smallest model with a capacity
 
 
 
-表 6: 约 1.3B 的最小档已超过更大的 StarCoder, CodeLlama, 主要得益于预训练数据质量; 规模增大, 表现也跟着抬. 补全工具部署上, 推荐 **Base 6.7B**-- 效率与精度较均衡.
+表 6：约 1.3B 的最小档已超过更大的 StarCoder，CodeLlama，主要得益于预训练数据质量；规模增大，表现也跟着抬。补全工具部署上，推荐 **Base 6.7B**-- 效率与精度较均衡。
 
 <!-- page 14 of 23 -->
 
@@ -672,7 +672,7 @@ of 1.3 billion parameters, DeepSeek-Coder outperforms its larger counterparts, S
 
 
 
-尽管只有 1.3B 参数, DeepSeek-Coder 在这些基准上仍超过更大的 StarCoder 与 CodeLlama, 主要得益于预训练数据质量. 随模型变大, 表现也相应提升. 基于效率与精度的折中, 建议在补全工具中部署 DeepSeek-Coder-Base 6.7B.
+尽管只有 1.3B 参数，DeepSeek-Coder 在这些基准上仍超过更大的 StarCoder 与 CodeLlama，主要得益于预训练数据质量。随模型变大，表现也相应提升。基于效率与精度的折中，建议在补全工具中部署 DeepSeek-Coder-Base 6.7B。
 
 ## 4.3. Cross-File Code Completion 跨文件代码补全
 
@@ -680,7 +680,7 @@ In this section, we will evaluate the performance of existing open-source models
 
 
 
-跨文件补全要求读懂多文件依赖. 用 CrossCodeEval(Ding et al., 2023)评约 7B 档开源代码模型, 覆盖 Python, Java, TypeScript, C#; 题面刻意依赖跨文件上下文. 数据仓建于 2023-03–06, 预训练只含 2023-02 前代码, 避免泄漏.
+跨文件补全要求读懂多文件依赖。用 CrossCodeEval(Ding et al., 2023)评约 7B 档开源代码模型，覆盖 Python，Java，TypeScript，C#；题面刻意依赖跨文件上下文。数据仓建于 2023-03–06，预训练只含 2023-02 前代码，避免泄漏。
 
 <table><tr><td rowspan="2">Model</td><td rowspan="2">Size</td><td colspan="2">Python</td><td colspan="2">Java</td><td colspan="2">TypeScript</td><td colspan="2">C#</td></tr><tr><td>EM</td><td>ES</td><td>EM</td><td>ES</td><td>EM</td><td>ES</td><td>EM</td><td>ES</td></tr><tr><td rowspan="2">CodeGeex2+ Retrieval</td><td rowspan="2">6B</td><td>8.11%</td><td>59.55%</td><td>7.34%</td><td>59.60%</td><td>6.14%</td><td>55.50%</td><td>1.70%</td><td>51.66%</td></tr><tr><td>10.73%</td><td>61.76%</td><td>10.10%</td><td>59.56%</td><td>7.72%</td><td>55.17%</td><td>4.64%</td><td>52.30%</td></tr><tr><td rowspan="2">StarCoder-Base+ Retrieval</td><td rowspan="2">7B</td><td>6.68%</td><td>59.55%</td><td>8.65%</td><td>62.57%</td><td>5.01%</td><td>48.83%</td><td>4.75%</td><td>59.53%</td></tr><tr><td>13.06%</td><td>64.24%</td><td>15.61%</td><td>64.78%</td><td>7.54%</td><td>42.06%</td><td>14.20%</td><td>65.03%</td></tr><tr><td rowspan="2">CodeLlama-Base+ Retrieval</td><td rowspan="2">7B</td><td>7.32%</td><td>59.66%</td><td>9.68%</td><td>62.64%</td><td>8.19%</td><td>58.50%</td><td>4.07%</td><td>59.19%</td></tr><tr><td>13.02%</td><td>64.30%</td><td>16.41%</td><td>64.64%</td><td>12.34%</td><td>60.64%</td><td>13.19%</td><td>63.04%</td></tr><tr><td rowspan="2">DeepSeek-Coder-Base+ Retrieval</td><td rowspan="2">6.7B</td><td>9.53%</td><td>61.65%</td><td>10.80%</td><td>61.77%</td><td>9.59%</td><td>60.17%</td><td>5.26%</td><td>61.32%</td></tr><tr><td>16.14%</td><td>66.51%</td><td>17.72%</td><td>63.18%</td><td>14.03%</td><td>61.77%</td><td>16.23%</td><td>63.42%</td></tr><tr><td>+ Retrieval w/o Repo Pre-training</td><td></td><td>16.02%</td><td>66.65%</td><td>16.64%</td><td>61.88%</td><td>13.23%</td><td>60.92%</td><td>14.48%</td><td>62.38%</td></tr></table>
 
@@ -688,13 +688,13 @@ Table 7 | Performance of different models on cross-file code completion.
 
 
 
-表 7｜跨文件代码补全表现.
+表 7｜跨文件代码补全表现。
 
 In our evaluation of various models, we set the maximum sequence length to 2048 tokens, the maximum output length to 50 tokens, and a limit of 512 tokens for the cross-file context. For the cross-file context, we utilize the official BM25 search results provided by Ding et al. (2023). Evaluation metrics include exact match and edit similarity. The results, presented in Table 7, demonstrate that DeepSeek-Coder consistently outperforms other models in cross-file completion tasks across multiple languages, showcasing its superior practical application capabilities. When only utilizing file-level code corpus (w/o Repo Pre-training) to pre-train DeepSeek-Coder, we observe a decrease in performance in the Java, TypeScript, and C# languages, indicating the effectiveness of the repository-level pre-training.
 
 
 
-评测设定: 最大序列 2048, 最大输出 50, 跨文件上下文上限 512; 检索用官方 BM25. 指标为 EM 与编辑相似度. 表 7 显示 DeepSeek-Coder 多语言跨文件补全持续领先; 若只用文件级语料预训练, Java / TypeScript / C# 会掉点, 说明仓库级预训练有效.
+评测设定：最大序列 2048，最大输出 50，跨文件上下文上限 512；检索用官方 BM25。指标为 EM 与编辑相似度。表 7 显示 DeepSeek-Coder 多语言跨文件补全持续领先；若只用文件级语料预训练，Java / TypeScript / C# 会掉点，说明仓库级预训练有效。
 
 <!-- page 15 of 23 -->
 
@@ -704,7 +704,7 @@ Program-based math reasoning involves evaluating a model’s ability to understa
 
 
 
-程序化数学推理: 用编程理解并解题, 对数据分析与科学计算很关键. 采用 Gao et al. (2023) 的 **PAL**, 覆盖 GSM8K, MATH, GSM-Hard, SVAMP, TabMWP, ASDiv, MAWPS: 交替用自然语言描述一步再用代码执行. 表 8 显示各基准均强, 尤其 33B, 适合复杂数学计算与求解场景.
+程序化数学推理：用编程理解并解题，对数据分析与科学计算很关键。采用 Gao et al. (2023) 的 **PAL**，覆盖 GSM8K，MATH，GSM-Hard，SVAMP，TabMWP，ASDiv，MAWPS：交替用自然语言描述一步再用代码执行。表 8 显示各基准均强，尤其 33B，适合复杂数学计算与求解场景。
 
 <table><tr><td>Model</td><td>Size</td><td>GSM8k</td><td>MATH</td><td>GSM-Hard</td><td>SVAMP</td><td>TabMWP</td><td>ASDiv</td><td>MAWPS</td><td>Avg</td></tr><tr><td colspan="10">Multilingual Base Models</td></tr><tr><td>CodeGeex-2</td><td>7B</td><td>22.2%</td><td>9.7%</td><td>23.6%</td><td>39.0%</td><td>44.6%</td><td>48.5%</td><td>66.0%</td><td>36.2%</td></tr><tr><td>StarCoder-Base</td><td>16B</td><td>23.4%</td><td>10.3%</td><td>23.0%</td><td>42.4%</td><td>45.0%</td><td>54.9%</td><td>81.1%</td><td>40.0%</td></tr><tr><td>CodeLlama-Base</td><td>7B</td><td>31.2%</td><td>12.1%</td><td>30.2%</td><td>54.2%</td><td>52.9%</td><td>59.6%</td><td>82.6%</td><td>46.1%</td></tr><tr><td>CodeLlama-Base</td><td>13B</td><td>43.1%</td><td>14.4%</td><td>40.2%</td><td>59.2%</td><td>60.3%</td><td>63.6%</td><td>85.3%</td><td>52.3%</td></tr><tr><td>CodeLlama-Base</td><td>34B</td><td>58.2%</td><td>21.2%</td><td>51.8%</td><td>70.3%</td><td>69.8%</td><td>70.7%</td><td>91.8%</td><td>62.0%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>1.3B</td><td>14.6%</td><td>16.8%</td><td>14.5%</td><td>36.7%</td><td>30.0%</td><td>48.2%</td><td>62.3%</td><td>31.9%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>6.7B</td><td>43.2%</td><td>19.2%</td><td>40.3%</td><td>58.4%</td><td>67.9%</td><td>67.2%</td><td>87.0%</td><td>54.7%</td></tr><tr><td>DeepSeek-Coder-Base</td><td>33B</td><td>60.7%</td><td>29.1%</td><td>54.1%</td><td>71.6%</td><td>75.3%</td><td>76.7%</td><td>93.3%</td><td>65.8%</td></tr></table>
 
@@ -712,7 +712,7 @@ Table 8 | Performance of different approaches on the program-aid math reasoning 
 
 
 
-表 8｜程序辅助数学推理任务表现.
+表 8｜程序辅助数学推理任务表现。
 
 ## 5. Continue Pre-Training From General LLM 从通用 LLM 继续预训练
 
@@ -720,7 +720,7 @@ To further enhance the natural language understanding and mathematical reasoning
 
 
 
-为进一步抬自然语言理解与数学推理, 从通用 DeepSeek-LLM-7B Base 再预训练 2 万亿 token, 得到 DeepSeek-Coder-v1.5 7B. 数据源见表 9. 与 Coder 不同, v1.5 预训练只用 next-token prediction, 上下文 4K.
+为进一步抬自然语言理解与数学推理，从通用 DeepSeek-LLM-7B Base 再预训练 2 万亿 token，得到 DeepSeek-Coder-v1.5 7B. 数据源见表 9。与 Coder 不同，v1.5 预训练只用 next-token prediction，上下文 4K。
 
 | Data Source | Percentage |
 | --- | --- |
@@ -734,13 +734,13 @@ Table 9 | Data sources for DeepSeek-Coder-v1.5 7B pre-training
 
 
 
-表 9｜DeepSeek-Coder-v1.5 7B 预训练数据来源.
+表 9｜DeepSeek-Coder-v1.5 7B 预训练数据来源。
 
 We conduct a comparison between DeepSeek-Coder-v1.5 7B and DeepSeek-Coder 6.7B, and re-run all benchmarks using our evaluation pipeline to ensure a fair comparison. We evaluate performance across a wide range of tasks, which can be categorized as follows:
 
 
 
-将 v1.5 7B 与 Coder 6.7B 用同一评测管线重跑, 对比公平. 任务分三类:
+将 v1.5 7B 与 Coder 6.7B 用同一评测管线重跑，对比公平。任务分三类：
 
 <!-- page 16 of 23 -->
 
@@ -748,27 +748,27 @@ We conduct a comparison between DeepSeek-Coder-v1.5 7B and DeepSeek-Coder 6.7B, 
 
 
 
-• **编程**: 多语言 HumanEval + Python MBPP.  
-• **数学推理**: GSM8K, MATH, 用写程序解题.  
-• **自然语言**: MMLU, BBH, HellaSwag, Winogrande, ARC-Challenge.
+• **编程**：多语言 HumanEval + Python MBPP.  
+• **数学推理**：GSM8K，MATH，用写程序解题。  
+• **自然语言**：MMLU, BBH, HellaSwag, Winogrande, ARC-Challenge。
 
 • Math Reasoning: We assess performance on math reasoning tasks using the GSM8K benchmark (Cobbe et al., 2021) and the MATH (Hendrycks et al., 2021) benchmark [4]. These tasks involve solving math problems by generating programs.
 
 
 
-• 数学推理: 用 GSM8K, MATH, 以写程序的方式解题.
+• 数学推理：用 GSM8K，MATH，以写程序的方式解题。
 
 • Natural Language Our evaluation in natural language tasks includes MMLU (Hendrycks et al., 2020), BBH (Suzgun et al., 2022), HellaSwag (Zellers et al., 2019), Winogrande (Sakaguchi et al., 2021), and ARC-Challenge (Clark et al., 2018) benchmarks.
 
 
 
-• 自然语言: 评测含 MMLU, BBH, HellaSwag, Winogrande, ARC-Challenge.
+• 自然语言：评测含 MMLU, BBH, HellaSwag, Winogrande, ARC-Challenge。
 
 The results for the Base and Instruct models are presented in Table 10. It is observed that the DeepSeek-Coder-Base-v1.5 model, despite a slight decrease in coding performance, shows marked improvements across most tasks when compared to the DeepSeek-Coder-Base model. In particular, in the Math Reasoning and Natural Language categories, DeepSeek-Coder-Base-v1.5 significantly outperforms its predecessor across all benchmarks, which also demonstrates significant improvements in its mathematical reasoning and natural language processing capabilities.
 
 
 
-表 10: Base-v1.5 代码略降, 多数任务明显更好; 数学推理与自然语言各基准全面超过前代.
+表 10: Base-v1.5 代码略降，多数任务明显更好；数学推理与自然语言各基准全面超过前代。
 
 <table><tr><td rowspan="2">Models</td><td rowspan="2">Size</td><td colspan="2">Programming</td><td colspan="2">Math Reasoning</td><td colspan="5">Natural Language</td></tr><tr><td>HumanEval</td><td>MBPP</td><td>GSM8K</td><td>MATH</td><td>MMLU</td><td>BBH</td><td>HellaSwag</td><td>WinoG</td><td>ARC-C</td></tr><tr><td>DeepSeek-Coder-Base</td><td>6.7B</td><td>44.7%</td><td>60.6%</td><td>43.2%</td><td>19.2%</td><td>36.6%</td><td>44.3%</td><td>53.8%</td><td>57.1%</td><td>32.5%</td></tr><tr><td>DeepSeek-Coder-Base-v1.5</td><td>6.9B</td><td>43.2%</td><td>60.4%</td><td>62.4%</td><td>24.7%</td><td>49.1%</td><td>55.2%</td><td>69.9%</td><td>63.8%</td><td>47.2%</td></tr><tr><td>DeepSeek-Coder-Instruct</td><td>6.7B</td><td>66.1%</td><td>65.4%</td><td>62.8%</td><td>28.6%</td><td>37.2%</td><td>46.9%</td><td>55.0%</td><td>57.6%</td><td>37.4%</td></tr><tr><td>DeepSeek-Coder-Instruct-v1.5</td><td>6.9B</td><td>64.1%</td><td>64.6%</td><td>72.6%</td><td>34.1%</td><td>49.5%</td><td>53.3%</td><td>72.2%</td><td>63.4%</td><td>48.1%</td></tr></table>
 
@@ -776,7 +776,7 @@ Table 10 | Comparative analysis of performance between DeepSeek-Coder-Base and D
 
 
 
-表 10｜DeepSeek-Coder-Base 与 v1.5 对比; 数学题用编程求解.
+表 10｜DeepSeek-Coder-Base 与 v1.5 对比；数学题用编程求解。
 
 ## 6. Conclusion
 
@@ -784,19 +784,19 @@ In this technical report, we introduce a series of specialized Large Language Mo
 
 
 
-本报告介绍代码专用 LLM 系列 DeepSeek-Coder, 三档: 1.3B, 6.7B, 33B. 训在精选仓库级代码语料上, 用填空式预训练加强中间填补; 上下文扩到 16, 384. 评测上 Base 33B 超过既有开源代码模型; 更小的 Base 6.7B 已能与 34B 的 CodeLlama 打平, 反映预训练语料质量.
+本报告介绍代码专用 LLM 系列 DeepSeek-Coder，三档：1.3B, 6.7B, 33B. 训在精选仓库级代码语料上，用填空式预训练加强中间填补；上下文扩到 16, 384。评测上 Base 33B 超过既有开源代码模型；更小的 Base 6.7B 已能与 34B 的 CodeLlama 打平，反映预训练语料质量。
 
 To augment the zero-shot instruction capabilities of the DeepSeek-Coder-Base models, we have fine-tuned them with high-quality instructional data. This has led to the DeepSeek-Coder-Instruct 33B model outperforming OpenAI’s GPT-3.5 Turbo in a range of coding-related tasks, showcasing its exceptional proficiency in code generation and understanding.
 
 
 
-高质量指令数据微调后, Instruct 33B 在多项代码相关任务上超过 GPT-3.5 Turbo, 生成与理解都强.
+高质量指令数据微调后，Instruct 33B 在多项代码相关任务上超过 GPT-3.5 Turbo，生成与理解都强。
 
 To further improve the natural language understanding capabilities of the DeepSeek-Coder-Base models, we have conducted additional pretraining based on the DeepSeek-LLM 7B checkpoint. This additional training involved processing a diverse dataset comprising 2 billion tokens, including natural language, code, and mathematical data. The result is the creation of a new
 
 
 
-基于 DeepSeek-LLM 7B checkpoint 再预训练(文中写涵盖自然语言, 代码与数学的多样数据, 约 2 billion tokens), 得到 DeepSeek-Coder-v1.5: 代码表现大体保住, 自然语言理解增强. 有效的代码 LLM 宜建在扎实的通用 LLM 之上-- 执行编码任务也要读懂多样自然语言指令. 后续计划在更大通用 LLM 上继续开源更强的代码模型.
+基于 DeepSeek-LLM 7B checkpoint 再预训练（文中写涵盖自然语言，代码与数学的多样数据，约 2 billion tokens），得到 DeepSeek-Coder-v1.5：代码表现大体保住，自然语言理解增强。有效的代码 LLM 宜建在扎实的通用 LLM 之上-- 执行编码任务也要读懂多样自然语言指令。后续计划在更大通用 LLM 上继续开源更强的代码模型。
 
 <!-- page 17 of 23 -->
 
@@ -804,7 +804,7 @@ and improved code model, DeepSeek-Coder-v1.5. Our observations indicate that Dee
 
 
 
-新模型 DeepSeek-Coder-v1.5: 编码表现大体保持, 自然语言理解明显增强. 这说明好的代码向 LLM 宜建立在扎实的通用 LLM 之上-- 要执行编码任务, 也得读懂多样自然语言指令. 后续计划在更大规模通用 LLM 上继续开源更强的代码模型.
+新模型 DeepSeek-Coder-v1.5：编码表现大体保持，自然语言理解明显增强。这说明好的代码向 LLM 宜建立在扎实的通用 LLM 之上-- 要执行编码任务，也得读懂多样自然语言指令。后续计划在更大规模通用 LLM 上继续开源更强的代码模型。
 
 ## Acknowledgements
 
@@ -812,7 +812,7 @@ We would like to express our gratitude to Bo Liu, Chengqi Deng, Chong Ruan, Dama
 
 
 
-感谢 Bo Liu, Chengqi Deng, Chong Ruan, Damai Dai, Jiashi Li, Kang Guan, Mingchuan Zhang, Panpan Huang, Shuiping Yu, Shirong Ma, Yaofeng Sun, Yishi Piao, Zhihong Shao, Zhewen Hao 在训练 DeepSeek-Coder 期间的讨论与帮助.
+感谢 Bo Liu, Chengqi Deng, Chong Ruan, Damai Dai, Jiashi Li, Kang Guan, Mingchuan Zhang, Panpan Huang，Shuiping Yu，Shirong Ma，Yaofeng Sun，Yishi Piao，Zhihong Shao，Zhewen Hao 在训练 DeepSeek-Coder 期间的讨论与帮助。
 
 ## References
 
@@ -840,13 +840,13 @@ T. Dao. Flashattention-2: Faster attention with better parallelism and work part
 
 
 
-「FlashAttention-2: 更快注意力与更好并行」
+「FlashAttention-2：更快注意力与更好并行」
 
 DeepSeek-AI. Deepseek llm: Scaling open-source language models with longtermism. arXiv preprint arXiv: 2401.02954, 2024.
 
 
 
-「DeepSeek LLM: 以长期主义缩放开源语言模型」
+「DeepSeek LLM：以长期主义缩放开源语言模型」
 
 <!-- page 18 of 23 -->
 
@@ -870,13 +870,13 @@ High-Flyer. Hai-llm: An efficient and lightweight tool for training large models
 
 
 
-「HAI-LLM: 高效轻量的大模型训练工具」
+「HAI-LLM：高效轻量的大模型训练工具」
 
 kaiokendev. Things i’m learning while training superhot. https://kaiokendev. github. io/til#extending-context-to-8k, 2023.
 
 
 
-「训练 SuperHOT 时学到的事」(含扩展上下文笔记)
+「训练 SuperHOT 时学到的事」（含扩展上下文笔记）
 
 D. Kocetkov, R. Li, L. Jia, C. Mou, Y. Jernite, M. Mitchell, C. M. Ferrandis, S. Hughes, T. Wolf, D. Bahdanau, et al. The stack: 3 tb of permissively licensed source code. Transactions on Machine Learning Research, 2022.
 
@@ -894,7 +894,7 @@ I. Loshchilov and F. Hutter. Decoupled weight decay regularization, 2019.
 
 
 
-「解耦权重衰减正则化」(AdamW)
+「解耦权重衰减正则化」（AdamW）
 
 P. Lu, L. Qiu, K.-W. Chang, Y. N. Wu, S.-C. Zhu, T. Rajpurohit, P. Clark, and A. Kalyan. Dynamic prompt learning via policy gradient for semi-structured mathematical reasoning. In The Eleventh International Conference on Learning Representations, 2022.
 
@@ -902,7 +902,7 @@ S.-Y. Miao, C.-C. Liang, and K.-Y. Su. A diverse corpus for evaluating and devel
 
 
 
-「ASDiv: 多样英文数学应用题语料」
+「ASDiv：多样英文数学应用题语料」
 
 D. Narayanan, A. Harlap, A. Phanishayee, V. Seshadri, N. R. Devanur, G. R. Ganger, P. B. Gibbons, and M. Zaharia. Pipedream: Generalized pipeline parallelism for dnn training. In Proceedings of the 27th ACM Symposium on Operating Systems Principles, pages 1–15, 2019.
 
@@ -912,7 +912,7 @@ E. Nijkamp, H. Hayashi, C. Xiong, S. Savarese, and Y. Zhou. Codegen2: Lessons fo
 
 
 
-「CodeGen2: 在编程与自然语言上训练 LLM 的经验」
+「CodeGen2：在编程与自然语言上训练 LLM 的经验」
 
 OpenAI. Gpt-4 technical report, 2023.
 
@@ -926,7 +926,7 @@ C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena, Y. Zhou, W. Li,
 
 
 
-「T5: 统一文本到文本的迁移学习极限」
+「T5：统一文本到文本的迁移学习极限」
 
 S. Rajbhandari, J. Rasley, O. Ruwase, and Y. He. Zero: Memory optimizations toward training trillion parameter models. In SC20: International Conference for High Performance Computing, Networking, Storage and Analysis, pages 1–16. IEEE, 2020.
 
@@ -936,7 +936,7 @@ K. Sakaguchi, R. L. Bras, C. Bhagavatula, and Y. Choi. Winogrande: An adversaria
 
 
 
-「WinoGrande: 大规模对抗 Winograd 图式挑战」
+「WinoGrande：大规模对抗 Winograd 图式挑战」
 
 R. Sennrich, B. Haddow, and A. Birch. Neural machine translation of rare words with subword units. arXiv preprint arXiv: 1508.07909, 2015.
 
@@ -954,7 +954,7 @@ R. Taori, I. Gulrajani, T. Zhang, Y. Dubois, X. Li, C. Guestrin, P. Liang, and T
 
 
 
-「Stanford Alpaca: 指令跟随 LLaMA」
+「Stanford Alpaca：指令跟随 LLaMA」
 
 H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y. Babaei, N. Bashlykov, S. Batra, P. Bhargava, S. Bhosale, et al. Llama 2: Open foundation and fine-tuned chat models. arXiv preprint arXiv: 2307.09288, 2023.
 
@@ -972,13 +972,13 @@ We will present two cases of interactions with DeepSeek-Coder-Instruct, with one
 
 
 
-附录给出与 Instruct 交互的两例: 一是多轮建库与数据分析, 二是解一道 LeetCode 样题.
+附录给出与 Instruct 交互的两例：一是多轮建库与数据分析，二是解一道 LeetCode 样题。
 
 In the first scenario, depicted in Figure 5, we instruct the model to build a student database using Python and randomly insert 10 pieces of information. Subsequently, in the second round of the conversation, we continue to ask the model by analyzing the age distribution of the students. From Figure 5, it’s evident that the model can generate bug-free and comprehensive code, accompanied by explanatory details. In the second scenario, as illustrated in Figure 6, we further assess the model’s capabilities by testing it on an out-of-domain LeetCode contest problem. This particular problem was released in November 2023, after our data collection, and thus, isn’t part of our model’s training data. The results show that our model excels at solving problems that extend beyond its training distribution.
 
 
 
-图 5: 先用 Python 建学生库并随机插入 10 条信息, 再分析年龄分布-- 模型能给出无 bug, 完整且带说明的代码. 图 6: 域外 LeetCode 竞赛题(2023-11 发布, 晚于数据采集), 结果说明分布外题目也能较好求解.
+图 5：先用 Python 建学生库并随机插入 10 条信息，再分析年龄分布-- 模型能给出无 bug，完整且带说明的代码。图 6：域外 LeetCode 竞赛题（2023-11 发布，晚于数据采集），结果说明分布外题目也能较好求解。
 
 ![Image block](images/p21-figure-5-an-example-of-building-database-and-data.png)
 
@@ -986,7 +986,7 @@ Figure 5 | An example of building database and data analysis.
 
 
 
-图 5｜建库与数据分析示例.
+图 5｜建库与数据分析示例。
 
 <!-- page 22 of 23 -->
 
@@ -996,7 +996,7 @@ Figure 6 | An example of solving LeetCode Problem.
 
 
 
-图 6｜求解 LeetCode 题目示例.
+图 6｜求解 LeetCode 题目示例。
 
 ## B. Benchmark curves during training of DeepSeek-Coder-Base B. DeepSeek-Coder-Base 训练过程中的基准曲线
 
@@ -1004,7 +1004,7 @@ In Figure 7, we present the benchmark curves illustrating the performance of Dee
 
 
 
-图 7 给出 Base 训练过程中的基准曲线. 验证集为从训练语料精选的 8, 000 个代码文件, 力求多样, 有代表性. 后两张子图细化展示训练全程指标.
+图 7 给出 Base 训练过程中的基准曲线。验证集为从训练语料精选的 8, 000 个代码文件，力求多样，有代表性。后两张子图细化展示训练全程指标。
 
 <!-- page 23 of 23 -->
 
@@ -1014,6 +1014,6 @@ Figure 7 | Benchmark curves during training of DeepSeek-Coder-Base.
 
 
 
-图 7｜DeepSeek-Coder-Base 训练过程基准曲线.
+图 7｜DeepSeek-Coder-Base 训练过程基准曲线。
 
 23

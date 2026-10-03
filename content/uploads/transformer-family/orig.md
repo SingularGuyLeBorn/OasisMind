@@ -1244,7 +1244,7 @@ The model cannot capture very long term dependencies.
 It is hard to predict the first few tokens in each segment given no or thin context.
 The evaluation is expensive. Whenever the segment is shifted to the right by one, the new segment is re-processed from scratch, although there are a lot of overlapped tokens.
 
-Transformer-XL (Dai et al., 2019; “XL” means “extra long”) modifies the architecture to reuse hidden states between segments with an additional memory. The recurrent connection between segments is introduced into the model by continuously using the hidden states from the previous segments.
+Transformer-XL (Dai et al., 2019；“XL” means “extra long”) modifies the architecture to reuse hidden states between segments with an additional memory. The recurrent connection between segments is introduced into the model by continuously using the hidden states from the previous segments.
 
 A comparison between the training phrase of vanilla Transformer & Transformer-XL with a segment length 4. (Image source: left part of Figure 2 in Dai et al., 2019).
 
@@ -5398,9 +5398,9 @@ References
 
 [2] Rami Al-Rfou, et al. “Character-level language modeling with deeper self-attention.” AAAI 2019.
 
-[3] Olah & Carter, “Attention and Augmented Recurrent Neural Networks”, Distill, 2016.
+[3] Olah & Carter，“Attention and Augmented Recurrent Neural Networks”，Distill, 2016.
 
-[4] Sainbayar Sukhbaatar, et al. “Adaptive Attention Span in Transformers”. ACL 2019.
+[4] Sainbayar Sukhbaatar, et al. “Adaptive Attention Span in Transformers”。ACL 2019.
 
 [5] Rewon Child, et al. “Generating Long Sequences with Sparse Transformers” arXiv:1904.10509 (2019).
 
@@ -5458,7 +5458,7 @@ References
 
 [32] Tay et al. “Efficient Transformers: A Survey.” ACM Computing Surveys 55.6 (2022): 1-28.
 
-[33] Chen et al., “Decision Transformer: Reinforcement Learning via Sequence Modeling” arXiv preprint arXiv:2106.01345 (2021).
+[33] Chen et al.，“Decision Transformer: Reinforcement Learning via Sequence Modeling” arXiv preprint arXiv:2106.01345 (2021).
 
 Architecture
  

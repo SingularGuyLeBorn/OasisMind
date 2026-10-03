@@ -11,7 +11,7 @@ excerpt: "本库 OPD 的全称是 On-Policy Distillation：学生按当前策略
 
 本篇读 Song & Zheng（腾讯大模型部）*[A Survey of On-Policy Distillation for Large Language Models](https://arxiv.org/html/2604.00626v3)*（[arXiv:2604.00626](https://arxiv.org/abs/2604.00626) v3；附属列表 [Awesome-LLM-On-Policy-Distillation](https://github.com/nick7nlp/Awesome-LLM-On-Policy-Distillation)）。作者自称 **first comprehensive OPD survey**：把 OPD 写成学生轨迹上的 $f$-散度最小化，再按三轴（优化什么 / 信号从哪来 / 怎么稳定）收编散落在蒸馏、RLHF、模仿学习三个社区的论文。
 
-记号与 [01](../../01-OPD基础原理/01-OPD基础原理.md) 的式 (1)–(3)、(6)–(9) 对齐处沿用 01，不另立一套定义。**不是** Online Preference Distillation，不是 DPO 换名，也不是把 OPD 合成 GRPO 变体。
+记号与 [01](../../01-OPD基础原理/01-OPD基础原理.md) 的式（1）–(3)、（6）–(9) 对齐处沿用 01，不另立一套定义。**不是** Online Preference Distillation，不是 DPO 换名，也不是把 OPD 合成 GRPO 变体。
 
 ## 1. 综述在补什么
 
@@ -34,25 +34,25 @@ $$
 \min_{\theta}\mathbb{E}_{x\sim\mathcal{D}}\,\mathbb{E}_{y\sim p_{\theta}(\cdot \mid x)}\bigl[\mathcal{L}(y,x;\theta,T)\bigr]. \tag{1}
 $$
 
-这与 [01 式 (6)](../../01-OPD基础原理/01-OPD基础原理.md) 是同一句，**沿用 01**。$\mathcal{L}$ 可以是散度、奖励或混合；关键是外层期望在学生自己的生成上。$\theta$ 一更新，$p_\theta$ 就变，每步都要重新 rollout——这是 OPD 的系统成本，不是实现细节。
+这与 [01 式（6）](../../01-OPD基础原理/01-OPD基础原理.md) 是同一句，**沿用 01**。$\mathcal{L}$ 可以是散度、奖励或混合；关键是外层期望在学生自己的生成上。$\theta$ 一更新，$p_\theta$ 就变，每步都要重新 rollout——这是 OPD 的系统成本，不是实现细节。
 
 记号沿用综述：小写 $p$ 是 token 级条件分布（教师 $p_T(\cdot \mid x,y_{<t})$，学生 $p_\theta$），大写 $P$ 是序列级。本库 01 用 $\pi_\theta,\pi_T$ 写策略，与这里的 $p_\theta,p_T$ 是同一对象，后文混用时以「学生 / 教师」为准，不另开第三套。
 
-Off-policy token-KD（综述式 (4)(7)）把期望放在数据集前缀上：
+Off-policy token-KD（综述式（4）（7））把期望放在数据集前缀上：
 
 $$
 \mathcal{L}_{\mathrm{Off-Policy}}=\mathbb{E}_{x,y\sim p_{\mathrm{data}}}\Bigl[\sum_{t}D_{\mathrm{KL}}\bigl(p_T(\cdot \mid x,y_{<t})\parallel p_\theta(\cdot \mid x,y_{<t})\bigr)\Bigr]. \tag{2}
 $$
 
-这对应 01 式 (1) 那条 **SFT / 监督蒸馏** 的采样源（$s_t$ 来自教师或数据），**沿用 01**。Seq-KD 再把序列级 $D_{\mathrm{KL}}(P_T \Vert P_\theta)$ 收成教师 beam 上的 NLL，分布信息丢掉，采样源仍是静态的。
+这对应 01 式（1）那条 **SFT / 监督蒸馏** 的采样源（$s_t$ 来自教师或数据），**沿用 01**。Seq-KD 再把序列级 $D_{\mathrm{KL}}(P_T \Vert P_\theta)$ 收成教师 beam 上的 NLL，分布信息丢掉，采样源仍是静态的。
 
-统一 on-policy 目标把**采样轨迹**和**局部匹配度量**拆开（综述式 (8)）：
+统一 on-policy 目标把**采样轨迹**和**局部匹配度量**拆开（综述式（8））：
 
 $$
 \mathcal{L}_{\mathrm{OPD}}(\theta)=\mathbb{E}_{y\sim\pi_{\mathrm{mix}}}\Bigl[\sum_{t=1}^{|y|}\mathcal{D}_{f}\bigl(p_T(\cdot \mid x,y_{<t}),\;p_\theta(\cdot \mid x,y_{<t})\bigr)\Bigr]. \tag{3}
 $$
 
-$\pi_{\mathrm{mix}}$ 控制「有多 on-policy」；$\mathcal{D}_f$ 控制「用哪把尺子」。$f$-散度（综述式 (9)）是
+$\pi_{\mathrm{mix}}$ 控制「有多 on-policy」；$\mathcal{D}_f$ 控制「用哪把尺子」。$f$-散度（综述式（9））是
 
 $$
 D_f(P\parallel Q)=\mathbb{E}_{y\sim Q}\Bigl[f\Bigl(\frac{P(y)}{Q(y)}\Bigr)\Bigr], \tag{4}
@@ -67,12 +67,12 @@ $f$ 凸且 $f(1)=0$。生成元决定似然比对权重：
 | $u\log u-(u+1)\log\frac{u+1}{2}$ | JSD | 对称、有界，在 covering / seeking 之间 | GKD 在翻译（WMT）上最好；既不是单答案也不是完全开放 |
 | $\alpha$-散度 | 连续族 | $\alpha\to 1$ 前向，$\alpha\to 0$ 反向 | 给「哪一种 KL」一个旋钮，不是新定义 |
 
-01 式 (2)(3) 是 MiniLLM 那条 reverse KL 在学生轨迹上的展开，**不是**综述对全体 OPD 的定义。GKD 默认写出的 token 级 $D_{\mathrm{KL}}(p_T \Vert p_S)$ 是 forward KL，散度本身可选 reverse / JSD，哪一种更好写成 **task-dependent**。两条梯度不是「OPD = Reverse KL」。Qwen3 只写 aligning logits to minimize KL，**未点名**正反向。沿用 [01 §10.3](../../01-OPD基础原理/01-OPD基础原理.md)。
+01 式（2）（3）是 MiniLLM 那条 reverse KL 在学生轨迹上的展开，**不是**综述对全体 OPD 的定义。GKD 默认写出的 token 级 $D_{\mathrm{KL}}(p_T \Vert p_S)$ 是 forward KL，散度本身可选 reverse / JSD，哪一种更好写成 **task-dependent**。两条梯度不是「OPD = Reverse KL」。Qwen3 只写 aligning logits to minimize KL，**未点名**正反向。沿用 [01 §10.3](../../01-OPD基础原理/01-OPD基础原理.md)。
 
 三个地基方法在这个平面上的位置（综述 §2.3；公式细节回 01，这里只放坐标）：
 
-1. **GKD**（Agarwal et al.）：$\pi_{\mathrm{mix}}=\lambda p_\theta+(1-\lambda)p_{\mathrm{data}}$。$\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。**不对采样路径反传**（state on-policy）。$\mathcal{D}_f$ 不可知论，实验过 FKL / RKL / JSD。对应 01 式 (8)(9)，**沿用 01**。
-2. **MiniLLM**（Gu et al.）：$\mathcal{D}_f=D_{\mathrm{KL}}(p_\theta \parallel p_T)$，再用 $\pi_{\mathrm{mix}}=(1-\alpha)p_\theta+\alpha p_T$（文中 $\alpha=0.2$）稳采样。学生既在期望里又在对数比里，梯度走 REINFORCE，$r_t=\log(p_T/p_\theta)$。对应 01 式 (7)，**沿用 01**。这是 action on-policy。
+1. **GKD**（Agarwal et al.）：$\pi_{\mathrm{mix}}=\lambda p_\theta+(1-\lambda)p_{\mathrm{data}}$。$\lambda=0$ 退回监督 KD，$\lambda=1$ 纯学生轨迹。**不对采样路径反传**（state on-policy）。$\mathcal{D}_f$ 不可知论，实验过 FKL / RKL / JSD。对应 01 式（8）（9），**沿用 01**。
+2. **MiniLLM**（Gu et al.）：$\mathcal{D}_f=D_{\mathrm{KL}}(p_\theta \parallel p_T)$，再用 $\pi_{\mathrm{mix}}=(1-\alpha)p_\theta+\alpha p_T$（文中 $\alpha=0.2$）稳采样。学生既在期望里又在对数比里，梯度走 REINFORCE，$r_t=\log(p_T/p_\theta)$。对应 01 式（7），**沿用 01**。这是 action on-policy。
 3. **DistiLLM**（Ko et al.）：前缀仍是学生生成，但用验证损失调度、replay buffer，目标改成对混合物 $\tilde p=\alpha p+(1-\alpha)q$ 的 skew KL，躲开 $p_\theta\approx 0$ 或 $p_T\approx 0$ 时的除零。Forward 一侧把目标密度下界钉在 $(1-\alpha)p_\theta$ 上，不必走 REINFORCE。本库没有 DistiLLM 单独成篇；它属于轴 1 的「固定散度 + 工程稳定」，不是 MiniLLM 的实现，也不是 01 §6 那条 `F.kl_div`。
 
 GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$，那是**监督 KD** 的经典采样源。GKD 论文的 on-policy 一项是 $y\sim p_S$ 再在学生前缀上算 token 级 KL。冲突时以 GKD 原文与 01 为准。
@@ -91,7 +91,7 @@ GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$，那
 
 综述 §3.3 的选型不是菜单，是硬约束。教师只能给 API 文本时，轴 1 的精确 token 级 FKL 直接不可行，只能走黑盒序列级（口头分、排序、rubric）。任务几何也管散度：唯一正确答案偏 reverse KL；开放生成偏 forward KL；指令跟随居中，GKD 写 $\lambda\geq 0.5$ 配 JSD。算力上，综述把「先 off-policy 热身、再 on-policy 收口」写成 $>5000$ GPU-hours 档的常见工业形状——那是选型口吻，**不是** Table 21 的 1,800 / 17,920；后两个格子只属于 Qwen3-8B、math+code，见 §7。
 
-推理任务上，综述把式 (3) 写成对学生自己的思维链 $r^S\sim P_\theta(\cdot \mid x)$ 做 KL（他们的 CoT-OPD）。证明从「反证」起头和从「归纳」起头，后面的 token 完全不是一条路；off-policy 只覆盖教师写过的有限路径，学生推理时要走自己的死胡同与挽回。这不是新公式，是式 (1) 在路径依赖任务上的同一句。
+推理任务上，综述把式（3）写成对学生自己的思维链 $r^S\sim P_\theta(\cdot \mid x)$ 做 KL（他们的 CoT-OPD）。证明从「反证」起头和从「归纳」起头，后面的 token 完全不是一条路；off-policy 只覆盖教师写过的有限路径，学生推理时要走自己的死胡同与挽回。这不是新公式，是式（1）在路径依赖任务上的同一句。
 
 ## 4. 白盒 / 黑盒 / teacher-free：把 01、02、04 放进格子
 
@@ -109,7 +109,7 @@ GxPO 综述把 GKD 的 forward KL 写成 $\mathbb{E}_{y\sim\pi_T}[\cdots]$，那
 
 轴 3 的成本来自「每步新鲜生成」。综述把 $N$ 个 token 的 off-policy 成本写成教师前向 + 学生前向后向；on-policy 还要乘上学生自回归生成 $G_{\mathrm{student}}$，以及教师监督刷新率 $\rho$。因为 $G_{\mathrm{student}}\gg F_{\mathrm{student}}$，on-policy 有一个明显乘数。他们给的 70B→7B、8×H100 示意是 off-policy 约 300 GPU-hours、on-policy 约 1,200–1,500（约 4–5×），那是**规模示意**，分母不是 Table 21，和 1,800 / 17,920 不是同一个故事。事实任务、翻译、摘要上 off-policy 天花板往往够用；推理 / 代码上静态教师轨迹盖不住组合路径，才把贵的 on-policy 留到最后一推。
 
-黑盒格子容易被读成「所以 OPD 就是偏好学习」。综述自己把 ORPO-Distill、AlignDistil 放在「logit 拿不到、或序列级质量判断更自然」时的**替代接口**：用教师给的排序或对比 DPO 当奖励，再在学生 rollout 上优化。定义句仍是式 (1) 的 $y\sim p_\theta$，不是 DPO 的 $\sigma(\beta\log\pi_w/\pi_{\mathrm{ref}}-\cdots)$。
+黑盒格子容易被读成「所以 OPD 就是偏好学习」。综述自己把 ORPO-Distill、AlignDistil 放在「logit 拿不到、或序列级质量判断更自然」时的**替代接口**：用教师给的排序或对比 DPO 当奖励，再在学生 rollout 上优化。定义句仍是式（1）的 $y\sim p_\theta$，不是 DPO 的 $\sigma(\beta\log\pi_w/\pi_{\mathrm{ref}}-\cdots)$。
 
 ## 5. 和 GxPO 综述的边界：散度目标退出 $J(\theta)$，hybrid 留在框内
 
@@ -117,7 +117,7 @@ Shen et al. *[A Survey of LLM Policy Optimization from First Principles](https:/
 
 **GRPO-OPD hybrid** 被留在 policy-gradient 框内：主目标仍是 $J(\theta)$，教师以稠密 $\tilde r_t$（常见 $\log\pi_T(y_t)/\pi_\theta(y_t)$）进入 GRPO 的重要性比、优势、期望内蒸馏或 KL 正则。这不是「OPD = GRPO」。MiniLLM / GKD 优化的是散度；GRPO 优化的是组相对标量奖励。hybrid 问的是：旁边已经有教师和验证器时，教师信号怎么进 GRPO，而不是把 GRPO 改名。
 
-[04-SDPO](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 换的是 **GRPO 的 token 级优势**：环境 $f$ 条件化同一套权重当自教师，KL(学生 $\parallel$ stopgrad(教师))，命题把梯度写成词表上的 $A_{i,t}$。它更靠近 hybrid（教师信号当 $A$），而不是 MiniLLM 的序列级 reverse KL + REINFORCE。LCBv6 / Qwen3-8B 的 **48.8 vs GRPO 41.2** 在 04 的表里。SDPO 没有证明「OPD 就是 GRPO」，也没有把 OPD 写成 DPO 变体——04 没有偏好对。
+[04-SDPO](../../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) 换的是 **GRPO 的 token 级优势**：环境 $f$ 条件化同一套权重当自教师，KL（学生 $\parallel$ stopgrad（教师）），命题把梯度写成词表上的 $A_{i,t}$。它更靠近 hybrid（教师信号当 $A$），而不是 MiniLLM 的序列级 reverse KL + REINFORCE。LCBv6 / Qwen3-8B 的 **48.8 vs GRPO 41.2** 在 04 的表里。SDPO 没有证明「OPD 就是 GRPO」，也没有把 OPD 写成 DPO 变体——04 没有偏好对。
 
 一张对照就够：
 
@@ -154,15 +154,15 @@ Table 21 的分母已经钉在 01 / 10，这里只复述格子，避免口口相
 | MiniLLM 公式套到 GKD 代码 | PyTorch `kl_div(log S, T)` 是 forward KL | 01 §10.3 |
 | Table 21 安到 V4 / 通用 RL | 分母是 8B、math+code、同一 off-policy 点 | 01 / 10 |
 | 07 的三种病在综述里换了名字 | 根因仍是前缀 OOD、mode-seeking、长度目标 | 见 07，加 Demystifying / Revisiting |
-| 没有外教师还硬跑 01 | 式 (1) 的 $T$ 没有监督源 | 02（需要 $y^\star$） |
+| 没有外教师还硬跑 01 | 式（1）的 $T$ 没有监督源 | 02（需要 $y^\star$） |
 
 后面的机制仍走 4.6 各单独成篇。GxPO 家族另写。
 
 ## 参考文献
 
-1. Song & Zheng. *A Survey of On-Policy Distillation for Large Language Models*（[arXiv:2604.00626](https://arxiv.org/abs/2604.00626) / [HTML v3](https://arxiv.org/html/2604.00626v3)）。腾讯；[Awesome-LLM-On-Policy-Distillation](https://github.com/nick7nlp/Awesome-LLM-On-Policy-Distillation)。式 (1)(8)(9)；三轴；白盒 / 黑盒 / teacher-free；§7 失败；§8 工业。作者自称 first comprehensive OPD survey。
-2. Gu et al. *MiniLLM*（[arXiv:2306.08543](https://arxiv.org/abs/2306.08543)）。沿用 01 式 (7)。
-3. Agarwal et al. *GKD / On-policy Distillation of Language Models*（[arXiv:2306.13649](https://arxiv.org/abs/2306.13649)）。沿用 01 式 (8)(9)。
+1. Song & Zheng. *A Survey of On-Policy Distillation for Large Language Models*（[arXiv:2604.00626](https://arxiv.org/abs/2604.00626) / [HTML v3](https://arxiv.org/html/2604.00626v3)）。腾讯；[Awesome-LLM-On-Policy-Distillation](https://github.com/nick7nlp/Awesome-LLM-On-Policy-Distillation)。式（1）（8）（9）；三轴；白盒 / 黑盒 / teacher-free；§7 失败；§8 工业。作者自称 first comprehensive OPD survey。
+2. Gu et al. *MiniLLM*（[arXiv:2306.08543](https://arxiv.org/abs/2306.08543)）。沿用 01 式（7）。
+3. Agarwal et al. *GKD / On-policy Distillation of Language Models*（[arXiv:2306.13649](https://arxiv.org/abs/2306.13649)）。沿用 01 式（8）（9）。
 4. Wang et al. *Demystifying On-Policy Distillation*（[arXiv:2607.13399](https://arxiv.org/html/2607.13399)）。探索催化剂；mismatch；长度作弊。见 07。
 5. Fu et al. *Revisiting On-Policy Distillation*（[arXiv:2603.25562](https://arxiv.org/html/2603.25562)）。sampled-token 三病；top-$K$ 局部支撑。见 07。
 6. Shen et al. GxPO 综述（[arXiv:2606.16733](https://arxiv.org/html/2606.16733)）。纯散度 OPD 退出 $J(\theta)$；GRPO-OPD hybrid 留在 PG 框。

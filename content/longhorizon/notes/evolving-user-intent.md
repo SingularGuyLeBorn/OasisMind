@@ -18,7 +18,7 @@ tags: ["long-horizon", "user-intent", "multi-turn", "benchmark", "agent", "micro
 
 真实人机协作里，用户**很少在第一轮就把意图说全**。意图会随对话展开而：逐步披露（under-specification）、中途修正（revision）、甚至转向相关但不同的子任务（function switch / task switching）。然而主流 LLM 评测与训练仍集中在**单轮、fully-specified** 设定——模型在静态任务上接近天花板，却未回答一个更根本的问题：**当用户意图在多轮中演化时，Agent 能否持续跟踪并据此行动？**
 
-现有不少 multi-turn benchmark 也有缺口：(i) 奖励常依赖 LLM-as-judge 而非可验证答案；(ii) 用户轮次偏短；(iii) 用户侧可控性有限，多停留在「增量披露信息」，缺少 revision 与 task switch 等真实动态。论文因此问：能否在**保留原始 benchmark 自动可验证性**的前提下，把静态单轮任务「升维」为演化意图的多轮环境？
+现有不少 multi-turn benchmark 也有缺口：（i）奖励常依赖 LLM-as-judge 而非可验证答案；（ii）用户轮次偏短；（iii）用户侧可控性有限，多停留在「增量披露信息」，缺少 revision 与 task switch 等真实动态。论文因此问：能否在**保留原始 benchmark 自动可验证性**的前提下，把静态单轮任务「升维」为演化意图的多轮环境？
 
 ### 方法贡献
 

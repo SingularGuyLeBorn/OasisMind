@@ -13,13 +13,13 @@ Y'=Y\odot\sigma(XW_\theta),
 \tag{1}
 $$
 
-其中 $X$ 是 **pre-norm 之后** 的隐状态（论文式 (5) 脚注 1），不是残差主干上未经归一化的 $h$。记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $Q,K,V,W_O$；本篇只回答「门加在注意力子层的哪一截、为什么 $G_1$ 赢」。它**不是** [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支残差读门，也**不是** [SwiGLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) / [PowLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/04-PowLU-Ling对SwiGLU的稳定化改写/04-PowLU-Ling对SwiGLU的稳定化改写.md) / [SiTU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 那种 FFN 激活。Qwen3-Next 把推荐的 SDPA 输出门捆进产品，第 14 章只链 [Qwen 家族](../../../../../model-library/03-模型家族/03-qwen/qwen/qwen-bi.md) / [Qwen3.5 架构](../../../../../model-library/03-模型家族/03-qwen/qwen/qwen-bi.md)，不在这里抄整份 Next 报告。
+其中 $X$ 是 **pre-norm 之后** 的隐状态（论文式（5）脚注 1），不是残差主干上未经归一化的 $h$。记号沿用 [01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的 $Q,K,V,W_O$；本篇只回答「门加在注意力子层的哪一截、为什么 $G_1$ 赢」。它**不是** [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支残差读门，也**不是** [SwiGLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/03-GLU家族-从GLU到SwiGLU/03-GLU家族-从GLU到SwiGLU.md) / [PowLU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/04-PowLU-Ling对SwiGLU的稳定化改写/04-PowLU-Ling对SwiGLU的稳定化改写.md) / [SiTU](../../../2.1-深度学习基础组件/2.1.1-前馈网络FFN与激活函数/01-SiTU-GLU/01-SiTU-GLU.md) 那种 FFN 激活。Qwen3-Next 把推荐的 SDPA 输出门捆进产品，第 14 章只链 [Qwen 家族](../../../../../model-library/03-模型家族/03-qwen/qwen/qwen-bi.md) / [Qwen3.5 架构](../../../../../model-library/03-模型家族/03-qwen/qwen/qwen-bi.md)，不在这里抄整份 Next 报告。
 
 ---
 
 ## 1. 问题：两段线性并成低秩，softmax 还得找个坑倒多余质量
 
-[01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的单头输出可以写成：先 $W_V$ 把历史隐状态映到 $d_k$ 维，softmax 加权求和，再乘这一头对应的 $W_O$ 切片。论文式 (6) 把这两次线性并在一起：
+[01-MHA](../01-MHA-多头注意力的标准形式/01-MHA-多头注意力的标准形式.md) 的单头输出可以写成：先 $W_V$ 把历史隐状态映到 $d_k$ 维，softmax 加权求和，再乘这一头对应的 $W_O$ 切片。论文式（6）把这两次线性并在一起：
 
 $$
 o_i^k=\sum_{j\le i}S_{ij}^k\,X_j(W_V^k W_O^k).
@@ -36,21 +36,21 @@ $d_k<d_{\mathrm{model}}$，所以 $W_V^k W_O^k$ 是低秩。实验里注意力�
 
 ## 2. 五个位置，默认形态，推荐 $G_1$
 
-论文把一层注意力拆成四段（§2.1）：QKV 投影、SDPA、多头拼接、输出投影 $W_O$。门的统一写法就是式 (1)。$Y$ 是被调制的张量，$X$ 用来算门分数，$W_\theta$ 是门的可学参数，$\sigma$ 默认 sigmoid。除非消融另写，论文采用：**head-specific、乘法、sigmoid**。
+论文把一层注意力拆成四段（§2.1）：QKV 投影、SDPA、多头拼接、输出投影 $W_O$。门的统一写法就是式（1）。$Y$ 是被调制的张量，$X$ 用来算门分数，$W_\theta$ 是门的可学参数，$\sigma$ 默认 sigmoid。除非消融另写，论文采用：**head-specific、乘法、sigmoid**。
 
-五个位置（论文 Figure 1 左，对应式 (1)–(4)）：
+五个位置（论文 Figure 1 左，对应式（1）–(4)）：
 
 | 记号 | 打在哪 | 对应论文 |
 |------|--------|----------|
-| $G_4$ | Query 投影之后 | 式 (1) 的 $Q$ |
-| $G_3$ | Key 投影之后 | 式 (1) 的 $K$ |
-| $G_2$ | Value 投影之后 | 式 (1) 的 $V$ |
-| **$G_1$** | **SDPA 输出之后、拼头进 $W_O$ 之前** | 式 (3) 的各头输出 |
-| $G_5$ | $W_O$ 之后 | 式 (4) 的 $O$ |
+| $G_4$ | Query 投影之后 | 式（1）的 $Q$ |
+| $G_3$ | Key 投影之后 | 式（1）的 $K$ |
+| $G_2$ | Value 投影之后 | 式（1）的 $V$ |
+| **$G_1$** | **SDPA 输出之后、拼头进 $W_O$ 之前** | 式（3）的各头输出 |
+| $G_5$ | $W_O$ 之后 | 式（4）的 $O$ |
 
 粒度还分 headwise（每头一个标量）和 elementwise（与 $Y$ 同形状）。头之间可以共享 $W_\theta$，也可以每头一套。加法门用无界的 SiLU，乘法门用 $[0,1]$ 的 sigmoid。官方实现 [`qiuzh20/gated_attention`](https://github.com/qiuzh20/gated_attention) 在 `Qwen3Attention` 里把门分数从 $q$ 投影里拆出来，SDPA / Flash / `scaled_dot_product_attention` 算完之后再 `attn_output * torch.sigmoid(gate_score)`，然后才 `o_proj`——这就是 $G_1$，不是残差流上的读门。
 
-![Q,K,V 进 SDPA，之后是推荐的逐头 sigmoid 门 G1，再 Concat 和 W_O；右侧虚线标 G2–G5 不是推荐位置](./images/fig-gated-attn-g1-after-sdpa.png)
+![Q，K，V 进 SDPA，之后是推荐的逐头 sigmoid 门 G1，再 Concat 和 W_O；右侧虚线标 G2–G5 不是推荐位置](./images/fig-gated-attn-g1-after-sdpa.png)
 
 > 图 1：门的五个位置。推荐 $G_1$ = SDPA 之后、head-specific sigmoid。
 
@@ -60,8 +60,8 @@ $d_k<d_{\mathrm{model}}$，所以 $W_V^k W_O^k$ 是低秩。实验里注意力�
 
 - **Q / K / V（蓝）**：pre-norm 后的 $X$ 经 $W_Q,W_K,W_V$。论文实验注意力走 GQA（Table 1 基线 $q=32,k=4$，$d_k=128$）。
 - **SDPA（黄）**：$\mathrm{softmax}(QK^\top/\sqrt{d_k})V$。公式没改，仍是精确 softmax 注意力。
-- **$G_1$（绿，RECOMMENDED）**：式 (1)。$Y$ 是 SDPA 各头输出；$X$ 是 **pre-norm 隐状态**，所以门分数对当前 query 位置依赖，不是对历史 key/value 依赖。
-- **Concat → $W_O$ → $O$**：门必须夹在 $W_V$ 与 $W_O$ 之间。挪到 $W_O$ 之后就是 $G_5$，补不上式 (2) 的低秩。
+- **$G_1$（绿，RECOMMENDED）**：式（1）。$Y$ 是 SDPA 各头输出；$X$ 是 **pre-norm 隐状态**，所以门分数对当前 query 位置依赖，不是对历史 key/value 依赖。
+- **Concat → $W_O$ → $O$**：门必须夹在 $W_V$ 与 $W_O$ 之间。挪到 $W_O$ 之后就是 $G_5$，补不上式（2）的低秩。
 - **右侧 $G_4/G_3/G_2/G_5$**：论文明确标了这些位置。$G_2$（Value 后）PPL 仍明显好于基线，但整体不如 $G_1$；$G_3,G_4,G_5$ 几乎不涨。不要把「注意力里有个 sigmoid」理解成「随便打在 QKV 上」。
 
 ---
@@ -84,7 +84,7 @@ o_i^k=\mathrm{NL}\Bigl(\sum_{j\le i}S_{ij}^k\cdot X_j W_V^k\Bigr)W_O^k.
 \tag{4}
 $$
 
-$G_5$ 落在 $W_O$ 之后，两段线性已经并完，所以 Table 1 第 (9) 行几乎打平基线。只在 $G_1$ 上套 SiLU、不加参数（Table 3 第 (6) 行）也能略降 PPL，但下游几乎不动——光有非线性不够，还要稀疏。
+$G_5$ 落在 $W_O$ 之后，两段线性已经并完，所以 Table 1 第（9）行几乎打平基线。只在 $G_1$ 上套 SiLU、不加参数（Table 3 第（6）行）也能略降 PPL，但下游几乎不动——光有非线性不够，还要稀疏。
 
 ### 3.2 有效的门分数很稀，而且必须跟当前 query 走
 
@@ -136,7 +136,7 @@ Table 4 在测试语言模型数据上量门分数均值（越低越稀）和第
 
 Table 1 的 caption 写死：15A2B MoE 训在 **400B** token。列是 Avg PPL、Hellaswag、MMLU、GSM8k、C-eval。基线 $q=32,k=4$。
 
-| 方法 | 新增参数 (M) | Avg PPL | Hellaswag | MMLU |
+| 方法 | 新增参数（M） | Avg PPL | Hellaswag | MMLU |
 |------|-------------:|--------:|----------:|-----:|
 | (1) 基线 | 0 | 6.026 | 73.07 | 58.79 |
 | (3) $q=48$（扩参对照） | 201 | 5.953 | 73.59 | 58.45 |
@@ -163,7 +163,7 @@ NeurIPS 相机就绪摘要补了一句：推荐的 SDPA 输出门用进了 **Qwe
 
 ### 5.4 整机插槽：Qwen3-Next 的 3:1，门只打在全注意力层
 
-Qwen3-Next 的层日程是 **3:1**：每四层里三层 [Gated DeltaNet](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/2.3.3-线性注意力机制.md)（线性状态、头级遗忘），一层全 softmax 注意力。本篇 $G_1$ **只插在那一层全注意力里**：pre-norm 之后算 QKV → SDPA → 逐头 sigmoid 门 → $W_O$。三层 GDN **没有**这条 SDPA 输出门——它们不走 $QK^\top$ softmax，门控是状态更新上的 $\alpha_t$，和式 (1) 不是同一根管子。
+Qwen3-Next 的层日程是 **3:1**：每四层里三层 [Gated DeltaNet](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/2.3.3-线性注意力机制.md)（线性状态、头级遗忘），一层全 softmax 注意力。本篇 $G_1$ **只插在那一层全注意力里**：pre-norm 之后算 QKV → SDPA → 逐头 sigmoid 门 → $W_O$。三层 GDN **没有**这条 SDPA 输出门——它们不走 $QK^\top$ softmax，门控是状态更新上的 $\alpha_t$，和式（1）不是同一根管子。
 
 残差仍是普通 $x+F(x)$。不要把「Next 也有 Gate」读成 [03-Gated Residual](../../../2.1-深度学习基础组件/2.1.3-残差连接/03-Gated-Residual/03-Gated-Residual.md) 的四分支读门，也不要把 GDN 的头级遗忘写成 $G_1$。日程形状和 [Kimi Linear](../../../2.3-高效与稀疏注意力/2.3.3-线性注意力机制/01-Kimi-Delta-Attention-KDA/01-Kimi-Delta-Attention-KDA.md) 的 3:1 像，积木不同：Qwen 是 GDN + 带 $G_1$ 的全注意力；Kimi 是 KDA + MLA。
 
@@ -195,7 +195,7 @@ Gated Attention 推荐配置就一句：**SDPA 之后、head-specific（elementw
 
 ## 参考文献
 
-1. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., et al. (2025). [Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free](https://arxiv.org/abs/2505.06708). *NeurIPS 2025* Oral. HTML：[arxiv.org/html/2505.06708](https://arxiv.org/html/2505.06708)。本篇 Table 1 / 2 / 4 / 5 与式 (1)–(8) 按该 HTML 核对。
+1. Qiu, Z., Wang, Z., Zheng, B., Huang, Z., et al. (2025). [Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free](https://arxiv.org/abs/2505.06708). *NeurIPS 2025* Oral. HTML：[arxiv.org/html/2505.06708](https://arxiv.org/html/2505.06708)。本篇 Table 1 / 2 / 4 / 5 与式（1）–(8) 按该 HTML 核对。
 2. 官方实现：[qiuzh20/gated_attention](https://github.com/qiuzh20/gated_attention)（`Qwen3Attention`：SDPA 后 `sigmoid` 再 `o_proj`）。
 3. Attention sink 邻居：Xiao et al. (2023). [StreamingLLM](https://arxiv.org/abs/2309.17453)，本库 [10 文](../../../2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/10-StreamingLLM与Attention-Sink/10-StreamingLLM与Attention-Sink.md)。
 4. Massive activation：Sun, Chen, Kolter, Liu (2024). [Massive Activations in Large Language Models](https://arxiv.org/abs/2402.17762)。

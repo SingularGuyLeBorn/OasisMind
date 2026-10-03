@@ -17,7 +17,7 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 KIMI
 
@@ -47,9 +47,9 @@ An open-source, coding-focused agentic model built for long-horizon software eng
 
 
 
-开源, 以编程为主的智能体模型, 面向长程软件工程.
+开源，以编程为主的智能体模型，面向长程软件工程。
 
-(「long-horizon」: 任务跨很多步, 很多文件, 很长会话, 模型要一路跟指令做到收尾, 而不是单轮答完.)
+（「long-horizon」：任务跨很多步，很多文件，很长会话，模型要一路跟指令做到收尾，而不是单轮答完。）
 
 [**Try in Kimi Code**](https://www. kimi. ai/code)
 
@@ -61,7 +61,7 @@ An open-source, coding-focused agentic model built for long-horizon software eng
 
 
 
-阅读约 8 分钟 / 更新: 2026-09-14
+阅读约 8 分钟 / 更新：2026-09-14
 
 ![Image block](images/p01-kkkkkkk-k-uuuuuuuuuuuukk-k-ku-dooooooooo0oo000ooo.png)
 
@@ -69,7 +69,7 @@ KKKKKKK#K##UUUUUUUUUUUUKK#####K######KU DOOOOOOOOO0OO000OOO#KKKKKOKOOOOOOOOOKOKK
 
 
 
-(页面主视觉 OCR 噪声, 保留源文原文; 图见上.)
+（页面主视觉 OCR 噪声，保留源文原文；图见上。）
 
 ## What is Kimi K2.7 Code?
 
@@ -81,9 +81,9 @@ Kimi K2.7 Code is an open-source, coding-focused agentic model developed by Moon
 
 
 
-Kimi K2.7 Code 是 Moonshot AI 开发的开源, 以编程为主的智能体模型. 它在编程与智能体表现上更强, 真实世界的长程编程任务有明显提升; 这些提升会体现为复杂软件工程流程里更高的端到端任务成功率. 相对 K2.6, K2.7 Code 也改善了推理效率, thinking token 用量大约少 30%.
+Kimi K2.7 Code 是 Moonshot AI 开发的开源，以编程为主的智能体模型。它在编程与智能体表现上更强，真实世界的长程编程任务有明显提升；这些提升会体现为复杂软件工程流程里更高的端到端任务成功率。相对 K2.6，K2.7 Code 也改善了推理效率，thinking token 用量大约少 30%。
 
-(「thinking-token」: 开启思考模式时, 模型在可见最终回答之外先生成的内部推演 token, 会计入用量与成本.)
+（「thinking-token」：开启思考模式时，模型在可见最终回答之外先生成的内部推演 token，会计入用量与成本。）
 
 ## Benchmark performance ## 基准表现
 
@@ -91,7 +91,7 @@ Kimi K2.7 Code was evaluated against K2.6 on a combination of internal and exter
 
 
 
-相对 K2.6, Kimi K2.7 Code 在一组内部与外部基准上评测, 覆盖两个维度: 编程能力, 以及智能体任务执行.
+相对 K2.6，Kimi K2.7 Code 在一组内部与外部基准上评测，覆盖两个维度：编程能力，以及智能体任务执行。
 
 https://www. kimi. ai/resources/kimi-k2-7-code
 
@@ -109,7 +109,7 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 ![Image block](images/p02-on-coding-benchmarks-k2-7-code-shows-substantial-gains.png)
 
@@ -117,17 +117,17 @@ On coding benchmarks, K2.7 Code shows substantial gains over K2.6:+21.8% on Kimi
 
 
 
-编程基准上, K2.7 Code 相对 K2.6 有明显抬升: Kimi Code Bench v2 +21.8%(62.0 对 50.9), Program Bench +11.0%(53.6 对 48.3), MLS Bench Lite +31.5%(35.1 对 26.7).
+编程基准上，K2.7 Code 相对 K2.6 有明显抬升：Kimi Code Bench v2 +21.8%（62.0 对 50.9），Program Bench +11.0%（53.6 对 48.3），MLS Bench Lite +31.5%（35.1 对 26.7）。
 
 Stronger coding capability also translates into stronger agentic performance. On Kimi Claw 24/7 Bench, MCP Atlas, and MCP Mark Verified - benchmarks that measure autonomous agent task execution - K2.7 Code improves by roughly 10% over K2.6.
 
 
 
-更强的编程能力也会落到更强的智能体表现. 在衡量自主智能体任务执行的 Kimi Claw 24/7 Bench, MCP Atlas, MCP Mark Verified 上, K2.7 Code 相对 K2.6 大约提升 10%.
+更强的编程能力也会落到更强的智能体表现。在衡量自主智能体任务执行的 Kimi Claw 24/7 Bench，MCP Atlas，MCP Mark Verified 上，K2.7 Code 相对 K2.6 大约提升 10%。
 
-(「MCP」: Model Context Protocol, 模型与外部工具/资源对话的协议; 文中 MCP Atlas, MCP Mark Verified 是围绕该生态的评测.)
+（「MCP」：Model Context Protocol，模型与外部工具/资源对话的协议；文中 MCP Atlas，MCP Mark Verified 是围绕该生态的评测。）
 
-### Coding: ### 编程:
+### Coding: ### 编程：
 
 | Benchmark | Kimi K2.6 | Kimi K2.7 Code | GPT-5.5 | Claude Opus 4.8 |
 | --- | --- | --- | --- | --- |
@@ -135,7 +135,7 @@ Stronger coding capability also translates into stronger agentic performance. On
 | Program Bench | 48.3 | 53.6 | 69.1 | 63.8 |
 | MLS Bench Lite | 26.7 | 35.1 | 35.5 | 42.8 |
 
-### Agentic: ### 智能体:
+### Agentic: ### 智能体：
 
 | Benchmark | Kimi K2.6 | Kimi K2.7 Code | GPT-5.5 | Claude Opus 4.8 |
 | --- | --- | --- | --- | --- |
@@ -147,7 +147,7 @@ Kimi Code Bench v2 is an in-house benchmark developed by Moonshot AI, and Kimi C
 
 
 
-Kimi Code Bench v2 是 Moonshot AI 的内部基准; Kimi Claw 24/7 Bench 是面向智能体评测的内部基准. Kimi K2.7 Code 与 K2.6 经 Kimi Code CLI 测试, 开启 thinking(temperature 1.0, top-p 0.95, 262, 144 token 上下文); GPT-5.5 在 Codex(xhigh)评测, Opus 4.8 在 Claude Code(xhigh)评测. 各基准例外与完整方法见 [Hugging Face model card](https://huggingface. co/moonshotai/Kimi-K2.7-Code).
+Kimi Code Bench v2 是 Moonshot AI 的内部基准；Kimi Claw 24/7 Bench 是面向智能体评测的内部基准。Kimi K2.7 Code 与 K2.6 经 Kimi Code CLI 测试，开启 thinking（temperature 1.0，top-p 0.95, 262, 144 token 上下文）；GPT-5.5 在 Codex(xhigh)评测，Opus 4.8 在 Claude Code(xhigh)评测。各基准例外与完整方法见 [Hugging Face model card](https://huggingface. co/moonshotai/Kimi-K2.7-Code).
 
 https://www. kimi. ai/resources/kimi-k2-7-code
 
@@ -165,7 +165,7 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 ## Built for long-horizon coding ## 为长程编程而建
 
@@ -173,13 +173,13 @@ Real-world software engineering rarely ends in a single step. Tasks like refacto
 
 
 
-真实软件工程很少一步结束. 重构代码库, 跨多文件实现功能, 或在很长的智能体会话里调试, 都要求模型在扩展上下文里稳定跟指令, 并把任务做到完成.
+真实软件工程很少一步结束。重构代码库，跨多文件实现功能，或在很长的智能体会话里调试，都要求模型在扩展上下文里稳定跟指令，并把任务做到完成。
 
 Kimi K2.7 Code is optimized for these long-horizon scenarios. Compared with K2.6, it follows instructions more reliably in long contexts and achieves higher end-to-end task success rates, making it better suited for complex software engineering workflows.
 
 
 
-Kimi K2.7 Code 针对这类长程场景做了优化. 相对 K2.6, 它在长上下文里更稳地跟指令, 端到端任务成功率更高, 更适合复杂软件工程流程.
+Kimi K2.7 Code 针对这类长程场景做了优化。相对 K2.6，它在长上下文里更稳地跟指令，端到端任务成功率更高，更适合复杂软件工程流程。
 
 [Try in Kimi Code](https://www. kimi. ai/code) [在 Kimi Code 中试用](https://www. kimi. ai/code)
 
@@ -189,19 +189,19 @@ Reasoning models tend to overthink, spending thousands of tokens deliberating on
 
 
 
-推理模型容易想过头, 在不需要的问题上烧掉成千上万 token. Kimi K2.7 Code 明显压低这种倾向: 相对 K2.6, 平均大约少用 30% 的 thinking token.
+推理模型容易想过头，在不需要的问题上烧掉成千上万 token. Kimi K2.7 Code 明显压低这种倾向：相对 K2.6，平均大约少用 30% 的 thinking token。
 
 Across Kimi Code Bench v2, Program Bench, and MLS Bench Lite, Kimi K2.7 Code achieves higher scores than K2.6 while consuming fewer tokens on each benchmark.
 
 
 
-在 Kimi Code Bench v2, Program Bench, MLS Bench Lite 上, Kimi K2.7 Code 分数高于 K2.6, 且每个基准消耗的 token 更少.
+在 Kimi Code Bench v2，Program Bench，MLS Bench Lite 上，Kimi K2.7 Code 分数高于 K2.6，且每个基准消耗的 token 更少。
 
 Kimi-K2.7 Code vs Kimi-K2.6 : Performance vs Tokens
 
 
 
-Kimi-K2.7 Code 对 Kimi-K2.6: 表现对 token
+Kimi-K2.7 Code 对 Kimi-K2.6：表现对 token
 
 ![Chart block](images/p03-for-developers-this-efficiency-compounds-across-every.png)
 
@@ -209,7 +209,7 @@ For developers, this efficiency compounds across every task: faster responses in
 
 
 
-对开发者而言, 这种效率会在每个任务上叠起来: 交互式编程会话响应更快, 生产里 API 成本更低, 同一上下文预算下智能体工作流能完成更多事.
+对开发者而言，这种效率会在每个任务上叠起来：交互式编程会话响应更快，生产里 API 成本更低，同一上下文预算下智能体工作流能完成更多事。
 
 [Try in Kimi Code](https://www. kimi. ai/code) [在 Kimi Code 中试用](https://www. kimi. ai/code)
 
@@ -231,17 +231,17 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 Kimi K2.7 Code is built on a Mixture-of-Experts (MoE) architecture with 1 trillion total parameters and 32 billion activated parameters per token. The model supports a 256K context length and uses Multi-head Latent Attention (MLA). It also includes MoonViT, a 400M-parameter vision encoder.
 
 
 
-Kimi K2.7 Code 基于 MoE 架构: 总参数 1 万亿, 每 token 激活参数 320 亿. 模型支持 256K 上下文, 使用 MLA, 并带有 MoonViT--400M 参数的视觉编码器.
+Kimi K2.7 Code 基于 MoE 架构：总参数 1 万亿，每 token 激活参数 320 亿。模型支持 256K 上下文，使用 MLA，并带有 MoonViT--400M 参数的视觉编码器。
 
-(「MoE」: 多数参数是专家库, 每次只激活少数专家; 服务期算力更接近激活参, 存储与通信仍按总参规模.)
+（「MoE」：多数参数是专家库，每次只激活少数专家；服务期算力更接近激活参，存储与通信仍按总参规模。）
 
-(「MLA」: Multi-head Latent Attention, 用低秩潜变量压缩 KV, 降低长上下文注意力显存与带宽.)
+（「MLA」：Multi-head Latent Attention，用低秩潜变量压缩 KV，降低长上下文注意力显存与带宽。）
 
 | Parameter | Value |
 | --- | --- |
@@ -267,7 +267,7 @@ The full model weights are open-sourced and available on Hugging Face.
 
 
 
-完整模型权重已开源, 可在 Hugging Face 获取.
+完整模型权重已开源，可在 Hugging Face 获取。
 
 ## Choosing between Kimi K2.7 Code and K2.6 ## 如何在 Kimi K2.7 Code 与 K2.6 之间选择
 
@@ -275,7 +275,7 @@ Kimi K2.7 Code is purpose-built for coding tasks. For general-purpose work such 
 
 
 
-Kimi K2.7 Code 专为编程任务打造. 写作, 分析, 对话等通用工作, 建议用能力更全面的 K2.6.
+Kimi K2.7 Code 专为编程任务打造。写作，分析，对话等通用工作，建议用能力更全面的 K2.6。
 
 ## How to access Kimi K2.7 Code ## 如何获取 Kimi K2.7 Code
 
@@ -285,13 +285,13 @@ Kimi K2.7 Code is available through:
 
 
 
-Kimi K2.7 Code 可通过以下渠道使用:
+Kimi K2.7 Code 可通过以下渠道使用：
 
 **Kimi Code** ([https://www. kimi. ai/code](https://www. kimi. ai/code)). Kimi K2.7 Code is now the default model, with thinking mode enabled by default. To get started, follow the setup instructions on the page.
 
 
 
-**Kimi Code**([https://www. kimi. ai/code](https://www. kimi. ai/code)). Kimi K2.7 Code 现为默认模型, 默认开启 thinking 模式. 起步请按该页安装说明操作.
+**Kimi Code**([https://www. kimi. ai/code](https://www. kimi. ai/code)). Kimi K2.7 Code 现为默认模型，默认开启 thinking 模式。起步请按该页安装说明操作。
 
 https://www. kimi. ai/resources/kimi-k2-7-code
 
@@ -309,7 +309,7 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 Send /help for help information.
 
@@ -341,7 +341,7 @@ K2.7 Code is ready higher end-to-end coding task success rates /model select K2.
 
 Use /dance on to keep the rainbow on.
 
-(以上为页面截图 OCR 文本, 保留源文字面; 终端界面见图.)
+（以上为页面截图 OCR 文本，保留源文字面；终端界面见图。）
 
 ![Image block](images/p05-i.png)
 
@@ -359,7 +359,7 @@ yolo K2.7 Code thinking \~/k2.7Code
 
 
 
-开放平台上的 **Kimi API**([https://platform. kimi. ai/](https://platform. kimi. ai/)). 开发者可通过 Kimi API 调用 Kimi K2.7 Code, 接入自有编程工作流, 智能体与开发者工具.
+开放平台上的 **Kimi API**([https://platform. kimi. ai/](https://platform. kimi. ai/))。开发者可通过 Kimi API 调用 Kimi K2.7 Code，接入自有编程工作流，智能体与开发者工具。
 
 ### Thinking mode requirement ### Thinking 模式要求
 
@@ -367,7 +367,7 @@ Kimi K2.7 Code does not support non-thinking mode. It always runs with thinking 
 
 
 
-Kimi K2.7 Code 不支持非 thinking 模式. 在 Kimi API 与 Kimi Code 上始终开启 thinking. 在 Kimi Code 里, 若请求关掉 thinking, 会自动改由 K2.6 承接.
+Kimi K2.7 Code 不支持非 thinking 模式。在 Kimi API 与 Kimi Code 上始终开启 thinking。在 Kimi Code 里，若请求关掉 thinking，会自动改由 K2.6 承接。
 
 ## Kimi K2.7 Code pricing ## Kimi K2.7 Code 定价
 
@@ -377,7 +377,7 @@ For users who want to experience Kimi K2.7 Code directly through Kimi Code, incl
 
 
 
-若希望直接通过 Kimi Code(含终端与 IDE 插件)体验 Kimi K2.7 Code, 可选 Code 套餐. 下表为 **年付** 下的月价:
+若希望直接通过 Kimi Code（含终端与 IDE 插件）体验 Kimi K2.7 Code，可选 Code 套餐。下表为 **年付** 下的月价：
 
 | Plan | Price | Best for |
 | --- | --- | --- |
@@ -388,16 +388,16 @@ For users who want to experience Kimi K2.7 Code directly through Kimi Code, incl
 
 | 套餐 | 价格 | 适合 |
 | --- | --- | --- |
-| Moderato | $15 / month | 需要按周刷新用量配额, 多设备访问, 做常规编程工作流 |
-| Allegretto | $31 / month | 进阶用户, 需要更大周限额与更高并发上限 |
-| Allegro | $79 / month | 高强度开发, 复杂项目与更大负载 |
-| Vivace | $159 / month | 需要最高周配额, 应对复杂项目与大型代码库 |
+| Moderato | $15 / month | 需要按周刷新用量配额，多设备访问，做常规编程工作流 |
+| Allegretto | $31 / month | 进阶用户，需要更大周限额与更高并发上限 |
+| Allegro | $79 / month | 高强度开发，复杂项目与更大负载 |
+| Vivace | $159 / month | 需要最高周配额，应对复杂项目与大型代码库 |
 
 Each plan includes weekly refreshed usage limits. Higher-tier plans provide larger weekly limits and higher concurrency caps, making them suitable for more complex projects. For the latest plan details, see the [official membership page](https://www. kimi. ai/membership/pricing).
 
 
 
-每个套餐都含按周刷新的用量上限. 更高档提供更大周限额与更高并发上限, 适合更复杂项目. 最新套餐细节见 [官方会员页](https://www. kimi. ai/membership/pricing).
+每个套餐都含按周刷新的用量上限。更高档提供更大周限额与更高并发上限，适合更复杂项目。最新套餐细节见 [官方会员页](https://www. kimi. ai/membership/pricing).
 
 https://www. kimi. ai/resources/kimi-k2-7-code
 
@@ -417,7 +417,7 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 ### Kimi API pricing ### Kimi API 定价
 
@@ -425,7 +425,7 @@ Kimi K2.7 Code is available through the Kimi API with usage-based, per-token bil
 
 
 
-Kimi K2.7 Code 经 Kimi API 提供, 按用量, 按 token 计费:
+Kimi K2.7 Code 经 Kimi API 提供，按用量，按 token 计费：
 
 | Model | Unit | Input Price (Cache Hit) | Input Price (Cache Miss) | Output Price | Context Window |
 | --- | --- | --- | --- | --- | --- |
@@ -435,9 +435,9 @@ The API supports automatic context caching, which lowers the input cost for reus
 
 
 
-API 支持自动上下文缓存, 复用上下文时降低输入成本(缓存命中每百万 token \$0.19, 未命中 \$0.95). 价格不含适用税费. 最新费率见 [官方定价文档](https://platform. kimi. ai/docs/pricing/chat).
+API 支持自动上下文缓存，复用上下文时降低输入成本（缓存命中每百万 token \$0.19，未命中 \$0.95）。价格不含适用税费。最新费率见 [官方定价文档](https://platform. kimi. ai/docs/pricing/chat).
 
-(「context caching」: 把已处理过的长前缀缓存起来, 后续请求命中缓存时按更低单价计输入 token.)
+（「context caching」：把已处理过的长前缀缓存起来，后续请求命中缓存时按更低单价计输入 token.）
 
 ## FAQ ## 常见问题
 
@@ -445,49 +445,49 @@ API 支持自动上下文缓存, 复用上下文时降低输入成本(缓存命�
 
 
 
-### Kimi K2.7 Code 是否开源?
+### Kimi K2.7 Code 是否开源？
 
 Yes. The model weights are open-sourced and available for download on Hugging Face, where you can also find deployment guides and full documentation.
 
 
 
-是. 模型权重已开源, 可在 Hugging Face 下载, 该处还有部署指南与完整文档.
+是。模型权重已开源，可在 Hugging Face 下载，该处还有部署指南与完整文档。
 
 ### What is the context window of Kimi K2.7 Code?
 
 
 
-### Kimi K2.7 Code 的上下文窗口是多少?
+### Kimi K2.7 Code 的上下文窗口是多少？
 
 Kimi K2.7 Code supports a 256K context window (262, 144 tokens), making it well-suited for repository-scale codebases and long, multi-turn coding sessions.
 
 
 
-Kimi K2.7 Code 支持 256K 上下文窗口(262, 144 tokens), 适合仓库级代码库与长多轮编程会话.
+Kimi K2.7 Code 支持 256K 上下文窗口（262, 144 tokens），适合仓库级代码库与长多轮编程会话。
 
 ### Does Kimi K2.7 Code support image and video input?
 
 
 
-### Kimi K2.7 Code 是否支持图像与视频输入?
+### Kimi K2.7 Code 是否支持图像与视频输入？
 
 Yes. Kimi K2.7 Code uses a natively multimodal architecture that supports text, image, and video input, in addition to its coding and agentic capabilities.
 
 
 
-是. Kimi K2.7 Code 采用原生多模态架构, 除编程与智能体能力外, 还支持文本, 图像与视频输入.
+是。Kimi K2.7 Code 采用原生多模态架构，除编程与智能体能力外，还支持文本，图像与视频输入。
 
 ### Is thinking mode required to use Kimi K2.7 Code?
 
 
 
-### 使用 Kimi K2.7 Code 是否必须开启 thinking 模式?
+### 使用 Kimi K2.7 Code 是否必须开启 thinking 模式？
 
 Yes. Kimi K2.7 Code does not support non-thinking mode and always runs with thinking enabled. In Kimi Code, requests made with thinking disabled are automatically served by K2.6 instead.
 
 
 
-是. Kimi K2.7 Code 不支持非 thinking 模式, 始终开启 thinking. 在 Kimi Code 里, 关掉 thinking 的请求会自动改由 K2.6 承接.
+是。Kimi K2.7 Code 不支持非 thinking 模式，始终开启 thinking。在 Kimi Code 里，关掉 thinking 的请求会自动改由 K2.6 承接。
 
 ## You Might Also Like ## 你可能还喜欢
 
@@ -509,7 +509,7 @@ https://www. kimi. ai/resources/kimi-k2-7-code
 
 
 
-[**10 个无代码 AI 智能体, 用于自动化工作流.**](https://www. kimi. ai/resources/no-code-ai-agent)
+[**10 个无代码 AI 智能体，用于自动化工作流。**](https://www. kimi. ai/resources/no-code-ai-agent)
 
 [**How to Integrate an External LLM API with.**](https://www. kimi. ai/resources/codex-api)
 
@@ -521,13 +521,13 @@ Kimi K2.7 Code: Open-Source Agentic Coding Model
 
 
 
-Kimi K2.7 Code: 开源智能体式编程模型
+Kimi K2.7 Code：开源智能体式编程模型
 
 [**How to Use Claude Code: Step-by-Step for Beginners**](https://www. kimi. ai/resources/how-to-use-claude-code)
 
 
 
-[**如何使用 Claude Code: 初学者分步指南**](https://www. kimi. ai/resources/how-to-use-claude-code)
+[**如何使用 Claude Code：初学者分步指南**](https://www. kimi. ai/resources/how-to-use-claude-code)
 
 [**How to** on Win](https://www. kimi. ai/resources/how-to-install-openclaw-on-windows)
 
@@ -711,7 +711,7 @@ English
 
 
 
-(页脚导航链接保留源文英文原文与目标 URL; 栏目名意译见上列粗体组. 链接条目本身不另造中文路径文案, 以免偏离源站 slug.)
+（页脚导航链接保留源文英文原文与目标 URL；栏目名意译见上列粗体组。链接条目本身不另造中文路径文案，以免偏离源站 slug.）
 
 https://www. kimi. ai/resources/kimi-k2-7-code
 

@@ -1,15 +1,15 @@
 ---
-title: "对照: Qwen2-VL"
+title: "对照：Qwen2-VL"
 category: "主流模型"
 published: true
-excerpt: "Qwen2-VL 技术报告中英对照. Abstract / Introduction / Conclusion / References / Appendix 不译; 其余英文段落后接中文意译."
+excerpt: "Qwen2-VL 技术报告中英对照。Abstract / Introduction / Conclusion / References / Appendix 不译；其余英文段落后接中文意译。"
 ---
 
 <!-- page 1 of 52 -->
 
 arXiv:2409.12191v2 [cs.CV] 3 Oct 2024
 
-# Qwen2-VL: Enhancing Vision-Language Model’s Perception of the World at Any Resolution # Qwen2-VL: 任意分辨率下增强视觉语言模型的世界感知
+# Qwen2-VL: Enhancing Vision-Language Model’s Perception of the World at Any Resolution # Qwen2-VL：任意分辨率下增强视觉语言模型的世界感知
 
 Peng Wang\* Shuai Bai\* Sinan Tan\* Shijie Wang\* Zhihao Fan\* Jinze Bai\*† Keqin Chen Xuejing Liu Jialin Wang Wenbin Ge Yang Fan Kai Dang Mengfei Du Xuancheng Ren Rui Men Dayiheng Liu Chang Zhou Jingren Zhou Junyang Lin† **Qwen Team Alibaba Group**
 
@@ -17,13 +17,13 @@ Peng Wang\* Shuai Bai\* Sinan Tan\* Shijie Wang\* Zhihao Fan\* Jinze Bai\*† Ke
 
 We present the Qwen2-VL Series, an advanced upgrade of the previous Qwen-VL models that redefines the conventional predetermined-resolution approach in visual processing. Qwen2-VL introduces the Naive Dynamic Resolution mechanism, which enables the model to dynamically process images of varying resolutions into different numbers of visual tokens. This approach allows the model to generate more efficient and accurate visual representations, closely aligning with human perceptual processes. The model also integrates Multimodal Rotary Position Embedding (M-RoPE), facilitating the effective fusion of positional information across text, images, and videos. We employ a unified paradigm for processing both images and videos, enhancing the model’s visual perception capabilities. To explore the potential of large multimodal models, Qwen2-VL investigates the scaling laws for large vision-language models (LVLMs). By scaling both the model size-with versions at 2B, 8B, and 72B parameters-and the amount of training data, the Qwen2-VL Series achieves highly competitive performance. Notably, the Qwen2-VL-72B model achieves results comparable to leading models such as GPT-4o and Claude3.5- Sonnet across various multimodal benchmarks, outperforming other generalist models. Code is available at [https://github.com/QwenLM/Qwen2-VL](https://github.com/QwenLM/Qwen2-VL).
 
-本文推出 Qwen2-VL 系列, 是前代 Qwen-VL 的重大升级, 重新定义了视觉处理中预设分辨率的常规做法. Qwen2-VL 引入 Naive Dynamic Resolution 机制, 将不同分辨率的图像动态处理成不同数量的视觉 token, 生成更高效, 更准确的视觉表示, 更贴近人类感知过程. 模型还集成 M-RoPE, 有效融合文本, 图像与视频的位置信息; 图像与视频统一处理范式进一步增强视觉感知. 为探索大型多模态模型的潜力, Qwen2-VL 研究了 LVLM 的 scaling laws: 同步放大模型规模 (2B, 8B, 72B 三档) 与训练数据量, 取得极具竞争力的性能. 其中 Qwen2-VL-72B 在多个多模态基准上可比肩 GPT-4o, Claude3.5-Sonnet 等领先模型, 超过其他通用模型. 代码已开源.
+本文推出 Qwen2-VL 系列，是前代 Qwen-VL 的重大升级，重新定义了视觉处理中预设分辨率的常规做法。Qwen2-VL 引入 Naive Dynamic Resolution 机制，将不同分辨率的图像动态处理成不同数量的视觉 token，生成更高效，更准确的视觉表示，更贴近人类感知过程。模型还集成 M-RoPE，有效融合文本，图像与视频的位置信息；图像与视频统一处理范式进一步增强视觉感知。为探索大型多模态模型的潜力，Qwen2-VL 研究了 LVLM 的 scaling laws：同步放大模型规模（2B，8B，72B 三档）与训练数据量，取得极具竞争力的性能。其中 Qwen2-VL-72B 在多个多模态基准上可比肩 GPT-4o，Claude3.5-Sonnet 等领先模型，超过其他通用模型。代码已开源。
 
 ## 1 Introduction
 
 In the realm of artificial intelligence, Large Vision-Language Models (LVLMs) represent a significant leap forward, building upon the strong textual processing capabilities of traditional large language models. These advanced models now encompass the ability to interpret and analyze a broader spectrum of data, including images, audio, and video. This expansion of capabilities has transformed LVLMs into indispensable tools for tackling a variety of real-world challenges. Recognized for their unique capacity to condense extensive and intricate knowledge into functional representations, LVLMs are paving the way for more comprehensive cognitive systems. By integrating diverse data forms, LVLMs aim to more closely mimic the nuanced ways in which humans perceive and interact with their environment. This allows these models to provide a more accurate representation of how we engage with and perceive our environment
 
-在人工智能领域, LVLM 在传统大语言模型强文本能力之上迈出重要一步: 把可解读, 可分析的数据扩展到图像, 音频, 视频等更广谱的形态, 成为应对众多真实世界任务的必备工具. LVLM 擅长把庞大繁复的知识凝练成可用的表示, 正在铺路更全面的认知系统: 融合多种数据形态, 更贴近人类感知与交互环境的方式, 从而更准确地刻画人与环境的互动.
+在人工智能领域，LVLM 在传统大语言模型强文本能力之上迈出重要一步：把可解读，可分析的数据扩展到图像，音频，视频等更广谱的形态，成为应对众多真实世界任务的必备工具。LVLM 擅长把庞大繁复的知识凝练成可用的表示，正在铺路更全面的认知系统：融合多种数据形态，更贴近人类感知与交互环境的方式，从而更准确地刻画人与环境的互动。
 
 Recent advancements in large vision-language models (LVLMs) (Li et al., 2023c; Liu et al., 2023b; Dai et al., 2023; Zhu et al., 2023; Huang et al., 2023a; Bai et al., 2023b; Liu et al., 2023a; Wang et al., 2023b; OpenAI., 2023; Team et al., 2023) have led to significant improvements in a short span. These models (OpenAI, 2023; Touvron et al., 2023a,b; Chiang et al., 2023; Bai et al., 2023a) generally follow a common approach of visual encoder→cross-modal connector→LLM. This setup, combined with next-token prediction as the primary training method and the availability of high-quality datasets (Liu et al., 2023a; Zhang et al., 2023; Chen et al., 2023b;
 
@@ -37,15 +37,15 @@ Figure 1: Qwen2-VL capabilities: Multilingual image text understanding, code/mat
 
 Li et al., 2023b), has driven much of the progress. Additional factors like larger model architectures (Alayrac et al., 2022), higher-resolution images (Li et al., 2023a,d), and advanced techniques such as mixture-of-expert models (MoE) (Wang et al., 2023b; Ye et al., 2023b), model ensembles (Lin et al., 2023), and more sophisticated connectors (Ye et al., 2023a) between visual and textual modalities have also played a key role in enhancing LVLMs’ ability to process complex visual and textual information more effectively.
 
-近期 LVLM 进展迅速, 普遍采用 视觉编码器 → 跨模态连接器 → LLM 的架构, 以 next-token prediction 为主要训练方式, 再配合高质量数据集, 构成进步主线. 更大的模型架构, 更高分辨率图像, 以及 MoE, 模型集成, 更精细的跨模态连接器等进阶技术, 也在提升 LVLM 处理复杂视觉与文本信息的能力上发挥关键作用.
+近期 LVLM 进展迅速，普遍采用 视觉编码器 → 跨模态连接器 → LLM 的架构，以 next-token prediction 为主要训练方式，再配合高质量数据集，构成进步主线。更大的模型架构，更高分辨率图像，以及 MoE，模型集成，更精细的跨模态连接器等进阶技术，也在提升 LVLM 处理复杂视觉与文本信息的能力上发挥关键作用。
 
 However, current large vision-language models (LVLMs) are typically constrained by a fixed image input size. Standard LVLMs encode input images to a fixed resolution (e.g., 224×224), often by either downsampling or upsampling the images (Zhu et al., 2023; Huang et al., 2023a), or by employing a scale-then-padding approach (Liu et al., 2023b,a). While this one-size-fits-all strategy enables processing of images at consistent resolutions, it also limits the model’s ability to capture information at different scales, particularly leading to a significant loss of detailed information in high-resolution images. Consequently, such models fall short of perceiving visual information with the same sensitivity to scale and detail as human vision.
 
-但现有 LVLM 通常受限于固定的图像输入尺寸: 标准做法把输入图像编码到固定分辨率 (如 224×224), 靠降采样或上采样, 或先缩放再 padding. 这种一刀切策略虽保证了分辨率一致, 却削弱了模型捕捉不同尺度信息的能力, 高分辨率图像的细节损失尤其严重, 达不到人眼对尺度与细节的敏感度.
+但现有 LVLM 通常受限于固定的图像输入尺寸：标准做法把输入图像编码到固定分辨率（如 224×224），靠降采样或上采样，或先缩放再 padding。这种一刀切策略虽保证了分辨率一致，却削弱了模型捕捉不同尺度信息的能力，高分辨率图像的细节损失尤其严重，达不到人眼对尺度与细节的敏感度。
 
 Additionally, most LVLMs rely on a static, frozen CLIP-style (Radford et al., 2021) vision encoder, raising concerns about whether the visual representations produced by such pre-trained models are adequate, particularly for complex reasoning tasks and processing intricate details within images. Recent works (Bai et al., 2023b; Ye et al., 2023a) have attempted to address these limitations by fine-tuning the vision transformer (ViT) during the LVLM training process, which has shown to yield improved results. To further enhance the model’s adaptability to varying resolutions, we introduce dynamic resolution training in the LVLM training process. Specifically, we employ a 2D Rotary Position Embedding (RoPE) in the ViT, thus allowing the model to better capture information across different spatial scales.
 
-此外, 多数 LVLM 依赖静态冻结的 CLIP 式视觉编码器, 这类预训练模型产出的视觉表示是否够用存疑, 复杂推理任务与图像精细细节处理更是如此. 近期工作尝试在 LVLM 训练过程中微调 ViT, 已有收益. 为进一步提升对不同分辨率的适应力, 我们在 LVLM 训练中引入动态分辨率训练: 具体做法是在 ViT 中使用 2D RoPE, 让模型更好捕捉不同空间尺度的信息.
+此外，多数 LVLM 依赖静态冻结的 CLIP 式视觉编码器，这类预训练模型产出的视觉表示是否够用存疑，复杂推理任务与图像精细细节处理更是如此。近期工作尝试在 LVLM 训练过程中微调 ViT，已有收益。为进一步提升对不同分辨率的适应力，我们在 LVLM 训练中引入动态分辨率训练：具体做法是在 ViT 中使用 2D RoPE，让模型更好捕捉不同空间尺度的信息。
 
 When it comes to video content, which is essentially a sequence of frames, many existing models continue to treat it as an independent modality. However, understanding the dynamic nature of reality, as manifested in videos, is crucial for models aiming to grasp the complexities of the real world. Unlike text, which is inherently one-dimensional, the real-world environment exists in three dimensions. The use of one-dimensional position embeddings in current models significantly limits their ability to model three-dimensional space and temporal dynamics effectively. To bridge this gap, we have developed Multimodal Rotary Position Embedding (M-
 
@@ -61,46 +61,46 @@ Table 1: Model descriptions of Qwen2-VL.
 
 RoPE), which employs separate components to represent temporal and spatial information. This enables the model to naturally comprehend dynamic content, such as videos or streaming data, improving its ability to understand and interact with the world.
 
-视频本质上是帧序列, 但许多现有模型仍把它当作独立模态对待. 然而要理解真实世界的复杂性, 把握视频所呈现的现实动态至关重要. 文本天然是一维的, 真实环境却是三维的; 现有模型用一维位置嵌入, 严重限制了其对三维空间与时间动态的建模. 为弥合这一鸿沟, 我们提出 M-RoPE: 用分离的分量表示时间与空间信息, 让模型自然理解视频, 流式数据等动态内容, 提升其理解与交互世界的能力.
+视频本质上是帧序列，但许多现有模型仍把它当作独立模态对待。然而要理解真实世界的复杂性，把握视频所呈现的现实动态至关重要。文本天然是一维的，真实环境却是三维的；现有模型用一维位置嵌入，严重限制了其对三维空间与时间动态的建模。为弥合这一鸿沟，我们提出 M-RoPE：用分离的分量表示时间与空间信息，让模型自然理解视频，流式数据等动态内容，提升其理解与交互世界的能力。
 
 Furthermore, compared to the scaling of large language models (LLMs), current LVLMs are still in the early stages of exploring the impact of scaling in terms of training data and model parameters. The exploration of scaling laws for LVLMs—how increases in model and data size affect performance—remains an open and promising area of research.
 
-再者, 与大语言模型的 scaling 相比, 当前 LVLM 在训练数据量与模型参数量两个维度上的 scaling 影响探索仍处早期; LVLM 的 scaling laws (模型与数据规模如何影响性能) 仍是一个开放而有前景的方向.
+再者，与大语言模型的 scaling 相比，当前 LVLM 在训练数据量与模型参数量两个维度上的 scaling 影响探索仍处早期；LVLM 的 scaling laws（模型与数据规模如何影响性能）仍是一个开放而有前景的方向。
 
 In this work, we introduce the newest addition to the large vision-language models of the Qwen family: Qwen2-VL series, which comprises three open-weight models with total parameter counts of 2 billion, 8 billion, and 72 billion. As shown in Figure 1, the key advances in Qwen2-VL include:
 
-本文推出 Qwen 家族大型视觉语言模型的最新成员 Qwen2-VL 系列, 含 2B, 8B, 72B 三个开源权重模型. 如图 1, 关键进展包括:
+本文推出 Qwen 家族大型视觉语言模型的最新成员 Qwen2-VL 系列，含 2B，8B，72B 三个开源权重模型。如图 1，关键进展包括：
 
 • **State-of-the-art understanding across various resolutions and aspect ratios:** Qwen2-VL achieves leading performance on visual benchmarks, including DocVQA, InfoVQA, RealWorldQA, MTVQA, MathVista, and others.
 
-各分辨率与宽高比下的 SOTA 理解: 在 DocVQA, InfoVQA, RealWorldQA, MTVQA, MathVista 等视觉基准上领先.
+各分辨率与宽高比下的 SOTA 理解：在 DocVQA，InfoVQA，RealWorldQA，MTVQA，MathVista 等视觉基准上领先。
 
 • **Comprehension of extended-duration videos (20 min+):** Qwen2-VL is capable of understanding videos over 20 minutes in length, enhancing its ability to perform high-quality video-based question answering, dialogue, content creation, and more.
 
-长视频理解 (20 分钟以上): 可理解超过 20 分钟的视频, 支撑高质量视频问答, 对话, 内容创作等.
+长视频理解（20 分钟以上）：可理解超过 20 分钟的视频，支撑高质量视频问答，对话，内容创作等。
 
 • **Robust agent capabilities for device operation:** With advanced reasoning and decision-making abilities, Qwen2-VL can be integrated with devices such as mobile phones, robots, etc., enabling autonomous operation based on visual inputs and text instructions.
 
-强健的设备操作 Agent 能力: 具备进阶推理与决策能力, 可接入手机, 机器人等设备, 按视觉输入与文本指令自主操作.
+强健的设备操作 Agent 能力：具备进阶推理与决策能力，可接入手机，机器人等设备，按视觉输入与文本指令自主操作。
 
 • **Multilingual support:** To serve a global audience, beyond English and Chinese, Qwen2-VL now supports multilingual context understanding within images, including most European languages, Japanese, Korean, Arabic, Vietnamese, and others.
 
-多语言支持: 除中英文外, 还能理解图像中的多语言文本, 覆盖绝大多数欧洲语言及日语, 韩语, 阿拉伯语, 越南语等.
+多语言支持：除中英文外，还能理解图像中的多语言文本，覆盖绝大多数欧洲语言及日语，韩语，阿拉伯语，越南语等。
 
 ## 2 Approach 方法
 
 The Qwen2-VL series consists of models of 3 sizes, which are Qwen2-VL-2B, Qwen2-VL-7B and Qwen2-VL-72B. Table 1 lists the hyper-parameters and important information. Notably, Qwen2-VL employs a 675M parameter ViT across various-sized LLMs, ensuring that the computational load of the ViT remains constant regardless of the scale of the LLM.
 
-Qwen2-VL 系列三档: Qwen2-VL-2B, Qwen2-VL-7B, Qwen2-VL-72B. 表 1 给超参与要点. 各尺寸 LLM 共用约 675M 参数的 ViT, 视觉侧算力不随 LLM 放大而变.
+Qwen2-VL 系列三档：Qwen2-VL-2B, Qwen2-VL-7B, Qwen2-VL-72B. 表 1 给超参与要点。各尺寸 LLM 共用约 675M 参数的 ViT，视觉侧算力不随 LLM 放大而变。
 
-> **想:** 摘要写 versions at 2B, 8B, and 72B, 正文型号却是 2B / 7B / 72B, 哪个为准?
-> 以表 1 与正文型号名为准: Qwen2-VL-2B / 7B / 72B. LLM 列是 1.5B / 7.6B / 72B; 摘要的 8B 是粗说体量, 不要和 7B 型号名对错号.
+> **想：** 摘要写 versions at 2B，8B，and 72B，正文型号却是 2B / 7B / 72B，哪个为准？
+> 以表 1 与正文型号名为准：Qwen2-VL-2B / 7B / 72B. LLM 列是 1.5B / 7.6B / 72B；摘要的 8B 是粗说体量，不要和 7B 型号名对错号。
 
 ### 2.1 Model Architecture 模型架构
 
 Figure 2 illustrates the comprehensive structure of Qwen2-VL. We have retained the Qwen-VL (Bai et al., 2023b) framework, which integrates vision encoders and language models. For various scale adaptations, we
 
-图 2 给出整体结构: 沿用 Qwen-VL 的「视觉编码器 + 语言模型」框架. 为适配多种规模, 我们
+图 2 给出整体结构：沿用 Qwen-VL 的「视觉编码器 + 语言模型」框架。为适配多种规模，我们
 
 <!-- page 4 of 52 -->
 
@@ -108,22 +108,22 @@ Figure 2 illustrates the comprehensive structure of Qwen2-VL. We have retained t
 
 Figure 2: Qwen2-VL is capable of accurately identifying and comprehending the content within images, regardless of their clarity, resolution, or extreme aspect ratios.
 
-图 2｜无论清晰度, 分辨率或极端宽高比, Qwen2-VL 都能准确识别并理解图像内容.
+图 2｜无论清晰度，分辨率或极端宽高比，Qwen2-VL 都能准确识别并理解图像内容。
 
 have implemented a Vision Transformer (ViT) (Dosovitskiy et al., 2021) with approximately 675 million parameters, adept at handling both image and video inputs. In terms of language processing, we have opted for the more powerful Qwen2 (Yang et al., 2024) series of language models. To further enhance the model’s ability to effectively perceive and comprehend visual information in videos, we introduced several key upgrades:
 
-实现了约 675M 参数的 ViT, 同时吃图像与视频; 语言侧换用更强的 Qwen2. 为更好感知视频视觉信息, 做了若干关键升级:
+实现了约 675M 参数的 ViT，同时吃图像与视频；语言侧换用更强的 Qwen2。为更好感知视频视觉信息，做了若干关键升级：
 
 **Naive Dynamic Resolution** A key architectural improvement in Qwen2-VL is the introduction of naive dynamic resolution support (Dehghani et al., 2024). Unlike Qwen-VL, Qwen2-VL can now process images of any resolution, dynamically converting them into a variable number of visual tokens.<sup>1</sup> To support this feature, we modified ViT by removing the original absolute position embeddings and introducing 2D-RoPE (Su et al., 2024; Su, 2021) to capture the two-dimensional positional information of images. At the inference stage, images of varying resolutions are packed into a single sequence, with the packed length controlled to limit GPU memory usage. Furthermore, to reduce the visual tokens of each image, a simple MLP layer is employed after the ViT to compress adjacent 2 × 2 tokens into a single token, with the special <|vision\_start|> and <|vision\_end|> tokens placed at the beginning and end of the compressed visual tokens. As a result, an image with a resolution of 224 × 224, encoded with a ViT using patch\_size=14, will be compressed to 66 tokens before entering LLM.
 
-**朴素动态分辨率.** 相对 Qwen-VL, 现可处理任意分辨率图像, 并动态变成可变数量视觉 token. ViT 去掉原绝对位置编码, 改用 **2D-RoPE** 刻画二维位置. 推理时不同分辨率图像打包进同一序列, 并控制打包长度以限制显存. ViT 后再接简单 MLP, 把相邻 2×2 token 压成 1 个, 两端加 `<|vision_start|>` / `<|vision_end|>`. 例如 224×224, `patch_size=14` 时, 进 LLM 前约压到 66 个 token.
+**朴素动态分辨率。** 相对 Qwen-VL，现可处理任意分辨率图像，并动态变成可变数量视觉 token. ViT 去掉原绝对位置编码，改用 **2D-RoPE** 刻画二维位置。推理时不同分辨率图像打包进同一序列，并控制打包长度以限制显存。ViT 后再接简单 MLP，把相邻 2×2 token 压成 1 个，两端加 `<|vision_start|>` / `<|vision_end|>`。例如 224×224，`patch_size=14` 时，进 LLM 前约压到 66 个 token。
 
-> **问:** 224×224, patch_size=14, 压完怎么是 66 个 token?
-> ViT 网格约 (224/14)^2 = 256 个 patch token; MLP 把相邻 2×2 压成 1 个得 64; 再加 vision_start / vision_end, 进 LLM 前约 66.
+> **问：** 224×224，patch_size=14，压完怎么是 66 个 token?
+> ViT 网格约（224/14）^2 = 256 个 patch token；MLP 把相邻 2×2 压成 1 个得 64；再加 vision_start / vision_end，进 LLM 前约 66。
 
 **Multimodal Rotary Position Embedding (M-RoPE)** Another key architectural enhancement is the innovation of Multimodal Rotary Position Embedding (M-RoPE). Unlike the traditional 1D-RoPE in LLMs, which is limited to encoding one-dimensional positional information, M-RoPE effectively models the positional
 
-**M-RoPE.** 相对 LLM 常见的一维 RoPE, M-RoPE 把旋转位置编码拆成时间, 高, 宽三分量. (本段跨页, 续见下页.)
+**M-RoPE.** 相对 LLM 常见的一维 RoPE，M-RoPE 把旋转位置编码拆成时间，高，宽三分量。（本段跨页，续见下页。）
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>1</sup>This technology was previously implemented in the internal iterations, Qwen-VL Plus and Qwen-VL MAX. We have further upgraded it in Qwen2-VL.</span></small>
 
@@ -133,69 +133,69 @@ have implemented a Vision Transformer (ViT) (Dosovitskiy et al., 2021) with appr
 
 Figure 3: A demonstration of M-RoPE. By decomposing rotary embedding into temporal, height, and width components, M-RoPE can explicitly model the positional information of text, images, and video in LLM.
 
-图 3｜M-RoPE 示意: 旋转嵌入拆成时间, 高, 宽, 在 LLM 中显式建模文本, 图像与视频位置.
+图 3｜M-RoPE 示意：旋转嵌入拆成时间，高，宽，在 LLM 中显式建模文本，图像与视频位置。
 
 information of multimodal inputs. This is achieved by deconstructing the original rotary embedding into three components: temporal, height, and width. For text inputs, these components utilize identical position IDs, making M-RoPE functionally equivalent to 1D-RoPE (Su, 2024). When processing images, the temporal IDs of each visual token remain constant, while distinct IDs are assigned to the height and width components based on the token’s position in the image. For videos, which are treated as sequences of frames, the temporal ID increments for each frame, while the height and width components follow the same ID assignment pattern as images. In scenarios where the model’s input encompasses multiple modalities, position numbering for each modality is initialized by incrementing the maximum position ID of the preceding modality by one. An illustration of M-RoPE is shown in Figure 3. M-RoPE not only enhances the modeling of positional information but also reduces the value of position IDs for images and videos, enabling the model to extrapolate to longer sequences during inference.
 
-对多模态输入的位置信息建模. 做法是把原旋转嵌入拆成时间, 高, 宽三分量. 文本三分量共用同一 position ID, 功能上等价 1D-RoPE; 图像时时间 ID 不变, 按 token 在图中位置赋高/宽 ID; 视频按帧递增时间 ID, 高宽同图像. 多模态拼接时, 后一模态的编号从前一模态最大 ID 加一开始. 示意见图 3. 除更好建模位置外, 还能压低图/视频的 position ID 数值, 利于推理时外推更长序列.
+对多模态输入的位置信息建模。做法是把原旋转嵌入拆成时间，高，宽三分量。文本三分量共用同一 position ID，功能上等价 1D-RoPE；图像时时间 ID 不变，按 token 在图中位置赋高/宽 ID；视频按帧递增时间 ID，高宽同图像。多模态拼接时，后一模态的编号从前一模态最大 ID 加一开始。示意见图 3。除更好建模位置外，还能压低图/视频的 position ID 数值，利于推理时外推更长序列。
 
-> **核对:** 文本三分量 ID 相同, 那和普通 1D-RoPE 算出来真一样吗?
-> 报告写 functionally equivalent to 1D-RoPE. 实现上三分量共用同一 ID, 读作与 1D 等价即可; 细公式见 RoPE 单独成篇.
+> **核对：** 文本三分量 ID 相同，那和普通 1D-RoPE 算出来真一样吗？
+> 报告写 functionally equivalent to 1D-RoPE。实现上三分量共用同一 ID，读作与 1D 等价即可；细公式见 RoPE 单独成篇。
 
 **Unified Image and Video Understanding** Qwen2-VL employs a mixed training regimen incorporating both image and video data, ensuring proficiency in image understanding and video comprehension. To preserve video information as completely as possible, we sampled each video at two frames per second. Additionally, we integrated 3D convolutions (Carreira and Zisserman, 2017) with a depth of two to process video inputs, allowing the model to handle 3D tubes instead of 2D patches, thus enabling it to process more video frames without increasing the sequence length (Arnab et al., 2021). For consistency, each image is treated as two identical frames. To balance the computational demands of long video processing with overall training efficiency, we dynamically adjust the resolution of each video frame, limiting the total number of tokens per video to 16384. This training approach strikes a balance between the model’s ability to comprehend long videos and training efficiency.
 
-**图像与视频统一理解.** 图, 视频混合训练. 视频尽量保信息, 按 2 fps 采样; 并用深度为 2 的 3D 卷积处理, 吃 3D tube 而非仅 2D patch, 从而在不拉长序列的前提下吞更多帧. 图像视为两帧相同画面以保持一致. 为平衡长视频算力与训练效率, 动态调每帧分辨率, 单视频 token 上限 16384.
+**图像与视频统一理解。** 图，视频混合训练。视频尽量保信息，按 2 fps 采样；并用深度为 2 的 3D 卷积处理，吃 3D tube 而非仅 2D patch，从而在不拉长序列的前提下吞更多帧。图像视为两帧相同画面以保持一致。为平衡长视频算力与训练效率，动态调每帧分辨率，单视频 token 上限 16384。
 
-> **看表:** 图像当两帧相同画面, 是为了迁就深度为 2 的 3D 卷积吗?
-> 是. 深度 2 的 3D 卷积吃 tube; 图像复制成两帧才能走同一条视频通路, 并与 2 fps 采样策略对齐.
+> **看表：** 图像当两帧相同画面，是为了迁就深度为 2 的 3D 卷积吗？
+> 是。深度 2 的 3D 卷积吃 tube；图像复制成两帧才能走同一条视频通路，并与 2 fps 采样策略对齐。
 
 ### 2.2 Training 训练
 
 Following Qwen-VL (Bai et al., 2023b), we adopt a three-stage training methodology. In the first stage, we focus exclusively on training the Vision Transformer (ViT) component, utilizing a vast corpus of image-text pairs to enhance semantic understanding within the Large Language Model (LLM). In the second stage, we unfreeze all parameters and train with a wider range of data for more comprehensive learning. In the final stage, we lock the ViT parameters and perform exclusive fine-tuning of the LLM using instructional datasets.
 
-沿用 Qwen-VL 三阶段: (1) 只训 ViT, 用大规模图文对加强与 LLM 的语义对齐; (2) 解冻全部参数, 用更广数据综合学习; (3) 锁定 ViT, 仅用指令数据微调 LLM.
+沿用 Qwen-VL 三阶段：（1）只训 ViT，用大规模图文对加强与 LLM 的语义对齐；（2）解冻全部参数，用更广数据综合学习；（3）锁定 ViT，仅用指令数据微调 LLM。
 
-> **想:** 第三阶段锁 ViT 只训 LLM, 和第一阶段只训 ViT, 会不会把视觉侧学歪后再冻住?
-> 这是经典三阶段对齐: 先视觉对齐, 再联合, 最后指令微调保视觉稳定. 是否最优报告未消融对比两阶段变体.
+> **想：** 第三阶段锁 ViT 只训 LLM，和第一阶段只训 ViT，会不会把视觉侧学歪后再冻住？
+> 这是经典三阶段对齐：先视觉对齐，再联合，最后指令微调保视觉稳定。是否最优报告未消融对比两阶段变体。
 
 The model is pre-trained on a diverse dataset that includes image-text pairs, optical character recognition (OCR) data, interleaved image-text articles, visual question answering datasets, video dialogues, and image knowledge datasets. Our data sources primarily comprise cleaned web pages, open-source datasets, and synthetic data. The cutoff date for our data knowledge is June 2023. This diverse data composition is instrumental in developing a robust multimodal understanding capability.
 
-预训练数据含图文对, OCR, 图文交错文章, VQA, 视频对话, 图像知识等; 来源以清洗网页, 开源集与合成数据为主; 知识截止 2023 年 6 月.
+预训练数据含图文对，OCR，图文交错文章，VQA，视频对话，图像知识等；来源以清洗网页，开源集与合成数据为主；知识截止 2023 年 6 月。
 
 During the initial pre-training phase, Qwen2-VL is exposed to a corpus of around 600 billion tokens. The LLM component of Qwen2-VL is initialized using the parameters from Qwen2 (Yang et al., 2024), while the vision encoder of Qwen2-VL is initialized with the ViT derived from DFN. However, the fixed position embedding in the original DFN’s ViT (Fang et al., 2023) is replaced by RoPE-2D. This pre-training phase
 
-第一阶段约 6000 亿 token: LLM 用 Qwen2 初始化, 视觉侧用 DFN 的 ViT, 但把原固定位置编码换成 RoPE-2D. 本阶段
+第一阶段约 6000 亿 token: LLM 用 Qwen2 初始化，视觉侧用 DFN 的 ViT，但把原固定位置编码换成 RoPE-2D. 本阶段
 
 <!-- page 6 of 52 -->
 
 primarily focuses on learning image-text relationships, textual content recognition within images through OCR, and image classification tasks. Such foundational training is instrumental in enabling the model to develop a robust understanding of core visual-textual correlations and alignments.
 
-重点学图文关系, 图内 OCR 与图像分类, 为视觉—文本对齐打底.
+重点学图文关系，图内 OCR 与图像分类，为视觉—文本对齐打底。
 
 The second pre-training phase marks a significant progression, involving an additional 800 billion tokens of image-related data. This stage introduces a higher volume of mixed image-text content, facilitating a more nuanced understanding of the interplay between visual and textual information. The incorporation of visual question answering datasets refines the model’s capacity to respond to image-related queries. Moreover, the inclusion of multitasking datasets is pivotal in developing the model’s ability to navigate diverse tasks concurrently, a skill of paramount importance when dealing with complex, real-world datasets. Concurrently, purely textual data continues to play a crucial role in maintaining and advancing the model’s linguistic proficiency.
 
-第二阶段再加约 8000 亿图像相关 token: 更多混合图文, VQA 与多任务数据, 同时保留纯文本以维持语言能力.
+第二阶段再加约 8000 亿图像相关 token：更多混合图文，VQA 与多任务数据，同时保留纯文本以维持语言能力。
 
 Throughout the pre-training stages, Qwen2-VL processes a cumulative total of 1.4 trillion tokens. Specifically, these tokens encompass not only text tokens but also image tokens. During the training process, however, we only provide supervision for the text tokens. This exposure to extensive and diverse linguistic and visual scenarios ensures that the model develops a deep understanding of the intricate relationships between visual and textual information, thereby laying a robust foundation for various multimodal tasks.
 
-预训练累计约 1.4 万亿 token (含文本与图像 token), 但监督只落在文本 token 上.
+预训练累计约 1.4 万亿 token（含文本与图像 token），但监督只落在文本 token 上。
 
-> **拆开:** 1.4T 里图像 token 也算进去了, 但 loss 只监督文本 token, 视觉侧怎么学?
-> 视觉 token 进上下文, 梯度仍从要预测的文本 token 回传, 所以视觉编码器与连接器靠「预测对的文本」间接受训.
+> **拆开：** 1.4T 里图像 token 也算进去了，但 loss 只监督文本 token，视觉侧怎么学？
+> 视觉 token 进上下文，梯度仍从要预测的文本 token 回传，所以视觉编码器与连接器靠「预测对的文本」间接受训。
 
 During the instruction fine-tuning phase, we employ the ChatML (Openai, 2024) format to construct instruction-following data. This dataset encompasses not only pure text-based dialogue data but also multimodal conversational data. The multimodal components include image question-answering, document parsing, multi-image comparison, video comprehension, video stream dialogue, and agent-based interactions. Our comprehensive approach to data construction aims to enhance the model’s capability to understand and execute a wide range of instructions across various modalities. By incorporating diverse data types, we seek to develop a more versatile and robust language model capable of handling complex, multimodal tasks in addition to traditional text-based interactions.
 
-指令微调阶段用 ChatML 格式构造数据: 含纯文本对话, 以及图像问答, 文档解析, 多图比较, 视频理解, 视频流对话, agent 交互等多模态对话.
+指令微调阶段用 ChatML 格式构造数据：含纯文本对话，以及图像问答，文档解析，多图比较，视频理解，视频流对话，agent 交互等多模态对话。
 
 #### 2.2.1 Data Format 数据格式
 
 In line with Qwen-VL, Qwen2-VL also employs special tokens to distinguish vision and text inputs. Tokens <|vision\_start|> and <|vision\_end|> are inserted at the start and end of the image feature sequence to demarcate the image content.
 
-与 Qwen-VL 一致, 用 `<|vision_start|>` / `<|vision_end|>` 标出图像特征序列边界.
+与 Qwen-VL 一致，用 `<|vision_start|>` / `<|vision_end|>` 标出图像特征序列边界。
 
 **Dialogue Data.** In terms of dialogue format, we construct our instruction tuning dataset using the ChatML format, where each interaction’s statement is marked with two special tokens (<|im\_start|> and <|im\_end|>) to facilitate dialogue termination. The sections marked in blue indicate the supervised parts.
 
-**对话数据.** 指令微调用 ChatML: 每轮语句用 `<|im_start|>` / `<|im_end|>` 包裹; 原文蓝色部分为监督片段.
+**对话数据。** 指令微调用 ChatML：每轮语句用 `<|im_start|>` / `<|im_end|>` 包裹；原文蓝色部分为监督片段。
 
 ```txt
 <|im_start|>user
@@ -204,10 +204,10 @@ In line with Qwen-VL, Qwen2-VL also employs special tokens to distinguish vision
 
 **Visual Grounding.** To endow the model with visual grounding capabilities, bounding box coordinates are normalized within [0, 1000) and represented as "(X<sub>top</sub> left, Y<sub>top</sub> left), (X<sub>bottom</sub> right, Y<sub>bottom</sub> right)". Tokens
 
-**视觉定位 (grounding).** 框坐标归一化到 [0, 1000), 写成左上—右下形式. (本段跨页.)
+**视觉定位（grounding）。** 框坐标归一化到 [0, 1000)，写成左上—右下形式。（本段跨页。）
 
-> **确认:** 框坐标归一化到 [0, 1000), 和 UI agent 里 point 也是 0 到 1000, 是同一套吗?
-> 报告两处都用 0–1000 量纲, 便于统一表示; 但 grounding 输出的是框角点对, agent 的 Tap 是单点, 语义不同, 不要混成同一种动作.
+> **确认：** 框坐标归一化到 [0, 1000)，和 UI agent 里 point 也是 0 到 1000，是同一套吗？
+> 报告两处都用 0–1000 量纲，便于统一表示；但 grounding 输出的是框角点对，agent 的 Tap 是单点，语义不同，不要混成同一种动作。
 
 <!-- page 7 of 52 -->
 
@@ -217,11 +217,11 @@ In line with Qwen-VL, Qwen2-VL also employs special tokens to distinguish vision
 
 <|box\_start|> and <|box\_end|> are utilized to demarcate bounding box text. To accurately link bounding boxes with their textual descriptions, we introduce tokens <|object\_ref\_start|> and <|object\_ref\_end|> to indicate the content that the bounding box references, thereby allowing the model to effectively interpret and generate precise descriptions of specific regions.
 
-`<|box_start|>` / `<|box_end|>` 包住框文本; 用 `<|object_ref_start|>` / `<|object_ref_end|>` 标出框所指对象描述.
+`<|box_start|>` / `<|box_end|>` 包住框文本；用 `<|object_ref_start|>` / `<|object_ref_end|>` 标出框所指对象描述。
 
 **Visual Agent.** To develop Qwen2-VL as a general-purpose VL-Agent, we treat various agent tasks, such as UI Operations, Robotic Control, Games, and Navigation, as sequential decision-making problems, enabling Qwen2-VL to accomplish tasks through multi-step action execution. For each task, we first define a set of permissible actions and keywords pattern (underline) for function call (Qwen Team, 2024). Qwen2-VL then analyzes the observations, performs reasoning and planning, executes the selected actions, and interacts with the environment to acquire new observations. This cycle repeats iteratively until the task is successfully completed. By integrating various tools and leveraging the vision perception capabilities of large visionlanguage models (LVLMs), Qwen2-VL is able to iteratively execute increasingly complex tasks involving real-world visual interactions.
 
-**视觉 Agent.** UI 操作, 机器人控制, 游戏, 导航等被当作序贯决策: 定义允许动作与函数调用关键词模式; 模型观察 → 推理规划 → 执行动作 → 获新观察, 循环至完成.
+**视觉 Agent.** UI 操作，机器人控制，游戏，导航等被当作序贯决策：定义允许动作与函数调用关键词模式；模型观察 → 推理规划 → 执行动作 → 获新观察，循环至完成。
 
 | Visual Agent |
 | --- |
@@ -247,31 +247,31 @@ In line with Qwen-VL, Qwen2-VL also employs special tokens to distinguish vision
 
 The Qwen2-VL models were trained on Alibaba Cloud’s PAI-Lingjun Intelligent Computing Service (Alibaba-Cloud, 2024c) with its scalable computing, auto resuming and straggler detection.
 
-训练跑在阿里云 PAI-灵骏: 可扩展算力, 自动续跑与掉队检测.
+训练跑在阿里云 PAI-灵骏：可扩展算力，自动续跑与掉队检测。
 
 **Storage.** We use Alibaba Cloud’s ultra-speed CPFS (Cloud Parallel File Storage) (Alibaba-Cloud, 2024a) to build a storage system of Qwen2-VL pre-training and post-training. We decoupled the text data and vision data storage. We simply store text data on CPFS and use mmap for efficient access. For vision data, we use Alibaba Cloud’s OSS (Object Storage Service) (Alibaba-Cloud, 2024b) for persistent storage. During training, we accessed vision data through OSS’s python-client concurrently and tuned the concurrency and retrying parameters to avoid reaching the QPS (queries per second) limit. We also found that video data decoding is a main bottleneck, especially for long videos. After several attempts with open-source (FFmpeg-Developers, 2024) and in-house software failed, we opted for a caching decoding technique. Checkpointing saves each GPU’s optimizer and model states on CPFS.
 
-**存储.** 文本与视觉解耦: 文本落 CPFS + mmap; 视觉持久化在 OSS, 训练时并发拉取并调重试以免触 QPS 上限. 长视频解码是瓶颈, 最终采用缓存解码. 检查点把各 GPU 的优化器与模型状态存 CPFS.
+**存储。** 文本与视觉解耦：文本落 CPFS + mmap；视觉持久化在 OSS，训练时并发拉取并调重试以免触 QPS 上限。长视频解码是瓶颈，最终采用缓存解码。检查点把各 GPU 的优化器与模型状态存 CPFS。
 
-> **对一下:** 开源与自研解码都失败才上缓存解码, 复现训练时普通人怎么办?
-> 报告没开源该缓存解码器细节. 复现重点应放在动态分辨率与 M-RoPE; 长视频 I/O 要自备解码与缓存策略.
+> **对一下：** 开源与自研解码都失败才上缓存解码，复现训练时普通人怎么办？
+> 报告没开源该缓存解码器细节。复现重点应放在动态分辨率与 M-RoPE；长视频 I/O 要自备解码与缓存策略。
 
 **Parallelism.** We use 3D parallelism which combines data parallelism (DP) (Li et al., 2020), tensor parallelism (TP) (Krizhevsky et al., 2012; Shoeybi et al., 2019) and pipeline parallelism (PP) (Huang et al., 2019; Narayanan et al., 2021; Lamy-Poirier, 2023) to scale Qwen2-VL model training. We also leverage deepspeed’s zero-1 redundancy optimizer (Rajbhandari et al., 2020) to shard states for memory saving. Sequence parallelism (SP) (Korthikanti et al., 2023) with selective checkpointing activation (Chen et al., 2016) was leveraged to reduce memory usage. When enabling TP training, we always shard the vision encoder and large language models together but not the vision merger due to its relatively few parameters. We found the TP training would result in different model shared-weights due to the convolution operator’s non-deterministic behavior <sup>2</sup>. We resolved this issue by performing offline reduction of the shared weights, thereby avoiding an additional **all-reduce** communication step. This approach resulted in only a minimal impact on performance. We leverage 1F1B PP (Narayanan et al., 2021) for Qwen2-VL 72B training. We combine the vision encoder, vision adapter and several LLM’s decoder layers into one stage, and evenly split the remaining decoder layers. Note that the vision and text sequence lengths are dynamic for each data point. We **broadcast** the dynamic sequence lengths before initiating the 1F1B process and access the shape information using batch indices. We also implemented an interleaved 1F1B PP (Narayanan et al., 2021) but found it is slower than the standard 1F1B setting.
 
-**并行.** DP+TP+PP 三维并行, 并配 ZeRO-1 与序列并行 (选择性激活重计算). 开 TP 时视觉编码器与 LLM 一起切分, vision merger 因参数少不切. 卷积非确定性会导致共享权重不一致, 用离线归约共享权重解决, 避免额外 all-reduce. 72B 用 1F1B 流水线; 交错 1F1B 实测更慢.
+**并行。** DP+TP+PP 三维并行，并配 ZeRO-1 与序列并行（选择性激活重计算）。开 TP 时视觉编码器与 LLM 一起切分，vision merger 因参数少不切。卷积非确定性会导致共享权重不一致，用离线归约共享权重解决，避免额外 all-reduce. 72B 用 1F1B 流水线；交错 1F1B 实测更慢。
 
-> **回看:** TP 下卷积非确定性导致共享权重不一致, 离线归约会不会改掉已学好的表示?
-> 报告说对性能影响很小, 目的是消掉各 TP 分片间的数值漂移, 避免再付一次 all-reduce. 不是重新训练.
+> **回看：** TP 下卷积非确定性导致共享权重不一致，离线归约会不会改掉已学好的表示？
+> 报告说对性能影响很小，目的是消掉各 TP 分片间的数值漂移，避免再付一次 all-reduce。不是重新训练。
 
 **Software.** We use PyTorch (Paszke et al., 2019; Ansel et al., 2024) version 2.1.2 with CUDA 11.8 (Nvidia, 2024b) for training. Additionally, we leverage flash-attention (Dao et al., 2022; Dao, 2024; Shah et al., 2024) for efficient training in both the vision encoder and the LLM. We also utilize fused operators (Nvidia, 2024a) such as LayerNorm (Ba et al., 2016), RMSNorm (Zhang and Sennrich, 2019), and Adam (Loshchilov and Hutter, 2019). Besides this, we leverage the overlap of communication and computation during matrix multiplication in our training process.
 
-**软件.** PyTorch 2.1.2 + CUDA 11.8; FlashAttention; 融合 LayerNorm / RMSNorm / Adam; 通信与矩阵乘重叠.
+**软件。** PyTorch 2.1.2 + CUDA 11.8；FlashAttention；融合 LayerNorm / RMSNorm / Adam；通信与矩阵乘重叠。
 
 ## 3 Experiments 实验
 
 In this section, we first evaluate the model’s performance by conducting a comparative analysis across a variety of visual benchmarks, demonstrating the advantages of our approach. Subsequently, we carry out a detailed examination of specific capabilities, including general visual perception, document understanding, multilingual recognition in images, video comprehension, and agent abilities. Finally, we present an ablation study to investigate several key components of our approach.
 
-本节先在多项视觉基准上对比; 再细看通用视觉, 文档, 多语 OCR, 视频与 agent; 最后做关键组件消融.
+本节先在多项视觉基准上对比；再细看通用视觉，文档，多语 OCR，视频与 agent；最后做关键组件消融。
 
 <small><span class="docvortex-page-footnote" data-block-type="page_footnote" style="color:#6b7280"><sup>2</sup>[https://pytorch.org/docs/stable/notes/randomness.html](https://pytorch.org/docs/stable/notes/randomness.html)</span></small>
 
@@ -279,7 +279,7 @@ In this section, we first evaluate the model’s performance by conducting a com
 
 Table 2: Performance Comparison of Qwen2-VL Models and State-of-the-art.
 
-表 2｜Qwen2-VL 与 SoTA / 闭源对照.
+表 2｜Qwen2-VL 与 SoTA / 闭源对照。
 
 | Benchmark | Previous SoTA | Claude-3.5 Sonnet | GPT-4o | Qwen2-VL-72B | Qwen2-VL-7B | Qwen2-VL-2B |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -308,7 +308,7 @@ Table 2: Performance Comparison of Qwen2-VL Models and State-of-the-art.
 
 Table 3: Performance of Qwen2-VL and GPT-4o on internal multilingual OCR benchmarks.
 
-表 3｜内部多语 OCR: Qwen2-VL-72B vs GPT-4o.
+表 3｜内部多语 OCR: Qwen2-VL-72B vs GPT-4o。
 
 | Language | Korean | Japanese | French | German | Italian | Russian | Vietnamese | Arabic |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -319,28 +319,28 @@ Table 3: Performance of Qwen2-VL and GPT-4o on internal multilingual OCR benchma
 
 We evaluate the visual capabilities of our model through various visual benchmarks, video tasks, and agentbased assessments. Qwen2-VL demonstrates highly competitive performance at the same scale, achieving new state-of-the-art (SoTA) results. Overall, our 72B model consistently delivers top-tier performance across most evaluation metrics, frequently surpassing even closed-source models such as GPT-4o (OpenAI, 2024) and Claude 3.5-Sonnet (Anthropic, 2024). Notably, it exhibits a significant advantage in document understanding tasks. However, in the MMMU (Yue et al., 2023) benchmark, our model still lags behind GPT-4o to some extent, indicating that Qwen2-VL-72B has room for improvement when handling more complex and challenging problem sets.
 
-同规模下竞争力强, 多处新 SoTA. 72B 在多数指标顶档, 常超过 GPT-4o 与 Claude 3.5-Sonnet, 文档理解优势尤其明显. 但在 MMMU 上仍落后 GPT-4o 一截, 说明复杂高难度题集仍有提升空间.
+同规模下竞争力强，多处新 SoTA. 72B 在多数指标顶档，常超过 GPT-4o 与 Claude 3.5-Sonnet，文档理解优势尤其明显。但在 MMMU 上仍落后 GPT-4o 一截，说明复杂高难度题集仍有提升空间。
 
-> **停一下:** 文档理解很强, 但 MMMU 落后, 这和动态分辨率叙事打架吗?
-> 不打架. 消融里也写 MMMU 对抬分辨率几乎不敏感, 瓶颈更偏推理与知识. 文档/OCR 吃分辨率与 OCR 数据; MMMU 吃的是另一刀.
+> **停一下：** 文档理解很强，但 MMMU 落后，这和动态分辨率叙事打架吗？
+> 不打架。消融里也写 MMMU 对抬分辨率几乎不敏感，瓶颈更偏推理与知识。文档/OCR 吃分辨率与 OCR 数据；MMMU 吃的是另一刀。
 
 ### 3.2 Quantitative Results 定量结果
 
 In this section, we present an extensive evaluation of the Qwen2-VL series across an array of datasets, offering a comprehensive understanding of the model’s capabilities in various aspects.
 
-本节在多类数据集上系统评测, 从各侧面刻画能力剖面.
+本节在多类数据集上系统评测，从各侧面刻画能力剖面。
 
 #### 3.2.1 General Visual Question Answering 通用视觉问答
 
 To rigorously assess our models’ capabilities in general visual question answering tasks, we conduct extensive evaluations across a diverse array of state-of-the-art benchmarks: RealWorldQA (X.AI, 2024a), MMStar (Chen et al., 2024a), MMVet (Yu et al., 2024), MMT-Bench (Ying et al., 2024), MMBench (Liu et al., 2023d), MMbench-1.1 (Liu et al., 2023d), MME (Fu et al., 2023), and HallusionBench (Guan et al., 2023). The Qwen2-VL series exhibits exceptional performance across these benchmarks, with the 72B model consistently achieving or surpassing state-of-the-art results, while the 7B and 2B variants also demonstrate robust capabilities. On RealWorldQA, which evaluates real-world spatial comprehension, Qwen2-VL-72B achieves a
 
-通用 VQA 覆盖 RealWorldQA, MMStar, MMVet, MMT-Bench, MMBench, MMBench-1.1, MME, HallusionBench 等. 72B 多处达到或超过 SoTA, 7B/2B 也扎实. RealWorldQA 上 72B 得
+通用 VQA 覆盖 RealWorldQA，MMStar，MMVet，MMT-Bench，MMBench，MMBench-1.1，MME，HallusionBench 等。72B 多处达到或超过 SoTA，7B/2B 也扎实。RealWorldQA 上 72B 得
 
 <!-- page 10 of 52 -->
 
 Table 4: Performance of Qwen2-VL and other models on video benchmarks.
 
-表 4｜视频基准.
+表 4｜视频基准。
 
 | Benchmark | Previous SoTA | Gemini 1.5-Pro | GPT-4o | Qwen2-VL-72B | Qwen2-VL-7B | Qwen2-VL-2B |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -351,7 +351,7 @@ Table 4: Performance of Qwen2-VL and other models on video benchmarks.
 
 Table 5: Performance Comparison of Qwen2-VL-72B across various agent benchmarks and GPT-4o. SR, GC, TM and EM are short for success rate, goal-condition success, type match and exact match. ALFRED, R2R and REVERIE are performance in valid-unseen.
 
-表 5｜Agent 基准 (TM/EM/SR/GC) vs GPT-4o.
+表 5｜Agent 基准（TM/EM/SR/GC）vs GPT-4o.
 
 | Benchmark General FnCall | Metric TM EM | Previous SoTA-- | GPT-4o90.250.0 | Qwen2-VL-72B93.153.2 |
 | --- | --- | --- | --- | --- |
@@ -368,14 +368,14 @@ Table 5: Performance Comparison of Qwen2-VL-72B across various agent benchmarks 
 
 score of 77.8, surpassing both the previous state-of-the-art (72.2) and formidable baselines such as GPT-4o (75.4), thus demonstrating superior understanding of physical environments. For MMStar, a benchmark designed to assess genuine multimodal capabilities through visually indispensable samples, Qwen2-VL-72B attains 68.3, outperforming the previous best of 67.1 and highlighting its proficiency in integrating visual and textual information. On MMVet, which evaluates the integration of core vision-language capabilities across 16 complex multimodal tasks, Qwen2-VL-72B achieves a remarkable 74.0, significantly outperforming strong competitors including GPT-4V (67.5) and showcasing its versatility in addressing diverse multimodal challenges. In the MMT-Bench evaluation, which assesses advanced reasoning and instruction following across 32 core meta-tasks and 162 subtasks in multimodal understanding, Qwen2-VL-72B achieves 71.7, markedly surpassing the previous best (63.4) and demonstrating its prowess in applying expert knowledge and executing deliberate visual recognition, localization, reasoning, and planning. On MMBench, which evaluates fine-grained abilities across 20 dimensions, Qwen2-VL-72B exhibits strong performance, achieving 86.5 on the English test set, matching the state-of-the-art, and 86.6 on the Chinese test set, establishing a new benchmark. For MME, which measures a wide spectrum of perception and cognition abilities across 14 subtasks, Qwen2-VL-72B achieves a cumulative score of 2482.7, significantly outperforming the previous best (2414.7), underscoring its advanced capabilities in both visual perception and high-level cognition tasks.
 
-77.8, 超过先前 SoTA (72.2) 与 GPT-4o (75.4). MMStar 68.3 (先前最佳 67.1). MMVet 74.0 (高于 GPT-4V 的 67.5). MMT-Bench 71.7 (先前最佳 63.4). MMBench 英测 86.5 持平 SoTA, 中测 86.6 新高. MME 累计 2482.7 (先前最佳 2414.7).
+77.8，超过先前 SoTA (72.2) 与 GPT-4o (75.4). MMStar 68.3（先前最佳 67.1）。MMVet 74.0（高于 GPT-4V 的 67.5）。MMT-Bench 71.7（先前最佳 63.4）。MMBench 英测 86.5 持平 SoTA，中测 86.6 新高。MME 累计 2482.7（先前最佳 2414.7）。
 
-> **再看:** MME 2482.7 是 sum, 和其他百分制榜能直接比吗?
-> 不能. MME 是多子任务累加分, 量纲不同. 同表内和 Previous SoTA 2414.7 比即可, 不要换算成准确率.
+> **再看：** MME 2482.7 是 sum，和其他百分制榜能直接比吗？
+> 不能。MME 是多子任务累加分，量纲不同。同表内和 Previous SoTA 2414.7 比即可，不要换算成准确率。
 
 These comprehensive results underscore the Qwen2-VL series’ exceptional proficiency in general visual question answering tasks. The models demonstrate advanced capabilities in real-world spatial comprehension, genuine multimodal integration, complex reasoning, instruction following, and a broad range of perception and cognition tasks. The consistent superior performance across diverse benchmarks, particularly the outstanding results of the 72B model, positions the Qwen2-VL series as a leading solution in the field of visual question answering. Our models excel in handling visually indispensable tasks, integrating core vision-language capabilities, and demonstrating expertise across diverse multimodal scenarios, ranging from fundamental perception tasks to complex reasoning and planning. This exhaustive evaluation highlights the Qwen2-VL series’ versatility and effectiveness in addressing the multifaceted challenges posed by state-of-the-art multimodal benchmarks, thereby setting a new standard for large vision-language models.
 
-综合看, 通用 VQA 上空间理解, 真多模态融合, 复杂推理与指令遵循都强; 72B 把系列推到通才 LVLM 前列.
+综合看，通用 VQA 上空间理解，真多模态融合，复杂推理与指令遵循都强；72B 把系列推到通才 LVLM 前列。
 
 <!-- page 11 of 52 -->
 
@@ -383,114 +383,114 @@ These comprehensive results underscore the Qwen2-VL series’ exceptional profic
 
 We tested our model’s OCR and document and diagram comprehension on DocVQA (Mathew et al., 2021), ChartQA (Masry et al., 2022),InfoVQA (Mathew et al., 2021), TextVQA (Singh et al., 2019),AI2D (Kembhavi et al., 2016) datasets. The DocVQA/InfoVQA/ChartQA dataset focuses on the model’s ability to comprehend text in documents/high-resolution infographics/charts, while the TextVQA dataset examines the ability to comprehend text in naturalistic images. The OCRBench dataset is a a dataset of mixed tasks, which focuses on mathematical formula parsing and information extraction in addition to the text-based VQA. The AI2D dataset focuses on multiple-choice questions on scientific diagrams containing text. In addition, we also tested the OCR and formula recognition capabilities of our model on OCRBench (Liu et al., 2023e), as well as the multilingual OCR capabilities of our model on the MTVQA (Tang et al., 2024) dataset.
 
-在 DocVQA, ChartQA, InfoVQA, TextVQA, AI2D 上测 OCR 与文档/图表理解; DocVQA/InfoVQA/ChartQA 偏文档/高清信息图/图表文字, TextVQA 偏自然图文字; OCRBench 还含公式解析与信息抽取; AI2D 偏含文字的科学示意图选择题. 另在 OCRBench 与 MTVQA 测公式与多语 OCR.
+在 DocVQA，ChartQA，InfoVQA，TextVQA，AI2D 上测 OCR 与文档/图表理解；DocVQA/InfoVQA/ChartQA 偏文档/高清信息图/图表文字，TextVQA 偏自然图文字；OCRBench 还含公式解析与信息抽取；AI2D 偏含文字的科学示意图选择题。另在 OCRBench 与 MTVQA 测公式与多语 OCR。
 
 The experimental results show that our model achieves SoTA level in several metrics, including DocVQA, InfoVQA, TextVQA and OCRBench, demonstrating that our model has good comprehension of textual content in images from multiple domains.
 
-DocVQA, InfoVQA, TextVQA, OCRBench 等多指标达 SoTA, 说明跨域图内文字理解扎实.
+DocVQA，InfoVQA，TextVQA，OCRBench 等多指标达 SoTA，说明跨域图内文字理解扎实。
 
 #### 3.2.3 Multilingual Text Recognition and Understanding 多语文字识别与理解
 
 In particular, our model surpasses all existing general-purpose LVLMs in multilingual OCR. Our model not only outperforms existing LVLMs (including proprietary models such as GPT-4o, Claude 3.5 Sonnet, etc.) on the public-available MTVQA dataset, it also outperforms GPT-4o on the in-house internal benchmark across all foreign languages except Arabic (Table 3).
 
-多语 OCR 上超过现有通才 LVLM: 公开 MTVQA 领先 GPT-4o / Claude 3.5 Sonnet 等; 内部榜除阿拉伯语外也全面高于 GPT-4o (表 3).
+多语 OCR 上超过现有通才 LVLM：公开 MTVQA 领先 GPT-4o / Claude 3.5 Sonnet 等；内部榜除阿拉伯语外也全面高于 GPT-4o（表 3）。
 
-> **对一下:** 表 3 阿拉伯语 70.7 低于 GPT-4o 的 75.9, 和「全面超过」怎么并存?
-> 正文已写 except Arabic. 公开 MTVQA 与内部多语多数项领先; 阿拉伯语是明确例外, 以表 3 为准.
+> **对一下：** 表 3 阿拉伯语 70.7 低于 GPT-4o 的 75.9，和「全面超过」怎么并存？
+> 正文已写 except Arabic。公开 MTVQA 与内部多语多数项领先；阿拉伯语是明确例外，以表 3 为准。
 
 #### 3.2.4 Mathematical Reasoning 数学推理
 
 We’ve conducted experiments on the MathVista (Lu et al., 2024a) and MathVision (Wang et al., 2024) datasets to assess mathematical reasoning capabilities. MathVista is a comprehensive benchmark featuring 6,141 diverse examples of mathematical and visual tasks. The MathVision dataset comprises 3,040 math problems embedded in visual contexts from actual math competitions, covering 16 mathematical disciplines and varying in difficulty across five levels. These challenges underscore the necessity for LVLMs to exhibit strong visual comprehension, a deep understanding of mathematics, and sound logical reasoning skills. The Qwen2-VL series has demonstrated superior performance on MathVista, achieving a 70.5 outperforming other LVLMs. Additionally, it has set a new open-source benchmark on MathVision with 25.9.
 
-MathVista (6141 例) 与 MathVision (3040 题, 16 学科, 五档难度) 测数学推理. MathVista 上得 70.5 领先; MathVision 25.9 创开源新高.
+MathVista（6141 例）与 MathVision（3040 题，16 学科，五档难度）测数学推理。MathVista 上得 70.5 领先；MathVision 25.9 创开源新高。
 
-> **想:** MathVista 70.5 很亮, MathVision 25.9 仍远低于 GPT-4o 的 30.4, 该信哪张?
-> 两张都信, 题型不同. MathVista 综合视觉数学; MathVision 更偏竞赛嵌图. 开源新高不等于追上闭源竞赛卷.
+> **想：** MathVista 70.5 很亮，MathVision 25.9 仍远低于 GPT-4o 的 30.4，该信哪张？
+> 两张都信，题型不同。MathVista 综合视觉数学；MathVision 更偏竞赛嵌图。开源新高不等于追上闭源竞赛卷。
 
 #### 3.2.5 Referring Expression Comprehension 指代表达理解
 
 Regarding visual localization task, we evaluate Qwen2-VL on RefCOCO, RefCOCO+, and RefCOCOg datasets (Kazemzadeh et al., 2014; Mao et al., 2016). The results, as depicted in Table 6, demonstrate that Qwen2-VL attains top-tier results among generalist models. Benefiting from a more rational structure design, Qwen2-VL is able to perceive details in high-resolution images, leading to significant improvements over Qwen-VL. The superiority of these models in comparison to both generalist and specialized models highlights their potential for advancing the field of visual localization and their capacity for real-world implementation in tasks requiring precise visual understanding.
 
-在 RefCOCO / RefCOCO+ / RefCOCOg 上评视觉定位 (表 6). 通才模型里顶档; 结构设计更合理, 高清细节感知强于 Qwen-VL, 相对专精模型也有竞争力.
+在 RefCOCO / RefCOCO+ / RefCOCOg 上评视觉定位（表 6）。通才模型里顶档；结构设计更合理，高清细节感知强于 Qwen-VL，相对专精模型也有竞争力。
 
 #### 3.2.6 Video Understanding 视频理解
 
 We evaluate our models on various video understanding tasks, with related benchmarks covering short videos of a few seconds to long videos of up to one hour. Table 4 presents the performance of Qwen2-VL and baseline models. Overall, Qwen2-VL demonstrates strong results across 2B, 7B, and 72B sizes, with Qwen2-VL-72B achieving the best performance on MVBench (Li et al., 2024), PerceptionTest (Patraucean et al., 2024), and EgoSchema (Mangalam et al., 2023). This showcases Qwen2-VL’s superior capabilities in
 
-视频基准覆盖数秒短片到约一小时长片. 表 4 显示 2B/7B/72B 都强, 72B 在 MVBench, PerceptionTest, EgoSchema 最佳. 这体现视频理解优势, 且
+视频基准覆盖数秒短片到约一小时长片。表 4 显示 2B/7B/72B 都强，72B 在 MVBench，PerceptionTest，EgoSchema 最佳。这体现视频理解优势，且
 
 <!-- page 12 of 52 -->
 
 Table 6: Performance Comparison on Referring Expression Comprehension Task.
 
-表 6｜指代表达理解 (RefCOCO 系列).
+表 6｜指代表达理解（RefCOCO 系列）。
 
 <table><tr><td rowspan="2">Type</td><td rowspan="2">Model</td><td colspan="3">RefCOCO</td><td colspan="3">RefCOCO+</td><td colspan="2">RefCOCOg</td></tr><tr><td>val</td><td>test-A</td><td>test-B</td><td>val</td><td>test-A</td><td>test-B</td><td>val</td><td>test</td></tr><tr><td rowspan="11">Generalist</td><td>OFA-L (Wang et al., 2022)</td><td>80.0</td><td>83.7</td><td>76.4</td><td>68.3</td><td>76.0</td><td>61.8</td><td>67.6</td><td>67.6</td></tr><tr><td>Shikra (Chen et al., 2023a)</td><td>87.0</td><td>90.6</td><td>80.2</td><td>81.6</td><td>87.4</td><td>72.1</td><td>82.3</td><td>82.2</td></tr><tr><td>Qwen-VL (Bai et al., 2023b)</td><td>89.4</td><td>92.3</td><td>85.3</td><td>83.1</td><td>88.3</td><td>77.2</td><td>85.6</td><td>85.5</td></tr><tr><td>Ferretv2 (Zhang et al., 2024a)</td><td>92.6</td><td>95.0</td><td>88.9</td><td>87.4</td><td>92.1</td><td>81.4</td><td>89.4</td><td>90.0</td></tr><tr><td>CogVLM (Wang et al., 2023b)</td><td>92.8</td><td>94.8</td><td>89.0</td><td>88.7</td><td>92.9</td><td>83.4</td><td>89.8</td><td>90.8</td></tr><tr><td>InternVL $2_{2b}$  (Chen et al., 2024c)</td><td>82.3</td><td>88.2</td><td>75.9</td><td>73.5</td><td>82.8</td><td>63.3</td><td>77.6</td><td>78.3</td></tr><tr><td>InternVL $2_{8b}$  (Chen et al., 2024c)</td><td>87.1</td><td>91.1</td><td>80.7</td><td>79.8</td><td>87.9</td><td>71.4</td><td>82.7</td><td>82.7</td></tr><tr><td>InternVL $2_{76b}$  (Chen et al., 2024c)</td><td>92.2</td><td>94.8</td><td>88.4</td><td>88.8</td><td>93.1</td><td>82.8</td><td>89.5</td><td>90.3</td></tr><tr><td>Qwen2-VL $_{2b}$ </td><td>87.6</td><td>90.6</td><td>82.3</td><td>79.0</td><td>84.9</td><td>71.0</td><td>81.2</td><td>80.3</td></tr><tr><td>Qwen2-VL $_{7b}$ </td><td>91.7</td><td>93.6</td><td>87.3</td><td>85.8</td><td>90.5</td><td>79.5</td><td>87.3</td><td>87.8</td></tr><tr><td>Qwen2-VL $_{72b}$ </td><td>93.2</td><td>95.3</td><td>90.7</td><td>90.1</td><td>93.8</td><td>85.6</td><td>89.9</td><td>90.4</td></tr><tr><td rowspan="3">Specialist</td><td>G-DINO-L (Liu et al., 2023c)</td><td>90.6</td><td>93.2</td><td>88.2</td><td>82.8</td><td>89.0</td><td>75.9</td><td>86.1</td><td>87.0</td></tr><tr><td>UNINEXT-H (Yan et al., 2023)</td><td>92.6</td><td>94.3</td><td>91.5</td><td>85.2</td><td>89.6</td><td>79.8</td><td>88.7</td><td>89.4</td></tr><tr><td>ONE-PEACE (Wang et al., 2023a)</td><td>92.6</td><td>94.2</td><td>89.3</td><td>88.8</td><td>92.2</td><td>83.2</td><td>89.2</td><td>89.3</td></tr></table>
 
 video understanding tasks, and scaling up Qwen2-VL yields significant improvements. For the challenging Video-MME benchmark (Fu et al., 2024), which includes videos up to one hour, it is noteworthy that we limited the maximum number of frames extracted per video to 768 during evaluation, potentially impacting performance on longer videos. Future work will focus on extending Qwen2-VL to support longer sequences, thereby accommodating longer videos.
 
-放大模型带来明显增益. Video-MME 含最长约一小时视频; 评测时每视频最多抽 768 帧, 可能伤更长片表现. 后续计划支持更长序列.
+放大模型带来明显增益。Video-MME 含最长约一小时视频；评测时每视频最多抽 768 帧，可能伤更长片表现。后续计划支持更长序列。
 
-> **问:** 宣传 20 min+ 长视频, 评测又限 768 帧, 会不会把长视频优势测短了?
-> 有可能. 正文自己提示 768 帧上限可能影响更长片. 读 Video-MME 分数时要带着这个评测约束.
+> **问：** 宣传 20 min+ 长视频，评测又限 768 帧，会不会把长视频优势测短了？
+> 有可能。正文自己提示 768 帧上限可能影响更长片。读 Video-MME 分数时要带着这个评测约束。
 
 #### 3.2.7 Visual Agent 视觉 Agent
 
 Qwen2-VL is evaluated first for its ability to interact with the environment via function calls and then for its capacity to complete complex sequential decision tasks through multiple rounds of interaction. The implementation is based on the Qwen-Agent framework (Qwen Team, 2024).
 
-先评函数调用与环境交互, 再评多轮序贯决策; 实现基于 Qwen-Agent.
+先评函数调用与环境交互，再评多轮序贯决策；实现基于 Qwen-Agent。
 
 **Function Calling** Unlike function calling in LLMs (Yan et al., 2024; Srinivasan et al., 2023; Chen et al., 2023c), function calling in LVLMs often involves extracting information from visual cues. Due to the absence of public benchmarks for evaluating the capabilities of LVLMs in function calling, we constructed our internal evaluation dataset.
 
-**函数调用.** LVLM 侧常要从视觉线索抽信息. 因缺公开榜, 自建内部评测集.
+**函数调用。** LVLM 侧常要从视觉线索抽信息。因缺公开榜，自建内部评测集。
 
 To construct the evaluation dataset, we undertook the following procedures (Chen et al., 2023c): Scene Categorization, Image Collection, Image Content Extraction, and Question/Functions/Arguments Generation. Firstly, we classified scenes into categories based on different visual applications. Subsequently, we downloaded and meticulously selected high-quality, representative images from the internet for each category. Thereafter, utilizing an advanced LVLM (Bai et al., 2023b), we analyzed each image to extract key visual elements and textual information. Finally, based on the content information from the images, we used an advanced LLM (Yang et al., 2024) to generate a series of questions that required specific functions to answer, along with specifying the input parameters needed for these function calls.
 
-建集流程: 场景分类 → 收图精选 → 用强 LVLM 抽关键视觉/文字 → 用强 LLM 生成需调函数的问题与参数.
+建集流程：场景分类 → 收图精选 → 用强 LVLM 抽关键视觉/文字 → 用强 LLM 生成需调函数的问题与参数。
 
 Similar to the function calling evaluation method in LLMs (Yan et al., 2024), we designed two metrics to evaluate the accuracy of the function selection and the correctness of the arguments input. Specifically, Type Match(TM), is calculated as the ratio of times the model successfully invoked the correct function to the total number of calls attempted. Exact Match(EM), for each function calling, we checked whether the arguments passed to the function exactly matched those recorded in the image’s content information, calculating this correctness ratio.
 
-指标: Type Match (TM) = 选对函数次数 / 总调用; Exact Match (EM) = 参数与图内记录完全一致的比例.
+指标：Type Match (TM) = 选对函数次数 / 总调用；Exact Match (EM) = 参数与图内记录完全一致的比例。
 
 As shown in Table 5, the performance of Qwen2-VL in both Type Match(93.1 vs. 90.2) and Exact Match(53.2 vs. 50.0) over GPT-4o substantiates the efficacy of Qwen2-VL’s capability in function calling, thereby underscoring
 
-表 5: TM 93.1 vs GPT-4o 90.2, EM 53.2 vs 50.0, 说明函数调用有效, 也
+表 5: TM 93.1 vs GPT-4o 90.2，EM 53.2 vs 50.0，说明函数调用有效，也
 
-> **核对:** TM 很高但 EM 只有 53.2, 函数调用到底能不能上生产?
-> 能选对工具, 参数常对不齐. 生产上要校验参数或二次确认, 不能只看 TM.
+> **核对：** TM 很高但 EM 只有 53.2，函数调用到底能不能上生产？
+> 能选对工具，参数常对不齐。生产上要校验参数或二次确认，不能只看 TM。
 
 <!-- page 13 of 52 -->
 
 its significant potential for application expansion through external tool integration.
 
-表明外挂工具扩展应用的潜力大.
+表明外挂工具扩展应用的潜力大。
 
 The evaluation results demonstrated that GPT-4o underperformed, primarily due to two factors: in scenarios where uncertainty arises, GPT-4o demonstrates a conservative approach by avoiding using external tools. The Optical Character Recognition (OCR) capability of GPT-4o is outperformed by Qwen2-VL, particularly in the context of Chinese characters.
 
-GPT-4o 偏弱主因: 不确定时偏保守少用外工具; OCR 尤其中文弱于 Qwen2-VL.
+GPT-4o 偏弱主因：不确定时偏保守少用外工具；OCR 尤其中文弱于 Qwen2-VL。
 
 **UI Operations/Games/Robotics/Navigation** To assess Qwen2-VL’s ability to generally handle complex tasks, we conduct evaluations across multiple VL agent tasks, including mobile operations (Zhang et al., 2024b; Rawles et al., 2024b; Lu et al., 2024b; Rawles et al., 2024a), robotic control (Kolve et al., 2017; Shridhar et al., 2020a; Inoue and Ohashi, 2022; Lu et al., 2023; Jiang et al., 2022; Huang et al., 2023b), card games (Zhai et al., 2024), and vision-language navigation (Anderson et al., 2018; Qi et al., 2020). As these tasks need multiple actions to complete tasks, we keep the history (observation, action) through Qwen2-VL supports a 32K context length, then append each new observation image after every action, enabling continuous reasoning about subsequent steps.
 
-**UI / 游戏 / 机器人 / 导航.** 多类 VL agent 任务需多步动作; 在 32K 上下文里保留 (观察, 动作) 历史, 每步追加新观察图, 持续推下一步.
+**UI / 游戏 / 机器人 / 导航。** 多类 VL agent 任务需多步动作；在 32K 上下文里保留（观察，动作）历史，每步追加新观察图，持续推下一步。
 
 **UI Operations:** we evaluate Qwen2-VL using the AITZ task (Zhang et al., 2024b), which constructs a core clean test set derived from AITW (Rawles et al., 2024b). Based on common operation patterns of phone, we define actions such as tap, input and swipe (Rawles et al., 2024b) for Qwen2-VL to interact with on-screen icons for task completion. For example, when Qwen2-VL is tasked with finding a pizza restaurant nearby by Google Maps, it should input "pizza" in the search term, swipe to select the appropriate restaurant, and tap the corresponding link. Following the AITZ setting, we report both type match (correctness of tap, input, or swipe) and exact match (correctness of tap location, input text, or swipe direction). With the support of grounding capability on UI, Qwen2-VL surpasses GPT-4 and previous SoTA (Zhang et al., 2024b; Zhan and Zhang, 2023).
 
-**UI 操作:** AITZ (源自 AITW 清洗核). 定义 tap / input / swipe 等; 报 TM 与 EM. 凭 UI grounding, 超过 GPT-4 与先前 SoTA.
+**UI 操作：** AITZ（源自 AITW 清洗核）。定义 tap / input / swipe 等；报 TM 与 EM。凭 UI grounding，超过 GPT-4 与先前 SoTA。
 
 **Robotic Control:** we evaluate Qwen2-VL on the ALFRED task (Shridhar et al., 2020a) in AI2THOR (Kolve et al., 2017). The task requires agent to perform complex household tasks, such as toasting bread and slicing an apple to prepare a meal. To work in the virtual environment, we define high-level actions (GotoLocation, Pickup, PutDown, Open, Close, Clean, Heat, Cool, Slice) (Shridhar et al., 2020b) as the action set. Moreover, agent needs to localize objects for manipulation (e.g., it can only pick up an apple if the apple is recognized). To improve the accuracy of manipulation, we integrate SAM (Kirillov et al., 2023). ALFRED task reports task success rate (SR) (e.g., preparing dinner) and sub-goal completion metrics (GC) (e.g., whether the bread is toasted or the apple is sliced). Qwen2-VL slightly outperforms the previously specialized model ThinkBot (Lu et al., 2023) on the valid-unseen set.
 
-**机器人控制:** ALFRED (AI2-THOR). 高层动作集含 GotoLocation, Pickup 等; 操作前需定位物体, 并接 SAM 提操纵精度. 报 SR 与 GC; valid-unseen 上略超专精 ThinkBot.
+**机器人控制：** ALFRED (AI2-THOR)。高层动作集含 GotoLocation，Pickup 等；操作前需定位物体，并接 SAM 提操纵精度。报 SR 与 GC；valid-unseen 上略超专精 ThinkBot。
 
 **Card Games:** we leverage the card game environment from RL4VLM (Zhai et al., 2024) to assess Qwen2-VL’s performance in a series of card-based games: Number Line, BlackJack, EZPoint, and Point24. Each game presents distinct challenges: (1) reaching a target number using +1 or -1 operations, (2) drawing or holding cards to compete against the dealer, (3) applying basic arithmetic operations to reach a total of 12, and (4) using arithmetic operations to achieve a total of 24. We report the success rate of the tasks. They not only evaluate agent capabilities but also require strong OCR skills to recognize these cards and understand the progression of the game. Qwen2-VL demonstrates superior performance across all tasks.
 
-**纸牌游戏:** Number Line, BlackJack, EZPoint, Point24; 既要 agent 能力也要强 OCR 认牌. 各任务成功率均领先.
+**纸牌游戏：** Number Line，BlackJack，EZPoint，Point24；既要 agent 能力也要强 OCR 认牌。各任务成功率均领先。
 
 **Vision-Language Navigation:** we evaluate Qwen2-VL on the Vision-and-Language Navigation (VLN) task using the R2R (Anderson et al., 2018) and REVERIE (Qi et al., 2020). In VLN, the model must autonomously determine the next location based on instruction, current observations. We report the success rate (SR) of VLM in reaching the predetermined destination for this task. The performance of Qwen2-VL is comparable to that of GPT-4o, but both models fall significantly behind current specialized VLN models (Chen et al., 2022; Sigurdsson et al., 2023). We attribute this gap to the incomplete and unstructured map information generated by the model from multiple images. Accurately modeling maps and locations in a 3D environment remains a major challenge for multimodal models.
 
-**视觉语言导航:** R2R 与 REVERIE, 报到达预定终点的 SR. 与 GPT-4o 可比, 但远落后专精 VLN; 归因于多图拼出的地图信息不完整, 三维场景建图仍是难点.
+**视觉语言导航：** R2R 与 REVERIE，报到达预定终点的 SR。与 GPT-4o 可比，但远落后专精 VLN；归因于多图拼出的地图信息不完整，三维场景建图仍是难点。
 
-> **看表:** R2R 上 51.7 高于 GPT-4o 的 43.7, 为什么还说远落后专精 VLN?
-> 对照的是专精 SoTA (约 79.0 / 61.0), 不是 GPT-4o. 相对通才闭源可比, 相对导航专模仍差一截.
+> **看表：** R2R 上 51.7 高于 GPT-4o 的 43.7，为什么还说远落后专精 VLN?
+> 对照的是专精 SoTA（约 79.0 / 61.0），不是 GPT-4o. 相对通才闭源可比，相对导航专模仍差一截。
 
 <!-- page 14 of 52 -->
 
@@ -498,7 +498,7 @@ GPT-4o 偏弱主因: 不确定时偏保守少用外工具; OCR 尤其中文弱�
 
 Table 7: Qwen2-VL-7B under fixed/dynamic image tokens. Adjusting image sizes only results in small perturbations in performance, demonstrating the robustness to varying image sizes. Moreover, the dynamic resolution strategy achieves top-tier performance while consuming fewer tokens on average, demonstrating the efficiency of our model.
 
-表 7｜固定 vs 动态图像 token; 动态平均更省且全面顶档.
+表 7｜固定 vs 动态图像 token；动态平均更省且全面顶档。
 
 <table><tr><td>Strategy</td><td>Average Image Tokens</td><td>InfoVQ $A_{val}$ </td><td>RealWorldQA</td><td>OCRBench</td><td>MMMU</td></tr><tr><td rowspan="4">Fixed Image Tokens</td><td>64</td><td>28.85</td><td>56.47</td><td>572</td><td>53.33</td></tr><tr><td>576</td><td>65.72</td><td>65.88</td><td>828</td><td>52.78</td></tr><tr><td>1600</td><td>74.99</td><td>69.54</td><td>824</td><td>52.89</td></tr><tr><td>3136</td><td>77.27</td><td>70.59</td><td>786</td><td>53.44</td></tr><tr><td>Dynamic Image Tokens</td><td>1924</td><td>75.89</td><td>70.07</td><td>866</td><td>53.44</td></tr></table>
 
@@ -508,29 +508,29 @@ Figure 4: Qwen2-VL-7B with different min\_pixels. Small images are upscaled to s
 
 In this section, we present ablation studies on image dynamic resolution, M-RoPE, and model scale. These experiments aim to provide insights into the impact of these key components on our model’s performance.
 
-本节给出动态分辨率, M-RoPE 与模型规模三方面的消融实验, 以观察这些关键组件对性能的影响.
+本节给出动态分辨率，M-RoPE 与模型规模三方面的消融实验，以观察这些关键组件对性能的影响。
 
 #### 3.3.1 Dynamic Resolution 动态分辨率
 
 As shown in Table 7, we compare the performance between dynamic resolution and fixed resolution. For fixed resolution, we resize the images to ensure a constant number of image tokens being input to the model, rather than resizing to a specific height and width, as this would distort the original aspect ratio. For dynamic resolution, we only set min\_pixels= 100 × 28 × 28 and max\_pixels= 16384 × 28 × 28, allowing the number of image tokens depend primarily on the image’s native resolution. It can be observed that adjusting image sizes only results in small perturbations in performance, demonstrating the model robustness to varying image sizes. Moreover, dynamic resolution approach is more efficient. We can observe that no single fixed resolution achieves optimal performance across all benchmarks. In contrast, the dynamic resolution approach consistently achieves top-tier performance while consuming fewer tokens on average.
 
-表 7 对比动态 vs 固定分辨率. 固定侧按恒定图像 token 数缩放, 不锁死高宽以免扭曲宽高比. 动态侧只设 min_pixels=100×28×28 与 max_pixels=16384×28×28, token 数主要由原生分辨率决定. 改尺寸只带来小扰动, 说明对尺寸稳健; 动态方案平均更省 token, 且没有单一固定档能在所有榜上最优.
+表 7 对比动态 vs 固定分辨率。固定侧按恒定图像 token 数缩放，不锁死高宽以免扭曲宽高比。动态侧只设 min_pixels=100×28×28 与 max_pixels=16384×28×28，token 数主要由原生分辨率决定。改尺寸只带来小扰动，说明对尺寸稳健；动态方案平均更省 token，且没有单一固定档能在所有榜上最优。
 
-> **拆开:** 动态平均 1924 token, 固定 3136 在 InfoVQA 上反而更高 (77.27 vs 75.89), 动态还谈得上全面更好吗?
-> 报告强调的是「没有单一固定档通吃」且平均更省. OCRBench 上动态 866 明显高于固定各档; 单看 InfoVQA 固定 3136 可以更高, 但代价是 token.
+> **拆开：** 动态平均 1924 token，固定 3136 在 InfoVQA 上反而更高（77.27 vs 75.89），动态还谈得上全面更好吗？
+> 报告强调的是「没有单一固定档通吃」且平均更省。OCRBench 上动态 866 明显高于固定各档；单看 InfoVQA 固定 3136 可以更高，但代价是 token。
 
 Additionally, we observe that merely increasing the image size does not always lead to improved performance. It is more important to choose an appropriate resolution for different images. As detailed in Figure 4, we upscale small images to surpass a specified min\_pixels threshold. Evaluations on upscaled images shows enhanced performance on perceptual tasks like InfoVQA, HallusionBench, and OCRBench. We attribute these gains to increased computational load. However, for OCRBench, a too-high min\_pixels value leads to a severe performance decline. This is likely because OCRBench contains numerous extremely small images, and excessive enlargement causes these images to deviate from the training data distribution, turning them into out-of-distribution samples. In contrast, the effect of increasing min\_pixels on the MMMU benchmark is negligible. We hypothesize that the performance bottleneck in MMMU is more related to the model’s
 
-单纯放大并不总涨分, 更要按图选合适分辨率. 如图 4, 把小图抬过 min_pixels 后, InfoVQA / HallusionBench / OCRBench 等感知任务变好, 可归因于算力增加; 但 OCRBench 上 min_pixels 过高会严重掉点 (极小图过度放大成 OOD). MMMU 对抬 min_pixels 几乎不敏感, 瓶颈更像推理能力而非分辨率.
+单纯放大并不总涨分，更要按图选合适分辨率。如图 4，把小图抬过 min_pixels 后，InfoVQA / HallusionBench / OCRBench 等感知任务变好，可归因于算力增加；但 OCRBench 上 min_pixels 过高会严重掉点（极小图过度放大成 OOD）。MMMU 对抬 min_pixels 几乎不敏感，瓶颈更像推理能力而非分辨率。
 
-> **确认:** min_pixels 过高让 OCRBench 崩掉, 是分布外还是细节糊了?
-> 报告归因是极小图被过度放大, 偏离训练分布成 OOD. 不是简单的「越大越清」.
+> **确认：** min_pixels 过高让 OCRBench 崩掉，是分布外还是细节糊了？
+> 报告归因是极小图被过度放大，偏离训练分布成 OOD。不是简单的「越大越清」。
 
 <!-- page 15 of 52 -->
 
 Table 8: Ablation studies of M-RoPE. Compared to 1D-RoPE, using M-RoPE achieves better performance in downstream tasks, particularly in video benchmarks. RWQ means RealworldQA.
 
-表 8｜M-RoPE vs 1D-RoPE 消融; 视频侧增益更明显.
+表 8｜M-RoPE vs 1D-RoPE 消融；视频侧增益更明显。
 
 <table><tr><td></td><td colspan="8">Image Benchmarks</td><td colspan="3">Video Benchmarks</td></tr><tr><td></td><td>MathVista</td><td>MMB</td><td>MMStar</td><td>RWQ</td><td>DocVQA</td><td>ChartQA</td><td>InfoVQA</td><td>TextVQA</td><td>PerceptionTest</td><td>NextQA</td><td>STAR</td></tr><tr><td>1D-RoPE</td><td>39.2</td><td>58.6</td><td>36.7</td><td>54.5</td><td>82.5</td><td>68.0</td><td>50.8</td><td>71.3</td><td>46.6</td><td>43.9</td><td>55.5</td></tr><tr><td>M-RoPE</td><td>43.4</td><td>60.6</td><td>36.7</td><td>53.7</td><td>82.8</td><td>68.4</td><td>50.3</td><td>71.8</td><td>47.4</td><td>46.0</td><td>57.9</td></tr></table>
 
@@ -538,7 +538,7 @@ Table 8: Ablation studies of M-RoPE. Compared to 1D-RoPE, using M-RoPE achieves 
 
 Figure 5: Evaluate the length extrapolation capability of Qwen2-VL-72B on Video-MME Medium Video. With the help of M-RoPE, the model demonstrated robust performance when the inference length exceeded the maximum training length of 16384 tokens.
 
-图 5｜Video-MME Medium 上长度外推: 训练 16K, 推理可到 80K.
+图 5｜Video-MME Medium 上长度外推：训练 16K，推理可到 80K。
 
 reasoning capability rather than image resolution.
 
@@ -546,20 +546,20 @@ reasoning capability rather than image resolution.
 
 In this subsection, we demonstrate the effectiveness of M-RoPE. First, we validate its capability on various downstream tasks. We employ Qwen2-1.5B and ViT-L as the backbone and report the results of the pre-trained models. As shown in Table 8, compared to 1D-RoPE, using M-RoPE achieves better performance in downstream tasks, particularly in video benchmarks. Furthermore, we assess the length extrapolation capability of M-RoPE on Video-MME medium-length videos. Figure 5 illustrates the performance of Qwen2- VL-72B at different inference lengths. Leveraging M-RoPE, the model demonstrates robust results across various inference lengths. Notably, despite limiting the maximum tokens per video to 16K during training, the model still exhibits exceptional performance at a maximum inference length of 80K tokens.
 
-先用 Qwen2-1.5B + ViT-L 骨干, 报预训练后下游分. 表 8: 相对 1D-RoPE, M-RoPE 整体更好, 视频榜增益更明显. 再在 Video-MME 中长视频上看长度外推: 图 5 显示训练单视频上限 16K token, 推理到 80K 仍稳健.
+先用 Qwen2-1.5B + ViT-L 骨干，报预训练后下游分。表 8：相对 1D-RoPE，M-RoPE 整体更好，视频榜增益更明显。再在 Video-MME 中长视频上看长度外推：图 5 显示训练单视频上限 16K token，推理到 80K 仍稳健。
 
-> **回看:** 表 8 里 RealWorldQA 上 M-RoPE 53.7 反低于 1D 的 54.5, 还能说全面更好吗?
-> 多数图像榜持平或小涨, 视频三榜都涨. 个别图像榜小幅回落不否定主结论; 外推长视频是 M-RoPE 的另一张王牌.
+> **回看：** 表 8 里 RealWorldQA 上 M-RoPE 53.7 反低于 1D 的 54.5，还能说全面更好吗？
+> 多数图像榜持平或小涨，视频三榜都涨。个别图像榜小幅回落不否定主结论；外推长视频是 M-RoPE 的另一张王牌。
 
 #### 3.3.3 Model Scaling 模型缩放
 
 We evaluate the performance of models of varying scales across multiple capability dimensions. Specifically, we categorize these dimensions into complex college-level problem-solving, mathematical abilities, document and table comprehension, general scenario question-answering, and video comprehension. The overall capability of a model is assessed by averaging its scores across different benchmarks associated with each dimension.
 
-按能力维切分: 大学级复杂题 (MMMU), 数学 (MathVista+MathVision 均分), 通用场景问答 (RealWorldQA 等六榜均分), 文档表格 (DocVQA 等六榜均分), 视频 (MVBench 等四榜均分).
+按能力维切分：大学级复杂题（MMMU），数学（MathVista+MathVision 均分），通用场景问答（RealWorldQA 等六榜均分），文档表格（DocVQA 等六榜均分），视频（MVBench 等四榜均分）。
 
 In particular, we use the MMMU (Yue et al., 2023) benchmark to represent college-level problem-solving ability, while the average scores from MathVista (Lu et al., 2024a) and MathVision (Wang et al., 2024) serve as indicators of mathematical ability. For general scenario question-answering, we compute the average score across the RealWorldQA (X.AI, 2024a), MMBench-V1.1 (Liu et al., 2023d), MMT-Bench (Ying et al., 2024), HallBench (Guan et al., 2023), MMVet (Yu et al., 2024), and MMStar (Chen et al., 2024a)
 
-具体: MMMU 代表大学级解题; MathVista 与 MathVision 均分代表数学; RealWorldQA, MMBench-V1.1, MMT-Bench, HallBench, MMVet, MMStar 均分代表通用场景. (跨页续.)
+具体：MMMU 代表大学级解题；MathVista 与 MathVision 均分代表数学；RealWorldQA，MMBench-V1.1，MMT-Bench，HallBench，MMVet，MMStar 均分代表通用场景。（跨页续。）
 
 <!-- page 16 of 52 -->
 
@@ -571,35 +571,35 @@ In particular, we use the MMMU (Yue et al., 2023) benchmark to represent college
 
 Figure 6: Model Performance Scaling Across Capabilities and Training Progress. As model size and the volume of training data increase, performance consistently improves across a range of capabilities and benchmarks.
 
-图 6｜能力维与训练进度上的 scaling: 模型与数据变大, 多维持续抬升.
+图 6｜能力维与训练进度上的 scaling：模型与数据变大，多维持续抬升。
 
 benchmarks. Document and table comprehension capability is reflected through the average score from benchmarks like DocVQA (Mathew et al., 2021), InfoVQA (Mathew et al., 2021), ChartQA (Masry et al., 2022), TextVQA (Singh et al., 2019), OCRBench (Liu et al., 2023e), and MTVQA (Tang et al., 2024). Lastly, video comprehension ability is measured by averaging scores across MVBench (Li et al., 2024), Perception-Test (Patraucean et al., 2024), EgoSchema (Mangalam et al., 2023), and Video-MME (Fu et al., 2024).
 
-文档表格用 DocVQA, InfoVQA, ChartQA, TextVQA, OCRBench, MTVQA 均分; 视频用 MVBench, Perception-Test, EgoSchema, Video-MME 均分.
+文档表格用 DocVQA，InfoVQA，ChartQA，TextVQA，OCRBench，MTVQA 均分；视频用 MVBench，Perception-Test，EgoSchema，Video-MME 均分。
 
 As illustrated in Figure 6(a), there is a consistent improvement in performance with increasing model size, particularly with respect to mathematical abilities, which show a positive correlation with the number of model parameters. On the other hand, for optical character recognition (OCR)-related tasks, even smallerscale models exhibit relatively strong performance.
 
-图 6(a): 随模型变大, 各能力维持续抬升, 数学与参数量正相关尤其明显; OCR 相关任务上, 较小模型已相对强.
+图 6(a)：随模型变大，各能力维持续抬升，数学与参数量正相关尤其明显；OCR 相关任务上，较小模型已相对强。
 
-> **停一下:** OCR 小模型已经较强, 那 72B 的文档 SoTA 主要靠什么?
-> 小模型 OCR 底子不错, 但旗舰在 DocVQA 96.5, OCRBench 877 等仍继续抬. 图 6 是能力维均分趋势, 具体格子仍看表 2.
+> **停一下：** OCR 小模型已经较强，那 72B 的文档 SoTA 主要靠什么？
+> 小模型 OCR 底子不错，但旗舰在 DocVQA 96.5，OCRBench 877 等仍继续抬。图 6 是能力维均分趋势，具体格子仍看表 2。
 
 As shown in Figure 6(b), we visualize the relationship between model performance and the number of training tokens during the second stage of pretraining for Qwen2-VL-7B. As the number of training tokens increases, the model performance improves; however, performance on vision question answering (VQA) tasks exhibits some fluctuation. In contrast, for tasks such as AI2D (Kembhavi et al., 2016) and InfoVQA (Mathew et al., 2021)—both of which involve understanding textual and graphical information in images—the model performance shows steady improvement as training data is augmented.
 
-图 6(b): Qwen2-VL-7B 第二阶段预训练中, 训练 token 增多总体涨分, VQA 有波动; AI2D / InfoVQA 等需读图内文字与图形的任务则随数据稳步升.
+图 6(b): Qwen2-VL-7B 第二阶段预训练中，训练 token 增多总体涨分，VQA 有波动；AI2D / InfoVQA 等需读图内文字与图形的任务则随数据稳步升。
 
-> **再看:** VQA 随 token 波动, 是不是第二阶段数据配比不稳?
-> 报告只描述波动现象, 未给配比时间表. 可读成 VQA 对数据次序更敏感; AI2D/InfoVQA 则更单调受益于加数据.
+> **再看：** VQA 随 token 波动，是不是第二阶段数据配比不稳？
+> 报告只描述波动现象，未给配比时间表。可读成 VQA 对数据次序更敏感；AI2D/InfoVQA 则更单调受益于加数据。
 
 ## 4 Conclusion
 
 We have presented the Qwen2-VL series, the versatile large vision-language models, including three open-weight models with total parameter counts of 2, 8, and 72 billion. Qwen2-VL matches the performance of top-tier models like GPT-4o and Claude3.5-Sonnet in a range of multimodal scenarios, surpassing all other open-weight LVLM models. Qwen2-VL series introduces naive dynamic resolution and multimodal rotary position embedding (M-RoPE) to fuse information across modals effectively and be capable of understanding videos over 20 minutes in length. With advanced reasoning and decision-making abilities, Qwen2-VL can be integrated with devices such as mobile phones, robots, etc. Furthermore, Qwen2-VL now supports understanding multilingual texts within images, including most European languages, Japanese, Korean, Arabic, Vietnamese, and others.
 
-本文介绍了 Qwen2-VL 系列通用大型视觉语言模型, 含 2B, 8B, 72B 三个开源权重模型. Qwen2-VL 在一系列多模态场景下可比肩 GPT-4o, Claude3.5-Sonnet 等顶尖模型, 并超过其他所有开源 LVLM. 系列引入 naive dynamic resolution 与 M-RoPE, 有效融合跨模态信息, 可理解 20 分钟以上的长视频; 凭借进阶推理与决策能力, 可接入手机, 机器人等设备; 并支持理解图像中的多语言文本, 覆盖绝大多数欧洲语言及日语, 韩语, 阿拉伯语, 越南语等.
+本文介绍了 Qwen2-VL 系列通用大型视觉语言模型，含 2B，8B，72B 三个开源权重模型。Qwen2-VL 在一系列多模态场景下可比肩 GPT-4o，Claude3.5-Sonnet 等顶尖模型，并超过其他所有开源 LVLM。系列引入 naive dynamic resolution 与 M-RoPE，有效融合跨模态信息，可理解 20 分钟以上的长视频；凭借进阶推理与决策能力，可接入手机，机器人等设备；并支持理解图像中的多语言文本，覆盖绝大多数欧洲语言及日语，韩语，阿拉伯语，越南语等。
 
 We have made the Qwen2-VL model weights openly accessible, which enables researchers and developers to harness the full potential in a variety of applications and research projects. We aim to advance AI technologies and enhance their beneficial effects on society by dedicating ourselves to these endeavors.
 
-我们已开放 Qwen2-VL 的模型权重, 研究者和开发者可将其用于各类应用与研究项目; 希望以此推进 AI 技术, 放大其对社会的正面价值.
+我们已开放 Qwen2-VL 的模型权重，研究者和开发者可将其用于各类应用与研究项目；希望以此推进 AI 技术，放大其对社会的正面价值。
 
 <!-- page 17 of 52 -->
 
@@ -607,7 +607,7 @@ We have made the Qwen2-VL model weights openly accessible, which enables researc
 
 We express our gratitude to Juan Zhu, Fan Hong, Jie Zhang, Yong Li of Alibaba Cloud’s PAI team (Alibaba-Cloud, 2024c) for supporting the training infrastructure of Qwen2-VL. This work was also supported by Qwen LLM team (Yang et al., 2024), and we especially thank Na Ni, Yichang Zhang, Jianxin Ma, Bowen Yu, Zheren Fu for their data contribution and insightful discussion.
 
-感谢阿里云 PAI 团队朱娟, 洪帆, 张杰, 李勇对训练基础设施的支持; 亦获 Qwen LLM 团队支持, 并特别感谢倪娜, 张怡畅, 马建鑫, 于博文, 付哲人在数据与讨论上的贡献.
+感谢阿里云 PAI 团队朱娟，洪帆，张杰，李勇对训练基础设施的支持；亦获 Qwen LLM 团队支持，并特别感谢倪娜，张怡畅，马建鑫，于博文，付哲人在数据与讨论上的贡献。
 
 ## References
 
@@ -875,7 +875,7 @@ In this section, we present some practical examples of our Qwen2-VL.
 
 The Qwen2-VL models are now more adept at accurately describing and identifying complex information within images, as well as providing detailed background and answering related questions. Besides, the text processing capabilities of the Qwen2-VL models have seen significant improvements, particularly concerning the recognition of Chinese and English text within images.
 
-Qwen2-VL 现在能更准确地描述与识别图像中的复杂信息, 给出详细背景并回答相关问题; 文本处理能力也显著增强, 尤其是图像中英文文本的识别.
+Qwen2-VL 现在能更准确地描述与识别图像中的复杂信息，给出详细背景并回答相关问题；文本处理能力也显著增强，尤其是图像中英文文本的识别。
 
 ![Image block](images/p25-figure-7-when-presented-with-an-image-of-cubes-of.png)
 
@@ -923,7 +923,7 @@ Figure 13: The model displays an adeptness in recognizing multilingual texts in 
 
 A notable advancement in the Qwen2-VL models is their enhanced visual reasoning capability. This advancement allows the models to interpret and comprehend complex representations such as flowcharts, diagrams, and other symbolic systems.
 
-Qwen2-VL 的一项显著进步是视觉推理能力增强: 能解读流程图, 图示及其他符号系统等复杂表示.
+Qwen2-VL 的一项显著进步是视觉推理能力增强：能解读流程图，图示及其他符号系统等复杂表示。
 
 ![Image block](images/p32-figure-14-the-model-displays-an-adeptness-in-solving.png)
 
@@ -1243,7 +1243,7 @@ Function Result
 
 The average Pass@1 scores on code generation benchmarks for each model have been calculated and are displayed in the table above. The bar chart shows the average scores for each model, providing a visual comparison of their performance across the different benchmarks.
 
-各模型在代码生成基准上的平均 Pass@1 分数已计算完成, 如表所示; 柱状图给出各模型的平均分, 直观对比它们在各项基准上的表现.
+各模型在代码生成基准上的平均 Pass@1 分数已计算完成，如表所示；柱状图给出各模型的平均分，直观对比它们在各项基准上的表现。
 
 Figure 28: The model analyzed the table, and wrote the code to calculate the mean of each row in the table and to plot the results as a bar chart, which was successfully executed and visualized by the code interpreter. Image source: (Dubey et al., 2024)
 

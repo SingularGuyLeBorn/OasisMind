@@ -2,12 +2,12 @@
 title: "LLM 指南"
 category: "LLM 指南"
 published: true
-excerpt: "大语言模型全栈知识库索引:从导论,预训练到 Agent 与工程化."
+excerpt: "大语言模型全栈知识库索引：从导论，预训练到 Agent 与工程化。"
 tags: ["LLM", "大语言模型", "深度学习", "NLP", "人工智能", "知识库"]
 ---
 # LLM 指南
 
-面向工程师与研究者的大语言模型全栈知识库,覆盖原理,训练,优化,应用与前沿.
+面向工程师与研究者的大语言模型全栈知识库，覆盖原理，训练，优化，应用与前沿。
 
 ## 章节导航
 
@@ -16,14 +16,14 @@ tags: ["LLM", "大语言模型", "深度学习", "NLP", "人工智能", "知识�
 | — | [致读者](/posts/%E8%87%B4%E8%AF%BB%E8%80%85%2F%E8%87%B4%E8%AF%BB%E8%80%85?garden=llm-guide) | 阅读说明 |
 | 1 | [导论与基础](/posts/1-%E5%AF%BC%E8%AE%BA%E4%B8%8E%E5%9F%BA%E7%A1%80%2F1-%E5%AF%BC%E8%AE%BA%E4%B8%8E%E5%9F%BA%E7%A1%80?garden=llm-guide) | 学习路线与知识图谱 |
 | 2 | [核心原理与架构](/posts/2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84%2F2-%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9E%B6%E6%9E%84?garden=llm-guide) | Transformer 与注意力 |
-| 3 | [预训练](/posts/3-%E9%A2%84%E8%AE%AD%E7%BB%83%2F3-%E9%A2%84%E8%AE%AD%E7%BB%83?garden=llm-guide) | 数据,Tokenizer,Scaling Law |
-| 4 | [后训练](/posts/4-%E5%90%8E%E8%AE%AD%E7%BB%83%2F4-%E5%90%8E%E8%AE%AD%E7%BB%83?garden=llm-guide) | SFT,RLHF,对齐 |
-| 5 | [评测,安全与治理](/posts/5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86%2F5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86?garden=llm-guide) | 评测科学,对抗安全,隐私与部署治理 |
-| — | [主流模型知识库](../model-library/_garden.md) | 模型家族,版本身份与选型 |
-| 6 | [训练与推理优化](/posts/6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96%2F6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96?garden=llm-guide) | 量化,KV Cache,并行 |
+| 3 | [预训练](/posts/3-%E9%A2%84%E8%AE%AD%E7%BB%83%2F3-%E9%A2%84%E8%AE%AD%E7%BB%83?garden=llm-guide) | 数据，Tokenizer,Scaling Law |
+| 4 | [后训练](/posts/4-%E5%90%8E%E8%AE%AD%E7%BB%83%2F4-%E5%90%8E%E8%AE%AD%E7%BB%83?garden=llm-guide) | SFT，RLHF，对齐 |
+| 5 | [评测，安全与治理](/posts/5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86%2F5-%E8%AF%84%E6%B5%8B%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B2%BB%E7%90%86?garden=llm-guide) | 评测科学，对抗安全，隐私与部署治理 |
+| — | [主流模型知识库](../model-library/_garden.md) | 模型家族，版本身份与选型 |
+| 6 | [训练与推理优化](/posts/6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96%2F6-%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96?garden=llm-guide) | 量化，KV Cache，并行 |
 | 7 | [LLM 应用开发](/posts/7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91%2F7-LLM%E5%BA%94%E7%94%A8%E5%BC%80%E5%8F%91?garden=llm-guide) | RAG,Agent,Prompt |
-| 8 | [多模态](/posts/8-%E5%A4%9A%E6%A8%A1%E6%80%81%2F8-%E5%A4%9A%E6%A8%A1%E6%80%81?garden=llm-guide) | VLM,CLIP,音视频 |
-| 9 | [AI 工程化与基础设施](/posts/9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%2F9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD?garden=llm-guide) | 硬件,分布式,推理框架 |
+| 8 | [多模态](/posts/8-%E5%A4%9A%E6%A8%A1%E6%80%81%2F8-%E5%A4%9A%E6%A8%A1%E6%80%81?garden=llm-guide) | VLM，CLIP，音视频 |
+| 9 | [AI 工程化与基础设施](/posts/9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%2F9-AI%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8E%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD?garden=llm-guide) | 硬件，分布式，推理框架 |
 | 13 | [Agent](/posts/13-Agent%2F13-Agent?garden=llm-guide) | 智能体系统工程 |
 
 ## 专栏
@@ -33,6 +33,6 @@ tags: ["LLM", "大语言模型", "深度学习", "NLP", "人工智能", "知识�
 
 ## 使用建议
 
-1. 从 **导论与基础** 建立全局地图,再按兴趣深入各章.
-2. 左侧 **本地内容目录** 可浏览完整树形结构.
-3. 文章内 `[[Wiki 链接]]` 与章节互链已启用,适合连续阅读.
+1. 从 **导论与基础** 建立全局地图，再按兴趣深入各章。
+2. 左侧 **本地内容目录** 可浏览完整树形结构。
+3. 文章内 `[[Wiki 链接]]` 与章节互链已启用，适合连续阅读。
