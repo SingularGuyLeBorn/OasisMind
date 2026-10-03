@@ -1,4 +1,4 @@
-﻿/**
+/**
  * D4：watch unlink 与运行时 CRUD 改名窗口的并发保护。
  *
  * 目标行 updatedAt 在 grace 窗口内 → 跳过本次 deleteBySlug，交给全量重扫收口。
@@ -17,7 +17,7 @@ export async function isWatchDeleteProtected(
   graceMs: number = WATCH_DELETE_GRACE_MS,
 ): Promise<boolean> {
   const since = new Date(Date.now() - graceMs);
-  // Post:posts / Post:knowledge / Post:resources — 按花园收窄改名窗口
+  // Post:posts / Post:resources / Post:<gardenId> — 按花园收窄改名窗口
   if (entityName === "Post" || entityName.startsWith("Post:")) {
     const garden = entityName.startsWith("Post:") ? entityName.slice("Post:".length) : undefined;
     return !!(await prisma.post.findFirst({

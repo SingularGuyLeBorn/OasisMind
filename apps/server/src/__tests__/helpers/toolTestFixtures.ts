@@ -82,7 +82,7 @@ export function createTestConfig(
     },
     inbox: {
       screenshotWatchDir: "",
-      defaultGarden: "knowledge",
+      defaultGarden: "daily-fragments",
       zhihuCollectionUrls: [],
     },
     uploadDir: path.join(projectRoot, "content", "uploads"),

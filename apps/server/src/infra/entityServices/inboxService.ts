@@ -491,7 +491,7 @@ export class InboxService extends BaseService<
 
   async distill(input: InboxDistillInput) {
     const { formatInboxItemBody } = await import("../inbox/index.js");
-    const garden = input.garden || this.config.inbox.defaultGarden || "knowledge";
+    const garden = input.garden ?? this.config.inbox.defaultGarden;
     const items = await this.prisma.inboxItem.findMany({
       where: { id: { in: input.ids } },
     });

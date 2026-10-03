@@ -431,7 +431,7 @@ export class GardenService extends BaseService<
     }
   }
 
-  /** 确保种子三库有目录、_garden.md 与 DB 行 */
+  /** 确保种子库有目录、_garden.md 与 DB 行 */
   async ensureSeedGardens(): Promise<void> {
     for (const id of SEED_GARDENS) {
       const meta = SEED_GARDEN_META[id] ?? {

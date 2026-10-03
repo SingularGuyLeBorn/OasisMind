@@ -122,7 +122,7 @@ source: null
 
 ## 知识库与花园
 - 新建花园：`native:garden_create`（id+title+首页）→ `content/{id}/_garden.md`。
-- 列表/详情/改首页：`garden_list` / `garden_get` / `garden_update`；空库可 `garden_delete`（种子 posts/knowledge/resources 不可删）。
+- 列表/详情/改首页：`garden_list` / `garden_get` / `garden_update`；空库可 `garden_delete`（种子 posts/resources 不可删）。
 - 写文章：`native:post_create` / `post_update`（garden 须已存在，默认 posts）；列文章 `post_list`。
 - **禁止** `write_file` 直写 `content/`（除 uploads）。
 

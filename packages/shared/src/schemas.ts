@@ -1375,7 +1375,8 @@ export const inboxIngestWechatDropSchema = z.object({
 
 export const inboxDistillSchema = z.object({
   ids: z.array(z.string().cuid()).min(1).max(30),
-  garden: z.string().min(1).max(64).default("knowledge"),
+  /** 不传 = 服务端 config.inbox.defaultGarden */
+  garden: z.string().min(1).max(64).optional(),
   published: z.boolean().default(false),
   /** W4：raw=原文直写（默认，与旧行为完全一致）；taste=按 USER.md/花园文风改写后落草稿 */
   mode: z.enum(["raw", "taste"]).default("raw"),

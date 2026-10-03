@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 同步脚本通用工具函数
  */
 
@@ -32,7 +32,7 @@ export function getContentDir(dirName: string): string {
   const cp = config.contentPaths as Record<string, string>;
   const gp = config.configPaths as Record<string, string>;
   const dp = config.dataPaths as Record<string, string>;
-  // 知识库路径优先（posts/knowledge/resources/about/uploads）
+  // 知识库路径优先（posts/resources/about/uploads）
   if (cp[dirName]) return cp[dirName];
   if (gp[dirName]) return gp[dirName];
   if (dp[dirName]) return dp[dirName];

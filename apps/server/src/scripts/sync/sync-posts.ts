@@ -1,7 +1,7 @@
 /**
  * Post / 知识库花园同步器
  *
- * 每棵花园（posts / knowledge / resources）注册一个 Syncer，
+ * 每棵花园（posts / resources / 各动态花园）注册一个 Syncer，
  * contentDirName = garden 名，物理根 content/{garden}/。
  * DB 唯一键：(garden, slug)；slug 仍是该根下相对路径。
  */

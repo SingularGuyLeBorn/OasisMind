@@ -14,6 +14,7 @@ import {
   LLM_PROVIDER_DEEPSEEK,
   LOCAL_LLM_DEFAULT_BASE_URLS,
   resolvePackFlags,
+  DEFAULT_INBOX_GARDEN,
   type LocalLlmProviderId,
   type PackFlags,
 } from "@oasismind/shared";
@@ -182,7 +183,7 @@ const InboxYamlSchema = z.object({
   /** 截图监视目录；空 = data/inbox/screenshots/drop；可填 iCloud Photos 路径 */
   screenshotWatchDir: z.string().default(""),
   /** 蒸馏默认写入的花园 id */
-  defaultGarden: z.string().default("knowledge"),
+  defaultGarden: z.string().default(DEFAULT_INBOX_GARDEN),
   /** 知乎收藏夹 URL 列表（定时同步可选） */
   zhihuCollectionUrls: z.array(z.string()).default([]),
 });
@@ -908,7 +909,7 @@ export function createAppConfig(): AppConfig {
     },
     inbox: {
       screenshotWatchDir: readEnv("OM_INBOX_SCREENSHOT_DIR") || inboxYaml.screenshotWatchDir,
-      defaultGarden: inboxYaml.defaultGarden || "knowledge",
+      defaultGarden: inboxYaml.defaultGarden || DEFAULT_INBOX_GARDEN,
       zhihuCollectionUrls: inboxYaml.zhihuCollectionUrls,
     },
     uploadDir: path.join(contentDir, "uploads"),

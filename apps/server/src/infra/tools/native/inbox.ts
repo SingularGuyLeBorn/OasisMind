@@ -190,7 +190,7 @@ async function inboxDistill(args: Record<string, unknown>, ctx: NativeToolContex
   if (!ids.length) throw new Error("ids 不能为空");
   return ctx.services.inbox.distill({
     ids,
-    garden: typeof args.garden === "string" ? args.garden : ctx.config.inbox.defaultGarden || "knowledge",
+    garden: typeof args.garden === "string" && args.garden ? args.garden : undefined,
     published: coerceToolBoolean(args.published),
     mode: args.mode === "taste" ? "taste" : "raw",
   });
@@ -439,7 +439,7 @@ const INBOX_DEFS: NativeToolDefinition[] = [
   {
     name: "inbox_distill",
     description:
-      "把 Inbox 条目蒸馏为 knowledge 花园文章（可用 garden 覆盖）。适合批量落库；若需深度改写可先 inbox_list 读内容再 post_create。",
+      "把 Inbox 条目蒸馏为花园文章草稿（默认落 config.yaml inbox.defaultGarden，即 daily-fragments；可用 garden 覆盖，花园须已存在）。适合批量落库；若需深度改写可先 inbox_list 读内容再 post_create。",
     concurrencyClass: "D",
     destructive: true,
     approvalExempt: true,
@@ -448,8 +448,8 @@ const INBOX_DEFS: NativeToolDefinition[] = [
       required: ["ids"],
       properties: {
         ids: { type: "array", items: { type: "string" } },
-        garden: { type: "string", description: "默认 knowledge" },
-        published: { type: "boolean", description: "写入后即可阅读，默认 true" },
+        garden: { type: "string", description: "目标花园 id；不传 = config.yaml inbox.defaultGarden（daily-fragments）" },
+        published: { type: "boolean", description: "true = 写入后即公开；默认 false（草稿）" },
       },
     },
   },

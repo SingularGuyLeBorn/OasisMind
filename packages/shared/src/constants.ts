@@ -970,6 +970,8 @@ export const ASSISTANT_DEFAULT_TOOLS: string[] = [
 export const SEED_GARDENS = ["posts", "resources"] as const;
 export type SeedGarden = (typeof SEED_GARDENS)[number];
 export const DEFAULT_POST_GARDEN = "posts" as const;
+/** Inbox 蒸馏默认落点；config.yaml `inbox.defaultGarden` 可覆盖 */
+export const DEFAULT_INBOX_GARDEN = "daily-fragments" as const;
 /** content/ 下禁止当作花园的目录名 */
 export const RESERVED_CONTENT_DIRS = ["about", "uploads"] as const;
 

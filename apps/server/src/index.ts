@@ -92,7 +92,7 @@ eventBus.on<{ postId?: string }>("comment.created", (payload) => {
 eventBus.on<{ postId?: string }>("comment.updated", (payload) => {
   notifyCommentUpdated(prisma, payload.data.postId).catch(() => {});
 });
-// 种子花园 posts/knowledge/resources：补 _garden.md + DB 行
+// 种子花园 posts/resources：补 _garden.md + DB 行
 services.garden.ensureSeedGardens().catch((err) => {
   console.warn("  ⚠️ [Garden] 种子库初始化失败:", err instanceof Error ? err.message : err);
 });

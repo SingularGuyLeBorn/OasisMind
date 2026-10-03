@@ -1,14 +1,20 @@
 /**
  * prd-inbox-distill.md 第 5 节：Inbox 蒸馏状态×事件表。
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { inboxDistillSchema } from "@oasismind/shared";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_INBOX_GARDEN, inboxDistillSchema } from "@oasismind/shared";
 import { enterInProcessMockLlm, resetInProcessMockHits } from "@oasismind/mock-llm-core";
 import { prisma } from "../db.js";
 import { createContextInner } from "../trpc/context.js";
 
 const RUN = `prd-distill-${Date.now().toString(36)}`;
 const FAKE_CUID = `c${"e".repeat(24)}`;
+
+// 默认落点不是种子库，隔离的 .test-content 里要先建出来；已存在时 create 返回失败，忽略即可
+beforeAll(async () => {
+  const { services } = await createContextInner();
+  await services.garden.create({ id: DEFAULT_INBOX_GARDEN, title: "每日碎片", description: "", homeContent: "# 每日碎片\n" });
+});
 
 async function insertItem(input: {
   title: string;
@@ -67,14 +73,14 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
   it("R12 默认 published=false", () => {
     const parsed = inboxDistillSchema.parse({ ids: [FAKE_CUID] });
     expect(parsed.published).toBe(false);
-    expect(parsed.garden).toBe("knowledge");
+    expect(parsed.garden).toBeUndefined();
     expect(parsed.mode).toBe("raw");
   });
 
-  it("R2 fetched 蒸馏成功：status+正文含 URL", async () => {
+  it("R2 fetched 蒸馏成功：不传 garden 落 config 默认花园，status+正文含 URL", async () => {
     const item = await insertItem({ title: `${RUN} 单篇` });
     inboxIds.push(item.id);
-    const result = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const result = await distill({ ids: [item.id], published: false });
     expect(result.errors).toEqual([]);
     expect(result.distilled).toHaveLength(1);
     postIds.push(result.distilled[0]!.postId);
@@ -83,13 +89,14 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
     expect(row?.distilledPostId).toBe(result.distilled[0]!.postId);
     const post = await prisma.post.findUnique({ where: { id: result.distilled[0]!.postId } });
     expect(post?.published).toBe(false);
+    expect(post?.garden).toBe(DEFAULT_INBOX_GARDEN);
     expect(post?.content).toContain(item.url);
   });
 
   it("R3 ignored 跳过不建 Post", async () => {
     const item = await insertItem({ title: `${RUN} 忽略`, status: "ignored" });
     inboxIds.push(item.id);
-    const result = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const result = await distill({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false });
     expect(result.distilled).toEqual([]);
     expect(result.errors.some((e) => e.includes("已忽略"))).toBe(true);
     const row = await prisma.inboxItem.findUnique({ where: { id: item.id } });
@@ -100,10 +107,10 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
   it("R4 已蒸馏再调幂等，不新建", async () => {
     const item = await insertItem({ title: `${RUN} 幂等` });
     inboxIds.push(item.id);
-    const first = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const first = await distill({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false });
     expect(first.distilled).toHaveLength(1);
     postIds.push(first.distilled[0]!.postId);
-    const second = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const second = await distill({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false });
     expect(second.distilled).toHaveLength(1);
     expect(second.distilled[0]!.postId).toBe(first.distilled[0]!.postId);
     expect(second.errors).toEqual([]);
@@ -111,7 +118,7 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
 
   it("R5 幽灵 id 省略", async () => {
     const ghost = "clghostinboxitem000000001";
-    const result = await distill({ ids: [ghost], garden: "knowledge", published: false });
+    const result = await distill({ ids: [ghost], garden: DEFAULT_INBOX_GARDEN, published: false });
     expect(result.distilled).toEqual([]);
     expect(result.errors.some((e) => e.includes(ghost))).toBe(false);
   });
@@ -123,7 +130,7 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
     const ghost = "clghostinboxitem000000002";
     const result = await distill({
       ids: [fetched.id, ignored.id, ghost],
-      garden: "knowledge",
+      garden: DEFAULT_INBOX_GARDEN,
       published: false,
     });
     expect(result.distilled.map((d) => d.inboxId)).toEqual([fetched.id]);
@@ -144,7 +151,7 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
     const slug = `inbox/${slugBase}-${item.id.slice(-6)}`;
     const blocker = await services.post.create({
       title: `${RUN} blocker`,
-      garden: "knowledge",
+      garden: DEFAULT_INBOX_GARDEN,
       slug,
       content: "占坑",
       published: false,
@@ -152,7 +159,7 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
     expect(blocker.success, JSON.stringify(blocker)).toBe(true);
     if (blocker.data?.id) postIds.push(blocker.data.id);
 
-    const result = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const result = await distill({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false });
     expect(result.distilled).toEqual([]);
     expect(result.errors.length).toBeGreaterThan(0);
     const row = await prisma.inboxItem.findUnique({ where: { id: item.id } });
@@ -162,7 +169,7 @@ describe("PRD Inbox 蒸馏 状态×事件表", () => {
   it("R9 刷新后 getById 仍 distilled", async () => {
     const item = await insertItem({ title: `${RUN} 刷新` });
     inboxIds.push(item.id);
-    const result = await distill({ ids: [item.id], garden: "knowledge", published: false });
+    const result = await distill({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false });
     postIds.push(result.distilled[0]!.postId);
     const again = await services.inbox.getById(item.id);
     expect(again.status).toBe("distilled");
@@ -197,7 +204,7 @@ describe("W4 Inbox 蒸馏 taste 模式", () => {
       const item = await insertItem({ title: `${RUN} taste`, url: "https://example.com/taste-abc" });
       inboxIds.push(item.id);
       const result = await services.inbox.distill(
-        inboxDistillSchema.parse({ ids: [item.id], garden: "knowledge", published: false, mode: "taste" }),
+        inboxDistillSchema.parse({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false, mode: "taste" }),
       );
       expect(result.errors).toEqual([]);
       expect(result.distilled).toHaveLength(1);
@@ -219,7 +226,7 @@ describe("W4 Inbox 蒸馏 taste 模式", () => {
       const item = await insertItem({ title: `${RUN} taste-fail OM-MOCK-TASTE-FAIL`, url: "https://example.com/taste-fail" });
       inboxIds.push(item.id);
       const result = await services.inbox.distill(
-        inboxDistillSchema.parse({ ids: [item.id], garden: "knowledge", published: false, mode: "taste" }),
+        inboxDistillSchema.parse({ ids: [item.id], garden: DEFAULT_INBOX_GARDEN, published: false, mode: "taste" }),
       );
       expect(result.distilled).toEqual([]);
       expect(result.errors.length).toBeGreaterThan(0);

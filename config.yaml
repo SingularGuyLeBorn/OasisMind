@@ -236,7 +236,7 @@ inbox:
   # 也可设 env OM_INBOX_SCREENSHOT_DIR
   screenshotWatchDir: ""
   # 蒸馏默认写入的花园
-  defaultGarden: knowledge
+  defaultGarden: daily-fragments
   # 可选：定时 inbox:sync 时自动拉这些知乎收藏夹
   zhihuCollectionUrls: []
 
