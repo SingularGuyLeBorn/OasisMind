@@ -1,8 +1,0 @@
-{
-    "username": "scy1999",
-    "customer_code": "10122385A",
-    "email": "",
-    "phone": "13586820267",
-    "company": "",
-    "license": "dXNlcm5hbWV8Y3VzdG9tZXJfY29kZXxlbWFpbHxwaG9uZXxjb21wYW55,oa2dJv4PKU3SnRkjgJWzq2kSqx/rHDNEE4mUdcApb49ug939XUrxMV83l2sTvpBK3yTBMKz6QYc8yIqyWM+GgW2KOCGv9SIATvXtSQ4s7XkT9789IHm+k7Fq0TkSFQXpbZjKl061rDZaQd9aoJMvjY0ujFtkqghK6ql587yJ13M="
-}

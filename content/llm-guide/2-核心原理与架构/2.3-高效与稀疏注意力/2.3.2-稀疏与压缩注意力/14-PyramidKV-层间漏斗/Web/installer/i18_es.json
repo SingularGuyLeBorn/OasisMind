@@ -1,8 +1,0 @@
-﻿{
-    "messages.com.epicgames.launcher.installer.downloadTitle" : "DESCARGA",
-    "messages.com.epicgames.launcher.installer.diskReadTitle" : "LECTURA",
-    "messages.com.epicgames.launcher.installer.diskWriteTitle" : "ESCRITURA",
-    "messages.com.epicgames.launcher.installer.operationsTitle" : "OPERACIONES",
-
-    "messages.com.epicgames.launcher.installer.downloadSize.downloadedCurrentOfTotalSeparator" : "de"
-}
