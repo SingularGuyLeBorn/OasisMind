@@ -1,226 +1,459 @@
 ---
 title: "03 · PowLU: Ling 对 SwiGLU 的稳定化改写"
 published: true
-tags: ["PowLU", "SwiGLU", "激活函数", "FFN", "Ling", "FP8"]
-excerpt: "PowLU (Power Linear Unit) 由 Ling Team 在 2026 年 5 月提出. 它将标量 SwiGLU 在正半轴的大输入增长从近似 x^2 调整为近似 x, 目标是减小专家 FFN 激活与梯度的动态范围, 提高低精度预训练的稳定性. 论文把它放在路由专家和共享专家的 FF…"
+tags: ["PowLU", "SwiGLU", "SwiGLU-Clip", "Ling", "激活函数", "FP8", "MoE"]
+excerpt: "SwiGLU 的标量形式 x²σ(x) 在正半轴按平方增长. Ling Team 的 PowLU 把指数换成随输入衰减的 1+m/(√x+1), 让正半轴渐近线性, 门控因子因此有界. 本文推导它的渐近性, 单调性条件和门控上界, 给出 7.9B 与 124B MoE 的完整评测表, FP8 训练中的 loss spike 对比, 以及与 SwiGLU-Clip, SiTU-GLU 的差别."
 ---
 # 03 PowLU: Ling 对 SwiGLU 的稳定化改写
 
-PowLU (Power Linear Unit) 由 Ling Team 在 2026 年 5 月提出. 它将标量 SwiGLU 在正半轴的大输入增长从近似 $x^2$ 调整为近似 $x$, 目标是减小专家 FFN 激活与梯度的动态范围, 提高低精度预训练的稳定性. 论文把它放在路由专家和共享专家的 FFN 里, 并以门函数作为主要对照变量; 小规模 scaling 实验明确保持其他设置一致, 7.9B 与 124B 实验没有公开完整模型配置.
+## 太长不看版
 
-设计上的核心问题是: 限制 SwiGLU 的大激活, 最容易想到的办法是硬截断. 但硬截断一旦超过阈值, 信息就直接丢失; 阈值设在哪一层,取多大, 都必须依赖经验, 稍有不慎就会削弱模型表达能力. PowLU 选择另一条路: 不设置硬边界, 而是把正半轴的增长阶从 $x^2$ 降到 $x$. 这样数值仍然无界, 但增长速度可控, 既保留了非线性, 又避免了阈值带来的信息截断问题.
+- 两路输入相同时, SwiGLU 退化成 $x^2\sigma(x)$, 正半轴按平方增长. PowLU 把它改成 $x^{1+m/(\sqrt x+1)}\sigma(x)$, 默认 $m=3$, 正半轴渐近线性.
+- 渐近线性来得很慢: $x=100$ 时 PowLU 约 351, 是 $x$ 的 3.5 倍; $x=10^4$ 时仍是 1.31 倍. 在 $[1,4]$ 区间它反而略大于 SwiGLU.
+- 在实际的双支路形式里, 改动只落在门控上. 推算可得 $m=3$ 时门控因子最大约 5.32, 之后回落到 1; 线性支路不加界.
+- 7.9B MoE 训练 600B token, 17 项评测里 PowLU 13 项最高; 124B MoE 训练 800B token, 12 项高于 SwiGLU. FP8 训练中 SwiGLU 和 SwiGLU-Clip 出现 loss spike, PowLU 没有.
+- Ling 2.0 发布的模型仍用 SwiGLU, PowLU 只出现在论文的研究模型里.
 
-PowLU 只改写三矩阵 FFN 的门函数, 值支路与三次线性投影保持不变. [02 GLU 家族](../02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md) 给出 SwiGLU 的三矩阵结构, [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) 讨论光滑有界化, [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) 汇总训练中的截断策略.
+SwiGLU 是现在大模型 FFN 的默认结构 (见 [02 GLU 家族](../02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md)). 它的两个乘子都无界, 在 FP8 和 FP4 预训练里容易产生激活离群值. 一类改法是加界: gpt-oss 的硬截断, Kimi K3 的 SiTU-GLU (见 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md)). PowLU 走的是另一条路: 不设上界, 改增长的阶数. 本文回答五个问题:
 
-> 导航: [2.1.1 激活函数与门控](../2.1.1-激活函数.md) · [02 GLU 家族](../02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md) · [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) · [Ling 2.0](../../../../../model-library/03-模型家族/15-ling/ling-2-0/ling-2-0-bi.md)
-
----
-
-## 1. 标量 SwiGLU 的正半轴增长
-
-三矩阵 SwiGLU 包含一条线性值支路和一条 SiLU 门支路. PowLU 论文先研究两条支路取相同标量输入时的函数:
-
-$$
-\mathrm{SwiGLU}(x)=x\,\mathrm{SiLU}(x)=x^2\sigma(x).
-$$
-
-当 $x\to+\infty$ 时, $\sigma(x)\to1$, 因此
-
-$$
-\mathrm{SwiGLU}(x)\sim x^2.
-$$
-
-二次增长会扩大激活与梯度的动态范围. PowLU 论文 Fig. 2 统计一个 7.9B MoE 检查点训练到 400B token 时的专家线性层: 在论文给定实验中, SwiGLU 的 min–max 与 P1–P99 范围均宽于 PowLU. 论文据此将**激活异常值 (activation outlier)**与 FP8, FP4 预训练中的数值不稳定联系起来.
-
-SiTU-GLU 与 PowLU 都处理 SwiGLU 两个无界因子带来的动态范围问题, 但数学方式不同: SiTU 使用 tanh 为两条支路提供光滑上界; PowLU 保持函数无界, 同时降低正半轴的渐近增长阶.
+1. SwiGLU 的增长在实际训练中表现为什么.
+2. PowLU 的公式怎样得到渐近线性, 为什么用 $\sqrt x+1$.
+3. 双支路实现里, 改动具体落在哪, 门控因子能有多大.
+4. 它在 Ling 的 MoE 层里放在哪, 实验怎么设计, 结果如何.
+5. 与硬截断和 SiTU-GLU 相比, 各自限制了什么.
 
 ---
 
-## 2. PowLU 定义与渐近性质
+## 1. 问题: 标量 SwiGLU 按平方增长
 
-论文实验默认取 $m=3$. 标量 PowLU 定义为
+### 1.1 标量形式
+
+PowLU 论文先看两路取同一个标量输入时的 SwiGLU:
+
+$$
+\mathrm{SwiGLU}(x)=x\cdot\mathrm{SiLU}(x)=x^2\sigma(x)
+\tag{1}
+$$
+
+$x\to+\infty$ 时 $\sigma(x)\to1$, 函数按 $x^2$ 增长. 输入放大 10 倍, 输出放大约 100 倍. 这是对角切片上的行为; 两路输入不同时, 输出约为两路的乘积, 结论相同.
+
+### 1.2 论文观察到的现象
+
+论文 Fig. 2 统计一个 7.9B MoE 模型训练到 400B token 时专家线性层的数值范围, 用三种区间画出: min 到 max (红, 含极端离群值), P1 到 P99 (紫, 覆盖 98% 的数), P25 到 P75 (橙, 中间 50%). 论文的观察集中在红色区间: SwiGLU 的红色区间很宽, 前向延伸到很大的最大值; 换成 PowLU 后离群值的比例下降. 论文认为这种离群值会随层数累积, 让预训练不稳定甚至崩溃; 低精度训练对数据范围更敏感, 放大后的值可能超出 FP8, FP4 的表示范围.
+
+论文还统计了共享专家 (Fig. 5): 前向看激活之后第二个线性层的输入, 反向看激活之前第一个线性层的梯度. 反向的差别比前向更明显: SwiGLU 的梯度红色区间剧烈波动, 范围很大; PowLU 的最大值更低. Fig. 6 和 Fig. 7 对同样的张量沿通道算 L2 范数, 把通道从大到小排开: SwiGLU 下有一批通道在前向和反向都明显偏大, PowLU 的颜色分布更均匀, 动态范围更小.
+
+为什么平方增长在低精度下特别麻烦, 可以手算一下. FP8 E4M3 的最大值是 448. 若一个张量按最大值缩放, 离群值从 100 变成 $10^4$, 缩放因子就小 100 倍, 张量里其余的数整体被压低约 $2^{6.6}$, 原本落在正规数范围内的小值会掉进次正规区, 只剩一两位有效数字 (FP8 格式的细节见 [2.1.1 激活函数](../2.1.1-激活函数.md) 第 8 节).
+
+---
+
+## 2. 已有做法: SwiGLU-Clip
+
+论文的主要对照是 SwiGLU-Clip, 引自 gpt-oss 模型卡 (Agarwal et al., 2025). 模型卡把 gpt-oss 的 SwiGLU 描述为包含截断和残差连接的非常规实现; 官方 PyTorch 实现里, 记门控预激活为 $g$, 线性为 $v$:
+
+$$
+\tilde g=\min(g,L),\qquad
+\tilde v=\mathrm{clip}(v,-L,L),\qquad
+\phi_{\text{clip}}(g,v)=\tilde g\,\sigma(\alpha\tilde g)\,(\tilde v+1)
+\tag{2}
+$$
+
+默认 $L=7$, $\alpha=1.702$. 门控只截上界, 线性两侧都截, 再加 1. 由式 (2) 可推出乘积绝对值不超过 $7\times8=56$. 论文没有写明自己实验中 SwiGLU-Clip 的 $L$ 取值.
+
+论文对它的评价是: 截断线性支路, 给门控封顶, 能有效压住激活离群值, 但激活一旦超过预设阈值, 有用的信息可能被丢掉. 从式 (2) 还能看出另一面: 截断点以外导数为 0, 略超阈值和远超阈值的坐标得到同样的梯度. K3 报告对硬截断的批评也落在这一点上 (见 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md)).
+
+论文的相关工作把稳定化手段分成三类. 优化器一侧: 梯度裁剪, 以及在 Adam 上加 spike 检测和动量重置的方法. 架构一侧: 残差连接, 层归一化, 以及 Kimi 的注意力残差. 激活函数一侧: SwiGLU-Clip 和本文的 PowLU. 优化器一侧限制的是更新量, 不限制前向的激活大小; 激活函数一侧直接改前向.
+
+---
+
+## 3. PowLU 的定义
+
+### 3.1 公式
+
+论文式 (1), 默认 $m=3$:
 
 $$
 \mathrm{PowLU}(x)=
 \begin{cases}
-x\cdot x^{m/(\sqrt{x}+1)}\cdot\sigma(x), & x>0,\\
-x^2\cdot\sigma(x), & x\le0.
+x\cdot x^{m/(\sqrt x+1)}\cdot\sigma(x), & x>0\\
+x^2\,\sigma(x), & x\le0
 \end{cases}
-\tag{1}
-$$
-
-正半轴可以写成
-
-$$
-\mathrm{PowLU}(x)=x^{1+m/(\sqrt{x}+1)}\sigma(x).
-$$
-
-比较 PowLU 与线性函数 $x$:
-
-$$
-\frac{\mathrm{PowLU}(x)}{x}
-=\exp\!\left(\frac{m\ln x}{\sqrt{x}+1}\right)\sigma(x).
-$$
-
-因为 $\ln x/\sqrt{x}\to0$ 且 $\sigma(x)\to1$, 所以
-
-$$
-\mathrm{PowLU}(x)\sim x,\qquad x\to+\infty.
-\tag{2}
-$$
-
-### 2.1 双支路实现
-
-在门控 FFN 中, 两条升维投影分别记为 $x_1$ 与 $x_2$:
-
-$$
-\mathrm{PowLU}(x_1,x_2)=x_1\odot f(x_2),
 \tag{3}
 $$
 
-其中
+名字里的 Pow 指幂次. 论文把它的设计概括为两点: 用输入平方根的有理式做指数, 随输入自适应地调整非线性程度; 再乘上 Sigmoid 加强非线性. 负半轴与 SwiGLU 完全相同. 正半轴可以合写成 $x^{1+m/(\sqrt x+1)}\sigma(x)$: 指数从 $x\to0^+$ 时的 $1+m$ 连续下降, $x\to\infty$ 时趋于 1.
+
+### 3.2 渐近线性
+
+与 $x$ 相比:
 
 $$
-f(x_2)=
-\begin{cases}
-x_2^{m/(\sqrt{x_2}+1)}\sigma(x_2), & x_2>0,\\
-x_2\sigma(x_2), & x_2\le0.
-\end{cases}
-$$
-
-当 $x_2$ 的各坐标趋向正无穷时, $f(x_2)\to\mathbf 1$; 对固定的 $x_1$, 双支路输出趋近 $x_1$. 在标量对照 $x_1=x_2=x$ 下, 这一结论对应式 (2) 的 $\mathrm{PowLU}(x)\sim x$.
-
-### 2.2 $\sqrt{x}+1$ 的作用
-
-- $\sqrt{x}$ 使指数向 0 的衰减慢于 $m/x$, 从而在更大的正输入范围内保留非线性.
-- 常数 $1$ 使 $x\to0^+$ 时指数趋于有限值 $m$, 正半轴局部形态可以按 $x^{1+m}\sigma(x)$ 分析; 去掉常数项后, 指数会在原点右侧发散, 得到另一种极限形态.
-
-正半轴在原点附近满足 $\mathrm{PowLU}(x)\sim\tfrac12x^{1+m}$. 连续性本身在 $m>-1$ 时成立; 在论文采用的 $m>0$ 参数域内, 右导数与左导数同为 0, 因此函数在原点可微. 正无穷处的渐近线性不依赖后面要说的 $m<10$ 这个充分条件. 论文进一步给出正半轴单调递增的充分范围 $0<m<10$, 其中上界来自辅助函数 $M(t)$ 的数值下界约 10.02. 负无穷处函数趋于 0.
-
-### 2.3 三个关键设计
-
-PowLU 的改动看起来只在正半轴加了一个输入相关指数, 但它同时回应了三个工程约束:
-
-1. **让衰减更平缓.这意味着在很大一片中间输入范围内, 函数仍保留明显的非线性弯曲, 而不是迅速退化成一条直线. 只有当 $x$ 真的很大时, 它才渐近地接近线性. 这样模型既享受了非线性的好处, 又不会被二次增长困扰.
-
-2. **分母 $+1$ 保证原点可微.** 如果没有这个常数, 指数在 $x\to0^+$ 时会发散, 正半轴局部形态会失控. $+1$ 把原点附近的指数固定到有限值 $m$, 使左右导数对齐, 避免在原点处出现一个不可导的尖点. 这是训练稳定的一个细节, 不是装饰.
-
-3. **保留 Sigmoid 增强非线性.** 正半轴的 $\sigma(x)$ 不是多余的: 它在输入由负转正的区域提供额外的弯曲, 让函数在原点附近有足够的非线性. 如果没有它, 正半轴在 $x$ 较小时近似幂函数, 非线性形态会被削弱.
-
----
-
-## 3. 正半轴增长示意
-
-PowLU 改变大正输入下的增长阶，但不引入水平上界；硬截断与 SiTU-GLU 分别使用硬截断和光滑有界变换。该图只说明渐近性质，不表示训练曲线、激活分布或模型性能。
-
----
-
-## 4. PowLU 在 MoE 层中的位置
-
-PowLU 论文 §4.1.1 说明, SwiGLU, SwiGLU-Clip 与 PowLU 都位于路由专家和共享专家的升维投影与降维投影之间, PowLU 默认 $m=3$. 对于 SwiGLU 与 PowLU, 三矩阵 FFN 可统一写成
-
-$$
-y=W_{\mathrm{down}}
-\left[
-(W_{\mathrm{up}}x)\odot f(W_{\mathrm{gate}}x)
-\right].
+\frac{\mathrm{PowLU}(x)}{x}=\exp\Bigl(\frac{m\ln x}{\sqrt x+1}\Bigr)\,\sigma(x)
 \tag{4}
 $$
 
-式 (4) 采用列向量约定: $W_{\mathrm{up}},W_{\mathrm{gate}}\in\mathbb R^{d'_{ff}\times d}$, $W_{\mathrm{down}}\in\mathbb R^{d\times d'_{ff}}$. SwiGLU 令 $f=\mathrm{SiLU}$, PowLU 则令 $f$ 取式 (3) 的分段门函数.
+$\ln x/\sqrt x\to0$, $\sigma(x)\to1$, 所以 $x\to+\infty$ 时 $\mathrm{PowLU}(x)\sim x$. 这是论文所说的「渐近线性」.
 
-SwiGLU-Clip 还会改写值支路, 不能只用式 (4) 中的 $f$ 表示. 令 $g=W_{\mathrm{gate}}x$, $v=W_{\mathrm{up}}x$, OpenAI 官方实现取
+但这个极限来得很慢. 代入式 (4), $m=3$:
+
+- $x=100$: 指数 $3\ln100/11\approx1.256$, 比值约 $3.51$.
+- $x=10^4$: 指数 $3\ln10^4/101\approx0.274$, 比值约 $1.31$.
+- $x=10^6$: 指数 $3\ln10^6/1001\approx0.041$, 比值约 $1.04$.
+
+指数 $1+3/(\sqrt x+1)$ 在 $x=16$ 时是 1.6, $x=100$ 时是 1.27, $x=400$ 时是 1.14. 所以输入在十几到几百之间时, PowLU 的局部增长阶在 1.1 到 1.6 之间, 比平方慢得多, 但还不是线性.
+
+### 3.3 逐点对比 SwiGLU
+
+代入式 (1) 与式 (3), $m=3$:
+
+| $x$ | PowLU 指数 $1+3/(\sqrt x+1)$ | PowLU | SwiGLU | PowLU / SwiGLU |
+|---|---|---|---|---|
+| 0.5 | 2.757 | 0.092 | 0.156 | 0.59 |
+| 1 | 2.5 | 0.731 | 0.731 | 1 |
+| 2 | 2.243 | 4.17 | 3.52 | 1.18 |
+| 4 | 2 | 15.71 | 15.71 | 1 |
+| 16 | 1.6 | 84.4 | 256 | 0.33 |
+| 100 | 1.273 | 351 | $10^4$ | 0.035 |
+| $10^4$ | 1.030 | $1.31\times10^4$ | $10^8$ | $1.3\times10^{-4}$ |
+
+两个交点可以直接从公式看出. $x=1$ 时任何幂次都是 1, 两者都等于 $\sigma(1)$. $x=4$ 时 $\sqrt x+1=3$, 指数正好是 2, 与 SwiGLU 的 $x^2$ 相同. 一般地, 指数等于 2 的位置是 $\sqrt x=m-1$, 即 $x=(m-1)^2$. 所以 $m=3$ 时: $(0,1)$ 上指数大于 2 而底数小于 1, PowLU 更小; $(1,4)$ 上指数大于 2 而底数大于 1, PowLU 更大, 在 $x=2$ 时大 18%; $x>4$ 后 PowLU 越来越小于 SwiGLU.
+
+### 3.4 原点附近
+
+$x\to0^+$ 时指数趋于 $1+m$, $\sigma(x)\to1/2$, 所以 $\mathrm{PowLU}(x)\approx\tfrac12x^{1+m}$, $m=3$ 时是 $\tfrac12x^4$; SwiGLU 是 $\tfrac12x^2$. 原点右侧 PowLU 更平. 左右导数在原点都是 0 ($m>0$ 时), 函数可微.
+
+### 3.5 为什么是 $\sqrt x+1$
+
+论文 §4.4.2 做了组件消融, 设计了三个正半轴变体 (负半轴都与 SwiGLU 相同): $x^{1+m/x}$, $x^{1+m/(x+1)}$, $x^{1+m/(x+1)}\sigma(x)$. Fig. 8 画出函数和导数: 大输入时 PowLU 的增长速度介于 SwiGLU 和三个变体之间, 三个变体彼此相近; PowLU 的导数大于三个变体. Fig. 9 比较训练 loss 与 SwiGLU 的差, PowLU 在参与比较的函数中 loss 最低, 论文据此认为 $\sqrt x$ 和 Sigmoid 两项有效. 三个改动各自的作用:
+
+- **分母里的 $+1$.** 去掉它, 指数 $1+m/x$ 在 $x\to0^+$ 时发散. 论文指出 $x^{1+m/x}$ 在 $(0,0.5]$ 上梯度几乎为 0. 代入 $x=0.5$, $m=3$ 可得 $0.5^{7}\approx0.0078$, 函数值本身已经很小. 加 1 后指数在原点有限, 等于 $1+m$.
+- **$\sqrt x$ 代替 $x$.** 指数 $m/(x+1)$ 衰减很快, $x=10$ 时只剩 0.27, 函数在中等输入上就近似线性了; $m/(\sqrt x+1)$ 在 $x=10$ 时还有 0.72, 保留了更宽的非线性区间.
+- **乘 $\sigma(x)$.** 让正半轴和负半轴在原点平滑衔接, 也让正半轴小输入处多一段弯曲. 没有它时, 正半轴就是纯幂函数.
+
+---
+
+## 4. 单调性: 为什么要求 $0<m<10$
+
+### 4.1 推导
+
+正半轴记 $t=\sqrt x$, 对 $\ln\mathrm{PowLU}(x)=\bigl(1+\tfrac{m}{t+1}\bigr)\ln x+\ln\sigma(x)$ 求导, 两边乘 $t^2(t+1)^2$ 整理可得: 导数为正当且仅当
 
 $$
-\begin{aligned}
-\tilde g&=\min(g,L),\\
-\tilde v&=\operatorname{clip}(v,-L,L),\\
-\phi_{\mathrm{clip}}(g,v)
-&=\bigl[\tilde g\,\sigma(\alpha\tilde g)\bigr]\odot(\tilde v+1),
-\end{aligned}
+(t+1)^2+m\,\varphi(t)+t^2(t+1)^2\bigl(1-\sigma(t^2)\bigr)>0,\qquad
+\varphi(t)=t+1-t\ln t
 \tag{5}
 $$
 
-其中默认 $L=7$, $\alpha=1.702$. 门支路只截断上界, 值支路同时截断上下界并增加 $+1$ 偏移. 论文把专家 FFN 的激活函数设为主要对照变量; 公开材料没有逐项披露两组大模型的路由器, 注意力与位置编码配置.
+第一项和第三项恒为正. $\varphi(t)$ 在 $t<t_0\approx3.59$ 时为正, 此时式 (5) 对任何 $m>0$ 成立; $t>t_0$ 时 $\varphi(t)<0$, 需要
 
-PowLU 论文沿用 Ling 家族骨架. 它披露了 26M–368M 激活参数的 scaling 配置, 以及 7.9B 总参数/600B token, 124B 总参数/800B token 两组大实验, 但没有给出后两组模型的完整专家配置. Ling-2.0 报告中的 256 个路由专家, Top-8, 1 个共享专家等信息只能作为家族架构背景, 不能补作 PowLU 两组大实验的未披露配置.
+$$
+m<M(t)=\frac{(t+1)^2+t^2(t+1)^2\bigl(1-\sigma(t^2)\bigr)}{t\ln t-t-1}
+\tag{6}
+$$
 
-### 4.1 Ling 家族中的组件边界
+### 4.2 手算验证论文的常数
 
-Ling-2.0 报告描述的产品层包含以下组件:
+论文给出 $M(t)$ 的最小值约 10.02, 在 $t^*\approx11.02$ 处 (即 $x\approx121$). 这时 $1-\sigma(121)$ 小到可以忽略, 只看第一项. 代入 $t=11.02$ 可得: 分子 $12.02^2\approx144.5$, 分母 $11.02\times2.3997-12.02\approx14.43$, 比值约 10.02. 再代入 $t=10$ 和 $t=12$, 分别得 10.06 和 10.05, 都比 $t=11.02$ 处大. 所以 $0<m<10$ 是正半轴单调递增的充分条件. 默认的 $m=3$ 离这个界很远.
 
-- 注意力支路使用 GQA, QKNorm 和 Partial RoPE; QKNorm 对 Q/K 做归一化, 以增强注意力计算和低精度训练稳定性, Partial RoPE 只旋转每个头的前 64 维.
-- MoE 支路包含路由专家与共享专家, 每个专家内部使用三矩阵门控 FFN.
-- PowLU 的替换点位于专家 FFN 内部, 对应式 (4) 中的 $f$; 它不改变注意力支路.
-
-报告从结构与实验两个角度讨论了 Partial RoPE, 但没有给未旋转维度预设固定的语义职责.
-
-**图 2 解析**
-
-- $v$ 和 $p=f_{\mathrm{PowLU}}(g)$ 的形状均为 $[d'_{ff},1]$，这是逐元素乘 $h=v\odot p$ 的前提。
-- PowLU 的正半轴分段形式与默认 $m=3$ 见式 (3)。它不额外插入 SiLU 或 tanh 模块；SwiGLU-Clip 还会改写值支路，不能只用本图的 $f$ 描述。
-- $W_{\mathrm{up}}$、$W_{\mathrm{gate}}$ 与 $W_{\mathrm{down}}$ 构成三矩阵 FFN；图只说明专家内部计算，不表示路由器或共享专家配置。
-
-PowLU 论文 Fig. 2 与 Fig. 5 分别统计专家线性层和共享专家的动态范围.
-
-### 4.2 研究模型与发布模型
-
-| 设定 | 模型或规模 | 数据 | 激活 | 公开依据 |
-|------|------------|------|------|----------|
-| scaling | 26M–368M 激活参数 | 序列长度 4096 | SwiGLU / PowLU | Table 1, Fig. 3 |
-| 大实验 A | 7.9B 总参数 | 600B token | SwiGLU / SwiGLU-Clip / PowLU | Table 2, Fig. 2, Fig. 4–5 |
-| 大实验 B | 124B 总参数 | 800B token | SwiGLU / PowLU | Table 3 |
-| Ling-2.0 发布模型 | mini 16B, flash 103B, 1T | 版本报告口径 | SwiGLU | 产品架构与模型身份 |
-
-7.9B 与 124B 是 PowLU 论文的研究模型. Ling-2.0 发布模型使用 SwiGLU, 并同时包含 MTP, 无辅助损失路由等组件; PowLU 论文的消融对象是门函数. 模型身份与公开配置见 [Ling 2.0](../../../../../model-library/03-模型家族/15-ling/ling-2-0/ling-2-0-bi.md).
+负半轴就是 $x^2\sigma(x)$, 恒为非负: 从 $x\to-\infty$ 时的 0 升到 $x\approx-2.22$ 处的极大值约 0.48, 再降回原点的 0, 与 SwiGLU 一样不单调. 论文的单调性讨论只针对正半轴. 标量对角切片上 PowLU 处处非负; 双支路形式里 $x_1$ 可正可负, 输出没有这个限制.
 
 ---
 
-## 5. 实验结果
+## 5. 双支路: 改动其实落在门控上
 
-**Scaling 实验.** Fig. 3 比较 26M, 47M, 92M, 199M, 368M 激活参数的模型. 在该训练协议下, 两条 loss scaling 拟合曲线近似重合; 这里测量的是训练损失的一致性, 表达能力没有单独实验.
+### 5.1 公式
 
-**7.9B 与 124B 评测.** 7.9B/600B token 的 Table 2 比较 SwiGLU, SwiGLU-Clip 与 PowLU:
+FFN 里两路输入不同. 记线性支路为 $x_1$, 门控支路为 $x_2$, PowLU 写成
+
+$$
+\mathrm{PowLU}(x_1,x_2)=x_1\odot f(x_2),\qquad
+f(x_2)=
+\begin{cases}
+x_2^{m/(\sqrt{x_2}+1)}\,\sigma(x_2), & x_2>0\\
+x_2\,\sigma(x_2), & x_2\le0
+\end{cases}
+\tag{7}
+$$
+
+$x_1=x_2=x$ 时回到式 (3). 负半轴的 $f$ 就是 SiLU, 与 SwiGLU 相同; 正半轴把 SiLU 里的线性因子 $x_2$ 换成了 $x_2^{m/(\sqrt{x_2}+1)}$. 整个 FFN 是 (论文 §4.1.1, 列向量记号):
+
+$$
+y=W_{\text{down}}\bigl[(W_{\text{up}}x)\odot f(W_{\text{gate}}x)\bigr]
+\tag{8}
+$$
+
+线性支路 $W_{\text{up}}x$ 没有任何改动. 所以 PowLU 与 SwiGLU 的区别全部在门控函数 $f$ 上.
+
+### 5.2 门控因子有上界
+
+$x_2\to+\infty$ 时 $x_2^{m/(\sqrt{x_2}+1)}\to1$, 门控趋于 1, 不是趋于无穷. 中间存在一个最大值. 对 $m\ln x_2/(\sqrt{x_2}+1)$ 求导并令其为 0, 记 $t=\sqrt{x_2}$, 得到 $t+1=t\ln t$, 也就是 $\varphi(t)=0$, 解恰好是第 4 节的 $t_0\approx3.59$. 把 $\ln t_0=(t_0+1)/t_0$ 代回, 幂次因子的最大值是
+
+$$
+\max_{x_2>0}\,x_2^{m/(\sqrt{x_2}+1)}=\exp\Bigl(\frac{2m}{t_0}\Bigr)\approx e^{0.557m}
+\tag{9}
+$$
+
+在 $x_2=t_0^2\approx12.9$ 处取到. 代入可得: $m=2$ 时约 3.05, $m=3$ 时约 5.32, $m=4$ 时约 9.28. 再乘上 $\sigma(x_2)<1$, 就是门控因子的上界. 门控的取值范围是 $(-0.28,\,5.32)$ ($m=3$), 负半轴下界来自 SiLU 的最小值. 论文没有写出这个上界, 它由式 (7) 直接算出.
+
+逐点代入式 (7), 与 SwiGLU 的门控 $\mathrm{SiLU}(x_2)$ 对照:
+
+| $x_2$ | PowLU 门控 $f$ | SiLU 门控 |
+|---|---|---|
+| 0.5 | 0.184 | 0.311 |
+| 1 | 0.731 | 0.731 |
+| 4 | 3.93 | 3.93 |
+| 12.9 | 5.32 | 12.9 |
+| 100 | 3.51 | 100 |
+| $10^4$ | 1.31 | $10^4$ |
+
+所以从双支路的角度看, PowLU 是一个「门控有界, 线性无界」的结构, 门控在 $x_2\approx12.9$ 后随输入增大反而减小. $x_1$ 和 $x_2$ 同时增大时, 输出最终只随 $x_1$ 线性增长, 这就是式 (4) 在对角切片上的含义.
+
+这个性质有一个后果: $x_2>12.9$ 时 $f'(x_2)<0$. 对线性支路为正的坐标, 门控预激活越大, 输出越小, 梯度会把门控预激活往回推. SwiGLU 没有这种回推, 门控越大输出越大. 论文没有讨论这一点对训练的影响.
+
+### 5.3 反向传播
+
+双支路形式下, 输出 $h=x_1 f(x_2)$ 对两路的偏导是
+
+$$
+\frac{\partial h}{\partial x_1}=f(x_2),\qquad
+\frac{\partial h}{\partial x_2}=x_1\,f'(x_2)
+\tag{10}
+$$
+
+对线性支路的梯度乘子就是门控值, 由 5.2 节, $m=3$ 时不超过 5.32. SwiGLU 的这个乘子是 $\mathrm{SiLU}(x_2)$, 无界. 对门控支路的乘子要算 $f'$. 正半轴 $f=p\,\sigma$, 其中 $p=x_2^{m/(\sqrt{x_2}+1)}$, 记 $t=\sqrt{x_2}$, 有 $(\ln p)'=\frac{m}{x_2(t+1)}-\frac{m\ln t}{t(t+1)^2}$, 于是 $f'=p\,\sigma\bigl[(\ln p)'+1-\sigma\bigr]$. 逐点代入:
+
+| $x_2$ | PowLU $f'(x_2)$ | SiLU$'(x_2)$ |
+|---|---|---|
+| 0.5 | 0.81 | 0.74 |
+| 1 | 1.29 | 0.93 |
+| 4 | 0.60 | 1.05 |
+| 12.9 | 约 0 | 1.00 |
+| 100 | $-0.010$ | 1.00 |
+
+小输入处 PowLU 门控的导数比 SiLU 大, $x_2=1$ 时大 39%; 过了 $x_2\approx12.9$ 门控导数变为很小的负数. SiLU 的导数在大输入处趋于 1, 门控支路的梯度乘子约等于 $x_1$, 随线性支路一起增长; PowLU 的门控在大输入处几乎饱和, 门控支路得到的梯度很小. 这与论文 Fig. 5 中反向梯度范围收窄的观察方向一致.
+
+标量对角切片上也可以对照. 由式 (5) 的推导, $\mathrm{PowLU}'(x)=\mathrm{PowLU}(x)\cdot\bigl[\ln\mathrm{PowLU}(x)\bigr]'$, 代入 $x=100$ 得约 2.46, $x=10^4$ 得约 1.18, 趋于 1; SwiGLU 的导数是 $2x\sigma(x)+x^2\sigma(x)(1-\sigma(x))$, $x=100$ 时约 200. 论文 Fig. 1 画的就是这个对比: SwiGLU 的输出和导数都明显大于 PowLU, 差距随输入增大而扩大.
+
+### 5.4 对 FP8 量程的影响
+
+按张量最大值缩放时, 量程由最大值决定. 设某个张量里线性支路的最大值约为 100, 门控预激活也到了 100:
+
+- SwiGLU 的乘积约 $100\times100=10^4$, 比 E4M3 的最大值 448 大 22 倍, 必须靠缩放因子压下来, 其余的数随之被压小.
+- PowLU 的乘积约 $100\times3.51=351$; 即使门控落在最大值附近, 也不超过 $100\times5.32=532$. 乘积的量程大致和线性支路本身同一量级.
+
+PowLU 不保证每个坐标的上界, 所以这一点依赖线性支路本身不失控. 论文的 Fig. 6 显示的是线性层张量的离群通道变少, 说明在 7.9B 实验里线性支路的离群值也一并下降, 但论文没有单独统计线性支路.
+
+### 5.5 与 SiTU-GLU 的上界对照
+
+K3 的 SiTU-GLU 门控上界是 4, 线性上界是 25. PowLU 的门控上界 5.32 和它同一量级, 差别在线性支路: SiTU-GLU 用 $25\tanh(u/25)$ 加界, PowLU 不加. 所以 SiTU-GLU 的输出坐标有确定的上界 100, PowLU 没有, 但输出只随线性支路线性增长, 不再有两个大值相乘.
+
+把两路取同一个值 $v$, 用式 (10) 和 01 篇的式 (9) 逐点算三者的输出与两个梯度乘子 (SiTU-GLU 取 $\beta_1=4$, $\beta_2=25$):
+
+| $v$ | 量 | SwiGLU | PowLU | SiTU-GLU |
+|---|---|---|---|---|
+| 2 | 输出 | 3.52 | 4.17 | 3.25 |
+| 2 | 对线性支路 | 1.76 | 2.08 | 1.62 |
+| 2 | 对门控支路 | 2.18 | 2.56 | 1.77 |
+| 10 | 输出 | 100.0 | 52.6 | 37.5 |
+| 10 | 对线性支路 | 10.0 | 5.26 | 3.38 |
+| 10 | 对门控支路 | 10.0 | 0.48 | 0.25 |
+| 100 | 输出 | $10^4$ | 351 | 99.9 |
+| 100 | 对线性支路 | 100 | 3.51 | 0.005 |
+| 100 | 对门控支路 | 100 | $-1.05$ | 约 0 |
+
+$v=2$ 时三者相差不到 30%, PowLU 最大. $v=10$ 时 PowLU 和 SiTU-GLU 的门控支路梯度都已降到 SwiGLU 的 5% 以下, 两者的差别主要在线性支路. $v=100$ 时差别最明显: SiTU-GLU 两路的梯度都接近 0, 这个坐标基本不再学习; PowLU 对线性支路仍有 3.51 的梯度, 门控支路得到一个小的负梯度. 换句话说, SiTU-GLU 在大输入处把前向和反向一起压住, PowLU 只压门控那一路, 线性那一路照常传梯度.
+
+---
+
+## 6. 在 Ling 的 MoE 层里
+
+### 6.1 Ling 2.0 的结构
+
+论文的研究模型沿用 Ling 家族的架构 (Ling Team, 2025). Ling 2.0 技术报告描述的结构:
+
+- 注意力用 GQA, key-value 头数为 8, 16 或 32, 头维度固定为 128. 报告引入 QKNorm 是为了训练稳健, 并验证它明显改善低精度训练下的稳定性; Partial RoPE 只旋转每个头的前 64 维, 目的是长度外推. FFN 用 SwiGLU, 归一化用 pre-norm 形式的 RMSNorm.
+- MoE 层有 256 个路由专家, 每个 token 选 8 个, 另有 1 个共享专家, 激活比例 $(8+1)/257\approx3.5\%$.
+- 前几层是稠密层 (mini, flash, 1T 分别是 1, 1, 4 层), 报告说这样能在性能不变的前提下减少总参数, 并改善路由均衡; 有 1 层 MTP, 损失权重 0.1; 负载均衡用无辅助损失的偏置更新.
+- 发布的三个模型: Ling-mini-2.0 总参数 16B, 激活 1.4B; Ling-flash-2.0 总参数 103B, 激活 6.1B; Ling-1T 总参数 1T, 激活 51B. 激活函数都是 SwiGLU.
+- 预训练全程用 FP8. 优化器是 AdamW, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1, 梯度范数裁剪 1.0; 前 20T token 用 4K 上下文, 之后 150B token 用 32K.
+
+Ling 2.0 已经在 FP8 下训练到万亿参数, 用的仍是 SwiGLU, 靠的是 QKNorm 和训练基础设施一侧的处理. PowLU 论文研究的是另一个问题: 在 FP8 下, 只换掉 FFN 的门控函数, 能不能直接消除 loss spike.
+
+本库的原文整理见 [Ling 2.0](../../../../../model-library/03-模型家族/15-ling/ling-2-0/ling-2-0-bi.md).
+
+### 6.2 PowLU 放在哪
+
+论文 §4.1.1 说明, SwiGLU, SwiGLU-Clip, PowLU 都放在路由专家和共享专家的升维与降维之间, 也就是式 (8) 的 $f$ 的位置. 注意力一侧不变. QKNorm 处理注意力投影的离群值, PowLU 处理 FFN 中间层的离群值, 两者作用在不同的张量上.
+
+### 6.3 研究模型与发布模型
+
+| 设定 | 规模 | 数据 | 对比的激活 | 出处 |
+|---|---|---|---|---|
+| scaling | 26M 到 368M 激活参数 | 序列长度 4096 | SwiGLU, PowLU | Table 1, Fig. 3 |
+| 大实验 A | 7.9B 总参数 | 600B token | SwiGLU, SwiGLU-Clip, PowLU | Table 2, Fig. 2, Fig. 5 |
+| 大实验 B | 124B 总参数 | 800B token | SwiGLU, PowLU | Table 3 |
+| Ling 2.0 发布 | 16B, 103B, 1T | 见 Ling 2.0 报告 | 只用 SwiGLU | Ling 2.0 报告 |
+
+论文没有给出 7.9B 和 124B 两个模型的专家数, 层数, 注意力等完整配置. Ling 2.0 的 256 选 8 只是家族背景, 不能当作这两个研究模型的配置.
+
+---
+
+## 7. 实验
+
+### 7.1 scaling 实验
+
+Table 1 的五个规模 (激活参数, 层数, 隐藏维, 学习率, batch size; 序列长度都是 4096):
+
+| 激活参数 | 层数 | 隐藏维 | 学习率 | batch size |
+|---|---|---|---|---|
+| 26M | 10 | 512 | 0.00156 | 128 |
+| 47M | 12 | 640 | 0.0013 | 192 |
+| 92M | 16 | 768 | 0.0011 | 256 |
+| 199M | 20 | 1024 | 0.00091 | 448 |
+| 368M | 24 | 1280 | 0.00077 | 640 |
+
+学习率随规模下降, batch size 随规模上升. 论文说明 SwiGLU 和 PowLU 两组模型的这些设置完全一致, 只换激活函数. Fig. 3 中 SwiGLU 和 PowLU 的 loss scaling 拟合曲线几乎重合. 这说明在这个范围内, 把门控改成 PowLU 不损失训练效率; 它不说明 PowLU 更好.
+
+### 7.2 $m$ 的消融
+
+Table 4 用 47M 激活参数训练 29.8B token: SwiGLU 的 loss 是 1.910; $m=2,3,4$ 分别是 1.913, 1.912, 1.914. 三个 $m$ 之间最多差 0.002, 与 SwiGLU 最多差 0.004. 论文在这个范围内选了 $m=3$. $m$ 可以取连续值, 论文只试 2, 3, 4, 依据是 PowLU 曲线与 SwiGLU 曲线之间的距离; $m$ 主要影响小输入处的非线性程度. 由 3.3 节, $m$ 还决定与 SwiGLU 的交点 $x=(m-1)^2$: $m=2,3,4$ 时分别在 1, 4, 9. 按式 (9), 三个 $m$ 对应的门控上界分别约为 3.05, 5.32, 9.28, 相差三倍, loss 却几乎不变, 说明在小模型上门控上界在这个范围内对 loss 不敏感.
+
+### 7.3 7.9B MoE, 600B token
+
+Table 2 (越高越好, 加粗为三者中最高):
 
 | 基准 | SwiGLU | SwiGLU-Clip | PowLU |
-|------|--------|-------------|-------|
+|---|---|---|---|
+| AGIEval | **31.75** | 30.23 | 31.13 |
 | MMLU | 53.95 | 54.12 | **54.92** |
-| HumanEval | 25.61 | 23.17 | **26.83** |
+| MMLU-Pro | 21.56 | 21.79 | **24.00** |
+| MMMLU | 31.77 | 32.40 | **32.61** |
+| C-Eval | 51.99 | 52.62 | **52.96** |
+| CMMLU | 52.69 | 50.24 | **52.82** |
 | SuperGPQA | **17.67** | 17.14 | 17.02 |
+| TriviaQA | 47.86 | **48.87** | 48.18 |
+| ARC-c | 51.53 | 51.86 | **55.93** |
+| BBH | 38.82 | 38.22 | **38.96** |
+| HellaSwag | 66.24 | 66.31 | **66.46** |
+| WinoGrande | 63.14 | 64.56 | **65.90** |
+| HumanEval | 25.61 | 23.17 | **26.83** |
+| GSM8K | 30.40 | 32.30 | **33.74** |
+| MATH | 22.98 | 22.64 | **23.98** |
+| MGSM | 15.93 | 17.40 | **18.40** |
+| CMATH | 63.21 | **63.39** | 63.11 |
 
-各任务排序不同: PowLU 在 MMLU, HumanEval 等条目较高, SwiGLU 在 SuperGPQA 等条目较高. 124B/800B token 的 Table 3 也呈现任务差异: MMLU 为 69.10 与 69.14, ARC-challenge 为 77.29 与 83.05; MMLU-Pro 为 40.75 与 40.12, WinoGrande 为 75.45 与 73.72. 前一个数均为 SwiGLU, 后一个数为 PowLU.
+17 项里 PowLU 13 项最高, SwiGLU 2 项 (AGIEval, SuperGPQA), SwiGLU-Clip 2 项 (TriviaQA, CMATH). 差距最大的是 ARC-c (比 SwiGLU 高 4.40) 和 MMLU-Pro (高 2.44). SwiGLU-Clip 并不总比 SwiGLU 好: CMMLU 低 2.45, HumanEval 低 2.44, 这和硬截断丢信息的批评方向一致, 但单次训练的差距不足以下结论.
 
-**$m$ 消融.** Table 4 使用 47M 激活参数, 29.8B token: SwiGLU loss 为 1.910, $m=2,3,4$ 时分别为 1.913, 1.912, 1.914. 论文在测量范围内选择 $m=3$; 它与 SwiGLU 相差 0.002, 且三个 $m$ 值之间的差异较小.
+### 7.4 124B MoE, 800B token
 
-**FP8 与 loss spike.** Fig. 4 中, FP8 SwiGLU 约在 76,200 step 后出现 loss spike, SwiGLU-Clip 约在 77,000 step 出现 spike; PowLU 的 FP8 曲线约为 1.32, 论文未观察到显著偏离. Fig. 4 包含 BF16 SwiGLU 与三条 FP8 曲线. SwiGLU-Clip 和 PowLU 先以 SwiGLU 训练, 再替换激活并经历恢复阶段; 论文未将 FP8 SwiGLU 描述为同类激活切换实验. 图中可直接观察到 FP8 PowLU 在所示区间内未出现另外两条 FP8 曲线的 loss spike. 四条曲线的精度与切换协议存在差异, 因此绝对 loss 只按各自协议解释.
+Table 3:
 
-**数值分布: 异常值被压缩.** 论文 Fig. 2 与 Fig. 5 分别给出路由专家和共享专家在相同训练步数后的激活分布. SwiGLU 的分布尾部明显延伸到更大的最大值, 红色长尾对应大异常值; PowLU 的分布则更集中, 极端值被压缩. 这与损失曲线的稳定表现一致: PowLU 不是完全消灭大值, 而是把动态范围压低一个量级, 使 FP8 等低精度格式能更有效地分配量化刻度.
+| 基准 | SwiGLU | PowLU |
+|---|---|---|
+| AGIEval | 53.03 | **53.75** |
+| MMLU | 69.10 | **69.14** |
+| MMLU-Pro | **40.75** | 40.12 |
+| MMMLU | 46.27 | **48.10** |
+| C-Eval | **71.74** | 71.56 |
+| CMMLU | **71.58** | 71.41 |
+| SuperGPQA | 25.93 | **26.16** |
+| TriviaQA | 66.31 | **66.91** |
+| ARC-c | 77.29 | **83.05** |
+| BBH | 62.07 | **63.36** |
+| HellaSwag | 76.23 | **76.24** |
+| WinoGrande | **75.45** | 73.72 |
+| HumanEval | 54.27 | **55.49** |
+| GSM8K | **70.81** | 69.90 |
+| MATH | 42.22 | **44.98** |
+| MGSM | 54.00 | **54.80** |
+| CMATH | 80.69 | **83.33** |
 
-**图 3 解析**
+PowLU 12 项更高, SwiGLU 5 项 (MMLU-Pro, C-Eval, CMMLU, WinoGrande, GSM8K). 7.9B 上 PowLU 领先的 MMLU-Pro 和 GSM8K, 到 124B 上反过来了; ARC-c 在两个规模上都领先最多 (4.40 和 5.76). 两个规模的结论都是「多数任务略好」, 单项上的方向并不稳定. 两组实验各训练一次, 论文没有给运行间波动.
 
-- 论文 Fig. 2/5 报告：在所示条件下，PowLU 分布尾部更集中。精确带宽、层间曲线和数值必须从原图或原始日志读取，不能由示意图补造。
-- 前向激活与反向梯度是不同统计对象，不能合并为同一分布；不同训练步、层、精度或采样条件也不能直接横比。
-- 此图说明统计结构与比较条件，不代表论文的精确测量值或模型性能。
+### 7.5 按类别平均
+
+论文把 17 项评测分成三类: 世界知识 9 项 (AGIEval 到 ARC-c), 语言与推理 3 项 (BBH, HellaSwag, WinoGrande), 数学与代码 5 项 (HumanEval 到 CMATH). 论文没有给平均分; 下表按 Table 2 和 Table 3 逐类算术平均:
+
+| 类别 | 7.9B SwiGLU | 7.9B SwiGLU-Clip | 7.9B PowLU | 124B SwiGLU | 124B PowLU |
+|---|---|---|---|---|---|
+| 世界知识 (9) | 40.09 | 39.92 | 41.06 | 58.00 | 58.91 |
+| 语言与推理 (3) | 56.07 | 56.36 | 57.11 | 71.25 | 71.11 |
+| 数学与代码 (5) | 31.63 | 31.78 | 33.21 | 60.40 | 61.70 |
+| 全部 (17) | 40.42 | 40.43 | 41.59 | 61.04 | 61.88 |
+
+7.9B 上 PowLU 三类都最高, 全部平均比 SwiGLU 高 1.17; SwiGLU-Clip 与 SwiGLU 的全部平均只差 0.01. 124B 上 PowLU 全部平均高 0.84, 其中世界知识的领先有 0.58 来自 ARC-c 一项 (单项差 5.76, 除以 9); 语言与推理一类 SwiGLU 略高, 主要因为 WinoGrande. 平均分把不同量程的基准直接相加, 只用来看方向, 不能当作模型能力的单一指标.
+
+### 7.6 FP8 训练与 loss spike
+
+论文 §4.3.1 的 Fig. 4 有四条曲线: BF16 SwiGLU 作基线, 以及 FP8 下的 SwiGLU, SwiGLU-Clip, PowLU. 观察到的现象:
+
+- loss spike 主要出现在 76,200 步之后. BF16 SwiGLU 的 loss 最低, 训练平稳.
+- FP8 SwiGLU-Clip 比 FP8 SwiGLU 推迟了 spike, 但在约 77,000 步也出现了.
+- FP8 PowLU 在图示区间内保持在约 1.32, 没有明显偏离.
+
+读这张图要注意协议. 论文对 BF16 曲线 loss 最低的解释有两条: 一是 BF16 精度比 FP8 高; 二是 SwiGLU-Clip 和 PowLU 两条曲线不是从头训练的, 而是先用 SwiGLU 训练一段, 再换成新激活, 经过一段 loss 恢复期, 所以 loss 偏高. 模型的具体规模论文只说是大规模模型. 所以四条曲线的绝对 loss 不能直接相比, 能读出的只是: 同在 FP8 下, SwiGLU 和 SwiGLU-Clip 出现了 spike, PowLU 没有. 硬截断把乘积限制在 56 以内仍然出现 spike, 说明问题不只在于最大值, 这与论文强调的「截断丢失信息」和「截断点外梯度为 0」相呼应; 论文没有对 spike 的成因做进一步的拆分实验.
 
 ---
 
-## 6. 与相近稳定化方法的机制边界
+## 8. 三种做法的对照
 
-| 方法 | 作用方式 | 大输入与梯度性质 | 适用范围 |
-|------|----------|------------------|----------|
-| PowLU | 改写门函数的输入相关指数 | 正半轴无界, 渐近线性 | PowLU 论文的研究模型; Ling-2.0 发布模型仍使用 SwiGLU |
-| SiTU-GLU | 两条支路使用光滑 tanh 变换 | 输出有界, 边界附近仍保留平滑梯度 | 详见 [01 SiTU-GLU](../01-SiTU-GLU/01-SiTU-GLU.md) |
-| V4 SwiGLU clamp | 对线性支路与门支路做硬截断 | 截断区间外对应梯度为 0 | 阈值与适用模型见 [6.1.7](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md) |
-| gpt-oss / PowLU 文中的 SwiGLU-Clip | 值支路双侧截断并加 $+1$, 门支路只截断上界 | 属于硬截断路线 | gpt-oss 模型卡记录 clamping; 官方实现给出 `swiglu_limit=7.0`, 默认 $\alpha=1.702$ 与具体截断位置 |
+| 方法 | 改动位置 | 门控因子 | 线性支路 | 输出坐标上界 | 截断处导数 |
+|---|---|---|---|---|---|
+| SwiGLU | 无 | 无界 | 无界 | 无 | 不衰减 |
+| SwiGLU-Clip (gpt-oss) | 两路硬截断, 线性加 1 | $\le7$ | $[-6,8]$ | 56 | 阈值外为 0 |
+| SiTU-GLU (Kimi K3) | 两路 softcap | $<4$ | $(-25,25)$ | 100 | 平滑趋于 0 |
+| PowLU (Ling) | 门控函数的指数 | $<5.32$ ($m=3$, 推算) | 无界 | 无 | 无截断 |
 
-PowLU 改变渐近增长阶, V4 与 SwiGLU-Clip 使用硬截断, SiTU 使用光滑有界变换. 三类方法的超参数, 输出范围和梯度性质不能互换.
+三种做法管住的东西不同. 硬截断和 SiTU-GLU 给输出一个确定的上界, 区别在边界处的导数. PowLU 不给上界, 只让两个大值不再相乘. 若低精度格式要求的是「每个坐标都不超过某个值」, 前两种能直接保证; PowLU 能保证的是增长阶, 最大值仍取决于线性支路的权重.
+
+[2.1.1 激活函数](../2.1.1-激活函数.md) 第 8 节还列了 DeepSeek-V4 的截断: 线性支路截到 $[-10,10]$, 门控上界 10, 属于硬截断一类. 训练中的其他稳定化手段见 [6.1.7 训练稳定性](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
+
+---
+
+## 9. 实现
+
+```python
+import torch
+import torch.nn.functional as F
+
+def powlu_gate(x2: torch.Tensor, m: float = 3.0) -> torch.Tensor:
+    pos = x2.clamp(min=1e-6)
+    power = torch.exp(m * torch.log(pos) / (pos.sqrt() + 1.0))
+    return torch.where(x2 > 0, power * torch.sigmoid(x2), F.silu(x2))
+
+def powlu_ffn(x, w_gate, w_up, w_down, m: float = 3.0):
+    return (powlu_gate(x @ w_gate, m) * (x @ w_up)) @ w_down
+```
+
+正半轴的幂次用 $\exp(m\ln x_2/(\sqrt{x_2}+1))$ 计算. $\ln$ 在 0 处发散, 所以先把输入截到一个很小的正数再取对数, 负半轴和 0 走 `torch.where` 的另一支. `torch.where` 两支都会计算, 截断保证负数和 0 不会在对数里产生 NaN, 反向时也不会有 NaN 混进梯度. 与 SwiGLU 相比, 每个坐标多一次 $\ln$, 一次开方, 一次 $\exp$, 相对矩阵乘仍可忽略, 但要和矩阵乘融合才不会多出访存.
+
+反向需要的中间量和 SwiGLU 一样: 保存两路预激活 $x_1$, $x_2$, 由式 (10) 现算 $f$ 与 $f'$ 即可, 不必额外保存幂次. 显存上与 SwiGLU 相同; 若采用激活重计算, 多出的也只是这几次逐元素运算. 已有的 SwiGLU 融合核一般把 SiLU 固定编译在核里, 换成 PowLU 需要改写门控那一段, 矩阵乘的切分和张量并行的布局不受影响, 因为线性支路和门控支路的形状都没变.
+
+---
+
+## 10. 失效模式与使用边界
+
+| 情形 | 会发生什么 | 怎么办 |
+|---|---|---|
+| 把 PowLU 当成有界激活 | 线性支路仍无界, 输出没有上界 | 需要确定上界时用截断或 SiTU-GLU |
+| 以为 PowLU 是 Ling 2.0 发布模型的激活 | 发布模型用 SwiGLU | 看 Ling 2.0 报告和模型配置 |
+| 实现里直接对负数取对数 | 前向或反向出现 NaN | 先截到正数, 再用 `where` 分支 |
+| 把 Fig. 4 的绝对 loss 横比 | 四条曲线的精度和切换协议不同 | 只比较是否出现 spike |
+| 门控预激活大量超过 12.9 | 门控导数为负, 门控越大输出越小 | 训练中统计门控预激活的分布 |
+| $m$ 取到 10 以上 | 正半轴不再保证单调 | 按式 (6), 保持 $m<10$ |
+| 推广到别的模型直接用 $m=3$ | 只在 47M 上扫过 $m=2,3,4$ | 在自己的规模上重做小范围扫描 |
 
 ---
 
 ## 参考文献
 
-1. Peijie Jiang, Yuqi Feng, Cunyin Peng, Qian Zhao, Jia Liu, KunLong Chen, Zhiqiang Zhang, Jun Zhou (Ling Team, Ant Group). (2026-05-25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). arXiv:2605.25704. 式 (1), §3.1 实现, $m=3$; Fig. 2–5; Table 1–4.
-2. Sandhini Agarwal et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). arXiv:2508.10925. 模型卡脚注记录 clamping 与 residual connection; [OpenAI 官方实现](https://github.com/openai/gpt-oss/blob/main/gpt_oss/torch/model.py)给出 `swiglu_limit=7.0`, 默认 $\alpha=1.702$ 与截断细节.
-3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). arXiv:2510.22115. Ling-2.0 的 GQA, QKNorm, Partial RoPE, 专家配置与 SwiGLU.
-4. Noam Shazeer. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv:2002.05202. SwiGLU 名称与门控 FFN 结构.
-5. 青稞 AI / Ling Team. (2026). [PowLU: 把 SwiGLU 的二次增长压回线性, 解决 FP8 训练 Loss Spike](https://mp.weixin.qq.com/s/LYmEQF-PcPPykYqFbKrsPw). 微信公众号博文. 设计动机,三个关键设计,Scaling Law,7.9B/124B 实验与数值分布可视化.
+1. Jiang, P., Feng, Y., Peng, C., Zhao, Q., Liu, J., Chen, K., Zhang, Z., & Zhou, J. (Ling Team, Ant Group). (2026, May 25). [PowLU: An Activation Function for Stable Pre-Training of LLMs](https://arxiv.org/abs/2605.25704). *arXiv:2605.25704*. 式 (1), §4.1.1, §4.3.1, §4.4.2, Table 1 至 Table 4, Fig. 2 至 Fig. 9, 附录单调性证明.
+2. Agarwal, S., et al. (2025). [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925). *arXiv:2508.10925*. 官方实现见 [gpt-oss model.py](https://github.com/openai/gpt-oss/blob/main/gpt_oss/torch/model.py), `swiglu_limit=7.0`, `alpha=1.702`.
+3. Ling Team. (2025). [Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation](https://arxiv.org/abs/2510.22115). *arXiv:2510.22115*. Ling 2.0 结构, SwiGLU.
+4. Shazeer, N. (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). *arXiv:2002.05202*. SwiGLU 定义.
+5. Kimi Team. (2026). [Kimi K3 Technical Report](https://arxiv.org/abs/2607.24653). *arXiv:2607.24653*. SiTU-GLU.
+6. DeepSeek-AI. (2026). DeepSeek-V4 技术报告, 见本库 [DeepSeek-V4 原文整理](../../../../../model-library/03-模型家族/01-deepseek/deepseek-v4/deepseek-v4-bi.md). SwiGLU 截断阈值.
+
+---
+
+上一篇: [02 GLU 家族](../02-GLU家族-从GLU到SwiGLU/02-GLU家族-从GLU到SwiGLU.md) · 下一篇: [2.1.2 归一化层](../../2.1.2-归一化层/2.1.2-归一化层.md)
