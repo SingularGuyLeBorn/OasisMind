@@ -119,7 +119,7 @@ Reasoning 线是 SFT, GRPO, ODPO 三段, 起点是长上下文预训练 checkpoi
 
 论文反复说面向 「compute and memory constrained applications」, 却没给任何部署数字. 用表 1 可以粗算. 权重按 bf16 每参数 2 字节: 14B 约 28.1 GB, 8B 约 17.0 GB, 3B 约 6.4 GB (只算语言部分, 不含 410M 视觉编码器). 这说明 3B 能进一张消费级显卡, 14B 在 bf16 下需要较大显存, 要落到端侧多半还得量化; 论文只在指令 SFT 处提到 fp8, 没说发布权重是什么精度.
 
-KV cache 在长上下文下更关键. 每个 token 的 KV cache 是 2 × 层数 × KV 头数 × 每头维度个数值. 按每头维度等于潜变量维度除以 32 的假设和 bf16: 14B 每 token 约 204.8 KB, 8B 约 139.3 KB, 3B 约 79.9 KB; 满 262,144 token 时分别约 53.7 GB, 36.5 GB, 20.9 GB. 3B 满上下文的 KV cache 是它自身权重的 3 倍多. GQA 把 KV 头从 32 压到 8, 已经把 cache 砍到四分之一, 但 256k 对 「memory constrained」 场景仍然是纸面能力. 长上下文外推的一般背景见 [RoPE 专题](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/RoPE/RoPE.md).
+KV cache 在长上下文下更关键. 每个 token 的 KV cache 是 2 × 层数 × KV 头数 × 每头维度个数值. 按每头维度等于潜变量维度除以 32 的假设和 bf16: 14B 每 token 约 204.8 KB, 8B 约 139.3 KB, 3B 约 79.9 KB; 满 262,144 token 时分别约 53.7 GB, 36.5 GB, 20.9 GB. 3B 满上下文的 KV cache 是它自身权重的 3 倍多. GQA 把 KV 头从 32 压到 8, 已经把 cache 砍到四分之一, 但 256k 对 「memory constrained」 场景仍然是纸面能力. 长上下文外推的一般背景见 [RoPE 专题](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/2.1.4-位置编码.md).
 
 ## 12. 本页对不上的数字和说法
 

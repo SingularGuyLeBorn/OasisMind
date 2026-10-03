@@ -31,7 +31,7 @@ OLMo 2 解决的是全开放 dense 模型能不能稳定训完, 以及退火和 
 
 训练侧, OLMo-core 在序列长 8192, 全程 bfloat16 下, 7B 达到每卡 7700 token/s, 32B 1960 token/s, 约合 43% 与 41% MFU. 手段包括 `torch.compile()`, 自定义 attention 与 LM head kernel, 异步批量收集指标和异步写检查点. Table 34 还给出分阶段吞吐: 7B midtraining 用 128 卡跑到 8.5K, 长上下文阶段用 256 卡, 8 路 **context parallelism** 让每张卡处理每条样本的 8K token, 吞吐降到 4.0K; 32B 三段分别是 2.0K / 2.0K / 1.3K. 作者采用基于 all-gather 的 CP 注意力, 理由是它容易支持 SWA 和文档内掩码这类不规则 mask.
 
-扩展到 65536 时, RoPE 怎么改是一个真正的选择. §3.6.4 试了调整基频, position interpolation 和 YaRN, 每种方法又分 「作用于全部 RoPE」 与 「只作用于 full attention 层的 RoPE」 两种, 结论是 **YaRN 只打在 full attention 层上最好** (Figure 13a). 一种解读是: SWA 层看到的相对距离永远不超过 4096, 预训练时早已见过, 改它们的频率只会扰动已学好的局部模式, 真正需要外推的只有全局层. 报告没有给这层机制的消融, YaRN 本身见 [03-长度外推：从PI到YaRN的频率扩展](../../../../llm-guide/2-核心原理与架构/2.5-长上下文与外推技术/RoPE/03-长度外推：从PI到YaRN的频率扩展.md).
+扩展到 65536 时, RoPE 怎么改是一个真正的选择. §3.6.4 试了调整基频, position interpolation 和 YaRN, 每种方法又分 「作用于全部 RoPE」 与 「只作用于 full attention 层的 RoPE」 两种, 结论是 **YaRN 只打在 full attention 层上最好** (Figure 13a). 一种解读是: SWA 层看到的相对距离永远不超过 4096, 预训练时早已见过, 改它们的频率只会扰动已学好的局部模式, 真正需要外推的只有全局层. 报告没有给这层机制的消融, YaRN 本身见 [03-长度外推：从PI到YaRN的频率扩展](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.4-位置编码/02-RoPE扩展-长上下文,多模态与工程实现/02-RoPE扩展-长上下文,多模态与工程实现.md).
 
 这套设计的代价在 Table 12 的长端. RULER 4K 上, Olmo 3 32B 为 96.10, 是 32B 档最高; 到 65K 降到 79.70, 低于 Mistral Small 3.1 24B 的 88.80 与 Gemma 3 27B 的 84.59. 7B 档更明显: 65K 为 67.96, Llama 3.1 8B 为 86.88, Nemotron Nano 9B 为 85.13. 未参与开发的 HELMET 上, 32B 在 65K 为 43.15, Gemma 3 27B 为 48.60. 短上下文不吃亏, 长端还有缺口, 这与第 2.4 节 「扩展阶段短」 的配方一致.
 
