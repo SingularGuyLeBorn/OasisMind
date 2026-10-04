@@ -211,9 +211,11 @@ export function createWeixinClawBotAdapter(
     }
     const mediaItems = parseWeixinMediaItems(msg);
     const media =
-      mediaItems.length > 0 ? await materializeWeixinInboundMedia(mediaItems, fetchImpl) : { mediaLines: [], chatAttachments: [] };
+      mediaItems.length > 0
+        ? await materializeWeixinInboundMedia(mediaItems, fetchImpl)
+        : { mediaLines: [], attachments: [] };
     const text = composeWeixinUserText({ text: rawText, mediaLines: media.mediaLines });
-    if (!text && media.chatAttachments.length === 0) return;
+    if (!text && media.attachments.length === 0) return;
     rememberContext(fromUserId, contextToken);
     replyCtx.set(eventId, { toUserId: fromUserId, contextToken });
     handleIncomingMessage({
@@ -225,7 +227,7 @@ export function createWeixinClawBotAdapter(
       },
       payload: {
         text: text || "（请查看附件）",
-        attachments: media.chatAttachments.length ? media.chatAttachments : undefined,
+        attachments: media.attachments.length ? media.attachments : undefined,
       },
       meta: { eventId, replyTo: eventId },
     }).catch((err) => {
@@ -313,7 +315,9 @@ export function createWeixinClawBotAdapter(
         tick().catch(() => {});
       }, 1500);
     };
-    void tick();
+    tick().catch((err) => {
+      lastError = err instanceof Error ? err.message : String(err);
+    });
     return { qrcode: qr.qrcode, imageDataUrl };
   };
 

@@ -3,7 +3,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isChatPostAttachment } from "@oasismind/shared";
+import { isChannelAttachment } from "@oasismind/shared";
 import {
   collectQqRawAttachments,
   composeQqUserText,
@@ -62,7 +62,7 @@ describe("qqInboundMedia", () => {
     expect(t).toContain("帮我看看");
   });
 
-  it("materialize：下载图 → ChatAttachment + mediaLines", async () => {
+  it("materialize：下载图 → ChannelAttachment + mediaLines", async () => {
     const png1x1 = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
       "base64",
@@ -83,11 +83,31 @@ describe("qqInboundMedia", () => {
       message_reference: { content: "上一张图" },
     });
     expect(result.quotedText).toBe("上一张图");
-    expect(result.chatAttachments).toHaveLength(1);
-    const att = result.chatAttachments[0]!;
-    expect(isChatPostAttachment(att)).toBe(false);
-    if (isChatPostAttachment(att)) throw new Error("expected image");
-    expect(att.previewUrl.startsWith("data:image/png;base64,")).toBe(true);
-    expect(result.mediaLines.some((l) => l.includes("content/uploads/qq/"))).toBe(true);
+    expect(result.attachments).toHaveLength(1);
+    const att = result.attachments[0]!;
+    expect(isChannelAttachment(att)).toBe(true);
+    expect(att.kind).toBe("image");
+    expect(att.status).toBe("ready");
+    expect(att.previewUrl?.startsWith("data:image/png;base64,")).toBe(true);
+    expect(att.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.mediaLines.some((l) => l.includes("content/uploads/channels/qq/"))).toBe(true);
+  });
+
+  it("materialize：错误 MIME 作为失败附件保留，不静默吞掉", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response("<html>login</html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+    );
+    const result = await materializeQqInboundMedia({
+      attachments: [{ url: "https://cdn.example/fake.jpg", content_type: "image/jpeg", filename: "fake.jpg" }],
+    });
+    expect(result.attachments).toHaveLength(1);
+    expect(result.attachments[0]).toMatchObject({ kind: "image", status: "failed" });
+    expect(result.attachments[0]?.error).toMatch(/MIME|验证/);
   });
 });

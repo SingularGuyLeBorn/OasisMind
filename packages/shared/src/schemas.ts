@@ -534,11 +534,75 @@ export const chatPostAttachmentSchema = z.object({
   contentSnippet: z.string().optional(),
 });
 
-/** 图片 | 文章引用（post 须带 type:"post"；无 type 视为图片，兼容旧数据） */
-export const chatAttachmentSchema = z.union([chatPostAttachmentSchema, chatImageAttachmentSchema]);
+/**
+ * IM 通道统一附件。
+ *
+ * 这份结构是 QQ、微信与 Agent 之间的唯一传输事实：正文不再用一行本机路径
+ * 冒充文件。`localPath` 只允许指向受控落盘目录或 hostAccess 已授权文件；
+ * `status=failed` 必须同时给出 error，调用方才能把失败原因明确回给用户。
+ */
+export const channelAttachmentSchema = z
+  .object({
+    type: z.literal("channel"),
+    id: z.string().uuid(),
+    kind: z.enum(["text", "image", "video", "audio", "file"]),
+    fileName: z.string().min(1).max(255),
+    mimeType: z.string().min(1).max(255),
+    size: z.number().int().nonnegative().nullable(),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/i).nullable(),
+    source: z.enum(["qq", "weixin", "agent", "local", "remote"]),
+    localPath: z.string().optional(),
+    storageKey: z.string().optional(),
+    remoteUrl: z.string().url().optional(),
+    remoteId: z.string().optional(),
+    caption: z.string().optional(),
+    status: z.enum(["pending", "downloading", "ready", "uploading", "sent", "failed"]),
+    error: z.string().optional(),
+    /** 图片可内嵌给视觉模型；大图只保留 localPath，避免挤爆上下文。 */
+    previewUrl: z.string().optional(),
+    /** 语音识别、OCR 或适配器补充的可检索文本。 */
+    extractedText: z.string().optional(),
+    createdAt: z.string().datetime().optional(),
+    updatedAt: z.string().datetime().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === "failed" && !value.error?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["error"],
+        message: "失败附件必须记录 error",
+      });
+    }
+    if (value.status === "ready" && !value.localPath && !value.storageKey && !value.remoteUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["localPath"],
+        message: "就绪附件必须有 localPath、storageKey 或 remoteUrl",
+      });
+    }
+    if ((value.status === "ready" || value.status === "sent") && (!value.sha256 || value.size === null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sha256"],
+        message: "就绪或已发送附件必须记录 size 与 sha256",
+      });
+    }
+  });
+
+/** Chat 可携带编辑器图片、文章引用或 IM 通道附件。 */
+export const chatAttachmentSchema = z.union([
+  chatPostAttachmentSchema,
+  chatImageAttachmentSchema,
+  channelAttachmentSchema,
+]);
 
 export type ChatPostAttachment = z.infer<typeof chatPostAttachmentSchema>;
+export type ChannelAttachment = z.infer<typeof channelAttachmentSchema>;
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>;
+
+export function isChannelAttachment(a: unknown): a is ChannelAttachment {
+  return channelAttachmentSchema.safeParse(a).success;
+}
 
 export function isChatPostAttachment(a: unknown): a is ChatPostAttachment {
   return (
@@ -560,6 +624,35 @@ export function isChatImageAttachment(a: unknown): a is z.infer<typeof chatImage
     typeof (a as { mimeType?: unknown }).mimeType === "string" &&
     typeof (a as { previewUrl?: unknown }).previewUrl === "string"
   );
+}
+
+/** IM 图片转换为现有视觉管线需要的轻量视图。 */
+export function channelImageAsChatImage(
+  attachment: ChannelAttachment,
+): z.infer<typeof chatImageAttachmentSchema> | null {
+  if (attachment.kind !== "image" || !attachment.previewUrl) return null;
+  return {
+    type: "image",
+    name: attachment.fileName,
+    mimeType: attachment.mimeType,
+    previewUrl: attachment.previewUrl,
+    extractedText: attachment.extractedText,
+    source: "user",
+  };
+}
+
+/** 非图片附件也以结构化文字进入模型上下文，避免文件悄悄消失。 */
+export function formatChannelAttachmentForLlm(attachment: ChannelAttachment): string {
+  const location = attachment.localPath || attachment.storageKey || attachment.remoteUrl || "无可用位置";
+  const lines = [
+    `[通道附件 · ${attachment.kind} · ${attachment.fileName}]`,
+    `状态: ${attachment.status}; MIME: ${attachment.mimeType}; 大小: ${attachment.size ?? "未知"}; SHA-256: ${attachment.sha256 ?? "未知"}`,
+    `位置: ${location}`,
+  ];
+  if (attachment.caption?.trim()) lines.push(`说明: ${attachment.caption.trim()}`);
+  if (attachment.extractedText?.trim()) lines.push(`识别文本: ${attachment.extractedText.trim()}`);
+  if (attachment.error?.trim()) lines.push(`传输错误: ${attachment.error.trim()}`);
+  return lines.join("\n");
 }
 
 /** 文章引用 → 注入 LLM 的文本块 */

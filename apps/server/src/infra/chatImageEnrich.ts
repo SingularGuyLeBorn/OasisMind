@@ -9,7 +9,11 @@
 
 import type { AppConfig } from "./config.js";
 import type { ChatAttachment, ChatImageAttachment } from "@oasismind/shared";
-import { isChatImageAttachment } from "@oasismind/shared";
+import {
+  channelImageAsChatImage,
+  isChannelAttachment,
+  isChatImageAttachment,
+} from "@oasismind/shared";
 import { describeImageWithVision } from "./tools/native/web/readImage.js";
 import { resolveAuxiliaryModel } from "./auxiliaryModel.js";
 import { MAX_VISION_IMAGE_BYTES, resolveLocalImagePath } from "./chatImageForLlm.js";
@@ -112,6 +116,24 @@ export async function enrichImageAttachmentsForPersist(
 
   const result: ChatAttachment[] = [];
   for (const att of list) {
+    if (isChannelAttachment(att) && att.kind === "image") {
+      if (att.extractedText?.trim()) {
+        result.push(att);
+        continue;
+      }
+      const image = channelImageAsChatImage(att);
+      if (!image) {
+        result.push(att);
+        continue;
+      }
+      const enriched = await enrichOne(image, ctx);
+      result.push(
+        isChatImageAttachment(enriched)
+          ? { ...att, extractedText: enriched.extractedText }
+          : att,
+      );
+      continue;
+    }
     if (!isChatImageAttachment(att)) {
       result.push(att);
       continue;

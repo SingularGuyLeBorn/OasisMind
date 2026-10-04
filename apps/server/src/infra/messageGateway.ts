@@ -8,7 +8,7 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
-import type { ChatAttachment } from "@oasismind/shared";
+import { chatAttachmentSchema, type ChatAttachment } from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { claimWebhookEvent } from "./webhookIdempotency.js";
@@ -101,31 +101,19 @@ export type ImInboundQueueMeta = {
   chatId?: string;
   eventId: string;
   replyTo: string;
-  /** 入站图片等（排队后 drain 原样喂 chatAgentStream） */
-  chatAttachments?: ChatAttachment[];
+  /** 入站统一附件（排队后 drain 原样喂 chatAgentStream） */
+  attachments?: ChatAttachment[];
 };
 
 export const IM_INBOUND_QUEUE_KIND = "im_inbound" as const;
 
-function sanitizeQueuedChatAttachments(raw: unknown): ChatAttachment[] | undefined {
+function sanitizeQueuedAttachments(raw: unknown): ChatAttachment[] | undefined {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
   const out: ChatAttachment[] = [];
   for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const a = item as Record<string, unknown>;
-    if (a.type === "post") continue; // IM 入站不排队文章引用
-    const name = typeof a.name === "string" ? a.name : "";
-    const mimeType = typeof a.mimeType === "string" ? a.mimeType : "";
-    const previewUrl = typeof a.previewUrl === "string" ? a.previewUrl : "";
-    if (!name || !mimeType || !previewUrl) continue;
-    out.push({
-      type: "image",
-      name,
-      mimeType,
-      previewUrl,
-      extractedText: typeof a.extractedText === "string" ? a.extractedText : undefined,
-      source: a.source === "ocr" || a.source === "vision" || a.source === "user" ? a.source : "user",
-    });
+    const parsed = chatAttachmentSchema.safeParse(item);
+    if (!parsed.success || parsed.data.type === "post") continue;
+    out.push(parsed.data);
   }
   return out.length ? out : undefined;
 }
@@ -138,7 +126,7 @@ export function buildImInboundAttachment(msg: UnifiedMessage): ImInboundQueueMet
     chatId: msg.envelope.chatId,
     eventId: msg.meta.eventId,
     replyTo: msg.meta.replyTo || msg.meta.eventId,
-    chatAttachments: msg.payload.attachments?.length ? msg.payload.attachments : undefined,
+    attachments: msg.payload.attachments?.length ? msg.payload.attachments : undefined,
   };
 }
 
@@ -159,7 +147,7 @@ export function parseImInboundAttachment(raw: unknown): ImInboundQueueMeta | nul
     chatId: typeof o.chatId === "string" && o.chatId ? o.chatId : undefined,
     eventId,
     replyTo: typeof o.replyTo === "string" && o.replyTo ? o.replyTo : eventId,
-    chatAttachments: sanitizeQueuedChatAttachments(o.chatAttachments),
+    attachments: sanitizeQueuedAttachments(o.attachments),
   };
 }
 
@@ -176,7 +164,7 @@ export function unifiedMessageFromImInbound(
     },
     payload: {
       text: content,
-      attachments: meta.chatAttachments,
+      attachments: meta.attachments,
     },
     meta: {
       eventId: meta.eventId,
@@ -535,9 +523,9 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
       }
       const queuePos = imPending + 1;
       const { enqueueImChannelDrain } = await import("./imChannelDrain.js");
-      void enqueueImChannelDrain(binding.sessionId).catch(() => {});
+      enqueueImChannelDrain(binding.sessionId).catch(() => {});
       if (adapter) {
-        void adapter
+        adapter
           .reply(msg, {
             text: `已排队（第 ${queuePos} 条），上一条结束后会继续回复。`,
             finish: false,
@@ -559,7 +547,7 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
     }
     stats.started += 1;
     if (adapter) {
-      void adapter
+      adapter
         .reply(msg, {
           text: "收到，正在处理…",
           finish: false,
@@ -569,7 +557,7 @@ export async function handleIncomingMessage(msg: UnifiedMessage): Promise<Gatewa
         .catch(() => {});
     }
     const { enqueueImChannelDrain } = await import("./imChannelDrain.js");
-    void enqueueImChannelDrain(binding.sessionId).catch(() => {});
+    enqueueImChannelDrain(binding.sessionId).catch(() => {});
     return { ok: true, sessionId: binding.sessionId };
   } catch (err) {
     stats.failed += 1;

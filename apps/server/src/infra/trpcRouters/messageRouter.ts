@@ -7,7 +7,7 @@ import {
   createMessageSchema, updateMessageSchema, listMessagesSchema,
   listMessagesForChatSchema, switchMessageVersionSchema, setMessageLabelSchema,
   isChatImageAttachment,
-  type ChatAttachment, type ChatImageAttachment,
+  isChannelAttachment, type ChatAttachment,
 } from "@oasismind/shared";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../../trpc/trpc.js";
@@ -54,7 +54,7 @@ export const messageRouter = router({
       const atts: ChatAttachment[] = Array.isArray(msg.attachments)
         ? (msg.attachments as ChatAttachment[])
         : [];
-      if (!atts.some(isChatImageAttachment)) {
+      if (!atts.some((a) => isChatImageAttachment(a) || (isChannelAttachment(a) && a.kind === "image"))) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "该消息没有图片附件" });
       }
       const session = await ctx.prisma.chatSession.findUnique({
@@ -63,8 +63,9 @@ export const messageRouter = router({
       });
       // 清掉失败/缺失的 extractedText，让 enrich 重跑；已成功的保留不重复计费
       const retryAtts: ChatAttachment[] = atts.map((a) =>
-        isChatImageAttachment(a) && (!a.extractedText || a.extractedText.startsWith("识图失败"))
-          ? ({ ...(a as ChatImageAttachment), extractedText: undefined } as ChatAttachment)
+        ((isChatImageAttachment(a) || (isChannelAttachment(a) && a.kind === "image")) &&
+          (!a.extractedText || a.extractedText.startsWith("识图失败")))
+          ? ({ ...a, extractedText: undefined } as ChatAttachment)
           : a,
       );
       const enriched = await enrichImageAttachmentsForPersist(retryAtts, {
@@ -74,4 +75,3 @@ export const messageRouter = router({
       return ctx.services.message.update({ id: msg.id, attachments: enriched });
     }),
 });
-

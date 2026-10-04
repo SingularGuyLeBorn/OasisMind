@@ -15,7 +15,11 @@ import {
   FileCode,
   Files,
 } from "lucide-react";
-import type { ChatMessage, ChatImageAttachment } from "@oasismind/shared";
+import {
+  isChannelAttachment,
+  type ChatMessage,
+  type ChatImageAttachment,
+} from "@oasismind/shared";
 import { PostContent } from "./post/PostContent";
 import { toPascalCaseId } from "@/lib/toolDisplayName";
 import { sessionMessagesStore } from "@/lib/useSessionMessages";
@@ -98,16 +102,34 @@ function extractCreatedFiles(msg: ChatMessage): ExtractedFile[] {
 }
 
 function extractImageAttachments(msg: ChatMessage): ExtractedFile[] {
-  const attachments = (msg.attachments ?? []) as ChatImageAttachment[];
-  return attachments.map((a, i) => ({
-    id: `img-${msg.id}-${i}`,
-    name: a.name,
-    type: "image" as const,
-    url: a.previewUrl,
-    mime: a.mimeType,
-    messageId: msg.id,
-    source: "upload" as const,
-  }));
+  return (msg.attachments ?? []).flatMap((attachment, index): ExtractedFile[] => {
+    if (isChannelAttachment(attachment)) {
+      const relativeUrl = attachment.localPath?.startsWith("content/uploads/")
+        ? `/${attachment.localPath.slice("content/".length)}`
+        : undefined;
+      return [{
+        id: `channel-${msg.id}-${attachment.id}`,
+        name: attachment.fileName,
+        type: attachment.kind === "image" ? "image" : "file",
+        url: attachment.previewUrl || relativeUrl || attachment.remoteUrl,
+        mime: attachment.mimeType,
+        messageId: msg.id,
+        source: "upload",
+        size: attachment.size === null ? undefined : `${attachment.size} B`,
+      }];
+    }
+    if (attachment.type === "post") return [];
+    const image = attachment as ChatImageAttachment;
+    return [{
+      id: `img-${msg.id}-${index}`,
+      name: image.name,
+      type: "image",
+      url: image.previewUrl,
+      mime: image.mimeType,
+      messageId: msg.id,
+      source: "upload",
+    }];
+  });
 }
 
 function fileIcon(type: ExtractedFile["type"]) {

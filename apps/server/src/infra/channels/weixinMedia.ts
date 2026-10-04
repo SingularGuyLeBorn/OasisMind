@@ -1,16 +1,21 @@
 /**
  * 微信 iLink 富媒体。
  *
- * AES-128-ECB 加解密、CDN 上下载、入站落盘、出站上传。
- * 图片内嵌 data URL 上限见 WEIXIN_VISION_INLINE_MAX_BYTES。
+ * AES-128-ECB 加解密、CDN 上下载、统一附件落盘、出站上传。
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
-import type { ChatAttachment } from "@oasismind/shared";
-import { getAppConfig } from "../config.js";
+import type { ChannelAttachment } from "@oasismind/shared";
 import { resolveProjectMediaPath } from "./imReplyText.js";
+import {
+  CHANNEL_ATTACHMENT_MAX_BYTES,
+  createFailedChannelAttachment,
+  fetchChannelAttachmentBytes,
+  formatInboundChannelAttachment,
+  materializeChannelAttachmentBytes,
+} from "./channelAttachment.js";
 import {
   WEIXIN_CDN_DEFAULT_BASE,
   WEIXIN_ITEM_TYPE,
@@ -21,10 +26,6 @@ import {
   getWeixinUploadUrl,
   sendWeixinItems,
 } from "./weixinIlink.js";
-
-const MAX_BYTES = 25 * 1024 * 1024;
-/** 超过此大小的入站图只落盘+写路径，不再内嵌 data URL（避免撑爆 LLM 上下文）。 */
-export const WEIXIN_VISION_INLINE_MAX_BYTES = Math.floor(1.5 * 1024 * 1024);
 
 export function decodeWeixinAesKey(raw: string): Buffer {
   const s = raw.trim();
@@ -49,53 +50,6 @@ export function decryptWeixinAesEcb(cipherText: Buffer, key: Buffer): Buffer {
   return Buffer.concat([decipher.update(cipherText), decipher.final()]);
 }
 
-function extForKind(kind: WeixinMediaKind, fileName?: string): string {
-  const fromName = fileName ? path.extname(fileName) : "";
-  if (fromName) return fromName;
-  if (kind === "image") return ".jpg";
-  if (kind === "video") return ".mp4";
-  if (kind === "voice") return ".silk";
-  return ".bin";
-}
-
-function sniffMime(buf: Buffer, kind: WeixinMediaKind): string {
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
-  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e) return "image/png";
-  if (buf.length >= 6 && buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image/gif";
-  if (buf.length >= 12 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) {
-    return "image/webp";
-  }
-  if (kind === "image") return "image/jpeg";
-  if (kind === "video") return "video/mp4";
-  if (kind === "voice") return "audio/silk";
-  return "application/octet-stream";
-}
-
-export function weixinChatImageAttachment(opts: {
-  fileName: string;
-  relPath: string;
-  bytes: Buffer;
-}): ChatAttachment | null {
-  if (opts.bytes.length > WEIXIN_VISION_INLINE_MAX_BYTES) return null;
-  const mime = sniffMime(opts.bytes, "image");
-  return {
-    type: "image",
-    name: opts.fileName,
-    mimeType: mime,
-    previewUrl: `data:${mime};base64,${opts.bytes.toString("base64")}`,
-    extractedText: `图片已保存到 ${opts.relPath}`,
-    source: "user",
-  };
-}
-
-async function fetchBytes(url: string, fetchImpl: typeof fetch): Promise<Buffer> {
-  const res = await fetchImpl(url);
-  if (!res.ok) throw new Error(`download HTTP ${res.status}: ${url.slice(0, 120)}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length <= 0 || buf.length > MAX_BYTES) throw new Error(`skip media size ${buf.length}`);
-  return buf;
-}
-
 export async function downloadWeixinCdnObject(opts: {
   encryptQueryParam: string;
   aesKeyRaw?: string;
@@ -104,7 +58,7 @@ export async function downloadWeixinCdnObject(opts: {
 }): Promise<Buffer> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const url = `${WEIXIN_CDN_DEFAULT_BASE}/download?encrypted_query_param=${encodeURIComponent(opts.encryptQueryParam)}`;
-  const cipher = await fetchBytes(url, fetchImpl);
+  const cipher = await fetchChannelAttachmentBytes(url, fetchImpl);
   const keySrc = opts.aeskeyHex || opts.aesKeyRaw;
   if (!keySrc) return cipher;
   try {
@@ -117,7 +71,7 @@ export async function downloadWeixinCdnObject(opts: {
 
 export type WeixinInboundMediaResult = {
   mediaLines: string[];
-  chatAttachments: ChatAttachment[];
+  attachments: ChannelAttachment[];
 };
 
 export async function materializeWeixinInboundMedia(
@@ -125,17 +79,31 @@ export async function materializeWeixinInboundMedia(
   fetchImpl?: typeof fetch,
 ): Promise<WeixinInboundMediaResult> {
   const impl = fetchImpl ?? fetch;
-  const destDir = path.join(getAppConfig().contentPaths.uploads, "weixin");
-  fs.mkdirSync(destDir, { recursive: true });
-
   const results = await Promise.all(
     items.map(async (item) => {
       const mediaLines: string[] = [];
-      const chatAttachments: ChatAttachment[] = [];
+      const attachments: ChannelAttachment[] = [];
+      const kind = item.kind === "voice" ? "audio" : item.kind;
+      const defaultName =
+        item.kind === "image"
+          ? "image.jpg"
+          : item.kind === "video"
+            ? "video.mp4"
+            : item.kind === "voice"
+              ? "voice.silk"
+              : "file.bin";
+      const declaredMime =
+        item.kind === "image"
+          ? "application/octet-stream"
+          : item.kind === "video"
+            ? "video/mp4"
+            : item.kind === "voice"
+              ? "audio/silk"
+              : "application/octet-stream";
       try {
         let bytes: Buffer | null = null;
         if (item.url && /^https?:\/\//i.test(item.url)) {
-          bytes = await fetchBytes(item.url, impl);
+          bytes = await fetchChannelAttachmentBytes(item.url, impl);
         } else if (item.encryptQueryParam) {
           bytes = await downloadWeixinCdnObject({
             encryptQueryParam: item.encryptQueryParam,
@@ -145,33 +113,43 @@ export async function materializeWeixinInboundMedia(
           });
         }
         if (!bytes) {
-          mediaLines.push(`（${item.kind} 无下载地址）`);
-          return { mediaLines, chatAttachments };
+          throw new Error(`${item.kind} 无下载地址`);
         }
-        const fileName = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}${extForKind(item.kind, item.fileName)}`;
-        fs.writeFileSync(path.join(destDir, fileName), bytes);
-        const rel = `content/uploads/weixin/${fileName}`;
-        if (item.kind === "image") {
-          const att = weixinChatImageAttachment({ fileName, relPath: rel, bytes });
-          if (att) chatAttachments.push(att);
-          mediaLines.push(`图片: ${rel}${att ? "" : "（过大未内嵌视觉，请用路径读取）"}`);
-        } else if (item.kind === "voice") {
-          mediaLines.push(`语音: ${rel}${item.asrText ? ` 识别：${item.asrText}` : ""}`);
-        } else if (item.kind === "video") {
-          mediaLines.push(`视频: ${rel}`);
-        } else {
-          mediaLines.push(`文件: ${rel}${item.fileName ? `（${item.fileName}）` : ""}`);
-        }
+        const attachment = materializeChannelAttachmentBytes({
+          source: "weixin",
+          bytes,
+          fileName: item.fileName || defaultName,
+          declaredMime,
+          hintedKind: kind,
+          remoteUrl: item.url,
+          remoteId: item.encryptQueryParam,
+        });
+        attachments.push(
+          item.asrText
+            ? { ...attachment, extractedText: item.asrText, caption: `语音识别：${item.asrText}` }
+            : attachment,
+        );
       } catch (err) {
-        mediaLines.push(`（${item.kind} 下载失败：${err instanceof Error ? err.message : String(err)}）`);
+        attachments.push(
+          createFailedChannelAttachment({
+            source: "weixin",
+            kind,
+            fileName: item.fileName || defaultName,
+            mimeType: declaredMime,
+            remoteUrl: item.url,
+            remoteId: item.encryptQueryParam,
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
       }
-      return { mediaLines, chatAttachments };
+      mediaLines.push(...attachments.map(formatInboundChannelAttachment));
+      return { mediaLines, attachments };
     }),
   );
 
   return {
     mediaLines: results.flatMap((r) => r.mediaLines),
-    chatAttachments: results.flatMap((r) => r.chatAttachments),
+    attachments: results.flatMap((r) => r.attachments),
   };
 }
 
@@ -232,14 +210,14 @@ export async function loadWeixinMediaBytes(
   if (!raw) return null;
   try {
     if (/^https?:\/\//i.test(raw)) {
-      const bytes = await fetchBytes(raw, fetchImpl);
+      const bytes = await fetchChannelAttachmentBytes(raw, fetchImpl);
       const name = path.basename(new URL(raw).pathname) || "media.bin";
       return { bytes, fileName: name.split("?")[0] || "media.bin" };
     }
     const abs = resolveProjectMediaPath(raw);
     if (!abs || !fs.existsSync(abs)) return null;
     const bytes = fs.readFileSync(abs);
-    if (bytes.length <= 0 || bytes.length > MAX_BYTES) return null;
+    if (bytes.length <= 0 || bytes.length > CHANNEL_ATTACHMENT_MAX_BYTES) return null;
     return { bytes, fileName: path.basename(abs) };
   } catch (err) {
     console.warn("[weixin-media] load bytes failed:", err instanceof Error ? err.message : err);

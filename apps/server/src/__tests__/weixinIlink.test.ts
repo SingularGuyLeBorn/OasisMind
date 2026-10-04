@@ -14,9 +14,12 @@ import {
   decryptWeixinAesEcb,
   encryptWeixinAesEcb,
   extraOutboundMedia,
-  weixinChatImageAttachment,
-  WEIXIN_VISION_INLINE_MAX_BYTES,
+  materializeWeixinInboundMedia,
 } from "../infra/channels/weixinMedia.js";
+import {
+  CHANNEL_IMAGE_INLINE_MAX_BYTES,
+  materializeChannelAttachmentBytes,
+} from "../infra/channels/channelAttachment.js";
 import { nextWeixinPollGap, WEIXIN_POLL_GAP_MS } from "../infra/channels/weixinClawBot.js";
 
 describe("weixinIlink helpers", () => {
@@ -149,12 +152,56 @@ describe("weixinMedia crypto", () => {
     ]);
   });
 
-  it("weixinChatImageAttachment skips oversized buffers", () => {
+  it("统一附件对小图内嵌预览，大图只保留受控路径", () => {
     const tiny = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
-    const att = weixinChatImageAttachment({ fileName: "a.jpg", relPath: "content/uploads/weixin/a.jpg", bytes: tiny });
-    expect(att && att.type !== "post" && att.previewUrl.startsWith("data:image/jpeg")).toBe(true);
-    const huge = Buffer.alloc(WEIXIN_VISION_INLINE_MAX_BYTES + 1, 1);
-    expect(weixinChatImageAttachment({ fileName: "b.jpg", relPath: "x", bytes: huge })).toBeNull();
+    const att = materializeChannelAttachmentBytes({
+      source: "weixin",
+      bytes: tiny,
+      fileName: "a.jpg",
+      declaredMime: "image/jpeg",
+      hintedKind: "image",
+    });
+    expect(att.previewUrl?.startsWith("data:image/jpeg")).toBe(true);
+    const huge = Buffer.concat([
+      tiny,
+      Buffer.alloc(CHANNEL_IMAGE_INLINE_MAX_BYTES + 1 - tiny.length, 1),
+    ]);
+    const large = materializeChannelAttachmentBytes({
+      source: "weixin",
+      bytes: huge,
+      fileName: "b.jpg",
+      declaredMime: "image/jpeg",
+      hintedKind: "image",
+    });
+    expect(large.status).toBe("ready");
+    expect(large.previewUrl).toBeUndefined();
+    expect(large.localPath).toContain("content/uploads/channels/weixin/");
+  });
+
+  it("微信入站图片经过统一校验后落盘为 ChannelAttachment", async () => {
+    const tinyJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+    const fetchImpl = vi.fn(async () =>
+      new Response(tinyJpeg, {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      }),
+    ) as unknown as typeof fetch;
+
+    const result = await materializeWeixinInboundMedia(
+      [{ kind: "image", url: "https://cdn.example/tiny.jpg", fileName: "tiny.jpg" }],
+      fetchImpl,
+    );
+
+    expect(result.attachments).toHaveLength(1);
+    expect(result.attachments[0]).toMatchObject({
+      type: "channel",
+      kind: "image",
+      source: "weixin",
+      status: "ready",
+      mimeType: "image/jpeg",
+    });
+    expect(result.attachments[0]?.localPath).toContain("content/uploads/channels/weixin/");
+    expect(result.attachments[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
   });
 });
 

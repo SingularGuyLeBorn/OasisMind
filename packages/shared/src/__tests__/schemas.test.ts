@@ -13,7 +13,48 @@ import {
   createPostFromToolResultSchema,
   createPostAnnotationSchema,
   updatePostAnnotationSchema,
+  channelAttachmentSchema,
 } from "../schemas.js";
+
+describe("统一通道附件 Schema", () => {
+  const ready = {
+    type: "channel" as const,
+    id: "c4c462d4-f660-4a7e-a95a-823555673ed7",
+    kind: "file" as const,
+    fileName: "report.pdf",
+    mimeType: "application/pdf",
+    size: 128,
+    sha256: "a".repeat(64),
+    source: "qq" as const,
+    localPath: "content/uploads/channels/qq/report.pdf",
+    status: "ready" as const,
+  };
+
+  it("接受带大小、哈希、来源和位置的就绪附件", () => {
+    expect(channelAttachmentSchema.parse(ready)).toMatchObject(ready);
+  });
+
+  it.each([
+    ["text", "note.txt", "text/plain"],
+    ["image", "photo.png", "image/png"],
+    ["video", "clip.mp4", "video/mp4"],
+    ["audio", "voice.mp3", "audio/mpeg"],
+    ["file", "report.pdf", "application/pdf"],
+  ] as const)("统一接受 %s 附件", (kind, fileName, mimeType) => {
+    expect(channelAttachmentSchema.parse({ ...ready, kind, fileName, mimeType })).toMatchObject({
+      type: "channel",
+      kind,
+      fileName,
+      mimeType,
+    });
+  });
+
+  it("失败必须有 error；就绪必须有位置与哈希", () => {
+    expect(channelAttachmentSchema.safeParse({ ...ready, status: "failed", error: undefined }).success).toBe(false);
+    expect(channelAttachmentSchema.safeParse({ ...ready, localPath: undefined }).success).toBe(false);
+    expect(channelAttachmentSchema.safeParse({ ...ready, sha256: null }).success).toBe(false);
+  });
+});
 
 describe("私人批注 Schema", () => {
   const locator = { garden: "notes", slug: "chapter/one" };

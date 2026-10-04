@@ -75,6 +75,7 @@ content/uploads/qq-text/
 content/uploads/tts/
 content/uploads/qq-img/
 content/uploads/qq/
+content/uploads/channels/
 *.bak-before-cleanup
 .env.bak*
 # 视频抽帧临时目录（工具运行时产物）

@@ -73,6 +73,9 @@ export function toApiAttachments(
         contentSnippet: att.contentSnippet,
       };
     }
+    if (att.type === "channel") {
+      return att;
+    }
     return {
       name: att.name,
       mimeType: att.mimeType,

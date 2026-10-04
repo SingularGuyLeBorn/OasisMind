@@ -2,12 +2,15 @@
  * 聊天历史 → LLM messages 重建（含 tool call 多轮回放 + vision 多模态）
  */
 
-import type { ChatAttachment, ChatImageAttachment } from "@oasismind/shared";
+import type { ChannelAttachment, ChatAttachment, ChatImageAttachment } from "@oasismind/shared";
 import {
+  channelImageAsChatImage,
+  formatChannelAttachmentForLlm,
   resolveModelSupportsVision,
   DEFAULT_MICRO_COMPACT_TOOL_MAX_CHARS,
   isChatImageAttachment,
   isChatPostAttachment,
+  isChannelAttachment,
   formatPostAttachmentForLlm,
 } from "@oasismind/shared";
 import type { LlmContentPart, LlmMessage } from "./llmClient.js";
@@ -49,7 +52,8 @@ export function parseAttachmentsFromToolResults(raw: unknown): ChatAttachment[] 
   const attachments = (raw as { attachments?: unknown }).attachments;
   if (!Array.isArray(attachments)) return [];
   return attachments.filter(
-    (a): a is ChatAttachment => isChatPostAttachment(a) || isChatImageAttachment(a),
+    (a): a is ChatAttachment =>
+      isChatPostAttachment(a) || isChatImageAttachment(a) || isChannelAttachment(a),
   );
 }
 
@@ -72,7 +76,15 @@ export function buildUserMessageContentForLlm(
   const trimmed = text.trim();
   const list = attachments ?? [];
   const postParts = list.filter(isChatPostAttachment).map(formatPostAttachmentForLlm);
-  const imageAtts = list.filter(isChatImageAttachment) as ChatImageAttachment[];
+  const channelAtts = list.filter(isChannelAttachment) as ChannelAttachment[];
+  const channelParts = channelAtts.map(formatChannelAttachmentForLlm);
+  const channelImages = channelAtts
+    .map(channelImageAsChatImage)
+    .filter((attachment): attachment is ChatImageAttachment => attachment !== null);
+  const imageAtts = [
+    ...(list.filter(isChatImageAttachment) as ChatImageAttachment[]),
+    ...channelImages,
+  ];
 
   if (!supportsVision || !imageAtts.length) {
     const ocrParts = imageAtts
@@ -81,13 +93,13 @@ export function buildUserMessageContentForLlm(
         (a) =>
           `[附件 · ${a.name} · ${a.source === "ocr" ? "OCR 识别" : a.source === "vision" ? "识图" : "用户"}]\n${a.extractedText!.trim()}`,
       );
-    const chunks = [...postParts, ...ocrParts];
+    const chunks = [...postParts, ...channelParts, ...ocrParts];
     if (trimmed) chunks.push(trimmed);
     return chunks.join("\n\n") || "(空消息)";
   }
 
   const parts: LlmContentPart[] = [];
-  const textChunks = [...postParts];
+  const textChunks = [...postParts, ...channelParts];
   if (trimmed) textChunks.push(trimmed);
   for (const att of imageAtts) {
     // 传 config 才解析相对/内网图；未传时回退旧行为（仅 data:）。
@@ -166,7 +178,8 @@ export function buildLlmMessagesFromHistory(
     if (msg.role === "user") {
       const attachments = Array.isArray(msg.attachments)
         ? msg.attachments.filter(
-            (a): a is ChatAttachment => isChatPostAttachment(a) || isChatImageAttachment(a),
+            (a): a is ChatAttachment =>
+              isChatPostAttachment(a) || isChatImageAttachment(a) || isChannelAttachment(a),
           )
         : parseAttachmentsFromToolResults(msg.toolResults);
       messages.push({

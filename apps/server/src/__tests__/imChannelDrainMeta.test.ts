@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { isChatPostAttachment } from "@oasismind/shared";
+import { isChannelAttachment } from "@oasismind/shared";
 import {
   buildImInboundAttachment,
   parseImInboundAttachment,
@@ -48,7 +48,7 @@ describe("im inbound queue meta", () => {
     expect(parseImInboundAttachment({ channel: "web", peerId: "x", eventId: "y" })).toBeNull();
   });
 
-  it("chatAttachments 随排队元数据往返", () => {
+  it("ChannelAttachment 随排队元数据往返，普通文件不会退化成路径文字", () => {
     const msg: UnifiedMessage = {
       envelope: {
         channel: "qq",
@@ -59,23 +59,29 @@ describe("im inbound queue meta", () => {
         text: "结合图看",
         attachments: [
           {
-            type: "image",
-            name: "a.jpg",
-            mimeType: "image/jpeg",
-            previewUrl: "data:image/jpeg;base64,abc",
-            extractedText: "图片已保存到 content/uploads/qq/a.jpg",
-            source: "user",
+            type: "channel",
+            id: "c4c462d4-f660-4a7e-a95a-823555673ed7",
+            kind: "file",
+            fileName: "report.pdf",
+            mimeType: "application/pdf",
+            size: 42,
+            sha256: "a".repeat(64),
+            source: "qq",
+            localPath: "content/uploads/channels/qq/report.pdf",
+            status: "ready",
           },
         ],
       },
       meta: { eventId: "m-img", replyTo: "m-img" },
     };
     const att = buildImInboundAttachment(msg);
-    expect(att.chatAttachments).toHaveLength(1);
+    expect(att.attachments).toHaveLength(1);
     const parsed = parseImInboundAttachment(att);
     const rebuilt = unifiedMessageFromImInbound("结合图看", parsed!);
-    const img = rebuilt.payload.attachments?.[0];
-    expect(img && !isChatPostAttachment(img) ? img.name : "").toBe("a.jpg");
-    expect(img && !isChatPostAttachment(img) ? img.previewUrl : "").toContain("base64");
+    const file = rebuilt.payload.attachments?.[0];
+    expect(isChannelAttachment(file)).toBe(true);
+    if (!isChannelAttachment(file)) throw new Error("expected channel attachment");
+    expect(file.fileName).toBe("report.pdf");
+    expect(file.kind).toBe("file");
   });
 });

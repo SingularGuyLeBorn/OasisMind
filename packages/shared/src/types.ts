@@ -335,7 +335,7 @@ export interface ChatMessage {
   label?: string | null;
   /** null=普通；branch_summary=分支摘要（默认不进 LLM 上下文） */
   kind?: string | null;
-  /** 图片 | 文章引用（见 schemas.chatAttachmentSchema） */
+  /** 编辑器图片、文章引用或 IM 通道附件（见 schemas.chatAttachmentSchema） */
   attachments?: import("./schemas.js").ChatAttachment[];
   toolCalls: any;
   toolResults: any;

@@ -441,7 +441,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       return;
     }
 
-    void (async () => {
+    (async () => {
       try {
         const { composeQqUserText, materializeQqInboundMedia } = await import(
           "./qqInboundMedia.js"
@@ -452,7 +452,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           quotedText: media.quotedText,
           mediaLines: media.mediaLines,
         });
-        if (!text.trim() && media.chatAttachments.length === 0) return;
+        if (!text.trim() && media.attachments.length === 0) return;
 
         if (parsed.groupOpenid) {
           const hist = takeQqGroupHistory(parsed.groupOpenid);
@@ -481,7 +481,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
           },
           payload: {
             text: text || "（见附件）",
-            attachments: media.chatAttachments.length ? media.chatAttachments : undefined,
+            attachments: media.attachments.length ? media.attachments : undefined,
           },
           meta: {
             eventId: parsed.msgId,
@@ -503,7 +503,9 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       } catch (err) {
         console.warn(`[qq] 入站异常:`, err instanceof Error ? err.message : err);
       }
-    })();
+    })().catch((err) => {
+      console.warn(`[qq] 入站异步处理异常:`, err instanceof Error ? err.message : err);
+    });
   };
 
   /** 供 Express webhook / WS 共用 */
@@ -531,7 +533,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
       }`,
     );
     reconnectTimer = setTimeout(() => {
-      void startWs().catch((e) => {
+      startWs().catch((e) => {
         lastError = e instanceof Error ? e.message : String(e);
         state = "error";
         scheduleReconnect(lastError);
@@ -539,7 +541,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
     }, delay);
   };
 
-  const startHeartbeat = (intervalMs: number, accessToken: string) => {
+  const startHeartbeat = (intervalMs: number) => {
     clearHeartbeat();
     const ms = Math.max(5_000, intervalMs);
     heartbeatTimer = setInterval(() => {
@@ -551,8 +553,6 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
         lastError = err instanceof Error ? err.message : String(err);
       }
     }, ms);
-    // Identify / Resume 后立即发一拍心跳（accessToken 仅用于日志对齐）
-    void accessToken;
   };
 
   const startWs = async () => {
@@ -614,7 +614,7 @@ export function createQqOfficialBotAdapter(cfg: QqBotConfig): ChannelAdapter {
             } else {
               ws?.send(JSON.stringify(buildQqIdentifyPayload(accessToken)));
             }
-            startHeartbeat(interval, accessToken);
+            startHeartbeat(interval);
             return;
           }
 
