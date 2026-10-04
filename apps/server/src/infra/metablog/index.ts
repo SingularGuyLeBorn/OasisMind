@@ -75,7 +75,9 @@ function looksLikeBlockedParse(result: ParseResult, platform?: string): boolean 
   return (
     looksLikeBlockedHtml(blob, MIN_READABLE_CHARS) ||
     len < 80 ||
-    /^(1\s*\|\s*-|打开知乎|验证码)/.test(content)
+    /^(1\s*\|\s*-|打开知乎|验证码)/.test(content) ||
+    // readability 把知乎风控返回的 error JSON 排成 "1 | {\"error\":...}"，同样视为拦截
+    /^\s*\d+\s*\|\s*\{\s*"error"/.test(content)
   );
 }
 

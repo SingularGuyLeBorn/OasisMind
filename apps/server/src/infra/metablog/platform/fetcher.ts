@@ -31,6 +31,7 @@ const BLOCKED_MARKERS = [
   "验证码登录",
   "打开知乎App",
   "环境异常",
+  "请求存在异常",
   "完成验证",
   "Access Denied",
   "403 Forbidden",
