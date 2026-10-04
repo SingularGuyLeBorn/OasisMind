@@ -112,36 +112,29 @@ $$
 - 下一个冰蓝框是 max vs min 偏好对, 橙色框是 DPO, 最后的奶油色框是 $M_{t+1}$.
 - 页脚写 same LLM generates and judges, Not a separate RM. 图中没有回环箭头, 下一轮把 $M_{t+1}$ 当作新的 $M_t$, 发生在两轮之间.
 
-## 3. 与相邻方法的分工
+### 2.6 一轮迭代的实现
 
-**OAIF.** 同样由当前策略采样, LLM 当场标注, 再套 DAP 损失. 区别在标注器: OAIF 默认策略是 PaLM 2-XS, 标注器是 PaLM 2-L, 可以比策略更强. OAIF 论文的 Discussion 也讨论过自我标注, 认为缺点是标注器与策略的架构和尺寸必须相同. OAIF 每步采两条, Self-Rewarding 采四条取两端. 见 [06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md).
+```python
+def self_rewarding_iteration(M_t, prompts, judge_prompt, n=4, k=3):
+    pairs = []
+    for x in prompts:
+        ys = [M_t.generate(x, temperature=0.7, top_p=0.9) for _ in range(n)]
+        # 同一个 M_t 当裁判, 每条打 k 次取平均, 解析 "Score: " 后的数字
+        scores = [mean(parse_score(M_t.generate(judge_prompt(x, y),
+                                                temperature=0.7, top_p=0.9))
+                       for _ in range(k)) for y in ys]
+        if max(scores) == min(scores):
+            continue
+        pairs.append((x, ys[argmax(scores)], ys[argmin(scores)]))
+    # 参考模型与初始化都是 M_t
+    return dpo_train(init=M_t, ref=M_t, data=pairs, beta=0.1)
+```
 
-**SPIN.** 胜者永远是 SFT 数据中的人写回答, 输者是上一轮生成, 不需要打分. Self-Rewarding 的相关工作一节指出 SPIN 的局限: 一旦模型生成追上人写回答就无法继续, 而且每条 prompt 都需要人写回答. 见 [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md).
+`parse_score` 解析失败的样本需要单独处理, 否则会被当成 0 分, 混进 $y^l$. 去掉 EFT 时有效偏好对大幅减少 (第 5.1 节), 打分质量直接决定每轮能用多少数据.
 
-**RLAIF (Lee 等).** 用现成 LLM 当裁判构造偏好数据, 训练一个固定的 RM, 再做强化学习. 论文提到 Lee 等也试过直接用 LLM-as-a-Judge 模型参与 PPO, 但报告计算成本很高; Self-Rewarding 的打分发生在离线构造 AIFT 的阶段, 成本相对低. Constitutional AI 更早用 LLM 给反馈, 同样训练一个固定的偏好模型再做 RL. 见 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md) 和 [01-Constitutional-AI](../../4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md).
+## 3. 实验设置
 
-**冻结 RM 的 RLHF.** 人工偏好训练 $r_\phi$, 冻结, 再做 PPO. 打分器在策略迭代中不变. Self-Rewarding 让打分能力随写回答能力一起变化, 第 5 节的 Table 4 给出了这一点的数据.
-
-| | 采样 | 标注 | 独立 RM | 优化 |
-|--|------|------|---------|------|
-| 冻结 RM 的 RLHF | 当前 $\pi$ | 人工, 训成固定 $r_\phi$ | 要 | PPO |
-| RLAIF | 当前 $\pi$ | LLM 标注后训 RM | 要 | 强化学习 |
-| SPIN | 上一轮生成 $y'$ | 无, 胜者是人写回答 | 不要 | logistic 成对差 |
-| OAIF | 当前 $\pi$ 两条 | 另一个 LLM 当场标 | 不要 | 任意 DAP |
-| Self-Rewarding | 当前 $M_t$ 四条 | 同一个 $M_t$ 打 0 到 5 分 | 不要 | Iterative DPO |
-
-![三列对照: 冻结 RM, OAIF 的外部标注器, Self-Rewarding 自己标自己](./images/fig-srlm-not-oaif-spin.png)
-
-> 图 2: 左列人工偏好训出冻结的 $r_\phi$, 再做 PPO; 中列当前策略采两条, 另一个 LLM 当场标注, 套 DAP 损失; 右列同一个 $M_t$ 采 4 条并当裁判, 再做 Iterative DPO.
-
-**图 2 解析**
-
-- 三列从上往下读, 竖线分开. 左列顶部黄框是人工偏好 $\mathcal{D}$, 灰框是冻结 RM, 粉框是 PPO, 底部薄荷绿是策略. 页脚 RM frozen, not self-score.
-- 中列薄荷绿框是当前 $\pi$ 采 $y_1,y_2$, 淡紫框写 other LLM annotator (can be stronger), 再进入偏好对和 DAP. 页脚 annotator may exceed policy size.
-- 右列的生成框和裁判框都写 same $M_t$, 偏好对是 max vs min, 底部橙色框是 Iterative DPO. 页脚 generate and judge share weights.
-- 列与列之间没有箭头.
-
-## 4. 实验设置
+### 3.1 模型与指令跟随评测
 
 底座 Llama 2 70B. 新 prompt 由固定的 Llama 2-Chat 70B 生成; 写回答和打分都用正在训练的模型.
 
@@ -151,13 +144,15 @@ $$
 - AlpacaEval 2.0 榜单格式: 805 条 prompt, 计算对 GPT-4 Turbo 的胜率, 裁判是 GPT-4.
 - MT-Bench: 多轮问题, GPT-4 打 0 到 10 分.
 
-另外测了九个 NLP 基准: ARC-Easy, ARC-Challenge, HellaSwag, SIQA, PIQA, GSM8K, MMLU, OBQA, NQ.
+### 3.2 NLP 基准与打分评测
+
+指令跟随之外, 另外测了九个 NLP 基准: ARC-Easy, ARC-Challenge, HellaSwag, SIQA, PIQA, GSM8K, MMLU, OBQA, NQ.
 
 打分能力在 EFT 评估集上与人工排序比较, 平均每条指令有 2.85 条带排名的回答. 五个指标: 成对准确率; 5-best (模型打 5 分的回答是否也是人工排名第一); exact match (完整排序是否一致); Spearman 和 Kendall $\tau$ 相关系数.
 
-## 5. 结果
+## 4. 结果
 
-### 5.1 头对头
+### 4.1 头对头
 
 先看种子: IFT+EFT 训练的 $M_1$ 对只用 IFT 的 SFT baseline, 胜率 30.5% 对 30.9%, 基本持平. 加入打分任务没有损害写回答的能力, 因此 $M_1$ 可以同时当生成器和裁判.
 
@@ -165,7 +160,7 @@ $M_2$ 对 $M_1$: 55.5% 胜, 11.7% 负; 对 SFT baseline: 49.2% 对 14.5%. $M_3$ 
 
 人评: 从 IFT 测试集随机抽 50 条指令, 每条三组对比 (SFT baseline 分别对 $M_1,M_2,M_3$), 每组由三位作者盲评, 取多数票. Figure 5 显示迭代越往后, 对 SFT baseline 的优势越大, 方向与 GPT-4 判定一致.
 
-### 5.2 AlpacaEval 2.0 (Table 1)
+### 4.2 AlpacaEval 2.0 与生成长度 (Table 1)
 
 | 模型 | 对 GPT-4 Turbo 胜率 | 蒸馏 | 专有数据 |
 |------|------:|:---:|:---:|
@@ -193,11 +188,9 @@ Figure 4 按类别拆分 AlpacaEval. 正文结论有三条: 多数类别胜率�
 
 附录 A.1 用 t-SNE 可视化 IFT, EFT 和 AIFT$(M_1)$. IFT 与 AIFT 有很好的重叠, EFT 落在嵌入空间的另一区域. 这可以解释加入 EFT 为什么基本不影响 IFT 上的表现.
 
-### 5.3 长度
+胜率上升的同时, 回答也在变长. AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为 2,552. $M_3$ 的长度约为 $M_1$ 的 2.3 倍. Limitations 一节承认, 长度与估计质量之间存在已知相关, 需要更深入地分析它对这组结果的影响.
 
-AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为 2,552. $M_3$ 的长度约为 $M_1$ 的 2.3 倍. Limitations 一节承认, 长度与估计质量之间存在已知相关, 需要更深入地分析它对这组结果的影响.
-
-### 5.4 MT-Bench (Table 2, Table 10)
+### 4.3 MT-Bench (Table 2, Table 10)
 
 | | 总分 | 数学, 代码, 推理 | 人文, 抽取, STEM, 角色扮演, 写作 |
 |--|----:|----:|----:|
@@ -217,7 +210,7 @@ AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为
 
 数学, 代码, 推理三类合计从 3.93 到 4.17, 涨幅小于另一组的 8.60 到 9.10. 作者把原因归于 Open Assistant 种子数据的构成. Reasoning 一项 $M_3$ 的 4.80 仍低于 SFT 的 5.30; Coding 从 $M_2$ 的 4.25 降到 $M_3$ 的 4.20.
 
-### 5.5 NLP 基准 (Table 9)
+### 4.4 NLP 基准 (Table 9)
 
 | | ARC-Easy | ARC-Ch | HellaSwag | SIQA | PIQA | GSM8K | MMLU | OBQA | NQ |
 |--|--------:|-------:|----------:|-----:|-----:|------:|-----:|-----:|---:|
@@ -229,7 +222,7 @@ AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为
 
 从 $M_1$ 到 $M_3$, ARC-Easy 降 5.79, ARC-Challenge 降 4.38, NQ 降 3.62, MMLU 基本不变. 作者引用 InstructGPT 中 RLHF 后部分公开 NLP 数据集回退的观察 (alignment tax), 并提出可以用更多样的种子 prompt 把自奖励扩展到这类任务.
 
-### 5.6 打分能力 (Table 4)
+### 4.5 打分能力 (Table 4)
 
 | | SFT baseline | $M_1$ | $M_2$ | $M_3$ |
 |--|------:|------:|------:|------:|
@@ -242,47 +235,58 @@ AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为
 
 SFT baseline 已经能打分, 成对准确率 65.1%, 因为 IFT 本身包含类似的指令. 加入 EFT 后五项全部上升, 成对准确率到 78.7%. $M_2$ 和 $M_3$ 的训练中没有新增 EFT, AIFT 数据也不像打分示范, 打分能力却继续上升. 作者的假设是: 指令跟随能力整体提高后, LLM-as-a-Judge 这项任务也随之变好. 并非每项都单调: 5-best 在 $M_3$ 从 44.3% 回落到 43.2%, exact match 在 $M_2$ 和 $M_3$ 持平.
 
-这张表的意义在于它和第 5.1 节的结果互为因果. $M_2$ 的训练数据由 $M_1$ 打分构造, $M_3$ 的训练数据由 $M_2$ 打分构造. 如果打分能力停在 $M_1$ 的水平, 第二轮的偏好对质量不会提高. 成对准确率 81.7% 也意味着, 在 EFT 评估集的回答对上, 仍有约 18% 的方向与人工排序相反. 实际构造 AIFT 时取的是四条中分差最大的两端, 出错率应低于这个数字, 但论文没有直接测量 AIFT 偏好对与人工判断的一致率.
+这张表的意义在于它和第 4.1 节的结果互为因果. $M_2$ 的训练数据由 $M_1$ 打分构造, $M_3$ 的训练数据由 $M_2$ 打分构造. 如果打分能力停在 $M_1$ 的水平, 第二轮的偏好对质量不会提高. 成对准确率 81.7% 也意味着, 在 EFT 评估集的回答对上, 仍有约 18% 的方向与人工排序相反. 实际构造 AIFT 时取的是四条中分差最大的两端, 出错率应低于这个数字, 但论文没有直接测量 AIFT 偏好对与人工判断的一致率.
 
 Spearman 从 0.253 升到 0.349, 绝对值仍不高. 模型在区分明显好坏时比较可靠, 对质量接近的回答, 排序与人工的一致性有限. 这与取两端的选对规则相互配合: 规则本身绕开了模型最不擅长的那部分判断.
 
-## 6. 消融
+## 5. 消融
 
-### 6.1 去掉 EFT
+### 5.1 去掉 EFT, 只加满分正例
 
 附录 A.3 从只用 IFT 训练的 $M_1'$ 出发, 再迭代两轮 DPO. 用同样数量的新 prompt, 只收集到很少的有效偏好对: AIFT$(M_1')$ 541 对, AIFT$(M_2')$ 429 对, 约为主实验 3,964 对和 6,942 对的 1/7 和 1/16. Figure 8 显示 EFT 让同样迭代次数下的表现更好, 而且两者的差距在后面的迭代中扩大. 打分示范决定了后续每一轮能构造出多少偏好对.
 
-### 6.2 只加满分正例
-
-附录 A.4 试了另一种自训练: 只把模型打满分 5 的 (prompt, response) 加回 SFT 数据, 不构造偏好对. 加入 11,254 条, 并调了混合权重, 对 SFT baseline 的头对头仍是 29% 胜对 30% 胜, 没有提升. 作者没有找到让这种方法有效的设置. 偏好对里的低分回答提供了「什么样的回答不好」的信息, 只克隆满分回答得不到这部分信号.
+反过来, 保留打分但不构造偏好对, 也不行. 附录 A.4 试了另一种自训练: 只把模型打满分 5 的 (prompt, response) 加回 SFT 数据, 不构造偏好对. 加入 11,254 条, 并调了混合权重, 对 SFT baseline 的头对头仍是 29% 胜对 30% 胜, 没有提升. 作者没有找到让这种方法有效的设置. 偏好对里的低分回答提供了「什么样的回答不好」的信息, 只克隆满分回答得不到这部分信号.
 
 两种做法用的是同一个打分器, 同一批候选. 差别只在于怎样使用分数: 满分筛选只看分数是否到顶, 丢掉了分数之间的相对信息; 偏好对只看相对高低, 对分数的绝对标定不敏感. 构造 EFT 时已经观察到大量样本得 4 分, 说明这类打分器的绝对分值集中在少数几个值上, 区分度有限; 在这种情况下, 相对排序比绝对分值更可靠, 这也是成对方法占优的一个原因.
 
-### 6.3 两轮增量为何没有缩小
+### 5.2 两轮增量为何没有缩小
 
-AlpacaEval 上两轮增量分别是 5.44 和 5.06 个百分点, 头对头中 $M_3$ 对 $M_2$ 的胜负比 (47.7 对 12.5) 与 $M_2$ 对 $M_1$ (55.5 对 11.7) 处在同一量级. 和 SPIN 每轮增量快速递减相比, 这里没有出现明显的饱和. 可以对照的两个因素: 一是 AIFT 的规模从 3,964 对增加到 6,942 对, 第二轮的训练数据更多; 二是打分能力在第二轮也提高了 (成对准确率 78.7% 到 80.4%), 造出的偏好对更可靠. SPIN 的目标分布固定为 SFT 数据, Self-Rewarding 的偏好来自不断变化的裁判, 没有一个固定的收敛点. 三轮的数据不足以判断这种增长能持续多久.
+AlpacaEval 上两轮增量分别是 5.44 和 5.06 个百分点, 头对头中 $M_3$ 对 $M_2$ 的胜负比 (47.7 对 12.5) 与 $M_2$ 对 $M_1$ (55.5 对 11.7) 处在同一量级. 和 SPIN 每轮增量快速递减相比, 这里没有出现明显的饱和.
 
-## 7. 一轮迭代的实现
+可以对照的两个因素: 一是 AIFT 的规模从 3,964 对增加到 6,942 对, 第二轮的训练数据更多; 二是打分能力在第二轮也提高了 (成对准确率 78.7% 到 80.4%), 造出的偏好对更可靠. SPIN 的目标分布固定为 SFT 数据, Self-Rewarding 的偏好来自不断变化的裁判, 没有一个固定的收敛点. 三轮的数据不足以判断这种增长能持续多久.
 
-```python
-def self_rewarding_iteration(M_t, prompts, judge_prompt, n=4, k=3):
-    pairs = []
-    for x in prompts:
-        ys = [M_t.generate(x, temperature=0.7, top_p=0.9) for _ in range(n)]
-        # 同一个 M_t 当裁判, 每条打 k 次取平均, 解析 "Score: " 后的数字
-        scores = [mean(parse_score(M_t.generate(judge_prompt(x, y),
-                                                temperature=0.7, top_p=0.9))
-                       for _ in range(k)) for y in ys]
-        if max(scores) == min(scores):
-            continue
-        pairs.append((x, ys[argmax(scores)], ys[argmin(scores)]))
-    # 参考模型与初始化都是 M_t
-    return dpo_train(init=M_t, ref=M_t, data=pairs, beta=0.1)
-```
+## 6. 相邻方法, 成本与失效
 
-`parse_score` 解析失败的样本需要单独处理, 否则会被当成 0 分, 混进 $y^l$. 去掉 EFT 时有效偏好对大幅减少 (第 6.1 节), 打分质量直接决定每轮能用多少数据.
+### 6.1 与相邻方法的分工
 
-## 8. 成本
+**OAIF.** 同样由当前策略采样, LLM 当场标注, 再套 DAP 损失. 区别在标注器: OAIF 默认策略是 PaLM 2-XS, 标注器是 PaLM 2-L, 可以比策略更强. OAIF 论文的 Discussion 也讨论过自我标注, 认为缺点是标注器与策略的架构和尺寸必须相同. OAIF 每步采两条, Self-Rewarding 采四条取两端. 见 [06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md).
+
+**SPIN.** 胜者永远是 SFT 数据中的人写回答, 输者是上一轮生成, 不需要打分. Self-Rewarding 的相关工作一节指出 SPIN 的局限: 一旦模型生成追上人写回答就无法继续, 而且每条 prompt 都需要人写回答. 见 [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md).
+
+**RLAIF (Lee 等).** 用现成 LLM 当裁判构造偏好数据, 训练一个固定的 RM, 再做强化学习. 论文提到 Lee 等也试过直接用 LLM-as-a-Judge 模型参与 PPO, 但报告计算成本很高; Self-Rewarding 的打分发生在离线构造 AIFT 的阶段, 成本相对低. Constitutional AI 更早用 LLM 给反馈, 同样训练一个固定的偏好模型再做 RL. 见 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md) 和 [01-Constitutional-AI](../../4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md).
+
+**冻结 RM 的 RLHF.** 人工偏好训练 $r_\phi$, 冻结, 再做 PPO. 打分器在策略迭代中不变. Self-Rewarding 让打分能力随写回答能力一起变化, 第 4 节的 Table 4 给出了这一点的数据.
+
+| | 采样 | 标注 | 独立 RM | 优化 |
+|--|------|------|---------|------|
+| 冻结 RM 的 RLHF | 当前 $\pi$ | 人工, 训成固定 $r_\phi$ | 要 | PPO |
+| RLAIF | 当前 $\pi$ | LLM 标注后训 RM | 要 | 强化学习 |
+| SPIN | 上一轮生成 $y'$ | 无, 胜者是人写回答 | 不要 | logistic 成对差 |
+| OAIF | 当前 $\pi$ 两条 | 另一个 LLM 当场标 | 不要 | 任意 DAP |
+| Self-Rewarding | 当前 $M_t$ 四条 | 同一个 $M_t$ 打 0 到 5 分 | 不要 | Iterative DPO |
+
+![三列对照: 冻结 RM, OAIF 的外部标注器, Self-Rewarding 自己标自己](./images/fig-srlm-not-oaif-spin.png)
+
+> 图 2: 左列人工偏好训出冻结的 $r_\phi$, 再做 PPO; 中列当前策略采两条, 另一个 LLM 当场标注, 套 DAP 损失; 右列同一个 $M_t$ 采 4 条并当裁判, 再做 Iterative DPO.
+
+**图 2 解析**
+
+- 三列从上往下读, 竖线分开. 左列顶部黄框是人工偏好 $\mathcal{D}$, 灰框是冻结 RM, 粉框是 PPO, 底部薄荷绿是策略. 页脚 RM frozen, not self-score.
+- 中列薄荷绿框是当前 $\pi$ 采 $y_1,y_2$, 淡紫框写 other LLM annotator (can be stronger), 再进入偏好对和 DAP. 页脚 annotator may exceed policy size.
+- 右列的生成框和裁判框都写 same $M_t$, 偏好对是 max vs min, 底部橙色框是 Iterative DPO. 页脚 generate and judge share weights.
+- 列与列之间没有箭头.
+
+### 6.2 成本与适用条件
 
 每一轮的额外开销来自三部分: 生成新 prompt; 每条 prompt 采 4 条回答; 每条回答打 3 次分. 一条 prompt 需要 4 次生成和 12 次打分生成, 打分输出包含最多 100 词的理由. 打分调用次数是生成次数的 3 倍. 对 70B 模型来说, 构造 AIFT 的推理量不小, 但这些都发生在训练之前, 训练本身只是普通的 DPO.
 
@@ -290,7 +294,7 @@ def self_rewarding_iteration(M_t, prompts, judge_prompt, n=4, k=3):
 
 适用条件: 有一份质量足够的打分示范 (EFT), 并且底座模型够大, 能学会打分. 论文只在 70B 上做了实验, 小模型能否学到足够可靠的打分能力, 还需要另做实验. 打分不可靠时, 偏好对的方向会出错, 第 2.2 节多选式提示的负相关就是这种情况.
 
-## 9. 失效模式
+### 6.3 失效模式
 
 **长度增长.** $M_3$ 的平均长度约为 $M_1$ 的 2.3 倍. 打分器和评测裁判都可能偏爱长回答, 胜率提升里有多少来自长度, 论文没有拆分.
 

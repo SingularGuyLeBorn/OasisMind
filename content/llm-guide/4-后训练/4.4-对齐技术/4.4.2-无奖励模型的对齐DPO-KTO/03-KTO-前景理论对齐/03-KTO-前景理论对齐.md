@@ -168,9 +168,7 @@ $z_0$ 不参与反向传播, 只用于控制价值饱和的位置, 这样训练�
 - E 到 F/G: 参考点是一个标量. F 是 desirable 的 $\lambda_D\sigma(\beta(r-z_0))$, G 是 undesirable 的 $\lambda_U\sigma(\beta(z_0-r))$, 自变量符号相反.
 - H: $L=\lambda_y-v$.
 
-## 4. $\hat z_0$ 的估计
-
-### 4.1 错配估计
+### 3.6 参考点 $\hat z_0$ 的错配估计
 
 按式 (5) 精确计算 $z_0$ 需要从 $\pi_\theta$ 采样, 太慢. 实际做法是在同一个 microbatch 里把输出错开一位, 构造错配对 $\{(x_1,y_2),(x_2,y_3),\ldots,(x_m,y_1)\}$, 为整个 microbatch 估一个共享的参考点. 记 $j=(i\bmod m)+1$,
 
@@ -186,11 +184,9 @@ $$
 
 这是 KL 的有偏估计. 截断到非负又引入了向上的偏差, 换来更小的方差. 用错配的 $y_j$ 要多算一次前向. 不用配对的 $y_i$ 的原因是: $y_i$ 往往是特意挑出来的典型好回答或坏回答, 它们的 $r_\theta$ 绝对值偏大, 不能代表一般输出. 论文还指出, 人感知到的参考点本身也是有偏的, 因为人看不到 $\pi_\theta$ 的完整分布.
 
-### 4.2 batch 大小
+这个估计对 batch 有要求. 式 (8) 至少要两条样本才能错配, 所以 microbatch 不能小于 2. 论文所有实验的有效 batch size 都是 32, 一般建议在 8 到 128 之间.
 
-式 (8) 至少要两条样本才能错配, 所以 microbatch 不能小于 2. 论文所有实验的有效 batch size 都是 32, 一般建议在 8 到 128 之间.
-
-### 4.3 消融: 参考点和价值函数形状都重要
+### 3.7 消融: 参考点和价值函数形状都重要
 
 Zephyr-$\beta$-SFT 在 UltraFeedback 上训 1 个 epoch (Table 2 中段):
 
@@ -200,9 +196,9 @@ Zephyr-$\beta$-SFT 在 UltraFeedback 上训 1 个 epoch (Table 2 中段):
 
 对称的 logistic 形状和参考点各自都有贡献.
 
-## 5. 超参
+## 4. 超参与实现
 
-### 5.1 $\lambda_D$ 与 $\lambda_U$
+### 4.1 $\lambda_D$ 与 $\lambda_U$
 
 默认 $\lambda_D=\lambda_U=1$, 正文实验都用这个设置. 数据不平衡时, 论文建议记 $n_D,n_U$ 为两类样本数, 让
 
@@ -213,15 +209,15 @@ $$
 
 例如 desirable 与 undesirable 是 1:10 时, 取 $\lambda_U=1$, $\lambda_D\in[10,15]$. 这样加权后 desirable 一侧的总权重略高于 undesirable 一侧.
 
-按式 (9) 算一组. 有 1,000 条 desirable, 10,000 条 undesirable, $\lambda_U=1$. 比值要落在 $[1,1.5]$, 即 $1000\lambda_D/10000\in[1,1.5]$, 得 $\lambda_D\in[10,15]$. 第 8.4 节用的 13.33 就在这个区间里. 若反过来 desirable 多, 比如 9:1, 取 $\lambda_D=1$, 则 $\lambda_U$ 应在 $[6,9]$ 之间.
+按式 (9) 算一组. 有 1,000 条 desirable, 10,000 条 undesirable, $\lambda_U=1$. 比值要落在 $[1,1.5]$, 即 $1000\lambda_D/10000\in[1,1.5]$, 得 $\lambda_D\in[10,15]$. 第 5.3 节用的 13.33 就在这个区间里. 若反过来 desirable 多, 比如 9:1, 取 $\lambda_D=1$, 则 $\lambda_U$ 应在 $[6,9]$ 之间.
 
-### 5.2 学习率
+### 4.2 学习率
 
 学习率是最敏感的超参. KTO 的最优学习率通常是 DPO 的 2 到 10 倍, 因为 KTO 的参考调整后奖励数值较小, 需要更大的步长. 例如 8B 规模 DPO 的默认学习率是 $5\times10^{-7}$, 而 KTO 在各种设置下 (有无 SFT, 用 Instruct 模型, LoRA) 都以 $5\times10^{-6}$ 最好, 建议配 AdamW. 学习率过大的信号是 desirable 和 undesirable 的隐式奖励一起下降; 理想情况是只有后者下降. 参考模型已经做过 SFT 或对齐时, desirable 的平均奖励可能持平, 因为参考模型本身已经很难超越.
 
 论文正文实验为了与 Rafailov 等人严格可比, 对所有方法都用了 DPO 的默认学习率和 RMSProp. 实际使用 KTO 时, 推荐从 AdamW 加 $5\times10^{-6}$ 开始.
 
-### 5.3 $\beta$
+### 4.3 $\beta$
 
 默认 $\beta=0.1$ 在多数情况下表现良好. 模型已经在同一份数据上微调过时, 建议更小的 $\beta\in[0.01,0.10)$. 参考模型已经很强, 比如已经做过某种对齐时, 建议更大的 $\beta\in(0.10,0.50]$.
 
@@ -234,44 +230,23 @@ $$
 | Llama-3 8B Instruct | KTO | 0.25 | 18.86 | 64.28 | 76.42 |
 | Qwen2.5 3B Instruct | KTO | 0.50 | 16.63 | 20.41 | 60.35 |
 
-学习率都是 $5\times10^{-6}$. Llama-3 8B 上, 跳过 SFT 直接 KTO 的 AlpacaEval LC 略高, GSM8K 略低. 已经对齐过的 Instruct 模型用了更大的 $\beta$, 与 5.3 节的建议一致.
+学习率都是 $5\times10^{-6}$. Llama-3 8B 上, 跳过 SFT 直接 KTO 的 AlpacaEval LC 略高, GSM8K 略低. 已经对齐过的 Instruct 模型用了更大的 $\beta$, 与 4.3 节的建议一致.
 
-## 6. 实现
-
-### 6.1 一个 microbatch 的计算
+### 4.4 一个 microbatch 的计算与监控
 
 一个 microbatch 有 $m$ 条样本, 每条是 $(x_i,y_i,\text{label}_i)$. 计算分四步. 第一步, 对每条 $(x_i,y_i)$ 分别过 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$, 得到序列对数概率之差 $r_i$. 第二步, 把 $y$ 错开一位得到 $(x_i,y_{i+1})$, 同样过两个模型, 取平均后截断到非负, 得到 $\hat z_0$, 并切断梯度. 第三步, 按标签分别算 $\sigma(\beta(r_i-\hat z_0))$ 或 $\sigma(\beta(\hat z_0-r_i))$. 第四步, 乘上 $\lambda_D$ 或 $\lambda_U$, 用 $\lambda_y$ 减去, 取平均.
 
 和 DPO 比, KTO 的每条样本只有一条回答, 但多了一次错配前向. 同样 $m$ 条回答, DPO 要在 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$ 上各算 $m$ 条; KTO 各算 $2m$ 条 (配对和错配各一次), 其中错配那次在 $\pi_\theta$ 上也不需要反向.
 
-### 6.2 训练时看什么
+训练时建议监控 desirable 和 undesirable 两类样本的平均隐式奖励, 以及 $\hat z_0$. 理想状态是 undesirable 的奖励下降, desirable 的奖励持平或上升, $\hat z_0$ 缓慢增长. 两类奖励同时下降, 说明学习率偏大 (第 4.2 节). $\hat z_0$ 长期为 0, 说明策略几乎没离开参考模型, 截断一直在起作用, 可以检查学习率是否过小.
 
-建议监控 desirable 和 undesirable 两类样本的平均隐式奖励, 以及 $\hat z_0$. 理想状态是 undesirable 的奖励下降, desirable 的奖励持平或上升, $\hat z_0$ 缓慢增长. 两类奖励同时下降, 说明学习率偏大 (第 5.2 节). $\hat z_0$ 长期为 0, 说明策略几乎没离开参考模型, 截断一直在起作用, 可以检查学习率是否过小.
+## 5. 实验结果
 
-## 7. 与相邻方法的分工
-
-DPO 一条样本是 $(x,y_w,y_l)$, 损失看的是两条隐式奖励之差, 参考点就是那条 $y_l$. 没有 $y_l$, DPO 的损失写不出来. KTO 的参考点是对整个策略估计的 KL, 单条 $y$ 就能产生梯度.
-
-IPO (Azar 等, [arXiv:2310.12036](https://arxiv.org/abs/2310.12036)) 同样要成对数据, 把 $\log\sigma$ 换成平方损失, 让对数比之差回归到固定间隔, 目的是避免偏好接近确定时对数比被推向无穷. 见 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).
-
-ORPO (Hong 等, [arXiv:2403.07691](https://arxiv.org/abs/2403.07691)) 不用参考模型, 但要成对数据, 损失是 chosen 的 SFT 加几率比项, 见 [02-ORPO](../02-ORPO/02-ORPO.md). KTO 也有不加载参考模型的变体: 假设 $\pi_{\mathrm{ref}}$ 对每个 $x$ 是均匀分布, $r_\theta-z_0$ 化为 $\log\pi_\theta(y\mid x)-H(\pi_\theta(\cdot\mid x))$, $H$ 是熵. 论文在 Zephyr 设定下报告, 这个变体取 $\lambda_D=1.75$ 时 MMLU, GSM8K, HumanEval, BBH 为 57.5, 47.5, 29.5, 51.6, 部分任务上好于 DPO, 部分任务上差, 整体弱于标准 KTO. 它对损失厌恶超参也更敏感, $\lambda_D$ 改成 1.5 或 2.0, GSM8K 和 BBH 都会掉好几个点.
-
-| | 数据 | 参考模型 | 目标 | 参考点 |
-|--|------|---------|------|--------|
-| DPO | $(x,y_w,y_l)$ | 要 | 偏好似然 | 那条 $y_l$ |
-| IPO | $(x,y_w,y_l)$ | 要 | 对数比差的平方回归 | 那条 $y_l$ |
-| ORPO | $(x,y_w,y_l)$ | 不要 | SFT 加几率比 | 无 |
-| KTO | $(x,y,\mathrm{D/U})$ | 要 (有无参考变体) | $\lambda_y-v$ | $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$ 的错配估计 |
-
-## 8. 实验结果
-
-### 8.1 Pythia 与 Llama 上的胜率
+### 5.1 Pythia, Llama 与 Zephyr 设定
 
 论文 Figure 3 沿用第 2.4 节的设定和 GPT-4 胜率. SFT+KTO 在 1B 到 30B 上与 SFT+DPO 持平或更好, 尽管使用的信号更弱. 在 Llama-7B, 13B, 30B 上, 单独 KTO 与单独 DPO 相比, 7B 和 30B 上的差距在多重比较校正后显著 ($p<0.01$).
 
-### 8.2 Zephyr 设定的基准 (Table 2)
-
-Zephyr-$\beta$-SFT 在 UltraFeedback 上恰好训 1 个 epoch:
+胜率之外, 论文在 Zephyr 设定上比了下游基准 (Table 2). Zephyr-$\beta$-SFT 在 UltraFeedback 上恰好训 1 个 epoch:
 
 | 方法 | MMLU | GSM8K | HumanEval | BBH |
 |------|-----:|------:|----------:|----:|
@@ -283,7 +258,7 @@ Zephyr-$\beta$-SFT 在 UltraFeedback 上恰好训 1 个 epoch:
 
 同样的数据来源, GSM8K 上 DPO 40.0, KTO 53.5, 相差 13.5 点. one-$y$-per-$x$ 每个 $x$ 只留一条 $y$, 数据减半, GSM8K 50.0, BBH 49.9, 仍高于 DPO. 附录另一张表中, AlpacaEval 2 上 KTO 12.5, DPO 7.8. TydiQA 上 KTO 低于 SFT (31.2 对 36.3), 并非所有任务都提升.
 
-### 8.3 Mistral-7B 与 OpenAssistant (Table 3)
+### 5.2 Mistral-7B 与 OpenAssistant (Table 3)
 
 Mistral-7B 在 OpenAssistant 上对齐, 以 GPT-4 判定相对 SFT 目标的胜率 (90% 置信区间):
 
@@ -299,21 +274,32 @@ one-$y$-per-$x$ 设定下训练数据量少 72%, 胜率仍高于 DPO. 人工评�
 
 人工评测的做法见附录 D: 从 OpenAssistant 测试集随机抽 256 个多轮对话 prompt, 分别用 DPO 和 KTO 对齐的 Mistral-7B 生成回答, 交给第三方标注服务, 由标注员在「模型回答」和「OpenAssistant 里的 SFT 目标回答」之间选更合适的一条. 需要专门领域经验的问题 (如编程) 被跳过, 两种方法各剩 214 组比较. 区间是 90% 二项置信区间. 按 GPT-4 判定, KTO 和 DPO 的差距不显著; 按人工判定, 差距在 $p<0.05$ 下显著. 人工判定与 GPT-4 判定的一致率, KTO 是 68.7%, DPO 是 65.9%. 也就是说, 约三分之一的单条判断上 GPT-4 和人意见相反, 用 GPT-4 胜率比较两种对齐方法时, 5 个百分点左右的差距不足以下结论.
 
-### 8.4 数据不平衡
+### 5.3 数据不平衡, 离线 PPO 与跳过 SFT
 
 在 Llama-7B 上丢弃大部分 desirable 样本, 让 desirable 与 undesirable 从 1:1 降到 1:10, 按式 (9) 把 $\lambda_D$ 设为 13.33, KTO 仍能超过 DPO. 论文的结论是, 最多丢掉 90% 的 desirable 样本, KTO 仍可以与 DPO 相当. 配对结构已经被打乱, 两类样本数量也相差十倍, KTO 的效果只能来自损失形状本身.
 
-### 8.5 与离线 PPO 基线的关系
-
 回到第 1.2 节的离线 PPO 基线. 它和 KTO 用的是同样的二值信号, 前者在 Llama-30B 上明显落后 DPO, 后者在 30B 上与 DPO 持平或更好. 两者的差别在于损失形状: 离线 PPO 用 $+1/-1$ 当优势, 经过 clip 目标更新, 没有参考点, 也没有饱和的价值函数; KTO 有 KL 参考点, 有 logistic 价值函数. 论文用这组对比说明, 信号强弱之外, 损失的归纳偏置同样决定效果.
 
-### 8.6 跳过 SFT
+最后是 SFT 能不能跳过. 单独 KTO 对齐的 Llama-13B 和 30B 与 SFT+KTO 相当, 在测试过的方法里只有 KTO 有这个表现. 论文的解释是 KTO 基本保持平均回答长度不变; 不做 SFT 直接 DPO 会让回答长度大幅增加, 模型会絮叨, 甚至编造整段对话 (Figure 4). 第 4.3 节表中 Llama-3 8B 的两行也说明, 跳过 SFT 的 KTO 在 AlpacaEval LC 上略高, 在 GSM8K 上略低, 是否先做 SFT 要看下游任务.
 
-单独 KTO 对齐的 Llama-13B 和 30B 与 SFT+KTO 相当, 在测试过的方法里只有 KTO 有这个表现. 论文的解释是 KTO 基本保持平均回答长度不变; 不做 SFT 直接 DPO 会让回答长度大幅增加, 模型会絮叨, 甚至编造整段对话 (Figure 4). 第 5.3 节表中 Llama-3 8B 的两行也说明, 跳过 SFT 的 KTO 在 AlpacaEval LC 上略高, 在 GSM8K 上略低, 是否先做 SFT 要看下游任务.
+## 6. 理论性质, 相邻方法与失效
 
-## 9. 理论分析
+### 6.1 与相邻方法的分工
 
-### 9.1 极端样本的梯度饱和
+DPO 一条样本是 $(x,y_w,y_l)$, 损失看的是两条隐式奖励之差, 参考点就是那条 $y_l$. 没有 $y_l$, DPO 的损失写不出来. KTO 的参考点是对整个策略估计的 KL, 单条 $y$ 就能产生梯度.
+
+IPO (Azar 等, [arXiv:2310.12036](https://arxiv.org/abs/2310.12036)) 同样要成对数据, 把 $\log\sigma$ 换成平方损失, 让对数比之差回归到固定间隔, 目的是避免偏好接近确定时对数比被推向无穷. 见 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).
+
+ORPO (Hong 等, [arXiv:2403.07691](https://arxiv.org/abs/2403.07691)) 不用参考模型, 但要成对数据, 损失是 chosen 的 SFT 加几率比项, 见 [02-ORPO](../02-ORPO/02-ORPO.md). KTO 也有不加载参考模型的变体: 假设 $\pi_{\mathrm{ref}}$ 对每个 $x$ 是均匀分布, $r_\theta-z_0$ 化为 $\log\pi_\theta(y\mid x)-H(\pi_\theta(\cdot\mid x))$, $H$ 是熵. 论文在 Zephyr 设定下报告, 这个变体取 $\lambda_D=1.75$ 时 MMLU, GSM8K, HumanEval, BBH 为 57.5, 47.5, 29.5, 51.6, 部分任务上好于 DPO, 部分任务上差, 整体弱于标准 KTO. 它对损失厌恶超参也更敏感, $\lambda_D$ 改成 1.5 或 2.0, GSM8K 和 BBH 都会掉好几个点.
+
+| | 数据 | 参考模型 | 目标 | 参考点 |
+|--|------|---------|------|--------|
+| DPO | $(x,y_w,y_l)$ | 要 | 偏好似然 | 那条 $y_l$ |
+| IPO | $(x,y_w,y_l)$ | 要 | 对数比差的平方回归 | 那条 $y_l$ |
+| ORPO | $(x,y_w,y_l)$ | 不要 | SFT 加几率比 | 无 |
+| KTO | $(x,y,\mathrm{D/U})$ | 要 (有无参考变体) | $\lambda_y-v$ | $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$ 的错配估计 |
+
+### 6.2 极端样本的梯度饱和
 
 论文命题 4.1: 当 $r_\theta(x,y)\to\pm\infty$ 时, KTO 对该样本的梯度趋于 0. 把式 (6)(7) 对 $\theta$ 求导, 记 $z=r_\theta-z_0$, $s=\sigma(\beta z)$, desirable 样本的梯度是
 
@@ -328,21 +314,17 @@ undesirable 样本把 $z$ 换成 $-z$, 符号相反. $s(1-s)$ 在 $|z|$ 很大�
 
 这个性质的两面: desirable 样本被模型认为极差 (大负 $z$), 可能是标签错误, KTO 自动忽略它, 对噪声更稳健; 但真正难学的样本也会被忽略, 导致欠拟合. 论文建议欠拟合时换更小的 $\beta$, 多训几个 epoch.
 
-### 9.2 等价类与价值分布
+### 6.3 等价类, 矛盾偏好与怎么选
 
 论文定理 4.2: 价值函数为 logistic, 参考点在奖励等价类变换下保持固定时, 对奖励 $r_a^*$ 存在同一等价类中的 $r_b^*(x,y)=r_a^*(x,y)+h(x)$, 它诱导同一最优策略和同一 Bradley-Terry 偏好分布, 但价值分布不同. DPO 最大化的是偏好似然, 等价类中加上 $h(x)$ 不改变偏好似然; KTO 最大化的是价值, $h(x)$ 会改变价值. 所以 Bradley-Terry 拟合得好, 不意味着人感知的价值也高.
 
-### 9.3 矛盾偏好
-
 论文定理 4.3: 同一个 $x$ 有矛盾的偏好 $y_a\succ y_b$ 和 $y_b\succ y_a$, 前者比例 $p\in(0.5,1)$. 当 $p^{1/\beta}\pi_{\mathrm{ref}}(y_a\mid x)<(1-p)^{1/\beta}\pi_{\mathrm{ref}}(y_b\mid x)$ 时, DPO 的最优策略更可能生成少数人偏好的 $y_b$; 而损失中性 ($\lambda_D=\lambda_U$) 的 KTO 最优策略会生成多数人偏好的 $y_a$. 也就是说, DPO 的结果会受参考模型初始偏好的影响. SHP, OpenAssistant 这类多人标注的数据中, 标注员之间的分歧很常见, 这是论文解释 KTO 在相同数据上胜过 DPO 的一个原因.
-
-### 9.4 怎么选
 
 论文给的选择原则: 数据本来就是二值, 或者两类样本不平衡, 用 KTO. 数据是成对偏好, 噪声小, 传递性不一致少时, DPO 可能更好, 因为 KTO 会因梯度饱和而欠拟合. 数据噪声多, 传递性不一致多时, 定理 4.2 和 4.3 都偏向 KTO. 没有哪一种 HALO 在所有情况下最好.
 
-## 10. 失效模式
+### 6.4 失效模式
 
-**难样本欠拟合.** 第 9.1 节的饱和对标签干净的数据是缺点. 训练集上 desirable 样本的隐式奖励长期为大负值, 应先排查学习率和 $\beta$.
+**难样本欠拟合.** 第 6.2 节的饱和对标签干净的数据是缺点. 训练集上 desirable 样本的隐式奖励长期为大负值, 应先排查学习率和 $\beta$.
 
 **学习率照搬 DPO.** KTO 的奖励尺度小, 用 DPO 的 $5\times10^{-7}$ 容易欠训. 学习率过大的信号是两类样本的隐式奖励同时下降.
 
