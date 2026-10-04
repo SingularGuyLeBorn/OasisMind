@@ -55,6 +55,6 @@ Chat 与 Base 的差距在三张榜上都在一分左右, 方向不一致: C-Eva
 
 ### 3.2. 微调脚本露出的内部命名, 和家族里的位置
 
-微调节推荐第三方的 LLaMA Efficient Tuning, 给出 instruction / input / output 三字段的 json 格式和两份脚本. 全量微调在 8 张 A100 80GB 上用 deepspeed, ZeRO stage 2, fp16 动态 loss scale; LoRA 在单卡上跑, rank 8, `--lora_target W_pack`. 两份脚本学习率同为 5e-5, cosine, 梯度裁剪 0.5, 2 个 epoch, 数据集是 alpaca_gpt4_en 与 alpaca_gpt4_zh. W_pack 是 7B 代码里就有的打包 QKV 投影, LoRA 只挂在它上面, 意味着**默认只调注意力投影, 不碰 FFN**. 配置文件名前后不一致 (标题 deep_speed.json, 脚本传 deepspeed.json), 照抄会出错. LoRA 的原理与常见挂载位置见 [LoRA 低秩适应](../../../../llm-guide/4-后训练/4.3-PEFT/01-LoRA低秩适应：原理实现与工业实践.md).
+微调节推荐第三方的 LLaMA Efficient Tuning, 给出 instruction / input / output 三字段的 json 格式和两份脚本. 全量微调在 8 张 A100 80GB 上用 deepspeed, ZeRO stage 2, fp16 动态 loss scale; LoRA 在单卡上跑, rank 8, `--lora_target W_pack`. 两份脚本学习率同为 5e-5, cosine, 梯度裁剪 0.5, 2 个 epoch, 数据集是 alpaca_gpt4_en 与 alpaca_gpt4_zh. W_pack 是 7B 代码里就有的打包 QKV 投影, LoRA 只挂在它上面, 意味着**默认只调注意力投影, 不碰 FFN**. 配置文件名前后不一致 (标题 deep_speed.json, 脚本传 deepspeed.json), 照抄会出错. LoRA 的原理与常见挂载位置见 [LoRA 低秩适应](../../../../llm-guide/4-后训练/4.3-PEFT/4.3.1-LoRA低秩适应/4.3.1-LoRA低秩适应.md).
 
 放回家族看, **13B 是第一代百川的收尾**: 结构沿用 7B 的 LLaMA 式配方, 词表不变, 做大的是宽度, 深度和 token 数, 新增的是 ALiBi, Chat 版和量化版, 前一版见 [Baichuan-7B 解析](../baichuan-7b/baichuan-7b-analysis.md). 它没回答的问题, 如数据怎么配, Chat 怎么对齐, 训练怎样才稳, 要到 [Baichuan 2](../baichuan-2/baichuan-2-analysis.md) 才有技术报告. 那份报告描述的是下一代模型, 数字不能直接搬到 Baichuan-13B 上, 但从反推出的 13,696 看, 两代 13B 的骨架是同一副.

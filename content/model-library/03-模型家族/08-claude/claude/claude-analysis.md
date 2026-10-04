@@ -37,7 +37,7 @@ excerpt: "这页只做一件事: 帮开发者在当前几款 Claude 模型里挑
 
 表里和思考相关的有两行. 「Thinking」 一行, Fable 5.1 与 Opus 5.5 写 「Adaptive (always on)」, Sonnet 5 只写 「Adaptive」; 按字面理解, 前两款的思考不能关, Sonnet 5 可以. 「Default effort」 一行, Fable 5.1 和 Sonnet 5 是 high, Opus 5.5 是 medium. effort 决定推理时多花多少算力, 属于 **TestingTime** 的调节, 和部署前把模型做大的 Scaling 是两回事.
 
-这两行是后训练的产物, 不是推理框架的开关. 公开资料能对上的一条线是: Claude 3.7 Sonnet 的系统卡写明 extended thinking 是用强化学习训出来的, 用户可以给一个思考 token 预算; 之后的代际把 「思考多少」 交给模型自己判断, 再用 effort 给一个粗粒度的偏好. 表里第四列的 「Exten」 与前三列的 「Adaptive」 正好对应这两代. 用 RL 训长推理的一般方法见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md), 可验证奖励的边界见 [RLVR的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4-RLVR的局限性与探索边界分析.md). Claude 具体用的是 PPO 还是别的算法, 奖励怎么构造, 本页没有, Anthropic 的公开资料也没有.
+这两行是后训练的产物, 不是推理框架的开关. 公开资料能对上的一条线是: Claude 3.7 Sonnet 的系统卡写明 extended thinking 是用强化学习训出来的, 用户可以给一个思考 token 预算; 之后的代际把 「思考多少」 交给模型自己判断, 再用 effort 给一个粗粒度的偏好. 表里第四列的 「Exten」 与前三列的 「Adaptive」 正好对应这两代. 用 RL 训长推理的一般方法见 [推理与思考能力](../../../../llm-guide/4-后训练/4.5-推理与思考能力/4.5-推理与思考能力.md), 可验证奖励的边界见 [RLVR的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.7-RLVR的局限性与探索边界/4.4.7-RLVR的局限性与探索边界.md). Claude 具体用的是 PPO 还是别的算法, 奖励怎么构造, 本页没有, Anthropic 的公开资料也没有.
 
 两行放在一起还有一处不太直观: Opus 5.5 默认 effort 比 Sonnet 5 低一档, 延迟却标 Moderate, 慢于 Sonnet 5 的 Fast. 说明延迟档位主要由模型本身决定, 默认 effort 低并不会让大模型快过小模型. 页面只有 「Comparative latency」 四个定性档, 没说比较条件, 没列 effort 共有几档, 调高一档 token 用量涨多少也没有交代.
 

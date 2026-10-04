@@ -372,7 +372,7 @@ focus remains on making models smarter, faster, and more efficient, as we drive 
 重点仍是让模型更聪明, 更快, 更高效, 朝着[真正理解并深刻帮助人类](https://x.ai/)的系统迈进.
 
 > **想:**「verifiable rewards in controlled domains」是在说 Grok 4 的训练奖励只来自可验证任务吗?
-> 本页最多能读出「以可验证奖励为主」. 第 2 页说可验证训练数据从数学和代码扩展到「many more domains」, 这里又说下一步才走出「controlled domains」, 两句合起来, Grok 4 的强化学习主要吃的是答案能自动核对的任务. 有没有偏好模型, 人类反馈, 奖励怎么设计, 页面一个字都没写.「complex real-world problems」没有可验证答案时奖励从哪来, 也只是方向, 没有方法. RLVR 能走多远的一般讨论见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.3-RLVR的局限性与探索边界分析.md).
+> 本页最多能读出「以可验证奖励为主」. 第 2 页说可验证训练数据从数学和代码扩展到「many more domains」, 这里又说下一步才走出「controlled domains」, 两句合起来, Grok 4 的强化学习主要吃的是答案能自动核对的任务. 有没有偏好模型, 人类反馈, 奖励怎么设计, 页面一个字都没写.「complex real-world problems」没有可验证答案时奖励从哪来, 也只是方向, 没有方法. RLVR 能走多远的一般讨论见 [RLVR 的局限性与探索边界分析](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.7-RLVR的局限性与探索边界/4.4.7-RLVR的局限性与探索边界.md).
 
 ![Image block](images/p10-2026-spacexai-llc.png)
 
