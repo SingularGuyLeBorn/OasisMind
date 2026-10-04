@@ -1,169 +1,224 @@
 ---
-title: "OAIF:在线 AI 反馈"
+title: "06 · OAIF: 在线 AI 反馈"
 published: true
 tags: ["OAIF", "DPO", "IPO", "SLiC", "在线偏好", "RLAIF", "PaLM 2"]
-excerpt: "OAIF(Online AI Feedback)不换损失.每步从当前策略 \\pi_{\\theta^{t}} 采两条 y^{1},y^{2},另找一份 LLM 当场判出 y^{+},y^{-},再套任意可微 DAP 损失."
+excerpt: "OAIF (Online AI Feedback) 保留 DPO, IPO, SLiC 的损失, 只换数据来源: 每步从当前策略采两条回答, 让一个 LLM 当场判出胜负, 再算损失."
 ---
-# OAIF:在线 AI 反馈
+# 06 OAIF: 在线 AI 反馈
 
-OAIF(Online AI Feedback)不换损失.每步从当前策略 $\pi_{\theta^{t}}$ 采两条 $y^{1},y^{2}$,另找一份 LLM 当场判出 $y^{+},y^{-}$,再套任意可微 DAP 损失.卡住的是离线偏好对:数据提前采好,训练中永不更新,策略自己已经走开了还在吃旧对.
+Guo, Zhang, Liu 等的 *Direct Language Model Alignment from Online AI Feedback* ([arXiv:2402.04792](https://arxiv.org/abs/2402.04792)) 处理的问题是: DPO 一类方法用的偏好对是训练前采好的, 来自别的模型, 训练中策略拿不到对自己新回答的反馈. 公式和表以 [arXiv HTML](https://arxiv.org/html/2402.04792) 为准, 隐式奖励的推导见 [01-DPO](../01-DPO/01-DPO.md).
 
-本篇跟 Guo,Zhang,Liu 等 *Direct Language Model Alignment from Online AI Feedback*([arXiv:2402.04792](https://arxiv.org/abs/2402.04792)).公式和表以 [arXiv HTML](https://arxiv.org/html/2402.04792) 为准.隐式奖励怎么从 KL 约束目标反解,见 [01-DPO](../01-DPO/01-DPO.md).**不是** Lee 等 RLAIF([arXiv:2309.00267](https://arxiv.org/abs/2309.00267)):那篇附录 E 是带价值基线的 REINFORCE,正本在 [4.4.3](../../4.4.3-RLAIF/4.4.3-RLAIF.md).OAIF 不跑 PPO,也不跑 REINFORCE.**不是** [SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md):SPIN 的 winner 永远是 SFT 人标,loser 是上一迭代自生成.**不是** 离线 DPO.
+## 1. 离线偏好对的问题
 
-## 1. 离线 DAP 吃的是别人采过的对
+### 1.1 偏好数据怎么来
 
-DAP(direct alignment from preferences)把成对偏好直接写成策略上的分类或回归,不另训奖励模型.[DPO](../01-DPO/01-DPO.md),[IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md),[SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md) 都是这一家.问题在数据从哪来.
-
-标准手续:prompt $\bm{x}$ 从 $p_{\mathcal{X}}$ 抽,两条回答从某份已有模型 $\rho$ 独立采,人或 AI 排成 $y^{+},y^{-}$,攒成
+标准流程是: prompt $x$ 从 $p_{\mathcal{X}}$ 抽取, 两条回答 $y^1,y^2$ 从某个已有模型 $\rho$ 独立采样, 由人或 AI 排成 $y^+,y^-$, 汇总成
 
 $$
-\mathbb{D}=\{(\bm{x}_{i},\bm{y}_{i}^{+},\bm{y}_{i}^{-})\}_{i=1}^{N}.
+\mathbb{D}=\{(x_i,y_i^+,y_i^-)\}_{i=1}^N.
 \tag{1}
 $$
 
-训练时这份 $\mathbb{D}$ 冻死.$\pi_{\theta}$ 看不到自己刚吐出来的句子被怎么评.论文把损失写成 $\ell(\bm{x},\bm{y}^{+},\bm{y}^{-},\bm{\theta})$,并强调 $(y^{+},y^{-})$ 来自 $\rho(\cdot|x)$,不是来自当前 $\pi_{\theta^{t}}$.
+DAP (direct alignment from preferences) 方法直接在这份数据上定义损失 $\ell(x,y^+,y^-,\theta)$, 不另训奖励模型. 论文指出 DAP 的一个优点是梯度可以精确高效地计算. RLHF 的目标对回答空间求期望, 通常用策略梯度做无偏估计, 再用价值函数降方差, 显存里要多放一个模型.
 
-两条错位叠在一起.
+### 1.2 两种错位
 
-一条叫离线.附录 A.1:学习是在线的,当 $(y^{+},y^{-})=f(x,y^{1},y^{2})$,$f$ 是随时可问的偏好函数(人,RM 或 LLM),且 $(y^{1},y^{2})\sim\pi_{\theta^{t}}(\cdot|x)$;否则就是离线,$\mathbb{D}$ 在训之前就采好了.RLHF 的 RL 步是在线的,因为 $y$ 从当前策略采,RM 一直在.离线 DPO 没有这条通道.人标太贵,训的时候通常请不到人在环里.
+论文附录 A 区分了两个概念.
 
-一条叫 off-policy.附录 A.2:$(y^{+},y^{-})$ 来自当前 $\pi_{\theta^{t}}$ 才是 on-policy;来自别的 $\rho$ 就是 off-policy.就算先 SFT 到 $\pi_{\theta^{0}}\approx\rho$,对齐过程中 $\pi_{\theta^{t}}$ 会离开 $\pi_{\theta^{0}}$.论文 Figure 2 把两段错位画在一起:初始 $\rho\neq\pi_{\theta^{0}}$,以及逐渐的 $\pi_{\theta^{0}}\neq\pi_{\theta^{t}}$.
+离线和在线: 如果 $(y^+,y^-)=f(x,y^1,y^2)$, 其中 $f$ 是训练中随时可以调用的偏好函数 (人, RM 或 LLM), 且 $y^1,y^2\sim\pi_{\theta^t}(\cdot\mid x)$, 学习就是在线的; 数据在训练前已经采好, 就是离线的. 人工标注成本高, 训练时通常没有人在环里, 所以 $\mathbb{D}$ 一般在训练前收集完毕并固定.
 
-附录 B 用 Stiennon 的 Stylistic-Continuation 做过一次验尸.人标对来自 GPT-2 Large,另从 PaLM 2-S 采一条 off-policy 续写 $\bar{y}$.GPT-2 Large 给自己那对 on-policy 的对数概率,明显高于 PaLM 2-S 那条.分布差看得见,不是口号.
+off-policy 和 on-policy: 偏好对来自当前 $\pi_{\theta^t}$ 是 on-policy, 来自别的 $\rho$ 是 off-policy. 即使先 SFT 使 $\pi_{\theta^0}\approx\rho$, 对齐过程中 $\pi_{\theta^t}$ 也会离开 $\pi_{\theta^0}$. 论文 Figure 2 把两段错位画在一起: 初始的 $\rho\ne\pi_{\theta^0}$, 以及训练中逐渐出现的 $\pi_{\theta^0}\ne\pi_{\theta^t}$.
 
-用 RM 给当前生成打伪标签,能把 DAP 做成在线.RSO(Liu 等),Iterative DPO(Xu 等),West-of-N(Pace 等)走这条.RM 自己仍在 $\mathbb{D}\sim\rho$ 上训,拿去标 $\pi_{\theta^{t}}$ 的回答,还是分布外.附录 A.3 把这件事说死:RM 在 $\rho$ 上拟合,推理时面对 $\pi_{\theta^{t}}$,只有在线采偏好,$\rho=\pi_{\theta^{t}}$ 才是 in-distribution.常见 RLHF 做不到.Xu 等 Iterative DPO 用 RM 给当前生成打序,再迭代 DPO,在线且 on-policy,RM 仍坐在旧 $\mathbb{D}$ 上.OAIF 跳过 RM,直接问 LLM.作者点名:和 Xu,Liu,Xiong 那些方法不同,不另训奖励.
+附录 B 用 Stiennon 等的 Stylistic-Continuation 数据验证了这个差距. 该数据由 GPT-2 Large 生成, 论文把 GPT-2 Large 当作策略, 于是数据里的 $y^+,y^-$ 都是 on-policy; 再用 PaLM 2-S 合成一条 off-policy 回答 $\bar y$. GPT-2 Large 给自己生成的回答的对数概率明显高于 $\bar y$. Figure 8 画的是三者在 GPT-2 Large 下的对数概率: $y^+$ 和 $y^-$ 两组分布接近, $\bar y$ 一组整体落在更低的位置, 和前两组之间有清楚的间隔. 也就是说, 只要偏好数据来自别的模型, 策略面对的就是一批自己很少会生成的回答.
 
-Table 1 三列对照:离线 DPO / IPO / SLiC 不需要 RM,但既不 on-policy 也不在线;RSO / Iterative DPO 在线且 on-policy,但要 RM;OAIF 三列都打勾.同期 Swamy 等也强调在线偏好,实验仍靠 RM.
+### 1.3 用 RM 打伪标签也不够
 
-DAP 还有一个卖点:梯度能精确算.RLHF 的目标里有一层对回答空间的期望,通常用策略梯度给无偏估计,再加价值函数降方差,内存里多坐一份 Critic.OAIF 仍走 DAP,采样和标注被 `stop_gradient` 挡在外面,$\ell$ 对 $\theta$ 可微.在线不等于改回 PPO.
+一种在线化方案是用奖励模型给当前生成打标签. RSO (Liu 等) 用 RM 做拒绝采样, Iterative DPO (Xu 等) 和 West-of-N (Pace 等) 用 RM 给 $\pi_{\theta^t}$ 的生成打伪标签. 这些方法做到了在线和 on-policy, 但 RM 本身仍在 $\mathbb{D}\sim\rho$ 上训练. 附录 A.3 写道: 只有 $\rho=\pi_{\theta^t}$ 时 RM 标注的才是分布内样本, 而 RLHF 的常见做法里 $\rho\ne\pi_{\theta^t}$, RM 面对的是分布外样本.
 
-## 2. 当场采,当场标,套旧损失
+论文 Table 1 用三列对比: 是否不需要 RM, 是否 on-policy 生成, 是否在线反馈. 离线 DPO, IPO, SLiC 只满足第一列; RSO 和 Iterative DPO 满足后两列; OAIF 三列都满足. 同期的 Swamy 等也强调在线偏好, 但仍依赖 RM.
 
-OAIF 把 DAP 的采样源从 $\rho$ 换成当前策略,把标注源从冻死的 $\mathbb{D}$ 换成随时可问的 LLM.Algorithm 1 按 batch size $1$ 写,实验 batch 是 $128$.输入是 prompt 集 $\mathbb{D}_{\mathcal{X}}$(从原偏好集抽出 $x$,不再用里面的 $y$),SFT 基线 $\pi_{\theta^{0}}$,一份 LLM 标注器,任意可微 DAP 损失 $\ell$.对 $t=0,\ldots,T$:
+OAIF 用 LLM 替代 RM 的依据是: 标注 LLM 没有在 $\mathbb{D}$ 上专门拟合, 它的判断能力来自预训练和指令微调, 面对 $\pi_{\theta^t}$ 的新回答时, 不存在「训练分布是 $\rho$」这一层错位. 这个依据也有边界. LLM 标注器同样有自己的偏好和盲区, 只是这些偏差与 $\rho$ 无关. 第 4 节的一致率数据给出了它的实际水平: 约七成与人一致.
 
-1. 抽 $\bm{x}\sim\mathbb{D}_{\mathcal{X}}$.
-2. 从 $\pi_{\theta^{t}}(\cdot|\bm{x})$ 独立采 $\bm{y}^{1},\bm{y}^{2}$.
-3. 问标注 LLM,得到 $\bm{y}^{+},\bm{y}^{-}$.
-4. 用 $\nabla_{\theta}\ell(\bm{x},\bm{y}^{+},\bm{y}^{-},\bm{\theta}^{t})$ 更新到 $\bm{\theta}^{t+1}$.
+## 2. 算法
 
-采样保证 on-policy.标注保证在线.损失还是原来那条.论文 Figure 1 就是这四步.
+### 2.1 四步循环
 
-DPO 印刷体是论文 (1):
+Algorithm 1 按 batch size 1 书写. 输入是 prompt 集 $\mathbb{D}_{\mathcal{X}}$ (从原偏好数据中只取 $x$), SFT 模型 $\pi_{\theta^0}$, 一个 LLM 标注器, 以及任意可微的 DAP 损失. 对 $t=0,\dots,T$:
+
+1. 抽取 $x\sim\mathbb{D}_{\mathcal{X}}$.
+2. 从 $\pi_{\theta^t}(\cdot\mid x)$ 独立采样 $y^1,y^2$.
+3. 用 LLM 标注器得到 $y^+,y^-$.
+4. 用 $\nabla_\theta\ell(x,y^+,y^-,\theta^t)$ 更新得到 $\theta^{t+1}$.
+
+第 2 步保证 on-policy, 第 3 步保证在线. 损失可以是任意 DAP 损失.
+
+### 2.2 三种损失
+
+DPO (论文式 (1)):
 
 $$
--\log\sigma\Biggl(\beta\log\frac{\pi_{\theta}(\bm{y}^{+}|\bm{x})\,\pi_{\theta^{0}}(\bm{y}^{-}|\bm{x})}{\pi_{\theta^{0}}(\bm{y}^{+}|\bm{x})\,\pi_{\theta}(\bm{y}^{-}|\bm{x})}\Biggr).
+\ell_{\mathrm{DPO}}
+=
+-\log\sigma\Biggl(\beta\log\frac{\pi_\theta(y^+\mid x)\,\pi_{\theta^0}(y^-\mid x)}{\pi_{\theta^0}(y^+\mid x)\,\pi_\theta(y^-\mid x)}\Biggr).
 \tag{2}
 $$
 
-实验 $\beta=0.1$.隐式奖励
+IPO (论文式 (2)) 把同一个对数比之差回归到常数:
 
 $$
-r=\beta\log\frac{\pi}{\pi_{\mathrm{ref}}}+\beta\log Z(x)
+\ell_{\mathrm{IPO}}
+=
+\Biggl(\log\frac{\pi_\theta(y^+\mid x)\,\pi_{\theta^0}(y^-\mid x)}{\pi_\theta(y^-\mid x)\,\pi_{\theta^0}(y^+\mid x)}-\frac{1}{2\beta}\Biggr)^2.
 \tag{3}
 $$
 
-怎么从 KL 约束目标反解,$Z(x)$ 为何在成对差里消掉,见 [01-DPO](../01-DPO/01-DPO.md) 式 (5)(6).
-
-IPO 印刷体是论文 (2),平方项把对数比之差往 $1/(2\beta)$ 上回归.OAIF 把这只旋钮写成 $\beta$,IPO 实验取 $\beta=1.0$.Azar 原文正则是 $\tau$,靶心是 $\tau^{-1}/2$,记号不要固定成 DPO 的 $\beta$.公式在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).
-
-SLiC 印刷体是论文 (3),一条 hinge:
+SLiC (论文式 (3)) 是 hinge 形式:
 
 $$
-\max\Biggl(0,\,1-\beta\log\frac{\pi_{\theta}(\bm{y}^{+}|\bm{x})\,\pi_{\theta^{0}}(\bm{y}^{-}|\bm{x})}{\pi_{\theta}(\bm{y}^{-}|\bm{x})\,\pi_{\theta^{0}}(\bm{y}^{+}|\bm{x})}\Biggr).
+\ell_{\mathrm{SLiC}}
+=
+\max\Biggl(0,\,1-\beta\log\frac{\pi_\theta(y^+\mid x)\,\pi_{\theta^0}(y^-\mid x)}{\pi_\theta(y^-\mid x)\,\pi_{\theta^0}(y^+\mid x)}\Biggr).
 \tag{4}
 $$
 
-实验 $\beta=0.002$.Zhao 的 SLiC-HF 还带一条对参考摘要的交叉熵.OAIF 套进去的是 hinge 这一截.完整形态在 [01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md).
+三式共用一个量: 对数比之差 $h=\log\frac{\pi_\theta(y^+)}{\pi_{\theta^0}(y^+)}-\log\frac{\pi_\theta(y^-)}{\pi_{\theta^0}(y^-)}$. 区别在怎样惩罚它. DPO 对 $\beta h$ 做 logistic, 没有目标值, $h$ 越大损失越小; IPO 把 $h$ 拉向 $1/(2\beta)$, 超过也受罚; SLiC 在 $\beta h\ge1$ 后不再更新. 三个 $\beta$ 的含义因此不同: 实验中 DPO 取 0.1, IPO 取 1.0 (目标值 $h=0.5$), SLiC 取 0.002 (需要 $h\ge500$ 才停止更新). IPO 的原文 (Azar 等) 把正则系数记作 $\tau$, 见 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md). SLiC-HF 原文还带一项对参考回答的交叉熵, OAIF 只用 hinge 部分, 见 [01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md).
 
-三条损失的公共形状是 $\ell(x,y^{+},y^{-},\theta)$.$y^{+},y^{-}$ 原来来自 $\rho$,现在来自 $\pi_{\theta^{t}}$.换数据槽,不换损失家族.实验 batch $128$,等于把 Algorithm 1 并成 $128$ 条 prompt 同时采,同时标,同时反传.温度 $0.9$ 是训练采样,不是评测解码.warmup $150$ 步配 Adafactor,学习率 $5\times 10^{-7}$,三条 DAP 共用这组优化超参,只换 $\beta$.DPO 的 $\beta=0.1$ 偏小(KL 松),SLiC 的 $\beta=0.002$ 是 hinge 间隔,IPO 的 $\beta=1.0$ 对应他们印刷体里 $1/(2\beta)=0.5$ 的靶心.同一字母,三只旋钮不是同一物理量.Azar 把正则写成 $\tau$,靶心 $\tau^{-1}/2$;OAIF 实验把 IPO 的 $\beta$ 设成 $1.0$,印刷体才长得像 $1/(2\beta)$.
+### 2.3 手算
 
-用一组假对数概率把式 (2) 走通.设 $\beta=0.1$,$y^{+}$ 上 $\log\pi_{\theta}=-8$,$\log\pi_{\theta^{0}}=-10$,$y^{-}$ 上 $\log\pi_{\theta}=-11$,$\log\pi_{\theta^{0}}=-9$.成对差是 $0.1\bigl((-8-(-10))-(-11-(-9))\bigr)=0.40$.$\sigma(0.40)\approx 0.60$,损失 $-\log 0.60\approx 0.51$.排对了,这条还在学,但不会很重.若排反,差变成 $-0.40$,损失约 $0.90$,梯度更重.数字是式 (2) 的算术,不是论文表.实现上仍是序列逐步 $\log\pi(y_{t}\mid x,y_{<t})$ 相加,prompt token mask 掉,和离线 DPO trainer 那套手续相同,换的是 $y^{+},y^{-}$ 从哪来.
+取 $\beta=0.1$. $y^+$ 上 $\log\pi_\theta=-8$, $\log\pi_{\theta^0}=-10$; $y^-$ 上 $\log\pi_\theta=-11$, $\log\pi_{\theta^0}=-9$. 则 $h=(-8+10)-(-11+9)=4$.
 
-梯度有一层实现选择.$\theta$ 同时出现在采样和损失里.$y^{+},y^{-}$ 还经过标注 LLM,原则上也是 $\theta$ 的函数.OAIF 只用 $\nabla_{\theta}\ell(\cdots)$,对采样和标注都 `stop_gradient`.离散 token 本来也反传不回去.这一刀和离线 DAP 的前向相同:对数概率对已生成的序列求.
+- DPO: $\beta h=0.40$, $\sigma(0.40)\approx0.60$, 损失 $\approx0.51$.
+- IPO ($\beta=1.0$): $(4-0.5)^2=12.25$, 梯度方向是减小 $h$. 排序已经正确, IPO 仍认为差距过大.
+- SLiC ($\beta=0.002$): $1-0.008=0.992$, 损失接近 1, 几乎没有饱和.
 
-标注提示跟 Lee 的 Detailed 0-shot.成对问「1 还是 2」,取生成 token「1」「2」的对数概率做 softmax,当偏好分数.位置会偏.同一对候选左右一换,栏位会跟着走.修法是对调顺序再平均.附录 E 把 TL;DR,Helpfulness,Harmlessness 的提示全文列了.可控实验只改标注 prompt,不重训 RM.
+同一个偏好对, 三种损失的更新方向和力度可能完全不同. OAIF 不改变这一点, 它只改变 $(y^+,y^-)$ 从哪来.
 
-![OAIF 单步:当前策略采两条,LLM 标完再进 DAP 损失](./images/fig-oaif-online-loop.png)
+把三种损失对 $h$ 求导, 差别更清楚:
 
-> 图 1:prompt $x$ 进当前 $\pi_{\theta^{t}}$,采出 $y^{1},y^{2}$,冻结的 LLM 标注器给出 $y^{+},y^{-}$,再进 DPO / IPO / SLiC 的 DAP 损失.
+$$
+\frac{\partial\ell_{\mathrm{DPO}}}{\partial h}=-\beta\,\sigma(-\beta h),\qquad
+\frac{\partial\ell_{\mathrm{IPO}}}{\partial h}=2\Bigl(h-\frac{1}{2\beta}\Bigr),\qquad
+\frac{\partial\ell_{\mathrm{SLiC}}}{\partial h}=-\beta\,\mathbb{1}[\beta h<1].
+\tag{5}
+$$
+
+在 $h=0$ 处 (新采的两条回答, 策略对它们还没有偏向), 三者分别是 $-0.05$, $-1$ 和 $-0.002$. 在线训练时, 每步的 $y^1,y^2$ 都是当前策略刚采出来的, 训练初期 $h$ 多在 0 附近, 三种损失都处于梯度最大的区间. 离线数据训练久了, 同一批偏好对的 $h$ 越来越大: DPO 的权重 $\sigma(-\beta h)$ 趋于 0, IPO 在超过目标值后开始反向拉回, SLiC 一直以常数梯度推动. 第 5.2 节中离线 IPO 的 quality 最低 (2.93), 式 (5) 给出的三种饱和方式, 可以作为理解这一结果的一个方向.
+
+### 2.4 梯度怎么算
+
+$\theta$ 同时出现在采样和损失中. $y^+,y^-$ 还经过标注器, 原则上也是 $\theta$ 的函数. 论文只用 $\nabla_\theta\ell(x,y^+,y^-,\theta)$, 相当于在采样和标注两步都加 `stop_gradient`. 离散 token 本来就无法直接反传, 这样处理之后, 每一步的计算和离线 DAP 相同: 对已经生成的序列求对数概率. 实现上是把序列逐 token 的 $\log\pi(y_t\mid x,y_{<t})$ 相加, 并屏蔽 prompt token.
+
+### 2.5 标注提示
+
+标注沿用 Lee 等的 Detailed 0-shot 提示. 成对提问「1 还是 2 更好」, 对生成 token「1」和「2」的对数概率做 softmax, 作为偏好分数. 为避免位置偏差, 两种顺序各算一次, 取平均. 附录 E 列出了 TL;DR, Helpfulness, Harmlessness 的完整提示.
+
+手算一次. 顺序「A 在前, B 在后」时, 标注器给「1」的概率是 0.70, 即 A 更好的概率 0.70. 调换为「B 在前, A 在后」后, 给「1」(此时指 B) 的概率是 0.60, 即 A 更好的概率 0.40. 平均得 $(0.70+0.40)/2=0.55$, A 记为 $y^+$. 只看第一种顺序会得到 0.70 的强偏好, 只看第二种顺序结论反而相反; 两种顺序的差距 $0.70-0.40=0.30$ 就是这对样本上的位置偏差. 平均之后 0.55 接近 0.5, 表示这对回答差别不大, 它产生的训练信号本来就应该弱. 论文按分数直接取胜者, 不对接近 0.5 的偏好对做额外过滤.
+
+### 2.6 一步的实现
+
+```python
+def oaif_step(policy, ref, annotator, prompts, loss_fn):
+    # 采样与标注都在 no_grad 下完成, 对应论文的 stop_gradient
+    y1, y2 = policy.sample(prompts, n=2, temperature=0.9)
+    p = 0.5 * (annotator.prefer_first(prompts, y1, y2)
+               + 1 - annotator.prefer_first(prompts, y2, y1))
+    y_pos = where(p >= 0.5, y1, y2)
+    y_neg = where(p >= 0.5, y2, y1)
+    # 以下与离线 DAP 完全相同
+    h = (policy.logp(prompts, y_pos) - ref.logp(prompts, y_pos)) \
+        - (policy.logp(prompts, y_neg) - ref.logp(prompts, y_neg))
+    loss = loss_fn(h).mean()
+    loss.backward()
+```
+
+和离线 DPO 的训练循环比, 只多出前四行. 参考模型 `ref` 固定为 $\pi_{\theta^0}$, 不随训练更新.
+
+![OAIF 单步: 当前策略采两条, LLM 标完再进 DAP 损失](./images/fig-oaif-online-loop.png)
+
+> 图 1: prompt $x$ 进入当前 $\pi_{\theta^t}$, 采出 $y^1,y^2$, 冻结的 LLM 标注器给出 $y^+,y^-$, 再进入 DPO, IPO 或 SLiC 损失.
 
 **图 1 解析**
 
-- 从左到右六框,一条单向实线.奶油框是 prompt $x$,箭头标 $x$ 进薄荷绿的当前策略.
-- 策略框写 trainable.冰蓝色框是两条回答 $y^{1},y^{2}$,走廊标签 sample.
-- 淡紫框是 PaLM 2-L 标注器,写 frozen.再往后是标好的 $y^{+},y^{-}$,最后进橙色 DAP 损失.
-- 页脚写 online + on-policy. Not a new loss.没有回头箭.下一 $t$ 把更新后的权重当成新的 $\pi_{\theta^{t}}$,发生在迭代之间,不在这一张里画环.
+- 从左到右六个框, 一条单向实线. 奶油色框是 prompt $x$, 箭头指向薄荷绿的当前策略, 框内标 trainable.
+- 冰蓝色框是两条回答 $y^1,y^2$, 连线标 sample.
+- 淡紫框是 PaLM 2-L 标注器, 标 frozen. 之后是标好的 $y^+,y^-$, 最后进入橙色 DAP 损失框.
+- 页脚写 online + on-policy, Not a new loss. 图中没有回环箭头: 更新后的权重在下一步成为新的 $\pi_{\theta^t}$, 这发生在两步之间.
 
-## 3. 不是 RLAIF,不是 SPIN,不是离线 DPO
+## 3. 与相邻方法的分工
 
-Lee 等 RLAIF 也用 LLM 标偏好.那条流水线是:AI 标 → 拟合奖励模型 → 附录 E 的带价值基线 REINFORCE.策略从当前 $\pi$ 采 $y$,RM 打标量分,再策略梯度.OAIF 不跑 PPO,也不跑 REINFORCE,中间没有独立 RM.词都叫 AI feedback,训练环不是同一个.Bai 等 Constitutional AI 更早用过这个词,无害走原则加模型 A/B,有帮助仍人标,前面还有批评修订 SFT,正本在 [4.4.3](../../4.4.3-RLAIF/4.4.3-RLAIF.md) 旁挂的宪法单独成篇.OAIF 不走宪法,不自我改写,不训 PM.
+**RLAIF (Lee 等).** 同样用 LLM 标偏好, 但流程是: AI 标注, 训练奖励模型, 再用强化学习优化策略. OAIF 中间没有奖励模型, 也没有策略梯度. 见 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md).
 
-[SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md) 的 logistic 形态像 DPO.winner 永远是 SFT 人标 $y$,loser 永远是上一迭代自生成 $y'$.参考每轮换成 $p_{\theta_{t}}$.OAIF 的两条都来自当前 $\pi_{\theta^{t}}$,胜负由标注 LLM 当场判.没有钉死的人标 winner.SPIN 不需要新偏好;OAIF 每步都要新偏好,只是标注员换成模型.
+**SPIN.** 损失和 DPO 同形, 但胜者固定为 SFT 数据里的人写回答, 输者是上一轮模型的生成, 不需要任何偏好标注. OAIF 的两条回答都来自当前策略, 胜负由标注器判定. 见 [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md).
 
-离线 DPO 吃预先采好的 $\mathbb{D}$.论文 Figure 3 在 TL;DR 上用 Gemini Pro 对 SFT 算胜率:离线 DPO 大约 step $3500$ 红线骤降,过拟合那份离线,off-policy 的偏好;在线 DPO 过 $4000$ 步还在涨,并超过离线.红线掉的位置在 $3500$ 附近,不是训崩到零.前半段离线也能涨,错位是后半段才咬人.自动裁判是 Gemini Pro,不是训练时的 PaLM 2-L,排除「自己给自己打分越来越高」.附录 D 换成 PaLM 2-L 当自动裁判,方向一样.这不是「离线再多训几个 epoch」能补的.数据槽错了,多训只会把旧对背得更死.论文 Figure 2 是分布错位示意图,过拟合曲线是 Figure 3,两张不要混.
+**Self-Rewarding.** 正在训练的模型自己给自己打分. 论文 Discussion 认为这条路可行, 因为生成和判别是两种任务; 缺点是标注器的架构和尺寸必须与策略相同. OAIF 的标注器可以是任意 LLM, 包括比策略更强的. 见 [07-Self-Rewarding](../07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md).
 
-[Nash-MD](../../4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md) 也在线采偏好.对手是当前策略与参考的几何混合,目标是偏好博弈的 Nash.不是 OAIF 这种「采两条,LLM 判,套 DAP」.Self-Rewarding LM(Yuan 等,[07](../07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md))让正在训的模型给自己打偏好.OAIF 的标注器可以是任意 LLM,包括比策略更强的.Discussion 写得更直:生成和判别是两件事,自己标自己理论上说得通,坏处是架构和尺寸必须一样.§4.5 更大的标注器有额外好处.有更大或更好的标注器时,不必强迫策略给自己打分.
+**Nash-MD.** 也在线采样偏好, 但对手是当前策略与参考策略的几何混合, 目标是偏好博弈的 Nash 均衡. 见 [06-Nash-MD](../../4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md).
 
 | | 采样 | 标注 | 独立 RM | 优化 |
 |--|------|------|---------|------|
-| 离线 DPO | $\rho$,预先 | 人,冻在 $\mathbb{D}$ | 不要 | DAP 分类 |
-| RLAIF(Lee) | 当前 $\pi$ | LLM → RM | 要 | REINFORCE + 价值基线 |
-| SPIN | 上一迭代 $y'$ | 无;winner = 人标 | 不要 | logistic 成对差 |
-| Nash-MD | 在线 | 偏好模型 $\mathcal{P}$ | 不要(有 $\mathcal{P}$) | Nash / 镜像下降 |
-| OAIF | 当前 $\pi_{\theta^{t}}$ 两条 | LLM 当场 | 不要 | 任意 DAP |
+| 离线 DPO | $\rho$, 预先采好 | 人, 固定在 $\mathbb{D}$ | 不要 | DAP 损失 |
+| RLAIF | 当前 $\pi$ | LLM 标注后训 RM | 要 | 强化学习 |
+| SPIN | 上一轮生成 $y'$ | 无, 胜者是人写回答 | 不要 | logistic 成对差 |
+| Nash-MD | 在线 | 偏好模型 | 不要, 但有偏好模型 | 镜像下降 |
+| OAIF | 当前 $\pi_{\theta^t}$ 两条 | LLM 当场标注 | 不要 | 任意 DAP 损失 |
 
-![左列离线 DAP 吃固定数据集,右列 OAIF 当场采当场标](./images/fig-oaif-vs-offline.png)
+![左列离线 DAP 吃固定数据集, 右列 OAIF 当场采当场标](./images/fig-oaif-vs-offline.png)
 
-> 图 2:左列离线 DAP 吃固定 $\mathcal{D}$(来自 $\rho$,常 off-policy),参考冻在 SFT;右列 OAIF 由当前 $\pi_{\theta^{t}}$ 采 $y^{1},y^{2}$,LLM 当场标完,再套同一条 DAP 损失.
+> 图 2: 左列离线 DAP 使用固定的 $\mathcal{D}$ (来自 $\rho$, 常是 off-policy), 参考冻结为 SFT; 右列 OAIF 由当前 $\pi_{\theta^t}$ 采 $y^1,y^2$, LLM 当场标注, 再代入同一种 DAP 损失.
 
 **图 2 解析**
 
-- 两列都从上往下,中间竖线分开.左列顶上黄框是固定数据集 $\mathcal{D}$,箭头标 old $(y^{+},y^{-})$.
-- 左列中间并排:绿框可训 $\pi_{\theta}$,灰框冻结 $\pi_{\mathrm{ref}}=\mathrm{SFT}$.两条对数概率向下进蓝色 DAP 损失.页脚 often off-policy.
-- 右列顶上薄荷绿是当前 $\pi_{\theta^{t}}$ 当场采样.淡紫框是冻结的 PaLM 2-L.底上橙色框写 same DAP loss,更新 $\theta$.
-- 右列没有独立 RM,也没有冻死的成对文件.页脚 on-policy + online.
+- 两列都从上往下读, 中间竖线分开. 左列顶部黄框是固定数据集 $\mathcal{D}$, 箭头标 old $(y^+,y^-)$.
+- 左列中部并排: 绿框是可训练的 $\pi_\theta$, 灰框是冻结的 $\pi_{\mathrm{ref}}=\mathrm{SFT}$. 两路对数概率进入蓝色 DAP 损失. 页脚 often off-policy.
+- 右列顶部薄荷绿框是当前 $\pi_{\theta^t}$ 当场采样, 淡紫框是冻结的 PaLM 2-L. 底部橙色框写 same DAP loss, 更新 $\theta$.
+- 右列没有独立 RM, 也没有固定的偏好文件. 页脚 on-policy + online.
 
-## 4. 实验设定:PaLM 2-XS 对 PaLM 2-L
+## 4. 实验设置
 
-任务三件:TL;DR(Stiennon 等),Anthropic Helpfulness,Anthropic Harmlessness(Bai 等).没有 AlpacaEval,没有 MT-Bench.prompt 集从原偏好集抽 $x$.
+任务三个: TL;DR (Stiennon 等), Anthropic Helpfulness, Anthropic Harmlessness (Bai 等). prompt 集从各自偏好数据中抽取 $x$.
 
-策略默认:SFT 过的 PaLM 2-XS.标注器默认 PaLM 2-L.采样温度 $0.9$.Adafactor,batch $128$,学习率 $5\times 10^{-7}$,warmup $150$ 步.$\beta$:DPO $0.1$,IPO $1.0$,SLiC $0.002$.
+策略默认是 SFT 后的 PaLM 2-XS, 标注器默认 PaLM 2-L. 训练采样温度 0.9. 优化器 Adafactor, batch 128, 学习率 $5\times10^{-7}$, warmup 150 步, 三种 DAP 共用这组优化超参, 只换 $\beta$.
 
-三个标注员看到一组策略吐出来的回答,各自打 quality($1$ 到 $5$,$5$ 最好),并指出最好的那条.平均分用来比模型.Table 2 / 3 的 win / tie / loss 是这条「挑最好」的票,quality 是 $1$–$5$ 的平均.两列不是同一把尺子.
+自动评测用 Gemini Pro 当裁判, 降低策略过拟合标注器和 reward hacking 的风险. 附录 Table 4 给出两种 LLM 与人工标注的一致率 (Detailed 0-shot):
 
-自动评测用 Gemini Pro 当裁判,降低自己过拟合标注器的风险.附录 Table 4,Detailed 0-shot,LLM 标对人标的对齐率:
-
-| Setting | TL;DR | Helpfulness | Harmlessness |
-|---------|------:|------------:|-------------:|
+| 设置 | TL;DR | Helpfulness | Harmlessness |
+|------|------:|------------:|-------------:|
 | Gemini Pro vs Human | 69.33% | 72.04% | 69.27% |
-| PaLM 2 L vs Human | 73.23% | 69.11% | 69.83% |
+| PaLM 2-L vs Human | 73.23% | 69.11% | 69.83% |
 
-平均:Gemini Pro $70.21\%$,PaLM 2-L $70.72\%$.正文写两者可比,所以测试阶段换 Gemini Pro 说得通.
+平均一致率 Gemini Pro 为 70.21%, PaLM 2-L 为 70.72%, 两者相当. 用 Gemini Pro 当裁判的依据就在这里. 两者都只在约 70% 的样本上与人一致, 每 10 条约有 3 条与人工判断相反, 这是 OAIF 训练信号自带的噪声水平.
 
-RLAIF / RLHF 对照尽量对齐:RLAIF 的 AI 反馈模型也是 PaLM 2-L;RLHF 用同一份预采集偏好训 RM.训练手续跟 Lee 等.
+人评: 三位评审看到一组策略的输出, 各自给每条回答打 1 到 5 分的 quality (5 最好), 并选出最好的一条. win / tie / loss 来自「选最好」的票, quality 是 1 到 5 分的平均, 两者口径不同.
 
-## 5. 人对人:Table 2 与 Table 3
+RLAIF 和 RLHF 的对照尽量对齐: RLAIF 的 AI 反馈模型同样是 PaLM 2-L; RLHF 在同一份预先收集的偏好数据上训 RM. 训练流程沿用 Lee 等.
 
-Table 2 是 online DPO 对 offline DPO 的人评,win / tie / loss 和 quality.数字按 HTML 抄,不四舍五入.HTML 离线行走 win / loss 与线上对调,tie 栏排版留空;成对比较里平局是同一个数,下表把 tie 补回对称位置.
+## 5. 结果
 
-| Method | Win | Tie | Loss | Quality |
-|--------|----:|----:|-----:|--------:|
-| **TL;DR** | | | | |
-| Online DPO | 63.74% | 28.57% | 7.69% | 3.95 |
-| Offline DPO | 7.69% | 28.57% | 63.74% | 3.46 |
-| **Helpfulness** | | | | |
-| Online DPO | 58.60% | 21.20% | 20.20% | 4.08 |
-| Offline DPO | 20.20% | 21.20% | 58.60% | 3.44 |
-| **Harmlessness** | | | | |
-| Online DPO | 60.26% | 35.90% | 3.84% | 4.41 |
-| Offline DPO | 3.84% | 35.90% | 60.26% | 3.57 |
+### 5.1 在线对离线 (Figure 3, Table 2)
 
-quality 三列都是 Online 更高:$3.95$ vs $3.46$,$4.08$ vs $3.44$,$4.41$ vs $3.57$.Harmlessness 的 loss 只有 $3.84\%$,几乎没输;Helpfulness 的 loss 到 $20.20\%$,三条任务里最接近.摘要写 online DAP 相对离线同法平均胜率约 $66\%$,和 Table 2 / 3 的 win 列同一量级.选模型的手续:开发集上用 Gemini Pro 对 SFT 算胜率,再加人工看样本,挑最好的 online / offline 再送人评.不是训练结束随便切一个 checkpoint.Table 2 三任务都走这套.
+Figure 3 在 TL;DR 上用 Gemini Pro 计算对 SFT 的胜率. 在线和离线 DPO 都有提升. 离线 DPO 的曲线在约 3,500 步处急剧下降, 论文的解释是它很快过拟合了 $\mathbb{D}$ 中离线且 off-policy 的偏好; 在线 DPO 的胜率持续上升, 4,000 步后超过离线. 附录 D 换成 PaLM 2-L 当裁判, 结论相同. 对离线 DPO 来说, 多训几个 epoch 只会加重过拟合, 因为数据本身没有变化.
 
-Table 3 把 IPO,SLiC 也做成 online vs offline,任务钉在 TL;DR.OAIF 是框架,三种损失都能套.
+从式 (2) 可以看出过拟合的去向. 固定偏好对上, 降低 DPO 损失最直接的办法是不断压低 $\pi_\theta(y^-\mid x)$, 让 $h$ 持续增大. 这些 $y^-$ 来自 $\rho$, 策略本来就很少生成它们, 压得再低也不改变策略实际会写出的回答, 却可能连带改变相近回答的概率. 在线时, 每步的 $y^1,y^2$ 都是策略当下会写的回答, 被压低的 $y^-$ 正是策略当下的典型错误, 每一次更新都作用在策略真正会访问的区域上.
 
-| Method | Win | Tie | Loss | Quality |
-|--------|----:|----:|-----:|--------:|
+Table 2 是在线 DPO 对离线 DPO 的人评. 两种模型都按开发集上 Gemini Pro 对 SFT 的胜率加人工检查选出最好的 checkpoint. 论文表格中离线行的 tie 栏为空, 成对比较里平局是同一个数, 下表补齐.
+
+| 任务 | 方法 | Win | Tie | Loss | Quality |
+|------|------|----:|----:|-----:|--------:|
+| TL;DR | Online DPO | 63.74% | 28.57% | 7.69% | 3.95 |
+| | Offline DPO | 7.69% | 28.57% | 63.74% | 3.46 |
+| Helpfulness | Online DPO | 58.60% | 21.20% | 20.20% | 4.08 |
+| | Offline DPO | 20.20% | 21.20% | 58.60% | 3.44 |
+| Harmlessness | Online DPO | 60.26% | 35.90% | 3.84% | 4.41 |
+| | Offline DPO | 3.84% | 35.90% | 60.26% | 3.57 |
+
+三项任务的 quality 都是在线更高. Harmlessness 的 loss 只有 3.84%; Helpfulness 的 loss 为 20.20%, 是三项中差距最小的.
+
+### 5.2 换损失 (Table 3)
+
+Table 3 在 TL;DR 上把 IPO 和 SLiC 也做了在线对离线的人评.
+
+| 方法 | Win | Tie | Loss | Quality |
+|------|----:|----:|-----:|--------:|
 | Online DPO | 63.74% | 28.57% | 7.69% | 3.95 |
 | Offline DPO | 7.69% | 28.57% | 63.74% | 3.46 |
 | Online IPO | 64.81% | 31.48% | 3.71% | 3.84 |
@@ -171,74 +226,89 @@ Table 3 把 IPO,SLiC 也做成 online vs offline,任务钉在 TL;DR.OAIF 是框�
 | Online SLiC | 71.43% | 26.98% | 1.59% | 3.85 |
 | Offline SLiC | 1.59% | 26.98% | 71.43% | 3.23 |
 
-Online SLiC 的 win $71.43\%$ 是三家里最高,quality $3.85$ 和 Online IPO 的 $3.84$ 几乎持平,都低于 Online DPO 的 $3.95$.Offline IPO 的 quality 掉到 $2.93$,是这张表最差的离线对照.框架成立:换损失,在线相对离线的优势还在.
+胜率范围约 64% 到 71%. 摘要报告的在线相对离线平均胜率约 66%, 与三行 win 的均值 $(63.74+64.81+71.43)/3\approx66.66$ 一致. Online SLiC 胜率最高, quality 3.85 与 Online IPO 的 3.84 接近, 都低于 Online DPO 的 3.95. Offline IPO 的 quality 只有 2.93, 是表中最低值. 换了损失, 在线相对离线的优势仍在.
 
-## 6. 四路人评 58.00%,其余三家不要拆假百分比
+### 5.3 对 RLHF 和 RLAIF (§4.4)
 
-§4.4 和摘要贡献第二条:TL;DR 上 4-way 人评,online DPO 被偏好 $58.00\%$ 的时间.摘要把对照写成 SFT,RLHF,RLAIF.Figure 4 图注写的四家是 online DPO,offline DPO,RLAIF,RLHF.HTML 正文只写 online DPO 在 $58\%$ 的时间里更被偏好,没有把另外三家拆成 $7\%/3\%/6\%$ 这类数.没有的分项不编.4-way 的意思是同一条 prompt 下并排看四家输出,人从里面挑更喜欢的.online DPO 拿到 $58.00\%$ 的偏好份额,其余三家分剩下的,正文没有再拆.Figure 4(b) 的横轴是长度分六个桶,纵轴是桶内平均 quality,误差棒是标准误差.固定长度之后 online DPO 仍更高,用来挡「全靠写长」的质疑.
+TL;DR 上做四路人评 (在线 DPO, 离线 DPO, RLAIF, RLHF), 在线 DPO 在 58.00% 的情况下被选为最好. 正文没有给出其余三者的拆分比例.
 
-同一节用同一份 RM 给 online DPO 打伪标签,当 RLAIF 那种 RM 在线反馈.这条赢过 RLAIF,但对 OAIF(LLM 当场标)的胜率 $<30\%$(Gemini Pro).同步重训 RM 理论上能做(Ziegler 等写过在线采偏好),流水线和成本都会涨回去.
+论文强调, RLAIF 和 RLHF 的 RM 通常在策略训练中不更新, 策略分布变化后, RM 的判断能力不一定能泛化. 为验证这一点, 作者用 RLAIF 的同一个 RM 给在线 DPO 打标签. 它胜过 RLAIF, 但对 OAIF (LLM 当场标注) 的胜率低于 30% (Gemini Pro 判定). 同样是在线 DPO, 标注源从固定 RM 换成 LLM, 结果差距很大.
 
-OAIF 会把回答拉长.Singhal 等写过 length bias:人和 LLM 裁判都偏爱长回答.长度不是唯一解释:同一张 Figure 4(b) 已经按桶看过 quality.
+OAIF 的回答明显更长. 人和 LLM 裁判都偏好长回答, 即 Singhal 等所说的 length bias. Figure 4(b) 把回答按长度分成六个桶, 画出每个桶的平均 quality 和标准误差. 在固定长度下, 在线 DPO 仍高于其他方法, 说明优势不全来自长度.
 
-## 7. 标注器变小,同尺寸也有用
+### 5.4 标注器尺寸 (§4.5, §4.7)
 
-默认标注器是 PaLM 2-L.§4.5 换成 PaLM 2-S 和 PaLM 2-XS,策略仍是 XS,任务 TL;DR.Figure 5:标注器越大,online DPO 对 SFT / 离线 DPO / RLAIF / RLHF 的自动胜率越高.相对初始 SFT,三种尺寸都涨.
+§4.5 把标注器换成 PaLM 2-XS 和 PaLM 2-S, 策略仍是 XS, 任务 TL;DR. Figure 5 显示标注器越大, 在线 DPO 的胜率越高; 三种尺寸相对 SFT 都有提升. 用 XS 自己做标注器时, 人评 quality 为 3.41, 略高于 RLHF 的 3.38, 与离线 DPO 的 3.46 相当.
 
-人对 quality:OAIF-XS $3.41$,RLHF $3.38$,offline DPO $3.46$.同尺寸标注仍有用,和 RLHF 持平附近,没超过那份离线人标 DPO 的 $3.46$.
+§4.7 把策略换成 PaLM 2-S, 标注器一个是更弱的 XS, 一个是更强的 L, 在 Helpfulness 上比较. 弱标注器也能提升 S 对 SFT 和离线 DPO 的胜率, 强标注器效果更好. 论文的解释是标注偏好是判别任务, 比生成回答容易, 所以小模型也能给大模型提供有用的反馈.
 
-§4.7 把策略换成 PaLM 2-S,老师一边是更弱的 XS,一边是更强的 L.弱老师仍能抬 S 相对 SFT 和离线 DPO 的胜率,强老师更明显.Burns 等弱到强:老师学生都是监督任务,难度同级.这里老师做判别(标偏好),学生做生成.作者写成更接近 GAN 的分工,只是不另训一个判别器.
+论文把这和 Burns 等的弱到强泛化对照. 那项工作里老师和学生做的是同一种监督任务, 难度相同; 这里老师只做判别, 学生要做生成, 难度不对称. 作者认为这种分工更接近 GAN 的生成器和判别器, 区别是 OAIF 不训练专门的判别器, 标注器始终冻结.
 
-## 8. 改标注 prompt 能压短
+两组结果合起来看: 标注器尺寸决定提升幅度, 但不是提升的前提. 同尺寸 (XS 标 XS) 已经能达到 RLHF 的水平, 而 RLHF 用的是人工偏好训出的 RM. 不过 3.41 对 3.46 的差距说明, 同尺寸标注还追不上离线人工偏好训出的 DPO.
 
-Helpfulness 上,先训一个只求 helpful 的 online DPO,平均长度约 $120$ token,人对 quality $4.08$.把标注 prompt 改成 helpful and short,helpful and very short,长度收到约 $90$ 和约 $40$.quality 掉到 $3.72$ 和 $3.26$,仍高于 SFT 的 $3.19$.Gemini Pro 对 SFT 的胜率也随变短往下走,但还在 SFT 上面.
+## 6. 用标注 prompt 控制行为
 
-RLHF 要改目标,通常重标数据,重训 RM.OAIF 改的是标注器看到的那几句.附录 Table 8:short 在质量接近时永远偏短;very short 把任务改成「更有帮助且更短」.代价写在 Figure 6(b):短了,有帮助程度跟着掉.可控不是免费.
+Helpfulness 上, 只要求 helpful 的在线 DPO 平均回答长度约 120 token. 把标注提示改为 helpful and short 和 helpful and very short (附录 Table 8), 平均长度分别降到约 90 和约 40 token. 人评 quality 从 4.08 降到 3.72 和 3.26, 仍高于 SFT 的 3.19. Gemini Pro 对 SFT 的胜率也随之下降, 但仍高于 SFT.
 
-附录 Table 6 的 Helpfulness 提示里,还特意禁了模型用 `Human:` / `Assistant:` 把对话往下续的小动作.作者说初期实验里模型爱回「That's very helpful, thank you!」这类空话.多写两句提示就能按住,这是文本可控的另一面,不是另训一个惩罚头.
+长度从约 120 降到约 90 时, quality 降 0.36; 从约 90 降到约 40 时, 再降 0.46. 长度每减少一个 token, 第一段约降 0.012 分, 第二段约降 0.009 分, 两段的单位代价接近. 长度和 quality 在这个区间里大致是线性交换的关系, 要压多少长度, 就要准备付出相应的质量.
 
-Harmlessness 的评分提示和反馈提示不是同一张.Table 7:评分提示问哪条更有害,再用反转分布当无害分;反馈提示问哪条既有帮助又无害,并写 harmlessness 优先于 helpfulness.评测口径和训练口径分开,避免自己给自己打满分.
+论文 §4.6 给出做这组实验的理由: 对齐到什么目标仍有争议, 人的期望因地区和文化而不同, 也会随时间变化, 所以人工偏好标注可能需要频繁大幅修改. 在 RLHF 里, 改目标通常意味着重新标注数据, 重新训练 RM. OAIF 只需要改标注器看到的几句话. 代价也很明确: 回答更短, 有帮助程度跟着下降.
 
-§5 还写过:约 $2000$ 步行为就能看见变化,batch $128$,大约 $256{,}000$ 条.单用户个性化仍然太多.LoRA 能降参数,对齐到具体一个人还缺样本效率,论文留给后续.长度只是可控性的试验田.有帮助,不偏不倚这类定性目标,人很难打成绝对分,才改成对偏好.OAIF 的看法是:改标注 prompt 就能把定性目标写进去,不必重训 RM.实验只做了长度,定性价值没做成表.
+附录 Table 6 的 Helpfulness 提示里还加了一段话, 用来抑制一种行为: 初期实验中, 模型会以 `Human: That's very helpful, thank you!` 这类内容自行续写对话. 加上这段提示后问题消失. 作者认为这进一步说明 LLM 给出的奖励信号可以由文本控制. 这段话只在训练标注中使用, 用 Gemini Pro 打分时不加.
 
-## 9. 失效与边界
+Harmlessness 的训练标注提示要求选出既有帮助又无害的回答, 并说明无害优先于有帮助.
 
-Limitation 写得很直.本文只讨论回答分布 $\rho(y|x)$ 与 $\pi_{\theta^{t}}(y|x)$ 的错位.prompt 分布 $p_{\mathcal{X}}$ 和「人类价值函数」也会漂.prompt-controllability 对后一件有一条缝,前一件没有.prompt 从给定偏好集抽,评测是 in-distribution,没有 OOD prompt.策略一直是 PaLM 2-XS,放大之后好不好,没做.Bai 等写过:回答越好,越难分.更大模型上的 OAIF 需要另证.
+§5 Discussion 还提到, §4.2 的实验中约 2,000 步就能看到行为明显变化, 对应约 256,000 条样本 ($2000\times128=256000$). 对单个用户的个性化来说, 这个数据量仍然太大. LoRA 可以提高样本效率, 但对齐到具体个人还需要更多基础进展.
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 写成新损失 | 损失仍是 DPO / IPO / SLiC | 换的是采样和标注时机 |
-| 写成 RLAIF | 无 RM,无 REINFORCE | Lee 附录 E 是价值基线 REINFORCE |
-| 写成 SPIN | 两条都来自当前策略 | SPIN 的 winner 钉死人标 |
-| 离线 DPO 训够就行 | Figure 3 step $3500$ 过拟合 | 在线过 $4000$ 仍涨 |
-| 把 $58\%$ 拆成四家假百分比 | HTML 只给 online DPO 的 $58.00\%$ | Figure 4(a) 其余分项未在正文写出 |
-| 小标注器已经赢过离线 DPO | quality $3.41$ vs $3.46$ | 只相对 RLHF 的 $3.38$ 略高 |
-| 压短没有代价 | quality $4.08\to 3.72\to 3.26$ | 仍高于 SFT $3.19$ |
-| 编 AlpacaEval / MT-Bench | 论文没有 | 任务只有 TL;DR 和 Anthropic 两列 |
-| 当成 Nash-MD | 无几何混合对手 | Nash 是偏好博弈,不是 DAP 套壳 |
-| 把 64.81% 写成 Calandriello 主表 | Table 3 是 OAIF 人评 | 那边 Table 2 是成对 $p(y\succ y')$ |
-| 把 IPO 靶心焊成 $1/(2\beta)$ | OAIF 印刷体用 $\beta$ | Azar 原文是 $\tau^{-1}/2$,见 IPO 单独成篇 |
-| 把 SLiC 当成只有 hinge | OAIF 套的是论文 (3) | SLiC-HF 另有 CE 项 |
+## 7. 成本
 
-OAIF 不是万能药.它把「DAP 为什么 offline / off-policy」收成每步重新采,重新标,省掉独立 RM 和策略梯度,前提是手头有一份靠得住的标注 LLM,并且接受标注 prompt 会把长度,口吻一起拧走.人标已经采好,只想离线分类,[01-DPO](../01-DPO/01-DPO.md) 仍是那条更短的路.标注器会把偏见和长度偏好写进策略,prompt 改错了,错的目标也会被在线放大.
+每个训练步要完成三件事: 策略对 128 条 prompt 各采两条回答; 标注器对每对回答做两次前向 (正反两种顺序); 策略和参考模型各算一次对数概率并反传. 相比离线 DPO, 多出来的是采样和标注两部分. 标注器是 PaLM 2-L 时, 标注的计算量远大于策略本身的训练.
 
-同夹:[01-DPO](../01-DPO/01-DPO.md),[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md),[07-Self-Rewarding](../07-Self-Rewarding-自奖励/07-Self-Rewarding-自奖励.md).AI 标再 RL 在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md).另外两条 DAP 损失在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md),[01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md).训好的 $p_\phi$ 打分,平方驻点变 Nash,在 [08-Online IPO](../../4.4.4-其他对齐技术/08-Online-IPO-在线偏好/08-Online-IPO-在线偏好.md);Table 3 那行 64.81% 是本篇实验,不要抄过去.在线偏好但走 Nash 几何混合的是 [06-Nash-MD](../../4.4.4-其他对齐技术/06-Nash-MD-纳什镜像下降/06-Nash-MD-纳什镜像下降.md).把解码 Best-of-$N$ 蒸馏回策略的是 [09-BOND](../../4.4.4-其他对齐技术/09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md),不走成对偏好损失.
+以 2,000 步计, 一共要采 $2000\times128\times2=512{,}000$ 条回答, 做 $2000\times128\times2=512{,}000$ 次标注前向. 离线 DPO 的数据成本在训练前一次付清, 而 OAIF 把它摊到每一步, 训练多久就付多久.
+
+收益是不需要人工标注, 不需要训练和维护 RM, 也不需要价值网络. 和 RLHF 比, 显存里少了 RM 和 Critic, 但多了一个常驻或可远程调用的标注 LLM.
+
+选择时可以按三个问题判断. 第一, 有没有一个与人工判断一致率足够高的标注 LLM. 论文中的一致率约 70%, 低于这个水平时, 在线标注的噪声会更大. 第二, 能否负担每步的标注调用. 标注器比策略大很多时, 训练成本主要由标注决定. 第三, 目标是否会变. 若对齐目标需要经常调整 (长度, 语气, 安全优先级), 改标注提示的成本远低于重新收集人工偏好和重训 RM.
+
+三个问题的答案都偏向否定时, 离线 DPO 加一份质量可靠的人工偏好数据仍是更省事的选择; 只有第三个问题答是, 可以先离线训练, 再用 OAIF 做目标调整.
+
+## 8. 失效模式
+
+**标注器噪声.** LLM 与人工标注的一致率约 70%. 约三成偏好对的方向与人相反, 这些错误会通过在线训练持续写入策略.
+
+**长度偏好.** OAIF 让回答变长. 按长度分桶后在线 DPO 仍占优, 但实际部署时仍要监控长度.
+
+**标注提示改错.** 标注 prompt 写错, 错误的目标会被在线训练放大. 压短实验说明, 提示的一点改动就能显著改变策略行为.
+
+**prompt 分布.** Limitations 一节指出, 论文只研究了回答分布 $\rho(y\mid x)$ 与 $\pi_{\theta^t}(y\mid x)$ 的错位. prompt 分布 $p_{\mathcal{X}}$ 和人类价值函数也会变化. 修改标注 prompt 可能缓解后者, 但前者仍是问题. prompt 来自给定偏好数据, 评测是分布内的, 没有测分布外 prompt.
+
+**规模.** 实验里被对齐的策略始终是 PaLM 2-XS (§4.7 的 S 除外). Bai 等指出回答质量越高越难区分, 策略更大时标注器还能否给出可靠偏好, 尚待验证.
+
+**两条回答过于相似.** 若采样温度太低, $y^1$ 和 $y^2$ 可能几乎相同. 极端情况下 $y^1=y^2$, 式 (2) 中 $y^+$ 和 $y^-$ 的对数概率梯度互相抵消, 这一对样本完全不产生更新, 却照样付出了一次标注成本. 论文的训练采样温度是 0.9, 让两条回答有足够差异. 反过来, 温度过高会采到明显劣质的回答, 标注器很容易判断, 但这类偏好对告诉策略的多是它本来就不常犯的错误.
+
+**标注器被迎合.** 在线训练中, 策略会朝标注器偏好的方向移动. 标注器有系统性偏好 (长度, 特定措辞, 礼貌套话) 时, 策略会学到这些偏好, 而它们未必是人想要的. Helpfulness 提示里需要专门压制「Human: That's very helpful」式续写, 就是一个例子.
+
+**裁判与标注器相关.** 自动评测用 Gemini Pro 而非训练标注用的 PaLM 2-L, 用来减少策略迎合标注器带来的虚高. 用标注器本身当裁判时, 胜率会混入这种迎合.
+
+**标注器能否换成策略自己.** Discussion 一节讨论了这种做法: 反馈也可以来自第 $t$ 步正在训练的 $\pi_{\theta^t}$, 即 Yuan 等 (2024) 的 Self-Rewarding. 作者认为这条路有前景, 因为生成回答是生成任务, 标注偏好是判别任务, 两者能力不同; 缺点是标注器的架构和尺寸只能和策略一样. OAIF 的标注器可以是任意模型, §4.5 用了比策略更大的标注器, §4.7 又说明更小的标注器也能带来提升.
+
+已有高质量的离线人工偏好、只想做一次离线训练时, [01-DPO](../01-DPO/01-DPO.md) 更简单. 用训练好的偏好模型在线打分的方法见 [08-Online-IPO](../../4.4.4-其他对齐技术/08-Online-IPO-在线偏好/08-Online-IPO-在线偏好.md), 把 Best-of-$N$ 蒸馏回策略的方法见 [09-BOND](../../4.4.4-其他对齐技术/09-BOND-Best-of-N蒸馏/09-BOND-Best-of-N蒸馏.md).
 
 ## 参考文献
 
-1. Guo, S., Zhang, B., Liu, T., Liu, T., Khalman, M., Llinares, F., Ramé, A., Mesnard, T., Zhao, Y., Piot, B., Ferret, J., & Blondel, M. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792). HTML:[arXiv HTML](https://arxiv.org/html/2402.04792).
-2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.
-3. Azar, M. G., Rowland, M., Piot, B., Guo, D., Calandriello, D., Valko, M., & Munos, R. (2023). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *ICML* 2024.
+1. Guo, S., Zhang, B., Liu, T., Liu, T., Khalman, M., Llinares, F., Ramé, A., Mesnard, T., Zhao, Y., Piot, B., Ferret, J., & Blondel, M. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).
+2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.
+3. Azar, M. G., Rowland, M., Piot, B., Guo, D., Calandriello, D., Valko, M., & Munos, R. (2023). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036).
 4. Zhao, Y., Joshi, R., Liu, T., Khalman, M., Saleh, M., & Liu, P. J. (2023). [SLiC-HF: Sequence Likelihood Calibration with Human Feedback](https://arxiv.org/abs/2305.10425).
-5. Lee, H., Phatale, S., Mansoor, H., Lu, K., Mesnard, T., Bishop, C., Carbune, V., & Rastogi, A. (2023). [RLAIF: Scaling Reinforcement Learning from Human Feedback with AI Feedback](https://arxiv.org/abs/2309.00267).
-6. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML*.
-7. Munos, R., Valko, M., Calandriello, D., et al. (2024). [Nash Learning from Human Feedback](https://arxiv.org/abs/2312.00886). *ICML*.
-8. Anil, R., et al. (2023). [PaLM 2 Technical Report](https://arxiv.org/abs/2305.10403).
-9. Gemini Team, et al. (2023). [Gemini: A Family of Highly Capable Multimodal Models](https://arxiv.org/abs/2312.11805).
-10. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).
-11. Stiennon, N., et al. (2020). [Learning to Summarize with Human Feedback](https://arxiv.org/abs/2009.01325). *NeurIPS*.(TL;DR)
-12. Yuan, W., Pang, R. Y., Cho, K., Sukhbaatar, S., Xu, J., & Weston, J. (2024). [Self-Rewarding Language Models](https://arxiv.org/abs/2401.10020).
-13. Liu, T., Zhao, Y., Joshi, R., Khalman, M., Saleh, M., Liu, P. J., & Liu, J. (2023). [Statistical Rejection Sampling Improves Preference Optimization](https://arxiv.org/abs/2309.06657).(RSO)
+5. Lee, H., Phatale, S., Mansoor, H., et al. (2023). [RLAIF: Scaling Reinforcement Learning from Human Feedback with AI Feedback](https://arxiv.org/abs/2309.00267).
+6. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML 2024*.
+7. Yuan, W., Pang, R. Y., Cho, K., Sukhbaatar, S., Xu, J., & Weston, J. (2024). [Self-Rewarding Language Models](https://arxiv.org/abs/2401.10020).
+8. Munos, R., Valko, M., Calandriello, D., et al. (2024). [Nash Learning from Human Feedback](https://arxiv.org/abs/2312.00886). *ICML 2024*.
+9. Liu, T., Zhao, Y., Joshi, R., Khalman, M., Saleh, M., Liu, P. J., & Liu, J. (2023). [Statistical Rejection Sampling Improves Preference Optimization](https://arxiv.org/abs/2309.06657).
+10. Anil, R., et al. (2023). [PaLM 2 Technical Report](https://arxiv.org/abs/2305.10403).
+11. Gemini Team (2023). [Gemini: A Family of Highly Capable Multimodal Models](https://arxiv.org/abs/2312.11805).
+12. Stiennon, N., et al. (2020). [Learning to Summarize with Human Feedback](https://arxiv.org/abs/2009.01325). *NeurIPS 2020*.
+13. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).
 14. Singhal, P., Goyal, T., Xu, J., & Durrett, G. (2023). [A Long Way to Go: Investigating Length Correlations in RLHF](https://arxiv.org/abs/2310.03716).
 15. Burns, C., et al. (2023). [Weak-to-Strong Generalization: Eliciting Strong Capabilities with Weak Supervision](https://arxiv.org/abs/2312.09390).
-16. Ziegler, D. M., et al. (2019). [Fine-Tuning Language Models from Human Preferences](https://arxiv.org/abs/1909.08593).
+16. Swamy, G., Dann, C., Kidambi, R., Wu, Z. S., & Agarwal, A. (2024). [A Minimaximalist Approach to Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2401.04056).

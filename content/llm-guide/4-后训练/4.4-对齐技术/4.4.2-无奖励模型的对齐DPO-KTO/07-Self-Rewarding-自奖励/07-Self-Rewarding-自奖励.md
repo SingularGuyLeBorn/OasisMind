@@ -1,134 +1,177 @@
 ---
-title: "07 · Self-Rewarding:自奖励"
+title: "07 · Self-Rewarding: 自奖励"
 published: true
 tags: ["Self-Rewarding", "Iterative DPO", "LLM-as-a-Judge", "Llama 2", "AlpacaEval"]
-excerpt: "Self-Rewarding 把奖励模型收进正在训的那份 LLM.同一组权重既按 prompt 写回答,又用 LLM-as-a-Judge 提示给这些回答打 0 到 5 分,再拿最高分对最低分做成偏好对,走 Iterative DPO."
+excerpt: "Self-Rewarding 让同一个 LLM 既写回答, 又用 LLM-as-a-Judge 提示给自己的回答打 0 到 5 分, 用最高分对最低分构造偏好对, 迭代做 DPO. 三轮后写回答和打分两种能力都在上升."
 ---
-# 07 Self-Rewarding:自奖励
+# 07 Self-Rewarding: 自奖励
 
-Self-Rewarding 把奖励模型收进正在训的那份 LLM.同一组权重既按 prompt 写回答,又用 LLM-as-a-Judge 提示给这些回答打 $0$ 到 $5$ 分,再拿最高分对最低分做成偏好对,走 Iterative DPO.卡住的是两条瓶颈叠在一起:人标偏好的上限就是人,冻死的独立 RM 在策略继续涨的时候不会跟着涨.
+Yuan, Pang, Cho 等的 *Self-Rewarding Language Models* ([arXiv:2401.10020](https://arxiv.org/abs/2401.10020), ICML 2024) 处理的问题是: 奖励模型训好后就冻结, 策略变强时打分器不会跟着变, 能否让同一个模型既写回答又给自己打分, 两种能力一起提高. 公式和表以 [arXiv HTML](https://arxiv.org/html/2401.10020) 为准, DPO 的推导见 [01-DPO](../01-DPO/01-DPO.md).
 
-本篇跟 Yuan,Pang,Cho 等 *Self-Rewarding Language Models*([arXiv:2401.10020](https://arxiv.org/abs/2401.10020),ICML 2024,PMLR 235:57905–57923).公式和表以 [arXiv HTML](https://arxiv.org/html/2401.10020) 为准.骨干是 Llama 2 70B,从 Open Assistant 种子出发走三轮.隐式奖励怎么从 KL 约束目标反解,见 [01-DPO](../01-DPO/01-DPO.md).**不是** [06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md):OAIF 的标注器可以是另一份,更大的 LLM.**不是** [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md):SPIN 的 winner 永远是 SFT 人标,loser 是上一迭代自生成.**不是** Lee 等 RLAIF([arXiv:2309.00267](https://arxiv.org/abs/2309.00267)):那篇附录 E 是带价值基线的 REINFORCE,正本在 [4.4.3](../../4.4.3-RLAIF/4.4.3-RLAIF.md).**不是** 独立冻结奖励模型那条 RLHF.
+## 1. 冻结的打分器
 
-## 1. 冻死的 RM 不会在策略涨的时候一起涨
+### 1.1 难点
 
-标准 RLHF 先在人标偏好上拟合 $r_\phi$,再把这份奖励冻住,交给 PPO.人标有多大,多干净,RM 就有多高.策略后面再怎么采样,打分器还是那份旧网络.DPO 把独立 RM 拿掉了,直接在人标对上做分类,人标本身仍是天花板.论文开篇把这两件事写成同一句话:未来要超人类的 agent,训练信号也得能超过人;冻住的 RM 给不了这条通道.
+标准 RLHF 先在人工偏好上拟合奖励模型 $r_\phi$, 冻结后交给 PPO. RM 的质量受限于人工数据的规模和质量, 训练中策略不断变化, 打分器始终不变. DPO 去掉了独立 RM, 直接在人工偏好对上训练, 人工偏好仍是上限. 论文开篇把两件事并在一起: 要训练超过人类水平的 agent, 训练信号本身也需要能超过人, 冻结的 RM 做不到这一点.
 
-Self-Rewarding 的判断是:不要把「写回答」和「打分」拆成两个模型.预训练和多任务指令微调本来就在同一套权重上做任务迁移.把打分也写成一条指令跟随任务,打分能力和写回答能力就能在同一次迭代里互相抬.Xu 等的 Iterative DPO 已经用过「每轮采新对,再 DPO」这副架子,但打分器是外面冻死的 RM.这里换成模型自己当裁判.
+论文的相关工作一节还指出, RLHF 的奖励信号在某种意义上本来就来自一个模型, 只是这个模型从人工数据蒸馏而来; 训练 LLM 当裁判的工作也已有 (如 Kim 等 2023), 但把打分训练和通用指令跟随放在同一个模型里一起做的还不常见. Self-Rewarding 要验证的正是后一种组合.
 
-种子只需要一小份人写的指令跟随,外加一份「如何按五分制打分」的示范.后面的偏好对由模型自己造.新 prompt 不必再配人写的标准答案.这一点和 SPIN 正好反过来:SPIN 每条 prompt 都得有人标 $y$.
+### 1.2 思路
 
-## 2. 同一份 $M_t$ 先写,再打分,再 DPO
+论文的判断是把「写回答」和「打分」放进同一个模型. 预训练和多任务指令微调本来就让一套权重同时处理多种任务, 不同任务之间有迁移. 如果把打分也写成一条指令跟随任务, 两种能力就可能在迭代中互相促进.
 
-先假定有一份预训练底座,加上少量人标种子.模型要同时会两件事:按用户请求写出有帮助,无害的回答;给自己新造的指令跟随样本打分,并把打过分的样本加回训练集.后者整段叫做 Self-Instruction creation.
+Xu 等的 Iterative DPO 已经用过「每轮采新偏好对, 再做 DPO」的流程, 但打分器是外部冻结的 RM. Self-Rewarding 把 RM 换成模型自己的 LLM-as-a-Judge 能力.
 
-### 2.1 两份种子:IFT 与 EFT
+种子数据只需要少量人写的指令数据和打分示范. 之后的偏好对都由模型自己构造, 新 prompt 不需要人写的参考回答. SPIN 的每条 prompt 都需要一条人写回答作为胜者, 这一点正好相反.
 
-IFT(Instruction Fine-Tuning)是人写的 $(\text{prompt}, \text{response})$.实验从 Open Assistant 抽英文第一轮,人工秩为 $0$ 的高质样本,$3200$ 条.只在这份数据上做 SFT 的模型,后文叫 SFT baseline.
+## 2. 算法
 
-EFT(Evaluation Fine-Tuning)把打分写成指令跟随.输入是论文 Figure 2 那张 additive 五分提示,五点是往上加,不是五档多选.相关且带一点信息,加 $1$;覆盖了问题的一大部分但仍没答完,再加 $1$;把基本要素答得有用,加到 $3$;以助手口吻直接,完整,有条理,加到 $4$;量身,无废话,看得出专家知识,才给 $5$.输出先写不超过 $100$ 词的理由,再以 `Score: ` 收束,分数 $r\in[0,5]$.Open Assistant 同一 prompt 下有多人排序的回答,但没有现成的思维链和五分数字.做法是:用 SFT baseline 给每条候选生成评语和分数,只有排序与人的秩一致才收进训练集;分数 $4$ 太多,再重采样压偏.最后 $1630$ 条训练,$541$ 条评价,与 IFT 不重叠.提示里写了「必要时用网页搜索」,脚注写明模型并没有搜索动作,那只是提示措辞.
+### 2.1 两份种子: IFT 和 EFT
 
-EFT 不是理论上必须.只用 IFT,模型也能被问「给回答打分」.附录 A.3 证明缺了 EFT,格式经常对不上,分数还会挤到 $4$ 附近,后面能收成的偏好对会少一个数量级.主实验仍把 IFT+EFT 捆在一起做 $M_1$.
+IFT (Instruction Fine-Tuning) 是人写的 (prompt, response) 对. 实验从 Open Assistant 中取英文对话的第一轮, 只保留人工排名最高 (rank 0) 的回答, 共 3,200 条. 只在 IFT 上做 SFT 得到的模型称为 SFT baseline.
 
-### 2.2 自己造偏好对
+EFT (Evaluation Fine-Tuning) 把打分写成指令跟随任务. 输入是论文 Figure 2 的 additive 五分提示, 分数逐项累加:
 
-有了 $M_t$,下一轮训练集按三步造.
+1. 回答相关, 提供了一些信息, 得 1 分.
+2. 覆盖了问题的大部分, 但没有完整回答, 再加 1 分.
+3. 以有用的方式回答了基本要素, 再加 1 分.
+4. 以 AI 助手的视角直接, 全面, 有条理地回答, 再加 1 分.
+5. 针对性强, 没有多余信息, 体现专家知识, 质量高, 再加 1 分.
 
-1. 造新 prompt $x_i$.主实验里这一步钉死为 Llama 2-Chat 70B,8-shot,跟 Self-Instruct:六个示范抽 IFT,两个抽模型已生成的指令,$T=0.6$,$p=0.9$,再加 ROUGE-L,关键词和长度过滤.附录 A.5 查过 $M_1$,$M_2$,$M_3$ 自己做 in-context 造指令:三十条都能写出新指令;$M_2$,$M_3$ 有时会先写几条指令,再画分隔符,然后开始回答,需要后处理.主结果没有把造 prompt 并进正在训的那份权重.
-2. 对 $x_i$ 从 $M_t$ 采 $N=4$ 条候选 $\{y_i^1,\ldots,y_i^N\}$,$T=0.7$,$p=0.9$.
-3. 同一份 $M_t$ 用 Figure 2 的提示给每条候选打 $r_i^n\in[0,5]$.分数有方差,同样解码参数下打 $3$ 次取平均.
+模型先写不超过 100 词的理由, 再以 `Score: ` 格式给出分数 $r\in[0,5]$.
 
-偏好对写成 $(x_i, y_i^w, y_i^l)$.$y^w$ 取 $N$ 条里平均分最高的,$y^l$ 取最低的.两头分数相同就丢掉.这是 Xu 等 Iterative DPO 的选对规则,只是打分器换成自己.得到的数据叫 AIFT(AI Feedback Training).$M_2$ 吃 AIFT$(M_1)$,共 $3964$ 对;$M_3$ 吃 AIFT$(M_2)$,共 $6942$ 对.
+Open Assistant 中同一个 prompt 有多条带人工排名的回答, 但没有现成的评语和分数. 构造方法是: 用 SFT baseline 给每条回答生成评语和分数, 只有分数排序与人工排序一致时才收入训练集. 观察到大量样本得 4 分, 于是丢掉一部分最常见分数的样本以减轻偏斜. 最终得到 1,630 条训练样本和 541 条评估样本, 与 IFT 不重叠.
 
-用一组假分数把选对规则走通.四条平均分是 $4.3$,$2.1$,$4.3$,$1.0$.最高 $4.3$,最低 $1.0$,这对能留.四条都是 $4.0$,丢掉.数字是规则的算术,不是论文表.
+### 2.2 打分提示的影响
 
-### 2.3 套 DPO,不换损失
+附录 A.2 在只用 IFT 训练的模型上比较了两种打分提示. Li 等 Instruction Backtranslation 用的是「从几个质量档位里选一个」的多选式提示; Self-Rewarding 的提示是逐项累加.
 
-种子阶段对 IFT+EFT 做 SFT.之后每一轮在 AIFT 上做 DPO.印刷体仍是 Rafailov 那条,实验 $\beta=0.1$:
+| 指标 | 多选式 | 累加式 |
+|------|------:|------:|
+| 成对准确率 | 26.6% | 65.1% |
+| 5-best | 23.5% | 39.6% |
+| Exact match | 1.1% | 10.1% |
+| Spearman | -0.18 | 0.25 |
+| Kendall $\tau$ | -0.16 | 0.23 |
+
+多选式提示下, 两个相关系数都是负数, 打分和人工排序方向相反. 多选要求模型一次判断档位; 累加式把相关性, 覆盖度, 有用性拆开逐项判断. 主实验固定使用 Figure 2 的累加式提示.
+
+### 2.3 构造偏好对
+
+有了 $M_t$, 下一轮的训练数据分三步构造.
+
+1. **生成新 prompt.** 主实验中这一步由固定的 Llama 2-Chat 70B 完成, 按 Self-Instruct 的方法用 8-shot 提示: 6 个示例取自 IFT, 2 个取自模型之前生成的指令; 解码 $T=0.6$, $p=0.9$; 再用 ROUGE-L 相似度, 关键词和长度过滤. 附录 A.5 检查了让 $M_1,M_2,M_3$ 自己生成指令的效果: 人工检查的 30 个例子中, 三个模型都能写出新指令; $M_2$ 和 $M_3$ 有时会先写几条指令, 然后输出分隔符并开始回答, 需要后处理.
+2. **采样候选.** 对每条 $x_i$ 从 $M_t$ 采 $N=4$ 条回答 $\{y_i^1,\dots,y_i^4\}$, $T=0.7$, $p=0.9$.
+3. **自我打分.** 同一个 $M_t$ 用 Figure 2 的提示给每条候选打分 $r_i^n\in[0,5]$. 分数有随机性, 用相同解码参数打 3 次取平均.
+
+偏好对 $(x_i,y_i^w,y_i^l)$ 中, $y^w$ 是平均分最高的候选, $y^l$ 是最低的; 最高分和最低分相同时丢弃这条 prompt. 这是 Iterative DPO 的选对规则, 只是打分器换成了模型自己. 得到的数据称为 AIFT (AI Feedback Training). AIFT$(M_1)$ 共 3,964 对, 用于训练 $M_2$; AIFT$(M_2)$ 共 6,942 对, 用于训练 $M_3$.
+
+手算一次. 四条候选三次打分的平均分分别是 4.3, 2.1, 4.3, 1.0. 最高 4.3, 最低 1.0, 取其中一条 4.3 作 $y^w$, 1.0 作 $y^l$. 若四条平均分都是 4.0, 这条 prompt 不产生偏好对. 打 3 次取平均让分数有了小数, 减少了并列的情况: 单次打分只有 0 到 5 共 6 个整数值, 四条候选全部相同的概率不低.
+
+### 2.4 为什么取两端
+
+四条候选能组成 6 个偏好对, 论文只取最高对最低这一对. 从打分噪声的角度可以理解这个选择. 设单次打分的标准差为 $s$, 三次平均后降到 $s/\sqrt3\approx0.58s$. 两条候选的平均分之差, 标准差约为 $\sqrt2\times0.58s\approx0.82s$. 若 $s=1$, 两条真实质量差 0.5 分的候选, 平均分之差的均值是 0.5, 标准差约 0.82, 排反的概率约为 $\Phi(-0.5/0.82)\approx27\%$; 真实差 2 分时, 排反概率降到约 $\Phi(-2.44)\approx0.7\%$. 最高和最低两条之间的分差通常最大, 方向出错的概率也最小. 这里的 $s=1$ 是演示用的假设值.
+
+代价是每条 prompt 只用了 6 个可能偏好对中的 1 个, 中间两条候选的采样和打分没有直接进入训练.
+
+### 2.5 DPO 损失
+
+种子阶段在 IFT+EFT 上做 SFT, 之后每一轮在 AIFT 上做 DPO, $\beta=0.1$:
 
 $$
--\log\sigma\Biggl(\beta\log\frac{\pi_{\theta}(y^{w}\mid x)\,\pi_{\mathrm{ref}}(y^{l}\mid x)}{\pi_{\mathrm{ref}}(y^{w}\mid x)\,\pi_{\theta}(y^{l}\mid x)}\Biggr).
+\ell
+=
+-\log\sigma\Biggl(\beta\log\frac{\pi_\theta(y^w\mid x)\,\pi_{\mathrm{ref}}(y^l\mid x)}{\pi_{\mathrm{ref}}(y^w\mid x)\,\pi_\theta(y^l\mid x)}\Biggr).
 \tag{1}
 $$
 
-隐式奖励 $r=\beta\log(\pi/\pi_{\mathrm{ref}})+\beta\log Z(x)$,$Z(x)$ 在成对差里消掉,见 [01-DPO](../01-DPO/01-DPO.md) 式 (5)(6).本篇不重推.论文写下一轮「从 $M_t$ 初始化,再用 AIFT$(M_t)$ 做 DPO」.这是 Iterative DPO 的架子,不是新目标.
+每一轮从 $M_t$ 初始化, 参考模型也是 $M_t$, 在 AIFT$(M_t)$ 上训练. 损失没有改动, 这是 Iterative DPO 的框架.
 
-用一组假对数概率把式 (1) 走通.设 $\beta=0.1$,$y^{w}$ 上 $\log\pi_{\theta}=-8$,$\log\pi_{\mathrm{ref}}=-10$,$y^{l}$ 上 $\log\pi_{\theta}=-11$,$\log\pi_{\mathrm{ref}}=-9$.成对差是 $0.1\bigl((-8-(-10))-(-11-(-9))\bigr)=0.40$.$\sigma(0.40)\approx 0.60$,损失 $-\log 0.60\approx 0.51$.排对了,这条还在学,但不会很重.若最高最低拿反,差变成 $-0.40$,损失约 $0.90$,梯度更重.数字是式 (1) 的算术,不是论文表.实现上仍是序列逐步 $\log\pi(y_t\mid x,y_{<t})$ 相加,prompt token mask 掉,和离线 DPO trainer 那套手续相同,换的是 $y^{w},y^{l}$ 从哪来.
+设 $\beta=0.1$, $y^w$ 上 $\log\pi_\theta=-8$, $\log\pi_{\mathrm{ref}}=-10$; $y^l$ 上 $\log\pi_\theta=-11$, $\log\pi_{\mathrm{ref}}=-9$. 括号内是 $0.1\bigl((-8+10)-(-11+9)\bigr)=0.40$, 损失 $-\log\sigma(0.40)\approx0.51$. 若最高最低拿反, 括号内为 $-0.40$, 损失约 0.91, 梯度更大.
 
-SFT 学习率 $5.5\times 10^{-6}$ 余弦收到 $1.1\times 10^{-6}$,DPO 从 $1\times 10^{-6}$ 收到 $1\times 10^{-7}$,batch $16$,dropout $0.1$,损失只算目标 token.每 $200$ 步存盘,用 Claude 2 在 $253$ 条验证 prompt 上按 AlpacaEval 提示做成对早停.
+超参: SFT 学习率 $5.5\times10^{-6}$, 余弦衰减到 $1.1\times10^{-6}$; DPO 学习率 $1\times10^{-6}$ 衰减到 $1\times10^{-7}$; batch 16, dropout 0.1; 只在目标 token 上计算损失. 每 200 步存一次 checkpoint, 用 Claude 2 在 253 条验证 prompt 上做成对评估来早停.
 
-模型序列按 HTML §2.4 抄:
+模型序列:
 
-- $M_0$:预训练 Llama 2 70B,未微调.
-- $M_1$:从 $M_0$ 起,IFT+EFT 上 SFT.
-- $M_2$:从 $M_1$ 起,AIFT$(M_1)$ 上 DPO.
-- $M_3$:从 $M_2$ 起,AIFT$(M_2)$ 上 DPO.
+- $M_0$: 预训练 Llama 2 70B, 未微调.
+- $M_1$: 从 $M_0$ 起, 在 IFT+EFT 上 SFT.
+- $M_2$: 从 $M_1$ 起, 在 AIFT$(M_1)$ 上 DPO.
+- $M_3$: 从 $M_2$ 起, 在 AIFT$(M_2)$ 上 DPO.
 
-主实验停在三轮.没有 PPO,没有独立 RM 头,没有价值函数.
+整个流程没有 PPO, 没有独立 RM, 也没有价值函数.
 
-![同一份模型先采样再当裁判,再进 DPO 得到下一轮](./images/fig-srlm-iterative-loop.png)
+![同一份模型先采样再当裁判, 再进 DPO 得到下一轮](./images/fig-srlm-iterative-loop.png)
 
-> 图 1:新 prompt $x_i$ 进当前 $M_t$,采 $N=4$ 条候选,同一组权重按 LLM-as-a-Judge 打 $0$ 到 $5$ 分,最高对最低做成 $(y^w,y^l)$,DPO($\beta=0.1$)更新到 $M_{t+1}$.
+> 图 1: 新 prompt $x_i$ 进入当前 $M_t$, 采 $N=4$ 条候选, 同一组权重按 LLM-as-a-Judge 打 0 到 5 分, 最高对最低组成 $(y^w,y^l)$, DPO ($\beta=0.1$) 更新得到 $M_{t+1}$.
 
 **图 1 解析**
 
-- 从左到右七框,一条单向实线.奶油框是新 prompt,箭头标 $x$ 进薄荷绿的 $M_t$ 生成.
-- 生成框写 trainable.冰蓝色框是四条候选,走廊标签 sample.
-- 淡紫框仍是 $M_t$,写 same weights,走廊标签 evaluate,再往后是分数 $r\in[0,5]$.
-- 下一冰蓝框写 max vs min 的偏好对,橙色框是 DPO,最后奶油框是 $M_{t+1}$.
-- 页脚写 same LLM generates and judges. Not a separate RM.没有回头箭.下一轮把 $M_{t+1}$ 当成新的 $M_t$,发生在迭代之间,不在这一张里画环.
+- 从左到右七个框, 一条单向实线. 奶油色框是新 prompt, 箭头标 $x$, 指向薄荷绿的 $M_t$ 生成框, 框内标 trainable.
+- 冰蓝色框是四条候选, 连线标 sample.
+- 淡紫框仍是 $M_t$, 标 same weights, 连线标 evaluate, 之后是分数 $r\in[0,5]$.
+- 下一个冰蓝框是 max vs min 偏好对, 橙色框是 DPO, 最后的奶油色框是 $M_{t+1}$.
+- 页脚写 same LLM generates and judges, Not a separate RM. 图中没有回环箭头, 下一轮把 $M_{t+1}$ 当作新的 $M_t$, 发生在两轮之间.
 
-## 3. 不是 OAIF,不是 SPIN,不是 RLAIF,不是冻结 RM
+## 3. 与相邻方法的分工
 
-[06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 也是当前策略采回答,LLM 当场标,再套 DAP.差别在标注器是谁.OAIF 默认策略是 PaLM 2-XS,标注器是 PaLM 2-L,可以比策略强;Discussion 写过,有更大更好的标注器时,不必强迫策略给自己打分.Self-Rewarding 钉死同一份 Llama 2 70B:生成和打分共享权重.OAIF 每步采两条;这里 $N=4$,取两端.OAIF 可以换 IPO / SLiC;这里只报 DPO.
+**OAIF.** 同样由当前策略采样, LLM 当场标注, 再套 DAP 损失. 区别在标注器: OAIF 默认策略是 PaLM 2-XS, 标注器是 PaLM 2-L, 可以比策略更强. OAIF 论文的 Discussion 也讨论过自我标注, 认为缺点是标注器与策略的架构和尺寸必须相同. OAIF 每步采两条, Self-Rewarding 采四条取两端. 见 [06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md).
 
-[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md) 的 logistic 形态像 DPO.winner 永远是 SFT 人标 $y$,loser 永远是上一迭代自生成 $y'$.参考每轮换成 $p_{\theta_t}$.没有新偏好,也不需要 LLM 裁判.人标就是天花板;相关工作里作者点名:一旦生成追上人标就被卡住,而且每条 prompt 都得有人写的回答.Self-Rewarding 的两条候选都来自 $M_t$,胜负由自己的五分裁判判.新 prompt 不必再配人标 $y$.
+**SPIN.** 胜者永远是 SFT 数据中的人写回答, 输者是上一轮生成, 不需要打分. Self-Rewarding 的相关工作一节指出 SPIN 的局限: 一旦模型生成追上人写回答就无法继续, 而且每条 prompt 都需要人写回答. 见 [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md).
 
-Lee 等 RLAIF 用现成 LLM 当裁判,先造偏好再拟合独立 RM,附录 E 用带价值基线的 REINFORCE 训策略.Constitutional AI 更早用 LLM 给反馈,再训一份冻住的 RM,再 RL.词都叫 AI feedback,训练环不是同一个.Self-Rewarding 不跑 PPO,也不跑 REINFORCE,中间没有 $r_\phi$.Lee 试过把 LLM-as-a-Judge 直接塞进 PPO,作者自己写计算贵;这里打分发生在离线造 AIFT 的时候,相对便宜.
+**RLAIF (Lee 等).** 用现成 LLM 当裁判构造偏好数据, 训练一个固定的 RM, 再做强化学习. 论文提到 Lee 等也试过直接用 LLM-as-a-Judge 模型参与 PPO, 但报告计算成本很高; Self-Rewarding 的打分发生在离线构造 AIFT 的阶段, 成本相对低. Constitutional AI 更早用 LLM 给反馈, 同样训练一个固定的偏好模型再做 RL. 见 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md) 和 [01-Constitutional-AI](../../4.4.3-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md).
 
-独立冻结 RM 的 RLHF 更老:人标 → $r_\phi$ → 冻住 → PPO.打分器在策略迭代期间不会变.Self-Rewarding 的贡献之一,就是让「打分」跟着「写回答」一起涨.Table 4 后面会给出这条轴上的数字.
+**冻结 RM 的 RLHF.** 人工偏好训练 $r_\phi$, 冻结, 再做 PPO. 打分器在策略迭代中不变. Self-Rewarding 让打分能力随写回答能力一起变化, 第 5 节的 Table 4 给出了这一点的数据.
 
 | | 采样 | 标注 | 独立 RM | 优化 |
 |--|------|------|---------|------|
-| 冻结 RM 的 RLHF | 当前 $\pi$(RL 步) | 人 → 冻住的 $r_\phi$ | 要 | PPO |
-| RLAIF(Lee) | 当前 $\pi$ | LLM → RM | 要 | REINFORCE + 价值基线 |
-| SPIN | 上一迭代 $y'$ | 无;winner = 人标 | 不要 | logistic 成对差 |
-| OAIF | 当前 $\pi$ 两条 | 另一份 LLM 当场 | 不要 | 任意 DAP |
-| Self-Rewarding | 当前 $M_t$ 的 $N=4$ | 同一份 $M_t$ 打 $0$–$5$ 分 | 不要 | Iterative DPO |
+| 冻结 RM 的 RLHF | 当前 $\pi$ | 人工, 训成固定 $r_\phi$ | 要 | PPO |
+| RLAIF | 当前 $\pi$ | LLM 标注后训 RM | 要 | 强化学习 |
+| SPIN | 上一轮生成 $y'$ | 无, 胜者是人写回答 | 不要 | logistic 成对差 |
+| OAIF | 当前 $\pi$ 两条 | 另一个 LLM 当场标 | 不要 | 任意 DAP |
+| Self-Rewarding | 当前 $M_t$ 四条 | 同一个 $M_t$ 打 0 到 5 分 | 不要 | Iterative DPO |
 
-![三列对照:冻结 RM,OAIF 的外部标注器,Self-Rewarding 自己标自己](./images/fig-srlm-not-oaif-spin.png)
+![三列对照: 冻结 RM, OAIF 的外部标注器, Self-Rewarding 自己标自己](./images/fig-srlm-not-oaif-spin.png)
 
-> 图 2:左列人标偏好训出冻结 $r_\phi$,再 PPO;中列当前策略采两条,另一份 LLM 当场标,套 DAP;右列同一份 $M_t$ 采 $N=4$ 并当裁判,再 Iterative DPO.
+> 图 2: 左列人工偏好训出冻结的 $r_\phi$, 再做 PPO; 中列当前策略采两条, 另一个 LLM 当场标注, 套 DAP 损失; 右列同一个 $M_t$ 采 4 条并当裁判, 再做 Iterative DPO.
 
 **图 2 解析**
 
-- 三列都从上往下,竖线分开.左列顶上黄框是人标 $\mathcal{D}$,灰框是冻结 RM,粉框是 PPO,底上薄荷绿是策略.页脚 RM frozen, not self-score.
-- 中列薄荷绿是当前 $\pi$ 采 $y_1,y_2$,淡紫框写 other LLM annotator (can be stronger),再进偏好对和 DAP.页脚 annotator may exceed policy size.
-- 右列生成和裁判都写 same $M_t$,偏好对是 max vs min,底上橙色是 Iterative DPO.页脚 generate and judge share weights.
+- 三列从上往下读, 竖线分开. 左列顶部黄框是人工偏好 $\mathcal{D}$, 灰框是冻结 RM, 粉框是 PPO, 底部薄荷绿是策略. 页脚 RM frozen, not self-score.
+- 中列薄荷绿框是当前 $\pi$ 采 $y_1,y_2$, 淡紫框写 other LLM annotator (can be stronger), 再进入偏好对和 DAP. 页脚 annotator may exceed policy size.
+- 右列的生成框和裁判框都写 same $M_t$, 偏好对是 max vs min, 底部橙色框是 Iterative DPO. 页脚 generate and judge share weights.
 - 列与列之间没有箭头.
 
-## 4. 实验设定:Llama 2 70B,三轮
+## 4. 实验设置
 
-底座 Llama 2 70B.IFT $3200$ 条,EFT $1630/541$.造 prompt 用固定的 Llama 2-Chat 70B;写回答和打分用正在训的 Self-Rewarding 模型.
+底座 Llama 2 70B. 新 prompt 由固定的 Llama 2-Chat 70B 生成; 写回答和打分都用正在训练的模型.
 
-指令跟随评三套尺子.一套是 $256$ 条 IFT 测试 prompt,GPT-4 按 AlpacaEval 提示做头对头,左右换序,两次判决打架算平.作者自己也做了人评.一套是 AlpacaEval 2.0 榜格式:$805$ 条 prompt,对 GPT-4 Turbo 的胜率,裁判仍是 GPT-4.一套是 MT-Bench,GPT-4 打 $0$ 到 $10$ 分.另外九个 NLP 基准:ARC-Easy / ARC-Challenge,HellaSwag,SIQA,PIQA,GSM8K,MMLU,OBQA,NQ.
+指令跟随用三类评测:
 
-奖励建模在 EFT 评价集上对人的秩.平均每条指令 $2.85$ 条带秩回答.指标五列:成对准确率,恰好满分 $5$ 的那条是否也是人排第一(5-best),全序完全一致(exact match),Spearman,Kendall $\tau$.
+- 256 条 IFT 测试 prompt 上的头对头比较, 用 GPT-4 按 AlpacaEval 的提示判定, 两种顺序各判一次, 结论不一致记为平局. 作者还做了人评.
+- AlpacaEval 2.0 榜单格式: 805 条 prompt, 计算对 GPT-4 Turbo 的胜率, 裁判是 GPT-4.
+- MT-Bench: 多轮问题, GPT-4 打 0 到 10 分.
 
-## 5. 指令跟随:AlpacaEval 2.0 从 9.94% 到 20.44%
+另外测了九个 NLP 基准: ARC-Easy, ARC-Challenge, HellaSwag, SIQA, PIQA, GSM8K, MMLU, OBQA, NQ.
 
-头对头先钉种子.IFT+EFT 对只用 IFT,胜率 $30.5\%$ 对 $30.9\%$,几乎打平.加进打分任务,没有把写回答的能力打坏.于是 $M_1$ 可以同时当生成器和裁判,再开后面两轮.
+打分能力在 EFT 评估集上与人工排序比较, 平均每条指令有 2.85 条带排名的回答. 五个指标: 成对准确率; 5-best (模型打 5 分的回答是否也是人工排名第一); exact match (完整排序是否一致); Spearman 和 Kendall $\tau$ 相关系数.
 
-$M_2$ 对 $M_1$:$55.5\%$ 胜,$11.7\%$ 负.对 SFT baseline:$49.2\%$ 对 $14.5\%$.$M_3$ 对 $M_2$:$47.7\%$ 对 $12.5\%$.对 SFT baseline:$62.5\%$ 对 $9.8\%$,比 $M_2$ 那轮赢得更频繁.AIFT$(M_1)$ 把 $M_1$ 抬到 $M_2$,AIFT$(M_2)$ 再把 $M_2$ 抬到 $M_3$.裁判能力如果冻在 $M_1$,第二跳不会这样走.
+## 5. 结果
 
-AlpacaEval 2.0 对 GPT-4 Turbo 的胜率抄 Table 1,不四舍五入.
+### 5.1 头对头
 
-| Model | Win Rate | Distilled | Proprietary |
-|-------|--------:|:---------:|:-----------:|
-| **Self-Rewarding 70B** | | | |
-| Iteration 1 ($M_1$) | 9.94% | | |
-| Iteration 2 ($M_2$) | 15.38% | | |
-| Iteration 3 ($M_3$) | 20.44% | | |
+先看种子: IFT+EFT 训练的 $M_1$ 对只用 IFT 的 SFT baseline, 胜率 30.5% 对 30.9%, 基本持平. 加入打分任务没有损害写回答的能力, 因此 $M_1$ 可以同时当生成器和裁判.
+
+$M_2$ 对 $M_1$: 55.5% 胜, 11.7% 负; 对 SFT baseline: 49.2% 对 14.5%. $M_3$ 对 $M_2$: 47.7% 对 12.5%; 对 SFT baseline: 62.5% 对 9.8%. 两轮 AIFT 各带来一次明显提升.
+
+人评: 从 IFT 测试集随机抽 50 条指令, 每条三组对比 (SFT baseline 分别对 $M_1,M_2,M_3$), 每组由三位作者盲评, 取多数票. Figure 5 显示迭代越往后, 对 SFT baseline 的优势越大, 方向与 GPT-4 判定一致.
+
+### 5.2 AlpacaEval 2.0 (Table 1)
+
+| 模型 | 对 GPT-4 Turbo 胜率 | 蒸馏 | 专有数据 |
+|------|------:|:---:|:---:|
+| Self-Rewarding $M_1$ | 9.94% | | |
+| Self-Rewarding $M_2$ | 15.38% | | |
+| Self-Rewarding $M_3$ | 20.44% | | |
 | GPT-4 0314 | 22.07% | | ✓ |
 | Mistral Medium | 21.86% | | ✓ |
 | Claude 2 | 17.19% | | ✓ |
@@ -142,19 +185,28 @@ AlpacaEval 2.0 对 GPT-4 Turbo 的胜率抄 Table 1,不四舍五入.
 | Davinci001 | 2.76% | | ✓ |
 | Alpaca 7B | 2.59% | ✓ | |
 
-$M_3$ 的 $20.44\%$ 高于 Claude 2 的 $17.19\%$,Gemini Pro 的 $16.85\%$,GPT-4 0613 的 $15.76\%$,仍低于 GPT-4 0314 的 $22.07\%$ 和 Mistral Medium 的 $21.86\%$.摘要写 outperform many existing systems,表上没有写成「超过所有 GPT-4」.对照模型要么有专有对齐数据(Llama 2 报告写过超过 $1$M 标注),要么从更强模型蒸馏.这边从 Open Assistant 种子出发,目标和奖励都由自己造.
+$M_3$ 的 20.44% 高于 Claude 2, Gemini Pro 和 GPT-4 0613, 低于 GPT-4 0314 (22.07%) 和 Mistral Medium (21.86%). 论文指出, 对照模型多数使用了专有对齐数据 (如 Llama 2 报告中超过 1M 条标注), 或者从更强的模型蒸馏; Self-Rewarding 只从 Open Assistant 的小份种子出发. 两轮增量分别是 5.44 和 5.06 个百分点, 第二轮没有明显减小.
 
-Figure 4 按类目拆 AlpacaEval.正文结论三句,没有把柱高编成假百分比.多数类目胜率明显涨;数学和逻辑推理涨得少,作者写成当前训练主要是让模型更好地用已有知识.复杂度 $5$,$6$,$7$(十分制)上涨得更明显.按期望回复长度分桶,各桶都在涨.HTML 没有给出每个类目的精确胜率数字,不编.附录 Table 6 只给出测试集构成,例如科学/工程 $134$ 条($16.65\%$),数学/逻辑 $52$ 条($6.46\%$),写代码 $44$ 条($5.47\%$).Table 7 复杂度众数在 $2$ 和 $3$(合计超过一半),$9$ 分只有 $3$ 条.Table 8 期望回复长度:$1$–$3$ 句 $44.84\%$,$1$ 段 $33.42\%$.构成表不是胜率表,两张不要混.
+同底座的对照更直接. LLaMA2 Chat 70B 与 Self-Rewarding 用的是同一个 Llama 2 70B 底座, 对齐时用了 Meta 的专有数据, 胜率 13.87%. $M_1$ 的 9.94% 低于它, $M_2$ 的 15.38% 已经超过, $M_3$ 再高出 6.57 个百分点. 两者的种子人工数据规模相差很大, 前者只有 3,200 条 IFT 和 1,630 条 EFT.
 
-附录 A.1 用 t-SNE 看 IFT,EFT 和 AIFT$(M_1)$.指令和回答两边,IFT 与 AIFT 叠在一起,EFT 落在另一块嵌入区.这能解释为什么加 EFT 几乎不伤 IFT 头对头:打分示范和写回答示范本来就不在同一片分布里.
+Figure 4 按类别拆分 AlpacaEval. 正文结论有三条: 多数类别胜率明显上升, 但数学和逻辑推理等任务没有提升, 作者据此认为当前方法主要帮助模型更好地使用已有知识; 几乎所有复杂度上都有提升, 复杂度 5, 6, 7 (满分 10) 的任务提升更明显; 不同期望回答长度的任务上胜率都在上升. 分组本身也是 GPT-4 做的 (附录 A.6): 先用 gpt-4-1106-preview 从测试集指令里归纳出 20 个类别, 再逐条判断每个样本的类别, 复杂度 (1 到 10) 和期望回答长度. 所以这组细分结果除了胜率由 GPT-4 判定, 分到哪一类也取决于 GPT-4 的判断, 单个类别的样本又少, 小类上的升降只能作为参考. 测试集构成见附录 Table 6 到 8: 科学/技术/工程 134 条 (16.65%), 数学/逻辑推理 52 条 (6.46%), 编程 44 条 (5.47%); 复杂度 3 占 29.57%, 复杂度 2 占 25.59%; 期望长度 1 到 3 句占 44.84%, 1 段占 33.42%. 数学类只占约 6%, 这一类不涨对总胜率的影响有限.
 
-长度在涨.AlpacaEval 生成平均长度:$M_1$ 为 $1092$,$M_2$ 为 $1552$,$M_3$ 为 $2552$.Limitation 自己写了长度和估质量的相关,可能掺进相对表现.人评没有被长度故事单独拆开,但长度不是可以假装没看见的量.
+附录 A.1 用 t-SNE 可视化 IFT, EFT 和 AIFT$(M_1)$. IFT 与 AIFT 有很好的重叠, EFT 落在嵌入空间的另一区域. 这可以解释加入 EFT 为什么基本不影响 IFT 上的表现.
 
-人评随机抽 $50$ 条 IFT 测试指令,每条三对(baseline 对 $M_1$,$M_2$,$M_3$),每对三名作者盲评,多数票.Figure 5:越往后的迭代,对 SFT baseline 的头对头优势越大,方向和 GPT-4 裁判一致.HTML 没有把人评胜率写成表内百分比,不编.
+### 5.3 长度
 
-MT-Bench 抄 Table 2.总体:$6.85$(SFT),$6.78$($M_1$),$7.01$($M_2$),$7.25$($M_3$).数学/代码/推理一截:$3.93$,$3.83$,$4.05$,$4.17$.人文/抽取/STEM/角色/写作为一截:$8.60$,$8.55$,$8.79$,$9.10$.种子偏 Open Assistant,推理类目弱,作者把较小的涨幅写在种子构成上.MT-Bench 本身是多轮,训练和造数据都是单轮,涨幅仍在.
+AlpacaEval 上的平均生成长度: $M_1$ 为 1,092, $M_2$ 为 1,552, $M_3$ 为 2,552. $M_3$ 的长度约为 $M_1$ 的 2.3 倍. Limitations 一节承认, 长度与估计质量之间存在已知相关, 需要更深入地分析它对这组结果的影响.
 
-附录 Table 10 分项,数字按 HTML 抄.
+### 5.4 MT-Bench (Table 2, Table 10)
+
+| | 总分 | 数学, 代码, 推理 | 人文, 抽取, STEM, 角色扮演, 写作 |
+|--|----:|----:|----:|
+| SFT baseline | 6.85 | 3.93 | 8.60 |
+| $M_1$ | 6.78 | 3.83 | 8.55 |
+| $M_2$ | 7.01 | 4.05 | 8.79 |
+| $M_3$ | 7.25 | 4.17 | 9.10 |
+
+附录 Table 10 的分项:
 
 | | Writing | Roleplay | Reasoning | Math | Coding | Extraction | STEM | Humanities | Overall |
 |--|--------:|---------:|----------:|-----:|-------:|-----------:|-----:|-----------:|--------:|
@@ -163,9 +215,9 @@ MT-Bench 抄 Table 2.总体:$6.85$(SFT),$6.78$($M_1$),$7.01$($M_2$),$7.25$($M_3$
 | $M_2$ | 9.10 | 8.00 | 4.60 | 3.30 | 4.25 | 7.65 | 9.40 | 9.80 | 7.01 |
 | $M_3$ | 9.58 | 8.73 | 4.80 | 3.50 | 4.20 | 7.80 | 9.45 | 9.95 | 7.25 |
 
-Coding 从 $M_2$ 的 $4.25$ 到 $M_3$ 的 $4.20$,略降.Writing,Roleplay,Extraction,STEM 这一侧更明显.
+数学, 代码, 推理三类合计从 3.93 到 4.17, 涨幅小于另一组的 8.60 到 9.10. 作者把原因归于 Open Assistant 种子数据的构成. Reasoning 一项 $M_3$ 的 4.80 仍低于 SFT 的 5.30; Coding 从 $M_2$ 的 4.25 降到 $M_3$ 的 4.20.
 
-NLP 基准大多维持在 Llama 2 70B 和 SFT 附近,有的会掉.作者写成 alignment tax,并指向 InstructGPT 里 RLHF 之后部分公开集回退的观察.附录 Table 9 全列:
+### 5.5 NLP 基准 (Table 9)
 
 | | ARC-Easy | ARC-Ch | HellaSwag | SIQA | PIQA | GSM8K | MMLU | OBQA | NQ |
 |--|--------:|-------:|----------:|-----:|-----:|------:|-----:|-----:|---:|
@@ -175,71 +227,102 @@ NLP 基准大多维持在 Llama 2 70B 和 SFT 附近,有的会掉.作者写成 a
 | $M_2$ | 74.84 | 54.51 | 84.27 | 51.23 | 81.94 | 59.29 | 69.31 | 57.60 | 33.07 |
 | $M_3$ | 72.35 | 53.13 | 83.29 | 49.28 | 80.79 | 57.70 | 69.37 | 58.40 | 31.86 |
 
-ARC-Easy 从 $M_1$ 的 $78.14$ 掉到 $M_3$ 的 $72.35$.GSM8K 在 $M_1$ 到过 $60.27$,高于底座 $56.80$,之后回到 $57.70$.MMLU 几乎不动.NQ 从 SFT 的 $34.35$ 到 $M_1$ 的 $35.48$,再掉到 $M_3$ 的 $31.86$.这些任务和 Open Assistant 风格的指令跟随不是同一回事.正文 Table 3 只展示了其中五列,方向与 Table 9 相同.
+从 $M_1$ 到 $M_3$, ARC-Easy 降 5.79, ARC-Challenge 降 4.38, NQ 降 3.62, MMLU 基本不变. 作者引用 InstructGPT 中 RLHF 后部分公开 NLP 数据集回退的观察 (alignment tax), 并提出可以用更多样的种子 prompt 把自奖励扩展到这类任务.
 
-## 6. 打分能力也在涨:Table 4
+### 5.6 打分能力 (Table 4)
 
-IFT 已经覆盖「给回答打分」这种指令,SFT baseline 成对准确率 $65.1\%$.加上 EFT,五列全涨,成对准确率到 $78.7\%$.$M_2$ 用 $M_1$ 当裁判造出的 AIFT 训练,自己当裁判时又高于 $M_1$.$M_3$ 再抬几列.中间没有新的 EFT,AIFT 样本看起来也不像打分示范.作者的假设:一般指令跟随变强,LLM-as-a-Judge 这条指令也跟着强.
+| | SFT baseline | $M_1$ | $M_2$ | $M_3$ |
+|--|------:|------:|------:|------:|
+| 训练数据 | IFT | IFT+EFT | +AIFT$(M_1)$ | +AIFT$(M_2)$ |
+| 成对准确率 | 65.1% | 78.7% | 80.4% | 81.7% |
+| 5-best | 39.6% | 41.5% | 44.3% | 43.2% |
+| Exact match | 10.1% | 13.1% | 14.3% | 14.3% |
+| Spearman | 0.253 | 0.279 | 0.331 | 0.349 |
+| Kendall $\tau$ | 0.233 | 0.253 | 0.315 | 0.324 |
 
-| | SFT Baseline | $M_1$ | $M_2$ | $M_3$ |
-|--|-------------:|------:|------:|------:|
-| Training data | IFT | IFT+EFT | IFT+EFT+AIFT$(M_1)$ | IFT+EFT+AIFT$(M_1)$+AIFT$(M_2)$ |
-| Pairwise acc. $\uparrow$ | 65.1% | 78.7% | 80.4% | 81.7% |
-| 5-best % $\uparrow$ | 39.6% | 41.5% | 44.3% | 43.2% |
-| Exact Match % $\uparrow$ | 10.1% | 13.1% | 14.3% | 14.3% |
-| Spearman $\uparrow$ | 0.253 | 0.279 | 0.331 | 0.349 |
-| Kendall $\tau$ $\uparrow$ | 0.233 | 0.253 | 0.315 | 0.324 |
+SFT baseline 已经能打分, 成对准确率 65.1%, 因为 IFT 本身包含类似的指令. 加入 EFT 后五项全部上升, 成对准确率到 78.7%. $M_2$ 和 $M_3$ 的训练中没有新增 EFT, AIFT 数据也不像打分示范, 打分能力却继续上升. 作者的假设是: 指令跟随能力整体提高后, LLM-as-a-Judge 这项任务也随之变好. 并非每项都单调: 5-best 在 $M_3$ 从 44.3% 回落到 43.2%, exact match 在 $M_2$ 和 $M_3$ 持平.
 
-5-best 在 $M_3$ 从 $44.3\%$ 回到 $43.2\%$.Exact match 在 $M_2$ 和 $M_3$ 都是 $14.3\%$.成对准确率和两个相关在继续涨.这张表是「自己标自己」能成立的证据:下一轮的偏好数据,由上一轮更强的裁判提供.
+这张表的意义在于它和第 5.1 节的结果互为因果. $M_2$ 的训练数据由 $M_1$ 打分构造, $M_3$ 的训练数据由 $M_2$ 打分构造. 如果打分能力停在 $M_1$ 的水平, 第二轮的偏好对质量不会提高. 成对准确率 81.7% 也意味着, 在 EFT 评估集的回答对上, 仍有约 18% 的方向与人工排序相反. 实际构造 AIFT 时取的是四条中分差最大的两端, 出错率应低于这个数字, 但论文没有直接测量 AIFT 偏好对与人工判断的一致率.
 
-## 7. 提示词,EFT,只加满分正例
+Spearman 从 0.253 升到 0.349, 绝对值仍不高. 模型在区分明显好坏时比较可靠, 对质量接近的回答, 排序与人工的一致性有限. 这与取两端的选对规则相互配合: 规则本身绕开了模型最不擅长的那部分判断.
 
-同一套 SFT baseline,换打分提示,差距很大.Li 等 Instruction Backtranslation 那张五档多选,成对准确率 $26.6\%$,Spearman $-0.18$.改成 additive 累加,成对准确率 $65.1\%$,Spearman $0.25$.附录 Table 5 其余列:5-best $23.5\%$ 对 $39.6\%$,exact match $1.1\%$ 对 $10.1\%$,Kendall $\tau$ $-0.16$ 对 $0.23$.多选要模型一次跳到档位;累加把相关性,覆盖,有用拆开加分.主实验锁死 Figure 2.
+## 6. 消融
 
-附录 A.3 从只训 IFT 的 $M_1'$ 再走两轮 DPO.分数挤在 $4$,同一批新 prompt 只收出 $541$ 对给 $M_2'$,$429$ 对给 $M_3'$.头对头仍能超过 SFT baseline,但和从 IFT+EFT 出发的 $M_2$,$M_3$ 差距越往后越大.EFT 不是锦上添花,它决定后面 AIFT 能不能收成.
+### 6.1 去掉 EFT
 
-附录 A.4 试过另一条自训:只把打到满分 $5$ 的 $(x,y)$ 加回 SFT,不做成对.加了 $11254$ 条,调过混合权重,对 SFT baseline 仍是 $29\%$ 胜对 $30\%$ 胜,等于没涨.ReST 一类「用固定奖励筛正例再 SFT」在这里没有帮上.偏好对帮上了.正例克隆补不出两端对比.
+附录 A.3 从只用 IFT 训练的 $M_1'$ 出发, 再迭代两轮 DPO. 用同样数量的新 prompt, 只收集到很少的有效偏好对: AIFT$(M_1')$ 541 对, AIFT$(M_2')$ 429 对, 约为主实验 3,964 对和 6,942 对的 1/7 和 1/16. Figure 8 显示 EFT 让同样迭代次数下的表现更好, 而且两者的差距在后面的迭代中扩大. 打分示范决定了后续每一轮能构造出多少偏好对.
 
-## 8. 失效与边界
+### 6.2 只加满分正例
 
-Limitation 写得很直.只跑了三轮,一种设定.迭代次数和不同能力模型上的「标度」没有做.长度在涨,质量估分和长度的相关是已知问题,结果里掺了多少,没有拆干净.训练奖励是 LLM,AlpacaEval / MT-Bench 的裁判也是 GPT-4,即使不是同一份模型,仍需要比论文更深的分析.人评方向一致,样本是 $50$ 条.安全评价和安全训练都没做.作者设想把 LLM-as-a-Judge 改成专门问安全,后面的迭代有可能抓住更早迭代抓不住的安全场景,这是设想,不是表.
+附录 A.4 试了另一种自训练: 只把模型打满分 5 的 (prompt, response) 加回 SFT 数据, 不构造偏好对. 加入 11,254 条, 并调了混合权重, 对 SFT baseline 的头对头仍是 29% 胜对 30% 胜, 没有提升. 作者没有找到让这种方法有效的设置. 偏好对里的低分回答提供了「什么样的回答不好」的信息, 只克隆满分回答得不到这部分信号.
 
-结论里的 virtuous circle 也写了饱和:真实场景里打分能力不会无限涨.它打开的是「超过原始人标种子」的可能性,不是一张已经超过人的证明.
+两种做法用的是同一个打分器, 同一批候选. 差别只在于怎样使用分数: 满分筛选只看分数是否到顶, 丢掉了分数之间的相对信息; 偏好对只看相对高低, 对分数的绝对标定不敏感. 构造 EFT 时已经观察到大量样本得 4 分, 说明这类打分器的绝对分值集中在少数几个值上, 区分度有限; 在这种情况下, 相对排序比绝对分值更可靠, 这也是成对方法占优的一个原因.
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 写成 OAIF | 标注器是同一份 $M_t$ | OAIF 允许更大的另一份 LLM |
-| 写成 SPIN | 两条都来自 $M_t$,胜负由五分裁判 | SPIN 的 winner 钉死人标 |
-| 写成 Lee RLAIF | 无 RM,无 REINFORCE | 附录 E 是价值基线 REINFORCE |
-| 写成冻结 RM 的 RLHF | 打分器随迭代更新 | Table 4 成对准确率 $65.1\%\to 81.7\%$ |
-| 把 20.44% 写成超过 GPT-4 | Table 1 对 GPT-4 Turbo | GPT-4 0314 是 $22.07\%$,0613 是 $15.76\%$ |
-| 五列打分指标都单调 | 5-best 在 $M_3$ 为 $43.2\%$ | 低于 $M_2$ 的 $44.3\%$ |
-| 只加满分正例也能涨 | $11254$ 条仍 $29\%$ vs $30\%$ | 要对,不要只克隆 $r=5$ |
-| 数学代码同步大涨 | Table 2 / Table 10 | Coding $4.25\to 4.20$;推理类目涨幅小 |
-| 编类目柱状图百分比 | Figure 4 无表内数字 | 只保留正文三句结论 |
-| 人评胜率写成假百分数 | Figure 5 无表 | HTML 只给人评方向 |
-| 造 prompt 也是 $M_t$ | 主实验钉 Llama 2-Chat 70B | 附录 A.5 才测自己造指令 |
-| NLP 基准一起涨 | Table 9 ARC-Easy $78.14\to 72.35$ | alignment tax,不是加分项 |
+### 6.3 两轮增量为何没有缩小
 
-Self-Rewarding 不是万能药.它把「写」和「评」捆在同一份 70B 上,用 Iterative DPO 让两条轴一起动,前提是种子里已经有能用的打分示范,并且接受回答变长,推理类目未必同步,公开 NLP 集可能掉.已经有更大更稳的外部标注器,[06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 不必强迫自己标自己.已经有人标回答,只想把模型从人标里再榨一轮,[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md) 更短.人标对已经采好,只想离线分类,[01-DPO](../01-DPO/01-DPO.md) 仍是那条更短的路.AI 标完再拟合 RM,再策略梯度,在 [4.4.3 RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md).
+AlpacaEval 上两轮增量分别是 5.44 和 5.06 个百分点, 头对头中 $M_3$ 对 $M_2$ 的胜负比 (47.7 对 12.5) 与 $M_2$ 对 $M_1$ (55.5 对 11.7) 处在同一量级. 和 SPIN 每轮增量快速递减相比, 这里没有出现明显的饱和. 可以对照的两个因素: 一是 AIFT 的规模从 3,964 对增加到 6,942 对, 第二轮的训练数据更多; 二是打分能力在第二轮也提高了 (成对准确率 78.7% 到 80.4%), 造出的偏好对更可靠. SPIN 的目标分布固定为 SFT 数据, Self-Rewarding 的偏好来自不断变化的裁判, 没有一个固定的收敛点. 三轮的数据不足以判断这种增长能持续多久.
 
-同夹:[01-DPO](../01-DPO/01-DPO.md),[05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md),[06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md).Iterative DPO 的外部 RM 版本是 Xu 等 Pairwise Cringe;本篇换的是裁判,不是损失家族.
+## 7. 一轮迭代的实现
+
+```python
+def self_rewarding_iteration(M_t, prompts, judge_prompt, n=4, k=3):
+    pairs = []
+    for x in prompts:
+        ys = [M_t.generate(x, temperature=0.7, top_p=0.9) for _ in range(n)]
+        # 同一个 M_t 当裁判, 每条打 k 次取平均, 解析 "Score: " 后的数字
+        scores = [mean(parse_score(M_t.generate(judge_prompt(x, y),
+                                                temperature=0.7, top_p=0.9))
+                       for _ in range(k)) for y in ys]
+        if max(scores) == min(scores):
+            continue
+        pairs.append((x, ys[argmax(scores)], ys[argmin(scores)]))
+    # 参考模型与初始化都是 M_t
+    return dpo_train(init=M_t, ref=M_t, data=pairs, beta=0.1)
+```
+
+`parse_score` 解析失败的样本需要单独处理, 否则会被当成 0 分, 混进 $y^l$. 去掉 EFT 时有效偏好对大幅减少 (第 6.1 节), 打分质量直接决定每轮能用多少数据.
+
+## 8. 成本
+
+每一轮的额外开销来自三部分: 生成新 prompt; 每条 prompt 采 4 条回答; 每条回答打 3 次分. 一条 prompt 需要 4 次生成和 12 次打分生成, 打分输出包含最多 100 词的理由. 打分调用次数是生成次数的 3 倍. 对 70B 模型来说, 构造 AIFT 的推理量不小, 但这些都发生在训练之前, 训练本身只是普通的 DPO.
+
+和 RLHF 比, 省掉了 RM 训练和价值网络, 也不需要训练中持续调用 RM. 和 OAIF 比, 不需要另一个更大的标注 LLM, 但标注质量受限于策略自己的判断能力.
+
+适用条件: 有一份质量足够的打分示范 (EFT), 并且底座模型够大, 能学会打分. 论文只在 70B 上做了实验, 小模型能否学到足够可靠的打分能力, 还需要另做实验. 打分不可靠时, 偏好对的方向会出错, 第 2.2 节多选式提示的负相关就是这种情况.
+
+## 9. 失效模式
+
+**长度增长.** $M_3$ 的平均长度约为 $M_1$ 的 2.3 倍. 打分器和评测裁判都可能偏爱长回答, 胜率提升里有多少来自长度, 论文没有拆分.
+
+**推理不涨.** 数学和逻辑推理类别没有提升, MT-Bench 的 Reasoning 低于 SFT. 自我打分难以判断推理是否正确, 这类任务更适合用可验证的答案做奖励.
+
+**NLP 基准回退.** ARC, NQ 等随迭代下降.
+
+**打分器与评测相关.** 训练奖励来自 LLM, 部分评测也由 LLM (GPT-4) 判定. 即使两者不是同一个模型, 论文也承认需要更深入的分析. 是否会出现 reward hacking, 以及在什么情况下出现, 尚待研究.
+
+**迭代次数.** 只跑了三轮, 一种设定. 论文结论承认这种「良性循环」在现实中很可能饱和, 它提供的是超过原始人工偏好的可能性.
+
+**安全.** 没有做安全评估, 也没有做安全训练. 论文设想把 LLM-as-a-Judge 改成专门评估安全, 但没有实验.
+
+**自我偏好.** 裁判和被评者是同一个模型. 模型偏爱的写法 (结构, 措辞, 篇幅) 在打分时也可能得到高分, 下一轮再被强化. 论文 Limitations 提出要研究框架内是否会出现 reward hacking, 自我偏好是其中最直接的一种可能.
+
+**分数偏斜.** EFT 构造中大量样本得 4 分, 需要重采样平衡. 打分集中时, 四条候选的分数容易接近, 偏好对的质量下降.
+
+有更大, 更可靠的外部标注器时, [06-OAIF](../06-OAIF-在线AI反馈/06-OAIF-在线AI反馈.md) 不必让策略自己打分. 只有 SFT 数据, 想从中再提取信号, 可用 [05-SPIN](../05-SPIN-自对弈微调/05-SPIN-自对弈微调.md). 已有离线人工偏好, [01-DPO](../01-DPO/01-DPO.md) 最简单.
 
 ## 参考文献
 
-1. Yuan, W., Pang, R. Y., Cho, K., Li, X., Sukhbaatar, S., Xu, J., & Weston, J. (2024). [Self-Rewarding Language Models](https://arxiv.org/abs/2401.10020). *ICML*,PMLR 235:57905–57923.HTML:[arXiv HTML](https://arxiv.org/html/2401.10020).
-2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.
-3. Xu, J., Lee, A., Sukhbaatar, S., & Weston, J. (2023). [Some Things Are More Cringe Than Others: Preference Optimization with the Pairwise Cringe Loss](https://arxiv.org/abs/2312.16682).(Iterative DPO)
-4. Zheng, L., Chiang, W.-L., Sheng, Y., et al. (2023). [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685). *NeurIPS Datasets and Benchmarks*.
-5. Wang, Y., Kordi, Y., Mishra, S., Liu, A., Smith, N. A., Khashabi, D., & Hajishirzi, H. (2023). [Self-Instruct: Aligning Language Models with Self-Generated Instructions](https://aclanthology.org/2023.acl-long.754/). *ACL*.
-6. Li, X., Yu, P., Zhou, C., Schick, T., Zettlemoyer, L., Levy, O., Weston, J., & Lewis, M. (2024). [Self-Alignment with Instruction Backtranslation](https://arxiv.org/abs/2308.06259). *ICLR*.
+1. Yuan, W., Pang, R. Y., Cho, K., Li, X., Sukhbaatar, S., Xu, J., & Weston, J. (2024). [Self-Rewarding Language Models](https://arxiv.org/abs/2401.10020). *ICML 2024*.
+2. Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.
+3. Xu, J., Lee, A., Sukhbaatar, S., & Weston, J. (2023). [Some Things Are More Cringe Than Others: Preference Optimization with the Pairwise Cringe Loss](https://arxiv.org/abs/2312.16682).
+4. Zheng, L., Chiang, W.-L., Sheng, Y., et al. (2023). [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685).
+5. Wang, Y., Kordi, Y., Mishra, S., et al. (2023). [Self-Instruct: Aligning Language Models with Self-Generated Instructions](https://aclanthology.org/2023.acl-long.754/). *ACL 2023*.
+6. Li, X., Yu, P., Zhou, C., et al. (2024). [Self-Alignment with Instruction Backtranslation](https://arxiv.org/abs/2308.06259). *ICLR 2024*.
 7. Touvron, H., Martin, L., Stone, K., et al. (2023). [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288).
-8. Köpf, A., Kilcher, Y., von Rütte, D., et al. (2023). [OpenAssistant Conversations — Democratizing Large Language Model Alignment](https://arxiv.org/abs/2304.07327).
-9. Li, X., Zhang, T., Dubois, Y., et al. (2023). [AlpacaEval: An Automatic Evaluator of Instruction-Following Models](https://github.com/tatsu-lab/alpaca_eval).
-10. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML*.
-11. Guo, S., Zhang, B., Liu, T., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).
-12. Lee, H., Phatale, S., Mansoor, H., et al. (2023). [RLAIF: Scaling Reinforcement Learning from Human Feedback with AI Feedback](https://arxiv.org/abs/2309.00267).
-13. Bai, Y., Kadavath, S., Kundu, S., et al. (2022). [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073).
-14. Ouyang, L., Wu, J., Jiang, X., et al. (2022). Training language models to follow instructions with human feedback. *NeurIPS*.
-15. Gulcehre, C., et al. (2023). [Reinforced Self-Training (ReST) for Language Modeling](https://arxiv.org/abs/2308.08998).
-16. Honovich, O., Scialom, T., Levy, O., & Schick, T. (2023). [Unnatural Instructions: Tuning Language Models with (Almost) No Human Labor](https://aclanthology.org/2023.acl-long.806/). *ACL*.
+8. Köpf, A., Kilcher, Y., von Rütte, D., et al. (2023). [OpenAssistant Conversations: Democratizing Large Language Model Alignment](https://arxiv.org/abs/2304.07327).
+9. Chen, Z., Deng, Y., Yuan, H., Ji, K., & Gu, Q. (2024). [Self-Play Fine-Tuning Converts Weak Language Models to Strong Language Models](https://arxiv.org/abs/2401.01335). *ICML 2024*.
+10. Guo, S., Zhang, B., Liu, T., et al. (2024). [Direct Language Model Alignment from Online AI Feedback](https://arxiv.org/abs/2402.04792).
+11. Lee, H., Phatale, S., Mansoor, H., et al. (2023). [RLAIF: Scaling Reinforcement Learning from Human Feedback with AI Feedback](https://arxiv.org/abs/2309.00267).
+12. Bai, Y., Kadavath, S., Kundu, S., et al. (2022). [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073).
+13. Ouyang, L., Wu, J., Jiang, X., et al. (2022). [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155). *NeurIPS 2022*.
+14. Gulcehre, C., et al. (2023). [Reinforced Self-Training (ReST) for Language Modeling](https://arxiv.org/abs/2308.08998).

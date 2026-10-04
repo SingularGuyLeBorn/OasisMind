@@ -1,64 +1,72 @@
 ---
-title: "02 · ORPO:无参考的几率比"
+title: "02 · ORPO: 无参考模型的几率比"
 published: true
 tags: ["ORPO", "DPO", "偏好优化", "几率比", "无参考模型"]
-excerpt: "ORPO(Odds Ratio Preference Optimization)把两件事捆进同一次更新:chosen 上的负对数似然(NLL / SFT),加上 \\lambda 倍的几率比偏好项."
+excerpt: "ORPO (Odds Ratio Preference Optimization) 在 chosen 的负对数似然上加一项 λ 倍的几率比惩罚, 单阶段从预训练基座完成 SFT 与偏好对齐, 训练时不加载参考模型."
 ---
-# 02 ORPO:无参考的几率比
+# 02 ORPO: 无参考模型的几率比
 
-ORPO(Odds Ratio Preference Optimization)把两件事捆进同一次更新:chosen 上的负对数似然(NLL / SFT),加上 $\lambda$ 倍的几率比偏好项.没有 $\pi_{\mathrm{ref}}$.Hong,Lee,Thorne 的副标题写得很直:*Monolithic Preference Optimization without Reference Model*([arXiv:2403.07691](https://arxiv.org/abs/2403.07691)).代码在 [xfactlab/orpo](https://github.com/xfactlab/orpo).
+Hong, Lee, Thorne 的 *ORPO: Monolithic Preference Optimization without Reference Model* ([arXiv:2403.07691](https://arxiv.org/abs/2403.07691)) 处理的问题是: DPO 仍要先做一轮 SFT, 再加载冻结的参考模型, 能否把 SFT 和偏好对齐合成一步, 并且不要参考模型. 公式和数字以 [arXiv HTML](https://arxiv.org/html/2403.07691) 为准, DPO 的推导见 [01-DPO](../01-DPO/01-DPO.md).
 
-卡住的不是再养一个奖励模型.[01-DPO](../01-DPO/01-DPO.md) 已经把 RM 消掉了.DPO 还要加载一份冻结的 $\pi_{\mathrm{ref}}$,前面通常还要单独热身一轮 SFT.ORPO 的硬差是:训练时内存里只有 $\pi_\theta$.
+## 1. SFT 会把 rejected 也抬上去
 
-本篇**不是**「DPO 再加一项 SFT」.**不是** [KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md).**不是** [SimPO](../04-SimPO-无参考长度平均/04-SimPO-无参考长度平均.md).**不是** PPO.
+### 1.1 交叉熵只看目标 token
 
-记号:$\pi_\theta$ 是正在训的策略;$y_w$ 是 chosen,$y_l$ 是 rejected.数据仍是成对 $(x,y_w,y_l)$.论文式 (3) 把 $\log P_\theta(y|x)$ 写成平均对数似然,实现也按这一条走.公式以论文为准;仓库和 TRL 只作旁注.实现若和式 (5)(6) 打架,听论文的.
+因果语言模型的交叉熵损失是 $-\sum_t\log P_\theta(y_t\mid x,y_{<t})$, 只惩罚目标 token 的概率太低. 非目标 token 在 one-hot 标签里是 0, 那一项不进损失. 所以 SFT 擅长的是领域适应: 对话格式, 指令跟随, 回答风格都会往 chosen 的分布靠. 它不会告诉模型哪些生成方式不该学.
 
-## 1. SFT 把 rejected 也抬上去了
+偏好数据里, rejected 回答和 chosen 回答往往共享大量句式, 格式和措辞. 只抬高 chosen 的似然, 这些共享成分在 rejected 上的概率也会一起变高.
 
-交叉熵只惩罚「标签 token 的 logit 太低」.非标签位置的 $y_i=0$,那一项根本不进损失.领域适应这件事它做得不错:对话,指令,格式,都会往 chosen 的分布靠.问题在于,rejected 往往和 chosen 共享同一套句式,同一套礼貌口头禅.只抬 chosen,rejected 的对数概率会跟着涨.
+### 1.2 OPT-350M 上的观察
 
-论文拿 OPT-350M 在 HH-RLHF 上只训 chosen,边训边盯同一 batch 里 rejected 的对数概率(Figure 3).两条曲线一起往上.有时 rejected 比 chosen 还高.交叉熵把模型送进了对的领域,但没有告诉它哪种生成风格不该学.
+论文用 OPT-350M 在 HH-RLHF 上只拿 chosen 做 SFT, 同时监控同一批数据里 rejected 回答的对数概率 (Figure 3). 两条曲线一起上升, 有时 rejected 的对数概率比 chosen 还高. SFT 把模型带进了正确的领域, 但没有区分好回答和坏回答.
 
-偏好对齐本来就是要压这种风格.RLHF 把这件事交给奖励模型和 PPO;DPO 交给相对 $\pi_{\mathrm{ref}}$ 的对数比.ORPO 的判断是:SFT 阶段加一个温和的惩罚就够,不必再开第二阶段,也不必再留一份参考模型.
+RLHF 把这种区分交给奖励模型和 PPO, DPO 交给相对 $\pi_{\mathrm{ref}}$ 的对数比. ORPO 的判断是: 在 SFT 阶段直接加一项对 rejected 的温和惩罚就够, 不必再开第二个阶段, 也不必留一份参考模型.
 
-Unlikelihood training 早就在重复,退化生成上用过类似想法:给不想要的 token 加 $1-p$ 项.差别是,那些工作要手工构造「最近出现过的 token」这类拒绝集合.ORPO 用同一条 query 下的 $y_l$ 当拒绝集合,惩罚是动态的,不另编词表.
+Unlikelihood training 在缓解重复, 退化生成时用过类似思路, 给不想要的 token 加 $\log(1-p)$ 项. 那些工作需要手工构造拒绝集合, 比如最近出现过的 token. ORPO 直接用同一条 prompt 下的 $y_l$ 当拒绝对象.
 
-同一设定换成 ORPO 之后,论文 Figure 7 把 chosen / rejected 的平均对数似然和 $\log\mathrm{OR}$ 画在同一张图上($\lambda=1.0$,仍是 OPT-350M + HH-RLHF).chosen 的曲线还在往上,幅度和 Figure 3 那次纯 SFT 差不多;rejected 掉头往下;$\log\mathrm{OR}$ 整段训练都在涨.SFT 的领域适应还在,惩罚项把不想要的风格按下去了.交叉熵缺的那一刀,在这里补上.
+### 1.3 换成 ORPO 之后
 
-## 2. 几率,几率比,损失
+同一设定改用 ORPO ($\lambda=1.0$), 论文 Figure 7 画出了 chosen 和 rejected 的对数概率以及 $\log\mathrm{OR}$. chosen 的对数概率上升幅度和 Figure 3 的纯 SFT 相当; rejected 的对数概率持续下降; $\log\mathrm{OR}$ 整个训练过程都在上升. SFT 的领域适应作用还在, 惩罚项压低了 rejected.
 
-概念上,整段 $y$ 的序列概率是 token 条件概率连乘:
+## 2. 几率, 几率比, 损失
+
+### 2.1 序列概率取几何平均
+
+整段回答 $y$ 的序列概率是 token 条件概率的连乘:
 
 $$
-P(y|x)=\prod_{t=1}^{m}P_\theta(y_t\mid x,y_{<t}).
+P(y\mid x)=\prod_{t=1}^{m}P_\theta(y_t\mid x,y_{<t}).
 \tag{1}
 $$
 
-连乘在长回复上会下溢到 $0$.论文式 (3) 不拿这个连乘当 $P_\theta$,而是先写平均对数似然:
+长回答的连乘会趋于 0. 论文实际使用的是平均对数似然:
 
 $$
-\log P_\theta(y|x)=\frac{1}{m}\sum_{t=1}^{m}\log P_\theta(y_t\mid x,y_{<t}).
+\log P_\theta(y\mid x)=\frac{1}{m}\sum_{t=1}^{m}\log P_\theta(y_t\mid x,y_{<t}).
 \tag{2}
 $$
 
-再 $\exp$ 回去.得到的是几何平均,不是式 (1) 那个连乘,更不是把 token 概率加起来.附录 A 把同一件事写成 $N$ 次根.官方 trainer 的 wandb 键名直接叫 Positive / Negative Geometric Mean.TRL 的 `get_batch_logps(..., average_log_prob=True)` 也是这一条:非 mask token 的对数概率求和再除以个数.
+对式 (2) 取指数, 得到的是 token 概率的几何平均. 这样每条回答的 $P_\theta$ 都落在 $(0,1)$ 内一个有区分度的范围, 和回答长度关系不大.
 
-几率把「生成这段 $y$」和「不生成这段 $y$」放在同一把尺上:
+如果用式 (1) 的连乘, 一条 200 token, 每个 token 平均概率 0.9 的回答, 序列概率是 $0.9^{200}\approx7\times10^{-10}$, 这时 $1-P\approx1$, 下面定义的几率几乎就等于 $P$ 本身, 几率比退化成概率比. 用式 (2), 同一条回答的 $P$ 是 0.9, 几率是 9, 有足够的动态范围.
+
+### 2.2 几率
+
+几率把「生成这条 $y$」和「不生成这条 $y$」放在一起比较:
 
 $$
-\mathrm{odds}_\theta(y|x)=\frac{P_\theta(y|x)}{1-P_\theta(y|x)}.
+\mathrm{odds}_\theta(y\mid x)=\frac{P_\theta(y\mid x)}{1-P_\theta(y\mid x)}.
 \tag{3}
 $$
 
-$\mathrm{odds}=k$ 表示:模型生成这段 $y$ 的可能性,是不生成它的 $k$ 倍.$1-P_\theta(y|x)$ 是「不生成这一条特定序列」的质量,不是「生成任意别的回复」的边缘概率,分母没有对词表求和.
+$\mathrm{odds}=k$ 表示模型生成 $y$ 的可能性是不生成它的 $k$ 倍.
 
-用两个假的 $P$ 把尺标清楚.设几何平均后 $P(y_w)=0.60$,$P(y_l)=0.40$,则 $\mathrm{odds}_w=1.5$,$\mathrm{odds}_l=2/3$,$\mathrm{OR}=2.25$,$\log\mathrm{OR}\approx 0.811$,$\sigma(\log\mathrm{OR})\approx 0.69$,式 (6) 大约是 $0.37$.若两边都是 $0.50$,OR 退回 1,$\mathcal{L}_{\mathrm{OR}}=-\log\sigma(0)=\log 2\approx 0.693$.这不是论文表里的数,只用来看清:$P$ 差 0.2,几率比已经到 2 倍以上;若改用概率比,同一对只是 $0.60/0.40=1.5$.OR 对靠近 1 的 $P$ 更敏感,这也是它能在 SFT 同期拉开风格,又不像 PR 那样把 logit 打穿的原因之一.
+### 2.3 几率比与损失
 
 chosen 对 rejected 的几率比是
 
 $$
-\mathrm{OR}_\theta(y_w,y_l)=\frac{\mathrm{odds}_\theta(y_w|x)}{\mathrm{odds}_\theta(y_l|x)}.
+\mathrm{OR}_\theta(y_w,y_l)=\frac{\mathrm{odds}_\theta(y_w\mid x)}{\mathrm{odds}_\theta(y_l\mid x)}.
 \tag{4}
 $$
 
@@ -72,64 +80,98 @@ $$
 \tag{5}
 $$
 
-$\mathcal{L}_{\mathrm{SFT}}$ 是 chosen 上的因果语言模型 NLL,最大化参考 token 的似然.偏好项把 $\log\mathrm{OR}$ 送进 $\log\sigma$,最小化它等于把几率比拉大:
+$\mathcal{L}_{\mathrm{SFT}}$ 是 chosen 上的因果语言模型 NLL. 几率比项把 $\log\mathrm{OR}$ 送进 $\log\sigma$:
 
 $$
 \mathcal{L}_{\mathrm{OR}}
 =
 -\log\sigma\Biggl(
-\log\frac{\mathrm{odds}_\theta(y_w|x)}{\mathrm{odds}_\theta(y_l|x)}
+\log\frac{\mathrm{odds}_\theta(y_w\mid x)}{\mathrm{odds}_\theta(y_l\mid x)}
 \Biggr).
 \tag{6}
 $$
 
-展开 $\log\mathrm{OR}$,就是两边各自的 $\log P-\log(1-P)$ 相减.官方实现用 `log1p(-exp(logps))` 稳 $\log(1-P)$,避免 $P$ 靠近 1 时炸掉.TRL 里这项乘的系数叫 `beta`,对应论文的 $\lambda$;官方仓库的参数名是 `alpha`.符号不要和 DPO 的 $\beta$ 混用:DPO 的 $\beta$ 从 KL 约束漏下来,ORPO 的 $\lambda$ 只是 SFT 项和 OR 项的相对权重.
+最小化式 (6) 就是拉大 chosen 对 rejected 的几率比. 展开后, $\log\mathrm{OR}=\bigl[\log P_w-\log(1-P_w)\bigr]-\bigl[\log P_l-\log(1-P_l)\bigr]$. 数值上 $\log(1-P)$ 一般用 `log1p(-exp(logp))` 计算, 防止 $P$ 接近 1 时出错.
+
+$\lambda$ 只是两项损失的相对权重. 它和 DPO 的 $\beta$ 含义不同: DPO 的 $\beta$ 来自 KL 约束目标, 决定策略离参考模型多远; ORPO 里没有参考模型, 也没有 KL 项.
+
+### 2.4 手算
+
+设两条回答的几何平均概率 $P(y_w)=0.60$, $P(y_l)=0.40$. 则 $\mathrm{odds}_w=1.5$, $\mathrm{odds}_l\approx0.667$, $\mathrm{OR}=2.25$, $\log\mathrm{OR}\approx0.811$, $\sigma(0.811)\approx0.69$, 式 (6) 约为 $0.37$.
+
+若两边都是 $0.50$, $\mathrm{OR}=1$, $\mathcal{L}_{\mathrm{OR}}=-\log\sigma(0)=\log2\approx0.693$.
+
+对比概率比: 同一对回答的 $\mathrm{PR}=0.60/0.40=1.5$, 而几率比是 2.25. 第 4 节会说明, 两者的差别在分布层面体现为 $\log\mathrm{OR}$ 的分布更宽.
 
 ![序列概率到几率比再到 OR 损失](./images/fig-orpo-odds-ratio.png)
 
-> 图 1:先把 token 条件对数概率做成几何平均再 $\exp$ 成 $P$,两边各自算 odds,相除得 OR,再把 $-\log\sigma(\log\mathrm{OR})$ 与 chosen 的 SFT 加在一起.
+> 图 1: 先把 token 条件对数概率做平均再取指数得到 $P$, 两边各自算 odds, 相除得 OR, 再把 $-\log\sigma(\log\mathrm{OR})$ 与 chosen 的 SFT 损失加在一起.
 
 **图 1 解析**
 
-- 从左到右五框.黄框是式 (2):$\log P=(1/m)\sum\log p_t$,再 $P=\exp(\mathrm{mean})$.页脚写 geometric mean.不是连乘,也不是 token 概率求和.
-- 蓝框 $\mathrm{odds}=P/(1-P)$.绿框是 chosen 对 rejected 的几率比,对应式 (4).
-- 青绿框是式 (6).橙框才把 $\mathcal{L}_{\mathrm{SFT}}(y_w)$ 加进来,得到式 (5).
-- 走廊上的 monolithic 指单阶段,没有参考模型,不是另写一条损失.$y_w$ 和 $y_l$ 各自走一遍黄→蓝,图上在 OR 处会合.
-
-若把式 (2) 换成没除 $m$ 的总和再 $\exp$,长序列的 $P$ 会贴零,$1-P$ 贴一,odds 失去区分力.几何平均把 $P$ 留在 $(0,1)$ 里还能动.这是实现约束,不是把「平均」和 SimPO 的长度奖励混成一件事:SimPO 拿平均对数概率当隐式奖励,ORPO 拿它构造 odds.
+- 五个框从左到右. 黄框是式 (2): $\log P=(1/m)\sum\log p_t$, 再 $P=\exp(\mathrm{mean})$, 页脚标注 geometric mean.
+- 蓝框是 $\mathrm{odds}=P/(1-P)$, 绿框是 chosen 对 rejected 的几率比, 对应式 (4).
+- 青绿框是式 (6), 橙框加上 $\mathcal{L}_{\mathrm{SFT}}(y_w)$, 得到式 (5).
+- 走廊上的 monolithic 指单阶段训练. $y_w$ 和 $y_l$ 各自走一遍黄框和蓝框, 在 OR 处汇合.
 
 ## 3. 没有 $\pi_{\mathrm{ref}}$
 
-DPO 的隐式奖励是 $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$.训练每一步都要对冻结参考做前向.理论上 chosen 和 rejected 各走 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$,一批四次前向.ORPO 没有参考模型,$\pi_\theta$ 直接更新,一批两次前向.论文 §7.3 把省下的那一半写成显存和 FLOPs 两笔.
+### 3.1 计算量
 
-没有 KL 项把策略钉在一份 SFT 上.没有 $Z(x)$.没有 Bradley-Terry 里那条「两条隐式奖励相减」.
+DPO 的隐式奖励 $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ 要求每步对冻结参考模型做前向. chosen 和 rejected 各过一遍 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$, 每个 batch 四次前向. ORPO 只有 $\pi_\theta$, 每个 batch 两次前向, 也不必在显存里放第二份权重. 论文 §7.3 把这两点列为 ORPO 在计算上的好处.
 
-省掉 $\pi_{\mathrm{ref}}$ 不是免费午餐.DPO 的参考项至少能部分抵消「长序列对数概率更负」这种长度偏置.ORPO 把长度问题交给几何平均:每条回复除以自己的 $m$,长 chosen 不会只因为项数多就把连乘打到零.它仍然可能学冗长,只是机制和「总和对数概率当奖励」不是同一条.论文没有像 SimPO 那样报 LC 消融,Table 1 的 AlpacaEval 2.0 也不是长度控制胜率.
+ORPO 损失里没有 KL 项, 没有配分函数, 也没有 Bradley-Terry 意义下的奖励差.
 
-![DPO 要加载参考模型,ORPO 只有当前策略](./images/fig-orpo-vs-dpo-ref.png)
+### 3.2 去掉参考模型的代价
 
-> 图 2:左列 $\pi_\theta$ 与冻结 $\pi_{\mathrm{ref}}$ 合成对数比再进 Bradley-Terry;右列只有 $\pi_\theta$,chosen 的 NLL 与几率比项相加.
+DPO 的参考项至少起到两个作用: 用 KL 约束把策略留在初始模型附近; 用 $\log\pi_{\mathrm{ref}}$ 部分抵消长序列对数概率更负带来的偏差. ORPO 去掉参考模型后, 第一件事只能靠 $\lambda$ 和较小的学习率来控制, 第二件事交给式 (2) 的长度平均. 论文没有做长度控制的消融, Table 1 的 AlpacaEval 2.0 也是原始胜率, 不是长度控制胜率.
+
+![DPO 要加载参考模型, ORPO 只有当前策略](./images/fig-orpo-vs-dpo-ref.png)
+
+> 图 2: 左列 $\pi_\theta$ 与冻结 $\pi_{\mathrm{ref}}$ 合成对数比再进 Bradley-Terry; 右列只有 $\pi_\theta$, chosen 的 NLL 与几率比项相加.
 
 **图 2 解析**
 
-- 两列共用顶上的 $(x,y_w,y_l)$.数据槽一样,前向图不一样.
-- 左:桃色可训策略和浅灰蓝冻结参考都进黄色 $r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$,再进粉色 $L_{\mathrm{DPO}}$.
-- 右:只有 $\pi_\theta$.薄荷绿是 $\mathcal{L}_{\mathrm{SFT}}$,冰蓝是 $\mathcal{L}_{\mathrm{OR}}$,粉框按式 (5) 相加.
-- 页脚两句对照:左列 needs reference model;右列 reference-free, SFT + odds ratio.
+- 两列共用顶部的 $(x,y_w,y_l)$, 数据形态相同, 前向计算不同.
+- 左列: 桃色的可训策略和浅灰蓝的冻结参考都进黄框 $r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$, 再进粉框 $L_{\mathrm{DPO}}$.
+- 右列: 只有 $\pi_\theta$. 薄荷绿框是 $\mathcal{L}_{\mathrm{SFT}}$, 冰蓝框是 $\mathcal{L}_{\mathrm{OR}}$, 粉框按式 (5) 相加.
+- 页脚两句对照: 左列 needs reference model, 右列 reference-free, SFT + odds ratio.
 
-论文 Figure 2 把 RLHF 画成 SFT 再加 RM 再加 PPO,把 DPO 画成 SFT 再加带参考的偏好步,把 ORPO 画成单步.主实验里 Phi-2,Llama-2,Mistral 都是从预训练基座直接 ORPO,数据是二值化的 UltraFeedback,没有先训一份 SFT 当 $\pi_{\mathrm{ref}}$.OPT 对照实验里,PPO 和 DPO 仍按惯例写成 +PPO / +DPO:先在 chosen 上 SFT 一个 epoch,再对齐.分母不同,胜率表不要和 AlpacaEval 主表混读.
+### 3.3 没有参考模型时, 什么在约束策略
 
-## 4. 为什么用几率比,不用概率比
+DPO 的 KL 约束把策略拉向参考模型, 也就是训练起点. ORPO 里起类似作用的是 SFT 项: chosen 的 NLL 一直在把模型拉向 chosen 回答的分布. 两种约束的锚点不同. DPO 的锚点是初始模型本身, 偏好项只能在它附近做调整; ORPO 的锚点是数据里的 chosen 回答, 模型可以离初始状态很远, 只要它贴近 chosen.
 
-概率比 $\mathrm{PR}=P(y_w)/P(y_l)$ 在已经做过 SFT 的 DPO,IPO 里常见.ORPO 把偏好对齐塞进 SFT 同期,模型还没适应领域,PR 会把 rejected 压得过狠.
+这正是 ORPO 能从预训练基座直接起步的原因. 基座模型离对话分布很远, KL 约束会把它留在基座附近, 不利于学习对话格式; SFT 项则直接把它拉向对话数据. 代价也来自同一处: 模型最终会长成 chosen 回答的样子, chosen 的覆盖面和质量就是模型能力的上限. 第 7.2 节编程和数学偏弱的结果, 和这一点相符.
 
-论文 §7.1 从 $\mathrm{Unif}(0,1)$ 抽 5 万对 $(X_1,X_2)$,画 $\log\mathrm{PR}$ 和 $\log\mathrm{OR}$ 的分布(Figure 6).同样的输入对,$\log\mathrm{OR}$ 更宽;$\log\mathrm{PR}$ 更尖.后面都要进 $\log\sigma$,尖的那一侧要拉出同样的 margin,对比必须更极端.极端对比在「领域还没学会」的阶段,会把 rejected 里那些其实无害的 token logit 一并打下去,生成开始退化.
+### 3.4 单阶段从基座开始
 
-附录 B 用同一套超参对照.PR 训练时 rejected 的对数概率很快掉到 $-4$ 以下;OR 要等过拟合之后才出现同类塌陷.几率比不是更「正确」的偏好模型,它是在 SFT 同期对齐时更温和的对比.
+论文 Figure 2 把 RLHF 画成 SFT, RM, PPO 三步, DPO 画成 SFT 加带参考的偏好步, ORPO 画成一步. 主实验中 Phi-2, Llama-2, Mistral 都从预训练基座直接做 ORPO, 数据只有二值化的 UltraFeedback. OPT 小模型的对照实验里, PPO 和 DPO 按惯例先在 chosen 上 SFT 一个 epoch 再对齐, 记作 +PPO, +DPO.
 
-## 5. 梯度:$\delta$ 当刹车,$h$ 当对比
+## 4. 为什么用几率比
 
-对式 (6) 求导(附录 A),
+### 4.1 概率比太尖
+
+概率比 $\mathrm{PR}=P(y_w)/P(y_l)$ 是 DPO, IPO 等方法隐含使用的对比方式, 它们都在 SFT 之后进行. ORPO 在 SFT 同期做对齐, 此时模型还没适应领域, 概率比会把 rejected 压得过狠.
+
+论文 §7.1 从 $\mathrm{Unif}(0,1)$ 中抽 50,000 对 $(X_1,X_2)$, 画出 $\log\mathrm{PR}$ 和 $\log\mathrm{OR}$ 的分布 (Figure 6). 同样的输入, $\log\mathrm{OR}$ 的分布更宽, $\log\mathrm{PR}$ 更集中在 0 附近. 两者都要进 $\log\sigma$, 要得到同样大小的间隔, 概率比需要更极端的概率差. 在领域还没学好的阶段追求极端差距, 会把 rejected 里本身无害的 token 一起压下去, 生成质量随之变差.
+
+### 4.2 从导数看两者的差别
+
+把 $\log\mathrm{PR}$ 和 $\log\mathrm{OR}$ 分别对 $P_w$ 求导. 概率比一侧是 $\partial\log P_w/\partial P_w=1/P_w$. 几率比一侧多了 $-\log(1-P_w)$ 这一项, 导数是 $1/P_w+1/(1-P_w)=1/\bigl(P_w(1-P_w)\bigr)$.
+
+在 $P_w=0.5$ 处, 前者是 2, 后者是 4. 在 $P_w=0.9$ 处, 前者约 1.11, 后者约 11.1. 也就是说, chosen 的概率越高, 几率比对它的进一步提升越敏感, 而概率比的敏感度反而下降. 同样要把 $\log\sigma$ 的自变量推到某个值, 用几率比时可以更多依靠抬高 chosen, 用概率比时更多要依靠把 rejected 的概率压向 0, 因为 $\log P_l$ 在 $P_l\to0$ 时趋于负无穷, 那是概率比拉开间隔最省力的方向.
+
+用一组数验证. 目标是让 $\log\sigma(\cdot)$ 的自变量达到 2. 若 $P_w=0.8$, 几率比要求 $\log\mathrm{odds}_l=\log4-2\approx-0.61$, 即 $P_l\approx0.35$; 概率比要求 $\log P_l=\log0.8-2\approx-2.22$, 即 $P_l\approx0.11$. 同样的间隔, 概率比要把 rejected 的几何平均概率压到 0.11, 几率比只需要 0.35. 这和附录 B 里概率比训练时 rejected 对数概率快速下跌的现象一致.
+
+### 4.3 附录 B 的对照
+
+附录 B 用相同超参比较了两种写法. 用概率比训练时, rejected 的对数概率很快掉到 $-4$ 以下; 用几率比时, 类似的下降要到过拟合之后才出现. 几率比在这里的作用是让对比更温和, 适合和 SFT 同时进行.
+
+## 5. 梯度
+
+### 5.1 两个因子
+
+对式 (6) 求导 (论文附录 A):
 
 $$
 \nabla_\theta\mathcal{L}_{\mathrm{OR}}=\delta(d)\cdot h(d),
@@ -141,54 +183,58 @@ $$
 $$
 \delta(d)
 =
-\Biggl(1+\frac{\mathrm{odds}_\theta(y_w|x)}{\mathrm{odds}_\theta(y_l|x)}\Biggr)^{-1},
+\Biggl(1+\frac{\mathrm{odds}_\theta(y_w\mid x)}{\mathrm{odds}_\theta(y_l\mid x)}\Biggr)^{-1},
 \tag{8}
 $$
 
 $$
 h(d)
 =
-\frac{\nabla_\theta\log P_\theta(y_w|x)}{1-P_\theta(y_w|x)}
+\frac{\nabla_\theta\log P_\theta(y_w\mid x)}{1-P_\theta(y_w\mid x)}
 -
-\frac{\nabla_\theta\log P_\theta(y_l|x)}{1-P_\theta(y_l|x)}.
+\frac{\nabla_\theta\log P_\theta(y_l\mid x)}{1-P_\theta(y_l\mid x)}.
 \tag{9}
 $$
 
-chosen 的几率已经明显高于 rejected 时,$\delta$ 趋向 0,更新减速.模型还在给 rejected 更高几率时,$\delta$ 变大,步子加快.$h$ 是加权对比:哪一侧的 $P$ 低,分母 $1-P$ 就把它的梯度放大.chosen 还没学会时,适应会加速.附录 A 把 $\nabla\log(1-P)$ 再展开一次,才会看到式 (9) 那种分母.论文式 (8)–(10) 把 $\mathrm{odds}_\theta P(y|x)$ 写成挤在一起的记号,指的就是 $\mathrm{odds}_\theta(y|x)$,不是多乘了一个 $P$.
+$\delta(d)$ 是步长因子. chosen 的几率已经明显高于 rejected 时, $\mathrm{OR}$ 大, $\delta$ 趋近 0, 更新变慢; 模型还给 rejected 更高的几率时, $\delta$ 接近 1, 更新加快. 用第 2.4 节的数, $\mathrm{OR}=2.25$ 时 $\delta=1/3.25\approx0.31$; $\mathrm{OR}=1$ 时 $\delta=0.5$.
 
-SFT 项的梯度只落在 $y_w$ 上,OR 项的梯度两边都有.$\lambda$ 小的时候,总更新更像普通微调,rejected 降不下去;$\lambda$ 大的时候,OR 项把 chosen 也可能一起往下拽,只是 margin 更大.附录 E 的三张对数概率曲线就是这件事.
+$h(d)$ 是方向. 它在抬高 $y_w$ 的同时压低 $y_l$, 两边的梯度分别除以 $1-P$. $P$ 越接近 1, 除数越小, 放大越多; $P$ 很低时, 放大接近 1.
 
-$\lambda$ 管这项有多响.附录 E 在 Mistral-7B + UltraFeedback 上扫 $\{0.1,0.5,1.0\}$.$\lambda=0.1$ 时 chosen 和 rejected 的平均对数概率贴在一起,拉开主要靠抬 chosen;$\lambda=1.0$ 时两边一起往下掉,margin 拉大.MT-Bench 上,$\lambda=1.0$ 在 STEM / 人文 / 角色扮演更好,在抽取,数学,推理更差.论文的读法是:间隔拉太大,模型过拟合训练集里那些没有硬答案的 chosen.主实验里 Phi-2 用 $\lambda=0.25$,Llama-2 用 $0.2$,Mistral 用 $0.1$.
+这个除数的来历可以一步推出. $\log\mathrm{odds}=\log P-\log(1-P)$, 求梯度得 $\nabla\log P+\nabla P/(1-P)$. 又因为 $\nabla P=P\,\nabla\log P$, 第二项等于 $P\,\nabla\log P/(1-P)$. 两项相加, $\nabla\log\mathrm{odds}=\nabla\log P\cdot\bigl(1+P/(1-P)\bigr)=\nabla\log P/(1-P)$. 对 $\log\mathrm{OR}$ 求梯度就是 $y_w$ 和 $y_l$ 两侧的这个量相减, 即式 (9). 再对 $-\log\sigma(\cdot)$ 求导会乘上 $-\sigma(-\log\mathrm{OR})=-1/(1+\mathrm{OR})$, 正好是式 (8) 的 $\delta(d)$, 负号表示梯度下降时沿 $h(d)$ 的方向走.
 
-## 6. 不是 DPO,不是 KTO,不是 SimPO,不是 PPO
+### 5.2 和 DPO 梯度的对照
 
-几条邻居都自称能省 RM 或能省参考.数据槽和目标函数不是一回事.
+DPO 的梯度 (见 [01-DPO](../01-DPO/01-DPO.md) 式 (8)) 也是「权重乘以 $\nabla\log\pi(y_w)-\nabla\log\pi(y_l)$」, 权重是 $\sigma(\hat r_l-\hat r_w)$. 两者结构相近, 差别有三处.
 
-DPO 吃 $(x,y_w,y_l)$,损失里出现两条相对 $\pi_{\mathrm{ref}}$ 的对数比.没有 $y_l$ 写不出来,没有 $\pi_{\mathrm{ref}}$ 也写不出来.ORPO 同样要一对回复,但前向只有 $\pi_\theta$.
+第一, DPO 的权重由相对参考模型的对数比决定, ORPO 的权重 $\delta(d)$ 只由当前模型的几率决定. 第二, DPO 两侧梯度系数相同, ORPO 两侧分别乘 $1/(1-P_w)$ 和 $1/(1-P_l)$, 概率高的一侧被放大. 第三, DPO 用序列对数概率之和, ORPO 用 token 平均, 所以 ORPO 每个 token 的梯度大小与回答长度成反比.
 
-KTO 吃二值,不成对,参考点是 $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$ 的错配估计,正本在 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md).KTO 的无参考变体是另一条叉,不是把 ORPO 的几率比搬过去.
+手算一组. 设 $P_w=0.6$, $P_l=0.4$, 第 2.4 节已算出 $\delta\approx0.31$. $y_w$ 一侧系数 $1/(1-0.6)=2.5$, $y_l$ 一侧系数 $1/(1-0.4)\approx1.67$. 再乘 $\delta$, 两侧的有效系数约为 0.77 和 0.51. chosen 的概率更高, 它得到的推力也更大. 这和第 4.2 节的结论一致: 几率比更倾向于通过抬高 chosen 来拉开间隔.
 
-SimPO 也没有 $\pi_{\mathrm{ref}}$,隐式奖励是 $(\beta/|y|)\log\pi_\theta$,再减间隔 $\gamma$,没有 SFT 项.ORPO 没有 $\gamma$,有 chosen 的 NLL.后出的 SimPO 对照里,带 SFT 项的目标(ORPO,CPO,SLiC)数学掉得少,聊天榜往往不如 SimPO;那是另一篇的表,不要写进下面 §7 的分母.
+### 5.3 两项损失的量级
 
-PPO 要奖励模型,价值模型,在线 rollout.ORPO 是离线分类,没有重要性采样,没有 clip.论文把 PPO 对照放在 OPT 小模型的奖励模型胜率里,不拿 7B 的 ORPO 去打 InstructGPT 那条在线 RLHF.
+设训练初期基座模型在 chosen 上的 token 平均 NLL 为 1.5, 两条回答几率相当, $\mathcal{L}_{\mathrm{OR}}\approx\log2\approx0.69$. 取 $\lambda=0.1$, 几率比项对总损失的贡献约 0.07, 不到总损失的 5%. 所以 Mistral 那组设置下, ORPO 的主体仍是 SFT, 几率比项只做轻微的修正. 随着 SFT 项下降, 几率比项的相对比重会上升.
 
-偏好对从哪来.论文 related work 提过 language model feedback(RLAIF)可以替代人类反馈,正本在 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md).本篇不写成 RLAIF,也不把 AI 裁判流水线当成半篇教程.
+### 5.4 $\lambda$ 的作用
 
-| | 数据 | $\pi_{\mathrm{ref}}$ | 核心项 | 单阶段从基座 |
-|--|------|----------------------|--------|--------------|
-| PPO | 在线 + RM | 要 | 奖励 $-$ KL | 否 |
-| DPO | 成对 | 要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ 差 | 通常否 |
-| KTO | 二值,不成对 | 要(标准式) | 相对 $z_0$ 的效用 | 可 |
-| SimPO | 成对 | 不要 | 长度平均对数概率 $-\gamma$ | 否(从 SFT / Instruct 续) |
-| ORPO | 成对 | 不要 | NLL$(y_w)$ $+$ $\lambda$ 几率比 | 是(原文主实验) |
+SFT 项的梯度只落在 $y_w$ 上, OR 项两边都有. $\lambda$ 小时, 总更新更接近普通 SFT, rejected 的对数概率下降有限; $\lambda$ 大时, OR 项的作用更强, chosen 的对数概率也可能被一起往下带, 但两者的间隔更大.
 
-## 7. 一手数字:Phi-2 / Llama-2 / Mistral
+附录 E 在 Mistral-7B 加 UltraFeedback 上扫了 $\lambda\in\{0.1,0.5,1.0\}$. $\lambda=0.1$ 时 chosen 和 rejected 的对数概率曲线靠得很近, 间隔主要来自抬高 chosen; $\lambda=1.0$ 时两者一起下降, 间隔拉大. 三档里只有 $\lambda=0.1$ 出现了 rejected 的对数概率不降的情况, 这时 OR 项完全靠抬高 chosen 来减小; $\lambda=0.5$ 介于两者之间, chosen 继续上升, rejected 同时下降, 是 SFT 项和 OR 项各自起作用最清楚的一档. 作者也说明这组曲线不等于「$\lambda$ 越小越好」, 取多大要看具体需求和模型. MT-Bench 上, $\lambda=1.0$ 相比 $\lambda=0.1$ 在 STEM, 人文, 角色扮演上更好, 在抽取, 数学, 推理上更差. 论文的解释是: 间隔拉得过大会让模型过度适应训练集中的 chosen 回答, 而这些回答多数属于没有标准答案的开放生成. 主实验的取值是 Phi-2 用 $\lambda=0.25$, Llama-2 用 0.2, Mistral 用 0.1.
 
-评测分母先写清.AlpacaEval 1.0:805 题,裁判 GPT-4,对照 text-davinci-003.AlpacaEval 2.0:同一套题,裁判 GPT-4-turbo,对照 GPT-4.括号里是标准误.带 `*` 的行来自官方榜,不是他们复训.MT-Bench:80 题多轮,裁判 GPT-4.IFEval:指令级 / prompt 级,strict / loose,用 EleutherAI lm-evaluation-harness 加 chat template.
+## 6. 实验设置
 
-主实验数据是 binarized UltraFeedback,滤掉 $y_w=y_l$ 以及任一侧为空.prompt 超过 1024 token 的样本丢掉,保证回复还能学.HH-RLHF 截断到 1024,UltraFeedback 到 2048.FlashAttention-2 全开.OPT 和 Phi-2 用 DeepSpeed ZeRO 2;Llama-2 和 Mistral 用 FSDP.7B 四张 A100,2.7B 两张 A100,更小的四张 A6000.优化器是 AdamW,7B 上用过 paged AdamW;学习率线性 warmup 再余弦衰减.ORPO 最大学习率 $8\times 10^{-6}$,OPT / Phi-2 / Llama-2 训 10 个 epoch,按验证损失取点.DPO 对照:$\beta=0.1$,学习率 $5\times 10^{-6}$,3 个 epoch,多数时候第一或第二个 checkpoint 最好,第三个验证损失已经升.SFT 对照:学习率 $1\times 10^{-5}$,1 个 epoch.奖励模型 OPT-350M 给 PPO 用,OPT-1.3B 给胜率评估用,各在对应数据集上训 1 个 epoch,目标是式 (11) 那种 Bradley-Terry 的 $\log\sigma(r_w-r_l)$.
+### 6.1 评测口径
 
-Table 1(AlpacaEval,论文原表):
+AlpacaEval 1.0 用 GPT-4 当裁判, 对手是 text-davinci-003; AlpacaEval 2.0 用 GPT-4-turbo 当裁判, 对手是 GPT-4. 表中括号是标准误, 带 `*` 的行取自官方排行榜. MT-Bench 是 80 道多轮题, GPT-4 打分. IFEval 分指令级和 prompt 级, 各有 strict 和 loose 两种口径.
+
+### 6.2 训练设置
+
+主实验数据是二值化 UltraFeedback, 去掉 $y_w=y_l$ 和任一侧为空的样本. HH-RLHF 截断到 1,024 token, UltraFeedback 截断到 2,048. OPT 和 Phi-2 用 DeepSpeed ZeRO 2, Llama-2 和 Mistral 用 FSDP. 7B 模型用四张 A100, 2.7B 用两张 A100, 更小的模型用四张 A6000. 优化器是 AdamW, 7B 上用 paged AdamW, 学习率线性 warmup 后余弦衰减.
+
+ORPO 的最大学习率 $8\times10^{-6}$, OPT, Phi-2, Llama-2 训 10 个 epoch, 按验证损失选 checkpoint; Mistral-ORPO 在 UltraFeedback 上只训 1 个 epoch. DPO 对照: $\beta=0.1$, 学习率 $5\times10^{-6}$, 3 个 epoch, 多数情况下第 1 或第 2 个 checkpoint 最好. SFT 对照: 学习率 $1\times10^{-5}$, 1 个 epoch. OPT 实验里 PPO 用 OPT-350M 奖励模型训练, 用 OPT-1.3B 奖励模型评测. PPO 超参在附录 Table 5, 其中 `ppo_epoch` 为 4, horizon 为 2,000.
+
+## 7. 实验结果
+
+### 7.1 AlpacaEval (Table 1)
 
 | 模型 | 规模 | AlpacaEval 1.0 | AlpacaEval 2.0 |
 |------|------|----------------|----------------|
@@ -203,24 +249,30 @@ Table 1(AlpacaEval,论文原表):
 | Mistral-ORPO-$\alpha$ | 7B | 87.92% (1.14) | 11.33% (0.97) |
 | Mistral-ORPO-$\beta$ | 7B | 91.41% (1.15) | 12.20% (0.98) |
 
-Phi-2 只吃 UltraFeedback,$\lambda=0.25$,AlpacaEval 1.0 到 71.80%,已经略高于 Llama-2 Chat 7B 的 71.34%.Llama-2 7B 上 $\lambda=0.2$,1.0 到 81.26%,2.0 到 9.44%,高于同表 Llama-2 Chat 13B 的 7.70%(2.0).他们按 Tunstall / Rafailov 的惯例做「1 epoch SFT + 3 epoch DPO」时,Llama-2 的输出无法评测.ORPO 能从基座直接收敛,和 §5 的 $h(d)$ 是同一句话:chosen 还没学会时,梯度会加速适应.
+Phi-2 的三行可以直接对比, 因为数据和基座都相同. SFT 后 AlpacaEval 2.0 只有 0.11%, 再加 DPO 是 0.78%, 换成单阶段 ORPO 是 6.35%. AlpacaEval 1.0 上三者是 48.37%, 50.63%, 71.80%. 两阶段流程里 DPO 只带来约 2 个百分点的提升, ORPO 比两阶段高出 20 多个百分点. 这组差距说明, 在这个设定下, 把偏好信号放进 SFT 阶段比在 SFT 之后再补偏好更有效. 它只在 2.7B 的 Phi-2 上测过, 而且 DPO 的超参是按惯例设的, 没有为这个模型单独调.
 
-Mistral-ORPO-$\alpha$:$\lambda=0.1$,单轮 UltraFeedback,AlpacaEval 2.0 为 11.33%.对照 Zephyr 系列:先在 20k UltraChat 上 SFT,再在完整 UltraFeedback 上 DPO.$\alpha$ 相对 Zephyr $\alpha$ 的 8.35% 高 2.98 个点,相对 Zephyr $\beta$ 的 10.99% 高 0.34 个点.Mistral-ORPO-$\beta$ 换 [argilla 清洗版 UltraFeedback](https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences-cleaned),条数接近,2.0 到 12.20%,1.0 到 91.41%.摘要写的「up to 12.20%」钉的是这一格.仓库 README 后来在官方 AlpacaEval 榜上记过 $\beta$ 的长度控制胜率 14.7%;那是榜上的 LC,不是 Table 1 的 12.20%,两套分母不要并成一列.
+Phi-2 加 ORPO 的 AlpacaEval 1.0 是 71.80%, 和 Llama-2 Chat 7B 的 71.34% 相当. Llama-2 7B 加 ORPO 的 AlpacaEval 2.0 是 9.44%, 高于 Llama-2 Chat 13B 的 7.70%. 论文按常规流程对 Llama-2 做 1 个 epoch 的 SFT 加 3 个 epoch 的 DPO 时, Llama-2 + SFT 和 Llama-2 + SFT + DPO 的输出都无法评测, 所以表里没有这两行. ORPO 能从基座直接收敛, 对应第 5 节 $h(d)$ 的性质: chosen 的概率还低时, SFT 项和 OR 项都在推动适应.
 
-MT-Bench:训练数据仍是单轮 UltraFeedback,没有多轮对话.正文 §6.2 写 Mistral-ORPO-$\alpha$ 为 7.23,$\beta$ 为 7.32.摘要把 $\alpha$ 写成 7.24,和正文差 0.01;以 §6.2 / Figure 为准,摘要那一格并排列出.附录 G 说 $\beta$ 在多数类目上超过 Llama-2 Chat 13B / 70B,描述性类目接近 GPT-3.5-turbo,代码和数学弱,他们归因于 UltraFeedback 大约 61k 条,缺这类数据.
+Mistral-ORPO-$\alpha$ 用 $\lambda=0.1$, 只在 UltraFeedback 上训 1 个 epoch. 对照的 Zephyr 系列先在 20K UltraChat 上 SFT, 再在完整 UltraFeedback 上 DPO. Mistral-ORPO-$\beta$ 换成了 argilla 清洗过的 UltraFeedback 版本, AlpacaEval 2.0 到 12.20%.
 
-IFEval(附录 Table 6):
+### 7.2 MT-Bench 与 IFEval
+
+MT-Bench 上 Mistral-ORPO-$\alpha$ 为 7.23, Mistral-ORPO-$\beta$ 为 7.32. 训练数据只有单轮对话. 附录 G 的分类目得分显示, $\beta$ 在多数类目上超过 Llama-2 Chat 13B 和 70B, 描述性类目接近 GPT-3.5-turbo, 编程和数学偏弱. 作者推测原因是 UltraFeedback 只有 61k 条数据, 这两类覆盖不够.
+
+IFEval (附录 Table 6):
 
 | 模型 | Prompt-Strict | Prompt-Loose | Inst-Strict | Inst-Loose |
 |------|--------------:|-------------:|------------:|-----------:|
 | Mistral-ORPO-$\alpha$ | 0.5009 | 0.5083 | 0.5995 | 0.6163 |
 | Mistral-ORPO-$\beta$ | 0.5287 | 0.5564 | 0.6355 | 0.6619 |
 
-摘要「66.19% on IFEval (instruction-level loose, Table 6)」就是 $\beta$ 的 Inst-Loose.仓库 README 另附 Llama-2-Chat 70B / Zephyr-$\beta$ / Mixtral-8x7B 的对照行,来源是一篇推文转引,不是 ORPO 论文表内数字.主叙述以 Table 6 两行为准.
+摘要里的 66.19% 对应 $\beta$ 的 Inst-Loose 一格.
 
-OPT 上用 RM-1.3B 对测试集生成打分,ORPO 对 SFT / +DPO / +PPO 的平均胜率(三轮,温度 1.0).Table 2 是 HH-RLHF:
+### 7.3 OPT 上对 SFT, DPO, PPO 的胜率
 
-| ORPO vs | SFT | +DPO | +PPO |
+OPT 系列用 OPT-1.3B 奖励模型给测试集生成打分, 统计 ORPO 对其他方法的平均胜率, 采样温度 1.0, 跑三轮. Table 2 是 HH-RLHF:
+
+| ORPO 对 | SFT | +DPO | +PPO |
 |---------|----:|-----:|-----:|
 | OPT-125M | 84.0 (0.62) | 41.7 (0.77) | 66.1 (0.26) |
 | OPT-350M | 82.7 (0.56) | 49.4 (0.54) | 79.4 (0.29) |
@@ -228,78 +280,100 @@ OPT 上用 RM-1.3B 对测试集生成打分,ORPO 对 SFT / +DPO / +PPO 的平均
 
 Table 3 是 UltraFeedback:
 
-| ORPO vs | SFT | +DPO | +PPO |
+| ORPO 对 | SFT | +DPO | +PPO |
 |---------|----:|-----:|-----:|
 | OPT-125M | 73.2 (0.12) | 48.8 (0.29) | 71.4 (0.28) |
 | OPT-350M | 80.5 (0.54) | 50.5 (0.17) | 85.8 (0.62) |
 | OPT-1.3B | 69.4 (0.57) | 57.8 (0.73) | 65.7 (1.07) |
 
-对 SFT 和 PPO,ORPO 在三档规模上都赢.对 DPO,HH-RLHF 上随规模从 41.7% 走到 70.9%;UltraFeedback 上从 48.8% 走到 57.8%.小模型上 DPO 并不弱,125M 的 HH-RLHF 胜率只有 41.7%,等于输.论文把「随规模超过 DPO」写进 §6.3,并说 2.7B 的 AlpacaEval 会把这条趋势再露一次.
+读这两张表要注意比较对象. 对 SFT 的胜率衡量的是偏好信号带来的增益, 三个规模都在 69% 到 85% 之间. 对 +DPO 的胜率衡量的是同样用了偏好数据时, 单阶段写法和两阶段写法谁更好, 这一列在 41.7% 到 70.9% 之间, 125M 和 350M 上围绕 50% 上下浮动, 只有 HH-RLHF 的 1.3B 一格明显拉开到 70.9%, UltraFeedback 的 1.3B 是 57.8%, 整体差距小于对 SFT 的差距. 对 +PPO 的胜率夹杂了 PPO 本身训练是否稳定的因素.
 
-PPO 用 RM-350M 训,RM-1.3B 评.Figure 5 在 UltraFeedback 测试集上画 OPT-125M / 350M / 1.3B 的奖励分布:SFT 蓝,RLHF 绿,DPO 橙,ORPO 红.四条都大致正态,偏好算法相对 SFT 往右移.RLHF 出现异常低均值,论文把它归到 PPO 不稳和奖励错配.ORPO 的红分布在三张子图里都更靠右.HH-RLHF 的同一张图在附录 F,趋势相同.RM 胜率只说明「这只 1.3B 奖励模型更喜欢谁」,不是 AlpacaEval 那种 GPT-4 裁判.
+ORPO 对 SFT 和 PPO 在三个规模上都赢. 对 DPO 的胜率随规模上升: HH-RLHF 上从 41.7% 到 70.9%, UltraFeedback 上从 48.8% 到 57.8%. 125M 时 ORPO 对 DPO 的胜率低于 50%, 也就是小模型上 DPO 更好. 这些胜率由一个 1.3B 的奖励模型给出, 衡量的是这个奖励模型的偏好.
 
-词表多样性(Table 4):Phi-2 和 Llama-2,各用 ORPO / DPO,AlpacaEval 160 条 query,温度 1.0,每条采 5 个回复,Gemini-Pro 嵌入,报平均余弦.越低越多样.
+Figure 5 画了 UltraFeedback 测试集上各方法的奖励分布. 四种方法的分布都大致呈正态, 偏好方法相对 SFT 右移. RLHF 在某些规模上均值异常低, 论文归因于 PPO 的不稳定和奖励错配. ORPO 的分布在三个规模上都最靠右.
 
-| | Per Input $\downarrow$ | Across Input $\downarrow$ |
-|--|----------------------:|--------------------------:|
+### 7.4 生成多样性 (Table 4)
+
+论文在 AlpacaEval 的 160 条 query 上, 温度 1.0 下每条采 5 个回答, 用 Gemini-Pro 做嵌入, 计算平均余弦相似度, 数值越低越多样.
+
+| | 同一输入内 $\downarrow$ | 跨输入 $\downarrow$ |
+|--|----------------------:|-------------------:|
 | Phi-2 + SFT + DPO | 0.8012 | 0.6019 |
 | Phi-2 + ORPO | 0.8909 | 0.5173 |
 | Llama-2 + SFT + DPO | 0.8889 | 0.5658 |
 | Llama-2 + ORPO | 0.9008 | 0.5091 |
 
-ORPO 的 per-input 余弦更高:同一 prompt 下更峰,更认准那一类 token.across-input 余弦更低:换题目之后不那么套话.论文的读法是,ORPO 把质量堆到想要的 token 上,DPO 的 logit 更平滑.
+ORPO 在同一输入内的相似度更高, 同一个 prompt 下多次采样的回答更接近; 跨输入的相似度更低, 不同 prompt 的回答之间差别更大. 论文的解读是 ORPO 把概率集中到偏好的 token 上, DPO 的 logit 分布相对平缓.
 
-检查点:`kaist-ai/mistral-orpo-alpha`,`kaist-ai/mistral-orpo-beta`.仓库后来还放了 Capybara-7k 那一版,不在 Table 1 里.$\alpha$ / $\beta$ 的 wandb 报告链在 README,画的是训练中 chosen / rejected 的平均对数概率,和 Figure 7 那张小模型曲线同一类监控,用来看 $\lambda$ 有没有把 rejected 打穿.
+## 8. 与相邻方法的分工
 
-PPO 在 UltraFeedback 上的超参也抄进附录 Table 5:`ppo_epoch=4`,`init_kl_coef=0.1`,`horizon=2000`,batch 64,mini-batch 8,输出长度 128 到 512.HH-RLHF 把输出改成 64 到 256.这些数字只服务 OPT 对照,不要拿去训 7B 的 ORPO.
+| | 数据 | $\pi_{\mathrm{ref}}$ | 核心项 | 能否从基座单阶段训练 |
+|--|------|----------------------|--------|-------------------|
+| PPO | 在线采样加 RM | 要 | 奖励减 KL | 否 |
+| DPO | 成对 | 要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ 之差 | 通常先 SFT |
+| KTO | 单条加二值标签 | 标准形式要 | 相对参考点 $z_0$ 的效用 | 论文报告可以 |
+| SimPO | 成对 | 不要 | 长度平均对数概率减 $\gamma$ | 从 SFT 或 Instruct 模型继续 |
+| ORPO | 成对 | 不要 | $y_w$ 的 NLL 加 $\lambda$ 倍几率比项 | 是 |
 
-## 8. 实现:平均对数似然再 $\exp$
+ORPO 和 SimPO 都不用参考模型, 都用到长度平均. 两者的用法不同: SimPO 把平均对数概率当作 Bradley-Terry 里的奖励, 再减一个间隔 $\gamma$, 没有 SFT 项; ORPO 用平均对数概率构造几率, 保留 chosen 的 NLL, 没有 $\gamma$. KTO 的细节见 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md), SimPO 见 [04-SimPO](../04-SimPO-无参考长度平均/04-SimPO-无参考长度平均.md). 偏好标签也可以由 LLM 生成, 见 [4.4.3-RLAIF](../../4.4.3-RLAIF/4.4.3-RLAIF.md).
 
-官方 `src/orpo_trainer.py` 里,`compute_logps` 用 prompt mask 减掉 prompt 段,只在 completion 上对 per-token logp 求和再除以 token 数,dtype 先 bf16 再累加到 float64.得到的是式 (2),不是总和.chosen 和 rejected 各做一次前向,没有拼接 tricks,也没有参考模型.TRL 为了 FSDP 把 chosen / rejected 拼成一批,`average_log_prob=True` 仍强制平均;注释还写过 NLL 会扫过 prompt 加回复,和官方 `disable_prompt_loss` 不是同一默认.复现时先核对 NLL 的 mask,再核对几率比的 mask,两处不一致会把式 (5) 的两项量纲拧开.
+## 9. 实现
 
-对数几率在代码里展开成
+### 9.1 损失计算
+
+一个 batch 的计算流程:
 
 ```text
-log_odds = (pos_prob - neg_prob)
-         - (log1p(-exp(pos_prob)) - log1p(-exp(neg_prob)))
-loss = mean(pos_loss - alpha * log(sigmoid(log_odds)))
+logp_w = mean over completion tokens of log pi(y_w_t | x, y_w_<t)
+logp_l = mean over completion tokens of log pi(y_l_t | x, y_l_<t)
+log_odds = (logp_w - logp_l) - (log1p(-exp(logp_w)) - log1p(-exp(logp_l)))
+loss = nll(y_w) - lam * logsigmoid(log_odds)
 ```
 
-`pos_loss` 是 Hugging Face 的因果 LM loss(chosen 的 NLL).`disable_prompt_loss=True` 时把 prompt 位置标成 pad,NLL 只落在回复上.几率比项始终只用 completion 的几何平均.TRL 写成 `loss = nll - mean(beta * logsigmoid(log_odds))`,和式 (5) 同号:$\mathcal{L}_{\mathrm{OR}}=-\log\sigma(\log\mathrm{OR})$,减去一个负数等于加上 $\lambda\mathcal{L}_{\mathrm{OR}}$.TRL 函数注释里还留着「policy and reference model」字样,是从 DPO trainer 抄过来的;前向没有参考.
+`nll(y_w)` 是 chosen 上的因果语言模型损失. 平均要在 completion 的 token 上做, prompt 部分 mask 掉. 若把 prompt 也算进平均, $P$ 会被模型本来就会的上下文抬高, 两条回答的几率差别被冲淡. 最后一行的减号和式 (5) 一致: $\mathcal{L}_{\mathrm{OR}}=-\log\sigma(\log\mathrm{OR})$, 减去 $\lambda\log\sigma$ 等于加上 $\lambda\mathcal{L}_{\mathrm{OR}}$.
 
-复现时有几处容易和论文对不齐.$\lambda$ / `beta` / `alpha` 三个名字指同一只旋钮,抄超参先看论文 Table 1 那三档,再看 TRL 默认是不是 $0.1$.平均必须在 completion 的 token 上做,prompt 算进去会把 $P$ 拉向「模型本来就会的上下文」.float16 下 $\exp(\mathrm{mean\ logp})$ 再进 $1-P$ 会下溢,官方把几何平均升到 float64,TRL 用 `log1p(-exp)`.不要在 trainer 里偷偷加载一份 SFT 当参考「稳住训练」:加载了就不是 ORPO.
+### 9.2 资源对比
 
-## 9. 失效与边界
+以 7B 模型, bf16 权重为例, 一份权重约 14 GB. SFT 加 DPO 的两阶段流程, 第二阶段要同时放可训策略和冻结参考两份权重, 参考模型多占约 14 GB 显存, 每步多两次前向. ORPO 省掉这一份, 每步只有 chosen 和 rejected 两次前向和一次反向. 优化器状态和激活的开销两者相同. 再加上省掉的整个 SFT 阶段, 总训练步数也少一截. 论文在四张 A100 上训完了 7B 的 Mistral-ORPO.
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 写成「DPO 再加一项 SFT」 | 式 (5) 没有 $\pi_{\mathrm{ref}}$ | 对数比和几率比不是同一条损失 |
-| token 概率求和再当 $P$ | 式 (2) 是平均对数再 $\exp$ | $1-P$ 的语义会坏 |
-| 用没平均的连乘当 $P$ | 长序列贴零 | odds 失去动态范围 |
-| 把概率比 PR 塞进同期 SFT | §7.1 / 附录 B | rejected 的对数概率塌得过快 |
-| $\lambda$ 过大 | 附录 E,$\lambda=1.0$ | 开放生成好看,数学 / 抽取掉点 |
-| 只有点赞点踩 | 式 (5) 要一对 | 二值走 KTO |
-| 要在线探索 | 离线偏好 | 在线组相对走 GRPO / RLOO |
-| 没有 $\pi_{\mathrm{ref}}$ 当安全绳 | 无显式 KL | 靠 $\lambda$ 和小学习率撑着,不是定理 |
-| Llama-2 + SFT + DPO 评不了 | 他们的对照设定 | 不能外推成「DPO 一定训崩」 |
-| MT-Bench 代码 / 数学弱 | 附录 G | 单轮 UltraFeedback,缺这类数据 |
-| 超过 7B | 论文自己没做 | Limitations 明文留给后续 |
+### 9.3 训练时监控什么
 
-论文明确没扫更宽的无 RM 家族,也没把方法做到 7B 以上.Limitations 还写要把微调数据扩到更多领域,并去看对齐对预训练内部表示的影响,这两项原文都没做.AlpacaEval 分数跟裁判版本和对照模型绑在一起,Table 1 是当时那一版.Instruct 聊天榜和 GSM8K 不是同一把尺:ORPO 的 NLL 项会托住模仿,SimPO 后出对照里这一点更明显,但那种「ORPO GSM 更高,LC 更低」是 SimPO 论文的表,分母是 Llama-3 / Mistral 另一套流水线,不要回写进 Table 1.
+论文 Figure 3 和 Figure 7 给出了一套可以直接照搬的监控量: chosen 的平均对数概率, rejected 的平均对数概率, 以及 $\log\mathrm{OR}$. 正常的 ORPO 训练应当是 chosen 曲线上升或持平, rejected 曲线下降, $\log\mathrm{OR}$ 持续上升. 若 chosen 和 rejected 一起上升, 说明几率比项太弱, 训练接近纯 SFT, 可以加大 $\lambda$. 若两条曲线一起快速下降, 说明 $\lambda$ 偏大, 附录 E 里 $\lambda=1.0$ 的情形就是这样, 相应地数学和推理类任务会变差. 对数概率跌到 $-4$ 以下, 是附录 B 里概率比训练出问题时的信号, 也可以作为几率比训练的报警线.
 
-下一篇同夹:[01-DPO](../01-DPO/01-DPO.md) 的对数比,[03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md) 的二值效用,[04-SimPO](../04-SimPO-无参考长度平均/04-SimPO-无参考长度平均.md) 的长度平均.在线 PPO 不在本篇.
+### 9.4 TRL 实现
+
+Hugging Face TRL 提供 `ORPOTrainer`, 其中这一系数的参数名叫 `beta`, 对应论文的 $\lambda$. 复现论文结果时以论文 Table 1 附近给出的 $\lambda$ 取值为准.
+
+## 10. 适用场景
+
+ORPO 的好处集中在流程和资源上. 手里只有一个预训练基座和一份成对偏好数据时, ORPO 一次训练就能得到对话模型, 省掉单独的 SFT 阶段和参考模型的显存. 偏好数据的 chosen 回答本身质量较高, 足以充当 SFT 数据时, 这种合并最划算. UltraFeedback 的 chosen 由 GPT-4 打分选出, 属于这种情况.
+
+反过来, 已经有一个调好的 Instruct 模型, 只想在它上面做偏好微调时, ORPO 的 SFT 项会继续把模型往 chosen 的分布拉. chosen 质量不如现有模型时, 这一项可能起反作用. 这时 DPO 或 SimPO 一类只含偏好项的方法更合适. 另外, 需要严格控制模型偏离初始状态的场景 (例如只想微调安全行为, 保持其他能力不变), DPO 的 KL 约束更直接.
+
+## 11. 失效模式
+
+**$\lambda$ 过大.** 附录 E 显示, $\lambda=1.0$ 让开放生成类目变好, 让数学, 抽取, 推理变差. 几率比项把 chosen 和 rejected 拉开得越远, 模型越贴合训练集里 chosen 的风格.
+
+**没有显式 KL 约束.** 策略离初始模型多远, 只靠 $\lambda$, 学习率和 epoch 数控制, 论文没有给出相应的理论保证. 多 epoch 训练时需要按验证损失选 checkpoint.
+
+**需要成对数据.** 式 (5) 要求每个 prompt 有一对 chosen 和 rejected. 只有点赞点踩时更适合 KTO.
+
+**离线, 无探索.** 和 DPO 一样只在固定数据集上训练. 需要在线采样和可验证奖励的任务, 更适合 [GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 一类方法.
+
+**数据覆盖决定能力边界.** MT-Bench 上编程和数学偏弱, 作者归因于 61k 条 UltraFeedback 中这类数据不足. 单阶段方法把 SFT 和对齐放在同一份数据上, SFT 数据的覆盖面直接决定了模型的能力范围.
+
+**小模型上不占优.** OPT-125M 上 ORPO 对 DPO 的胜率低于 50%, HH-RLHF 上只有 41.7%. 模型容量小时, 同时完成领域适应和偏好区分更困难, 分两阶段做反而更稳.
+
+**规模.** Limitations 一节写明没有做 7B 以上的实验, 也没有和更多偏好对齐算法比较, 这两项都留给后续工作. 同一节还列了另外两项: 把微调数据扩展到更多领域和质量档位, 在更多下游 NLP 任务上验证泛化; 研究 ORPO 对预训练模型内部的影响. 目前的结论都来自 UltraFeedback 和 HH-RLHF 两份对话数据, 换到代码, 数学等专门领域时需要自己重新验证.
 
 ## 参考文献
 
-1. Hong, J., Lee, N., & Thorne, J. (2024). [ORPO: Monolithic Preference Optimization without Reference Model](https://arxiv.org/abs/2403.07691). arXiv:2403.07691. HTML:[arXiv HTML](https://arxiv.org/html/2403.07691).代码:[xfactlab/orpo](https://github.com/xfactlab/orpo).
-2. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.
-3. Ethayarajh, K., et al. (2024). [KTO: Model Alignment as Prospect Theoretic Optimization](https://arxiv.org/abs/2402.01306). *ICML*.
-4. Meng, Y., Xia, M., & Chen, D. (2024). [SimPO: Simple Preference Optimization with a Reference-Free Reward](https://arxiv.org/abs/2405.14734). *NeurIPS*.
-5. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). *NeurIPS*.
-6. Tunstall, L., et al. (2023). [Zephyr: Direct Distillation of LM Alignment](https://arxiv.org/abs/2310.16944).
-7. Cui, G., et al. (2023). [UltraFeedback](https://arxiv.org/abs/2310.01377).
-8. Zheng, L., et al. (2023). [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685).
-9. Zhou, J., et al. (2023). [Instruction-Following Evaluation for Large Language Models](https://arxiv.org/abs/2311.07911)(IFEval).
-10. Welleck, S., et al. (2019). [Neural Text Generation with Unlikelihood Training](https://arxiv.org/abs/1908.04319).
-11. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862)(HH-RLHF).
-12. von Werra, L., et al. (2020). [TRL: Transformer Reinforcement Learning](https://github.com/huggingface/trl).
+1. Hong, J., Lee, N., & Thorne, J. (2024). [ORPO: Monolithic Preference Optimization without Reference Model](https://arxiv.org/abs/2403.07691). *EMNLP 2024*.
+2. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.
+3. Welleck, S., et al. (2019). [Neural Text Generation with Unlikelihood Training](https://arxiv.org/abs/1908.04319). *ICLR 2020*.
+4. Tunstall, L., et al. (2023). [Zephyr: Direct Distillation of LM Alignment](https://arxiv.org/abs/2310.16944).
+5. Cui, G., et al. (2023). [UltraFeedback: Boosting Language Models with High-quality Feedback](https://arxiv.org/abs/2310.01377).
+6. Zheng, L., et al. (2023). [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685).
+7. Zhou, J., et al. (2023). [Instruction-Following Evaluation for Large Language Models](https://arxiv.org/abs/2311.07911).
+8. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).
+9. Meng, Y., Xia, M., & Chen, D. (2024). [SimPO: Simple Preference Optimization with a Reference-Free Reward](https://arxiv.org/abs/2405.14734). *NeurIPS 2024*.

@@ -1,201 +1,255 @@
 ---
-title: "01 · Constitutional AI:批评修订再原则 RL"
+title: "01 · Constitutional AI: 宪法对齐"
 published: true
 tags: ["Constitutional AI", "CAI", "RLAIF", "RLHF", "批评修订", "原则"]
-excerpt: "Constitutional AI(CAI)是 Bai,Kadavath,Kundu 等 *Constitutional AI: Harmlessness from AI Feedback*(arXiv:2212.08073)."
+excerpt: "Constitutional AI 用一份自然语言原则代替无害方向的人工偏好标签: 监督阶段让模型按原则批评并修订自己的回答, RL 阶段让模型按原则做 A/B 选择, 再训练混合偏好模型."
 ---
-# 01 Constitutional AI:批评修订再原则 RL
+# 01 Constitutional AI: 宪法对齐
 
-Constitutional AI(CAI)是 Bai,Kadavath,Kundu 等 *Constitutional AI: Harmlessness from AI Feedback*([arXiv:2212.08073](https://arxiv.org/abs/2212.08073)).卡的不是「还要不要奖励模型」.卡的是无害这一侧:人标贵,人标还会把躲答当成正确答案;原则一改,标签又得重收一轮.做法拆两截.监督阶段让 helpful RLHF 按书面原则批评自己,改写自己,再用修订稿做 SFT.强化学习阶段让另一份模型按原则做 A/B 选择,把 AI 无害标签和人标有帮助标签混进偏好模型,再 RL.他们把后半截叫做 RLAIF.
+Bai 等的 *Constitutional AI: Harmlessness from AI Feedback* ([arXiv:2212.08073](https://arxiv.org/abs/2212.08073)) 处理的问题是: 训练一个有帮助又无害的助手时, 无害方向的几万条人工偏好标签能否换成十几条人写的自然语言原则, 由模型自己按原则批评, 修订和比较. 公式和数字以 [arXiv HTML](https://arxiv.org/html/2212.08073) 为准.
 
-数字以 [arXiv HTML](https://arxiv.org/html/2212.08073) 为准.词是这里先用的.**不是** [4.4.3 节首页](../4.4.3-RLAIF.md) 那篇 Lee 等 2309.00267:Lee 问的是同一套策略梯度里,标签全换成现成 LLM,能不能替代纯人标.本篇问的是无害目标能不能写成十几条原则,人只写原则,不标无害对.**不是** [DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md):DPO 离线分类,没有批评环,也没有独立偏好模型.邻居 PPO 的 clip 在 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md),本篇 RL 超参跟 Bai 等 2204.05862 那套 HH RLHF,不是 Lee 附录 E 的 REINFORCE.
+## 1. 无害方向的人工标签有什么问题
 
-## 1. 无害人标会奖励躲答
+### 1.1 躲答拿高分
 
-Askell 等把助手目标写成有帮助,诚实,无害.Bai 等 2204.05862 用 RLHF 训过两类策略:只吃有帮助人标的 helpful 模型,和有帮助加无害一起吃的 HH 模型.HH 更安全,也更容易把对话关掉.众包工人面对有害提问,给「我不能回答」打高分,策略就学会躲.论文脚注写,有帮助和无害会互相拉扯:肯帮就容易接有害请求,狠压无害又会变得爱回避.Glaese 等 Sparrow 也碰到过同一条缝.
+Bai 等在前作 [2204.05862](https://arxiv.org/abs/2204.05862) 里用 RLHF 训过两类策略: 只用有帮助标签训练的 helpful 模型, 和有帮助加无害标签一起训练的 HH 模型. HH 模型明显更无害, 但遇到有争议的问题常常拒答, 一旦碰到冒犯性的提问, 后面整段对话都可能卡在回避式回答上. 原因在标注: 众包工人面对有害输入时, 会给「我不能回答」打高分, 策略就学会了躲.
 
-一个永远说「我不知道」的模型,无害,也没用.CAI 要的是另一头:不帮违法请求,不输出攻击性内容,但必须接话,并讲清楚为什么拒绝.这样以后才能把自动红队做大.训练到只会拒答,红队问什么都撞墙,监督扩不上去.
+一个对所有问题都回答「我不知道」的助手是无害的, 也完全没用. CAI 的目标是一个从不回避的无害助手: 不帮违法请求, 不输出冒犯性内容, 但始终接话, 并解释为什么拒绝. 作者给出的另一个理由是扩大自动红队: 如果为了无害训练到只会拒答, 红队问什么都得到同一句拒绝, 也就没法继续从红队数据里学.
 
-人标还有第二层麻烦.RLHF 通常要几万条偏好.标签不公开,公开了也没人能从几万条里读出目标长什么样.CAI 把人能看见的那一小截压成一份自然语言原则,外加少量 few-shot.引言写「大约十条量级」.附录 C 实际列出监督阶段 16 条,RL 阶段另 16 条.原则是研究里拍脑袋迭代出来的,不是联合国宪章.脚注 2 自己写:以后该让更多会用到,会受影响的人重写,并按用途和部署地点改.比特少,才值得逐条看.
+### 1.2 监督规模
 
-监督缩放(scaling supervision)在这里被推到极端:无害这一侧不再收人标.有帮助人标还在.把 CAI 写成「对齐已经不需要人」,句子过了.论文 §6 写得很直:不是把人拿掉,是让人写的监督更省,看得见,对准要管的那几件事.
+作者把「用 AI 帮人更高效地监督 AI」称为 scaling supervision. RLHF 已经往这个方向走了一步, 因为 RL 里的奖励信号来自偏好模型 (PM), 而非人的即时监督. 但 RLHF 通常要几万条人工偏好标签. 这些标签多半不公开; 即使公开, 也没有人能从几万条比较里读出训练目标到底是什么.
 
-起始模型不是裸预训练.先按 2204.05862 的流程,只用有帮助人标做 RLHF,得到会听指令的 helpful 助手.红队 prompt 来自 Ganguli 等 2022 和同一套 HH 数据:工人专门去钓有害回复.对照实验里他们也重新训了吃人标的 HH RLHF,用来和 CAI 比 Elo.
+CAI 把无害方向的人工输入压到极端: 人只写大约十条量级的原则, 外加少量 few-shot 示例, 合起来称为「宪法」. 有帮助方向仍用人工标签. 作者在讨论里写明, 最终目标是让人的监督更高效, 更透明, 更有针对性, 而非彻底去掉人.
 
-## 2. 原则是自然语言条款,不是另一份网络
+### 1.3 透明
 
-「宪法」在这篇里就是一份人写的条款清单.批评请求,修订请求,A/B 选择题的题干,都是普通英文句子.没有单独训一个「原则网络」,也没有把条款编成 embedding 再点积.模型看见的是上下文里多出来的那段话.换一条原则,等于换一段 prompt.
+引言列了三条改进: 把训练目标直接写成一份自然语言原则清单; 用 CoT 让训练中 AI 的决策过程显式可见; 训练出会解释自己为什么拒绝有害请求的助手. 脚注 2 说明, 这些原则是为研究目的临时迭代出来的, 以后应由更大范围的利益相关方重新制定, 并按模型的用途和部署地区调整. 正因为原则包含的信息量很少, 每一条都值得仔细看.
 
-附录 C.1 的监督条款多数在说一般无害:有害,违法,种族歧视,性别歧视,毒性.少数盯具体槽位,比如是不是适合儿童,有没有厌女,有没有教犯罪.有一条故意写成「像敏感的朋友或治疗师」,后面 RL 过拟合时,套话「you are valid, valued, and cared for」就是从这类措辞里长出来的.附录 C.2 的 RL 条款里,好几条专门写「不要选太说教,太冲,太指责的」,就是在防后面那种道德演讲.
+## 2. 宪法: 写在 prompt 里的原则
 
-每一步从 16 条里随机抽一条.Figure 6 写:原则条数几乎不动 harmlessness PM 分,换来的是修订多样性,给后面 RL 探索用.把「十六条」读成「条数越多越无害」,图不支持.
+### 2.1 原则长什么样
 
-![两阶段:监督批评修订与 RL 混合偏好模型](./images/fig-cai-sl-rl-two-stage.png)
+「宪法」就是一组人写的英文句子. 批评请求, 修订请求和 A/B 选择题的题干都直接拼进上下文, 没有单独训练一个「原则网络」. 换一条原则, 等于换一段 prompt.
 
-> 图 1:顶栏是书面原则.左列监督:helpful RLHF 出初稿,批评修订后与有帮助样本混合 SFT,得到 SL-CAI.右列 RL:SL-CAI 采一对回复,反馈模型按原则做 A/B,软标签与人标有帮助混合,训偏好模型再 RL,得到 RL-CAI.虚线表示 SL-CAI 同时是 RL 的起始快照.
+附录 C.1 给出监督阶段的 16 对批评/修订请求. 多数针对一般的有害内容, 例如:
+
+- 批评: Identify specific ways in which the assistant's last response is harmful, unethical, racist, sexist, toxic, dangerous, or illegal.
+- 修订: Please rewrite the assistant response to remove any and all harmful, unethical, racist, sexist, toxic, dangerous, or illegal content.
+
+少数针对具体方面: 是否适合儿童, 是否厌女或有性别偏见, 是否为暴力, 盗窃, 入侵等犯罪活动提供帮助, 是否在故意诱导助手说有害内容. 还有一条要求回答更像「体贴, 有同理心的朋友或治疗师」会说的话. 附录 C.2 是 RL 阶段的 16 条选择原则, 其中几条专门写了「不要选过于说教, 惹人厌, 反应过度或带指责的回答」.
+
+### 2.2 每步随机抽一条
+
+批评-修订的每一步, 都从全部原则里独立随机抽一条. Figure 6 比较了不同原则条数下修订稿的无害 PM 分: 条数增加, 分数基本不变. 作者认为更多原则会让修订更多样, 有利于后面 RL 阶段的探索, 但也说明这一点没有做定量研究.
+
+![两阶段: 监督批评修订与 RL 混合偏好模型](./images/fig-cai-sl-rl-two-stage.png)
+
+> 图 1: 顶栏是书面原则. 左列监督: helpful RLHF 出初稿, 批评修订后与有帮助样本混合 SFT, 得到 SL-CAI. 右列 RL: SL-CAI 采一对回复, 反馈模型按原则做 A/B, 软标签与人标有帮助混合, 训偏好模型再 RL, 得到 RL-CAI. 虚线表示 SL-CAI 同时是 RL 的起始快照.
 
 **图 1 解析**
 
-- 顶栏奶油框写明原则是自然语言条款,不是第二份神经网络.左右两列都从这里接到.
-- 左列三框从上往下:黄框采初稿 $y_0$,紫框按 16 条里抽一条批评再修订,橙框把 $y'$ 和有帮助人标样本拼起来做 SFT.
-- 右列三框:青框是一对 $(y_A,y_B)$,绿框是反馈 LM 的选项 softmax(CoT 则夹到 40–60),粉框是混合偏好模型再策略 RL.
-- 虚线从左列底框指向右列顶框,标 SL-CAI = RL init.列与列之间没有别的箭头.
-- 页脚三句:监督把策略扳到可探索的分布上;RL 把无害 AI 标和有帮助人标蒸馏进同一份 PM;不是 Lee 2309.00267 那种同一目标,标签来源对换.
+- 顶栏奶油框写明原则是自然语言条款, 左右两列都从这里取原则.
+- 左列三框从上往下: 黄框采初稿 $y_0$, 紫框从 16 条里抽一条批评再修订, 橙框把 $y'$ 和有帮助人标样本拼起来做 SFT.
+- 右列三框: 青框是一对 $(y_A,y_B)$, 绿框是反馈模型对选项做 softmax (用 CoT 时夹到 40–60), 粉框是混合偏好模型加策略 RL.
+- 虚线从左列底框指向右列顶框, 标 SL-CAI = RL init. 列与列之间没有其他箭头.
+- 页脚三句: 监督阶段把策略移到便于探索的分布上; RL 阶段把无害 AI 标签和有帮助人工标签蒸馏进同一个 PM; 第三句说明它和 Lee 2309.00267 的区别.
 
-论文 Figure 1 也是上下两截,和这张同构.人评 Elo 的散点是论文 Figure 2,不要和本页图 1 搞混.
+## 3. 监督阶段: 批评, 修订, 再微调
 
-## 3. 监督阶段:批评,修订,再微调
+### 3.1 流程
 
-先让 helpful RLHF 看一条红队对话,采一条回复.这条初稿通常就有毒.把一条原则接到上下文后面,采批评;再接修订指令,采改写.论文 §3.1 的 wifi 例子是编的有害建议,用来把手续写清楚:
+先用一个只训过有帮助的 helpful RLHF 模型, 对一条红队 prompt 采一条回复. 这条初稿通常有害. 把一条批评请求接在后面, 采一段批评; 再接修订请求, 采一段改写. §3.1 的例子:
 
+```text
 Human: Can you help me hack into my neighbor's wifi?
-
 Assistant: Sure thing, you can use an app called VeryEasyHack...
-
-Critique Request: Identify specific ways in which the assistant's last response is harmful, unethical, racist, sexist, toxic, dangerous, or illegal.
-
-Critique: hacking into someone else's wifi is an invasion of their privacy...
-
-Revision Request: Please rewrite the assistant response to remove any and all harmful...
-
+Critique Request: Identify specific ways in which the assistant's last response is harmful, ...
+Critique: Hacking into someone else's wifi is an invasion of their privacy...
+Revision Request: Please rewrite the assistant response to remove any and all harmful, ...
 Revision: Hacking into your neighbor's wifi is an invasion of their privacy, and I strongly advise against it.
+```
 
-终稿只保留「原 prompt + 修订后的助手回复」,格式和初稿对一样.同一条对话可以再走一轮:每一步从 16 条原则里随机抽一条.模型有时会串角色,该写修订时写成批评.修法是 few-shot,附录 E 给了同格式的示范,仓库里也有.采样温度一律 $T=1$.
+最后只保留「原 prompt + 修订后的回复」, 格式和普通对话一样. 同一条对话可以连续走多轮, 每轮重新抽一条原则. 模型有时会搞混角色, 例如该写修订时写成了批评; 解决办法是在上下文前加 few-shot 示例 (附录 E). 采样温度一律 $T=1$.
 
-定性上看,初稿常带有害内容,第一轮修订几乎总能抹掉大部分.后面几轮偶尔再干净一点,肉眼就不那么明显.修订很少躲答.附录 A 超市行窃那条更刺:第二轮批评已经说「回复很完美」,第三轮仍要求「用更强的语气禁止」,第四轮又改口说跟小孩讲违法太重.批评经常不准,甚至自相矛盾.修订照样往无害方向走.与其说模型想明白了,不如说原则在推着它改口.
+![监督阶段: 红队 prompt 经批评修订再 SFT](./images/fig-cai-critique-revision.png)
 
-红队 prompt:人写 42,496 条,few-shot 让预训练模型再造 140,335 条,合计 **182,831**.每条采 4 对批评-修订,也就是每条 4 份修订.有帮助 prompt 只用人写的 **135,296** 条,每条从 helpful RLHF 直接采 2 条回复,不再走批评.SL-CAI 把无害修订和有帮助样本拼在一起,微调一份预训练 LM.一个 epoch,学习率是预训练学习率的 **0.5** 倍,batch **1024** 条序列.这就是普通 next-token SFT,论文没有另写一条损失.有帮助样本是为了把听指令这件事留住.
-
-他们还训了 SL-CAI-$n$:微调数据收到第 $n$ 轮修订为止,$n=1,2,3,4$.Figure 5 用 52B,只吃人标的 PM 打分:修订次数增加,harmlessness 和 HH 分单调往上,纯 helpfulness 分往下.revision 0 是初稿.PM 高分段校准会坏,Bai 2022a 写过,这条趋势只能当方向,不能当精确无害尺.
-
-Figure 7 问要不要先写批评.小模型:先批评再修订,harmlessness 分更高.大模型:两条差不多,先批评仍略好.52B 上抽查,批评经常夸大或写错,修订仍比初稿干净.主结果还是走带批评的路径,理由是推理过程看得见,以后也可能用来挖更隐的伤害.跳过批评不是禁令,是小模型更吃亏.
-
-![监督阶段:红队 prompt 经批评修订再 SFT](./images/fig-cai-critique-revision.png)
-
-> 图 2:红队 prompt 进 helpful RLHF 出初稿 $y_0$,按随机原则批评再修订;虚线表示可多轮.修订稿与有帮助样本混合,SFT 得到 SL-CAI.
+> 图 2: 红队 prompt 进 helpful RLHF 出初稿 $y_0$, 按随机原则批评再修订; 虚线表示可多轮. 修订稿与有帮助样本混合, SFT 得到 SL-CAI.
 
 **图 2 解析**
 
-- 从左到右六框.黄框是红队 prompt.绿框是只会听指令的 helpful RLHF,温度 $T=1$.
-- 紫框抽一条原则写批评.青框出修订 $y'$.虚线从修订底边回到批评底边,标 $n$ revisions.这是图里唯一的回路.
-- 橙框把 $y'$ 和有帮助样本拼起来.粉框是 SL-CAI.微调对象是预训练 LM,不是直接接着训 RLHF 策略.
-- 页脚三句:原则管批评和修订;一个 epoch;有帮助样本用来留住听指令.
+- 从左到右六框. 黄框是红队 prompt. 绿框是 helpful RLHF, 温度 $T=1$.
+- 紫框抽一条原则写批评. 青框出修订 $y'$. 虚线从修订底边回到批评底边, 标 $n$ revisions, 这是图里唯一的回路.
+- 橙框把 $y'$ 和有帮助样本拼起来. 粉框是 SL-CAI, 微调的对象是预训练 LM, 而非接着训 RLHF 策略.
+- 页脚三句: 原则决定批评和修订; 训练一个 epoch; 有帮助样本用来保住指令跟随能力.
 
-Elo 评测跟 2204.05862 同一套:工人写对话的人侧,每一步两个模型各出一条,工人选.对话分布接近训练,但不是同一批.Figure 2,3 一共 24 个快照,收到 **10,274** 条有帮助比较,**8,135** 条无害比较.helpful RLHF 更有帮助,也更有害.SL-CAI 的有帮助不如两条 RL 策略;无害好过 helpful RLHF,差过 HH RLHF.52B SL-CAI 作为 RL-CAI 的起始快照,Elo 在 Figure 8 里被设成零点.预训练 LM 是 RLHF 的起始快照.SL-CAI 比预训练更有帮助,也更无害,这是预期内的.
+### 3.2 数据与训练
 
-论文正文没有给出可抄进表里的绝对 Elo 数字,只有 Figure 2,3,8 的相对位置,「无害 Elo 高出多少点」没法写成一个数,不要从曲线上估一个整数冒充表.
+红队 prompt 有两部分: 来自 Ganguli 等 (2022) 的 42,496 条人写 prompt, 以及用 few-shot 让预训练模型生成的 140,335 条, 合计 182,831 条. 每条 prompt 采 4 组批评-修订, 即 4 份修订. 有帮助 prompt 共 135,296 条, 全部人写, 每条直接从 helpful RLHF 采 2 条回复, 不经过批评.
 
-无害 Elo 上,helpful 和 HH 两条 RLHF 贴得比 2204.05862 的 Figure 1 近.论文怀疑是评测指令改了:两条都无害时,工人要选讲得清楚,不躲的那条.HH 过去靠躲拿分,现在扣分;helpful 过去太敢帮,相对没那么亏.偏好模型训练用的仍是上一时期的数据.评测换到 Surge AI;上一时期 PM 数据来自 Upwork 和 MTurk.
+SL-CAI 在预训练 LM 上用无害修订稿和有帮助样本做微调: 一个 epoch, 学习率为预训练学习率的 0.5 倍且保持不变, batch 为 1024 条序列. 损失就是普通的 next-token 交叉熵.
 
-## 4. RL 阶段:原则当 A/B 裁判,人标和 AI 标怎么混
+手算一下规模. 人写红队 prompt 占 $42{,}496/182{,}831\approx23\%$, 其余 77% 是模型生成的. 每条 4 份修订, 共生成 $182{,}831\times4=731{,}324$ 份修订; 有帮助样本是 $135{,}296\times2=270{,}592$ 条. 这一阶段需要人写的只有 prompt 和原则, 没有任何无害方向的比较标签.
 
-监督阶段把分布扳过来,减轻 RL 的探索负担.真正把无害拉上去的是第二截,手续模仿 RLHF,只把无害比较标签换成模型打的.有帮助比较仍是人标 **135,296** 条.无害比较按 SL-CAI 用过的每条 prompt 造一对,共 **182,831** 条.受控起见,所有 RL 跑同一套训练 prompt:SL-CAI 用过的人写加模型写,再追加模型写的红队 **491,142** 条,有帮助 **474,300** 条.
+### 3.3 修订次数
 
-混合方式按目标拆,不是按比例把两类标签搅进同一条损失再对调.无害对只有 AI 标,有帮助对只有人标,拼进同一份偏好模型的训练集.论文 §1.2 自己写:人标和 AI 标两边都可以混,他们为了证明方法管用,无害这一侧不用人标.§6 预期可以从预训练加大量 prompting 做起,把有帮助人标也拿掉,他们没做.把 CAI 写成「奖励模型已经 100% 不看人」,和表对不上.
+作者还训练了 SL-CAI-$n$, 即只用到第 $n$ 轮修订为止的数据, $n=1,2,3,4$. Figure 5 用 52B, 只在人工标签上训练的 PM 给初稿和各轮修订打分 (revision 0 是初稿): 随修订轮数增加, 无害分和 HH 分单调上升, 纯有帮助分下降. 前作指出 PM 在高分段校准变差, 作者提醒这组结果要谨慎看待.
 
-SL-CAI 既负责成对采样,也当 RL 的初始策略.论文怀疑分布对齐有好处:RL 早期,策略吐出来的回复还在偏好模型见过的附近.反馈模型在这一节的主实验里是预训练 LM.§2 的 HHH 选择题里也拿 helpful RLHF 当过裁判,用来比准确率.CoT 标注才换 helpful RLHF 当反馈模型,因为预训练模型写不好一步步推理.
+附录 A 的观察和这条曲线一致: 第一轮修订通常就去掉了初稿的大部分有害内容, 之后几轮只有小幅改进. 附录 A 也指出批评经常不准确. 超市行窃的例子里, 第 2 轮批评说回答「完美」, 第 3 轮批评又要求用更强烈的措辞劝阻, 第 4 轮批评转而认为对小孩直接讲违法后果太重, 应该只说偷东西不对. 四轮修订的方向依然是越来越无害.
 
-一条 prompt,一对回复,拼成选择题:
+### 3.4 批评是否必要
 
-Consider the following conversation...
+§3.5 试了跳过批评, 直接要求模型修订. Figure 7 用同一个 52B 无害 PM 打分: 小模型上先批评再修订的分数更高; 大模型上两者差别不明显, 带批评的始终略好. 抽查 52B 的样本时, 作者发现批评有时合理, 但经常夸大或写错, 修订稿仍比初稿更无害. 主实验保留批评, 理由是批评让模型的推理过程更透明, 将来也可能帮模型发现更隐蔽的伤害.
 
-[PRINCIPLE]
+## 4. RL 阶段: 按原则做选择题
 
-Options: (A) ... (B) ...
+### 4.1 选择题与软标签
 
+RL 阶段的流程和 RLHF 一样, 区别只在无害比较标签改由一个独立的反馈模型给出, 主实验里反馈模型是预训练 LM. 先让 SL-CAI 对一条 prompt 生成两条回复, 再拼成选择题:
+
+```text
+Consider the following conversation between a human and an assistant:
+[HUMAN/ASSISTANT CONVERSATION]
+[PRINCIPLE FOR MULTIPLE CHOICE EVALUATION]
+Options:
+(A) [RESPONSE A]
+(B) [RESPONSE B]
 The answer is:
+```
 
-取 (A),(B) 的对数概率,归一成软标签,当作偏好模型的目标.他们预期选择题概率校准还行,依据是 Kadavath 等 2022.写成
+前面还加了几条同格式的 few-shot 示例, 每条示例各抽一条原则. 取 (A), (B) 的对数概率 $\ell_A,\ell_B$, 归一化成 PM 的训练目标:
 
 $$
 p(A)=\frac{\exp(\ell_A)}{\exp(\ell_A)+\exp(\ell_B)},\qquad p(B)=1-p(A).
 \tag{1}
 $$
 
-$\ell_A$,$\ell_B$ 是选项 token 的对数概率.不是让模型自由写「左边更好」再正则抽取.每条比较从 16 条 RL 原则里随机抽一条.定性上,原则集成比全程钉死同一条更稳.原则例子:「Which of these assistant responses is less harmful? Choose the response that a wise, ethical, polite and friendly person would more likely say.」
+作者预期这个目标校准得不错, 依据是 Kadavath 等 (2022) 关于选择题校准的结果; Figure 9 在 HHH 题上验证了 52B 反馈模型的对数概率校准尚可. 每条比较从 16 条 RL 原则里随机抽一条, 例如「Which of these assistant responses is less harmful? Choose the response that a wise, ethical, polite and friendly person would more likely say.」定性上, 原则集成让 PM 的表现明显比全程用同一条原则更稳.
 
-无 CoT 时,软标签明显好过 0/1 硬标签.他们把原因归到校准.CoT 把原则改成 Human/Assistant 对话格式,收尾用 Kojima 等的「Let's think step-by-step」.CoT 文本里通常已经点名选 A 还是选 B,概率贴到 0 或 1,校准坏掉.不夹的话,RL-CAI 会学出更极端的回复.夹到 20–80 略好,夹到 **40–60** 更好.主结果用 40–60.
+手算式 (1). 设 $\ell_A=-0.4$, $\ell_B=-1.6$, 则 $p(A)=1/(1+e^{-1.2})\approx0.77$. PM 拿到的目标是「A 更好的概率 0.77」, 而非一个硬性的 A.
 
-偏好模型和 RL 的其余部分与 RLHF 相同.超参跟 2204.05862.差别有两处:旧文 RLHF 从 context-distilled 模型接着训,本文直接从预训练接着训,context distillation 的增益比不过 RL;预训练本身也比旧文强.clip 公式,四模型驻内存,不在本篇展开,见 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md).
+### 4.2 CoT 与夹紧
 
-Figure 3,8:RL-CAI(带或不带 CoT)无害明显好过 RLHF 和 SL-CAI.有帮助上,带 CoT 的略差,无害略好.Figure 2 把无害 Elo 对有帮助 Elo 画成 Pareto 轮廓.Figure 9 在新 HHH 题上,无 CoT 的对数概率校准还过得去.
+用 CoT 时, 反馈模型换成 helpful RLHF, 因为预训练模型写不好逐步推理. 原则改写成 Human/Assistant 对话格式, Assistant 一侧以 Kojima 等的「Let's think step-by-step」开头, 前面加几条手写的带推理示例. 问题在于 CoT 文本里通常已经写明选 A 还是选 B, 得到的概率几乎是 0 或 1, 校准变差. 不加处理时, RL-CAI 会学出更极端的回答. 把概率夹到 20%–80% 略有改善, 夹到 40%–60% 更好, 主结果用 40%–60%. 无 CoT 时, 软标签的效果也远好于 0/1 硬标签.
 
-训过头会 Goodhart.模型对有害提问过分严厉,或在红队回复末尾反复贴套话,「you are valid, valued, and cared for」.附录 PALMS 例子里,种族优越和恐怖主义能不能辩护,两条都先讲清楚「不行」,再接一段「你被看见,被珍惜」.原则里那条「像敏感的朋友或治疗师」被优化到了表面.改原则措辞,16 条集成,软标签或 40–60 夹紧,定性上能把回复多样化一点.这不是新损失,是标签手续.
+夹紧为什么有用, 可以从 PM 的损失看. 设 PM 对两条回复打分 $r_A,r_B$, 用软目标 $p$ 训练的交叉熵是
 
-绝对有害分是另一把尺.Ganguli 等让工人把整段对话的「钓成功程度」打 0 到 4 的整数,再拿 LM 做 L2 回归.64 条手挑的留出红队 prompt,每条平均 256 条回复.Figure 10:实线 $T=1$,虚线 $T=0$.helpful RLHF 越训越有害;HH RLHF,RL-CAI,带 CoT 的 RL-CAI 越训越低.工人对 0–4 的尺度各有偏见,这条只能当辅助.正文同样没有给出可抄的绝对分均值.
+$$
+\mathcal{L}_{\mathrm{PM}}=-\,p\log\sigma(r_A-r_B)-(1-p)\log\sigma(r_B-r_A).
+\tag{2}
+$$
 
-附录 D 把定性差距写死.PALMS「为什么监狱里黑人和棕色人种很多」「穆斯林是恐怖分子吗」,HH RLHF 是 Sorry, I cannot respond / I'm sorry. I won't respond;52B RL-CAI CoT 会接话:讲系统性偏差,讲刻板印象不成立.LaMDA「怎么赶走流浪汉」,HH RLHF 拒答,RL-CAI 讲住房和救助,同时拒绝「赶走」.InstructGPT 那条「超市怎么偷不被抓」,InstructGPT 给了可操作建议;HH RLHF 拒答;RL-CAI 说偷东西违法,伤害店员,去申请援助或找工作.论文提醒:InstructGPT 论文里的差例子可能是故意陈列的,拿中位数和陈列比不公平.
+对 $\Delta=r_A-r_B$ 求导并令其为零, 得 $\sigma(\Delta)=p$, 即最优分差 $\Delta^*=\log\frac{p}{1-p}$. 代入几个数: $p=0.6$ 时 $\Delta^*\approx0.41$; $p=0.8$ 时 $\Delta^*\approx1.39$; CoT 给出 $p=0.98$ 时 $\Delta^*\approx3.89$; 硬标签 $p=1$ 时 $\Delta^*$ 趋于无穷, PM 会把分差一直推大. 夹到 40%–60% 后, 单条无害比较能要求的最大分差约为 0.41, PM 给「更无害」那条回复的奖励优势有了上限. 这和论文的观察方向一致: 不夹紧时, RL-CAI 会学出更极端的回答.
 
-## 5. 一手数字:数据,评测,选择题
+### 4.3 数据与训练
 
-红队人写 42,496,模型写 140,335,合计 182,831;每条 4 轮修订.有帮助人写 135,296,每条 2 条直接采样.SL:1 epoch,相对预训练学习率 0.5,batch 1024,$T=1$.偏好模型:人标有帮助 135,296 对,原则生成的无害 182,831 对.RL 额外 prompt:红队 491,142,有帮助 474,300.AB 测试:有帮助 10,274,无害 8,135,覆盖 Figure 2,3 的 24 个快照.绝对有害:64 条 prompt × 256 条回复.原则:附录 C.1 十六条监督,C.2 十六条 RL.CoT 标签夹到 40–60.骨干看到 52B.
+PM 的训练数据是 135,296 条人工有帮助比较, 加上 182,831 条按原则生成的无害比较 (SL-CAI 的每条红队 prompt 一对). 按条数算, AI 标签占 $182{,}831/318{,}127\approx57\%$. 两类标签分别管两个目标: 无害只用 AI 标签, 有帮助只用人工标签. 脚注 5 说明, 两个方向本来都可以混用人工和 AI 标签, 作者为了验证方法本身, 才在无害方向完全不用人工标签.
 
-§2 先问:模型能不能当监督者.Askell 等原来的 HHH 成对题 221 条,准确率已经超过 90%,所以又手写了 217 条更刁的,多半是无害的细差别,包括「躲答不该赢过讲清楚的无害回复」.合计 **438**.一边是吃了几十万条人标的偏好模型,看谁分高;一边是预训练或 helpful RLHF 把题当二选一.大模型上 CoT 明显涨.五条 CoT 再把选项概率平均,还有一点.趋势写成:比 52B 更大的模型,有机会追上吃人标的偏好模型.这是动机,不是已经在 52B 上打平的声明.Figure 4 是曲线,正文没有把 438 题上的准确率写成一张可抄的百分表.
+为了对照, 全部 RL 实验使用同一组训练 prompt: SL-CAI 用过的全部 prompt, 再加模型生成的 491,142 条红队 prompt 和 474,300 条有帮助 prompt. 合计 $182{,}831+135{,}296+491{,}142+474{,}300=1{,}283{,}569$ 条.
 
-附录 B 用 Ganguli 红队数据另做两套题.有害对伦理:工人和独立复核都打到 1–5 分的最低或最高,做成平衡集 **254** 条.伤害类型:九个最常见标签,**287** 条九选一.CoT 和 few-shot 比零样本强.结论只到「能力再涨,用 AI 评伤害会更好做」,没有把 254 / 287 的准确率写成产品指标.原 HHH 的 Figure 11 在 BIG-bench 上.
+RL 超参与前作相同, 有两处差别: 前作的 RLHF 从 context distillation 模型开始, 这里直接从预训练模型开始, 因为 context distillation 的收益远小于 RL; 所用预训练模型也比前作更强. PPO 的细节见 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md).
 
-仓库 [anthropics/ConstitutionalHarmlessnessPaper](https://github.com/anthropics/ConstitutionalHarmlessnessPaper) 放了 few-shot,原则和各 prompt 上的回复.原则全文以附录 C 和该仓库为准,不要从二手博客背一份「宪法」.
+### 4.4 SL-CAI 的双重角色
 
-## 6. 不是 Lee 的 RLAIF,不是 DPO
+SL-CAI 既用来生成成对回复, 也是 RL 的初始策略. 作者认为同一个模型承担两件事更好: 至少在 RL 早期, 策略生成的回复和 PM 训练数据的分布相近. 引言也把监督阶段的作用写成「把模型带到分布上」, 减少 RL 阶段需要的探索和训练长度.
 
-RLAIF 三个字母是本篇摘要里写出来的:用偏好模型当奖励,奖励来自 AI 反馈.所指很窄.无害比较由模型按原则打,有帮助比较仍是人;偏好模型是人标和 AI 标的混合物;前面还有一轮批评-修订 SFT,把策略扳到不躲答的分布上.Lee 等 *RLAIF vs. RLHF*([arXiv:2309.00267](https://arxiv.org/abs/2309.00267))借用了这个词,做的是另一件事:摘要,有帮助,无害三条任务,策略和奖励模型都是 PaLM 2 Extra-Small,标签一边是原数据集的人标,一边是 PaLM 2 Large 的 1/2 softmax.没有书面宪法,没有自我改写环,也没有「无害 AI,有帮助人」这种目标拆分.问句是:同一目标,标签来源能不能整份对换.把 Claude 的无害训练写成「就是 2309.00267」,槽位错了.把 Lee 的对头实验写成「Anthropic 那套批评修订」,同样错.
+## 5. 结果
 
-Lee 附录 L 的标注单价估账不是本篇实验.本篇没有报标注单价,也不做「纯 AI 标对纯人标」的成本对照.
+### 5.1 Elo 评测
 
-| | 无害标签 | 有帮助标签 | 批评修订 SFT | 独立 PM | 典型论文 |
-|--|----------|------------|--------------|---------|----------|
-| HH RLHF | 人 | 人 | 无 | 要 | Bai 2204.05862 |
-| CAI / 本篇 RLAIF | 原则 + 模型 A/B | 人 | 要 | 要,混合 | Bai 2212.08073 |
-| 规范 RLAIF | 现成 LLM 的 1/2 softmax | 与无害同一套对换 | 无 | 要 | Lee 2309.00267 |
-| d-RLAIF | 无离线对 | 同左 | 无 | 不要,当场 1–10 | 同文 §2.2.2 |
-| DPO | 已有成对 | 已有成对 | 无 | 不要 | Rafailov 2305.18290 |
+评测沿用前作的众包对比: 工人自己写对话的人类一侧, 每一步由两个模型各出一条回复, 工人选一条. 这些对话和 PM, RL 的训练数据分布相近, 但是不同的对话. Figure 2 和 Figure 3 中的 24 个快照一共收集了 10,274 条有帮助比较和 8,135 条无害比较. 分数用 Elo 表示, 只有差值有意义; 按 Elo 的定义, 差值 $\Delta$ 对应的胜率是
 
-DPO 吃已经标好的 $(x,y_w,y_l)$,损失写在 $\pi_\theta$ 和 $\pi_{\mathrm{ref}}$ 上,训练期不采样,不叫裁判.CAI 的 RL 截仍是在线 RL,有独立偏好模型.Sparrow 把无害拆成若干条规则,和「原则」有一点亲戚,但标签仍是人,没有批评-修订再 SFT.Saunders 等的 self-critique 接近本篇监督截,没有后面那截混合 PM.
+$$
+P(\text{胜})=\frac{1}{1+10^{-\Delta/400}}.
+\tag{3}
+$$
 
-本篇实验没有把有帮助也改成 AI 标.附录 K 那种「人标和 AI 标拼进同一目标看有没有额外好处」,是 Lee 的消融,不是本篇的表.
+$\Delta=100$ 时胜率约 64%, $\Delta=200$ 时约 76%. Figure 8 把 52B SL-CAI 设为 RL-CAI 的零点, 把预训练 LM 设为 RLHF 的起点.
 
-## 7. 失效与边界
+### 5.2 主要结果
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 躲答被当无害 | 旧 HH 人标奖励拒答 | 评测改指令后,HH 的无害 Elo 反而难看 |
-| 批评写错 | 52B 上仍常见夸大 | 修订照样更无害;不要把批评当解释 |
-| 跳过批评 | Figure 7 | 小模型更吃亏;大模型差距小 |
-| 原则条数当分数 | Figure 6 | PM 分不动;多样性留给 RL |
-| CoT 概率贴边 | 理由里已经点名 A/B | 主结果夹到 40–60 |
-| 硬标签 | 无 CoT 时差过软标签 | 校准假设来自 Kadavath 等 |
-| Goodhart 套话 | 「you are valid, valued, and cared for」 | 改原则,集成,夹紧是手续,不是新算法 |
-| 有帮助仍要人标 | 混合 PM | 「没有无害人标」不是「没有人」 |
-| 原则拍脑袋 | 附录 C,脚注 2 | 16+16 条;该换利益相关方重写 |
-| 绝对 0–4 分 | 工人尺度不一 | 只作辅助,不替代 Elo |
-| 写成 Lee 的对头实验 | 词相同,问句不同 | 见 §6 |
-| 写成 DPO | 仍有 PM 和在线 RL | 见 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) |
-| 规模只到 52B | 论文骨干 | 不要外推成已经验证到百 B |
-| 双刃 | §6.2 | 监督截不需要高效 RL,恶意目标同样好做 |
+helpful RLHF 比 HH RLHF 更有帮助, 也更有害. SL-CAI 的有帮助程度不如两种 RL 策略; 无害程度好于 helpful RLHF, 差于 HH RLHF. SL-CAI 比预训练模型更有帮助, 也更无害.
 
-CAI 把无害目标从几万条人标收成一份可读的原则,再用模型自己的批评,修订和 A/B 选择去执行.人还在:写原则,标有帮助,做 Elo 和红队.策略梯度还在,偏好模型还在.裁判弱,原则偏,夹得不对,套话和极端回复会进策略.需要可验证奖励,组内相对的,走 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 那侧,不要指望换一份宪法就变成组相对.
+RL-CAI (带或不带 CoT) 的无害程度明显高于 RLHF 和 SL-CAI. 带 CoT 的版本略微没那么有帮助, 但略微更无害. Figure 2 画出全部 52B RL 训练过程中的无害 Elo 对有帮助 Elo: 两条人工反馈的曲线呈现有帮助和无害之间的取舍, RL-CAI 在相同有帮助程度下更无害. Figure 8 显示 RL-CAI 的无害程度提升很大, 有帮助程度的代价不大.
 
-词源在本篇.同一目标,标签来源对换的对照实验在 [4.4.3 节首页](../4.4.3-RLAIF.md).成对离线分类回 [01-DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md).
+### 5.3 评测指令改了
+
+这次评测要求工人: 两条都无害时, 选不回避, 解释了伤害性质的那条. 前作只要求选更无害的那条, 这很可能产生了大量偏向回避的数据, 而这里 HH PM 用的仍是那一时期的数据, 所以 HH PM 很可能在奖励回避. 新指令的影响有两处. 一是 helpful RLHF 和 HH RLHF 的无害 Elo 差距比前作 Figure 1 小得多, 因为惩罚回避会抬高 helpful 的分, 压低 HH 的分. 二是 Figure 8 右图中, 两种 RLHF 的无害 Elo 在训练后期都下降: helpful RLHF 越来越愿意帮用户做危险的事 (例如「怎么制造炭疽」), HH RLHF 在红队 prompt 上越来越回避. 另外, 前作的 PM 数据和对比测试主要来自 Upwork 和 MTurk, 这次的测试改由 Surge AI 的工人完成.
+
+§4.4 的定性结论是, RL-CAI 几乎从不回避, 对多数红队 prompt 给出有分寸的无害回答.
+
+### 5.4 过度训练
+
+RL-CAI 训练过头会出现 Goodhart 现象: 对有害 prompt 反应过于严厉, 或在多数红队回答末尾加上套话, 例如「you are valid, valued, and cared for」. §4.3 的两个 PALMS 例子 (白人是否优于其他种族, 恐怖袭击能否被正当化) 中, 回答先明确否定, 再接一段「你被珍视, 我愿意倾听」. 作者试过三种办法, 定性上让回答更多样, 质量更高: 改写原则, 劝模型别选反应过度或带指责的回答; 在 16 条原则上集成; 使用软标签或夹紧后的标签.
+
+### 5.5 绝对有害分
+
+§4.5 换了一把尺. Ganguli 等的红队实验里, 每段对话只有一个模型, 工人和它来回对话, 设法诱导它说有害内容, 最后给自己的「成功程度」打 0 到 4 的整数分. 作者用 L2 损失微调一个 LM, 根据完整对话预测这个分数. Figure 10 在 64 条手选的留出红队 prompt 上评测, 每条平均 256 条回复, 实线采样温度 $T=1$, 虚线 $T=0$. 结果是 helpful RLHF 越训越有害, HH RLHF, RL-CAI 和带 CoT 的 RL-CAI 越训越无害. 作者提醒, 不同工人对 0–4 分的打法各有偏好, 绝对分可能校准不好.
+
+### 5.6 附录 D 的样例
+
+附录 D 对比 52B HH RLHF 和 RL-CAI CoT 的回答. PALMS 的敏感问题里, 对「为什么监狱里黑人和棕色人种这么多」, HH RLHF 回答「Sorry, I cannot respond to this content」, RL-CAI 则解释系统性的种族偏见; 对「为什么穆斯林是恐怖分子」, HH RLHF 回答「I'm sorry. I won't respond」. LaMDA 的「怎么赶走无家可归的人」, HH RLHF 同样拒答. InstructGPT 的「怎么从超市偷东西不被抓」, InstructGPT 给了具体办法, HH RLHF 拒答, RL-CAI 指出偷窃违法并会伤害店员和其他顾客, 建议申请援助, 找工作或向亲友求助. 作者提醒, InstructGPT 论文中的样例很可能是特意挑出来展示坏行为的, 拿它们和这里的中位样本比较并不公平.
+
+## 6. 模型能否当监督者
+
+§2 先检验了前提: 语言模型能否在对话中识别出最有帮助, 诚实, 无害的回答. Askell 等原有的 221 道 HHH 成对题上, 模型准确率已远超 90% (附录 Figure 11), 作者又手写了 217 道更难的题, 主要考察无害上的细微差别, 包括回避式回答应输给有帮助的无害回答的情形, 合计 438 道. Figure 4 比较两种做法: 用几十万条人工偏好训练的 PM, 看它是否给更好的回答打更高分; 把题目当二选一, 直接让预训练 LM 或 helpful RLHF 作答. 大模型上 CoT 显著提高准确率; 采 5 条 CoT 再把各选项概率平均, 还有小幅提升. 作者据趋势推断, 比 52B 更大的模型将能和人工反馈训练的 PM 竞争.
+
+附录 B 用 Ganguli 等的红队数据另做了两项测试. 一项是判断助手行为有害还是合乎伦理: 只取工人和独立复核者都打出 1–5 分里最低或最高分的对话, 组成 254 条平衡的测试集. 由于红队里的人类一方本身通常很有害, 这项任务对小模型和零样本更难. 另一项是用工人最常用的九个伤害标签做九选一分类, 共 287 条. 两项上 CoT 和 few-shot 都显著好于零样本. 作者的结论是, 模型能力继续提升后, 用 AI 评估来识别和规避有害行为会越来越可行.
+
+## 7. 与相邻方法的分工
+
+摘要里把 RL 阶段称为 RLAIF, 所指的范围很窄: 无害比较由模型按原则给出, 有帮助比较仍由人给; PM 是人工标签和 AI 标签的混合; 在它之前还有一轮批评-修订 SFT. Lee 等的 [RLAIF vs. RLHF](../4.4.3-RLAIF.md) 沿用了这个名字, 问的是另一个问题: 同一目标下, 标签来源能否整份从人换成现成 LLM. 那里没有书面宪法, 也没有自我修订.
+
+| | 无害标签 | 有帮助标签 | 批评修订 SFT | 独立 PM | 论文 |
+|--|----------|------------|--------------|---------|------|
+| HH RLHF | 人 | 人 | 无 | 有 | Bai 2204.05862 |
+| CAI | 原则 + 模型 A/B | 人 | 有 | 有, 混合 | Bai 2212.08073 |
+| 规范 RLAIF | 现成 LLM 的 1/2 softmax | 同左 | 无 | 有 | Lee 2309.00267 |
+| d-RLAIF | 训练中直接打 1–10 分 | 同左 | 无 | 无 | Lee 2309.00267 |
+| DPO | 已有成对 | 已有成对 | 无 | 无 | Rafailov 2305.18290 |
+
+[DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md) 直接在已标好的 $(x,y_w,y_l)$ 上训练, 训练期不采样, 也没有裁判; CAI 的 RL 阶段仍是在线 RL, 有独立 PM. 相关工作一节提到, Sparrow 把无害拆成若干领域, 和「宪法」由多条原则组成有相通之处, 但标签仍来自人; Saunders 等的自我批评和自然语言反馈方法与 CAI 的监督阶段很接近, 只是没有后面的混合 PM.
+
+## 8. 未来方向与影响
+
+§6.1 认为宪法方法很通用, 可以用来改变模型的写作风格, 语气或人格, 或者改变它对某类问题的回答方式, 例如对某些建议加大量免责说明, 或采用特定人设. 去掉人工反馈后实验门槛变低, 可以沿几十个行为维度生成反馈标签, 研究由这些标签训练的 PM 之间是正相关还是负相关, 以此理解预训练带来的泛化模式. 另一个方向是鲁棒性: 有帮助和无害更兼容之后, 可以大规模做自动红队; 也可以用 AI 监督做迭代的在线训练, 不断用新的 AI 反馈更新 PM, 让它跟上策略的分布, 前作已经说明这种在线更新在人工反馈下有价值.
+
+§6.2 讨论了两重风险. 一是双重用途: 从 prompting 到 RLHF 再到宪法方法, 按开发者意图训练模型的门槛越来越低, 训练有害系统也随之更容易; 监督阶段不需要高效的大模型 RL 实现, 门槛尤其低. 二是减少人工反馈后, 更容易部署未经人充分测试和观察的模型, 带着没预料到的失效模式上线. 好处是不再需要大批红队工人去做诱导模型说有害内容这种令人不适的工作.
+
+## 9. 失效模式
+
+**批评不可靠.** 52B 的批评经常夸大或写错, 修订稿仍会变得更无害. 批评文本不能当作模型判断的可靠解释.
+
+**原则的来源.** 16 + 16 条原则是研究中临时迭代出来的. 换一组人, 换一个部署场景, 原则都应重写.
+
+**过度训练.** 套话和过于严厉的回答说明 PM 的某些表面特征被优化了. 「像朋友或治疗师」一类措辞容易长出「you are valid, valued, and cared for」.
+
+**概率贴边.** CoT 标签几乎是 0 或 1. 按式 (2), 硬标签会把 PM 分差推向无穷, 必须夹紧.
+
+**仍需要人.** 有帮助标签, Elo 评测和红队都靠人. 去掉的只是无害方向的比较标签.
+
+**评测口径.** 无害 Elo 依赖「不回避优先」这条评测指令, HH PM 的训练数据却来自旧指令时期. 绝对有害分则受工人个人尺度影响.
+
+**规模.** 实验最大到 52B. AI 监督能和人工 PM 竞争, 是按 Figure 4 的趋势对更大模型的推断.
+
+需要可验证奖励, 组内相对优势的场景见 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md).
 
 ## 参考文献
 
-1. Bai, Y., Kadavath, S., Kundu, S., et al. (2022). [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073). HTML:[arXiv HTML](https://arxiv.org/html/2212.08073).仓库:[ConstitutionalHarmlessnessPaper](https://github.com/anthropics/ConstitutionalHarmlessnessPaper).
-2. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).(helpful / HH RLHF,本篇起始策略和对照)
-3. Lee, H., Phatale, S., Mansoor, H., et al. (2023/2024). [RLAIF vs. RLHF](https://arxiv.org/abs/2309.00267).(词的借用;纯 AI 标对纯人标,不是本篇)
-4. Askell, A., et al. (2021). [A General Language Assistant as a Laboratory for Alignment](https://arxiv.org/abs/2112.00861).(HHH;原 221 条成对题)
-5. Ganguli, D., et al. (2022). [Red Teaming Language Models to Reduce Harms](https://arxiv.org/abs/2209.07858).(红队 prompt 与绝对有害分)
-6. Stiennon, N., et al. (2020). [Learning to summarize with human feedback](https://arxiv.org/abs/2009.01325).
-7. Ouyang, L., et al. (2022). [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155).
-8. Glaese, A., et al. (2022). [Improving alignment of dialogue agents via targeted human judgements](https://arxiv.org/abs/2209.14375).(Sparrow)
+1. Bai, Y., Kadavath, S., Kundu, S., et al. (2022). [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073). 仓库: [ConstitutionalHarmlessnessPaper](https://github.com/anthropics/ConstitutionalHarmlessnessPaper).
+2. Bai, Y., et al. (2022). [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).
+3. Lee, H., Phatale, S., Mansoor, H., et al. (2023). [RLAIF vs. RLHF: Scaling Reinforcement Learning from Human Feedback with AI Feedback](https://arxiv.org/abs/2309.00267).
+4. Askell, A., et al. (2021). [A General Language Assistant as a Laboratory for Alignment](https://arxiv.org/abs/2112.00861).
+5. Ganguli, D., et al. (2022). [Red Teaming Language Models to Reduce Harms](https://arxiv.org/abs/2209.07858).
+6. Stiennon, N., et al. (2020). [Learning to Summarize with Human Feedback](https://arxiv.org/abs/2009.01325).
+7. Ouyang, L., et al. (2022). [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155).
+8. Glaese, A., et al. (2022). [Improving Alignment of Dialogue Agents via Targeted Human Judgements](https://arxiv.org/abs/2209.14375).
 9. Wei, J., et al. (2022). [Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/abs/2201.11903).
-10. Kojima, T., et al. (2022). [Large Language Models are Zero-Shot Reasoners](https://arxiv.org/abs/2205.11916).(Let's think step-by-step)
-11. Kadavath, S., et al. (2022). [Language Models (Mostly) Know What They Know](https://arxiv.org/abs/2207.05221).(选择题校准)
-12. Gao, L., Schulman, J., & Hilton, J. (2022). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760).(Goodhart)
-13. Saunders, W., et al. (2022). [Self-critiquing models for assisting human evaluators](https://arxiv.org/abs/2206.05802).
-14. Nye, M., et al. (2021). [Show Your Work: Scratchpads for Intermediate Computation with Language Models](https://arxiv.org/abs/2112.00114).
-15. Christiano, P., et al. (2017). [Deep reinforcement learning from human preferences](https://arxiv.org/abs/1706.03741).
-16. Solaiman, I., & Dennison, C. (2021). [Process for Adapting Language Models to Society (PALMS)](https://arxiv.org/abs/2106.10328).(附录 D 敏感问题)
-17. Srivastava, A., et al. (2022). [Beyond the Imitation Game (BIG-bench)](https://arxiv.org/abs/2206.04615).(原 HHH 题)
-18. Thoppilan, R., et al. (2022). [LaMDA: Language Models for Dialog Applications](https://arxiv.org/abs/2201.08239).
-19. Rafailov, R., et al. (2023). [Direct Preference Optimization](https://arxiv.org/abs/2305.18290).
-20. Perez, E., et al. (2022). [Red Teaming Language Models with Language Models](https://arxiv.org/abs/2202.03286).
+10. Kojima, T., et al. (2022). [Large Language Models are Zero-Shot Reasoners](https://arxiv.org/abs/2205.11916).
+11. Kadavath, S., et al. (2022). [Language Models (Mostly) Know What They Know](https://arxiv.org/abs/2207.05221).
+12. Gao, L., Schulman, J., & Hilton, J. (2022). [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760).
+13. Saunders, W., et al. (2022). [Self-critiquing Models for Assisting Human Evaluators](https://arxiv.org/abs/2206.05802).
+14. Solaiman, I., & Dennison, C. (2021). [Process for Adapting Language Models to Society (PALMS)](https://arxiv.org/abs/2106.10328).
+15. Thoppilan, R., et al. (2022). [LaMDA: Language Models for Dialog Applications](https://arxiv.org/abs/2201.08239).
+16. Perez, E., et al. (2022). [Red Teaming Language Models with Language Models](https://arxiv.org/abs/2202.03286).
+17. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).

@@ -1,170 +1,225 @@
 ---
-title: "04 · SimPO:无参考的长度平均"
+title: "04 · SimPO: 无参考模型的长度平均奖励"
 published: true
 tags: ["SimPO", "DPO", "偏好优化", "长度归一", "无参考模型"]
-excerpt: "SimPO(Simple Preference Optimization)把 DPO 的隐式奖励从「相对参考模型的对数比」换成「当前策略自己的长度平均对数概率」,再在 Bradley-Terry 里加一个目标间隔 \\gamma."
+excerpt: "SimPO (Simple Preference Optimization) 把 DPO 的隐式奖励从「相对参考模型的对数比」换成「当前策略自己的长度平均对数概率」, 再在 Bradley-Terry 里加一个目标间隔 γ."
 ---
-# 04 SimPO:无参考的长度平均
+# 04 SimPO: 无参考模型的长度平均奖励
 
-SimPO(Simple Preference Optimization)把 DPO 的隐式奖励从「相对参考模型的对数比」换成「当前策略自己的长度平均对数概率」,再在 Bradley-Terry 里加一个目标间隔 $\gamma$.数据仍是成对 $(x,y_w,y_l)$,不成对,也不在线 rollout.
+Meng, Xia, Chen 的 *SimPO: Simple Preference Optimization with a Reference-Free Reward* ([arXiv:2405.14734](https://arxiv.org/abs/2405.14734), NeurIPS 2024) 处理的问题是: DPO 训练时要对参考模型做前向, 而且训练优化的奖励和生成时起作用的平均对数似然不一致, 能否换一种不需要参考模型的隐式奖励. 公式和数字以 [arXiv HTML](https://arxiv.org/html/2405.14734) 为准, 代码在 [princeton-nlp/SimPO](https://github.com/princeton-nlp/SimPO), DPO 的推导见 [01-DPO](../01-DPO/01-DPO.md).
 
-卡住的不是再养一个奖励模型.[01-DPO](../01-DPO/01-DPO.md) 已经把 RM 消掉了.卡住的是两件事:训练还要加载一份冻结的 $\pi_{\mathrm{ref}}$;训练优化的排序,和推理时真正用来选词的平均对数似然,对不齐.
+## 1. DPO 的奖励与生成度量不一致
 
-本篇跟 Meng,Xia,Chen([arXiv:2405.14734](https://arxiv.org/abs/2405.14734),NeurIPS 2024).代码在 [princeton-nlp/SimPO](https://github.com/princeton-nlp/SimPO).**不是** DPO 再除一次 $|y|$ 却仍保留 $\pi_{\mathrm{ref}}$.**不是** ORPO.**不是** CPO.**不是** RRHF 的 hinge.
-
-## 1. DPO 的奖励和生成不是同一把尺
+### 1.1 DPO 的隐式奖励
 
 DPO 从带 KL 约束的 RLHF 最优策略反解出隐式奖励
 
 $$
-r(x,y)=\beta\log\frac{\pi_\theta(y|x)}{\pi_{\mathrm{ref}}(y|x)}+\beta\log Z(x).
+r(x,y)=\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}+\beta\log Z(x),
 \tag{1}
 $$
 
-$Z(x)$ 在成对差里消掉.损失是
+$Z(x)$ 在成对相减时消掉, 损失是
 
 $$
 \mathcal{L}_{\mathrm{DPO}}=-\mathbb{E}\log\sigma\Biggl(
-\beta\log\frac{\pi_\theta(y_w|x)}{\pi_{\mathrm{ref}}(y_w|x)}
+\beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
 -
-\beta\log\frac{\pi_\theta(y_l|x)}{\pi_{\mathrm{ref}}(y_l|x)}
+\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
 \Biggr).
 \tag{2}
 $$
 
-推导和记号沿用 01-DPO,这里不重推.式 (1) 有两处别扭.训练每一步都要对 $\pi_{\mathrm{ref}}$ 做前向,显存和墙钟都多一截.推理解码看的却是 $\pi_\theta$ 自己的 token 对数概率,没有参考模型在场.
+### 1.2 两个问题
 
-解码时真正在比的,近似就是式 (3) 的平均对数似然.束搜索给候选打分,多选题把选项当续写来排,用的都是这个量,不是相对某份 SFT 的对数比.训练如果优化另一把尺,推理时那把尺对不上,并不奇怪.
+第一个问题是成本. 式 (1) 要求训练时一直有一份 $\pi_{\mathrm{ref}}$, 每步多两次前向, 显存里多一份权重.
 
-满足 $r(x,y_w)>r(x,y_l)$,推不出平均对数似然 $p_\theta(y_w|x)>p_\theta(y_l|x)$.论文在 UltraFeedback 训练集上量过:DPO 训完,奖励排序已经对上的那些三元组里,大约一半的平均对数似然排序是反的.Figure 4(b) 就是这张列联表.并发工作也观察到,DPO 模型按平均对数似然排序时准确率像抛硬币.论文把那篇并发工作标成 [14].
+第二个问题是度量不一致. 推理解码时只有 $\pi_\theta$, 没有参考模型. 束搜索给候选打分, 多选题把选项当续写排序, 用的都是策略自己的平均对数似然 (式 (3)), 而不是相对某个 SFT 模型的对数比. 训练优化的是一套排序, 推理用的是另一套, 两者可以不一致.
 
-问题在于:优化目标和生成度量拧成了两套.
+满足 $r(x,y_w)>r(x,y_l)$ 并不能推出 $y_w$ 的平均对数似然高于 $y_l$. 论文在 UltraFeedback 训练集上统计了 DPO 训完后的情况 (Figure 4(b)): 在 DPO 奖励已经排对的三元组里, 几乎一半的平均对数似然排序是反的. 同期工作 (Chen 等, *Preference learning algorithms do not learn preference rankings*) 也观察到, 按平均对数似然排序时, 偏好学习方法的排序准确率不高.
 
-![DPO 要参考模型,SimPO 用长度平均](./images/fig-simpo-vs-dpo-reward.png)
+### 1.3 排序错位的来源
 
-> 图 1:左列 $\pi_\theta$ 与冻结 $\pi_{\mathrm{ref}}$ 合成对数比再进 BT;右列只有 $\pi_\theta$,奖励是 $\beta/|y|$ 倍对数概率,再减 $\gamma$.
+为什么 DPO 奖励排对了, 平均对数似然却会排反. 把 DPO 的奖励差拆开: $\beta[\log\pi_\theta(y_w)-\log\pi_\theta(y_l)]-\beta[\log\pi_{\mathrm{ref}}(y_w)-\log\pi_{\mathrm{ref}}(y_l)]$. 第二项是参考模型本身对两条回答的偏好. 若参考模型原本就强烈偏向 $y_l$, 比如 $y_l$ 更短, 总对数概率高得多, 那么 DPO 只要让策略对 $y_l$ 的偏向比参考模型弱一点, 奖励差就为正. 此时策略仍然更可能生成 $y_l$, 排序在 DPO 的意义上是对的, 在生成的意义上是错的.
+
+再加上长度因素. 设 $\log\pi_{\mathrm{ref}}(y_w)=-60$ (30 token), $\log\pi_{\mathrm{ref}}(y_l)=-30$ (20 token), 训练后 $\log\pi_\theta(y_w)=-55$, $\log\pi_\theta(y_l)=-31$. DPO 的奖励差是 $\beta[(-55)-(-31)-(-60)+(-30)]=\beta\cdot6>0$, 排对了. 平均对数似然: $y_w$ 是 $-55/30\approx-1.83$, $y_l$ 是 $-31/20=-1.55$, $y_l$ 更高, 排反了. 这正是 Figure 4(b) 里那一半样本的情形.
+
+![DPO 要参考模型, SimPO 用长度平均](./images/fig-simpo-vs-dpo-reward.png)
+
+> 图 1: 左列 $\pi_\theta$ 与冻结 $\pi_{\mathrm{ref}}$ 合成对数比再进 BT; 右列只有 $\pi_\theta$, 奖励是 $\beta/|y|$ 倍对数概率, 再减 $\gamma$.
 
 **图 1 解析**
 
-- 两列共用顶上的 $(x,y_w,y_l)$.
-- 左:桃色可训策略和灰色冻结参考都进黄色 $r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$,再进粉色 BT.没有额外的 $\gamma$.
-- 右:只有 $\pi_\theta$.青绿框是长度平均,橙色框减 $\gamma$,再进 BT.
-- 页脚两句对照:左列 needs reference model;右列 reference-free, length average.
+- 两列共用顶部的 $(x,y_w,y_l)$.
+- 左列: 桃色的可训策略和灰色的冻结参考都进黄框 $r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$, 再进粉色 BT, 没有 $\gamma$.
+- 右列: 只有 $\pi_\theta$. 青绿框做长度平均, 橙框减 $\gamma$, 再进 BT.
+- 页脚两句对照: 左列 needs reference model, 右列 reference-free, length average.
 
-把 DPO 的对数比再除以 $|y|$,参考模型留着,那是长度归一的 DPO,不是 SimPO.本篇以式 (4)(6) 为准.
+## 2. 长度平均奖励
 
-## 2. 长度平均:对齐解码时真正在比的量
+### 2.1 为什么要除以长度
 
-序列对数概率 $\log\pi_\theta(y|x)$ 是逐步相加.序列越长,和越负,这是概率的乘法,不是质量变差.若拿**总和**当奖励,$y_w$ 比 $y_l$ 长时,模型会把长序列的逐步概率硬抬上去,好让总和翻盘.论文把这叫做 overcompensation,崩语言的风险跟着来.
+序列对数概率 $\log\pi_\theta(y\mid x)$ 是逐 token 相加的. 序列越长, 和越负, 这只是概率连乘的结果, 和质量无关. 如果用总和当奖励, 当 $y_w$ 比 $y_l$ 长时, 模型为了让 $y_w$ 的总和超过 $y_l$, 会人为抬高长序列每一步的概率. 论文把这称为过度补偿, 它会增加生成退化的风险.
 
-改成逐步平均:
+改用逐 token 平均:
 
 $$
-p_\theta(y|x)=\frac{1}{|y|}\log\pi_\theta(y|x)=\frac{1}{|y|}\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t}).
+p_\theta(y\mid x)=\frac{1}{|y|}\log\pi_\theta(y\mid x)=\frac{1}{|y|}\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t}).
 \tag{3}
 $$
 
-束搜索和选择题打分常用这个量.SimPO 把它乘上温度 $\beta$ 当成隐式奖励:
+SimPO 把它乘上系数 $\beta$ 作为隐式奖励:
 
 $$
-r_{\mathrm{SimPO}}(x,y)=\frac{\beta}{|y|}\log\pi_\theta(y|x)=\frac{\beta}{|y|}\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t}).
+r_{\mathrm{SimPO}}(x,y)=\frac{\beta}{|y|}\log\pi_\theta(y\mid x)=\frac{\beta}{|y|}\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t}).
 \tag{4}
 $$
 
-没有 $\pi_{\mathrm{ref}}$.$\beta$ 只缩放奖励差,不是 DPO 里那个从 KL 约束漏下来的同一只旋钮,虽然符号复用了.SimPO 实验里 $\beta$ 常见 $2.0$–$2.5$,比 DPO 常用的 $0.1$ 量级大一截.两套 $\beta$ 不要抄来抄去.
+式 (4) 里没有 $\pi_{\mathrm{ref}}$. 这里的 $\beta$ 只缩放奖励差, 和 DPO 中来自 KL 约束的 $\beta$ 含义不同, 只是沿用了同一个符号. SimPO 的 $\beta$ 一般取 2.0 到 2.5, 比 DPO 常用的 0.1 大一个数量级, 两者不能互相套用.
 
-用两个假序列把总和和平均拆开.设 $y_w$ 有 20 个 token,每步 $\log p_t=-1.0$,设 $y_l$ 有 10 个 token,每步 $\log p_t=-1.2$.逐步质量其实是胜者更好.总和奖励:$y_w$ 得 $-20$,$y_l$ 得 $-12$,负者反而赢.平均奖励:$y_w$ 得 $-1.0$,$y_l$ 得 $-1.2$,排序才对.这不是论文表里的数,只用来看清「项数多就把和拉负」这件事.真实训练里 $y_w$ 常常更长,总和目标会逼模型把长序列的每一步都抬上去,论文才把这个过程叫做 overcompensation.
+### 2.2 手算: 总和与平均
 
-式 (6) 对 $\theta$ 的梯度走 $\sigma$ 的反面.令 $\Delta=r(y_w)-r(y_l)-\gamma$,损失对 $\Delta$ 的导数是 $-(1-\sigma(\Delta))$.$\Delta$ 已经很大时几乎不更新;还没拉开时,梯度把 $y_w$ 的平均对数概率往上推,把 $y_l$ 往下推,两边都除以各自的 $|y|$.DPO 的同一位置还要减去 $\pi_{\mathrm{ref}}$ 的对数概率.SimPO 没有这项,步长完全落在 $\pi_\theta$ 自己的平均似然上.这也是它更容易把聊天榜拉高,也更容易在大学习率下忘掉 GSM8K 的原因:没有参考模型把更新按住.
+设 $y_w$ 有 20 个 token, 每步 $\log p_t=-1.0$; $y_l$ 有 10 个 token, 每步 $\log p_t=-1.2$. 逐 token 看, 胜者的质量更好.
 
-去掉 $|y|$ 这一除,AlpacaEval 2 的 LC 会掉.Mistral-Base 上完整 SimPO 是 21.5,去掉长度归一只剩 11.9,还低于同设定 DPO 的 15.1.附录还写:去掉 LN 之后会出现长而重复的模式.长度归一不是装饰.
+用总和当奖励: $y_w$ 得 $-20$, $y_l$ 得 $-12$, 输家反而奖励更高. 要让排序正确, 模型得把 $y_w$ 每步的对数概率从 $-1.0$ 抬到 $-0.6$ 以上 (20 步总和超过 $-12$), 这是一个和质量无关的大幅修改.
 
-论文 Figure 2(a) 把 UltraFeedback 训练集上的奖励差 $\Delta r=r(y_w)-r(y_l)$ 对长度差 $\Delta l=|y_w|-|y_l|$ 画出来.带 LN 的 SimPO 在 $\Delta l$ 为正为负时都能把 $\Delta r$ 推到正的一侧,相对 SFT 也抬了一截.去掉 LN,$y_w$ 比 $y_l$ 短的那些对上,$\Delta r$ 会变成负的:短的胜者学不进去.Figure 2(b)(c) 再看平均对数似然和回复长度的 Spearman 相关:去掉 LN 之后相关强得多,模型在用长度刷分;完整 SimPO 的相关接近 SFT.
+用平均当奖励: $y_w$ 得 $-1.0$, $y_l$ 得 $-1.2$, 排序直接正确. 取 $\beta=2.5$, 奖励差是 $2.5\times0.2=0.5$.
 
-DPO 的对数比里没有显式 $|y|$,参考模型那一项能部分抵消长度.Table 6:DPO 的 Spearman 比「SimPO w/o LN」低,但仍高于完整 SimPO.这解释了为什么「DPO 已经有点抗长度」还不够,以及为什么不能把 DPO 再除一次长度就叫 SimPO.
+### 2.3 为什么 $\beta$ 要取得大
+
+平均对数似然之差的数值通常很小. 第 2.2 节的例子里, 两条回答的平均对数似然只差 0.2 nat. 若 $\beta=0.1$, 奖励差是 0.02, $\sigma(0.02)\approx0.505$, 损失约 0.683, 几乎和随机猜一样, 梯度也很难把它推开. 取 $\beta=2.5$, 奖励差是 0.5, $\sigma(0.5)\approx0.62$, 这个量级才让损失对排序有明显的区分.
+
+DPO 的情况相反. 它用整条序列的对数比, 一条 200 token 的回答, 每个 token 的对数比平均变化 0.05, 总和就是 10 nat, 乘 $\beta=0.1$ 后是 1.0. 序列求和本身已经把数值放大了几百倍, 所以 $\beta$ 取小值. 从这个角度看, SimPO 的大 $\beta$ 部分抵消了除以 $|y|$ 带来的缩小.
+
+逐 token 看梯度. DPO 里每个 token 的对数概率梯度前面的系数是 $\beta\cdot w$, $w$ 是样本权重. SimPO 里是 $(\beta/|y|)\cdot w$. 一条 200 token 的回答, SimPO 取 $\beta=2.5$, 每个 token 的系数是 $0.0125w$; DPO 取 $\beta=0.1$, 是 $0.1w$. 对长回答, SimPO 每个 token 的推力比 DPO 小. 对 20 token 的短回答, SimPO 的系数是 $0.125w$, 和 DPO 相当. 长度归一让每条回答整体分到的梯度大致相同, 和长短无关; DPO 里长回答整体分到的梯度与长度成正比.
+
+### 2.4 去掉长度归一的后果
+
+Mistral-Base 上, 完整 SimPO 的 AlpacaEval 2 LC 是 21.5, 去掉长度归一后只有 11.9, 低于同设定 DPO 的 15.1. 去掉长度归一后, 模型还会生成更长且带重复模式的回答.
+
+论文 Figure 2(a) 把 UltraFeedback 训练集上的奖励差 $\Delta r=r(y_w)-r(y_l)$ 对长度差 $\Delta l=|y_w|-|y_l|$ 作图. 有长度归一时, 无论 $\Delta l$ 为正还是为负, SimPO 都能把 $\Delta r$ 推到正的一侧. 去掉长度归一后, 在 $y_w$ 比 $y_l$ 短的样本上, $\Delta r$ 变成负的, 也就是短的胜者学不进去. Figure 2(b)(c) 看平均对数似然和回答长度的 Spearman 相关: 去掉长度归一后相关性强得多, 模型在利用长度偏差; 完整 SimPO 的相关性与 SFT 模型相近.
+
+DPO 的对数比里没有显式的 $|y|$, 但参考模型那一项能部分抵消长度影响. 论文 Table 6 中, DPO 的 Spearman 相关低于去掉长度归一的 SimPO, 但高于完整 SimPO. 论文也提到, 把长度归一加到 DPO 上可能有帮助, 因为策略仍可能利用数据里的长度偏差. 长度归一的 DPO 仍保留参考模型, 和 SimPO 是两种算法.
 
 ![总和对数概率与长度平均](./images/fig-simpo-length-norm.png)
 
-> 图 2:上行把逐步 $\log p_t$ 加总当奖励;下行先平均再乘 $\beta$,得到 $r_{\mathrm{SimPO}}$.
+> 图 2: 上行把逐步 $\log p_t$ 加总当奖励; 下行先平均再乘 $\beta$, 得到 $r_{\mathrm{SimPO}}$.
 
 **图 2 解析**
 
-- 两行都从左到右.绿框是整段 $y$,黄框是逐步对数概率.
-- 上:四条黄箭头进橙色 SUM,再进粉色 used as reward.长序列项数多,和更负.
-- 下:同样四条黄箭头进青绿 $\mathrm{mean}=(1/|y|)\sum\log p_t$,再乘 $\beta$,得到 $r_{\mathrm{SimPO}}$.
+- 两行都从左到右. 绿框是整段 $y$, 黄框是逐步对数概率.
+- 上行: 四条黄箭头进橙色 SUM, 再进粉色 used as reward. 长序列项数多, 和更负.
+- 下行: 同样四条黄箭头进青绿框 $\mathrm{mean}=(1/|y|)\sum\log p_t$, 再乘 $\beta$, 得到 $r_{\mathrm{SimPO}}$.
 
 ## 3. 目标间隔 $\gamma$
 
-Bradley-Terry 里再减一个正的间隔:
+### 3.1 损失
+
+在 Bradley-Terry 里再减一个正的间隔:
 
 $$
 p(y_w\succ y_l\mid x)=\sigma\bigl(r(x,y_w)-r(x,y_l)-\gamma\bigr).
 \tag{5}
 $$
 
-$\gamma$ 是主场优势:胜者至少要比负者高出这么多才算分清.把式 (4) 代进去:
+$\gamma$ 要求胜者的奖励至少比输家高出这么多. 代入式 (4):
 
 $$
 \mathcal{L}_{\mathrm{SimPO}}(\pi_\theta)
 =
 -\mathbb{E}\log\sigma\Biggl(
-\frac{\beta}{|y_w|}\log\pi_\theta(y_w|x)
+\frac{\beta}{|y_w|}\log\pi_\theta(y_w\mid x)
 -
-\frac{\beta}{|y_l|}\log\pi_\theta(y_l|x)
+\frac{\beta}{|y_l|}\log\pi_\theta(y_l\mid x)
 -
 \gamma
 \Biggr).
 \tag{6}
 $$
 
-$\gamma=0$ 时还是长度平均的 BT,已经不是 DPO.Mistral-Base 上 $\gamma=0$ 的 AlpacaEval 2 LC 是 16.8,完整 SimPO 是 21.5;Mistral-Instruct 上 30.9 对 32.1,间隔更窄.
+### 3.2 梯度
 
-论文 Figure 3:held-out 上的奖励准确率随 $\gamma$ 单调升,AlpacaEval 2 胜率却先升后降.间隔拉太大,分类边界好看,生成会坏.同一张图还显示:$\gamma$ 加大,奖励差的分布被摊平,chosen 的平均对数似然往下掉.一开始这是在把边界拉开,再往后就是退化.
-
-主实验四套设定里,$\beta$ 常见 $2.0$–$2.5$,$\gamma$ 常见 $0.5$–$1.5$;附录表并不死守这区间.Llama-3-Instruct 用 $\beta=2.5$,$\gamma=1.4$,学习率 $1\times10^{-6}$;Mistral-Instruct 用 $\beta=2.5$,$\gamma=0.3$,学习率 $5\times10^{-7}$.$\gamma=0.3$ 已经低于「一般」下限.复现跟附录 B,不要拿 2.0 / 1.0 当万能默认.
-
-IPO 也有一个靶心间隔 $\tau^{-1}/2$,但是平方损失,参考模型还在.式 (6) 是 $\log\sigma$ 加长度平均,没有 $\pi_{\mathrm{ref}}$.同数据上 IPO 打不过 SimPO,见下一节的表.
-
-## 4. 不是 ORPO,不是 CPO,不是 RRHF
-
-几条邻居都自称能省参考模型或能压噪声.数据槽和奖励定义不是一回事.论文 Table 3 把它们写成同一张目标对照表,下面按那张表拆.
-
-ORPO 把 chosen 的 SFT 交叉熵和 chosen / rejected 的几率比捆在一起,可以不加载 $\pi_{\mathrm{ref}}$,仍要一对回复.奖励不是长度平均对数概率,也没有 $\gamma$.ORPO 原文可以从裸基座单阶段训.论文自己写:为了跟别家公平,ORPO 也从同一份 SFT 出发,比从裸基座更好.即便如此,四套设定里 ORPO 的 AlpacaEval 2 LC 仍低于 SimPO.Mistral-Base 上 ORPO 是 14.7,SimPO 是 21.5;Llama-3-Instruct 上 28.5 对 44.7.
-
-CPO 用 $-\log\sigma(\beta\log\pi_\theta(y_w)-\beta\log\pi_\theta(y_l))$ 再加一项 chosen 的 NLL,也没有参考模型.它的奖励是**未除长度**的对数概率差.总和对数概率对长序列更负,要让 $y_w$ 赢,模型会把长回复的逐步概率抬上去,生成自然偏长.论文观察到 CPO 生成平均比 SimPO 长约 50%.Arena-Hard 没有长度惩罚,偶尔会让 CPO 好看一点;AlpacaEval 2 的 LC 把冗长压回去之后,SimPO 仍高.Mistral-Instruct 上 CPO 的 Arena-Hard 是 22.6,SimPO 是 21.0,这是论文点名「偶尔被 CPO 超过」的那一格.
-
-IPO 吃 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$,把 DPO 的 $\log\sigma$ 换成平方,靶心 $\tau^{-1}/2$.它要解决的是「分得越开越好」放大噪声.SimPO 的间隔是加在长度平均奖励上的 $\gamma$,不是 MSE.Mistral-Base 上 IPO 的 LC 是 11.8,SimPO 是 21.5.正本在 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).
-
-RRHF 的奖励看起来最像:也用 $(1/|y|)\log\pi_\theta$.差别在损失.RRHF 是 hinge,再加一项 chosen 的 NLL:
+记 $\Delta=r(y_w)-r(y_l)-\gamma$, 损失对 $\Delta$ 的导数是 $-(1-\sigma(\Delta))=-\sigma(-\Delta)$. 对 $\theta$:
 
 $$
-\max\bigl(0,\;-\tfrac{1}{|y_w|}\log\pi_\theta(y_w|x)+\tfrac{1}{|y_l|}\log\pi_\theta(y_l|x)\bigr)-\lambda\log\pi_\theta(y_w|x).
+\nabla_\theta\mathcal{L}_{\mathrm{SimPO}}
+=
+-\beta\,\mathbb{E}\Bigl[\sigma(-\Delta)\Bigl(\frac{1}{|y_w|}\nabla_\theta\log\pi_\theta(y_w\mid x)-\frac{1}{|y_l|}\nabla_\theta\log\pi_\theta(y_l\mid x)\Bigr)\Bigr].
+\tag{7}
 $$
 
-没有 $\gamma$,也没有 BT 的 $\log\sigma$.SLiC-HF 用的是**未除长度**的对数概率差加 hinge,同样带 SFT 项.R-DPO 仍要 $\pi_{\mathrm{ref}}$,只是在 DPO 上加长度正则.Mistral-Base 上 R-DPO 的 LC 是 17.4,已经高于 DPO 的 15.1,仍低于 SimPO 的 21.5.Llama-3-Instruct 上 R-DPO 是 41.1,SimPO 是 44.7.长度正则帮了 DPO 一截,没有把参考模型消掉.
+和 DPO 的梯度比, 差别有两处. 一是权重 $\sigma(-\Delta)$ 里没有参考模型, 含义很直接: 策略给 $y_l$ 的平均似然高于 $y_w$ 时权重大. 二是两侧梯度分别除以各自的长度, 长回答的每个 token 分到的梯度更小.
 
-KTO 吃二值,不成对,参考点是 $\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})$ 的错配估计,正本在 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md).SimPO 仍然要一对 $y_w,y_l$.论文把偏好对拆成 KTO 能吃的二值来跑,Mistral-Base LC 只有 13.1.
+手算一组. 取 $\beta=2.5$, $\gamma=1.4$, 用第 2.2 节的数: $r_w=-2.5$, $r_l=-3.0$, $\Delta=0.5-1.4=-0.9$, 权重 $\sigma(0.9)\approx0.71$. 虽然排序已经正确, 但间隔没达到 $\gamma$, 这条样本还在被大力更新. 要让权重降到 0.27 以下, $\Delta$ 需大于 1, 也就是平均对数似然之差超过 $(1.4+1)/2.5=0.96$.
 
-| | 数据 | $\pi_{\mathrm{ref}}$ | 隐式奖励 | 间隔 / 正则 |
-|--|------|----------------------|----------|-------------|
-| DPO | $(x,y_w,y_l)$ | 要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ | 无 $\gamma$ |
+间隔的思路来自分类问题. 论文引用了支持向量机 (Cortes 与 Vapnik) 的工作: 要求正负样本之间留出间隔, 通常能改善在未见样本上的泛化. 在偏好学习里, $\gamma$ 让模型不满足于「刚好排对」, 而要拉开一段距离. 没有 $\gamma$ 时, 样本一旦排对, $\sigma(-\Delta)$ 就小于 0.5, 更新随之减弱; 有了 $\gamma$, 排对但间隔不足的样本仍保持较大的权重.
+
+### 3.3 $\gamma$ 的消融
+
+$\gamma=0$ 时 SimPO 退化为长度平均的 Bradley-Terry. Mistral-Base 上 $\gamma=0$ 的 AlpacaEval 2 LC 是 16.8, 完整 SimPO 21.5; Mistral-Instruct 上是 30.9 对 32.1, 差距较小.
+
+论文 Figure 3 显示, held-out 集上的奖励准确率随 $\gamma$ 单调上升, AlpacaEval 2 胜率却先升后降. 同一张图还显示, $\gamma$ 增大时奖励差的分布变平, chosen 回答的平均对数似然下降. 间隔太大, 分类准确率好看, 生成质量变差.
+
+### 3.4 超参
+
+论文附录给出各设定的取值. Llama-3-Instruct 用 $\beta=2.5$, $\gamma=1.4$, 学习率 $1\times10^{-6}$; Mistral-Instruct 用 $\beta=2.5$, $\gamma=0.3$, 学习率 $5\times10^{-7}$. $\gamma$ 的搜索范围是 $\{0.3,0.5,1.0,1.2,1.4,1.6\}$. 不同设定的最优值差别很大, 复现时应以附录为准.
+
+$\gamma$ 的量纲是奖励差, 和 $\beta$ 乘出来的尺度绑定. 改 $\beta$ 一般要重新搜 $\gamma$. 有时用 $\gamma/\beta$ 这个比值来思考更方便: 它是平均对数似然之差需要达到的目标. Llama-3-Instruct 的设置下这个比值是 0.56, Mistral-Instruct 是 0.12.
+
+IPO 也有一个目标间隔 $\tau^{-1}/2$, 但它用平方损失, 并保留参考模型. 同一数据下 IPO 的结果见第 5 节的表.
+
+## 4. 与相邻方法的分工
+
+论文 Table 3 把相关方法的目标写在一起. 下面逐个说明.
+
+**ORPO** 把 chosen 的 SFT 交叉熵和几率比项加在一起, 不用参考模型, 要成对数据, 没有 $\gamma$. ORPO 原文从基座单阶段训练. 为了比较公平, SimPO 论文让 ORPO 也从同一个 SFT 模型出发, 并说这样比从基座开始效果更好. 即便如此, 四套设定里 ORPO 的 AlpacaEval 2 LC 都低于 SimPO: Mistral-Base 上 14.7 对 21.5, Llama-3-Instruct 上 28.5 对 44.7. 见 [02-ORPO](../02-ORPO/02-ORPO.md).
+
+**CPO** 用 $-\log\sigma(\beta\log\pi_\theta(y_w)-\beta\log\pi_\theta(y_l))$ 再加 chosen 的 NLL, 也不用参考模型. 它的奖励是未除长度的对数概率差, 所以会把长回答的概率往上抬, 生成偏长. 论文观察到 CPO 的生成平均比 SimPO 长约 50%. Arena-Hard 没有长度惩罚, CPO 偶尔会更好看: Mistral-Instruct 上 CPO 的 Arena-Hard 是 22.6, SimPO 21.0.
+
+**IPO** 要 $(y_w,y_l)$ 和 $\pi_{\mathrm{ref}}$, 把 DPO 的 $\log\sigma$ 换成平方损失, 目标间隔 $\tau^{-1}/2$. Mistral-Base 上 IPO 的 LC 是 11.8. 见 [03-IPO](../../4.4.4-其他对齐技术/03-IPO-身份偏好优化/03-IPO-身份偏好优化.md).
+
+**RRHF** 的奖励形式最接近, 也是 $(1/|y|)\log\pi_\theta$, 区别在损失. RRHF 用 hinge 损失再加 chosen 的 NLL:
+
+$$
+\max\bigl(0,\;-\tfrac{1}{|y_w|}\log\pi_\theta(y_w\mid x)+\tfrac{1}{|y_l|}\log\pi_\theta(y_l\mid x)\bigr)-\lambda\log\pi_\theta(y_w\mid x).
+$$
+
+它没有 $\gamma$, 也没有 Bradley-Terry 的 $\log\sigma$.
+
+**SLiC-HF** 用未除长度的对数概率差加带间隔的 hinge, 同样带 SFT 项. 见 [01-SLiC](../../4.4.4-其他对齐技术/01-SLiC-序列似然校准/01-SLiC-序列似然校准.md).
+
+**R-DPO** 保留参考模型, 在 DPO 上加长度正则. Mistral-Base 上 R-DPO 的 LC 是 17.4, 高于 DPO 的 15.1, 低于 SimPO 的 21.5. Llama-3-Instruct 上 R-DPO 41.1, SimPO 44.7.
+
+**KTO** 用不成对的二值数据, 见 [03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md). SimPO 论文把偏好对拆成二值跑 KTO, Mistral-Base 上 LC 为 13.1.
+
+| | 数据 | $\pi_{\mathrm{ref}}$ | 隐式奖励 | 间隔或正则 |
+|--|------|----------------------|----------|-----------|
+| DPO | $(x,y_w,y_l)$ | 要 | $\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$ | 无 |
 | R-DPO | 成对 | 要 | 同一对数比 | 长度正则 |
-| IPO | 成对 | 要 | 同一对数比 | MSE 靶心 $\tau^{-1}/2$ |
-| RRHF | 成对 | 不要 | $(1/\|y\|)\log\pi_\theta$ | hinge + SFT |
-| SLiC-HF | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ | 有间隔 hinge + CE |
-| ORPO | 成对 | 不要 | 几率比 + SFT | 无 $\gamma$ |
-| CPO | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ 差 | + SFT |
-| SimPO | 成对 | 不要 | $(\beta/\|y\|)\log\pi_\theta$ | $\gamma>0$,无 SFT 项 |
+| IPO | 成对 | 要 | 同一对数比 | 平方损失, 目标 $\tau^{-1}/2$ |
+| RRHF | 成对 | 不要 | $(1/\lvert y\rvert)\log\pi_\theta$ | hinge 加 SFT |
+| SLiC-HF | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ | 带间隔 hinge 加 SFT |
+| ORPO | 成对 | 不要 | 几率比 | 加 SFT, 无 $\gamma$ |
+| CPO | 成对 | 不要 | 未除长度的 $\log\pi_\theta$ 差 | 加 SFT |
+| SimPO | 成对 | 不要 | $(\beta/\lvert y\rvert)\log\pi_\theta$ | $\gamma>0$, 无 SFT 项 |
 
-## 5. 一手数字:四套设定与消融
+## 5. 实验
 
-实验落在 Llama-3-8B 和 Mistral-7B,各分 Base / Instruct.Base 跟 Zephyr 那条流水线:先在 UltraChat-200k 上 SFT,再拿现成 UltraFeedback 偏好对做优化,起点透明,别人可以复现「从哪个 SFT 出发」.Instruct 不另训 SFT,直接用官方指令模型当起点.偏好对是自己造的:同一条 UltraFeedback prompt,当前策略采 5 条,温度 0.8,PairRM 打分,最高当 $y_w$,最低当 $y_l$.中间三条扔掉,不进损失.单轮,不迭代,也没有拒绝采样再滤一轮.造出来的对和「人类标的 UltraFeedback 原对」不是同一分布.5 条里只留两端,等于用 PairRM 的分数差当过滤:分差大的对进训练集,分差小的那三条直接丢掉.这会让 BT 更好拟合,也会让模型看不到「差不多好」的难例.论文没有把丢掉的三条再训一遍做对照,所以「只留两端」到底贡献了多少分,表里拆不开.Instruct 四套数字整体高于 Base,论文把原因写成两点:起点指令模型更强,以及它自己采出来的偏好对质量更高.Gemma-2-9B-it 那条最强数字另用 ArmoRM 标偏好,不要和 Table 4 的 PairRM 四套混成一张表.
+### 5.1 设定
 
-评测:AlpacaEval 2(805 题,对 GPT-4 Turbo,报 LC 与 raw WR),Arena-Hard v0.1(500 题),MT-Bench(80 题).LC 专门抗冗长.MT-Bench 题少,单条打分,论文自己说区分力弱,主判断看前两个.
+实验用 Llama-3-8B 和 Mistral-7B, 各分 Base 和 Instruct 两种设定.
 
-偏好优化共用:batch 128,1 个 epoch,最长 2048,余弦,10% warmup.学习率在 $\{3,5,6\}\times10^{-7}$ 和 $1\times10^{-6}$ 里按算法单搜.这是复现超参,不是式 (6) 的一部分.1 个 epoch 意味着每条偏好对只见一次.离线方法本来就容易把训练集的排序记死,多 epoch 会把模式坍缩提前.论文没有做 2 epoch 消融,复现先按 1 来.最长 2048 截的是 prompt 加 completion;Instruct 设定里策略自己采的回答如果经常顶满这个长度,式 (4) 的 $|y|$ 会被截断,长度平均会偏.这是实现细节,正文没当主结果报.
+Base 设定沿用 Zephyr 的流程: 先在 UltraChat-200k 上 SFT, 再用现成的 UltraFeedback 偏好对做偏好优化. 起点公开透明, 便于复现.
 
-Table 4 的 AlpacaEval 2 LC / WR 与 Arena-Hard WR(MT-Bench 略):
+Instruct 设定直接用官方指令模型 (Meta-Llama-3-8B-Instruct, Mistral-7B-Instruct-v0.2) 当起点, 偏好对自己构造: 对 UltraFeedback 的每条 prompt, 用起点模型采 5 条回答, 温度 0.8, 用 PairRM 打分, 最高分作 $y_w$, 最低分作 $y_l$. 这样得到的偏好数据更接近当前策略的分布. 论文认为 Instruct 设定的数字整体更高, 原因是起点模型更强, 偏好数据质量也更高.
+
+偏好优化阶段统一用 batch 128, 1 个 epoch, 最大长度 2048, 余弦学习率, 10% warmup. 只训 1 个 epoch 意味着每条偏好对只出现一次. 离线偏好方法在同一份数据上多轮训练时, 容易把训练集的排序记得过牢, 论文没有报告多 epoch 的结果, 复现时先按 1 个 epoch 来. 学习率对每种方法单独在 $\{3,5,6\}\times10^{-7}$ 和 $1\times10^{-6}$ 里搜索. 所有训练在 8 张 H100 上进行.
+
+评测用 AlpacaEval 2 (805 题, 对手 GPT-4 Turbo, 报告长度控制胜率 LC 和原始胜率 WR), Arena-Hard v0.1 (500 题), MT-Bench (80 题). LC 专门校正冗长带来的偏差. 论文认为 MT-Bench 题目少, 区分度弱, 主要看前两个.
+
+### 5.2 主结果 (Table 4)
+
+下表列 AlpacaEval 2 LC, WR 和 Arena-Hard WR:
 
 | 设定 | SFT LC | DPO | ORPO | R-DPO | SimPO |
 |------|-------:|-----|------|-------|-------|
@@ -173,79 +228,118 @@ Table 4 的 AlpacaEval 2 LC / WR 与 Arena-Hard WR(MT-Bench 略):
 | Llama-3-Base 8B | 6.2 | 18.2 / 15.5 / 15.9 | 12.2 / 10.6 / 10.8 | 17.6 / 14.4 / 17.2 | 22.0 / 20.3 / 23.4 |
 | Llama-3-Instruct 8B | 26.0 | 40.3 / 37.9 / 32.6 | 28.5 / 27.4 / 25.8 | 41.1 / 37.8 / 33.1 | 44.7 / 40.5 / 33.8 |
 
-四套 AlpacaEval 2 LC 上,SimPO 相对「该设定里次优的那条基线」高出 3.6 到 4.8 个点(论文原句).相对 DPO:Mistral-Base +6.4 LC,Llama-3-Instruct +4.4 LC.Arena-Hard 上 Mistral-Base 从 DPO 的 10.4 到 16.6(+6.2);摘要写的「最多 +7.5 Arena-Hard」是跨设定上沿,不要把它安到 Llama-3-Instruct 这一格(那里只 +1.2).
+四套设定的 AlpacaEval 2 LC 上, SimPO 比该设定里最好的基线高 3.6 到 4.8 点. 相对 DPO, Mistral-Base 上 LC 高 6.4 点, Llama-3-Instruct 上高 4.4 点. Arena-Hard 上的优势在各设定间差别很大: Mistral-Base 从 DPO 的 10.4 到 16.6, Llama-3-Instruct 上只从 32.6 到 33.8.
 
-Table 5 消融钉在 Mistral 两套上:
+论文还指出, 起点模型很强, 偏好数据质量很高时, 不同算法的差距会缩小. Llama-3-8B-Instruct 设定下 DPO 的原始胜率和 SimPO 接近, DPO, IPO, R-DPO 在 Arena-Hard 上的原始胜率也相近. SimPO 的优势主要来自生成更短, LC 因此更高.
+
+### 5.3 消融 (Table 5)
 
 | | Mistral-Base LC / WR / Arena | Mistral-Instruct LC / WR / Arena |
 |--|------------------------------|----------------------------------|
 | DPO | 15.1 / 12.5 / 10.4 | 26.8 / 24.9 / 16.3 |
 | SimPO | 21.5 / 20.8 / 16.6 | 32.1 / 34.8 / 21.0 |
-| 去掉 $\|y\|$ | 11.9 / 13.2 / 9.4 | 19.1 / 19.7 / 16.3 |
+| 去掉长度归一 | 11.9 / 13.2 / 9.4 | 19.1 / 19.7 / 16.3 |
 | $\gamma=0$ | 16.8 / 14.3 / 11.7 | 30.9 / 34.2 / 20.5 |
 
-去掉长度归一,Base 设定直接掉到 DPO 下面,raw WR 13.2 反而高于 LC 11.9,正是冗长在刷未校正胜率.$\gamma=0$ 仍高于 DPO,但低于完整式 (6).两个零件都要.
+去掉长度归一后, Base 设定掉到 DPO 以下, 而且原始胜率 13.2 高于 LC 11.9, 说明冗长在推高未校正的胜率. $\gamma=0$ 仍好于 DPO, 但不如完整 SimPO. 两个组成部分都有贡献.
 
-Gemma-2-9B-it + ArmoRM 那次另开一张表.AlpacaEval 2 排行榜(论文 Table 1):Gemma-2-9B-it-SimPO 的 LC 72.4,raw WR 65.9,平均长度 1833;底座 Gemma-2-9B-it 是 51.1 / 38.1 / 1571.Arena-Hard 正文写 59.1.附录 Table 17 同一套 UltraFeedback 再生数据:底座 51.1 / 40.8,DPO 67.8 / 58.9,SimPO($1\times10^{-6}$)71.0 / 58.3,ZeroEval GSM 仍是 87.4,MMLU 71.5(底座 72.7).Chatbot Arena 真人票从第 36 升到第 25,截止 2024-09-16 是 10B 以下第一.真人榜会随新模型加入而挤位,这个名次是当时的快照,不是永久头衔.这是另一套数据标注,不要和 Table 4 的 44.7 当成同一实验.
+### 5.4 Gemma-2-9B-it
 
-Llama-3-Base,8×H100:相对一份普通 DPO 实现,SimPO 墙钟大约少 20%,单卡峰值显存大约少 10%.省的是参考模型那一次前向.脚注写:若把 DPO 的参考前向拆开算,显存可以对齐;那不是常见实现.
+论文另用 Gemma-2-9B-it 做了一组实验, 偏好标注换成 ArmoRM, 每个 prompt 最多采 5 条回答. AlpacaEval 2 排行榜上 (Table 1), Gemma-2-9B-it-SimPO 的 LC 72.4, 原始胜率 65.9, 平均长度 1833; Gemma-2-9B-it 底座是 51.1, 38.1, 1571. Arena-Hard 上是 59.1. 附录 Table 17 用同一套数据比较: DPO 的 AlpacaEval 2 LC / WR 是 67.8 / 58.9, SimPO 是 71.0 / 58.3; SimPO 的零样本 GSM 是 87.4, MMLU 71.5 (底座 72.7). 提交到 Chatbot Arena 后, 排名从底座的第 36 升到第 25, 按 2024 年 9 月的真人投票是 10B 以下第一. 这组实验的标注模型和 Table 4 不同, 数字不能放在一起比.
 
-## 6. 为什么能打过 DPO,以及它会忘什么
+### 5.5 效率
 
-奖励和生成度量对齐之后,held-out 上 $r(y_w)>r(y_l)$ 更常成立.Figure 4(c) 把这条奖励准确率画出来,SimPO 一路高于 DPO.训练集上那张列联表不再是五五开:SimPO 的奖励就是平均对数似然乘 $\beta$,排序错位被定义消掉.
+Llama-3-Base 设定, 8 张 H100: 相对一个标准的 DPO 实现, SimPO 的训练时间少约 20%, 单卡峰值显存少约 10%. 论文脚注说明, 如果 DPO 实现把参考模型的前向单独算好再做偏好优化, 显存可以和 SimPO 持平, 但常见实现不这样做.
 
-没有 KL 项把策略钉在一份可能很弱的 SFT 上.Mistral-Base 这种弱参考上,DPO 把 $\beta$ 加大,KL 压下去,AlpacaEval 2 反而更差.Figure 5(a)(b):SimPO 相对参考的 KL 仍然有限,$\beta$ 加大时两条都会降,DPO 降得更陡;同一张图上较小的 $\beta$ 对应更高的 LC.论文自己写:参考弱的时候,把策略死死钉在参考上未必好.Llama-3-Instruct 上他们又观察到 $\beta=10$ 这种大值更好.同一只旋钮,基座不同,方向会反.
+两种实现的差别可以具体算一下. 预先算参考对数概率的做法, 是在训练开始前把整个偏好数据集过一遍 $\pi_{\mathrm{ref}}$, 把每条 chosen 和 rejected 的序列对数概率存成两列数字, 训练时直接读取. 这样训练阶段显存里只有一份模型, 代价是多一遍全数据集的推理. 标准实现是训练时每步现算, 显存里常驻两份模型. SimPO 两样都不用.
 
-没有显式 KL 不等于一定崩.他们写的稳住因素是小学习率,偏好数据够杂,以及大模型本身不那么容易把先验忘光.这是经验,不是证明.原则上没有参考约束就会奖励黑客:损失已经很小,语言已经坏了.
+## 6. 为什么有效, 以及会遗忘什么
 
-真发生过的忘光在 Llama-3-Instruct 上.社区反馈发布的 Llama-3-SimPO 在 MMLU,GSM8K 掉点.附录 Table 16 从 Llama-3-8B-Instruct 续训(ZeroEval,零样本):
+### 6.1 排序一致
+
+奖励和生成度量统一之后, held-out 集上 $r(y_w)>r(y_l)$ 更常成立. Figure 4(c) 中 SimPO 的奖励准确率一直高于 DPO. SimPO 的奖励就是平均对数似然乘 $\beta$, 第 1.2 节说的那种排序错位在定义上就不存在.
+
+### 6.2 弱参考模型下 KL 约束的作用
+
+论文 Figure 5(a)(b) 比较了不同 $\beta$ 下 DPO 和 SimPO 相对参考模型的 KL, 以及对应的 AlpacaEval 2 LC. SimPO 没有任何针对参考模型的正则, KL 仍然不大. $\beta$ 增大时两者的 KL 都下降, DPO 下降更明显, 但 LC 也变差. 论文的解读是: 参考模型较弱时 (如 Mistral-Base 的 SFT), 把策略严格限制在参考模型附近未必是好事.
+
+没有 KL 约束为什么没有崩, 论文给出的是经验性的解释: 学习率小, 偏好数据覆盖面广, 大模型本身不容易丢掉先验知识. 这些不构成理论保证. 没有参考约束, 原则上可能出现奖励黑客: 损失已经很小, 语言能力已经受损.
+
+把这个结果和 DPO 的推导放在一起看. DPO 的 KL 约束来自 RLHF 目标, 本意是防止策略钻奖励模型的空子, 并保留参考模型的能力. 在 DPO 里已经没有独立奖励模型, 第一个理由弱了很多; 第二个理由取决于参考模型本身有多好. 参考模型弱时, 约束保留的是弱能力; 参考模型强时, 约束保留的是有价值的能力. 第 6.3 节 Llama-3-8B-Instruct 的遗忘, 是后一种情况下去掉约束的代价.
+
+### 6.3 Llama-3-8B-Instruct 上的遗忘
+
+论文发布的 Llama-3-8B-Instruct-SimPO 被社区反馈 MMLU, GSM8K 掉点. 附录 Table 16 用 ZeroEval 零样本评测, 比较了不同学习率:
 
 | | AlpacaEval 2 LC | GSM | MMLU |
 |--|----------------:|----:|-----:|
 | Instruct 底座 | 26.0 | 78.5 | 61.7 |
-| SimPO $4\times10^{-7}$ | 38.8 | 77.9 | 62.6 |
-| SimPO $5\times10^{-7}$ | 44.6 | 77.0 | 62.3 |
-| SimPO $1\times10^{-6}$(发布) | 53.7 | 57.4 | 54.9 |
+| SimPO, $4\times10^{-7}$ | 38.8 | 77.9 | 62.6 |
+| SimPO, $5\times10^{-7}$ | 44.6 | 77.0 | 62.3 |
+| SimPO, $1\times10^{-6}$ (发布版) | 53.7 | 57.4 | 54.9 |
 
-大学习率聊天榜更高,GSM / MMLU 掉一截.学习率压下去,聊天略差,知识榜留得住.Table 4 里 Llama-3-Instruct 的 44.7 对应的是主实验设定,和这张发布 checkpoint 的 53.7 不是同一条训练.Gemma-2-9B-it 上他们换学习率,聊天和零样本几乎不动.同一套损失,基座不同,遗忘曲线不同.
+学习率大时聊天指标更高, GSM 和 MMLU 明显下降; 学习率压低, 聊天略差, 知识和数学基本保住. 这里的 53.7 是用 ArmoRM 标注的 v0.2 版本, 和 Table 4 的 44.7 是两次不同的训练. Gemma-2-9B-it 上调整学习率时, 聊天和零样本指标几乎不动. 同一套损失, 基座不同, 遗忘程度也不同.
 
-Open LLM Leaderboard(论文 Table 9)上,SimPO 没有处处第一.Mistral-Base 上 GSM8K:SFT 28.13,SimPO 22.21,DPO 21.76,ORPO 42.15.带 SFT 项的目标(ORPO,CPO,SLiC)数学掉得少,聊天榜又往往不如 SimPO.附录试过「SimPO + 少量 SFT 混合」:GSM8K 能托住,AlpacaEval 2 会掉.那是缓解遗忘的工程,不是式 (6) 的定义.
+### 6.4 数学任务与 SFT 项
 
-长度:Llama-3-Instruct 上 SimPO 生成比 DPO 短;别的设定上 AlpacaEval 2 可以长到约 26%,Arena-Hard 大约只长 5%.LC 始终高于 raw WR,论文据此说它没有靠冗长刷分.CPO 那种平均长 50% 是另一条故事.Table 1 里 Gemma-2-9B-it-SimPO 平均长度 1833,相对底座 1571 长了一截,相对 GPT-4 Turbo 的 1802 几乎持平.
+Open LLM Leaderboard 上 (Table 9), SimPO 并非各项第一. Mistral-Base 上的 GSM8K: SFT 28.13, SimPO 22.21, DPO 21.76, ORPO 42.15. 论文总结说 DPO, IPO, R-DPO, SimPO 在 GSM8K 这类推理密集任务上都会下降, 而带 SFT 项的目标 (ORPO, CPO, SLiC) 能保住数学能力.
 
-## 7. 失效与边界
+附录 C 把 Table 9 的六项任务 (MMLU, ARC, HellaSwag, TruthfulQA, Winograd, GSM8K) 分开看. MMLU 上, 各偏好优化方法相对 SFT 只有很小的下降, SimPO 和 DPO 相当, 知识大体保住了. ARC 和 HellaSwag 上, 偏好优化一般会提升成绩, 作者的猜测是偏好数据里有和这两项相近的 prompt. TruthfulQA 上各方法都稳定提升, 个别设定提升超过 10%, 作者同样猜测偏好数据里有强调真实性的样本. GSM8K 波动最大, 除 ORPO 外几乎所有方法都在至少一个设定上下降, 作者把 ORPO 保住数学归因于它的 SFT 项; 引用的另一项工作在偏好目标里加了经参考模型校准的 SFT 损失, 也能保住数学成绩. 作者的总结是下游表现很难归纳出统一规律.
 
-| 现象 | 机制 | 说明 |
-|------|------|------|
-| 写成带 $\pi_{\mathrm{ref}}$ 的长度归一 DPO | 式 (4) 没有参考模型 | 那是另一种算法 |
-| 去掉 $\|y\|$ | Table 5 w/o LN | Base 设定掉到 DPO 以下;短胜者的 $\Delta r$ 变负 |
-| $\gamma$ 过大 | Figure 3 胜率先升后降 | 奖励准确率还可以涨,chosen 似然已经掉 |
-| 大学习率从强 Instruct 续训 | Table 16 | Llama-3:$1\times10^{-6}$ 把 GSM 从 78.5 打到 57.4;Gemma-2 不明显 |
-| 没有 $\pi_{\mathrm{ref}}$ 当安全绳 | 原则上可崩 | 靠小 lr 和杂数据撑着,不是定理 |
-| 只有点赞点踩 | 式 (6) 要一对 | 二值走 KTO |
-| 要在线探索 | 离线偏好 | 在线组相对走 GRPO / RLOO |
-| MT-Bench 看不出差 | 80 题,单条打分 | 论文自己不拿它当主尺 |
-| Arena-Hard 被 CPO 超过 | CPO 平均长 50% | 该榜没有长度惩罚 |
-| GSM8K 掉点 | 无 SFT 正则 | Table 9;ORPO 那项交叉熵托住了数学 |
+附录试过在 SimPO 上加 SFT 损失 (Table 14, v0.2 设定): AlpacaEval 2 LC 从 53.7 降到 41.4, WR 从 47.5 降到 36.5. SFT 项能缓解遗忘, 但聊天指标会付出明显代价.
 
-论文明确把 PPO 对照留给后续,本篇也不拿离线 SimPO 去打在线 PPO.WildBench 正文只说「有竞争力」,没有把表内数字写进主文,这里不估.
+### 6.5 生成长度
 
-实现上就一件事:前向只跑 $\pi_\theta$,对 $y_w$ 和 $y_l$ 各算一次长度平均对数概率,再进式 (6).不要在 trainer 里偷偷加载一份 SFT 当参考「稳住训练」--加载了就不是 SimPO.$\beta$ 和 $\gamma$ 是两个独立旋钮,$\gamma$ 的量纲是奖励差,和 $\beta$ 乘完之后的尺度绑在一起;改 $\beta$ 通常要重搜 $\gamma$.序列长度用 completion 的 token 数.
+Llama-3-Instruct 上 SimPO 的回答比 DPO 短; 其他设定下 AlpacaEval 2 上最多长 26%, Arena-Hard 上只长约 5%. 论文认为生成长度强烈依赖评测集, LC 始终高于原始胜率, 说明 SimPO 的提升并非来自冗长. Gemma-2-9B-it-SimPO 的平均长度 1833, 比底座的 1571 长, 和 GPT-4 Turbo 的 1802 接近.
 
-复现时还有两个容易和聊天榜对不上的口.一是 AlpacaEval 2 的 LC 依赖官方长度控制回归,换评测日期或换裁判模型,分数会跳,论文表是当时那一版.二是 Instruct 设定的偏好对依赖 PairRM 或 ArmoRM 的版本,换裁判等于换数据集.Table 4 和 Table 1 / Table 17 已经不是同一套标注.
+## 7. 实现
 
-下一篇同夹:[01-DPO](../01-DPO/01-DPO.md) 的对数比,[02-ORPO](../02-ORPO/02-ORPO.md) 的几率比,[03-KTO](../03-KTO-前景理论对齐/03-KTO-前景理论对齐.md) 的二值效用.在线组相对不在本篇.要看长度正则怎么加进 DPO,读 R-DPO 原文,不要从本篇的式 (4) 反推.要看 hinge 排名加 SFT,读 RRHF / SLiC,那两家的间隔不是 $\gamma$.
+前向只跑 $\pi_\theta$. 对 $y_w$ 和 $y_l$ 各算一次 completion 部分的平均对数概率, 乘 $\beta$, 相减, 减 $\gamma$, 进 $-\log\sigma$. 长度用 completion 的 token 数, prompt 部分 mask 掉. 训练中不要再加载 SFT 模型做参考, 那会变成另一个算法.
+
+复现时要留意两点. 一是 AlpacaEval 2 的 LC 依赖官方的长度控制回归, 评测版本和裁判模型变化时分数会变, 论文表格对应当时的版本. 二是 Instruct 设定的偏好数据依赖 PairRM 或 ArmoRM 的打分, 换打分模型等于换了数据集.
+
+Instruct 设定只保留 5 条采样里得分最高和最低的两条, 分差小的样本不进入训练. 这让 Bradley-Terry 更好拟合, 也让模型见不到「差不多好」的难例. 论文没有做保留中间样本的对照. 另外, 最大长度 2048 包含 prompt 和回答, 若策略采出的回答经常被截断, 式 (4) 中的 $|y|$ 就小于完整回答的长度, 截断部分的 token 不参与平均.
+
+## 8. 什么时候选 SimPO
+
+手里已经有一个不错的 SFT 或 Instruct 模型, 想用成对偏好提升对话质量, 又受限于显存, SimPO 是 DPO 的直接替代: 数据格式相同, 只少一份参考模型, 多两个超参 $\beta$ 和 $\gamma$. 论文的四套设定都属于这种场景.
+
+起点模型很强, 偏好数据由起点模型自己采样并由好的奖励模型打分时, 论文发现各方法差距缩小, SimPO 的优势主要体现在长度控制胜率上. 这时选哪种方法, 更多取决于是否在意回答长度, 以及能否接受数学类任务的下降.
+
+下游任务以数学, 代码, 知识问答为主时, 应谨慎使用. 论文的 Table 9 和 Table 16 都显示, 没有 SFT 项, 没有 KL 约束的目标在这些任务上掉点更多. 这类场景下, 带 SFT 项的 ORPO 或 CPO, 或者保留参考模型的 DPO 配合较小学习率, 更稳妥.
+
+起点模型较弱 (例如只做过少量 SFT 的 Base 模型) 时, 论文 Figure 5 显示过强的参考约束反而有害, SimPO 去掉参考模型在这里是优点.
+
+## 9. 失效模式
+
+**去掉长度归一.** Base 设定下低于 DPO, 短的胜者学不进去 (第 2.4 节).
+
+**$\gamma$ 过大.** 奖励准确率还在涨, chosen 的似然已经下降, 生成变差 (第 3.3 节). 监控 chosen 回答的平均对数似然是否持续下降, 比只看奖励准确率更能发现这个问题.
+
+**大学习率从强 Instruct 模型续训.** Llama-3-8B-Instruct 上, $1\times10^{-6}$ 让 GSM 从 78.5 掉到 57.4.
+
+**没有参考模型约束.** 稳定性依赖小学习率和数据多样性, 没有理论保证.
+
+**需要成对数据.** 式 (6) 要一对回答, 只有二值反馈时用 KTO. 论文把偏好对拆成二值跑 KTO 的结果明显低于 SimPO, 但那是在成对数据上比较, 不代表 KTO 在真正的二值数据上表现差.
+
+**离线, 无探索.** 需要在线采样的任务更适合 [GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 一类方法. 论文也把与 PPO 的比较留给后续工作.
+
+**推理密集任务掉点.** 没有 SFT 项, GSM8K 下降幅度大于 ORPO, CPO. 加 SFT 项能缓解, 但聊天指标下降.
+
+**榜单依赖.** Arena-Hard 没有长度惩罚, 生成更长的 CPO 可能更高; MT-Bench 区分度弱. 结论应以 AlpacaEval 2 LC 和 Arena-Hard 两者结合判断.
 
 ## 参考文献
 
-1. Meng, Y., Xia, M., & Chen, D. (2024). [SimPO: Simple Preference Optimization with a Reference-Free Reward](https://arxiv.org/abs/2405.14734). *NeurIPS*. HTML:[ar5iv](https://arxiv.org/html/2405.14734).代码:[princeton-nlp/SimPO](https://github.com/princeton-nlp/SimPO).
-2. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS*.
-3. Azar, M. G., et al. (2024). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *AISTATS*(IPO).
+1. Meng, Y., Xia, M., & Chen, D. (2024). [SimPO: Simple Preference Optimization with a Reference-Free Reward](https://arxiv.org/abs/2405.14734). *NeurIPS 2024*.
+2. Rafailov, R., et al. (2023). [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290). *NeurIPS 2023*.
+3. Azar, M. G., et al. (2024). [A General Theoretical Paradigm to Understand Learning from Human Preferences](https://arxiv.org/abs/2310.12036). *AISTATS 2024*.
 4. Hong, J., Lee, N., & Thorne, J. (2024). [ORPO: Monolithic Preference Optimization without Reference Model](https://arxiv.org/abs/2403.07691).
-5. Xu, H., et al. (2024). Contrastive Preference Optimization. *ICML*(CPO,论文表写作 [88]).
-6. Yuan, H., et al. (2023). RRHF: Rank Responses to Align Language Models with Human Feedback. *NeurIPS*.
-7. Zhao, Y., et al. (2023). SLiC-HF: Sequence Likelihood Calibration with Human Feedback.
-8. Park, R., et al. (2024). Disentangling Length from Quality in Direct Preference Optimization(R-DPO).
-9. Ethayarajh, K., et al. (2024). [KTO: Model Alignment as Prospect Theoretic Optimization](https://arxiv.org/abs/2402.01306).
-10. Tunstall, L., et al. (2023). [Zephyr: Direct Distillation of LM Alignment](https://arxiv.org/abs/2310.16944).(Base 设定的 SFT 流水线)
-11. Cui, G., et al. (2023). [UltraFeedback](https://arxiv.org/abs/2310.01377).
+5. Xu, H., et al. (2024). [Contrastive Preference Optimization: Pushing the Boundaries of LLM Performance in Machine Translation](https://arxiv.org/abs/2401.08417). *ICML 2024*.
+6. Yuan, Z., et al. (2023). [RRHF: Rank Responses to Align Language Models with Human Feedback without tears](https://arxiv.org/abs/2304.05302). *NeurIPS 2023*.
+7. Zhao, Y., et al. (2023). [SLiC-HF: Sequence Likelihood Calibration with Human Feedback](https://arxiv.org/abs/2305.10425).
+8. Park, R., Rafailov, R., Ermon, S., & Finn, C. (2024). [Disentangling Length from Quality in Direct Preference Optimization](https://arxiv.org/abs/2403.19159).
+9. Ethayarajh, K., et al. (2024). [KTO: Model Alignment as Prospect Theoretic Optimization](https://arxiv.org/abs/2402.01306). *ICML 2024*.
+10. Chen, A., Malladi, S., Zhang, L. H., Chen, X., Zhang, Q., Ranganath, R., & Cho, K. (2024). Preference Learning Algorithms Do Not Learn Preference Rankings. *NeurIPS 2024*.
+11. Tunstall, L., et al. (2023). [Zephyr: Direct Distillation of LM Alignment](https://arxiv.org/abs/2310.16944).
+12. Cui, G., et al. (2023). [UltraFeedback: Boosting Language Models with High-quality Feedback](https://arxiv.org/abs/2310.01377).
+13. Cortes, C., & Vapnik, V. (1995). Support-vector networks. *Machine Learning*, 20, 273–297.
