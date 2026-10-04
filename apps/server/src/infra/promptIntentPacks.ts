@@ -26,7 +26,7 @@ const GARDEN_RE =
   /写文章|写篇|知识库|花园|wiki\s*链|\[\[|落库|成文|面经|蒸馏|笔记写成|post_create|post_update|邻居文章|数字花园/i;
 const SWARM_RE =
   /子\s*agent|派生子|spawn|并行|编排|workspace|工作区|委托|分派|多代理|swarm/i;
-const QQ_RE = /qq|QQ|群聊|私聊|openid|发消息给/i;
+const CHANNEL_RE = /qq|QQ|微信|群聊|私聊|openid|发消息给|回传|发文件|发图片/i;
 const MATH_RE =
   /公式|推导|katex|latex|注意力|softmax|梯度|矩阵|证明|数学|√|\\frac|\$\$/i;
 const SESSION_RE = /压缩|compact|历史消息|召回|上下文太长|session_search/i;
@@ -101,8 +101,18 @@ export function detectPromptIntentPacks(opts: {
     packs.add("swarm");
   }
   if (
-    want(QQ_RE) &&
-    hasTool(opts.tools, "send_qq_text", "send_qq_image", "send_qq_file", "send_qq_voice")
+    want(CHANNEL_RE) &&
+    hasTool(
+      opts.tools,
+      "send_qq_text",
+      "send_qq_image",
+      "send_qq_file",
+      "send_qq_voice",
+      "send_weixin_text",
+      "send_weixin_image",
+      "send_weixin_file",
+      "send_weixin_voice",
+    )
   ) {
     packs.add("qq");
   }

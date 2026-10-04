@@ -42,6 +42,39 @@ function extensionForMime(mime: string): string {
   return table[mime] ?? ".bin";
 }
 
+/** 文件扩展名只作为声明提示；图片和视频仍必须通过魔数复核。 */
+export function mimeForChannelFileName(fileName: string): string {
+  const extension = path.extname(fileName).toLowerCase();
+  const table: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".mp4": "video/mp4",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".mp3": "audio/mpeg",
+    ".silk": "audio/silk",
+    ".slk": "audio/silk",
+    ".amr": "audio/amr",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".pdf": "application/pdf",
+    ".zip": "application/zip",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".json": "application/json",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xls": "application/vnd.ms-excel",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  };
+  return table[extension] ?? "application/octet-stream";
+}
+
 /** 只相信可由魔数确认的格式；其余保持 application/octet-stream。 */
 export function sniffChannelMime(bytes: Buffer): string {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
@@ -178,6 +211,9 @@ export function materializeChannelAttachmentBytes(opts: {
     ) {
       throw new Error(`无法验证 ${hintedKind} 附件，声明 MIME 为 ${declaredMime || "未知"}`);
     }
+    if (["image", "video"].includes(hintedKind) && sniffedMime === "application/octet-stream") {
+      throw new Error(`无法通过文件魔数验证 ${hintedKind} 附件，拒绝仅凭扩展名发送`);
+    }
     const mimeType = sniffedMime !== "application/octet-stream" ? sniffedMime : declaredMime;
     const kind = kindFromMime(mimeType, hintedKind);
     const extension = path.extname(inputName) || extensionForMime(mimeType);
@@ -226,6 +262,118 @@ export function materializeChannelAttachmentBytes(opts: {
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+/** 文本也使用统一附件模型；正文放在 caption，哈希用于传输幂等。 */
+export function createTextChannelAttachment(opts: {
+  text: string;
+  source?: Extract<ChannelAttachmentSource, "agent" | "local">;
+  fileName?: string;
+}): ChannelAttachment {
+  const text = opts.text;
+  const bytes = Buffer.from(text, "utf8");
+  const now = new Date().toISOString();
+  return {
+    type: "channel",
+    id: randomUUID(),
+    kind: "text",
+    fileName: sanitizeFileName(opts.fileName || "message.txt", "message.txt"),
+    mimeType: "text/plain; charset=utf-8",
+    size: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+    source: opts.source ?? "agent",
+    caption: text,
+    status: "ready",
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * 把已通过 Workspace/hostAccess 权限检查的文件复制进受控发送区。
+ * 调用方必须先用 resolveAgentFsPath；本函数只负责文件与媒体真实性校验。
+ */
+export function materializeLocalChannelAttachment(opts: {
+  absPath: string;
+  source?: Extract<ChannelAttachmentSource, "agent" | "local">;
+  fileName?: string;
+  hintedKind?: ChannelAttachmentKind;
+  caption?: string;
+}): ChannelAttachment {
+  const stat = fs.statSync(opts.absPath);
+  if (!stat.isFile()) {
+    return createFailedChannelAttachment({
+      source: opts.source ?? "agent",
+      kind: opts.hintedKind ?? "file",
+      fileName: opts.fileName || path.basename(opts.absPath) || "attachment.bin",
+      mimeType: "application/octet-stream",
+      caption: opts.caption,
+      error: "发送路径不是普通文件",
+    });
+  }
+  if (stat.size > CHANNEL_ATTACHMENT_MAX_BYTES) {
+    return createFailedChannelAttachment({
+      source: opts.source ?? "agent",
+      kind: opts.hintedKind ?? "file",
+      fileName: opts.fileName || path.basename(opts.absPath),
+      mimeType: mimeForChannelFileName(opts.fileName || opts.absPath),
+      caption: opts.caption,
+      error: `附件大小 ${stat.size} 字节超过上限 ${CHANNEL_ATTACHMENT_MAX_BYTES} 字节`,
+    });
+  }
+  return materializeChannelAttachmentBytes({
+    source: opts.source ?? "agent",
+    bytes: fs.readFileSync(opts.absPath),
+    fileName: opts.fileName || path.basename(opts.absPath),
+    declaredMime: mimeForChannelFileName(opts.fileName || opts.absPath),
+    hintedKind: opts.hintedKind,
+    caption: opts.caption,
+  });
+}
+
+/**
+ * 自动回复中的 Markdown 路径没有 NativeToolContext，不能据此读取任意本机文件。
+ * 因此这里只接受 content/uploads（及其 /uploads 别名）；授权主机文件必须显式走发送工具，
+ * 由 resolveAgentFsPath 完成 hostAccess 与私聊检查。
+ */
+export async function materializeReplyChannelReference(opts: {
+  reference: string;
+  kind: Exclude<ChannelAttachmentKind, "text">;
+  caption?: string;
+}): Promise<ChannelAttachment> {
+  const reference = opts.reference.trim();
+  if (/^https?:\/\//i.test(reference)) {
+    return materializeRemoteChannelAttachment({
+      source: "remote",
+      remoteUrl: reference,
+      hintedKind: opts.kind,
+      caption: opts.caption,
+    });
+  }
+
+  const uploadsRoot = path.resolve(getAppConfig().contentPaths.uploads);
+  let candidate = reference.replace(/\\/g, "/");
+  if (candidate.startsWith("/uploads/")) candidate = `content${candidate}`;
+  else if (candidate.startsWith("uploads/")) candidate = `content/${candidate}`;
+  const abs = path.isAbsolute(candidate)
+    ? path.resolve(candidate)
+    : path.resolve(getAppConfig().projectRoot, candidate);
+  const relative = path.relative(uploadsRoot, abs);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("自动回复只允许发送 content/uploads 内的文件；本机文件请使用显式发送工具");
+  }
+  const realRoot = fs.realpathSync(uploadsRoot);
+  const realFile = fs.realpathSync(abs);
+  const realRelative = path.relative(realRoot, realFile);
+  if (!realRelative || realRelative.startsWith("..") || path.isAbsolute(realRelative)) {
+    throw new Error("附件符号链接越过 content/uploads，已拒绝发送");
+  }
+  return materializeLocalChannelAttachment({
+    absPath: realFile,
+    source: "agent",
+    hintedKind: opts.kind,
+    caption: opts.caption,
+  });
 }
 
 export async function materializeRemoteChannelAttachment(opts: {

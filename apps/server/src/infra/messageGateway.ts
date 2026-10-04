@@ -8,7 +8,11 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
-import { chatAttachmentSchema, type ChatAttachment } from "@oasismind/shared";
+import {
+  chatAttachmentSchema,
+  type ChannelAttachment,
+  type ChatAttachment,
+} from "@oasismind/shared";
 import type { AppConfig } from "./config.js";
 import type { ServiceContainer } from "./serviceContainer.js";
 import { claimWebhookEvent } from "./webhookIdempotency.js";
@@ -23,7 +27,7 @@ import {
   clearChannelOutbound,
   shouldSkipChannelFallback,
 } from "./channelOutboundLedger.js";
-import { notifySessionListChanged } from "./uiStateNotify.js";
+import { notifyAllMainSessionsUi, notifySessionListChanged } from "./uiStateNotify.js";
 import { IM_SLASH_HELP_TEXT, parseImSlashCommand } from "./imSlashCommands.js";
 
 /**
@@ -91,6 +95,25 @@ export type ChannelReplyChunk = {
   imStatus?: "queued" | "working";
   /** 覆盖本条是否强制引用入站（缺省看 UnifiedMessage.meta.quoteInbound） */
   imQuote?: boolean;
+};
+
+/** Agent 主动出站与自动回复共用的目标；敏感平台 token 不进入该结构。 */
+export type ChannelSendTarget = {
+  peerId: string;
+  chatId?: string;
+  /** 最近入站事件 id；仅在 quote=true 时作为平台引用依据。 */
+  replyTo?: string;
+  quote?: boolean;
+  /** 仅支持成员提及的平台使用；正文不再自行猜目标。 */
+  mentionPeerIds?: string[];
+};
+
+export type ChannelCapability = {
+  inbound: Array<ChannelAttachment["kind"]>;
+  outbound: Array<ChannelAttachment["kind"]>;
+  maxBytes: number;
+  supportsCaption: boolean;
+  supportsQuote: boolean;
 };
 
 /** SessionQueueItem.attachments 中的 IM 入站元数据（drain 回发 / 引用依赖） */
@@ -184,6 +207,10 @@ export interface ChannelAdapter {
   stop(): Promise<void>;
   /** 向原渠道回发（流式分片或终稿） */
   reply(msg: UnifiedMessage, chunk: ChannelReplyChunk): Promise<void>;
+  /** 发送一份已经校验并落盘的统一附件；用于 Agent 工具与安全重试。 */
+  sendAttachment?(target: ChannelSendTarget, attachment: ChannelAttachment): Promise<unknown>;
+  /** 管理页据此展示真实能力，禁止用文案猜平台支持范围。 */
+  readonly capabilities?: ChannelCapability;
 }
 
 export type GatewayHandleResult =
@@ -222,6 +249,19 @@ export function getMessageGatewayStats() {
   return { ...stats, channels: Object.fromEntries(
     [...adapters.entries()].map(([k, a]) => [k, { enabled: a.enabled, ...a.getStatus() }]),
   ) };
+}
+
+/** 出站台账写点后的 PUSH 半边；/channels 另保留轮询作为 PULL 兜底。 */
+export async function notifyChannelTransferUpdated(event: {
+  transferId: string;
+  channel: string;
+  status: string;
+}): Promise<void> {
+  if (!deps) return;
+  await notifyAllMainSessionsUi(deps.prisma, {
+    type: "channel_transfer_updated",
+    ...event,
+  });
 }
 
 export function initMessageGateway(next: GatewayDeps): void {

@@ -735,6 +735,13 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:send_qq_file",
     "native:send_qq_voice",
     "native:delete_qq_message",
+    "native:send_weixin_text",
+    "native:send_weixin_image",
+    "native:send_weixin_video",
+    "native:send_weixin_file",
+    "native:send_weixin_voice",
+    "native:channel_transfer_status",
+    "native:channel_transfer_retry",
   ],
   manager: [
     // 调度 / 审查 / 汇报 / 派生子 Agent
@@ -783,6 +790,13 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:send_qq_file",
     "native:send_qq_voice",
     "native:delete_qq_message",
+    "native:send_weixin_text",
+    "native:send_weixin_image",
+    "native:send_weixin_video",
+    "native:send_weixin_file",
+    "native:send_weixin_voice",
+    "native:channel_transfer_status",
+    "native:channel_transfer_retry",
   ],
   sub: [
     "native:sleep",
@@ -845,6 +859,13 @@ export const TIER_DEFAULT_TOOLS: Record<AgentTier, string[]> = {
     "native:send_qq_file",
     "native:send_qq_voice",
     "native:delete_qq_message",
+    "native:send_weixin_text",
+    "native:send_weixin_image",
+    "native:send_weixin_video",
+    "native:send_weixin_file",
+    "native:send_weixin_voice",
+    "native:channel_transfer_status",
+    "native:channel_transfer_retry",
   ],
 };
 
@@ -971,6 +992,13 @@ export const ASSISTANT_DEFAULT_TOOLS: string[] = [
   "native:send_qq_file",
   "native:send_qq_voice",
   "native:delete_qq_message",
+  "native:send_weixin_text",
+  "native:send_weixin_image",
+  "native:send_weixin_video",
+  "native:send_weixin_file",
+  "native:send_weixin_voice",
+  "native:channel_transfer_status",
+  "native:channel_transfer_retry",
 ];
 
 /* ─── 知识库花园（动态 N 座） ───

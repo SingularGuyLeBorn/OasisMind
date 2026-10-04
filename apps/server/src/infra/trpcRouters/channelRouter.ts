@@ -34,9 +34,24 @@ export const channelRouter = router({
           channel: a.channel,
           name: a.name,
           enabled: a.enabled,
+          capabilities: a.capabilities ?? null,
           ...a.getStatus(),
         })),
       };
+    }),
+  listTransfers: publicProcedure
+    .meta({ description: "列出最近 IM 出站传输状态。", aiReadable: true })
+    .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }).optional())
+    .query(async ({ ctx, input }) => {
+      const { listChannelTransfers } = await import("../channels/channelTransferLedger.js");
+      return { items: listChannelTransfers(ctx.config.dataDir, input?.limit ?? 50) };
+    }),
+  retryTransfer: publicProcedure
+    .meta({ description: "只重试明确失败且 retrySafe=true 的 IM 传输。", aiReadable: true })
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const { retryChannelTransfer } = await import("../channels/channelTransfer.js");
+      return retryChannelTransfer({ dataDir: ctx.config.dataDir, transferId: input.id });
     }),
   listBindings: publicProcedure
     .meta({ description: "列出 IM 对端 ↔ 会话绑定。", aiReadable: true })

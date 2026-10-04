@@ -26,6 +26,7 @@ import { registerAgentCronTools } from "./agentCron.js";
 import { registerLiteratureTools } from "./literature.js";
 import { registerDocumentTools } from "./document.js";
 import { registerQqTools } from "./qq.js";
+import { registerWeixinTools } from "./weixin.js";
 
 type DomainRegistrar = { domain: Parameters<typeof domainAllowed>[0]; register: () => void };
 
@@ -52,6 +53,7 @@ const DOMAIN_REGISTRARS: DomainRegistrar[] = [
   { domain: "literature", register: registerLiteratureTools },
   { domain: "document", register: registerDocumentTools },
   { domain: "qq", register: registerQqTools },
+  { domain: "qq", register: registerWeixinTools },
 ];
 
 export function registerNativeDomains(packs: PackFlags): void {

@@ -54,6 +54,19 @@ describe("统一通道附件 Schema", () => {
     expect(channelAttachmentSchema.safeParse({ ...ready, localPath: undefined }).success).toBe(false);
     expect(channelAttachmentSchema.safeParse({ ...ready, sha256: null }).success).toBe(false);
   });
+
+  it("文本附件以 caption 承载正文，不要求伪造文件位置", () => {
+    expect(
+      channelAttachmentSchema.safeParse({
+        ...ready,
+        kind: "text",
+        fileName: "message.txt",
+        mimeType: "text/plain; charset=utf-8",
+        localPath: undefined,
+        caption: "你好",
+      }).success,
+    ).toBe(true);
+  });
 });
 
 describe("私人批注 Schema", () => {

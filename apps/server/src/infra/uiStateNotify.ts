@@ -21,6 +21,7 @@ export type UiStateNotifyKind =
   | "daily_flow_updated"
   | "inbox_updated"
   | "dead_letter_updated"
+  | "channel_transfer_updated"
   | "workspace_stages_updated";
 
 /** 会话树换叶后推到该会话（消息列表按活跃路径再水合） */

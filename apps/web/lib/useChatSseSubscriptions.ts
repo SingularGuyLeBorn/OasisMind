@@ -315,6 +315,11 @@ export function useChatSseSubscriptions({
         utils.deadLetter.list.invalidate().catch(logQueryCatch);
         postUiState({ type: "dead_letter_updated" });
       });
+      register("channel_transfer_updated", () => {
+        utils.channel.listTransfers.invalidate().catch(logQueryCatch);
+        utils.channel.status.invalidate().catch(logQueryCatch);
+        postUiState({ type: "channel_transfer_updated" });
+      });
       register("workspace_stages_updated", (ev) => {
         utils.workspace.listStages.invalidate().catch(logQueryCatch);
         try {

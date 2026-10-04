@@ -573,11 +573,17 @@ export const channelAttachmentSchema = z
         message: "失败附件必须记录 error",
       });
     }
-    if (value.status === "ready" && !value.localPath && !value.storageKey && !value.remoteUrl) {
+    if (
+      value.status === "ready" &&
+      value.kind !== "text" &&
+      !value.localPath &&
+      !value.storageKey &&
+      !value.remoteUrl
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["localPath"],
-        message: "就绪附件必须有 localPath、storageKey 或 remoteUrl",
+        message: "非文本就绪附件必须有 localPath、storageKey 或 remoteUrl",
       });
     }
     if ((value.status === "ready" || value.status === "sent") && (!value.sha256 || value.size === null)) {

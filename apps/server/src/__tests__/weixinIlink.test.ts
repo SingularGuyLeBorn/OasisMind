@@ -15,6 +15,7 @@ import {
   encryptWeixinAesEcb,
   extraOutboundMedia,
   materializeWeixinInboundMedia,
+  sendWeixinLocalMedia,
 } from "../infra/channels/weixinMedia.js";
 import {
   CHANNEL_IMAGE_INLINE_MAX_BYTES,
@@ -202,6 +203,62 @@ describe("weixinMedia crypto", () => {
     });
     expect(result.attachments[0]?.localPath).toContain("content/uploads/channels/weixin/");
     expect(result.attachments[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("微信出站文件严格走取上传地址、加密上传和 sendmessage 三步", async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    const fetchImpl = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const target = String(url);
+      calls.push({ url: target, body: init?.body });
+      if (target.includes("getuploadurl")) {
+        return new Response(JSON.stringify({ ret: 0, upload_param: "upload-token" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (target.includes("/upload?")) {
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBeInstanceOf(Uint8Array);
+        return new Response("", {
+          status: 200,
+          headers: { "x-encrypted-param": "encrypted-file-ref" },
+        });
+      }
+      if (target.includes("sendmessage")) {
+        return new Response(JSON.stringify({ ret: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("not found", { status: 404 });
+    }) as unknown as typeof fetch;
+
+    await sendWeixinLocalMedia({
+      session: {
+        botToken: "token",
+        baseUrl: "https://ilink.example",
+        getUpdatesBuf: "",
+        boundUserId: "wx-u1",
+        accountId: "a1",
+      },
+      toUserId: "wx-u1",
+      contextToken: "ctx-1",
+      kind: "file",
+      bytes: Buffer.from("report"),
+      fileName: "report.txt",
+      fetchImpl,
+    });
+
+    expect(calls.map((call) => call.url)).toEqual([
+      expect.stringContaining("getuploadurl"),
+      expect.stringContaining("/upload?"),
+      expect.stringContaining("sendmessage"),
+    ]);
+    const sendCall = calls.find((call) => call.url.includes("sendmessage"));
+    const sendBody = JSON.parse(String(sendCall?.body ?? "{}")) as {
+      msg?: { item_list?: Array<{ file_item?: { file_name?: string } }> };
+    };
+    expect(sendBody.msg?.item_list?.[0]?.file_item?.file_name).toBe("report.txt");
   });
 });
 

@@ -20,6 +20,7 @@ export type UiStateChannelMessage = {
     | "post_annotation_updated"
     | "inbox_updated"
     | "dead_letter_updated"
+    | "channel_transfer_updated"
     | "compose_prefill"
     | "subagent_session_update"
     | "workspace_stages_updated";
