@@ -417,3 +417,40 @@
 - **deepseek-ocr-4** 20 倍压缩下约 60% 的结果受输出格式差异影响，不能只归因于视觉信息损失. 求证结果:
 - **deepseek-ocr-5** 论文只用 OCR 重建间接验证光学上下文压缩，没有进行数字与光学 token 交错预训练或 needle 测试. 求证结果:
 - **deepseek-ocr-6** 论文缺少编码器逐部件消融与多语言分项评测，组件贡献和跨语言稳定性仍不明确. 求证结果:
+
+### DeepSeek-OCR 2
+
+解析：`content/deepseek/01-模型技术报告/deepseek-ocr-2/deepseek-ocr-2-analysis.md`。
+
+- **deepseek-ocr-2-1** 新旧模型除 encoder 外还改变了 OCR 1.0 的 3:1:1 采样和 layout 标签合并，3.73 的增益不能严格全部归因于 causal flow. 求证结果:
+- **deepseek-ocr-2-2** encoder 从约 300M 参数的 CLIP 换成约 500M 参数的 Qwen2，参数量与预训练差异也是混杂变量. 求证结果:
+- **deepseek-ocr-2-3** mBART cross-attention 只被描述为不收敛，没有训练曲线、超参数或重复实验. 求证结果:
+- **deepseek-ocr-2-4** production 评测只使用 repetition rate，没有 ground truth 和样本量，不能代表整体准确率. 求证结果:
+- **deepseek-ocr-2-5** newspaper 文本 ED 0.139 略差于 baseline 0.131，作者归因于 1120 token 上限和仅 250k 数据，但没有对应消融. 求证结果:
+- **deepseek-ocr-2-6** “genuine 2D reasoning”只在文档 OCR 上验证，没有一般视觉推理证据. 求证结果:
+- **deepseek-ocr-2-7** omni-modal encoder 仍是设想，没有音频或文本共享实验. 求证结果:
+- **deepseek-ocr-2-8** 1120 token 与 Gemini 使用相同 token 数不代表信息量或 FLOPs 相等. 求证结果:
+- **deepseek-ocr-2-9** 论文缺少速度、显存以及 mask/query 比例消融. 求证结果:
+
+### DeepSeek-VL2
+
+解析：`content/deepseek/01-模型技术报告/deepseek-vl2/deepseek-vl2-analysis.md`。
+
+- **deepseek-vl2-1** 论文缺少动态切图、pixel shuffle、MLA、MoE 与数据扩充的完整组件消融，无法独立分离各项贡献. 求证结果:
+- **deepseek-vl2-2** 内部数据的分项规模、人工抽检率和污染检查没有公开，训练集无法严格复现. 求证结果:
+- **deepseek-vl2-3** 多图超过 2 张时关闭动态切图，但没有联合报告多图数量、tile 数和回答长度对效果的影响. 求证结果:
+- **deepseek-vl2-4** 论文只给训练节点与天数，没有 GPU 利用率、有效 FLOPs、在线吞吐或延迟. 求证结果:
+- **deepseek-vl2-5** grounding 坐标离散到 0–999，但没有按物体尺寸分析定位误差. 求证结果:
+
+### Harness Composability
+
+解析：`content/deepseek/03-基础设施/harness-composability/harness-composability-analysis.md`。
+
+- **harness-composability-1** runtime 不验证 inverse 的正确性、coeffect 交换律或 confinement，形式性质依赖实现者满足前提. 求证结果:
+- **harness-composability-2** 论文没有性能基准，也没有 notification 在大规模依赖图上的扩展性评测. 求证结果:
+- **harness-composability-3** VS Code Top 100 扩展统计没有附抓取脚本与完整清单，样本构成难以复算. 求证结果:
+- **harness-composability-4** Koishi 的 4000 多个插件只作为生态案例出现，没有量化兼容率、故障率或迁移成本. 求证结果:
+- **harness-composability-5** HMR 对 module 顶层副作用和外部不可逆副作用的处理边界不清楚. 求证结果:
+- **harness-composability-6** 分布式扩展没有覆盖消息乱序、网络分区和重复投递. 求证结果:
+- **harness-composability-7** `FAILED` 状态或 inverse 抛错后的清理策略没有完整定义. 求证结果:
+- **harness-composability-8** 自演化 agent 只作为未来应用提出，没有实验验证. 求证结果:
