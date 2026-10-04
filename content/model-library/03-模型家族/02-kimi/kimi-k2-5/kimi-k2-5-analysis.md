@@ -21,7 +21,7 @@ K2 和 K2 Thinking 都只处理文本. 视觉那条线在 Moonshot 内部是单�
 
 ### 2.1. 骨架: K2 的 MoE 原样保留, 前面接一个图视共享的编码器
 
-语言部分完全继承 K2. 报告 §4.1 重复了 K2 的规模: 总参 1.04T, 每 token 激活 32B, 384 个专家激活 8 个, 稀疏度 48, 优化器是 MuonClip 加 QK-Clip. 附录 C 提到对 MLA 上投影做选择性重算, 说明注意力仍是 K2 那套 MLA. MoE 稀疏激活的一般机制见 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 见 [04-MLA-低秩潜变量与矩阵吸收](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), MuonClip 见 [05-MuonClip与PolarExpress](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md). K2.5 在语言骨干上没有改层数, 专家数或注意力, 结构上的新东西全在视觉入口.
+语言部分完全继承 K2. 报告 §4.1 重复了 K2 的规模: 总参 1.04T, 每 token 激活 32B, 384 个专家激活 8 个, 稀疏度 48, 优化器是 MuonClip 加 QK-Clip. 附录 C 提到对 MLA 上投影做选择性重算, 说明注意力仍是 K2 那套 MLA. MoE 稀疏激活的一般机制见 [01-DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md), MLA 见 [MLA: 低秩潜变量与解耦 RoPE](../../../../llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/03-MLA-低秩潜变量与解耦RoPE/03-MLA-低秩潜变量与解耦RoPE.md), MuonClip 见 [MuonClip 与 Polar Express](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md). K2.5 在语言骨干上没有改层数, 专家数或注意力, 结构上的新东西全在视觉入口.
 
 多模态结构是三件套: 视觉编码器 **MoonViT-3D**, 一个 MLP 投影器, 再接 K2 MoE, 设计原则沿用 Kimi-VL. MoonViT 从 SigLIP-SO-400M 初始化, 采用 NaViT 的 patch packing: 每张图按原生分辨率切 patch, 展平后首尾相接拼成一维序列, 不同分辨率的图可以放在同一个 batch 里训练, 不必做切子图再拼接. 报告没有写 MoonViT 的参数量, 从 SigLIP-SO-400M 这个名字只能推断量级在 4 亿参数上下. 视觉编码器的一般背景见 [8.8-CLIP与视觉编码器](../../../../llm-guide/8-多模态/8.8-CLIP与视觉编码器/8.8-CLIP与视觉编码器.md).
 
