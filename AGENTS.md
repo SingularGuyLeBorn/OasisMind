@@ -406,6 +406,7 @@ E2E 进程由 `apps/web/e2e-global/setup.mjs` 启动（不要再用 Playwright `
 | Agent 工具 / MCP / Skill | `infra/agentTools.ts`、`infra/tools/`、`infra/loop/` |
 | 改 tRPC | `apps/server/src/router.ts`、`packages/shared/src/schemas.ts` |
 | 改 sync | `apps/server/src/scripts/sync.ts` |
+| 改知识库文章、目录或编号 | `docs/writing-spec.md` §3.5；叶子文章可直接放父目录，非叶子节点必须使用同名目录与同名首页 |
 | 测试圣经 / 满分标准 | `docs/development/testing.md` |
 
 ---

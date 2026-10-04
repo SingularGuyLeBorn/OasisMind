@@ -18,7 +18,7 @@ tags: ["ops", "structure", "llm-guide"]
 - **没有无号文章.** 有编号的目录下, 每篇文章和子节都带号. 花园根目录 (只有 `_garden.md` 作首页) 不要求编号.
 - 夹名不用全角冒号, 顿号, 空格, 括号, 逗号.
 
-检查: `python layout_check.py content/llm-guide` (脚本在 agent store), 报 BARE (裸文件), NOIDX (缺首页), GAP (断号), MIX (编号混用), PREFIX (子节号与父节不符), NONUM (有号目录下的无号项), NAME (夹名含顿号, 全角标点或空格). 只允许新开、正在写首页的节暂时报 NOIDX.
+检查: `python layout_check.py content/llm-guide` (脚本在 agent store). `BARE` 只表示仍要承载子节点却裸放在上一级的父文章, 直接挂在父目录下的叶子 Markdown 合法; `NOIDX` 表示非叶子目录缺少同名首页; `GAP`, `MIX`, `PREFIX`, `NONUM`, `NAME` 分别表示断号、编号体系混用、子节前缀错误、有号层级夹入无号知识节点、目录或文件命名不合规. 新开但尚未完成首页的非叶子节点也不能长期保留 `NOIDX`.
 
 ## 第 2-4 章现在的目录
 
