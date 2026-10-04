@@ -3,15 +3,22 @@ title: "DeepSeek-V4: 压缩注意力撑起 1M 上下文"
 category: "模型库"
 tags: ["DeepSeek", "技术解析"]
 published: true
-excerpt: "本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照原技术报告观看."
+excerpt: "DeepSeek-V4 把注意力改成沿序列维压缩的 CSA 与 HCA 交错结构, 1M 上下文下 Pro 的单 token FLOPs 降到 V3.2 的 27%, KV cache 降到 10%; 残差换成 mHC, 优化器换成 Muon, 后训练用十多个教师做 On-Policy Distillation."
 ---
 # DeepSeek-V4: 压缩注意力撑起 1M 上下文
 
-来源: [DeepSeek-V4 Technical Report](https://arxiv.org/abs/2606.19348) (arXiv: 2606.19348, 2026-04-26).
+## 太长不看版
 
-本文大量引用了技术报告的表格和图片(受限于篇幅无法写进来)以及公式, 建议阅读的时候对照[原技术报告](https://arxiv.org/abs/2606.19348)观看。配套对照译稿见同目录的 bi 稿。
+材料是 DeepSeek 的正式技术报告 (arXiv 2606.19348, 58 页), 发布的是 V4 预览版的两个 MoE 模型: V4-Pro 总参数 1.6T, 激活 49B; V4-Flash 总参数 284B, 激活 13B, 都原生支持 1M token 上下文.
 
-V4 预览版有两个模型: V4-Pro 总参数 1.6T, 激活 49B; V4-Flash 总参数 284B, 激活 13B, 都支持 1M token 上下文. 相对 V3, 它保留 DeepSeekMoE 与 MTP, 改了四处: 注意力从 MLA 换成 CSA 与 HCA 交错的混合结构, 残差连接换成 mHC, 优化器换成 Muon, 后训练的收尾从混合 RL 换成多教师 On-Policy Distillation(OPD). 报告摘要的核心数字是: 1M 上下文下, Pro 的单 token 推理 FLOPs 只有 V3.2 的 27%, KV cache 只有 10%. 这篇报告同时覆盖了结构, 基础设施, 预训练, 后训练和评测, 各部分之间的依赖很强: 注意力压缩决定了 1M 能不能训, Muon 和 mHC 决定了训不训得稳, FP4 和批不变内核决定了 RL 采样与部署是否一致. 下面按这个顺序展开.
+- **注意力**: MLA 换成两种沿序列维压缩 KV 的注意力交错使用. CSA 每 4 个 token 压成一个 KV 条目, 再用 lightning indexer 挑 top-k (Pro 1024, Flash 512) 做稀疏注意力; HCA 每 128 个 token 压成一个条目, 对全部条目做稠密注意力. 两者都是单 KV 头的 MQA, 另配 128 个 token 的滑动窗口支路.
+- **效率**: 1M 上下文下, Pro 的单 token 推理 FLOPs 是 V3.2 的 27%, KV cache 是 10%; Flash 分别是 10% 和 7%.
+- **残差与优化器**: 残差流加宽到 4 路并把混合矩阵约束成双随机矩阵 (mHC); 大部分矩阵参数改用 Muon. 训练出现的损失尖峰靠 Anticipatory Routing 和 SwiGLU Clamping 压住, 报告承认两者的机理不清楚.
+- **数据与训练**: Flash 32T token, Pro 33T token, 序列长度从 4K 逐步拉到 1M.
+- **后训练**: 按领域训专家 (SFT 加 GRPO), 再用十个以上教师做全词表 On-Policy Distillation, 取代 V3.2 的混合 RL.
+- **结果**: Pro-Max 的 SWE Verified 80.6, Codeforces 3206, HMMT 2026 Feb 95.2, MRCR 1M 83.5. 知识类 (SimpleQA-Verified 57.9) 仍落后 Gemini-3.1-Pro 17.7 分.
+
+V4 相对 V3 保留了 DeepSeekMoE 与 MTP, 改了四处: 注意力从 MLA 换成 CSA 与 HCA 交错的混合结构, 残差连接换成 mHC, 优化器换成 Muon, 后训练的收尾从混合 RL 换成多教师 On-Policy Distillation (OPD). 这几处改动互相依赖. 没有注意力压缩, 1M 序列的预训练和 RL 采样都撑不下来; 报告把 Muon 的作用写成「更快收敛, 更稳的训练」, 把 mHC 写成「增强常规残差」, 训练稳定还要靠第 4.2 节的两种经验手段; FP4 量化感知训练和批不变内核则保证 RL 采样, 训练和线上部署看到的是同一套数值. 下面依次讲结构, 基础设施, 预训练, 后训练和评测.
 
 ## 1. 模型结构: 规模, MoE 与 mHC
 
@@ -19,18 +26,18 @@ V4 预览版有两个模型: V4-Pro 总参数 1.6T, 激活 49B; V4-Flash 总参�
 
 报告第 4.2.1 节给出完整配置. Pro 有 61 层, 隐藏维 7168, 每层 1 个共享专家加 384 个路由专家, 专家中间维 3072, 每 token 激活 6 个路由专家. Flash 有 43 层, 隐藏维 4096, 1 个共享专家加 256 个路由专家, 专家中间维 2048, 同样激活 6 个. 按 SwiGLU 三个矩阵算, Pro 每个专家约 6600 万参数, 每层 385 个专家约 254 亿, 61 层合计约 1.55T, 加上注意力和嵌入, 与 1.6T 吻合; Flash 每层 257 个专家约 65 亿, 43 层约 2780 亿, 与 284B 吻合.
 
-激活参数的构成更值得看. Pro 每 token 激活 7 个专家, 61 层约 28B; 注意力部分按第 2.3 节的维度估算每层约 3.1 亿参数, 61 层约 19B; 再加约 1B 的嵌入和输出头, 合计约 48–50B, 与 49B 一致. 也就是说注意力约占激活参数的 40%, 远高于 V3 的比例, 主要来自 128 个查询头, 每头 512 维带来的上投影和输出投影. 报告第 4.2.1 节末尾把 Pro 的参数写成 「DeepSeek-V4-Flash comprises 1.6T total parameters」, 这是笔误, 同段开头和 Table 1 都是 Pro.
+激活参数也能按同样的办法拆开. Pro 每 token 激活 7 个专家 (1 个共享加 6 个路由), 61 层约 28B; 注意力部分按第 2.2 节的维度估算每层约 3.1 亿参数 (查询上投影 $1536\times128\times512\approx1.0$ 亿, 分组输出投影约 1.8 亿, 其余是查询下投影, KV 与压缩权重投影和索引器), 61 层约 19B; 再加嵌入和输出头约 2B, 合计约 49B, 与报告一致 (推导). 注意力约占激活参数的 40%. 作为对照, V3 的 MLA 按其配置 ($n_h=128$, $d_h=128$, $d_c=512$, $d_c'=1536$) 每层约 1.9 亿参数, 61 层约 11B, 占 37B 激活的约 30% (推导). V4 的注意力参数多出来的部分, 主要来自 128 个查询头每头 512 维带来的查询上投影和输出投影. 报告第 4.2.1 节末尾把 Pro 的参数写成 「DeepSeek-V4-Flash comprises 1.6T total parameters」, 这是笔误, 同段开头和 Table 1 都是 Pro.
 
 ### 1.2. MoE 的小改动与 MTP
 
-MoE 仍是 DeepSeekMoE 的细粒度加共享专家结构, 见 [DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). 相对 V3 有四处改动。
+MoE 仍是 DeepSeekMoE 的细粒度加共享专家结构, 见 [DeepSeek-MoE](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.1-混合专家模型MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md). 相对 V3 有四处改动.
 
-- 计算亲和度的激活从 Sigmoid 换成 $\sqrt{\mathrm{Softplus}(\cdot)}$, 后者没有上界, 在大输入时按平方根增长, 报告没有解释为什么换。
-- 继续用无辅助损失均衡, 另加一个很小的序列级均衡损失防止单条序列内极端不均。
-- 去掉了 V3 的「每个 token 最多发往 M 个节点」约束, 报告说为此重新设计了并行策略。
+- 计算亲和度的激活从 Sigmoid 换成 $\sqrt{\mathrm{Softplus}(\cdot)}$, 后者没有上界, 在大输入时按平方根增长, 报告没有解释为什么换.
+- 继续用无辅助损失均衡, 另加一个很小的序列级均衡损失防止单条序列内极端不均.
+- 去掉了 V3 的「每个 token 最多发往 $M$ 个节点」约束, 报告说为此重新设计了并行策略.
 - 前几层的稠密 FFN 换成 **Hash 路由**的 MoE: 按输入 token ID 的预设哈希函数决定去哪个专家, 不经过门控网络, 两个模型都是前 3 个 MoE 层用 Hash 路由.
 
-去掉节点约束意味着通信量不再被限死在 4 个节点以内, 所以第 3.1 节的通算融合就变得必要. Hash 路由用在浅层, 可能是因为浅层的隐藏状态还接近 token 嵌入, 学出来的路由和按 token ID 分配差别不大, 固定哈希反而能避免浅层路由的不稳定. MTP 按 V3 的配置不变, 深度为 1, 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md). 均衡超参沿用 V3: 偏置更新速度 0.001, 序列均衡损失权重 0.0001; MTP 损失权重大部分时间是 0.3, 学习率开始衰减时改为 0.1.
+去掉节点约束后, 一个 token 发往的 6 个路由专家可以散在任意多个节点上, 跨节点通信量不再有 V3 那样的 4 节点上限, 所以第 3.1 节的通算融合就变得必要. Hash 路由为什么只用在前 3 层, 报告没有解释. Hash 路由的代价也很直接: 同一个 token ID 在任何上下文里都去同一个专家, 浅层专家没法按语境分工. MTP 按 V3 的配置不变, 深度为 1, 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md). 均衡超参沿用 V3: 偏置更新速度 0.001, 序列均衡损失权重 0.0001; MTP 损失权重大部分时间是 0.3, 学习率开始衰减时改为 0.1.
 
 ### 1.3. mHC: 把残差流加宽并约束
 
@@ -48,7 +55,9 @@ $$
 
 $\hat X_l$ 是把 $n_{\mathrm{hc}}\times d$ 的残差流展平后做 RMSNorm 的结果. 每个矩阵都是「动态项乘门控 $\alpha$, 加静态偏置 $S$」; $\alpha$ 初始化很小, 所以训练初期三个矩阵几乎就是静态偏置, 连接方式固定, 随训练才逐步变成依赖输入. $A_l$ 过 sigmoid 落在 $(0,1)$; $C_l$ 是 $2\sigma$, 落在 $(0,2)$, 动态项为 0 且偏置为 0 时恰好等于 1, 即写回权重从 1 起步. $B_l$ 的投影用 Sinkhorn-Knopp 算法: 先取指数保证为正, 再交替做行归一化 $\mathcal T_r$ 和列归一化 $\mathcal T_c$, $M^{(t)}=\mathcal T_r(\mathcal T_c(M^{(t-1)}))$, 迭代 20 次. 20 次后只是近似双随机, 行和列和不严格等于 1, 报告没给残差误差. 两个模型都取 $n_{\mathrm{hc}}=4$. mHC 的一般原理见 [Hyper-Connections 与 mHC](../../../../llm-guide/2-核心原理与架构/2.1-深度学习基础组件/2.1.3-残差连接/01-Hyper-Connections与mHC/01-Hyper-Connections与mHC.md). 
 
-代价在激活显存和流水线通信上, 第 3.5.2 节用融合内核, 选择性重算和调整 DualPipe, 把墙钟开销压到重叠 1F1B 流水阶段的 6.7%. 报告没有给 mHC 对损失或评测的消融, 也没有和普通残差做对照.
+按四件事收一下 mHC. 谁算: 每个 Transformer 块之前, 由展平归一化后的残差流 $\hat X_l$ 经三组小线性投影算出 $A_l, B_l, C_l$, 每 token 每层算一次. 和谁算: $A_l$ 把 4 路残差加权合成这一层的 $d$ 维输入, $B_l$ 在 4 路之间做 $4\times4$ 的混合, $C_l$ 把层输出按权重写回 4 路. 状态怎么变: 层与层之间传递的不再是一个 $d$ 维向量, 而是 $4\times d$ 的矩阵, 激活显存和流水线阶段间传递的张量都变成原来的 4 倍左右; 推理时 KV cache 不受影响, 因为注意力仍在 $d$ 维输入上算. 丢了什么: $B_l$ 被限制在双随机矩阵上, 不能放大信号, 也不能给某一路取负号, 朴素 HC 里这些自由度换成了数值稳定; Sinkhorn 只迭代 20 次, 约束本身也只是近似满足.
+
+代价在激活显存和流水线通信上, 第 3.5.2 节用融合内核, 选择性重算和调整 DualPipe, 把墙钟开销压到重叠 1F1B 流水阶段的 6.7%. 报告没有给 mHC 对损失或评测的消融, 也没有和普通残差做对照. 后续的 V4.1-Flash 保留 mHC, 把系数预测错后一块, 让部署时一个内核读一遍残差流就能完成输入混合和下一块的系数预测, 激活访存从 V4 实现的 $(4n+4)d$ 降到 $(2n+2)d$, 见 [V4.1-Flash 解析](../deepseek-v4-1-flash/deepseek-v4-1-flash-analysis.md).
 
 ## 2. 混合注意力: CSA 与 HCA
 
@@ -74,7 +83,7 @@ $$
 
 ### 2.2. CSA 第二步: 索引器选块, MQA 计算
 
-压缩后, CSA 沿用 V3.2 的 lightning indexer 选 top-k. 索引器的键也按同样方式压缩, 查询由低秩方式生成: 先把 $\mathbf h_t$ 降到 $d_c$ 维的潜变量 $\mathbf c^Q_t$, 再上投影成 $n^I_h$ 个索引头, 分数仍是 $\sum_h w_{t,h}\mathrm{ReLU}(\mathbf q^I_{t,h}\cdot K^{\mathrm{IComp}}_s)$, 见式 (13)–(17). 两个模型的索引器都是 64 头, 每头 128 维; top-k 在 Flash 上是 512, Pro 上是 1024. 每个被选中的条目代表 4 个 token, 所以 Pro 每个查询实际覆盖约 4096 个 token 位置, 比 V3.2 的 2048 多, 但选择次数只有一半. 报告第 2.3.4 节说 V4 选了比 V3.2 更小的 top-k, 以提高短中文本的效率.
+压缩后, CSA 沿用 V3.2 的 lightning indexer 选 top-k. 索引器的键也按同样方式压缩, 查询由低秩方式生成: 先把 $\mathbf h_t$ 降到 $d_c$ 维的潜变量 $\mathbf c^Q_t$, 再上投影成 $n^I_h$ 个索引头, 分数仍是 $\sum_h w_{t,h}\mathrm{ReLU}(\mathbf q^I_{t,h}\cdot K^{\mathrm{IComp}}_s)$, 见式 (13)–(17). 两个模型的索引器都是 64 头, 每头 128 维; top-k 在 Flash 上是 512, Pro 上是 1024. 每个被选中的条目代表 4 个 token, 所以 Pro 每个查询实际覆盖约 4096 个 token 位置, 比 V3.2 的 2048 多, 但选出的条目数只有一半. 报告第 2.3.4 节说 V4 选了比 V3.2 更小的 top-k, 以提高短文本和中等长度文本上的效率: 序列不长时, 压缩条目总数和 top-k 相差不多, 注意力计算量主要由 top-k 决定.
 
 核心注意力用 MQA: 每个压缩条目同时当键和值, 所有查询头共享. 查询头由同一个 $\mathbf c^Q_t$ 上投影得到, 与索引器共用潜变量. Pro 有 128 个查询头, Flash 有 64 个, 每头 $c=512$ 维. 这样 $c\cdot n_h$ 很大, Pro 达到 65536 维, 直接投影回 7168 维代价太高, 所以用分组输出投影: 把头分成 $g$ 组, 每组先投到 $d_g=1024$ 维, 再拼起来投回 $d$. Pro 取 $g=16$, Flash 取 $g=8$. 按 Pro 的配置, 分组后输出投影约 1.8 亿参数, 不分组直接投需要约 4.7 亿.
 
@@ -82,7 +91,18 @@ $$
 
 **Heavily Compressed Attention**(HCA)用更大的压缩率 $m'=128$, 窗口不重叠, 只有一组 KV, 见式 (20)–(23); 压缩后不做稀疏选择, 查询对所有压缩条目做稠密注意力, 也用共享 KV 的 MQA 和分组输出投影. 1M 上下文下, HCA 每层只有约 8192 个条目, 稠密计算也不贵; CSA 每层有约 26 万个条目, 所以需要索引器再挑. 两者的分工是: HCA 给出全局的粗粒度视图, CSA 在细一些的粒度上按内容挑远处的块.
 
-层排布上, Flash 前两层是纯滑动窗口注意力, Pro 前两层是 HCA, 之后 CSA 与 HCA 交错. 按 Pro 的 61 层算, 约 30 层 CSA, 31 层 HCA; 开源推理代码的层类型与此一致, 这是页外信息. 报告没有解释为什么 Flash 前两层只用滑动窗口而 Pro 用 HCA, 也没有给交错比例的消融. CSA 与 HCA 的对比和更多背景见 [CSA-HCA 混合压缩注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md).
+层排布上, Flash 前两层是纯滑动窗口注意力, Pro 前两层是 HCA, 之后 CSA 与 HCA 交错. 按 Pro 的 61 层算, 前两层 HCA 之后 59 层交错, 约 30 层 CSA, 31 层 HCA (推导). 报告没有解释为什么 Flash 前两层只用滑动窗口而 Pro 用 HCA, 也没有给交错比例的消融.
+
+把两种注意力按四件事并排放:
+
+| | CSA | HCA |
+|---|---|---|
+| 谁算 | 每个 token 算两组 KV 向量 $C^a, C^b$ 和两组压缩权重, 每满 4 个 token 产出一个 512 维条目; 索引器另算一份压缩键 | 每个 token 算一组 KV 向量和压缩权重, 每满 128 个 token 产出一个 512 维条目 |
+| 和谁算 | 查询先经索引器给全部压缩条目打分, 只和 top-k 个条目加最近 128 个原始 token 做注意力 | 查询和全部压缩条目加最近 128 个原始 token 做稠密注意力 |
+| 缓存怎么变 | 每 4 个 token 追加一个主 KV 条目和一个索引键; 不满 4 个的尾巴放在状态缓存里 | 每 128 个 token 追加一个条目; 尾巴同样暂存 |
+| 丢了什么 | 块内 4 个 token 的逐 token 细节只剩加权和; 没被 top-k 选中的条目这一层完全看不到 | 128 个 token 的细节压成一条, 远处只剩粗粒度信息, 精确定位靠交错的 CSA 层和滑动窗口 |
+
+两种层交错, 是让每一层都只付一种代价: CSA 层的远程信息是细的但不全, HCA 层的远程信息是全的但粗. 1M 长度下 HCA 每层只有约 8192 个条目, 稠密计算不贵; CSA 每层约 26 万个条目, 打分开销落在索引器上. CSA 与 HCA 的对比和更多背景见 [CSA-HCA 混合压缩注意力](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/05-CSA-HCA-混合压缩注意力/05-CSA-HCA-混合压缩注意力.md).
 
 ### 2.4. 注意力的四项补充设计
 
@@ -98,7 +118,9 @@ $$
 
 ### 2.5. 效率: 读图 1 并按配置复算 KV
 
-图 1 右侧的单 token FLOPs 曲线上, 1M 位置处 V3.2 约 1.19T, Pro 约 0.32T(图上标「低 3.7 倍」), Flash 约 0.12T(标「低 9.8 倍」)(读图). 1/3.7 约 27%, 1/9.8 约 10%, 与正文一致. 报告的 FLOPs 按「等效 FP8 FLOPs」计. V3.2 的曲线从约 0.1T 线性涨到 1.2T, 主要是索引器随长度线性增长的开销; V4 的斜率小得多, 因为 CSA 的索引器只对四分之一的条目打分, HCA 没有索引器. KV cache 方面, 报告用了三项精度手段: RoPE 维用 BF16, 其余维用 FP8, 比纯 BF16 省近一半; 索引器的注意力计算用 FP4; top-k 比 V3.2 小.
+图 1 右侧的单 token FLOPs 曲线上, 1M 位置处 V3.2 约 1.19T, Pro 约 0.32T (图上标「低 3.7 倍」), Flash 约 0.12T (标「低 9.8 倍」)(读图). 1/3.7 约 27%, 对应引言里 Pro 的 FLOPs 比例; 1/9.8 约 10%, 是 Flash 的 FLOPs 比例, 和 Pro 的 KV cache 比例 10% 恰好同数, 不是一回事. 引言给出的 Flash KV cache 比例是 7%. 报告的 FLOPs 按「等效 FP8 FLOPs」计. V3.2 的曲线从约 0.1T 线性涨到 1.2T, 主要是索引器随长度线性增长的开销; V4 的斜率小得多, 因为 CSA 的索引器只对四分之一的条目打分, HCA 没有索引器.
+
+第 2.3.4 节把效率来源分成存储和计算两类. 存储上, KV 条目的 RoPE 维用 BF16, 其余维用 FP8, 比纯 BF16 省近一半, 这一项直接缩小 KV cache. 计算上, 索引器内部的注意力打分用 FP4, top-k 比 V3.2 小, 这两项减的是 FLOPs, 不改变每 token 存多少字节. 报告说最主要的一项仍是压缩注意力和混合注意力本身, 它同时减小 FLOPs 和 KV cache.
 
 ![报告 Figure 1: V4 与 V3.2 的单 token FLOPs 及 benchmark 对比](images/p01-figure-1-left-benchmark-performance-of-deepseek-v4-pro.png)
 
@@ -142,7 +164,7 @@ Flash 训练 32T token, batch 从小逐步增加到 75.5M token 后保持; 学�
 
 ### 4.3. Base 模型评测
 
-Table 1 在统一的内部框架下比较三个 Base. Flash-Base 激活 13B, 总参 284B, 在多数项上超过激活 37B, 总参 671B 的 V3.2-Base, 知识类提升最明显: MMLU-Pro 65.5 → 68.3, FACTS Parametric 27.1 → 33.9, LongBench-V2 40.2 → 44.7. Pro-Base 再上一截: MMLU-Pro 73.5, Simple-QA verified 55.2(Flash 30.1, V3.2 28.3), FACTS Parametric 62.6, SuperGPQA 53.9, LongBench-V2 51.5, HumanEval 76.8. 知识类的大幅提升集中在总参数 1.6T 的 Pro 上, Flash 只小幅超过 V3.2, 符合知识容量主要随总参数增长的一般规律.
+Table 1 在统一的内部框架下比较三个 Base. Flash-Base 激活 13B, 总参 284B, 在多数项上超过激活 37B, 总参 671B 的 V3.2-Base: 知识类 MMLU-Pro 65.5 → 68.3, FACTS Parametric 27.1 → 33.9, Simple-QA verified 28.3 → 30.1; 报告归在长上下文类的 LongBench-V2 从 40.2 到 44.7. Pro-Base 再上一截: MMLU-Pro 73.5, Simple-QA verified 55.2, FACTS Parametric 62.6, SuperGPQA 53.9, LongBench-V2 51.5, HumanEval 76.8. 事实记忆类 (Simple-QA verified, FACTS Parametric) 的大幅提升集中在总参数 1.6T 的 Pro 上: Flash 相对 V3.2 涨 1.8 和 6.8 分, Pro 相对 V3.2 涨 26.9 和 35.5 分. 总参数 284B 的 Flash 比 671B 的 V3.2 还小, 事实记忆却没有掉, 这部分要归给数据和训练; Pro 的跳升则和总参数一起出现.
 
 报告说 Pro-Base 在推理, 代码, 长上下文, 世界知识上「全面领先」, 但表里有反例. BigCodeBench 上 V3.2-Base 63.9, 高于 Pro 的 59.2 和 Flash 的 56.8; CMath 上 V3.2 92.6 高于 Pro 90.9; BBH 上 V3.2 87.6 与 Pro 87.5, 按表注「差距不超过 0.3 视为同一水平」; MATH 上 Flash 57.4 低于 V3.2 的 60.5. 按第 4.1 节的粗算, Flash-Base 的训练算力少于 V3.2-Base, 大多数项仍然领先, 说明结构, 数据和优化器的改进确有贡献; 但 Table 1 没有消融, 无法区分这几项各自的作用.
 
@@ -150,7 +172,7 @@ Table 1 在统一的内部框架下比较三个 Base. Flash-Base 激活 13B, 总
 
 ### 5.1. 专家训练: 三档推理, 生成式奖励与工具格式
 
-后训练先按领域训专家, 每个专家先 SFT 再用 GRPO 做 RL, 超参沿用前作, 见 [GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md). 领域包括数学, 代码, Agent, 指令跟随等. 推理投入分三档: Non-think 直接给摘要; Think High 先写思考 token 再给摘要; Think Max 在系统提示开头加一句 「Reasoning Effort: Absolute maximum with no shortcuts permitted.」 三档对应 RL 时不同的长度惩罚和上下文窗口, 评测时上下文分别是 8K, 128K, 384K. 报告没有给三档各自的长度惩罚系数.
+后训练先按领域训专家, 每个专家先 SFT 再用 GRPO 做 RL, 超参沿用前作, 见 [GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md). 领域包括数学, 代码, Agent, 指令跟随等. 推理投入分三档: Non-think 直接给摘要; Think High 先写思考 token 再给摘要; Think Max 在系统提示开头加一句 「Reasoning Effort: Absolute maximum with no shortcuts permitted.」 三档对应 RL 时不同的长度惩罚和上下文窗口, 评测中上下文分别是 8K, 128K, 384K. 报告没有给三档各自的长度惩罚系数.
 
 难验证任务不再用标量奖励模型, 改用带 rubric 的 RL 数据和生成式奖励模型(GRM), 并且直接对 GRM 本身做 RL: actor 网络同时充当 GRM, 评判能力和生成能力一起优化, 报告说这样只需要少量多样的人工标注. 工具调用改用 XML 格式, 加一个特殊 token `|DSML|`, 报告说 XML 能减少转义失败和工具调用错误. 交错思考比 V3.2 更进一步: 工具调用场景下所有推理内容在整段对话中保留, 包括跨用户消息; 普通对话仍在新用户消息到来时丢弃旧推理. Quick Instruction 在输入序列后追加专用特殊 token, 直接复用已算好的 KV cache 完成是否搜索, 生成搜索词, 判断权威性和领域等辅助任务, 省掉单独小模型的重复预填充, 降低首 token 延迟.
 
@@ -170,7 +192,7 @@ Table 1 在统一的内部框架下比较三个 Base. Flash-Base 激活 13B, 总
 
 ### 6.1. 评测协议与主结果
 
-推理和知识任务温度 1.0, 数学题用「逐步推理, 答案放进 \boxed{}」的模板, Pro-Max 做数学时换成要求严格证明的模板. Codeforces 是内部基准: 2025 年 5 月到 11 月的 14 场 Div.1 比赛, 114 题; 每题生成 32 个候选, 不放回抽 10 个随机排序作为提交序列, 按 OpenAI 的罚分方案计分, 换算成名次和 rating, 再对所有抽样取期望, 14 场平均. 代码 Agent 任务用内部框架, 只给 bash 和文件编辑两个工具, 最多 500 步, 上下文 512K; 搜索任务同样 500 步, 512K, BrowseComp 沿用 V3.2 的 Discard-all 上下文管理.
+推理和知识任务温度 1.0, 数学题用「逐步推理, 答案放进 `\boxed{}`」的模板, Pro-Max 做数学时换成要求严格证明的模板. Codeforces 是内部基准: 2025 年 5 月到 11 月的 14 场 Div.1 比赛, 114 题; 每题生成 32 个候选, 不放回抽 10 个随机排序作为提交序列, 按 OpenAI 的罚分方案计分, 换算成名次和 rating, 再对所有抽样取期望, 14 场平均. 代码 Agent 任务用内部框架, 只给 bash 和文件编辑两个工具, 最多 500 步, 上下文 512K; 搜索任务同样 500 步, 512K, BrowseComp 沿用 V3.2 的 Discard-all 上下文管理.
 
 Table 6 的 Pro-Max 主要分数: MMLU-Pro 87.5, SimpleQA-Verified 57.9, Chinese-SimpleQA 84.4, GPQA Diamond 90.1, HLE 37.7, LiveCodeBench 93.5, Codeforces 3206, HMMT 2026 Feb 95.2, IMOAnswerBench 89.8, Apex 38.3, Apex Shortlist 90.2; Agent 部分 Terminal Bench 2.0 67.9, SWE Verified 80.6, SWE Pro 55.4, BrowseComp 83.4, 带工具 HLE 48.2, MCPAtlas 73.6, Toolathlon 51.8. 相对 Gemini-3.1-Pro, SimpleQA-Verified 低 17.7 分, GPQA 低 4.2 分; 相对开源的 K2.6 和 GLM-5.1, 知识和推理多数领先, 但带工具 HLE 的 48.2 是表中最低. 报告说 Pro-Max 在 Codeforces 人类排行榜上排第 23 名. Codeforces 的 3206 与 V3.2 报告的 2386 不能直接比, 两者的题目集和计分方式都不同.
 
@@ -184,9 +206,9 @@ MRCR 表中 Pro-Max 的 「MRCR 1M」 是 83.5, 高于 Gemini-3.1-Pro 的 76.3, 
 
 Table 7 显示推理档位的影响很大. Pro 的 HLE 从 Non-think 7.7 到 High 34.5 再到 Max 37.7; HMMT 从 31.7 到 94.0 到 95.2. Non-think 档里, Pro 在 HMMT(31.7)和 IMOAnswerBench(35.3)上反而低于 Flash(40.8, 41.9). Flash-Max 在推理上接近 Pro-Max: LiveCodeBench 91.6 对 93.5, HMMT 94.8 对 95.2; 知识上差距大: SimpleQA-Verified 34.1 对 57.9. 图 10 的成本曲线上, Terminal Bench 2.0 的 Pro 三档约用 2.8 万, 3.6 万, 5.0 万 token, Flash 三档约 3.7 万, 4.7 万, 5.7 万 token, Flash 每一档都比 Pro 用的 token 多, 分数却低(读图). 所以 Flash 单 token 便宜, 但完成同一任务的总开销要按 token 数一起算.
 
-![报告 Figure 10: 推理档位与成本——Terminal Bench 2.0 上 Pro 三档的 token 开销](images/p41-figure-10-hle-and-terminal-bench-2-0-performance-by.png)
+![报告 Figure 10: HLE 与 Terminal Bench 2.0 上 Pro 和 Flash 各推理档的分数与 token 开销](images/p41-figure-10-hle-and-terminal-bench-2-0-performance-by.png)
 
-*报告 Figure 10: 推理档位与成本——Terminal Bench 2.0 上 Pro 三档的 token 开销*
+*报告 Figure 10: HLE 与 Terminal Bench 2.0 上 Pro 和 Flash 各推理档的分数与 token 开销*
 
 ### 6.3. 真实场景评测
 
@@ -196,6 +218,17 @@ Table 7 显示推理档位的影响很大. Pro 的 HLE 从 Non-think 7.7 到 Hig
 
 ## 7. 局限与谱系
 
-报告第 6 节列了两项局限: 为了冲极端长上下文, 保留了很多初步验证过的组件和技巧, 结构偏复杂, 后续要精简到最本质的设计; Anticipatory Routing 和 SwiGLU Clamping 有效但原理不清. 未来方向包括更稀疏的嵌入模块, 低延迟结构, 长程多轮 Agent, 多模态, 数据策展与合成. 从正文还能看出几处缺口: mHC, Muon, CSA/HCA 比例, Hash 路由都没有消融; OPD 没有与混合 RL 对照; 数据配比没有给; MRCR 1M 的口径没有说明; 真实场景评测全是内部数据.
+报告第 6 节列了两项局限: 为了冲极端长上下文, 保留了很多初步验证过的组件和技巧, 结构偏复杂, 后续要精简到最本质的设计; Anticipatory Routing 和 SwiGLU Clamping 有效但原理不清. 未来方向包括更稀疏的嵌入模块 (报告引用的是 Engram 条件记忆, Cheng et al., 2026), 低延迟结构, 长程多轮 Agent, 多模态, 数据策展与合成. 正文里 mHC, Muon, CSA/HCA 交错比例和 Hash 路由都没有消融, OPD 也没有和混合 RL 对照, 所以这几项各自贡献多少, 从这份报告里分不出来.
 
-谱系上, V4 是 DeepSeek 第一次在 V3 之后整体重做底座. MoE 和 MTP 保留; 注意力从 V2 起用的 MLA 换成沿序列维压缩的 CSA/HCA, 但保留了 V3.2 的 lightning indexer, 所以 V3.2 的 DSA 是 V4 注意力的直接前身; 残差和优化器都换了; 后训练从 R1 的规则奖励 RL, V3.2 的专家蒸馏加混合 RL, 走到专家 RL 加多教师 OPD. 后续的 V4.1-Flash 在这条线上继续压缩 KV cache, 对照时应以 V4-Flash 为基线.
+谱系上, V4 是 DeepSeek 在 V3 之后第一次整体重做底座. MoE 和 MTP 保留; 注意力从 V2 起用的 MLA 换成沿序列维压缩的 CSA/HCA, 但保留了 V3.2 的 lightning indexer, 所以 V3.2 的 DSA 是 V4 注意力的直接前身, 见 [V3.2 解析](../deepseek-v3-2/deepseek-v3-2-analysis.md); 残差和优化器都换了; 后训练从 R1 的规则奖励 RL, V3.2 的专家蒸馏加混合 RL, 走到专家 RL 加多教师 OPD.
+
+后续的 [V4.1-Flash](../deepseek-v4-1-flash/deepseek-v4-1-flash-analysis.md) 以 V4-Flash 为基线, 把本文这几处设计各推进了一步. 注意力上, CSA 与 HCA 的交错换成只用 CSA2 一种层, CSA2 去掉了本文式 (9)–(12) 的重叠窗口和块内位置偏置, 索引键改从主 KV 条目投影, 并让多数层复用前面某一层的 KV 和 top-k 选择; 前 20 层作 encoder, prefill 只跑这一半. 精度上主 KV 从 FP8 降到 FP4. 部署上, 本文第 3.3 节的状态缓存里那份滑动窗口 KV 被移出持久化缓存, 缺失时只回放最近 128 个 token 近似重建. 每 token 的 global KV 从 V4-Flash 的 3,514 字节降到 890 字节. 其余方面, V4.1 去掉 MTP 改用独立训练的 DSpark 草稿模型, 挂上 196B 的 Engram, 推理档位从本文的三档变成 1 到 100 的标量, OPD 教师从十个以上加到四十个以上.
+
+总的来看, V4 的贡献是把 1M 上下文从「能跑」变成常规配置: 注意力 FLOPs 和 KV cache 都按序列维压到 V3.2 的十分之一量级, 代价是结构上叠了很多组件, 其中两项训练稳定手段连作者也说不清原理. 评测上 Pro-Max 在推理和代码 Agent 上进入第一梯队, 知识类和 1M 长度处的检索仍有明显差距.
+
+## 参考文献
+
+- DeepSeek-AI. DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence. arXiv:2606.19348, 2026. https://arxiv.org/abs/2606.19348
+- DeepSeek-AI. DeepSeek-V3 Technical Report. arXiv:2412.19437, 2024. https://arxiv.org/abs/2412.19437
+- Z. Xie et al. mHC: Manifold-Constrained Hyper-Connections. arXiv:2512.24880, 2025. https://arxiv.org/abs/2512.24880
+- X. Cheng et al. Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models. arXiv:2601.07372, 2026. https://arxiv.org/abs/2601.07372
