@@ -94,7 +94,7 @@ RLHF 里的奖励形态更特殊: 除最后一个 token 外, 即时奖励只有 
 - $\lambda=1$: $A_t=\sum_{l\ge0}\delta_{t+l}$, 中间的 $V$ 全部抵消, $A_t=1-V(s_t)$, 即 $(0.5,0.4,0.6,0.2)$. 优势只依赖 $V(s_t)$ 本身, 价值网络只起基线作用, 不会把自身误差带进别的位置.
 - $\lambda=0.95$: $A_3=0.2$, $A_2=0.4+0.95\times0.2=0.59$, $A_1=-0.2+0.95\times0.59=0.3605$, $A_0=0.1+0.95\times0.3605=0.4425$. 和 $\lambda=1$ 相比, $A_1$ 从 0.4 降到 0.36, $A_2$ 从 0.6 降到 0.59. 差异来自后续位置 $V$ 的取值: $V$ 准确时差异是降方差的收益, $V$ 有偏时差异就是偏差.
 
-句末奖励, 确定转移, 长回答这三个条件叠在一起时, 价值网络很难对中间前缀给出准确估计, 低 $\lambda$ 带进来的主要是偏差. §6 中 $\lambda=1$ 表现最好的实验结果与此一致.
+句末奖励, 确定转移, 长回答这三个条件叠在一起时, 价值网络很难对中间前缀给出准确估计, 低 $\lambda$ 带进来的主要是偏差. §6.1 中 $\lambda=1$ 表现最好的实验结果与此一致.
 
 ## 3. 重要性比率与裁剪
 
@@ -140,8 +140,7 @@ $\hat{A}_t<0$: $r\ge1-\varepsilon$ 时, 若 $r\le1+\varepsilon$ 两项相同; �
 - 上框标题「GAE $\lambda$」. 第一行四个蓝框是 $\delta_0$ 到 $\delta_3$, 最右写出 $\delta_3=r+\gamma V_4-V_3$. 每个 $\delta_t$ 向下进入对应的橙框 $A_t$.
 - 橙框之间的虚线箭头从右指向左, 标 $\gamma\lambda$, 表示 $A_{t+1}$ 乘 $\gamma\lambda$ 后加进 $A_t$, 对应式 (7).
 - 右侧两个绿框是两个端点: $\lambda=0$ 时 $A_t=\delta_t$ (TD); $\lambda=1$ 时为完整回报 (MC).
-- 下框标题「clip $1\pm\varepsilon$」. 绿框是比率 $\eta=\pi_\theta/\pi_{\mathrm{old}}$, 即本文的 $r_t$; 黄框是 clip gate $[1-\varepsilon,1+\varepsilon]$, 注明 $\varepsilon=0.2\to[0.8,1.2]$.
-- 黄框分两路: 粉框「$A>0$ lock at $1+\varepsilon$」, 紫框「$A<0$ lock at $1-\varepsilon$」, 两路汇入底部的 $L^{\mathrm{CLIP}}=E[\min(\eta A,\mathrm{clip}(\eta)A)]$.
+- 下框标题「clip $1\pm\varepsilon$」. 绿框是比率 $\eta=\pi_\theta/\pi_{\mathrm{old}}$, 即本文的 $r_t$; 黄框是 clip gate $[1-\varepsilon,1+\varepsilon]$, 注明 $\varepsilon=0.2\to[0.8,1.2]$. 黄框分两路: 粉框「$A>0$ lock at $1+\varepsilon$」, 紫框「$A<0$ lock at $1-\varepsilon$」, 两路汇入底部的 $L^{\mathrm{CLIP}}=E[\min(\eta A,\mathrm{clip}(\eta)A)]$.
 - 底注: $\lambda$ 把 TD 残差向后混合; clip 是比率门, 图中没有画函数曲线.
 
 下面的动画展示同一个裁剪带:
@@ -181,7 +180,7 @@ $$
 
 不裁剪时分数为负, 是因为 HalfCheetah 上得分比随机策略还低.
 
-读这张表要注意三点. 第一, 每种方法都单独搜过超参, 表里比较的是各自较好的设置, clip 在 $0.1$ 到 $0.3$ 之间都不差于最好的 KL 罚变体. 第二, 自适应 KL 的三个目标值相差 10 倍, 分数只在 0.68 到 0.74 之间变化, 说明它对 $d_{\mathrm{targ}}$ 不敏感, 但上限低于 clip. 第三, 这些结论来自小型 MLP 和每任务 1M 步的连续控制, 搬到语言模型时, $\varepsilon$ 的最佳值和 clip 是否必要都要重新验证, §6 就是一个反例.
+读这张表要注意三点. 第一, 每种方法都单独搜过超参, 表里比较的是各自较好的设置, clip 在 $0.1$ 到 $0.3$ 之间都不差于最好的 KL 罚变体. 第二, 自适应 KL 的三个目标值相差 10 倍, 分数只在 0.68 到 0.74 之间变化, 说明它对 $d_{\mathrm{targ}}$ 不敏感, 但上限低于 clip. 第三, 这些结论来自小型 MLP 和每任务 1M 步的连续控制, 搬到语言模型时, $\varepsilon$ 的最佳值和 clip 是否必要都要重新验证, §6.1 就是一个反例.
 
 **超参数.** MuJoCo: $T=2048$, Adam 步长 $3\times10^{-4}$, 10 个 epoch, mini-batch 64, $\gamma=0.99$, $\lambda=0.95$. Atari: $T=128$, 3 个 epoch, 8 个 actor, $\varepsilon=0.1\times\alpha$, 其中 $\alpha$ 在训练中从 1 线性降到 0, $c_1=1$, $c_2=0.01$. 所以 $\varepsilon=0.2$ 是连续控制实验的取值, Atari 上用的是 0.1 并逐渐退火.
 
@@ -252,8 +251,7 @@ RM 对留出标注员只有约 70% 的准确率, PPO 仍然提升了人类偏好
 - Actor 向下分出两路: 绿框 $\log\pi_\theta$ 和红框 Critic $V_\phi$ (train). response $y$ 向下分出三路: 进入 Critic, 黄框 Reward $r_\phi$ (frozen), 紫框 $\pi_{\mathrm{ref}}$ (frozen).
 - 两条虚线标 KL, 分别从 $\log\pi_\theta$ 和 $\pi_{\mathrm{ref}}$ 指向中间的橙框 $r_t=r_\phi-\beta\,\mathrm{KL}$; RM 的 score 用实线进入同一个框.
 - Critic 的 $V$ 和 $r_t$ 一起进入 $\mathrm{GAE}(\gamma,\lambda)$ 框, 输出 $A_t$ 和 $R_t=A_t+V$.
-- $A_t$ 进入左下 $L^{\mathrm{CLIP}}\to\theta$, $R_t$ 进入右下 $L^{\mathrm{VF}}\to\phi$. 图中没有从损失回到模型的箭头, 更新写在底框里.
-- 底注: 绿色和红色可训练, 黄色和紫色冻结, KL 在 GAE 之前进入奖励.
+- $A_t$ 进入左下 $L^{\mathrm{CLIP}}\to\theta$, $R_t$ 进入右下 $L^{\mathrm{VF}}\to\phi$. 图中没有从损失回到模型的箭头, 更新写在底框里. 底注: 绿色和红色可训练, 黄色和紫色冻结, KL 在 GAE 之前进入奖励.
 
 一次迭代按图走: Actor 采完整回答并记录 $\log\pi_{\theta_{\mathrm{old}}}$; 参考模型算每个 token 的 $\log\pi_{\mathrm{ref}}$; RM 给完整 $(x,y)$ 一个分数; Critic 给每个前缀一个 $V$. 每个 token 的即时奖励是 $-\beta(\log\pi_{\theta_{\mathrm{old}}}-\log\pi_{\mathrm{ref}})$, 最后一个 token 再加上 RM 分数. 这些奖励和 $V$ 进入 GAE, 得到 $\hat{A}_t$ 和 $R_t$. 更新时只动 Actor 和 Critic.
 
@@ -344,13 +342,14 @@ def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
 1. 策略自回归生成 512 条回答, 同时记下每个 token 的 $\log\pi_{\theta_{\mathrm{old}}}$. 这一步是逐 token 解码, 其余步骤都是对已知序列做一次前向.
 2. 参考模型对 512 条回答前向一次, 得到 $\log\pi_{\mathrm{ref}}$.
 3. 奖励模型对 512 个 $(x,y)$ 前向一次, 得到分数.
-4. 价值网络对 512 条回答前向一次, 得到每个前缀的 $V$.
-5. 在 CPU 或 GPU 上算逐 token 奖励和 GAE, 计算量可以忽略.
-6. 把 512 条切成 8 个 64 条的 mini-batch, 每个 mini-batch 上策略和价值各做一次前向加反向, 共 8 次参数更新.
+4. 价值网络对 512 条回答前向一次, 得到每个前缀的 $V$. 随后在 CPU 或 GPU 上算逐 token 奖励和 GAE, 计算量可以忽略.
+5. 把 512 条切成 8 个 64 条的 mini-batch, 每个 mini-batch 上策略和价值各做一次前向加反向, 共 8 次参数更新.
 
-256k 个 episode 除以每批 512, 是 500 次迭代, 合计 4000 次策略参数更新. PPO-ptx 还要在每个 mini-batch 上额外算一次预训练梯度并累加, 预训练样本总数是 episode 数的 8 倍. 从这张清单可以看出去掉价值网络能省什么: 第 4 步的前向, 第 6 步里价值网络的前向和反向, 以及它的优化器状态. 去掉参考模型 (例如 DAPO 不加 KL) 则省掉第 2 步.
+256k 个 episode 除以每批 512, 是 500 次迭代, 合计 4000 次策略参数更新. PPO-ptx 还要在每个 mini-batch 上额外算一次预训练梯度并累加, 预训练样本总数是 episode 数的 8 倍. 从这张清单可以看出去掉价值网络能省什么: 第 4 步里价值网络的前向, 第 5 步里价值网络的前向和反向, 以及它的优化器状态. 去掉参考模型 (例如 DAPO 不加 KL) 则省掉第 2 步.
 
 ### 5.5 训练中看什么
+
+训练过程中常盯下面五个指标, 每个指标对应一类异常和处理办法:
 
 | 指标 | 含义 | 异常时的处理 |
 |------|------|-------------|
@@ -360,7 +359,9 @@ def ppo_update(policy, critic, batch, clip_eps=0.2, c1=0.5):
 | 价值损失与 explained variance | 价值网络是否跟得上 | 价值长期拟合不了回报: 优势不可信, 先查价值学习率 |
 | 回答长度 | 是否在利用长度偏好 | 长度单调上涨且 RM 分同步上涨: 检查 RM 的长度偏差 |
 
-## 6. RLHF 里 PPO 的组件有多少在起作用
+## 6. 组件检验, 失效模式与相邻算法
+
+### 6.1 RLHF 里 PPO 的组件有多少在起作用
 
 Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthropic-HH 和 TL;DR 上重新检查 PPO:
 
@@ -373,7 +374,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 
 这不等于 PPO 在 LLM 上无用. 推理任务的回答长, 一批 rollout 常切成多个 mini-batch 更新多次, off-policy 程度更高, clip 触发更频繁, 这正是 [03-GSPO](../03-GSPO/03-GSPO.md) 讨论的场景. 需要逐 token 价值估计 (例如过程奖励) 时, 价值网络也仍有用.
 
-## 7. 失效模式
+### 6.2 失效模式
 
 | 现象 | 常见原因 | 处理 |
 |------|----------|------|
@@ -388,7 +389,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 
 价值网络的初始化也会影响前期稳定性. InstructGPT 从 RM 初始化价值网络: 在完整回答上, RM 的输出就是这条回答的得分, 也就是最后一个位置价值的目标, 所以训练开始时价值网络至少在末端位置有合理的估计. 随机初始化的价值头在训练初期给出的优势接近噪声, 这段时间里策略更新的方向不可靠, 一种做法是先只训练价值网络一段时间, 等价值损失下降后再放开策略更新.
 
-## 8. 与相邻算法的关系
+### 6.3 与相邻算法的关系
 
 | 算法 | 优势从哪来 | 比率与裁剪 | 价值网络 | 在线采样 |
 |------|-----------|-----------|----------|---------|
