@@ -142,3 +142,21 @@
 - **flexolmo-18** §5.1 消融: 称每个组件都单独去掉过, 表 1 只有 "no init, no bias" 合并的一行, 路由初始化的效果没有被单独隔离. 求证结果:
 - **flexolmo-19** §4.3: Unrestricted MoE 的 FLOPs 约为 FlexOlmo 的 2×, 没给专家数, top-k 和负载均衡设置, 无法复算. 求证结果:
 - **flexolmo-20** 附录 C / 表 5: SciRIFF 报五个子任务的平均, 指标一栏是 "—"; LaTeX 里留有待补注释. 求证结果:
+
+### Bolmo (arXiv 2512.15586)
+
+解析: `content/olmo/01-模型技术报告/bolmo/bolmo-analysis.md`.
+
+- **bolmo-1** §5 Bolmo 1B 段: 写「+3.3% on CoQA」. 表 2 中 Bolmo 1B 是 81.7, OLMo 2 1B 是 77.4, 81.7−77.4=4.3, v1 和 v2 都写成 3.3. 求证结果:
+- **bolmo-2** 附录 A: 「fused non-causal boundary prediction of the patch end is best」. 表 3 的 Avg: NC(S) 在 oracle 下 58.2, 学到边界下 55.7 (加粗), NC(F) 分别是 57.9 和 55.6. NC(F) 只在成本上占优: L/G 为 8.8 对 9.8. 求证结果:
+- **bolmo-3** §4 Evaluation: 写 7B 套件跳过了 BigCodeBench, 表 5 列出了 BigCodeBench (pass@1 (5), max toks 1280), 表 1 里却没有它. 求证结果:
+- **bolmo-4** §6.3: 解码速度「∼125 bytes/s vs ∼150」. Figure 7 左图 Bolmo (c=4.4) 约 113-117, 右图选中点约 115, 约为子词模型的 77%. 求证结果:
+- **bolmo-5** 表 8: 吞吐一律是 BPS = 6×TPS (59.4/9.9, 37.8/6.3, 207/34.5, 166.2/27.7), 同表 Total Bytes 按每 token 4.4 字节算 (43.1/9.8, 172.9/39.3). 6 = 24576/4096, BPS 计入了填充槽位, 有效字节吞吐约为表中数字的 4.4/6≈73%. 求证结果:
+- **bolmo-6** §3.2.1 $\lambda_\mathcal{E}=1$: 脚本里 `encoder_loss_lookahead_weights=[0,0,0,4.0]`, `no_lookahead_weight=0`, 第 4 层表示损失的有效权重是 4, $n=0$ 那项不参与. 求证结果:
+- **bolmo-7** §3.2.1 把 $\mathcal{L}_{\mathcal{D},\text{Distill}}$ 称为精确目标: 阶段 1 脚本开了 `do_alm_debiasing=true`, 给两侧 patch 对数概率各加一项空格类符号的 logsumexp, 公式里没有这一项. 求证结果:
+- **bolmo-8** 表 1 / §5: 代码「pass@1 总体略低」, 类目均值 40.7 对 39.5. 这个均值把 pass@1 和 pass@16 共 11 个数混在一起平均 (447.4/11, 434.8/11); 只算 pass@1 时是 27.6 对 31.1, 其中 HumanEval 低 8.4. 求证结果:
+- **bolmo-9** README 与论文: bolmo-core README 的 Code 是 41.0 / 40.1, 论文表 1 是 40.7 / 39.5. 求证结果:
+- **bolmo-10** §6.2: 阶段 1 的成本约为 $2\times\text{FLOPs}_\mathcal{M}$. 按论文自己描述的计算路径是 $1+3n/L$, 7B 为 1.375, 1B 为 1.75; 按 2/3 补 token 后, 只做阶段 2 的一组在 7B 上多拿约 45% 算力, 结论方向不变. 求证结果:
+- **bolmo-11** 脚注 2: 把多语言低效记作「problem (ii)」, 正文 (ii) 是分词偏差, 多语言效率在 (iii). 求证结果:
+- **bolmo-12** §3.2.1 $\mathcal{L}_E$ 的记号: 写作 $\mathrm{Pool}(\mathcal{E}(\hat e,\mathcal{B}_\text{subword}(x)))$, 别处是 $\hat e=\mathcal{E}(e)$, $h=\mathrm{Pool}(\hat e,p)$, 括号和参数错位. 求证结果:
+- **bolmo-13** Figure 5 题注: 「either ... and」应为「either ... or」, 中间面板纵轴实际是百分数. 求证结果:
