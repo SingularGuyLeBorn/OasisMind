@@ -7,7 +7,7 @@ excerpt: "序列级 REINFORCE 把整段回复当成一个动作, 用写完后才
 
 # REINFORCE: 序列级策略梯度
 
-> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [06 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [07 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [02 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [4.7.1 RLAIF](../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md)
+> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [05 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [4.7.2 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [4.5 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [4.7.1 RLAIF](../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md)
 
 材料是 Williams (1992) 的 REINFORCE 估计器, 以及 Ahmadian 等的 *Back to Basics: Revisiting REINFORCE-Style Optimization for Learning from Human Feedback in LLMs* (ACL 2024, arXiv:2402.14740) 中的序列级用法. 问题是 RLHF 的第三阶段能否把整段回复当成一个动作, 只用一个简单的基线, 不要价值网络.
 
@@ -183,7 +183,7 @@ $\gamma=1$, 奖励只在末尾出现时, 两种权重差得不多. 设 $T=3$, �
 
 Vanilla PG 在三组上都高于 PPO, 表内差值分别是 $2.8$, $7.2$, $20.3$. 序列级 REINFORCE 与 Vanilla PG 在 Pythia 上基本持平 ($70.7$ 对 $70.4$, $37.9$ 对 $36.4$), 在 HH + Llama 上更高 ($55.3$ 对 $52.3$). 论文的结论是: 只建模整段生成, 不建模部分回复, 即使不用多样本也足够有效. 测试奖励曲线 (Figure 2) 方向一致: RLOO 始终最好, Vanilla PG 始终高于 PPO.
 
-DPO 在 HH 上高于单样本的两种 REINFORCE, 在 TL;DR 上最低. 多样本的 RLOO ($k=4$) 比 PPO 分别高 $10.3$, $14.5$, $32.1$, 在 HH (Pythia) 上 $k=2$ 的胜率更高, 那是 [06 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) 的内容.
+DPO 在 HH 上高于单样本的两种 REINFORCE, 在 TL;DR 上最低. 多样本的 RLOO ($k=4$) 比 PPO 分别高 $10.3$, $14.5$, $32.1$, 在 HH (Pythia) 上 $k=2$ 的胜率更高, 那是 [05 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) 的内容.
 
 ### 5.3 流畅度, 多样性与奖励方差
 
@@ -198,7 +198,9 @@ Table 2 在 HH 上报告长度, 困惑度, $n$-gram 多样性和奖励方差:
 
 困惑度上, RLOO, RAFT 和带滑动平均基线的 REINFORCE 彼此接近, 都明显低于 PPO 和 Vanilla PG. Vanilla PG 的奖励方差最高; 带基线的 REINFORCE 奖励方差低 27%, 奖励和胜率还不低于 Vanilla PG. 论文认为低奖励方差对安全, 无害这类「生成一次低分样本就有风险」的应用更重要. PPO 的生成最短 (平均 16 token 左右), DPO 最长 (约 104 token), 显得啰嗦. Diversity-1 在 RLOO, RAFT, 带基线的 REINFORCE 和 Vanilla PG 之间相近; Diversity-2 在奖励优化得更好的方法上略低, 论文认为这与它们的生成长度差异较大有关. PPO 的 Diversity-1 达到 0.34, 与它的回复只有十几个 token 分不开, 不能直接读成更好的多样性. 长度也提醒读表时要谨慎: 带基线的 REINFORCE 比 Vanilla PG 平均长 8 个 token, 困惑度却低得多, 两者的差别不能只归到估计器上, 论文没有做长度控制的对照.
 
-## 6. 与相邻方法的区别
+## 6. 与相邻方法的区别和适用边界
+
+### 6.1 每个 prompt 多采样的方法: RLOO, ReMax, RAFT
 
 ![REINFORCE, RLOO, PPO, RAFT 四列对照](./images/fig-reinforce-four-col.png)
 
@@ -214,9 +216,11 @@ Table 2 在 HH 上报告长度, 困惑度, $n$-gram 多样性和奖励方差:
 
 **ReMax.** 用当前策略对同一 prompt 贪心解码得到的回复的奖励作基线, 也只多一次生成, 不需要价值网络, 见 [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md).
 
-**RAFT.** 与 RLOO 同样每个 prompt 采 $k$ 条, 但只对奖励最高的一条做监督微调, 其余丢掉. 论文指出, 这种用奖励筛选样本再接监督学习目标的做法也叫 bandit-to-supervised conversion, 在 LLM 的 RLHF 出现之前, 已在大动作空间的 NLP 离线 RL 里取得过效果 (Lawrence & Riezler 2018; Kreutzer 等 2018). 论文在相同采样预算下比较两者, RLOO 胜率更高, 并且对 KL 系数和奖励噪声更稳, 见 [07 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md).
+**RAFT.** 与 RLOO 同样每个 prompt 采 $k$ 条, 但只对奖励最高的一条做监督微调, 其余丢掉. 论文指出, 这种用奖励筛选样本再接监督学习目标的做法也叫 bandit-to-supervised conversion, 在 LLM 的 RLHF 出现之前, 已在大动作空间的 NLP 离线 RL 里取得过效果 (Lawrence & Riezler 2018; Kreutzer 等 2018). 论文在相同采样预算下比较两者, RLOO 胜率更高, 并且对 KL 系数和奖励噪声更稳, 见 [4.7.2 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md).
 
-**GRPO.** DeepSeekMath 中的 GRPO 与 Ahmadian 等的论文同在 2024 年 2 月挂上 arXiv, 都去掉了价值网络. GRPO 用含自身的组内均值和标准差做标准化, 并保留 PPO 式的比率裁剪; 序列级 REINFORCE 的 $b_{\mathrm{MA}}$ 跨 prompt 混合, 没有标准化, 也没有裁剪, 见 [02 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md). 标准化与否决定优势的单位: GRPO 的优势是无量纲的 $z$ 分数, 奖励模型整体放大一倍, 更新不变; $b_{\mathrm{MA}}$ 下的优势保留奖励的原单位, 奖励放大一倍, 等效学习率也放大一倍, 所以换奖励模型后学习率和 $\beta$ 要重新调.
+### 6.2 换掉基线或不做 RL: GRPO, DPO, RLAIF
+
+**GRPO.** DeepSeekMath 中的 GRPO 与 Ahmadian 等的论文同在 2024 年 2 月挂上 arXiv, 都去掉了价值网络. GRPO 用含自身的组内均值和标准差做标准化, 并保留 PPO 式的比率裁剪; 序列级 REINFORCE 的 $b_{\mathrm{MA}}$ 跨 prompt 混合, 没有标准化, 也没有裁剪, 见 [4.5 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md). 标准化与否决定优势的单位: GRPO 的优势是无量纲的 $z$ 分数, 奖励模型整体放大一倍, 更新不变; $b_{\mathrm{MA}}$ 下的优势保留奖励的原单位, 奖励放大一倍, 等效学习率也放大一倍, 所以换奖励模型后学习率和 $\beta$ 要重新调.
 
 **DPO.** 跳过在线采样和独立的奖励模型, 直接把偏好对放进分类损失. Ahmadian 等把它作为不做 RL 的对照.
 
@@ -238,7 +242,7 @@ $$
 | 裁剪 | 无 | 无 | 比率裁剪 | 无 | 比率裁剪 |
 | 额外网络 | 无 | 基线网络 | 价值网络 | 无 | 无 |
 
-## 7. 失效与边界
+### 6.3 失效与边界
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
@@ -251,7 +255,7 @@ $$
 
 论文 §7 列了三条局限: 没有研究奖励模型过优化, 即代理奖励与「金标准」奖励在优化中分叉 (Gao 等 2022), RAFT 一类迭代微调方法同样缺这方面的研究; 没有在「建模部分序列并给中间奖励」的单 token 动作框架下研究留一基线; 只用 LLM 模拟胜率, 没有测量与最终人评偏好的相关性, 也没有用 ROUGE, BLEU 等 NLP 指标作奖励训练.
 
-还要补两点. 第一, 结论的前提是强初始化: 策略从预训练加 SFT 的模型出发, 概率质量已经集中. 从弱初始化开始训练, 或者奖励稀疏到大多数样本都拿同一个分, 单样本 REINFORCE 的方差仍是实际问题. 第二, 裁剪不到 5% 的统计来自论文的模型与数据. 一批 rollout 要更新多轮, 或策略变化快的场景 (例如长 CoT 的推理 RL), 比率会离 1 更远, 这时裁剪或软门是否必要要重新判断, 可参考 [08 CISPO](../../4.5-GRPO家族与RLVR/03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) 和 [09 SAPO](../../4.5-GRPO家族与RLVR/06-SAPO-温度软门/06-SAPO-温度软门.md).
+还要补两点. 第一, 结论的前提是强初始化: 策略从预训练加 SFT 的模型出发, 概率质量已经集中. 从弱初始化开始训练, 或者奖励稀疏到大多数样本都拿同一个分, 单样本 REINFORCE 的方差仍是实际问题. 第二, 裁剪不到 5% 的统计来自论文的模型与数据. 一批 rollout 要更新多轮, 或策略变化快的场景 (例如长 CoT 的推理 RL), 比率会离 1 更远, 这时裁剪或软门是否必要要重新判断, 可参考 [4.5 CISPO](../../4.5-GRPO家族与RLVR/03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) 和 [4.5 SAPO](../../4.5-GRPO家族与RLVR/06-SAPO-温度软门/06-SAPO-温度软门.md).
 
 ## 参考文献
 

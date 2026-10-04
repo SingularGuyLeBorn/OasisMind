@@ -6,11 +6,13 @@ excerpt: "ReMax 用同一条 prompt 上贪心解码的奖励做基线, 随机采
 ---
 # 06 · ReMax: 贪心解码当基线
 
-> 相关阅读: [4.5 其他策略梯度](../../4.5-GRPO家族与RLVR/4.5-GRPO家族与RLVR.md) · [10-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [06-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../04-PPO/04-PPO.md) · [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [01-DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
+> 相关阅读: [4.5 GRPO 家族与 RLVR](../../4.5-GRPO家族与RLVR/4.5-GRPO家族与RLVR.md) · [02-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [05-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../04-PPO/04-PPO.md) · [4.5 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [01-DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
 
 材料是 Li 等的 *ReMax: A Simple, Effective, and Efficient Reinforcement Learning Method for Aligning Large Language Models* (arXiv:2310.10505, ICML 2024), 名字取自 REINFORCE 加 argmax. 问题是 RLHF 中 PPO 的价值网络能否去掉, 去掉后用什么做基线.
 
-## 1. 问题: PPO 的价值网络在 RLHF 里用处不大
+## 1. 为什么能去掉价值网络
+
+### 1.1 语言模型上的三个性质
 
 InstructGPT 的三阶段流程是 SFT, 训练奖励模型, 再用奖励抬策略, 第三阶段默认用 PPO. PPO 是为一般 MDP 设计的: 转移可以随机, 仿真可以很慢, 奖励可以逐步给出. 论文指出语言模型上这三条都不成立, 并归纳为三个性质.
 
@@ -22,13 +24,17 @@ InstructGPT 的三阶段流程是 SFT, 训练奖励模型, 再用奖励抬策略
 
 把这三条代进 GAE 看得更直接. GAE 的优势是 $A_t=\sum_{l\ge0}(\gamma\lambda)^l\delta_{t+l}$, 其中 $\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)$, $\gamma$ 是折扣, $\lambda$ 是平滑系数. 取 $\gamma=\lambda=1$, 中间奖励全为 0, 终点奖励为 $r(x,y)$, 求和时相邻的 $V$ 项逐个抵消, 只剩 $A_t=r(x,y)-V(s_t)$. 这时价值网络的作用退化为一个逐 token 的基线, 减掉的是从当前前缀出发的期望奖励. ReMax 用一个按 prompt 计算的基线代替它, 放弃了逐 token 的区分, 换来少训一个网络. 实践中 PPO 常取 $\lambda<1$, 用 $V$ 的偏差换方差, 这一点上 ReMax 没有对应的旋钮.
 
+### 1.2 价值网络的显存与超参代价
+
 价值网络解决的两类问题, 随机环境里复用旧数据和慢仿真里快速估回报, 在 RLHF 里都不迫切. PPO 却要维护一份和策略差不多大的价值网络, 包括它的梯度和 Adam 状态. 附录 E.3 按 Llama-2-7B 估算: 一份可训练模型约 147.02 GB, 一份冻结模型约 12.55 GB. PPO 是两份可训练 (策略, 价值) 加两份冻结 (奖励模型, 参考模型), 合计 319.14 GB; ReMax 是一份可训练加两份冻结, 172.12 GB, 约为 PPO 的 54%. 摘要说省约 46% 显存. 按论文脚注的拆分, 冻结的奖励模型只占约 4%, 价值网络连同激活, 梯度和优化器状态约占 46%. 正文还写到, 价值网络训练时的显存是推理时的 4 倍以上.
 
 PPO 还带一串需要调的超参: 重要性比率的 clip 范围, GAE 的 $\lambda$, 价值网络的学习率, 一批数据上的内层 epoch 数. ReMax 去掉了这四个. 论文 §1.1 还给了实现规模的对比: ReMax 的主体代码约 6 行, PPO 在 30 行以上. 在 7B 规模上, 每扫一组超参都很贵, 少几个超参能直接省算力.
 
-序列级记号沿用 [10-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md): 整段 $y$ 当一个动作, 终局标量乘整段 $\nabla\log\pi$. ReMax 换的只是减去的基线.
+序列级记号沿用 [02-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md): 整段 $y$ 当一个动作, 终局标量乘整段 $\nabla\log\pi$. ReMax 换的只是减去的基线.
 
-## 2. 公式: 从 REINFORCE 到减一条贪心回答
+## 2. 估计器: 从 REINFORCE 到减一条贪心回答
+
+### 2.1 裸 REINFORCE 的方差从哪来
 
 固定 prompt $x$, REINFORCE 的策略梯度是
 
@@ -48,6 +54,8 @@ $$
 式 (2) 无偏, 但方差大. 论文用梯度范数做方差的代理指标, 依据是对随机变量 $Z$ 有 $\mathbb{E}[|Z|]\le\sqrt{\mathrm{Var}[Z]+(\mathbb{E}[Z])^{2}}$. Figure 4 显示, OPT-1.3B 上裸 REINFORCE 的梯度范数明显高于 ReMax, 评测奖励也更差. 附录 F.1 换成 Llama-2-7B, 裸 REINFORCE 不再发散, 但评测奖励仍明显低于 ReMax. 增大模型规模消除不了这部分方差.
 
 方差有两个来源. 环境转移的随机性在 RLHF 里不存在. 剩下的是策略本身的随机性, 以及不同 prompt 奖励尺度的差异. Llama-2-7B 的一个 mini-batch 里, 奖励从 $-14.25$ 到 $7.25$; 训练一个 epoch 后仍从 $-8.125$ 到 $7.56$. 开放问题 (写一篇短故事) 和封闭问题 (新西兰首都是哪) 的奖励分布差别很大, SFT 相当于每条样本权重都是 1, 裸 REINFORCE 则把这种差异直接乘进梯度.
+
+### 2.2 贪心基线与 Algorithm 1
 
 减去一个与当前样本独立的基线 $b(x)$, 期望不变, 方差可以下降:
 
@@ -75,9 +83,11 @@ for prompt in datasets:
 
 `seq_max` 只参与奖励减法, 不进入 `logp`, 梯度只流过随机采样的 $y$. 随机样本按训练温度 (Part I 是 1, top-p 0.9) 采样, 贪心回答相当于温度趋于 0 的极限, 不受采样温度和 top-p 影响, 改训练温度只改变随机样本一侧. 每条 prompt 只有一条带梯度的样本, 方差主要靠 batch 里 prompt 的数量来平均, 这也是 ReMax 能用上更大 batch 的意义所在. RAFT 的做法相反, 它只对奖励最高的样本做交叉熵, 其余丢弃.
 
-**数值例子**. 随机样本三个 token 的对数概率是 $-0.4$, $-0.8$, $-0.2$, 和为 $-1.4$. 奖励模型给它 $r=2.1$, 给贪心回答 $r=1.4$, 优势 $A=0.7$. 损失为 $-\bigl((\sum_t\log\pi)\cdot A\bigr)=-((-1.4)\times0.7)=0.98$. 最小化这个损失, 等于沿整段 $\nabla\log\pi$ 乘 $+0.7$ 的方向上升, 三个 token 拿到同一个权重. 如果随机样本只得 0.9 分, 优势是 $-0.5$, 整段概率被压低. 贪心回答的 token 对数概率不出现在损失里, 它再流畅也不会被当作正例模仿.
+### 2.3 一个数值例子
 
-和 [10-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) 的滑动平均基线对比: 那里 $b_{\mathrm{MA}}=(1.2+0.8+1.5+0.4)/4=0.975$ 是过去所有 prompt 奖励的平均; ReMax 的基线针对当前这条 $x$ 和当前参数. 跨 prompt 的 $-14$ 到 $+7$ 这种尺度差异, 被同一条 prompt 上的两次打分相减消去一部分.
+随机样本三个 token 的对数概率是 $-0.4$, $-0.8$, $-0.2$, 和为 $-1.4$. 奖励模型给它 $r=2.1$, 给贪心回答 $r=1.4$, 优势 $A=0.7$. 损失为 $-\bigl((\sum_t\log\pi)\cdot A\bigr)=-((-1.4)\times0.7)=0.98$. 最小化这个损失, 等于沿整段 $\nabla\log\pi$ 乘 $+0.7$ 的方向上升, 三个 token 拿到同一个权重. 如果随机样本只得 0.9 分, 优势是 $-0.5$, 整段概率被压低. 贪心回答的 token 对数概率不出现在损失里, 它再流畅也不会被当作正例模仿.
+
+和 [02-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) 的滑动平均基线对比: 那里 $b_{\mathrm{MA}}=(1.2+0.8+1.5+0.4)/4=0.975$ 是过去所有 prompt 奖励的平均; ReMax 的基线针对当前这条 $x$ 和当前参数. 跨 prompt 的 $-14$ 到 $+7$ 这种尺度差异, 被同一条 prompt 上的两次打分相减消去一部分.
 
 ![随机采样减贪心基线再乘对数概率](./images/fig-remax-greedy-baseline.png)
 
@@ -92,11 +102,39 @@ for prompt in datasets:
 
 随机样本比贪心回答好, 优势为正, 整段概率上调; 比贪心差, 优势为负, 整段下调. PPO 用 $V(s_t)$ 做类似的中心化, 代价是多训一个网络; ReMax 的代价是多一次贪心生成.
 
-## 3. 理论: 为什么无偏, 方差何时下降
+### 2.4 KL 怎么并进奖励
+
+主文省略了 KL 正则, 附录 B 补上. 目标是
+
+$$
+\max_{\theta}\mathbb{E}[r(x,y)]-\beta\,\mathbb{E}\Bigl[\log\frac{\pi_{\theta}(y\mid x)}{\pi_{\mathrm{REF}}(y\mid x)}\Bigr]. \tag{7}
+$$
+
+$\pi_{\mathrm{REF}}$ 是参考模型, $\beta$ 是 KL 系数. KL 可以并进塑形奖励. one-step 形式把当前 token 的对数比加到终点奖励上:
+
+$$
+\widetilde r(x,y_{1:t})=r(x,y)-\beta\bigl(\log\pi_{\theta}(y_t\mid x,y_{<t})-\log\pi_{\mathrm{REF}}(y_t\mid x,y_{<t})\bigr). \tag{8}
+$$
+
+full-step 形式从 $t$ 累加到 $T$, 即动态规划里的 cost-to-go, PPO 常用这一种:
+
+$$
+\widetilde r(x,y_{1:t})=r(x,y)-\beta\sum_{h=t}^{T}\bigl(\log\pi_{\theta}(y_h\mid x,y_{<h})-\log\pi_{\mathrm{REF}}(y_h\mid x,y_{<h})\bigr). \tag{9}
+$$
+
+full-step 惩罚更重, KL 估计的噪声也更大. ReMax 把 $r(x,y)$ 换成 $r(x,y)-b(x)$ 后代入式 (8) 或式 (9). 附录 F.2 显示两种都能训练; full-step 效果更强, $\beta$ 要从 0.1 降到 0.01 才和 one-step 的曲线相当. Part I 主实验用 $\beta=0.1$, Part II 用 full-step.
+
+参考模型在 ReMax 里只用于 KL, 不参与贪心基线; 基线查的是奖励模型. DPO 的隐式奖励才把参考策略写进减数. 代码在 [liziniu/ReMax](https://github.com/liziniu/ReMax).
+
+## 3. 理论: 无偏, 收敛与方差条件
+
+### 3.1 无偏性与收敛
 
 **命题 1**: 式 (3)(4) 对目标 $\mathbb{E}_{x\sim\rho}\mathbb{E}_{y\sim\pi_{\theta}}[r(x,y)]$ 无偏, 方差上界为 $c\cdot r_{\max}^{2}\cdot T^{2}\cdot S^{2}/N$. $\rho$ 是 prompt 分布, $S$ 是 $\|\nabla_{\theta}\log\pi_{\theta}\|$ 的上界, $r_{\max}$ 是 $|r|$ 的上界, $c$ 是常数. 附录 C.1 的关键一步: 对任何与动作无关的常数 $b$, $\sum_z\nabla_{\theta}p_{\theta}(z)\,b=\nabla_{\theta}(1\cdot b)=0$. 给定 $(x,\theta)$ 时贪心轨迹确定, $r(x,\bar y)$ 对随机 $y$ 是常数, 所以基线项的期望为零. 只要基线和用来乘 $\nabla\log\pi$ 的那条样本统计独立, 无偏性就成立; 若把当前样本自己的奖励放进基线, 独立性就破坏了.
 
 **命题 2** (非形式版, 形式版是附录命题 4): 学习率 $\eta_k=\mathcal{O}(1/\sqrt{k})$ 时, ReMax 在期望意义下收敛到驻点. 目标非凸, 不保证全局最优.
+
+### 3.2 方差何时下降
 
 **命题 3** 说明方差下降需要条件. 设定是 2 臂 bandit, softmax 参数化, 奖励为正, $a_1$ 是最优臂. 当
 
@@ -113,6 +151,8 @@ $$
 
 两种情形均值都不变, 这就是无偏; 方差的降幅在策略还不确定时最大.
 
+### 3.3 最优常数基线与贪心近似
+
 把基线从常数推广到任意 $b$, 单样本估计量 $(r-b)\nabla\log\pi$ 的方差是 $\mathbb{E}[(r-b)^2\|\nabla\log\pi\|^2]-\|\nabla J\|^2$. 对 $b$ 求导令其为零, 得到方差最小的常数基线
 
 $$
@@ -124,6 +164,8 @@ $b^{*}$ 是按得分函数范数平方加权的期望奖励, 精确计算要多�
 与预先标准化奖励相比, 贪心基线随 prompt 变化, 也随训练进程变化. 论文脚注提到, Zheng 等 2023 那种训练前统计好的归一化, 训练中奖励分布变化后就不准; Zhao 等 2011 那种指数滑动平均把不同 prompt 混在一起, 对单条 prompt 当前的奖励水平反应慢.
 
 ## 4. 与 $b_{\mathrm{MA}}$, RLOO, PPO, DPO 的比较
+
+### 4.1 与 RLOO, GRPO: 同样多一次生成
 
 ![PPO, 滑动平均, 留一法, 贪心基线四列](./images/fig-remax-vs-ppo-rloo.png)
 
@@ -139,9 +181,11 @@ $b^{*}$ 是按得分函数范数平方加权的期望奖励, 精确计算要多�
 
 RLOO 的其他样本也是随机采的, ReMax 的第二条是确定的贪心回答. 两者每条 prompt 都多一次生成, 统计含义不同: 留一法在同分布的 $k$ 条之间互为基线; 贪心基线取的是当前策略概率最大的那条路径. 贪心轨迹不进入策略梯度的期望, 只进入减数.
 
-沿用第 3 节的 2 臂算例 ($p=0.3$, $r(a_1)=1$, $r(a_2)=0.5$) 比较 $k=2$ 的留一法. 两条独立样本 $a,a'$, 第一条的估计项是 $(r(a)-r(a'))\nabla\log\pi(a)$: $a=a_1,a'=a_2$ 时取 $0.5\times0.7=0.35$, 概率 0.21; $a=a_2,a'=a_1$ 时取 $(-0.5)\times(-0.3)=0.15$, 概率 0.21; 两条相同时为 0. 均值 0.105, 方差约 0.019, 略低于 ReMax 的 0.026. 差别在于留一法的两条样本都是随机的, 都贡献梯度; ReMax 的第二条只提供基线. 同样是两次生成, 留一法多拿到一条有梯度的样本, ReMax 换来的是基线随策略峰值移动.
+沿用第 3.2 节的 2 臂算例 ($p=0.3$, $r(a_1)=1$, $r(a_2)=0.5$) 比较 $k=2$ 的留一法. 两条独立样本 $a,a'$, 第一条的估计项是 $(r(a)-r(a'))\nabla\log\pi(a)$: $a=a_1,a'=a_2$ 时取 $0.5\times0.7=0.35$, 概率 0.21; $a=a_2,a'=a_1$ 时取 $(-0.5)\times(-0.3)=0.15$, 概率 0.21; 两条相同时为 0. 均值 0.105, 方差约 0.019, 略低于 ReMax 的 0.026. 差别在于留一法的两条样本都是随机的, 都贡献梯度; ReMax 的第二条只提供基线. 同样是两次生成, 留一法多拿到一条有梯度的样本, ReMax 换来的是基线随策略峰值移动.
 
 GRPO 可以看成把留一法扩到 $G$ 条, 再除以组内标准差. 除标准差能消掉不同 prompt 的奖励尺度, 这正是 ReMax 用贪心基线想解决的问题之一; 代价是 $G$ 次生成和 Dr.GRPO 指出的难度偏差.
+
+### 4.2 与 PPO, DPO: 少一个网络, 多一次采样
 
 **相对 PPO**: ReMax 没有重要性比率 $\pi_{\theta}/\pi_{\mathrm{old}}$, 没有 clip, 没有 GAE $\lambda$, 没有价值损失. 时间结构也不同. 论文把单步拆成生成时间和反传时间: PPO 是一次生成加两次反传 (策略与价值), ReMax 是两次生成加一次反传. 生成通常比反传快, 所以总时间可能更短, Table 2 给出了实测.
 
@@ -154,7 +198,7 @@ GRPO 可以看成把留一法扩到 $G$ 条, 再除以组内标准差. 除标准
 | 额外网络 | 价值网络 | 无 | 无 | 无 | 无, 需要 $\pi_{\mathrm{ref}}$ |
 | 在线 rollout | 要 | 要 | 要 | 要, 多一次贪心 | 不要 |
 
-## 5. 实验
+## 5. 实验与边界
 
 ### 5.1 Part I: Llama-2-7B, full-hh-rlhf
 
@@ -212,33 +256,9 @@ Yue 等 (arXiv:2504.13837) 在 VeRL 里重新实现了 PPO, GRPO, Reinforce++, R
 | ReMax | 24.4 | 65.5 | 23.8 | 67.5 | 73.5 | 96.6 |
 | DAPO | 31.4 | 66.1 | 26.5 | 67.0 | 75.6 | 96.4 |
 
-这一设置下 ReMax 的 pass@1 在六种方法里最低, pass@256 与表中其他方法相差不到 2 个点, 各方法的 pass@256 都没有明显超过基座. 0/1 奖励下贪心基线只有两个取值, 对方差的压缩不如组内多条样本的均值. 这组结果的详细讨论见 [4.4.7](../../4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
+这一设置下 ReMax 的 pass@1 在六种方法里最低, pass@256 与表中其他方法相差不到 2 个点, 各方法的 pass@256 都没有明显超过基座. 0/1 奖励下贪心基线只有两个取值, 对方差的压缩不如组内多条样本的均值. 这组结果的详细讨论见 [4.5 RLVR 的局限性](../../4.5-GRPO家族与RLVR/09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md).
 
-## 6. KL 怎么并进奖励
-
-主文省略了 KL 正则, 附录 B 补上. 目标是
-
-$$
-\max_{\theta}\mathbb{E}[r(x,y)]-\beta\,\mathbb{E}\Bigl[\log\frac{\pi_{\theta}(y\mid x)}{\pi_{\mathrm{REF}}(y\mid x)}\Bigr]. \tag{7}
-$$
-
-$\pi_{\mathrm{REF}}$ 是参考模型, $\beta$ 是 KL 系数. KL 可以并进塑形奖励. one-step 形式把当前 token 的对数比加到终点奖励上:
-
-$$
-\widetilde r(x,y_{1:t})=r(x,y)-\beta\bigl(\log\pi_{\theta}(y_t\mid x,y_{<t})-\log\pi_{\mathrm{REF}}(y_t\mid x,y_{<t})\bigr). \tag{8}
-$$
-
-full-step 形式从 $t$ 累加到 $T$, 即动态规划里的 cost-to-go, PPO 常用这一种:
-
-$$
-\widetilde r(x,y_{1:t})=r(x,y)-\beta\sum_{h=t}^{T}\bigl(\log\pi_{\theta}(y_h\mid x,y_{<h})-\log\pi_{\mathrm{REF}}(y_h\mid x,y_{<h})\bigr). \tag{9}
-$$
-
-full-step 惩罚更重, KL 估计的噪声也更大. ReMax 把 $r(x,y)$ 换成 $r(x,y)-b(x)$ 后代入式 (8) 或式 (9). 附录 F.2 显示两种都能训练; full-step 效果更强, $\beta$ 要从 0.1 降到 0.01 才和 one-step 的曲线相当. Part I 主实验用 $\beta=0.1$, Part II 用 full-step.
-
-参考模型在 ReMax 里只用于 KL, 不参与贪心基线; 基线查的是奖励模型. DPO 的隐式奖励才把参考策略写进减数. 代码在 [liziniu/ReMax](https://github.com/liziniu/ReMax).
-
-## 7. 边界与失效
+### 5.4 边界与失效
 
 **过优化**: Part II 里 40k prompt 已经让 AlpacaEval 和 MT-bench 回落. 奖励模型有偏时, 在线方法会沿着偏差优化, ReMax 只是用更低的成本走到同一个结果. 论文把「如何从偏好推断奖励」「如何缓解奖励偏差」列为未解决的问题. 奖励模型的质量直接决定上限: Part I 自训奖励模型在评测集上的准确率只有 63%, 意味着约三分之一的偏好对排反; 贪心基线和随机样本由同一个奖励模型打分, 两者之差同样带着这部分噪声. Part II 换成准确率 71% 的 UltraRM 后, 只用 prompt 就能在已经很强的指令模型上继续提分.
 
@@ -248,7 +268,7 @@ full-step 惩罚更重, KL 估计的噪声也更大. ReMax 把 $r(x,y)$ 换成 $
 
 **其他基线**: 裸 REINFORCE 在 OPT-1.3B 上梯度范数大, 奖励差; Llama-2-7B 上不发散, 但评测奖励仍明显低于 ReMax. 滑动平均 $b_{\mathrm{MA}}$ 能处理随时间变化的尺度, 处理不了单条 prompt 自身的奖励水平. RLOO 要 $k$ 条同分布样本, 显存和采样预算随 $k$ 增长.
 
-**规则验证器**: 数学和代码用规则判分时, 贪心基线仍然合法, 因为规则判分也是轨迹级标量. 此时基线的含义变成「贪心解码能否通过验证」, 取值只有 0 和 1. 组内 $z$-score, 过程监督, 序列级 clip 这些做法分别见 [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 与 [03-GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md); ReMax 没有组, 没有标准差, 没有 clip.
+**规则验证器**: 数学和代码用规则判分时, 贪心基线仍然合法, 因为规则判分也是轨迹级标量. 此时基线的含义变成「贪心解码能否通过验证」, 取值只有 0 和 1. 组内 $z$-score, 过程监督, 序列级 clip 这些做法分别见 [4.5 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) 与 [4.5 GSPO](../../4.5-GRPO家族与RLVR/04-GSPO/04-GSPO.md); ReMax 没有组, 没有标准差, 没有 clip.
 
 ## 参考文献
 
