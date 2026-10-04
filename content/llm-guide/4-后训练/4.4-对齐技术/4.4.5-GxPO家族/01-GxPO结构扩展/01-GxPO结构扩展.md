@@ -1,49 +1,73 @@
 ---
-title: "01 · GxPO 结构扩展:轨迹侧与奖励侧"
+title: "01 · GxPO 结构扩展: 轨迹侧与奖励侧"
 published: true
 tags: ["GxPO", "GRPO", "GSPO", "DAPO", "GMPO", "GHPO", "DrGRPO", "CISPO"]
-excerpt: "GxPO 不是一个算法,是 GRPO 及其结构扩展 的坐标系:大家都还在优化 J(\\theta)=\\mathbb{E}_{\\tau\\sim p_{\\theta}}[R(\\tau)],差别只在干预落在 轨迹侧 p_{\\theta}(\\tau) 还是 奖励侧 R(\\tau)."
+excerpt: "GRPO 之后的一串缩写都在优化同一个期望回报. 按改动落在轨迹分布还是奖励标量来分: DAPO 拆开 clip 上下界并丢掉全对全错组, GSPO 把重要性比率收成序列级, GMPO 换几何平均, GHPO 给难题补标准解前缀, Dr.GRPO 去掉长度和标准差两个归一."
 ---
-# 01 · GxPO 结构扩展:轨迹侧与奖励侧
+# 01 · GxPO 结构扩展: 轨迹侧与奖励侧
 
-GxPO 不是一个算法,是 **GRPO 及其结构扩展** 的坐标系:大家都还在优化 $J(\theta)=\mathbb{E}_{\tau\sim p_{\theta}}[R(\tau)]$,差别只在干预落在 **轨迹侧** $p_{\theta}(\tau)$ 还是 **奖励侧** $R(\tau)$.卡住的瓶颈是:PPO 要养一个和策略同级的 Critic,GRPO 用组内相对奖励拆掉它之后,clip 粒度,采样,优势归一,prompt 又各自裂出新失效.本篇是 [4.4.5](../4.4.5-GxPO家族.md) 的机制单独成篇;PPO 公式见 [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md),组内 $z$-score 的展开见 [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md),这里只写一次,变体只写相对 GRPO 改了哪一侧.**不是** DPO.**不是** 把 OPD 写成 GRPO 变体--综述把散度最小化的 On-Policy Distillation 标成 $J$ 的边界.
+> 相关阅读: [4.4.5 GxPO 家族](../4.4.5-GxPO家族.md) · [02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) · [03-GSPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/03-GSPO/03-GSPO.md) · [01-GMPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/01-GMPO/01-GMPO.md) · [04-PPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) · [08-CISPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/08-CISPO-裁剪重要性权重/08-CISPO-裁剪重要性权重.md) · [03-Dr.GRPO](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) · [OPD 基础原理](../../../4.6-OPD/01-OPD基础原理/01-OPD基础原理.md)
 
-坐标系来自 Shen 等 *A First-Principles Derivation of LLM Policy Optimization*([arXiv:2606.16733](https://arxiv.org/abs/2606.16733)).综述只当地图:数字和公式冲突时弃综述,跟原论文.
+材料是 Shen 等 (arXiv:2606.16733) 对策略梯度方法的分类, 以及 GRPO, DAPO, GSPO, GMPO, GHPO 各自的原论文. GxPO 指 GRPO 及其结构扩展这一族, 没有一个叫 GxPO 的算法; 问题是这些方法各自改动了期望回报中的哪一部分.
 
-## 1. 同一个 $J$,两根轴
+## 1. 同一个 $J$, 两根轴
 
-所有政策梯度都从期望回报出发:
+策略梯度方法的出发点是期望回报:
 
 $$
 J(\theta)=\mathbb{E}_{\tau\sim p_{\theta}(\tau)}\bigl[R(\tau)\bigr]. \tag{1}
 $$
 
-轨迹侧管样本怎么进更新:从哪采,重要性比率怎么定义,clip 卡在哪一层.奖励侧管这条轨迹拿什么标量加权:奖励从哪来,怎么归一成优势,优势广播到哪些 token.PPO 在轨迹侧用 token 级比率加对称 clip,在奖励侧用 GAE + Critic.GRPO 把奖励侧的 Critic 换成组内相对优势,**轨迹侧的比率与对称 clip 原样留下**.后面的 GxPO 不是另起一套目标,是对式 (1) 两侧的局部手术.
+$\tau$ 是一条完整回答, $p_\theta(\tau)$ 是当前策略生成它的概率, $R(\tau)$ 是给它的标量奖励. 对 $\theta$ 求导, 用 $\nabla p=p\,\nabla\log p$:
+
+$$
+\nabla_\theta J(\theta)=\mathbb{E}_{\tau\sim p_\theta}\bigl[R(\tau)\,\nabla_\theta\log p_\theta(\tau)\bigr],\qquad
+\log p_\theta(\tau)=\sum_{t=1}^{|o|}\log\pi_\theta(o_t\mid q,o_{<t}). \tag{2}
+$$
+
+$q$ 是问题, $o$ 是回答的 token 序列, $\pi_\theta$ 是逐 token 的策略. 自回归模型的序列概率是 token 概率之积, 所以序列级的得分函数拆成 token 对数概率梯度之和. 式 (2) 方差很大. 减去一个只依赖问题的基线 $b(q)$ 不改变期望, 因为 $\mathbb{E}_{\tau}[b(q)\nabla_\theta\log p_\theta(\tau)]=b(q)\nabla_\theta\sum_\tau p_\theta(\tau)=b(q)\nabla_\theta 1=0$:
+
+$$
+\nabla_\theta J(\theta)=\mathbb{E}_{\tau\sim p_\theta}\Bigl[\bigl(R(\tau)-b(q)\bigr)\sum_{t}\nabla_\theta\log\pi_\theta(o_t\mid q,o_{<t})\Bigr]. \tag{3}
+$$
+
+式 (3) 要求样本来自当前策略. 为了一批 rollout 能更新多步, PPO 系方法改用旧策略 $\pi_{\theta_{\mathrm{old}}}$ 的样本, 乘上重要性比率 $r_t(\theta)=\pi_\theta(o_t\mid q,o_{<t})/\pi_{\theta_{\mathrm{old}}}(o_t\mid q,o_{<t})$, 优化替代目标:
+
+$$
+L(\theta)=\mathbb{E}_{\tau\sim\pi_{\theta_{\mathrm{old}}}}\Bigl[\sum_{t}r_t(\theta)\,A_t\Bigr],\qquad
+\nabla_\theta L(\theta)\big|_{\theta=\theta_{\mathrm{old}}}=\nabla_\theta J(\theta)\big|_{\theta=\theta_{\mathrm{old}}}. \tag{4}
+$$
+
+$A_t$ 是优势, 即式 (3) 中 $R(\tau)-b(q)$ 的某种估计. 等号只在 $\theta=\theta_{\mathrm{old}}$ 处成立, 策略走远之后替代目标就不准, 于是要 clip 或 KL 把更新限制在附近. 从式 (2) 到式 (4), 每一步都留下一个可选项: 优势怎么估计, 基线取什么, 是否归一; 样本从哪个分布来, 比率按 token 还是按序列算, 越界时怎么处理. 前一组选项落在 $R$ 上, 后一组落在 $p_\theta$ 上, 于是改动可以按落点分两类.
+
+用组均值当基线时, $b(q)$ 里含有样本 $i$ 自己的奖励, 严格说已不独立于 $\tau_i$. RLOO 用其余 $G-1$ 条的均值当基线, 消掉这一项; Dr.GRPO 推导出组均值基线的优势乘以 $G/(G-1)$ 后与 RLOO 相同, 差别只是一个常数缩放.
+
+**轨迹侧**管样本怎么进入更新: 从哪个分布采样, 重要性比率按 token 算还是按序列算, clip 卡在哪一层, 哪些组被保留. **奖励侧**管这条轨迹用什么标量加权: 奖励来自规则还是模型, 怎么归一成优势, 优势广播到哪些 token. PPO 在轨迹侧用 token 级比率加对称 clip, 在奖励侧用 GAE 和价值网络. GRPO 只动了奖励侧, 把价值网络换成组内相对优势, 轨迹侧的比率和对称 clip 原样保留. 后面的变体都是在式 (1) 两侧做局部改动.
 
 ![GxPO family on trajectory vs reward axes](./images/fig-gxpo-two-axes.png)
 
-> 图 1:从 $J(\theta)$ 分出轨迹侧与奖励侧.GRPO 是奖励侧替换(组内 $z$-score 替代 Critic).DAPO / GSPO / GMPO / GHPO 相对 GRPO 改 clip,采样,比率聚合或 prompt.红框:DPO 退出 $J$;OPD 散度目标是边界,不是 GRPO 变体.
+> 图 1: 从 $J(\theta)$ 分出轨迹侧与奖励侧. GRPO 是奖励侧替换. DAPO, GSPO, GMPO, GHPO 相对 GRPO 分别改 clip, 采样, 比率聚合或 prompt. 红框里的 DPO 与散度形式的 OPD 落在 $J$ 之外.
 
 **图 1 解析**
 
-- **顶栏**:式 (1) 只有两个因子.问「这个缩写改了什么」时,先回答改的是 $p_{\theta}$ 还是 $R$.
-- **左列(轨迹侧)**:GSPO 把重要性比率收成序列级标量再 clip;DAPO 的 Clip-Higher 与 Dynamic Sampling 改信任域和进 batch 的组;GHPO 改的是 prompt 本身;GMPO 用几何平均压 token 级比率的离群值.
-- **右列(奖励侧)**:GRPO 的组内 $z$-score 只在这里写一次.Dr. GRPO 去掉 $\sigma$ 与 $1/|o|$.DAPO 的超长塑造加在 $R$ 上,不是另发明一套优势.
-- **红框**:DPO 用偏好分类换掉 rollout;$J$ 不在了.MiniLLM / GKD 那条 OPD 把 $R$ 换成散度,综述 §9.1 标成边界.GRPO-OPD hybrid 仍留 $J$,那是另一篇的事.
+- **顶栏**: 式 (1) 的两个因子. 判断一个缩写改了什么, 先看它动的是 $p_\theta$ 还是 $R$.
+- **左列 (轨迹侧)**: GSPO 把比率收成序列级标量再 clip. DAPO 的 Clip-Higher 改信任域上界, Dynamic Sampling 改哪些组进 batch. GHPO 改 prompt 本身, 因而改了轨迹从哪个条件分布采出. GMPO 用几何平均压住 token 级比率的离群值.
+- **右列 (奖励侧)**: GRPO 的组内 $z$-score 只在这里出现一次. Dr.GRPO 去掉 $\sigma$ 与 $1/|o|$. DAPO 的软超长惩罚直接加在 $R$ 上.
+- **红框**: DPO 用偏好分类代替 rollout, 目标里没有 $J$ 了. 用散度做目标的 On-Policy Distillation (MiniLLM, GKD 一类) 把 $R$ 换成与教师分布的距离, 综述 §9.1 把它标为边界情况. 综述正文研究的是保留 $J$ 的 GRPO-OPD hybrid.
 
-## 2. GRPO:奖励侧替换,组内 $z$-score 只写一次
+## 2. GRPO: 奖励侧替换
 
-DeepSeekMath([arXiv:2402.03300](https://arxiv.org/abs/2402.03300))的动机写得很具体:PPO 的价值网络通常与策略同规模;LLM 又往往只在最后一个 token 给奖励,逐 token 的 $V_{\psi}$ 难训.GRPO 对同一问题 $q$ 从旧策略采 $G$ 条输出 $\{o_i\}$,用组内分数当基线,不再养 Critic.
+DeepSeekMath (arXiv:2402.03300) 的动机很具体. PPO 的价值网络通常和策略同规模, 显存与算力都翻倍. LLM 的奖励往往只给在最后一个 token 上, 逐 token 训练价值函数 $V_\psi$ 很难. GRPO 对同一问题 $q$ 从旧策略 $\pi_{\theta_{\mathrm{old}}}$ 采 $G$ 条输出 $\{o_i\}_{i=1}^{G}$, 用组内分数做基线.
 
-结果监督下,组奖励 $\mathbf{r}=\{r_1,\ldots,r_G\}$ 先减均值再除标准差,**整条回答共享同一个优势**:
+结果监督下, 组奖励 $\mathbf{r}=\{r_1,\ldots,r_G\}$ 减均值除标准差, 整条回答的每个 token 共享同一个优势:
 
 $$
-\hat{A}_{i,t}=\tilde{r}_{i}=\frac{r_i-\mathrm{mean}(\mathbf{r})}{\mathrm{std}(\mathbf{r})}. \tag{2}
+\hat{A}_{i,t}=\tilde{r}_{i}=\frac{r_i-\mathrm{mean}(\mathbf{r})}{\mathrm{std}(\mathbf{r})}. \tag{5}
 $$
 
-这就是组内 $z$-score.后面所有变体,只要没改式 (2),就还在用这套相对好坏;差别在轨迹侧怎么吃这个 $\hat{A}_i$.
+这就是组内 $z$-score. 下文的变体只要没动式 (5), 优势就还是这一套, 差别在轨迹侧怎么使用 $\hat{A}_i$.
 
-目标函数(DeepSeekMath 式 (3))在 token 上做与 PPO 同构的 clip,KL 不进奖励,直接加在损失上:
+目标函数 (DeepSeekMath 式 (3)) 在 token 上做和 PPO 同构的 clip, KL 不折进奖励, 直接加在损失上:
 
 $$
 \begin{aligned}
@@ -55,72 +79,66 @@ r_{i,t}(\theta)\hat{A}_{i,t},\;
 \mathrm{clip}\bigl(r_{i,t}(\theta),1-\varepsilon,1+\varepsilon\bigr)\hat{A}_{i,t}
 \Big)
 -\beta\,\mathbb{D}_{\mathrm{KL}}[\pi_{\theta}\Vert\pi_{\mathrm{ref}}]\Bigg],
-\end{aligned} \tag{3}
+\end{aligned} \tag{6}
 $$
 
-其中 $r_{i,t}(\theta)=\pi_{\theta}(o_{i,t}\mid q,o_{i,<t})/\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})$.综述把这叫做 **纯奖励侧替换**:重要性比率,对称 clip,对 $\pi_{\mathrm{ref}}$ 的 KL 都还在;变的是 $A_t^{\mathrm{GAE}}\to\hat{A}_i$.
+其中 $r_{i,t}(\theta)=\pi_{\theta}(o_{i,t}\mid q,o_{i,<t})/\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})$ 是 token 级重要性比率, $\varepsilon$ 是 clip 半宽, $\beta$ 是 KL 系数, $\pi_{\mathrm{ref}}$ 是冻结的参考模型. KL 用无偏估计 $\pi_{\mathrm{ref}}/\pi_{\theta}-\log(\pi_{\mathrm{ref}}/\pi_{\theta})-1$. 综述称之为纯奖励侧替换: 比率, 对称 clip 和 KL 都还在, 变化只有 $A_t^{\mathrm{GAE}}\to\hat{A}_i$.
 
-DeepSeekMath 在 DeepSeekMath-Instruct 上,只用英语指令子集做 RL 的分母:GSM8K **82.9% → 88.2%**,MATH **46.8% → 51.7%**(文中 Table 5 相邻段;CoT,无工具).这是 GRPO 这篇的数字,不是 R1-Zero 的 47 分 AIME.
+DeepSeekMath 的 RL 设置: 学习率 $1\times10^{-6}$, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索只做一次更新. 结果 (Table 5, CoT 推理, 不用工具): DeepSeekMath-Instruct 7B 做 GRPO 后, GSM8K 82.9% 到 88.2%, MATH 46.8% 到 51.7%, CMATH 84.6% 到 88.8%. Figure 7 在温度 0.7 下比较 Instruct 与 RL 模型, RL 提高了 Maj@K, Pass@K 基本不变 (§5.2.2). 4.4.7 讨论的 RLVR 边界问题, 在这里已经出现了.
 
-组内方差为零时式 (2) 是 $0/0$.实现里加 $\epsilon$ 或跳过该组,梯度空掉--这是 DAPO 动态采样和 GHPO 改 prompt 要对付的同一件事,不是两套病.
+**失效**: 组内奖励全相同时式 (5) 是 $0/0$, 实现里加一个小常数或跳过该组, 这道题的梯度为零. DAPO 的动态采样和 GHPO 的 hint 处理的就是这一情况. 过程监督版本里, 逐步奖励归一后从后往前累加成每个 token 的优势; 下文默认对照结果监督.
 
-DeepSeekMath 还写了过程监督版:逐步奖励归一化后,从后向前累加得到每个 token 的 $\hat{A}_{i,t}$,而不是把同一个 $\tilde{r}_i$ 广播到整句.本篇变体默认对照的是 **结果监督** 那条(可验证对错,一个标量).过程奖励是奖励密度问题,综述放在 reward density,不在 GxPO 缩写里重开一套.
-
-KL 估计器用 Schulman 的无偏形式 $\pi_{\mathrm{ref}}/\pi_{\theta}-\log(\pi_{\mathrm{ref}}/\pi_{\theta})-1$,插在损失上而不是折进每步奖励,免得和式 (2) 的组统计搅在一起.DAPO / 多数 Zero-RL 复现后来把这项拿掉,那是轨迹侧「要不要锚住初始化」的选择,不是否定 GRPO 曾经把它写进式 (3).
-
-## 3. 对照表:相对 GRPO 改了哪一侧
+## 3. 对照表: 相对 GRPO 改了哪一侧
 
 ![Which knob each GxPO variant turns](./images/fig-gxpo-which-knob.png)
 
-> 图 2:四列旋钮.相对 GRPO:谁改 clip,谁改优势聚合,谁改采样,谁改 prompt.示意,不是论文表.完整对照见下表.
+> 图 2: 四列旋钮. 相对 GRPO, 各方法分别改 clip, 优势聚合, 采样或 prompt. 示意图, 数字以正文和表格为准.
 
 **图 2 解析**
 
-- **Clip 列**:对称 $1\pm\varepsilon$ 是 GRPO/PPO 默认.DAPO 把上下界拆开.GSPO 的 $\varepsilon$ 作用在序列似然比上,数量级从 $0.2$ 掉到 $10^{-4}$.GMPO 在对数空间按 token clip,再用几何平均.
-- **优势聚合列**:GRPO 的 $z$-score 只出现一次.Dr. GRPO 拆的是 $\sigma$ 与 $1/|o|$.GMPO 改的是「重要性加权奖励」的平均算子,不是另写一个组统计.
-- **采样列**:只有 DAPO 在进更新前丢掉准确率为 0 或 1 的组.
-- **Prompt 列**:只有 GHPO 改 $q$.其余算法问题文本不动.
+- **Clip 列**: GRPO 与 PPO 默认对称 $1\pm\varepsilon$. DAPO 把上下界拆开. GSPO 的 $\varepsilon$ 作用在序列似然比上, 数量级从 0.2 降到 $10^{-4}$. GMPO 在对数空间按 token clip, 再做几何平均.
+- **优势聚合列**: 组内 $z$-score 只在 GRPO 处出现一次. Dr.GRPO 拆掉 $\sigma$ 与 $1/|o|$. GMPO 改的是重要性加权奖励的平均算子, 组统计本身没变.
+- **采样列**: 只有 DAPO 在更新前丢掉准确率为 0 或 1 的组.
+- **Prompt 列**: 只有 GHPO 改题目文本.
 
-| 算法 | 相对 GRPO 改哪一侧 | clip | 优势 / 损失聚合 | 采样 | prompt |
+| 算法 | 相对 GRPO 改哪一侧 | clip | 优势与损失聚合 | 采样 | prompt |
 | --- | --- | --- | --- | --- | --- |
-| GRPO | 奖励侧:式 (2) 替换 Critic | 对称 $1\pm\varepsilon$,token 级 | 组内 $z$-score;序列内再对 token 取均值 | 组全留 | $q$ 不动 |
-| DAPO | **两侧**:clip/采样(轨迹)+ token 损失与超长塑造(奖励) | $\varepsilon_{\mathrm{low}}=0.2$,$\varepsilon_{\mathrm{high}}=0.28$ | 分母改成组内 token 总数;优势公式仍是式 (2) | 丢掉全对/全错组 | 不动 |
-| GSPO | **轨迹侧**:比率粒度 | 对序列标量 $s_i$ clip(文中左右界 $3\times10^{-4}$ / $4\times10^{-4}$) | 优势仍是组内 $z$-score | 组全留 | 不动 |
-| GMPO | **轨迹侧**:比率聚合 | token 级,对数空间,推荐 $(e^{-0.4},e^{0.4})$ | 几何平均 $\bigl(\prod_t\|\rho_{i,t}\hat{A}_i\|\bigr)^{1/\|o_i\|}$ | 组全留 | 不动 |
-| GHPO | **轨迹侧**:采什么样的前缀 | 仍用 GRPO 式 clip | 优势仍是组内相对 | 组全留,难样本改写成 $q^*$ | $q^*=q$ 或 $q+\omega\cdot h$ |
-| Dr. GRPO | **奖励侧**:统计偏差 | 不改 clip 形态 | 去掉 $1/\|o_i\|$ 与 $\mathrm{std}(\mathbf{r})$ | 组全留 | 不动 |
+| GRPO | 奖励侧: 式 (5) 替换价值网络 | 对称 $1\pm\varepsilon$, token 级 | 组内 $z$-score, 序列内对 token 取均值 | 组全留 | 不动 |
+| DAPO | 两侧: clip 与采样在轨迹侧, 长度惩罚在奖励侧 | $\varepsilon_{\mathrm{low}}=0.2$, $\varepsilon_{\mathrm{high}}=0.28$ | 分母改为组内 token 总数, 优势仍是式 (5) | 丢掉全对或全错组 | 不动 |
+| GSPO | 轨迹侧: 比率粒度 | 对序列标量 $s_i$ clip, 左右界 $3\times10^{-4}$, $4\times10^{-4}$ | 组内 $z$-score | 组全留 | 不动 |
+| GMPO | 轨迹侧: 比率聚合 | token 级, 对数空间, $(e^{-0.4},e^{0.4})$ | 几何平均 | 组全留 | 不动 |
+| GHPO | 轨迹侧: 条件分布 | GRPO 式 clip | 组内相对 | 组全留, 难题改写成 $q^*$ | $q$ 或 $q+\omega\cdot h$ |
+| Dr.GRPO | 奖励侧: 统计偏差 | 不改 | 去掉 $1/\lvert o_i\rvert$ 与 $\mathrm{std}(\mathbf{r})$ | 组全留 | 不动 |
 
-DAPO 不是「段级优势」.段级优势是综述里 SPO 等信用分配线,和 DAPO 四件套不是一回事.
+DAPO 的优势公式与 GRPO 相同. 段级优势属于 SPO 等信用分配方法, 和 DAPO 无关.
 
-## 4. DAPO:全称钉死,四件套跟原文
+## 4. DAPO: 四项改动
 
-**DAPO = Decoupled Clip and Dynamic sAmpling Policy Optimization**(Yu 等,[arXiv:2503.14476](https://arxiv.org/abs/2503.14476)).不是 Alignment,不是 Advantage Policy Optimization.4.4 节首页写过 Decoupled Alignment--那是错的,本篇不跟,也不去改首页.
-
-起点:同一套 Qwen2.5-32B **base** 上朴素 GRPO,AIME 2024 只有 **30** 分(后文 Table 1 的 $\mathrm{avg@32}$),对 DeepSeek-R1-Zero-Qwen-32B 的 **47** 分差一截.他们把失败拆成熵崩,零优势组,长 CoT 的样本级损失,截断奖励噪声,对应四项.
+**DAPO = Decoupled Clip and Dynamic sAmpling Policy Optimization** (Yu 等, arXiv:2503.14476), 实现基于 verl. 起点是 Qwen2.5-32B base 上的朴素 GRPO, AIME 2024 avg@32 只有 30 分, 而 DeepSeek-R1-Zero-Qwen-32B 是 47. 作者把差距拆成熵崩塌, 零优势组, 长 CoT 的样本级损失, 截断奖励噪声四个问题, 对应四项改动.
 
 ### 4.1 Clip-Higher
 
-对称 $\varepsilon=0.2$ 时,旧概率 $0.01$ 的探索 token 最多被抬到 $0.012$;旧概率 $0.9$ 的利用 token 几乎不被上界挡住.低概率探索 token 的均值被上 clip 卡在 $\pi_{\theta}<0.2$.DAPO 把上下界拆开:
+对称 $\varepsilon=0.2$ 时, 旧概率 0.01 的 token 一步最多涨到 0.012, 旧概率 0.9 的 token 上界是 1.08, 实际上不受约束. 上界对低概率 token 卡得最紧, 作者统计被上界裁掉的 token, 平均概率低于 0.2 (Figure 3a). 结果是低概率的探索 token 很难被抬起来, 熵迅速下降. DAPO 把上下界拆开:
 
 $$
-\mathrm{clip}\bigl(r_{i,t}(\theta),\,1-\varepsilon_{\mathrm{low}},\,1+\varepsilon_{\mathrm{high}}\bigr),\qquad \varepsilon_{\mathrm{low}}=0.2,\;\varepsilon_{\mathrm{high}}=0.28. \tag{4}
+\mathrm{clip}\bigl(r_{i,t}(\theta),\,1-\varepsilon_{\mathrm{low}},\,1+\varepsilon_{\mathrm{high}}\bigr),\qquad \varepsilon_{\mathrm{low}}=0.2,\;\varepsilon_{\mathrm{high}}=0.28. \tag{7}
 $$
 
-下界不动:再放大 $\varepsilon_{\mathrm{low}}$ 会把负优势 token 的概率压向 0,采样空间塌掉.长 CoT 里他们去掉 KL:策略本就该离开初始化,冻住的 $\pi_{\mathrm{ref}}$ 会卡住探索.
+下界保持 0.2. 放大 $\varepsilon_{\mathrm{low}}$ 会把负优势 token 的概率一路压向 0, 采样空间跟着塌. DAPO 同时去掉 KL 项 (§2.3): 长 CoT 训练中策略本来就要离开初始化, 冻结的 $\pi_{\mathrm{ref}}$ 会拖住它.
 
 ### 4.2 Dynamic Sampling
 
-组内全对或全错时式 (2) 的优势为零,该 prompt 的梯度为零.随着训练,准确率 $=1$ 的 prompt 比例上升,有效 batch 变瘦,方差变大.DAPO 的约束是
+组内全对或全错时, 式 (5) 的优势为零, 这道题对梯度没有贡献. 训练越往后, 准确率为 1 的题越多, 有效 batch 越小, 梯度方差越大. DAPO 要求每个进入更新的组满足
 
 $$
-0 < \bigl|\{o_i \mid \texttt{is\_equivalent}(a,o_i)\}\bigr| < G. \tag{5}
+0 < \bigl|\{o_i \mid \texttt{is\_equivalent}(a,o_i)\}\bigr| < G, \tag{8}
 $$
 
-不够就继续采,直到 buffer 装满「既有对又有错」的组.过滤的是 **prompt 组**,不是把 DAPO 定义成段级优势.
+$a$ 是标准答案. 不满足的组丢掉, 继续采样直到 buffer 装满有对有错的组. 过滤单位是 prompt 组. 采样量会随全对全错组的比例增加, 作者观察到收敛所需步数下降, 墙钟时间不一定变长. 这一点的前提是生成同步且未流水线化, 此时生成时间主要由长尾样本决定, 多采几组短样本的边际成本不高.
 
 ### 4.3 Token-level Policy Gradient Loss
 
-GRPO 先在序列内对 token 取均值,再对样本取均值,每条回答权重相同.长回答里每个 token 的贡献被稀释:高质量长推理学不进去,胡写,复读的超长样本也罚不狠.DAPO 把分母改成组内 token 总数:
+式 (6) 先在序列内对 token 取均值, 再对样本取均值, 每条回答权重相同. 长回答里每个 token 的贡献被稀释: 好的长推理学得慢, 重复和胡写的超长样本也罚得轻. DAPO 把分母改成组内 token 总数:
 
 $$
 \mathcal{J}_{\mathrm{DAPO}}(\theta)
@@ -129,28 +147,28 @@ $$
 \sum_{i=1}^{G}\sum_{t=1}^{|o_i|}
 \min\bigl(r_{i,t}\hat{A}_{i,t},\;
 \mathrm{clip}(r_{i,t},1-\varepsilon_{\mathrm{low}},1+\varepsilon_{\mathrm{high}})\hat{A}_{i,t}\bigr)
-\Biggr]. \tag{6}
+\Biggr]. \tag{9}
 $$
 
-同一生成模式无论出现在短句还是长句,梯度权重按 token 计,不按「一条回答一票」.
+同一种生成模式出现在短句还是长句里, 每个 token 的梯度权重相同.
 
 ### 4.4 Overlong Reward Shaping
 
-截断样本若直接给惩罚,一段本来对的推理只因为超长被打成错,奖励噪声大.他们先做 Overlong Filtering:截断样本的损失 mask 掉.再给出 Soft Overlong Punishment(原文式 (13)):
+超出生成上限而被截断的样本, 如果直接给惩罚, 一段推理可能本身正确, 只因为太长就被判错, 奖励噪声变大. DAPO 先做 Overlong Filtering, 截断样本的损失整体 mask 掉; 再给出软超长惩罚 (原文式 (13)):
 
 $$
 R_{\mathrm{length}}(y)=\begin{cases}
 0, & |y|\le L_{\max}-L_{\mathrm{cache}},\\
 \dfrac{(L_{\max}-L_{\mathrm{cache}})-|y|}{L_{\mathrm{cache}}}, & L_{\max}-L_{\mathrm{cache}}<|y|\le L_{\max},\\
 -1, & |y|>L_{\max}.
-\end{cases} \tag{7}
+\end{cases} \tag{10}
 $$
 
-实验里 $L_{\max}=16384$,$L_{\mathrm{cache}}=4096$,生成上限 20480.这是加在规则正确性奖励上的长度项,不是「超长奖励改成 0」那种简化.规则奖励本身是等价则 $+1$,否则 $-1$.
+$L_{\max}$ 是生成上限, $L_{\mathrm{cache}}$ 是惩罚缓冲区长度. 实验里期望最大长度是 16384, 另设 4096 的缓冲, 生成上限 20480, 按式 (10) 的记号即 $L_{\max}=20480$, $L_{\mathrm{cache}}=4096$. 这一项加在规则正确性奖励上, 后者是答案等价得 $+1$, 否则 $-1$ (原文式 (7)).
 
-### 4.5 数字:Table 1,分母写全
+### 4.5 实验
 
-模型 **Qwen2.5-32B base**;评测 AIME 2024 **avg@32**(测试集重复 32 次);温度 1.0,top-p 0.7.对比行 DeepSeek-R1-Zero-Qwen-32B = **47**.超参:prompt batch 512,每题 16 条,AdamW $1\times 10^{-6}$.
+模型 Qwen2.5-32B base, 评测 AIME 2024 avg@32, 温度 1.0, top-p 0.7. 训练: AdamW, 学习率 $1\times10^{-6}$, 前 20 个 rollout step 线性 warmup; prompt batch 512, 每题 16 条; mini-batch 512, 即每个 rollout step 做 16 次梯度更新.
 
 | 设定 | $\mathrm{AIME24}_{\mathrm{avg@32}}$ |
 | --- | ---: |
@@ -160,182 +178,183 @@ $$
 | + Clip-Higher | 38 |
 | + Soft Overlong Punishment | 41 |
 | + Token-level Loss | 42 |
-| + Dynamic Sampling(完整 DAPO) | 50 |
+| + Dynamic Sampling (完整 DAPO) | 50 |
 
-50 分用大约 R1-Zero-Qwen-32B **一半的训练步数** 超过 47.Token-level loss 在表上只 +1 分,正文写它主要稳长度和熵.
+完整 DAPO 用 R1-Zero-Qwen-32B 50% 的训练步数达到 50 分. Token-level Loss 在表上只加 1 分, 作者说它的主要作用是稳定长度和熵.
 
-综述把 DAPO 同时放进轨迹侧 clip–ratio 表和双侧「clip–方差耦合」:非对称 clip 管熵,动态采样管零优势组,超长塑造管 $R$ 的噪声,token 级分母管长句权重.四项缺一,表上的 50 就不是那一行.Algorithm 1 的循环是:采 $G$ 条 → 打分 → 按式 (5) 滤进 buffer → buffer 不够就 `continue` 再采 → 够了才算 $\hat{A}$ 并做 $\mu$ 次策略更新.采样成本随「全对/全错」比例涨,但他们观察到收敛步数下降,墙钟不一定更慢--前提是同步,未流水线化的生成被长尾样本主导.
+Algorithm 1 的循环顺序是: 对 batch 里每道题采 $G$ 条回答, 用规则奖励加式 (10) 打分, 按式 (8) 过滤后放进 buffer; buffer 不满就回去再采一批; 满了才按式 (5) 计算优势, 用式 (9) 做若干次策略更新. 四项改动作用在不同环节, 互相依赖: Clip-Higher 维持熵, 熵高了组内才更可能有对有错, 动态采样才不至于丢掉太多组; token 级损失让长回答的每个 token 都被计入, 软超长惩罚再从奖励端压住无节制的变长. 表里从 42 到 50 的最后一跳来自动态采样, 也说明零优势组在后期占了相当比例. 数据集 DAPO-Math-17K 有 17K 道题, 答案全部改造成整数, 例如原答案 $(a+\sqrt b)/c$ 改成求 $a+b+c$, 这样规则判分才可靠.
 
-数据集 DAPO-Math-17K:网上竞赛题改造成 **整数答案**(例如原答案 $(a+\sqrt{b})/c$ 改成求 $a+b+c$),共 17K prompt.规则奖励能用,是因为分母被他们改成可解析整数,不是「任意数学文字都能规则打分」.
+**边界**: 50 分的口径是 Qwen2.5-32B base 加 avg@32, 换骨干或换 $k$ 不能直接比. 动态采样丢掉的是题库里当前最难的一截, 这些题不进入梯度. 没有可解析答案的任务用不了式 (8).
 
-## 5. GSPO:序列级重要性比率,不是滑窗优势
+## 5. GSPO: 序列级重要性比率
 
-**GSPO = Group Sequence Policy Optimization**(Zheng 等,Qwen Team,[arXiv:2507.18071](https://arxiv.org/abs/2507.18071)).4.4 节首页把它写成「时间维滑动窗口局部优势」--原文没有这个机制.GSPO 的主张是:**奖励给整条序列,重要性校正也应该给整条序列.**
+**GSPO = Group Sequence Policy Optimization** (Zheng 等, Qwen Team, arXiv:2507.18071). 主张是奖励给整条序列, 重要性校正也应该给整条序列.
 
-GRPO 在每个 token 位置用单次采样的 $w_{i,t}=\pi_{\theta}/\pi_{\theta_{\mathrm{old}}}$ 当重要性权重.重要性采样要靠 $N\gg 1$ 的平均才能纠分布;一个位置一个样本,这个权重纠不了分布,只是往梯度里灌高方差噪声.序列一长,再叠 MoE 路由抖动,clip 会把噪声放大到崩.
+GRPO 在每个 token 位置用单次采样的 $w_{i,t}=\pi_{\theta}/\pi_{\theta_{\mathrm{old}}}$ 做重要性权重. 重要性采样要靠多个样本的平均才能校正分布, 每个位置只有一个样本时, 这个权重起不到校正作用, 只往梯度里加高方差噪声. 序列一长, 噪声沿 token 累积, 再叠加 MoE 的路由变化, clip 会把它放大到训练崩溃.
 
-GSPO 把比率定义成长度归一的序列似然比(几何平均):
+GSPO 把比率定义为长度归一的序列似然比 (原文式 (7)):
 
 $$
 s_i(\theta)
 =\Biggl(\frac{\pi_{\theta}(y_i\mid x)}{\pi_{\theta_{\mathrm{old}}}(y_i\mid x)}\Biggr)^{1/|y_i|}
 =\exp\Biggl(\frac{1}{|y_i|}\sum_{t=1}^{|y_i|}
-\log\frac{\pi_{\theta}(y_{i,t}\mid x,y_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(y_{i,t}\mid x,y_{i,<t})}\Biggr). \tag{8}
+\log\frac{\pi_{\theta}(y_{i,t}\mid x,y_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(y_{i,t}\mid x,y_{i,<t})}\Biggr). \tag{11}
 $$
 
-目标对 **这个标量** clip,优势仍用组内 $z$-score(原文式 (6),与式 (2) 同构):
+$x$ 是问题, $y_i$ 是第 $i$ 条回答, $1/|y_i|$ 次幂把不同长度的序列拉回同一数值范围. 目标对这个标量 clip, 优势仍是组内 $z$-score (原文式 (5)):
 
 $$
 \mathcal{J}_{\mathrm{GSPO}}(\theta)
 =\mathbb{E}\Biggl[\frac{1}{G}\sum_{i=1}^{G}
 \min\bigl(s_i(\theta)\widehat{A}_i,\;
-\mathrm{clip}(s_i(\theta),1-\varepsilon,1+\varepsilon)\widehat{A}_i\bigr)\Biggr]. \tag{9}
+\mathrm{clip}(s_i(\theta),1-\varepsilon,1+\varepsilon)\widehat{A}_i\bigr)\Biggr]. \tag{12}
 $$
+
+不考虑 clip 时, 两者的梯度可以并排写出. 对式 (11) 求导, 有 $\nabla_\theta s_i=s_i\cdot\frac{1}{|y_i|}\sum_t\nabla_\theta\log\pi_\theta(y_{i,t}\mid x,y_{i,<t})$, 于是
+
+$$
+\begin{aligned}
+\nabla_\theta\mathcal{J}_{\mathrm{GSPO}}&=\mathbb{E}\Biggl[\frac{1}{G}\sum_{i=1}^{G}s_i(\theta)\,\widehat{A}_i\cdot\frac{1}{|y_i|}\sum_{t=1}^{|y_i|}\nabla_\theta\log\pi_\theta(y_{i,t}\mid x,y_{i,<t})\Biggr],\\
+\nabla_\theta\mathcal{J}_{\mathrm{GRPO}}&=\mathbb{E}\Biggl[\frac{1}{G}\sum_{i=1}^{G}\widehat{A}_i\cdot\frac{1}{|y_i|}\sum_{t=1}^{|y_i|}w_{i,t}(\theta)\,\nabla_\theta\log\pi_\theta(y_{i,t}\mid x,y_{i,<t})\Biggr].
+\end{aligned} \tag{13}
+$$
+
+区别在权重的位置. GSPO 中同一条回答的所有 token 共享一个 $s_i$, 各 token 的对数概率梯度等权相加. GRPO 中每个 token 带着自己的 $w_{i,t}$, 某几个位置的比率偏离 1 很远时, 这几个 token 的梯度就被放大或缩小, 而这些偏离大多来自单次采样的噪声.
 
 ![GRPO token-level IS versus GSPO sequence-level IS](./images/fig-gspo-seq-is.png)
 
-> 图 3:左,GRPO 每个 token 自己的 $r_t$ 各自 clip,再乘同一条 $\hat{A}_i$.右:先把 token 对数比做成几何平均标量 $s$,再 clip 一次,整条序列共用 $\tilde{s}\hat{A}_i$.红框:不是滑窗局部优势,也不是段级 $A$.
+> 图 3: 左, GRPO 每个 token 的 $r_t$ 各自 clip, 再乘同一个 $\hat{A}_i$. 右, GSPO 先把 token 对数比做成几何平均标量 $s$, clip 一次, 整条序列共用 $\tilde{s}\hat{A}_i$.
 
 **图 3 解析**
 
-- **左**:clip 发生在 token.正优势时各 $w_{i,t}$ 可落在 $(0,1+\varepsilon]$,负优势时可落到 $[1-\varepsilon,+\infty)$.权重不相等,会沿序列累积.
-- **右**:$\pi_{\theta}(y\mid x)=\prod_t\pi_{\theta}(y_t\mid\ldots)$,$(1/|y|)$ 次幂把不同长度拉回同一数值范围.clip 整段丢掉或整段留下,和「奖励是整段一个分」对齐.
-- **红框**:局部窗口优势,段级优势,都不是这篇的定义.邻居 [03-GSPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/03-GSPO/03-GSPO.md) 公式方向与原文一致;若旧叙述把 GSPO 写成 token 算术平均,以本篇式 (8) 为准.
+- **左**: clip 发生在 token 上. 正优势时各 $w_{i,t}$ 落在 $(0,1+\varepsilon]$, 负优势时落在 $[1-\varepsilon,+\infty)$. 权重各不相同, 沿序列累积.
+- **右**: $\pi_{\theta}(y\mid x)=\prod_t\pi_{\theta}(y_t\mid x,y_{<t})$, 取 $1/|y|$ 次幂后得到 $s$. clip 要么整段留下, 要么整段丢掉, 和奖励是整段一个分对齐.
 
-实验设定(原文 §5.1):冷启动模型从 **Qwen3-30B-A3B-Base** 微调;AIME'24 为 32 次采样的平均 Pass@1;LiveCodeBench(202410–202502)8 次平均 Pass@1;CodeForces 报 Elo.每批 rollout 切成 4 个 mini-batch.GSPO clip 左右界 **$3\times10^{-4}$** 与 **$4\times10^{-4}$**;对照 GRPO 调到 **0.2** 与 **0.27**.数量级不同,是因为 $s_i$ 已经是几何平均后的似然比,不是单个 token 的 $\pi$ 比.
+**实验** (原文 §5.1): 冷启动模型从 Qwen3-30B-A3B-Base 微调得到. AIME'24 报 32 次采样的平均 Pass@1, LiveCodeBench (202410 至 202502) 报 8 次平均 Pass@1, CodeForces 报 Elo. 每批 rollout 切成 4 个 mini-batch. GSPO 的 clip 左右界是 $3\times10^{-4}$ 与 $4\times10^{-4}$, 对照 GRPO 用 0.2 与 0.27. 数量级差这么多, 是因为 $s_i$ 已经是几何平均后的似然比. 作者还观察到 GSPO 裁掉的 token 比例比 GRPO 高两个数量级, 训练效率却更高, 他们用这一点说明 token 级梯度的噪声大.
 
-MoE:Qwen3-30B-A3B 约 48 层,一次梯度更新后同一条 rollout 大约 **10%** 的专家与 $\pi_{\theta_{\mathrm{old}}}$ 不同.GRPO 的 token 级 $w_{i,t}$ 被路由抖动打散,要靠 Routing Replay(缓存并重放旧路由)才能收敛.GSPO 只看序列似然,不依赖 Routing Replay.文中还观察到 GSPO clip 掉的 token 比例比 GRPO **高两个数量级**,但训练效率更高--他们用来论证 token 级梯度噪声大,不是画一张假坐标曲线.
+**MoE**: 48 层的 Qwen3-30B-A3B 每次梯度更新后, 同一条 rollout 大约有 10% 的激活专家发生变化. GRPO 的 token 级 $w_{i,t}$ 被路由变化打乱, 要靠 Routing Replay (缓存旧策略的路由并在计算比率时重放) 才能收敛, 这会带来额外显存与通信开销, 也限制模型容量. GSPO 只看序列似然, 对单个 token 的路由变化不敏感, 不需要 Routing Replay.
 
-GSPO-token(式 (13)(14))把 $s_i$ 的数值 stop-gradient 后乘到每个 token 的 $\pi_{\theta}/\mathrm{sg}[\pi_{\theta}]$ 上,数值上等于 $s_i$,方便多轮里按 token 改 $\widehat{A}_{i,t}$.$\widehat{A}_{i,t}=\widehat{A}_i$ 时与 GSPO 梯度相同.
+**GSPO-token** (原文式 (13)(14)): 把 $s_i$ 的数值 stop-gradient 后乘到每个 token 的 $\pi_{\theta}/\mathrm{sg}[\pi_{\theta}]$ 上, 数值仍等于 $s_i$, 好处是多轮场景中可以按 token 给不同的 $\widehat{A}_{i,t}$. 当 $\widehat{A}_{i,t}=\widehat{A}_i$ 时, 梯度与 GSPO 相同.
 
-## 6. GMPO:几何平均压离群比率
+**边界**: 序列级 clip 的粒度粗, 一条回答里只有少数 token 偏离旧策略时, 整条回答要么全部保留, 要么全部丢掉. 奖励本身是逐 token 或逐步给出时 (过程奖励, 多轮工具调用), 需要退回 GSPO-token 这类形式.
 
-**GMPO = Geometric-Mean Policy Optimization**(Zhao,Liu 等,[arXiv:2507.20673](https://arxiv.org/abs/2507.20673)).邻居 [01-GMPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/01-GMPO/01-GMPO.md) 有年薪类比;本篇数字只跟原表,不跟营销类比.
+## 6. GMPO: 几何平均压离群比率
 
-GRPO 优化 token 级重要性加权奖励的 **算术平均**.$\rho_t\hat{A}$ 对离群 $\rho_t$ 敏感,训练中 $\rho_t$ 会冲到极端值,再靠窄 clip 压住,探索跟着死.GMPO 换成几何平均(省略 clip 的核心式):
+**GMPO = Geometric-Mean Policy Optimization** (Zhao, Liu 等, arXiv:2507.20673).
+
+GRPO 优化的是 token 级重要性加权奖励的算术平均. $\rho_{i,t}\hat{A}_i$ 对离群的 $\rho_{i,t}$ 很敏感, 训练中比率会冲到极端值, 只好用窄 clip 压住, 探索也一起被压住. $\rho_{i,t}$ 即式 (6) 的 $r_{i,t}$. GMPO 换成几何平均 (省略 clip 的核心形式):
 
 $$
 \mathcal{J}^{*}_{\mathrm{GMPO}}(\pi_{\theta})
 =\mathbb{E}\Biggl[\frac{1}{G}\sum_{i=1}^{G}
 \Biggl(\prod_{t=1}^{|o_i|}\bigl|\rho_{i,t}(\theta)\hat{A}_i\bigr|\Biggr)^{1/|o_i|}
-\cdot\mathrm{sgn}(\hat{A}_i)\Biggr]. \tag{10}
+\cdot\mathrm{sgn}(\hat{A}_i)\Biggr]. \tag{14}
 $$
 
-由 AM-GM,$|\mathcal{J}^{*}_{\mathrm{GMPO}}|\le|\mathcal{J}^{*}_{\mathrm{GRPO}}|$,目标值域更窄.梯度上,GRPO 每个 token 的权重含自己的 $\rho_{i,t}$;GMPO 每个 token 共享整句的几何平均 $\bigl(\prod_k\rho_{i,k}\bigr)^{1/|o_i|}$,单个极端 $\rho$ 拉不动整句.
+$\mathrm{sgn}(\hat{A}_i)$ 把符号放回去, 因为几何平均只能对非负数取. 由算术几何平均不等式, $|\mathcal{J}^{*}_{\mathrm{GMPO}}|\le|\mathcal{J}^{*}_{\mathrm{GRPO}}|$, 目标值域更窄. 举一个数值情形: 一条回答有 100 个 token, 其中 99 个比率是 1, 1 个比率是 5. 算术平均是 $1.04$, 几何平均是 $5^{1/100}\approx1.016$; 比率冲到 50 时, 算术平均变成 1.49, 几何平均只到约 1.04. 离群 token 对整句的影响被对数压缩. 梯度上, GRPO 每个 token 的权重只含自己的 $\rho_{i,t}$; GMPO 每个 token 共享整句的几何平均 $\bigl(\prod_k\rho_{i,k}\bigr)^{1/|o_i|}$, 单个极端比率拉不动整句.
 
-实现上在 **token 级,对数空间** clip,再做几何平均,而不是像某些 R1 实现那样对 $\prod_t\rho_{t}$ 做序列级 clip.序列级 clip 一触发,整句梯度全零.推荐范围 $(e^{-0.4},e^{0.4})$,比 GRPO 的 $(0.8,1.2)$ 和 DAPO 的 $(0.8,1.28)$ 都宽.消融去掉 $1/|o|$ 归一,7B 均分 52.7→52.0.
+实现上 GMPO 在 token 级, 对数空间 clip, 再做几何平均. 如果对 $\prod_t\rho_{i,t}$ 做序列级 clip, 一旦触发, 整句梯度全为零; Figure 3 还显示序列级 clip 下比率的范围比 token 级 clip 更宽, 更容易产生极端梯度. 推荐范围 $(e^{-0.4},e^{0.4})$, 比 GRPO 的 $(0.8,1.2)$ 和 DAPO 的 $(0.8,1.28)$ 都宽. Figure 1 中把 GMPO 的 clip 从 $(e^{-0.2},e^{0.2})$ 一直放到不 clip, 比率范围随之变宽, 更新变得不稳, $(e^{-0.4},e^{0.4})$ 是两者之间的折中. 训练过程中, GMPO 相对初始模型的 KL 比 GRPO 小, token 熵比 GRPO 高. 目标里沿用 Dr.GRPO 的做法, 不加 KL 项. 消融中去掉 $1/|o|$ 归一, 7B 均分从 52.7 降到 52.0.
 
-评测协议跟 Dr. GRPO 文:语言任务温度 **0.0**,每题一条,报 **Pass@1**.训练:MATH Level 3–5,**8523** 题;每题 8 条 rollout,最长 3000 token.
+**设置**: 训练数据 MATH Level 3 至 5, 共 8523 题; 每题 8 条 rollout, 最长 3000 token; 每轮 1024 条 rollout, 更新 8 次, batch 128, 8 张 A800. 评测协议沿用 Dr.GRPO: 语言任务温度 0.0, 每题一条, 报 Pass@1; 多模态任务温度 0.5, 每题 16 条.
 
-Table 1(五科均分;Oly. = OlympiadBench):
+Table 1 (Oly. 为 OlympiadBench):
 
-| 模型 | AIME24 | AMC | MATH500 | Minerva | Oly. | Avg. |
+| 模型 | AIME24 | AMC | MATH500 | Minerva | Oly. | 平均 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| GRPO-7B(R1-Distill) | 43.3 | 67.5 | 89.0 | 39.7 | 56.7 | **59.3** |
-| GMPO-7B(R1-Distill) | 46.6 | 78.3 | 91.4 | 37.9 | 62.5 | **63.4** |
+| GRPO-7B (R1-Distill) | 43.3 | 67.5 | 89.0 | 39.7 | 56.7 | 59.3 |
+| GMPO-7B (R1-Distill) | 46.6 | 78.3 | 91.4 | 37.9 | 62.5 | 63.4 |
 | GRPO-7B | 40.0 | 59.0 | 83.4 | 32.4 | 41.3 | 51.2 |
 | GMPO-7B | 43.3 | 61.4 | 82.0 | 33.5 | 43.6 | 52.7 |
 | GRPO-1.5B | 23.3 | 49.4 | 75.2 | 25.7 | 39.0 | 42.5 |
 | GMPO-1.5B | 20.0 | 53.0 | 77.6 | 30.1 | 38.7 | 43.9 |
 
-R1-Distill-Qwen-7B 上均分 **59.3 → 63.4**(+4.1 百分点).Minerva **39.7 → 37.9**,不是五科都涨.Table 2:Qwen2.5-VL-Instruct-7B 在 Geometry3K 上 **53.3 → 54.7**(+1.4);Qwen3-32B MoE 在 MATH500 上 **94.6 → 96.7**(+2.1).几何平均和 GSPO 的 $s_i$ 长得像,但 GMPO 的几何平均作用在 $|\rho\hat{A}|$ 上,clip 仍在 token;GSPO 的几何平均是序列似然比本身.
+R1-Distill-Qwen-7B 上均分 59.3 到 63.4, 但 Minerva 从 39.7 降到 37.9; 1.5B 上 AIME24 从 23.3 降到 20.0. 平均分涨, 单科有跌. Table 2: Qwen2.5-VL-Instruct-7B 在 Geometry3K 上 53.3 到 54.7; Qwen3-32B MoE 在 MATH500 上 94.6 到 96.7. MoE 实验的训练数据换成了 DeepScaleR 和 CountDown, 多模态实验沿用 EasyR1 的设置, 在 Geometry3K 上训练.
 
-## 7. GHPO:难样本改 prompt,在模仿与 on-policy 之间切
+GMPO 与 GSPO 都用了几何平均, 作用对象不同. GMPO 平均的是 $|\rho\hat{A}|$, clip 仍在 token 上; GSPO 平均的是序列似然比本身, clip 在序列上.
 
-**GHPO = Guided Hybrid Policy Optimization**(Liu,Gong 等,[arXiv:2507.10628](https://arxiv.org/abs/2507.10628) v2 HTML).它不改 clip 公式,改的是 **轨迹从哪条条件分布采出来**.
+## 7. GHPO: 难题补标准解前缀
 
-病根:RLVR 的奖励在轨迹终点才给.当前策略对某题 $G$ 次全错,奖励全 0,式 (2) 优势全 0,这题的算力白烧.他们在 NuminaMath-1.5(约 90 万竞赛题)上测 Qwen2.5-7B-Instruct,**52%** 的题做不出--对 Qwen2.5-7B-Base 更谈不上.DAPO 的办法是丢掉这些组;GHPO 的办法是 **留下,但改 prompt**.
+**GHPO** (Liu, Gong 等, *GHPO: Adaptive Guidance for Stable and Efficient LLM Reinforcement Learning*, arXiv:2507.10628v2) 不改 clip 公式, 改的是轨迹从哪个条件分布采出.
 
-难度检测:组内 $G$ 条奖励全 0,则判难.否则 $q^*=q$,走普通 on-policy GRPO.难则把标准答案的前缀切一段接到问题上:
+**问题**: RLVR 的奖励只在轨迹终点给出. 当前策略对某题 $G$ 次全错, 奖励全 0, 式 (5) 优势全 0, 这道题的算力白费. 作者在 NuminaMath-1.5 (约 90 万道竞赛题) 上测 Qwen2.5-7B-Instruct, 有 52% 的题做不出. DAPO 的处理是丢掉这些组; GHPO 留下它们, 但改 prompt.
+
+**公式**: 组内 $G$ 条奖励全为 0 则判为难题, 否则照常走 on-policy GRPO. 难题把标准解的前缀接到题目后:
 
 $$
 q^*=\begin{cases}
 q, & \sum_{i}f(a,o_i)>0,\\
 q+\omega\cdot h_{f,q}, & \text{otherwise.}
-\end{cases} \tag{11}
+\end{cases} \tag{15}
 $$
 
-$\omega$ 按阶段线性加长:**$\{0.25,0.5,0.75\}$**.提示模板是一句固定引导语加上 hint 正文(原文 Figure 3).前 **$N=20$** 步可选冷启动:关掉检测,先跑原版 GRPO,避免格式还不会时几乎每题都判难.
+$f(a,o_i)$ 是规则判分, $h_{f,q}$ 是题 $q$ 的完整标准解, $\omega\cdot h_{f,q}$ 表示取它的前 $\omega$ 比例. $\omega$ 按阶段加长, 取值 $\{0.25,0.5,0.75\}$: 先给四分之一, 还是全错就给一半, 再给四分之三. 提示模板是一句固定引导语加 hint 正文 (原文 Figure 3). 前 $N=20$ 步可选冷启动, 关掉检测先跑原版 GRPO, 避免模型连格式都还不会时几乎每题都被判难.
 
-目标函数形态仍是 GRPO 的 token clip + 组相对优势,但比率在 $q^*$ 上算(原文式 (4)–(6)).这是轨迹侧的「修前缀」,不是奖励侧另训一个教师 logits.和 OPD 的分界:OPD 要教师在学生前缀上给分布;GHPO 掺的是 **数据集里已有的标准解答文本**,没有外挂教师模型.
+目标函数仍是 GRPO 的 token clip 加组相对优势, 比率在 $q^*$ 上计算 (原文式 (4) 至 (6)). 这里掺入的是数据集里已有的标准解文本, 没有外挂教师模型; OPD 则要教师在学生前缀上给出分布.
 
-评测(原文 §4.4):多数基准报 **pass@1**;AIME2024 题少且难,报 **avg@32**.温度 0.0 或 1.0(随基准难度),最长 4096.评测 **不用** hint.奖励:规则正确性 $+1/0$,格式 $+1/0$,两者权重 **2:1**.训练 batch 112,每题 8 条,最长 2048.
+**设置**: 奖励由规则正确性 ($+1/0$) 和格式 ($+1/0$) 组成, 权重 2:1. 训练学习率 $1\times10^{-6}$, cosine 调度, 10% warmup; batch 112, 每题 8 条, 8 步梯度累积; 温度 1.0, 最长 2048; 无 KL. 评测用 Lighteval, 温度 0.0 或 1.0 (随基准), 最长 4096, 不加 hint; 多数基准报 pass@1, AIME2024 报 avg@32.
 
-Table 1:训练数据 **Math3to5**(MATH Level 3–5,**8890** 题).AIME24 列为 avg@32,其余 pass@1,AVG 是六项算术平均.
+Table 1, 训练数据 Math3to5 (MATH Level 3 至 5, 8890 题), AVG 是六项算术平均:
 
 | 模型 | AIME24 | MATH-500 | OlympiadBench | AMC23 | Minerva | GPQA-D | AVG |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Qwen2.5-Base-7B | 0.098 | 0.694 | 0.340 | 0.400 | 0.195 | 0.217 | 0.324 |
-| Qwen2.5-7B-GRPO | 0.131 | 0.752 | 0.408 | 0.475 | 0.312 | 0.308 | **0.398** |
-| Qwen2.5-7B-GHPO | 0.133 | 0.786 | 0.415 | 0.575 | 0.346 | 0.394 | **0.442** |
+| Qwen2.5-7B-GRPO | 0.131 | 0.752 | 0.408 | 0.475 | 0.312 | 0.308 | 0.398 |
+| Qwen2.5-7B-GHPO | 0.133 | 0.786 | 0.415 | 0.575 | 0.346 | 0.394 | 0.442 |
 
-Table 1 上 GRPO→GHPO 均分 **0.398 → 0.442**(+4.4 百分点).摘要写「约 5%」是约数;核对用表.AMC23 **0.475 → 0.575**,GPQA-Diamond **0.308 → 0.394**;AIME24 几乎不动(0.131 → 0.133).
+均分 0.398 到 0.442, 涨 4.4 个百分点, 摘要里的「约 5%」是这个数的约数. AMC23 0.475 到 0.575, GPQA-Diamond 0.308 到 0.394, AIME24 几乎不动.
 
-Table 2:更难的 **NuminaMath-S**(18300 题,math3to5 + OlympiadBench + AMC).同一套六科,同一套分母.
+Table 2 换成更难的混合数据 NuminaMath-S (18300 题, 由 Math3to5, OlympiadBench, AMC 组成):
 
 | 模型 | AIME24 | MATH-500 | OlympiadBench | AMC23 | Minerva | GPQA-D | AVG |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Qwen2.5-7B-GRPO | 0.122 | 0.774 | 0.396 | 0.525 | 0.283 | 0.353 | 0.409 |
 | Qwen2.5-7B-GRPO-CL | 0.112 | 0.774 | 0.395 | 0.550 | 0.335 | 0.323 | 0.415 |
 | Qwen2.5-7B-GRPO-CL-H(0.5) | 0.152 | 0.774 | 0.389 | 0.550 | 0.331 | 0.338 | 0.422 |
-| Qwen2.5-7B-GHPO | 0.163 | 0.776 | 0.389 | 0.575 | 0.342 | 0.404 | **0.442** |
+| Qwen2.5-7B-GHPO | 0.163 | 0.776 | 0.389 | 0.575 | 0.342 | 0.404 | 0.442 |
 | Qwen2.5-Math-7B-GRPO | 0.2698 | 0.81 | 0.4481 | 0.625 | 0.3456 | 0.3384 | 0.4728 |
-| Qwen2.5-Math-7B-GHPO | 0.3198 | 0.822 | 0.4525 | 0.7 | 0.3824 | 0.3687 | **0.5076** |
+| Qwen2.5-Math-7B-GHPO | 0.3198 | 0.822 | 0.4525 | 0.7 | 0.3824 | 0.3687 | 0.5076 |
 
-Mixed 上 Base 的 AIME24 avg@32 **0.122 → 0.163**;课程学习 GRPO-CL 均分只有 0.415,固定 50% hint 的 CL-H 到 0.422,都低于自适应 $\omega$ 的 GHPO **0.442**.Math-7B 骨干上均分 **0.4728 → 0.5076**.OlympiadBench 在 Base Mixed 上 GHPO **0.389** 略低于 GRPO 的 **0.396**,不是六科单调涨.
+AIME24 从 0.122 到 0.163. 课程学习 GRPO-CL 均分 0.415, 固定一半 hint 的 CL-H 是 0.422, 都低于自适应 $\omega$ 的 0.442. Math-7B 骨干上 0.4728 到 0.5076. OlympiadBench 上 GHPO 的 0.389 略低于 GRPO 的 0.396.
 
-训练动态(原文 Figure 5):相当长时间里,一个 mini-batch 里仍有约 **60%** 的题被判难,需要 hint.GHPO 的准确率奖励全程高于 GRPO,梯度范数更小;后期平均回复更长.这是「改 prompt 换有效梯度」,不是把 GHPO 写成另一种 clip.
+**训练动态**: Figure 5 显示, 相当长一段训练里, 每个 mini-batch 仍有约 60% 的题被判难, 需要 hint. Figure 6 显示 GHPO 的准确率奖励全程高于 GRPO, 梯度范数更小, 后期平均回复更长.
 
-和 DAPO 动态采样的分工:同样面对全错组,DAPO **扔掉 prompt**,保证 batch 里每条都有非零 $\hat{A}$;GHPO **留下 prompt**,把标准解前缀补进 $q$,让至少一条 rollout 有机会得非零奖励.前者省的是无效更新,代价是题库里最难的那截永远不进梯度;后者吃掉这截,代价是训练分布掺了教师前缀,和推理时的无 hint 前缀再次错位.这就是为什么评测必须关 hint,以及 $\omega$ 要按阶段加长而不是固定 0.5.固定 hint 的 GRPO-CL-H(0.5) 均分 0.422,低于自适应 GHPO 的 0.442,分母同是 Table 2 的六科平均.
+**和 DAPO 动态采样的分工**: 面对全错组, DAPO 丢掉 prompt, 保证 batch 里每条样本都有非零 $\hat{A}$, 代价是最难的那部分题永远进不了梯度. GHPO 留下 prompt, 补标准解前缀, 让至少一条 rollout 有机会得分, 代价是训练分布里掺了标准解前缀, 和推理时无 hint 的输入不一致. 所以评测必须关 hint, $\omega$ 也要按需逐步加长; 固定 0.5 的 CL-H 比自适应版低 2 个百分点.
 
-## 8. 可选对照:Dr. GRPO 与 CISPO
+**失效**: $\omega$ 过大时, 难题上的训练接近对标准解做 SFT. 数据集没有完整标准解时, 式 (15) 无从实施.
 
-Dr. GRPO 正本在 [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md),本夹只留对照,公式以单独成篇为准.**Dr. GRPO**(Liu 等,*Understanding R1-Zero-like Training*,[arXiv:2503.20783](https://arxiv.org/abs/2503.20783))在奖励侧拆 GRPO 目标里的两个归一.**长度偏差**:除以 $|o_i|$ 让正优势短句每个 token 更新更猛,负优势长句罚得更稀.**难度偏差**:除以组内 $\mathrm{std}$ 让几乎全对或全错的题权重反而更大.拆掉这两项,用生成预算常数做 masked mean,得到无偏估计.他们的最小配方:Qwen2.5-Math-7B,MATH Level 3–5,Qwen-Math 模板,**8×A100,约 27 小时**.Table 4 里 Oat-Zero-7B(即这条配方)五科均分 **51.4**(AIME24 43.3,AMC 62.7,MATH500 80.0,Minerva 30.1,OlympiadBench 41.0);生成预算 3k.这是 Dr. GRPO 文的表,不要和 GMPO Table 1 的 52.7 直接并成「同一实验」.
+## 8. Dr.GRPO 与 CISPO
 
-**CISPO** 一手在 MiniMax-M1([arXiv:2506.13585](https://arxiv.org/abs/2506.13585)):**Clipped IS-weight Policy Optimization**.他们的设定是每代 rollout 做 16 轮 off-policy 更新;这时 GRPO/DAPO 那种「越出 clip 带就丢掉 token」会把对长 CoT 关键的高比率 token 整段抹掉,熵也稳不住.CISPO 把 clip 加在重要性权重上,并对该权重 **stop-gradient**,梯度仍从 $\log\pi_{\theta}$ 走:
+**Dr.GRPO** (Liu 等, *Understanding R1-Zero-Like Training: A Critical Perspective*, arXiv:2503.20783) 在奖励侧拆掉式 (6) 和式 (5) 中的两个归一. 除以 $|o_i|$ 带来长度偏差: 正优势时短回答的每个 token 更新更大, 负优势时长回答的每个 token 罚得更轻, 错误回答于是越写越长. 除以组内 $\mathrm{std}$ 带来难度偏差: 几乎全对或几乎全错的题, 标准差小, 权重反而被放大. 去掉两项后用常数归一, 梯度与 RLOO 同形. 最小配方 Oat-Zero-7B: Qwen2.5-Math-7B, MATH Level 3 至 5, Qwen-Math 模板, 8 张 A100 约 27 小时; Table 4 五科均分 51.4 (AIME24 43.3, AMC 62.7, MATH500 80.0, Minerva 30.1, OlympiadBench 41.0), 生成上限 3000. 推导和实验细节见 [4.4.6/03](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md). 这组数字和 GMPO Table 1 的 52.7 来自不同论文的不同设置.
+
+**CISPO** (Clipped IS-weight Policy Optimization) 出自 MiniMax-M1 (arXiv:2506.13585). 他们的设定是每批 rollout 做 16 轮 off-policy 更新. 此时 GRPO 和 DAPO 的做法, 即比率越出 clip 带就丢掉该 token 的梯度, 会把一些对长 CoT 关键的低概率 token (比如表示反思转折的词) 整批抹掉, 熵也稳不住. CISPO 把 clip 加在重要性权重上, 并对权重做 stop-gradient, 梯度仍从 $\log\pi_{\theta}$ 走:
 
 $$
 \hat{r}_{i,t}(\theta)=\mathrm{clip}\bigl(r_{i,t}(\theta),\,1-\varepsilon_{\mathrm{low}}^{\mathrm{IS}},\,1+\varepsilon_{\mathrm{high}}^{\mathrm{IS}}\bigr),\qquad
-\mathcal{J}_{\mathrm{CISPO}}\propto \mathrm{sg}(\hat{r}_{i,t})\,\hat{A}_{i,t}\,\log\pi_{\theta}(o_{i,t}\mid\cdot). \tag{12}
+\mathcal{J}_{\mathrm{CISPO}}\propto \mathrm{sg}(\hat{r}_{i,t})\,\hat{A}_{i,t}\,\log\pi_{\theta}(o_{i,t}\mid q,o_{i,<t}). \tag{16}
 $$
 
-无权重 clip 时退回普通政策梯度.实验里他们把下界 $\varepsilon_{\mathrm{low}}^{\mathrm{IS}}$ 放很大(等于不卡下界),只调上界;优势用 GRPO 组相对,损失用 token 级分母,并沿用 DAPO 的动态采样与长度惩罚,无 KL.对照设定:Qwen2.5-32B-base,DAPO 数学数据,AIME 2024.文称同等步数优于 GRPO/DAPO,并称约一半步数追上 DAPO(Figure 2;本篇不临摹该曲线).ScaleRL 也采用 CISPO;本篇符号以 MiniMax-M1 HTML 为准,不另编 ScaleRL 专有公式.
+$\mathrm{sg}(\cdot)$ 是 stop-gradient. 不做权重 clip 时退回普通的重要性加权策略梯度. 实验中他们把 $\varepsilon_{\mathrm{low}}^{\mathrm{IS}}$ 设得很大, 相当于不设下界, 只调上界; 优势用 GRPO 组相对, 损失用 token 级分母, 沿用 DAPO 的动态采样与长度惩罚, 不加 KL. 在 Qwen2.5-32B-base 的受控对比中, CISPO 用 DAPO 50% 的步数达到 DAPO 的 AIME 2024 成绩, 相当于 2 倍加速 (Figure 2). 单篇见 [08-CISPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/08-CISPO-裁剪重要性权重/08-CISPO-裁剪重要性权重.md).
 
-## 9. 勘误(4.4 首页与 13.4.1 不要抄)
+## 9. 失效对照
 
-| 错的说法 | 本篇以谁为准 |
-| --- | --- |
-| DAPO = Decoupled Alignment Policy Optimization | 原文标题:**Decoupled Clip and Dynamic sAmpling Policy Optimization** |
-| GSPO = 时间维滑动窗口局部优势 | 序列似然比 $s_i$(几何平均)再 clip;优势仍是组内 $z$-score |
-| DAPO = 段级优势 | DAPO 优势公式与 GRPO 相同;段级优势是 SPO 等另一条线 |
-| DAPO 超长奖励改成 0 | 先 Filtering mask 损失,再式 (7) 的软惩罚区间 |
-| OPD 是 GRPO 变体 | 综述:散度 OPD 换 $J$;hybrid 才留 $J$.蒸馏见 4.6 |
-| GMPO 的几何平均 = GSPO 的 $s_i$ | 一个平均 $\|\rho\hat{A}\|$,一个平均序列似然比 |
-
-## 10. 失效
-
-| 现象 | 落在哪一侧 | 说明 |
+| 现象 | 落在哪一侧 | 处理 |
 | --- | --- | --- |
-| 组内全对/全错 | 奖励侧式 (2) 退化;轨迹侧采到无信息组 | DAPO 丢掉;GHPO 改 prompt;什么都不做则梯度为零 |
-| 熵崩,过早确定 | 轨迹侧对称上 clip | Clip-Higher 放宽上界;过放下界会塌采样空间 |
-| 长 CoT 胡写,复读 | 样本级 $1/G\sum 1/\|o_i\|$ | DAPO token 级分母;Dr. GRPO 去长度归一,动机不同 |
-| MoE 一次更新换约 10% 专家 | 轨迹侧 token 级 IS | GSPO 看序列似然;GRPO 需 Routing Replay |
-| $\rho_t$ 离群把更新拉飞 | 轨迹侧算术平均 | GMPO 几何平均;仍可能牺牲 Minerva 这种单科 |
-| 标准答案泄漏进评测 | GHPO 的 $q^*$ | 评测必须关 hint;训练 $\omega$ 过大则变成变相 SFT |
-| 没有可解析的整数答案 | DAPO-Math-17K 的前提 | 他们把答案改造成整数才用规则奖励 |
-| 拿 50 分 AIME 当「所有 DAPO」 | 分母是 Qwen2.5-32B base,avg@32 | 换骨干,换 $k$ 不能直接比 |
-
-下一篇读邻居展开:[02-GRPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md) 的组统计,[03-GSPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/03-GSPO/03-GSPO.md) 的序列似然,[01-GMPO](../../4.4.1-基于奖励模型的RL-RLHF-PPO/01-GMPO/01-GMPO.md) 的几何平均实现.OPD:[01-OPD-学生前缀蒸馏](../../../4.6-OPD/01-OPD-学生前缀蒸馏/01-OPD-学生前缀蒸馏.md).
+| 组内全对或全错 | 奖励侧式 (5) 退化 | DAPO 丢组; GHPO 补前缀; 不处理则梯度为零 |
+| 熵崩塌, 过早确定 | 轨迹侧对称上界 | Clip-Higher 放宽上界; 放宽下界会塌掉采样空间 |
+| 长 CoT 重复, 胡写 | 样本级 $\frac1G\sum_i\frac{1}{\lvert o_i\rvert}$ | DAPO 用 token 级分母; Dr.GRPO 去掉长度归一, 动机是无偏 |
+| MoE 一次更新换约 10% 专家 | 轨迹侧 token 级比率 | GSPO 用序列似然; GRPO 要 Routing Replay |
+| 比率离群把更新拉飞 | 轨迹侧算术平均 | GMPO 几何平均, 单科仍可能下降 |
+| 标准解泄漏进评测 | GHPO 的 $q^*$ | 评测关 hint; $\omega$ 过大近似 SFT |
+| 多轮 off-policy 更新抹掉关键 token | 轨迹侧丢梯度式 clip | CISPO 只 clip 权重, 保留梯度 |
+| 没有可解析答案 | DAPO 规则奖励的前提 | DAPO-Math-17K 把答案改成整数 |
 
 ## 参考文献
 
-1. Shen, Luo, Li, et al. *A First-Principles Derivation of LLM Policy Optimization: From Expected Reward to GRPO and Its Structural Extensions*([arXiv:2606.16733](https://arxiv.org/abs/2606.16733) / [HTML](https://arxiv.org/html/2606.16733)).式 (3) 的 $J(\theta)$;GRPO 为奖励侧替换;DAPO/GSPO 在 clip–ratio;§9.1 OPD/DPO 边界.
-2. Shao et al. *DeepSeekMath*([arXiv:2402.03300](https://arxiv.org/abs/2402.03300) / [HTML](https://arxiv.org/html/2402.03300)).GRPO 式 (3);结果监督 $\hat{A}_{i,t}=(r_i-\mathrm{mean})/\mathrm{std}$;GSM8K 82.9→88.2,MATH 46.8→51.7.
-3. Yu et al. *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*([arXiv:2503.14476](https://arxiv.org/abs/2503.14476) / [HTML](https://arxiv.org/html/2503.14476)).全称;式 (8)(10)(12)(13);Table 1 的 30/36/38/41/42/50.
-4. Zheng et al. *Group Sequence Policy Optimization*([arXiv:2507.18071](https://arxiv.org/abs/2507.18071) / [HTML](https://arxiv.org/html/2507.18071)).式 (5)(7);clip $3\times10^{-4}$/$4\times10^{-4}$;MoE 约 10% 专家变化.
-5. Zhao, Liu, et al. *Geometric-Mean Policy Optimization*([arXiv:2507.20673](https://arxiv.org/abs/2507.20673) / [HTML](https://arxiv.org/html/2507.20673)).式 (3)(4);Table 1–2.
-6. Liu, Gong, et al. *GHPO: Adaptive Guidance for Stable and Efficient LLM Reinforcement Learning*([arXiv:2507.10628](https://arxiv.org/abs/2507.10628) / [HTML](https://arxiv.org/html/2507.10628v2)).式 (4)(5);Table 1–2;$\omega\in\{0.25,0.5,0.75\}$.
-7. Liu et al. *Understanding R1-Zero-like Training*(Dr. GRPO;[arXiv:2503.20783](https://arxiv.org/abs/2503.20783) / [HTML](https://arxiv.org/html/2503.20783)).去 $1/|o|$ 与 $\mathrm{std}$;Table 4 Oat-Zero-7B.
-8. MiniMax. *MiniMax-M1*([arXiv:2506.13585](https://arxiv.org/abs/2506.13585)).CISPO:clip IS 权重 + stop-gradient.
-
-DAPO Figure 1,GSPO Figure 1 等训练曲线不临摹.
+1. Shen, Luo, Li, et al. *A First-Principles Derivation of LLM Policy Optimization: From Expected Reward to GRPO and Its Structural Extensions*. [arXiv:2606.16733](https://arxiv.org/abs/2606.16733). 期望回报 $J(\theta)$ 的两侧分解, §9.1 OPD 与 DPO 边界.
+2. Shao, Wang, Zhu, et al. *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models*. [arXiv:2402.03300](https://arxiv.org/abs/2402.03300). GRPO 式 (3), Table 5, Figure 7.
+3. Yu, Zhang, Zhu, et al. *DAPO: An Open-Source LLM Reinforcement Learning System at Scale*. [arXiv:2503.14476](https://arxiv.org/abs/2503.14476). 式 (10) 至 (13), Table 1.
+4. Zheng, Liu, Li, et al. *Group Sequence Policy Optimization*. [arXiv:2507.18071](https://arxiv.org/abs/2507.18071). 式 (5)(7)(13)(14), §5.
+5. Zhao, Liu, et al. *Geometric-Mean Policy Optimization*. [arXiv:2507.20673](https://arxiv.org/abs/2507.20673). Table 1, Table 2.
+6. Liu, Gong, et al. *GHPO: Adaptive Guidance for Stable and Efficient LLM Reinforcement Learning*. [arXiv:2507.10628](https://arxiv.org/abs/2507.10628). 式 (4) 至 (6), Table 1, Table 2, Figure 5, Figure 6.
+7. Liu, Chen, Li, et al. *Understanding R1-Zero-Like Training: A Critical Perspective*. [arXiv:2503.20783](https://arxiv.org/abs/2503.20783). Dr.GRPO, Table 4.
+8. MiniMax. *MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*. [arXiv:2506.13585](https://arxiv.org/abs/2506.13585). CISPO, Figure 2.
