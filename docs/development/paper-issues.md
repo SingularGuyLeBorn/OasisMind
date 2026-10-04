@@ -229,3 +229,13 @@
 - **olmes-repo-3** per-task JSON 示例把 `hellaswag` 拼成 `hellasag`，照抄示例可能导致任务查找失败. 求证结果:
 - **olmes-repo-4** ARC 的 OLMES 默认同时运行 multiple-choice 与 cloze 协议并报告较高者，包含协议选择效应；跨模型比较必须固定相同协议，不能与单协议结果直接并列. 求证结果:
 - **olmes-repo-5** 外部 judge/API 版本和 Hugging Face 默认 revision 没有被仓库提交号一并冻结；只固定 OLMES 代码提交仍不足以完全复现实验. 求证结果:
+
+### Signal and Noise (arXiv 2507.13659)
+
+解析: `content/olmo/04-数据与评测/signal-and-noise/signal-and-noise-analysis.md`.
+
+- **signal-and-noise-1** signal 用全体模型最大值与最小值的极差定义；单个离群或失败模型会显著抬高 SNR，即使大多数候选仍近乎并列. 求证结果:
+- **signal-and-noise-2** noise 的相对标准差以均值作分母，均值接近零时不稳定；末期窗口内尚存的真实趋势也会被计入噪声. 求证结果:
+- **signal-and-noise-3** SNR 与 decision accuracy 的相关性约为 R=0.653、R²=0.426，只是中等相关，不能单独作为一次昂贵训练决策的充分证据. 求证结果:
+- **signal-and-noise-4** 过滤低 SNR 子任务会提高预测稳定性，但同时改变能力和领域覆盖；稳定性提升不等于 construct validity 提升. 求证结果:
+- **signal-and-noise-5** Decision Accuracy 对所有方案对等权；第一、第二名互换和选到最差方案在指标中的权重相同，但实际决策代价通常不同. 求证结果:
