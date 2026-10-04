@@ -64,7 +64,13 @@
 ## 4. 图片修复 (次优先)
 
 - 背景: 部分图片在提交时已是全零字节 (LFS 指针里的 sha256 是零文件的), 只能从用户 GitHub 仓库按 (文件名, 大小) 找原图. 脚本 store `img_gh.py`, 待修清单 `img_bad.txt` (453 条, 路径相对 `content/`).
-- 现状: 已恢复 119 张 (cs336 下, 工作区显示 `M`, 未提交); 脚本已停, 没跑完. 续跑 `img_gh.py` (有 `gh_trees.json` 缓存), 跑完看 `img_gh_fail.txt`, 找不到原图的按原文重画或删引用. 提交前抽查恢复图能打开且非全零.
+- 17:08 全仓重扫 (store `img_audit.py`, 结果 `img_audit.txt`, 以它为准, `img_bad.txt` 已过时): 6961 个图片文件, 坏 288 个, 另有 9 处引用断链.
+  - 全零 198: llm-guide 191 (大语言模型架构全景图 36, LLM技术与ICL 20, 2023年AI-Agent调研 20, Jeff-Dean演讲 20, OPD 05-07, MLA 工程实现等), deepseek 5 (`04-开源仓库/3fs/images/`, 从 deepseek-ai/3FS 仓库文档重新下载), cs336 2.
+  - 内容错位 89 (扩展名是图, 内容是 Python/JS/msgpack, 写入时磁盘问题造成, 和 HEAD 一致): cs336 71, llm-guide 18. 同样只能从 GitHub 找回原图.
+  - 文件头清零 1: llm-guide `05-Jeff-Dean演讲/images/image_3.webp`.
+  - 断链 9: `qwen2-vl-bi.md` 7 处 MinerU 占位名 (`Screenshot_1`, `Screen_4` 等), llm-guide 2 处 (`/icons/robot.svg`, 失效的 `/uploads/llm-guide/...fig-001.jpg`).
+  - 扩展名与格式不符 35 (llm-guide, 能显示, 顺手改名).
+- 已恢复 119 张 (cs336, 工作区 `M`, 复扫全部有效, 未提交). 续跑 `img_gh.py` (有 `gh_trees.json` 缓存) 处理上面 288 个, 找不到原图的按原文重画或删引用, 修完重跑 `img_audit.py` 直到全 0.
 
 ## 5. 暂停 / 旧待办
 
