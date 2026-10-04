@@ -1,210 +1,356 @@
 ---
-title: "05 · TRPO:信任域策略优化"
+title: "05 · TRPO: 信任域策略优化"
 published: true
-tags: ["TRPO", "PPO", "RLHF", "信任域", "策略梯度"]
-excerpt: "TRPO(Trust Region Policy Optimization)把策略更新关进平均 KL 球:球内最大化替代目标 L,球外不保证真实回报 \\eta 跟着涨."
+tags: ["TRPO", "PPO", "信任域", "自然梯度", "共轭梯度", "策略梯度"]
+excerpt: "TRPO 从性能差恒等式出发, 证明带 KL 罚的替代目标是真实回报的下界, 再把罚项改成平均 KL 约束, 用共轭梯度加线搜索求解. PPO 的裁剪目标是它的一阶近似."
 ---
-# 05 TRPO:信任域策略优化
+# 05 TRPO: 信任域策略优化
 
-TRPO(Trust Region Policy Optimization)把策略更新关进平均 KL 球:球内最大化替代目标 $L$,球外不保证真实回报 $\eta$ 跟着涨.Schulman,Levine,Moritz,Jordan,Abbeel 写在 2015 年 ICML([arXiv:1502.05477](https://arxiv.org/abs/1502.05477)),实验是 MuJoCo 游泳,跳跃,走路和 Atari 像素,半径一律 $\delta=0.01$.公式从 Kakade–Langford 的性能差恒等式走到替代目标 $L_\pi(\tilde\pi)$,再落到平均 KL 与共轭梯度加线搜索.邻居 [04-PPO](../04-PPO/04-PPO.md) 用 clip 近似这个球,不再解约束,不算 Fisher.不是 PPO.LLM-RLHF 几乎不跑 TRPO.不是 GRPO,不是 GSPO.
+> 相关阅读: [04-PPO](../04-PPO/04-PPO.md) · [02-GRPO](../02-GRPO/02-GRPO.md) · [4.4.0 强化学习的数学原理](../../4.4.0-强化学习的数学原理/4.4.0-强化学习的数学原理.md)
 
-## 1. 性能差写在新策略轨迹上
+## 太长不看版
 
-无限折扣 MDP 里,策略 $\pi$ 的性能是期望折扣回报
+- TRPO (Schulman et al., ICML 2015, arXiv:1502.05477) 解决的问题是: 策略梯度给出了方向, 但没说一步能走多远; 步子太大, 基于旧数据的估计失效, 真实回报可能大幅下降.
+- 理论部分: 由 Kakade–Langford 的性能差恒等式得到替代目标 $L_\pi(\tilde\pi)$, 它与真实回报 $\eta$ 在旧策略处一阶相等; TRPO 证明 $\eta(\tilde\pi)\ge L_\pi(\tilde\pi)-C\,D_{\mathrm{KL}}^{\max}(\pi,\tilde\pi)$, $C=4\epsilon\gamma/(1-\gamma)^2$, 每轮最大化右边就能保证 $\eta$ 不降.
+- 实用算法做了三处近似: 罚项改为硬约束 (理论的 $C$ 让步长小到不可用), 逐状态最大 KL 改为平均 KL (约束条数等于状态数), 忽略优势的估计误差.
+- 求解: 目标一阶展开, KL 二阶展开, 用共轭梯度解 $Ax=g$ ($A$ 为 Fisher 矩阵, 只需 Fisher–向量积), 按 $\beta=\sqrt{2\delta/s^\top As}$ 定最大步长, 再线搜索确认目标上升且 KL 不超限.
+- 实验: 所有任务 $\delta=0.01$. MuJoCo 的 Swimmer, Hopper, Walker 上, single path 和 vine 都学会了游泳, 跳跃和行走; 固定惩罚的自然梯度在 Hopper 和 Walker 上只学会站立. Atari 7 个游戏用同一套 33500 参数的卷积策略, 部分游戏超过 DQN.
+- PPO 用比率裁剪代替 KL 约束, 去掉了共轭梯度和 Fisher–向量积. LLM 的 RLHF 走的是 PPO 这条线; TRPO 的价值在于给出了「为什么要限制步长」的理论依据.
 
-$$
-\eta(\pi)=\mathbb{E}_{s_0,a_0,\dots}\Bigl[\sum_{t=0}^{\infty}\gamma^t r(s_t)\Bigr],\qquad
-s_0\sim\rho_0,\; a_t\sim\pi(\cdot|s_t). \tag{1}
-$$
+## 1. 问题: 步长该多大
 
-$Q_\pi$,$V_\pi$,优势 $A_\pi=Q_\pi-V_\pi$ 按标准定义.Kakade 与 Langford(2002)给出新旧策略的性能差恒等式(TRPO 式 (1),附录 A 有证明):
+### 1.1 设定
 
-$$
-\eta(\tilde\pi)=\eta(\pi)+\mathbb{E}_{\tau\sim\tilde\pi}\Bigl[\sum_{t=0}^{\infty}\gamma^t A_\pi(s_t,a_t)\Bigr]. \tag{2}
-$$
-
-期望写在**新**策略 $\tilde\pi$ 的轨迹上,优势却是**旧**策略 $\pi$ 的.改写成未归一化折扣访问 $\rho_{\tilde\pi}(s)=\sum_{t\ge0}\gamma^t P(s_t=s\mid\tilde\pi)$,就是
+无限时域折扣 MDP $(\mathcal{S},\mathcal{A},P,r,\rho_0,\gamma)$, 随机策略 $\pi$ 的性能是期望折扣回报
 
 $$
-\eta(\tilde\pi)=\eta(\pi)+\sum_s\rho_{\tilde\pi}(s)\sum_a\tilde\pi(a|s)A_\pi(s,a). \tag{3}
+\eta(\pi)=\mathbb{E}_{s_0,a_0,\ldots}\Bigl[\sum_{t=0}^{\infty}\gamma^t r(s_t)\Bigr],\qquad s_0\sim\rho_0,\;a_t\sim\pi(\cdot\mid s_t),\;s_{t+1}\sim P(\cdot\mid s_t,a_t). \tag{1}
 $$
 
-每个状态上若 $\sum_a\tilde\pi(a|s)A_\pi(s,a)\ge0$,精确策略迭代会单调不降:取 $\tilde\pi(s)=\arg\max_a A_\pi(s,a)$ 就是经典策略迭代.麻烦在近似.估计一有噪声,总会有些状态的期望优势是负的;$\rho_{\tilde\pi}$ 又依赖未知的 $\tilde\pi$.直接优化式 (3) 是先有鸡还是先有蛋.
+$Q_\pi$, $V_\pi$ 按标准定义, 优势 $A_\pi(s,a)=Q_\pi(s,a)-V_\pi(s)$.
 
-附录 A 的 Lemma 1 把式 (2) 写成望远镜.由 $A_\pi(s,a)=\mathbb{E}_{s'}[r(s)+\gamma V_\pi(s')-V_\pi(s)]$,把 $\gamma^t A_\pi(s_t,a_t)$ 沿 $\tilde\pi$ 的轨迹求和,$V_\pi(s_t)$ 与 $\gamma V_\pi(s_{t+1})$ 错开一项,中间全消,只剩 $-V_\pi(s_0)+\sum_t\gamma^t r(s_t)$.对 $s_0$ 取期望就是 $-\eta(\pi)+\eta(\tilde\pi)$.恒等式不是拍出来的,是 $A=Q-V$ 沿轨迹展开的会计恒等.它精确,但不自动可优化:采样分布绑在未知的 $\tilde\pi$ 上.
+### 1.2 三个难点
 
-## 2. 替代目标:把访问分布冻在旧策略
+1. **方向有了, 步长没有.** 策略梯度是 $\eta$ 在当前参数处的一阶信息. 用固定学习率沿梯度走, 策略分布可能变化很大, 新策略访问的状态和旧数据完全不同.
+2. **参数距离不等于策略距离.** 同样大小的 $\Delta\theta$, 在网络的不同位置对输出分布的影响差别很大. 用 $\|\Delta\theta\|_2$ 限步长 (即普通梯度上升) 不能反映策略实际改变了多少.
+3. **无梯度方法在大策略上失效.** 论文引言提到, CEM, CMA 这类无梯度方法在许多问题上效果好, 也容易实现, 但样本复杂度随参数量上升, 难以处理几万参数的神经网络策略.
 
-TRPO 式 (3) 把 $\rho_{\tilde\pi}$ 换成 $\rho_\pi$,得到替代目标
+TRPO 的回答: 用 KL 散度度量策略之间的距离, 在 KL 不超过 $\delta$ 的范围内最大化一个可以用旧数据估计的目标.
 
-$$
-L_\pi(\tilde\pi)=\eta(\pi)+\sum_s\rho_\pi(s)\sum_a\tilde\pi(a|s)A_\pi(s,a). \tag{4}
-$$
+## 2. 性能差恒等式与替代目标
 
-它假装策略改了之后,智能体还在旧策略常去的地方转.$\tilde\pi$ 离 $\pi$ 远时,这个假装会破.参数化策略 $\pi_\theta$ 上,替代与真实目标在旧点一阶相切(Kakade & Langford;TRPO 式 (4)):
+### 2.1 恒等式
 
-$$
-L_{\pi_{\theta_0}}(\pi_{\theta_0})=\eta(\pi_{\theta_0}),\qquad
-\nabla_\theta L_{\pi_{\theta_0}}(\pi_\theta)\big|_{\theta=\theta_0}
-=\nabla_\theta\eta(\pi_\theta)\big|_{\theta=\theta_0}. \tag{5}
-$$
-
-沿 $L$ 走一小步,$\eta$ 也会涨.式 (5) 不告诉步子能迈多大.Kakade 与 Langford 的保守策略迭代先解 $\pi'=\arg\max L_{\pi_{\mathrm{old}}}(\pi')$,再把新策略写成混合物
+Kakade 与 Langford (2002) 给出新旧策略的性能差 (TRPO 式 (1), 附录 A 有证明):
 
 $$
-\pi_{\mathrm{new}}(a|s)=(1-\alpha)\pi_{\mathrm{old}}(a|s)+\alpha\pi'(a|s). \tag{6}
+\eta(\tilde\pi)=\eta(\pi)+\mathbb{E}_{s_0,a_0,\ldots\sim\tilde\pi}\Bigl[\sum_{t=0}^{\infty}\gamma^tA_\pi(s_t,a_t)\Bigr]. \tag{2}
 $$
 
-下界是 $\eta(\pi_{\mathrm{new}})\ge L_{\pi_{\mathrm{old}}}(\pi_{\mathrm{new}})-\frac{2\varepsilon\gamma}{(1-\gamma)^2}\alpha^2$,其中 $\varepsilon$ 是 $\pi'$ 相对旧优势的最大期望绝对值.混合物在深度网络里不好用:策略是 $\theta$ 的非线性映射,不是两个分布的凸组合旋钮.TRPO 第 3 节把 $\alpha$ 换成任意随机策略之间的全变差 $D_{\mathrm{TV}}^{\max}$,再换成 KL,保证才从「只对混合物成立」扩到神经网络策略.
+期望在新策略 $\tilde\pi$ 的轨迹上取, 优势却属于旧策略 $\pi$. 证明只用到 $A_\pi(s,a)=\mathbb{E}_{s'}[r(s)+\gamma V_\pi(s')-V_\pi(s)]$: 沿 $\tilde\pi$ 的轨迹把 $\gamma^tA_\pi(s_t,a_t)$ 加起来, $\gamma^{t+1}V_\pi(s_{t+1})$ 和下一项的 $-\gamma^{t+1}V_\pi(s_{t+1})$ 相消, 只剩 $-V_\pi(s_0)+\sum_t\gamma^tr(s_t)$, 对 $s_0$ 取期望就是 $\eta(\tilde\pi)-\eta(\pi)$.
 
-定理 1:令 $\alpha=D_{\mathrm{TV}}^{\max}(\pi_{\mathrm{old}},\pi_{\mathrm{new}})$,$\varepsilon=\max_{s,a}|A_\pi(s,a)|$,则
-
-$$
-\eta(\pi_{\mathrm{new}})\ge L_{\pi_{\mathrm{old}}}(\pi_{\mathrm{new}})-\frac{4\varepsilon\gamma}{(1-\gamma)^2}\alpha^2. \tag{7}
-$$
-
-附录 A 用耦合讲清 $\alpha^2$ 从哪来.两个策略可以耦合成一对动作 $(a,\tilde a)$,使得 $P(a\neq\tilde a|s)\le\alpha$.$L$ 只记账「第一次分道」带来的优势;$\eta$ 与 $L$ 的误差来自两次及以上的分道,于是余项是 $O(\alpha^2)$.全变差 $\alpha$ 正好是「能耦合成以 $1-\alpha$ 概率同动作」的那个距离.再用 $D_{\mathrm{TV}}(p\|q)^2\le D_{\mathrm{KL}}(p\|q)$(Pollard),得到论文式 (9):
+记未归一化的折扣访问频率 $\rho_\pi(s)=\sum_{t\ge0}\gamma^tP(s_t=s\mid\pi)$, 式 (2) 改写为对状态求和:
 
 $$
-\eta(\tilde\pi)\ge L_\pi(\tilde\pi)-C\,D_{\mathrm{KL}}^{\max}(\pi,\tilde\pi),\qquad
-C=\frac{4\varepsilon\gamma}{(1-\gamma)^2}. \tag{8}
+\eta(\tilde\pi)=\eta(\pi)+\sum_s\rho_{\tilde\pi}(s)\sum_a\tilde\pi(a\mid s)A_\pi(s,a). \tag{3}
 $$
 
-Algorithm 1 每轮最大化 $M_i(\pi)=L_{\pi_i}(\pi)-C\,D_{\mathrm{KL}}^{\max}(\pi_i,\pi)$.这是 minorization-maximization:$M_i(\pi_i)=\eta(\pi_i)$,且 $\eta(\pi)\ge M_i(\pi)$ 处处成立,于是
+如果每个状态上 $\sum_a\tilde\pi(a\mid s)A_\pi(s,a)\ge0$, 则 $\eta$ 不降. 精确策略迭代取 $\tilde\pi(s)=\arg\max_aA_\pi(s,a)$, 就是这种情况. 近似场景下, 估计误差和函数近似误差使得总有一些状态的期望优势为负; 而且 $\rho_{\tilde\pi}$ 依赖于还没确定的 $\tilde\pi$, 式 (3) 无法直接优化.
+
+### 2.2 替代目标
+
+把 $\rho_{\tilde\pi}$ 换成 $\rho_\pi$ (TRPO 式 (3)):
 
 $$
-\eta(\pi_{i+1})-\eta(\pi_i)\ge M_i(\pi_{i+1})-M_i(\pi_i). \tag{9}
+L_\pi(\tilde\pi)=\eta(\pi)+\sum_s\rho_\pi(s)\sum_a\tilde\pi(a\mid s)A_\pi(s,a). \tag{4}
 $$
 
-抬 $M$ 就抬 $\eta$.理论步长由 $C$ 钉死.$\gamma=0.99$ 时 $(1-\gamma)^2=10^{-4}$,$C$ 再乘 $4\varepsilon\gamma$,优势只要有个位数,$\delta$ 量级的 KL 也会被罚到更新几乎不动.实践里这个 $C$ 不能当步长用.TRPO 第 4 节丢掉惩罚,改成硬约束.
-
-## 3. 平均 KL 球,不是逐状态最大 KL
-
-理论形态是每个状态都要满足的最大 KL 约束 $D_{\mathrm{KL}}^{\max}(\theta_{\mathrm{old}},\theta)\le\delta$.状态一多,约束条数跟状态空间一样大,数值上解不动.论文改用旧访问上的**平均** KL:
+$L_\pi$ 忽略了策略变化引起的状态分布变化. 对参数化策略 $\pi_\theta$, 它与 $\eta$ 在当前点一阶相等 (TRPO 式 (4)):
 
 $$
-\overline{D}_{\mathrm{KL}}^{\rho}(\theta_1,\theta_2)
-=\mathbb{E}_{s\sim\rho}\bigl[D_{\mathrm{KL}}\bigl(\pi_{\theta_1}(\cdot|s)\,\|\,\pi_{\theta_2}(\cdot|s)\bigr)\bigr]. \tag{10}
+L_{\pi_{\theta_0}}(\pi_{\theta_0})=\eta(\pi_{\theta_0}),\qquad\nabla_\theta L_{\pi_{\theta_0}}(\pi_\theta)\big|_{\theta=\theta_0}=\nabla_\theta\eta(\pi_\theta)\big|_{\theta=\theta_0}. \tag{5}
 $$
 
-实用更新(式 (12))是
+所以足够小的一步, 只要提高 $L$, 也会提高 $\eta$. 式 (5) 不告诉我们「足够小」是多小.
+
+### 2.3 手算: $L$ 漏掉了什么
+
+用一个两步的回合制例子 (取 $\gamma=1$, 恒等式在有限时域回合制下同样成立). 初始状态 $s_0$ 有两个动作: $a$ 进入 $s_1$, $b$ 进入 $s_2$. 在 $s_1$ 选 $x$ 得到奖励 1 并结束, 选 $y$ 得 0 并结束; $s_2$ 无论选什么都得 0 并结束.
+
+旧策略 $\pi$: $\pi(a\mid s_0)=0.5$, $\pi(x\mid s_1)=0.5$. 于是 $V_\pi(s_1)=0.5$, $V_\pi(s_2)=0$, $V_\pi(s_0)=0.25=\eta(\pi)$. 优势: $A_\pi(s_0,a)=0.5-0.25=0.25$, $A_\pi(s_0,b)=-0.25$, $A_\pi(s_1,x)=0.5$, $A_\pi(s_1,y)=-0.5$. 旧策略的访问频率 $\rho_\pi(s_0)=1$, $\rho_\pi(s_1)=\rho_\pi(s_2)=0.5$.
+
+新策略 $\tilde\pi$: $\tilde\pi(a\mid s_0)=0.8$, $\tilde\pi(x\mid s_1)=0.9$. 真实回报 $\eta(\tilde\pi)=0.8\times0.9=0.72$.
+
+- $s_0$ 上的期望优势: $0.8\times0.25+0.2\times(-0.25)=0.15$.
+- $s_1$ 上的期望优势: $0.9\times0.5+0.1\times(-0.5)=0.4$.
+- 替代目标 (式 (4)): $L_\pi(\tilde\pi)=0.25+1\times0.15+0.5\times0.4=0.60$.
+- 恒等式 (式 (3)) 用新策略的访问频率 $\rho_{\tilde\pi}(s_1)=0.8$: $0.25+0.15+0.8\times0.4=0.72$, 与真实回报一致.
+
+差值 $0.12=(0.8-0.5)\times0.4$, 等于「$s_1$ 访问频率的变化」乘以「$s_1$ 上策略改进带来的期望优势」. 如果只改 $s_0$ ($\tilde\pi(x\mid s_1)$ 保持 0.5), $s_1$ 上期望优势为 0, $L=\eta=0.4$; 如果只改 $s_1$, 访问频率不变, $L=\eta$. 误差只在两处都变时出现, 是两个变化量的乘积, 这正是 §3 中误差项为 $\alpha^2$ 阶的直观来源.
+
+### 2.4 保守策略迭代
+
+Kakade 与 Langford 的保守策略迭代给出了显式下界. 令 $\pi'=\arg\max_{\pi'}L_{\pi_{\mathrm{old}}}(\pi')$, 新策略取混合
 
 $$
-\max_\theta L_{\theta_{\mathrm{old}}}(\theta)
-\quad\text{s.t.}\quad
-\overline{D}_{\mathrm{KL}}^{\rho_{\theta_{\mathrm{old}}}}(\theta_{\mathrm{old}},\theta)\le\delta. \tag{11}
+\pi_{\mathrm{new}}(a\mid s)=(1-\alpha)\pi_{\mathrm{old}}(a\mid s)+\alpha\pi'(a\mid s), \tag{6}
 $$
 
-$\delta$ 是超参,实验里 locomotion 和 Atari 都取 $0.01$.平均代替最大是启发式.Cart-pole 上他们拿得动最大 KL 版本,曲线接近,平均约束没有把保证彻底拆掉.自然梯度(Kakade 2002)把同一套一阶 $L$,二阶 KL 写成固定惩罚系数,步长当超参扫.TRPO 每步都强制落在球里.Hopper 和 Walker 上,扫过的自然梯度学不会往前跳,往前走;带硬约束的 TRPO 可以.
+则 $\eta(\pi_{\mathrm{new}})\ge L_{\pi_{\mathrm{old}}}(\pi_{\mathrm{new}})-\frac{2\epsilon\gamma}{(1-\gamma)^2}\alpha^2$, 其中 $\epsilon=\max_s|\mathbb{E}_{a\sim\pi'}[A_\pi(s,a)]|$. 这个界只对混合策略成立. 神经网络策略是参数的非线性函数, 一般写不成两个分布的凸组合, 所以需要把界推广到任意随机策略.
 
-KL 不对称.约束写的是 $D_{\mathrm{KL}}(\pi_{\mathrm{old}}\Vert\pi_{\mathrm{new}})$,用旧策略当参考去量新策略.实现时左右顺序不要写反.
+## 3. 一般策略的单调改进保证
 
-两点伯努利上可以把 $0.01$ 换成能看见的数.旧策略 $\pi_{\mathrm{old}}=(0.6,0.4)$,新策略 $\pi=(0.7,0.3)$,则
+### 3.1 定理 1
+
+TRPO 把混合系数 $\alpha$ 换成两个策略之间的最大总变差 $D_{\mathrm{TV}}^{\max}(\pi,\tilde\pi)=\max_sD_{\mathrm{TV}}(\pi(\cdot\mid s)\|\tilde\pi(\cdot\mid s))$, 其中 $D_{\mathrm{TV}}(p\|q)=\frac12\sum_i|p_i-q_i|$.
+
+**定理 1.** 令 $\alpha=D_{\mathrm{TV}}^{\max}(\pi_{\mathrm{old}},\pi_{\mathrm{new}})$, $\epsilon=\max_{s,a}|A_\pi(s,a)|$, 则
 
 $$
-D_{\mathrm{KL}}(\pi_{\mathrm{old}}\|\pi)=0.6\log\frac{0.6}{0.7}+0.4\log\frac{0.4}{0.3}\approx 0.022.
+\eta(\pi_{\mathrm{new}})\ge L_{\pi_{\mathrm{old}}}(\pi_{\mathrm{new}})-\frac{4\epsilon\gamma}{(1-\gamma)^2}\alpha^2. \tag{7}
 $$
 
-已经大于 $0.01$,线搜索会把步长再缩小.若只挪到 $(0.65,0.35)$,KL 大约 $0.005$,落在球内.连续高斯同理:均值挪得太远,对角方差再聪明也出球.这个算术不是论文表格,只用来看 $\delta=0.01$ 有多紧.
+附录 A 的证明思路: 总变差为 $\alpha$ 的两个分布可以耦合成一对随机变量, 以概率 $1-\alpha$ 取相同值. 把两个策略这样耦合后, $L$ 只计入两者第一次选不同动作时带来的优势; $\eta$ 与 $L$ 的差来自两次及以上的分歧, 所以误差是 $O(\alpha^2)$. 具体地, 第 $t$ 步之前出现过分歧的概率不超过 $1-(1-\alpha)^t$, 每步期望优势的差不超过 $4\alpha(1-(1-\alpha)^t)\epsilon$, 对 $t$ 加权求和得到
 
-![无约束一步与平均 KL 球](./images/fig-trpo-trust-region.png)
+$$
+|\eta(\tilde\pi)-L_\pi(\tilde\pi)|\le\frac{4\alpha^2\gamma\epsilon}{(1-\gamma)(1-\gamma(1-\alpha))}\le\frac{4\alpha^2\gamma\epsilon}{(1-\gamma)^2}. \tag{8}
+$$
 
-> 图 1:左列无约束抬 $\eta$,步子过大则近似失效,真实回报掉;右列最大化 $L$,但平均 KL 不得超过 $\delta$,新策略留在球内.
+附录 B 还给了一个基于扰动理论的证明, 结论相同.
+
+与 §2.4 的保守策略迭代界对比, 有两处变化. 系数从 $2\epsilon\gamma$ 变成 $4\epsilon\gamma$; $\epsilon$ 的定义从「每个状态上按 $\pi'$ 取期望后的优势绝对值的最大值」放宽为「所有状态–动作对上优势绝对值的最大值」, 后者不小于前者. 换来的是适用范围: 定理 1 对任意两个随机策略成立, 不要求新策略是混合策略. 对混合策略 $(1-\alpha)\pi+\alpha\pi'$, 每个状态上的总变差不超过 $\alpha$, 定理 1 直接覆盖这种情况.
+
+### 3.2 换成 KL
+
+利用 $D_{\mathrm{TV}}(p\|q)^2\le D_{\mathrm{KL}}(p\|q)$ (Pollard, 2000), 记 $D_{\mathrm{KL}}^{\max}(\pi,\tilde\pi)=\max_sD_{\mathrm{KL}}(\pi(\cdot\mid s)\|\tilde\pi(\cdot\mid s))$, 得到 TRPO 式 (9):
+
+$$
+\eta(\tilde\pi)\ge L_\pi(\tilde\pi)-C\,D_{\mathrm{KL}}^{\max}(\pi,\tilde\pi),\qquad C=\frac{4\epsilon\gamma}{(1-\gamma)^2}. \tag{9}
+$$
+
+### 3.3 MM 算法
+
+论文 Algorithm 1: 每轮计算全部优势值, 求解 $\pi_{i+1}=\arg\max_\pi M_i(\pi)$, 其中 $M_i(\pi)=L_{\pi_i}(\pi)-C\,D_{\mathrm{KL}}^{\max}(\pi_i,\pi)$. 由式 (9), $\eta(\pi_{i+1})\ge M_i(\pi_{i+1})$; 又 $\eta(\pi_i)=M_i(\pi_i)$. 两式相减:
+
+$$
+\eta(\pi_{i+1})-\eta(\pi_i)\ge M_i(\pi_{i+1})-M_i(\pi_i)\ge0. \tag{10}
+$$
+
+最后一个不等号成立是因为 $\pi_{i+1}$ 是 $M_i$ 的最大值点, 至少不比 $\pi_i$ 差. 这是一种 minorization-maximization 算法, EM 也属于这一类: $M_i$ 处处不高于 $\eta$, 并在 $\pi_i$ 处相等. 这里假设优势值精确已知.
+
+### 3.4 手算: 理论系数有多大
+
+取 $\gamma=0.99$, 优势的最大绝对值 $\epsilon=1$. $C=4\times1\times0.99/(0.01)^2=39600$. 若新旧策略的最大 KL 是 $0.01$, 罚项为 $396$. 在优势绝对值不超过 1 的问题里, $L$ 的提升量 $\sum_s\rho_\pi(s)\sum_a\tilde\pi(a\mid s)A_\pi(s,a)$ 的量级受 $\frac{1}{1-\gamma}=100$ 限制, 一次小幅更新带来的提升远小于 396. 要让 $M_i$ 上升, KL 必须小到 $10^{-5}$ 量级, 策略几乎不动. 这就是论文说的「按理论推荐的罚系数, 步长会很小」.
+
+## 4. 实用算法
+
+### 4.1 罚项改约束, 最大 KL 改平均 KL
+
+罚系数 $C$ 太大, 而且很难在不同问题间稳定地选一个系数. TRPO 改用 KL 约束 (信任域), 先写成最大 KL 形式 (TRPO 式 (11)):
+
+$$
+\max_\theta L_{\theta_{\mathrm{old}}}(\theta)\quad\text{s.t.}\quad D_{\mathrm{KL}}^{\max}(\theta_{\mathrm{old}},\theta)\le\delta. \tag{11}
+$$
+
+这要求每个状态都满足约束, 约束条数等于状态数, 数值上不可解. 论文改用在旧策略访问分布上平均的 KL:
+
+$$
+\overline{D}_{\mathrm{KL}}^{\rho}(\theta_1,\theta_2)=\mathbb{E}_{s\sim\rho}\bigl[D_{\mathrm{KL}}(\pi_{\theta_1}(\cdot\mid s)\|\pi_{\theta_2}(\cdot\mid s))\bigr], \tag{12}
+$$
+
+实际求解的问题是 (TRPO 式 (12))
+
+$$
+\max_\theta L_{\theta_{\mathrm{old}}}(\theta)\quad\text{s.t.}\quad\overline{D}_{\mathrm{KL}}^{\rho_{\theta_{\mathrm{old}}}}(\theta_{\mathrm{old}},\theta)\le\delta. \tag{13}
+$$
+
+平均 KL 是启发式近似. 论文在 Cart-pole 上实现了最大 KL 版本作对照, 它学得稍慢 (约束更严), 但整体效果接近, 说明平均约束与理论上的最大约束作用相似. 注意 KL 的方向: 旧策略在前, $D_{\mathrm{KL}}(\pi_{\mathrm{old}}\|\pi_\theta)$, 实现时不要写反.
+
+### 4.2 用样本估计
+
+把式 (13) 展开: 先把 $\sum_s\rho_{\theta_{\mathrm{old}}}(s)[\cdot]$ 换成 $\frac{1}{1-\gamma}\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}}}[\cdot]$; 再把 $A_{\theta_{\mathrm{old}}}$ 换成 $Q_{\theta_{\mathrm{old}}}$, 这只让目标差一个常数, 因为 $\sum_a\pi_\theta(a\mid s)V(s)=V(s)$ 与 $\theta$ 无关; 最后用重要性采样替换对动作的求和, 采样分布记为 $q$. 得到 TRPO 式 (14):
+
+$$
+\max_\theta\;\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}},\,a\sim q}\Bigl[\frac{\pi_\theta(a\mid s)}{q(a\mid s)}Q_{\theta_{\mathrm{old}}}(s,a)\Bigr]\quad\text{s.t.}\quad\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}}}\bigl[D_{\mathrm{KL}}(\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)\|\pi_\theta(\cdot\mid s))\bigr]\le\delta. \tag{14}
+$$
+
+### 4.3 Single path 与 vine
+
+**Single path.** 从 $s_0\sim\rho_0$ 出发, 用 $\pi_{\theta_{\mathrm{old}}}$ 跑轨迹, 所以 $q=\pi_{\theta_{\mathrm{old}}}$. 每个 $(s_t,a_t)$ 的 $Q$ 用这条轨迹之后的折扣回报估计. 不需要把环境重置到任意状态, 可以直接在实体系统上采样.
+
+**Vine.** 先跑一批「主干」轨迹, 从中选 $N$ 个状态作为 rollout 集合. 每个状态 $s_n$ 采 $K$ 个动作 $a_{n,k}\sim q(\cdot\mid s_n)$, 每个动作接一段短 rollout 估计 $\hat{Q}(s_n,a_{n,k})$. 同一状态的 $K$ 条 rollout 使用相同的随机数序列 (common random numbers), 降低 $Q$ 值之差的方差. 论文发现连续控制上 $q=\pi_{\theta_i}$ 效果好, Atari 上均匀分布有时探索更好. 动作空间小时可以对每个动作都做 rollout:
+
+$$
+L_n(\theta)=\sum_{k=1}^{K}\pi_\theta(a_k\mid s_n)\hat{Q}(s_n,a_k). \tag{15}
+$$
+
+动作空间大或连续时, 用自归一化重要性采样:
+
+$$
+L_n(\theta)=\frac{\sum_{k=1}^{K}\frac{\pi_\theta(a_{n,k}\mid s_n)}{\pi_{\theta_{\mathrm{old}}}(a_{n,k}\mid s_n)}\hat{Q}(s_n,a_{n,k})}{\sum_{k=1}^{K}\frac{\pi_\theta(a_{n,k}\mid s_n)}{\pi_{\theta_{\mathrm{old}}}(a_{n,k}\mid s_n)}}. \tag{16}
+$$
+
+自归一化让 $Q$ 值不需要减基线: $Q$ 整体加一个常数, 式 (16) 也只加同一个常数, 梯度不变.
+
+Vine 的优势估计方差低得多, 代价是模拟器调用次数多, 并且必须能把系统重置到指定状态, 一般只能在仿真里用. 对 LLM 而言, 状态是前缀, 从任意前缀重新采样在技术上可行 (把前缀重新喂给模型即可), 但每个分支都是一次完整生成, 成本和 vine 在仿真里的模拟器调用相当.
+
+### 4.4 一轮迭代的步骤
+
+论文 §6 把实用算法归纳为反复执行三步:
+
+1. 用 single path 或 vine 采集一批状态–动作对, 并用蒙特卡洛方法估计它们的 $Q$ 值.
+2. 对样本求平均, 构造式 (14) 的目标和约束的估计.
+3. 近似求解这个约束优化问题, 更新策略参数 $\theta$. 求解方法是 §5 的共轭梯度加线搜索.
+
+论文同时列出了实用算法与理论之间的三处差距: 用 KL 约束代替罚项, 理由是罚系数 $C$ 会导致过小的步长; 用平均 KL 代替难以优化和估计的最大 KL; 忽略优势函数的估计误差. 第三处在 Kakade 与 Langford 的原始推导里有所处理, 论文为简单起见没有加入.
+
+### 4.5 手算: 一次实验要多少仿真
+
+按 §7.1 表格的 Hopper 设置, 每轮 1M 仿真步, 200 轮共 $2\times10^8$ 步. vine 每轮 14 分钟, 200 轮约 $14\times200/60\approx47$ 小时; single path 每轮 35 分钟, 约 117 小时. Walker 的 single path 每轮 100 分钟, 200 轮约 333 小时. Atari 的 vine 每轮约 400K 步, 500 轮约 $2\times10^8$ 步, 论文报告 16 核机器上约 30 小时. 这些耗时针对的是 2015 年的 CPU 实现, 用来说明样本量的级别: TRPO 每轮都丢弃旧数据重新采样, 总样本量与迭代次数成正比.
+
+## 5. 共轭梯度与线搜索
+
+### 5.1 近似问题
+
+目标在 $\theta_{\mathrm{old}}$ 处一阶展开, $g=\nabla_\theta L$; 平均 KL 二阶展开, 一阶项为 0 (KL 在 $\theta=\theta_{\mathrm{old}}$ 处取最小值 0):
+
+$$
+\overline{D}_{\mathrm{KL}}(\theta_{\mathrm{old}},\theta)\approx\frac12(\theta-\theta_{\mathrm{old}})^\top A(\theta-\theta_{\mathrm{old}}),\qquad A_{ij}=\frac{\partial^2}{\partial\theta_i\partial\theta_j}\overline{D}_{\mathrm{KL}}(\theta_{\mathrm{old}},\theta)\Big|_{\theta=\theta_{\mathrm{old}}}. \tag{17}
+$$
+
+$A$ 就是 Fisher 信息矩阵. 问题变为 $\max_s g^\top s$, s.t. $\frac12s^\top As\le\delta$. 由拉格朗日条件, 解的方向是 $s\propto A^{-1}g$. 令 $\theta=\theta_{\mathrm{old}}+\beta s$, 代入约束取等号, $\delta=\frac12\beta^2s^\top As$, 得最大步长
+
+$$
+\beta=\sqrt{\frac{2\delta}{s^\top As}}. \tag{18}
+$$
+
+### 5.2 只用 Fisher–向量积
+
+网络参数多时, $A$ 存不下, 更不能求逆. 共轭梯度法只需要能计算 $y\mapsto Ay$, 就能近似求解 $Ax=g$. 附录 C.1 给出高效算法: 策略先把输入映射到分布参数 $\mu_\theta(x)$, KL 写成 $\mathrm{kl}(\mu_\theta(x),\mu_{\mathrm{old}})$. 对 $\theta$ 求二阶导时, 含 $\mu$ 二阶导数的那一项在 $\theta=\theta_{\mathrm{old}}$ 处为 0 (因为此时 KL 对 $\mu$ 的一阶导为 0), 只剩
+
+$$
+A=J^\top MJ,\qquad J=\frac{\partial\mu}{\partial\theta},\quad M=\frac{\partial^2\mathrm{kl}}{\partial\mu\,\partial\mu}. \tag{19}
+$$
+
+$Jy$ 和 $J^\top z$ 分别是前向和反向自动微分, $M$ 对常见分布有简单的闭式. 也可以直接用通用的 Hessian–向量积对 $\overline{D}_{\mathrm{KL}}$ 求二阶, 实现更省事, 只是多算了那一项, 略慢.
+
+论文还说明了 Fisher 矩阵的估计方式: 对每个采样状态的 KL 求解析 Hessian 再平均, 而不是用 $\nabla\log\pi$ 外积的经验 Fisher. 解析估计在每个状态上对动作积分, 与那个状态实际采到的动作无关; 大规模时不用存稠密 Hessian, 也不用存整批的策略梯度. 实验里两种估计的策略改进速度相近.
+
+**代价.** 一次 Fisher–向量积的开销与算一次梯度相当. 论文取 CG 迭代 $k=10$, 更大的 $k$ 不会让策略改进更快. 朴素实现会把 90% 以上的计算花在 Fisher–向量积上. 由于 Fisher 矩阵只充当度量, 可以只在 10% 的数据上计算, 这样全部 Hessian–向量积的总开销约等于一次梯度. 论文的说法是, 共轭梯度加线搜索总体只比算一次梯度略贵.
+
+### 5.3 两类策略的 $M$
+
+附录 D 给出了实验用的两种策略参数化. 连续控制用高斯策略: 网络输出均值 $\mu_\theta(s)$, 标准差 $\sigma=\exp(r)$, $r$ 是与状态无关的参数向量. 单个维度上两个高斯的 KL 为
+
+$$
+D_{\mathrm{KL}}\bigl(\mathcal{N}(\mu_0,\sigma_0^2)\|\mathcal{N}(\mu,\sigma^2)\bigr)=\ln\frac{\sigma}{\sigma_0}+\frac{\sigma_0^2+(\mu_0-\mu)^2}{2\sigma^2}-\frac12. \tag{20}
+$$
+
+在 $\mu=\mu_0$, $\sigma=\sigma_0$ 处对 $\mu$ 求二阶导得 $1/\sigma_0^2$, 对 $\log\sigma$ 求二阶导得 2, 交叉项为 0. 所以式 (19) 里的 $M$ 是对角阵, 均值方向的权重是 $1/\sigma^2$: 探索噪声越小, 同样的均值移动对应的 KL 越大, 允许的步长越小. Atari 用分类分布 (factored categorical), 以概率向量 $p$ 为分布参数时 $M=\mathrm{diag}(1/p)$, 概率小的动作上同样的概率变化代价更高. 两种情况下 $M$ 都可以逐样本闭式计算, Fisher–向量积的主要开销是 $J$ 和 $J^\top$ 的两次自动微分.
+
+### 5.4 线搜索
+
+二阶近似不精确. 线搜索在非线性目标 $L_{\theta_{\mathrm{old}}}(\theta)-\mathcal{X}[\overline{D}_{\mathrm{KL}}(\theta_{\mathrm{old}},\theta)\le\delta]$ 上进行, $\mathcal{X}[\cdot]$ 在条件成立时为 0, 不成立时为 $+\infty$. 从式 (18) 的 $\beta$ 开始按指数缩小, 直到目标上升. 附录 C 写明, 不做线搜索时, 算法偶尔会迈出导致性能灾难性下降的大步. 线搜索只缩短步长, 方向保持 CG 给出的 $s$.
+
+### 5.5 实现
+
+```python
+def conjugate_gradient(fvp, g, iters=10, tol=1e-10):
+    x = torch.zeros_like(g)
+    r = g.clone()                 # 残差 g - A x, 初始 x = 0
+    p = g.clone()
+    rr = r @ r
+    for _ in range(iters):
+        Ap = fvp(p)
+        alpha = rr / (p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        rr_new = r @ r
+        if rr_new < tol:
+            break
+        p = r + (rr_new / rr) * p
+        rr = rr_new
+    return x
+
+def trpo_step(params, surrogate, mean_kl, fvp, delta=0.01, backtrack=0.5, max_tries=10):
+    g = flat_grad(surrogate(), params)
+    s = conjugate_gradient(fvp, g)
+    beta = torch.sqrt(2 * delta / (s @ fvp(s)))
+    old = flat_params(params)
+    L_old = surrogate().item()
+    for i in range(max_tries):
+        set_flat_params(params, old + (backtrack ** i) * beta * s)
+        if mean_kl().item() <= delta and surrogate().item() > L_old:
+            return True
+    set_flat_params(params, old)
+    return False
+```
+
+`fvp(v)` 计算 $Av$: 可以先算 `kl = mean_kl()`, 求 `grad_kl = autograd.grad(kl, params, create_graph=True)`, 再对 `(grad_kl * v).sum()` 求一次梯度, 这就是通用 Hessian–向量积的写法. 实践中常给 $A$ 加一个小的阻尼项 $\lambda I$ 保证数值稳定, 这一项论文正文没有提. `fvp` 只在一部分状态上计算即可, 对应 §5.2 的 10% 子采样.
+
+![共轭梯度求方向, 再线搜索收步长](./images/fig-trpo-cg-linesearch.png)
 
 **图 1 解析**
 
-- 两列都从冰蓝 $\pi_{\mathrm{old}}$ 出发.
-- 左:黄框 $\Delta\theta=\alpha\nabla\eta$,橙框 $\pi_{\mathrm{far}}$,虚线「approx fails」,底框 $\eta$ drops.
-- 右:黄框 maximize $L$,青绿框 mean KL $\le\delta$,底框 $\pi_{\mathrm{new}}$ inside.
-- 青绿框是平均 KL,不是逐状态最大 KL,也不是 PPO 的比率 clip 区间.
-- 图里没有坐标曲线.真实学习曲线看论文 Figure 4 / 5,不要用本图冒充.
+- 主链从左到右七个框: 黄框 `theta_old` 与优势 $A$; 蓝框 linearize $L$, 写 $g=\mathrm{grad}\,L$; 绿框 quadratic KL: Fisher $F$; 橙框 conjugate gradient: solve $Fx=g$; 青框 candidate direction $x$; 橙框 line search: shrink until mean KL $\le\delta$ and $L$ improves; 粉框 `theta_new`.
+- 线搜索框向下连到紫框 if KL too big: smaller alpha, 表示线搜索内部的回退, 数据流仍然走主链.
+- 图中的 $F$ 即本文的 $A$ (平均 KL 的 Hessian), 图中的 $x$ 即本文的 $s$. 图里没有 Adam 和 clip.
 
-![真实目标 η,替代目标 L,以及平均 KL 球](./images/fig-trpo-eta-l-kl-ball.png)
+## 6. 两个示意图
 
-> 图 2:上排从 Kakade 恒等式走到替代 $L$,一阶相切,再到真实 $\eta$;下排以 $\pi_{\mathrm{old}}$ 为球心,更新落在平均 KL 球内.虚线标 $O(\alpha^2)$ 缝和「球外不保证」.
+![无约束一步与平均 KL 信任域](./images/fig-trpo-trust-region.png)
 
 **图 2 解析**
 
-- 左上 Kakade:$\eta$ 的差等于新轨迹上旧优势的折扣和.
-- 「replace $\rho$」:$\rho_{\tilde\pi}$ 换成 $\rho_\pi$,才得到可在旧数据上估计的 $L$.
-- 黄框是式 (5).虚线 $O(\alpha^2)$ 对应式 (7) 的余项.
-- 下排冰蓝 $\pi_{\mathrm{old}}$ 是球心.紫框是式 (10)(11),不是坐标轴上画出来的圆.
-- 右下 $\theta_{\mathrm{new}}$ 两条进线:实线「可行」,虚线「只有球内才对 $\eta$ 安全」.
+- 左列标题 Unconstrained PG: 蓝框 $\pi_{\mathrm{old}}$, 经标注 unconstrained 的箭头到橙框 $\Delta\theta=\alpha\nabla\eta$, 再到深橙框 $\pi_{\mathrm{far}}$, 最后一段虚线标 approx fails, 指向红框 $\eta$ drops.
+- 右列标题 TRPO: 蓝框 $\pi_{\mathrm{old}}$ 到黄框 maximize $L$, 经标注 s.t. 的箭头到青框 mean $KL\le\delta$, 再到绿框 $\pi_{\mathrm{new}}$ inside.
+- 底注: 实际约束是平均 KL, 不是最大 KL.
+- 图中没有坐标曲线, 学习曲线见论文 Figure 4 (运动控制) 和附录 F 的 Figure 5 (Atari).
 
-第 6 节把可跑的算法收成三步,循环执行:用 single path 或 vine 采状态–动作对,并给每个对配上蒙特卡洛 $Q$;按样本平均拼出目标和约束;共轭梯度加线搜索近似求解,代价只比算一次梯度略高.理论和实现的对应也写在这一节:惩罚改约束,因为 $C$ 太死;最大 KL 改平均,因为约束太多;优势当精确,估计误差略去.
-
-展开 $L$ 并用重要性采样,得到式 (14).采样分布记作 $q$,目标里的优势可换成 $Q$(只差常数):因为 $\sum_a\pi(a|s)A(s,a)=0$,加回 $V(s)$ 不改变对 $\theta$ 的梯度.实现里常见「直接用 $Q$」就是这句话.
-
-$$
-\max_\theta\;
-\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}},\,a\sim q}
-\Bigl[\frac{\pi_\theta(a|s)}{q(a|s)}Q_{\theta_{\mathrm{old}}}(s,a)\Bigr]
-\quad\text{s.t.}\quad
-\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}}}
-\bigl[D_{\mathrm{KL}}(\pi_{\theta_{\mathrm{old}}}(\cdot|s)\,\|\,\pi_\theta(\cdot|s))\bigr]\le\delta. \tag{12}
-$$
-
-## 4. 单路径和 vine
-
-式 (12) 的期望换成样本.论文给两套估计,Figure 1 左右对照.
-
-**Single path.** 从 $s_0\sim\rho_0$ 出发,用 $\pi_{\theta_{\mathrm{old}}}$ 滚一条轨迹,于是 $q=\pi_{\theta_{\mathrm{old}}}$.每个 $(s_t,a_t)$ 上的 $Q$ 用这条轨迹往后的折扣回报.不用把环境复位到任意状态,真机也能采.这是后来 on-policy 实现的默认形态.
-
-**Vine.** 先滚一批「主干」轨迹,从上面抠 $N$ 个状态当 rollout set.每个 $s_n$ 再采 $K$ 个动作,各跟一条短 rollout 估 $\hat Q$.连续控制上 $q=\pi_{\theta_i}$ 够用;Atari 离散动作上均匀 $q$ 有时探索更好.同一组 rollout 共用随机数(common random numbers)压 $Q$ 差的方差.动作空间小还可以对每个动作都 rollout.大空间用自归一化重要性采样(式 (16)),分子分母都是 $\pi_\theta/\pi_{\theta_{\mathrm{old}}}$ 加权的 $\hat Q$,不必再减 baseline.
-
-Vine 的优势估计更稳,但模拟器调用多,而且必须能把系统复位到指定状态,基本只活在仿真里.Single path 样本效率差一些,不依赖复位.论文 locomotion 两套都能学出步态;Atari 上各有输赢,没有「vine 全面更好」.
-
-附录 D 把策略写成「网络输出分布参数 $\mu$,再从 $p(a|\mu)$ 采样」.连续控制是对角高斯:全连接层出均值,对数标准差 $r$ 与状态无关,单独一套参数,$\pi=\mathcal{N}(\mathrm{NN}(s),\exp(r))$.Atari 是分解的离散动作,每个因子一块 softmax,拼成 $\mu$.附录 C.1 的 Fisher–向量积就建在 $\mu$ 这一层:$D_{\mathrm{KL}}$ 对 $\theta$ 的二阶里,$\mu$ 的二阶项在 $\theta=\theta_{\mathrm{old}}$ 处为零,只剩 $J^\top MJ$.泛用自动微分去算 $\overline{D}_{\mathrm{KL}}$ 的 Hessian–向量积也能跑,只是多算了那一项,实现省事,稍慢.
-
-## 5. 共轭梯度求出方向,线搜索收回步长
-
-每步要解式 (11) 这种带非线性约束的问题.附录 C 拆成两段:线性目标加二次约束求出方向,再在真实的非线性 $L$ 和非线性 KL 上做线搜索.
-
-目标 $L$ 在 $\theta_{\mathrm{old}}$ 处一阶展开,平均 KL 二阶展开.$A$ 是平均 KL 的 Hessian,也就是 Fisher 信息矩阵:
-
-$$
-\overline{D}_{\mathrm{KL}}(\theta_{\mathrm{old}},\theta)
-\approx\frac12(\theta-\theta_{\mathrm{old}})^\top A(\theta-\theta_{\mathrm{old}}),\qquad
-A_{ij}=\frac{\partial^2}{\partial\theta_i\partial\theta_j}\overline{D}_{\mathrm{KL}}. \tag{13}
-$$
-
-近似问题变成 $\max_s g^\top s$ 且 $\frac12 s^\top A s\le\delta$,解析方向 $s\propto A^{-1}g$.网络参数一多,$A$ 存不下,也求不了逆.共轭梯度解 $As=g$,只要求会算 Fisher–向量积 $y\mapsto Ay$.论文用 KL 对 $\theta$ 的解析 Hessian,在每个状态上对动作积分,不依赖这条轨迹实际采到的 $a_n$;不用梯度外积那种经验 Fisher.他们试过 $k=10$ 次 CG,再加大 $k$ 并没有更快抬策略.朴素做法会把九成时间花在 Fisher–向量积上;Fisher 只当度量,可以在 **10%** 数据上算,代价就和算一次 $g$ 同量级.
-
-第 6 节还写了一句容易漏掉的实现选择:Fisher 用 KL 的解析 Hessian 平均,
-
-$$
-A_{ij}\approx\frac1N\sum_{n=1}^N\frac{\partial^2}{\partial\theta_i\partial\theta_j}
-D_{\mathrm{KL}}\bigl(\pi_{\theta_{\mathrm{old}}}(\cdot|s_n)\,\|\,\pi_\theta(\cdot|s_n)\bigr), \tag{14}
-$$
-
-而不是 $\nabla\log\pi$ 的外积.解析估计在每个 $s_n$ 上对动作积分,不看这条轨迹实际采到的 $a_n$.大规模时就不必存稠密 Hessian,也不必存整批策略梯度.实验里它和经验 Fisher 的改进速度接近;选型理由是算得动,不是曲线高一截.
-
-方向 $s\approx A^{-1}g$ 之后,二次近似给出最大步长
-
-$$
-\beta=\sqrt{\frac{2\delta}{s^\top A s}}. \tag{15}
-$$
-
-$s^\top As$ 一次 Hessian–向量积就能拿,CG 过程里也会冒出来.泰勒是近似.附录 C 写明:没有线搜索,算法偶尔会迈出毁掉性能的大步.线搜索从式 (15) 的 $\beta$ 起,按指数缩小,直到非线性目标 $L$ 真的上升,并且真实平均 KL 仍 $\le\delta$.失败就缩 $\beta$,不是换方向.
-
-![共轭梯度求约束方向,再线搜索收步长](./images/fig-trpo-cg-linesearch.png)
-
-> 图 3:从 $\theta_{\mathrm{old}}$ 与优势出发,线性化 $L$,二次化 KL,CG 解 $Fx=g$,再线搜索收到平均 KL $\le\delta$ 且 $L$ 上升.
+![替代目标 L, 真实回报 η 与平均 KL 球](./images/fig-trpo-eta-l-kl-ball.png)
 
 **图 3 解析**
 
-- 主链从左到右:黄框 $\theta_{\mathrm{old}}$ 与 $A$ → 蓝框 linearize $L$($g=\nabla L$)→ 绿框 quadratic KL: Fisher $F$ → 橙框 CG 解 $Fx=g$ → 青框 candidate direction $x$ → 橙框 line search → 粉框 $\theta_{\mathrm{new}}$.
-- 线搜索框写 shrink until mean KL $\le\delta$ and $L$ improves.向下紫框 if KL too big: smaller alpha,是内部缩小,不是第二条数据流.
-- 没有 Adam,没有 clip.$F$ 是平均 KL 的 Hessian,不是网络权重矩阵.
-- 正文里 CG $k=10$,Fisher 可在 10% 数据上算,是附录 C 的实现选择,没有画进这张图.
+- 上排从左到右: 黄框 Kakade identity, 写式 (2); 箭头标 replace $\rho$, 进入绿框 Surrogate $L$, 注明 $L_\pi(\tilde\pi)$ 用 $\rho_\pi$ 而非 $\rho_{\tilde\pi}$, 对应式 (4); 再到黄框 First-order match, 即式 (5); 一条标 $O(\alpha^2)$ gap 的虚线指向橙框 True $\eta$, 注明步子太大时可能下降, 对应式 (8) 的误差项.
+- 下排: 蓝框 $\pi_{\mathrm{old}}$ 向上连到 Kakade 框 (标 old policy), 向右以 center 连到紫框 Average KL ball $D^{\rho}_{KL}(\pi_{\mathrm{old}},\pi)\le\delta$, 即式 (13); 再以 feasible 连到右下橙框 $\theta_{\mathrm{new}}$ stays inside ball.
+- 右侧一条虚线从 True $\eta$ 向下指到 $\theta_{\mathrm{new}}$, 标 safe only inside ball.
 
-GAE(Schulman 等,2016,[1506.02438](https://arxiv.org/abs/1506.02438))不在这篇 TRPO 里.2015 年正文用轨迹回报估 $Q$.后来 PPO 把 GAE 做成标配,不要倒填进 TRPO.
+### 6.1 手算: $\delta=0.01$ 有多紧
 
-## 6. 论文里实际跑出什么
+两动作的策略, 旧策略 $(0.6,0.4)$. 新策略为 $(0.7,0.3)$ 时
 
-Locomotion 用 MuJoCo.Swimmer 状态 10 维,控制 2 维,策略 364 参数;Hopper 12 维,3 维,4806 参数;Walker 正文写 18 维状态,附录 Table 2 写 20 维,控制 6 维,8206 参数.奖励是前进速度减一点力矩惩罚,Swimmer 写成 $r(x,u)=v_x-10^{-5}\|u\|^2$;Hopper 另加存活 $+1$,躯干高度和倾角越线就判倒,停回合.Walker 加脚落地冲击惩罚,免得学成蹦.策略是若干全连接层到高斯均值,对数标准差与状态无关,单独一套参数.隐层 Swimmer 30,Hopper / Walker 50.$\gamma=0.99$,信任域 $0.01$,迭代 200 次.Swimmer 每轮 5 万仿真步;Hopper / Walker 每轮 $10^6$ 步.Vine 每个状态 4 条分支,主干 rollout 长度 1000;single path 的路径数从 Swimmer 的 50 条到 Walker 的 10000 条.附录记下的单轮墙钟:vine 大约 2 / 14 / 40 分钟,single path 大约 5 / 35 / 100 分钟.Cart-pole 按 Barto,Sutton 与 Anderson 1983 的设定,线性策略六个参数,好让 CEM / CMA 在小问题上还有资格出场.对照包括 CEM,CMA,固定惩罚的自然梯度,经验 Fisher,以及 Cart-pole 上的最大 KL.自然梯度的步长按三倍网格扫,取最终回报最好的那档.Single path 与 vine 都解了三道题;自然梯度在容易的两道上还行,Hopper / Walker 停在原地站稳,不往前.论文把 $-1$ 分标成「学会了站,没学会走」.CEM / CMA 是无梯度方法,样本复杂度随参数涨,大问题上垮.最大 KL 只在 Cart-pole 上拿得动,学得稍慢,说明平均约束和理论上的逐状态最大约束效果接近.
+$$
+D_{\mathrm{KL}}(\pi_{\mathrm{old}}\|\pi)=0.6\ln\frac{0.6}{0.7}+0.4\ln\frac{0.4}{0.3}\approx-0.0925+0.1151=0.0226,
+$$
 
-Atari 跟 Mnih 等 2013 同一套七个游戏,同一套图像预处理.卷积两层,16 通道,stride 2,再一个 20 单元全连接,策略 **33500** 参数.部分可观测,延迟奖励(Breakout / Space Invaders 掉命当时不扣分),Q*bert 要在 21 个台子上按顺序跳,Enduro 背景闪烁,都写在 §8.2.$\delta$ 仍是 $0.01$,迭代 500 次,16 核机器大约 30 小时.Vine 每轮约 40 万仿真步,single path 约 10 万.Table 1 一次运行,同一套结构(论文写明 run-to-run 方差大,没给误差条):
+超过 $0.01$, 线搜索会继续缩步长. 新策略为 $(0.65,0.35)$ 时, KL $\approx0.6\times(-0.0800)+0.4\times0.1335=0.0054$, 在约束内. 也就是说, 在这个状态上, 一次更新大约只能把某个动作的概率改变 5 到 7 个百分点. 平均 KL 约束允许某些状态改得多一些, 另一些少一些, 只要平均值不超过 $\delta$.
+
+## 7. 实验
+
+### 7.1 运动控制
+
+MuJoCo 上的三个机器人, 状态是广义位置和速度, 控制是关节力矩:
+
+| 项 | Swimmer | Hopper | Walker |
+|----|---------|--------|--------|
+| 状态维度 | 10 | 12 | 正文 18, 附录 Table 2 为 20 |
+| 策略参数 | 364 | 4806 | 8206 |
+| 隐层宽度 | 30 | 50 | 50 |
+| 每轮仿真步数 | 50K | 1M | 1M |
+| 策略迭代次数 | 200 | 200 | 200 |
+| vine 每轮耗时 (分钟) | 2 | 14 | 40 |
+| single path 路径数 | 50 | 1000 | 10000 |
+| single path 每轮耗时 (分钟) | 5 | 35 | 100 |
+
+奖励: Swimmer 为 $r(x,u)=v_x-10^{-5}\|u\|^2$; Hopper 相同, 另加非终止状态每步 $+1$, 机器人摔倒即结束 episode; Walker 加了脚部着地冲击的惩罚, 鼓励平稳行走而非跳跃. 共同设置 $\delta=0.01$, $\gamma=0.99$. vine 每个状态 4 条 rollout, 主干 rollout 长度 1000. 策略是全连接网络输出高斯均值, 对数标准差是与状态无关的独立参数. 另有 Cart-pole, 按 Barto 等 (1983) 的设定, 用 6 个参数的线性策略, 这个规模下无梯度方法也能优化.
+
+对照方法: CEM, CMA (无梯度); 自然梯度 (与 single path 的唯一区别是用固定罚系数代替 KL 约束, 步长按 3 倍间隔扫描, 取最终表现最好的一档); 经验 Fisher (用梯度协方差估计 Fisher); 最大 KL (只在 Cart-pole 上可解). 每种方法 5 次随机初始化, 曲线取平均.
+
+结果: single path 和 vine 解决了全部问题, 效果最好. 自然梯度在两个较容易的任务上表现不错, 但在 Hopper 和 Walker 上学不出向前移动的步态. 这两个任务不前进也能拿到 $-1$ 分 (纵轴为 cost), 对应只学会保持站立. CEM 和 CMA 在较大问题上表现差. 论文认为这说明约束 KL 比固定罚系数更稳健. TRPO 使用通用网络和简单奖励就学会了这些步态, 而之前的运动控制方法大多依赖手工设计的、显式编码平衡和迈步的策略结构.
+
+### 7.2 Atari
+
+与 Mnih et al. (2013) 相同的 7 个游戏和图像预处理. 策略网络: 两个 16 通道, 步长 2 的卷积层, 一个 20 单元全连接层, 共 33500 参数. 每轮 vine 约 400K 仿真步, single path 约 100K, 500 次迭代, 16 核机器上约 30 小时. 结果 (论文 Table 1, 每个任务只跑一次; 论文说明不同随机初始化之间差异很大, 由于时间限制没有误差统计):
 
 | | B. Rider | Breakout | Enduro | Pong | Q*bert | Seaquest | S. Invaders |
 |--|--|--|--|--|--|--|--|
@@ -215,45 +361,49 @@ Atari 跟 Mnih 等 2013 同一套七个游戏,同一套图像预处理.卷积两
 | TRPO single path | 1425.2 | 10.8 | 534.6 | 20.9 | 1973.5 | 1908.6 | 568.4 |
 | TRPO vine | 859.5 | 34.2 | 430.8 | 20.9 | 7732.5 | 788.4 | 450.2 |
 
-Pong 两套都到 20.9,接近当时的上限.Breakout 上 vine 34.2,single path 10.8,和 DQN 的 168 不在一个量级.Q*bert 上 vine 7732.5,single path 只有 1973.5.Seaquest 则是 single path 1908.6 高于 vine 的 788.4.论文自己的判断是:同一套策略搜索能覆盖运动控制和像素游戏,并不是在每个游戏上压过为 Atari 特化的方法.UCC-I 把蒙特卡洛树搜索和监督训练绑在一起,DQN 是值函数方法;TRPO 没有为这些游戏改目标.附录 F 的 Atari 曲线纵轴画的是代价(负回报),读图时别和 Figure 4 的正回报混用.学习曲线以论文 Figure 4 / 5 为准,数字以 Table 1 和附录表为准.视频在论文站 http://sites.google.com/site/trpopaper/,正文说步态是通用网络加极简奖励从零学出来的,没有把平衡和迈步写进策略类.这和当时多数运动控制工作相反.
+TRPO 在 Enduro (single path 534.6 对 DQN 470), Pong, Q*bert (vine 7732.5 对 DQN 1952), Seaquest (single path 1908.6 对 1705) 上超过 DQN, 在 Beam Rider, Breakout, Space Invaders 上落后. UCC-I 结合了蒙特卡洛树搜索与监督训练. 论文的结论是, TRPO 只在部分游戏上胜过之前的方法, 但每个游戏都取得了合理的分数, 而且这是一个没有针对 Atari 专门设计的通用策略搜索方法. 附录 F 的 Atari 学习曲线纵轴是 cost (负回报).
 
-## 7. 和 PPO,GRPO 的边界
+## 8. 与其他方法的关系
 
-PPO([1707.06347](https://arxiv.org/abs/1707.06347))还是重要性比率乘优势,但用 $\mathrm{clip}(\pi_\theta/\pi_{\mathrm{old}},1-\varepsilon,1+\varepsilon)$ 挡住大步.信任域变成一阶剪切,没有共轭梯度,没有 Fisher–向量积,没有式 (15) 的 $\beta$.工程上这是 TRPO 的替代,不是同一条求解器.clip 的 $\varepsilon$ 通常取 $0.1$ 或 $0.2$,和 $\delta=0.01$ 不是同一个量纲:一个卡比率,一个卡平均 KL.
+论文 §7 把几种更新写成同一个模板的特例:
 
-InstructGPT 一类 LLM-RLHF 跑 PPO:Actor,Critic,Reward,Reference 四份权重,KL 往往扣进奖励.TRPO 的平均 KL 要在每个前缀上对整个词表积分(或对 $\pi_{\mathrm{old}}$ 再采一批动作),序列长度一到几千,比对角高斯贵得多.再叠 10 次 CG,若干次线搜索前向,和「同一批经验上多 epoch,Adam 走 clip」不是一条产线.开源对齐栈里几乎看不到有人在 LLM 上解式 (11).说「大模型都在用 TRPO」是把 2015 年的连续控制论文读成了 2022 年以后的对齐标配.
+| 方法 | 目标 | 约束或步长 |
+|------|------|-----------|
+| 普通策略梯度 | $L$ 的一阶近似 | $\frac12\lVert\theta-\theta_{\mathrm{old}}\rVert^2\le\delta$ |
+| 自然策略梯度 (Kakade, 2002) | $L$ 的一阶近似 | KL 二阶近似, 固定步长 $\frac1\lambda$: $\theta_{\mathrm{new}}=\theta_{\mathrm{old}}+\frac1\lambda A^{-1}\nabla L$ |
+| TRPO | $L$ (线搜索时用非线性形式) | 每步强制平均 KL $\le\delta$ |
+| 策略迭代 | $L$ | 无约束 |
+| REPS (Peters et al., 2010) | 类似 | 约束状态–动作联合分布 $p(s,a)$, 内层要解非线性优化 |
 
-GRPO 把 Critic 换成同题 $G$ 条的组内 $z$-score,clip 仍在,仍是 token 级比率.GSPO 把重要性采样提到序列几何平均.两者都站在 PPO 这一侧,不站在共轭梯度这一侧.公式和数字写在 [02-GRPO](../02-GRPO/02-GRPO.md),[03-GSPO](../03-GSPO/03-GSPO.md).
+TRPO 与自然梯度的区别看起来很小: 方向相同 ($A^{-1}g$), 一个固定步长系数, 一个每步按 $\delta$ 定步长并做线搜索. §7.1 的实验显示这个区别在 Hopper 和 Walker 上决定了能否学会行走.
 
-和更早的亲戚也要分开.自然梯度是固定惩罚,固定步长系数 $\theta_{\mathrm{new}}=\theta_{\mathrm{old}}+\frac1\lambda A^{-1}\nabla L$;TRPO 是每步硬约束再线搜索,差别看起来细,论文说大问题上这点差别就是 Hopper / Walker 会不会往前走.REPS 约束的是状态–动作联合 $p(s,a)$,TRPO 约束条件分布 $p(a|s)$,内层不必再解一道贵的非线性规划.Levine 与 Abbeel(2014)的 guided policy search 也用 KL,目的是别离开动力学模型还准的区域;TRPO 不显式建模型,KL 只约束策略别离开采样分布.Pirotta 等(2013)同样从 Kakade–Langford 往外推,算法不是这篇的 CG 加线搜索.标准策略梯度可以看成对 $\theta$ 加 $\ell_2$ 球;精确策略迭代可以看成无约束地最大化 $L$.TRPO 把这两端收进同一个带信任域的模具里.
+与 PPO 的关系见 [04-PPO](../04-PPO/04-PPO.md). PPO 论文指出 TRPO 实现相对复杂, 且不兼容带噪声的结构 (如 dropout) 以及策略与价值共享参数的网络. PPO 保留了 $L^{\mathrm{CPI}}=\hat{\mathbb{E}}_t[r_t\hat{A}_t]$ 这个替代目标, 用比率裁剪构造悲观下界, 只需一阶优化. 两者的超参含义不同: PPO 的 $\varepsilon$ 限制每个样本的概率比, TRPO 的 $\delta$ 限制状态平均的 KL. PPO 论文也试过把 KL 作为罚项, 按目标值 $d_{\mathrm{targ}}$ (取 0.003, 0.01, 0.03) 自适应调整罚系数, 这相当于 §3.3 的罚项形式加上自动调系数; 在其连续控制对比中, 这一变体不如裁剪目标.
 
-## 8. 失效和适用边界
+在 LLM 上, TRPO 的平均 KL 要在每个前缀上对整个词表计算, 再乘 10 次 CG 迭代的 Fisher–向量积和若干次线搜索前向, 成本远高于 PPO 的「同一批数据, 几个 epoch, Adam」. InstructGPT 和之后的 GRPO, GSPO 都在 PPO 这一侧.
 
-| 现象 | 原因 | 说明 |
-|------|------|------|
-| 理论 $C$ 更新几乎为零 | $C=4\varepsilon\gamma/(1-\gamma)^2$ 随 $\gamma\to1$ 炸掉 | 论文改硬约束 $\delta$,保证从 Algorithm 1 变成启发式 |
-| 平均 KL 仍让个别状态跑飞 | 约束是 $\mathbb{E}_s[D_{\mathrm{KL}}]$,不是 $\max_s$ | Cart-pole 上 max KL 更慢但能跑;大状态空间只拿得动平均 |
-| 线搜索整段拒绝 | 二次方向已经离开真实可行集,或 $L$ 的样本估计在噪声里 | 缩 $\beta$;连续失败等于这轮白采 |
-| Vine 搬不到真机 | 要从指定状态开多条分支 | 真机,以及 LLM 这种「状态=前缀,不能回档」的环境,只剩 single path |
-| LLM 词表上估平均 KL | 每个前缀一次 $D_{\mathrm{KL}}(\pi_{\mathrm{old}}\|\pi_\theta)$,序列一长,词表一宽 | 比连续高斯贵一个数量级;PPO clip 用比率阈值躲开这件事 |
-| 优势估计误差 | 理论当 $A_\pi$ 精确;正文承认省略了 Kakade–Langford 对估计误差的处理 | 2015 年用蒙特卡洛 $Q$;偏差进 $g$,CG 再精确也是精确地走错向 |
-| 样本只服务当前 $\pi_{\mathrm{old}}$ | on-policy | 策略一更新,上一批评率作废.这不是实现疏忽,是式 (12) 的定义 |
-| 把 $\delta$ 当学习率 | 量纲是平均 KL | 和 Adam 步长一起乱调会看不懂 |
-| 写成「单调改进定理已落地」 | 实用算法已经近似 | 下界在惩罚形式的 $M$ 上,神经网络走的是平均 KL 约束 |
+## 9. 失效模式与边界
 
-第 6 节把理论和实现的缝列成三条,值得和上表对着读.理论要的是 KL 惩罚系数 $C$,实践改硬约束,因为 $C$ 给的步长小到不能用,惩罚系数又不好稳稳地调.理论要逐状态最大 KL,实践改平均,因为约束条数跟状态一样多.理论当优势精确,实践省略估计误差.三条都是「为了算得动」做的缺口,不是笔误.论文仍然报告:即便偏离了 Algorithm 1,TRPO 往往给出单调改进,超参几乎不用调.这句话是经验,不是式 (8) 的推论.
+| 现象 | 原因 | 说明或处理 |
+|------|------|-----------|
+| 按理论罚系数更新几乎不动 | $C=4\epsilon\gamma/(1-\gamma)^2$ 随 $\gamma\to1$ 急剧增大 | 改用硬约束 $\delta$, 单调改进从定理变成经验现象 |
+| 个别状态上策略变化很大 | 约束的是平均 KL | 最大 KL 只在小问题上可解 |
+| 线搜索连续失败 | 二阶近似在当前点很差, 或 $L$ 的样本估计噪声大 | 本轮不更新; 增大 batch 或减小 $\delta$ |
+| 更新方向错误 | 优势估计有偏, 理论部分假设优势精确 | CG 解得再准, 也是沿着错误梯度的方向 |
+| Fisher 矩阵病态 | 某些参数方向上 KL 几乎不变 | 加阻尼 $\lambda I$ |
+| KL 方向写反 | $D_{\mathrm{KL}}(\pi_\theta\|\pi_{\mathrm{old}})$ 与论文不同 | 按式 (12) 旧策略在前 |
+| 把 $\delta$ 当学习率调 | $\delta$ 的单位是 nats (平均 KL) | 与 Adam 学习率不可比 |
+| vine 无法用于实体系统 | 需要从指定状态重新采样 | 只能用 single path |
+| 样本只能用一次 | on-policy, 式 (14) 的期望在 $\rho_{\theta_{\mathrm{old}}}$ 下 | 每轮重新采样 |
 
-TRPO 不是万能的.它回答的是:在能算 Fisher–向量积,能做线搜索的中等策略上,怎样让 on-policy 更新既不太小,又不太毁.连续控制,几万参数的卷积策略,这套东西在 2015 年说得通.对齐课把 TRPO 写成「RLHF 主算法」,位置放错了.主算法是 PPO;TRPO 是 PPO 为什么要 clip 的那一层数学.$\delta$ 太小,每步几乎不动,样本浪费在估一个用不上的方向.$\delta$ 太大,信任域名存实亡.论文没有给 LLM 的 $\delta$ 表.
-
-下一篇看 clip 和四模型怎么落到 LLM,走 [04-PPO](../04-PPO/04-PPO.md).组内相对优势走 GRPO;序列级比率走 GSPO.
+论文在讨论中写道: 尽管实用算法偏离了理论, TRPO 往往仍给出单调改进, 超参数也很少需要调. 这句话是实验观察, 不是式 (9) 的推论; 理论保证针对的是带最大 KL 罚项的 Algorithm 1. GAE (arXiv:1506.02438) 是同一批作者之后的工作, 这篇 TRPO 用蒙特卡洛回报估计 $Q$.
 
 ## 参考文献
 
-1. Schulman, J., Levine, S., Moritz, P., Jordan, M. I., & Abbeel, P. (2015). [Trust Region Policy Optimization](https://arxiv.org/abs/1502.05477). In *ICML*. HTML:[arXiv html 1502.05477](https://arxiv.org/html/1502.05477).PMLR:[v37/schulman15](https://proceedings.mlr.press/v37/schulman15.html).
-2. Kakade, S., & Langford, J. (2002). *Approximately Optimal Approximate Reinforcement Learning*. ICML.
-3. Kakade, S. (2002). *A Natural Policy Gradient*. NeurIPS.
-4. Schulman, J., et al. (2017). *Proximal Policy Optimization Algorithms*. https://arxiv.org/abs/1707.06347
-5. Schulman, J., Moritz, P., Levine, S., Jordan, M., & Abbeel, P. (2016). *High-Dimensional Continuous Control Using Generalized Advantage Estimation*. https://arxiv.org/abs/1506.02438
-6. Ouyang, L., et al. (2022). *Training language models to follow instructions with human feedback*. NeurIPS.
-7. Peters, J., Mülling, K., & Altün, Y. (2010). *Relative Entropy Policy Search*. AAAI.
-8. Mnih, V., et al. (2013). *Playing Atari with Deep Reinforcement Learning*. https://arxiv.org/abs/1312.5602
+1. Schulman, J., Levine, S., Moritz, P., Jordan, M. I., & Abbeel, P. (2015). *Trust Region Policy Optimization*. ICML 2015. arXiv:1502.05477. https://arxiv.org/abs/1502.05477
+2. Kakade, S., & Langford, J. (2002). *Approximately Optimal Approximate Reinforcement Learning*. ICML 2002.
+3. Kakade, S. (2002). *A Natural Policy Gradient*. NeurIPS 2002.
+4. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). *Proximal Policy Optimization Algorithms*. arXiv:1707.06347. https://arxiv.org/abs/1707.06347
+5. Schulman, J., Moritz, P., Levine, S., Jordan, M., & Abbeel, P. (2016). *High-Dimensional Continuous Control Using Generalized Advantage Estimation*. ICLR 2016. arXiv:1506.02438. https://arxiv.org/abs/1506.02438
+6. Peters, J., Mülling, K., & Altun, Y. (2010). *Relative Entropy Policy Search*. AAAI 2010.
+7. Mnih, V., et al. (2013). *Playing Atari with Deep Reinforcement Learning*. arXiv:1312.5602. https://arxiv.org/abs/1312.5602
+8. Hunter, D. R., & Lange, K. (2004). *A Tutorial on MM Algorithms*. The American Statistician, 58(1), 30–37.
