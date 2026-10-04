@@ -209,3 +209,13 @@
 - **infini-gram-2** `<20 ms`、`40 ms`、`200 ms` 是 RedPajama 与特定优化环境下的平均延迟；论文没有证明 5T 组合索引、P95 或高并发条件下仍保持同一延迟. 求证结果:
 - **infini-gram-3** 机器文本与 infini-gram 的一致率随 suffix length 呈不规则变化，被解释为神经预训练或位置编码缺陷；但 suffix length 同时关联文本类型、重复度和成员关系，现有证据只能说明相关性，不能完成因果定位. 求证结果:
 - **infini-gram-4** 插值困惑度收益在索引包含神经模型训练语料时可能体现非参数记忆增强；若参考集与索引仍有残留重叠，也会高估泛化收益，需结合严格去污染结果解释. 求证结果:
+
+### Dolma 仓库
+
+解析: `content/olmo/05-开源仓库/dolma/dolma-analysis.md`.
+
+- **dolma-repo-1** `docs/data-format.md` 的文档格式示例在 `created` 字段后缺少逗号，按 JSON 语法该示例无效. 求证结果:
+- **dolma-repo-2** `docs/data-format.md` 结尾残留编辑草稿文字 `how does your signals data look?` 及孤立的 `}`，不能作为稳定格式规范解读. 求证结果:
+- **dolma-repo-3** `docs/mixer.md` 参数说明写成 `if you do not with to use jq selector pattern`，疑为 `wish` 的文字笔误. 求证结果:
+- **dolma-repo-4** 去重文档明确 Bloom filter 会产生 false positive，因此最终重复标记不是精确真值，阈值及容量配置会改变误删率. 求证结果:
+- **dolma-repo-5** attributes 流依赖与文档流的行数、顺序完全对齐而非按 ID join；坏行或漏行会把后续属性错配给错误文档，流水线必须额外校验对齐. 求证结果:
