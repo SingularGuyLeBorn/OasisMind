@@ -1,52 +1,152 @@
 ---
 title: "DeepSeek-Coder-V2 技术报告详解"
 category: "模型技术报告"
-tags: ["DeepSeek", "技术解析"]
+tags: ["DeepSeek", "代码模型", "MoE", "GRPO", "长上下文"]
 published: true
-excerpt: "开源代码模型在 StarCoder, CodeLlama, DeepSeek-Coder, Codestral 这条线上已经把成绩往上推了不少, 但和当时的 GPT-4-Turbo, Claude 3 Opus, Gemini 1.5 Pro 比, 差距仍然看得见."
+excerpt: "DeepSeek-Coder-V2 从 DeepSeek-V2 中间 checkpoint 继续训练, 用 60/10/30 数据配比, MoE, 128K 上下文和代码奖励模型覆盖生成, 补全与软件修复."
 ---
 # DeepSeek-Coder-V2 技术报告详解
 
-来源: [arXiv: 2406.11931](https://arxiv. org/abs/2406.11931)(2024-06-17, v1), 仓库 [deepseek-ai/DeepSeek-Coder-V2](https://github. com/deepseek-ai/DeepSeek-Coder-V2). 数字以报告正文与表格为准.
+论文 [DeepSeek-Coder-V2: Breaking the Barrier of Closed-Source Models in Code Intelligence](https://arxiv.org/abs/2406.11931) 于 2024 年 6 月公开, 模型与使用说明见 [deepseek-ai/DeepSeek-Coder-V2](https://github.com/deepseek-ai/DeepSeek-Coder-V2). V2 不再从零训练一组 Dense 代码模型, 而是从已经训练 4.2T token 的 DeepSeek-V2 中间 checkpoint 继续训练 6T token. Lite 版本有 16B 总参数, 每个 token 激活 2.4B; 大版本有 236B 总参数, 激活 21B. 编程语言由上一代约 87 种扩展到 338 种, 上下文扩到 128K.
 
-开源代码模型在 StarCoder, CodeLlama, DeepSeek-Coder, Codestral 这条线上已经把成绩往上推了不少, 但和当时的 GPT-4-Turbo, Claude 3 Opus, Gemini 1.5 Pro 比, 差距仍然看得见. DeepSeek-Coder-V2 的做法不是再从零训一个 Dense 代码模型, 而是从 DeepSeek-V2 的中间 checkpoint 接着训: 那份 checkpoint 已经吃过 4.2T token, 再灌 6T 以代码和数学为主的语料, 总暴露量到 10.2T. 架构沿用 V2 的 MoE(报告写明与 DeepSeek-V2 / DeepSeek-V2-Lite 同套超参), 两档尺寸是 Lite 16B 总参 / 2.4B 激活, 以及 236B / 21B 激活. 编程语言从 Coder 时代的 86 种扩到 338 种, 上下文从 16K 拉到 128K.
+## 1. 续训路线把代码能力接到通用 MoE 基座上
 
-## 1. 数据: 60% 代码, 10% 数学, 30% 自然语言
+### 1.1. 60/10/30 配比同时保留三类能力
 
-预训练配比写得很死: 源码 60%, 数学 10%, 自然语言 30%. 自然语言直接从 DeepSeek-V2 训练语料采样, 这一节主要交代代码和数学怎么捞, 怎么洗.
+新增训练数据按 60% 代码, 10% 数学, 30% 自然语言混合. 自然语言从 DeepSeek-V2 语料中采样, 代码和数学数据重新构建. GitHub 数据截止到 2023 年 11 月以前, 使用与 DeepSeek-Coder 相近的行长, 字母比例和文件类型过滤, 再做近重复去重. 最终从 GitHub 获得 821B 源码 token 与 185B 代码相关文本 token.
 
-GitHub 侧截到 2023 年 11 月前公开仓库, 过滤规则与 DeepSeek-Coder 相同: 平均行长超过 100 或最长行超过 1000 的丢掉; 字母比例低于 25% 的丢掉; 除 XSLT 外, 前 100 字符出现 `<? xml version=` 的丢掉; HTML 要求可见文本至少占 20% 且不少于 100 字符; JSON/YAML 只留 50–5000 字符, 把数据堆型文件清掉. 过滤加近重复去重之后, 得到 821B 代码(338 种语言)和 185B 代码相关文本(markdown, issue 等).
+Common Crawl 侧沿用 DeepSeekMath 的迭代召回. StackOverflow, PyTorch 文档, Math StackExchange 等高相关页面先作为种子训练 fastText 分类器, 分类器再从网页中发现新页面. 中文文本改用 DeepSeek-V2 的 BPE token 作为分类输入, 避免依赖空格分词. 首轮中代码或数学页面占比超过 10% 的域名会被标记, 后续再沿 URL 补充同域未收录页面. 三轮网页召回得到 70B 代码相关 token 和 221B 数学 token; GitHub 上再运行两轮分类流程, 补充 94B 高质量源码. 新代码语料合计约 1.17T token.
 
-网页侧走 DeepSeekMath 那套 fastText 迭代召回: 用 StackOverflow, PyTorch 文档, Math StackExchange 等当种子, 训分类器扩网页; 中文不能靠空格切词, 所以分词用 DeepSeek-V2 的 BPE, 召回准不少. 域名里第一轮召回比例超过 10% 的标成代码/数学相关, 再标 URL, 补未收录页, 三轮下来从网页拿到 70B 代码相关 token 和 221B 数学相关 token. GitHub 上又用同一管道两轮, 补了 94B 更高质量源码. 新代码语料合计 1, 170B token(GitHub + CommonCrawl). 数学 221B, 大约是 DeepSeekMath 当年 120B 的两倍.
+数学语料 221B token, 大约是 DeepSeekMath 所用 120B 的两倍. 代码与数学共同增加, 与后续 Table 3 和 Table 9 的生成结果相符. 30% 自然语言维持通用交互, 但 Table 10 显示知识问答会相对 DeepSeek-V2 Chat 回落. 配比因此体现明确取舍: 更多容量被分配给代码结构, 数学步骤与任务指令, 百科知识的保持并非无损.
 
-报告用 1B 模型做语料消融(Table 1): 同样训 1T, 新语料把 HumanEval 从 30.5% 拉到 36.0%, MBPP 从 44.6% 到 49.0%; 再训到 2T, 到 37.2% / 54.0%. 引言里写的「HumanEval +6.7%, MBPP +9.4%」对应的是相对旧 Coder 语料, 训到 2T 后的总增益.
+### 1.2. 1B 消融把语料质量与模型规模分开
 
-## 2. 训练: 从 V2 中间点续训, 16B 带 FIM, 上下文用 Yarn 两段扩
+报告使用同一 1B 模型架构比较旧 DeepSeek-Coder 语料与新语料. 训练 1T token 后, HumanEval 从 30.5% 升到 36.0%, MBPP 从 44.6% 升到 49.0%. 新语料继续训练到 2T token 后, 两项分别达到 37.2% 与 54.0%. 因为模型规模保持不变, 这组消融比大模型横向排名更直接地支持新语料管线有效.
 
-目标函数上, 16B 同时做 Next-Token-Prediction 和 Fill-In-Middle; 236B 只做 NTP. FIM 用 PSM(Prefix–Suffix–Middle), 文档级, 打包前进序列, FIM 比例 0.5, 格式是:
+1T 与 2T 的比较同时混入训练 token 数量变化. 其中旧语料 1T 对新语料 1T 可以支持质量差异; 新语料 1T 对 2T 只能说明继续训练有收益. 引言概括的 HumanEval 增加 6.7 个百分点, MBPP 增加 9.4 个百分点, 对应旧语料 1T 与新语料 2T 的总差, 不能全部算作清洗算法贡献.
+
+### 1.3. MoE 的总参数和激活参数承担不同含义
+
+V2 直接沿用 DeepSeek-V2-Lite 与 DeepSeek-V2 的 MoE 架构超参数. Lite 为 16B 总参数, 激活 2.4B; 大版本为 236B 总参数, 激活 21B. 总参数描述专家容量, 激活参数更接近一次 token 前向计算实际经过的权重规模. 两个数字都不能单独等同于显存占用或吞吐, 因为专家权重仍需分布在设备上, 路由, 通信和 batch 形状也会影响成本.
+
+代码语料并未改变 MoE 的基本路由结构. V2 的路线是利用通用基座已经形成的语言, 数学和世界知识, 再通过 6T 定向续训改变能力分布. 报告还记录训练中出现不稳定与梯度尖峰, 并将问题归因于 exponential normalization, 随后退回 conventional normalization. 文中没有给出尖峰频率和消融数值, 可以确定的是最终训练设置放弃了该归一化方案, 不能进一步量化它对最终成绩的影响.
+
+## 2. 训练目标和长上下文按模型用途分流
+
+### 2.1. Lite 保留 FIM, 大模型只做 next-token prediction
+
+16B Lite 同时使用 next-token prediction 与 FIM, 236B 只使用 next-token prediction. Lite 的 FIM 采用 PSM, 把文档切为 $f_{pre}$, $f_{middle}$ 与 $f_{suf}$ 后重排:
 
 $$
-<|\text{fim\_begin}|> f_{pre} <|fim\_hole|> f_{suf} <|fim\_end|> f_{middle} <|eos\_token|>
+\langle|\mathrm{fim\_begin}|\rangle f_{pre}\langle|\mathrm{fim\_hole}|\rangle f_{suf}\langle|\mathrm{fim\_end}|\rangle f_{middle}\langle|\mathrm{eos}|\rangle
 $$
 
-优化器用 AdamW, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1; 学习率 cosine, 2000 warm-up, 最终降到初始值的 10%. 训练里碰到不稳定和梯度尖峰, 报告归咎于指数归一化, 后来退回常规归一化.
+FIM 在文档级, packing 之前执行, 比例为 0.5. 生成中间片段时, 前缀与后缀都已经位于因果注意力的左侧. Lite 因而保留适合 IDE 的双侧补全能力. 大版本把训练容量集中在自然语言指令下的长代码生成, 数学和软件任务, 没有以 FIM 为目标训练. Table 6 主要报告 Lite-Base, 正好与两档模型的训练目标对应.
 
-长上下文跟 V2 一样用 YaRN, scale 40, 其余超参与 V2 一致. 扩展分两段: 先 32K, batch 1152, 训 1000 步; 再 128K, batch 288, 再 1000 步; 期间上采样长上下文数据. NIAH(Figure 2)显示到 128K 窗口都还能稳住.
+FIM 与 next-token prediction 共用模型参数, 但输入格式不同. 50% FIM 会减少自然顺序文档占比, 同时增加双侧条件样本. V2 沿用上一代经过消融选择的比例, 没有报告在新 MoE 架构上重新扫描不同 FIM 率. 因此 0.5 是继承并验证可用的配置, 不是 V2 报告重新证明的最优点.
 
-对齐分两步. SFT 混了约 20k 代码指令, 30k 数学指令(分别来自 DeepSeek-Coder 与 DeepSeek-Math), 再从 V2 指令里采一部分通用数据, 合计约 300M token; cosine, 100 warm-up, 初始学习率 $5\times10^{-6}$, batch 约 1M token, 总共吃大约 1B token. 之后用 GRPO 做 RL(与 DeepSeek-V2 / DeepSeekMath 同族算法, 不维护 critic). 代码相关 prompt 过滤后大约 40k, 每条带测试用例. 数学偏好用 ground-truth; 代码侧明明可以靠编译器给 0/1, 但测试覆盖经常不够, 直接用编译器信号噪声大, 于是在编译器数据上再训奖励模型, 用 RM 信号做 RL. Figure 3 在内部 LeetCode / LeetCode-zh 上显示 RM 信号明显好于原始编译器信号. 16B 在 SFT 里仍保留 FIM, 对齐后还能做中间填空式补全.
+### 2.2. 优化设置包含一次明确的稳定性回退
 
-## 3. 结果: 生成与数学逼近闭源, 仓库级补全省激活, 复杂修仓仍有洞
+预训练使用 AdamW, $\beta_1=0.9$, $\beta_2=0.95$, weight decay 0.1. 学习率采用 cosine 调度, warm-up 2000 步, 末端降到初始学习率的 10%. Lite 与大版本分别继承 DeepSeek-V2-Lite 和 DeepSeek-V2 的主要超参数. 从中间 checkpoint 续训减少了重新获得通用能力的成本, 也意味着最终模型不能只按新增 6T token 理解; 总暴露量为 10.2T token.
 
-代码生成(Table 3, greedy): DS-Coder-V2-Instruct(236B/21B)Python HumanEval 90.2%, 多语言平均 75.3%, MBPP+ 76.2%; 只低于 GPT-4o 的平均 76.4%, 高于 GPT-4-Turbo-0409 的 72.3%. Lite(16B/2.4B)平均 65.6%, 超过 DS-Coder-Instruct 33B 的 61.9%. LiveCodeBench(2023-12 至 2024-06 子集)上 236B 总体 43.4%, 与 GPT-4o 持平; USACO 12.1%. 报告还写它是首个 SWE-Bench 超过 10% 的开源模型(Table 7 里 12.7%), Aider 73.7% 甚至略高于表中 GPT-4o 的 72.9%; Defects4J 单方法子集 21.0%. CRUXEval 上 236B 的 I-COT / O-COT 为 70.0% / 75.1%, 开源里突出, 相对更大闭源仍有差距, 报告自己点到激活参数只有 21B.
+归一化回退揭示了大规模续训的一项边界: 在小规模实验中有效的数值技巧, 放到长周期 MoE 训练可能放大梯度异常. 最终采用 conventional normalization 是训练稳定性选择. 报告没有公开回退前后的损失曲线和成本, 所以不能断言该变化提升了基准成绩, 只能确认它解决了团队观察到的不稳定与梯度尖峰.
 
-数学(Table 9, greedy, 无工具): GSM8K 94.9%, MATH 75.7%(GPT-4o 76.6%), AIME 2024 为 4/30(maj@64 可到 5/30), Math Odyssey 53.7%. AIME 张数超过表内对照的闭源模型.
+### 2.3. YaRN 用两段训练把窗口推到 128K
 
-补全方面, RepoBench v1.1 的 2023-12 子集上, Lite-Base 激活仅 2.4B, Python 平均 38.9%, 接近旧 DS-Coder-Base 33B 的 39.1%; Java 平均 43.3%. 单行 FIM(Table 6)Lite-Base 均值 86.4%, 与 DS-Coder-Base 33B 持平. 236B 基座这条线没有按 FIM 目标训, 补全表主要报 Lite.
+长上下文扩展沿用 DeepSeek-V2 的 YaRN, scale 为 40, beta 参数为 1 与 32. 第一阶段把序列扩到 32K, batch size 1152, 训练 1000 步; 第二阶段扩到 128K, batch size 288, 再训练 1000 步. 序列变长时 batch 减小, 控制每步显存与 token 规模. 训练阶段还会上采样长上下文数据, 让扩展后的位置范围真正出现在样本中.
 
-通用语言(Table 10)相对 V2 Chat: 推理向基准 Lite/236B 往往更高, 例如 BBH 83.9 vs 79.7, Arena-Hard 65.0 vs 41.6; 知识向有回落, TriviaQA 82.3 vs 86.7, NaturalQuestions 47.5 vs 53.4. MT-Bench, AlignBench 略低于 V2 Chat. 30% 自然语言保住了通用面, 但配比和对齐资源偏向代码与数学后, 百科式问答会退一点.
+Figure 2 的 Needle In A Haystack(NIAH)测试显示模型在直至 128K 的窗口内能够找回插入信息. NIAH 主要检验检索, 不覆盖多文件依赖推理, patch 正确性或长上下文中的干扰鲁棒性. 128K 表示已经训练并通过该检索测试的窗口, 对真实仓库仍需结合 RepoBench, SWE-Bench 等任务结果判断.
 
-## 4. 结论里自己划的边界
+## 3. 对齐阶段把可验证反馈转成训练信号
 
-报告承认: 标准基准上已经能和 GPT-4-Turbo, Claude 3 Opus, Gemini 1.5 Pro 在代码与数学专项里打得有来有回, 但指令跟随仍明显弱于当时最强闭源, 复杂场景(例如 SWE-Bench)会被拖住. 下一步他们押在加强 instruction-following, 不再指望靠同类生成基准把洞补上.
+### 3.1. SFT 混合代码, 数学和通用指令
 
-整条链路可以概括成: 站在通用 MoE 中间点上续训; 60/10/30 把代码, 数学, 语言捆在一起; 小模型留 FIM 做补全, 大模型主攻对话式编码; RL 用 GRPO, 代码侧用 RM 平滑编译器 0/1. 数字上最醒目的是 236B 只激活 21B 就把 HumanEval 推到 90.2%, MATH 到 75.7%, 以及 Lite 2.4B 激活在多项补全/生成指标上压过更大的 Dense 代码模型. 缺的那一块报告自己也写了: 真实多文件修仓和硬指令跟随, 这 6T 续训还没补平.
+SFT 数据包括约 20k 代码指令, 30k 数学指令, 以及从 DeepSeek-V2 指令集中采样的通用数据, 总量约 300M token. 训练使用 cosine 调度, warm-up 100 步, 初始学习率 $5\times10^{-6}$, batch 约 1M token, 模型总计接触约 1B token. 指令条数与训练 token 暴露量口径不同, 后者包含重复 epoch 或采样.
+
+16B 在 SFT 阶段继续保留 FIM 数据, 避免自然语言指令微调完全覆盖中间补全格式. 这项安排使同一个 Lite-Instruct 模型既能回答代码问题, 又能使用前后缀补中间. 报告没有给出 SFT 前后 FIM 的单独消融, Table 6 展示的是 Lite-Base, 因而只能确认训练方案保留该目标, 不能量化对齐后 FIM 能力保留了多少.
+
+### 3.2. 编译器 0/1 信号先用于训练奖励模型
+
+数学任务可以用 ground-truth 判定答案. 代码任务也能用编译和测试给出 0/1 反馈, 但有限测试用例无法覆盖所有行为: 一个错误程序可能碰巧通过, 一个输出格式差异也可能被判失败. 直接把该二值结果作为强化学习奖励, 梯度信号离散且带有测试覆盖噪声.
+
+团队先用编译器与测试产生的数据训练代码奖励模型, 再由奖励模型给强化学习提供连续信号. Figure 3 在内部 LeetCode 与 LeetCode-zh 测试上显示, 奖励模型信号优于原始编译器信号. 奖励模型可以从大量已标注样本中学习跨题型特征, 但它不会自动获得测试未覆盖的真实正确性. 其误差可能被策略模型利用, 所以结果支持信号更有效, 不表示奖励已经等价于程序验证.
+
+### 3.3. GRPO 省去 critic, 仍依赖组内比较质量
+
+强化学习阶段使用 Group Relative Policy Optimization(GRPO), 代码 prompt 过滤后约 40k, 每条配有测试用例. GRPO 对同一 prompt 采样一组回答, 通过组内奖励的相对关系构造优势, 无需像 PPO 那样额外维护 critic 模型. 对 236B 总参数的 MoE, 少一个 critic 能显著减少训练权重与前向计算负担.
+
+省去 critic 不会消除奖励偏差. 如果同组样本整体质量都低, 或奖励模型在某类代码上系统误判, 相对优势仍会把策略推向错误方向. 报告用内部数据比较奖励信号, 但没有公开奖励模型结构, 训练集规模, 组大小与 KL 设置. 因此可以复述 GRPO 的成本优势和信号来源, 无法从报告完整复现 RL 配方.
+
+## 4. 代码评测要按生成, 补全和修复分开读
+
+### 4.1. 函数生成与竞赛题衡量不同难度
+
+Table 3 在 greedy 解码下给出 236B/21B Instruct 的 Python HumanEval 90.2%, 多语言平均 75.3%, MBPP+ 76.2%. 表内 GPT-4o 的多语言平均为 76.4%, GPT-4-Turbo-0409 为 72.3%. Lite 的多语言平均为 65.6%, 高于上一代 DeepSeek-Coder-Instruct 33B 的 61.9%. 这些数字显示 MoE 续训在函数级生成上取得较高参数效率, 但 HumanEval 的短函数不能代替软件修复结果.
+
+LiveCodeBench 只取 2023 年 12 月至 2024 年 6 月子集, 因为预训练代码截止在 2023 年 11 月以前. 236B 总分 43.4%, 与表内 GPT-4o 相同, 低于 GPT-4-Turbo-0409 的 45.7%. USACO 为 12.1%. LiveCodeBench 的持续新增题降低直接污染风险; USACO 的复杂算法题和高质量测试则显示标准函数生成成绩无法等比例转化为竞赛能力.
+
+CRUXEval 包含 800 个 Python 函数及输入输出, I 任务由输入预测输出, O 任务由输出反推输入. 236B 的 I-COT 为 70.0%, O-COT 为 75.1%. 报告把与更大闭源模型的差距部分归因于仅激活 21B 参数, 这是作者解释, 不是控制变量实验. 架构, 训练数据与对齐方法也同时不同.
+
+### 4.2. Lite 的补全成绩对应低激活成本场景
+
+RepoBench v1.1 来自 2023 年 10 月 6 日至 12 月 31 日创建的 Python 与 Java 仓库. 为避开 11 月前的训练数据, 报告只使用 2023 年 12 月子集. Lite-Base 的 Python 平均为 38.9%, 接近上一代 33B Base 的 39.1%; Java 平均为 43.3%. 它每个 token 激活 2.4B 参数, 但部署速度仍取决于专家并行和硬件通信, 不能只按激活参数线性推算.
+
+单行 FIM 的 Table 6 中, Lite-Base 在 Python 为 80.0%, Java 为 89.1%, JavaScript 为 87.2%, 均值 86.4%. 结果与 0.5 FIM 训练目标一致, 也说明大模型没有参与这条产品定位的竞争. Exact match 对格式敏感, 一行完全一致适合评价自动补全接受概率, 不能度量语义等价的多行修复.
+
+### 4.3. 软件修复暴露长上下文之外的瓶颈
+
+Table 7 同时报告 Defects4J, SWE-Bench 与 Aider. 236B Instruct 分别为 21.0%, 12.7%, 73.7%. SWE-Bench 要求根据 GitHub issue 修改真实仓库并通过测试, 它把问题理解, 文件定位, patch 生成与验证串在一起. 12.7% 是报告中首个超过 10% 的开源成绩, 但也意味着大多数问题仍未修复. Lite-Instruct 在 SWE-Bench 为 0.0%, 表明 128K 窗口本身不能弥补模型容量, 检索和复杂指令执行的不足.
+
+Aider 的 73.7% 高于表内 GPT-4o 的 72.9%, Defects4J 21.0% 则低于 GPT-4o 的 26.1%, SWE-Bench 12.7% 也低于 26.7%. 三个基准的输入形式, patch 范围与评分程序不同, 不能取一个最高数字概括所有修复能力. 更稳妥的结论是 V2 已能在部分代码编辑协议中接近闭源模型, 对开放式真实 issue 仍有明显缺口.
+
+## 5. 数学和通用能力显示了配比的收益与代价
+
+### 5.1. 数学成绩受益于数据与可验证对齐
+
+Table 9 使用 greedy 且不调用外部工具. 236B Instruct 在 GSM8K 为 94.9%, MATH 为 75.7%, 后者接近表内 GPT-4o 的 76.6%. AIME 2024 为 4/30, maj@64 为 5/30, Math Odyssey 为 53.7%. AIME 分母很小, 单题变化就会明显改变比例, 所以报告保留答对题数比换算百分比更合适.
+
+数学提升同时来自 221B 数学预训练语料, 30k SFT 数学指令和 ground-truth 奖励, 报告没有逐项消融三者贡献. 可验证答案让强化学习信号比开放式文本稳定, 但 GSM8K 与 MATH 成绩不能直接归因于 GRPO. 1B 语料消融只报告 HumanEval 与 MBPP, 没有给出数学语料的对应小模型对照.
+
+### 5.2. 通用能力没有因 30% 自然语言完全保真
+
+Table 10 与 DeepSeek-V2 Chat 对比时, V2-Coder 在部分推理和指令指标上更高, 例如 BBH 为 83.9 对 79.7, Arena-Hard 为 65.0 对 41.6. 知识型任务出现回落: TriviaQA 为 82.3 对 86.7, NaturalQuestions 为 47.5 对 53.4. MT-Bench 与 AlignBench 也略低于 DeepSeek-V2 Chat.
+
+这些变化符合定向续训的能力再分配. 60% 代码和 10% 数学增强结构化生成与推理, 30% 自然语言避免通用能力大幅丢失, 但无法保证所有知识指标不退. 报告在结论中也把 instruction-following 和复杂场景列为后续方向. V2 的进步集中在代码, 数学, 长上下文和参数激活效率; 真实仓库修复与稳定执行复杂要求仍是评测中最清楚的边界.
+
+迭代召回的每一轮都会改变下一轮分类器的数据分布. 域名阈值先扩大覆盖, URL 标注再补同站遗漏页面, GitHub 两轮筛选则继续提高源码相关性. 这比只按扩展名抓取更容易得到教程, issue 与代码说明, 也会继承种子集合的领域和语言偏好. 报告没有公开误报率, 分类阈值曲线和 338 种语言各自占比, 无法判断长尾语言是否均衡.
+
+1B 消融需要按对照拆开. 旧语料与新语料都训练 1T 时, HumanEval 和 MBPP 的差异可归于语料管线. 新语料从 1T 继续到 2T 后的提升同时包含更多训练量. 引言给出的总增幅跨越了语料与 token 数两个变量, 不能全算作过滤算法收益. 1B 的数据瓶颈也不必然等同于 236B MoE, 所以完整模型评测仍然必要.
+
+MoE 的总参数和激活参数回答不同问题. 总参数描述专家库容量, 激活参数近似单个 token 经过的权重规模. 未激活专家仍需驻留或在设备间分布, 路由和 all-to-all 通信也会影响速度. 236B/21B 不表示部署只需容纳 21B 权重, Lite 16B/2.4B 也不能直接等同于 2.4B Dense 模型.
+
+RepoBench 中 Lite 接近更大的上一代 Dense 模型, 支持其参数效率, 但报告没有同硬件吞吐曲线. 专家并行, batch 大小和内存带宽会改变真实延迟. 激活参数适合解释每 token 计算为什么较低, 不能据此线性推算 IDE 响应时间. Lite 的产品定位还依赖 FIM 目标, 并非只由参数量决定.
+
+Lite 与 236B 的训练目标已经分流. IDE 补全通常输入光标前后代码, 输出短且要求低延迟, Lite 的 0.5 FIM 与 2.4B 激活适合此场景. 大版本只做 next-token prediction, 再通过 SFT 和 RL 加强长代码生成与复杂请求. 两档模型不是同一目标上的简单缩放, 因而不能拿缺少 FIM 训练的大版本替代 Lite 的 PSM 使用路径.
+
+两阶段 YaRN 训练控制位置分布变化. 先用 32K, batch 1152 训练 1000 步, 再用 128K, batch 288 训练 1000 步. 序列长度扩大四倍时 batch 缩小四倍, 每步 token 规模保持相近. 上采样长文档同样关键: 位置编码允许远距离输入, 只有样本真正出现远端依赖, 参数才获得利用它的梯度.
+
+NIAH 证明在 128K 内找回插入信息, 不证明能修复 128K 仓库. 软件修复还要定位相关文件, 理解 issue, 生成一致 patch 并通过环境测试. NIAH 表现良好而 SWE-Bench 只有 12.7%, 正好显示长距离检索只是任务的一环. 上下文窗口扩大不能自动提供搜索策略和执行反馈循环.
+
+SFT 的约 300M 去重 token 与约 1B 训练暴露量是两个口径, 后者意味着重复采样或多轮遍历. 代码, 数学和通用指令共同维持交互面, 16B 还继续混入 FIM 以减少对齐遗忘. 报告没有给通用样本数, 类别采样比例和 FIM 混合率, 所以不能从公开数字还原完整 epoch 分布.
+
+编译器 0/1 反馈混合了语法, 有限测试和测试覆盖三层信息. 奖励模型从这类标签学习后, 能给部分正确候选连续排序, 也可能把代码风格和常见模板误当成正确性. Figure 3 支持内部 LeetCode 上奖励模型信号更有效, 没有给出可抄成百分点的表格数值. 部署时仍需真实编译与测试.
+
+GRPO 通过同一 prompt 的一组候选计算相对优势, 困难题不会仅因绝对奖励低而完全失去信号. 当组内奖励相同, 更新信息会变弱; 采样多样性和奖励分辨率直接影响训练. 连续奖励模型因此比稀疏 0/1 更适配组内比较. 组大小, KL 设置和奖励模型结构未公开, 公开报告不足以完整复现 RL 配方.
+
+代码生成表的 greedy, 数学表的 maj@64 与修复表的 patch 成功率也不能混用. greedy 衡量一次确定性输出, maj@64 使用多次采样聚合, SWE-Bench 要求真实仓库测试通过. AIME 4/30 的分母很小, 单题就会明显改变比例. 对比模型时需要保持 prompt, 工具使用和采样预算一致.
+
+RepoBench 和单行 FIM 分别测试跨文件条件与当前文件双侧条件. Lite 在单行 FIM 均值 86.4%, RepoBench Python 平均 38.9%, 难度与指标并不相同. 大版本没有 FIM 训练, 报告不提供对应 FIM 表项. 两档模型用途不同, 所以表格覆盖的任务也不同.
+
+Defects4J, SWE-Bench 和 Aider 对修改范围及交互协议的要求不同. 236B 在 Aider 达到 73.7%, 在 SWE-Bench 只有 12.7%; 高 Aider 分数不能概括所有软件修复. Lite 在 SWE-Bench 为 0.0%, 也说明低激活补全模型无法仅靠 128K 上下文完成开放式修仓. 容量, 对齐, 检索和执行环境都会进入最终结果.
+
+数学提升来自 221B 数学预训练数据, 约 30k SFT 数学指令和 ground-truth 奖励的共同作用. 报告没有逐项消融, 不能把 MATH 75.7% 全归给 GRPO. 数学最终答案易于核验, 代码测试则受覆盖率限制, 因而两类奖励采用不同构造. 可验证信号减少主观打分, 仍不保证推导过程或未测试行为正确.
+
+Arena-Hard 上升而 TriviaQA, NaturalQuestions 回落, 说明定向续训改善部分复杂回答与推理, 同时损失一部分事实召回. 30% 自然语言的作用是维持可用通用接口, 不是完全保存 DeepSeek-V2 Chat 的能力曲线. 工程选型应按任务分档: Lite-Base 做仓库补全与 FIM, Lite-Instruct兼顾交互, 236B Instruct处理高难生成, 数学与软件编辑.
+
+128K, 奖励模型与 GRPO 分别处理输入长度, 训练信号和优化成本, 三者没有替代关系. 长窗口承载证据, 奖励模型平滑有限测试产生的标签, GRPO 省去 critic. 完整的软件工程链路还要接入检索, 编译, 测试和失败回馈. Table 7 留下的差距表明, 这些外部环节仍是把模型能力转成稳定修复率的必要部分.
+
+报告的开放材料也限定了复现深度. 数据召回给出种子类型, 迭代轮数与总 token, 没有发布全部 URL 和分类器; RL 给出 prompt 数量, 奖励来源与 GRPO 名称, 没有给组大小, KL 系数和奖励模型结构. 因而可以复现方法框架与公开评测, 无法得到逐样本相同的训练轨迹. 对结果的解释应停留在表格和已公开设置能支持的范围内.
+
+从前后代演进看, DeepSeek-Coder-V2 同时改变了基座, 架构, 数据截止时间, token 数, 语言覆盖, 上下文和对齐方式. Lite 超过上一代 33B 的若干成绩不能只归因于 MoE, 新语料和通用基座同样是变量. 1B 语料消融, RepoBench 的激活参数对照和修复基准分别提供局部证据, 但报告没有覆盖所有变量的全因子实验.
+
+V2 最有价值的工程判断是将任务分开配置. 补全依赖 FIM, 双侧上下文和低延迟; 复杂生成依赖更大激活容量与指令对齐; 软件修复还要加检索和执行验证; 数学可以利用 ground-truth 奖励. 单一模型接口可以承载这些请求, 训练数据和外部系统却必须针对各自误差来源设计. 这也是标准生成分数接近闭源后, SWE-Bench 仍保留明显差距的原因.
