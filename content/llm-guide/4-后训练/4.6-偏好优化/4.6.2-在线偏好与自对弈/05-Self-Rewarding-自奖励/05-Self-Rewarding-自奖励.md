@@ -263,7 +263,7 @@ AlpacaEval 上两轮增量分别是 5.44 和 5.06 个百分点, 头对头中 $M_
 
 **SPIN.** 胜者永远是 SFT 数据中的人写回答, 输者是上一轮生成, 不需要打分. Self-Rewarding 的相关工作一节指出 SPIN 的局限: 一旦模型生成追上人写回答就无法继续, 而且每条 prompt 都需要人写回答. 见 [05-SPIN](../04-SPIN-自对弈微调/04-SPIN-自对弈微调.md).
 
-**RLAIF (Lee 等).** 用现成 LLM 当裁判构造偏好数据, 训练一个固定的 RM, 再做强化学习. 论文提到 Lee 等也试过直接用 LLM-as-a-Judge 模型参与 PPO, 但报告计算成本很高; Self-Rewarding 的打分发生在离线构造 AIFT 的阶段, 成本相对低. Constitutional AI 更早用 LLM 给反馈, 同样训练一个固定的偏好模型再做 RL. 见 [4.4.3-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md) 和 [01-Constitutional-AI](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md).
+**RLAIF (Lee 等).** 用现成 LLM 当裁判构造偏好数据, 训练一个固定的 RM, 再做强化学习. 论文提到 Lee 等也试过直接用 LLM-as-a-Judge 模型参与 PPO, 但报告计算成本很高; Self-Rewarding 的打分发生在离线构造 AIFT 的阶段, 成本相对低. Constitutional AI 更早用 LLM 给反馈, 同样训练一个固定的偏好模型再做 RL. 见 [4.7.1-RLAIF](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md) 和 [01-Constitutional-AI](../../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/01-Constitutional-AI-宪法对齐/01-Constitutional-AI-宪法对齐.md).
 
 **冻结 RM 的 RLHF.** 人工偏好训练 $r_\phi$, 冻结, 再做 PPO. 打分器在策略迭代中不变. Self-Rewarding 让打分能力随写回答能力一起变化, 第 4 节的 Table 4 给出了这一点的数据.
 

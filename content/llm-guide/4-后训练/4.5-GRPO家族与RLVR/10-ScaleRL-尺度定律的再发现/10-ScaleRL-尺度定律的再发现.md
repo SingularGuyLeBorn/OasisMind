@@ -6,7 +6,7 @@ excerpt: "Khatri 等人 (2025) 用 40 万 GB200 GPU 小时把 RL 后训练的验
 ---
 # ScaleRL: 用 sigmoid 曲线预测 RL 算力的回报
 
-> 相关阅读: [4.4 对齐技术](../../4.6-偏好优化/4.6-偏好优化.md) · [GRPO](../01-GRPO/01-GRPO.md) · [GSPO](../04-GSPO/04-GSPO.md) · [CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.5.1 推理模型训练](../../4.8-推理与Agent能力/4.8.1-推理模型训练/4.8.1-推理模型训练.md) · [4.4.7 RLVR 的局限](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
+> 相关阅读: [4.6 对齐技术](../../4.6-偏好优化/4.6-偏好优化.md) · [GRPO](../01-GRPO/01-GRPO.md) · [GSPO](../04-GSPO/04-GSPO.md) · [CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.8.1 推理模型训练](../../4.8-推理与Agent能力/4.8.1-推理模型训练/4.8.1-推理模型训练.md) · [4.4.7 RLVR 的局限](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
 
 Khatri, Madaan 等人 (Meta, UT Austin 等) 2025 年 10 月发表的 *The Art of Scaling Reinforcement Learning Compute for LLMs* (arXiv:2510.13786), 全部实验在 Nvidia GB200 上做, 合计超过 40 万 GPU 小时. 论文研究的是 RL 后训练的算力投入与验证集通过率之间, 能不能拟合出一条从小预算外推到大预算的曲线.
 

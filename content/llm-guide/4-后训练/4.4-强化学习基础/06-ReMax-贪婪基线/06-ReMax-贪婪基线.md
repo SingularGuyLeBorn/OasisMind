@@ -6,7 +6,7 @@ excerpt: "ReMax 用同一条 prompt 上贪心解码的奖励做基线, 随机采
 ---
 # 06 · ReMax: 贪心解码当基线
 
-> 相关阅读: [4.4.6 其他策略梯度](../../4.5-GRPO家族与RLVR/4.5-GRPO家族与RLVR.md) · [10-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [06-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../04-PPO/04-PPO.md) · [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [01-DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
+> 相关阅读: [4.5 其他策略梯度](../../4.5-GRPO家族与RLVR/4.5-GRPO家族与RLVR.md) · [10-REINFORCE](../02-REINFORCE-序列级策略梯度/02-REINFORCE-序列级策略梯度.md) · [06-RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../04-PPO/04-PPO.md) · [02-GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [01-DPO](../../4.6-偏好优化/4.6.1-离线偏好优化/01-DPO/01-DPO.md)
 
 材料是 Li 等的 *ReMax: A Simple, Effective, and Efficient Reinforcement Learning Method for Aligning Large Language Models* (arXiv:2310.10505, ICML 2024), 名字取自 REINFORCE 加 argmax. 问题是 RLHF 中 PPO 的价值网络能否去掉, 去掉后用什么做基线.
 

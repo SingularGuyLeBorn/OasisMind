@@ -6,7 +6,7 @@ excerpt: "JustRL 用 veRL 默认的 GRPO, DAPO 规则验证器和 clip higher, �
 ---
 # 08 · JustRL: 1.5B 数学 RL 的极简配方
 
-> 相关阅读: [4.4.6 其他策略梯度](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [01-GxPO 结构扩展](../07-GxPO结构扩展/07-GxPO结构扩展.md) · [01-ReMax](../../4.4-强化学习基础/06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [03-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.4.7 RLVR 的局限性](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
+> 相关阅读: [4.5 其他策略梯度](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [01-GxPO 结构扩展](../07-GxPO结构扩展/07-GxPO结构扩展.md) · [01-ReMax](../../4.4-强化学习基础/06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [03-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.4.7 RLVR 的局限性](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
 
 材料是 He 等的 *JustRL: Scaling a 1.5B LLM with a Simple RL Recipe* (arXiv:2512.16649), 代码在 [thunlp/JustRL](https://github.com/thunlp/JustRL), 权重在 Hugging Face 的 `hbx/justrl` 集合. 问题是 1.5B 数学 RL 中层层叠加的训练技巧是否必要.
 
@@ -224,7 +224,7 @@ overlong penalty 在 DAPO 自己的设定 (32B, 有 token 级损失) 中有效, 
 
 **与 DAPO**: JustRL 从 DAPO 拿了三样东西: 规则验证器, DAPO-Math-17k 数据, clip higher. DAPO 的另外三项, 即动态采样, token 级损失, 软超长惩罚, 都没有用; 目标里保留的是序列内先平均的 $1/|o_i|$. DAPO 在 Qwen2.5-32B base 上的递进实验里, 动态采样贡献最大 (42 到 50), 软超长惩罚加 3 分; 到 JustRL 这条 1.5B 蒸馏线上, 消融显示超长惩罚有害. 同一组技巧在不同骨干, 规模, 上下文长度下的效果方向可以相反.
 
-序列级重要性比率等结构改动见 [4.4.5](../4.5-GRPO家族与RLVR.md).
+序列级重要性比率等结构改动见 [4.5](../4.5-GRPO家族与RLVR.md).
 
 **与 ReMax**: 两者都在做减法. ReMax 去掉价值网络, 减贪心回答的奖励; JustRL 去掉调度, 保留组. ReMax 的主实验是 7B 对话加奖励模型, JustRL 是 1.5B 数学加规则分.
 

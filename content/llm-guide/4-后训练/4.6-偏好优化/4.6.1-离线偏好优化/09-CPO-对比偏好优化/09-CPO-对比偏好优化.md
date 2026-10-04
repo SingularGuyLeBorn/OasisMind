@@ -6,7 +6,7 @@ excerpt: "CPO (Contrastive Preference Optimization) 把 DPO 的参考策略换�
 ---
 # 09 CPO: 对比偏好优化
 
-> 相关阅读: [4.4.4 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [01 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [02 RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) · [03 IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) · [01 DPO](../01-DPO/01-DPO.md) · [02 ORPO](../04-ORPO/04-ORPO.md) · [04 SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md)
+> 相关阅读: [4.6.2 其他对齐技术](../../4.6.2-在线偏好与自对弈/4.6.2-在线偏好与自对弈.md) · [01 SLiC](../06-SLiC-序列似然校准/06-SLiC-序列似然校准.md) · [02 RRHF](../07-RRHF-排序响应对齐/07-RRHF-排序响应对齐.md) · [03 IPO](../02-IPO-身份偏好优化/02-IPO-身份偏好优化.md) · [01 DPO](../01-DPO/01-DPO.md) · [02 ORPO](../04-ORPO/04-ORPO.md) · [04 SimPO](../05-SimPO-无参考长度平均/05-SimPO-无参考长度平均.md)
 
 材料是 Xu, Sharaf, Chen 等 (约翰斯·霍普金斯大学与微软) 的 *Contrastive Preference Optimization: Pushing the Boundaries of LLM Performance in Machine Translation* ([arXiv:2401.08417](https://arxiv.org/abs/2401.08417), ICML 2024). 问题是 7B, 13B 的翻译模型在 SFT 之后已经到顶, 参考译文本身又不完美, 怎样继续提升, 同时不付 DPO 那份参考模型的显存.
 

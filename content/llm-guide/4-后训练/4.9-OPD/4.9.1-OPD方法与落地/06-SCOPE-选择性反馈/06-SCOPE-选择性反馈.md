@@ -6,7 +6,7 @@ excerpt: "SCOPE 先用验证器把学生的在线轨迹分成对错两组: 错�
 ---
 # SCOPE: 按对错分流的双路径 OPD
 
-> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) · [05 G-OPD](../05-GOPD-散度光谱/05-GOPD-散度光谱.md) · [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [4.6.3 状态分布视角](../../4.9.3-状态分布视角/4.9.3-状态分布视角.md)
+> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [04 SDPO](../04-SDPO-自蒸馏策略优化/04-SDPO-自蒸馏策略优化.md) · [05 G-OPD](../05-GOPD-散度光谱/05-GOPD-散度光谱.md) · [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [4.9.3 状态分布视角](../../4.9.3-状态分布视角/4.9.3-状态分布视角.md)
 
 本文的材料是 Zheng, Ma 等 (美团 LongCat 团队) 的 *SCOPE: Signal-Calibrated On-Policy Distillation Enhancement with Dual-Path Adaptive Weighting* (arXiv:2604.10688), 名字 SCOPE 取自标题前半的 Signal-Calibrated On-Policy Distillation Enhancement. 它要回答的问题是: OPD 对学生的每条 rollout 施加同样强度的教师 KL, 做对的轨迹和做错的轨迹是否都该这样对待.
 

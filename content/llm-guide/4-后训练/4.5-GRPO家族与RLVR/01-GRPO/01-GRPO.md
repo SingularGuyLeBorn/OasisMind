@@ -6,7 +6,7 @@ excerpt: "GRPO 是 PPO 的变体: 同一道题采 G 条回答, 用组内奖励�
 ---
 # 01 GRPO: 组内相对优势
 
-> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [01 GMPO](../05-GMPO/05-GMPO.md) · [03 GSPO](../04-GSPO/04-GSPO.md) · [06 RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md)
+> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [01 GMPO](../05-GMPO/05-GMPO.md) · [03 GSPO](../04-GSPO/04-GSPO.md) · [06 RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md)
 
 材料是 Shao 等人的 DeepSeekMath (arXiv:2402.03300): §4.1 提出 GRPO, §5.2 给出统一范式, 附录 A.1 给出各方法的梯度系数, 文中式号对应论文式 (1)-(4) 与 (19)-(21). 后半部分取 HybridFlow (veRL) 与 OpenRLHF 的系统实现. 问题是去掉价值网络之后优势怎样估, 一轮训练又怎样在推理和训练两套引擎之间流转.
 
@@ -271,7 +271,7 @@ Figure 7 在温度 0.7 下画了 Instruct 和 RL 两个 7B 模型在 GSM8K, MATH
 
 ### 4.1 长度偏差
 
-Liu et al. (2025, Dr. GRPO) 分析了式 (2) 和式 (4) 里的两个归一化项. 完整讨论见 [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md), 家族对照见 [4.4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md).
+Liu et al. (2025, Dr. GRPO) 分析了式 (2) 和式 (4) 里的两个归一化项. 完整讨论见 [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md), 家族对照见 [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md).
 
 $1/|o_i|$ 让同样大小的 $\hat A_i$ 摊在不同长度上. 设两条回答优势相同, 长度分别为 100 和 400:
 
@@ -414,7 +414,7 @@ Megatron-LM 本身不是 RL 框架, 它提供 3D 并行下的前向, 反向和�
 | 算法 | 相对 GRPO 改什么 | 文章 |
 |---|---|---|
 | Dr. GRPO (arXiv:2503.20783) | 删去 $1/|o_i|$ 和组 $\mathrm{std}$ | [Dr. GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) |
-| DAPO (arXiv:2503.14476) | Clip-Higher, 动态采样, token 级损失, 超长惩罚 | [4.4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) |
+| DAPO (arXiv:2503.14476) | Clip-Higher, 动态采样, token 级损失, 超长惩罚 | [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) |
 | GMPO (arXiv:2507.20673) | token 级加权奖励改用几何平均, 窗口放宽 | [01 GMPO](../05-GMPO/05-GMPO.md) |
 | GSPO (arXiv:2507.18071) | 序列级重要性比率与序列级 clip | [03 GSPO](../04-GSPO/04-GSPO.md) |
 | RLOO | 基线用其余 $K-1$ 条的均值, 不含自己, 通常不除标准差 | [06 RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) |

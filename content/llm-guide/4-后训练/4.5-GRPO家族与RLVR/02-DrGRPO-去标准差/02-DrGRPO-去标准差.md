@@ -6,7 +6,7 @@ excerpt: "Dr.GRPO 从 GRPO 目标中删去回复长度归一化和组内标准�
 ---
 # 02 · Dr.GRPO: 去掉长度与难度偏差
 
-> 相关阅读: [4.4.6 其他策略梯度](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [06-RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [02-JustRL](../08-JustRL-极简配方/08-JustRL-极简配方.md) · [01-GxPO 结构扩展](../07-GxPO结构扩展/07-GxPO结构扩展.md) · [4.4.7 RLVR 的局限性](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
+> 相关阅读: [4.5 其他策略梯度](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [06-RLOO](../../4.4-强化学习基础/05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [02-JustRL](../08-JustRL-极简配方/08-JustRL-极简配方.md) · [01-GxPO 结构扩展](../07-GxPO结构扩展/07-GxPO结构扩展.md) · [4.4.7 RLVR 的局限性](../09-RLVR的局限性与探索边界/09-RLVR的局限性与探索边界.md)
 
 材料是 Liu 等的 *Understanding R1-Zero-Like Training: A Critical Perspective* (arXiv:2503.20783), 代码在 [sail-sg/understand-r1-zero](https://github.com/sail-sg/understand-r1-zero), 训练框架是 Oat. 问题是 R1-Zero 式训练中的涨分和回复变长, 分别有多少来自基座, 模板和 GRPO 的目标本身.
 

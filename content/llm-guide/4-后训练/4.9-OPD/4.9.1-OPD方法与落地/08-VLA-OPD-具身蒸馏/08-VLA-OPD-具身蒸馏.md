@@ -6,7 +6,7 @@ excerpt: "VLA-OPD 让学生 VLA 在仿真里自己执行, 由冻结的 SimpleVLA
 ---
 # VLA-OPD: 把 OPD 搬到机器人策略上
 
-> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [03 SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) · [05 G-OPD](../05-GOPD-散度光谱/05-GOPD-散度光谱.md) · [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [4.6.3 状态分布视角](../../4.9.3-状态分布视角/4.9.3-状态分布视角.md)
+> 相关阅读: [01 OPD 基础原理](../01-OPD基础原理/01-OPD基础原理.md) · [03 SDFT](../03-SDFT-自蒸馏持续学习/03-SDFT-自蒸馏持续学习.md) · [05 G-OPD](../05-GOPD-散度光谱/05-GOPD-散度光谱.md) · [07 OPD 失败模式](../07-OPD-失败模式/07-OPD-失败模式.md) · [4.9.3 状态分布视角](../../4.9.3-状态分布视角/4.9.3-状态分布视角.md)
 
 本文的材料是 Zhong, Yan, Li, He, Zhang, Li (港科大广州) 的 *VLA-OPD: Bridging Offline SFT and Online RL for Vision-Language-Action Models via On-Policy Distillation* (arXiv:2603.26666), 以及它直接依赖的两项工作: 提供动作 token 化方案的 OpenVLA (arXiv:2406.09246) 和提供教师的 SimpleVLA-RL (arXiv:2509.09674). 要回答的问题是: 文本 OPD 的「学生采样, 教师逐 token 打分, reverse KL」能否原样用在机器人操作策略的后训练上, 用了之后和 SFT, GRPO 比各有什么得失.
 

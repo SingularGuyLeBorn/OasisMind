@@ -6,7 +6,7 @@ excerpt: "GRPO 之后的一串缩写都在优化同一个期望回报. 按改动
 ---
 # 07 · GxPO 结构扩展: 轨迹侧与奖励侧
 
-> 相关阅读: [4.4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [03-GSPO](../04-GSPO/04-GSPO.md) · [01-GMPO](../05-GMPO/05-GMPO.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [08-CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [03-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [OPD 基础原理](../../4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md)
+> 相关阅读: [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) · [02-GRPO](../01-GRPO/01-GRPO.md) · [03-GSPO](../04-GSPO/04-GSPO.md) · [01-GMPO](../05-GMPO/05-GMPO.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [08-CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [03-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [OPD 基础原理](../../4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md)
 
 材料是 Shen 等 (arXiv:2606.16733) 对策略梯度方法的分类, 以及 GRPO, DAPO, GSPO, GMPO, GHPO 各自的原论文. GxPO 指 GRPO 及其结构扩展这一族, 没有一个叫 GxPO 的算法; 问题是这些方法各自改动了期望回报中的哪一部分.
 

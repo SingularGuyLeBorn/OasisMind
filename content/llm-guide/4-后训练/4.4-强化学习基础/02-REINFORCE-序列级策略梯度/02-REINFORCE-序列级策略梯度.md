@@ -7,7 +7,7 @@ excerpt: "序列级 REINFORCE 把整段回复当成一个动作, 用写完后才
 
 # REINFORCE: 序列级策略梯度
 
-> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [06 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [07 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [02 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [4.4.3 RLAIF](../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md)
+> 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [06 RLOO](../05-RLOO-留一法基线/05-RLOO-留一法基线.md) · [07 RAFT](../../4.7-AI反馈与奖励过优化/4.7.2-Best-of-N与奖励过优化/04-RAFT-奖励排序微调/04-RAFT-奖励排序微调.md) · [02 GRPO](../../4.5-GRPO家族与RLVR/01-GRPO/01-GRPO.md) · [ReMax](../06-ReMax-贪婪基线/06-ReMax-贪婪基线.md) · [4.7.1 RLAIF](../../4.7-AI反馈与奖励过优化/4.7.1-RLAIF/4.7.1-RLAIF.md)
 
 材料是 Williams (1992) 的 REINFORCE 估计器, 以及 Ahmadian 等的 *Back to Basics: Revisiting REINFORCE-Style Optimization for Learning from Human Feedback in LLMs* (ACL 2024, arXiv:2402.14740) 中的序列级用法. 问题是 RLHF 的第三阶段能否把整段回复当成一个动作, 只用一个简单的基线, 不要价值网络.
 

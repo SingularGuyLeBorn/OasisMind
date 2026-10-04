@@ -6,7 +6,7 @@ excerpt: "MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留."
 ---
 # MoE 系统优化:稀疏激活碰到硬件的并行胃口
 
-MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留.系统层卡住的不是再写一遍 Top-$K$,而是三件硬东西:token 怎么送到拥有专家的那张卡,细粒度之后激活怎么不按 $O(TKd)$ 涨,Grouped GEMM 的 Tile 怎么不被填充吃掉.路由公式在 [2.4.1](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md),共享专家在 [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md),STE 在 [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).本篇不重推 $g_i(x)$.
+MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留.系统层卡住的不是再写一遍 Top-$K$,而是三件硬东西:token 怎么送到拥有专家的那张卡,细粒度之后激活怎么不按 $O(TKd)$ 涨,Grouped GEMM 的 Tile 怎么不被填充吃掉.路由公式在 [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md),共享专家在 [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md),STE 在 [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).本篇不重推 $g_i(x)$.
 
 卡间 Wave,DeepEP,MoonEP 的通信重叠正本在 [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md).这里只把并行轴,Dispatch / Combine,两种 GEMM layout 和几条能对上论文的系统数字钉死.
 
@@ -163,7 +163,7 @@ Tutel 的 fast encode/decode 对应上面五步里的第 2,第 4 步:下标 → 
 - 右列同样从 token 出发,进带虚线 mask 的槽位网格,再进 Masked Grouped GEMM.mask 线两端 **没有** 箭头--它是辅助,不是数据回流.
 - 两列都不是路由公式.换 layout 不改变 Top-$K$ 选了谁,只改变「选完之后 GEMM 怎么喂给 Tensor Core」.
 
-MegaBlocks(Gale, Narayanan, Young, Zaharia, [arXiv:2211.15841](https://arxiv.org/abs/2211.15841))走另一条:把 MoE 写成 **block-sparse** 算子,不再把每专家 token 数 trim / pad 成固定容量.摘要:相对 Tutel 端到端最多约 **40%**,相对 Megatron-LM 上的稠密 DNN 约 **2.4×**.dMoE 从不丢 token.容量因子 $\gamma$ 和 drop / dropless 的算法账在 [2.4.1 第 5 节](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md);本篇只取「系统可以不靠 dropless 口号,而靠稀疏核把动态形状吃下来」.
+MegaBlocks(Gale, Narayanan, Young, Zaharia, [arXiv:2211.15841](https://arxiv.org/abs/2211.15841))走另一条:把 MoE 写成 **block-sparse** 算子,不再把每专家 token 数 trim / pad 成固定容量.摘要:相对 Tutel 端到端最多约 **40%**,相对 Megatron-LM 上的稠密 DNN 约 **2.4×**.dMoE 从不丢 token.容量因子 $\gamma$ 和 drop / dropless 的算法账在 [2.6 第 5 节](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md);本篇只取「系统可以不靠 dropless 口号,而靠稀疏核把动态形状吃下来」.
 
 ## 6. Tutel 与 SmartMoE:自适应并行,不是新门控
 
@@ -191,9 +191,9 @@ SonicMoE 的端到端数字明确写了 **FSDP-2 + lm-engine + 7B**.FSDP-2 把�
 
 | 问题 | 去哪 | 本篇不写 |
 |------|------|----------|
-| 先 Top-$K$ 再 Softmax,STE,ReMoE | [2.4.1](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) / [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md) | 第二份可导证明 |
+| 先 Top-$K$ 再 Softmax,STE,ReMoE | [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) / [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md) | 第二份可导证明 |
 | 共享专家,$K_r$,$b_i$ | [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md) | 第二份 DeepSeek-MoE 公式 |
-| 容量 $C$,drop,aux,z-loss | [2.4.1 第 4–5 节](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) | 把 rounding 写成 $\gamma$ |
+| 容量 $C$,drop,aux,z-loss | [2.6 第 4–5 节](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) | 把 rounding 写成 $\gamma$ |
 | 瘦专家 $\ell$,分位数 bias | [10](../../../../2-核心原理与架构/2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md) | |
 | Wave 藏 All-to-All,MoonEP 等 token | [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md) | 把 MoonEP 说成新的 $p_i$ |
 | 专家权重量化 | [6.3.1/09](../../../6.3-模型压缩/6.3.1-量化/05-MoE模型量化技术综述/05-MoE模型量化技术综述.md) | 把 QMoE 当 EP |
@@ -203,7 +203,7 @@ SonicMoE 的端到端数字明确写了 **FSDP-2 + lm-engine + 7B**.FSDP-2 把�
 
 只开 EP,不处理热专家:All-to-All 等最慢的 rank,MFU 看起来像通信墙,其实是负载.细粒度加高 $K$ 仍按稠密 FFN 的激活检查点:HBM 先爆,这是 SonicMoE 要砍掉 $O(TKd)$ 的原因.把 token rounding 当成负载损失:圆的是 Tile,不是 $q=mk/n$.单卡卸载却按多卡 EP 的 overlap 估延迟:PCIe 不是 NVLink.把 Tutel 的 4.96× 安到「任意 16 卡 LLM 训练」上:那是单层 MoE 相对当时 Fairseq 的数.把 2DH 的 20.7× 安到端到端:那是通信微基准.把 213B tok/天和 225B tok/天直接比快慢:一个 64 卡,一个 96 卡.Contiguous layout 拿去绑 Decode 的 CUDA Graph:step 间形状在变,图会废.Masked layout 拿去当「可导路由」:mask 是 GEMM 辅助,不是 STE.ScatterMoE 的 ParallelLinear 拿去当「专家结构创新」:它是 scatter 与 GEMM 的融合核.Decode batch=1 仍开跨节点 EP:式 (2) 里 $T$ 太小,All2All 启动开销比 GEMM 还刺.把共享专家也 dispatch 到远端:白加一倍 All2All,还把 always-on 支路变成通信.
 
-下一篇机制仍回 [2.4.1](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md).量化走 6.3.1;板级加速走 9.1.5.
+下一篇机制仍回 [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md).量化走 6.3.1;板级加速走 9.1.5.
 
 ## 参考文献
 

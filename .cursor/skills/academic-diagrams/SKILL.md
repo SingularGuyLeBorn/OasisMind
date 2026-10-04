@@ -60,16 +60,16 @@ S, C
 
 默认（用户点名「还凑合」）：
 
-`content/llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/images/fig-qsa-hybrid-slot.png`
+`content/llm-guide/2-核心原理与架构/2.2-注意力机制/2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/images/fig-gated-attn-g1-after-sdpa.png`
 
 按拓扑换参考，不要按论文题目：
 
 | 要画的拓扑 | 优先参考 |
 |---|---|
-| 层间插槽 / 正交肘线 / 成对平行箭 | 上面 QSA 默认 |
-| 残差 / 门控读写 | `2.1.3-残差连接/03-Gated-Residual/images/fig-gr-elem-read-scalar-write.png` |
-| MoE 路由 / Top-K | `2.4.1-混合专家模型MoE/02-MoE路由与Top-K可导性/images/fig-moe-topk-ste.png` |
-| EP / All2All | `6.1.8-MoE系统与并行/08-MoE系统优化综述/images/fig-moe-ep-alltoall.png` |
+| 层间插槽 / 正交肘线 / 成对平行箭 | 上面 Gated Attention 默认 |
+| 残差 / 门控读写 | `2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/images/fig-gated-attn-not-gated-residual.png` |
+| MoE 路由 / Top-K | `2.6-MoE/02-MoE路由与Top-K可导性/images/fig-moe-topk-ste.png` |
+| EP / All2All | `2.6-MoE/05-MoE系统-并行通信与部署/images/fig-moe-ep-alltoall.png` |
 
 ### Planner
 

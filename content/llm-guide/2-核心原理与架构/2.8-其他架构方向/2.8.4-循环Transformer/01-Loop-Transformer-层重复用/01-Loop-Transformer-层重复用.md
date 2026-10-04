@@ -8,7 +8,7 @@ excerpt: "普通 Transformer 的深度和参数绑定: 一层一套 W_Q, W_K, W_
 
 普通 Transformer 的深度和参数绑定在一起: 一层一套 $W_Q,W_K,W_V,W_O$ 和一套 FFN. 想加深, 就得再存一套. 循环 Transformer 把两者分开: 只存 $K$ 个物理块, 同一套 (或这 $K$ 套) 转 $R$ 轮, 展开深度 $N=KR$, 参数量只取决于 $K$.
 
-要解决的问题是「更深必须更大」. 下文依次讲: 定义与 $N=KR$, 祖先, 常深度可编程, 合成推理上的 $k\otimes L$, Huginn 的 sandwich, 残差缩放, 以及和序列 RNN、CoT、MoE 的区别. 多吐 thinking token 的方法见 [4.5](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md). Universal Transformer、Huginn、DeepLoop 的超参各不相同, 后面分开写.
+要解决的问题是「更深必须更大」. 下文依次讲: 定义与 $N=KR$, 祖先, 常深度可编程, 合成推理上的 $k\otimes L$, Huginn 的 sandwich, 残差缩放, 以及和序列 RNN、CoT、MoE 的区别. 多吐 thinking token 的方法见 [4.8](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md). Universal Transformer、Huginn、DeepLoop 的超参各不相同, 后面分开写.
 
 ## 1. 定义与位置
 
@@ -43,9 +43,9 @@ $K=1$ 是「整网一套权重转 $R$ 圈」, Universal Transformer 的默认结
 
 ### 1.2 与序列 RNN、CoT、MoE 的区别
 
-**序列 RNN.** [2.4.4](../../../2.5-线性注意力与状态空间模型/2.5.4-线性RNN与Griffin/2.5.4-线性RNN与Griffin.md) 的线性 RNN、RWKV、Griffin, 状态沿 token 下标 $t$ 走: $h_t=f(h_{t-1},x_t)$. 循环 Transformer 的状态沿深度下标 $r$ 走, 同一时刻整段序列仍可并行做自注意力. Dehghani et al. (2018) 的原话是: Universal Transformer 不在序列位置上循环, 而是对每个位置的向量表示做连续修订. 序列长度 $T$ 可以不动, $R$ 照样加.
+**序列 RNN.** [2.5.4](../../../2.5-线性注意力与状态空间模型/2.5.4-线性RNN与Griffin/2.5.4-线性RNN与Griffin.md) 的线性 RNN、RWKV、Griffin, 状态沿 token 下标 $t$ 走: $h_t=f(h_{t-1},x_t)$. 循环 Transformer 的状态沿深度下标 $r$ 走, 同一时刻整段序列仍可并行做自注意力. Dehghani et al. (2018) 的原话是: Universal Transformer 不在序列位置上循环, 而是对每个位置的向量表示做连续修订. 序列长度 $T$ 可以不动, $R$ 照样加.
 
-**CoT.** [4.5](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md) 的 o1 路线把中间步骤写成新 token, 上下文变长, KV 变长, 注意力二次项跟着涨. 循环可以在同一段残差状态上转 $R$ 圈, 输出仍是下一个 token. Saunshi et al. (2025) 的定理把 $T$ 步 CoT 嵌进 $T$ 次 loop, 那是表达力上的对照, 不说明循环模型已经会写长 CoT.
+**CoT.** [4.8](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md) 的 o1 路线把中间步骤写成新 token, 上下文变长, KV 变长, 注意力二次项跟着涨. 循环可以在同一段残差状态上转 $R$ 圈, 输出仍是下一个 token. Saunshi et al. (2025) 的定理把 $T$ 步 CoT 嵌进 $T$ 次 loop, 那是表达力上的对照, 不说明循环模型已经会写长 CoT.
 
 **MoE.** MoE 稀疏的是**这一 token 激活哪些专家矩阵**. 循环减少的是**独立参数的份数**, 计算并不按专家关掉; 同一份权重被访问 $R$ 次. Mixture-of-Recursions 借用了 Expert-Choice / Token-Choice 这套词, 路由的对象是「这个 token 再进几轮」, 与 2.4.1 里的 FFN 专家无关.
 
