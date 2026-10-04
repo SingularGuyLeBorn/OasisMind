@@ -185,6 +185,15 @@ export function materializeChannelAttachmentBytes(opts: {
   remoteUrl?: string;
   remoteId?: string;
   caption?: string;
+  /**
+   * 生成型附件可指定当前工具上下文的上传根，避免测试或多实例误写全局目录。
+   * 省略时仍使用应用配置中的 content/uploads。
+   */
+  uploadDir?: string;
+  /** 与 uploadDir 配套，用于生成可被其它 Native 工具读取的项目相对路径。 */
+  projectRoot?: string;
+  /** 上传根内的受控分类，例如 screenshots；不得包含路径穿越。 */
+  storagePrefix?: string;
 }): ChannelAttachment {
   const id = randomUUID();
   const declaredMime = (opts.declaredMime || "application/octet-stream").split(";", 1)[0]!.trim().toLowerCase();
@@ -219,9 +228,22 @@ export function materializeChannelAttachmentBytes(opts: {
     const extension = path.extname(inputName) || extensionForMime(mimeType);
     const stem = path.basename(inputName, path.extname(inputName));
     const fileName = sanitizeFileName(`${stem}${extension}`, `attachment${extension}`);
-    const storageKey = `channels/${opts.source}/${new Date().toISOString().slice(0, 7)}/${id}-${fileName}`;
-    const localPath = `content/uploads/${storageKey}`;
-    const absPath = path.join(getAppConfig().contentPaths.uploads, storageKey);
+    const configured = getAppConfig();
+    const uploadDir = path.resolve(opts.uploadDir ?? configured.contentPaths.uploads);
+    const projectRoot = path.resolve(opts.projectRoot ?? configured.projectRoot);
+    const storagePrefix = (opts.storagePrefix ?? `channels/${opts.source}/${new Date().toISOString().slice(0, 7)}`)
+      .replace(/\\/g, "/")
+      .replace(/^\/+|\/+$/g, "");
+    if (!storagePrefix || storagePrefix.split("/").some((part) => !part || part === "." || part === "..")) {
+      throw new Error(`附件存储分类不合法：${opts.storagePrefix ?? ""}`);
+    }
+    const storageKey = `${storagePrefix}/${id}-${fileName}`;
+    const absPath = path.resolve(uploadDir, storageKey);
+    const relativeToUploads = path.relative(uploadDir, absPath);
+    if (relativeToUploads.startsWith("..") || path.isAbsolute(relativeToUploads)) {
+      throw new Error("附件存储路径逃出 content/uploads，已拒绝写入");
+    }
+    const localPath = path.relative(projectRoot, absPath).replace(/\\/g, "/");
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
     const tempPath = `${absPath}.${randomUUID()}.tmp`;
     fs.writeFileSync(tempPath, opts.bytes, { flag: "wx" });

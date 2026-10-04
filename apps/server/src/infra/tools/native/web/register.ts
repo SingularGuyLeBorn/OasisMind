@@ -10,7 +10,7 @@ import { academicDefs, academicHandlers } from "./academic.js";
 import { webSearch, rssFetchTool, rssDraftPostsTool, articleImportTool } from "./search.js";
 import { readArticleTool } from "./article.js";
 import { scrapeWebPageTool } from "./scrape.js";
-import { browserScreenshotTool, scrollScreenshotTool } from "./screenshot.js";
+import { browserScreenshotTool, captureScreenshotTool, scrollScreenshotTool } from "./screenshot.js";
 import { saveWebpageTool, downloadFileTool } from "./saveWebpage.js";
 import { readImageTool, visionDescribeTool } from "./readImage.js";
 import { videoTranscriptTool } from "./transcript.js";
@@ -146,6 +146,30 @@ const WEB_DEFS: NativeToolDefinition[] = [
         height: { type: "number", description: "视口高度，默认 800" },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "capture_screenshot",
+    concurrencyClass: "C",
+    description:
+      "统一截图工具。mode=web_viewport 截网页当前视区；web_fullpage 截完整网页；desktop 截本机桌面；window 按窗口标题截指定窗口。所有模式都返回可预览、可持久化的 ChannelAttachment，attachment.localPath 可直接作为 send_qq_image / send_weixin_image 的 file。desktop/window 必须开启 hostAccess、授予 native:host_access，且群聊硬拒绝。",
+    parameters: {
+      type: "object",
+      properties: {
+        mode: {
+          type: "string",
+          enum: ["web_viewport", "web_fullpage", "desktop", "window"],
+          description: "截图模式",
+        },
+        url: { type: "string", description: "网页模式必填：http/https 页面地址" },
+        windowTitle: { type: "string", description: "window 模式必填：完整标题或足以唯一匹配的标题片段" },
+        display: { type: "number", description: "desktop 模式可选：显示器编号；不传则截所有可见显示器" },
+        timeout: { type: "number", description: "网页导航超时毫秒，默认 30000" },
+        waitFor: { type: "string", description: "网页模式可选：等待出现的 CSS 选择器" },
+        width: { type: "number", description: "网页视口宽度，默认 1280" },
+        height: { type: "number", description: "网页视口高度，默认 800" },
+      },
+      required: ["mode"],
     },
   },
   {
@@ -323,6 +347,7 @@ const WEB_HANDLERS = {
   article_import: articleImportTool,
   scrape_web_page: scrapeWebPageTool,
   browser_screenshot: browserScreenshotTool,
+  capture_screenshot: captureScreenshotTool,
   scroll_screenshot: scrollScreenshotTool,
   save_webpage: saveWebpageTool,
   download_file: downloadFileTool,

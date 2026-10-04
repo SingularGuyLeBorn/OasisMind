@@ -71,6 +71,7 @@ export function detectPromptIntentPacks(opts: {
       "read_article",
       "scrape_web_page",
       "browser_screenshot",
+      "capture_screenshot",
       "read_image",
       "search_arxiv",
       "search_huggingface",

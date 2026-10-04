@@ -10,6 +10,7 @@ tools:
   - "native:scrape_web_page"
   - "native:download_file"
   - "native:browser_screenshot"
+  - "native:capture_screenshot"
   - "native:read_image"
   - "native:vision_describe"
   - "native:generate_illustration"

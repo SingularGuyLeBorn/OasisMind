@@ -87,6 +87,7 @@ const EXPLORE_READONLY_TOOLS = new Set([
   "download_file",
   "article_import",
   "browser_screenshot",
+  "capture_screenshot",
   "scroll_screenshot",
   "read_image",
   "vision_describe",

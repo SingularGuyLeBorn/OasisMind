@@ -319,16 +319,27 @@ async function callToolOnce(
   );
 }
 
-export async function executeMcpTool(
+type ExecuteMcpGate = {
+  config?: import("./config.js").AppConfig;
+  prisma?: import("@prisma/client").PrismaClient;
+  sessionId?: string;
+  agentTools?: string[] | null;
+};
+
+/**
+ * MCP 的统一执行内核。
+ *
+ * 普通 Agent 调用只能拿到截断后的结果，避免大段图片 base64 挤爆上下文。
+ * 少数 Native 工具需要在进程内消费二进制内容（例如把桌面截图转成附件），此时由
+ * `executeMcpToolRaw` 请求原始结果；原始结果不会直接返回给模型。两条入口共用同一套
+ * 主机授权、私聊限制、工具白名单、断路器与重连逻辑，禁止另开绕过安全闸的 MCP 客户端。
+ */
+async function executeMcpToolInternal(
   services: ServiceContainer,
   externalName: string,
   args: Record<string, unknown>,
-  gate?: {
-    config?: import("./config.js").AppConfig;
-    prisma?: import("@prisma/client").PrismaClient;
-    sessionId?: string;
-    agentTools?: string[] | null;
-  },
+  gate: ExecuteMcpGate | undefined,
+  rawResult: boolean,
 ): Promise<unknown> {
   if (process.env.MOCK_MCP === "true") {
     return executeMockMcpTool(externalName, args, services);
@@ -380,14 +391,14 @@ export async function executeMcpTool(
   try {
     const result = await callToolOnce(server, meta.toolName, args, false);
     breaker.recordSuccess(probeToken);
-    return truncateMcpResult(result);
+    return rawResult ? result : truncateMcpResult(result);
   } catch (firstErr) {
     console.warn(`[MCP] ${meta.serverName}.${meta.toolName} 失败，尝试重连…`, firstErr instanceof Error ? firstErr.message : firstErr);
     evictClient(server.name);
     try {
       const result = await callToolOnce(server, meta.toolName, args, true);
       breaker.recordSuccess(probeToken);
-      return truncateMcpResult(result);
+      return rawResult ? result : truncateMcpResult(result);
     } catch (retryErr) {
       // 首试 + 重连重试整体计一次失败（避免一次调用双重计数提前开闸）
       breaker.recordFailure(probeToken);
@@ -396,6 +407,29 @@ export async function executeMcpTool(
       );
     }
   }
+}
+
+/** Agent / MCP 工具的公开执行入口：始终限制返回体大小。 */
+export async function executeMcpTool(
+  services: ServiceContainer,
+  externalName: string,
+  args: Record<string, unknown>,
+  gate?: ExecuteMcpGate,
+): Promise<unknown> {
+  return executeMcpToolInternal(services, externalName, args, gate, false);
+}
+
+/**
+ * 仅供受信任的 Native 工具在进程内解析 MCP 图片、音频等内容。
+ * 调用方必须把原始字节转成受控本地资源，严禁把本函数结果原样交给 LLM。
+ */
+export async function executeMcpToolRaw(
+  services: ServiceContainer,
+  externalName: string,
+  args: Record<string, unknown>,
+  gate?: ExecuteMcpGate,
+): Promise<unknown> {
+  return executeMcpToolInternal(services, externalName, args, gate, true);
 }
 
 export async function disconnectAllMcpClients(): Promise<void> {

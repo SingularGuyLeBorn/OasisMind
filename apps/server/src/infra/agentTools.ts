@@ -125,6 +125,7 @@ const READ_ONLY_NATIVE = new Set([
   "read_article",
   "scrape_web_page",
   "browser_screenshot",
+  "capture_screenshot",
   "read_image",
   "read_file",
   "list_directory",

@@ -39,7 +39,7 @@ export const NATIVE_TOOL_GROUPS: NativeToolGroup[] = [
 
 export function groupIdForNativeTool(name: string): NativeToolGroupId {
   if (
-    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|scroll_screenshot|save_webpage|download_file|vision_describe|generate_illustration|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
+    /^(web_|read_article|dokobot_|webbridge_|scrape_|rss_|browser_|capture_screenshot|scroll_screenshot|save_webpage|download_file|vision_describe|generate_illustration|video_transcript|read_image|search_arxiv|fetch_arxiv|search_huggingface|fetch_huggingface_|literature_|document_to_markdown)/.test(
       name,
     )
   ) {
@@ -96,6 +96,7 @@ export const NATIVE_LABELS: Record<string, string> = {
   webbridge_command: "WebBridge 浏览器操作",
   scrape_web_page: "采集网页",
   browser_screenshot: "网页截图",
+  capture_screenshot: "统一截图",
   scroll_screenshot: "滚动截图",
   save_webpage: "保存网页到本地",
   download_file: "下载文件到本地",

@@ -344,6 +344,7 @@ export const ALL_NATIVE_TOOL_NAMES = [
   "webbridge_command",
   "scrape_web_page",
   "browser_screenshot",
+  "capture_screenshot",
   "scroll_screenshot",
   "save_webpage",
   "download_file",
