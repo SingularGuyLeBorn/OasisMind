@@ -837,7 +837,7 @@ These trends are consistent with the cost model: DDP spreads its once-per-step w
 这些趋势与成本模型一致: batch 变大时, DDP 每步一次的工作被摊到更多有效计算上, FSDP 则在每个 microbatch 里重复 gather 权重. 每个点只跑了一次, 也没有配套的通信 profile, 所以图里能看出趋势, 看不出确切原因; 而且它测的是吞吐, 训练质量和达到目标 loss 的时间都没有测.
 
 > **问:** 按式 (7) 和 $W_{\text{FSDP}} \propto m P_{\text{local}}$, FSDP 的有效计算和权重搬运都随 m 线性增长, 比值不变; 那 Figure 8a 里 FSDP 的 MFU 为什么还能从 26.4% 升到 29.8%?
-> 两者比值不变, 说明 FSDP 涨的那一点来自每步只付一次的成本被摊薄: 优化器更新 (Table 4 里 $\propto P_{\text{total}}$, 每步一次), 步首步尾的固定开销, 以及梯度同步, 如果 FSDP2 在非最后一个 microbatch 上关掉了 reduce-scatter. FSDP2 默认每次反向都 reduce-scatter, 要靠 `set_requires_gradient_sync(False)` 才能推迟; 报告没说这组对比里 FSDP 是否推迟了梯度同步, 也没给通信 profile (图注明说不分解). DDP 从 25.2% 升到 41.4%, 涨幅大得多, 和「DDP 每步一次的同步与重建全部被摊薄」相符. FSDP 那 3.4 个点具体归哪一项, 报告里没写, 以上归因是纯猜的.
+> 两者比值不变, 说明 FSDP 涨的那一点来自每步只付一次的成本被摊薄: 优化器更新 (Table 4 里 $\propto P_{\text{total}}$, 每步一次), 步首步尾的固定开销, 以及梯度同步, 如果 FSDP2 在非最后一个 microbatch 上关掉了 reduce-scatter. FSDP2 默认每次反向都 reduce-scatter, 要靠 `set_requires_gradient_sync(False)` 才能推迟; 报告没说这组对比里 FSDP 是否推迟了梯度同步, 也没给通信 profile (图注明说不分解). DDP 从 25.2% 升到 41.4%, 涨幅大得多, 和「DDP 每步一次的同步与重建全部被摊薄」相符. FSDP 那 3.4 个点具体归哪一项, 报告里没写, 以上归因只是从已知数字推出的说法, 没有数据验证.
 
 ## 4.3 DDP Alone Hits a Memory Wall · 只靠 DDP 会撞上显存墙
 
@@ -2389,7 +2389,7 @@ On every capacity-enabled sync-free forward, all expert-parallel ranks all-gathe
 每次开了容量的无同步前向里, 所有 expert 并行 rank 先 all-gather 各自请求的 split 计数, 再各自独立推出同一个确定性的 **keep 矩阵**. 对每个目标 rank, 当前策略按「本地 expert 为主序, 源 rank 为次序」把计数展平, 累加放行路由直到达到 $C_{\mathrm{rank}}$, 每个 (源, expert) split 内部保留一段前缀. 还原和 combine 时把尾部丢掉的路由 mask 掉. 这样溢出量有界, 结果可复现, 但排序会影响哪些路由留下来; 所以评估容量时应该报告丢弃的分布, 不能只报总数.
 
 > **核对:** keep 矩阵按「本地 expert 主序, 源 rank 次序」做前缀放行, 溢出时丢的是哪些路由, 这是不是一种系统性偏置?
-> 答: 是. 代码 `nn/moe/v2/ep_no_sync_common.py` 里, 对每个目标 rank 把 `global_requested` 按 `permute(2, 0, 1)` 展平成 (本地 expert, 源 rank) 的顺序, 做 `cumsum` 后 `clamp(max=rank_capacity)`, 差分得到每段放行数. 所以一旦溢出, 先被截掉的总是编号最大的本地 expert, 其次是编号大的源 rank; 编号 0 的本地 expert 只要自己的请求不超过整个预算, 就永远不会丢. 被丢的路由集中在固定的几个 expert 上, 这些 expert 的梯度信号因此系统性偏少, 和 10.2 节「expert 被请求却收不到信号」是同一件事, 只是落点由编号决定, 不由负载决定. 式 (29) 只比较丢弃总数, 没涉及这种分布; 报告这里要求「报告丢弃的分布」, 正是因为这个顺序. 报告的设计意图是近乎不丢 (下面的方框), 偏置只在罕见溢出时出现; 如果溢出频繁, 轮转起始 expert 之类的做法能消除偏置, 但报告和代码里都没有, 是纯猜的.
+> 答: 是. 代码 `nn/moe/v2/ep_no_sync_common.py` 里, 对每个目标 rank 把 `global_requested` 按 `permute(2, 0, 1)` 展平成 (本地 expert, 源 rank) 的顺序, 做 `cumsum` 后 `clamp(max=rank_capacity)`, 差分得到每段放行数. 所以一旦溢出, 先被截掉的总是编号最大的本地 expert, 其次是编号大的源 rank; 编号 0 的本地 expert 只要自己的请求不超过整个预算, 就永远不会丢. 被丢的路由集中在固定的几个 expert 上, 这些 expert 的梯度信号因此系统性偏少, 和 10.2 节「expert 被请求却收不到信号」是同一件事, 只是落点由编号决定, 不由负载决定. 式 (29) 只比较丢弃总数, 没涉及这种分布; 报告这里要求「报告丢弃的分布」, 正是因为这个顺序. 报告的设计意图是近乎不丢 (下面的方框), 偏置只在罕见溢出时出现; 如果溢出频繁, 轮转起始 expert 之类的做法能消除偏置, 但报告和代码里都没有, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 71 of 168 -->
 
@@ -3070,7 +3070,7 @@ Each linear weight is consumed in two orientations. Forward computes with $W ^ {
 每个线性层权重要以两个方向被使用. 前向用 $W^{\top}$ 计算, dgrad 用 $W$ 计算. 每个方向都需要自己的 qdata 和 scale 布局. 本节把这些 qdata 加 scale 的表示叫作 **MXFP8 计算权重缓存**, 简称 **权重缓存**. 按名义存储算, 两个 MXFP8 视图对每个原始权重值需要 $2 \times 33/32 = 2.0625$ 字节. 还没算分块 scale 的 padding, 就已经比一份两字节的 BF16 计算权重多 3.125%.
 
 > **确认:** 为什么不能只存一份 MXFP8 权重, dgrad 时转置一下就用?
-> 答: 因为 MX 的 scale 块是沿收缩维划的 (11.1.1 节, 图 47: scale 网格是 $M \times (K/32)$ 和 $(K/32) \times N$). 前向 $Y = X W^{\top}$ 沿 $d_{\mathrm{in}}$ 收缩, $W$ 的 32 值块要沿 $d_{\mathrm{in}}$ 划; dgrad $\nabla X = \nabla Y W$ 沿 $d_{\mathrm{out}}$ 收缩, 块要沿 $d_{\mathrm{out}}$ 划. 两种划法下每个 scale 覆盖的 32 个元素完全不同, 转置 qdata 不会得到另一种划法的合法表示; 要从一份 MXFP8 再量化出另一份, 又会叠加两次舍入误差. 所以只能从 BF16 (或 FP32 主权重) 各量化一次, 存两份. 同一个约束也落在 Wgrad 上: $\nabla W_e = X_e^{\mathsf{T}} \nabla Y_e$ 沿 $M_e$ 收缩 (表 15), 块要沿 token 维划, 而 rowwise buffer 里各 expert 的段按真实 $M_e$ 紧密排列, $M_e$ 不一定是 32 的倍数, 32 值块会跨过 expert 边界. 这可能是 9.5 节说当前 Wgrad 退回 BF16 grouped GEMM 的原因之一; 具体理由报告放在 11.3 节, 本段范围内没写, 跨边界这一条是纯猜的.
+> 答: 因为 MX 的 scale 块是沿收缩维划的 (11.1.1 节, 图 47: scale 网格是 $M \times (K/32)$ 和 $(K/32) \times N$). 前向 $Y = X W^{\top}$ 沿 $d_{\mathrm{in}}$ 收缩, $W$ 的 32 值块要沿 $d_{\mathrm{in}}$ 划; dgrad $\nabla X = \nabla Y W$ 沿 $d_{\mathrm{out}}$ 收缩, 块要沿 $d_{\mathrm{out}}$ 划. 两种划法下每个 scale 覆盖的 32 个元素完全不同, 转置 qdata 不会得到另一种划法的合法表示; 要从一份 MXFP8 再量化出另一份, 又会叠加两次舍入误差. 所以只能从 BF16 (或 FP32 主权重) 各量化一次, 存两份. 同一个约束也落在 Wgrad 上: $\nabla W_e = X_e^{\mathsf{T}} \nabla Y_e$ 沿 $M_e$ 收缩 (表 15), 块要沿 token 维划, 而 rowwise buffer 里各 expert 的段按真实 $M_e$ 紧密排列, $M_e$ 不一定是 32 的倍数, 32 值块会跨过 expert 边界. 这可能是 9.5 节说当前 Wgrad 退回 BF16 grouped GEMM 的原因之一; 具体理由报告放在 11.3 节, 本段范围内没写, 跨边界这一条只是推出的说法, 没有数据验证.
 
 Our optimizer also retains an FP32 main weight and FP32 optimizer states. After the MXFP8 caches have been initialized, the full BF16 initialization anchor can be released, but the two caches take its place. MXFP8 therefore does not remove the persistent training-state memory wall by itself. EP, PP, and distributed optimizer sharding remain responsible for dividing parameters, gradients, and optimizer tensors, as described in Part II.
 
@@ -3315,7 +3315,7 @@ The direction of this result matches the NVIDIA recipe study: round-ceiling scal
 结果的方向与 NVIDIA 的配方研究一致: round-ceiling scaling 贴着高精度基线走, floor scaling 则出现肉眼可见的 loss 退化 (Mishra et al., 2025).
 
 > **想:** §11.3.5 的三条支路共用一个 floor 训出的 step-6000 checkpoint, floor 支路只是照原样继续, 为什么偏偏它在约 11B token 内拉开 +0.022 的 loss, 梯度范数高 51%?
-> 答: 先按 Table 24 的伪代码算 floor 什么时候截断. floor 取 $e=\lfloor\log_2 a\rfloor-8$, 归一化后的块最大值 $a/2^e$ 落在 $[256,512)$; 落进 $(448,512)$ 的块, 最大元素就被 `sat_E4M3` 截到 448, 最多压小 12.5%. 若块最大值在对数尺度上大致均匀, 这类块约占 $\log_2(512/448)\approx 0.19$, 即五分之一左右的 32 元素块. rceil 把 $a/2^e$ 放进 $(224,448]$, 不截断, 代价是这些块的量化步长粗一倍. 所以 floor 的误差有偏 (只压每块的最大值), rceil 的误差是无偏的舍入误差. 梯度范数 +51% 与「被截的恰好是 outlier 通道」的推断一致, 但 Figure 56 只有全模型的总梯度范数, 没有分层或分张量的数据, 这一步报告里没写, 是纯猜的. 另外 trunk 的前 6000 步也是 floor, 报告没有一条从头 BF16 的对照, 所以只能说「从同一点出发, floor 比 rceil 和 BF16 差」, 不能说前 6000 步没被 floor 拖累. 代码侧, `src/olmo_core/mxfp8_config.py` 的 `MXFP8ScaleMode` 只有 `floor` 和 `rceil` 两档, 环境变量缺省取 `rceil`, 与正文「默认 rceil」一致.
+> 答: 先按 Table 24 的伪代码算 floor 什么时候截断. floor 取 $e=\lfloor\log_2 a\rfloor-8$, 归一化后的块最大值 $a/2^e$ 落在 $[256,512)$; 落进 $(448,512)$ 的块, 最大元素就被 `sat_E4M3` 截到 448, 最多压小 12.5%. 若块最大值在对数尺度上大致均匀, 这类块约占 $\log_2(512/448)\approx 0.19$, 即五分之一左右的 32 元素块. rceil 把 $a/2^e$ 放进 $(224,448]$, 不截断, 代价是这些块的量化步长粗一倍. 所以 floor 的误差有偏 (只压每块的最大值), rceil 的误差是无偏的舍入误差. 梯度范数 +51% 与「被截的恰好是 outlier 通道」的推断一致, 但 Figure 56 只有全模型的总梯度范数, 没有分层或分张量的数据, 这一步报告里没写, 只是从已知数字推出的说法, 没有数据验证. 另外 trunk 的前 6000 步也是 floor, 报告没有一条从头 BF16 的对照, 所以只能说「从同一点出发, floor 比 rceil 和 BF16 差」, 不能说前 6000 步没被 floor 拖累. 代码侧, `src/olmo_core/mxfp8_config.py` 的 `MXFP8ScaleMode` 只有 `floor` 和 `rceil` 两档, 环境变量缺省取 `rceil`, 与正文「默认 rceil」一致.
 
 ## 11.4 The Olmo MXFP8 Recipe for MoE · Olmo 面向 MoE 的 MXFP8 配方
 
@@ -3620,7 +3620,7 @@ The profile shows which work repeats. A normal train\_batch contains 64 projecte
 profile 显示了哪些工作被重复. 正常的一个 `train_batch` 包含 64 段 block forward: 8 个 block 乘 8 个 rank 本地 microbatch. per-block recompute 把这个数提到 128, 因为每个 block 的 forward 都在 backward 时重算一遍; 7 个 routed block 的每次重算都包含 dispatch 和 combine. GEMM 与 attention kernel 的总时长增加 24.8%, rank 0 的 GPU span 增加 26.7%, 与独立测得的「单位有效工作耗时增加 26.5%」很接近. 这些时长之和只是工作量指标, 不能相加成 wall time 的分解, 因为不同 stream 上的 kernel 会重叠.
 
 > **拆开:** §13.4 里 per-block recompute 把 block forward 从 64 段翻到 128 段, 为什么 GEMM 与 attention kernel 时间只涨 24.8%, 低于「backward 约为 forward 两倍, 多一遍 forward 就多 1/3」给出的约 33%?
-> 答: 先对数: 单位工作耗时涨 26.5%, 对应吞吐降到 $1/1.265\approx0.790$, 正好是 Figure 62 的 -20.95%, 两个口径自洽. 33% 的估算假设 backward 恰好是 forward 的 2 倍. 偏低的可能来源有三处. 第一, attention backward 要重算 softmax, 通常比 forward 贵出两倍以上, 分母变大, 比例就下降. 第二, 输出 logits 和 LM head 不在 transformer block 里, 不参与重算, 却算在 GEMM 总时长里; Table 32 的说明提到 logits 在 40.8 GiB 瞬态峰值里有份, 说明这部分不小. 第三, 正常模式下 router 输入本来就走 §13.2 的 output-discard checkpoint, 两种模式都有这一点重算, 抵掉了一小截差值. §13 引言说的 non-reentrant 提前停止也可能少算最后一个算子. 各项各占多少报告没拆, 是纯猜的. 能确定的是 24.8%, 26.7%, 26.5% 三个数很接近, 说明多出来的时间基本就是重复计算本身, 重跑 dispatch 和 combine 没有引入明显的额外等待.
+> 答: 先对数: 单位工作耗时涨 26.5%, 对应吞吐降到 $1/1.265\approx0.790$, 正好是 Figure 62 的 -20.95%, 两个口径自洽. 33% 的估算假设 backward 恰好是 forward 的 2 倍. 偏低的可能来源有三处. 第一, attention backward 要重算 softmax, 通常比 forward 贵出两倍以上, 分母变大, 比例就下降. 第二, 输出 logits 和 LM head 不在 transformer block 里, 不参与重算, 却算在 GEMM 总时长里; Table 32 的说明提到 logits 在 40.8 GiB 瞬态峰值里有份, 说明这部分不小. 第三, 正常模式下 router 输入本来就走 §13.2 的 output-discard checkpoint, 两种模式都有这一点重算, 抵掉了一小截差值. §13 引言说的 non-reentrant 提前停止也可能少算最后一个算子. 各项各占多少报告没拆, 只是从已知数字推出的说法, 没有数据验证. 能确定的是 24.8%, 26.7%, 26.5% 三个数很接近, 说明多出来的时间基本就是重复计算本身, 重跑 dispatch 和 combine 没有引入明显的额外等待.
 
 <!-- page 103 of 168 -->
 
@@ -4167,7 +4167,7 @@ Separate B300 stress measurements show that power limiting can reduce clocks and
 另一组 B300 压力测量表明, 功耗限制会压低时钟和吞吐. §9 的 grouped GEMM 诊断 (附录 A.12) 用极大的 expert 形状把 B300 顶到板卡功耗上限: 几乎每个遥测样本里软件功耗上限限制器都处于激活状态, SM 时钟中位数从 1174 MHz 降到 960 MHz, grouped GEMM 吞吐中位数从 1366 TFLOP/s 降到 1163 TFLOP/s; 而每次试验的每 MHz 吞吐 (该次吞吐除以它的平均 SM 时钟), 在同一个 kernel 模板上按形状取中位数, 都落在 1.16 到 1.19 TFLOP/s/MHz. 那次运行改的是形状而非操作数取值, 所以它说明这款硬件如何响应, 回答不了 Table 34 里是什么触发了响应. 在压力诊断里, 吞吐随时钟降低而下降. 这些测量不能说明原始运行里操作数取值为什么改变了耗时. Table 35 汇总了与「功耗加时钟」假说相关的观测. 按 §19.3 的做法对齐操作数, 就能控制住观测到的耗时效应, 不必先在几种机制之间做出判断.
 
 > **回看:** §19.2 用 B300 压力测试里「每 MHz 吞吐近乎恒定」去支撑功耗降频假说, 可 Table 34 里 dense GEMM 在常数填充下几乎不变 (24.350 对 24.724 ms), grouped GEMM 却快了 34%; 单靠「比特翻转少, 功耗低, 时钟高」解释得了这个差别吗?
-> 答: 按降频假说, 时间与时钟成反比, 常数填充时两种 GEMM 的翻转都应该很少. 若都处在功耗上限, 两者应该一起变快; dense 不变, 说明至少 dense 那次没有被功耗卡住, 或者它的耗时主要不由时钟决定. 一种可能是工作点不同: grouped GEMM 8 组各 16,384 行, 总量与 dense 的 $M=131{,}072$ 相同, 但 kernel 模板和 tile 调度不同, 各自离功耗上限多远可以不一样, 离得近的那个才对比特翻转敏感. 全零时 dense 也降了 21%, 与「零值翻转最少, 把 dense 也压到上限以下」相符. 这条推断要靠同时记录 SM 时钟和功耗来验证, 正文承认这次运行没记; 按 Table 35 只能确认「功耗限制会降频」和「取值会改功耗」两段, 中间「本次运行确实触发了降频」这一环没有数据, 是纯猜的.
+> 答: 按降频假说, 时间与时钟成反比, 常数填充时两种 GEMM 的翻转都应该很少. 若都处在功耗上限, 两者应该一起变快; dense 不变, 说明至少 dense 那次没有被功耗卡住, 或者它的耗时主要不由时钟决定. 一种可能是工作点不同: grouped GEMM 8 组各 16,384 行, 总量与 dense 的 $M=131{,}072$ 相同, 但 kernel 模板和 tile 调度不同, 各自离功耗上限多远可以不一样, 离得近的那个才对比特翻转敏感. 全零时 dense 也降了 21%, 与「零值翻转最少, 把 dense 也压到上限以下」相符. 这条推断要靠同时记录 SM 时钟和功耗来验证, 正文承认这次运行没记; 按 Table 35 只能确认「功耗限制会降频」和「取值会改功耗」两段, 中间「本次运行确实触发了降频」这一环没有数据, 只是从已知数字推出的说法, 没有数据验证.
 
 Inline compression is another possible mechanism, but we have no evidence that it was active in this experiment. NVIDIA documents that Hopper can transfer compressible global memory using fewer physical bytes and thereby exceed nominal uncompressed bandwidth (NVIDIA, 2026s). This is an opt-in property of an individual allocation, requested through the CUDA Driver API; it is not a general promise that ordinary tensors are compressed (NVIDIA, 2026o). Our benchmark used ordinary PyTorch allocations on a Blackwell B300 and never requested the compressible-memory attribute. A later check on the same GPU class with the current PyTorch allocator found that an ordinary tensor, when it could be queried at all, reported no compression attribute; that check describes the current allocator rather than the environment of the original run. The high arithmetic intensity of these GEMMs and the different constant-fill behavior of grouped and dense kernels also argue against assuming a single bandwidth-only explanation.
 
@@ -5142,7 +5142,7 @@ Nsight timelines at $M _ { e } = 2 \mathrm { K }$ and 32K show the same CUTLASS 
 $M _ { e } = 2 \mathrm { K }$ 和 32K 的 Nsight 时间线显示用的是同一个 CUTLASS grouped GEMM kernel 模板. 加上每 MHz 吞吐几乎不变, 这就排除了大 $M_e$ 时换了 kernel 分派的可能, 也没有证据表明出现了算法层面的扩展崩溃. 实际情况是, 持续运行的超大 grouped GEMM 在接近 1.1 kW 板卡功耗上限时稳定在一个更低的时钟. 这个更低工作点的具体微架构原因尚未确定. 这些极端形状下的计时, 要结合时钟, 功耗和操作数数值一起解读.
 
 > **停一下:** A.12 把 grouped GEMM 变慢归到功耗墙下的降频, 但同 FLOPs 的稠密对照一直持平在 1.41–1.42 PFLOP/s; 同样的算术量, 为什么 grouped GEMM 的时钟被压得更低?
-> 答: 先看 A.11: $T$ 为 32K 和 64K 时「all paths operate under the software power limit」, 稠密也在功耗墙下, 只是在墙下仍跑出 1.41 PFLOP/s, grouped 则稳定在它的 82.7%, 与这里 1163/1411 约 0.82 一致. 所以问题其实是: 同样卡在约 1.1 kW, 为什么 grouped 每焦耳做的有效 FLOPs 更少. Figure 73 图注给了线索: 稠密复用一个权重矩阵, grouped 读 16 个专家矩阵. 按 A.8 的式 (90), $M_e\ge 4\mathrm K$ 时两者的算术强度都在数千 FLOP/byte, 不受带宽限制, 但多出来的权重读取仍要消耗 HBM 和 L2 的能量, 同样的功耗预算留给 Tensor Core 的就少, 时钟被压低. 每 MHz 吞吐几乎不变 (1.16–1.19) 说明每个时钟周期的效率没变, 变的只是时钟. BMM 同样读 16 个矩阵, 吞吐平在 1.21–1.22 PFLOP/s, 报告没给它的时钟, 判断不了它是否也降了频. §19 说操作数数值会改变 GEMM 时间, 数值翻转率也影响功耗, 是另一个可能的因素. 报告明说「precise microarchitectural reason ... is not established」, 上面能耗分配的解释是纯猜的.
+> 答: 先看 A.11: $T$ 为 32K 和 64K 时「all paths operate under the software power limit」, 稠密也在功耗墙下, 只是在墙下仍跑出 1.41 PFLOP/s, grouped 则稳定在它的 82.7%, 与这里 1163/1411 约 0.82 一致. 所以问题其实是: 同样卡在约 1.1 kW, 为什么 grouped 每焦耳做的有效 FLOPs 更少. Figure 73 图注给了线索: 稠密复用一个权重矩阵, grouped 读 16 个专家矩阵. 按 A.8 的式 (90), $M_e\ge 4\mathrm K$ 时两者的算术强度都在数千 FLOP/byte, 不受带宽限制, 但多出来的权重读取仍要消耗 HBM 和 L2 的能量, 同样的功耗预算留给 Tensor Core 的就少, 时钟被压低. 每 MHz 吞吐几乎不变 (1.16–1.19) 说明每个时钟周期的效率没变, 变的只是时钟. BMM 同样读 16 个矩阵, 吞吐平在 1.21–1.22 PFLOP/s, 报告没给它的时钟, 判断不了它是否也降了频. §19 说操作数数值会改变 GEMM 时间, 数值翻转率也影响功耗, 是另一个可能的因素. 报告明说「precise microarchitectural reason ... is not established」, 上面能耗分配的解释没有数据验证.
 
 ## A.13 Grouped Kernels Accept Managed Buffers · Grouped kernel 接受外部管理的 buffer
 
@@ -5575,7 +5575,7 @@ This is the dense BF16 Tensor Core peak, not NVIDIA’s doubled 2:4-sparse peak 
 $C_{\mathrm{BF16}}$ 是稠密 BF16 Tensor Core 峰值, 不是 NVIDIA 翻倍后的 2:4 稀疏峰值 (NVIDIA, 2026r); 只选一部分 expert, 并不会让它们的权重矩阵变成 2:4 稀疏. 分子只计激活模型的工作量, 不含激活重算; 耗时则包含整个训练步. MXFP8 的 run 也沿用这个 BF16 参照, 保证归一化口径一致; 这些值不能读作 FP8 峰值的利用率.
 
 > **核对:** 式 (95) 的分子不计重算, 分母用 BF16 峰值; Ultra-128E 的 858 TFLOP/s/GPU 背后, 硬件实际执行了多少算力?
-> 答: 按式 (95), 858 / 2250 ≈ 38.1% 的 BF16 参照 MFU. B.10 第一张表里 Ultra-128E 开了逐层重算, 反向之前要把每层的前向再算一遍. 按「前向 1 份, 反向 2 份」的常用比例粗估, 实际执行的矩阵乘约为有效工作量的 4/3, 即约 1144 TFLOP/s/GPU, 合 BF16 峰值的 51% 左右. 对照 Medium-64E 的 853: 它是 BF16, 不重算, 853 就是实际执行量. 两行数字接近, 但 Ultra-128E 背后硬件多做了约三分之一的工作, 而且它的 attention 和 MLP 矩阵乘走 MXFP8, 相对 FP8 峰值的利用率还会更低. 4/3 这个系数是按经验比例估的, 逐层重算是否覆盖 attention 内部, 报告里没写, 是纯猜的.
+> 答: 按式 (95), 858 / 2250 ≈ 38.1% 的 BF16 参照 MFU. B.10 第一张表里 Ultra-128E 开了逐层重算, 反向之前要把每层的前向再算一遍. 按「前向 1 份, 反向 2 份」的常用比例粗估, 实际执行的矩阵乘约为有效工作量的 4/3, 即约 1144 TFLOP/s/GPU, 合 BF16 峰值的 51% 左右. 对照 Medium-64E 的 853: 它是 BF16, 不重算, 853 就是实际执行量. 两行数字接近, 但 Ultra-128E 背后硬件多做了约三分之一的工作, 而且它的 attention 和 MLP 矩阵乘走 MXFP8, 相对 FP8 峰值的利用率还会更低. 4/3 这个系数是按经验比例估的, 逐层重算是否覆盖 attention 内部, 报告里没写, 只是从已知数字推出的说法, 没有数据验证.
 
 <!-- page 151 of 168 -->
 
