@@ -46,7 +46,7 @@ $$\rho = \frac{N_{\text{act}}}{N_{\text{total}}} \tag{1}$$
 
 ### 1.4. 上一代留下的训练问题
 
-规模从 196B 到 600B, 3.5 Flash 报告里记下的几类训练问题都会更突出. 第一类来自优化器: 全程用 Muon, 正交化用 Polar Express, bfloat16 下偶发不可恢复的 loss 尖峰, 最后把 Polar Express 的状态和中间量改成 float16 才压住. 第二类是专家死亡: Step-3 遇到的是路由饥饿, 某些专家长期分不到 token; 3.5 Flash 看到的是路由统计正常, 专家的激活和参数范数却一路萎缩, 诱因之一是 micro-batch 级均衡 loss 管得太严. 第三类是深层少数专家的激活爆炸, 只做权重裁剪推迟不了多久, 要在进 $W_{\text{down}}$ 之前对激活逐元素截断才压得住. 作者因此把「每专家激活范数的 max/median 比值」列为必须监控的指标. 另外, 3.5 Flash 在常规负载均衡 loss 之外, 还按 EP rank 分组加了一项组级均衡, 目的是避免专家并行时个别卡拖慢整步. 600B 的专家要摊到更多卡上, 这类拖尾只会更明显. Muon 的背景见 [MuonClip 与 Polar Express](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).
+规模从 196B 到 600B, 3.5 Flash 报告里记下的几类训练问题都会更突出. 第一类来自优化器: 全程用 Muon, 正交化用 Polar Express, bfloat16 下偶发不可恢复的 loss 尖峰, 最后把 Polar Express 的状态和中间量改成 float16 才压住. 第二类是专家死亡: Step-3 遇到的是路由饥饿, 某些专家长期分不到 token; 3.5 Flash 看到的是路由统计正常, 专家的激活和参数范数却一路萎缩, 诱因之一是 micro-batch 级均衡 loss 管得太严. 第三类是深层少数专家的激活爆炸, 只做权重裁剪推迟不了多久, 要在进 $W_{\text{down}}$ 之前对激活逐元素截断才压得住. 作者因此把「每专家激活范数的 max/median 比值」列为必须监控的指标. 另外, 3.5 Flash 在常规负载均衡 loss 之外, 还按 EP rank 分组加了一项组级均衡, 目的是避免专家并行时个别卡拖慢整步. 600B 的专家要摊到更多卡上, 这类拖尾只会更明显. Muon 的背景见 [MuonClip 与 Polar Express](../../../../llm-guide/6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md).
 
 后训练上, 3.5 Flash 先分领域练专家模型, 再自蒸馏回一个模型, 最后用 MIS-PO 做大规模 RL. MIS-PO 把推理引擎和训练框架之间的概率比当作二值过滤条件, 比值落在区间外的 token 或整条轨迹直接丢掉, 用来压住 MoE 上「同一 token 在两边被路由到不同专家」带来的方差. 配套的 Routing Confidence 是每个 token 被激活专家的 top-$k$ 概率之和再取平均, 低了就要 Router Replay 或严格 on-policy. 报告 §7 列的第一条局限是 token 效率, 达到 Gemini 3.0 Pro 相当的质量需要更长的生成轨迹, 下一步打算压缩思考过程. Step 5 发布页把卖点放在 Task Cost 上, 正好接着这条局限, 但页面没给 token 用量, 训练方法也一句没提, 这一代是否沿用 MIS-PO 无从核对.
 

@@ -1042,4 +1042,4 @@ Muon,Sophia,Adam-mini 三者共同勾勒出 2025–2026 年优化器研究的三
 - **Polar Express** 替换的是 $\mathrm{polar}(M)$ 的多项式,不是优化器品牌;BF16 仍可能 spike.
 - **MuonClip / QK-Clip** 是更新后按头缩放 $W_q,W_k$,不是梯度裁剪.
 
-对照 AdamW 的单独成篇:[05-MuonClip与PolarExpress](../05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).本篇 NS 推导不删,不重写. 
+对照 AdamW 的单独成篇:[04-MuonClip与PolarExpress](../04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md).本篇 NS 推导不删,不重写. 

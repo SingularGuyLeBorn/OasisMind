@@ -205,7 +205,7 @@ Muon 只用于真正作为二维线性映射的权重: 注意力的 q, k, v, o, 
 - **输出门**: 注意力输出门和 GDN 的 z 投影, 消融里 AdamW 与 Muon 持平或略好.
 - **向量参数**: GDN 的 decay 和 beta 投影每个头只出一个标量, 正交化没有意义, 排除在 Muon 之外.
 
-融合参数 (Megatron-LM 中拼在一起的 qkv, SwiGLU 的 fc1, GDN 输入投影) 语义上是沿输出维拼接的独立线性映射, 直接对拼接矩阵正交化会把不相关子块的奇异方向混在一起, 缩放系数也按错误的形状计算. 报告先把梯度拆开, 对每个子矩阵单独做 Newton-Schulz, 再拼回原布局. qkv 和 GDN 输入按头拆, loss 和下游都有改善; fc1 拆成 gate 和 up 两半, loss 基本不变, 下游略升. Newton-Schulz 迭代取 8 步, 比更少步数正交化更准, 压力测试中梯度范数尖峰的幅度和频率都更低. 细节见 [MuonClip 与 Polar Express](../../../../6-训练与推理优化/6.5-优化器/6.5.2-Muon/05-MuonClip与PolarExpress/05-MuonClip与PolarExpress.md).
+融合参数 (Megatron-LM 中拼在一起的 qkv, SwiGLU 的 fc1, GDN 输入投影) 语义上是沿输出维拼接的独立线性映射, 直接对拼接矩阵正交化会把不相关子块的奇异方向混在一起, 缩放系数也按错误的形状计算. 报告先把梯度拆开, 对每个子矩阵单独做 Newton-Schulz, 再拼回原布局. qkv 和 GDN 输入按头拆, loss 和下游都有改善; fc1 拆成 gate 和 up 两半, loss 基本不变, 下游略升. Newton-Schulz 迭代取 8 步, 比更少步数正交化更准, 压力测试中梯度范数尖峰的幅度和频率都更低. 细节见 [MuonClip 与 Polar Express](../../../../6-训练与推理优化/6.5-优化器/6.5.2-Muon/04-MuonClip与PolarExpress/04-MuonClip与PolarExpress.md).
 
 ### 4.3 压力测试
 

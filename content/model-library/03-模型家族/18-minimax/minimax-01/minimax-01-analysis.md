@@ -46,7 +46,7 @@ lightning attention 是作者团队此前提出的方法, 本文称它是 TransN
 
 速度一侧, 图 8 在 3B 规模, 单机 H800 上把序列从 1,024 拉到 65,536, 称 lightning 的训练速度与长度无关, 并且是唯一超过 FlashAttention-2 的线性模型. 读图时可以看到, 在 1,024 这一点上 softmax 的 TGS 其实还略高于 lightning (读图), 优势是从更长的长度开始出现的. 这与第 3.3.4 节的推理数据互相印证: 序列长 1,024,000 token 时, softmax attention 占注意力与 FFN 总延迟的 95%, lightning 不到 12%. 线性注意力的收益随长度放大, 在短序列上并不明显.
 
-延伸阅读: [新兴架构与混合模型](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.5-新兴架构与混合模型/2.5.5-新兴架构与混合模型.md), [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
+延伸阅读: [混合架构](../../../../llm-guide/2-核心原理与架构/2.5-线性注意力与状态空间模型/2.5.5-混合架构/2.5.5-混合架构.md), [Scaling Law](../../../../llm-guide/3-预训练/3.3-模型配置与Scaling-Laws/3.3.2-Scaling-Laws/3.3.2-Scaling-Laws.md).
 
 ## 3. MoE 与规格: 456B 和 45.9B 是怎么来的
 

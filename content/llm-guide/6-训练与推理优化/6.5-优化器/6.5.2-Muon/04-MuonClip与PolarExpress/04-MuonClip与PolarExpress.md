@@ -1,5 +1,5 @@
 ---
-title: "05 · MuonClip 与 Polar Express:对照 AdamW 的稳定性与极分解"
+title: "04 · MuonClip 与 Polar Express:对照 AdamW 的稳定性与极分解"
 published: true
 tags: ["Muon", "MuonClip", "QK-Clip", "Polar Express", "AdamW", "优化器"]
 excerpt: "AdamW 把每个权重当成独立标量;Muon 把二维层当成矩阵,走谱范数意义下的最速下降.2025–2026 的训练报告里,真正把这套跑到万亿 MoE 上的,不是再发明一个「Muon 2」,而是两件更窄的事:"
