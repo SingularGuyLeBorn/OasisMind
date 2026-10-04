@@ -75,7 +75,7 @@ python scripts/paper-ingest.py <arxiv-id | pdf 路径 | URL> <garden>/<章>/<slu
 - 结构: 篇名 `#` 不编号; `## 1.` 大段 3-5 个 (最多 6, 参考文献不计), `### 1.1.` 每个 `##` 至少两个, 每个 `###` 至少两段; 列表最多 5 项. 开头一段写来源 (论文, 日期, 机构, 代码链接).
 - 内容: 每个机制讲到能复述: 解决哪项成本, 怎么做, 代价, 实测数字及口径 (哪张表, 什么设置). 公式按项写开; 消融写清改了哪个量. 能链接 llm-guide 已有推导的就链接, 不重推 (先确认文件存在).
 - 篇幅: 5000-15000 汉字, 讲完为止, 不灌水. 超过 10000 字可在开头写 3-5 句的「太长不看版」.
-- 图: `![](images/<文件名>)` 后紧跟「图 N 解析」, 只引真实存在的图.
+- 图: `![](images/<文件名>)` 下一行必须是图注 `> 图 N: <画的是什么, 原文 Figure k>`, 图注之后才写「图 N 解析」; 只引真实存在的图. bi 稿里原文没有题注的图也要补一行中文图注.
 - 禁止: 比喻, 元评论 (「本篇」「先看」「源文 §x 说」), 面试腔, 「纯猜」「(推断)」「(估算)」「TODO」「待补」这类标记 (content-check 会拦). 拿不准的数写「文中没有给出」并说明推算路径.
 
 ## 5. 检查 (全过才进下一步)
@@ -87,6 +87,7 @@ python <store>/structure_check.py <slug>-analysis.md   # 结构全 0
 python <store>/scan.py <slug>-bi.md <slug>-analysis.md # 禁用词 0, 全角标点 0
 python <store>/check_math.py <slug>-analysis.md        # 汉字数, 未包 $ 的符号
 node scripts/content-check.mjs                          # 文件, 链接, frontmatter, 标记
+python scripts/caption-check.py <slug 目录>              # 每张图都有图注
 ```
 
 ## 6. 清理与提交
