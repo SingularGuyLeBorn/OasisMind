@@ -41,7 +41,7 @@ pnpm --filter @oasismind/server zhihu search <关键词> [--count 5]
 pnpm --filter @oasismind/server zhihu read <url> [--offset 0] [--maxChars 12000] [--meta-only]
 pnpm --filter @oasismind/server zhihu answers <question-url> [--limit 20] [--offset 0]
 pnpm --filter @oasismind/server zhihu comments <文章/回答url> [--order score|reverse|ascending] [--max 200]
-pnpm --filter @oasismind/server zhihu follow-check <作者名|url_token ...>
+pnpm --filter @oasismind/server zhihu follow-check <作者名|url_token ...> [--max 5000]
 pnpm --filter @oasismind/server zhihu save <url> [--no-comments] [--max 200] [--maxChars 80000]
 
 status 不打印密钥。search 每条只印摘要字数+前 180 字。read 默认输出该页正文；长文看 nextOffset。
@@ -244,9 +244,16 @@ async function cmdComments(url: string, flags: Flags): Promise<void> {
   console.log(JSON.stringify(row, null, 2));
 }
 
-async function cmdFollowCheck(authors: string[]): Promise<void> {
+async function cmdFollowCheck(authors: string[], flags: Flags): Promise<void> {
   const ctx = makeCtx();
-  const raw = await executeNativeTool("zhihu_openapi_follow_check", { authors }, ctx);
+  const raw = await executeNativeTool(
+    "zhihu_openapi_follow_check",
+    {
+      authors,
+      ...(Number.isFinite(flags.max) ? { maxFollowees: Math.max(50, Math.floor(Number(flags.max))) } : {}),
+    },
+    ctx,
+  );
   const row = raw as Record<string, unknown>;
   if (row.error) throw new Error(String(row.error));
   console.log(JSON.stringify(row, null, 2));
@@ -307,7 +314,7 @@ async function main(): Promise<void> {
   if (cmd === "follow-check" || cmd === "follow_check" || cmd === "followcheck") {
     const authors = positional.map((a) => a.trim()).filter(Boolean);
     if (!authors.length) throw new Error("follow-check 需要至少一个作者名或 url_token");
-    await cmdFollowCheck(authors);
+    await cmdFollowCheck(authors, flags);
     return;
   }
   if (cmd === "save") {
