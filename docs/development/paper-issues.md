@@ -219,3 +219,13 @@
 - **dolma-repo-3** `docs/mixer.md` 参数说明写成 `if you do not with to use jq selector pattern`，疑为 `wish` 的文字笔误. 求证结果:
 - **dolma-repo-4** 去重文档明确 Bloom filter 会产生 false positive，因此最终重复标记不是精确真值，阈值及容量配置会改变误删率. 求证结果:
 - **dolma-repo-5** attributes 流依赖与文档流的行数、顺序完全对齐而非按 ID join；坏行或漏行会把后续属性错配给错误文档，流水线必须额外校验对齐. 求证结果:
+
+### OLMES 仓库
+
+解析: `content/olmo/05-开源仓库/olmes/olmes-analysis.md`.
+
+- **olmes-repo-1** README 的 OLMo 3 结果条目仍保留 `TBD Title ([TBD Citation](...))` 占位文本，不能据此恢复正式论文题名或引用. 求证结果:
+- **olmes-repo-2** safety 命令使用 `OPEN_API_KEY`，而前文 instruct 评测使用 `OPENAI_API_KEY`；环境变量名称不一致，疑为文档笔误或未说明的不同接口. 求证结果:
+- **olmes-repo-3** per-task JSON 示例把 `hellaswag` 拼成 `hellasag`，照抄示例可能导致任务查找失败. 求证结果:
+- **olmes-repo-4** ARC 的 OLMES 默认同时运行 multiple-choice 与 cloze 协议并报告较高者，包含协议选择效应；跨模型比较必须固定相同协议，不能与单协议结果直接并列. 求证结果:
+- **olmes-repo-5** 外部 judge/API 版本和 Hugging Face 默认 revision 没有被仓库提交号一并冻结；只固定 OLMES 代码提交仍不足以完全复现实验. 求证结果:
