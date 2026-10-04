@@ -1,96 +1,175 @@
 ---
-title: "GLM-5.3: 同一个基座上, 后训练改了多少分"
+title: "GLM-5.3: 基座不变, 后训练把长程编程推上去"
 category: "模型库"
 tags: ["GLM", "技术解析"]
 published: true
-excerpt: "它是厂商的发布博客, 不是技术报告. 全篇没有模型结构, 没有参数量, 没有训练数据量, 也没有消融实验."
+excerpt: "GLM-5.3 和 GLM-5.2 用同一个基座, 提升全部来自后训练: 合成的长程任务环境更多, 强化学习沿用 SAO, slime 在训推一致性和吞吐上又升了一级. Terminal Bench 3.0 从 4.6 涨到 28.3, 漏洞利用类基准比 GLM-5.2 翻倍以上."
 ---
-> 源文 `glm-5-3.md` 是 Z.ai 的一篇发布博客, 12 页, 10 张图. 全篇没有结构, 参数量和训练数据量, 能核对的只有一张 17 行对比表, 七张评测图, 15 条脚注和几段文字说明.
+# GLM-5.3: 基座不变, 后训练把长程编程推上去
 
-# GLM-5.3: 同一个基座上, 后训练改了多少分
+## 太长不看版
 
-来源: 同目录 `glm-5-3.md`, 对照同目录 `glm-5-3.pdf` (PDF 生成时间 2026-09-25). 逐段英中对照和 12 处疑点见 `glm-5-3-bi.md`. 引到同家族 `glm-5-2/glm-5-2.md` 的地方一律注明 「GLM-5.2 博客」, 只作核对. 网络安全部分只记基准名和分数, 不写做法, 不写案例.
+材料是 Z.ai 2026-08-14 的发布博客, 加上 HuggingFace 上 `zai-org/GLM-5.3` 的模型卡. 博客开头一句是 「Scaling post-training is all we did for GLM-5.3」, 所以这是一篇纯后训练的升级说明.
 
-## 1. 材料是什么
+- **基座**: 和 GLM-5.2 相同, 结构就是 GLM-5.2 那套 (78 层 MoE, MLA 加 DSA, IndexShare, 1M 窗口). 模型卡 Safetensors 栏显示 753B, 博客没写参数量和训练数据.
+- **后训练栈**: IndexShare 管长上下文成本, SAO (单条 rollout 的异步 PPO) 管长程 RL, slime 管大规模异步训练. 这次加的是环境: 研究型智能体合成长程任务环境, 验证器不看参考解自己合成, 过 oracle, no-op, 未解状态三道检查后直接出二值奖励.
+- **slime 升级**: 训练和 rollout 两条路径完全数值对齐, 对数概率平均差压到 1e-7 量级; 多教师 OPD 动态切换教师, router 与 slime 联合调度, 长程编程 RL 端到端吞吐提高 2.3 倍以上.
+- **成绩**: Terminal Bench 3.0 4.6 到 28.3, DeepSWE v1.1 46.2 到 66.9, AutomationBench 26.2 到 48.2; 内部 Z.ai Code Bench 上 Max 档 23.4% 到 34.5%, 输出从 96K 降到约 75K.
+- **网络安全**: CyberGym 84.5, 全表最高; ExploitBench 24.4 到 54.4, ExploitGym 2 小时内完成任务数 29 到 105. 和表里最强的闭源列仍差得远.
+- **使用**: API 只有 low, high, max 三档, 默认 max, 思考不能关. 权重已在 HuggingFace 公开.
 
-这是 Z.ai 研究栏目的一篇发布博客, 日期 2026-08-14, PDF 共 12 页, md 收了 10 张图. 内容按页分布如下: 第 1 页是标题, 四个链接, 两段导语和三条要点; 第 2 到 3 页是一组评测小图和一张 17 行的对比表, 分编程 8 行, 网络安全 3 行, 智能体 6 行; 第 3 到 5 页 「Stronger Coding」 讲任务环境, 奖励信号和内部基准 Z.ai Code Bench, 配一张 effort 档位图; 第 5 到 7 页是网络安全, 配三张小图和一组台账统计; 第 7 到 8 页讲训练框架 slime; 第 8 到 10 页是 API 变化, 编程套餐, ZCode 和本地部署; 第 10 到 11 页是 15 条脚注; 第 12 页是页脚.
+预训练不动, 能动的就只有后训练用什么数据, 什么环境, 什么算法, 多少算力. GLM-5.2 已经把 1M 窗口, 长程 RL 算法和训练框架搭好, GLM-5.3 在同一套栈上加环境, 加任务, 加算力. 下面先讲继承了什么, 再讲环境和 slime 两处新东西, 最后看评测和口径.
 
-它是厂商的发布博客, 不是技术报告. 全篇没有模型结构, 没有参数量, 没有训练数据量, 也没有消融实验. 能拿来核对的是表, 图, 脚注和同家族 GLM-5.2 博客. 10 张图里, 2 张是链接行的图标 (Z 字标和 HuggingFace 笑脸), 7 张是评测图 (第 2 页 3 张, 第 5 页 1 张, 第 6 页 3 张), 1 张是台账的严重程度和年份分布图. PDF 第 2 页那组评测图其实有 6 张, md 只切出了 3 张, 漏掉的 Agents' Last Exam, AutomationBench, GDPVal-AA v2 三张要看 PDF.
+## 1. 基座与后训练栈
 
-PDF 的生成时间比发布日晚 42 天, 抓的是页面后来的样子. 页面上 「两周内放出权重」 的原话还在, 抓取时权重有没有放出, 这份材料看不出来. 页脚是 © 2026 Z.ai Inc., 没有别的版本信息.
+### 1.1. 和 GLM-5.2 同一个基座
 
-## 2. 「同一个基座」 能说明什么, 不能说明什么
+博客原话是 「It uses the same base model as GLM-5.2 — every gain comes from post-training」. 基座相同, 结构和预训练权重就相同. GLM-5.2 的 `config.json` 给出的结构是: 78 层 (3 个稠密层加 75 个 MoE 层), 隐藏维 6144, 64 头 MLA, 潜在 KV 512 维加 64 维 RoPE 部分, 256 个路由专家加 1 个共享专家, 每 token 激活 8 个; 稀疏注意力是 DSA, 每个查询选 2048 个 token, indexer 按 IndexShare 每 4 层共用一个, 78 层里 21 层有自己的 indexer. 这些细节和来源见 [GLM-5.2 解读](../glm-5-2/glm-5-2-analysis.md). 这套维度又和 GLM-5 技术报告 (arXiv 2602.15763) 的表 10 一致.
 
-第 1 页的原话是 「It uses the same base model as GLM-5.2」, 后半句 「every gain comes from post-training」. 这句话本身信息量很大: 预训练阶段没动, GLM-5.3 和 GLM-5.2 的差别全在后训练. 顺着它可以推出, 模型结构, 最大上下文长度这些由基座决定的东西, 两代是一样的; 脚注里 NL2Repo, ALE, PostTrainBench, SWE-Marathon 都用 1M 上下文, 和 GLM-5.2 博客说的 「solid 1M-token context」 对得上.
+参数量博客和模型卡正文都没写. 模型卡页面的 Safetensors 栏显示 753B, SAO 论文把 GLM-5.2 写作 750B-A40B, GLM-5 报告是 744B 总参数, 40B 激活. 预训练数据量也没写, 能确定的只是它和 GLM-5.2 相同. 窗口方面, NL2Repo, ALE, PostTrainBench, SWE-Marathon 的脚注都写 1M 上下文, 实际评测用到了 1M.
 
-但这句话没带任何数字. 总参数, 本篇没写; 激活参数, 本篇也没写. GLM-5.2 博客讲了 IndexShare, MTP 层和 1M 上下文推理, 同样没给总参数和激活参数. 同家族里能找到的数都属于别的对象: `glm-5` 目录的论文给 GLM-5 的是 744B 总参数, 40B 激活参数; `glm-5-1` 目录的 Hugging Face 页面信息栏显示 754B, 那是页面平台读出的数, 不在作者正文里. 本篇和 GLM-5.2 博客都没说这个基座和 GLM-5 或 GLM-5.1 的基座是什么关系, 所以这几个数一个都不能搬过来. 关于规模, 能写的只有 「和 GLM-5.2 共用一个基座」 这一句.
+### 1.2. GLM-5.2 搭好的三件东西
 
-本篇把 IndexShare 列在 GLM-5.2 搭好的技术栈里, 说它 「for efficient long-context processing」. 按 GLM-5.2 博客的描述, IndexShare 是每 4 层稀疏注意力共享一个 indexer, 在 1M 上下文下把每 token 的 FLOPs 降到约 1/2.9, 并且从 mid-training 阶段就开始用. 它属于基座的一部分, 这次没有改. 许可证方面, GLM-5.2 博客明写 MIT; 本篇全文没提许可证, 只说两周后放权重.
+博客把 GLM-5.2 时搭好的栈列为三项, 每项都挂了链接. 第一是 IndexShare (arXiv 2603.12201, 论文名 IndexCache): 相邻层的 top-k 下标高度重合, 所以只让少数层算 indexer, 其余层直接继承下标, 1M 处单 token FLOPs 降到约 1/2.9. 第二是 SAO (arXiv 2607.07508): 每个提示只采一条 rollout, 跑完立刻进训练, 用 critic 估 token 级优势, 用 rollout 引擎记下的对数概率做双侧屏蔽的重要性采样, GAE 跳过环境反馈 token. SAO 论文摘要明说它部署在 GLM-5.2 的智能体 RL 流水线里, GLM-5.2 博客里「从按组优化改成基于 critic 的 PPO」讲的就是它. 第三是 slime, 下面第 3 节单讲.
 
-## 3. 「Scaling post-training」 指的是什么
+GLM-5.3 博客说沿用了 GLM-5.2 的 RL 策略, 「including SAO with compaction」, 理由是让收益在长程任务上也站得住, 不只体现在短任务上. compaction 是长程轨迹的压缩: 一条长轨迹被切成几段子轨迹, 每段都当作可训练样本. 按组比较奖励的算法在这种情况下没法对齐同一提示下的多条 rollout, SAO 不需要分组, 所以能直接接上. 两种算法的推导分别见 [PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md) 和 [GRPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/02-GRPO/02-GRPO.md).
 
-导语第一句 「Scaling post-training is all we did for GLM-5.3」 后面紧跟着解释: 过去一个月在 GLM-5.2 的技术栈上继续加码, 环境更多, 任务更多样, 花在这些任务上的训练算力更多. 这说的是发布前在后训练阶段多投入, 属于训练侧, 和推理时让模型多想一会儿是两回事. 全篇没有 「投入多少算力换多少分」 的曲线或公式, 所以它是一句做法描述, 不是可以拿来外推的规律.
+### 1.3. SAO 的几个关键部件
 
-「过去一个月」 这个说法和日期对不上. GLM-5.2 博客是 2026-06-16, 本篇是 2026-08-14, 中间隔了 59 天. 博客没说这一个月从哪天算起, 也许 GLM-5.2 发布之后先做了别的事, 这里只把两个日期并排记下.
+SAO 去掉分组以后, 优势全靠价值模型估计, 价值模型不准, 单条 rollout 的梯度方差就压不住. 论文为此做了三件事, 消融表 (Qwen3-30B-A3B, AIME2025 和 BeyondAIME) 逐项给了代价:
 
-环境往哪个方向加, 第 3 页讲得比较具体. 任务 「less like coding exercises and more like real units of expert work」, 有的相当于资深工程师好几天的工作量. 举的例子是机器学习基础设施任务: 模型拿到和工程师一样的环境, 能访问计算集群, 存储, 内部文档, 代码库和实验结果, 要诊断训练栈的瓶颈, 做优化, 跑实验, 交付端到端加速, 同时保证正确性. 博客的判断是, 智能体能力上去以后, 后训练的难处从模型转到了环境: 环境要能执行, 能验证, 贴近真实工作, 而且要大量.
+| 配置 | AIME2025 | BeyondAIME |
+|---|---|---|
+| SAO | 97.3 | 74.8 |
+| 去掉 critic 加速更新 | 95.0 | 69.8 |
+| 去掉 critic 冻结注意力 | 90.6 | 74.5 |
+| 原版 VAPO (无 DIS) | 91.3 | 69.0 |
+| 滑动均值基线代替 critic | 79.8 | 55.3 |
 
-为此他们搭了端到端合成环境的流水线, 一部分任务连奖励信号也合成. 流程分几步: 研究型智能体从真实工作里收集任务模式, 做成带多步依赖和隐藏状态的长程环境; 评判智能体逐个去做, 确认可解; 验证器在看不到参考解的情况下合成; 求解轨迹用来找出并堵上奖励捷径; 验证器通过 oracle, no-op, 未解状态三种检查后, 给出的二值奖励就直接用来训练. 博客也承认这条流水线仍要大量人工参与. 强化学习策略沿用 GLM-5.2 的 「SAO with compaction」. GLM-5.2 博客里没有 SAO 这个名字, 它讲的是按组优化换成基于 critic 的 PPO, 再把 compaction 切出的子轨迹全部拿来训练; 本篇给 SAO 挂的 arXiv 编号是 2607.07508, 晚于 GLM-5.2 博客. 两者是不是同一件事, 两篇都没明说.
+critic 加速更新是策略每更新 1 次, critic 更新 2 次; 论文用解释方差 $EV=1-\mathrm{Var}(R-V)/\mathrm{Var}(R)$ 衡量价值预测和真实回报的吻合程度, 约 400 步之后 SAO 的 EV 明显更高. 冻结注意力是训练 critic 时只调 MoE 投影, 注意力层不动, 全参数训练时 critic 的梯度范数大得多, 也更抖. 另外, 价值模型预训练的数据规模要做大, 论文说 critic 的冷启动是主要瓶颈. 滑动均值基线那一行最低, 说明单条 rollout 下, 不用一个学出来的 critic, 优势估计就太粗.
 
-## 4. 编程与智能体分数, 以及和 GLM-5.2 是否同口径
+论文还做了一个在线学习的模拟: 写作任务的奖励偏好按阶段切换 (可爱, 中二, 古典三种文风), 每个提示只有一条轨迹的反馈. SAO 在每次切换后很快转向新风格, 滑动均值基线因为窗口里残留旧奖励, 恢复明显更慢. 对 GLM-5.3 来说, 环境和任务一直在加, 训练分布本身就在变, 这一点比静态基准上的几分更相关.
 
-先看表面上的数. 17 行里 GLM-5.3 每一行都高于 GLM-5.2 那一列. 编程 8 行的差值是: Terminal Bench 2.1 高 7.2, Terminal Bench 3.0 高 23.7 (4.6 到 28.3, 约 6.2 倍), DeepSWE v1.1 高 20.7, NL2Repo 高 9.1, ProgramBench (Almost Solved) 高 9.5, FrontierSWE 高 10.6, SWE-Marathon v1.1 高 23.1, PostTrainBench 高 8.1. 智能体 6 行里, Toolathlon Verified 高 13.1, AutomationBench v1.0.6 高 22.0, Agents' Last Exam 高 4.7, HLE w/ Tools 高 7.8, GDPval-AA v2 高 261. 第 4 页正文点名的三组 (4.6 到 28.3, 46.2 到 66.9, 23.8 到 28.5) 都能在表里找到.
+## 2. 环境合成: 后训练的难处挪到了环境
 
-问题出在 GLM-5.2 这一列的来源. 拿 GLM-5.2 博客对照, 有四格数字一模一样, 但评测设置变了. Terminal Bench 2.1 的 81.0 在 GLM-5.2 博客里是 Terminus-2 框架的分, 同一篇里 Claude Code 框架是 82.7; 本篇脚注说 Terminal-Bench 2.1 在 Claude Code 2.1.207 里评. DeepSWE 的 46.2 在 GLM-5.2 博客里是超时 2 小时, temperature=1.0; 本篇是超时 6 小时, temperature=0.95, 行名还多了 v1.1. NL2Repo 的 48.9 在 GLM-5.2 博客里是 48k 输出, 400k 上下文; 本篇是 64k 输出, 1M 上下文. HLE w/ Tools 的 54.7 在 GLM-5.2 博客里明写不用上下文管理, 裁判是 GPT-5.5; 本篇用上下文管理, 裁判是 GPT-5.6-luna. 分数不变而设置变了, 可能是 GLM-5.2 没有按新设置重跑.
+### 2.1. 任务长什么样
 
-另有四格和 GLM-5.2 博客的数不一样. ProgramBench 在 GLM-5.2 博客是 63.7, 这里是 9.5, 行名下多了 「Almost Solved」, 换了指标. FrontierSWE 从 74.4 变成 67.5, 因为它报的是 Dominance 分, 一个是 2026/06/16 的, 一个是 2026/08/14 的, 参评的模型变了, 同一个模型的分数也跟着变. PostTrainBench 从 34.3 变成 31.7, 评测方从 PostTrainBench 官方换成了 Z.ai 自己, 还换了防第三方 API 的检查. SWE-Marathon 从 13.0 变成 19.4, 行名带 v1.1, 同样是自己跑, 改了检查项. 这四格看上去是按新版本或新设置重新取的数.
+博客对任务的要求是 「less like coding exercises and more like real units of expert work」, 有的相当于资深工程师好几天的工作量. 举的例子是机器学习基础设施任务: 模型拿到和工程师一样的环境, 可以访问计算集群, 存储, 内部文档, 代码库和实验结果, 要诊断训练栈的瓶颈, 做优化, 跑实验, 最后交付端到端的加速, 同时保证结果正确. 这种任务没有标准答案, 也很难写一个固定的单元测试来判对错.
 
-所以 GLM-5.2 这一列是混出来的: 有的格照搬旧博客, 有的格重测, 表上没有任何标记. 读提升幅度时要按行看. 像 DeepSWE 从 46.2 到 66.9 这种, 超时从 2 小时放到 6 小时, 这 20.7 分里有多少来自后训练, 有多少来自多给的时间, 博客给不出答案. Terminal Bench 3.0, Toolathlon Verified, AutomationBench, Agents' Last Exam, GDPval-AA v2 这几行 GLM-5.2 博客里没有, 没法核.
+博客的判断是, 智能体能力上去以后, 后训练的难处从模型转到了环境. 环境要满足四个条件: 能执行, 能验证, 贴近真实工作, 而且数量要大. 靠人工一个个搭, 规模上不去. GLM-5.2 时已经有积累下来的长程任务环境, 这一版要把环境的生产本身自动化.
 
-「most capable open-weights model for coding」 和 「open-source SOTA」 两句话也要对着表读. 表上没标哪些模型开放权重. 拿 Kimi K3, DeepSeek-V4 Pro-0813, Qwen3.8-Max 三列比, GLM-5.3 在 Terminal Bench 2.1 (Kimi K3 88.3), DeepSWE (Kimi K3 67.5), NL2Repo (DeepSeek 61.1), SWE-Marathon (Kimi K3 48.1), Toolathlon Verified (Kimi K3 76.5, DeepSeek 74.1) 上都不是最高. 第 1 页点名的 Terminal Bench 3.0 和 Agents' Last Exam 两行, 它确实领先这三列. 「编程最强」 的依据是 Z.ai Code Bench, 而那张图只比了 GLM-5.2 和两个 Claude 模型, 没有别的开放权重模型.
+环境的规模和奖励的可靠性互相牵制. 环境越多越杂, 越难给每个任务手写验证逻辑; 验证器一旦有漏洞, RL 会把漏洞当成捷径放大, 模型学到的就是钻空子而不是做任务. SAO 用的又是二值结果奖励加 critic 估优势, 奖励错一次, 误差会经 critic 传到整条轨迹的每个 token 上. 所以流水线的重点放在验证器的合成和检查上, 环境本身反而交给研究型智能体批量生产.
 
-## 5. Z.ai Code Bench 和 effort 档位
+### 2.2. 流水线与验证器
 
-Z.ai Code Bench 是内部私有基准, v1.0, 在 Claude Code 2.1.207 上评. 博客说它覆盖多种任务类别, 把智能体放进复杂的本地开发环境, 按 「端到端完成率」 和 「细粒度检查清单准确率」 两个维度打分, 私有的好处是降低公开测试集的污染风险. 第 5 页那张图的纵轴只写 「Accuracy (%)」, 没说对应两个维度里的哪一个, 也没说题目数量.
+流水线分几步. 研究型智能体从真实工作里收集任务模式, 做成可运行的长程环境, 带多步依赖和隐藏状态. 评判智能体逐个去做这些任务, 确认它们确实可解. 验证器在看不到参考解的情况下合成, 避免验证器只认参考解那一种写法. 求解轨迹则拿来找奖励捷径, 找到就堵上. 部分任务连 RL 的奖励信号也是合成的.
 
-图上正文给出的数有五个: GLM-5.3 Max 34.5% / 约 75K, GLM-5.2 Max 23.4% / 96K, GLM-5.3 High 31.4% / 约 50K, Claude Opus 4.8 29.5% / 120K, Claude Fable 5 Max 39.5%. 第 1 页说的 「50% improvement」, Max 档按比例算是 47.4%, High 档按目测的 GLM-5.2 High 约 20.9% 算是约 50%, 博客没说取的是哪一档. 「每个档位都更省 token」 只在 Max 档明确成立: High 档两者都在 50K 上下; GLM-5.2 没有 Low 点, 只有一个 Non-Thinking 点, 约 44K, 比 GLM-5.3 的 Low (约 49K) 还少. 正文说 GLM-5.3 High 超过 Opus 4.8, 用的是 Opus 4.8 的 Max 点; 同档比, Opus 4.8 High 约 23.4%, 差距更大.
+验证器要过三道检查才能用: oracle, no-op, 未解状态. 博客没逐条解释, 按检查的名字, 可以读成三个方向: 正确的解应当判过 (oracle), 什么都不做应当判不过 (no-op), 环境初始的未解状态应当判不过. 三道都过, 验证器给出的二值奖励就 「reliable enough to train on directly」. 博客也承认这条流水线仍要大量人工参与, 让环境生成和验证更自主是下一步.
 
-API 这边, GLM-5.3 有 low, high, max 三档, 默认 max, 编程推荐 max, 而且不能再关闭思考. GLM-5.2 的图上有 Non-Thinking 点, 套餐说明里只提 High 和 Max 两档; 到 GLM-5.3, 「disabled」 直接会让请求失败, 迁移时要改成 enabled 并把 reasoning_effort 设成 low. 这和图上 GLM-5.3 没有 Non-Thinking 点是一致的. 所有公开基准的脚注里, 写明档位的都是 max.
+### 2.3. 和防作弊是同一个问题的两头
 
-## 6. 网络安全: 只记基准名和分数
+GLM-5.2 时的防作弊模块在每次工具调用上在线检查, 规则过滤加 LLM 判别, 发现作弊就拦下调用, 返回假信息, rollout 继续. 那是在 rollout 里堵. GLM-5.3 的流水线在验证器上线之前就用求解轨迹找奖励捷径, 是在环境里堵. 两者针对的都是 RL 里模型学会钻奖励空子. GLM-5.2 博客承认它比 GLM-5.1 表现出更多潜在的作弊行为, 能力越强, 这个问题越要从环境一侧处理.
 
-三个基准的分数如下. CyberGym: GLM-5.3 84.5, GLM-5.2 77.2, Kimi K3 80.0, DeepSeek-V4 Pro-0813 83.3, Qwen3.8-Max 78.5, Opus 4.8 78.1, 最右列 83.8, 图上另有 GPT-5.6 Sol 83.6. ExploitBench: 54.4, 24.4, 32.2, 无, 28.8, 40.0, 最右列 78.0, GPT-5.6 Sol 76.5. ExploitGym 按 2 小时 / 6 小时预算报完成任务数: GLM-5.3 105 / 130, GLM-5.2 29 / 39, Kimi K3 36 / 70, Qwen3.8-Max 14 / 26, Opus 4.8 80 / 120, 最右列 181 / 247 (表里被截成 「181 / 2」). 脚注给的评分口径: CyberGym 是 1,507 个任务的单次 Pass@1; ExploitGym 是 869 个任务的单次 Pass@1; ExploitBench 是 41 个任务在 3 个 revision 上的平均覆盖分, 交互上限 300 轮.
+评测里也能看到这条线. NL2Repo 的脚注写着用规则加 LLM 判别拦未经许可的 pip 或 curl; CyberGym 去掉了所有 Git 相关信息, 并设域名白名单, 只放行 pypi.org 和 deb.debian.org 这类装基础工具用的域名; SWE-Marathon 的 strip-clone 任务原来的反作弊检查对 import 检测过宽, 会误杀合法实现, 改成 LLM 检查. PostTrainBench 原本按模式匹配防第三方 API, 本地 vLLM 端点经 OpenAI SDK 访问时会误报, 也改成 LLM 智能体检查.
 
-倍数可以核. ExploitBench 54.4 对 24.4 约 2.23 倍; ExploitGym 2 小时约 3.62 倍, 6 小时约 3.33 倍; CyberGym 只高 7.3 分. 第 1 页 「more than doubles」 限定在 exploitation 类基准上, 和数字一致. 口径的缺口在 ExploitGym: 预算按每个模型的 TPS 折算, 脚注只列了 GLM-5.3 115, Kimi K3 40, Qwen3.8 Max 47 三家; GLM-5.2, Opus 4.8 和最右列的数是谁跑的, 按多少 TPS 折算, 没有交代. 这几格能不能和 GLM-5.3 直接比, 博客回答不了.
+## 3. slime 的两条升级
 
-博客关于这部分只给了基准名, 分数和评分口径, 训练里具体加了哪些数据和环境没有展开. 第 6 到 7 页还有一段真实代码库上的案例和一个披露台账, 那是案例, 不是基准分数, 这里不记.
+### 3.1. 一条数据流
 
-## 7. 对比列: 截断, 改名, 图表不一
+slime 是 THUDM 开源的后训练框架 (github.com/THUDM/slime), 训练侧用 Megatron, rollout 侧用 SGLang. 设计要点是训练, rollout 和数据缓冲区走同一条数据流, 数学, 代码, 沙箱, 验证器和长程智能体环境都以「数据生成」的形式接进来, 不改训练循环. 博客说, 这正是从 GLM-5.2 到 GLM-5.3 能一直加环境, 不用每次重搭训练栈的原因. GLM-5.2 博客里列过它的 rollout 组织方式 (白盒, 黑盒, 压缩轨迹, 子智能体工作流), 以及用它做并行 OPD, 两天合并十多个专家模型.
 
-最右一列在页面边缘被切断, 表头只剩 「Fable (w/ fallb」. 同一个 Anthropic 标志在三处叫法不同: 第 2 页图例 「Fable 5」, 第 5 页 「Claude Fable 5」, 第 6 页 「Mythos 5」. 第 6 页正文给 Mythos 5 的 CyberGym 83.8, ExploitBench 78.0, ExploitGym 181 和 247, 和表里这一列完全一致. 两个名字指不指同一个模型, 博客没说, 引用时照各处原文写. md 在这一列还丢了两处数字: ExploitGym 的 「181 / 2」 实为 181 / 247, GDPval-AA v2 的 「174」 在 PDF 文字层是 1743.
+### 3.2. 算法侧: 采样控制与训推一致
 
-GPT-5.6 Sol 只出现在图里. 第 2 页六张小图和第 6 页前两张小图都有它, 大表里没有这一列, 第 6 页 ExploitGym 图里也没有它. 第 2 页 Agents' Last Exam 的图上, GPT-5.6 Sol 28.6 比 GLM-5.3 28.5 高 0.1, 所以那一行 GLM-5.3 是表内最高, 放到图上就不是了; 博客措辞用的是 「open-source SOTA」, 不冲突.
+新加的能力有三类. 一是 top-p mask, 二是 top-k 和全词表两种 OPD, 三是提高训练和 rollout 一致性的配置, 包括 R3 式设置和两条路径的完全数值对齐. 博客说这些让采样, 训练和教师信号能更细地控制, 受控对比实验也跑得快.
 
-表里的粗体也值得一看. 除了 GLM-5.3 整列蓝色高亮以外, 加粗的格子有 7 个: NL2Repo 的 Opus 4.8 69.7, ProgramBench 的最右列 33.0, FrontierSWE 的最右列 88.2, SWE-Marathon 的 Opus 4.8 48.8, PostTrainBench 的最右列 41.8, ExploitBench 的最右列 78.0, Toolathlon Verified 的 Kimi K3 76.5. 它们都比 GLM-5.3 高, 也都是本行最高. 可比 GLM-5.3 高却没加粗的格子还有五个: Terminal Bench 2.1 的 Kimi K3 88.3, Terminal Bench 3.0 的最右列 33.7, DeepSWE 的 Kimi K3 67.5 和最右列 69.7, HLE w/ Tools 的最右列 63.9. 其中 Terminal Bench 3.0, DeepSWE, HLE w/ Tools 三行正好是第 2 页小图里画了的, 粗体规则博客没说明, 这里不替它归纳. md 抓取时粗体全丢了.
+这几项博客都没展开定义, 但都对应 RL 里已知的问题. rollout 用 top-p 采样时, 低概率 token 根本不会被采到, 训练端若在全词表上算对数概率, 两边的分布就不一样; top-p mask 处理的是这类差异, MiMo-V2.6 的做法是记下 top-p 的候选集, 训练端在同一候选集内重新归一化. R3 是小米 MiMo 团队提出的 Rollout Routing Replay (Ma 等, 2025): 记下推理引擎里每个 token 选中的专家, 训练时重放同一组专家, 解决 MoE 在两套引擎下因数值差异翻转少量专家选择的问题, 见 [MiMo-V2-Flash 解读](../../05-mimo/mimo-v2-flash/mimo-v2-flash-analysis.md). OPD 的 top-k 和全词表两种版本, 差别在学生对齐教师分布时只看教师概率最高的 $k$ 个 token, 还是整个词表; 多教师 OPD 的原理见 [MOPD](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md).
 
-## 8. slime: 两个数字和它们的基线
+训推一致给出了数字. 在他们的一致性评估里, 训练路径和 rollout 路径对同一 token 算出的对数概率, 平均差异压到 1e-7 量级, 比之前的设置降低 99.99% 以上 (按这两个数反推, 之前在 1e-3 量级). 这个差异直接进入重要性采样比值. SAO 的比值是
 
-slime 是 Z.ai 开源的后训练框架, 训练侧 Megatron, rollout 侧 SGLang. 设计要点是训练, rollout, 数据缓冲区走同一条数据流, 数学, 代码, 沙箱, 验证器, 长程智能体环境都以数据生成的方式接进来, 不改训练循环. 博客说这正是从 GLM-5.2 到 GLM-5.3 能一直加环境, 不用重搭训练栈的原因.
+$$
+r_t(\theta)=\exp\left(\log\pi_\theta(a_t\mid s_t)-\log\pi_{\mathrm{rollout}}(a_t\mid s_t)\right)
+\tag{1}
+$$
 
-算法方面新加的是 top-p mask, top-k 和全词表 OPD, 以及提高训练与 rollout 一致性的配置, 包括 R3 式设置和两条路径的完全数值对齐. 给出的数字是: 对数概率的平均差异压到 1e-7 量级, 比之前降低 99.99% 以上. 反推一下, 降 99.99% 到 1e-7, 之前大约在 1e-3 量级. 「之前的设置」 指哪一版, 是 GLM-5.2 时的 slime 还是别的配置, 博客没说. R3 也没有解释.
+当训练端参数还没更新时, $\pi_\theta$ 和 $\pi_{\mathrm{rollout}}$ 本应是同一个分布, $r_t$ 应等于 1. 对数概率差 $\Delta$ 会让 $r_t\approx 1+\Delta$. 单个 token 上 1e-3 的偏差远小于 SAO 的屏蔽区间, 不会触发屏蔽, 它的影响是给本应同策略的梯度带上系统偏差; 序列级的对数概率是逐 token 相加的, 长轨迹上偏差会累积. 差异压到 1e-7 后, 比值偏离 1 的部分基本只剩策略更新和异步延迟带来的那一块. 训推不一致的来源和其它处理办法见 [训练稳定性与训推不一致](../../../../llm-guide/6-训练与推理优化/6.1-训练基础设施/6.1.7-训练稳定性与训推不一致.md).
 
-系统方面有四项: 本地存储当额外一层缓存; 多教师 OPD 在训练侧动态切换和预取教师, 不必给每个教师常驻推理服务; router 和 slime 联合调度, 应对长短不一的 rollout 请求; 按每个环境的负载特征自动推 prefill/decode 配比和并发等配置. 合起来, 长程编程强化学习任务的端到端训练吞吐提高 2.3 倍以上. 这个倍数的基线同样没说, 也没给绝对吞吐. GLM-5.2 博客提过用 slime 做并行 OPD, 把十几个专家模型合进最终模型, 用了约两天; 本篇的多教师 OPD 和那次是不是同一流程, 没有交代.
+### 3.3. 系统侧: 缓存, 多教师与调度
 
-## 9. 套餐, ZCode 和权重
+系统方面有四项. 本地存储当额外一层缓存, 分层存放原本要占主机内存的模型状态和数据. 这一项主要服务多教师 OPD: 训练侧能动态切换教师并预取, 同时用上几个教师, 不必给每个教师常驻一套推理服务, 开销有限, 资源消耗低得多. 对智能体和异步负载, router 和 slime 联合调度并做负载均衡, 让长度和完成时间相差很大的 rollout 请求更好地利用推理资源. 最后是按负载自动配置: 根据每个 rollout 环境的特点, 推出 prefill/decode 资源配比, 并发设置等影响吞吐的参数.
 
-GLM Coding Plan 改成了积分制: 输入, 缓存输入, 输出 token 分开计积分; 高峰时段是周一到周五 14:00-18:00 (UTC+8), 其余时间包括周末按标准积分的 50% 计. GLM-5.2 博客的规则是高峰 3 倍, 非高峰 2 倍, 高峰时段每天 14:00-18:00. 两代套餐的计量方式不同, 用量不能直接换算.
+合起来的结果是长程编程 RL 任务的端到端训练吞吐提高 2.3 倍以上. 基线是哪一版没说, 也没给绝对吞吐. 联合调度这一项和 SAO 的单条 rollout 是配套的: SAO 每条轨迹跑完就进训练, 轨迹长短差得越多, 推理侧越需要按请求而不是按批次调度. GLM-5 报告里的 DP 感知路由用一致性哈希把同一 rollout 的请求固定到同一 DP rank 复用前缀 KV, 是同一方向更早的一步.
 
-ZCode 那三条里有一处算术值得看. 98% 以上的缓存命中率带来 「约 30% 更多的有效 token」, 1.5 倍限时额度加成, 两者叠加 「最多到标准额度的 180%」. 180% 是 150% 加 30% 相加得来的; 如果按两个因子相乘, 1.5 × 1.3 是 195%. 博客没说明为什么用相加. 这项活动到 8 月 31 日截止, 离发布只有 17 天. Goal 模式和手机远程控制是产品功能, 没有配评测.
+RL 训练的端到端时间主要花在 rollout 上, Bebop 论文 (arXiv 2606.12370) 的引言也是这个判断, 异步框架只能缓解长尾, 改变不了 rollout 是瓶颈. 所以 GLM 这条线上加速 rollout 的手段是叠在一起用的: IndexShare 降低长上下文每个 token 的计算, MTP 的投机解码 (GLM-5.2 改成拒绝采样加 TV 损失) 提高每次前向落地的 token 数, slime 的调度和 P/D 配比让推理资源少空转. 2.3 倍是系统层这一项单独的数, 前两项的收益不在里面.
 
-权重的说法出现两次. 第 1 页: 发布后两周, 等安全评估和加固完成再放; 第 10 页: 「soon in two weeks」. 按发布日推算是 8 月 28 日前后, 页面没给确切日期. 第 1 页的 HuggingFace 链接已经指向 zai-org/GLM-5.3. 许可证和部署框架本篇都没写, GLM-5.2 博客写的是 MIT, 支持 transformers, vLLM, SGLang, xLLM, ktransformers.
+## 4. 编程与智能体评测
 
-## 10. 这篇能回答什么, 不能回答什么
+### 4.1. 主表
 
-能照抄引用的: 发布日期 2026-08-14; GLM-5.3 和 GLM-5.2 共用一个基座, 提升全部来自后训练; 后训练投入的三项是更多环境, 更多样的任务, 更多训练算力; 环境合成流水线的几个环节和验证器的三种检查; 17 行对比表里各列的分数, 以及第 2 页六张小图里 GPT-5.6 Sol 的数; Z.ai Code Bench 上正文给出的五个点; 网络安全三个基准的名称, 分数和评分口径; slime 的 1e-7 和 2.3 倍两个数; API 的三档 effort 和不能关闭思考; 套餐和 ZCode 的规则; 权重预计两周后放出. 这些都能在页面上找到原字原数.
+模型卡的完整表有 16 行 (编程 8 行, 网络安全 3 行, 智能体 5 行) 和 8 个模型列. 下面挑与长程编程和智能体相关的几行:
 
-不能回答的: 基座的总参数是多少, 激活参数是多少, 两个数本篇和 GLM-5.2 博客都没有; GLM-5.2 列里照搬的四格和重测的四格, 哪些提升来自后训练, 哪些来自评测设置变化; 「50%」 取自哪个档位; Code Bench 纵轴是完成率还是检查清单准确率; SAO 和 GLM-5.2 博客里的 critic PPO 是否同一件事; 最右一列的完整名字, 以及 Fable 5 和 Mythos 5 的关系; ExploitGym 里除三家以外的模型按多少 TPS 折算; slime 两个数字的基线; 180% 为什么按相加算; 权重的许可证. `glm-5-3-bi.md` 里的 12 处疑点, 就集中在基座规模, GLM-5.2 分数的口径, 对比列的命名和截断, effort 图的读法, 网络安全行只有分数这几件事上.
+| 基准 | GLM-5.3 | GLM-5.2 | Kimi K3 | DeepSeek-V4 Pro-0813 | Opus 4.8 | Fable 5 (w/ fallback) | GPT-5.6 Sol |
+|---|---|---|---|---|---|---|---|
+| Terminal Bench 2.1 | 88.2 | 81.0 | 88.3 | 87.9 | 85.0 | 88.0 | 88.8 |
+| Terminal Bench 3.0 | 28.3 | 4.6 | 17.4 | - | 21.1 | 33.7 | 34.6 |
+| DeepSWE (v1.1) | 66.9 | 46.2 | 67.5 | 62.7 | 58.0 | 69.7 | 72.7 |
+| SWE-Marathon (v1.1) | 42.5 | 19.4 | 48.1 | - | 48.8 | 33.1 | 42.5 |
+| Toolathlon Verified | 73.0 | 59.9 | 76.5 | 74.1 | 76.2 | 74.7 | 74.9 |
+| AutomationBench (v1.0.6) | 48.2 | 26.2 | 46.7 | 43.2 | 41.0 | 46.2 | 45.8 |
+| Agents' Last Exam (CLI) | 28.5 | 23.8 | 27.6 | 25.7 | 25.7 | 23.8 | 28.6 |
+| HLE w/ Tools | 62.5 | 54.7 | 59.8 | 60.0 | 57.9 | 63.9 | 64.5 |
+
+16 行里 GLM-5.3 全部高于 GLM-5.2, 涨幅最大的是最长程的几项: Terminal Bench 3.0 高 23.7, SWE-Marathon 高 23.1, AutomationBench 高 22.0, DeepSWE 高 20.7. 和 Kimi K3, DeepSeek-V4 Pro-0813, Qwen3.8-Max 三列比, Kimi K3 在 Terminal Bench 2.1, DeepSWE, SWE-Marathon, Toolathlon 四行更高, NL2Repo 上 DeepSeek-V4 Pro-0813 是 61.1 对 58.0; 博客点名 「open-source SOTA」 的 Terminal Bench 3.0 和 Agents' Last Exam 两行, GLM-5.3 确实领先这三列.
+
+Terminal Bench 3.0 的设置值得单看, 它是最能体现「长程」的一项: Claude Code 2.1.207 框架, max 档, 400K 上下文, 128K 最大输出, 每题跑 3 次取平均, 每次最多 600 轮, 10 小时超时, 由各任务官方的独立验证器给分. GLM-5.2 在这里只有 4.6, GLM-5.3 是 28.3, 已经超过 Opus 4.8 的 21.1, 但离 GPT-5.6 Sol 的 34.6 和 Fable 5 的 33.7 还差五六分. Agents' Last Exam 是 105 个任务, 默认 4 小时超时, 部分任务最长 8 小时.
+
+表里没放的几行也有信息. FrontierSWE 由第三方 Proximal 在 1M 上下文下评, GLM-5.3 78.1, Opus 4.8 66.5, Fable 5 88.2. PostTrainBench 是让智能体用一块 H100 对小模型做后训练, 按提升幅度计分, GLM-5.3 39.8, 高于 Opus 4.8 的 32.9 和 GPT-5.6 Sol 的 36.2; 跑不出分的运行按官方零样本基座分兜底, 报 3 次加权平均. ProgramBench 换成 「Almost Solved」 指标后, GLM-5.3 19.0, Fable 5 33.0. GDPval-AA v2 由 Artificial Analysis 评, GLM-5.3 1769, 全表最高. Toolathlon Verified 走官方评测服务, 报 3 次独立运行的 pass@1 平均. 和闭源列比, 差距最大的是 Terminal Bench 3.0, ProgramBench, FrontierSWE 这几项长程编程任务, Fable 5 仍领先 5 到 14 分; GDPval 和 ALE 这类偏办公和通用智能体的任务, GLM-5.3 已经和闭源列持平或略高.
+
+### 4.2. GLM-5.2 一列的口径
+
+读涨幅时要注意 GLM-5.2 这一列的来源. 拿 GLM-5.2 博客对照, 有四格数字完全相同, 评测设置却变了. Terminal Bench 2.1 的 81.0 在 GLM-5.2 博客里是 Terminus-2 框架的分, 这里脚注写在 Claude Code 2.1.207 里评; DeepSWE 的 46.2 当时是 2 小时超时, temperature 1.0, 这里是 6 小时, 0.95, 行名多了 v1.1; NL2Repo 的 48.9 当时是 400K 上下文, 这里是 1M; HLE w/ Tools 的 54.7 当时不用上下文管理, 评审是 GPT-5.5, 这里用上下文管理, 评审换成 GPT-5.6-luna. 博客没说这四格是不是按新设置重跑过. 如果没有重跑, 像 DeepSWE 的 20.7 分涨幅里, 就混着后训练的收益和超时从 2 小时放宽到 6 小时的收益.
+
+另有四格和 GLM-5.2 博客不同, 原因能从脚注找到. ProgramBench 从 63.7 变成 9.5, 行名多了 「Almost Solved」, 换了指标. FrontierSWE 从 74.4 变成 67.5, 它报的是 Dominance 分, 一个截至 2026/06/16, 一个截至 2026/08/14, 参评模型变了, 同一个模型的相对分也跟着变. PostTrainBench 从 34.3 变成 31.7, SWE-Marathon 从 13.0 变成 19.4, 这两项 GLM-5.2 博客由第三方评测, 这次的脚注写的是 Z.ai 自己用 Claude Code 2.1.207 评 GLM-5.3, 并改了反作弊检查; GLM-5.2 的新数是谁按什么设置跑的, 脚注没写.
+
+### 4.3. Z.ai Code Bench 与档位
+
+Z.ai Code Bench 是内部私有基准, v1.0, 在 Claude Code 2.1.207 上评. 它把智能体放进复杂的本地开发环境, 从端到端完成率和细粒度检查清单准确率两个维度打分; 私有的好处是降低公开测试集的污染风险, 代价是外部无法复现. 图的纵轴只写 Accuracy (%), 没说是两个维度里的哪一个.
+
+图上正文给了五个点: GLM-5.3 Max 34.5%, 平均输出约 75K; GLM-5.2 Max 23.4%, 96K; GLM-5.3 High 31.4%, 约 50K; Claude Opus 4.8 Max 29.5%, 120K; Claude Fable 5 Max 39.5%. Max 档按比例算是 $34.5/23.4\approx1.47$, 博客写作 「50% improvement」. 同为 Max 档, GLM-5.3 的分更高, 输出却从 96K 降到约 75K, 后训练同时提高了成功率和 token 效率. GLM-5.3 的 High 档以约 50K 输出拿到 31.4%, 超过 Opus 4.8 Max 档的 29.5%, 后者用了 120K. 这张图里没有其它开放权重模型, 「编程最强的开放权重模型」 这句话在图上没有直接对照.
+
+档位对读公开基准也有影响. 脚注里写了档位的公开基准, 一律是 max, 而 API 不传参数时默认也是 max. Max 档的输出量明显更大: Code Bench 上 GLM-5.3 Max 比 High 多花约 25K 输出, 换 3.1 分. 用户按默认设置调用, 拿到的是评测同款档位, token 消耗也是评测同款; 想省 token 要显式传 high 或 low.
+
+## 5. 网络安全基准
+
+博客把网络安全能力叫作 「emergent」: 后训练做大以后, 这方面的能力涨得比预期快. 博客只给了基准名, 分数和评分口径, 训练里有没有专门的安全数据没写. 三个基准按漏洞分析和利用的不同阶段排:
+
+| 基准 | GLM-5.3 | GLM-5.2 | Kimi K3 | Opus 4.8 | Fable 5 (w/ fallback) | GPT-5.6 Sol |
+|---|---|---|---|---|---|---|
+| CyberGym | 84.5 | 77.2 | 80.0 | 78.1 | 83.8 | 83.6 |
+| ExploitBench | 54.4 | 24.4 | 32.2 | 40.0 | 78.0 | 76.5 |
+| ExploitGym (2h / 6h) | 105 / 130 | 29 / 39 | 36 / 70 | 80 / 120 | 181 / 247 | 216 / 293 |
+
+CyberGym 只高 7.3 分, 但已是全表最高; 越往利用链后段走, 相对 GLM-5.2 的倍数越大 (ExploitBench 约 2.2 倍, ExploitGym 2 小时约 3.6 倍), 离闭源两列的差距也越大. 博客自己的总结也是这个形态.
+
+评分口径来自脚注. CyberGym 是 1,507 个任务的单次 Pass@1, 不限时, 智能体放在任务容器里. ExploitGym 是 869 个任务的单次 Pass@1, 预算按 API 推理时间乘以各模型的 TPS 折算, 再加非 API 开销, TPS 取自 Artificial Analysis: GLM-5.3 115, Kimi K3 40, Qwen3.8 Max 47. 脚注只写了这三个模型是 Z.ai 自己评的, 其余各列的来源和折算方式没写, 不同来源的格子能否直接比要打个问号. ExploitBench 是 41 个任务在 3 个 revision 上的平均覆盖分, 交互上限 300 轮, 每个任务的覆盖结果取三个 revision 上达成能力的并集. 三项 GLM-5.3 都在 Claude Code 2.1.207 里跑, max 档, 不给联网工具, temperature 1.0, 最大输出 128,000 token. 和编程表一样, 能横向比的只有同一套设置下跑出来的几列; 闭源两列的分数从哪来, 脚注没写. 博客另有一节真实代码库上的测试和公开披露台账 (cvd.z.ai), 属于案例, 不在基准表里.
+
+## 6. API, 套餐与权重
+
+API 有 low, high, max 三档 `reasoning_effort`, 不传或传其它值都按 max, 复现基准要保持默认 max. 思考不能再关: `thinking.type` 只支持 enabled, 原来用 disabled 的应用要改成 enabled 并把档位设成 low, 否则请求失败. 聊天模板里 `clear_thinking` 默认 false, 普通聊天场景模型卡建议显式传 true.
+
+GLM Coding Plan 改成积分制: 输入, 缓存输入, 输出 token 分开计; 高峰是周一到周五 14:00 到 18:00 (UTC+8), 其余时间按标准积分的 50% 计. GLM-5.2 时的规则是高峰 3 倍, 非高峰 2 倍, 两代计量方式不同, 用量没法直接换算. 发布当天权重尚未放出, 博客说两周后完成安全评估和加固再放; 模型卡现已上线, 支持 SGLang, vLLM, TokenSpeed, Transformers, KTransformers, Unsloth, 昇腾平台上支持 vLLM-Ascend, xLLM 和 SGLang.
+
+## 7. 结论与边界
+
+GLM-5.3 是「基座不动, 只加后训练」的一次完整实验. 结构, 窗口, 推理成本都和 GLM-5.2 相同, 分数的变化来自三处: 合成的长程环境和验证器让可训练的任务变多, SAO 让长轨迹能逐条训练, slime 的数值对齐和调度让训练更稳更快. 涨幅集中在最长程的基准上 (Terminal Bench 3.0, SWE-Marathon, AutomationBench), 网络安全能力随之大涨, 这和后训练的投入方向一致.
+
+边界有三条. 第一, 博客没有消融, 环境, 算法和算力三者各贡献多少分无从拆分. 第二, GLM-5.2 一列有四格可能沿用旧设置的分数, 涨幅要按行看口径. 第三, Z.ai Code Bench 是私有基准, 网络安全三项里只有三个模型是 Z.ai 自己按统一设置跑的.
+
+## 参考文献
+
+1. Z.ai. 「GLM-5.3」 发布博客. Z.ai 官网, 2026-08-14. 中英对照见 [glm-5-3-bi](./glm-5-3-bi.md).
+2. Z.ai. `zai-org/GLM-5.3` 模型卡. HuggingFace, https://huggingface.co/zai-org/GLM-5.3.
+3. Zhenyu Hou, Yujiang Li, Jie Tang, Yuxiao Dong. 「Single-Rollout Asynchronous Optimization for Agentic Reinforcement Learning」. arXiv:2607.07508, 2026.
+4. Yushi Bai, Qian Dong, Ting Jiang, et al. 「IndexCache: Accelerating Sparse Attention via Cross-Layer Index Reuse」. arXiv:2603.12201, 2026.
+5. Aohan Zeng, Xin Lv, et al. 「GLM-5: from Vibe Coding to Agentic Engineering」. arXiv:2602.15763, 2026.
+6. THUDM. slime: an LLM post-training framework for RL Scaling. https://github.com/THUDM/slime.
+7. Bangjun Xiao, et al. 「MiMo-V2-Flash Technical Report」. arXiv:2601.02780, 2026.

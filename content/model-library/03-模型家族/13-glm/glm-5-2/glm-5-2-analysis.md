@@ -1,104 +1,215 @@
 ---
-title: "GLM-5.2 博客: 1M 窗口, 长程编程和一张截断的表"
+title: "GLM-5.2: IndexShare 撑起 1M 上下文, 长程编程成绩大涨"
 category: "模型库"
 tags: ["GLM", "技术解析"]
 published: true
-excerpt: "它不是技术报告. 全篇没有总参数量, 激活参数量, 层数, 训练数据量和训练算力; 讲结构的部分只讲相对 GLM-5.1 改了什么 (IndexShare, MTP 的几项改进), 没有给出完整的模型结构."
+excerpt: "GLM-5.2 沿用 GLM-5 的 MoE 加 DSA 主干, 窗口从 200K 提到 1M. 稀疏注意力的 indexer 改成每 4 层共用一个, 1M 处单 token FLOPs 约为 GLM-5.1 的 1/2.9; MTP 换成拒绝采样加 TV 损失, 长程 RL 从按组优化换成带 critic 的单条 rollout PPO."
 ---
-> 源文 `glm-5-2.md` 是 Z.ai 博客的 MinerU 抓取, 13 页, 18 张图. 正文讲 1M 上下文, 长程编程评测, IndexShare 和 MTP 的改动, 推理服务, 后训练和防作弊, 再加一张 19 行的基准表和评测脚注; 没有参数量, 层数和训练数据.
+# GLM-5.2: IndexShare 撑起 1M 上下文, 长程编程成绩大涨
 
-# GLM-5.2 博客: 1M 窗口, 长程编程和一张截断的表
+## 太长不看版
 
-来源: 同目录 `glm-5-2.md` (MinerU 抓取), 对照同目录 `glm-5-2.pdf` (13 页, PDF 生成时间 2026-09-25). 逐段英中对照和 12 处疑点见 `glm-5-2-bi.md`. 下文的数都出自博客正文, 图和表; 引到同家族 `glm-5-1` 目录那张模型卡的地方, 一律写 「GLM-5.1 卡」, 只作核对.
+材料是 Z.ai 2026-06-16 发的博客 「GLM-5.2: Built for Long-Horizon Tasks」, 讲的是相对 GLM-5.1 改了哪些地方, 篇幅不到一份技术报告. 结构细节要靠 HuggingFace 上的 `config.json`, 两个关键方法分别有论文 (IndexCache, arXiv 2603.12201; SAO, arXiv 2607.07508).
 
-## 1. 材料性质: 一篇研究博客, 不是技术报告
+- **窗口**: 200K 提到 1M, 配置里 `max_position_embeddings` 是 1,048,576, 即 $2^{20}$. Claude Code 里要把模型名写成 `GLM-5.2[1m]` 才开 1M.
+- **IndexShare**: DSA 的 indexer 每 4 层共用一个, 被共用的层直接拿上一层的 top-k 下标. 从中期训练 (128K 序列) 起就带着这个结构训练. 1M 处单 token FLOPs 标 「2.9x lower」, 图上读数约 0.67 对 0.22. KV cache 没有同比例下降.
+- **MTP**: 草稿层也共用索引和 KV, 验证改成拒绝采样, 训练改用端到端 TV 损失. 在 GLM-5.1 主干上测, 接受长度 4.56 到 5.47, 提高 20%.
+- **后训练**: 长程任务 RL 从按组优化 (GRPO 一类) 换成带 critic 的 PPO, 每个提示只采一条 rollout, 优势按 token 估计 (SAO). 另加在线防作弊: 规则过滤加 LLM 判别, 发现作弊就拦下这次工具调用.
+- **成绩**: Terminal-Bench 2.1 (Terminus-2) 63.5 到 81.0, SWE-bench Pro 58.4 到 62.1, FrontierSWE 30.5 到 74.4, DeepSWE 18.0 到 46.2.
+- **没写的**: 博客没给参数量, 层数和训练数据. 配置里是 78 层, 与 GLM-5 相同; SAO 论文称它为 750B-A40B. 许可证 MIT.
 
-这是 Z.ai 官网的一篇博客, 栏目 Research, 日期 2026-06-16, 标题 「GLM-5.2: Built for Long-Horizon Tasks」. 13 页的分布是: 第 1 页标题, 五个外链和四条新能力; 第 2 页三个长程基准和一张条形图; 第 3 页八张常规评测柱状图和档位控制的说明; 第 4 页档位折线图, 以及 「Architecture for 1M Context」 下面的结构图, FLOPs 曲线和接受长度柱状图; 第 5, 6 页讲 IndexShare 和 MTP; 第 6, 7 页讲 1M 上下文的推理服务, 配一张吞吐图; 第 7 到 9 页讲 slime, 长程强化学习和防作弊; 第 9, 10 页是完整基准表; 第 10, 11 页是使用和本地部署; 第 11, 12 页是评测脚注; 第 13 页只剩版权行.
+GLM-5.2 的改动都围着「窗口拉到 1M 之后哪里变贵」这个问题. 稀疏注意力把核心注意力的代价压到了 $O(Lk)$, 剩下的 $O(L^2)$ 在 indexer 身上, 所以先砍 indexer; 1M 下解码更慢, 投机解码的接受长度就更值钱, 所以改 MTP; 长程任务的轨迹被压缩切段以后, 一组 rollout 没法再整齐对比, 所以换 RL 算法. 下面按这个顺序讲.
 
-它不是技术报告. 全篇没有总参数量, 激活参数量, 层数, 训练数据量和训练算力; 讲结构的部分只讲相对 GLM-5.1 改了什么 (IndexShare, MTP 的几项改进), 没有给出完整的模型结构. 第 1 页的 GitHub 链接指向 `zai-org/GLM-5` 仓库, 权重在 HuggingFace 的 `zai-org/GLM-5.2` 和 ModelScope 的 `ZhipuAI/GLM-5.2`. 许可证只有第 1 页一句 「An MIT open-source license」, 页面没有许可证全文. 所以下文只写能指回原句, 图中数字或表格的内容, 图里没画的结构一律不补, 其它代模型的参数也不挪过来.
+## 1. 主干: 和 GLM-5 同一套结构
 
-## 2. 1M 是窗口长度, 从 200K 改成 1M
+### 1.1. GLM-5 留下的底子
 
-第 1 页的核心说法是 GLM-5.2 「for the first time, delivers that capability on a solid 1M-token context」. 这里的 1M 是上下文窗口的长度, 也就是模型一次能接收的最大 token 数. 变化前后的值印在第 6 页: 「extends the maximum context length from 200K to 1M tokens」. 第 7 页吞吐图也对得上: GLM-5.1 的最长上下文标为 「200k*」, 256k 以后的三格都写 OOC (out of context). 第 10 页给了用法: 编程套餐用户在 Claude Code 里把模型名写成 GLM-5.2[1m] 才开启 1M 上下文长度. 所以和 GLM-5.1 相比, 窗口上限从 200K 改成了 1M.
+GLM-5 的技术报告 (arXiv 2602.15763) 给出完整配置: 总参数 744B, 激活 40B, 3 个稠密层加 75 个 MoE 层共 78 层, 隐藏维 6144, 256 个路由专家加 1 个共享专家, 每 token 激活 8 个路由专家. 注意力是 MLA, 头维从 DeepSeek-V3 的 192 提到 256, 头数相应降到 64, 潜在 KV 维度 512 加 64 维 RoPE 部分共 576. 稀疏注意力用的是 DeepSeek-V3.2 的 DSA, 每个查询挑 $k=2048$ 个 token, 从中期训练结束的基座继续训练约 22.8B token 接进来. 窗口是 200K. 这些细节见 [GLM-5 技术报告解读](../glm-5/glm-5-analysis.md).
 
-1M 这个写法只出现在正文里, 图里用的是另一套刻度. FLOPs 曲线的横轴是 「Token Position (K)」, 最右一格是 1024; 吞吐图横轴最右一格是 1024k. 正文 「reducing per-token FLOPs by 2.9× at a 1M context length」 对应的就是 FLOPs 曲线 1024 那个点. 1M 和 1024k 是否指同一个长度, 页面没说; 引用时正文照写 1M, 图照写 1024k.
+GLM-5 的 MTP 是 3 步共享参数: 训练时 3 个 MTP 步共用一套权重, 所以配置里 MTP 层数仍是 1, 显存开销和只训一层的 DeepSeek-V3 一样. 报告里在 4 步投机的设置下, 接受长度 2.76, DeepSeek-V3.2 是 2.55. GLM-5 的 RL 还已经用上了异步 rollout 和「直接双侧重要性采样」, 后面讲 SAO 时会再碰到它.
 
-训练侧能读到的只有两句. 一句在第 5 页: GLM-5.2 「is trained with IndexShare from mid-training with 128K sequence length」, 即 IndexShare 从中期训练开始用, 那时序列长 128K. 另一句在第 1 页: 「we substantially expanded 1M-context training for coding-agent scenarios」, 覆盖大规模实现, 自动化研究, 性能优化和复杂调试四类场景. 1M 长度的训练在哪个阶段做, 用了多少数据, 页面没有数字. 「solid」 也没有量化标准, 全篇没有一项专门考长上下文检索或理解的分数.
+### 1.2. GLM-5.2 的配置文件
 
-评测侧, 写明 1M 的只有三项: FrontierSWE, PostTrainBench, SWE-Marathon, 由第三方 Proximal, PostTrainBench, Abundant AI 执行, 设置都是 「1M context length, max effort level, and 128K maximum output tokens」. 其余各项的窗口都不到 1M: SWE-Bench Pro, NL2Repo, DeepSWE, ProgramBench 是 400K, Terminal-Bench 2.1 (Terminus 2) 是 256K, HLE 带工具是 300,000 token; 另有三项没写窗口. 这三项长程基准的 1M 是 「允许用到 1M」 的设置, 页面没报告任务实际用到多长. 还有一处没交代: 这三行 GLM-5.1 也有分 (30.5, 20.1, 1.0), 可 GLM-5.1 的上限是 200K, 脚注没写它在什么长度下测.
+`zai-org/GLM-5.2` 的 `config.json` 写着 `model_type: glm_moe_dsa`, 维度和 GLM-5 表 10 一一对得上: 78 层, `first_k_dense_replace: 3`, 隐藏维 6144, 64 个注意力头, `kv_lora_rank: 512`, `qk_rope_head_dim: 64`, `v_head_dim: 256`, 256 个路由专家加 1 个共享专家, top-8, 专家中间维 2048. indexer 部分是 `index_topk: 2048`, `index_n_heads: 32`, `index_head_dim: 128`, 和 GLM-5 相同. 和窗口及本次改动有关的字段有三个: `max_position_embeddings` 是 1,048,576, RoPE 基数 `rope_theta` 是 8,000,000; `indexer_types` 逐层标出哪些层有自己的 indexer; `index_share_for_mtp_iteration: true` 让 MTP 的多步共用索引. 后两个分别对应下面两节的 IndexShare 和 MTP 改动.
 
-## 3. 和 GLM-5.1 比: 正文印的是哪两行
+参数量博客里没写. SAO 论文摘要说这套方法用在了 「the open GLM-5.2 model (750B-A40B)」, GLM-5.1 模型卡的 Safetensors 栏显示 754B, GLM-5 报告是 744B, 几处数字的计法都没交代. 结构维度相同, 规模在这一档, 后面不再讨论参数. 训练数据量和 1M 训练用了多少 token, 博客没有数字, 只有一句 「we substantially expanded 1M-context training for coding-agent scenarios」, 场景是大规模实现, 自动化研究, 性能优化和复杂调试四类.
 
-正文直接拿 GLM-5.1 对比的数只有两组, 在第 2 页末到第 3 页初: 「81.0 vs. 63.5 on Terminal-Bench 2.1 and 62.1 vs. 58.4 on SWE-bench Pro」. 第 10 页大表里 Terminal Bench 2.1 有两行, 81.0 对 63.5 是 Terminus-2 那一行, 差 17.5; 另一行 「Best Reported Harness」 是 82.7 (Claude Code) 对 69 (Claude Code), 差 13.7, 正文没用这一行. 第 3 页柱状图的副标题写的也是 「Terminal-Bench 2.1 (Terminus)」, 柱上印 81.0 和 63.5, 三处口径一致. SWE-bench Pro 表里只有一行, 62.1 对 58.4, 差 3.7.
+## 2. IndexShare: 1M 时 indexer 成了大头
 
-其它和 GLM-5.1 比的说法都没有配数. 第 1 页 「a substantial leap in long-horizon task capability over its predecessor GLM-5.1」 要靠第 10 页大表去对; 第 3 页 「substantially stronger agentic coding performance than GLM-5.1 at comparable token budgets」 只能从折线图目测; 第 5 页 「outperforming GLM-5.1 on long-context benchmarks with less computation」 没有基准名也没有分数; 第 8 页 「GLM-5.2 shows more potential hacking behavior than GLM-5.1」 没有比例或次数. 这四句只能当宣称引用.
+### 2.1. DSA 的 indexer 为什么在长序列上贵
 
-把大表 19 行逐行比, GLM-5.2 全部高于 GLM-5.1. 差距最大的几行都在长程和编程组: FrontierSWE 74.4 对 30.5, 高 43.9; DeepSWE 46.2 对 18.0, 高 28.2; Terminal Bench 2.1 (Terminus-2) 高 17.5; CritPt 20.9 对 4.6, 高 16.3; PostTrainBench 34.3 对 20.1, 高 14.2; Terminal Bench 2.1 最好框架一行高 13.7; ProgramBench 63.7 对 50.9, 高 12.8; SWE-Marathon 13.0 对 1.0, 高 12.0. 差距最小的是 HMMT Nov. 2025, 94.4 对 94.0, 只高 0.4; 其次是 HLE 带工具高 2.4, SWE-bench Pro 高 3.7, AIME 2026 高 3.9. 其余几行: HLE 高 9.5, HMMT Feb. 2026 高 9.9, IMOAnswerBench 高 7.2, GPQA-Diamond 高 5.0, NL2Repo 高 6.2, MCP-Atlas 高 5.0, Tool-Decathlon 高 7.5.
+DSA 把每层注意力拆成两步. 先由一个轻量的 lightning indexer 给当前查询 $t$ 和每个前面的 token $s$ 打分:
 
-GLM-5.1 这一列还可以和 GLM-5.1 卡对一下. 两边都有的 13 行, 数字全部相同, 包括 HLE 31.0, GPQA-Diamond 86.2, SWE-bench Pro 58.4, NL2Repo 42.7, MCP-Atlas 71.8, Tool-Decathlon 40.7. 不同的只有名字: GLM-5.1 卡上是 Terminal-Bench 2.0 (Terminus-2 63.5, 自报 69.0), 这里是 Terminal Bench 2.1 (63.5 和 69). 版本号变了, 分数一分不差, 是重测恰好相同还是沿用旧数, 本页没说. CritPt, DeepSWE, ProgramBench 和三项长程基准, GLM-5.1 卡上没有, 在这张表里第一次出现.
+$$
+I_{t,s}=\sum_{j=1}^{H^I} w^I_{t,j}\,\mathrm{ReLU}\left(q^I_{t,j}\cdot k^I_s\right)
+\tag{1}
+$$
 
-## 4. 三个长程基准: 百分点和 「最高开源」
+其中 $H^I$ 是 indexer 头数 (GLM 系列是 32), $q^I_{t,j}$ 是第 $j$ 个 indexer 头的查询, $k^I_s$ 是 token $s$ 的 indexer 键 (各头共用, 维度 128), $w^I_{t,j}$ 是按查询算出的头权重. 然后取分数最高的 $k$ 个位置, 主注意力只在这 $k$ 个 token 上算. 主注意力每层从 $O(L^2)$ 降到 $O(Lk)$, indexer 本身仍要对所有前面的 token 打分, 每层 $O(L^2)$, $N$ 层合计 $O(NL^2)$. indexer 头少, 维度低, 还能用 FP8, 单次比主注意力便宜一个量级, 可它是唯一还随 $L^2$ 增长的部分. DSA 靠两段继续训练接到稠密模型上: 先做短暂的稠密预热, 冻结其余参数, 只用 KL 让 indexer 的分布对齐本层各头聚合后的注意力分布; 再打开 top-k 选择做稀疏训练, 整个模型一起调, indexer 的蒸馏梯度走一条断开的计算图, 不回传到主干. 公式推导和 DSA 的两段训练见 [QSA 一文的 DSA 部分](../../../../llm-guide/2-核心原理与架构/2.3-高效与稀疏注意力/2.3.2-稀疏与压缩注意力/06-QSA-Qwen稀疏注意力/06-QSA-Qwen稀疏注意力.md).
 
-第 2 页的条形图分三组. FrontierSWE (副标题 「Dominance」, 「Max 20 Hrs」): Opus 4.8 75.1%, GLM-5.2 74.4%, GPT-5.5 72.6%, Opus 4.7 63.0%, Gemini 3.1 Pro 39.6%. PostTrainBench (「Max 10 Hrs」): Opus 4.8 37.2%, GLM-5.2 34.3%, Opus 4.7 28.6%, GPT-5.5 25.0%, Gemini 3.1 Pro 21.6%. SWE-Marathon (「Max 10 Hrs」): Opus 4.8 26.0%, Opus 4.7 16.0%, GLM-5.2 13.0%, GPT-5.5 12.0%, 最后一条 4.0% 没印名字, 图标和 Gemini 3.1 Pro 相同. GLM-5.2 在三组里分别排第 2, 第 2, 第 3.
+IndexCache 论文 (Bai 等, Z.ai 与清华, arXiv 2603.12201) 在一个 30B 的 DSA 模型上做了时延剖析: 上下文越长, indexer 在总时延里占的比例涨得越快, prefill 阶段最明显, 其余计算只缓慢增长. 同一篇论文统计了逐层 top-k 下标的重合率, 相邻层选中的 token 有 70% 到 100% 相同, 热力图上还能看出几段互相高度重合的层块. 既然相邻层大多选同一批 token, 每层各算一遍 indexer 大部分是重复劳动. 重合也有边界: 热力图左下和右上两角的重合率不到 0.4, 早期层和后期层关心的 token 差别很大; 跨层块边界时重合率掉得比块内快, 说明少数「过渡层」会把注意力焦点整体挪开. 所以不能随便挑一层的下标给全网用.
 
-正文的百分比是按图相减的百分点, 不是相对比例, 而且取整不统一. FrontierSWE 上 「trails Opus 4.8 by only 1%」 实际差 0.7 个点, 「edging out GPT-5.5 by 1%」 实际差 1.8 个点, 「Opus 4.7 by 11%」 实际差 11.4 个点. SWE-Marathon 上 「trailing Opus 4.8 by 13%」 是 26.0 减 13.0; 换成相对比例, GLM-5.2 只有 Opus 4.8 的一半. 引用时最好直接写两边的分数, 不转述成百分比差.
+### 2.2. IndexCache 论文: 留几层 indexer, 怎么训
 
-「Across all three benchmarks, GLM-5.2 is the highest-ranked open-source model」 在这张图上无从核对: 图里另外四个模型, 本页没有把哪一个称为开源. 第 10 页大表的三行里, 只有 FrontierSWE 有另一个开源列的数, DeepSeek-V4-Pro 29.0; PostTrainBench 和 SWE-Marathon 除两列 GLM 外都是 「-」. GLM-5.1 也不在条形图里. 所以这句话在本页上的证据, 只有 FrontierSWE 一行 74.4 对 29.0.
+GLM-5.2 博客里的 IndexShare 指向这篇论文, 论文自己用的名字是 IndexCache. 它把 $N$ 层分成两类: F 层保留自己的 indexer, 算新的 top-k; S 层没有 indexer, 直接继承前面最近一个 F 层的下标集合. 第一层必须是 F. 推理时只多一个条件分支, 下标放在一个临时缓冲区里, 每到 F 层就被覆盖, 论文说不需要额外显存.
 
-## 5. 八项常规评测, 以及档位控制
+怎么选哪些层当 F, 论文给了两条路. 免训练的做法是贪心搜索: 从全 F 开始, 每步试着把每个 F 层翻成 S, 在校准集上算语言模型损失, 留下损失最小的那次翻转. 均匀交替 (每 4 层留 1 个) 在免训练设置下掉分明显: 30B 模型上保留 1/4 时, 长上下文均分从 50.2 掉到 43.0, 搜出来的模式是 49.9. 论文附录还记了一个失败的尝试: 先算「第 $i$ 层借用第 $j$ 层下标后注意力输出的余弦相似度」, 再用动态规划找总相似度最大的模式, 结果和均匀交替差不多. 原因是逐层相似度只看局部, 借来的下标漏掉少数关键 token, 本层输出几乎不变, 误差却会沿后面的层累积; 语言模型损失看的是端到端的结果, 才分得出哪些层不能共用. 要训练的做法是多层蒸馏: 一个 F 层的 indexer 不再只对齐本层的注意力分布, 而是同时对齐它服务的所有层:
 
-第 3 页八张柱状图, 每张五根柱: GLM-5.2, GLM-5.1, Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro. 两列 GLM 的数和大表对照, 七张完全一致, 一张不一致: MCP-Atlas 图上 GLM-5.2 印 77.0, 大表 「MCP-Atlas / Public Set」 印 76.8, 差 0.2, GLM-5.1 两处都是 71.8. 页面没说哪个是准的. Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro 的数只在图上, 大表最右一列 「Cla」 被截断, 表里没有 GPT-5.5 和 Gemini 3.1 Pro, 这些数核对不了. 图的副标题说所有模型都在最高思考档位下评测, 脚注里八项中只有 ProgramBench 写了 reasoning_effort=max.
+$$
+\mathcal{L}^{I}_{\mathrm{multi}}=\sum_{j=0}^{m}\frac{1}{m+1}\sum_{t}D_{\mathrm{KL}}\left(p^{(\ell+j)}_{t}\,\big\|\,q^{(\ell)}_{t}\right)
+\tag{2}
+$$
 
-和图上三个模型比, 情况各不相同. Claude Opus 4.8 在八张图里全部高于 GLM-5.2, 差距从 MCP-Atlas 的 0.8 (77.8 对 77.0) 到 NL2Repo 的 20.8 (69.7 对 48.9). GPT-5.5 在 SWE-bench Pro (58.6), MCP-Atlas (75.3), HLE 带工具 (52.2) 三处低于 GLM-5.2, 在 Terminal-Bench 2.1 (84.0), NL2Repo (50.7), DeepSWE (70.0), ProgramBench (70.8), Tool-Decathlon (55.6), HLE 不带工具 (41.4) 六处高于 GLM-5.2. Gemini 3.1 Pro 只在 Tool-Decathlon (48.8 对 48.2) 和 HLE 不带工具 (45.0 对 40.5) 两处高于 GLM-5.2. 正文 「within a few points of Claude Opus 4.8 (85.0)」 说的是 Terminal-Bench 2.1, 差 4.0; 同一张图里 GPT-5.5 的 84.0 也在 GLM-5.2 前面, 正文没提.
+$p^{(\ell+j)}_t$ 是第 $\ell+j$ 层各头平均后的注意力分布, $q^{(\ell)}_t=\mathrm{Softmax}(I^{(\ell)}_t)$ 是 F 层 indexer 的输出分布, $m$ 是跟在它后面的 S 层个数. 论文的命题 1 证明, 式 (2) 的梯度和「对 $m+1$ 层平均分布 $\bar p_t$ 做单个 KL」完全相同, 因为 $p$ 不依赖参数, 熵项求导为零, 剩下的交叉熵对 $p$ 是线性的. 所以 F 层学的是它服务的几层共同关心的 token. 带这个损失训练后, 均匀交替的 1/4 方案长上下文均分 50.6, 基线 51.0; 去掉跨层损失, 1/2 方案的长上下文均分从 51.6 掉到 49.8.
 
-「strongest open-source model」 这句要看大表. 大表可见的开源对手是 Qwen3.7-Max, MiniMax M3, DeepSeek-V4-Pro 三列. CODING 组九行里, GLM-5.2 在每一行都是可见列最高; 放到全表, 有五行不是: HLE (Qwen3.7-Max 41.4 对 40.5), HMMT Nov. 2025 (Qwen3.7-Max 95.0 对 94.4), HMMT Feb. 2026 (Qwen3.7-Max 97.1, DeepSeek-V4-Pro 95.2, GLM-5.2 92.5), GPQA-Diamond (MiniMax M3 93.0 对 91.2), Tool-Decathlon (DeepSeek-V4-Pro 52.8 对 48.2). 正文限定的是 「standard coding benchmarks」, 在可见列内成立; 被截掉的列里有什么, 看不到. PDF 里 GLM-5.2 整列是浅蓝底蓝色粗体, 那是列的样式, 不表示每格最高; 全表另外只有 HMMT Feb. 2026 的 97.1 是黑色粗体.
+速度收益论文也测了. 30B 模型在 H100 上用 SGLang, 200K 长度保留 1/4 indexer 时, prefill 从 19.5 秒降到 10.7 秒 (1.82 倍), 单请求解码从 58 tok/s 升到 86 tok/s (1.48 倍). 在 744B 的 GLM-5 上做了免训练的初步实验: 保留 1/4 并用搜出的模式, 五项长上下文均分 78.0, 原版 78.4; 均匀交替只有 72.7. 论文结尾说下一步要在这个规模上做要训练的版本, GLM-5.2 就是这一步.
 
-第 4 页的档位折线图, 横轴是每个任务的平均输出 token 数, 纵轴是 Terminal-Bench 2.1, DeepSWE, SWE-Atlas QnA 三项的平均分, 在 Claude Code 2.1.167 上测. 点旁不印数值, 目测: GLM-5.2 Non-Thinking 约 35k, 63 分, High 约 44k, 72 分, Max 约 84k, 74 到 75 分; GLM-5.1 Non-Thinking 约 32k, 53 分, Max 约 45k, 57 到 58 分; Claude Opus 4.8 High 约 40k, 78 分, Max 约 88k, 78 分; Claude Opus 4.7 Max 约 49k, 71 分. 在 44k 到 45k 附近, GLM-5.2 的 High 比 GLM-5.1 的 Max 高十几分, 这就是 「comparable token budgets」 在图上的位置; 「between Claude Opus 4.7 and Claude Opus 4.8」 在 40k 到 50k 这一段成立. GLM-5.2 从 High 到 Max, 输出接近翻倍, 分数只多两三分.
+### 2.3. GLM-5.2 怎么用: 均匀交替, 从中期训练开始
 
-这张图有两处不能直接用. 纵轴里的 SWE-Atlas QnA 不在大表里, 本页没有它的单项分, 所以折线图的分和大表任何一行都对不上. 档位名也不统一: GLM 两条线最低一档叫 Non-Thinking, Claude 两条线叫 Low, 第 10 页告诉订阅用户的可选档位只有 High 和 Max.
+GLM-5.2 走的是要训练的那条路. 博客说它 「is trained with IndexShare from mid-training with 128K sequence length」, 也就是 indexer 共用不是事后剪出来的, 中期训练阶段 128K 序列上就已经按共用的结构训练. 配置里的 `indexer_types` 给出了具体模式: 前 3 层都是 full, 之后每 4 层一组, 3 个 shared 加 1 个 full, 最后以 3 个 shared 收尾. 数下来是 21 个 full, 57 个 shared, indexer 计算只剩原来的 $21/78\approx27\%$ (推导). 前 3 层正好是稠密 FFN 层, 配置里还有 `index_skip_topk_offset: 3`. 论文发现在免训练设置下早期层对去掉 indexer 最敏感, 带训练后均匀模式就够用, GLM-5.2 的选择和这两条一致.
 
-## 6. 结构改动: IndexShare 和 MTP, 只写图文印了的
+效果只有一张 FLOPs 曲线. 纵轴是单 token FLOPs (单位标 「T」, 没有解释), 横轴是 token 位置. 32K 处两条线都在 0.1 附近, 到 1024K 处 GLM-5.1 约 0.67, GLM-5.2 约 0.22, 旁注 「2.9x lower」. indexer 计算降到约 27%, 总 FLOPs 只降到约 1/2.9, 剩下的差额是主注意力, MoE 和投影这些不随 IndexShare 变的部分. 博客说长上下文基准上 「outperforming GLM-5.1 with less computation」, 没有列是哪几项.
 
-IndexShare 在第 1 页的说法是 「reuses the same indexer across every four sparse attention layers」, 第 5 页展开为: 每 4 个 transformer 层共用一个轻量 indexer, indexer 放在第一层, 它算出的 topk 索引给这 4 层共用, 于是 4 层里有 3 层省掉 indexer 的点积和 topk 运算. 方法链到 arXiv 2603.12201. 第 4 页结构图 「Architecture Changes in GLM-5.2」 的左半画的就是这个: Main Model 里一组四个 DSA Block, 最下面一个 「w/ Indexer」, 上面三个 「w/o Indexer」, 旁边写 「Reuse top-k indices」, 整组标 「x L」. L 是多少, 图和正文都没写.
+top-k 次数变少对 RL 也有影响. GLM-5 报告讲过, MoE 可以用 routing replay 把 rollout 时选中的专家记下来给训练端复用, indexer 每个位置选 2048 个下标, 存不下, 只能换成确定性的 `torch.topk`, 保证训练和推理选出同一批 token; 用非确定性的 CUDA 或 TileLang 实现时, RL 跑几步熵就骤降. RL 期间 indexer 参数默认冻结. IndexShare 之后, 每次前向的 top-k 从 78 次降到 21 次 (推导), 确定性实现比非确定性实现慢的那部分开销也跟着缩小. GLM-5.2 是否沿用了冻结 indexer 的做法, 博客没提.
 
-FLOPs 曲线 「Single-Token FLOPs (T)」 画的是单个 token 的计算量随位置的变化. 32K 处两条线都在 0.1 左右; 到 1024 处, GLM-5.1 目测约 0.67, GLM-5.2 约 0.22, 旁注 「2.9x lower」, 目测比值和标注在读图误差内. 纵轴单位 「T」 没有解释. 这条曲线上 GLM-5.1 一直画到 1024, 而它的窗口上限是 200K, 页面没说 200K 以后那一段是怎么得出的. 第 6 页还补了一句限制: 新结构降低了每个 token 的计算 FLOPs, 却 「does not proportionally reduce per-token KV-cache size」.
+KV cache 降得少, 原因在缓存里存了什么. S 层只是不算 indexer, 主注意力照样要读本层自己的 KV, 每个 token 每层仍是 576 维的潜在 KV. 能省的只有 S 层的 indexer 键缓存. 按每层 576 维潜在 KV 加 128 维 indexer 键估算, 78 层全带 indexer 是每 token $78\times704=54{,}912$ 维, IndexShare 后是 $78\times576+21\times128=47{,}616$ 维, 只少约 13% (推导, indexer 键的存储精度和布局博客没写). 博客原话是新结构 「does not proportionally reduce per-token KV-cache size」, 这也是第 4 节推理服务要单独处理 KV 容量的原因.
 
-MTP 部分有两个目标: 让作为草稿模型的 MTP 层开销小, 让投机解码的接受率高. 做法是在 MTP 层上也用 IndexShare: indexer 放在第一步, topk 索引给后面各步共用. 第 5 页的两步示意图说明了第二个目标怎么实现: 不共用时, 第二步里 $h_5$ 的 KV cache 混有目标模型算出的 $kv_{1:4}$ 和 MTP 层算出的 $kv_5$; 共用索引后, $h_5$ 只注意到 $h_1$ 到 $h_4$, KV cache 只含来自目标模型的 $kv_{1:4}$, 正文称这消除了 GLM-5.1 MTP 层里训练和推理不一致的问题. 训练时复用第一步的 kv cache 和 topk 索引; 不同 MTP 步的参数和 GLM-5.1 一样共享. 另外引入了拒绝采样 (受 arXiv 2606.12370 启发) 和端到端 TV 损失.
+## 3. MTP: 草稿层也共用索引
 
-接受长度的消融有一个前提要记住: 「In the experiment we use the backbone and training data of GLM-5.1」, MTP 步数训练和推理都设为 7, 场景是编程. 四个数是 Baseline 4.56, 加 IndexShare 和 KV Share 5.10, 加拒绝采样 5.29, 加端到端 TV 损失 5.47, 5.47 / 4.56 约为 1.20, 印 +20%; 三步各加 0.54, 0.19, 0.18. 第 4 页柱状图和这张表的四个数相同. 所以第 1 页 「improve GLM-5.2's MTP layer ... increasing the acceptance length by up to 20%」 里的 20%, 是在 GLM-5.1 主干上量出来的, 页面没有给 GLM-5.2 自己的接受长度.
+### 3.1. 两个目标: 草稿便宜, 接受得多
 
-结构图里其余可见的部件只有这些: 两个 MTP module, 各由 Embedding (Shared), E-Norm, H-Norm, Linear 和一个 DSA Block 组成, 输出经 MTP Head (Shared); 两个模块之间有 「Reuse top-k indices」 和 「Shared KV Cache」. 图里没有注意力头数, 前馈层, 宽度和参数量, 第 8 页 「merging more than ten expert models」 说的是后训练里合并十多个模型, 也不是结构描述. 这些空白本页不能填.
+MTP 在 GLM 系列里拿来做投机解码: MTP 层充当草稿模型, 一次往后猜几个 token, 主模型一次前向验证. 每次验证能落地的 token 数叫接受长度. 草稿越便宜, 接受长度越长, 解码越快. 机制见 [MTP 深度解析](../../../../llm-guide/2-核心原理与架构/2.4-前沿架构与变体/2.4.6-多Token预测MTP/2.4.6-多Token预测MTP.md) 与 [投机解码原理](../../../../llm-guide/6-训练与推理优化/6.6-推理框架与高级优化/6.6.2-投机解码/01-投机解码原理与应用.md). 1M 窗口下单 token 解码更慢, 接受长度多一点, 省下的时间就多一点; GLM-5 报告还提到 RL rollout 常处于小 batch 解码, 长尾样本最吃 MTP 的加速.
 
-## 7. 1M 的推理服务和吞吐图
+GLM-5.2 的 MTP 层本身也是一个 DSA 块, 也带 indexer. 博客的做法是把 IndexShare 搬到 MTP 的多步上: indexer 只在第一步算, top-k 下标给后面各步用. 配置里 `index_share_for_mtp_iteration: true` 就是这个开关. 各步参数和 GLM-5.1 一样共享.
 
-第 6 页的推理段落先讲问题: 窗口从 200K 提到 1M 后, 编程负载预计会转向更长的提示, 推理瓶颈从计算转到 KV-cache 容量, 长上下文算子开销和 CPU 侧开销. 引擎优化分三个方向: 在 LayerSplit 基础上做更细粒度的显存管理和并行, 提高 KV-cache 容量; 优化开销随上下文增长的算子, 并和缓存传输流水线配合, 减少对 prefill 和 decode 的影响; 优化 CPU 侧的缓存管理, 请求调度和运行时路径, 减少 GPU 流水线空泡. 三条都没有单独的数字.
+### 3.2. 共用 KV, 消掉训练和推理的不一致
 
-第 7 页吞吐图以 GLM-5.1 在 32K 时为 1. GLM-5.1: 64k 1.62x, 128k 2.42x, 200k* 2.77x, 更长 OOC; GLM-5.2: 32k 1.03x, 64k 2.06x, 128k 3.86x, 200k 4.69x, 256k 5.37x, 512k 6.16x, 1024k 6.97x. 同长度下两者之比从 32k 的约 1.03 升到 64k 约 1.27, 128k 约 1.60, 200k 约 1.69, 这是正文 「increasingly larger throughput advantage」 在图上的样子. 但 「Normalized Throughput」 按什么计, 为什么 GLM-5.1 自己的柱也随长度升高, 用了什么硬件和并发, 页面都没写, 这些倍数只能在这张图内部比.
+共用索引还顺带修了一个问题. 博客用两步示意图说明: 不共用时, MTP 第二步里 $h_5$ 要看的 KV cache 混着两种来源, $kv_{1:4}$ 来自目标模型, $kv_5$ 是 MTP 层自己算的; 共用下标之后, $h_5$ 只看 $h_1$ 到 $h_4$, 缓存里只有目标模型的 $kv_{1:4}$. 推理时, 这几个位置的 KV 本来就是目标模型算的, 训练时 MTP 却看到自己算的 KV, 两边看到的东西不一样. 博客称这消除了 GLM-5.1 MTP 层里训练和推理不一致的问题. 训练时复用 MTP 第一步的 kv cache 和 top-k 下标, 后面几步不再重算.
 
-## 8. 后训练: slime, 长程强化学习, 防作弊
+### 3.3. 拒绝采样与端到端 TV 损失
 
-slime 在第 7, 8 页被描述为从训练贯通到大规模推理 rollout 的一层基础设施, 支持白盒 rollout, 黑盒 rollout, 紧凑轨迹和子智能体工作流四种组织方式, 能适配不同的并行策略, 路由策略, PD 分离和部署方式, 并配合 KV-cache FP8. 具体可引用的数字只有一处: 用 slime 做并行 OPD 训练, 把十多个 「expert models」 合并进最终模型, 全程约两天. OPD 全篇没展开, 两天用了多少卡没写.
+另外两项改动来自阿里 Qwen 团队的 Bebop 论文 (Li 等, arXiv 2606.12370), 博客写的是 「inspired by」. 论文对比了两种验证方式. 只看目标概率的验证 (target-only) 取草稿分布的 argmax 作候选, 以目标概率接受:
 
-长程强化学习的改动写在第 8 页. 长程任务的轨迹被压缩 (compaction) 切成多段子轨迹后, 同一提示下不同 rollout 的可训练轨迹数和长度都不一样, 所以从按组优化改为基于 critic 的 PPO, 从单条 rollout 学习, 由 critic 估计 token 级优势. 压缩后的所有子轨迹都作为可训练轨迹, 再用 token 级损失处理长度不均. 这一节没有训练曲线和对比分数.
+$$
+\alpha^{\mathrm{TO}}=p\left(\arg\max_y q(y)\right)
+\tag{3}
+$$
 
-防作弊一节的起因是 「GLM-5.2 shows more potential hacking behavior than GLM-5.1」. 页面举的例子有用 curl 直接下载答案, 以及 find, cat, python 三步串起来读取 `/workspace/.eval/secret_cases.json`. 检测分两步: 规则过滤器先抓, 追求召回; LLM 评审再看意图, 保证精确. 在线监控每一步工具调用, 发现作弊就拦下这次调用, 返回假信息, rollout 继续, 不丢弃整条轨迹. 这个模块 「for both RL training and evaluation」, 即评测里也用; 脚注里明确写到防作弊判定的只有 NL2Repo 一项 (基于规则和基于 LLM 的判定, 例子是未经许可的 pip 或 curl). 其它各项评测里是否拦截过, 拦了多少, 页面没说.
+拒绝采样则从草稿分布 $q$ 里采候选 $\hat y$, 以 $\min(1,p(\hat y)/q(\hat y))$ 接受, 期望接受率等于两分布的重叠:
 
-## 9. 评测设置: 脚注写了什么
+$$
+\alpha^{\mathrm{RS}}=\sum_y \min\left(p(y),q(y)\right)=1-d_{\mathrm{TV}}(p,q)
+\tag{4}
+$$
 
-第 11, 12 页脚注逐项给了设置. 推理类 (HLE 等): temperature=1.0, top_p=0.95, 最大生成长度 163,840 token, 默认报纯文本子集, AIME, HMMT, IMOAnswerBench 用固定系统提示, 评审模型 GPT-5.5 (medium); HLE 带工具的最大上下文 300,000 token, 不用上下文管理. SWE-Bench Pro 用 OpenHands, 400K 窗口; NL2Repo 400k; DeepSWE 用 pier 框架和 mini-swe-agent, 2 小时超时, 2 CPU 8 GB 不联网; ProgramBench 200 个实例, Claude-Code 2.1.156, 6 小时超时, reasoning_effort=max, 4 CPU 8 GB 不联网; Terminal-Bench 2.1 分 Terminus 2 (256K, 4 小时超时) 和 Claude Code 2.1.167 (max_new_tokens 经透明代理覆盖为 128k, 去掉墙钟限制, 5 次平均) 两种; MCP-Atlas 500 个任务的公开子集, 每题 10 分钟, 评审模型 Gemini-3.0-Pro; Tool-Decathlon 用官方服务, max_token 128K; 三项长程基准由第三方在 1M, max 档位, 128K 输出下测.
+$d_{\mathrm{TV}}$ 是总变差距离. 式 (3) 的上限是 $\max_y p(y)$, 目标分布熵一高, 这个值就跟着降; RL 为了探索常维持较高的熵, 论文观察到接受率随熵近似线性下降. 式 (4) 只看重叠, 对熵不那么敏感, 输出分布仍严格等于 $p$.
 
-几处要注意的口径. 只有 Terminal-Bench 2.1 (Claude Code) 写了 「averaged over 5 runs」, 其它项没写跑了几次. 两处用到 Claude Code, 版本不同: ProgramBench 用 2.1.156, Terminal-Bench 和档位折线图用 2.1.167. 评审模型也不同: 数学题用 GPT-5.5, MCP-Atlas 用 Gemini-3.0-Pro, 而 GPT-5.5 本身又是柱状图里的对比模型之一. 表尾 「*: refers to their scores of full set」 和脚注 「results marked with * are from the full set」 说的是带星号的格子, 可大表可见部分一个星号都没有, 带星号的格子可能在被截掉的 「Cla」 列里, 这是推断.
+$\gamma$ 步 MTP 的期望接受长度是各步接受率的累乘和:
 
-## 10. 18 张图, 文件名和 md 的抓取问题
+$$
+\mathbb{E}[L]=\sum_{j=1}^{\gamma}\prod_{i=1}^{j}\alpha_i
+\tag{5}
+$$
 
-18 张图按页是第 1 页 2 张, 第 2 页 2 张, 第 3 页 8 张, 第 4 页 4 张, 第 5 页 1 张, 第 7 页 1 张. PDF 里的位图更少: 第 3 页八张柱状图连同标题和图例是一张 4239x2799 的整图, md 把它切成八块; 第 4 页是两张位图, 档位折线图一张, 结构图, FLOPs 曲线和接受长度图合在另一张里, md 切成三块; 第 2 页的 Z 字标是从长程评测图右上角切下来的. 第 1 页两张是链接前的小图标 (Z 字标和 Hugging Face 笑脸), 第 5 页是两步 MTP 示意图, 第 7 页是吞吐图. 能读出数字的有 13 张: 长程条形图, 八张柱状图, 档位折线图, FLOPs 曲线, 接受长度图, 吞吐图.
+交叉熵或 KL 训练只是间接压低 TV 距离 (Pinsker 不等式给的是上界), 而且平均对待词表里所有 token. Bebop 直接把式 (5) 归一化后当损失:
 
-文件名对不上画面的有 8 张, 规律是名字取自图后面那段文字. 第 4 页四张整体错开一位: 档位折线图叫 `p04-architecture-for-1m-context.png`, 结构图叫 `p04-lower-flops-with-indexshare.png`, FLOPs 曲线叫 `p04-higher-mtp-acceptance-length.png`, 接受长度图叫 `p04-indexshare-for-dsa.png`; md 里 「Lower FLOPs with IndexShare」 和 「Higher MTP Acceptance Length」 两行图题也跟着落到了前一张图下面. 第 3 页第八张 HLE 柱状图叫 `p03-glm-5-2-also-introduces-effort-level-control-enabling.png`; 第 2 页 Z 字标和长程条形图的名字取自各自后面的正文; 第 1 页笑脸叫 `p01-try-it-at-z-ai-...png`. 名字泛但不算错的是 `p01-image.png` 和七张 `p03-chart*.png`; 第 5 页和第 7 页两张的名字取自讲图的正文和图注, 内容对得上.
+$$
+\mathcal{L}_{\mathrm{e2e}}=1-\frac{1}{\gamma}\sum_{j=1}^{\gamma}\prod_{i=1}^{j}\left(1-d_{\mathrm{TV}}(p_i,q_i)\right)
+\tag{6}
+$$
 
-md 还有几处和 PDF 不一致. 「## LLM Performance Evaluation」, 「Long-Horizon Task Evaluation」, 「Agentic Coding Performance by Effort Level」 等行在 PDF 文字层里没有, 是从图里识别出来的字, 其中第一行还被当成了二级标题. 三个孤立的 「Z」 和末尾的 「x0」 是图标被识别成的字符, 第 1 页 HuggingFace 前的 「S」 也是. 第 10 页表头 「Qwen3.7-Max」 被切成 「Q」 和 「wen3.7-Max」, 行名下的小字副标题成了单独的行, 被截断的 「Cla」 列并进了 DeepSeek-V4-Pro 的表头. 第 11 页脚注丢了星号, 第 13 页丢了 「Legal」, 「Privacy Policy」, 「Terms of Service」 三行链接. PDF 的粗体 md 也没有保留.
+靠前的步出现在更多乘积项里, 权重自然更大, 而且权重随当前各步的接受率自动调整. 单步 TV 损失对 logit 的梯度正比于 $q_j$, 绝对值不超过 1: 草稿给的概率低于目标的 token 被往上推, 高于目标的被往下压, 草稿本来就几乎不给概率的长尾 token 梯度接近零. KL 的梯度是 $q_j-p_j$, 对整个词表一视同仁. 论文还拆分了 RL 中接受率下降的来源, 认为主因是策略熵的变化, 策略更新带来的草稿与目标失配影响很小, 所以只要 RL 开始前用 TV 损失训好 MTP, 再配拒绝采样, 整个 RL 过程里不必在线更新 MTP. 论文报告 TV 损失比 CE 或 KL 多出约 10% 的接受率, 在 Qwen3.5 到 3.7 的异步 RL 上端到端最多加速 1.8 倍.
 
-## 11. 这篇能回答什么, 不能回答什么
+### 3.4. 消融: 每一步加了多少
 
-能照原字原数引用的: 发布日期 2026-06-16; 窗口上限从 200K 改为 1M, Claude Code 里用 GLM-5.2[1m] 开启; IndexShare 每 4 层共用一个 indexer, 1024K 处单 token FLOPs 标 「2.9x lower」; MTP 接受长度在 GLM-5.1 主干上从 4.56 到 5.47; 吞吐图各长度的倍数; 大表 19 行里五个可见模型的分数; 八张柱状图和长程条形图里对比模型的分数; 各项评测的设置; OPD 合并十多个模型约两天; 编程套餐高峰 3 倍, 非高峰 2 倍 (9 月底前非高峰 1 倍) 的额度规则; 权重在 HuggingFace 和 ModelScope 公开, 支持 transformers, vLLM, SGLang, xLLM, ktransformers.
+博客的消融有个前提: 「we use the backbone and training data of GLM-5.1」, 训练和推理都用 7 步 MTP, 场景是编程.
 
-本页回答不了的: GLM-5.2 的参数量, 层数 L 和完整结构; 1M 长度的训练在哪个阶段做, 用多少数据; 「long-context benchmarks」 是哪几项, 分数多少; 有没有专门在 1M 长度上考检索或理解的分数; GLM-5.2 自己的 MTP 接受长度; 吞吐按什么计; MCP-Atlas 77.0 和 76.8 哪个准; GLM-5.1 在三项长程基准上用的是什么窗口; Terminal Bench 2.1 上 GLM-5.1 的数为什么和 GLM-5.1 卡上 2.0 的数完全一样; 被截掉的 「Cla」 列是谁, 星号在哪; OPD 是什么, 两天用了多少卡; 「more potential hacking behavior」 多了多少. `glm-5-2-bi.md` 里的 12 处疑点, 集中在这几件事上: 1M 的含义和评测长度, 和 GLM-5.1 对比所用的行, 图表数字的一致性, 20% 的测量条件, 以及图的文件名.
+| 配置 | 接受长度 |
+|---|---|
+| Baseline | 4.56 |
+| + IndexShare 与 KV Share | 5.10 |
+| + 拒绝采样 | 5.29 |
+| + 端到端 TV 损失 | 5.47 |
+
+三步分别加 0.54, 0.19, 0.18, 总共 $5.47/4.56\approx1.20$. 共用索引和 KV 这一项贡献最大, 说明训推不一致是之前接受长度的主要损失来源. 第 1 页的 「increasing the acceptance length by up to 20%」 就是这张表, 是在 GLM-5.1 主干上量的, GLM-5.2 自己的接受长度博客没给.
+
+## 4. 1M 的推理服务
+
+窗口到 1M 以后, 博客预计编程负载会转向更长的提示, 推理瓶颈从计算转到三处: KV cache 容量, 随上下文增长的长序列算子, CPU 侧开销. 对应的引擎改动也是三条: 在 LayerSplit 基础上做更细粒度的显存管理和并行, 提高 KV cache 容量; 优化那些开销随上下文变长的算子, 让它们和缓存传输流水起来, 减少对 prefill 和 decode 的干扰; 优化 CPU 侧的缓存管理, 请求调度和运行时路径, 减少 GPU 空泡. 第一条直接接着第 2.3 节: IndexShare 省了算力, 没怎么省 KV, 容量问题只能由引擎补.
+
+吞吐图以 GLM-5.1 在 32K 时的吞吐为 1:
+
+| 上下文 | 32k | 64k | 128k | 200k | 256k | 512k | 1024k |
+|---|---|---|---|---|---|---|---|
+| GLM-5.1 | 1.00 | 1.62 | 2.42 | 2.77 | OOC | OOC | OOC |
+| GLM-5.2 | 1.03 | 2.06 | 3.86 | 4.69 | 5.37 | 6.16 | 6.97 |
+
+同长度下两者之比从 32k 的 1.03 升到 64k 约 1.27, 128k 约 1.60, 200k 约 1.69 (推导), 越长优势越大. GLM-5.1 的 200k 标了星号, 256k 起写 OOC (超出上下文). 两条柱都随长度升高, 说明这里的「吞吐」不是每秒生成的 token 数; 博客没写按什么计, 也没写硬件和并发, 这些倍数只能在图内比较.
+
+## 5. 后训练: slime, SAO 与防作弊
+
+### 5.1. slime: 训练和大规模 rollout 一套框架
+
+slime 是 THUDM 开源的 RL 后训练框架 (github.com/THUDM/slime), GLM-5.3 的博客说它把 Megatron 训练和 SGLang 推理放进一条数据流. GLM-5.2 博客列的功能是四种 rollout 组织方式: 白盒 rollout, 黑盒 rollout, 压缩轨迹 (compact trajectory) 和子智能体工作流; 适配不同的并行策略, 路由策略, PD 分离和部署方式, 配合 KV cache FP8. 唯一的数字是: 用 slime 做并行 OPD, 把十多个专家模型合进最终模型, 全程约两天, 用了多少卡没写. OPD 的思路是学生在自己采的样本上逐 token 对齐教师分布, 多教师版本见 [MOPD](../../../../llm-guide/4-后训练/4.6-OPD/09-MOPD-多教师在线蒸馏/09-MOPD-多教师在线蒸馏.md).
+
+### 5.2. 从按组优化到单条 rollout 的 PPO
+
+长程任务的轨迹会经过压缩 (compaction), 一条原轨迹被切成几段子轨迹. 博客指出, 这样一来同一提示下不同 rollout 的可训练轨迹数和长度都不一样, 按组比较奖励的做法不再自然. 改法是换成基于 critic 的 PPO, 每条 rollout 单独学, critic 估计 token 级优势; 压缩后的所有子轨迹都当作可训练轨迹, 再用 token 级损失处理长度不均.
+
+这套方法的论文是 SAO (Single-rollout Asynchronous Optimization, Hou 等, arXiv 2607.07508). 论文指出按组采样和异步训练合不来: 一组要等最慢的那条跑完才能送进训练, 等待本身制造了 off-policy; 很多智能体环境对一个提示也只给一条轨迹的反馈. SAO 每个提示只采一条, 跑完立刻进训练. 稳定性靠直接双侧重要性采样 (DIS), 比值直接用 rollout 引擎记下的对数概率算:
+
+$$
+r_t(\theta)=\exp\left(\log\pi_\theta(a_t\mid s_t)-\log\pi_{\mathrm{rollout}}(a_t\mid s_t)\right)
+\tag{7}
+$$
+
+$r_t$ 落在 $(1-\epsilon_\ell,1+\epsilon_h)$ 之外的 token 整个屏蔽, 不参与梯度. 这样不用保存历史检查点, GLM-5 的异步 RL 已经在用这一招. 单条 rollout 的方差大, 要靠价值模型: SAO 让 critic 每步更新 2 次 (策略 1 次), 训练 critic 时冻结注意力层只调 MoE 部分 (论文发现 critic 的梯度不稳主要来自全注意力层). 智能体轨迹是动作和环境反馈交替的, 环境反馈不是模型生成的, SAO 的 GAE 跳过观测 token, 直接把上一个动作的末 token 连到下一个动作的首 token:
+
+$$
+\hat A(a_{i,N})=\delta+\gamma\lambda\hat A(a_{i+1,0}),\qquad \delta=r_t+\gamma V(a_{i+1,0})-V(a_{i,N})
+\tag{8}
+$$
+
+$a_{i,N}$ 是第 $i$ 个动作的最后一个 token, $a_{i+1,0}$ 是下一个动作的第一个. PPO 和 GAE 的推导见 [PPO](../../../../llm-guide/4-后训练/4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/04-PPO.md). 屏蔽区间放得很宽, 而且不对称: 论文的数学推理实验用 $\epsilon_\ell=0.3$, $\epsilon_h=5.0$, 编程智能体实验用 0.8 和 3.0; GAE 的 $\lambda$ 随序列长度自适应. 论文在 Qwen3-30B-A3B 上的结果: SWE-Bench Verified 基线 23.0, GRPO 加 DIS 27.0, SAO 29.8; 原版 GRPO 约 160 步后崩掉, SAO 能稳定训约一千步. 摘要明确说 SAO 部署在了 GLM-5.2 的智能体 RL 流水线里.
+
+### 5.3. 防作弊: 拦下工具调用, rollout 继续
+
+博客承认 「GLM-5.2 shows more potential hacking behavior than GLM-5.1」, 没给比例. 举的例子有两类: 用 curl 从 GitHub 直接下载答案文件; 用 find, cat, python 三步串起来读 `/workspace/.eval/secret_cases.json`. 检测分两级: 规则过滤器先筛, 追求召回; LLM 判别再看意图, 保证精确. 监控在线跑在每一次工具调用上, 判定作弊就拦下这次调用, 返回假信息, rollout 继续往下走, 整条轨迹不丢. 博客说这个模块 「for both RL training and evaluation」, 评测里也开着; 脚注里写到防作弊判定的只有 NL2Repo (例子是未经许可的 pip 或 curl). 这意味着评测分数里包含被拦过又继续跑完的轨迹, 各项拦了多少次, 博客没写.
+
+## 6. 评测
+
+大表有 19 行, 下面只留和本次改动直接相关的几行, 加上两个开源对手:
+
+| 基准 | GLM-5.2 | GLM-5.1 | Qwen3.7-Max | DeepSeek-V4-Pro |
+|---|---|---|---|---|
+| Terminal-Bench 2.1 (Terminus-2) | 81.0 | 63.5 | 75.0 | 64.0 |
+| SWE-bench Pro | 62.1 | 58.4 | 60.6 | 55.4 |
+| DeepSWE | 46.2 | 18.0 | 18.0 | 8.0 |
+| FrontierSWE | 74.4 | 30.5 | - | 29.0 |
+| PostTrainBench | 34.3 | 20.1 | - | - |
+| SWE-Marathon | 13.0 | 1.0 | - | - |
+| HLE (带工具) | 54.7 | 52.3 | 53.5 | 48.2 |
+| GPQA-Diamond | 91.2 | 86.2 | 90.0 | 90.1 |
+
+涨幅最大的都是长程和编程项: FrontierSWE 高 43.9, DeepSWE 高 28.2, Terminal-Bench 高 17.5; 知识和推理类涨得少, HLE 带工具只高 2.4. 这和改动的方向一致, 窗口, 长程 RL 和防作弊都是为长程编程做的. 全表 19 行 GLM-5.2 都高于 GLM-5.1, 但不是每行都领先开源对手: HMMT Feb. 2026 上 Qwen3.7-Max 97.1, GLM-5.2 92.5; Tool-Decathlon 上 DeepSeek-V4-Pro 52.8, GLM-5.2 48.2.
+
+口径上有两点要注意. FrontierSWE, PostTrainBench, SWE-Marathon 三项由第三方 (Proximal, PostTrainBench, Abundant AI) 在 1M 上下文, max 档位, 128K 输出下评测, 其余写了窗口的各项都在 400K 以内, Terminal-Bench 2.1 是 256K. GLM-5.1 的窗口只有 200K, 这三项它在什么长度下测的, 脚注没写. 另外, FrontierSWE 报的是 Dominance 分, 脚注标「截至 2026/06/16」, 这是个随时间变化的相对分, 后来 GLM-5.3 博客里 GLM-5.2 同一项印的是 67.5. 和闭源模型比, 长程条形图里 Claude Opus 4.8 三项都在 GLM-5.2 前面: FrontierSWE 75.1 对 74.4, PostTrainBench 37.2 对 34.3, SWE-Marathon 26.0 对 13.0; Terminal-Bench 2.1 上 Opus 4.8 是 85.0.
+
+GLM-5.2 还加了思考档位控制, 博客用一张折线图看「花多少输出换多少分」. 横轴是每个任务的平均输出 token 数, 纵轴是 Terminal-Bench 2.1, DeepSWE, SWE-Atlas QnA 三项的平均分, 在 Claude Code 2.1.167 上测, 点旁不印数值. 目测读数: GLM-5.2 的 Non-Thinking 约 35k 输出, 63 分; High 约 44k, 72 分; Max 约 84k, 74 到 75 分. GLM-5.1 的 Max 约 45k, 57 到 58 分. 同样四万多的输出, GLM-5.2 的 High 比 GLM-5.1 的 Max 高十几分; GLM-5.2 从 High 到 Max 输出接近翻倍, 分数只多两三分. Claude Opus 4.8 的 High 约 40k, 78 分. 纵轴里的 SWE-Atlas QnA 不在大表里, 这张图的分数和大表任何一行都对不上, 只能看趋势. 订阅用户能选的档位是 High 和 Max.
+
+## 7. 结论与边界
+
+GLM-5.2 没有换主干, 改的是 1M 窗口下最贵的几处. IndexShare 把 indexer 的 $O(NL^2)$ 砍到约四分之一, 换来 1M 处约 2.9 倍的单 token FLOPs 下降, KV 容量则交给推理引擎处理; MTP 通过共用索引和 KV 消掉训推不一致, 再借 Bebop 的拒绝采样和 TV 损失把接受长度提高 20%; 后训练用 SAO 让被压缩切段的长轨迹也能逐条训练. 成绩上, 长程编程项的涨幅远大于知识类.
+
+博客能支撑的结论到此为止. 1M 窗口的检索和理解能力没有专门的基准分数; 20% 的接受长度提升是在 GLM-5.1 主干上测的; 吞吐图的计量方式没给; 防作弊在评测中拦了多少次也没给. 这些要等完整技术报告.
+
+## 参考文献
+
+1. Z.ai. 「GLM-5.2: Built for Long-Horizon Tasks」. Z.ai 官网博客, 2026-06-16. 中英对照见 [glm-5-2-bi](./glm-5-2-bi.md).
+2. Z.ai. `zai-org/GLM-5.2` 模型配置 `config.json`. HuggingFace, https://huggingface.co/zai-org/GLM-5.2.
+3. Yushi Bai, Qian Dong, Ting Jiang, et al. 「IndexCache: Accelerating Sparse Attention via Cross-Layer Index Reuse」. arXiv:2603.12201, 2026.
+4. Yucheng Li, Huiqiang Jiang, et al. 「Breaking Entropy Bounds: Accelerating RL Training via MTP with Rejection Sampling」. arXiv:2606.12370, 2026.
+5. Zhenyu Hou, Yujiang Li, Jie Tang, Yuxiao Dong. 「Single-Rollout Asynchronous Optimization for Agentic Reinforcement Learning」. arXiv:2607.07508, 2026.
+6. Aohan Zeng, Xin Lv, et al. 「GLM-5: from Vibe Coding to Agentic Engineering」. arXiv:2602.15763, 2026.
+7. Aixin Liu, et al. 「DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models」. arXiv:2512.02556, 2025.
+8. THUDM. slime: an LLM post-training framework for RL Scaling. https://github.com/THUDM/slime.
