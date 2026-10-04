@@ -1491,7 +1491,7 @@ Table 12. MMLU Example prompt, presented in two different languages. Note we do 
 | English | Why is the sky blue? A) Because the molecules that compose the Earth's atmosphere have a blue-ish |
 | >1B speakers | color. B) Because the sky reflects the color of the Earth's oceans. C) Because the atmosphere preferentially scatters short wavelengths. D) Because the Earth's atmosphere preferentially absorbs all other colors. |
 | Marathi | aAkAf EnkA aAh? A) kArZ p-LvFQyA vAtAvrZAcF rcnA krZAyArZ\\cA r\\g EnA asto |
-| 90M speakers | B) kArZ aAkAfAtn p-LvFQyA mhAsAgrA\\cA r\\g prEtEb\\Ebt hoto C) kArZ vAtAvrZ prAm HyAnlhAn tr\\glA\\bF EvK rt D) kArZ p-LvFcvAtAvrZ itr svr\\gA\\nA prADAyAnfoqn Gt |
+| 90M speakers | B) kArZ aAkAfAtn p-LvFQyA mhAsAgrA\\cA r\\g prEtEb\\Ebt hoto C) kArZ vAtAvrZ prAmHyAnlhAn tr\\glA\\bF EvKrt D) kArZ p-LvFcvAtAvrZ itr svr\\gA\\nA prADAyAnfoqn Gt |
 | Latvian | Ka¯pe¯c debesis ir zilas? A) Jo molekula¯m, kas veido Zemes atmosfe¯ru, ir zilgana kra¯sa. |
 | 2M speakers | B) Jo debesis atspogul,o Zemes okea¯nu kra¯su. C) Jo atmosfe¯ra galvenoka¯rt izkliede¯ ¯ısus vil,n, u garumus. D) Jo Zemes atmosfe¯ra galvenoka¯rt absorbe¯ visas pa¯re¯ja¯s kra¯sas. |
 | Welsh | Pam mae'r awyr yn las? A) Oherwydd bod gan y moleciwlau sy'n cyfansoddi atmosffer y Ddaear liw |
