@@ -8,15 +8,11 @@ excerpt: "同一条 softmax(QK^T/sqrt(d))V,在 PyTorch eager,SDPA,flash-attn 和
 
 > 相关:[01 Memory-Efficient Attention](../01-Memory-Efficient-Attention/01-Memory-Efficient-Attention.md) · [02 FlashAttention](../02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md) · [03 FlashAttention-3/4](../03-FlashAttention-Hopper与Blackwell/03-FlashAttention-Hopper与Blackwell.md) · [04 PagedAttention](../04-PagedAttention/04-PagedAttention.md) · [2.2.2 多头注意力变体](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md)
 
-## 太长不看版
-
-- **问题**:注意力的数学定义只有一条,但工程上有几条执行路径.逐算子执行会把 $N\times N$ 的分数矩阵和概率矩阵写进显存,$B=64,H=16,N=4096$ 的 FP16 分数矩阵就有 32 GiB.选错路径,同样的模型会慢很多,或者直接显存不够.
-- **已有做法**:PyTorch eager 逐算子执行;`F.scaled_dot_product_attention`(SDPA)按输入在 FlashAttention-2,Memory-Efficient Attention,cuDNN 和 C++ 参考实现之间派发;`flash-attn` 包直接暴露 FlashAttention 的各种接口;xFormers 的 `memory_efficient_attention` 在 CUTLASS,FlashAttention,CK 等内核之间派发.
-- **思路**:比较的关键量是 HBM 访存.eager 的访存量约为 $4BHN^2$ 个元素,融合内核约为 $4BHND$ 个元素,算术强度分别约为 $D/P$ 和 $N/P$ FLOPs 每字节.
-- **GQA**:Query 头 $h$ 读第 $\lfloor h/g\rfloor$ 个 KV 头,$g=H_q/H_{kv}$.SDPA 的参考实现和 HuggingFace 的 `repeat_kv` 先把 KV 复制成 $H_q$ 个头;flash-attn 等融合内核直接按头号索引,不复制.
-- **边界**:SDPA 的 `is_causal` 在 $L\ne S$ 时按左上角对齐,flash-attn 从 2.1 起按右下角对齐,解码时两者结果不同.各后端对 dtype,头维度,GPU 架构的支持范围不同,不满足条件时会回退或报错.
+材料是 PyTorch SDPA 文档,flash-attn 和 xFormers 的 README 与源码.问题是同一条注意力公式在这几条执行路径上各跑什么 kernel,访存差多少,GQA 又是怎么处理的.
 
 ## 1. 问题:同一个公式,不同的执行方式
+
+### 1.1 注意力的几种执行方式
 
 注意力的定义是
 
@@ -48,13 +44,13 @@ $$
 
 注意力出现在三种场合,对实现的要求不同:
 
-1. **训练**:$L=S=N$,前向之后还有反向,要么保存 $P$,要么在反向时重算.显存和访存都按 $N^2$ 增长,融合内核的收益最大,见 3.6 节.
+1. **训练**:$L=S=N$,前向之后还有反向,要么保存 $P$,要么在反向时重算.显存和访存都按 $N^2$ 增长,融合内核的收益最大,见 2.6 节.
 2. **推理的 prefill**:一次处理整个 prompt,$L=S$,只有前向.形式与训练前向相同,同时要把算出的 K,V 写进 KV cache.
-3. **推理的 decode**:每步只有一个新 query,$L=1,S$ 为已有长度.计算量很小,时间主要花在读 KV cache 上,见 3.8 节.因果掩码的对齐方式和 GQA 的实现方式在这里影响最大.
+3. **推理的 decode**:每步只有一个新 query,$L=1,S$ 为已有长度.计算量很小,时间主要花在读 KV cache 上,见 2.8 节.因果掩码的对齐方式和 GQA 的实现方式在这里影响最大.
 
 同一个模型在这三种场合可能走三条不同的路径,下文分别讨论.
 
-## 2. 已有做法:四条执行路径
+### 1.2 已有做法:四条执行路径
 
 | 路径 | 入口 | 输入布局 | 中间矩阵 | 说明 |
 |---|---|---|---|---|
@@ -71,9 +67,9 @@ $$
 
 **xFormers** 的 `memory_efficient_attention` 是一个派发入口.源码中列出的前向算子包括 CUTLASS 实现,FlashAttention 实现,FlashAttention-3,AMD 的 CK 实现,Blackwell 的 CUTLASS 实现和 Triton 的 split-K 实现,按输入和硬件选择.目前 fmha 的实现已经迁到 `mslk` 包,`xformers.ops.fmha` 重新导出这些符号.LLaMA 第一代的论文说明,训练时用的因果多头注意力来自 xformers 库,实现受 Rabe 和 Staats 的工作启发,反向用的是 Dao 等人的方法.函数名中的 memory efficient 指的是这一类不物化注意力矩阵的算法,具体跑哪个 kernel 由派发决定.
 
-## 3. 思路与公式
+## 2. 访存,派发与接口细节
 
-### 3.1 访存量和算术强度
+### 2.1 访存量和算术强度
 
 只统计 $N\gg D$ 时的主项.eager 路径的 HBM 读写(以元素计):
 
@@ -104,7 +100,7 @@ $$
 
 两者之比约为 $N/D$.以 H100 SXM 为例,FP16 稠密矩阵乘峰值 989 TFLOPs,HBM 带宽约 3.35 TB/s,两者之比约 295 FLOPs/字节,低于这个强度的计算受带宽限制.FP16 下 $D=64$ 时 $I_{eager}\approx32$,远低于 295;$N=4096$ 时 $I_{fused}\approx2048$,高于 295.这说明 eager 路径即使在 Tensor Core 上算矩阵乘,时间也主要花在搬运 $S$ 和 $P$ 上.
 
-把第 1 节的设置代进去算一遍时间下限.$B=64,H=16,N=4096,D=64$,FP16:
+把第 1.1 节的设置代进去算一遍时间下限.$B=64,H=16,N=4096,D=64$,FP16:
 
 - 计算量:式 (4) 为 $4\times64\times16\times4096^2\times64\approx4.40\times10^{12}$ FLOPs,按 989 TFLOPs 算约 4.4 ms.
 - eager 访存:式 (5) 主项 $4BHN^2$ 个元素,共 $137{,}438{,}953{,}472$ 字节,按 3.35 TB/s 算约 41 ms.
@@ -114,7 +110,7 @@ eager 的访存时间约为计算时间的 9 倍,受带宽限制;融合内核的
 
 式 (7) 还没有计入 softmax 本身的指数运算和 kernel 启动开销.$N$ 较小时 $S$ 本身不大,可能留在 L2 缓存中,eager 的实际差距会小于式 (7) 的比值.
 
-### 3.2 SDPA 的语义和派发
+### 2.2 SDPA 的语义和派发
 
 SDPA 文档给出的参考实现(简写):
 
@@ -153,7 +149,7 @@ def sdpa_reference(query, key, value, attn_mask=None, dropout_p=0.0,
 
 数值上,不同后端的浮点运算顺序不同,结果可能有微小差别.C++ 实现支持 float64;输入为 half 或 bfloat16 时,它的中间结果都用 float32 保存.
 
-### 3.3 因果掩码的两种对齐
+### 2.3 因果掩码的两种对齐
 
 设 query 长度 $L$,key 长度 $S$.因果掩码允许第 $i$ 个 query 看到第 $j$ 个 key 的条件有两种写法:
 
@@ -173,7 +169,7 @@ $L=S$ 时两者相同.SDPA 的 `is_causal` 在 $L\ne S$ 时按左上角对齐.fl
 
 融合内核处理因果掩码时还能跳过整块被屏蔽的分块,计算量约为不加掩码时的一半;eager 路径要先构造 $L\times S$ 的掩码,再把整个 $S$ 算出来.
 
-### 3.4 flash-attn 的接口
+### 2.4 flash-attn 的接口
 
 flash-attn 2.x 的主要接口:
 
@@ -188,7 +184,7 @@ flash-attn 2.x 的主要接口:
 
 运行条件:FlashAttention-2 需要 CUDA 12.0 以上,Ampere,Ada 或 Hopper 架构(Turing 由另一个仓库支持部分功能),fp16 或 bf16,头维度最大 256.FlashAttention-3 需要 H100 或 H800,CUDA 12.3 以上,推荐 12.8.FlashAttention-4 用 CuTe-DSL 编写,面向 Hopper 和 Blackwell,从 `flash_attn.cute` 导入 `flash_attn_func`.AMD 的 CDNA 和 RDNA 显卡由 Triton 实现支持,包括 fp32.
 
-### 3.5 GQA 在各路径中的处理
+### 2.5 GQA 在各路径中的处理
 
 GQA 有 $H_q$ 个 Query 头和 $H_{kv}$ 个 KV 头,组大小 $g=H_q/H_{kv}$ 必须是整数.MQA 是 $H_{kv}=1$ 的特例,MHA 是 $H_{kv}=H_q$.数学定义与模型质量的讨论见 [2.2.2 多头注意力变体](../../../2.2-基础注意力机制/2.2.2-多头注意力变体/2.2.2-多头注意力变体.md).
 
@@ -237,7 +233,7 @@ SDPA 文档中给 Llama 3 的 GQA 示例是 32 个 Query 头,8 个 KV 头,并且
 
 判断一份模型代码走的是哪一种,最直接的办法是看传进注意力函数的 K 张量形状:头数那一维是 $H_{kv}$,说明复制交给了内核或者根本没有复制;是 $H_q$,说明调用之前已经展开过.再配合性能分析工具看实际启动的 kernel 名称,就能确认 SDPA 最后派发到了哪个后端.
 
-### 3.6 训练时保存的中间结果
+### 2.6 训练时保存的中间结果
 
 训练时反向要用到 softmax 的输出.eager 路径保存整个 $P$,每层的额外显存为
 
@@ -255,7 +251,7 @@ $$
 
 同样的设置下每层只有 $8\times32\times4096\times4=4$ MiB.代价是反向要多做一次 $QK^\top$,FLOPs 增加,但省掉了 $P$ 的读写,在长序列上总体更快.重算的细节见 [02 FlashAttention](../02-FlashAttention-IO感知分块/02-FlashAttention-IO感知分块.md).
 
-### 3.7 变长序列:padding 和打包
+### 2.7 变长序列:padding 和打包
 
 一个 batch 里的序列长度不同,$n_1,\dots,n_B$.按最长序列 padding 成 $[B,N_{max}]$ 时,注意力的计算量和访存都按 $N_{max}$ 计算,padding 位置再用掩码屏蔽:
 
@@ -277,7 +273,7 @@ $$
 
 例如 4 条序列,长度 512,1024,1024,4096:padding 后 $B\cdot N_{max}^2=4\times4096^2\approx6.7\times10^7$;打包后 $\sum n_i^2=512^2+2\times1024^2+4096^2\approx1.9\times10^7$,约为前者的 28%.flash-attn 的 `flash_attn_varlen_func` 用的就是这种格式;xFormers 用 `BlockDiagonalMask` 一类的偏置表示同样的分段结构;SDPA 对 nested tensor 有一定支持,但 GQA 不支持 nested tensor.
 
-### 3.8 解码时的算术强度
+### 2.8 解码时的算术强度
 
 增量解码时每个序列只有 1 个新 query,$L=1$.每层每个序列的计算量为 $4H_qND$,读取的 KV 字节数为式 (10),算术强度为
 
@@ -289,7 +285,7 @@ FP16 时 MHA($g=1$)为 1 FLOPs/字节,$g=8$ 的 GQA 为 8 FLOPs/字节,都远低
 
 $L=1$ 时 FlashAttention 原来的并行方式(按 batch,头和 query 分块切分)在小 batch 下切不出足够多的线程块,GPU 占不满.flash-attn 2.2 起加入的 Flash-Decoding 沿 KV 长度再切分,各段分别算局部 softmax 结果,最后用 logsumexp 合并,原理见 [6.6.3 Flash-Decoding](../../../../6-训练与推理优化/6.6-推理框架与高级优化/6.6.3-Flash-Decoding原理与实现.md).这也是先复制再算的 GQA 实现在解码时代价最大的原因:式 (16) 中的 $g$ 被复制抵消,读 KV 的量退回到 MHA 的水平.
 
-### 3.9 全屏蔽行和数值比较
+### 2.9 全屏蔽行和数值比较
 
 某一行的掩码全为屏蔽时,eager 路径的 softmax 会出问题.这一行的分数全是 $-\infty$,减去行最大值得到 $-\infty-(-\infty)$,结果是 NaN,再经过 $PV$ 传给后面的层.padding 的 query 行,或者 $L>S$ 时右下角对齐掩码的前几行,都会出现这种情况.flash-attn 的文档写明,掩码全为 0 的行输出为 0.不同实现对这种行的处理不一样,模型代码最好在掩码层面避免出现全屏蔽行,或者在注意力之后把这些位置的输出显式置零.
 
@@ -297,7 +293,7 @@ $L=1$ 时 FlashAttention 原来的并行方式(按 batch,头和 query 分块切�
 
 误差的另一个来源是 softmax 的分母.融合内核按块累加分母和输出,每遇到更大的行最大值就把已有的累加量乘一个缩放因子,运算顺序与一次性求和不同.这在数学上是精确的,在浮点上只造成舍入差异,累加器为 FP32 时量级与上面的 RMSE 相当.反向的情况类似,但 flash-attn 默认的反向对 $dQ$ 用原子加累加,多个线程块的加法顺序不固定,两次运行的梯度可能有极小差别,需要逐位复现时要开 `deterministic=True`.
 
-### 3.10 掩码和偏置的表示
+### 2.10 掩码和偏置的表示
 
 三套接口表达掩码的方式不同,这直接决定了一种注意力变体能不能走融合内核.
 
@@ -313,7 +309,7 @@ $$
 
 $L=S=N$ 时它与式 (5) 中单个 $S$ 矩阵的读写同阶,融合内核省下的 $O(N^2)$ 访存又回来了一部分.广播维度($B$ 或 $H$ 为 1)能减少这一项,但只要掩码依赖 $(i,j)$ 且无法用公式现场算出,$N^2$ 这一项就去不掉.因果,滑动窗口,ALiBi 都只依赖 $i-j$ 或 $i,j$ 的简单关系,所以能做成零额外访存的内核参数.
 
-### 3.11 选择路径
+### 2.11 选择路径
 
 | 情况 | 可选路径 | 依据 |
 |---|---|---|
@@ -324,7 +320,11 @@ $L=S=N$ 时它与式 (5) 中单个 $S$ 矩阵的读写同阶,融合内核省下�
 | 需要 float64,或调试注意力内部 | eager 或 SDPA 的 C++ 实现 | 可以检查 $S,P$ |
 | 头维度超过 256 | SDPA 的其他后端或 eager | FlashAttention-2 最大支持 256 |
 
-## 4. 代码
+表的读法是默认用 SDPA,只有它表达不了的需求才换路径.第二行对应 2.2 节的派发规则:输入不满足某个融合内核的限制时,SDPA 只给警告并换用其他实现,在 `sdpa_kernel` 里只放目标后端,这种回退就变成报错.第三,四行是 flash-attn 独有的结构化参数和分页接口,参数含义见 2.4 节,打包见 2.7 节,掩码的表示见 2.10 节.最后两行落在融合内核的数据类型和头维度限制之外,只能回到非融合实现,代价是 2.1 节算过的 $O(N^2)$ 访存.
+
+## 3. 代码与边界
+
+### 3.1 代码
 
 下面四个函数的输出在数值误差范围内应该一致.注意输入布局:eager 和 SDPA 用 `[B, H, N, D]`,flash-attn 和 xFormers 用 `[B, N, H, D]`.
 
@@ -385,7 +385,7 @@ def attention_xformers(q, k, v, causal=False):
 - `attention_eager` 的因果掩码假定 $L=S$.增量解码时 $L<S$,要按式 (8) 的右下角对齐构造.
 - 比较几条路径的输出时,容差要按 dtype 设置.fp16 和 bf16 下融合内核与 eager 的差异来自累加顺序,不说明哪一条有错.
 
-## 5. 边界
+### 3.2 边界
 
 **语义差异.** 各后端在因果掩码对齐,掩码取值约定,dropout 行为上不完全一致,从一个后端换到另一个时要逐项核对,尤其是 $L\ne S$ 的因果掩码.输入布局也不同,SDPA 是头在序列之前,flash-attn 和 xFormers 是序列在头之前,换后端时漏掉一次转置,形状仍可能对得上,结果却是错的.
 
@@ -397,7 +397,7 @@ def attention_xformers(q, k, v, causal=False):
 
 **测量数字依赖环境.** eager 和融合内核的速度比随 GPU,序列长度,头维度和软件版本变化.式 (7) 只说明趋势;具体倍数要在目标环境上测量.
 
-**融合内核覆盖不到的变体.** 自定义的注意力打分函数,任意稠密偏置,需要输出注意力矩阵的分析工作,往往只能走 eager 或 C++ 实现,或者改用支持自定义打分的编译方案.
+**融合内核覆盖不到的变体.** 自定义的注意力打分函数,任意稠密偏置,需要输出注意力矩阵的分析工作,往往只能走 eager 或 C++ 实现,或者改用支持自定义打分的编译方案.PyTorch 2.5 加入的 FlexAttention(`torch.nn.attention.flex_attention`)是这类方案之一:用户用 Python 写一个 `score_mod` 函数改分数,或写一个 `mask_mod` 函数描述哪些 $(i,j)$ 可见,`torch.compile` 把它们融合进一个 Triton 内核;`mask_mod` 先被转成块级的 `BlockMask`,整块被屏蔽的分块直接跳过.PyTorch 官方博客报告的速度是前向约为 FlashAttention-2 的 90%,反向约 85%.`create_block_mask` 默认的块大小是 128.以因果掩码,序列 8192 为例,共 $64\times64$ 个块,对角线以上的 2016 个块整块跳过,只有对角线上的 64 个块要逐元素算掩码.块越大,能整块跳过的判断越粗;对角线块里约一半元素被屏蔽,仍然要按元素处理.这种写法覆盖式 (17) 里能用公式现场算出的偏置,任意稠密偏置仍要从显存读.
 
 **分页 KV cache 的块大小要求不同.** 上游 flash-attn 的分页接口要求块大小是 256 的倍数,PagedAttention 论文中 vLLM 的默认块大小是 16.接入时要核对所用内核对块大小的要求.
 

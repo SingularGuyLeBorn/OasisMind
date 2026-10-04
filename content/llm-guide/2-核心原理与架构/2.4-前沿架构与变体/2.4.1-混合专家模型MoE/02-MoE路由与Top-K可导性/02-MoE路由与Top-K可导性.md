@@ -6,17 +6,9 @@ excerpt: "稀疏 MoE 的路由器决定每个 token 调用哪几个专家.本篇
 ---
 # 02 MoE 路由:Token-Choice,Expert-Choice 与 Top-K 的反向传播
 
-## 太长不看版
+## 1. 离散选择与前向路由
 
-- 稀疏 MoE 用路由器给每个 token 选出少数专家.主流是 Token-Choice:每个 token 对全部专家打分,取 Top-$K$.Expert-Choice 反过来让每个专家挑固定数量的 token;哈希路由用固定映射,没有可学习参数.
-- Token-Choice 有两种门控顺序.先 Top-$K$ 再 Softmax(Shazeer 2017,Mixtral)选中门控之和为 1;先 Softmax 再截断(Switch,DeepSeek V1/V2)选中门控之和小于 1.DeepSeek V3 用逐专家 Sigmoid 再在选中集合上归一化.
-- `torch.topk` 返回浮点 values 和整数 indices.选中集合不变时,values 的反向按保存的 indices 做 scatter,这是分段线性映射的普通导数;indices 没有梯度,选中集合在并列和换位处跳变.显式的 straight-through estimator(STE)是另一种人为指定的替代梯度.
-- 固定选中集合时,全局 Softmax 后截断会让落选专家的 logits 也收到梯度,子集 Softmax 与逐专家 Sigmoid 则不会.离散选择本身带来的梯度项 $\nabla_0$ 在常规训练里被置 0.
-- ReMoE 用 ReLU 加自适应 $L_1$ 替换 Top-K,Soft-MoE 用连续的 token–slot 混合替换离散派遣,SparseMixer 用中点法估计 $\nabla_0$.三者分别改前向路由函数,改专家输入的构造方式,改反向估计.
-
----
-
-## 1. 问题:条件计算需要离散选择
+### 1.1 问题:条件计算需要离散选择
 
 一层 MoE 把稠密 FFN 换成 $N$ 个专家和一个路由器.记 token 隐状态 $x\in\mathbb{R}^{d}$,专家 $E_i:\mathbb{R}^d\to\mathbb{R}^d$(各是一个 FFN),门控 $g_i(x)\in\mathbb{R}$.1991 年 Jacobs,Jordan,Nowlan,Hinton 的 Adaptive Mixtures of Local Experts 已经有专家加门控的结构,输出是全部专家的加权和:
 
@@ -35,9 +27,7 @@ $\mathcal{S}(x)$ 是选中集合.未选专家这一步不做前向,也不存激�
 
 稀疏的代价是离散选择.$\mathcal{S}(x)$ 由排序决定,对输入是分段常值的,这带来两个问题:一是 token 与专家怎么匹配(第 2–3 节),二是梯度怎么经过选择回到路由器(第 4–7 节).第 8–10 节是三条改写离散选择的路线.
 
----
-
-## 2. 三种匹配方式
+### 1.2 三种匹配方式
 
 路由本质上是 token 与专家的匹配,常见三条路:
 
@@ -47,7 +37,7 @@ $\mathcal{S}(x)$ 是选中集合.未选专家这一步不做前向,也不存激�
 
 把匹配写成带容量约束的全局分配问题(例如运输问题或二分 $b$-matching)可以同时满足两侧约束,但每个训练 step 求解代价高.Kimi K3 的 Quantile Balancing 从这个对偶问题出发,只保留专家侧的阈值,见 [04](../04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md).
 
-### 2.1 Expert-Choice
+### 1.3 Expert-Choice
 
 记一个路由组有 $n$ 个 token,$e$ 个专家.先算 token–专家分数矩阵 $S=\operatorname{Softmax}(XW_g)\in\mathbb{R}^{n\times e}$,Softmax 沿专家维,每行和为 1.然后对每一列(每个专家)沿 token 维取 Top-$k$,Zhou et al. 式 (1) 把每个专家的容量写成
 
@@ -65,9 +55,9 @@ Expert-Choice 的列选择与 Token-Choice 的行选择共用同一张分数矩�
 
 一个例子:8 个 token,5 个专家,$c=1.25$,$k=2$.总派遣数为 $ek=10$,平均每 token 1.25 个专家.某些 token 可能被两个专家选中,某些 token 可能一个都没被选中,后者在本层只有残差.Expert-Choice 按构造保证负载均衡,不需要辅助损失;代价是选择依赖同组的其他 token,自回归解码时一个 step 只有一个新 token,组内竞争无法按训练时的方式进行.
 
----
+Zhou et al. 的实验在 GLUE 与 SuperGLUE 的 11 个任务上微调评估.训练效率方面,EC-CF2($c=2$)用不到一半的步数就达到 GShard top-2 的困惑度,GShard 每步还要慢 20%,论文把这部分归于负载不均:最忙的专家决定步时.100M/64E(专家大小 100M,64 个专家)上,11 个任务的平均分 Switch top-1 为 78.4,GShard top-2 为 82.2,EC-CF2 为 84.0.每 token 的专家数确实是可变的:多数 token 分到 1 到 2 个专家,23% 分到 3 到 4 个,约 3% 超过 4 个.限制每 token 最多 2 个专家(EC-CAP2)时平均分降到 83.2,放宽到 3 个(EC-CAP3)回到 84.0,与不设上限相同.用 token id 取模的哈希路由同样完全均衡,平均分只有 81.3,说明均衡本身不能解释 Expert-Choice 的收益.论文的局限一节也承认,现有实现做 Top-$k$ 时会用到过去和未来的 token,不能直接用于自回归生成.论文提出的设想是收集大批序列,把同一序列的 token 分到不同的组里再各自做 Expert-Choice;推理 batch 很小时改用全局 Top-$k$,并限制每个专家或每个 token 被选中的次数.两者都留作后续工作.
 
-## 3. Token-Choice 的门控顺序
+### 1.4 Token-Choice 的门控顺序
 
 对 $x$,路由器先算 logits:
 
@@ -108,11 +98,13 @@ $$
 
 Switch 取 $K=1$:每个被接收的 token 只调用一个专家,门控是被选专家的全局 Softmax 概率.若 logits 为 $(0.11,0.07,0.12,0.18,0.73,0.09,0.14,0.10)$,则 $p_5\approx0.2088$ 最大,$y\approx0.2088E_5(x)$.如果在单个选中专家上再做 Softmax,门控恒为 1,路由器就无法通过主损失得到梯度;Switch 保留全局概率,固定获胜索引时 $\partial p_5/\partial h_j=p_5(\mathbb{1}[j=5]-p_j)$,主损失可以通过 $p_5$ 调整路由器.
 
-DeepSeek V3 走第三条:逐专家 Sigmoid 打分,Top-$K$ 后在选中集合上归一化,负载偏置只参与排序,见 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) 第 8 节.
+DeepSeek V3 走第三条:逐专家 Sigmoid 打分,Top-$K$ 后在选中集合上归一化,负载偏置只参与排序,见 [01](../01-DeepSeek-MoE/01-DeepSeek-MoE.md) 第 3.3 节.
 
 ---
 
-## 4. Top-K 的前向与默认反向
+## 2. Top-K 的反向与梯度
+
+### 2.1 Top-K 的前向与默认反向
 
 把散射回原坐标的稀疏向量写成逐坐标阈值,阈值是第 $K$ 大的分数 $s_{[K]}$:
 
@@ -147,10 +139,10 @@ $$
 
 - **前向**:输入分数 $(1.0,3.0,2.0,4.0)$,$K=2$,输出 $(0,3.0,0,4.0)$,对应 $I=[3,1]$(从 0 计数).图中红字「Forward Top-K is not continuous」指的是选中集合在并列与换位处跳变,选中集合内部的 values 仍随分数连续变化.
 - **反向**:上游梯度全为 1 时,按式 (10) 得到 $(0,1,0,1)$,与上面的代码一致.若上游梯度为 $\partial L/\partial v=(2,-1)$(按 values 的顺序,先 4.0 后 3.0),scatter 后得 $(0,-1,0,2)$,每个梯度回到它来源的坐标.
-- **图中标签的口径**:图里把这一步写成「Masked Identity (STE)」.`torch.topk` 的默认反向是式 (10) 的 gather/scatter Jacobian,不需要借用 STE 的定义;STE 指第 5 节那种由实现者显式指定的替代梯度.两者在这个例子上数值相同,含义不同.
+- **图中标签的口径**:图里把这一步写成「Masked Identity (STE)」.`torch.topk` 的默认反向是式 (10) 的 gather/scatter Jacobian,不需要借用 STE 的定义;STE 指第 2.3 节那种由实现者显式指定的替代梯度.两者在这个例子上数值相同,含义不同.
 - **边界**:当前第 2,3 名之差为 $3-2=1$,小扰动不改变 $P_I$.到 $(1,3,3,4)$ 这样的并列点,第二个坐标可能取 1 或 2,坐标 Jacobian 不唯一.
 
-### 4.1 从 indices 到派遣:排序,计数与回写
+### 2.2 从 indices 到派遣:排序,计数与回写
 
 路由器输出的 indices 还要变成专家能批量计算的输入.一个 batch 有 $T$ 个 token,每个 token 选 $K$ 个专家,共 $TK$ 条 (token, 专家) 记录.常见实现分四步:
 
@@ -163,9 +155,7 @@ $$
 
 这套流程也说明了为什么各专家收到的 token 数会直接影响速度.$c_j$ 由路由结果决定,每个 step 都不同;grouped GEMM 的各段长度不同,最长的一段决定这一层专家计算的完成时间.专家并行时 $c_j$ 还决定每台设备要接收多少 token.路由器的输出分布因此同时是模型问题和系统问题.
 
----
-
-## 5. STE 的定义与适用范围
+### 2.3 STE 的定义与适用范围
 
 Bengio,Léonard,Courville(2013)讨论的 straight-through estimator 是一种显式替代梯度:硬阈值前向仍输出离散值,反向由实现者指定一个便于优化的替代.恒等版把损失对硬输出 $h_i$ 的梯度直接当作对阈值前激活 $a_i$ 的估计:
 
@@ -181,9 +171,7 @@ $$
 
 两种实现应分开命名.默认 Top-K 对 values 用 gather/scatter Jacobian;自定义 STE 则为硬 mask 或离散选择另外指定替代,例如把某个软门控的梯度接到硬前向上,这是有偏估计.Bengio 文中还对照了 REINFORCE 族估计器.Transformer MoE 常规训练中的 `topk.values` 反向既不是 REINFORCE,也不会自动构造选择替代.
 
----
-
-## 6. 固定选中集合时的门控梯度
+### 2.4 固定选中集合时的门控梯度
 
 真实 MoE 把路由 logits 变成门控,再乘专家输出.固定同一个离散集合 $\mathcal{S}$,三种门控构造在落选 logits 上的梯度不同.下面用一组四专家的例子:$K=2$,选中专家 1 与 2,损失只读取 $g_1,g_2$.
 
@@ -214,11 +202,9 @@ $$
 
 结论是,全局 Softmax 后截断时,落选专家的 logits 通过分母收到梯度;子集 Softmax 与 Sigmoid 加子集归一化时,落选 logits 不在门控路径上,它们若要收到梯度,只能来自负载损失这类使用完整概率的项.离散的 Top-K 边界在三种构造中都存在.
 
----
+### 2.5 对 MoE 训练的影响
 
-## 7. 对 MoE 训练的影响
-
-式 (2) 对专家参数的梯度只经过 $g_i\neq0$ 的专家.路由器的梯度有两部分:固定选中集合时的门控梯度(第 6 节),以及选择另一位专家会怎样改变损失的离散项.SparseMixer 论文把路由参数 $W_r$ 的梯度写成
+式 (2) 对专家参数的梯度只经过 $g_i\neq0$ 的专家.路由器的梯度有两部分:固定选中集合时的门控梯度(第 2.4 节),以及选择另一位专家会怎样改变损失的离散项.SparseMixer 论文把路由参数 $W_r$ 的梯度写成
 
 $$
 \frac{\partial\mathcal{L}}{\partial W_r}=\nabla_0+\nabla_1 \tag{16}
@@ -232,7 +218,9 @@ $\nabla_1$ 是已选门控与后续网络能由普通反向得到的项,$\nabla_
 
 ---
 
-## 8. ReMoE:用 ReLU 替换离散 Top-K
+## 3. 改写离散选择
+
+### 3.1 ReMoE:用 ReLU 替换离散 Top-K
 
 ReMoE(Wang, Chen, Zhu, [arXiv:2412.14711](https://arxiv.org/abs/2412.14711),ICLR 2025)的出发点是式 (9) 的跳跃:阈值 $s_{[K]}$ 随输入变化.把阈值固定在 0,就得到 ReLU:
 
@@ -272,11 +260,7 @@ ReMoE 与 Hard Top-K 的差别有四点.Top-K 的开关由相对排名决定,跳
 
 实验设定是 LLaMA 结构,The Pile,30B token,激活参数 182M,$E=8$,$K=1$.Table 2 的零样本平均准确率:Dense 38.20,dMoE(dropless Top-K)39.67,ReMoE 40.03.在激活参数 182M 到 978M,专家数 4 到 128,细粒度 1 到 64 的范围内,论文报告 ReMoE 的验证损失都低于对应的 Top-K MoE.训练开始约 100 步是接近稠密的预热(此时 $\lambda_i$ 还小,多数专家都开),随后稀疏化到目标稀疏度,这两个阶段约占总步数的 0.17%.官方实现 [thu-ml/ReMoE](https://github.com/thu-ml/ReMoE) 在 Megatron-LM 中以 `--moe-relu-routing` 替换原路由器.
 
----
-
-## 9. Soft-MoE 与 V-MoE:视觉模型里的两种改写
-
-### 9.1 Soft-MoE:连续的 token–slot 混合
+### 3.2 Soft-MoE:连续的 token–slot 混合
 
 Soft-MoE(Puigcerver et al., [arXiv:2308.00951](https://arxiv.org/abs/2308.00951))不做离散派遣.设一段序列 $X\in\mathbb{R}^{m\times d}$,$n$ 个专家,每专家 $p$ 个 slot,slot 参数 $\Phi\in\mathbb{R}^{d\times(np)}$.一个 slot 是交给某个专家处理的 $d$ 维向量,由全部 token 加权混合得到.Dispatch 权重沿 token 维做 Softmax(每列和为 1),Combine 权重沿 slot 维做 Softmax(每行和为 1):
 
@@ -294,7 +278,7 @@ $e(s)$ 是 slot $s$ 所属的专家,按专家优先编号时 $e(s)=1+\lfloor(s-1
 
 Soft-MoE 的每个输出 token 依赖全部 slot,每个 slot 依赖全部 token,所以原始形式跨 token 聚合,直接用于自回归解码会读到未来位置,论文把因果化列为未解决的问题.视觉任务没有这一限制,论文摘要报告 Soft MoE Huge/14 的参数量是 ViT Huge/14 的 40 倍以上,推理时间只增加约 2%.
 
-### 9.2 V-MoE:按优先级派遣
+### 3.3 V-MoE:按优先级派遣
 
 V-MoE(Riquelme et al., [arXiv:2106.05974](https://arxiv.org/abs/2106.05974))在 ViT 的部分 Encoder block 中把 FFN 换成 Token-Choice MoE,门控为 $g_t=\operatorname{Softmax}(Wx_t+\epsilon)$.容量按专家分别检查:
 
@@ -306,7 +290,7 @@ $T$ 是路由组内 token 数,$C$ 是容量比.默认派遣顺序按 token 位�
 
 例子:16 个 token,4 个专家,$k=2$,$C=0.75$,由式 (24) 得 $B_e=\operatorname{round}(2\times16\times0.75/4)=6$.第一轮 16 条 Top-1 派遣全部接收,每个专家占 4 个槽;第二轮按优先级处理,前 8 个 token 的第 2 选择填满剩余 8 个槽,后 8 个 token 的第 2 选择被跳过.总尝试 32 次,接收 24 次,跳过 8 次.论文第 4.1 节说明,路由权重主要编码 token 与专家的匹配程度,它被用作重要性的代理,并非现成的前景与背景标注.
 
-### 9.3 三种前向路由的计算预算
+### 3.4 三种前向路由的计算预算
 
 Hard Top-K,ReMoE 与 Soft-MoE 可以使用形状相同的专家 FFN,但计算预算的计量方式不同,对比实验时要分别报告.Hard Top-K 每 token 恰好 $K$ 次专家调用,一层的专家调用总数是 $TK$,若有容量截断还要减去被丢弃的记录.ReMoE 每 token 的调用次数可变,只有层与 token 上的平均值被自适应 $L_1$ 拉向 $K$,单个 batch 的实际调用数会围绕 $TK$ 波动,kernel 需要支持变长分段.Soft-MoE 的调用总数固定为 slot 数 $np$,与 token 数解耦;当 $np$ 远小于 $TK$ 时它更省计算,但每个 slot 的构造与输出的重组都要与全部 token 做一次矩阵乘,开销为 $O(m\cdot d\cdot np)$.
 
@@ -314,7 +298,9 @@ Hard Top-K,ReMoE 与 Soft-MoE 可以使用形状相同的专家 FFN,但计算预
 
 ---
 
-## 10. SparseMixer 与 GRIN:估计离散选择项
+## 4. 估计离散选择项与失效模式
+
+### 4.1 SparseMixer 与 GRIN:估计离散选择项
 
 [SparseMixer](https://arxiv.org/abs/2310.00811)(Liu, Gao, Chen, 2023)针对式 (16) 的 $\nabla_0$ 构造估计器.在简化的 Top-1 设定中,令 $D\sim\pi$ 为按路由概率采样的专家,只计算被采样专家,记 $h=\pi_D E_D(x)$.一阶估计与中点二阶估计分别为
 
@@ -337,9 +323,9 @@ $$
 
 还有一条常被当作可导 Top-K 的路线:Gumbel-Softmax(Jang, Gu, Poole, [arXiv:1611.01144](https://arxiv.org/abs/1611.01144))用温度把离散样本松弛成单纯形上的连续向量,温度趋于 0 才接近 one-hot.稀疏 MoE 需要精确的 0 才能跳过整块 GEMM,训练时门控若是软的,省下的 FLOPs 就没有了,所以它没有成为 LLM 主流路由器.
 
----
+### 4.2 失效模式
 
-## 11. 失效模式
+下表的问题分三类.第 1,5,6 行关于梯度:空闲专家拿不到梯度见第 2.5 节,Sigmoid 只改固定选集内的 Jacobian 见第 2.4 节,默认反向与 STE 的区别见第 2.1 节和第 2.3 节.第 2,3,4 行关于前向实现:并列分数见第 2.1 节,两种门控写法的尺度差见第 1.4 节的式 (7) 与式 (8).第 7,8,9 行关于替代方案:ReMoE 见第 3.1 节,Soft-MoE 与 Expert-Choice 依赖同组 token 见第 3.2 节和第 1.3 节,Gumbel-Softmax 见第 4.1 节.
 
 | 现象 | 原因 | 处理 |
 |------|------|------|

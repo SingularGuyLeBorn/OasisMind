@@ -8,16 +8,6 @@ excerpt: "GSPO 把重要性比率从 token 提到整条回答, clip 作用在长
 
 > 相关阅读: [02-GRPO](../02-GRPO/02-GRPO.md) · [01-GMPO](../01-GMPO/01-GMPO.md) · [04-PPO](../04-PPO/04-PPO.md) · [4.4.5 GxPO 家族](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md) · [4.4.0 强化学习的数学原理](../../4.4.0-强化学习的数学原理/4.4.0-强化学习的数学原理.md)
 
-## 太长不看版
-
-- GRPO 的奖励按整条回答给出, 重要性比率却按 token 算. Qwen 的 GSPO (arXiv:2507.18071) 认为这种错位让每个位置的比率只剩噪声, 序列一长, 噪声累积, 训练可能不可逆地崩掉.
-- GSPO 定义序列比率 $s_i=\exp(\frac{1}{|y_i|}\sum_t\log\eta_{i,t})$, 即 token 比率的几何平均. clip 只作用在 $s_i$ 上, 一条回答要么整段参与梯度, 要么整段出局.
-- 梯度上, GSPO 让一条回答里所有 token 的 $\nabla\log\pi$ 等权, 权重是同一个 $s_i$. GRPO 则给每个 token 乘不同的 $\eta_{i,t}$.
-- 两者的 clip 宽度差几个数量级: 论文里 GSPO 取 $3\times10^{-4}$ 和 $4\times10^{-4}$, GRPO 取 $0.2$ 和 $0.27$.
-- MoE 上, 一次更新后同一条样本约 10% 的激活专家会变 (48 层的 Qwen3-30B-A3B-Base). GRPO 需要 Routing Replay 才能收敛, GSPO 不需要.
-- DCPO (百川, arXiv:2509.02333) 走另一条路: 比率仍在 token 级, 但裁剪界由约束 $|(r-1)p|\le\epsilon$ 推出, 随旧概率 $q$ 变化; 优势用同一 prompt 跨步累积的统计做平滑; 损失只在单条回答内平均.
-- DCPO 在 Qwen2.5-Math-7B 上 AIME24 Avg@1/Avg@32 为 46.7/38.8, GRPO 为 36.7/32.1; 非零优势回答占比 (RUR) 四模型平均 71.8%, GRPO 为 43.8%.
-
 ## 1. 问题: 奖励在序列级, 权重在 token 级
 
 ### 1.1 GRPO 的比率放在哪一层

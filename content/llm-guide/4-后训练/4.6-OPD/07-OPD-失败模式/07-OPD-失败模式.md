@@ -64,13 +64,13 @@ $$
 
 最小值 0 在学生也均匀时取到; delta 分布的熵为 0, KL 为 $\log V$, 是最大值. 所以对均匀教师做 reverse KL 会把学生推向均匀. reverse KL 的 mode-seeking 出现在教师多峰且峰间低密度的情形: 学生几乎不采样的那个峰在式 (6) 的期望里权重很小, 学生可以只覆盖其中一个峰.
 
-## 2. sampled-token 信号的三类失败 (Fu 等)
-
-Fu 等的观察来自数学推理上的 sampled-token OPD: 学生 Qwen2.5-7B-Instruct, 教师 OpenThinker3-7B (在 Qwen2.5-7B-Instruct 上 SFT 得到).
+## 2. sampled-token 信号的失败与修复 (Fu 等)
 
 ### 2.1 信号失衡
 
-每一步的更新由单个采样 token 的 $\log q(y_t\mid c_t)-\log\pi_\theta(y_t\mid c_t)$ 决定. 只要学生给采样 token 的概率高于教师, 这个奖励就是负的. Figure 2 是第一轮迭代时采样 token 上师生概率的散点, 大部分点落在负奖励一侧. 结果是优化被少数局部为正的 token 主导, 高频的填充词和短续写容易拿到有利的局部分数, 对整条轨迹的质量却贡献很小.
+Fu 等的观察来自数学推理上的 sampled-token OPD: 学生 Qwen2.5-7B-Instruct, 教师 OpenThinker3-7B (在 Qwen2.5-7B-Instruct 上 SFT 得到). 下面三类失败都在这组师生上观察到.
+
+在 sampled-token OPD 里, 每一步的更新由单个采样 token 的 $\log q(y_t\mid c_t)-\log\pi_\theta(y_t\mid c_t)$ 决定. 只要学生给采样 token 的概率高于教师, 这个奖励就是负的. Figure 2 是第一轮迭代时采样 token 上师生概率的散点, 大部分点落在负奖励一侧. 结果是优化被少数局部为正的 token 主导, 高频的填充词和短续写容易拿到有利的局部分数, 对整条轨迹的质量却贡献很小.
 
 ### 2.2 漂移前缀上的教师信号
 
@@ -84,7 +84,50 @@ SCOPE 的预实验给了同一现象的定量版本: 教师困惑度高的错误
 
 sampled-token 比较的是学生生成的那个 token 在教师分布下的概率. 两个模型切分不同时, 同一段文本会被切成不同的 token. 论文的例子: 学生把 `<think>` 切成 `<`, `think`, `>`, 教师期望的是 `<th`, `ink`, `>`, 于是 `<` 在教师下概率很低, 尽管两者生成的语义内容相同. 结束符等特殊 token 也会出现类似的错配 (Figure 5). 一 token 的比较把切分差异当成了语义分歧.
 
-这一项在 Fu 等的实验中影响很大: 单任务数学上, 只给 sampled-token OPD 加上特殊 token 掩码, 平均分就从 36.4 升到 40.7 (第 5.2 节表格, 原文 Table 1).
+这一项在 Fu 等的实验中影响很大: 单任务数学上, 只给 sampled-token OPD 加上特殊 token 掩码, 平均分就从 36.4 升到 40.7 (第 2.5 节表格, 原文 Table 1).
+
+### 2.4 修复: 教师 top-K 局部支持匹配
+
+不再只比较采样 token, 在每个前缀上取教师 top-$K$ 集合 $S(c_{i,t})=\mathrm{TopK}_q(c_{i,t})$, 在集合内对师生分布重新归一化:
+
+$$
+\hat\pi_\theta(v\mid c_{i,t})=\frac{\pi_\theta(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}\pi_\theta(u\mid c_{i,t})},\qquad\hat q(v\mid c_{i,t})=\frac{q(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}q(u\mid c_{i,t})} \tag{7}
+$$
+
+局部支持匹配 (LSM) 对所有 rollout 位置平均截断的 reverse KL:
+
+$$
+\mathcal L_{\mathrm{LSM}}=\mathbb E\Bigl[\frac{1}{\sum_i|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}\sum_{v\in S(c_{i,t})}\hat\pi_\theta(v\mid c_{i,t})\log\frac{\hat\pi_\theta(v\mid c_{i,t})}{\hat q(v\mid c_{i,t})}\Bigr] \tag{8}
+$$
+
+更新不再由单个 token 的 log-ratio 的正负与大小决定, 仍然是逐 token 的局部更新, 成本远低于全词表 KL. 集合外的 token 不从这一项得到梯度, 相对全词表 reverse KL 是有偏的.
+
+配套的三件事:
+
+- **集合内重新归一化**. 在集合内单独做 softmax, 否则集合内师生的概率质量不可比; 去掉这一步训练迅速崩塌.
+- **top-$p$ rollout**. 无约束采样偶尔采到极低概率的 token, 制造教师信号失效的前缀. 实验取 $p=0.9$, 温度 1.
+- **特殊 token 掩码**. 掩掉切分约定不兼容的特殊 token, 减少假阴性. 它对 sampled-token OPD 帮助很大, 对 LSM 影响很小.
+
+实现在 verl-agent 上, 8 张 H100. 数学: 最大回答 16,384, 组大小 8, $K=32$, AdamW 学习率 $2\times10^{-6}$, batch 128, mini batch 64, 共 400 步.
+
+### 2.5 局部支持匹配的结果
+
+单任务数学 (Table 1, 训练集 DAPO-Math-17K 英文部分, pass@1):
+
+| 方法 | Math500 | AIME24 | AIME25 | Minerva | Olympiad | 平均 |
+|------|---------|--------|--------|---------|----------|-----|
+| Qwen2.5-7B-Instruct | 68.2 | 13.3 | 0.0 | 26.5 | 32.9 | 28.2 |
+| OpenThinker3-7B (教师) | 92.2 | 53.3 | 40.0 | 39.0 | 55.6 | 56.0 |
+| sampled-token OPD | 80.0 | 10.0 | 16.7 | 32.4 | 43.1 | 36.4 |
+| sampled-token + 掩码 | 81.4 | 26.7 | 16.7 | 34.2 | 44.7 | 40.7 |
+| LSM 无掩码 | 80.4 | 23.3 | 26.7 | 34.2 | 43.9 | 41.7 |
+| LSM + 掩码 | 82.0 | 23.3 | 23.3 | 34.9 | 43.9 | 41.5 |
+
+掩码对 LSM 几乎无影响 (41.7 对 41.5), 说明 LSM 的增益不只来自处理 tokenizer 错配. 与教师的 56.0 相比仍有 14 个点以上的差距.
+
+数学与 ALFWorld 交替训练 (Table 2, ALFWorld 教师是 GiGPO-Qwen2.5-7B-Instruct-ALFWorld, 400 步中两类各 200 步): sampled-token OPD 的 ALFWorld 成功率 90.6, 数学平均 34.8; LSM 无掩码 95.3 与 41.7, 数学提升 19.8%, 这就是摘要里的 +19.8%; LSM 加掩码 ALFWorld 最高 97.7, 数学降到 38.6. 拆到单项, LSM 无掩码的增益主要在 MATH500 (74.8 到 82.0) 和 AIME24 (13.3 到 33.3) 上, AIME25 和 Minerva 与 sampled-token 相差不到 4 个点. 论文的解读是局部支持匹配主要帮的是推理这一侧, 推理轨迹更长, sampled-token 信号更容易受前缀漂移影响; 掩码在这次运行里则把取舍推向了智能体任务. 附录 G.1 在 WebShop 上用 Qwen2.5-1.5B-Instruct 做学生, 成功率从 sampled-token 的 50.0 升到 57.8, 教师是 66.4.
+
+组件消融 (Table 3, AIME24 avg@32): sampled-token 20.4, 加 top-$p$ 21.6; 只换成教师 top-$K$ 是 17.7, 反而更低; 教师 top-$K$ 加 top-$p$ 23.6. 两者要一起用. 支持集合的选法 (Table 4 与附录 G.3) 在单任务上差别不大, 在多任务上默认的教师 top-$K$ (数学平均 41.7) 远好于学生 top-$K$ 加采样 token (28.4) 和教师 top-$K$ 加采样 token (26.9); 带无偏尾部校正的 EMA-PG 变体也没有更好 (36.2 与 33.7).
 
 ## 3. 长度膨胀与重复饱和 (Luo 等)
 
@@ -117,13 +160,13 @@ Luo 等对一批 rollout 定义:
 **形式化** (§3.5). 忽略裁剪, 记 $d_{\pi_\theta}(s)$ 为学生诱导的前缀访问分布, $A(s,y)=\log\pi_T(y\mid s)-\log\pi_\theta(y\mid s)$, 则
 
 $$
-g(\theta)\propto\mathbb E_{s\sim d_{\pi_\theta},\,y\sim\pi_\theta(\cdot\mid s)}\bigl[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)\bigr] \tag{7}
+g(\theta)\propto\mathbb E_{s\sim d_{\pi_\theta},\,y\sim\pi_\theta(\cdot\mid s)}\bigl[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)\bigr] \tag{9}
 $$
 
-记 $\mathcal R$ 为重复尾部的状态集合, $\Delta(s)=\mathbb E_{y\sim\pi_\theta}[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)]$, 式 (7) 拆成
+记 $\mathcal R$ 为重复尾部的状态集合, $\Delta(s)=\mathbb E_{y\sim\pi_\theta}[A(s,y)\nabla_\theta\log\pi_\theta(y\mid s)]$, 式 (9) 拆成
 
 $$
-g(\theta)=\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\notin\mathcal R\}\Delta(s)\bigr]+\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\in\mathcal R\}\Delta(s)\bigr] \tag{8}
+g(\theta)=\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\notin\mathcal R\}\Delta(s)\bigr]+\mathbb E_{s\sim d_{\pi_\theta}}\bigl[\mathbf 1\{s\in\mathcal R\}\Delta(s)\bigr] \tag{10}
 $$
 
 第二项的份额等于「访问频率乘优势大小」. 重复状态一旦被访问得多一些, 第二项就占更大份额, 而它的更新又进一步鼓励留在 $\mathcal R$ 里. 用论文给的数估算: 重复 token 占 30%, 优势是 4-9 倍, 第二项与第一项的优势加权比约为 $0.3\times4/0.7\approx1.7$ 到 $0.3\times9/0.7\approx3.9$, 重复部分已经在更新里占多数. 这是一个自我强化的回路, 也解释了为什么转变如此突然.
@@ -135,7 +178,7 @@ $$
 **混合蒸馏**. 维护一个高质量完整解的固定集合 $\mathcal D_{\mathrm{gold}}$, 每个 prompt 除了学生的 on-policy rollout, 再配一条 golden 解, 在同一个 minibatch 里联合优化:
 
 $$
-\mathcal L_{\mathrm{mix}}(\theta)=\mathcal L_{\mathrm{OPD}}(\theta)+\lambda_{\mathrm{gold}}\,\mathbb E_{(x,y)\sim\mathcal D_{\mathrm{gold}}}\bigl[\mathcal L_{\mathrm{SFT}}(\theta;x,y)\bigr] \tag{9}
+\mathcal L_{\mathrm{mix}}(\theta)=\mathcal L_{\mathrm{OPD}}(\theta)+\lambda_{\mathrm{gold}}\,\mathbb E_{(x,y)\sim\mathcal D_{\mathrm{gold}}}\bigl[\mathcal L_{\mathrm{SFT}}(\theta;x,y)\bigr] \tag{11}
 $$
 
 从状态分布看, 训练是在学生诱导的分布与 golden 数据诱导的固定分布的混合上进行, 即使 on-policy rollout 开始退化, 梯度里仍有一部分来自完整, 不截断, 不重复的轨迹. 论文特别区分了它与 SDPO, OPSD 中 golden 解的用法: 那里 golden 解用来改造教师信号本身, Kim 等 (2026) 指出这会压低教师在推理中的不确定性; Stable-OPD 不改 on-policy rollout 上的教师信号, golden 数据只通过辅助的 SFT 项起作用.
@@ -143,7 +186,7 @@ $$
 **参考 KL**. 以初始学生为 $\pi_{\mathrm{ref}}$, 在访问到的前缀上惩罚偏离:
 
 $$
-\mathcal L_{\text{Stable-OPD}}(\theta)=\mathcal L_{\mathrm{mix}}(\theta)+\beta_{\mathrm{KL}}\,\mathbb E_{s_t}\bigl[D_{\mathrm{KL}}(\pi_\theta(\cdot\mid s_t)\|\pi_{\mathrm{ref}}(\cdot\mid s_t))\bigr] \tag{10}
+\mathcal L_{\text{Stable-OPD}}(\theta)=\mathcal L_{\mathrm{mix}}(\theta)+\beta_{\mathrm{KL}}\,\mathbb E_{s_t}\bigl[D_{\mathrm{KL}}(\pi_\theta(\cdot\mid s_t)\|\pi_{\mathrm{ref}}(\cdot\mid s_t))\bigr] \tag{12}
 $$
 
 混合蒸馏改的是训练分布, 不直接限制每步更新的幅度; 参考 KL 限制的是策略漂移.
@@ -180,42 +223,40 @@ Qwen2.5-Math-7B (Table 1): OPD 平均 43.8, 低于 SFT 的 44.1 和 GRPO 的 45.
 
 ## 4. 教师选不对 (Li 等)
 
+### 4.1 出发点与三个动态指标
+
 Li 等的出发点是一个反常现象: 更强的教师可能完全教不动学生, 而初始对齐更低的较弱教师反而能教会. 论文引言提到 Qwen3, MiMo, GLM-5 的后训练都用了 OPD, Thinking Machines Lab 也以远低于 RL 的算力复现了 Qwen3 的 OPD 配方, 但什么条件下 OPD 失败, 此前很少有系统研究. Li 等的实验全部在数学上, 训练集 DAPO-Math-17K, 评测 AIME24, AIME25, AMC23, 每题 16 个样本, 温度 0.7, top-p 0.95, 最长 31,744 token, 报 avg@16.
 
-### 4.1 三个动态指标
-
-记学生与教师在步 $t$ 的 top-$k$ 集合为 $S_t^{(p)}$, $S_t^{(q)}$:
+为了把「教不动」量化, 论文在学生 rollout 上跟踪三个逐步指标. 记学生与教师在步 $t$ 的 top-$k$ 集合为 $S_t^{(p)}$, $S_t^{(q)}$:
 
 - **重合率**: $\mathcal M_{\mathrm{overlap}}=\mathbb E_t\bigl[|S_t^{(p)}\cap S_t^{(q)}|/k\bigr]$.
 - **重合 token 优势**: 在交集上重新归一化得 $\bar p_t,\bar q_t$, $A_t(v)=\bar p_t(v)(\log\bar q_t(v)-\log\bar p_t(v))$, 对交集取平均. 接近 0 表示学生在教师偏好的 token 上分配了合适的质量, 大的负值表示学生在交集内比教师更自信.
 - **熵差**: $\Delta H_t=|H(q_t)-H(p_t)|$, 在学生 rollout 上计算.
 
-### 4.2 条件一: 思维模式兼容
+### 4.2 两个条件: 思维模式兼容, 有新知识
 
-学生 Qwen3-1.7B-Base, 两个教师: Qwen3-4B (Non-thinking) 与 Qwen3-4B-Base-GRPO (在 Qwen3-4B-Base 上做 zero-RL). 两个教师的分数大体相当, 后者初始重合率更高, 蒸馏效果始终更好. 两条重合率曲线后期会合, 性能差距却一直保留, 论文的解读是早期模式不匹配损失的收益后面补不回来.
+第一个条件是思维模式兼容. 学生 Qwen3-1.7B-Base, 两个教师: Qwen3-4B (Non-thinking) 与 Qwen3-4B-Base-GRPO (在 Qwen3-4B-Base 上做 zero-RL). 两个教师的分数大体相当, 后者初始重合率更高, 蒸馏效果始终更好. 两条重合率曲线后期会合, 性能差距却一直保留, 论文的解读是早期模式不匹配损失的收益后面补不回来.
 
-### 4.3 条件二: 分数高不等于有新知识
-
-两组对照, 关键对比是同一流水线的教师与额外做过 RL 的教师:
+第二个条件是教师要有学生没有的能力, 分数高不等于有新知识. 论文做了两组对照, 关键对比是同一流水线的教师与额外做过 RL 的教师:
 
 - DeepSeek 家族: 学生 R1-Distill-1.5B, 教师 R1-Distill-7B 对 Skywork-OR1-Math-7B (在 R1-Distill-7B 上做 RL).
 - Qwen 家族: 学生 Qwen3-1.7B (Non-thinking), 教师 Qwen3-4B (Non-thinking) 对在 DeepMath 57K 子集上做过 RL 的版本.
 
 两个家族里, 同流水线教师的提升都有限, 做过 RL 的教师提升明显大, 差距恢复率 $(\mathrm{Acc}_{\text{OPD 后}}-\mathrm{Acc}_{\text{OPD 前}})/(\mathrm{Acc}_{\text{教师}}-\mathrm{Acc}_{\text{OPD 前}})$ 也高得多. RL 后的教师来自同一基座, 思维模式仍然兼容, 收益来自 RL 带来的新能力.
 
-### 4.4 反向蒸馏
+### 4.3 反向蒸馏
 
 JustRL-1.5B 由 R1-Distill-1.5B 做 RL 得到. 把方向反过来: 以 JustRL-1.5B 为学生, 分别用 R1-Distill-1.5B (它自己 RL 前的检查点) 和 R1-Distill-7B 做教师. R1-Distill-7B 的分数略高于 JustRL-1.5B, R1-Distill-1.5B 明显更弱.
 
 结果 (Figure 5): 两次蒸馏都把学生拉回大约 RL 前的水平, RL 学到的增益全部被抹掉, 两条训练曲线几乎重合. 由于 OPD 在学生访问的状态上最小化 reverse KL, 这说明两个尺寸的教师在这些状态上给出几乎相同的局部目标分布. 论文从中得出三点: OPD 学的是教师的思维模式并覆盖学生自己的; 教师的 benchmark 分数不能预测 OPD 的结果, 甚至可能方向相反; 同家族里大模型的高分可能只是对同样数据拟合程度不同, 不代表新能力.
 
-### 4.5 机制: 高概率 token 上的逐步对齐
+### 4.4 机制: 高概率 token 上的逐步对齐
 
 学生 R1-Distill-1.5B, 教师 JustRL-1.5B (成功) 对 R1-Distill-7B (失败), 两个教师数学能力相当, 后者略强. 成功的一组最终恢复了超过 80% 的师生差距, 失败的一组没有任何提升 (Figure 6). 成功时重合率稳步上升, 重合 token 优势向 0 靠近, 熵差收窄; 失败时三个指标从一开始就停滞. 整个训练中重合 token 都占两个模型 97%-99% 的概率质量 (附录 B.1).
 
 进一步的消融 (Figure 7, $k=16$) 只改损失覆盖哪些 token: 学生全部 top-$k$, 只用交集, 只用对称差. 只用交集与全部 top-$k$ 的效果几乎一样, 只用对称差明显更弱. 前两者的重合率都从约 72% 升到 91% 以上, 只用对称差时重合率先降后部分回升. 机制是自我强化的: 一个 token 进入共同高概率区且被教师偏好, reverse KL 就往它上面集中更多质量, 把非重合的竞争 token 挤出学生的 top-$k$.
 
-### 4.6 两条修复
+### 4.5 两条修复
 
 **off-policy 冷启动** (§5.1). 学生 Qwen3-1.7B-Base, 教师 Qwen3-4B (Non-thinking). 先让教师在 OpenThoughts3-1.2M 数学子集上生成 200K 条回答, 学生在上面 SFT, 再在去重后剩下的约 30K prompt 上做 OPD. 与直接从 Base 开始 OPD 相比, 冷启动后的学生初始重合率高得多, 熵差小, 曲线平稳, 验证性能在整个训练中都更高, 最终上限也更高.
 
@@ -224,7 +265,7 @@ JustRL-1.5B 由 R1-Distill-1.5B 做 RL 得到. 把方向反过来: 以 JustRL-1.
 - 模板: 学生 R1-Distill-1.5B, 教师 JustRL-1.5B, 题目同为 DAPO-Math-17K, 只把模板从 DAPO 格式 (要求最后一行写 `Answer:`) 换成 JustRL 训练时的格式 (`Please reason step by step, and put your final answer within \boxed{}.`). 三个基准都提升, 重合率起点更高, 收敛也更高.
 - 内容: 学生 Qwen3-1.7B-Base, 教师 Qwen3-4B-Base-GRPO, 对比 DAPO-Math-17K (教师 RL 用过的数据) 与等量的 DeepMath 子集. 前者下游更好, 重合率反而更低, 但学生在重合 token 上的累计质量明显更高, 学生熵也低得多. 论文建议把教师对齐的 prompt 与教师没见过的 prompt 混用, 以免熵过低, 失去探索.
 
-### 4.7 稠密奖励的代价
+### 4.6 稠密奖励的代价
 
 **长度有甜点** (§6.1). R1-Distill-1.5B 对 JustRL-1.5B, 最大回答长度取 0.5K 到 15K 六档, 各训 200 步. 0.5K 和 1K 的监督 token 太少; 3K 和 7K 最好; 10K 和 15K 持平或下降, 后期重合率骤降, 学生熵和梯度范数出现尖峰. 15K 设定下按位置画学生熵, 高熵先出现在回答末尾, 随训练逐步向前蔓延; 教师熵也有同样的从后往前的趋势.
 
@@ -236,52 +277,9 @@ JustRL-1.5B 由 R1-Distill-1.5B 做 RL 得到. 把方向反过来: 以 JustRL-1.
 
 这一条与 Fu 等的结论表面上冲突. Fu 等的 sampled-token 基线没有用 top-$p$ rollout, 师生来自不同的 SFT 流水线, 还受 tokenizer 不一致影响; Li 等这组师生同属 R1-Distill-1.5B 家族, 模板也一致. 两篇的结论各自对应自己的设定.
 
-## 5. 修复: 教师 top-K 局部支持匹配 (Fu 等)
+## 5. 症状对照与局限
 
-### 5.1 目标
-
-不再只比较采样 token, 在每个前缀上取教师 top-$K$ 集合 $S(c_{i,t})=\mathrm{TopK}_q(c_{i,t})$, 在集合内对师生分布重新归一化:
-
-$$
-\hat\pi_\theta(v\mid c_{i,t})=\frac{\pi_\theta(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}\pi_\theta(u\mid c_{i,t})},\qquad\hat q(v\mid c_{i,t})=\frac{q(v\mid c_{i,t})}{\sum_{u\in S(c_{i,t})}q(u\mid c_{i,t})} \tag{11}
-$$
-
-局部支持匹配 (LSM) 对所有 rollout 位置平均截断的 reverse KL:
-
-$$
-\mathcal L_{\mathrm{LSM}}=\mathbb E\Bigl[\frac{1}{\sum_i|o_i|}\sum_{i=1}^{G}\sum_{t=1}^{|o_i|}\sum_{v\in S(c_{i,t})}\hat\pi_\theta(v\mid c_{i,t})\log\frac{\hat\pi_\theta(v\mid c_{i,t})}{\hat q(v\mid c_{i,t})}\Bigr] \tag{12}
-$$
-
-更新不再由单个 token 的 log-ratio 的正负与大小决定, 仍然是逐 token 的局部更新, 成本远低于全词表 KL. 集合外的 token 不从这一项得到梯度, 相对全词表 reverse KL 是有偏的.
-
-配套的三件事:
-
-- **集合内重新归一化**. 在集合内单独做 softmax, 否则集合内师生的概率质量不可比; 去掉这一步训练迅速崩塌.
-- **top-$p$ rollout**. 无约束采样偶尔采到极低概率的 token, 制造教师信号失效的前缀. 实验取 $p=0.9$, 温度 1.
-- **特殊 token 掩码**. 掩掉切分约定不兼容的特殊 token, 减少假阴性. 它对 sampled-token OPD 帮助很大, 对 LSM 影响很小.
-
-实现在 verl-agent 上, 8 张 H100. 数学: 最大回答 16,384, 组大小 8, $K=32$, AdamW 学习率 $2\times10^{-6}$, batch 128, mini batch 64, 共 400 步.
-
-### 5.2 结果
-
-单任务数学 (Table 1, 训练集 DAPO-Math-17K 英文部分, pass@1):
-
-| 方法 | Math500 | AIME24 | AIME25 | Minerva | Olympiad | 平均 |
-|------|---------|--------|--------|---------|----------|-----|
-| Qwen2.5-7B-Instruct | 68.2 | 13.3 | 0.0 | 26.5 | 32.9 | 28.2 |
-| OpenThinker3-7B (教师) | 92.2 | 53.3 | 40.0 | 39.0 | 55.6 | 56.0 |
-| sampled-token OPD | 80.0 | 10.0 | 16.7 | 32.4 | 43.1 | 36.4 |
-| sampled-token + 掩码 | 81.4 | 26.7 | 16.7 | 34.2 | 44.7 | 40.7 |
-| LSM 无掩码 | 80.4 | 23.3 | 26.7 | 34.2 | 43.9 | 41.7 |
-| LSM + 掩码 | 82.0 | 23.3 | 23.3 | 34.9 | 43.9 | 41.5 |
-
-掩码对 LSM 几乎无影响 (41.7 对 41.5), 说明 LSM 的增益不只来自处理 tokenizer 错配. 与教师的 56.0 相比仍有 14 个点以上的差距.
-
-数学与 ALFWorld 交替训练 (Table 2, ALFWorld 教师是 GiGPO-Qwen2.5-7B-Instruct-ALFWorld, 400 步中两类各 200 步): sampled-token OPD 的 ALFWorld 成功率 90.6, 数学平均 34.8; LSM 无掩码 95.3 与 41.7, 数学提升 19.8%, 这就是摘要里的 +19.8%; LSM 加掩码 ALFWorld 最高 97.7, 数学降到 38.6. 拆到单项, LSM 无掩码的增益主要在 MATH500 (74.8 到 82.0) 和 AIME24 (13.3 到 33.3) 上, AIME25 和 Minerva 与 sampled-token 相差不到 4 个点. 论文的解读是局部支持匹配主要帮的是推理这一侧, 推理轨迹更长, sampled-token 信号更容易受前缀漂移影响; 掩码在这次运行里则把取舍推向了智能体任务. 附录 G.1 在 WebShop 上用 Qwen2.5-1.5B-Instruct 做学生, 成功率从 sampled-token 的 50.0 升到 57.8, 教师是 66.4.
-
-组件消融 (Table 3, AIME24 avg@32): sampled-token 20.4, 加 top-$p$ 21.6; 只换成教师 top-$K$ 是 17.7, 反而更低; 教师 top-$K$ 加 top-$p$ 23.6. 两者要一起用. 支持集合的选法 (Table 4 与附录 G.3) 在单任务上差别不大, 在多任务上默认的教师 top-$K$ (数学平均 41.7) 远好于学生 top-$K$ 加采样 token (28.4) 和教师 top-$K$ 加采样 token (26.9); 带无偏尾部校正的 EMA-PG 变体也没有更好 (36.2 与 33.7).
-
-## 6. 从症状对照到论文
+### 5.1 从症状对照到论文
 
 | 症状 | 先查什么 | 依据 |
 |------|---------|------|
@@ -293,16 +291,13 @@ $$
 | 学生原本 RL 学到的能力消失 | 教师是否就是学生 RL 前的同家族模型 | Li 等 §3.3 |
 | 重合率不涨, 梯度范数持续很小 | 冷启动 SFT, 换成教师训练时的模板与 prompt | Li 等 §5 |
 
-这几类失败会互相叠加. 漂移前缀上的教师失准 (第 2.2 节) 是重复饱和 (第 3 节) 能自我强化的前提: 教师若在重复内容上给低分, 式 (8) 的第二项就不会占优. 回答越长, 学生越可能走进教师少见的前缀 (第 4.7 节), 两者又都与最大长度的设置有关.
+这几类失败会互相叠加. 漂移前缀上的教师失准 (第 2.2 节) 是重复饱和 (第 3 节) 能自我强化的前提: 教师若在重复内容上给低分, 式 (10) 的第二项就不会占优. 回答越长, 学生越可能走进教师少见的前缀 (第 4.6 节), 两者又都与最大长度的设置有关.
 
-## 7. 局限
+### 5.2 局限
 
-- **领域**. 三篇的主要实验都在数学上; Fu 等加了 ALFWorld 和 WebShop, Li 等明确把代码和开放式任务列为未来工作.
-- **模型规模**. 学生在 1.5B 到 7B, 教师 4B 到 7B. 更大模型上相变是否出现, 出现的时间点, 都没有数据.
-- **自蒸馏**. 三篇都研究独立的教师. 自蒸馏里同一个模型借助特权信息 (标准答案, 执行反馈) 充当教师, 思维模式天然一致, 新知识来自特权信息. Li 等把这种情形下两个条件是否成立列为下一步.
-- **假设未验证**. Li 等关于 7B 教师逐 token 优势方向不一致的解释, 论文自己说明尚未验证. Fu 等的方差上界是最坏情况, 玩具实验只是定性的.
-- **训练与推理不一致**. Fu 等的 rollout 由 vLLM 以 top-$p$ 生成, 训练引擎没有对这个采样过程做校正, 论文把这列为未解决的问题.
-- **与教师的差距**. 修复之后学生离教师仍有明显距离 (Fu 等单任务 41.7 对 56.0), 更好的局部监督只解决了其中一部分.
+先看覆盖面. 三篇的主要实验都在数学上; Fu 等加了 ALFWorld 和 WebShop, Li 等明确把代码和开放式任务列为未来工作. 模型规模也偏小, 学生在 1.5B 到 7B, 教师 4B 到 7B, 更大模型上相变是否出现, 出现在第几步, 都没有数据. 三篇研究的都是独立的教师; 自蒸馏里同一个模型借助特权信息 (标准答案, 执行反馈) 充当教师, 思维模式天然一致, 新知识来自特权信息, Li 等把这种情形下 4.2 节的两个条件是否成立列为下一步.
+
+再看结论本身的强度. Li 等关于 7B 教师逐 token 优势方向不一致的解释, 论文自己说明尚未验证; Fu 等的方差上界 (式 (4)(5)) 是最坏情况, 玩具实验只是定性的. Fu 等的 rollout 由 vLLM 以 top-$p$ 生成, 训练引擎没有对这个采样过程做校正, 论文把这列为未解决的问题. 修复之后学生离教师仍有明显距离 (Fu 等单任务 41.7 对 56.0), 更好的局部监督只解决了其中一部分.
 
 ## 参考文献
 

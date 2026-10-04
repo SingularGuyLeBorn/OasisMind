@@ -8,15 +8,6 @@ excerpt: "PPO 用裁剪后的重要性比率代替 TRPO 的 KL 约束, 只用一
 
 > 相关阅读: [05-TRPO](../05-TRPO/05-TRPO.md) · [02-GRPO](../02-GRPO/02-GRPO.md) · [03-GSPO](../03-GSPO/03-GSPO.md) · [06-RLOO](../06-RLOO-留一法基线/06-RLOO-留一法基线.md) · [4.4.0 强化学习的数学原理](../../4.4.0-强化学习的数学原理/4.4.0-强化学习的数学原理.md) · [4.4.2 DPO](../../4.4.2-无奖励模型的对齐DPO-KTO/01-DPO/01-DPO.md)
 
-## 太长不看版
-
-- PPO (Schulman et al., arXiv:1707.06347) 的核心是代理目标 $\min(r_t\hat{A}_t,\mathrm{clip}(r_t,1-\varepsilon,1+\varepsilon)\hat{A}_t)$, 其中 $r_t=\pi_\theta/\pi_{\theta_{\mathrm{old}}}$. 它是未裁剪目标的悲观下界, 只挡住「让目标继续变好」方向上的大步, 不挡「往回走」.
-- 论文在 7 个 MuJoCo 任务上比较: $\varepsilon=0.2$ 的归一化平均分 0.82, 为各设置最高; 不裁剪也不加罚是 $-0.39$; 自适应 KL 罚最好是 0.74.
-- 优势用 GAE 估计: $\hat{A}_t=\sum_l(\gamma\lambda)^l\delta_{t+l}$, 实现上从后往前递推 $A_t=\delta_t+\gamma\lambda A_{t+1}$. $\lambda$ 在偏差与方差之间取舍.
-- InstructGPT (arXiv:2203.02155) 的 RLHF 用四个模型: 可训练的策略和价值网络, 冻结的奖励模型和 SFT 参考模型. 奖励是 RM 分数减去逐 token 的 KL 罚, $\beta=0.02$; 价值网络为 6B, 从 6B RM 初始化, 所有尺寸的策略共用.
-- InstructGPT 的 PPO 每批 512 条, 切成 8 个 mini-batch, 只跑 1 个内层 epoch, GAE 不打折扣, clip 为 0.2. PPO-ptx 混入预训练梯度, 用来减少公开 NLP 基准上的退步.
-- Ahmadian et al. (arXiv:2402.14740) 在 RLHF 设置中发现每个 batch 平均被 clip 的损失项不到 5%, GAE 取 $\lambda=1$ 奖励最高. 奖励只在句末给出时, PPO 的多数组件作用有限, 这是 GRPO, RLOO 去掉价值网络的出发点.
-
 ## 1. 问题: 策略梯度的方差和样本效率
 
 ### 1.1 策略梯度
@@ -376,6 +367,7 @@ Ahmadian et al. (2024, arXiv:2402.14740) 用 Pythia-6.9B 和 Llama-7B 在 Anthro
 1. **GAE 的 $\lambda$.** 在 Llama-7B + HH 上比较 $\lambda=0,0.5,0.95,1.0$, $\lambda=1.0$ (无偏, 方差最大, 即 Vanilla PG) 的训练奖励最高, 降方差但引入偏差的低 $\lambda$ 反而更差.
 2. **裁剪.** 每个 batch 中损失被 clip 的比例平均低于 5%. 关闭 clip (包括价值网络的 clip), 再在 $\lambda=1$ 下去掉比率 $\pi_\theta/\pi_{\mathrm{old}}$, PPO 退化为 Vanilla PG, 奖励没有下降, 甚至略有提升.
 3. **建模粒度.** 把整段回答当作一个动作的 REINFORCE 和 RLOO, 在所有数据集和模型上都优于把每个 token 当作动作的 PPO 和 Vanilla PG. Vanilla PG 的胜率比 PPO 高 3.2% 到 20.3%.
+4. **最终胜率** (表 1, GPT-4 模拟评估, 对比数据集原回答). TL;DR, HH (Pythia), HH (Llama) 三组上, PPO 为 67.6, 29.2, 32.0, 两组 HH 上都是全表最低, RLOO ($k=4$) 为 77.9, 43.7, 64.1, 分别高 10.3, 14.5, 32.1 个点. 生成长度也差得多 (HH 表 2): PPO 平均只有 16.5 个 token, 困惑度 40.4, 在各方法中最高, 逐 token 建模的 Vanilla PG 为 39.0, 排第二; RLOO ($k=4$) 为 60.6 个 token, 困惑度 27.6. 同样每题采 $k$ 条时, RLOO 也胜过只拿最高分那条做交叉熵的 RAFT, 三组平均胜率 $k=2$ 时 61.3 对 56.1, $k=4$ 时 61.9 对 59.5. DPO 的回答最长, 平均 104.4 个 token.
 
 论文的解释是: 预训练加 SFT 的初始化很强, 在 prompt 条件下, 每一步的概率质量集中在少数几个 token 上, 环境转移又是确定的, 所以传统深度强化学习里用来压方差和防大步的组件在这里很少被触发. 这和 §4.2 中 InstructGPT 每批只跑 1 个内层 epoch 的设置一致. 详细的序列级推导和 RLOO 见 [06-RLOO](../06-RLOO-留一法基线/06-RLOO-留一法基线.md).
 

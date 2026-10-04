@@ -8,15 +8,7 @@ excerpt: "GMPO 把 GRPO 目标里 token 级加权奖励的算术平均换成几�
 
 > 相关阅读: [02 GRPO](../02-GRPO/02-GRPO.md) · [03 GSPO](../03-GSPO/03-GSPO.md) · [04 PPO](../04-PPO/04-PPO.md) · [4.4.0 强化学习的数学原理](../../4.4.0-强化学习的数学原理/4.4.0-强化学习的数学原理.md) · [4.4.5 GxPO 家族](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md)
 
-## 太长不看版
-
-- **出处**: Zhao et al., *Geometric-Mean Policy Optimization*, arXiv:2507.20673, 作者来自 Microsoft Research 与国科大等, 代码在 [callsys/GMPO](https://github.com/callsys/GMPO). 公式编号沿用论文式 (1)-(6), 表为 Table 1-6.
-- **问题**: GRPO 目标是 token 级「重要性比率乘优势」的算术平均. 训练中某些 token 的比率 $\rho_t$ 会跑到极端值, 算术平均对这种离群值敏感, 更新随之变猛; 压住它只能收窄 clip 窗, 窗一窄, 熵掉得快, 探索变少.
-- **改法**: 同一条回答内, 把 $|\rho_t\hat A|$ 的算术平均换成几何平均, 再乘 $\mathrm{sgn}(\hat A)$ 找回方向. clip 仍逐 token 做, 窗口从 GRPO 的 $(0.8,1.2)$ 放宽到 $(e^{-0.4},e^{0.4})\approx(0.670,1.492)$.
-- **梯度**: 两者都是策略梯度的加权和. GRPO 每个 token 的权重是它自己的 $\rho_t$, GMPO 每个 token 的权重是整段 $\rho$ 的几何平均, 同一条回答里所有 token 拿到同一个数. 比率项仍在梯度里.
-- **结果**: DeepSeek-R1-Distill-Qwen-7B 五份数学卷均分 63.4 对 59.3; Qwen2.5-Math-7B 52.7 对 51.2; Qwen2.5-Math-1.5B 43.9 对 42.5; Geometry3K 54.7 对 53.3; 论文记为 Qwen3-32B 的 MoE 设定上 MATH500 96.7 对 94.6.
-- **消融**: 去掉几何平均里的 $1/|o|$ 次方, 7B 均分从 52.7 降到 52.0; clip 改到序列级 52.6; 不 clip 52.3. 窗口 $e^{\pm0.2}$, $e^{\pm0.4}$, $e^{\pm0.8}$ 分别为 52.4, 52.7, 52.1.
-- **与 GSPO 的区别**: 两者都出现「比率的几何平均」. GMPO 先逐 token clip 再取几何平均; GSPO 先取几何平均得到序列比率 $s_i$, 再对 $s_i$ clip. 加上 clip 之后两者不能互相代入.
+材料是 Zhao 等人的 *Geometric-Mean Policy Optimization* (arXiv:2507.20673), 作者来自 Microsoft Research 与国科大等, 代码在 [callsys/GMPO](https://github.com/callsys/GMPO); 公式编号沿用论文式 (1)-(6), 表为 Table 1-6. 问题是 GRPO 训练中重要性比率出现极端值时, 怎样在不收窄 clip 窗的前提下让更新保持稳定.
 
 ## 1. 问题: 算术平均放大离群比率
 
@@ -167,7 +159,7 @@ $\prod_{t\neq k}\rho_{i,t}\cdot\rho_{i,k}$ 就是整段乘积, 和前面的 $-1$
 | GRPO, 式 (8) | 该 token 自己的 $\rho_{i,t}$ | 第 7 个 token 的梯度放大 8 倍, 其余 token 不变 |
 | GMPO, 式 (9) | 整段的几何平均 $(\prod_k\rho_{i,k})^{1/|o_i|}$ | 所有 token 的权重一起乘 $8^{1/|o_i|}$; 回答长 1000 时约 1.002 |
 
-旧版讲义里有一种写法, 说 GMPO 的梯度里没有 $\pi_\theta/\pi_{\theta_{\mathrm{old}}}$, 只剩 $\frac{1}{|o_i|}\sum\nabla\log\pi\cdot\hat A$, 并据此说它「消除了比率项」. 这与论文式 (6) 不符: 比率仍在, 只是从逐 token 的值换成了序列内的几何平均. 漏掉这一项, GMPO 就被读成了不做重要性修正的 REINFORCE, 在多次 mini-batch 更新的 off-policy 设定下两者不等价.
+式 (9) 里比率项仍在 (论文式 (6)), 只是从逐 token 的值换成了序列内的几何平均. 若把它去掉, 只剩 $\frac{1}{|o_i|}\sum\nabla\log\pi\cdot\hat A$, 就成了不做重要性修正的 REINFORCE, 在多次 mini-batch 更新的 off-policy 设定下两者不等价.
 
 ### 3.1 哪些离群比率真的进了梯度
 
@@ -176,6 +168,16 @@ PPO 式的 $\min(\rho A,\mathrm{clip}(\rho)A)$ 只裁对目标有利的一侧. $
 所以 2.1 节里 $\hat A=+1$, $\rho=8$ 的那个 token, 在带 clip 的 GRPO 里其实不产生梯度. 真正不受约束地进入式 (8) 的, 是负优势回答里比率很大的 token: 当前策略已经把一个「坏回答里的 token」的概率抬到旧策略的 8 倍, GRPO 会按 8 倍的权重往下压它. 这类更新幅度没有上限, dual-clip (Ye et al., 2020) 就是为它加一个上界; DCPO 论文附录 A.9 记录的设置里, DAPO 把负优势的比率上限设为 10, DCPO 对正负优势都设为 10.
 
 Algorithm 1 里 $\hat A<0$ 时同样只截断 $\log\rho<-0.4$ 的一侧, 大比率照样通过. 区别在于它进入的是几何平均: $|o_i|=200$ 时, 一个 $\rho=8$ 的 token 让整段权重乘 $8^{1/200}\approx1.010$, 其余 199 个 token 的梯度方向不受它的单独影响. 离群比率没有被裁掉, 它对梯度的放大被 $1/|o_i|$ 次方压到了接近 1.
+
+把 clip 放回式 (7) 再求导. 记 $\tilde\delta_t$ 为截断后的 $\log\rho_{i,t}$, $\mathcal U_i$ 为没被截断的 token 集合. 被截的 $\tilde\delta_t$ 等于常数 $\pm0.4$, 对 $\theta$ 的导数为 0, 于是
+
+$$
+\nabla_\theta\mathcal{J}_{\mathrm{GMPO}}\Big|_{q,o_i}=\frac{\hat A_i}{G\cdot|o_i|}\,\exp\Big(\frac{1}{|o_i|}\sum_{t}\tilde\delta_t\Big)\sum_{t\in\mathcal U_i}\nabla_\theta\log\pi_\theta(o_{i,t}\mid q,o_{i,<t}) \tag{9'}
+$$
+
+被截的那些 token 不再贡献梯度方向, 但截断值仍留在权重的指数里; 分母仍然是 $|o_i|$, 不随被截的个数变小. 一条回答里被截的 token 越多, 这条回答的总步长越小, 全部被截时整条回答没有梯度, 与序列级 clip 的结果相同.
+
+手算: 优势为正, 100 个 token 里有 10 个的 $\log\rho$ 超过 0.4, 截到 0.4, 其余 90 个都为 0. 权重为 $e^{10\times0.4/100}=e^{0.04}\approx1.041$, 梯度只落在这 90 个 token 上, 合起来的步长约为 $1.041\times90/100\approx0.94$ 份, 比没有离群 token 的同长回答 (步长为 1 份) 还要小一点.
 
 ### 3.2 小偏差下两种权重差多少
 

@@ -8,15 +8,7 @@ excerpt: "GRPO 是 PPO 的变体: 同一道题采 G 条回答, 用组内奖励�
 
 > 相关阅读: [04 PPO](../04-PPO/04-PPO.md) · [01 GMPO](../01-GMPO/01-GMPO.md) · [03 GSPO](../03-GSPO/03-GSPO.md) · [06 RLOO](../06-RLOO-留一法基线/06-RLOO-留一法基线.md) · [Dr. GRPO](../../4.4.6-其他策略梯度/03-DrGRPO-去标准差/03-DrGRPO-去标准差.md) · [4.4.5 GxPO 家族](../../4.4.5-GxPO家族/4.4.5-GxPO家族.md) · [4.4.0 强化学习的数学原理](../../4.4.0-强化学习的数学原理/4.4.0-强化学习的数学原理.md)
 
-## 太长不看版
-
-- **出处**: Shao et al., *DeepSeekMath*, arXiv:2402.03300, §4.1 提出 GRPO, §5.2 给出统一范式, 附录 A.1 给出各方法的梯度系数. 文中式号对应论文式 (1)-(4) 与 (19)-(21).
-- **问题**: PPO 要训练一个与策略同量级的价值网络 $V_\psi$. LLM 的奖励通常只落在最后一个 token 上, 每个前缀的价值很难估准; 显存上还要多驻一份模型和它的优化器状态.
-- **改法**: 同一道题从旧策略采 $G$ 条回答, 奖励做组内标准化 $\hat A_i=(r_i-\mathrm{mean})/\mathrm{std}$, 结果监督下整条回答共用这个优势. clip 沿用 PPO, 作用在 token 级比率上. KL 不再扣进奖励, 而是以 $\beta\,\mathbb{D}_{\mathrm{KL}}$ 直接加进损失, 估计器取 $\pi_{\mathrm{ref}}/\pi_\theta-\log(\pi_{\mathrm{ref}}/\pi_\theta)-1$.
-- **设定**: 从 DeepSeekMath-Instruct 7B 出发, 约 144K 道 GSM8K/MATH 的 CoT 题; 策略学习率 $10^{-6}$, KL 系数 0.04, 每题 64 条, 最长 1024, batch 1024, 每次探索后只更新一次.
-- **结果**: CoT 设定下 GSM8K 82.9%→88.2%, MATH 46.8%→51.7%, MGSM-zh 73.2%→79.6%, CMATH 84.6%→88.8%. Maj@K 提升, Pass@K 基本不变.
-- **偏差**: 损失里的 $1/|o_i|$ 让同号优势在长短回答之间分配不均; 优势里的 $\mathrm{std}$ 在近乎全对或全错的组里放大微小差异. Dr. GRPO 两项都删, DAPO 换成 token 级分母并丢掉全对全错的组.
-- **系统**: 一轮 GRPO 至少要两套运行时: 推理引擎 (vLLM/SGLang) 采样并记下旧 logprob, 训练引擎 (Megatron/FSDP/DeepSpeed) 重算新 logprob, 反向, 更新, 再把权重同步回推理引擎. HybridFlow 测得 actor 训练加生成约占一轮 RLHF 时间的 58.9%; OpenRLHF 初版的 profiling 显示 PPO 采样阶段约占 80%.
+材料是 Shao 等人的 DeepSeekMath (arXiv:2402.03300): §4.1 提出 GRPO, §5.2 给出统一范式, 附录 A.1 给出各方法的梯度系数, 文中式号对应论文式 (1)-(4) 与 (19)-(21). 后半部分取 HybridFlow (veRL) 与 OpenRLHF 的系统实现. 问题是去掉价值网络之后优势怎样估, 一轮训练又怎样在推理和训练两套引擎之间流转.
 
 ## 1. 问题: PPO 的价值网络
 
