@@ -119,4 +119,4 @@ N:M 剪枝,块稀疏,动态稀疏等算法层面的稀疏性, 需要硬件层面
 1. Dong et al. *UbiMoE*. [arXiv:2502.05602](https://arxiv.org/abs/2502.05602).
 2. Lin et al. *FLAME: Fully Leveraging MoE Sparsity for Transformer on FPGA*. DAC 2024.
 3. Sarkar et al. *Edge-MoE*. IEEE, 2023.
-4. 系统对照:[04](../01-MoE硬件架构研究综述/01-MoE硬件架构研究综述.md) · [08](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/03-MoE系统优化综述/03-MoE系统优化综述.md)
+4. 系统对照:[01](../01-MoE硬件架构研究综述/01-MoE硬件架构研究综述.md) · [03](../../../../6-训练与推理优化/6.1-训练基础设施/6.1.8-MoE系统与并行/03-MoE系统优化综述/03-MoE系统优化综述.md)

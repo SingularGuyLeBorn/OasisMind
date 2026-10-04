@@ -6,7 +6,7 @@ excerpt: "MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留."
 ---
 # MoE 系统优化:稀疏激活碰到硬件的并行胃口
 
-MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留.系统层卡住的不是再写一遍 Top-$K$,而是三件硬东西:token 怎么送到拥有专家的那张卡,细粒度之后激活怎么不按 $O(TKd)$ 涨,Grouped GEMM 的 Tile 怎么不被填充吃掉.路由公式在 [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md),共享专家在 [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md),STE 在 [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).本篇不重推 $g_i(x)$.
+MoE 把每 token 的 FLOPs 做成稀疏,参数却仍要驻留.系统层卡住的不是再写一遍 Top-$K$,而是三件硬东西:token 怎么送到拥有专家的那张卡,细粒度之后激活怎么不按 $O(TKd)$ 涨,Grouped GEMM 的 Tile 怎么不被填充吃掉.路由公式在 [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md),共享专家在 [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md),STE 在 [02](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md).本篇不重推 $g_i(x)$.
 
 卡间 Wave,DeepEP,MoonEP 的通信重叠正本在 [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md).这里只把并行轴,Dispatch / Combine,两种 GEMM layout 和几条能对上论文的系统数字钉死.
 
@@ -73,7 +73,7 @@ $$
 - 紫框是专家并行:每个 expert 住在自己的 EP rank 上.
 - DeepEP,Flux,NCCL-EP 是实现名,数字以各仓库和 6.1.1 为准.本图只钉数据流.
 
-传统 NCCL All-to-All 对「每步目的 rank 都在变」不友好.DeepEP 一类工作做的是动态路由下的 buffer 与通算重叠,不是新的 $p_i$.MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token,让计算形状静态--那是 **卡间 token 数**,和 Quantile Balancing 的 **专家间被选次数** 不是一层,见 [10](../../../../2-核心原理与架构/2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md).
+传统 NCCL All-to-All 对「每步目的 rank 都在变」不友好.DeepEP 一类工作做的是动态路由下的 buffer 与通算重叠,不是新的 $p_i$.MoonEP 要求每个 rank 收到恰好 $S\times K$ 个 token,让计算形状静态--那是 **卡间 token 数**,和 Quantile Balancing 的 **专家间被选次数** 不是一层,见 [04](../../../../2-核心原理与架构/2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md).
 
 通信量可以先按激活字节估,不要先编加速比.一次 Dispatch 把本卡 $T$ 个 token,隐状态宽度 $d$,每个 token $K$ 个目的专家,搬到对端;Combine 再搬回来.数量级是
 
@@ -191,10 +191,10 @@ SonicMoE 的端到端数字明确写了 **FSDP-2 + lm-engine + 7B**.FSDP-2 把�
 
 | 问题 | 去哪 | 本篇不写 |
 |------|------|----------|
-| 先 Top-$K$ 再 Softmax,STE,ReMoE | [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) / [03](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md) | 第二份可导证明 |
+| 先 Top-$K$ 再 Softmax,STE,ReMoE | [2.6](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) / [02](../../../../2-核心原理与架构/2.6-MoE/02-MoE路由与Top-K可导性/02-MoE路由与Top-K可导性.md) | 第二份可导证明 |
 | 共享专家,$K_r$,$b_i$ | [01](../../../../2-核心原理与架构/2.6-MoE/01-DeepSeek-MoE/01-DeepSeek-MoE.md) | 第二份 DeepSeek-MoE 公式 |
 | 容量 $C$,drop,aux,z-loss | [2.6 第 4–5 节](../../../../2-核心原理与架构/2.6-MoE/2.6-MoE.md) | 把 rounding 写成 $\gamma$ |
-| 瘦专家 $\ell$,分位数 bias | [10](../../../../2-核心原理与架构/2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md) | |
+| 瘦专家 $\ell$,分位数 bias | [04](../../../../2-核心原理与架构/2.6-MoE/04-Stable-LatentMoE与Quantile-Balancing/04-Stable-LatentMoE与Quantile-Balancing.md) | |
 | Wave 藏 All-to-All,MoonEP 等 token | [6.1.1](../../6.1.1-分布式训练/6.1.1-分布式训练.md) | 把 MoonEP 说成新的 $p_i$ |
 | 专家权重量化 | [6.3.1/09](../../../6.3-模型压缩/6.3.1-量化/05-MoE模型量化技术综述/05-MoE模型量化技术综述.md) | 把 QMoE 当 EP |
 | FPGA / NDP | [9.1.5](../../../../9-AI工程化与基础设施/9.1-硬件基础/9.1.5-MoE硬件与加速/9.1.5-MoE硬件与加速.md) | |

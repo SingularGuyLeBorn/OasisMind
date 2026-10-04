@@ -47,7 +47,7 @@ $K=1$ 是「整网一套权重转 $R$ 圈」, Universal Transformer 的默认结
 
 **CoT.** [4.8](../../../../4-后训练/4.8-推理与Agent能力/4.8-推理与Agent能力.md) 的 o1 路线把中间步骤写成新 token, 上下文变长, KV 变长, 注意力二次项跟着涨. 循环可以在同一段残差状态上转 $R$ 圈, 输出仍是下一个 token. Saunshi et al. (2025) 的定理把 $T$ 步 CoT 嵌进 $T$ 次 loop, 那是表达力上的对照, 不说明循环模型已经会写长 CoT.
 
-**MoE.** MoE 稀疏的是**这一 token 激活哪些专家矩阵**. 循环减少的是**独立参数的份数**, 计算并不按专家关掉; 同一份权重被访问 $R$ 次. Mixture-of-Recursions 借用了 Expert-Choice / Token-Choice 这套词, 路由的对象是「这个 token 再进几轮」, 与 2.4.1 里的 FFN 专家无关.
+**MoE.** MoE 稀疏的是**这一 token 激活哪些专家矩阵**. 循环减少的是**独立参数的份数**, 计算并不按专家关掉; 同一份权重被访问 $R$ 次. Mixture-of-Recursions 借用了 Expert-Choice / Token-Choice 这套词, 路由的对象是「这个 token 再进几轮」, 与 2.6 MoE 里的 FFN 专家无关.
 
 ## 2. 祖先与表达力: Universal Transformer, ALBERT, 可编程构造
 
@@ -277,7 +277,7 @@ $$
 
 结果 (Table 3, FineWeb-Edu). 训练预算固定为 $16.5\times10^{18}$ FLOPs 时, Expert-Choice、$N_r=2$ 的 MoR 参数量约为普通 Transformer 的一半, few-shot 平均 43.1% 对 42.3%, 验证损失也更低; 原因是每 token 算得更少, 同样 FLOPs 能多训 token. 训练 token 固定为 20B 时, $N_r=2$ 的 MoR 训练 FLOPs 少 25%, 训练时间少 19%, 峰值显存少 25%. 推理侧, 共享参数允许连续深度批处理 (不同深度的 token 拼进同一批), 360M 档 MoR-4 在最大批量下吞吐最高达普通模型的 2.06 倍, 代价是似然略降.
 
-MoR 借用了 MoE 的术语, 路由对象是「这个 token 再进几轮循环核」. 专家矩阵的稀疏见 2.4.1.
+MoR 借用了 MoE 的术语, 路由对象是「这个 token 再进几轮循环核」. 专家矩阵的稀疏见 [2.6 MoE](../../../2.6-MoE/2.6-MoE.md).
 
 ### 6.2 Ouro
 

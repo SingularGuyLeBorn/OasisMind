@@ -168,7 +168,7 @@ Llama-2-7B 的配置是 4096 总量: 0+4096 为 3359.95, 1+4095 为 11.88, 2+409
 
 **同期工作.** Han 等人 (LM-Infinite) 从理论上分析了长度泛化失败, 用 Λ 形注意力模式并重新设置位置距离, 做法和 StreamingLLM 相似.
 
-**训练期的 sink logit.** DeepSeek-V4 的 CSA 和 HCA 核心注意力引用 StreamingLLM 和 OpenAI 2025, 给每个头设一个可学习的 sink logit $z'_h$, 在分母里加 $\mathrm{Exp}(z'_h)$, 和式 (3) 的分母加 1 是同一类做法, 只是常数换成了可学习的标量. 这样每一行的注意力和可以小于 1, 不需要额外的 KV. 详见 [CSA-HCA 篇](../../../2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md). 这里的 OpenAI 2025 指 gpt-oss: 它的模型卡写明每个注意力头有一个学出来的偏置, 加在 softmax 的分母上, 让这个头可以把注意力几乎全部「不分给」任何 token. 这正是 5 节里 Sink Token 做法的另一种实现, 不占 cache 槽位.
+**训练期的 sink logit.** DeepSeek-V4 的 CSA 和 HCA 核心注意力引用 StreamingLLM 和 OpenAI 2025, 给每个头设一个可学习的 sink logit $z'_h$, 在分母里加 $\mathrm{Exp}(z'_h)$, 和式 (3) 的分母加 1 是同一类做法, 只是常数换成了可学习的标量. 这样每一行的注意力和可以小于 1, 不需要额外的 KV. 详见 [CSA-HCA 篇](../../../2.4-稀疏注意力/04-CSA-HCA-混合压缩注意力/04-CSA-HCA-混合压缩注意力.md). 这里的 OpenAI 2025 指 gpt-oss: 它的模型卡写明每个注意力头有一个学出来的偏置, 加在 softmax 的分母上, 让这个头可以把注意力几乎全部「不分给」任何 token. 这正是 3.2 节里 Sink Token 做法的另一种实现, 不占 cache 槽位.
 
 **推理框架的集成.** 官方仓库列出的集成包括 NVIDIA TensorRT-LLM, Intel Extension for Transformers, HuggingFace Transformers 和 CMU 的 MLC LLM. HuggingFace Transformers 里对应的是一种带 sink 的 cache 类 (`SinkCache`), 构造时指定窗口长度和 sink token 数, 驱逐规则就是式 (2).
 
