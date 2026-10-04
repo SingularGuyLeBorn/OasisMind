@@ -200,3 +200,12 @@
 - **open-instruct-repo-3** README 明确说明内置评测已不维护并推荐改用 OLMES；继续用仓库内旧评测脚本不能视为当前官方评测协议. 求证结果:
 - **open-instruct-repo-4** 仓库定位为研究代码且不保证向后兼容；主分支命令、配置字段和默认值不可直接外推到历史论文实验. 求证结果:
 - **open-instruct-repo-5** `chat_template.jinja` 与 `tokenizer_config.json` 可同时存在，而 Transformers 优先使用前者；两份模板不同步时，相同 tokenizer 名称可能生成不同训练序列. 求证结果:
+
+### Infini-gram (arXiv 2401.17377)
+
+解析: `content/olmo/04-数据与评测/infini-gram/infini-gram-analysis.md`.
+
+- **infini-gram-1** 摘要的 47% next-token accuracy 高度依赖测试文本与 5T token 索引的重叠、tokenizer 和去污染设置，不能外推为任意新领域的普遍准确率. 求证结果:
+- **infini-gram-2** `<20 ms`、`40 ms`、`200 ms` 是 RedPajama 与特定优化环境下的平均延迟；论文没有证明 5T 组合索引、P95 或高并发条件下仍保持同一延迟. 求证结果:
+- **infini-gram-3** 机器文本与 infini-gram 的一致率随 suffix length 呈不规则变化，被解释为神经预训练或位置编码缺陷；但 suffix length 同时关联文本类型、重复度和成员关系，现有证据只能说明相关性，不能完成因果定位. 求证结果:
+- **infini-gram-4** 插值困惑度收益在索引包含神经模型训练语料时可能体现非参数记忆增强；若参考集与索引仍有残留重叠，也会高估泛化收益，需结合严格去污染结果解释. 求证结果:
