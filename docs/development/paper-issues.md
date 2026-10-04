@@ -239,3 +239,13 @@
 - **signal-and-noise-3** SNR 与 decision accuracy 的相关性约为 R=0.653、R²=0.426，只是中等相关，不能单独作为一次昂贵训练决策的充分证据. 求证结果:
 - **signal-and-noise-4** 过滤低 SNR 子任务会提高预测稳定性，但同时改变能力和领域覆盖；稳定性提升不等于 construct validity 提升. 求证结果:
 - **signal-and-noise-5** Decision Accuracy 对所有方案对等权；第一、第二名互换和选到最差方案在指标中的权重相同，但实际决策代价通常不同. 求证结果:
+
+### olmOCR 仓库
+
+解析: `content/olmo/05-开源仓库/olmocr/olmocr-analysis.md`.
+
+- **olmocr-repo-1** README 的 demo 地址前文为 `olmocr.allenai.org`，Usage 段却写成 `olmocr.allen.ai`，域名不一致，疑为文档笔误. 求证结果:
+- **olmocr-repo-2** license badge 链接指向 `allenai/OLMo` 仓库的 LICENSE，而不是 olmOCR 本仓库的 LICENSE，需要确认是有意共用还是链接错误. 求证结果:
+- **olmocr-repo-3** benchmark 表中 Infinity-Parser 的总体误差写成 `±?`，不确定性数值不完整. 求证结果:
+- **olmocr-repo-4** README 声称每百万页成本低于 200 美元，但相邻正文没有固定硬件、价格、页面分布及重试假设，不能解释为稳定成本保证. 求证结果:
+- **olmocr-repo-5** 第三方 benchmark 表混合版本化软件和 API 服务结果；服务模型、限流与运行条件会漂移，只固定 olmOCR 仓库提交不足以复现整张表. 求证结果:
