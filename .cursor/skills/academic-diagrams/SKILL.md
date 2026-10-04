@@ -69,7 +69,7 @@ S, C
 | 层间插槽 / 正交肘线 / 成对平行箭 | 上面 Gated Attention 默认 |
 | 残差 / 门控读写 | `2.2.2-多头注意力变体/05-Gated-Attention-SDPA输出门控/images/fig-gated-attn-not-gated-residual.png` |
 | MoE 路由 / Top-K | `2.6-MoE/02-MoE路由与Top-K可导性/images/fig-moe-topk-ste.png` |
-| EP / All2All | `2.6-MoE/05-MoE系统-并行通信与部署/images/fig-moe-ep-alltoall.png` |
+| EP / All2All | `6.1.8-MoE系统与并行/01-MoE专家并行与All-to-All通信/images/fig-moe-ep-alltoall.png` |
 
 ### Planner
 
