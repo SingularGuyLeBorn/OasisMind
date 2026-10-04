@@ -7,7 +7,7 @@ excerpt: "CISPO 来自 MiniMax-M1 技术报告. 它把 PPO 和 GRPO 对 token �
 
 # CISPO: 裁剪重要性权重
 
-> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [06 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md) · [GxPO 家族](../4.5-GRPO家族与RLVR.md)
+> 相关阅读: [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [06 SAPO](../06-SAPO-温度软门/06-SAPO-温度软门.md) · [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md)
 
 材料是 MiniMax-M1 技术报告 (*MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention*, arXiv:2506.13585) 的 §3.1, CISPO 全称 Clipped IS-weight Policy Optimization. 问题是同一批 rollout 要更新多轮时, PPO/GRPO 的裁剪会让一部分 token 失去梯度.
 

@@ -156,7 +156,7 @@ epsilon: 0.2
 策略和价值共享参数时, 目标要合并价值损失, 再加熵奖励鼓励探索 (论文式 (9)):
 
 $$
-L^{\mathrm{CLIP+VF+S}}_t(\theta)=\hat{\mathbb{E}}_t\Bigl[L^{\mathrm{CLIP}}_t(\theta)-c_1\bigl(V_\theta(s_t)-V^{\mathrm{targ}}_t\bigr)^2+c_2S[\pi_\theta](../../4.4-对齐技术/4.4.1-基于奖励模型的RL-RLHF-PPO/04-PPO/s_t)\Bigr]. \tag{10}
+L^{\mathrm{CLIP+VF+S}}_t(\theta)=\hat{\mathbb{E}}_t\Bigl[L^{\mathrm{CLIP}}_t(\theta)-c_1\bigl(V_\theta(s_t)-V^{\mathrm{targ}}_t\bigr)^2+c_2S[\pi_\theta](s_t)\Bigr]. \tag{10}
 $$
 
 论文 Algorithm 1: 每轮迭代, $N$ 个并行 actor 各用 $\pi_{\theta_{\mathrm{old}}}$ 跑 $T$ 步, 计算优势; 然后在这 $NT$ 个样本上用 mini-batch 大小 $M\le NT$ 优化 $K$ 个 epoch (通常用 Adam); 最后 $\theta_{\mathrm{old}}\leftarrow\theta$. 采样是 on-policy 的, 同一批上的多次更新带一点 off-policy, 由 clip 控制.

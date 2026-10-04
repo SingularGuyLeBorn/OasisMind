@@ -6,7 +6,7 @@ excerpt: "GMPO 把 GRPO 目标里 token 级加权奖励的算术平均换成几�
 ---
 # 05 GMPO: 几何平均策略优化
 
-> 相关阅读: [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md)
+> 相关阅读: [01 GRPO](../01-GRPO/01-GRPO.md) · [04 GSPO](../04-GSPO/04-GSPO.md) · [04 PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [4.4.0 强化学习的数学原理](../../4.4-强化学习基础/01-强化学习的数学原理/01-强化学习的数学原理.md) · [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md)
 
 材料是 Zhao 等人的 *Geometric-Mean Policy Optimization* (arXiv:2507.20673), 作者来自 Microsoft Research 与国科大等, 代码在 [callsys/GMPO](https://github.com/callsys/GMPO); 公式编号沿用论文式 (1)-(6), 表为 Table 1-6. 问题是 GRPO 训练中重要性比率出现极端值时, 怎样在不收窄 clip 窗的前提下让更新保持稳定.
 
@@ -382,7 +382,7 @@ Figure 4 画了熵, KL, 梯度范数和验证分. GMPO 的平均 token 熵在 MA
 
 换成 GMPO 后, 训练日志至少要看三项: 每步 $\rho_t$ 的最大最小值, 平均 token 熵, 被 clip 的 token 比例. 论文 Figure 1, 3, 4 用的就是前两项.
 
-GxPO 家族其他成员的对照见 [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md).
+GxPO 家族其他成员的对照见 [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md).
 
 ## 参考文献
 

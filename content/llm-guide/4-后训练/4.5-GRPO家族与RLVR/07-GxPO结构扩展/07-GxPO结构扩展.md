@@ -6,7 +6,7 @@ excerpt: "GRPO 之后的一串缩写都在优化同一个期望回报. 按改动
 ---
 # 07 · GxPO 结构扩展: 轨迹侧与奖励侧
 
-> 相关阅读: [4.5 GxPO 家族](../4.5-GRPO家族与RLVR.md) · [01-GRPO](../01-GRPO/01-GRPO.md) · [04-GSPO](../04-GSPO/04-GSPO.md) · [05-GMPO](../05-GMPO/05-GMPO.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [03-CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [02-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [OPD 基础原理](../../4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md)
+> 相关阅读: [4.5 GRPO 家族与 RLVR](../4.5-GRPO家族与RLVR.md) · [01-GRPO](../01-GRPO/01-GRPO.md) · [04-GSPO](../04-GSPO/04-GSPO.md) · [05-GMPO](../05-GMPO/05-GMPO.md) · [04-PPO](../../4.4-强化学习基础/04-PPO/04-PPO.md) · [03-CISPO](../03-CISPO-裁剪重要性权重/03-CISPO-裁剪重要性权重.md) · [02-Dr.GRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md) · [OPD 基础原理](../../4.9-OPD/4.9.1-OPD方法与落地/01-OPD基础原理/01-OPD基础原理.md)
 
 材料是 Shen 等 (arXiv:2606.16733) 对策略梯度方法的分类, 以及 GRPO, DAPO, GSPO, GMPO, GHPO 各自的原论文. GxPO 指 GRPO 及其结构扩展这一族, 没有一个叫 GxPO 的算法; 问题是这些方法各自改动了期望回报中的哪一部分.
 
@@ -92,7 +92,7 @@ $$
 
 其中 $r_{i,t}(\theta)=\pi_{\theta}(o_{i,t}\mid q,o_{i,<t})/\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})$ 是 token 级重要性比率, $\varepsilon$ 是 clip 半宽, $\beta$ 是 KL 系数, $\pi_{\mathrm{ref}}$ 是冻结的参考模型. KL 用无偏估计 $\pi_{\mathrm{ref}}/\pi_{\theta}-\log(\pi_{\mathrm{ref}}/\pi_{\theta})-1$. 综述称之为纯奖励侧替换: 比率, 对称 clip 和 KL 都还在, 变化只有 $A_t^{\mathrm{GAE}}\to\hat{A}_i$.
 
-DeepSeekMath 的 RL 设置: 学习率 $1\times10^{-6}$, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索只做一次更新. 结果 (Table 5, CoT 推理, 不用工具): DeepSeekMath-Instruct 7B 做 GRPO 后, GSM8K 82.9% 到 88.2%, MATH 46.8% 到 51.7%, CMATH 84.6% 到 88.8%. Figure 7 在温度 0.7 下比较 Instruct 与 RL 模型, RL 提高了 Maj@K, Pass@K 基本不变 (§5.2.2). 4.4.7 讨论的 RLVR 边界问题, 在这里已经出现了.
+DeepSeekMath 的 RL 设置: 学习率 $1\times10^{-6}$, KL 系数 0.04, 每题采 64 条, 最长 1024 token, batch 1024, 每轮探索只做一次更新. 结果 (Table 5, CoT 推理, 不用工具): DeepSeekMath-Instruct 7B 做 GRPO 后, GSM8K 82.9% 到 88.2%, MATH 46.8% 到 51.7%, CMATH 84.6% 到 88.8%. Figure 7 在温度 0.7 下比较 Instruct 与 RL 模型, RL 提高了 Maj@K, Pass@K 基本不变 (§5.2.2). 09 篇讨论的 RLVR 边界问题, 在这里已经出现了.
 
 **失效**: 组内奖励全相同时式 (5) 是 $0/0$, 实现里加一个小常数或跳过该组, 这道题的梯度为零. DAPO 的动态采样和 GHPO 的 hint 处理的就是这一情况. 过程监督版本里, 逐步奖励归一后从后往前累加成每个 token 的优势; 下文默认对照结果监督.
 
@@ -348,7 +348,7 @@ AIME24 从 0.122 到 0.163. 课程学习 GRPO-CL 均分 0.415, 固定一半 hint
 
 **Dr.GRPO** (Liu 等, *Understanding R1-Zero-Like Training: A Critical Perspective*, arXiv:2503.20783) 在奖励侧拆掉式 (6) 和式 (5) 中的两个归一. 除以 $|o_i|$ 带来长度偏差: 正优势时短回答的每个 token 更新更大, 负优势时长回答的每个 token 罚得更轻, 错误回答于是越写越长. 除以组内 $\mathrm{std}$ 带来难度偏差: 几乎全对或几乎全错的题, 标准差小, 权重反而被放大. 去掉两项后用常数归一, 梯度与 RLOO 同形.
 
-论文给出的最小配方是 Oat-Zero-7B: Qwen2.5-Math-7B, MATH Level 3 至 5, Qwen-Math 模板, 8 张 A100 约 27 小时; Table 4 五科均分 51.4 (AIME24 43.3, AMC 62.7, MATH500 80.0, Minerva 30.1, OlympiadBench 41.0), 生成上限 3000. 推导和实验细节见 [4.4.6/03](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md). 这组数字和 GMPO Table 1 的 52.7 来自不同论文的不同设置.
+论文给出的最小配方是 Oat-Zero-7B: Qwen2.5-Math-7B, MATH Level 3 至 5, Qwen-Math 模板, 8 张 A100 约 27 小时; Table 4 五科均分 51.4 (AIME24 43.3, AMC 62.7, MATH500 80.0, Minerva 30.1, OlympiadBench 41.0), 生成上限 3000. 推导和实验细节见 [02 DrGRPO](../02-DrGRPO-去标准差/02-DrGRPO-去标准差.md). 这组数字和 GMPO Table 1 的 52.7 来自不同论文的不同设置.
 
 ### 6.2 CISPO: 只 clip 权重
 
